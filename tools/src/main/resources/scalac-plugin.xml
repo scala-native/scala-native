@@ -1,0 +1,4 @@
+<plugin>
+  <name>salty</name>
+  <classname>salty.tools.compiler.SaltyPlugin</classname>
+</plugin>

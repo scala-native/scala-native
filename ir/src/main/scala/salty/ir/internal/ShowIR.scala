@@ -6,6 +6,15 @@ object ShowIR {
   import salty.util.Show, Show.{Sequence => s, Indent => i,
                                 Repeat => r, Newline => n}
 
+  implicit val showTree: Show[Tree] = Show {
+    case t: Type  => t
+    case i: Instr => i
+    case s: Stat  => s
+    case b: Branch => b
+    case lt: LabeledType => lt
+    case lv: LabeledVal => lv
+  }
+
   implicit val showType: Show[Type] = Show {
     case n: Name           => n
     case Type.Bool         => "bool"
@@ -51,8 +60,6 @@ object ShowIR {
       s("alloc ", name)
     case Expr.Call(name, args) =>
       s(name, "(", r(args, sep = ", "), ")")
-    case Expr.MethodCall(target, name, args) =>
-      s(target, ".", name, "(", r(args, sep = ", "), ")")
     case Expr.Phi(names) =>
       s("phi(", r(names, sep = ", "), ")")
     case Expr.Block(instrs) =>
@@ -73,11 +80,15 @@ object ShowIR {
 
   implicit val showStat: Show[Stat] = Show {
     case Stat.Class(name, p, ifaces, body) =>
-      s("class ", name, " extends ", r(p +: ifaces, sep = " with "), " {",
+      s("class ", name, ": ", r(p +: ifaces, sep = ", "), " {",
           r(body.map(i(_))),
         n("}"))
-    case Stat.Interface(name, interfaces, body) =>
-      s("interface ", name, " extends ", r(interfaces, sep = " with "), " {",
+    case Stat.Interface(name, ifaces, body) =>
+      s("interface ", name, r(ifaces, pre = ": ", sep = ", "), " {",
+          r(body.map(i(_))),
+        n("}"))
+    case Stat.Module(name, p, ifaces, body) =>
+      s("module ", name, ": ", r(p +: ifaces, sep = ", "), " {",
           r(body.map(i(_))),
         n("}"))
     case Stat.Struct(name, body) =>
@@ -88,9 +99,11 @@ object ShowIR {
       s("const ", name, ": ", ty, " = ", init)
     case Stat.Var(name, ty, init) =>
       s("var ", name, ": ", ty, " = ", init)
-    case Stat.Def(name, args, ty, body) =>
-      s("def ", name, "(", r(args, sep = ", "), "): ", ty, " = ", body)
-  }
+    case Stat.Declare(name, args, ty) =>
+      s("declare ", name, "(", r(args, sep = ", "), "): ", ty)
+    case Stat.Define(name, args, ty, body) =>
+      s("define ", name, "(", r(args, sep = ", "), "): ", ty, " = ", body)
+ }
 
   implicit val showName: Show[Name] = Show { _.repr }
 

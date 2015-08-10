@@ -1,7 +1,12 @@
 package salty
 package ir
 
-sealed abstract class Tree
+import salty.util.Show
+import salty.ir.internal.ShowIR
+
+sealed abstract class Tree {
+  def show: Show.Result = ShowIR.showTree(this)
+}
 
 sealed abstract trait Type extends Tree
 object Type {
@@ -33,7 +38,6 @@ object Expr {
   final case class Select(target: Val, name: Name) extends Expr
   final case class Allocate(name: Name) extends Expr
   final case class Call(name: Name, args: Seq[Val]) extends Expr
-  final case class MethodCall(target: Val, name: Name, args: Seq[Val]) extends Expr
   final case class Phi(names: Seq[Name]) extends Expr
   final case class Block(instrs: Seq[Instr]) extends Expr
 }
@@ -54,11 +58,15 @@ object Stat {
                          interfaces: Seq[Name], body: Seq[Stat]) extends Stat
   final case class Interface(name: Name, interfaces: Seq[Name],
                              body: Seq[Stat]) extends Stat
+  final case class Module(name: Name, parent: Name,
+                          interfaces: Seq[Name], body: Seq[Stat]) extends Stat
   final case class Struct(name: Name, body: Seq[Stat]) extends Stat
   final case class Const(name: Name, ty: Type, init: Val) extends Stat
   final case class Var(name: Name, ty: Type, init: Val) extends Stat
-  final case class Def(name: Name, args: Seq[LabeledType],
-                       ty: Type, body: Expr) extends Stat
+  final case class Declare(name: Name, params: Seq[LabeledType],
+                           ty: Type) extends Stat
+  final case class Define(name: Name, params: Seq[LabeledType],
+                          ty: Type, body: Expr) extends Stat
 }
 
 final case class Name(repr: String) extends Type with Val
@@ -66,7 +74,7 @@ final case class Branch(value: Val, expr: Expr) extends Tree
 final case class LabeledType(name: Name, ty: Type) extends Tree
 final case class LabeledVal(name: Name, value: Val) extends Tree
 
-sealed abstract class BinOp extends Tree
+sealed abstract class BinOp
 object BinOp {
   final case object +   extends BinOp
   final case object -   extends BinOp
@@ -89,7 +97,7 @@ object BinOp {
   final case object ||  extends BinOp
 }
 
-sealed abstract trait CastOp extends Tree
+sealed abstract trait CastOp
 object CastOp {
   final case object Bitcast  extends CastOp
   final case object Upcast   extends CastOp
