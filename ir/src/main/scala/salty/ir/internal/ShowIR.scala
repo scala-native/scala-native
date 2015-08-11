@@ -16,17 +16,21 @@ object ShowIR {
   }
 
   implicit val showType: Show[Type] = Show {
-    case n: Name           => n
-    case Type.Bool         => "bool"
-    case Type.I8           => "i8"
-    case Type.I16          => "i16"
-    case Type.I32          => "i32"
-    case Type.I64          => "i64"
-    case Type.F32          => "f32"
-    case Type.F64          => "f64"
-    case Type.Ptr(ty)      => s(ty, "*")
-    case Type.Array(ty, n) => s("array { ", ty, ", ", n, "}")
-    case Type.Struct(tys)  => s("struct {", r(tys, sep = ", "), "}")
+    case n: Name                => n
+    case Type.Unit              => "unit"
+    case Type.Null              => "null"
+    case Type.Nothing           => "nothing"
+    case Type.Bool              => "bool"
+    case Type.I8                => "i8"
+    case Type.I16               => "i16"
+    case Type.I32               => "i32"
+    case Type.I64               => "i64"
+    case Type.F32               => "f32"
+    case Type.F64               => "f64"
+    case Type.Ptr(ty)           => s(ty, "*")
+    case Type.Array(ty)         => s("array { ", ty, "}")
+    case Type.FixedArray(ty, n) => s("farray { ", ty, ", ", n, "}")
+    case Type.Struct(tys)       => s("struct {", r(tys, sep = ", "), "}")
   }
 
   implicit val showInstr: Show[Instr] = Show {
@@ -53,25 +57,29 @@ object ShowIR {
     case Expr.Binary(op, left, right) =>
       s(left, " ", op.toString, " ", right)
     case Expr.Cast(op, value, to) =>
-      s(op.toString.toLowerCase, " ", value, " to ", to)
+      s(value, " ", op.toString.toLowerCase, " ", to)
+    case Expr.Is(value, ty) =>
+      s(value, " is ", ty)
     case Expr.Select(target, name) =>
       s(target, ".", name)
-    case Expr.Allocate(name) =>
+    case Expr.Alloc(name) =>
       s("alloc ", name)
     case Expr.Call(name, args) =>
       s(name, "(", r(args, sep = ", "), ")")
     case Expr.Phi(names) =>
       s("phi(", r(names, sep = ", "), ")")
-    case Expr.Block(instrs) =>
+    case Expr.Block(instrs, value) =>
       s("{",
           r(instrs.map(i(_))),
+          i(value),
         n("}"))
   }
 
   implicit val showVal: Show[Val] = Show {
     case n: Name               => n
-    case Val.True              => "true"
-    case Val.False             => "false"
+    case Val.Null              => "null"
+    case Val.Unit              => "unit"
+    case Val.Bool(v)           => v.toString
     case Val.Integer(repr, ty) => s(repr, ty)
     case Val.Float(repr, ty)   => s(repr, ty)
     case Val.Struct(vs)        => s("struct {", r(vs, sep = ", "), "}")
@@ -99,11 +107,11 @@ object ShowIR {
       s("const ", name, ": ", ty, " = ", init)
     case Stat.Var(name, ty, init) =>
       s("var ", name, ": ", ty, " = ", init)
-    case Stat.Declare(name, args, ty) =>
-      s("declare ", name, "(", r(args, sep = ", "), "): ", ty)
-    case Stat.Define(name, args, ty, body) =>
-      s("define ", name, "(", r(args, sep = ", "), "): ", ty, " = ", body)
- }
+    case Stat.Decl(name, args, ty) =>
+      s("decl ", name, "(", r(args, sep = ", "), "): ", ty)
+    case Stat.Def(name, args, ty, body) =>
+      s("def ", name, "(", r(args, sep = ", "), "): ", ty, " = ", body)
+  }
 
   implicit val showName: Show[Name] = Show { _.repr }
 

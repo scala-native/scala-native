@@ -1,18 +1,5 @@
 package test
 
-object M extends C {
-  println(foo())
-  object Nested {
-    println(foo())
-  }
-}
-
-trait J extends I
-
-trait I {
-  def foo(): Int
-}
-
-class C extends I {
-  def foo(): Int = 3
+class C {
+  def foo(x: Any): Boolean = x.asInstanceOf[String].isInstanceOf[String]
 }
