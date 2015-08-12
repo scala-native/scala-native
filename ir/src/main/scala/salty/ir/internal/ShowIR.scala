@@ -36,8 +36,6 @@ object ShowIR {
   implicit val showInstr: Show[Instr] = Show {
     case e: Expr =>
       e
-    case Instr.If(cond, thenp, elsep) =>
-      s("if ", cond, " then ", thenp, " else ", elsep)
     case Instr.Switch(on, cases, default) =>
       s("switch ", on, " { ",
           r(cases.map(i(_))),
@@ -54,10 +52,10 @@ object ShowIR {
   implicit val showExpr: Show[Expr] = Show {
     case v: Val =>
       v
-    case Expr.Binary(op, left, right) =>
-      s(left, " ", op.toString, " ", right)
-    case Expr.Cast(op, value, to) =>
-      s(value, " ", op.toString.toLowerCase, " ", to)
+    case Expr.Bin(op, left, right) =>
+      s(op.toString.toLowerCase, " ", left, ", ", right)
+    case Expr.Conv(op, value, to) =>
+      s(op.toString.toLowerCase, " ", value, " to ", to)
     case Expr.Is(value, ty) =>
       s(value, " is ", ty)
     case Expr.Select(target, name) =>
@@ -68,6 +66,8 @@ object ShowIR {
       s(name, "(", r(args, sep = ", "), ")")
     case Expr.Phi(names) =>
       s("phi(", r(names, sep = ", "), ")")
+    case Expr.If(cond, thenp, elsep) =>
+      s("if ", cond, " then ", thenp, " else ", elsep)
     case Expr.Block(instrs, value) =>
       s("{",
           r(instrs.map(i(_))),

@@ -28,7 +28,6 @@ object Type {
 
 sealed abstract trait Instr extends Tree
 object Instr {
-  final case class If(cond: Val, thenp: Expr, elsep: Expr) extends Instr
   final case class Switch(on: Val, cases: Seq[Branch], default: Expr) extends Instr
   final case class Assign(name: Name, expr: Expr) extends Instr
   final case class While(cond: Expr, body: Expr) extends Instr
@@ -37,13 +36,54 @@ object Instr {
 
 sealed abstract trait Expr extends Instr
 object Expr {
-  final case class Binary(op: BinOp, left: Val, right: Val) extends Expr
-  final case class Cast(op: CastOp, value: Val, to: Type) extends Expr
+  final case class Bin(op: Bin.Op, left: Val, right: Val) extends Expr
+  object Bin {
+    sealed abstract class Op
+    object Op {
+      final case object Add   extends Bin.Op
+      final case object Sub   extends Bin.Op
+      final case object Mul   extends Bin.Op
+      final case object Div   extends Bin.Op
+      final case object Mod   extends Bin.Op
+      final case object Shl   extends Bin.Op
+      final case object Lshr  extends Bin.Op
+      final case object Ashr  extends Bin.Op
+      final case object And   extends Bin.Op
+      final case object Or    extends Bin.Op
+      final case object Xor   extends Bin.Op
+      final case object Eq    extends Bin.Op
+      final case object Neq   extends Bin.Op
+      final case object Lt    extends Bin.Op
+      final case object Lte   extends Bin.Op
+      final case object Gt    extends Bin.Op
+      final case object Gte   extends Bin.Op
+    }
+  }
+  final case class Conv(op: Conv.Op, value: Val, to: Type) extends Expr
+  object Conv {
+    sealed abstract trait Op
+    object Op {
+      final case object Trunc    extends Conv.Op
+      final case object Zext     extends Conv.Op
+      final case object Sext     extends Conv.Op
+      final case object Fptrunc  extends Conv.Op
+      final case object Fpext    extends Conv.Op
+      final case object Fptoui   extends Conv.Op
+      final case object Fptosi   extends Conv.Op
+      final case object Uitofp   extends Conv.Op
+      final case object Sitofp   extends Conv.Op
+      final case object Ptrtoint extends Conv.Op
+      final case object Inttoptr extends Conv.Op
+      final case object Bitcast  extends Conv.Op
+      final case object Dyncast  extends Conv.Op
+    }
+  }
   final case class Is(value: Val, ty: Type) extends Expr
   final case class Select(target: Val, name: Name) extends Expr
   final case class Alloc(name: Name) extends Expr
   final case class Call(name: Name, args: Seq[Val]) extends Expr
   final case class Phi(names: Seq[Name]) extends Expr
+  final case class If(cond: Val, thenp: Expr, elsep: Expr) extends Expr
   final case class Block(instrs: Seq[Instr], ret: Val) extends Expr
   object Block {
     def apply(ret: Val): Block = Block(Seq(), ret)
@@ -82,32 +122,3 @@ final case class Name(repr: String) extends Type with Val
 final case class Branch(value: Val, expr: Expr) extends Tree
 final case class LabeledType(name: Name, ty: Type) extends Tree
 final case class LabeledVal(name: Name, value: Val) extends Tree
-
-sealed abstract class BinOp
-object BinOp {
-  final case object +   extends BinOp
-  final case object -   extends BinOp
-  final case object *   extends BinOp
-  final case object /   extends BinOp
-  final case object %   extends BinOp
-  final case object |   extends BinOp
-  final case object ^   extends BinOp
-  final case object &   extends BinOp
-  final case object <<  extends BinOp
-  final case object >>> extends BinOp
-  final case object >>  extends BinOp
-  final case object ==  extends BinOp
-  final case object !=  extends BinOp
-  final case object >   extends BinOp
-  final case object >=  extends BinOp
-  final case object <   extends BinOp
-  final case object <=  extends BinOp
-  final case object &&  extends BinOp
-  final case object ||  extends BinOp
-}
-
-sealed abstract trait CastOp
-object CastOp {
-  final case object Bitcast  extends CastOp
-  final case object Dyncast  extends CastOp
-}

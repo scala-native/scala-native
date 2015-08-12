@@ -42,6 +42,11 @@ abstract class GenSaltyCode extends PluginComponent {
     val currentMethodSym = new ScopedVar[Symbol]
     val currentEnv = new ScopedVar[Env]
 
+    override def run(): Unit = {
+      scalaPrimitives.init()
+      super.run()
+    }
+
     override def apply(cunit: CompilationUnit): Unit = {
       def collectClassDefs(tree: Tree): List[ClassDef] = {
         tree match {
@@ -196,10 +201,107 @@ abstract class GenSaltyCode extends PluginComponent {
         case Select(New(_), nme.CONSTRUCTOR) =>
           genApplyNew(app)
         case _ =>
-          println(s"no apply impl for ${showRaw(app)}\n${app.toString}")
-          ???
+          val sym = fun.symbol
+
+          if (scalaPrimitives.isPrimitive(sym))
+            genPrimitiveOp(app)
+          else
+            ???
       }
     }
+
+    def genPrimitiveOp(app: Apply) = {
+      import scalaPrimitives._
+
+      val sym = app.symbol
+      val Apply(fun @ Select(receiver, _), args) = app
+      val code = scalaPrimitives.getPrimitive(sym, receiver.tpe)
+
+      if (isArithmeticOp(code) || isLogicalOp(code) || isComparisonOp(code))
+        genSimpleOp(app, receiver :: args, code)
+      else if (code == scalaPrimitives.CONCAT)
+        genStringConcat(app, receiver, args)
+      else if (code == HASH)
+        genScalaHash(app, receiver)
+      else if (isArrayOp(code))
+        genArrayOp(app, code)
+      else if (code == SYNCHRONIZED)
+        genSynchronized(app)
+      else if (isCoercion(code))
+        genCoercion(app, receiver, code)
+      else
+        abort("Unknown primitive operation: " + sym.fullName + "(" +
+              fun.symbol.simpleName + ") " + " at: " + (app.pos))
+    }
+
+    def genSimpleOp(app: Apply, args: List[Tree], code: Int) = {
+      import scalaPrimitives._
+      import ir.Expr.Bin, Bin.Op
+      val resType = genType(app.tpe)
+
+      args match {
+        case List(unary) =>
+          val block @ ir.Expr.Block(instrs, value) = genExpr(unary)
+          val expropt = code match {
+            case POS  => None
+            case NEG  => Some(Bin(Op.Sub, ir.Val.Integer("0", resType), value))
+            case NOT  => Some(Bin(Op.Xor, ir.Val.Integer("-1", resType), value))
+            case ZNOT => Some(Bin(Op.Xor, ir.Val.Bool(true), value))
+            case _ =>
+              abort("Unknown unary operation code: " + code)
+          }
+          val res = currentEnv.fresh()
+          expropt.map { expr =>
+            ir.Expr.Block(instrs :+ ir.Instr.Assign(res, expr), res)
+          }.getOrElse(block)
+
+        // TODO: convert to the common type
+        // TODO: equality on reference types
+        case List(left, right) =>
+          val lblock @ ir.Expr.Block(linstrs, lvalue) = genExpr(left)
+          val rblock @ ir.Expr.Block(rinstrs, rvalue) = genExpr(right)
+          val expr = code match {
+            case ADD  => Bin(Op.Add,  lvalue, rvalue)
+            case SUB  => Bin(Op.Sub,  lvalue, rvalue)
+            case MUL  => Bin(Op.Mul,  lvalue, rvalue)
+            case DIV  => Bin(Op.Div,  lvalue, rvalue)
+            case MOD  => Bin(Op.Mod,  lvalue, rvalue)
+            case OR   => Bin(Op.Or,   lvalue, rvalue)
+            case XOR  => Bin(Op.Xor,  lvalue, rvalue)
+            case AND  => Bin(Op.And,  lvalue, rvalue)
+            case LSL  => Bin(Op.Shl,  lvalue, rvalue)
+            case LSR  => Bin(Op.Lshr, lvalue, rvalue)
+            case ASR  => Bin(Op.Ashr, lvalue, rvalue)
+            case EQ   => Bin(Op.Eq,   lvalue, rvalue)
+            case NE   => Bin(Op.Neq,  lvalue, rvalue)
+            case LT   => Bin(Op.Lt,   lvalue, rvalue)
+            case LE   => Bin(Op.Lte,  lvalue, rvalue)
+            case GT   => Bin(Op.Gt,   lvalue, rvalue)
+            case GE   => Bin(Op.Gte,  lvalue, rvalue)
+            case ID   => ???
+            case NI   => ???
+            case ZOR  => ir.Expr.If(lvalue, ir.Val.Bool(true), rblock)
+            case ZAND => ir.Expr.If(lvalue, rblock, ir.Val.Bool(false))
+            case _ =>
+              abort("Unknown binary operation code: " + code)
+          }
+          val res = currentEnv.fresh()
+          ir.Expr.Block(linstrs ++ rinstrs :+ ir.Instr.Assign(res, expr), res)
+
+        case _ =>
+          abort("Too many arguments for primitive function: " + app)
+      }
+    }
+
+    def genStringConcat(app: Apply, receiver: Tree, args: List[Tree]) = ???
+
+    def genScalaHash(app: Apply, receiver: Tree) = ???
+
+    def genArrayOp(app: Apply, code: Int) = ???
+
+    def genSynchronized(app: Apply) = ???
+
+    def genCoercion(app: Apply, receiver: Tree, code: Int) = ???
 
     def genApplyTypeApply(app: Apply) = {
       val Apply(TypeApply(fun @ Select(obj, _), targs), _) = app
@@ -213,7 +315,7 @@ abstract class GenSaltyCode extends PluginComponent {
       val instr =
         ir.Instr.Assign(res,
           if (cast)
-            ir.Expr.Cast(ir.CastOp.Dyncast, l, ty)
+            ir.Expr.Conv(ir.Expr.Conv.Op.Dyncast, l, ty)
           else
             ir.Expr.Is(l, ty))
 

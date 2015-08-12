@@ -1,5 +1,3 @@
 package test
 
-class C {
-  def foo(x: Any): Boolean = x.asInstanceOf[String].isInstanceOf[String]
-}
+class C { def foo(a: Boolean, b: Boolean) = a && b }
