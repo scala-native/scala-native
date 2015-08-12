@@ -14,12 +14,17 @@ object Type {
   case object Null    extends Type
   case object Nothing extends Type
   case object Bool    extends Type
-  case object I8      extends Type
-  case object I16     extends Type
-  case object I32     extends Type
-  case object I64     extends Type
-  case object F32     extends Type
-  case object F64     extends Type
+
+  sealed abstract case class I(width: Int) extends Type
+  object I8 extends  Type.I(8)
+  object I16 extends Type.I(16)
+  object I32 extends Type.I(32)
+  object I64 extends Type.I(64)
+
+  sealed abstract case class F(width: Int) extends Type
+  object F32 extends Type.F(32)
+  object F64 extends Type.F(64)
+
   final case class Ptr(ty: Type) extends Type
   final case class Array(ty: Type) extends Type
   final case class FixedArray(ty: Type, n: Val) extends Type
@@ -39,44 +44,40 @@ object Expr {
   final case class Bin(op: Bin.Op, left: Val, right: Val) extends Expr
   object Bin {
     sealed abstract class Op
-    object Op {
-      final case object Add   extends Bin.Op
-      final case object Sub   extends Bin.Op
-      final case object Mul   extends Bin.Op
-      final case object Div   extends Bin.Op
-      final case object Mod   extends Bin.Op
-      final case object Shl   extends Bin.Op
-      final case object Lshr  extends Bin.Op
-      final case object Ashr  extends Bin.Op
-      final case object And   extends Bin.Op
-      final case object Or    extends Bin.Op
-      final case object Xor   extends Bin.Op
-      final case object Eq    extends Bin.Op
-      final case object Neq   extends Bin.Op
-      final case object Lt    extends Bin.Op
-      final case object Lte   extends Bin.Op
-      final case object Gt    extends Bin.Op
-      final case object Gte   extends Bin.Op
-    }
+    final case object Add   extends Bin.Op
+    final case object Sub   extends Bin.Op
+    final case object Mul   extends Bin.Op
+    final case object Div   extends Bin.Op
+    final case object Mod   extends Bin.Op
+    final case object Shl   extends Bin.Op
+    final case object Lshr  extends Bin.Op
+    final case object Ashr  extends Bin.Op
+    final case object And   extends Bin.Op
+    final case object Or    extends Bin.Op
+    final case object Xor   extends Bin.Op
+    final case object Eq    extends Bin.Op
+    final case object Neq   extends Bin.Op
+    final case object Lt    extends Bin.Op
+    final case object Lte   extends Bin.Op
+    final case object Gt    extends Bin.Op
+    final case object Gte   extends Bin.Op
   }
   final case class Conv(op: Conv.Op, value: Val, to: Type) extends Expr
   object Conv {
-    sealed abstract trait Op
-    object Op {
-      final case object Trunc    extends Conv.Op
-      final case object Zext     extends Conv.Op
-      final case object Sext     extends Conv.Op
-      final case object Fptrunc  extends Conv.Op
-      final case object Fpext    extends Conv.Op
-      final case object Fptoui   extends Conv.Op
-      final case object Fptosi   extends Conv.Op
-      final case object Uitofp   extends Conv.Op
-      final case object Sitofp   extends Conv.Op
-      final case object Ptrtoint extends Conv.Op
-      final case object Inttoptr extends Conv.Op
-      final case object Bitcast  extends Conv.Op
-      final case object Dyncast  extends Conv.Op
-    }
+    sealed abstract class Op
+    final case object Trunc    extends Conv.Op
+    final case object Zext     extends Conv.Op
+    final case object Sext     extends Conv.Op
+    final case object Fptrunc  extends Conv.Op
+    final case object Fpext    extends Conv.Op
+    final case object Fptoui   extends Conv.Op
+    final case object Fptosi   extends Conv.Op
+    final case object Uitofp   extends Conv.Op
+    final case object Sitofp   extends Conv.Op
+    final case object Ptrtoint extends Conv.Op
+    final case object Inttoptr extends Conv.Op
+    final case object Bitcast  extends Conv.Op
+    final case object Dyncast  extends Conv.Op
   }
   final case class Is(value: Val, ty: Type) extends Expr
   final case class Select(target: Val, name: Name) extends Expr
@@ -95,8 +96,7 @@ object Val {
   case object Null extends Val
   case object Unit extends Val
   final case class Bool(value: Boolean) extends Val
-  final case class Integer(repr: String, ty: Type) extends Val
-  final case class Float(repr: String, ty: Type) extends Val
+  final case class Number(repr: String, ty: Type) extends Val
   final case class Struct(vs: Seq[LabeledVal]) extends Val
   final case class Array(vs: Seq[Val]) extends Val
 }

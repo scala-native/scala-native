@@ -156,17 +156,17 @@ abstract class GenSaltyCode extends PluginComponent {
           case BooleanTag =>
             ir.Val.Bool(value.booleanValue)
           case ByteTag =>
-            ir.Val.Integer(value.intValue.toString, ir.Type.I8)
+            ir.Val.Number(value.intValue.toString, ir.Type.I8)
           case ShortTag | CharTag =>
-            ir.Val.Integer(value.intValue.toString, ir.Type.I16)
+            ir.Val.Number(value.intValue.toString, ir.Type.I16)
           case IntTag =>
-            ir.Val.Integer(value.intValue.toString, ir.Type.I32)
+            ir.Val.Number(value.intValue.toString, ir.Type.I32)
           case LongTag =>
-            ir.Val.Integer(value.longValue.toString, ir.Type.I64)
+            ir.Val.Number(value.longValue.toString, ir.Type.I64)
           case FloatTag =>
-            ir.Val.Float(value.floatValue.toString, ir.Type.F32)
+            ir.Val.Number(value.floatValue.toString, ir.Type.F32)
           case DoubleTag =>
-            ir.Val.Float(value.doubleValue.toString, ir.Type.F64)
+            ir.Val.Number(value.doubleValue.toString, ir.Type.F64)
           case StringTag =>
             ???
           case ClazzTag =>
@@ -236,24 +236,24 @@ abstract class GenSaltyCode extends PluginComponent {
 
     def genSimpleOp(app: Apply, args: List[Tree], code: Int) = {
       import scalaPrimitives._
-      import ir.Expr.Bin, Bin.Op
+      import ir.Expr.Bin
       val resType = genType(app.tpe)
 
       args match {
         case List(unary) =>
           val block @ ir.Expr.Block(instrs, value) = genExpr(unary)
-          val expropt = code match {
-            case POS  => None
-            case NEG  => Some(Bin(Op.Sub, ir.Val.Integer("0", resType), value))
-            case NOT  => Some(Bin(Op.Xor, ir.Val.Integer("-1", resType), value))
-            case ZNOT => Some(Bin(Op.Xor, ir.Val.Bool(true), value))
-            case _ =>
-              abort("Unknown unary operation code: " + code)
-          }
-          val res = currentEnv.fresh()
-          expropt.map { expr =>
+          if (code == POS) block
+          else {
+            val expr = code match {
+              case NEG  => Bin(Bin.Sub, ir.Val.Number("0", resType), value)
+              case NOT  => Bin(Bin.Xor, ir.Val.Number("-1", resType), value)
+              case ZNOT => Bin(Bin.Xor, ir.Val.Bool(true), value)
+              case _ =>
+                abort("Unknown unary operation code: " + code)
+            }
+            val res = currentEnv.fresh()
             ir.Expr.Block(instrs :+ ir.Instr.Assign(res, expr), res)
-          }.getOrElse(block)
+          }
 
         // TODO: convert to the common type
         // TODO: equality on reference types
@@ -261,23 +261,23 @@ abstract class GenSaltyCode extends PluginComponent {
           val lblock @ ir.Expr.Block(linstrs, lvalue) = genExpr(left)
           val rblock @ ir.Expr.Block(rinstrs, rvalue) = genExpr(right)
           val expr = code match {
-            case ADD  => Bin(Op.Add,  lvalue, rvalue)
-            case SUB  => Bin(Op.Sub,  lvalue, rvalue)
-            case MUL  => Bin(Op.Mul,  lvalue, rvalue)
-            case DIV  => Bin(Op.Div,  lvalue, rvalue)
-            case MOD  => Bin(Op.Mod,  lvalue, rvalue)
-            case OR   => Bin(Op.Or,   lvalue, rvalue)
-            case XOR  => Bin(Op.Xor,  lvalue, rvalue)
-            case AND  => Bin(Op.And,  lvalue, rvalue)
-            case LSL  => Bin(Op.Shl,  lvalue, rvalue)
-            case LSR  => Bin(Op.Lshr, lvalue, rvalue)
-            case ASR  => Bin(Op.Ashr, lvalue, rvalue)
-            case EQ   => Bin(Op.Eq,   lvalue, rvalue)
-            case NE   => Bin(Op.Neq,  lvalue, rvalue)
-            case LT   => Bin(Op.Lt,   lvalue, rvalue)
-            case LE   => Bin(Op.Lte,  lvalue, rvalue)
-            case GT   => Bin(Op.Gt,   lvalue, rvalue)
-            case GE   => Bin(Op.Gte,  lvalue, rvalue)
+            case ADD  => Bin(Bin.Add,  lvalue, rvalue)
+            case SUB  => Bin(Bin.Sub,  lvalue, rvalue)
+            case MUL  => Bin(Bin.Mul,  lvalue, rvalue)
+            case DIV  => Bin(Bin.Div,  lvalue, rvalue)
+            case MOD  => Bin(Bin.Mod,  lvalue, rvalue)
+            case OR   => Bin(Bin.Or,   lvalue, rvalue)
+            case XOR  => Bin(Bin.Xor,  lvalue, rvalue)
+            case AND  => Bin(Bin.And,  lvalue, rvalue)
+            case LSL  => Bin(Bin.Shl,  lvalue, rvalue)
+            case LSR  => Bin(Bin.Lshr, lvalue, rvalue)
+            case ASR  => Bin(Bin.Ashr, lvalue, rvalue)
+            case EQ   => Bin(Bin.Eq,   lvalue, rvalue)
+            case NE   => Bin(Bin.Neq,  lvalue, rvalue)
+            case LT   => Bin(Bin.Lt,   lvalue, rvalue)
+            case LE   => Bin(Bin.Lte,  lvalue, rvalue)
+            case GT   => Bin(Bin.Gt,   lvalue, rvalue)
+            case GE   => Bin(Bin.Gte,  lvalue, rvalue)
             case ID   => ???
             case NI   => ???
             case ZOR  => ir.Expr.If(lvalue, ir.Val.Bool(true), rblock)
@@ -301,7 +301,82 @@ abstract class GenSaltyCode extends PluginComponent {
 
     def genSynchronized(app: Apply) = ???
 
-    def genCoercion(app: Apply, receiver: Tree, code: Int) = ???
+    def genCoercion(app: Apply, receiver: Tree, code: Int) = {
+      import salty.ir.Expr.Conv
+      import salty.ir.Type._
+
+      val block @ ir.Expr.Block(instrs, value) = genExpr(receiver)
+      val (fromty, toty) = coercionTypes(code)
+
+      if (fromty == toty) block
+      else {
+        val expr = (fromty, toty) match {
+          case (I(lwidth), I(rwidth)) if lwidth < rwidth =>
+            Conv(Conv.Zext, value, toty)
+          case (I(lwidth), I(rwidth)) if lwidth > rwidth =>
+            Conv(Conv.Trunc, value, toty)
+          case (I(_), F(_)) =>
+            Conv(Conv.Sitofp, value, toty)
+          case (F(_), I(_)) =>
+            Conv(Conv.Fptosi, value, toty)
+          case (F(32), F(64)) =>
+            Conv(Conv.Fptrunc, value, toty)
+          case (F(64), F(32)) =>
+            Conv(Conv.Fpext, value, toty)
+        }
+        val res = currentEnv.fresh()
+        ir.Expr.Block(instrs :+ ir.Instr.Assign(res, expr), res)
+      }
+    }
+
+    def coercionTypes(code: Int) = {
+      import scalaPrimitives._
+      import salty.ir.Type._
+
+      code match {
+        case B2B       => (I8, I8)
+        case B2S | B2C => (I8, I16)
+        case B2I       => (I8, I32)
+        case B2L       => (I8, I64)
+        case B2F       => (I8, F32)
+        case B2D       => (I8, F64)
+
+        case S2B       | C2B       => (I16, I8)
+        case S2S | S2C | C2S | C2C => (I16, I16)
+        case S2I       | C2I       => (I16, I32)
+        case S2L       | C2L       => (I16, I64)
+        case S2F       | C2F       => (I16, F32)
+        case S2D       | C2D       => (I16, F64)
+
+        case I2B       => (I32, I8)
+        case I2S | I2C => (I32, I16)
+        case I2I       => (I32, I32)
+        case I2L       => (I32, I64)
+        case I2F       => (I32, F32)
+        case I2D       => (I32, F64)
+
+        case L2B       => (I64, I8)
+        case L2S | L2C => (I64, I16)
+        case L2I       => (I64, I32)
+        case L2L       => (I64, I64)
+        case L2F       => (I64, F32)
+        case L2D       => (I64, F64)
+
+        case F2B       => (F32, I8)
+        case F2S | F2C => (F32, I16)
+        case F2I       => (F32, I32)
+        case F2L       => (F32, I64)
+        case F2F       => (F32, F32)
+        case F2D       => (F32, F64)
+
+        case D2B       => (F64, I8)
+        case D2S | D2C => (F64, I16)
+        case D2I       => (F64, I32)
+        case D2L       => (F64, I64)
+        case D2F       => (F64, F32)
+        case D2D       => (F64, F64)
+      }
+    }
 
     def genApplyTypeApply(app: Apply) = {
       val Apply(TypeApply(fun @ Select(obj, _), targs), _) = app
@@ -315,7 +390,7 @@ abstract class GenSaltyCode extends PluginComponent {
       val instr =
         ir.Instr.Assign(res,
           if (cast)
-            ir.Expr.Conv(ir.Expr.Conv.Op.Dyncast, l, ty)
+            ir.Expr.Conv(ir.Expr.Conv.Dyncast, l, ty)
           else
             ir.Expr.Is(l, ty))
 

@@ -21,12 +21,8 @@ object ShowIR {
     case Type.Null              => "null"
     case Type.Nothing           => "nothing"
     case Type.Bool              => "bool"
-    case Type.I8                => "i8"
-    case Type.I16               => "i16"
-    case Type.I32               => "i32"
-    case Type.I64               => "i64"
-    case Type.F32               => "f32"
-    case Type.F64               => "f64"
+    case Type.I(w)              => s("i", w.toString)
+    case Type.F(w)              => s("f", w.toString)
     case Type.Ptr(ty)           => s(ty, "*")
     case Type.Array(ty)         => s("array { ", ty, "}")
     case Type.FixedArray(ty, n) => s("farray { ", ty, ", ", n, "}")
@@ -80,8 +76,7 @@ object ShowIR {
     case Val.Null              => "null"
     case Val.Unit              => "unit"
     case Val.Bool(v)           => v.toString
-    case Val.Integer(repr, ty) => s(repr, ty)
-    case Val.Float(repr, ty)   => s(repr, ty)
+    case Val.Number(repr, ty)  => s(repr, (ty: Type))
     case Val.Struct(vs)        => s("struct {", r(vs, sep = ", "), "}")
     case Val.Array(vs)         => s("array {", r(vs, sep = ", "), "}")
   }
