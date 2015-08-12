@@ -27,14 +27,14 @@ abstract class GenSaltyCode extends PluginComponent {
     }
 
     def enter(sym: Symbol): ir.Name = {
-      val name = ir.Name("%" + sym.name + "_" + freshId())
+      val name = ir.Name.Local(sym.name + "_" + freshId())
       subst += sym -> name
       name
     }
 
     def resolve(sym: Symbol): ir.Name = subst(sym)
 
-    def fresh(): ir.Name = ir.Name("%" + freshId())
+    def fresh(): ir.Name = ir.Name.Local(freshId().toString)
   }
 
   class SaltyCodePhase(prev: Phase) extends StdPhase(prev) {
@@ -105,7 +105,7 @@ abstract class GenSaltyCode extends PluginComponent {
       currentMethodSym := dd.symbol
     ) {
       val sym = dd.symbol
-      val name = encodeMethodName(dd)
+      val name = encodeMethodName(sym)
       val paramSyms = methodParamSymbols(dd)
       val ty =
         if (dd.symbol.isClassConstructor) ir.Type.Unit
@@ -130,51 +130,19 @@ abstract class GenSaltyCode extends PluginComponent {
       if (vp.isEmpty) Nil else vp.head.map(_.symbol)
     }
 
-    def genDeclParams(paramSyms: List[Symbol]): Seq[ir.Type] = {
-      val params = paramSyms.map(sym => genType(sym.tpe))
-      encodeClassType(currentClassSym) +: params
-    }
+    def genDeclParams(paramSyms: List[Symbol]): Seq[ir.Type] =
+      paramSyms.map(sym => genType(sym.tpe))
 
-    def genDefParams(paramSyms: List[Symbol]): Seq[ir.LabeledType] = {
-      val params =
-        paramSyms.map { sym =>
-          val name = currentEnv.enter(sym)
-          val ty = genType(sym.tpe)
-          ir.LabeledType(name, ty)
-        }
-      val self = ir.LabeledType(ir.Name("%this"), encodeClassType(currentClassSym))
-      self +: params
-    }
+    def genDefParams(paramSyms: List[Symbol]): Seq[ir.LabeledType] =
+      paramSyms.map { sym =>
+        val name = currentEnv.enter(sym)
+        val ty = genType(sym.tpe)
+        ir.LabeledType(name, ty)
+      }
 
     def genExpr(t: Tree): ir.Expr.Block = t match {
       case Literal(value) =>
-        val v = value.tag match {
-          case NullTag =>
-            ir.Val.Null
-          case UnitTag =>
-            ir.Val.Unit
-          case BooleanTag =>
-            ir.Val.Bool(value.booleanValue)
-          case ByteTag =>
-            ir.Val.Number(value.intValue.toString, ir.Type.I8)
-          case ShortTag | CharTag =>
-            ir.Val.Number(value.intValue.toString, ir.Type.I16)
-          case IntTag =>
-            ir.Val.Number(value.intValue.toString, ir.Type.I32)
-          case LongTag =>
-            ir.Val.Number(value.longValue.toString, ir.Type.I64)
-          case FloatTag =>
-            ir.Val.Number(value.floatValue.toString, ir.Type.F32)
-          case DoubleTag =>
-            ir.Val.Number(value.doubleValue.toString, ir.Type.F64)
-          case StringTag =>
-            ???
-          case ClazzTag =>
-            ???
-          case EnumTag =>
-            ???
-        }
-        ir.Expr.Block(v)
+        genLiteral(value)
 
       case app: Apply =>
         genApply(app)
@@ -186,8 +154,45 @@ abstract class GenSaltyCode extends PluginComponent {
           else currentEnv.resolve(sym)
         ir.Expr.Block(name)
 
+      case If(cond, thenp, elsep) =>
+        val ir.Expr.Block(instrs, value) = genExpr(cond)
+        val res = currentEnv.fresh()
+        val instr =
+          ir.Instr.Assign(res, ir.Expr.If(value, genExpr(thenp), genExpr(elsep)))
+        ir.Expr.Block(instrs :+ instr, res)
+
       case _ =>
-        ir.Expr.Block(ir.Name("@unrecognized"))
+        ir.Expr.Block(ir.Name.Global("unrecognized"))
+    }
+
+    def genLiteral(value: Constant) = {
+      val v = value.tag match {
+        case NullTag =>
+          ir.Val.Null
+        case UnitTag =>
+          ir.Val.Unit
+        case BooleanTag =>
+          ir.Val.Bool(value.booleanValue)
+        case ByteTag =>
+          ir.Val.Number(value.intValue.toString, ir.Type.I8)
+        case ShortTag | CharTag =>
+          ir.Val.Number(value.intValue.toString, ir.Type.I16)
+        case IntTag =>
+          ir.Val.Number(value.intValue.toString, ir.Type.I32)
+        case LongTag =>
+          ir.Val.Number(value.longValue.toString, ir.Type.I64)
+        case FloatTag =>
+          ir.Val.Number(value.floatValue.toString, ir.Type.F32)
+        case DoubleTag =>
+          ir.Val.Number(value.doubleValue.toString, ir.Type.F64)
+        case StringTag =>
+          ???
+        case ClazzTag =>
+          ???
+        case EnumTag =>
+          ???
+      }
+      ir.Expr.Block(v)
     }
 
     def genApply(app: Apply) = {
@@ -203,12 +208,27 @@ abstract class GenSaltyCode extends PluginComponent {
         case _ =>
           val sym = fun.symbol
 
-          if (scalaPrimitives.isPrimitive(sym))
+          if (sym.isLabel) {
+            genLabelApply(app)
+          } else if (scalaPrimitives.isPrimitive(sym)) {
             genPrimitiveOp(app)
-          else
-            ???
+          } else if (currentRun.runDefinitions.isBox(sym)) {
+            val arg = args.head
+            makePrimitiveBox(genExpr(arg), arg.tpe)
+          } else if (currentRun.runDefinitions.isUnbox(sym)) {
+            val arg = args.head
+            makePrimitiveUnbox(genExpr(arg), app.tpe)
+          } else {
+            genNormalApply(app)
+          }
       }
     }
+
+    def genLabelApply(tree: Tree) = ???
+
+    def makePrimitiveBox(block: ir.Expr.Block, ty: Type) = ???
+
+    def makePrimitiveUnbox(block: ir.Expr.Block, ty: Type) = ???
 
     def genPrimitiveOp(app: Apply) = {
       import scalaPrimitives._
@@ -319,9 +339,9 @@ abstract class GenSaltyCode extends PluginComponent {
             Conv(Conv.Sitofp, value, toty)
           case (F(_), I(_)) =>
             Conv(Conv.Fptosi, value, toty)
-          case (F(32), F(64)) =>
+          case (F64, F32) =>
             Conv(Conv.Fptrunc, value, toty)
-          case (F(64), F(32)) =>
+          case (F32, F64) =>
             Conv(Conv.Fpext, value, toty)
         }
         val res = currentEnv.fresh()
@@ -401,7 +421,21 @@ abstract class GenSaltyCode extends PluginComponent {
 
     def genApplyNew(app: Apply) = ???
 
-    lazy val genObjectType = ir.Type.Ptr(ir.Name("@java.lang.Object"))
+    def genNormalApply(app: Apply) = {
+      val Apply(fun @ Select(receiver, _), args) = app
+      val res = currentEnv.fresh()
+      val ir.Expr.Block(rinstrs, rvalue) = genExpr(receiver)
+      val argblocks = args.map(genExpr)
+      val arginstrs = argblocks.map(_.instrs).flatten
+      val argvalues = argblocks.map(_.value)
+      val mname     = ir.Name.Nested(encodeClassName(receiver.tpe.typeSymbol),
+                                     encodeMethodName(fun.symbol))
+      val callinstr = ir.Instr.Assign(res, ir.Expr.Call(mname, argvalues))
+
+      ir.Expr.Block(rinstrs ++ arginstrs :+ callinstr, res)
+    }
+
+    lazy val genObjectType = ir.Type.Ptr(ir.Name.Global("java.lang.Object"))
 
     def genRefType(sym: Symbol, targs: List[Type] = Nil) = sym match {
       case ArrayClass   => ir.Type.Array(genType(targs.head))
@@ -439,10 +473,8 @@ abstract class GenSaltyCode extends PluginComponent {
 
     def debug[T](msg: String)(v: T): T = { println(s"$msg = $v"); v }
 
-    def encodeMethodName(dd: DefDef) = ir.Name("@" + dd.name)
+    def encodeMethodName(sym: Symbol) = ir.Name.Global(sym.name.toString)
 
-    def encodeClassName(sym: Symbol) = ir.Name("@" + sym.fullName)
-
-    def encodeClassType(sym: Symbol) = ir.Type.Ptr(encodeClassName(sym))
+    def encodeClassName(sym: Symbol) = ir.Name.Global(sym.fullName.toString)
   }
 }

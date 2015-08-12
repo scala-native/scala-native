@@ -54,12 +54,10 @@ object ShowIR {
       s(op.toString.toLowerCase, " ", value, " to ", to)
     case Expr.Is(value, ty) =>
       s(value, " is ", ty)
-    case Expr.Select(target, name) =>
-      s(target, ".", name)
     case Expr.Alloc(name) =>
       s("alloc ", name)
     case Expr.Call(name, args) =>
-      s(name, "(", r(args, sep = ", "), ")")
+      s("call ", name, "(", r(args, sep = ", "), ")")
     case Expr.Phi(names) =>
       s("phi(", r(names, sep = ", "), ")")
     case Expr.If(cond, thenp, elsep) =>
@@ -108,7 +106,11 @@ object ShowIR {
       s("def ", name, "(", r(args, sep = ", "), "): ", ty, " = ", body)
   }
 
-  implicit val showName: Show[Name] = Show { _.repr }
+  implicit val showName: Show[Name] = Show {
+    case Name.Local(id)             => s("%", id)
+    case Name.Global(id)            => s("@", id)
+    case Name.Nested(parent, child) => s(parent, "::", child)
+  }
 
   implicit val showBranch: Show[Branch] = Show {
     case Branch(v, expr) => s("case ", v, " => ", expr)

@@ -80,12 +80,11 @@ object Expr {
     final case object Dyncast  extends Conv.Op
   }
   final case class Is(value: Val, ty: Type) extends Expr
-  final case class Select(target: Val, name: Name) extends Expr
   final case class Alloc(name: Name) extends Expr
   final case class Call(name: Name, args: Seq[Val]) extends Expr
   final case class Phi(names: Seq[Name]) extends Expr
   final case class If(cond: Val, thenp: Expr, elsep: Expr) extends Expr
-  final case class Block(instrs: Seq[Instr], ret: Val) extends Expr
+  final case class Block(instrs: Seq[Instr], value: Val) extends Expr
   object Block {
     def apply(ret: Val): Block = Block(Seq(), ret)
   }
@@ -118,7 +117,13 @@ object Stat {
                        ty: Type, body: Expr) extends Stat
 }
 
-final case class Name(repr: String) extends Type with Val
+sealed abstract class Name extends Val with Type
+object Name {
+  final case class Local(id: String) extends Name
+  final case class Global(id: String) extends Name
+  final case class Nested(parent: Name, child: Name) extends Name
+}
+
 final case class Branch(value: Val, expr: Expr) extends Tree
 final case class LabeledType(name: Name, ty: Type) extends Tree
 final case class LabeledVal(name: Name, value: Val) extends Tree
