@@ -33,10 +33,12 @@ object Type {
 
 sealed abstract trait Instr extends Tree
 object Instr {
-  final case class Switch(on: Val, cases: Seq[Branch], default: Expr) extends Instr
   final case class Assign(name: Name, expr: Expr) extends Instr
   final case class While(cond: Expr, body: Expr) extends Instr
   final case class DoWhile(body: Expr, cond: Expr) extends Instr
+  final case class Label(name: Name) extends Instr
+  final case class Jump(to: Name) extends Instr
+  final case class Return(value: Val) extends Instr
 }
 
 sealed abstract trait Expr extends Instr
@@ -80,12 +82,18 @@ object Expr {
     final case object Dyncast  extends Conv.Op
   }
   final case class Is(value: Val, ty: Type) extends Expr
-  final case class Alloc(name: Name) extends Expr
+  final case class New(name: Name) extends Expr
   final case class Call(name: Name, args: Seq[Val]) extends Expr
   final case class Phi(names: Seq[Name]) extends Expr
   final case class If(cond: Val, thenp: Expr, elsep: Expr) extends Expr
+  final case class Switch(on: Val, cases: Seq[Branch], default: Expr) extends Expr
   final case class Block(instrs: Seq[Instr], value: Val) extends Expr
   object Block {
+    def unapply(scrut: Any): Option[(Seq[Instr], Val)] = scrut match {
+      case b: Block => Some((b.instrs, b.value))
+      case v: Val   => Some((Seq(), v))
+      case _        => None
+    }
     def apply(ret: Val): Block = Block(Seq(), ret)
   }
 }
@@ -94,6 +102,7 @@ sealed abstract trait Val extends Expr
 object Val {
   case object Null extends Val
   case object Unit extends Val
+  case object This extends Val
   final case class Bool(value: Boolean) extends Val
   final case class Number(repr: String, ty: Type) extends Val
   final case class Struct(vs: Seq[LabeledVal]) extends Val

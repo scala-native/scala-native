@@ -29,6 +29,10 @@ object Show {
           indentation += 1
           nl(res)
           indentation -= 1
+        case Unindent(res) =>
+          indentation -= 1
+          nl(res)
+          indentation += 1
         case Newline(res) =>
           nl(res)
       }
@@ -42,6 +46,7 @@ object Show {
   final case class Repeat(xs: Seq[Result], sep: Result = None,
                           pre: Result = None, post: Result = None) extends Result
   final case class Indent(res: Result) extends Result
+  final case class Unindent(res: Result) extends Result
   final case class Newline(res: Result) extends Result
 
   def apply[T](f: T => Result): Show[T] =

@@ -10,6 +10,8 @@ abstract class GenSaltyCode extends PluginComponent {
   import global._
   import global.definitions._
 
+  def noimpl = ir.Name.Global("not_implemented")
+
   val phaseName = "saltycode"
 
   override def newPhase(prev: Phase): StdPhase =
@@ -71,7 +73,7 @@ abstract class GenSaltyCode extends PluginComponent {
 
     def genClass(cd: ClassDef): ir.Stat = withScopedVars (
       currentClassSym := cd.symbol
-    ){
+    ) {
       val ClassDef(mods, name, _, impl) = cd
       val sym = cd.symbol
       val irName = encodeClassName(sym)
@@ -99,6 +101,7 @@ abstract class GenSaltyCode extends PluginComponent {
     def genClassStat(stat: Tree): Seq[ir.Stat] = stat match {
       case EmptyTree  => Seq()
       case dd: DefDef => Seq(genMethod(dd))
+      case _  => Seq()
     }
 
     def genMethod(dd: DefDef): ir.Stat = withScopedVars (
@@ -140,59 +143,58 @@ abstract class GenSaltyCode extends PluginComponent {
         ir.LabeledType(name, ty)
       }
 
-    def genExpr(t: Tree): ir.Expr.Block = t match {
+    def genExpr(tree: Tree): ir.Expr = tree match {
       case Literal(value) =>
         genLiteral(value)
 
       case app: Apply =>
         genApply(app)
 
+      case This(qual) =>
+        if (tree.symbol == currentClassSym.get) ir.Val.This
+        else encodeClassName(tree.symbol)
+
       case id: Ident =>
         val sym = id.symbol
-        val name =
-          if (sym.isModule) encodeClassName(sym)
-          else currentEnv.resolve(sym)
-        ir.Expr.Block(name)
+        if (sym.isModule) encodeClassName(sym)
+        else currentEnv.resolve(sym)
 
       case If(cond, thenp, elsep) =>
         val ir.Expr.Block(instrs, value) = genExpr(cond)
         val res = currentEnv.fresh()
         val instr =
           ir.Instr.Assign(res, ir.Expr.If(value, genExpr(thenp), genExpr(elsep)))
-        ir.Expr.Block(instrs :+ instr, res)
+        mkBlock(instrs :+ instr, res)
 
       case _ =>
-        ir.Expr.Block(ir.Name.Global("unrecognized"))
+        noimpl
     }
 
-    def genLiteral(value: Constant) = {
-      val v = value.tag match {
-        case NullTag =>
-          ir.Val.Null
-        case UnitTag =>
-          ir.Val.Unit
-        case BooleanTag =>
-          ir.Val.Bool(value.booleanValue)
-        case ByteTag =>
-          ir.Val.Number(value.intValue.toString, ir.Type.I8)
-        case ShortTag | CharTag =>
-          ir.Val.Number(value.intValue.toString, ir.Type.I16)
-        case IntTag =>
-          ir.Val.Number(value.intValue.toString, ir.Type.I32)
-        case LongTag =>
-          ir.Val.Number(value.longValue.toString, ir.Type.I64)
-        case FloatTag =>
-          ir.Val.Number(value.floatValue.toString, ir.Type.F32)
-        case DoubleTag =>
-          ir.Val.Number(value.doubleValue.toString, ir.Type.F64)
-        case StringTag =>
-          ???
-        case ClazzTag =>
-          ???
-        case EnumTag =>
-          ???
-      }
-      ir.Expr.Block(v)
+    def genLiteral(value: Constant) = value.tag match {
+      case NullTag =>
+        ir.Val.Null
+      case UnitTag =>
+        ir.Val.Unit
+      case BooleanTag =>
+        ir.Val.Bool(value.booleanValue)
+      case ByteTag =>
+        ir.Val.Number(value.intValue.toString, ir.Type.I8)
+      case ShortTag | CharTag =>
+        ir.Val.Number(value.intValue.toString, ir.Type.I16)
+      case IntTag =>
+        ir.Val.Number(value.intValue.toString, ir.Type.I32)
+      case LongTag =>
+        ir.Val.Number(value.longValue.toString, ir.Type.I64)
+      case FloatTag =>
+        ir.Val.Number(value.floatValue.toString, ir.Type.F32)
+      case DoubleTag =>
+        ir.Val.Number(value.doubleValue.toString, ir.Type.F64)
+      case StringTag =>
+        ???
+      case ClazzTag =>
+        ???
+      case EnumTag =>
+        ???
     }
 
     def genApply(app: Apply) = {
@@ -224,11 +226,11 @@ abstract class GenSaltyCode extends PluginComponent {
       }
     }
 
-    def genLabelApply(tree: Tree) = ???
+    def genLabelApply(tree: Tree) = noimpl
 
-    def makePrimitiveBox(block: ir.Expr.Block, ty: Type) = ???
+    def makePrimitiveBox(expr: ir.Expr, ty: Type) = noimpl
 
-    def makePrimitiveUnbox(block: ir.Expr.Block, ty: Type) = ???
+    def makePrimitiveUnbox(expr: ir.Expr, ty: Type) = noimpl
 
     def genPrimitiveOp(app: Apply) = {
       import scalaPrimitives._
@@ -272,7 +274,7 @@ abstract class GenSaltyCode extends PluginComponent {
                 abort("Unknown unary operation code: " + code)
             }
             val res = currentEnv.fresh()
-            ir.Expr.Block(instrs :+ ir.Instr.Assign(res, expr), res)
+            mkBlock(instrs :+ ir.Instr.Assign(res, expr), res)
           }
 
         // TODO: convert to the common type
@@ -306,20 +308,20 @@ abstract class GenSaltyCode extends PluginComponent {
               abort("Unknown binary operation code: " + code)
           }
           val res = currentEnv.fresh()
-          ir.Expr.Block(linstrs ++ rinstrs :+ ir.Instr.Assign(res, expr), res)
+          mkBlock(linstrs ++ rinstrs :+ ir.Instr.Assign(res, expr), res)
 
         case _ =>
           abort("Too many arguments for primitive function: " + app)
       }
     }
 
-    def genStringConcat(app: Apply, receiver: Tree, args: List[Tree]) = ???
+    def genStringConcat(app: Apply, receiver: Tree, args: List[Tree]) = noimpl
 
-    def genScalaHash(app: Apply, receiver: Tree) = ???
+    def genScalaHash(app: Apply, receiver: Tree) = noimpl
 
-    def genArrayOp(app: Apply, code: Int) = ???
+    def genArrayOp(app: Apply, code: Int) = noimpl
 
-    def genSynchronized(app: Apply) = ???
+    def genSynchronized(app: Apply) = noimpl
 
     def genCoercion(app: Apply, receiver: Tree, code: Int) = {
       import salty.ir.Expr.Conv
@@ -345,7 +347,7 @@ abstract class GenSaltyCode extends PluginComponent {
             Conv(Conv.Fpext, value, toty)
         }
         val res = currentEnv.fresh()
-        ir.Expr.Block(instrs :+ ir.Instr.Assign(res, expr), res)
+        mkBlock(instrs :+ ir.Instr.Assign(res, expr), res)
       }
     }
 
@@ -426,13 +428,14 @@ abstract class GenSaltyCode extends PluginComponent {
       val res = currentEnv.fresh()
       val ir.Expr.Block(rinstrs, rvalue) = genExpr(receiver)
       val argblocks = args.map(genExpr)
-      val arginstrs = argblocks.map(_.instrs).flatten
-      val argvalues = argblocks.map(_.value)
-      val mname     = ir.Name.Nested(encodeClassName(receiver.tpe.typeSymbol),
+      val arginstrs = argblocks.map { case ir.Expr.Block(instrs, _) => instrs } .flatten
+      val argvalues = argblocks.map { case ir.Expr.Block(_, value) => value }
+      val mname     = ir.Name.Nested(encodeClassName(receiver.symbol),
                                      encodeMethodName(fun.symbol))
-      val callinstr = ir.Instr.Assign(res, ir.Expr.Call(mname, argvalues))
+      val callargs  = rvalue +: argvalues
+      val callinstr = ir.Instr.Assign(res, ir.Expr.Call(mname, callargs))
 
-      ir.Expr.Block(rinstrs ++ arginstrs :+ callinstr, res)
+      mkBlock(rinstrs ++ arginstrs :+ callinstr, res)
     }
 
     lazy val genObjectType = ir.Type.Ptr(ir.Name.Global("java.lang.Object"))
@@ -476,5 +479,8 @@ abstract class GenSaltyCode extends PluginComponent {
     def encodeMethodName(sym: Symbol) = ir.Name.Global(sym.name.toString)
 
     def encodeClassName(sym: Symbol) = ir.Name.Global(sym.fullName.toString)
+
+    def mkBlock(instrs: Seq[ir.Instr], value: ir.Val) =
+      if (instrs.isEmpty) value else ir.Expr.Block(instrs, value)
   }
 }

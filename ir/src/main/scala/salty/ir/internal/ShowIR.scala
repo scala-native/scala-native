@@ -3,7 +3,7 @@ package ir
 package internal
 
 object ShowIR {
-  import salty.util.Show, Show.{Sequence => s, Indent => i,
+  import salty.util.Show, Show.{Sequence => s, Indent => i, Unindent => u,
                                 Repeat => r, Newline => n}
 
   implicit val showTree: Show[Tree] = Show {
@@ -32,17 +32,18 @@ object ShowIR {
   implicit val showInstr: Show[Instr] = Show {
     case e: Expr =>
       e
-    case Instr.Switch(on, cases, default) =>
-      s("switch ", on, " { ",
-          r(cases.map(i(_))),
-          i(s("case _ => ", default)),
-        n(" }"))
     case Instr.Assign(name, expr) =>
       s(name, " = ", expr)
     case Instr.While(cond, body) =>
       s("while ", cond, " do ", body)
     case Instr.DoWhile(body, cond) =>
       s("do ", body, " while ", cond)
+    case Instr.Label(name) =>
+      u(s(name, ":"))
+    case Instr.Jump(name) =>
+      s("jump ", name)
+    case Instr.Return(value) =>
+      s("return ", value)
   }
 
   implicit val showExpr: Show[Expr] = Show {
@@ -54,14 +55,20 @@ object ShowIR {
       s(op.toString.toLowerCase, " ", value, " to ", to)
     case Expr.Is(value, ty) =>
       s(value, " is ", ty)
-    case Expr.Alloc(name) =>
-      s("alloc ", name)
+    case Expr.New(name) =>
+      s("new ", name)
     case Expr.Call(name, args) =>
       s("call ", name, "(", r(args, sep = ", "), ")")
     case Expr.Phi(names) =>
       s("phi(", r(names, sep = ", "), ")")
     case Expr.If(cond, thenp, elsep) =>
       s("if ", cond, " then ", thenp, " else ", elsep)
+    case Expr.Switch(on, cases, default) =>
+      s("switch ", on, " { ",
+          r(cases.map(i(_))),
+          i(s("case _ => ", default)),
+        n(" }"))
+
     case Expr.Block(instrs, value) =>
       s("{",
           r(instrs.map(i(_))),
@@ -73,6 +80,7 @@ object ShowIR {
     case n: Name               => n
     case Val.Null              => "null"
     case Val.Unit              => "unit"
+    case Val.This              => "this"
     case Val.Bool(v)           => v.toString
     case Val.Number(repr, ty)  => s(repr, (ty: Type))
     case Val.Struct(vs)        => s("struct {", r(vs, sep = ", "), "}")
