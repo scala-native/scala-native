@@ -4,13 +4,15 @@ package compiler
 import scala.tools.nsc._
 import scala.tools.nsc.plugins._
 import salty.ir
+import salty.ir.{Expr => E, Type => T, Instr => I,
+                 Val => V, Name => N, Stat => S}
 import salty.util.ScopedVar, ScopedVar.withScopedVars
 
 abstract class GenSaltyCode extends PluginComponent {
   import global._
   import global.definitions._
 
-  def noimpl = ir.Name.Global("not_implemented")
+  def noimpl = N.Global("not_implemented")
 
   val phaseName = "saltycode"
 
@@ -19,8 +21,8 @@ abstract class GenSaltyCode extends PluginComponent {
 
   class Env {
     private var freshCounter: Int = 0
-    private var used: Set[ir.Name] = Set.empty[ir.Name]
-    private var subst: Map[Symbol, ir.Name] = Map.empty[Symbol, ir.Name]
+    private var used: Set[N] = Set.empty[N]
+    private var subst: Map[Symbol, N] = Map.empty[Symbol, N]
 
     private def freshId(): Int = {
       val res = freshCounter
@@ -28,15 +30,15 @@ abstract class GenSaltyCode extends PluginComponent {
       res
     }
 
-    def enter(sym: Symbol): ir.Name = {
-      val name = ir.Name.Local(sym.name + "_" + freshId())
+    def enter(sym: Symbol): N = {
+      val name = N.Local(sym.name + "_" + freshId())
       subst += sym -> name
       name
     }
 
-    def resolve(sym: Symbol): ir.Name = subst(sym)
+    def resolve(sym: Symbol): N = subst(sym)
 
-    def fresh(): ir.Name = ir.Name.Local(freshId().toString)
+    def fresh(): N = N.Local(freshId().toString)
   }
 
   class SaltyCodePhase(prev: Phase) extends StdPhase(prev) {
@@ -71,7 +73,7 @@ abstract class GenSaltyCode extends PluginComponent {
       irClasses.foreach(c => println(c.show.build))
     }
 
-    def genClass(cd: ClassDef): ir.Stat = withScopedVars (
+    def genClass(cd: ClassDef): S = withScopedVars (
       currentClassSym := cd.symbol
     ) {
       val ClassDef(mods, name, _, impl) = cd
@@ -82,11 +84,11 @@ abstract class GenSaltyCode extends PluginComponent {
       val irBody = impl.body.flatMap(genClassStat(_))
 
       if (sym.isModuleClass)
-        ir.Stat.Module(irName, irParent, irInterfaces, irBody)
+        S.Module(irName, irParent, irInterfaces, irBody)
       else if (sym.isInterface)
-        ir.Stat.Interface(irName, irInterfaces, irBody)
+        S.Interface(irName, irInterfaces, irBody)
       else
-        ir.Stat.Class(irName, irParent, irInterfaces, irBody)
+        S.Class(irName, irParent, irInterfaces, irBody)
     }
 
     def genClassInterfaces(sym: Symbol) =
@@ -98,32 +100,32 @@ abstract class GenSaltyCode extends PluginComponent {
         encodeClassName(psym)
       }
 
-    def genClassStat(stat: Tree): Seq[ir.Stat] = stat match {
+    def genClassStat(stat: Tree): Seq[S] = stat match {
       case EmptyTree  => Seq()
       case dd: DefDef => Seq(genMethod(dd))
       case _  => Seq()
     }
 
-    def genMethod(dd: DefDef): ir.Stat = withScopedVars (
+    def genMethod(dd: DefDef): S = withScopedVars (
       currentMethodSym := dd.symbol
     ) {
       val sym = dd.symbol
       val name = encodeMethodName(sym)
       val paramSyms = methodParamSymbols(dd)
       val ty =
-        if (dd.symbol.isClassConstructor) ir.Type.Unit
+        if (dd.symbol.isClassConstructor) T.Unit
         else genType(sym.tpe.resultType)
 
       if (dd.symbol.isDeferred) {
         val params = genDeclParams(paramSyms)
-        ir.Stat.Decl(name, params, ty)
+        S.Decl(name, params, ty)
       } else {
         withScopedVars (
           currentEnv := new Env
         ) {
           val params = genDefParams(paramSyms)
           val body = genExpr(dd.rhs)
-          ir.Stat.Def(name, params, ty, body)
+          S.Def(name, params, ty, body)
         }
       }
     }
@@ -133,7 +135,7 @@ abstract class GenSaltyCode extends PluginComponent {
       if (vp.isEmpty) Nil else vp.head.map(_.symbol)
     }
 
-    def genDeclParams(paramSyms: List[Symbol]): Seq[ir.Type] =
+    def genDeclParams(paramSyms: List[Symbol]): Seq[T] =
       paramSyms.map(sym => genType(sym.tpe))
 
     def genDefParams(paramSyms: List[Symbol]): Seq[ir.LabeledType] =
@@ -143,7 +145,7 @@ abstract class GenSaltyCode extends PluginComponent {
         ir.LabeledType(name, ty)
       }
 
-    def genExpr(tree: Tree): ir.Expr = tree match {
+    def genExpr(tree: Tree): E = tree match {
       case Literal(value) =>
         genLiteral(value)
 
@@ -151,7 +153,7 @@ abstract class GenSaltyCode extends PluginComponent {
         genApply(app)
 
       case This(qual) =>
-        if (tree.symbol == currentClassSym.get) ir.Val.This
+        if (tree.symbol == currentClassSym.get) V.This
         else encodeClassName(tree.symbol)
 
       case id: Ident =>
@@ -160,10 +162,10 @@ abstract class GenSaltyCode extends PluginComponent {
         else currentEnv.resolve(sym)
 
       case If(cond, thenp, elsep) =>
-        val ir.Expr.Block(instrs, value) = genExpr(cond)
+        val E.Block(instrs, value) = genExpr(cond)
         val res = currentEnv.fresh()
         val instr =
-          ir.Instr.Assign(res, ir.Expr.If(value, genExpr(thenp), genExpr(elsep)))
+          I.Assign(res, E.If(value, genExpr(thenp), genExpr(elsep)))
         mkBlock(instrs :+ instr, res)
 
       case _ =>
@@ -172,23 +174,23 @@ abstract class GenSaltyCode extends PluginComponent {
 
     def genLiteral(value: Constant) = value.tag match {
       case NullTag =>
-        ir.Val.Null
+        V.Null
       case UnitTag =>
-        ir.Val.Unit
+        V.Unit
       case BooleanTag =>
-        ir.Val.Bool(value.booleanValue)
+        V.Bool(value.booleanValue)
       case ByteTag =>
-        ir.Val.Number(value.intValue.toString, ir.Type.I8)
+        V.Number(value.intValue.toString, T.I8)
       case ShortTag | CharTag =>
-        ir.Val.Number(value.intValue.toString, ir.Type.I16)
+        V.Number(value.intValue.toString, T.I16)
       case IntTag =>
-        ir.Val.Number(value.intValue.toString, ir.Type.I32)
+        V.Number(value.intValue.toString, T.I32)
       case LongTag =>
-        ir.Val.Number(value.longValue.toString, ir.Type.I64)
+        V.Number(value.longValue.toString, T.I64)
       case FloatTag =>
-        ir.Val.Number(value.floatValue.toString, ir.Type.F32)
+        V.Number(value.floatValue.toString, T.F32)
       case DoubleTag =>
-        ir.Val.Number(value.doubleValue.toString, ir.Type.F64)
+        V.Number(value.doubleValue.toString, T.F64)
       case StringTag =>
         ???
       case ClazzTag =>
@@ -228,9 +230,9 @@ abstract class GenSaltyCode extends PluginComponent {
 
     def genLabelApply(tree: Tree) = noimpl
 
-    def makePrimitiveBox(expr: ir.Expr, ty: Type) = noimpl
+    def makePrimitiveBox(expr: E, ty: Type) = noimpl
 
-    def makePrimitiveUnbox(expr: ir.Expr, ty: Type) = noimpl
+    def makePrimitiveUnbox(expr: E, ty: Type) = noimpl
 
     def genPrimitiveOp(app: Apply) = {
       import scalaPrimitives._
@@ -258,57 +260,57 @@ abstract class GenSaltyCode extends PluginComponent {
 
     def genSimpleOp(app: Apply, args: List[Tree], code: Int) = {
       import scalaPrimitives._
-      import ir.Expr.Bin
+
       val resType = genType(app.tpe)
 
       args match {
         case List(unary) =>
-          val block @ ir.Expr.Block(instrs, value) = genExpr(unary)
+          val block @ E.Block(instrs, value) = genExpr(unary)
           if (code == POS) block
           else {
             val expr = code match {
-              case NEG  => Bin(Bin.Sub, ir.Val.Number("0", resType), value)
-              case NOT  => Bin(Bin.Xor, ir.Val.Number("-1", resType), value)
-              case ZNOT => Bin(Bin.Xor, ir.Val.Bool(true), value)
+              case NEG  => E.Bin(E.Bin.Sub, V.Number("0", resType), value)
+              case NOT  => E.Bin(E.Bin.Xor, V.Number("-1", resType), value)
+              case ZNOT => E.Bin(E.Bin.Xor, V.Bool(true), value)
               case _ =>
                 abort("Unknown unary operation code: " + code)
             }
             val res = currentEnv.fresh()
-            mkBlock(instrs :+ ir.Instr.Assign(res, expr), res)
+            mkBlock(instrs :+ I.Assign(res, expr), res)
           }
 
         // TODO: convert to the common type
         // TODO: equality on reference types
         case List(left, right) =>
-          val lblock @ ir.Expr.Block(linstrs, lvalue) = genExpr(left)
-          val rblock @ ir.Expr.Block(rinstrs, rvalue) = genExpr(right)
+          val lblock @ E.Block(linstrs, lvalue) = genExpr(left)
+          val rblock @ E.Block(rinstrs, rvalue) = genExpr(right)
           val expr = code match {
-            case ADD  => Bin(Bin.Add,  lvalue, rvalue)
-            case SUB  => Bin(Bin.Sub,  lvalue, rvalue)
-            case MUL  => Bin(Bin.Mul,  lvalue, rvalue)
-            case DIV  => Bin(Bin.Div,  lvalue, rvalue)
-            case MOD  => Bin(Bin.Mod,  lvalue, rvalue)
-            case OR   => Bin(Bin.Or,   lvalue, rvalue)
-            case XOR  => Bin(Bin.Xor,  lvalue, rvalue)
-            case AND  => Bin(Bin.And,  lvalue, rvalue)
-            case LSL  => Bin(Bin.Shl,  lvalue, rvalue)
-            case LSR  => Bin(Bin.Lshr, lvalue, rvalue)
-            case ASR  => Bin(Bin.Ashr, lvalue, rvalue)
-            case EQ   => Bin(Bin.Eq,   lvalue, rvalue)
-            case NE   => Bin(Bin.Neq,  lvalue, rvalue)
-            case LT   => Bin(Bin.Lt,   lvalue, rvalue)
-            case LE   => Bin(Bin.Lte,  lvalue, rvalue)
-            case GT   => Bin(Bin.Gt,   lvalue, rvalue)
-            case GE   => Bin(Bin.Gte,  lvalue, rvalue)
+            case ADD  => E.Bin(E.Bin.Add,  lvalue, rvalue)
+            case SUB  => E.Bin(E.Bin.Sub,  lvalue, rvalue)
+            case MUL  => E.Bin(E.Bin.Mul,  lvalue, rvalue)
+            case DIV  => E.Bin(E.Bin.Div,  lvalue, rvalue)
+            case MOD  => E.Bin(E.Bin.Mod,  lvalue, rvalue)
+            case OR   => E.Bin(E.Bin.Or,   lvalue, rvalue)
+            case XOR  => E.Bin(E.Bin.Xor,  lvalue, rvalue)
+            case AND  => E.Bin(E.Bin.And,  lvalue, rvalue)
+            case LSL  => E.Bin(E.Bin.Shl,  lvalue, rvalue)
+            case LSR  => E.Bin(E.Bin.Lshr, lvalue, rvalue)
+            case ASR  => E.Bin(E.Bin.Ashr, lvalue, rvalue)
+            case EQ   => E.Bin(E.Bin.Eq,   lvalue, rvalue)
+            case NE   => E.Bin(E.Bin.Neq,  lvalue, rvalue)
+            case LT   => E.Bin(E.Bin.Lt,   lvalue, rvalue)
+            case LE   => E.Bin(E.Bin.Lte,  lvalue, rvalue)
+            case GT   => E.Bin(E.Bin.Gt,   lvalue, rvalue)
+            case GE   => E.Bin(E.Bin.Gte,  lvalue, rvalue)
             case ID   => ???
             case NI   => ???
-            case ZOR  => ir.Expr.If(lvalue, ir.Val.Bool(true), rblock)
-            case ZAND => ir.Expr.If(lvalue, rblock, ir.Val.Bool(false))
+            case ZOR  => E.If(lvalue, V.Bool(true), rblock)
+            case ZAND => E.If(lvalue, rblock, V.Bool(false))
             case _ =>
               abort("Unknown binary operation code: " + code)
           }
           val res = currentEnv.fresh()
-          mkBlock(linstrs ++ rinstrs :+ ir.Instr.Assign(res, expr), res)
+          mkBlock(linstrs ++ rinstrs :+ I.Assign(res, expr), res)
 
         case _ =>
           abort("Too many arguments for primitive function: " + app)
@@ -324,79 +326,75 @@ abstract class GenSaltyCode extends PluginComponent {
     def genSynchronized(app: Apply) = noimpl
 
     def genCoercion(app: Apply, receiver: Tree, code: Int) = {
-      import salty.ir.Expr.Conv
-      import salty.ir.Type._
-
-      val block @ ir.Expr.Block(instrs, value) = genExpr(receiver)
+      val block @ E.Block(instrs, value) = genExpr(receiver)
       val (fromty, toty) = coercionTypes(code)
 
       if (fromty == toty) block
       else {
         val expr = (fromty, toty) match {
-          case (I(lwidth), I(rwidth)) if lwidth < rwidth =>
-            Conv(Conv.Zext, value, toty)
-          case (I(lwidth), I(rwidth)) if lwidth > rwidth =>
-            Conv(Conv.Trunc, value, toty)
-          case (I(_), F(_)) =>
-            Conv(Conv.Sitofp, value, toty)
-          case (F(_), I(_)) =>
-            Conv(Conv.Fptosi, value, toty)
-          case (F64, F32) =>
-            Conv(Conv.Fptrunc, value, toty)
-          case (F32, F64) =>
-            Conv(Conv.Fpext, value, toty)
+          case (T.I(lwidth), T.I(rwidth)) if lwidth < rwidth =>
+            E.Conv(E.Conv.Zext, value, toty)
+          case (T.I(lwidth), T.I(rwidth)) if lwidth > rwidth =>
+            E.Conv(E.Conv.Trunc, value, toty)
+          case (T.I(_), T.F(_)) =>
+            E.Conv(E.Conv.Sitofp, value, toty)
+          case (T.F(_), T.I(_)) =>
+            E.Conv(E.Conv.Fptosi, value, toty)
+          case (T.F64, T.F32) =>
+            E.Conv(E.Conv.Fptrunc, value, toty)
+          case (T.F32, T.F64) =>
+            E.Conv(E.Conv.Fpext, value, toty)
         }
         val res = currentEnv.fresh()
-        mkBlock(instrs :+ ir.Instr.Assign(res, expr), res)
+        mkBlock(instrs :+ I.Assign(res, expr), res)
       }
     }
 
     def coercionTypes(code: Int) = {
       import scalaPrimitives._
-      import salty.ir.Type._
 
       code match {
-        case B2B       => (I8, I8)
-        case B2S | B2C => (I8, I16)
-        case B2I       => (I8, I32)
-        case B2L       => (I8, I64)
-        case B2F       => (I8, F32)
-        case B2D       => (I8, F64)
+        case B2B       => (T.I8, T.I8)
+        case B2S | B2C => (T.I8, T.I16)
+        case B2I       => (T.I8, T.I32)
+        case B2L       => (T.I8, T.I64)
+        case B2F       => (T.I8, T.F32)
+        case B2D       => (T.I8, T.F64)
 
-        case S2B       | C2B       => (I16, I8)
-        case S2S | S2C | C2S | C2C => (I16, I16)
-        case S2I       | C2I       => (I16, I32)
-        case S2L       | C2L       => (I16, I64)
-        case S2F       | C2F       => (I16, F32)
-        case S2D       | C2D       => (I16, F64)
+        case S2B       | C2B       => (T.I16, T.I8)
+        case S2S | S2C | C2S | C2C => (T.I16, T.I16)
+        case S2I       | C2I       => (T.I16, T.I32)
+        case S2L       | C2L       => (T.I16, T.I64)
+        case S2F       | C2F       => (T.I16, T.F32)
+        case S2D       | C2D       => (T.I16, T.F64)
 
-        case I2B       => (I32, I8)
-        case I2S | I2C => (I32, I16)
-        case I2I       => (I32, I32)
-        case I2L       => (I32, I64)
-        case I2F       => (I32, F32)
-        case I2D       => (I32, F64)
+        case I2B       => (T.I32, T.I8)
+        case I2S | I2C => (T.I32, T.I16)
+        case I2I       => (T.I32, T.I32)
+        case I2L       => (T.I32, T.I64)
+        case I2F       => (T.I32, T.F32)
+        case I2D       => (T.I32, T.F64)
 
-        case L2B       => (I64, I8)
-        case L2S | L2C => (I64, I16)
-        case L2I       => (I64, I32)
-        case L2L       => (I64, I64)
-        case L2F       => (I64, F32)
-        case L2D       => (I64, F64)
+        case L2B       => (T.I64, T.I8)
+        case L2S | L2C => (T.I64, T.I16)
+        case L2I       => (T.I64, T.I32)
+        case L2L       => (T.I64, T.I64)
+        case L2F       => (T.I64, T.F32)
+        case L2D       => (T.I64, T.F64)
 
-        case F2B       => (F32, I8)
-        case F2S | F2C => (F32, I16)
-        case F2I       => (F32, I32)
-        case F2L       => (F32, I64)
-        case F2F       => (F32, F32)
-        case F2D       => (F32, F64)
+        case F2B       => (T.F32, T.I8)
+        case F2S | F2C => (T.F32, T.I16)
+        case F2I       => (T.F32, T.I32)
+        case F2L       => (T.F32, T.I64)
+        case F2F       => (T.F32, T.F32)
+        case F2D       => (T.F32, T.F64)
 
-        case D2B       => (F64, I8)
-        case D2S | D2C => (F64, I16)
-        case D2I       => (F64, I32)
-        case D2L       => (F64, I64)
-        case D2F       => (F64, F32)
-        case D2D       => (F64, F64)
+        case D2B       => (T.F64, T.I8)
+        case D2S | D2C => (T.F64, T.I16)
+        case D2I       => (T.F64, T.I32)
+        case D2L       => (T.F64, T.I64)
+        case D2F       => (T.F64, T.F32)
+        case D2D       => (T.F64, T.F64)
       }
     }
 
@@ -407,62 +405,83 @@ abstract class GenSaltyCode extends PluginComponent {
         case Object_asInstanceOf => true
       }
       val ty = genType(targs.head.tpe)
-      val ir.Expr.Block(instrs, l) = genExpr(obj)
+      val E.Block(instrs, l) = genExpr(obj)
       val res = currentEnv.fresh()
       val instr =
-        ir.Instr.Assign(res,
+        I.Assign(res,
           if (cast)
-            ir.Expr.Conv(ir.Expr.Conv.Dyncast, l, ty)
+            E.Conv(E.Conv.Dyncast, l, ty)
           else
-            ir.Expr.Is(l, ty))
+            E.Is(l, ty))
 
-      ir.Expr.Block(instrs :+ instr, res)
+      E.Block(instrs :+ instr, res)
     }
 
     def genApplySuper(app: Apply) = ???
 
-    def genApplyNew(app: Apply) = ???
+    def genApplyNew(app: Apply) = {
+      val Apply(fun @ Select(New(tpt), nme.CONSTRUCTOR), args) = app
+      val ctor = fun.symbol
+      val tpe = tpt.tpe
+
+      genNew(tpe.typeSymbol, ctor, args)
+    }
+
+    def genNew(clazz: Symbol, ctor: Symbol, args: List[Tree]) = {
+      val argblocks = args.map(genExpr)
+      val arginstrs = argblocks.flatMap { case E.Block(i, _) => i }
+      val argvals = argblocks.map { case E.Block(_, v) => v }
+      val cname = encodeClassName(clazz)
+      val ctorname = encodeMethodName(ctor)
+      val res = currentEnv.fresh()
+
+      mkBlock(
+        arginstrs :+
+        I.Assign(res, E.New(cname)) :+
+        E.Call(N.Nested(cname, ctorname), res +: argvals),
+        res)
+    }
 
     def genNormalApply(app: Apply) = {
       val Apply(fun @ Select(receiver, _), args) = app
       val res = currentEnv.fresh()
-      val ir.Expr.Block(rinstrs, rvalue) = genExpr(receiver)
+      val E.Block(rinstrs, rvalue) = genExpr(receiver)
       val argblocks = args.map(genExpr)
-      val arginstrs = argblocks.map { case ir.Expr.Block(instrs, _) => instrs } .flatten
-      val argvalues = argblocks.map { case ir.Expr.Block(_, value) => value }
-      val mname     = ir.Name.Nested(encodeClassName(receiver.symbol),
+      val arginstrs = argblocks.map { case E.Block(instrs, _) => instrs } .flatten
+      val argvalues = argblocks.map { case E.Block(_, value) => value }
+      val mname     = N.Nested(encodeClassName(receiver.symbol),
                                      encodeMethodName(fun.symbol))
       val callargs  = rvalue +: argvalues
-      val callinstr = ir.Instr.Assign(res, ir.Expr.Call(mname, callargs))
+      val callinstr = I.Assign(res, E.Call(mname, callargs))
 
       mkBlock(rinstrs ++ arginstrs :+ callinstr, res)
     }
 
-    lazy val genObjectType = ir.Type.Ptr(ir.Name.Global("java.lang.Object"))
+    lazy val genObjectType = T.Ptr(N.Global("java.lang.Object"))
 
     def genRefType(sym: Symbol, targs: List[Type] = Nil) = sym match {
-      case ArrayClass   => ir.Type.Array(genType(targs.head))
-      case NullClass    => ir.Type.Null
-      case NothingClass => ir.Type.Nothing
+      case ArrayClass   => T.Array(genType(targs.head))
+      case NullClass    => T.Null
+      case NothingClass => T.Nothing
       case _            => encodeClassName(sym)
     }
 
-    lazy val genPrimitiveType: PartialFunction[Symbol, ir.Type] = {
-      case UnitClass    => ir.Type.Unit
-      case BooleanClass => ir.Type.Bool
-      case ByteClass    => ir.Type.I8
-      case CharClass    => ir.Type.I16
-      case ShortClass   => ir.Type.I16
-      case IntClass     => ir.Type.I32
-      case LongClass    => ir.Type.I64
-      case FloatClass   => ir.Type.F32
-      case DoubleClass  => ir.Type.F64
+    lazy val genPrimitiveType: PartialFunction[Symbol, T] = {
+      case UnitClass    => T.Unit
+      case BooleanClass => T.Bool
+      case ByteClass    => T.I8
+      case CharClass    => T.I16
+      case ShortClass   => T.I16
+      case IntClass     => T.I32
+      case LongClass    => T.I64
+      case FloatClass   => T.F32
+      case DoubleClass  => T.F64
     }
 
     def genPrimitiveOrRefType(sym: Symbol, targs: List[Type] = Nil) =
-      genPrimitiveType.applyOrElse(sym, (_: Symbol) => genRefType(sym, targs))
+      genPrimitiveType.applyOrElse(sym, genRefType((_: Symbol), targs))
 
-    def genType(t: Type): ir.Type = t.normalize match {
+    def genType(t: Type): T = t.normalize match {
       case ThisType(ArrayClass)            => genObjectType
       case ThisType(sym)                   => genRefType(sym)
       case SingleType(_, sym)              => genPrimitiveOrRefType(sym)
@@ -476,11 +495,11 @@ abstract class GenSaltyCode extends PluginComponent {
 
     def debug[T](msg: String)(v: T): T = { println(s"$msg = $v"); v }
 
-    def encodeMethodName(sym: Symbol) = ir.Name.Global(sym.name.toString)
+    def encodeMethodName(sym: Symbol) = N.Global(sym.name.toString)
 
-    def encodeClassName(sym: Symbol) = ir.Name.Global(sym.fullName.toString)
+    def encodeClassName(sym: Symbol) = N.Global(sym.fullName.toString)
 
-    def mkBlock(instrs: Seq[ir.Instr], value: ir.Val) =
-      if (instrs.isEmpty) value else ir.Expr.Block(instrs, value)
+    def mkBlock(instrs: Seq[I], value: V) =
+      if (instrs.isEmpty) value else E.Block(instrs, value)
   }
 }
