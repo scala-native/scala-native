@@ -118,8 +118,8 @@ object Stat {
   final case class Module(name: Name, parent: Name,
                           interfaces: Seq[Name], body: Seq[Stat]) extends Stat
   final case class Struct(name: Name, body: Seq[Stat]) extends Stat
-  final case class Const(name: Name, ty: Type, init: Val) extends Stat
-  final case class Var(name: Name, ty: Type, init: Val) extends Stat
+  final case class Const(name: Name, ty: Type, init: Expr) extends Stat
+  final case class Var(name: Name, ty: Type, init: Expr) extends Stat
   final case class Decl(name: Name, params: Seq[Type],
                         ty: Type) extends Stat
   final case class Def(name: Name, params: Seq[LabeledType],

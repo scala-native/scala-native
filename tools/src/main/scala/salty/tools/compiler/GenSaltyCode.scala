@@ -73,7 +73,7 @@ abstract class GenSaltyCode extends PluginComponent {
       irClasses.foreach(c => println(c.show.build))
     }
 
-    def genClass(cd: ClassDef): S = withScopedVars (
+    def genClass(cd: ClassDef): ir.Stat = withScopedVars (
       currentClassSym := cd.symbol
     ) {
       val ClassDef(mods, name, _, impl) = cd
@@ -100,13 +100,21 @@ abstract class GenSaltyCode extends PluginComponent {
         encodeClassName(psym)
       }
 
-    def genClassStat(stat: Tree): Seq[S] = stat match {
-      case EmptyTree  => Seq()
+    def genClassStat(stat: Tree): Seq[ir.Stat] = stat match {
+      case vd: ValDef => Seq(genField(vd))
       case dd: DefDef => Seq(genMethod(dd))
-      case _  => Seq()
+      case _          => Seq()
     }
 
-    def genMethod(dd: DefDef): S = withScopedVars (
+    def genField(vd: ValDef): ir.Stat = {
+      val name = encodeFieldName(vd.symbol)
+      val ty = genType(vd.tpt.tpe)
+      val init = genDefault(ty)
+
+      S.Var(name, ty, init)
+    }
+
+    def genMethod(dd: DefDef): ir.Stat = withScopedVars (
       currentMethodSym := dd.symbol
     ) {
       val sym = dd.symbol
@@ -135,7 +143,7 @@ abstract class GenSaltyCode extends PluginComponent {
       if (vp.isEmpty) Nil else vp.head.map(_.symbol)
     }
 
-    def genDeclParams(paramSyms: List[Symbol]): Seq[T] =
+    def genDeclParams(paramSyms: List[Symbol]): Seq[ir.Type] =
       paramSyms.map(sym => genType(sym.tpe))
 
     def genDefParams(paramSyms: List[Symbol]): Seq[ir.LabeledType] =
@@ -145,22 +153,7 @@ abstract class GenSaltyCode extends PluginComponent {
         ir.LabeledType(name, ty)
       }
 
-    def genExpr(tree: Tree): E = tree match {
-      case Literal(value) =>
-        genLiteral(value)
-
-      case app: Apply =>
-        genApply(app)
-
-      case This(qual) =>
-        if (tree.symbol == currentClassSym.get) V.This
-        else encodeClassName(tree.symbol)
-
-      case id: Ident =>
-        val sym = id.symbol
-        if (sym.isModule) encodeClassName(sym)
-        else currentEnv.resolve(sym)
-
+    def genExpr(tree: Tree): ir.Expr = tree match {
       case If(cond, thenp, elsep) =>
         val E.Block(instrs, value) = genExpr(cond)
         val res = currentEnv.fresh()
@@ -168,9 +161,67 @@ abstract class GenSaltyCode extends PluginComponent {
           I.Assign(res, E.If(value, genExpr(thenp), genExpr(elsep)))
         mkBlock(instrs :+ instr, res)
 
+      case r: Return =>
+        noimpl
+
+      case t: Try =>
+        noimpl
+
+      case t: Throw =>
+        noimpl
+
+      case app: Apply =>
+        genApply(app)
+
+      case app: ApplyDynamic =>
+        genApplyDynamic(app)
+
+      case This(qual) =>
+        if (tree.symbol == currentClassSym.get) V.This
+        else encodeClassName(tree.symbol)
+
+      case Select(qual, sel) =>
+        noimpl
+
+      case id: Ident =>
+        val sym = id.symbol
+        if (sym.isModule) encodeClassName(sym)
+        else currentEnv.resolve(sym)
+
+      case Literal(value) =>
+        genLiteral(value)
+
+      case block: Block =>
+        genBlock(block)
+
+      case Typed(Super(_, _), _) =>
+        V.This
+
+      case Typed(expr, _) =>
+        genExpr(expr)
+
+      case Assign(l, r) =>
+        noimpl
+
+      case av: ArrayValue =>
+        noimpl
+
+      case m: Match =>
+        genSwitch(m)
+
+      case fun: Function =>
+        noimpl
+
+      case EmptyTree =>
+        noimpl
+
       case _ =>
         noimpl
     }
+
+    def genBlock(block: Block) = noimpl
+
+    def genSwitch(m: Match) = noimpl
 
     def genLiteral(value: Constant) = value.tag match {
       case NullTag =>
@@ -198,6 +249,8 @@ abstract class GenSaltyCode extends PluginComponent {
       case EnumTag =>
         ???
     }
+
+    def genApplyDynamic(app: ApplyDynamic) = noimpl
 
     def genApply(app: Apply) = {
       val Apply(fun, args) = app
@@ -230,9 +283,9 @@ abstract class GenSaltyCode extends PluginComponent {
 
     def genLabelApply(tree: Tree) = noimpl
 
-    def makePrimitiveBox(expr: E, ty: Type) = noimpl
+    def makePrimitiveBox(expr: ir.Expr, ty: Type) = noimpl
 
-    def makePrimitiveUnbox(expr: E, ty: Type) = noimpl
+    def makePrimitiveUnbox(expr: ir.Expr, ty: Type) = noimpl
 
     def genPrimitiveOp(app: Apply) = {
       import scalaPrimitives._
@@ -350,7 +403,7 @@ abstract class GenSaltyCode extends PluginComponent {
       }
     }
 
-    def coercionTypes(code: Int) = {
+    def coercionTypes(code: Int): (ir.Type, ir.Type) = {
       import scalaPrimitives._
 
       code match {
@@ -400,25 +453,23 @@ abstract class GenSaltyCode extends PluginComponent {
 
     def genApplyTypeApply(app: Apply) = {
       val Apply(TypeApply(fun @ Select(obj, _), targs), _) = app
-      val cast = fun.symbol match {
-        case Object_isInstanceOf => false
-        case Object_asInstanceOf => true
-      }
       val ty = genType(targs.head.tpe)
       val E.Block(instrs, l) = genExpr(obj)
+      val expr = fun.symbol match {
+        case Object_isInstanceOf =>
+          E.Is(l, ty)
+        case Object_asInstanceOf =>
+          E.Conv(E.Conv.Dyncast, l, ty)
+      }
       val res = currentEnv.fresh()
-      val instr =
-        I.Assign(res,
-          if (cast)
-            E.Conv(E.Conv.Dyncast, l, ty)
-          else
-            E.Is(l, ty))
+      val instr = I.Assign(res, expr)
 
       E.Block(instrs :+ instr, res)
     }
 
     def genApplySuper(app: Apply) = ???
 
+    // TODO: new array
     def genApplyNew(app: Apply) = {
       val Apply(fun @ Select(New(tpt), nme.CONSTRUCTOR), args) = app
       val ctor = fun.symbol
@@ -442,12 +493,19 @@ abstract class GenSaltyCode extends PluginComponent {
         res)
     }
 
+    def genDefault(t: ir.Type) = t match {
+      case T.Unit          => V.Unit
+      case T.I(_) | T.F(_) => V.Number("0", t)
+      case T.Ptr(_)        => V.Null
+      case _               => abort(s"can't generate default for $t")
+    }
+
     def genNormalApply(app: Apply) = {
       val Apply(fun @ Select(receiver, _), args) = app
       val res = currentEnv.fresh()
       val E.Block(rinstrs, rvalue) = genExpr(receiver)
       val argblocks = args.map(genExpr)
-      val arginstrs = argblocks.map { case E.Block(instrs, _) => instrs } .flatten
+      val arginstrs = argblocks.flatMap { case E.Block(instrs, _) => instrs }
       val argvalues = argblocks.map { case E.Block(_, value) => value }
       val mname     = N.Nested(encodeClassName(receiver.symbol),
                                      encodeMethodName(fun.symbol))
@@ -466,7 +524,7 @@ abstract class GenSaltyCode extends PluginComponent {
       case _            => encodeClassName(sym)
     }
 
-    lazy val genPrimitiveType: PartialFunction[Symbol, T] = {
+    lazy val genPrimitiveType: PartialFunction[Symbol, ir.Type] = {
       case UnitClass    => T.Unit
       case BooleanClass => T.Bool
       case ByteClass    => T.I8
@@ -481,7 +539,7 @@ abstract class GenSaltyCode extends PluginComponent {
     def genPrimitiveOrRefType(sym: Symbol, targs: List[Type] = Nil) =
       genPrimitiveType.applyOrElse(sym, genRefType((_: Symbol), targs))
 
-    def genType(t: Type): T = t.normalize match {
+    def genType(t: Type): ir.Type = t.normalize match {
       case ThisType(ArrayClass)            => genObjectType
       case ThisType(sym)                   => genRefType(sym)
       case SingleType(_, sym)              => genPrimitiveOrRefType(sym)
@@ -494,6 +552,8 @@ abstract class GenSaltyCode extends PluginComponent {
     }
 
     def debug[T](msg: String)(v: T): T = { println(s"$msg = $v"); v }
+
+    def encodeFieldName(sym: Symbol) = N.Global(sym.name.toString)
 
     def encodeMethodName(sym: Symbol) = N.Global(sym.name.toString)
 
