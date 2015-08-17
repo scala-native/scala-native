@@ -1,23 +1,25 @@
-package salty.tools
+  package salty.tools
 package compiler
 
 import scala.tools.nsc._
 import scala.tools.nsc.plugins._
 import salty.ir
-import salty.ir.{Expr => E, Type => T, Instr => I,
-                 Val => V, Name => N, Stat => S}
+import salty.ir.{Expr => E, Type => Ty, Termn => Tn, Instr => I,
+                 Val => V, Name => N, Stat => S, Block => B}
 import salty.util.ScopedVar, ScopedVar.withScopedVars
 
 abstract class GenSaltyCode extends PluginComponent {
   import global._
   import global.definitions._
 
-  def noimpl = N.Global("not_implemented")
+  def noimpl = B(Tn.Return(N.Global("noimpl")))
 
   val phaseName = "saltycode"
 
   override def newPhase(prev: Phase): StdPhase =
     new SaltyCodePhase(prev)
+
+  def debug[T](msg: String)(v: T): T = { println(s"$msg = $v"); v }
 
   class Env {
     private var freshCounter: Int = 0
@@ -38,13 +40,16 @@ abstract class GenSaltyCode extends PluginComponent {
 
     def resolve(sym: Symbol): N = subst(sym)
 
-    def fresh(): N = N.Local(freshId().toString)
+    def fresh() = N.Local(freshId().toString)
   }
 
   class SaltyCodePhase(prev: Phase) extends StdPhase(prev) {
     val currentClassSym = new ScopedVar[Symbol]
     val currentMethodSym = new ScopedVar[Symbol]
     val currentEnv = new ScopedVar[Env]
+
+    implicit val fresh: ir.Fresh[N.Local] =
+      new ir.Fresh[N.Local] { def gen = currentEnv.fresh() }
 
     override def run(): Unit = {
       scalaPrimitives.init()
@@ -122,7 +127,7 @@ abstract class GenSaltyCode extends PluginComponent {
       val name = encodeMethodName(sym)
       val paramSyms = methodParamSymbols(dd)
       val ty =
-        if (dd.symbol.isClassConstructor) T.Unit
+        if (dd.symbol.isClassConstructor) Ty.Unit
         else genType(sym.tpe.resultType)
 
       if (dd.symbol.isDeferred) {
@@ -133,7 +138,7 @@ abstract class GenSaltyCode extends PluginComponent {
           currentEnv := new Env
         ) {
           val params = genDefParams(paramSyms)
-          val body = genExpr(dd.rhs)
+          val body = genDefBody(dd.rhs)
           S.Define(name, params, ty, body)
         }
       }
@@ -154,22 +159,27 @@ abstract class GenSaltyCode extends PluginComponent {
         ir.LabeledType(name, ty)
       }
 
-    def genExpr(tree: Tree): ir.Expr = tree match {
-      case If(cond, thenp, elsep) =>
-        val E.Block(instrs, value) = genExpr(cond)
-        val res = currentEnv.fresh()
-        val instr =
-          I.Assign(res, E.If(value, genExpr(thenp), genExpr(elsep)))
-        mkBlock(instrs :+ instr, res)
+    def genDefBody(body: Tree): ir.Block = genExpr(body)
 
-      case r: Return =>
-        noimpl
-
+    def genExpr(tree: Tree): ir.Block = tree match {
       case t: Try =>
         noimpl
 
       case t: Throw =>
         noimpl
+
+      case Return(expr) =>
+        genExpr(expr).chain { (pre, v) =>
+          B(pre, Tn.Return(v))
+        }
+
+      case If(cond, thenp, elsep) =>
+        genExpr(cond).chain { (pre, v) =>
+          B(pre, Tn.If(v, genExpr(thenp), genExpr(elsep)))
+        }
+
+      case Literal(value) =>
+        B(Tn.Return(genLiteral(value)))
 
       case app: Apply =>
         genApply(app)
@@ -178,25 +188,24 @@ abstract class GenSaltyCode extends PluginComponent {
         genApplyDynamic(app)
 
       case This(qual) =>
-        if (tree.symbol == currentClassSym.get) V.This
-        else encodeClassName(tree.symbol)
+        B(Tn.Return(
+          if (tree.symbol == currentClassSym.get) V.This
+          else encodeClassName(tree.symbol)))
 
       case Select(qual, sel) =>
         noimpl
 
       case id: Ident =>
         val sym = id.symbol
-        if (sym.isModule) encodeClassName(sym)
-        else currentEnv.resolve(sym)
-
-      case Literal(value) =>
-        genLiteral(value)
+        B(Tn.Return(
+          if (sym.isModule) encodeClassName(sym)
+          else currentEnv.resolve(sym)))
 
       case block: Block =>
         genBlock(block)
 
       case Typed(Super(_, _), _) =>
-        V.This
+        B(Tn.Return(V.This))
 
       case Typed(expr, _) =>
         genExpr(expr)
@@ -220,11 +229,7 @@ abstract class GenSaltyCode extends PluginComponent {
         noimpl
     }
 
-    def genBlock(block: Block) = noimpl
-
-    def genSwitch(m: Match) = noimpl
-
-    def genLiteral(value: Constant) = value.tag match {
+    def genLiteral(value: Constant): ir.Val = value.tag match {
       case NullTag =>
         V.Null
       case UnitTag =>
@@ -232,17 +237,17 @@ abstract class GenSaltyCode extends PluginComponent {
       case BooleanTag =>
         V.Bool(value.booleanValue)
       case ByteTag =>
-        V.Number(value.intValue.toString, T.I8)
+        V.Number(value.intValue.toString, Ty.I8)
       case ShortTag | CharTag =>
-        V.Number(value.intValue.toString, T.I16)
+        V.Number(value.intValue.toString, Ty.I16)
       case IntTag =>
-        V.Number(value.intValue.toString, T.I32)
+        V.Number(value.intValue.toString, Ty.I32)
       case LongTag =>
-        V.Number(value.longValue.toString, T.I64)
+        V.Number(value.longValue.toString, Ty.I64)
       case FloatTag =>
-        V.Number(value.floatValue.toString, T.F32)
+        V.Number(value.floatValue.toString, Ty.F32)
       case DoubleTag =>
-        V.Number(value.doubleValue.toString, T.F64)
+        V.Number(value.doubleValue.toString, Ty.F64)
       case StringTag =>
         ???
       case ClazzTag =>
@@ -251,9 +256,13 @@ abstract class GenSaltyCode extends PluginComponent {
         ???
     }
 
+    def genBlock(block: Block) = noimpl
+
+    def genSwitch(m: Match) = noimpl
+
     def genApplyDynamic(app: ApplyDynamic) = noimpl
 
-    def genApply(app: Apply) = {
+    def genApply(app: Apply): ir.Block = {
       val Apply(fun, args) = app
 
       fun match {
@@ -272,10 +281,10 @@ abstract class GenSaltyCode extends PluginComponent {
             genPrimitiveOp(app)
           } else if (currentRun.runDefinitions.isBox(sym)) {
             val arg = args.head
-            makePrimitiveBox(genExpr(arg), arg.tpe)
+            makePrimitiveBox(arg, arg.tpe)
           } else if (currentRun.runDefinitions.isUnbox(sym)) {
             val arg = args.head
-            makePrimitiveUnbox(genExpr(arg), app.tpe)
+            makePrimitiveUnbox(arg, app.tpe)
           } else {
             genNormalApply(app)
           }
@@ -284,11 +293,11 @@ abstract class GenSaltyCode extends PluginComponent {
 
     def genLabelApply(tree: Tree) = noimpl
 
-    def makePrimitiveBox(expr: ir.Expr, ty: Type) = noimpl
+    def makePrimitiveBox(expr: Tree, ty: Type) = noimpl
 
-    def makePrimitiveUnbox(expr: ir.Expr, ty: Type) = noimpl
+    def makePrimitiveUnbox(expr: Tree, ty: Type) = noimpl
 
-    def genPrimitiveOp(app: Apply) = {
+    def genPrimitiveOp(app: Apply): ir.Block = {
       import scalaPrimitives._
 
       val sym = app.symbol
@@ -312,59 +321,63 @@ abstract class GenSaltyCode extends PluginComponent {
               fun.symbol.simpleName + ") " + " at: " + (app.pos))
     }
 
-    def genSimpleOp(app: Apply, args: List[Tree], code: Int) = {
+    def genSimpleOp(app: Apply, args: List[Tree], code: Int): ir.Block = {
       import scalaPrimitives._
 
       val resType = genType(app.tpe)
 
       args match {
         case List(unary) =>
-          val block @ E.Block(instrs, value) = genExpr(unary)
-          if (code == POS) block
-          else {
-            val expr = code match {
-              case NEG  => E.Bin(E.Bin.Sub, V.Number("0", resType), value)
-              case NOT  => E.Bin(E.Bin.Xor, V.Number("-1", resType), value)
-              case ZNOT => E.Bin(E.Bin.Xor, V.Bool(true), value)
-              case _ =>
-                abort("Unknown unary operation code: " + code)
+          val unaryb = genExpr(unary)
+          if (code == POS)
+            unaryb
+          else
+            unaryb.chain { (instrs, value) =>
+              val expr = code match {
+                case NEG  => E.Bin(E.Bin.Sub, V.Number("0", resType), value)
+                case NOT  => E.Bin(E.Bin.Xor, V.Number("-1", resType), value)
+                case ZNOT => E.Bin(E.Bin.Xor, V.Bool(true), value)
+                case _ =>
+                  abort("Unknown unary operation code: " + code)
+              }
+              val res = currentEnv.fresh()
+              B(instrs :+ I.Assign(res, expr), Tn.Return(res))
             }
-            val res = currentEnv.fresh()
-            mkBlock(instrs :+ I.Assign(res, expr), res)
-          }
 
         // TODO: convert to the common type
-        // TODO: equality on reference types
+        // TODO: eq, ne, ||, &&
         case List(left, right) =>
-          val lblock @ E.Block(linstrs, lvalue) = genExpr(left)
-          val rblock @ E.Block(rinstrs, rvalue) = genExpr(right)
-          val expr = code match {
-            case ADD  => E.Bin(E.Bin.Add,  lvalue, rvalue)
-            case SUB  => E.Bin(E.Bin.Sub,  lvalue, rvalue)
-            case MUL  => E.Bin(E.Bin.Mul,  lvalue, rvalue)
-            case DIV  => E.Bin(E.Bin.Div,  lvalue, rvalue)
-            case MOD  => E.Bin(E.Bin.Mod,  lvalue, rvalue)
-            case OR   => E.Bin(E.Bin.Or,   lvalue, rvalue)
-            case XOR  => E.Bin(E.Bin.Xor,  lvalue, rvalue)
-            case AND  => E.Bin(E.Bin.And,  lvalue, rvalue)
-            case LSL  => E.Bin(E.Bin.Shl,  lvalue, rvalue)
-            case LSR  => E.Bin(E.Bin.Lshr, lvalue, rvalue)
-            case ASR  => E.Bin(E.Bin.Ashr, lvalue, rvalue)
-            case EQ   => E.Bin(E.Bin.Eq,   lvalue, rvalue)
-            case NE   => E.Bin(E.Bin.Neq,  lvalue, rvalue)
-            case LT   => E.Bin(E.Bin.Lt,   lvalue, rvalue)
-            case LE   => E.Bin(E.Bin.Lte,  lvalue, rvalue)
-            case GT   => E.Bin(E.Bin.Gt,   lvalue, rvalue)
-            case GE   => E.Bin(E.Bin.Gte,  lvalue, rvalue)
-            case ID   => ???
-            case NI   => ???
-            case ZOR  => E.If(lvalue, V.Bool(true), rblock)
-            case ZAND => E.If(lvalue, rblock, V.Bool(false))
-            case _ =>
-              abort("Unknown binary operation code: " + code)
+          val lblock = genExpr(left)
+          val rblock = genExpr(right)
+          lblock.zipChain(rblock) { (instrs, lvalue, rvalue) =>
+            val expr = code match {
+              case ADD  => E.Bin(E.Bin.Add,  lvalue, rvalue)
+              case SUB  => E.Bin(E.Bin.Sub,  lvalue, rvalue)
+              case MUL  => E.Bin(E.Bin.Mul,  lvalue, rvalue)
+              case DIV  => E.Bin(E.Bin.Div,  lvalue, rvalue)
+              case MOD  => E.Bin(E.Bin.Mod,  lvalue, rvalue)
+              case OR   => E.Bin(E.Bin.Or,   lvalue, rvalue)
+              case XOR  => E.Bin(E.Bin.Xor,  lvalue, rvalue)
+              case AND  => E.Bin(E.Bin.And,  lvalue, rvalue)
+              case LSL  => E.Bin(E.Bin.Shl,  lvalue, rvalue)
+              case LSR  => E.Bin(E.Bin.Lshr, lvalue, rvalue)
+              case ASR  => E.Bin(E.Bin.Ashr, lvalue, rvalue)
+              case EQ   => E.Bin(E.Bin.Eq,   lvalue, rvalue)
+              case NE   => E.Bin(E.Bin.Neq,  lvalue, rvalue)
+              case LT   => E.Bin(E.Bin.Lt,   lvalue, rvalue)
+              case LE   => E.Bin(E.Bin.Lte,  lvalue, rvalue)
+              case GT   => E.Bin(E.Bin.Gt,   lvalue, rvalue)
+              case GE   => E.Bin(E.Bin.Gte,  lvalue, rvalue)
+              case ID   => ???
+              case NI   => ???
+              case ZOR  => ??? // If(lvalue, V.Bool(true), rblock)
+              case ZAND => ??? // If(lvalue, rblock, V.Bool(false))
+              case _ =>
+                abort("Unknown binary operation code: " + code)
+            }
+            val res = currentEnv.fresh()
+            B(instrs :+ I.Assign(res, expr), Tn.Return(res))
           }
-          val res = currentEnv.fresh()
-          mkBlock(linstrs ++ rinstrs :+ I.Assign(res, expr), res)
 
         case _ =>
           abort("Too many arguments for primitive function: " + app)
@@ -380,27 +393,27 @@ abstract class GenSaltyCode extends PluginComponent {
     def genSynchronized(app: Apply) = noimpl
 
     def genCoercion(app: Apply, receiver: Tree, code: Int) = {
-      val block @ E.Block(instrs, value) = genExpr(receiver)
+      val block = genExpr(receiver)
       val (fromty, toty) = coercionTypes(code)
 
       if (fromty == toty) block
-      else {
+      else block.chain { (instrs, value) =>
         val expr = (fromty, toty) match {
-          case (T.I(lwidth), T.I(rwidth)) if lwidth < rwidth =>
+          case (Ty.I(lwidth), Ty.I(rwidth)) if lwidth < rwidth =>
             E.Conv(E.Conv.Zext, value, toty)
-          case (T.I(lwidth), T.I(rwidth)) if lwidth > rwidth =>
+          case (Ty.I(lwidth), Ty.I(rwidth)) if lwidth > rwidth =>
             E.Conv(E.Conv.Trunc, value, toty)
-          case (T.I(_), T.F(_)) =>
+          case (Ty.I(_), Ty.F(_)) =>
             E.Conv(E.Conv.Sitofp, value, toty)
-          case (T.F(_), T.I(_)) =>
+          case (Ty.F(_), Ty.I(_)) =>
             E.Conv(E.Conv.Fptosi, value, toty)
-          case (T.F64, T.F32) =>
+          case (Ty.F64, Ty.F32) =>
             E.Conv(E.Conv.Fptrunc, value, toty)
-          case (T.F32, T.F64) =>
+          case (Ty.F32, Ty.F64) =>
             E.Conv(E.Conv.Fpext, value, toty)
         }
         val res = currentEnv.fresh()
-        mkBlock(instrs :+ I.Assign(res, expr), res)
+        B(instrs :+ I.Assign(res, expr), Tn.Return(res))
       }
     }
 
@@ -408,51 +421,51 @@ abstract class GenSaltyCode extends PluginComponent {
       import scalaPrimitives._
 
       code match {
-        case B2B       => (T.I8, T.I8)
-        case B2S | B2C => (T.I8, T.I16)
-        case B2I       => (T.I8, T.I32)
-        case B2L       => (T.I8, T.I64)
-        case B2F       => (T.I8, T.F32)
-        case B2D       => (T.I8, T.F64)
+        case B2B       => (Ty.I8, Ty.I8)
+        case B2S | B2C => (Ty.I8, Ty.I16)
+        case B2I       => (Ty.I8, Ty.I32)
+        case B2L       => (Ty.I8, Ty.I64)
+        case B2F       => (Ty.I8, Ty.F32)
+        case B2D       => (Ty.I8, Ty.F64)
 
-        case S2B       | C2B       => (T.I16, T.I8)
-        case S2S | S2C | C2S | C2C => (T.I16, T.I16)
-        case S2I       | C2I       => (T.I16, T.I32)
-        case S2L       | C2L       => (T.I16, T.I64)
-        case S2F       | C2F       => (T.I16, T.F32)
-        case S2D       | C2D       => (T.I16, T.F64)
+        case S2B       | C2B       => (Ty.I16, Ty.I8)
+        case S2S | S2C | C2S | C2C => (Ty.I16, Ty.I16)
+        case S2I       | C2I       => (Ty.I16, Ty.I32)
+        case S2L       | C2L       => (Ty.I16, Ty.I64)
+        case S2F       | C2F       => (Ty.I16, Ty.F32)
+        case S2D       | C2D       => (Ty.I16, Ty.F64)
 
-        case I2B       => (T.I32, T.I8)
-        case I2S | I2C => (T.I32, T.I16)
-        case I2I       => (T.I32, T.I32)
-        case I2L       => (T.I32, T.I64)
-        case I2F       => (T.I32, T.F32)
-        case I2D       => (T.I32, T.F64)
+        case I2B       => (Ty.I32, Ty.I8)
+        case I2S | I2C => (Ty.I32, Ty.I16)
+        case I2I       => (Ty.I32, Ty.I32)
+        case I2L       => (Ty.I32, Ty.I64)
+        case I2F       => (Ty.I32, Ty.F32)
+        case I2D       => (Ty.I32, Ty.F64)
 
-        case L2B       => (T.I64, T.I8)
-        case L2S | L2C => (T.I64, T.I16)
-        case L2I       => (T.I64, T.I32)
-        case L2L       => (T.I64, T.I64)
-        case L2F       => (T.I64, T.F32)
-        case L2D       => (T.I64, T.F64)
+        case L2B       => (Ty.I64, Ty.I8)
+        case L2S | L2C => (Ty.I64, Ty.I16)
+        case L2I       => (Ty.I64, Ty.I32)
+        case L2L       => (Ty.I64, Ty.I64)
+        case L2F       => (Ty.I64, Ty.F32)
+        case L2D       => (Ty.I64, Ty.F64)
 
-        case F2B       => (T.F32, T.I8)
-        case F2S | F2C => (T.F32, T.I16)
-        case F2I       => (T.F32, T.I32)
-        case F2L       => (T.F32, T.I64)
-        case F2F       => (T.F32, T.F32)
-        case F2D       => (T.F32, T.F64)
+        case F2B       => (Ty.F32, Ty.I8)
+        case F2S | F2C => (Ty.F32, Ty.I16)
+        case F2I       => (Ty.F32, Ty.I32)
+        case F2L       => (Ty.F32, Ty.I64)
+        case F2F       => (Ty.F32, Ty.F32)
+        case F2D       => (Ty.F32, Ty.F64)
 
-        case D2B       => (T.F64, T.I8)
-        case D2S | D2C => (T.F64, T.I16)
-        case D2I       => (T.F64, T.I32)
-        case D2L       => (T.F64, T.I64)
-        case D2F       => (T.F64, T.F32)
-        case D2D       => (T.F64, T.F64)
+        case D2B       => (Ty.F64, Ty.I8)
+        case D2S | D2C => (Ty.F64, Ty.I16)
+        case D2I       => (Ty.F64, Ty.I32)
+        case D2L       => (Ty.F64, Ty.I64)
+        case D2F       => (Ty.F64, Ty.F32)
+        case D2D       => (Ty.F64, Ty.F64)
       }
     }
 
-    def genApplyTypeApply(app: Apply) = {
+    def genApplyTypeApply(app: Apply) = noimpl /*{
       val Apply(TypeApply(fun @ Select(obj, _), targs), _) = app
       val ty = genType(targs.head.tpe)
       val E.Block(instrs, l) = genExpr(obj)
@@ -466,20 +479,20 @@ abstract class GenSaltyCode extends PluginComponent {
       val instr = I.Assign(res, expr)
 
       E.Block(instrs :+ instr, res)
-    }
+    }*/
 
-    def genApplySuper(app: Apply) = ???
+    def genApplySuper(app: Apply) = noimpl
 
     // TODO: new array
-    def genApplyNew(app: Apply) = {
+    def genApplyNew(app: Apply) = noimpl /*{
       val Apply(fun @ Select(New(tpt), nme.CONSTRUCTOR), args) = app
       val ctor = fun.symbol
       val tpe = tpt.tpe
 
       genNew(tpe.typeSymbol, ctor, args)
-    }
+    }*/
 
-    def genNew(clazz: Symbol, ctor: Symbol, args: List[Tree]) = {
+    def genNew(clazz: Symbol, ctor: Symbol, args: List[Tree]) = noimpl /*{
       val argblocks = args.map(genExpr)
       val arginstrs = argblocks.flatMap { case E.Block(i, _) => i }
       val argvals = argblocks.map { case E.Block(_, v) => v }
@@ -492,9 +505,9 @@ abstract class GenSaltyCode extends PluginComponent {
         I.Assign(res, E.New(cname)) :+
         E.Call(N.Nested(cname, ctorname), res +: argvals),
         res)
-    }
+    }*/
 
-    def genNormalApply(app: Apply) = {
+    def genNormalApply(app: Apply) = noimpl /*{
       val Apply(fun @ Select(receiver, _), args) = app
       val res = currentEnv.fresh()
       val E.Block(rinstrs, rvalue) = genExpr(receiver)
@@ -507,27 +520,27 @@ abstract class GenSaltyCode extends PluginComponent {
       val callinstr = I.Assign(res, E.Call(mname, callargs))
 
       mkBlock(rinstrs ++ arginstrs :+ callinstr, res)
-    }
+    }*/
 
-    lazy val genObjectType = T.Ptr(N.Global("java.lang.Object"))
+    lazy val genObjectType = Ty.Ptr(N.Global("java.lang.Object"))
 
     def genRefType(sym: Symbol, targs: List[Type] = Nil) = sym match {
-      case ArrayClass   => T.Array(genType(targs.head))
-      case NullClass    => T.Null
-      case NothingClass => T.Nothing
+      case ArrayClass   => Ty.Array(genType(targs.head))
+      case NullClass    => Ty.Null
+      case NothingClass => Ty.Nothing
       case _            => encodeClassName(sym)
     }
 
     lazy val genPrimitiveType: PartialFunction[Symbol, ir.Type] = {
-      case UnitClass    => T.Unit
-      case BooleanClass => T.Bool
-      case ByteClass    => T.I8
-      case CharClass    => T.I16
-      case ShortClass   => T.I16
-      case IntClass     => T.I32
-      case LongClass    => T.I64
-      case FloatClass   => T.F32
-      case DoubleClass  => T.F64
+      case UnitClass    => Ty.Unit
+      case BooleanClass => Ty.Bool
+      case ByteClass    => Ty.I8
+      case CharClass    => Ty.I16
+      case ShortClass   => Ty.I16
+      case IntClass     => Ty.I32
+      case LongClass    => Ty.I64
+      case FloatClass   => Ty.F32
+      case DoubleClass  => Ty.F64
     }
 
     def genPrimitiveOrRefType(sym: Symbol, targs: List[Type] = Nil) =
@@ -545,15 +558,10 @@ abstract class GenSaltyCode extends PluginComponent {
       case tpe: ErasedValueType            => genRefType(tpe.valueClazz)
     }
 
-    def debug[T](msg: String)(v: T): T = { println(s"$msg = $v"); v }
-
     def encodeFieldName(sym: Symbol) = N.Global(sym.name.toString)
 
     def encodeMethodName(sym: Symbol) = N.Global(sym.name.toString)
 
     def encodeClassName(sym: Symbol) = N.Global(sym.fullName.toString)
-
-    def mkBlock(instrs: Seq[I], value: V) =
-      if (instrs.isEmpty) value else E.Block(instrs, value)
   }
 }

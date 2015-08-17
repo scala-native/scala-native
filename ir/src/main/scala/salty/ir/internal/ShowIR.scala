@@ -8,9 +8,11 @@ object ShowIR {
 
   implicit val showTree: Show[Tree] = Show {
     case t: Type  => t
+    case t: Termn  => t
     case i: Instr => i
     case s: Stat  => s
     case b: Branch => b
+    case b: Block => b
     case lt: LabeledType => lt
     case lv: LabeledVal => lv
   }
@@ -32,16 +34,20 @@ object ShowIR {
       e
     case Instr.Assign(name, expr) =>
       s(name, " = ", expr)
-    case Instr.While(cond, body) =>
-      s("while ", cond, " do ", body)
-    case Instr.DoWhile(body, cond) =>
-      s("do ", body, " while ", cond)
-    case Instr.Label(name) =>
-      u(s(name, ":"))
-    case Instr.Jump(name) =>
-      s("jump ", name)
-    case Instr.Return(value) =>
+  }
+
+  implicit val showTermn: Show[Termn] = Show {
+    case Termn.Return(value) =>
       s("return ", value)
+    case Termn.Jump(name) =>
+      s("jump ", name.id)
+    case Termn.If(cond, thenp, elsep) =>
+      s("if ", cond, " then ", thenp.id, " else ", elsep.id)
+    case Termn.Switch(on, cases, default) =>
+      s("switch ", on, " { ",
+          r(cases.map(i(_))),
+          i(s("case _ => ", default.id)),
+        n(" }"))
   }
 
   implicit val showExpr: Show[Expr] = Show {
@@ -58,20 +64,7 @@ object ShowIR {
     case Expr.Call(name, args) =>
       s("call ", name, "(", r(args, sep = ", "), ")")
     case Expr.Phi(names) =>
-      s("phi(", r(names, sep = ", "), ")")
-    case Expr.If(cond, thenp, elsep) =>
-      s("if ", cond, " then ", thenp, " else ", elsep)
-    case Expr.Switch(on, cases, default) =>
-      s("switch ", on, " { ",
-          r(cases.map(i(_))),
-          i(s("case _ => ", default)),
-        n(" }"))
-
-    case Expr.Block(instrs, value) =>
-      s("{",
-          r(instrs.map(i(_))),
-          i(value),
-        n("}"))
+      s("phi {", r(names, sep = ", "), "}")
   }
 
   implicit val showVal: Show[Val] = Show {
@@ -101,8 +94,24 @@ object ShowIR {
       s("field ", name, ": ", ty)
     case Stat.Declare(name, args, ty) =>
       s("declare ", name, "(", r(args, sep = ", "), "): ", ty)
-    case Stat.Define(name, args, ty, body) =>
-      s("define ", name, "(", r(args, sep = ", "), "): ", ty, " = ", body)
+    case Stat.Define(name, args, ty, block) =>
+      s("define ", name, "(", r(args, sep = ", "), "): ", ty, " = {",
+        block,
+        n("}"))
+  }
+
+  implicit val showBlock: Show[Block] = Show { entry =>
+    var visited = Set.empty[Block]
+    def loop(bs: Seq[Block]): Show.Result = bs match {
+      case Seq() =>
+        s()
+      case b +: rest =>
+        visited += b
+        val next = (rest ++ b.next).filterNot(visited.contains(_))
+        n(s(b.id, ":", r(b.instrs.map(i(_))), i(b.termn),
+            loop(next)))
+    }
+    loop(Seq(entry))
   }
 
   implicit val showName: Show[Name] = Show {
@@ -112,7 +121,7 @@ object ShowIR {
   }
 
   implicit val showBranch: Show[Branch] = Show {
-    case Branch(v, expr) => s("case ", v, " => ", expr)
+    case Branch(v, block) => s(v, ", ", block.id)
   }
 
   implicit val showLabeledType: Show[LabeledType] = Show {
@@ -122,4 +131,6 @@ object ShowIR {
   implicit val showLabeledVal: Show[LabeledVal] = Show {
     case LabeledVal(name, value) => s(name, " = ", value)
   }
+
+  implicit val showInt: Show[Int] = Show { _.toString }
 }

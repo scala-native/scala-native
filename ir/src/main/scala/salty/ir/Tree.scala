@@ -32,11 +32,14 @@ object Type {
 sealed abstract trait Instr extends Tree
 object Instr {
   final case class Assign(name: Name, expr: Expr) extends Instr
-  final case class While(cond: Expr, body: Expr) extends Instr
-  final case class DoWhile(body: Expr, cond: Expr) extends Instr
-  final case class Label(name: Name) extends Instr
-  final case class Jump(to: Name) extends Instr
-  final case class Return(value: Val) extends Instr
+}
+
+sealed abstract trait Termn extends Tree
+object Termn {
+  final case class Jump(to: Block) extends Termn
+  final case class Return(value: Val) extends Termn
+  final case class If(cond: Val, thenb: Block, elseb: Block) extends Termn
+  final case class Switch(on: Val, cases: Seq[Branch], defaultb: Block) extends Termn
 }
 
 sealed abstract trait Expr extends Instr
@@ -82,18 +85,7 @@ object Expr {
   final case class Is(value: Val, ty: Type) extends Expr
   final case class New(name: Name) extends Expr
   final case class Call(name: Name, args: Seq[Val]) extends Expr
-  final case class Phi(names: Seq[Name]) extends Expr
-  final case class If(cond: Val, thenp: Expr, elsep: Expr) extends Expr
-  final case class Switch(on: Val, cases: Seq[Branch], default: Expr) extends Expr
-  final case class Block(instrs: Seq[Instr], value: Val) extends Expr
-  object Block {
-    def unapply(scrut: Any): Option[(Seq[Instr], Val)] = scrut match {
-      case b: Block => Some((b.instrs, b.value))
-      case v: Val   => Some((Seq(), v))
-      case _        => None
-    }
-    def apply(ret: Val): Block = Block(Seq(), ret)
-  }
+  final case class Phi(branches: Seq[Branch]) extends Expr
 }
 
 sealed abstract trait Val extends Expr
@@ -118,7 +110,7 @@ object Stat {
   final case class Declare(name: Name, params: Seq[Type],
                            ty: Type) extends Stat
   final case class Define(name: Name, params: Seq[LabeledType],
-                          ty: Type, body: Expr) extends Stat
+                          ty: Type, body: Block) extends Stat
 }
 
 sealed abstract class Name extends Val with Type
@@ -128,6 +120,71 @@ object Name {
   final case class Nested(parent: Name, child: Name) extends Name
 }
 
-final case class Branch(value: Val, expr: Expr) extends Tree
+final case class Branch(value: Val, block: Block) extends Tree
 final case class LabeledType(name: Name, ty: Type) extends Tree
 final case class LabeledVal(name: Name, value: Val) extends Tree
+final class Block(val instrs: Seq[Instr], private var _termn: Termn) extends Tree {
+  def termn = _termn
+
+  def id: Name =
+    Name.Local(java.lang.Integer.toHexString(this.##))
+
+  def next: Seq[Block] = termn match {
+    case Termn.Return(_) =>
+      Seq()
+    case Termn.Jump(b) =>
+      Seq(b)
+    case Termn.If(_, b1, b2) =>
+      Seq(b1, b2)
+    case Termn.Switch(_, branches, default) =>
+      branches.map(_.block) :+ default
+  }
+
+  def chain(f: (Seq[Instr], Val) => Block)
+           (implicit fresh: Fresh[Name.Local]): Block = {
+    termn match {
+      case Termn.Return(v) =>
+        f(instrs, v)
+      case Termn.Jump(block) =>
+        Block(instrs, Termn.Jump(block.chain(f)))
+      case Termn.If(cond, b1, b2) =>
+        var n1, n2: Block = null
+        b1 chain { (instrs1, v1) =>
+          b2 chain { (instrs2, v2) =>
+            n1 = Block(instrs1, Termn.Return(v1))
+            n2 = Block(instrs2, Termn.Return(v2))
+            val branches = Seq(Branch(v1, n1), Branch(v2, n2))
+            val name = fresh.gen
+            val next =
+              f(Seq(Instr.Assign(name, Expr.Phi(branches))), name)
+            n1._termn = Termn.Jump(next)
+            n2._termn = Termn.Jump(next)
+            n2
+          }
+          n1
+        }
+        Block(instrs, Termn.If(cond, n1, n2))
+      case Termn.Switch(_, _, _) =>
+        ???
+    }
+  }
+
+  def zipChain(other: Block)
+              (f: (Seq[Instr], Val, Val) => Block)
+              (implicit fresh: Fresh[Name.Local]): Block =
+    this.chain { (instrs1, v1) =>
+      other.chain { (instrs2, v2) =>
+        f(instrs1 ++ instrs2, v1, v2)
+      }
+    }
+}
+object Block {
+  def apply(termn: Termn): Block =
+    new Block(Seq(), termn)
+  def apply(instrs: Seq[Instr], termn: Termn): Block =
+    new Block(instrs, termn)
+}
+
+trait Fresh[T] {
+  def gen: T
+}

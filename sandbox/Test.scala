@@ -1,5 +1,6 @@
 package test
 
 class C {
-  def foo = new Array(3)
+  def foo(x: Int, y: Int) =
+    (if (x + y > 0) x * y else 0).toLong
 }
