@@ -27,8 +27,6 @@ object Type {
 
   final case class Ptr(ty: Type) extends Type
   final case class Array(ty: Type) extends Type
-  final case class FixedArray(ty: Type, n: Val) extends Type
-  final case class Struct(tys: Seq[LabeledType]) extends Type
 }
 
 sealed abstract trait Instr extends Tree
@@ -105,7 +103,6 @@ object Val {
   case object This extends Val
   final case class Bool(value: Boolean) extends Val
   final case class Number(repr: String, ty: Type) extends Val
-  final case class Struct(vs: Seq[LabeledVal]) extends Val
   final case class Array(vs: Seq[Val]) extends Val
 }
 
@@ -117,13 +114,11 @@ object Stat {
                              body: Seq[Stat]) extends Stat
   final case class Module(name: Name, parent: Name,
                           interfaces: Seq[Name], body: Seq[Stat]) extends Stat
-  final case class Struct(name: Name, body: Seq[Stat]) extends Stat
-  final case class Const(name: Name, ty: Type, init: Expr) extends Stat
-  final case class Var(name: Name, ty: Type, init: Expr) extends Stat
-  final case class Decl(name: Name, params: Seq[Type],
-                        ty: Type) extends Stat
-  final case class Def(name: Name, params: Seq[LabeledType],
-                       ty: Type, body: Expr) extends Stat
+  final case class Field(name: Name, ty: Type) extends Stat
+  final case class Declare(name: Name, params: Seq[Type],
+                           ty: Type) extends Stat
+  final case class Define(name: Name, params: Seq[LabeledType],
+                          ty: Type, body: Expr) extends Stat
 }
 
 sealed abstract class Name extends Val with Type

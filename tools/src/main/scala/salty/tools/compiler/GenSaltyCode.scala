@@ -76,19 +76,20 @@ abstract class GenSaltyCode extends PluginComponent {
     def genClass(cd: ClassDef): ir.Stat = withScopedVars (
       currentClassSym := cd.symbol
     ) {
-      val ClassDef(mods, name, _, impl) = cd
       val sym = cd.symbol
-      val irName = encodeClassName(sym)
-      val irParent = encodeClassName(sym.superClass)
-      val irInterfaces = genClassInterfaces(sym)
-      val irBody = impl.body.flatMap(genClassStat(_))
+      val name = encodeClassName(sym)
+      val parent = encodeClassName(sym.superClass)
+      val interfaces = genClassInterfaces(sym)
+      val fields = genClassFields(sym)
+      val methods = genClassMethods(cd.impl.body)
+      val body = fields ++ methods
 
       if (sym.isModuleClass)
-        S.Module(irName, irParent, irInterfaces, irBody)
+        S.Module(name, parent, interfaces, body)
       else if (sym.isInterface)
-        S.Interface(irName, irInterfaces, irBody)
+        S.Interface(name, interfaces, body)
       else
-        S.Class(irName, irParent, irInterfaces, irBody)
+        S.Class(name, parent, interfaces, body)
     }
 
     def genClassInterfaces(sym: Symbol) =
@@ -100,19 +101,19 @@ abstract class GenSaltyCode extends PluginComponent {
         encodeClassName(psym)
       }
 
-    def genClassStat(stat: Tree): Seq[ir.Stat] = stat match {
-      case vd: ValDef => Seq(genField(vd))
-      case dd: DefDef => Seq(genMethod(dd))
-      case _          => Seq()
-    }
+    def genClassMethods(stats: List[Tree]): Seq[ir.Stat] =
+      stats.flatMap {
+        case dd: DefDef => Seq(genMethod(dd))
+        case _          => Seq()
+      }
 
-    def genField(vd: ValDef): ir.Stat = {
-      val name = encodeFieldName(vd.symbol)
-      val ty = genType(vd.tpt.tpe)
-      val init = genDefault(ty)
-
-      S.Var(name, ty, init)
-    }
+    def genClassFields(sym: Symbol) =
+      (for {
+        f <- sym.info.decls
+        if !f.isMethod && f.isTerm && !f.isModule
+      } yield {
+        S.Field(encodeFieldName(f), genType(f.tpe))
+      }).toList
 
     def genMethod(dd: DefDef): ir.Stat = withScopedVars (
       currentMethodSym := dd.symbol
@@ -126,14 +127,14 @@ abstract class GenSaltyCode extends PluginComponent {
 
       if (dd.symbol.isDeferred) {
         val params = genDeclParams(paramSyms)
-        S.Decl(name, params, ty)
+        S.Declare(name, params, ty)
       } else {
         withScopedVars (
           currentEnv := new Env
         ) {
           val params = genDefParams(paramSyms)
           val body = genExpr(dd.rhs)
-          S.Def(name, params, ty, body)
+          S.Define(name, params, ty, body)
         }
       }
     }
@@ -491,13 +492,6 @@ abstract class GenSaltyCode extends PluginComponent {
         I.Assign(res, E.New(cname)) :+
         E.Call(N.Nested(cname, ctorname), res +: argvals),
         res)
-    }
-
-    def genDefault(t: ir.Type) = t match {
-      case T.Unit          => V.Unit
-      case T.I(_) | T.F(_) => V.Number("0", t)
-      case T.Ptr(_)        => V.Null
-      case _               => abort(s"can't generate default for $t")
     }
 
     def genNormalApply(app: Apply) = {
