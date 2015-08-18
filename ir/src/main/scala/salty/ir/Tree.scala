@@ -123,68 +123,80 @@ object Name {
 final case class Branch(value: Val, block: Block) extends Tree
 final case class LabeledType(name: Name, ty: Type) extends Tree
 final case class LabeledVal(name: Name, value: Val) extends Tree
-final class Block(val instrs: Seq[Instr], private var _termn: Termn) extends Tree {
-  def termn = _termn
 
-  def id: Name =
-    Name.Local(java.lang.Integer.toHexString(this.##))
-
+final case class Block(name: Name, instrs: Seq[Instr], var termn: Termn) extends Tree {
   def next: Seq[Block] = termn match {
-    case Termn.Return(_) =>
-      Seq()
-    case Termn.Jump(b) =>
-      Seq(b)
-    case Termn.If(_, b1, b2) =>
-      Seq(b1, b2)
+    case Termn.Return(_) => Seq()
+    case Termn.Jump(b) => Seq(b)
+    case Termn.If(_, b1, b2) => Seq(b1, b2)
     case Termn.Switch(_, branches, default) =>
       branches.map(_.block) :+ default
   }
-
-  def chain(f: (Seq[Instr], Val) => Block)
-           (implicit fresh: Fresh[Name.Local]): Block = {
-    termn match {
-      case Termn.Return(v) =>
-        f(instrs, v)
-      case Termn.Jump(block) =>
-        Block(instrs, Termn.Jump(block.chain(f)))
-      case Termn.If(cond, b1, b2) =>
-        var n1, n2: Block = null
-        b1 chain { (instrs1, v1) =>
-          b2 chain { (instrs2, v2) =>
-            n1 = Block(instrs1, Termn.Return(v1))
-            n2 = Block(instrs2, Termn.Return(v2))
-            val branches = Seq(Branch(v1, n1), Branch(v2, n2))
-            val name = fresh.gen
-            val next =
-              f(Seq(Instr.Assign(name, Expr.Phi(branches))), name)
-            n1._termn = Termn.Jump(next)
-            n2._termn = Termn.Jump(next)
-            n2
-          }
-          n1
-        }
-        Block(instrs, Termn.If(cond, n1, n2))
-      case Termn.Switch(_, _, _) =>
-        ???
-    }
-  }
-
-  def zipChain(other: Block)
-              (f: (Seq[Instr], Val, Val) => Block)
-              (implicit fresh: Fresh[Name.Local]): Block =
-    this.chain { (instrs1, v1) =>
-      other.chain { (instrs2, v2) =>
-        f(instrs1 ++ instrs2, v1, v2)
-      }
-    }
 }
 object Block {
-  def apply(termn: Termn): Block =
-    new Block(Seq(), termn)
-  def apply(instrs: Seq[Instr], termn: Termn): Block =
-    new Block(instrs, termn)
+  def apply(termn: Termn)(implicit fresh: Fresh): Block =
+    new Block(fresh("block"), Seq(), termn)
+  def apply(instrs: Seq[Instr], termn: Termn)(implicit fresh: Fresh): Block =
+    new Block(fresh("block"), instrs, termn)
+
+  def foreachNext(block: Block)(f: Block => Unit): Unit = block.termn match {
+    case Termn.Return(_) =>
+      ()
+    case Termn.Jump(b) =>
+      f(b)
+    case Termn.If(_, b1, b2) =>
+      f(b1)
+      f(b2)
+    case Termn.Switch(_, branches, default) =>
+      branches.foreach(br => f(br.block))
+      f(default)
+  }
+
+  def foreach(block: Block)(f: Block => Unit): Unit = {
+    var visited = List.empty[Block]
+    def loop(block: Block): Unit =
+      if (visited.contains(block)) ()
+      else {
+        f(block)
+        visited = block :: visited
+        foreachNext(block)(loop)
+      }
+    loop(block)
+  }
+
+  def foreachLeaf(block: Block)(f: Block => Unit): Unit =
+    foreach(block) {
+      case b @ Block(_, _, Termn.Return(_)) =>
+        f(b)
+      case _ =>
+        ()
+    }
+
+  def meet(block: Block)(f: Expr => Block): Unit = {
+    var branches = List.empty[Branch]
+    foreachLeaf(block) {
+      case b @ Block(_, _, Termn.Return(v)) =>
+        branches = Branch(v, b) :: branches
+    }
+    branches match {
+      case Nil =>
+        ()
+      case Branch(v, block) :: Nil =>
+        block.termn = Termn.Jump(f(v))
+      case branches =>
+        val target = f(Expr.Phi(branches))
+        branches.foreach { br =>
+          br.block.termn = Termn.Jump(target)
+        }
+    }
+  }
 }
 
-trait Fresh[T] {
-  def gen: T
+class Fresh {
+  private var i: Int = 0
+  def apply(prefix: String = "") = {
+    val res = Name.Local(prefix + i)
+    i += 1
+    res
+  }
 }

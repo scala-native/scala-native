@@ -40,13 +40,13 @@ object ShowIR {
     case Termn.Return(value) =>
       s("return ", value)
     case Termn.Jump(name) =>
-      s("jump ", name.id)
+      s("jump ", name.name)
     case Termn.If(cond, thenp, elsep) =>
-      s("if ", cond, " then ", thenp.id, " else ", elsep.id)
+      s("if ", cond, " then ", thenp.name, " else ", elsep.name)
     case Termn.Switch(on, cases, default) =>
       s("switch ", on, " { ",
           r(cases.map(i(_))),
-          i(s("case _ => ", default.id)),
+          i(s("case _ => ", default.name)),
         n(" }"))
   }
 
@@ -101,17 +101,12 @@ object ShowIR {
   }
 
   implicit val showBlock: Show[Block] = Show { entry =>
-    var visited = Set.empty[Block]
-    def loop(bs: Seq[Block]): Show.Result = bs match {
-      case Seq() =>
-        s()
-      case b +: rest =>
-        visited += b
-        val next = (rest ++ b.next).filterNot(visited.contains(_))
-        n(s(b.id, ":", r(b.instrs.map(i(_))), i(b.termn),
-            loop(next)))
+    var shows = List.empty[Show.Result]
+    Block.foreach(entry) { b =>
+      shows = s(b.name, ":", r(b.instrs.map(i(_))), i(b.termn)) :: shows
     }
-    loop(Seq(entry))
+    val first :: last = shows
+    r(last.map(n(_)), pre = first)
   }
 
   implicit val showName: Show[Name] = Show {
@@ -121,7 +116,7 @@ object ShowIR {
   }
 
   implicit val showBranch: Show[Branch] = Show {
-    case Branch(v, block) => s(v, ", ", block.id)
+    case Branch(v, block) => s(v, ", ", block.name)
   }
 
   implicit val showLabeledType: Show[LabeledType] = Show {

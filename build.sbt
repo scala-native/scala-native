@@ -1,5 +1,5 @@
 
-lazy val shared = Seq(
+lazy val common = Seq(
   libraryDependencies += "com.lihaoyi" %% "fastparse" % "0.2.1",
   libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.4" % "test",
   scalaVersion := "2.11.7",
@@ -8,14 +8,14 @@ lazy val shared = Seq(
 )
 
 lazy val ir =
-  project.in(file("ir")).settings(shared: _*).dependsOn(util)
+  project.in(file("ir")).settings(common: _*).dependsOn(util)
 
 lazy val util =
-  project.in(file("util")).settings(shared: _*)
+  project.in(file("util")).settings(common: _*)
 
 lazy val tools =
   project.in(file("tools")).
-    settings(shared: _*).
+    settings(common: _*).
     settings(
       unmanagedSourceDirectories in Compile ++= Seq(
         (scalaSource in (ir, Compile)).value,
@@ -29,7 +29,7 @@ lazy val tools =
 
 lazy val sandbox =
   project.in(file("sandbox")).
-    settings(shared: _*).
+    settings(common: _*).
     settings(
       scalacOptions ++= Seq(
         "-Xplugin:tools/target/scala-2.11/tools_2.11-0.1-SNAPSHOT.jar"

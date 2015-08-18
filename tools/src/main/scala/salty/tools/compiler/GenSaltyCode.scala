@@ -49,7 +49,7 @@ abstract class GenSaltyCode extends PluginComponent {
     val currentEnv = new ScopedVar[Env]
 
     implicit val fresh: ir.Fresh[N.Local] =
-      new ir.Fresh[N.Local] { def gen = currentEnv.fresh() }
+      new ir.Fresh[N.Local] { def apply() = currentEnv.fresh() }
 
     override def run(): Unit = {
       scalaPrimitives.init()
@@ -340,7 +340,7 @@ abstract class GenSaltyCode extends PluginComponent {
                 case _ =>
                   abort("Unknown unary operation code: " + code)
               }
-              val res = currentEnv.fresh()
+              val res = fresh()
               B(instrs :+ I.Assign(res, expr), Tn.Return(res))
             }
 
@@ -375,7 +375,7 @@ abstract class GenSaltyCode extends PluginComponent {
               case _ =>
                 abort("Unknown binary operation code: " + code)
             }
-            val res = currentEnv.fresh()
+            val res = fresh()
             B(instrs :+ I.Assign(res, expr), Tn.Return(res))
           }
 
@@ -412,7 +412,7 @@ abstract class GenSaltyCode extends PluginComponent {
           case (Ty.F32, Ty.F64) =>
             E.Conv(E.Conv.Fpext, value, toty)
         }
-        val res = currentEnv.fresh()
+        val res = fresh()
         B(instrs :+ I.Assign(res, expr), Tn.Return(res))
       }
     }
@@ -465,32 +465,31 @@ abstract class GenSaltyCode extends PluginComponent {
       }
     }
 
-    def genApplyTypeApply(app: Apply) = noimpl /*{
+    def genApplyTypeApply(app: Apply) = {
       val Apply(TypeApply(fun @ Select(obj, _), targs), _) = app
       val ty = genType(targs.head.tpe)
-      val E.Block(instrs, l) = genExpr(obj)
-      val expr = fun.symbol match {
-        case Object_isInstanceOf =>
-          E.Is(l, ty)
-        case Object_asInstanceOf =>
-          E.Conv(E.Conv.Dyncast, l, ty)
-      }
-      val res = currentEnv.fresh()
-      val instr = I.Assign(res, expr)
 
-      E.Block(instrs :+ instr, res)
-    }*/
+      genExpr(obj) chain { (instrs, l) =>
+        val expr = fun.symbol match {
+          case Object_isInstanceOf => E.Is(l, ty)
+          case Object_asInstanceOf => E.Conv(E.Conv.Dyncast, l, ty)
+        }
+        val res = fresh()
+        val instr = I.Assign(res, expr)
+        B(instrs :+ instr, Tn.Return(res))
+      }
+    }
 
     def genApplySuper(app: Apply) = noimpl
 
     // TODO: new array
-    def genApplyNew(app: Apply) = noimpl /*{
+    def genApplyNew(app: Apply) = {
       val Apply(fun @ Select(New(tpt), nme.CONSTRUCTOR), args) = app
       val ctor = fun.symbol
       val tpe = tpt.tpe
 
       genNew(tpe.typeSymbol, ctor, args)
-    }*/
+    }
 
     def genNew(clazz: Symbol, ctor: Symbol, args: List[Tree]) = noimpl /*{
       val argblocks = args.map(genExpr)
@@ -498,7 +497,7 @@ abstract class GenSaltyCode extends PluginComponent {
       val argvals = argblocks.map { case E.Block(_, v) => v }
       val cname = encodeClassName(clazz)
       val ctorname = encodeMethodName(ctor)
-      val res = currentEnv.fresh()
+      val res = fresh()
 
       mkBlock(
         arginstrs :+
@@ -509,7 +508,7 @@ abstract class GenSaltyCode extends PluginComponent {
 
     def genNormalApply(app: Apply) = noimpl /*{
       val Apply(fun @ Select(receiver, _), args) = app
-      val res = currentEnv.fresh()
+      val res = fresh()
       val E.Block(rinstrs, rvalue) = genExpr(receiver)
       val argblocks = args.map(genExpr)
       val arginstrs = argblocks.flatMap { case E.Block(instrs, _) => instrs }
