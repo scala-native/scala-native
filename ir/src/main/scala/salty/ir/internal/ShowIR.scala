@@ -39,13 +39,15 @@ object ShowIR {
   implicit val showTermn: Show[Termn] = Show {
     case Termn.Return(value) =>
       s("return ", value)
+    case Termn.Throw(value) =>
+      s("throw ", value)
     case Termn.Jump(name) =>
       s("jump ", name.name)
     case Termn.If(cond, thenp, elsep) =>
       s("if ", cond, " then ", thenp.name, " else ", elsep.name)
-    case Termn.Switch(on, default, cases) =>
+    case Termn.Switch(on, default, branches) =>
       s("switch ", on, ", ", default.name, " { ",
-          r(cases.map(i(_))),
+          r(branches.map(i(_))),
         n("}"))
   }
 
@@ -62,8 +64,10 @@ object ShowIR {
       s("new ", name)
     case Expr.Call(name, args) =>
       s("call ", name, "(", r(args, sep = ", "), ")")
-    case Expr.Phi(names) =>
-      s("phi {", r(names, sep = ", "), "}")
+    case Expr.Phi(branches) =>
+      s("phi { ",
+          r(branches.map(i(_))),
+        n("}"))
   }
 
   implicit val showVal: Show[Val] = Show {
@@ -89,8 +93,8 @@ object ShowIR {
       s("module ", name, ": ", r(p +: ifaces, sep = ", "), " {",
           r(body.map(i(_))),
         n("}"))
-    case Stat.Field(name, ty) =>
-      s("field ", name, ": ", ty)
+    case Stat.Var(name, ty) =>
+      s("var ", name, ": ", ty)
     case Stat.Declare(name, args, ty) =>
       s("declare ", name, "(", r(args, sep = ", "), "): ", ty)
     case Stat.Define(name, args, ty, block) =>
@@ -101,7 +105,7 @@ object ShowIR {
 
   implicit val showBlock: Show[Block] = Show { entry =>
     var shows = List.empty[Show.Result]
-    entry.foreach { b =>
+    entry.foreachBreadthFirst { b =>
       shows = s(b.name, ":", r(b.instrs.map(i(_))), i(b.termn)) :: shows
     }
     val first :: last = shows.reverse

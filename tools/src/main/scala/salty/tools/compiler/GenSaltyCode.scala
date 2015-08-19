@@ -1,11 +1,11 @@
-  package salty.tools
+package salty.tools
 package compiler
 
 import scala.tools.nsc._
 import scala.tools.nsc.plugins._
 import salty.ir
 import salty.ir.{Expr => E, Type => Ty, Termn => Tn, Instr => I,
-                 Val => V, Name => N, Stat => S, Block => B}
+                 Val => V, Name => N, Stat => S, Block => B, Branch => Br}
 import salty.util.ScopedVar, ScopedVar.withScopedVars
 
 abstract class GenSaltyCode extends PluginComponent {
@@ -109,7 +109,7 @@ abstract class GenSaltyCode extends PluginComponent {
         f <- sym.info.decls
         if !f.isMethod && f.isTerm && !f.isModule
       } yield {
-        S.Field(encodeFieldName(f), genType(f.tpe))
+        S.Var(encodeFieldName(f), genType(f.tpe))
       }).toList
 
     def genMethod(dd: DefDef): ir.Stat = withScopedVars (
@@ -154,11 +154,20 @@ abstract class GenSaltyCode extends PluginComponent {
     def genDefBody(body: Tree): ir.Block = genExpr(body)
 
     def genExpr(tree: Tree): ir.Block = tree match {
+      case vd: ValDef =>
+        assert(!vd.mods.hasFlag(Flag.MUTABLE))
+        genExpr(vd.rhs).merge { (pre, v) =>
+          val name = currentEnv.enter(vd.symbol)
+          B(pre :+ I.Assign(name, v), Tn.Return(V.Unit))
+        }
+
       case t: Try =>
         noimpl
 
-      case t: Throw =>
-        noimpl
+      case Throw(expr) =>
+        genExpr(expr).merge { (pre, v) =>
+          B(pre, Tn.Throw(v))
+        }
 
       case Return(expr) =>
         genExpr(expr).merge { (pre, v) =>
@@ -170,8 +179,8 @@ abstract class GenSaltyCode extends PluginComponent {
           B(pre, Tn.If(v, genExpr(thenp), genExpr(elsep)))
         }
 
-      case Literal(value) =>
-        B(Tn.Return(genLiteral(value)))
+      case lit: Literal =>
+        B(Tn.Return(genValue(lit)))
 
       case app: Apply =>
         genApply(app)
@@ -221,36 +230,75 @@ abstract class GenSaltyCode extends PluginComponent {
         noimpl
     }
 
-    def genLiteral(value: Constant): ir.Val = value.tag match {
-      case NullTag =>
-        V.Null
-      case UnitTag =>
-        V.Unit
-      case BooleanTag =>
-        V.Bool(value.booleanValue)
-      case ByteTag =>
-        V.Number(value.intValue.toString, Ty.I8)
-      case ShortTag | CharTag =>
-        V.Number(value.intValue.toString, Ty.I16)
-      case IntTag =>
-        V.Number(value.intValue.toString, Ty.I32)
-      case LongTag =>
-        V.Number(value.longValue.toString, Ty.I64)
-      case FloatTag =>
-        V.Number(value.floatValue.toString, Ty.F32)
-      case DoubleTag =>
-        V.Number(value.doubleValue.toString, Ty.F64)
-      case StringTag =>
-        ???
-      case ClazzTag =>
-        ???
-      case EnumTag =>
-        ???
+    def genValue(lit: Literal): ir.Val = {
+      val value = lit.value
+      value.tag match {
+        case NullTag =>
+          V.Null
+        case UnitTag =>
+          V.Unit
+        case BooleanTag =>
+          V.Bool(value.booleanValue)
+        case ByteTag =>
+          V.Number(value.intValue.toString, Ty.I8)
+        case ShortTag | CharTag =>
+          V.Number(value.intValue.toString, Ty.I16)
+        case IntTag =>
+          V.Number(value.intValue.toString, Ty.I32)
+        case LongTag =>
+          V.Number(value.longValue.toString, Ty.I64)
+        case FloatTag =>
+          V.Number(value.floatValue.toString, Ty.F32)
+        case DoubleTag =>
+          V.Number(value.doubleValue.toString, Ty.F64)
+        case StringTag =>
+          ???
+        case ClazzTag =>
+          ???
+        case EnumTag =>
+          ???
+      }
     }
 
-    def genBlock(block: Block) = noimpl
+    def genBlock(block: Block) = {
+      val Block(stats, last) = block
+      B.chain((stats :+ last).map(genExpr)) { (pre, values) =>
+        B(pre, Tn.Return(values.last))
+      }
+    }
 
-    def genSwitch(m: Match) = noimpl
+    def genSwitch(m: Match) = {
+      val Match(sel, cases) = m
+
+      genExpr(sel).merge { (instrs, selvalue) =>
+        val defaultBody =
+          cases.collectFirst {
+            case c @ CaseDef(Ident(nme.WILDCARD), _, body) => body
+          }.get
+        val defaultBlock = genExpr(defaultBody)
+        val branches = cases.flatMap { case CaseDef(pat, guard, body) =>
+          val bodyBlock = genExpr(body)
+          val guardedBlock =
+            if (guard.isEmpty) bodyBlock
+            else
+              genExpr(guard).merge { (ginstrs, gv) =>
+                B(ginstrs, Tn.If(gv, bodyBlock, defaultBlock))
+              }
+          val values =
+            pat match {
+              case lit: Literal =>
+                Seq(genValue(lit))
+              case Alternative(alts) =>
+                alts.map { case lit: Literal => genValue(lit) }
+              case _ =>
+                Seq()
+            }
+          values.map(Br(_, guardedBlock))
+        }
+
+        B(instrs, Tn.Switch(selvalue, defaultBlock, branches))
+      }
+    }
 
     def genApplyDynamic(app: ApplyDynamic) = noimpl
 
@@ -483,35 +531,28 @@ abstract class GenSaltyCode extends PluginComponent {
       genNew(tpe.typeSymbol, ctor, args)
     }
 
-    def genNew(clazz: Symbol, ctor: Symbol, args: List[Tree]) = noimpl /*{
-      val argblocks = args.map(genExpr)
-      val arginstrs = argblocks.flatMap { case E.Block(i, _) => i }
-      val argvals = argblocks.map { case E.Block(_, v) => v }
-      val cname = encodeClassName(clazz)
-      val ctorname = encodeMethodName(ctor)
-      val res = fresh()
+    def genNew(clazz: Symbol, ctor: Symbol, args: List[Tree]) =
+      B.chain(args.map(genExpr)) { (instrs, values) =>
+        val cname = encodeClassName(clazz)
+        val ctorname = encodeMethodName(ctor)
+        val res = fresh()
+        B(instrs :+
+          I.Assign(res, E.New(cname)) :+
+          E.Call(N.Nested(cname, ctorname), res +: values),
+          Tn.Return(res))
+      }
 
-      mkBlock(
-        arginstrs :+
-        I.Assign(res, E.New(cname)) :+
-        E.Call(N.Nested(cname, ctorname), res +: argvals),
-        res)
-    }*/
-
-    def genNormalApply(app: Apply) = noimpl /*{
+    def genNormalApply(app: Apply) = {
       val Apply(fun @ Select(receiver, _), args) = app
-      val res = fresh()
-      val E.Block(rinstrs, rvalue) = genExpr(receiver)
-      val argblocks = args.map(genExpr)
-      val arginstrs = argblocks.flatMap { case E.Block(instrs, _) => instrs }
-      val argvalues = argblocks.map { case E.Block(_, value) => value }
-      val mname     = N.Nested(encodeClassName(receiver.symbol),
-                                     encodeMethodName(fun.symbol))
-      val callargs  = rvalue +: argvalues
-      val callinstr = I.Assign(res, E.Call(mname, callargs))
-
-      mkBlock(rinstrs ++ arginstrs :+ callinstr, res)
-    }*/
+      val blocks = (receiver +: args).map(genExpr)
+      B.chain(blocks) { (instrs, values) =>
+        val res = fresh()
+        val mname = N.Nested(encodeClassName(receiver.symbol),
+                             encodeMethodName(fun.symbol))
+        val callinstr = I.Assign(res, E.Call(mname, values))
+        B(instrs :+ callinstr, Tn.Return(res))
+      }
+    }
 
     lazy val genObjectType = Ty.Ptr(N.Global("java.lang.Object"))
 
