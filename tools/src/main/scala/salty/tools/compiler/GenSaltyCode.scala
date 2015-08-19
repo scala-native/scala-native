@@ -12,8 +12,6 @@ abstract class GenSaltyCode extends PluginComponent {
   import global._
   import global.definitions._
 
-  def noimpl = B(Tn.Return(N.Global("noimpl")))
-
   val phaseName = "saltycode"
 
   override def newPhase(prev: Phase): StdPhase =
@@ -22,25 +20,18 @@ abstract class GenSaltyCode extends PluginComponent {
   def debug[T](msg: String)(v: T): T = { println(s"$msg = $v"); v }
 
   class Env {
-    private var freshCounter: Int = 0
     private var used: Set[N] = Set.empty[N]
     private var subst: Map[Symbol, N] = Map.empty[Symbol, N]
 
-    private def freshId(): Int = {
-      val res = freshCounter
-      freshCounter += 1
-      res
-    }
+    val fresh = new ir.Fresh
 
     def enter(sym: Symbol): N = {
-      val name = N.Local(sym.name + "_" + freshId())
+      val name = fresh(sym.name.toString)
       subst += sym -> name
       name
     }
 
     def resolve(sym: Symbol): N = subst(sym)
-
-    def fresh() = N.Local(freshId().toString)
   }
 
   class SaltyCodePhase(prev: Phase) extends StdPhase(prev) {
@@ -48,8 +39,9 @@ abstract class GenSaltyCode extends PluginComponent {
     val currentMethodSym = new ScopedVar[Symbol]
     val currentEnv = new ScopedVar[Env]
 
-    implicit val fresh: ir.Fresh[N.Local] =
-      new ir.Fresh[N.Local] { def apply() = currentEnv.fresh() }
+    implicit def fresh: ir.Fresh = currentEnv.fresh
+
+    def noimpl = B(Tn.Return(N.Global("noimpl")))
 
     override def run(): Unit = {
       scalaPrimitives.init()
@@ -75,7 +67,7 @@ abstract class GenSaltyCode extends PluginComponent {
       println("Input:")
       classDefs.foreach(c => println(c.toString))
       println("\nOutput:")
-      irClasses.foreach(c => println(c.show.build))
+      irClasses.foreach(c => println(c.show))
     }
 
     def genClass(cd: ClassDef): ir.Stat = withScopedVars (
@@ -169,12 +161,12 @@ abstract class GenSaltyCode extends PluginComponent {
         noimpl
 
       case Return(expr) =>
-        genExpr(expr).chain { (pre, v) =>
+        genExpr(expr).merge { (pre, v) =>
           B(pre, Tn.Return(v))
         }
 
       case If(cond, thenp, elsep) =>
-        genExpr(cond).chain { (pre, v) =>
+        genExpr(cond).merge { (pre, v) =>
           B(pre, Tn.If(v, genExpr(thenp), genExpr(elsep)))
         }
 
@@ -332,7 +324,7 @@ abstract class GenSaltyCode extends PluginComponent {
           if (code == POS)
             unaryb
           else
-            unaryb.chain { (instrs, value) =>
+            unaryb.merge { (instrs, value) =>
               val expr = code match {
                 case NEG  => E.Bin(E.Bin.Sub, V.Number("0", resType), value)
                 case NOT  => E.Bin(E.Bin.Xor, V.Number("-1", resType), value)
@@ -349,7 +341,7 @@ abstract class GenSaltyCode extends PluginComponent {
         case List(left, right) =>
           val lblock = genExpr(left)
           val rblock = genExpr(right)
-          lblock.zipChain(rblock) { (instrs, lvalue, rvalue) =>
+          lblock.chain(rblock) { (instrs, lvalue, rvalue) =>
             val expr = code match {
               case ADD  => E.Bin(E.Bin.Add,  lvalue, rvalue)
               case SUB  => E.Bin(E.Bin.Sub,  lvalue, rvalue)
@@ -397,7 +389,7 @@ abstract class GenSaltyCode extends PluginComponent {
       val (fromty, toty) = coercionTypes(code)
 
       if (fromty == toty) block
-      else block.chain { (instrs, value) =>
+      else block.merge { (instrs, value) =>
         val expr = (fromty, toty) match {
           case (Ty.I(lwidth), Ty.I(rwidth)) if lwidth < rwidth =>
             E.Conv(E.Conv.Zext, value, toty)
@@ -469,7 +461,7 @@ abstract class GenSaltyCode extends PluginComponent {
       val Apply(TypeApply(fun @ Select(obj, _), targs), _) = app
       val ty = genType(targs.head.tpe)
 
-      genExpr(obj) chain { (instrs, l) =>
+      genExpr(obj).merge { (instrs, l) =>
         val expr = fun.symbol match {
           case Object_isInstanceOf => E.Is(l, ty)
           case Object_asInstanceOf => E.Conv(E.Conv.Dyncast, l, ty)

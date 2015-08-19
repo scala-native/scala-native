@@ -5,7 +5,7 @@ import salty.util.Show
 import salty.ir.internal.ShowIR
 
 sealed abstract class Tree {
-  def show: Show.Result = ShowIR.showTree(this)
+  def show: String = ShowIR.showTree(this).build
 }
 
 sealed abstract trait Type extends Tree
@@ -39,7 +39,7 @@ object Termn {
   final case class Jump(to: Block) extends Termn
   final case class Return(value: Val) extends Termn
   final case class If(cond: Val, thenb: Block, elseb: Block) extends Termn
-  final case class Switch(on: Val, cases: Seq[Branch], defaultb: Block) extends Termn
+  final case class Switch(on: Val, default: Block, branches: Seq[Branch]) extends Termn
 }
 
 sealed abstract trait Expr extends Instr
@@ -124,22 +124,8 @@ final case class Branch(value: Val, block: Block) extends Tree
 final case class LabeledType(name: Name, ty: Type) extends Tree
 final case class LabeledVal(name: Name, value: Val) extends Tree
 
-final case class Block(name: Name, instrs: Seq[Instr], var termn: Termn) extends Tree {
-  def next: Seq[Block] = termn match {
-    case Termn.Return(_) => Seq()
-    case Termn.Jump(b) => Seq(b)
-    case Termn.If(_, b1, b2) => Seq(b1, b2)
-    case Termn.Switch(_, branches, default) =>
-      branches.map(_.block) :+ default
-  }
-}
-object Block {
-  def apply(termn: Termn)(implicit fresh: Fresh): Block =
-    new Block(fresh("block"), Seq(), termn)
-  def apply(instrs: Seq[Instr], termn: Termn)(implicit fresh: Fresh): Block =
-    new Block(fresh("block"), instrs, termn)
-
-  def foreachNext(block: Block)(f: Block => Unit): Unit = block.termn match {
+final case class Block(name: Name, var instrs: Seq[Instr], var termn: Termn) extends Tree {
+  def foreachNext(f: Block => Unit): Unit = termn match {
     case Termn.Return(_) =>
       ()
     case Termn.Jump(b) =>
@@ -147,48 +133,75 @@ object Block {
     case Termn.If(_, b1, b2) =>
       f(b1)
       f(b2)
-    case Termn.Switch(_, branches, default) =>
-      branches.foreach(br => f(br.block))
+    case Termn.Switch(_, default, branches) =>
       f(default)
+      branches.foreach(br => f(br.block))
   }
 
-  def foreach(block: Block)(f: Block => Unit): Unit = {
+  def foreach(f: Block => Unit): Unit = {
     var visited = List.empty[Block]
     def loop(block: Block): Unit =
-      if (visited.contains(block)) ()
+      if (visited.contains(block))
+        ()
       else {
-        f(block)
         visited = block :: visited
-        foreachNext(block)(loop)
+        f(block)
+        block.foreachNext(loop)
       }
-    loop(block)
+    loop(this)
   }
 
-  def foreachLeaf(block: Block)(f: Block => Unit): Unit =
-    foreach(block) {
+  def foreachLeaf(f: Block => Unit): Unit =
+    foreach {
       case b @ Block(_, _, Termn.Return(_)) =>
         f(b)
       case _ =>
         ()
     }
 
-  def meet(block: Block)(f: Expr => Block): Unit = {
+  def branches: Seq[Branch] = {
     var branches = List.empty[Branch]
-    foreachLeaf(block) {
+    foreachLeaf {
       case b @ Block(_, _, Termn.Return(v)) =>
         branches = Branch(v, b) :: branches
     }
-    branches match {
-      case Nil =>
-        ()
-      case Branch(v, block) :: Nil =>
-        block.termn = Termn.Jump(f(v))
-      case branches =>
-        val target = f(Expr.Phi(branches))
-        branches.foreach { br =>
-          br.block.termn = Termn.Jump(target)
-        }
+    branches
+  }
+
+  def merge(f: (Seq[Instr], Val) => Block)(implicit fresh: Fresh): Block = this match {
+    case Block(_, instrs, Termn.Return(value)) =>
+      f(instrs, value)
+    case _ =>
+      branches match {
+        case Seq() => ()
+        case Seq(Branch(v, block @ Block(_, instrs, _))) =>
+          val Block(_, finstrs, ftermn) = f(Seq(), v)
+          block.instrs = instrs ++ finstrs
+          block.termn = ftermn
+        case branches =>
+          val name = fresh()
+          val instr = Instr.Assign(name, Expr.Phi(branches))
+          val target = f(Seq(instr), name)
+          branches.foreach { br =>
+            br.block.termn = Termn.Jump(target)
+          }
+      }
+      this
+  }
+
+  def chain(other: Block)(f: (Seq[Instr], Val, Val) => Block)
+           (implicit fresh: Fresh): Block =
+    this.merge { (instrs1, v1) =>
+      other.merge { (instrs2, v2) =>
+        f(instrs1 ++ instrs2, v1, v2)
+      }
     }
+}
+object Block {
+  def apply(termn: Termn)(implicit fresh: Fresh): Block =
+    new Block(fresh("block"), Seq(), termn)
+  def apply(instrs: Seq[Instr], termn: Termn)(implicit fresh: Fresh): Block = {
+    new Block(fresh("block"), instrs, termn)
   }
 }
 

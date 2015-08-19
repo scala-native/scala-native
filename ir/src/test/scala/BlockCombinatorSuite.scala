@@ -1,5 +1,5 @@
 import org.scalatest.FunSuite
-import salty.ir._
+import salty.ir._, Termn._, Instr._
 
 class BlockCombinatorSuite extends FunSuite {
   implicit val fresh = new Fresh()
@@ -14,6 +14,7 @@ class BlockCombinatorSuite extends FunSuite {
   val I3 = i(3)
   val I4 = i(4)
   val I5 = i(5)
+  val I6 = i(6)
 
   val V0 = n(0)
   val V1 = n(1)
@@ -21,64 +22,34 @@ class BlockCombinatorSuite extends FunSuite {
   val V3 = n(3)
   val V4 = n(4)
   val V5 = n(5)
-
-  /*test("chain return") {
-    val block = Block(Seq(I1), Termn.Return(V1))
-    val res = block chain { (is, v) =>
-      Block(is :+ I2, Termn.Return(V2))
-    }
-    val Block(Seq(I1, I2), Termn.Return(V2)) = res
-  }
-
-  test("chain jump-return") {
-    val block = Block(Seq(I1), Termn.Jump(Block(Seq(I2), Termn.Return(V2))))
-    val res = block chain { (instrs, v) =>
-      Block(instrs :+ I3, Termn.Return(V3))
-    }
-    val Block(Seq(I1), Termn.Jump(
-      Block(Seq(I2, I3), Termn.Return(V3)))) = res
-  }
-
-  test("chain if-return") {
-    val block =
-      Block(Seq(I1), Termn.If(V1,
-        Block(Seq(I2), Termn.Return(V2)),
-        Block(Seq(I3), Termn.Return(V3))))
-    val res = block chain { (instrs, v) =>
-      Block(instrs :+ I4, Termn.Return(V4))
-    }
-    val Block(Seq(I1), Termn.If(V1,
-      b2 @ Block(Seq(I2), Termn.Jump(j1)),
-      b3 @ Block(Seq(I3), Termn.Jump(j2)))) = res
-    assert(j1 eq j2)
-    val Block(Seq(
-      Instr.Assign(_, Expr.Phi(Seq(Branch(V2, `b2`), Branch(V3, `b3`)))),
-      I4),
-      Termn.Return(V4)) = j1
-  }
-
-  test("initialize by-name") {
-    lazy val block: Block =
-      Block.byName(Seq(I1), Termn.If(V1, block, Block(Seq(I2), Termn.Return(V2))))
-    val Block(_, Termn.If(_, b, _)) = block
-    assert(b eq block)
-  }
-  */
+  val V6 = n(6)
 
   test("meet if") {
-    val b =
-      Block(Seq(I1), Termn.If(V1,
-        Block(Seq(I2), Termn.Return(V2)),
-        Block(Seq(I3), Termn.Return(V3))))
+    val block =
+      Block(Seq(I1), If(V1,
+        Block(Seq(I2), Return(V2)),
+        Block(Seq(I3), Return(V3))))
 
-    println(b.show.build)
-    Block.meet(b) { e =>
+    block.join { e =>
       val name = fresh()
       Block(
-        Seq(Instr.Assign(name, e)),
-        Termn.Return(name))
+        Seq(Assign(name, e)),
+        Return(name))
     }
-    println()
-    println(b.show.build)
+  }
+
+  test("meet switch") {
+    val block =
+      Block(Seq(I1), Switch(V1,
+        Block(Seq(I2), Return(V2)),
+        Seq(Branch(V3, Block(Seq(I3), Return(V3))),
+            Branch(V4, Block(Seq(I4), Return(V4))))))
+
+    block.join { e =>
+      val name = fresh()
+      Block(
+        Seq(Assign(name, e)),
+        Return(name))
+    }
   }
 }
