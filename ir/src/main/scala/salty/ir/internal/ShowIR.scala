@@ -7,14 +7,14 @@ object ShowIR {
                                 Repeat => r, Newline => n}
 
   implicit val showTree: Show[Tree] = Show {
-    case t: Type  => t
-    case t: Termn  => t
-    case i: Instr => i
-    case s: Stat  => s
-    case b: Branch => b
-    case b: Block => b
+    case t: Type         => t
+    case t: Termn        => t
+    case i: Instr        => i
+    case s: Stat         => s
+    case b: Branch       => b
+    case b: Block        => b
     case lt: LabeledType => lt
-    case lv: LabeledVal => lv
+    case lv: LabeledVal  => lv
   }
 
   implicit val showType: Show[Type] = Show {
@@ -37,6 +37,8 @@ object ShowIR {
   }
 
   implicit val showTermn: Show[Termn] = Show {
+    case Termn.Out(value) =>
+      s("out ", value)
     case Termn.Return(value) =>
       s("return ", value)
     case Termn.Throw(value) =>
@@ -60,14 +62,18 @@ object ShowIR {
       s(op.toString.toLowerCase, " ", value, " to ", to)
     case Expr.Is(value, ty) =>
       s(value, " is ", ty)
-    case Expr.New(name) =>
-      s("new ", name)
+    case Expr.Alloc(name) =>
+      s("alloc ", name)
     case Expr.Call(name, args) =>
       s("call ", name, "(", r(args, sep = ", "), ")")
     case Expr.Phi(branches) =>
       s("phi { ",
           r(branches.map(i(_))),
         n("}"))
+    case Expr.Load(ptr) =>
+      s("load ", ptr)
+    case Expr.Store(ptr, value) =>
+      s("store ", ptr, ", ", value)
   }
 
   implicit val showVal: Show[Val] = Show {

@@ -37,6 +37,7 @@ object Instr {
 sealed abstract trait Termn extends Tree
 object Termn {
   sealed abstract class Leaf extends Termn
+  final case class Out(value: Val) extends Leaf
   final case class Return(value: Val) extends Leaf
   final case class Throw(value: Val) extends Leaf
   final case class Jump(to: Block) extends Termn
@@ -85,9 +86,11 @@ object Expr {
     final case object Dyncast  extends Conv.Op
   }
   final case class Is(value: Val, ty: Type) extends Expr
-  final case class New(name: Name) extends Expr
+  final case class Alloc(ty: Type) extends Expr
   final case class Call(name: Name, args: Seq[Val]) extends Expr
   final case class Phi(branches: Seq[Branch]) extends Expr
+  final case class Load(ptr: Val) extends Expr
+  final case class Store(ptr: Val, value: Val) extends Expr
 }
 
 sealed abstract trait Val extends Expr
@@ -179,10 +182,10 @@ final case class Block(name: Name, var instrs: Seq[Instr], var termn: Termn) ext
         ()
     }
 
-  def returnBranches: Seq[Branch] = {
+  def outs: Seq[Branch] = {
     var branches = List.empty[Branch]
     foreachLeaf {
-      case b @ Block(_, _, Termn.Return(v)) =>
+      case b @ Block(_, _, Termn.Out(v)) =>
         branches = Branch(v, b) :: branches
       case _ =>
         ()
@@ -191,11 +194,11 @@ final case class Block(name: Name, var instrs: Seq[Instr], var termn: Termn) ext
   }
 
   def merge(f: (Seq[Instr], Val) => Block)(implicit fresh: Fresh): Block = this match {
-    case Block(_, instrs, Termn.Return(value)) =>
+    case Block(_, instrs, Termn.Out(value)) =>
       val Block(name, finstrs, ftermn) = f(Seq(), value)
       Block(name, instrs ++ finstrs, ftermn)
     case _ =>
-      returnBranches match {
+      outs match {
         case Seq() => ()
         case Seq(Branch(v, block)) =>
           val target = f(Seq(), v)
