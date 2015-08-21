@@ -25,6 +25,7 @@ object Type {
   object F32 extends Type.F(32)
   object F64 extends Type.F(64)
 
+
   final case class Ptr(ty: Type) extends Type
   final case class Array(ty: Type) extends Type
 }
@@ -91,6 +92,8 @@ object Expr {
   final case class Phi(branches: Seq[Branch]) extends Expr
   final case class Load(ptr: Val) extends Expr
   final case class Store(ptr: Val, value: Val) extends Expr
+  final case class Box(value: Val) extends Expr
+  final case class Unbox(value: Val) extends Expr
 }
 
 sealed abstract trait Val extends Expr

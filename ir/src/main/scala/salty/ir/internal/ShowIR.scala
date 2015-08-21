@@ -74,6 +74,10 @@ object ShowIR {
       s("load ", ptr)
     case Expr.Store(ptr, value) =>
       s("store ", ptr, ", ", value)
+    case Expr.Box(value) =>
+      s("box ", value)
+    case Expr.Unbox(value) =>
+      s("unbox ", value)
   }
 
   implicit val showVal: Show[Val] = Show {

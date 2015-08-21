@@ -361,11 +361,9 @@ abstract class GenSaltyCode extends PluginComponent {
           } else if (scalaPrimitives.isPrimitive(sym)) {
             genPrimitiveOp(app)
           } else if (currentRun.runDefinitions.isBox(sym)) {
-            val arg = args.head
-            makePrimitiveBox(arg, arg.tpe)
+            makePrimitiveBox(args.head)
           } else if (currentRun.runDefinitions.isUnbox(sym)) {
-            val arg = args.head
-            makePrimitiveUnbox(arg, app.tpe)
+            makePrimitiveUnbox(args.head)
           } else {
             genNormalApply(app)
           }
@@ -374,9 +372,29 @@ abstract class GenSaltyCode extends PluginComponent {
 
     def genLabelApply(tree: Tree) = noimpl
 
-    def makePrimitiveBox(expr: Tree, ty: Type) = noimpl
+    lazy val primitive2box = Map(
+      ByteTpe   -> N.Global("java.lang.Byte"),
+      CharTpe   -> N.Global("java.lang.Character"),
+      ShortTpe  -> N.Global("java.lang.Short"),
+      IntTpe    -> N.Global("java.lang.Integer"),
+      LongTpe   -> N.Global("java.lang.Long"),
+      FloatTpe  -> N.Global("java.lang.Float"),
+      DoubleTpe -> N.Global("java.lang.Double")
+    )
 
-    def makePrimitiveUnbox(expr: Tree, ty: Type) = noimpl
+    lazy val ctorName = N.Global(nme.CONSTRUCTOR.toString)
+
+    def makePrimitiveBox(expr: Tree) =
+      genExpr(expr).merge { (pre, v) =>
+        val name = fresh()
+        B(pre :+ I.Assign(name, E.Box(v)), Tn.Out(name))
+      }
+
+    def makePrimitiveUnbox(expr: Tree) =
+      genExpr(expr).merge { (pre, v) =>
+        val name = fresh()
+        B(pre :+ I.Assign(name, E.Unbox(v)), Tn.Out(name))
+      }
 
     def genPrimitiveOp(app: Apply): ir.Block = {
       import scalaPrimitives._
