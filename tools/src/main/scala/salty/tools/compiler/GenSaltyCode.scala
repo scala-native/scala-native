@@ -303,8 +303,8 @@ abstract class GenSaltyCode extends PluginComponent {
 
     def genBlock(block: Block) = {
       val Block(stats, last) = block
-      B.chain((stats :+ last).map(genExpr)) { (pre, values) =>
-        B(pre, Tn.Out(values.last))
+      B.chain(stats.map(genExpr)) { (instrs, vals) =>
+        genExpr(last)
       }
     }
 

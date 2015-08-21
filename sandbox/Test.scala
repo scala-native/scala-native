@@ -7,6 +7,8 @@ class C {
       z += x
     else
       z -= y
+    z *= x
+    z /= y
     z
   }
 }

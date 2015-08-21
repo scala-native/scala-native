@@ -202,13 +202,11 @@ final case class Block(name: Name, var instrs: Seq[Instr], var termn: Termn) ext
         case Seq() => ()
         case Seq(Branch(v, block)) =>
           val target = f(Seq(), v)
-          println(s"merging ${this.name} with ${target.name}")
           block.termn = Termn.Jump(target)
         case branches =>
           val name = fresh()
           val instr = Instr.Assign(name, Expr.Phi(branches))
           val target = f(Seq(instr), name)
-          println(s"merging ${this.name} with ${target.name}")
           branches.foreach { br =>
             br.block.termn = Termn.Jump(target)
           }
@@ -218,7 +216,6 @@ final case class Block(name: Name, var instrs: Seq[Instr], var termn: Termn) ext
 
   def chain(other: Block)(f: (Seq[Instr], Val, Val) => Block)
            (implicit fresh: Fresh): Block = {
-    println(s"chaining ${this.name} with ${other.name}")
     this.merge { (instrs1, v1) =>
       other.merge { (instrs2, v2) =>
         f(instrs1 ++ instrs2, v1, v2)
@@ -235,12 +232,6 @@ object Block {
 
   def chain(blocks: Seq[Block])(f: (Seq[Instr], Seq[Val]) => Block)
            (implicit fresh: Fresh): Block = {
-    println(s"-- chaining:")
-    blocks.foreach { b =>
-      println("--")
-      println(b.show)
-    }
-
     def loop(blocks: Seq[Block], instrs: Seq[Instr], values: Seq[Val]): Block =
       blocks match {
         case Seq() =>
@@ -250,10 +241,7 @@ object Block {
             loop(rest, instrs ++ ninstrs, values :+ nv)
           }
       }
-    val res = loop(blocks, Seq(), Seq())
-    println(s"-- res")
-    println(res.show)
-    res
+    loop(blocks, Seq(), Seq())
   }
 }
 
