@@ -27,7 +27,8 @@ object Type {
   object F64 extends Type.F(64)
 
   final case class Ptr(ty: Type) extends Type
-  final case class Array(ty: Type) extends Type
+  final case class Slice(ty: Type) extends Type
+  final case class Array(ty: Type, length: Int) extends Type
 }
 
 sealed abstract trait Instr extends Tree
@@ -87,14 +88,14 @@ object Expr {
     final case object Dyncast  extends Conv.Op
   }
   final case class Is(value: Val, ty: Type) extends Expr
-  final case class Alloc(ty: Type) extends Expr
+  final case class Alloc(ty: Type, elements: Val = Val(1)) extends Expr
   final case class Call(name: Name, args: Seq[Val]) extends Expr
   final case class Phi(branches: Seq[Branch]) extends Expr
   final case class Load(ptr: Val) extends Expr
   final case class Store(ptr: Val, value: Val) extends Expr
-  final case class Elem(ptr: Val, value: Val) extends Expr
   final case class Box(value: Val, ty: Type) extends Expr
   final case class Unbox(value: Val, ty: Type) extends Expr
+  final case class Length(value: Val) extends Expr
 }
 
 sealed abstract trait Val extends Expr
@@ -105,6 +106,10 @@ object Val {
   final case class Bool(value: Boolean) extends Val
   final case class Number(repr: String, ty: Type) extends Val
   final case class Array(vs: Seq[Val]) extends Val
+  final case class Slice(ptr: Val, length: Val) extends Val
+  final case class Elem(ptr: Val, value: Val) extends Val
+
+  def apply(i: Int) = Val.Number(i.toString, Type.I32)
 }
 
 sealed abstract trait Stat extends Tree

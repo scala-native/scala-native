@@ -274,13 +274,16 @@ abstract class GenSaltyCode extends PluginComponent {
           else encodeClassName(tree.symbol)))
 
       case Select(qual, sel) =>
-        genExpr(qual).merge { (pre, v) =>
-          val n1, n2 = fresh()
-          B(pre :+
-            I.Assign(n1, E.Elem(v, encodeFullFieldName(tree.symbol))) :+
-            I.Assign(n2, E.Load(n1)),
-            Tn.Out(n2))
-        }
+        val sym = tree.symbol
+        if (sym.isModule)
+          B(Tn.Out(encodeClassName(sym)))
+        else
+          genExpr(qual).merge { (pre, v) =>
+            val n = fresh()
+            B(pre :+
+              I.Assign(n, E.Load(V.Elem(v, encodeFullFieldName(tree.symbol)))),
+              Tn.Out(n))
+          }
 
       case id: Ident =>
         val sym = id.symbol
@@ -310,10 +313,8 @@ abstract class GenSaltyCode extends PluginComponent {
         lhs match {
           case sel @ Select(qual, _) =>
             genExpr(qual).chain(genExpr(rhs)) { (pre, vqual, vrhs) =>
-              val n = fresh()
               B(pre :+
-                I.Assign(n, E.Elem(vqual, encodeFullFieldName(sel.symbol))) :+
-                E.Store(n, vrhs),
+                E.Store(V.Elem(vqual, encodeFullFieldName(sel.symbol)), vrhs),
                 Tn.Out(V.Unit))
             }
           case id: Ident =>
@@ -324,7 +325,7 @@ abstract class GenSaltyCode extends PluginComponent {
         }
 
       case av: ArrayValue =>
-        noimpl
+        genArrayValue(av)
 
       case m: Match =>
         genSwitch(m)
@@ -394,6 +395,20 @@ abstract class GenSaltyCode extends PluginComponent {
           ???
         case EnumTag =>
           ???
+      }
+    }
+
+    // TODO: insert coercions
+    def genArrayValue(av: ArrayValue) = {
+      val ArrayValue(tpt, elems) = av
+      B.chain(elems.map(genExpr)) { (pre, values) =>
+        val ty = genType(tpt.tpe)
+        val len = values.length
+        val n = fresh()
+        B(pre :+
+          I.Assign(n, E.Alloc(Ty.Array(ty, len))) :+
+          E.Store(n, V.Array(values)),
+          Tn.Out(V.Slice(n, V(len))))
       }
     }
 
@@ -586,7 +601,32 @@ abstract class GenSaltyCode extends PluginComponent {
 
     def genScalaHash(app: Apply, receiver: Tree) = noimpl
 
-    def genArrayOp(app: Apply, code: Int) = noimpl
+    def genArrayOp(app: Apply, code: Int) = {
+      import scalaPrimitives._
+
+      val Apply(Select(array, _), args) = app
+      val blocks = (array +: args).map(genExpr)
+      B.chain(blocks) { (pre, values) =>
+        val arrayvalue +: argvalues = values
+
+        if (scalaPrimitives.isArrayGet(code)) {
+          val n = fresh()
+          B(pre :+
+            I.Assign(n, E.Load(V.Elem(arrayvalue, argvalues(0)))),
+            Tn.Out(n))
+        } else if (scalaPrimitives.isArraySet(code)) {
+          val n = fresh()
+          B(pre :+
+            E.Store(V.Elem(arrayvalue, argvalues(0)), argvalues(1)),
+            Tn.Out(V.Unit))
+        } else {
+          val n = fresh()
+          B(pre :+
+            I.Assign(n, E.Length(arrayvalue)),
+            Tn.Out(n))
+        }
+      }
+    }
 
     def genSynchronized(app: Apply) = noimpl
 
@@ -680,23 +720,39 @@ abstract class GenSaltyCode extends PluginComponent {
 
     def genApplySuper(app: Apply) = noimpl
 
-    // TODO: new array
     def genApplyNew(app: Apply) = {
       val Apply(fun @ Select(New(tpt), nme.CONSTRUCTOR), args) = app
       val ctor = fun.symbol
       val tpe = tpt.tpe
 
-      genNew(tpe.typeSymbol, ctor, args)
+      genType(tpe) match {
+        case ty @ Ty.Slice(_) =>
+          genNewArray(ty, args.head)
+        case classty: N.Global =>
+          genNew(classty, ctor, args)
+        case _ =>
+          abort("unexpected new: " + app)
+      }
     }
 
-    def genNew(clazz: Symbol, ctor: Symbol, args: List[Tree]) =
+    def genNewArray(ty: ir.Type.Slice, length: Tree) = {
+      val Ty.Slice(elemty) = ty
+      val n = fresh()
+
+      genExpr(length).merge { (pre, v) =>
+        B(pre :+
+          I.Assign(n, E.Alloc(elemty, v)),
+          Tn.Out(V.Slice(n, v)))
+      }
+    }
+
+    def genNew(ty: ir.Name.Global, ctorsym: Symbol, args: List[Tree]) =
       B.chain(args.map(genExpr)) { (instrs, values) =>
-        val cname = encodeClassName(clazz)
-        val ctorname = encodeDefName(ctor)
+        val ctor = N.Nested(ty, encodeDefName(ctorsym))
         val res = fresh()
         B(instrs :+
-          I.Assign(res, E.Alloc(cname)) :+
-          E.Call(N.Nested(cname, ctorname), res +: values),
+          I.Assign(res, E.Alloc(ty)) :+
+          E.Call(ctor, res +: values),
           Tn.Out(res))
       }
 
@@ -715,7 +771,7 @@ abstract class GenSaltyCode extends PluginComponent {
     lazy val genObjectType = Ty.Ptr(N.Global("java.lang.Object"))
 
     def genRefType(sym: Symbol, targs: List[Type] = Nil) = sym match {
-      case ArrayClass   => Ty.Array(genType(targs.head))
+      case ArrayClass   => Ty.Slice(genType(targs.head))
       case NullClass    => Ty.Null
       case NothingClass => Ty.Nothing
       case _            => encodeClassName(sym)

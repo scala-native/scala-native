@@ -18,15 +18,16 @@ object ShowIR {
   }
 
   implicit val showType: Show[Type] = Show {
-    case n: Name        => n
-    case Type.Unit      => "unit"
-    case Type.Null      => "null"
-    case Type.Nothing   => "nothing"
-    case Type.Bool      => "bool"
-    case Type.I(w)      => s("i", w.toString)
-    case Type.F(w)      => s("f", w.toString)
-    case Type.Ptr(ty)   => s(ty, "*")
-    case Type.Array(ty) => s("[", ty, "]")
+    case n: Name           => n
+    case Type.Unit         => "unit"
+    case Type.Null         => "null"
+    case Type.Nothing      => "nothing"
+    case Type.Bool         => "bool"
+    case Type.I(w)         => s("i", w.toString)
+    case Type.F(w)         => s("f", w.toString)
+    case Type.Ptr(ty)      => s(ty, "*")
+    case Type.Array(ty, n) => s("[", ty, ", ", n.toString, "]")
+    case Type.Slice(ty)    => s("[", ty, "]")
   }
 
   implicit val showInstr: Show[Instr] = Show {
@@ -62,8 +63,10 @@ object ShowIR {
       s(op.toString.toLowerCase, " ", value, " to ", to)
     case Expr.Is(value, ty) =>
       s(value, " is ", ty)
-    case Expr.Alloc(name) =>
+    case Expr.Alloc(name, Val.Number("1", Type.I32)) =>
       s("alloc ", name)
+    case Expr.Alloc(name, length) =>
+      s("alloc ", name, ", ", length)
     case Expr.Call(name, args) =>
       s("call ", name, "(", r(args, sep = ", "), ")")
     case Expr.Phi(branches) =>
@@ -74,12 +77,13 @@ object ShowIR {
       s("load ", ptr)
     case Expr.Store(ptr, value) =>
       s("store ", ptr, ", ", value)
-    case Expr.Elem(ptr, value) =>
-      s("elem ", ptr, ", ", value)
+
     case Expr.Box(value, ty) =>
       s(value, " box ", ty)
     case Expr.Unbox(value, ty) =>
       s(value, " unbox ", ty)
+    case Expr.Length(value) =>
+      s("length ", value)
   }
 
   implicit val showVal: Show[Val] = Show {
@@ -90,6 +94,8 @@ object ShowIR {
     case Val.Bool(v)          => v.toString
     case Val.Number(repr, ty) => s(repr, (ty: Type))
     case Val.Array(vs)        => s("[", r(vs, sep = ", "), "]")
+    case Val.Slice(len, data) => s("slice(", len, ", ", data, ")")
+    case Val.Elem(ptr, value) => s("elem(", ptr, ", ", value, ")")
   }
 
   implicit val showStat: Show[Stat] = Show {
