@@ -274,7 +274,13 @@ abstract class GenSaltyCode extends PluginComponent {
           else encodeClassName(tree.symbol)))
 
       case Select(qual, sel) =>
-        noimpl
+        genExpr(qual).merge { (pre, v) =>
+          val n1, n2 = fresh()
+          B(pre :+
+            I.Assign(n1, E.Elem(v, encodeFullFieldName(tree.symbol))) :+
+            I.Assign(n2, E.Load(n1)),
+            Tn.Out(n2))
+        }
 
       case id: Ident =>
         val sym = id.symbol
@@ -302,8 +308,14 @@ abstract class GenSaltyCode extends PluginComponent {
 
       case Assign(lhs, rhs) =>
         lhs match {
-          case Select(_, _) =>
-            noimpl
+          case sel @ Select(qual, _) =>
+            genExpr(qual).chain(genExpr(rhs)) { (pre, vqual, vrhs) =>
+              val n = fresh()
+              B(pre :+
+                I.Assign(n, E.Elem(vqual, encodeFullFieldName(sel.symbol))) :+
+                E.Store(n, vrhs),
+                Tn.Out(V.Unit))
+            }
           case id: Ident =>
             genExpr(rhs).merge { (pre, v) =>
               val store = E.Store(currentEnv.resolve(id.symbol), v)
@@ -735,6 +747,10 @@ abstract class GenSaltyCode extends PluginComponent {
       case t: AnnotatedType                => genType(t.underlying)
       case tpe: ErasedValueType            => genRefType(tpe.valueClazz)
     }
+
+
+    def encodeFullFieldName(sym: Symbol) = N.Nested(encodeClassName(sym.owner),
+                                                    encodeFieldName(sym))
 
     def encodeFieldName(sym: Symbol) = N.Global(sym.name.toString)
 

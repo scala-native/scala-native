@@ -74,6 +74,8 @@ object ShowIR {
       s("load ", ptr)
     case Expr.Store(ptr, value) =>
       s("store ", ptr, ", ", value)
+    case Expr.Elem(ptr, value) =>
+      s("elem ", ptr, ", ", value)
     case Expr.Box(value, ty) =>
       s(value, " box ", ty)
     case Expr.Unbox(value, ty) =>

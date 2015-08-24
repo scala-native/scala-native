@@ -92,6 +92,7 @@ object Expr {
   final case class Phi(branches: Seq[Branch]) extends Expr
   final case class Load(ptr: Val) extends Expr
   final case class Store(ptr: Val, value: Val) extends Expr
+  final case class Elem(ptr: Val, value: Val) extends Expr
   final case class Box(value: Val, ty: Type) extends Expr
   final case class Unbox(value: Val, ty: Type) extends Expr
 }
