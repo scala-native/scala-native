@@ -216,23 +216,6 @@ final case class Block(var name: Name,
     this
   }
 
-  def andThen(f: (Val => (Seq[Instr], Termn)))(implicit fresh: Fresh): Block = {
-    outs match {
-      case Seq() =>
-        ()
-      case Seq(Branch(v, block)) =>
-        val (instrs, termn) = f(v)
-        block.instrs = block.instrs ++ instrs
-        block.termn = termn
-      case branches =>
-        this.merge { (pre, v) =>
-          val (instrs, termn) = f(v)
-          Block(pre ++ instrs, termn)
-        }
-    }
-    this
-  }
-
   def chain(other: Block)(f: (Seq[Instr], Val, Val) => Block)
            (implicit fresh: Fresh): Block = {
     this.merge { (instrs1, v1) =>
@@ -240,6 +223,42 @@ final case class Block(var name: Name,
         f(instrs1 ++ instrs2, v1, v2)
       }
     }
+  }
+
+  def simplify: Block = {
+    val usecount = mutable.Map.empty[Name, Int].withDefault(_ => 0)
+    this.foreach { block =>
+      block.foreachNext { next =>
+        usecount(next.name) += 1
+      }
+    }
+    val mergemap = mutable.Map.empty[Name, Block]
+    def fixphi(instr: Instr) = instr match {
+      case Instr.Assign(n, Expr.Phi(branches)) =>
+        Instr.Assign(n, Expr.Phi(
+          branches.map { case br @ Branch(v, block) =>
+            Branch(v, mergemap.get(block.name).getOrElse(block))
+          }
+        ))
+      case _ => instr
+    }
+    this.foreach { block =>
+      def loop() = block match {
+        case Block(_, instrs1, Termn.Jump(next @ Block(_, instrs2, termn)))
+             if usecount(next.name) == 1 =>
+          block.instrs = instrs1 ++ instrs2
+          block.termn = termn
+          mergemap(next.name) = block
+          true
+        case _ =>
+          false
+      }
+      while (loop()) ()
+    }
+    this.foreach { block =>
+      block.instrs = block.instrs.map(fixphi)
+    }
+    this
   }
 }
 object Block {

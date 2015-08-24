@@ -1,9 +1,10 @@
 package test
 
 class C {
-  def foo(x: Any): Any = x match {
-    case x: Int => x
-    case x: Long => x
-    case _ => 0
+  def foo(): Int = {
+    var x: Int = 0
+    while (x < 10)
+      x += 1
+    x
   }
 }
