@@ -718,7 +718,17 @@ abstract class GenSaltyCode extends PluginComponent {
       }
     }
 
-    def genApplySuper(app: Apply) = noimpl
+    def genApplySuper(app: Apply) = {
+      val Apply(fun @ Select(sup, _), args) = app
+      val method = encodeFullDefName(fun.symbol)
+      val n = fresh()
+
+      B.chain(args.map(genExpr)) { (pre, values) =>
+        B(pre :+
+          I.Assign(n, E.Call(method, V.This +: values)),
+          Tn.Out(n))
+      }
+    }
 
     def genApplyNew(app: Apply) = {
       val Apply(fun @ Select(New(tpt), nme.CONSTRUCTOR), args) = app
@@ -809,6 +819,9 @@ abstract class GenSaltyCode extends PluginComponent {
                                                     encodeFieldName(sym))
 
     def encodeFieldName(sym: Symbol) = N.Global(sym.name.toString)
+
+    def encodeFullDefName(sym: Symbol) = N.Nested(encodeClassName(sym.owner),
+                                                  encodeDefName(sym))
 
     def encodeDefName(sym: Symbol) = N.Global(sym.name.toString)
 
