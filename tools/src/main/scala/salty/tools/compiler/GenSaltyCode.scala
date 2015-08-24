@@ -229,34 +229,34 @@ abstract class GenSaltyCode extends PluginComponent {
         genLabel(label)
 
       case vd: ValDef =>
-        genExpr(vd.rhs).merge { (pre, v) =>
+        genExpr(vd.rhs).andThen { v =>
           val isMutable = currentMutableLocalVars.contains(vd.symbol)
           val name = currentEnv.enter(vd.symbol)
           if (!isMutable)
-            B(pre :+ I.Assign(name, v), Tn.Out(V.Unit))
+            (Seq(I.Assign(name, v)),
+             Tn.Out(V.Unit))
           else
-            B(pre :+
-              I.Assign(name, E.Alloc(genType(vd.symbol.tpe))) :+
-              E.Store(name, v),
-              Tn.Out(V.Unit))
+            (Seq(I.Assign(name, E.Alloc(genType(vd.symbol.tpe))),
+                 E.Store(name, v)),
+             Tn.Out(V.Unit))
         }
 
       case If(cond, thenp, elsep) =>
-        genExpr(cond).merge { (pre, v) =>
-          B(pre, Tn.If(v, genExpr(thenp), genExpr(elsep)))
+        genExpr(cond).andThen { v =>
+          (Seq(), Tn.If(v, genExpr(thenp), genExpr(elsep)))
         }
 
       case Return(expr) =>
-        genExpr(expr).merge { (pre, v) =>
-          B(pre, Tn.Return(v))
+        genExpr(expr).andThen { v =>
+          (Seq(), Tn.Return(v))
         }
 
       case t: Try =>
         noimpl
 
       case Throw(expr) =>
-        genExpr(expr).merge { (pre, v) =>
-          B(pre, Tn.Throw(v))
+        genExpr(expr).andThen { v =>
+          (Seq(), Tn.Throw(v))
         }
 
       case app: Apply =>
@@ -302,9 +302,9 @@ abstract class GenSaltyCode extends PluginComponent {
           case Select(_, _) =>
             noimpl
           case id: Ident =>
-            genExpr(rhs).merge { (pre, v) =>
+            genExpr(rhs).andThen { v =>
               val store = E.Store(currentEnv.resolve(id.symbol), v)
-              B(pre :+ store, Tn.Out(V.Unit))
+              (Seq(store), Tn.Out(V.Unit))
             }
         }
 
@@ -381,7 +381,7 @@ abstract class GenSaltyCode extends PluginComponent {
     def genSwitch(m: Match) = {
       val Match(sel, cases) = m
 
-      genExpr(sel).merge { (instrs, selvalue) =>
+      genExpr(sel).andThen { selvalue =>
         val defaultBody =
           cases.collectFirst {
             case c @ CaseDef(Ident(nme.WILDCARD), _, body) => body
@@ -392,8 +392,8 @@ abstract class GenSaltyCode extends PluginComponent {
           val guardedBlock =
             if (guard.isEmpty) bodyBlock
             else
-              genExpr(guard).merge { (ginstrs, gv) =>
-                B(ginstrs, Tn.If(gv, bodyBlock, defaultBlock))
+              genExpr(guard).andThen { gv =>
+                (Seq(), Tn.If(gv, bodyBlock, defaultBlock))
               }
           val values =
             pat match {
@@ -407,7 +407,7 @@ abstract class GenSaltyCode extends PluginComponent {
           values.map(Br(_, guardedBlock))
         }
 
-        B(instrs, Tn.Switch(selvalue, defaultBlock, branches))
+        (Seq(), Tn.Switch(selvalue, defaultBlock, branches))
       }
     }
 
@@ -465,15 +465,15 @@ abstract class GenSaltyCode extends PluginComponent {
     lazy val ctorName = N.Global(nme.CONSTRUCTOR.toString)
 
     def makePrimitiveBox(expr: Tree, tpe: Type) =
-      genExpr(expr).merge { (pre, v) =>
+      genExpr(expr).andThen { v =>
         val name = fresh()
-        B(pre :+ I.Assign(name, E.Box(v, genType(tpe))), Tn.Out(name))
+        (Seq(I.Assign(name, E.Box(v, genType(tpe)))), Tn.Out(name))
       }
 
     def makePrimitiveUnbox(expr: Tree, tpe: Type) =
-      genExpr(expr).merge { (pre, v) =>
+      genExpr(expr).andThen { v =>
         val name = fresh()
-        B(pre :+ I.Assign(name, E.Unbox(v, genType(tpe))), Tn.Out(name))
+        (Seq(I.Assign(name, E.Unbox(v, genType(tpe)))), Tn.Out(name))
       }
 
     def genPrimitiveOp(app: Apply): ir.Block = {
@@ -511,7 +511,7 @@ abstract class GenSaltyCode extends PluginComponent {
           if (code == POS)
             unaryb
           else
-            unaryb.merge { (instrs, value) =>
+            unaryb.andThen { value =>
               val expr = code match {
                 case NEG  => E.Bin(E.Bin.Sub, V.Number("0", resType), value)
                 case NOT  => E.Bin(E.Bin.Xor, V.Number("-1", resType), value)
@@ -520,7 +520,7 @@ abstract class GenSaltyCode extends PluginComponent {
                   abort("Unknown unary operation code: " + code)
               }
               val res = fresh()
-              B(instrs :+ I.Assign(res, expr), Tn.Out(res))
+              (Seq(I.Assign(res, expr)), Tn.Out(res))
             }
 
         // TODO: convert to the common type
@@ -576,7 +576,7 @@ abstract class GenSaltyCode extends PluginComponent {
       val (fromty, toty) = coercionTypes(code)
 
       if (fromty == toty) block
-      else block.merge { (instrs, value) =>
+      else block.andThen { value =>
         val expr = (fromty, toty) match {
           case (Ty.I(lwidth), Ty.I(rwidth)) if lwidth < rwidth =>
             E.Conv(E.Conv.Zext, value, toty)
@@ -592,7 +592,7 @@ abstract class GenSaltyCode extends PluginComponent {
             E.Conv(E.Conv.Fpext, value, toty)
         }
         val res = fresh()
-        B(instrs :+ I.Assign(res, expr), Tn.Out(res))
+        (Seq(I.Assign(res, expr)), Tn.Out(res))
       }
     }
 
@@ -648,14 +648,14 @@ abstract class GenSaltyCode extends PluginComponent {
       val Apply(TypeApply(fun @ Select(obj, _), targs), _) = app
       val ty = genType(targs.head.tpe)
 
-      genExpr(obj).merge { (instrs, l) =>
+      genExpr(obj).andThen { l =>
         val expr = fun.symbol match {
           case Object_isInstanceOf => E.Is(l, ty)
           case Object_asInstanceOf => E.Conv(E.Conv.Dyncast, l, ty)
         }
         val res = fresh()
         val instr = I.Assign(res, expr)
-        B(instrs :+ instr, Tn.Out(res))
+        (Seq(instr), Tn.Out(res))
       }
     }
 

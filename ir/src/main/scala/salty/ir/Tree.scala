@@ -216,6 +216,23 @@ final case class Block(var name: Name,
     this
   }
 
+  def andThen(f: (Val => (Seq[Instr], Termn)))(implicit fresh: Fresh): Block = {
+    outs match {
+      case Seq() =>
+        ()
+      case Seq(Branch(v, block)) =>
+        val (instrs, termn) = f(v)
+        block.instrs = block.instrs ++ instrs
+        block.termn = termn
+      case branches =>
+        this.merge { (pre, v) =>
+          val (instrs, termn) = f(v)
+          Block(pre ++ instrs, termn)
+        }
+    }
+    this
+  }
+
   def chain(other: Block)(f: (Seq[Instr], Val, Val) => Block)
            (implicit fresh: Fresh): Block = {
     this.merge { (instrs1, v1) =>
