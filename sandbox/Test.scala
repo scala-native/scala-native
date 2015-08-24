@@ -1,10 +1,9 @@
 package test
 
 class C {
-  def foo(x: Int, y: Int): Any = {
-    val z = bar(x + y)
-    z
+  def foo(x: Any): Any = x match {
+    case x: Int => x
+    case x: Long => x
+    case _ => 0
   }
-
-  def bar[T](x: T): T = x
 }

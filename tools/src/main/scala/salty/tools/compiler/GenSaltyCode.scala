@@ -19,19 +19,70 @@ abstract class GenSaltyCode extends PluginComponent {
 
   def debug[T](msg: String)(v: T): T = { println(s"$msg = $v"); v }
 
+  def unreachable = abort("unreachable")
+
   class Env {
-    private var used: Set[N] = Set.empty[N]
-    private var subst: Map[Symbol, N] = Map.empty[Symbol, N]
+    var used = Set.empty[ir.Name]
+    var names = Map.empty[Symbol, ir.Name]
 
-    val fresh = new ir.Fresh
+    implicit val fresh = new ir.Fresh {
+      override def apply(prefix: String) = {
+        var name = super.apply(prefix)
+        while (used.contains(name))
+          name = super.apply(prefix)
+        used += name
+        name
+      }
+    }
 
-    def enter(sym: Symbol): N = {
-      val name = fresh(sym.name.toString + "_")
-      subst += sym -> name
+    def enter(sym: Symbol): ir.Name = {
+      var name = N.Local(sym.name.toString)
+      var i = 0
+      while (used.contains(name)) {
+        name = N.Local(sym.name.toString + i)
+        i += 1
+      }
+      used += name
+      names += sym -> name
       name
     }
 
-    def resolve(sym: Symbol): N = subst(sym)
+    def resolve(sym: Symbol): ir.Name =
+      names(sym)
+  }
+
+  class LabelEnv(env: Env, parent: LabelEnv) {
+    var labels = Map.empty[Symbol, (LabelDef, ir.Block)]
+
+    def enterLabel(label: LabelDef): ir.Block = {
+      val sym = label.symbol
+      val name = env.enter(sym)
+      val params = label.params.zip(sym.asMethod.paramLists.head).map {
+        case (treeid, reflsym) =>
+          val name = env.enter(reflsym)
+          env.names += treeid.symbol -> name
+          name
+      }
+      val instrs = params.map { param =>
+        I.Assign(param, E.Phi(Seq()))
+      }
+      val block = B(name, instrs, Tn.Out(V.Unit))
+      labels += sym -> ((label, block))
+      block
+    }
+
+    def enterLabelCall(sym: Symbol, values: Seq[ir.Val], from: ir.Block): Unit = {
+      val block = resolveLabel(sym)
+      block.instrs = block.instrs.zip(values).map {
+        case (I.Assign(n, E.Phi(branches)), value) =>
+          I.Assign(n, E.Phi(branches :+ Br(value, from)))
+        case _ =>
+          unreachable
+      }
+    }
+
+    def resolveLabel(sym: Symbol): ir.Block =
+      labels.get(sym).map(_._2).getOrElse(parent.resolveLabel(sym))
   }
 
   case class CollectMutableLocalVars(var result: Set[Symbol] = Set.empty)
@@ -55,6 +106,7 @@ abstract class GenSaltyCode extends PluginComponent {
     val currentClassSym = new ScopedVar[Symbol]
     val currentMethodSym = new ScopedVar[Symbol]
     val currentEnv = new ScopedVar[Env]
+    val currentLabelEnv = new ScopedVar[LabelEnv]
 
     implicit def fresh: ir.Fresh = currentEnv.fresh
 
@@ -75,16 +127,17 @@ abstract class GenSaltyCode extends PluginComponent {
       }
       val classDefs = collectClassDefs(cunit.body)
 
+      println("Input:")
+      classDefs.foreach(println(_))
+
       val irClasses = classDefs.flatMap { cd =>
         val sym = cd.symbol
         if (isPrimitiveValueClass(sym) || (sym == ArrayClass)) Nil
         else List(genClass(cd))
       }
 
-      println("Input:")
-      classDefs.foreach(c => println(c.toString))
       println("\nOutput:")
-      irClasses.foreach(c => println(c.show))
+      irClasses.foreach(println(_))
     }
 
     def genClass(cd: ClassDef): ir.Stat = withScopedVars (
@@ -117,7 +170,7 @@ abstract class GenSaltyCode extends PluginComponent {
 
     def genClassMethods(stats: List[Tree]): Seq[ir.Stat] =
       stats.flatMap {
-        case dd: DefDef => Seq(genMethod(dd))
+        case dd: DefDef => Seq(genDef(dd))
         case _          => Seq()
       }
 
@@ -129,12 +182,12 @@ abstract class GenSaltyCode extends PluginComponent {
         S.Var(encodeFieldName(f), genType(f.tpe))
       }).toList
 
-    def genMethod(dd: DefDef): ir.Stat = withScopedVars (
+    def genDef(dd: DefDef): ir.Stat = withScopedVars (
       currentMethodSym := dd.symbol
     ) {
       val sym = dd.symbol
-      val name = encodeMethodName(sym)
-      val paramSyms = methodParamSymbols(dd)
+      val name = encodeDefName(sym)
+      val paramSyms = defParamSymbols(dd)
       val ty =
         if (dd.symbol.isClassConstructor) Ty.Unit
         else genType(sym.tpe.resultType)
@@ -154,7 +207,7 @@ abstract class GenSaltyCode extends PluginComponent {
       }
     }
 
-    def methodParamSymbols(dd: DefDef): List[Symbol] = {
+    def defParamSymbols(dd: DefDef): List[Symbol] = {
       val vp = dd.vparamss
       if (vp.isEmpty) Nil else vp.head.map(_.symbol)
     }
@@ -173,7 +226,7 @@ abstract class GenSaltyCode extends PluginComponent {
 
     def genExpr(tree: Tree): ir.Block = tree match {
       case label: LabelDef =>
-        noimpl
+        genLabel(label)
 
       case vd: ValDef =>
         genExpr(vd.rhs).merge { (pre, v) =>
@@ -265,10 +318,32 @@ abstract class GenSaltyCode extends PluginComponent {
         noimpl
 
       case EmptyTree =>
-        noimpl
+        B(Tn.Out(V.Unit))
 
       case _ =>
-        noimpl
+        abort("Unexpected tree in genExpr: " +
+              tree + "/" + tree.getClass + " at: " + tree.pos)
+    }
+
+    def genBlock(block: Block) = withScopedVars (
+      currentLabelEnv := new LabelEnv(currentEnv, currentLabelEnv)
+    ) {
+      val Block(stats, last) = block
+      val res = B.chain(stats.map(genExpr)) { (instrs, vals) =>
+        genExpr(last)
+      }
+      genLabelBodies()
+      res
+    }
+
+    def genLabel(label: LabelDef) =
+      currentLabelEnv.enterLabel(label)
+
+    def genLabelBodies(): Unit = {
+      for ((_, (label, block)) <- currentLabelEnv.labels) {
+        val res = genExpr(label.rhs)
+        block.termn = Tn.Jump(res)
+      }
     }
 
     def genValue(lit: Literal): ir.Val = {
@@ -301,12 +376,7 @@ abstract class GenSaltyCode extends PluginComponent {
       }
     }
 
-    def genBlock(block: Block) = {
-      val Block(stats, last) = block
-      B.chain(stats.map(genExpr)) { (instrs, vals) =>
-        genExpr(last)
-      }
-    }
+
 
     def genSwitch(m: Match) = {
       val Match(sel, cases) = m
@@ -361,16 +431,26 @@ abstract class GenSaltyCode extends PluginComponent {
           } else if (scalaPrimitives.isPrimitive(sym)) {
             genPrimitiveOp(app)
           } else if (currentRun.runDefinitions.isBox(sym)) {
-            makePrimitiveBox(args.head)
+            val arg = args.head
+            makePrimitiveBox(arg, arg.tpe)
           } else if (currentRun.runDefinitions.isUnbox(sym)) {
-            makePrimitiveUnbox(args.head)
+            makePrimitiveUnbox(args.head, app.tpe)
           } else {
             genNormalApply(app)
           }
       }
     }
 
-    def genLabelApply(tree: Tree) = noimpl
+    def genLabelApply(tree: Tree) = tree match {
+      case Apply(fun, Nil) =>
+        currentLabelEnv.resolveLabel(fun.symbol)
+      case Apply(fun, args) =>
+        B.chain(args.map(genExpr)) { (instrs, vals) =>
+          val block = B(instrs, Tn.Jump(currentLabelEnv.resolveLabel(fun.symbol)))
+          currentLabelEnv.enterLabelCall(fun.symbol, vals, block)
+          block
+        }
+    }
 
     lazy val primitive2box = Map(
       ByteTpe   -> N.Global("java.lang.Byte"),
@@ -384,16 +464,16 @@ abstract class GenSaltyCode extends PluginComponent {
 
     lazy val ctorName = N.Global(nme.CONSTRUCTOR.toString)
 
-    def makePrimitiveBox(expr: Tree) =
+    def makePrimitiveBox(expr: Tree, tpe: Type) =
       genExpr(expr).merge { (pre, v) =>
         val name = fresh()
-        B(pre :+ I.Assign(name, E.Box(v)), Tn.Out(name))
+        B(pre :+ I.Assign(name, E.Box(v, genType(tpe))), Tn.Out(name))
       }
 
-    def makePrimitiveUnbox(expr: Tree) =
+    def makePrimitiveUnbox(expr: Tree, tpe: Type) =
       genExpr(expr).merge { (pre, v) =>
         val name = fresh()
-        B(pre :+ I.Assign(name, E.Unbox(v)), Tn.Out(name))
+        B(pre :+ I.Assign(name, E.Unbox(v, genType(tpe))), Tn.Out(name))
       }
 
     def genPrimitiveOp(app: Apply): ir.Block = {
@@ -593,7 +673,7 @@ abstract class GenSaltyCode extends PluginComponent {
     def genNew(clazz: Symbol, ctor: Symbol, args: List[Tree]) =
       B.chain(args.map(genExpr)) { (instrs, values) =>
         val cname = encodeClassName(clazz)
-        val ctorname = encodeMethodName(ctor)
+        val ctorname = encodeDefName(ctor)
         val res = fresh()
         B(instrs :+
           I.Assign(res, E.Alloc(cname)) :+
@@ -607,7 +687,7 @@ abstract class GenSaltyCode extends PluginComponent {
       B.chain(blocks) { (instrs, values) =>
         val res = fresh()
         val mname = N.Nested(encodeClassName(receiver.symbol),
-                             encodeMethodName(fun.symbol))
+                             encodeDefName(fun.symbol))
         val callinstr = I.Assign(res, E.Call(mname, values))
         B(instrs :+ callinstr, Tn.Out(res))
       }
@@ -651,7 +731,7 @@ abstract class GenSaltyCode extends PluginComponent {
 
     def encodeFieldName(sym: Symbol) = N.Global(sym.name.toString)
 
-    def encodeMethodName(sym: Symbol) = N.Global(sym.name.toString)
+    def encodeDefName(sym: Symbol) = N.Global(sym.name.toString)
 
     def encodeClassName(sym: Symbol) = N.Global(sym.fullName.toString)
   }

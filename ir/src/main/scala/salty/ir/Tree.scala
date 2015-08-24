@@ -1,11 +1,12 @@
 package salty
 package ir
 
+import scala.collection.mutable
 import salty.util.Show
 import salty.ir.internal.ShowIR
 
 sealed abstract class Tree {
-  def show: String = ShowIR.showTree(this).build
+  override def toString = ShowIR.showTree(this).build
 }
 
 sealed abstract trait Type extends Tree
@@ -24,7 +25,6 @@ object Type {
   sealed abstract case class F(width: Int) extends Type
   object F32 extends Type.F(32)
   object F64 extends Type.F(64)
-
 
   final case class Ptr(ty: Type) extends Type
   final case class Array(ty: Type) extends Type
@@ -92,8 +92,8 @@ object Expr {
   final case class Phi(branches: Seq[Branch]) extends Expr
   final case class Load(ptr: Val) extends Expr
   final case class Store(ptr: Val, value: Val) extends Expr
-  final case class Box(value: Val) extends Expr
-  final case class Unbox(value: Val) extends Expr
+  final case class Box(value: Val, ty: Type) extends Expr
+  final case class Unbox(value: Val, ty: Type) extends Expr
 }
 
 sealed abstract trait Val extends Expr
@@ -132,7 +132,9 @@ final case class Branch(value: Val, block: Block) extends Tree
 final case class LabeledType(name: Name, ty: Type) extends Tree
 final case class LabeledVal(name: Name, value: Val) extends Tree
 
-final case class Block(name: Name, var instrs: Seq[Instr], var termn: Termn) extends Tree {
+final case class Block(var name: Name,
+                       var instrs: Seq[Instr],
+                       var termn: Termn) extends Tree {
   def foreachNext(f: Block => Unit): Unit = termn match {
     case _: Termn.Leaf =>
       ()
@@ -196,25 +198,22 @@ final case class Block(name: Name, var instrs: Seq[Instr], var termn: Termn) ext
     branches
   }
 
-  def merge(f: (Seq[Instr], Val) => Block)(implicit fresh: Fresh): Block = this match {
-    case Block(_, instrs, Termn.Out(value)) =>
-      val Block(name, finstrs, ftermn) = f(Seq(), value)
-      Block(name, instrs ++ finstrs, ftermn)
-    case _ =>
-      outs match {
-        case Seq() => ()
-        case Seq(Branch(v, block)) =>
-          val target = f(Seq(), v)
-          block.termn = Termn.Jump(target)
-        case branches =>
-          val name = fresh()
-          val instr = Instr.Assign(name, Expr.Phi(branches))
-          val target = f(Seq(instr), name)
-          branches.foreach { br =>
-            br.block.termn = Termn.Jump(target)
-          }
-      }
-      this
+  def merge(f: (Seq[Instr], Val) => Block)(implicit fresh: Fresh): Block = {
+    outs match {
+      case Seq() =>
+        ()
+      case Seq(Branch(v, block)) =>
+        val target = f(Seq(), v)
+        block.termn = Termn.Jump(target)
+      case branches =>
+        val name = fresh()
+        val instr = Instr.Assign(name, Expr.Phi(branches))
+        val target = f(Seq(instr), name)
+        branches.foreach { br =>
+          br.block.termn = Termn.Jump(target)
+        }
+    }
+    this
   }
 
   def chain(other: Block)(f: (Seq[Instr], Val, Val) => Block)
