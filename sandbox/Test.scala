@@ -5,5 +5,9 @@ class A {
 }
 
 class B extends A {
-  override def foo = super.foo * 2
+  override def foo =
+    try throw new Exception
+    finally {
+      println(42)
+    }
 }

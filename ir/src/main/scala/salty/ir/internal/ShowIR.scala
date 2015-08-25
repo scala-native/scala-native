@@ -52,6 +52,10 @@ object ShowIR {
       s("switch ", on, ", ", default.name, " { ",
           r(branches.map(i(_))),
         n("}"))
+    case Termn.Try(body, catchopt, finallyopt) =>
+      s("try ", body.name,
+        catchopt.map(catchb => s(" catch ", catchb.name)).getOrElse(s()),
+        finallyopt.map(finallyb => s(" finally ", finallyb.name)).getOrElse(s()))
   }
 
   implicit val showExpr: Show[Expr] = Show {
@@ -63,12 +67,12 @@ object ShowIR {
       s(op.toString.toLowerCase, " ", value, " to ", to)
     case Expr.Is(value, ty) =>
       s(value, " is ", ty)
-    case Expr.Alloc(name, Val.Number("1", Type.I32)) =>
-      s("alloc ", name)
-    case Expr.Alloc(name, length) =>
-      s("alloc ", name, ", ", length)
-    case Expr.Call(name, args) =>
-      s("call ", name, "(", r(args, sep = ", "), ")")
+    case Expr.Alloc(name, elements) =>
+      s("alloc ", name,
+        elements.map { v => s(", ", v) }.getOrElse(s()))
+    case Expr.Call(name, args, unwind) =>
+      s("call ", name, "(", r(args, sep = ", "), ")",
+        unwind.map { b => s(" unwind ", b.name) }.getOrElse(s()))
     case Expr.Phi(branches) =>
       s("phi { ",
           r(branches.map(i(_))),
@@ -84,6 +88,8 @@ object ShowIR {
       s(value, " unbox ", ty)
     case Expr.Length(value) =>
       s("length ", value)
+    case Expr.Catchpad =>
+      s("catchpad")
   }
 
   implicit val showVal: Show[Val] = Show {

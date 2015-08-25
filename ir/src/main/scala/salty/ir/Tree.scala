@@ -45,6 +45,9 @@ object Termn {
   final case class Jump(to: Block) extends Termn
   final case class If(cond: Val, thenb: Block, elseb: Block) extends Termn
   final case class Switch(on: Val, default: Block, branches: Seq[Branch]) extends Termn
+  final case class Try(body: Block,
+                       catchb: Option[Block],
+                       finallyb: Option[Block]) extends Termn
 }
 
 sealed abstract trait Expr extends Instr
@@ -85,17 +88,19 @@ object Expr {
     final case object Ptrtoint extends Conv.Op
     final case object Inttoptr extends Conv.Op
     final case object Bitcast  extends Conv.Op
-    final case object Dyncast  extends Conv.Op
+    final case object Cast     extends Conv.Op
   }
   final case class Is(value: Val, ty: Type) extends Expr
-  final case class Alloc(ty: Type, elements: Val = Val(1)) extends Expr
-  final case class Call(name: Name, args: Seq[Val]) extends Expr
+  final case class Alloc(ty: Type, elements: Option[Val] = None) extends Expr
+  final case class Call(name: Name, args: Seq[Val],
+                        unwind: Option[Block] = None) extends Expr
   final case class Phi(branches: Seq[Branch]) extends Expr
   final case class Load(ptr: Val) extends Expr
   final case class Store(ptr: Val, value: Val) extends Expr
   final case class Box(value: Val, ty: Type) extends Expr
   final case class Unbox(value: Val, ty: Type) extends Expr
   final case class Length(value: Val) extends Expr
+  final case object Catchpad extends Expr
 }
 
 sealed abstract trait Val extends Expr
@@ -152,6 +157,10 @@ final case class Block(var name: Name,
     case Termn.Switch(_, default, branches) =>
       f(default)
       branches.foreach(br => f(br.block))
+    case Termn.Try(b1, b2, b3) =>
+      f(b1)
+      b2.foreach(f)
+      b3.foreach(f)
   }
 
   def foreach(f: Block => Unit): Unit = {

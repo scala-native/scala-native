@@ -254,8 +254,17 @@ abstract class GenSaltyCode extends PluginComponent {
           B(pre, Tn.Return(v))
         }
 
-      case t: Try =>
-        noimpl
+      case Try(expr, catches, finalizer) if catches.isEmpty && finalizer.isEmpty =>
+        genExpr(expr)
+
+      case Try(expr, catches, finalizer) =>
+        val finallyopt =
+          if (finalizer.isEmpty) None
+          else
+            Some(genExpr(finalizer).merge { (pre, v) =>
+              B(pre, Tn.Out(V.Unit))
+            })
+        B(Tn.Try(genExpr(expr), genCatch(catches), finallyopt))
 
       case Throw(expr) =>
         genExpr(expr).merge { (pre, v) =>
@@ -340,6 +349,38 @@ abstract class GenSaltyCode extends PluginComponent {
         abort("Unexpected tree in genExpr: " +
               tree + "/" + tree.getClass + " at: " + tree.pos)
     }
+
+
+    // TODO: finally
+    def genCatch(catches: List[Tree]) =
+      if (catches.isEmpty) None
+      else Some {
+        val exc = fresh("e")
+        val elseb = B(Tn.Throw(exc))
+        val catchb =
+          catches.foldRight(elseb) { (catchp, elseb) =>
+            val CaseDef(pat, _, body) = catchp
+            val bodyb = genExpr(body)
+            val (nameopt, excty) = pat match {
+              case Typed(Ident(nme.WILDCARD), tpt) =>
+                (None, genType(tpt.tpe))
+              case Ident(nme.WILDCARD) =>
+                (None, genType(ThrowableClass.tpe))
+              case Bind(_, _) =>
+                (Some(currentEnv.enter(pat.symbol)), genType(pat.symbol.tpe))
+            }
+            val n = fresh()
+            B(Seq(I.Assign(n, E.Is(exc, excty))),
+              Tn.If(n,
+                nameopt.map { name =>
+                  B(Seq(I.Assign(name, E.Conv(E.Conv.Cast, exc, excty))),
+                    Tn.Jump(bodyb))
+                }.getOrElse(bodyb),
+                elseb))
+          }
+
+        B(Seq(I.Assign(exc, E.Catchpad)), Tn.Jump(catchb))
+      }
 
     def genBlock(block: Block) = withScopedVars (
       currentLabelEnv := new LabelEnv(currentEnv, currentLabelEnv)
@@ -501,13 +542,13 @@ abstract class GenSaltyCode extends PluginComponent {
     def makePrimitiveBox(expr: Tree, tpe: Type) =
       genExpr(expr).merge { (pre, v) =>
         val name = fresh()
-        B(pre :+ I.Assign(name, E.Box(v, primitive2box(tpe))), Tn.Out(name))
+        B(pre :+ I.Assign(name, E.Box(v, primitive2box(tpe.widen))), Tn.Out(name))
       }
 
     def makePrimitiveUnbox(expr: Tree, tpe: Type) =
       genExpr(expr).merge { (pre, v) =>
         val name = fresh()
-        B(pre :+ I.Assign(name, E.Unbox(v, primitive2box(tpe))), Tn.Out(name))
+        B(pre :+ I.Assign(name, E.Unbox(v, primitive2box(tpe.widen))), Tn.Out(name))
       }
 
     def genPrimitiveOp(app: Apply): ir.Block = {
@@ -710,7 +751,7 @@ abstract class GenSaltyCode extends PluginComponent {
       genExpr(obj).merge { (pre, v) =>
         val expr = fun.symbol match {
           case Object_isInstanceOf => E.Is(v, ty)
-          case Object_asInstanceOf => E.Conv(E.Conv.Dyncast, v, ty)
+          case Object_asInstanceOf => E.Conv(E.Conv.Cast, v, ty)
         }
         val res = fresh()
         val instr = I.Assign(res, expr)
@@ -751,7 +792,7 @@ abstract class GenSaltyCode extends PluginComponent {
 
       genExpr(length).merge { (pre, v) =>
         B(pre :+
-          I.Assign(n, E.Alloc(elemty, v)),
+          I.Assign(n, E.Alloc(elemty, Some(v))),
           Tn.Out(V.Slice(n, v)))
       }
     }
