@@ -81,7 +81,6 @@ object ShowIR {
       s("load ", ptr)
     case Expr.Store(ptr, value) =>
       s("store ", ptr, ", ", value)
-
     case Expr.Box(value, ty) =>
       s(value, " box ", ty)
     case Expr.Unbox(value, ty) =>
@@ -102,6 +101,10 @@ object ShowIR {
     case Val.Array(vs)        => s("[", r(vs, sep = ", "), "]")
     case Val.Slice(len, data) => s("slice(", len, ", ", data, ")")
     case Val.Elem(ptr, value) => s("elem(", ptr, ", ", value, ")")
+    case Val.Class(ty)        => s("class(", ty, ")")
+    case Val.Str(str)         =>
+      val esc = str.replace("\"", "\\\"").replace("\n", "\\n")
+      s("\"", esc, "\"")
   }
 
   implicit val showStat: Show[Stat] = Show {

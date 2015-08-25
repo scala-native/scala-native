@@ -111,8 +111,6 @@ abstract class GenSaltyCode extends PluginComponent {
 
     implicit def fresh: ir.Fresh = currentEnv.fresh
 
-    def noimpl = B(Tn.Out(N.Global("noimpl")))
-
     override def run(): Unit = {
       scalaPrimitives.init()
       super.run()
@@ -340,7 +338,7 @@ abstract class GenSaltyCode extends PluginComponent {
         genSwitch(m)
 
       case fun: Function =>
-        noimpl
+        ???
 
       case EmptyTree =>
         B(Tn.Out(V.Unit))
@@ -370,6 +368,7 @@ abstract class GenSaltyCode extends PluginComponent {
                 (Some(currentEnv.enter(pat.symbol)), genType(pat.symbol.tpe))
             }
             val n = fresh()
+
             B(Seq(I.Assign(n, E.Is(exc, excty))),
               Tn.If(n,
                 nameopt.map { name =>
@@ -397,7 +396,7 @@ abstract class GenSaltyCode extends PluginComponent {
     def genLabel(label: LabelDef) =
       currentLabelEnv.enterLabel(label)
 
-    def genLabelBodies(): Unit = {
+    def genLabelBodies(): Unit =
       for ((_, (label, block, last)) <- currentLabelEnv.labels) {
         val termn = block.termn
         block.termn = Tn.Return(V.Unit)
@@ -407,10 +406,10 @@ abstract class GenSaltyCode extends PluginComponent {
           else rhsblock.merge { (pre, v) => B(termn) }
         block.termn = Tn.Jump(target)
       }
-    }
 
     def genValue(lit: Literal): ir.Val = {
       val value = lit.value
+
       value.tag match {
         case NullTag =>
           V.Null
@@ -430,10 +429,10 @@ abstract class GenSaltyCode extends PluginComponent {
           V.Number(value.floatValue.toString, Ty.F32)
         case DoubleTag =>
           V.Number(value.doubleValue.toString, Ty.F64)
-        case StringTag =>
-          ???
         case ClazzTag =>
-          ???
+          V.Class(genType(value.typeValue))
+        case StringTag =>
+          V.Str(value.stringValue)
         case EnumTag =>
           ???
       }
@@ -442,10 +441,12 @@ abstract class GenSaltyCode extends PluginComponent {
     // TODO: insert coercions
     def genArrayValue(av: ArrayValue) = {
       val ArrayValue(tpt, elems) = av
+
       B.chain(elems.map(genExpr)) { (pre, values) =>
         val ty = genType(tpt.tpe)
         val len = values.length
         val n = fresh()
+
         B(pre :+
           I.Assign(n, E.Alloc(Ty.Array(ty, len))) :+
           E.Store(n, V.Array(values)),
@@ -486,7 +487,7 @@ abstract class GenSaltyCode extends PluginComponent {
       }
     }
 
-    def genApplyDynamic(app: ApplyDynamic) = noimpl
+    def genApplyDynamic(app: ApplyDynamic) = ???
 
     def genApply(app: Apply): ir.Block = {
       val Apply(fun, args) = app
@@ -560,16 +561,16 @@ abstract class GenSaltyCode extends PluginComponent {
 
       if (isArithmeticOp(code) || isLogicalOp(code) || isComparisonOp(code))
         genSimpleOp(app, receiver :: args, code)
-      else if (code == scalaPrimitives.CONCAT)
+      else if (code == CONCAT)
         genStringConcat(app, receiver, args)
       else if (code == HASH)
-        genScalaHash(app, receiver)
+        genHash(app, receiver)
       else if (isArrayOp(code))
         genArrayOp(app, code)
-      else if (code == SYNCHRONIZED)
-        genSynchronized(app)
       else if (isCoercion(code))
         genCoercion(app, receiver, code)
+      else if (code == SYNCHRONIZED)
+        genSynchronized(app)
       else
         abort("Unknown primitive operation: " + sym.fullName + "(" +
               fun.symbol.simpleName + ") " + " at: " + (app.pos))
@@ -638,9 +639,16 @@ abstract class GenSaltyCode extends PluginComponent {
       }
     }
 
-    def genStringConcat(app: Apply, receiver: Tree, args: List[Tree]) = noimpl
+    def genStringConcat(tree: Tree, receiver: Tree, args: List[Tree]) =
+      genExpr(receiver).chain(genExpr(args.head)) { (pre, l, r) =>
+        val n = fresh()
 
-    def genScalaHash(app: Apply, receiver: Tree) = noimpl
+        B(pre :+
+          I.Assign(n, E.Bin(E.Bin.Add, l, r)),
+          Tn.Out(n))
+      }
+
+    def genHash(tree: Tree, receiver: Tree) = ???
 
     def genArrayOp(app: Apply, code: Int) = {
       import scalaPrimitives._
@@ -669,7 +677,14 @@ abstract class GenSaltyCode extends PluginComponent {
       }
     }
 
-    def genSynchronized(app: Apply) = noimpl
+    // TODO: re-evaluate dropping sychcronized
+    // TODO: NPE
+    def genSynchronized(app: Apply) = {
+      val Apply(Select(receiver, _), List(arg)) = app
+      genExpr(receiver).chain(genExpr(arg)) { (pre, v1, v2) =>
+        B(pre, Tn.Out(v2))
+      }
+    }
 
     def genCoercion(app: Apply, receiver: Tree, code: Int) = {
       val block = genExpr(receiver)
@@ -691,8 +706,9 @@ abstract class GenSaltyCode extends PluginComponent {
           case (Ty.F32, Ty.F64) =>
             E.Conv(E.Conv.Fpext, value, toty)
         }
-        val res = fresh()
-        B(pre :+ I.Assign(res, expr), Tn.Out(res))
+        val n = fresh()
+
+        B(pre :+ I.Assign(n, expr), Tn.Out(n))
       }
     }
 
@@ -869,3 +885,4 @@ abstract class GenSaltyCode extends PluginComponent {
     def encodeClassName(sym: Symbol) = N.Global(sym.fullName.toString)
   }
 }
+

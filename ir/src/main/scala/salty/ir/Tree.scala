@@ -113,6 +113,8 @@ object Val {
   final case class Array(vs: Seq[Val]) extends Val
   final case class Slice(ptr: Val, length: Val) extends Val
   final case class Elem(ptr: Val, value: Val) extends Val
+  final case class Class(ty: Type) extends Val
+  final case class Str(value: String) extends Val
 
   def apply(i: Int) = Val.Number(i.toString, Type.I32)
 }
