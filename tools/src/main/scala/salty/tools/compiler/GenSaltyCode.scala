@@ -284,6 +284,8 @@ abstract class GenSaltyCode extends PluginComponent {
         val sym = tree.symbol
         if (sym.isModule)
           B(Tn.Out(encodeClassName(sym)))
+        else if (sym.isStaticMember)
+          genStaticMember(sym)
         else
           genExpr(qual).merge { (pre, v) =>
             val n = fresh()
@@ -434,7 +436,7 @@ abstract class GenSaltyCode extends PluginComponent {
         case StringTag =>
           V.Str(value.stringValue)
         case EnumTag =>
-          ???
+          genStaticMember(value.symbolValue)
       }
     }
 
@@ -834,6 +836,8 @@ abstract class GenSaltyCode extends PluginComponent {
         B(instrs :+ callinstr, Tn.Out(res))
       }
     }
+
+    def genStaticMember(sym: Symbol) = ???
 
     lazy val genObjectType = Ty.Ptr(N.Global("java.lang.Object"))
 
