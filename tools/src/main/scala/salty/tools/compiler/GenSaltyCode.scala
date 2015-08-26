@@ -604,34 +604,40 @@ abstract class GenSaltyCode extends PluginComponent {
         case List(left, right) =>
           val lblock = genExpr(left)
           val rblock = genExpr(right)
-          def chained(f: (ir.Val, ir.Val) => ir.Expr) =
+          def binop(op: E.Bin.Op) =
             lblock.chain(rblock) { (lvalue, rvalue) =>
               val res = fresh()
-              B(Seq(I.Assign(res, f(lvalue, rvalue))),
+              B(Seq(I.Assign(res, E.Bin(op, lvalue, rvalue))),
                 Tn.Out(res))
             }
           code match {
-            case ADD  => chained(E.Bin(E.Bin.Add,  _, _))
-            case SUB  => chained(E.Bin(E.Bin.Sub,  _, _))
-            case MUL  => chained(E.Bin(E.Bin.Mul,  _, _))
-            case DIV  => chained(E.Bin(E.Bin.Div,  _, _))
-            case MOD  => chained(E.Bin(E.Bin.Mod,  _, _))
-            case OR   => chained(E.Bin(E.Bin.Or,   _, _))
-            case XOR  => chained(E.Bin(E.Bin.Xor,  _, _))
-            case AND  => chained(E.Bin(E.Bin.And,  _, _))
-            case LSL  => chained(E.Bin(E.Bin.Shl,  _, _))
-            case LSR  => chained(E.Bin(E.Bin.Lshr, _, _))
-            case ASR  => chained(E.Bin(E.Bin.Ashr, _, _))
-            case EQ   => chained(E.Bin(E.Bin.Eq,   _, _))
-            case NE   => chained(E.Bin(E.Bin.Neq,  _, _))
-            case LT   => chained(E.Bin(E.Bin.Lt,   _, _))
-            case LE   => chained(E.Bin(E.Bin.Lte,  _, _))
-            case GT   => chained(E.Bin(E.Bin.Gt,   _, _))
-            case GE   => chained(E.Bin(E.Bin.Gte,  _, _))
+            case ADD  => binop(E.Bin.Add)
+            case SUB  => binop(E.Bin.Sub)
+            case MUL  => binop(E.Bin.Mul)
+            case DIV  => binop(E.Bin.Div)
+            case MOD  => binop(E.Bin.Mod)
+            case OR   => binop(E.Bin.Or)
+            case XOR  => binop(E.Bin.Xor)
+            case AND  => binop(E.Bin.And)
+            case LSL  => binop(E.Bin.Shl)
+            case LSR  => binop(E.Bin.Lshr)
+            case ASR  => binop(E.Bin.Ashr)
+            case EQ   => binop(E.Bin.Eq)
+            case NE   => binop(E.Bin.Neq)
+            case LT   => binop(E.Bin.Lt)
+            case LE   => binop(E.Bin.Lte)
+            case GT   => binop(E.Bin.Gt)
+            case GE   => binop(E.Bin.Gte)
             case ID   => ???
             case NI   => ???
-            case ZOR  => ???
-            case ZAND => ??? // If(lvalue, rblock, V.Bool(false))
+            case ZOR  =>
+              lblock.merge { lvalue =>
+                B(Tn.If(lvalue, B(Tn.Out(V(true))), rblock))
+              }
+            case ZAND =>
+              lblock.merge { lvalue =>
+                B(Tn.If(lvalue, rblock, B(Tn.Out(V(false)))))
+              }
             case _ =>
               abort("Unknown binary operation code: " + code)
           }

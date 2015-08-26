@@ -117,6 +117,7 @@ object Val {
   final case class Str(value: String) extends Val
 
   def apply(i: Int) = Val.Number(i.toString, Type.I32)
+  def apply(b: Boolean) = Val.Bool(b)
 }
 
 sealed abstract trait Stat extends Tree
