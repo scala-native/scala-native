@@ -215,29 +215,29 @@ final case class Block(var name: Name,
     branches
   }
 
-  def merge(f: (Seq[Instr], Val) => Block)(implicit fresh: Fresh): Block = {
+  def merge(f: Val => Block)(implicit fresh: Fresh): Block = {
     outs match {
       case Seq() =>
         ()
       case Seq(Branch(v, block)) =>
-        val target = f(Seq(), v)
+        val target = f(v)
         block.termn = Termn.Jump(target)
       case branches =>
         val name = fresh()
         val instr = Instr.Assign(name, Expr.Phi(branches))
-        val target = f(Seq(instr), name)
+        val termn = Termn.Jump(Block(Seq(instr), Termn.Jump(f(name))))
         branches.foreach { br =>
-          br.block.termn = Termn.Jump(target)
+          br.block.termn = termn
         }
     }
     this
   }
 
-  def chain(other: Block)(f: (Seq[Instr], Val, Val) => Block)
+  def chain(other: Block)(f: (Val, Val) => Block)
            (implicit fresh: Fresh): Block = {
-    this.merge { (instrs1, v1) =>
-      other.merge { (instrs2, v2) =>
-        f(instrs1 ++ instrs2, v1, v2)
+    this.merge { v1 =>
+      other.merge { v2 =>
+        f(v1, v2)
       }
     }
   }
@@ -285,18 +285,18 @@ object Block {
     new Block(fresh("block"), instrs, termn)
   }
 
-  def chain(blocks: Seq[Block])(f: (Seq[Instr], Seq[Val]) => Block)
+  def chain(blocks: Seq[Block])(f: Seq[Val] => Block)
            (implicit fresh: Fresh): Block = {
-    def loop(blocks: Seq[Block], instrs: Seq[Instr], values: Seq[Val]): Block =
+    def loop(blocks: Seq[Block], values: Seq[Val]): Block =
       blocks match {
         case Seq() =>
-          f(instrs, values)
+          f(values)
         case init +: rest =>
-          init.merge { (ninstrs, nv) =>
-            loop(rest, instrs ++ ninstrs, values :+ nv)
+          init.merge { nv =>
+            loop(rest, values :+ nv)
           }
       }
-    loop(blocks, Seq(), Seq())
+    loop(blocks, Seq())
   }
 }
 
