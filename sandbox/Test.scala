@@ -1,6 +1,6 @@
 package test
 
 class A {
-  def foo(l: Int, r: Long) =
-    l == r
+  def poly[T](x: T): T = x
+  def foo = poly(())
 }

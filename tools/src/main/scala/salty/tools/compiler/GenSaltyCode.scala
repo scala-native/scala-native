@@ -3,6 +3,7 @@ package compiler
 
 import scala.tools.nsc._
 import scala.tools.nsc.plugins._
+import scala.util.{Either, Left, Right}
 import salty.ir
 import salty.ir.{Expr => E, Type => Ty, Termn => Tn, Instr => I,
                  Val => V, Name => N, Stat => S, Block => B, Branch => Br}
@@ -306,7 +307,10 @@ abstract class GenSaltyCode extends PluginComponent
         }
 
       case lit: Literal =>
-        B(Tn.Out(genValue(lit)))
+        genValue(lit) match {
+          case Left(value)  => B(Tn.Out(value))
+          case Right(block) => block
+        }
 
       case block: Block =>
         genBlock(block)
@@ -407,34 +411,34 @@ abstract class GenSaltyCode extends PluginComponent
         block.termn = Tn.Jump(target)
       }
 
-    def genValue(lit: Literal): ir.Val = {
+    def genValue(lit: Literal): Either[ir.Val, ir.Block]= {
       val value = lit.value
 
       value.tag match {
         case NullTag =>
-          V.Null
+          Left(V.Null)
         case UnitTag =>
-          V.Unit
+          Left(V.Unit)
         case BooleanTag =>
-          V.Bool(value.booleanValue)
+          Left(V.Bool(value.booleanValue))
         case ByteTag =>
-          V.Number(value.intValue.toString, Ty.I8)
+          Left(V.Number(value.intValue.toString, Ty.I8))
         case ShortTag | CharTag =>
-          V.Number(value.intValue.toString, Ty.I16)
+          Left(V.Number(value.intValue.toString, Ty.I16))
         case IntTag =>
-          V.Number(value.intValue.toString, Ty.I32)
+          Left(V.Number(value.intValue.toString, Ty.I32))
         case LongTag =>
-          V.Number(value.longValue.toString, Ty.I64)
+          Left(V.Number(value.longValue.toString, Ty.I64))
         case FloatTag =>
-          V.Number(value.floatValue.toString, Ty.F32)
+          Left(V.Number(value.floatValue.toString, Ty.F32))
         case DoubleTag =>
-          V.Number(value.doubleValue.toString, Ty.F64)
+          Left(V.Number(value.doubleValue.toString, Ty.F64))
         case ClazzTag =>
-          V.Class(genType(value.typeValue))
+          Left(V.Class(genType(value.typeValue)))
         case StringTag =>
-          V.Str(value.stringValue)
+          Left(V.Str(value.stringValue))
         case EnumTag =>
-          genStaticMember(value.symbolValue)
+          Right(genStaticMember(value.symbolValue))
       }
     }
 
@@ -443,9 +447,9 @@ abstract class GenSaltyCode extends PluginComponent
       val ArrayValue(tpt, elems) = av
 
       B.chain(elems.map(genExpr)) { values =>
-        val ty = genType(tpt.tpe)
+        val ty  = genType(tpt.tpe)
         val len = values.length
-        val n = fresh()
+        val n   = fresh()
 
         B(Seq(I.Assign(n, E.Alloc(Ty.Array(ty, len))),
               E.Store(n, V.Array(values))),
@@ -470,12 +474,17 @@ abstract class GenSaltyCode extends PluginComponent
               genExpr(guard).merge { gv =>
                 B(Tn.If(gv, bodyBlock, defaultBlock))
               }
-          val values =
+          val values: Seq[ir.Val] =
             pat match {
               case lit: Literal =>
-                Seq(genValue(lit))
+                val Left(value) = genValue(lit)
+                Seq(value)
               case Alternative(alts) =>
-                alts.map { case lit: Literal => genValue(lit) }
+                alts.map {
+                  case lit: Literal =>
+                    val Left(value) = genValue(lit)
+                    value
+                }
               case _ =>
                 Seq()
             }
@@ -588,9 +597,9 @@ abstract class GenSaltyCode extends PluginComponent
           val rblock = genExpr(right)
           def unary(op: E.Bin.Op, lvalue: ir.Val) =
             rblock.merge { rvalue =>
-              val res = fresh()
-              B(Seq(I.Assign(res, E.Bin(op, lvalue, rvalue))),
-                Tn.Out(res))
+              val n = fresh()
+              B(Seq(I.Assign(n, E.Bin(op, lvalue, rvalue))),
+                Tn.Out(n))
             }
           code match {
             case POS  => rblock
@@ -612,9 +621,9 @@ abstract class GenSaltyCode extends PluginComponent
             lblock.chain(rblock) { (lvalue, rvalue) =>
               genCoercion(lvalue, lty, ty).merge { lcoerced =>
                 genCoercion(rvalue, rty, ty).merge { rcoerced =>
-                  val res = fresh()
-                  B(Seq(I.Assign(res, E.Bin(op, lcoerced, rcoerced))),
-                    Tn.Out(res))
+                  val n = fresh()
+                  B(Seq(I.Assign(n, E.Bin(op, lcoerced, rcoerced))),
+                    Tn.Out(n))
                 }
               }
             }
@@ -837,10 +846,10 @@ abstract class GenSaltyCode extends PluginComponent
           case Object_isInstanceOf => E.Is(v, ty)
           case Object_asInstanceOf => E.Conv(E.Conv.Cast, v, ty)
         }
-        val res = fresh()
+        val n = fresh()
 
-        B(Seq(I.Assign(res, expr)),
-          Tn.Out(res))
+        B(Seq(I.Assign(n, expr)),
+          Tn.Out(n))
       }
     }
 
@@ -883,11 +892,11 @@ abstract class GenSaltyCode extends PluginComponent
     def genNew(ty: ir.Name.Global, ctorsym: Symbol, args: List[Tree]) =
       B.chain(args.map(genExpr)) { values =>
         val ctor = N.Nested(ty, encodeDefName(ctorsym))
-        val res = fresh()
+        val n    = fresh()
 
-        B(Seq(I.Assign(res, E.Alloc(ty)),
-              E.Call(ctor, res +: values)),
-          Tn.Out(res))
+        B(Seq(I.Assign(n, E.Alloc(ty)),
+              E.Call(ctor, n +: values)),
+          Tn.Out(n))
       }
 
     def genNormalApply(app: Apply) = {
@@ -900,15 +909,22 @@ abstract class GenSaltyCode extends PluginComponent
     }
 
     def genMethodCall(owner: Symbol, sym: Symbol, values: Seq[ir.Val]) = {
-      val res = fresh()
       val mname = N.Nested(encodeClassName(owner),
                            encodeDefName(sym))
+      val n     = fresh()
 
-      B(Seq(I.Assign(res, E.Call(mname, values))),
-        Tn.Out(res))
+      B(Seq(I.Assign(n, E.Call(mname, values))),
+        Tn.Out(n))
     }
 
-    def genStaticMember(sym: Symbol) = ???
+    def genStaticMember(sym: Symbol) = {
+      val instance = encodeClassName(sym.owner)
+      val method   = encodeDefName(sym)
+      val n        = fresh()
+
+      B(Seq(I.Assign(n, E.Call(N.Nested(instance, method), Seq()))),
+        Tn.Out(n))
+    }
   }
 }
 
