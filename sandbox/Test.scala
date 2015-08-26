@@ -1,6 +1,6 @@
 package test
 
 class A {
-  def foo(l: Float, r: Float) =
-    l > r
+  def foo(l: Int, r: Long) =
+    l == r
 }

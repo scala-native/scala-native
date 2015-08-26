@@ -8,7 +8,9 @@ import salty.ir.{Expr => E, Type => Ty, Termn => Tn, Instr => I,
                  Val => V, Name => N, Stat => S, Block => B, Branch => Br}
 import salty.util.ScopedVar, ScopedVar.withScopedVars
 
-abstract class GenSaltyCode extends PluginComponent {
+abstract class GenSaltyCode extends PluginComponent
+                               with TypeKinds
+                               with NameEncoding {
   import global._
   import global.definitions._
 
@@ -616,6 +618,32 @@ abstract class GenSaltyCode extends PluginComponent {
                 }
               }
             }
+          def equality(negated: Boolean) =
+            genKind(left.tpe) match {
+              case ClassKind(_) =>
+                lblock.chain(rblock) { (lvalue, rvalue) =>
+                  val classEq = genClassEquality(lvalue, rvalue)
+                  if (!negated)
+                    classEq
+                  else
+                    classEq.merge { v =>
+                      val n = fresh()
+                      B(Seq(I.Assign(n, E.Bin(E.Bin.Xor, V(true), v))),
+                        Tn.Out(n))
+                    }
+                }
+              case kind =>
+                val op = if (negated) E.Bin.Neq else E.Bin.Eq
+                bin(E.Bin.Eq, binaryOperationType(lty, rty))
+            }
+          def referenceEquality(negated: Boolean) = {
+            val op = if (negated) E.Bin.Neq else E.Bin.Eq
+            val n = fresh()
+            lblock.chain(rblock) { (lvalue, rvalue) =>
+              B(Seq(I.Assign(n, E.Bin(op, lvalue, rvalue))),
+                Tn.Out(n))
+            }
+          }
           code match {
             // arithmetic & bitwise
             case ADD  => bin(E.Bin.Add,  retty)
@@ -630,13 +658,15 @@ abstract class GenSaltyCode extends PluginComponent {
             case LSR  => bin(E.Bin.Lshr, retty)
             case ASR  => bin(E.Bin.Ashr, retty)
             // comparison
-            case LT   => bin(E.Bin.Lt,  widestNumericPrimitive(lty, rty))
-            case LE   => bin(E.Bin.Lte, widestNumericPrimitive(lty, rty))
-            case GT   => bin(E.Bin.Gt,  widestNumericPrimitive(lty, rty))
-            case GE   => bin(E.Bin.Gte, widestNumericPrimitive(lty, rty))
+            case LT   => bin(E.Bin.Lt,  binaryOperationType(lty, rty))
+            case LE   => bin(E.Bin.Lte, binaryOperationType(lty, rty))
+            case GT   => bin(E.Bin.Gt,  binaryOperationType(lty, rty))
+            case GE   => bin(E.Bin.Gte, binaryOperationType(lty, rty))
             // equality
-            case EQ | NE | ID | NI =>
-              genEquality(code, lblock, rblock, lty, rty)
+            case EQ   => equality(negated = false)
+            case NE   => equality(negated = true)
+            case ID   => referenceEquality(negated = false)
+            case NI   => referenceEquality(negated = true)
             // logical
             case ZOR  =>
               lblock.merge { lvalue =>
@@ -655,7 +685,7 @@ abstract class GenSaltyCode extends PluginComponent {
       }
     }
 
-    def widestNumericPrimitive(lty: ir.Type, rty: ir.Type) = (lty, rty) match {
+    def binaryOperationType(lty: ir.Type, rty: ir.Type) = (lty, rty) match {
       case (Ty.I(lwidth), Ty.I(rwidth)) =>
         if (lwidth >= rwidth) lty else rty
       case (Ty.I(_), Ty.F(_)) =>
@@ -664,13 +694,22 @@ abstract class GenSaltyCode extends PluginComponent {
         lty
       case (Ty.F(lwidth), Ty.F(rwidth)) =>
         if (lwidth >= rwidth) lty else rty
+      case (ty1 , ty2) if ty1 == ty2 =>
+        ty1
       case _ =>
-        abort(s"either $lty or $rty is not a numeric primitive")
+        abort(s"can't perform binary opeation between $lty and $rty")
     }
 
-    def genEquality(code: Int,
-                    lblock: ir.Block, rblock: ir.Block,
-                    lty: ir.Type, rty: ir.Type) = ???
+    def genClassEquality(lvalue: ir.Val, rvalue: ir.Val) = {
+      import scalaPrimitives._
+
+      val n1, n2 = fresh()
+      B(Seq(I.Assign(n1, E.Bin(E.Bin.Eq, lvalue, V.Null))),
+        Tn.If(n1,
+          B(Seq(I.Assign(n2, E.Bin(E.Bin.Eq, rvalue, V.Null))),
+            Tn.Out(n2)),
+          genMethodCall(ObjectClass, Object_equals, Seq(lvalue, rvalue))))
+    }
 
     def genStringConcat(tree: Tree, receiver: Tree, args: List[Tree]) =
       genExpr(receiver).chain(genExpr(args.head)) { (l, r) =>
@@ -856,65 +895,20 @@ abstract class GenSaltyCode extends PluginComponent {
       val blocks = (receiver +: args).map(genExpr)
 
       B.chain(blocks) { values =>
-        val res = fresh()
-        val mname = N.Nested(encodeClassName(receiver.symbol),
-                             encodeDefName(fun.symbol))
-
-        B(Seq(I.Assign(res, E.Call(mname, values))),
-          Tn.Out(res))
+        genMethodCall(receiver.symbol, fun.symbol, values)
       }
     }
 
+    def genMethodCall(owner: Symbol, sym: Symbol, values: Seq[ir.Val]) = {
+      val res = fresh()
+      val mname = N.Nested(encodeClassName(owner),
+                           encodeDefName(sym))
+
+      B(Seq(I.Assign(res, E.Call(mname, values))),
+        Tn.Out(res))
+    }
+
     def genStaticMember(sym: Symbol) = ???
-
-    lazy val genObjectType = Ty.Ptr(N.Global("java.lang.Object"))
-
-    def genRefType(sym: Symbol, targs: List[Type] = Nil) = sym match {
-      case ArrayClass   => Ty.Slice(genType(targs.head))
-      case NullClass    => Ty.Null
-      case NothingClass => Ty.Nothing
-      case _            => encodeClassName(sym)
-    }
-
-    lazy val genPrimitiveType: PartialFunction[Symbol, ir.Type] = {
-      case UnitClass    => Ty.Unit
-      case BooleanClass => Ty.Bool
-      case ByteClass    => Ty.I8
-      case CharClass    => Ty.I16
-      case ShortClass   => Ty.I16
-      case IntClass     => Ty.I32
-      case LongClass    => Ty.I64
-      case FloatClass   => Ty.F32
-      case DoubleClass  => Ty.F64
-    }
-
-    def genPrimitiveOrRefType(sym: Symbol, targs: List[Type] = Nil) =
-      genPrimitiveType.applyOrElse(sym, genRefType((_: Symbol), targs))
-
-    def genType(t: Type): ir.Type = t.normalize match {
-      case ThisType(ArrayClass)            => genObjectType
-      case ThisType(sym)                   => genRefType(sym)
-      case SingleType(_, sym)              => genPrimitiveOrRefType(sym)
-      case ConstantType(_)                 => genType(t.underlying)
-      case TypeRef(_, sym, args)           => genPrimitiveOrRefType(sym, args)
-      case ClassInfoType(_, _, ArrayClass) => abort("ClassInfoType to ArrayClass!")
-      case ClassInfoType(_, _, sym)        => genPrimitiveOrRefType(sym)
-      case t: AnnotatedType                => genType(t.underlying)
-      case tpe: ErasedValueType            => genRefType(tpe.valueClazz)
-    }
-
-
-    def encodeFullFieldName(sym: Symbol) = N.Nested(encodeClassName(sym.owner),
-                                                    encodeFieldName(sym))
-
-    def encodeFieldName(sym: Symbol) = N.Global(sym.name.toString)
-
-    def encodeFullDefName(sym: Symbol) = N.Nested(encodeClassName(sym.owner),
-                                                  encodeDefName(sym))
-
-    def encodeDefName(sym: Symbol) = N.Global(sym.name.toString)
-
-    def encodeClassName(sym: Symbol) = N.Global(sym.fullName.toString)
   }
 }
 

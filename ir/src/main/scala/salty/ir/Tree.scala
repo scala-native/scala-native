@@ -11,18 +11,18 @@ sealed abstract class Tree {
 
 sealed abstract trait Type extends Tree
 object Type {
-  case object Unit    extends Type
   case object Null    extends Type
   case object Nothing extends Type
-  case object Bool    extends Type
 
-  sealed abstract case class I(width: Int) extends Type
+  sealed abstract class Primitive extends Type
+  case object Unit extends Primitive
+  case object Bool extends Primitive
+  sealed abstract case class I(width: Int) extends Primitive
   object I8 extends  Type.I(8)
   object I16 extends Type.I(16)
   object I32 extends Type.I(32)
   object I64 extends Type.I(64)
-
-  sealed abstract case class F(width: Int) extends Type
+  sealed abstract case class F(width: Int) extends Primitive
   object F32 extends Type.F(32)
   object F64 extends Type.F(64)
 
