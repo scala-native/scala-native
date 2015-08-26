@@ -717,7 +717,7 @@ abstract class GenSaltyCode extends PluginComponent
         Tn.If(n1,
           B(Seq(I.Assign(n2, E.Bin(E.Bin.Eq, rvalue, V.Null))),
             Tn.Out(n2)),
-          genMethodCall(ObjectClass, Object_equals, Seq(lvalue, rvalue))))
+          genMethodCall(ObjectClass, Object_equals, lvalue, Seq(rvalue))))
     }
 
     def genStringConcat(tree: Tree, receiver: Tree, args: List[Tree]) =
@@ -728,7 +728,14 @@ abstract class GenSaltyCode extends PluginComponent
           Tn.Out(n))
       }
 
-    def genHash(tree: Tree, receiver: Tree) = ???
+    def genHash(tree: Tree, receiver: Tree) = {
+      val cls    = ScalaRunTimeModule
+      val method = getMember(ScalaRunTimeModule, nme.hash_)
+
+      genExpr(receiver).merge { v =>
+        genMethodCall(cls, method, encodeClassName(cls), Seq(v))
+      }
+    }
 
     def genArrayOp(app: Apply, code: Int) = {
       import scalaPrimitives._
@@ -901,28 +908,29 @@ abstract class GenSaltyCode extends PluginComponent
 
     def genNormalApply(app: Apply) = {
       val Apply(fun @ Select(receiver, _), args) = app
-      val blocks = (receiver +: args).map(genExpr)
 
-      B.chain(blocks) { values =>
-        genMethodCall(receiver.symbol, fun.symbol, values)
+      genExpr(receiver).merge { rvalue =>
+        B.chain(args.map(genExpr)) { argvalues =>
+          genMethodCall(receiver.symbol, fun.symbol, rvalue, argvalues)
+        }
       }
     }
 
-    def genMethodCall(owner: Symbol, sym: Symbol, values: Seq[ir.Val]) = {
+    def genMethodCall(owner: Symbol, sym: Symbol, self: ir.Val, args: Seq[ir.Val]) = {
       val mname = N.Nested(encodeClassName(owner),
                            encodeDefName(sym))
       val n     = fresh()
 
-      B(Seq(I.Assign(n, E.Call(mname, values))),
+      B(Seq(I.Assign(n, E.Call(mname, self +: args))),
         Tn.Out(n))
     }
 
     def genStaticMember(sym: Symbol) = {
-      val instance = encodeClassName(sym.owner)
-      val method   = encodeDefName(sym)
-      val n        = fresh()
+      val cls    = encodeClassName(sym.owner)
+      val method = encodeDefName(sym)
+      val n      = fresh()
 
-      B(Seq(I.Assign(n, E.Call(N.Nested(instance, method), Seq()))),
+      B(Seq(I.Assign(n, E.Call(N.Nested(cls, method), Seq()))),
         Tn.Out(n))
     }
   }
