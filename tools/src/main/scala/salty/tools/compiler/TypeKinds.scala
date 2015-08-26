@@ -11,7 +11,9 @@ trait TypeKinds extends SubComponent with NameEncoding {
   sealed abstract class Kind
   final case class PrimitiveKind(sym: Symbol) extends Kind
   final case class BottomKind(sym: Symbol) extends Kind
-  final case class ClassKind(sym: Symbol) extends Kind
+  final case class ClassKind(sym: Symbol) extends Kind {
+    def name = encodeClassName(sym)
+  }
   final case class ArrayKind(of: Kind) extends Kind
 
   val ObjectKind  = ClassKind(ObjectClass)

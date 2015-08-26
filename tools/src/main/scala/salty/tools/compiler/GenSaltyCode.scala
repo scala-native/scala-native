@@ -717,7 +717,7 @@ abstract class GenSaltyCode extends PluginComponent
         Tn.If(n1,
           B(Seq(I.Assign(n2, E.Bin(E.Bin.Eq, rvalue, V.Null))),
             Tn.Out(n2)),
-          genMethodCall(ObjectClass, Object_equals, lvalue, Seq(rvalue))))
+          genMethodCall(Object_equals, lvalue, Seq(rvalue))))
     }
 
     def genStringConcat(tree: Tree, receiver: Tree, args: List[Tree]) =
@@ -730,10 +730,10 @@ abstract class GenSaltyCode extends PluginComponent
 
     def genHash(tree: Tree, receiver: Tree) = {
       val cls    = ScalaRunTimeModule
-      val method = getMember(ScalaRunTimeModule, nme.hash_)
+      val method = getMember(cls, nme.hash_)
 
       genExpr(receiver).merge { v =>
-        genMethodCall(cls, method, encodeClassName(cls), Seq(v))
+        genMethodCall(method, encodeClassName(cls), Seq(v))
       }
     }
 
@@ -874,19 +874,20 @@ abstract class GenSaltyCode extends PluginComponent
     def genApplyNew(app: Apply) = {
       val Apply(fun @ Select(New(tpt), nme.CONSTRUCTOR), args) = app
       val ctor = fun.symbol
-      val tpe = tpt.tpe
+      val kind = genKind(tpt.tpe)
+      val ty   = toIRType(kind)
 
-      genType(tpe) match {
-        case ty @ Ty.Slice(_) =>
+      kind match {
+        case _: ArrayKind =>
           genNewArray(ty, args.head)
-        case classty: N.Global =>
-          genNew(classty, ctor, args)
-        case _ =>
-          abort("unexpected new: " + app)
+        case ckind: ClassKind =>
+          genNew(ckind.name, ctor, args)
+        case ty =>
+          abort("unexpected new: " + app + "\ngen type: " + ty)
       }
     }
 
-    def genNewArray(ty: ir.Type.Slice, length: Tree) = {
+    def genNewArray(ty: ir.Type, length: Tree) = {
       val Ty.Slice(elemty) = ty
       val n = fresh()
 
@@ -896,7 +897,7 @@ abstract class GenSaltyCode extends PluginComponent
       }
     }
 
-    def genNew(ty: ir.Name.Global, ctorsym: Symbol, args: List[Tree]) =
+    def genNew(ty: ir.Name, ctorsym: Symbol, args: List[Tree]) =
       B.chain(args.map(genExpr)) { values =>
         val ctor = N.Nested(ty, encodeDefName(ctorsym))
         val n    = fresh()
@@ -911,13 +912,13 @@ abstract class GenSaltyCode extends PluginComponent
 
       genExpr(receiver).merge { rvalue =>
         B.chain(args.map(genExpr)) { argvalues =>
-          genMethodCall(receiver.symbol, fun.symbol, rvalue, argvalues)
+          genMethodCall(fun.symbol, rvalue, argvalues)
         }
       }
     }
 
-    def genMethodCall(owner: Symbol, sym: Symbol, self: ir.Val, args: Seq[ir.Val]) = {
-      val mname = N.Nested(encodeClassName(owner),
+    def genMethodCall(sym: Symbol, self: ir.Val, args: Seq[ir.Val]) = {
+      val mname = N.Nested(encodeClassName(sym.owner),
                            encodeDefName(sym))
       val n     = fresh()
 

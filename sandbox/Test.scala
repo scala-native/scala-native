@@ -2,5 +2,5 @@ package test
 
 class A {
   def foo =
-    this.##
+    ((x: Int) => x)(2)
 }
