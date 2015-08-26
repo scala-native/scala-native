@@ -526,13 +526,14 @@ abstract class GenSaltyCode extends PluginComponent {
     }
 
     lazy val primitive2box = Map(
-      ByteTpe   -> N.Global("java.lang.Byte"),
-      CharTpe   -> N.Global("java.lang.Character"),
-      ShortTpe  -> N.Global("java.lang.Short"),
-      IntTpe    -> N.Global("java.lang.Integer"),
-      LongTpe   -> N.Global("java.lang.Long"),
-      FloatTpe  -> N.Global("java.lang.Float"),
-      DoubleTpe -> N.Global("java.lang.Double")
+      BooleanTpe -> N.Global("java.lang.Boolean"),
+      ByteTpe    -> N.Global("java.lang.Byte"),
+      CharTpe    -> N.Global("java.lang.Character"),
+      ShortTpe   -> N.Global("java.lang.Short"),
+      IntTpe     -> N.Global("java.lang.Integer"),
+      LongTpe    -> N.Global("java.lang.Long"),
+      FloatTpe   -> N.Global("java.lang.Float"),
+      DoubleTpe  -> N.Global("java.lang.Double")
     )
 
     lazy val ctorName = N.Global(nme.CONSTRUCTOR.toString)
@@ -578,58 +579,65 @@ abstract class GenSaltyCode extends PluginComponent {
     def genSimpleOp(app: Apply, args: List[Tree], code: Int): ir.Block = {
       import scalaPrimitives._
 
-      val resType = genType(app.tpe)
+      val retty = genType(app.tpe)
 
       args match {
-        case List(unary) =>
-          val unaryb = genExpr(unary)
-          if (code == POS)
-            unaryb
-          else
-            unaryb.merge { value =>
-              val expr = code match {
-                case NEG  => E.Bin(E.Bin.Sub, V.Number("0", resType), value)
-                case NOT  => E.Bin(E.Bin.Xor, V.Number("-1", resType), value)
-                case ZNOT => E.Bin(E.Bin.Xor, V.Bool(true), value)
-                case _ =>
-                  abort("Unknown unary operation code: " + code)
-              }
-              val res = fresh()
-              B(Seq(I.Assign(res, expr)),
-                Tn.Out(res))
-            }
-
-        // TODO: convert to the common type
-        // TODO: eq, ne, ||, &&
-        case List(left, right) =>
-          val lblock = genExpr(left)
+        case List(right) =>
           val rblock = genExpr(right)
-          def binop(op: E.Bin.Op) =
-            lblock.chain(rblock) { (lvalue, rvalue) =>
+          def unary(op: E.Bin.Op, lvalue: ir.Val) =
+            rblock.merge { rvalue =>
               val res = fresh()
               B(Seq(I.Assign(res, E.Bin(op, lvalue, rvalue))),
                 Tn.Out(res))
             }
           code match {
-            case ADD  => binop(E.Bin.Add)
-            case SUB  => binop(E.Bin.Sub)
-            case MUL  => binop(E.Bin.Mul)
-            case DIV  => binop(E.Bin.Div)
-            case MOD  => binop(E.Bin.Mod)
-            case OR   => binop(E.Bin.Or)
-            case XOR  => binop(E.Bin.Xor)
-            case AND  => binop(E.Bin.And)
-            case LSL  => binop(E.Bin.Shl)
-            case LSR  => binop(E.Bin.Lshr)
-            case ASR  => binop(E.Bin.Ashr)
-            case EQ   => binop(E.Bin.Eq)
-            case NE   => binop(E.Bin.Neq)
-            case LT   => binop(E.Bin.Lt)
-            case LE   => binop(E.Bin.Lte)
-            case GT   => binop(E.Bin.Gt)
-            case GE   => binop(E.Bin.Gte)
-            case ID   => ???
-            case NI   => ???
+            case POS  => rblock
+            case NEG  => unary(E.Bin.Sub, V.Number("0", retty))
+            case NOT  => unary(E.Bin.Xor, V.Number("-1", retty))
+            case ZNOT => unary(E.Bin.Xor, V(true))
+            case _ =>
+              abort("Unknown unary operation code: " + code)
+          }
+
+        // TODO: convert to the common type
+        // TODO: eq, ne
+        case List(left, right) =>
+          val lblock = genExpr(left)
+          val rblock = genExpr(right)
+          val lty    = genType(left.tpe)
+          val rty    = genType(right.tpe)
+          def bin(op: E.Bin.Op, ty: ir.Type) =
+            lblock.chain(rblock) { (lvalue, rvalue) =>
+              genCoercion(lvalue, lty, ty).merge { lcoerced =>
+                genCoercion(rvalue, rty, ty).merge { rcoerced =>
+                  val res = fresh()
+                  B(Seq(I.Assign(res, E.Bin(op, lcoerced, rcoerced))),
+                    Tn.Out(res))
+                }
+              }
+            }
+          code match {
+            // arithmetic & bitwise
+            case ADD  => bin(E.Bin.Add,  retty)
+            case SUB  => bin(E.Bin.Sub,  retty)
+            case MUL  => bin(E.Bin.Mul,  retty)
+            case DIV  => bin(E.Bin.Div,  retty)
+            case MOD  => bin(E.Bin.Mod,  retty)
+            case OR   => bin(E.Bin.Or,   retty)
+            case XOR  => bin(E.Bin.Xor,  retty)
+            case AND  => bin(E.Bin.And,  retty)
+            case LSL  => bin(E.Bin.Shl,  retty)
+            case LSR  => bin(E.Bin.Lshr, retty)
+            case ASR  => bin(E.Bin.Ashr, retty)
+            // comparison
+            case LT   => bin(E.Bin.Lt,  widestNumericPrimitive(lty, rty))
+            case LE   => bin(E.Bin.Lte, widestNumericPrimitive(lty, rty))
+            case GT   => bin(E.Bin.Gt,  widestNumericPrimitive(lty, rty))
+            case GE   => bin(E.Bin.Gte, widestNumericPrimitive(lty, rty))
+            // equality
+            case EQ | NE | ID | NI =>
+              genEquality(code, lblock, rblock, lty, rty)
+            // logical
             case ZOR  =>
               lblock.merge { lvalue =>
                 B(Tn.If(lvalue, B(Tn.Out(V(true))), rblock))
@@ -646,6 +654,23 @@ abstract class GenSaltyCode extends PluginComponent {
           abort("Too many arguments for primitive function: " + app)
       }
     }
+
+    def widestNumericPrimitive(lty: ir.Type, rty: ir.Type) = (lty, rty) match {
+      case (Ty.I(lwidth), Ty.I(rwidth)) =>
+        if (lwidth >= rwidth) lty else rty
+      case (Ty.I(_), Ty.F(_)) =>
+        rty
+      case (Ty.F(_), Ty.I(_)) =>
+        lty
+      case (Ty.F(lwidth), Ty.F(rwidth)) =>
+        if (lwidth >= rwidth) lty else rty
+      case _ =>
+        abort(s"either $lty or $rty is not a numeric primitive")
+    }
+
+    def genEquality(code: Int,
+                    lblock: ir.Block, rblock: ir.Block,
+                    lty: ir.Type, rty: ir.Type) = ???
 
     def genStringConcat(tree: Tree, receiver: Tree, args: List[Tree]) =
       genExpr(receiver).chain(genExpr(args.head)) { (l, r) =>
@@ -688,32 +713,33 @@ abstract class GenSaltyCode extends PluginComponent {
       }
     }
 
-    def genCoercion(app: Apply, receiver: Tree, code: Int) = {
+    def genCoercion(app: Apply, receiver: Tree, code: Int): ir.Block = {
       val block = genExpr(receiver)
       val (fromty, toty) = coercionTypes(code)
 
-      if (fromty == toty) block
-      else block.merge { value =>
-        val expr = (fromty, toty) match {
-          case (Ty.I(lwidth), Ty.I(rwidth)) if lwidth < rwidth =>
-            E.Conv(E.Conv.Zext, value, toty)
-          case (Ty.I(lwidth), Ty.I(rwidth)) if lwidth > rwidth =>
-            E.Conv(E.Conv.Trunc, value, toty)
-          case (Ty.I(_), Ty.F(_)) =>
-            E.Conv(E.Conv.Sitofp, value, toty)
-          case (Ty.F(_), Ty.I(_)) =>
-            E.Conv(E.Conv.Fptosi, value, toty)
-          case (Ty.F64, Ty.F32) =>
-            E.Conv(E.Conv.Fptrunc, value, toty)
-          case (Ty.F32, Ty.F64) =>
-            E.Conv(E.Conv.Fpext, value, toty)
-        }
-        val n = fresh()
-
-        B(Seq(I.Assign(n, expr)),
-          Tn.Out(n))
+      block.merge { value =>
+        genCoercion(value, fromty, toty)
       }
     }
+
+    def genCoercion(value: ir.Val, fromty: ir.Type, toty: ir.Type): ir.Block =
+      if (fromty == toty) B(Tn.Out(value))
+      else {
+        val op = (fromty, toty) match {
+          case (Ty.I(lwidth), Ty.I(rwidth))
+            if lwidth < rwidth    => E.Conv.Zext
+          case (Ty.I(lwidth), Ty.I(rwidth))
+            if lwidth > rwidth    => E.Conv.Trunc
+          case (Ty.I(_), Ty.F(_)) => E.Conv.Sitofp
+          case (Ty.F(_), Ty.I(_)) => E.Conv.Fptosi
+          case (Ty.F64, Ty.F32)   => E.Conv.Fptrunc
+          case (Ty.F32, Ty.F64)   => E.Conv.Fpext
+        }
+        val expr = E.Conv(op, value, toty)
+        val n = fresh()
+
+        B(Seq(I.Assign(n, expr)), Tn.Out(n))
+      }
 
     def coercionTypes(code: Int): (ir.Type, ir.Type) = {
       import scalaPrimitives._
