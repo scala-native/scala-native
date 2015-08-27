@@ -56,7 +56,8 @@ abstract class GenSaltyCode extends PluginComponent
   }
 
   class LabelEnv(env: Env) {
-    var labels = Map.empty[Symbol, (LabelDef, ir.Block)]
+    var blocks = Map.empty[Symbol, ir.Block]
+    var params = Map.empty[Symbol, Seq[ir.Val]]
 
     def enterLabel(label: LabelDef): ir.Block = {
       val sym = label.symbol
@@ -71,7 +72,8 @@ abstract class GenSaltyCode extends PluginComponent
         I.Assign(param, E.Phi(Seq()))
       }
       val block = B(name, instrs, Tn.Out(V.Unit))
-      labels += sym -> ((label, block))
+      this.blocks += sym -> block
+      this.params += sym -> params
       block
     }
 
@@ -85,8 +87,9 @@ abstract class GenSaltyCode extends PluginComponent
       }
     }
 
-    def resolveLabel(sym: Symbol): ir.Block =
-      labels(sym)._2
+    def resolveLabel(sym: Symbol): ir.Block = blocks(sym)
+
+    def resolveLabelParams(sym: Symbol): Seq[ir.Val] = params(sym)
   }
 
   class CollectLocalInfo extends Traverser {
@@ -117,6 +120,7 @@ abstract class GenSaltyCode extends PluginComponent
     val currentMethodSym = new ScopedVar[Symbol]
     val currentEnv = new ScopedVar[Env]
     val currentLabelEnv = new ScopedVar[LabelEnv]
+    val currentThis = new ScopedVar[ir.Val]
 
     implicit def fresh: ir.Fresh = currentEnv.fresh
 
@@ -211,7 +215,7 @@ abstract class GenSaltyCode extends PluginComponent
           currentLocalInfo := (new CollectLocalInfo).collect(dd.rhs)
         ) {
           val params = genDefParams(paramSyms)
-          val body = genDefBody(dd.rhs)
+          val body = genDefBody(dd.rhs, params.map(_.name))
           S.Define(name, params, ty, body)
         }
       }
@@ -232,9 +236,27 @@ abstract class GenSaltyCode extends PluginComponent
         ir.LabeledType(name, ty)
       }
 
-    def genDefBody(body: Tree): ir.Block = {
-
-      genExpr(body).simplify
+    def genDefBody(body: Tree, paramValues: Seq[ir.Val]): ir.Block = body match {
+      case Block(List(ValDef(_, nme.THIS, _, _)),
+                 label @ LabelDef(name, Ident(nme.THIS) :: _, rhs)) =>
+        val entry = B(Tn.Out(V.Unit))
+        val values = (V.This +: paramValues).take(label.params.length)
+        currentLabelEnv.enterLabel(label)
+        currentLabelEnv.enterLabelCall(label.symbol, values, entry)
+        val block =
+          withScopedVars (
+            currentThis := currentLabelEnv.resolveLabelParams(label.symbol).head
+          ) {
+            genLabel(label)
+          }
+        entry.termn = Tn.Jump(block)
+        entry.simplify
+      case _ =>
+        withScopedVars (
+          currentThis := V.This
+        ) {
+          genExpr(body).simplify
+        }
     }
 
     def genExpr(tree: Tree): ir.Block = tree match {
@@ -291,7 +313,7 @@ abstract class GenSaltyCode extends PluginComponent
 
       case This(qual) =>
         B(Tn.Out(
-          if (tree.symbol == currentClassSym.get) V.This
+          if (tree.symbol == currentClassSym.get) currentThis
           else encodeClassName(tree.symbol)))
 
       case Select(qual, sel) =>
@@ -329,7 +351,7 @@ abstract class GenSaltyCode extends PluginComponent
         genBlock(block)
 
       case Typed(Super(_, _), _) =>
-        B(Tn.Out(V.This))
+        B(Tn.Out(currentThis))
 
       case Typed(expr, _) =>
         genExpr(expr)
@@ -907,7 +929,7 @@ abstract class GenSaltyCode extends PluginComponent
       val n = fresh()
 
       B.chain(args.map(genExpr)) { values =>
-        B(Seq(I.Assign(n, E.Call(method, V.This +: values))),
+        B(Seq(I.Assign(n, E.Call(method, currentThis.get +: values))),
           Tn.Out(n))
       }
     }
