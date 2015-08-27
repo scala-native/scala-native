@@ -1,6 +1,7 @@
 package salty.tools
 package compiler
 
+import scala.collection.mutable.ListBuffer
 import scala.tools.nsc._
 import scala.tools.nsc.plugins._
 import scala.util.{Either, Left, Right}
@@ -10,6 +11,7 @@ import salty.ir.{Expr => E, Type => Ty, Termn => Tn, Instr => I,
 import salty.util.ScopedVar, ScopedVar.withScopedVars
 
 abstract class GenSaltyCode extends PluginComponent
+                               with GenIRFiles
                                with TypeKinds
                                with NameEncoding {
   import global._
@@ -138,18 +140,18 @@ abstract class GenSaltyCode extends PluginComponent
         }
       }
       val classDefs = collectClassDefs(cunit.body)
+      val generatedIR = ListBuffer.empty[(Symbol, ir.Stat)]
 
       classDefs.foreach { cd =>
         val sym = cd.symbol
         if (isPrimitiveValueClass(sym) || (sym == ArrayClass))
           ()
-        else {
-          println("Input:")
-          println(cd)
-          println("\nOutput:")
-          println(genClass(cd))
-        }
+        else
+          generatedIR += ((sym, genClass(cd)))
       }
+
+      for ((sym, stat) <- generatedIR)
+        genIRFile(cunit, sym, stat)
     }
 
     def genClass(cd: ClassDef): ir.Stat = withScopedVars (
