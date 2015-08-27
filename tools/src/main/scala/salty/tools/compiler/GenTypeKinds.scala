@@ -5,7 +5,7 @@ import scala.tools.nsc._
 import salty.ir
 import salty.ir.{Type => Ty}
 
-trait TypeKinds extends SubComponent with NameEncoding {
+trait GenTypeKinds extends SubComponent with GenNameEncoding {
   import global._, definitions._
 
   sealed abstract class Kind

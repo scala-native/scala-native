@@ -5,7 +5,7 @@ import scala.tools.nsc._
 import salty.ir
 import salty.ir.{Name => N}
 
-trait NameEncoding extends SubComponent {
+trait GenNameEncoding extends SubComponent {
   import global._, definitions._
 
   def encodeFullFieldName(sym: Symbol) = N.Nested(encodeClassName(sym.owner),

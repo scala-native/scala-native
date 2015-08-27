@@ -12,8 +12,8 @@ import salty.util.ScopedVar, ScopedVar.withScopedVars
 
 abstract class GenSaltyCode extends PluginComponent
                                with GenIRFiles
-                               with TypeKinds
-                               with NameEncoding {
+                               with GenTypeKinds
+                               with GenNameEncoding {
   import global._
   import global.definitions._
   import global.treeInfo.hasSynthCaseSymbol
