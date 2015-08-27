@@ -55,23 +55,24 @@ object Expr {
   final case class Bin(op: Bin.Op, left: Val, right: Val) extends Expr
   object Bin {
     sealed abstract class Op
-    final case object Add   extends Bin.Op
-    final case object Sub   extends Bin.Op
-    final case object Mul   extends Bin.Op
-    final case object Div   extends Bin.Op
-    final case object Mod   extends Bin.Op
-    final case object Shl   extends Bin.Op
-    final case object Lshr  extends Bin.Op
-    final case object Ashr  extends Bin.Op
-    final case object And   extends Bin.Op
-    final case object Or    extends Bin.Op
-    final case object Xor   extends Bin.Op
-    final case object Eq    extends Bin.Op
-    final case object Neq   extends Bin.Op
-    final case object Lt    extends Bin.Op
-    final case object Lte   extends Bin.Op
-    final case object Gt    extends Bin.Op
-    final case object Gte   extends Bin.Op
+    final case object Add    extends Bin.Op
+    final case object Sub    extends Bin.Op
+    final case object Mul    extends Bin.Op
+    final case object Div    extends Bin.Op
+    final case object Mod    extends Bin.Op
+    final case object Shl    extends Bin.Op
+    final case object Lshr   extends Bin.Op
+    final case object Ashr   extends Bin.Op
+    final case object And    extends Bin.Op
+    final case object Or     extends Bin.Op
+    final case object Xor    extends Bin.Op
+    final case object Eq     extends Bin.Op
+    final case object Equals extends Bin.Op
+    final case object Neq    extends Bin.Op
+    final case object Lt     extends Bin.Op
+    final case object Lte    extends Bin.Op
+    final case object Gt     extends Bin.Op
+    final case object Gte    extends Bin.Op
   }
   final case class Conv(op: Conv.Op, value: Val, to: Type) extends Expr
   object Conv {
