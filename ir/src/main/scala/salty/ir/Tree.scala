@@ -1,30 +1,35 @@
-package salty
-package ir
+package salty.ir
 
 import scala.collection.mutable
 import salty.util.Show
-import salty.ir.internal.ShowIR
+import salty.ir.internal.{Serializer, ShowIR}
 
-sealed abstract class Tree {
+sealed abstract class Tree extends Serializable {
   override def toString = ShowIR.showTree(this).build
+  def serialize: Array[Byte] = Serializer.serialize(this)
+}
+object Tree {
+  def deserialize(bytes: Array[Byte]): Tree = Serializer.deserialize(bytes)
 }
 
 sealed abstract trait Type extends Tree
 object Type {
-  case object Null    extends Type
-  case object Nothing extends Type
+  final case object Null    extends Type
+  final case object Nothing extends Type
 
   sealed abstract class Primitive extends Type
-  case object Unit extends Primitive
-  case object Bool extends Primitive
+  final object Unit extends Primitive
+  final object Bool extends Primitive
+
   sealed abstract case class I(width: Int) extends Primitive
-  object I8 extends  Type.I(8)
-  object I16 extends Type.I(16)
-  object I32 extends Type.I(32)
-  object I64 extends Type.I(64)
+  final object I8 extends  Type.I(8)
+  final object I16 extends Type.I(16)
+  final object I32 extends Type.I(32)
+  final object I64 extends Type.I(64)
+
   sealed abstract case class F(width: Int) extends Primitive
-  object F32 extends Type.F(32)
-  object F64 extends Type.F(64)
+  final object F32 extends Type.F(32)
+  final object F64 extends Type.F(64)
 
   final case class Ptr(ty: Type) extends Type
   final case class Slice(ty: Type) extends Type
@@ -44,7 +49,7 @@ object Termn {
   final case class Throw(value: Val) extends Leaf
   final case class Jump(to: Block) extends Termn
   final case class If(cond: Val, thenb: Block, elseb: Block) extends Termn
-  final case class Switch(on: Val, default: Block, branches: Seq[Branch]) extends Termn
+  final case class Switch(on: Val, default: Block, branches: List[Branch]) extends Termn
   final case class Try(body: Block,
                        catchb: Option[Block],
                        finallyb: Option[Block]) extends Termn
@@ -93,9 +98,9 @@ object Expr {
   }
   final case class Is(value: Val, ty: Type) extends Expr
   final case class Alloc(ty: Type, elements: Option[Val] = None) extends Expr
-  final case class Call(name: Name, args: Seq[Val],
+  final case class Call(name: Name, args: List[Val],
                         unwind: Option[Block] = None) extends Expr
-  final case class Phi(branches: Seq[Branch]) extends Expr
+  final case class Phi(branches: List[Branch]) extends Expr
   final case class Load(ptr: Val) extends Expr
   final case class Store(ptr: Val, value: Val) extends Expr
   final case class Box(value: Val, ty: Type) extends Expr
@@ -106,12 +111,12 @@ object Expr {
 
 sealed abstract trait Val extends Expr
 object Val {
-  case object Null extends Val
-  case object Unit extends Val
-  case object This extends Val
+  final case object Null extends Val
+  final case object Unit extends Val
+  final case object This extends Val
   final case class Bool(value: Boolean) extends Val
   final case class Number(repr: String, ty: Type) extends Val
-  final case class Array(vs: Seq[Val]) extends Val
+  final case class Array(vs: List[Val]) extends Val
   final case class Slice(ptr: Val, length: Val) extends Val
   final case class Elem(ptr: Val, value: Val) extends Val
   final case class Class(ty: Type) extends Val
@@ -124,15 +129,15 @@ object Val {
 sealed abstract trait Stat extends Tree
 object Stat {
   final case class Class(name: Name, parent: Name,
-                         interfaces: Seq[Name], body: Seq[Stat]) extends Stat
-  final case class Interface(name: Name, interfaces: Seq[Name],
-                             body: Seq[Stat]) extends Stat
+                         interfaces: List[Name], body: List[Stat]) extends Stat
+  final case class Interface(name: Name, interfaces: List[Name],
+                             body: List[Stat]) extends Stat
   final case class Module(name: Name, parent: Name,
-                          interfaces: Seq[Name], body: Seq[Stat]) extends Stat
+                          interfaces: List[Name], body: List[Stat]) extends Stat
   final case class Var(name: Name, ty: Type) extends Stat
-  final case class Declare(name: Name, params: Seq[Type],
+  final case class Declare(name: Name, params: List[Type],
                            ty: Type) extends Stat
-  final case class Define(name: Name, params: Seq[LabeledType],
+  final case class Define(name: Name, params: List[LabeledType],
                           ty: Type, body: Block) extends Stat
 }
 
@@ -148,7 +153,7 @@ final case class LabeledType(name: Name, ty: Type) extends Tree
 final case class LabeledVal(name: Name, value: Val) extends Tree
 
 final case class Block(var name: Name,
-                       var instrs: Seq[Instr],
+                       var instrs: List[Instr],
                        var termn: Termn) extends Tree {
   def foreachNext(f: Block => Unit): Unit = termn match {
     case _: Termn.Leaf =>
@@ -182,8 +187,8 @@ final case class Block(var name: Name,
 
   def foreachBreadthFirst(f: Block => Unit): Unit = {
     var visited = List.empty[Block]
-    def loop(blocks: Seq[Block]): Unit = blocks match {
-      case Seq() => ()
+    def loop(blocks: List[Block]): Unit = blocks match {
+      case List() => ()
       case block +: rest =>
         if (visited.contains(block))
           loop(rest)
@@ -195,7 +200,7 @@ final case class Block(var name: Name,
           loop(rest ++ next.reverse)
         }
     }
-    loop(Seq(this))
+    loop(List(this))
   }
 
   def foreachLeaf(f: Block => Unit): Unit =
@@ -206,7 +211,7 @@ final case class Block(var name: Name,
         ()
     }
 
-  def outs: Seq[Branch] = {
+  def outs: List[Branch] = {
     var branches = List.empty[Branch]
     foreachLeaf {
       case b @ Block(_, _, Termn.Out(v)) =>
@@ -219,15 +224,15 @@ final case class Block(var name: Name,
 
   def merge(f: Val => Block)(implicit fresh: Fresh): Block = {
     outs match {
-      case Seq() =>
+      case List() =>
         ()
-      case Seq(Branch(v, block)) =>
+      case List(Branch(v, block)) =>
         val target = f(v)
         block.termn = Termn.Jump(target)
       case branches =>
         val name = fresh()
         val instr = Instr.Assign(name, Expr.Phi(branches))
-        val termn = Termn.Jump(Block(Seq(instr), Termn.Jump(f(name))))
+        val termn = Termn.Jump(Block(List(instr), Termn.Jump(f(name))))
         branches.foreach { br =>
           br.block.termn = termn
         }
@@ -282,23 +287,23 @@ final case class Block(var name: Name,
 }
 object Block {
   def apply(termn: Termn)(implicit fresh: Fresh): Block =
-    new Block(fresh("block"), Seq(), termn)
-  def apply(instrs: Seq[Instr], termn: Termn)(implicit fresh: Fresh): Block = {
+    new Block(fresh("block"), List(), termn)
+  def apply(instrs: List[Instr], termn: Termn)(implicit fresh: Fresh): Block = {
     new Block(fresh("block"), instrs, termn)
   }
 
-  def chain(blocks: Seq[Block])(f: Seq[Val] => Block)
+  def chain(blocks: List[Block])(f: List[Val] => Block)
            (implicit fresh: Fresh): Block = {
-    def loop(blocks: Seq[Block], values: Seq[Val]): Block =
+    def loop(blocks: List[Block], values: List[Val]): Block =
       blocks match {
-        case Seq() =>
+        case List() =>
           f(values)
         case init +: rest =>
           init.merge { nv =>
             loop(rest, values :+ nv)
           }
       }
-    loop(blocks, Seq())
+    loop(blocks, List())
   }
 }
 
@@ -310,3 +315,5 @@ class Fresh {
     res
   }
 }
+
+

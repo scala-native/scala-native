@@ -59,7 +59,7 @@ abstract class GenSaltyCode extends PluginComponent
 
   class LabelEnv(env: Env) {
     var blocks = Map.empty[Symbol, ir.Block]
-    var params = Map.empty[Symbol, Seq[ir.Val]]
+    var params = Map.empty[Symbol, List[ir.Val]]
 
     def enterLabel(label: LabelDef): ir.Block = {
       val sym = label.symbol
@@ -71,7 +71,7 @@ abstract class GenSaltyCode extends PluginComponent
           name
       }
       val instrs = params.map { param =>
-        I.Assign(param, E.Phi(Seq()))
+        I.Assign(param, E.Phi(List()))
       }
       val block = B(name, instrs, Tn.Out(V.Unit))
       this.blocks += sym -> block
@@ -79,7 +79,7 @@ abstract class GenSaltyCode extends PluginComponent
       block
     }
 
-    def enterLabelCall(sym: Symbol, values: Seq[ir.Val], from: ir.Block): Unit = {
+    def enterLabelCall(sym: Symbol, values: List[ir.Val], from: ir.Block): Unit = {
       val block = resolveLabel(sym)
       block.instrs = block.instrs.zip(values).map {
         case (I.Assign(n, E.Phi(branches)), value) =>
@@ -91,7 +91,7 @@ abstract class GenSaltyCode extends PluginComponent
 
     def resolveLabel(sym: Symbol): ir.Block = blocks(sym)
 
-    def resolveLabelParams(sym: Symbol): Seq[ir.Val] = params(sym)
+    def resolveLabelParams(sym: Symbol): List[ir.Val] = params(sym)
   }
 
   class CollectLocalInfo extends Traverser {
@@ -132,6 +132,8 @@ abstract class GenSaltyCode extends PluginComponent
     }
 
     override def apply(cunit: CompilationUnit): Unit = {
+      println("welcome to salty")
+
       def collectClassDefs(tree: Tree): List[ClassDef] = {
         tree match {
           case EmptyTree => Nil
@@ -182,10 +184,10 @@ abstract class GenSaltyCode extends PluginComponent
         encodeClassName(psym)
       }
 
-    def genClassMethods(stats: List[Tree]): Seq[ir.Stat] =
+    def genClassMethods(stats: List[Tree]): List[ir.Stat] =
       stats.flatMap {
-        case dd: DefDef => Seq(genDef(dd))
-        case _          => Seq()
+        case dd: DefDef => List(genDef(dd))
+        case _          => List()
       }
 
     def genClassFields(sym: Symbol) =
@@ -228,17 +230,17 @@ abstract class GenSaltyCode extends PluginComponent
       if (vp.isEmpty) Nil else vp.head.map(_.symbol)
     }
 
-    def genDeclParams(paramSyms: List[Symbol]): Seq[ir.Type] =
+    def genDeclParams(paramSyms: List[Symbol]): List[ir.Type] =
       paramSyms.map(sym => genType(sym.tpe))
 
-    def genDefParams(paramSyms: List[Symbol]): Seq[ir.LabeledType] =
+    def genDefParams(paramSyms: List[Symbol]): List[ir.LabeledType] =
       paramSyms.map { sym =>
         val name = currentEnv.enter(sym)
         val ty = genType(sym.tpe)
         ir.LabeledType(name, ty)
       }
 
-    def genDefBody(body: Tree, paramValues: Seq[ir.Val]): ir.Block = body match {
+    def genDefBody(body: Tree, paramValues: List[ir.Val]): ir.Block = body match {
       case Block(List(ValDef(_, nme.THIS, _, _)),
                  label @ LabelDef(name, Ident(nme.THIS) :: _, rhs)) =>
         val entry = B(Tn.Out(V.Unit))
@@ -272,10 +274,10 @@ abstract class GenSaltyCode extends PluginComponent
         rhs.merge { v =>
           val isMutable = currentLocalInfo.mutableVars.contains(vd.symbol)
           if (!isMutable)
-            B(Seq(I.Assign(name, v)),
+            B(List(I.Assign(name, v)),
               Tn.Out(V.Unit))
           else
-            B(Seq(I.Assign(name, E.Alloc(genType(vd.symbol.tpe))),
+            B(List(I.Assign(name, E.Alloc(genType(vd.symbol.tpe))),
                   E.Store(name, v)),
               Tn.Out(V.Unit))
         }
@@ -327,7 +329,7 @@ abstract class GenSaltyCode extends PluginComponent
         else
           genExpr(qual).merge { v =>
             val n = fresh()
-            B(Seq(I.Assign(n, E.Load(V.Elem(v, encodeFullFieldName(tree.symbol))))),
+            B(List(I.Assign(n, E.Load(V.Elem(v, encodeFullFieldName(tree.symbol))))),
               Tn.Out(n))
           }
 
@@ -339,7 +341,7 @@ abstract class GenSaltyCode extends PluginComponent
             else currentEnv.resolve(sym)))
         else {
           val name = fresh()
-          B(Seq(I.Assign(name, E.Load(currentEnv.resolve(sym)))),
+          B(List(I.Assign(name, E.Load(currentEnv.resolve(sym)))),
             Tn.Out(name))
         }
 
@@ -362,12 +364,12 @@ abstract class GenSaltyCode extends PluginComponent
         lhs match {
           case sel @ Select(qual, _) =>
             genExpr(qual).chain(genExpr(rhs)) { (vqual, vrhs) =>
-              B(Seq(E.Store(V.Elem(vqual, encodeFullFieldName(sel.symbol)), vrhs)),
+              B(List(E.Store(V.Elem(vqual, encodeFullFieldName(sel.symbol)), vrhs)),
                 Tn.Out(V.Unit))
             }
           case id: Ident =>
             genExpr(rhs).merge { v =>
-              B(Seq(E.Store(currentEnv.resolve(id.symbol), v)),
+              B(List(E.Store(currentEnv.resolve(id.symbol), v)),
                 Tn.Out(V.Unit))
             }
         }
@@ -410,16 +412,16 @@ abstract class GenSaltyCode extends PluginComponent
             val bodyb = genExpr(body)
             val n = fresh()
 
-            B(Seq(I.Assign(n, E.Is(exc, excty))),
+            B(List(I.Assign(n, E.Is(exc, excty))),
               Tn.If(n,
                 nameopt.map { name =>
-                  B(Seq(I.Assign(name, E.Conv(E.Conv.Cast, exc, excty))),
+                  B(List(I.Assign(name, E.Conv(E.Conv.Cast, exc, excty))),
                     Tn.Jump(bodyb))
                 }.getOrElse(bodyb),
                 elseb))
           }
 
-        B(Seq(I.Assign(exc, E.Catchpad)), Tn.Jump(catchb))
+        B(List(I.Assign(exc, E.Catchpad)), Tn.Jump(catchb))
       }
 
     def genBlock(block: Block) = {
@@ -507,7 +509,7 @@ abstract class GenSaltyCode extends PluginComponent
         val len = values.length
         val n   = fresh()
 
-        B(Seq(I.Assign(n, E.Alloc(Ty.Array(ty, len))),
+        B(List(I.Assign(n, E.Alloc(Ty.Array(ty, len))),
               E.Store(n, V.Array(values))),
           Tn.Out(V.Slice(n, V(len))))
       }
@@ -530,11 +532,11 @@ abstract class GenSaltyCode extends PluginComponent
               genExpr(guard).merge { gv =>
                 B(Tn.If(gv, bodyBlock, defaultBlock))
               }
-          val values: Seq[ir.Val] =
+          val values: List[ir.Val] =
             pat match {
               case lit: Literal =>
                 val Left(value) = genValue(lit)
-                Seq(value)
+                List(value)
               case Alternative(alts) =>
                 alts.map {
                   case lit: Literal =>
@@ -542,7 +544,7 @@ abstract class GenSaltyCode extends PluginComponent
                     value
                 }
               case _ =>
-                Seq()
+                List()
             }
           values.map(Br(_, guardedBlock))
         }
@@ -608,14 +610,14 @@ abstract class GenSaltyCode extends PluginComponent
     def makePrimitiveBox(expr: Tree, tpe: Type) =
       genExpr(expr).merge { v =>
         val name = fresh()
-        B(Seq(I.Assign(name, E.Box(v, primitive2box(tpe.widen)))),
+        B(List(I.Assign(name, E.Box(v, primitive2box(tpe.widen)))),
           Tn.Out(name))
       }
 
     def makePrimitiveUnbox(expr: Tree, tpe: Type) =
       genExpr(expr).merge { v =>
         val name = fresh()
-        B(Seq(I.Assign(name, E.Unbox(v, primitive2box(tpe.widen)))),
+        B(List(I.Assign(name, E.Unbox(v, primitive2box(tpe.widen)))),
           Tn.Out(name))
       }
 
@@ -654,7 +656,7 @@ abstract class GenSaltyCode extends PluginComponent
           def unary(op: E.Bin.Op, lvalue: ir.Val) =
             rblock.merge { rvalue =>
               val n = fresh()
-              B(Seq(I.Assign(n, E.Bin(op, lvalue, rvalue))),
+              B(List(I.Assign(n, E.Bin(op, lvalue, rvalue))),
                 Tn.Out(n))
             }
           code match {
@@ -678,7 +680,7 @@ abstract class GenSaltyCode extends PluginComponent
               genCoercion(lvalue, lty, ty).merge { lcoerced =>
                 genCoercion(rvalue, rty, ty).merge { rcoerced =>
                   val n = fresh()
-                  B(Seq(I.Assign(n, E.Bin(op, lcoerced, rcoerced))),
+                  B(List(I.Assign(n, E.Bin(op, lcoerced, rcoerced))),
                     Tn.Out(n))
                 }
               }
@@ -693,7 +695,7 @@ abstract class GenSaltyCode extends PluginComponent
                   else
                     classEq.merge { v =>
                       val n = fresh()
-                      B(Seq(I.Assign(n, E.Bin(E.Bin.Xor, V(true), v))),
+                      B(List(I.Assign(n, E.Bin(E.Bin.Xor, V(true), v))),
                         Tn.Out(n))
                     }
                 }
@@ -705,7 +707,7 @@ abstract class GenSaltyCode extends PluginComponent
             val op = if (negated) E.Bin.Neq else E.Bin.Eq
             val n = fresh()
             lblock.chain(rblock) { (lvalue, rvalue) =>
-              B(Seq(I.Assign(n, E.Bin(op, lvalue, rvalue))),
+              B(List(I.Assign(n, E.Bin(op, lvalue, rvalue))),
                 Tn.Out(n))
             }
           }
@@ -776,10 +778,10 @@ abstract class GenSaltyCode extends PluginComponent
 
       rvalue match {
         case V.Null =>
-          B(Seq(I.Assign(n, E.Bin(E.Bin.Eq, lvalue, V.Null))),
+          B(List(I.Assign(n, E.Bin(E.Bin.Eq, lvalue, V.Null))),
             Tn.Out(n))
         case _ =>
-          B(Seq(I.Assign(n, E.Bin(E.Bin.Equals, lvalue, rvalue))),
+          B(List(I.Assign(n, E.Bin(E.Bin.Equals, lvalue, rvalue))),
             Tn.Out(n))
       }
     }
@@ -788,7 +790,7 @@ abstract class GenSaltyCode extends PluginComponent
       genExpr(receiver).chain(genExpr(args.head)) { (l, r) =>
         val n = fresh()
 
-        B(Seq(I.Assign(n, E.Bin(E.Bin.Add, l, r))),
+        B(List(I.Assign(n, E.Bin(E.Bin.Add, l, r))),
           Tn.Out(n))
       }
 
@@ -797,7 +799,7 @@ abstract class GenSaltyCode extends PluginComponent
       val method = getMember(cls, nme.hash_)
 
       genExpr(receiver).merge { v =>
-        genMethodCall(method, encodeClassName(cls), Seq(v))
+        genMethodCall(method, encodeClassName(cls), List(v))
       }
     }
 
@@ -812,13 +814,13 @@ abstract class GenSaltyCode extends PluginComponent
         val n = fresh()
 
         if (scalaPrimitives.isArrayGet(code))
-          B(Seq(I.Assign(n, E.Load(V.Elem(arrayvalue, argvalues(0))))),
+          B(List(I.Assign(n, E.Load(V.Elem(arrayvalue, argvalues(0))))),
             Tn.Out(n))
         else if (scalaPrimitives.isArraySet(code))
-          B(Seq(E.Store(V.Elem(arrayvalue, argvalues(0)), argvalues(1))),
+          B(List(E.Store(V.Elem(arrayvalue, argvalues(0)), argvalues(1))),
             Tn.Out(V.Unit))
         else
-          B(Seq(I.Assign(n, E.Length(arrayvalue))),
+          B(List(I.Assign(n, E.Length(arrayvalue))),
             Tn.Out(n))
       }
     }
@@ -858,7 +860,7 @@ abstract class GenSaltyCode extends PluginComponent
         val expr = E.Conv(op, value, toty)
         val n = fresh()
 
-        B(Seq(I.Assign(n, expr)), Tn.Out(n))
+        B(List(I.Assign(n, expr)), Tn.Out(n))
       }
 
     def coercionTypes(code: Int): (ir.Type, ir.Type) = {
@@ -920,7 +922,7 @@ abstract class GenSaltyCode extends PluginComponent
         }
         val n = fresh()
 
-        B(Seq(I.Assign(n, expr)),
+        B(List(I.Assign(n, expr)),
           Tn.Out(n))
       }
     }
@@ -931,7 +933,7 @@ abstract class GenSaltyCode extends PluginComponent
       val n = fresh()
 
       B.chain(args.map(genExpr)) { values =>
-        B(Seq(I.Assign(n, E.Call(method, currentThis.get +: values))),
+        B(List(I.Assign(n, E.Call(method, currentThis.get +: values))),
           Tn.Out(n))
       }
     }
@@ -957,7 +959,7 @@ abstract class GenSaltyCode extends PluginComponent
       val n = fresh()
 
       genExpr(length).merge { v =>
-        B(Seq(I.Assign(n, E.Alloc(elemty, Some(v)))),
+        B(List(I.Assign(n, E.Alloc(elemty, Some(v)))),
           Tn.Out(V.Slice(n, v)))
       }
     }
@@ -967,7 +969,7 @@ abstract class GenSaltyCode extends PluginComponent
         val ctor = N.Nested(ty, encodeDefName(ctorsym))
         val n    = fresh()
 
-        B(Seq(I.Assign(n, E.Alloc(ty)),
+        B(List(I.Assign(n, E.Alloc(ty)),
               E.Call(ctor, n +: values)),
           Tn.Out(n))
       }
@@ -982,12 +984,12 @@ abstract class GenSaltyCode extends PluginComponent
       }
     }
 
-    def genMethodCall(sym: Symbol, self: ir.Val, args: Seq[ir.Val]) = {
+    def genMethodCall(sym: Symbol, self: ir.Val, args: List[ir.Val]) = {
       val mname = N.Nested(encodeClassName(sym.owner),
                            encodeDefName(sym))
       val n     = fresh()
 
-      B(Seq(I.Assign(n, E.Call(mname, self +: args))),
+      B(List(I.Assign(n, E.Call(mname, self +: args))),
         Tn.Out(n))
     }
 
@@ -996,7 +998,7 @@ abstract class GenSaltyCode extends PluginComponent
       val method = encodeDefName(sym)
       val n      = fresh()
 
-      B(Seq(I.Assign(n, E.Call(N.Nested(cls, method), Seq()))),
+      B(List(I.Assign(n, E.Call(N.Nested(cls, method), List()))),
         Tn.Out(n))
     }
   }

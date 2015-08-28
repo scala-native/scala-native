@@ -12,11 +12,9 @@ trait GenIRFiles extends SubComponent  {
   def genIRFile(cunit: CompilationUnit, sym: Symbol, stat: ir.Stat): Unit = {
     val outfile = getFileFor(cunit, sym, ".salty")
     val output = outfile.bufferedOutput
-    try {
-      output.write(stat.toString.getBytes)
-    } finally {
-      output.close()
-    }
+    val serialized = stat.serialize
+    try output.write(serialized)
+    finally output.close()
   }
 
   private def getFileFor(cunit: CompilationUnit, sym: Symbol, suffix: String) = {

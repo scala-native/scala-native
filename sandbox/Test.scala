@@ -1,6 +1,7 @@
 package a
 
 class A {
+  def foo = ()
   var x = 2
   def foo(capture: A) = {
     def factorial(n: Int): Int =  {

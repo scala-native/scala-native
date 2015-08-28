@@ -1,5 +1,4 @@
-package salty
-package ir
+package salty.ir
 package internal
 
 object ShowIR {
