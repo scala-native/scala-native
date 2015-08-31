@@ -2,7 +2,6 @@
 lazy val common = Seq(
   libraryDependencies += "com.lihaoyi" %% "fastparse" % "0.2.1",
   libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.4" % "test",
-  libraryDependencies += "com.lihaoyi" %% "upickle" % "0.3.6",
   scalaVersion := "2.11.7",
   // Can I have some exhaustivity checking? Pretty please?
   scalacOptions ++= Seq("-Ypatmat-exhaust-depth", "1000000")

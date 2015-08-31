@@ -1,18 +1,8 @@
 package salty.ir
 
 import scala.collection.mutable
-import salty.util.Show
-import salty.ir.internal.{Serializer, ShowIR}
 
-sealed abstract class Tree extends Serializable {
-  override def toString = ShowIR.showTree(this).build
-  def serialize: Array[Byte] = Serializer.serialize(this)
-}
-object Tree {
-  def deserialize(bytes: Array[Byte]): Tree = Serializer.deserialize(bytes)
-}
-
-sealed abstract trait Type extends Tree
+sealed abstract trait Type
 object Type {
   final case object Null    extends Type
   final case object Nothing extends Type
@@ -36,12 +26,12 @@ object Type {
   final case class Array(ty: Type, length: Int) extends Type
 }
 
-sealed abstract trait Instr extends Tree
+sealed abstract trait Instr
 object Instr {
   final case class Assign(name: Name, expr: Expr) extends Instr
 }
 
-sealed abstract trait Termn extends Tree
+sealed abstract trait Termn
 object Termn {
   sealed abstract class Leaf extends Termn
   final case class Out(value: Val) extends Leaf
@@ -49,58 +39,59 @@ object Termn {
   final case class Throw(value: Val) extends Leaf
   final case class Jump(to: Block) extends Termn
   final case class If(cond: Val, thenb: Block, elseb: Block) extends Termn
-  final case class Switch(on: Val, default: Block, branches: List[Branch]) extends Termn
+  final case class Switch(on: Val, default: Block, branches: Seq[Branch]) extends Termn
   final case class Try(body: Block,
                        catchb: Option[Block],
                        finallyb: Option[Block]) extends Termn
 }
 
+sealed abstract class BinOp
+object BinOp {
+  final case object Add    extends BinOp
+  final case object Sub    extends BinOp
+  final case object Mul    extends BinOp
+  final case object Div    extends BinOp
+  final case object Mod    extends BinOp
+  final case object Shl    extends BinOp
+  final case object Lshr   extends BinOp
+  final case object Ashr   extends BinOp
+  final case object And    extends BinOp
+  final case object Or     extends BinOp
+  final case object Xor    extends BinOp
+  final case object Eq     extends BinOp
+  final case object Equals extends BinOp
+  final case object Neq    extends BinOp
+  final case object Lt     extends BinOp
+  final case object Lte    extends BinOp
+  final case object Gt     extends BinOp
+  final case object Gte    extends BinOp
+}
+
+sealed abstract class ConvOp
+object ConvOp {
+  final case object Trunc    extends ConvOp
+  final case object Zext     extends ConvOp
+  final case object Sext     extends ConvOp
+  final case object Fptrunc  extends ConvOp
+  final case object Fpext    extends ConvOp
+  final case object Fptoui   extends ConvOp
+  final case object Fptosi   extends ConvOp
+  final case object Uitofp   extends ConvOp
+  final case object Sitofp   extends ConvOp
+  final case object Ptrtoint extends ConvOp
+  final case object Inttoptr extends ConvOp
+  final case object Bitcast  extends ConvOp
+  final case object Cast     extends ConvOp
+}
+
 sealed abstract trait Expr extends Instr
 object Expr {
-  final case class Bin(op: Bin.Op, left: Val, right: Val) extends Expr
-  object Bin {
-    sealed abstract class Op
-    final case object Add    extends Bin.Op
-    final case object Sub    extends Bin.Op
-    final case object Mul    extends Bin.Op
-    final case object Div    extends Bin.Op
-    final case object Mod    extends Bin.Op
-    final case object Shl    extends Bin.Op
-    final case object Lshr   extends Bin.Op
-    final case object Ashr   extends Bin.Op
-    final case object And    extends Bin.Op
-    final case object Or     extends Bin.Op
-    final case object Xor    extends Bin.Op
-    final case object Eq     extends Bin.Op
-    final case object Equals extends Bin.Op
-    final case object Neq    extends Bin.Op
-    final case object Lt     extends Bin.Op
-    final case object Lte    extends Bin.Op
-    final case object Gt     extends Bin.Op
-    final case object Gte    extends Bin.Op
-  }
-  final case class Conv(op: Conv.Op, value: Val, to: Type) extends Expr
-  object Conv {
-    sealed abstract class Op
-    final case object Trunc    extends Conv.Op
-    final case object Zext     extends Conv.Op
-    final case object Sext     extends Conv.Op
-    final case object Fptrunc  extends Conv.Op
-    final case object Fpext    extends Conv.Op
-    final case object Fptoui   extends Conv.Op
-    final case object Fptosi   extends Conv.Op
-    final case object Uitofp   extends Conv.Op
-    final case object Sitofp   extends Conv.Op
-    final case object Ptrtoint extends Conv.Op
-    final case object Inttoptr extends Conv.Op
-    final case object Bitcast  extends Conv.Op
-    final case object Cast     extends Conv.Op
-  }
+  final case class Bin(op: BinOp, left: Val, right: Val) extends Expr
+  final case class Conv(op: ConvOp, value: Val, to: Type) extends Expr
   final case class Is(value: Val, ty: Type) extends Expr
   final case class Alloc(ty: Type, elements: Option[Val] = None) extends Expr
-  final case class Call(name: Name, args: List[Val],
-                        unwind: Option[Block] = None) extends Expr
-  final case class Phi(branches: List[Branch]) extends Expr
+  final case class Call(name: Name, args: Seq[Val]) extends Expr
+  final case class Phi(branches: Seq[Branch]) extends Expr
   final case class Load(ptr: Val) extends Expr
   final case class Store(ptr: Val, value: Val) extends Expr
   final case class Box(value: Val, ty: Type) extends Expr
@@ -116,7 +107,7 @@ object Val {
   final case object This extends Val
   final case class Bool(value: Boolean) extends Val
   final case class Number(repr: String, ty: Type) extends Val
-  final case class Array(vs: List[Val]) extends Val
+  final case class Array(vs: Seq[Val]) extends Val
   final case class Slice(ptr: Val, length: Val) extends Val
   final case class Elem(ptr: Val, value: Val) extends Val
   final case class Class(ty: Type) extends Val
@@ -126,18 +117,18 @@ object Val {
   def apply(b: Boolean) = Val.Bool(b)
 }
 
-sealed abstract trait Stat extends Tree
+sealed abstract trait Stat
 object Stat {
   final case class Class(name: Name, parent: Name,
-                         interfaces: List[Name], body: List[Stat]) extends Stat
-  final case class Interface(name: Name, interfaces: List[Name],
-                             body: List[Stat]) extends Stat
+                         interfaces: Seq[Name], body: Seq[Stat]) extends Stat
+  final case class Interface(name: Name, interfaces: Seq[Name],
+                             body: Seq[Stat]) extends Stat
   final case class Module(name: Name, parent: Name,
-                          interfaces: List[Name], body: List[Stat]) extends Stat
+                          interfaces: Seq[Name], body: Seq[Stat]) extends Stat
   final case class Var(name: Name, ty: Type) extends Stat
-  final case class Declare(name: Name, params: List[Type],
+  final case class Declare(name: Name, params: Seq[Type],
                            ty: Type) extends Stat
-  final case class Define(name: Name, params: List[LabeledType],
+  final case class Define(name: Name, params: Seq[LabeledType],
                           ty: Type, body: Block) extends Stat
 }
 
@@ -148,13 +139,9 @@ object Name {
   final case class Nested(parent: Name, child: Name) extends Name
 }
 
-final case class Branch(value: Val, block: Block) extends Tree
-final case class LabeledType(name: Name, ty: Type) extends Tree
-final case class LabeledVal(name: Name, value: Val) extends Tree
-
 final case class Block(var name: Name,
-                       var instrs: List[Instr],
-                       var termn: Termn) extends Tree {
+                       var instrs: Seq[Instr],
+                       var termn: Termn) {
   def foreachNext(f: Block => Unit): Unit = termn match {
     case _: Termn.Leaf =>
       ()
@@ -188,8 +175,8 @@ final case class Block(var name: Name,
   def foreachBreadthFirst(f: Block => Unit): Unit = {
     var visited = List.empty[Block]
     def loop(blocks: List[Block]): Unit = blocks match {
-      case List() => ()
-      case block +: rest =>
+      case Nil => ()
+      case block :: rest =>
         if (visited.contains(block))
           loop(rest)
         else {
@@ -224,15 +211,15 @@ final case class Block(var name: Name,
 
   def merge(f: Val => Block)(implicit fresh: Fresh): Block = {
     outs match {
-      case List() =>
+      case Nil =>
         ()
-      case List(Branch(v, block)) =>
+      case Branch(v, block) :: Nil =>
         val target = f(v)
         block.termn = Termn.Jump(target)
       case branches =>
         val name = fresh()
         val instr = Instr.Assign(name, Expr.Phi(branches))
-        val termn = Termn.Jump(Block(List(instr), Termn.Jump(f(name))))
+        val termn = Termn.Jump(Block(Seq(instr), Termn.Jump(f(name))))
         branches.foreach { br =>
           br.block.termn = termn
         }
@@ -287,33 +274,28 @@ final case class Block(var name: Name,
 }
 object Block {
   def apply(termn: Termn)(implicit fresh: Fresh): Block =
-    new Block(fresh("block"), List(), termn)
-  def apply(instrs: List[Instr], termn: Termn)(implicit fresh: Fresh): Block = {
+    new Block(fresh("block"), Nil, termn)
+  def apply(instrs: Seq[Instr], termn: Termn)(implicit fresh: Fresh): Block = {
     new Block(fresh("block"), instrs, termn)
   }
 
-  def chain(blocks: List[Block])(f: List[Val] => Block)
+  def chain(blocks: Seq[Block])(f: Seq[Val] => Block)
            (implicit fresh: Fresh): Block = {
-    def loop(blocks: List[Block], values: List[Val]): Block =
+    def loop(blocks: Seq[Block], values: Seq[Val]): Block =
       blocks match {
-        case List() =>
+        case Seq() =>
           f(values)
         case init +: rest =>
           init.merge { nv =>
             loop(rest, values :+ nv)
           }
       }
-    loop(blocks, List())
+    loop(blocks, Seq())
   }
 }
 
-class Fresh {
-  private var i: Int = 0
-  def apply(prefix: String = "") = {
-    val res = Name.Local(prefix + i)
-    i += 1
-    res
-  }
-}
+final case class Branch(value: Val, block: Block)
+final case class LabeledType(name: Name, ty: Type)
+final case class LabeledVal(name: Name, value: Val)
 
 

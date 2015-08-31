@@ -1,20 +1,8 @@
 package salty.ir
-package internal
 
-object ShowIR {
+object Shows {
   import salty.util.Show, Show.{Sequence => s, Indent => i, Unindent => u,
                                 Repeat => r, Newline => n}
-
-  implicit val showTree: Show[Tree] = Show {
-    case t: Type         => t
-    case t: Termn        => t
-    case i: Instr        => i
-    case s: Stat         => s
-    case b: Branch       => b
-    case b: Block        => b
-    case lt: LabeledType => lt
-    case lv: LabeledVal  => lv
-  }
 
   implicit val showType: Show[Type] = Show {
     case n: Name           => n
@@ -69,9 +57,8 @@ object ShowIR {
     case Expr.Alloc(name, elements) =>
       s("alloc ", name,
         elements.map { v => s(", ", v) }.getOrElse(s()))
-    case Expr.Call(name, args, unwind) =>
-      s("call ", name, "(", r(args, sep = ", "), ")",
-        unwind.map { b => s(" unwind ", b.name) }.getOrElse(s()))
+    case Expr.Call(name, args) =>
+      s("call ", name, "(", r(args, sep = ", "), ")")
     case Expr.Phi(branches) =>
       s("phi { ",
           r(branches.map(i(_))),

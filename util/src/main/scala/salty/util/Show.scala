@@ -1,5 +1,4 @@
-package salty
-package util
+package salty.util
 
 trait Show[T] { def apply(t: T): Show.Result }
 object Show {
@@ -54,8 +53,8 @@ object Show {
 
   implicit def showResult[R <: Result]: Show[R] = apply(identity)
   implicit def showString[T <: String]: Show[T] = apply(Show.Str(_))
-  implicit def toShow[T: Show](t: T): Result =
+  implicit def toResult[T: Show](t: T): Result =
     implicitly[Show[T]].apply(t)
-  implicit def seqToShow[T: Show](ts: Seq[T]): Seq[Result] =
+  implicit def seqToResult[T: Show](ts: Seq[T]): Seq[Result] =
     ts.map { t => implicitly[Show[T]].apply(t) }
 }

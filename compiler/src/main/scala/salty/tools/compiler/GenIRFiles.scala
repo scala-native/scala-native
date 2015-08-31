@@ -2,19 +2,23 @@ package salty.tools
 package compiler
 
 import java.io._
+import java.nio._
 import scala.tools.nsc._
 import scala.tools.nsc.io.AbstractFile
 import salty.ir
+import salty.ir.Serializers._
+import salty.util.serialize
 
 trait GenIRFiles extends SubComponent  {
   import global._
 
   def genIRFile(cunit: CompilationUnit, sym: Symbol, stat: ir.Stat): Unit = {
-    val outfile = getFileFor(cunit, sym, ".salty")
-    val output = outfile.bufferedOutput
-    val serialized = stat.serialize
-    try output.write(serialized)
-    finally output.close()
+    val outfile = getFileFor(cunit, sym, ".salty").file
+    val buffer = serialize(stat)
+    val channel = (new FileOutputStream(outfile)).getChannel()
+    buffer.flip()
+    try channel.write(buffer)
+    finally channel.close()
   }
 
   private def getFileFor(cunit: CompilationUnit, sym: Symbol, suffix: String) = {

@@ -7,7 +7,8 @@ import scala.tools.nsc.plugins._
 import scala.util.{Either, Left, Right}
 import salty.ir
 import salty.ir.{Expr => E, Type => Ty, Termn => Tn, Instr => I,
-                 Val => V, Name => N, Stat => S, Block => B, Branch => Br}
+                 Val => V, Name => N, Stat => S, Block => B, Branch => Br,
+                 BinOp, ConvOp}
 import salty.util.ScopedVar, ScopedVar.withScopedVars
 
 abstract class GenSaltyCode extends PluginComponent
@@ -71,7 +72,7 @@ abstract class GenSaltyCode extends PluginComponent
           name
       }
       val instrs = params.map { param =>
-        I.Assign(param, E.Phi(List()))
+        I.Assign(param, E.Phi(Nil))
       }
       val block = B(name, instrs, Tn.Out(V.Unit))
       this.blocks += sym -> block
@@ -79,7 +80,7 @@ abstract class GenSaltyCode extends PluginComponent
       block
     }
 
-    def enterLabelCall(sym: Symbol, values: List[ir.Val], from: ir.Block): Unit = {
+    def enterLabelCall(sym: Symbol, values: Seq[ir.Val], from: ir.Block): Unit = {
       val block = resolveLabel(sym)
       block.instrs = block.instrs.zip(values).map {
         case (I.Assign(n, E.Phi(branches)), value) =>
@@ -132,8 +133,6 @@ abstract class GenSaltyCode extends PluginComponent
     }
 
     override def apply(cunit: CompilationUnit): Unit = {
-      println("welcome to salty")
-
       def collectClassDefs(tree: Tree): List[ClassDef] = {
         tree match {
           case EmptyTree => Nil
@@ -187,7 +186,7 @@ abstract class GenSaltyCode extends PluginComponent
     def genClassMethods(stats: List[Tree]): List[ir.Stat] =
       stats.flatMap {
         case dd: DefDef => List(genDef(dd))
-        case _          => List()
+        case _          => Nil
       }
 
     def genClassFields(sym: Symbol) =
@@ -244,7 +243,7 @@ abstract class GenSaltyCode extends PluginComponent
       case Block(List(ValDef(_, nme.THIS, _, _)),
                  label @ LabelDef(name, Ident(nme.THIS) :: _, rhs)) =>
         val entry = B(Tn.Out(V.Unit))
-        val values = (V.This +: paramValues).take(label.params.length)
+        val values = (V.This :: paramValues).take(label.params.length)
         currentLabelEnv.enterLabel(label)
         currentLabelEnv.enterLabelCall(label.symbol, values, entry)
         val block =
@@ -415,7 +414,7 @@ abstract class GenSaltyCode extends PluginComponent
             B(List(I.Assign(n, E.Is(exc, excty))),
               Tn.If(n,
                 nameopt.map { name =>
-                  B(List(I.Assign(name, E.Conv(E.Conv.Cast, exc, excty))),
+                  B(List(I.Assign(name, E.Conv(ConvOp.Cast, exc, excty))),
                     Tn.Jump(bodyb))
                 }.getOrElse(bodyb),
                 elseb))
@@ -544,7 +543,7 @@ abstract class GenSaltyCode extends PluginComponent
                     value
                 }
               case _ =>
-                List()
+                Nil
             }
           values.map(Br(_, guardedBlock))
         }
@@ -653,7 +652,7 @@ abstract class GenSaltyCode extends PluginComponent
       args match {
         case List(right) =>
           val rblock = genExpr(right)
-          def unary(op: E.Bin.Op, lvalue: ir.Val) =
+          def unary(op: BinOp, lvalue: ir.Val) =
             rblock.merge { rvalue =>
               val n = fresh()
               B(List(I.Assign(n, E.Bin(op, lvalue, rvalue))),
@@ -661,9 +660,9 @@ abstract class GenSaltyCode extends PluginComponent
             }
           code match {
             case POS  => rblock
-            case NEG  => unary(E.Bin.Sub, V.Number("0", retty))
-            case NOT  => unary(E.Bin.Xor, V.Number("-1", retty))
-            case ZNOT => unary(E.Bin.Xor, V(true))
+            case NEG  => unary(BinOp.Sub, V.Number("0", retty))
+            case NOT  => unary(BinOp.Xor, V.Number("-1", retty))
+            case ZNOT => unary(BinOp.Xor, V(true))
             case _ =>
               abort("Unknown unary operation code: " + code)
           }
@@ -675,7 +674,7 @@ abstract class GenSaltyCode extends PluginComponent
           val rblock = genExpr(right)
           val lty    = genType(left.tpe)
           val rty    = genType(right.tpe)
-          def bin(op: E.Bin.Op, ty: ir.Type) =
+          def bin(op: BinOp, ty: ir.Type) =
             lblock.chain(rblock) { (lvalue, rvalue) =>
               genCoercion(lvalue, lty, ty).merge { lcoerced =>
                 genCoercion(rvalue, rty, ty).merge { rcoerced =>
@@ -695,16 +694,16 @@ abstract class GenSaltyCode extends PluginComponent
                   else
                     classEq.merge { v =>
                       val n = fresh()
-                      B(List(I.Assign(n, E.Bin(E.Bin.Xor, V(true), v))),
+                      B(List(I.Assign(n, E.Bin(BinOp.Xor, V(true), v))),
                         Tn.Out(n))
                     }
                 }
               case kind =>
-                val op = if (negated) E.Bin.Neq else E.Bin.Eq
-                bin(E.Bin.Eq, binaryOperationType(lty, rty))
+                val op = if (negated) BinOp.Neq else BinOp.Eq
+                bin(BinOp.Eq, binaryOperationType(lty, rty))
             }
           def referenceEquality(negated: Boolean) = {
-            val op = if (negated) E.Bin.Neq else E.Bin.Eq
+            val op = if (negated) BinOp.Neq else BinOp.Eq
             val n = fresh()
             lblock.chain(rblock) { (lvalue, rvalue) =>
               B(List(I.Assign(n, E.Bin(op, lvalue, rvalue))),
@@ -713,22 +712,22 @@ abstract class GenSaltyCode extends PluginComponent
           }
           code match {
             // arithmetic & bitwise
-            case ADD  => bin(E.Bin.Add,  retty)
-            case SUB  => bin(E.Bin.Sub,  retty)
-            case MUL  => bin(E.Bin.Mul,  retty)
-            case DIV  => bin(E.Bin.Div,  retty)
-            case MOD  => bin(E.Bin.Mod,  retty)
-            case OR   => bin(E.Bin.Or,   retty)
-            case XOR  => bin(E.Bin.Xor,  retty)
-            case AND  => bin(E.Bin.And,  retty)
-            case LSL  => bin(E.Bin.Shl,  retty)
-            case LSR  => bin(E.Bin.Lshr, retty)
-            case ASR  => bin(E.Bin.Ashr, retty)
+            case ADD  => bin(BinOp.Add,  retty)
+            case SUB  => bin(BinOp.Sub,  retty)
+            case MUL  => bin(BinOp.Mul,  retty)
+            case DIV  => bin(BinOp.Div,  retty)
+            case MOD  => bin(BinOp.Mod,  retty)
+            case OR   => bin(BinOp.Or,   retty)
+            case XOR  => bin(BinOp.Xor,  retty)
+            case AND  => bin(BinOp.And,  retty)
+            case LSL  => bin(BinOp.Shl,  retty)
+            case LSR  => bin(BinOp.Lshr, retty)
+            case ASR  => bin(BinOp.Ashr, retty)
             // comparison
-            case LT   => bin(E.Bin.Lt,  binaryOperationType(lty, rty))
-            case LE   => bin(E.Bin.Lte, binaryOperationType(lty, rty))
-            case GT   => bin(E.Bin.Gt,  binaryOperationType(lty, rty))
-            case GE   => bin(E.Bin.Gte, binaryOperationType(lty, rty))
+            case LT   => bin(BinOp.Lt,  binaryOperationType(lty, rty))
+            case LE   => bin(BinOp.Lte, binaryOperationType(lty, rty))
+            case GT   => bin(BinOp.Gt,  binaryOperationType(lty, rty))
+            case GE   => bin(BinOp.Gte, binaryOperationType(lty, rty))
             // equality
             case EQ   => equality(negated = false)
             case NE   => equality(negated = true)
@@ -778,10 +777,10 @@ abstract class GenSaltyCode extends PluginComponent
 
       rvalue match {
         case V.Null =>
-          B(List(I.Assign(n, E.Bin(E.Bin.Eq, lvalue, V.Null))),
+          B(List(I.Assign(n, E.Bin(BinOp.Eq, lvalue, V.Null))),
             Tn.Out(n))
         case _ =>
-          B(List(I.Assign(n, E.Bin(E.Bin.Equals, lvalue, rvalue))),
+          B(List(I.Assign(n, E.Bin(BinOp.Equals, lvalue, rvalue))),
             Tn.Out(n))
       }
     }
@@ -790,7 +789,7 @@ abstract class GenSaltyCode extends PluginComponent
       genExpr(receiver).chain(genExpr(args.head)) { (l, r) =>
         val n = fresh()
 
-        B(List(I.Assign(n, E.Bin(E.Bin.Add, l, r))),
+        B(List(I.Assign(n, E.Bin(BinOp.Add, l, r))),
           Tn.Out(n))
       }
 
@@ -807,10 +806,10 @@ abstract class GenSaltyCode extends PluginComponent
       import scalaPrimitives._
 
       val Apply(Select(array, _), args) = app
-      val blocks = (array +: args).map(genExpr)
+      val blocks = (array :: args).map(genExpr)
 
       B.chain(blocks) { values =>
-        val arrayvalue +: argvalues = values
+        val arrayvalue :: argvalues = values
         val n = fresh()
 
         if (scalaPrimitives.isArrayGet(code))
@@ -848,14 +847,14 @@ abstract class GenSaltyCode extends PluginComponent
       else {
         val op = (fromty, toty) match {
           case (Ty.I(lwidth), Ty.I(rwidth))
-            if lwidth < rwidth      => E.Conv.Zext
+            if lwidth < rwidth      => ConvOp.Zext
           case (Ty.I(lwidth), Ty.I(rwidth))
-            if lwidth > rwidth      => E.Conv.Trunc
-          case (Ty.I(_), Ty.F(_))   => E.Conv.Sitofp
-          case (Ty.F(_), Ty.I(_))   => E.Conv.Fptosi
-          case (Ty.F64, Ty.F32)     => E.Conv.Fptrunc
-          case (Ty.F32, Ty.F64)     => E.Conv.Fpext
-          case (Ty.Null, _)         => E.Conv.Cast
+            if lwidth > rwidth      => ConvOp.Trunc
+          case (Ty.I(_), Ty.F(_))   => ConvOp.Sitofp
+          case (Ty.F(_), Ty.I(_))   => ConvOp.Fptosi
+          case (Ty.F64, Ty.F32)     => ConvOp.Fptrunc
+          case (Ty.F32, Ty.F64)     => ConvOp.Fpext
+          case (Ty.Null, _)         => ConvOp.Cast
         }
         val expr = E.Conv(op, value, toty)
         val n = fresh()
@@ -918,7 +917,7 @@ abstract class GenSaltyCode extends PluginComponent
       genExpr(obj).merge { v =>
         val expr = fun.symbol match {
           case Object_isInstanceOf => E.Is(v, ty)
-          case Object_asInstanceOf => E.Conv(E.Conv.Cast, v, ty)
+          case Object_asInstanceOf => E.Conv(ConvOp.Cast, v, ty)
         }
         val n = fresh()
 
@@ -984,7 +983,7 @@ abstract class GenSaltyCode extends PluginComponent
       }
     }
 
-    def genMethodCall(sym: Symbol, self: ir.Val, args: List[ir.Val]) = {
+    def genMethodCall(sym: Symbol, self: ir.Val, args: Seq[ir.Val]) = {
       val mname = N.Nested(encodeClassName(sym.owner),
                            encodeDefName(sym))
       val n     = fresh()
@@ -998,7 +997,7 @@ abstract class GenSaltyCode extends PluginComponent
       val method = encodeDefName(sym)
       val n      = fresh()
 
-      B(List(I.Assign(n, E.Call(N.Nested(cls, method), List()))),
+      B(List(I.Assign(n, E.Call(N.Nested(cls, method), Nil))),
         Tn.Out(n))
     }
   }
