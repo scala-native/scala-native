@@ -296,6 +296,5 @@ object Block {
 
 final case class Branch(value: Val, block: Block)
 final case class LabeledType(name: Name, ty: Type)
-final case class LabeledVal(name: Name, value: Val)
 
 

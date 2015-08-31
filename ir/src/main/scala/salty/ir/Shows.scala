@@ -139,9 +139,5 @@ object Shows {
     case LabeledType(name, ty) => s(name, ": ", ty)
   }
 
-  implicit val showLabeledVal: Show[LabeledVal] = Show {
-    case LabeledVal(name, value) => s(name, " = ", value)
-  }
-
   implicit val showInt: Show[Int] = Show { _.toString }
 }

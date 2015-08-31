@@ -59,8 +59,8 @@ object Serialize {
     case scala.Some(v) => s(1.toByte, v)
   }
   implicit def serializeSeq[T: Serialize]: Serialize[Seq[T]] = Serialize { seq =>
-    s(seq.map(el => (el: Serialize.Result)): _*)
+    s(seq.length, s(seq.map(el => (el: Serialize.Result)): _*))
   }
   implicit val serializeString: Serialize[String] = Serialize(_.toSeq)
-  implicit val serializeBoolea: Serialize[Boolean] = Serialize { b => if (b) 1.toByte else 0.toByte }
+  implicit val serializeBoolean: Serialize[Boolean] = Serialize { b => if (b) 1.toByte else 0.toByte }
 }

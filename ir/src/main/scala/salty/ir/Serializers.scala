@@ -9,8 +9,12 @@ object Serializers {
     case Type.Null         => Tags.Type.Null
     case Type.Nothing      => Tags.Type.Nothing
     case Type.Bool         => Tags.Type.Bool
-    case Type.I(w)         => s(Tags.Type.I, w)
-    case Type.F(w)         => s(Tags.Type.F, w)
+    case Type.I8           => Tags.Type.I8
+    case Type.I16          => Tags.Type.I16
+    case Type.I32          => Tags.Type.I32
+    case Type.I64          => Tags.Type.I64
+    case Type.F32          => Tags.Type.F32
+    case Type.F64          => Tags.Type.F64
     case Type.Ptr(ty)      => s(Tags.Type.Ptr, ty)
     case Type.Array(ty, n) => s(Tags.Type.Array, ty, n)
     case Type.Slice(ty)    => s(Tags.Type.Slice, ty)
@@ -115,9 +119,9 @@ object Serializers {
     entry.foreach { b =>
       blocks = b :: blocks
     }
-    s(blocks.map { b =>
-      s(b.name, b.instrs, b.termn)
-    }: _*)
+    s(blocks.length,
+      s(blocks.map { b => serializeName(b.name) }: _*),
+      s(blocks.map { b => s(b.instrs, b.termn) }: _*))
   }
 
   implicit val serializeName: Serialize[Name] = Serialize {
@@ -132,9 +136,5 @@ object Serializers {
 
   implicit val serializeLabeledType: Serialize[LabeledType] = Serialize {
     case LabeledType(name, ty) => s(name, ty)
-  }
-
-  implicit val serializeLabeledVal: Serialize[LabeledVal] = Serialize {
-    case LabeledVal(name, value) => s(name, value)
   }
 }
