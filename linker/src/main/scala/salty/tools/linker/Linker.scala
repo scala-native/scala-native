@@ -8,7 +8,7 @@ import java.nio.channels._
 import salty.ir._, Deserializers.RichGet
 
 class Linker {
-  def load(paths: List[String]): Unit = paths.foreach { path =>
+  def load(paths: List[String]) = paths.map { path =>
     try {
       val file = new RandomAccessFile(path, "r")
       val channel = file.getChannel
@@ -18,9 +18,11 @@ class Linker {
       buffer.clear()
       channel.close()
       file.close()
+      List(res)
     } catch {
-      case _ =>
-        println(s"failed with $path")
+      case exc: Exception =>
+        println(s"failed for $path with $exc")
+        Nil
     }
   }
 }

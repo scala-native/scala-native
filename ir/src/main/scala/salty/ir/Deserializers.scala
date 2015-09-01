@@ -14,7 +14,6 @@ object Deserializers {
     def getTypeSeq: Seq[Type] = getSeq(getType)
     def getType: Type = getType(getTag)
     def getType(tag: Tag): Type = tag match {
-      case Tags.Name()       => getName(tag)
       case Tags.Type.Unit    => Type.Unit
       case Tags.Type.Null    => Type.Null
       case Tags.Type.Nothing => Type.Nothing
@@ -25,9 +24,10 @@ object Deserializers {
       case Tags.Type.I64     => Type.I64
       case Tags.Type.F32     => Type.F32
       case Tags.Type.F64     => Type.F64
-      case Tags.Type.Ptr     => Type.Ptr(getType)
+      case Tags.Type.Ref     => Type.Ref(getType)
       case Tags.Type.Array   => Type.Array(getType, getInt)
       case Tags.Type.Slice   => Type.Slice(getType)
+      case Tags.Type.Named   => Type.Named(getName.asInstanceOf[Name.Global])
     }
 
     def getInstrSeq(implicit env: BlockEnv): Seq[Instr] = getSeq(getInstr)

@@ -9,7 +9,8 @@ import salty.ir
 import salty.ir.{Expr => E, Type => Ty, Termn => Tn, Instr => I,
                  Val => V, Name => N, Stat => S, Block => B, Branch => Br,
                  BinOp, ConvOp}
-import salty.util.ScopedVar, ScopedVar.withScopedVars
+import salty.ir.Shows._
+import salty.util, util.Sh
 
 abstract class GenSaltyCode extends PluginComponent
                                with GenIRFiles
@@ -74,7 +75,7 @@ abstract class GenSaltyCode extends PluginComponent
       val instrs = params.map { param =>
         I.Assign(param, E.Phi(Nil))
       }
-      val block = B(name, instrs, Tn.Out(V.Unit))
+      val block = B(name, instrs, Tn.Undefined)
       this.blocks += sym -> block
       this.params += sym -> params
       block
@@ -118,12 +119,12 @@ abstract class GenSaltyCode extends PluginComponent
   }
 
   class SaltyCodePhase(prev: Phase) extends StdPhase(prev) {
-    val currentLocalInfo = new ScopedVar[CollectLocalInfo]
-    val currentClassSym = new ScopedVar[Symbol]
-    val currentMethodSym = new ScopedVar[Symbol]
-    val currentEnv = new ScopedVar[Env]
-    val currentLabelEnv = new ScopedVar[LabelEnv]
-    val currentThis = new ScopedVar[ir.Val]
+    val currentLocalInfo = new util.ScopedVar[CollectLocalInfo]
+    val currentClassSym  = new util.ScopedVar[Symbol]
+    val currentMethodSym = new util.ScopedVar[Symbol]
+    val currentEnv       = new util.ScopedVar[Env]
+    val currentLabelEnv  = new util.ScopedVar[LabelEnv]
+    val currentThis      = new util.ScopedVar[ir.Val]
 
     implicit def fresh: ir.Fresh = currentEnv.fresh
 
@@ -151,11 +152,12 @@ abstract class GenSaltyCode extends PluginComponent
           generatedIR += ((sym, genClass(cd)))
       }
 
-      for ((sym, stat) <- generatedIR)
+      for ((sym, stat) <- generatedIR) {
         genIRFile(cunit, sym, stat)
+      }
     }
 
-    def genClass(cd: ClassDef): ir.Stat = withScopedVars (
+    def genClass(cd: ClassDef): ir.Stat = util.ScopedVar.withScopedVars (
       currentClassSym := cd.symbol
     ) {
       val sym = cd.symbol
@@ -197,7 +199,7 @@ abstract class GenSaltyCode extends PluginComponent
         S.Var(encodeFieldName(f), genType(f.tpe))
       }).toList
 
-    def genDef(dd: DefDef): ir.Stat = withScopedVars (
+    def genDef(dd: DefDef): ir.Stat = util.ScopedVar.withScopedVars (
       currentMethodSym := dd.symbol
     ) {
       val sym = dd.symbol
@@ -212,7 +214,7 @@ abstract class GenSaltyCode extends PluginComponent
         S.Declare(name, params, ty)
       } else {
         val env = new Env
-        withScopedVars (
+        util.ScopedVar.withScopedVars (
           currentEnv := env,
           currentLabelEnv := new LabelEnv(env),
           currentLocalInfo := (new CollectLocalInfo).collect(dd.rhs)
@@ -239,15 +241,15 @@ abstract class GenSaltyCode extends PluginComponent
         ir.LabeledType(name, ty)
       }
 
-    def genDefBody(body: Tree, paramValues: List[ir.Val]): ir.Block = body match {
+    def genDefBody(body: Tree, paramValues: List[ir.Val]): ir.Block = (body match {
       case Block(List(ValDef(_, nme.THIS, _, _)),
                  label @ LabelDef(name, Ident(nme.THIS) :: _, rhs)) =>
-        val entry = B(Tn.Out(V.Unit))
+        val entry = B(Tn.Undefined)
         val values = (V.This :: paramValues).take(label.params.length)
         currentLabelEnv.enterLabel(label)
         currentLabelEnv.enterLabelCall(label.symbol, values, entry)
         val block =
-          withScopedVars (
+          util.ScopedVar.withScopedVars (
             currentThis := currentLabelEnv.resolveLabelParams(label.symbol).head
           ) {
             genLabel(label)
@@ -255,12 +257,12 @@ abstract class GenSaltyCode extends PluginComponent
         entry.termn = Tn.Jump(block)
         entry.simplify
       case _ =>
-        withScopedVars (
+        util.ScopedVar.withScopedVars (
           currentThis := V.This
         ) {
           genExpr(body).simplify
         }
-    }
+    }).verify
 
     def genExpr(tree: Tree): ir.Block = tree match {
       case label: LabelDef =>
@@ -586,7 +588,8 @@ abstract class GenSaltyCode extends PluginComponent
       case Apply(fun, Nil) =>
         currentLabelEnv.resolveLabel(fun.symbol)
       case Apply(fun, args) =>
-        B.chain(args.map(genExpr)) { vals =>
+        val argblocks = args.map(genExpr)
+        B.chain(argblocks) { vals =>
           val block = B(Tn.Jump(currentLabelEnv.resolveLabel(fun.symbol)))
           currentLabelEnv.enterLabelCall(fun.symbol, vals, block)
           block
@@ -594,14 +597,14 @@ abstract class GenSaltyCode extends PluginComponent
     }
 
     lazy val primitive2box = Map(
-      BooleanTpe -> N.Global("java.lang.Boolean"),
-      ByteTpe    -> N.Global("java.lang.Byte"),
-      CharTpe    -> N.Global("java.lang.Character"),
-      ShortTpe   -> N.Global("java.lang.Short"),
-      IntTpe     -> N.Global("java.lang.Integer"),
-      LongTpe    -> N.Global("java.lang.Long"),
-      FloatTpe   -> N.Global("java.lang.Float"),
-      DoubleTpe  -> N.Global("java.lang.Double")
+      BooleanTpe -> Ty.Named(N.Global("java.lang.Boolean")),
+      ByteTpe    -> Ty.Named(N.Global("java.lang.Byte")),
+      CharTpe    -> Ty.Named(N.Global("java.lang.Character")),
+      ShortTpe   -> Ty.Named(N.Global("java.lang.Short")),
+      IntTpe     -> Ty.Named(N.Global("java.lang.Integer")),
+      LongTpe    -> Ty.Named(N.Global("java.lang.Long")),
+      FloatTpe   -> Ty.Named(N.Global("java.lang.Float")),
+      DoubleTpe  -> Ty.Named(N.Global("java.lang.Double"))
     )
 
     lazy val ctorName = N.Global(nme.CONSTRUCTOR.toString)
@@ -963,13 +966,13 @@ abstract class GenSaltyCode extends PluginComponent
       }
     }
 
-    def genNew(ty: ir.Name, ctorsym: Symbol, args: List[Tree]) =
+    def genNew(cname: ir.Name, ctorsym: Symbol, args: List[Tree]) =
       B.chain(args.map(genExpr)) { values =>
-        val ctor = N.Nested(ty, encodeDefName(ctorsym))
+        val ctor = N.Nested(cname, encodeDefName(ctorsym))
         val n    = fresh()
 
-        B(List(I.Assign(n, E.Alloc(ty)),
-              E.Call(ctor, n +: values)),
+        B(List(I.Assign(n, E.Alloc(Ty.Named(cname))),
+               E.Call(ctor, n +: values)),
           Tn.Out(n))
       }
 

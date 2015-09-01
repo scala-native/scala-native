@@ -86,7 +86,7 @@ trait GenTypeKinds extends SubComponent with GenNameEncoding {
         case NothingClass => Ty.Nothing
       }
     case ClassKind(sym) =>
-      Ty.Ptr(encodeClassName(sym))
+      Ty.Ref(Ty.Named(encodeClassName(sym)))
     case ArrayKind(of) =>
       Ty.Slice(toIRType(of))
   }

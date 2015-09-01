@@ -1,8 +1,10 @@
 package salty.ir
 
 import scala.collection.mutable
+import salty.util.Sh
+import salty.ir.Shows._
 
-sealed abstract trait Type
+sealed abstract class Type
 object Type {
   final case object Null    extends Type
   final case object Nothing extends Type
@@ -21,19 +23,21 @@ object Type {
   final object F32 extends Type.F(32)
   final object F64 extends Type.F(64)
 
-  final case class Ptr(ty: Type) extends Type
+  final case class Ref(ty: Type) extends Type
   final case class Slice(ty: Type) extends Type
   final case class Array(ty: Type, length: Int) extends Type
+  final case class Named(name: Name) extends Type
 }
 
-sealed abstract trait Instr
+sealed abstract class Instr
 object Instr {
   final case class Assign(name: Name, expr: Expr) extends Instr
 }
 
-sealed abstract trait Termn
+sealed abstract class Termn
 object Termn {
   sealed abstract class Leaf extends Termn
+  final case object Undefined extends Leaf
   final case class Out(value: Val) extends Leaf
   final case class Return(value: Val) extends Leaf
   final case class Throw(value: Val) extends Leaf
@@ -45,46 +49,7 @@ object Termn {
                        finallyb: Option[Block]) extends Termn
 }
 
-sealed abstract class BinOp
-object BinOp {
-  final case object Add    extends BinOp
-  final case object Sub    extends BinOp
-  final case object Mul    extends BinOp
-  final case object Div    extends BinOp
-  final case object Mod    extends BinOp
-  final case object Shl    extends BinOp
-  final case object Lshr   extends BinOp
-  final case object Ashr   extends BinOp
-  final case object And    extends BinOp
-  final case object Or     extends BinOp
-  final case object Xor    extends BinOp
-  final case object Eq     extends BinOp
-  final case object Equals extends BinOp
-  final case object Neq    extends BinOp
-  final case object Lt     extends BinOp
-  final case object Lte    extends BinOp
-  final case object Gt     extends BinOp
-  final case object Gte    extends BinOp
-}
-
-sealed abstract class ConvOp
-object ConvOp {
-  final case object Trunc    extends ConvOp
-  final case object Zext     extends ConvOp
-  final case object Sext     extends ConvOp
-  final case object Fptrunc  extends ConvOp
-  final case object Fpext    extends ConvOp
-  final case object Fptoui   extends ConvOp
-  final case object Fptosi   extends ConvOp
-  final case object Uitofp   extends ConvOp
-  final case object Sitofp   extends ConvOp
-  final case object Ptrtoint extends ConvOp
-  final case object Inttoptr extends ConvOp
-  final case object Bitcast  extends ConvOp
-  final case object Cast     extends ConvOp
-}
-
-sealed abstract trait Expr extends Instr
+sealed abstract class Expr extends Instr
 object Expr {
   final case class Bin(op: BinOp, left: Val, right: Val) extends Expr
   final case class Conv(op: ConvOp, value: Val, to: Type) extends Expr
@@ -100,7 +65,7 @@ object Expr {
   final case object Catchpad extends Expr
 }
 
-sealed abstract trait Val extends Expr
+sealed abstract class Val extends Expr
 object Val {
   final case object Null extends Val
   final case object Unit extends Val
@@ -117,7 +82,7 @@ object Val {
   def apply(b: Boolean) = Val.Bool(b)
 }
 
-sealed abstract trait Stat
+sealed abstract class Stat
 object Stat {
   final case class Class(name: Name, parent: Name,
                          interfaces: Seq[Name], body: Seq[Stat]) extends Stat
@@ -132,7 +97,7 @@ object Stat {
                           ty: Type, body: Block) extends Stat
 }
 
-sealed abstract class Name extends Val with Type
+sealed abstract class Name extends Val
 object Name {
   final case class Local(id: String) extends Name
   final case class Global(id: String) extends Name
@@ -237,37 +202,23 @@ final case class Block(var name: Name,
   }
 
   def simplify: Block = {
-    val usecount = mutable.Map.empty[Name, Int].withDefault(_ => 0)
-    this.foreach { block =>
-      block.foreachNext { next =>
-        usecount(next.name) += 1
-      }
-    }
-    val mergemap = mutable.Map.empty[Name, Block]
-    def fixphi(instr: Instr) = instr match {
-      case Instr.Assign(n, Expr.Phi(branches)) =>
-        Instr.Assign(n, Expr.Phi(
-          branches.map { case br @ Branch(v, block) =>
-            Branch(v, mergemap.get(block.name).getOrElse(block))
+    (new SimplifyCFG).run(this)
+    this
+  }
+
+  def verify: Block = {
+    var blocks = List.empty[Block]
+    this.foreach { b => blocks = b :: blocks }
+    blocks.foreach {
+      _.instrs.foreach {
+        case Instr.Assign(_, Expr.Phi(branches)) =>
+          branches.foreach { br =>
+            assert(blocks.contains(br.block),
+              sh"block referenced but doesn't exist in the call graph ${br.block}")
           }
-        ))
-      case _ => instr
-    }
-    this.foreach { block =>
-      def loop() = block match {
-        case Block(_, instrs1, Termn.Jump(next @ Block(_, instrs2, termn)))
-             if usecount(next.name) == 1 =>
-          block.instrs = instrs1 ++ instrs2
-          block.termn = termn
-          mergemap(next.name) = block
-          true
         case _ =>
-          false
+          ()
       }
-      while (loop()) ()
-    }
-    this.foreach { block =>
-      block.instrs = block.instrs.map(fixphi)
     }
     this
   }
@@ -275,9 +226,9 @@ final case class Block(var name: Name,
 object Block {
   def apply(termn: Termn)(implicit fresh: Fresh): Block =
     new Block(fresh("block"), Nil, termn)
-  def apply(instrs: Seq[Instr], termn: Termn)(implicit fresh: Fresh): Block = {
+
+  def apply(instrs: Seq[Instr], termn: Termn)(implicit fresh: Fresh): Block =
     new Block(fresh("block"), instrs, termn)
-  }
 
   def chain(blocks: Seq[Block])(f: Seq[Val] => Block)
            (implicit fresh: Fresh): Block = {
@@ -296,5 +247,44 @@ object Block {
 
 final case class Branch(value: Val, block: Block)
 final case class LabeledType(name: Name, ty: Type)
+
+sealed abstract class BinOp
+object BinOp {
+  final case object Add    extends BinOp
+  final case object Sub    extends BinOp
+  final case object Mul    extends BinOp
+  final case object Div    extends BinOp
+  final case object Mod    extends BinOp
+  final case object Shl    extends BinOp
+  final case object Lshr   extends BinOp
+  final case object Ashr   extends BinOp
+  final case object And    extends BinOp
+  final case object Or     extends BinOp
+  final case object Xor    extends BinOp
+  final case object Eq     extends BinOp
+  final case object Equals extends BinOp
+  final case object Neq    extends BinOp
+  final case object Lt     extends BinOp
+  final case object Lte    extends BinOp
+  final case object Gt     extends BinOp
+  final case object Gte    extends BinOp
+}
+
+sealed abstract class ConvOp
+object ConvOp {
+  final case object Trunc    extends ConvOp
+  final case object Zext     extends ConvOp
+  final case object Sext     extends ConvOp
+  final case object Fptrunc  extends ConvOp
+  final case object Fpext    extends ConvOp
+  final case object Fptoui   extends ConvOp
+  final case object Fptosi   extends ConvOp
+  final case object Uitofp   extends ConvOp
+  final case object Sitofp   extends ConvOp
+  final case object Ptrtoint extends ConvOp
+  final case object Inttoptr extends ConvOp
+  final case object Bitcast  extends ConvOp
+  final case object Cast     extends ConvOp
+}
 
 

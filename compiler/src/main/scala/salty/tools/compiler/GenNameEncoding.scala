@@ -8,15 +8,15 @@ import salty.ir.{Name => N}
 trait GenNameEncoding extends SubComponent {
   import global._, definitions._
 
-  def encodeFullFieldName(sym: Symbol) = N.Nested(encodeClassName(sym.owner),
-                                                  encodeFieldName(sym))
+  def encodeFullFieldName(sym: Symbol): N = N.Nested(encodeClassName(sym.owner),
+                                                     encodeFieldName(sym))
 
-  def encodeFieldName(sym: Symbol) = N.Global(sym.name.toString)
+  def encodeFieldName(sym: Symbol): N = N.Global(sym.name.toString)
 
-  def encodeFullDefName(sym: Symbol) = N.Nested(encodeClassName(sym.owner),
+  def encodeFullDefName(sym: Symbol): N = N.Nested(encodeClassName(sym.owner),
                                                 encodeDefName(sym))
 
-  def encodeDefName(sym: Symbol) = N.Global(sym.name.toString)
+  def encodeDefName(sym: Symbol): N = N.Global(sym.name.toString)
 
-  def encodeClassName(sym: Symbol) = N.Global(sym.fullName.toString)
+  def encodeClassName(sym: Symbol): N = N.Global(sym.fullName.toString)
 }

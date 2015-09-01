@@ -4,7 +4,6 @@ object Serializers {
   import salty.util.Serialize, Serialize.{Sequence => s}
 
   implicit val serializeType: Serialize[Type] = Serialize {
-    case n: Name           => n
     case Type.Unit         => Tags.Type.Unit
     case Type.Null         => Tags.Type.Null
     case Type.Nothing      => Tags.Type.Nothing
@@ -15,9 +14,10 @@ object Serializers {
     case Type.I64          => Tags.Type.I64
     case Type.F32          => Tags.Type.F32
     case Type.F64          => Tags.Type.F64
-    case Type.Ptr(ty)      => s(Tags.Type.Ptr, ty)
+    case Type.Ref(ty)      => s(Tags.Type.Ref, ty)
     case Type.Array(ty, n) => s(Tags.Type.Array, ty, n)
     case Type.Slice(ty)    => s(Tags.Type.Slice, ty)
+    case Type.Named(n)     => s(Tags.Type.Named, (n: Name))
   }
 
   implicit val serializeInstr: Serialize[Instr] = Serialize {

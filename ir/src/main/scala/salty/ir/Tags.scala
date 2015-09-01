@@ -14,13 +14,14 @@ object Tags {
     final val I64     = 1 + I32
     final val F32     = 1 + I64
     final val F64     = 1 + F32
-    final val Ptr     = 1 + F64
-    final val Slice   = 1 + Ptr
+    final val Ref     = 1 + F64
+    final val Slice   = 1 + Ref
     final val Array   = 1 + Slice
+    final val Named   = 1 + Array
   }
 
   object Instr {
-    final val Assign = 1 + Type.Array
+    final val Assign = 1 + Type.Named
   }
 
   object Termn {

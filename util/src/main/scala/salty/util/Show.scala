@@ -3,7 +3,7 @@ package salty.util
 trait Show[T] { def apply(t: T): Show.Result }
 object Show {
   sealed abstract class Result {
-    def build = {
+    override def toString = {
       val sb = new StringBuilder
       var indentation = 0
       def nl(res: Result) = {
@@ -34,6 +34,12 @@ object Show {
           indentation += 1
         case Newline(res) =>
           nl(res)
+        case Interpolated(parts, args) =>
+          parts.init.zip(args).foreach { case (part, arg) =>
+            sb.append(part)
+            loop(arg)
+          }
+          sb.append(parts.last)
       }
       loop(this)
       sb.toString
@@ -47,6 +53,7 @@ object Show {
   final case class Indent(res: Result) extends Result
   final case class Unindent(res: Result) extends Result
   final case class Newline(res: Result) extends Result
+  final case class Interpolated(parts: Seq[String], args: Seq[Result]) extends Result
 
   def apply[T](f: T => Result): Show[T] =
     new Show[T] { def apply(input: T): Result = f(input) }
@@ -57,4 +64,5 @@ object Show {
     implicitly[Show[T]].apply(t)
   implicit def seqToResult[T: Show](ts: Seq[T]): Seq[Result] =
     ts.map { t => implicitly[Show[T]].apply(t) }
+  implicit def anyToString[T]: Show[T] = apply(_.toString)
 }

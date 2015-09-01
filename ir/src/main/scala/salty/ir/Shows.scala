@@ -3,18 +3,19 @@ package salty.ir
 object Shows {
   import salty.util.Show, Show.{Sequence => s, Indent => i, Unindent => u,
                                 Repeat => r, Newline => n}
+  import salty.util.Sh
 
   implicit val showType: Show[Type] = Show {
-    case n: Name           => n
     case Type.Unit         => "unit"
     case Type.Null         => "null"
     case Type.Nothing      => "nothing"
     case Type.Bool         => "bool"
     case Type.I(w)         => s("i", w.toString)
     case Type.F(w)         => s("f", w.toString)
-    case Type.Ptr(ty)      => s(ty, "*")
+    case Type.Ref(ty)      => s(ty, "!")
     case Type.Array(ty, n) => s("[", ty, ", ", n.toString, "]")
     case Type.Slice(ty)    => s("[", ty, "]")
+    case Type.Named(n)     => s((n: Name))
   }
 
   implicit val showInstr: Show[Instr] = Show {
@@ -25,6 +26,8 @@ object Shows {
   }
 
   implicit val showTermn: Show[Termn] = Show {
+    case Termn.Undefined =>
+      "undefined"
     case Termn.Out(value) =>
       s("out ", value)
     case Termn.Return(value) =>
@@ -53,7 +56,7 @@ object Shows {
     case Expr.Conv(op, value, to) =>
       s(op.toString.toLowerCase, " ", value, " to ", to)
     case Expr.Is(value, ty) =>
-      s(value, " is ", ty)
+      s("is ", value, ", ", ty)
     case Expr.Alloc(name, elements) =>
       s("alloc ", name,
         elements.map { v => s(", ", v) }.getOrElse(s()))
@@ -68,9 +71,9 @@ object Shows {
     case Expr.Store(ptr, value) =>
       s("store ", ptr, ", ", value)
     case Expr.Box(value, ty) =>
-      s(value, " box ", ty)
+      s("box ", value, ", ", ty)
     case Expr.Unbox(value, ty) =>
-      s(value, " unbox ", ty)
+      s("unbox ", value, ", ", ty)
     case Expr.Length(value) =>
       s("length ", value)
     case Expr.Catchpad =>
@@ -117,9 +120,11 @@ object Shows {
   }
 
   implicit val showBlock: Show[Block] = Show { entry =>
+    def repr(b: Block) =
+      s(b.name, ":", r(b.instrs.map(i(_))), i(b.termn))
     var shows = List.empty[Show.Result]
     entry.foreachBreadthFirst { b =>
-      shows = s(b.name, ":", r(b.instrs.map(i(_))), i(b.termn)) :: shows
+      shows = repr(b) :: shows
     }
     val first :: last = shows.reverse
     s(first, r(last.map(n(_))))
