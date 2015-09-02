@@ -29,21 +29,6 @@ object Instr {
   final case class Assign(name: Name, expr: Expr) extends Instr
 }
 
-sealed abstract class Termn
-object Termn {
-  sealed abstract class Leaf extends Termn
-  final case object Undefined extends Leaf
-  final case class Out(value: Val) extends Leaf
-  final case class Return(value: Val) extends Leaf
-  final case class Throw(value: Val) extends Leaf
-  final case class Jump(to: Block) extends Termn
-  final case class If(cond: Val, thenb: Block, elseb: Block) extends Termn
-  final case class Switch(on: Val, default: Block, branches: Seq[Branch]) extends Termn
-  final case class Try(body: Block,
-                       catchb: Option[Block],
-                       finallyb: Option[Block]) extends Termn
-}
-
 sealed abstract class Expr extends Instr
 object Expr {
   final case class Bin(op: BinOp, left: Val, right: Val) extends Expr
@@ -75,6 +60,28 @@ object Val {
   def apply(b: Boolean) = Val.Bool(b)
 }
 
+sealed abstract class Name extends Val
+object Name {
+  final case class Local(id: String) extends Name
+  final case class Global(id: String) extends Name
+  final case class Nested(parent: Name, child: Name) extends Name
+}
+
+sealed abstract class Termn
+object Termn {
+  sealed abstract class Leaf extends Termn
+  final case object Undefined extends Leaf
+  final case class Out(value: Val) extends Leaf
+  final case class Return(value: Val) extends Leaf
+  final case class Throw(value: Val) extends Leaf
+  final case class Jump(to: Block) extends Termn
+  final case class If(cond: Val, thenb: Block, elseb: Block) extends Termn
+  final case class Switch(on: Val, default: Block, branches: Seq[Branch]) extends Termn
+  final case class Try(body: Block,
+                       catchb: Option[Block],
+                       finallyb: Option[Block]) extends Termn
+}
+
 sealed abstract class Stat
 object Stat {
   final case class Class(parent: Name, interfaces: Seq[Name], scope: Scope) extends Stat
@@ -83,13 +90,6 @@ object Stat {
   final case class Field(ty: Type) extends Stat
   final case class Declare(ty: Type, params: Seq[Type]) extends Stat
   final case class Define(ty: Type, params: Seq[LabeledType], body: Block) extends Stat
-}
-
-sealed abstract class Name extends Val
-object Name {
-  final case class Local(id: String) extends Name
-  final case class Global(id: String) extends Name
-  final case class Nested(parent: Name, child: Name) extends Name
 }
 
 final case class LabeledType(ty: Type, name: Name)
