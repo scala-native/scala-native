@@ -25,13 +25,14 @@ object Tags {
   }
 
   object Termn {
-    final val Out    = 1 + Instr.Assign
-    final val Return = 1 + Out
-    final val Throw  = 1 + Return
-    final val Jump   = 1 + Throw
-    final val If     = 1 + Jump
-    final val Switch = 1 + If
-    final val Try    = 1 + Switch
+    final val Undefined = 1 + Instr.Assign
+    final val Out       = 1 + Undefined
+    final val Return    = 1 + Out
+    final val Throw     = 1 + Return
+    final val Jump      = 1 + Throw
+    final val If        = 1 + Jump
+    final val Switch    = 1 + If
+    final val Try       = 1 + Switch
   }
 
   object BinOp {

@@ -26,6 +26,7 @@ object Serializers {
   }
 
   implicit val serializeTermn: Serialize[Termn] = Serialize {
+    case Termn.Undefined                       => Tags.Termn.Undefined
     case Termn.Out(value)                      => s(Tags.Termn.Out, value)
     case Termn.Return(value)                   => s(Tags.Termn.Return, value)
     case Termn.Throw(value)                    => s(Tags.Termn.Throw, value)

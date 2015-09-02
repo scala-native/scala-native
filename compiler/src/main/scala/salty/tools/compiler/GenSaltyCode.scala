@@ -446,14 +446,14 @@ abstract class GenSaltyCode extends PluginComponent
           translateMatch(label)
 
         case _ =>
-          B.chain(stats.map(genExpr)) { vals =>
+          stats.map(genExpr).chain { vals =>
             genExpr(last)
           }
       }
     }
 
-    def genMatch(prologue: List[Tree], cases: List[LabelDef], last: LabelDef) = {
-      B.chain(prologue.map(genExpr)) { _ =>
+    def genMatch(prologue: List[Tree], cases: List[LabelDef], last: LabelDef) =
+      prologue.map(genExpr).chain { _ =>
         currentLabelEnv.enterLabel(last)
         for (label <- cases) {
           currentLabelEnv.enterLabel(label)
@@ -461,7 +461,6 @@ abstract class GenSaltyCode extends PluginComponent
         genLabel(last)
         cases.map(genLabel).head
       }
-    }
 
     def genLabel(label: LabelDef) = {
       val entry = currentLabelEnv.resolveLabel(label.symbol)
@@ -505,7 +504,7 @@ abstract class GenSaltyCode extends PluginComponent
     def genArrayValue(av: ArrayValue) = {
       val ArrayValue(tpt, elems) = av
 
-      B.chain(elems.map(genExpr)) { values =>
+      elems.map(genExpr).chain { values =>
         val ty  = genType(tpt.tpe)
         val len = values.length
         val n   = fresh()
@@ -588,8 +587,7 @@ abstract class GenSaltyCode extends PluginComponent
       case Apply(fun, Nil) =>
         currentLabelEnv.resolveLabel(fun.symbol)
       case Apply(fun, args) =>
-        val argblocks = args.map(genExpr)
-        B.chain(argblocks) { vals =>
+        args.map(genExpr).chain { vals =>
           val block = B(Tn.Jump(currentLabelEnv.resolveLabel(fun.symbol)))
           currentLabelEnv.enterLabelCall(fun.symbol, vals, block)
           block
@@ -811,7 +809,7 @@ abstract class GenSaltyCode extends PluginComponent
       val Apply(Select(array, _), args) = app
       val blocks = (array :: args).map(genExpr)
 
-      B.chain(blocks) { values =>
+      blocks.chain { values =>
         val arrayvalue :: argvalues = values
         val n = fresh()
 
@@ -934,7 +932,7 @@ abstract class GenSaltyCode extends PluginComponent
       val method = encodeFullDefName(fun.symbol)
       val n = fresh()
 
-      B.chain(args.map(genExpr)) { values =>
+      args.map(genExpr).chain { values =>
         B(List(I.Assign(n, E.Call(method, currentThis.get +: values))),
           Tn.Out(n))
       }
@@ -967,7 +965,7 @@ abstract class GenSaltyCode extends PluginComponent
     }
 
     def genNew(cname: ir.Name, ctorsym: Symbol, args: List[Tree]) =
-      B.chain(args.map(genExpr)) { values =>
+      args.map(genExpr).chain { values =>
         val ctor = N.Nested(cname, encodeDefName(ctorsym))
         val n    = fresh()
 
@@ -980,7 +978,7 @@ abstract class GenSaltyCode extends PluginComponent
       val Apply(fun @ Select(receiver, _), args) = app
 
       genExpr(receiver).merge { rvalue =>
-        B.chain(args.map(genExpr)) { argvalues =>
+        args.map(genExpr).chain { argvalues =>
           genMethodCall(fun.symbol, rvalue, argvalues)
         }
       }

@@ -39,13 +39,14 @@ object Deserializers {
 
     def getTermn(implicit env: BlockEnv): Termn = getTermn(getTag)
     def getTermn(tag: Tag)(implicit env: BlockEnv): Termn = tag match {
-      case Tags.Termn.Out    => Termn.Out(getVal)
-      case Tags.Termn.Return => Termn.Return(getVal)
-      case Tags.Termn.Throw  => Termn.Throw(getVal)
-      case Tags.Termn.Jump   => Termn.Jump(getBlock)
-      case Tags.Termn.If     => Termn.If(getVal, getBlock, getBlock)
-      case Tags.Termn.Switch => Termn.Switch(getVal, getBlock, getBranchSeq)
-      case Tags.Termn.Try    => Termn.Try(getBlock, getBlockOpt, getBlockOpt)
+      case Tags.Termn.Undefined => Termn.Undefined
+      case Tags.Termn.Out       => Termn.Out(getVal)
+      case Tags.Termn.Return    => Termn.Return(getVal)
+      case Tags.Termn.Throw     => Termn.Throw(getVal)
+      case Tags.Termn.Jump      => Termn.Jump(getBlock)
+      case Tags.Termn.If        => Termn.If(getVal, getBlock, getBlock)
+      case Tags.Termn.Switch    => Termn.Switch(getVal, getBlock, getBranchSeq)
+      case Tags.Termn.Try       => Termn.Try(getBlock, getBlockOpt, getBlockOpt)
     }
 
     def getExpr(implicit env: BlockEnv): Expr = getExpr(getTag)
