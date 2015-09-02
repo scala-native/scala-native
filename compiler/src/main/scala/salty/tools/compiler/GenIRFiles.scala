@@ -4,6 +4,7 @@ package compiler
 import java.io._
 import java.nio._
 import java.nio.channels._
+import java.util.Base64
 import scala.tools.nsc._
 import scala.tools.nsc.io.AbstractFile
 import salty.ir
@@ -14,26 +15,11 @@ import salty.util.serialize
 trait GenIRFiles extends SubComponent  {
   import global._
 
-  def genIRFile(cunit: CompilationUnit, sym: Symbol, stat: ir.Stat): String = {
+  def genIRFile(cunit: CompilationUnit, sym: Symbol, stat: ir.Stat): Unit = {
     val outfile = getFileFor(cunit, sym, ".salty").file
-    val buffer = serialize(stat)
     val channel = (new FileOutputStream(outfile)).getChannel()
-    buffer.flip
-    try channel.write(buffer)
+    try channel.write(serialize(stat))
     finally channel.close
-    outfile.getCanonicalPath
-  }
-
-  def loadIRFile(path: String): ir.Stat = {
-    val file = new RandomAccessFile(path, "r")
-    val channel = file.getChannel
-    val buffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size())
-    buffer.load
-    val res = buffer.getStat
-    buffer.clear
-    channel.close
-    file.close
-    res
   }
 
   private def getFileFor(cunit: CompilationUnit, sym: Symbol, suffix: String) = {

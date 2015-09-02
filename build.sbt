@@ -35,7 +35,7 @@ lazy val linker =
   project.in(file("linker")).
     settings(common: _*).
     settings(
-      fork in console := true
+      libraryDependencies += "commons-io" % "commons-io" % "2.4"
     ).
     dependsOn(ir)
 

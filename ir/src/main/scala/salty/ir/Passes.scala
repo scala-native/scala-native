@@ -1,7 +1,7 @@
 package salty.ir
 
 import scala.collection.{ mutable => mut }
-import salty.util.Sh
+import salty.util.sh
 import salty.ir.Combinators._
 
 abstract class Pass[T] {

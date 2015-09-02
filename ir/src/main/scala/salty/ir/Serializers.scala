@@ -105,12 +105,16 @@ object Serializers {
   }
 
   implicit val serializeStat: Serialize[Stat] = Serialize {
-    case Stat.Class(name, p, ifaces, body)  => s(Tags.Stat.Class, name, p, ifaces, body)
-    case Stat.Interface(name, ifaces, body) => s(Tags.Stat.Interface, name, ifaces, body)
-    case Stat.Module(name, p, ifaces, body) => s(Tags.Stat.Module, name, p, ifaces, body)
-    case Stat.Var(name, ty)                 => s(Tags.Stat.Var, name, ty)
-    case Stat.Declare(name, args, ty)       => s(Tags.Stat.Declare, name, args, ty)
-    case Stat.Define(name, args, ty, block) => s(Tags.Stat.Define, name, args, ty, block)
+    case Stat.Class(p, ifaces, scope)  => s(Tags.Stat.Class, p, ifaces, scope)
+    case Stat.Interface(ifaces, scope) => s(Tags.Stat.Interface, ifaces, scope)
+    case Stat.Module(p, ifaces, scope) => s(Tags.Stat.Module, p, ifaces, scope)
+    case Stat.Field(ty)                => s(Tags.Stat.Field, ty)
+    case Stat.Declare(ty, args)        => s(Tags.Stat.Declare, ty, args)
+    case Stat.Define(ty, args, block)  => s(Tags.Stat.Define, ty, args, block)
+  }
+
+  implicit val serializeScope: Serialize[Scope] = Serialize { scope =>
+    scope.entries.toIterator.map { case (name, stat) => s(name, stat) }.toSeq
   }
 
   implicit val serializeBlock: Serialize[Block] = Serialize { entry =>

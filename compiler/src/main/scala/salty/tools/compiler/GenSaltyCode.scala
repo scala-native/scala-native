@@ -11,7 +11,7 @@ import salty.ir.{Expr => E, Type => Ty, Termn => Tn, Instr => I,
                  BinOp, ConvOp}
 import salty.ir.Shows._
 import salty.ir.Combinators._
-import salty.util, util.Sh
+import salty.util, util.sh
 
 abstract class GenSaltyCode extends PluginComponent
                                with GenIRFiles
@@ -143,22 +143,19 @@ abstract class GenSaltyCode extends PluginComponent
         }
       }
       val classDefs = collectClassDefs(cunit.body)
-      val generatedIR = ListBuffer.empty[(Symbol, ir.Stat)]
 
       classDefs.foreach { cd =>
         val sym = cd.symbol
         if (isPrimitiveValueClass(sym) || (sym == ArrayClass))
           ()
-        else
-          generatedIR += ((sym, genClass(cd)))
-      }
-
-      for ((sym, stat) <- generatedIR) {
-        genIRFile(cunit, sym, stat)
+        else {
+          val (name, stat) = genClass(cd)
+          genIRFile(cunit, sym, stat)
+        }
       }
     }
 
-    def genClass(cd: ClassDef): ir.Stat = util.ScopedVar.withScopedVars (
+    def genClass(cd: ClassDef): (ir.Name.Global, ir.Stat) = util.ScopedVar.withScopedVars (
       currentClassSym := cd.symbol
     ) {
       val sym = cd.symbol
@@ -167,14 +164,14 @@ abstract class GenSaltyCode extends PluginComponent
       val interfaces = genClassInterfaces(sym)
       val fields = genClassFields(sym)
       val methods = genClassMethods(cd.impl.body)
-      val body = fields ++ methods
+      val scope = ir.Scope(Map((fields ++ methods): _*))
 
       if (sym.isModuleClass)
-        S.Module(name, parent, interfaces, body)
+        name -> S.Module(parent, interfaces, scope)
       else if (sym.isInterface)
-        S.Interface(name, interfaces, body)
+        name -> S.Interface(interfaces, scope)
       else
-        S.Class(name, parent, interfaces, body)
+        name -> S.Class(parent, interfaces, scope)
     }
 
     def genClassInterfaces(sym: Symbol) =
@@ -186,7 +183,7 @@ abstract class GenSaltyCode extends PluginComponent
         encodeClassName(psym)
       }
 
-    def genClassMethods(stats: List[Tree]): List[ir.Stat] =
+    def genClassMethods(stats: List[Tree]): List[(ir.Name, ir.Stat)] =
       stats.flatMap {
         case dd: DefDef => List(genDef(dd))
         case _          => Nil
@@ -197,10 +194,10 @@ abstract class GenSaltyCode extends PluginComponent
         f <- sym.info.decls
         if !f.isMethod && f.isTerm && !f.isModule
       } yield {
-        S.Var(encodeFieldName(f), genType(f.tpe))
+        encodeFieldName(f) -> S.Field(genType(f.tpe))
       }).toList
 
-    def genDef(dd: DefDef): ir.Stat = util.ScopedVar.withScopedVars (
+    def genDef(dd: DefDef): (ir.Name, ir.Stat) = util.ScopedVar.withScopedVars (
       currentMethodSym := dd.symbol
     ) {
       val sym = dd.symbol
@@ -212,7 +209,7 @@ abstract class GenSaltyCode extends PluginComponent
 
       if (dd.symbol.isDeferred) {
         val params = genDeclParams(paramSyms)
-        S.Declare(name, params, ty)
+        name -> S.Declare(ty, params)
       } else {
         val env = new Env
         util.ScopedVar.withScopedVars (
@@ -222,7 +219,7 @@ abstract class GenSaltyCode extends PluginComponent
         ) {
           val params = genDefParams(paramSyms)
           val body = genDefBody(dd.rhs, params.map(_.name))
-          S.Define(name, params, ty, body)
+          name -> S.Define(ty, params, body)
         }
       }
     }
@@ -237,9 +234,9 @@ abstract class GenSaltyCode extends PluginComponent
 
     def genDefParams(paramSyms: List[Symbol]): List[ir.LabeledType] =
       paramSyms.map { sym =>
-        val name = currentEnv.enter(sym)
         val ty = genType(sym.tpe)
-        ir.LabeledType(name, ty)
+        val name = currentEnv.enter(sym)
+        ir.LabeledType(ty, name)
       }
 
     def genDefBody(body: Tree, paramValues: List[ir.Val]): ir.Block = (body match {

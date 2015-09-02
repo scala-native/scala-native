@@ -1,6 +1,6 @@
 package salty.ir
 
-import salty.util.Sh
+import salty.util.sh
 
 object Combinators {
   implicit class RichBlock(val self: Block) extends AnyVal {

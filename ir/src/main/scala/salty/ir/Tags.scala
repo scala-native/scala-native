@@ -105,8 +105,8 @@ object Tags {
     final val Class     = 1 + Val.Str
     final val Interface = 1 + Class
     final val Module    = 1 + Interface
-    final val Var       = 1 + Module
-    final val Declare   = 1 + Var
+    final val Field     = 1 + Module
+    final val Declare   = 1 + Field
     final val Define    = 1 + Declare
   }
 

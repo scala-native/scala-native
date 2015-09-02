@@ -29,6 +29,7 @@ object Serialize {
         case Sequence(xs @ _*) => xs.foreach(loop)
       }
       loop(this)
+      buffer.flip
       buffer
     }
   }
@@ -54,6 +55,7 @@ object Serialize {
 
   import Serialize.{Sequence => s}
 
+  implicit def serializeResult[T <: Result]: Serialize[T] = Serialize(identity)
   implicit def serializeOption[T: Serialize]: Serialize[Option[T]] = Serialize {
     case scala.None    => s(0.toByte)
     case scala.Some(v) => s(1.toByte, v)
@@ -62,5 +64,7 @@ object Serialize {
     s(seq.length, s(seq.map(el => (el: Serialize.Result)): _*))
   }
   implicit val serializeString: Serialize[String] = Serialize(_.toSeq)
-  implicit val serializeBoolean: Serialize[Boolean] = Serialize { b => if (b) 1.toByte else 0.toByte }
+  implicit val serializeBoolean: Serialize[Boolean] = Serialize { b =>
+    if (b) 1.toByte else 0.toByte
+  }
 }

@@ -117,16 +117,17 @@ object Deserializers {
       case Tags.Val.Str    => Val.Str(getString)
     }
 
-    def getStatSeq: Seq[Stat] = getSeq(getStat)
     def getStat: Stat = getStat(getTag)
     def getStat(tag: Tag): Stat = tag match {
-      case Tags.Stat.Class     => Stat.Class(getName, getName, getNameSeq, getStatSeq)
-      case Tags.Stat.Interface => Stat.Interface(getName, getNameSeq, getStatSeq)
-      case Tags.Stat.Module    => Stat.Module(getName, getName, getNameSeq, getStatSeq)
-      case Tags.Stat.Var       => Stat.Var(getName, getType)
-      case Tags.Stat.Declare   => Stat.Declare(getName, getTypeSeq, getType)
-      case Tags.Stat.Define    => Stat.Define(getName, getLabeledTypeSeq, getType, getEntryBlock)
+      case Tags.Stat.Class     => Stat.Class(getName, getNameSeq, getScope)
+      case Tags.Stat.Interface => Stat.Interface(getNameSeq, getScope)
+      case Tags.Stat.Module    => Stat.Module(getName, getNameSeq, getScope)
+      case Tags.Stat.Field     => Stat.Field(getType)
+      case Tags.Stat.Declare   => Stat.Declare(getType, getTypeSeq)
+      case Tags.Stat.Define    => Stat.Define(getType, getLabeledTypeSeq, getEntryBlock)
     }
+
+    def getScope = Scope(Map(getSeq((getName, getStat)): _*))
 
     def getBlockOpt(implicit env: BlockEnv): Option[Block] = getOption(getBlock)
     def getBlock(implicit env: BlockEnv): Block = env(getName)
@@ -152,7 +153,7 @@ object Deserializers {
     def getBranch(implicit env: BlockEnv): Branch = Branch(getVal, getBlock)
 
     def getLabeledTypeSeq: Seq[LabeledType] = getSeq(getLabeledType)
-    def getLabeledType: LabeledType = LabeledType(getName, getType)
+    def getLabeledType: LabeledType = LabeledType(getType, getName)
 
     def getOption[T](f: => T): Option[T] = get.toInt match {
       case 0 => None

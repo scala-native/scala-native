@@ -3,7 +3,7 @@ package salty.ir
 import salty.ir.Combinators._
 import salty.util.Show, Show.{Sequence => s, Indent => i, Unindent => u,
                               Repeat => r, Newline => n}
-import salty.util.Sh
+import salty.util.sh
 
 object Shows {
   implicit val showType: Show[Type] = Show {
@@ -95,26 +95,42 @@ object Shows {
   }
 
   implicit val showStat: Show[Stat] = Show {
-    case Stat.Class(name, p, ifaces, body) =>
-      s("class ", name, ": ", r(p +: ifaces, sep = ", "), " {",
-          r(body.map(i(_))),
+    case Stat.Class(p, ifaces, scope) =>
+      s("class", r(p +: ifaces, pre = " (", sep = ", ", post = ")"), " {",
+          i(scope),
         n("}"))
-    case Stat.Interface(name, ifaces, body) =>
-      s("interface ", name, r(ifaces, pre = ": ", sep = ", "), " {",
-          r(body.map(i(_))),
+    case Stat.Interface(ifaces, scope) =>
+      s("interface", r(ifaces, pre = " (", sep = ", ", post = ")"), " {",
+          i(scope),
         n("}"))
-    case Stat.Module(name, p, ifaces, body) =>
-      s("module ", name, ": ", r(p +: ifaces, sep = ", "), " {",
-          r(body.map(i(_))),
+    case Stat.Module(p, ifaces, scope) =>
+      s("module", r(p +: ifaces, pre = " (", sep = ", ", post = ")"), " {",
+          i(scope),
         n("}"))
-    case Stat.Var(name, ty) =>
-      s("var ", name, ": ", ty)
-    case Stat.Declare(name, args, ty) =>
-      s("declare ", name, "(", r(args, sep = ", "), "): ", ty)
-    case Stat.Define(name, args, ty, block) =>
-      s("define ", name, "(", r(args, sep = ", "), "): ", ty, " = {",
-        n(block),
+    case Stat.Field(ty) =>
+      s("field ", ty)
+    case Stat.Declare(ty, args) =>
+      s("declare ", ty, " (", r(args, sep = ", "), ")")
+    case Stat.Define(ty, args, block) =>
+      s("define ", ty, " (", r(args, sep = ", "), ") {",
+        i(block),
         n("}"))
+  }
+
+  implicit def showScope[S <: Scope]: Show[S] = Show { scope =>
+    if (scope.isEmpty) s()
+    else {
+      val entries = scope.entries.toSeq.sortBy {
+        case (n, stat) =>
+          (stat.getClass.toString, sh"$n".toString)
+      }
+      val first +: rest =
+        entries.map {
+          case (name, stat) =>
+            s(name, " = ", stat)
+        }
+      s(first, r(rest.map(n)))
+    }
   }
 
   implicit val showBlock: Show[Block] = Show { entry =>
@@ -139,7 +155,7 @@ object Shows {
   }
 
   implicit val showLabeledType: Show[LabeledType] = Show {
-    case LabeledType(name, ty) => s(name, ": ", ty)
+    case LabeledType(ty, name) => s(ty, " ", name)
   }
 
   implicit val showInt: Show[Int] = Show { _.toString }

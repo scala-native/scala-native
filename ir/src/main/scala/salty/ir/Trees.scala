@@ -1,9 +1,5 @@
 package salty.ir
 
-import scala.collection.mutable
-import salty.util.Sh
-import salty.ir.Shows._
-
 sealed abstract class Type
 object Type {
   final case object Null    extends Type
@@ -81,17 +77,12 @@ object Val {
 
 sealed abstract class Stat
 object Stat {
-  final case class Class(name: Name, parent: Name,
-                         interfaces: Seq[Name], body: Seq[Stat]) extends Stat
-  final case class Interface(name: Name, interfaces: Seq[Name],
-                             body: Seq[Stat]) extends Stat
-  final case class Module(name: Name, parent: Name,
-                          interfaces: Seq[Name], body: Seq[Stat]) extends Stat
-  final case class Var(name: Name, ty: Type) extends Stat
-  final case class Declare(name: Name, params: Seq[Type],
-                           ty: Type) extends Stat
-  final case class Define(name: Name, params: Seq[LabeledType],
-                          ty: Type, body: Block) extends Stat
+  final case class Class(parent: Name, interfaces: Seq[Name], scope: Scope) extends Stat
+  final case class Interface(interfaces: Seq[Name], scope: Scope) extends Stat
+  final case class Module(parent: Name, interfaces: Seq[Name], scope: Scope) extends Stat
+  final case class Field(ty: Type) extends Stat
+  final case class Declare(ty: Type, params: Seq[Type]) extends Stat
+  final case class Define(ty: Type, params: Seq[LabeledType], body: Block) extends Stat
 }
 
 sealed abstract class Name extends Val
@@ -101,7 +92,7 @@ object Name {
   final case class Nested(parent: Name, child: Name) extends Name
 }
 
-final case class LabeledType(name: Name, ty: Type)
+final case class LabeledType(ty: Type, name: Name)
 final case class Branch(value: Val, block: Block)
 final case class Block(var name: Name,
                        var instrs: Seq[Instr],
