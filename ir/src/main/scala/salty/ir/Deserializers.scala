@@ -1,13 +1,13 @@
 package salty.ir
 
 import java.nio.ByteBuffer
+import salty.ir.Tags.Tag
 
 object Deserializers {
   type BlockEnv = Map[Name, Block]
 
   implicit class RichGet(val bb: ByteBuffer) extends AnyVal {
     import bb._
-    import Tags.Tag
 
     def getTag: Tag = getInt
 
@@ -25,7 +25,6 @@ object Deserializers {
       case Tags.Type.F32     => Type.F32
       case Tags.Type.F64     => Type.F64
       case Tags.Type.Ref     => Type.Ref(getType)
-      case Tags.Type.Array   => Type.Array(getType, getInt)
       case Tags.Type.Slice   => Type.Slice(getType)
       case Tags.Type.Named   => Type.Named(getName.asInstanceOf[Name.Global])
     }
@@ -113,8 +112,6 @@ object Deserializers {
       case Tags.Val.This   => Val.This
       case Tags.Val.Bool   => Val.Bool(getBool)
       case Tags.Val.Number => Val.Number(getString, getType)
-      case Tags.Val.Array  => Val.Array(getValSeq)
-      case Tags.Val.Slice  => Val.Slice(getVal, getVal)
       case Tags.Val.Elem   => Val.Elem(getVal, getVal)
       case Tags.Val.Class  => Val.Class(getType)
       case Tags.Val.Str    => Val.Str(getString)

@@ -2,7 +2,7 @@ package salty.ir
 
 import salty.util.Sh
 
-package object ir {
+object Combinators {
   implicit class RichBlock(val self: Block) extends AnyVal {
     import self._
 

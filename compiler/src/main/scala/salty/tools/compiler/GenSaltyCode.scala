@@ -10,6 +10,7 @@ import salty.ir.{Expr => E, Type => Ty, Termn => Tn, Instr => I,
                  Val => V, Name => N, Stat => S, Block => B, Branch => Br,
                  BinOp, ConvOp}
 import salty.ir.Shows._
+import salty.ir.Combinators._
 import salty.util, util.Sh
 
 abstract class GenSaltyCode extends PluginComponent
@@ -505,13 +506,17 @@ abstract class GenSaltyCode extends PluginComponent
       val ArrayValue(tpt, elems) = av
 
       elems.map(genExpr).chain { values =>
-        val ty  = genType(tpt.tpe)
-        val len = values.length
-        val n   = fresh()
+        val n      = fresh()
+        val ty     = genType(tpt.tpe)
+        val len    = values.length
+        val stores = values.zipWithIndex.map {
+          case (v, i) =>
+            E.Store(V.Elem(n, V(i)), v)
+        }
 
-        B(List(I.Assign(n, E.Alloc(Ty.Array(ty, len))),
-              E.Store(n, V.Array(values))),
-          Tn.Out(V.Slice(n, V(len))))
+        B(I.Assign(n, E.Alloc(ty, Some(V(len)))) +:
+          stores,
+          Tn.Out(n))
       }
     }
 
@@ -960,7 +965,7 @@ abstract class GenSaltyCode extends PluginComponent
 
       genExpr(length).merge { v =>
         B(List(I.Assign(n, E.Alloc(elemty, Some(v)))),
-          Tn.Out(V.Slice(n, v)))
+          Tn.Out(n))
       }
     }
 

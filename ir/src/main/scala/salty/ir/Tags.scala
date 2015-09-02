@@ -16,8 +16,7 @@ object Tags {
     final val F64     = 1 + F32
     final val Ref     = 1 + F64
     final val Slice   = 1 + Ref
-    final val Array   = 1 + Slice
-    final val Named   = 1 + Array
+    final val Named   = 1 + Slice
   }
 
   object Instr {
@@ -97,9 +96,7 @@ object Tags {
     final val This   = 1 + Unit
     final val Bool   = 1 + This
     final val Number = 1 + Bool
-    final val Array  = 1 + Number
-    final val Slice  = 1 + Array
-    final val Elem   = 1 + Slice
+    final val Elem   = 1 + Number
     final val Class  = 1 + Elem
     final val Str    = 1 + Class
   }

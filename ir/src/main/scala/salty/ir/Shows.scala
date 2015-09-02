@@ -1,10 +1,11 @@
 package salty.ir
 
-object Shows {
-  import salty.util.Show, Show.{Sequence => s, Indent => i, Unindent => u,
-                                Repeat => r, Newline => n}
-  import salty.util.Sh
+import salty.ir.Combinators._
+import salty.util.Show, Show.{Sequence => s, Indent => i, Unindent => u,
+                              Repeat => r, Newline => n}
+import salty.util.Sh
 
+object Shows {
   implicit val showType: Show[Type] = Show {
     case Type.Unit         => "unit"
     case Type.Null         => "null"
@@ -13,7 +14,6 @@ object Shows {
     case Type.I(w)         => s("i", w.toString)
     case Type.F(w)         => s("f", w.toString)
     case Type.Ref(ty)      => s(ty, "!")
-    case Type.Array(ty, n) => s("[", ty, ", ", n.toString, "]")
     case Type.Slice(ty)    => s("[", ty, "]")
     case Type.Named(n)     => s((n: Name))
   }
@@ -87,8 +87,6 @@ object Shows {
     case Val.This             => "this"
     case Val.Bool(v)          => v.toString
     case Val.Number(repr, ty) => s(repr, (ty: Type))
-    case Val.Array(vs)        => s("[", r(vs, sep = ", "), "]")
-    case Val.Slice(len, data) => s("slice(", len, ", ", data, ")")
     case Val.Elem(ptr, value) => s("elem(", ptr, ", ", value, ")")
     case Val.Class(ty)        => s("class(", ty, ")")
     case Val.Str(str)         =>

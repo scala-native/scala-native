@@ -25,7 +25,6 @@ object Type {
 
   final case class Ref(ty: Type) extends Type
   final case class Slice(ty: Type) extends Type
-  final case class Array(ty: Type, length: Int) extends Type
   final case class Named(name: Name) extends Type
 }
 
@@ -72,8 +71,6 @@ object Val {
   final case object This extends Val
   final case class Bool(value: Boolean) extends Val
   final case class Number(repr: String, ty: Type) extends Val
-  final case class Array(vs: Seq[Val]) extends Val
-  final case class Slice(ptr: Val, length: Val) extends Val
   final case class Elem(ptr: Val, value: Val) extends Val
   final case class Class(ty: Type) extends Val
   final case class Str(value: String) extends Val
@@ -104,8 +101,8 @@ object Name {
   final case class Nested(parent: Name, child: Name) extends Name
 }
 
-final case class Branch(value: Val, block: Block)
 final case class LabeledType(name: Name, ty: Type)
+final case class Branch(value: Val, block: Block)
 final case class Block(var name: Name,
                        var instrs: Seq[Instr],
                        var termn: Termn)

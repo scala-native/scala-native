@@ -1,8 +1,9 @@
 package salty.ir
 
-object Serializers {
-  import salty.util.Serialize, Serialize.{Sequence => s}
+import salty.ir.Combinators._
+import salty.util.Serialize, Serialize.{Sequence => s}
 
+object Serializers {
   implicit val serializeType: Serialize[Type] = Serialize {
     case Type.Unit         => Tags.Type.Unit
     case Type.Null         => Tags.Type.Null
@@ -15,7 +16,6 @@ object Serializers {
     case Type.F32          => Tags.Type.F32
     case Type.F64          => Tags.Type.F64
     case Type.Ref(ty)      => s(Tags.Type.Ref, ty)
-    case Type.Array(ty, n) => s(Tags.Type.Array, ty, n)
     case Type.Slice(ty)    => s(Tags.Type.Slice, ty)
     case Type.Named(n)     => s(Tags.Type.Named, (n: Name))
   }
@@ -99,8 +99,6 @@ object Serializers {
     case Val.This             => Tags.Val.This
     case Val.Bool(v)          => s(Tags.Val.Bool, v)
     case Val.Number(repr, ty) => s(Tags.Val.Number, repr, ty)
-    case Val.Array(vs)        => s(Tags.Val.Array, vs)
-    case Val.Slice(len, data) => s(Tags.Val.Slice, len, data)
     case Val.Elem(ptr, value) => s(Tags.Val.Elem, ptr, value)
     case Val.Class(ty)        => s(Tags.Val.Class, ty)
     case Val.Str(str)         => s(Tags.Val.Str, str)
