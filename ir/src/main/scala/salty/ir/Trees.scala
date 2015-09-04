@@ -104,6 +104,7 @@ object Block {
   def apply(instrs: Seq[Instr], termn: Termn)(implicit fresh: Fresh): Block =
     new Block(fresh("block"), instrs, termn)
 }
+final case class Scope(entries: Map[Name, Defn])
 
 sealed abstract class BinOp
 object BinOp {

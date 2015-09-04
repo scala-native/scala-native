@@ -2,7 +2,7 @@ package salty.ir
 
 import scala.collection.{ mutable => mut }
 import salty.util.sh
-import salty.ir.Combinators._
+import salty.ir, ir.Shows._, ir.Combinators._
 
 abstract class Pass[T] {
   def onBackReference(b: Block): Unit = ()

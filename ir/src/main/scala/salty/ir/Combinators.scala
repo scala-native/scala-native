@@ -102,12 +102,16 @@ object Combinators {
     def verify: Block = {
       var blocks = List.empty[Block]
       self.foreach { b => blocks = b :: blocks }
+      val names = blocks.map(_.name).toSet
       blocks.foreach {
         _.instrs.foreach {
           case Instr.Assign(_, Expr.Phi(branches)) =>
             branches.foreach { br =>
-              assert(blocks.contains(br.block),
-                sh"block referenced but doesn't exist in the call graph ${br.block}")
+              assert(names.contains(br.block.name), {
+                println(sh"block phi-referenced ${br.block}")
+                println(sh"but it doesn't exist in the call graph ${self}")
+                ""
+              })
             }
           case _ =>
             ()

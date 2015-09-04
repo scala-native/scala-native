@@ -118,7 +118,8 @@ object Shows {
   }
 
   implicit def showScope[S <: Scope]: Show[S] = Show { scope =>
-    if (scope.isEmpty) s()
+    if (scope.entries.isEmpty)
+      s()
     else {
       val entries = scope.entries.toSeq.sortBy {
         case (n, stat) =>

@@ -45,6 +45,7 @@ lazy val sandbox =
     settings(
       scalacOptions ++= Seq(
         "-Xplugin:compiler/target/scala-2.11/compiler_2.11-0.1-SNAPSHOT.jar"
-      )
+      ),
+      libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.11.7"
     ).
     dependsOn(ir, compiler)

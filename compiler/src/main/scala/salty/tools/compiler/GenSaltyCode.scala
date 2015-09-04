@@ -71,23 +71,26 @@ abstract class GenSaltyCode extends PluginComponent
     var blocks = Map.empty[Symbol, ir.Block]
     var params = Map.empty[Symbol, List[ir.Val]]
 
-    def enterLabel(label: LabelDef): ir.Block = {
-      val sym = label.symbol
-      val name = env.enter(sym)
-      val params = label.params.zip(sym.asMethod.paramLists.head).map {
-        case (treeid, reflsym) =>
-          val name = env.enter(reflsym)
-          env.names += treeid.symbol -> name
-          name
+    def enterLabel(label: LabelDef): ir.Block =
+      if (blocks.contains(label.symbol))
+        throw new Exception(s"can't enter label twice: $label")
+      else {
+        val sym = label.symbol
+        val name = env.enter(sym)
+        val params = label.params.zip(sym.asMethod.paramLists.head).map {
+          case (treeid, reflsym) =>
+            val name = env.enter(reflsym)
+            env.names += treeid.symbol -> name
+            name
+        }
+        val instrs = params.map { param =>
+          I.Assign(param, E.Phi(Nil))
+        }
+        val block = B(name, instrs, Tn.Undefined)
+        this.blocks += sym -> block
+        this.params += sym -> params
+        block
       }
-      val instrs = params.map { param =>
-        I.Assign(param, E.Phi(Nil))
-      }
-      val block = B(name, instrs, Tn.Undefined)
-      this.blocks += sym -> block
-      this.params += sym -> params
-      block
-    }
 
     def enterLabelCall(sym: Symbol, values: Seq[ir.Val], from: ir.Block): Unit = {
       val block = resolveLabel(sym)
@@ -157,7 +160,6 @@ abstract class GenSaltyCode extends PluginComponent
           ()
         else {
           val scope = genClass(cd)
-          println(sh"$scope")
           genIRFile(cunit, sym, scope)
         }
       }
@@ -265,14 +267,14 @@ abstract class GenSaltyCode extends PluginComponent
             genLabel(label)
           }
         entry.termn = Tn.Jump(block)
-        entry.simplify
+        entry
       case _ =>
         util.ScopedVar.withScopedVars (
           currentThis := paramValues.head
         ) {
-          genExpr(body).simplify
+          genExpr(body)
         }
-    }).verify
+    }).simplify.verify
 
     def genExpr(tree: Tree): ir.Block = tree match {
       case label: LabelDef =>
@@ -392,7 +394,7 @@ abstract class GenSaltyCode extends PluginComponent
         genSwitch(m)
 
       case fun: Function =>
-        ???
+        B(Tn.Undefined)
 
       case EmptyTree =>
         B(Tn.Out(V.Unit))
@@ -462,7 +464,7 @@ abstract class GenSaltyCode extends PluginComponent
       }
     }
 
-    def genMatch(prologue: List[Tree], cases: List[LabelDef], last: LabelDef) =
+    def genMatch(prologue: List[Tree], cases: List[LabelDef], last: LabelDef) = {
       prologue.map(genExpr).chain { _ =>
         currentLabelEnv.enterLabel(last)
         for (label <- cases) {
@@ -471,6 +473,7 @@ abstract class GenSaltyCode extends PluginComponent
         genLabel(last)
         cases.map(genLabel).head
       }
+    }
 
     def genLabel(label: LabelDef) = {
       val entry = currentLabelEnv.resolveLabel(label.symbol)
@@ -538,36 +541,40 @@ abstract class GenSaltyCode extends PluginComponent
             case c @ CaseDef(Ident(nme.WILDCARD), _, body) => body
           }.get
         val defaultBlock = genExpr(defaultBody)
-        val branches = cases.flatMap { case CaseDef(pat, guard, body) =>
-          val bodyBlock = genExpr(body)
-          val guardedBlock =
-            if (guard.isEmpty) bodyBlock
-            else
-              genExpr(guard).merge { gv =>
-                B(Tn.If(gv, bodyBlock, defaultBlock))
-              }
-          val values: List[ir.Val] =
-            pat match {
-              case lit: Literal =>
-                val Left(value) = genValue(lit)
-                List(value)
-              case Alternative(alts) =>
-                alts.map {
-                  case lit: Literal =>
-                    val Left(value) = genValue(lit)
-                    value
+        val branches = cases.flatMap {
+          case CaseDef(Ident(nme.WILDCARD), _, _) =>
+            Nil
+          case CaseDef(pat, guard, body) =>
+            val bodyBlock = genExpr(body)
+            val guardedBlock =
+              if (guard.isEmpty) bodyBlock
+              else
+                genExpr(guard).merge { gv =>
+                  B(Tn.If(gv, bodyBlock, defaultBlock))
                 }
-              case _ =>
-                Nil
-            }
-          values.map(Br(_, guardedBlock))
+            val values: List[ir.Val] =
+              pat match {
+                case lit: Literal =>
+                  val Left(value) = genValue(lit)
+                  List(value)
+                case Alternative(alts) =>
+                  alts.map {
+                    case lit: Literal =>
+                      val Left(value) = genValue(lit)
+                      value
+                  }
+                case _ =>
+                  Nil
+              }
+            values.map(Br(_, guardedBlock))
         }
 
         B(Tn.Switch(selvalue, defaultBlock, branches))
       }
     }
 
-    def genApplyDynamic(app: ApplyDynamic) = ???
+    def genApplyDynamic(app: ApplyDynamic) =
+      B(Tn.Undefined)
 
     def genApply(app: Apply): ir.Block = {
       val Apply(fun, args) = app
