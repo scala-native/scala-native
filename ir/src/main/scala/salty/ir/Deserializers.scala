@@ -4,7 +4,7 @@ import java.nio.ByteBuffer
 import salty.ir.Tags.Tag
 
 object Deserializers {
-  type BlockEnv = Map[Name, Block]
+  type BlockEnv = Map[Val.Local, Block]
 
   implicit class RichGet(val bb: ByteBuffer) extends AnyVal {
     import bb._
@@ -26,15 +26,18 @@ object Deserializers {
       case Tags.Type.F64     => Type.F64
       case Tags.Type.Ref     => Type.Ref(getType)
       case Tags.Type.Slice   => Type.Slice(getType)
-      case Tags.Type.Named   => Type.Named(getName.asInstanceOf[Name.Global])
+      case Tags.Type.Of      => Type.Of(getDefn)
     }
 
     def getInstrSeq(implicit env: BlockEnv): Seq[Instr] = getSeq(getInstr)
     def getInstr(implicit env: BlockEnv): Instr = getInstr(getTag)
     def getInstr(tag: Tag)(implicit env: BlockEnv): Instr = tag match {
       case Tags.Expr()       => getExpr(tag)
-      case Tags.Instr.Assign => Instr.Assign(getName, getExpr)
+      case Tags.Instr.Assign => Instr.Assign(getLocal, getExpr)
     }
+
+    def getLocalOpt: Option[Val.Local] = getOption(getLocal)
+    def getLocal: Val.Local = Val.Local(getString)
 
     def getTermn(implicit env: BlockEnv): Termn = getTermn(getTag)
     def getTermn(tag: Tag)(implicit env: BlockEnv): Termn = tag match {
@@ -55,7 +58,7 @@ object Deserializers {
       case Tags.Expr.Conv     => Expr.Conv(getConvOp, getVal, getType)
       case Tags.Expr.Is       => Expr.Is(getVal, getType)
       case Tags.Expr.Alloc    => Expr.Alloc(getType, getValOpt)
-      case Tags.Expr.Call     => Expr.Call(getName, getValSeq)
+      case Tags.Expr.Call     => Expr.Call(getDefn, getValSeq)
       case Tags.Expr.Phi      => Expr.Phi(getBranchSeq)
       case Tags.Expr.Load     => Expr.Load(getVal)
       case Tags.Expr.Store    => Expr.Store(getVal, getVal)
@@ -106,33 +109,35 @@ object Deserializers {
     def getValSeq: Seq[Val] = getSeq(getVal)
     def getVal: Val = getVal(getTag)
     def getVal(tag: Tag): Val = tag match {
-      case Tags.Name()     => getName(tag)
       case Tags.Val.Null   => Val.Null
       case Tags.Val.Unit   => Val.Unit
-      case Tags.Val.This   => Val.This
       case Tags.Val.Bool   => Val.Bool(getBool)
       case Tags.Val.Number => Val.Number(getString, getType)
       case Tags.Val.Elem   => Val.Elem(getVal, getVal)
       case Tags.Val.Class  => Val.Class(getType)
       case Tags.Val.Str    => Val.Str(getString)
+      case Tags.Val.Local  => getLocal
+      case Tags.Val.Of     => Val.Of(getDefn)
     }
 
-    def getStat: Stat = getStat(getTag)
-    def getStat(tag: Tag): Stat = tag match {
-      case Tags.Stat.Class     => Stat.Class(getName, getNameSeq, getScope)
-      case Tags.Stat.Interface => Stat.Interface(getNameSeq, getScope)
-      case Tags.Stat.Module    => Stat.Module(getName, getNameSeq, getScope)
-      case Tags.Stat.Field     => Stat.Field(getType)
-      case Tags.Stat.Declare   => Stat.Declare(getType, getTypeSeq)
-      case Tags.Stat.Define    => Stat.Define(getType, getLabeledTypeSeq, getEntryBlock)
+    def getDefnSeq: Seq[Defn] = getSeq(getDefn(getTag))
+    def getDefn: Defn = getDefn(getTag)
+    def getDefn(tag: Tag): Defn = tag match {
+      case Tags.Defn.Class     => Defn.Class(getDefn, getDefnSeq)
+      case Tags.Defn.Interface => Defn.Interface(getDefnSeq)
+      case Tags.Defn.Module    => Defn.Module(getDefn, getDefnSeq)
+      case Tags.Defn.Field     => Defn.Field(getType, getDefn)
+      case Tags.Defn.Declare   => Defn.Declare(getType, getParamSeq)
+      case Tags.Defn.Define    => Defn.Define(getType, getParamSeq, getEntryBlock)
+      case Tags.Defn.Extern    => Defn.Extern(getName)
     }
 
-    def getScope = Scope(Map(getSeq((getName, getStat)): _*))
+    def getScope = Scope(Map(getSeq((getName, getDefn)): _*))
 
     def getBlockOpt(implicit env: BlockEnv): Option[Block] = getOption(getBlock)
-    def getBlock(implicit env: BlockEnv): Block = env(getName)
+    def getBlock(implicit env: BlockEnv): Block = env(getLocal)
     def getEntryBlock: Block = {
-      val blocks = Seq.fill(getInt)(Block(getName, null, null))
+      val blocks = Seq.fill(getInt)(Block(getLocal, null, null))
       implicit val env = blocks.map { case b => b.name -> b }.toMap
       blocks.foreach { b =>
         b.instrs = getInstrSeq
@@ -144,7 +149,6 @@ object Deserializers {
     def getNameSeq: Seq[Name] = getSeq(getName)
     def getName: Name = getName(getTag)
     def getName(tag: Tag): Name = tag match {
-      case Tags.Name.Local  => Name.Local(getString)
       case Tags.Name.Global => Name.Global(getString)
       case Tags.Name.Nested => Name.Nested(getName, getName)
     }
@@ -152,8 +156,8 @@ object Deserializers {
     def getBranchSeq(implicit env: BlockEnv): Seq[Branch] = getSeq(getBranch)
     def getBranch(implicit env: BlockEnv): Branch = Branch(getVal, getBlock)
 
-    def getLabeledTypeSeq: Seq[LabeledType] = getSeq(getLabeledType)
-    def getLabeledType: LabeledType = LabeledType(getType, getName)
+    def getParamSeq: Seq[Param] = getSeq(getParam)
+    def getParam: Param = Param(getType, getLocalOpt)
 
     def getOption[T](f: => T): Option[T] = get.toInt match {
       case 0 => None

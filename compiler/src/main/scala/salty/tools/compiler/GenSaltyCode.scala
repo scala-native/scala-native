@@ -7,7 +7,7 @@ import scala.tools.nsc.plugins._
 import scala.util.{Either, Left, Right}
 import salty.ir
 import salty.ir.{Expr => E, Type => Ty, Termn => Tn, Instr => I,
-                 Val => V, Name => N, Stat => S, Block => B, Branch => Br,
+                 Val => V, Name => N, Defn => D, Block => B, Branch => Br,
                  BinOp, ConvOp}
 import salty.ir.Shows._
 import salty.ir.Combinators._
@@ -31,8 +31,8 @@ abstract class GenSaltyCode extends PluginComponent
   def unreachable = abort("unreachable")
 
   class Env {
-    var used = Set.empty[ir.Name]
-    var names = Map.empty[Symbol, ir.Name]
+    var used = Set.empty[ir.Val.Local]
+    var names = Map.empty[Symbol, ir.Val.Local]
 
     implicit val fresh = new ir.Fresh {
       override def apply(prefix: String) = {
@@ -44,19 +44,26 @@ abstract class GenSaltyCode extends PluginComponent
       }
     }
 
-    def enter(sym: Symbol): ir.Name = {
-      var name = N.Local(sym.name.toString)
+    private def findName(base: String) = {
+      var name = V.Local(base)
       var i = 0
       while (used.contains(name)) {
-        name = N.Local(sym.name.toString + i)
+        name = V.Local(base + i)
         i += 1
       }
       used += name
+      name
+    }
+
+    def enterThis: ir.Val.Local = findName("this")
+
+    def enter(sym: Symbol): ir.Val.Local = {
+      val name = findName(sym.name.toString)
       names += sym -> name
       name
     }
 
-    def resolve(sym: Symbol): ir.Name =
+    def resolve(sym: Symbol): ir.Val.Local =
       names(sym)
   }
 
@@ -149,29 +156,31 @@ abstract class GenSaltyCode extends PluginComponent
         if (isPrimitiveValueClass(sym) || (sym == ArrayClass))
           ()
         else {
-          val (name, stat) = genClass(cd)
-          genIRFile(cunit, sym, stat)
+          val scope = genClass(cd)
+          println(sh"$scope")
+          genIRFile(cunit, sym, scope)
         }
       }
     }
 
-    def genClass(cd: ClassDef): (ir.Name.Global, ir.Stat) = util.ScopedVar.withScopedVars (
+    def genClass(cd: ClassDef): ir.Scope = util.ScopedVar.withScopedVars (
       currentClassSym := cd.symbol
     ) {
-      val sym = cd.symbol
-      val name = encodeClassName(sym)
-      val parent = encodeClassName(sym.superClass)
-      val interfaces = genClassInterfaces(sym)
-      val fields = genClassFields(sym)
+      val sym     = cd.symbol
+      val name    = getClassName(sym)
+      val parent  = getClassDefn(sym.superClass)
+      val ifaces  = genClassInterfaces(sym)
+      val fields  = genClassFields(sym).toSeq
       val methods = genClassMethods(cd.impl.body)
-      val scope = ir.Scope(Map((fields ++ methods): _*))
+      val owner   =
+        if (sym.isModuleClass)
+          name -> D.Module(parent, ifaces)
+        else if (sym.isInterface)
+          name -> D.Interface(ifaces)
+        else
+          name -> D.Class(parent, ifaces)
 
-      if (sym.isModuleClass)
-        name -> S.Module(parent, interfaces, scope)
-      else if (sym.isInterface)
-        name -> S.Interface(interfaces, scope)
-      else
-        name -> S.Class(parent, interfaces, scope)
+      ir.Scope(Map(((owner +: fields) ++ methods): _*))
     }
 
     def genClassInterfaces(sym: Symbol) =
@@ -180,36 +189,38 @@ abstract class GenSaltyCode extends PluginComponent
         psym = parent.typeSymbol
         if psym.isInterface
       } yield {
-        encodeClassName(psym)
+        getClassDefn(psym)
       }
 
-    def genClassMethods(stats: List[Tree]): List[(ir.Name, ir.Stat)] =
+    def genClassMethods(stats: List[Tree]): List[(ir.Name, ir.Defn)] =
       stats.flatMap {
         case dd: DefDef => List(genDef(dd))
         case _          => Nil
       }
 
-    def genClassFields(sym: Symbol) =
-      (for {
+    def genClassFields(sym: Symbol) = {
+      val owner = getClassDefn(sym)
+      for {
         f <- sym.info.decls
         if !f.isMethod && f.isTerm && !f.isModule
       } yield {
-        encodeFieldName(f) -> S.Field(genType(f.tpe))
-      }).toList
+        getFieldName(f) -> D.Field(genType(f.tpe), owner)
+      }
+    }
 
-    def genDef(dd: DefDef): (ir.Name, ir.Stat) = util.ScopedVar.withScopedVars (
+    def genDef(dd: DefDef): (ir.Name, ir.Defn) = util.ScopedVar.withScopedVars (
       currentMethodSym := dd.symbol
     ) {
       val sym = dd.symbol
-      val name = encodeDefName(sym)
+      val name = getDefName(sym)
       val paramSyms = defParamSymbols(dd)
       val ty =
         if (dd.symbol.isClassConstructor) Ty.Unit
         else genType(sym.tpe.resultType)
 
       if (dd.symbol.isDeferred) {
-        val params = genDeclParams(paramSyms)
-        name -> S.Declare(ty, params)
+        val params = genParams(paramSyms, unnamed = true)
+        name -> D.Declare(ty, params)
       } else {
         val env = new Env
         util.ScopedVar.withScopedVars (
@@ -217,9 +228,9 @@ abstract class GenSaltyCode extends PluginComponent
           currentLabelEnv := new LabelEnv(env),
           currentLocalInfo := (new CollectLocalInfo).collect(dd.rhs)
         ) {
-          val params = genDefParams(paramSyms)
-          val body = genDefBody(dd.rhs, params.map(_.name))
-          name -> S.Define(ty, params, body)
+          val params = genParams(paramSyms, unnamed = false)
+          val body = genDefBody(dd.rhs, params.map(_.name.get))
+          name -> D.Define(ty, params, body)
         }
       }
     }
@@ -229,21 +240,22 @@ abstract class GenSaltyCode extends PluginComponent
       if (vp.isEmpty) Nil else vp.head.map(_.symbol)
     }
 
-    def genDeclParams(paramSyms: List[Symbol]): List[ir.Type] =
-      paramSyms.map(sym => genType(sym.tpe))
-
-    def genDefParams(paramSyms: List[Symbol]): List[ir.LabeledType] =
-      paramSyms.map { sym =>
+    def genParams(paramSyms: List[Symbol], unnamed: Boolean): List[ir.Param] = {
+      val self = ir.Param(Ty.Ref(Ty.Of(getClassDefn(currentClassSym))),
+                          if (unnamed) None else Some(currentEnv.enterThis))
+      val params = paramSyms.map { sym =>
         val ty = genType(sym.tpe)
-        val name = currentEnv.enter(sym)
-        ir.LabeledType(ty, name)
+        val name = if (unnamed) None else Some(currentEnv.enter(sym))
+        ir.Param(ty, name)
       }
+      self +: params
+    }
 
     def genDefBody(body: Tree, paramValues: List[ir.Val]): ir.Block = (body match {
       case Block(List(ValDef(_, nme.THIS, _, _)),
                  label @ LabelDef(name, Ident(nme.THIS) :: _, rhs)) =>
         val entry = B(Tn.Undefined)
-        val values = (V.This :: paramValues).take(label.params.length)
+        val values = paramValues.take(label.params.length)
         currentLabelEnv.enterLabel(label)
         currentLabelEnv.enterLabelCall(label.symbol, values, entry)
         val block =
@@ -256,7 +268,7 @@ abstract class GenSaltyCode extends PluginComponent
         entry.simplify
       case _ =>
         util.ScopedVar.withScopedVars (
-          currentThis := V.This
+          currentThis := paramValues.head
         ) {
           genExpr(body).simplify
         }
@@ -317,18 +329,18 @@ abstract class GenSaltyCode extends PluginComponent
       case This(qual) =>
         B(Tn.Out(
           if (tree.symbol == currentClassSym.get) currentThis
-          else encodeClassName(tree.symbol)))
+          else V.Of(getClassDefn(tree.symbol))))
 
       case Select(qual, sel) =>
         val sym = tree.symbol
         if (sym.isModule)
-          B(Tn.Out(encodeClassName(sym)))
+          B(Tn.Out(V.Of(getClassDefn(sym))))
         else if (sym.isStaticMember)
           genStaticMember(sym)
         else
           genExpr(qual).merge { v =>
             val n = fresh()
-            B(List(I.Assign(n, E.Load(V.Elem(v, encodeFullFieldName(tree.symbol))))),
+            B(List(I.Assign(n, E.Load(V.Elem(v, V.Of(getFieldDefn(tree.symbol)))))),
               Tn.Out(n))
           }
 
@@ -336,7 +348,7 @@ abstract class GenSaltyCode extends PluginComponent
         val sym = id.symbol
         if (!currentLocalInfo.mutableVars.contains(sym))
           B(Tn.Out(
-            if (sym.isModule) encodeClassName(sym)
+            if (sym.isModule) V.Of(getClassDefn(sym))
             else currentEnv.resolve(sym)))
         else {
           val name = fresh()
@@ -363,7 +375,7 @@ abstract class GenSaltyCode extends PluginComponent
         lhs match {
           case sel @ Select(qual, _) =>
             genExpr(qual).chain(genExpr(rhs)) { (vqual, vrhs) =>
-              B(List(E.Store(V.Elem(vqual, encodeFullFieldName(sel.symbol)), vrhs)),
+              B(List(E.Store(V.Elem(vqual, V.Of(getFieldDefn(sel.symbol))), vrhs)),
                 Tn.Out(V.Unit))
             }
           case id: Ident =>
@@ -597,14 +609,14 @@ abstract class GenSaltyCode extends PluginComponent
     }
 
     lazy val primitive2box = Map(
-      BooleanTpe -> Ty.Named(N.Global("java.lang.Boolean")),
-      ByteTpe    -> Ty.Named(N.Global("java.lang.Byte")),
-      CharTpe    -> Ty.Named(N.Global("java.lang.Character")),
-      ShortTpe   -> Ty.Named(N.Global("java.lang.Short")),
-      IntTpe     -> Ty.Named(N.Global("java.lang.Integer")),
-      LongTpe    -> Ty.Named(N.Global("java.lang.Long")),
-      FloatTpe   -> Ty.Named(N.Global("java.lang.Float")),
-      DoubleTpe  -> Ty.Named(N.Global("java.lang.Double"))
+      BooleanTpe -> Ty.Of(D.Extern(N.Global("java.lang.Boolean"))),
+      ByteTpe    -> Ty.Of(D.Extern(N.Global("java.lang.Byte"))),
+      CharTpe    -> Ty.Of(D.Extern(N.Global("java.lang.Character"))),
+      ShortTpe   -> Ty.Of(D.Extern(N.Global("java.lang.Short"))),
+      IntTpe     -> Ty.Of(D.Extern(N.Global("java.lang.Integer"))),
+      LongTpe    -> Ty.Of(D.Extern(N.Global("java.lang.Long"))),
+      FloatTpe   -> Ty.Of(D.Extern(N.Global("java.lang.Float"))),
+      DoubleTpe  -> Ty.Of(D.Extern(N.Global("java.lang.Double")))
     )
 
     lazy val ctorName = N.Global(nme.CONSTRUCTOR.toString)
@@ -801,7 +813,7 @@ abstract class GenSaltyCode extends PluginComponent
       val method = getMember(cls, nme.hash_)
 
       genExpr(receiver).merge { v =>
-        genMethodCall(method, encodeClassName(cls), List(v))
+        genMethodCall(method, v, List())
       }
     }
 
@@ -931,11 +943,11 @@ abstract class GenSaltyCode extends PluginComponent
 
     def genApplySuper(app: Apply) = {
       val Apply(fun @ Select(sup, _), args) = app
-      val method = encodeFullDefName(fun.symbol)
-      val n = fresh()
+      val stat = getDefDefn(fun.symbol)
+      val n    = fresh()
 
       args.map(genExpr).chain { values =>
-        B(List(I.Assign(n, E.Call(method, currentThis.get +: values))),
+        B(List(I.Assign(n, E.Call(stat, currentThis.get +: values))),
           Tn.Out(n))
       }
     }
@@ -950,7 +962,7 @@ abstract class GenSaltyCode extends PluginComponent
         case _: ArrayKind =>
           genNewArray(ty, args.head)
         case ckind: ClassKind =>
-          genNew(ckind.name, ctor, args)
+          genNew(ckind.sym, ctor, args)
         case ty =>
           abort("unexpected new: " + app + "\ngen type: " + ty)
       }
@@ -966,12 +978,13 @@ abstract class GenSaltyCode extends PluginComponent
       }
     }
 
-    def genNew(cname: ir.Name, ctorsym: Symbol, args: List[Tree]) =
+    def genNew(sym: Symbol, ctorsym: Symbol, args: List[Tree]) =
       args.map(genExpr).chain { values =>
-        val ctor = N.Nested(cname, encodeDefName(ctorsym))
+        val stat = getClassDefn(sym)
+        val ctor = getDefDefn(ctorsym)
         val n    = fresh()
 
-        B(List(I.Assign(n, E.Alloc(Ty.Named(cname))),
+        B(List(I.Assign(n, E.Alloc(Ty.Of(stat))),
                E.Call(ctor, n +: values)),
           Tn.Out(n))
       }
@@ -987,22 +1000,15 @@ abstract class GenSaltyCode extends PluginComponent
     }
 
     def genMethodCall(sym: Symbol, self: ir.Val, args: Seq[ir.Val]) = {
-      val mname = N.Nested(encodeClassName(sym.owner),
-                           encodeDefName(sym))
-      val n     = fresh()
+      val stat = getDefDefn(sym)
+      val n    = fresh()
 
-      B(List(I.Assign(n, E.Call(mname, self +: args))),
+      B(List(I.Assign(n, E.Call(stat, self +: args))),
         Tn.Out(n))
     }
 
-    def genStaticMember(sym: Symbol) = {
-      val cls    = encodeClassName(sym.owner)
-      val method = encodeDefName(sym)
-      val n      = fresh()
-
-      B(List(I.Assign(n, E.Call(N.Nested(cls, method), Nil))),
-        Tn.Out(n))
-    }
+    def genStaticMember(sym: Symbol) =
+      B(Tn.Out(V.Of(getFieldDefn(sym))))
   }
 }
 

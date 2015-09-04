@@ -11,9 +11,7 @@ trait GenTypeKinds extends SubComponent with GenNameEncoding {
   sealed abstract class Kind
   final case class PrimitiveKind(sym: Symbol) extends Kind
   final case class BottomKind(sym: Symbol) extends Kind
-  final case class ClassKind(sym: Symbol) extends Kind {
-    def name = encodeClassName(sym)
-  }
+  final case class ClassKind(sym: Symbol) extends Kind
   final case class ArrayKind(of: Kind) extends Kind
 
   val ObjectKind  = ClassKind(ObjectClass)
@@ -86,7 +84,7 @@ trait GenTypeKinds extends SubComponent with GenNameEncoding {
         case NothingClass => Ty.Nothing
       }
     case ClassKind(sym) =>
-      Ty.Ref(Ty.Named(encodeClassName(sym)))
+      Ty.Ref(Ty.Of(getClassDefn(sym)))
     case ArrayKind(of) =>
       Ty.Slice(toIRType(of))
   }

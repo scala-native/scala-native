@@ -16,11 +16,11 @@ object Tags {
     final val F64     = 1 + F32
     final val Ref     = 1 + F64
     final val Slice   = 1 + Ref
-    final val Named   = 1 + Slice
+    final val Of      = 1 + Slice
   }
 
   object Instr {
-    final val Assign = 1 + Type.Named
+    final val Assign = 1 + Type.Of
   }
 
   object Termn {
@@ -89,31 +89,33 @@ object Tags {
   }
 
   object Val {
-    def unapply(tag: Tag) = Tags.Name.unapply(tag) || (tag >= Null && tag <= Str)
+    def unapply(tag: Tag) = (tag >= Null && tag <= Of)
 
     final val Null   = 1 + Expr.Catchpad
     final val Unit   = 1 + Null
-    final val This   = 1 + Unit
-    final val Bool   = 1 + This
+    final val Bool   = 1 + Unit
     final val Number = 1 + Bool
     final val Elem   = 1 + Number
     final val Class  = 1 + Elem
     final val Str    = 1 + Class
+    final val Local  = 1 + Str
+    final val Of     = 1 + Local
   }
 
-  object Stat {
-    final val Class     = 1 + Val.Str
+  object Defn {
+    final val Class     = 1 + Val.Of
     final val Interface = 1 + Class
     final val Module    = 1 + Interface
     final val Field     = 1 + Module
     final val Declare   = 1 + Field
     final val Define    = 1 + Declare
+    final val Extern    = 1 + Define
   }
 
   object Name {
     def unapply(tag: Tag) = tag >= Local && tag <= Nested
 
-    final val Local  = 1 + Stat.Define
+    final val Local  = 1 + Defn.Extern
     final val Global = 1 + Local
     final val Nested = 1 + Global
   }

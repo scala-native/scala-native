@@ -3,20 +3,19 @@ package compiler
 
 import scala.tools.nsc._
 import salty.ir
-import salty.ir.{Name => N}
+import salty.ir.{Name => N, Defn => D}
 
 trait GenNameEncoding extends SubComponent {
   import global._, definitions._
 
-  def encodeFullFieldName(sym: Symbol): N = N.Nested(encodeClassName(sym.owner),
-                                                     encodeFieldName(sym))
+  def getFieldDefn(sym: Symbol) = D.Extern(getFieldName(sym))
+  def getFieldName(sym: Symbol) = N.Nested(getClassName(sym.owner),
+                                           N.Global(sym.name.toString))
 
-  def encodeFieldName(sym: Symbol): N = N.Global(sym.name.toString)
+  def getDefDefn(sym: Symbol) = D.Extern(getDefName(sym))
+  def getDefName(sym: Symbol) = N.Nested(getClassName(sym.owner),
+                                         N.Global(sym.name.toString))
 
-  def encodeFullDefName(sym: Symbol): N = N.Nested(encodeClassName(sym.owner),
-                                                encodeDefName(sym))
-
-  def encodeDefName(sym: Symbol): N = N.Global(sym.name.toString)
-
-  def encodeClassName(sym: Symbol): N.Global = N.Global(sym.fullName.toString)
+  def getClassDefn(sym: Symbol) = D.Extern(getClassName(sym))
+  def getClassName(sym: Symbol) = N.Global(sym.fullName.toString)
 }

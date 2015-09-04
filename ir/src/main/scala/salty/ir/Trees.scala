@@ -21,12 +21,12 @@ object Type {
 
   final case class Ref(ty: Type) extends Type
   final case class Slice(ty: Type) extends Type
-  final case class Named(name: Name) extends Type
+  final case class Of(defn: Defn) extends Type
 }
 
 sealed abstract class Instr
 object Instr {
-  final case class Assign(name: Name, expr: Expr) extends Instr
+  final case class Assign(name: Val.Local, expr: Expr) extends Instr
 }
 
 sealed abstract class Expr extends Instr
@@ -35,7 +35,7 @@ object Expr {
   final case class Conv(op: ConvOp, value: Val, to: Type) extends Expr
   final case class Is(value: Val, ty: Type) extends Expr
   final case class Alloc(ty: Type, elements: Option[Val] = None) extends Expr
-  final case class Call(name: Name, args: Seq[Val]) extends Expr
+  final case class Call(name: Defn, args: Seq[Val]) extends Expr
   final case class Phi(branches: Seq[Branch]) extends Expr
   final case class Load(ptr: Val) extends Expr
   final case class Store(ptr: Val, value: Val) extends Expr
@@ -49,22 +49,16 @@ sealed abstract class Val extends Expr
 object Val {
   final case object Null extends Val
   final case object Unit extends Val
-  final case object This extends Val
   final case class Bool(value: Boolean) extends Val
   final case class Number(repr: String, ty: Type) extends Val
   final case class Elem(ptr: Val, value: Val) extends Val
   final case class Class(ty: Type) extends Val
   final case class Str(value: String) extends Val
+  final case class Local(id: String) extends Val
+  final case class Of(defn: Defn) extends Val
 
   def apply(i: Int) = Val.Number(i.toString, Type.I32)
   def apply(b: Boolean) = Val.Bool(b)
-}
-
-sealed abstract class Name extends Val
-object Name {
-  final case class Local(id: String) extends Name
-  final case class Global(id: String) extends Name
-  final case class Nested(parent: Name, child: Name) extends Name
 }
 
 sealed abstract class Termn
@@ -82,19 +76,26 @@ object Termn {
                        finallyb: Option[Block]) extends Termn
 }
 
-sealed abstract class Stat
-object Stat {
-  final case class Class(parent: Name, interfaces: Seq[Name], scope: Scope) extends Stat
-  final case class Interface(interfaces: Seq[Name], scope: Scope) extends Stat
-  final case class Module(parent: Name, interfaces: Seq[Name], scope: Scope) extends Stat
-  final case class Field(ty: Type) extends Stat
-  final case class Declare(ty: Type, params: Seq[Type]) extends Stat
-  final case class Define(ty: Type, params: Seq[LabeledType], body: Block) extends Stat
+sealed abstract class Defn
+object Defn {
+  final case class Class(parent: Defn, interfaces: Seq[Defn]) extends Defn
+  final case class Interface(interfaces: Seq[Defn]) extends Defn
+  final case class Module(parent: Defn, interfaces: Seq[Defn]) extends Defn
+  final case class Field(ty: Type, of: Defn) extends Defn
+  final case class Declare(ty: Type, params: Seq[Param]) extends Defn
+  final case class Define(ty: Type, params: Seq[Param], body: Block) extends Defn
+  final case class Extern(name: Name) extends Defn
 }
 
-final case class LabeledType(ty: Type, name: Name)
+sealed abstract class Name
+object Name {
+  final case class Global(id: String) extends Name
+  final case class Nested(parent: Name, child: Name) extends Name
+}
+
+final case class Param(ty: Type, name: Option[Val.Local])
 final case class Branch(value: Val, block: Block)
-final case class Block(var name: Name,
+final case class Block(var name: Val.Local,
                        var instrs: Seq[Instr],
                        var termn: Termn)
 object Block {

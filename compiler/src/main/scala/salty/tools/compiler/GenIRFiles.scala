@@ -15,10 +15,10 @@ import salty.util.serialize
 trait GenIRFiles extends SubComponent  {
   import global._
 
-  def genIRFile(cunit: CompilationUnit, sym: Symbol, stat: ir.Stat): Unit = {
+  def genIRFile(cunit: CompilationUnit, sym: Symbol, scope: ir.Scope): Unit = {
     val outfile = getFileFor(cunit, sym, ".salty").file
     val channel = (new FileOutputStream(outfile)).getChannel()
-    try channel.write(serialize(stat))
+    try channel.write(serialize(scope))
     finally channel.close
   }
 

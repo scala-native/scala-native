@@ -41,10 +41,10 @@ abstract class DFPass[T] extends Pass[T] {
 }
 
 final class SimplifyCFG extends Pass[Unit] {
-  type UseCount = mut.Map[Name, Int]
+  type UseCount = mut.Map[Val, Int]
 
   private class CollectUseCount extends DFPass[UseCount]{
-    val result = mut.Map.empty[Name, Int].withDefault(_ => 0)
+    val result = mut.Map.empty[Val, Int].withDefault(_ => 0)
     override def onBackReference(b: Block) = result(b.name) += 1
     override def onForwardReference(b: Block) = result(b.name) += 1
   }

@@ -64,5 +64,4 @@ object Show {
     implicitly[Show[T]].apply(t)
   implicit def seqToResult[T: Show](ts: Seq[T]): Seq[Result] =
     ts.map { t => implicitly[Show[T]].apply(t) }
-  implicit def anyToString[T]: Show[T] = apply(_.toString)
 }

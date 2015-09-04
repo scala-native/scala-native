@@ -17,13 +17,15 @@ object Serializers {
     case Type.F64          => Tags.Type.F64
     case Type.Ref(ty)      => s(Tags.Type.Ref, ty)
     case Type.Slice(ty)    => s(Tags.Type.Slice, ty)
-    case Type.Named(n)     => s(Tags.Type.Named, (n: Name))
+    case Type.Of(stat)     => s(Tags.Type.Of, stat)
   }
 
   implicit val serializeInstr: Serialize[Instr] = Serialize {
-    case e: Expr                  => e
-    case Instr.Assign(name, expr) => s(Tags.Instr.Assign, name, expr)
+    case e: Expr                   => e
+    case Instr.Assign(local, expr) => s(Tags.Instr.Assign, local, expr)
   }
+
+  implicit val serializeLocal: Serialize[Val.Local] = Serialize { _.id }
 
   implicit val serializeTermn: Serialize[Termn] = Serialize {
     case Termn.Undefined                       => Tags.Termn.Undefined
@@ -93,24 +95,25 @@ object Serializers {
   }
 
   implicit val serializeVal: Serialize[Val] = Serialize {
-    case n: Name              => n
     case Val.Null             => Tags.Val.Null
     case Val.Unit             => Tags.Val.Unit
-    case Val.This             => Tags.Val.This
     case Val.Bool(v)          => s(Tags.Val.Bool, v)
     case Val.Number(repr, ty) => s(Tags.Val.Number, repr, ty)
     case Val.Elem(ptr, value) => s(Tags.Val.Elem, ptr, value)
     case Val.Class(ty)        => s(Tags.Val.Class, ty)
     case Val.Str(str)         => s(Tags.Val.Str, str)
+    case local: Val.Local     => s(Tags.Val.Local, serializeLocal(local))
+    case Val.Of(stat)         => s(Tags.Val.Of, stat)
   }
 
-  implicit val serializeStat: Serialize[Stat] = Serialize {
-    case Stat.Class(p, ifaces, scope)  => s(Tags.Stat.Class, p, ifaces, scope)
-    case Stat.Interface(ifaces, scope) => s(Tags.Stat.Interface, ifaces, scope)
-    case Stat.Module(p, ifaces, scope) => s(Tags.Stat.Module, p, ifaces, scope)
-    case Stat.Field(ty)                => s(Tags.Stat.Field, ty)
-    case Stat.Declare(ty, args)        => s(Tags.Stat.Declare, ty, args)
-    case Stat.Define(ty, args, block)  => s(Tags.Stat.Define, ty, args, block)
+  implicit val serializeDefn: Serialize[Defn] = Serialize {
+    case Defn.Class(p, ifaces)         => s(Tags.Defn.Class, p, ifaces)
+    case Defn.Interface(ifaces)        => s(Tags.Defn.Interface, ifaces)
+    case Defn.Module(p, ifaces)        => s(Tags.Defn.Module, p, ifaces)
+    case Defn.Field(ty, of)            => s(Tags.Defn.Field, ty, of)
+    case Defn.Declare(ty, args)        => s(Tags.Defn.Declare, ty, args)
+    case Defn.Define(ty, args, block)  => s(Tags.Defn.Define, ty, args, block)
+    case Defn.Extern(name)             => s(Tags.Defn.Extern, name)
   }
 
   implicit val serializeScope: Serialize[Scope] = Serialize { scope =>
@@ -123,12 +126,11 @@ object Serializers {
       blocks = b :: blocks
     }
     s(blocks.length,
-      s(blocks.map { b => serializeName(b.name) }: _*),
+      s(blocks.map { b => serializeVal(b.name) }: _*),
       s(blocks.map { b => s(b.instrs, b.termn) }: _*))
   }
 
   implicit val serializeName: Serialize[Name] = Serialize {
-    case Name.Local(id)             => s(Tags.Name.Local, id)
     case Name.Global(id)            => s(Tags.Name.Global, id)
     case Name.Nested(parent, child) => s(Tags.Name.Nested, parent, child)
   }
@@ -137,7 +139,7 @@ object Serializers {
     case Branch(v, block) => s(v, block.name)
   }
 
-  implicit val serializeLabeledType: Serialize[LabeledType] = Serialize {
-    case LabeledType(name, ty) => s(name, ty)
+  implicit val serializeParam: Serialize[Param] = Serialize {
+    case Param(name, ty) => s(name, ty)
   }
 }
