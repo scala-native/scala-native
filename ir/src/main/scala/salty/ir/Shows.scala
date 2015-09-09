@@ -6,15 +6,15 @@ import salty.util.Show, Show.{Sequence => s, Indent => i, Unindent => u,
 import salty.util.sh
 
 abstract class Pass {
-  def onRoot(node: Root): Unit
+  def onNode(node: Node): Unit
 }
 object Pass {
-  def run(entry: Root, pass: Pass) = {
-    val epoch = Root.nextEpoch
-    def loop(node: Root): Unit =
+  def run(entry: Node, pass: Pass) = {
+    val epoch = Node.nextEpoch
+    def loop(node: Node): Unit =
       if (node.epoch < epoch) {
         node.epoch = epoch
-        pass.onRoot(node)
+        pass.onNode(node)
         node.next.foreach(loop)
       }
     loop(entry)
@@ -22,15 +22,16 @@ object Pass {
 }
 
 object ShowDOT {
+  import System.{identityHashCode => id}
   def key(defn: Defn) = ???
 
   class ShowPass extends Pass {
     var shows = List.empty[Show.Result]
-    def key(root: Root): String = root match {
-      case ty: Type => key(ty)
-      case node: Node => key(node)
-      case defn: Defn => key(defn)
-      case meta: Meta => key(meta)
+    def key(node: Node): String = node match {
+      case ty: Type     => key(ty)
+      case instr: Instr => key(instr)
+      case defn: Defn   => key(defn)
+      case rel: Rel     => key(rel)
     }
     def key(ty: Type): String = {
       val mnemonic = ty.tag match {
@@ -51,19 +52,16 @@ object ShowDOT {
       val id = System.identityHashCode(ty)
       key(mnemonic + "#" + id)
     }
-    def key(node: Node): String = {
-      val id = System.identityHashCode(node)
-      key(node.op.mnemonic + "#" + id)
-    }
-    def key(meta: Meta): String = {
-      val mnemonic = meta.tag match {
-        case Tag.Meta.Parent    => "parent"
-        case Tag.Meta.Interface => "interface"
-        case Tag.Meta.Overrides => "overrides"
-        case Tag.Meta.Belongs   => "belongs"
+    def key(instr: Instr): String =
+      key(instr.op.mnemonic + "#" + id(instr))
+    def key(rel: Rel): String = {
+      val mnemonic = rel.tag match {
+        case Tag.Rel.Parent    => "parent"
+        case Tag.Rel.Interface => "interface"
+        case Tag.Rel.Overrides => "overrides"
+        case Tag.Rel.Belongs   => "belongs"
       }
-      val id = System.identityHashCode(meta)
-      key(mnemonic + "#" + id)
+      key(mnemonic + "#" + id(rel))
     }
     def key(defn: Defn): String = {
       val mnemonic = defn.tag match {
@@ -75,16 +73,15 @@ object ShowDOT {
         case Tag.Defn.Field     => "field"
         case Tag.Defn.Extern    => "extern"
       }
-      val id = System.identityHashCode(defn)
-      key(mnemonic + "#" + id)
+      key(mnemonic + "#" + id(defn))
     }
     def key(s: String): String = "\"" + s + "\""
-    def cross(node: Root, nodes: Seq[Root]) = {
+    def cross(node: Node, nodes: Seq[Node]) = {
       val k = key(node)
-      nodes.foreach { n => shows = s(k, " -> ", key(n)) :: shows }
+      nodes.foreach { n => shows = s(key(n), " -> ", k) :: shows }
     }
-    def onRoot(root: Root) =
-      cross(root, root.next)
+    def onNode(node: Node) =
+      cross(node, node.next)
   }
 
   implicit val showScope: Show[Scope] = Show { scope =>

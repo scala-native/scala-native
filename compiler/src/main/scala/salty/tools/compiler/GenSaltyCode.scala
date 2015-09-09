@@ -6,9 +6,9 @@ import scala.tools.nsc._
 import scala.tools.nsc.plugins._
 import scala.util.{Either, Left, Right}
 import salty.ir
-import salty.ir.{Type => Ty, Node => N, Defn => D, Meta => M, Name => Nm, Op}
+import salty.ir.{Type => Ty, Instr => I, Defn => D, Rel => R, Name => N, Val => V, Op}
 import salty.ir.Combinators._
-import salty.util, util.sh
+import salty.util, util.sh, util.ScopedVar.{withScopedVars => scoped}
 
 abstract class GenSaltyCode extends PluginComponent
                                with GenIRFiles
@@ -27,20 +27,22 @@ abstract class GenSaltyCode extends PluginComponent
 
   def unreachable = abort("unreachable")
 
+  final case class Tails(cf: ir.Instr, ef: ir.Instr, value: ir.Instr)
+
   class Env {
-    val env = mut.Map.empty[Symbol, ir.Node]
-    def enter(sym: Symbol, node: ir.Node): ir.Node = {
+    val env = mut.Map.empty[Symbol, ir.Instr]
+    def enter(sym: Symbol, node: ir.Instr): ir.Instr = {
       env += ((sym, node))
       node
     }
-    def resolve(sym: Symbol): ir.Node = env(sym)
+    def resolve(sym: Symbol): ir.Instr = env(sym)
   }
 
   class LabelEnv(env: Env) {
-    def enterLabel(label: LabelDef): ir.Node = ???
-    def enterLabelCall(sym: Symbol, values: Seq[ir.Node], from: ir.Node): Unit = ???
-    def resolveLabel(sym: Symbol): ir.Node = ???
-    def resolveLabelParams(sym: Symbol): List[ir.Node] = ???
+    def enterLabel(label: LabelDef): ir.Instr = ???
+    def enterLabelCall(sym: Symbol, values: Seq[ir.Instr], from: ir.Instr): Unit = ???
+    def resolveLabel(sym: Symbol): ir.Instr = ???
+    def resolveLabelParams(sym: Symbol): List[ir.Instr] = ???
   }
 
   class CollectLocalInfo extends Traverser {
@@ -66,12 +68,12 @@ abstract class GenSaltyCode extends PluginComponent
   }
 
   class SaltyCodePhase(prev: Phase) extends StdPhase(prev) {
-    val currentLocalInfo = new util.ScopedVar[CollectLocalInfo]
-    val currentClassSym  = new util.ScopedVar[Symbol]
-    val currentMethodSym = new util.ScopedVar[Symbol]
-    val currentEnv       = new util.ScopedVar[Env]
-    val currentLabelEnv  = new util.ScopedVar[LabelEnv]
-    val currentThis      = new util.ScopedVar[ir.Node]
+    val curLocalInfo = new util.ScopedVar[CollectLocalInfo]
+    val curClassSym  = new util.ScopedVar[Symbol]
+    val curMethodSym = new util.ScopedVar[Symbol]
+    val curEnv       = new util.ScopedVar[Env]
+    val curLabelEnv  = new util.ScopedVar[LabelEnv]
+    val curThis      = new util.ScopedVar[ir.Instr]
 
     override def run(): Unit = {
       scalaPrimitives.init()
@@ -99,8 +101,8 @@ abstract class GenSaltyCode extends PluginComponent
       }
     }
 
-    def genClass(cd: ClassDef): ir.Scope = util.ScopedVar.withScopedVars (
-      currentClassSym := cd.symbol
+    def genClass(cd: ClassDef): ir.Scope = scoped (
+      curClassSym := cd.symbol
     ) {
       val sym     = cd.symbol
       val name    = getClassName(sym)
@@ -142,12 +144,12 @@ abstract class GenSaltyCode extends PluginComponent
         f <- sym.info.decls
         if !f.isMethod && f.isTerm && !f.isModule
       } yield {
-        getFieldName(f) -> D.Field(genType(f.tpe), Seq(M.Belongs(owner)))
+        getFieldName(f) -> D.Field(genType(f.tpe), Seq(R.Belongs(owner)))
       }
     }
 
-    def genDef(dd: DefDef): (ir.Name, ir.Defn) = util.ScopedVar.withScopedVars (
-      currentMethodSym := dd.symbol
+    def genDef(dd: DefDef): (ir.Name, ir.Defn) = scoped (
+      curMethodSym := dd.symbol
     ) {
       val sym = dd.symbol
       val name = getDefName(sym)
@@ -155,17 +157,17 @@ abstract class GenSaltyCode extends PluginComponent
       val ty =
         if (dd.symbol.isClassConstructor) Ty.Unit
         else genType(sym.tpe.resultType)
-      val meta = Seq(M.Belongs(getClassDefn(sym)))
+      val meta = Seq(R.Belongs(getClassDefn(sym)))
 
       if (dd.symbol.isDeferred) {
         val params = genParams(paramSyms, define = false)
         name -> D.Declare(params, ty, meta)
       } else {
         val env = new Env
-        util.ScopedVar.withScopedVars (
-          currentEnv := env,
-          currentLabelEnv := new LabelEnv(env),
-          currentLocalInfo := (new CollectLocalInfo).collect(dd.rhs)
+        scoped (
+          curEnv := env,
+          curLabelEnv := new LabelEnv(env),
+          curLocalInfo := (new CollectLocalInfo).collect(dd.rhs)
         ) {
           val params = genParams(paramSyms, define = true)
           val body = genDefBody(dd.rhs, params)
@@ -179,128 +181,143 @@ abstract class GenSaltyCode extends PluginComponent
       if (vp.isEmpty) Nil else vp.head.map(_.symbol)
     }
 
-    def genParams(paramSyms: List[Symbol], define: Boolean): List[ir.Node] = {
-      val self = N.In(Ty.Of(getClassDefn(currentClassSym)))
+    def genParams(paramSyms: List[Symbol], define: Boolean): List[ir.Instr] = {
+      val self = I.In(Ty.Of(getClassDefn(curClassSym)))
       val params = paramSyms.map { sym =>
-        val node = N.In(genType(sym.tpe))
+        val node = I.In(genType(sym.tpe))
         if (define)
-          currentEnv.enter(sym, node)
+          curEnv.enter(sym, node)
         node
       }
 
       self +: params
     }
 
-    def genDefBody(body: Tree, params: List[ir.Node]): ir.Node = genExpr(body)
+    def genDefBody(body: Tree, params: List[ir.Instr]): ir.Instr = {
+      val start = I.Start()
+      val tails = Tails(start, start, I.Unit)
+      val btails = genExpr(body, tails)
+      I.End(Seq(I.Out(btails.cf, btails.ef, btails.value)))
+    }
 
     /* (body match {
       case Block(List(ValDef(_, nme.THIS, _, _)),
                  label @ LabelDef(name, Ident(nme.THIS) :: _, rhs)) =>
         val entry = B(Tn.Undefined)
         val values = paramValues.take(label.params.length)
-        currentLabelEnv.enterLabel(label)
-        currentLabelEnv.enterLabelCall(label.symbol, values, entry)
+        curLabelEnv.enterLabel(label)
+        curLabelEnv.enterLabelCall(label.symbol, values, entry)
         val block =
-          util.ScopedVar.withScopedVars (
-            currentThis := currentLabelEnv.resolveLabelParams(label.symbol).head
+          scoped (
+            curThis := curLabelEnv.resolveLabelParams(label.symbol).head
           ) {
             genLabel(label)
           }
         entry.termn = Tn.Jump(block)
         entry
       case _ =>
-        util.ScopedVar.withScopedVars (
-          currentThis := paramValues.head
+        scoped (
+          curThis := paramValues.head
         ) {
           genExpr(body)
         }
     }).simplify.verify*/
 
-    def genExpr(tree: Tree): ir.Node = tree match {
+    def genExpr(tree: Tree, tails: Tails): Tails = tree match {
       case label: LabelDef =>
-        currentLabelEnv.enterLabel(label)
+        ???
+        /*
+        curLabelEnv.enterLabel(label)
         genLabel(label)
+        */
 
       case vd: ValDef =>
-        val rhs = genExpr(vd.rhs).merge
-        currentEnv.enter(vd.symbol, rhs)
-        val isMutable = currentLocalInfo.mutableVars.contains(vd.symbol)
+        val rhs = genExpr(vd.rhs, tails)
+        curEnv.enter(vd.symbol, rhs.value)
+        val isMutable = curLocalInfo.mutableVars.contains(vd.symbol)
         if (!isMutable)
-          N.Out(N.Unit, effects = Seq(rhs))
+          Tails(rhs.cf, rhs.ef, I.Unit)
         else {
-          val alloc = N.Alloc(genType(vd.symbol.tpe))
-          val store = N.Store(alloc, rhs)
-          N.Out(N.Unit, effects = Seq(store))
+          val allocEf = I.Alloc(rhs.ef, genType(vd.symbol.tpe))
+          val storeEf = I.Store(allocEf, allocEf, rhs.value)
+          Tails(rhs.cf, storeEf, I.Unit)
         }
 
       case If(cond, thenp, elsep) =>
         ???
 
       case Return(expr) =>
-        N.Return(genExpr(expr))
+        ???
 
       case Try(expr, catches, finalizer) if catches.isEmpty && finalizer.isEmpty =>
-        genExpr(expr)
+        genExpr(expr, tails)
 
       case Try(expr, catches, finalizer) =>
         ???
 
       case Throw(expr) =>
-        N.Throw(genExpr(expr))
+        ???
 
       case app: Apply =>
-        genApply(app)
+        genApply(app, tails)
 
       case app: ApplyDynamic =>
-        genApplyDynamic(app)
+        genApplyDynamic(app, tails)
 
       case This(qual) =>
-        N.Out(
-          if (tree.symbol == currentClassSym.get) currentThis
-          else N.Of(getClassDefn(tree.symbol)))
+        Tails(tails.cf, tails.ef,
+          if (tree.symbol == curClassSym.get) curThis
+          else I.Defn(getClassDefn(tree.symbol)))
 
       case Select(qual, sel) =>
         val sym = tree.symbol
         if (sym.isModule)
-          N.Out(N.Of(getClassDefn(sym)))
+          Tails(tails.cf, tails.ef, I.Defn(getClassDefn(sym)))
         else if (sym.isStaticMember)
-          genStaticMember(sym)
-        else
-          N.Out(N.Load(N.Elem(genExpr(qual), N.Of(getFieldDefn(tree.symbol)))))
+          Tails(tails.cf, tails.ef, genStaticMember(sym))
+        else {
+          val qtails = genExpr(qual, tails)
+          val elem   = I.Elem(qtails.value, I.Defn(getFieldDefn(tree.symbol)))
+          val loadEf = I.Load(qtails.ef, elem)
+          Tails(qtails.cf, loadEf, loadEf)
+        }
 
       case id: Ident =>
         val sym = id.symbol
-        if (!currentLocalInfo.mutableVars.contains(sym))
-          N.Out(
-            if (sym.isModule) N.Of(getClassDefn(sym))
-            else currentEnv.resolve(sym))
-        else
-          N.Out(N.Load(currentEnv.resolve(sym)))
+        if (!curLocalInfo.mutableVars.contains(sym))
+          Tails(tails.cf, tails.ef,
+            if (sym.isModule) I.Defn(getClassDefn(sym))
+            else curEnv.resolve(sym))
+        else {
+          val loadEf = I.Load(tails.ef, curEnv.resolve(sym))
+          Tails(tails.cf, loadEf, loadEf)
+        }
 
       case lit: Literal =>
-        genValue(lit)
+        Tails(tails.cf, tails.ef, genValue(lit))
 
       case block: Block =>
         genBlock(block)
 
       case Typed(Super(_, _), _) =>
-        N.Out(currentThis)
+        Tails(tails.cf, tails.ef, curThis)
 
       case Typed(expr, _) =>
-        genExpr(expr)
+        genExpr(expr, tails)
 
       case Assign(lhs, rhs) =>
         lhs match {
           case sel @ Select(qual, _) =>
-            val qualNode = genExpr(qual)
-            val rhsNode = genExpr(rhs)
-            val elemNode = N.Elem(qualNode, N.Of(getFieldDefn(sel.symbol)))
-            val storeNode = N.Store(elemNode, rhsNode)
-            N.Out(N.Unit, effects = Seq(storeNode))
+            val qtails  = genExpr(qual, tails)
+            val rtails  = genExpr(rhs, qtails)
+            val elem    = I.Elem(qtails.value, I.Defn(getFieldDefn(sel.symbol)))
+            val storeEf = I.Store(rtails.ef, elem, rtails.value)
+            Tails(rtails.cf, storeEf, I.Unit)
 
           case id: Ident =>
-            val store = N.Store(currentEnv.resolve(id.symbol), genExpr(rhs))
-            N.Out(N.Unit, effects = Seq(store))
+            val rtails  = genExpr(rhs, tails)
+            val storeEf = I.Store(rtails.ef, curEnv.resolve(id.symbol), rtails.value)
+            Tails(rtails.cf, storeEf, I.Unit)
         }
 
       case av: ArrayValue =>
@@ -310,48 +327,48 @@ abstract class GenSaltyCode extends PluginComponent
         genSwitch(m)
 
       case fun: Function =>
-        N.Undefined
+        ???
 
       case EmptyTree =>
-        N.Out(N.Unit)
+        Tails(tails.cf, tails.ef, I.Unit)
 
       case _ =>
         abort("Unexpected tree in genExpr: " +
               tree + "/" + tree.getClass + " at: " + tree.pos)
     }
 
-    def genValue(lit: Literal): ir.Node = {
+    def genValue(lit: Literal): ir.Instr = {
       val value = lit.value
       value.tag match {
         case NullTag =>
-          (N.Null)
+          I.Null
         case UnitTag =>
-          (N.Unit)
+          I.Unit
         case BooleanTag =>
-          (if (value.booleanValue) N.True else N.False)
+          if (value.booleanValue) I.True else I.False
         case ByteTag =>
-          (N.I8(value.intValue.toByte))
+          I.Val(V.I8(value.intValue.toByte))
         case ShortTag | CharTag =>
-          (N.I16(value.intValue.toShort))
+          I.Val(V.I16(value.intValue.toShort))
         case IntTag =>
-          (N.I32(value.intValue))
+          I.Val(V.I32(value.intValue))
         case LongTag =>
-          (N.I64(value.longValue))
+          I.Val(V.I64(value.longValue))
         case FloatTag =>
-          (N.F32(value.floatValue))
+          I.Val(V.F32(value.floatValue))
         case DoubleTag =>
-          (N.F64(value.doubleValue))
+          I.Val(V.F64(value.doubleValue))
+       case StringTag =>
+          I.Val(V.Str(value.stringValue))
         case ClazzTag =>
-          (N.Class(genType(value.typeValue)))
-        case StringTag =>
-          (N.Str(value.stringValue))
+          I.Class(genType(value.typeValue))
         case EnumTag =>
-          (genStaticMember(value.symbolValue))
+          genStaticMember(value.symbolValue)
       }
     }
 
     def genStaticMember(sym: Symbol) =
-      N.Out(N.Of(getFieldDefn(sym)))
+      I.Defn(getFieldDefn(sym))
 
     def genCatch(catches: List[Tree]) = ??? /*
       if (catches.isEmpty) None
@@ -367,7 +384,7 @@ abstract class GenSaltyCode extends PluginComponent
               case Ident(nme.WILDCARD) =>
                 (None, genType(ThrowableClass.tpe))
               case Bind(_, _) =>
-                (Some(currentEnv.enter(pat.symbol)), genType(pat.symbol.tpe))
+                (Some(curEnv.enter(pat.symbol)), genType(pat.symbol.tpe))
             }
             val bodyb = genExpr(body)
             val n = fresh()
@@ -414,9 +431,9 @@ abstract class GenSaltyCode extends PluginComponent
 
     def genMatch(prologue: List[Tree], cases: List[LabelDef], last: LabelDef) = ??? /*{
       prologue.map(genExpr).chain { _ =>
-        currentLabelEnv.enterLabel(last)
+        curLabelEnv.enterLabel(last)
         for (label <- cases) {
-          currentLabelEnv.enterLabel(label)
+          curLabelEnv.enterLabel(label)
         }
         genLabel(last)
         cases.map(genLabel).head
@@ -424,7 +441,7 @@ abstract class GenSaltyCode extends PluginComponent
     }*/
 
     def genLabel(label: LabelDef) = ??? /*{
-      val entry = currentLabelEnv.resolveLabel(label.symbol)
+      val entry = curLabelEnv.resolveLabel(label.symbol)
       val target = genExpr(label.rhs)
       entry.termn = Tn.Jump(target)
       entry
@@ -470,7 +487,7 @@ abstract class GenSaltyCode extends PluginComponent
                 genExpr(guard).merge { gv =>
                   B(Tn.If(gv, bodyBlock, defaultBlock))
                 }
-            val values: List[ir.Node] =
+            val values: List[ir.Instr] =
               pat match {
                 case lit: Literal =>
                   val Left(value) = genValue(lit)
@@ -491,61 +508,61 @@ abstract class GenSaltyCode extends PluginComponent
       }
     }*/
 
-    def genApplyDynamic(app: ApplyDynamic) = N.Undefined
+    def genApplyDynamic(app: ApplyDynamic, tails: Tails): Tails = ???
 
-    def genApply(app: Apply): ir.Node = {
+    def genApply(app: Apply, tails: Tails): Tails = {
       val Apply(fun, args) = app
 
       fun match {
         case _: TypeApply =>
-          genApplyTypeApply(app)
+          genApplyTypeApply(app, tails)
         case Select(Super(_, _), _) =>
-          genApplySuper(app)
+          genApplySuper(app, tails)
         case Select(New(_), nme.CONSTRUCTOR) =>
-          genApplyNew(app)
+          genApplyNew(app, tails)
         case _ =>
           val sym = fun.symbol
 
           if (sym.isLabel) {
-            genLabelApply(app)
+            genLabelApply(app, tails)
           } else if (scalaPrimitives.isPrimitive(sym)) {
-            genPrimitiveOp(app)
+            genPrimitiveOp(app, tails)
           } else if (currentRun.runDefinitions.isBox(sym)) {
             val arg = args.head
-            makePrimitiveBox(arg, arg.tpe)
+            genPrimitiveBox(arg, arg.tpe, tails)
           } else if (currentRun.runDefinitions.isUnbox(sym)) {
-            makePrimitiveUnbox(args.head, app.tpe)
+            genPrimitiveUnbox(args.head, app.tpe, tails)
           } else {
-            genNormalApply(app)
+            genNormalApply(app, tails)
           }
       }
     }
 
-    def genLabelApply(tree: Tree) = ??? /*tree match {
+    def genLabelApply(tree: Tree, tails: Tails): Tails = ??? /*tree match {
       case Apply(fun, Nil) =>
-        currentLabelEnv.resolveLabel(fun.symbol)
+        curLabelEnv.resolveLabel(fun.symbol)
       case Apply(fun, args) =>
         args.map(genExpr).chain { vals =>
-          val block = B(Tn.Jump(currentLabelEnv.resolveLabel(fun.symbol)))
-          currentLabelEnv.enterLabelCall(fun.symbol, vals, block)
+          val block = B(Tn.Jump(curLabelEnv.resolveLabel(fun.symbol)))
+          curLabelEnv.enterLabelCall(fun.symbol, vals, block)
           block
         }
     }*/
 
     lazy val primitive2box = Map(
-      BooleanTpe -> Ty.Of(D.Extern(Nm.Global("java.lang.Boolean"))),
-      ByteTpe    -> Ty.Of(D.Extern(Nm.Global("java.lang.Byte"))),
-      CharTpe    -> Ty.Of(D.Extern(Nm.Global("java.lang.Character"))),
-      ShortTpe   -> Ty.Of(D.Extern(Nm.Global("java.lang.Short"))),
-      IntTpe     -> Ty.Of(D.Extern(Nm.Global("java.lang.Integer"))),
-      LongTpe    -> Ty.Of(D.Extern(Nm.Global("java.lang.Long"))),
-      FloatTpe   -> Ty.Of(D.Extern(Nm.Global("java.lang.Float"))),
-      DoubleTpe  -> Ty.Of(D.Extern(Nm.Global("java.lang.Double")))
+      BooleanTpe -> Ty.Of(D.Extern(N.Global("java.lang.Boolean"))),
+      ByteTpe    -> Ty.Of(D.Extern(N.Global("java.lang.Byte"))),
+      CharTpe    -> Ty.Of(D.Extern(N.Global("java.lang.Character"))),
+      ShortTpe   -> Ty.Of(D.Extern(N.Global("java.lang.Short"))),
+      IntTpe     -> Ty.Of(D.Extern(N.Global("java.lang.Integer"))),
+      LongTpe    -> Ty.Of(D.Extern(N.Global("java.lang.Long"))),
+      FloatTpe   -> Ty.Of(D.Extern(N.Global("java.lang.Float"))),
+      DoubleTpe  -> Ty.Of(D.Extern(N.Global("java.lang.Double")))
     )
 
-    lazy val ctorName = Nm.Global(nme.CONSTRUCTOR.toString)
+    lazy val ctorName = N.Global(nme.CONSTRUCTOR.toString)
 
-    def makePrimitiveBox(expr: Tree, tpe: Type) = ??? /*
+    def genPrimitiveBox(expr: Tree, tpe: Type, tails: Tails): Tails = ??? /*
       genExpr(expr).merge { v =>
         val name = fresh()
         B(List(I.Assign(name, E.Box(v, primitive2box(tpe.widen)))),
@@ -553,7 +570,7 @@ abstract class GenSaltyCode extends PluginComponent
       }
       */
 
-    def makePrimitiveUnbox(expr: Tree, tpe: Type) = ??? /*
+    def genPrimitiveUnbox(expr: Tree, tpe: Type, tails: Tails): Tails = ??? /*
       genExpr(expr).merge { v =>
         val name = fresh()
         B(List(I.Assign(name, E.Unbox(v, primitive2box(tpe.widen)))),
@@ -561,7 +578,7 @@ abstract class GenSaltyCode extends PluginComponent
       }
       */
 
-    def genPrimitiveOp(app: Apply): ir.Node = {
+    def genPrimitiveOp(app: Apply, tails: Tails): Tails = {
       import scalaPrimitives._
 
       val sym = app.symbol
@@ -569,37 +586,38 @@ abstract class GenSaltyCode extends PluginComponent
       val code = scalaPrimitives.getPrimitive(sym, receiver.tpe)
 
       if (isArithmeticOp(code) || isLogicalOp(code) || isComparisonOp(code))
-        genSimpleOp(app, receiver :: args, code)
+        genSimpleOp(app, receiver :: args, code, tails)
       else if (code == CONCAT)
-        genStringConcat(app, receiver, args)
+        genStringConcat(app, receiver, args, tails)
       else if (code == HASH)
-        genHash(app, receiver)
+        genHash(app, receiver, tails)
       else if (isArrayOp(code))
-        genArrayOp(app, code)
+        genArrayOp(app, code, tails)
       else if (isCoercion(code))
-        genCoercion(app, receiver, code)
+        genCoercion(app, receiver, code, tails)
       else if (code == SYNCHRONIZED)
-        genSynchronized(app)
+        genSynchronized(app, tails)
       else
         abort("Unknown primitive operation: " + sym.fullName + "(" +
               fun.symbol.simpleName + ") " + " at: " + (app.pos))
     }
 
-    def genSimpleOp(app: Apply, args: List[Tree], code: Int): ir.Node = {
+    def genSimpleOp(app: Apply, args: List[Tree], code: Int, tails: Tails): Tails = {
       import scalaPrimitives._
 
       val retty = genType(app.tpe)
 
       args match {
         case List(right) =>
-          val rblock = genExpr(right)
-          def unary(op: Op, lvalue: ir.Node) =
-            N.Out(N.Bin(op, lvalue, rblock.merge))
+          val rtails = genExpr(right, tails)
+          def unary(op: Op, linstr: ir.Instr) =
+            Tails(rtails.cf, rtails.ef,
+                  I.Bin(op, linstr, rtails.value))
           code match {
-            case POS  => rblock
+            case POS  => rtails
             case NEG  => ??? // unary(Op.Sub, V.Number("0", retty))
             case NOT  => ??? // unary(Op.Xor, V.Number("-1", retty))
-            case ZNOT => unary(Op.Xor, N.True)
+            case ZNOT => unary(Op.Xor, I.True)
             case _ =>
               abort("Unknown unary operation code: " + code)
           }
@@ -607,14 +625,14 @@ abstract class GenSaltyCode extends PluginComponent
         // TODO: convert to the common type
         // TODO: eq, ne
         case List(left, right) =>
-          val lnode = genExpr(left)
-          val rnode = genExpr(right)
-          val lty   = genType(left.tpe)
-          val rty   = genType(right.tpe)
+          val lty    = genType(left.tpe)
+          val rty    = genType(right.tpe)
           def bin(op: Op, ty: ir.Type) = {
-            val lcoerced = genCoercion(lnode.merge, lty, ty).merge
-            val rcoerced = genCoercion(rnode.merge, rty, ty).merge
-            N.Out(N.Bin(op, lcoerced, rcoerced))
+            val ltails   = genExpr(left, tails)
+            val lcoerced = genCoercion(ltails.value, lty, ty)
+            val rtails   = genExpr(right, ltails)
+            val rcoerced = genCoercion(rtails.value, rty, ty)
+            Tails(rtails.cf, rtails.ef, I.Bin(op, lcoerced, rcoerced))
           }
           def equality(negated: Boolean) = ??? /*
             genKind(left.tpe) match {
@@ -705,7 +723,7 @@ abstract class GenSaltyCode extends PluginComponent
         abort(s"can't perform binary opeation between $lty and $rty")
     }
 
-    def genClassEquality(lvalue: ir.Node, rvalue: ir.Node): ir.Node = ??? /* {
+    def genClassEquality(lvalue: ir.Instr, rvalue: ir.Instr, tails: Tails): Tails = ??? /* {
       import scalaPrimitives._
 
       val n = fresh()
@@ -720,7 +738,7 @@ abstract class GenSaltyCode extends PluginComponent
       }
     }*/
 
-    def genStringConcat(tree: Tree, receiver: Tree, args: List[Tree]) = ??? /*
+    def genStringConcat(tree: Tree, receiver: Tree, args: List[Tree], tails: Tails): Tails = ??? /*
       genExpr(receiver).chain(genExpr(args.head)) { (l, r) =>
         val n = fresh()
 
@@ -729,7 +747,7 @@ abstract class GenSaltyCode extends PluginComponent
       }
     */
 
-    def genHash(tree: Tree, receiver: Tree): ir.Node = ??? /*{
+    def genHash(tree: Tree, receiver: Tree, tails: Tails): Tails = ??? /*{
       val cls    = ScalaRunTimeModule
       val method = getMember(cls, nme.hash_)
 
@@ -738,7 +756,7 @@ abstract class GenSaltyCode extends PluginComponent
       }
     }*/
 
-    def genArrayOp(app: Apply, code: Int): ir.Node = ??? /*{
+    def genArrayOp(app: Apply, code: Int, tails: Tails): Tails = ??? /*{
       import scalaPrimitives._
 
       val Apply(Select(array, _), args) = app
@@ -762,21 +780,21 @@ abstract class GenSaltyCode extends PluginComponent
 
     // TODO: re-evaluate dropping sychcronized
     // TODO: NPE
-    def genSynchronized(app: Apply): ir.Node = ??? /*{
+    def genSynchronized(app: Apply, tails: Tails): Tails = ??? /*{
       val Apply(Select(receiver, _), List(arg)) = app
       genExpr(receiver).chain(genExpr(arg)) { (v1, v2) =>
         B(Tn.Out(v2))
       }
     }*/
 
-    def genCoercion(app: Apply, receiver: Tree, code: Int): ir.Node = {
-      val nreceiver = genExpr(receiver)
+    def genCoercion(app: Apply, receiver: Tree, code: Int, tails: Tails): Tails = {
+      val rtails = genExpr(receiver, tails)
       val (fromty, toty) = coercionTypes(code)
 
-      genCoercion(nreceiver.merge, fromty, toty)
+      Tails(rtails.cf, rtails.ef, genCoercion(rtails.value, fromty, toty))
     }
 
-    def genCoercion(value: ir.Node, fromty: ir.Type, toty: ir.Type): ir.Node =
+    def genCoercion(value: ir.Instr, fromty: ir.Type, toty: ir.Type): ir.Instr =
       if (fromty == toty)
         value
       else {
@@ -791,7 +809,7 @@ abstract class GenSaltyCode extends PluginComponent
           case (Ty.F32, Ty.F64)     => Op.Fpext
           case (Ty.Null, _)         => Op.Cast
         }
-        N.Conv(op, value, toty)
+        I.Conv(op, value, toty)
       }
 
     def coercionTypes(code: Int): (ir.Type, ir.Type) = {
@@ -842,7 +860,7 @@ abstract class GenSaltyCode extends PluginComponent
       }
     }
 
-    def genApplyTypeApply(app: Apply): ir.Node = ??? /* {
+    def genApplyTypeApply(app: Apply, tails: Tails): Tails = ??? /* {
       val Apply(TypeApply(fun @ Select(obj, _), targs), _) = app
       val ty = genType(targs.head.tpe)
 
@@ -858,18 +876,18 @@ abstract class GenSaltyCode extends PluginComponent
       }
     }*/
 
-    def genApplySuper(app: Apply): ir.Node = ??? /* {
+    def genApplySuper(app: Apply, tails: Tails): Tails = ??? /* {
       val Apply(fun @ Select(sup, _), args) = app
       val stat = getDefDefn(fun.symbol)
       val n    = fresh()
 
       args.map(genExpr).chain { values =>
-        B(List(I.Assign(n, E.Call(stat, currentThis.get +: values))),
+        B(List(I.Assign(n, E.Call(stat, curThis.get +: values))),
           Tn.Out(n))
       }
     }*/
 
-    def genApplyNew(app: Apply): ir.Node = ??? /*{
+    def genApplyNew(app: Apply, tails: Tails): Tails = ??? /*{
       val Apply(fun @ Select(New(tpt), nme.CONSTRUCTOR), args) = app
       val ctor = fun.symbol
       val kind = genKind(tpt.tpe)
@@ -885,7 +903,7 @@ abstract class GenSaltyCode extends PluginComponent
       }
     }*/
 
-    def genNewArray(ty: ir.Type, length: Tree): ir.Node = ??? /*{
+    def genNewArray(ty: ir.Type, length: Tree): ir.Instr = ??? /*{
       val Ty.Slice(elemty) = ty
       val n = fresh()
 
@@ -895,7 +913,7 @@ abstract class GenSaltyCode extends PluginComponent
       }
     }*/
 
-    def genNew(sym: Symbol, ctorsym: Symbol, args: List[Tree]): ir.Node = ??? /*
+    def genNew(sym: Symbol, ctorsym: Symbol, args: List[Tree]): ir.Instr = ??? /*
       args.map(genExpr).chain { values =>
         val stat = getClassDefn(sym)
         val ctor = getDefDefn(ctorsym)
@@ -907,7 +925,7 @@ abstract class GenSaltyCode extends PluginComponent
       }
     */
 
-    def genNormalApply(app: Apply): ir.Node = ??? /*{
+    def genNormalApply(app: Apply, tails: Tails): Tails = ??? /*{
       val Apply(fun @ Select(receiver, _), args) = app
 
       genExpr(receiver).merge { rvalue =>
@@ -917,7 +935,8 @@ abstract class GenSaltyCode extends PluginComponent
       }
     }*/
 
-    def genMethodCall(sym: Symbol, self: ir.Node, args: Seq[ir.Node]): ir.Node = ??? /*{
+    def genMethodCall(sym: Symbol, self: ir.Instr,
+                      args: Seq[ir.Instr], tails: Tails): Tails = ??? /*{
       val stat = getDefDefn(sym)
       val n    = fresh()
 

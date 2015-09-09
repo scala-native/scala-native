@@ -1,15 +1,15 @@
 package salty.ir
 
 object Combinators {
-  implicit class RichNode(val self: Node) extends AnyVal {
+  implicit class RichInstr(val self: Instr) extends AnyVal {
     import self._
 
-    def merge: Node = self
+    def merge: Instr = self
 
-    def chain(other: Node): (Node, Node) = ???
+    def chain(other: Instr): (Instr, Instr) = ???
   }
 
-  implicit class RichNodes(val blocks: Seq[Node]) extends AnyVal {
-    def chain: Seq[Node] = ???
+  implicit class RichInstrs(val blocks: Seq[Instr]) extends AnyVal {
+    def chain: Seq[Instr] = ???
   }
 }

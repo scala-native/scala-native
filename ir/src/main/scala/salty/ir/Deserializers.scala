@@ -10,9 +10,9 @@ object Deserializers {
     def getTag: Tag = getInt
 
     def getType: Type = ???
-    def getNode: Node = ???
+    def getInstr: Instr = ???
     def getOp: Op     = ???
     def getDefn: Defn = ???
-    def getMeta: Meta = ???
+    def getRel: Rel = ???
   }
 }
