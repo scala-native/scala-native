@@ -197,7 +197,7 @@ abstract class GenSaltyCode extends PluginComponent
       val start = I.Start()
       val tails = Tails(start, start, I.Unit)
       val btails = genExpr(body, tails)
-      I.End(Seq(I.Out(btails.cf, btails.ef, btails.value)))
+      I.End(Seq(I.Return(btails.cf, btails.ef, btails.value)))
     }
 
     /* (body match {
@@ -238,8 +238,8 @@ abstract class GenSaltyCode extends PluginComponent
         if (!isMutable)
           Tails(rhs.cf, rhs.ef, I.Unit)
         else {
-          val allocEf = I.Alloc(rhs.ef, genType(vd.symbol.tpe))
-          val storeEf = I.Store(allocEf, allocEf, rhs.value)
+          val allocEf = I.Alloc(genType(vd.symbol.tpe))
+          val storeEf = I.Store(rhs.ef, allocEf, rhs.value)
           Tails(rhs.cf, storeEf, I.Unit)
         }
 

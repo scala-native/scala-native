@@ -22,16 +22,17 @@ object Tag {
   object Op {
     final val Start       = 1 + Tag.Type.Of
     final val If          = 1 + Start
-    final val IfTrue      = 1 + If
-    final val IfFalse     = 1 + IfTrue
-    final val Switch      = 1 + IfFalse
-    final val CaseValue   = 1 + Switch
+    final val Switch      = 1 + If
+    final val CaseTrue    = 1 + Switch
+    final val CaseFalse   = 1 + CaseTrue
+    final val CaseValue   = 1 + CaseFalse
     final val CaseDefault = 1 + CaseValue
-    final val Throw       = 1 + CaseDefault
+    final val CaseEnd     = 1 + CaseDefault
+    final val Return      = 1 + CaseEnd
+    final val Throw       = 1 + Return
     final val Undefined   = 1 + Throw
-    final val Out         = 1 + Undefined
-    final val Return      = 1 + Out
-    final val End         = 1 + Return
+    final val Merge       = 1 + Undefined
+    final val End         = 1 + Merge
     final val Add         = 1 + End
     final val Sub         = 1 + Add
     final val Mul         = 1 + Sub
