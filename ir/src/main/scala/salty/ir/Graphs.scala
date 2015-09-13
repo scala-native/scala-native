@@ -1,11 +1,8 @@
 package salty
 package ir
 
-import Tag.Tag
-
 sealed abstract class Node {
   var epoch: Int = 0
-  def next: Seq[Node]
 }
 object Node {
   var lastEpoch = 0
@@ -15,232 +12,153 @@ object Node {
   }
 }
 
-final case class Type(tag: Tag, ty: Option[Type], defn: Option[Defn]) extends Node {
-  def next = ty.toSeq ++ defn.toSeq
-}
+sealed abstract class Type extends Node
 object Type {
-  val Null            = Type(Tag.Type.Null,    None,     None      )
-  val Nothing         = Type(Tag.Type.Nothing, None,     None      )
-  val Unit            = Type(Tag.Type.Unit,    None,     None      )
-  val Bool            = Type(Tag.Type.Bool,    None,     None      )
-  val I8              = Type(Tag.Type.I8,      None,     None      )
-  val I16             = Type(Tag.Type.I16,     None,     None      )
-  val I32             = Type(Tag.Type.I32,     None,     None      )
-  val I64             = Type(Tag.Type.I64,     None,     None      )
-  val F32             = Type(Tag.Type.F32,     None,     None      )
-  val F64             = Type(Tag.Type.F64,     None,     None      )
-  def Ref(ty: Type)   = Type(Tag.Type.Ref,     Some(ty), None      )
-  def Slice(ty: Type) = Type(Tag.Type.Slice,   Some(ty), None      )
-  def Of(defn: Defn)  = Type(Tag.Type.Of,      None,     Some(defn))
+  final case object Null           extends Type
+  final case object Nothing        extends Type
+  final case object Unit           extends Type
+  final case object Bool           extends Type
+  final case object I8             extends Type
+  final case object I16            extends Type
+  final case object I32            extends Type
+  final case object I64            extends Type
+  final case object F32            extends Type
+  final case object F64            extends Type
+  final case class Ref(ty: Type)   extends Type
+  final case class Slice(ty: Type) extends Type
+  final case class Of(defn: Defn)  extends Type
 
   object I {
-    def unapply(ty: Type) = ty.tag match {
-      case Tag.Type.I8  => Some(32)
-      case Tag.Type.I16 => Some(32)
-      case Tag.Type.I32 => Some(32)
-      case Tag.Type.I64 => Some(64)
-      case _            => None
+    def unapply(ty: Type) = ty match {
+      case Type.I8  => Some(32)
+      case Type.I16 => Some(32)
+      case Type.I32 => Some(32)
+      case Type.I64 => Some(64)
+      case _        => None
     }
   }
 
   object F {
-    def unapply(ty: Type) = ty.tag match {
-      case Tag.Type.F32 => Some(32)
-      case Tag.Type.F64 => Some(64)
-      case _            => None
+    def unapply(ty: Type) = ty match {
+      case Type.F32 => Some(32)
+      case Type.F64 => Some(64)
+      case _        => None
     }
   }
 }
 
-final case class Instr(op: Op, nodes: Seq[Instr]) extends Node {
-  def next = op.next ++ nodes
-}
+sealed abstract class Instr extends Node
 object Instr {
-  def apply(op: Op): Instr = Instr(op, Seq())
+  sealed trait Cf    extends Instr
+  sealed trait Ef    extends Instr
+  sealed trait Val   extends Instr
+  sealed trait Const extends Val
 
   // Control-flow
   // TODO: Loop
   // TODO: Try, CaseTry, CaseCatch, CaseFinally
-  def Start()                                    = Instr(Op.Start)
-  def If(cf: Instr, ef: Instr, value: Instr)     = Instr(Op.If,           Seq(cf, value))
-  def Switch(cf: Instr, ef: Instr, value: Instr) = Instr(Op.Switch,       Seq(cf, value))
-  def CaseTrue(cf: Instr)                        = Instr(Op.CaseTrue,     Seq(cf))
-  def CaseFalse(cf: Instr)                       = Instr(Op.CaseFalse,    Seq(cf))
-  def CaseValue(cf: Instr, v: Val)               = Instr(Op.CaseValue(v), Seq(cf))
-  def CaseDefault(cf: Instr)                     = Instr(Op.CaseDefault,  Seq(cf))
-  def CaseEnd(cf: Instr, ef: Instr)              = Instr(Op.CaseEnd,      Seq(cf, ef))
-  def Return(cf: Instr, ef: Instr, value: Instr) = Instr(Op.Return,       Seq(cf, ef, value))
-  def Throw(cf: Instr, ef: Instr, value: Instr)  = Instr(Op.Throw,        Seq(cf, ef, value))
-  def Undefined(cf: Instr, ef: Instr)            = Instr(Op.Undefined,    Seq(cf, ef))
-  def Merge(cfs: Seq[Instr])                     = Instr(Op.Merge,        cfs)
-  def End(cfs: Seq[Instr])                       = Instr(Op.End,          cfs)
-
-  // Pure
-  def Bin(op: Op, left: Instr, right: Instr) = Instr(op,        Seq(left, right))
-  def Conv(op: Op, left: Instr, ty: Type)    = Instr(op,        Seq(left, Type(ty)))
-  def Is(value: Instr, ty: Type)             = Instr(Op.Is,     Seq(value, Type(ty)))
-  def Alloc(ty: Type)                        = Instr(Op.Alloc,  Seq(Type(ty)))
-  def Salloc(ty: Type, n: Instr)             = Instr(Op.Salloc, Seq(Type(ty), n))
-  def Phi(merge: Instr, values: Seq[Instr])  = Instr(Op.Phi,    merge +: values)
-  def Box(value: Instr, ty: Type)            = Instr(Op.Box,    Seq(value, Type(ty)))
-  def Unbox(value: Instr, ty: Type)          = Instr(Op.Unbox,  Seq(value, Type(ty)))
-  def Length(value: Instr)                   = Instr(Op.Length, Seq(value))
-  def Elem(ptr: Instr, value: Instr)         = Instr(Op.Elem,   Seq(ptr, value))
-  def Class(ty: Type)                        = Instr(Op.Class,  Seq(Type(ty)))
+  final case class Start()                            extends Cf with Ef
+  final case class If(cf: Cf, ef: Ef, value: Val)     extends Cf
+  final case class Switch(cf: Cf, ef: Ef, value: Val) extends Cf
+  final case class CaseTrue(cf: Cf)                   extends Cf with Ef
+  final case class CaseFalse(cf: Cf)                  extends Cf with Ef
+  final case class CaseConst(cf: Cf, const: Const)    extends Cf with Ef
+  final case class CaseDefault(cf: Cf)                extends Cf with Ef
+  final case class CaseEnd(cf: Cf, ef: Ef)            extends Cf
+  final case class Return(cf: Cf, ef: Ef, value: Val) extends Cf
+  final case class Throw(cf: Cf, ef: Ef, value: Val)  extends Cf
+  final case class Undefined(cf: Cf, ef: Ef)          extends Cf
+  final case class Merge(cfs: Seq[Cf])                extends Cf
+  final case class End(cfs: Seq[Cf])                  extends Cf
 
   // Effectful
-  def Equals(ef: Instr, left: Instr, right: Instr)  = Instr(Op.Equals, Seq(ef, left, right))
-  def Call(ef: Instr, defn: Defn, args: Seq[Instr]) = Instr(Op.Call,   ef +: Defn(defn) +: args)
-  def Load(ef: Instr, ptr: Instr)                   = Instr(Op.Load,   Seq(ef, ptr))
-  def Store(ef: Instr, ptr: Instr, value: Instr)    = Instr(Op.Store,  Seq(ef, ptr, value))
+  final case class Equals(ef: Ef, left: Val, right: Val)  extends Val with Ef
+  final case class Call(ef: Ef, ptr: Val, args: Seq[Val]) extends Val with Ef
+  final case class Load(ef: Ef, ptr: Val)                 extends Val with Ef
+  final case class Store(ef: Ef, ptr: Val, value: Val)    extends Val with Ef
 
-  // Values
-  def In(ty: Type)     = Instr(Op.In, Seq(Type(ty)))
-  def Val(v: Val)      = Instr(Op.Val(v))
-  def Type(ty: Type)   = Instr(Op.Type(ty))
-  def Defn(defn: Defn) = Instr(Op.Defn(defn))
-  def Name(name: Name) = Instr(Op.Name(name))
+  // Pure binary
+  final case class Add (left: Val, right: Val) extends Val
+  final case class Sub (left: Val, right: Val) extends Val
+  final case class Mul (left: Val, right: Val) extends Val
+  final case class Div (left: Val, right: Val) extends Val
+  final case class Mod (left: Val, right: Val) extends Val
+  final case class Shl (left: Val, right: Val) extends Val
+  final case class Lshr(left: Val, right: Val) extends Val
+  final case class Ashr(left: Val, right: Val) extends Val
+  final case class And (left: Val, right: Val) extends Val
+  final case class Or  (left: Val, right: Val) extends Val
+  final case class Xor (left: Val, right: Val) extends Val
+  final case class Eq  (left: Val, right: Val) extends Val
+  final case class Neq (left: Val, right: Val) extends Val
+  final case class Lt  (left: Val, right: Val) extends Val
+  final case class Lte (left: Val, right: Val) extends Val
+  final case class Gt  (left: Val, right: Val) extends Val
+  final case class Gte (left: Val, right: Val) extends Val
 
-  // Common values
-  val Unit  = Instr.Val(ir.Val.Unit)
-  val Null  = Instr.Val(ir.Val.Unit)
-  val True  = Instr.Val(ir.Val.Unit)
-  val False = Instr.Val(ir.Val.Unit)
+  // Pure conversions
+  final case class Trunc   (value: Val, ty: Type) extends Val
+  final case class Zext    (value: Val, ty: Type) extends Val
+  final case class Sext    (value: Val, ty: Type) extends Val
+  final case class Fptrunc (value: Val, ty: Type) extends Val
+  final case class Fpext   (value: Val, ty: Type) extends Val
+  final case class Fptoui  (value: Val, ty: Type) extends Val
+  final case class Fptosi  (value: Val, ty: Type) extends Val
+  final case class Uitofp  (value: Val, ty: Type) extends Val
+  final case class Sitofp  (value: Val, ty: Type) extends Val
+  final case class Ptrtoint(value: Val, ty: Type) extends Val
+  final case class Inttoptr(value: Val, ty: Type) extends Val
+  final case class Bitcast (value: Val, ty: Type) extends Val
+  final case class Cast    (value: Val, ty: Type) extends Val
+
+  // Pure rest
+  final case class Is(value: Val, ty: Type)         extends Val
+  final case class Alloc(ty: Type)                  extends Val
+  final case class Salloc(ty: Type, n: Val)         extends Val
+  final case class Phi(merge: Cf, values: Seq[Val]) extends Val
+  final case class Box(value: Val, ty: Type)        extends Val
+  final case class Unbox(value: Val, ty: Type)      extends Val
+  final case class Length(value: Val)               extends Val
+  final case class Elem(ptr: Val, value: Val)       extends Val
+  final case class Class(ty: Type)                  extends Val
+  final case class In(ty: Type)                     extends Val
+  final case class ValueOf(defn: Defn)              extends Val
+
+  // Constants
+  final case object Unit              extends Const
+  final case object Null              extends Const
+  final case object True              extends Const
+  final case object False             extends Const
+  final case class I8(value: Byte)    extends Const
+  final case class I16(value: Short)  extends Const
+  final case class I32(value: Int)    extends Const
+  final case class I64(value: Long)   extends Const
+  final case class F32(value: Float)  extends Const
+  final case class F64(value: Double) extends Const
+  final case class Str(value: String) extends Const
 }
 
-final case class Op(tag: Tag, value: Any, mnemonic: String) {
-  def next = tag match {
-    case Tag.Op.Type => value.asInstanceOf[Type].next
-    case Tag.Op.Defn => Seq(value.asInstanceOf[Defn])
-    case _           => Seq()
-  }
-}
-object Op {
-  def apply(tag: Tag, mnemonic: String): Op = Op(tag, ir.Val.Unit, mnemonic)
-
-  // Control-flow
-  val Start             = Op(Tag.Op.Start,         "start"       )
-  val If                = Op(Tag.Op.If,            "if"          )
-  val Switch            = Op(Tag.Op.Switch,        "switch"      )
-  val CaseTrue          = Op(Tag.Op.CaseTrue,      "case-true"   )
-  val CaseFalse         = Op(Tag.Op.CaseFalse,     "case-false"  )
-  def CaseValue(v: Val) = Op(Tag.Op.CaseValue, v, s"case-$v"     )
-  val CaseDefault       = Op(Tag.Op.CaseDefault,   "case-default")
-  val CaseEnd           = Op(Tag.Op.CaseEnd,       "case-end"    )
-  val Return            = Op(Tag.Op.Return,        "return"      )
-  val Throw             = Op(Tag.Op.Throw,         "throw"       )
-  val Undefined         = Op(Tag.Op.Undefined,     "undefined"   )
-  val Merge             = Op(Tag.Op.Merge,         "merge"       )
-  val End               = Op(Tag.Op.End,           "end"         )
-
-  // Binary operations
-  val Add  = Op(Tag.Op.Add,    "add" )
-  val Sub  = Op(Tag.Op.Sub,    "sub" )
-  val Mul  = Op(Tag.Op.Mul,    "mul" )
-  val Div  = Op(Tag.Op.Div,    "div" )
-  val Mod  = Op(Tag.Op.Mod,    "mod" )
-  val Shl  = Op(Tag.Op.Shl,    "shl" )
-  val Lshr = Op(Tag.Op.Lshr,   "lshr")
-  val Ashr = Op(Tag.Op.Ashr,   "ashr")
-  val And  = Op(Tag.Op.And,    "and" )
-  val Or   = Op(Tag.Op.Or,     "or"  )
-  val Xor  = Op(Tag.Op.Xor,    "xor" )
-  val Eq   = Op(Tag.Op.Eq,     "eq"  )
-  val Neq  = Op(Tag.Op.Neq,    "neq" )
-  val Lt   = Op(Tag.Op.Lt,     "lt"  )
-  val Lte  = Op(Tag.Op.Lte,    "lte" )
-  val Gt   = Op(Tag.Op.Gt,     "gt"  )
-  val Gte  = Op(Tag.Op.Gte,    "gte" )
-
-  // Conversion operations
-  val Trunc    = Op(Tag.Op.Trunc,    "trunc"   )
-  val Zext     = Op(Tag.Op.Zext,     "zext"    )
-  val Sext     = Op(Tag.Op.Sext,     "sext"    )
-  val Fptrunc  = Op(Tag.Op.Fptrunc,  "fptrunc" )
-  val Fpext    = Op(Tag.Op.Fpext,    "fpext"   )
-  val Fptoui   = Op(Tag.Op.Fptoui,   "fptoui"  )
-  val Fptosi   = Op(Tag.Op.Fptosi,   "fptosi"  )
-  val Uitofp   = Op(Tag.Op.Uitofp,   "uitofp"  )
-  val Sitofp   = Op(Tag.Op.Sitofp,   "sitofp"  )
-  val Ptrtoint = Op(Tag.Op.Ptrtoint, "ptrtoint")
-  val Inttoptr = Op(Tag.Op.Inttoptr, "inttoptr")
-  val Bitcast  = Op(Tag.Op.Bitcast,  "bitcast" )
-  val Cast     = Op(Tag.Op.Cast,     "cast"    )
-
-  // Scala-specific binary operations
-  val Is     = Op(Tag.Op.Is,     "is"    )
-  val Equals = Op(Tag.Op.Equals, "equals")
-
-  // Operations
-  val Alloc    = Op(Tag.Op.Alloc,    "alloc"   )
-  val Salloc   = Op(Tag.Op.Salloc,   "salloc"  )
-  val Call     = Op(Tag.Op.Call,     "call"    )
-  val Phi      = Op(Tag.Op.Phi,      "phi"     )
-  val Load     = Op(Tag.Op.Load,     "load"    )
-  val Store    = Op(Tag.Op.Store,    "store"   )
-  val Box      = Op(Tag.Op.Box,      "box"     )
-  val Unbox    = Op(Tag.Op.Unbox,    "unbox"   )
-  val Length   = Op(Tag.Op.Length,   "length"  )
-  val Elem     = Op(Tag.Op.Elem,     "elem"    )
-  val Class    = Op(Tag.Op.Class,    "class"   )
-
-  // Value-like ops
-  def In               = Op(Tag.Op.In,           "in")
-  def Val(value: Val)  = Op(Tag.Op.Val,  value, s"value-$value")
-  def Type(ty: Type)   = Op(Tag.Op.Type, ty,    s"type")
-  def Defn(defn: Defn) = Op(Tag.Op.Defn, defn,  s"defn")
-  def Name(name: Name) = Op(Tag.Op.Name, name,  s"name-$name")
-}
-
-sealed abstract class Val
-object Val {
-  case object Unit extends Val
-  case object Null extends Val
-  case object True extends Val
-  case object False extends Val
-  case class I8(value: Byte) extends Val
-  case class I16(value: Short) extends Val
-  case class I32(value: Int) extends Val
-  case class I64(value: Long) extends Val
-  case class F32(value: Float) extends Val
-  case class F64(value: Double) extends Val
-  case class Str(value: String) extends Val
-}
-
-final case class Defn(tag: Tag, nodes: Seq[Instr], rels: Seq[Rel] = Seq()) extends Node {
-  def next = nodes ++ rels
+sealed abstract class Defn extends Node {
+  def rels: Seq[Rel]
 }
 object Defn {
-  def Class(parent: Defn, ifaces: Seq[Defn], rels: Seq[Rel] = Seq()) =
-    Defn(Tag.Defn.Class, Seq(),
-         Rel.Parent(parent) +: ifaces.map(Rel.Interface) ++: rels)
-  def Interface(ifaces: Seq[Defn], rels: Seq[Rel] = Seq()) =
-    Defn(Tag.Defn.Interface, Seq(), ifaces.map(Rel.Interface) ++ rels)
-  def Module(parent: Defn, ifaces: Seq[Defn], rels: Seq[Rel] = Seq()) =
-    Defn(Tag.Defn.Module, Seq(),
-         Rel.Parent(parent) +: ifaces.map(Rel.Interface) ++: rels)
-  def Declare(in: Seq[Instr], ty: Type, rels: Seq[Rel] = Seq()) =
-    Defn(Tag.Defn.Declare, in, rels)
-  def Define(in: Seq[Instr], out: Instr, rels: Seq[Rel] = Seq()) =
-    Defn(Tag.Defn.Define, in :+ out, rels)
-  def Field(ty: Type, rels: Seq[Rel] = Seq()) =
-    Defn(Tag.Defn.Field, Seq(Instr.Type(ty)), rels)
-  def Extern(name: Name, rels: Seq[Rel] = Seq()) =
-    Defn(Tag.Defn.Extern, Seq(Instr.Name(name)), rels)
+  final case class Class(rels: Seq[Rel] = Seq()) extends Defn
+  final case class Interface(rels: Seq[Rel] = Seq()) extends Defn
+  final case class Module(rels: Seq[Rel] = Seq()) extends Defn
+  final case class Declare(ty: Type, in: Seq[Instr.In],
+                           rels: Seq[Rel] = Seq()) extends Defn
+  final case class Define(ty: Type, in: Seq[Instr.In], out: Instr.End,
+                          rels: Seq[Rel] = Seq()) extends Defn
+  final case class Field(ty: Type, rels: Seq[Rel] = Seq()) extends Defn
+  final case class Extern(name: Name, rels: Seq[Rel] = Seq()) extends Defn
 }
 
-final case class Rel(tag: Tag, defns: Seq[Defn]) extends Node {
-  def next = defns
-}
+sealed abstract class Rel { def defn: Defn }
 object Rel {
-  def Parent(defn: Defn) =
-    Rel(Tag.Rel.Parent, Seq(defn))
-  def Interface(defn: Defn) =
-    Rel(Tag.Rel.Interface, Seq(defn))
-  def Overrides(defn: Defn) =
-    Rel(Tag.Rel.Overrides, Seq(defn))
-  def Belongs(defn: Defn) =
-    Rel(Tag.Rel.Belongs, Seq(defn))
+  final case class Child(defn: Defn)      extends Rel
+  final case class Implements(defn: Defn) extends Rel
+  final case class Overrides(defn: Defn)  extends Rel
+  final case class Belongs(defn: Defn)    extends Rel
 }
 
 sealed abstract class Name

@@ -6,7 +6,7 @@ import scala.tools.nsc._
 import scala.tools.nsc.plugins._
 import scala.util.{Either, Left, Right}
 import salty.ir
-import salty.ir.{Type => Ty, Instr => I, Defn => D, Rel => R, Name => N, Val => V, Op}
+import salty.ir.{Type => Ty, Instr => I, Defn => D, Rel => R, Name => N}
 import salty.ir.Combinators._
 import salty.util, util.sh, util.ScopedVar.{withScopedVars => scoped}
 
@@ -27,15 +27,15 @@ abstract class GenSaltyCode extends PluginComponent
 
   def unreachable = abort("unreachable")
 
-  final case class Tails(cf: ir.Instr, ef: ir.Instr, value: ir.Instr)
+  final case class Tails(cf: I.Cf, ef: I.Ef, value: I.Val)
 
   class Env {
-    val env = mut.Map.empty[Symbol, ir.Instr]
-    def enter(sym: Symbol, node: ir.Instr): ir.Instr = {
+    val env = mut.Map.empty[Symbol, I.Val]
+    def enter(sym: Symbol, node: I.Val): I.Val = {
       env += ((sym, node))
       node
     }
-    def resolve(sym: Symbol): ir.Instr = env(sym)
+    def resolve(sym: Symbol): I.Val = env(sym)
   }
 
   class LabelEnv(env: Env) {
@@ -73,7 +73,7 @@ abstract class GenSaltyCode extends PluginComponent
     val curMethodSym = new util.ScopedVar[Symbol]
     val curEnv       = new util.ScopedVar[Env]
     val curLabelEnv  = new util.ScopedVar[LabelEnv]
-    val curThis      = new util.ScopedVar[ir.Instr]
+    val curThis      = new util.ScopedVar[I.Val]
 
     override def run(): Unit = {
       scalaPrimitives.init()
@@ -106,17 +106,17 @@ abstract class GenSaltyCode extends PluginComponent
     ) {
       val sym     = cd.symbol
       val name    = getClassName(sym)
-      val parent  = getClassDefn(sym.superClass)
-      val ifaces  = genClassInterfaces(sym)
+      val parent  = R.Child(getClassDefn(sym.superClass))
+      val ifaces  = genClassInterfaces(sym).map(R.Implements)
       val fields  = genClassFields(sym).toSeq
       val methods = genClassMethods(cd.impl.body)
       val owner   =
         if (sym.isModuleClass)
-          name -> D.Module(parent, ifaces)
+          name -> D.Module(parent +: ifaces)
         else if (sym.isInterface)
           name -> D.Interface(ifaces)
         else
-          name -> D.Class(parent, ifaces)
+          name -> D.Class(parent +: ifaces)
 
       ir.Scope(Map(((owner +: fields) ++ methods): _*))
     }
@@ -157,11 +157,11 @@ abstract class GenSaltyCode extends PluginComponent
       val ty =
         if (dd.symbol.isClassConstructor) Ty.Unit
         else genType(sym.tpe.resultType)
-      val meta = Seq(R.Belongs(getClassDefn(sym)))
+      val rel = Seq(R.Belongs(getClassDefn(sym)))
 
       if (dd.symbol.isDeferred) {
         val params = genParams(paramSyms, define = false)
-        name -> D.Declare(params, ty, meta)
+        name -> D.Declare(ty, params, rel)
       } else {
         val env = new Env
         scoped (
@@ -171,7 +171,7 @@ abstract class GenSaltyCode extends PluginComponent
         ) {
           val params = genParams(paramSyms, define = true)
           val body = genDefBody(dd.rhs, params)
-          name -> D.Define(params, body, meta)
+          name -> D.Define(ty, params, body, rel)
         }
       }
     }
@@ -181,7 +181,7 @@ abstract class GenSaltyCode extends PluginComponent
       if (vp.isEmpty) Nil else vp.head.map(_.symbol)
     }
 
-    def genParams(paramSyms: List[Symbol], define: Boolean): List[ir.Instr] = {
+    def genParams(paramSyms: List[Symbol], define: Boolean): Seq[I.In] = {
       val self = I.In(Ty.Of(getClassDefn(curClassSym)))
       val params = paramSyms.map { sym =>
         val node = I.In(genType(sym.tpe))
@@ -193,7 +193,7 @@ abstract class GenSaltyCode extends PluginComponent
       self +: params
     }
 
-    def genDefBody(body: Tree, params: List[ir.Instr]): ir.Instr = {
+    def genDefBody(body: Tree, params: Seq[I.In]) = {
       val start = I.Start()
       val tails = Tails(start, start, I.Unit)
       val btails = genExpr(body, tails)
@@ -267,17 +267,17 @@ abstract class GenSaltyCode extends PluginComponent
       case This(qual) =>
         Tails(tails.cf, tails.ef,
           if (tree.symbol == curClassSym.get) curThis
-          else I.Defn(getClassDefn(tree.symbol)))
+          else I.ValueOf(getClassDefn(tree.symbol)))
 
       case Select(qual, sel) =>
         val sym = tree.symbol
         if (sym.isModule)
-          Tails(tails.cf, tails.ef, I.Defn(getClassDefn(sym)))
+          Tails(tails.cf, tails.ef, I.ValueOf(getClassDefn(sym)))
         else if (sym.isStaticMember)
           Tails(tails.cf, tails.ef, genStaticMember(sym))
         else {
           val qtails = genExpr(qual, tails)
-          val elem   = I.Elem(qtails.value, I.Defn(getFieldDefn(tree.symbol)))
+          val elem   = I.Elem(qtails.value, I.ValueOf(getFieldDefn(tree.symbol)))
           val loadEf = I.Load(qtails.ef, elem)
           Tails(qtails.cf, loadEf, loadEf)
         }
@@ -286,7 +286,7 @@ abstract class GenSaltyCode extends PluginComponent
         val sym = id.symbol
         if (!curLocalInfo.mutableVars.contains(sym))
           Tails(tails.cf, tails.ef,
-            if (sym.isModule) I.Defn(getClassDefn(sym))
+            if (sym.isModule) I.ValueOf(getClassDefn(sym))
             else curEnv.resolve(sym))
         else {
           val loadEf = I.Load(tails.ef, curEnv.resolve(sym))
@@ -310,7 +310,7 @@ abstract class GenSaltyCode extends PluginComponent
           case sel @ Select(qual, _) =>
             val qtails  = genExpr(qual, tails)
             val rtails  = genExpr(rhs, qtails)
-            val elem    = I.Elem(qtails.value, I.Defn(getFieldDefn(sel.symbol)))
+            val elem    = I.Elem(qtails.value, I.ValueOf(getFieldDefn(sel.symbol)))
             val storeEf = I.Store(rtails.ef, elem, rtails.value)
             Tails(rtails.cf, storeEf, I.Unit)
 
@@ -337,7 +337,7 @@ abstract class GenSaltyCode extends PluginComponent
               tree + "/" + tree.getClass + " at: " + tree.pos)
     }
 
-    def genValue(lit: Literal): ir.Instr = {
+    def genValue(lit: Literal): I.Val = {
       val value = lit.value
       value.tag match {
         case NullTag =>
@@ -347,19 +347,19 @@ abstract class GenSaltyCode extends PluginComponent
         case BooleanTag =>
           if (value.booleanValue) I.True else I.False
         case ByteTag =>
-          I.Val(V.I8(value.intValue.toByte))
+          I.I8(value.intValue.toByte)
         case ShortTag | CharTag =>
-          I.Val(V.I16(value.intValue.toShort))
+          I.I16(value.intValue.toShort)
         case IntTag =>
-          I.Val(V.I32(value.intValue))
+          I.I32(value.intValue)
         case LongTag =>
-          I.Val(V.I64(value.longValue))
+          I.I64(value.longValue)
         case FloatTag =>
-          I.Val(V.F32(value.floatValue))
+          I.F32(value.floatValue)
         case DoubleTag =>
-          I.Val(V.F64(value.doubleValue))
+          I.F64(value.doubleValue)
        case StringTag =>
-          I.Val(V.Str(value.stringValue))
+          I.Str(value.stringValue)
         case ClazzTag =>
           I.Class(genType(value.typeValue))
         case EnumTag =>
@@ -368,7 +368,7 @@ abstract class GenSaltyCode extends PluginComponent
     }
 
     def genStaticMember(sym: Symbol) =
-      I.Defn(getFieldDefn(sym))
+      I.ValueOf(getFieldDefn(sym))
 
     def genCatch(catches: List[Tree]) = ??? /*
       if (catches.isEmpty) None
@@ -610,14 +610,14 @@ abstract class GenSaltyCode extends PluginComponent
       args match {
         case List(right) =>
           val rtails = genExpr(right, tails)
-          def unary(op: Op, linstr: ir.Instr) =
+          def unary(op: (I.Val, I.Val) => I.Val, linstr: I.Val) =
             Tails(rtails.cf, rtails.ef,
-                  I.Bin(op, linstr, rtails.value))
+                  op(linstr, rtails.value))
           code match {
             case POS  => rtails
-            case NEG  => ??? // unary(Op.Sub, V.Number("0", retty))
-            case NOT  => ??? // unary(Op.Xor, V.Number("-1", retty))
-            case ZNOT => unary(Op.Xor, I.True)
+            case NEG  => ??? // unary(Instr.Sub, V.Number("0", retty))
+            case NOT  => ??? // unary(Instr.Xor, V.Number("-1", retty))
+            case ZNOT => unary(I.Xor, I.True)
             case _ =>
               abort("Unknown unary operation code: " + code)
           }
@@ -627,12 +627,12 @@ abstract class GenSaltyCode extends PluginComponent
         case List(left, right) =>
           val lty    = genType(left.tpe)
           val rty    = genType(right.tpe)
-          def bin(op: Op, ty: ir.Type) = {
+          def bin(op: (I.Val, I.Val) => I.Val, ty: ir.Type) = {
             val ltails   = genExpr(left, tails)
             val lcoerced = genCoercion(ltails.value, lty, ty)
             val rtails   = genExpr(right, ltails)
             val rcoerced = genCoercion(rtails.value, rty, ty)
-            Tails(rtails.cf, rtails.ef, I.Bin(op, lcoerced, rcoerced))
+            Tails(rtails.cf, rtails.ef, op(lcoerced, rcoerced))
           }
           def equality(negated: Boolean) = ??? /*
             genKind(left.tpe) match {
@@ -663,22 +663,22 @@ abstract class GenSaltyCode extends PluginComponent
           } */
           code match {
             // arithmetic & bitwise
-            case ADD  => bin(Op.Add,  retty)
-            case SUB  => bin(Op.Sub,  retty)
-            case MUL  => bin(Op.Mul,  retty)
-            case DIV  => bin(Op.Div,  retty)
-            case MOD  => bin(Op.Mod,  retty)
-            case OR   => bin(Op.Or,   retty)
-            case XOR  => bin(Op.Xor,  retty)
-            case AND  => bin(Op.And,  retty)
-            case LSL  => bin(Op.Shl,  retty)
-            case LSR  => bin(Op.Lshr, retty)
-            case ASR  => bin(Op.Ashr, retty)
+            case ADD  => bin(I.Add,  retty)
+            case SUB  => bin(I.Sub,  retty)
+            case MUL  => bin(I.Mul,  retty)
+            case DIV  => bin(I.Div,  retty)
+            case MOD  => bin(I.Mod,  retty)
+            case OR   => bin(I.Or,   retty)
+            case XOR  => bin(I.Xor,  retty)
+            case AND  => bin(I.And,  retty)
+            case LSL  => bin(I.Shl,  retty)
+            case LSR  => bin(I.Lshr, retty)
+            case ASR  => bin(I.Ashr, retty)
             // comparison
-            case LT   => bin(Op.Lt,  binaryOperationType(lty, rty))
-            case LE   => bin(Op.Lte, binaryOperationType(lty, rty))
-            case GT   => bin(Op.Gt,  binaryOperationType(lty, rty))
-            case GE   => bin(Op.Gte, binaryOperationType(lty, rty))
+            case LT   => bin(I.Lt,  binaryOperationType(lty, rty))
+            case LE   => bin(I.Lte, binaryOperationType(lty, rty))
+            case GT   => bin(I.Gt,  binaryOperationType(lty, rty))
+            case GE   => bin(I.Gte, binaryOperationType(lty, rty))
             // equality
             case EQ   => equality(negated = false)
             case NE   => equality(negated = true)
@@ -794,22 +794,22 @@ abstract class GenSaltyCode extends PluginComponent
       Tails(rtails.cf, rtails.ef, genCoercion(rtails.value, fromty, toty))
     }
 
-    def genCoercion(value: ir.Instr, fromty: ir.Type, toty: ir.Type): ir.Instr =
+    def genCoercion(value: I.Val, fromty: ir.Type, toty: ir.Type): I.Val =
       if (fromty == toty)
         value
       else {
         val op = (fromty, toty) match {
           case (Ty.I(lwidth), Ty.I(rwidth))
-            if lwidth < rwidth      => Op.Zext
+            if lwidth < rwidth      => I.Zext
           case (Ty.I(lwidth), Ty.I(rwidth))
-            if lwidth > rwidth      => Op.Trunc
-          case (Ty.I(_), Ty.F(_))   => Op.Sitofp
-          case (Ty.F(_), Ty.I(_))   => Op.Fptosi
-          case (Ty.F64, Ty.F32)     => Op.Fptrunc
-          case (Ty.F32, Ty.F64)     => Op.Fpext
-          case (Ty.Null, _)         => Op.Cast
+            if lwidth > rwidth      => I.Trunc
+          case (Ty.I(_), Ty.F(_))   => I.Sitofp
+          case (Ty.F(_), Ty.I(_))   => I.Fptosi
+          case (Ty.F64, Ty.F32)     => I.Fptrunc
+          case (Ty.F32, Ty.F64)     => I.Fpext
+          case (Ty.Null, _)         => I.Cast
         }
-        I.Conv(op, value, toty)
+        op(value, toty)
       }
 
     def coercionTypes(code: Int): (ir.Type, ir.Type) = {

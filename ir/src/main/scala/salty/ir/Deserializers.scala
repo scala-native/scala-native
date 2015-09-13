@@ -11,7 +11,6 @@ object Deserializers {
 
     def getType: Type = ???
     def getInstr: Instr = ???
-    def getOp: Op     = ???
     def getDefn: Defn = ???
     def getRel: Rel = ???
   }
