@@ -95,11 +95,11 @@ object Edge {
     defn match {
       case _: Defn.Class | _: Defn.Interface | _: Defn.Module | _: Defn.Extern =>
         reledges
-      case Defn.Declare(ty, in, _) =>
+      case Defn.Declare(_, ty, in, _) =>
         Edge.Type(ty) +: (in.map(Edge.Instr) ++ reledges)
-      case Defn.Define(ty, in, out, _) =>
+      case Defn.Define(_, ty, in, out, _) =>
         Edge.Type(ty) +: Edge.Instr(out) +: (in.map(Edge.Instr) ++ reledges)
-      case Defn.Field(ty, _) =>
+      case Defn.Field(_, ty, _) =>
         Edge.Type(ty) +: reledges
     }
   }

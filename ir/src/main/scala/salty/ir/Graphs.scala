@@ -139,17 +139,18 @@ object Instr {
 }
 
 sealed abstract class Defn extends Node {
+  def name: Name
   def rels: Seq[Rel]
 }
 object Defn {
-  final case class Class(rels: Seq[Rel] = Seq()) extends Defn
-  final case class Interface(rels: Seq[Rel] = Seq()) extends Defn
-  final case class Module(rels: Seq[Rel] = Seq()) extends Defn
-  final case class Declare(ty: Type, in: Seq[Instr.In],
+  final case class Class(name: Name, rels: Seq[Rel] = Seq()) extends Defn
+  final case class Interface(name: Name, rels: Seq[Rel] = Seq()) extends Defn
+  final case class Module(name: Name, rels: Seq[Rel] = Seq()) extends Defn
+  final case class Declare(name: Name, ty: Type, in: Seq[Instr.In],
                            rels: Seq[Rel] = Seq()) extends Defn
-  final case class Define(ty: Type, in: Seq[Instr.In], out: Instr.End,
+  final case class Define(name: Name, ty: Type, in: Seq[Instr.In], out: Instr.End,
                           rels: Seq[Rel] = Seq()) extends Defn
-  final case class Field(ty: Type, rels: Seq[Rel] = Seq()) extends Defn
+  final case class Field(name: Name, ty: Type, rels: Seq[Rel] = Seq()) extends Defn
   final case class Extern(name: Name, rels: Seq[Rel] = Seq()) extends Defn
 }
 

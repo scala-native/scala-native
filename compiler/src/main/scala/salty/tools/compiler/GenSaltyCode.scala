@@ -28,6 +28,7 @@ abstract class GenSaltyCode extends PluginComponent
   def unreachable = abort("unreachable")
 
   final case class Tails(cf: I.Cf, ef: I.Ef, value: I.Val) {
+    assert(value != null)
     def wrap[T](f: (I.Cf, I.Ef) => T) = f(cf, ef)
     def wrap[T](f: (I.Cf, I.Ef, I.Val) => T) = f(cf, ef, value)
     def withValue(newvalue: I.Val) = Tails(cf, ef, newvalue)
@@ -45,6 +46,15 @@ abstract class GenSaltyCode extends PluginComponent
       Tails(cf,
         I.EfPhi(cf, tails.map(_.ef)),
         I.Phi(cf, tails.map(_.value)))
+    }
+    def fold[T](elems: Seq[T], tails: Tails)(f: (T, Tails) => Tails): Seq[Tails] = {
+      val buf = new mut.ListBuffer[Tails]
+      elems.foldLeft(tails) { (etails, elem) =>
+        val ntails = f(elem, etails)
+        buf += ntails
+        ntails
+      }
+      buf.toSeq
     }
   }
 
@@ -124,18 +134,18 @@ abstract class GenSaltyCode extends PluginComponent
       curClassSym := cd.symbol
     ) {
       val sym     = cd.symbol
-      val name    = getClassName(sym)
-      val parent  = R.Child(getClassDefn(sym.superClass))
+      val name    = genClassName(sym)
+      val parent  = R.Child(genClassDefn(sym.superClass))
       val ifaces  = genClassInterfaces(sym).map(R.Implements)
       val fields  = genClassFields(sym).toSeq
       val methods = genClassMethods(cd.impl.body)
       val owner   =
         if (sym.isModuleClass)
-          name -> D.Module(parent +: ifaces)
+          name -> D.Module(name, parent +: ifaces)
         else if (sym.isInterface)
-          name -> D.Interface(ifaces)
+          name -> D.Interface(name, ifaces)
         else
-          name -> D.Class(parent +: ifaces)
+          name -> D.Class(name, parent +: ifaces)
 
       ir.Scope(Map(((owner +: fields) ++ methods): _*))
     }
@@ -146,23 +156,23 @@ abstract class GenSaltyCode extends PluginComponent
         psym = parent.typeSymbol
         if psym.isInterface
       } yield {
-        getClassDefn(psym)
+        genClassDefn(psym)
       }
 
     def genClassMethods(stats: List[Tree]): List[(ir.Name, ir.Defn)] =
       stats.flatMap {
-        // TODO: remove guard
-        case dd: DefDef if dd.name != nme.CONSTRUCTOR => List(genDef(dd))
+        case dd: DefDef => List(genDef(dd))
         case _          => Nil
       }
 
     def genClassFields(sym: Symbol) = {
-      val owner = getClassDefn(sym)
+      val owner = genClassDefn(sym)
       for {
         f <- sym.info.decls
         if !f.isMethod && f.isTerm && !f.isModule
       } yield {
-        getFieldName(f) -> D.Field(genType(f.tpe), Seq(R.Belongs(owner)))
+        val name = genFieldName(f)
+        name -> D.Field(name, genType(f.tpe), Seq(R.Belongs(owner)))
       }
     }
 
@@ -171,16 +181,16 @@ abstract class GenSaltyCode extends PluginComponent
     ) {
       println(s"generating $dd")
       val sym = dd.symbol
-      val name = getDefName(sym)
+      val name = genDefName(sym)
       val paramSyms = defParamSymbols(dd)
       val ty =
         if (dd.symbol.isClassConstructor) Ty.Unit
         else genType(sym.tpe.resultType)
-      val rel = Seq(R.Belongs(getClassDefn(sym)))
+      val rel = Seq(R.Belongs(genClassDefn(sym)))
 
       if (dd.symbol.isDeferred) {
         val params = genParams(paramSyms, define = false)
-        name -> D.Declare(ty, params, rel)
+        name -> D.Declare(name, ty, params, rel)
       } else {
         val env = new Env
         scoped (
@@ -190,7 +200,7 @@ abstract class GenSaltyCode extends PluginComponent
         ) {
           val params = genParams(paramSyms, define = true)
           val body = genDefBody(dd.rhs, params)
-          name -> D.Define(ty, params, body, rel)
+          name -> D.Define(name, ty, params, body, rel)
         }
       }
     }
@@ -201,7 +211,7 @@ abstract class GenSaltyCode extends PluginComponent
     }
 
     def genParams(paramSyms: List[Symbol], define: Boolean): Seq[I.In] = {
-      val self = I.In(Ty.Of(getClassDefn(curClassSym)))
+      val self = I.In(Ty.Of(genClassDefn(curClassSym)))
       val params = paramSyms.map { sym =>
         val node = I.In(genType(sym.tpe))
         if (define)
@@ -213,7 +223,11 @@ abstract class GenSaltyCode extends PluginComponent
     }
 
     def genDefBody(body: Tree, params: Seq[I.In]) =
-      I.End(Seq(genExpr(body, Tails(I.Start())).wrap(I.Return)))
+      scoped (
+        curThis := params.head
+      ) {
+        I.End(Seq(genExpr(body, Tails(I.Start())).wrap(I.Return)))
+      }
 
     /* (body match {
       case Block(List(ValDef(_, nme.THIS, _, _)),
@@ -283,17 +297,17 @@ abstract class GenSaltyCode extends PluginComponent
       case This(qual) =>
         Tails(tails.cf, tails.ef,
           if (tree.symbol == curClassSym.get) curThis
-          else I.ValueOf(getClassDefn(tree.symbol)))
+          else I.ValueOf(genClassDefn(tree.symbol)))
 
       case Select(qual, sel) =>
         val sym = tree.symbol
         if (sym.isModule)
-          Tails(tails.cf, tails.ef, I.ValueOf(getClassDefn(sym)))
+          Tails(tails.cf, tails.ef, I.ValueOf(genClassDefn(sym)))
         else if (sym.isStaticMember)
           Tails(tails.cf, tails.ef, genStaticMember(sym))
         else {
           val qtails = genExpr(qual, tails)
-          val elem   = I.Elem(qtails.value, I.ValueOf(getFieldDefn(tree.symbol)))
+          val elem   = I.Elem(qtails.value, I.ValueOf(genFieldDefn(tree.symbol)))
           val loadEf = I.Load(qtails.ef, elem)
           Tails(qtails.cf, loadEf, loadEf)
         }
@@ -302,7 +316,7 @@ abstract class GenSaltyCode extends PluginComponent
         val sym = id.symbol
         if (!curLocalInfo.mutableVars.contains(sym))
           Tails(tails.cf, tails.ef,
-            if (sym.isModule) I.ValueOf(getClassDefn(sym))
+            if (sym.isModule) I.ValueOf(genClassDefn(sym))
             else curEnv.resolve(sym))
         else {
           val loadEf = I.Load(tails.ef, curEnv.resolve(sym))
@@ -326,7 +340,7 @@ abstract class GenSaltyCode extends PluginComponent
           case sel @ Select(qual, _) =>
             val qtails  = genExpr(qual, tails)
             val rtails  = genExpr(rhs, qtails)
-            val elem    = I.Elem(qtails.value, I.ValueOf(getFieldDefn(sel.symbol)))
+            val elem    = I.Elem(qtails.value, I.ValueOf(genFieldDefn(sel.symbol)))
             val storeEf = I.Store(rtails.ef, elem, rtails.value)
             Tails(rtails.cf, storeEf, I.Unit)
 
@@ -337,7 +351,7 @@ abstract class GenSaltyCode extends PluginComponent
         }
 
       case av: ArrayValue =>
-        genArrayValue(av)
+        genArrayValue(av, tails)
 
       case m: Match =>
         genSwitch(m, tails)
@@ -384,7 +398,7 @@ abstract class GenSaltyCode extends PluginComponent
     }
 
     def genStaticMember(sym: Symbol) =
-      I.ValueOf(getFieldDefn(sym))
+      I.ValueOf(genFieldDefn(sym))
 
     def genCatch(catches: List[Tree]) = ??? /*
       if (catches.isEmpty) None
@@ -443,14 +457,7 @@ abstract class GenSaltyCode extends PluginComponent
         */
 
         case _ =>
-          def loop(stats: Seq[Tree], tails: Tails): Tails =
-            stats match {
-              case Seq() =>
-                genExpr(last, tails)
-              case stat +: rest =>
-                loop(rest, genExpr(stat, tails))
-            }
-          loop(stats, tails)
+          genExpr(last, Tails.fold(stats, tails)(genExpr(_, _)).last)
       }
     }
 
@@ -472,25 +479,25 @@ abstract class GenSaltyCode extends PluginComponent
       entry
     }*/
 
-
-    // TODO: insert coercions
-    def genArrayValue(av: ArrayValue) = ??? /*{
+    def genArrayValue(av: ArrayValue, tails: Tails) = {
       val ArrayValue(tpt, elems) = av
 
-      elems.map(genExpr).chain { values =>
-        val n      = fresh()
-        val ty     = genType(tpt.tpe)
-        val len    = values.length
-        val stores = values.zipWithIndex.map {
-          case (v, i) =>
-            E.Store(V.Elem(n, V(i)), v)
+      var values = new mut.ListBuffer[I.Val]
+      val elemtails =
+        elems.foldLeft(tails) { (etails, e) =>
+          val res = genExpr(e, etails)
+          values += res.value
+          res
         }
-
-        B(I.Assign(n, E.Alloc(ty, Some(V(len)))) +:
-          stores,
-          Tn.Out(n))
+      val ty     = genType(tpt.tpe)
+      val len    = values.length
+      val salloc = I.Salloc(ty, I.I32(len))
+      val vtails = values.zipWithIndex.foldLeft(elemtails) { (vtails, vi) =>
+        val (v, i) = vi
+        vtails withEf I.Store(vtails.ef, I.Elem(salloc, I.I32(i)), v)
       }
-    }*/
+      vtails withValue salloc
+    }
 
     def genIf(cond: Tree, thenp: Tree, elsep: Tree, tails: Tails) = {
       val condtails = genExpr(cond, tails)
@@ -594,21 +601,19 @@ abstract class GenSaltyCode extends PluginComponent
 
     lazy val ctorName = N.Global(nme.CONSTRUCTOR.toString)
 
-    def genPrimitiveBox(expr: Tree, tpe: Type, tails: Tails): Tails = ??? /*
-      genExpr(expr).merge { v =>
-        val name = fresh()
-        B(List(I.Assign(name, E.Box(v, primitive2box(tpe.widen)))),
-          Tn.Out(name))
-      }
-      */
+    def genPrimitiveBox(expr: Tree, tpe: Type, tails: Tails): Tails = {
+      val etails = genExpr(expr, tails)
+      val box    = I.Box(etails.value, Ty.Ref(primitive2box(tpe.widen)))
 
-    def genPrimitiveUnbox(expr: Tree, tpe: Type, tails: Tails): Tails = ??? /*
-      genExpr(expr).merge { v =>
-        val name = fresh()
-        B(List(I.Assign(name, E.Unbox(v, primitive2box(tpe.widen)))),
-          Tn.Out(name))
-      }
-      */
+      etails withValue box
+    }
+
+    def genPrimitiveUnbox(expr: Tree, tpe: Type, tails: Tails): Tails = {
+      val etails = genExpr(expr, tails)
+      val unbox  = I.Unbox(etails.value, primitive2box(tpe.widen))
+
+      etails withValue unbox
+    }
 
     def genPrimitiveOp(app: Apply, tails: Tails): Tails = {
       import scalaPrimitives._
@@ -902,34 +907,32 @@ abstract class GenSaltyCode extends PluginComponent
       }
     }
 
-    def genApplyTypeApply(app: Apply, tails: Tails): Tails = ??? /* {
-      val Apply(TypeApply(fun @ Select(obj, _), targs), _) = app
-      val ty = genType(targs.head.tpe)
-
-      genExpr(obj).merge { v =>
-        val expr = fun.symbol match {
-          case Object_isInstanceOf => E.Is(v, ty)
-          case Object_asInstanceOf => E.Conv(ConvOp.Cast, v, ty)
-        }
-        val n = fresh()
-
-        B(List(I.Assign(n, expr)),
-          Tn.Out(n))
+    def genApplyTypeApply(app: Apply, tails: Tails): Tails = {
+      val Apply(TypeApply(fun @ Select(receiver, _), targs), _) = app
+      val ty     = genType(targs.head.tpe)
+      val rtails = genExpr(receiver, tails)
+      val value  = fun.symbol match {
+        case Object_isInstanceOf => I.Is(rtails.value, ty)
+        case Object_asInstanceOf => I.Cast(rtails.value, ty)
       }
-    }*/
 
-    def genApplySuper(app: Apply, tails: Tails): Tails = ??? /* {
+      rtails withValue value
+    }
+
+    def genNormalApply(app: Apply, tails: Tails): Tails = {
+      val Apply(fun @ Select(receiver, _), args) = app
+      val rtails = genExpr(receiver, tails)
+
+      genMethodCall(fun.symbol, rtails.value, args, rtails)
+    }
+
+    def genApplySuper(app: Apply, tails: Tails): Tails = {
       val Apply(fun @ Select(sup, _), args) = app
-      val stat = getDefDefn(fun.symbol)
-      val n    = fresh()
 
-      args.map(genExpr).chain { values =>
-        B(List(I.Assign(n, E.Call(stat, curThis.get +: values))),
-          Tn.Out(n))
-      }
-    }*/
+      genMethodCall(fun.symbol, curThis.get, args, tails)
+    }
 
-    def genApplyNew(app: Apply, tails: Tails): Tails = ??? /*{
+    def genApplyNew(app: Apply, tails: Tails): Tails = {
       val Apply(fun @ Select(New(tpt), nme.CONSTRUCTOR), args) = app
       val ctor = fun.symbol
       val kind = genKind(tpt.tpe)
@@ -937,54 +940,38 @@ abstract class GenSaltyCode extends PluginComponent
 
       kind match {
         case _: ArrayKind =>
-          genNewArray(ty, args.head)
+          genNewArray(ty, args.head, tails)
         case ckind: ClassKind =>
-          genNew(ckind.sym, ctor, args)
+          genNew(ckind.sym, ctor, args, tails)
         case ty =>
           abort("unexpected new: " + app + "\ngen type: " + ty)
       }
-    }*/
+    }
 
-    def genNewArray(ty: ir.Type, length: Tree): ir.Instr = ??? /*{
+    def genNewArray(ty: ir.Type, length: Tree, tails: Tails): Tails = {
       val Ty.Slice(elemty) = ty
-      val n = fresh()
+      val ltails = genExpr(length, tails)
 
-      genExpr(length).merge { v =>
-        B(List(I.Assign(n, E.Alloc(elemty, Some(v)))),
-          Tn.Out(n))
-      }
-    }*/
+      ltails withValue I.Salloc(elemty, ltails.value)
+    }
 
-    def genNew(sym: Symbol, ctorsym: Symbol, args: List[Tree]): ir.Instr = ??? /*
-      args.map(genExpr).chain { values =>
-        val stat = getClassDefn(sym)
-        val ctor = getDefDefn(ctorsym)
-        val n    = fresh()
+    def genNew(sym: Symbol, ctorsym: Symbol, args: List[Tree], tails: Tails): Tails = {
+      val stat  = genClassDefn(sym)
+      val alloc = I.Alloc(Ty.Of(stat))
 
-        B(List(I.Assign(n, E.Alloc(Ty.Of(stat))),
-               E.Call(ctor, n +: values)),
-          Tn.Out(n))
-      }
-    */
+      genMethodCall(ctorsym, alloc, args, tails)
+    }
 
-    def genNormalApply(app: Apply, tails: Tails): Tails = ??? /*{
-      val Apply(fun @ Select(receiver, _), args) = app
+    def genMethodCall(sym: Symbol, self: I.Val, args: Seq[Tree], tails: Tails): Tails = {
+      val argtails  = Tails.fold(args, tails)(genExpr(_, _))
+      val argvalues = argtails.map(_.value)
+      val lasttails = argtails.lastOption.getOrElse(tails)
+      val stat      = genDefDefn(sym)
+      val call      = I.Call(lasttails.ef, I.ValueOf(stat), self +: argvalues)
 
-      genExpr(receiver).merge { rvalue =>
-        args.map(genExpr).chain { argvalues =>
-          genMethodCall(fun.symbol, rvalue, argvalues)
-        }
-      }
-    }*/
+      lasttails withEf call withValue call
+    }
 
-    def genMethodCall(sym: Symbol, self: ir.Instr,
-                      args: Seq[ir.Instr], tails: Tails): Tails = ??? /*{
-      val stat = getDefDefn(sym)
-      val n    = fresh()
-
-      B(List(I.Assign(n, E.Call(stat, self +: args))),
-        Tn.Out(n))
-    }*/
   }
 }
 
