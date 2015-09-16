@@ -60,10 +60,13 @@ object Instr {
   final case class Start()                            extends Cf with Ef
   final case class If(cf: Cf, value: Val)             extends Cf
   final case class Switch(cf: Cf, value: Val)         extends Cf
+  final case class Try(cf: Cf)                        extends Cf
   final case class CaseTrue(cf: Cf)                   extends Cf
   final case class CaseFalse(cf: Cf)                  extends Cf
   final case class CaseConst(cf: Cf, const: Const)    extends Cf
   final case class CaseDefault(cf: Cf)                extends Cf
+  final case class CaseNormal(cf: Cf)                 extends Cf
+  final case class CaseExceptional(cf: Cf)            extends Cf
   final case class Return(cf: Cf, ef: Ef, value: Val) extends Cf
   final case class Throw(cf: Cf, ef: Ef, value: Val)  extends Cf
   final case class Undefined(cf: Cf, ef: Ef)          extends Cf
@@ -113,7 +116,7 @@ object Instr {
   final case class Box     (value: Val, ty: Type) extends Val
   final case class Unbox   (value: Val, ty: Type) extends Val
 
-  // Pure rest
+  // Pure resft
   final case class Is(value: Val, ty: Type)         extends Val
   final case class Alloc(ty: Type)                  extends Val
   final case class Salloc(ty: Type, n: Val)         extends Val
@@ -123,6 +126,7 @@ object Instr {
   final case class Class(ty: Type)                  extends Val
   final case class In(ty: Type)                     extends Val
   final case class ValueOf(defn: Defn)              extends Val
+  final case class ExceptionOf(cf: Cf)              extends Val
 
   // Constants
   final case object Unit              extends Const { override def toString = "unit" }

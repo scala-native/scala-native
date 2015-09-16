@@ -31,10 +31,12 @@ abstract class GenSaltyCode extends PluginComponent
     assert(value != null)
     def wrap[T](f: (I.Cf, I.Ef) => T) = f(cf, ef)
     def wrap[T](f: (I.Cf, I.Ef, I.Val) => T) = f(cf, ef, value)
-    def withValue(newvalue: I.Val) = Tails(cf, ef, newvalue)
     def withCf(newcf: I.Cf) = Tails(newcf, ef, value)
     def withEf(newef: I.Ef) = Tails(cf, newef, value)
-    def withCfEf(newcfef: I.Cf with I.Ef) = Tails(newcfef, newcfef, value)
+    def withValue(newvalue: I.Val) = Tails(cf, ef, newvalue)
+    def mapCf(f: I.Cf => I.Cf) = Tails(f(cf), ef, value)
+    def mapEf(f: I.Ef => I.Ef) = Tails(cf, f(ef), value)
+    def mapValue(f: I.Val => I.Val) = Tails(cf, ef, f(value))
   }
   object Tails {
     def apply(cf: I.Cf with I.Ef): Tails =
@@ -650,104 +652,99 @@ abstract class GenSaltyCode extends PluginComponent
     }
 
     def genSimpleOp(app: Apply, args: List[Tree], code: Int, tails: Tails): Tails = {
-      import scalaPrimitives._
-
       val retty = genType(app.tpe)
 
       args match {
-        case List(right) =>
-          val rtails = genExpr(right, tails)
-          def unary(op: (I.Val, I.Val) => I.Val, linstr: I.Val) =
-            Tails(rtails.cf, rtails.ef,
-                  op(linstr, rtails.value))
-          code match {
-            case POS  => rtails
-            case NEG  => unary(I.Sub, numOfType(0, retty))
-            case NOT  => unary(I.Xor, numOfType(-1, retty))
-            case ZNOT => unary(I.Xor, I.True)
-            case _ =>
-              abort("Unknown unary operation code: " + code)
-          }
+        case List(right)       => genUnaryOp(code, right, retty, tails)
+        case List(left, right) => genBinaryOp(code, left, right, retty, tails)
+        case _                 => abort("Too many arguments for primitive function: " + app)
+      }
+    }
 
-        // TODO: convert to the common type
-        // TODO: eq, ne
-        case List(left, right) =>
-          val lty    = genType(left.tpe)
-          val rty    = genType(right.tpe)
-          def bin(op: (I.Val, I.Val) => I.Val, ty: ir.Type) = {
-            val ltails   = genExpr(left, tails)
-            val lcoerced = genCoercion(ltails.value, lty, ty)
-            val rtails   = genExpr(right, ltails)
-            val rcoerced = genCoercion(rtails.value, rty, ty)
-            Tails(rtails.cf, rtails.ef, op(lcoerced, rcoerced))
-          }
-          def equality(negated: Boolean) = ??? /*
-            genKind(left.tpe) match {
-              case ClassKind(_) =>
-                lblock.chain(rblock) { (lvalue, rvalue) =>
-                  val classEq = genClassEquality(lvalue, rvalue)
-                  if (!negated)
-                    classEq
-                  else
-                    classEq.merge { v =>
-                      val n = fresh()
-                      B(List(I.Assign(n, E.Bin(Op.Xor, V(true), v))),
-                        Tn.Out(n))
-                    }
-                }
-              case kind =>
-                val op = if (negated) Op.Neq else Op.Eq
-                bin(Op.Eq, binaryOperationType(lty, rty))
-            }
-          */
-          def referenceEquality(negated: Boolean) = ??? /*{
-            val op = if (negated) Op.Neq else Op.Eq
-            val n = fresh()
-            lblock.chain(rblock) { (lvalue, rvalue) =>
-              B(List(I.Assign(n, E.Bin(op, lvalue, rvalue))),
-                Tn.Out(n))
-            }
-          } */
-          code match {
-            // arithmetic & bitwise
-            case ADD  => bin(I.Add,  retty)
-            case SUB  => bin(I.Sub,  retty)
-            case MUL  => bin(I.Mul,  retty)
-            case DIV  => bin(I.Div,  retty)
-            case MOD  => bin(I.Mod,  retty)
-            case OR   => bin(I.Or,   retty)
-            case XOR  => bin(I.Xor,  retty)
-            case AND  => bin(I.And,  retty)
-            case LSL  => bin(I.Shl,  retty)
-            case LSR  => bin(I.Lshr, retty)
-            case ASR  => bin(I.Ashr, retty)
-            // comparison
-            case LT   => bin(I.Lt,  binaryOperationType(lty, rty))
-            case LE   => bin(I.Lte, binaryOperationType(lty, rty))
-            case GT   => bin(I.Gt,  binaryOperationType(lty, rty))
-            case GE   => bin(I.Gte, binaryOperationType(lty, rty))
-            // equality
-            case EQ   => equality(negated = false)
-            case NE   => equality(negated = true)
-            case ID   => referenceEquality(negated = false)
-            case NI   => referenceEquality(negated = true)
-            // logical
-            case ZOR  =>
-              ???
-              /*lblock.merge { lvalue =>
-                B(Tn.If(lvalue, B(Tn.Out(V(true))), rblock))
-              }*/
-            case ZAND =>
-              ???
-              /*lblock.merge { lvalue =>
-                B(Tn.If(lvalue, rblock, B(Tn.Out(V(false)))))
-              }*/
-            case _ =>
-              abort("Unknown binary operation code: " + code)
-          }
+    def genUnaryOp(code: Int, right: Tree, retty: ir.Type, tails: Tails) = {
+      import scalaPrimitives._
 
-        case _ =>
-          abort("Too many arguments for primitive function: " + app)
+      val rtails = genExpr(right, tails)
+
+      code match {
+        case POS  => rtails
+        case NEG  => rtails mapValue (v => I.Sub(numOfType(0, retty), v))
+        case NOT  => rtails mapValue (v => I.Xor(numOfType(-1, retty), v))
+        case ZNOT => rtails mapValue (v => I.Xor(I.True, v))
+        case _    => abort("Unknown unary operation code: " + code)
+      }
+    }
+
+    def genBinaryOp(code: Int, left: Tree, right: Tree, retty: ir.Type, tails: Tails): Tails = {
+      import scalaPrimitives._
+
+      val lty   = genType(left.tpe)
+      val rty   = genType(right.tpe)
+
+      code match {
+        case ADD  => genBinaryOp(I.Add,  left, right, retty, tails)
+        case SUB  => genBinaryOp(I.Sub,  left, right, retty, tails)
+        case MUL  => genBinaryOp(I.Mul,  left, right, retty, tails)
+        case DIV  => genBinaryOp(I.Div,  left, right, retty, tails)
+        case MOD  => genBinaryOp(I.Mod,  left, right, retty, tails)
+        case OR   => genBinaryOp(I.Or,   left, right, retty, tails)
+        case XOR  => genBinaryOp(I.Xor,  left, right, retty, tails)
+        case AND  => genBinaryOp(I.And,  left, right, retty, tails)
+        case LSL  => genBinaryOp(I.Shl,  left, right, retty, tails)
+        case LSR  => genBinaryOp(I.Lshr, left, right, retty, tails)
+        case ASR  => genBinaryOp(I.Ashr, left, right, retty, tails)
+
+        case LT   => genBinaryOp(I.Lt,  left, right, binaryOperationType(lty, rty), tails)
+        case LE   => genBinaryOp(I.Lte, left, right, binaryOperationType(lty, rty), tails)
+        case GT   => genBinaryOp(I.Gt,  left, right, binaryOperationType(lty, rty), tails)
+        case GE   => genBinaryOp(I.Gte, left, right, binaryOperationType(lty, rty), tails)
+
+        case EQ   => genEqualityOp(left, right, ref = false, negated = false, tails)
+        case NE   => genEqualityOp(left, right, ref = false, negated = true,  tails)
+        case ID   => genEqualityOp(left, right, ref = true,  negated = false, tails)
+        case NI   => genEqualityOp(left, right, ref = true,  negated = true,  tails)
+
+        case ZOR  => genIf(left, Literal(Constant(true)), right, tails)
+        case ZAND => genIf(left, right, Literal(Constant(false)), tails)
+
+        case _    => abort("Unknown binary operation code: " + code)
+      }
+    }
+
+    def genBinaryOp(op: (I.Val, I.Val) => I.Val, left: Tree, right: Tree, retty: ir.Type,
+                    tails: Tails): Tails = {
+      val ltails   = genExpr(left, tails)
+      val lcoerced = genCoercion(ltails.value, genType(left.tpe), retty)
+      val rtails   = genExpr(right, ltails)
+      val rcoerced = genCoercion(rtails.value, genType(right.tpe), retty)
+
+      Tails(rtails.cf, rtails.ef, op(lcoerced, rcoerced))
+    }
+
+    def genEqualityOp(left: Tree, right: Tree, ref: Boolean, negated: Boolean,
+                      tails: Tails): Tails = {
+      val eq = if (negated) I.Neq else I.Eq
+
+      genKind(left.tpe) match {
+        case ClassKind(_) | BottomKind(NullClass) =>
+          val ltails = genExpr(left, tails)
+          val rtails = genExpr(right, ltails)
+          if (ref)
+            rtails withValue eq(ltails.value, rtails.value)
+          else if (ltails.value eq I.Null)
+            rtails withValue eq(rtails.value, I.Null)
+          else if (rtails.value eq I.Null)
+            rtails withValue eq(ltails.value, I.Null)
+          else {
+            val equals = I.Equals(rtails.ef, ltails.value, rtails.value)
+            val value = if (!negated) equals else I.Xor(I.True, equals)
+            rtails withEf equals withValue value
+          }
+        case kind =>
+          val lty = genType(left.tpe)
+          val rty = genType(right.tpe)
+          val retty = binaryOperationType(lty, rty)
+          genBinaryOp(eq, left, right, retty, tails)
       }
     }
 
@@ -769,21 +766,6 @@ abstract class GenSaltyCode extends PluginComponent
       case _ =>
         abort(s"can't perform binary opeation between $lty and $rty")
     }
-
-    def genClassEquality(lvalue: ir.Instr, rvalue: ir.Instr, tails: Tails): Tails = ??? /* {
-      import scalaPrimitives._
-
-      val n = fresh()
-
-      rvalue match {
-        case V.Null =>
-          B(List(I.Assign(n, E.Bin(Op.Eq, lvalue, V.Null))),
-            Tn.Out(n))
-        case _ =>
-          B(List(I.Assign(n, E.Bin(Op.Equals, lvalue, rvalue))),
-            Tn.Out(n))
-      }
-    }*/
 
     def genStringConcat(tree: Tree, receiver: Tree, args: List[Tree], tails: Tails): Tails = ??? /*
       genExpr(receiver).chain(genExpr(args.head)) { (l, r) =>
