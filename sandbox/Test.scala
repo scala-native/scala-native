@@ -1,5 +1,17 @@
-package a
+package test
 
-class B {
-  def f(x: Int, y: Int) = x + y
+class Test {
+  def foo(x: Int) = {
+    var y = 0
+    val z =
+      if (x > 0) {
+        y = 1
+        -x
+      }
+      else {
+        y = 2
+        x
+      }
+    z + y
+  }
 }

@@ -58,13 +58,12 @@ object Instr {
   // TODO: Loop
   // TODO: Try, CaseTry, CaseCatch, CaseFinally
   final case class Start()                            extends Cf with Ef
-  final case class If(cf: Cf, ef: Ef, value: Val)     extends Cf
-  final case class Switch(cf: Cf, ef: Ef, value: Val) extends Cf
-  final case class CaseTrue(cf: Cf)                   extends Cf with Ef
-  final case class CaseFalse(cf: Cf)                  extends Cf with Ef
-  final case class CaseConst(cf: Cf, const: Const)    extends Cf with Ef
-  final case class CaseDefault(cf: Cf)                extends Cf with Ef
-  final case class CaseEnd(cf: Cf, ef: Ef)            extends Cf
+  final case class If(cf: Cf, value: Val)             extends Cf
+  final case class Switch(cf: Cf, value: Val)         extends Cf
+  final case class CaseTrue(cf: Cf)                   extends Cf
+  final case class CaseFalse(cf: Cf)                  extends Cf
+  final case class CaseConst(cf: Cf, const: Const)    extends Cf
+  final case class CaseDefault(cf: Cf)                extends Cf
   final case class Return(cf: Cf, ef: Ef, value: Val) extends Cf
   final case class Throw(cf: Cf, ef: Ef, value: Val)  extends Cf
   final case class Undefined(cf: Cf, ef: Ef)          extends Cf
@@ -72,6 +71,7 @@ object Instr {
   final case class End(cfs: Seq[Cf])                  extends Cf
 
   // Effectful
+  final case class EfPhi(cf: Cf, efs: Seq[Ef])            extends Ef
   final case class Equals(ef: Ef, left: Val, right: Val)  extends Val with Ef
   final case class Call(ef: Ef, ptr: Val, args: Seq[Val]) extends Val with Ef
   final case class Load(ef: Ef, ptr: Val)                 extends Val with Ef
@@ -110,14 +110,14 @@ object Instr {
   final case class Inttoptr(value: Val, ty: Type) extends Val
   final case class Bitcast (value: Val, ty: Type) extends Val
   final case class Cast    (value: Val, ty: Type) extends Val
+  final case class Box     (value: Val, ty: Type) extends Val
+  final case class Unbox   (value: Val, ty: Type) extends Val
 
   // Pure rest
   final case class Is(value: Val, ty: Type)         extends Val
   final case class Alloc(ty: Type)                  extends Val
   final case class Salloc(ty: Type, n: Val)         extends Val
   final case class Phi(merge: Cf, values: Seq[Val]) extends Val
-  final case class Box(value: Val, ty: Type)        extends Val
-  final case class Unbox(value: Val, ty: Type)      extends Val
   final case class Length(value: Val)               extends Val
   final case class Elem(ptr: Val, value: Val)       extends Val
   final case class Class(ty: Type)                  extends Val
@@ -125,17 +125,17 @@ object Instr {
   final case class ValueOf(defn: Defn)              extends Val
 
   // Constants
-  final case object Unit              extends Const
-  final case object Null              extends Const
-  final case object True              extends Const
-  final case object False             extends Const
-  final case class I8(value: Byte)    extends Const
-  final case class I16(value: Short)  extends Const
-  final case class I32(value: Int)    extends Const
-  final case class I64(value: Long)   extends Const
-  final case class F32(value: Float)  extends Const
-  final case class F64(value: Double) extends Const
-  final case class Str(value: String) extends Const
+  final case object Unit              extends Const { override def toString = "unit" }
+  final case object Null              extends Const { override def toString = "null" }
+  final case object True              extends Const { override def toString = "true" }
+  final case object False             extends Const { override def toString = "false" }
+  final case class I8(value: Byte)    extends Const { override def toString = s"${value}i8" }
+  final case class I16(value: Short)  extends Const { override def toString = s"${value}i16" }
+  final case class I32(value: Int)    extends Const { override def toString = s"${value}i32" }
+  final case class I64(value: Long)   extends Const { override def toString = s"${value}i64" }
+  final case class F32(value: Float)  extends Const { override def toString = s"${value}f32" }
+  final case class F64(value: Double) extends Const { override def toString = s"${value}f64" }
+  final case class Str(value: String) extends Const { override def toString = "\"" + value + "\"" }
 }
 
 sealed abstract class Defn extends Node {
@@ -163,8 +163,12 @@ object Rel {
 
 sealed abstract class Name
 object Name {
-  final case class Global(id: String) extends Name
-  final case class Nested(parent: Name, child: Name) extends Name
+  final case class Global(id: String) extends Name {
+    override def toString = id
+  }
+  final case class Nested(parent: Name, child: Name) extends Name {
+    override def toString = s"$parent::$child"
+  }
 }
 
 final case class Scope(entries: Map[Name, Defn])

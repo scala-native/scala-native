@@ -27,7 +27,26 @@ abstract class GenSaltyCode extends PluginComponent
 
   def unreachable = abort("unreachable")
 
-  final case class Tails(cf: I.Cf, ef: I.Ef, value: I.Val)
+  final case class Tails(cf: I.Cf, ef: I.Ef, value: I.Val) {
+    def wrap[T](f: (I.Cf, I.Ef) => T) = f(cf, ef)
+    def wrap[T](f: (I.Cf, I.Ef, I.Val) => T) = f(cf, ef, value)
+    def withValue(newvalue: I.Val) = Tails(cf, ef, newvalue)
+    def withCf(newcf: I.Cf) = Tails(newcf, ef, value)
+    def withEf(newef: I.Ef) = Tails(cf, newef, value)
+    def withCfEf(newcfef: I.Cf with I.Ef) = Tails(newcfef, newcfef, value)
+  }
+  object Tails {
+    def apply(cf: I.Cf with I.Ef): Tails =
+      Tails(cf, cf, I.Unit)
+    def apply(cf: I.Cf, ef: I.Ef): Tails =
+      Tails(cf, ef, I.Unit)
+    def merge(tails: Seq[Tails]) = {
+      val cf = I.Merge(tails.map(_.cf))
+      Tails(cf,
+        I.EfPhi(cf, tails.map(_.ef)),
+        I.Phi(cf, tails.map(_.value)))
+    }
+  }
 
   class Env {
     val env = mut.Map.empty[Symbol, I.Val]
@@ -132,9 +151,8 @@ abstract class GenSaltyCode extends PluginComponent
 
     def genClassMethods(stats: List[Tree]): List[(ir.Name, ir.Defn)] =
       stats.flatMap {
-        case dd: DefDef =>
-          try { List(genDef(dd)) }
-          catch { case e => println(s"failed ${dd.symbol} due to $e"); Nil }
+        // TODO: remove guard
+        case dd: DefDef if dd.name != nme.CONSTRUCTOR => List(genDef(dd))
         case _          => Nil
       }
 
@@ -151,6 +169,7 @@ abstract class GenSaltyCode extends PluginComponent
     def genDef(dd: DefDef): (ir.Name, ir.Defn) = scoped (
       curMethodSym := dd.symbol
     ) {
+      println(s"generating $dd")
       val sym = dd.symbol
       val name = getDefName(sym)
       val paramSyms = defParamSymbols(dd)
@@ -193,12 +212,8 @@ abstract class GenSaltyCode extends PluginComponent
       self +: params
     }
 
-    def genDefBody(body: Tree, params: Seq[I.In]) = {
-      val start = I.Start()
-      val tails = Tails(start, start, I.Unit)
-      val btails = genExpr(body, tails)
-      I.End(Seq(I.Return(btails.cf, btails.ef, btails.value)))
-    }
+    def genDefBody(body: Tree, params: Seq[I.In]) =
+      I.End(Seq(genExpr(body, Tails(I.Start())).wrap(I.Return)))
 
     /* (body match {
       case Block(List(ValDef(_, nme.THIS, _, _)),
@@ -233,18 +248,19 @@ abstract class GenSaltyCode extends PluginComponent
 
       case vd: ValDef =>
         val rhs = genExpr(vd.rhs, tails)
-        curEnv.enter(vd.symbol, rhs.value)
         val isMutable = curLocalInfo.mutableVars.contains(vd.symbol)
-        if (!isMutable)
+        if (!isMutable) {
+          curEnv.enter(vd.symbol, rhs.value)
           Tails(rhs.cf, rhs.ef, I.Unit)
-        else {
+        } else {
           val allocEf = I.Alloc(genType(vd.symbol.tpe))
           val storeEf = I.Store(rhs.ef, allocEf, rhs.value)
+          curEnv.enter(vd.symbol, allocEf)
           Tails(rhs.cf, storeEf, I.Unit)
         }
 
       case If(cond, thenp, elsep) =>
-        ???
+        genIf(cond, thenp, elsep, tails)
 
       case Return(expr) =>
         ???
@@ -297,7 +313,7 @@ abstract class GenSaltyCode extends PluginComponent
         Tails(tails.cf, tails.ef, genValue(lit))
 
       case block: Block =>
-        genBlock(block)
+        genBlock(block, tails)
 
       case Typed(Super(_, _), _) =>
         Tails(tails.cf, tails.ef, curThis)
@@ -324,7 +340,7 @@ abstract class GenSaltyCode extends PluginComponent
         genArrayValue(av)
 
       case m: Match =>
-        genSwitch(m)
+        genSwitch(m, tails)
 
       case fun: Function =>
         ???
@@ -402,9 +418,10 @@ abstract class GenSaltyCode extends PluginComponent
       }
     */
 
-    def genBlock(block: Block) = ??? /*{
+    def genBlock(block: Block, tails: Tails) = {
       val Block(stats, last) = block
 
+      /*
       def isCaseLabelDef(tree: Tree) =
         tree.isInstanceOf[LabelDef] && hasSynthCaseSymbol(tree)
 
@@ -413,21 +430,29 @@ abstract class GenSaltyCode extends PluginComponent
         val labels = cases.map { case label: LabelDef => label }
         genMatch(prologue, labels, last)
       }
+      */
 
       last match {
+        /*
         case label: LabelDef if isCaseLabelDef(label) =>
           translateMatch(label)
 
         case Apply(TypeApply(Select(label: LabelDef, nme.asInstanceOf_Ob), _), _)
             if isCaseLabelDef(label) =>
           translateMatch(label)
+        */
 
         case _ =>
-          stats.map(genExpr).chain { vals =>
-            genExpr(last)
-          }
+          def loop(stats: Seq[Tree], tails: Tails): Tails =
+            stats match {
+              case Seq() =>
+                genExpr(last, tails)
+              case stat +: rest =>
+                loop(rest, genExpr(stat, tails))
+            }
+          loop(stats, tails)
       }
-    }*/
+    }
 
     def genMatch(prologue: List[Tree], cases: List[LabelDef], last: LabelDef) = ??? /*{
       prologue.map(genExpr).chain { _ =>
@@ -467,46 +492,53 @@ abstract class GenSaltyCode extends PluginComponent
       }
     }*/
 
-    def genSwitch(m: Match) = ??? /*{
+    def genIf(cond: Tree, thenp: Tree, elsep: Tree, tails: Tails) = {
+      val condtails = genExpr(cond, tails)
+      val cf = I.If(condtails.cf, condtails.value)
+      Tails.merge(Seq(
+        genExpr(thenp, Tails(I.CaseTrue(cf), condtails.ef)),
+        genExpr(elsep, Tails(I.CaseFalse(cf), condtails.ef))))
+    }
+
+    def genSwitch(m: Match, tails: Tails): Tails = {
       val Match(sel, cases) = m
 
-      genExpr(sel).merge { selvalue =>
-        val defaultBody =
-          cases.collectFirst {
-            case c @ CaseDef(Ident(nme.WILDCARD), _, body) => body
-          }.get
-        val defaultBlock = genExpr(defaultBody)
-        val branches = cases.flatMap {
-          case CaseDef(Ident(nme.WILDCARD), _, _) =>
-            Nil
-          case CaseDef(pat, guard, body) =>
-            val bodyBlock = genExpr(body)
-            val guardedBlock =
-              if (guard.isEmpty) bodyBlock
-              else
-                genExpr(guard).merge { gv =>
-                  B(Tn.If(gv, bodyBlock, defaultBlock))
-                }
-            val values: List[ir.Instr] =
-              pat match {
-                case lit: Literal =>
-                  val Left(value) = genValue(lit)
-                  List(value)
-                case Alternative(alts) =>
-                  alts.map {
-                    case lit: Literal =>
-                      val Left(value) = genValue(lit)
-                      value
-                  }
-                case _ =>
-                  Nil
-              }
-            values.map(Br(_, guardedBlock))
-        }
+      val seltails = genExpr(sel, tails)
+      val switch = I.Switch(seltails.cf, seltails.value)
 
-        B(Tn.Switch(selvalue, defaultBlock, branches))
+      val defaultBody =
+        cases.collectFirst {
+          case c @ CaseDef(Ident(nme.WILDCARD), _, body) => body
+        }.get
+      val defaultTails = genExpr(defaultBody, Tails(I.CaseDefault(switch), seltails.ef))
+      val branchTails: Seq[Tails] = cases.flatMap {
+        case CaseDef(Ident(nme.WILDCARD), _, _) =>
+          Nil
+        case CaseDef(pat, guard, body) =>
+          def guardedBlock(tails: Tails) =
+            if (guard.isEmpty) genExpr(body, tails)
+            else ??? //genIf(guard, body, defaultBody, tails)
+          val consts =
+            pat match {
+              case lit: Literal =>
+                val __ @ (const: I.Const) = genValue(lit)
+                List(const)
+              case Alternative(alts) =>
+                alts.map {
+                  case lit: Literal =>
+                    val __ @ (const: I.Const) = genValue(lit)
+                    const
+                }
+              case _ =>
+                Nil
+            }
+          consts.map { const =>
+            guardedBlock(Tails(I.CaseConst(switch, const), seltails.ef))
+          }
       }
-    }*/
+
+      Tails.merge(defaultTails +: branchTails)
+    }
 
     def genApplyDynamic(app: ApplyDynamic, tails: Tails): Tails = ???
 
@@ -602,6 +634,16 @@ abstract class GenSaltyCode extends PluginComponent
               fun.symbol.simpleName + ") " + " at: " + (app.pos))
     }
 
+    def numOfType(num: Int, ty: ir.Type) = ty match {
+      case Ty.I8  => I.I8 (num.toByte)
+      case Ty.I16 => I.I16(num.toShort)
+      case Ty.I32 => I.I32(num)
+      case Ty.I64 => I.I64(num.toLong)
+      case Ty.F32 => I.F32(num.toFloat)
+      case Ty.F64 => I.F64(num.toDouble)
+      case _      => unreachable
+    }
+
     def genSimpleOp(app: Apply, args: List[Tree], code: Int, tails: Tails): Tails = {
       import scalaPrimitives._
 
@@ -615,8 +657,8 @@ abstract class GenSaltyCode extends PluginComponent
                   op(linstr, rtails.value))
           code match {
             case POS  => rtails
-            case NEG  => ??? // unary(Instr.Sub, V.Number("0", retty))
-            case NOT  => ??? // unary(Instr.Xor, V.Number("-1", retty))
+            case NEG  => unary(I.Sub, numOfType(0, retty))
+            case NOT  => unary(I.Xor, numOfType(-1, retty))
             case ZNOT => unary(I.Xor, I.True)
             case _ =>
               abort("Unknown unary operation code: " + code)
