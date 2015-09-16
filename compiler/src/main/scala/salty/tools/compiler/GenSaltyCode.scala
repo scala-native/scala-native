@@ -515,9 +515,7 @@ abstract class GenSaltyCode extends PluginComponent
         case CaseDef(Ident(nme.WILDCARD), _, _) =>
           Nil
         case CaseDef(pat, guard, body) =>
-          def guardedBlock(tails: Tails) =
-            if (guard.isEmpty) genExpr(body, tails)
-            else ??? //genIf(guard, body, defaultBody, tails)
+          assert(guard.isEmpty)
           val consts =
             pat match {
               case lit: Literal =>
@@ -532,9 +530,11 @@ abstract class GenSaltyCode extends PluginComponent
               case _ =>
                 Nil
             }
-          consts.map { const =>
-            guardedBlock(Tails(I.CaseConst(switch, const), seltails.ef))
+          val cf = consts match {
+            case const :: Nil => I.CaseConst(switch, consts.head)
+            case _            => I.Merge(consts.map(I.CaseConst(switch, _)))
           }
+          List(genExpr(body, Tails(cf, seltails.ef)))
       }
 
       Tails.merge(defaultTails +: branchTails)
