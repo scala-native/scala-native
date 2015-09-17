@@ -50,6 +50,7 @@ object Type {
 sealed abstract class Instr extends Node
 object Instr {
   sealed trait Cf    extends Instr
+  sealed trait Termn extends Cf
   sealed trait Ef    extends Instr
   sealed trait Val   extends Instr
   sealed trait Const extends Val
@@ -66,11 +67,11 @@ object Instr {
   final case class CaseConst(cf: Cf, const: Const)    extends Cf
   final case class CaseDefault(cf: Cf)                extends Cf
   final case class CaseException(cf: Cf)              extends Cf
-  final case class Return(cf: Cf, ef: Ef, value: Val) extends Cf
-  final case class Throw(cf: Cf, ef: Ef, value: Val)  extends Cf
-  final case class Undefined(cf: Cf, ef: Ef)          extends Cf
   final case class Merge(cfs: Seq[Cf])                extends Cf
-  final case class End(cfs: Seq[Cf])                  extends Cf
+  final case class Return(cf: Cf, ef: Ef, value: Val) extends Termn
+  final case class Throw(cf: Cf, ef: Ef, value: Val)  extends Termn
+  final case class Undefined(cf: Cf, ef: Ef)          extends Termn
+  final case class End(cfs: Seq[Termn])               extends Cf
 
   // Effectful
   final case class EfPhi(cf: Cf, efs: Seq[Ef])            extends Ef

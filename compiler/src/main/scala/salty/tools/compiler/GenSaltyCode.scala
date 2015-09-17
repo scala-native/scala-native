@@ -6,14 +6,15 @@ import scala.tools.nsc._
 import scala.tools.nsc.plugins._
 import scala.util.{Either, Left, Right}
 import salty.ir
-import salty.ir.{Type => Ty, Instr => I, Defn => D, Rel => R, Name => N, Tails}
+import salty.ir.{Type => Ty, Instr => I, Defn => D, Rel => R, Name => N}
+import salty.ir.{Focus, Tails}, Focus.sequenced
 import salty.util, util.sh, util.ScopedVar.{withScopedVars => scoped}
 
 abstract class GenSaltyCode extends PluginComponent
                                with GenIRFiles
                                with GenTypeKinds
                                with GenNameEncoding {
-  import global._
+  import global.{ merge => _, _ }
   import global.definitions._
   import global.treeInfo.hasSynthCaseSymbol
 
@@ -194,7 +195,12 @@ abstract class GenSaltyCode extends PluginComponent
       scoped (
         curThis := params.head
       ) {
-        I.End(Seq(genExpr(body, Tails.start()).wrap(I.Return)))
+        val tails =
+          try genExpr(body, Focus.start())
+          catch {
+            case Tails.NotMergeable(tails) => tails
+          }
+        tails.end
       }
 
     /* (body match {
@@ -220,7 +226,7 @@ abstract class GenSaltyCode extends PluginComponent
         }
     }).simplify.verify*/
 
-    def genExpr(tree: Tree, tails: Tails): Tails = tree match {
+    def genExpr(tree: Tree, focus: Focus): Tails = tree match {
       case label: LabelDef =>
         ???
         /*
@@ -229,102 +235,108 @@ abstract class GenSaltyCode extends PluginComponent
         */
 
       case vd: ValDef =>
-        val rtails = genExpr(vd.rhs, tails)
+        val (rfocus, rt) = genExpr(vd.rhs, focus).merge
         val isMutable = curLocalInfo.mutableVars.contains(vd.symbol)
-        if (!isMutable) {
-          curEnv.enter(vd.symbol, rtails.value)
-          rtails withValue I.Unit
-        } else {
-          val alloc = I.Alloc(genType(vd.symbol.tpe))
-          curEnv.enter(vd.symbol, alloc)
-          rtails mapEf (ef => I.Store(ef, alloc, rtails.value))
-        }
+        val vdfocus =
+          if (!isMutable) {
+            curEnv.enter(vd.symbol, rfocus.value)
+            rfocus withValue I.Unit
+          } else {
+            val alloc = I.Alloc(genType(vd.symbol.tpe))
+            curEnv.enter(vd.symbol, alloc)
+            rfocus mapEf (I.Store(_, alloc, rfocus.value))
+          }
+        vdfocus +: rt
 
       case If(cond, thenp, elsep) =>
-        genIf(cond, thenp, elsep, tails)
+        genIf(cond, thenp, elsep, focus)
 
       case Return(expr) =>
-        ???
+        val (efocus, etails) = genExpr(expr, focus).merge
+        (efocus withCf I.Return(efocus.cf, efocus.ef, efocus.value)) +: etails
 
       case Try(expr, catches, finalizer) if catches.isEmpty && finalizer.isEmpty =>
-        genExpr(expr, tails)
+        genExpr(expr, focus)
 
       case Try(expr, catches, finalizer) =>
-        genTry(expr, catches, finalizer, tails)
+        genTry(expr, catches, finalizer, focus)
 
       case Throw(expr) =>
-        ???
+        val (efocus, etails) = genExpr(expr, focus).merge
+        (efocus withCf I.Throw(efocus.cf, efocus.ef, efocus.value)) +: etails
 
       case app: Apply =>
-        genApply(app, tails)
+        genApply(app, focus)
 
       case app: ApplyDynamic =>
-        genApplyDynamic(app, tails)
+        genApplyDynamic(app, focus)
 
       case This(qual) =>
-        tails withValue {
+        Tails(focus withValue {
           if (tree.symbol == curClassSym.get) curThis
           else I.ValueOf(genClassDefn(tree.symbol))
-        }
+        })
 
       case Select(qual, sel) =>
         val sym = tree.symbol
         if (sym.isModule)
-          tails withValue I.ValueOf(genClassDefn(sym))
+          Tails(focus withValue I.ValueOf(genClassDefn(sym)))
         else if (sym.isStaticMember)
-          tails withValue genStaticMember(sym)
+          Tails(focus withValue genStaticMember(sym))
         else {
-          val qtails = genExpr(qual, tails)
-          val elem = I.Elem(qtails.value, I.ValueOf(genFieldDefn(tree.symbol)))
-          qtails mapEf (I.Load(_, elem))
+          val (qfocus, qt) = genExpr(qual, focus).merge
+          val elem = I.Elem(qfocus.value, I.ValueOf(genFieldDefn(tree.symbol)))
+          (qfocus mapEf (I.Load(_, elem))) +: qt
         }
 
       case id: Ident =>
         val sym = id.symbol
-        if (!curLocalInfo.mutableVars.contains(sym))
-          tails withValue {
-            if (sym.isModule) I.ValueOf(genClassDefn(sym))
-            else curEnv.resolve(sym)
-          }
-        else
-          tails mapEf (I.Load(_, curEnv.resolve(sym)))
+        Tails {
+          if (!curLocalInfo.mutableVars.contains(sym))
+            focus withValue {
+              if (sym.isModule) I.ValueOf(genClassDefn(sym))
+              else curEnv.resolve(sym)
+            }
+          else
+            focus mapEf (I.Load(_, curEnv.resolve(sym)))
+        }
 
       case lit: Literal =>
-        tails withValue genValue(lit)
+        Tails(focus withValue genValue(lit))
 
       case block: Block =>
-        genBlock(block, tails)
+        genBlock(block, focus)
 
       case Typed(Super(_, _), _) =>
-        tails withValue curThis
+        Tails(focus withValue curThis)
 
       case Typed(expr, _) =>
-        genExpr(expr, tails)
+        genExpr(expr, focus)
 
       case Assign(lhs, rhs) =>
         lhs match {
           case sel @ Select(qual, _) =>
-            val qtails  = genExpr(qual, tails)
-            val rtails  = genExpr(rhs, qtails)
-            val elem    = I.Elem(qtails.value, I.ValueOf(genFieldDefn(sel.symbol)))
-            rtails mapEf (I.Store(_, elem, rtails.value))
+            val (qfocus, qt) = genExpr(qual, focus).merge
+            val (rfocus, rt) = genExpr(rhs, qfocus).merge
+            val elem = I.Elem(qfocus.value, I.ValueOf(genFieldDefn(sel.symbol)))
+            (rfocus mapEf (I.Store(_, elem, rfocus.value))) +: (qt ++ rt)
 
           case id: Ident =>
-            val rtails  = genExpr(rhs, tails)
-            rtails mapEf (I.Store(_, curEnv.resolve(id.symbol), rtails.value))
+            val (rfocus, rt) = genExpr(rhs, focus).merge
+            (rfocus mapEf (I.Store(_, curEnv.resolve(id.symbol), rfocus.value))) +: rt
         }
 
       case av: ArrayValue =>
-        genArrayValue(av, tails)
+        genArrayValue(av, focus)
 
       case m: Match =>
-        genSwitch(m, tails)
+        genSwitch(m, focus)
 
       case fun: Function =>
         ???
 
       case EmptyTree =>
-        tails withValue I.Unit
+        Tails(focus withValue I.Unit)
 
       case _ =>
         abort("Unexpected tree in genExpr: " +
@@ -352,7 +364,7 @@ abstract class GenSaltyCode extends PluginComponent
           I.F32(value.floatValue)
         case DoubleTag =>
           I.F64(value.doubleValue)
-       case StringTag =>
+        case StringTag =>
           I.Str(value.stringValue)
         case ClazzTag =>
           I.Class(genType(value.typeValue))
@@ -364,20 +376,19 @@ abstract class GenSaltyCode extends PluginComponent
     def genStaticMember(sym: Symbol) =
       I.ValueOf(genFieldDefn(sym))
 
-    def genTry(expr: Tree, catches: List[Tree], finalizer: Tree, tails: Tails) = {
-      val cf          = I.Try(tails.cf)
-      val normal      = genExpr(expr, tails withCf cf)
-      val exceptional = genCatch(catches, finalizer, tails withCf I.CaseException(cf))
+    def genTry(expr: Tree, catches: List[Tree], finalizer: Tree, focus: Focus) = {
+      val cf          = I.Try(focus.cf)
+      val normal      = genExpr(expr, focus withCf cf)
+      val exceptional = genCatch(catches, finalizer, focus withCf I.CaseException(cf))
 
-      Tails.merge(Seq(normal, exceptional))
+      normal ++ exceptional
     }
 
-    def genCatch(catches: List[Tree], finalizer: Tree, tails: Tails) = {
-      val exc = I.ExceptionOf(tails.cf)
+    def genCatch(catches: List[Tree], finalizer: Tree, focus: Focus) = {
+      val exc = I.ExceptionOf(focus.cf)
 
       ???
     }
-
 
     /*
       if (catches.isEmpty) None
@@ -411,7 +422,7 @@ abstract class GenSaltyCode extends PluginComponent
       }
     */
 
-    def genBlock(block: Block, tails: Tails) = {
+    def genBlock(block: Block, focus: Focus) = {
       val Block(stats, last) = block
 
       /*
@@ -436,7 +447,8 @@ abstract class GenSaltyCode extends PluginComponent
         */
 
         case _ =>
-          genExpr(last, Tails.fold(stats, tails)(genExpr(_, _)).last)
+          val (focs, tails) = sequenced(stats, focus)(genExpr(_, _))
+          genExpr(last, focs.last) ++ tails
       }
     }
 
@@ -458,105 +470,109 @@ abstract class GenSaltyCode extends PluginComponent
       entry
     }*/
 
-    def genArrayValue(av: ArrayValue, tails: Tails) = {
+    def genArrayValue(av: ArrayValue, focus: Focus): Tails = {
       val ArrayValue(tpt, elems) = av
-
-      var values = new mut.ListBuffer[I.Val]
-      val elemtails =
-        elems.foldLeft(tails) { (etails, e) =>
-          val res = genExpr(e, etails)
-          values += res.value
-          res
+      val ty           = genType(tpt.tpe)
+      val len          = elems.length
+      val salloc       = I.Salloc(ty, I.I32(len))
+      val (rfocus, rt) =
+        if (elems.isEmpty)
+          (focus, Tails.Empty)
+        else {
+          val (vfocus, vt) = sequenced(elems, focus)(genExpr(_, _))
+          val values       = vfocus.map(_.value)
+          val lastfocus    = vfocus.lastOption.getOrElse(focus)
+          val (sfocus, st) = sequenced(values.zipWithIndex, lastfocus) { (vi, foc) =>
+            val (value, i) = vi
+            Tails(foc withEf I.Store(foc.ef, I.Elem(salloc, I.I32(i)), value))
+          }
+          (sfocus.last, vt ++ st)
         }
-      val ty     = genType(tpt.tpe)
-      val len    = values.length
-      val salloc = I.Salloc(ty, I.I32(len))
-      val vtails = values.zipWithIndex.foldLeft(elemtails) { (vtails, vi) =>
-        val (v, i) = vi
-        vtails withEf I.Store(vtails.ef, I.Elem(salloc, I.I32(i)), v)
-      }
-      vtails withValue salloc
+
+      (rfocus withValue salloc) +: rt
     }
 
-    def genIf(cond: Tree, thenp: Tree, elsep: Tree, tails: Tails) = {
-      val condtails = genExpr(cond, tails)
-      val cf = I.If(condtails.cf, condtails.value)
-      Tails.merge(Seq(
-        genExpr(thenp, Tails(I.CaseTrue(cf), condtails.ef)),
-        genExpr(elsep, Tails(I.CaseFalse(cf), condtails.ef))))
+    def genIf(cond: Tree, thenp: Tree, elsep: Tree, focus: Focus) = {
+      val (condfocus, condt) = genExpr(cond, focus).merge
+      val cf = I.If(condfocus.cf, condfocus.value)
+      condt ++
+      genExpr(thenp, condfocus withCf I.CaseTrue(cf)) ++
+      genExpr(elsep, condfocus withCf I.CaseFalse(cf))
     }
 
-    def genSwitch(m: Match, tails: Tails): Tails = {
+    def genSwitch(m: Match, focus: Focus): Tails = {
       val Match(sel, cases) = m
 
-      val seltails = genExpr(sel, tails)
-      val switch = I.Switch(seltails.cf, seltails.value)
+      val (selfocus, selt) = genExpr(sel, focus).merge
+      val switch = I.Switch(selfocus.cf, selfocus.value)
 
       val defaultBody =
         cases.collectFirst {
           case c @ CaseDef(Ident(nme.WILDCARD), _, body) => body
         }.get
-      val defaultTails = genExpr(defaultBody, Tails(I.CaseDefault(switch), seltails.ef))
-      val branchTails: Seq[Tails] = cases.flatMap {
-        case CaseDef(Ident(nme.WILDCARD), _, _) =>
-          Nil
-        case CaseDef(pat, guard, body) =>
-          assert(guard.isEmpty)
-          val consts =
-            pat match {
-              case lit: Literal =>
-                val __ @ (const: I.Const) = genValue(lit)
-                List(const)
-              case Alternative(alts) =>
-                alts.map {
-                  case lit: Literal =>
-                    val __ @ (const: I.Const) = genValue(lit)
-                    const
-                }
-              case _ =>
-                Nil
+      val defaultTails =
+        genExpr(defaultBody, selfocus withCf I.CaseDefault(switch))
+      val branchTails: Seq[Tails] =
+        cases.map {
+          case CaseDef(Ident(nme.WILDCARD), _, _) =>
+            Tails.Empty
+          case CaseDef(pat, guard, body) =>
+            assert(guard.isEmpty)
+            val consts =
+              pat match {
+                case lit: Literal =>
+                  val __ @ (const: I.Const) = genValue(lit)
+                  List(const)
+                case Alternative(alts) =>
+                  alts.map {
+                    case lit: Literal =>
+                      val __ @ (const: I.Const) = genValue(lit)
+                      const
+                  }
+                case _ =>
+                  Nil
+              }
+            val cf = consts match {
+              case const :: Nil => I.CaseConst(switch, consts.head)
+              case _            => I.Merge(consts.map(I.CaseConst(switch, _)))
             }
-          val cf = consts match {
-            case const :: Nil => I.CaseConst(switch, consts.head)
-            case _            => I.Merge(consts.map(I.CaseConst(switch, _)))
-          }
-          List(genExpr(body, Tails(cf, seltails.ef)))
-      }
+            genExpr(body, selfocus withCf cf)
+        }
 
-      Tails.merge(defaultTails +: branchTails)
+      Tails.flatten(defaultTails +: branchTails)
     }
 
-    def genApplyDynamic(app: ApplyDynamic, tails: Tails): Tails = ???
+    def genApplyDynamic(app: ApplyDynamic, focus: Focus) = ???
 
-    def genApply(app: Apply, tails: Tails): Tails = {
+    def genApply(app: Apply, focus: Focus): Tails = {
       val Apply(fun, args) = app
 
       fun match {
         case _: TypeApply =>
-          genApplyTypeApply(app, tails)
+          genApplyTypeApply(app, focus)
         case Select(Super(_, _), _) =>
-          genApplySuper(app, tails)
+          genApplySuper(app, focus)
         case Select(New(_), nme.CONSTRUCTOR) =>
-          genApplyNew(app, tails)
+          genApplyNew(app, focus)
         case _ =>
           val sym = fun.symbol
 
           if (sym.isLabel) {
-            genLabelApply(app, tails)
+            genLabelApply(app, focus)
           } else if (scalaPrimitives.isPrimitive(sym)) {
-            genPrimitiveOp(app, tails)
+            genPrimitiveOp(app, focus)
           } else if (currentRun.runDefinitions.isBox(sym)) {
             val arg = args.head
-            genPrimitiveBox(arg, arg.tpe, tails)
+            genPrimitiveBox(arg, arg.tpe, focus)
           } else if (currentRun.runDefinitions.isUnbox(sym)) {
-            genPrimitiveUnbox(args.head, app.tpe, tails)
+            genPrimitiveUnbox(args.head, app.tpe, focus)
           } else {
-            genNormalApply(app, tails)
+            genNormalApply(app, focus)
           }
       }
     }
 
-    def genLabelApply(tree: Tree, tails: Tails): Tails = ??? /*tree match {
+    def genLabelApply(tree: Tree, focus: Focus) = ??? /*tree match {
       case Apply(fun, Nil) =>
         curLabelEnv.resolveLabel(fun.symbol)
       case Apply(fun, args) =>
@@ -580,21 +596,21 @@ abstract class GenSaltyCode extends PluginComponent
 
     lazy val ctorName = N.Global(nme.CONSTRUCTOR.toString)
 
-    def genPrimitiveBox(expr: Tree, tpe: Type, tails: Tails): Tails = {
-      val etails = genExpr(expr, tails)
-      val box    = I.Box(etails.value, Ty.Ref(primitive2box(tpe.widen)))
+    def genPrimitiveBox(expr: Tree, tpe: Type, focus: Focus) = {
+      val (efocus, et) = genExpr(expr, focus).merge
+      val box = I.Box(efocus.value, Ty.Ref(primitive2box(tpe.widen)))
 
-      etails withValue box
+      (efocus withValue box) +: et
     }
 
-    def genPrimitiveUnbox(expr: Tree, tpe: Type, tails: Tails): Tails = {
-      val etails = genExpr(expr, tails)
-      val unbox  = I.Unbox(etails.value, primitive2box(tpe.widen))
+    def genPrimitiveUnbox(expr: Tree, tpe: Type, focus: Focus) = {
+      val (efocus, et) = genExpr(expr, focus).merge
+      val unbox  = I.Unbox(efocus.value, primitive2box(tpe.widen))
 
-      etails withValue unbox
+      (efocus withValue unbox) +: et
     }
 
-    def genPrimitiveOp(app: Apply, tails: Tails): Tails = {
+    def genPrimitiveOp(app: Apply, focus: Focus): Tails = {
       import scalaPrimitives._
 
       val sym = app.symbol
@@ -602,17 +618,17 @@ abstract class GenSaltyCode extends PluginComponent
       val code = scalaPrimitives.getPrimitive(sym, receiver.tpe)
 
       if (isArithmeticOp(code) || isLogicalOp(code) || isComparisonOp(code))
-        genSimpleOp(app, receiver :: args, code, tails)
+        genSimpleOp(app, receiver :: args, code, focus)
       else if (code == CONCAT)
-        genStringConcat(app, receiver, args, tails)
+        genStringConcat(app, receiver, args, focus)
       else if (code == HASH)
-        genHash(app, receiver, tails)
+        genHash(app, receiver, focus)
       else if (isArrayOp(code))
-        genArrayOp(app, code, tails)
+        genArrayOp(app, code, focus)
       else if (isCoercion(code))
-        genCoercion(app, receiver, code, tails)
+        genCoercion(app, receiver, code, focus)
       else if (code == SYNCHRONIZED)
-        genSynchronized(app, tails)
+        genSynchronized(app, focus)
       else
         abort("Unknown primitive operation: " + sym.fullName + "(" +
               fun.symbol.simpleName + ") " + " at: " + (app.pos))
@@ -628,100 +644,106 @@ abstract class GenSaltyCode extends PluginComponent
       case _      => unreachable
     }
 
-    def genSimpleOp(app: Apply, args: List[Tree], code: Int, tails: Tails): Tails = {
+    def genSimpleOp(app: Apply, args: List[Tree], code: Int, focus: Focus) = {
       val retty = genType(app.tpe)
 
       args match {
-        case List(right)       => genUnaryOp(code, right, retty, tails)
-        case List(left, right) => genBinaryOp(code, left, right, retty, tails)
+        case List(right)       => genUnaryOp(code, right, retty, focus)
+        case List(left, right) => genBinaryOp(code, left, right, retty, focus)
         case _                 => abort("Too many arguments for primitive function: " + app)
       }
     }
 
-    def genUnaryOp(code: Int, right: Tree, retty: ir.Type, tails: Tails) = {
+    def genUnaryOp(code: Int, right: Tree, retty: ir.Type, focus: Focus) = {
       import scalaPrimitives._
 
-      val rtails = genExpr(right, tails)
+      val (rfocus, rt) = genExpr(right, focus).merge
+      val resfocus =
+        code match {
+          case POS  => rfocus
+          case NEG  => rfocus mapValue (v => I.Sub(numOfType(0, retty), v))
+          case NOT  => rfocus mapValue (v => I.Xor(numOfType(-1, retty), v))
+          case ZNOT => rfocus mapValue (v => I.Xor(I.True, v))
+          case _    => abort("Unknown unary operation code: " + code)
+        }
 
-      code match {
-        case POS  => rtails
-        case NEG  => rtails mapValue (v => I.Sub(numOfType(0, retty), v))
-        case NOT  => rtails mapValue (v => I.Xor(numOfType(-1, retty), v))
-        case ZNOT => rtails mapValue (v => I.Xor(I.True, v))
-        case _    => abort("Unknown unary operation code: " + code)
-      }
+      rfocus +: rt
     }
 
-    def genBinaryOp(code: Int, left: Tree, right: Tree, retty: ir.Type, tails: Tails): Tails = {
+    def genBinaryOp(code: Int, left: Tree, right: Tree, retty: ir.Type,
+                    focus: Focus): Tails = {
       import scalaPrimitives._
 
       val lty   = genType(left.tpe)
       val rty   = genType(right.tpe)
 
       code match {
-        case ADD  => genBinaryOp(I.Add,  left, right, retty, tails)
-        case SUB  => genBinaryOp(I.Sub,  left, right, retty, tails)
-        case MUL  => genBinaryOp(I.Mul,  left, right, retty, tails)
-        case DIV  => genBinaryOp(I.Div,  left, right, retty, tails)
-        case MOD  => genBinaryOp(I.Mod,  left, right, retty, tails)
-        case OR   => genBinaryOp(I.Or,   left, right, retty, tails)
-        case XOR  => genBinaryOp(I.Xor,  left, right, retty, tails)
-        case AND  => genBinaryOp(I.And,  left, right, retty, tails)
-        case LSL  => genBinaryOp(I.Shl,  left, right, retty, tails)
-        case LSR  => genBinaryOp(I.Lshr, left, right, retty, tails)
-        case ASR  => genBinaryOp(I.Ashr, left, right, retty, tails)
+        case ADD  => genBinaryOp(I.Add,  left, right, retty, focus)
+        case SUB  => genBinaryOp(I.Sub,  left, right, retty, focus)
+        case MUL  => genBinaryOp(I.Mul,  left, right, retty, focus)
+        case DIV  => genBinaryOp(I.Div,  left, right, retty, focus)
+        case MOD  => genBinaryOp(I.Mod,  left, right, retty, focus)
+        case OR   => genBinaryOp(I.Or,   left, right, retty, focus)
+        case XOR  => genBinaryOp(I.Xor,  left, right, retty, focus)
+        case AND  => genBinaryOp(I.And,  left, right, retty, focus)
+        case LSL  => genBinaryOp(I.Shl,  left, right, retty, focus)
+        case LSR  => genBinaryOp(I.Lshr, left, right, retty, focus)
+        case ASR  => genBinaryOp(I.Ashr, left, right, retty, focus)
 
-        case LT   => genBinaryOp(I.Lt,  left, right, binaryOperationType(lty, rty), tails)
-        case LE   => genBinaryOp(I.Lte, left, right, binaryOperationType(lty, rty), tails)
-        case GT   => genBinaryOp(I.Gt,  left, right, binaryOperationType(lty, rty), tails)
-        case GE   => genBinaryOp(I.Gte, left, right, binaryOperationType(lty, rty), tails)
+        case LT   => genBinaryOp(I.Lt,  left, right, binaryOperationType(lty, rty), focus)
+        case LE   => genBinaryOp(I.Lte, left, right, binaryOperationType(lty, rty), focus)
+        case GT   => genBinaryOp(I.Gt,  left, right, binaryOperationType(lty, rty), focus)
+        case GE   => genBinaryOp(I.Gte, left, right, binaryOperationType(lty, rty), focus)
 
-        case EQ   => genEqualityOp(left, right, ref = false, negated = false, tails)
-        case NE   => genEqualityOp(left, right, ref = false, negated = true,  tails)
-        case ID   => genEqualityOp(left, right, ref = true,  negated = false, tails)
-        case NI   => genEqualityOp(left, right, ref = true,  negated = true,  tails)
+        case EQ   => genEqualityOp(left, right, ref = false, negated = false, focus)
+        case NE   => genEqualityOp(left, right, ref = false, negated = true,  focus)
+        case ID   => genEqualityOp(left, right, ref = true,  negated = false, focus)
+        case NI   => genEqualityOp(left, right, ref = true,  negated = true,  focus)
 
-        case ZOR  => genIf(left, Literal(Constant(true)), right, tails)
-        case ZAND => genIf(left, right, Literal(Constant(false)), tails)
+        case ZOR  => genIf(left, Literal(Constant(true)), right, focus)
+        case ZAND => genIf(left, right, Literal(Constant(false)), focus)
 
         case _    => abort("Unknown binary operation code: " + code)
       }
     }
 
     def genBinaryOp(op: (I.Val, I.Val) => I.Val, left: Tree, right: Tree, retty: ir.Type,
-                    tails: Tails): Tails = {
-      val ltails   = genExpr(left, tails)
-      val lcoerced = genCoercion(ltails.value, genType(left.tpe), retty)
-      val rtails   = genExpr(right, ltails)
-      val rcoerced = genCoercion(rtails.value, genType(right.tpe), retty)
+                    focus: Focus): Tails = {
+      val (lfocus, lt) = genExpr(left, focus).merge
+      val lcoerced     = genCoercion(lfocus.value, genType(left.tpe), retty)
+      val (rfocus, rt) = genExpr(right, lfocus).merge
+      val rcoerced     = genCoercion(rfocus.value, genType(right.tpe), retty)
 
-      rtails withValue op(lcoerced, rcoerced)
+      (rfocus withValue op(lcoerced, rcoerced)) +: (lt ++ rt)
     }
 
     def genEqualityOp(left: Tree, right: Tree, ref: Boolean, negated: Boolean,
-                      tails: Tails): Tails = {
+                      focus: Focus) = {
       val eq = if (negated) I.Neq else I.Eq
 
       genKind(left.tpe) match {
         case ClassKind(_) | BottomKind(NullClass) =>
-          val ltails = genExpr(left, tails)
-          val rtails = genExpr(right, ltails)
-          if (ref)
-            rtails withValue eq(ltails.value, rtails.value)
-          else if (ltails.value eq I.Null)
-            rtails withValue eq(rtails.value, I.Null)
-          else if (rtails.value eq I.Null)
-            rtails withValue eq(ltails.value, I.Null)
-          else {
-            val equals = I.Equals(rtails.ef, ltails.value, rtails.value)
-            val value = if (!negated) equals else I.Xor(I.True, equals)
-            rtails withEf equals withValue value
-          }
+          val (lfocus, lt) = genExpr(left, focus).merge
+          val (rfocus, rt) = genExpr(right, lfocus).merge
+          val resfocus =
+            if (ref)
+              rfocus withValue eq(lfocus.value, rfocus.value)
+            else if (lfocus.value eq I.Null)
+              rfocus withValue eq(rfocus.value, I.Null)
+            else if (rfocus.value eq I.Null)
+              rfocus withValue eq(lfocus.value, I.Null)
+            else {
+              val equals = I.Equals(rfocus.ef, lfocus.value, rfocus.value)
+              val value = if (!negated) equals else I.Xor(I.True, equals)
+              rfocus withEf equals withValue value
+            }
+          resfocus +: (lt ++ rt)
+
         case kind =>
           val lty = genType(left.tpe)
           val rty = genType(right.tpe)
           val retty = binaryOperationType(lty, rty)
-          genBinaryOp(eq, left, right, retty, tails)
+          genBinaryOp(eq, left, right, retty, focus)
       }
     }
 
@@ -744,53 +766,55 @@ abstract class GenSaltyCode extends PluginComponent
         abort(s"can't perform binary opeation between $lty and $rty")
     }
 
-    def genStringConcat(tree: Tree, left: Tree, args: List[Tree], tails: Tails): Tails = {
+    def genStringConcat(tree: Tree, left: Tree, args: List[Tree], focus: Focus) = {
       val List(right) = args
-      val ltails = genExpr(left, tails)
-      val rtails = genExpr(right, ltails)
+      val (lfocus, lt) = genExpr(left, focus).merge
+      val (rfocus, rt) = genExpr(right, lfocus).merge
 
-      rtails withValue I.Add(ltails.value, rtails.value)
+      (rfocus withValue I.Add(lfocus.value, rfocus.value)) +: (lt ++ rt)
     }
 
-    def genHash(tree: Tree, receiver: Tree, tails: Tails): Tails = {
+    def genHash(tree: Tree, receiver: Tree, focus: Focus) = {
       val method = getMember(ScalaRunTimeModule, nme.hash_)
-      val rectails = genExpr(receiver, tails)
+      val (recfocus, rt) = genExpr(receiver, focus).merge
 
-      genMethodCall(method, rectails.value, Nil, rectails)
+      genMethodCall(method, recfocus.value, Nil, recfocus) ++ rt
     }
 
-    def genArrayOp(app: Apply, code: Int, tails: Tails): Tails = {
+    def genArrayOp(app: Apply, code: Int, focus: Focus): Tails = {
       import scalaPrimitives._
 
       val Apply(Select(array, _), args) = app
-      val alltails = Tails.fold(array :: args, tails)(genExpr(_, _))
-      val lasttails = alltails.last
-      def arrayvalue = alltails(0).value
-      def argvalues = alltails.tail.map(_.value)
+      val (allfocus, allt) = sequenced(array :: args, focus)(genExpr(_, _))
+      val lastfocus  = allfocus.last
+      def arrayvalue = allfocus(0).value
+      def argvalues  = allfocus.tail.map(_.value)
+      val rfocus =
+        if (scalaPrimitives.isArrayGet(code))
+          lastfocus mapEf (I.Load(_, I.Elem(arrayvalue, argvalues(0))))
+        else if (scalaPrimitives.isArraySet(code))
+          lastfocus mapEf (I.Store(_, I.Elem(arrayvalue, argvalues(0)), argvalues(1)))
+        else
+          lastfocus withValue I.Length(arrayvalue)
 
-      if (scalaPrimitives.isArrayGet(code))
-        lasttails mapEf (ef => I.Load(ef, I.Elem(arrayvalue, argvalues(0))))
-      else if (scalaPrimitives.isArraySet(code))
-        lasttails mapEf (ef => I.Store(ef, I.Elem(arrayvalue, argvalues(0)), argvalues(1)))
-      else
-        lasttails withValue I.Length(arrayvalue)
+      rfocus +: allt
     }
 
     // TODO: re-evaluate dropping sychcronized
     // TODO: NPE
-    def genSynchronized(app: Apply, tails: Tails): Tails = {
+    def genSynchronized(app: Apply, focus: Focus): Tails = {
       val Apply(Select(receiver, _), List(arg)) = app
-      val rectails = genExpr(receiver, tails)
-      val argtails = genExpr(arg, rectails)
+      val (recfocus, rt) = genExpr(receiver, focus).merge
+      val (argfocus, at) = genExpr(arg, recfocus).merge
 
-      argtails
+      argfocus +: (rt ++ at)
     }
 
-    def genCoercion(app: Apply, receiver: Tree, code: Int, tails: Tails): Tails = {
-      val rtails = genExpr(receiver, tails)
+    def genCoercion(app: Apply, receiver: Tree, code: Int, focus: Focus): Tails = {
+      val (rfocus, rt) = genExpr(receiver, focus).merge
       val (fromty, toty) = coercionTypes(code)
 
-      rtails mapValue (genCoercion(_, fromty, toty))
+      (rfocus mapValue (genCoercion(_, fromty, toty))) +: rt
     }
 
     def genCoercion(value: I.Val, fromty: ir.Type, toty: ir.Type): I.Val =
@@ -859,32 +883,32 @@ abstract class GenSaltyCode extends PluginComponent
       }
     }
 
-    def genApplyTypeApply(app: Apply, tails: Tails): Tails = {
+    def genApplyTypeApply(app: Apply, focus: Focus) = {
       val Apply(TypeApply(fun @ Select(receiver, _), targs), _) = app
-      val ty     = genType(targs.head.tpe)
-      val rtails = genExpr(receiver, tails)
-      val value  = fun.symbol match {
-        case Object_isInstanceOf => I.Is(rtails.value, ty)
-        case Object_asInstanceOf => I.Cast(rtails.value, ty)
+      val ty = genType(targs.head.tpe)
+      val (rfocus, rt) = genExpr(receiver, focus).merge
+      val value = fun.symbol match {
+        case Object_isInstanceOf => I.Is(rfocus.value, ty)
+        case Object_asInstanceOf => I.Cast(rfocus.value, ty)
       }
 
-      rtails withValue value
+      (rfocus withValue value) +: rt
     }
 
-    def genNormalApply(app: Apply, tails: Tails): Tails = {
+    def genNormalApply(app: Apply, focus: Focus) = {
       val Apply(fun @ Select(receiver, _), args) = app
-      val rtails = genExpr(receiver, tails)
+      val (rfocus, rt) = genExpr(receiver, focus).merge
 
-      genMethodCall(fun.symbol, rtails.value, args, rtails)
+      genMethodCall(fun.symbol, rfocus.value, args, rfocus) ++ rt
     }
 
-    def genApplySuper(app: Apply, tails: Tails): Tails = {
+    def genApplySuper(app: Apply, focus: Focus) = {
       val Apply(fun @ Select(sup, _), args) = app
 
-      genMethodCall(fun.symbol, curThis.get, args, tails)
+      genMethodCall(fun.symbol, curThis.get, args, focus)
     }
 
-    def genApplyNew(app: Apply, tails: Tails): Tails = {
+    def genApplyNew(app: Apply, focus: Focus) = {
       val Apply(fun @ Select(New(tpt), nme.CONSTRUCTOR), args) = app
       val ctor = fun.symbol
       val kind = genKind(tpt.tpe)
@@ -892,36 +916,36 @@ abstract class GenSaltyCode extends PluginComponent
 
       kind match {
         case _: ArrayKind =>
-          genNewArray(ty, args.head, tails)
+          genNewArray(ty, args.head, focus)
         case ckind: ClassKind =>
-          genNew(ckind.sym, ctor, args, tails)
+          genNew(ckind.sym, ctor, args, focus)
         case ty =>
           abort("unexpected new: " + app + "\ngen type: " + ty)
       }
     }
 
-    def genNewArray(ty: ir.Type, length: Tree, tails: Tails): Tails = {
+    def genNewArray(ty: ir.Type, length: Tree, focus: Focus) = {
       val Ty.Slice(elemty) = ty
-      val ltails = genExpr(length, tails)
+      val (lfocus, lt) = genExpr(length, focus).merge
 
-      ltails withValue I.Salloc(elemty, ltails.value)
+      (lfocus withValue I.Salloc(elemty, lfocus.value)) +: lt
     }
 
-    def genNew(sym: Symbol, ctorsym: Symbol, args: List[Tree], tails: Tails): Tails = {
+    def genNew(sym: Symbol, ctorsym: Symbol, args: List[Tree], focus: Focus) = {
       val stat  = genClassDefn(sym)
       val alloc = I.Alloc(Ty.Of(stat))
 
-      genMethodCall(ctorsym, alloc, args, tails)
+      genMethodCall(ctorsym, alloc, args, focus)
     }
 
-    def genMethodCall(sym: Symbol, self: I.Val, args: Seq[Tree], tails: Tails): Tails = {
-      val argtails  = Tails.fold(args, tails)(genExpr(_, _))
-      val argvalues = argtails.map(_.value)
-      val lasttails = argtails.lastOption.getOrElse(tails)
-      val stat      = genDefDefn(sym)
-      val call      = I.Call(lasttails.ef, I.ValueOf(stat), self +: argvalues)
+    def genMethodCall(sym: Symbol, self: I.Val, args: Seq[Tree], focus: Focus): Tails = {
+      val (argfocus, argt) = sequenced(args, focus)(genExpr(_, _))
+      val argvalues        = argfocus.map(_.value)
+      val lastfocus        = argfocus.lastOption.getOrElse(focus)
+      val stat             = genDefDefn(sym)
+      val call             = I.Call(lastfocus.ef, I.ValueOf(stat), self +: argvalues)
 
-      lasttails withEf call withValue call
+      (lastfocus withEf call withValue call) +: argt
     }
 
   }

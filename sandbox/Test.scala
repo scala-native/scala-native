@@ -1,5 +1,8 @@
 package test
 
 class Test {
-  def f(a: Array[Int]) = synchronized { a }
+  def foo(x: Int): Int = {
+    return 2
+    x
+  }
 }
