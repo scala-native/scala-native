@@ -30,10 +30,12 @@ object Edge {
     case ir.Instr.Start()           => Seq()
     case ir.Instr.If(cf, v)         => Seq(Edge.Cf(cf), Edge.Val(v))
     case ir.Instr.Switch(cf, v)     => Seq(Edge.Cf(cf), Edge.Val(v))
+    case ir.Instr.Try(cf)           => Seq(Edge.Cf(cf))
     case ir.Instr.CaseTrue(cf)      => Seq(Edge.Cf(cf))
     case ir.Instr.CaseFalse(cf)     => Seq(Edge.Cf(cf))
     case ir.Instr.CaseConst(cf, c)  => Seq(Edge.Cf(cf), Edge.Val(c))
     case ir.Instr.CaseDefault(cf)   => Seq(Edge.Cf(cf))
+    case ir.Instr.CaseException(cf) => Seq(Edge.Cf(cf))
     case ir.Instr.Return(cf, ef, v) => Seq(Edge.Cf(cf), Edge.Ef(ef), Edge.Val(v))
     case ir.Instr.Throw(cf, ef, v)  => Seq(Edge.Cf(cf), Edge.Ef(ef), Edge.Val(v))
     case ir.Instr.Undefined(cf, ef )=> Seq(Edge.Cf(cf), Edge.Ef(ef))
@@ -89,6 +91,7 @@ object Edge {
     case ir.Instr.Class(ty)          => Seq(Edge.Type(ty))
     case ir.Instr.In(ty)             => Seq(Edge.Type(ty))
     case ir.Instr.ValueOf(defn)      => Seq(Edge.Ref(defn))
+    case ir.Instr.ExceptionOf(cf)    => Seq(Edge.Cf(cf))
   }
   def of(defn: ir.Defn): Seq[Edge] = {
     val reledges = defn.rels.map(rel => Edge.Rel(rel.defn))

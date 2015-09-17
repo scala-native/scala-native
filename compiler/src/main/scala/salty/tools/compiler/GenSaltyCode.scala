@@ -194,7 +194,7 @@ abstract class GenSaltyCode extends PluginComponent
       scoped (
         curThis := params.head
       ) {
-        I.End(Seq(genExpr(body, Tails(I.Start())).wrap(I.Return)))
+        I.End(Seq(genExpr(body, Tails.start()).wrap(I.Return)))
       }
 
     /* (body match {
@@ -229,16 +229,15 @@ abstract class GenSaltyCode extends PluginComponent
         */
 
       case vd: ValDef =>
-        val rhs = genExpr(vd.rhs, tails)
+        val rtails = genExpr(vd.rhs, tails)
         val isMutable = curLocalInfo.mutableVars.contains(vd.symbol)
         if (!isMutable) {
-          curEnv.enter(vd.symbol, rhs.value)
-          Tails(rhs.cf, rhs.ef, I.Unit)
+          curEnv.enter(vd.symbol, rtails.value)
+          rtails withValue I.Unit
         } else {
-          val allocEf = I.Alloc(genType(vd.symbol.tpe))
-          val storeEf = I.Store(rhs.ef, allocEf, rhs.value)
-          curEnv.enter(vd.symbol, allocEf)
-          Tails(rhs.cf, storeEf, I.Unit)
+          val alloc = I.Alloc(genType(vd.symbol.tpe))
+          curEnv.enter(vd.symbol, alloc)
+          rtails mapEf (ef => I.Store(ef, alloc, rtails.value))
         }
 
       case If(cond, thenp, elsep) =>
@@ -251,7 +250,7 @@ abstract class GenSaltyCode extends PluginComponent
         genExpr(expr, tails)
 
       case Try(expr, catches, finalizer) =>
-        ???
+        genTry(expr, catches, finalizer, tails)
 
       case Throw(expr) =>
         ???
@@ -263,42 +262,41 @@ abstract class GenSaltyCode extends PluginComponent
         genApplyDynamic(app, tails)
 
       case This(qual) =>
-        Tails(tails.cf, tails.ef,
+        tails withValue {
           if (tree.symbol == curClassSym.get) curThis
-          else I.ValueOf(genClassDefn(tree.symbol)))
+          else I.ValueOf(genClassDefn(tree.symbol))
+        }
 
       case Select(qual, sel) =>
         val sym = tree.symbol
         if (sym.isModule)
-          Tails(tails.cf, tails.ef, I.ValueOf(genClassDefn(sym)))
+          tails withValue I.ValueOf(genClassDefn(sym))
         else if (sym.isStaticMember)
-          Tails(tails.cf, tails.ef, genStaticMember(sym))
+          tails withValue genStaticMember(sym)
         else {
           val qtails = genExpr(qual, tails)
-          val elem   = I.Elem(qtails.value, I.ValueOf(genFieldDefn(tree.symbol)))
-          val loadEf = I.Load(qtails.ef, elem)
-          Tails(qtails.cf, loadEf, loadEf)
+          val elem = I.Elem(qtails.value, I.ValueOf(genFieldDefn(tree.symbol)))
+          qtails mapEf (I.Load(_, elem))
         }
 
       case id: Ident =>
         val sym = id.symbol
         if (!curLocalInfo.mutableVars.contains(sym))
-          Tails(tails.cf, tails.ef,
+          tails withValue {
             if (sym.isModule) I.ValueOf(genClassDefn(sym))
-            else curEnv.resolve(sym))
-        else {
-          val loadEf = I.Load(tails.ef, curEnv.resolve(sym))
-          Tails(tails.cf, loadEf, loadEf)
-        }
+            else curEnv.resolve(sym)
+          }
+        else
+          tails mapEf (I.Load(_, curEnv.resolve(sym)))
 
       case lit: Literal =>
-        Tails(tails.cf, tails.ef, genValue(lit))
+        tails withValue genValue(lit)
 
       case block: Block =>
         genBlock(block, tails)
 
       case Typed(Super(_, _), _) =>
-        Tails(tails.cf, tails.ef, curThis)
+        tails withValue curThis
 
       case Typed(expr, _) =>
         genExpr(expr, tails)
@@ -309,13 +307,11 @@ abstract class GenSaltyCode extends PluginComponent
             val qtails  = genExpr(qual, tails)
             val rtails  = genExpr(rhs, qtails)
             val elem    = I.Elem(qtails.value, I.ValueOf(genFieldDefn(sel.symbol)))
-            val storeEf = I.Store(rtails.ef, elem, rtails.value)
-            Tails(rtails.cf, storeEf, I.Unit)
+            rtails mapEf (I.Store(_, elem, rtails.value))
 
           case id: Ident =>
             val rtails  = genExpr(rhs, tails)
-            val storeEf = I.Store(rtails.ef, curEnv.resolve(id.symbol), rtails.value)
-            Tails(rtails.cf, storeEf, I.Unit)
+            rtails mapEf (I.Store(_, curEnv.resolve(id.symbol), rtails.value))
         }
 
       case av: ArrayValue =>
@@ -328,7 +324,7 @@ abstract class GenSaltyCode extends PluginComponent
         ???
 
       case EmptyTree =>
-        Tails(tails.cf, tails.ef, I.Unit)
+        tails withValue I.Unit
 
       case _ =>
         abort("Unexpected tree in genExpr: " +
@@ -368,7 +364,22 @@ abstract class GenSaltyCode extends PluginComponent
     def genStaticMember(sym: Symbol) =
       I.ValueOf(genFieldDefn(sym))
 
-    def genCatch(catches: List[Tree]) = ??? /*
+    def genTry(expr: Tree, catches: List[Tree], finalizer: Tree, tails: Tails) = {
+      val cf          = I.Try(tails.cf)
+      val normal      = genExpr(expr, tails withCf cf)
+      val exceptional = genCatch(catches, finalizer, tails withCf I.CaseException(cf))
+
+      Tails.merge(Seq(normal, exceptional))
+    }
+
+    def genCatch(catches: List[Tree], finalizer: Tree, tails: Tails) = {
+      val exc = I.ExceptionOf(tails.cf)
+
+      ???
+    }
+
+
+    /*
       if (catches.isEmpty) None
       else Some {
         val exc = fresh("e")
@@ -684,7 +695,7 @@ abstract class GenSaltyCode extends PluginComponent
       val rtails   = genExpr(right, ltails)
       val rcoerced = genCoercion(rtails.value, genType(right.tpe), retty)
 
-      Tails(rtails.cf, rtails.ef, op(lcoerced, rcoerced))
+      rtails withValue op(lcoerced, rcoerced)
     }
 
     def genEqualityOp(left: Tree, right: Tree, ref: Boolean, negated: Boolean,
@@ -779,7 +790,7 @@ abstract class GenSaltyCode extends PluginComponent
       val rtails = genExpr(receiver, tails)
       val (fromty, toty) = coercionTypes(code)
 
-      Tails(rtails.cf, rtails.ef, genCoercion(rtails.value, fromty, toty))
+      rtails mapValue (genCoercion(_, fromty, toty))
     }
 
     def genCoercion(value: I.Val, fromty: ir.Type, toty: ir.Type): I.Val =

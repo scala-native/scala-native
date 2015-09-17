@@ -65,8 +65,7 @@ object Instr {
   final case class CaseFalse(cf: Cf)                  extends Cf
   final case class CaseConst(cf: Cf, const: Const)    extends Cf
   final case class CaseDefault(cf: Cf)                extends Cf
-  final case class CaseNormal(cf: Cf)                 extends Cf
-  final case class CaseExceptional(cf: Cf)            extends Cf
+  final case class CaseException(cf: Cf)              extends Cf
   final case class Return(cf: Cf, ef: Ef, value: Val) extends Cf
   final case class Throw(cf: Cf, ef: Ef, value: Val)  extends Cf
   final case class Undefined(cf: Cf, ef: Ef)          extends Cf

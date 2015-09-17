@@ -7,14 +7,16 @@ final case class Tails(cf: Cf, ef: Ef, value: Val) {
   assert(value != null)
   def wrap[T](f: (Cf, Ef) => T)      = f(cf, ef)
   def wrap[T](f: (Cf, Ef, Val) => T) = f(cf, ef, value)
-  def withCf(newcf: Cf)              = Tails(newcf, ef, value)
-  def withEf(newef: Ef)              = Tails(cf, newef, value)
-  def withValue(newvalue: Val)       = Tails(cf, ef, newvalue)
-  def mapCf(f: Cf => Cf)             = Tails(f(cf), ef, value)
-  def mapEf(f: Ef => Val with Ef)    = { val newef = f(ef); Tails(cf, newef, newef) }
-  def mapValue(f: Val => Val)        = Tails(cf, ef, f(value))
+  def withCf(newcf: Cf)              = copy(cf = newcf)
+  def withEf(newef: Ef)              = copy(ef = newef)
+  def withValue(newvalue: Val)       = copy(value = newvalue)
+  def mapCf(f: Cf => Cf)             = copy(cf = f(cf))
+  def mapEf(f: Ef => Val with Ef)    = { val newef = f(ef); copy(ef = newef, value = newef) }
+  def mapValue(f: Val => Val)        = copy(value = f(value))
 }
 object Tails {
+  def start() =
+    Tails(Start())
   def apply(cf: Cf with Ef): Tails =
     Tails(cf, cf, Unit)
   def apply(cf: Cf, ef: Ef): Tails =
