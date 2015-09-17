@@ -127,6 +127,7 @@ object Instr {
   final case class In(ty: Type)                     extends Val
   final case class ValueOf(defn: Defn)              extends Val
   final case class ExceptionOf(cf: Cf)              extends Val
+  final case class TagOf(value: Val)                extends Val
 
   // Constants
   final case object Unit              extends Const { override def toString = "unit" }
@@ -140,6 +141,7 @@ object Instr {
   final case class F32(value: Float)  extends Const { override def toString = s"${value}f32" }
   final case class F64(value: Double) extends Const { override def toString = s"${value}f64" }
   final case class Str(value: String) extends Const { override def toString = "\"" + value + "\"" }
+  final case class Tag(ty: Type)      extends Const
 }
 
 sealed abstract class Defn extends Node {

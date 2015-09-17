@@ -25,6 +25,7 @@ object Edge {
     case _                 => Seq()
   }
   def of(instr: ir.Instr): Seq[Edge] = instr match {
+    case ir.Instr.Tag(ty)           => Seq(Edge.Type(ty))
     case _: ir.Instr.Const          => Seq()
 
     case ir.Instr.Start()           => Seq()
@@ -92,6 +93,7 @@ object Edge {
     case ir.Instr.In(ty)             => Seq(Edge.Type(ty))
     case ir.Instr.ValueOf(defn)      => Seq(Edge.Ref(defn))
     case ir.Instr.ExceptionOf(cf)    => Seq(Edge.Cf(cf))
+    case ir.Instr.TagOf(value)       => Seq(Edge.Val(value))
   }
   def of(defn: ir.Defn): Seq[Edge] = {
     val reledges = defn.rels.map(rel => Edge.Rel(rel.defn))

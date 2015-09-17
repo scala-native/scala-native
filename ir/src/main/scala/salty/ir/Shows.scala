@@ -12,6 +12,8 @@ object ShowDOT {
     var shows = List.empty[Show.Result]
     def mnemonic(node: Node) =
       (node match {
+        case tag: Instr.Tag =>
+          "Tag"
         case _: Instr.Const =>
           node.toString
         case d: Defn =>

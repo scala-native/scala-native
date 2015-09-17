@@ -27,6 +27,9 @@ abstract class GenSaltyCode extends PluginComponent
 
   def unreachable = abort("unreachable")
 
+  def undefined(focus: Focus) =
+    Tails(focus withCf I.Undefined(focus.cf, focus.ef))
+
   class Env {
     val env = mut.Map.empty[Symbol, I.Val]
     def enter(sym: Symbol, node: I.Val): I.Val = {
@@ -333,7 +336,7 @@ abstract class GenSaltyCode extends PluginComponent
         genSwitch(m, focus)
 
       case fun: Function =>
-        ???
+        undefined(focus)
 
       case EmptyTree =>
         Tails(focus withValue I.Unit)
@@ -384,43 +387,29 @@ abstract class GenSaltyCode extends PluginComponent
       normal ++ exceptional
     }
 
+    // TODO: finally
     def genCatch(catches: List[Tree], finalizer: Tree, focus: Focus) = {
-      val exc = I.ExceptionOf(focus.cf)
+      assert(finalizer.isEmpty, ???)
+      val exc    = I.ExceptionOf(focus.cf)
+      val switch = I.Switch(focus.cf, I.TagOf(exc))
 
-      ???
-    }
-
-    /*
-      if (catches.isEmpty) None
-      else Some {
-        val exc = fresh("e")
-        val elseb = B(Tn.Throw(exc))
-        val catchb =
-          catches.foldRight(elseb) { (catchp, elseb) =>
-            val CaseDef(pat, _, body) = catchp
-            val (nameopt, excty) = pat match {
+      val cases =
+        catches.map {
+          case CaseDef(pat, _, body) =>
+            val (symopt, excty) = pat match {
               case Typed(Ident(nme.WILDCARD), tpt) =>
                 (None, genType(tpt.tpe))
               case Ident(nme.WILDCARD) =>
                 (None, genType(ThrowableClass.tpe))
               case Bind(_, _) =>
-                (Some(curEnv.enter(pat.symbol)), genType(pat.symbol.tpe))
+                (Some(pat.symbol), genType(pat.symbol.tpe))
             }
-            val bodyb = genExpr(body)
-            val n = fresh()
+            symopt foreach (curEnv.enter(_, I.Cast(exc, excty)))
+            genExpr(body, focus withCf I.CaseConst(switch, I.Tag(excty)))
+        }
 
-            B(List(I.Assign(n, E.Is(exc, excty))),
-              Tn.If(n,
-                nameopt.map { name =>
-                  B(List(I.Assign(name, E.Conv(ConvOp.Cast, exc, excty))),
-                    Tn.Jump(bodyb))
-                }.getOrElse(bodyb),
-                elseb))
-          }
-
-        B(List(I.Assign(exc, E.Catchpad)), Tn.Jump(catchb))
-      }
-    */
+      Tails.flatten(cases)
+    }
 
     def genBlock(block: Block, focus: Focus) = {
       val Block(stats, last) = block
@@ -448,7 +437,8 @@ abstract class GenSaltyCode extends PluginComponent
 
         case _ =>
           val (focs, tails) = sequenced(stats, focus)(genExpr(_, _))
-          genExpr(last, focs.last) ++ tails
+          val lastfocus = focs.lastOption.getOrElse(focus)
+          genExpr(last, lastfocus) ++ tails
       }
     }
 
@@ -542,7 +532,8 @@ abstract class GenSaltyCode extends PluginComponent
       Tails.flatten(defaultTails +: branchTails)
     }
 
-    def genApplyDynamic(app: ApplyDynamic, focus: Focus) = ???
+    def genApplyDynamic(app: ApplyDynamic, focus: Focus) =
+      undefined(focus)
 
     def genApply(app: Apply, focus: Focus): Tails = {
       val Apply(fun, args) = app
