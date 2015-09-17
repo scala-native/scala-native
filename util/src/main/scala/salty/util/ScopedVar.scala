@@ -2,28 +2,31 @@ package salty.util
 
 import language.implicitConversions
 
-class ScopedVar[A](init: A) {
+class ScopedVar[A] {
   import ScopedVar.Assignment
 
-  private var value = init
+  private var init = false
+  private var value: A = _
 
-  def this()(implicit ev: Null <:< A) = this(ev(null))
-
-  def get: A = value
+  def get: A = if (!init) throw ScopedVar.Unitialized() else value
   def :=(newValue: A): Assignment[A] = new Assignment(this, newValue)
 }
 
 object ScopedVar {
+  case class Unitialized() extends Exception
+
   class Assignment[T](scVar: ScopedVar[T], value: T) {
     private[ScopedVar] def push(): AssignmentStackElement[T] = {
-      val stack = new AssignmentStackElement(scVar, scVar.value)
+      val stack = new AssignmentStackElement(scVar, scVar.init, scVar.value)
+      scVar.init = true
       scVar.value = value
       stack
     }
   }
 
-  private class AssignmentStackElement[T](scVar: ScopedVar[T], oldValue: T) {
+  private class AssignmentStackElement[T](scVar: ScopedVar[T], oldInit: Boolean, oldValue: T) {
     private[ScopedVar] def pop(): Unit = {
+      scVar.init = oldInit
       scVar.value = oldValue
     }
   }
