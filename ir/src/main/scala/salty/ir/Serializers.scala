@@ -1,6 +1,5 @@
 package salty.ir
 
-import salty.ir.Combinators._
 import salty.util.Serialize, Serialize.{Sequence => s}
 
 object Serializers {

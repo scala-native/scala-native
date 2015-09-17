@@ -1,5 +1,5 @@
 package test
 
 class Test {
-  def f(a: Boolean, b: Boolean) = a && b
+  def f(a: Array[Int]) = synchronized { a }
 }

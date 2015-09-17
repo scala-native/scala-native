@@ -6,8 +6,7 @@ import scala.tools.nsc._
 import scala.tools.nsc.plugins._
 import scala.util.{Either, Left, Right}
 import salty.ir
-import salty.ir.{Type => Ty, Instr => I, Defn => D, Rel => R, Name => N}
-import salty.ir.Combinators._
+import salty.ir.{Type => Ty, Instr => I, Defn => D, Rel => R, Name => N, Tails}
 import salty.util, util.sh, util.ScopedVar.{withScopedVars => scoped}
 
 abstract class GenSaltyCode extends PluginComponent
@@ -26,39 +25,6 @@ abstract class GenSaltyCode extends PluginComponent
   def debug[T](msg: String)(v: T): T = { println(s"$msg = $v"); v }
 
   def unreachable = abort("unreachable")
-
-  final case class Tails(cf: I.Cf, ef: I.Ef, value: I.Val) {
-    assert(value != null)
-    def wrap[T](f: (I.Cf, I.Ef) => T) = f(cf, ef)
-    def wrap[T](f: (I.Cf, I.Ef, I.Val) => T) = f(cf, ef, value)
-    def withCf(newcf: I.Cf) = Tails(newcf, ef, value)
-    def withEf(newef: I.Ef) = Tails(cf, newef, value)
-    def withValue(newvalue: I.Val) = Tails(cf, ef, newvalue)
-    def mapCf(f: I.Cf => I.Cf) = Tails(f(cf), ef, value)
-    def mapEf(f: I.Ef => I.Ef) = Tails(cf, f(ef), value)
-    def mapValue(f: I.Val => I.Val) = Tails(cf, ef, f(value))
-  }
-  object Tails {
-    def apply(cf: I.Cf with I.Ef): Tails =
-      Tails(cf, cf, I.Unit)
-    def apply(cf: I.Cf, ef: I.Ef): Tails =
-      Tails(cf, ef, I.Unit)
-    def merge(tails: Seq[Tails]) = {
-      val cf = I.Merge(tails.map(_.cf))
-      Tails(cf,
-        I.EfPhi(cf, tails.map(_.ef)),
-        I.Phi(cf, tails.map(_.value)))
-    }
-    def fold[T](elems: Seq[T], tails: Tails)(f: (T, Tails) => Tails): Seq[Tails] = {
-      val buf = new mut.ListBuffer[Tails]
-      elems.foldLeft(tails) { (etails, elem) =>
-        val ntails = f(elem, etails)
-        buf += ntails
-        ntails
-      }
-      buf.toSeq
-    }
-  }
 
   class Env {
     val env = mut.Map.empty[Symbol, I.Val]
@@ -767,54 +733,47 @@ abstract class GenSaltyCode extends PluginComponent
         abort(s"can't perform binary opeation between $lty and $rty")
     }
 
-    def genStringConcat(tree: Tree, receiver: Tree, args: List[Tree], tails: Tails): Tails = ??? /*
-      genExpr(receiver).chain(genExpr(args.head)) { (l, r) =>
-        val n = fresh()
+    def genStringConcat(tree: Tree, left: Tree, args: List[Tree], tails: Tails): Tails = {
+      val List(right) = args
+      val ltails = genExpr(left, tails)
+      val rtails = genExpr(right, ltails)
 
-        B(List(I.Assign(n, E.Bin(Op.Add, l, r))),
-          Tn.Out(n))
-      }
-    */
+      rtails withValue I.Add(ltails.value, rtails.value)
+    }
 
-    def genHash(tree: Tree, receiver: Tree, tails: Tails): Tails = ??? /*{
-      val cls    = ScalaRunTimeModule
-      val method = getMember(cls, nme.hash_)
+    def genHash(tree: Tree, receiver: Tree, tails: Tails): Tails = {
+      val method = getMember(ScalaRunTimeModule, nme.hash_)
+      val rectails = genExpr(receiver, tails)
 
-      genExpr(receiver).merge { v =>
-        genMethodCall(method, v, List())
-      }
-    }*/
+      genMethodCall(method, rectails.value, Nil, rectails)
+    }
 
-    def genArrayOp(app: Apply, code: Int, tails: Tails): Tails = ??? /*{
+    def genArrayOp(app: Apply, code: Int, tails: Tails): Tails = {
       import scalaPrimitives._
 
       val Apply(Select(array, _), args) = app
-      val blocks = (array :: args).map(genExpr)
+      val alltails = Tails.fold(array :: args, tails)(genExpr(_, _))
+      val lasttails = alltails.last
+      def arrayvalue = alltails(0).value
+      def argvalues = alltails.tail.map(_.value)
 
-      blocks.chain { values =>
-        val arrayvalue :: argvalues = values
-        val n = fresh()
-
-        if (scalaPrimitives.isArrayGet(code))
-          B(List(I.Assign(n, E.Load(V.Elem(arrayvalue, argvalues(0))))),
-            Tn.Out(n))
-        else if (scalaPrimitives.isArraySet(code))
-          B(List(E.Store(V.Elem(arrayvalue, argvalues(0)), argvalues(1))),
-            Tn.Out(V.Unit))
-        else
-          B(List(I.Assign(n, E.Length(arrayvalue))),
-            Tn.Out(n))
-      }
-    }*/
+      if (scalaPrimitives.isArrayGet(code))
+        lasttails mapEf (ef => I.Load(ef, I.Elem(arrayvalue, argvalues(0))))
+      else if (scalaPrimitives.isArraySet(code))
+        lasttails mapEf (ef => I.Store(ef, I.Elem(arrayvalue, argvalues(0)), argvalues(1)))
+      else
+        lasttails withValue I.Length(arrayvalue)
+    }
 
     // TODO: re-evaluate dropping sychcronized
     // TODO: NPE
-    def genSynchronized(app: Apply, tails: Tails): Tails = ??? /*{
+    def genSynchronized(app: Apply, tails: Tails): Tails = {
       val Apply(Select(receiver, _), List(arg)) = app
-      genExpr(receiver).chain(genExpr(arg)) { (v1, v2) =>
-        B(Tn.Out(v2))
-      }
-    }*/
+      val rectails = genExpr(receiver, tails)
+      val argtails = genExpr(arg, rectails)
+
+      argtails
+    }
 
     def genCoercion(app: Apply, receiver: Tree, code: Int, tails: Tails): Tails = {
       val rtails = genExpr(receiver, tails)
