@@ -235,34 +235,28 @@ abstract class GenSaltyCode extends PluginComponent
       }
 
     def genDefBody(body: Tree, params: Seq[I.Param]) =
-      scoped (
-        curThis := params.head
-      ) {
-        notMergeableGuard(genExpr(body, Focus.start())).end
-      }
 
-    /* (body match {
+
+    body match {
       case Block(List(ValDef(_, nme.THIS, _, _)),
                  label @ LabelDef(name, Ident(nme.THIS) :: _, rhs)) =>
-        val entry = B(Tn.Undefined)
-        val values = paramValues.take(label.params.length)
+
         curLabelEnv.enterLabel(label)
-        curLabelEnv.enterLabelCall(label.symbol, values, entry)
-        val block =
-          scoped (
-            curThis := curLabelEnv.resolveLabelParams(label.symbol).head
-          ) {
-            genLabel(label)
-          }
-        entry.termn = Tn.Jump(block)
-        entry
+        val start = Focus.start()
+        val values = params.take(label.params.length)
+        curLabelEnv.enterLabelCall(label.symbol, values, start)
+        scoped (
+          curThis := curLabelEnv.resolveLabelParams(label.symbol).head
+        ) {
+          genLabel(label).end
+        }
       case _ =>
         scoped (
-          curThis := paramValues.head
+          curThis := params.head
         ) {
-          genExpr(body)
+          notMergeableGuard(genExpr(body, Focus.start())).end
         }
-    }).simplify.verify*/
+    }
 
     def genExpr(tree: Tree, focus: Focus): Tails = tree match {
       case ld: LabelDef =>
