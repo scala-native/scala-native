@@ -45,26 +45,28 @@ abstract class GenSaltyCode extends PluginComponent
     private val phiss   = mut.Map.empty[Symbol, Seq[I.Phi]]
     private val efphis  = mut.Map.empty[Symbol, I.EfPhi]
 
-    def enterLabel(ld: LabelDef): I.Label =
-      if (labels.contains(ld.symbol))
-        throw new Exception(s"can't enter label twice: $ld")
-      else {
-        val sym = ld.symbol
-        val label = I.Label(genLabelName(ld.symbol), Seq())
-        val phis = Seq.fill(ld.params.length)(I.Phi(label, Seq()))
-        val efphi = I.EfPhi(label, Seq())
-        val treesyms = ld.params.map(_.symbol)
-        val reflsyms = sym.asMethod.paramLists.head
-        treesyms.zip(reflsyms).zip(phis).foreach {
-          case ((treesym, reflsym), phi) =>
-            env.enter(reflsym, phi)
-            env.enter(treesym, phi)
-        }
-        labels += sym -> label
-        phiss  += sym -> phis
-        efphis += sym -> efphi
-        label
+    def enterLabel(ld: LabelDef): I.Label = {
+      if (labels.contains(ld.symbol)) {
+        labels -= ld.symbol
+        phiss -= ld.symbol
+        efphis -= ld.symbol
       }
+      val sym = ld.symbol
+      val label = I.Label(genLabelName(ld.symbol), Seq())
+      val phis = Seq.fill(ld.params.length)(I.Phi(label, Seq()))
+      val efphi = I.EfPhi(label, Seq())
+      val treesyms = ld.params.map(_.symbol)
+      val reflsyms = sym.asMethod.paramLists.head
+      treesyms.zip(reflsyms).zip(phis).foreach {
+        case ((treesym, reflsym), phi) =>
+          env.enter(reflsym, phi)
+          env.enter(treesym, phi)
+      }
+      labels += sym -> label
+      phiss  += sym -> phis
+      efphis += sym -> efphi
+      label
+    }
     def enterLabelCall(sym: Symbol, values: Seq[I.Val], focus: Focus): Unit = {
       val label = labels(sym)
       val phis = phiss(sym)
@@ -248,13 +250,13 @@ abstract class GenSaltyCode extends PluginComponent
         scoped (
           curThis := curLabelEnv.resolveLabelParams(label.symbol).head
         ) {
-          genLabel(label).end
+          genLabel(label).end(I.Return)
         }
       case _ =>
         scoped (
           curThis := params.head
         ) {
-          notMergeableGuard(genExpr(body, Focus.start())).end
+          notMergeableGuard(genExpr(body, Focus.start())).end(I.Return)
         }
     }
 
@@ -410,14 +412,12 @@ abstract class GenSaltyCode extends PluginComponent
     def genTry(expr: Tree, catches: List[Tree], finalizer: Tree, focus: Focus) = {
       val cf          = I.Try(focus.cf)
       val normal      = genExpr(expr, focus withCf cf)
-      val exceptional = genCatch(catches, finalizer, focus withCf I.CaseException(cf))
+      val exceptional = genCatch(catches, focus withCf I.CaseException(cf))
 
-      normal ++ exceptional
+      genFinally(normal ++ exceptional, finalizer)
     }
 
-    // TODO: finally
-    def genCatch(catches: List[Tree], finalizer: Tree, focus: Focus) = {
-      assert(finalizer.isEmpty, ???)
+    def genCatch(catches: List[Tree], focus: Focus) = {
       val exc    = I.ExceptionOf(focus.cf)
       val switch = I.Switch(focus.cf, I.TagOf(exc))
 
@@ -435,8 +435,32 @@ abstract class GenSaltyCode extends PluginComponent
             symopt foreach (curEnv.enter(_, I.Cast(exc, excty)))
             genExpr(body, focus withCf I.CaseConst(switch, I.Tag(excty)))
         }
+      val default =
+        Tails.termn(I.Throw(I.CaseDefault(switch), focus.ef, exc))
 
-      Tails.flatten(cases)
+      Tails.flatten(default +: cases)
+    }
+
+    def genFinally(tails: Tails, finalizer: Tree) = {
+      val Tails(open, closed) = tails
+
+      def genClosed(focus: Focus, wrap: (I.Cf, I.Ef) => I.Termn): Seq[I.Termn] =
+        genExpr(finalizer, focus).end((cf, ef, v) => wrap(cf, ef)).cfs
+
+      val closedtails = Tails(Seq(), closed.flatMap {
+        case I.Return(cf, ef, v) => genClosed(Focus(cf, ef, I.Unit), I.Return(_, _, v))
+        case I.Throw(cf, ef, v)  => genClosed(Focus(cf, ef, I.Unit), I.Throw(_, _, v))
+        case I.Undefined(cf, ef) => genClosed(Focus(cf, ef, I.Unit), I.Undefined(_, _))
+      })
+
+      val opentails =
+        if (open.isEmpty) Tails.empty
+        else {
+          val (focus, _) = Tails(open, Seq()).merge
+          genExpr(finalizer, focus)
+        }
+
+      opentails ++ closedtails
     }
 
     def genBlock(block: Block, focus: Focus) = {
@@ -479,7 +503,6 @@ abstract class GenSaltyCode extends PluginComponent
       for (ld <- lds) {
         lasttails = lasttails ++ genLabel(ld)
       }
-      println(lasttails)
 
       lasttails
     }
@@ -488,9 +511,7 @@ abstract class GenSaltyCode extends PluginComponent
     def genLabel(label: LabelDef) = {
       val cf = curLabelEnv.resolveLabel(label.symbol)
       val ef = curLabelEnv.resolveLabelEf(label.symbol)
-      val res = genExpr(label.rhs, Focus(cf, ef, I.Unit))
-      println(s"genLabel(${label.symbol}) = $res")
-      res
+      genExpr(label.rhs, Focus(cf, ef, I.Unit))
     }
 
     def genArrayValue(av: ArrayValue, focus: Focus): Tails = {
@@ -823,8 +844,6 @@ abstract class GenSaltyCode extends PluginComponent
       rfocus +: allt
     }
 
-    // TODO: re-evaluate dropping sychcronized
-    // TODO: NPE
     def genSynchronized(app: Apply, focus: Focus): Tails = {
       val Apply(Select(receiver, _), List(arg)) = app
       val (recfocus, rt) = genExpr(receiver, focus).merge

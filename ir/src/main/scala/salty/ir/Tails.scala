@@ -3,7 +3,7 @@ package salty.ir
 import scala.collection.{mutable => mut}
 import salty.ir.Instr._
 
-final case class Tails private[ir] (open: Seq[Focus], closed: Seq[Termn]) {
+final case class Tails(open: Seq[Focus], closed: Seq[Termn]) {
   override def toString =
     s"Tails(${open.map(_.cf.getClass)}, ${closed.map(_.getClass)})"
 
@@ -21,8 +21,9 @@ final case class Tails private[ir] (open: Seq[Focus], closed: Seq[Termn]) {
     }
     (foc, Tails(Seq(), closed))
   }
-  def end: End =
-    End(open.map { case Focus(cf, ef, v) => Return(cf, ef, v) } ++ closed)
+
+  def end(wrap: (Cf, Ef, Val) => Termn): End =
+    End(open.map { case Focus(cf, ef, v) => wrap(cf, ef, v) } ++ closed)
 
   def +:(focus: Focus): Tails = focus.cf match {
     case termn: Termn => Tails(open, termn +: closed)
