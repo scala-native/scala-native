@@ -187,7 +187,7 @@ abstract class GenSaltyCode extends PluginComponent
     def genDef(dd: DefDef): (ir.Name, ir.Defn) = scoped (
       curMethodSym := dd.symbol
     ) {
-      println(s"generating $dd")
+      //println(s"generating $dd")
       val sym = dd.symbol
       val name = genDefName(sym)
       val paramSyms = defParamSymbols(dd)
@@ -237,28 +237,28 @@ abstract class GenSaltyCode extends PluginComponent
       }
 
     def genDefBody(body: Tree, params: Seq[I.Param]) =
+      notMergeableGuard {
+        body match {
+          case Block(List(ValDef(_, nme.THIS, _, _)),
+                     label @ LabelDef(name, Ident(nme.THIS) :: _, rhs)) =>
 
-
-    body match {
-      case Block(List(ValDef(_, nme.THIS, _, _)),
-                 label @ LabelDef(name, Ident(nme.THIS) :: _, rhs)) =>
-
-        curLabelEnv.enterLabel(label)
-        val start = Focus.start()
-        val values = params.take(label.params.length)
-        curLabelEnv.enterLabelCall(label.symbol, values, start)
-        scoped (
-          curThis := curLabelEnv.resolveLabelParams(label.symbol).head
-        ) {
-          genLabel(label).end(I.Return)
+            curLabelEnv.enterLabel(label)
+            val start = Focus.start()
+            val values = params.take(label.params.length)
+            curLabelEnv.enterLabelCall(label.symbol, values, start)
+            scoped (
+              curThis := curLabelEnv.resolveLabelParams(label.symbol).head
+            ) {
+              genLabel(label)
+            }
+          case _ =>
+            scoped (
+              curThis := params.head
+            ) {
+              genExpr(body, Focus.start())
+            }
         }
-      case _ =>
-        scoped (
-          curThis := params.head
-        ) {
-          notMergeableGuard(genExpr(body, Focus.start())).end(I.Return)
-        }
-    }
+      }.end(I.Return)
 
     def genExpr(tree: Tree, focus: Focus): Tails = tree match {
       case ld: LabelDef =>

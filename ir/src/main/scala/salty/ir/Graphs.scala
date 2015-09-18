@@ -30,8 +30,8 @@ object Type {
 
   object I {
     def unapply(ty: Type) = ty match {
-      case Type.I8  => Some(32)
-      case Type.I16 => Some(32)
+      case Type.I8  => Some(8)
+      case Type.I16 => Some(16)
       case Type.I32 => Some(32)
       case Type.I64 => Some(64)
       case _        => None

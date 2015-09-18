@@ -53,20 +53,20 @@ object ShowDOT {
           s("[shape=box, label=\"", mnemonic(node), "\"]")
       }
     def cross(node: Node, edges: Seq[Edge]) = {
-      node match {
-        case _: Instr =>
+      //node match {
+      //  case _: Instr =>
           val k = key(node)
           shows = s(k, style(node)) :: shows
           edges.foreach { e =>
-            e match {
-              case _: Edge.Val | _: Edge.Ef | _: Edge.Cf =>
+            //e match {
+              //case _: Edge.Val | _: Edge.Ef | _: Edge.Cf =>
                 shows = s(key(e.node), style(e.node), ";") ::
                         s(key(e.node), " -> ", k, style(e), ";") :: shows
-              case _ =>
-            }
+              //case _ =>
+            //}
           }
-        case _ =>
-      }
+        //case _ =>
+      //}
     }
     def onNode(node: Node) =
       cross(node, Edge.of(node))
