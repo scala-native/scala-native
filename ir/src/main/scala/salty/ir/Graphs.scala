@@ -124,7 +124,7 @@ object Instr {
   final case class Length(value: Val)               extends Val
   final case class Elem(ptr: Val, value: Val)       extends Val
   final case class Class(ty: Type)                  extends Val
-  final case class In(ty: Type)                     extends Val
+  final case class Param(name: Name, ty: Type)      extends Val
   final case class ValueOf(defn: Defn)              extends Val
   final case class ExceptionOf(cf: Cf)              extends Val
   final case class TagOf(value: Val)                extends Val
@@ -152,10 +152,10 @@ object Defn {
   final case class Class(name: Name, rels: Seq[Rel] = Seq()) extends Defn
   final case class Interface(name: Name, rels: Seq[Rel] = Seq()) extends Defn
   final case class Module(name: Name, rels: Seq[Rel] = Seq()) extends Defn
-  final case class Declare(name: Name, ty: Type, in: Seq[Instr.In],
+  final case class Declare(name: Name, ty: Type, params: Seq[Instr.Param],
                            rels: Seq[Rel] = Seq()) extends Defn
-  final case class Define(name: Name, ty: Type, in: Seq[Instr.In], out: Instr.End,
-                          rels: Seq[Rel] = Seq()) extends Defn
+  final case class Define(name: Name, ty: Type, params: Seq[Instr.Param],
+                          end: Instr.End, rels: Seq[Rel] = Seq()) extends Defn
   final case class Field(name: Name, ty: Type, rels: Seq[Rel] = Seq()) extends Defn
   final case class Extern(name: Name, rels: Seq[Rel] = Seq()) extends Defn
 }

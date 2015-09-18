@@ -18,4 +18,6 @@ trait GenNameEncoding extends SubComponent {
 
   def genClassDefn(sym: Symbol) = D.Extern(genClassName(sym))
   def genClassName(sym: Symbol) = N.Global(sym.fullName.toString)
+
+  def genParamName(sym: Symbol) = N.Global(sym.name.toString)
 }

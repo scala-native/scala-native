@@ -182,10 +182,10 @@ abstract class GenSaltyCode extends PluginComponent
       if (vp.isEmpty) Nil else vp.head.map(_.symbol)
     }
 
-    def genParams(paramSyms: List[Symbol], define: Boolean): Seq[I.In] = {
-      val self = I.In(Ty.Of(genClassDefn(curClassSym)))
+    def genParams(paramSyms: List[Symbol], define: Boolean): Seq[I.Param] = {
+      val self = I.Param(N.Global("this"), Ty.Of(genClassDefn(curClassSym)))
       val params = paramSyms.map { sym =>
-        val node = I.In(genType(sym.tpe))
+        val node = I.Param(genParamName(sym), genType(sym.tpe))
         if (define)
           curEnv.enter(sym, node)
         node
@@ -194,7 +194,7 @@ abstract class GenSaltyCode extends PluginComponent
       self +: params
     }
 
-    def genDefBody(body: Tree, params: Seq[I.In]) =
+    def genDefBody(body: Tree, params: Seq[I.Param]) =
       scoped (
         curThis := params.head
       ) {

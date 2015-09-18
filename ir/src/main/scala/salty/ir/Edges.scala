@@ -90,7 +90,7 @@ object Edge {
     case ir.Instr.Length(value)      => Seq(Edge.Val(value))
     case ir.Instr.Elem(ptr, value)   => Seq(Edge.Val(ptr), Edge.Val(value))
     case ir.Instr.Class(ty)          => Seq(Edge.Type(ty))
-    case ir.Instr.In(ty)             => Seq(Edge.Type(ty))
+    case ir.Instr.Param(_, ty)       => Seq(Edge.Type(ty))
     case ir.Instr.ValueOf(defn)      => Seq(Edge.Ref(defn))
     case ir.Instr.ExceptionOf(cf)    => Seq(Edge.Cf(cf))
     case ir.Instr.TagOf(value)       => Seq(Edge.Val(value))

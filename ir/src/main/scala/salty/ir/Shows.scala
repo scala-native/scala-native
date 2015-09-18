@@ -16,6 +16,8 @@ object ShowDOT {
           "Tag"
         case _: Instr.Const =>
           node.toString
+        case param: Instr.Param =>
+          s"param ${param.name}"
         case d: Defn =>
           defn(d)
         case _ =>
