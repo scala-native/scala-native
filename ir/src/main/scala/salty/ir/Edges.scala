@@ -29,6 +29,7 @@ object Edge {
     case _: ir.Instr.Const          => Seq()
 
     case ir.Instr.Start()           => Seq()
+    case ir.Instr.Label(_, cfs)     => cfs.map(Edge.Cf)
     case ir.Instr.If(cf, v)         => Seq(Edge.Cf(cf), Edge.Val(v))
     case ir.Instr.Switch(cf, v)     => Seq(Edge.Cf(cf), Edge.Val(v))
     case ir.Instr.Try(cf)           => Seq(Edge.Cf(cf))

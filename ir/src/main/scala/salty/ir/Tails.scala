@@ -3,7 +3,10 @@ package salty.ir
 import scala.collection.{mutable => mut}
 import salty.ir.Instr._
 
-final case class Tails private[ir](open: Seq[Focus], closed: Seq[Termn]) {
+final case class Tails private[ir] (open: Seq[Focus], closed: Seq[Termn]) {
+  override def toString =
+    s"Tails(${open.map(_.cf.getClass)}, ${closed.map(_.getClass)})"
+
   def merge: (Focus, Tails) = {
     val foc = open match {
       case Seq()    =>
@@ -32,13 +35,9 @@ final case class Tails private[ir](open: Seq[Focus], closed: Seq[Termn]) {
 object Tails {
   final case class NotMergeable(tails: Tails) extends Exception
 
-  val Empty = Tails(Seq(), Seq())
-
-  def apply(focus: Focus*): Tails = {
-    val open = focus.filter(!_.cf.isInstanceOf[Termn])
-    val closed = focus.collect { case Focus(termn: Termn, _, _) => termn}
-    Tails(open, closed)
-  }
+  val empty = Tails(Seq(), Seq())
+  def open(focus: Focus): Tails = Tails(Seq(focus), Seq())
+  def termn(termn: Termn): Tails = Tails(Seq(), Seq(termn))
 
   def flatten(tails: Seq[Tails]) = {
     val open = tails.flatMap(_.open)
@@ -47,7 +46,7 @@ object Tails {
   }
 }
 
-final case class Focus private[ir](cf: Cf, ef: Ef, value: Val) {
+final case class Focus(cf: Cf, ef: Ef, value: Val) {
   def withCf(newcf: Cf)              = copy(cf = newcf)
   def withEf(newef: Ef)              = copy(ef = newef)
   def withValue(newvalue: Val)       = copy(value = newvalue)
