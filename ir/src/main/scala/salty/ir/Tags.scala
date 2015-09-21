@@ -1,12 +1,11 @@
 package salty.ir
 
 object Tag {
-  final val Type  = 1
-  final val Cf    = 1   + Type
-  final val Ef    = 1   + Cf
-  final val Val   = 1   + Ef    // 256 slots: val_0,   ..., val_255
-  final val Instr = 256 + Val   // 256 slots: instr_0, ..., instr_255
-  final val Ref   = 256 + Instr
+  final val Type = 1
+  final val Cf   = 1 + Type
+  final val Ef   = 1 + Cf
+  final val Val  = 1 + Ef
+  final val Ref  = 1 + Val
 
   final val Child      = 1 + Ref
   final val Implements = 1 + Child
@@ -89,7 +88,10 @@ object Tag {
   final val ValueOf       = 1 + Param
   final val ExceptionOf   = 1 + ValueOf
   final val TagOf         = 1 + ExceptionOf
-  final val Unit          = 1 + TagOf
+  final val Const         = 1 + TagOf
+  final val TagConst      = 1 + Const
+
+  final val Unit          = 1 + TagConst
   final val Null          = 1 + Unit
   final val True          = 1 + Null
   final val False         = 1 + True
@@ -100,9 +102,8 @@ object Tag {
   final val F32           = 1 + I64
   final val F64           = 1 + F32
   final val Str           = 1 + F64
-  final val Tag           = 1 + Str
 
-  final val Class     = 1 + Tag
+  final val Class     = 1 + Str
   final val Interface = 1 + Class
   final val Module    = 1 + Interface
   final val Declare   = 1 + Module
