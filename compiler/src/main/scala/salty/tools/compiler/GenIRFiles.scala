@@ -8,12 +8,13 @@ import java.util.Base64
 import scala.tools.nsc._
 import scala.tools.nsc.io.AbstractFile
 import salty.ir
-import salty.ir.Serializers._
+import salty.ir.Serialization._
 import salty.ir.ShowDOT
-import salty.util.{sh, serialize}
 
 trait GenIRFiles extends SubComponent  {
   import global._
+
+  def serialize(scope: ir.Scope): ByteBuffer = ???
 
   def genIRFile(cunit: CompilationUnit, sym: Symbol, scope: ir.Scope): Unit = {
     val outfile = getFileFor(cunit, sym, ".salty").file

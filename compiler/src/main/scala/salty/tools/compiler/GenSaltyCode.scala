@@ -8,7 +8,7 @@ import scala.util.{Either, Left, Right}
 import salty.ir
 import salty.ir.{Type => Ty, Instr => I, Defn => D, Rel => R, Name => N}
 import salty.ir.{Focus, Tails}, Focus.sequenced
-import salty.util, util.sh, util.ScopedVar.{withScopedVars => scoped}
+import salty.util, util.sh, util.ScopedVar.scoped
 
 abstract class GenSaltyCode extends PluginComponent
                                with GenIRFiles
@@ -400,7 +400,7 @@ abstract class GenSaltyCode extends PluginComponent
         case StringTag =>
           I.Str(value.stringValue)
         case ClazzTag =>
-          I.Class(genType(value.typeValue))
+          I.Box(I.Tag(genType(value.typeValue)), Ty.Ref(javaLangClass))
         case EnumTag =>
           genStaticMember(value.symbolValue)
       }
@@ -637,6 +637,8 @@ abstract class GenSaltyCode extends PluginComponent
       FloatTpe   -> Ty.Of(D.Extern(N.Global("java.lang.Float"))),
       DoubleTpe  -> Ty.Of(D.Extern(N.Global("java.lang.Double")))
     )
+
+    lazy val javaLangClass = Ty.Of(D.Extern(N.Global("java.lang.Class")))
 
     lazy val ctorName = N.Global(nme.CONSTRUCTOR.toString)
 

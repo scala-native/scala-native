@@ -3,14 +3,16 @@ package salty.ir
 import salty.util.Show, Show.{Sequence => s, Indent => i, Unindent => u,
                               Repeat => r, Newline => n}
 import salty.util.sh
+import salty.ir.{Graph => G}
 
 object ShowDOT {
   import System.{identityHashCode => id}
   def key(defn: Defn) = ???
 
-  class ShowPass extends Pass {
+  /*
+  class ShowPass extends G.Pass {
     var shows = List.empty[Show.Result]
-    def mnemonic(node: Node) =
+    def mnemonic(node: G.Node) =
       (node match {
         case tag: Instr.Tag =>
           "Tag"
@@ -25,13 +27,13 @@ object ShowDOT {
         case _ =>
           node.getClass.getSimpleName.toString
       }).replace("\"", "\\\"")
-    def key(node: Node) =
+    def key(node: G.Node) =
       s("\"", System.identityHashCode(node).toString, "\"")
-    def style(edge: Edge) = edge match {
-      case Edge.Val(_) => s()
-      case Edge.Ef(_)  => s("[style=dashed]")
-      case Edge.Cf(_)  => s("[style=bold]")
-      case _           => s("[style=dotted]")
+    def style(edge: G.Edge) = edge.tag match {
+      case Tag.Edge.Val => s()
+      case Tag.Edge.Ef  => s("[style=dashed]")
+      case Tag.Edge.Cf  => s("[style=bold]")
+      case _            => s("[style=dotted]")
     }
     def defn(defn: Defn) = {
       val name = defn.name
@@ -45,19 +47,19 @@ object ShowDOT {
         case _: Defn.Extern    => s"Extern $name"
       }
     }
-    def style(node: Node) =
+    def style(node: G.Node) =
       node match {
         case _: Instr.Cf =>
           s("[shape=box, style=filled, color=lightgrey, label=\"", mnemonic(node), "\"]")
         case _ =>
           s("[shape=box, label=\"", mnemonic(node), "\"]")
       }
-    def cross(node: Node, edges: Seq[Edge]) = {
+    def onNode(node: G.Node) ={
       //node match {
       //  case _: Instr =>
           val k = key(node)
           shows = s(k, style(node)) :: shows
-          edges.foreach { e =>
+          node.edges.foreach { e =>
             //e match {
               //case _: Edge.Val | _: Edge.Ef | _: Edge.Cf =>
                 shows = s(key(e.node), style(e.node), ";") ::
@@ -68,12 +70,12 @@ object ShowDOT {
         //case _ =>
       //}
     }
-    def onNode(node: Node) =
-      cross(node, Edge.of(node))
   }
+  */
 
   implicit val showScope: Show[Scope] = Show { scope =>
-
+    ???
+    /*
     s(scope.entries.map { case (_, defn) =>
       val pass = new ShowPass
       Pass.run(defn, pass)
@@ -81,6 +83,6 @@ object ShowDOT {
           r(pass.shows.map(i)),
         n("}"))
     }.toSeq: _*)
-
+    */
   }
 }

@@ -1,16 +1,7 @@
 package salty
 package ir
 
-sealed abstract class Node {
-  var epoch: Int = 0
-}
-object Node {
-  var lastEpoch = 0
-  def nextEpoch = {
-    lastEpoch += 1
-    lastEpoch
-  }
-}
+sealed abstract class Node
 
 sealed abstract class Type extends Node
 object Type {
@@ -58,77 +49,76 @@ object Instr {
   // Control-flow
   // TODO: Loop
   // TODO: Try, CaseTry, CaseCatch, CaseFinally
-  final case class Start()                             extends Cf with Ef
-  final case class Label(name: Name, var cfs: Seq[Cf]) extends Cf
-  final case class If(cf: Cf, value: Val)              extends Cf
-  final case class Switch(cf: Cf, value: Val)          extends Cf
-  final case class Try(cf: Cf)                         extends Cf
-  final case class CaseTrue(cf: Cf)                    extends Cf
-  final case class CaseFalse(cf: Cf)                   extends Cf
-  final case class CaseConst(cf: Cf, const: Const)     extends Cf
-  final case class CaseDefault(cf: Cf)                 extends Cf
-  final case class CaseException(cf: Cf)               extends Cf
-  final case class Merge(cfs: Seq[Cf])                 extends Cf
-  final case class Return(cf: Cf, ef: Ef, value: Val)  extends Termn
-  final case class Throw(cf: Cf, ef: Ef, value: Val)   extends Termn
-  final case class Undefined(cf: Cf, ef: Ef)           extends Termn
-  final case class End(cfs: Seq[Termn])                extends Cf
+  final case class Start()                                         extends Cf with Ef
+  final case class Label(name: Name, var cfs: Seq[Cf])             extends Cf
+  final case class If(var cf: Cf, var value: Val)                  extends Cf
+  final case class Switch(var cf: Cf, var value: Val)              extends Cf
+  final case class Try(var cf: Cf)                                 extends Cf
+  final case class CaseTrue(var cf: Cf)                            extends Cf
+  final case class CaseFalse(var cf: Cf)                           extends Cf
+  final case class CaseConst(var cf: Cf, var const: Const)         extends Cf
+  final case class CaseDefault(var cf: Cf)                         extends Cf
+  final case class CaseException(var cf: Cf)                       extends Cf
+  final case class Merge(var cfs: Seq[Cf])                         extends Cf
+  final case class Return(var cf: Cf, var ef: Ef, var value: Val)  extends Termn
+  final case class Throw(var cf: Cf, var ef: Ef, var value: Val)   extends Termn
+  final case class Undefined(var cf: Cf, var ef: Ef)               extends Termn
+  final case class End(var cfs: Seq[Termn])                        extends Cf
 
   // Effectful
-  final case class EfPhi(cf: Cf, var efs: Seq[Ef])        extends Ef
-  final case class Equals(ef: Ef, left: Val, right: Val)  extends Val with Ef
-  final case class Call(ef: Ef, ptr: Val, args: Seq[Val]) extends Val with Ef
-  final case class Load(ef: Ef, ptr: Val)                 extends Val with Ef
-  final case class Store(ef: Ef, ptr: Val, value: Val)    extends Val with Ef
+  final case class EfPhi(var cf: Cf, var efs: Seq[Ef])                extends Ef
+  final case class Equals(var ef: Ef, var left: Val, var right: Val)  extends Val with Ef
+  final case class Call(var ef: Ef, var ptr: Val, var args: Seq[Val]) extends Val with Ef
+  final case class Load(var ef: Ef, var ptr: Val)                     extends Val with Ef
+  final case class Store(var ef: Ef, var ptr: Val, var value: Val)    extends Val with Ef
 
   // Pure binary
-  final case class Add (left: Val, right: Val) extends Val
-  final case class Sub (left: Val, right: Val) extends Val
-  final case class Mul (left: Val, right: Val) extends Val
-  final case class Div (left: Val, right: Val) extends Val
-  final case class Mod (left: Val, right: Val) extends Val
-  final case class Shl (left: Val, right: Val) extends Val
-  final case class Lshr(left: Val, right: Val) extends Val
-  final case class Ashr(left: Val, right: Val) extends Val
-  final case class And (left: Val, right: Val) extends Val
-  final case class Or  (left: Val, right: Val) extends Val
-  final case class Xor (left: Val, right: Val) extends Val
-  final case class Eq  (left: Val, right: Val) extends Val
-  final case class Neq (left: Val, right: Val) extends Val
-  final case class Lt  (left: Val, right: Val) extends Val
-  final case class Lte (left: Val, right: Val) extends Val
-  final case class Gt  (left: Val, right: Val) extends Val
-  final case class Gte (left: Val, right: Val) extends Val
+  final case class Add (var left: Val, var right: Val) extends Val
+  final case class Sub (var left: Val, var right: Val) extends Val
+  final case class Mul (var left: Val, var right: Val) extends Val
+  final case class Div (var left: Val, var right: Val) extends Val
+  final case class Mod (var left: Val, var right: Val) extends Val
+  final case class Shl (var left: Val, var right: Val) extends Val
+  final case class Lshr(var left: Val, var right: Val) extends Val
+  final case class Ashr(var left: Val, var right: Val) extends Val
+  final case class And (var left: Val, var right: Val) extends Val
+  final case class Or  (var left: Val, var right: Val) extends Val
+  final case class Xor (var left: Val, var right: Val) extends Val
+  final case class Eq  (var left: Val, var right: Val) extends Val
+  final case class Neq (var left: Val, var right: Val) extends Val
+  final case class Lt  (var left: Val, var right: Val) extends Val
+  final case class Lte (var left: Val, var right: Val) extends Val
+  final case class Gt  (var left: Val, var right: Val) extends Val
+  final case class Gte (var left: Val, var right: Val) extends Val
 
   // Pure conversions
-  final case class Trunc   (value: Val, ty: Type) extends Val
-  final case class Zext    (value: Val, ty: Type) extends Val
-  final case class Sext    (value: Val, ty: Type) extends Val
-  final case class Fptrunc (value: Val, ty: Type) extends Val
-  final case class Fpext   (value: Val, ty: Type) extends Val
-  final case class Fptoui  (value: Val, ty: Type) extends Val
-  final case class Fptosi  (value: Val, ty: Type) extends Val
-  final case class Uitofp  (value: Val, ty: Type) extends Val
-  final case class Sitofp  (value: Val, ty: Type) extends Val
-  final case class Ptrtoint(value: Val, ty: Type) extends Val
-  final case class Inttoptr(value: Val, ty: Type) extends Val
-  final case class Bitcast (value: Val, ty: Type) extends Val
-  final case class Cast    (value: Val, ty: Type) extends Val
-  final case class Box     (value: Val, ty: Type) extends Val
-  final case class Unbox   (value: Val, ty: Type) extends Val
+  final case class Trunc   (var value: Val, var ty: Type) extends Val
+  final case class Zext    (var value: Val, var ty: Type) extends Val
+  final case class Sext    (var value: Val, var ty: Type) extends Val
+  final case class Fptrunc (var value: Val, var ty: Type) extends Val
+  final case class Fpext   (var value: Val, var ty: Type) extends Val
+  final case class Fptoui  (var value: Val, var ty: Type) extends Val
+  final case class Fptosi  (var value: Val, var ty: Type) extends Val
+  final case class Uitofp  (var value: Val, var ty: Type) extends Val
+  final case class Sitofp  (var value: Val, var ty: Type) extends Val
+  final case class Ptrtoint(var value: Val, var ty: Type) extends Val
+  final case class Inttoptr(var value: Val, var ty: Type) extends Val
+  final case class Bitcast (var value: Val, var ty: Type) extends Val
+  final case class Cast    (var value: Val, var ty: Type) extends Val
+  final case class Box     (var value: Val, var ty: Type) extends Val
+  final case class Unbox   (var value: Val, var ty: Type) extends Val
 
   // Pure resft
-  final case class Phi(merge: Cf, var values: Seq[Val]) extends Val
-  final case class Is(value: Val, ty: Type)             extends Val
-  final case class Alloc(ty: Type)                      extends Val
-  final case class Salloc(ty: Type, n: Val)             extends Val
-  final case class Length(value: Val)                   extends Val
-  final case class Elem(ptr: Val, value: Val)           extends Val
-  final case class Class(ty: Type)                      extends Val
-  final case class Param(name: Name, ty: Type)          extends Val
-  final case class ValueOf(defn: Defn)                  extends Val
-  final case class ExceptionOf(cf: Cf)                  extends Val
-  final case class TagOf(value: Val)                    extends Val
+  final case class Phi(var merge: Cf, var values: Seq[Val]) extends Val
+  final case class Is(var value: Val, var ty: Type)         extends Val
+  final case class Alloc(var ty: Type)                      extends Val
+  final case class Salloc(var ty: Type, var n: Val)         extends Val
+  final case class Length(var value: Val)                   extends Val
+  final case class Elem(var ptr: Val, var value: Val)       extends Val
+  final case class Param(name: Name, var ty: Type)          extends Val
+  final case class ValueOf(var defn: Defn)                  extends Val
+  final case class ExceptionOf(var cf: Cf)                  extends Val
+  final case class TagOf(var value: Val)                    extends Val
 
   // Constants
   final case object Unit              extends Const { override def toString = "unit" }
@@ -150,15 +140,15 @@ sealed abstract class Defn extends Node {
   def rels: Seq[Rel]
 }
 object Defn {
-  final case class Class(name: Name, rels: Seq[Rel] = Seq()) extends Defn
-  final case class Interface(name: Name, rels: Seq[Rel] = Seq()) extends Defn
-  final case class Module(name: Name, rels: Seq[Rel] = Seq()) extends Defn
-  final case class Declare(name: Name, ty: Type, params: Seq[Instr.Param],
-                           rels: Seq[Rel] = Seq()) extends Defn
-  final case class Define(name: Name, ty: Type, params: Seq[Instr.Param],
-                          end: Instr.End, rels: Seq[Rel] = Seq()) extends Defn
-  final case class Field(name: Name, ty: Type, rels: Seq[Rel] = Seq()) extends Defn
-  final case class Extern(name: Name, rels: Seq[Rel] = Seq()) extends Defn
+  final case class Class(name: Name, var rels: Seq[Rel] = Seq()) extends Defn
+  final case class Interface(name: Name, var rels: Seq[Rel] = Seq()) extends Defn
+  final case class Module(name: Name, var rels: Seq[Rel] = Seq()) extends Defn
+  final case class Declare(name: Name, var ty: Type, var params: Seq[Instr.Param],
+                           var rels: Seq[Rel] = Seq()) extends Defn
+  final case class Define(name: Name, var ty: Type, var params: Seq[Instr.Param],
+                          var end: Instr.End, rels: Seq[Rel] = Seq()) extends Defn
+  final case class Field(name: Name, var ty: Type, rels: Seq[Rel] = Seq()) extends Defn
+  final case class Extern(name: Name, var rels: Seq[Rel] = Seq()) extends Defn
 }
 
 sealed abstract class Rel { def defn: Defn }
