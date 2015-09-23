@@ -1,6 +1,6 @@
 package salty.ir
 
-object Tag {
+object Tags {
   final val Type = 1
   final val Cf   = 1 + Type
   final val Ef   = 1 + Cf
@@ -110,8 +110,5 @@ object Tag {
   final val Define    = 1 + Declare
   final val Field     = 1 + Define
   final val Extern    = 1 + Field
-
-  final val Local  = 1 + Belongs
-  final val Global = 1 + Local
-  final val Nested = 1 + Global
+  final val Primitive = 1 + Extern
 }

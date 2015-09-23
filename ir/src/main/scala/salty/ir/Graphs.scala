@@ -1,172 +1,156 @@
 package salty
 package ir
 
-sealed abstract class Node
+import salty.ir.{Tags => T}
 
-sealed abstract class Type extends Node
-object Type {
-  final case object Null           extends Type
-  final case object Nothing        extends Type
-  final case object Unit           extends Type
-  final case object Bool           extends Type
-  final case object I8             extends Type
-  final case object I16            extends Type
-  final case object I32            extends Type
-  final case object I64            extends Type
-  final case object F32            extends Type
-  final case object F64            extends Type
-  final case class Ref(ty: Type)   extends Type
-  final case class Slice(ty: Type) extends Type
-  final case class Of(defn: Defn)  extends Type
-
-  object I {
-    def unapply(ty: Type) = ty match {
-      case Type.I8  => Some(8)
-      case Type.I16 => Some(16)
-      case Type.I32 => Some(32)
-      case Type.I64 => Some(64)
-      case _        => None
-    }
-  }
-
-  object F {
-    def unapply(ty: Type) = ty match {
-      case Type.F32 => Some(32)
-      case Type.F64 => Some(64)
-      case _        => None
-    }
-  }
+sealed class Node(var desc: Desc, var deps: Seq[Node]) {
+  private[ir] var epoch: Int = 0
 }
 
-sealed abstract class Instr extends Node
-object Instr {
-  sealed trait Cf    extends Instr
+sealed abstract class Prim(name: Name) extends Node(Desc.Primitive(name), Seq())
+object Prim {
+  final case object Null    extends Prim(Name.Simple("null"))
+  final case object Nothing extends Prim(Name.Simple("nothing"))
+  final case object Unit    extends Prim(Name.Simple("unit"))
+  final case object Bool    extends Prim(Name.Simple("bool"))
+
+  sealed abstract case class I(width: Int) extends Prim(Name.Simple(s"i$width"))
+  final object I8  extends I(8)
+  final object I16 extends I(16)
+  final object I32 extends I(32)
+  final object I64 extends I(64)
+
+  sealed abstract case class F(width: Int) extends Prim(Name.Simple(s"f$width"))
+  final object F32 extends F(32)
+  final object F64 extends F(64)
+}
+
+sealed abstract class Desc(tag: Int, cfIn: Int, efIn: Int, valIn: Int, refIn: Int) {
+  def totalIn: Int = cfIn + efIn + valIn + refIn
+}
+object Desc {
+  sealed trait Cf
   sealed trait Termn extends Cf
-  sealed trait Ef    extends Instr
-  sealed trait Val   extends Instr
-  sealed trait Const extends Val
+  sealed trait Ef
+  sealed trait Val
+  sealed trait Defn
 
-  // Control-flow
-  // TODO: Loop
-  // TODO: Try, CaseTry, CaseCatch, CaseFinally
-  final case class Start()                                         extends Cf with Ef
-  final case class Label(name: Name, var cfs: Seq[Cf])             extends Cf
-  final case class If(var cf: Cf, var value: Val)                  extends Cf
-  final case class Switch(var cf: Cf, var value: Val)              extends Cf
-  final case class Try(var cf: Cf)                                 extends Cf
-  final case class CaseTrue(var cf: Cf)                            extends Cf
-  final case class CaseFalse(var cf: Cf)                           extends Cf
-  final case class CaseConst(var cf: Cf, var const: Const)         extends Cf
-  final case class CaseDefault(var cf: Cf)                         extends Cf
-  final case class CaseException(var cf: Cf)                       extends Cf
-  final case class Merge(var cfs: Seq[Cf])                         extends Cf
-  final case class Return(var cf: Cf, var ef: Ef, var value: Val)  extends Termn
-  final case class Throw(var cf: Cf, var ef: Ef, var value: Val)   extends Termn
-  final case class Undefined(var cf: Cf, var ef: Ef)               extends Termn
-  final case class End(var cfs: Seq[Termn])                        extends Cf
+  final case object Start                     extends Desc(T.Start        , 0, 0, 0, 0) with Cf with Ef
+  final case class  Label(name: Name, n: Int) extends Desc(T.Label        , n, 0, 0, 0) with Cf
+  final case object If                        extends Desc(T.If           , 1, 0, 1, 0) with Cf
+  final case object Switch                    extends Desc(T.Switch       , 1, 0, 1, 0) with Cf
+  final case object Try                       extends Desc(T.Try          , 1, 0, 0, 0) with Cf
+  final case object CaseTrue                  extends Desc(T.CaseTrue     , 1, 0, 0, 0) with Cf
+  final case object CaseFalse                 extends Desc(T.CaseFalse    , 1, 0, 0, 0) with Cf
+  final case object CaseConst                 extends Desc(T.CaseConst    , 1, 0, 1, 0) with Cf
+  final case object CaseDefault               extends Desc(T.CaseDefault  , 1, 0, 0, 0) with Cf
+  final case object CaseException             extends Desc(T.CaseException, 1, 0, 0, 0) with Cf
+  final case class  Merge(n: Int)             extends Desc(T.Merge        , n, 0, 0, 0) with Cf
+  final case object Return                    extends Desc(T.Return       , 1, 1, 1, 0) with Termn
+  final case object Throw                     extends Desc(T.Throw        , 1, 1, 1, 0) with Termn
+  final case object Undefined                 extends Desc(T.Undefined    , 1, 1, 0, 0) with Termn
+  final case class  End(n: Int)               extends Desc(T.End          , n, 0, 0, 0) with Cf
 
-  // Effectful
-  final case class EfPhi(var cf: Cf, var efs: Seq[Ef])                extends Ef
-  final case class Equals(var ef: Ef, var left: Val, var right: Val)  extends Val with Ef
-  final case class Call(var ef: Ef, var ptr: Val, var args: Seq[Val]) extends Val with Ef
-  final case class Load(var ef: Ef, var ptr: Val)                     extends Val with Ef
-  final case class Store(var ef: Ef, var ptr: Val, var value: Val)    extends Val with Ef
+  final case class  EfPhi(n: Int) extends Desc(T.EfPhi , 1, n, 0,     0) with Ef
+  final case object Equals        extends Desc(T.Equals, 0, 1, 2,     0) with Ef with Val
+  final case class  Call(n: Int)  extends Desc(T.Call  , 0, 1, n + 1, 0) with Ef with Val
+  final case object Load          extends Desc(T.Load  , 0, 1, 1,     0) with Ef with Val
+  final case object Store         extends Desc(T.Store , 0, 1, 2,     0) with Ef with Val
 
-  // Pure binary
-  final case class Add (var left: Val, var right: Val) extends Val
-  final case class Sub (var left: Val, var right: Val) extends Val
-  final case class Mul (var left: Val, var right: Val) extends Val
-  final case class Div (var left: Val, var right: Val) extends Val
-  final case class Mod (var left: Val, var right: Val) extends Val
-  final case class Shl (var left: Val, var right: Val) extends Val
-  final case class Lshr(var left: Val, var right: Val) extends Val
-  final case class Ashr(var left: Val, var right: Val) extends Val
-  final case class And (var left: Val, var right: Val) extends Val
-  final case class Or  (var left: Val, var right: Val) extends Val
-  final case class Xor (var left: Val, var right: Val) extends Val
-  final case class Eq  (var left: Val, var right: Val) extends Val
-  final case class Neq (var left: Val, var right: Val) extends Val
-  final case class Lt  (var left: Val, var right: Val) extends Val
-  final case class Lte (var left: Val, var right: Val) extends Val
-  final case class Gt  (var left: Val, var right: Val) extends Val
-  final case class Gte (var left: Val, var right: Val) extends Val
+  final case object Add  extends Desc(T.Add , 0, 0, 2, 0) with Val
+  final case object Sub  extends Desc(T.Sub , 0, 0, 2, 0) with Val
+  final case object Mul  extends Desc(T.Mul , 0, 0, 2, 0) with Val
+  final case object Div  extends Desc(T.Div , 0, 0, 2, 0) with Val
+  final case object Mod  extends Desc(T.Mod , 0, 0, 2, 0) with Val
+  final case object Shl  extends Desc(T.Shl , 0, 0, 2, 0) with Val
+  final case object Lshr extends Desc(T.Lshr, 0, 0, 2, 0) with Val
+  final case object Ashr extends Desc(T.Ashr, 0, 0, 2, 0) with Val
+  final case object And  extends Desc(T.And , 0, 0, 2, 0) with Val
+  final case object Or   extends Desc(T.Or  , 0, 0, 2, 0) with Val
+  final case object Xor  extends Desc(T.Xor , 0, 0, 2, 0) with Val
+  final case object Eq   extends Desc(T.Eq  , 0, 0, 2, 0) with Val
+  final case object Neq  extends Desc(T.Neq , 0, 0, 2, 0) with Val
+  final case object Lt   extends Desc(T.Lt  , 0, 0, 2, 0) with Val
+  final case object Lte  extends Desc(T.Lte , 0, 0, 2, 0) with Val
+  final case object Gt   extends Desc(T.Gt  , 0, 0, 2, 0) with Val
+  final case object Gte  extends Desc(T.Gte , 0, 0, 2, 0) with Val
 
-  // Pure conversions
-  final case class Trunc   (var value: Val, var ty: Type) extends Val
-  final case class Zext    (var value: Val, var ty: Type) extends Val
-  final case class Sext    (var value: Val, var ty: Type) extends Val
-  final case class Fptrunc (var value: Val, var ty: Type) extends Val
-  final case class Fpext   (var value: Val, var ty: Type) extends Val
-  final case class Fptoui  (var value: Val, var ty: Type) extends Val
-  final case class Fptosi  (var value: Val, var ty: Type) extends Val
-  final case class Uitofp  (var value: Val, var ty: Type) extends Val
-  final case class Sitofp  (var value: Val, var ty: Type) extends Val
-  final case class Ptrtoint(var value: Val, var ty: Type) extends Val
-  final case class Inttoptr(var value: Val, var ty: Type) extends Val
-  final case class Bitcast (var value: Val, var ty: Type) extends Val
-  final case class Cast    (var value: Val, var ty: Type) extends Val
-  final case class Box     (var value: Val, var ty: Type) extends Val
-  final case class Unbox   (var value: Val, var ty: Type) extends Val
+  final case object Trunc    extends Desc(T.Trunc   , 0, 0, 1, 1) with Val
+  final case object Zext     extends Desc(T.Zext    , 0, 0, 1, 1) with Val
+  final case object Sext     extends Desc(T.Sext    , 0, 0, 1, 1) with Val
+  final case object Fptrunc  extends Desc(T.Fptrunc , 0, 0, 1, 1) with Val
+  final case object Fpext    extends Desc(T.Fpext   , 0, 0, 1, 1) with Val
+  final case object Fptoui   extends Desc(T.Fptoui  , 0, 0, 1, 1) with Val
+  final case object Fptosi   extends Desc(T.Fptosi  , 0, 0, 1, 1) with Val
+  final case object Uitofp   extends Desc(T.Uitofp  , 0, 0, 1, 1) with Val
+  final case object Sitofp   extends Desc(T.Sitofp  , 0, 0, 1, 1) with Val
+  final case object Ptrtoint extends Desc(T.Ptrtoint, 0, 0, 1, 1) with Val
+  final case object Inttoptr extends Desc(T.Inttoptr, 0, 0, 1, 1) with Val
+  final case object Bitcast  extends Desc(T.Bitcast , 0, 0, 1, 1) with Val
+  final case object Cast     extends Desc(T.Cast    , 0, 0, 1, 1) with Val
+  final case object Box      extends Desc(T.Box     , 0, 0, 1, 1) with Val
+  final case object Unbox    extends Desc(T.Unbox   , 0, 0, 1, 1) with Val
 
-  // Pure resft
-  final case class Phi(var merge: Cf, var values: Seq[Val]) extends Val
-  final case class Is(var value: Val, var ty: Type)         extends Val
-  final case class Alloc(var ty: Type)                      extends Val
-  final case class Salloc(var ty: Type, var n: Val)         extends Val
-  final case class Length(var value: Val)                   extends Val
-  final case class Elem(var ptr: Val, var value: Val)       extends Val
-  final case class Param(name: Name, var ty: Type)          extends Val
-  final case class ValueOf(var defn: Defn)                  extends Val
-  final case class ExceptionOf(var cf: Cf)                  extends Val
-  final case class TagOf(var value: Val)                    extends Val
+  final case class  Phi(n: Int)         extends Desc(T.Phi        , 1, 0, n, 0) with Val
+  final case object Is                  extends Desc(T.Is         , 0, 0, 1, 1) with Val
+  final case object Alloc               extends Desc(T.Alloc      , 0, 0, 0, 1) with Val
+  final case object Salloc              extends Desc(T.Salloc     , 0, 0, 1, 1) with Val
+  final case object Length              extends Desc(T.Length     , 0, 0, 1, 0) with Val
+  final case object Elem                extends Desc(T.Elem       , 0, 0, 2, 0) with Val
+  final case class  Param(name: Name)   extends Desc(T.Param      , 0, 0, 0, 1) with Val
+  final case object ValueOf             extends Desc(T.ValueOf    , 0, 0, 0, 1) with Val
+  final case object ExceptionOf         extends Desc(T.ExceptionOf, 1, 0, 0, 0) with Val
+  final case object TagOf               extends Desc(T.TagOf      , 0, 0, 1, 0) with Val
+  final case class  Const(const: Const) extends Desc(T.Const      , 0, 0, 0, 0) with Val
+  final case object TagConst            extends Desc(T.TagConst   , 0, 0, 0, 1) with Val
 
-  // Constants
-  final case object Unit              extends Const { override def toString = "unit" }
-  final case object Null              extends Const { override def toString = "null" }
-  final case object True              extends Const { override def toString = "true" }
-  final case object False             extends Const { override def toString = "false" }
-  final case class I8(value: Byte)    extends Const { override def toString = s"${value}i8" }
-  final case class I16(value: Short)  extends Const { override def toString = s"${value}i16" }
-  final case class I32(value: Int)    extends Const { override def toString = s"${value}i32" }
-  final case class I64(value: Long)   extends Const { override def toString = s"${value}i64" }
-  final case class F32(value: Float)  extends Const { override def toString = s"${value}f32" }
-  final case class F64(value: Double) extends Const { override def toString = s"${value}f64" }
-  final case class Str(value: String) extends Const { override def toString = "\"" + value + "\"" }
-  final case class Tag(ty: Type)      extends Const
+  final case class Class(name: Name, rels: Int)                extends Desc(T.Class,     0, 0, 0,      rels)        with Defn
+  final case class Interface(name: Name, rels: Int)            extends Desc(T.Interface, 0, 0, 0,      rels)        with Defn
+  final case class Module(name: Name, rels: Int)               extends Desc(T.Module,    0, 0, 0,      rels)        with Defn
+  final case class Declare(name: Name, params: Int, rels: Int) extends Desc(T.Declare,   0, 0, params, 1 + rels)    with Defn
+  final case class Define(name: Name, params: Int, rels: Int)  extends Desc(T.Define,    1, 0, params, 1 + rels)    with Defn
+  final case class Field(name: Name, rels: Int)                extends Desc(T.Field,     0, 0, 0,      1 + rels)    with Defn
+  final case class Extern(name: Name)                          extends Desc(T.Extern,    0, 0, 0,      0)           with Defn
+  final case class Type(shape: Shape)                          extends Desc(T.Type,      0, 0, 0,      shape.holes) with Defn
+  final case class Primitive(name: Name)                       extends Desc(T.Primitive, 0, 0, 0,      0)           with Defn
 }
 
-sealed abstract class Defn extends Node {
-  def name: Name
-  def rels: Seq[Rel]
-}
-object Defn {
-  final case class Class(name: Name, var rels: Seq[Rel] = Seq()) extends Defn
-  final case class Interface(name: Name, var rels: Seq[Rel] = Seq()) extends Defn
-  final case class Module(name: Name, var rels: Seq[Rel] = Seq()) extends Defn
-  final case class Declare(name: Name, var ty: Type, var params: Seq[Instr.Param],
-                           var rels: Seq[Rel] = Seq()) extends Defn
-  final case class Define(name: Name, var ty: Type, var params: Seq[Instr.Param],
-                          var end: Instr.End, rels: Seq[Rel] = Seq()) extends Defn
-  final case class Field(name: Name, var ty: Type, rels: Seq[Rel] = Seq()) extends Defn
-  final case class Extern(name: Name, var rels: Seq[Rel] = Seq()) extends Defn
-}
-
-sealed abstract class Rel { def defn: Defn }
-object Rel {
-  final case class Child(defn: Defn)      extends Rel
-  final case class Implements(defn: Defn) extends Rel
-  final case class Overrides(defn: Defn)  extends Rel
-  final case class Belongs(defn: Defn)    extends Rel
+sealed abstract class Const
+object Const {
+  final case object Unit extends Const
+  final case object Null extends Const
+  final case object True extends Const
+  final case object False extends Const
+  final case class I8(value: Byte) extends Const
+  final case class I16(value: Short) extends Const
+  final case class I32(value: Int) extends Const
+  final case class I64(value: Long) extends Const
+  final case class F32(value: Float) extends Const
+  final case class F64(value: Double) extends Const
+  final case class Str(value: String) extends Const
 }
 
 sealed abstract class Name
 object Name {
-  final case class Global(id: String) extends Name {
-    override def toString = id
-  }
-  final case class Nested(parent: Name, child: Name) extends Name {
-    override def toString = s"$parent::$child"
-  }
+  final case object No extends Name
+  final case class Simple(id: String) extends Name
+  final case class Nested(parent: Name, child: Name) extends Name
 }
 
-final case class Scope(entries: Map[Name, Defn])
+sealed abstract class Shape {
+  def holes: Int = this match {
+    case Shape.Hole         => 1
+    case Shape.Ref(shape)   => shape.holes
+    case Shape.Slice(shape) => shape.holes
+  }
+}
+object Shape {
+  final case object Hole extends Shape
+  final case class Ref(of: Shape) extends Shape
+  final case class Slice(of: Shape) extends Shape
+  // TODO: Func(ret, args)
+  // TODO: Struct(fields)
+  // TODO: Array(t, n)
+}
+
+final case class Scope(entries: Map[Name, Node])

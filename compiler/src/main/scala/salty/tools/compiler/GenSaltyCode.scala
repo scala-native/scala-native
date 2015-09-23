@@ -5,8 +5,7 @@ import scala.collection.{mutable => mut}
 import scala.tools.nsc._
 import scala.tools.nsc.plugins._
 import scala.util.{Either, Left, Right}
-import salty.ir
-import salty.ir.{Type => Ty, Instr => I, Defn => D, Rel => R, Name => N}
+import salty.ir, ir.{Name, Prim}
 import salty.ir.{Focus, Tails}, Focus.sequenced
 import salty.util, util.sh, util.ScopedVar.scoped
 
@@ -28,33 +27,33 @@ abstract class GenSaltyCode extends PluginComponent
   def unreachable = abort("unreachable")
 
   def undefined(focus: Focus) =
-    Tails.termn(I.Undefined(focus.cf, focus.ef))
+    Tails.termn(ir.Undefined(focus.cf, focus.ef))
 
   class Env {
-    private val env = mut.Map.empty[Symbol, I.Val]
+    private val env = mut.Map.empty[Symbol, ir.Node]
 
-    def enter(sym: Symbol, node: I.Val): I.Val = {
+    def enter(sym: Symbol, node: ir.Node): ir.Node = {
       env += ((sym, node))
       node
     }
-    def resolve(sym: Symbol): I.Val = env(sym)
+    def resolve(sym: Symbol): ir.Node = env(sym)
   }
 
   class LabelEnv(env: Env) {
-    private val labels  = mut.Map.empty[Symbol, I.Label]
-    private val phiss   = mut.Map.empty[Symbol, Seq[I.Phi]]
-    private val efphis  = mut.Map.empty[Symbol, I.EfPhi]
+    private val labels  = mut.Map.empty[Symbol, ir.Node]
+    private val phiss   = mut.Map.empty[Symbol, Seq[ir.Node]]
+    private val efphis  = mut.Map.empty[Symbol, ir.Node]
 
-    def enterLabel(ld: LabelDef): I.Label = {
+    def enterLabel(ld: LabelDef): ir.Node = {
       if (labels.contains(ld.symbol)) {
         labels -= ld.symbol
         phiss -= ld.symbol
         efphis -= ld.symbol
       }
       val sym = ld.symbol
-      val label = I.Label(genLabelName(ld.symbol), Seq())
-      val phis = Seq.fill(ld.params.length)(I.Phi(label, Seq()))
-      val efphi = I.EfPhi(label, Seq())
+      val label = ir.Label(genLabelName(ld.symbol), Seq())
+      val phis = Seq.fill(ld.params.length)(ir.Phi(label, Seq()))
+      val efphi = ir.EfPhi(label, Seq())
       val treesyms = ld.params.map(_.symbol)
       val reflsyms = sym.asMethod.paramLists.head
       treesyms.zip(reflsyms).zip(phis).foreach {
@@ -67,19 +66,19 @@ abstract class GenSaltyCode extends PluginComponent
       efphis += sym -> efphi
       label
     }
-    def enterLabelCall(sym: Symbol, values: Seq[I.Val], focus: Focus): Unit = {
+    def enterLabelCall(sym: Symbol, values: Seq[ir.Node], focus: Focus): Unit = {
       val label = labels(sym)
       val phis = phiss(sym)
       val efphi = efphis(sym)
-      label.cfs = label.cfs :+ focus.cf
+      ??? /* label.cfs = label.cfs :+ focus.cf
       efphi.efs = efphi.efs :+ focus.ef
       phis.zip(values).foreach { case (phi, value) =>
         phi.values = phi.values :+ value
-      }
+      }*/
     }
-    def resolveLabel(sym: Symbol): I.Label = labels(sym)
-    def resolveLabelParams(sym: Symbol): Seq[I.Phi] = phiss(sym)
-    def resolveLabelEf(sym: Symbol): I.EfPhi = efphis(sym)
+    def resolveLabel(sym: Symbol): ir.Node = labels(sym)
+    def resolveLabelParams(sym: Symbol): Seq[ir.Node] = phiss(sym)
+    def resolveLabelEf(sym: Symbol): ir.Node = efphis(sym)
   }
 
   class CollectLocalInfo extends Traverser {
@@ -110,7 +109,7 @@ abstract class GenSaltyCode extends PluginComponent
     val curMethodSym = new util.ScopedVar[Symbol]
     val curEnv       = new util.ScopedVar[Env]
     val curLabelEnv  = new util.ScopedVar[LabelEnv]
-    val curThis      = new util.ScopedVar[I.Val]
+    val curThis      = new util.ScopedVar[ir.Node]
 
     override def run(): Unit = {
       scalaPrimitives.init()
@@ -133,7 +132,7 @@ abstract class GenSaltyCode extends PluginComponent
           ()
         else {
           val scope = genClass(cd)
-          genDOTFile(cunit, sym, scope)
+          // genDOTFile(cunit, sym, scope)
         }
       }
     }
@@ -143,17 +142,17 @@ abstract class GenSaltyCode extends PluginComponent
     ) {
       val sym     = cd.symbol
       val name    = genClassName(sym)
-      val parent  = R.Child(genClassDefn(sym.superClass))
-      val ifaces  = genClassInterfaces(sym).map(R.Implements)
+      val parent  = genClassDefn(sym.superClass)
+      val ifaces  = genClassInterfaces(sym)
       val fields  = genClassFields(sym).toSeq
       val methods = genClassMethods(cd.impl.body)
       val owner   =
         if (sym.isModuleClass)
-          name -> D.Module(name, parent +: ifaces)
+          name -> ir.Module(name, parent +: ifaces)
         else if (sym.isInterface)
-          name -> D.Interface(name, ifaces)
+          name -> ir.Interface(name, ifaces)
         else
-          name -> D.Class(name, parent +: ifaces)
+          name -> ir.Class(name, parent +: ifaces)
 
       ir.Scope(Map(((owner +: fields) ++ methods): _*))
     }
@@ -167,7 +166,7 @@ abstract class GenSaltyCode extends PluginComponent
         genClassDefn(psym)
       }
 
-    def genClassMethods(stats: List[Tree]): List[(ir.Name, ir.Defn)] =
+    def genClassMethods(stats: List[Tree]): List[(ir.Name, ir.Node)] =
       stats.flatMap {
         case dd: DefDef => List(genDef(dd))
         case _          => Nil
@@ -180,11 +179,11 @@ abstract class GenSaltyCode extends PluginComponent
         if !f.isMethod && f.isTerm && !f.isModule
       } yield {
         val name = genFieldName(f)
-        name -> D.Field(name, genType(f.tpe), Seq(R.Belongs(owner)))
+        name -> ir.Field(name, genType(f.tpe), Seq(owner))
       }
     }
 
-    def genDef(dd: DefDef): (ir.Name, ir.Defn) = scoped (
+    def genDef(dd: DefDef): (ir.Name, ir.Node) = scoped (
       curMethodSym := dd.symbol
     ) {
       //println(s"generating $dd")
@@ -192,13 +191,13 @@ abstract class GenSaltyCode extends PluginComponent
       val name = genDefName(sym)
       val paramSyms = defParamSymbols(dd)
       val ty =
-        if (dd.symbol.isClassConstructor) Ty.Unit
+        if (dd.symbol.isClassConstructor) Prim.Unit
         else genType(sym.tpe.resultType)
-      val rel = Seq(R.Belongs(genClassDefn(sym)))
+      val rel = Seq(genClassDefn(sym))
 
       if (dd.symbol.isDeferred) {
         val params = genParams(paramSyms, define = false)
-        name -> D.Declare(name, ty, params, rel)
+        name -> ir.Declare(name, ty, params, rel)
       } else {
         val env = new Env
         scoped (
@@ -208,7 +207,7 @@ abstract class GenSaltyCode extends PluginComponent
         ) {
           val params = genParams(paramSyms, define = true)
           val body = genDefBody(dd.rhs, params)
-          name -> D.Define(name, ty, params, body, rel)
+          name -> ir.Define(name, ty, params, body, rel)
         }
       }
     }
@@ -218,10 +217,10 @@ abstract class GenSaltyCode extends PluginComponent
       if (vp.isEmpty) Nil else vp.head.map(_.symbol)
     }
 
-    def genParams(paramSyms: List[Symbol], define: Boolean): Seq[I.Param] = {
-      val self = I.Param(N.Global("this"), Ty.Of(genClassDefn(curClassSym)))
+    def genParams(paramSyms: List[Symbol], define: Boolean): Seq[ir.Node] = {
+      val self = ir.Param(Name.Simple("this"), genClassDefn(curClassSym))
       val params = paramSyms.map { sym =>
-        val node = I.Param(genParamName(sym), genType(sym.tpe))
+        val node = ir.Param(genParamName(sym), genType(sym.tpe))
         if (define)
           curEnv.enter(sym, node)
         node
@@ -236,7 +235,7 @@ abstract class GenSaltyCode extends PluginComponent
         case Tails.NotMergeable(tails) => tails
       }
 
-    def genDefBody(body: Tree, params: Seq[I.Param]) =
+    def genDefBody(body: Tree, params: Seq[ir.Node]) =
       notMergeableGuard {
         body match {
           case Block(List(ValDef(_, nme.THIS, _, _)),
@@ -258,7 +257,7 @@ abstract class GenSaltyCode extends PluginComponent
               genExpr(body, Focus.start())
             }
         }
-      }.end(I.Return)
+      }.end(ir.Return(_, _, _))
 
     def genExpr(tree: Tree, focus: Focus): Tails = tree match {
       case ld: LabelDef =>
@@ -273,11 +272,11 @@ abstract class GenSaltyCode extends PluginComponent
         val vdfocus =
           if (!isMutable) {
             curEnv.enter(vd.symbol, rfocus.value)
-            rfocus withValue I.Unit
+            rfocus withValue ir.Unit()
           } else {
-            val alloc = I.Alloc(genType(vd.symbol.tpe))
+            val alloc = ir.Alloc(genType(vd.symbol.tpe))
             curEnv.enter(vd.symbol, alloc)
-            rfocus mapEf (I.Store(_, alloc, rfocus.value))
+            rfocus mapEf (ir.Store(_, alloc, rfocus.value))
           }
         vdfocus +: rt
 
@@ -286,7 +285,7 @@ abstract class GenSaltyCode extends PluginComponent
 
       case Return(expr) =>
         val (efocus, etails) = genExpr(expr, focus).merge
-        (efocus withCf I.Return(efocus.cf, efocus.ef, efocus.value)) +: etails
+        (efocus withCf ir.Return(efocus.cf, efocus.ef, efocus.value)) +: etails
 
       case Try(expr, catches, finalizer) if catches.isEmpty && finalizer.isEmpty =>
         genExpr(expr, focus)
@@ -296,7 +295,7 @@ abstract class GenSaltyCode extends PluginComponent
 
       case Throw(expr) =>
         val (efocus, etails) = genExpr(expr, focus).merge
-        (efocus withCf I.Throw(efocus.cf, efocus.ef, efocus.value)) +: etails
+        (efocus withCf ir.Throw(efocus.cf, efocus.ef, efocus.value)) +: etails
 
       case app: Apply =>
         genApply(app, focus)
@@ -307,19 +306,19 @@ abstract class GenSaltyCode extends PluginComponent
       case This(qual) =>
         Tails.open(focus withValue {
           if (tree.symbol == curClassSym.get) curThis
-          else I.ValueOf(genClassDefn(tree.symbol))
+          else ir.ValueOf(genClassDefn(tree.symbol))
         })
 
       case Select(qual, sel) =>
         val sym = tree.symbol
         if (sym.isModule)
-          Tails.open(focus withValue I.ValueOf(genClassDefn(sym)))
+          Tails.open(focus withValue ir.ValueOf(genClassDefn(sym)))
         else if (sym.isStaticMember)
           Tails.open(focus withValue genStaticMember(sym))
         else {
           val (qfocus, qt) = genExpr(qual, focus).merge
-          val elem = I.Elem(qfocus.value, I.ValueOf(genFieldDefn(tree.symbol)))
-          (qfocus mapEf (I.Load(_, elem))) +: qt
+          val elem = ir.Elem(qfocus.value, ir.ValueOf(genFieldDefn(tree.symbol)))
+          (qfocus mapEf (ir.Load(_, elem))) +: qt
         }
 
       case id: Ident =>
@@ -327,11 +326,11 @@ abstract class GenSaltyCode extends PluginComponent
         Tails.open {
           if (!curLocalInfo.mutableVars.contains(sym))
             focus withValue {
-              if (sym.isModule) I.ValueOf(genClassDefn(sym))
+              if (sym.isModule) ir.ValueOf(genClassDefn(sym))
               else curEnv.resolve(sym)
             }
           else
-            focus mapEf (I.Load(_, curEnv.resolve(sym)))
+            focus mapEf (ir.Load(_, curEnv.resolve(sym)))
         }
 
       case lit: Literal =>
@@ -351,12 +350,12 @@ abstract class GenSaltyCode extends PluginComponent
           case sel @ Select(qual, _) =>
             val (qfocus, qt) = genExpr(qual, focus).merge
             val (rfocus, rt) = genExpr(rhs, qfocus).merge
-            val elem = I.Elem(qfocus.value, I.ValueOf(genFieldDefn(sel.symbol)))
-            (rfocus mapEf (I.Store(_, elem, rfocus.value))) +: (qt ++ rt)
+            val elem = ir.Elem(qfocus.value, ir.ValueOf(genFieldDefn(sel.symbol)))
+            (rfocus mapEf (ir.Store(_, elem, rfocus.value))) +: (qt ++ rt)
 
           case id: Ident =>
             val (rfocus, rt) = genExpr(rhs, focus).merge
-            (rfocus mapEf (I.Store(_, curEnv.resolve(id.symbol), rfocus.value))) +: rt
+            (rfocus mapEf (ir.Store(_, curEnv.resolve(id.symbol), rfocus.value))) +: rt
         }
 
       case av: ArrayValue =>
@@ -369,57 +368,57 @@ abstract class GenSaltyCode extends PluginComponent
         undefined(focus)
 
       case EmptyTree =>
-        Tails.open(focus withValue I.Unit)
+        Tails.open(focus withValue ir.Unit())
 
       case _ =>
         abort("Unexpected tree in genExpr: " +
               tree + "/" + tree.getClass + " at: " + tree.pos)
     }
 
-    def genValue(lit: Literal): I.Val = {
+    def genValue(lit: Literal): ir.Node = {
       val value = lit.value
       value.tag match {
         case NullTag =>
-          I.Null
+          ir.Null()
         case UnitTag =>
-          I.Unit
+          ir.Unit()
         case BooleanTag =>
-          if (value.booleanValue) I.True else I.False
+          if (value.booleanValue) ir.True() else ir.False()
         case ByteTag =>
-          I.I8(value.intValue.toByte)
+          ir.I8(value.intValue.toByte)
         case ShortTag | CharTag =>
-          I.I16(value.intValue.toShort)
+          ir.I16(value.intValue.toShort)
         case IntTag =>
-          I.I32(value.intValue)
+          ir.I32(value.intValue)
         case LongTag =>
-          I.I64(value.longValue)
+          ir.I64(value.longValue)
         case FloatTag =>
-          I.F32(value.floatValue)
+          ir.F32(value.floatValue)
         case DoubleTag =>
-          I.F64(value.doubleValue)
+          ir.F64(value.doubleValue)
         case StringTag =>
-          I.Str(value.stringValue)
+          ir.Str(value.stringValue)
         case ClazzTag =>
-          I.Box(I.Tag(genType(value.typeValue)), Ty.Ref(javaLangClass))
+          ir.Box(ir.TagConst(genType(value.typeValue)), ref(javaLangClass))
         case EnumTag =>
           genStaticMember(value.symbolValue)
       }
     }
 
     def genStaticMember(sym: Symbol) =
-      I.ValueOf(genFieldDefn(sym))
+      ir.ValueOf(genFieldDefn(sym))
 
     def genTry(expr: Tree, catches: List[Tree], finalizer: Tree, focus: Focus) = {
-      val cf          = I.Try(focus.cf)
+      val cf          = ir.Try(focus.cf)
       val normal      = genExpr(expr, focus withCf cf)
-      val exceptional = genCatch(catches, focus withCf I.CaseException(cf))
+      val exceptional = genCatch(catches, focus withCf ir.CaseException(cf))
 
       genFinally(normal ++ exceptional, finalizer)
     }
 
     def genCatch(catches: List[Tree], focus: Focus) = {
-      val exc    = I.ExceptionOf(focus.cf)
-      val switch = I.Switch(focus.cf, I.TagOf(exc))
+      val exc    = ir.ExceptionOf(focus.cf)
+      val switch = ir.Switch(focus.cf, ir.TagOf(exc))
 
       val cases =
         catches.map {
@@ -432,11 +431,11 @@ abstract class GenSaltyCode extends PluginComponent
               case Bind(_, _) =>
                 (Some(pat.symbol), genType(pat.symbol.tpe))
             }
-            symopt foreach (curEnv.enter(_, I.Cast(exc, excty)))
-            genExpr(body, focus withCf I.CaseConst(switch, I.Tag(excty)))
+            symopt foreach (curEnv.enter(_, ir.Cast(exc, excty)))
+            genExpr(body, focus withCf ir.CaseConst(switch, ir.TagConst(excty)))
         }
       val default =
-        Tails.termn(I.Throw(I.CaseDefault(switch), focus.ef, exc))
+        Tails.termn(ir.Throw(ir.CaseDefault(switch), focus.ef, exc))
 
       Tails.flatten(default +: cases)
     }
@@ -444,13 +443,13 @@ abstract class GenSaltyCode extends PluginComponent
     def genFinally(tails: Tails, finalizer: Tree) = {
       val Tails(open, closed) = tails
 
-      def genClosed(focus: Focus, wrap: (I.Cf, I.Ef) => I.Termn): Seq[I.Termn] =
-        genExpr(finalizer, focus).end((cf, ef, v) => wrap(cf, ef)).cfs
+      def genClosed(focus: Focus, wrap: (ir.Node, ir.Node) => ir.Node): Seq[ir.Node] =
+        genExpr(finalizer, focus).end((cf, ef, v) => wrap(cf, ef)).deps
 
       val closedtails = Tails(Seq(), closed.flatMap {
-        case I.Return(cf, ef, v) => genClosed(Focus(cf, ef, I.Unit), I.Return(_, _, v))
-        case I.Throw(cf, ef, v)  => genClosed(Focus(cf, ef, I.Unit), I.Throw(_, _, v))
-        case I.Undefined(cf, ef) => genClosed(Focus(cf, ef, I.Unit), I.Undefined(_, _))
+        case ir.Return(cf, ef, v) => genClosed(Focus(cf, ef, ir.Unit()), ir.Return(_, _, v))
+        case ir.Throw(cf, ef, v)  => genClosed(Focus(cf, ef, ir.Unit()), ir.Throw(_, _, v))
+        case ir.Undefined(cf, ef) => genClosed(Focus(cf, ef, ir.Unit()), ir.Undefined(_, _))
       })
 
       val opentails =
@@ -511,14 +510,14 @@ abstract class GenSaltyCode extends PluginComponent
     def genLabel(label: LabelDef) = {
       val cf = curLabelEnv.resolveLabel(label.symbol)
       val ef = curLabelEnv.resolveLabelEf(label.symbol)
-      genExpr(label.rhs, Focus(cf, ef, I.Unit))
+      genExpr(label.rhs, Focus(cf, ef, ir.Unit()))
     }
 
     def genArrayValue(av: ArrayValue, focus: Focus): Tails = {
       val ArrayValue(tpt, elems) = av
       val ty           = genType(tpt.tpe)
       val len          = elems.length
-      val salloc       = I.Salloc(ty, I.I32(len))
+      val salloc       = ir.Salloc(ty, ir.I32(len))
       val (rfocus, rt) =
         if (elems.isEmpty)
           (focus, Tails.empty)
@@ -528,7 +527,7 @@ abstract class GenSaltyCode extends PluginComponent
           val lastfocus    = vfocus.lastOption.getOrElse(focus)
           val (sfocus, st) = sequenced(values.zipWithIndex, lastfocus) { (vi, foc) =>
             val (value, i) = vi
-            Tails.open(foc withEf I.Store(foc.ef, I.Elem(salloc, I.I32(i)), value))
+            Tails.open(foc withEf ir.Store(foc.ef, ir.Elem(salloc, ir.I32(i)), value))
           }
           (sfocus.last, vt ++ st)
         }
@@ -538,24 +537,24 @@ abstract class GenSaltyCode extends PluginComponent
 
     def genIf(cond: Tree, thenp: Tree, elsep: Tree, focus: Focus) = {
       val (condfocus, condt) = genExpr(cond, focus).merge
-      val cf = I.If(condfocus.cf, condfocus.value)
+      val cf = ir.If(condfocus.cf, condfocus.value)
       condt ++
-      genExpr(thenp, condfocus withCf I.CaseTrue(cf)) ++
-      genExpr(elsep, condfocus withCf I.CaseFalse(cf))
+      genExpr(thenp, condfocus withCf ir.CaseTrue(cf)) ++
+      genExpr(elsep, condfocus withCf ir.CaseFalse(cf))
     }
 
     def genSwitch(m: Match, focus: Focus): Tails = {
       val Match(sel, cases) = m
 
       val (selfocus, selt) = genExpr(sel, focus).merge
-      val switch = I.Switch(selfocus.cf, selfocus.value)
+      val switch = ir.Switch(selfocus.cf, selfocus.value)
 
       val defaultBody =
         cases.collectFirst {
           case c @ CaseDef(Ident(nme.WILDCARD), _, body) => body
         }.get
       val defaultTails =
-        genExpr(defaultBody, selfocus withCf I.CaseDefault(switch))
+        genExpr(defaultBody, selfocus withCf ir.CaseDefault(switch))
       val branchTails: Seq[Tails] =
         cases.map {
           case CaseDef(Ident(nme.WILDCARD), _, _) =>
@@ -565,20 +564,17 @@ abstract class GenSaltyCode extends PluginComponent
             val consts =
               pat match {
                 case lit: Literal =>
-                  val __ @ (const: I.Const) = genValue(lit)
-                  List(const)
+                  List(genValue(lit))
                 case Alternative(alts) =>
                   alts.map {
-                    case lit: Literal =>
-                      val __ @ (const: I.Const) = genValue(lit)
-                      const
+                    case lit: Literal => genValue(lit)
                   }
                 case _ =>
                   Nil
               }
             val cf = consts match {
-              case const :: Nil => I.CaseConst(switch, consts.head)
-              case _            => I.Merge(consts.map(I.CaseConst(switch, _)))
+              case const :: Nil => ir.CaseConst(switch, consts.head)
+              case _            => ir.Merge(consts.map(ir.CaseConst(switch, _)))
             }
             genExpr(body, selfocus withCf cf)
         }
@@ -628,30 +624,33 @@ abstract class GenSaltyCode extends PluginComponent
     }
 
     lazy val primitive2box = Map(
-      BooleanTpe -> Ty.Of(D.Extern(N.Global("java.lang.Boolean"))),
-      ByteTpe    -> Ty.Of(D.Extern(N.Global("java.lang.Byte"))),
-      CharTpe    -> Ty.Of(D.Extern(N.Global("java.lang.Character"))),
-      ShortTpe   -> Ty.Of(D.Extern(N.Global("java.lang.Short"))),
-      IntTpe     -> Ty.Of(D.Extern(N.Global("java.lang.Integer"))),
-      LongTpe    -> Ty.Of(D.Extern(N.Global("java.lang.Long"))),
-      FloatTpe   -> Ty.Of(D.Extern(N.Global("java.lang.Float"))),
-      DoubleTpe  -> Ty.Of(D.Extern(N.Global("java.lang.Double")))
+      BooleanTpe -> ir.Extern(Name.Simple("java.lang.Boolean")),
+      ByteTpe    -> ir.Extern(Name.Simple("java.lang.Byte")),
+      CharTpe    -> ir.Extern(Name.Simple("java.lang.Character")),
+      ShortTpe   -> ir.Extern(Name.Simple("java.lang.Short")),
+      IntTpe     -> ir.Extern(Name.Simple("java.lang.Integer")),
+      LongTpe    -> ir.Extern(Name.Simple("java.lang.Long")),
+      FloatTpe   -> ir.Extern(Name.Simple("java.lang.Float")),
+      DoubleTpe  -> ir.Extern(Name.Simple("java.lang.Double"))
     )
 
-    lazy val javaLangClass = Ty.Of(D.Extern(N.Global("java.lang.Class")))
+    lazy val javaLangClass = ir.Extern(Name.Simple("java.lang.Class"))
 
-    lazy val ctorName = N.Global(nme.CONSTRUCTOR.toString)
+    lazy val ctorName = Name.Simple(nme.CONSTRUCTOR.toString)
+
+    def ref(node: ir.Node) =
+      ir.Type(ir.Shape.Ref(ir.Shape.Hole), Seq(node))
 
     def genPrimitiveBox(expr: Tree, tpe: Type, focus: Focus) = {
       val (efocus, et) = genExpr(expr, focus).merge
-      val box = I.Box(efocus.value, Ty.Ref(primitive2box(tpe.widen)))
+      val box = ir.Box(efocus.value, ref(primitive2box(tpe.widen)))
 
       (efocus withValue box) +: et
     }
 
     def genPrimitiveUnbox(expr: Tree, tpe: Type, focus: Focus) = {
       val (efocus, et) = genExpr(expr, focus).merge
-      val unbox  = I.Unbox(efocus.value, primitive2box(tpe.widen))
+      val unbox  = ir.Unbox(efocus.value, primitive2box(tpe.widen))
 
       (efocus withValue unbox) +: et
     }
@@ -680,13 +679,13 @@ abstract class GenSaltyCode extends PluginComponent
               fun.symbol.simpleName + ") " + " at: " + (app.pos))
     }
 
-    def numOfType(num: Int, ty: ir.Type) = ty match {
-      case Ty.I8  => I.I8 (num.toByte)
-      case Ty.I16 => I.I16(num.toShort)
-      case Ty.I32 => I.I32(num)
-      case Ty.I64 => I.I64(num.toLong)
-      case Ty.F32 => I.F32(num.toFloat)
-      case Ty.F64 => I.F64(num.toDouble)
+    def numOfType(num: Int, ty: ir.Node) = ty match {
+      case Prim.I8  => ir.I8 (num.toByte)
+      case Prim.I16 => ir.I16(num.toShort)
+      case Prim.I32 => ir.I32(num)
+      case Prim.I64 => ir.I64(num.toLong)
+      case Prim.F32 => ir.F32(num.toFloat)
+      case Prim.F64 => ir.F64(num.toDouble)
       case _      => unreachable
     }
 
@@ -700,23 +699,23 @@ abstract class GenSaltyCode extends PluginComponent
       }
     }
 
-    def genUnaryOp(code: Int, right: Tree, retty: ir.Type, focus: Focus) = {
+    def genUnaryOp(code: Int, right: Tree, retty: ir.Node, focus: Focus) = {
       import scalaPrimitives._
 
       val (rfocus, rt) = genExpr(right, focus).merge
       val resfocus =
         code match {
           case POS  => rfocus
-          case NEG  => rfocus mapValue (v => I.Sub(numOfType(0, retty), v))
-          case NOT  => rfocus mapValue (v => I.Xor(numOfType(-1, retty), v))
-          case ZNOT => rfocus mapValue (v => I.Xor(I.True, v))
+          case NEG  => rfocus mapValue (v => ir.Sub(numOfType(0, retty), v))
+          case NOT  => rfocus mapValue (v => ir.Xor(numOfType(-1, retty), v))
+          case ZNOT => rfocus mapValue (v => ir.Xor(ir.True(), v))
           case _    => abort("Unknown unary operation code: " + code)
         }
 
       rfocus +: rt
     }
 
-    def genBinaryOp(code: Int, left: Tree, right: Tree, retty: ir.Type,
+    def genBinaryOp(code: Int, left: Tree, right: Tree, retty: ir.Node,
                     focus: Focus): Tails = {
       import scalaPrimitives._
 
@@ -724,22 +723,22 @@ abstract class GenSaltyCode extends PluginComponent
       val rty   = genType(right.tpe)
 
       code match {
-        case ADD  => genBinaryOp(I.Add,  left, right, retty, focus)
-        case SUB  => genBinaryOp(I.Sub,  left, right, retty, focus)
-        case MUL  => genBinaryOp(I.Mul,  left, right, retty, focus)
-        case DIV  => genBinaryOp(I.Div,  left, right, retty, focus)
-        case MOD  => genBinaryOp(I.Mod,  left, right, retty, focus)
-        case OR   => genBinaryOp(I.Or,   left, right, retty, focus)
-        case XOR  => genBinaryOp(I.Xor,  left, right, retty, focus)
-        case AND  => genBinaryOp(I.And,  left, right, retty, focus)
-        case LSL  => genBinaryOp(I.Shl,  left, right, retty, focus)
-        case LSR  => genBinaryOp(I.Lshr, left, right, retty, focus)
-        case ASR  => genBinaryOp(I.Ashr, left, right, retty, focus)
+        case ADD  => genBinaryOp(ir.Add,  left, right, retty, focus)
+        case SUB  => genBinaryOp(ir.Sub,  left, right, retty, focus)
+        case MUL  => genBinaryOp(ir.Mul,  left, right, retty, focus)
+        case DIV  => genBinaryOp(ir.Div,  left, right, retty, focus)
+        case MOD  => genBinaryOp(ir.Mod,  left, right, retty, focus)
+        case OR   => genBinaryOp(ir.Or,   left, right, retty, focus)
+        case XOR  => genBinaryOp(ir.Xor,  left, right, retty, focus)
+        case AND  => genBinaryOp(ir.And,  left, right, retty, focus)
+        case LSL  => genBinaryOp(ir.Shl,  left, right, retty, focus)
+        case LSR  => genBinaryOp(ir.Lshr, left, right, retty, focus)
+        case ASR  => genBinaryOp(ir.Ashr, left, right, retty, focus)
 
-        case LT   => genBinaryOp(I.Lt,  left, right, binaryOperationType(lty, rty), focus)
-        case LE   => genBinaryOp(I.Lte, left, right, binaryOperationType(lty, rty), focus)
-        case GT   => genBinaryOp(I.Gt,  left, right, binaryOperationType(lty, rty), focus)
-        case GE   => genBinaryOp(I.Gte, left, right, binaryOperationType(lty, rty), focus)
+        case LT   => genBinaryOp(ir.Lt,  left, right, binaryOperationType(lty, rty), focus)
+        case LE   => genBinaryOp(ir.Lte, left, right, binaryOperationType(lty, rty), focus)
+        case GT   => genBinaryOp(ir.Gt,  left, right, binaryOperationType(lty, rty), focus)
+        case GE   => genBinaryOp(ir.Gte, left, right, binaryOperationType(lty, rty), focus)
 
         case EQ   => genEqualityOp(left, right, ref = false, negated = false, focus)
         case NE   => genEqualityOp(left, right, ref = false, negated = true,  focus)
@@ -753,7 +752,7 @@ abstract class GenSaltyCode extends PluginComponent
       }
     }
 
-    def genBinaryOp(op: (I.Val, I.Val) => I.Val, left: Tree, right: Tree, retty: ir.Type,
+    def genBinaryOp(op: (ir.Node, ir.Node) => ir.Node, left: Tree, right: Tree, retty: ir.Node,
                     focus: Focus): Tails = {
       val (lfocus, lt) = genExpr(left, focus).merge
       val lcoerced     = genCoercion(lfocus.value, genType(left.tpe), retty)
@@ -765,7 +764,7 @@ abstract class GenSaltyCode extends PluginComponent
 
     def genEqualityOp(left: Tree, right: Tree, ref: Boolean, negated: Boolean,
                       focus: Focus) = {
-      val eq = if (negated) I.Neq else I.Eq
+      val eq = if (negated) ir.Neq else ir.Eq
 
       genKind(left.tpe) match {
         case ClassKind(_) | BottomKind(NullClass) =>
@@ -774,13 +773,14 @@ abstract class GenSaltyCode extends PluginComponent
           val resfocus =
             if (ref)
               rfocus withValue eq(lfocus.value, rfocus.value)
-            else if (lfocus.value eq I.Null)
-              rfocus withValue eq(rfocus.value, I.Null)
-            else if (rfocus.value eq I.Null)
-              rfocus withValue eq(lfocus.value, I.Null)
+            // TODO: this eq won't work
+            else if (lfocus.value eq ir.Null())
+              rfocus withValue eq(rfocus.value, ir.Null())
+            else if (rfocus.value eq ir.Null())
+              rfocus withValue eq(lfocus.value, ir.Null())
             else {
-              val equals = I.Equals(rfocus.ef, lfocus.value, rfocus.value)
-              val value = if (!negated) equals else I.Xor(I.True, equals)
+              val equals = ir.Equals(rfocus.ef, lfocus.value, rfocus.value)
+              val value = if (!negated) equals else ir.Xor(ir.True(), equals)
               rfocus withEf equals withValue value
             }
           resfocus +: (lt ++ rt)
@@ -793,20 +793,20 @@ abstract class GenSaltyCode extends PluginComponent
       }
     }
 
-    def binaryOperationType(lty: ir.Type, rty: ir.Type) = (lty, rty) match {
-      case (Ty.I(lwidth), Ty.I(rwidth)) =>
+    def binaryOperationType(lty: ir.Node, rty: ir.Node) = (lty, rty) match {
+      case (Prim.I(lwidth), Prim.I(rwidth)) =>
         if (lwidth >= rwidth) lty else rty
-      case (Ty.I(_), Ty.F(_)) =>
+      case (Prim.I(_), Prim.F(_)) =>
         rty
-      case (Ty.F(_), Ty.I(_)) =>
+      case (Prim.F(_), Prim.I(_)) =>
         lty
-      case (Ty.F(lwidth), Ty.F(rwidth)) =>
+      case (Prim.F(lwidth), Prim.F(rwidth)) =>
         if (lwidth >= rwidth) lty else rty
       case (ty1 , ty2) if ty1 == ty2 =>
         ty1
-      case (Ty.Null, _) =>
+      case (Prim.Null, _) =>
         rty
-      case (_, Ty.Null) =>
+      case (_, Prim.Null) =>
         lty
       case _ =>
         abort(s"can't perform binary opeation between $lty and $rty")
@@ -817,7 +817,7 @@ abstract class GenSaltyCode extends PluginComponent
       val (lfocus, lt) = genExpr(left, focus).merge
       val (rfocus, rt) = genExpr(right, lfocus).merge
 
-      (rfocus withValue I.Add(lfocus.value, rfocus.value)) +: (lt ++ rt)
+      (rfocus withValue ir.Add(lfocus.value, rfocus.value)) +: (lt ++ rt)
     }
 
     def genHash(tree: Tree, receiver: Tree, focus: Focus) = {
@@ -837,11 +837,11 @@ abstract class GenSaltyCode extends PluginComponent
       def argvalues  = allfocus.tail.map(_.value)
       val rfocus =
         if (scalaPrimitives.isArrayGet(code))
-          lastfocus mapEf (I.Load(_, I.Elem(arrayvalue, argvalues(0))))
+          lastfocus mapEf (ir.Load(_, ir.Elem(arrayvalue, argvalues(0))))
         else if (scalaPrimitives.isArraySet(code))
-          lastfocus mapEf (I.Store(_, I.Elem(arrayvalue, argvalues(0)), argvalues(1)))
+          lastfocus mapEf (ir.Store(_, ir.Elem(arrayvalue, argvalues(0)), argvalues(1)))
         else
-          lastfocus withValue I.Length(arrayvalue)
+          lastfocus withValue ir.Length(arrayvalue)
 
       rfocus +: allt
     }
@@ -861,69 +861,69 @@ abstract class GenSaltyCode extends PluginComponent
       (rfocus mapValue (genCoercion(_, fromty, toty))) +: rt
     }
 
-    def genCoercion(value: I.Val, fromty: ir.Type, toty: ir.Type): I.Val =
+    def genCoercion(value: ir.Node, fromty: ir.Node, toty: ir.Node): ir.Node =
       if (fromty == toty)
         value
       else {
         val op = (fromty, toty) match {
-          case (Ty.I(lwidth), Ty.I(rwidth))
-            if lwidth < rwidth      => I.Zext
-          case (Ty.I(lwidth), Ty.I(rwidth))
-            if lwidth > rwidth      => I.Trunc
-          case (Ty.I(_), Ty.F(_))   => I.Sitofp
-          case (Ty.F(_), Ty.I(_))   => I.Fptosi
-          case (Ty.F64, Ty.F32)     => I.Fptrunc
-          case (Ty.F32, Ty.F64)     => I.Fpext
-          case (Ty.Null, _)         => I.Cast
+          case (Prim.I(lwidth), Prim.I(rwidth))
+            if lwidth < rwidth        => ir.Zext
+          case (Prim.I(lwidth), Prim.I(rwidth))
+            if lwidth > rwidth        => ir.Trunc
+          case (Prim.I(_), Prim.F(_)) => ir.Sitofp
+          case (Prim.F(_), Prim.I(_)) => ir.Fptosi
+          case (Prim.F64, Prim.F32)   => ir.Fptrunc
+          case (Prim.F32, Prim.F64)   => ir.Fpext
+          case (Prim.Null, _)         => ir.Cast
         }
         op(value, toty)
       }
 
-    def coercionTypes(code: Int): (ir.Type, ir.Type) = {
+    def coercionTypes(code: Int): (ir.Node, ir.Node) = {
       import scalaPrimitives._
 
       code match {
-        case B2B       => (Ty.I8, Ty.I8)
-        case B2S | B2C => (Ty.I8, Ty.I16)
-        case B2I       => (Ty.I8, Ty.I32)
-        case B2L       => (Ty.I8, Ty.I64)
-        case B2F       => (Ty.I8, Ty.F32)
-        case B2D       => (Ty.I8, Ty.F64)
+        case B2B       => (Prim.I8, Prim.I8)
+        case B2S | B2C => (Prim.I8, Prim.I16)
+        case B2I       => (Prim.I8, Prim.I32)
+        case B2L       => (Prim.I8, Prim.I64)
+        case B2F       => (Prim.I8, Prim.F32)
+        case B2D       => (Prim.I8, Prim.F64)
 
-        case S2B       | C2B       => (Ty.I16, Ty.I8)
-        case S2S | S2C | C2S | C2C => (Ty.I16, Ty.I16)
-        case S2I       | C2I       => (Ty.I16, Ty.I32)
-        case S2L       | C2L       => (Ty.I16, Ty.I64)
-        case S2F       | C2F       => (Ty.I16, Ty.F32)
-        case S2D       | C2D       => (Ty.I16, Ty.F64)
+        case S2B       | C2B       => (Prim.I16, Prim.I8)
+        case S2S | S2C | C2S | C2C => (Prim.I16, Prim.I16)
+        case S2I       | C2I       => (Prim.I16, Prim.I32)
+        case S2L       | C2L       => (Prim.I16, Prim.I64)
+        case S2F       | C2F       => (Prim.I16, Prim.F32)
+        case S2D       | C2D       => (Prim.I16, Prim.F64)
 
-        case I2B       => (Ty.I32, Ty.I8)
-        case I2S | I2C => (Ty.I32, Ty.I16)
-        case I2I       => (Ty.I32, Ty.I32)
-        case I2L       => (Ty.I32, Ty.I64)
-        case I2F       => (Ty.I32, Ty.F32)
-        case I2D       => (Ty.I32, Ty.F64)
+        case I2B       => (Prim.I32, Prim.I8)
+        case I2S | I2C => (Prim.I32, Prim.I16)
+        case I2I       => (Prim.I32, Prim.I32)
+        case I2L       => (Prim.I32, Prim.I64)
+        case I2F       => (Prim.I32, Prim.F32)
+        case I2D       => (Prim.I32, Prim.F64)
 
-        case L2B       => (Ty.I64, Ty.I8)
-        case L2S | L2C => (Ty.I64, Ty.I16)
-        case L2I       => (Ty.I64, Ty.I32)
-        case L2L       => (Ty.I64, Ty.I64)
-        case L2F       => (Ty.I64, Ty.F32)
-        case L2D       => (Ty.I64, Ty.F64)
+        case L2B       => (Prim.I64, Prim.I8)
+        case L2S | L2C => (Prim.I64, Prim.I16)
+        case L2I       => (Prim.I64, Prim.I32)
+        case L2L       => (Prim.I64, Prim.I64)
+        case L2F       => (Prim.I64, Prim.F32)
+        case L2D       => (Prim.I64, Prim.F64)
 
-        case F2B       => (Ty.F32, Ty.I8)
-        case F2S | F2C => (Ty.F32, Ty.I16)
-        case F2I       => (Ty.F32, Ty.I32)
-        case F2L       => (Ty.F32, Ty.I64)
-        case F2F       => (Ty.F32, Ty.F32)
-        case F2D       => (Ty.F32, Ty.F64)
+        case F2B       => (Prim.F32, Prim.I8)
+        case F2S | F2C => (Prim.F32, Prim.I16)
+        case F2I       => (Prim.F32, Prim.I32)
+        case F2L       => (Prim.F32, Prim.I64)
+        case F2F       => (Prim.F32, Prim.F32)
+        case F2D       => (Prim.F32, Prim.F64)
 
-        case D2B       => (Ty.F64, Ty.I8)
-        case D2S | D2C => (Ty.F64, Ty.I16)
-        case D2I       => (Ty.F64, Ty.I32)
-        case D2L       => (Ty.F64, Ty.I64)
-        case D2F       => (Ty.F64, Ty.F32)
-        case D2D       => (Ty.F64, Ty.F64)
+        case D2B       => (Prim.F64, Prim.I8)
+        case D2S | D2C => (Prim.F64, Prim.I16)
+        case D2I       => (Prim.F64, Prim.I32)
+        case D2L       => (Prim.F64, Prim.I64)
+        case D2F       => (Prim.F64, Prim.F32)
+        case D2D       => (Prim.F64, Prim.F64)
       }
     }
 
@@ -932,8 +932,8 @@ abstract class GenSaltyCode extends PluginComponent
       val ty = genType(targs.head.tpe)
       val (rfocus, rt) = genExpr(receiver, focus).merge
       val value = fun.symbol match {
-        case Object_isInstanceOf => I.Is(rfocus.value, ty)
-        case Object_asInstanceOf => I.Cast(rfocus.value, ty)
+        case Object_isInstanceOf => ir.Is(rfocus.value, ty)
+        case Object_asInstanceOf => ir.Cast(rfocus.value, ty)
       }
 
       (rfocus withValue value) +: rt
@@ -959,8 +959,8 @@ abstract class GenSaltyCode extends PluginComponent
       val ty   = toIRType(kind)
 
       kind match {
-        case _: ArrayKind =>
-          genNewArray(ty, args.head, focus)
+        case ArrayKind(of) =>
+          genNewArray(toIRType(of), args.head, focus)
         case ckind: ClassKind =>
           genNew(ckind.sym, ctor, args, focus)
         case ty =>
@@ -968,26 +968,24 @@ abstract class GenSaltyCode extends PluginComponent
       }
     }
 
-    def genNewArray(ty: ir.Type, length: Tree, focus: Focus) = {
-      val Ty.Slice(elemty) = ty
+    def genNewArray(elemty: ir.Node, length: Tree, focus: Focus) = {
       val (lfocus, lt) = genExpr(length, focus).merge
 
-      (lfocus withValue I.Salloc(elemty, lfocus.value)) +: lt
+      (lfocus withValue ir.Salloc(elemty, lfocus.value)) +: lt
     }
 
     def genNew(sym: Symbol, ctorsym: Symbol, args: List[Tree], focus: Focus) = {
-      val stat  = genClassDefn(sym)
-      val alloc = I.Alloc(Ty.Of(stat))
+      val alloc = ir.Alloc(genClassDefn(sym))
 
       genMethodCall(ctorsym, alloc, args, focus)
     }
 
-    def genMethodCall(sym: Symbol, self: I.Val, args: Seq[Tree], focus: Focus): Tails = {
+    def genMethodCall(sym: Symbol, self: ir.Node, args: Seq[Tree], focus: Focus): Tails = {
       val (argfocus, argt) = sequenced(args, focus)(genExpr(_, _))
       val argvalues        = argfocus.map(_.value)
       val lastfocus        = argfocus.lastOption.getOrElse(focus)
       val stat             = genDefDefn(sym)
-      val call             = I.Call(lastfocus.ef, I.ValueOf(stat), self +: argvalues)
+      val call             = ir.Call(lastfocus.ef, ir.ValueOf(stat), self +: argvalues)
 
       (lastfocus withEf call withValue call) +: argt
     }

@@ -3,7 +3,6 @@ package compiler
 
 import scala.tools.nsc._
 import salty.ir
-import salty.ir.{Type => Ty}
 
 trait GenTypeKinds extends SubComponent with GenNameEncoding {
   import global._, definitions._
@@ -63,29 +62,29 @@ trait GenTypeKinds extends SubComponent with GenNameEncoding {
     case tpe: ErasedValueType            => genRefKind(tpe.valueClazz)
   }
 
-  def genType(tpe: Type): ir.Type = toIRType(genKind(tpe))
+  def genType(tpe: Type): ir.Node = toIRType(genKind(tpe))
 
-  def toIRType(kind: Kind): ir.Type = kind match {
+  def toIRType(kind: Kind): ir.Node = kind match {
     case PrimitiveKind(sym) =>
       sym match {
-        case UnitClass    => Ty.Unit
-        case BooleanClass => Ty.Bool
-        case ByteClass    => Ty.I8
-        case CharClass    => Ty.I16
-        case ShortClass   => Ty.I16
-        case IntClass     => Ty.I32
-        case LongClass    => Ty.I64
-        case FloatClass   => Ty.F32
-        case DoubleClass  => Ty.F64
+        case UnitClass    => ir.Prim.Unit
+        case BooleanClass => ir.Prim.Bool
+        case ByteClass    => ir.Prim.I8
+        case CharClass    => ir.Prim.I16
+        case ShortClass   => ir.Prim.I16
+        case IntClass     => ir.Prim.I32
+        case LongClass    => ir.Prim.I64
+        case FloatClass   => ir.Prim.F32
+        case DoubleClass  => ir.Prim.F64
       }
     case BottomKind(sym) =>
       sym match {
-        case NullClass    => Ty.Null
-        case NothingClass => Ty.Nothing
+        case NullClass    => ir.Prim.Null
+        case NothingClass => ir.Prim.Nothing
       }
     case ClassKind(sym) =>
-      Ty.Ref(Ty.Of(genClassDefn(sym)))
+      ir.Type(ir.Shape.Ref(ir.Shape.Hole), Seq(genClassDefn(sym)))
     case ArrayKind(of) =>
-      Ty.Slice(toIRType(of))
+      ir.Type(ir.Shape.Ref(ir.Shape.Hole), Seq(toIRType(of)))
   }
 }

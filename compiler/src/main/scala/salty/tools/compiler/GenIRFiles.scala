@@ -9,7 +9,7 @@ import scala.tools.nsc._
 import scala.tools.nsc.io.AbstractFile
 import salty.ir
 import salty.ir.Serialization._
-import salty.ir.ShowDOT
+//import salty.ir.ShowDOT
 
 trait GenIRFiles extends SubComponent  {
   import global._
@@ -23,12 +23,14 @@ trait GenIRFiles extends SubComponent  {
     finally channel.close
   }
 
+  /*
   def genDOTFile(cunit: CompilationUnit, sym: Symbol, scope: ir.Scope): Unit = {
     val outfile = getFileFor(cunit, sym, ".dot").file
     val channel = (new FileOutputStream(outfile)).getChannel()
     try channel.write(ByteBuffer.wrap((ShowDOT.showScope(scope).toString.getBytes)))
     finally channel.close
   }
+  */
 
   private def getFileFor(cunit: CompilationUnit, sym: Symbol, suffix: String) = {
     val baseDir: AbstractFile =

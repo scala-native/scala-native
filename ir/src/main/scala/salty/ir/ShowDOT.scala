@@ -1,5 +1,6 @@
 package salty.ir
 
+/*
 import salty.util.Show, Show.{Sequence => s, Indent => i, Unindent => u,
                               Repeat => r, Newline => n}
 import salty.util.sh
@@ -86,3 +87,4 @@ object ShowDOT {
     */
   }
 }
+*/

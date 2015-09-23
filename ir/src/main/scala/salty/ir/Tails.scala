@@ -1,9 +1,10 @@
 package salty.ir
 
 import scala.collection.{mutable => mut}
-import salty.ir.Instr._
+import salty.ir.{Node => N}
+import salty.ir.{Desc => D}, D.{Cf, Ef, Val, Termn}
 
-final case class Tails(open: Seq[Focus], closed: Seq[Termn]) {
+final case class Tails(open: Seq[Focus], closed: Seq[Node]) {
   override def toString =
     s"Tails(${open.map(_.cf.getClass)}, ${closed.map(_.getClass)})"
 
@@ -22,13 +23,14 @@ final case class Tails(open: Seq[Focus], closed: Seq[Termn]) {
     (foc, Tails(Seq(), closed))
   }
 
-  def end(wrap: (Cf, Ef, Val) => Termn): End =
+  def end(wrap: (Node, Node, Node) => Node): Node =
     End(open.map { case Focus(cf, ef, v) => wrap(cf, ef, v) } ++ closed)
 
-  def +:(focus: Focus): Tails = focus.cf match {
-    case termn: Termn => Tails(open, termn +: closed)
-    case _            => Tails(focus +: open, closed)
-  }
+  def +:(focus: Focus): Tails =
+    if (focus.cf.desc.isInstanceOf[Termn])
+      Tails(open, focus.cf +: closed)
+    else
+      Tails(focus +: open, closed)
 
   def ++(tails: Tails): Tails =
     Tails(tails.open ++ open, tails.closed ++ closed)
@@ -38,7 +40,7 @@ object Tails {
 
   val empty = Tails(Seq(), Seq())
   def open(focus: Focus): Tails = Tails(Seq(focus), Seq())
-  def termn(termn: Termn): Tails = Tails(Seq(), Seq(termn))
+  def termn(termn: Node): Tails = Tails(Seq(), Seq(termn))
 
   def flatten(tails: Seq[Tails]) = {
     val open = tails.flatMap(_.open)
@@ -47,18 +49,18 @@ object Tails {
   }
 }
 
-final case class Focus(cf: Cf, ef: Ef, value: Val) {
-  def withCf(newcf: Cf)              = copy(cf = newcf)
-  def withEf(newef: Ef)              = copy(ef = newef)
-  def withValue(newvalue: Val)       = copy(value = newvalue)
-  def mapCf(f: Cf => Cf)             = copy(cf = f(cf))
-  def mapEf(f: Ef => Ef with Val)    = { val newef = f(ef); copy(ef = newef, value = newef) }
-  def mapValue(f: Val => Val)        = copy(value = f(value))
+final case class Focus(cf: Node, ef: Node, value: Node) {
+  def withCf(newcf: Node)       = copy(cf = newcf)
+  def withEf(newef: Node)       = copy(ef = newef)
+  def withValue(newvalue: Node) = copy(value = newvalue)
+  def mapCf(f: Node => Node)    = copy(cf = f(cf))
+  def mapEf(f: Node => Node)    = { val newef = f(ef); copy(ef = newef, value = newef) }
+  def mapValue(f: Node => Node) = copy(value = f(value))
 }
 object Focus {
   def start(): Focus = {
     val start = Start()
-    Focus(start, start, Unit)
+    Focus(start, start, ConstOf(Const.Unit))
   }
 
   def sequenced[T](elems: Seq[T], foc: Focus)
