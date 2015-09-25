@@ -60,7 +60,7 @@ final case class Focus(cf: Node, ef: Node, value: Node) {
 object Focus {
   def start(): Focus = {
     val start = Start()
-    Focus(start, start, ConstOf(Const.Unit))
+    Focus(start, start, Unit())
   }
 
   def sequenced[T](elems: Seq[T], foc: Focus)

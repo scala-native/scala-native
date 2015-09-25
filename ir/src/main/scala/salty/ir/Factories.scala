@@ -1,135 +1,303 @@
 package salty.ir
 
-object Start {
-  def apply(): Node = ???
-  def unapply(n: Node): Boolean = ???
+import salty.ir.{Desc => D, Tags => T}
+
+sealed abstract class NullaryFactory(desc: D) extends (() => Node) {
+  def apply(): Node=
+    Node(desc, Seq())
+  def unapply(n: Node): Boolean =
+    n.desc eq desc
 }
+
+sealed abstract class UnaryFactory(desc: D) extends (Node => Node) {
+  def apply(n: Node): Node =
+    Node(desc, Seq(Var(n)))
+  def unapply(n: Node): Option[Var] =
+    if (n.desc eq desc)
+      Some(n.slots(0).asVar)
+    else
+      None
+}
+
+sealed abstract class BinaryFactory(desc: D) extends ((Node, Node) => Node) {
+  def apply(left: Node, right: Node): Node =
+    Node(desc, Seq(Var(left), Var(right)))
+  def unapply(n: Node): Option[(Var, Var)] =
+    if (n.desc eq desc)
+      Some((n.slots(0).asVar, n.slots(1).asVar))
+    else
+      None
+}
+
+sealed abstract class TernaryFactory(desc: D) extends ((Node, Node, Node) => Node) {
+  def apply(left: Node, middle: Node, right: Node): Node =
+    Node(desc, Seq(Var(left), Var(middle), Var(right)))
+  def unapply(n: Node): Option[(Var, Var, Var)] =
+    if (n.desc eq desc)
+      Some((n.slots(0).asVar, n.slots(1).asVar, n.slots(2).asVar))
+    else
+      None
+}
+
+object Start         extends NullaryFactory(D.Start)
 object Label {
-  def apply(name: Name, cfs: Seq[Node]): Node = ???
+  def apply(name: Name, cfs: Seq[Node]): Node =
+    Node(D.Label(name), Seq(SeqVar(cfs)))
+  def unapply(n: Node): Option[(Name, SeqVar)] = n.desc match {
+    case D.Label(name) => Some((name, n.slots(0).asSeqVar))
+    case _             => None
+  }
 }
-object If {
-  def apply(cf: Node, value: Node): Node = ???
-}
-object Switch {
-  def apply(cf: Node, value: Node): Node = ???
-}
-object Try {
-  def apply(cf: Node): Node = ???
-}
-object CaseTrue {
-  def apply(cf: Node): Node = ???
-}
-object CaseFalse {
-  def apply(cf: Node): Node = ???
-}
-object CaseConst {
-  def apply(cf: Node, const: Node): Node = ???
-}
-object CaseDefault {
-  def apply(cf: Node): Node = ???
-}
-object CaseException {
-  def apply(cf: Node): Node = ???
-}
+object If            extends BinaryFactory(D.If)
+object Switch        extends BinaryFactory(D.Switch)
+object Try           extends UnaryFactory(D.Try)
+object CaseTrue      extends UnaryFactory(D.CaseTrue)
+object CaseFalse     extends UnaryFactory(D.CaseFalse)
+object CaseConst     extends BinaryFactory(D.CaseConst)
+object CaseDefault   extends UnaryFactory(D.CaseDefault)
+object CaseException extends UnaryFactory(D.CaseException)
 object Merge {
-  def apply(cfs: Seq[Node]): Node = ???
+  def apply(cfs: Seq[Node]): Node =
+    Node(D.Merge, Seq(SeqVar(cfs)))
+  def unapply(n: Node): Option[SeqVar] =
+    if (n.desc.tag == T.Merge)
+      Some(n.slots(0).asSeqVar)
+    else
+      None
 }
-object Return {
-  def apply(cf: Node, ef: Node, value: Node): Node = ???
-  def unapply(node: Node): Option[(Node, Node, Node)] = ???
-}
-object Throw {
-  def apply(cf: Node, ef: Node, value: Node): Node = ???
-  def unapply(node: Node): Option[(Node, Node, Node)] = ???
-}
-object Undefined {
-  def apply(cf: Node, ef: Node): Node = ???
-  def unapply(node: Node): Option[(Node, Node)] = ???
-}
+object Return        extends TernaryFactory(D.Return)
+object Throw         extends TernaryFactory(D.Throw)
+object Undefined     extends BinaryFactory(D.Undefined)
 object End {
-  def apply(cfs: Seq[Node]): Node = ???
+  def apply(cfs: Seq[Node]): Node =
+    Node(D.End, Seq(SeqVar(cfs)))
+  def unapply(n: Node): Option[SeqVar] =
+    if (n.desc.tag == T.End)
+      Some(n.slots(0).asSeqVar)
+    else
+      None
 }
 
 object EfPhi {
-  def apply(cf: Node, efs: Seq[Node]): Node = ???
+  def apply(cf: Node, efs: Seq[Node]): Node =
+    Node(D.EfPhi, Seq(Var(cf), SeqVar(efs)))
+  def unapply(n: Node): Option[(Var, SeqVar)] =
+    if (n.desc.tag == T.EfPhi)
+      Some((n.slots(0).asVar, n.slots(1).asSeqVar))
+    else
+      None
 }
-object Equals {
-  def apply(ef: Node, left: Node, right: Node): Node = ???
-}
+object Equals extends TernaryFactory(D.Equals)
 object Call {
-  def apply(ef: Node, funptr: Node, args: Seq[Node]): Node = ???
+  def apply(ef: Node, funptr: Node, args: Seq[Node]): Node =
+    Node(D.Call, Seq(Var(ef), Var(funptr), SeqVar(args)))
+  def unapply(n: Node): Option[(Var, Var, SeqVar)] =
+    if (n.desc.tag == T.Call)
+      Some((n.slots(0).asVar, n.slots(1).asVar, n.slots(2).asSeqVar))
+    else
+      None
+
 }
-object Load {
-  def apply(ef: Node, ptr: Node): Node = ???
+object Load  extends BinaryFactory(D.Load)
+object Store extends TernaryFactory(D.Store)
+
+
+object Add  extends BinaryFactory(D.Add )
+object Sub  extends BinaryFactory(D.Sub )
+object Mul  extends BinaryFactory(D.Mul )
+object Div  extends BinaryFactory(D.Div )
+object Mod  extends BinaryFactory(D.Mod )
+object Shl  extends BinaryFactory(D.Shl )
+object Lshr extends BinaryFactory(D.Lshr)
+object Ashr extends BinaryFactory(D.Ashr)
+object And  extends BinaryFactory(D.And )
+object Or   extends BinaryFactory(D.Or  )
+object Xor  extends BinaryFactory(D.Xor )
+object Eq   extends BinaryFactory(D.Eq  )
+object Neq  extends BinaryFactory(D.Neq )
+object Lt   extends BinaryFactory(D.Lt  )
+object Lte  extends BinaryFactory(D.Lte )
+object Gt   extends BinaryFactory(D.Gt  )
+object Gte  extends BinaryFactory(D.Gte )
+
+object Trunc    extends BinaryFactory(D.Trunc   )
+object Zext     extends BinaryFactory(D.Zext    )
+object Sext     extends BinaryFactory(D.Sext    )
+object Fptrunc  extends BinaryFactory(D.Fptrunc )
+object Fpext    extends BinaryFactory(D.Fpext   )
+object Fptoui   extends BinaryFactory(D.Fptoui  )
+object Fptosi   extends BinaryFactory(D.Fptosi  )
+object Uitofp   extends BinaryFactory(D.Uitofp  )
+object Sitofp   extends BinaryFactory(D.Sitofp  )
+object Ptrtoint extends BinaryFactory(D.Ptrtoint)
+object Inttoptr extends BinaryFactory(D.Inttoptr)
+object Bitcast  extends BinaryFactory(D.Bitcast )
+object Cast     extends BinaryFactory(D.Cast    )
+object Box      extends BinaryFactory(D.Box     )
+object Unbox    extends BinaryFactory(D.Unbox   )
+
+object Phi {
+  def apply(cf: Node, values: Seq[Node]): Node =
+    Node(D.Phi, Seq(Var(cf), SeqVar(values)))
+  def unapply(n: Node): Option[(Var, SeqVar)] =
+    if (n.desc.tag == T.Phi)
+      Some((n.slots(0).asVar, n.slots(1).asSeqVar))
+    else
+      None
 }
-object Store {
-  def apply(ef: Node, ptr: Node, value: Node): Node = ???
+object Is          extends BinaryFactory(D.If)
+object Alloc       extends UnaryFactory(D.Alloc)
+object Salloc      extends BinaryFactory(D.Salloc)
+object Length      extends UnaryFactory(D.Length)
+object Elem        extends BinaryFactory(D.Elem)
+object Param {
+  def apply(name: Name, ty: Node): Node =
+    Node(D.Param(name), Seq(Var(ty)))
+  def unapply(n: Node): Option[(Name, Var)] = n.desc match {
+    case D.Param(name) => Some((name, n.slots(0).asVar))
+    case _             => None
+  }
 }
+object ValueOf     extends UnaryFactory(D.ValueOf)
+object ExceptionOf extends UnaryFactory(D.ExceptionOf)
+object TagOf       extends UnaryFactory(D.TagOf)
 
-object Add  extends ((Node, Node) => Node) { def apply(left: Node, right: Node): Node = ??? }
-object Sub  extends ((Node, Node) => Node) { def apply(left: Node, right: Node): Node = ??? }
-object Mul  extends ((Node, Node) => Node) { def apply(left: Node, right: Node): Node = ??? }
-object Div  extends ((Node, Node) => Node) { def apply(left: Node, right: Node): Node = ??? }
-object Mod  extends ((Node, Node) => Node) { def apply(left: Node, right: Node): Node = ??? }
-object Shl  extends ((Node, Node) => Node) { def apply(left: Node, right: Node): Node = ??? }
-object Lshr extends ((Node, Node) => Node) { def apply(left: Node, right: Node): Node = ??? }
-object Ashr extends ((Node, Node) => Node) { def apply(left: Node, right: Node): Node = ??? }
-object And  extends ((Node, Node) => Node) { def apply(left: Node, right: Node): Node = ??? }
-object Or   extends ((Node, Node) => Node) { def apply(left: Node, right: Node): Node = ??? }
-object Xor  extends ((Node, Node) => Node) { def apply(left: Node, right: Node): Node = ??? }
-object Eq   extends ((Node, Node) => Node) { def apply(left: Node, right: Node): Node = ??? }
-object Neq  extends ((Node, Node) => Node) { def apply(left: Node, right: Node): Node = ??? }
-object Lt   extends ((Node, Node) => Node) { def apply(left: Node, right: Node): Node = ??? }
-object Lte  extends ((Node, Node) => Node) { def apply(left: Node, right: Node): Node = ??? }
-object Gt   extends ((Node, Node) => Node) { def apply(left: Node, right: Node): Node = ??? }
-object Gte  extends ((Node, Node) => Node) { def apply(left: Node, right: Node): Node = ??? }
+object Null  extends NullaryFactory(D.Null)
+object Unit  extends NullaryFactory(D.Unit)
+object True  extends NullaryFactory(D.True)
+object False extends NullaryFactory(D.False)
+object I8    {
+  def apply(v: Byte): Node =
+    Node(D.I8(v), Seq())
+  def unapply(n: Node): Option[Byte] = n.desc match {
+    case D.I8(v) => Some(v)
+    case _       => None
+  }
+}
+object I16   {
+  def apply(v: Short): Node =
+    Node(D.I16(v), Seq())
+  def unapply(n: Node): Option[Short] = n.desc match {
+    case D.I16(v) => Some(v)
+    case _        => None
+  }
+}
+object I32   {
+  def apply(v: Int): Node =
+    Node(D.I32(v), Seq())
+  def unapply(n: Node): Option[Int] = n.desc match {
+    case D.I32(v) => Some(v)
+    case _        => None
+  }
+}
+object I64   {
+  def apply(v: Long): Node =
+    Node(D.I64(v), Seq())
+  def unapply(n: Node): Option[Long] = n.desc match {
+    case D.I64(v) => Some(v)
+    case _        => None
+  }
+}
+object F32   {
+  def apply(v: Float): Node =
+    Node(D.F32(v), Seq())
+  def unapply(n: Node): Option[Float] = n.desc match {
+    case D.F32(v) => Some(v)
+    case _        => None
+  }
+}
+object F64   {
+  def apply(v: Double): Node =
+    Node(D.F64(v), Seq())
+  def unapply(n: Node): Option[Double] = n.desc match {
+    case D.F64(v) => Some(v)
+    case _        => None
+  }
+}
+object Str   {
+  def apply(v: String): Node =
+    Node(D.Str(v), Seq())
+  def unapply(n: Node): Option[String] = n.desc match {
+    case D.Str(v) => Some(v)
+    case _        => None
+  }
+}
+object Tag extends UnaryFactory(D.Tag)
 
-object Trunc    extends ((Node, Node) => Node) { def apply(value: Node, ty: Node): Node = ??? }
-object Zext     extends ((Node, Node) => Node) { def apply(value: Node, ty: Node): Node = ??? }
-object Sext     extends ((Node, Node) => Node) { def apply(value: Node, ty: Node): Node = ??? }
-object Fptrunc  extends ((Node, Node) => Node) { def apply(value: Node, ty: Node): Node = ??? }
-object Fpext    extends ((Node, Node) => Node) { def apply(value: Node, ty: Node): Node = ??? }
-object Fptoui   extends ((Node, Node) => Node) { def apply(value: Node, ty: Node): Node = ??? }
-object Fptosi   extends ((Node, Node) => Node) { def apply(value: Node, ty: Node): Node = ??? }
-object Uitofp   extends ((Node, Node) => Node) { def apply(value: Node, ty: Node): Node = ??? }
-object Sitofp   extends ((Node, Node) => Node) { def apply(value: Node, ty: Node): Node = ??? }
-object Ptrtoint extends ((Node, Node) => Node) { def apply(value: Node, ty: Node): Node = ??? }
-object Inttoptr extends ((Node, Node) => Node) { def apply(value: Node, ty: Node): Node = ??? }
-object Bitcast  extends ((Node, Node) => Node) { def apply(value: Node, ty: Node): Node = ??? }
-object Cast     extends ((Node, Node) => Node) { def apply(value: Node, ty: Node): Node = ??? }
-object Box      extends ((Node, Node) => Node) { def apply(value: Node, ty: Node): Node = ??? }
-object Unbox    extends ((Node, Node) => Node) { def apply(value: Node, ty: Node): Node = ??? }
-
-object Phi         { def apply(cf: Node, values: Seq[Node]): Node = ??? }
-object Is          { def apply(value: Node, ty: Node): Node = ??? }
-object Alloc       { def apply(ty: Node): Node = ??? }
-object Salloc      { def apply(ty: Node, n: Node): Node = ??? }
-object Length      { def apply(value: Node): Node = ??? }
-object Elem        { def apply(value: Node, index: Node): Node = ??? }
-object Param       { def apply(name: Name, ty: Node): Node = ??? }
-object ValueOf     { def apply(defn: Node): Node = ??? }
-object ExceptionOf { def apply(cf: Node): Node = ??? }
-object TagOf       { def apply(defn: Node): Node = ??? }
-object ConstOf     { def apply(const: Const): Node = ??? }
-object TagConst    { def apply(defn: Node): Node = ??? }
-
-object Null  { def apply(): Node = ??? }
-object Unit  { def apply(): Node = ??? }
-object True  { def apply(): Node = ??? }
-object False { def apply(): Node = ??? }
-object I8    { def apply(v: Byte): Node = ??? }
-object I16   { def apply(v: Short): Node = ??? }
-object I32   { def apply(v: Int): Node = ??? }
-object I64   { def apply(v: Long): Node = ??? }
-object F32   { def apply(v: Float): Node = ??? }
-object F64   { def apply(v: Double): Node = ??? }
-object Str   { def apply(v: String): Node = ??? }
-
-object Class     { def apply(name: Name, rels: Seq[Node]): Node = ??? }
-object Interface { def apply(name: Name, rels: Seq[Node]): Node = ??? }
-object Module    { def apply(name: Name, rels: Seq[Node]): Node = ??? }
-object Declare   { def apply(name: Name, ty: Node, params: Seq[Node], rels: Seq[Node]): Node = ??? }
-object Define    { def apply(name: Name, ty: Node, params: Seq[Node], end: Node, rels: Seq[Node]): Node = ??? }
-object Field     { def apply(name: Name, ty: Node, rels: Seq[Node]): Node = ??? }
-object Extern    { def apply(name: Name): Node = ??? }
-object Type      { def apply(shape: Shape, holes: Seq[Node]): Node = ??? }
+object Class {
+  def apply(name: Name, rels: Seq[Node]): Node =
+    Node(D.Class(name), Seq(SeqVar(rels)))
+  def unapply(n: Node): Option[(Name, SeqVar)] = n.desc match {
+    case D.Class(name) => Some((name, n.slots(0).asSeqVar))
+    case _             => None
+  }
+}
+object Interface {
+  def apply(name: Name, rels: Seq[Node]): Node =
+    Node(D.Interface(name), Seq(SeqVar(rels)))
+  def unapply(n: Node): Option[(Name, SeqVar)] = n.desc match {
+    case D.Interface(name) => Some((name, n.slots(0).asSeqVar))
+    case _                 => None
+  }
+}
+object Module {
+  def apply(name: Name, rels: Seq[Node]): Node =
+    Node(D.Module(name), Seq(SeqVar(rels)))
+  def unapply(n: Node): Option[(Name, SeqVar)] = n.desc match {
+    case D.Module(name) => Some((name, n.slots(0).asSeqVar))
+    case _              => None
+  }
+}
+object Declare {
+  def apply(name: Name, ty: Node, params: Seq[Node], rels: Seq[Node]): Node =
+    Node(D.Declare(name),
+         Seq(Var(ty), SeqVar(params), SeqVar(rels)))
+  def unapply(n: Node): Option[(Name, Var, SeqVar, SeqVar)] = n.desc match {
+    case D.Declare(name) =>
+      val ty     = n.slots(0).asVar
+      val params = n.slots(1).asSeqVar
+      val rels   = n.slots(2).asSeqVar
+      Some((name, ty, params, rels))
+    case _ =>
+      None
+  }
+}
+object Define {
+  def apply(name: Name, ty: Node, params: Seq[Node], end: Node, rels: Seq[Node]): Node =
+    Node(D.Define(name),
+         Seq(Var(ty), SeqVar(params), Var(end), SeqVar(rels)))
+  def unapply(n: Node): Option[(Name, Var, SeqVar, Var, SeqVar)] = n.desc match {
+    case D.Define(name) =>
+      val ty     = n.slots(0).asVar
+      val params = n.slots(1).asSeqVar
+      val end    = n.slots(2).asVar
+      val rels   = n.slots(3).asSeqVar
+      Some((name, ty, params, end, rels))
+    case _ =>
+      None
+  }
+}
+object Field {
+  def apply(name: Name, ty: Node, rels: Seq[Node]): Node =
+    Node(D.Field(name), Seq(Var(ty), SeqVar(rels)))
+  def unapply(n: Node): Option[(Name, Var, SeqVar)] = n.desc match {
+    case D.Field(name) => Some((name, n.slots(0).asVar, n.slots(1).asSeqVar))
+    case _             => None
+  }
+}
+object Extern {
+  def apply(name: Name): Node =
+    Node(D.Extern(name), Seq())
+  def unapply(n: Node): Option[Name] = n.desc match {
+    case D.Extern(name) => Some(name)
+    case _              => None
+  }
+}
+object Type {
+  def apply(shape: Shape, holes: Seq[Node]): Node =
+    Node(D.Type(shape), Seq(SeqVar(holes)))
+  def unapply(n: Node): Option[(Shape, SeqVar)] = n.desc match {
+    case D.Type(shape) => Some((shape, n.slots.head.asSeqVar))
+    case _             => None
+  }
+}

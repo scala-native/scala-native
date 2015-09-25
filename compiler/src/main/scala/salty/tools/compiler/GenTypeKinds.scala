@@ -85,6 +85,6 @@ trait GenTypeKinds extends SubComponent with GenNameEncoding {
     case ClassKind(sym) =>
       ir.Type(ir.Shape.Ref(ir.Shape.Hole), Seq(genClassDefn(sym)))
     case ArrayKind(of) =>
-      ir.Type(ir.Shape.Ref(ir.Shape.Hole), Seq(toIRType(of)))
+      ir.Type(ir.Shape.Slice(ir.Shape.Hole), Seq(toIRType(of)))
   }
 }

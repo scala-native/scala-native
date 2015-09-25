@@ -7,14 +7,21 @@ import java.nio.channels._
 import java.util.Base64
 import scala.tools.nsc._
 import scala.tools.nsc.io.AbstractFile
-import salty.ir
-import salty.ir.Serialization._
+import salty.ir, ir.Serializer
 //import salty.ir.ShowDOT
 
 trait GenIRFiles extends SubComponent  {
   import global._
 
-  def serialize(scope: ir.Scope): ByteBuffer = ???
+  lazy val bb = ByteBuffer.allocateDirect(16 * 1024 * 1024) // 16M should be enough for everyone.
+
+  def serialize(scope: ir.Scope): ByteBuffer = {
+    bb.clear
+    val serializer = new Serializer(bb)
+    serializer.serialize(scope)
+    bb.flip
+    bb
+  }
 
   def genIRFile(cunit: CompilationUnit, sym: Symbol, scope: ir.Scope): Unit = {
     val outfile = getFileFor(cunit, sym, ".salty").file

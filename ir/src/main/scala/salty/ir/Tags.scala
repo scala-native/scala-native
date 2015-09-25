@@ -1,32 +1,10 @@
 package salty.ir
 
 object Tags {
-  final val Type = 1
-  final val Cf   = 1 + Type
-  final val Ef   = 1 + Cf
-  final val Val  = 1 + Ef
-  final val Ref  = 1 + Val
+  final var Var    = 1
+  final var SeqVar = 1 + Var
 
-  final val Child      = 1 + Ref
-  final val Implements = 1 + Child
-  final val Overrides  = 1 + Implements
-  final val Belongs    = 1 + Overrides
-
-  final val TyNull    = 1 + Belongs
-  final val TyNothing = 1 + TyNull
-  final val TyUnit    = 1 + TyNothing
-  final val TyBool    = 1 + TyUnit
-  final val TyI8      = 1 + TyBool
-  final val TyI16     = 1 + TyI8
-  final val TyI32     = 1 + TyI16
-  final val TyI64     = 1 + TyI32
-  final val TyF32     = 1 + TyI64
-  final val TyF64     = 1 + TyF32
-  final val TyRef     = 1 + TyF64
-  final val TySlice   = 1 + TyRef
-  final val TyOf      = 1 + TySlice
-
-  final val Start         = 1 + TyOf
+  final val Start         = 1 + SeqVar
   final val Label         = 1 + Start
   final val If            = 1 + Label
   final val Switch        = 1 + If
@@ -88,27 +66,35 @@ object Tags {
   final val ValueOf       = 1 + Param
   final val ExceptionOf   = 1 + ValueOf
   final val TagOf         = 1 + ExceptionOf
-  final val Const         = 1 + TagOf
-  final val TagConst      = 1 + Const
 
-  final val Unit          = 1 + TagConst
-  final val Null          = 1 + Unit
-  final val True          = 1 + Null
-  final val False         = 1 + True
-  final val I8            = 1 + False
-  final val I16           = 1 + I8
-  final val I32           = 1 + I16
-  final val I64           = 1 + I32
-  final val F32           = 1 + I64
-  final val F64           = 1 + F32
-  final val Str           = 1 + F64
+  final val Unit  = 1 + TagOf
+  final val Null  = 1 + Unit
+  final val True  = 1 + Null
+  final val False = 1 + True
+  final val I8    = 1 + False
+  final val I16   = 1 + I8
+  final val I32   = 1 + I16
+  final val I64   = 1 + I32
+  final val F32   = 1 + I64
+  final val F64   = 1 + F32
+  final val Str   = 1 + F64
+  final val Tag   = 1 + Str
 
-  final val Class     = 1 + Str
+  final val Class     = 1 + Tag
   final val Interface = 1 + Class
   final val Module    = 1 + Interface
   final val Declare   = 1 + Module
   final val Define    = 1 + Declare
   final val Field     = 1 + Define
   final val Extern    = 1 + Field
-  final val Primitive = 1 + Extern
+  final val Type      = 1 + Extern
+  final val Primitive = 1 + Type
+
+  final val NoName     = 1 + Primitive
+  final val SimpleName = 1 + NoName
+  final val NestedName = 1 + SimpleName
+
+  final val HoleShape  = 1 + NestedName
+  final val RefShape   = 1 + HoleShape
+  final val SliceShape = 1 + RefShape
 }

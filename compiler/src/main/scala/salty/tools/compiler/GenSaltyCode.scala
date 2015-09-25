@@ -5,7 +5,7 @@ import scala.collection.{mutable => mut}
 import scala.tools.nsc._
 import scala.tools.nsc.plugins._
 import scala.util.{Either, Left, Right}
-import salty.ir, ir.{Name, Prim}
+import salty.ir, ir.{Name, Prim, Desc}
 import salty.ir.{Focus, Tails}, Focus.sequenced
 import salty.util, util.sh, util.ScopedVar.scoped
 
@@ -67,14 +67,16 @@ abstract class GenSaltyCode extends PluginComponent
       label
     }
     def enterLabelCall(sym: Symbol, values: Seq[ir.Node], focus: Focus): Unit = {
-      val label = labels(sym)
-      val phis = phiss(sym)
-      val efphi = efphis(sym)
-      ??? /* label.cfs = label.cfs :+ focus.cf
-      efphi.efs = efphi.efs :+ focus.ef
-      phis.zip(values).foreach { case (phi, value) =>
-        phi.values = phi.values :+ value
-      }*/
+      val ir.Label(_, cfs) = labels(sym)
+      cfs := cfs :+ focus.cf
+
+      val ir.EfPhi(_, efs) = efphis(sym)
+      efs := efs :+ focus.ef
+
+      phiss(sym).zip(values).foreach {
+        case (ir.Phi(_, values), v) =>
+          values := values :+ v
+      }
     }
     def resolveLabel(sym: Symbol): ir.Node = labels(sym)
     def resolveLabelParams(sym: Symbol): Seq[ir.Node] = phiss(sym)
@@ -132,7 +134,7 @@ abstract class GenSaltyCode extends PluginComponent
           ()
         else {
           val scope = genClass(cd)
-          // genDOTFile(cunit, sym, scope)
+          genIRFile(cunit, sym, scope)
         }
       }
     }
@@ -399,7 +401,7 @@ abstract class GenSaltyCode extends PluginComponent
         case StringTag =>
           ir.Str(value.stringValue)
         case ClazzTag =>
-          ir.Box(ir.TagConst(genType(value.typeValue)), ref(javaLangClass))
+          ir.Box(ir.Tag(genType(value.typeValue)), ref(javaLangClass))
         case EnumTag =>
           genStaticMember(value.symbolValue)
       }
@@ -432,7 +434,7 @@ abstract class GenSaltyCode extends PluginComponent
                 (Some(pat.symbol), genType(pat.symbol.tpe))
             }
             symopt foreach (curEnv.enter(_, ir.Cast(exc, excty)))
-            genExpr(body, focus withCf ir.CaseConst(switch, ir.TagConst(excty)))
+            genExpr(body, focus withCf ir.CaseConst(switch, ir.Tag(excty)))
         }
       val default =
         Tails.termn(ir.Throw(ir.CaseDefault(switch), focus.ef, exc))
@@ -443,8 +445,10 @@ abstract class GenSaltyCode extends PluginComponent
     def genFinally(tails: Tails, finalizer: Tree) = {
       val Tails(open, closed) = tails
 
-      def genClosed(focus: Focus, wrap: (ir.Node, ir.Node) => ir.Node): Seq[ir.Node] =
-        genExpr(finalizer, focus).end((cf, ef, v) => wrap(cf, ef)).deps
+      def genClosed(focus: Focus, wrap: (ir.Node, ir.Node) => ir.Node): Seq[ir.Node] = {
+        val ir.End(ends) = genExpr(finalizer, focus).end((cf, ef, v) => wrap(cf, ef))
+        ends
+      }
 
       val closedtails = Tails(Seq(), closed.flatMap {
         case ir.Return(cf, ef, v) => genClosed(Focus(cf, ef, ir.Unit()), ir.Return(_, _, v))
@@ -773,10 +777,9 @@ abstract class GenSaltyCode extends PluginComponent
           val resfocus =
             if (ref)
               rfocus withValue eq(lfocus.value, rfocus.value)
-            // TODO: this eq won't work
-            else if (lfocus.value eq ir.Null())
+            else if (lfocus.value.desc eq Desc.Null)
               rfocus withValue eq(rfocus.value, ir.Null())
-            else if (rfocus.value eq ir.Null())
+            else if (rfocus.value.desc eq Desc.Null)
               rfocus withValue eq(lfocus.value, ir.Null())
             else {
               val equals = ir.Equals(rfocus.ef, lfocus.value, rfocus.value)
@@ -786,8 +789,8 @@ abstract class GenSaltyCode extends PluginComponent
           resfocus +: (lt ++ rt)
 
         case kind =>
-          val lty = genType(left.tpe)
-          val rty = genType(right.tpe)
+          val lty   = genType(left.tpe)
+          val rty   = genType(right.tpe)
           val retty = binaryOperationType(lty, rty)
           genBinaryOp(eq, left, right, retty, focus)
       }
@@ -802,7 +805,7 @@ abstract class GenSaltyCode extends PluginComponent
         lty
       case (Prim.F(lwidth), Prim.F(rwidth)) =>
         if (lwidth >= rwidth) lty else rty
-      case (ty1 , ty2) if ty1 == ty2 =>
+      case (ty1 , ty2) if ty1 type_== ty2 =>
         ty1
       case (Prim.Null, _) =>
         rty
@@ -862,7 +865,7 @@ abstract class GenSaltyCode extends PluginComponent
     }
 
     def genCoercion(value: ir.Node, fromty: ir.Node, toty: ir.Node): ir.Node =
-      if (fromty == toty)
+      if (fromty type_== toty)
         value
       else {
         val op = (fromty, toty) match {
