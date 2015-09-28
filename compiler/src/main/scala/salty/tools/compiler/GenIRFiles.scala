@@ -7,37 +7,31 @@ import java.nio.channels._
 import java.util.Base64
 import scala.tools.nsc._
 import scala.tools.nsc.io.AbstractFile
-import salty.ir, ir.Serializer
+import salty.ir, ir.{GraphSerializer, BinarySerializer}
 //import salty.ir.ShowDOT
 
 trait GenIRFiles extends SubComponent  {
   import global._
 
-  lazy val bb = ByteBuffer.allocateDirect(16 * 1024 * 1024) // 16M should be enough for everyone.
+  // 16M should be enough for everyone, right?
+  private lazy val bb = ByteBuffer.allocateDirect(16 * 1024 * 1024)
 
-  def serialize(scope: ir.Scope): ByteBuffer = {
+  private def serialize(scope: ir.Scope)
+                       (serializer: (ir.Scope, ByteBuffer) => Unit): ByteBuffer = {
     bb.clear
-    val serializer = new Serializer(bb)
-    serializer.serialize(scope)
+    serializer(scope, bb)
     bb.flip
     bb
   }
 
-  def genIRFile(cunit: CompilationUnit, sym: Symbol, scope: ir.Scope): Unit = {
-    val outfile = getFileFor(cunit, sym, ".salty").file
+  private def genSerializedFile(cunit: CompilationUnit, sym: Symbol, scope: ir.Scope,
+                                serializer: (ir.Scope, ByteBuffer) => Unit,
+                                extension: String): Unit = {
+    val outfile = getFileFor(cunit, sym, extension).file
     val channel = (new FileOutputStream(outfile)).getChannel()
-    try channel.write(serialize(scope))
+    try channel.write(serialize(scope)(serializer))
     finally channel.close
   }
-
-  /*
-  def genDOTFile(cunit: CompilationUnit, sym: Symbol, scope: ir.Scope): Unit = {
-    val outfile = getFileFor(cunit, sym, ".dot").file
-    val channel = (new FileOutputStream(outfile)).getChannel()
-    try channel.write(ByteBuffer.wrap((ShowDOT.showScope(scope).toString.getBytes)))
-    finally channel.close
-  }
-  */
 
   private def getFileFor(cunit: CompilationUnit, sym: Symbol, suffix: String) = {
     val baseDir: AbstractFile =
@@ -52,4 +46,10 @@ trait GenIRFiles extends SubComponent  {
 
     dir fileNamed (filename + suffix)
   }
+
+  def genSaltyFile(cunit: CompilationUnit, sym: Symbol, scope: ir.Scope) =
+    genSerializedFile(cunit, sym, scope, BinarySerializer, ".salty")
+
+  def genGraphFile(cunit: CompilationUnit, sym: Symbol, scope: ir.Scope) =
+    genSerializedFile(cunit, sym, scope, GraphSerializer, ".dot")
 }

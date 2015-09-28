@@ -4,13 +4,13 @@ import scala.collection.mutable
 import java.nio.ByteBuffer
 import salty.ir.{Desc => D, Tags => T}
 
-class Serializer(bb: ByteBuffer) {
+class BinarySerializer(bb: ByteBuffer) extends  {
   import bb._
 
   private val offsets  = mutable.Map[Node, Int]()
   private val worklist = mutable.Stack[(Int, Node)]()
 
-  def serialize(scope: Scope) = {
+  private def serialize(scope: Scope) = {
     putInt(scope.entries.size)
     scope.entries.foreach {
       case (n, node) =>
@@ -103,4 +103,8 @@ class Serializer(bb: ByteBuffer) {
     val bytes = v.getBytes
     putInt(bytes.length); put(bytes)
   }
+}
+object BinarySerializer extends ((Scope, ByteBuffer) => Unit) {
+  def apply(scope: Scope, bb: ByteBuffer): Unit =
+    (new BinarySerializer(bb)).serialize(scope)
 }
