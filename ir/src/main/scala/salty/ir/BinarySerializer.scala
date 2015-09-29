@@ -68,15 +68,15 @@ class BinarySerializer(bb: ByteBuffer) extends  {
     seq.foreach(putT)
   }
 
-  private def putSlots(slots: Seq[Slot]) = putSeq(slots)(putSlot)
+  private def putSlots(slots: Array[Any]) = putSeq(slots)(putSlot)
 
-  private def putSlot(slot: Slot) = slot match {
-    case Var(n) =>
+  private def putSlot(slot: Any) = slot match {
+    case n: Node =>
       putInt(T.Var)
       putVar(n)
-    case SeqVar(ns) =>
+    case ns: Seq[_] =>
       putInt(T.SeqVar)
-      putSeq(ns)(putVar)
+      putSeq(ns.asInstanceOf[Seq[Node]])(putVar)
   }
 
   private def putVar(n: Node) =

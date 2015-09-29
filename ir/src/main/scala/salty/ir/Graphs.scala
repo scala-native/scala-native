@@ -3,14 +3,14 @@ package ir
 
 import salty.ir.{Tags => T, Schema => Sc}
 
-sealed class Node(var desc: Desc, var slots: Seq[Slot]) {
+sealed class Node private[ir] (var desc: Desc, var slots: Array[Any]) {
   private[ir] var epoch: Int = 0
 
   final override def toString = {
     val name = desc.toString
     val slots = this.slots.map {
-      case Var(n)     => n.toString
-      case SeqVar(ns) => ns.mkString(", ")
+      case n: Node     => n.toString
+      case seq: Seq[_] => seq.mkString(", ")
     }.mkString("; ")
     s"$name { $slots }"
   }
@@ -28,10 +28,13 @@ sealed class Node(var desc: Desc, var slots: Seq[Slot]) {
   // TODO: iterator
   final def edges: Seq[(Sc, Node)] =
     desc.schema.zip(slots).flatMap {
-      case (Sc.Many(sc), SeqVar(nodes)) => nodes.map { n => (sc, n) }
-      case (sc         , Var(node))     => Seq((sc, node))
-      case _                            => throw new Exception("schema violation")
+      case (Sc.Many(sc), nodes) => nodes.asInstanceOf[Seq[Node]].map { n => (sc, n) }
+      case (sc         , node)  => Seq((sc, node.asInstanceOf[Node]))
+      case _                    => throw new Exception("schema violation")
     }
+
+  private[ir] def at(index: Int): Slot[Node]          = new Slot[Node](this, index)
+  private[ir] def manyAt(index: Int): Slot[Seq[Node]] = new Slot[Seq[Node]](this, index)
 }
 object Node {
   private var lastEpoch = 0
@@ -40,28 +43,19 @@ object Node {
     lastEpoch
   }
 
-  def apply(desc: Desc, slots: Seq[Slot]) =
+  private[ir] def apply(desc: Desc, slots: Array[Any]) =
     new Node(desc, slots)
 }
 
-sealed abstract class Slot {
-  def asVar = this.asInstanceOf[Var]
-  def asSeqVar = this.asInstanceOf[SeqVar]
+final class Slot[T](node: Node, index: Int) {
+  def :=(value: T) = node.slots(index) = value
+  def get: T = node.slots(index).asInstanceOf[T]
 }
-final case class Var(var node: Node) extends Slot {
-  def :=(value: Node) = node = value
-}
-object Var {
-  implicit def toValue(v: Var): Node = v.node
-}
-final case class SeqVar(var nodes: Seq[Node]) extends Slot {
-  def :=(values: Seq[Node]) = nodes = values
-}
-object SeqVar {
-  implicit def toValue(v: SeqVar): Seq[Node] = v.nodes
+object Slot {
+  implicit def slot2value[T](slot: Slot[T]): T = slot.get
 }
 
-sealed abstract class Prim(name: Name) extends Node(Desc.Primitive(name), Seq())
+sealed abstract class Prim(name: Name) extends Node(Desc.Primitive(name), Array())
 object Prim {
   final case object Null    extends Prim(Name.Simple("null"))
   final case object Nothing extends Prim(Name.Simple("nothing"))
