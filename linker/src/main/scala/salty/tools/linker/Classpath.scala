@@ -5,9 +5,10 @@ import org.apache.commons.io.FileUtils
 import org.apache.commons.io.filefilter.{DirectoryFileFilter, RegexFileFilter}
 import salty.ir
 
+// TODO: rewrite using nio-only
 // TODO: replace with something less naive in the future
 class Classpath(val paths: Seq[String]) extends salty.ir.Classpath {
-  def resolve: Seq[(ir.Name, String)] =
+  lazy val resolve: Seq[(ir.Name, String)] =
     paths.flatMap { path =>
       val base = new File(path)
       val baseabs = base.getAbsolutePath()
@@ -20,7 +21,7 @@ class Classpath(val paths: Seq[String]) extends salty.ir.Classpath {
         val fileabs = file.getAbsolutePath()
         val rel = fileabs.replace(baseabs + "/", "").replace(".salty", "")
         val parts = rel.split("/").toSeq
-        val name = ir.Name.Global(parts.mkString("."))
+        val name = ir.Name.Simple(parts.mkString("."))
         (name -> fileabs)
       }.toSeq
     }

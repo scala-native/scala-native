@@ -53,12 +53,19 @@ class GraphSerializer extends Pass {
   def key(node: Node) =
     s("\"", System.identityHashCode(node).toString, "\"")
 
-  def onNode(node: Node) ={
+  var defined = Set.empty[Node]
+  def define(next: Node) =
+    if (!defined.contains(next)) {
+      shows = s(key(next), style(next)) :: shows
+      defined = defined + next
+    }
+
+  def onNode(node: Node): Unit = {
     val k = key(node)
-    shows = s(k, style(node)) :: shows
+    define(node)
     node.edges.foreach { case (sc, next) =>
-      shows = s(key(next), style(next), ";") ::
-              s(key(next), " -> ", k, style(sc), ";") :: shows
+      define(next)
+      shows = s(key(next), " -> ", k, style(sc), ";") :: shows
     }
   }
 }

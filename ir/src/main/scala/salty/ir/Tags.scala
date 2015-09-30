@@ -1,10 +1,12 @@
 package salty.ir
 
-object Tags {
-  final var Var    = 1
-  final var SeqVar = 1 + Var
+import salty.ir.{Tags => T}
 
-  final val Start         = 1 + SeqVar
+object Tags {
+  final val NodeSlot    = 1
+  final val SeqNodeSlot = 1 + NodeSlot
+
+  final val Start         = 1 + SeqNodeSlot
   final val Label         = 1 + Start
   final val If            = 1 + Label
   final val Switch        = 1 + If
@@ -97,4 +99,79 @@ object Tags {
   final val HoleShape  = 1 + NestedName
   final val RefShape   = 1 + HoleShape
   final val SliceShape = 1 + RefShape
+
+  val plain2tag: Map[Desc.Plain, Int] = Map(
+    Desc.Start         -> T.Start        ,
+    Desc.If            -> T.If           ,
+    Desc.Switch        -> T.Switch       ,
+    Desc.Try           -> T.Try          ,
+    Desc.CaseTrue      -> T.CaseTrue     ,
+    Desc.CaseFalse     -> T.CaseFalse    ,
+    Desc.CaseConst     -> T.CaseConst    ,
+    Desc.CaseDefault   -> T.CaseDefault  ,
+    Desc.CaseException -> T.CaseException,
+    Desc.Merge         -> T.Merge        ,
+    Desc.Return        -> T.Return       ,
+    Desc.Throw         -> T.Throw        ,
+    Desc.Undefined     -> T.Undefined    ,
+    Desc.End           -> T.End          ,
+
+    Desc.EfPhi  -> T.EfPhi ,
+    Desc.Equals -> T.Equals,
+    Desc.Call   -> T.Call  ,
+    Desc.Load   -> T.Load  ,
+    Desc.Store  -> T.Store ,
+
+    Desc.Add  -> T.Add ,
+    Desc.Sub  -> T.Sub ,
+    Desc.Mul  -> T.Mul ,
+    Desc.Div  -> T.Div ,
+    Desc.Mod  -> T.Mod ,
+    Desc.Shl  -> T.Shl ,
+    Desc.Lshr -> T.Lshr,
+    Desc.Ashr -> T.Ashr,
+    Desc.And  -> T.And ,
+    Desc.Or   -> T.Or  ,
+    Desc.Xor  -> T.Xor ,
+    Desc.Eq   -> T.Eq  ,
+    Desc.Neq  -> T.Neq ,
+    Desc.Lt   -> T.Lt  ,
+    Desc.Lte  -> T.Lte ,
+    Desc.Gt   -> T.Gt  ,
+    Desc.Gte  -> T.Gte ,
+
+    Desc.Trunc    -> T.Trunc   ,
+    Desc.Zext     -> T.Zext    ,
+    Desc.Sext     -> T.Sext    ,
+    Desc.Fptrunc  -> T.Fptrunc ,
+    Desc.Fpext    -> T.Fpext   ,
+    Desc.Fptoui   -> T.Fptoui  ,
+    Desc.Fptosi   -> T.Fptosi  ,
+    Desc.Uitofp   -> T.Uitofp  ,
+    Desc.Sitofp   -> T.Sitofp  ,
+    Desc.Ptrtoint -> T.Ptrtoint,
+    Desc.Inttoptr -> T.Inttoptr,
+    Desc.Bitcast  -> T.Bitcast ,
+    Desc.Cast     -> T.Cast    ,
+    Desc.Box      -> T.Box     ,
+    Desc.Unbox    -> T.Unbox   ,
+
+    Desc.Phi         -> T.Phi        ,
+    Desc.Is          -> T.Is         ,
+    Desc.Alloc       -> T.Alloc      ,
+    Desc.Salloc      -> T.Salloc     ,
+    Desc.Length      -> T.Length     ,
+    Desc.Elem        -> T.Elem       ,
+    Desc.ValueOf     -> T.ValueOf    ,
+    Desc.ExceptionOf -> T.ExceptionOf,
+    Desc.TagOf       -> T.TagOf      ,
+
+    Desc.Unit  -> T.Unit ,
+    Desc.Null  -> T.Null ,
+    Desc.True  -> T.True ,
+    Desc.False -> T.False,
+    Desc.Tag   -> T.Tag
+  )
+
+  val tag2plain: Map[Int, Desc.Plain] = plain2tag.map { case (k, v) => (v, k) }
 }

@@ -61,7 +61,7 @@ object Merge {
   def apply(cfs: Seq[Node]): Node =
     Node(D.Merge, Array(cfs))
   def unapply(n: Node): Option[Slot[Seq[Node]]] =
-    if (n.desc.tag == T.Merge)
+    if (n.desc eq D.Merge)
       Some(n.manyAt(0))
     else
       None
@@ -73,7 +73,7 @@ object End {
   def apply(cfs: Seq[Node]): Node =
     Node(D.End, Array(cfs))
   def unapply(n: Node): Option[Slot[Seq[Node]]] =
-    if (n.desc.tag == T.End)
+    if (n.desc eq D.End)
       Some(n.manyAt(0))
     else
       None
@@ -83,7 +83,7 @@ object EfPhi {
   def apply(cf: Node, efs: Seq[Node]): Node =
     Node(D.EfPhi, Array(cf, efs))
   def unapply(n: Node): Option[(Slot[Node], Slot[Seq[Node]])] =
-    if (n.desc.tag == T.EfPhi)
+    if (n.desc eq D.EfPhi)
       Some((n.at(0), n.manyAt(1)))
     else
       None
@@ -93,7 +93,7 @@ object Call {
   def apply(ef: Node, funptr: Node, args: Seq[Node]): Node =
     Node(D.Call, Array(ef, funptr, args))
   def unapply(n: Node): Option[(Slot[Node], Slot[Node], Slot[Seq[Node]])] =
-    if (n.desc.tag == T.Call)
+    if (n.desc eq D.Call)
       Some((n.at(0), n.at(1), n.manyAt(2)))
     else
       None
@@ -141,7 +141,7 @@ object Phi {
   def apply(cf: Node, values: Seq[Node]): Node =
     Node(D.Phi, Array(cf, values))
   def unapply(n: Node): Option[(Slot[Node], Slot[Seq[Node]])] =
-    if (n.desc.tag == T.Phi)
+    if (n.desc eq D.Phi)
       Some((n.at(0), n.manyAt(1)))
     else
       None

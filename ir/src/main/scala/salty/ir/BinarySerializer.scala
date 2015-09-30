@@ -34,33 +34,32 @@ class BinarySerializer(bb: ByteBuffer) extends  {
   private def putNode(n: Node): Int = {
     val pos = position
     offsets += (n -> pos)
-    putDesc(n.desc); putSlots(n.slots)
+    putDesc(n.desc)
+    if (n.desc.schema.nonEmpty)
+      putSlots(n.slots)
     pos
   }
 
-  private def putDesc(desc: Desc) = {
-    putInt(desc.tag)
-    desc match {
-      case _: D.Plain        => ()
-      case D.Label(name)     => putName(name)
-      case D.Param(name)     => putName(name)
-      case D.I8(v)           => put(v)
-      case D.I16(v)          => putShort(v)
-      case D.I32(v)          => putInt(v)
-      case D.I64(v)          => putLong(v)
-      case D.F32(v)          => putFloat(v)
-      case D.F64(v)          => putDouble(v)
-      case D.Str(v)          => putString(v)
-      case D.Class(name)     => putName(name)
-      case D.Interface(name) => putName(name)
-      case D.Module(name)    => putName(name)
-      case D.Declare(name)   => putName(name)
-      case D.Define(name)    => putName(name)
-      case D.Field(name)     => putName(name)
-      case D.Extern(name)    => putName(name)
-      case D.Type(shape)     => putShape(shape)
-      case D.Primitive(name) => putName(name)
-    }
+  private def putDesc(desc: Desc) = desc match {
+    case plain: D.Plain    => putInt(T.plain2tag(plain))
+    case D.Label(name)     => putInt(T.Label); putName(name)
+    case D.Param(name)     => putInt(T.Param); putName(name)
+    case D.I8(v)           => putInt(T.I8); put(v)
+    case D.I16(v)          => putInt(T.I16); putShort(v)
+    case D.I32(v)          => putInt(T.I32); putInt(v)
+    case D.I64(v)          => putInt(T.I64); putLong(v)
+    case D.F32(v)          => putInt(T.F32); putFloat(v)
+    case D.F64(v)          => putInt(T.F64); putDouble(v)
+    case D.Str(v)          => putInt(T.Str); putString(v)
+    case D.Class(name)     => putInt(T.Class); putName(name)
+    case D.Interface(name) => putInt(T.Interface); putName(name)
+    case D.Module(name)    => putInt(T.Module); putName(name)
+    case D.Declare(name)   => putInt(T.Declare); putName(name)
+    case D.Define(name)    => putInt(T.Define); putName(name)
+    case D.Field(name)     => putInt(T.Field); putName(name)
+    case D.Extern(name)    => putInt(T.Extern); putName(name)
+    case D.Type(shape)     => putInt(T.Type); putShape(shape)
+    case D.Primitive(name) => putInt(T.Primitive); putName(name)
   }
 
   private def putSeq[T](seq: Seq[T])(putT: T => Unit) = {
@@ -72,14 +71,14 @@ class BinarySerializer(bb: ByteBuffer) extends  {
 
   private def putSlot(slot: Any) = slot match {
     case n: Node =>
-      putInt(T.Var)
-      putVar(n)
+      putInt(T.NodeSlot)
+      putNodeRef(n)
     case ns: Seq[_] =>
-      putInt(T.SeqVar)
-      putSeq(ns.asInstanceOf[Seq[Node]])(putVar)
+      putInt(T.SeqNodeSlot)
+      putSeq(ns.asInstanceOf[Seq[Node]])(putNodeRef)
   }
 
-  private def putVar(n: Node) =
+  private def putNodeRef(n: Node) =
     if (offsets.contains(n))
       putInt(offsets(n))
     else {

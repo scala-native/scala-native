@@ -4,7 +4,6 @@ package compiler
 import java.io._
 import java.nio._
 import java.nio.channels._
-import java.util.Base64
 import scala.tools.nsc._
 import scala.tools.nsc.io.AbstractFile
 import salty.ir, ir.{GraphSerializer, BinarySerializer}
