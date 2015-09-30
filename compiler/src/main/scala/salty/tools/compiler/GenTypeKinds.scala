@@ -4,8 +4,10 @@ package compiler
 import scala.tools.nsc._
 import salty.ir
 
-trait GenTypeKinds extends SubComponent with GenNameEncoding {
+trait GenTypeKinds extends SubComponent {
   import global._, definitions._
+
+  def genClassDefn(sym: Symbol): ir.Node
 
   sealed abstract class Kind
   final case class PrimitiveKind(sym: Symbol) extends Kind

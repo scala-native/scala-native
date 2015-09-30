@@ -189,15 +189,19 @@ object Desc {
 
 sealed abstract class Name {
   final override def toString = this match {
-    case Name.No           => ""
-    case Name.Simple(id)   => id
-    case Name.Nested(l, r) => s"$l::$r"
+    case Name.No                        => ""
+    case Name.Simple(id)                => id
+    case Name.Nested(l, r)              => s"$l::$r"
+    case Name.Overload(base, args, ret) => s"$base<${args.mkString(", ")}; $ret>"
+    case Name.Slice(n)                  => s"$n[]"
   }
 }
 object Name {
   final case object No extends Name
   final case class Simple(id: String) extends Name
   final case class Nested(parent: Name, child: Name) extends Name
+  final case class Overload(base: Name, args: Seq[Name], ret: Name) extends Name
+  final case class Slice(name: Name) extends Name
 }
 
 sealed abstract class Shape {

@@ -16,9 +16,7 @@ class BinaryDeserializer(path: String) {
   import bb._
 
   private val nametable =
-    (1 to getInt).map { _ =>
-      (getName, getInt)
-    }.toMap
+    getSeq((getName, getInt)).toMap
 
   private val nodes = mutable.Map.empty[Int, Node]
 
@@ -91,26 +89,25 @@ class BinaryDeserializer(path: String) {
     case tag         => T.tag2plain(tag)
   }
 
-  private def getSlots(): Array[Any] = {
-    val len = getInt
-    (1 to len).map(_ => getSlot).toArray
-  }
+  private def getSlots(): Array[Any] = getSeq(getSlot).toArray
 
   private def getSlot(): Any = {
     getInt match {
-      case T.NodeSlot    =>
-        getNodeRef
-      case T.SeqNodeSlot =>
-        val len = getInt
-        (1 to len).map(_ => getNodeRef).toSeq
+      case T.NodeSlot    => getNodeRef
+      case T.SeqNodeSlot => getSeq(getNodeRef)
     }
   }
 
   private def getName(): Name = getInt match {
-    case T.NoName     => Name.No
-    case T.SimpleName => Name.Simple(getString)
-    case T.NestedName => Name.Nested(getName, getName)
+    case T.NoName       => Name.No
+    case T.SimpleName   => Name.Simple(getString)
+    case T.NestedName   => Name.Nested(getName, getName)
+    case T.OverloadName => Name.Overload(getName, getSeq(getName), getName)
+    case T.SliceName    => Name.Slice(getName)
   }
+
+  private def getSeq[T](getT: => T): Seq[T] =
+    (1 to getInt).map(_ => getT).toSeq
 
   private def getShape(): Shape = getInt match {
     case T.HoleShape  => Shape.Hole

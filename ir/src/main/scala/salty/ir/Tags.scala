@@ -92,11 +92,13 @@ object Tags {
   final val Type      = 1 + Extern
   final val Primitive = 1 + Type
 
-  final val NoName     = 1 + Primitive
-  final val SimpleName = 1 + NoName
-  final val NestedName = 1 + SimpleName
+  final val NoName       = 1 + Primitive
+  final val SimpleName   = 1 + NoName
+  final val NestedName   = 1 + SimpleName
+  final val OverloadName = 1 + NestedName
+  final val SliceName    = 1 + OverloadName
 
-  final val HoleShape  = 1 + NestedName
+  final val HoleShape  = 1 + SliceName
   final val RefShape   = 1 + HoleShape
   final val SliceShape = 1 + RefShape
 

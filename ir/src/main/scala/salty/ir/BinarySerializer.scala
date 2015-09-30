@@ -90,6 +90,9 @@ class BinarySerializer(bb: ByteBuffer) extends  {
     case Name.No             => putInt(T.NoName)
     case Name.Simple(v)      => putInt(T.SimpleName); putString(v)
     case Name.Nested(n1, n2) => putInt(T.NestedName); putName(n1); putName(n2)
+    case Name.Overload(n, params, ret) =>
+      putInt(T.OverloadName); putName(n); putSeq(params)(putName); putName(ret)
+    case Name.Slice(n)       => putInt(T.SliceName); putName(n)
   }
 
   private def putShape(shape: Shape): Unit = shape match {
