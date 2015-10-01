@@ -42,8 +42,8 @@ class BinarySerializer(bb: ByteBuffer) extends  {
 
   private def putDesc(desc: Desc) = desc match {
     case plain: D.Plain    => putInt(T.plain2tag(plain))
-    case D.Label(name)     => putInt(T.Label); putName(name)
-    case D.Param(name)     => putInt(T.Param); putName(name)
+    case D.Label(id)       => putInt(T.Label); putString(id)
+    case D.Param(id)       => putInt(T.Param); putString(id)
     case D.I8(v)           => putInt(T.I8); put(v)
     case D.I16(v)          => putInt(T.I16); putShort(v)
     case D.I32(v)          => putInt(T.I32); putInt(v)
@@ -87,12 +87,22 @@ class BinarySerializer(bb: ByteBuffer) extends  {
     }
 
   private def putName(name: Name): Unit = name match {
-    case Name.No             => putInt(T.NoName)
-    case Name.Simple(v)      => putInt(T.SimpleName); putString(v)
-    case Name.Nested(n1, n2) => putInt(T.NestedName); putName(n1); putName(n2)
-    case Name.Overload(n, params, ret) =>
-      putInt(T.OverloadName); putName(n); putSeq(params)(putName); putName(ret)
-    case Name.Slice(n)       => putInt(T.SliceName); putName(n)
+    case Name.No =>
+      putInt(T.NoName)
+    case Name.Class(v) =>
+      putInt(T.ClassName); putString(v)
+    case Name.Module(v) =>
+      putInt(T.ModuleName); putString(v)
+    case Name.Interface(v) =>
+      putInt(T.InterfaceName); putString(v)
+    case Name.Primitive(v) =>
+      putInt(T.PrimitiveName); putString(v)
+    case Name.Slice(n) =>
+      putInt(T.SliceName); putName(n)
+    case Name.Field(owner, id) =>
+      putInt(T.FieldName); putName(owner); putString(id)
+    case Name.Method(owner, id, params, ret) =>
+      putInt(T.MethodName); putName(owner); putString(id); putSeq(params)(putName); putName(ret)
   }
 
   private def putShape(shape: Shape): Unit = shape match {

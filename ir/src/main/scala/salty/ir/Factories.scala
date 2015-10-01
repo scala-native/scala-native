@@ -41,12 +41,12 @@ sealed abstract class TernaryFactory(desc: D) extends ((Node, Node, Node) => Nod
 
 object Start         extends NullaryFactory(D.Start)
 object Label {
-  def apply(name: Name, cfs: Seq[Node]): Node =
-    Node(D.Label(name), Array(cfs))
-  def unapply(n: Node): Option[(Name, Slot[Seq[Node]])] =
+  def apply(id: String, cfs: Seq[Node]): Node =
+    Node(D.Label(id), Array(cfs))
+  def unapply(n: Node): Option[(String, Slot[Seq[Node]])] =
     n.desc match {
-      case D.Label(name) => Some((name, n.manyAt(0)))
-      case _             => None
+      case D.Label(id) => Some((id, n.manyAt(0)))
+      case _           => None
     }
 }
 object If            extends BinaryFactory(D.If)
@@ -152,16 +152,14 @@ object Salloc      extends BinaryFactory(D.Salloc)
 object Length      extends UnaryFactory(D.Length)
 object Elem        extends BinaryFactory(D.Elem)
 object Param {
-  def apply(name: Name, ty: Node): Node =
-    Node(D.Param(name), Array(ty))
-  def unapply(n: Node): Option[(Name, Slot[Node])] =
+  def apply(id: String, ty: Node): Node =
+    Node(D.Param(id), Array(ty))
+  def unapply(n: Node): Option[(String, Slot[Node])] =
     n.desc match {
-      case D.Param(name) => Some((name, n.at(0)))
-      case _             => None
+      case D.Param(id) => Some((id, n.at(0)))
+      case _           => None
     }
 }
-object ValueOf     extends UnaryFactory(D.ValueOf)
-object ExceptionOf extends UnaryFactory(D.ExceptionOf)
 object TagOf       extends UnaryFactory(D.TagOf)
 
 object Null  extends NullaryFactory(D.Null)
@@ -231,7 +229,6 @@ object Str   {
       case _        => None
     }
 }
-object Tag extends UnaryFactory(D.Tag)
 
 object Class {
   def apply(name: Name, rels: Seq[Node]): Node =

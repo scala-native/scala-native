@@ -26,7 +26,7 @@ class BinaryDeserializer(path: String) {
       nodes(pos)
     } else {
       getDesc match {
-        case Desc.Primitive(Name.Simple(id)) =>
+        case Desc.Primitive(Name.Primitive(id)) =>
           id match {
             case "null"    => Prim.Null
             case "nothing" => Prim.Nothing
@@ -68,8 +68,8 @@ class BinaryDeserializer(path: String) {
   }
 
   private def getDesc(): Desc = getInt match {
-    case T.Label     => Desc.Label(getName)
-    case T.Param     => Desc.Param(getName)
+    case T.Label     => Desc.Label(getString)
+    case T.Param     => Desc.Param(getString)
     case T.I8        => Desc.I8(get)
     case T.I16       => Desc.I16(getShort)
     case T.I32       => Desc.I32(getInt)
@@ -99,11 +99,14 @@ class BinaryDeserializer(path: String) {
   }
 
   private def getName(): Name = getInt match {
-    case T.NoName       => Name.No
-    case T.SimpleName   => Name.Simple(getString)
-    case T.NestedName   => Name.Nested(getName, getName)
-    case T.OverloadName => Name.Overload(getName, getSeq(getName), getName)
-    case T.SliceName    => Name.Slice(getName)
+    case T.NoName        => Name.No
+    case T.ClassName     => Name.Class(getString)
+    case T.ModuleName    => Name.Module(getString)
+    case T.InterfaceName => Name.Interface(getString)
+    case T.PrimitiveName => Name.Primitive(getString)
+    case T.SliceName     => Name.Slice(getName)
+    case T.FieldName     => Name.Field(getName, getString)
+    case T.MethodName    => Name.Method(getName, getString, getSeq(getName), getName)
   }
 
   private def getSeq[T](getT: => T): Seq[T] =

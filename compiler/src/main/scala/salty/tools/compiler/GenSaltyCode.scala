@@ -51,7 +51,7 @@ abstract class GenSaltyCode extends PluginComponent
         efphis -= ld.symbol
       }
       val sym = ld.symbol
-      val label = ir.Label(genLabelName(ld.symbol), Seq())
+      val label = ir.Label(genLabelId(ld.symbol), Seq())
       val phis = Seq.fill(ld.params.length)(ir.Phi(label, Seq()))
       val efphi = ir.EfPhi(label, Seq())
       val treesyms = ld.params.map(_.symbol)
@@ -134,6 +134,7 @@ abstract class GenSaltyCode extends PluginComponent
           ()
         else {
           val scope = genClass(cd)
+          //println(cd)
           genSaltyFile(cunit, sym, scope)
           genGraphFile(cunit, sym, scope)
         }
@@ -145,17 +146,17 @@ abstract class GenSaltyCode extends PluginComponent
     ) {
       val sym     = cd.symbol
       val name    = genClassName(sym)
-      val parent  = genClassDefn(sym.superClass)
+      val parent  = if (sym.superClass != NoSymbol) Some(genClassDefn(sym.superClass)) else None
       val ifaces  = genClassInterfaces(sym)
       val fields  = genClassFields(sym).toSeq
       val methods = genClassMethods(cd.impl.body)
       val owner   =
-        if (sym.isModuleClass)
-          name -> ir.Module(name, parent +: ifaces)
+        if (sym.isModuleClass || sym.isImplClass)
+          name -> ir.Module(name, parent ++: ifaces)
         else if (sym.isInterface)
           name -> ir.Interface(name, ifaces)
         else
-          name -> ir.Class(name, parent +: ifaces)
+          name -> ir.Class(name, parent ++: ifaces)
 
       ir.Scope(Map(((owner +: fields) ++ methods): _*))
     }
@@ -196,7 +197,7 @@ abstract class GenSaltyCode extends PluginComponent
       val ty =
         if (dd.symbol.isClassConstructor) Prim.Unit
         else genType(sym.tpe.resultType)
-      val rel = Seq(genClassDefn(sym))
+      val rel = Seq(genClassDefn(curClassSym))
 
       if (dd.symbol.isDeferred) {
         val params = genParams(paramSyms, define = false)
@@ -221,9 +222,9 @@ abstract class GenSaltyCode extends PluginComponent
     }
 
     def genParams(paramSyms: List[Symbol], define: Boolean): Seq[ir.Node] = {
-      val self = ir.Param(Name.Simple("this"), genClassDefn(curClassSym))
+      val self = ir.Param("this", genClassDefn(curClassSym))
       val params = paramSyms.map { sym =>
-        val node = ir.Param(genParamName(sym), genType(sym.tpe))
+        val node = ir.Param(genParamId(sym), genType(sym.tpe))
         if (define)
           curEnv.enter(sym, node)
         node
@@ -309,18 +310,21 @@ abstract class GenSaltyCode extends PluginComponent
       case This(qual) =>
         Tails.open(focus withValue {
           if (tree.symbol == curClassSym.get) curThis
-          else ir.ValueOf(genClassDefn(tree.symbol))
+          else genClassDefn(tree.symbol)
         })
 
       case Select(qual, sel) =>
         val sym = tree.symbol
         if (sym.isModule)
-          Tails.open(focus withValue ir.ValueOf(genClassDefn(sym)))
+          Tails.open(focus withValue genClassDefn(sym))
         else if (sym.isStaticMember)
           Tails.open(focus withValue genStaticMember(sym))
-        else {
+        else if (sym.isMethod) {
           val (qfocus, qt) = genExpr(qual, focus).merge
-          val elem = ir.Elem(qfocus.value, ir.ValueOf(genFieldDefn(tree.symbol)))
+          genMethodCall(sym, qfocus.value, Seq(), qfocus) ++ qt
+        } else {
+          val (qfocus, qt) = genExpr(qual, focus).merge
+          val elem = ir.Elem(qfocus.value, genFieldDefn(tree.symbol))
           (qfocus mapEf (ir.Load(_, elem))) +: qt
         }
 
@@ -329,7 +333,7 @@ abstract class GenSaltyCode extends PluginComponent
         Tails.open {
           if (!curLocalInfo.mutableVars.contains(sym))
             focus withValue {
-              if (sym.isModule) ir.ValueOf(genClassDefn(sym))
+              if (sym.isModule) genClassDefn(sym)
               else curEnv.resolve(sym)
             }
           else
@@ -353,7 +357,7 @@ abstract class GenSaltyCode extends PluginComponent
           case sel @ Select(qual, _) =>
             val (qfocus, qt) = genExpr(qual, focus).merge
             val (rfocus, rt) = genExpr(rhs, qfocus).merge
-            val elem = ir.Elem(qfocus.value, ir.ValueOf(genFieldDefn(sel.symbol)))
+            val elem = ir.Elem(qfocus.value, genFieldDefn(sel.symbol))
             (rfocus mapEf (ir.Store(_, elem, rfocus.value))) +: (qt ++ rt)
 
           case id: Ident =>
@@ -402,14 +406,14 @@ abstract class GenSaltyCode extends PluginComponent
         case StringTag =>
           ir.Str(value.stringValue)
         case ClazzTag =>
-          ir.Box(ir.Tag(genType(value.typeValue)), ref(javaLangClass))
+          ir.Box(genType(value.typeValue), ref(javaLangClass))
         case EnumTag =>
           genStaticMember(value.symbolValue)
       }
     }
 
     def genStaticMember(sym: Symbol) =
-      ir.ValueOf(genFieldDefn(sym))
+      genFieldDefn(sym)
 
     def genTry(expr: Tree, catches: List[Tree], finalizer: Tree, focus: Focus) = {
       val cf          = ir.Try(focus.cf)
@@ -420,8 +424,8 @@ abstract class GenSaltyCode extends PluginComponent
     }
 
     def genCatch(catches: List[Tree], focus: Focus) = {
-      val exc    = ir.ExceptionOf(focus.cf)
-      val switch = ir.Switch(focus.cf, ir.TagOf(exc))
+      val exc    = focus.cf
+      val switch = ir.Switch(exc, ir.TagOf(exc))
 
       val cases =
         catches.map {
@@ -435,7 +439,7 @@ abstract class GenSaltyCode extends PluginComponent
                 (Some(pat.symbol), genType(pat.symbol.tpe))
             }
             symopt foreach (curEnv.enter(_, ir.Cast(exc, excty)))
-            genExpr(body, focus withCf ir.CaseConst(switch, ir.Tag(excty)))
+            genExpr(body, focus withCf ir.CaseConst(switch, excty))
         }
       val default =
         Tails.termn(ir.Throw(ir.CaseDefault(switch), focus.ef, exc))
@@ -629,19 +633,17 @@ abstract class GenSaltyCode extends PluginComponent
     }
 
     lazy val primitive2box = Map(
-      BooleanTpe -> ir.Extern(Name.Simple("java.lang.Boolean")),
-      ByteTpe    -> ir.Extern(Name.Simple("java.lang.Byte")),
-      CharTpe    -> ir.Extern(Name.Simple("java.lang.Character")),
-      ShortTpe   -> ir.Extern(Name.Simple("java.lang.Short")),
-      IntTpe     -> ir.Extern(Name.Simple("java.lang.Integer")),
-      LongTpe    -> ir.Extern(Name.Simple("java.lang.Long")),
-      FloatTpe   -> ir.Extern(Name.Simple("java.lang.Float")),
-      DoubleTpe  -> ir.Extern(Name.Simple("java.lang.Double"))
+      BooleanTpe -> ir.Extern(Name.Class("java.lang.Boolean")),
+      ByteTpe    -> ir.Extern(Name.Class("java.lang.Byte")),
+      CharTpe    -> ir.Extern(Name.Class("java.lang.Character")),
+      ShortTpe   -> ir.Extern(Name.Class("java.lang.Short")),
+      IntTpe     -> ir.Extern(Name.Class("java.lang.Integer")),
+      LongTpe    -> ir.Extern(Name.Class("java.lang.Long")),
+      FloatTpe   -> ir.Extern(Name.Class("java.lang.Float")),
+      DoubleTpe  -> ir.Extern(Name.Class("java.lang.Double"))
     )
 
-    lazy val javaLangClass = ir.Extern(Name.Simple("java.lang.Class"))
-
-    lazy val ctorName = Name.Simple(nme.CONSTRUCTOR.toString)
+    lazy val javaLangClass = ir.Extern(Name.Class("java.lang.Class"))
 
     def ref(node: ir.Node) =
       ir.Type(ir.Shape.Ref(ir.Shape.Hole), Seq(node))
@@ -989,11 +991,10 @@ abstract class GenSaltyCode extends PluginComponent
       val argvalues        = argfocus.map(_.value)
       val lastfocus        = argfocus.lastOption.getOrElse(focus)
       val stat             = genDefDefn(sym)
-      val call             = ir.Call(lastfocus.ef, ir.ValueOf(stat), self +: argvalues)
+      val call             = ir.Call(lastfocus.ef, ir.Elem(self, stat), self +: argvalues)
 
       (lastfocus withEf call withValue call) +: argt
     }
-
   }
 }
 

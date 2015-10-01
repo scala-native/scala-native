@@ -28,7 +28,7 @@ class GraphSerializer extends Pass {
       case Desc.Declare(name)   => s"Declare $name"
       case Desc.Define(name)    => s"Define $name"
       case Desc.Field(name)     => s"Field $name"
-      case Desc.Extern(name)    => s"Extern $name"
+      case Desc.Extern(name)    => s"Extern ${name.fullString}"
       case Desc.Type(shape)     => s"Type $shape"
       case Desc.Primitive(name) => s"Prim $name"
 
@@ -46,6 +46,8 @@ class GraphSerializer extends Pass {
     node.desc match {
       case _: Desc.Cf =>
         s("[shape=box, style=filled, color=lightgrey, label=\"", label(node.desc), "\"]")
+      case _: Desc.Extern =>
+        s("[shape=box, color=red, label=\"", label(node.desc), "\"]")
       case _ =>
         s("[shape=box, label=\"", label(node.desc), "\"]")
     }

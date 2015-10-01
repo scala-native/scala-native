@@ -92,13 +92,16 @@ object Tags {
   final val Type      = 1 + Extern
   final val Primitive = 1 + Type
 
-  final val NoName       = 1 + Primitive
-  final val SimpleName   = 1 + NoName
-  final val NestedName   = 1 + SimpleName
-  final val OverloadName = 1 + NestedName
-  final val SliceName    = 1 + OverloadName
+  final val NoName        = 1 + Primitive
+  final val ClassName     = 1 + NoName
+  final val ModuleName    = 1 + ClassName
+  final val InterfaceName = 1 + ModuleName
+  final val PrimitiveName = 1 + InterfaceName
+  final val SliceName     = 1 + PrimitiveName
+  final val FieldName     = 1 + SliceName
+  final val MethodName    = 1 + FieldName
 
-  final val HoleShape  = 1 + SliceName
+  final val HoleShape  = 1 + MethodName
   final val RefShape   = 1 + HoleShape
   final val SliceShape = 1 + RefShape
 
@@ -164,15 +167,12 @@ object Tags {
     Desc.Salloc      -> T.Salloc     ,
     Desc.Length      -> T.Length     ,
     Desc.Elem        -> T.Elem       ,
-    Desc.ValueOf     -> T.ValueOf    ,
-    Desc.ExceptionOf -> T.ExceptionOf,
     Desc.TagOf       -> T.TagOf      ,
 
     Desc.Unit  -> T.Unit ,
     Desc.Null  -> T.Null ,
     Desc.True  -> T.True ,
-    Desc.False -> T.False,
-    Desc.Tag   -> T.Tag
+    Desc.False -> T.False
   )
 
   val tag2plain: Map[Int, Desc.Plain] = plain2tag.map { case (k, v) => (v, k) }

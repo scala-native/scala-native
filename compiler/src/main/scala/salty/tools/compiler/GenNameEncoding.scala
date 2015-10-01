@@ -7,31 +7,44 @@ import salty.ir, ir.{Name => N, Extern, Desc}
 trait GenNameEncoding extends SubComponent with GenTypeKinds {
   import global._, definitions._
 
+  def genParamId(sym: Symbol) = sym.name.toString
+  def genLabelId(sym: Symbol) = sym.name.toString
+
   def genFieldDefn(sym: Symbol) = Extern(genFieldName(sym))
-  def genFieldName(sym: Symbol) = N.Nested(genClassName(sym.owner),
-                                           N.Simple(sym.name.toString))
+  def genFieldName(sym: Symbol) = N.Field(genClassName(sym.owner), sym.name.toString)
 
   def genClassDefn(sym: Symbol) = Extern(genClassName(sym))
-  def genClassName(sym: Symbol) = N.Simple(sym.fullName.toString)
-
-  def genParamName(sym: Symbol) = N.Simple(sym.name.toString)
-  def genLabelName(sym: Symbol) = N.Simple(sym.name.toString)
+  def genClassName(sym: Symbol): N = {
+    val id = sym.fullName.toString
+    val name =
+      if (sym.isModule)
+        genClassName(sym.moduleClass)
+      else if (sym.isModuleClass || sym.isImplClass)
+        N.Module(id)
+      else if (sym.isInterface)
+        N.Interface(id)
+      else
+        N.Class(id)
+    //println(s"name for $sym is ${name.fullString}")
+    name
+  }
 
   def genDefDefn(sym: Symbol) = Extern(genDefName(sym))
   def genDefName(sym: Symbol) = {
-    val base   = N.Nested(genClassName(sym.owner), N.Simple(sym.name.toString))
-    val tpe    = sym.tpe
+    val owner  = genClassName(sym.owner)
+    val id     = sym.name.toString
+    val tpe    = sym.tpe.widen
     val params = tpe.params.map(kindName).toSeq
     val ret    = kindName(tpe.resultType)
 
-    N.Overload(base, params, ret)
+    N.Method(owner, id, params, ret)
   }
 
   private def kindName(sym: Symbol): ir.Name =
     kindName(genKind(sym.tpe))
 
   private def kindName(tpe: Type): ir.Name =
-    kindName(genKind(tpe))
+    kindName(genKind(tpe.widen))
 
   private def kindName(kind: Kind): ir.Name = {
     val node = toIRType(kind)

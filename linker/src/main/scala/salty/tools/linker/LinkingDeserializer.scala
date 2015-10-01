@@ -21,13 +21,18 @@ final class ClasspathDeserializer(classpath: Classpath) { self =>
 
   val deserializers = mutable.Map.empty[Name, LinkingDeserializer]
 
-  def deserializer(name: Name): Option[BinaryDeserializer] = {
-    def root(name: Name): Name = name match {
-      case Name.No              => throw new Exception("can't resolve unnamed node")
-      case name: Name.Simple    => name
-      case Name.Nested(left, _) => root(left)
-    }
-    val rt = root(name)
+  def root(name: Name): Name = name match {
+    case Name.No           |
+         _: Name.Slice     |
+         _: Name.Primitive => throw new Exception("unreachable")
+    case _: Name.Class     |
+         _: Name.Interface |
+         _: Name.Module    => name
+    case Name.Field(owner, _) => root(owner)
+    case Name.Method(owner, _, _, _) => root(owner)
+  }
+
+  def deserializer(rt: Name): Option[BinaryDeserializer] = {
     deserializers.get(rt).map(Some(_)).getOrElse {
       paths.get(rt).map { path =>
         val de = new LinkingDeserializer(path)
@@ -37,8 +42,38 @@ final class ClasspathDeserializer(classpath: Classpath) { self =>
     }
   }
 
-  def resolve(name: Name): Option[Node] =
-    deserializer(name).flatMap(_.resolve(name))
+  def defnName(node: Node) =
+    node match {
+      case Class(name, _)     => name
+      case Module(name, _)    => name
+      case Interface(name, _) => name
+    }
+
+  def relatives(node: Node): Option[Seq[Name]] =
+    node match {
+      case Class(_, rels)     => Some(rels.map(defnName))
+      case Module(_, rels)    => Some(rels.map(defnName))
+      case Interface(_, rels) => Some(rels.map(defnName))
+      case _                  => None
+    }
+
+  def chown(name: Name, owner: Name): Name =
+    name match {
+      case Name.Field(_, id)             => Name.Field(owner, id)
+      case Name.Method(_, id, args, ret) => Name.Method(owner, id, args, ret)
+    }
+
+  def resolve(name: Name): Option[Node] = {
+    val rt = root(name)
+    deserializer(rt).flatMap { des =>
+      des.resolve(name).map(Some(_)).getOrElse {
+        val rels = relatives(des.resolve(rt).get).get
+        rels.reverse.map { pname =>
+          resolve(chown(name, pname))
+        }.headOption.flatten
+      }
+    }
+  }
 }
 object ClasspathDeserializer {
   def load(classpath: Classpath, entryPoints: Seq[Name]): Scope = {

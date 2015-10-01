@@ -46,8 +46,13 @@ trait GenIRFiles extends SubComponent  {
     dir fileNamed (filename + suffix)
   }
 
-  def genSaltyFile(cunit: CompilationUnit, sym: Symbol, scope: ir.Scope) =
-    genSerializedFile(cunit, sym, scope, BinarySerializer, ".salty")
+  def genSaltyFile(cunit: CompilationUnit, sym: Symbol, scope: ir.Scope) = {
+    val kind =
+      if (sym.isModuleClass) "module"
+      else if (sym.isInterface) "interface"
+      else "class"
+    genSerializedFile(cunit, sym, scope, BinarySerializer, s".$kind.salty")
+  }
 
   def genGraphFile(cunit: CompilationUnit, sym: Symbol, scope: ir.Scope) =
     genSerializedFile(cunit, sym, scope, GraphSerializer, ".dot")

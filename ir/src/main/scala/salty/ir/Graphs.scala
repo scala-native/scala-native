@@ -57,18 +57,18 @@ object Slot {
 
 sealed abstract class Prim(name: Name) extends Node(Desc.Primitive(name), Array())
 object Prim {
-  final case object Null    extends Prim(Name.Simple("null"))
-  final case object Nothing extends Prim(Name.Simple("nothing"))
-  final case object Unit    extends Prim(Name.Simple("unit"))
-  final case object Bool    extends Prim(Name.Simple("bool"))
+  final case object Null    extends Prim(Name.Primitive("null"))
+  final case object Nothing extends Prim(Name.Primitive("nothing"))
+  final case object Unit    extends Prim(Name.Primitive("unit"))
+  final case object Bool    extends Prim(Name.Primitive("bool"))
 
-  sealed abstract case class I(width: Int) extends Prim(Name.Simple(s"i$width"))
+  sealed abstract case class I(width: Int) extends Prim(Name.Primitive(s"i$width"))
   final object I8  extends I(8)
   final object I16 extends I(16)
   final object I32 extends I(32)
   final object I64 extends I(64)
 
-  sealed abstract case class F(width: Int) extends Prim(Name.Simple(s"f$width"))
+  sealed abstract case class F(width: Int) extends Prim(Name.Primitive(s"f$width"))
   final object F32 extends F(32)
   final object F64 extends F(64)
 }
@@ -97,7 +97,7 @@ object Desc {
   sealed trait Defn
 
   final case object Start             extends Desc(                    ) with Plain with Cf with Ef
-  final case class  Label(name: Name) extends Desc(Sc.Many(Sc.Cf)      )            with Cf
+  final case class  Label(id: String) extends Desc(Sc.Many(Sc.Cf)      )            with Cf
   final case object If                extends Desc(Sc.Cf, Sc.Val       ) with Plain with Cf
   final case object Switch            extends Desc(Sc.Cf, Sc.Val       ) with Plain with Cf
   final case object Try               extends Desc(Sc.Cf               ) with Plain with Cf
@@ -105,7 +105,7 @@ object Desc {
   final case object CaseFalse         extends Desc(Sc.Cf               ) with Plain with Cf
   final case object CaseConst         extends Desc(Sc.Cf, Sc.Val       ) with Plain with Cf
   final case object CaseDefault       extends Desc(Sc.Cf               ) with Plain with Cf
-  final case object CaseException     extends Desc(Sc.Cf               ) with Plain with Cf
+  final case object CaseException     extends Desc(Sc.Cf               ) with Plain with Cf with Val
   final case object Merge             extends Desc(Sc.Many(Sc.Cf)      ) with Plain with Cf
   final case object Return            extends Desc(Sc.Cf, Sc.Ef, Sc.Val) with Plain with Termn
   final case object Throw             extends Desc(Sc.Cf, Sc.Ef, Sc.Val) with Plain with Termn
@@ -152,16 +152,14 @@ object Desc {
   final case object Box      extends Desc(Sc.Val, Sc.Ref) with Plain with Val
   final case object Unbox    extends Desc(Sc.Val, Sc.Ref) with Plain with Val
 
-  final case object Phi                 extends Desc(Sc.Cf, Sc.Many(Sc.Val)) with Plain with Val
-  final case object Is                  extends Desc(Sc.Val, Sc.Ref        ) with Plain with Val
-  final case object Alloc               extends Desc(Sc.Ref                ) with Plain with Val
-  final case object Salloc              extends Desc(Sc.Ref, Sc.Val        ) with Plain with Val
-  final case object Length              extends Desc(Sc.Val                ) with Plain with Val
-  final case object Elem                extends Desc(Sc.Val, Sc.Val        ) with Plain with Val
-  final case class  Param(name: Name)   extends Desc(Sc.Ref                )            with Val
-  final case object ValueOf             extends Desc(Sc.Val                ) with Plain with Val
-  final case object ExceptionOf         extends Desc(Sc.Cf                 ) with Plain with Val
-  final case object TagOf               extends Desc(Sc.Val                ) with Plain with Val
+  final case object Phi               extends Desc(Sc.Cf, Sc.Many(Sc.Val)) with Plain with Val
+  final case object Is                extends Desc(Sc.Val, Sc.Ref        ) with Plain with Val
+  final case object Alloc             extends Desc(Sc.Ref                ) with Plain with Val
+  final case object Salloc            extends Desc(Sc.Ref, Sc.Val        ) with Plain with Val
+  final case object Length            extends Desc(Sc.Val                ) with Plain with Val
+  final case object Elem              extends Desc(Sc.Val, Sc.Val        ) with Plain with Val
+  final case class  Param(id: String) extends Desc(Sc.Ref                )            with Val
+  final case object TagOf             extends Desc(Sc.Val                ) with Plain with Val
 
   final case object Unit                extends Desc() with Plain with Const
   final case object Null                extends Desc() with Plain with Const
@@ -174,34 +172,48 @@ object Desc {
   final case class  F32(value: Float)   extends Desc()            with Const
   final case class  F64(value: Double)  extends Desc()            with Const
   final case class  Str(value: String)  extends Desc()            with Const
-  final case object Tag                 extends Desc() with Plain with Const
 
-  final case class Class(name: Name)     extends Desc(Sc.Many(Sc.Ref)                                 ) with Defn
-  final case class Interface(name: Name) extends Desc(Sc.Many(Sc.Ref)                                 ) with Defn
-  final case class Module(name: Name)    extends Desc(Sc.Many(Sc.Ref)                                 ) with Defn
-  final case class Declare(name: Name)   extends Desc(Sc.Ref, Sc.Many(Sc.Val), Sc.Many(Sc.Ref)        ) with Defn
-  final case class Define(name: Name)    extends Desc(Sc.Ref, Sc.Many(Sc.Val), Sc.Val, Sc.Many(Sc.Ref)) with Defn
-  final case class Field(name: Name)     extends Desc(Sc.Ref, Sc.Many(Sc.Ref)                         ) with Defn
-  final case class Extern(name: Name)    extends Desc(                                                ) with Defn
-  final case class Type(shape: Shape)    extends Desc(Sc.Many(Sc.Ref)                                 ) with Defn
-  final case class Primitive(name: Name) extends Desc(                                                ) with Defn
+  final case class Class(name: Name)     extends Desc(Sc.Many(Sc.Ref)                                ) with Defn with Val
+  final case class Interface(name: Name) extends Desc(Sc.Many(Sc.Ref)                                ) with Defn with Val
+  final case class Module(name: Name)    extends Desc(Sc.Many(Sc.Ref)                                ) with Defn with Val
+  final case class Declare(name: Name)   extends Desc(Sc.Ref, Sc.Many(Sc.Val), Sc.Many(Sc.Ref)       ) with Defn with Val
+  final case class Define(name: Name)    extends Desc(Sc.Ref, Sc.Many(Sc.Val), Sc.Cf, Sc.Many(Sc.Ref)) with Defn with Val
+  final case class Field(name: Name)     extends Desc(Sc.Ref, Sc.Many(Sc.Ref)                        ) with Defn with Val
+  final case class Extern(name: Name)    extends Desc(                                               ) with Defn
+  final case class Type(shape: Shape)    extends Desc(Sc.Many(Sc.Ref)                                ) with Defn
+  final case class Primitive(name: Name) extends Desc(                                               ) with Defn
 }
 
 sealed abstract class Name {
-  final override def toString = this match {
-    case Name.No                        => ""
-    case Name.Simple(id)                => id
-    case Name.Nested(l, r)              => s"$l::$r"
-    case Name.Overload(base, args, ret) => s"$base<${args.mkString(", ")}; $ret>"
-    case Name.Slice(n)                  => s"$n[]"
+  override def toString: String = this match {
+    case Name.No                               => ""
+    case Name.Class(id)                        => id
+    case Name.Module(id)                       => id
+    case Name.Interface(id)                    => id
+    case Name.Primitive(id)                    => id
+    case Name.Slice(n)                         => s"$n[]"
+    case Name.Field(owner, field)              => s"$owner::$field"
+    case Name.Method(owner, method, args, ret) => s"$owner::$method<${args.mkString(", ")}; $ret>"
+  }
+  def fullString = this match {
+    case Name.No | _: Name.Slice => this.toString
+    case _: Name.Class           => s"class $this"
+    case _: Name.Module          => s"object $this"
+    case _: Name.Interface       => s"interface $this"
+    case _: Name.Primitive       => s"primitive $this"
+    case _: Name.Field           => s"field $this"
+    case _: Name.Method          => s"method $this"
   }
 }
 object Name {
   final case object No extends Name
-  final case class Simple(id: String) extends Name
-  final case class Nested(parent: Name, child: Name) extends Name
-  final case class Overload(base: Name, args: Seq[Name], ret: Name) extends Name
+  final case class Class(id: String) extends Name
+  final case class Module(id: String) extends Name
+  final case class Interface(id: String) extends Name
+  final case class Primitive(id: String) extends Name
   final case class Slice(name: Name) extends Name
+  final case class Field(owner: Name, id: String) extends Name
+  final case class Method(owner: Name, id: String, args: Seq[Name], ret: Name) extends Name
 }
 
 sealed abstract class Shape {
