@@ -1,12 +1,48 @@
-package salty.tools.linker
+package salty.tools.compiler
 
+import java.io.File
+import org.apache.commons.io.FileUtils
+import org.apache.commons.io.filefilter.{DirectoryFileFilter, RegexFileFilter}
 import scala.collection.mutable
 import salty.ir._
+import salty.ir.serialization._
 
-final class ClasspathDeserializer(classpath: Classpath) { self =>
+// TODO: rewrite using nio-only
+// TODO: replace with something less naive in the future
+final case class Classpath(val paths: Seq[String]) { self =>
   var externs: mutable.Map[Name, Node] = mutable.Map.empty
+  val deserializers = mutable.Map.empty[Name, LinkingDeserializer]
 
-  final class LinkingDeserializer(path: String) extends BinaryDeserializer(path) {
+  lazy val pathmap: Map[Name, String] =
+    paths.flatMap { path =>
+      val base = new File(path)
+      val baseabs = base.getAbsolutePath()
+      val files =
+        FileUtils.listFiles(
+          base,
+          new RegexFileFilter("(.*)\\.salty"),
+          DirectoryFileFilter.DIRECTORY).toArray.toIterator
+      files.map { case file: File =>
+        val fileabs = file.getAbsolutePath()
+        val relpath = fileabs.replace(baseabs + "/", "")
+        val (nm, rel) =
+          if (relpath.endsWith(".class.salty"))
+            (Name.Class, relpath.replace(".class.salty", ""))
+          else if (relpath.endsWith("$.module.salty"))
+            (Name.Module, relpath.replace("$.module.salty", ""))
+          else if (relpath.endsWith(".module.salty"))
+            (Name.Module, relpath.replace(".module.salty", ""))
+          else if (relpath.endsWith(".interface.salty"))
+            (Name.Interface, relpath.replace(".interface.salty", ""))
+          else
+            throw new Exception(s"can't parse file kind $relpath")
+        val parts = rel.split("/").toSeq
+        val name = nm(parts.mkString("."))
+        (name -> fileabs)
+      }.toSeq
+    }.toMap
+
+  final class LinkingDeserializer(path: String) extends SaltyDeserializer(path) {
     override def extern(name: Name) =
       self.resolve(name).getOrElse {
         externs.get(name).getOrElse {
@@ -16,10 +52,6 @@ final class ClasspathDeserializer(classpath: Classpath) { self =>
         }
       }
   }
-
-  val paths = classpath.resolve.toMap
-
-  val deserializers = mutable.Map.empty[Name, LinkingDeserializer]
 
   def root(name: Name): Name = name match {
     case Name.No           |
@@ -32,9 +64,9 @@ final class ClasspathDeserializer(classpath: Classpath) { self =>
     case Name.Method(owner, _, _, _) => root(owner)
   }
 
-  def deserializer(rt: Name): Option[BinaryDeserializer] = {
+  def deserializer(rt: Name): Option[SaltyDeserializer] = {
     deserializers.get(rt).map(Some(_)).getOrElse {
-      paths.get(rt).map { path =>
+      pathmap.get(rt).map { path =>
         val de = new LinkingDeserializer(path)
         deserializers += (rt -> de)
         de
@@ -73,12 +105,5 @@ final class ClasspathDeserializer(classpath: Classpath) { self =>
         }.headOption.flatten
       }
     }
-  }
-}
-object ClasspathDeserializer {
-  def load(classpath: Classpath, entryPoints: Seq[Name]): Scope = {
-    val deserializer = new ClasspathDeserializer(classpath)
-    val nodemap = entryPoints.map(n => (n, deserializer.resolve(n).get)).toMap
-    Scope(nodemap)
   }
 }

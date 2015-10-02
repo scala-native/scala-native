@@ -1,77 +1,6 @@
-package salty
-package ir
+package salty.ir
 
-import salty.ir.{Tags => T, Schema => Sc}
-
-sealed class Node private[ir] (var desc: Desc, var slots: Array[Any]) {
-  private[ir] var epoch: Int = 0
-
-  final override def toString = {
-    val name = desc.toString
-    val slots = this.slots.map {
-      case n: Node     => n.toString
-      case seq: Seq[_] => seq.mkString(", ")
-    }.mkString("; ")
-    s"$name { $slots }"
-  }
-
-  final def type_==(other: Node): Boolean =
-    (this, other) match {
-      case (Extern(name1), Extern(name2)) =>
-        name1 == name2
-      case (Type(shape1, deps1), Type(shape2, deps2)) =>
-        shape1 == shape2 && deps1.zip(deps2).forall { case (l, r) => l type_== r }
-      case _ =>
-        this eq other
-    }
-
-  // TODO: iterator
-  final def edges: Seq[(Sc, Node)] =
-    desc.schema.zip(slots).flatMap {
-      case (Sc.Many(sc), nodes) => nodes.asInstanceOf[Seq[Node]].map { n => (sc, n) }
-      case (sc         , node)  => Seq((sc, node.asInstanceOf[Node]))
-      case _                    => throw new Exception("schema violation")
-    }
-
-  private[ir] def at(index: Int): Slot[Node]          = new Slot[Node](this, index)
-  private[ir] def manyAt(index: Int): Slot[Seq[Node]] = new Slot[Seq[Node]](this, index)
-}
-object Node {
-  private var lastEpoch = 0
-  private[ir] def nextEpoch = {
-    lastEpoch += 1
-    lastEpoch
-  }
-
-  private[ir] def apply(desc: Desc, slots: Array[Any]) =
-    new Node(desc, slots)
-}
-
-final class Slot[T](node: Node, index: Int) {
-  def :=(value: T) = node.slots(index) = value
-  def get: T = node.slots(index).asInstanceOf[T]
-}
-object Slot {
-  implicit def slot2value[T](slot: Slot[T]): T = slot.get
-}
-
-sealed abstract class Prim(name: Name) extends Node(Desc.Primitive(name), Array())
-object Prim {
-  final case object Null    extends Prim(Name.Primitive("null"))
-  final case object Nothing extends Prim(Name.Primitive("nothing"))
-  final case object Unit    extends Prim(Name.Primitive("unit"))
-  final case object Bool    extends Prim(Name.Primitive("bool"))
-
-  sealed abstract case class I(width: Int) extends Prim(Name.Primitive(s"i$width"))
-  final object I8  extends I(8)
-  final object I16 extends I(16)
-  final object I32 extends I(32)
-  final object I64 extends I(64)
-
-  sealed abstract case class F(width: Int) extends Prim(Name.Primitive(s"f$width"))
-  final object F32 extends F(32)
-  final object F64 extends F(64)
-}
+import salty.ir.{Schema => Sc}
 
 sealed abstract class Schema
 object Schema {
@@ -85,10 +14,6 @@ object Schema {
 sealed abstract class Desc(val schema: Schema*)
 object Desc {
   sealed trait Plain extends Desc
-  object Plain {
-    def unapply(tag: Int): Option[Plain] = ???
-  }
-
   sealed trait Cf
   sealed trait Termn extends Cf
   sealed trait Ef
@@ -183,59 +108,3 @@ object Desc {
   final case class Type(shape: Shape)    extends Desc(Sc.Many(Sc.Ref)                                ) with Defn
   final case class Primitive(name: Name) extends Desc(                                               ) with Defn
 }
-
-sealed abstract class Name {
-  override def toString: String = this match {
-    case Name.No                               => ""
-    case Name.Class(id)                        => id
-    case Name.Module(id)                       => id
-    case Name.Interface(id)                    => id
-    case Name.Primitive(id)                    => id
-    case Name.Slice(n)                         => s"$n[]"
-    case Name.Field(owner, field)              => s"$owner::$field"
-    case Name.Method(owner, method, args, ret) => s"$owner::$method<${args.mkString(", ")}; $ret>"
-  }
-  def fullString = this match {
-    case Name.No | _: Name.Slice => this.toString
-    case _: Name.Class           => s"class $this"
-    case _: Name.Module          => s"object $this"
-    case _: Name.Interface       => s"interface $this"
-    case _: Name.Primitive       => s"primitive $this"
-    case _: Name.Field           => s"field $this"
-    case _: Name.Method          => s"method $this"
-  }
-}
-object Name {
-  final case object No extends Name
-  final case class Class(id: String) extends Name
-  final case class Module(id: String) extends Name
-  final case class Interface(id: String) extends Name
-  final case class Primitive(id: String) extends Name
-  final case class Slice(name: Name) extends Name
-  final case class Field(owner: Name, id: String) extends Name
-  final case class Method(owner: Name, id: String, args: Seq[Name], ret: Name) extends Name
-}
-
-sealed abstract class Shape {
-  final def holes: Int = this match {
-    case Shape.Hole         => 1
-    case Shape.Ref(shape)   => shape.holes
-    case Shape.Slice(shape) => shape.holes
-  }
-
-  final override def toString = this match {
-    case Shape.Hole         => "•"
-    case Shape.Ref(shape)   => s"$shape!"
-    case Shape.Slice(shape) => s"$shape[]"
-  }
-}
-object Shape {
-  final case object Hole extends Shape
-  final case class Ref(of: Shape) extends Shape
-  final case class Slice(of: Shape) extends Shape
-  // TODO: Func(ret, args)
-  // TODO: Struct(fields)
-  // TODO: Array(t, n)
-}
-
-final case class Scope(entries: Map[Name, Node])

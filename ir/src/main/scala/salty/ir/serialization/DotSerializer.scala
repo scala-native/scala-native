@@ -1,4 +1,5 @@
 package salty.ir
+package serialization
 
 import salty.util.Show, Show.{Sequence => s, Indent => i, Unindent => u,
                               Repeat => r, Newline => n}
@@ -7,7 +8,7 @@ import salty.ir.{Schema => Sc}
 import java.nio.ByteBuffer
 import java.lang.System.{identityHashCode => id}
 
-class GraphSerializer extends Pass {
+class DotSerializer extends Pass {
   var shows = List.empty[Show.Result]
 
   def label(desc: Desc): String =
@@ -71,17 +72,16 @@ class GraphSerializer extends Pass {
     }
   }
 }
-object GraphSerializer extends ((Scope, ByteBuffer) => Unit) {
-  def apply(scope: Scope, bb: ByteBuffer): Unit = {
+object DotSerializer {
+  implicit val showScope: Show[Scope] = Show { scope =>
     val res =
       s(scope.entries.toSeq.zipWithIndex.map { case ((_, node), idx) =>
-        val pass = new GraphSerializer
+        val pass = new DotSerializer
         Pass.run(pass, node)
         s("digraph \"", idx.toString, "\" {",
             r(pass.shows.map(i)),
           n("}"))
       }.toSeq: _*)
-    val bytes = res.toString.getBytes
-    bb.put(bytes)
+    res
   }
 }

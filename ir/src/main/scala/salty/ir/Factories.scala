@@ -1,6 +1,7 @@
 package salty.ir
 
 import salty.ir.{Desc => D, Tags => T}
+import salty.ir.Node.Slot
 
 sealed abstract class NullaryFactory(desc: D) extends (() => Node) {
   def apply(): Node=

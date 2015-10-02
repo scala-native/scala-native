@@ -1,4 +1,5 @@
 package salty.ir
+package serialization
 
 import java.nio.ByteBuffer
 import java.nio.file.Paths
@@ -6,7 +7,7 @@ import java.nio.channels.FileChannel
 import scala.collection.mutable
 import salty.ir.{Tags => T}
 
-class BinaryDeserializer(path: String) {
+class SaltyDeserializer(path: String) {
   private val bb = {
     val channel = FileChannel.open(Paths.get(path))
     val buffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size())

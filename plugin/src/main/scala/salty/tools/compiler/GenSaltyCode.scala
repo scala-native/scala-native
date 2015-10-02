@@ -136,7 +136,7 @@ abstract class GenSaltyCode extends PluginComponent
           val scope = genClass(cd)
           //println(cd)
           genSaltyFile(cunit, sym, scope)
-          genGraphFile(cunit, sym, scope)
+          genDotFile(cunit, sym, scope)
         }
       }
     }

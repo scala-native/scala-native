@@ -16,8 +16,8 @@ lazy val util =
   project.in(file("util")).
     settings(common: _*)
 
-lazy val compiler =
-  project.in(file("compiler")).
+lazy val plugin =
+  project.in(file("plugin")).
     settings(common: _*).
     settings(
       unmanagedSourceDirectories in Compile ++= Seq(
@@ -31,8 +31,8 @@ lazy val compiler =
     ).
     dependsOn(ir)
 
-lazy val linker =
-  project.in(file("linker")).
+lazy val compiler =
+  project.in(file("compiler")).
     settings(common: _*).
     settings(
       libraryDependencies += "commons-io" % "commons-io" % "2.4"
@@ -44,8 +44,7 @@ lazy val sandbox =
     settings(common: _*).
     settings(
       scalacOptions ++= Seq(
-        "-Xplugin:compiler/target/scala-2.11/compiler_2.11-0.1-SNAPSHOT.jar"
+        "-Xplugin:plugin/target/scala-2.11/plugin_2.11-0.1-SNAPSHOT.jar"
       ),
       libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.11.7"
-    ).
-    dependsOn(ir, compiler)
+    )
