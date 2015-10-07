@@ -11,22 +11,28 @@ trait GenNameEncoding extends SubComponent with GenTypeKinds {
   def genLabelId(sym: Symbol) = sym.name.toString
 
   def genFieldDefn(sym: Symbol) = Extern(genFieldName(sym))
-  def genFieldName(sym: Symbol) = N.Field(genClassName(sym.owner), sym.name.toString)
+  def genFieldName(sym: Symbol) = {
+    val owner = genClassName(sym.owner)
+    val id0 = sym.name.toString
+    val id =
+      if (id0.charAt(id0.length()-1) != ' ') id0
+      else id0.substring(0, id0.length()-1)
+
+    N.Field(owner, id)
+  }
 
   def genClassDefn(sym: Symbol) = Extern(genClassName(sym))
   def genClassName(sym: Symbol): N = {
     val id = sym.fullName.toString
-    val name =
-      if (sym.isModule)
-        genClassName(sym.moduleClass)
-      else if (sym.isModuleClass || sym.isImplClass)
-        N.Module(id)
-      else if (sym.isInterface)
-        N.Interface(id)
-      else
-        N.Class(id)
-    //println(s"name for $sym is ${name.fullString}")
-    name
+
+    if (sym.isModule)
+      genClassName(sym.moduleClass)
+    else if (sym.isModuleClass || sym.isImplClass)
+      N.Module(id)
+    else if (sym.isInterface)
+      N.Interface(id)
+    else
+      N.Class(id)
   }
 
   def genDefDefn(sym: Symbol) = Extern(genDefName(sym))
@@ -35,7 +41,11 @@ trait GenNameEncoding extends SubComponent with GenTypeKinds {
     val id     = sym.name.toString
     val tpe    = sym.tpe.widen
     val params = tpe.params.map(kindName).toSeq
-    val ret    = kindName(tpe.resultType)
+    val ret    =
+      if (sym.name == nme.CONSTRUCTOR)
+        ir.Prim.Unit.name
+      else
+        kindName(tpe.resultType)
 
     N.Method(owner, id, params, ret)
   }

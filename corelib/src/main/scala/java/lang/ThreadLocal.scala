@@ -1,7 +1,7 @@
 package java.lang
 
 class ThreadLocal[T] {
-  private var hasValue: Boolean = false
+  private var hasValue: scala.Boolean = false
   private var v: T = _
 
   protected def initialValue(): T = null.asInstanceOf[T]
@@ -12,12 +12,12 @@ class ThreadLocal[T] {
     v
   }
 
-  def set(o: T): Unit = {
+  def set(o: T): scala.Unit = {
     v = o
     hasValue = true
   }
 
-  def remove(): Unit = {
+  def remove(): scala.Unit = {
     hasValue = false
     v = null.asInstanceOf[T] // for gc
   }

@@ -56,7 +56,7 @@ object Node {
   }
 }
 
-sealed abstract class Prim(name: Name) extends Node(Desc.Primitive(name), Array())
+sealed abstract class Prim(val name: Name) extends Node(Desc.Primitive(name), Array())
 object Prim {
   final case object Null    extends Prim(Name.Primitive("null"))
   final case object Nothing extends Prim(Name.Primitive("nothing"))
@@ -72,4 +72,64 @@ object Prim {
   sealed abstract case class F(width: Int) extends Prim(Name.Primitive(s"f$width"))
   final object F32 extends F(32)
   final object F64 extends F(64)
+
+  final object Object extends Prim(Name.Class("java.lang.Object")) {
+    def resolve(name: Name): Option[Node] = name match {
+      case `initName`      => Some(initMethod)
+      case `cloneName`     => Some(cloneMethod)
+      case `equalsName`    => Some(equalsMethod)
+      case `finalizeName`  => Some(finalizeMethod)
+      case `getClassName`  => Some(getClassMethod)
+      case `hashCodeName`  => Some(hashCodeMethod)
+      case `notifyName`    => Some(notifyMethod)
+      case `notifyAllName` => Some(notifyAllMethod)
+      case `toStringName`  => Some(toStringMethod)
+      case `wait0Name`     => Some(wait0Method)
+      case `wait1Name`     => Some(wait1Method)
+      case `wait2Name`     => Some(wait2Method)
+      case _               => None
+    }
+
+    lazy val initName: Name = Name.Method(name, "<init>", Seq(), Unit.name)
+    lazy val initMethod: Node = {
+      val start = Start()
+      val end   = End(Seq(Return(start, start, Unit)))
+      val rels  = Seq(this)
+
+      Define(initName, Unit, Seq(), end, rels)
+    }
+
+    lazy val cloneName: Name = Name.Method(name, "clone", Seq(), name)
+    lazy val cloneMethod: Node = ???
+
+    lazy val equalsName: Name = Name.Method(name, "equals", Seq(name), Bool.name)
+    lazy val equalsMethod: Node = ???
+
+    lazy val finalizeName: Name = Name.Method(name, "finalize", Seq(), Unit.name)
+    lazy val finalizeMethod: Node = ???
+
+    lazy val getClassName: Name = Name.Method(name, "getClass", Seq(), Name.Class("java.lang.Class"))
+    lazy val getClassMethod: Node = ???
+
+    lazy val hashCodeName: Name = Name.Method(name, "hashCode", Seq(), I32.name)
+    lazy val hashCodeMethod: Node = ???
+
+    lazy val notifyName: Name = Name.Method(name, "notify", Seq(), Unit.name)
+    lazy val notifyMethod: Node = ???
+
+    lazy val notifyAllName: Name = Name.Method(name, "notifyAll", Seq(), Unit.name)
+    lazy val notifyAllMethod: Node = ???
+
+    lazy val toStringName: Name = Name.Method(name, "toString", Seq(), Name.Class("java.lang.String"))
+    lazy val toStringMethod: Node = ???
+
+    lazy val wait0Name: Name = Name.Method(name, "wait", Seq(), Unit.name)
+    lazy val wait0Method: Node = ???
+
+    lazy val wait1Name: Name = Name.Method(name, "wait", Seq(I64.name), Unit.name)
+    lazy val wait1Method: Node = ???
+
+    lazy val wait2Name: Name = Name.Method(name, "wait", Seq(I64.name, I32.name), Unit.name)
+    lazy val wait2Method: Node = ???
+  }
 }

@@ -27,19 +27,25 @@ class SaltyDeserializer(path: String) {
       nodes(pos)
     } else {
       getDesc match {
-        case Desc.Primitive(Name.Primitive(id)) =>
-          id match {
-            case "null"    => Prim.Null
-            case "nothing" => Prim.Nothing
-            case "unit"    => Prim.Unit
-            case "bool"    => Prim.Bool
-            case "i8"      => Prim.I8
-            case "i16"     => Prim.I16
-            case "i32"     => Prim.I32
-            case "i64"     => Prim.I64
-            case "f32"     => Prim.F32
-            case "f64"     => Prim.F64
+        case Desc.Primitive(name) =>
+          name match {
+            case Name.Primitive("null")        => Prim.Null
+            case Name.Primitive("nothing")     => Prim.Nothing
+            case Name.Primitive("unit")        => Prim.Unit
+            case Name.Primitive("bool")        => Prim.Bool
+            case Name.Primitive("i8")          => Prim.I8
+            case Name.Primitive("i16")         => Prim.I16
+            case Name.Primitive("i32")         => Prim.I32
+            case Name.Primitive("i64")         => Prim.I64
+            case Name.Primitive("f32")         => Prim.F32
+            case Name.Primitive("f64")         => Prim.F64
+            case Name.Class("java.lang.Class") => Prim.Object
+            case _                             => throw new Exception("unreachable")
           }
+        case Desc.Extern(Name.Class("java.lang.Object")) =>
+          Prim.Object
+        case Desc.Extern(name @ Name.Method(Name.Class("java.lang.Object"), _, _, _)) =>
+          Prim.Object.resolve(name).get
         case Desc.Extern(name) =>
           extern(name)
         case desc =>

@@ -44,7 +44,8 @@ lazy val corelib =
     settings(common: _*).
     settings(
       scalacOptions ++= Seq(
-        "-Xplugin:plugin/target/scala-2.11/plugin_2.11-0.1-SNAPSHOT.jar"
+        "-Xplugin:plugin/target/scala-2.11/plugin_2.11-0.1-SNAPSHOT.jar",
+        "-Yno-imports"
       ),
       libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.11.7"
     ).

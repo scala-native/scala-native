@@ -22,7 +22,7 @@ object Main extends App {
   }
   val classpath = Opt.get[Opt.Cp](opts).value
   val node = classpath.resolve(entry).getOrElse {
-    abort(s"Couldn't resolve entry point ${entry.fullString}")
+    abort(s"Couldn't resolve entry point $entry")
   }
   Opt.get[Opt.Dot](opts).value.foreach { path =>
     val scope = Scope(Map(entry -> node))

@@ -3,23 +3,13 @@ package salty.ir
 sealed abstract class Name {
   override def toString: String = this match {
     case Name.No                               => ""
-    case Name.Class(id)                        => id
-    case Name.Module(id)                       => id
-    case Name.Interface(id)                    => id
-    case Name.Primitive(id)                    => id
+    case Name.Class(id)                        => s"class $id"
+    case Name.Module(id)                       => s"module $id"
+    case Name.Interface(id)                    => s"interface $id"
+    case Name.Primitive(id)                    => s"$id"
     case Name.Slice(n)                         => s"$n[]"
-    case Name.Field(owner, field)              => s"$owner::$field"
-    case Name.Method(owner, method, args, ret) => s"$owner::$method<${args.mkString(", ")}; $ret>"
-  }
-
-  def fullString = this match {
-    case Name.No | _: Name.Slice => this.toString
-    case _: Name.Class           => s"class $this"
-    case _: Name.Module          => s"module $this"
-    case _: Name.Interface       => s"interface $this"
-    case _: Name.Primitive       => s"primitive $this"
-    case _: Name.Field           => s"field $this"
-    case _: Name.Method          => s"method $this"
+    case Name.Field(owner, field)              => s"$owner :: field `$field`"
+    case Name.Method(owner, method, args, ret) => s"$owner :: method $method <${args.mkString(", ")}; $ret>"
   }
 }
 object Name {

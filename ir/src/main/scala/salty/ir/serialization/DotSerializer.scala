@@ -62,15 +62,15 @@ object DotSerializer {
       case Desc.F32(v)          => s"${v}f32"
       case Desc.F64(v)          => s"${v}f64"
       case Desc.Str(v)          => "\"" + v + "\""
-      case Desc.Class(name)     => s"Class $name"
-      case Desc.Interface(name) => s"Interface $name"
-      case Desc.Module(name)    => s"Module $name"
-      case Desc.Declare(name)   => s"Declare $name"
-      case Desc.Define(name)    => s"Define $name"
-      case Desc.Field(name)     => s"Field $name"
-      case Desc.Extern(name)    => s"Extern ${name.fullString}"
+      case Desc.Class(name)     => s"$name"
+      case Desc.Interface(name) => s"$name"
+      case Desc.Module(name)    => s"$name"
+      case Desc.Declare(name)   => s"$name"
+      case Desc.Define(name)    => s"$name"
+      case Desc.Field(name)     => s"$name"
+      case Desc.Extern(name)    => s"$name"
+      case Desc.Primitive(name) => s"$name"
       case Desc.Type(shape)     => s"Type $shape"
-      case Desc.Primitive(name) => s"Prim $name"
     }).replace("\"", "\\\"")
 
   implicit val showScope: Show[Scope] = Show { scope =>

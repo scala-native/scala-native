@@ -134,7 +134,8 @@ abstract class GenSaltyCode extends PluginComponent
           ()
         else {
           val scope = genClass(cd)
-          //println(cd)
+          scope.entries.keys.foreach(println)
+          println(cd)
           genSaltyFile(cunit, sym, scope)
           genDotFile(cunit, sym, scope)
         }
@@ -149,10 +150,14 @@ abstract class GenSaltyCode extends PluginComponent
       val parent  = if (sym.superClass != NoSymbol) Some(genClassDefn(sym.superClass)) else None
       val ifaces  = genClassInterfaces(sym)
       val fields  = genClassFields(sym).toSeq
-      val methods = genClassMethods(cd.impl.body)
+      val defdefs = cd.impl.body.collect { case dd: DefDef => dd }
+      val methods = defdefs.map(genDef)
+      val ctor    = defdefs.zip(methods).collectFirst {
+        case (dd, (_, node)) if dd.name == nme.CONSTRUCTOR => node
+      }
       val owner   =
         if (sym.isModuleClass || sym.isImplClass)
-          name -> ir.Module(name, parent ++: ifaces)
+          name -> ir.Module(name, ctor ++: parent ++: ifaces)
         else if (sym.isInterface)
           name -> ir.Interface(name, ifaces)
         else
@@ -168,12 +173,6 @@ abstract class GenSaltyCode extends PluginComponent
         if psym.isInterface
       } yield {
         genClassDefn(psym)
-      }
-
-    def genClassMethods(stats: List[Tree]): List[(ir.Name, ir.Node)] =
-      stats.flatMap {
-        case dd: DefDef => List(genDef(dd))
-        case _          => Nil
       }
 
     def genClassFields(sym: Symbol) = {
@@ -413,7 +412,7 @@ abstract class GenSaltyCode extends PluginComponent
     }
 
     def genStaticMember(sym: Symbol) =
-      genFieldDefn(sym)
+      ir.Elem(genClassDefn(sym.owner), genFieldDefn(sym))
 
     def genTry(expr: Tree, catches: List[Tree], finalizer: Tree, focus: Focus) = {
       val cf          = ir.Try(focus.cf)
