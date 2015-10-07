@@ -2,6 +2,7 @@ package salty.ir
 
 import java.nio._
 import java.nio.file._
+import java.nio.file.{StandardOpenOption => OpenOpt}
 import java.nio.channels._
 
 package object serialization {
@@ -14,11 +15,11 @@ package object serialization {
     (new SaltySerializer(buffer)).serialize(scope)
 
   def serializeFile(serialize: (Scope, ByteBuffer) => Unit, scope: Scope, path: String,
-                       buffer: ByteBuffer = defaultBuffer): Unit = {
+                    buffer: ByteBuffer = defaultBuffer): Unit = {
     buffer.clear
     serialize(scope, buffer)
     buffer.flip
-    val channel = FileChannel.open(Paths.get(path), StandardOpenOption.WRITE)
+    val channel = FileChannel.open(Paths.get(path), OpenOpt.WRITE, OpenOpt.TRUNCATE_EXISTING)
     try channel.write(buffer)
     finally channel.close
   }

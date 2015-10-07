@@ -11,10 +11,11 @@ sealed abstract class Name {
     case Name.Field(owner, field)              => s"$owner::$field"
     case Name.Method(owner, method, args, ret) => s"$owner::$method<${args.mkString(", ")}; $ret>"
   }
+
   def fullString = this match {
     case Name.No | _: Name.Slice => this.toString
     case _: Name.Class           => s"class $this"
-    case _: Name.Module          => s"object $this"
+    case _: Name.Module          => s"module $this"
     case _: Name.Interface       => s"interface $this"
     case _: Name.Primitive       => s"primitive $this"
     case _: Name.Field           => s"field $this"

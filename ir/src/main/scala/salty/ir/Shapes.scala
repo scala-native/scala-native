@@ -17,6 +17,7 @@ object Shape {
   final case object Hole extends Shape
   final case class Ref(of: Shape) extends Shape
   final case class Slice(of: Shape) extends Shape
+  // TODO: Ptr(t)
   // TODO: Func(ret, args)
   // TODO: Struct(fields)
   // TODO: Array(t, n)

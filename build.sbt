@@ -39,6 +39,17 @@ lazy val compiler =
     ).
     dependsOn(ir)
 
+lazy val corelib =
+  project.in(file("corelib")).
+    settings(common: _*).
+    settings(
+      scalacOptions ++= Seq(
+        "-Xplugin:plugin/target/scala-2.11/plugin_2.11-0.1-SNAPSHOT.jar"
+      ),
+      libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.11.7"
+    ).
+    dependsOn(plugin)
+
 lazy val sandbox =
   project.in(file("sandbox")).
     settings(common: _*).
@@ -47,4 +58,6 @@ lazy val sandbox =
         "-Xplugin:plugin/target/scala-2.11/plugin_2.11-0.1-SNAPSHOT.jar"
       ),
       libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.11.7"
-    )
+    ).
+    dependsOn(plugin)
+

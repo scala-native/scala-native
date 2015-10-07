@@ -7,33 +7,10 @@ import salty.util.sh
 import salty.ir.{Schema => Sc}
 import java.nio.ByteBuffer
 import java.lang.System.{identityHashCode => id}
+import DotSerializer._
 
 class DotSerializer extends Pass {
   var shows = List.empty[Show.Result]
-
-  def label(desc: Desc): String =
-    (desc match {
-      case _: Desc.Plain        => desc.toString
-      case Desc.Label(name)     => s"Label $name"
-      case Desc.Param(name)     => s"Param $name"
-      case Desc.I8(v)           => s"${v}i8"
-      case Desc.I16(v)          => s"${v}i16"
-      case Desc.I32(v)          => s"${v}i32"
-      case Desc.I64(v)          => s"${v}i64"
-      case Desc.F32(v)          => s"${v}f32"
-      case Desc.F64(v)          => s"${v}f64"
-      case Desc.Str(v)          => "\"" + v + "\""
-      case Desc.Class(name)     => s"Class $name"
-      case Desc.Interface(name) => s"Interface $name"
-      case Desc.Module(name)    => s"Module $name"
-      case Desc.Declare(name)   => s"Declare $name"
-      case Desc.Define(name)    => s"Define $name"
-      case Desc.Field(name)     => s"Field $name"
-      case Desc.Extern(name)    => s"Extern ${name.fullString}"
-      case Desc.Type(shape)     => s"Type $shape"
-      case Desc.Primitive(name) => s"Prim $name"
-
-    }).replace("\"", "\\\"")
 
   def style(sc: Sc) = sc match {
     case Sc.Val => s()
@@ -68,20 +45,43 @@ class DotSerializer extends Pass {
     define(node)
     node.edges.foreach { case (sc, next) =>
       define(next)
-      shows = s(key(next), " -> ", k, style(sc), ";") :: shows
+      shows = s(key(next), " -> ", k, style(sc)) :: shows
     }
   }
 }
 object DotSerializer {
+  def label(desc: Desc): String =
+    (desc match {
+      case _: Desc.Plain        => desc.toString
+      case Desc.Label(name)     => s"Label $name"
+      case Desc.Param(name)     => s"Param $name"
+      case Desc.I8(v)           => s"${v}i8"
+      case Desc.I16(v)          => s"${v}i16"
+      case Desc.I32(v)          => s"${v}i32"
+      case Desc.I64(v)          => s"${v}i64"
+      case Desc.F32(v)          => s"${v}f32"
+      case Desc.F64(v)          => s"${v}f64"
+      case Desc.Str(v)          => "\"" + v + "\""
+      case Desc.Class(name)     => s"Class $name"
+      case Desc.Interface(name) => s"Interface $name"
+      case Desc.Module(name)    => s"Module $name"
+      case Desc.Declare(name)   => s"Declare $name"
+      case Desc.Define(name)    => s"Define $name"
+      case Desc.Field(name)     => s"Field $name"
+      case Desc.Extern(name)    => s"Extern ${name.fullString}"
+      case Desc.Type(shape)     => s"Type $shape"
+      case Desc.Primitive(name) => s"Prim $name"
+    }).replace("\"", "\\\"")
+
   implicit val showScope: Show[Scope] = Show { scope =>
-    val res =
-      s(scope.entries.toSeq.zipWithIndex.map { case ((_, node), idx) =>
-        val pass = new DotSerializer
-        Pass.run(pass, node)
-        s("digraph \"", idx.toString, "\" {",
-            r(pass.shows.map(i)),
-          n("}"))
-      }.toSeq: _*)
-    res
+    s(r(scope.entries.values.toSeq.map(n(_))))
+  }
+
+  implicit val showNode: Show[Node] = Show { node =>
+    val pass = new DotSerializer
+    Pass.run(pass, node)
+    s("digraph \"", label(node.desc), "\" {",
+        r(pass.shows.map(i)),
+      n("}"))
   }
 }

@@ -11,26 +11,21 @@ object Main extends App {
   }
 
   val (opts, entry) = Opt.parse(args.toList) match {
-    case (opts, s :: Nil) =>
-      s.split(" ") match {
-        case Array(kind, id) =>
-          kind match {
-            case "class"     => (opts, Name.Class(id))
-            case "module"    => (opts, Name.Module(id))
-            case "interface" => (opts, Name.Interface(id))
-            case _           => abort("Only classes, modules and interfaces qualify as entry points.")
-          }
-        case _ =>
-          abort("Entry point must consist of kind and id.")
-      }
-    case (opts, _       ) => abort("Compiler takes a single entry point.")
+    case (opts, id :: Nil) =>
+      val entry =
+        Name.Method(Name.Module(id), "main",
+          Vector(Name.Slice(Name.Class("java.lang.String"))),
+          Name.Primitive("unit"))
+      (opts, entry)
+    case (opts, _ ) =>
+      abort("Compiler takes a single entry point.")
   }
   val classpath = Opt.get[Opt.Cp](opts).value
-  val deserializer = classpath.deserializer(entry).getOrElse {
+  val node = classpath.resolve(entry).getOrElse {
     abort(s"Couldn't resolve entry point ${entry.fullString}")
   }
-  val scope = deserializer.scope
   Opt.get[Opt.Dot](opts).value.foreach { path =>
+    val scope = Scope(Map(entry -> node))
     serializeDotFile(scope, path)
   }
 }
