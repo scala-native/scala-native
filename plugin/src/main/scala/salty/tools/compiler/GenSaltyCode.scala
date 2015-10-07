@@ -134,8 +134,8 @@ abstract class GenSaltyCode extends PluginComponent
           ()
         else {
           val scope = genClass(cd)
-          scope.entries.keys.foreach(println)
           println(cd)
+          scope.entries.keys.foreach(println)
           genSaltyFile(cunit, sym, scope)
           genDotFile(cunit, sym, scope)
         }
@@ -277,7 +277,7 @@ abstract class GenSaltyCode extends PluginComponent
             curEnv.enter(vd.symbol, rfocus.value)
             rfocus withValue ir.Unit()
           } else {
-            val alloc = ir.Alloc(genType(vd.symbol.tpe))
+            val alloc = ir.Alloca(genType(vd.symbol.tpe))
             curEnv.enter(vd.symbol, alloc)
             rfocus mapEf (ir.Store(_, alloc, rfocus.value))
           }
@@ -424,7 +424,7 @@ abstract class GenSaltyCode extends PluginComponent
 
     def genCatch(catches: List[Tree], focus: Focus) = {
       val exc    = focus.cf
-      val switch = ir.Switch(exc, ir.TagOf(exc))
+      val switch = ir.Switch(exc, ir.GetClass(exc))
 
       val cases =
         catches.map {
@@ -437,7 +437,7 @@ abstract class GenSaltyCode extends PluginComponent
               case Bind(_, _) =>
                 (Some(pat.symbol), genType(pat.symbol.tpe))
             }
-            symopt foreach (curEnv.enter(_, ir.Cast(exc, excty)))
+            symopt foreach (curEnv.enter(_, ir.As(exc, excty)))
             genExpr(body, focus withCf ir.CaseConst(switch, excty))
         }
       val default =
@@ -525,7 +525,7 @@ abstract class GenSaltyCode extends PluginComponent
       val ArrayValue(tpt, elems) = av
       val ty           = genType(tpt.tpe)
       val len          = elems.length
-      val salloc       = ir.Salloc(ty, ir.I32(len))
+      val salloc       = ir.Allocs(ty, ir.I32(len))
       val (rfocus, rt) =
         if (elems.isEmpty)
           (focus, Tails.empty)
@@ -825,11 +825,11 @@ abstract class GenSaltyCode extends PluginComponent
       (rfocus withValue ir.Add(lfocus.value, rfocus.value)) +: (lt ++ rt)
     }
 
+    // TODO: this doesn't get called on foo.## expressions
     def genHash(tree: Tree, receiver: Tree, focus: Focus) = {
-      val method = getMember(ScalaRunTimeModule, nme.hash_)
       val (recfocus, rt) = genExpr(receiver, focus).merge
 
-      genMethodCall(method, recfocus.value, Nil, recfocus) ++ rt
+      (recfocus mapEf (ir.Hash(_, recfocus.value))) +: rt
     }
 
     def genArrayOp(app: Apply, code: Int, focus: Focus): Tails = {
@@ -879,7 +879,7 @@ abstract class GenSaltyCode extends PluginComponent
           case (Prim.F(_), Prim.I(_)) => ir.Fptosi
           case (Prim.F64, Prim.F32)   => ir.Fptrunc
           case (Prim.F32, Prim.F64)   => ir.Fpext
-          case (Prim.Null, _)         => ir.Cast
+          case (Prim.Null, _)         => ir.As
         }
         op(value, toty)
       }
@@ -938,7 +938,7 @@ abstract class GenSaltyCode extends PluginComponent
       val (rfocus, rt) = genExpr(receiver, focus).merge
       val value = fun.symbol match {
         case Object_isInstanceOf => ir.Is(rfocus.value, ty)
-        case Object_asInstanceOf => ir.Cast(rfocus.value, ty)
+        case Object_asInstanceOf => ir.As(rfocus.value, ty)
       }
 
       (rfocus withValue value) +: rt
@@ -976,7 +976,7 @@ abstract class GenSaltyCode extends PluginComponent
     def genNewArray(elemty: ir.Node, length: Tree, focus: Focus) = {
       val (lfocus, lt) = genExpr(length, focus).merge
 
-      (lfocus withValue ir.Salloc(elemty, lfocus.value)) +: lt
+      (lfocus withValue ir.Allocs(elemty, lfocus.value)) +: lt
     }
 
     def genNew(sym: Symbol, ctorsym: Symbol, args: List[Tree], focus: Focus) = {

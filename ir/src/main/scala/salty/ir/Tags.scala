@@ -21,12 +21,8 @@ object Tags {
   final val Throw         = 1 + Return
   final val Undefined     = 1 + Throw
   final val End           = 1 + Undefined
-  final val EfPhi         = 1 + End
-  final val Equals        = 1 + EfPhi
-  final val Call          = 1 + Equals
-  final val Load          = 1 + Call
-  final val Store         = 1 + Load
-  final val Add           = 1 + Store
+
+  final val Add           = 1 + End
   final val Sub           = 1 + Add
   final val Mul           = 1 + Sub
   final val Div           = 1 + Mul
@@ -55,21 +51,28 @@ object Tags {
   final val Ptrtoint      = 1 + Sitofp
   final val Inttoptr      = 1 + Ptrtoint
   final val Bitcast       = 1 + Inttoptr
-  final val Cast          = 1 + Bitcast
-  final val Box           = 1 + Cast
+  final val As            = 1 + Bitcast
+  final val Box           = 1 + As
   final val Unbox         = 1 + Box
-  final val Phi           = 1 + Unbox
-  final val Is            = 1 + Phi
-  final val Alloc         = 1 + Is
-  final val Salloc        = 1 + Alloc
-  final val Length        = 1 + Salloc
-  final val Elem          = 1 + Length
-  final val Param         = 1 + Elem
-  final val ValueOf       = 1 + Param
-  final val ExceptionOf   = 1 + ValueOf
-  final val TagOf         = 1 + ExceptionOf
 
-  final val Unit  = 1 + TagOf
+  final val EfPhi         = 1 + Unbox
+  final val Call          = 1 + EfPhi
+  final val Load          = 1 + Call
+  final val Store         = 1 + Load
+  final val Equals        = 1 + Store
+  final val Hash          = 1 + Equals
+
+  final val Phi           = 1 + Hash
+  final val Param         = 1 + Phi
+  final val Alloc         = 1 + Param
+  final val Alloca        = 1 + Alloc
+  final val Allocs        = 1 + Alloca
+  final val Is            = 1 + Allocs
+  final val Length        = 1 + Is
+  final val Elem          = 1 + Length
+  final val GetClass      = 1 + Elem
+
+  final val Unit  = 1 + GetClass
   final val Null  = 1 + Unit
   final val True  = 1 + Null
   final val False = 1 + True
@@ -121,12 +124,6 @@ object Tags {
     Desc.Undefined     -> T.Undefined    ,
     Desc.End           -> T.End          ,
 
-    Desc.EfPhi  -> T.EfPhi ,
-    Desc.Equals -> T.Equals,
-    Desc.Call   -> T.Call  ,
-    Desc.Load   -> T.Load  ,
-    Desc.Store  -> T.Store ,
-
     Desc.Add  -> T.Add ,
     Desc.Sub  -> T.Sub ,
     Desc.Mul  -> T.Mul ,
@@ -157,17 +154,25 @@ object Tags {
     Desc.Ptrtoint -> T.Ptrtoint,
     Desc.Inttoptr -> T.Inttoptr,
     Desc.Bitcast  -> T.Bitcast ,
-    Desc.Cast     -> T.Cast    ,
+    Desc.As       -> T.As      ,
     Desc.Box      -> T.Box     ,
     Desc.Unbox    -> T.Unbox   ,
 
+    Desc.EfPhi  -> T.EfPhi ,
+    Desc.Call   -> T.Call  ,
+    Desc.Load   -> T.Load  ,
+    Desc.Store  -> T.Store ,
+    Desc.Equals -> T.Equals,
+    Desc.Hash   -> T.Hash  ,
+
     Desc.Phi         -> T.Phi        ,
-    Desc.Is          -> T.Is         ,
     Desc.Alloc       -> T.Alloc      ,
-    Desc.Salloc      -> T.Salloc     ,
+    Desc.Alloca      -> T.Alloca     ,
+    Desc.Allocs      -> T.Allocs     ,
+    Desc.Is          -> T.Is         ,
     Desc.Length      -> T.Length     ,
     Desc.Elem        -> T.Elem       ,
-    Desc.TagOf       -> T.TagOf      ,
+    Desc.GetClass    -> T.GetClass   ,
 
     Desc.Unit  -> T.Unit ,
     Desc.Null  -> T.Null ,

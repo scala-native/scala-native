@@ -80,30 +80,6 @@ object End {
       None
 }
 
-object EfPhi {
-  def apply(cf: Node, efs: Seq[Node]): Node =
-    Node(D.EfPhi, Array(cf, efs))
-  def unapply(n: Node): Option[(Slot[Node], Slot[Seq[Node]])] =
-    if (n.desc eq D.EfPhi)
-      Some((n.at(0), n.manyAt(1)))
-    else
-      None
-}
-object Equals extends TernaryFactory(D.Equals)
-object Call {
-  def apply(ef: Node, funptr: Node, args: Seq[Node]): Node =
-    Node(D.Call, Array(ef, funptr, args))
-  def unapply(n: Node): Option[(Slot[Node], Slot[Node], Slot[Seq[Node]])] =
-    if (n.desc eq D.Call)
-      Some((n.at(0), n.at(1), n.manyAt(2)))
-    else
-      None
-
-}
-object Load  extends BinaryFactory(D.Load)
-object Store extends TernaryFactory(D.Store)
-
-
 object Add  extends BinaryFactory(D.Add )
 object Sub  extends BinaryFactory(D.Sub )
 object Mul  extends BinaryFactory(D.Mul )
@@ -134,9 +110,33 @@ object Sitofp   extends BinaryFactory(D.Sitofp  )
 object Ptrtoint extends BinaryFactory(D.Ptrtoint)
 object Inttoptr extends BinaryFactory(D.Inttoptr)
 object Bitcast  extends BinaryFactory(D.Bitcast )
-object Cast     extends BinaryFactory(D.Cast    )
+object As       extends BinaryFactory(D.As      )
 object Box      extends BinaryFactory(D.Box     )
 object Unbox    extends BinaryFactory(D.Unbox   )
+
+object EfPhi {
+  def apply(cf: Node, efs: Seq[Node]): Node =
+    Node(D.EfPhi, Array(cf, efs))
+  def unapply(n: Node): Option[(Slot[Node], Slot[Seq[Node]])] =
+    if (n.desc eq D.EfPhi)
+      Some((n.at(0), n.manyAt(1)))
+    else
+      None
+}
+object Call {
+  def apply(ef: Node, funptr: Node, args: Seq[Node]): Node =
+    Node(D.Call, Array(ef, funptr, args))
+  def unapply(n: Node): Option[(Slot[Node], Slot[Node], Slot[Seq[Node]])] =
+    if (n.desc eq D.Call)
+      Some((n.at(0), n.at(1), n.manyAt(2)))
+    else
+      None
+
+}
+object Load   extends BinaryFactory(D.Load)
+object Store  extends TernaryFactory(D.Store)
+object Equals extends TernaryFactory(D.Equals)
+object Hash   extends BinaryFactory(D.Hash)
 
 object Phi {
   def apply(cf: Node, values: Seq[Node]): Node =
@@ -147,11 +147,6 @@ object Phi {
     else
       None
 }
-object Is          extends BinaryFactory(D.If)
-object Alloc       extends UnaryFactory(D.Alloc)
-object Salloc      extends BinaryFactory(D.Salloc)
-object Length      extends UnaryFactory(D.Length)
-object Elem        extends BinaryFactory(D.Elem)
 object Param {
   def apply(id: String, ty: Node): Node =
     Node(D.Param(id), Array(ty))
@@ -161,7 +156,13 @@ object Param {
       case _           => None
     }
 }
-object TagOf       extends UnaryFactory(D.TagOf)
+object Alloc    extends UnaryFactory(D.Alloc)
+object Alloca   extends UnaryFactory(D.Alloca)
+object Allocs   extends BinaryFactory(D.Allocs)
+object Is       extends BinaryFactory(D.If)
+object Length   extends UnaryFactory(D.Length)
+object Elem     extends BinaryFactory(D.Elem)
+object GetClass extends UnaryFactory(D.GetClass)
 
 object Null  extends NullaryFactory(D.Null)
 object Unit  extends NullaryFactory(D.Unit)

@@ -14,9 +14,9 @@ sealed abstract class Shape {
   }
 }
 object Shape {
-  final case object Hole extends Shape
-  final case class Ref(of: Shape) extends Shape
-  final case class Slice(of: Shape) extends Shape
+  final case object Hole             extends Shape
+  final case class  Ref(of: Shape)   extends Shape //scala
+  final case class  Slice(of: Shape) extends Shape //scala
   // TODO: Ptr(t)
   // TODO: Func(ret, args)
   // TODO: Struct(fields)

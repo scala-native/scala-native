@@ -37,12 +37,6 @@ object Desc {
   final case object Undefined         extends Desc(Sc.Cf, Sc.Ef        ) with Plain with Termn
   final case object End               extends Desc(Sc.Many(Sc.Cf)      ) with Plain with Cf
 
-  final case object EfPhi  extends Desc(Sc.Cf, Sc.Many(Sc.Ef))          with Plain with Ef
-  final case object Equals extends Desc(Sc.Ef, Sc.Val, Sc.Val)          with Plain with Ef with Val
-  final case object Call   extends Desc(Sc.Ef, Sc.Val, Sc.Many(Sc.Val)) with Plain with Ef with Val
-  final case object Load   extends Desc(Sc.Ef, Sc.Val)                  with Plain with Ef with Val
-  final case object Store  extends Desc(Sc.Ef, Sc.Val, Sc.Val)          with Plain with Ef with Val
-
   final case object Add  extends Desc(Sc.Val, Sc.Val) with Plain with Val
   final case object Sub  extends Desc(Sc.Val, Sc.Val) with Plain with Val
   final case object Mul  extends Desc(Sc.Val, Sc.Val) with Plain with Val
@@ -73,18 +67,26 @@ object Desc {
   final case object Ptrtoint extends Desc(Sc.Val, Sc.Ref) with Plain with Val
   final case object Inttoptr extends Desc(Sc.Val, Sc.Ref) with Plain with Val
   final case object Bitcast  extends Desc(Sc.Val, Sc.Ref) with Plain with Val
-  final case object Cast     extends Desc(Sc.Val, Sc.Ref) with Plain with Val
-  final case object Box      extends Desc(Sc.Val, Sc.Ref) with Plain with Val
-  final case object Unbox    extends Desc(Sc.Val, Sc.Ref) with Plain with Val
+  final case object As       extends Desc(Sc.Val, Sc.Ref) with Plain with Val //scala
+  final case object Box      extends Desc(Sc.Val, Sc.Ref) with Plain with Val //scala
+  final case object Unbox    extends Desc(Sc.Val, Sc.Ref) with Plain with Val //scala
 
-  final case object Phi               extends Desc(Sc.Cf, Sc.Many(Sc.Val)) with Plain with Val
-  final case object Is                extends Desc(Sc.Val, Sc.Ref        ) with Plain with Val
-  final case object Alloc             extends Desc(Sc.Ref                ) with Plain with Val
-  final case object Salloc            extends Desc(Sc.Ref, Sc.Val        ) with Plain with Val
-  final case object Length            extends Desc(Sc.Val                ) with Plain with Val
-  final case object Elem              extends Desc(Sc.Val, Sc.Val        ) with Plain with Val
-  final case class  Param(id: String) extends Desc(Sc.Ref                )            with Val
-  final case object TagOf             extends Desc(Sc.Val                ) with Plain with Val
+  final case object EfPhi             extends Desc(Sc.Cf, Sc.Many(Sc.Ef))          with Plain with Ef
+  final case object Call              extends Desc(Sc.Ef, Sc.Val, Sc.Many(Sc.Val)) with Plain with Ef with Val
+  final case object Load              extends Desc(Sc.Ef, Sc.Val)                  with Plain with Ef with Val
+  final case object Store             extends Desc(Sc.Ef, Sc.Val, Sc.Val)          with Plain with Ef with Val
+  final case object Equals            extends Desc(Sc.Ef, Sc.Val, Sc.Val)          with Plain with Ef with Val //scala
+  final case object Hash              extends Desc(Sc.Ef, Sc.Val)                  with Plain with Ef with Val //scala
+
+  final case object Phi               extends Desc(Sc.Cf, Sc.Many(Sc.Val))         with Plain with Val
+  final case class  Param(id: String) extends Desc(Sc.Ref)                                    with Val
+  final case object Alloc             extends Desc(Sc.Ref)                         with Plain with Val
+  final case object Alloca            extends Desc(Sc.Ref)                         with Plain with Val
+  final case object Allocs            extends Desc(Sc.Ref, Sc.Val)                 with Plain with Val //scala
+  final case object Is                extends Desc(Sc.Val, Sc.Ref)                 with Plain with Val //scala
+  final case object Length            extends Desc(Sc.Val)                         with Plain with Val //scala
+  final case object Elem              extends Desc(Sc.Val, Sc.Val)                 with Plain with Val //scala?
+  final case object GetClass          extends Desc(Sc.Val)                         with Plain with Val //scala
 
   final case object Unit                extends Desc() with Plain with Const
   final case object Null                extends Desc() with Plain with Const
@@ -96,7 +98,7 @@ object Desc {
   final case class  I64(value: Long)    extends Desc()            with Const
   final case class  F32(value: Float)   extends Desc()            with Const
   final case class  F64(value: Double)  extends Desc()            with Const
-  final case class  Str(value: String)  extends Desc()            with Const
+  final case class  Str(value: String)  extends Desc()            with Const //scala
 
   final case class Class(name: Name)     extends Desc(Sc.Many(Sc.Ref)                                ) with Defn with Val
   final case class Interface(name: Name) extends Desc(Sc.Many(Sc.Ref)                                ) with Defn with Val
