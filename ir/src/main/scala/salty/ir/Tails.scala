@@ -58,10 +58,8 @@ final case class Focus(cf: Node, ef: Node, value: Node) {
   def mapValue(f: Node => Node) = copy(value = f(value))
 }
 object Focus {
-  def start(): Focus = {
-    val start = Start()
-    Focus(start, start, Unit())
-  }
+  def start(): Focus =
+    Focus(Empty, Empty, Unit())
 
   def sequenced[T](elems: Seq[T], foc: Focus)
                   (f: (T, Focus) => Tails): (Seq[Focus], Tails) = {

@@ -5,8 +5,7 @@ import salty.ir.{Tags => T}
 object Tags {
   final val Empty         = 1
 
-  final val Start         = 1 + Empty
-  final val Label         = 1 + Start
+  final val Label         = 1 + Empty
   final val If            = 1 + Label
   final val Switch        = 1 + If
   final val Try           = 1 + Switch
@@ -110,7 +109,6 @@ object Tags {
   val plain2tag: Map[Desc.Plain, Int] = Map(
     Desc.Empty -> T.Empty,
 
-    Desc.Start         -> T.Start        ,
     Desc.If            -> T.If           ,
     Desc.Switch        -> T.Switch       ,
     Desc.Try           -> T.Try          ,

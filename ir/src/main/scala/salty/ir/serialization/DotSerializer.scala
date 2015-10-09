@@ -44,8 +44,10 @@ class DotSerializer extends Pass {
     val k = key(node)
     define(node)
     node.edges.foreach { case (sc, next) =>
-      define(next)
-      shows = s(key(next), " -> ", k, style(sc)) :: shows
+      if (next.get ne Empty) {
+        define(next)
+        shows = s(key(next), " -> ", k, style(sc)) :: shows
+      }
     }
   }
 }

@@ -40,7 +40,6 @@ sealed abstract class TernaryFactory(desc: D) extends ((Node, Node, Node) => Nod
       None
 }
 
-object Start         extends NullaryFactory(D.Start)
 object Label {
   def apply(id: String, cfs: Seq[Node]): Node =
     Node(D.Label(id), Array(cfs))

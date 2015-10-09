@@ -149,8 +149,7 @@ object Prim {
 
     lazy val initName: Name = Name.Method(name, "<init>", Seq(), Unit.name)
     lazy val initMethod: Node = {
-      val start = Start()
-      val end   = End(Seq(Return(start, start, Unit)))
+      val end   = End(Seq(Return(Empty, Empty, Unit)))
       val rels  = Seq(this)
 
       Define(initName, Unit, Seq(), end, rels)
@@ -191,5 +190,4 @@ object Prim {
   }
 }
 
-// TODO: shall this replace start?
 final case object Empty extends Node(Desc.Empty)

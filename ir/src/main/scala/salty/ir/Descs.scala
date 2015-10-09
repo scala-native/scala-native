@@ -23,7 +23,6 @@ object Desc {
 
   final case object Empty extends Desc() with Plain with Ef with Cf with Val with Defn
 
-  final case object Start             extends Desc(                    ) with Plain with Cf with Ef
   final case class  Label(id: String) extends Desc(Sc.Many(Sc.Cf)      )            with Cf
   final case object If                extends Desc(Sc.Cf, Sc.Val       ) with Plain with Cf
   final case object Switch            extends Desc(Sc.Cf, Sc.Val       ) with Plain with Cf
