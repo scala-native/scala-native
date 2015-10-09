@@ -6,7 +6,7 @@ import scala.tools.nsc.plugins._
 
 class SaltyPlugin(val global: Global) extends Plugin { self =>
   val name = "salty"
-  val description = "Compile to LLVM"
+  val description = "Compile to Salty"
   val components = List[PluginComponent](GenSaltyCodeComponent)
 
   object GenSaltyCodeComponent extends {

@@ -1,7 +1,7 @@
 package salty.tools
 package compiler
 
-import scala.collection.{mutable => mut}
+import scala.collection.mutable
 import scala.tools.nsc._
 import scala.tools.nsc.plugins._
 import scala.util.{Either, Left, Right}
@@ -30,7 +30,7 @@ abstract class GenSaltyCode extends PluginComponent
     Tails.termn(ir.Undefined(focus.cf, focus.ef))
 
   class Env {
-    private val env = mut.Map.empty[Symbol, ir.Node]
+    private val env = mutable.Map.empty[Symbol, ir.Node]
 
     def enter(sym: Symbol, node: ir.Node): ir.Node = {
       env += ((sym, node))
@@ -40,9 +40,10 @@ abstract class GenSaltyCode extends PluginComponent
   }
 
   class LabelEnv(env: Env) {
-    private val labels  = mut.Map.empty[Symbol, ir.Node]
-    private val phiss   = mut.Map.empty[Symbol, Seq[ir.Node]]
-    private val efphis  = mut.Map.empty[Symbol, ir.Node]
+    private val offsets = mutable.Map.empty[Symbol, Int]
+    private val labels  = mutable.Map.empty[Symbol, ir.Node]
+    private val phiss   = mutable.Map.empty[Symbol, Seq[ir.Node]]
+    private val efphis  = mutable.Map.empty[Symbol, ir.Node]
 
     def enterLabel(ld: LabelDef): ir.Node = {
       if (labels.contains(ld.symbol)) {
@@ -61,22 +62,27 @@ abstract class GenSaltyCode extends PluginComponent
           env.enter(reflsym, phi)
           env.enter(treesym, phi)
       }
-      labels += sym -> label
-      phiss  += sym -> phis
-      efphis += sym -> efphi
+      offsets += sym -> 0
+      labels  += sym -> label
+      phiss   += sym -> phis
+      efphis  += sym -> efphi
       label
     }
     def enterLabelCall(sym: Symbol, values: Seq[ir.Node], focus: Focus): Unit = {
+      val offset = offsets(sym)
+
       val ir.Label(_, cfs) = labels(sym)
-      cfs := cfs :+ focus.cf
+      cfs(offset) := focus.cf
 
       val ir.EfPhi(_, efs) = efphis(sym)
-      efs := efs :+ focus.ef
+      efs(offset) := focus.ef
 
       phiss(sym).zip(values).foreach {
         case (ir.Phi(_, values), v) =>
-          values := values :+ v
+          values(offset) := v
       }
+
+      offsets(sym) = offset + 1
     }
     def resolveLabel(sym: Symbol): ir.Node = labels(sym)
     def resolveLabelParams(sym: Symbol): Seq[ir.Node] = phiss(sym)
@@ -84,8 +90,9 @@ abstract class GenSaltyCode extends PluginComponent
   }
 
   class CollectLocalInfo extends Traverser {
-    var mutableVars: Set[Symbol] = Set.empty
-    var labels: Set[LabelDef] = Set.empty
+    var mutableVars     = Set.empty[Symbol]
+    var labels          = Set.empty[LabelDef]
+    val labelApplyCount = mutable.Map.empty[Symbol, Int].withDefault(_ => 0)
 
     override def traverse(tree: Tree) = {
       tree match {
@@ -93,6 +100,8 @@ abstract class GenSaltyCode extends PluginComponent
           labels += label
         case Assign(id @ Ident(_), _) =>
           mutableVars += id.symbol
+        case Apply(fun, _) if fun.symbol.isLabel =>
+          labelApplyCount(fun.symbol) = labelApplyCount(fun.symbol) + 1
         case _ =>
           ()
       }
@@ -451,7 +460,7 @@ abstract class GenSaltyCode extends PluginComponent
 
       def genClosed(focus: Focus, wrap: (ir.Node, ir.Node) => ir.Node): Seq[ir.Node] = {
         val ir.End(ends) = genExpr(finalizer, focus).end((cf, ef, v) => wrap(cf, ef))
-        ends
+        ends.toSeq.map(_.get)
       }
 
       val closedtails = Tails(Seq(), closed.flatMap {

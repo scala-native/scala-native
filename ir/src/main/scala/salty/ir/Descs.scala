@@ -71,6 +71,7 @@ object Desc {
   final case object Box      extends Desc(Sc.Val, Sc.Ref) with Plain with Val //scala
   final case object Unbox    extends Desc(Sc.Val, Sc.Ref) with Plain with Val //scala
 
+  final case object NoEf              extends Desc()                               with Plain with Ef
   final case object EfPhi             extends Desc(Sc.Cf, Sc.Many(Sc.Ef))          with Plain with Ef
   final case object Call              extends Desc(Sc.Ef, Sc.Val, Sc.Many(Sc.Val)) with Plain with Ef with Val
   final case object Load              extends Desc(Sc.Ef, Sc.Val)                  with Plain with Ef with Val
@@ -100,9 +101,9 @@ object Desc {
   final case class  F64(value: Double)  extends Desc()            with Const
   final case class  Str(value: String)  extends Desc()            with Const //scala
 
-  final case class Class(name: Name)     extends Desc(Sc.Many(Sc.Ref)                                ) with Defn with Val
-  final case class Interface(name: Name) extends Desc(Sc.Many(Sc.Ref)                                ) with Defn with Val
-  final case class Module(name: Name)    extends Desc(Sc.Many(Sc.Ref)                                ) with Defn with Val
+  final case class Class(name: Name)     extends Desc(Sc.Many(Sc.Ref)                                ) with Defn with Val //scala
+  final case class Interface(name: Name) extends Desc(Sc.Many(Sc.Ref)                                ) with Defn with Val //scala
+  final case class Module(name: Name)    extends Desc(Sc.Many(Sc.Ref)                                ) with Defn with Val //scala
   final case class Declare(name: Name)   extends Desc(Sc.Ref, Sc.Many(Sc.Val), Sc.Many(Sc.Ref)       ) with Defn with Val
   final case class Define(name: Name)    extends Desc(Sc.Ref, Sc.Many(Sc.Val), Sc.Cf, Sc.Many(Sc.Ref)) with Defn with Val
   final case class Field(name: Name)     extends Desc(Sc.Ref, Sc.Many(Sc.Ref)                        ) with Defn with Val

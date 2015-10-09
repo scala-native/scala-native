@@ -3,10 +3,7 @@ package salty.ir
 import salty.ir.{Tags => T}
 
 object Tags {
-  final val NodeSlot    = 1
-  final val SeqNodeSlot = 1 + NodeSlot
-
-  final val Start         = 1 + SeqNodeSlot
+  final val Start         = 1
   final val Label         = 1 + Start
   final val If            = 1 + Label
   final val Switch        = 1 + If

@@ -28,6 +28,7 @@ final case class Classpath(val paths: Seq[String]) { self =>
         val (nm, rel) =
           if (relpath.endsWith(".class.salty"))
             (Name.Class, relpath.replace(".class.salty", ""))
+          // TODO: it might be better to strip $ in plugin
           else if (relpath.endsWith("$.module.salty"))
             (Name.Module, relpath.replace("$.module.salty", ""))
           else if (relpath.endsWith(".module.salty"))
@@ -94,6 +95,7 @@ final case class Classpath(val paths: Seq[String]) { self =>
     name match {
       case Name.Field(_, id)             => Name.Field(owner, id)
       case Name.Method(_, id, args, ret) => Name.Method(owner, id, args, ret)
+      case _                             => throw new Exception("unreachable")
     }
 
   def resolve(name: Name): Option[Node] = {

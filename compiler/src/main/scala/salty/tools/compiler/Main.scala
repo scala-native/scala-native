@@ -2,6 +2,7 @@ package salty.tools.compiler
 
 import salty.ir._
 import salty.ir.serialization._
+import salty.tools.compiler.reductions._
 
 object Main extends App {
   def abort(msg: String): Nothing = {
@@ -24,6 +25,7 @@ object Main extends App {
   val node = classpath.resolve(entry).getOrElse {
     abort(s"Couldn't resolve entry point $entry")
   }
+  Reduction.run(LowerBoxing, node)
   Opt.get[Opt.Dot](opts).value.foreach { path =>
     val scope = Scope(Map(entry -> node))
     serializeDotFile(scope, path)

@@ -36,8 +36,10 @@ class SaltySerializer(buffer: ByteBuffer) {
     val pos = position
     offsets += (n -> pos)
     putDesc(n.desc)
-    if (n.desc.schema.nonEmpty)
-      putSlots(n.slots)
+    if (n.desc.schema.nonEmpty) {
+      putSeq(n.offsets)(putInt(_))
+      putSeq(n.slots)(putSlot(_))
+    }
     pos
   }
 
@@ -68,16 +70,7 @@ class SaltySerializer(buffer: ByteBuffer) {
     seq.foreach(putT)
   }
 
-  private def putSlots(slots: Array[Any]) = putSeq(slots)(putSlot)
-
-  private def putSlot(slot: Any) = slot match {
-    case n: Node =>
-      putInt(T.NodeSlot)
-      putNodeRef(n)
-    case ns: Seq[_] =>
-      putInt(T.SeqNodeSlot)
-      putSeq(ns.asInstanceOf[Seq[Node]])(putNodeRef)
-  }
+  private def putSlot(slot: Node.Slot) = putNodeRef(slot.get)
 
   private def putNodeRef(n: Node) =
     if (offsets.contains(n))

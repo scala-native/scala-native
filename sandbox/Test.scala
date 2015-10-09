@@ -2,5 +2,5 @@ package test
 
 object Test {
   def main(args: Array[String]): Unit =
-    System.out.println("hello")
+    System.out.println(42.toString)
 }

@@ -1,62 +1,119 @@
 package salty
 package ir
 
+import scala.collection.mutable
 import salty.ir.{Schema => Sc}
-import salty.ir.Node.Slot
+import salty.ir.Node.{Slot, MultiSlot}
 
-sealed class Node private[ir] (var desc: Desc, var slots: Array[Any]) {
-  private[ir] var epoch: Int = 0
+// TODO: consider storing offsets in desc
+// TODO: ensure that all mutability is private[ir]
+sealed class Node private (
+              var desc:    Desc,
+  private[ir] var slots:   Array[Slot] = null,
+  private[ir] var offsets: Array[Int]  = null,
+  private[ir] var epoch:   Int         = 0
+) {
+  private[ir] def this(desc: Desc) = this(desc, Array(), Array())
 
-  final override def toString = {
-    val name = desc.toString
-    val slots = this.slots.map {
-      case n: Node     => n.toString
-      case seq: Seq[_] => seq.mkString(", ")
-    }.mkString("; ")
-    s"$name { $slots }"
-  }
+  private def length(index: Int): Int =
+    if (index + 1 < offsets.length)
+      offsets(index + 1) - offsets(index)
+    else
+      offsets.length - offsets(index)
 
+  private[ir] def at(index: Int): Slot =
+    slots(offsets(index))
+
+  private[ir] def manyAt(index: Int): MultiSlot =
+    new MultiSlot(this, length(index), offsets(index))
+
+  private[ir] def uses: Seq[Slot] = ???
+
+  final override def toString = s"Node($desc, ...)"
+
+  // TODO: cycles
   final def type_==(other: Node): Boolean =
     (this, other) match {
       case (Extern(name1), Extern(name2)) =>
         name1 == name2
       case (Type(shape1, deps1), Type(shape2, deps2)) =>
-        shape1 == shape2 && deps1.zip(deps2).forall { case (l, r) => l type_== r }
+        // shape1 == shape2 && deps1.zip(deps2).forall { case (l, r) => l type_== r }
+        ???
       case _ =>
         this eq other
     }
 
   // TODO: iterator
-  final def edges: Seq[(Sc, Node)] =
-    desc.schema.zip(slots).flatMap {
-      case (Sc.Many(sc), nodes) => nodes.asInstanceOf[Seq[Node]].map { n => (sc, n) }
-      case (sc         , node)  => Seq((sc, node.asInstanceOf[Node]))
-      case _                    => throw new Exception("schema violation")
+  final def edges: Seq[(Sc, Slot)] =
+    desc.schema.zip(offsets).flatMap {
+      case (Sc.Many(sc), offset) => manyAt(offset).toSeq.map((sc, _))
+      case (sc,          offset) => Seq((sc, at(offset)))
+      case _                     => throw new Exception("schema violation")
     }
 
-  private[ir] def at(index: Int): Slot[Node]          = new Slot[Node](this, index)
-  private[ir] def manyAt(index: Int): Slot[Seq[Node]] = new Slot[Seq[Node]](this, index)
+  final def deps: Iterator[Node] =
+    slots.toIterator.map(_.get)
 }
 object Node {
-  private var lastEpoch = 0
+  private[ir] var lastEpoch = 0
+
   private[ir] def nextEpoch = {
     lastEpoch += 1
     lastEpoch
   }
+  private[ir] def apply(desc: Desc): Node =
+    new Node(desc)
 
-  private[ir] def apply(desc: Desc, slots: Array[Any]) =
-    new Node(desc, slots)
+  private[ir] def apply(desc: Desc, deps: Array[Any] /* Array[Slot | Seq[Slot]] */): Node = {
+    val node    = new Node(desc)
+    val slots   = new mutable.ArrayBuffer[Slot]
+    val offsets = new mutable.ArrayBuffer[Int]
+    var offset  = 0
+    deps.foreach {
+      case seq: Seq[_] =>
+        seq.asInstanceOf[Seq[Node]].foreach { n =>
+          slots += new Slot(node, n)
+        }
+        offsets += offset
+        offset  += seq.length
+      case n: Node =>
+        slots   += new Slot(node, n)
+        offsets += offset
+        offset  += 1
+    }
+    node.slots   = slots.toArray
+    node.offsets = offsets.toArray
+    node
+  }
 
-  final class Slot[T](node: Node, index: Int) {
-    def :=(value: T) = node.slots(index) = value
-    def get: T = node.slots(index).asInstanceOf[T]
+  final class Slot private[ir] (
+                  val node: Node,
+    private[this] var next: Node
+  ) {
+    def isEmpty         = false
+    def get             = next
+    def :=(value: Node) = next = value
   }
   object Slot {
-    implicit def slot2value[T](slot: Slot[T]): T = slot.get
+    def unapply(slot: Slot): Slot = slot
+    implicit def unwrap(slot: Slot): Node = slot.get
+  }
+
+  final class MultiSlot(val node: Node, val length: Int, val offset: Int) {
+    def apply(index: Int): Slot = node.slots(offset + index)
+
+    def toSeq: Seq[Slot] = {
+      var i = offset
+      Seq.fill(length) {
+        val slot = node.slots(i)
+        i += 1
+        slot
+      }
+    }
   }
 }
 
-sealed abstract class Prim(val name: Name) extends Node(Desc.Primitive(name), Array())
+sealed abstract class Prim(val name: Name) extends Node(Desc.Primitive(name))
 object Prim {
   final case object Null    extends Prim(Name.Primitive("null"))
   final case object Nothing extends Prim(Name.Primitive("nothing"))
@@ -133,3 +190,5 @@ object Prim {
     lazy val wait2Method: Node = ???
   }
 }
+
+final case object NoEf extends Node(Desc.NoEf)

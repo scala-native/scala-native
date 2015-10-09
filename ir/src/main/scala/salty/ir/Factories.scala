@@ -1,7 +1,7 @@
 package salty.ir
 
 import salty.ir.{Desc => D, Tags => T}
-import salty.ir.Node.Slot
+import salty.ir.Node.{Slot, MultiSlot}
 
 sealed abstract class NullaryFactory(desc: D) extends (() => Node) {
   def apply(): Node=
@@ -13,7 +13,7 @@ sealed abstract class NullaryFactory(desc: D) extends (() => Node) {
 sealed abstract class UnaryFactory(desc: D) extends (Node => Node) {
   def apply(n: Node): Node =
     Node(desc, Array(n))
-  def unapply(n: Node): Option[Slot[Node]] =
+  def unapply(n: Node): Option[Slot] =
     if (n.desc eq desc)
       Some(n.at(0))
     else
@@ -23,7 +23,7 @@ sealed abstract class UnaryFactory(desc: D) extends (Node => Node) {
 sealed abstract class BinaryFactory(desc: D) extends ((Node, Node) => Node) {
   def apply(left: Node, right: Node): Node =
     Node(desc, Array(left, right))
-  def unapply(n: Node): Option[(Slot[Node], Slot[Node])] =
+  def unapply(n: Node): Option[(Slot, Slot)] =
     if (n.desc eq desc)
       Some((n.at(0), n.at(1)))
     else
@@ -33,7 +33,7 @@ sealed abstract class BinaryFactory(desc: D) extends ((Node, Node) => Node) {
 sealed abstract class TernaryFactory(desc: D) extends ((Node, Node, Node) => Node) {
   def apply(left: Node, middle: Node, right: Node): Node =
     Node(desc, Array(left, middle, right))
-  def unapply(n: Node): Option[(Slot[Node], Slot[Node], Slot[Node])] =
+  def unapply(n: Node): Option[(Slot, Slot, Slot)] =
     if (n.desc eq desc)
       Some((n.at(0), n.at(1), n.at(2)))
     else
@@ -44,7 +44,7 @@ object Start         extends NullaryFactory(D.Start)
 object Label {
   def apply(id: String, cfs: Seq[Node]): Node =
     Node(D.Label(id), Array(cfs))
-  def unapply(n: Node): Option[(String, Slot[Seq[Node]])] =
+  def unapply(n: Node): Option[(String, MultiSlot)] =
     n.desc match {
       case D.Label(id) => Some((id, n.manyAt(0)))
       case _           => None
@@ -61,7 +61,7 @@ object CaseException extends UnaryFactory(D.CaseException)
 object Merge {
   def apply(cfs: Seq[Node]): Node =
     Node(D.Merge, Array(cfs))
-  def unapply(n: Node): Option[Slot[Seq[Node]]] =
+  def unapply(n: Node): Option[MultiSlot] =
     if (n.desc eq D.Merge)
       Some(n.manyAt(0))
     else
@@ -73,7 +73,7 @@ object Undefined     extends BinaryFactory(D.Undefined)
 object End {
   def apply(cfs: Seq[Node]): Node =
     Node(D.End, Array(cfs))
-  def unapply(n: Node): Option[Slot[Seq[Node]]] =
+  def unapply(n: Node): Option[MultiSlot] =
     if (n.desc eq D.End)
       Some(n.manyAt(0))
     else
@@ -117,7 +117,7 @@ object Unbox    extends BinaryFactory(D.Unbox   )
 object EfPhi {
   def apply(cf: Node, efs: Seq[Node]): Node =
     Node(D.EfPhi, Array(cf, efs))
-  def unapply(n: Node): Option[(Slot[Node], Slot[Seq[Node]])] =
+  def unapply(n: Node): Option[(Slot, MultiSlot)] =
     if (n.desc eq D.EfPhi)
       Some((n.at(0), n.manyAt(1)))
     else
@@ -126,7 +126,7 @@ object EfPhi {
 object Call {
   def apply(ef: Node, funptr: Node, args: Seq[Node]): Node =
     Node(D.Call, Array(ef, funptr, args))
-  def unapply(n: Node): Option[(Slot[Node], Slot[Node], Slot[Seq[Node]])] =
+  def unapply(n: Node): Option[(Slot, Slot, MultiSlot)] =
     if (n.desc eq D.Call)
       Some((n.at(0), n.at(1), n.manyAt(2)))
     else
@@ -141,7 +141,7 @@ object Hash   extends BinaryFactory(D.Hash)
 object Phi {
   def apply(cf: Node, values: Seq[Node]): Node =
     Node(D.Phi, Array(cf, values))
-  def unapply(n: Node): Option[(Slot[Node], Slot[Seq[Node]])] =
+  def unapply(n: Node): Option[(Slot, MultiSlot)] =
     if (n.desc eq D.Phi)
       Some((n.at(0), n.manyAt(1)))
     else
@@ -150,7 +150,7 @@ object Phi {
 object Param {
   def apply(id: String, ty: Node): Node =
     Node(D.Param(id), Array(ty))
-  def unapply(n: Node): Option[(String, Slot[Node])] =
+  def unapply(n: Node): Option[(String, Slot)] =
     n.desc match {
       case D.Param(id) => Some((id, n.at(0)))
       case _           => None
@@ -235,7 +235,7 @@ object Str   {
 object Class {
   def apply(name: Name, rels: Seq[Node]): Node =
     Node(D.Class(name), Array(rels))
-  def unapply(n: Node): Option[(Name, Slot[Seq[Node]])] =
+  def unapply(n: Node): Option[(Name, MultiSlot)] =
     n.desc match {
       case D.Class(name) => Some((name, n.manyAt(0)))
       case _             => None
@@ -244,7 +244,7 @@ object Class {
 object Interface {
   def apply(name: Name, rels: Seq[Node]): Node =
     Node(D.Interface(name), Array(rels))
-  def unapply(n: Node): Option[(Name, Slot[Seq[Node]])] =
+  def unapply(n: Node): Option[(Name, MultiSlot)] =
     n.desc match {
       case D.Interface(name) => Some((name, n.manyAt(0)))
       case _                 => None
@@ -253,7 +253,7 @@ object Interface {
 object Module {
   def apply(name: Name, rels: Seq[Node]): Node =
     Node(D.Module(name), Array(rels))
-  def unapply(n: Node): Option[(Name, Slot[Seq[Node]])] =
+  def unapply(n: Node): Option[(Name, MultiSlot)] =
     n.desc match {
       case D.Module(name) => Some((name, n.manyAt(0)))
       case _              => None
@@ -263,7 +263,7 @@ object Declare {
   def apply(name: Name, ty: Node, params: Seq[Node], rels: Seq[Node]): Node =
     Node(D.Declare(name),
          Array(ty, params, rels))
-  def unapply(n: Node): Option[(Name, Slot[Node], Slot[Seq[Node]], Slot[Seq[Node]])] =
+  def unapply(n: Node): Option[(Name, Slot, MultiSlot, MultiSlot)] =
     n.desc match {
       case D.Declare(name) =>
         Some((name, n.at(0), n.manyAt(1), n.manyAt(2)))
@@ -275,7 +275,7 @@ object Define {
   def apply(name: Name, ty: Node, params: Seq[Node], end: Node, rels: Seq[Node]): Node =
     Node(D.Define(name),
          Array(ty, params, end, rels))
-  def unapply(n: Node): Option[(Name, Slot[Node], Slot[Seq[Node]], Slot[Node], Slot[Seq[Node]])] =
+  def unapply(n: Node): Option[(Name, Slot, MultiSlot, Slot, MultiSlot)] =
     n.desc match {
       case D.Define(name) =>
         Some((name, n.at(0), n.manyAt(1), n.at(2), n.manyAt(3)))
@@ -286,7 +286,7 @@ object Define {
 object Field {
   def apply(name: Name, ty: Node, rels: Seq[Node]): Node =
     Node(D.Field(name), Array(ty, rels))
-  def unapply(n: Node): Option[(Name, Slot[Node], Slot[Seq[Node]])] =
+  def unapply(n: Node): Option[(Name, Slot, MultiSlot)] =
     n.desc match {
       case D.Field(name) => Some((name, n.at(0), n.manyAt(1)))
       case _             => None
@@ -304,9 +304,20 @@ object Extern {
 object Type {
   def apply(shape: Shape, holes: Seq[Node]): Node =
     Node(D.Type(shape), Array(holes))
-  def unapply(n: Node): Option[(Shape, Slot[Seq[Node]])] =
+  def unapply(n: Node): Option[(Shape, MultiSlot)] =
     n.desc match {
       case D.Type(shape) => Some((shape, n.manyAt(0)))
       case _             => None
     }
+}
+
+// ---
+
+object Ref {
+  def apply(node: Node): Node =
+    Type(Shape.Ref(Shape.Hole), Seq(node))
+  def unapply(node: Node): Option[Node] = node match {
+    case Type(Shape.Ref(Shape.Hole), mslot) => Some(mslot(0))
+    case _                                  => None
+  }
 }
