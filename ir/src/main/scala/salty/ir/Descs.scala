@@ -21,6 +21,8 @@ object Desc {
   sealed trait Const extends Val
   sealed trait Defn
 
+  final case object Empty extends Desc() with Plain with Ef with Cf with Val with Defn
+
   final case object Start             extends Desc(                    ) with Plain with Cf with Ef
   final case class  Label(id: String) extends Desc(Sc.Many(Sc.Cf)      )            with Cf
   final case object If                extends Desc(Sc.Cf, Sc.Val       ) with Plain with Cf
@@ -71,7 +73,6 @@ object Desc {
   final case object Box      extends Desc(Sc.Val, Sc.Ref) with Plain with Val //scala
   final case object Unbox    extends Desc(Sc.Val, Sc.Ref) with Plain with Val //scala
 
-  final case object NoEf              extends Desc()                               with Plain with Ef
   final case object EfPhi             extends Desc(Sc.Cf, Sc.Many(Sc.Ef))          with Plain with Ef
   final case object Call              extends Desc(Sc.Ef, Sc.Val, Sc.Many(Sc.Val)) with Plain with Ef with Val
   final case object Load              extends Desc(Sc.Ef, Sc.Val)                  with Plain with Ef with Val

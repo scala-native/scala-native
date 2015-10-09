@@ -3,7 +3,9 @@ package salty.ir
 import salty.ir.{Tags => T}
 
 object Tags {
-  final val Start         = 1
+  final val Empty         = 1
+
+  final val Start         = 1 + Empty
   final val Label         = 1 + Start
   final val If            = 1 + Label
   final val Switch        = 1 + If
@@ -106,6 +108,8 @@ object Tags {
   final val SliceShape = 1 + RefShape
 
   val plain2tag: Map[Desc.Plain, Int] = Map(
+    Desc.Empty -> T.Empty,
+
     Desc.Start         -> T.Start        ,
     Desc.If            -> T.If           ,
     Desc.Switch        -> T.Switch       ,

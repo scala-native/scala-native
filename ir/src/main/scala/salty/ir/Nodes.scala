@@ -5,7 +5,7 @@ import scala.collection.mutable
 import salty.ir.{Schema => Sc}
 import salty.ir.Node.{Slot, MultiSlot}
 
-// TODO: consider storing offsets in desc
+// TODO: store offsets in desc
 // TODO: ensure that all mutability is private[ir]
 sealed class Node private (
               var desc:    Desc,
@@ -19,7 +19,7 @@ sealed class Node private (
     if (index + 1 < offsets.length)
       offsets(index + 1) - offsets(index)
     else
-      offsets.length - offsets(index)
+      slots.length - offsets(index)
 
   private[ir] def at(index: Int): Slot =
     slots(offsets(index))
@@ -45,10 +45,10 @@ sealed class Node private (
 
   // TODO: iterator
   final def edges: Seq[(Sc, Slot)] =
-    desc.schema.zip(offsets).flatMap {
-      case (Sc.Many(sc), offset) => manyAt(offset).toSeq.map((sc, _))
-      case (sc,          offset) => Seq((sc, at(offset)))
-      case _                     => throw new Exception("schema violation")
+    desc.schema.zipWithIndex.flatMap {
+      case (Sc.Many(sc), idx) => manyAt(idx).toSeq.map((sc, _))
+      case (sc,          idx) => Seq((sc, at(idx)))
+      case _                  => throw new Exception("schema violation")
     }
 
   final def deps: Iterator[Node] =
@@ -191,4 +191,5 @@ object Prim {
   }
 }
 
-final case object NoEf extends Node(Desc.NoEf)
+// TODO: shall this replace start?
+final case object Empty extends Node(Desc.Empty)

@@ -22,8 +22,6 @@ abstract class GenSaltyCode extends PluginComponent
   override def newPhase(prev: Phase): StdPhase =
     new SaltyCodePhase(prev)
 
-  def debug[T](msg: String)(v: T): T = { println(s"$msg = $v"); v }
-
   def unreachable = abort("unreachable")
 
   def undefined(focus: Focus) =
@@ -45,16 +43,17 @@ abstract class GenSaltyCode extends PluginComponent
     private val phiss   = mutable.Map.empty[Symbol, Seq[ir.Node]]
     private val efphis  = mutable.Map.empty[Symbol, ir.Node]
 
-    def enterLabel(ld: LabelDef): ir.Node = {
+    def enterLabel(ld: LabelDef, calls: Int): ir.Node = {
+      println(s"label ${ld.symbol} has $calls entries")
       if (labels.contains(ld.symbol)) {
         labels -= ld.symbol
         phiss -= ld.symbol
         efphis -= ld.symbol
       }
       val sym = ld.symbol
-      val label = ir.Label(genLabelId(ld.symbol), Seq())
-      val phis = Seq.fill(ld.params.length)(ir.Phi(label, Seq()))
-      val efphi = ir.EfPhi(label, Seq())
+      val label = ir.Label(genLabelId(ld.symbol), Seq.fill(calls)(ir.Empty))
+      val phis = Seq.fill(ld.params.length)(ir.Phi(label, Seq.fill(calls)(ir.Empty)))
+      val efphi = ir.EfPhi(label, Seq.fill(calls)(ir.Empty))
       val treesyms = ld.params.map(_.symbol)
       val reflsyms = sym.asMethod.paramLists.head
       treesyms.zip(reflsyms).zip(phis).foreach {
@@ -69,6 +68,8 @@ abstract class GenSaltyCode extends PluginComponent
       label
     }
     def enterLabelCall(sym: Symbol, values: Seq[ir.Node], focus: Focus): Unit = {
+      println(s"entering call to $sym")
+
       val offset = offsets(sym)
 
       val ir.Label(_, cfs) = labels(sym)
@@ -144,7 +145,7 @@ abstract class GenSaltyCode extends PluginComponent
         else {
           val scope = genClass(cd)
           println(cd)
-          scope.entries.keys.foreach(println)
+          //scope.entries.keys.foreach(println)
           genSaltyFile(cunit, sym, scope)
           genDotFile(cunit, sym, scope)
         }
@@ -253,7 +254,7 @@ abstract class GenSaltyCode extends PluginComponent
           case Block(List(ValDef(_, nme.THIS, _, _)),
                      label @ LabelDef(name, Ident(nme.THIS) :: _, rhs)) =>
 
-            curLabelEnv.enterLabel(label)
+            curLabelEnv.enterLabel(label, curLocalInfo.labelApplyCount(label.symbol) + 1)
             val start = Focus.start()
             val values = params.take(label.params.length)
             curLabelEnv.enterLabelCall(label.symbol, values, start)
@@ -274,7 +275,7 @@ abstract class GenSaltyCode extends PluginComponent
     def genExpr(tree: Tree, focus: Focus): Tails = tree match {
       case ld: LabelDef =>
         assert(ld.params.length == 0)
-        val label = curLabelEnv.enterLabel(ld)
+        val label = curLabelEnv.enterLabel(ld, curLocalInfo.labelApplyCount(ld.symbol) + 1)
         curLabelEnv.enterLabelCall(ld.symbol, Seq(), focus)
         genLabel(ld)
 
@@ -510,8 +511,9 @@ abstract class GenSaltyCode extends PluginComponent
       val (prfocus, prt) = sequenced(prologue, focus)(genExpr(_, _))
       val lastfocus = prfocus.lastOption.getOrElse(focus)
 
-      for (ld <- lds) {
-        curLabelEnv.enterLabel(ld)
+      curLabelEnv.enterLabel(lds.head, curLocalInfo.labelApplyCount(lds.head.symbol) + 1)
+      for (ld <- lds.tail) {
+        curLabelEnv.enterLabel(ld, curLocalInfo.labelApplyCount(ld.symbol))
       }
       curLabelEnv.enterLabelCall(lds.head.symbol, Seq(), lastfocus)
 

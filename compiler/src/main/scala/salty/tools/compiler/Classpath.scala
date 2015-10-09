@@ -85,9 +85,9 @@ final case class Classpath(val paths: Seq[String]) { self =>
 
   def relatives(node: Node): Option[Seq[Name]] =
     node match {
-      case Class(_, rels)     => Some(rels.flatMap(defnName))
-      case Module(_, rels)    => Some(rels.flatMap(defnName))
-      case Interface(_, rels) => Some(rels.flatMap(defnName))
+      case Class(_, rels)     => Some(rels.toSeq.flatMap(s => defnName(s.get)))
+      case Module(_, rels)    => Some(rels.toSeq.flatMap(s => defnName(s.get)))
+      case Interface(_, rels) => Some(rels.toSeq.flatMap(s => defnName(s.get)))
       case _                  => None
     }
 

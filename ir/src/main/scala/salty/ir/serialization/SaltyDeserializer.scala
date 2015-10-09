@@ -27,6 +27,8 @@ class SaltyDeserializer(path: String) {
       nodes(pos)
     } else {
       getDesc match {
+        case Desc.Empty =>
+          Empty
         case Desc.Primitive(name) =>
           name match {
             case Name.Primitive("null")        => Prim.Null
