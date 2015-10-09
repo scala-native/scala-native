@@ -37,8 +37,7 @@ sealed class Node private (
       case (Extern(name1), Extern(name2)) =>
         name1 == name2
       case (Type(shape1, deps1), Type(shape2, deps2)) =>
-        // shape1 == shape2 && deps1.zip(deps2).forall { case (l, r) => l type_== r }
-        ???
+        shape1 == shape2 && deps1.toSeq.zip(deps2.toSeq).forall { case (l, r) => l type_== r }
       case _ =>
         this eq other
     }

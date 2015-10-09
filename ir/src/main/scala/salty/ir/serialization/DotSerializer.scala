@@ -34,10 +34,10 @@ class DotSerializer extends Pass {
     s("\"", System.identityHashCode(node).toString, "\"")
 
   var defined = Set.empty[Node]
-  def define(next: Node) =
-    if (!defined.contains(next)) {
-      shows = s(key(next), style(next)) :: shows
-      defined = defined + next
+  def define(node: Node) =
+    if (!defined.contains(node) && (node ne Empty)) {
+      shows = s(key(node), style(node)) :: shows
+      defined = defined + node
     }
 
   def onNode(node: Node): Unit = {

@@ -44,7 +44,6 @@ abstract class GenSaltyCode extends PluginComponent
     private val efphis  = mutable.Map.empty[Symbol, ir.Node]
 
     def enterLabel(ld: LabelDef, calls: Int): ir.Node = {
-      println(s"label ${ld.symbol} has $calls entries")
       if (labels.contains(ld.symbol)) {
         labels -= ld.symbol
         phiss -= ld.symbol
@@ -68,8 +67,6 @@ abstract class GenSaltyCode extends PluginComponent
       label
     }
     def enterLabelCall(sym: Symbol, values: Seq[ir.Node], focus: Focus): Unit = {
-      println(s"entering call to $sym")
-
       val offset = offsets(sym)
 
       val ir.Label(_, cfs) = labels(sym)
@@ -144,7 +141,7 @@ abstract class GenSaltyCode extends PluginComponent
           ()
         else {
           val scope = genClass(cd)
-          println(cd)
+          //println(cd)
           //scope.entries.keys.foreach(println)
           genSaltyFile(cunit, sym, scope)
           genDotFile(cunit, sym, scope)

@@ -16,7 +16,6 @@ package object serialization {
 
   def serializeFile(serialize: (Scope, ByteBuffer) => Unit, scope: Scope, path: String,
                     buffer: ByteBuffer = defaultBuffer): Unit = {
-    println(s"serializing to $path")
     buffer.clear
     serialize(scope, buffer)
     buffer.flip
