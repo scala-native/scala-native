@@ -7,8 +7,8 @@ import salty.ir, ir.{Name => N, Extern, Desc}
 trait GenNameEncoding extends SubComponent with GenTypeKinds {
   import global._, definitions._
 
-  def genParamId(sym: Symbol) = sym.name.toString
-  def genLabelId(sym: Symbol) = sym.name.toString
+  def genParamName(sym: Symbol) = N.Local(sym.name.toString)
+  def genLabelName(sym: Symbol) = N.Local(sym.name.toString)
 
   def genFieldDefn(sym: Symbol) = Extern(genFieldName(sym))
   def genFieldName(sym: Symbol) = {
@@ -59,8 +59,8 @@ trait GenNameEncoding extends SubComponent with GenTypeKinds {
   private def kindName(kind: Kind): ir.Name = {
     val node = toIRType(kind)
     kind match {
-      case PrimitiveKind(_) => node.desc.asInstanceOf[Desc.Primitive].name
-      case BottomKind(_)    => node.desc.asInstanceOf[Desc.Primitive].name
+      case PrimitiveKind(_) => node.name
+      case BottomKind(_)    => node.name
       case ClassKind(sym)   => genClassName(sym)
       case ArrayKind(kind)  => N.Slice(kindName(kind))
     }

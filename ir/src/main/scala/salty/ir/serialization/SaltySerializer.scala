@@ -32,37 +32,32 @@ class SaltySerializer(buffer: ByteBuffer) {
     }
   }
 
-  private def putNode(n: Node): Int = {
+  private def putNode(n: Node): Int =  {
     val pos = position
     offsets += (n -> pos)
-    putDesc(n.desc)
-    if (n.desc.schema.nonEmpty) {
-      putSeq(n.offsets)(putInt(_))
-      putSeq(n.slots)(putSlot(_))
+    if (n eq Empty)
+      putDesc(D.Empty)
+    else {
+      putDesc(n.desc)
+      putName(n.name)
+      if (n.desc.schema.nonEmpty) {
+        putSeq(n.offsets)(putInt(_))
+        putSeq(n.slots)(putSlot(_))
+      }
     }
     pos
   }
 
   private def putDesc(desc: Desc) = desc match {
-    case plain: D.Plain    => putInt(T.plain2tag(plain))
-    case D.Label(id)       => putInt(T.Label); putString(id)
-    case D.Param(id)       => putInt(T.Param); putString(id)
-    case D.I8(v)           => putInt(T.I8); put(v)
-    case D.I16(v)          => putInt(T.I16); putShort(v)
-    case D.I32(v)          => putInt(T.I32); putInt(v)
-    case D.I64(v)          => putInt(T.I64); putLong(v)
-    case D.F32(v)          => putInt(T.F32); putFloat(v)
-    case D.F64(v)          => putInt(T.F64); putDouble(v)
-    case D.Str(v)          => putInt(T.Str); putString(v)
-    case D.Class(name)     => putInt(T.Class); putName(name)
-    case D.Interface(name) => putInt(T.Interface); putName(name)
-    case D.Module(name)    => putInt(T.Module); putName(name)
-    case D.Declare(name)   => putInt(T.Declare); putName(name)
-    case D.Define(name)    => putInt(T.Define); putName(name)
-    case D.Field(name)     => putInt(T.Field); putName(name)
-    case D.Extern(name)    => putInt(T.Extern); putName(name)
-    case D.Type(shape)     => putInt(T.Type); putShape(shape)
-    case D.Primitive(name) => putInt(T.Primitive); putName(name)
+    case plain: D.Plain => putInt(T.plain2tag(plain))
+    case D.I8(v)        => putInt(T.I8); put(v)
+    case D.I16(v)       => putInt(T.I16); putShort(v)
+    case D.I32(v)       => putInt(T.I32); putInt(v)
+    case D.I64(v)       => putInt(T.I64); putLong(v)
+    case D.F32(v)       => putInt(T.F32); putFloat(v)
+    case D.F64(v)       => putInt(T.F64); putDouble(v)
+    case D.Str(v)       => putInt(T.Str); putString(v)
+    case D.Type(shape)  => putInt(T.Type); putShape(shape)
   }
 
   private def putSeq[T](seq: Seq[T])(putT: T => Unit) = {
@@ -70,7 +65,7 @@ class SaltySerializer(buffer: ByteBuffer) {
     seq.foreach(putT)
   }
 
-  private def putSlot(slot: Node.Slot) = putNodeRef(slot.get)
+  private def putSlot(slot: Slot) = putNodeRef(slot.get)
 
   private def putNodeRef(n: Node) =
     if (offsets.contains(n))
@@ -83,6 +78,8 @@ class SaltySerializer(buffer: ByteBuffer) {
   private def putName(name: Name): Unit = name match {
     case Name.No =>
       putInt(T.NoName)
+    case Name.Local(v) =>
+      putInt(T.LocalName); putString(v)
     case Name.Class(v) =>
       putInt(T.ClassName); putString(v)
     case Name.Module(v) =>

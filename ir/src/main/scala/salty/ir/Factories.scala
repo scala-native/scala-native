@@ -1,18 +1,17 @@
 package salty.ir
 
 import salty.ir.{Desc => D, Tags => T}
-import salty.ir.Node.{Slot, MultiSlot}
 
-sealed abstract class NullaryFactory(desc: D) extends (() => Node) {
-  def apply(): Node=
-    Node(desc, Array())
+sealed abstract class NullaryFactory(desc: D) {
+  def apply(name: Name = Name.No): Node=
+    Node(desc, name, Array())
   def unapply(n: Node): Boolean =
     n.desc eq desc
 }
 
-sealed abstract class UnaryFactory(desc: D) extends (Node => Node) {
-  def apply(n: Node): Node =
-    Node(desc, Array(n))
+sealed abstract class UnaryFactory(desc: D) {
+  def apply(n: Node, name: Name = Name.No): Node =
+    Node(desc, name, Array(n))
   def unapply(n: Node): Option[Slot] =
     if (n.desc eq desc)
       Some(n.at(0))
@@ -20,9 +19,9 @@ sealed abstract class UnaryFactory(desc: D) extends (Node => Node) {
       None
 }
 
-sealed abstract class BinaryFactory(desc: D) extends ((Node, Node) => Node) {
-  def apply(left: Node, right: Node): Node =
-    Node(desc, Array(left, right))
+sealed abstract class BinaryFactory(desc: D) {
+  def apply(left: Node, right: Node, name: Name = Name.No): Node =
+    Node(desc, name, Array(left, right))
   def unapply(n: Node): Option[(Slot, Slot)] =
     if (n.desc eq desc)
       Some((n.at(0), n.at(1)))
@@ -30,9 +29,9 @@ sealed abstract class BinaryFactory(desc: D) extends ((Node, Node) => Node) {
       None
 }
 
-sealed abstract class TernaryFactory(desc: D) extends ((Node, Node, Node) => Node) {
-  def apply(left: Node, middle: Node, right: Node): Node =
-    Node(desc, Array(left, middle, right))
+sealed abstract class TernaryFactory(desc: D) {
+  def apply(left: Node, middle: Node, right: Node, name: Name = Name.No): Node =
+    Node(desc, name, Array(left, middle, right))
   def unapply(n: Node): Option[(Slot, Slot, Slot)] =
     if (n.desc eq desc)
       Some((n.at(0), n.at(1), n.at(2)))
@@ -40,15 +39,57 @@ sealed abstract class TernaryFactory(desc: D) extends ((Node, Node, Node) => Nod
       None
 }
 
-object Label {
-  def apply(id: String, cfs: Seq[Node]): Node =
-    Node(D.Label(id), Array(cfs))
-  def unapply(n: Node): Option[(String, MultiSlot)] =
-    n.desc match {
-      case D.Label(id) => Some((id, n.manyAt(0)))
-      case _           => None
-    }
+private[ir] sealed abstract class SeqNodeFactory(desc: D) {
+  def apply(nodes: Seq[Node], name: Name = Name.No): Node =
+    Node(desc, name, Array(nodes))
+  def unapply(n: Node): Option[MultiSlot] =
+    if (n.desc eq desc)
+      Some(n.multiAt(0))
+    else
+      None
 }
+
+private[ir] sealed abstract class NodeSeqNodeFactory(desc: D) {
+  def apply(node: Node, nodes: Seq[Node], name: Name = Name.No): Node =
+    Node(desc, name, Array(node, nodes))
+  def unapply(n: Node): Option[(Slot, MultiSlot)] =
+    if (n.desc eq desc)
+      Some((n.at(0), n.multiAt(1)))
+    else
+      None
+}
+
+private[ir] sealed abstract class NodeSeqNodeNodeFactory(desc: D) {
+  def apply(node1: Node, nodes: Seq[Node], node2: Node, name: Name = Name.No): Node =
+    Node(desc, name, Array(node1, nodes, node2))
+  def unapply(n: Node): Option[(Slot, MultiSlot, Slot)] =
+    if (n.desc eq desc)
+      Some((n.at(0), n.multiAt(1), n.at(2)))
+    else
+      None
+}
+
+private[ir] sealed abstract class NodeSeqNodeNodeNodeFactory(desc: D) {
+  def apply(node1: Node, nodes: Seq[Node], node2: Node, node3: Node, name: Name = Name.No): Node =
+    Node(desc, name, Array(node1, nodes, node2, node3))
+  def unapply(n: Node): Option[(Slot, MultiSlot, Slot, Slot)] =
+    if (n.desc eq desc)
+      Some((n.at(0), n.multiAt(1), n.at(2), n.at(3)))
+    else
+      None
+}
+
+private[ir] sealed abstract class NodeNodeSeqNodeFactory(desc: D) {
+  def apply(node1: Node, node2: Node, nodes: Seq[Node], name: Name = Name.No): Node =
+    Node(desc, name, Array(node1, node2, nodes))
+  def unapply(n: Node): Option[(Slot, Slot, MultiSlot)] =
+    if (n.desc eq desc)
+      Some((n.at(0), n.at(1), n.multiAt(2)))
+    else
+      None
+}
+
+object Label         extends SeqNodeFactory(D.Label)
 object If            extends BinaryFactory(D.If)
 object Switch        extends BinaryFactory(D.Switch)
 object Try           extends UnaryFactory(D.Try)
@@ -57,27 +98,11 @@ object CaseFalse     extends UnaryFactory(D.CaseFalse)
 object CaseConst     extends BinaryFactory(D.CaseConst)
 object CaseDefault   extends UnaryFactory(D.CaseDefault)
 object CaseException extends UnaryFactory(D.CaseException)
-object Merge {
-  def apply(cfs: Seq[Node]): Node =
-    Node(D.Merge, Array(cfs))
-  def unapply(n: Node): Option[MultiSlot] =
-    if (n.desc eq D.Merge)
-      Some(n.manyAt(0))
-    else
-      None
-}
+object Merge         extends SeqNodeFactory(D.Merge)
 object Return        extends TernaryFactory(D.Return)
 object Throw         extends TernaryFactory(D.Throw)
 object Undefined     extends BinaryFactory(D.Undefined)
-object End {
-  def apply(cfs: Seq[Node]): Node =
-    Node(D.End, Array(cfs))
-  def unapply(n: Node): Option[MultiSlot] =
-    if (n.desc eq D.End)
-      Some(n.manyAt(0))
-    else
-      None
-}
+object End           extends SeqNodeFactory(D.End)
 
 object Add  extends BinaryFactory(D.Add )
 object Sub  extends BinaryFactory(D.Sub )
@@ -109,121 +134,91 @@ object Sitofp   extends BinaryFactory(D.Sitofp  )
 object Ptrtoint extends BinaryFactory(D.Ptrtoint)
 object Inttoptr extends BinaryFactory(D.Inttoptr)
 object Bitcast  extends BinaryFactory(D.Bitcast )
-object As       extends BinaryFactory(D.As      )
-object Box      extends BinaryFactory(D.Box     )
-object Unbox    extends BinaryFactory(D.Unbox   )
 
-object EfPhi {
-  def apply(cf: Node, efs: Seq[Node]): Node =
-    Node(D.EfPhi, Array(cf, efs))
-  def unapply(n: Node): Option[(Slot, MultiSlot)] =
-    if (n.desc eq D.EfPhi)
-      Some((n.at(0), n.manyAt(1)))
-    else
-      None
-}
-object Call {
-  def apply(ef: Node, funptr: Node, args: Seq[Node]): Node =
-    Node(D.Call, Array(ef, funptr, args))
-  def unapply(n: Node): Option[(Slot, Slot, MultiSlot)] =
-    if (n.desc eq D.Call)
-      Some((n.at(0), n.at(1), n.manyAt(2)))
-    else
-      None
 
-}
+object EfPhi  extends NodeSeqNodeFactory(D.EfPhi)
+object Call   extends NodeNodeSeqNodeFactory(D.Call)
 object Load   extends BinaryFactory(D.Load)
 object Store  extends TernaryFactory(D.Store)
-object Equals extends TernaryFactory(D.Equals)
-object Hash   extends BinaryFactory(D.Hash)
+object Param  extends UnaryFactory(D.Param)
+object Phi    extends NodeSeqNodeFactory(D.Phi)
+object Alloc  extends UnaryFactory(D.Alloc)
+object Alloca extends UnaryFactory(D.Alloca)
 
-object Phi {
-  def apply(cf: Node, values: Seq[Node]): Node =
-    Node(D.Phi, Array(cf, values))
-  def unapply(n: Node): Option[(Slot, MultiSlot)] =
-    if (n.desc eq D.Phi)
-      Some((n.at(0), n.manyAt(1)))
-    else
-      None
-}
-object Param {
-  def apply(id: String, ty: Node): Node =
-    Node(D.Param(id), Array(ty))
-  def unapply(n: Node): Option[(String, Slot)] =
-    n.desc match {
-      case D.Param(id) => Some((id, n.at(0)))
-      case _           => None
-    }
-}
-object Alloc    extends UnaryFactory(D.Alloc)
-object Alloca   extends UnaryFactory(D.Alloca)
-object Allocs   extends BinaryFactory(D.Allocs)
-object Is       extends BinaryFactory(D.If)
-object Length   extends UnaryFactory(D.Length)
-object Elem     extends BinaryFactory(D.Elem)
-object GetClass extends UnaryFactory(D.GetClass)
+object Equals     extends TernaryFactory(D.Equals)
+object Hash       extends BinaryFactory(D.Hash)
+object FieldElem  extends TernaryFactory(D.FieldElem)
+object MethodElem extends TernaryFactory(D.MethodElem)
+object SliceElem  extends TernaryFactory(D.SliceElem)
+object GetClass   extends BinaryFactory(D.GetClass)
+object Length     extends BinaryFactory(D.Length)
+object Is         extends BinaryFactory(D.If)
+object As         extends BinaryFactory(D.As)
+object Box        extends BinaryFactory(D.Box)
+object Unbox      extends BinaryFactory(D.Unbox)
+object Allocs     extends BinaryFactory(D.Allocs)
 
 object Null  extends NullaryFactory(D.Null)
 object Unit  extends NullaryFactory(D.Unit)
 object True  extends NullaryFactory(D.True)
 object False extends NullaryFactory(D.False)
-object I8    {
+object I8 {
   def apply(v: Byte): Node =
-    Node(D.I8(v), Array())
+    Node(D.I8(v))
   def unapply(n: Node): Option[Byte] =
     n.desc match {
       case D.I8(v) => Some(v)
       case _       => None
     }
 }
-object I16   {
+object I16 {
   def apply(v: Short): Node =
-    Node(D.I16(v), Array())
+    Node(D.I16(v))
   def unapply(n: Node): Option[Short] =
     n.desc match {
       case D.I16(v) => Some(v)
       case _        => None
     }
 }
-object I32   {
+object I32 {
   def apply(v: Int): Node =
-    Node(D.I32(v), Array())
+    Node(D.I32(v))
   def unapply(n: Node): Option[Int] =
     n.desc match {
       case D.I32(v) => Some(v)
       case _        => None
     }
 }
-object I64   {
+object I64 {
   def apply(v: Long): Node =
-    Node(D.I64(v), Array())
+    Node(D.I64(v))
   def unapply(n: Node): Option[Long] =
     n.desc match {
       case D.I64(v) => Some(v)
       case _        => None
     }
 }
-object F32   {
+object F32 {
   def apply(v: Float): Node =
-    Node(D.F32(v), Array())
+    Node(D.F32(v))
   def unapply(n: Node): Option[Float] =
     n.desc match {
       case D.F32(v) => Some(v)
       case _        => None
     }
 }
-object F64   {
+object F64 {
   def apply(v: Double): Node =
-    Node(D.F64(v), Array())
+    Node(D.F64(v))
   def unapply(n: Node): Option[Double] =
     n.desc match {
       case D.F64(v) => Some(v)
       case _        => None
     }
 }
-object Str   {
+object Str {
   def apply(v: String): Node =
-    Node(D.Str(v), Array())
+    Node(D.Str(v))
   def unapply(n: Node): Option[String] =
     n.desc match {
       case D.Str(v) => Some(v)
@@ -231,92 +226,42 @@ object Str   {
     }
 }
 
-object Class {
-  def apply(name: Name, rels: Seq[Node]): Node =
-    Node(D.Class(name), Array(rels))
-  def unapply(n: Node): Option[(Name, MultiSlot)] =
-    n.desc match {
-      case D.Class(name) => Some((name, n.manyAt(0)))
-      case _             => None
-    }
-}
-object Interface {
-  def apply(name: Name, rels: Seq[Node]): Node =
-    Node(D.Interface(name), Array(rels))
-  def unapply(n: Node): Option[(Name, MultiSlot)] =
-    n.desc match {
-      case D.Interface(name) => Some((name, n.manyAt(0)))
-      case _                 => None
-    }
-}
-object Module {
-  def apply(name: Name, rels: Seq[Node]): Node =
-    Node(D.Module(name), Array(rels))
-  def unapply(n: Node): Option[(Name, MultiSlot)] =
-    n.desc match {
-      case D.Module(name) => Some((name, n.manyAt(0)))
-      case _              => None
-    }
-}
-object Declare {
-  def apply(name: Name, ty: Node, params: Seq[Node], rels: Seq[Node]): Node =
-    Node(D.Declare(name),
-         Array(ty, params, rels))
-  def unapply(n: Node): Option[(Name, Slot, MultiSlot, MultiSlot)] =
-    n.desc match {
-      case D.Declare(name) =>
-        Some((name, n.at(0), n.manyAt(1), n.manyAt(2)))
-      case _ =>
-        None
-    }
-}
-object Define {
-  def apply(name: Name, ty: Node, params: Seq[Node], end: Node, rels: Seq[Node]): Node =
-    Node(D.Define(name),
-         Array(ty, params, end, rels))
-  def unapply(n: Node): Option[(Name, Slot, MultiSlot, Slot, MultiSlot)] =
-    n.desc match {
-      case D.Define(name) =>
-        Some((name, n.at(0), n.manyAt(1), n.at(2), n.manyAt(3)))
-      case _ =>
-        None
-    }
-}
-object Field {
-  def apply(name: Name, ty: Node, rels: Seq[Node]): Node =
-    Node(D.Field(name), Array(ty, rels))
-  def unapply(n: Node): Option[(Name, Slot, MultiSlot)] =
-    n.desc match {
-      case D.Field(name) => Some((name, n.at(0), n.manyAt(1)))
-      case _             => None
-    }
-}
-object Extern {
-  def apply(name: Name): Node =
-    Node(D.Extern(name), Array())
-  def unapply(n: Node): Option[Name] =
-    n.desc match {
-      case D.Extern(name) => Some(name)
-      case _              => None
-    }
-}
+object Primitive extends NullaryFactory(D.Primitive)
+object Global    extends BinaryFactory(D.Global)
+object Define    extends NodeSeqNodeNodeFactory(D.Define)
+object Declare   extends NodeSeqNodeFactory(D.Declare)
+object Extern    extends NullaryFactory(D.Extern)
 object Type {
-  def apply(shape: Shape, holes: Seq[Node]): Node =
-    Node(D.Type(shape), Array(holes))
+  def apply(shape: Shape, nodes: Seq[Node], name: Name = Name.No): Node =
+    Node(D.Type(shape), name, Array(nodes))
   def unapply(n: Node): Option[(Shape, MultiSlot)] =
     n.desc match {
-      case D.Type(shape) => Some((shape, n.manyAt(0)))
+      case D.Type(shape) => Some((shape, n.multiAt(0)))
       case _             => None
     }
 }
 
-// ---
+object Class     extends NodeSeqNodeFactory(D.Class)
+object Interface extends SeqNodeFactory(D.Interface)
+object Module    extends NodeSeqNodeNodeFactory(D.Module)
+object Method    extends NodeSeqNodeNodeNodeFactory(D.Method)
+object Field     extends BinaryFactory(D.Field)
+
+// Helper extractors
 
 object Ref {
   def apply(node: Node): Node =
     Type(Shape.Ref(Shape.Hole), Seq(node))
-  def unapply(node: Node): Option[Node] = node match {
+  def unapply(node: Node): Option[Slot] = node match {
     case Type(Shape.Ref(Shape.Hole), mslot) => Some(mslot(0))
     case _                                  => None
+  }
+}
+object Slice {
+  def apply(node: Node): Node =
+    Type(Shape.Slice(Shape.Hole), Seq(node))
+  def unapply(node: Node): Option[Slot] = node match {
+    case Type(Shape.Slice(Shape.Hole), mslot) => Some(mslot(0))
+    case _                                    => None
   }
 }

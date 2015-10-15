@@ -49,52 +49,57 @@ object Tags {
   final val Ptrtoint      = 1 + Sitofp
   final val Inttoptr      = 1 + Ptrtoint
   final val Bitcast       = 1 + Inttoptr
-  final val As            = 1 + Bitcast
-  final val Box           = 1 + As
-  final val Unbox         = 1 + Box
 
-  final val EfPhi         = 1 + Unbox
+  final val EfPhi         = 1 + Bitcast
   final val Call          = 1 + EfPhi
   final val Load          = 1 + Call
   final val Store         = 1 + Load
-  final val Equals        = 1 + Store
-  final val Hash          = 1 + Equals
-
-  final val Phi           = 1 + Hash
-  final val Param         = 1 + Phi
-  final val Alloc         = 1 + Param
+  final val Param         = 1 + Store
+  final val Phi           = 1 + Param
+  final val Alloc         = 1 + Phi
   final val Alloca        = 1 + Alloc
-  final val Allocs        = 1 + Alloca
-  final val Is            = 1 + Allocs
-  final val Length        = 1 + Is
-  final val Elem          = 1 + Length
-  final val GetClass      = 1 + Elem
 
-  final val Unit  = 1 + GetClass
-  final val Null  = 1 + Unit
-  final val True  = 1 + Null
-  final val False = 1 + True
-  final val I8    = 1 + False
-  final val I16   = 1 + I8
-  final val I32   = 1 + I16
-  final val I64   = 1 + I32
-  final val F32   = 1 + I64
-  final val F64   = 1 + F32
-  final val Str   = 1 + F64
-  final val Tag   = 1 + Str
+  final val Equals        = 1 + Alloca
+  final val Hash          = 1 + Equals
+  final val FieldElem     = 1 + Hash
+  final val MethodElem    = 1 + FieldElem
+  final val SliceElem     = 1 + MethodElem
+  final val GetClass      = 1 + SliceElem
+  final val Length        = 1 + GetClass
+  final val Is            = 1 + Length
+  final val As            = 1 + Is
+  final val Box           = 1 + As
+  final val Unbox         = 1 + Box
+  final val Allocs        = 1 + Unbox
 
-  final val Class     = 1 + Tag
-  final val Interface = 1 + Class
-  final val Module    = 1 + Interface
-  final val Declare   = 1 + Module
-  final val Define    = 1 + Declare
-  final val Field     = 1 + Define
-  final val Extern    = 1 + Field
-  final val Type      = 1 + Extern
-  final val Primitive = 1 + Type
+  final val Unit          = 1 + Allocs
+  final val Null          = 1 + Unit
+  final val True          = 1 + Null
+  final val False         = 1 + True
+  final val I8            = 1 + False
+  final val I16           = 1 + I8
+  final val I32           = 1 + I16
+  final val I64           = 1 + I32
+  final val F32           = 1 + I64
+  final val F64           = 1 + F32
+  final val Str           = 1 + F64
 
-  final val NoName        = 1 + Primitive
-  final val ClassName     = 1 + NoName
+  final val Primitive     = 1 + Str
+  final val Global        = 1 + Primitive
+  final val Define        = 1 + Global
+  final val Declare       = 1 + Define
+  final val Extern        = 1 + Declare
+  final val Type          = 1 + Extern
+
+  final val Class         = 1 + Type
+  final val Interface     = 1 + Class
+  final val Module        = 1 + Interface
+  final val Method        = 1 + Module
+  final val Field         = 1 + Method
+
+  final val NoName        = 1 + Field
+  final val LocalName     = 1 + NoName
+  final val ClassName     = 1 + LocalName
   final val ModuleName    = 1 + ClassName
   final val InterfaceName = 1 + ModuleName
   final val PrimitiveName = 1 + InterfaceName
@@ -102,13 +107,14 @@ object Tags {
   final val FieldName     = 1 + SliceName
   final val MethodName    = 1 + FieldName
 
-  final val HoleShape  = 1 + MethodName
-  final val RefShape   = 1 + HoleShape
-  final val SliceShape = 1 + RefShape
+  final val HoleShape     = 1 + MethodName
+  final val RefShape      = 1 + HoleShape
+  final val SliceShape    = 1 + RefShape
 
   val plain2tag: Map[Desc.Plain, Int] = Map(
-    Desc.Empty -> T.Empty,
+    Desc.Empty         -> T.Empty,
 
+    Desc.Label         -> T.Label        ,
     Desc.If            -> T.If           ,
     Desc.Switch        -> T.Switch       ,
     Desc.Try           -> T.Try          ,
@@ -123,60 +129,75 @@ object Tags {
     Desc.Undefined     -> T.Undefined    ,
     Desc.End           -> T.End          ,
 
-    Desc.Add  -> T.Add ,
-    Desc.Sub  -> T.Sub ,
-    Desc.Mul  -> T.Mul ,
-    Desc.Div  -> T.Div ,
-    Desc.Mod  -> T.Mod ,
-    Desc.Shl  -> T.Shl ,
-    Desc.Lshr -> T.Lshr,
-    Desc.Ashr -> T.Ashr,
-    Desc.And  -> T.And ,
-    Desc.Or   -> T.Or  ,
-    Desc.Xor  -> T.Xor ,
-    Desc.Eq   -> T.Eq  ,
-    Desc.Neq  -> T.Neq ,
-    Desc.Lt   -> T.Lt  ,
-    Desc.Lte  -> T.Lte ,
-    Desc.Gt   -> T.Gt  ,
-    Desc.Gte  -> T.Gte ,
+    Desc.Add           -> T.Add ,
+    Desc.Sub           -> T.Sub ,
+    Desc.Mul           -> T.Mul ,
+    Desc.Div           -> T.Div ,
+    Desc.Mod           -> T.Mod ,
+    Desc.Shl           -> T.Shl ,
+    Desc.Lshr          -> T.Lshr,
+    Desc.Ashr          -> T.Ashr,
+    Desc.And           -> T.And ,
+    Desc.Or            -> T.Or  ,
+    Desc.Xor           -> T.Xor ,
+    Desc.Eq            -> T.Eq  ,
+    Desc.Neq           -> T.Neq ,
+    Desc.Lt            -> T.Lt  ,
+    Desc.Lte           -> T.Lte ,
+    Desc.Gt            -> T.Gt  ,
+    Desc.Gte           -> T.Gte ,
 
-    Desc.Trunc    -> T.Trunc   ,
-    Desc.Zext     -> T.Zext    ,
-    Desc.Sext     -> T.Sext    ,
-    Desc.Fptrunc  -> T.Fptrunc ,
-    Desc.Fpext    -> T.Fpext   ,
-    Desc.Fptoui   -> T.Fptoui  ,
-    Desc.Fptosi   -> T.Fptosi  ,
-    Desc.Uitofp   -> T.Uitofp  ,
-    Desc.Sitofp   -> T.Sitofp  ,
-    Desc.Ptrtoint -> T.Ptrtoint,
-    Desc.Inttoptr -> T.Inttoptr,
-    Desc.Bitcast  -> T.Bitcast ,
-    Desc.As       -> T.As      ,
-    Desc.Box      -> T.Box     ,
-    Desc.Unbox    -> T.Unbox   ,
+    Desc.Trunc         -> T.Trunc   ,
+    Desc.Zext          -> T.Zext    ,
+    Desc.Sext          -> T.Sext    ,
+    Desc.Fptrunc       -> T.Fptrunc ,
+    Desc.Fpext         -> T.Fpext   ,
+    Desc.Fptoui        -> T.Fptoui  ,
+    Desc.Fptosi        -> T.Fptosi  ,
+    Desc.Uitofp        -> T.Uitofp  ,
+    Desc.Sitofp        -> T.Sitofp  ,
+    Desc.Ptrtoint      -> T.Ptrtoint,
+    Desc.Inttoptr      -> T.Inttoptr,
+    Desc.Bitcast       -> T.Bitcast ,
 
-    Desc.EfPhi  -> T.EfPhi ,
-    Desc.Call   -> T.Call  ,
-    Desc.Load   -> T.Load  ,
-    Desc.Store  -> T.Store ,
-    Desc.Equals -> T.Equals,
-    Desc.Hash   -> T.Hash  ,
+    Desc.EfPhi         -> T.EfPhi ,
+    Desc.Call          -> T.Call  ,
+    Desc.Load          -> T.Load  ,
+    Desc.Store         -> T.Store ,
+    Desc.Param         -> T.Param ,
+    Desc.Phi           -> T.Phi   ,
+    Desc.Alloc         -> T.Alloc ,
+    Desc.Alloca        -> T.Alloca,
 
-    Desc.Phi         -> T.Phi        ,
-    Desc.Alloc       -> T.Alloc      ,
-    Desc.Alloca      -> T.Alloca     ,
-    Desc.Allocs      -> T.Allocs     ,
-    Desc.Is          -> T.Is         ,
-    Desc.Length      -> T.Length     ,
-    Desc.Elem        -> T.Elem       ,
-    Desc.GetClass    -> T.GetClass   ,
+    Desc.Equals        -> T.Equals    ,
+    Desc.Hash          -> T.Hash      ,
+    Desc.FieldElem     -> T.FieldElem ,
+    Desc.MethodElem    -> T.MethodElem,
+    Desc.SliceElem     -> T.SliceElem ,
+    Desc.GetClass      -> T.GetClass  ,
+    Desc.Length        -> T.Length    ,
+    Desc.Is            -> T.Is        ,
+    Desc.As            -> T.As        ,
+    Desc.Box           -> T.Box       ,
+    Desc.Unbox         -> T.Unbox     ,
+    Desc.Allocs        -> T.Allocs    ,
 
-    Desc.Unit  -> T.Unit ,
-    Desc.Null  -> T.Null ,
-    Desc.True  -> T.True ,
-    Desc.False -> T.False
+    Desc.Unit          -> T.Unit ,
+    Desc.Null          -> T.Null ,
+    Desc.True          -> T.True ,
+    Desc.False         -> T.False,
+
+    Desc.Primitive     -> T.Primitive,
+    Desc.Global        -> T.Global   ,
+    Desc.Define        -> T.Define   ,
+    Desc.Declare       -> T.Declare  ,
+    Desc.Extern        -> T.Extern   ,
+
+    Desc.Class         -> T.Class    ,
+    Desc.Interface     -> T.Interface,
+    Desc.Module        -> T.Module   ,
+    Desc.Method        -> T.Method   ,
+    Desc.Field         -> T.Field
   )
 
   val tag2plain: Map[Int, Desc.Plain] = plain2tag.map { case (k, v) => (v, k) }

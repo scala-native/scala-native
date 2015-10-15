@@ -29,8 +29,8 @@ class SaltyDeserializer(path: String) {
       getDesc match {
         case Desc.Empty =>
           Empty
-        case Desc.Primitive(name) =>
-          name match {
+        case Desc.Primitive =>
+          getName match {
             case Name.Primitive("null")        => Prim.Null
             case Name.Primitive("nothing")     => Prim.Nothing
             case Name.Primitive("unit")        => Prim.Unit
@@ -44,18 +44,21 @@ class SaltyDeserializer(path: String) {
             case Name.Class("java.lang.Class") => Prim.Object
             case _                             => throw new Exception("unreachable")
           }
-        case Desc.Extern(Name.Class("java.lang.Object")) =>
-          Prim.Object
-        case Desc.Extern(name @ Name.Method(Name.Class("java.lang.Object"), _, _, _)) =>
-          Prim.Object.resolve(name).get
-        case Desc.Extern(name) =>
-          extern(name)
+        case Desc.Extern =>
+          getName match {
+            case Name.Class("java.lang.Object") =>
+              Prim.Object
+            case name @ Name.Method(Name.Class("java.lang.Object"), _, _, _) =>
+              Prim.Object.resolve(name).get
+            case name =>
+              extern(name)
+          }
         case desc =>
-          val node = Node(desc, Array())
+          val node = Node(desc, getName)
           nodes += pos -> node
           if (desc.schema.nonEmpty) {
             node.offsets = getOffsets
-            node.slots = getNodeRefs.map(new Node.Slot(node, _))
+            node.slots = getNodeRefs.map(new Slot(node, _))
           }
           node
       }
@@ -69,6 +72,22 @@ class SaltyDeserializer(path: String) {
     res
   }
 
+  private def getDesc(): Desc = getInt match {
+    case T.I8   => Desc.I8(get)
+    case T.I16  => Desc.I16(getShort)
+    case T.I32  => Desc.I32(getInt)
+    case T.I64  => Desc.I64(getLong)
+    case T.F32  => Desc.F32(getFloat)
+    case T.F64  => Desc.F64(getDouble)
+    case T.Str  => Desc.Str(getString)
+    case T.Type => Desc.Type(getShape)
+    case tag    => T.tag2plain(tag)
+  }
+
+  private def getOffsets(): Array[Int] = getSeq(getInt).toArray
+
+  private def getNodeRefs(): Array[Node] = getSeq(getNodeRef).toArray
+
   private def getNodeRef = {
     val pos = getInt
     detour {
@@ -77,34 +96,9 @@ class SaltyDeserializer(path: String) {
     }
   }
 
-  private def getDesc(): Desc = getInt match {
-    case T.Label     => Desc.Label(getString)
-    case T.Param     => Desc.Param(getString)
-    case T.I8        => Desc.I8(get)
-    case T.I16       => Desc.I16(getShort)
-    case T.I32       => Desc.I32(getInt)
-    case T.I64       => Desc.I64(getLong)
-    case T.F32       => Desc.F32(getFloat)
-    case T.F64       => Desc.F64(getDouble)
-    case T.Str       => Desc.Str(getString)
-    case T.Class     => Desc.Class(getName)
-    case T.Interface => Desc.Interface(getName)
-    case T.Module    => Desc.Module(getName)
-    case T.Declare   => Desc.Declare(getName)
-    case T.Define    => Desc.Define(getName)
-    case T.Field     => Desc.Field(getName)
-    case T.Extern    => Desc.Extern(getName)
-    case T.Type      => Desc.Type(getShape)
-    case T.Primitive => Desc.Primitive(getName)
-    case tag         => T.tag2plain(tag)
-  }
-
-  private def getOffsets(): Array[Int] = getSeq(getInt).toArray
-
-  private def getNodeRefs(): Array[Node] = getSeq(getNodeRef).toArray
-
   private def getName(): Name = getInt match {
     case T.NoName        => Name.No
+    case T.LocalName     => Name.Local(getString)
     case T.ClassName     => Name.Class(getString)
     case T.ModuleName    => Name.Module(getString)
     case T.InterfaceName => Name.Interface(getString)

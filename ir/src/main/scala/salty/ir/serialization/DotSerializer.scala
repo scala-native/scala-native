@@ -23,11 +23,11 @@ class DotSerializer extends Pass {
   def style(node: Node) =
     node.desc match {
       case _: Desc.Cf =>
-        s("[shape=box, style=filled, color=lightgrey, label=\"", label(node.desc), "\"]")
-      case _: Desc.Extern =>
-        s("[shape=box, color=red, label=\"", label(node.desc), "\"]")
+        s("[shape=box, style=filled, color=lightgrey, label=\"", label(node), "\"]")
+      case Desc.Extern =>
+        s("[shape=box, color=red, label=\"", label(node), "\"]")
       case _ =>
-        s("[shape=box, label=\"", label(node.desc), "\"]")
+        s("[shape=box, label=\"", label(node), "\"]")
     }
 
   def key(node: Node) =
@@ -52,28 +52,29 @@ class DotSerializer extends Pass {
   }
 }
 object DotSerializer {
-  def label(desc: Desc): String =
-    (desc match {
-      case _: Desc.Plain        => desc.toString
-      case Desc.Label(name)     => s"Label $name"
-      case Desc.Param(name)     => s"Param $name"
-      case Desc.I8(v)           => s"${v}i8"
-      case Desc.I16(v)          => s"${v}i16"
-      case Desc.I32(v)          => s"${v}i32"
-      case Desc.I64(v)          => s"${v}i64"
-      case Desc.F32(v)          => s"${v}f32"
-      case Desc.F64(v)          => s"${v}f64"
-      case Desc.Str(v)          => "\"" + v + "\""
-      case Desc.Class(name)     => s"$name"
-      case Desc.Interface(name) => s"$name"
-      case Desc.Module(name)    => s"$name"
-      case Desc.Declare(name)   => s"$name"
-      case Desc.Define(name)    => s"$name"
-      case Desc.Field(name)     => s"$name"
-      case Desc.Extern(name)    => s"$name"
-      case Desc.Primitive(name) => s"$name"
-      case Desc.Type(shape)     => s"Type $shape"
-    }).replace("\"", "\\\"")
+  def label(node: Node): String = {
+    val body =
+      (node.desc match {
+        case desc: Desc.Plain => desc.toString
+        case Desc.I8(v)       => s"${v}i8"
+        case Desc.I16(v)      => s"${v}i16"
+        case Desc.I32(v)      => s"${v}i32"
+        case Desc.I64(v)      => s"${v}i64"
+        case Desc.F32(v)      => s"${v}f32"
+        case Desc.F64(v)      => s"${v}f64"
+        case Desc.Str(v)      => "\"" + v + "\""
+        case Desc.Type(shape) => s"Type $shape"
+      }).replace("\"", "\\\"")
+
+    node.name match {
+      case Name.No => body
+      case other   =>
+        if (node.desc.isInstanceOf[Desc.Defn])
+          node.name.toString
+        else
+          s"$other = $body"
+    }
+  }
 
   implicit val showScope: Show[Scope] = Show { scope =>
     s(r(scope.entries.values.toSeq.map(n(_))))
@@ -82,7 +83,7 @@ object DotSerializer {
   implicit val showNode: Show[Node] = Show { node =>
     val pass = new DotSerializer
     Pass.run(pass, node)
-    s("digraph \"", label(node.desc), "\" {",
+    s("digraph \"", label(node), "\" {",
         r(pass.shows.map(i)),
       n("}"))
   }

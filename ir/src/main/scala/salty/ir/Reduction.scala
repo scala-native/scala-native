@@ -8,7 +8,8 @@ abstract class Reduction {
 object Reduction {
   sealed abstract class Change
   final case object NoChange extends Change
-  final case class Replace(node: Node) extends Change
+  final case class Replace(f: Slot => Node) extends Change
+  object Replace { def all(n: Node) = Replace(_ => n) }
 
   def run(reduction: Reduction, entry: Node): Unit = {
     val epoch = Node.nextEpoch
@@ -18,13 +19,15 @@ object Reduction {
       if (node.epoch < epoch)
         reduction.reduce.applyOrElse(node, (_: Node) => NoChange) match {
           case NoChange =>
-            println(s"no change $node")
             node.epoch = epoch
             node.deps.foreach(stack.push)
-          case Replace(newnode) =>
-            println(s"replace $node with $newnode")
-            node.uses.foreach(_ := newnode)
-            stack.push(newnode)
+          // TODO: split into Replace & ReplaceAll ?
+          case Replace(f) =>
+            node.uses.foreach { s =>
+              val newnode = f(s)
+              stack.push(newnode)
+              s := newnode
+            }
         }
     }
   }

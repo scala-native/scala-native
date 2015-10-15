@@ -75,20 +75,12 @@ final case class Classpath(val paths: Seq[String]) { self =>
     }
   }
 
-  def defnName(node: Node): Option[Name] =
-    node match {
-      case Class(name, _)     => Some(name)
-      case Module(name, _)    => Some(name)
-      case Interface(name, _) => Some(name)
-      case _                  => None
-    }
-
   def relatives(node: Node): Option[Seq[Name]] =
     node match {
-      case Class(_, rels)     => Some(rels.toSeq.flatMap(s => defnName(s.get)))
-      case Module(_, rels)    => Some(rels.toSeq.flatMap(s => defnName(s.get)))
-      case Interface(_, rels) => Some(rels.toSeq.flatMap(s => defnName(s.get)))
-      case _                  => None
+      case Class(parent, ifaces)     => Some((parent +: ifaces.toSeq).map(_.get.name))
+      case Module(parent, ifaces, _) => Some((parent +: ifaces.toSeq).map(_.get.name))
+      case Interface(ifaces)         => Some(ifaces.toSeq.map(_.get.name))
+      case _                         => None
     }
 
   def chown(name: Name, owner: Name): Name =

@@ -3,18 +3,18 @@ package ir
 
 import scala.collection.mutable
 import salty.ir.{Schema => Sc}
-import salty.ir.Node.{Slot, MultiSlot}
 
 // TODO: store offsets in desc
 // TODO: ensure that all mutability is private[ir]
 sealed class Node private (
               val desc:    Desc,
+              val name:    Name,
   private[ir] var slots:   Array[Slot]       = null,
   private[ir] var offsets: Array[Int]        = null,
   private[ir] var epoch:   Int               = 0,
   private[ir] var uses:    mutable.Set[Slot] = mutable.Set.empty
 ) {
-  private[ir] def this(desc: Desc) = this(desc, Array(), Array())
+  private[ir] def this(desc: Desc, name: Name) = this(desc, name, Array(), Array())
 
   private def length(index: Int): Int =
     if (index + 1 < offsets.length)
@@ -25,7 +25,7 @@ sealed class Node private (
   private[ir] def at(index: Int): Slot =
     slots(offsets(index))
 
-  private[ir] def manyAt(index: Int): MultiSlot =
+  private[ir] def multiAt(index: Int): MultiSlot =
     new MultiSlot(this, length(index), offsets(index))
 
   final override def toString = s"Node($desc, ...)"
@@ -33,8 +33,8 @@ sealed class Node private (
   // TODO: cycles
   final def type_==(other: Node): Boolean =
     (this, other) match {
-      case (Extern(name1), Extern(name2)) =>
-        name1 == name2
+      case (Extern(), Extern()) =>
+        this.name == other.name
       case (Type(shape1, deps1), Type(shape2, deps2)) =>
         shape1 == shape2 && deps1.toSeq.zip(deps2.toSeq).forall { case (l, r) => l type_== r }
       case _ =>
@@ -44,7 +44,7 @@ sealed class Node private (
   // TODO: iterator
   final def edges: Seq[(Sc, Slot)] =
     desc.schema.zipWithIndex.flatMap {
-      case (Sc.Many(sc), idx) => manyAt(idx).toSeq.map((sc, _))
+      case (Sc.Many(sc), idx) => multiAt(idx).toSeq.map((sc, _))
       case (sc,          idx) => Seq((sc, at(idx)))
       case _                  => throw new Exception("schema violation")
     }
@@ -54,16 +54,16 @@ sealed class Node private (
 }
 object Node {
   private[ir] var lastEpoch = 0
-
   private[ir] def nextEpoch = {
     lastEpoch += 1
     lastEpoch
   }
-  private[ir] def apply(desc: Desc): Node =
-    new Node(desc)
 
-  private[ir] def apply(desc: Desc, deps: Array[Any] /* Array[Slot | Seq[Slot]] */): Node = {
-    val node    = new Node(desc)
+  private[ir] def apply(desc: Desc, name: Name = Name.No): Node =
+    new Node(desc, name)
+
+  private[ir] def apply(desc: Desc, name: Name, deps: Array[Any] /* Array[Slot | Seq[Slot]] */): Node = {
+    val node    = new Node(desc, name)
     val slots   = new mutable.ArrayBuffer[Slot]
     val offsets = new mutable.ArrayBuffer[Int]
     var offset  = 0
@@ -74,7 +74,7 @@ object Node {
         }
         offsets += offset
         offset  += seq.length
-      case n: Node =>
+      case n: Node=>
         slots   += new Slot(node, n)
         offsets += offset
         offset  += 1
@@ -83,41 +83,9 @@ object Node {
     node.offsets = offsets.toArray
     node
   }
-
-  final class Slot private[ir] (
-                  val node: Node,
-    private[this] var next: Node
-  ) {
-    next.uses += this
-
-    def isEmpty: Boolean      = false
-    def get: Node             = next
-    def :=(value: Node): Unit = {
-      next.uses -= this
-      next = value
-      next.uses += this
-    }
-  }
-  object Slot {
-    def unapply(slot: Slot): Slot = slot
-    implicit def unwrap(slot: Slot): Node = slot.get
-  }
-
-  final class MultiSlot(val node: Node, val length: Int, val offset: Int) {
-    def apply(index: Int): Slot = node.slots(offset + index)
-
-    def toSeq: Seq[Slot] = {
-      var i = offset
-      Seq.fill(length) {
-        val slot = node.slots(i)
-        i += 1
-        slot
-      }
-    }
-  }
 }
 
-sealed abstract class Prim(val name: Name) extends Node(Desc.Primitive(name))
+sealed abstract class Prim(name: Name) extends Node(Desc.Primitive, name)
 object Prim {
   final case object Null    extends Prim(Name.Primitive("null"))
   final case object Nothing extends Prim(Name.Primitive("nothing"))
@@ -152,12 +120,8 @@ object Prim {
     }
 
     lazy val initName: Name = Name.Method(name, "<init>", Seq(), Unit.name)
-    lazy val initMethod: Node = {
-      val end   = End(Seq(Return(Empty, Empty, Unit)))
-      val rels  = Seq(this)
-
-      Define(initName, Unit, Seq(), end, rels)
-    }
+    lazy val initMethod: Node =
+      Method(Unit, Seq(), End(Seq(Return(Empty, Empty, Unit))), this, name = initName)
 
     lazy val cloneName: Name = Name.Method(name, "clone", Seq(), name)
     lazy val cloneMethod: Node = ???
@@ -194,4 +158,4 @@ object Prim {
   }
 }
 
-final case object Empty extends Node(Desc.Empty)
+final case object Empty extends Node(Desc.Empty, Name.No)
