@@ -25,7 +25,7 @@ object Main extends App {
   val node = classpath.resolve(entry).getOrElse {
     abort(s"Couldn't resolve entry point $entry")
   }
-  //Reduction.run(LowerBoxing, node)
+  Reduction.run(LowerBoxing, node)
   Opt.get[Opt.Dot](opts).value.foreach { path =>
     val scope = Scope(Map(entry -> node))
     serializeDotFile(scope, path)

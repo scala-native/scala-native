@@ -15,16 +15,17 @@ object Reduction {
     val stack = mutable.Stack(entry)
     while (stack.nonEmpty) {
       val node = stack.pop()
-      node.deps.foreach { n =>
-        if (n.epoch < epoch) stack.push(n)
-      }
-      reduction.reduce.applyOrElse(node, (_: Node) => NoChange) match {
-        case NoChange =>
-          ()
-        case Replace(newnode) =>
-          node.uses.foreach(_ := newnode)
-      }
-      node.epoch = epoch
+      if (node.epoch < epoch)
+        reduction.reduce.applyOrElse(node, (_: Node) => NoChange) match {
+          case NoChange =>
+            println(s"no change $node")
+            node.epoch = epoch
+            node.deps.foreach(stack.push)
+          case Replace(newnode) =>
+            println(s"replace $node with $newnode")
+            node.uses.foreach(_ := newnode)
+            stack.push(newnode)
+        }
     }
   }
 }

@@ -8,10 +8,11 @@ import salty.ir.Node.{Slot, MultiSlot}
 // TODO: store offsets in desc
 // TODO: ensure that all mutability is private[ir]
 sealed class Node private (
-              var desc:    Desc,
-  private[ir] var slots:   Array[Slot] = null,
-  private[ir] var offsets: Array[Int]  = null,
-  private[ir] var epoch:   Int         = 0
+              val desc:    Desc,
+  private[ir] var slots:   Array[Slot]       = null,
+  private[ir] var offsets: Array[Int]        = null,
+  private[ir] var epoch:   Int               = 0,
+  private[ir] var uses:    mutable.Set[Slot] = mutable.Set.empty
 ) {
   private[ir] def this(desc: Desc) = this(desc, Array(), Array())
 
@@ -26,8 +27,6 @@ sealed class Node private (
 
   private[ir] def manyAt(index: Int): MultiSlot =
     new MultiSlot(this, length(index), offsets(index))
-
-  private[ir] def uses: Seq[Slot] = ???
 
   final override def toString = s"Node($desc, ...)"
 
@@ -89,9 +88,15 @@ object Node {
                   val node: Node,
     private[this] var next: Node
   ) {
-    def isEmpty         = false
-    def get             = next
-    def :=(value: Node) = next = value
+    next.uses += this
+
+    def isEmpty: Boolean      = false
+    def get: Node             = next
+    def :=(value: Node): Unit = {
+      next.uses -= this
+      next = value
+      next.uses += this
+    }
   }
   object Slot {
     def unapply(slot: Slot): Slot = slot
