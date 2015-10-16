@@ -8,11 +8,11 @@ import salty.ir._, Reduction._
  *
  *  For example a module with members:
  *
- *      object $name: $parent, ..$ifaces, $ctor
+ *      object $name: $parent, .. $ifaces, $ctor
  *
  *  Translates to:
  *
- *      class $name: $parent, ..$ifaces
+ *      class $name: $parent, .. $ifaces
  *
  *      global $name.data: $name = null
  *
@@ -26,8 +26,11 @@ import salty.ir._, Reduction._
  *        else
  *          return %prev
  *
- *  All type dependenceies become type dependencies on module class.
- *  All value dependencies rewritten to calls to accessor.
+ *  Usages are rewritten as follows:
+ *
+ *  * Type usages become usages of module class
+ *
+ *  * Value dependencies are rewritten to calls to accessor.
  */
 object ModuleLowering extends Reduction {
   def reduce = {
