@@ -111,9 +111,11 @@ object Tags {
   final val ConstructorName = 1 + FieldName
   final val MethodName      = 1 + ConstructorName
 
-  final val HoleShape     = 1 + MethodName
-  final val RefShape      = 1 + HoleShape
-  final val SliceShape    = 1 + RefShape
+  final val ValSchema  = 1 + MethodName
+  final val CfSchema   = 1 + ValSchema
+  final val EfSchema   = 1 + CfSchema
+  final val RefSchema  = 1 + EfSchema
+  final val ManySchema = 1 + RefSchema
 
   val plain2tag: Map[Desc.Plain, Int] = Map(
     Desc.Empty         -> T.Empty,

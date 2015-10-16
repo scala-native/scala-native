@@ -10,24 +10,33 @@ object Main extends App {
     System.exit(1)
     throw new Exception("unreachable")
   }
-
-  val (opts, entry) = Opt.parse(args.toList) match {
+  val (opts, id) = Opt.parse(args.toList) match {
     case (opts, id :: Nil) =>
-      val entry =
-        Name.Method(Name.Module(id), "main",
-          Vector(Name.Slice(Name.Class("java.lang.String"))),
-          Name.Primitive("unit"))
-      (opts, entry)
+      (opts, id)
     case (opts, _ ) =>
       abort("Compiler takes a single entry point.")
   }
   val classpath = Opt.get[Opt.Cp](opts).value
-  val node = classpath.resolve(entry).getOrElse {
-    abort(s"Couldn't resolve entry point $entry")
+  def resolve(n: Name) =
+    classpath.resolve(n).getOrElse {
+      abort(s"Couldn't resolve $n")
+    }
+  val main = {
+    val moduleName = Name.Module(id)
+    val methodName =
+      Name.Method(moduleName, "main",
+        Vector(Name.Slice(Name.Class("java.lang.String"))),
+        Name.Primitive("unit"))
+    val module = resolve(moduleName)
+    val method = resolve(methodName)
+    val elem = MethodElem(Empty, module, method)
+    val call = Call(elem, elem, Seq())
+    val end = End(Seq(Return(Empty, call, Unit())))
+    Define(Prim.Unit, Seq(), end, name = Name.Main)
   }
-  //Reduction.run(LowerBoxing, node)
+  Reduction.run(ModuleLowering, main)
   Opt.get[Opt.Dot](opts).value.foreach { path =>
-    val scope = Scope(Map(entry -> node))
+    val scope = Scope(Map(Name.Main -> main))
     serializeDotFile(scope, path)
   }
 }

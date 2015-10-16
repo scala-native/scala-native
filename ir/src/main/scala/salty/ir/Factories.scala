@@ -162,6 +162,7 @@ object Null  extends NullaryFactory(D.Null)
 object Unit  extends NullaryFactory(D.Unit)
 object True  extends NullaryFactory(D.True)
 object False extends NullaryFactory(D.False)
+object Zero  extends UnaryFactory(D.Zero)
 object I8 {
   def apply(v: Byte): Node =
     Node(D.I8(v))

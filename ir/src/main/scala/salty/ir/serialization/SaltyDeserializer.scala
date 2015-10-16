@@ -60,7 +60,7 @@ class SaltyDeserializer(path: String) {
           nodes += pos -> node
           if (desc.schema.nonEmpty) {
             node.offsets = getOffsets
-            node.slots = getNodeRefs.map(new Slot(node, _))
+            node.slots = getSlots(node)
           }
           node
       }
@@ -86,7 +86,19 @@ class SaltyDeserializer(path: String) {
 
   private def getOffsets(): Array[Int] = getSeq(getInt).toArray
 
-  private def getNodeRefs(): Array[Node] = getSeq(getNodeRef).toArray
+  private def getSlots(node: Node): Array[Slot] = getSeq {
+    val sc = getSchema
+    val next = getNodeRef
+    new Slot(sc, node, next)
+  }.toArray
+
+  private def getSchema: Schema = getInt match {
+    case T.ValSchema  => Schema.Val
+    case T.CfSchema   => Schema.Cf
+    case T.EfSchema   => Schema.Ef
+    case T.RefSchema  => Schema.Ref
+    case T.ManySchema => Schema.Many(getSchema)
+  }
 
   private def getNodeRef = {
     val pos = getInt

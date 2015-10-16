@@ -84,17 +84,18 @@ object Desc {
   final case object Unbox      extends Plain(       Sc.Val, Sc.Ref)         with Val //scala
   final case object Allocs     extends Plain(       Sc.Ref, Sc.Val)         with Val //scala
 
-  final case object Unit               extends Plain() with Val
-  final case object Null               extends Plain() with Val
-  final case object True               extends Plain() with Val
-  final case object False              extends Plain() with Val
-  final case class  I8(value: Byte)    extends Rich()  with Val
-  final case class  I16(value: Short)  extends Rich()  with Val
-  final case class  I32(value: Int)    extends Rich()  with Val
-  final case class  I64(value: Long)   extends Rich()  with Val
-  final case class  F32(value: Float)  extends Rich()  with Val
-  final case class  F64(value: Double) extends Rich()  with Val
-  final case class  Str(value: String) extends Rich()  with Val //scala
+  final case object Unit               extends Plain()       with Val
+  final case object Null               extends Plain()       with Val
+  final case object True               extends Plain()       with Val
+  final case object False              extends Plain()       with Val
+  final case object Zero               extends Plain(Sc.Ref) with Val
+  final case class  I8(value: Byte)    extends Rich()        with Val
+  final case class  I16(value: Short)  extends Rich()        with Val
+  final case class  I32(value: Int)    extends Rich()        with Val
+  final case class  I64(value: Long)   extends Rich()        with Val
+  final case class  F32(value: Float)  extends Rich()        with Val
+  final case class  F64(value: Double) extends Rich()        with Val
+  final case class  Str(value: String) extends Rich()        with Val //scala
 
   final case object Primitive extends Plain(                              ) with Defn
   final case object Global    extends Plain(Sc.Ref, Sc.Val                ) with Defn with Val

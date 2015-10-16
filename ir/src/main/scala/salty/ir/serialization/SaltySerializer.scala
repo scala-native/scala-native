@@ -64,7 +64,15 @@ class SaltySerializer(buffer: ByteBuffer) {
     seq.foreach(putT)
   }
 
-  private def putSlot(slot: Slot) = putNodeRef(slot.get)
+  private def putSlot(slot: Slot) = { putSchema(slot.schema); putNodeRef(slot.get) }
+
+  private def putSchema(schema: Schema): Unit = schema match {
+    case Schema.Val      => putInt(T.ValSchema)
+    case Schema.Cf       => putInt(T.CfSchema)
+    case Schema.Ef       => putInt(T.EfSchema)
+    case Schema.Ref      => putInt(T.RefSchema)
+    case Schema.Many(sc) => putInt(T.ManySchema); putSchema(sc)
+  }
 
   private def putNodeRef(n: Node) =
     if (offsets.contains(n))

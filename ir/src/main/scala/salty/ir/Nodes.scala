@@ -73,17 +73,19 @@ object Node {
     val slots   = new mutable.ArrayBuffer[Slot]
     val offsets = new mutable.ArrayBuffer[Int]
     var offset  = 0
-    deps.foreach {
-      case seq: Seq[_] =>
+    deps.zip(desc.schema).foreach {
+      case (seq: Seq[_], Sc.Many(schema)) =>
         seq.asInstanceOf[Seq[Node]].foreach { n =>
-          slots += new Slot(node, n)
+          slots += new Slot(schema, node, n)
         }
         offsets += offset
         offset  += seq.length
-      case n: Node=>
-        slots   += new Slot(node, n)
+      case (n: Node, schema) =>
+        slots   += new Slot(schema, node, n)
         offsets += offset
         offset  += 1
+      case _ =>
+        throw new Exception("Schema violation.")
     }
     node.slots   = slots.toArray
     node.offsets = offsets.toArray
