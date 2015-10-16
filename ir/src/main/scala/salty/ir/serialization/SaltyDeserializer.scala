@@ -81,7 +81,6 @@ class SaltyDeserializer(path: String) {
     case T.F32  => Desc.F32(getFloat)
     case T.F64  => Desc.F64(getDouble)
     case T.Str  => Desc.Str(getString)
-    case T.Type => Desc.Type(getShape)
     case tag    => T.tag2plain(tag)
   }
 
@@ -112,12 +111,6 @@ class SaltyDeserializer(path: String) {
 
   private def getSeq[T](getT: => T): Seq[T] =
     (1 to getInt).map(_ => getT).toSeq
-
-  private def getShape(): Shape = getInt match {
-    case T.HoleShape  => Shape.Hole
-    case T.RefShape   => Shape.Ref(getShape)
-    case T.SliceShape => Shape.Slice(getShape)
-  }
 
   private def getString(): String = {
     val arr = new Array[Byte](getInt)

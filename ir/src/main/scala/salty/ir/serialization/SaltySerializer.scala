@@ -57,7 +57,6 @@ class SaltySerializer(buffer: ByteBuffer) {
     case D.F32(v)       => putInt(T.F32); putFloat(v)
     case D.F64(v)       => putInt(T.F64); putDouble(v)
     case D.Str(v)       => putInt(T.Str); putString(v)
-    case D.Type(shape)  => putInt(T.Type); putShape(shape)
   }
 
   private def putSeq[T](seq: Seq[T])(putT: T => Unit) = {
@@ -96,12 +95,6 @@ class SaltySerializer(buffer: ByteBuffer) {
       putInt(T.ConstructorName); putName(owner); putSeq(params)(putName)
     case Name.Method(owner, id, params, ret) =>
       putInt(T.MethodName); putName(owner); putString(id); putSeq(params)(putName); putName(ret)
-  }
-
-  private def putShape(shape: Shape): Unit = shape match {
-    case Shape.Hole     => putInt(T.HoleShape)
-    case Shape.Ref(s)   => putInt(T.RefShape); putShape(s)
-    case Shape.Slice(s) => putInt(T.SliceShape); putShape(s)
   }
 
   private def putString(v: String) = {

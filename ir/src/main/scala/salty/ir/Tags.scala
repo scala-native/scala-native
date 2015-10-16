@@ -89,13 +89,16 @@ object Tags {
   final val Define        = 1 + Global
   final val Declare       = 1 + Define
   final val Extern        = 1 + Declare
-  final val Type          = 1 + Extern
+  final val Struct        = 1 + Extern
+  final val Ptr           = 1 + Struct
+  final val Function      = 1 + Ptr
 
-  final val Class         = 1 + Type
+  final val Class         = 1 + Slice
   final val Interface     = 1 + Class
   final val Module        = 1 + Interface
   final val Method        = 1 + Module
   final val Field         = 1 + Method
+  final val Slice         = 1 + Function
 
   final val NoName          = 1 + Field
   final val LocalName       = 1 + NoName
@@ -193,12 +196,16 @@ object Tags {
     Desc.Define        -> T.Define   ,
     Desc.Declare       -> T.Declare  ,
     Desc.Extern        -> T.Extern   ,
+    Desc.Struct        -> T.Struct   ,
+    Desc.Ptr           -> T.Ptr      ,
+    Desc.Function      -> T.Function ,
 
     Desc.Class         -> T.Class    ,
     Desc.Interface     -> T.Interface,
     Desc.Module        -> T.Module   ,
     Desc.Method        -> T.Method   ,
-    Desc.Field         -> T.Field
+    Desc.Field         -> T.Field    ,
+    Desc.Slice         -> T.Slice
   )
 
   val tag2plain: Map[Int, Desc.Plain] = plain2tag.map { case (k, v) => (v, k) }

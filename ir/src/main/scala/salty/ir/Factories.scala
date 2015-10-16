@@ -231,37 +231,13 @@ object Global    extends BinaryFactory(D.Global)
 object Define    extends NodeSeqNodeNodeFactory(D.Define)
 object Declare   extends NodeSeqNodeFactory(D.Declare)
 object Extern    extends NullaryFactory(D.Extern)
-object Type {
-  def apply(shape: Shape, nodes: Seq[Node], name: Name = Name.No): Node =
-    Node(D.Type(shape), name, Array(nodes))
-  def unapply(n: Node): Option[(Shape, MultiSlot)] =
-    n.desc match {
-      case D.Type(shape) => Some((shape, n.multiAt(0)))
-      case _             => None
-    }
-}
+object Struct    extends SeqNodeFactory(D.Struct)
+object Ptr       extends UnaryFactory(D.Ptr)
+object Function  extends NodeSeqNodeFactory(D.Function)
 
 object Class     extends NodeSeqNodeFactory(D.Class)
 object Interface extends SeqNodeFactory(D.Interface)
 object Module    extends NodeSeqNodeNodeFactory(D.Module)
 object Method    extends NodeSeqNodeNodeNodeFactory(D.Method)
 object Field     extends BinaryFactory(D.Field)
-
-// Helper extractors
-
-object Ref {
-  def apply(node: Node): Node =
-    Type(Shape.Ref(Shape.Hole), Seq(node))
-  def unapply(node: Node): Option[Slot] = node match {
-    case Type(Shape.Ref(Shape.Hole), mslot) => Some(mslot(0))
-    case _                                  => None
-  }
-}
-object Slice {
-  def apply(node: Node): Node =
-    Type(Shape.Slice(Shape.Hole), Seq(node))
-  def unapply(node: Node): Option[Slot] = node match {
-    case Type(Shape.Slice(Shape.Hole), mslot) => Some(mslot(0))
-    case _                                    => None
-  }
-}
+object Slice     extends UnaryFactory(D.Slice)

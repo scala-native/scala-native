@@ -35,8 +35,14 @@ sealed class Node private (
     (this, other) match {
       case (Extern(), Extern()) =>
         this.name == other.name
-      case (Type(shape1, deps1), Type(shape2, deps2)) =>
-        shape1 == shape2 && deps1.toSeq.zip(deps2.toSeq).forall { case (l, r) => l type_== r }
+      case (Struct(args1), Struct(args2)) =>
+        args1.toSeq.zip(args2.toSeq).forall { case (l, r) => l type_== r }
+      case (Ptr(arg1), Ptr(arg2)) =>
+        arg1 type_== arg2
+      case (Function(ret1, args1), Function(ret2, args2)) =>
+        (ret1 type_== ret2) && (args1.toSeq.zip(args2.toSeq).forall { case (l, r) => l type_== r })
+      case (Slice(arg1), Slice(arg2)) =>
+        arg1 type_== arg2
       case _ =>
         this eq other
     }

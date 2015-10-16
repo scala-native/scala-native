@@ -418,7 +418,7 @@ abstract class GenSaltyCode extends PluginComponent
         case StringTag =>
           focus withValue ir.Str(value.stringValue)
         case ClazzTag =>
-          focus withValue ir.Box(genType(value.typeValue), ref(javaLangClass))
+          focus withValue ir.Box(genType(value.typeValue), javaLangClass)
         case EnumTag =>
           genStaticMember(value.symbolValue, focus)
       }
@@ -661,12 +661,9 @@ abstract class GenSaltyCode extends PluginComponent
 
     lazy val javaLangClass = ir.Extern(Name.Class("java.lang.Class"))
 
-    def ref(node: ir.Node) =
-      ir.Type(ir.Shape.Ref(ir.Shape.Hole), Seq(node))
-
     def genPrimitiveBox(expr: Tree, tpe: Type, focus: Focus) = {
       val (efocus, et) = genExpr(expr, focus).merge
-      val box = ir.Box(efocus.value, ref(primitive2box(tpe.widen)))
+      val box = ir.Box(efocus.value, primitive2box(tpe.widen))
 
       (efocus withValue box) +: et
     }

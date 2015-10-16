@@ -84,9 +84,7 @@ trait GenTypeKinds extends SubComponent {
         case NullClass    => ir.Prim.Null
         case NothingClass => ir.Prim.Nothing
       }
-    case ClassKind(sym) =>
-      ir.Type(ir.Shape.Ref(ir.Shape.Hole), Seq(genClassDefn(sym)))
-    case ArrayKind(of) =>
-      ir.Type(ir.Shape.Slice(ir.Shape.Hole), Seq(toIRType(of)))
+    case ClassKind(sym) => genClassDefn(sym)
+    case ArrayKind(of) => ir.Slice(toIRType(of))
   }
 }

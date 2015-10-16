@@ -96,17 +96,19 @@ object Desc {
   final case class  F64(value: Double) extends Rich()  with Val
   final case class  Str(value: String) extends Rich()  with Val //scala
 
-  final case object Primitive          extends Plain(                              ) with Defn
-  final case object Global             extends Plain(Sc.Ref, Sc.Val                ) with Defn with Val
-  final case object Define             extends Plain(Sc.Ref, Sc.Many(Sc.Val), Sc.Cf) with Defn with Val
-  final case object Declare            extends Plain(Sc.Ref, Sc.Many(Sc.Val)       ) with Defn with Val
-  final case object Extern             extends Plain(                              ) with Defn with Val
-  final case class  Type(shape: Shape) extends Rich(Sc.Many(Sc.Ref)                ) with Defn
+  final case object Primitive extends Plain(                              ) with Defn
+  final case object Global    extends Plain(Sc.Ref, Sc.Val                ) with Defn with Val
+  final case object Define    extends Plain(Sc.Ref, Sc.Many(Sc.Val), Sc.Cf) with Defn with Val
+  final case object Declare   extends Plain(Sc.Ref, Sc.Many(Sc.Val)       ) with Defn with Val
+  final case object Extern    extends Plain(                              ) with Defn with Val
+  final case object Struct    extends Plain(Sc.Many(Sc.Ref)               ) with Defn
+  final case object Ptr       extends Plain(Sc.Ref                        ) with Defn
+  final case object Function  extends Plain(Sc.Ref, Sc.Many(Sc.Ref)       ) with Defn
 
   final case object Class     extends Plain(Sc.Ref, Sc.Many(Sc.Ref)               ) with Defn with Val //scala
   final case object Interface extends Plain(Sc.Many(Sc.Ref)                       ) with Defn with Val //scala
   final case object Module    extends Plain(Sc.Ref, Sc.Many(Sc.Ref), Sc.Ref       ) with Defn with Val //scala
   final case object Method    extends Plain(Sc.Ref, Sc.Many(Sc.Val), Sc.Cf, Sc.Ref) with Defn          //scala
   final case object Field     extends Plain(Sc.Ref, Sc.Ref                        ) with Defn          //scala
-
+  final case object Slice     extends Plain(Sc.Ref                                ) with Defn          //scala
 }

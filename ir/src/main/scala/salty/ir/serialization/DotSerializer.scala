@@ -63,7 +63,6 @@ object DotSerializer {
         case Desc.F32(v)      => s"${v}f32"
         case Desc.F64(v)      => s"${v}f64"
         case Desc.Str(v)      => "\"" + v + "\""
-        case Desc.Type(shape) => s"Type $shape"
       }).replace("\"", "\\\"")
 
     node.name match {
