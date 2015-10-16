@@ -62,6 +62,7 @@ final case class Classpath(val paths: Seq[String]) { self =>
          _: Name.Interface |
          _: Name.Module    => name
     case Name.Field(owner, _) => root(owner)
+    case Name.Constructor(owner, _) => root(owner)
     case Name.Method(owner, _, _, _) => root(owner)
   }
 

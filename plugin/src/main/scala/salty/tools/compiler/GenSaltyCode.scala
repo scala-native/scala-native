@@ -50,7 +50,7 @@ abstract class GenSaltyCode extends PluginComponent
         efphis -= ld.symbol
       }
       val sym = ld.symbol
-      val label = ir.Label(Seq.fill(calls)(ir.Empty), name = genLabelName(ld.symbol))
+      val label = ir.Label(Seq.fill(calls)(ir.Empty), name = genLocalName(ld.symbol))
       val phis = Seq.fill(ld.params.length)(ir.Phi(label, Seq.fill(calls)(ir.Empty)))
       val efphi = ir.EfPhi(label, Seq.fill(calls)(ir.Empty))
       val treesyms = ld.params.map(_.symbol)
@@ -231,7 +231,7 @@ abstract class GenSaltyCode extends PluginComponent
     def genParams(paramSyms: List[Symbol], define: Boolean): Seq[ir.Node] = {
       val self = ir.Param(genClassDefn(curClassSym), Name.Local("this"))
       val params = paramSyms.map { sym =>
-        val node = ir.Param(genType(sym.tpe), genParamName(sym))
+        val node = ir.Param(genType(sym.tpe), genLocalName(sym))
         if (define)
           curEnv.enter(sym, node)
         node
@@ -278,6 +278,7 @@ abstract class GenSaltyCode extends PluginComponent
         genLabel(ld)
 
       case vd: ValDef =>
+        // TODO: attribute valdef name to the rhs node
         val (rfocus, rt) = genExpr(vd.rhs, focus).merge
         val isMutable = curLocalInfo.mutableVars.contains(vd.symbol)
         val vdfocus =

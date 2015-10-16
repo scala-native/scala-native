@@ -25,7 +25,7 @@ class SaltyDeserializer(path: String) {
     val pos = position
     if (nodes.contains(pos)) {
       nodes(pos)
-    } else {
+    } else
       getDesc match {
         case Desc.Empty =>
           Empty
@@ -46,9 +46,11 @@ class SaltyDeserializer(path: String) {
           }
         case Desc.Extern =>
           getName match {
-            case Name.Class("java.lang.Object") =>
+            case Prim.Object.name =>
               Prim.Object
-            case name @ Name.Method(Name.Class("java.lang.Object"), _, _, _) =>
+            case name @ (Name.Field(Prim.Object.name, _)       |
+                         Name.Constructor(Prim.Object.name, _) |
+                         Name.Method(Prim.Object.name, _, _, _)) =>
               Prim.Object.resolve(name).get
             case name =>
               extern(name)
@@ -62,7 +64,6 @@ class SaltyDeserializer(path: String) {
           }
           node
       }
-    }
   }
 
   def detour[T](f: => T): T = {
@@ -97,15 +98,16 @@ class SaltyDeserializer(path: String) {
   }
 
   private def getName(): Name = getInt match {
-    case T.NoName        => Name.No
-    case T.LocalName     => Name.Local(getString)
-    case T.ClassName     => Name.Class(getString)
-    case T.ModuleName    => Name.Module(getString)
-    case T.InterfaceName => Name.Interface(getString)
-    case T.PrimitiveName => Name.Primitive(getString)
-    case T.SliceName     => Name.Slice(getName)
-    case T.FieldName     => Name.Field(getName, getString)
-    case T.MethodName    => Name.Method(getName, getString, getSeq(getName), getName)
+    case T.NoName          => Name.No
+    case T.LocalName       => Name.Local(getString)
+    case T.ClassName       => Name.Class(getString)
+    case T.ModuleName      => Name.Module(getString)
+    case T.InterfaceName   => Name.Interface(getString)
+    case T.PrimitiveName   => Name.Primitive(getString)
+    case T.SliceName       => Name.Slice(getName)
+    case T.FieldName       => Name.Field(getName, getString)
+    case T.ConstructorName => Name.Constructor(getName, getSeq(getName))
+    case T.MethodName      => Name.Method(getName, getString, getSeq(getName), getName)
   }
 
   private def getSeq[T](getT: => T): Seq[T] =

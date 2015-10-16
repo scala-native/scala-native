@@ -119,7 +119,7 @@ object Prim {
       case _               => None
     }
 
-    lazy val initName: Name = Name.Method(name, "<init>", Seq(), Unit.name)
+    lazy val initName: Name = Name.Constructor(name, Seq())
     lazy val initMethod: Node =
       Method(Unit, Seq(), End(Seq(Return(Empty, Empty, Unit))), this, name = initName)
 

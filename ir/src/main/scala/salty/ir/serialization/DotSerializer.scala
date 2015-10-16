@@ -68,11 +68,7 @@ object DotSerializer {
 
     node.name match {
       case Name.No => body
-      case other   =>
-        if (node.desc.isInstanceOf[Desc.Defn])
-          node.name.toString
-        else
-          s"$other = $body"
+      case name    => s"$body $name"
     }
   }
 

@@ -92,6 +92,8 @@ class SaltySerializer(buffer: ByteBuffer) {
       putInt(T.SliceName); putName(n)
     case Name.Field(owner, id) =>
       putInt(T.FieldName); putName(owner); putString(id)
+    case Name.Constructor(owner, params) =>
+      putInt(T.ConstructorName); putName(owner); putSeq(params)(putName)
     case Name.Method(owner, id, params, ret) =>
       putInt(T.MethodName); putName(owner); putString(id); putSeq(params)(putName); putName(ret)
   }

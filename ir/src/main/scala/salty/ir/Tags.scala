@@ -97,15 +97,16 @@ object Tags {
   final val Method        = 1 + Module
   final val Field         = 1 + Method
 
-  final val NoName        = 1 + Field
-  final val LocalName     = 1 + NoName
-  final val ClassName     = 1 + LocalName
-  final val ModuleName    = 1 + ClassName
-  final val InterfaceName = 1 + ModuleName
-  final val PrimitiveName = 1 + InterfaceName
-  final val SliceName     = 1 + PrimitiveName
-  final val FieldName     = 1 + SliceName
-  final val MethodName    = 1 + FieldName
+  final val NoName          = 1 + Field
+  final val LocalName       = 1 + NoName
+  final val ClassName       = 1 + LocalName
+  final val ModuleName      = 1 + ClassName
+  final val InterfaceName   = 1 + ModuleName
+  final val PrimitiveName   = 1 + InterfaceName
+  final val SliceName       = 1 + PrimitiveName
+  final val FieldName       = 1 + SliceName
+  final val ConstructorName = 1 + FieldName
+  final val MethodName      = 1 + ConstructorName
 
   final val HoleShape     = 1 + MethodName
   final val RefShape      = 1 + HoleShape
