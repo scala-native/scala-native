@@ -1,5 +1,7 @@
 package salty.tools.compiler.reductions
 
+import salty.ir._, Reduction._
+
 /** Lowers classes, methods and fields down to
  *  structs with accompanying vtables.
  *
@@ -9,18 +11,17 @@ package salty.tools.compiler.reductions
  *  For example a class w:
  *
  *      class $name: $parent
- *      .. method $name::$mname(%this: $name, .. %pname: $ptype): $ret = $end
- *      .. field $name::$fname : $ftype
+ *      .. method $name::$mname(%this: $name, .. %pname: $pty): $retty = $end
+ *      .. field $name::$fname : $fty
  *
  *  Gets lowered to:
  *
- *      struct $name.vtable = { .. $ret(.. $params)* }
- *      struct $name.data = { $parent.data, .. $ftype }
+ *      struct $name.vtable = { $parent.vtable, .. $retty(.. $pty)* }
+ *      struct $name.data = { $parent.data, .. $fty }
  *      struct $name.ref = { $name.vtable*, $name.data* }
  *
  *      .. define $name::$mname(%this: $name.ref, .. %pname: $ptype): $ret = $end
- *
- *      global $name.vtable.data: $name.vtable = { .. $name::$mname }
+ *      constant $name.vtable.data: $name.vtable = { .. $name::$mname }
  *
  *  Usages are rewritten as following:
  *

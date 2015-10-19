@@ -109,16 +109,23 @@ class SaltyDeserializer(path: String) {
   }
 
   private def getName(): Name = getInt match {
-    case T.NoName          => Name.No
-    case T.LocalName       => Name.Local(getString)
-    case T.ClassName       => Name.Class(getString)
-    case T.ModuleName      => Name.Module(getString)
-    case T.InterfaceName   => Name.Interface(getString)
-    case T.PrimitiveName   => Name.Primitive(getString)
-    case T.SliceName       => Name.Slice(getName)
-    case T.FieldName       => Name.Field(getName, getString)
-    case T.ConstructorName => Name.Constructor(getName, getSeq(getName))
-    case T.MethodName      => Name.Method(getName, getString, getSeq(getName), getName)
+    case T.NoName               => Name.No
+    case T.MainName             => Name.Main
+    case T.LocalName            => Name.Local(getString)
+    case T.ClassName            => Name.Class(getString)
+    case T.ClassVtableName      => Name.ClassVtable(getName)
+    case T.ClassVtableDataName  => Name.ClassVtableData(getName)
+    case T.ClassDataName        => Name.ClassData(getName)
+    case T.ClassRefName         => Name.ClassRef(getName)
+    case T.ModuleName           => Name.Module(getString)
+    case T.ModuleAccessorName   => Name.ModuleAccessor(getName)
+    case T.ModuleDataName       => Name.ModuleData(getName)
+    case T.InterfaceName        => Name.Interface(getString)
+    case T.PrimitiveName        => Name.Primitive(getString)
+    case T.SliceName            => Name.Slice(getName)
+    case T.FieldName            => Name.Field(getName, getString)
+    case T.ConstructorName      => Name.Constructor(getName, getSeq(getName))
+    case T.MethodName           => Name.Method(getName, getString, getSeq(getName), getName)
   }
 
   private def getSeq[T](getT: => T): Seq[T] =

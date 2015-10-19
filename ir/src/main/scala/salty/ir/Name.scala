@@ -22,9 +22,13 @@ object Name {
   final case object Main extends Name
   final case class Local(id: String) extends Name
   final case class Class(id: String) extends Name
+  final case class ClassVtable(owner: Name) extends Name
+  final case class ClassVtableData(owner: Name) extends Name
+  final case class ClassData(owner: Name) extends Name
+  final case class ClassRef(owner: Name) extends Name
   final case class Module(id: String) extends Name
-  final case class ModuleAccessor(module: Name) extends Name
-  final case class ModuleData(module: Name) extends Name
+  final case class ModuleAccessor(owner: Name) extends Name
+  final case class ModuleData(owner: Name) extends Name
   final case class Interface(id: String) extends Name
   final case class Primitive(id: String) extends Name
   final case class Slice(name: Name) extends Name

@@ -99,6 +99,7 @@ object Desc {
 
   final case object Primitive extends Plain(                              ) with Defn
   final case object Global    extends Plain(Sc.Ref, Sc.Val                ) with Defn with Val
+  final case object Constant  extends Plain(Sc.Ref, Sc.Val                ) with Defn with Val
   final case object Define    extends Plain(Sc.Ref, Sc.Many(Sc.Val), Sc.Cf) with Defn with Val
   final case object Declare   extends Plain(Sc.Ref, Sc.Many(Sc.Val)       ) with Defn with Val
   final case object Extern    extends Plain(                              ) with Defn with Val
