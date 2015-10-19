@@ -18,10 +18,10 @@ import salty.ir._, Reduction._
  *
  *      struct $name.vtable = { $parent.vtable, .. $retty(.. $pty)* }
  *      struct $name.data = { $parent.data, .. $fty }
- *      struct $name.ref = { $name.vtable*, $name.data* }
+ *      struct $name = { $name.vtable*, $name.data* }
  *
  *      .. define $name::$mname(%this: $name.ref, .. %pname: $ptype): $ret = $end
- *      constant $name.vtable.data: $name.vtable = { .. $name::$mname }
+ *      constant $name.vtable.constant: $name.vtable = { .. $name::$mname }
  *
  *  Usages are rewritten as following:
  *
@@ -29,7 +29,7 @@ import salty.ir._, Reduction._
  *
  *  * Allocations
  *
- *        alloc $name
+ *        class-alloc $name
  *
  *    Lowered to:
  *
@@ -41,7 +41,9 @@ import salty.ir._, Reduction._
  *
  *    Lowered to:
  *
- *        elem %instance, 0, 0, ${indexOf(vtable, method)}
+ *        %meth_** = elem %vtable, 0, 0, %{vtable.indexOf(method)}
+ *        %meth_* = load %meth_**
+ *        %meth_*
  *
  *  * Field elems
  *
@@ -49,8 +51,102 @@ import salty.ir._, Reduction._
  *
  *    Lowered to:
  *
- *        elem %instance, 1, 0, ${indexOf(data, field)}
+ *        %field_* = elem %instance, 1, 0, ${data.indexOf(field)}
+ *        %field_*
  */
 object ClassLowering extends Reduction {
-  def reduce = ???
+  def dataAttr(node: Node): Option[ClassData] =
+    node.attrs.collectFirst { case dm: ClassData => dm }
+  def vtableAttr(node: Node): Option[ClassVtable] =
+    node.attrs.collectFirst { case vt: ClassVtable => vt }
+
+  def reduceClass(cls: Node, parent: Node) =
+    After(parent) { parent =>
+      println(s"rewriting class ${cls.name} into structs")
+      val parentData = dataAttr(parent).map(_.data)
+      val parentVtable = vtableAttr(parent).map(_.vtable)
+      val methods = cls.uses.collect {
+        case Use(meth @ Defn.Method(_, _, _, _)) => meth
+      }
+      val vtableIndex = methods.zipWithIndex.toMap
+      val vtable =
+        Defn.Struct(
+          parentVtable ++: methods.map {
+            case Defn.Method(retty, params, _, _) =>
+              Defn.Function(retty, params.nodes.map {
+                case Param(Slot(ty)) => ty
+              })
+          },
+          Name.Vtable(cls.name))
+      val vtableConstant =
+        Defn.Constant(
+          vtable,
+          Struct(Seq()), // TODO:
+          Name.VtableConstant(cls.name))
+      val fields = cls.uses.collect {
+        case Use(field @ Defn.Field(_, _)) => field
+      }
+      val dataIndex = fields.zipWithIndex.toMap
+      val data =
+        Defn.Struct(
+          parentData ++: cls.uses.collect {
+            case Slot(Defn.Field(Slot(ty), _)) => ty
+          },
+          Name.ClassData(cls.name))
+      val ref =
+        Defn.Struct(
+          Seq(Defn.Ptr(vtable), Defn.Ptr(data)),
+          cls.name,
+          ClassData(data, dataIndex),
+          ClassVtable(vtable, vtableConstant, vtableIndex))
+
+      Replace.all(ref)
+    }
+
+  def reduce = {
+    case meth @ Defn.Method(retty, params, cf, cls) =>
+      After(cls) { _ =>
+        println(s"rewriting method ${meth.name} into define")
+        Replace.all(Defn.Define(retty, params.nodes, cf, meth.name))
+      }
+
+    case cls @ Builtin.AnyRef =>
+      reduceClass(cls, Empty)
+
+    case cls @ Defn.Class(parent, _) =>
+      reduceClass(cls, parent)
+
+    case ClassAlloc(cls) =>
+      After(cls) { cls =>
+        val data       = dataAttr(cls).get.data
+        val vtableData = vtableAttr(cls).get.vtableConstant
+
+        Replace.all(Struct(Seq(vtableData, Alloc(data))))
+      }
+
+    case MethodElem(ef, instance, Slot(meth @ Defn.Method(_, _, _, cls))) =>
+      println(s"1. method-elem ${meth.name}")
+      After(cls) { cls =>
+        println(s"2. method-elem ${meth.name}")
+        val methindex = vtableAttr(cls).get.index
+        val meth_** = Elem(instance, Seq(I32(0), I32(0), I32(methindex(meth))))
+        val meth_* = Load(Empty, meth_**)
+
+        Replace {
+          case s if s.schema == Schema.Ef => ef
+          case _                          => meth_*
+        }
+      }
+
+    case FieldElem(ef, instance, Slot(field @ Defn.Field(_, cls))) =>
+      After(cls) { cls =>
+        val fieldindex = dataAttr(cls).get.index
+        val field_* = Elem(instance, Seq(I32(1), I32(0), I32(fieldindex(field))))
+
+        Replace {
+          case s if s.schema == Schema.Ef => ef
+          case _                          => field_*
+        }
+      }
+  }
 }

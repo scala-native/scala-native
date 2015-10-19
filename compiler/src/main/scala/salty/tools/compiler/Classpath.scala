@@ -44,26 +44,26 @@ final case class Classpath(val paths: Seq[String]) { self =>
     }.toMap
 
   final class LinkingDeserializer(path: String) extends SaltyDeserializer(path) {
-    override def extern(name: Name) =
+    override def extern(attrs: Seq[Attr]) = {
+      val name = attrs.collectFirst { case n: Name => n }.get
       self.resolve(name).getOrElse {
         externs.get(name).getOrElse {
-          val ext = Extern(name)
+          val ext = Defn.Extern(name)
           externs += (name -> ext)
           ext
         }
       }
+    }
   }
 
   def root(name: Name): Name = name match {
-    case Name.No           |
-         _: Name.Slice     |
-         _: Name.Primitive => throw new Exception("unreachable")
-    case _: Name.Class     |
-         _: Name.Interface |
-         _: Name.Module    => name
-    case Name.Field(owner, _) => root(owner)
-    case Name.Constructor(owner, _) => root(owner)
+    case _: Name.Class               |
+         _: Name.Interface           |
+         _: Name.Module              => name
+    case Name.Field(owner, _)        => root(owner)
+    case Name.Constructor(owner, _)  => root(owner)
     case Name.Method(owner, _, _, _) => root(owner)
+    case _                           => throw new Exception("unreachable")
   }
 
   def deserializer(rt: Name): Option[SaltyDeserializer] = {
@@ -78,10 +78,10 @@ final case class Classpath(val paths: Seq[String]) { self =>
 
   def relatives(node: Node): Option[Seq[Name]] =
     node match {
-      case Class(parent, ifaces)     => Some((parent +: ifaces.toSeq).map(_.get.name))
-      case Module(parent, ifaces, _) => Some((parent +: ifaces.toSeq).map(_.get.name))
-      case Interface(ifaces)         => Some(ifaces.toSeq.map(_.get.name))
-      case _                         => None
+      case Defn.Class(parent, ifaces)     => Some((parent +: ifaces.slots).map(_.get.name))
+      case Defn.Module(parent, ifaces, _) => Some((parent +: ifaces.slots).map(_.get.name))
+      case Defn.Interface(ifaces)         => Some(ifaces.nodes.map(_.name))
+      case _                              => None
     }
 
   def chown(name: Name, owner: Name): Name =

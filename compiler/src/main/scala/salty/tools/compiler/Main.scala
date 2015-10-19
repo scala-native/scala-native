@@ -26,17 +26,17 @@ object Main extends App {
     val methodName =
       Name.Method(moduleName, "main",
         Vector(Name.Slice(Name.Class("java.lang.String"))),
-        Name.Primitive("unit"))
+        Name.Builtin("unit"))
     val module = resolve(moduleName)
     val method = resolve(methodName)
     val elem = MethodElem(Empty, module, method)
     val call = Call(elem, elem, Seq())
     val end = End(Seq(Return(Empty, call, Unit())))
-    Define(Prim.Unit, Seq(), end, name = Name.Main)
+    Defn.Define(Builtin.Unit, Seq(), end, Name.Main)
   }
+  serializeDotFile(Scope(Map(Name.Main -> main)), "out0.dot")
   Reduction.run(ModuleLowering, main)
-  Opt.get[Opt.Dot](opts).value.foreach { path =>
-    val scope = Scope(Map(Name.Main -> main))
-    serializeDotFile(scope, path)
-  }
+  serializeDotFile(Scope(Map(Name.Main -> main)), "out1.dot")
+  Reduction.run(ClassLowering, main)
+  serializeDotFile(Scope(Map(Name.Main -> main)), "out2.dot")
 }

@@ -69,22 +69,22 @@ trait GenTypeKinds extends SubComponent {
   def toIRType(kind: Kind): ir.Node = kind match {
     case PrimitiveKind(sym) =>
       sym match {
-        case UnitClass    => ir.Prim.Unit
-        case BooleanClass => ir.Prim.Bool
-        case ByteClass    => ir.Prim.I8
-        case CharClass    => ir.Prim.I16
-        case ShortClass   => ir.Prim.I16
-        case IntClass     => ir.Prim.I32
-        case LongClass    => ir.Prim.I64
-        case FloatClass   => ir.Prim.F32
-        case DoubleClass  => ir.Prim.F64
+        case UnitClass    => ir.Builtin.Unit
+        case BooleanClass => ir.Builtin.Bool
+        case ByteClass    => ir.Builtin.I8
+        case CharClass    => ir.Builtin.I16
+        case ShortClass   => ir.Builtin.I16
+        case IntClass     => ir.Builtin.I32
+        case LongClass    => ir.Builtin.I64
+        case FloatClass   => ir.Builtin.F32
+        case DoubleClass  => ir.Builtin.F64
       }
     case BottomKind(sym) =>
       sym match {
-        case NullClass    => ir.Prim.Null
-        case NothingClass => ir.Prim.Nothing
+        case NullClass    => ir.Builtin.Null
+        case NothingClass => ir.Builtin.Nothing
       }
     case ClassKind(sym) => genClassDefn(sym)
-    case ArrayKind(of) => ir.Slice(toIRType(of))
+    case ArrayKind(of) => ir.Defn.Slice(toIRType(of))
   }
 }

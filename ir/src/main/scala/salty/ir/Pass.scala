@@ -7,8 +7,8 @@ object Pass {
   def run(pass: Pass, entry: Node): Unit = {
     val epoch = Node.nextEpoch
     def loop(node: Node): Unit =
-      if (node.epoch < epoch) {
-        node.epoch = epoch
+      if (node._epoch < epoch) {
+        node._epoch = epoch
         pass.onNode(node)
         node.edges.foreach { case (_, next) => loop(next) }
       }

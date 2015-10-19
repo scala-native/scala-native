@@ -34,9 +34,9 @@ import salty.ir._, Reduction._
  */
 object ModuleLowering extends Reduction {
   def reduce = {
-    case module @ Module(parent, ifaces, ctor) =>
-      val cls = Class(parent, ifaces, name = module.name)
-      val global = Global(cls, Zero(cls), name = Name.ModuleData(module.name))
+    case module @ Defn.Module(parent, ifaces, ctor) =>
+      val cls = Defn.Class(parent, ifaces.nodes, module.name)
+      val global = Defn.Global(cls, Zero(cls), Name.ModuleData(module.name))
       val accessor = {
         val prevVal     = Load(Empty, global)
         val ifPrevNull  = If(Empty, Eq(prevVal, Null()))
@@ -47,7 +47,7 @@ object ModuleLowering extends Reduction {
         val retExisting = Return(CaseFalse(ifPrevNull), prevVal, prevVal)
         val end         = End(Seq(retNew, retExisting))
 
-        Define(cls, Seq(), end, name = Name.ModuleAccessor(module.name))
+        Defn.Define(cls, Seq(), end, Name.ModuleAccessor(module.name))
       }
       val accessorCall = Call(Empty, accessor, Seq())
 

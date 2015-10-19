@@ -5,7 +5,7 @@ import scala.collection.mutable
 import scala.tools.nsc._
 import scala.tools.nsc.plugins._
 import scala.util.{Either, Left, Right}
-import salty.ir, ir.{Name, Prim, Desc}
+import salty.ir, ir.{Name, Builtin, Desc}
 import salty.ir.{Focus, Tails}, Focus.sequenced
 import salty.util, util.sh, util.ScopedVar.scoped
 
@@ -50,7 +50,7 @@ abstract class GenSaltyCode extends PluginComponent
         efphis -= ld.symbol
       }
       val sym = ld.symbol
-      val label = ir.Label(Seq.fill(calls)(ir.Empty), name = genLocalName(ld.symbol))
+      val label = ir.Label(Seq.fill(calls)(ir.Empty), genLocalName(ld.symbol))
       val phis = Seq.fill(ld.params.length)(ir.Phi(label, Seq.fill(calls)(ir.Empty)))
       val efphi = ir.EfPhi(label, Seq.fill(calls)(ir.Empty))
       val treesyms = ld.params.map(_.symbol)
@@ -164,11 +164,11 @@ abstract class GenSaltyCode extends PluginComponent
       }
       val owner   =
         if (sym.isModuleClass || sym.isImplClass)
-          name -> ir.Module(parent.get, ifaces, ctor.get, name)
+          name -> ir.Defn.Module(parent.get, ifaces, ctor.get, name)
         else if (sym.isInterface)
-          name -> ir.Interface(ifaces, name)
+          name -> ir.Defn.Interface(ifaces, name)
         else
-          name -> ir.Class(parent.get, ifaces, name)
+          name -> ir.Defn.Class(parent.get, ifaces, name)
 
       ir.Scope(Map(((owner +: fields) ++ methods): _*))
     }
@@ -189,7 +189,7 @@ abstract class GenSaltyCode extends PluginComponent
         if !f.isMethod && f.isTerm && !f.isModule
       } yield {
         val name = genFieldName(f)
-        name -> ir.Field(genType(f.tpe), owner, name)
+        name -> ir.Defn.Field(genType(f.tpe), owner, name)
       }
     }
 
@@ -201,14 +201,14 @@ abstract class GenSaltyCode extends PluginComponent
       val name = genDefName(sym)
       val paramSyms = defParamSymbols(dd)
       val ty =
-        if (dd.symbol.isClassConstructor) Prim.Unit
+        if (dd.symbol.isClassConstructor) Builtin.Unit
         else genType(sym.tpe.resultType)
       val owner = genClassDefn(curClassSym)
 
       if (dd.symbol.isDeferred) {
         val params = genParams(paramSyms, define = false)
         val body = ir.End(Seq(ir.Undefined(ir.Empty, ir.Empty)))
-        name -> ir.Method(ty, params, body, owner, name)
+        name -> ir.Defn.Method(ty, params, body, owner, name)
       } else {
         val env = new Env
         scoped (
@@ -218,7 +218,7 @@ abstract class GenSaltyCode extends PluginComponent
         ) {
           val params = genParams(paramSyms, define = true)
           val body = genDefBody(dd.rhs, params)
-          name -> ir.Method(ty, params, body, owner, name)
+          name -> ir.Defn.Method(ty, params, body, owner, name)
         }
       }
     }
@@ -464,7 +464,7 @@ abstract class GenSaltyCode extends PluginComponent
 
       def genClosed(focus: Focus, wrap: (ir.Node, ir.Node) => ir.Node): Seq[ir.Node] = {
         val ir.End(ends) = genExpr(finalizer, focus).end((cf, ef, v) => wrap(cf, ef))
-        ends.toSeq.map(_.get)
+        ends.nodes
       }
 
       val closedtails = Tails(Seq(), closed.flatMap {
@@ -539,7 +539,7 @@ abstract class GenSaltyCode extends PluginComponent
       val ArrayValue(tpt, elems) = av
       val ty           = genType(tpt.tpe)
       val len          = elems.length
-      val salloc       = ir.Allocs(ty, ir.I32(len))
+      val salloc       = ir.SliceAlloc(ty, ir.I32(len))
       val (rfocus, rt) =
         if (elems.isEmpty)
           (focus, Tails.empty)
@@ -649,17 +649,17 @@ abstract class GenSaltyCode extends PluginComponent
     }
 
     lazy val primitive2box = Map(
-      BooleanTpe -> ir.Extern(Name.Class("java.lang.Boolean")),
-      ByteTpe    -> ir.Extern(Name.Class("java.lang.Byte")),
-      CharTpe    -> ir.Extern(Name.Class("java.lang.Character")),
-      ShortTpe   -> ir.Extern(Name.Class("java.lang.Short")),
-      IntTpe     -> ir.Extern(Name.Class("java.lang.Integer")),
-      LongTpe    -> ir.Extern(Name.Class("java.lang.Long")),
-      FloatTpe   -> ir.Extern(Name.Class("java.lang.Float")),
-      DoubleTpe  -> ir.Extern(Name.Class("java.lang.Double"))
+      BooleanTpe -> ir.Defn.Extern(Name.Class("java.lang.Boolean")),
+      ByteTpe    -> ir.Defn.Extern(Name.Class("java.lang.Byte")),
+      CharTpe    -> ir.Defn.Extern(Name.Class("java.lang.Character")),
+      ShortTpe   -> ir.Defn.Extern(Name.Class("java.lang.Short")),
+      IntTpe     -> ir.Defn.Extern(Name.Class("java.lang.Integer")),
+      LongTpe    -> ir.Defn.Extern(Name.Class("java.lang.Long")),
+      FloatTpe   -> ir.Defn.Extern(Name.Class("java.lang.Float")),
+      DoubleTpe  -> ir.Defn.Extern(Name.Class("java.lang.Double"))
     )
 
-    lazy val javaLangClass = ir.Extern(Name.Class("java.lang.Class"))
+    lazy val javaLangClass = ir.Defn.Extern(Name.Class("java.lang.Class"))
 
     def genPrimitiveBox(expr: Tree, tpe: Type, focus: Focus) = {
       val (efocus, et) = genExpr(expr, focus).merge
@@ -700,12 +700,12 @@ abstract class GenSaltyCode extends PluginComponent
     }
 
     def numOfType(num: Int, ty: ir.Node) = ty match {
-      case Prim.I8  => ir.I8 (num.toByte)
-      case Prim.I16 => ir.I16(num.toShort)
-      case Prim.I32 => ir.I32(num)
-      case Prim.I64 => ir.I64(num.toLong)
-      case Prim.F32 => ir.F32(num.toFloat)
-      case Prim.F64 => ir.F64(num.toDouble)
+      case Builtin.I8  => ir.I8 (num.toByte)
+      case Builtin.I16 => ir.I16(num.toShort)
+      case Builtin.I32 => ir.I32(num)
+      case Builtin.I64 => ir.I64(num.toLong)
+      case Builtin.F32 => ir.F32(num.toFloat)
+      case Builtin.F64 => ir.F64(num.toDouble)
       case _      => unreachable
     }
 
@@ -813,19 +813,19 @@ abstract class GenSaltyCode extends PluginComponent
     }
 
     def binaryOperationType(lty: ir.Node, rty: ir.Node) = (lty, rty) match {
-      case (Prim.I(lwidth), Prim.I(rwidth)) =>
+      case (Builtin.I(lwidth), Builtin.I(rwidth)) =>
         if (lwidth >= rwidth) lty else rty
-      case (Prim.I(_), Prim.F(_)) =>
+      case (Builtin.I(_), Builtin.F(_)) =>
         rty
-      case (Prim.F(_), Prim.I(_)) =>
+      case (Builtin.F(_), Builtin.I(_)) =>
         lty
-      case (Prim.F(lwidth), Prim.F(rwidth)) =>
+      case (Builtin.F(lwidth), Builtin.F(rwidth)) =>
         if (lwidth >= rwidth) lty else rty
       case (ty1 , ty2) if ty1 type_== ty2 =>
         ty1
-      case (Prim.Null, _) =>
+      case (Builtin.Null, _) =>
         rty
-      case (_, Prim.Null) =>
+      case (_, Builtin.Null) =>
         lty
       case _ =>
         abort(s"can't perform binary opeation between $lty and $rty")
@@ -891,15 +891,15 @@ abstract class GenSaltyCode extends PluginComponent
         value
       else {
         val op = (fromty, toty) match {
-          case (Prim.I(lwidth), Prim.I(rwidth))
+          case (Builtin.I(lwidth), Builtin.I(rwidth))
             if lwidth < rwidth        => ir.Zext
-          case (Prim.I(lwidth), Prim.I(rwidth))
+          case (Builtin.I(lwidth), Builtin.I(rwidth))
             if lwidth > rwidth        => ir.Trunc
-          case (Prim.I(_), Prim.F(_)) => ir.Sitofp
-          case (Prim.F(_), Prim.I(_)) => ir.Fptosi
-          case (Prim.F64, Prim.F32)   => ir.Fptrunc
-          case (Prim.F32, Prim.F64)   => ir.Fpext
-          case (Prim.Null, _)         => ir.As
+          case (Builtin.I(_), Builtin.F(_)) => ir.Sitofp
+          case (Builtin.F(_), Builtin.I(_)) => ir.Fptosi
+          case (Builtin.F64, Builtin.F32)   => ir.Fptrunc
+          case (Builtin.F32, Builtin.F64)   => ir.Fpext
+          case (Builtin.Null, _)         => ir.As
         }
         op(value, toty)
       }
@@ -908,47 +908,47 @@ abstract class GenSaltyCode extends PluginComponent
       import scalaPrimitives._
 
       code match {
-        case B2B       => (Prim.I8, Prim.I8)
-        case B2S | B2C => (Prim.I8, Prim.I16)
-        case B2I       => (Prim.I8, Prim.I32)
-        case B2L       => (Prim.I8, Prim.I64)
-        case B2F       => (Prim.I8, Prim.F32)
-        case B2D       => (Prim.I8, Prim.F64)
+        case B2B       => (Builtin.I8, Builtin.I8)
+        case B2S | B2C => (Builtin.I8, Builtin.I16)
+        case B2I       => (Builtin.I8, Builtin.I32)
+        case B2L       => (Builtin.I8, Builtin.I64)
+        case B2F       => (Builtin.I8, Builtin.F32)
+        case B2D       => (Builtin.I8, Builtin.F64)
 
-        case S2B       | C2B       => (Prim.I16, Prim.I8)
-        case S2S | S2C | C2S | C2C => (Prim.I16, Prim.I16)
-        case S2I       | C2I       => (Prim.I16, Prim.I32)
-        case S2L       | C2L       => (Prim.I16, Prim.I64)
-        case S2F       | C2F       => (Prim.I16, Prim.F32)
-        case S2D       | C2D       => (Prim.I16, Prim.F64)
+        case S2B       | C2B       => (Builtin.I16, Builtin.I8)
+        case S2S | S2C | C2S | C2C => (Builtin.I16, Builtin.I16)
+        case S2I       | C2I       => (Builtin.I16, Builtin.I32)
+        case S2L       | C2L       => (Builtin.I16, Builtin.I64)
+        case S2F       | C2F       => (Builtin.I16, Builtin.F32)
+        case S2D       | C2D       => (Builtin.I16, Builtin.F64)
 
-        case I2B       => (Prim.I32, Prim.I8)
-        case I2S | I2C => (Prim.I32, Prim.I16)
-        case I2I       => (Prim.I32, Prim.I32)
-        case I2L       => (Prim.I32, Prim.I64)
-        case I2F       => (Prim.I32, Prim.F32)
-        case I2D       => (Prim.I32, Prim.F64)
+        case I2B       => (Builtin.I32, Builtin.I8)
+        case I2S | I2C => (Builtin.I32, Builtin.I16)
+        case I2I       => (Builtin.I32, Builtin.I32)
+        case I2L       => (Builtin.I32, Builtin.I64)
+        case I2F       => (Builtin.I32, Builtin.F32)
+        case I2D       => (Builtin.I32, Builtin.F64)
 
-        case L2B       => (Prim.I64, Prim.I8)
-        case L2S | L2C => (Prim.I64, Prim.I16)
-        case L2I       => (Prim.I64, Prim.I32)
-        case L2L       => (Prim.I64, Prim.I64)
-        case L2F       => (Prim.I64, Prim.F32)
-        case L2D       => (Prim.I64, Prim.F64)
+        case L2B       => (Builtin.I64, Builtin.I8)
+        case L2S | L2C => (Builtin.I64, Builtin.I16)
+        case L2I       => (Builtin.I64, Builtin.I32)
+        case L2L       => (Builtin.I64, Builtin.I64)
+        case L2F       => (Builtin.I64, Builtin.F32)
+        case L2D       => (Builtin.I64, Builtin.F64)
 
-        case F2B       => (Prim.F32, Prim.I8)
-        case F2S | F2C => (Prim.F32, Prim.I16)
-        case F2I       => (Prim.F32, Prim.I32)
-        case F2L       => (Prim.F32, Prim.I64)
-        case F2F       => (Prim.F32, Prim.F32)
-        case F2D       => (Prim.F32, Prim.F64)
+        case F2B       => (Builtin.F32, Builtin.I8)
+        case F2S | F2C => (Builtin.F32, Builtin.I16)
+        case F2I       => (Builtin.F32, Builtin.I32)
+        case F2L       => (Builtin.F32, Builtin.I64)
+        case F2F       => (Builtin.F32, Builtin.F32)
+        case F2D       => (Builtin.F32, Builtin.F64)
 
-        case D2B       => (Prim.F64, Prim.I8)
-        case D2S | D2C => (Prim.F64, Prim.I16)
-        case D2I       => (Prim.F64, Prim.I32)
-        case D2L       => (Prim.F64, Prim.I64)
-        case D2F       => (Prim.F64, Prim.F32)
-        case D2D       => (Prim.F64, Prim.F64)
+        case D2B       => (Builtin.F64, Builtin.I8)
+        case D2S | D2C => (Builtin.F64, Builtin.I16)
+        case D2I       => (Builtin.F64, Builtin.I32)
+        case D2L       => (Builtin.F64, Builtin.I64)
+        case D2F       => (Builtin.F64, Builtin.F32)
+        case D2D       => (Builtin.F64, Builtin.F64)
       }
     }
 
@@ -996,11 +996,11 @@ abstract class GenSaltyCode extends PluginComponent
     def genNewArray(elemty: ir.Node, length: Tree, focus: Focus) = {
       val (lfocus, lt) = genExpr(length, focus).merge
 
-      (lfocus withValue ir.Allocs(elemty, lfocus.value)) +: lt
+      (lfocus withValue ir.SliceAlloc(elemty, lfocus.value)) +: lt
     }
 
     def genNew(sym: Symbol, ctorsym: Symbol, args: List[Tree], focus: Focus) = {
-      val alloc = ir.Alloc(genClassDefn(sym))
+      val alloc = ir.ClassAlloc(genClassDefn(sym))
 
       genMethodCall(ctorsym, alloc, args, focus)
     }

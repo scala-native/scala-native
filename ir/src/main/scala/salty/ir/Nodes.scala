@@ -6,42 +6,48 @@ import salty.ir.{Schema => Sc}
 
 // TODO: store offsets in desc
 // TODO: ensure that all mutability is private[ir]
-sealed class Node private (
-              val desc:    Desc,
-              val name:    Name,
-  private[ir] var slots:   Array[Slot]       = null,
-  private[ir] var offsets: Array[Int]        = null,
-  private[ir] var epoch:   Int               = 0,
-  private[ir] var uses:    mutable.Set[Slot] = mutable.Set.empty
+sealed class Node private[ir] (
+              var desc:     Desc,
+  private[ir] var _slots:   Array[Slot]       = Array.empty,
+  private[ir] var _offsets: Array[Int]        = Array.empty,
+  private[ir] var _epoch:   Int               = Node.lastEpoch,
+  private[ir] var _uses:    mutable.Set[Slot] = mutable.Set.empty,
+  private[ir] val _attrs:   Array[Attr]       = Array.empty
 ) {
-  private[ir] def this(desc: Desc, name: Name) = this(desc, name, Array(), Array())
-
   private def length(index: Int): Int =
-    if (index + 1 < offsets.length)
-      offsets(index + 1) - offsets(index)
+    if (index + 1 < _offsets.length)
+      _offsets(index + 1) - _offsets(index)
     else
-      slots.length - offsets(index)
+      _slots.length - _offsets(index)
 
   private[ir] def at(index: Int): Slot =
-    slots(offsets(index))
+    _slots(_offsets(index))
 
   private[ir] def multiAt(index: Int): MultiSlot =
-    new MultiSlot(this, length(index), offsets(index))
+    new MultiSlot(this, length(index), _offsets(index))
+
+  final def attrs: Seq[Attr] =
+    _attrs.toSeq
+
+  lazy val name: Name =
+    _attrs.collectFirst { case n: Name => n }.getOrElse(Name.No)
+
+  final def uses: Seq[Slot] = _uses.toSeq
 
   final override def toString = s"Node($desc, ...)"
 
   // TODO: cycles
   final def type_==(other: Node): Boolean =
     (this, other) match {
-      case (Extern(), Extern()) =>
+      case (Defn.Extern(), Defn.Extern()) =>
         this.name == other.name
-      case (Struct(args1), Struct(args2)) =>
-        args1.toSeq.zip(args2.toSeq).forall { case (l, r) => l type_== r }
-      case (Ptr(arg1), Ptr(arg2)) =>
+      case (Defn.Struct(args1), Defn.Struct(args2)) =>
+        args1.nodes.zip(args2.nodes).forall { case (l, r) => l type_== r }
+      case (Defn.Ptr(arg1), Defn.Ptr(arg2)) =>
         arg1 type_== arg2
-      case (Function(ret1, args1), Function(ret2, args2)) =>
-        (ret1 type_== ret2) && (args1.toSeq.zip(args2.toSeq).forall { case (l, r) => l type_== r })
-      case (Slice(arg1), Slice(arg2)) =>
+      case (Defn.Function(ret1, args1), Defn.Function(ret2, args2)) =>
+        (ret1 type_== ret2) && (args1.nodes.zip(args2.nodes).forall { case (l, r) => l type_== r })
+      case (Defn.Slice(arg1), Defn.Slice(arg2)) =>
         arg1 type_== arg2
       case _ =>
         this eq other
@@ -50,13 +56,13 @@ sealed class Node private (
   // TODO: iterator
   final def edges: Seq[(Sc, Slot)] =
     desc.schema.zipWithIndex.flatMap {
-      case (Sc.Many(sc), idx) => multiAt(idx).toSeq.map((sc, _))
+      case (Sc.Many(sc), idx) => multiAt(idx).slots.map((sc, _))
       case (sc,          idx) => Seq((sc, at(idx)))
       case _                  => throw new Exception("schema violation")
     }
 
   final def deps: Iterator[Node] =
-    slots.toIterator.map(_.get)
+    _slots.toIterator.map(_.get)
 }
 object Node {
   private[ir] var lastEpoch = 0
@@ -65,11 +71,14 @@ object Node {
     lastEpoch
   }
 
-  private[ir] def apply(desc: Desc, name: Name = Name.No): Node =
-    new Node(desc, name)
+  private[ir] def apply(desc: Desc): Node =
+    new Node(desc)
 
-  private[ir] def apply(desc: Desc, name: Name, deps: Array[Any] /* Array[Slot | Seq[Slot]] */): Node = {
-    val node    = new Node(desc, name)
+  private[ir] def apply(desc: Desc, attrs: Seq[Attr]): Node =
+    new Node(desc, _attrs = attrs.toArray)
+
+  private[ir] def apply(desc: Desc, deps: Array[Any], attrs: Seq[Attr]): Node = {
+    val node    = Node(desc, attrs)
     val slots   = new mutable.ArrayBuffer[Slot]
     val offsets = new mutable.ArrayBuffer[Int]
     var offset  = 0
@@ -87,30 +96,48 @@ object Node {
       case _ =>
         throw new Exception("Schema violation.")
     }
-    node.slots   = slots.toArray
-    node.offsets = offsets.toArray
+    node._slots   = slots.toArray
+    node._offsets = offsets.toArray
     node
   }
 }
 
-sealed abstract class Prim(name: Name) extends Node(Desc.Primitive, name)
-object Prim {
-  final case object Null    extends Prim(Name.Primitive("null"))
-  final case object Nothing extends Prim(Name.Primitive("nothing"))
-  final case object Unit    extends Prim(Name.Primitive("unit"))
-  final case object Bool    extends Prim(Name.Primitive("bool"))
+sealed abstract class Builtin(desc: Desc) extends Node(desc) {
+  override lazy val name: Name = this match {
+    case Builtin.Unit    => Name.Builtin("unit")
+    case Builtin.Bool    => Name.Builtin("bool")
+    case Builtin.I(w)    => Name.Builtin(s"i$w")
+    case Builtin.F(w)    => Name.Builtin(s"f$w")
+    case Builtin.Nothing => Name.Builtin("nothing")
+    case Builtin.Null    => Name.Builtin("null")
+    case Builtin.AnyRef  => Name.Class("java.lang.Object")
+  }
+}
+object Builtin {
+  final case object Unit extends Builtin(Desc.Builtin.Unit)
+  final case object Bool extends Builtin(Desc.Builtin.Bool)
 
-  sealed abstract case class I(width: Int) extends Prim(Name.Primitive(s"i$width"))
+  sealed abstract case class I(width: Int) extends Builtin(width match {
+    case 8  => Desc.Builtin.I8
+    case 16 => Desc.Builtin.I16
+    case 32 => Desc.Builtin.I32
+    case 64 => Desc.Builtin.I64
+  })
   final object I8  extends I(8)
   final object I16 extends I(16)
   final object I32 extends I(32)
   final object I64 extends I(64)
 
-  sealed abstract case class F(width: Int) extends Prim(Name.Primitive(s"f$width"))
+  sealed abstract case class F(width: Int) extends Builtin(width match {
+    case 32 => Desc.Builtin.F32
+    case 64 => Desc.Builtin.F64
+  })
   final object F32 extends F(32)
   final object F64 extends F(64)
 
-  final object Object extends Prim(Name.Class("java.lang.Object")) {
+  final case object Nothing extends Builtin(Desc.Builtin.Nothing)
+  final case object Null    extends Builtin(Desc.Builtin.Null)
+  final case object AnyRef  extends Builtin(Desc.Builtin.AnyRef) {
     def resolve(name: Name): Option[Node] = name match {
       case `initName`      => Some(initMethod)
       case `cloneName`     => Some(cloneMethod)
@@ -129,7 +156,7 @@ object Prim {
 
     lazy val initName: Name = Name.Constructor(name, Seq())
     lazy val initMethod: Node =
-      Method(Unit, Seq(), End(Seq(Return(Empty, Empty, Unit))), this, name = initName)
+      Defn.Method(Unit, Seq(), End(Seq(Return(Empty, Empty, Unit))), this, initName)
 
     lazy val cloneName: Name = Name.Method(name, "clone", Seq(), name)
     lazy val cloneMethod: Node = ???
@@ -166,4 +193,4 @@ object Prim {
   }
 }
 
-final case object Empty extends Node(Desc.Empty, Name.No)
+final case object Empty extends Node(Desc.Empty)

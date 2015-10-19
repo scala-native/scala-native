@@ -35,15 +35,18 @@ class SaltySerializer(buffer: ByteBuffer) {
   private def putNode(n: Node): Int =  {
     val pos = position
     offsets += (n -> pos)
-    if (n eq Empty)
-      putDesc(D.Empty)
-    else {
-      putDesc(n.desc)
-      putName(n.name)
-      if (n.desc.schema.nonEmpty) {
-        putSeq(n.offsets)(putInt(_))
-        putSeq(n.slots)(putSlot(_))
-      }
+    n.desc match {
+      case Desc.Empty =>
+        putDesc(D.Empty)
+      case _: Desc.Builtin =>
+        putDesc(n.desc)
+      case _ =>
+        putDesc(n.desc)
+        putAttrs(n.attrs)
+        if (n.desc.schema.nonEmpty) {
+          putSeq(n._offsets)(putInt(_))
+          putSeq(n._slots)(putSlot(_))
+        }
     }
     pos
   }
@@ -82,23 +85,32 @@ class SaltySerializer(buffer: ByteBuffer) {
       putInt(0)
     }
 
+  private def putAttrs(attrs: Seq[Attr]) = {
+    val pattrs = attrs.collect { case pattr: PersistentAttr => pattr }
+    putSeq(pattrs)(putPersistentAttr)
+  }
+
+  private def putPersistentAttr(attr: PersistentAttr) = attr match {
+    case n: Name => putName(n)
+  }
+
   private def putName(name: Name): Unit = name match {
     case Name.No =>
       putInt(T.NoName)
     case Name.Main =>
       putInt(T.MainName)
+    case Name.Builtin(v) =>
+      putInt(T.BuiltinName); putString(v)
     case Name.Local(v) =>
       putInt(T.LocalName); putString(v)
     case Name.Class(v) =>
       putInt(T.ClassName); putString(v)
-    case Name.ClassVtable(owner) =>
-      putInt(T.ClassVtableName); putName(owner)
-    case Name.ClassVtableData(owner) =>
-      putInt(T.ClassVtableDataName); putName(owner)
     case Name.ClassData(owner) =>
       putInt(T.ClassDataName); putName(owner)
-    case Name.ClassRef(owner) =>
-      putInt(T.ClassRefName); putName(owner)
+    case Name.Vtable(owner) =>
+      putInt(T.VtableName); putName(owner)
+    case Name.VtableConstant(owner) =>
+      putInt(T.VtableConstantName); putName(owner)
     case Name.Module(v) =>
       putInt(T.ModuleName); putString(v)
     case Name.ModuleAccessor(owner) =>
@@ -107,8 +119,6 @@ class SaltySerializer(buffer: ByteBuffer) {
       putInt(T.ModuleDataName); putName(owner)
     case Name.Interface(v) =>
       putInt(T.InterfaceName); putString(v)
-    case Name.Primitive(v) =>
-      putInt(T.PrimitiveName); putString(v)
     case Name.Slice(n) =>
       putInt(T.SliceName); putName(n)
     case Name.Field(owner, id) =>

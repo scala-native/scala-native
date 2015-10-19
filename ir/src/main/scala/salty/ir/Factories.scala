@@ -3,15 +3,15 @@ package salty.ir
 import salty.ir.{Desc => D, Tags => T}
 
 sealed abstract class NullaryFactory(desc: D) {
-  def apply(name: Name = Name.No): Node=
-    Node(desc, name, Array())
+  def apply(attrs: Attr*): Node=
+    Node(desc, Array(), attrs)
   def unapply(n: Node): Boolean =
     n.desc eq desc
 }
 
 sealed abstract class UnaryFactory(desc: D) {
-  def apply(n: Node, name: Name = Name.No): Node =
-    Node(desc, name, Array(n))
+  def apply(n: Node, attrs: Attr*): Node =
+    Node(desc, Array(n), attrs)
   def unapply(n: Node): Option[Slot] =
     if (n.desc eq desc)
       Some(n.at(0))
@@ -20,8 +20,8 @@ sealed abstract class UnaryFactory(desc: D) {
 }
 
 sealed abstract class BinaryFactory(desc: D) {
-  def apply(left: Node, right: Node, name: Name = Name.No): Node =
-    Node(desc, name, Array(left, right))
+  def apply(left: Node, right: Node, attrs: Attr*): Node =
+    Node(desc, Array(left, right), attrs)
   def unapply(n: Node): Option[(Slot, Slot)] =
     if (n.desc eq desc)
       Some((n.at(0), n.at(1)))
@@ -30,8 +30,8 @@ sealed abstract class BinaryFactory(desc: D) {
 }
 
 sealed abstract class TernaryFactory(desc: D) {
-  def apply(left: Node, middle: Node, right: Node, name: Name = Name.No): Node =
-    Node(desc, name, Array(left, middle, right))
+  def apply(left: Node, middle: Node, right: Node, attrs: Attr*): Node =
+    Node(desc, Array(left, middle, right), attrs)
   def unapply(n: Node): Option[(Slot, Slot, Slot)] =
     if (n.desc eq desc)
       Some((n.at(0), n.at(1), n.at(2)))
@@ -40,8 +40,8 @@ sealed abstract class TernaryFactory(desc: D) {
 }
 
 private[ir] sealed abstract class SeqNodeFactory(desc: D) {
-  def apply(nodes: Seq[Node], name: Name = Name.No): Node =
-    Node(desc, name, Array(nodes))
+  def apply(nodes: Seq[Node], attrs: Attr*): Node =
+    Node(desc, Array(nodes), attrs)
   def unapply(n: Node): Option[MultiSlot] =
     if (n.desc eq desc)
       Some(n.multiAt(0))
@@ -50,8 +50,8 @@ private[ir] sealed abstract class SeqNodeFactory(desc: D) {
 }
 
 private[ir] sealed abstract class NodeSeqNodeFactory(desc: D) {
-  def apply(node: Node, nodes: Seq[Node], name: Name = Name.No): Node =
-    Node(desc, name, Array(node, nodes))
+  def apply(node: Node, nodes: Seq[Node], attrs: Attr*): Node =
+    Node(desc, Array(node, nodes), attrs)
   def unapply(n: Node): Option[(Slot, MultiSlot)] =
     if (n.desc eq desc)
       Some((n.at(0), n.multiAt(1)))
@@ -60,8 +60,8 @@ private[ir] sealed abstract class NodeSeqNodeFactory(desc: D) {
 }
 
 private[ir] sealed abstract class NodeSeqNodeNodeFactory(desc: D) {
-  def apply(node1: Node, nodes: Seq[Node], node2: Node, name: Name = Name.No): Node =
-    Node(desc, name, Array(node1, nodes, node2))
+  def apply(node1: Node, nodes: Seq[Node], node2: Node, attrs: Attr*): Node =
+    Node(desc, Array(node1, nodes, node2), attrs)
   def unapply(n: Node): Option[(Slot, MultiSlot, Slot)] =
     if (n.desc eq desc)
       Some((n.at(0), n.multiAt(1), n.at(2)))
@@ -70,8 +70,8 @@ private[ir] sealed abstract class NodeSeqNodeNodeFactory(desc: D) {
 }
 
 private[ir] sealed abstract class NodeSeqNodeNodeNodeFactory(desc: D) {
-  def apply(node1: Node, nodes: Seq[Node], node2: Node, node3: Node, name: Name = Name.No): Node =
-    Node(desc, name, Array(node1, nodes, node2, node3))
+  def apply(node1: Node, nodes: Seq[Node], node2: Node, node3: Node, attrs: Attr*): Node =
+    Node(desc, Array(node1, nodes, node2, node3), attrs)
   def unapply(n: Node): Option[(Slot, MultiSlot, Slot, Slot)] =
     if (n.desc eq desc)
       Some((n.at(0), n.multiAt(1), n.at(2), n.at(3)))
@@ -80,8 +80,8 @@ private[ir] sealed abstract class NodeSeqNodeNodeNodeFactory(desc: D) {
 }
 
 private[ir] sealed abstract class NodeNodeSeqNodeFactory(desc: D) {
-  def apply(node1: Node, node2: Node, nodes: Seq[Node], name: Name = Name.No): Node =
-    Node(desc, name, Array(node1, node2, nodes))
+  def apply(node1: Node, node2: Node, nodes: Seq[Node], attrs: Attr*): Node =
+    Node(desc, Array(node1, node2, nodes), attrs)
   def unapply(n: Node): Option[(Slot, Slot, MultiSlot)] =
     if (n.desc eq desc)
       Some((n.at(0), n.at(1), n.multiAt(2)))
@@ -140,6 +140,7 @@ object EfPhi  extends NodeSeqNodeFactory(D.EfPhi)
 object Call   extends NodeNodeSeqNodeFactory(D.Call)
 object Load   extends BinaryFactory(D.Load)
 object Store  extends TernaryFactory(D.Store)
+object Elem   extends NodeSeqNodeFactory(D.Elem)
 object Param  extends UnaryFactory(D.Param)
 object Phi    extends NodeSeqNodeFactory(D.Phi)
 object Alloc  extends UnaryFactory(D.Alloc)
@@ -156,13 +157,17 @@ object Is         extends BinaryFactory(D.If)
 object As         extends BinaryFactory(D.As)
 object Box        extends BinaryFactory(D.Box)
 object Unbox      extends BinaryFactory(D.Unbox)
-object Allocs     extends BinaryFactory(D.Allocs)
+object ClassAlloc extends UnaryFactory(D.ClassAlloc)
+object SliceAlloc extends BinaryFactory(D.SliceAlloc)
+
+object Struct extends SeqNodeFactory(D.Struct)
 
 object Null  extends NullaryFactory(D.Null)
 object Unit  extends NullaryFactory(D.Unit)
 object True  extends NullaryFactory(D.True)
 object False extends NullaryFactory(D.False)
 object Zero  extends UnaryFactory(D.Zero)
+object Size  extends UnaryFactory(D.Size)
 object I8 {
   def apply(v: Byte): Node =
     Node(D.I8(v))
@@ -227,18 +232,20 @@ object Str {
     }
 }
 
-object Primitive extends NullaryFactory(D.Primitive)
-object Global    extends BinaryFactory(D.Global)
-object Define    extends NodeSeqNodeNodeFactory(D.Define)
-object Declare   extends NodeSeqNodeFactory(D.Declare)
-object Extern    extends NullaryFactory(D.Extern)
-object Struct    extends SeqNodeFactory(D.Struct)
-object Ptr       extends UnaryFactory(D.Ptr)
-object Function  extends NodeSeqNodeFactory(D.Function)
+object Defn {
+  object Global    extends BinaryFactory(D.Defn.Global)
+  object Constant  extends BinaryFactory(D.Defn.Global)
+  object Define    extends NodeSeqNodeNodeFactory(D.Defn.Define)
+  object Declare   extends NodeSeqNodeFactory(D.Defn.Declare)
+  object Extern    extends NullaryFactory(D.Defn.Extern)
+  object Struct    extends SeqNodeFactory(D.Defn.Struct)
+  object Ptr       extends UnaryFactory(D.Defn.Ptr)
+  object Function  extends NodeSeqNodeFactory(D.Defn.Function)
 
-object Class     extends NodeSeqNodeFactory(D.Class)
-object Interface extends SeqNodeFactory(D.Interface)
-object Module    extends NodeSeqNodeNodeFactory(D.Module)
-object Method    extends NodeSeqNodeNodeNodeFactory(D.Method)
-object Field     extends BinaryFactory(D.Field)
-object Slice     extends UnaryFactory(D.Slice)
+  object Class     extends NodeSeqNodeFactory(D.Defn.Class)
+  object Interface extends SeqNodeFactory(D.Defn.Interface)
+  object Module    extends NodeSeqNodeNodeFactory(D.Defn.Module)
+  object Method    extends NodeSeqNodeNodeNodeFactory(D.Defn.Method)
+  object Field     extends BinaryFactory(D.Defn.Field)
+  object Slice     extends UnaryFactory(D.Defn.Slice)
+}

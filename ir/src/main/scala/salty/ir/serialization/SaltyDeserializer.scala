@@ -23,44 +23,40 @@ class SaltyDeserializer(path: String) {
 
   private def getNode(): Node = {
     val pos = position
-    if (nodes.contains(pos)) {
-      nodes(pos)
-    } else
+    if (nodes.contains(pos)) nodes(pos)
+    else
       getDesc match {
-        case Desc.Empty =>
-          Empty
-        case Desc.Primitive =>
-          getName match {
-            case Name.Primitive("null")        => Prim.Null
-            case Name.Primitive("nothing")     => Prim.Nothing
-            case Name.Primitive("unit")        => Prim.Unit
-            case Name.Primitive("bool")        => Prim.Bool
-            case Name.Primitive("i8")          => Prim.I8
-            case Name.Primitive("i16")         => Prim.I16
-            case Name.Primitive("i32")         => Prim.I32
-            case Name.Primitive("i64")         => Prim.I64
-            case Name.Primitive("f32")         => Prim.F32
-            case Name.Primitive("f64")         => Prim.F64
-            case Name.Class("java.lang.Class") => Prim.Object
-            case _                             => throw new Exception("unreachable")
-          }
-        case Desc.Extern =>
-          getName match {
-            case Prim.Object.name =>
-              Prim.Object
-            case name @ (Name.Field(Prim.Object.name, _)       |
-                         Name.Constructor(Prim.Object.name, _) |
-                         Name.Method(Prim.Object.name, _, _, _)) =>
-              Prim.Object.resolve(name).get
-            case name =>
-              extern(name)
+        case Desc.Empty           => Empty
+        case Desc.Builtin.Unit    => Builtin.Unit
+        case Desc.Builtin.Bool    => Builtin.Bool
+        case Desc.Builtin.I8      => Builtin.I8
+        case Desc.Builtin.I16     => Builtin.I16
+        case Desc.Builtin.I32     => Builtin.I32
+        case Desc.Builtin.I64     => Builtin.I64
+        case Desc.Builtin.F32     => Builtin.F32
+        case Desc.Builtin.F64     => Builtin.F64
+        case Desc.Builtin.AnyRef  => Builtin.AnyRef
+        case Desc.Builtin.Null    => Builtin.Null
+        case Desc.Builtin.Nothing => Builtin.Nothing
+        case Desc.Defn.Extern     =>
+          val attrs = getAttrs
+          val name = attrs.collectFirst { case n: Name => n }
+          name match {
+            case Some(Builtin.AnyRef.name) =>
+              Builtin.AnyRef
+            case Some(name @ (Name.Field(Builtin.AnyRef.name, _)       |
+                              Name.Constructor(Builtin.AnyRef.name, _) |
+                              Name.Method(Builtin.AnyRef.name, _, _, _))) =>
+              Builtin.AnyRef.resolve(name).get
+            case _ =>
+              extern(attrs)
           }
         case desc =>
-          val node = Node(desc, getName)
+          val node = Node(desc, getAttrs)
           nodes += pos -> node
           if (desc.schema.nonEmpty) {
-            node.offsets = getOffsets
-            node.slots = getSlots(node)
+            node._offsets = getOffsets
+            node._slots = getSlots(node)
           }
           node
       }
@@ -82,6 +78,12 @@ class SaltyDeserializer(path: String) {
     case T.F64  => Desc.F64(getDouble)
     case T.Str  => Desc.Str(getString)
     case tag    => T.tag2plain(tag)
+  }
+
+  private def getAttrs(): Seq[Attr] = getSeq(getPersistentAttr)
+
+  private def getPersistentAttr(): PersistentAttr = getInt match {
+    case tag if tag >= T.NoName && tag <= T.MethodName => getName(tag)
   }
 
   private def getOffsets(): Array[Int] = getSeq(getInt).toArray
@@ -108,24 +110,24 @@ class SaltyDeserializer(path: String) {
     }
   }
 
-  private def getName(): Name = getInt match {
-    case T.NoName               => Name.No
-    case T.MainName             => Name.Main
-    case T.LocalName            => Name.Local(getString)
-    case T.ClassName            => Name.Class(getString)
-    case T.ClassVtableName      => Name.ClassVtable(getName)
-    case T.ClassVtableDataName  => Name.ClassVtableData(getName)
-    case T.ClassDataName        => Name.ClassData(getName)
-    case T.ClassRefName         => Name.ClassRef(getName)
-    case T.ModuleName           => Name.Module(getString)
-    case T.ModuleAccessorName   => Name.ModuleAccessor(getName)
-    case T.ModuleDataName       => Name.ModuleData(getName)
-    case T.InterfaceName        => Name.Interface(getString)
-    case T.PrimitiveName        => Name.Primitive(getString)
-    case T.SliceName            => Name.Slice(getName)
-    case T.FieldName            => Name.Field(getName, getString)
-    case T.ConstructorName      => Name.Constructor(getName, getSeq(getName))
-    case T.MethodName           => Name.Method(getName, getString, getSeq(getName), getName)
+  private def getName: Name = getName(getInt)
+  private def getName(tag: Int): Name = tag match {
+    case T.NoName             => Name.No
+    case T.MainName           => Name.Main
+    case T.BuiltinName        => Name.Builtin(getString)
+    case T.LocalName          => Name.Local(getString)
+    case T.ClassName          => Name.Class(getString)
+    case T.ClassDataName      => Name.ClassData(getName)
+    case T.VtableName         => Name.Vtable(getName)
+    case T.VtableConstantName => Name.VtableConstant(getName)
+    case T.ModuleName         => Name.Module(getString)
+    case T.ModuleAccessorName => Name.ModuleAccessor(getName)
+    case T.ModuleDataName     => Name.ModuleData(getName)
+    case T.InterfaceName      => Name.Interface(getString)
+    case T.SliceName          => Name.Slice(getName)
+    case T.FieldName          => Name.Field(getName, getString)
+    case T.ConstructorName    => Name.Constructor(getName, getSeq(getName))
+    case T.MethodName         => Name.Method(getName, getString, getSeq(getName), getName)
   }
 
   private def getSeq[T](getT: => T): Seq[T] =
@@ -137,7 +139,8 @@ class SaltyDeserializer(path: String) {
     new String(arr)
   }
 
-  def extern(name: Name): Node = Extern(name)
+  def extern(attrs: Seq[Attr]): Node =
+    Defn.Extern(attrs: _*)
 
   final def resolve(name: Name): Option[Node] =
     nametable.get(name).map { pos => position(pos); getNode }

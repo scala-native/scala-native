@@ -24,7 +24,7 @@ class DotSerializer extends Pass {
     node.desc match {
       case _: Desc.Cf =>
         s("[shape=box, style=filled, color=lightgrey, label=\"", label(node), "\"]")
-      case Desc.Extern =>
+      case Desc.Defn.Extern =>
         s("[shape=box, color=red, label=\"", label(node), "\"]")
       case _ =>
         s("[shape=box, label=\"", label(node), "\"]")
@@ -49,6 +49,10 @@ class DotSerializer extends Pass {
         shows = s(key(next), " -> ", k, style(sc)) :: shows
       }
     }
+    //node.uses.foreach { case slot: Slot =>
+    //  define(slot.node)
+    //  shows = s(key(slot.node), " -> ", k, "[color=red, style=dotted]") :: shows
+    //}
   }
 }
 object DotSerializer {

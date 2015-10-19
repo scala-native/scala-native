@@ -12,9 +12,10 @@ object Desc {
   sealed trait Termn extends Cf
   sealed trait Ef
   sealed trait Val
-  sealed trait Defn
 
   final case object Empty extends Plain() with Ef with Cf with Val with Defn
+
+  final case object Dead extends Plain() with Ef with Cf with Val with Defn
 
   final case object Label         extends Plain(Sc.Many(Sc.Cf)      ) with Cf
   final case object If            extends Plain(Sc.Cf, Sc.Val       ) with Cf
@@ -66,6 +67,7 @@ object Desc {
   final case object Call   extends Plain(Sc.Ef, Sc.Val, Sc.Many(Sc.Val)) with Ef with Val
   final case object Load   extends Plain(Sc.Ef, Sc.Val                 ) with Ef with Val
   final case object Store  extends Plain(Sc.Ef, Sc.Val, Sc.Val         ) with Ef with Val
+  final case object Elem   extends Plain(       Sc.Val, Sc.Many(Sc.Val))         with Val
   final case object Param  extends Plain(       Sc.Ref                 )         with Val
   final case object Phi    extends Plain(       Sc.Cf, Sc.Many(Sc.Val) )         with Val
   final case object Alloc  extends Plain(       Sc.Ref                 )         with Val
@@ -82,13 +84,17 @@ object Desc {
   final case object As         extends Plain(       Sc.Val, Sc.Ref)         with Val //scala
   final case object Box        extends Plain(       Sc.Val, Sc.Ref)         with Val //scala
   final case object Unbox      extends Plain(       Sc.Val, Sc.Ref)         with Val //scala
-  final case object Allocs     extends Plain(       Sc.Ref, Sc.Val)         with Val //scala
+  final case object ClassAlloc extends Plain(       Sc.Ref        )         with Val //scala
+  final case object SliceAlloc extends Plain(       Sc.Ref, Sc.Val)         with Val//scala
+
+  final case object Struct extends Plain(Sc.Many(Sc.Ref)) with Val
 
   final case object Unit               extends Plain()       with Val
   final case object Null               extends Plain()       with Val
   final case object True               extends Plain()       with Val
   final case object False              extends Plain()       with Val
   final case object Zero               extends Plain(Sc.Ref) with Val
+  final case object Size               extends Plain(Sc.Ref) with Val
   final case class  I8(value: Byte)    extends Rich()        with Val
   final case class  I16(value: Short)  extends Rich()        with Val
   final case class  I32(value: Int)    extends Rich()        with Val
@@ -97,20 +103,43 @@ object Desc {
   final case class  F64(value: Double) extends Rich()        with Val
   final case class  Str(value: String) extends Rich()        with Val //scala
 
-  final case object Primitive extends Plain(                              ) with Defn
-  final case object Global    extends Plain(Sc.Ref, Sc.Val                ) with Defn with Val
-  final case object Constant  extends Plain(Sc.Ref, Sc.Val                ) with Defn with Val
-  final case object Define    extends Plain(Sc.Ref, Sc.Many(Sc.Val), Sc.Cf) with Defn with Val
-  final case object Declare   extends Plain(Sc.Ref, Sc.Many(Sc.Val)       ) with Defn with Val
-  final case object Extern    extends Plain(                              ) with Defn with Val
-  final case object Struct    extends Plain(Sc.Many(Sc.Ref)               ) with Defn
-  final case object Ptr       extends Plain(Sc.Ref                        ) with Defn
-  final case object Function  extends Plain(Sc.Ref, Sc.Many(Sc.Ref)       ) with Defn
+  sealed abstract class Builtin extends Plain() with Defn
+  object Builtin {
+    final case object Unit    extends Builtin()
+    final case object Bool    extends Builtin()
+    final case object I8      extends Builtin()
+    final case object I16     extends Builtin()
+    final case object I32     extends Builtin()
+    final case object I64     extends Builtin()
+    final case object F32     extends Builtin()
+    final case object F64     extends Builtin()
+    final case object Nothing extends Builtin() //scala
+    final case object Null    extends Builtin() //scala
+    final case object AnyRef  extends Builtin() //scala
+  }
 
-  final case object Class     extends Plain(Sc.Ref, Sc.Many(Sc.Ref)               ) with Defn with Val //scala
-  final case object Interface extends Plain(Sc.Many(Sc.Ref)                       ) with Defn with Val //scala
-  final case object Module    extends Plain(Sc.Ref, Sc.Many(Sc.Ref), Sc.Ref       ) with Defn with Val //scala
-  final case object Method    extends Plain(Sc.Ref, Sc.Many(Sc.Val), Sc.Cf, Sc.Ref) with Defn          //scala
-  final case object Field     extends Plain(Sc.Ref, Sc.Ref                        ) with Defn          //scala
-  final case object Slice     extends Plain(Sc.Ref                                ) with Defn          //scala
+  sealed trait Defn
+  object Defn {
+    final case object Global    extends Plain(Sc.Ref, Sc.Val                ) with Defn with Val
+    final case object Constant  extends Plain(Sc.Ref, Sc.Val                ) with Defn with Val
+    final case object Define    extends Plain(Sc.Ref, Sc.Many(Sc.Val), Sc.Cf) with Defn with Val
+    final case object Declare   extends Plain(Sc.Ref, Sc.Many(Sc.Val)       ) with Defn with Val
+    final case object Extern    extends Plain(                              ) with Defn with Val
+    final case object Struct    extends Plain(Sc.Many(Sc.Ref)               ) with Defn
+    final case object Ptr       extends Plain(Sc.Ref                        ) with Defn
+    final case object Function  extends Plain(Sc.Ref, Sc.Many(Sc.Ref)       ) with Defn
+
+    //                                        parent, ifaces
+    final case object Class     extends Plain(Sc.Ref, Sc.Many(Sc.Ref)               ) with Defn with Val //scala
+    //                                        ifaces
+    final case object Interface extends Plain(Sc.Many(Sc.Ref)                       ) with Defn with Val //scala
+    //                                        parent, ifaces,          ctor
+    final case object Module    extends Plain(Sc.Ref, Sc.Many(Sc.Ref), Sc.Ref       ) with Defn with Val //scala
+    //                                        retty,  params,          cf,    owner
+    final case object Method    extends Plain(Sc.Ref, Sc.Many(Sc.Val), Sc.Cf, Sc.Ref) with Defn          //scala
+    //                                        ty,     owner
+    final case object Field     extends Plain(Sc.Ref, Sc.Ref                        ) with Defn          //scala
+    //                                        ty
+    final case object Slice     extends Plain(Sc.Ref                                ) with Defn          //scala
+  }
 }
