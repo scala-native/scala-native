@@ -103,19 +103,18 @@ object Desc {
   final case class  F64(value: Double) extends Rich()        with Val
   final case class  Str(value: String) extends Rich()        with Val //scala
 
-  sealed abstract class Builtin extends Plain() with Defn
-  object Builtin {
-    final case object Unit    extends Builtin()
-    final case object Bool    extends Builtin()
-    final case object I8      extends Builtin()
-    final case object I16     extends Builtin()
-    final case object I32     extends Builtin()
-    final case object I64     extends Builtin()
-    final case object F32     extends Builtin()
-    final case object F64     extends Builtin()
-    final case object Nothing extends Builtin() //scala
-    final case object Null    extends Builtin() //scala
-    final case object AnyRef  extends Builtin() //scala
+  sealed abstract class Prim extends Plain() with Defn
+  object Prim {
+    final case object Unit    extends Prim()
+    final case object Bool    extends Prim()
+    final case object I8      extends Prim()
+    final case object I16     extends Prim()
+    final case object I32     extends Prim()
+    final case object I64     extends Prim()
+    final case object F32     extends Prim()
+    final case object F64     extends Prim()
+    final case object Nothing extends Prim() //scala
+    final case object Null    extends Prim() //scala
   }
 
   sealed trait Defn

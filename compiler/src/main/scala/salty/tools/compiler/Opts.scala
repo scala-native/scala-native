@@ -5,10 +5,10 @@ object Opt {
   final case class Key[T](value: String)
   final case class Default[T](value: T)
 
-  final case class Cp(value: Classpath) extends Opt
+  final case class Cp(value: ClasspathLoader) extends Opt
   object Cp {
     implicit val key:     Key[Cp]     = Key[Cp]("cp")
-    implicit val default: Default[Cp] = Default(Cp(Classpath(Seq("."))))
+    implicit val default: Default[Cp] = Default(Cp(new ClasspathLoader(Seq("."))))
   }
 
   final case class Dot(value: Option[String]) extends Opt
@@ -21,7 +21,7 @@ object Opt {
     args match {
       case "-cp" :: classpath :: rest =>
         val (restopts, restrest) = parse(rest)
-        (restopts + (Opt.Cp.key -> Opt.Cp(Classpath(classpath.split(":")))), restrest)
+        (restopts + (Opt.Cp.key -> Opt.Cp(new ClasspathLoader(classpath.split(":")))), restrest)
       case "-dot" :: path :: rest =>
         val (restopts, restrest) = parse(rest)
         (restopts + (Opt.Dot.key -> Opt.Dot(Some(path))), restrest)

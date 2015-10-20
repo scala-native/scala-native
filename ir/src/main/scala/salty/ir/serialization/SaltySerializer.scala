@@ -36,9 +36,7 @@ class SaltySerializer(buffer: ByteBuffer) {
     val pos = position
     offsets += (n -> pos)
     n.desc match {
-      case Desc.Empty =>
-        putDesc(D.Empty)
-      case _: Desc.Builtin =>
+      case Desc.Empty | _: Desc.Prim =>
         putDesc(n.desc)
       case _ =>
         putDesc(n.desc)
@@ -99,8 +97,8 @@ class SaltySerializer(buffer: ByteBuffer) {
       putInt(T.NoName)
     case Name.Main =>
       putInt(T.MainName)
-    case Name.Builtin(v) =>
-      putInt(T.BuiltinName); putString(v)
+    case Name.Prim(v) =>
+      putInt(T.PrimName); putString(v)
     case Name.Local(v) =>
       putInt(T.LocalName); putString(v)
     case Name.Class(v) =>

@@ -102,95 +102,40 @@ object Node {
   }
 }
 
-sealed abstract class Builtin(desc: Desc) extends Node(desc) {
+sealed abstract class Prim(desc: Desc) extends Node(desc) {
   override lazy val name: Name = this match {
-    case Builtin.Unit    => Name.Builtin("unit")
-    case Builtin.Bool    => Name.Builtin("bool")
-    case Builtin.I(w)    => Name.Builtin(s"i$w")
-    case Builtin.F(w)    => Name.Builtin(s"f$w")
-    case Builtin.Nothing => Name.Builtin("nothing")
-    case Builtin.Null    => Name.Builtin("null")
-    case Builtin.AnyRef  => Name.Class("java.lang.Object")
+    case Prim.Unit    => Name.Prim("unit")
+    case Prim.Bool    => Name.Prim("bool")
+    case Prim.I(w)    => Name.Prim(s"i$w")
+    case Prim.F(w)    => Name.Prim(s"f$w")
+    case Prim.Nothing => Name.Prim("nothing")
+    case Prim.Null    => Name.Prim("null")
   }
 }
-object Builtin {
-  final case object Unit extends Builtin(Desc.Builtin.Unit)
-  final case object Bool extends Builtin(Desc.Builtin.Bool)
+object Prim {
+  final case object Unit extends Prim(Desc.Prim.Unit)
+  final case object Bool extends Prim(Desc.Prim.Bool)
 
-  sealed abstract case class I(width: Int) extends Builtin(width match {
-    case 8  => Desc.Builtin.I8
-    case 16 => Desc.Builtin.I16
-    case 32 => Desc.Builtin.I32
-    case 64 => Desc.Builtin.I64
+  sealed abstract case class I(width: Int) extends Prim(width match {
+    case 8  => Desc.Prim.I8
+    case 16 => Desc.Prim.I16
+    case 32 => Desc.Prim.I32
+    case 64 => Desc.Prim.I64
   })
   final object I8  extends I(8)
   final object I16 extends I(16)
   final object I32 extends I(32)
   final object I64 extends I(64)
 
-  sealed abstract case class F(width: Int) extends Builtin(width match {
-    case 32 => Desc.Builtin.F32
-    case 64 => Desc.Builtin.F64
+  sealed abstract case class F(width: Int) extends Prim(width match {
+    case 32 => Desc.Prim.F32
+    case 64 => Desc.Prim.F64
   })
   final object F32 extends F(32)
   final object F64 extends F(64)
 
-  final case object Nothing extends Builtin(Desc.Builtin.Nothing)
-  final case object Null    extends Builtin(Desc.Builtin.Null)
-  final case object AnyRef  extends Builtin(Desc.Builtin.AnyRef) {
-    def resolve(name: Name): Option[Node] = name match {
-      case `initName`      => Some(initMethod)
-      case `cloneName`     => Some(cloneMethod)
-      case `equalsName`    => Some(equalsMethod)
-      case `finalizeName`  => Some(finalizeMethod)
-      case `getClassName`  => Some(getClassMethod)
-      case `hashCodeName`  => Some(hashCodeMethod)
-      case `notifyName`    => Some(notifyMethod)
-      case `notifyAllName` => Some(notifyAllMethod)
-      case `toStringName`  => Some(toStringMethod)
-      case `wait0Name`     => Some(wait0Method)
-      case `wait1Name`     => Some(wait1Method)
-      case `wait2Name`     => Some(wait2Method)
-      case _               => None
-    }
-
-    lazy val initName: Name = Name.Constructor(name, Seq())
-    lazy val initMethod: Node =
-      Defn.Method(Unit, Seq(), End(Seq(Return(Empty, Empty, Unit))), this, initName)
-
-    lazy val cloneName: Name = Name.Method(name, "clone", Seq(), name)
-    lazy val cloneMethod: Node = ???
-
-    lazy val equalsName: Name = Name.Method(name, "equals", Seq(name), Bool.name)
-    lazy val equalsMethod: Node = ???
-
-    lazy val finalizeName: Name = Name.Method(name, "finalize", Seq(), Unit.name)
-    lazy val finalizeMethod: Node = ???
-
-    lazy val getClassName: Name = Name.Method(name, "getClass", Seq(), Name.Class("java.lang.Class"))
-    lazy val getClassMethod: Node = ???
-
-    lazy val hashCodeName: Name = Name.Method(name, "hashCode", Seq(), I32.name)
-    lazy val hashCodeMethod: Node = ???
-
-    lazy val notifyName: Name = Name.Method(name, "notify", Seq(), Unit.name)
-    lazy val notifyMethod: Node = ???
-
-    lazy val notifyAllName: Name = Name.Method(name, "notifyAll", Seq(), Unit.name)
-    lazy val notifyAllMethod: Node = ???
-
-    lazy val toStringName: Name = Name.Method(name, "toString", Seq(), Name.Class("java.lang.String"))
-    lazy val toStringMethod: Node = ???
-
-    lazy val wait0Name: Name = Name.Method(name, "wait", Seq(), Unit.name)
-    lazy val wait0Method: Node = ???
-
-    lazy val wait1Name: Name = Name.Method(name, "wait", Seq(I64.name), Unit.name)
-    lazy val wait1Method: Node = ???
-
-    lazy val wait2Name: Name = Name.Method(name, "wait", Seq(I64.name, I32.name), Unit.name)
-    lazy val wait2Method: Node = ???
-  }
+  final case object Nothing extends Prim(Desc.Prim.Nothing)
+  final case object Null    extends Prim(Desc.Prim.Null)
 }
 
 final case object Empty extends Node(Desc.Empty)

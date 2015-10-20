@@ -60,61 +60,53 @@ object ClassLowering extends Reduction {
   def vtableAttr(node: Node): Option[ClassVtable] =
     node.attrs.collectFirst { case vt: ClassVtable => vt }
 
-  def reduceClass(cls: Node, parent: Node) =
-    After(parent) { parent =>
-      println(s"rewriting class ${cls.name} into structs")
-      val parentData = dataAttr(parent).map(_.data)
-      val parentVtable = vtableAttr(parent).map(_.vtable)
-      val methods = cls.uses.collect {
-        case Use(meth @ Defn.Method(_, _, _, _)) => meth
-      }
-      val vtableIndex = methods.zipWithIndex.toMap
-      val vtable =
-        Defn.Struct(
-          parentVtable ++: methods.map {
-            case Defn.Method(retty, params, _, _) =>
-              Defn.Function(retty, params.nodes.map {
-                case Param(Slot(ty)) => ty
-              })
-          },
-          Name.Vtable(cls.name))
-      val vtableConstant =
-        Defn.Constant(
-          vtable,
-          Struct(Seq()), // TODO:
-          Name.VtableConstant(cls.name))
-      val fields = cls.uses.collect {
-        case Use(field @ Defn.Field(_, _)) => field
-      }
-      val dataIndex = fields.zipWithIndex.toMap
-      val data =
-        Defn.Struct(
-          parentData ++: cls.uses.collect {
-            case Slot(Defn.Field(Slot(ty), _)) => ty
-          },
-          Name.ClassData(cls.name))
-      val ref =
-        Defn.Struct(
-          Seq(Defn.Ptr(vtable), Defn.Ptr(data)),
-          cls.name,
-          ClassData(data, dataIndex),
-          ClassVtable(vtable, vtableConstant, vtableIndex))
-
-      Replace.all(ref)
-    }
-
   def reduce = {
     case meth @ Defn.Method(retty, params, cf, cls) =>
       After(cls) { _ =>
-        println(s"rewriting method ${meth.name} into define")
         Replace.all(Defn.Define(retty, params.nodes, cf, meth.name))
       }
 
-    case cls @ Builtin.AnyRef =>
-      reduceClass(cls, Empty)
-
     case cls @ Defn.Class(parent, _) =>
-      reduceClass(cls, parent)
+      After(parent) { parent =>
+        val parentData = dataAttr(parent).map(_.data)
+        val parentVtable = vtableAttr(parent).map(_.vtable)
+        val methods = cls.uses.collect {
+          case Use(meth @ Defn.Method(_, _, _, _)) => meth
+        }
+        val vtableIndex = methods.zipWithIndex.toMap
+        val vtable =
+          Defn.Struct(
+            parentVtable ++: methods.map {
+              case Defn.Method(retty, params, _, _) =>
+                Defn.Function(retty, params.nodes.map {
+                  case Param(Slot(ty)) => ty
+                })
+            },
+            Name.Vtable(cls.name))
+        val vtableConstant =
+          Defn.Constant(
+            vtable,
+            Struct(Seq()), // TODO:
+            Name.VtableConstant(cls.name))
+        val fields = cls.uses.collect {
+          case Use(field @ Defn.Field(_, _)) => field
+        }
+        val dataIndex = fields.zipWithIndex.toMap
+        val data =
+          Defn.Struct(
+            parentData ++: cls.uses.collect {
+              case Slot(Defn.Field(Slot(ty), _)) => ty
+            },
+            Name.ClassData(cls.name))
+        val ref =
+          Defn.Struct(
+            Seq(Defn.Ptr(vtable), Defn.Ptr(data)),
+            cls.name,
+            ClassData(data, dataIndex),
+            ClassVtable(vtable, vtableConstant, vtableIndex))
+
+        Replace.all(ref)
+      }
 
     case ClassAlloc(cls) =>
       After(cls) { cls =>
@@ -125,9 +117,7 @@ object ClassLowering extends Reduction {
       }
 
     case MethodElem(ef, instance, Slot(meth @ Defn.Method(_, _, _, cls))) =>
-      println(s"1. method-elem ${meth.name}")
       After(cls) { cls =>
-        println(s"2. method-elem ${meth.name}")
         val methindex = vtableAttr(cls).get.index
         val meth_** = Elem(instance, Seq(I32(0), I32(0), I32(methindex(meth))))
         val meth_* = Load(Empty, meth_**)

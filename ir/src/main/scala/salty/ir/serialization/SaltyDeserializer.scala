@@ -26,31 +26,18 @@ class SaltyDeserializer(path: String) {
     if (nodes.contains(pos)) nodes(pos)
     else
       getDesc match {
-        case Desc.Empty           => Empty
-        case Desc.Builtin.Unit    => Builtin.Unit
-        case Desc.Builtin.Bool    => Builtin.Bool
-        case Desc.Builtin.I8      => Builtin.I8
-        case Desc.Builtin.I16     => Builtin.I16
-        case Desc.Builtin.I32     => Builtin.I32
-        case Desc.Builtin.I64     => Builtin.I64
-        case Desc.Builtin.F32     => Builtin.F32
-        case Desc.Builtin.F64     => Builtin.F64
-        case Desc.Builtin.AnyRef  => Builtin.AnyRef
-        case Desc.Builtin.Null    => Builtin.Null
-        case Desc.Builtin.Nothing => Builtin.Nothing
-        case Desc.Defn.Extern     =>
-          val attrs = getAttrs
-          val name = attrs.collectFirst { case n: Name => n }
-          name match {
-            case Some(Builtin.AnyRef.name) =>
-              Builtin.AnyRef
-            case Some(name @ (Name.Field(Builtin.AnyRef.name, _)       |
-                              Name.Constructor(Builtin.AnyRef.name, _) |
-                              Name.Method(Builtin.AnyRef.name, _, _, _))) =>
-              Builtin.AnyRef.resolve(name).get
-            case _ =>
-              extern(attrs)
-          }
+        case Desc.Empty        => Empty
+        case Desc.Prim.Unit    => Prim.Unit
+        case Desc.Prim.Bool    => Prim.Bool
+        case Desc.Prim.I8      => Prim.I8
+        case Desc.Prim.I16     => Prim.I16
+        case Desc.Prim.I32     => Prim.I32
+        case Desc.Prim.I64     => Prim.I64
+        case Desc.Prim.F32     => Prim.F32
+        case Desc.Prim.F64     => Prim.F64
+        case Desc.Prim.Null    => Prim.Null
+        case Desc.Prim.Nothing => Prim.Nothing
+        case Desc.Defn.Extern  => extern(getAttrs)
         case desc =>
           val node = Node(desc, getAttrs)
           nodes += pos -> node
@@ -114,7 +101,7 @@ class SaltyDeserializer(path: String) {
   private def getName(tag: Int): Name = tag match {
     case T.NoName             => Name.No
     case T.MainName           => Name.Main
-    case T.BuiltinName        => Name.Builtin(getString)
+    case T.PrimName           => Name.Prim(getString)
     case T.LocalName          => Name.Local(getString)
     case T.ClassName          => Name.Class(getString)
     case T.ClassDataName      => Name.ClassData(getName)

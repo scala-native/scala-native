@@ -98,9 +98,8 @@ object Tags {
   final val F64Defn     = 1 + F32Defn
   final val NothingDefn = 1 + F64Defn
   final val NullDefn    = 1 + NothingDefn
-  final val AnyRefDefn  = 1 + NullDefn
 
-  final val GlobalDefn   = 1 + AnyRefDefn
+  final val GlobalDefn   = 1 + NullDefn
   final val ConstantDefn = 1 + GlobalDefn
   final val DefineDefn   = 1 + ConstantDefn
   final val DeclareDefn  = 1 + DefineDefn
@@ -118,8 +117,8 @@ object Tags {
 
   final val NoName             = 1 + SliceDefn
   final val MainName           = 1 + NoName
-  final val BuiltinName        = 1 + MainName
-  final val LocalName          = 1 + BuiltinName
+  final val PrimName           = 1 + MainName
+  final val LocalName          = 1 + PrimName
   final val ClassName          = 1 + LocalName
   final val VtableName         = 1 + ClassName
   final val VtableConstantName = 1 + VtableName
@@ -220,17 +219,16 @@ object Tags {
     Desc.Zero  -> T.Zero ,
     Desc.Size  -> T.Size ,
 
-    Desc.Builtin.Unit    -> T.UnitDefn   ,
-    Desc.Builtin.Bool    -> T.BoolDefn   ,
-    Desc.Builtin.I8      -> T.I8Defn     ,
-    Desc.Builtin.I16     -> T.I16Defn    ,
-    Desc.Builtin.I32     -> T.I32Defn    ,
-    Desc.Builtin.I64     -> T.I64Defn    ,
-    Desc.Builtin.F32     -> T.F32Defn    ,
-    Desc.Builtin.F64     -> T.F64Defn    ,
-    Desc.Builtin.Nothing -> T.NothingDefn,
-    Desc.Builtin.Null    -> T.NullDefn   ,
-    Desc.Builtin.AnyRef  -> T.AnyRefDefn ,
+    Desc.Prim.Unit    -> T.UnitDefn   ,
+    Desc.Prim.Bool    -> T.BoolDefn   ,
+    Desc.Prim.I8      -> T.I8Defn     ,
+    Desc.Prim.I16     -> T.I16Defn    ,
+    Desc.Prim.I32     -> T.I32Defn    ,
+    Desc.Prim.I64     -> T.I64Defn    ,
+    Desc.Prim.F32     -> T.F32Defn    ,
+    Desc.Prim.F64     -> T.F64Defn    ,
+    Desc.Prim.Nothing -> T.NothingDefn,
+    Desc.Prim.Null    -> T.NullDefn   ,
 
     Desc.Defn.Global   -> T.GlobalDefn  ,
     Desc.Defn.Define   -> T.DefineDefn  ,

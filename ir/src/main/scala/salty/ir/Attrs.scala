@@ -8,7 +8,7 @@ sealed abstract class Name extends PersistentAttr {
   override def toString: String = this match {
     case Name.No                               => ""
     case Name.Main                             => "@main"
-    case Name.Builtin(id)                      => id
+    case Name.Prim(id)                         => id
     case Name.Local(id)                        => s"%$id"
     case Name.Module(id)                       => s"@m.$id"
     case Name.ModuleAccessor(module)           => s"$module.accessor"
@@ -27,7 +27,7 @@ sealed abstract class Name extends PersistentAttr {
 object Name {
   final case object No extends Name
   final case object Main extends Name
-  final case class Builtin(id: String) extends Name
+  final case class Prim(id: String) extends Name
   final case class Local(id: String) extends Name
   final case class Class(id: String) extends Name
   final case class ClassData(owner: Name) extends Name
