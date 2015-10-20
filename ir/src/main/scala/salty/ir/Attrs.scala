@@ -2,7 +2,7 @@ package salty.ir
 
 sealed abstract class Attr
 sealed abstract class PersistentAttr extends Attr
-sealed abstract class TransientAttr extends Attr
+abstract class TransientAttr extends Attr
 
 sealed abstract class Name extends PersistentAttr {
   override def toString: String = this match {
@@ -43,5 +43,4 @@ object Name {
   final case class Method(owner: Name, id: String, args: Seq[Name], ret: Name) extends Name
 }
 
-final case class ClassData(data: Node, index: Map[Node, Int]) extends TransientAttr
-final case class ClassVtable(vtable: Node, vtableConstant: Node, index: Map[Node, Int]) extends TransientAttr
+

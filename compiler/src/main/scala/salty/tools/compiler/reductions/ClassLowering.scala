@@ -7,6 +7,7 @@ import salty.ir._, Reduction._
  *
  *  TODO: interfaces
  *  TODO: value dependencies on classes
+ *  TODO: NPE
  *
  *  For example a class w:
  *
@@ -55,38 +56,45 @@ import salty.ir._, Reduction._
  *        %field_*
  */
 object ClassLowering extends Reduction {
+  final case class ClassData(data: Node, index: Map[Node, Int]) extends TransientAttr
+  final case class ClassVtable(vtable: Node, vtableConstant: Node,
+                               func: Map[Node, Node], index: Map[Node, Int]) extends TransientAttr
+
   def dataAttr(node: Node): Option[ClassData] =
     node.attrs.collectFirst { case dm: ClassData => dm }
   def vtableAttr(node: Node): Option[ClassVtable] =
     node.attrs.collectFirst { case vt: ClassVtable => vt }
 
   def reduce = {
-    case meth @ Defn.Method(retty, params, cf, cls) =>
-      After(cls) { _ =>
-        Replace.all(Defn.Define(retty, params.nodes, cf, meth.name))
-      }
-
     case cls @ Defn.Class(parent, _) =>
       After(parent) { parent =>
         val parentData = dataAttr(parent).map(_.data)
-        val parentVtable = vtableAttr(parent).map(_.vtable)
+        val parentVtableAttr = vtableAttr(parent)
+        val parentVtable = parentVtableAttr.map(_.vtable)
+        val parentVtableValue = parentVtableAttr.map { _.vtableConstant match {
+          case Defn.Constant(_, value) => value.get
+        }}
         val methods = cls.uses.collect {
           case Use(meth @ Defn.Method(_, _, _, _)) => meth
         }
+        val funcs = methods.map {
+          case meth @ Defn.Method(retty, params, end, _) =>
+            meth -> Defn.Define(retty.get, params.nodes, end.get, meth.name)
+        }.toMap
         val vtableIndex = methods.zipWithIndex.toMap
         val vtable =
           Defn.Struct(
             parentVtable ++: methods.map {
               case Defn.Method(retty, params, _, _) =>
-                Defn.Function(retty, params.nodes.map {
-                  case Param(Slot(ty)) => ty
+                Defn.Function(retty.get, params.nodes.map {
+                  case Param(Dep(ty)) => ty
                 })
             },
             Name.Vtable(cls.name))
         val vtableConstant =
           Defn.Constant(
             vtable,
-            Struct(Seq()), // TODO:
+            Struct(parentVtableValue ++: funcs.values.toSeq),
             Name.VtableConstant(cls.name))
         val fields = cls.uses.collect {
           case Use(field @ Defn.Field(_, _)) => field
@@ -95,7 +103,7 @@ object ClassLowering extends Reduction {
         val data =
           Defn.Struct(
             parentData ++: cls.uses.collect {
-              case Slot(Defn.Field(Slot(ty), _)) => ty
+              case Dep(Defn.Field(Dep(ty), _)) => ty
             },
             Name.ClassData(cls.name))
         val ref =
@@ -103,9 +111,14 @@ object ClassLowering extends Reduction {
             Seq(Defn.Ptr(vtable), Defn.Ptr(data)),
             cls.name,
             ClassData(data, dataIndex),
-            ClassVtable(vtable, vtableConstant, vtableIndex))
+            ClassVtable(vtable, vtableConstant, funcs, vtableIndex))
 
         Replace.all(ref)
+      }
+
+    case meth @ Defn.Method(_, _, _, cls) =>
+      After(cls) { cls =>
+        Replace.all(vtableAttr(cls).get.func(meth))
       }
 
     case ClassAlloc(cls) =>
@@ -116,7 +129,7 @@ object ClassLowering extends Reduction {
         Replace.all(Struct(Seq(vtableData, Alloc(data))))
       }
 
-    case MethodElem(ef, instance, Slot(meth @ Defn.Method(_, _, _, cls))) =>
+    case MethodElem(Dep(ef), Dep(instance), Dep(meth @ Defn.Method(_, _, _, cls))) =>
       After(cls) { cls =>
         val methindex = vtableAttr(cls).get.index
         val meth_** = Elem(instance, Seq(I32(0), I32(0), I32(methindex(meth))))
@@ -128,7 +141,7 @@ object ClassLowering extends Reduction {
         }
       }
 
-    case FieldElem(ef, instance, Slot(field @ Defn.Field(_, cls))) =>
+    case FieldElem(Dep(ef), Dep(instance), Dep(field @ Defn.Field(_, cls))) =>
       After(cls) { cls =>
         val fieldindex = dataAttr(cls).get.index
         val field_* = Elem(instance, Seq(I32(1), I32(0), I32(fieldindex(field))))

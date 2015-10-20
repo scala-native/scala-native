@@ -10,7 +10,7 @@ object Reduction {
   final case object NoChange extends Change
   // TODO: split into Replace & ReplaceAll ?
   final case class Replace(f: Slot => Node) extends Change
-  final case class After(node: Node)(val f: Node => Change) extends Change
+  final case class After(slot: Slot)(val f: Node => Change) extends Change
   object Replace { def all(n: Node) = Replace(_ => n) }
 
   def alive(node: Node): Boolean = node.desc match {
@@ -18,36 +18,42 @@ object Reduction {
     case _         => node.deps.forall(alive)
   }
 
+  sealed abstract class Action
+  final case class Visit(node: Node) extends Action
+  final case class Revisit(node: Node, after: After) extends Action
+
   def run(reduction: Reduction, entry: Node): Unit = {
-    println(s"--- running $reduction")
     val epoch = Node.nextEpoch
-    val stack = mutable.Stack(entry)
+    val stack = mutable.Stack[Action](Visit(entry))
     def handle(node: Node, change: Change): Unit = change match {
       case NoChange =>
-        println(s"no change for ${node.desc} ${node.name}")
         node._epoch = epoch
-        node.deps.foreach(stack.push)
+        node.deps.foreach(n => stack.push(Visit(n)))
       case Replace(f) =>
-        println(s"replacing ${node.desc} ${node.name}")
         node.uses.foreach { s =>
           val newnode = f(s)
-          stack.push(newnode)
+          stack.push(Visit(newnode))
           s := newnode
         }
-        node.desc = Desc.Dead
+        node._desc = Desc.Dead
+        node._epoch = epoch
       case after: After =>
-        if (after.node._epoch == epoch)
-          handle(node, after.f(after.node))
-        else {
-          println(s"putting off ${node.desc} ${node.name} until ${after.node.desc} ${after.node.name} is done")
-          stack.push(node)
-          stack.push(after.node)
+        if (after.slot.get._epoch == epoch) {
+          handle(node, after.f(after.slot.get))
+        } else {
+          stack.push(Revisit(node, after))
+          stack.push(Visit(after.slot.get))
         }
     }
     while (stack.nonEmpty) {
-      val node = stack.pop()
-      if (node._epoch < epoch)
-        handle(node, reduction.reduce.applyOrElse(node, (_: Node) => NoChange))
+      stack.pop() match {
+        case Visit(node) =>
+          if (node._epoch < epoch)
+            handle(node, reduction.reduce.applyOrElse(node, (_: Node) => NoChange))
+        case Revisit(node, after) =>
+          assert(after.slot.get._epoch == epoch)
+          handle(node, after.f(after.slot.get))
+      }
     }
   }
 }

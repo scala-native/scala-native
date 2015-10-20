@@ -468,9 +468,12 @@ abstract class GenSaltyCode extends PluginComponent
       }
 
       val closedtails = Tails(Seq(), closed.flatMap {
-        case ir.Return(cf, ef, v) => genClosed(Focus(cf, ef, ir.Unit()), ir.Return(_, _, v))
-        case ir.Throw(cf, ef, v)  => genClosed(Focus(cf, ef, ir.Unit()), ir.Throw(_, _, v))
-        case ir.Undefined(cf, ef) => genClosed(Focus(cf, ef, ir.Unit()), ir.Undefined(_, _))
+        case ir.Return(cf, ef, v) =>
+          genClosed(Focus(cf.get, ef.get, ir.Unit()), ir.Return(_, _, v.get))
+        case ir.Throw(cf, ef, v)  =>
+          genClosed(Focus(cf.get, ef.get, ir.Unit()), ir.Throw(_, _, v.get))
+        case ir.Undefined(cf, ef) =>
+          genClosed(Focus(cf.get, ef.get, ir.Unit()), ir.Undefined(_, _))
       })
 
       val opentails =

@@ -7,12 +7,12 @@ import salty.ir.{Schema => Sc}
 // TODO: store offsets in desc
 // TODO: ensure that all mutability is private[ir]
 sealed class Node private[ir] (
-              var desc:     Desc,
+  private[ir] var _desc:    Desc,
   private[ir] var _slots:   Array[Slot]       = Array.empty,
   private[ir] var _offsets: Array[Int]        = Array.empty,
-  private[ir] var _epoch:   Int               = Node.lastEpoch,
+  private[ir] var _epoch:   Int               = 0,
   private[ir] var _uses:    mutable.Set[Slot] = mutable.Set.empty,
-  private[ir] val _attrs:   Array[Attr]       = Array.empty
+  private[ir] var _attrs:   Array[Attr]       = Array.empty
 ) {
   private def length(index: Int): Int =
     if (index + 1 < _offsets.length)
@@ -26,6 +26,8 @@ sealed class Node private[ir] (
   private[ir] def multiAt(index: Int): MultiSlot =
     new MultiSlot(this, length(index), _offsets(index))
 
+  final def desc: Desc = _desc
+
   final def attrs: Seq[Attr] =
     _attrs.toSeq
 
@@ -34,7 +36,7 @@ sealed class Node private[ir] (
 
   final def uses: Seq[Slot] = _uses.toSeq
 
-  final override def toString = s"Node($desc, ...)"
+  final override def toString = s"$desc $name"
 
   // TODO: cycles
   final def type_==(other: Node): Boolean =
@@ -44,11 +46,12 @@ sealed class Node private[ir] (
       case (Defn.Struct(args1), Defn.Struct(args2)) =>
         args1.nodes.zip(args2.nodes).forall { case (l, r) => l type_== r }
       case (Defn.Ptr(arg1), Defn.Ptr(arg2)) =>
-        arg1 type_== arg2
+        arg1.get type_== arg2.get
       case (Defn.Function(ret1, args1), Defn.Function(ret2, args2)) =>
-        (ret1 type_== ret2) && (args1.nodes.zip(args2.nodes).forall { case (l, r) => l type_== r })
+        (ret1.get type_== ret2.get) &&
+        (args1.nodes.zip(args2.nodes).forall { case (l, r) => l type_== r })
       case (Defn.Slice(arg1), Defn.Slice(arg2)) =>
-        arg1 type_== arg2
+        arg1.get type_== arg2.get
       case _ =>
         this eq other
     }

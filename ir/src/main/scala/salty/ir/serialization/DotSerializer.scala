@@ -45,8 +45,8 @@ class DotSerializer extends Pass {
     define(node)
     node.edges.foreach { case (sc, next) =>
       if (next.get ne Empty) {
-        define(next)
-        shows = s(key(next), " -> ", k, style(sc)) :: shows
+        define(next.get)
+        shows = s(key(next.get), " -> ", k, style(sc)) :: shows
       }
     }
     //node.uses.foreach { case slot: Slot =>

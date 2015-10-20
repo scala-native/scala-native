@@ -17,6 +17,7 @@ final class Slot private[ir] (
   def isEmpty: Boolean = false
   def get: Node        = next
 
+  // TODO: this should be private[ir]
   def :=(value: Node): Unit = {
     assert(value ne node)
     next._uses -= this
@@ -26,9 +27,9 @@ final class Slot private[ir] (
 
   override def toString = s"Slot($next)"
 }
-object Slot {
+
+object Dep {
   def unapply(slot: Slot): Slot = slot
-  implicit def unwrap(slot: Slot): Node = slot.get
 }
 
 object Use {
@@ -55,9 +56,4 @@ final class MultiSlot(val node: Node, val length: Int, val offset: Int) {
     }
   }
 }
-object MultiSlot {
-  //def unapplySeq(mslot: MultiSlot): Seq[Slot] = mslot.slots
-  //implicit def unwrap(mslot: MultiSlot): Seq[Slot] = mslot.toSeq
-}
-
 
