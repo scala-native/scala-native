@@ -10,7 +10,7 @@ object Pass {
       if (node._epoch < epoch) {
         node._epoch = epoch
         pass.onNode(node)
-        node.deps.foreach(loop)
+        node.deps.foreach(d => loop(d.dep))
       }
     loop(entry)
   }

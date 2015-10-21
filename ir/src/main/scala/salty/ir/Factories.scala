@@ -12,81 +12,137 @@ sealed abstract class NullaryFactory(desc: D) {
 sealed abstract class UnaryFactory(desc: D) {
   def apply(n: Node, attrs: Attr*): Node =
     Node(desc, Array(n), attrs)
-  def unapply(n: Node): Option[Slot] =
+  def unapply(n: Node): Option[Node] =
     if (n.desc eq desc)
-      Some(n.at(0))
+      Some(n.at(0).dep)
     else
       None
+  object deps {
+    def unapply(n: Node): Option[Dep] =
+      if (n.desc eq desc)
+        Some(n.at(0))
+      else
+        None
+  }
 }
 
 sealed abstract class BinaryFactory(desc: D) {
   def apply(left: Node, right: Node, attrs: Attr*): Node =
     Node(desc, Array(left, right), attrs)
-  def unapply(n: Node): Option[(Slot, Slot)] =
+  def unapply(n: Node): Option[(Node, Node)] =
     if (n.desc eq desc)
-      Some((n.at(0), n.at(1)))
+      Some((n.at(0).dep, n.at(1).dep))
     else
       None
+  object deps {
+    def unapply(n: Node): Option[(Dep, Dep)] =
+      if (n.desc eq desc)
+        Some((n.at(0), n.at(1)))
+      else
+        None
+  }
 }
 
 sealed abstract class TernaryFactory(desc: D) {
   def apply(left: Node, middle: Node, right: Node, attrs: Attr*): Node =
     Node(desc, Array(left, middle, right), attrs)
-  def unapply(n: Node): Option[(Slot, Slot, Slot)] =
+  def unapply(n: Node): Option[(Node, Node, Node)] =
     if (n.desc eq desc)
-      Some((n.at(0), n.at(1), n.at(2)))
+      Some((n.at(0).dep, n.at(1).dep, n.at(2).dep))
     else
       None
+  object deps {
+    def unapply(n: Node): Option[(Dep, Dep, Dep)] =
+      if (n.desc eq desc)
+        Some((n.at(0), n.at(1), n.at(2)))
+      else
+        None
+  }
 }
 
 private[ir] sealed abstract class SeqNodeFactory(desc: D) {
   def apply(nodes: Seq[Node], attrs: Attr*): Node =
     Node(desc, Array(nodes), attrs)
-  def unapply(n: Node): Option[MultiSlot] =
+  def unapply(n: Node): Option[Seq[Node]] =
     if (n.desc eq desc)
-      Some(n.multiAt(0))
+      Some(n.multiAt(0).deps)
     else
       None
+  object deps {
+    def unapply(n: Node): Option[MultiDep] =
+      if (n.desc eq desc)
+        Some(n.multiAt(0))
+      else
+        None
+  }
 }
 
 private[ir] sealed abstract class NodeSeqNodeFactory(desc: D) {
   def apply(node: Node, nodes: Seq[Node], attrs: Attr*): Node =
     Node(desc, Array(node, nodes), attrs)
-  def unapply(n: Node): Option[(Slot, MultiSlot)] =
+  def unapply(n: Node): Option[(Node, Seq[Node])] =
     if (n.desc eq desc)
-      Some((n.at(0), n.multiAt(1)))
+      Some((n.at(0).dep, n.multiAt(1).deps))
     else
       None
+  object deps {
+    def unapply(n: Node): Option[(Dep, MultiDep)] =
+      if (n.desc eq desc)
+        Some((n.at(0), n.multiAt(1)))
+      else
+        None
+  }
 }
 
 private[ir] sealed abstract class NodeSeqNodeNodeFactory(desc: D) {
   def apply(node1: Node, nodes: Seq[Node], node2: Node, attrs: Attr*): Node =
     Node(desc, Array(node1, nodes, node2), attrs)
-  def unapply(n: Node): Option[(Slot, MultiSlot, Slot)] =
+  def unapply(n: Node): Option[(Node, Seq[Node], Node)] =
     if (n.desc eq desc)
-      Some((n.at(0), n.multiAt(1), n.at(2)))
+      Some((n.at(0).dep, n.multiAt(1).deps, n.at(2).dep))
     else
       None
+  object deps {
+    def unapply(n: Node): Option[(Dep, MultiDep, Dep)] =
+      if (n.desc eq desc)
+        Some((n.at(0), n.multiAt(1), n.at(2)))
+      else
+        None
+  }
 }
 
 private[ir] sealed abstract class NodeSeqNodeNodeNodeFactory(desc: D) {
   def apply(node1: Node, nodes: Seq[Node], node2: Node, node3: Node, attrs: Attr*): Node =
     Node(desc, Array(node1, nodes, node2, node3), attrs)
-  def unapply(n: Node): Option[(Slot, MultiSlot, Slot, Slot)] =
+  def unapply(n: Node): Option[(Node, Seq[Node], Node, Node)] =
     if (n.desc eq desc)
-      Some((n.at(0), n.multiAt(1), n.at(2), n.at(3)))
+      Some((n.at(0).dep, n.multiAt(1).deps, n.at(2).dep, n.at(3).dep))
     else
       None
+  object deps {
+    def unapply(n: Node): Option[(Dep, MultiDep, Dep, Dep)] =
+      if (n.desc eq desc)
+        Some((n.at(0), n.multiAt(1), n.at(2), n.at(3)))
+      else
+        None
+  }
 }
 
 private[ir] sealed abstract class NodeNodeSeqNodeFactory(desc: D) {
   def apply(node1: Node, node2: Node, nodes: Seq[Node], attrs: Attr*): Node =
     Node(desc, Array(node1, node2, nodes), attrs)
-  def unapply(n: Node): Option[(Slot, Slot, MultiSlot)] =
+  def unapply(n: Node): Option[(Node, Node, Seq[Node])] =
     if (n.desc eq desc)
-      Some((n.at(0), n.at(1), n.multiAt(2)))
+      Some((n.at(0).dep, n.at(1).dep, n.multiAt(2).deps))
     else
       None
+  object deps {
+    def unapply(n: Node): Option[(Dep, Dep, MultiDep)] =
+      if (n.desc eq desc)
+        Some((n.at(0), n.at(1), n.multiAt(2)))
+      else
+        None
+  }
 }
 
 object Label         extends SeqNodeFactory(D.Label)

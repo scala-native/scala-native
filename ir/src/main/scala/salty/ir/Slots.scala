@@ -1,59 +1,60 @@
 package salty.ir
 
-// TODO: compute schema dynamically
-final class Slot private[ir] (
-                val schema: Schema,
-                val node:   Node,
-                var next:   Node
-) {
-  def isVal: Boolean  = schema == Schema.Val
-  def isCf: Boolean   = schema == Schema.Cf
-  def isEf: Boolean   = schema == Schema.Ef
-  def isRef: Boolean  = schema == Schema.Ref
-
-  next._uses += this
-  assert(next ne node)
-
-  def isEmpty: Boolean = false
-  def get: Node        = next
-
-  // TODO: this should be private[ir]
-  def :=(value: Node): Unit = {
-    assert(value ne node)
-    next._uses -= this
-    next = value
-    next._uses += this
-  }
-
-  override def toString = s"Slot($next)"
+sealed trait Context {
+  def isVal: Boolean
+  def isCf:  Boolean
+  def isEf:  Boolean
+  def isRef: Boolean
 }
 
-object Dep {
-  def unapply(slot: Slot): Slot = slot
+sealed trait Use extends Context {
+  def use: Node
 }
-
 object Use {
-  def unapply(slot: Slot): Some[Node] = Some(slot.node)
+  def unapply(use: Use): Some[Node] = Some(use.use)
 }
 
-final class MultiSlot(val node: Node, val length: Int, val offset: Int) {
-  def apply(index: Int): Slot = node._slots(offset + index)
+sealed trait Dep extends Context {
+  def dep: Node
+}
+object Dep {
+  def unapply(dep: Dep): Some[Node] = Some(dep.dep)
+}
 
-  def nodes: Seq[Node] = {
+final class MultiDep(val node: Node, val length: Int, val offset: Int) {
+  def apply(index: Int): Node =
+    node._slots(offset + index).dep
+
+  def deps: Seq[Node] = {
     var i = offset
     Seq.fill(length) {
-      val n = node._slots(i).get
+      val n = node._slots(i).dep
       i += 1
       n
     }
   }
-  def slots: Seq[Slot] = {
-    var i = offset
-    Seq.fill(length) {
-      val slot = node._slots(i)
-      i += 1
-      slot
-    }
-  }
 }
+
+// TODO: compute schema dynamically
+private[ir] final class Slot private[ir] (
+  val schema: Schema,
+  val use:    Node,
+  var dep:    Node
+) extends Use with Dep {
+  def isVal: Boolean = schema == Schema.Val
+  def isCf:  Boolean = schema == Schema.Cf
+  def isEf:  Boolean = schema == Schema.Ef
+  def isRef: Boolean = schema == Schema.Ref
+
+  dep._uses += this
+
+  def :=(value: Node): Unit = {
+    dep._uses -= this
+    dep = value
+    dep._uses += this
+  }
+
+  override def toString = s"Slot(use = $use, dep = $dep)"
+}
+
 

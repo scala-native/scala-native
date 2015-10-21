@@ -124,9 +124,9 @@ final class ClasspathLoader(val paths: Seq[String]) extends Loader { self =>
 
   def relatives(node: Node): Option[Seq[Name]] =
     node match {
-      case Defn.Class(parent, ifaces)     => Some((parent +: ifaces.slots).map(_.get.name))
-      case Defn.Module(parent, ifaces, _) => Some((parent +: ifaces.slots).map(_.get.name))
-      case Defn.Interface(ifaces)         => Some(ifaces.nodes.map(_.name))
+      case Defn.Class(parent, ifaces)     => Some((parent +: ifaces).map(_.name))
+      case Defn.Module(parent, ifaces, _) => Some((parent +: ifaces).map(_.name))
+      case Defn.Interface(ifaces)         => Some(ifaces.map(_.name))
       case _                              => None
     }
 

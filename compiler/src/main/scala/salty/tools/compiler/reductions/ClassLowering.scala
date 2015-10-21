@@ -56,38 +56,42 @@ import salty.ir._, Reduction._
  *        %field_*
  */
 object ClassLowering extends Reduction {
-  final case class ClassData(data: Node, index: Map[Node, Int]) extends TransientAttr
-  final case class ClassVtable(vtable: Node, vtableConstant: Node,
-                               func: Map[Node, Node], index: Map[Node, Int]) extends TransientAttr
+  private final case class ClassData(data: Node,
+                                     index: Map[Node, Int]) extends TransientAttr
+  private final case class ClassVtable(vtable: Node, vtableConstant: Node, func: Map[Node, Node],
+                                       index: Map[Node, Int]) extends TransientAttr
 
-  def dataAttr(node: Node): Option[ClassData] =
+  private def dataAttr(node: Node): Option[ClassData] =
     node.attrs.collectFirst { case dm: ClassData => dm }
-  def vtableAttr(node: Node): Option[ClassVtable] =
+  private def vtableAttr(node: Node): Option[ClassVtable] =
     node.attrs.collectFirst { case vt: ClassVtable => vt }
 
   def reduce = {
-    case cls @ Defn.Class(parent, _) =>
-      After(parent) { parent =>
-        val parentData = dataAttr(parent).map(_.data)
-        val parentVtableAttr = vtableAttr(parent)
-        val parentVtable = parentVtableAttr.map(_.vtable)
+    case cls @ Defn.Class.deps(parent, _) =>
+      after(parent) {
+        val parentData        = dataAttr(parent.dep).map(_.data)
+        val parentVtableAttr  = vtableAttr(parent.dep)
+        val parentVtable      = parentVtableAttr.map(_.vtable)
         val parentVtableValue = parentVtableAttr.map { _.vtableConstant match {
-          case Defn.Constant(_, value) => value.get
+          case Defn.Constant(_, value) => value
         }}
+        val fields = cls.uses.collect {
+          case Use(field @ Defn.Field(_, _)) => field
+        }.toSeq
         val methods = cls.uses.collect {
           case Use(meth @ Defn.Method(_, _, _, _)) => meth
-        }
+        }.toSeq
         val funcs = methods.map {
           case meth @ Defn.Method(retty, params, end, _) =>
-            meth -> Defn.Define(retty.get, params.nodes, end.get, meth.name)
+            meth -> Defn.Define(retty, params, end, meth.name)
         }.toMap
         val vtableIndex = methods.zipWithIndex.toMap
         val vtable =
           Defn.Struct(
             parentVtable ++: methods.map {
               case Defn.Method(retty, params, _, _) =>
-                Defn.Function(retty.get, params.nodes.map {
-                  case Param(Dep(ty)) => ty
+                Defn.Function(retty, params.map {
+                  case Param(ty) => ty
                 })
             },
             Name.Vtable(cls.name))
@@ -96,15 +100,12 @@ object ClassLowering extends Reduction {
             vtable,
             Struct(parentVtableValue ++: funcs.values.toSeq),
             Name.VtableConstant(cls.name))
-        val fields = cls.uses.collect {
-          case Use(field @ Defn.Field(_, _)) => field
-        }
         val dataIndex = fields.zipWithIndex.toMap
         val data =
           Defn.Struct(
             parentData ++: cls.uses.collect {
-              case Dep(Defn.Field(Dep(ty), _)) => ty
-            },
+              case Use(Defn.Field(ty, _)) => ty
+            }.toSeq,
             Name.ClassData(cls.name))
         val ref =
           Defn.Struct(
@@ -113,42 +114,42 @@ object ClassLowering extends Reduction {
             ClassData(data, dataIndex),
             ClassVtable(vtable, vtableConstant, funcs, vtableIndex))
 
-        Replace.all(ref)
+        replaceAll(ref)
       }
 
-    case meth @ Defn.Method(_, _, _, cls) =>
-      After(cls) { cls =>
-        Replace.all(vtableAttr(cls).get.func(meth))
+    case meth @ Defn.Method.deps(_, _, _, cls) =>
+      after(cls) {
+        replaceAll(vtableAttr(cls.dep).get.func(meth))
       }
 
-    case ClassAlloc(cls) =>
-      After(cls) { cls =>
-        val data       = dataAttr(cls).get.data
-        val vtableData = vtableAttr(cls).get.vtableConstant
+    case ClassAlloc.deps(cls) =>
+      after(cls) {
+        val data       = dataAttr(cls.dep).get.data
+        val vtableData = vtableAttr(cls.dep).get.vtableConstant
 
-        Replace.all(Struct(Seq(vtableData, Alloc(data))))
+        replaceAll(Struct(Seq(vtableData, Alloc(data))))
       }
 
-    case MethodElem(Dep(ef), Dep(instance), Dep(meth @ Defn.Method(_, _, _, cls))) =>
-      After(cls) { cls =>
-        val methindex = vtableAttr(cls).get.index
+    case MethodElem(ef, instance, meth @ Defn.Method.deps(_, _, _, cls)) =>
+      after(cls) {
+        val methindex = vtableAttr(cls.dep).get.index
         val meth_** = Elem(instance, Seq(I32(0), I32(0), I32(methindex(meth))))
         val meth_* = Load(Empty, meth_**)
 
-        Replace {
-          case s if s.schema == Schema.Ef => ef
-          case _                          => meth_*
+        replace {
+          case u if u.isEf => ef
+          case _           => meth_*
         }
       }
 
-    case FieldElem(Dep(ef), Dep(instance), Dep(field @ Defn.Field(_, cls))) =>
-      After(cls) { cls =>
-        val fieldindex = dataAttr(cls).get.index
+    case FieldElem(ef, instance, field @ Defn.Field.deps(_, cls)) =>
+      after(cls) {
+        val fieldindex = dataAttr(cls.dep).get.index
         val field_* = Elem(instance, Seq(I32(1), I32(0), I32(fieldindex(field))))
 
-        Replace {
-          case s if s.schema == Schema.Ef => ef
-          case _                          => field_*
+        replace {
+          case u if u.isEf => ef
+          case _           => field_*
         }
       }
   }

@@ -70,14 +70,17 @@ abstract class GenSaltyCode extends PluginComponent
       val offset = offsets(sym)
 
       val ir.Label(cfs) = labels(sym)
-      cfs(offset) := focus.cf
+      ???
+      //cfs(offset) := focus.cf
 
       val ir.EfPhi(_, efs) = efphis(sym)
-      efs(offset) := focus.ef
+      ???
+      //efs(offset) := focus.ef
 
       phiss(sym).zip(values).foreach {
         case (ir.Phi(_, values), v) =>
-          values(offset) := v
+          ???
+          //values(offset) := v
       }
 
       offsets(sym) = offset + 1
@@ -464,16 +467,13 @@ abstract class GenSaltyCode extends PluginComponent
 
       def genClosed(focus: Focus, wrap: (ir.Node, ir.Node) => ir.Node): Seq[ir.Node] = {
         val ir.End(ends) = genExpr(finalizer, focus).end((cf, ef, v) => wrap(cf, ef))
-        ends.nodes
+        ends
       }
 
       val closedtails = Tails(Seq(), closed.flatMap {
-        case ir.Return(cf, ef, v) =>
-          genClosed(Focus(cf.get, ef.get, ir.Unit()), ir.Return(_, _, v.get))
-        case ir.Throw(cf, ef, v)  =>
-          genClosed(Focus(cf.get, ef.get, ir.Unit()), ir.Throw(_, _, v.get))
-        case ir.Undefined(cf, ef) =>
-          genClosed(Focus(cf.get, ef.get, ir.Unit()), ir.Undefined(_, _))
+        case ir.Return(cf, ef, v) => genClosed(Focus(cf, ef, ir.Unit()), ir.Return(_, _, v))
+        case ir.Throw(cf, ef, v)  => genClosed(Focus(cf, ef, ir.Unit()), ir.Throw(_, _, v))
+        case ir.Undefined(cf, ef) => genClosed(Focus(cf, ef, ir.Unit()), ir.Undefined(_, _))
       })
 
       val opentails =

@@ -20,11 +20,11 @@ sealed class Node private[ir] (
     else
       _slots.length - _offsets(index)
 
-  private[ir] def at(index: Int): Slot =
+  private[ir] def at(index: Int): Dep =
     _slots(_offsets(index))
 
-  private[ir] def multiAt(index: Int): MultiSlot =
-    new MultiSlot(this, length(index), _offsets(index))
+  private[ir] def multiAt(index: Int): MultiDep =
+    new MultiDep(this, length(index), _offsets(index))
 
   final def desc: Desc = _desc
 
@@ -34,9 +34,9 @@ sealed class Node private[ir] (
   lazy val name: Name =
     _attrs.collectFirst { case n: Name => n }.getOrElse(Name.No)
 
-  final def uses: Seq[Slot] = _uses.toSeq
+  final def uses: Iterator[Use] = _uses.toIterator
 
-  final override def toString = s"$desc $name"
+  final def deps: Iterator[Dep] = _slots.toIterator
 
   // TODO: cycles
   final def type_==(other: Node): Boolean =
@@ -44,28 +44,19 @@ sealed class Node private[ir] (
       case (Defn.Extern(), Defn.Extern()) =>
         this.name == other.name
       case (Defn.Struct(args1), Defn.Struct(args2)) =>
-        args1.nodes.zip(args2.nodes).forall { case (l, r) => l type_== r }
+        args1.zip(args2).forall { case (l, r) => l type_== r }
       case (Defn.Ptr(arg1), Defn.Ptr(arg2)) =>
-        arg1.get type_== arg2.get
+        arg1 type_== arg2
       case (Defn.Function(ret1, args1), Defn.Function(ret2, args2)) =>
-        (ret1.get type_== ret2.get) &&
-        (args1.nodes.zip(args2.nodes).forall { case (l, r) => l type_== r })
+        (ret1 type_== ret2) &&
+        (args1.zip(args2).forall { case (l, r) => l type_== r })
       case (Defn.Slice(arg1), Defn.Slice(arg2)) =>
-        arg1.get type_== arg2.get
+        arg1 type_== arg2
       case _ =>
         this eq other
     }
 
-  // TODO: iterator
-  final def edges: Seq[(Sc, Slot)] =
-    desc.schema.zipWithIndex.flatMap {
-      case (Sc.Many(sc), idx) => multiAt(idx).slots.map((sc, _))
-      case (sc,          idx) => Seq((sc, at(idx)))
-      case _                  => throw new Exception("schema violation")
-    }
-
-  final def deps: Iterator[Node] =
-    _slots.toIterator.map(_.get)
+  final override def toString = s"$desc $name"
 }
 object Node {
   private[ir] var lastEpoch = 0

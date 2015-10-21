@@ -35,13 +35,13 @@ import salty.ir._, Reduction._
 object ModuleLowering extends Reduction {
   def reduce = {
     case module @ Defn.Module(parent, ifaces, ctor) =>
-      val cls = Defn.Class(parent.get, ifaces.nodes, module.name)
-      val global = Defn.Global(cls, Zero(cls), Name.ModuleData(module.name))
+      val cls      = Defn.Class(parent, ifaces, module.name)
+      val global   = Defn.Global(cls, Zero(cls), Name.ModuleData(module.name))
       val accessor = {
         val prevVal     = Load(Empty, global)
         val ifPrevNull  = If(Empty, Eq(prevVal, Null()))
         val newVal      = ClassAlloc(cls)
-        val ctorCall    = Call(prevVal, ctor.get, Seq(newVal))
+        val ctorCall    = Call(prevVal, ctor, Seq(newVal))
         val storeNew    = Store(ctorCall, global, newVal)
         val retNew      = Return(CaseTrue(ifPrevNull), storeNew, newVal)
         val retExisting = Return(CaseFalse(ifPrevNull), prevVal, prevVal)
@@ -51,10 +51,10 @@ object ModuleLowering extends Reduction {
       }
       val accessorCall = Call(Empty, accessor, Seq())
 
-      Replace {
-        case s if s.schema == Schema.Ref => cls
-        case s if s.schema == Schema.Val => accessorCall
-        case _                           => throw new Exception("unreachable")
+      replace {
+        case use if use.isRef => cls
+        case use if use.isVal => accessorCall
+        case _                => throw new Exception("unreachable")
       }
   }
 }

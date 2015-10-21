@@ -12,12 +12,12 @@ import DotSerializer._
 class DotSerializer extends Pass {
   var shows = List.empty[Show.Result]
 
-  def style(sc: Sc) = sc match {
-    case Sc.Val => s()
-    case Sc.Ef  => s("[style=dashed]")
-    case Sc.Cf  => s("[style=bold]")
-    case Sc.Ref => s("[style=dotted]")
-    case _      => throw new Exception("unreachable")
+  def style(dep: Dep) = () match {
+    case _ if dep.isVal => s()
+    case _ if dep.isEf  => s("[style=dashed]")
+    case _ if dep.isCf  => s("[style=bold]")
+    case _ if dep.isRef => s("[style=dotted]")
+    case _              => throw new Exception("unreachable")
   }
 
   def style(node: Node) =
@@ -43,10 +43,10 @@ class DotSerializer extends Pass {
   def onNode(node: Node): Unit = {
     val k = key(node)
     define(node)
-    node.edges.foreach { case (sc, next) =>
-      if (next.get ne Empty) {
-        define(next.get)
-        shows = s(key(next.get), " -> ", k, style(sc)) :: shows
+    node.deps.foreach { d =>
+      if (d.dep ne Empty) {
+        define(d.dep)
+        shows = s(key(d.dep), " -> ", k, style(d)) :: shows
       }
     }
     //node.uses.foreach { case slot: Slot =>
