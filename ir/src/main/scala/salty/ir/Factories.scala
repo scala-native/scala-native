@@ -216,76 +216,78 @@ object Unbox      extends BinaryFactory(D.Unbox)
 object ClassAlloc extends UnaryFactory(D.ClassAlloc)
 object SliceAlloc extends BinaryFactory(D.SliceAlloc)
 
-object Struct extends SeqNodeFactory(D.Struct)
+object Lit {
+  object Struct extends SeqNodeFactory(D.Lit.Struct)
 
-object Null  extends NullaryFactory(D.Null)
-object Unit  extends NullaryFactory(D.Unit)
-object True  extends NullaryFactory(D.True)
-object False extends NullaryFactory(D.False)
-object Zero  extends UnaryFactory(D.Zero)
-object Size  extends UnaryFactory(D.Size)
-object I8 {
-  def apply(v: Byte): Node =
-    Node(D.I8(v))
-  def unapply(n: Node): Option[Byte] =
-    n.desc match {
-      case D.I8(v) => Some(v)
-      case _       => None
-    }
-}
-object I16 {
-  def apply(v: Short): Node =
-    Node(D.I16(v))
-  def unapply(n: Node): Option[Short] =
-    n.desc match {
-      case D.I16(v) => Some(v)
-      case _        => None
-    }
-}
-object I32 {
-  def apply(v: Int): Node =
-    Node(D.I32(v))
-  def unapply(n: Node): Option[Int] =
-    n.desc match {
-      case D.I32(v) => Some(v)
-      case _        => None
-    }
-}
-object I64 {
-  def apply(v: Long): Node =
-    Node(D.I64(v))
-  def unapply(n: Node): Option[Long] =
-    n.desc match {
-      case D.I64(v) => Some(v)
-      case _        => None
-    }
-}
-object F32 {
-  def apply(v: Float): Node =
-    Node(D.F32(v))
-  def unapply(n: Node): Option[Float] =
-    n.desc match {
-      case D.F32(v) => Some(v)
-      case _        => None
-    }
-}
-object F64 {
-  def apply(v: Double): Node =
-    Node(D.F64(v))
-  def unapply(n: Node): Option[Double] =
-    n.desc match {
-      case D.F64(v) => Some(v)
-      case _        => None
-    }
-}
-object Str {
-  def apply(v: String): Node =
-    Node(D.Str(v))
-  def unapply(n: Node): Option[String] =
-    n.desc match {
-      case D.Str(v) => Some(v)
-      case _        => None
-    }
+  object Null  extends NullaryFactory(D.Lit.Null)
+  object Unit  extends NullaryFactory(D.Lit.Unit)
+  object True  extends NullaryFactory(D.Lit.True)
+  object False extends NullaryFactory(D.Lit.False)
+  object Zero  extends UnaryFactory(D.Lit.Zero)
+  object Size  extends UnaryFactory(D.Lit.Size)
+  object I8 {
+    def apply(v: Byte): Node =
+      Node(D.Lit.I8(v))
+    def unapply(n: Node): Option[Byte] =
+      n.desc match {
+        case D.Lit.I8(v) => Some(v)
+        case _           => None
+      }
+  }
+  object I16 {
+    def apply(v: Short): Node =
+      Node(D.Lit.I16(v))
+    def unapply(n: Node): Option[Short] =
+      n.desc match {
+        case D.Lit.I16(v) => Some(v)
+        case _            => None
+      }
+  }
+  object I32 {
+    def apply(v: Int): Node =
+      Node(D.Lit.I32(v))
+    def unapply(n: Node): Option[Int] =
+      n.desc match {
+        case D.Lit.I32(v) => Some(v)
+        case _            => None
+      }
+  }
+  object I64 {
+    def apply(v: Long): Node =
+      Node(D.Lit.I64(v))
+    def unapply(n: Node): Option[Long] =
+      n.desc match {
+        case D.Lit.I64(v) => Some(v)
+        case _            => None
+      }
+  }
+  object F32 {
+    def apply(v: Float): Node =
+      Node(D.Lit.F32(v))
+    def unapply(n: Node): Option[Float] =
+      n.desc match {
+        case D.Lit.F32(v) => Some(v)
+        case _            => None
+      }
+  }
+  object F64 {
+    def apply(v: Double): Node =
+      Node(D.Lit.F64(v))
+    def unapply(n: Node): Option[Double] =
+      n.desc match {
+        case D.Lit.F64(v) => Some(v)
+        case _            => None
+      }
+  }
+  object Str {
+    def apply(v: String): Node =
+      Node(D.Lit.Str(v))
+    def unapply(n: Node): Option[String] =
+      n.desc match {
+        case D.Lit.Str(v) => Some(v)
+        case _            => None
+      }
+  }
 }
 
 object Defn {

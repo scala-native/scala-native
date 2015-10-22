@@ -287,7 +287,7 @@ abstract class GenSaltyCode extends PluginComponent
         val vdfocus =
           if (!isMutable) {
             curEnv.enter(vd.symbol, rfocus.value)
-            rfocus withValue ir.Unit()
+            rfocus withValue ir.Lit.Unit()
           } else {
             val alloc = ir.Alloca(genType(vd.symbol.tpe))
             curEnv.enter(vd.symbol, alloc)
@@ -390,7 +390,7 @@ abstract class GenSaltyCode extends PluginComponent
         undefined(focus)
 
       case EmptyTree =>
-        Tails.open(focus withValue ir.Unit())
+        Tails.open(focus withValue ir.Lit.Unit())
 
       case _ =>
         abort("Unexpected tree in genExpr: " +
@@ -401,25 +401,25 @@ abstract class GenSaltyCode extends PluginComponent
       val value = lit.value
       value.tag match {
         case NullTag =>
-          focus withValue ir.Null()
+          focus withValue ir.Lit.Null()
         case UnitTag =>
-          focus withValue ir.Unit()
+          focus withValue ir.Lit.Unit()
         case BooleanTag =>
-          focus withValue (if (value.booleanValue) ir.True() else ir.False())
+          focus withValue (if (value.booleanValue) ir.Lit.True() else ir.Lit.False())
         case ByteTag =>
-          focus withValue ir.I8(value.intValue.toByte)
+          focus withValue ir.Lit.I8(value.intValue.toByte)
         case ShortTag | CharTag =>
-          focus withValue ir.I16(value.intValue.toShort)
+          focus withValue ir.Lit.I16(value.intValue.toShort)
         case IntTag =>
-          focus withValue ir.I32(value.intValue)
+          focus withValue ir.Lit.I32(value.intValue)
         case LongTag =>
-          focus withValue ir.I64(value.longValue)
+          focus withValue ir.Lit.I64(value.longValue)
         case FloatTag =>
-          focus withValue ir.F32(value.floatValue)
+          focus withValue ir.Lit.F32(value.floatValue)
         case DoubleTag =>
-          focus withValue ir.F64(value.doubleValue)
+          focus withValue ir.Lit.F64(value.doubleValue)
         case StringTag =>
-          focus withValue ir.Str(value.stringValue)
+          focus withValue ir.Lit.Str(value.stringValue)
         case ClazzTag =>
           focus withValue ir.Box(genType(value.typeValue), javaLangClass)
         case EnumTag =>
@@ -471,9 +471,9 @@ abstract class GenSaltyCode extends PluginComponent
       }
 
       val closedtails = Tails(Seq(), closed.flatMap {
-        case ir.Return(cf, ef, v) => genClosed(Focus(cf, ef, ir.Unit()), ir.Return(_, _, v))
-        case ir.Throw(cf, ef, v)  => genClosed(Focus(cf, ef, ir.Unit()), ir.Throw(_, _, v))
-        case ir.Undefined(cf, ef) => genClosed(Focus(cf, ef, ir.Unit()), ir.Undefined(_, _))
+        case ir.Return(cf, ef, v) => genClosed(Focus(cf, ef, ir.Lit.Unit()), ir.Return(_, _, v))
+        case ir.Throw(cf, ef, v)  => genClosed(Focus(cf, ef, ir.Lit.Unit()), ir.Throw(_, _, v))
+        case ir.Undefined(cf, ef) => genClosed(Focus(cf, ef, ir.Lit.Unit()), ir.Undefined(_, _))
       })
 
       val opentails =
@@ -535,14 +535,14 @@ abstract class GenSaltyCode extends PluginComponent
     def genLabel(label: LabelDef) = {
       val cf = curLabelEnv.resolveLabel(label.symbol)
       val ef = curLabelEnv.resolveLabelEf(label.symbol)
-      genExpr(label.rhs, Focus(cf, ef, ir.Unit()))
+      genExpr(label.rhs, Focus(cf, ef, ir.Lit.Unit()))
     }
 
     def genArrayValue(av: ArrayValue, focus: Focus): Tails = {
       val ArrayValue(tpt, elems) = av
       val ty           = genType(tpt.tpe)
       val len          = elems.length
-      val salloc       = ir.SliceAlloc(ty, ir.I32(len))
+      val salloc       = ir.SliceAlloc(ty, ir.Lit.I32(len))
       val (rfocus, rt) =
         if (elems.isEmpty)
           (focus, Tails.empty)
@@ -553,7 +553,7 @@ abstract class GenSaltyCode extends PluginComponent
           val (sfocus, st) = sequenced(values.zipWithIndex, lastfocus) { (vi, foc) =>
             val (value, i) = vi
             Tails.open(foc mapEf { ef =>
-              val elem = ir.SliceElem(ef, salloc, ir.I32(i))
+              val elem = ir.SliceElem(ef, salloc, ir.Lit.I32(i))
               ir.Store(elem, elem, value)
             })
           }
@@ -703,13 +703,13 @@ abstract class GenSaltyCode extends PluginComponent
     }
 
     def numOfType(num: Int, ty: ir.Node) = ty match {
-      case Prim.I8  => ir.I8 (num.toByte)
-      case Prim.I16 => ir.I16(num.toShort)
-      case Prim.I32 => ir.I32(num)
-      case Prim.I64 => ir.I64(num.toLong)
-      case Prim.F32 => ir.F32(num.toFloat)
-      case Prim.F64 => ir.F64(num.toDouble)
-      case _      => unreachable
+      case Prim.I8  => ir.Lit.I8 (num.toByte)
+      case Prim.I16 => ir.Lit.I16(num.toShort)
+      case Prim.I32 => ir.Lit.I32(num)
+      case Prim.I64 => ir.Lit.I64(num.toLong)
+      case Prim.F32 => ir.Lit.F32(num.toFloat)
+      case Prim.F64 => ir.Lit.F64(num.toDouble)
+      case _        => unreachable
     }
 
     def genSimpleOp(app: Apply, args: List[Tree], code: Int, focus: Focus) = {
@@ -731,7 +731,7 @@ abstract class GenSaltyCode extends PluginComponent
           case POS  => rfocus
           case NEG  => rfocus mapValue (v => ir.Sub(numOfType(0, retty), v))
           case NOT  => rfocus mapValue (v => ir.Xor(numOfType(-1, retty), v))
-          case ZNOT => rfocus mapValue (v => ir.Xor(ir.True(), v))
+          case ZNOT => rfocus mapValue (v => ir.Xor(ir.Lit.True(), v))
           case _    => abort("Unknown unary operation code: " + code)
         }
 
@@ -796,13 +796,13 @@ abstract class GenSaltyCode extends PluginComponent
           val resfocus =
             if (ref)
               rfocus withValue eq(lfocus.value, rfocus.value)
-            else if (lfocus.value.desc eq Desc.Null)
-              rfocus withValue eq(rfocus.value, ir.Null())
-            else if (rfocus.value.desc eq Desc.Null)
-              rfocus withValue eq(lfocus.value, ir.Null())
+            else if (lfocus.value.desc eq Desc.Lit.Null)
+              rfocus withValue eq(rfocus.value, ir.Lit.Null())
+            else if (rfocus.value.desc eq Desc.Lit.Null)
+              rfocus withValue eq(lfocus.value, ir.Lit.Null())
             else {
               val equals = ir.Equals(rfocus.ef, lfocus.value, rfocus.value)
-              val value = if (!negated) equals else ir.Xor(ir.True(), equals)
+              val value = if (!negated) equals else ir.Xor(ir.Lit.True(), equals)
               rfocus withEf equals withValue value
             }
           resfocus +: (lt ++ rt)

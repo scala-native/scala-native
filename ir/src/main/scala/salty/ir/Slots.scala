@@ -1,10 +1,10 @@
 package salty.ir
 
 sealed trait Context {
-  def isVal: Boolean
-  def isCf:  Boolean
-  def isEf:  Boolean
-  def isRef: Boolean
+  def isVal:  Boolean
+  def isCf:   Boolean
+  def isEf:   Boolean
+  def isDefn: Boolean
 }
 
 sealed trait Use extends Context {
@@ -41,10 +41,10 @@ private[ir] final class Slot private[ir] (
   val use:    Node,
   var dep:    Node
 ) extends Use with Dep {
-  def isVal: Boolean = schema == Schema.Val
-  def isCf:  Boolean = schema == Schema.Cf
-  def isEf:  Boolean = schema == Schema.Ef
-  def isRef: Boolean = schema == Schema.Ref
+  def isVal:  Boolean = schema == Schema.Val
+  def isCf:   Boolean = schema == Schema.Cf
+  def isEf:   Boolean = schema == Schema.Ef
+  def isDefn: Boolean = schema == Schema.Ref
 
   dep._uses += this
 

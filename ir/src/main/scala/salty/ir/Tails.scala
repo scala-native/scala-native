@@ -59,7 +59,7 @@ final case class Focus(cf: Node, ef: Node, value: Node) {
 }
 object Focus {
   def start(): Focus =
-    Focus(Empty, Empty, Unit())
+    Focus(Empty, Empty, Lit.Unit())
 
   def sequenced[T](elems: Seq[T], foc: Focus)
                   (f: (T, Focus) => Tails): (Seq[Focus], Tails) = {

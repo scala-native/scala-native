@@ -98,7 +98,7 @@ object ClassLowering extends Reduction {
         val vtableConstant =
           Defn.Constant(
             vtable,
-            Struct(parentVtableValue ++: funcs.values.toSeq),
+            Lit.Struct(parentVtableValue ++: funcs.values.toSeq),
             Name.VtableConstant(cls.name))
         val dataIndex = fields.zipWithIndex.toMap
         val data =
@@ -127,13 +127,13 @@ object ClassLowering extends Reduction {
         val data       = dataAttr(cls.dep).get.data
         val vtableData = vtableAttr(cls.dep).get.vtableConstant
 
-        replaceAll(Struct(Seq(vtableData, Alloc(data))))
+        replaceAll(Lit.Struct(Seq(vtableData, Alloc(data))))
       }
 
     case MethodElem(ef, instance, meth @ Defn.Method.deps(_, _, _, cls)) =>
       after(cls) {
         val methindex = vtableAttr(cls.dep).get.index
-        val meth_** = Elem(instance, Seq(I32(0), I32(0), I32(methindex(meth))))
+        val meth_** = Elem(instance, Seq(Lit.I32(0), Lit.I32(0), Lit.I32(methindex(meth))))
         val meth_* = Load(Empty, meth_**)
 
         replace {
@@ -145,7 +145,7 @@ object ClassLowering extends Reduction {
     case FieldElem(ef, instance, field @ Defn.Field.deps(_, cls)) =>
       after(cls) {
         val fieldindex = dataAttr(cls.dep).get.index
-        val field_* = Elem(instance, Seq(I32(1), I32(0), I32(fieldindex(field))))
+        val field_* = Elem(instance, Seq(Lit.I32(1), Lit.I32(0), Lit.I32(fieldindex(field))))
 
         replace {
           case u if u.isEf => ef

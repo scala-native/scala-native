@@ -13,11 +13,11 @@ class DotSerializer extends Pass {
   var shows = List.empty[Show.Result]
 
   def style(dep: Dep) = () match {
-    case _ if dep.isVal => s()
-    case _ if dep.isEf  => s("[style=dashed]")
-    case _ if dep.isCf  => s("[style=bold]")
-    case _ if dep.isRef => s("[style=dotted]")
-    case _              => throw new Exception("unreachable")
+    case _ if dep.isVal  => s()
+    case _ if dep.isEf   => s("[style=dashed]")
+    case _ if dep.isCf   => s("[style=bold]")
+    case _ if dep.isDefn => s("[style=dotted]")
+    case _               => throw new Exception("unreachable")
   }
 
   def style(node: Node) =
@@ -56,24 +56,11 @@ class DotSerializer extends Pass {
   }
 }
 object DotSerializer {
-  def label(node: Node): String = {
-    val body =
-      (node.desc match {
-        case desc: Desc.Plain => desc.toString
-        case Desc.I8(v)       => s"${v}i8"
-        case Desc.I16(v)      => s"${v}i16"
-        case Desc.I32(v)      => s"${v}i32"
-        case Desc.I64(v)      => s"${v}i64"
-        case Desc.F32(v)      => s"${v}f32"
-        case Desc.F64(v)      => s"${v}f64"
-        case Desc.Str(v)      => "\"" + v + "\""
-      }).replace("\"", "\\\"")
-
+  def label(node: Node): String =
     node.name match {
-      case Name.No => body
-      case name    => s"$body $name"
+      case Name.No => node.desc.toString
+      case name    => s"${node.desc} $name"
     }
-  }
 
   implicit val showScope: Show[Scope] = Show { scope =>
     s(r(scope.entries.values.toSeq.map(n(_))))

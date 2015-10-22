@@ -87,34 +87,53 @@ object Desc {
   final case object ClassAlloc extends Plain(       Sc.Ref        )         with Val //scala
   final case object SliceAlloc extends Plain(       Sc.Ref, Sc.Val)         with Val//scala
 
-  final case object Struct extends Plain(Sc.Many(Sc.Ref)) with Val
+  sealed abstract trait Lit extends Val {
+    override def toString = this match {
+      case Lit.Unit               => "unit"
+      case Lit.Null               => "null"
+      case Lit.True               => "true"
+      case Lit.False              => "false"
+      case Lit.Zero               => "zero"
+      case Lit.Size               => "size"
+      case Lit.I8(value: Byte)    => s"${value}i8"
+      case Lit.I16(value: Short)  => s"${value}i16"
+      case Lit.I32(value: Int)    => s"${value}i32"
+      case Lit.I64(value: Long)   => s"${value}i64"
+      case Lit.F32(value: Float)  => s"${value}f32"
+      case Lit.F64(value: Double) => s"${value}f64"
+      case Lit.Struct             => "struct"
+      case Lit.Str(value: String) => "\"" + value + "\""
+    }
+  }
+  object Lit {
+    final case object Unit               extends Plain()                with Lit
+    final case object Null               extends Plain()                with Lit
+    final case object True               extends Plain()                with Lit
+    final case object False              extends Plain()                with Lit
+    final case object Zero               extends Plain(Sc.Ref)          with Lit
+    final case object Size               extends Plain(Sc.Ref)          with Lit
+    final case object Struct             extends Plain(Sc.Many(Sc.Ref)) with Lit
+    final case class  I8(value: Byte)    extends Rich()                 with Lit
+    final case class  I16(value: Short)  extends Rich()                 with Lit
+    final case class  I32(value: Int)    extends Rich()                 with Lit
+    final case class  I64(value: Long)   extends Rich()                 with Lit
+    final case class  F32(value: Float)  extends Rich()                 with Lit
+    final case class  F64(value: Double) extends Rich()                 with Lit
+    final case class  Str(value: String) extends Rich()                 with Lit //scala
+  }
 
-  final case object Unit               extends Plain()       with Val
-  final case object Null               extends Plain()       with Val
-  final case object True               extends Plain()       with Val
-  final case object False              extends Plain()       with Val
-  final case object Zero               extends Plain(Sc.Ref) with Val
-  final case object Size               extends Plain(Sc.Ref) with Val
-  final case class  I8(value: Byte)    extends Rich()        with Val
-  final case class  I16(value: Short)  extends Rich()        with Val
-  final case class  I32(value: Int)    extends Rich()        with Val
-  final case class  I64(value: Long)   extends Rich()        with Val
-  final case class  F32(value: Float)  extends Rich()        with Val
-  final case class  F64(value: Double) extends Rich()        with Val
-  final case class  Str(value: String) extends Rich()        with Val //scala
-
-  sealed abstract class Prim extends Plain() with Defn
+  sealed trait Prim extends Defn
   object Prim {
-    final case object Unit    extends Prim()
-    final case object Bool    extends Prim()
-    final case object I8      extends Prim()
-    final case object I16     extends Prim()
-    final case object I32     extends Prim()
-    final case object I64     extends Prim()
-    final case object F32     extends Prim()
-    final case object F64     extends Prim()
-    final case object Nothing extends Prim() //scala
-    final case object Null    extends Prim() //scala
+    final case object Unit    extends Plain() with Prim
+    final case object Bool    extends Plain() with Prim
+    final case object I8      extends Plain() with Prim
+    final case object I16     extends Plain() with Prim
+    final case object I32     extends Plain() with Prim
+    final case object I64     extends Plain() with Prim
+    final case object F32     extends Plain() with Prim
+    final case object F64     extends Plain() with Prim
+    final case object Nothing extends Plain() with Prim //scala
+    final case object Null    extends Plain() with Prim //scala
   }
 
   sealed trait Defn

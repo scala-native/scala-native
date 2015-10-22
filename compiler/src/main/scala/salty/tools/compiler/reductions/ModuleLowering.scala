@@ -36,10 +36,10 @@ object ModuleLowering extends Reduction {
   def reduce = {
     case module @ Defn.Module(parent, ifaces, ctor) =>
       val cls      = Defn.Class(parent, ifaces, module.name)
-      val global   = Defn.Global(cls, Zero(cls), Name.ModuleData(module.name))
+      val global   = Defn.Global(cls, Lit.Zero(cls), Name.ModuleData(module.name))
       val accessor = {
         val prevVal     = Load(Empty, global)
-        val ifPrevNull  = If(Empty, Eq(prevVal, Null()))
+        val ifPrevNull  = If(Empty, Eq(prevVal, Lit.Null()))
         val newVal      = ClassAlloc(cls)
         val ctorCall    = Call(prevVal, ctor, Seq(newVal))
         val storeNew    = Store(ctorCall, global, newVal)
@@ -52,9 +52,9 @@ object ModuleLowering extends Reduction {
       val accessorCall = Call(Empty, accessor, Seq())
 
       replace {
-        case use if use.isRef => cls
-        case use if use.isVal => accessorCall
-        case _                => throw new Exception("unreachable")
+        case use if use.isDefn => cls
+        case use if use.isVal  => accessorCall
+        case _                 => throw new Exception("unreachable")
       }
   }
 }

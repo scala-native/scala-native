@@ -51,13 +51,13 @@ class SaltySerializer(buffer: ByteBuffer) {
 
   private def putDesc(desc: Desc) = desc match {
     case plain: D.Plain => putInt(T.plain2tag(plain))
-    case D.I8(v)        => putInt(T.I8); put(v)
-    case D.I16(v)       => putInt(T.I16); putShort(v)
-    case D.I32(v)       => putInt(T.I32); putInt(v)
-    case D.I64(v)       => putInt(T.I64); putLong(v)
-    case D.F32(v)       => putInt(T.F32); putFloat(v)
-    case D.F64(v)       => putInt(T.F64); putDouble(v)
-    case D.Str(v)       => putInt(T.Str); putString(v)
+    case D.Lit.I8(v)    => putInt(T.I8Lit); put(v)
+    case D.Lit.I16(v)   => putInt(T.I16Lit); putShort(v)
+    case D.Lit.I32(v)   => putInt(T.I32Lit); putInt(v)
+    case D.Lit.I64(v)   => putInt(T.I64Lit); putLong(v)
+    case D.Lit.F32(v)   => putInt(T.F32Lit); putFloat(v)
+    case D.Lit.F64(v)   => putInt(T.F64Lit); putDouble(v)
+    case D.Lit.Str(v)   => putInt(T.StrLit); putString(v)
   }
 
   private def putSeq[T](seq: Seq[T])(putT: T => Unit) = {

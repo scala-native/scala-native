@@ -57,14 +57,14 @@ class SaltyDeserializer(path: String) {
   }
 
   private def getDesc(): Desc = getInt match {
-    case T.I8   => Desc.I8(get)
-    case T.I16  => Desc.I16(getShort)
-    case T.I32  => Desc.I32(getInt)
-    case T.I64  => Desc.I64(getLong)
-    case T.F32  => Desc.F32(getFloat)
-    case T.F64  => Desc.F64(getDouble)
-    case T.Str  => Desc.Str(getString)
-    case tag    => T.tag2plain(tag)
+    case T.I8Lit  => Desc.Lit.I8(get)
+    case T.I16Lit => Desc.Lit.I16(getShort)
+    case T.I32Lit => Desc.Lit.I32(getInt)
+    case T.I64Lit => Desc.Lit.I64(getLong)
+    case T.F32Lit => Desc.Lit.F32(getFloat)
+    case T.F64Lit => Desc.Lit.F64(getDouble)
+    case T.StrLit => Desc.Lit.Str(getString)
+    case tag      => T.tag2plain(tag)
   }
 
   private def getAttrs(): Seq[Attr] = getSeq(getPersistentAttr)

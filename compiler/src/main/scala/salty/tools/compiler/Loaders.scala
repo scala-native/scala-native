@@ -31,7 +31,7 @@ final class BuiltinLoader extends Loader {
   lazy val Object: Node =
     Defn.Class(Empty, Seq(), ObjectName)
   lazy val ObjectConstructor: Node =
-    Defn.Method(Prim.Unit, Seq(), End(Seq(Return(Empty, Empty, Unit()))),
+    Defn.Method(Prim.Unit, Seq(), End(Seq(Return(Empty, Empty, Lit.Unit()))),
                 Object, ObjectConstructorName)
 
   def resolve(name: Name): Option[Node] = name match {
@@ -141,6 +141,7 @@ final class ClasspathLoader(val paths: Seq[String]) extends Loader { self =>
     val rt = root(name)
     loaderForName(rt).flatMap { loader =>
       loader.resolve(name).map(Some(_)).getOrElse {
+        println(s"name $name, root $rt")
         val rels = relatives(loader.resolve(rt).get).get
         rels.reverse.map { pname =>
           resolve(chown(name, pname))

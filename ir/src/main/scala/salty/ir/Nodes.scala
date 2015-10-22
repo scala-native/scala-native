@@ -56,6 +56,9 @@ sealed class Node private[ir] (
         this eq other
     }
 
+  final def copy(attrs: Seq[Attr] = _attrs.clone()) =
+    new Node(_desc, _slots.clone(), _offsets.clone(), _attrs = attrs.toArray)
+
   final override def toString = s"$desc $name"
 }
 object Node {

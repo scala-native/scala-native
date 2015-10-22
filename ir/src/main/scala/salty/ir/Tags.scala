@@ -74,21 +74,22 @@ object Tags {
   final val ClassAlloc = 1 + Unbox
   final val SliceAlloc = 1 + ClassAlloc
 
-  final val Unit  = 1 + SliceAlloc
-  final val Null  = 1 + Unit
-  final val True  = 1 + Null
-  final val False = 1 + True
-  final val Zero  = 1 + False
-  final val Size  = 1 + Zero
-  final val I8    = 1 + Size
-  final val I16   = 1 + I8
-  final val I32   = 1 + I16
-  final val I64   = 1 + I32
-  final val F32   = 1 + I64
-  final val F64   = 1 + F32
-  final val Str   = 1 + F64
+  final val UnitLit   = 1 + SliceAlloc
+  final val NullLit   = 1 + UnitLit
+  final val TrueLit   = 1 + NullLit
+  final val FalseLit  = 1 + TrueLit
+  final val ZeroLit   = 1 + FalseLit
+  final val SizeLit   = 1 + ZeroLit
+  final val StructLit = 1 + SizeLit
+  final val I8Lit     = 1 + StructLit
+  final val I16Lit    = 1 + I8Lit
+  final val I32Lit    = 1 + I16Lit
+  final val I64Lit    = 1 + I32Lit
+  final val F32Lit    = 1 + I64Lit
+  final val F64Lit    = 1 + F32Lit
+  final val StrLit    = 1 + F64Lit
 
-  final val UnitDefn    = 1 + Str
+  final val UnitDefn    = 1 + StrLit
   final val BoolDefn    = 1 + UnitDefn
   final val I8Defn      = 1 + BoolDefn
   final val I16Defn     = 1 + I8Defn
@@ -212,12 +213,13 @@ object Tags {
     Desc.ClassAlloc -> T.ClassAlloc,
     Desc.SliceAlloc -> T.SliceAlloc,
 
-    Desc.Unit  -> T.Unit ,
-    Desc.Null  -> T.Null ,
-    Desc.True  -> T.True ,
-    Desc.False -> T.False,
-    Desc.Zero  -> T.Zero ,
-    Desc.Size  -> T.Size ,
+    Desc.Lit.Unit   -> T.UnitLit  ,
+    Desc.Lit.Null   -> T.NullLit  ,
+    Desc.Lit.True   -> T.TrueLit  ,
+    Desc.Lit.False  -> T.FalseLit ,
+    Desc.Lit.Zero   -> T.ZeroLit  ,
+    Desc.Lit.Size   -> T.SizeLit  ,
+    Desc.Lit.Struct -> T.StructLit,
 
     Desc.Prim.Unit    -> T.UnitDefn   ,
     Desc.Prim.Bool    -> T.BoolDefn   ,

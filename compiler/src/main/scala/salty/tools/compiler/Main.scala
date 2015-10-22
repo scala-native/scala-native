@@ -2,6 +2,7 @@ package salty.tools.compiler
 
 import salty.ir._
 import salty.ir.serialization._
+import salty.tools.compiler.backend._
 import salty.tools.compiler.reductions._
 
 object Main extends App {
@@ -31,7 +32,7 @@ object Main extends App {
     val method = resolve(methodName)
     val elem = MethodElem(Empty, module, method)
     val call = Call(elem, elem, Seq())
-    val end = End(Seq(Return(Empty, call, Unit())))
+    val end = End(Seq(Return(Empty, call, Lit.Unit())))
     Defn.Define(Prim.Unit, Seq(), end, Name.Main)
   }
   serializeDotFile(Scope(Map(Name.Main -> main)), "out0.dot")
@@ -39,4 +40,9 @@ object Main extends App {
   serializeDotFile(Scope(Map(Name.Main -> main)), "out1.dot")
   Reduction.run(ClassLowering, main)
   serializeDotFile(Scope(Map(Name.Main -> main)), "out2.dot")
+  Reduction.run(GlobalNaming, main)
+  serializeDotFile(Scope(Map(Name.Main -> main)), "out3.dot")
+
+  println("LLVM code:")
+  println(ShowLLVM.showSchedule(Schedule(main)))
 }
