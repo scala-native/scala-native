@@ -11,6 +11,16 @@ object Main extends App {
     System.exit(1)
     throw new Exception("unreachable")
   }
+  def run(reds: Seq[Reduction], main: Node) = {
+    serializeDotFile(Scope(Map(Name.Main -> main)), "out0.dot")
+    var i = 0
+    reds.foreach { red =>
+      i += 1
+      Reduction.run(red, main)
+      serializeDotFile(Scope(Map(Name.Main -> main)), s"out$i.dot")
+    }
+  }
+
   val (opts, id) = Opt.parse(args.toList) match {
     case (opts, id :: Nil) =>
       (opts, id)
@@ -31,18 +41,21 @@ object Main extends App {
     val module = resolve(moduleName)
     val method = resolve(methodName)
     val elem = MethodElem(Empty, module, method)
-    val call = Call(elem, elem, Seq())
+    val call = Call(elem, elem, Seq(module))
     val end = End(Seq(Return(Empty, call, Lit.Unit())))
     Defn.Define(Prim.Unit, Seq(), end, Name.Main)
   }
-  serializeDotFile(Scope(Map(Name.Main -> main)), "out0.dot")
-  Reduction.run(ModuleLowering, main)
-  serializeDotFile(Scope(Map(Name.Main -> main)), "out1.dot")
-  Reduction.run(ClassLowering, main)
-  serializeDotFile(Scope(Map(Name.Main -> main)), "out2.dot")
-  Reduction.run(GlobalNaming, main)
-  serializeDotFile(Scope(Map(Name.Main -> main)), "out3.dot")
+  run(Seq(
+    ModuleLowering,
+    ClassLowering,
+    UnitLowering,
+    SliceLowering,
+    GlobalNaming
+  ), main)
 
-  println("LLVM code:")
-  println(ShowLLVM.showSchedule(Schedule(main)))
+  val llvm = ShowLLVM.showSchedule(Schedule(main)).toString
+  println(llvm)
+  val writer = new java.io.PrintWriter("out.ll")
+  writer.write(llvm)
+  writer.close()
 }

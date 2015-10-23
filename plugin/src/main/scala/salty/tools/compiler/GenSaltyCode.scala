@@ -542,7 +542,7 @@ abstract class GenSaltyCode extends PluginComponent
       val ArrayValue(tpt, elems) = av
       val ty           = genType(tpt.tpe)
       val len          = elems.length
-      val salloc       = ir.SliceAlloc(ty, ir.Lit.I32(len))
+      val salloc       = ir.SliceAlloc(???, ty, ir.Lit.I32(len))
       val (rfocus, rt) =
         if (elems.isEmpty)
           (focus, Tails.empty)
@@ -869,7 +869,7 @@ abstract class GenSaltyCode extends PluginComponent
             ir.Store(elem, elem, argvalues(1))
           }
         else
-          lastfocus mapEf (ir.Length(_, arrayvalue))
+          lastfocus mapEf (ir.SliceLength(_, arrayvalue))
 
       rfocus +: allt
     }
@@ -999,13 +999,13 @@ abstract class GenSaltyCode extends PluginComponent
     def genNewArray(elemty: ir.Node, length: Tree, focus: Focus) = {
       val (lfocus, lt) = genExpr(length, focus).merge
 
-      (lfocus withValue ir.SliceAlloc(elemty, lfocus.value)) +: lt
+      (lfocus mapEf (ir.SliceAlloc(_, elemty, lfocus.value))) +: lt
     }
 
     def genNew(sym: Symbol, ctorsym: Symbol, args: List[Tree], focus: Focus) = {
-      val alloc = ir.ClassAlloc(genClassDefn(sym))
+      val nfocus = focus mapEf (ir.ClassAlloc(_, genClassDefn(sym)))
 
-      genMethodCall(ctorsym, alloc, args, focus)
+      genMethodCall(ctorsym, nfocus.value, args, nfocus)
     }
 
     def genMethodCall(sym: Symbol, self: ir.Node, args: Seq[Tree], focus: Focus): Tails = {

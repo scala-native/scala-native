@@ -103,20 +103,18 @@ class SaltySerializer(buffer: ByteBuffer) {
       putInt(T.LocalName); putString(v)
     case Name.Class(v) =>
       putInt(T.ClassName); putString(v)
-    case Name.ClassData(owner) =>
-      putInt(T.ClassDataName); putName(owner)
+    case Name.Module(v) =>
+      putInt(T.ModuleName); putString(v)
+    case Name.Interface(v) =>
+      putInt(T.InterfaceName); putString(v)
     case Name.Vtable(owner) =>
       putInt(T.VtableName); putName(owner)
     case Name.VtableConstant(owner) =>
       putInt(T.VtableConstantName); putName(owner)
-    case Name.Module(v) =>
-      putInt(T.ModuleName); putString(v)
-    case Name.ModuleAccessor(owner) =>
-      putInt(T.ModuleAccessorName); putName(owner)
-    case Name.ModuleData(owner) =>
-      putInt(T.ModuleDataName); putName(owner)
-    case Name.Interface(v) =>
-      putInt(T.InterfaceName); putString(v)
+    case Name.Accessor(owner) =>
+      putInt(T.AccessorName); putName(owner)
+    case Name.Data(owner) =>
+      putInt(T.DataName); putName(owner)
     case Name.Slice(n) =>
       putInt(T.SliceName); putName(n)
     case Name.Field(owner, id) =>

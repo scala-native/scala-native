@@ -63,31 +63,50 @@ object Desc {
   final case object Inttoptr extends Plain(Sc.Val, Sc.Ref) with Val
   final case object Bitcast  extends Plain(Sc.Val, Sc.Ref) with Val
 
-  final case object EfPhi  extends Plain(Sc.Cf, Sc.Many(Sc.Ef)         ) with Ef
-  final case object Call   extends Plain(Sc.Ef, Sc.Val, Sc.Many(Sc.Val)) with Ef with Val
-  final case object Load   extends Plain(Sc.Ef, Sc.Val                 ) with Ef with Val
-  final case object Store  extends Plain(Sc.Ef, Sc.Val, Sc.Val         ) with Ef with Val
-  final case object Elem   extends Plain(       Sc.Val, Sc.Many(Sc.Val))         with Val
-  final case object Param  extends Plain(       Sc.Ref                 )         with Val
-  final case object Phi    extends Plain(       Sc.Cf, Sc.Many(Sc.Val) )         with Val
-  final case object Alloc  extends Plain(       Sc.Ref                 )         with Val
-  final case object Alloca extends Plain(       Sc.Ref                 )         with Val
+  final case object EfPhi      extends Plain(Sc.Cf, Sc.Many(Sc.Ef)         ) with Ef
+  final case object Call       extends Plain(Sc.Ef, Sc.Val, Sc.Many(Sc.Val)) with Ef with Val
+  final case object Load       extends Plain(Sc.Ef, Sc.Val                 ) with Ef with Val
+  final case object Store      extends Plain(Sc.Ef, Sc.Val, Sc.Val         ) with Ef with Val
+  final case object Elem       extends Plain(       Sc.Val, Sc.Many(Sc.Val))         with Val
+  // TODO: rename to ValueElem
+  final case object StructElem extends Plain(       Sc.Val, Sc.Val         )         with Val
+  // TODO: rename to PtrElem
+  final case object Param      extends Plain(       Sc.Ref                 )         with Val
+  final case object Phi        extends Plain(       Sc.Cf, Sc.Many(Sc.Val) )         with Val
+  final case object Alloc      extends Plain(       Sc.Ref                 )         with Val
+  final case object Alloca     extends Plain(       Sc.Ref                 )         with Val
 
-  final case object Equals     extends Plain(Sc.Ef, Sc.Val, Sc.Val) with Ef with Val //scala
-  final case object Hash       extends Plain(Sc.Ef, Sc.Val        ) with Ef with Val //scala
-  final case object FieldElem  extends Plain(Sc.Ef, Sc.Val, Sc.Ref) with Ef with Val //scala
-  final case object MethodElem extends Plain(Sc.Ef, Sc.Val, Sc.Ref) with Ef with Val //scala
-  final case object SliceElem  extends Plain(Sc.Ef, Sc.Val, Sc.Val) with Ef with Val //scala
-  final case object GetClass   extends Plain(Sc.Ef, Sc.Val        ) with Ef with Val //scala
-  final case object Length     extends Plain(Sc.Ef, Sc.Val        ) with Ef with Val //scala
-  final case object Is         extends Plain(       Sc.Val, Sc.Ref)         with Val //scala
-  final case object As         extends Plain(       Sc.Val, Sc.Ref)         with Val //scala
-  final case object Box        extends Plain(       Sc.Val, Sc.Ref)         with Val //scala
-  final case object Unbox      extends Plain(       Sc.Val, Sc.Ref)         with Val //scala
-  final case object ClassAlloc extends Plain(       Sc.Ref        )         with Val //scala
-  final case object SliceAlloc extends Plain(       Sc.Ref, Sc.Val)         with Val//scala
+  final case object Equals      extends Plain(Sc.Ef, Sc.Val, Sc.Val) with Ef with Val //scala
+  final case object Hash        extends Plain(Sc.Ef, Sc.Val        ) with Ef with Val //scala
+  final case object FieldElem   extends Plain(Sc.Ef, Sc.Val, Sc.Ref) with Ef with Val //scala
+  final case object MethodElem  extends Plain(Sc.Ef, Sc.Val, Sc.Ref) with Ef with Val //scala
+  final case object SliceElem   extends Plain(Sc.Ef, Sc.Val, Sc.Val) with Ef with Val //scala
+  final case object GetClass    extends Plain(Sc.Ef, Sc.Val        ) with Ef with Val //scala
+  final case object SliceLength extends Plain(Sc.Ef, Sc.Val        ) with Ef with Val //scala
+  final case object ClassAlloc  extends Plain(Sc.Ef, Sc.Ref        )         with Val //scala
+  final case object SliceAlloc  extends Plain(Sc.Ef, Sc.Ref, Sc.Val)         with Val //scala
+  final case object Is          extends Plain(       Sc.Val, Sc.Ref)         with Val //scala
+  final case object As          extends Plain(       Sc.Val, Sc.Ref)         with Val //scala
+  final case object Box         extends Plain(       Sc.Val, Sc.Ref)         with Val //scala
+  final case object Unbox       extends Plain(       Sc.Val, Sc.Ref)         with Val //scala
 
   sealed abstract trait Lit extends Val {
+    def valueString: String = this match {
+      case Lit.Unit   => "{}"
+      case Lit.Null   => "null"
+      case Lit.True   => "true"
+      case Lit.False  => "false"
+      case Lit.Zero   => ???
+      case Lit.Size   => ???
+      case Lit.I8(v)  => v.toString
+      case Lit.I16(v) => v.toString
+      case Lit.I32(v) => v.toString
+      case Lit.I64(v) => v.toString
+      case Lit.F32(v) => v.toString
+      case Lit.F64(v) => v.toString
+      case Lit.Struct => ???
+      case Lit.Str(s) => ???
+    }
     override def toString = this match {
       case Lit.Unit               => "unit"
       case Lit.Null               => "null"
@@ -106,20 +125,20 @@ object Desc {
     }
   }
   object Lit {
-    final case object Unit               extends Plain()                with Lit
-    final case object Null               extends Plain()                with Lit
-    final case object True               extends Plain()                with Lit
-    final case object False              extends Plain()                with Lit
-    final case object Zero               extends Plain(Sc.Ref)          with Lit
-    final case object Size               extends Plain(Sc.Ref)          with Lit
-    final case object Struct             extends Plain(Sc.Many(Sc.Ref)) with Lit
-    final case class  I8(value: Byte)    extends Rich()                 with Lit
-    final case class  I16(value: Short)  extends Rich()                 with Lit
-    final case class  I32(value: Int)    extends Rich()                 with Lit
-    final case class  I64(value: Long)   extends Rich()                 with Lit
-    final case class  F32(value: Float)  extends Rich()                 with Lit
-    final case class  F64(value: Double) extends Rich()                 with Lit
-    final case class  Str(value: String) extends Rich()                 with Lit //scala
+    final case object Unit               extends Plain()                        with Lit
+    final case object Null               extends Plain()                        with Lit
+    final case object True               extends Plain()                        with Lit
+    final case object False              extends Plain()                        with Lit
+    final case object Zero               extends Plain(Sc.Ref)                  with Lit
+    final case object Size               extends Plain(Sc.Ref)                  with Lit
+    final case object Struct             extends Plain(Sc.Ref, Sc.Many(Sc.Ref)) with Lit
+    final case class  I8(value: Byte)    extends Rich()                         with Lit
+    final case class  I16(value: Short)  extends Rich()                         with Lit
+    final case class  I32(value: Int)    extends Rich()                         with Lit
+    final case class  I64(value: Long)   extends Rich()                         with Lit
+    final case class  F32(value: Float)  extends Rich()                         with Lit
+    final case class  F64(value: Double) extends Rich()                         with Lit
+    final case class  Str(value: String) extends Rich()                         with Lit //scala
   }
 
   sealed trait Prim extends Defn

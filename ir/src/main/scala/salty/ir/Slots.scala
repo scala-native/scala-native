@@ -40,7 +40,7 @@ private[ir] final class Slot private[ir] (
   val schema: Schema,
   val use:    Node,
   var dep:    Node
-) extends Use with Dep {
+) extends java.lang.Cloneable with Use with Dep {
   def isVal:  Boolean = schema == Schema.Val
   def isCf:   Boolean = schema == Schema.Cf
   def isEf:   Boolean = schema == Schema.Ef

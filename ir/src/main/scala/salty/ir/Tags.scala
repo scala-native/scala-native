@@ -50,29 +50,30 @@ object Tags {
   final val Inttoptr = 1 + Ptrtoint
   final val Bitcast  = 1 + Inttoptr
 
-  final val EfPhi  = 1 + Bitcast
-  final val Call   = 1 + EfPhi
-  final val Load   = 1 + Call
-  final val Store  = 1 + Load
-  final val Elem   = 1 + Store
-  final val Param  = 1 + Elem
-  final val Phi    = 1 + Param
-  final val Alloc  = 1 + Phi
-  final val Alloca = 1 + Alloc
+  final val EfPhi      = 1 + Bitcast
+  final val Call       = 1 + EfPhi
+  final val Load       = 1 + Call
+  final val Store      = 1 + Load
+  final val Elem       = 1 + Store
+  final val StructElem = 1 + Elem
+  final val Param      = 1 + StructElem
+  final val Phi        = 1 + Param
+  final val Alloc      = 1 + Phi
+  final val Alloca     = 1 + Alloc
 
-  final val Equals     = 1 + Alloca
-  final val Hash       = 1 + Equals
-  final val FieldElem  = 1 + Hash
-  final val MethodElem = 1 + FieldElem
-  final val SliceElem  = 1 + MethodElem
-  final val GetClass   = 1 + SliceElem
-  final val Length     = 1 + GetClass
-  final val Is         = 1 + Length
-  final val As         = 1 + Is
-  final val Box        = 1 + As
-  final val Unbox      = 1 + Box
-  final val ClassAlloc = 1 + Unbox
-  final val SliceAlloc = 1 + ClassAlloc
+  final val Equals      = 1 + Alloca
+  final val Hash        = 1 + Equals
+  final val FieldElem   = 1 + Hash
+  final val MethodElem  = 1 + FieldElem
+  final val SliceElem   = 1 + MethodElem
+  final val GetClass    = 1 + SliceElem
+  final val SliceLength = 1 + GetClass
+  final val ClassAlloc  = 1 + Unbox
+  final val SliceAlloc  = 1 + ClassAlloc
+  final val Is          = 1 + SliceLength
+  final val As          = 1 + Is
+  final val Box         = 1 + As
+  final val Unbox       = 1 + Box
 
   final val UnitLit   = 1 + SliceAlloc
   final val NullLit   = 1 + UnitLit
@@ -121,15 +122,13 @@ object Tags {
   final val PrimName           = 1 + MainName
   final val LocalName          = 1 + PrimName
   final val ClassName          = 1 + LocalName
-  final val VtableName         = 1 + ClassName
+  final val ModuleName         = 1 + ClassName
+  final val InterfaceName      = 1 + ModuleName
+  final val AccessorName       = 1 + InterfaceName
+  final val DataName           = 1 + AccessorName
+  final val VtableName         = 1 + DataName
   final val VtableConstantName = 1 + VtableName
-  final val ClassDataName      = 1 + VtableConstantName
-  final val ClassRefName       = 1 + ClassDataName
-  final val ModuleName         = 1 + ClassRefName
-  final val ModuleAccessorName = 1 + ModuleName
-  final val ModuleDataName     = 1 + ModuleAccessorName
-  final val InterfaceName      = 1 + ModuleDataName
-  final val SliceName          = 1 + InterfaceName
+  final val SliceName          = 1 + VtableConstantName
   final val FieldName          = 1 + SliceName
   final val ConstructorName    = 1 + FieldName
   final val MethodName         = 1 + ConstructorName
@@ -189,29 +188,30 @@ object Tags {
     Desc.Inttoptr -> T.Inttoptr,
     Desc.Bitcast  -> T.Bitcast ,
 
-    Desc.EfPhi  -> T.EfPhi ,
-    Desc.Call   -> T.Call  ,
-    Desc.Load   -> T.Load  ,
-    Desc.Store  -> T.Store ,
-    Desc.Elem   -> T.Elem  ,
-    Desc.Param  -> T.Param ,
-    Desc.Phi    -> T.Phi   ,
-    Desc.Alloc  -> T.Alloc ,
-    Desc.Alloca -> T.Alloca,
+    Desc.EfPhi      -> T.EfPhi ,
+    Desc.Call       -> T.Call  ,
+    Desc.Load       -> T.Load  ,
+    Desc.Store      -> T.Store ,
+    Desc.Elem       -> T.Elem  ,
+    Desc.StructElem -> T.StructElem  ,
+    Desc.Param      -> T.Param ,
+    Desc.Phi        -> T.Phi   ,
+    Desc.Alloc      -> T.Alloc ,
+    Desc.Alloca     -> T.Alloca,
 
-    Desc.Equals     -> T.Equals    ,
-    Desc.Hash       -> T.Hash      ,
-    Desc.FieldElem  -> T.FieldElem ,
-    Desc.MethodElem -> T.MethodElem,
-    Desc.SliceElem  -> T.SliceElem ,
-    Desc.GetClass   -> T.GetClass  ,
-    Desc.Length     -> T.Length    ,
-    Desc.Is         -> T.Is        ,
-    Desc.As         -> T.As        ,
-    Desc.Box        -> T.Box       ,
-    Desc.Unbox      -> T.Unbox     ,
-    Desc.ClassAlloc -> T.ClassAlloc,
-    Desc.SliceAlloc -> T.SliceAlloc,
+    Desc.Equals      -> T.Equals     ,
+    Desc.Hash        -> T.Hash       ,
+    Desc.FieldElem   -> T.FieldElem  ,
+    Desc.MethodElem  -> T.MethodElem ,
+    Desc.SliceElem   -> T.SliceElem  ,
+    Desc.GetClass    -> T.GetClass   ,
+    Desc.SliceLength -> T.SliceLength,
+    Desc.ClassAlloc  -> T.ClassAlloc ,
+    Desc.SliceAlloc  -> T.SliceAlloc ,
+    Desc.Is          -> T.Is         ,
+    Desc.As          -> T.As         ,
+    Desc.Box         -> T.Box        ,
+    Desc.Unbox       -> T.Unbox      ,
 
     Desc.Lit.Unit   -> T.UnitLit  ,
     Desc.Lit.Null   -> T.NullLit  ,

@@ -31,7 +31,8 @@ final class BuiltinLoader extends Loader {
   lazy val Object: Node =
     Defn.Class(Empty, Seq(), ObjectName)
   lazy val ObjectConstructor: Node =
-    Defn.Method(Prim.Unit, Seq(), End(Seq(Return(Empty, Empty, Lit.Unit()))),
+    Defn.Method(Prim.Unit, Seq(Param(Object)),
+                End(Seq(Return(Empty, Empty, Lit.Unit()))),
                 Object, ObjectConstructorName)
 
   def resolve(name: Name): Option[Node] = name match {
