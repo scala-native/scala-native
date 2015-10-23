@@ -50,6 +50,8 @@ object Main extends App {
     ClassLowering,
     UnitLowering,
     SliceLowering,
+    AllocLowering,
+    SizeLowering,
     GlobalNaming
   ), main)
 

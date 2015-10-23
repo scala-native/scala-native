@@ -43,8 +43,11 @@ object Schedule {
   }
 
   private def typedconst(n: Node): Type = n.desc match {
-    case Desc.Lit.I32(_) => Type.Prim(Prim.I32)
-    case Desc.Lit.Null   => Type.Ptr(Type.Prim(Prim.I8))
+    case Desc.Lit.Zero =>
+      val Lit.Zero(of) = n
+      toType(of)
+    case Desc.Lit.I32(_)  => Type.Prim(Prim.I32)
+    case Desc.Lit.Null    => Type.Ptr(Type.Prim(Prim.I8))
   }
 
   private def typeddefn(n: Node): Type = n match {
@@ -54,6 +57,9 @@ object Schedule {
       Type.Ptr(toType(ty))
     case ir.Defn.Struct(elems) =>
       Type.Struct(n)
+    case ir.Defn.Declare(ret, params) =>
+      val paramtypes = params.map { case Param(ty) => toType(ty) }
+      Type.Ptr(Type.Func(toType(ret), paramtypes))
     case ir.Defn.Define(ret, params, _) =>
       val paramtypes = params.map { case Param(ty) => toType(ty) }
       Type.Ptr(Type.Func(toType(ret), paramtypes))
@@ -76,6 +82,11 @@ object Schedule {
       Type.Func(toType(ret), args.map(toType))
     case ir.Defn.Struct(_) =>
       Type.Struct(n)
+  }
+  private def constvalue(n: Node): Value = n match {
+    case Lit.Struct(ty, deps) => Value.Struct(ty, deps.map(constvalue))
+    case _ if n.desc.isInstanceOf[Desc.Lit] => Value.Const(n)
+    case _ if n.desc.isInstanceOf[Desc.Defn] => Value.Defn(n)
   }
 
   private def scheduleOps(n: Node): Seq[Op] = {
@@ -136,6 +147,10 @@ object Schedule {
         val Type.Struct(ir.Defn.Struct(elemdefns)) = typedvalue(structvalue)
         op.ty = toType(elemdefns(n))
         op.args = Seq(structvalue, argvalue(idx))
+      case Elem(ptr, Seq(idx)) =>
+        val ptrvalue = argvalue(ptr)
+        op.ty = typedvalue(ptrvalue)
+        op.args = Seq(ptrvalue, argvalue(idx))
       case Elem(ptr, Seq(idx1, idx2)) =>
         val ptrvalue = argvalue(ptr)
         val Desc.Lit.I32(n) = idx2.desc
@@ -168,9 +183,11 @@ object Schedule {
         val newvalue = argvalue(value)
         op.args = Seq(ptrvalue, newvalue)
       case Bitcast(v, ty) =>
-        val value = argvalue(v)
         op.ty = toType(ty)
-        op.args = Seq(value)
+        op.args = Seq(argvalue(v))
+      case Ptrtoint(v, ty) =>
+        op.ty = toType(ty)
+        op.args = Seq(argvalue(v))
     }
 
     ops.foreach { op =>
@@ -184,10 +201,11 @@ object Schedule {
     val collectDefns = new CollectDefns
     Pass.run(collectDefns, node)
     val defns = collectDefns.defns.collect {
-      case n @ ir.Defn.Global(ty, _) =>
-        Defn(n, Seq(toType(ty)), Seq())
-      case n @ ir.Defn.Constant(ty, _) =>
-        Defn(n, Seq(toType(ty)), Seq())
+      case n @ ir.Defn.Global(ty, rhs) =>
+        // TODO: fixme
+        Defn(n, Seq(toType(ty)), Seq(Op(null, null, Seq(constvalue(rhs)))))
+      case n @ ir.Defn.Constant(ty, rhs) =>
+        Defn(n, Seq(toType(ty)), Seq(Op(null, null, Seq(constvalue(rhs)))))
       case n @ ir.Defn.Struct(fields) =>
         val tys = fields.map(toType)
         Defn(n, tys, Seq())

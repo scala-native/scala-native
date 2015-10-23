@@ -20,11 +20,11 @@ object ShowLLVM {
     def tytail = tys.tail
     node match {
       case Defn.Global(_, _) =>
-        // TODO: rhs value
-        sh"@$name = global $ty zeroinitializer"
+        val Seq(Sch.Op(_, _, Seq(rhs))) = ops
+        sh"@$name = global $rhs"
       case Defn.Constant(_, _) =>
-        // TODO: rhs value
-        sh"@$name = constant $ty zeroinitializer"
+        val Seq(Sch.Op(_, _, Seq(rhs))) = ops
+        sh"@$name = constant $rhs"
       case Defn.Define(_, params, _) =>
         sh"define $ty @$name(${showParams(tytail, params)}) { ${r(ops.map(n(_)))} ${n("}") }"
       case Defn.Declare(_, params) =>
@@ -68,8 +68,12 @@ object ShowLLVM {
       case Sch.Value.Struct(_, values) =>
         sh"{ ${r(values, ", ")} }"
       case Sch.Value.Const(n) =>
-        val v = n.desc.asInstanceOf[Desc.Lit].valueString
-        sh"$v"
+        n.desc match {
+          case Desc.Lit.Zero =>
+            s("zeroinitializer")
+          case lit: Desc.Lit =>
+            s(lit.valueString)
+        }
       case Sch.Value.Param(n) =>
         sh"%${n.name}"
       case Sch.Value.Defn(n) =>
@@ -120,6 +124,8 @@ object ShowLLVM {
         sh"  store $value, $ptr"
       case Desc.Bitcast =>
         sh"  %$name = bitcast $arg to $ty"
+      case Desc.Ptrtoint =>
+        sh"  %$name = ptrtoint $arg to $ty"
     }
   }
 }

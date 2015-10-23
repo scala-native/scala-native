@@ -130,6 +130,7 @@ object Desc {
     final case object True               extends Plain()                        with Lit
     final case object False              extends Plain()                        with Lit
     final case object Zero               extends Plain(Sc.Ref)                  with Lit
+    // TODO: move size out of lit
     final case object Size               extends Plain(Sc.Ref)                  with Lit
     final case object Struct             extends Plain(Sc.Ref, Sc.Many(Sc.Ref)) with Lit
     final case class  I8(value: Byte)    extends Rich()                         with Lit
