@@ -39,8 +39,8 @@ lazy val compiler =
     ).
     dependsOn(ir)
 
-lazy val corelib =
-  project.in(file("corelib")).
+lazy val javalib =
+  project.in(file("javalib")).
     settings(common: _*).
     settings(
       scalacOptions ++= Seq(
