@@ -1,4 +1,4 @@
-package salty
+package native
 
 import java.nio.ByteBuffer
 

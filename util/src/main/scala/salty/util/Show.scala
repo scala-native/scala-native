@@ -1,4 +1,4 @@
-package salty.util
+package native.util
 
 trait Show[T] { def apply(t: T): Show.Result }
 object Show {

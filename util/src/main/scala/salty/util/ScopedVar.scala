@@ -1,4 +1,4 @@
-package salty.util
+package native.util
 
 import language.implicitConversions
 
