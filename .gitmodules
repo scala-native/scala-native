@@ -1,3 +1,0 @@
-[submodule "scala"]
-	path = scala
-	url = git@github.com:scala/scala.git
