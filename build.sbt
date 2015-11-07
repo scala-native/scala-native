@@ -7,6 +7,13 @@ lazy val common = Seq(
   scalacOptions ++= Seq("-Ypatmat-exhaust-depth", "1000000")
 )
 
+lazy val withPluginCommon = common ++ Seq(
+  scalacOptions ++= Seq(
+    "-Xplugin:plugin/target/scala-2.11/plugin_2.11-0.1-SNAPSHOT.jar"
+  ),
+  libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.11.7"
+)
+
 lazy val ir =
   project.in(file("ir")).
     settings(common: _*).
@@ -41,24 +48,16 @@ lazy val compiler =
 
 lazy val javalib =
   project.in(file("javalib")).
-    settings(common: _*).
-    settings(
-      scalacOptions ++= Seq(
-        "-Xplugin:plugin/target/scala-2.11/plugin_2.11-0.1-SNAPSHOT.jar",
-        "-Yno-imports"
-      ),
-      libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.11.7"
-    ).
+    settings(withPluginCommon: _*).
+    dependsOn(plugin)
+
+lazy val nativelib =
+  project.in(file("nativelib")).
+    settings(withPluginCommon: _*).
     dependsOn(plugin)
 
 lazy val sandbox =
   project.in(file("sandbox")).
-    settings(common: _*).
-    settings(
-      scalacOptions ++= Seq(
-        "-Xplugin:plugin/target/scala-2.11/plugin_2.11-0.1-SNAPSHOT.jar"
-      ),
-      libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.11.7"
-    ).
+    settings(withPluginCommon: _*).
     dependsOn(plugin)
 
