@@ -59,7 +59,7 @@ trait GenNameEncoding extends SubComponent with GenTypeKinds {
       case PrimitiveKind(_) => node.name
       case BottomKind(_)    => node.name
       case ClassKind(sym)   => genClassName(sym)
-      case ArrayKind(kind)  => Name.Slice(kindName(kind))
+      case ArrayKind(kind)  => Name.Array(kindName(kind))
     }
   }
 }

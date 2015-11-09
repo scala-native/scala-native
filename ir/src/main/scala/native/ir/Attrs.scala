@@ -18,7 +18,7 @@ sealed abstract class Name extends PersistentAttr {
     case Name.Data(owner)                      => s"$owner.data"
     case Name.Vtable(owner)                    => s"$owner.vtable"
     case Name.VtableConstant(owner)            => s"$owner.vtable.constant"
-    case Name.Slice(n)                         => s"$n[]"
+    case Name.Array(n)                         => s"$n[]"
     case Name.Field(owner, field)              => s"$owner::$field"
     case Name.Constructor(owner, args)         => s"$owner<${args.mkString(", ")}>"
     case Name.Method(owner, method, args, ret) => s"$owner::$method<${args.mkString(", ")}; $ret>"
@@ -36,7 +36,7 @@ object Name {
   final case class Data(owner: Name) extends Name
   final case class Vtable(owner: Name) extends Name
   final case class VtableConstant(owner: Name) extends Name
-  final case class Slice(name: Name) extends Name
+  final case class Array(name: Name) extends Name
   final case class Field(owner: Name, id: String) extends Name
   final case class Constructor(owner: Name, args: Seq[Name]) extends Name
   final case class Method(owner: Name, id: String, args: Seq[Name], ret: Name) extends Name

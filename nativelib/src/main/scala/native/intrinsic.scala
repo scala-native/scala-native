@@ -2,5 +2,5 @@ package native
 
 class intrinsic extends scala.annotation.StaticAnnotation
 object intrinsic {
-  def impl: Nothing = ???
+  def impl: Nothing = throw new Exception("unimplemented intrinsic")
 }

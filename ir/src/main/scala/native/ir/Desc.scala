@@ -77,19 +77,19 @@ object Desc {
   final case object Alloc      extends Plain(       Sc.Ref                 )         with Val
   final case object Alloca     extends Plain(       Sc.Ref                 )         with Val
 
-  final case object Equals      extends Plain(Sc.Ef, Sc.Val, Sc.Val) with Ef with Val //scala
-  final case object Hash        extends Plain(Sc.Ef, Sc.Val        ) with Ef with Val //scala
-  final case object FieldElem   extends Plain(Sc.Ef, Sc.Val, Sc.Ref) with Ef with Val //scala
-  final case object MethodElem  extends Plain(Sc.Ef, Sc.Val, Sc.Ref) with Ef with Val //scala
-  final case object SliceElem   extends Plain(Sc.Ef, Sc.Val, Sc.Val) with Ef with Val //scala
-  final case object GetClass    extends Plain(Sc.Ef, Sc.Val        ) with Ef with Val //scala
-  final case object SliceLength extends Plain(Sc.Ef, Sc.Val        ) with Ef with Val //scala
-  final case object ClassAlloc  extends Plain(Sc.Ef, Sc.Ref        )         with Val //scala
-  final case object SliceAlloc  extends Plain(Sc.Ef, Sc.Ref, Sc.Val)         with Val //scala
-  final case object Is          extends Plain(       Sc.Val, Sc.Ref)         with Val //scala
-  final case object As          extends Plain(       Sc.Val, Sc.Ref)         with Val //scala
-  final case object Box         extends Plain(       Sc.Val, Sc.Ref)         with Val //scala
-  final case object Unbox       extends Plain(       Sc.Val, Sc.Ref)         with Val //scala
+  final case object Equals       extends Plain(Sc.Ef, Sc.Val, Sc.Val) with Ef with Val //scala
+  final case object Hash         extends Plain(Sc.Ef, Sc.Val        ) with Ef with Val //scala
+  final case object FieldElem    extends Plain(Sc.Ef, Sc.Val, Sc.Ref) with Ef with Val //scala
+  final case object MethodElem   extends Plain(Sc.Ef, Sc.Val, Sc.Ref) with Ef with Val //scala
+  final case object JArrayElem   extends Plain(Sc.Ef, Sc.Val, Sc.Val) with Ef with Val //scala
+  final case object GetClass     extends Plain(Sc.Ef, Sc.Val        ) with Ef with Val //scala
+  final case object JArrayLength extends Plain(Sc.Ef, Sc.Val        ) with Ef with Val //scala
+  final case object ClassAlloc   extends Plain(Sc.Ef, Sc.Ref        )         with Val //scala
+  final case object JArrayAlloc  extends Plain(Sc.Ef, Sc.Ref, Sc.Val)         with Val //scala
+  final case object Is           extends Plain(       Sc.Val, Sc.Ref)         with Val //scala
+  final case object As           extends Plain(       Sc.Val, Sc.Ref)         with Val //scala
+  final case object Box          extends Plain(       Sc.Val, Sc.Ref)         with Val //scala
+  final case object Unbox        extends Plain(       Sc.Val, Sc.Ref)         with Val //scala
 
   sealed abstract trait Lit extends Val {
     def valueString: String = this match {
@@ -106,6 +106,7 @@ object Desc {
       case Lit.F32(v) => v.toString
       case Lit.F64(v) => v.toString
       case Lit.Struct => ???
+      case Lit.CArray => ???
       case Lit.Str(s) => ???
     }
     override def toString = this match {
@@ -121,7 +122,8 @@ object Desc {
       case Lit.I64(value: Long)   => s"${value}i64"
       case Lit.F32(value: Float)  => s"${value}f32"
       case Lit.F64(value: Double) => s"${value}f64"
-      case Lit.Struct             => "struct"
+      case Lit.Struct             => "struct_lit"
+      case Lit.CArray             => "carray_lit"
       case Lit.Str(value: String) => "\"" + value + "\""
     }
   }
@@ -134,6 +136,7 @@ object Desc {
     // TODO: move size out of lit
     final case object Size               extends Plain(Sc.Ref)                  with Lit
     final case object Struct             extends Plain(Sc.Ref, Sc.Many(Sc.Ref)) with Lit
+    final case object CArray             extends Plain(Sc.Many(Sc.Val))         with Lit
     final case class  I8(value: Byte)    extends Rich()                         with Lit
     final case class  I16(value: Short)  extends Rich()                         with Lit
     final case class  I32(value: Int)    extends Rich()                         with Lit
@@ -159,14 +162,15 @@ object Desc {
 
   sealed trait Defn
   object Defn {
-    final case object Global    extends Plain(Sc.Ref, Sc.Val                ) with Defn with Val
-    final case object Constant  extends Plain(Sc.Ref, Sc.Val                ) with Defn with Val
-    final case object Define    extends Plain(Sc.Ref, Sc.Many(Sc.Val), Sc.Cf) with Defn with Val
-    final case object Declare   extends Plain(Sc.Ref, Sc.Many(Sc.Val)       ) with Defn with Val
-    final case object Extern    extends Plain(                              ) with Defn with Val
-    final case object Struct    extends Plain(Sc.Many(Sc.Ref)               ) with Defn
-    final case object Ptr       extends Plain(Sc.Ref                        ) with Defn
-    final case object Function  extends Plain(Sc.Ref, Sc.Many(Sc.Ref)       ) with Defn
+    final case object Global         extends Plain(Sc.Ref, Sc.Val                ) with Defn with Val
+    final case object Constant       extends Plain(Sc.Ref, Sc.Val                ) with Defn with Val
+    final case object Define         extends Plain(Sc.Ref, Sc.Many(Sc.Val), Sc.Cf) with Defn with Val
+    final case object Declare        extends Plain(Sc.Ref, Sc.Many(Sc.Val)       ) with Defn with Val
+    final case object Extern         extends Plain(                              ) with Defn with Val
+    final case object Struct         extends Plain(Sc.Many(Sc.Ref)               ) with Defn
+    final case class  CArray(n: Int) extends Rich(Sc.Ref                         ) with Defn
+    final case object Ptr            extends Plain(Sc.Ref                        ) with Defn
+    final case object Function       extends Plain(Sc.Ref, Sc.Many(Sc.Ref)       ) with Defn
 
     //                                        parent, ifaces
     final case object Class     extends Plain(Sc.Ref, Sc.Many(Sc.Ref)               ) with Defn with Val //scala
@@ -179,6 +183,6 @@ object Desc {
     //                                        ty,     owner
     final case object Field     extends Plain(Sc.Ref, Sc.Ref                        ) with Defn          //scala
     //                                        ty
-    final case object Slice     extends Plain(Sc.Ref                                ) with Defn          //scala
+    final case object JArray    extends Plain(Sc.Ref                                ) with Defn          //scala
   }
 }

@@ -50,7 +50,7 @@ sealed class Node private[ir] (
       case (Defn.Function(ret1, args1), Defn.Function(ret2, args2)) =>
         (ret1 type_== ret2) &&
         (args1.zip(args2).forall { case (l, r) => l type_== r })
-      case (Defn.Slice(arg1), Defn.Slice(arg2)) =>
+      case (Defn.JArray(arg1), Defn.JArray(arg2)) =>
         arg1 type_== arg2
       case _ =>
         this eq other

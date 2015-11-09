@@ -37,7 +37,7 @@ object Main extends App {
     val moduleName = Name.Module(id)
     val methodName =
       Name.Method(moduleName, "main",
-        Vector(Name.Slice(Name.Class("java.lang.String"))),
+        Vector(Name.Array(Name.Class("java.lang.String"))),
         Name.Prim("unit"))
     val module = resolve(moduleName)
     val method = resolve(methodName)
@@ -50,7 +50,7 @@ object Main extends App {
     ModuleLowering,
     ClassLowering,
     UnitLowering,
-    SliceLowering,
+    JArrayLowering,
     AllocLowering,
     SizeLowering,
     GlobalNaming

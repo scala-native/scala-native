@@ -59,5 +59,6 @@ lazy val nativelib =
 lazy val sandbox =
   project.in(file("sandbox")).
     settings(withPluginCommon: _*).
-    dependsOn(plugin)
+    dependsOn(plugin, nativelib)
+
 

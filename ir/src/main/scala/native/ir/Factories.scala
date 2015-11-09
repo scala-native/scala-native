@@ -192,7 +192,6 @@ object Ptrtoint extends BinaryFactory(D.Ptrtoint)
 object Inttoptr extends BinaryFactory(D.Inttoptr)
 object Bitcast  extends BinaryFactory(D.Bitcast )
 
-
 object EfPhi      extends NodeSeqNodeFactory(D.EfPhi)
 object Call       extends NodeNodeSeqNodeFactory(D.Call)
 object Load       extends BinaryFactory(D.Load)
@@ -204,29 +203,30 @@ object Phi        extends NodeSeqNodeFactory(D.Phi)
 object Alloc      extends UnaryFactory(D.Alloc)
 object Alloca     extends UnaryFactory(D.Alloca)
 
-object Equals      extends TernaryFactory(D.Equals)
-object Hash        extends BinaryFactory(D.Hash)
-object FieldElem   extends TernaryFactory(D.FieldElem)
-object MethodElem  extends TernaryFactory(D.MethodElem)
-object SliceElem   extends TernaryFactory(D.SliceElem)
-object GetClass    extends BinaryFactory(D.GetClass)
-object SliceLength extends BinaryFactory(D.SliceLength)
-object ClassAlloc  extends BinaryFactory(D.ClassAlloc)
-object SliceAlloc  extends TernaryFactory(D.SliceAlloc)
-object Is          extends BinaryFactory(D.If)
-object As          extends BinaryFactory(D.As)
-object Box         extends BinaryFactory(D.Box)
-object Unbox       extends BinaryFactory(D.Unbox)
+object Equals       extends TernaryFactory(D.Equals)
+object Hash         extends BinaryFactory(D.Hash)
+object FieldElem    extends TernaryFactory(D.FieldElem)
+object MethodElem   extends TernaryFactory(D.MethodElem)
+object JArrayElem   extends TernaryFactory(D.JArrayElem)
+object GetClass     extends BinaryFactory(D.GetClass)
+object JArrayLength extends BinaryFactory(D.JArrayLength)
+object ClassAlloc   extends BinaryFactory(D.ClassAlloc)
+object JArrayAlloc  extends TernaryFactory(D.JArrayAlloc)
+object Is           extends BinaryFactory(D.If)
+object As           extends BinaryFactory(D.As)
+object Box          extends BinaryFactory(D.Box)
+object Unbox        extends BinaryFactory(D.Unbox)
 
 object Lit {
+  object Null   extends NullaryFactory(D.Lit.Null)
+  object Unit   extends NullaryFactory(D.Lit.Unit)
+  object True   extends NullaryFactory(D.Lit.True)
+  object False  extends NullaryFactory(D.Lit.False)
+  object Zero   extends UnaryFactory(D.Lit.Zero)
+  object Size   extends UnaryFactory(D.Lit.Size)
   object Struct extends NodeSeqNodeFactory(D.Lit.Struct)
+  object CArray extends SeqNodeFactory(D.Lit.CArray)
 
-  object Null  extends NullaryFactory(D.Lit.Null)
-  object Unit  extends NullaryFactory(D.Lit.Unit)
-  object True  extends NullaryFactory(D.Lit.True)
-  object False extends NullaryFactory(D.Lit.False)
-  object Zero  extends UnaryFactory(D.Lit.Zero)
-  object Size  extends UnaryFactory(D.Lit.Size)
   object I8 {
     def apply(v: Byte): Node =
       Node(D.Lit.I8(v))
@@ -301,11 +301,25 @@ object Defn {
   object Struct    extends SeqNodeFactory(D.Defn.Struct)
   object Ptr       extends UnaryFactory(D.Defn.Ptr)
   object Function  extends NodeSeqNodeFactory(D.Defn.Function)
+  object CArray {
+    def apply(n: Int, of: Node, attrs: Attr*) =
+      Node(D.Defn.CArray(n), Array(of), attrs)
+    def unapply(node: Node): Option[(Int, Node)] = node.desc match {
+      case D.Defn.CArray(n) => Some((n, node.at(0).dep))
+      case _                => None
+    }
+    object deps {
+      def unapply(node: Node): Option[(Int, Dep)] = node.desc match {
+        case D.Defn.CArray(n) => Some((n, node.at(0)))
+        case _                => None
+      }
+    }
+  }
 
   object Class     extends NodeSeqNodeFactory(D.Defn.Class)
   object Interface extends SeqNodeFactory(D.Defn.Interface)
   object Module    extends NodeSeqNodeNodeFactory(D.Defn.Module)
   object Method    extends NodeSeqNodeNodeNodeFactory(D.Defn.Method)
   object Field     extends BinaryFactory(D.Defn.Field)
-  object Slice     extends UnaryFactory(D.Defn.Slice)
+  object JArray    extends UnaryFactory(D.Defn.JArray)
 }

@@ -52,8 +52,8 @@ object ShowLLVM {
     }, sep = ", ")
 
   implicit def showName: Show[Name] = Show {
-    case Name.Slice(n) =>
-      sh"${n}S"
+    case Name.Array(n) =>
+      sh"${n}A"
     case Name.Constructor(owner, args) =>
       sh"${owner}__ctor_${r(args)}"
     case Name.Method(owner, name, args, ret) =>
