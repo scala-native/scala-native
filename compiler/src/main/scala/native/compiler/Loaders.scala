@@ -81,21 +81,21 @@ final class ClasspathLoader(val paths: Seq[String]) extends Loader { self =>
       val files =
         FileUtils.listFiles(
           base,
-          new RegexFileFilter("(.*)\\.nir"),
+          new RegexFileFilter("(.*)\\.gir"),
           DirectoryFileFilter.DIRECTORY).toArray.toIterator
       files.map { case file: File =>
         val fileabs = file.getAbsolutePath()
         val relpath = fileabs.replace(baseabs + "/", "")
         val (nm, rel) =
-          if (relpath.endsWith(".class.nir"))
-            (Name.Class, relpath.replace(".class.nir", ""))
+          if (relpath.endsWith(".class.gir"))
+            (Name.Class, relpath.replace(".class.gir", ""))
           // TODO: it might be better to strip $ in plugin
-          else if (relpath.endsWith("$.module.nir"))
-            (Name.Module, relpath.replace("$.module.nir", ""))
-          else if (relpath.endsWith(".module.nir"))
-            (Name.Module, relpath.replace(".module.nir", ""))
-          else if (relpath.endsWith(".interface.nir"))
-            (Name.Interface, relpath.replace(".interface.nir", ""))
+          else if (relpath.endsWith("$.module.gir"))
+            (Name.Module, relpath.replace("$.module.gir", ""))
+          else if (relpath.endsWith(".module.gir"))
+            (Name.Module, relpath.replace(".module.gir", ""))
+          else if (relpath.endsWith(".interface.gir"))
+            (Name.Interface, relpath.replace(".interface.gir", ""))
           else
             throw new Exception(s"can't parse file kind $relpath")
         val parts = rel.split("/").toSeq

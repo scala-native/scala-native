@@ -29,7 +29,7 @@ trait GenIRFiles extends SubComponent  {
       if (sym.isModuleClass) "module"
       else if (sym.isInterface) "interface"
       else "class"
-    serializeIRFile(scope, getPathFor(cunit, sym, s".$kind.nir"))
+    serializeIRFile(scope, getPathFor(cunit, sym, s".$kind.gir"))
   }
 
   def genDotFile(cunit: CompilationUnit, sym: Symbol, scope: ir.Scope) =
