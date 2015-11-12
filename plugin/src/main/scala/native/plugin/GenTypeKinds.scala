@@ -85,6 +85,6 @@ trait GenTypeKinds extends SubComponent {
         case NothingClass => ir.Prim.Nothing
       }
     case ClassKind(sym) => genClassDefn(sym)
-    case ArrayKind(of)  => ir.Defn.JArray(toIRType(of))
+    case ArrayKind(of)  => ir.Defn.ArrayClass(toIRType(of))
   }
 }

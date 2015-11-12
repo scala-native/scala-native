@@ -50,7 +50,7 @@ object Main extends App {
     ModuleLowering,
     ClassLowering,
     UnitLowering,
-    JArrayLowering,
+    ArrayClassLowering,
     AllocLowering,
     SizeLowering,
     GlobalNaming

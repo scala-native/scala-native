@@ -51,15 +51,15 @@ class SaltySerializer(buffer: ByteBuffer) {
   }
 
   private def putDesc(desc: Desc) = desc match {
-    case plain: D.Plain   => putInt(T.plain2tag(plain))
-    case D.Lit.I8(v)      => putInt(T.I8Lit); put(v)
-    case D.Lit.I16(v)     => putInt(T.I16Lit); putShort(v)
-    case D.Lit.I32(v)     => putInt(T.I32Lit); putInt(v)
-    case D.Lit.I64(v)     => putInt(T.I64Lit); putLong(v)
-    case D.Lit.F32(v)     => putInt(T.F32Lit); putFloat(v)
-    case D.Lit.F64(v)     => putInt(T.F64Lit); putDouble(v)
-    case D.Lit.Str(v)     => putInt(T.StrLit); putString(v)
-    case D.Defn.CArray(n) => putInt(T.CArrayDefn); putInt(n)
+    case plain: D.Plain  => putInt(T.plain2tag(plain))
+    case D.Lit.I8(v)     => putInt(T.I8Lit); put(v)
+    case D.Lit.I16(v)    => putInt(T.I16Lit); putShort(v)
+    case D.Lit.I32(v)    => putInt(T.I32Lit); putInt(v)
+    case D.Lit.I64(v)    => putInt(T.I64Lit); putLong(v)
+    case D.Lit.F32(v)    => putInt(T.F32Lit); putFloat(v)
+    case D.Lit.F64(v)    => putInt(T.F64Lit); putDouble(v)
+    case D.Lit.Str(v)    => putInt(T.StrLit); putString(v)
+    case D.Defn.Array(n) => putInt(T.ArrayDefn); putInt(n)
   }
 
   private def putSeq[T](seq: Seq[T])(putT: T => Unit) = {

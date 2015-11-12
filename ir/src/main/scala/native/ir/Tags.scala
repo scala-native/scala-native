@@ -62,29 +62,29 @@ object Tags {
   final val Alloc      = 1 + Phi
   final val Alloca     = 1 + Alloc
 
-  final val Equals       = 1 + Alloca
-  final val Hash         = 1 + Equals
-  final val FieldElem    = 1 + Hash
-  final val MethodElem   = 1 + FieldElem
-  final val JArrayElem   = 1 + MethodElem
-  final val GetClass     = 1 + JArrayElem
-  final val JArrayLength = 1 + GetClass
-  final val ClassAlloc   = 1 + Unbox
-  final val JArrayAlloc  = 1 + ClassAlloc
-  final val Is           = 1 + JArrayLength
-  final val As           = 1 + Is
-  final val Box          = 1 + As
-  final val Unbox        = 1 + Box
+  final val Equals           = 1 + Alloca
+  final val Hash             = 1 + Equals
+  final val FieldElem        = 1 + Hash
+  final val MethodElem       = 1 + FieldElem
+  final val ArrayClassElem   = 1 + MethodElem
+  final val GetClass         = 1 + ArrayClassElem
+  final val ArrayClassLength = 1 + GetClass
+  final val ClassAlloc       = 1 + Unbox
+  final val ArrayClassAlloc  = 1 + ClassAlloc
+  final val Is               = 1 + ArrayClassLength
+  final val As               = 1 + Is
+  final val Box              = 1 + As
+  final val Unbox            = 1 + Box
 
-  final val UnitLit   = 1 + JArrayAlloc
+  final val UnitLit   = 1 + ArrayClassAlloc
   final val NullLit   = 1 + UnitLit
   final val TrueLit   = 1 + NullLit
   final val FalseLit  = 1 + TrueLit
   final val ZeroLit   = 1 + FalseLit
   final val SizeLit   = 1 + ZeroLit
   final val StructLit = 1 + SizeLit
-  final val CArrayLit = 1 + StructLit
-  final val I8Lit     = 1 + CArrayLit
+  final val ArrayLit = 1 + StructLit
+  final val I8Lit     = 1 + ArrayLit
   final val I16Lit    = 1 + I8Lit
   final val I32Lit    = 1 + I16Lit
   final val I64Lit    = 1 + I32Lit
@@ -109,8 +109,8 @@ object Tags {
   final val DeclareDefn  = 1 + DefineDefn
   final val ExternDefn   = 1 + DeclareDefn
   final val StructDefn   = 1 + ExternDefn
-  final val CArrayDefn   = 1 + StructDefn
-  final val PtrDefn      = 1 + CArrayDefn
+  final val ArrayDefn   = 1 + StructDefn
+  final val PtrDefn      = 1 + ArrayDefn
   final val FunctionDefn = 1 + PtrDefn
 
   final val ClassDefn     = 1 + FunctionDefn
@@ -118,9 +118,9 @@ object Tags {
   final val ModuleDefn    = 1 + InterfaceDefn
   final val MethodDefn    = 1 + ModuleDefn
   final val FieldDefn     = 1 + MethodDefn
-  final val JArrayDefn     = 1 + FieldDefn
+  final val ArrayClassDefn     = 1 + FieldDefn
 
-  final val NoName             = 1 + JArrayDefn
+  final val NoName             = 1 + ArrayClassDefn
   final val MainName           = 1 + NoName
   final val PrimName           = 1 + MainName
   final val LocalName          = 1 + PrimName
@@ -202,19 +202,19 @@ object Tags {
     Desc.Alloc      -> T.Alloc ,
     Desc.Alloca     -> T.Alloca,
 
-    Desc.Equals       -> T.Equals      ,
-    Desc.Hash         -> T.Hash        ,
-    Desc.FieldElem    -> T.FieldElem   ,
-    Desc.MethodElem   -> T.MethodElem  ,
-    Desc.JArrayElem   -> T.JArrayElem  ,
-    Desc.GetClass     -> T.GetClass    ,
-    Desc.JArrayLength -> T.JArrayLength,
-    Desc.ClassAlloc   -> T.ClassAlloc  ,
-    Desc.JArrayAlloc  -> T.JArrayAlloc ,
-    Desc.Is           -> T.Is          ,
-    Desc.As           -> T.As          ,
-    Desc.Box          -> T.Box         ,
-    Desc.Unbox        -> T.Unbox       ,
+    Desc.Equals           -> T.Equals      ,
+    Desc.Hash             -> T.Hash        ,
+    Desc.FieldElem        -> T.FieldElem   ,
+    Desc.MethodElem       -> T.MethodElem  ,
+    Desc.ArrayClassElem   -> T.ArrayClassElem  ,
+    Desc.GetClass         -> T.GetClass    ,
+    Desc.ArrayClassLength -> T.ArrayClassLength,
+    Desc.ClassAlloc       -> T.ClassAlloc  ,
+    Desc.ArrayClassAlloc  -> T.ArrayClassAlloc ,
+    Desc.Is               -> T.Is          ,
+    Desc.As               -> T.As          ,
+    Desc.Box              -> T.Box         ,
+    Desc.Unbox            -> T.Unbox       ,
 
     Desc.Lit.Unit   -> T.UnitLit  ,
     Desc.Lit.Null   -> T.NullLit  ,
@@ -223,7 +223,7 @@ object Tags {
     Desc.Lit.Zero   -> T.ZeroLit  ,
     Desc.Lit.Size   -> T.SizeLit  ,
     Desc.Lit.Struct -> T.StructLit,
-    Desc.Lit.CArray -> T.CArrayLit,
+    Desc.Lit.Array  -> T.ArrayLit,
 
     Desc.Prim.Unit    -> T.UnitDefn   ,
     Desc.Prim.Bool    -> T.BoolDefn   ,
@@ -244,12 +244,12 @@ object Tags {
     Desc.Defn.Ptr      -> T.PtrDefn     ,
     Desc.Defn.Function -> T.FunctionDefn,
 
-    Desc.Defn.Class     -> T.ClassDefn    ,
-    Desc.Defn.Interface -> T.InterfaceDefn,
-    Desc.Defn.Module    -> T.ModuleDefn   ,
-    Desc.Defn.Method    -> T.MethodDefn   ,
-    Desc.Defn.Field     -> T.FieldDefn    ,
-    Desc.Defn.JArray    -> T.JArrayDefn
+    Desc.Defn.Class      -> T.ClassDefn    ,
+    Desc.Defn.Interface  -> T.InterfaceDefn,
+    Desc.Defn.Module     -> T.ModuleDefn   ,
+    Desc.Defn.Method     -> T.MethodDefn   ,
+    Desc.Defn.Field      -> T.FieldDefn    ,
+    Desc.Defn.ArrayClass -> T.ArrayClassDefn
   )
 
   val tag2plain: Map[Int, Desc.Plain] = plain2tag.map { case (k, v) => (v, k) }

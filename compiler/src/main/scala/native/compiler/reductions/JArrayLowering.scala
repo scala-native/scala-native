@@ -6,15 +6,15 @@ import native.ir._, Reduction._
 
 /** Lowers slices and operations on them down to pointers to structs.
  */
-object JArrayLowering extends Reduction {
+object ArrayClassLowering extends Reduction {
   def reduce = {
-    case Defn.JArray(ty) =>
+    case Defn.ArrayClass(ty) =>
       replaceAll(Defn.Ptr(Prim.I8))
-    case JArrayAlloc(_, _, _) =>
+    case ArrayClassAlloc(_, _, _) =>
       ???
-    case JArrayElem(_, _, _) =>
+    case ArrayClassElem(_, _, _) =>
       ???
-    case JArrayLength(_) =>
+    case ArrayClassLength(_) =>
       ???
   }
 }

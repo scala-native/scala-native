@@ -542,7 +542,7 @@ abstract class GenNative extends PluginComponent
       val ArrayValue(tpt, elems) = av
       val ty           = genType(tpt.tpe)
       val len          = elems.length
-      val allocfocus   = focus mapEf (ir.JArrayAlloc(_, ty, ir.Lit.I32(len)))
+      val allocfocus   = focus mapEf (ir.ArrayClassAlloc(_, ty, ir.Lit.I32(len)))
       val (rfocus, rt) =
         if (elems.isEmpty)
           (allocfocus, Tails.empty)
@@ -553,7 +553,7 @@ abstract class GenNative extends PluginComponent
           val (sfocus, st) = sequenced(values.zipWithIndex, lastfocus) { (vi, foc) =>
             val (value, i) = vi
             Tails.open(foc mapEf { ef =>
-              val elem = ir.JArrayElem(ef, allocfocus.value, ir.Lit.I32(i))
+              val elem = ir.ArrayClassElem(ef, allocfocus.value, ir.Lit.I32(i))
               ir.Store(elem, elem, value)
             })
           }
@@ -860,16 +860,16 @@ abstract class GenNative extends PluginComponent
       val rfocus =
         if (scalaPrimitives.isArrayGet(code))
           lastfocus mapEf { ef =>
-            val elem = ir.JArrayElem(ef, arrayvalue, argvalues(0))
+            val elem = ir.ArrayClassElem(ef, arrayvalue, argvalues(0))
             ir.Load(elem, elem)
           }
         else if (scalaPrimitives.isArraySet(code))
           lastfocus mapEf { ef =>
-            val elem = ir.JArrayElem(ef, arrayvalue, argvalues(0))
+            val elem = ir.ArrayClassElem(ef, arrayvalue, argvalues(0))
             ir.Store(elem, elem, argvalues(1))
           }
         else
-          lastfocus mapEf (ir.JArrayLength(_, arrayvalue))
+          lastfocus mapEf (ir.ArrayClassLength(_, arrayvalue))
 
       rfocus +: allt
     }
@@ -999,7 +999,7 @@ abstract class GenNative extends PluginComponent
     def genNewArray(elemty: ir.Node, length: Tree, focus: Focus) = {
       val (lfocus, lt) = genExpr(length, focus).merge
 
-      (lfocus mapEf (ir.JArrayAlloc(_, elemty, lfocus.value))) +: lt
+      (lfocus mapEf (ir.ArrayClassAlloc(_, elemty, lfocus.value))) +: lt
     }
 
     def genNew(sym: Symbol, ctorsym: Symbol, args: List[Tree], focus: Focus) = {
