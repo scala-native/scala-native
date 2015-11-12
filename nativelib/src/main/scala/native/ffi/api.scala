@@ -4,27 +4,27 @@ import scala.annotation.StaticAnnotation
 import scala.language.experimental.macros
 
 package ffi {
-  @intrinsic
+  @builtin
   final class Ptr[T] private {
-    def apply(): T                      = intrinsic.impl
-    def apply(i: Size): T               = intrinsic.impl
-    def update(value: T): Unit          = intrinsic.impl
-    def update(i: Size, value: T): Unit = intrinsic.impl
-    def +(i: Int): Ptr[T]               = intrinsic.impl
-    def -(i: Int): Ptr[T]               = intrinsic.impl
+    def apply(): T                      = builtin
+    def apply(i: Size): T               = builtin
+    def update(value: T): Unit          = builtin
+    def update(i: Size, value: T): Unit = builtin
+    def +(i: Int): Ptr[T]               = builtin
+    def -(i: Int): Ptr[T]               = builtin
   }
   object Ptr {
-    def Null[T]: Ptr[T] = intrinsic.impl
+    def Null[T]: Ptr[T]                 = builtin
   }
 
-  @intrinsic
+  @builtin
   final class Arr[T, N <: Size with Singleton] private {
-    def apply(i: Size): T               = intrinsic.impl
-    def update(i: Size, value: T): Unit = intrinsic.impl
-    def size: N                         = intrinsic.impl
+    def apply(i: Size): T               = builtin
+    def update(i: Size, value: T): Unit = builtin
+    def size: N                         = builtin
   }
   object Arr {
-    def apply[T, N <: Size with Singleton](elems: T*): Arr[T, N] = intrinsic.impl
+    def apply[T, N <: Size with Singleton](elems: T*): Arr[T, N] = builtin
   }
 
   final class struct extends StaticAnnotation
@@ -47,10 +47,10 @@ package object ffi {
   type Char16  = Nothing
   type Char32  = Nothing
 
-  def &[T](v: T): Ptr[T] = intrinsic.impl
-  def sizeOf[T]: Size    = intrinsic.impl
-  def alignOf[T]: Size   = intrinsic.impl
-  def extern: Nothing    = intrinsic.impl
+  def &[T](v: T): Ptr[T] = builtin
+  def sizeOf[T]: Size    = builtin
+  def alignOf[T]: Size   = builtin
+  def extern: Nothing    = builtin
 
   implicit class CQuote(ctx: StringContext) {
     def c(args: Any*): ffi.Ptr[ffi.Char8] =
