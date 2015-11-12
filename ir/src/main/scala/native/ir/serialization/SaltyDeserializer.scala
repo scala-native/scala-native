@@ -7,6 +7,7 @@ import java.nio.file.Paths
 import java.nio.channels.FileChannel
 import scala.collection.mutable
 import native.ir.{Tags => T}
+import native.ir.Desc.Schema
 
 class SaltyDeserializer(path: String) {
   private val bb = {
@@ -84,11 +85,11 @@ class SaltyDeserializer(path: String) {
   }.toArray
 
   private def getSchema: Schema = getInt match {
-    case T.ValSchema  => Schema.Val
-    case T.CfSchema   => Schema.Cf
-    case T.EfSchema   => Schema.Ef
-    case T.RefSchema  => Schema.Ref
-    case T.ManySchema => Schema.Many(getSchema)
+    case T.ValSchema  => Desc.Val
+    case T.CfSchema   => Desc.Cf
+    case T.EfSchema   => Desc.Ef
+    case T.RefSchema  => Desc.Ref
+    case T.ManySchema => Desc.Many(getSchema)
   }
 
   private def getNodeRef = {

@@ -4,7 +4,7 @@ package serialization
 
 import scala.collection.mutable
 import java.nio.ByteBuffer
-import native.ir.{Desc => D, Tags => T}
+import native.ir.{Tags => T}
 
 class SaltySerializer(buffer: ByteBuffer) {
   import buffer._
@@ -51,15 +51,15 @@ class SaltySerializer(buffer: ByteBuffer) {
   }
 
   private def putDesc(desc: Desc) = desc match {
-    case plain: D.Plain  => putInt(T.plain2tag(plain))
-    case D.Lit.I8(v)     => putInt(T.I8Lit); put(v)
-    case D.Lit.I16(v)    => putInt(T.I16Lit); putShort(v)
-    case D.Lit.I32(v)    => putInt(T.I32Lit); putInt(v)
-    case D.Lit.I64(v)    => putInt(T.I64Lit); putLong(v)
-    case D.Lit.F32(v)    => putInt(T.F32Lit); putFloat(v)
-    case D.Lit.F64(v)    => putInt(T.F64Lit); putDouble(v)
-    case D.Lit.Str(v)    => putInt(T.StrLit); putString(v)
-    case D.Defn.Array(n) => putInt(T.ArrayDefn); putInt(n)
+    case plain: Desc.Plain  => putInt(T.plain2tag(plain))
+    case Desc.Lit.I8(v)     => putInt(T.I8Lit); put(v)
+    case Desc.Lit.I16(v)    => putInt(T.I16Lit); putShort(v)
+    case Desc.Lit.I32(v)    => putInt(T.I32Lit); putInt(v)
+    case Desc.Lit.I64(v)    => putInt(T.I64Lit); putLong(v)
+    case Desc.Lit.F32(v)    => putInt(T.F32Lit); putFloat(v)
+    case Desc.Lit.F64(v)    => putInt(T.F64Lit); putDouble(v)
+    case Desc.Lit.Str(v)    => putInt(T.StrLit); putString(v)
+    case Desc.Defn.Array(n) => putInt(T.ArrayDefn); putInt(n)
   }
 
   private def putSeq[T](seq: Seq[T])(putT: T => Unit) = {
@@ -69,12 +69,12 @@ class SaltySerializer(buffer: ByteBuffer) {
 
   private def putSlot(slot: Slot) = { putSchema(slot.schema); putNodeRef(slot.dep) }
 
-  private def putSchema(schema: Schema): Unit = schema match {
-    case Schema.Val      => putInt(T.ValSchema)
-    case Schema.Cf       => putInt(T.CfSchema)
-    case Schema.Ef       => putInt(T.EfSchema)
-    case Schema.Ref      => putInt(T.RefSchema)
-    case Schema.Many(sc) => putInt(T.ManySchema); putSchema(sc)
+  private def putSchema(schema: Desc.Schema): Unit = schema match {
+    case Desc.Val      => putInt(T.ValSchema)
+    case Desc.Cf       => putInt(T.CfSchema)
+    case Desc.Ef       => putInt(T.EfSchema)
+    case Desc.Ref      => putInt(T.RefSchema)
+    case Desc.Many(sc) => putInt(T.ManySchema); putSchema(sc)
   }
 
   private def putNodeRef(n: Node) =

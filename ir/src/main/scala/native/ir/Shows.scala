@@ -1,18 +1,13 @@
 package native
-package compiler
-package backend
+package ir
 
 import scala.collection.mutable
-import native.util.{sh, Show}, Show.{Sequence => s, Indent => i, Repeat => r, Newline => n}
-import native.ir, ir._
-import native.compiler.backend.{Schedule => Sch}
+import native.util.{sh, Show}, Show.{Sequence => s, Indent => i, Repeat => r, Newline => nl}
+import native.ir.{Schedule => Sch}
 
-object ShowLLVM {
+object Shows {
   implicit def showSchedule: Show[Sch] = Show { sch =>
-    val structs = sch.defns.collect { case defn @ Sch.Defn(Defn.Struct(_), _, _) => defn }.sortBy(_.node.name.toString)
-    val state = sch.defns.collect { case defn @ Sch.Defn(Defn.Global(_, _) | Defn.Constant(_, _), _, _) => defn }.sortBy(_.node.name.toString)
-    val funcs = sch.defns.collect { case defn @ Sch.Defn(Defn.Define(_, _, _) | Defn.Declare(_, _), _, _) => defn }.sortBy(_.node.name.toString)
-    r(Seq(r(structs.map(n(_))), r(state.map(n(_))), r(funcs.map(n(_)))).map(n(_)))
+    r(sch.defns, sep = nl(""))
   }
 
   implicit def showDefn: Show[Sch.Defn] = Show { defn =>
@@ -28,21 +23,31 @@ object ShowLLVM {
         val Seq(Sch.Op(_, _, Seq(rhs))) = ops
         sh"@$name = constant $rhs"
       case Defn.Define(_, params, _) =>
-        sh"define $ty @$name(${showParams(tytail, params)}) { ${r(ops.map(n(_)))} ${n("}") }"
+        sh"define $ty @$name(${showParams(tytail, params)}) { ${r(ops.map(nl(_)))} ${nl("}") }"
       case Defn.Declare(_, params) =>
         sh"declare $ty @$name(${showParams(tytail, params)})"
       case Defn.Struct(elems) =>
         sh"%$name = type { ${r(tys, sep = ", ")} }"
-      case _ =>
-        sh"${node.desc} @$name ${r(ops.map(n(_)))}"
+      case Defn.Extern() =>
+        // TODO: figure out if % or @ based on name
+        sh"extern $name"
+      case Defn.Class(_, _) =>
+        sh"class %$name: ${r(tys, sep = ", ")}"
+      case Defn.Interface(_) =>
+        sh"interface %$name: ${r(tys, sep = ", ")}"
+      case Defn.Module(_) =>
+        sh"module @$name: ${r(tys, sep = ", ")}"
+      case Defn.Method(_, params, _, _) =>
+        sh"method $ty @$name(${showParams(tytail, params)}) { ${r(ops.map(nl(_)))} ${nl("}") }"
     }
   }
 
   implicit def showTy: Show[Sch.Type] = Show {
     case Sch.Type.None            => sh""
     case Sch.Type.Prim(n)         => sh"${n.name}"
-    case Sch.Type.Struct(n)       => sh"%${n.name}"
+    case Sch.Type.Defn(n)         => sh"%${n.name}"
     case Sch.Type.Ptr(ty)         => sh"${ty}*"
+    case Sch.Type.Array(ty, n)    => sh"[$ty x n]"
     case Sch.Type.Func(ret, args) => sh"$ret (${r(args, sep = ", ")})"
   }
 

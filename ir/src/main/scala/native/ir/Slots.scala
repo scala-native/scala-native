@@ -38,14 +38,14 @@ final class MultiDep(val node: Node, val length: Int, val offset: Int) {
 
 // TODO: compute schema dynamically
 private[ir] final class Slot private[ir] (
-  val schema: Schema,
+  val schema: Desc.Schema,
   val use:    Node,
   var dep:    Node
 ) extends java.lang.Cloneable with Use with Dep {
-  def isVal:  Boolean = schema == Schema.Val
-  def isCf:   Boolean = schema == Schema.Cf
-  def isEf:   Boolean = schema == Schema.Ef
-  def isDefn: Boolean = schema == Schema.Ref
+  def isVal:  Boolean = schema == Desc.Val
+  def isCf:   Boolean = schema == Desc.Cf
+  def isEf:   Boolean = schema == Desc.Ef
+  def isDefn: Boolean = schema == Desc.Ref
 
   dep._uses += this
 

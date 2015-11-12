@@ -2,7 +2,6 @@ package native
 package ir
 
 import scala.collection.mutable
-import native.ir.{Schema => Sc}
 
 // TODO: store offsets in desc
 // TODO: ensure that all mutability is private[ir]
@@ -85,7 +84,7 @@ object Node {
     val offsets = new mutable.ArrayBuffer[Int]
     var offset  = 0
     deps.zip(desc.schema).foreach {
-      case (seq: Seq[_], Sc.Many(schema)) =>
+      case (seq: Seq[_], Desc.Many(schema)) =>
         seq.asInstanceOf[Seq[Node]].foreach { n =>
           slots += new Slot(schema, node, n)
         }

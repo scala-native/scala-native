@@ -1,9 +1,7 @@
 package native
-package compiler
-package backend
+package ir
 
 import scala.collection.mutable
-import native.ir, ir._
 
 final case class Schedule(defns: Seq[Schedule.Defn]) {
   override def toString = defns.mkString("\n")
@@ -16,9 +14,10 @@ object Schedule {
   sealed abstract class Type
   object Type {
     final case object None extends Type
-    final case class Struct(node: Node) extends Type
+    final case class Defn(node: Node) extends Type
     final case class Prim(node: Node) extends Type
     final case class Ptr(ty: Type) extends Type
+    final case class Array(ty: Type, n: Int) extends Type
     final case class Func(ret: Type, args: Seq[Type]) extends Type
   }
 
@@ -58,7 +57,7 @@ object Schedule {
     case ir.Defn.Global(ty, _) =>
       Type.Ptr(toType(ty))
     case ir.Defn.Struct(elems) =>
-      Type.Struct(n)
+      Type.Defn(n)
     case ir.Defn.Declare(ret, params) =>
       val paramtypes = params.map { case Param(ty) => toType(ty) }
       Type.Ptr(Type.Func(toType(ret), paramtypes))
@@ -83,7 +82,11 @@ object Schedule {
     case ir.Defn.Function(ret, args) =>
       Type.Func(toType(ret), args.map(toType))
     case ir.Defn.Struct(_) =>
-      Type.Struct(n)
+      Type.Defn(n)
+    case ir.Defn.Class(_, _) =>
+      Type.Defn(n)
+    case ir.Defn.Extern() =>
+      Type.Defn(n)
   }
   private def constvalue(n: Node): Value = n match {
     case Lit.Struct(ty, deps) => Value.Struct(ty, deps.map(constvalue))
@@ -146,7 +149,7 @@ object Schedule {
       case StructElem(struct, idx) =>
         val structvalue = argvalue(struct)
         val Desc.Lit.I32(n) = idx.desc
-        val Type.Struct(ir.Defn.Struct(elemdefns)) = typedvalue(structvalue)
+        val Type.Defn(ir.Defn.Struct(elemdefns)) = typedvalue(structvalue)
         op.ty = toType(elemdefns(n))
         op.args = Seq(structvalue, argvalue(idx))
       case Elem(ptr, Seq(idx)) =>
@@ -156,7 +159,7 @@ object Schedule {
       case Elem(ptr, Seq(idx1, idx2)) =>
         val ptrvalue = argvalue(ptr)
         val Desc.Lit.I32(n) = idx2.desc
-        val Type.Ptr(Type.Struct(ir.Defn.Struct(elemdefns))) = typedvalue(ptrvalue)
+        val Type.Ptr(Type.Defn(ir.Defn.Struct(elemdefns))) = typedvalue(ptrvalue)
         op.ty = Type.Ptr(toType(elemdefns(n)))
         op.args = Seq(ptrvalue, argvalue(idx1), argvalue(idx2))
       case Load(_, ptr) =>
@@ -190,6 +193,14 @@ object Schedule {
       case Ptrtoint(v, ty) =>
         op.ty = toType(ty)
         op.args = Seq(argvalue(v))
+      case MethodElem(_, instance, method) =>
+        val ir.Defn.Method(ret, params, _, _) = method
+        val paramtys = params.map { case Param(ty) => toType(ty) }
+        op.ty   = Type.Ptr(Type.Func(toType(ret), paramtys))
+        op.args = Seq(argvalue(instance), argvalue(method))
+      case ir.Defn.Extern() =>
+        // TODO: extern needs attributed type
+        op.ty = toType(op.node)
     }
 
     ops.foreach { op =>
@@ -208,9 +219,6 @@ object Schedule {
         Defn(n, Seq(toType(ty)), Seq(Op(null, null, Seq(constvalue(rhs)))))
       case n @ ir.Defn.Constant(ty, rhs) =>
         Defn(n, Seq(toType(ty)), Seq(Op(null, null, Seq(constvalue(rhs)))))
-      case n @ ir.Defn.Struct(fields) =>
-        val tys = fields.map(toType)
-        Defn(n, tys, Seq())
       case n @ ir.Defn.Define(ret, params, end) =>
         val retty = toType(ret)
         val argtys = params.map { case Param(ty) => toType(ty) }
@@ -219,6 +227,26 @@ object Schedule {
         val retty = toType(ret)
         val argtys = params.map { case Param(ty) => toType(ty) }
         Defn(n, retty +: argtys, Seq())
+      case n @ ir.Defn.Extern() =>
+        Defn(n, Seq(), Seq())
+      case n @ ir.Defn.Struct(fields) =>
+        val tys = fields.map(toType)
+        Defn(n, tys, Seq())
+      case n @ ir.Defn.Class(parent, ifaces) =>
+        val tys = (parent +: ifaces).map(toType)
+        Defn(n, tys, Seq())
+      case n @ ir.Defn.Interface(ifaces) =>
+        val tys = ifaces.map(toType)
+        Defn(n, tys, Seq())
+      case n @ ir.Defn.Module(parent, ifaces, _) =>
+        val tys = (parent +: ifaces).map(toType)
+        Defn(n, tys, Seq())
+      case n @ ir.Defn.Method(ret, params, end, owner) =>
+        val retty = toType(ret)
+        val argtys = params.map { case Param(ty) => toType(ty) }
+        Defn(n, retty +: argtys, scheduleOps(end))
+      //case n @ ir.Defn.Field(ty, owner) =>
+      //case n @ ir.Defn.ArrayClass(ty) =>
     }
     Schedule(defns)
   }
