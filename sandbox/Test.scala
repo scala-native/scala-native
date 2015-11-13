@@ -5,9 +5,10 @@ class C {
 }
 
 object Test {
+  def bar(x: Int) = x
   def main(args: Array[String]) = {
     val c = new C
-    c.x + 2
+    bar(c.x + 2)
     ()
   }
 }

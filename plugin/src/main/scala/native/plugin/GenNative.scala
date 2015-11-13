@@ -1003,8 +1003,9 @@ abstract class GenNative extends PluginComponent
 
     def genNew(sym: Symbol, ctorsym: Symbol, args: List[Tree], focus: Focus) = {
       val nfocus = focus mapEf (ir.ClassAlloc(_, genClassDefn(sym)))
+      val (resfocus, restails) = genMethodCall(ctorsym, nfocus.value, args, nfocus).merge
 
-      genMethodCall(ctorsym, nfocus.value, args, nfocus)
+      (resfocus withValue nfocus.value) +: restails
     }
 
     def genMethodCall(sym: Symbol, self: ir.Node, args: Seq[Tree], focus: Focus): Tails = {

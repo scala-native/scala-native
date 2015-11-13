@@ -141,6 +141,9 @@ object Shows {
         sh"  %$name = load $arg"
       case Desc.Call =>
         sh"  %$name = call $arg(${r(argtail, ", ")})"
+      case Desc.Add =>
+        val Seq(left, right) = args
+        sh"  %$name = add $left, ${justvalue(right)}"
       case Desc.Eq =>
         // TODO: floats
         val Seq(left, right) = args

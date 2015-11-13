@@ -44,9 +44,9 @@ object Main extends App {
     val module = resolve(moduleName)
     val method = resolve(methodName)
     val elem = MethodElem(Empty, module, method)
-    val call = Call(elem, elem, Seq(module))
-    val end = End(Seq(Return(Empty, call, Lit.Unit())))
-    Defn.Define(Prim.Unit, Seq(), end, Name.Main)
+    val call = Call(elem, elem, Seq(module, Lit.Null()))
+    val end = End(Seq(Return(Empty, call, Lit.I32(0))))
+    Defn.Define(Prim.I32, Seq(), end, Name.Main)
   }
 
   run(Seq(

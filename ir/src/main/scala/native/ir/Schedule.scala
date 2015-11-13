@@ -175,77 +175,102 @@ object Schedule {
     def typedop(op: Op): Unit = op.node match {
       case Param(ty) =>
         op.ty = toType(ty)
+
       case Call(_, fun, args) =>
         val funvalue = argvalue(fun)
         val argvalues = args.map(argvalue)
         val Type.Ptr(Type.Func(ret, _)) = typedvalue(funvalue)
         op.ty = ret
         op.args = funvalue +: argvalues
+
       case StructElem(struct, idx) =>
         val structvalue = argvalue(struct)
         val Desc.Lit.I32(n) = idx.desc
         val Type.Defn(ir.Defn.Struct(elemdefns)) = typedvalue(structvalue)
         op.ty = toType(elemdefns(n))
         op.args = Seq(structvalue, argvalue(idx))
-      case Elem(ptr, Seq(idx)) =>
+
+      case Elem(ptr, idx +: indexes) =>
         val ptrvalue = argvalue(ptr)
-        op.ty = typedvalue(ptrvalue)
-        op.args = Seq(ptrvalue, argvalue(idx))
-      case Elem(ptr, Seq(idx1, idx2)) =>
-        val ptrvalue = argvalue(ptr)
-        val Desc.Lit.I32(n) = idx2.desc
-        val Type.Ptr(Type.Defn(ir.Defn.Struct(elemdefns))) = typedvalue(ptrvalue)
-        op.ty = Type.Ptr(toType(elemdefns(n)))
-        op.args = Seq(ptrvalue, argvalue(idx1), argvalue(idx2))
+        val Type.Ptr(to) = typedvalue(ptrvalue)
+        def find(indexes: Seq[Node], ty: Type): Type = indexes match {
+          case Nil =>
+            ty
+          case index :: rest =>
+            val Lit.I32(n) = index
+            ty match {
+              case Type.Defn(ir.Defn.Struct(elems)) =>
+                find(rest, toType(elems(n)))
+            }
+        }
+        op.ty = Type.Ptr(find(indexes, to))
+        op.args = Seq(ptrvalue, argvalue(idx)) ++ indexes.map(argvalue)
+
       case Load(_, ptr) =>
         val ptrvalue = argvalue(ptr)
         val Type.Ptr(ty) = typedvalue(ptrvalue)
         op.ty = ty
         op.args = Seq(ptrvalue)
+
       case Return(_, _, value) =>
         val retvalue = argvalue(value)
         op.ty = typedvalue(retvalue)
         op.args = Seq(retvalue)
+
       case Eq(left, right) =>
         val leftvalue = argvalue(left)
         val rightvalue = argvalue(right)
         op.ty = Type.Prim(Prim.Bool)
         op.args = Seq(leftvalue, rightvalue)
+
       case ifnode @ If(_, cond) =>
         val condvalue = argvalue(cond)
         val casetrue = ops.collectFirst { case op @ Op(_, CaseTrue(n)) if n eq ifnode => op }.get
         val casefalse = ops.collectFirst { case op @ Op(_, CaseFalse(n)) if n eq ifnode => op }.get
         op.args = Seq(condvalue)
         op.cf = Seq(casetrue, casefalse)
+
       case CaseTrue(_) | CaseFalse(_) =>
         ()
+
       case Alloc(ty) =>
         op.ty = Type.Ptr(toType(ty))
+
       case Store(_, ptr, value) =>
         val ptrvalue = argvalue(ptr)
         val newvalue = argvalue(value)
         op.args = Seq(ptrvalue, newvalue)
+
       case Bitcast(v, ty) =>
         op.ty = toType(ty)
         op.args = Seq(argvalue(v))
+
       case Ptrtoint(v, ty) =>
         op.ty = toType(ty)
         op.args = Seq(argvalue(v))
+
       case MethodElem(_, instance, method) =>
         val ir.Defn.Method(ret, params, _, _) = method
         val paramtys = params.map { case Param(ty) => toType(ty) }
         op.ty   = Type.Ptr(Type.Func(toType(ret), paramtys))
         op.args = Seq(argvalue(method), argvalue(instance))
+
       case FieldElem(_, instance, field) =>
         val ir.Defn.Field(ty, _) = field
         op.ty = Type.Ptr(toType(ty))
         op.args = Seq(argvalue(field), argvalue(instance))
+
       case ClassAlloc(_, cls) =>
         op.ty = toType(cls)
         op.args = Seq(argvalue(cls))
+
       case Size(cls) =>
         op.ty = Type.Prim(Prim.I64)
         op.args = Seq(argvalue(cls))
+
+      case Add(l, r) =>
+        op.ty = typedvalue(argvalue(l))
+        op.args = Seq(argvalue(l), argvalue(r))
     }
 
     ops.foreach { op =>
@@ -260,7 +285,6 @@ object Schedule {
     case Use(m @ ir.Defn.Method(ret, params, end, _)) =>
       val retty = toType(ret)
       val argtys = params.map { case Param(ty) => toType(ty) }
-      println(s"scheduling ops for $n")
       Defn.Func(m, retty, argtys, scheduleOps(end))
   }.toSeq
 
@@ -275,7 +299,6 @@ object Schedule {
       case n @ ir.Defn.Define(ret, params, end) =>
         val retty = toType(ret)
         val argtys = params.map { case Param(ty) => toType(ty) }
-        println(s"scheduling ops for $n")
         Defn.Func(n, retty, argtys, scheduleOps(end))
       case n @ ir.Defn.Declare(ret, params) =>
         val retty = toType(ret)
