@@ -80,6 +80,7 @@ object Desc {
   final case object Phi        extends Plain(    Cf, Many(Val)    )         with Val
   final case object Alloc      extends Plain(    Ref              )         with Val
   final case object Alloca     extends Plain(    Ref              )         with Val
+  final case object Size       extends Plain(Ref                  )         with Val
 
   final case object Equals           extends Plain(Ef, Val, Val) with Ef with Val //scala
   final case object Hash             extends Plain(Ef, Val     ) with Ef with Val //scala
@@ -101,17 +102,16 @@ object Desc {
       case Lit.Null   => "null"
       case Lit.True   => "true"
       case Lit.False  => "false"
-      case Lit.Zero   => ???
-      case Lit.Size   => ???
+      case Lit.Zero   => "zeroinitilizer"
       case Lit.I8(v)  => v.toString
       case Lit.I16(v) => v.toString
       case Lit.I32(v) => v.toString
       case Lit.I64(v) => v.toString
       case Lit.F32(v) => v.toString
       case Lit.F64(v) => v.toString
-      case Lit.Struct => ???
-      case Lit.Array  => ???
-      case Lit.Str(s) => ???
+      case Lit.Struct => "struct_lit"
+      case Lit.Array  => "array_lit"
+      case Lit.Str(s) => s
     }
     override def toString = this match {
       case Lit.Unit               => "unit"
@@ -119,7 +119,6 @@ object Desc {
       case Lit.True               => "true"
       case Lit.False              => "false"
       case Lit.Zero               => "zero"
-      case Lit.Size               => "size"
       case Lit.I8(value: Byte)    => s"${value}i8"
       case Lit.I16(value: Short)  => s"${value}i16"
       case Lit.I32(value: Int)    => s"${value}i32"
@@ -137,8 +136,6 @@ object Desc {
     final case object True               extends Plain()               with Lit
     final case object False              extends Plain()               with Lit
     final case object Zero               extends Plain(Ref)            with Lit
-    // TODO: move size out of lit
-    final case object Size               extends Plain(Ref)            with Lit
     final case object Struct             extends Plain(Ref, Many(Ref)) with Lit
     final case object Array              extends Plain(Many(Val))      with Lit
     final case class  I8(value: Byte)    extends Rich()                with Lit

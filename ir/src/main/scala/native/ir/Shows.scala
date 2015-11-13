@@ -7,42 +7,62 @@ import native.ir.{Schedule => Sch}
 
 object Shows {
   implicit def showSchedule: Show[Sch] = Show { sch =>
-    r(sch.defns, sep = nl(""))
+    val types = sch.defns.collect { case d: Sch.Defn.Type  => d }
+    val state = sch.defns.collect { case d: Sch.Defn.State => d }
+    val funcs = sch.defns.collect { case d: Sch.Defn.Func  => d }
+    s(r(types, sep = nl("")), nl(nl("")),
+      r(state, sep = nl("")), nl(nl("")),
+      r(funcs, sep = nl("")))
   }
 
-  implicit def showDefn: Show[Sch.Defn] = Show { defn =>
-    import defn._
-    val name = node.name
-    def ty = tys.head
-    def tytail = tys.tail
-    node match {
-      case Defn.Global(_, _) =>
-        val Seq(Sch.Op(_, _, _, Seq(rhs))) = ops
-        sh"@$name = global $rhs"
-      case Defn.Constant(_, _) =>
-        val Seq(Sch.Op(_, _, _, Seq(rhs))) = ops
-        sh"@$name = constant $rhs"
-      case Defn.Define(_, params, _) =>
-        sh"define $ty @$name(${showParams(tytail, params)}) { ${r(ops.map(nl(_)))} ${nl("}") }"
-      case Defn.Declare(_, params) =>
-        sh"declare $ty @$name(${showParams(tytail, params)})"
-      case Defn.Struct(elems) =>
-        sh"%$name = type { ${r(tys, sep = ", ")} }"
-      case Defn.Extern() =>
-        // TODO: figure out if % or @ based on name/type of extern
-        sh"extern $name"
-      case Defn.Class(_, _) =>
-        if (tys.nonEmpty)
-          sh"class %$name: ${r(tys, sep = ", ")}"
-        else
-          sh"class %$name"
-      case Defn.Interface(_) =>
-        sh"interface %$name: ${r(tys, sep = ", ")}"
-      case Defn.Module(_) =>
-        sh"module @$name: ${r(tys, sep = ", ")}"
-      case Defn.Method(_, params, _, _) =>
-        sh"method $ty @$name(${showParams(tytail, params)}) { ${r(ops.map(nl(_)))} ${nl("}") }"
-    }
+  implicit def showDefn: Show[Sch.Defn] = Show {
+    case d: Sch.Defn.Type  => d
+    case d: Sch.Defn.State => d
+    case d: Sch.Defn.Func  => d
+  }
+
+  implicit def showDefnState: Show[Sch.Defn.State] = Show {
+    case Sch.Defn.State(n, rhs) =>
+      n match {
+        case Defn.Global(_, _) =>
+          sh"@${n.name} = global $rhs"
+        case Defn.Constant(_, _) =>
+          sh"@${n.name} = constant $rhs"
+        case Defn.Field(_, _) =>
+          sh"@${n.name} = field $rhs"
+      }
+  }
+
+  implicit def showDefnType: Show[Sch.Defn.Type] = Show {
+    case Sch.Defn.Type(n, tys, members) =>
+      def ext =
+        if (tys.nonEmpty) sh": ${r(tys, sep = ", ")}"
+        else sh""
+      def body =
+        if (members.nonEmpty) sh" {${r(members.map(i(_)))}${nl("}")}"
+        else sh""
+      n match {
+        case Defn.Struct(elems) =>
+          sh"%${n.name} = type { ${r(tys, sep = ", ")} }"
+        case Defn.Class(_, _) =>
+          sh"class %${n.name}$ext$body"
+        case Defn.Interface(_) =>
+          sh"interface %${n.name}$ext$body"
+        case Defn.Module(_, _, _) =>
+          sh"module @${n.name}$ext$body"
+      }
+  }
+
+  implicit def showDefnFunc: Show[Sch.Defn.Func] = Show {
+    case Sch.Defn.Func(n, ret, paramtys, ops) =>
+      n match {
+        case Defn.Define(_, params, _) =>
+          sh"define $ret @${n.name}(${showParams(paramtys, params)}) {${r(ops.map(nl(_)))}${nl("}")}"
+        case Defn.Declare(_, params) =>
+          sh"declare $ret @${n.name}(${showParams(paramtys, params)})"
+        case Defn.Method(_, params, _, _) =>
+          sh"method $ret @${n.name}(${showParams(paramtys, params)}) {${r(ops.map(nl(_)))}${nl("}")}"
+      }
   }
 
   implicit def showTy: Show[Sch.Type] = Show {
@@ -130,12 +150,9 @@ object Shows {
       case Desc.Call =>
         sh"  $name = call $arg(${r(argtail, ", ")})"
       case Desc.Eq =>
+        // TODO: floats
         val Seq(left, right) = args
         sh"  $name = icmp eq $left, ${justvalue(right)}"
-      case Desc.Alloc =>
-        // TODO: proper allocation here
-        val Sch.Type.Ptr(inner) = ty
-        sh"  $name = alloca $inner"
       case Desc.Store =>
         val Seq(ptr, value) = args
         sh"  store $value, $ptr"

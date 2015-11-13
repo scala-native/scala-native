@@ -61,8 +61,9 @@ object Tags {
   final val Phi        = 1 + Param
   final val Alloc      = 1 + Phi
   final val Alloca     = 1 + Alloc
+  final val Size       = 1 + Alloca
 
-  final val Equals           = 1 + Alloca
+  final val Equals           = 1 + Size
   final val Hash             = 1 + Equals
   final val FieldElem        = 1 + Hash
   final val MethodElem       = 1 + FieldElem
@@ -81,9 +82,8 @@ object Tags {
   final val TrueLit   = 1 + NullLit
   final val FalseLit  = 1 + TrueLit
   final val ZeroLit   = 1 + FalseLit
-  final val SizeLit   = 1 + ZeroLit
-  final val StructLit = 1 + SizeLit
-  final val ArrayLit = 1 + StructLit
+  final val StructLit = 1 + ZeroLit
+  final val ArrayLit  = 1 + StructLit
   final val I8Lit     = 1 + ArrayLit
   final val I16Lit    = 1 + I8Lit
   final val I32Lit    = 1 + I16Lit
@@ -201,6 +201,7 @@ object Tags {
     Desc.Phi        -> T.Phi   ,
     Desc.Alloc      -> T.Alloc ,
     Desc.Alloca     -> T.Alloca,
+    Desc.Size       -> T.Size  ,
 
     Desc.Equals           -> T.Equals      ,
     Desc.Hash             -> T.Hash        ,
@@ -221,7 +222,6 @@ object Tags {
     Desc.Lit.True   -> T.TrueLit  ,
     Desc.Lit.False  -> T.FalseLit ,
     Desc.Lit.Zero   -> T.ZeroLit  ,
-    Desc.Lit.Size   -> T.SizeLit  ,
     Desc.Lit.Struct -> T.StructLit,
     Desc.Lit.Array  -> T.ArrayLit,
 

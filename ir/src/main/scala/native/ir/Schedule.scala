@@ -8,8 +8,15 @@ final case class Schedule(defns: Seq[Schedule.Defn]) {
 
 }
 object Schedule {
-  final case class Defn(node: Node, tys: Seq[Type], ops: Seq[Op])
   final case class Op(index: Int, node: Node, var ty: Type, var args: Seq[Value])
+
+  sealed abstract class Defn { def node: Node }
+  object Defn {
+    final case class Type(node: Node, tys: Seq[Schedule.Type], members: Seq[Defn]) extends Defn
+    final case class Func(node: Node, retty: Schedule.Type,
+                          paramtys: Seq[Schedule.Type], ops: Seq[Op]) extends Defn
+    final case class State(node: Node, init: Value) extends Defn
+  }
 
   sealed abstract class Type
   object Type {
@@ -49,7 +56,10 @@ object Schedule {
     case Desc.Lit.Zero =>
       val Lit.Zero(of) = n
       toType(of)
+    case Desc.Lit.I8(_)  => Type.Prim(Prim.I32)
+    case Desc.Lit.I16(_)  => Type.Prim(Prim.I32)
     case Desc.Lit.I32(_)  => Type.Prim(Prim.I32)
+    case Desc.Lit.I64(_)  => Type.Prim(Prim.I32)
     case Desc.Lit.Unit    => Type.Prim(Prim.Unit)
     case Desc.Lit.Null    => Type.Ptr(Type.Prim(Prim.I8))
   }
@@ -218,7 +228,7 @@ object Schedule {
         op.args = Seq(argvalue(method), argvalue(instance))
       case FieldElem(_, instance, field) =>
         val ir.Defn.Field(ty, _) = field
-        op.ty = toType(ty)
+        op.ty = Type.Ptr(toType(ty))
         op.args = Seq(argvalue(field), argvalue(instance))
       case ClassAlloc(_, cls) =>
         op.ty = toType(cls)
@@ -231,44 +241,48 @@ object Schedule {
     ops
   }
 
+  def membersof(n: Node): Seq[Defn] = n.uses.collect {
+    case Use(f @ ir.Defn.Field(ty, _)) =>
+      Defn.State(f, Value.Const(Lit.Zero(ty)))
+    case Use(m @ ir.Defn.Method(ret, params, end, _)) =>
+      val retty = toType(ret)
+      val argtys = params.map { case Param(ty) => toType(ty) }
+      println(s"scheduling ops for $n")
+      Defn.Func(m, retty, argtys, scheduleOps(end))
+  }.toSeq
+
   def apply(node: Node): Schedule = {
     val collectDefns = new CollectDefns
     Pass.run(collectDefns, node)
-    val defns = collectDefns.defns.collect {
+    val defns: Seq[Defn] = collectDefns.defns.collect {
       case n @ ir.Defn.Global(ty, rhs) =>
-        // TODO: fixme
-        Defn(n, Seq(toType(ty)), Seq(Op(0, null, null, Seq(constvalue(rhs)))))
+        Defn.State(n, constvalue(rhs))
       case n @ ir.Defn.Constant(ty, rhs) =>
-        Defn(n, Seq(toType(ty)), Seq(Op(0, null, null, Seq(constvalue(rhs)))))
+        Defn.State(n, constvalue(rhs))
       case n @ ir.Defn.Define(ret, params, end) =>
         val retty = toType(ret)
         val argtys = params.map { case Param(ty) => toType(ty) }
-        Defn(n, retty +: argtys, scheduleOps(end))
+        println(s"scheduling ops for $n")
+        Defn.Func(n, retty, argtys, scheduleOps(end))
       case n @ ir.Defn.Declare(ret, params) =>
         val retty = toType(ret)
         val argtys = params.map { case Param(ty) => toType(ty) }
-        Defn(n, retty +: argtys, Seq())
+        Defn.Func(n, retty, argtys, Seq())
       case n @ ir.Defn.Struct(fields) =>
         val tys = fields.map(toType)
-        Defn(n, tys, Seq())
+        Defn.Type(n, tys, Seq())
       case n @ ir.Defn.Class(Empty, ifaces) =>
         val tys = ifaces.map(toType)
-        Defn(n, tys, Seq())
+        Defn.Type(n, tys, membersof(n))
       case n @ ir.Defn.Class(parent, ifaces) =>
         val tys = (parent +: ifaces).map(toType)
-        Defn(n, tys, Seq())
+        Defn.Type(n, tys, membersof(n))
       case n @ ir.Defn.Interface(ifaces) =>
         val tys = ifaces.map(toType)
-        Defn(n, tys, Seq())
+        Defn.Type(n, tys, membersof(n))
       case n @ ir.Defn.Module(parent, ifaces, _) =>
         val tys = (parent +: ifaces).map(toType)
-        Defn(n, tys, Seq())
-      case n @ ir.Defn.Method(ret, params, end, owner) =>
-        val retty = toType(ret)
-        val argtys = params.map { case Param(ty) => toType(ty) }
-        Defn(n, retty +: argtys, scheduleOps(end))
-      //case n @ ir.Defn.Field(ty, owner) =>
-      //case n @ ir.Defn.ArrayClass(ty) =>
+        Defn.Type(n, tys, membersof(n))
       case n @ ir.Defn.Extern() =>
         throw new Exception(s"can't schedule graph with unlinked extern ${n.name}")
     }

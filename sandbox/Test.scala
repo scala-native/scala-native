@@ -1,5 +1,17 @@
 package test
 
 class C {
-  def foo = 2
+  var x = 2
+  def foo = {
+    x = 3
+    x
+  }
+}
+
+object Test {
+  def main(args: Array[String]) = {
+    val c = new C
+    c.foo + 2
+    ()
+  }
 }

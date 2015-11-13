@@ -16,8 +16,10 @@ object Main extends App {
     var i = 0
     reds.foreach { red =>
       i += 1
+      println(s"--- [$i] $red")
       Reduction.run(red, main)
-      serializeDotFile(Scope(Map(Name.Main -> main)), s"out$i.dot")
+      //serializeDotFile(Scope(Map(Name.Main -> main)), s"out$i.dot")
+      serializeTextFile(Schedule(main), s"out$i.ll")
     }
   }
 
@@ -46,9 +48,6 @@ object Main extends App {
     Defn.Define(Prim.Unit, Seq(), end, Name.Main)
   }
 
-  println(s"-- high-level:")
-  println(Shows.showSchedule(Schedule(main)).toString)
-
   run(Seq(
     ModuleLowering,
     ClassLowering,
@@ -57,11 +56,4 @@ object Main extends App {
     AllocLowering,
     SizeLowering
   ), main)
-
-  println(s"-- low-level:")
-  val llvm = Shows.showSchedule(Schedule(main)).toString
-  println(llvm)
-  val writer = new java.io.PrintWriter("out.ll")
-  writer.write(llvm)
-  writer.close()
 }

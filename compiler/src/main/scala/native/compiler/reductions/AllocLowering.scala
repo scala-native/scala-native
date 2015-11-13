@@ -10,7 +10,7 @@ object AllocLowering extends Reduction {
 
   def reduce = {
     case Alloc(n) =>
-      val call = Call(Empty, malloc, Seq(Lit.Size(n)))
+      val call = Call(Empty, malloc, Seq(Size(n)))
       val cast = Bitcast(call, Defn.Ptr(n))
 
       replaceAll(cast)

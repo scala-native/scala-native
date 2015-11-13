@@ -12,13 +12,16 @@ package object serialization {
   def serializeDot(scope: Scope, buffer: ByteBuffer): Unit =
     buffer.put(DotSerializer.showScope(scope).toString.getBytes)
 
+  def serializeText(schedule: Schedule, buffer: ByteBuffer): Unit =
+    buffer.put(Shows.showSchedule(schedule).toString.getBytes)
+
   def serializeSalty(scope: Scope, buffer: ByteBuffer): Unit =
     (new SaltySerializer(buffer)).serialize(scope)
 
-  def serializeFile(serialize: (Scope, ByteBuffer) => Unit, scope: Scope, path: String,
-                    buffer: ByteBuffer = defaultBuffer): Unit = {
+  def serializeFile[T](serialize: (T, ByteBuffer) => Unit, input: T, path: String,
+                       buffer: ByteBuffer = defaultBuffer): Unit = {
     buffer.clear
-    serialize(scope, buffer)
+    serialize(input, buffer)
     buffer.flip
     val channel =
       FileChannel.open(Paths.get(path), OpenOpt.CREATE, OpenOpt.WRITE, OpenOpt.TRUNCATE_EXISTING)
@@ -29,6 +32,10 @@ package object serialization {
   def serializeDotFile(scope: Scope, path: String,
                        buffer: ByteBuffer = defaultBuffer): Unit =
     serializeFile(serializeDot, scope, path, buffer)
+
+  def serializeTextFile(schedule: Schedule, path: String,
+                        buffer: ByteBuffer = defaultBuffer): Unit =
+    serializeFile(serializeText, schedule, path, buffer)
 
   def serializeIRFile(scope: Scope, path: String,
                          buffer: ByteBuffer = defaultBuffer): Unit =

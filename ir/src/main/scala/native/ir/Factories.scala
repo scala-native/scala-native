@@ -202,6 +202,7 @@ object Param      extends UnaryFactory(D.Param)
 object Phi        extends NodeSeqNodeFactory(D.Phi)
 object Alloc      extends UnaryFactory(D.Alloc)
 object Alloca     extends UnaryFactory(D.Alloca)
+object Size       extends UnaryFactory(D.Size)
 
 object Equals           extends TernaryFactory(D.Equals)
 object Hash             extends BinaryFactory(D.Hash)
@@ -223,7 +224,6 @@ object Lit {
   object True   extends NullaryFactory(D.Lit.True)
   object False  extends NullaryFactory(D.Lit.False)
   object Zero   extends UnaryFactory(D.Lit.Zero)
-  object Size   extends UnaryFactory(D.Lit.Size)
   object Struct extends NodeSeqNodeFactory(D.Lit.Struct)
   object Array extends SeqNodeFactory(D.Lit.Array)
 

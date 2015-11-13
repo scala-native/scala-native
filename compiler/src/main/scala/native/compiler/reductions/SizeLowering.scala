@@ -6,7 +6,7 @@ import native.ir._, Reduction._
 
 object SizeLowering extends Reduction {
   def reduce = {
-    case Lit.Size(n) =>
+    case Size(n) =>
       val offset = Elem(Lit.Zero(Defn.Ptr(n)), Seq(Lit.I32(1)))
       val cast = Ptrtoint(offset, Prim.I64)
 
