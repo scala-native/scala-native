@@ -145,10 +145,6 @@ abstract class GenNative extends PluginComponent
         else {
           val scope = genClass(cd)
           println(cd)
-          scope.entries.foreach { case (name, node) =>
-            println(s"--- $name")
-            println(native.ir.Shows.showSchedule(native.ir.Schedule(node)))
-          }
           genIRFile(cunit, sym, scope)
           genDotFile(cunit, sym, scope)
         }

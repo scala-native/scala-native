@@ -29,15 +29,18 @@ final class BuiltinLoader extends Loader {
   lazy val ObjectWait1Name       = Name.Method(ObjectName, "wait", Seq(Prim.I64.name), Prim.Unit.name)
   lazy val ObjectWait2Name       = Name.Method(ObjectName, "wait", Seq(Prim.I64.name, Prim.I32.name), Prim.Unit.name)
 
-  lazy val Object: Node =
+  lazy val ObjectClass: Node =
     Defn.Class(Empty, Seq(), ObjectName)
   lazy val ObjectConstructor: Node =
-    Defn.Method(Prim.Unit, Seq(Param(Object)),
+    Defn.Method(Prim.Unit, Seq(Param(ObjectClass)),
                 End(Seq(Return(Empty, Empty, Lit.Unit()))),
-                Object, ObjectConstructorName)
+                ObjectClass, ObjectConstructorName)
+
+  lazy val StringClass: Node =
+    Defn.Class(ObjectClass, Seq(), StringName)
 
   def resolve(name: Name): Option[Node] = name match {
-    case `ObjectName`            => Some(Object)
+    case `ObjectName`            => Some(ObjectClass)
     case `ObjectConstructorName` => Some(ObjectConstructor)
     case `ObjectCloneName`       => ???
     case `ObjectEqualsName`      => ???
@@ -50,6 +53,7 @@ final class BuiltinLoader extends Loader {
     case `ObjectWait0Name`       => ???
     case `ObjectWait1Name`       => ???
     case `ObjectWait2Name`       => ???
+    case `StringName`            => Some(StringClass)
     case _                       => None
   }
 }
@@ -72,7 +76,11 @@ final class SaltyLoader(cp: ClasspathLoader, path: String) extends SaltyDeserial
 final class ClasspathLoader(val paths: Seq[String]) extends Loader { self =>
   var externs: mutable.Map[Name, Node] = mutable.Map.empty
   val builtins = new BuiltinLoader
-  val loaders = mutable.Map[Name, Loader](builtins.ObjectName -> builtins)
+  val loaders = mutable.Map[Name, Loader](
+    builtins.ObjectName -> builtins,
+    builtins.ClassName -> builtins,
+    builtins.StringName -> builtins
+  )
 
   lazy val pathmap: Map[Name, String] =
     paths.flatMap { path =>

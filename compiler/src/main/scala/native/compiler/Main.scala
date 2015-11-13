@@ -3,7 +3,6 @@ package compiler
 
 import native.ir._
 import native.ir.serialization._
-import native.compiler.backend._
 import native.compiler.reductions._
 
 object Main extends App {
@@ -46,17 +45,21 @@ object Main extends App {
     val end = End(Seq(Return(Empty, call, Lit.Unit())))
     Defn.Define(Prim.Unit, Seq(), end, Name.Main)
   }
+
+  println(s"-- high-level:")
+  println(Shows.showSchedule(Schedule(main)).toString)
+
   run(Seq(
     ModuleLowering,
     ClassLowering,
     UnitLowering,
     ArrayClassLowering,
     AllocLowering,
-    SizeLowering,
-    GlobalNaming
+    SizeLowering
   ), main)
 
-  val llvm = ShowLLVM.showSchedule(Schedule(main)).toString
+  println(s"-- low-level:")
+  val llvm = Shows.showSchedule(Schedule(main)).toString
   println(llvm)
   val writer = new java.io.PrintWriter("out.ll")
   writer.write(llvm)

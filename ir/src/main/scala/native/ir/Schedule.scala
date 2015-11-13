@@ -9,16 +9,18 @@ final case class Schedule(defns: Seq[Schedule.Defn]) {
 }
 object Schedule {
   final case class Defn(node: Node, tys: Seq[Type], ops: Seq[Op])
-  final case class Op(node: Node, var ty: Type, var args: Seq[Value])
+  final case class Op(index: Int, node: Node, var ty: Type, var args: Seq[Value])
 
   sealed abstract class Type
   object Type {
     final case object None extends Type
+    final case object Unit extends Type
     final case class Defn(node: Node) extends Type
     final case class Prim(node: Node) extends Type
     final case class Ptr(ty: Type) extends Type
     final case class Array(ty: Type, n: Int) extends Type
     final case class Func(ret: Type, args: Seq[Type]) extends Type
+    final case class ArrayClass(ty: Type) extends Type
   }
 
   sealed abstract class Value { def ty = typedvalue(this) }
@@ -48,22 +50,35 @@ object Schedule {
       val Lit.Zero(of) = n
       toType(of)
     case Desc.Lit.I32(_)  => Type.Prim(Prim.I32)
+    case Desc.Lit.Unit    => Type.Prim(Prim.Unit)
     case Desc.Lit.Null    => Type.Ptr(Type.Prim(Prim.I8))
   }
 
   private def typeddefn(n: Node): Type = n match {
+    case _: ir.Prim =>
+      Type.Prim(n)
     case ir.Defn.Ptr(ty) =>
       Type.Ptr(toType(ty))
     case ir.Defn.Global(ty, _) =>
       Type.Ptr(toType(ty))
-    case ir.Defn.Struct(elems) =>
+    case ir.Defn.Struct(_)       |
+         ir.Defn.Class(_, _)     |
+         ir.Defn.Interface(_)    |
+         ir.Defn.Module(_, _, _) =>
       Type.Defn(n)
+    case ir.Defn.ArrayClass(n) =>
+      Type.ArrayClass(toType(n))
     case ir.Defn.Declare(ret, params) =>
       val paramtypes = params.map { case Param(ty) => toType(ty) }
       Type.Ptr(Type.Func(toType(ret), paramtypes))
     case ir.Defn.Define(ret, params, _) =>
       val paramtypes = params.map { case Param(ty) => toType(ty) }
       Type.Ptr(Type.Func(toType(ret), paramtypes))
+    case ir.Defn.Method(ret, params, _, _) =>
+      val paramtypes = params.map { case Param(ty) => toType(ty) }
+      Type.Ptr(Type.Func(toType(ret), paramtypes))
+    case ir.Defn.Field(ty, _) =>
+      toType(ty)
   }
 
   private def typedvalue(v: Value): Type = v match {
@@ -81,13 +96,14 @@ object Schedule {
       Type.Ptr(toType(to))
     case ir.Defn.Function(ret, args) =>
       Type.Func(toType(ret), args.map(toType))
-    case ir.Defn.Struct(_) =>
+    case ir.Defn.Struct(_)       |
+         ir.Defn.Class(_, _)     |
+         ir.Defn.Module(_, _, _) =>
       Type.Defn(n)
-    case ir.Defn.Class(_, _) =>
-      Type.Defn(n)
-    case ir.Defn.Extern() =>
-      Type.Defn(n)
+    case ir.Defn.ArrayClass(n) =>
+      Type.ArrayClass(toType(n))
   }
+
   private def constvalue(n: Node): Value = n match {
     case Lit.Struct(ty, deps) => Value.Struct(ty, deps.map(constvalue))
     case _ if n.desc.isInstanceOf[Desc.Lit] => Value.Const(n)
@@ -127,7 +143,9 @@ object Schedule {
       }
 
     val ordered = order(n, Seq())
-    val ops = ordered.map(Op(_, Type.None, Seq()))
+    val ops = ordered.zipWithIndex.map { case (node, index) =>
+      Op(index, node, Type.None, Seq())
+    }
 
     def argvalue(n: Node): Value = n match {
       case Lit.Struct(ty, deps) => Value.Struct(ty, deps.map(argvalue))
@@ -197,14 +215,17 @@ object Schedule {
         val ir.Defn.Method(ret, params, _, _) = method
         val paramtys = params.map { case Param(ty) => toType(ty) }
         op.ty   = Type.Ptr(Type.Func(toType(ret), paramtys))
-        op.args = Seq(argvalue(instance), argvalue(method))
-      case ir.Defn.Extern() =>
-        // TODO: extern needs attributed type
-        op.ty = toType(op.node)
+        op.args = Seq(argvalue(method), argvalue(instance))
+      case FieldElem(_, instance, field) =>
+        val ir.Defn.Field(ty, _) = field
+        op.ty = toType(ty)
+        op.args = Seq(argvalue(field), argvalue(instance))
+      case ClassAlloc(_, cls) =>
+        op.ty = toType(cls)
+        op.args = Seq(argvalue(cls))
     }
 
     ops.foreach { op =>
-      println(s"typechecking ${op.node}")
       typedop(op)
     }
     ops
@@ -216,9 +237,9 @@ object Schedule {
     val defns = collectDefns.defns.collect {
       case n @ ir.Defn.Global(ty, rhs) =>
         // TODO: fixme
-        Defn(n, Seq(toType(ty)), Seq(Op(null, null, Seq(constvalue(rhs)))))
+        Defn(n, Seq(toType(ty)), Seq(Op(0, null, null, Seq(constvalue(rhs)))))
       case n @ ir.Defn.Constant(ty, rhs) =>
-        Defn(n, Seq(toType(ty)), Seq(Op(null, null, Seq(constvalue(rhs)))))
+        Defn(n, Seq(toType(ty)), Seq(Op(0, null, null, Seq(constvalue(rhs)))))
       case n @ ir.Defn.Define(ret, params, end) =>
         val retty = toType(ret)
         val argtys = params.map { case Param(ty) => toType(ty) }
@@ -227,10 +248,11 @@ object Schedule {
         val retty = toType(ret)
         val argtys = params.map { case Param(ty) => toType(ty) }
         Defn(n, retty +: argtys, Seq())
-      case n @ ir.Defn.Extern() =>
-        Defn(n, Seq(), Seq())
       case n @ ir.Defn.Struct(fields) =>
         val tys = fields.map(toType)
+        Defn(n, tys, Seq())
+      case n @ ir.Defn.Class(Empty, ifaces) =>
+        val tys = ifaces.map(toType)
         Defn(n, tys, Seq())
       case n @ ir.Defn.Class(parent, ifaces) =>
         val tys = (parent +: ifaces).map(toType)
@@ -247,6 +269,8 @@ object Schedule {
         Defn(n, retty +: argtys, scheduleOps(end))
       //case n @ ir.Defn.Field(ty, owner) =>
       //case n @ ir.Defn.ArrayClass(ty) =>
+      case n @ ir.Defn.Extern() =>
+        throw new Exception(s"can't schedule graph with unlinked extern ${n.name}")
     }
     Schedule(defns)
   }
