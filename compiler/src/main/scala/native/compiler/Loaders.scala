@@ -28,11 +28,12 @@ final class BuiltinLoader extends Loader {
   lazy val ObjectWait0Name       = Name.Method(ObjectName, "wait", Seq(), Prim.Unit.name)
   lazy val ObjectWait1Name       = Name.Method(ObjectName, "wait", Seq(Prim.I64.name), Prim.Unit.name)
   lazy val ObjectWait2Name       = Name.Method(ObjectName, "wait", Seq(Prim.I64.name, Prim.I32.name), Prim.Unit.name)
+  lazy val ThisName              = Name.Local("this")
 
   lazy val ObjectClass: Node =
     Defn.Class(Empty, Seq(), ObjectName)
   lazy val ObjectConstructor: Node =
-    Defn.Method(Prim.Unit, Seq(Param(ObjectClass)),
+    Defn.Method(Prim.Unit, Seq(Param(ObjectClass, ThisName)),
                 End(Seq(Return(Empty, Empty, Lit.Unit()))),
                 ObjectClass, ObjectConstructorName)
 

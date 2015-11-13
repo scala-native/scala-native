@@ -13,12 +13,13 @@ object Main extends App {
   }
   def run(reds: Seq[Reduction], main: Node) = {
     serializeDotFile(Scope(Map(Name.Main -> main)), "out0.dot")
+    serializeTextFile(Schedule(main), s"out0.ll")
     var i = 0
     reds.foreach { red =>
       i += 1
       println(s"--- [$i] $red")
       Reduction.run(red, main)
-      //serializeDotFile(Scope(Map(Name.Main -> main)), s"out$i.dot")
+      serializeDotFile(Scope(Map(Name.Main -> main)), s"out$i.dot")
       serializeTextFile(Schedule(main), s"out$i.ll")
     }
   }

@@ -8,7 +8,14 @@ final case class Schedule(defns: Seq[Schedule.Defn]) {
 
 }
 object Schedule {
-  final case class Op(index: Int, node: Node, var ty: Type, var args: Seq[Value])
+  final case class Op(index: Int, node: Node) {
+    var ty: Type = Type.None
+    var args: Seq[Value] = Seq.empty
+    var cf: Seq[Op] = Seq.empty
+    def name =
+      if (node.name != Name.No) node.name
+      else Name.Local("_" + index.toString)
+  }
 
   sealed abstract class Defn { def node: Node }
   object Defn {
@@ -154,7 +161,7 @@ object Schedule {
 
     val ordered = order(n, Seq())
     val ops = ordered.zipWithIndex.map { case (node, index) =>
-      Op(index, node, Type.None, Seq())
+      Op(index + 1, node)
     }
 
     def argvalue(n: Node): Value = n match {
@@ -204,9 +211,12 @@ object Schedule {
         val rightvalue = argvalue(right)
         op.ty = Type.Prim(Prim.Bool)
         op.args = Seq(leftvalue, rightvalue)
-      case If(_, cond) =>
+      case ifnode @ If(_, cond) =>
         val condvalue = argvalue(cond)
+        val casetrue = ops.collectFirst { case op @ Op(_, CaseTrue(n)) if n eq ifnode => op }.get
+        val casefalse = ops.collectFirst { case op @ Op(_, CaseFalse(n)) if n eq ifnode => op }.get
         op.args = Seq(condvalue)
+        op.cf = Seq(casetrue, casefalse)
       case CaseTrue(_) | CaseFalse(_) =>
         ()
       case Alloc(ty) =>
@@ -232,6 +242,9 @@ object Schedule {
         op.args = Seq(argvalue(field), argvalue(instance))
       case ClassAlloc(_, cls) =>
         op.ty = toType(cls)
+        op.args = Seq(argvalue(cls))
+      case Size(cls) =>
+        op.ty = Type.Prim(Prim.I64)
         op.args = Seq(argvalue(cls))
     }
 

@@ -59,7 +59,7 @@ object Shows {
         case Defn.Define(_, params, _) =>
           sh"define $ret @${n.name}(${showParams(paramtys, params)}) {${r(ops.map(nl(_)))}${nl("}")}"
         case Defn.Declare(_, params) =>
-          sh"declare $ret @${n.name}(${showParams(paramtys, params)})"
+          sh"declare $ret @${n.name}(${r(paramtys, ", ")})"
         case Defn.Method(_, params, _, _) =>
           sh"method $ret @${n.name}(${showParams(paramtys, params)}) {${r(ops.map(nl(_)))}${nl("}")}"
       }
@@ -92,16 +92,10 @@ object Shows {
 
   implicit def showDesc: Show[Desc] = Show(_.toString.toLowerCase)
 
-  def opname(op: Sch.Op) =
-    if (op.node.name != Name.No)
-      sh"%${op.node.name}"
-    else
-      sh"%${op.index.toString}"
-
   def justvalue(v: Sch.Value) =
     v match {
       case Sch.Value.Op(op) =>
-        opname(op)
+        sh"%${op.name}"
       case Sch.Value.Struct(_, values) =>
         sh"{ ${r(values, ", ")} }"
       case Sch.Value.Const(n) =>
@@ -126,42 +120,40 @@ object Shows {
   implicit def showOp: Show[Sch.Op] = Show { operator =>
     import operator._
     def op = node.desc
-    def name = opname(operator)
     def arg = args.head
     def argtail = args.tail
+    def label(op: Sch.Op) = sh"label %${op.name}"
 
     node.desc match {
       case Desc.Label | Desc.CaseTrue | Desc.CaseFalse |
            Desc.CaseConst | Desc.CaseDefault | Desc.CaseException =>
-        sh"$op$name:"
+        sh"$name:"
       case Desc.If =>
-        val casetrue = node.uses.collectFirst { case Use(n @ CaseTrue(_)) => n }.get
-        val casefalse = node.uses.collectFirst { case Use(n @ CaseFalse(_)) => n }.get
-        sh"  br i1 ${justvalue(arg)}, label %casetrue${casetrue.name}, label %casefalse${casefalse.name}"
+        sh"  br i1 ${justvalue(arg)}, ${label(cf(0))}, ${label(cf(1))}"
       case Desc.Return =>
         sh"  ret $arg"
       case Desc.StructElem =>
         val arg :: Sch.Value.Const(Lit.I32(n)) :: Nil = args
-        sh"  $name = extractvalue $arg, ${n.toString}"
+        sh"  %$name = extractvalue $arg, ${n.toString}"
       case Desc.Elem =>
-        sh"  $name = getelementptr ${r(args, ", ")}"
+        sh"  %$name = getelementptr ${r(args, ", ")}"
       case Desc.Load =>
-        sh"  $name = load $arg"
+        sh"  %$name = load $arg"
       case Desc.Call =>
-        sh"  $name = call $arg(${r(argtail, ", ")})"
+        sh"  %$name = call $arg(${r(argtail, ", ")})"
       case Desc.Eq =>
         // TODO: floats
         val Seq(left, right) = args
-        sh"  $name = icmp eq $left, ${justvalue(right)}"
+        sh"  %$name = icmp eq $left, ${justvalue(right)}"
       case Desc.Store =>
         val Seq(ptr, value) = args
         sh"  store $value, $ptr"
       case Desc.Bitcast =>
-        sh"  $name = bitcast $arg to $ty"
+        sh"  %$name = bitcast $arg to $ty"
       case Desc.Ptrtoint =>
-        sh"  $name = ptrtoint $arg to $ty"
+        sh"  %$name = ptrtoint $arg to $ty"
       case desc =>
-        sh"  $name = ${desc.toString.toLowerCase} ${r(args, sep = ", ")}"
+        sh"  %$name = ${desc.toString.toLowerCase} ${r(args, sep = ", ")}"
     }
   }
 }
