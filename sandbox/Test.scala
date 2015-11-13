@@ -7,8 +7,13 @@ class C {
 object Test {
   def bar(x: Int) = x
   def main(args: Array[String]) = {
-    val c = new C
-    bar(c.x + 2)
+    val x = 1
+    val y = 2
+    bar(x + y)
+    bar(x - y)
+    bar(x * y)
+    bar(x / y)
+    bar(x % y)
     ()
   }
 }

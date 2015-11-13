@@ -271,6 +271,22 @@ object Schedule {
       case Add(l, r) =>
         op.ty = typedvalue(argvalue(l))
         op.args = Seq(argvalue(l), argvalue(r))
+
+      case Sub(l, r) =>
+        op.ty = typedvalue(argvalue(l))
+        op.args = Seq(argvalue(l), argvalue(r))
+
+      case Mul(l, r) =>
+        op.ty = typedvalue(argvalue(l))
+        op.args = Seq(argvalue(l), argvalue(r))
+
+      case Div(l, r) =>
+        op.ty = typedvalue(argvalue(l))
+        op.args = Seq(argvalue(l), argvalue(r))
+
+      case Mod(l, r) =>
+        op.ty = typedvalue(argvalue(l))
+        op.args = Seq(argvalue(l), argvalue(r))
     }
 
     ops.foreach { op =>

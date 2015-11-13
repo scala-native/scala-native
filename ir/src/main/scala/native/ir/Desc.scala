@@ -38,23 +38,23 @@ object Desc {
   final case object Undefined     extends Plain(Cf, Ef)      with Termn
   final case object End           extends Plain(Many(Cf))    with Cf
 
-  final case object Add  extends Plain(Val, Val) with Val
-  final case object Sub  extends Plain(Val, Val) with Val
-  final case object Mul  extends Plain(Val, Val) with Val
-  final case object Div  extends Plain(Val, Val) with Val
-  final case object Mod  extends Plain(Val, Val) with Val
-  final case object Shl  extends Plain(Val, Val) with Val
-  final case object Lshr extends Plain(Val, Val) with Val
-  final case object Ashr extends Plain(Val, Val) with Val
-  final case object And  extends Plain(Val, Val) with Val
-  final case object Or   extends Plain(Val, Val) with Val
-  final case object Xor  extends Plain(Val, Val) with Val
-  final case object Eq   extends Plain(Val, Val) with Val
-  final case object Neq  extends Plain(Val, Val) with Val
-  final case object Lt   extends Plain(Val, Val) with Val
-  final case object Lte  extends Plain(Val, Val) with Val
-  final case object Gt   extends Plain(Val, Val) with Val
-  final case object Gte  extends Plain(Val, Val) with Val
+  final case object Add  extends Plain(Val, Val) with Val // add & fadd
+  final case object Sub  extends Plain(Val, Val) with Val // sub & fsub
+  final case object Mul  extends Plain(Val, Val) with Val // mul & fmul
+  final case object Div  extends Plain(Val, Val) with Val // div & fdiv
+  final case object Mod  extends Plain(Val, Val) with Val // rem & frem
+  final case object Shl  extends Plain(Val, Val) with Val // shl
+  final case object Lshr extends Plain(Val, Val) with Val // lshr
+  final case object Ashr extends Plain(Val, Val) with Val // ashr
+  final case object And  extends Plain(Val, Val) with Val // and
+  final case object Or   extends Plain(Val, Val) with Val // or
+  final case object Xor  extends Plain(Val, Val) with Val // xor
+  final case object Eq   extends Plain(Val, Val) with Val // icmp eq  & fcmp ???
+  final case object Neq  extends Plain(Val, Val) with Val // icmp ne  & fcmp ???
+  final case object Lt   extends Plain(Val, Val) with Val // icmp slt & fcmp ???
+  final case object Lte  extends Plain(Val, Val) with Val // icmp sle & fcmp ???
+  final case object Gt   extends Plain(Val, Val) with Val // icmp sgt & fcmp ???
+  final case object Gte  extends Plain(Val, Val) with Val // icmp sge & fcmp ???
 
   final case object Trunc    extends Plain(Val, Ref) with Val
   final case object Zext     extends Plain(Val, Ref) with Val

@@ -144,6 +144,18 @@ object Shows {
       case Desc.Add =>
         val Seq(left, right) = args
         sh"  %$name = add $left, ${justvalue(right)}"
+      case Desc.Sub =>
+        val Seq(left, right) = args
+        sh"  %$name = sub $left, ${justvalue(right)}"
+      case Desc.Mul =>
+        val Seq(left, right) = args
+        sh"  %$name = mul $left, ${justvalue(right)}"
+      case Desc.Div =>
+        val Seq(left, right) = args
+        sh"  %$name = sdiv $left, ${justvalue(right)}"
+      case Desc.Mod =>
+        val Seq(left, right) = args
+        sh"  %$name = srem $left, ${justvalue(right)}"
       case Desc.Eq =>
         // TODO: floats
         val Seq(left, right) = args
