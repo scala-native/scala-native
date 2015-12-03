@@ -26,6 +26,9 @@ final class MultiDep(val node: Node, val length: Int, val offset: Int) {
   def apply(index: Int): Node =
     node._slots(offset + index).dep
 
+  def at(index: Int): Slot =
+    node._slots(offset + index)
+
   def deps: Seq[Node] = {
     var i = offset
     Seq.fill(length) {

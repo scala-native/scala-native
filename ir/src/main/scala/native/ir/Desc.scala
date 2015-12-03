@@ -148,7 +148,7 @@ object Desc {
 
   sealed trait Prim extends Defn
   object Prim {
-    final case object Unit    extends Plain() with Prim
+    final case object Void    extends Plain() with Prim
     final case object Bool    extends Plain() with Prim
     final case object I8      extends Plain() with Prim
     final case object I16     extends Plain() with Prim
@@ -156,6 +156,7 @@ object Desc {
     final case object I64     extends Plain() with Prim
     final case object F32     extends Plain() with Prim
     final case object F64     extends Plain() with Prim
+    final case object Unit    extends Plain() with Prim //scala
     final case object Nothing extends Plain() with Prim //scala
     final case object Null    extends Plain() with Prim //scala
   }

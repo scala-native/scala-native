@@ -92,15 +92,16 @@ object Tags {
   final val F64Lit    = 1 + F32Lit
   final val StrLit    = 1 + F64Lit
 
-  final val UnitDefn    = 1 + StrLit
-  final val BoolDefn    = 1 + UnitDefn
+  final val VoidDefn    = 1 + StrLit
+  final val BoolDefn    = 1 + VoidDefn
   final val I8Defn      = 1 + BoolDefn
   final val I16Defn     = 1 + I8Defn
   final val I32Defn     = 1 + I16Defn
   final val I64Defn     = 1 + I32Defn
   final val F32Defn     = 1 + I64Defn
   final val F64Defn     = 1 + F32Defn
-  final val NothingDefn = 1 + F64Defn
+  final val UnitDefn    = 1 + F64Defn
+  final val NothingDefn = 1 + UnitDefn
   final val NullDefn    = 1 + NothingDefn
 
   final val GlobalDefn   = 1 + NullDefn
@@ -226,7 +227,7 @@ object Tags {
     Desc.Lit.Struct -> T.StructLit,
     Desc.Lit.Array  -> T.ArrayLit,
 
-    Desc.Prim.Unit    -> T.UnitDefn   ,
+    Desc.Prim.Void    -> T.VoidDefn   ,
     Desc.Prim.Bool    -> T.BoolDefn   ,
     Desc.Prim.I8      -> T.I8Defn     ,
     Desc.Prim.I16     -> T.I16Defn    ,
@@ -234,6 +235,7 @@ object Tags {
     Desc.Prim.I64     -> T.I64Defn    ,
     Desc.Prim.F32     -> T.F32Defn    ,
     Desc.Prim.F64     -> T.F64Defn    ,
+    Desc.Prim.Unit    -> T.UnitDefn   ,
     Desc.Prim.Nothing -> T.NothingDefn,
     Desc.Prim.Null    -> T.NullDefn   ,
 

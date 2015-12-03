@@ -54,11 +54,15 @@ lazy val javalib =
 lazy val nativelib =
   project.in(file("nativelib")).
     settings(withPluginCommon: _*).
+
     dependsOn(plugin)
 
 lazy val sandbox =
   project.in(file("sandbox")).
     settings(withPluginCommon: _*).
+    settings(
+      scalacOptions += "-Xprint:all"
+    ).
     dependsOn(plugin, nativelib)
 
 

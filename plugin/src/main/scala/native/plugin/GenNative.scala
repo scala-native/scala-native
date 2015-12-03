@@ -70,18 +70,15 @@ abstract class GenNative extends PluginComponent
     def enterLabelCall(sym: Symbol, values: Seq[ir.Node], focus: Focus): Unit = {
       val offset = offsets(sym)
 
-      val ir.Label(cfs) = labels(sym)
-      ???
-      //cfs(offset) := focus.cf
+      val ir.Label.deps(cfs) = labels(sym)
+      cfs.at(offset) := focus.cf
 
-      val ir.EfPhi(_, efs) = efphis(sym)
-      ???
-      //efs(offset) := focus.ef
+      val ir.EfPhi.deps(_, efs) = efphis(sym)
+      efs.at(offset) := focus.ef
 
       phiss(sym).zip(values).foreach {
-        case (ir.Phi(_, values), v) =>
-          ???
-          //values(offset) := v
+        case (ir.Phi.deps(_, values), v) =>
+          values.at(offset) := v
       }
 
       offsets(sym) = offset + 1
@@ -152,11 +149,13 @@ abstract class GenNative extends PluginComponent
     }
 
     def isForeignExternModule(sym: Symbol): Boolean =
-      sym.annotations.find(_.tpe =:= ForeignExternClass.tpe).isDefined
+      sym.annotations.find(_.tpe =:= ExternClass.tpe).isDefined
 
     def genClass(cd: ClassDef): ir.Scope = scoped (
       curClassSym := cd.symbol
     ) {
+      println(cd)
+
       val sym     = cd.symbol
       val name    = genClassName(sym)
       val parent  = if (sym.superClass != NoSymbol) Some(genClassDefn(sym.superClass)) else None
