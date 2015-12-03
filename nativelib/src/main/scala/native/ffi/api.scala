@@ -33,19 +33,19 @@ package ffi {
 }
 
 package object ffi {
-  type Addr    = Nothing
-  type Size    = Nothing
-  type Int8    = Byte
-  type Int16   = Short
-  type Int32   = Int
-  type Int64   = Long
-  type UInt8   = Nothing
-  type UInt16  = Nothing
-  type UInt32  = Nothing
-  type UInt64  = Nothing
-  type Char8   = Byte
-  type Char16  = Nothing
-  type Char32  = Nothing
+  type Addr   = Nothing
+  type Size   = Nothing
+  type Int8   = Byte
+  type Int16  = Short
+  type Int32  = Int
+  type Int64  = Long
+  type UInt8  = Nothing
+  type UInt16 = Nothing
+  type UInt32 = Nothing
+  type UInt64 = Nothing
+  type Char8  = Byte
+  type Char16 = Nothing
+  type Char32 = Nothing
 
   def &[T](v: T): Ptr[T] = builtin
   def sizeOf[T]: Size    = builtin

@@ -3,6 +3,6 @@ package native {
 }
 
 package object native {
-  def builtin: Nothing = throw new Exception("unimplemented built-in")
+  def builtin: Nothing = throw new Exception
 }
 

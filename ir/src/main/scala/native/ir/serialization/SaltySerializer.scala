@@ -125,6 +125,8 @@ class SaltySerializer(buffer: ByteBuffer) {
       putInt(T.ConstructorName); putName(owner); putSeq(params)(putName)
     case Name.Method(owner, id, params, ret) =>
       putInt(T.MethodName); putName(owner); putString(id); putSeq(params)(putName); putName(ret)
+    case Name.Foreign(owner, id) =>
+      putInt(T.ForeignName); putName(owner); putString(id)
   }
 
   private def putString(v: String) = {

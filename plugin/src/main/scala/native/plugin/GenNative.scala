@@ -10,6 +10,7 @@ import native.ir.{Focus, Tails}, Focus.sequenced
 import native.util, util.sh, util.ScopedVar.scoped
 
 abstract class GenNative extends PluginComponent
+                            with NativeDefinitions
                             with GenIRFiles
                             with GenTypeKinds
                             with GenNameEncoding {
@@ -144,12 +145,14 @@ abstract class GenNative extends PluginComponent
           ()
         else {
           val scope = genClass(cd)
-          println(cd)
           genIRFile(cunit, sym, scope)
           genDotFile(cunit, sym, scope)
         }
       }
     }
+
+    def isForeignExternModule(sym: Symbol): Boolean =
+      sym.annotations.find(_.tpe =:= ForeignExternClass.tpe).isDefined
 
     def genClass(cd: ClassDef): ir.Scope = scoped (
       curClassSym := cd.symbol
@@ -198,7 +201,6 @@ abstract class GenNative extends PluginComponent
     def genDef(dd: DefDef): (ir.Name, ir.Node) = scoped (
       curMethodSym := dd.symbol
     ) {
-      //println(s"generating $dd")
       val sym = dd.symbol
       val name = genDefName(sym)
       val paramSyms = defParamSymbols(dd)
@@ -207,8 +209,12 @@ abstract class GenNative extends PluginComponent
         else genType(sym.tpe.resultType)
       val owner = genClassDefn(curClassSym)
 
-      if (dd.symbol.isDeferred) {
-        val params = genParams(paramSyms, define = false)
+      if (isForeignExternModule(sym.owner)) {
+        val name = genForeignName(sym)
+        val params = genParams(paramSyms, withSelf = false, enterParams = false)
+        name -> ir.Defn.Declare(ty, params, name)
+      } else if (sym.isDeferred) {
+        val params = genParams(paramSyms, withSelf = true, enterParams = false)
         val body = ir.End(Seq(ir.Undefined(ir.Empty, ir.Empty)))
         name -> ir.Defn.Method(ty, params, body, owner, name)
       } else {
@@ -218,7 +224,7 @@ abstract class GenNative extends PluginComponent
           curLabelEnv := new LabelEnv(env),
           curLocalInfo := (new CollectLocalInfo).collect(dd.rhs)
         ) {
-          val params = genParams(paramSyms, define = true)
+          val params = genParams(paramSyms, withSelf = true, enterParams = true)
           val body = genDefBody(dd.rhs, params)
           name -> ir.Defn.Method(ty, params, body, owner, name)
         }
@@ -230,16 +236,16 @@ abstract class GenNative extends PluginComponent
       if (vp.isEmpty) Nil else vp.head.map(_.symbol)
     }
 
-    def genParams(paramSyms: List[Symbol], define: Boolean): Seq[ir.Node] = {
+    def genParams(paramSyms: List[Symbol], withSelf: Boolean, enterParams: Boolean): Seq[ir.Node] = {
       val self = ir.Param(genClassDefn(curClassSym), Name.Local("this"))
       val params = paramSyms.map { sym =>
         val node = ir.Param(genType(sym.tpe), genLocalName(sym))
-        if (define)
+        if (enterParams)
           curEnv.enter(sym, node)
         node
       }
 
-      self +: params
+      if (withSelf) self +: params else params
     }
 
     def notMergeableGuard(f: => Tails): Tails =
@@ -1012,11 +1018,26 @@ abstract class GenNative extends PluginComponent
       val (argfocus, argt) = sequenced(args, focus)(genExpr(_, _))
       val argvalues        = argfocus.map(_.value)
       val lastfocus        = argfocus.lastOption.getOrElse(focus)
-      val stat             = genDefDefn(sym)
-      val elem             = ir.MethodElem(lastfocus.ef, self, stat)
-      val call             = ir.Call(elem, elem, self +: argvalues)
 
-      (lastfocus withEf call withValue call) +: argt
+      if (isForeignExternModule(sym.owner))
+        genForeignCall(sym, argvalues, lastfocus) +: argt
+      else
+        genNormalMethodCall(sym, self, argvalues, lastfocus) +: argt
+    }
+
+    def genForeignCall(sym: Symbol, args: Seq[ir.Node], focus: Focus): Focus = {
+      val defn = genForeignDefn(sym)
+      val call = ir.Call(focus.ef, defn, args)
+
+      focus withEf call withValue call
+    }
+
+    def genNormalMethodCall(sym: Symbol, self: ir.Node, args: Seq[ir.Node], focus: Focus): Focus = {
+      val stat = genDefDefn(sym)
+      val elem = ir.MethodElem(focus.ef, self, stat)
+      val call = ir.Call(elem, elem, self +: args)
+
+      focus withEf call withValue call
     }
   }
 }

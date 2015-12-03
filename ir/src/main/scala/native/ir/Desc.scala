@@ -20,8 +20,7 @@ object Desc {
   final case class  Many(of: Schema) extends Schema
 
   final case object Empty extends Plain() with Ef with Cf with Val with Defn
-
-  final case object Dead extends Plain() with Ef with Cf with Val with Defn
+  final case object Dead  extends Plain() with Ef with Cf with Val with Defn
 
   final case object Label         extends Plain(Many(Cf))    with Cf
   final case object If            extends Plain(Cf, Val)     with Cf
@@ -69,18 +68,18 @@ object Desc {
   final case object Inttoptr extends Plain(Val, Ref) with Val
   final case object Bitcast  extends Plain(Val, Ref) with Val
 
-  final case object EfPhi      extends Plain(Cf, Many(Ef)         ) with Ef
-  final case object Call       extends Plain(Ef, Val, Many(Val)   ) with Ef with Val
-  final case object Load       extends Plain(Ef, Val              ) with Ef with Val
-  final case object Store      extends Plain(Ef, Val, Val         ) with Ef with Val
+  final case object EfPhi      extends Plain(Cf, Many(Ef)      ) with Ef
+  final case object Call       extends Plain(Ef, Val, Many(Val)) with Ef with Val
+  final case object Load       extends Plain(Ef, Val           ) with Ef with Val
+  final case object Store      extends Plain(Ef, Val, Val      ) with Ef with Val
   final case object Elem       extends Plain(    Val, Many(Val))            with Val
   // TODO: rename to Extract
-  final case object StructElem extends Plain(    Val, Val         )         with Val
-  final case object Param      extends Plain(    Ref              )         with Val
-  final case object Phi        extends Plain(    Cf, Many(Val)    )         with Val
-  final case object Alloc      extends Plain(    Ref              )         with Val
-  final case object Alloca     extends Plain(    Ref              )         with Val
-  final case object Size       extends Plain(Ref                  )         with Val
+  final case object StructElem extends Plain(    Val, Val      )         with Val
+  final case object Param      extends Plain(    Ref           )         with Val
+  final case object Phi        extends Plain(    Cf, Many(Val) )         with Val
+  final case object Alloc      extends Plain(    Ref           )         with Val
+  final case object Alloca     extends Plain(    Ref           )         with Val
+  final case object Size       extends Plain(    Ref           )         with Val
 
   final case object Equals           extends Plain(Ef, Val, Val) with Ef with Val //scala
   final case object Hash             extends Plain(Ef, Val     ) with Ef with Val //scala

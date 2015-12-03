@@ -47,6 +47,9 @@ trait GenNameEncoding extends SubComponent with GenTypeKinds {
       Name.Method(owner, id, params, kindName(tpe.resultType))
   }
 
+  def genForeignDefn(sym: Symbol) = Defn.Extern(genForeignName(sym))
+  def genForeignName(sym: Symbol) = Name.Foreign(genClassName(sym.owner), sym.name.toString)
+
   private def kindName(sym: Symbol): ir.Name =
     kindName(genKind(sym.tpe))
 

@@ -109,16 +109,16 @@ object Tags {
   final val DeclareDefn  = 1 + DefineDefn
   final val ExternDefn   = 1 + DeclareDefn
   final val StructDefn   = 1 + ExternDefn
-  final val ArrayDefn   = 1 + StructDefn
+  final val ArrayDefn    = 1 + StructDefn
   final val PtrDefn      = 1 + ArrayDefn
   final val FunctionDefn = 1 + PtrDefn
 
-  final val ClassDefn     = 1 + FunctionDefn
-  final val InterfaceDefn = 1 + ClassDefn
-  final val ModuleDefn    = 1 + InterfaceDefn
-  final val MethodDefn    = 1 + ModuleDefn
-  final val FieldDefn     = 1 + MethodDefn
-  final val ArrayClassDefn     = 1 + FieldDefn
+  final val ClassDefn      = 1 + FunctionDefn
+  final val InterfaceDefn  = 1 + ClassDefn
+  final val ModuleDefn     = 1 + InterfaceDefn
+  final val MethodDefn     = 1 + ModuleDefn
+  final val FieldDefn      = 1 + MethodDefn
+  final val ArrayClassDefn = 1 + FieldDefn
 
   final val NoName             = 1 + ArrayClassDefn
   final val MainName           = 1 + NoName
@@ -135,8 +135,9 @@ object Tags {
   final val FieldName          = 1 + ArrayName
   final val ConstructorName    = 1 + FieldName
   final val MethodName         = 1 + ConstructorName
+  final val ForeignName        = 1 + MethodName
 
-  final val ValSchema  = 1 + MethodName
+  final val ValSchema  = 1 + ForeignName
   final val CfSchema   = 1 + ValSchema
   final val EfSchema   = 1 + CfSchema
   final val RefSchema  = 1 + EfSchema

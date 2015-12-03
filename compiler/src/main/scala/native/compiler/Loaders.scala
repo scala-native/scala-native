@@ -60,10 +60,16 @@ final class BuiltinLoader extends Loader {
 }
 
 final class SaltyLoader(cp: ClasspathLoader, path: String) extends SaltyDeserializer(path) with Loader {
+  override def resolve(name: Name): Option[Node] = {
+    val res = super.resolve(name)
+    println(s"resolving $name in $path: $res")
+    res
+  }
   override def extern(attrs: Seq[Attr]) = {
     val name = attrs.collectFirst { case n: Name => n }.get
     cp.resolve(name).getOrElse {
       cp.externs.get(name).getOrElse {
+        println(s"couldn't resolve $name")
         val ext = Defn.Extern(name)
         cp.externs += (name -> ext)
         ext
@@ -120,6 +126,7 @@ final class ClasspathLoader(val paths: Seq[String]) extends Loader { self =>
     case Name.Field(owner, _)        => root(owner)
     case Name.Constructor(owner, _)  => root(owner)
     case Name.Method(owner, _, _, _) => root(owner)
+    case Name.Foreign(owner, _)      => root(owner)
     case _                           => throw new Exception("unreachable")
   }
 
@@ -133,7 +140,7 @@ final class ClasspathLoader(val paths: Seq[String]) extends Loader { self =>
     }
   }
 
-  def relatives(node: Node): Option[Seq[Name]] =
+  /*def relatives(node: Node): Option[Seq[Name]] =
     node match {
       case Defn.Class(parent, ifaces)     => Some((parent +: ifaces).map(_.name))
       case Defn.Module(parent, ifaces, _) => Some((parent +: ifaces).map(_.name))
@@ -146,18 +153,17 @@ final class ClasspathLoader(val paths: Seq[String]) extends Loader { self =>
       case Name.Field(_, id)             => Name.Field(owner, id)
       case Name.Method(_, id, args, ret) => Name.Method(owner, id, args, ret)
       case _                             => throw new Exception("unreachable")
-    }
+    }*/
 
   def resolve(name: Name): Option[Node] = {
     val rt = root(name)
     loaderForName(rt).flatMap { loader =>
-      loader.resolve(name).map(Some(_)).getOrElse {
-        println(s"name $name, root $rt")
+      loader.resolve(name)/*.map(Some(_)).getOrElse {
         val rels = relatives(loader.resolve(rt).get).get
         rels.reverse.map { pname =>
           resolve(chown(name, pname))
         }.headOption.flatten
-      }
+      }*/
     }
   }
 }

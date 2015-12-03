@@ -1,19 +1,8 @@
 package test
 
-class C {
-  var x = 2
-}
+import native.ffi._, stdio._
 
 object Test {
-  def bar(x: Int) = x
-  def main(args: Array[String]) = {
-    val x = 1
-    val y = 2
-    bar(x + y)
-    bar(x - y)
-    bar(x * y)
-    bar(x / y)
-    bar(x % y)
-    ()
-  }
+  def main(args: Array[String]) =
+    puts(c"hello, world!")
 }

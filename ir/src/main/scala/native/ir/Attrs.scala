@@ -22,6 +22,7 @@ sealed abstract class Name extends PersistentAttr {
     case Name.Field(owner, field)              => s"$owner::$field"
     case Name.Constructor(owner, args)         => s"$owner<${args.mkString(", ")}>"
     case Name.Method(owner, method, args, ret) => s"$owner::$method<${args.mkString(", ")}; $ret>"
+    case Name.Foreign(owner, id)               => s"$owner::$id"
   }
 }
 object Name {
@@ -40,4 +41,5 @@ object Name {
   final case class Field(owner: Name, id: String) extends Name
   final case class Constructor(owner: Name, args: Seq[Name]) extends Name
   final case class Method(owner: Name, id: String, args: Seq[Name], ret: Name) extends Name
+  final case class Foreign(owner: Name, id: String) extends Name
 }

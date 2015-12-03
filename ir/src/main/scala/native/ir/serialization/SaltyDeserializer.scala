@@ -73,7 +73,7 @@ class SaltyDeserializer(path: String) {
   private def getAttrs(): Seq[Attr] = getSeq(getPersistentAttr)
 
   private def getPersistentAttr(): PersistentAttr = getInt match {
-    case tag if tag >= T.NoName && tag <= T.MethodName => getName(tag)
+    case tag if tag >= T.NoName && tag <= T.ForeignName => getName(tag)
   }
 
   private def getOffsets(): Array[Int] = getSeq(getInt).toArray
@@ -117,6 +117,7 @@ class SaltyDeserializer(path: String) {
     case T.FieldName          => Name.Field(getName, getString)
     case T.ConstructorName    => Name.Constructor(getName, getSeq(getName))
     case T.MethodName         => Name.Method(getName, getString, getSeq(getName), getName)
+    case T.ForeignName        => Name.Foreign(getName, getString)
   }
 
   private def getSeq[T](getT: => T): Seq[T] =
@@ -131,7 +132,7 @@ class SaltyDeserializer(path: String) {
   def extern(attrs: Seq[Attr]): Node =
     Defn.Extern(attrs: _*)
 
-  final def resolve(name: Name): Option[Node] =
+  def resolve(name: Name): Option[Node] =
     nametable.get(name).map { pos => position(pos); getNode }
 
   final def scope(): Scope =

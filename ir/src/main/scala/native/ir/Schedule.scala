@@ -64,11 +64,11 @@ object Schedule {
       val Lit.Zero(of) = n
       toType(of)
     case Desc.Lit.I8(_)  => Type.Prim(Prim.I32)
-    case Desc.Lit.I16(_)  => Type.Prim(Prim.I32)
-    case Desc.Lit.I32(_)  => Type.Prim(Prim.I32)
-    case Desc.Lit.I64(_)  => Type.Prim(Prim.I32)
-    case Desc.Lit.Unit    => Type.Prim(Prim.Unit)
-    case Desc.Lit.Null    => Type.Ptr(Type.Prim(Prim.I8))
+    case Desc.Lit.I16(_) => Type.Prim(Prim.I32)
+    case Desc.Lit.I32(_) => Type.Prim(Prim.I32)
+    case Desc.Lit.I64(_) => Type.Prim(Prim.I32)
+    case Desc.Lit.Unit   => Type.Prim(Prim.Unit)
+    case Desc.Lit.Null   => Type.Ptr(Type.Prim(Prim.I8))
   }
 
   private def typeddefn(n: Node): Type = n match {
@@ -213,6 +213,11 @@ object Schedule {
         op.args = Seq(ptrvalue)
 
       case Return(_, _, value) =>
+        val retvalue = argvalue(value)
+        op.ty = typedvalue(retvalue)
+        op.args = Seq(retvalue)
+
+      case Throw(_, _, value) =>
         val retvalue = argvalue(value)
         op.ty = typedvalue(retvalue)
         op.args = Seq(retvalue)

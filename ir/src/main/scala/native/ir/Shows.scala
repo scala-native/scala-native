@@ -87,7 +87,10 @@ object Shows {
       sh"${owner}__ctor_${r(args)}"
     case Name.Method(owner, name, args, ret) =>
       sh"${owner}__${name}_${r(args)}_$ret"
-    case n => n.toString
+    case Name.Foreign(_, name) =>
+      name
+    case n =>
+      n.toString
   }
 
   implicit def showDesc: Show[Desc] = Show(_.toString.toLowerCase)
@@ -132,6 +135,8 @@ object Shows {
         sh"  br i1 ${justvalue(arg)}, ${label(cf(0))}, ${label(cf(1))}"
       case Desc.Return =>
         sh"  ret $arg"
+      case Desc.Throw =>
+        sh"  throw $arg"
       case Desc.StructElem =>
         val arg :: Sch.Value.Const(Lit.I32(n)) :: Nil = args
         sh"  %$name = extractvalue $arg, ${n.toString}"
