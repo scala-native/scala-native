@@ -60,6 +60,12 @@ object Show {
 
   implicit def showResult[R <: Result]: Show[R] = apply(identity)
   implicit def showString[T <: String]: Show[T] = apply(Show.Str(_))
+  implicit def showByte[T <: Byte]: Show[T]     = apply(i => Show.Str(i.toString))
+  implicit def showShort[T <: Short]: Show[T]   = apply(i => Show.Str(i.toString))
+  implicit def showInt[T <: Int]: Show[T]       = apply(i => Show.Str(i.toString))
+  implicit def showLong[T <: Long]: Show[T]     = apply(i => Show.Str(i.toString))
+  implicit def showFloat[T <: Float]: Show[T]   = apply(f => Show.Str(f.toString))
+  implicit def showDouble[T <: Double]: Show[T] = apply(f => Show.Str(f.toString))
   implicit def toResult[T: Show](t: T): Result =
     implicitly[Show[T]].apply(t)
   implicit def seqToResult[T: Show](ts: Seq[T]): Seq[Result] =

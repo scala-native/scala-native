@@ -1,16 +1,17 @@
 package native
 package nir
 
-final case class Block(params: Seq[Param], ops: Seq[Op])
-final case class Param(value: Val, ty: Defn)
-final case class Next(value: Val, block: Block, values: Seq[Val])
+final case class Block(name: Name, params: Seq[Param], instrs: Seq[Instr])
+final case class Instr(name: Name, op: Op)
+final case class Param(name: Name, ty: Defn)
+final case class Next(value: Val, name: Name, args: Seq[Val])
 
 sealed trait Op
 object Op {
   final case object Undefined                                                extends Op
-  final case class Return(value: Val)                                        extends Op
+  final case class Ret   (value: Val)                                        extends Op
   final case class Throw (value: Val)                                        extends Op
-  final case class If    (cond: Val, thenp: Next, elsep: Next)               extends Op
+  final case class Br    (cond: Val, thenp: Next, elsep: Next)               extends Op
   final case class Switch(scrut: Val, default: Next, cases: Seq[Next])       extends Op
   final case class Invoke(func: Val, args: Seq[Val], succ: Next, fail: Next) extends Op
 
@@ -71,6 +72,8 @@ object Op {
 
 sealed trait Val
 object Val {
+  final case object None                    extends Val
+  final case object Zero                    extends Val
   final case object True                    extends Val
   final case object False                   extends Val
   final case class I8    (value: Byte)      extends Val
@@ -81,8 +84,7 @@ object Val {
   final case class F64   (value: Double)    extends Val
   final case class Struct(values: Seq[Val]) extends Val
   final case class Array (values: Seq[Val]) extends Val
-  final case class Defn  (defn: Defn)       extends Val
-  final case class Op    (op: Op)           extends Val
+  final case class Name  (name: nir.Name)   extends Val
 
   //scala
   final case object Null extends Val
@@ -92,31 +94,29 @@ object Val {
 
 sealed trait Defn { def name: Name }
 object Defn {
-  final case class Global  (name: Name, of: Type, value: Val) extends Defn
-  final case class Constant(name: Name, of: Type, value: Val) extends Defn
-  final case class Define  (name: Name, entry: Block)         extends Defn
-  final case class Declare (name: Name, params: Seq[Param])   extends Defn
-  final case class Extern  (name: Name)                       extends Defn
-  final case class Struct  (name: Name, fields: Seq[Defn])    extends Defn
+  final case class Var     (name: Name, ty: Type, value: Val)         extends Defn
+  final case class Declare (name: Name, ty: Type)                     extends Defn
+  final case class Define  (name: Name, ty: Type, blocks: Seq[Block]) extends Defn
+  final case class Extern  (name: Name)                               extends Defn
+  final case class Struct  (name: Name, fields: Seq[Defn])            extends Defn
 
   // scala
+  final case class Interface(name: Name,
+                             interfaces: Seq[Defn],
+                             members: Seq[Defn]) extends Defn
   final case class Class(name: Name,
                          parent: Defn,
                          interfaces: Seq[Defn],
                          members: Seq[Defn]) extends Defn
-  final case class Interface(name: Name,
-                             interfaces: Seq[Defn],
-                             members: Seq[Defn]) extends Defn
   final case class Module(name: Name,
                           parent: Defn,
                           interfaces: Seq[Defn],
                           members: Seq[Defn]) extends Defn
-  final case class Method(name: Name, entry: Block) extends Defn
-  final case class Field(name: Name, of: Defn) extends Defn
 }
 
 sealed trait Type
 object Type {
+  final case object None                                extends Type
   final case object Void                                extends Type
   final case object Bool                                extends Type
   final case object I8                                  extends Type
@@ -128,27 +128,28 @@ object Type {
   final case class Array   (ty: Defn, n: Int)           extends Type
   final case class Ptr     (ty: Defn)                   extends Type
   final case class Function(ret: Defn, args: Seq[Defn]) extends Type
-  final case class Struct  (defn: Defn.Struct)          extends Type
+  final case class Struct  (name: Name)                 extends Type
 
   // scala
-  final case object Unit                   extends Type
-  final case object Nothing                extends Type
-  final case object Null                   extends Type
-  final case class Class(defn: Defn.Class) extends Type
-  final case class ArrayClass(of: Type)    extends Type
+  final case object Unit                extends Type
+  final case object Nothing             extends Type
+  final case object Null                extends Type
+  final case class Class(name: Name)    extends Type
+  final case class ArrayClass(ty: Type) extends Type
 }
 
 sealed trait Name
 object Name {
   final case object None                                               extends Name
+  final case class Fresh      (id: Int)                                extends Name
   final case class Local      (id: String)                             extends Name
   final case class Extern     (id: String)                             extends Name
   final case class Nested     (owner: Name, member: Name)              extends Name
   final case class Class      (id: String)                             extends Name
   final case class Module     (id: String)                             extends Name
   final case class Interface  (id: String)                             extends Name
-  final case class Constructor(args: Seq[Name])                        extends Name
   final case class Field      (id: String)                             extends Name
+  final case class Constructor(args: Seq[Name])                        extends Name
   final case class Method     (id: String, args: Seq[Name], ret: Name) extends Name
   final case class Accessor   (owner: Name)                            extends Name
   final case class Data       (owner: Name)                            extends Name
