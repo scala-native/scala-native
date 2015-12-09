@@ -2,72 +2,79 @@ package native
 package nir
 
 final case class Block(name: Name, params: Seq[Param], instrs: Seq[Instr])
-final case class Instr(name: Name, op: Op)
+final case class Instr(name: Name, op: Op, ty: Type)
 final case class Param(name: Name, ty: Defn)
 final case class Next(value: Val, name: Name, args: Seq[Val])
 
 sealed trait Op
 object Op {
   final case object Undefined                                                extends Op
-  final case class Ret   (value: Val)                                        extends Op
-  final case class Throw (value: Val)                                        extends Op
-  final case class Br    (cond: Val, thenp: Next, elsep: Next)               extends Op
-  final case class Switch(scrut: Val, default: Next, cases: Seq[Next])       extends Op
-  final case class Invoke(func: Val, args: Seq[Val], succ: Next, fail: Next) extends Op
-
-  final case class Add (left: Val, right: Val) extends Op
-  final case class Sub (left: Val, right: Val) extends Op
-  final case class Mul (left: Val, right: Val) extends Op
-  final case class Div (left: Val, right: Val) extends Op
-  final case class Mod (left: Val, right: Val) extends Op
-  final case class Shl (left: Val, right: Val) extends Op
-  final case class Lshr(left: Val, right: Val) extends Op
-  final case class Ashr(left: Val, right: Val) extends Op
-  final case class And (left: Val, right: Val) extends Op
-  final case class Or  (left: Val, right: Val) extends Op
-  final case class Xor (left: Val, right: Val) extends Op
-  final case class Eq  (left: Val, right: Val) extends Op
-  final case class Neq (left: Val, right: Val) extends Op
-  final case class Lt  (left: Val, right: Val) extends Op
-  final case class Lte (left: Val, right: Val) extends Op
-  final case class Gt  (left: Val, right: Val) extends Op
-  final case class Gte (left: Val, right: Val) extends Op
-
-  final case class Trunc   (value: Val, to: Defn) extends Op
-  final case class Zext    (value: Val, to: Defn) extends Op
-  final case class Sext    (value: Val, to: Defn) extends Op
-  final case class Fptrunc (value: Val, to: Defn) extends Op
-  final case class Fpext   (value: Val, to: Defn) extends Op
-  final case class Fptoui  (value: Val, to: Defn) extends Op
-  final case class Fptosi  (value: Val, to: Defn) extends Op
-  final case class Uitofp  (value: Val, to: Defn) extends Op
-  final case class Sitofp  (value: Val, to: Defn) extends Op
-  final case class Ptrtoint(value: Val, to: Defn) extends Op
-  final case class Inttoptr(value: Val, to: Defn) extends Op
-  final case class Bitcast (value: Val, to: Defn) extends Op
-
-  final case class Load   (ptr: Val)                    extends Op
-  final case class Store  (ptr: Val, value: Val)        extends Op
-  final case class Elem   (ptr: Val, indexes: Seq[Val]) extends Op
-  final case class Extract(aggr: Val, index: Val)       extends Op
-  final case class Alloc  (defn: Defn)                  extends Op
-  final case class Alloca (defn: Defn)                  extends Op
-  final case class Size   (defn: Defn)                  extends Op
+  final case class Ret    (value: Val)                                       extends Op
+  final case class Throw  (value: Val)                                       extends Op
+  final case class Br     (value: Val, thenp: Next, elsep: Next)             extends Op
+  final case class Switch (value: Val, default: Next, cases: Seq[Next])      extends Op
+  final case class Invoke (ptr: Val, args: Seq[Val], succ: Next, fail: Next) extends Op
+  final case class Call   (ptr: Val, args: Seq[Val])                         extends Op
+  final case class Load   (ty: Type, ptr: Val)                               extends Op
+  final case class Store  (ty: Type, ptr: Val, value: Val)                   extends Op
+  final case class Elem   (ptr: Val, indexes: Seq[Val])                      extends Op
+  final case class Extract(aggr: Val, index: Val)                            extends Op
+  final case class Insert (aggr: Val, value: Val, index: Val)                extends Op
+  final case class Alloc  (ty: Type)                                         extends Op
+  final case class Alloca (ty: Type)                                         extends Op
+  final case class Size   (ty: Type)                                         extends Op
+  final case class Builtin(builtin: nir.Builtin, targs: Seq[Type],
+                           args: Seq[Val]) extends Op
 
   //scala
-  final case class Equals          (left: Val, right: Val)       extends Op
-  final case class Hash            (value: Val)                  extends Op
-  final case class FieldElem       (instance: Val, field: Defn)  extends Op
-  final case class MethodElem      (instance: Val, method: Defn) extends Op
-  final case class GetClass        (instance: Val)               extends Op
-  final case class ClassAlloc      (defn: Defn)                  extends Op
-  final case class ArrayClassElem  (instance: Val)               extends Op
-  final case class ArrayClassLength(instance: Val)               extends Op
-  final case class ArrayClassAlloc (defn: Defn, length: Val)     extends Op
-  final case class Is              (value: Val, defn: Defn)      extends Op
-  final case class As              (value: Val, defn: Defn)      extends Op
-  final case class Box             (value: Val, defn: Defn)      extends Op
-  final case class Unbox           (value: Val, defn: Defn)      extends Op
+  final case class FieldElem   (name: Name, value: Val) extends Op
+  final case class MethodElem  (name: Name, value: Val) extends Op
+  final case class AllocClass  (ty: Type)               extends Op
+  final case class AllocArray  (ty: Type, length: Val)  extends Op
+  final case class Equals      (left: Val, right: Val)  extends Op
+  final case class HashCode    (value: Val)             extends Op
+  final case class GetClass    (value: Val)             extends Op
+  final case class ClassOf     (ty: Type)               extends Op
+  final case class AsInstanceOf(value: Val, ty: Type)   extends Op
+  final case class IsInstanceOf(value: Val, ty: Type)   extends Op
+  final case class ArrayLength (value: Val)             extends Op
+  final case class ArrayElem   (value: Val, index: Val) extends Op
+  final case class Box         (value: Val, to: Type)   extends Op
+  final case class Unbox       (value: Val, to: Type)   extends Op
+}
+
+sealed trait Builtin
+object Builtin {
+  final case object Add  extends Builtin
+  final case object Sub  extends Builtin
+  final case object Mul  extends Builtin
+  final case object Div  extends Builtin
+  final case object Mod  extends Builtin
+  final case object Shl  extends Builtin
+  final case object Lshr extends Builtin
+  final case object Ashr extends Builtin
+  final case object And  extends Builtin
+  final case object Or   extends Builtin
+  final case object Xor  extends Builtin
+  final case object Eq   extends Builtin
+  final case object Neq  extends Builtin
+  final case object Lt   extends Builtin
+  final case object Lte  extends Builtin
+  final case object Gt   extends Builtin
+  final case object Gte  extends Builtin
+
+  final case object Trunc    extends Builtin
+  final case object Zext     extends Builtin
+  final case object Sext     extends Builtin
+  final case object Fptrunc  extends Builtin
+  final case object Fpext    extends Builtin
+  final case object Fptoui   extends Builtin
+  final case object Fptosi   extends Builtin
+  final case object Uitofp   extends Builtin
+  final case object Sitofp   extends Builtin
+  final case object Ptrtoint extends Builtin
+  final case object Inttoptr extends Builtin
+  final case object Bitcast  extends Builtin
 }
 
 sealed trait Val
@@ -89,28 +96,27 @@ object Val {
   //scala
   final case object Null extends Val
   final case object Unit extends Val
-  final case class Str(value: String) extends Val
 }
 
 sealed trait Defn { def name: Name }
 object Defn {
+  final case class Extern  (name: Name)                               extends Defn
   final case class Var     (name: Name, ty: Type, value: Val)         extends Defn
   final case class Declare (name: Name, ty: Type)                     extends Defn
   final case class Define  (name: Name, ty: Type, blocks: Seq[Block]) extends Defn
-  final case class Extern  (name: Name)                               extends Defn
   final case class Struct  (name: Name, fields: Seq[Defn])            extends Defn
 
   // scala
   final case class Interface(name: Name,
-                             interfaces: Seq[Defn],
+                             interfaces: Seq[Name],
                              members: Seq[Defn]) extends Defn
   final case class Class(name: Name,
-                         parent: Defn,
-                         interfaces: Seq[Defn],
+                         parent: Name,
+                         interfaces: Seq[Name],
                          members: Seq[Defn]) extends Defn
   final case class Module(name: Name,
-                          parent: Defn,
-                          interfaces: Seq[Defn],
+                          parent: Name,
+                          interfaces: Seq[Name],
                           members: Seq[Defn]) extends Defn
 }
 
