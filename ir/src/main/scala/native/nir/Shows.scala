@@ -151,14 +151,14 @@ object Shows {
     case Defn.Extern(name) =>
       sh"extern $name"
     case Defn.Var(name, ty, rhs) =>
-      sh"$name = global $ty $rhs"
+      sh"var $name: $ty = $rhs"
     case Defn.Declare(name, ty) =>
       sh"declare $name: $ty"
     case Defn.Define(name, ty, blocks) =>
       val body = r(blocks.map(i(_)), pre = "{", post = nl("}"))
       sh"define $name: $ty = $body"
     case Defn.Struct(name, fields) =>
-      sh"$name = type {${r(fields, sep = ", ")}}"
+      sh"struct $name {${r(fields, sep = ", ")}}"
 
     case Defn.Interface(name, ifaces, members) =>
       val parents = r(ifaces, sep = ",")

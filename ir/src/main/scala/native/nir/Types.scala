@@ -12,9 +12,9 @@ object Type {
   final case object I64                                 extends Type
   final case object F32                                 extends Type
   final case object F64                                 extends Type
-  final case class Array   (ty: Defn, n: Int)           extends Type
-  final case class Ptr     (ty: Defn)                   extends Type
-  final case class Function(ret: Defn, args: Seq[Defn]) extends Type
+  final case class Array   (ty: Type, n: Int)           extends Type
+  final case class Ptr     (ty: Type)                   extends Type
+  final case class Function(ret: Type, args: Seq[Type]) extends Type
   final case class Struct  (name: Name)                 extends Type
 
   // scala
