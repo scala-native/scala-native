@@ -62,8 +62,10 @@ object Shows {
       sh"alloca[$ty]"
     case Op.Size(ty) =>
       sh"size[$ty]"
-    case Op.Builtin(name, targs, args) =>
-      sh"$name[${r(targs, sep = ", ")}] ${r(args, sep = ",")}"
+    case Op.Bin(name, ty, l, r) =>
+      sh"$name[Rty] $l, $r"
+    case Op.Conv(name, ty, v) =>
+      sh"$name[$ty] $v"
 
     case Op.FieldElem(name, value) =>
       sh"field-elem $name, $value"
@@ -95,37 +97,39 @@ object Shows {
       sh"unbox[$to] $value"
   }
 
-  implicit val showBuiltin: Show[Builtin] = Show {
-    case Builtin.Add  => "add"
-    case Builtin.Sub  => "sub"
-    case Builtin.Mul  => "mul"
-    case Builtin.Div  => "div"
-    case Builtin.Mod  => "mod"
-    case Builtin.Shl  => "shl"
-    case Builtin.Lshr => "lshr"
-    case Builtin.Ashr => "ashr"
-    case Builtin.And  => "and"
-    case Builtin.Or   => "or"
-    case Builtin.Xor  => "xor"
-    case Builtin.Eq   => "eq"
-    case Builtin.Neq  => "neq"
-    case Builtin.Lt   => "lt"
-    case Builtin.Lte  => "lte"
-    case Builtin.Gt   => "gt"
-    case Builtin.Gte  => "gte"
+  implicit val showBin: Show[Bin] = Show {
+    case Bin.Add  => "add"
+    case Bin.Sub  => "sub"
+    case Bin.Mul  => "mul"
+    case Bin.Div  => "div"
+    case Bin.Mod  => "mod"
+    case Bin.Shl  => "shl"
+    case Bin.Lshr => "lshr"
+    case Bin.Ashr => "ashr"
+    case Bin.And  => "and"
+    case Bin.Or   => "or"
+    case Bin.Xor  => "xor"
+    case Bin.Eq   => "eq"
+    case Bin.Neq  => "neq"
+    case Bin.Lt   => "lt"
+    case Bin.Lte  => "lte"
+    case Bin.Gt   => "gt"
+    case Bin.Gte  => "gte"
+  }
 
-    case Builtin.Trunc    => "trunc"
-    case Builtin.Zext     => "zext"
-    case Builtin.Sext     => "sext"
-    case Builtin.Fptrunc  => "fptrunc"
-    case Builtin.Fpext    => "fpext"
-    case Builtin.Fptoui   => "fptoui"
-    case Builtin.Fptosi   => "fptosi"
-    case Builtin.Uitofp   => "uitofp"
-    case Builtin.Sitofp   => "sitofp"
-    case Builtin.Ptrtoint => "ptrtoint"
-    case Builtin.Inttoptr => "inttoptr"
-    case Builtin.Bitcast  => "bitcast"
+  implicit val showConv: Show[Conv] = Show {
+    case Conv.Trunc    => "trunc"
+    case Conv.Zext     => "zext"
+    case Conv.Sext     => "sext"
+    case Conv.Fptrunc  => "fptrunc"
+    case Conv.Fpext    => "fpext"
+    case Conv.Fptoui   => "fptoui"
+    case Conv.Fptosi   => "fptosi"
+    case Conv.Uitofp   => "uitofp"
+    case Conv.Sitofp   => "sitofp"
+    case Conv.Ptrtoint => "ptrtoint"
+    case Conv.Inttoptr => "inttoptr"
+    case Conv.Bitcast  => "bitcast"
   }
 
   implicit val showVal: Show[Val] = Show {

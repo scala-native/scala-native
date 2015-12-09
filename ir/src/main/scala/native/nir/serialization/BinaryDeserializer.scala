@@ -11,42 +11,45 @@ class BinaryDeserializer(bb: ByteBuffer) {
   def getSeq[T](getT: => T): Seq[T] =
     (1 to getInt).map(_ => getT).toSeq
 
-  private def getString(): String = {
+  def getString(): String = {
     val arr = new Array[Byte](getInt)
     get(arr)
     new String(arr)
   }
 
-  def getBuiltin(): Builtin = getInt match {
-    case T.AddBuiltin      => Builtin.Add
-    case T.SubBuiltin      => Builtin.Sub
-    case T.MulBuiltin      => Builtin.Mul
-    case T.DivBuiltin      => Builtin.Div
-    case T.ModBuiltin      => Builtin.Mod
-    case T.ShlBuiltin      => Builtin.Shl
-    case T.LshrBuiltin     => Builtin.Lshr
-    case T.AshrBuiltin     => Builtin.Ashr
-    case T.AndBuiltin      => Builtin.And
-    case T.OrBuiltin       => Builtin.Or
-    case T.XorBuiltin      => Builtin.Xor
-    case T.EqBuiltin       => Builtin.Eq
-    case T.NeqBuiltin      => Builtin.Neq
-    case T.LtBuiltin       => Builtin.Lt
-    case T.LteBuiltin      => Builtin.Lte
-    case T.GtBuiltin       => Builtin.Gt
-    case T.GteBuiltin      => Builtin.Gte
-    case T.TruncBuiltin    => Builtin.Trunc
-    case T.ZextBuiltin     => Builtin.Zext
-    case T.SextBuiltin     => Builtin.Sext
-    case T.FptruncBuiltin  => Builtin.Fptrunc
-    case T.FpextBuiltin    => Builtin.Fpext
-    case T.FptouiBuiltin   => Builtin.Fptoui
-    case T.FptosiBuiltin   => Builtin.Fptosi
-    case T.UitofpBuiltin   => Builtin.Uitofp
-    case T.SitofpBuiltin   => Builtin.Sitofp
-    case T.PtrtointBuiltin => Builtin.Ptrtoint
-    case T.InttoptrBuiltin => Builtin.Inttoptr
-    case T.BitcastBuiltin  => Builtin.Bitcast
+  def getBin(): Bin = getInt match {
+    case T.AddBin  => Bin.Add
+    case T.SubBin  => Bin.Sub
+    case T.MulBin  => Bin.Mul
+    case T.DivBin  => Bin.Div
+    case T.ModBin  => Bin.Mod
+    case T.ShlBin  => Bin.Shl
+    case T.LshrBin => Bin.Lshr
+    case T.AshrBin => Bin.Ashr
+    case T.AndBin  => Bin.And
+    case T.OrBin   => Bin.Or
+    case T.XorBin  => Bin.Xor
+    case T.EqBin   => Bin.Eq
+    case T.NeqBin  => Bin.Neq
+    case T.LtBin   => Bin.Lt
+    case T.LteBin  => Bin.Lte
+    case T.GtBin   => Bin.Gt
+    case T.GteBin  => Bin.Gte
+  }
+
+  def getConv(): Conv = getInt match {
+    case T.TruncConv    => Conv.Trunc
+    case T.ZextConv     => Conv.Zext
+    case T.SextConv     => Conv.Sext
+    case T.FptruncConv  => Conv.Fptrunc
+    case T.FpextConv    => Conv.Fpext
+    case T.FptouiConv   => Conv.Fptoui
+    case T.FptosiConv   => Conv.Fptosi
+    case T.UitofpConv   => Conv.Uitofp
+    case T.SitofpConv   => Conv.Sitofp
+    case T.PtrtointConv => Conv.Ptrtoint
+    case T.InttoptrConv => Conv.Inttoptr
+    case T.BitcastConv  => Conv.Bitcast
   }
 
   def getDefns(): Seq[Defn] = getSeq(getDefn)
@@ -108,7 +111,8 @@ class BinaryDeserializer(bb: ByteBuffer) {
     case T.AllocOp        => Op.Alloc(getType)
     case T.AllocaOp       => Op.Alloca(getType)
     case T.SizeOp         => Op.Size(getType)
-    case T.BuiltinOp      => Op.Builtin(getBuiltin, getTypes, getVals)
+    case T.BinOp          => Op.Bin(getBin, getType, getVal, getVal)
+    case T.ConvOp         => Op.Conv(getConv, getType, getVal)
     case T.FieldElemOp    => Op.FieldElem(getName, getVal)
     case T.MethodElemOp   => Op.MethodElem(getName, getVal)
     case T.AllocClassOp   => Op.AllocClass(getType)

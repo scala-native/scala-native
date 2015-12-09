@@ -18,36 +18,39 @@ class BinarySerializer(buffer: ByteBuffer) {
     putInt(bytes.length); put(bytes)
   }
 
-  def putBuiltin(builtin: Builtin) = builtin match {
-    case Builtin.Add      => T.AddBuiltin
-    case Builtin.Sub      => T.SubBuiltin
-    case Builtin.Mul      => T.MulBuiltin
-    case Builtin.Div      => T.DivBuiltin
-    case Builtin.Mod      => T.ModBuiltin
-    case Builtin.Shl      => T.ShlBuiltin
-    case Builtin.Lshr     => T.LshrBuiltin
-    case Builtin.Ashr     => T.AshrBuiltin
-    case Builtin.And      => T.AndBuiltin
-    case Builtin.Or       => T.OrBuiltin
-    case Builtin.Xor      => T.XorBuiltin
-    case Builtin.Eq       => T.EqBuiltin
-    case Builtin.Neq      => T.NeqBuiltin
-    case Builtin.Lt       => T.LtBuiltin
-    case Builtin.Lte      => T.LteBuiltin
-    case Builtin.Gt       => T.GtBuiltin
-    case Builtin.Gte      => T.GteBuiltin
-    case Builtin.Trunc    => T.TruncBuiltin
-    case Builtin.Zext     => T.ZextBuiltin
-    case Builtin.Sext     => T.SextBuiltin
-    case Builtin.Fptrunc  => T.FptruncBuiltin
-    case Builtin.Fpext    => T.FpextBuiltin
-    case Builtin.Fptoui   => T.FptouiBuiltin
-    case Builtin.Fptosi   => T.FptosiBuiltin
-    case Builtin.Uitofp   => T.UitofpBuiltin
-    case Builtin.Sitofp   => T.SitofpBuiltin
-    case Builtin.Ptrtoint => T.PtrtointBuiltin
-    case Builtin.Inttoptr => T.InttoptrBuiltin
-    case Builtin.Bitcast  => T.BitcastBuiltin
+  def putBin(bin: Bin) = bin match {
+    case Bin.Add  => T.AddBin
+    case Bin.Sub  => T.SubBin
+    case Bin.Mul  => T.MulBin
+    case Bin.Div  => T.DivBin
+    case Bin.Mod  => T.ModBin
+    case Bin.Shl  => T.ShlBin
+    case Bin.Lshr => T.LshrBin
+    case Bin.Ashr => T.AshrBin
+    case Bin.And  => T.AndBin
+    case Bin.Or   => T.OrBin
+    case Bin.Xor  => T.XorBin
+    case Bin.Eq   => T.EqBin
+    case Bin.Neq  => T.NeqBin
+    case Bin.Lt   => T.LtBin
+    case Bin.Lte  => T.LteBin
+    case Bin.Gt   => T.GtBin
+    case Bin.Gte  => T.GteBin
+  }
+
+  def putConv(conv: Conv) = conv match {
+    case Conv.Trunc    => T.TruncConv
+    case Conv.Zext     => T.ZextConv
+    case Conv.Sext     => T.SextConv
+    case Conv.Fptrunc  => T.FptruncConv
+    case Conv.Fpext    => T.FpextConv
+    case Conv.Fptoui   => T.FptouiConv
+    case Conv.Fptosi   => T.FptosiConv
+    case Conv.Uitofp   => T.UitofpConv
+    case Conv.Sitofp   => T.SitofpConv
+    case Conv.Ptrtoint => T.PtrtointConv
+    case Conv.Inttoptr => T.InttoptrConv
+    case Conv.Bitcast  => T.BitcastConv
   }
 
   def putDefns(defns: Seq[Defn]): Unit = putSeq(putDefn)(defns)
@@ -147,8 +150,10 @@ class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.AllocaOp); putType(ty)
     case Op.Size(ty) =>
       putInt(T.SizeOp); putType(ty)
-    case Op.Builtin(builtin, tys, args) =>
-      putInt(T.BuiltinOp); putBuiltin(builtin); putTypes(tys); putVals(args)
+    case Op.Bin(bin, ty, l, r) =>
+      putInt(T.BinOp); putBin(bin); putType(ty); putVal(l); putVal(r)
+    case Op.Conv(conv, ty, v) =>
+      putInt(T.ConvOp); putConv(conv); putType(ty); putVal(v)
     case Op.FieldElem(name, v) =>
       putInt(T.FieldElemOp); putName(name); putVal(v)
     case Op.MethodElem(name, v) =>

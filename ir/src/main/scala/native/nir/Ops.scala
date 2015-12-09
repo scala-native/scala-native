@@ -18,9 +18,8 @@ object Op {
   final case class Alloc  (ty: Type)                                         extends Op
   final case class Alloca (ty: Type)                                         extends Op
   final case class Size   (ty: Type)                                         extends Op
-  // TODO: split into binary and conversion
-  final case class Builtin(builtin: nir.Builtin, targs: Seq[Type],
-                           args: Seq[Val]) extends Op
+  final case class Bin    (bin: nir.Bin, ty: Type, l: Val, r: Val)           extends Op
+  final case class Conv   (conv: nir.Conv, ty: Type, value: Val)             extends Op
 
   //scala
   final case class FieldElem   (name: Name, value: Val) extends Op
