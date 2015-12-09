@@ -186,7 +186,7 @@ object Shows {
     case Type.F64                 => "f64"
     case Type.Array(ty, n)        => sh"[$ty x $n]"
     case Type.Ptr(ty)             => sh"${ty}*"
-    case Type.Function(ret, args) => sh"$ret (${r(args, sep = ", ")})"
+    case Type.Function(args, ret) => sh"(${r(args, sep = ", ")}) => $ret"
     case Type.Struct(name)        => name
 
     case Type.Unit                => "unit"

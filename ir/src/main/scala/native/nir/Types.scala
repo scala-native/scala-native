@@ -14,7 +14,7 @@ object Type {
   final case object F64                                 extends Type
   final case class Array   (ty: Type, n: Int)           extends Type
   final case class Ptr     (ty: Type)                   extends Type
-  final case class Function(ret: Type, args: Seq[Type]) extends Type
+  final case class Function(args: Seq[Type], ret: Type) extends Type
   final case class Struct  (name: Name)                 extends Type
 
   // scala

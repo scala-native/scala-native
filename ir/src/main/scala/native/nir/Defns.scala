@@ -7,7 +7,7 @@ object Defn {
   final case class Var     (name: Name, ty: Type, value: Val)         extends Defn
   final case class Declare (name: Name, ty: Type)                     extends Defn
   final case class Define  (name: Name, ty: Type, blocks: Seq[Block]) extends Defn
-  final case class Struct  (name: Name, fields: Seq[Defn])            extends Defn
+  final case class Struct  (name: Name, members: Seq[Defn])           extends Defn
 
   // scala
   final case class Interface(name: Name,

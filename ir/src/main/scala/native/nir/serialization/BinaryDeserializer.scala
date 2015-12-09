@@ -138,7 +138,7 @@ class BinaryDeserializer(bb: ByteBuffer) {
     case T.F64Type        => Type.F64
     case T.ArrayType      => Type.Array(getType, getInt)
     case T.PtrType        => Type.Ptr(getType)
-    case T.FunctionType   => Type.Function(getType, getTypes)
+    case T.FunctionType   => Type.Function(getTypes, getType)
     case T.StructType     => Type.Struct(getName)
     case T.UnitType       => Type.Unit
     case T.NothingType    => Type.Nothing

@@ -18,6 +18,7 @@ object Op {
   final case class Alloc  (ty: Type)                                         extends Op
   final case class Alloca (ty: Type)                                         extends Op
   final case class Size   (ty: Type)                                         extends Op
+  // TODO: split into binary and conversion
   final case class Builtin(builtin: nir.Builtin, targs: Seq[Type],
                            args: Seq[Val]) extends Op
 
