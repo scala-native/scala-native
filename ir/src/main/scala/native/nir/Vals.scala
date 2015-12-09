@@ -1,4 +1,4 @@
-package scala
+package native
 package nir
 
 sealed trait Val
