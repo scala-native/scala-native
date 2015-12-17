@@ -1,7 +1,7 @@
 package native
 package nir
 
-sealed trait Conv
+sealed abstract class Conv
 object Conv {
   final case object Trunc    extends Conv
   final case object Zext     extends Conv

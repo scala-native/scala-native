@@ -1,7 +1,7 @@
 package native
 package nir
 
-sealed trait Op
+sealed abstract class Op
 object Op {
   final case object Undefined                                                extends Op
   final case class Ret    (value: Val)                                       extends Op

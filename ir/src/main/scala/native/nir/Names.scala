@@ -1,7 +1,7 @@
 package native
 package nir
 
-sealed trait Name
+sealed abstract class Name
 object Name {
   final case object None                                               extends Name
   final case class Fresh      (id: Int)                                extends Name

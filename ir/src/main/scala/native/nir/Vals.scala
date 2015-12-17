@@ -1,7 +1,7 @@
 package native
 package nir
 
-sealed trait Val
+sealed abstract class Val
 object Val {
   final case object None                    extends Val
   final case object Zero                    extends Val

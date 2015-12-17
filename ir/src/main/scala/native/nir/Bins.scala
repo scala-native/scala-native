@@ -1,7 +1,7 @@
 package native
 package nir
 
-sealed trait Bin
+sealed abstract class Bin
 object Bin {
   final case object Add  extends Bin
   final case object Sub  extends Bin

@@ -1,7 +1,7 @@
 package native
 package nir
 
-sealed trait Defn { def name: Name }
+sealed abstract class Defn { def name: Name }
 object Defn {
   final case class Extern  (name: Name)                               extends Defn
   final case class Var     (name: Name, ty: Type, value: Val)         extends Defn
