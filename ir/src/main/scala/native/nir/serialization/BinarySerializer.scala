@@ -184,6 +184,7 @@ class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.UnboxOp); putVal(v); putType(ty)
   }
 
+
   def putTypes(tys: Seq[Type]): Unit = putSeq(putType)(tys)
   def putType(ty: Type): Unit = ty match {
     case Type.None                => putInt(T.NoneType)

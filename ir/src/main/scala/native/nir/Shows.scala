@@ -151,6 +151,8 @@ object Shows {
     case Val.Unit           => "unit"
   }
 
+  implicit val showDefns: Show[Seq[Defn]] = Show { defns => r(defns.map(nl(_))) }
+
   implicit val showDefn: Show[Defn] = Show {
     case Defn.Extern(name) =>
       sh"extern $name"
