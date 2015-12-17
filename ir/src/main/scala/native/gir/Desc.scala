@@ -1,5 +1,5 @@
 package native
-package ir
+package gir
 
 // TODO: names and ids are just for debugging, store them elsewhere
 sealed abstract class Desc(val schema: Desc.Schema*)

@@ -1,7 +1,7 @@
 package native
-package ir
+package gir
 
-import native.ir.{Tags => T}
+import native.gir.{Tags => T}
 
 object Tags {
   final val Empty = 1

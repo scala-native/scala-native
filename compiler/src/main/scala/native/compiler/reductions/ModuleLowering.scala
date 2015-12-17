@@ -2,7 +2,7 @@ package native
 package compiler
 package reductions
 
-import native.ir._, Reduction._
+import native.gir._, Reduction._
 
 /** Lowers modules into module classes with singleton
  *  instance stored in a global variable that is accessed

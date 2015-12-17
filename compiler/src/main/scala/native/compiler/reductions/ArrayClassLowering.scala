@@ -2,7 +2,7 @@ package native
 package compiler
 package reductions
 
-import native.ir._, Reduction._
+import native.gir._, Reduction._
 
 /** Lowers slices and operations on them down to pointers to structs.
  */

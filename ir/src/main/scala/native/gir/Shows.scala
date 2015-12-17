@@ -1,9 +1,9 @@
 package native
-package ir
+package gir
 
 import scala.collection.mutable
 import native.util.{sh, Show}, Show.{Sequence => s, Indent => i, Repeat => r, Newline => nl}
-import native.ir.{Schedule => Sch}
+import native.gir.{Schedule => Sch}
 
 object Shows {
   implicit def showSchedule: Show[Sch] = Show { sch =>

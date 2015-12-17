@@ -2,7 +2,7 @@ package native
 package compiler
 package reductions
 
-import native.ir._, Reduction._
+import native.gir._, Reduction._
 
 /** Lowers unit to zero-element struct.
  *  Currently it's naively lowered to zero-element struct.

@@ -5,8 +5,8 @@ import scala.collection.mutable
 import scala.tools.nsc._
 import scala.tools.nsc.plugins._
 import scala.util.{Either, Left, Right}
-import native.ir, ir.{Name, Prim, Desc}
-import native.ir.{Focus, Tails}, Focus.sequenced
+import native.{gir => ir}, ir.{Name, Prim, Desc}
+import native.gir.{Focus, Tails}, Focus.sequenced
 import native.util, util.sh, util.ScopedVar.scoped
 
 abstract class GenNative extends PluginComponent

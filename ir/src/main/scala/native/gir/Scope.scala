@@ -1,4 +1,4 @@
 package native
-package ir
+package gir
 
 final case class Scope(entries: Map[Name, Node])

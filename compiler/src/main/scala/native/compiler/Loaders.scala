@@ -5,8 +5,8 @@ import java.io.File
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.filefilter.{DirectoryFileFilter, RegexFileFilter}
 import scala.collection.mutable
-import native.ir._
-import native.ir.serialization._
+import native.gir._
+import native.gir.serialization._
 
 sealed trait Loader {
   def resolve(name: Name): Option[Node]

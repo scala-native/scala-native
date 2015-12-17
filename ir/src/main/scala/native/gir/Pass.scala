@@ -1,5 +1,5 @@
 package native
-package ir
+package gir
 
 abstract class Pass {
   def onNode(node: Node): Unit

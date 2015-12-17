@@ -2,7 +2,7 @@ package native
 package plugin
 
 import scala.tools.nsc._
-import native.ir, ir.{Name, Defn, Desc}
+import native.{gir => ir}, ir.{Name, Defn, Desc}
 
 trait GenNameEncoding extends SubComponent with GenTypeKinds {
   import global.{Name => _, _}, definitions._

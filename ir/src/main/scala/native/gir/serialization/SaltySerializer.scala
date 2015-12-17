@@ -1,10 +1,10 @@
 package native
-package ir
+package gir
 package serialization
 
 import scala.collection.mutable
 import java.nio.ByteBuffer
-import native.ir.{Tags => T}
+import native.gir.{Tags => T}
 
 class SaltySerializer(buffer: ByteBuffer) {
   import buffer._

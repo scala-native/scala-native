@@ -1,7 +1,7 @@
 package native
-package ir
+package gir
 
-import native.ir.{Desc => D, Tags => T}
+import native.gir.{Desc => D, Tags => T}
 
 sealed abstract class NullaryFactory(desc: D) {
   def apply(attrs: Attr*): Node=
@@ -61,7 +61,7 @@ sealed abstract class TernaryFactory(desc: D) {
   }
 }
 
-private[ir] sealed abstract class SeqNodeFactory(desc: D) {
+private[gir] sealed abstract class SeqNodeFactory(desc: D) {
   def apply(nodes: Seq[Node], attrs: Attr*): Node =
     Node(desc, Array(nodes), attrs)
   def unapply(n: Node): Option[Seq[Node]] =
@@ -78,7 +78,7 @@ private[ir] sealed abstract class SeqNodeFactory(desc: D) {
   }
 }
 
-private[ir] sealed abstract class NodeSeqNodeFactory(desc: D) {
+private[gir] sealed abstract class NodeSeqNodeFactory(desc: D) {
   def apply(node: Node, nodes: Seq[Node], attrs: Attr*): Node =
     Node(desc, Array(node, nodes), attrs)
   def unapply(n: Node): Option[(Node, Seq[Node])] =
@@ -95,7 +95,7 @@ private[ir] sealed abstract class NodeSeqNodeFactory(desc: D) {
   }
 }
 
-private[ir] sealed abstract class NodeSeqNodeNodeFactory(desc: D) {
+private[gir] sealed abstract class NodeSeqNodeNodeFactory(desc: D) {
   def apply(node1: Node, nodes: Seq[Node], node2: Node, attrs: Attr*): Node =
     Node(desc, Array(node1, nodes, node2), attrs)
   def unapply(n: Node): Option[(Node, Seq[Node], Node)] =
@@ -112,7 +112,7 @@ private[ir] sealed abstract class NodeSeqNodeNodeFactory(desc: D) {
   }
 }
 
-private[ir] sealed abstract class NodeSeqNodeNodeNodeFactory(desc: D) {
+private[gir] sealed abstract class NodeSeqNodeNodeNodeFactory(desc: D) {
   def apply(node1: Node, nodes: Seq[Node], node2: Node, node3: Node, attrs: Attr*): Node =
     Node(desc, Array(node1, nodes, node2, node3), attrs)
   def unapply(n: Node): Option[(Node, Seq[Node], Node, Node)] =
@@ -129,7 +129,7 @@ private[ir] sealed abstract class NodeSeqNodeNodeNodeFactory(desc: D) {
   }
 }
 
-private[ir] sealed abstract class NodeNodeSeqNodeFactory(desc: D) {
+private[gir] sealed abstract class NodeNodeSeqNodeFactory(desc: D) {
   def apply(node1: Node, node2: Node, nodes: Seq[Node], attrs: Attr*): Node =
     Node(desc, Array(node1, node2, nodes), attrs)
   def unapply(n: Node): Option[(Node, Node, Seq[Node])] =

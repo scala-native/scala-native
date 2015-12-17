@@ -1,13 +1,13 @@
 package native
-package ir
+package gir
 package serialization
 
 import java.nio.ByteBuffer
 import java.nio.file.Paths
 import java.nio.channels.FileChannel
 import scala.collection.mutable
-import native.ir.{Tags => T}
-import native.ir.Desc.Schema
+import native.gir.{Tags => T}
+import native.gir.Desc.Schema
 
 class SaltyDeserializer(path: String) {
   private val bb = {

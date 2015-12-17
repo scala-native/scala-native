@@ -1,9 +1,9 @@
 package native
-package ir
+package gir
 
 import scala.collection.{mutable => mut}
-import native.ir.{Node => N}
-import native.ir.{Desc => D}, D.{Cf, Ef, Val, Termn}
+import native.gir.{Node => N}
+import native.gir.{Desc => D}, D.{Cf, Ef, Val, Termn}
 
 final case class Tails(open: Seq[Focus], closed: Seq[Node]) {
   override def toString =

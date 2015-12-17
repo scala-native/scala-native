@@ -3,8 +3,8 @@ package plugin
 
 import scala.tools.nsc._
 import scala.tools.nsc.io.AbstractFile
-import native.ir
-import native.ir.serialization._
+import native.gir
+import native.gir.serialization._
 
 trait GenIRFiles extends SubComponent  {
   import global._
@@ -24,7 +24,7 @@ trait GenIRFiles extends SubComponent  {
     file.file.getAbsolutePath
   }
 
-  def genIRFile(cunit: CompilationUnit, sym: Symbol, scope: ir.Scope) = {
+  def genIRFile(cunit: CompilationUnit, sym: Symbol, scope: gir.Scope) = {
     val kind =
       if (sym.isModuleClass) "module"
       else if (sym.isInterface) "interface"
@@ -32,6 +32,6 @@ trait GenIRFiles extends SubComponent  {
     serializeIRFile(scope, getPathFor(cunit, sym, s".$kind.gir"))
   }
 
-  def genDotFile(cunit: CompilationUnit, sym: Symbol, scope: ir.Scope) =
+  def genDotFile(cunit: CompilationUnit, sym: Symbol, scope: gir.Scope) =
     serializeDotFile(scope, getPathFor(cunit, sym, ".dot"))
 }

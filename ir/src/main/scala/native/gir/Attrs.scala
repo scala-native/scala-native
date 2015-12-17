@@ -1,5 +1,5 @@
 package native
-package ir
+package gir
 
 sealed abstract class Attr
 sealed abstract class PersistentAttr extends Attr

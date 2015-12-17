@@ -2,7 +2,7 @@ package native
 package compiler
 package reductions
 
-import native.ir._, Reduction._
+import native.gir._, Reduction._
 
 object AllocLowering extends Reduction {
   val malloc =

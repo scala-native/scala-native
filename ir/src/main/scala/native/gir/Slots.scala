@@ -1,5 +1,5 @@
 package native
-package ir
+package gir
 
 sealed trait Context {
   def isVal:  Boolean
@@ -40,7 +40,7 @@ final class MultiDep(val node: Node, val length: Int, val offset: Int) {
 }
 
 // TODO: compute schema dynamically
-private[ir] final class Slot private[ir] (
+private[gir] final class Slot private[gir] (
   val schema: Desc.Schema,
   val use:    Node,
   var dep:    Node

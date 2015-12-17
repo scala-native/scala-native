@@ -1,5 +1,5 @@
 package native
-package ir
+package gir
 
 import java.nio._
 import java.nio.file._

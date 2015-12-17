@@ -1,5 +1,5 @@
 package native
-package ir
+package gir
 
 import scala.collection.mutable
 
@@ -46,7 +46,7 @@ object Schedule {
     final case class Param(node: Node) extends Value
   }
 
-  private class CollectDefns extends native.ir.Pass {
+  private class CollectDefns extends native.gir.Pass {
     val defns = mutable.ArrayBuffer[Node]()
     def onNode(n: Node): Unit =
       n.desc match {
@@ -72,29 +72,29 @@ object Schedule {
   }
 
   private def typeddefn(n: Node): Type = n match {
-    case _: ir.Prim =>
+    case _: gir.Prim =>
       Type.Prim(n)
-    case ir.Defn.Ptr(ty) =>
+    case gir.Defn.Ptr(ty) =>
       Type.Ptr(toType(ty))
-    case ir.Defn.Global(ty, _) =>
+    case gir.Defn.Global(ty, _) =>
       Type.Ptr(toType(ty))
-    case ir.Defn.Struct(_)       |
-         ir.Defn.Class(_, _)     |
-         ir.Defn.Interface(_)    |
-         ir.Defn.Module(_, _, _) =>
+    case gir.Defn.Struct(_)       |
+         gir.Defn.Class(_, _)     |
+         gir.Defn.Interface(_)    |
+         gir.Defn.Module(_, _, _) =>
       Type.Defn(n)
-    case ir.Defn.ArrayClass(n) =>
+    case gir.Defn.ArrayClass(n) =>
       Type.ArrayClass(toType(n))
-    case ir.Defn.Declare(ret, params) =>
+    case gir.Defn.Declare(ret, params) =>
       val paramtypes = params.map { case Param(ty) => toType(ty) }
       Type.Ptr(Type.Func(toType(ret), paramtypes))
-    case ir.Defn.Define(ret, params, _) =>
+    case gir.Defn.Define(ret, params, _) =>
       val paramtypes = params.map { case Param(ty) => toType(ty) }
       Type.Ptr(Type.Func(toType(ret), paramtypes))
-    case ir.Defn.Method(ret, params, _, _) =>
+    case gir.Defn.Method(ret, params, _, _) =>
       val paramtypes = params.map { case Param(ty) => toType(ty) }
       Type.Ptr(Type.Func(toType(ret), paramtypes))
-    case ir.Defn.Field(ty, _) =>
+    case gir.Defn.Field(ty, _) =>
       toType(ty)
   }
 
@@ -107,17 +107,17 @@ object Schedule {
   }
 
   private def toType(n: Node): Type = n match {
-    case _: ir.Prim =>
+    case _: gir.Prim =>
       Type.Prim(n)
-    case ir.Defn.Ptr(to) =>
+    case gir.Defn.Ptr(to) =>
       Type.Ptr(toType(to))
-    case ir.Defn.Function(ret, args) =>
+    case gir.Defn.Function(ret, args) =>
       Type.Func(toType(ret), args.map(toType))
-    case ir.Defn.Struct(_)       |
-         ir.Defn.Class(_, _)     |
-         ir.Defn.Module(_, _, _) =>
+    case gir.Defn.Struct(_)       |
+         gir.Defn.Class(_, _)     |
+         gir.Defn.Module(_, _, _) =>
       Type.Defn(n)
-    case ir.Defn.ArrayClass(n) =>
+    case gir.Defn.ArrayClass(n) =>
       Type.ArrayClass(toType(n))
   }
 
@@ -186,7 +186,7 @@ object Schedule {
       case StructElem(struct, idx) =>
         val structvalue = argvalue(struct)
         val Desc.Lit.I32(n) = idx.desc
-        val Type.Defn(ir.Defn.Struct(elemdefns)) = typedvalue(structvalue)
+        val Type.Defn(gir.Defn.Struct(elemdefns)) = typedvalue(structvalue)
         op.ty = toType(elemdefns(n))
         op.args = Seq(structvalue, argvalue(idx))
 
@@ -199,7 +199,7 @@ object Schedule {
           case index :: rest =>
             val Lit.I32(n) = index
             ty match {
-              case Type.Defn(ir.Defn.Struct(elems)) =>
+              case Type.Defn(gir.Defn.Struct(elems)) =>
                 find(rest, toType(elems(n)))
             }
         }
@@ -255,13 +255,13 @@ object Schedule {
         op.args = Seq(argvalue(v))
 
       case MethodElem(_, instance, method) =>
-        val ir.Defn.Method(ret, params, _, _) = method
+        val gir.Defn.Method(ret, params, _, _) = method
         val paramtys = params.map { case Param(ty) => toType(ty) }
         op.ty   = Type.Ptr(Type.Func(toType(ret), paramtys))
         op.args = Seq(argvalue(method), argvalue(instance))
 
       case FieldElem(_, instance, field) =>
-        val ir.Defn.Field(ty, _) = field
+        val gir.Defn.Field(ty, _) = field
         op.ty = Type.Ptr(toType(ty))
         op.args = Seq(argvalue(field), argvalue(instance))
 
@@ -301,9 +301,9 @@ object Schedule {
   }
 
   def membersof(n: Node): Seq[Defn] = n.uses.collect {
-    case Use(f @ ir.Defn.Field(ty, _)) =>
+    case Use(f @ gir.Defn.Field(ty, _)) =>
       Defn.State(f, Value.Const(Lit.Zero(ty)))
-    case Use(m @ ir.Defn.Method(ret, params, end, _)) =>
+    case Use(m @ gir.Defn.Method(ret, params, end, _)) =>
       val retty = toType(ret)
       val argtys = params.map { case Param(ty) => toType(ty) }
       Defn.Func(m, retty, argtys, scheduleOps(end))
@@ -313,34 +313,34 @@ object Schedule {
     val collectDefns = new CollectDefns
     Pass.run(collectDefns, node)
     val defns: Seq[Defn] = collectDefns.defns.collect {
-      case n @ ir.Defn.Global(ty, rhs) =>
+      case n @ gir.Defn.Global(ty, rhs) =>
         Defn.State(n, constvalue(rhs))
-      case n @ ir.Defn.Constant(ty, rhs) =>
+      case n @ gir.Defn.Constant(ty, rhs) =>
         Defn.State(n, constvalue(rhs))
-      case n @ ir.Defn.Define(ret, params, end) =>
+      case n @ gir.Defn.Define(ret, params, end) =>
         val retty = toType(ret)
         val argtys = params.map { case Param(ty) => toType(ty) }
         Defn.Func(n, retty, argtys, scheduleOps(end))
-      case n @ ir.Defn.Declare(ret, params) =>
+      case n @ gir.Defn.Declare(ret, params) =>
         val retty = toType(ret)
         val argtys = params.map { case Param(ty) => toType(ty) }
         Defn.Func(n, retty, argtys, Seq())
-      case n @ ir.Defn.Struct(fields) =>
+      case n @ gir.Defn.Struct(fields) =>
         val tys = fields.map(toType)
         Defn.Type(n, tys, Seq())
-      case n @ ir.Defn.Class(Empty, ifaces) =>
+      case n @ gir.Defn.Class(Empty, ifaces) =>
         val tys = ifaces.map(toType)
         Defn.Type(n, tys, membersof(n))
-      case n @ ir.Defn.Class(parent, ifaces) =>
+      case n @ gir.Defn.Class(parent, ifaces) =>
         val tys = (parent +: ifaces).map(toType)
         Defn.Type(n, tys, membersof(n))
-      case n @ ir.Defn.Interface(ifaces) =>
+      case n @ gir.Defn.Interface(ifaces) =>
         val tys = ifaces.map(toType)
         Defn.Type(n, tys, membersof(n))
-      case n @ ir.Defn.Module(parent, ifaces, _) =>
+      case n @ gir.Defn.Module(parent, ifaces, _) =>
         val tys = (parent +: ifaces).map(toType)
         Defn.Type(n, tys, membersof(n))
-      case n @ ir.Defn.Extern() =>
+      case n @ gir.Defn.Extern() =>
         throw new Exception(s"can't schedule graph with unlinked extern ${n.name}")
     }
     Schedule(defns)

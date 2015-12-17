@@ -1,17 +1,17 @@
 package native
-package ir
+package gir
 
 import scala.collection.mutable
 
 // TODO: store offsets in desc
-// TODO: ensure that all mutability is private[ir]
-sealed class Node private[ir] (
-  private[ir] var _desc:    Desc,
-  private[ir] var _slots:   Array[Slot]       = Array.empty,
-  private[ir] var _offsets: Array[Int]        = Array.empty,
-  private[ir] var _epoch:   Int               = 0,
-  private[ir] var _uses:    mutable.Set[Slot] = mutable.Set.empty,
-  private[ir] var _attrs:   Array[Attr]       = Array.empty
+// TODO: ensure that all mutability is private[gir]
+sealed class Node private[gir] (
+  private[gir] var _desc:    Desc,
+  private[gir] var _slots:   Array[Slot]       = Array.empty,
+  private[gir] var _offsets: Array[Int]        = Array.empty,
+  private[gir] var _epoch:   Int               = 0,
+  private[gir] var _uses:    mutable.Set[Slot] = mutable.Set.empty,
+  private[gir] var _attrs:   Array[Attr]       = Array.empty
 ) {
   private def length(index: Int): Int =
     if (index + 1 < _offsets.length)
@@ -19,10 +19,10 @@ sealed class Node private[ir] (
     else
       _slots.length - _offsets(index)
 
-  private[ir] def at(index: Int): Dep =
+  private[gir] def at(index: Int): Dep =
     _slots(_offsets(index))
 
-  private[ir] def multiAt(index: Int): MultiDep =
+  private[gir] def multiAt(index: Int): MultiDep =
     new MultiDep(this, length(index), _offsets(index))
 
   final def desc: Desc = _desc
@@ -66,19 +66,19 @@ sealed class Node private[ir] (
   final override def toString = s"$desc $name"
 }
 object Node {
-  private[ir] var lastEpoch = 0
-  private[ir] def nextEpoch = {
+  private[gir] var lastEpoch = 0
+  private[gir] def nextEpoch = {
     lastEpoch += 1
     lastEpoch
   }
 
-  private[ir] def apply(desc: Desc): Node =
+  private[gir] def apply(desc: Desc): Node =
     new Node(desc)
 
-  private[ir] def apply(desc: Desc, attrs: Seq[Attr]): Node =
+  private[gir] def apply(desc: Desc, attrs: Seq[Attr]): Node =
     new Node(desc, _attrs = attrs.toArray)
 
-  private[ir] def apply(desc: Desc, deps: Array[Any], attrs: Seq[Attr]): Node = {
+  private[gir] def apply(desc: Desc, deps: Array[Any], attrs: Seq[Attr]): Node = {
     val node    = Node(desc, attrs)
     val slots   = new mutable.ArrayBuffer[Slot]
     val offsets = new mutable.ArrayBuffer[Int]

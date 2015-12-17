@@ -2,12 +2,12 @@ package native
 package plugin
 
 import scala.tools.nsc._
-import native.ir
+import native.gir
 
 trait GenTypeKinds extends SubComponent {
   import global._, definitions._
 
-  def genClassDefn(sym: Symbol): ir.Node
+  def genClassDefn(sym: Symbol): gir.Node
 
   sealed abstract class Kind
   final case class PrimitiveKind(sym: Symbol) extends Kind
@@ -64,27 +64,27 @@ trait GenTypeKinds extends SubComponent {
     case tpe: ErasedValueType            => genRefKind(tpe.valueClazz)
   }
 
-  def genType(tpe: Type): ir.Node = toIRType(genKind(tpe))
+  def genType(tpe: Type): gir.Node = toIRType(genKind(tpe))
 
-  def toIRType(kind: Kind): ir.Node = kind match {
+  def toIRType(kind: Kind): gir.Node = kind match {
     case PrimitiveKind(sym) =>
       sym match {
-        case UnitClass    => ir.Prim.Unit
-        case BooleanClass => ir.Prim.Bool
-        case ByteClass    => ir.Prim.I8
-        case CharClass    => ir.Prim.I16
-        case ShortClass   => ir.Prim.I16
-        case IntClass     => ir.Prim.I32
-        case LongClass    => ir.Prim.I64
-        case FloatClass   => ir.Prim.F32
-        case DoubleClass  => ir.Prim.F64
+        case UnitClass    => gir.Prim.Unit
+        case BooleanClass => gir.Prim.Bool
+        case ByteClass    => gir.Prim.I8
+        case CharClass    => gir.Prim.I16
+        case ShortClass   => gir.Prim.I16
+        case IntClass     => gir.Prim.I32
+        case LongClass    => gir.Prim.I64
+        case FloatClass   => gir.Prim.F32
+        case DoubleClass  => gir.Prim.F64
       }
     case BottomKind(sym) =>
       sym match {
-        case NullClass    => ir.Prim.Null
-        case NothingClass => ir.Prim.Nothing
+        case NullClass    => gir.Prim.Null
+        case NothingClass => gir.Prim.Nothing
       }
     case ClassKind(sym) => genClassDefn(sym)
-    case ArrayKind(of)  => ir.Defn.ArrayClass(toIRType(of))
+    case ArrayKind(of)  => gir.Defn.ArrayClass(toIRType(of))
   }
 }

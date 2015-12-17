@@ -1,5 +1,5 @@
 package native
-package ir
+package gir
 package serialization
 
 import java.nio.ByteBuffer
@@ -7,7 +7,7 @@ import java.lang.System.{identityHashCode => id}
 import native.util.Show, Show.{Sequence => s, Indent => i, Unindent => u,
                                Repeat => r, Newline => n}
 import native.util.sh
-import native.ir.Desc
+import native.gir.Desc
 import DotSerializer._
 
 class DotSerializer extends Pass {

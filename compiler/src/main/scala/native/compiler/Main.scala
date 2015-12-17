@@ -1,8 +1,8 @@
 package native
 package compiler
 
-import native.ir._
-import native.ir.serialization._
+import native.gir._
+import native.gir.serialization._
 import native.compiler.reductions._
 
 object Main extends App {
