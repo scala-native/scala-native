@@ -9,7 +9,7 @@ lazy val common = Seq(
 
 lazy val withPluginCommon = common ++ Seq(
   scalacOptions ++= Seq(
-    "-Xplugin:plugin/target/scala-2.11/plugin_2.11-0.1-SNAPSHOT.jar"
+    "-Xplugin:gplugin/target/scala-2.11/gplugin_2.11-0.1-SNAPSHOT.jar"
   ),
   libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.11.7"
 )
@@ -23,8 +23,8 @@ lazy val util =
   project.in(file("util")).
     settings(common: _*)
 
-lazy val plugin =
-  project.in(file("plugin")).
+lazy val gplugin =
+  project.in(file("gplugin")).
     settings(common: _*).
     settings(
       unmanagedSourceDirectories in Compile ++= Seq(
@@ -49,13 +49,12 @@ lazy val compiler =
 lazy val javalib =
   project.in(file("javalib")).
     settings(withPluginCommon: _*).
-    dependsOn(plugin)
+    dependsOn(gplugin)
 
 lazy val nativelib =
   project.in(file("nativelib")).
     settings(withPluginCommon: _*).
-
-    dependsOn(plugin)
+    dependsOn(gplugin)
 
 lazy val sandbox =
   project.in(file("sandbox")).
@@ -63,6 +62,6 @@ lazy val sandbox =
     settings(
       scalacOptions += "-Xprint:all"
     ).
-    dependsOn(plugin, nativelib)
+    dependsOn(gplugin, nativelib)
 
 

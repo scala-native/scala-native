@@ -1,5 +1,5 @@
 package native
-package plugin
+package gplugin
 
 import scala.collection.mutable
 import scala.tools.nsc._
