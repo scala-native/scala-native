@@ -10,4 +10,7 @@ package object util {
   object sh {
     def apply(res: Show.Result) = res
   }
+
+  final case object Unreachable extends Exception
+  def unreachable = throw Unreachable
 }

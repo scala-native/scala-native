@@ -48,18 +48,19 @@ object Shows {
       sh"switch $scrut, $default [${r(cases, sep = "; ")}]"
     case Op.Invoke(f, args, succ, fail) =>
       sh"invoke $f(${r(args, sep = ", ")}) to $succ unwind $fail"
-    case Op.Call(f, args) =>
-      sh"call $f(${r(args, sep = ",")})"
+
+    case Op.Call(ty, f, args) =>
+      sh"call[$ty] $f(${r(args, sep = ",")})"
     case Op.Load(ty, ptr) =>
       sh"load[$ty] $ptr"
     case Op.Store(ty, ptr, value) =>
       sh"store[$ty] $ptr, $value"
-    case Op.Elem(ptr, indexes) =>
-      sh"element $ptr, ${r(indexes, sep = ", ")}"
-    case Op.Extract(aggr, index) =>
-      sh"extract $aggr, $index"
-    case Op.Insert(aggr, value, index) =>
-      sh"insert $aggr, $index"
+    case Op.Elem(ty, ptr, indexes) =>
+      sh"element[$ty] $ptr, ${r(indexes, sep = ", ")}"
+    case Op.Extract(ty, aggr, index) =>
+      sh"extract[$ty] $aggr, $index"
+    case Op.Insert(ty, aggr, value, index) =>
+      sh"insert[$ty] $aggr, $index"
     case Op.Alloc(ty) =>
       sh"alloc[$ty]"
     case Op.Alloca(ty) =>
@@ -69,14 +70,14 @@ object Shows {
     case Op.Bin(name, ty, l, r) =>
       sh"$name[$ty] $l, $r"
     case Op.Comp(name, ty, l, r) =>
-      sh"$name[$name] $l, $r"
+      sh"$name[$ty] $l, $r"
     case Op.Conv(name, ty, v) =>
       sh"$name[$ty] $v"
 
-    case Op.FieldElem(name, value) =>
-      sh"field-elem $name, $value"
-    case Op.MethodElem(name, value) =>
-      sh"method-elem $name, $value"
+    case Op.FieldElem(ty, name, value) =>
+      sh"field-elem[$ty] $name, $value"
+    case Op.MethodElem(ty, name, value) =>
+      sh"method-elem[$ty] $name, $value"
     case Op.AllocClass(ty) =>
       sh"alloc-class[$ty]"
     case Op.AllocArray(ty, length) =>
@@ -95,8 +96,8 @@ object Shows {
       sh"is-instance-of[$ty] $value"
     case Op.ArrayLength(value) =>
       sh"array-length $value"
-    case Op.ArrayElem(value, index) =>
-      sh"array-elem $value, $index"
+    case Op.ArrayElem(ty, value, index) =>
+      sh"array-elem[$ty] $value, $index"
     case Op.Box(value, to) =>
       sh"box[$to] $value"
     case Op.Unbox(value, to) =>
@@ -194,6 +195,7 @@ object Shows {
   implicit val showType: Show[Type] = Show {
     case Type.None                => ""
     case Type.Void                => "void"
+    case Type.Size                => "size"
     case Type.Bool                => "bool"
     case Type.I8                  => "i8"
     case Type.I16                 => "i16"

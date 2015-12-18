@@ -5,6 +5,7 @@ sealed abstract class Type
 object Type {
   final case object None                   extends Type
   final case object Void                   extends Type
+  final case object Size                   extends Type
   final case object Bool                   extends Type
   sealed abstract case class I(width: Int) extends Type
   final object I8                          extends I(8)

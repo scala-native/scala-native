@@ -7,7 +7,7 @@ import scala.tools.nsc._
 import scala.tools.nsc.plugins._
 import scala.util.{Either, Left, Right}
 import native.nir.Focus, Focus.sequenced
-import native.util, util.sh, util.ScopedVar.scoped
+import native.util, util._, util.ScopedVar.scoped
 import native.nir.Shows._
 
 abstract class GenNIR extends PluginComponent
@@ -23,8 +23,6 @@ abstract class GenNIR extends PluginComponent
 
   override def newPhase(prev: Phase): StdPhase =
     new SaltyCodePhase(prev)
-
-  def unreachable = abort("unreachable")
 
   def undefined(focus: Focus) =
     focus.finish(Op.Undefined)
@@ -158,7 +156,7 @@ abstract class GenNIR extends PluginComponent
       val sym = dd.symbol
       val name = genDefName(sym)
       val paramSyms = defParamSymbols(dd)
-      val sig = genDefSig(sym, paramSyms)
+      val sig = genDefSig(sym)
 
       if (isForeignExternModule(sym.owner))
         Defn.Declare(genForeignName(sym), sig)
@@ -178,7 +176,8 @@ abstract class GenNIR extends PluginComponent
       }
     }
 
-    def genDefSig(sym: Symbol, params: Seq[Symbol]): nir.Type = {
+    def genDefSig(sym: Symbol): nir.Type = {
+      val params   = sym.asMethod.paramLists.flatten
       val selfty   = Type.Class(genClassName(sym.owner))
       val paramtys = params.map(p => genType(p.tpe))
       val retty    =
@@ -300,7 +299,7 @@ abstract class GenNIR extends PluginComponent
         } else {
           val ty = genType(tree.symbol.tpe)
           val qual = genExpr(qualp, focus)
-          val elem = qual.withOp(Op.FieldElem(genFieldName(tree.symbol), qual.value))
+          val elem = qual.withOp(Op.FieldElem(ty, genFieldName(tree.symbol), qual.value))
           elem.withOp(Op.Load(ty, elem.value))
         }
 
@@ -332,7 +331,7 @@ abstract class GenNIR extends PluginComponent
             val ty   = genType(sel.tpe)
             val qual = genExpr(qualp, focus)
             val rhs  = genExpr(rhsp, qual)
-            val elem = rhs.withOp(Op.FieldElem(genFieldName(sel.symbol), qual.value))
+            val elem = rhs.withOp(Op.FieldElem(ty, genFieldName(sel.symbol), qual.value))
             elem.withOp(Op.Store(ty, elem.value, rhs.value))
 
           case id: Ident =>
@@ -390,7 +389,7 @@ abstract class GenNIR extends PluginComponent
 
     def genStaticMember(sym: Symbol, focus: Focus): Focus = {
       val ty = genType(sym.tpe)
-      val elem = focus.withOp(Op.FieldElem(genFieldName(sym), Val.Name(genClassName(sym.owner))))
+      val elem = focus.withOp(Op.FieldElem(ty, genFieldName(sym), Val.Name(genClassName(sym.owner))))
       elem.withOp(Op.Load(ty, elem.value))
     }
 
@@ -629,13 +628,13 @@ abstract class GenNIR extends PluginComponent
     def genPrimitiveBox(exprp: Tree, tpe: Type, focus: Focus) = {
       val expr = genExpr(exprp, focus)
 
-      expr.withOp(Op.Box(expr.value, primitive2box(tpe.widen)))
+      expr.withOp(Op.Box(primitive2box(tpe.widen), expr.value))
     }
 
     def genPrimitiveUnbox(exprp: Tree, tpe: Type, focus: Focus) = {
       val expr = genExpr(exprp, focus)
 
-      expr.withOp(Op.Unbox(expr.value, primitive2box(tpe.widen)))
+      expr.withOp(Op.Unbox(primitive2box(tpe.widen), expr.value))
     }
 
     def genPrimitiveOp(app: Apply, focus: Focus): Focus = {
@@ -812,10 +811,10 @@ abstract class GenNIR extends PluginComponent
       def argvalues  = allfocus.tail.map(_.value)
 
       if (scalaPrimitives.isArrayGet(code)) {
-        val elem = lastfocus withOp Op.ArrayElem(arrayvalue, argvalues(0))
+        val elem = lastfocus withOp Op.ArrayElem(elemty, arrayvalue, argvalues(0))
         elem withOp Op.Load(elemty, elem.value)
       } else if (scalaPrimitives.isArraySet(code)) {
-        val elem = lastfocus withOp Op.ArrayElem(arrayvalue, argvalues(0))
+        val elem = lastfocus withOp Op.ArrayElem(elemty, arrayvalue, argvalues(0))
         elem withOp Op.Store(elemty, elem.value, argvalues(1))
       } else
         lastfocus withOp Op.ArrayLength(arrayvalue)
@@ -969,15 +968,17 @@ abstract class GenNIR extends PluginComponent
 
     def genForeignCall(sym: Symbol, args: Seq[Val], focus: Focus): Focus = {
       val name = genForeignName(sym)
-      val call = focus withOp Op.Call(Val.Name(name), args)
+      val sig  = genDefSig(sym)
+      val call = focus withOp Op.Call(sig, Val.Name(name), args)
 
       call
     }
 
     def genNormalMethodCall(sym: Symbol, self: Val, args: Seq[Val], focus: Focus): Focus = {
       val name = genDefName(sym)
-      val elem = focus withOp Op.MethodElem(name, self)
-      val call = elem withOp Op.Call(elem.value, self +: args)
+      val sig  = genDefSig(sym)
+      val elem = focus withOp Op.MethodElem(sig, name, self)
+      val call = elem withOp Op.Call(sig, elem.value, self +: args)
 
       call
     }

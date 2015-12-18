@@ -141,18 +141,19 @@ class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.SwitchOp); putVal(v); putNext(default); putCases(cases)
     case Op.Invoke(f, args, succ, fail) =>
       putInt(T.InvokeOp); putVal(f); putVals(args); putNext(succ); putNext(fail)
-    case Op.Call(v, args) =>
-      putInt(T.CallOp); putVal(v); putVals(args)
+
+    case Op.Call(ty, v, args) =>
+      putInt(T.CallOp); putType(ty); putVal(v); putVals(args)
     case Op.Load(ty, ptr) =>
       putInt(T.LoadOp); putType(ty); putVal(ptr)
     case Op.Store(ty, value, ptr) =>
       putInt(T.StoreOp); putType(ty); putVal(value); putVal(ptr)
-    case Op.Elem(v, indexes) =>
-      putInt(T.ElemOp); putVal(v); putVals(indexes)
-    case Op.Extract(v, index) =>
-      putInt(T.ExtractOp); putVal(v); putVal(index)
-    case Op.Insert(v, value, index) =>
-      putInt(T.InsertOp); putVal(v); putVal(value); putVal(index)
+    case Op.Elem(ty, v, indexes) =>
+      putInt(T.ElemOp); putType(ty); putVal(v); putVals(indexes)
+    case Op.Extract(ty, v, index) =>
+      putInt(T.ExtractOp); putType(ty); putVal(v); putVal(index)
+    case Op.Insert(ty, v, value, index) =>
+      putInt(T.InsertOp); putType(ty); putVal(v); putVal(value); putVal(index)
     case Op.Alloc(ty) =>
       putInt(T.AllocOp); putType(ty)
     case Op.Alloca(ty) =>
@@ -165,9 +166,10 @@ class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.CompOp); putComp(comp); putType(ty); putVal(l); putVal(r)
     case Op.Conv(conv, ty, v) =>
       putInt(T.ConvOp); putConv(conv); putType(ty); putVal(v)
-    case Op.FieldElem(name, v) =>
+
+    case Op.FieldElem(ty, name, v) =>
       putInt(T.FieldElemOp); putName(name); putVal(v)
-    case Op.MethodElem(name, v) =>
+    case Op.MethodElem(ty, name, v) =>
       putInt(T.MethodElemOp); putName(name); putVal(v)
     case Op.AllocClass(ty) =>
       putInt(T.AllocClassOp); putType(ty)
@@ -187,12 +189,12 @@ class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.IsInstanceOfOp); putVal(v); putType(ty)
     case Op.ArrayLength(v) =>
       putInt(T.ArrayLengthOp); putVal(v)
-    case Op.ArrayElem(v, index) =>
-      putInt(T.ArrayElemOp); putVal(v); putVal(index)
-    case Op.Box(v, ty) =>
-      putInt(T.BoxOp); putVal(v); putType(ty)
-    case Op.Unbox(v, ty) =>
-      putInt(T.UnboxOp); putVal(v); putType(ty)
+    case Op.ArrayElem(ty, v, index) =>
+      putInt(T.ArrayElemOp); putType(ty); putVal(v); putVal(index)
+    case Op.Box(ty, v) =>
+      putInt(T.BoxOp); putType(ty); putVal(v)
+    case Op.Unbox(ty, v) =>
+      putInt(T.UnboxOp); putType(ty); putVal(v)
     case Op.MonitorEnter(v) =>
       putInt(T.MonitorEnterOp); putVal(v)
     case Op.MonitorExit(v) =>
