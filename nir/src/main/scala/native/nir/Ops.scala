@@ -7,7 +7,7 @@ object Op {
   final case class Ret    (value: Val)                                       extends Op
   final case class Throw  (value: Val)                                       extends Op
   final case class Br     (value: Val, thenp: Next, elsep: Next)             extends Op
-  final case class Switch (value: Val, default: Next, cases: Seq[Next])      extends Op
+  final case class Switch (value: Val, default: Next, cases: Seq[Case])      extends Op
   final case class Invoke (ptr: Val, args: Seq[Val], succ: Next, fail: Next) extends Op
   final case class Call   (ptr: Val, args: Seq[Val])                         extends Op
   final case class Load   (ty: Type, ptr: Val)                               extends Op
@@ -36,4 +36,6 @@ object Op {
   final case class ArrayElem   (value: Val, index: Val) extends Op
   final case class Box         (value: Val, to: Type)   extends Op
   final case class Unbox       (value: Val, to: Type)   extends Op
+  final case class MonitorEnter(value: Val)             extends Op
+  final case class MonitorExit (value: Val)             extends Op
 }

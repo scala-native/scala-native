@@ -54,7 +54,6 @@ class BinaryDeserializer(bb: ByteBuffer) {
 
   def getDefns(): Seq[Defn] = getSeq(getDefn)
   def getDefn(): Defn = getInt match {
-    case T.ExternDefn   => Defn.Extern(getName)
     case T.VarDefn      => Defn.Var(getName, getType, getVal)
     case T.DeclareDefn  => Defn.Declare(getName, getType)
     case T.DefineDefn   => Defn.Define(getName, getType, getBlocks)
@@ -74,14 +73,18 @@ class BinaryDeserializer(bb: ByteBuffer) {
   def getParam(): Param = Param(getName, getType)
 
   def getNexts(): Seq[Next] = getSeq(getNext)
-  def getNext(): Next = Next(getVal, getName, getVals)
+  def getNext(): Next = Next(getName, getVals)
+
+  def getCases(): Seq[Case] = getSeq(getCase)
+  def getCase(): Case = Case(getVal, getNext)
 
   def getNames(): Seq[Name] = getSeq(getName)
   def getName(): Name = getInt match {
     case T.NoneName        => Name.None
     case T.FreshName       => Name.Fresh(getInt)
     case T.LocalName       => Name.Local(getString)
-    case T.ExternName      => Name.Extern(getString)
+    case T.PrimName        => Name.Prim(getString)
+    case T.ForeignName     => Name.Foreign(getString)
     case T.NestedName      => Name.Nested(getName, getName)
     case T.ClassName       => Name.Class(getString)
     case T.ModuleName      => Name.Module(getString)
@@ -100,7 +103,7 @@ class BinaryDeserializer(bb: ByteBuffer) {
     case T.RetOp          => Op.Ret(getVal)
     case T.ThrowOp        => Op.Throw(getVal)
     case T.BrOp           => Op.Br(getVal, getNext, getNext)
-    case T.SwitchOp       => Op.Switch(getVal, getNext, getNexts)
+    case T.SwitchOp       => Op.Switch(getVal, getNext, getCases)
     case T.InvokeOp       => Op.Invoke(getVal, getVals, getNext, getNext)
     case T.CallOp         => Op.Call(getVal, getVals)
     case T.LoadOp         => Op.Load(getType, getVal)
@@ -127,6 +130,8 @@ class BinaryDeserializer(bb: ByteBuffer) {
     case T.ArrayElemOp    => Op.ArrayElem(getVal, getVal)
     case T.BoxOp          => Op.Box(getVal, getType)
     case T.UnboxOp        => Op.Unbox(getVal, getType)
+    case T.MonitorEnterOp => Op.MonitorEnter(getVal)
+    case T.MonitorExitOp  => Op.MonitorExit(getVal)
   }
 
   def getTypes(): Seq[Type] = getSeq(getType)

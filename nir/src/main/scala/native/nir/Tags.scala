@@ -33,8 +33,7 @@ object Tags {
   final val InttoptrConv = 1 + PtrtointConv
   final val BitcastConv  = 1 + InttoptrConv
 
-  final val ExternDefn   = 1 + BitcastConv
-  final val VarDefn      = 1 + ExternDefn
+  final val VarDefn      = 1 + BitcastConv
   final val DeclareDefn  = 1 + VarDefn
   final val DefineDefn   = 1 + DeclareDefn
   final val StructDefn   = 1 + DefineDefn
@@ -45,8 +44,9 @@ object Tags {
   final val NoneName        = 1 + ModuleDefn
   final val FreshName       = 1 + NoneName
   final val LocalName       = 1 + FreshName
-  final val ExternName      = 1 + LocalName
-  final val NestedName      = 1 + ExternName
+  final val PrimName        = 1 + LocalName
+  final val ForeignName     = 1 + PrimName
+  final val NestedName      = 1 + ForeignName
   final val ClassName       = 1 + NestedName
   final val ModuleName      = 1 + ClassName
   final val InterfaceName   = 1 + ModuleName
@@ -89,8 +89,10 @@ object Tags {
   final val ArrayElemOp    = 1 + ArrayLengthOp
   final val BoxOp          = 1 + ArrayElemOp
   final val UnboxOp        = 1 + BoxOp
+  final val MonitorEnterOp = 1 + UnboxOp
+  final val MonitorExitOp  = 1 + MonitorEnterOp
 
-  final val NoneType       = 1 + UnboxOp
+  final val NoneType       = 1 + MonitorExitOp
   final val VoidType       = 1 + NoneType
   final val BoolType       = 1 + VoidType
   final val I8Type         = 1 + BoolType

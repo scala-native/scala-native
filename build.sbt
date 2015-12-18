@@ -9,13 +9,18 @@ lazy val common = Seq(
 
 lazy val withPluginCommon = common ++ Seq(
   scalacOptions ++= Seq(
-    "-Xplugin:gplugin/target/scala-2.11/gplugin_2.11-0.1-SNAPSHOT.jar"
+    "-Xplugin:nirplugin/target/scala-2.11/nirplugin_2.11-0.1-SNAPSHOT.jar"
   ),
   libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.11.7"
 )
 
-lazy val ir =
-  project.in(file("ir")).
+lazy val gir =
+  project.in(file("gir")).
+    settings(common: _*).
+    dependsOn(util)
+
+lazy val nir =
+  project.in(file("nir")).
     settings(common: _*).
     dependsOn(util)
 
@@ -28,7 +33,7 @@ lazy val gplugin =
     settings(common: _*).
     settings(
       unmanagedSourceDirectories in Compile ++= Seq(
-        (scalaSource in (ir, Compile)).value,
+        (scalaSource in (gir, Compile)).value,
         (scalaSource in (util, Compile)).value
       ),
       libraryDependencies ++= Seq(
@@ -36,7 +41,22 @@ lazy val gplugin =
         "org.scala-lang" % "scala-reflect" % scalaVersion.value
       )
     ).
-    dependsOn(ir)
+    dependsOn(gir)
+
+lazy val nirplugin =
+  project.in(file("nirplugin")).
+    settings(common: _*).
+    settings(
+      unmanagedSourceDirectories in Compile ++= Seq(
+        (scalaSource in (nir, Compile)).value,
+        (scalaSource in (util, Compile)).value
+      ),
+      libraryDependencies ++= Seq(
+        "org.scala-lang" % "scala-compiler" % scalaVersion.value,
+        "org.scala-lang" % "scala-reflect" % scalaVersion.value
+      )
+    ).
+    dependsOn(nir)
 
 lazy val compiler =
   project.in(file("compiler")).
@@ -44,7 +64,7 @@ lazy val compiler =
     settings(
       libraryDependencies += "commons-io" % "commons-io" % "2.4"
     ).
-    dependsOn(ir)
+    dependsOn(gir)
 
 lazy val javalib =
   project.in(file("javalib")).
@@ -62,6 +82,6 @@ lazy val sandbox =
     settings(
       scalacOptions += "-Xprint:all"
     ).
-    dependsOn(gplugin, nativelib)
+    dependsOn(nirplugin)
 
 

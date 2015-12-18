@@ -6,7 +6,8 @@ object Name {
   final case object None                                               extends Name
   final case class Fresh      (id: Int)                                extends Name
   final case class Local      (id: String)                             extends Name
-  final case class Extern     (id: String)                             extends Name
+  final case class Foreign    (id: String)                             extends Name
+  final case class Prim       (id: String)                             extends Name
   final case class Nested     (owner: Name, member: Name)              extends Name
   final case class Class      (id: String)                             extends Name
   final case class Module     (id: String)                             extends Name

@@ -30,7 +30,7 @@ package object serialization {
                         buffer: ByteBuffer = defaultBuffer): Unit =
     serializeFile(serializeText, defns, path, buffer)
 
-  def serializeIRFile(defns: Seq[Defn], path: String,
+  def serializeBinaryFile(defns: Seq[Defn], path: String,
                       buffer: ByteBuffer = defaultBuffer): Unit =
     serializeFile(serializeBinary, defns, path, buffer)
 }

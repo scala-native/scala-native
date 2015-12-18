@@ -55,8 +55,6 @@ class BinarySerializer(buffer: ByteBuffer) {
 
   def putDefns(defns: Seq[Defn]): Unit = putSeq(putDefn)(defns)
   def putDefn(value: Defn): Unit = value match {
-    case Defn.Extern(name) =>
-      putInt(T.ExternDefn); putName(name)
     case Defn.Var(name, ty, value) =>
       putInt(T.VarDefn); putName(name); putType(ty); putVal(value)
     case Defn.Declare(name, ty) =>
@@ -95,9 +93,14 @@ class BinarySerializer(buffer: ByteBuffer) {
 
   def putNexts(nexts: Seq[Next]) = putSeq(putNext)(nexts)
   def putNext(next: Next) = {
-    putVal(next.value)
     putName(next.name)
     putVals(next.args)
+  }
+
+  def putCases(kases: Seq[Case]) = putSeq(putCase)(kases)
+  def putCase(kase: Case) = {
+    putVal(kase.value)
+    putNext(kase.next)
   }
 
   def putNames(names: Seq[Name]): Unit = putSeq(putName)(names)
@@ -105,7 +108,8 @@ class BinarySerializer(buffer: ByteBuffer) {
     case Name.None                  => putInt(T.NoneName)
     case Name.Fresh(id)             => putInt(T.FreshName); putInt(id)
     case Name.Local(id)             => putInt(T.LocalName); putString(id)
-    case Name.Extern(id)            => putInt(T.ExternName); putString(id)
+    case Name.Prim(id)              => putInt(T.PrimName); putString(id)
+    case Name.Foreign(id)           => putInt(T.ForeignName); putString(id)
     case Name.Nested(owner, member) => putInt(T.NestedName); putName(owner); putName(member)
     case Name.Class(id)             => putInt(T.ClassName); putString(id)
     case Name.Module(id)            => putInt(T.ModuleName); putString(id)
@@ -129,7 +133,7 @@ class BinarySerializer(buffer: ByteBuffer) {
     case Op.Br(v, thenp, elsep) =>
       putInt(T.BrOp); putVal(v); putNext(thenp); putNext(elsep)
     case Op.Switch(v, default, cases) =>
-      putInt(T.SwitchOp); putVal(v); putNext(default); putNexts(cases)
+      putInt(T.SwitchOp); putVal(v); putNext(default); putCases(cases)
     case Op.Invoke(f, args, succ, fail) =>
       putInt(T.InvokeOp); putVal(f); putVals(args); putNext(succ); putNext(fail)
     case Op.Call(v, args) =>
@@ -182,8 +186,11 @@ class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.BoxOp); putVal(v); putType(ty)
     case Op.Unbox(v, ty) =>
       putInt(T.UnboxOp); putVal(v); putType(ty)
+    case Op.MonitorEnter(v) =>
+      putInt(T.MonitorEnterOp); putVal(v)
+    case Op.MonitorExit(v) =>
+      putInt(T.MonitorExitOp); putVal(v)
   }
-
 
   def putTypes(tys: Seq[Type]): Unit = putSeq(putType)(tys)
   def putType(ty: Type): Unit = ty match {
