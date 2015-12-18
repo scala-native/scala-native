@@ -130,8 +130,10 @@ class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.RetOp); putVal(v)
     case Op.Throw(v) =>
       putInt(T.ThrowOp); putVal(v)
-    case Op.Br(v, thenp, elsep) =>
-      putInt(T.BrOp); putVal(v); putNext(thenp); putNext(elsep)
+    case Op.Jump(next) =>
+      putInt(T.JumpOp); putNext(next)
+    case Op.If(v, thenp, elsep) =>
+      putInt(T.IfOp); putVal(v); putNext(thenp); putNext(elsep)
     case Op.Switch(v, default, cases) =>
       putInt(T.SwitchOp); putVal(v); putNext(default); putCases(cases)
     case Op.Invoke(f, args, succ, fail) =>

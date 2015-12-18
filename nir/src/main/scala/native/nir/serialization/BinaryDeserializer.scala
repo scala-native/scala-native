@@ -102,7 +102,8 @@ class BinaryDeserializer(bb: ByteBuffer) {
     case T.UndefinedOp    => Op.Undefined
     case T.RetOp          => Op.Ret(getVal)
     case T.ThrowOp        => Op.Throw(getVal)
-    case T.BrOp           => Op.Br(getVal, getNext, getNext)
+    case T.JumpOp         => Op.Jump(getNext)
+    case T.IfOp           => Op.If(getVal, getNext, getNext)
     case T.SwitchOp       => Op.Switch(getVal, getNext, getCases)
     case T.InvokeOp       => Op.Invoke(getVal, getVals, getNext, getNext)
     case T.CallOp         => Op.Call(getVal, getVals)

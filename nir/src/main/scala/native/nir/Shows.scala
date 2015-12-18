@@ -25,7 +25,7 @@ object Shows {
 
   implicit val showNext: Show[Next] = Show {
     case Next(name, args) =>
-      sh"label $name(${r(args, sep = ", ")})"
+      sh"$name(${r(args, sep = ", ")})"
   }
 
   implicit val showCase: Show[Case] = Show {
@@ -40,8 +40,10 @@ object Shows {
       sh"ret $value"
     case Op.Throw(value) =>
       sh"throw $value"
-    case Op.Br(cond, thenp, elsep) =>
-      sh"br $cond, $thenp, $elsep"
+    case Op.Jump(next) =>
+      sh"jump $next"
+    case Op.If(cond, thenp, elsep) =>
+      sh"if $cond then $thenp else $elsep"
     case Op.Switch(scrut, default, cases)  =>
       sh"switch $scrut, $default [${r(cases, sep = "; ")}]"
     case Op.Invoke(f, args, succ, fail) =>

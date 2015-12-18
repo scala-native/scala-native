@@ -197,13 +197,11 @@ abstract class GenNIR extends PluginComponent
       val self = Param(Name.Local("this"), genType(curClassSym.tpe))
       val params = paramSyms.map { sym =>
         val name = genLocalName(sym)
-        println(s"local name for $sym is $name")
         val param = Param(name, genType(sym.tpe))
         curEnv.enter(sym, Val.Name(name))
         param
       }
 
-      println(s"params without self are $params")
       self +: params
     }
 

@@ -30,7 +30,26 @@ final case class Focus(
     preceding
   }
 
-  def branchIf(cond: Val, thenf: Focus => Focus, elsef: Focus => Focus): Focus = ???
+  def branchIf(cond: Val, thenf: Focus => Focus, elsef: Focus => Focus)(implicit fresh: Fresh): Focus = {
+    val merge = fresh().name
+    val param = Param(fresh().name, Type.None)
+    def wrap(f: Focus => Focus) = {
+      val end = f(Focus.entry(Seq()))
+      val finalized = end.finish(Op.Jump(Next(merge, Seq(end.value))))
+      finalized.blocks
+    }
+    val thenprec = wrap(elsef)
+    val thenname = thenprec.last.name
+    val elseprec = wrap(thenf)
+    val elsename = elseprec.last.name
+    val prec =
+      finish(Op.If(cond,
+        Next(thenname, Seq()),
+        Next(elsename, Seq()))).blocks
+    Focus(prec ++ thenprec ++ elseprec,
+          merge, Seq(param), Seq(),
+          Val.Name(param.name), complete = false)
+  }
 }
 object Focus {
   final case class NotMergeable(focus: Focus) extends Exception

@@ -61,8 +61,9 @@ object Tags {
   final val UndefinedOp    = 1 + ArrayName
   final val RetOp          = 1 + UndefinedOp
   final val ThrowOp        = 1 + RetOp
-  final val BrOp           = 1 + ThrowOp
-  final val SwitchOp       = 1 + BrOp
+  final val JumpOp         = 1 + ThrowOp
+  final val IfOp           = 1 + JumpOp
+  final val SwitchOp       = 1 + IfOp
   final val InvokeOp       = 1 + SwitchOp
   final val CallOp         = 1 + InvokeOp
   final val LoadOp         = 1 + CallOp
