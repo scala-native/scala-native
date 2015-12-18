@@ -30,12 +30,15 @@ class BinarySerializer(buffer: ByteBuffer) {
     case Bin.And  => T.AndBin
     case Bin.Or   => T.OrBin
     case Bin.Xor  => T.XorBin
-    case Bin.Eq   => T.EqBin
-    case Bin.Neq  => T.NeqBin
-    case Bin.Lt   => T.LtBin
-    case Bin.Lte  => T.LteBin
-    case Bin.Gt   => T.GtBin
-    case Bin.Gte  => T.GteBin
+  }
+
+  def putComp(comp: Comp) = comp match {
+    case Comp.Eq  => T.EqComp
+    case Comp.Neq => T.NeqComp
+    case Comp.Lt  => T.LtComp
+    case Comp.Lte => T.LteComp
+    case Comp.Gt  => T.GtComp
+    case Comp.Gte => T.GteComp
   }
 
   def putConv(conv: Conv) = conv match {
@@ -158,6 +161,8 @@ class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.SizeOp); putType(ty)
     case Op.Bin(bin, ty, l, r) =>
       putInt(T.BinOp); putBin(bin); putType(ty); putVal(l); putVal(r)
+    case Op.Comp(comp, ty, l, r) =>
+      putInt(T.CompOp); putComp(comp); putType(ty); putVal(l); putVal(r)
     case Op.Conv(conv, ty, v) =>
       putInt(T.ConvOp); putConv(conv); putType(ty); putVal(v)
     case Op.FieldElem(name, v) =>

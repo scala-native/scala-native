@@ -14,10 +14,4 @@ object Bin {
   final case object And  extends Bin
   final case object Or   extends Bin
   final case object Xor  extends Bin
-  final case object Eq   extends Bin
-  final case object Neq  extends Bin
-  final case object Lt   extends Bin
-  final case object Lte  extends Bin
-  final case object Gt   extends Bin
-  final case object Gte  extends Bin
 }

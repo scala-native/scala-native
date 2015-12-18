@@ -68,6 +68,8 @@ object Shows {
       sh"size[$ty]"
     case Op.Bin(name, ty, l, r) =>
       sh"$name[$ty] $l, $r"
+    case Op.Comp(name, ty, l, r) =>
+      sh"$name[$name] $l, $r"
     case Op.Conv(name, ty, v) =>
       sh"$name[$ty] $v"
 
@@ -117,12 +119,15 @@ object Shows {
     case Bin.And  => "and"
     case Bin.Or   => "or"
     case Bin.Xor  => "xor"
-    case Bin.Eq   => "eq"
-    case Bin.Neq  => "neq"
-    case Bin.Lt   => "lt"
-    case Bin.Lte  => "lte"
-    case Bin.Gt   => "gt"
-    case Bin.Gte  => "gte"
+  }
+
+  implicit val showComp: Show[Comp] = Show {
+    case Comp.Eq  => "eq"
+    case Comp.Neq => "neq"
+    case Comp.Lt  => "lt"
+    case Comp.Lte => "lte"
+    case Comp.Gt  => "gt"
+    case Comp.Gte => "gte"
   }
 
   implicit val showConv: Show[Conv] = Show {

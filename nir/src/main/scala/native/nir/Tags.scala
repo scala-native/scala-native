@@ -2,25 +2,26 @@ package native
 package nir
 
 object Tags {
-  final val AddBin      = 1
-  final val SubBin      = 1 + AddBin
-  final val MulBin      = 1 + SubBin
-  final val DivBin      = 1 + MulBin
-  final val ModBin      = 1 + DivBin
-  final val ShlBin      = 1 + ModBin
-  final val LshrBin     = 1 + ShlBin
-  final val AshrBin     = 1 + LshrBin
-  final val AndBin      = 1 + AshrBin
-  final val OrBin       = 1 + AndBin
-  final val XorBin      = 1 + OrBin
-  final val EqBin       = 1 + XorBin
-  final val NeqBin      = 1 + EqBin
-  final val LtBin       = 1 + NeqBin
-  final val LteBin      = 1 + LtBin
-  final val GtBin       = 1 + LteBin
-  final val GteBin      = 1 + GtBin
+  final val AddBin  = 1
+  final val SubBin  = 1 + AddBin
+  final val MulBin  = 1 + SubBin
+  final val DivBin  = 1 + MulBin
+  final val ModBin  = 1 + DivBin
+  final val ShlBin  = 1 + ModBin
+  final val LshrBin = 1 + ShlBin
+  final val AshrBin = 1 + LshrBin
+  final val AndBin  = 1 + AshrBin
+  final val OrBin   = 1 + AndBin
+  final val XorBin  = 1 + OrBin
 
-  final val TruncConv    = 1 + GteBin
+  final val EqComp  = 1 + XorBin
+  final val NeqComp = 1 + EqComp
+  final val LtComp  = 1 + NeqComp
+  final val LteComp = 1 + LtComp
+  final val GtComp  = 1 + LteComp
+  final val GteComp = 1 + GtComp
+
+  final val TruncConv    = 1 + GteComp
   final val ZextConv     = 1 + TruncConv
   final val SextConv     = 1 + ZextConv
   final val FptruncConv  = 1 + SextConv
@@ -75,7 +76,8 @@ object Tags {
   final val AllocaOp       = 1 + AllocOp
   final val SizeOp         = 1 + AllocaOp
   final val BinOp          = 1 + SizeOp
-  final val ConvOp         = 1 + BinOp
+  final val CompOp         = 1 + BinOp
+  final val ConvOp         = 1 + CompOp
   final val FieldElemOp    = 1 + ConvOp
   final val MethodElemOp   = 1 + FieldElemOp
   final val AllocClassOp   = 1 + MethodElemOp

@@ -20,6 +20,7 @@ object Op {
   final case class Alloca (ty: Type)                                         extends Op
   final case class Size   (ty: Type)                                         extends Op
   final case class Bin    (bin: nir.Bin, ty: Type, l: Val, r: Val)           extends Op
+  final case class Comp   (comp: nir.Comp, ty: Type, l: Val, r: Val)         extends Op
   final case class Conv   (conv: nir.Conv, ty: Type, value: Val)             extends Op
 
   //scala

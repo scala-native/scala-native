@@ -29,12 +29,15 @@ class BinaryDeserializer(bb: ByteBuffer) {
     case T.AndBin  => Bin.And
     case T.OrBin   => Bin.Or
     case T.XorBin  => Bin.Xor
-    case T.EqBin   => Bin.Eq
-    case T.NeqBin  => Bin.Neq
-    case T.LtBin   => Bin.Lt
-    case T.LteBin  => Bin.Lte
-    case T.GtBin   => Bin.Gt
-    case T.GteBin  => Bin.Gte
+  }
+
+  def getComp(): Comp = getInt match {
+    case T.EqComp  => Comp.Eq
+    case T.NeqComp => Comp.Neq
+    case T.LtComp  => Comp.Lt
+    case T.LteComp => Comp.Lte
+    case T.GtComp  => Comp.Gt
+    case T.GteComp => Comp.Gte
   }
 
   def getConv(): Conv = getInt match {
@@ -116,6 +119,7 @@ class BinaryDeserializer(bb: ByteBuffer) {
     case T.AllocaOp       => Op.Alloca(getType)
     case T.SizeOp         => Op.Size(getType)
     case T.BinOp          => Op.Bin(getBin, getType, getVal, getVal)
+    case T.CompOp         => Op.Comp(getComp, getType, getVal, getVal)
     case T.ConvOp         => Op.Conv(getConv, getType, getVal)
     case T.FieldElemOp    => Op.FieldElem(getName, getVal)
     case T.MethodElemOp   => Op.MethodElem(getName, getVal)

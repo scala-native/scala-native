@@ -703,22 +703,22 @@ abstract class GenNIR extends PluginComponent
       val rty   = genType(right.tpe)
 
       code match {
-        case ADD  => genBinaryOp(Bin.Add,  left, right, retty, focus)
-        case SUB  => genBinaryOp(Bin.Sub,  left, right, retty, focus)
-        case MUL  => genBinaryOp(Bin.Mul,  left, right, retty, focus)
-        case DIV  => genBinaryOp(Bin.Div,  left, right, retty, focus)
-        case MOD  => genBinaryOp(Bin.Mod,  left, right, retty, focus)
-        case OR   => genBinaryOp(Bin.Or,   left, right, retty, focus)
-        case XOR  => genBinaryOp(Bin.Xor,  left, right, retty, focus)
-        case AND  => genBinaryOp(Bin.And,  left, right, retty, focus)
-        case LSL  => genBinaryOp(Bin.Shl,  left, right, retty, focus)
-        case LSR  => genBinaryOp(Bin.Lshr, left, right, retty, focus)
-        case ASR  => genBinaryOp(Bin.Ashr, left, right, retty, focus)
+        case ADD  => genBinaryOp(Op.Bin(Bin.Add,  _, _, _), left, right, retty, focus)
+        case SUB  => genBinaryOp(Op.Bin(Bin.Sub,  _, _, _), left, right, retty, focus)
+        case MUL  => genBinaryOp(Op.Bin(Bin.Mul,  _, _, _), left, right, retty, focus)
+        case DIV  => genBinaryOp(Op.Bin(Bin.Div,  _, _, _), left, right, retty, focus)
+        case MOD  => genBinaryOp(Op.Bin(Bin.Mod,  _, _, _), left, right, retty, focus)
+        case OR   => genBinaryOp(Op.Bin(Bin.Or,   _, _, _), left, right, retty, focus)
+        case XOR  => genBinaryOp(Op.Bin(Bin.Xor,  _, _, _), left, right, retty, focus)
+        case AND  => genBinaryOp(Op.Bin(Bin.And,  _, _, _), left, right, retty, focus)
+        case LSL  => genBinaryOp(Op.Bin(Bin.Shl,  _, _, _), left, right, retty, focus)
+        case LSR  => genBinaryOp(Op.Bin(Bin.Lshr, _, _, _), left, right, retty, focus)
+        case ASR  => genBinaryOp(Op.Bin(Bin.Ashr, _, _, _), left, right, retty, focus)
 
-        case LT   => genBinaryOp(Bin.Lt,  left, right, binaryOperationType(lty, rty), focus)
-        case LE   => genBinaryOp(Bin.Lte, left, right, binaryOperationType(lty, rty), focus)
-        case GT   => genBinaryOp(Bin.Gt,  left, right, binaryOperationType(lty, rty), focus)
-        case GE   => genBinaryOp(Bin.Gte, left, right, binaryOperationType(lty, rty), focus)
+        case LT   => genBinaryOp(Op.Comp(Comp.Lt,  _, _, _), left, right, binaryOperationType(lty, rty), focus)
+        case LE   => genBinaryOp(Op.Comp(Comp.Lte, _, _, _), left, right, binaryOperationType(lty, rty), focus)
+        case GT   => genBinaryOp(Op.Comp(Comp.Gt,  _, _, _), left, right, binaryOperationType(lty, rty), focus)
+        case GE   => genBinaryOp(Op.Comp(Comp.Gte, _, _, _), left, right, binaryOperationType(lty, rty), focus)
 
         case EQ   => genEqualityOp(left, right, ref = false, negated = false, focus)
         case NE   => genEqualityOp(left, right, ref = false, negated = true,  focus)
@@ -732,20 +732,20 @@ abstract class GenNIR extends PluginComponent
       }
     }
 
-    def genBinaryOp(bin: Bin, leftp: Tree, rightp: Tree, retty: nir.Type,
+    def genBinaryOp(op: (nir.Type, Val, Val) => Op, leftp: Tree, rightp: Tree, retty: nir.Type,
                     focus: Focus): Focus = {
       val left         = genExpr(leftp, focus)
       val leftcoerced  = genCoercion(left.value, genType(leftp.tpe), retty, left)
       val right        = genExpr(rightp, leftcoerced)
       val rightcoerced = genCoercion(right.value, genType(rightp.tpe), retty, right)
 
-      rightcoerced withOp Op.Bin(bin, retty, leftcoerced.value, rightcoerced.value)
+      rightcoerced withOp op(retty, leftcoerced.value, rightcoerced.value)
     }
 
     def genEqualityOp(leftp: Tree, rightp: Tree,
                       ref: Boolean, negated: Boolean,
                       focus: Focus) = {
-      val bin = if (negated) Bin.Neq else Bin.Eq
+      val comp = if (negated) Comp.Neq else Comp.Eq
 
       genKind(leftp.tpe) match {
         case ClassKind(_) | BottomKind(NullClass) =>
@@ -754,7 +754,7 @@ abstract class GenNIR extends PluginComponent
           val right = genExpr(rightp, left)
 
           if (ref)
-            right withOp Op.Bin(bin, ty, left.value, right.value)
+            right withOp Op.Comp(comp, ty, left.value, right.value)
           else {
             val equals = right withOp Op.Equals(left.value, right.value)
             equals withOp Op.Bin(Bin.Xor, Type.Bool, Val.True, equals.value)
@@ -765,7 +765,7 @@ abstract class GenNIR extends PluginComponent
           val rty   = genType(rightp.tpe)
           val retty = binaryOperationType(lty, rty)
 
-          genBinaryOp(bin, leftp, rightp, retty, focus)
+          genBinaryOp(Op.Comp(comp, _, _, _), leftp, rightp, retty, focus)
       }
     }
 
