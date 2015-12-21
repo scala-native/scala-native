@@ -198,6 +198,8 @@ class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.MonitorEnterOp); putVal(v)
     case Op.MonitorExit(v) =>
       putInt(T.MonitorExitOp); putVal(v)
+    case Op.StringAdd(l, r) =>
+      putInt(T.StringAddOp); putVal(l); putVal(r)
   }
 
   def putTypes(tys: Seq[Type]): Unit = putSeq(putType)(tys)
@@ -221,14 +223,15 @@ class BinarySerializer(buffer: ByteBuffer) {
     case Type.Null                => putInt(T.NullType)
     case Type.Class(n)            => putInt(T.ClassType); putName(n)
     case Type.ArrayClass(ty)      => putInt(T.ArrayClassType); putType(ty)
+    case Type.StringClass         => putInt(T.StringClassType)
   }
 
   def putVals(values: Seq[Val]): Unit = putSeq(putVal)(values)
   def putVal(value: Val): Unit = value match {
     case Val.None           => putInt(T.NoneVal)
-    case Val.Zero           => putInt(T.ZeroVal)
     case Val.True           => putInt(T.TrueVal)
     case Val.False          => putInt(T.FalseVal)
+    case Val.Zero(ty)       => putInt(T.ZeroVal); putType(ty)
     case Val.I8(v)          => putInt(T.I8Val); put(v)
     case Val.I16(v)         => putInt(T.I16Val); putShort(v)
     case Val.I32(v)         => putInt(T.I32Val); putInt(v)
@@ -240,5 +243,6 @@ class BinarySerializer(buffer: ByteBuffer) {
     case Val.Name(n, ty)    => putInt(T.NameVal); putName(n); putType(ty)
     case Val.Null           => putInt(T.NullVal)
     case Val.Unit           => putInt(T.UnitVal)
+    case Val.String(v)      => putInt(T.StringVal); putString(v)
   }
 }

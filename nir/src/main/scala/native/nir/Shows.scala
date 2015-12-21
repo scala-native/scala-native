@@ -55,7 +55,7 @@ object Shows {
         unwind $fail"""
 
     case Op.Call(ty, f, args) =>
-      sh"call[$ty] $f(${r(args, sep = ",")})"
+      sh"call[$ty] $f(${r(args, sep = ", ")})"
     case Op.Load(ty, ptr) =>
       sh"load[$ty] $ptr"
     case Op.Store(ty, ptr, value) =>
@@ -111,6 +111,8 @@ object Shows {
       sh"monitor-enter $v"
     case Op.MonitorExit(v) =>
       sh"monitor-exit $v"
+    case Op.StringAdd(l, r) =>
+      sh"string-add $l, $r"
   }
 
   implicit val showBin: Show[Bin] = Show {
@@ -153,21 +155,22 @@ object Shows {
 
   implicit val showVal: Show[Val] = Show {
     case Val.None               => ""
-    case Val.Zero               => "zero"
     case Val.True               => "true"
     case Val.False              => "false"
+    case Val.Zero(ty)           => sh"zero[$ty]"
     case Val.I8(value)          => sh"${value}i8"
     case Val.I16(value)         => sh"${value}i16"
     case Val.I32(value)         => sh"${value}i32"
     case Val.I64(value)         => sh"${value}i64"
     case Val.F32(value)         => sh"${value}f32"
     case Val.F64(value)         => sh"${value}f64"
-    case Val.Struct(ty, values) => sh"struct[${ty: Type}] ${r(values, ", ")}"
+    case Val.Struct(ty, values) => sh"struct[$ty] ${r(values, ", ")}"
     case Val.Array(ty, values)  => sh"array[$ty] ${r(values, ", ")}"
     case Val.Name(name, ty)     => sh"$name: $ty"
 
-    case Val.Null => "null"
-    case Val.Unit => "unit"
+    case Val.Null      => "null"
+    case Val.Unit      => "unit"
+    case Val.String(v) => "\"" + v.replace("\"", "\\\"") + "\""
   }
 
   implicit val showDefns: Show[Seq[Defn]] = Show { defns => r(defns.map(nl(_))) }
@@ -184,15 +187,15 @@ object Shows {
       sh"struct $name {${r(fields, sep = ", ")}}"
 
     case Defn.Interface(name, ifaces, members) =>
-      val parents = r(ifaces, sep = ",")
+      val parents = r(ifaces, sep = ", ")
       val body = r(members.map(i(_)))
       sh"interface $name: $parents =$body"
     case Defn.Class(name, parent, ifaces, members) =>
-      val parents = r(parent +: ifaces, sep = ",")
+      val parents = r(parent +: ifaces, sep = ", ")
       val body = r(members.map(i(_)))
       sh"class $name: $parents =$body"
     case Defn.Module(name, parent, ifaces, members) =>
-      val parents = r(parent +: ifaces, sep = ",")
+      val parents = r(parent +: ifaces, sep = ", ")
       val body = r(members.map(i(_)))
       sh"module $name: $parents =$body"
   }
@@ -213,11 +216,12 @@ object Shows {
     case Type.Function(args, ret) => sh"(${r(args, sep = ", ")}) => $ret"
     case Type.Struct(name)        => name
 
-    case Type.Unit                => "unit"
-    case Type.Nothing             => "nothing"
-    case Type.Null                => "null"
-    case Type.Class(name)         => name
-    case Type.ArrayClass(ty)      => ty
+    case Type.Unit           => "unit"
+    case Type.Nothing        => "nothing"
+    case Type.Null           => "null"
+    case Type.Class(name)    => name
+    case Type.ArrayClass(ty) => sh"${ty}[]"
+    case Type.StringClass    => "string"
   }
 
   implicit val showName: Show[Name] = Show {

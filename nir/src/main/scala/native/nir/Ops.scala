@@ -43,6 +43,7 @@ sealed abstract class Op {
     case Op.Unbox(ty, _)         => ty
     case Op.MonitorEnter(_)      => Type.Unit
     case Op.MonitorExit(_)       => Type.Unit
+    case Op.StringAdd(_, _)      => Type.StringClass
   }
 }
 object Op {
@@ -74,7 +75,7 @@ object Op {
   final case class MethodElem  (ty: Type, name: Name, value: Val) extends Op
   final case class AllocClass  (ty: Type)                         extends Op
   final case class AllocArray  (ty: Type, length: Val)            extends Op
-  final case class Equals      (left: Val, right: Val)            extends Op
+  final case class Equals      (l: Val, r: Val)                   extends Op
   final case class HashCode    (value: Val)                       extends Op
   final case class GetClass    (value: Val)                       extends Op
   final case class ClassOf     (ty: Type)                         extends Op
@@ -86,4 +87,5 @@ object Op {
   final case class Unbox       (ty: Type, value: Val)             extends Op
   final case class MonitorEnter(value: Val)                       extends Op
   final case class MonitorExit (value: Val)                       extends Op
+  final case class StringAdd   (l: Val, r: Val)                   extends Op
 }

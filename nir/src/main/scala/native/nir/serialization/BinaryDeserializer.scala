@@ -139,37 +139,39 @@ class BinaryDeserializer(bb: ByteBuffer) {
     case T.UnboxOp        => Op.Unbox(getType, getVal)
     case T.MonitorEnterOp => Op.MonitorEnter(getVal)
     case T.MonitorExitOp  => Op.MonitorExit(getVal)
+    case T.StringAddOp    => Op.StringAdd(getVal, getVal)
   }
 
   def getTypes(): Seq[Type] = getSeq(getType)
   def getType(): Type = getInt match {
-    case T.NoneType       => Type.None
-    case T.VoidType       => Type.Void
-    case T.SizeType       => Type.Size
-    case T.BoolType       => Type.Bool
-    case T.I8Type         => Type.I8
-    case T.I16Type        => Type.I16
-    case T.I32Type        => Type.I32
-    case T.I64Type        => Type.I64
-    case T.F32Type        => Type.F32
-    case T.F64Type        => Type.F64
-    case T.ArrayType      => Type.Array(getType, getInt)
-    case T.PtrType        => Type.Ptr(getType)
-    case T.FunctionType   => Type.Function(getTypes, getType)
-    case T.StructType     => Type.Struct(getName)
-    case T.UnitType       => Type.Unit
-    case T.NothingType    => Type.Nothing
-    case T.NullType       => Type.Null
-    case T.ClassType      => Type.Class(getName)
-    case T.ArrayClassType => Type.ArrayClass(getType)
+    case T.NoneType        => Type.None
+    case T.VoidType        => Type.Void
+    case T.SizeType        => Type.Size
+    case T.BoolType        => Type.Bool
+    case T.I8Type          => Type.I8
+    case T.I16Type         => Type.I16
+    case T.I32Type         => Type.I32
+    case T.I64Type         => Type.I64
+    case T.F32Type         => Type.F32
+    case T.F64Type         => Type.F64
+    case T.ArrayType       => Type.Array(getType, getInt)
+    case T.PtrType         => Type.Ptr(getType)
+    case T.FunctionType    => Type.Function(getTypes, getType)
+    case T.StructType      => Type.Struct(getName)
+    case T.UnitType        => Type.Unit
+    case T.NothingType     => Type.Nothing
+    case T.NullType        => Type.Null
+    case T.ClassType       => Type.Class(getName)
+    case T.ArrayClassType  => Type.ArrayClass(getType)
+    case T.StringClassType => Type.StringClass
   }
 
   def getVals(): Seq[Val] = getSeq(getVal)
   def getVal(): Val = getInt match {
     case T.NoneVal   => Val.None
-    case T.ZeroVal   => Val.Zero
     case T.TrueVal   => Val.True
     case T.FalseVal  => Val.False
+    case T.ZeroVal   => Val.Zero(getType)
     case T.I8Val     => Val.I8(get)
     case T.I16Val    => Val.I16(getShort)
     case T.I32Val    => Val.I32(getInt)
@@ -181,5 +183,6 @@ class BinaryDeserializer(bb: ByteBuffer) {
     case T.NameVal   => Val.Name(getName, getType)
     case T.NullVal   => Val.Null
     case T.UnitVal   => Val.Unit
+    case T.StringVal => Val.String(getString)
   }
 }

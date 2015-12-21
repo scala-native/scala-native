@@ -147,7 +147,8 @@ abstract class GenNIR extends PluginComponent
         if !f.isMethod && f.isTerm && !f.isModule
       } yield {
         val name = genFieldName(f)
-        Defn.Var(name, genType(f.tpe), Val.Zero)
+        val ty = genType(f.tpe)
+        Defn.Var(name, ty, Val.Zero(ty))
       }
 
     def genDef(dd: DefDef): Defn = scoped (
@@ -401,7 +402,7 @@ abstract class GenNIR extends PluginComponent
         case DoubleTag =>
           Val.F64(value.doubleValue)
         case StringTag =>
-          ???
+          Val.String(value.stringValue)
         case ClazzTag =>
           ???
       }
@@ -800,17 +801,18 @@ abstract class GenNIR extends PluginComponent
         abort(s"can't perform binary opeation between $lty and $rty")
     }
 
-    def genStringConcat(tree: Tree, left: Tree, args: List[Tree], focus: Focus) = ???/*{
-      val List(right) = args
-      val (lfocus, lt) = genExpr(left, focus).merge
-      val (rfocus, rt) = genExpr(right, lfocus).merge
+    def genStringConcat(tree: Tree, leftp: Tree, args: List[Tree], focus: Focus) = {
+      val List(rightp) = args
+      val left = genExpr(leftp, focus)
+      val right = genExpr(rightp, left)
 
-      (rfocus withValue ir.Add(lfocus.value, rfocus.value)) +: (lt ++ rt)
-    }*/
+      right withOp Op.StringAdd(left.value, right.value)
+    }
 
-    // TODO: this doesn't get called on foo.## expressions
+    // TODO: this doesn't seem to get called on foo.## expressions
     def genHashCode(tree: Tree, receiverp: Tree, focus: Focus) = {
       val recv = genExpr(receiverp, focus)
+
       recv.withOp(Op.HashCode(recv.value))
     }
 

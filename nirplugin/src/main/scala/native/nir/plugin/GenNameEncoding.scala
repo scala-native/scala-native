@@ -68,6 +68,7 @@ trait GenNameEncoding extends SubComponent with GenTypeKinds {
           case LongClass    => nir.Name.Prim("i64")
           case FloatClass   => nir.Name.Prim("f32")
           case DoubleClass  => nir.Name.Prim("f64")
+          case StringClass  => nir.Name.Prim("string")
         }
       case BottomKind(sym) =>
         sym match {

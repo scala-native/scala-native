@@ -27,4 +27,5 @@ object Type {
   final case object Null                extends Type
   final case class Class(name: Name)    extends Type
   final case class ArrayClass(ty: Type) extends Type
+  final case object StringClass         extends Type
 }

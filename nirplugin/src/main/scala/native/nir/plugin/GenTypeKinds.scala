@@ -29,6 +29,7 @@ trait GenTypeKinds extends SubComponent {
   val LongKind    = PrimitiveKind(LongClass)
   val FloatKind   = PrimitiveKind(FloatClass)
   val DoubleKind  = PrimitiveKind(DoubleClass)
+  val StringKind  = PrimitiveKind(StringClass)
 
   def genRefKind(sym: Symbol, targs: List[Type] = Nil): Kind = sym match {
     case NullClass    => NullKind
@@ -47,6 +48,7 @@ trait GenTypeKinds extends SubComponent {
     case LongClass    => LongKind
     case FloatClass   => FloatKind
     case DoubleClass  => DoubleKind
+    case StringClass  => StringKind
   }
 
   def genPrimitiveOrRefKind(sym: Symbol, targs: List[Type] = Nil): Kind =
@@ -78,6 +80,7 @@ trait GenTypeKinds extends SubComponent {
         case LongClass    => nir.Type.I64
         case FloatClass   => nir.Type.F32
         case DoubleClass  => nir.Type.F64
+        case StringClass  => nir.Type.StringClass
       }
     case BottomKind(sym) =>
       sym match {
