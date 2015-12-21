@@ -38,7 +38,7 @@ abstract class GenNIR extends PluginComponent
   }
 
   class LabelEnv(env: Env) {
-    def enterLabel(ld: LabelDef, calls: Int)  = ???
+    def enterLabel(ld: LabelDef, calls: Int) = ???
     def enterLabelCall(sym: Symbol, values: Seq[Val], focus: Focus) = ???
     def resolveLabel(sym: Symbol) = ???
     def resolveLabelParams(sym: Symbol) = ???
@@ -503,30 +503,28 @@ abstract class GenNIR extends PluginComponent
       genExpr(label.rhs, Focus(cf, ef, Val.Unit()))
     }*/
 
-    def genArrayValue(av: ArrayValue, focus: Focus): Focus = ???/*{
+    def genArrayValue(av: ArrayValue, focus: Focus): Focus = {
       val ArrayValue(tpt, elems) = av
-      val ty           = genType(tpt.tpe)
-      val len          = elems.length
-      val allocfocus   = focus mapEf (ir.ArrayClassAlloc(_, ty, Val.I32(len)))
-      val (rfocus, rt) =
+      val ty         = genType(tpt.tpe)
+      val len        = elems.length
+      val allocfocus = focus withOp Op.AllocArray(ty, Val.I32(len))
+      val rfocus     =
         if (elems.isEmpty)
-          (allocfocus, Tails.empty)
+          allocfocus
         else {
-          val (vfocus, vt) = sequenced(elems, allocfocus)(genExpr(_, _))
-          val values       = vfocus.map(_.value)
-          val lastfocus    = vfocus.lastOption.getOrElse(focus)
-          val (sfocus, st) = sequenced(values.zipWithIndex, lastfocus) { (vi, foc) =>
+          val vfocus    = sequenced(elems, allocfocus)(genExpr(_, _))
+          val values    = vfocus.map(_.value)
+          val lastfocus = vfocus.lastOption.getOrElse(focus)
+          val sfocus    = sequenced(values.zipWithIndex, lastfocus) { (vi, foc) =>
             val (value, i) = vi
-            Tails.open(foc mapEf { ef =>
-              val elem = ir.ArrayClassElem(ef, allocfocus.value, Val.I32(i))
-              ir.Store(elem, elem, value)
-            })
+            val elem = foc withOp Op.ArrayElem(ty, allocfocus.value, Val.I32(i))
+            elem withOp Op.Store(ty, elem.value, value)
           }
-          (sfocus.last, vt ++ st)
+          sfocus.last
         }
 
-      (rfocus withValue allocfocus.value) +: rt
-    }*/
+      rfocus withValue allocfocus.value
+    }
 
     def genIf(condp: Tree, thenp: Tree, elsep: Tree, retty: nir.Type, focus: Focus) = {
       val cond = genExpr(condp, focus)

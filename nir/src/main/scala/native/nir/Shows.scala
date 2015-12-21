@@ -203,7 +203,7 @@ object Shows {
     case Type.F32                 => "f32"
     case Type.F64                 => "f64"
     case Type.Array(ty, n)        => sh"[$ty x $n]"
-    case Type.Ptr(ty)             => sh"${ty}*"
+    case Type.Ptr(ty)             => sh"ptr ${ty}"
     case Type.Function(args, ret) => sh"(${r(args, sep = ", ")}) => $ret"
     case Type.Struct(name)        => name
 
