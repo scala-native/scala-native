@@ -7,15 +7,14 @@ import native.util.{sh, Show}, Show.{Sequence => s, Indent => i, Unindent => ui,
 object Shows {
   implicit val showBlock: Show[Block] = Show { block =>
     import block._
-    val header = sh"$name(${r(params, sep = ", ")})"
+    val header = sh"block $name(${r(params, sep = ", ")})"
     val body = i(r(instrs, sep = nl("")))
-    sh"$header: $body"
+    sh"$header =$body"
   }
 
   implicit val showInstr: Show[Instr] = Show {
-    case Instr(Name.None, op, _)    => op
-    case Instr(name, op, Type.None) => sh"$name = $op"
-    case Instr(name, op, ty)        => sh"$name: $ty = $op"
+    case Instr(Name.None, op) => op
+    case Instr(name, op)      => sh"$name: ${op.resty} = $op"
   }
 
   implicit val showParam: Show[Param] = Show {
@@ -159,7 +158,7 @@ object Shows {
     case Val.F64(value)         => sh"${value}f64"
     case Val.Struct(ty, values) => sh"struct[${ty: Type}] ${r(values, ", ")}"
     case Val.Array(ty, values)  => sh"array[$ty] ${r(values, ", ")}"
-    case Val.Name(ty, name)     => sh"$name: $ty"
+    case Val.Name(name, ty)     => sh"$name: $ty"
 
     case Val.Null => "null"
     case Val.Unit => "unit"

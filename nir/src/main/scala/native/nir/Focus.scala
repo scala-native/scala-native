@@ -19,7 +19,7 @@ final case class Focus(
   def withOp(op: Op)(implicit fresh: Fresh): Focus = {
     assert(!complete)
     val name = fresh()
-    copy(instrs = instrs :+ Instr(name, op), value = Val.Name(op.resty, name))
+    copy(instrs = instrs :+ Instr(name, op), value = Val.Name(name, op.resty))
   }
 
   def finish(op: Op): Focus =
@@ -30,9 +30,10 @@ final case class Focus(
     preceding
   }
 
-  def branchIf(cond: Val, thenf: Focus => Focus, elsef: Focus => Focus)(implicit fresh: Fresh): Focus = {
+  def branchIf(cond: Val, ty: Type, thenf: Focus => Focus, elsef: Focus => Focus)
+              (implicit fresh: Fresh): Focus = {
     val merge = fresh()
-    val param = Param(fresh(), Type.None)
+    val param = Param(fresh(), ty)
     def wrap(f: Focus => Focus) = {
       val end = f(Focus.entry(Seq()))
       val finalized = end.finish(Op.Jump(Next(merge, Seq(end.value))))
@@ -48,7 +49,7 @@ final case class Focus(
         Next(elsename, Seq()))).blocks
     Focus(prec ++ thenprec ++ elseprec,
           merge, Seq(param), Seq(),
-          Val.Name(???, param.name), complete = false)
+          Val.Name(param.name, ty), complete = false)
   }
 }
 object Focus {

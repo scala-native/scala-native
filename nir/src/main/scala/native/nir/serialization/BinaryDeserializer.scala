@@ -70,7 +70,7 @@ class BinaryDeserializer(bb: ByteBuffer) {
   def getBlock(): Block = Block(getName, getParams, getInstrs)
 
   def getInstrs(): Seq[Instr] = getSeq(getInstr)
-  def getInstr(): Instr = Instr(getName, getOp, getType)
+  def getInstr(): Instr = Instr(getName, getOp)
 
   def getParams(): Seq[Param] = getSeq(getParam)
   def getParam(): Param = Param(getName, getType)
@@ -145,6 +145,7 @@ class BinaryDeserializer(bb: ByteBuffer) {
   def getType(): Type = getInt match {
     case T.NoneType       => Type.None
     case T.VoidType       => Type.Void
+    case T.SizeType       => Type.Size
     case T.BoolType       => Type.Bool
     case T.I8Type         => Type.I8
     case T.I16Type        => Type.I16
@@ -177,7 +178,7 @@ class BinaryDeserializer(bb: ByteBuffer) {
     case T.F64Val    => Val.F64(getDouble)
     case T.StructVal => Val.Struct(getType, getVals)
     case T.ArrayVal  => Val.Array(getType, getVals)
-    case T.NameVal   => Val.Name(getType, getName)
+    case T.NameVal   => Val.Name(getName, getType)
     case T.NullVal   => Val.Null
     case T.UnitVal   => Val.Unit
   }

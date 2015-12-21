@@ -196,8 +196,9 @@ abstract class GenNIR extends PluginComponent
       val self = Param(Name.Local("this"), genType(curClassSym.tpe))
       val params = paramSyms.map { sym =>
         val name = genLocalName(sym)
-        val param = Param(name, genType(sym.tpe))
-        curEnv.enter(sym, Val.Name(name))
+        val ty = genType(sym.tpe)
+        val param = Param(name, ty)
+        curEnv.enter(sym, Val.Name(name, ty))
         param
       }
 
@@ -230,7 +231,7 @@ abstract class GenNIR extends PluginComponent
           case _ =>
             val params = genParams(paramSyms)
             scoped (
-              curThis := Val.Name(params.head.name)
+              curThis := Val.Name(params.head.name, params.head.ty)
             ) {
               genExpr(body, Focus.entry(params))
             }
@@ -259,7 +260,7 @@ abstract class GenNIR extends PluginComponent
         }
 
       case If(cond, thenp, elsep) =>
-        genIf(cond, thenp, elsep, focus)
+        genIf(cond, thenp, elsep, genType(tree.tpe), focus)
 
       case Return(exprp) =>
         val expr = genExpr(exprp, focus)
@@ -284,13 +285,13 @@ abstract class GenNIR extends PluginComponent
       case This(qual) =>
         focus.withValue {
           if (tree.symbol == curClassSym.get) curThis.get
-          else Val.Name(genClassName(tree.symbol))
+          else Val.Name(genClassName(tree.symbol), genType(tree.tpe))
         }
 
       case Select(qualp, selp) =>
         val sym = tree.symbol
         if (sym.isModule)
-          focus.withValue(Val.Name(genClassName(sym)))
+          focus.withValue(Val.Name(genClassName(sym), genType(sym.tpe)))
         else if (sym.isStaticMember)
           genStaticMember(sym, focus)
         else if (sym.isMethod) {
@@ -307,7 +308,7 @@ abstract class GenNIR extends PluginComponent
         val sym = id.symbol
         if (!curLocalInfo.mutableVars.contains(sym))
           focus.withValue {
-            if (sym.isModule) Val.Name(genClassName(sym))
+            if (sym.isModule) Val.Name(genClassName(sym), genType(sym.tpe))
             else curEnv.resolve(sym)
           }
         else
@@ -389,7 +390,8 @@ abstract class GenNIR extends PluginComponent
 
     def genStaticMember(sym: Symbol, focus: Focus): Focus = {
       val ty = genType(sym.tpe)
-      val elem = focus.withOp(Op.FieldElem(ty, genFieldName(sym), Val.Name(genClassName(sym.owner))))
+      val module = Val.Name(genClassName(sym.owner), genType(sym.owner.tpe))
+      val elem = focus.withOp(Op.FieldElem(ty, genFieldName(sym), module))
       elem.withOp(Op.Load(ty, elem.value))
     }
 
@@ -526,9 +528,9 @@ abstract class GenNIR extends PluginComponent
       (rfocus withValue allocfocus.value) +: rt
     }*/
 
-    def genIf(condp: Tree, thenp: Tree, elsep: Tree, focus: Focus) = {
+    def genIf(condp: Tree, thenp: Tree, elsep: Tree, retty: nir.Type, focus: Focus) = {
       val cond = genExpr(condp, focus)
-      cond.branchIf(cond.value, genExpr(thenp, _), genExpr(elsep, _))
+      cond.branchIf(cond.value, retty, genExpr(thenp, _), genExpr(elsep, _))
     }
 
     def genSwitch(m: Match, focus: Focus): Focus = ???/*{
@@ -724,8 +726,8 @@ abstract class GenNIR extends PluginComponent
         case ID   => genEqualityOp(left, right, ref = true,  negated = false, focus)
         case NI   => genEqualityOp(left, right, ref = true,  negated = true,  focus)
 
-        case ZOR  => genIf(left, Literal(Constant(true)), right, focus)
-        case ZAND => genIf(left, right, Literal(Constant(false)), focus)
+        case ZOR  => genIf(left, Literal(Constant(true)), right, retty, focus)
+        case ZAND => genIf(left, right, Literal(Constant(false)), retty, focus)
 
         case _    => abort("Unknown binary operation code: " + code)
       }
@@ -969,7 +971,7 @@ abstract class GenNIR extends PluginComponent
     def genForeignCall(sym: Symbol, args: Seq[Val], focus: Focus): Focus = {
       val name = genForeignName(sym)
       val sig  = genDefSig(sym)
-      val call = focus withOp Op.Call(sig, Val.Name(name), args)
+      val call = focus withOp Op.Call(sig, Val.Name(name, Type.Ptr(sig)), args)
 
       call
     }
