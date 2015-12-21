@@ -515,7 +515,6 @@ abstract class GenNIR extends PluginComponent
       lasttails
     }*/
 
-    // TODO: while(true) loops
     def genLabel(label: LabelDef) = ??? /*{
       val cf = curLabelEnv.resolveLabel(label.symbol)
       val ef = curLabelEnv.resolveLabelEf(label.symbol)

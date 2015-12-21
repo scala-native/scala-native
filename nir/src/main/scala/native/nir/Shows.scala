@@ -231,8 +231,8 @@ object Shows {
     case Name.Module(id)            => sh"@module.$id"
     case Name.Interface(id)         => sh"@interface.$id"
     case Name.Field(id)             => id
-    case Name.Constructor(args)     => sh"<${args.mkString(", ")}>"
-    case Name.Method(id, args, ret) => sh"$id<${args.mkString(", ")}; $ret>"
+    case Name.Constructor(args)     => sh"<${r(args, sep = ", ")}>"
+    case Name.Method(id, args, ret) => sh"$id<${r(args, sep = ", ")}; $ret>"
     case Name.Accessor(owner)       => sh"$owner.accessor"
     case Name.Data(owner)           => sh"$owner.data"
     case Name.Vtable(owner)         => sh"$owner.vtable"
