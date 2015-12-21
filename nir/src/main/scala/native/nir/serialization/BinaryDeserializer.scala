@@ -175,9 +175,9 @@ class BinaryDeserializer(bb: ByteBuffer) {
     case T.I64Val    => Val.I64(getLong)
     case T.F32Val    => Val.F32(getFloat)
     case T.F64Val    => Val.F64(getDouble)
-    case T.StructVal => Val.Struct(getVals)
-    case T.ArrayVal  => Val.Array(getVals)
-    case T.NameVal   => Val.Name(getName)
+    case T.StructVal => Val.Struct(getType, getVals)
+    case T.ArrayVal  => Val.Array(getType, getVals)
+    case T.NameVal   => Val.Name(getType, getName)
     case T.NullVal   => Val.Null
     case T.UnitVal   => Val.Unit
   }

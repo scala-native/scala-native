@@ -18,8 +18,8 @@ final case class Focus(
 
   def withOp(op: Op)(implicit fresh: Fresh): Focus = {
     assert(!complete)
-    val newvalue = fresh()
-    copy(instrs = instrs :+ Instr(newvalue.name, op), value = newvalue)
+    val name = fresh()
+    copy(instrs = instrs :+ Instr(name, op), value = Val.Name(op.resty, name))
   }
 
   def finish(op: Op): Focus =
@@ -31,8 +31,8 @@ final case class Focus(
   }
 
   def branchIf(cond: Val, thenf: Focus => Focus, elsef: Focus => Focus)(implicit fresh: Fresh): Focus = {
-    val merge = fresh().name
-    val param = Param(fresh().name, Type.None)
+    val merge = fresh()
+    val param = Param(fresh(), Type.None)
     def wrap(f: Focus => Focus) = {
       val end = f(Focus.entry(Seq()))
       val finalized = end.finish(Op.Jump(Next(merge, Seq(end.value))))
@@ -48,14 +48,14 @@ final case class Focus(
         Next(elsename, Seq()))).blocks
     Focus(prec ++ thenprec ++ elseprec,
           merge, Seq(param), Seq(),
-          Val.Name(param.name), complete = false)
+          Val.Name(???, param.name), complete = false)
   }
 }
 object Focus {
   final case class NotMergeable(focus: Focus) extends Exception
 
   def entry(params: Seq[Param])(implicit fresh: Fresh): Focus =
-    Focus(Seq(), fresh().name, params, Seq(), Val.Unit, complete = false)
+    Focus(Seq(), fresh(), params, Seq(), Val.Unit, complete = false)
 
   def complete(blocks: Seq[Block]) =
     Focus(blocks, Name.None, Seq(), Seq(), Val.Unit, complete = true)

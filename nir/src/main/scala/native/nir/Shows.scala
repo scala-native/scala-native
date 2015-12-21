@@ -147,22 +147,22 @@ object Shows {
   }
 
   implicit val showVal: Show[Val] = Show {
-    case Val.None           => ""
-    case Val.Zero           => "zero"
-    case Val.True           => "true"
-    case Val.False          => "false"
-    case Val.I8(value)      => sh"${value}i8"
-    case Val.I16(value)     => sh"${value}i16"
-    case Val.I32(value)     => sh"${value}i32"
-    case Val.I64(value)     => sh"${value}i64"
-    case Val.F32(value)     => sh"${value}f32"
-    case Val.F64(value)     => sh"${value}f64"
-    case Val.Struct(values) => sh"{${r(values, ", ")}}"
-    case Val.Array(values)  => sh"[${r(values, ", ")}]"
-    case Val.Name(name)     => name
+    case Val.None               => ""
+    case Val.Zero               => "zero"
+    case Val.True               => "true"
+    case Val.False              => "false"
+    case Val.I8(value)          => sh"${value}i8"
+    case Val.I16(value)         => sh"${value}i16"
+    case Val.I32(value)         => sh"${value}i32"
+    case Val.I64(value)         => sh"${value}i64"
+    case Val.F32(value)         => sh"${value}f32"
+    case Val.F64(value)         => sh"${value}f64"
+    case Val.Struct(ty, values) => sh"struct[${ty: Type}] ${r(values, ", ")}"
+    case Val.Array(ty, values)  => sh"array[$ty] ${r(values, ", ")}"
+    case Val.Name(ty, name)     => sh"$name: $ty"
 
-    case Val.Null           => "null"
-    case Val.Unit           => "unit"
+    case Val.Null => "null"
+    case Val.Unit => "unit"
   }
 
   implicit val showDefns: Show[Seq[Defn]] = Show { defns => r(defns.map(nl(_))) }

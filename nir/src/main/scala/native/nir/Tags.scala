@@ -97,7 +97,8 @@ object Tags {
 
   final val NoneType       = 1 + MonitorExitOp
   final val VoidType       = 1 + NoneType
-  final val BoolType       = 1 + VoidType
+  final val SizeType       = 1 + VoidType
+  final val BoolType       = 1 + SizeType
   final val I8Type         = 1 + BoolType
   final val I16Type        = 1 + I8Type
   final val I32Type        = 1 + I16Type
