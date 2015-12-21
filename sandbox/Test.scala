@@ -2,13 +2,10 @@ package test
 
 object Test {
   def f(x: Int, y: Int) = {
-    val bar = 0
-    val baz = bar + 1
-    var foo = baz + 2
-    if (x > 0)
-      foo += x
-    else
-      foo -= y
-    foo
+    x match {
+      case 1 => if (y > 0) y else x
+      case 2 => 3
+      case _ => 4
+    }
   }
 }

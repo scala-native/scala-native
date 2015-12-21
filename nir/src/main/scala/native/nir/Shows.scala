@@ -42,11 +42,17 @@ object Shows {
     case Op.Jump(next) =>
       sh"jump $next"
     case Op.If(cond, thenp, elsep) =>
-      sh"if $cond then $thenp else $elsep"
+      sh"""if $cond
+        then $thenp
+        else $elsep"""
     case Op.Switch(scrut, default, cases)  =>
-      sh"switch $scrut, $default [${r(cases, sep = "; ")}]"
+      sh"""switch $scrut
+        ${r(cases, sep = nl("  "))}
+        case _ => $default"""
     case Op.Invoke(f, args, succ, fail) =>
-      sh"invoke $f(${r(args, sep = ", ")}) to $succ unwind $fail"
+      sh"""invoke $f(${r(args, sep = ", ")})
+        to $succ
+        unwind $fail"""
 
     case Op.Call(ty, f, args) =>
       sh"call[$ty] $f(${r(args, sep = ",")})"

@@ -30,18 +30,20 @@ final case class Focus(
     preceding
   }
 
-  def branchIf(cond: Val, ty: Type, thenf: Focus => Focus, elsef: Focus => Focus)
+  private def wrapBranch(merge: Name, f: Focus => Focus)
+                        (implicit fresh: Fresh): Seq[Block] = {
+    val end = f(Focus.entry(Seq()))
+    val finalized = end.finish(Op.Jump(Next(merge, Seq(end.value))))
+    finalized.blocks
+  }
+
+  def branchIf(cond: Val, retty: Type, thenf: Focus => Focus, elsef: Focus => Focus)
               (implicit fresh: Fresh): Focus = {
     val merge = fresh()
-    val param = Param(fresh(), ty)
-    def wrap(f: Focus => Focus) = {
-      val end = f(Focus.entry(Seq()))
-      val finalized = end.finish(Op.Jump(Next(merge, Seq(end.value))))
-      finalized.blocks
-    }
-    val thenprec = wrap(elsef)
+    val param = Param(fresh(), retty)
+    val thenprec = wrapBranch(merge, elsef)
     val thenname = thenprec.last.name
-    val elseprec = wrap(thenf)
+    val elseprec = wrapBranch(merge, thenf)
     val elsename = elseprec.last.name
     val prec =
       finish(Op.If(cond,
@@ -49,7 +51,26 @@ final case class Focus(
         Next(elsename, Seq()))).blocks
     Focus(prec ++ thenprec ++ elseprec,
           merge, Seq(param), Seq(),
-          Val.Name(param.name, ty), complete = false)
+          Val.Name(param.name, retty), complete = false)
+  }
+
+  def branchSwitch(scrut: Val, retty: Type,
+                   defaultf: Focus => Focus,
+                   casevalues: Seq[Val], casefs: Seq[Focus => Focus])
+                  (implicit fresh: Fresh): Focus = {
+    val merge = fresh()
+    val param = Param(fresh(), retty)
+    val defaultprec = wrapBranch(merge, defaultf)
+    val defaultname = defaultprec.last.name
+    val caseprecs = casefs.map(wrapBranch(merge, _))
+    val casenames = caseprecs.map(_.last.name)
+    val prec =
+      finish(Op.Switch(scrut,
+        Next(defaultname, Seq()),
+        casevalues.zip(casenames).map { case (v, n) => Case(v, Next(n, Seq())) })).blocks
+    Focus(prec ++ defaultprec ++ caseprecs.flatten,
+          merge, Seq(param), Seq(),
+          Val.Name(param.name, retty), complete = false)
   }
 }
 object Focus {

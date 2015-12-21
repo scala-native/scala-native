@@ -315,7 +315,7 @@ abstract class GenNIR extends PluginComponent
           focus.withOp(Op.Load(genType(sym.tpe), curEnv.resolve(sym)))
 
       case lit: Literal =>
-        genValue(lit, focus)
+        genLiteral(lit, focus)
 
       case block: Block =>
         genBlock(block, focus)
@@ -358,33 +358,52 @@ abstract class GenNIR extends PluginComponent
               tree + "/" + tree.getClass + " at: " + tree.pos)
     }
 
-    def genValue(lit: Literal, focus: Focus): Focus = {
+    def genLiteral(lit: Literal, focus: Focus): Focus = {
+      val value = lit.value
+      value.tag match {
+        case NullTag
+           | UnitTag
+           | BooleanTag
+           | ByteTag
+           | ShortTag
+           | CharTag
+           | IntTag
+           | LongTag
+           | FloatTag
+           | DoubleTag
+           | StringTag
+           | ClazzTag =>
+          focus withValue genLiteralValue(lit)
+        case EnumTag =>
+          genStaticMember(value.symbolValue, focus)
+      }
+    }
+
+    def genLiteralValue(lit: Literal): Val = {
       val value = lit.value
       value.tag match {
         case NullTag =>
-          focus withValue Val.Null
+          Val.Null
         case UnitTag =>
-          focus withValue Val.Unit
+          Val.Unit
         case BooleanTag =>
-          focus withValue (if (value.booleanValue) Val.True else Val.False)
+          if (value.booleanValue) Val.True else Val.False
         case ByteTag =>
-          focus withValue Val.I8(value.intValue.toByte)
+          Val.I8(value.intValue.toByte)
         case ShortTag | CharTag =>
-          focus withValue Val.I16(value.intValue.toShort)
+          Val.I16(value.intValue.toShort)
         case IntTag =>
-          focus withValue Val.I32(value.intValue)
+          Val.I32(value.intValue)
         case LongTag =>
-          focus withValue Val.I64(value.longValue)
+          Val.I64(value.longValue)
         case FloatTag =>
-          focus withValue Val.F32(value.floatValue)
+          Val.F32(value.floatValue)
         case DoubleTag =>
-          focus withValue Val.F64(value.doubleValue)
+          Val.F64(value.doubleValue)
         case StringTag =>
           ???
         case ClazzTag =>
           ???
-        case EnumTag =>
-          genStaticMember(value.symbolValue, focus)
       }
     }
 
@@ -531,44 +550,39 @@ abstract class GenNIR extends PluginComponent
       cond.branchIf(cond.value, retty, genExpr(thenp, _), genExpr(elsep, _))
     }
 
-    def genSwitch(m: Match, focus: Focus): Focus = ???/*{
-      val Match(sel, cases) = m
-
-      val (selfocus, selt) = genExpr(sel, focus).merge
-      val switch = ir.Switch(selfocus.cf, selfocus.value)
-
-      val defaultBody =
-        cases.collectFirst {
+    def genSwitch(m: Match, focus: Focus): Focus = {
+      val Match(scrutp, casesp) = m
+      val scrut = genExpr(scrutp, focus)
+      val retty = genType(m.tpe)
+      val defaultcase: Tree =
+        casesp.collectFirst {
           case c @ CaseDef(Ident(nme.WILDCARD), _, body) => body
         }.get
-      val defaultTails =
-        genExpr(defaultBody, selfocus withCf ir.CaseDefault(switch))
-      val branchTails: Seq[Tails] =
-        cases.map {
+      val normalcases: Seq[(Val, Tree)] =
+        casesp.flatMap {
           case CaseDef(Ident(nme.WILDCARD), _, _) =>
-            Tails.empty
+            Seq()
           case CaseDef(pat, guard, body) =>
             assert(guard.isEmpty)
-            val consts =
+            val vals: Seq[Val] =
               pat match {
                 case lit: Literal =>
-                  List(genValue(lit, Focus.start()).value)
+                  List(genLiteralValue(lit))
                 case Alternative(alts) =>
                   alts.map {
-                    case lit: Literal => genValue(lit, Focus.start()).value
+                    case lit: Literal => genLiteralValue(lit)
                   }
                 case _ =>
                   Nil
               }
-            val cf = consts match {
-              case const :: Nil => ir.CaseConst(switch, consts.head)
-              case _            => ir.Merge(consts.map(ir.CaseConst(switch, _)))
-            }
-            genExpr(body, selfocus withCf cf)
+            vals.map((_, body))
         }
 
-      Tails.flatten(defaultTails +: branchTails)
-    }*/
+      scrut.branchSwitch(scrut.value, retty,
+        genExpr(defaultcase, _),
+        normalcases.map { case (v, _) => v },
+        normalcases.map { case (_, body) => genExpr(body, _: Focus) })
+    }
 
     def genApplyDynamic(app: ApplyDynamic, focus: Focus) =
       undefined(focus)
