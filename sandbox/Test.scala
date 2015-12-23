@@ -24,6 +24,27 @@ object Test {
     new jl.Double("0.0")
   }
 
+  def boxValueOf: Unit = {
+    jl.Boolean.valueOf(false)
+    jl.Character.valueOf('0')
+    jl.Byte.valueOf(0.toByte)
+    jl.Short.valueOf(0.toShort)
+    jl.Integer.valueOf(0)
+    jl.Long.valueOf(0L)
+    jl.Float.valueOf(0.0f)
+    jl.Double.valueOf(0.0d)
+  }
+
+  def boxStringValueOf: Unit = {
+    jl.Boolean.valueOf("false")
+    jl.Byte.valueOf("0")
+    jl.Short.valueOf("0")
+    jl.Integer.valueOf("0")
+    jl.Long.valueOf("0")
+    jl.Float.valueOf("0.0")
+    jl.Double.valueOf("0.0")
+  }
+
   def unboxBoolean(box: jl.Boolean): Unit = {
     box.booleanValue
   }

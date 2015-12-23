@@ -20,6 +20,8 @@ trait NativeDefinitions {
     val longValue    = TermName("longValue")
     val floatValue   = TermName("floatValue")
     val doubleValue  = TermName("doubleValue")
+
+    val valueOf = TermName("valueOf")
   }
 
   lazy val JBoolean_booleanValue = getMemberMethod(BoxedBooleanClass,   nnme.booleanValue)
@@ -115,6 +117,29 @@ trait NativeDefinitions {
       case JDouble_doubleValue => Some((nir.Type.DoubleClass, nir.Type.F64))
 
       case _                   => None
+    }
+  }
+
+  lazy val JBoolean_valueOf   = getMemberMethod(BoxedBooleanClass.companion,   nnme.valueOf)
+  lazy val JCharacter_valueOf = getMemberMethod(BoxedCharacterClass.companion, nnme.valueOf)
+  lazy val JByte_valueOf      = getMemberMethod(BoxedByteClass.companion,      nnme.valueOf)
+  lazy val JShort_valueOf     = getMemberMethod(BoxedShortClass.companion,     nnme.valueOf)
+  lazy val JInteger_valueOf   = getMemberMethod(BoxedIntClass.companion,       nnme.valueOf)
+  lazy val JLong_valueOf      = getMemberMethod(BoxedLongClass.companion,      nnme.valueOf)
+  lazy val JFloat_valueOf     = getMemberMethod(BoxedFloatClass.companion,     nnme.valueOf)
+  lazy val JDouble_valueOf    = getMemberMethod(BoxedDoubleClass.companion,    nnme.valueOf)
+
+  object BoxValue {
+    def unapply(sym: Symbol): Option[nir.Type] = {
+           if (  JBoolean_valueOf.alternatives.contains(sym)) Some(nir.Type.BooleanClass)
+      else if (JCharacter_valueOf.alternatives.contains(sym)) Some(nir.Type.CharacterClass)
+      else if (     JByte_valueOf.alternatives.contains(sym)) Some(nir.Type.ByteClass)
+      else if (    JShort_valueOf.alternatives.contains(sym)) Some(nir.Type.ShortClass)
+      else if (  JInteger_valueOf.alternatives.contains(sym)) Some(nir.Type.IntegerClass)
+      else if (     JLong_valueOf.alternatives.contains(sym)) Some(nir.Type.LongClass)
+      else if (    JFloat_valueOf.alternatives.contains(sym)) Some(nir.Type.FloatClass)
+      else if (   JDouble_valueOf.alternatives.contains(sym)) Some(nir.Type.DoubleClass)
+      else                                                    None
     }
   }
 }

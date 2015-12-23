@@ -111,7 +111,8 @@ abstract class GenNIR extends PluginComponent
       sym.annotations.find(_.tpe =:= ExternClass.tpe).isDefined
 
     def isBuiltin(sym: Symbol): Boolean =
-      UnboxValue.unapply(sym).nonEmpty
+      UnboxValue.unapply(sym).nonEmpty ||
+      BoxValue.unapply(sym).nonEmpty
 
     def genClass(cd: ClassDef): Seq[Defn] = scoped (
       curClassSym := cd.symbol
@@ -957,15 +958,26 @@ abstract class GenNIR extends PluginComponent
 
     def genBuiltinApply(app: Tree, focus: Focus): Focus = {
       val Apply(fun @ Select(receiverp, _), args) = app
-      val rec = genExpr(receiverp, focus)
 
       fun.symbol match {
         case UnboxValue(fromty, toty) =>
-          val unboxed = rec withOp Op.Unbox(fromty, rec.value)
+          val boxed = genExpr(receiverp, focus)
+          val unboxed = boxed withOp Op.Unbox(fromty, boxed.value)
           genCoercion(unboxed.value, fromty.unboxed, toty, unboxed)
-        case _ =>
-          ???
+        case BoxValue(boxty) =>
+          genValueOfApply(boxty, args, focus)
       }
+    }
+
+    def genValueOfApply(boxty: nir.Type, args: Seq[Tree], focus: Focus) = {
+      val List(argp) = args
+      val arg = genExpr(argp, focus)
+      val converted =
+        if (argp.tpe.widen == StringTpe)
+          arg withOp Op.FromString(boxty.unboxed, arg.value)
+        else
+          arg
+      converted withOp Op.Box(boxty, converted.value)
     }
 
     def genNormalApply(app: Apply, focus: Focus) = {
@@ -1013,15 +1025,7 @@ abstract class GenNIR extends PluginComponent
            | JLongKind
            | JFloatKind
            | JDoubleKind =>
-          val List(argp) = args
-          val sym = builtin.sym
-          val arg = genExpr(argp, focus)
-          val converted =
-            if (argp.tpe.widen == StringTpe)
-              arg withOp Op.FromString(boxed2primty(sym), arg.value)
-            else
-              arg
-          converted withOp Op.Box(boxed2boxedty(sym), converted.value)
+          genValueOfApply(toIRType(builtin), args, focus)
       }
 
     def genNewArray(elemty: nir.Type, lengthp: Tree, focus: Focus) = {
