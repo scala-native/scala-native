@@ -22,6 +22,14 @@ trait NativeDefinitions {
     val doubleValue  = TermName("doubleValue")
 
     val valueOf = TermName("valueOf")
+
+    val parseBoolean = TermName("parseBoolean")
+    val parseByte    = TermName("parseByte")
+    val parseShort   = TermName("parseShort")
+    val parseInt     = TermName("parseInt")
+    val parseLong    = TermName("parseLong")
+    val parseFloat   = TermName("parseFloat")
+    val parseDouble  = TermName("parseDouble")
   }
 
   lazy val JBoolean_booleanValue = getMemberMethod(BoxedBooleanClass,   nnme.booleanValue)
@@ -140,6 +148,27 @@ trait NativeDefinitions {
       else if (    JFloat_valueOf.alternatives.contains(sym)) Some(nir.Type.FloatClass)
       else if (   JDouble_valueOf.alternatives.contains(sym)) Some(nir.Type.DoubleClass)
       else                                                    None
+    }
+  }
+
+  lazy val JBoolean_parseBoolean = getMemberMethod(BoxedBooleanClass.companion, nnme.parseBoolean)
+  lazy val JByte_parseByte       = getMemberMethod(BoxedByteClass.companion,    nnme.parseByte)
+  lazy val JShort_parseShort     = getMemberMethod(BoxedShortClass.companion,   nnme.parseShort)
+  lazy val JInteger_parseInt     = getMemberMethod(BoxedIntClass.companion,     nnme.parseInt)
+  lazy val JLong_parseLong       = getMemberMethod(BoxedLongClass.companion,    nnme.parseLong)
+  lazy val JFloat_parseFloat     = getMemberMethod(BoxedFloatClass.companion,   nnme.parseFloat)
+  lazy val JDouble_parseDouble   = getMemberMethod(BoxedDoubleClass.companion,  nnme.parseDouble)
+
+  object ParseValue {
+    def unapply(sym: Symbol): Option[nir.Type] = {
+           if (JBoolean_parseBoolean.alternatives.contains(sym)) Some((nir.Type.Bool))
+      else if (      JByte_parseByte.alternatives.contains(sym)) Some((nir.Type.I8))
+      else if (    JShort_parseShort.alternatives.contains(sym)) Some((nir.Type.I16))
+      else if (    JInteger_parseInt.alternatives.contains(sym)) Some((nir.Type.I32))
+      else if (      JLong_parseLong.alternatives.contains(sym)) Some((nir.Type.I64))
+      else if (    JFloat_parseFloat.alternatives.contains(sym)) Some((nir.Type.F32))
+      else if (  JDouble_parseDouble.alternatives.contains(sym)) Some((nir.Type.F64))
+      else                                                       None
     }
   }
 }

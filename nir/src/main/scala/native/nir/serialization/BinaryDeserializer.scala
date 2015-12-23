@@ -140,7 +140,7 @@ class BinaryDeserializer(bb: ByteBuffer) {
     case T.MonitorExitOp  => Op.MonitorExit(getVal)
     case T.StringConcatOp => Op.StringConcat(getVal, getVal)
     case T.ToStringOp     => Op.ToString(getVal)
-    case T.FromStringOp   => Op.FromString(getType, getVal)
+    case T.FromStringOp   => Op.FromString(getType, getVal, getVal)
   }
 
   def getTypes(): Seq[Type] = getSeq(getType)

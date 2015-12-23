@@ -200,8 +200,8 @@ class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.StringConcatOp); putVal(l); putVal(r)
     case Op.ToString(v) =>
       putInt(T.ToStringOp); putVal(v)
-    case Op.FromString(ty, v) =>
-      putInt(T.FromStringOp); putType(ty); putVal(v)
+    case Op.FromString(ty, v, radix) =>
+      putInt(T.FromStringOp); putType(ty); putVal(v); putVal(radix)
   }
 
   def putTypes(tys: Seq[Type]): Unit = putSeq(putType)(tys)

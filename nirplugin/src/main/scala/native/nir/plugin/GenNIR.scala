@@ -112,7 +112,8 @@ abstract class GenNIR extends PluginComponent
 
     def isBuiltin(sym: Symbol): Boolean =
       UnboxValue.unapply(sym).nonEmpty ||
-      BoxValue.unapply(sym).nonEmpty
+      BoxValue.unapply(sym).nonEmpty   ||
+      ParseValue.unapply(sym).nonEmpty
 
     def genClass(cd: ClassDef): Seq[Defn] = scoped (
       curClassSym := cd.symbol
@@ -957,7 +958,7 @@ abstract class GenNIR extends PluginComponent
     }
 
     def genBuiltinApply(app: Tree, focus: Focus): Focus = {
-      val Apply(fun @ Select(receiverp, _), args) = app
+      val Apply(fun @ Select(receiverp, _), argsp) = app
 
       fun.symbol match {
         case UnboxValue(fromty, toty) =>
@@ -965,18 +966,33 @@ abstract class GenNIR extends PluginComponent
           val unboxed = boxed withOp Op.Unbox(fromty, boxed.value)
           genCoercion(unboxed.value, fromty.unboxed, toty, unboxed)
         case BoxValue(boxty) =>
-          genValueOfApply(boxty, args, focus)
+          genValueOfApply(boxty, argsp, focus)
+        case ParseValue(ty) =>
+          genParseValue(ty, argsp, focus)
       }
     }
 
-    def genValueOfApply(boxty: nir.Type, args: Seq[Tree], focus: Focus) = {
-      val List(argp) = args
-      val arg = genExpr(argp, focus)
+    def genParseValue(ty: nir.Type, argsp: Seq[Tree], focus: Focus) =
+      argsp match {
+        case List(strp) =>
+          val str = genExpr(strp, focus)
+          str withOp Op.FromString(ty, str.value, Val.None)
+        case List(strp, radixp) =>
+          val str = genExpr(strp, focus)
+          val radix = genExpr(radixp, str)
+          radix withOp Op.FromString(ty, str.value, radix.value)
+      }
+
+    def genValueOfApply(boxty: nir.Type, argsp: Seq[Tree], focus: Focus) = {
       val converted =
-        if (argp.tpe.widen == StringTpe)
-          arg withOp Op.FromString(boxty.unboxed, arg.value)
-        else
-          arg
+        argsp match {
+          case List(s, radix) =>
+            genParseValue(boxty.unboxed, argsp, focus)
+          case List(s) if s.tpe.widen == StringTpe =>
+            genParseValue(boxty.unboxed, argsp, focus)
+          case List(valuep) =>
+            genExpr(valuep, focus)
+        }
       converted withOp Op.Box(boxty, converted.value)
     }
 

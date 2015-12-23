@@ -113,8 +113,10 @@ object Shows {
       sh"string-concat $l, $r"
     case Op.ToString(v) =>
       sh"to-string $v"
-    case Op.FromString(ty, v) =>
-      sh"from-string[$ty] $v"
+    case Op.FromString(ty, s, Val.None) =>
+      sh"from-string[$ty] $s"
+    case Op.FromString(ty, s, radix) =>
+      sh"from-string[$ty] $s, $radix"
   }
 
   implicit val showBin: Show[Bin] = Show {
