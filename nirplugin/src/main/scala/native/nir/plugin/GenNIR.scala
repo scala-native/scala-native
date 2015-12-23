@@ -110,6 +110,9 @@ abstract class GenNIR extends PluginComponent
     def isForeignExternModule(sym: Symbol): Boolean =
       sym.annotations.find(_.tpe =:= ExternClass.tpe).isDefined
 
+    def isBuiltin(sym: Symbol): Boolean =
+      UnboxValue.unapply(sym).nonEmpty
+
     def genClass(cd: ClassDef): Seq[Defn] = scoped (
       curClassSym := cd.symbol
     ) {
@@ -117,7 +120,8 @@ abstract class GenNIR extends PluginComponent
 
       val sym     = cd.symbol
       val name    = genClassName(sym)
-      val parent  = if (sym.superClass != NoSymbol) genClassName(sym.superClass) else Name.None
+      val parent  = if (sym.superClass == NoSymbol) Type.None
+                    else genType(sym.superClass.tpe)
       val ifaces  = genClassInterfaces(sym)
       val fields  = genClassFields(sym).toSeq
       val defdefs = cd.impl.body.collect { case dd: DefDef => dd }
@@ -138,7 +142,7 @@ abstract class GenNIR extends PluginComponent
         psym = parent.typeSymbol
         if psym.isInterface
       } yield {
-        genClassName(psym)
+        genType(psym.tpe)
       }
 
     def genClassFields(sym: Symbol) =
@@ -179,7 +183,7 @@ abstract class GenNIR extends PluginComponent
 
     def genDefSig(sym: Symbol): nir.Type = {
       val params   = sym.asMethod.paramLists.flatten
-      val selfty   = Type.Class(genClassName(sym.owner))
+      val selfty   = genType(sym.owner.tpe)
       val paramtys = params.map(p => genType(p.tpe))
       val retty    =
         if (sym.isClassConstructor) Type.Unit
@@ -404,7 +408,7 @@ abstract class GenNIR extends PluginComponent
         case StringTag =>
           Val.String(value.stringValue)
         case ClazzTag =>
-          ???
+          Val.Class(genType(value.typeValue))
       }
     }
 
@@ -609,6 +613,8 @@ abstract class GenNIR extends PluginComponent
             genPrimitiveBox(arg, arg.tpe, focus)
           } else if (currentRun.runDefinitions.isUnbox(sym)) {
             genPrimitiveUnbox(args.head, app.tpe, focus)
+          } else if (isBuiltin(sym)) {
+            genBuiltinApply(app, focus)
           } else {
             genNormalApply(app, focus)
           }
@@ -625,30 +631,51 @@ abstract class GenNIR extends PluginComponent
       res
     }*/
 
-    lazy val primitive2box = Map(
-      BooleanTpe -> Type.Class(Name.Class("java.lang.Boolean")),
-      ByteTpe    -> Type.Class(Name.Class("java.lang.Byte")),
-      CharTpe    -> Type.Class(Name.Class("java.lang.Character")),
-      ShortTpe   -> Type.Class(Name.Class("java.lang.Short")),
-      IntTpe     -> Type.Class(Name.Class("java.lang.Integer")),
-      LongTpe    -> Type.Class(Name.Class("java.lang.Long")),
-      FloatTpe   -> Type.Class(Name.Class("java.lang.Float")),
-      DoubleTpe  -> Type.Class(Name.Class("java.lang.Double"))
+    lazy val prim2ty = Map(
+      BooleanTpe -> Type.BooleanClass,
+      ByteTpe    -> Type.ByteClass,
+      CharTpe    -> Type.CharacterClass,
+      ShortTpe   -> Type.ShortClass,
+      IntTpe     -> Type.IntegerClass,
+      LongTpe    -> Type.LongClass,
+      FloatTpe   -> Type.FloatClass,
+      DoubleTpe  -> Type.DoubleClass
+    )
+
+    lazy val boxed2primty = Map[Symbol, nir.Type](
+      BoxedBooleanClass   -> Type.BooleanClass,
+      BoxedByteClass      -> Type.ByteClass,
+      BoxedCharacterClass -> Type.CharacterClass,
+      BoxedShortClass     -> Type.ShortClass,
+      BoxedIntClass       -> Type.IntegerClass,
+      BoxedLongClass      -> Type.LongClass,
+      BoxedFloatClass     -> Type.FloatClass,
+      BoxedDoubleClass    -> Type.DoubleClass
+    )
+
+    lazy val boxed2boxedty = Map[Symbol, nir.Type](
+      BoxedBooleanClass   -> Type.BooleanClass,
+      BoxedByteClass      -> Type.ByteClass,
+      BoxedCharacterClass -> Type.CharacterClass,
+      BoxedShortClass     -> Type.ShortClass,
+      BoxedIntClass       -> Type.IntegerClass,
+      BoxedLongClass      -> Type.LongClass,
+      BoxedFloatClass     -> Type.FloatClass,
+      BoxedDoubleClass    -> Type.DoubleClass
     )
 
     lazy val javaLangObject = Type.Class(Name.Class("java.lang.Object"))
-    lazy val javaLangClass = Type.Class(Name.Class("java.lang.Class"))
 
     def genPrimitiveBox(exprp: Tree, tpe: Type, focus: Focus) = {
       val expr = genExpr(exprp, focus)
 
-      expr.withOp(Op.Box(primitive2box(tpe.widen), expr.value))
+      expr.withOp(Op.Box(prim2ty(tpe.widen), expr.value))
     }
 
     def genPrimitiveUnbox(exprp: Tree, tpe: Type, focus: Focus) = {
       val expr = genExpr(exprp, focus)
 
-      expr.withOp(Op.Unbox(primitive2box(tpe.widen), expr.value))
+      expr.withOp(Op.Unbox(prim2ty(tpe.widen), expr.value))
     }
 
     def genPrimitiveOp(app: Apply, focus: Focus): Focus = {
@@ -793,9 +820,9 @@ abstract class GenNIR extends PluginComponent
         if (lwidth >= rwidth) lty else rty
       case (ty1 , ty2) if ty1 == ty2 =>
         ty1
-      case (nir.Type.Null, _) =>
+      case (nir.Type.NullClass, _) =>
         rty
-      case (_, nir.Type.Null) =>
+      case (_, nir.Type.NullClass) =>
         lty
       case _ =>
         abort(s"can't perform binary opeation between $lty and $rty")
@@ -806,7 +833,7 @@ abstract class GenNIR extends PluginComponent
       val left = genExpr(leftp, focus)
       val right = genExpr(rightp, left)
 
-      right withOp Op.StringAdd(left.value, right.value)
+      right withOp Op.StringConcat(left.value, right.value)
     }
 
     // TODO: this doesn't seem to get called on foo.## expressions
@@ -865,7 +892,7 @@ abstract class GenNIR extends PluginComponent
           case (nir.Type.F(_), nir.Type.I(_)) => Conv.Fptosi
           case (nir.Type.F64, nir.Type.F32)   => Conv.Fptrunc
           case (nir.Type.F32, nir.Type.F64)   => Conv.Fpext
-          case (nir.Type.Null, _)             => ???
+          case (nir.Type.NullClass, _)        => ???
         }
         focus withOp Op.Conv(conv, toty, value)
       }
@@ -928,6 +955,19 @@ abstract class GenNIR extends PluginComponent
       })
     }
 
+    def genBuiltinApply(app: Tree, focus: Focus): Focus = {
+      val Apply(fun @ Select(receiverp, _), args) = app
+      val rec = genExpr(receiverp, focus)
+
+      fun.symbol match {
+        case UnboxValue(fromty, toty) =>
+          val unboxed = rec withOp Op.Unbox(fromty, rec.value)
+          genCoercion(unboxed.value, fromty.unboxed, toty, unboxed)
+        case _ =>
+          ???
+      }
+    }
+
     def genNormalApply(app: Apply, focus: Focus) = {
       val Apply(fun @ Select(receiverp, _), args) = app
       val rec = genExpr(receiverp, focus)
@@ -948,6 +988,8 @@ abstract class GenNIR extends PluginComponent
       val ty   = toIRType(kind)
 
       kind match {
+        case builtin: BuiltinKind =>
+          genNewBuiltin(builtin, ctor, args, focus)
         case ArrayKind(of) =>
           genNewArray(toIRType(of), args.head, focus)
         case ckind: ClassKind =>
@@ -956,6 +998,31 @@ abstract class GenNIR extends PluginComponent
           abort("unexpected new: " + app + "\ngen type: " + ty)
       }
     }
+
+    def genNewBuiltin(builtin: BuiltinKind, ctorsym: Symbol, args: List[Tree], focus: Focus) =
+      builtin match {
+        case JObjectKind =>
+          focus withOp Op.Alloc(Type.ObjectClass)
+        case JStringKind =>
+          ???
+        case JCharKind
+           | JBooleanKind
+           | JByteKind
+           | JShortKind
+           | JIntKind
+           | JLongKind
+           | JFloatKind
+           | JDoubleKind =>
+          val List(argp) = args
+          val sym = builtin.sym
+          val arg = genExpr(argp, focus)
+          val converted =
+            if (argp.tpe.widen == StringTpe)
+              arg withOp Op.FromString(boxed2primty(sym), arg.value)
+            else
+              arg
+          converted withOp Op.Box(boxed2boxedty(sym), converted.value)
+      }
 
     def genNewArray(elemty: nir.Type, lengthp: Tree, focus: Focus) = {
       val length = genExpr(lengthp, focus)

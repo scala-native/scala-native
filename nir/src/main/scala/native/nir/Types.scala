@@ -1,7 +1,19 @@
 package native
 package nir
 
-sealed abstract class Type
+sealed abstract class Type {
+  def unboxed = this match {
+    case Type.CharacterClass => Type.I16
+    case Type.BooleanClass   => Type.Bool
+    case Type.ByteClass      => Type.I8
+    case Type.ShortClass     => Type.I16
+    case Type.IntegerClass   => Type.I32
+    case Type.LongClass      => Type.I64
+    case Type.FloatClass     => Type.F32
+    case Type.DoubleClass    => Type.F64
+    case _                   => native.util.unreachable
+  }
+}
 object Type {
   final case object None                   extends Type
   final case object Void                   extends Type
@@ -24,8 +36,18 @@ object Type {
   // scala
   final case object Unit                extends Type
   final case object Nothing             extends Type
-  final case object Null                extends Type
+  final case object NullClass           extends Type
+  final case object ObjectClass         extends Type
+  final case object ClassClass          extends Type
+  final case object StringClass         extends Type
+  final case object CharacterClass      extends Type
+  final case object BooleanClass        extends Type
+  final case object ByteClass           extends Type
+  final case object ShortClass          extends Type
+  final case object IntegerClass        extends Type
+  final case object LongClass           extends Type
+  final case object FloatClass          extends Type
+  final case object DoubleClass         extends Type
   final case class Class(name: Name)    extends Type
   final case class ArrayClass(ty: Type) extends Type
-  final case object StringClass         extends Type
 }

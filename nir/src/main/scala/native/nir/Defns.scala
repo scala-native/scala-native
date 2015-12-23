@@ -10,14 +10,14 @@ object Defn {
 
   // scala
   final case class Interface(name: Name,
-                             interfaces: Seq[Name],
+                             interfaces: Seq[Type],
                              members: Seq[Defn]) extends Defn
   final case class Class(name: Name,
-                         parent: Name,
-                         interfaces: Seq[Name],
+                         parent: Type,
+                         interfaces: Seq[Type],
                          members: Seq[Defn]) extends Defn
   final case class Module(name: Name,
-                          parent: Name,
-                          interfaces: Seq[Name],
+                          parent: Type,
+                          interfaces: Seq[Type],
                           members: Seq[Defn]) extends Defn
 }

@@ -17,9 +17,10 @@ sealed abstract class Val {
     case Val.Array(ty, vals) => Type.Array(ty, vals.length)
     case Val.Name(_, ty)     => ty
 
-    case Val.Null            => Type.Null
-    case Val.Unit            => Type.Unit
-    case Val.String(_)       => Type.StringClass
+    case Val.Unit      => Type.Unit
+    case Val.Null      => Type.NullClass
+    case Val.String(_) => Type.StringClass
+    case Val.Class(ty) => Type.ClassClass
   }
 }
 object Val {
@@ -38,7 +39,8 @@ object Val {
   final case class Name  (name: nir.Name, valty: Type)      extends Val
 
   //scala
-  final case object Null                           extends Val
   final case object Unit                           extends Val
+  final case object Null                           extends Val
   final case class String(value: java.lang.String) extends Val
+  final case class Class(classty: Type)            extends Val
 }

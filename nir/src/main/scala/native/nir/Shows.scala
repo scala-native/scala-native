@@ -14,7 +14,7 @@ object Shows {
 
   implicit val showInstr: Show[Instr] = Show {
     case Instr(Name.None, op) => op
-    case Instr(name, op)      => sh"$name: ${op.resty} = $op"
+    case Instr(name, op)      => sh"$name = $op"
   }
 
   implicit val showParam: Show[Param] = Show {
@@ -93,8 +93,6 @@ object Shows {
       sh"hash-code $value"
     case Op.GetClass(value) =>
       sh"get-class $value"
-    case Op.ClassOf(ty) =>
-      sh"class-of[$ty]"
     case Op.AsInstanceOf(value, ty) =>
       sh"as-instance-of[$ty] $value"
     case Op.IsInstanceOf(value, ty) =>
@@ -103,16 +101,20 @@ object Shows {
       sh"array-length $value"
     case Op.ArrayElem(ty, value, index) =>
       sh"array-elem[$ty] $value, $index"
-    case Op.Box(value, to) =>
-      sh"box[$to] $value"
-    case Op.Unbox(value, to) =>
-      sh"unbox[$to] $value"
+    case Op.Box(ty, value) =>
+      sh"box[$ty] $value"
+    case Op.Unbox(ty, value) =>
+      sh"unbox[$ty] $value"
     case Op.MonitorEnter(v) =>
       sh"monitor-enter $v"
     case Op.MonitorExit(v) =>
       sh"monitor-exit $v"
-    case Op.StringAdd(l, r) =>
-      sh"string-add $l, $r"
+    case Op.StringConcat(l, r) =>
+      sh"string-concat $l, $r"
+    case Op.ToString(v) =>
+      sh"to-string $v"
+    case Op.FromString(ty, v) =>
+      sh"from-string[$ty] $v"
   }
 
   implicit val showBin: Show[Bin] = Show {
@@ -166,14 +168,17 @@ object Shows {
     case Val.F64(value)         => sh"${value}f64"
     case Val.Struct(ty, values) => sh"struct[$ty] ${r(values, ", ")}"
     case Val.Array(ty, values)  => sh"array[$ty] ${r(values, ", ")}"
-    case Val.Name(name, ty)     => sh"$name: $ty"
+    case Val.Name(name, ty)     => sh"$name"
 
-    case Val.Null      => "null"
     case Val.Unit      => "unit"
+    case Val.Null      => "null"
     case Val.String(v) => "\"" + v.replace("\"", "\\\"") + "\""
+    case Val.Class(ty) => sh"class[$ty]"
   }
 
-  implicit val showDefns: Show[Seq[Defn]] = Show { defns => r(defns.map(nl(_))) }
+  implicit val showDefns: Show[Seq[Defn]] = Show { defns =>
+    r(defns.map(nl(_)))
+  }
 
   implicit val showDefn: Show[Defn] = Show {
     case Defn.Var(name, ty, rhs) =>
@@ -189,15 +194,15 @@ object Shows {
     case Defn.Interface(name, ifaces, members) =>
       val parents = r(ifaces, sep = ", ")
       val body = r(members.map(i(_)))
-      sh"interface $name: $parents =$body"
+      sh"interface $name($parents) =$body"
     case Defn.Class(name, parent, ifaces, members) =>
       val parents = r(parent +: ifaces, sep = ", ")
       val body = r(members.map(i(_)))
-      sh"class $name: $parents =$body"
+      sh"class $name($parents) =$body"
     case Defn.Module(name, parent, ifaces, members) =>
       val parents = r(parent +: ifaces, sep = ", ")
       val body = r(members.map(i(_)))
-      sh"module $name: $parents =$body"
+      sh"module $name($parents) =$body"
   }
 
   implicit val showType: Show[Type] = Show {
@@ -218,10 +223,20 @@ object Shows {
 
     case Type.Unit           => "unit"
     case Type.Nothing        => "nothing"
-    case Type.Null           => "null"
+    case Type.NullClass      => "null"
+    case Type.ObjectClass    => "object"
+    case Type.ClassClass     => "class"
+    case Type.StringClass    => "string"
+    case Type.CharacterClass => "char"
+    case Type.BooleanClass   => "boolean"
+    case Type.ByteClass      => "byte"
+    case Type.ShortClass     => "short"
+    case Type.IntegerClass   => "integer"
+    case Type.LongClass      => "long"
+    case Type.FloatClass     => "float"
+    case Type.DoubleClass    => "double"
     case Type.Class(name)    => name
     case Type.ArrayClass(ty) => sh"${ty}[]"
-    case Type.StringClass    => "string"
   }
 
   implicit val showName: Show[Name] = Show {

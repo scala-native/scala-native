@@ -33,17 +33,18 @@ sealed abstract class Op {
     case Op.AllocArray(ty, _)    => Type.ArrayClass(ty)
     case Op.Equals(_, _)         => Type.Bool
     case Op.HashCode(_)          => Type.I32
-    case Op.GetClass(_)          => Type.Class(Name.Class("java.lang.Class"))
-    case Op.ClassOf(_)           => Type.Class(Name.Class("java.lang.Class"))
+    case Op.GetClass(_)          => Type.ClassClass
     case Op.AsInstanceOf(_, ty)  => ty
     case Op.IsInstanceOf(_, _)   => Type.Bool
     case Op.ArrayLength(_)       => Type.I32
     case Op.ArrayElem(ty, _, _)  => ty
     case Op.Box(ty, _)           => ty
-    case Op.Unbox(ty, _)         => ty
+    case Op.Unbox(ty, _)         => ty.unboxed
     case Op.MonitorEnter(_)      => Type.Unit
     case Op.MonitorExit(_)       => Type.Unit
-    case Op.StringAdd(_, _)      => Type.StringClass
+    case Op.StringConcat(_, _)   => Type.StringClass
+    case Op.ToString(_)          => Type.StringClass
+    case Op.FromString(ty ,_)    => ty
   }
 }
 object Op {
@@ -78,7 +79,6 @@ object Op {
   final case class Equals      (l: Val, r: Val)                   extends Op
   final case class HashCode    (value: Val)                       extends Op
   final case class GetClass    (value: Val)                       extends Op
-  final case class ClassOf     (ty: Type)                         extends Op
   final case class AsInstanceOf(value: Val, ty: Type)             extends Op
   final case class IsInstanceOf(value: Val, ty: Type)             extends Op
   final case class ArrayLength (value: Val)                       extends Op
@@ -87,5 +87,7 @@ object Op {
   final case class Unbox       (ty: Type, value: Val)             extends Op
   final case class MonitorEnter(value: Val)                       extends Op
   final case class MonitorExit (value: Val)                       extends Op
-  final case class StringAdd   (l: Val, r: Val)                   extends Op
+  final case class StringConcat(l: Val, r: Val)                   extends Op
+  final case class ToString    (l: Val)                           extends Op
+  final case class FromString  (ty: Type, value: Val)             extends Op
 }
