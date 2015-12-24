@@ -12,7 +12,6 @@ trait NativeBuiltins {
   lazy val ExternClass = getRequiredClass("native.ffi.extern")
 
   def isBuiltin(sym: Symbol): Boolean =
-    ToString.unapply(sym).nonEmpty                  ||
     UnboxValue.unapply(sym).nonEmpty                ||
     BoxValue.unapply(sym).nonEmpty                  ||
     ParseValue.unapply(sym).nonEmpty                ||
@@ -21,7 +20,11 @@ trait NativeBuiltins {
     BoxModuleToUnsignedString.unapply(sym).nonEmpty ||
     DivideUnsigned.unapply(sym).nonEmpty            ||
     RemainderUnsigned.unapply(sym).nonEmpty         ||
-    ToUnsigned.unapply(sym).nonEmpty
+    ToUnsigned.unapply(sym).nonEmpty                ||
+    ToString.unapply(sym).nonEmpty                  ||
+    HashCode.unapply(sym).nonEmpty                  ||
+    ScalaRunTimeHashCode.unapply(sym)               ||
+    Equals.unapply(sym)
 
   object nnme {
     val booleanValue = TermName("booleanValue")
@@ -53,6 +56,11 @@ trait NativeBuiltins {
 
     val divideUnsigned    = TermName("divideUnsigned")
     val remainderUnsigned = TermName("remainderUnsigned")
+
+    val hash      = TermName("hash")
+    val hashCode_ = TermName("hashCode")
+
+    val equals_ = TermName("equals")
   }
 
   lazy val JBoolean_booleanValue = getMemberMethod(BoxedBooleanClass,   nnme.booleanValue)
@@ -218,15 +226,16 @@ trait NativeBuiltins {
 
   object ToString {
     def unapply(sym: Symbol): Option[nir.Type] = sym match {
-      case JObject_toString  => Some(nir.Type.ObjectClass)
-      case JBoolean_toString => Some(nir.Type.BooleanClass)
-      case JByte_toString    => Some(nir.Type.ByteClass)
-      case JShort_toString   => Some(nir.Type.ShortClass)
-      case JInteger_toString => Some(nir.Type.IntegerClass)
-      case JLong_toString    => Some(nir.Type.LongClass)
-      case JFloat_toString   => Some(nir.Type.FloatClass)
-      case JDouble_toString  => Some(nir.Type.DoubleClass)
-      case _                 => None
+      case JObject_toString    => Some(nir.Type.ObjectClass)
+      case JBoolean_toString   => Some(nir.Type.BooleanClass)
+      case JCharacter_toString => Some(nir.Type.CharacterClass)
+      case JByte_toString      => Some(nir.Type.ByteClass)
+      case JShort_toString     => Some(nir.Type.ShortClass)
+      case JInteger_toString   => Some(nir.Type.IntegerClass)
+      case JLong_toString      => Some(nir.Type.LongClass)
+      case JFloat_toString     => Some(nir.Type.FloatClass)
+      case JDouble_toString    => Some(nir.Type.DoubleClass)
+      case _                   => None
     }
   }
 
@@ -299,6 +308,63 @@ trait NativeBuiltins {
       case JShortModule_toUnsignedLong   => Some((nir.Type.I16, nir.Type.I64))
       case JIntegerModule_toUnsignedLong => Some((nir.Type.I32, nir.Type.I64))
       case _                             => None
+    }
+  }
+
+  lazy val ScalaRunTime_hash = getMemberMethod(ScalaRunTimeModule, nnme.hash)
+
+  object ScalaRunTimeHashCode {
+    def unapply(sym: Symbol): Boolean =
+      ScalaRunTime_hash.alternatives.contains(sym)
+  }
+
+  lazy val JObject_hashCode    = getDecl(ObjectClass        , nnme.hashCode_)
+  lazy val JBoolean_hashCode   = getDecl(BoxedBooleanClass  , nnme.hashCode_)
+  lazy val JCharacter_hashCode = getDecl(BoxedCharacterClass, nnme.hashCode_)
+  lazy val JByte_hashCode      = getDecl(BoxedByteClass     , nnme.hashCode_)
+  lazy val JShort_hashCode     = getDecl(BoxedShortClass    , nnme.hashCode_)
+  lazy val JInteger_hashCode   = getDecl(BoxedIntClass      , nnme.hashCode_)
+  lazy val JLong_hashCode      = getDecl(BoxedLongClass     , nnme.hashCode_)
+  lazy val JFloat_hashCode     = getDecl(BoxedFloatClass    , nnme.hashCode_)
+  lazy val JDouble_hashCode    = getDecl(BoxedDoubleClass   , nnme.hashCode_)
+
+  object HashCode {
+    def unapply(sym: Symbol): Option[nir.Type] = sym match {
+      case JObject_hashCode    => Some(nir.Type.ObjectClass)
+      case JBoolean_hashCode   => Some(nir.Type.BooleanClass)
+      case JCharacter_hashCode => Some(nir.Type.CharacterClass)
+      case JByte_hashCode      => Some(nir.Type.ByteClass)
+      case JShort_hashCode     => Some(nir.Type.ShortClass)
+      case JInteger_hashCode   => Some(nir.Type.IntegerClass)
+      case JLong_hashCode      => Some(nir.Type.LongClass)
+      case JFloat_hashCode     => Some(nir.Type.FloatClass)
+      case JDouble_hashCode    => Some(nir.Type.DoubleClass)
+      case _                   => None
+    }
+  }
+
+  lazy val JObject_equals    = getDecl(ObjectClass        , nnme.equals_)
+  lazy val JBoolean_equals   = getDecl(BoxedBooleanClass  , nnme.equals_)
+  lazy val JCharacter_equals = getDecl(BoxedCharacterClass, nnme.equals_)
+  lazy val JByte_equals      = getDecl(BoxedByteClass     , nnme.equals_)
+  lazy val JShort_equals     = getDecl(BoxedShortClass    , nnme.equals_)
+  lazy val JInteger_equals   = getDecl(BoxedIntClass      , nnme.equals_)
+  lazy val JLong_equals      = getDecl(BoxedLongClass     , nnme.equals_)
+  lazy val JFloat_equals     = getDecl(BoxedFloatClass    , nnme.equals_)
+  lazy val JDouble_equals    = getDecl(BoxedDoubleClass   , nnme.equals_)
+
+  object Equals {
+    def unapply(sym: Symbol): Boolean = sym match {
+      case JObject_equals    => true
+      case JBoolean_equals   => true
+      case JCharacter_equals => true
+      case JByte_equals      => true
+      case JShort_equals     => true
+      case JInteger_equals   => true
+      case JLong_equals      => true
+      case JFloat_equals     => true
+      case JDouble_equals    => true
+      case _                 => false
     }
   }
 }

@@ -100,6 +100,7 @@ abstract class GenNIR extends PluginComponent
         if (isPrimitiveValueClass(sym) || (sym == ArrayClass))
           ()
         else {
+          println(cd)
           val defns = genClass(cd)
           println(sh"${defns.head}")
           genIRFile(cunit, sym, defns)
@@ -113,8 +114,6 @@ abstract class GenNIR extends PluginComponent
     def genClass(cd: ClassDef): Seq[Defn] = scoped (
       curClassSym := cd.symbol
     ) {
-      println(cd)
-
       val sym     = cd.symbol
       val name    = genClassName(sym)
       val parent  = if (sym.superClass == NoSymbol) Type.None
@@ -303,7 +302,7 @@ abstract class GenNIR extends PluginComponent
           val ty = genType(tree.symbol.tpe)
           val qual = genExpr(qualp, focus)
           val elem = qual.withOp(Op.FieldElem(ty, genFieldName(tree.symbol), qual.value))
-          elem.withOp(Op.Load(ty, elem.value))
+          elem withOp Op.Load(ty, elem.value)
         }
 
       case id: Ident =>
@@ -661,8 +660,6 @@ abstract class GenNIR extends PluginComponent
       BoxedDoubleClass    -> Type.DoubleClass
     )
 
-    lazy val javaLangObject = Type.Class(Name.Class("java.lang.Object"))
-
     def genPrimitiveBox(exprp: Tree, tpe: Type, focus: Focus) = {
       val expr = genExpr(exprp, focus)
 
@@ -784,17 +781,19 @@ abstract class GenNIR extends PluginComponent
                       focus: Focus) = {
       val comp = if (negated) Comp.Neq else Comp.Eq
 
-      genKind(leftp.tpe) match {
-        case ClassKind(_) | BottomKind(NullClass) =>
-          val ty    = javaLangObject
+      genType(leftp.tpe) match {
+        case _: nir.Type.ClassKind =>
           val left  = genExpr(leftp, focus)
           val right = genExpr(rightp, left)
 
           if (ref)
-            right withOp Op.Comp(comp, ty, left.value, right.value)
+            right withOp Op.Comp(comp, nir.Type.ObjectClass, left.value, right.value)
           else {
             val equals = right withOp Op.Equals(left.value, right.value)
-            equals withOp Op.Bin(Bin.Xor, Type.Bool, Val.True, equals.value)
+            if (negated)
+              equals withOp Op.Bin(Bin.Xor, Type.Bool, Val.True, equals.value)
+            else
+              equals
           }
 
         case kind =>
@@ -815,12 +814,10 @@ abstract class GenNIR extends PluginComponent
         lty
       case (nir.Type.F(lwidth), nir.Type.F(rwidth)) =>
         if (lwidth >= rwidth) lty else rty
+      case (_: nir.Type.ClassKind, _: nir.Type.ClassKind) =>
+        nir.Type.ObjectClass
       case (ty1 , ty2) if ty1 == ty2 =>
         ty1
-      case (nir.Type.NullClass, _) =>
-        rty
-      case (_, nir.Type.NullClass) =>
-        lty
       case _ =>
         abort(s"can't perform binary opeation between $lty and $rty")
     }
@@ -956,13 +953,6 @@ abstract class GenNIR extends PluginComponent
       val Apply(fun @ Select(receiverp, _), argsp) = app
 
       fun.symbol match {
-        case ToString(nir.Type.ObjectClass) =>
-          val obj = genExpr(receiverp, focus)
-          obj withOp Op.ToString(obj.value, Val.None)
-        case ToString(boxty) =>
-          val boxed = genExpr(receiverp, focus)
-          val unboxed = boxed withOp Op.Unbox(boxty, boxed.value)
-          unboxed withOp Op.ToString(unboxed.value, Val.None)
         case UnboxValue(fromty, toty) =>
           val boxed = genExpr(receiverp, focus)
           val unboxed = boxed withOp Op.Unbox(fromty, boxed.value)
@@ -991,6 +981,29 @@ abstract class GenNIR extends PluginComponent
           val List(argp) = argsp
           val unboxed = genExpr(argp, focus)
           unboxed withOp Op.Conv(Conv.Zext, toty, unboxed.value)
+        case ToString(nir.Type.ObjectClass) =>
+          val obj = genExpr(receiverp, focus)
+          obj withOp Op.ToString(obj.value, Val.None)
+        case ToString(boxty) =>
+          val boxed = genExpr(receiverp, focus)
+          val unboxed = boxed withOp Op.Unbox(boxty, boxed.value)
+          unboxed withOp Op.ToString(unboxed.value, Val.None)
+        case HashCode(nir.Type.ObjectClass) =>
+          val obj = genExpr(receiverp, focus)
+          obj withOp Op.HashCode(obj.value)
+        case HashCode(boxty) =>
+          val boxed = genExpr(receiverp, focus)
+          val unboxed = boxed withOp Op.Unbox(boxty, boxed.value)
+          unboxed withOp Op.HashCode(unboxed.value)
+        case ScalaRunTimeHashCode() =>
+          val List(argp) = argsp
+          val unboxed = genExpr(argp, focus)
+          unboxed withOp Op.HashCode(unboxed.value)
+        case Equals() =>
+          val List(argp) = argsp
+          val obj = genExpr(receiverp, focus)
+          val arg = genExpr(argp, obj)
+          arg withOp Op.Equals(obj.value, arg.value)
       }
     }
 
@@ -1057,7 +1070,7 @@ abstract class GenNIR extends PluginComponent
       val ty   = toIRType(kind)
 
       kind match {
-        case builtin: BuiltinKind =>
+        case builtin: BuiltinClassKind =>
           genNewBuiltin(builtin, ctor, args, focus)
         case ArrayKind(of) =>
           genNewArray(toIRType(of), args.head, focus)
@@ -1068,7 +1081,8 @@ abstract class GenNIR extends PluginComponent
       }
     }
 
-    def genNewBuiltin(builtin: BuiltinKind, ctorsym: Symbol, args: List[Tree], focus: Focus) =
+    def genNewBuiltin(builtin: BuiltinClassKind, ctorsym: Symbol,
+                      args: List[Tree], focus: Focus) =
       builtin match {
         case JObjectKind =>
           focus withOp Op.Alloc(Type.ObjectClass)
@@ -1092,7 +1106,7 @@ abstract class GenNIR extends PluginComponent
     }
 
     def genNew(sym: Symbol, ctorsym: Symbol, args: List[Tree], focus: Focus) = {
-      val alloc = focus.withOp(Op.AllocClass(Type.Class(genClassName(sym))))
+      val alloc = focus.withOp(Op.AllocClass(genType(sym.tpe)))
       val ctor = genMethodCall(ctorsym, alloc.value, args, alloc)
 
       ctor.withValue(alloc.value)

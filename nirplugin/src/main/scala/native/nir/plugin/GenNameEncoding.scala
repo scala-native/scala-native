@@ -69,24 +69,24 @@ trait GenNameEncoding extends SubComponent with GenTypeKinds {
           case FloatClass   => nir.Name.Prim("f32")
           case DoubleClass  => nir.Name.Prim("f64")
         }
-    case BuiltinKind(sym) =>
-      sym match {
-        case ObjectClass         => nir.Name.Prim("object")
-        case ClassClass          => nir.Name.Prim("class")
-        case StringClass         => nir.Name.Prim("string")
-        case BoxedCharacterClass => nir.Name.Prim("character")
-        case BoxedBooleanClass   => nir.Name.Prim("boolean")
-        case BoxedByteClass      => nir.Name.Prim("byte")
-        case BoxedShortClass     => nir.Name.Prim("short")
-        case BoxedIntClass       => nir.Name.Prim("integer")
-        case BoxedLongClass      => nir.Name.Prim("long")
-        case BoxedFloatClass     => nir.Name.Prim("float")
-        case BoxedDoubleClass    => nir.Name.Prim("double")
-      }
       case BottomKind(sym) =>
         sym match {
           case NullClass    => nir.Name.Prim("null")
           case NothingClass => nir.Name.Prim("nothing")
+        }
+      case BuiltinClassKind(sym) =>
+        sym match {
+          case ObjectClass         => nir.Name.Prim("object")
+          case ClassClass          => nir.Name.Prim("class")
+          case StringClass         => nir.Name.Prim("string")
+          case BoxedCharacterClass => nir.Name.Prim("character")
+          case BoxedBooleanClass   => nir.Name.Prim("boolean")
+          case BoxedByteClass      => nir.Name.Prim("byte")
+          case BoxedShortClass     => nir.Name.Prim("short")
+          case BoxedIntClass       => nir.Name.Prim("integer")
+          case BoxedLongClass      => nir.Name.Prim("long")
+          case BoxedFloatClass     => nir.Name.Prim("float")
+          case BoxedDoubleClass    => nir.Name.Prim("double")
         }
       case ClassKind(sym)   => genClassName(sym)
       case ArrayKind(kind)  => Name.Array(kindName(kind))

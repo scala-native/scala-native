@@ -11,35 +11,35 @@ trait GenTypeKinds extends SubComponent {
 
   sealed abstract class Kind
   final case class PrimitiveKind(sym: Symbol) extends Kind
-  final case class BuiltinKind(sym: Symbol) extends Kind
   final case class BottomKind(sym: Symbol) extends Kind
+  final case class BuiltinClassKind(sym: Symbol) extends Kind
   final case class ClassKind(sym: Symbol) extends Kind
   final case class ArrayKind(of: Kind) extends Kind
 
-  val UnitKind       = PrimitiveKind(UnitClass)
-  val BooleanKind    = PrimitiveKind(BooleanClass)
-  val ByteKind       = PrimitiveKind(ByteClass)
-  val CharKind       = PrimitiveKind(CharClass)
-  val ShortKind      = PrimitiveKind(ShortClass)
-  val IntKind        = PrimitiveKind(IntClass)
-  val LongKind       = PrimitiveKind(LongClass)
-  val FloatKind      = PrimitiveKind(FloatClass)
-  val DoubleKind     = PrimitiveKind(DoubleClass)
+  val UnitKind     = PrimitiveKind(UnitClass)
+  val BooleanKind  = PrimitiveKind(BooleanClass)
+  val ByteKind     = PrimitiveKind(ByteClass)
+  val CharKind     = PrimitiveKind(CharClass)
+  val ShortKind    = PrimitiveKind(ShortClass)
+  val IntKind      = PrimitiveKind(IntClass)
+  val LongKind     = PrimitiveKind(LongClass)
+  val FloatKind    = PrimitiveKind(FloatClass)
+  val DoubleKind   = PrimitiveKind(DoubleClass)
 
-  val JObjectKind  = BuiltinKind(ObjectClass)
-  val JClassKind   = BuiltinKind(ClassClass)
-  val JStringKind  = BuiltinKind(StringClass)
-  val JCharKind    = BuiltinKind(BoxedCharacterClass)
-  val JBooleanKind = BuiltinKind(BoxedBooleanClass)
-  val JByteKind    = BuiltinKind(BoxedByteClass)
-  val JShortKind   = BuiltinKind(BoxedShortClass)
-  val JIntKind     = BuiltinKind(BoxedIntClass)
-  val JLongKind    = BuiltinKind(BoxedLongClass)
-  val JFloatKind   = BuiltinKind(BoxedFloatClass)
-  val JDoubleKind  = BuiltinKind(BoxedDoubleClass)
+  val NullKind     = BottomKind(NullClass)
+  val NothingKind  = BottomKind(NothingClass)
 
-  val NullKind    = BottomKind(NullClass)
-  val NothingKind = BottomKind(NothingClass)
+  val JObjectKind  = BuiltinClassKind(ObjectClass)
+  val JClassKind   = BuiltinClassKind(ClassClass)
+  val JStringKind  = BuiltinClassKind(StringClass)
+  val JCharKind    = BuiltinClassKind(BoxedCharacterClass)
+  val JBooleanKind = BuiltinClassKind(BoxedBooleanClass)
+  val JByteKind    = BuiltinClassKind(BoxedByteClass)
+  val JShortKind   = BuiltinClassKind(BoxedShortClass)
+  val JIntKind     = BuiltinClassKind(BoxedIntClass)
+  val JLongKind    = BuiltinClassKind(BoxedLongClass)
+  val JFloatKind   = BuiltinClassKind(BoxedFloatClass)
+  val JDoubleKind  = BuiltinClassKind(BoxedDoubleClass)
 
   def genRefKind(sym: Symbol, targs: List[Type] = Nil): Kind = sym match {
     case NullClass           => NullKind
@@ -101,7 +101,12 @@ trait GenTypeKinds extends SubComponent {
         case FloatClass   => nir.Type.F32
         case DoubleClass  => nir.Type.F64
       }
-    case BuiltinKind(sym) =>
+    case BottomKind(sym) =>
+      sym match {
+        case NullClass    => nir.Type.NullClass
+        case NothingClass => nir.Type.Nothing
+      }
+    case BuiltinClassKind(sym) =>
       sym match {
         case ObjectClass         => nir.Type.ObjectClass
         case ClassClass          => nir.Type.ClassClass
@@ -114,11 +119,6 @@ trait GenTypeKinds extends SubComponent {
         case BoxedLongClass      => nir.Type.LongClass
         case BoxedFloatClass     => nir.Type.FloatClass
         case BoxedDoubleClass    => nir.Type.DoubleClass
-      }
-    case BottomKind(sym) =>
-      sym match {
-        case NullClass    => nir.Type.NullClass
-        case NothingClass => nir.Type.Nothing
       }
     case ClassKind(sym) => nir.Type.Class(genClassName(sym))
     case ArrayKind(of)  => nir.Type.ArrayClass(toIRType(of))

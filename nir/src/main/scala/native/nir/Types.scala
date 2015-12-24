@@ -36,18 +36,20 @@ object Type {
   // scala
   final case object Unit                extends Type
   final case object Nothing             extends Type
-  final case object NullClass           extends Type
-  final case object ObjectClass         extends Type
-  final case object ClassClass          extends Type
-  final case object StringClass         extends Type
-  final case object CharacterClass      extends Type
-  final case object BooleanClass        extends Type
-  final case object ByteClass           extends Type
-  final case object ShortClass          extends Type
-  final case object IntegerClass        extends Type
-  final case object LongClass           extends Type
-  final case object FloatClass          extends Type
-  final case object DoubleClass         extends Type
-  final case class Class(name: Name)    extends Type
-  final case class ArrayClass(ty: Type) extends Type
+
+  sealed abstract class ClassKind        extends Type
+  final case object NullClass            extends ClassKind
+  final case object ObjectClass          extends ClassKind
+  final case object ClassClass           extends ClassKind
+  final case object StringClass          extends ClassKind
+  final case object CharacterClass       extends ClassKind
+  final case object BooleanClass         extends ClassKind
+  final case object ByteClass            extends ClassKind
+  final case object ShortClass           extends ClassKind
+  final case object IntegerClass         extends ClassKind
+  final case object LongClass            extends ClassKind
+  final case object FloatClass           extends ClassKind
+  final case object DoubleClass          extends ClassKind
+  final case class Class(name: Name)     extends ClassKind
+  final case class ArrayClass(ty: Type)  extends ClassKind
 }
