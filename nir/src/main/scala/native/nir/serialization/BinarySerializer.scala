@@ -18,42 +18,47 @@ class BinarySerializer(buffer: ByteBuffer) {
     putInt(bytes.length); put(bytes)
   }
 
+  def putAttrs(attrs: Seq[Attr]) = putSeq(putAttr)(attrs)
+  def putAttr(attr: Attr) = attr match {
+    case Attr.Usgn => putInt(T.UsgnAttr)
+  }
+
   def putBin(bin: Bin) = bin match {
-    case Bin.Add  => T.AddBin
-    case Bin.Sub  => T.SubBin
-    case Bin.Mul  => T.MulBin
-    case Bin.Div  => T.DivBin
-    case Bin.Mod  => T.ModBin
-    case Bin.Shl  => T.ShlBin
-    case Bin.Lshr => T.LshrBin
-    case Bin.Ashr => T.AshrBin
-    case Bin.And  => T.AndBin
-    case Bin.Or   => T.OrBin
-    case Bin.Xor  => T.XorBin
+    case Bin.Add  => putInt(T.AddBin)
+    case Bin.Sub  => putInt(T.SubBin)
+    case Bin.Mul  => putInt(T.MulBin)
+    case Bin.Div  => putInt(T.DivBin)
+    case Bin.Mod  => putInt(T.ModBin)
+    case Bin.Shl  => putInt(T.ShlBin)
+    case Bin.Lshr => putInt(T.LshrBin)
+    case Bin.Ashr => putInt(T.AshrBin)
+    case Bin.And  => putInt(T.AndBin)
+    case Bin.Or   => putInt(T.OrBin)
+    case Bin.Xor  => putInt(T.XorBin)
   }
 
   def putComp(comp: Comp) = comp match {
-    case Comp.Eq  => T.EqComp
-    case Comp.Neq => T.NeqComp
-    case Comp.Lt  => T.LtComp
-    case Comp.Lte => T.LteComp
-    case Comp.Gt  => T.GtComp
-    case Comp.Gte => T.GteComp
+    case Comp.Eq  => putInt(T.EqComp)
+    case Comp.Neq => putInt(T.NeqComp)
+    case Comp.Lt  => putInt(T.LtComp)
+    case Comp.Lte => putInt(T.LteComp)
+    case Comp.Gt  => putInt(T.GtComp)
+    case Comp.Gte => putInt(T.GteComp)
   }
 
   def putConv(conv: Conv) = conv match {
-    case Conv.Trunc    => T.TruncConv
-    case Conv.Zext     => T.ZextConv
-    case Conv.Sext     => T.SextConv
-    case Conv.Fptrunc  => T.FptruncConv
-    case Conv.Fpext    => T.FpextConv
-    case Conv.Fptoui   => T.FptouiConv
-    case Conv.Fptosi   => T.FptosiConv
-    case Conv.Uitofp   => T.UitofpConv
-    case Conv.Sitofp   => T.SitofpConv
-    case Conv.Ptrtoint => T.PtrtointConv
-    case Conv.Inttoptr => T.InttoptrConv
-    case Conv.Bitcast  => T.BitcastConv
+    case Conv.Trunc    => putInt(T.TruncConv)
+    case Conv.Zext     => putInt(T.ZextConv)
+    case Conv.Sext     => putInt(T.SextConv)
+    case Conv.Fptrunc  => putInt(T.FptruncConv)
+    case Conv.Fpext    => putInt(T.FpextConv)
+    case Conv.Fptoui   => putInt(T.FptouiConv)
+    case Conv.Fptosi   => putInt(T.FptosiConv)
+    case Conv.Uitofp   => putInt(T.UitofpConv)
+    case Conv.Sitofp   => putInt(T.SitofpConv)
+    case Conv.Ptrtoint => putInt(T.PtrtointConv)
+    case Conv.Inttoptr => putInt(T.InttoptrConv)
+    case Conv.Bitcast  => putInt(T.BitcastConv)
   }
 
   def putDefns(defns: Seq[Defn]): Unit = putSeq(putDefn)(defns)
@@ -84,6 +89,7 @@ class BinarySerializer(buffer: ByteBuffer) {
   def putInstrs(instrs: Seq[Instr]) = putSeq(putInstr)(instrs)
   def putInstr(instr: Instr) = {
     putName(instr.name)
+    putAttrs(instr.attrs)
     putOp(instr.op)
   }
 
@@ -198,8 +204,8 @@ class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.MonitorExitOp); putVal(v)
     case Op.StringConcat(l, r) =>
       putInt(T.StringConcatOp); putVal(l); putVal(r)
-    case Op.ToString(v) =>
-      putInt(T.ToStringOp); putVal(v)
+    case Op.ToString(v, radix) =>
+      putInt(T.ToStringOp); putVal(v); putVal(radix)
     case Op.FromString(ty, v, radix) =>
       putInt(T.FromStringOp); putType(ty); putVal(v); putVal(radix)
   }

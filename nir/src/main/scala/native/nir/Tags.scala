@@ -2,7 +2,9 @@ package native
 package nir
 
 object Tags {
-  final val AddBin  = 1
+  final val UsgnAttr = 1
+
+  final val AddBin  = 1 + UsgnAttr
   final val SubBin  = 1 + AddBin
   final val MulBin  = 1 + SubBin
   final val DivBin  = 1 + MulBin

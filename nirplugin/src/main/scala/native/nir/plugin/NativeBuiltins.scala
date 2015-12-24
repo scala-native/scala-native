@@ -4,12 +4,21 @@ package plugin
 
 import scala.tools.nsc.Global
 
-trait NativeDefinitions {
+trait NativeBuiltins {
   val global: Global
   import global._, definitions._, rootMirror._
 
   lazy val PtrClass    = getRequiredClass("native.ffi.Ptr")
   lazy val ExternClass = getRequiredClass("native.ffi.extern")
+
+  def isBuiltin(sym: Symbol): Boolean =
+    UnboxValue.unapply(sym).nonEmpty                ||
+    BoxValue.unapply(sym).nonEmpty                  ||
+    ParseValue.unapply(sym).nonEmpty                ||
+    ParseUnsignedValue.unapply(sym).nonEmpty        ||
+    ToString.unapply(sym).nonEmpty                  ||
+    BoxModuleToString.unapply(sym).nonEmpty         ||
+    BoxModuleToUnsignedString.unapply(sym).nonEmpty
 
   object nnme {
     val booleanValue = TermName("booleanValue")
@@ -30,6 +39,12 @@ trait NativeDefinitions {
     val parseLong    = TermName("parseLong")
     val parseFloat   = TermName("parseFloat")
     val parseDouble  = TermName("parseDouble")
+
+    def parseUnsignedInt  = TermName("parseUnsignedInt")
+    def parseUnsignedLong = TermName("parseUnsignedLong")
+
+    val toString_         = TermName("toString")
+    val toUnsignedString_ = TermName("toUnsignedString")
   }
 
   lazy val JBoolean_booleanValue = getMemberMethod(BoxedBooleanClass,   nnme.booleanValue)
@@ -151,24 +166,93 @@ trait NativeDefinitions {
     }
   }
 
-  lazy val JBoolean_parseBoolean = getMemberMethod(BoxedBooleanClass.companion, nnme.parseBoolean)
-  lazy val JByte_parseByte       = getMemberMethod(BoxedByteClass.companion,    nnme.parseByte)
-  lazy val JShort_parseShort     = getMemberMethod(BoxedShortClass.companion,   nnme.parseShort)
-  lazy val JInteger_parseInt     = getMemberMethod(BoxedIntClass.companion,     nnme.parseInt)
-  lazy val JLong_parseLong       = getMemberMethod(BoxedLongClass.companion,    nnme.parseLong)
-  lazy val JFloat_parseFloat     = getMemberMethod(BoxedFloatClass.companion,   nnme.parseFloat)
-  lazy val JDouble_parseDouble   = getMemberMethod(BoxedDoubleClass.companion,  nnme.parseDouble)
+  lazy val JBooleanModule_parseBoolean = getMemberMethod(BoxedBooleanClass.companion, nnme.parseBoolean)
+  lazy val JByteModule_parseByte       = getMemberMethod(BoxedByteClass.companion,    nnme.parseByte)
+  lazy val JShortModule_parseShort     = getMemberMethod(BoxedShortClass.companion,   nnme.parseShort)
+  lazy val JIntegerModule_parseInt     = getMemberMethod(BoxedIntClass.companion,     nnme.parseInt)
+  lazy val JLongModule_parseLong       = getMemberMethod(BoxedLongClass.companion,    nnme.parseLong)
+  lazy val JFloatModule_parseFloat     = getMemberMethod(BoxedFloatClass.companion,   nnme.parseFloat)
+  lazy val JDoubleModule_parseDouble   = getMemberMethod(BoxedDoubleClass.companion,  nnme.parseDouble)
 
   object ParseValue {
     def unapply(sym: Symbol): Option[nir.Type] = {
-           if (JBoolean_parseBoolean.alternatives.contains(sym)) Some((nir.Type.Bool))
-      else if (      JByte_parseByte.alternatives.contains(sym)) Some((nir.Type.I8))
-      else if (    JShort_parseShort.alternatives.contains(sym)) Some((nir.Type.I16))
-      else if (    JInteger_parseInt.alternatives.contains(sym)) Some((nir.Type.I32))
-      else if (      JLong_parseLong.alternatives.contains(sym)) Some((nir.Type.I64))
-      else if (    JFloat_parseFloat.alternatives.contains(sym)) Some((nir.Type.F32))
-      else if (  JDouble_parseDouble.alternatives.contains(sym)) Some((nir.Type.F64))
-      else                                                       None
+           if (JBooleanModule_parseBoolean.alternatives.contains(sym)) Some((nir.Type.Bool))
+      else if (      JByteModule_parseByte.alternatives.contains(sym)) Some((nir.Type.I8))
+      else if (    JShortModule_parseShort.alternatives.contains(sym)) Some((nir.Type.I16))
+      else if (    JIntegerModule_parseInt.alternatives.contains(sym)) Some((nir.Type.I32))
+      else if (      JLongModule_parseLong.alternatives.contains(sym)) Some((nir.Type.I64))
+      else if (    JFloatModule_parseFloat.alternatives.contains(sym)) Some((nir.Type.F32))
+      else if (  JDoubleModule_parseDouble.alternatives.contains(sym)) Some((nir.Type.F64))
+      else                                                             None
+    }
+  }
+
+  lazy val JIntegerModule_parseUnsignedInt = getMemberMethod(BoxedIntClass.companion,  nnme.parseUnsignedInt)
+  lazy val JLongModule_parseUnsignedLong   = getMemberMethod(BoxedLongClass.companion, nnme.parseUnsignedLong)
+
+  object ParseUnsignedValue {
+    def unapply(sym: Symbol): Option[nir.Type] = {
+           if (JIntegerModule_parseUnsignedInt.alternatives.contains(sym)) Some((nir.Type.I32))
+      else if (  JLongModule_parseUnsignedLong.alternatives.contains(sym)) Some((nir.Type.I64))
+      else                                                                 None
+    }
+  }
+
+  lazy val JObject_toString    = getDecl(ObjectClass        , nnme.toString_)
+  lazy val JBoolean_toString   = getDecl(BoxedBooleanClass  , nnme.toString_)
+  lazy val JCharacter_toString = getDecl(BoxedCharacterClass, nnme.toString_)
+  lazy val JByte_toString      = getDecl(BoxedByteClass     , nnme.toString_)
+  lazy val JShort_toString     = getDecl(BoxedShortClass    , nnme.toString_)
+  lazy val JInteger_toString   = getDecl(BoxedIntClass      , nnme.toString_)
+  lazy val JLong_toString      = getDecl(BoxedLongClass     , nnme.toString_)
+  lazy val JFloat_toString     = getDecl(BoxedFloatClass    , nnme.toString_)
+  lazy val JDouble_toString    = getDecl(BoxedDoubleClass   , nnme.toString_)
+
+  object ToString {
+    def unapply(sym: Symbol): Option[nir.Type] = sym match {
+      case JObject_toString  => Some(nir.Type.ObjectClass)
+      case JBoolean_toString => Some(nir.Type.BooleanClass)
+      case JByte_toString    => Some(nir.Type.ByteClass)
+      case JShort_toString   => Some(nir.Type.ShortClass)
+      case JInteger_toString => Some(nir.Type.IntegerClass)
+      case JLong_toString    => Some(nir.Type.LongClass)
+      case JFloat_toString   => Some(nir.Type.FloatClass)
+      case JDouble_toString  => Some(nir.Type.DoubleClass)
+      case _                 => None
+    }
+  }
+
+  lazy val JBooleanModule_toString   = getMemberMethod(BoxedBooleanClass.companion,   nnme.toString_)
+  lazy val JCharacterModule_toString = getMemberMethod(BoxedCharacterClass.companion, nnme.toString_)
+  lazy val JByteModule_toString      = getMemberMethod(BoxedByteClass.companion,      nnme.toString_)
+  lazy val JShortModule_toString     = getMemberMethod(BoxedShortClass.companion,     nnme.toString_)
+  lazy val JIntegerModule_toString   = getMemberMethod(BoxedIntClass.companion,       nnme.toString_)
+  lazy val JLongModule_toString      = getMemberMethod(BoxedLongClass.companion,      nnme.toString_)
+  lazy val JFloatModule_toString     = getMemberMethod(BoxedFloatClass.companion,     nnme.toString_)
+  lazy val JDoubleModule_toString    = getMemberMethod(BoxedDoubleClass.companion,    nnme.toString_)
+
+  object BoxModuleToString {
+    def unapply(sym: Symbol): Option[nir.Type] = {
+           if (  JBooleanModule_toString.alternatives.contains(sym)) Some((nir.Type.BooleanClass))
+      else if (JCharacterModule_toString.alternatives.contains(sym)) Some((nir.Type.CharacterClass))
+      else if (     JByteModule_toString.alternatives.contains(sym)) Some((nir.Type.ByteClass))
+      else if (    JShortModule_toString.alternatives.contains(sym)) Some((nir.Type.ShortClass))
+      else if (  JIntegerModule_toString.alternatives.contains(sym)) Some((nir.Type.IntegerClass))
+      else if (     JLongModule_toString.alternatives.contains(sym)) Some((nir.Type.LongClass))
+      else if (    JFloatModule_toString.alternatives.contains(sym)) Some((nir.Type.FloatClass))
+      else if (   JDoubleModule_toString.alternatives.contains(sym)) Some((nir.Type.DoubleClass))
+      else                                                           None
+    }
+  }
+
+  lazy val JIntegerModule_toUnsignedString = getMemberMethod(BoxedIntClass.companion,  nnme.toUnsignedString_)
+  lazy val JLongModule_toUnsignedString    = getMemberMethod(BoxedLongClass.companion, nnme.toUnsignedString_)
+
+  object BoxModuleToUnsignedString {
+    def unapply(sym: Symbol): Option[nir.Type] = {
+           if (JIntegerModule_toUnsignedString.alternatives.contains(sym)) Some((nir.Type.IntegerClass))
+      else if (   JLongModule_toUnsignedString.alternatives.contains(sym)) Some((nir.Type.LongClass))
+      else                                                                 None
     }
   }
 }

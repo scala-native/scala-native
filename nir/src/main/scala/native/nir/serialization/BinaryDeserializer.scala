@@ -17,6 +17,11 @@ class BinaryDeserializer(bb: ByteBuffer) {
     new String(arr)
   }
 
+  def getAttrs(): Seq[Attr] = getSeq(getAttr)
+  def getAttr(): Attr = getInt match {
+    case T.UsgnAttr => Attr.Usgn
+  }
+
   def getBin(): Bin = getInt match {
     case T.AddBin  => Bin.Add
     case T.SubBin  => Bin.Sub
@@ -70,7 +75,7 @@ class BinaryDeserializer(bb: ByteBuffer) {
   def getBlock(): Block = Block(getName, getParams, getInstrs)
 
   def getInstrs(): Seq[Instr] = getSeq(getInstr)
-  def getInstr(): Instr = Instr(getName, getOp)
+  def getInstr(): Instr = Instr(getName, getAttrs, getOp)
 
   def getParams(): Seq[Param] = getSeq(getParam)
   def getParam(): Param = Param(getName, getType)
@@ -139,7 +144,7 @@ class BinaryDeserializer(bb: ByteBuffer) {
     case T.MonitorEnterOp => Op.MonitorEnter(getVal)
     case T.MonitorExitOp  => Op.MonitorExit(getVal)
     case T.StringConcatOp => Op.StringConcat(getVal, getVal)
-    case T.ToStringOp     => Op.ToString(getVal)
+    case T.ToStringOp     => Op.ToString(getVal, getVal)
     case T.FromStringOp   => Op.FromString(getType, getVal, getVal)
   }
 

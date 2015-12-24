@@ -5,6 +5,15 @@ import native.util.{sh, Show}, Show.{Sequence => s, Indent => i, Unindent => ui,
                                      Repeat => r, Newline => nl}
 
 object Shows {
+  implicit val showAttrs: Show[Seq[Attr]] = Show { attrs =>
+    if (attrs.isEmpty) s()
+    else r(attrs, sep = " ", post = " ")
+  }
+
+  implicit val showAttr: Show[Attr] = Show {
+    case Attr.Usgn => "usgn"
+  }
+
   implicit val showBlock: Show[Block] = Show { block =>
     import block._
     val header = sh"block $name(${r(params, sep = ", ")})"
@@ -13,8 +22,8 @@ object Shows {
   }
 
   implicit val showInstr: Show[Instr] = Show {
-    case Instr(Name.None, op) => op
-    case Instr(name, op)      => sh"$name = $op"
+    case Instr(Name.None, attrs, op) => sh"$attrs$op"
+    case Instr(name, attrs, op)      => sh"$name = $attrs$op"
   }
 
   implicit val showParam: Show[Param] = Show {
@@ -111,8 +120,10 @@ object Shows {
       sh"monitor-exit $v"
     case Op.StringConcat(l, r) =>
       sh"string-concat $l, $r"
-    case Op.ToString(v) =>
+    case Op.ToString(v, Val.None) =>
       sh"to-string $v"
+    case Op.ToString(v, radix) =>
+      sh"to-string $v, $radix"
     case Op.FromString(ty, s, Val.None) =>
       sh"from-string[$ty] $s"
     case Op.FromString(ty, s, radix) =>

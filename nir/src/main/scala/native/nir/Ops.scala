@@ -43,7 +43,7 @@ sealed abstract class Op {
     case Op.MonitorEnter(_)      => Type.Unit
     case Op.MonitorExit(_)       => Type.Unit
     case Op.StringConcat(_, _)   => Type.StringClass
-    case Op.ToString(_)          => Type.StringClass
+    case Op.ToString(_, _)       => Type.StringClass
     case Op.FromString(ty, _, _) => ty
   }
 }
@@ -88,6 +88,6 @@ object Op {
   final case class MonitorEnter(value: Val)                       extends Op
   final case class MonitorExit (value: Val)                       extends Op
   final case class StringConcat(l: Val, r: Val)                   extends Op
-  final case class ToString    (l: Val)                           extends Op
+  final case class ToString    (v: Val, radix: Val)               extends Op
   final case class FromString  (ty: Type, s: Val, radix: Val)     extends Op
 }

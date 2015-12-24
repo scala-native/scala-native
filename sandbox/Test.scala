@@ -3,7 +3,7 @@ package test
 import java.{lang => jl}
 
 object Test {
-  def boxValue: Unit = {
+  /*def boxValue: Unit = {
     new jl.Boolean(false)
     new jl.Character('0')
     new jl.Byte(0.toByte)
@@ -36,6 +36,13 @@ object Test {
     jl.Long.parseLong("0", 10)
     jl.Float.parseFloat("0.0")
     jl.Double.parseDouble("0.0")
+  }
+
+  def parseUnsigned: Unit = {
+    jl.Integer.parseUnsignedInt("0")
+    jl.Integer.parseUnsignedInt("0", 10)
+    jl.Long.parseUnsignedLong("0")
+    jl.Long.parseUnsignedLong("0", 10)
   }
 
   def boxValueOf: Unit = {
@@ -105,5 +112,42 @@ object Test {
     box.longValue
     box.floatValue
     box.doubleValue
+  }
+
+  def boxedBooleanToString(box: jl.Boolean): Unit   = box.toString
+  def boxedCharToString   (box: jl.Character): Unit = box.toString
+  def boxedByteToString   (box: jl.Byte): Unit      = box.toString
+  def boxedShortToString  (box: jl.Short): Unit     = box.toString
+  def boxedIntToString    (box: jl.Integer): Unit   = box.toString
+  def boxedLongToString   (box: jl.Long): Unit      = box.toString
+  def boxedFloatToString  (box: jl.Float): Unit     = box.toString
+  def boxedDoubleToString (box: jl.Double): Unit    = box.toString
+
+  def unboxedBooleanToString(box: Boolean): Unit = box.toString
+  def unboxedCharToString   (box: Char): Unit    = box.toString
+  def unboxedByteToString   (box: Byte): Unit    = box.toString
+  def unboxedShortToString  (box: Short): Unit   = box.toString
+  def unboxedIntToString    (box: Int): Unit     = box.toString
+  def unboxedLongToString   (box: Long): Unit    = box.toString
+  def unboxedFloatToString  (box: Float): Unit   = box.toString
+  def unboxedDoubleToString (box: Double): Unit  = box.toString
+
+  def primitiveToString: Unit = {
+    jl.Boolean.toString(false)
+    jl.Byte.toString(0.toByte)
+    jl.Short.toString(0.toShort)
+    jl.Integer.toString(0)
+    jl.Integer.toString(0, 10)
+    jl.Long.toString(0L)
+    jl.Long.toString(0L, 10)
+    jl.Float.toString(0F)
+    jl.Double.toString(0D)
+  }*/
+
+  def primitiveToUnsignedString: Unit = {
+    jl.Integer.toUnsignedString(0)
+    jl.Integer.toUnsignedString(0, 10)
+    jl.Long.toUnsignedString(0L)
+    jl.Long.toUnsignedString(0L, 10)
   }
 }

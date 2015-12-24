@@ -16,14 +16,17 @@ final case class Focus(
     copy(value = newvalue)
   }
 
-  def withOp(op: Op)(implicit fresh: Fresh): Focus = {
+  def withOp(op: Op)(implicit fresh: Fresh): Focus =
+    withOp(Seq(), op)
+
+  def withOp(attrs: Seq[Attr], op: Op)(implicit fresh: Fresh): Focus = {
     assert(!complete)
     val name = fresh()
-    copy(instrs = instrs :+ Instr(name, op), value = Val.Name(name, op.resty))
+    copy(instrs = instrs :+ Instr(name, attrs, op), value = Val.Name(name, op.resty))
   }
 
   def finish(op: Op): Focus =
-    Focus.complete(preceding :+ Block(name, params, instrs :+ Instr(Name.None, op)))
+    Focus.complete(preceding :+ Block(name, params, instrs :+ Instr(Name.None, Seq(), op)))
 
   def blocks: Seq[Block] = {
     assert(complete)
