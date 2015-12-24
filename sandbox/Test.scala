@@ -3,7 +3,7 @@ package test
 import java.{lang => jl}
 
 object Test {
-  /*def boxValue: Unit = {
+  def boxFromValue: Unit = {
     new jl.Boolean(false)
     new jl.Character('0')
     new jl.Byte(0.toByte)
@@ -14,7 +14,7 @@ object Test {
     new jl.Double(0.0d)
   }
 
-  def boxString: Unit = {
+  def boxFromString: Unit = {
     new jl.Boolean("false")
     new jl.Byte("0")
     new jl.Short("0")
@@ -36,13 +36,6 @@ object Test {
     jl.Long.parseLong("0", 10)
     jl.Float.parseFloat("0.0")
     jl.Double.parseDouble("0.0")
-  }
-
-  def parseUnsigned: Unit = {
-    jl.Integer.parseUnsignedInt("0")
-    jl.Integer.parseUnsignedInt("0", 10)
-    jl.Long.parseUnsignedLong("0")
-    jl.Long.parseUnsignedLong("0", 10)
   }
 
   def boxValueOf: Unit = {
@@ -70,14 +63,8 @@ object Test {
     jl.Double.valueOf("0.0")
   }
 
-  def unboxBoolean(box: jl.Boolean): Unit = {
-    box.booleanValue
-  }
-
-  def unboxCharacter(box: jl.Character): Unit = {
-    box.charValue
-  }
-
+  def unboxBoolean(box: jl.Boolean): Unit = box.booleanValue
+  def unboxCharacter(box: jl.Character): Unit = box.charValue
   def unboxByte(box: jl.Byte): Unit = {
     box.byteValue
     box.shortValue
@@ -86,7 +73,6 @@ object Test {
     box.floatValue
     box.doubleValue
   }
-
   def unboxShort(box: jl.Short): Unit = {
     box.byteValue
     box.shortValue
@@ -95,7 +81,6 @@ object Test {
     box.floatValue
     box.doubleValue
   }
-
   def unboxInteger(box: jl.Integer): Unit = {
     box.byteValue
     box.shortValue
@@ -104,7 +89,6 @@ object Test {
     box.floatValue
     box.doubleValue
   }
-
   def unboxLong(box: jl.Long): Unit = {
     box.byteValue
     box.shortValue
@@ -142,12 +126,39 @@ object Test {
     jl.Long.toString(0L, 10)
     jl.Float.toString(0F)
     jl.Double.toString(0D)
-  }*/
+  }
 
-  def primitiveToUnsignedString: Unit = {
+  def unsignedParse: Unit = {
+    jl.Integer.parseUnsignedInt("0")
+    jl.Integer.parseUnsignedInt("0", 10)
+    jl.Long.parseUnsignedLong("0")
+    jl.Long.parseUnsignedLong("0", 10)
+  }
+
+  def unsignedToString: Unit = {
     jl.Integer.toUnsignedString(0)
     jl.Integer.toUnsignedString(0, 10)
     jl.Long.toUnsignedString(0L)
     jl.Long.toUnsignedString(0L, 10)
   }
+
+  def unsignedDivision: Unit = {
+    jl.Integer.divideUnsigned(0, 0)
+    jl.Integer.remainderUnsigned(0, 0)
+    jl.Long.divideUnsigned(0L, 0L)
+    jl.Long.remainderUnsigned(0L, 0L)
+  }
+
+  def unsignedConversion: Unit = {
+    jl.Byte.toUnsignedInt(0.toByte)
+    jl.Byte.toUnsignedLong(0.toByte)
+    jl.Short.toUnsignedInt(0.toShort)
+    jl.Short.toUnsignedLong(0.toShort)
+    jl.Integer.toUnsignedLong(0)
+  }
+
+  // TODO:
+  // def primitiveCompare: Unit = ???
+  // def boxedCompare: Unit = ???
+  // def unsignedCompare: Unit = ???
 }

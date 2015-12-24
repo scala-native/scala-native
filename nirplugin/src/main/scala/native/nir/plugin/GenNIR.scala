@@ -882,7 +882,7 @@ abstract class GenNIR extends PluginComponent
       else {
         val conv = (fromty, toty) match {
           case (nir.Type.I(lwidth), nir.Type.I(rwidth))
-            if lwidth < rwidth                => Conv.Zext
+            if lwidth < rwidth                => Conv.Sext
           case (nir.Type.I(lwidth), nir.Type.I(rwidth))
             if lwidth > rwidth                => Conv.Trunc
           case (nir.Type.I(_), nir.Type.F(_)) => Conv.Sitofp
@@ -956,6 +956,13 @@ abstract class GenNIR extends PluginComponent
       val Apply(fun @ Select(receiverp, _), argsp) = app
 
       fun.symbol match {
+        case ToString(nir.Type.ObjectClass) =>
+          val obj = genExpr(receiverp, focus)
+          obj withOp Op.ToString(obj.value, Val.None)
+        case ToString(boxty) =>
+          val boxed = genExpr(receiverp, focus)
+          val unboxed = boxed withOp Op.Unbox(boxty, boxed.value)
+          unboxed withOp Op.ToString(unboxed.value, Val.None)
         case UnboxValue(fromty, toty) =>
           val boxed = genExpr(receiverp, focus)
           val unboxed = boxed withOp Op.Unbox(fromty, boxed.value)
@@ -970,13 +977,20 @@ abstract class GenNIR extends PluginComponent
           genValueToString(boxty, argsp, unsigned = false, focus)
         case BoxModuleToUnsignedString(boxty) =>
           genValueToString(boxty, argsp, unsigned = true, focus)
-        case ToString(nir.Type.ObjectClass) =>
-          val obj = genExpr(receiverp, focus)
-          obj withOp Op.ToString(obj.value, Val.None)
-        case ToString(boxty) =>
-          val boxed = genExpr(receiverp, focus)
-          val unboxed = boxed withOp Op.Unbox(boxty, boxed.value)
-          unboxed withOp Op.ToString(unboxed.value, Val.None)
+        case DivideUnsigned(ty) =>
+          val List(l, r) = argsp
+          val left = genExpr(l, focus)
+          val right = genExpr(r, left)
+          right.withOp(Seq(Attr.Usgn), Op.Bin(Bin.Div, ty, left.value, right.value))
+        case RemainderUnsigned(ty) =>
+          val List(l, r) = argsp
+          val left = genExpr(l, focus)
+          val right = genExpr(r, left)
+          right.withOp(Seq(Attr.Usgn), Op.Bin(Bin.Mod, ty, left.value, right.value))
+        case ToUnsigned(fromty, toty) =>
+          val List(argp) = argsp
+          val unboxed = genExpr(argp, focus)
+          unboxed withOp Op.Conv(Conv.Zext, toty, unboxed.value)
       }
     }
 

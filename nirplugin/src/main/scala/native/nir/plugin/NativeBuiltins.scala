@@ -12,13 +12,16 @@ trait NativeBuiltins {
   lazy val ExternClass = getRequiredClass("native.ffi.extern")
 
   def isBuiltin(sym: Symbol): Boolean =
+    ToString.unapply(sym).nonEmpty                  ||
     UnboxValue.unapply(sym).nonEmpty                ||
     BoxValue.unapply(sym).nonEmpty                  ||
     ParseValue.unapply(sym).nonEmpty                ||
     ParseUnsignedValue.unapply(sym).nonEmpty        ||
-    ToString.unapply(sym).nonEmpty                  ||
     BoxModuleToString.unapply(sym).nonEmpty         ||
-    BoxModuleToUnsignedString.unapply(sym).nonEmpty
+    BoxModuleToUnsignedString.unapply(sym).nonEmpty ||
+    DivideUnsigned.unapply(sym).nonEmpty            ||
+    RemainderUnsigned.unapply(sym).nonEmpty         ||
+    ToUnsigned.unapply(sym).nonEmpty
 
   object nnme {
     val booleanValue = TermName("booleanValue")
@@ -45,6 +48,11 @@ trait NativeBuiltins {
 
     val toString_         = TermName("toString")
     val toUnsignedString_ = TermName("toUnsignedString")
+    val toUnsignedInt     = TermName("toUnsignedInt")
+    val toUnsignedLong    = TermName("toUnsignedLong")
+
+    val divideUnsigned    = TermName("divideUnsigned")
+    val remainderUnsigned = TermName("remainderUnsigned")
   }
 
   lazy val JBoolean_booleanValue = getMemberMethod(BoxedBooleanClass,   nnme.booleanValue)
@@ -253,6 +261,44 @@ trait NativeBuiltins {
            if (JIntegerModule_toUnsignedString.alternatives.contains(sym)) Some((nir.Type.IntegerClass))
       else if (   JLongModule_toUnsignedString.alternatives.contains(sym)) Some((nir.Type.LongClass))
       else                                                                 None
+    }
+  }
+
+  lazy val JIntegerModule_divideUnsigned    = getDecl(BoxedIntClass.companion,  nnme.divideUnsigned)
+  lazy val JIntegerModule_remainderUnsigned = getDecl(BoxedIntClass.companion,  nnme.remainderUnsigned)
+  lazy val JLongModule_divideUnsigned       = getDecl(BoxedLongClass.companion, nnme.divideUnsigned)
+  lazy val JLongModule_remainderUnsigned    = getDecl(BoxedLongClass.companion, nnme.remainderUnsigned)
+
+  object DivideUnsigned {
+    def unapply(sym: Symbol): Option[nir.Type] = sym match {
+      case JIntegerModule_divideUnsigned => Some(nir.Type.I32)
+      case JLongModule_divideUnsigned    => Some(nir.Type.I64)
+      case _                             => None
+    }
+  }
+
+  object RemainderUnsigned {
+    def unapply(sym: Symbol): Option[nir.Type] = sym match {
+      case JIntegerModule_remainderUnsigned => Some(nir.Type.I32)
+      case JLongModule_remainderUnsigned    => Some(nir.Type.I64)
+      case _                                => None
+    }
+  }
+
+  lazy val JByteModule_toUnsignedInt     = getDecl(BoxedByteClass.companion,  nnme.toUnsignedInt)
+  lazy val JByteModule_toUnsignedLong    = getDecl(BoxedByteClass.companion,  nnme.toUnsignedLong)
+  lazy val JShortModule_toUnsignedInt    = getDecl(BoxedShortClass.companion, nnme.toUnsignedInt)
+  lazy val JShortModule_toUnsignedLong   = getDecl(BoxedShortClass.companion, nnme.toUnsignedLong)
+  lazy val JIntegerModule_toUnsignedLong = getDecl(BoxedIntClass.companion,   nnme.toUnsignedLong)
+
+  object ToUnsigned {
+    def unapply(sym: Symbol): Option[(nir.Type, nir.Type)] = sym match {
+      case JByteModule_toUnsignedInt     => Some((nir.Type.I8,  nir.Type.I32))
+      case JByteModule_toUnsignedLong    => Some((nir.Type.I8,  nir.Type.I64))
+      case JShortModule_toUnsignedInt    => Some((nir.Type.I16, nir.Type.I32))
+      case JShortModule_toUnsignedLong   => Some((nir.Type.I16, nir.Type.I64))
+      case JIntegerModule_toUnsignedLong => Some((nir.Type.I32, nir.Type.I64))
+      case _                             => None
     }
   }
 }
