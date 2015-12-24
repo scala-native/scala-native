@@ -1004,6 +1004,9 @@ abstract class GenNIR extends PluginComponent
           val obj = genExpr(receiverp, focus)
           val arg = genExpr(argp, obj)
           arg withOp Op.Equals(obj.value, arg.value)
+        case GetClass() =>
+          val obj = genExpr(receiverp, focus)
+          obj withOp Op.GetClass(obj.value)
       }
     }
 

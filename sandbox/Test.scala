@@ -298,6 +298,11 @@ object Equals {
   def object_ne(l: C, r: C): Unit                 = l ne r
 }
 
+object GetClass {
+  def object_getClass(obj: jl.Object): Unit = obj.getClass
+  def object_getClass(obj: C): Unit         = obj.getClass
+}
+
 // TODO:
 // def primitiveCompare: Unit = ???
 // def boxedCompare: Unit = ???

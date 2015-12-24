@@ -24,7 +24,8 @@ trait NativeBuiltins {
     ToString.unapply(sym).nonEmpty                  ||
     HashCode.unapply(sym).nonEmpty                  ||
     ScalaRunTimeHashCode.unapply(sym)               ||
-    Equals.unapply(sym)
+    Equals.unapply(sym)                             ||
+    GetClass.unapply(sym)
 
   object nnme {
     val booleanValue = TermName("booleanValue")
@@ -59,8 +60,8 @@ trait NativeBuiltins {
 
     val hash      = TermName("hash")
     val hashCode_ = TermName("hashCode")
-
-    val equals_ = TermName("equals")
+    val equals_   = TermName("equals")
+    val getClass_ = TermName("getClass")
   }
 
   lazy val JBoolean_booleanValue = getMemberMethod(BoxedBooleanClass,   nnme.booleanValue)
@@ -365,6 +366,15 @@ trait NativeBuiltins {
       case JFloat_equals     => true
       case JDouble_equals    => true
       case _                 => false
+    }
+  }
+
+  lazy val JObject_getClass = getDecl(ObjectClass, nnme.getClass_)
+
+  object GetClass {
+    def unapply(sym: Symbol): Boolean = sym match {
+      case JObject_getClass => true
+      case _                => false
     }
   }
 }
