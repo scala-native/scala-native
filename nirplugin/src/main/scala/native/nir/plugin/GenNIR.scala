@@ -840,11 +840,11 @@ abstract class GenNIR extends PluginComponent
     def genArrayOp(app: Apply, code: Int, focus: Focus): Focus = {
       import scalaPrimitives._
       val Apply(Select(array, _), args) = app
-      val elemty: nir.Type = ???
       val allfocus = sequenced(array :: args, focus)(genExpr(_, _))
       val lastfocus  = allfocus.last
       def arrayvalue = allfocus(0).value
       def argvalues  = allfocus.tail.map(_.value)
+      def elemty     = genType(app.tpe)
 
       if (scalaPrimitives.isArrayGet(code)) {
         val elem = lastfocus withOp Op.ArrayElem(elemty, arrayvalue, argvalues(0))

@@ -303,6 +303,13 @@ object GetClass {
   def object_getClass(obj: C): Unit         = obj.getClass
 }
 
+object ArrayOps {
+  def array_new = new Array[Int](32)
+  def array_load_elem(arr: Array[Int], idx: Int) = arr(idx)
+  def array_store_elem(arr: Array[Int], idx: Int, v: Int) = { arr(idx) = v }
+  def array_length(arr: Array[Int]) = arr.length
+}
+
 // TODO:
 // def primitiveCompare: Unit = ???
 // def boxedCompare: Unit = ???
