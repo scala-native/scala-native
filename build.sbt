@@ -58,13 +58,21 @@ lazy val nirplugin =
     ).
     dependsOn(nir)
 
-lazy val compiler =
-  project.in(file("compiler")).
+lazy val gcompiler =
+  project.in(file("gcompiler")).
     settings(common: _*).
     settings(
       libraryDependencies += "commons-io" % "commons-io" % "2.4"
     ).
     dependsOn(gir)
+
+lazy val nircompiler =
+  project.in(file("nircompiler")).
+    settings(common: _*).
+    settings(
+      libraryDependencies += "commons-io" % "commons-io" % "2.4"
+    ).
+    dependsOn(nir)
 
 lazy val javalib =
   project.in(file("javalib")).

@@ -201,8 +201,8 @@ object Shows {
     case Defn.Define(name, ty, blocks) =>
       val body = r(blocks.map(i(_)))
       sh"define $name: $ty = $body"
-    case Defn.Struct(name, fields) =>
-      sh"struct $name {${r(fields, sep = ", ")}}"
+    case Defn.Struct(name, members) =>
+      sh"struct $name {${r(members, sep = ", ")}}"
 
     case Defn.Interface(name, ifaces, members) =>
       val parents = r(ifaces, sep = ", ")

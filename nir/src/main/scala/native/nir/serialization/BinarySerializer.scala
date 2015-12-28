@@ -186,10 +186,10 @@ class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.HashCodeOp); putVal(v)
     case Op.GetClass(v) =>
       putInt(T.GetClassOp); putVal(v)
-    case Op.AsInstanceOf(v, ty) =>
-      putInt(T.AsInstanceOfOp); putVal(v); putType(ty)
-    case Op.IsInstanceOf(v, ty) =>
-      putInt(T.IsInstanceOfOp); putVal(v); putType(ty)
+    case Op.AsInstanceOf(ty, v) =>
+      putInt(T.AsInstanceOfOp); putType(ty); putVal(v)
+    case Op.IsInstanceOf(ty, v) =>
+      putInt(T.IsInstanceOfOp); putType(ty); putVal(v)
     case Op.ArrayLength(v) =>
       putInt(T.ArrayLengthOp); putVal(v)
     case Op.ArrayElem(ty, v, index) =>

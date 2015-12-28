@@ -10,38 +10,40 @@ final case class Focus(
   instrs:    Seq[Instr],
   value:     Val,
   complete:  Boolean
-) {
+)(implicit fresh: Fresh) {
   def withValue(newvalue: Val): Focus = {
     assert(!complete)
     copy(value = newvalue)
   }
 
-  def withOp(op: Op)(implicit fresh: Fresh): Focus =
+  def withOp(op: Op): Focus =
     withOp(Seq(), op)
 
-  def withOp(attrs: Seq[Attr], op: Op)(implicit fresh: Fresh): Focus = {
+  def withOp(attrs: Seq[Attr], op: Op): Focus = {
     assert(!complete)
     val name = fresh()
     copy(instrs = instrs :+ Instr(name, attrs, op), value = Val.Name(name, op.resty))
   }
 
   def finish(op: Op): Focus =
-    Focus.complete(preceding :+ Block(name, params, instrs :+ Instr(Name.None, Seq(), op)))
+    finish(Instr(Name.None, Seq(), op))
+
+  def finish(instr: Instr): Focus =
+    Focus.complete(preceding :+ Block(name, params, instrs :+ instr))
 
   def blocks: Seq[Block] = {
     assert(complete)
     preceding
   }
 
-  private def wrapBranch(merge: Name, f: Focus => Focus)
-                        (implicit fresh: Fresh): Seq[Block] = {
+  private def wrapBranch(merge: Name, f: Focus => Focus): Seq[Block] = {
     val end = f(Focus.entry(Seq()))
     val finalized = end.finish(Op.Jump(Next(merge, Seq(end.value))))
     finalized.blocks
   }
 
-  def branchIf(cond: Val, retty: Type, thenf: Focus => Focus, elsef: Focus => Focus)
-              (implicit fresh: Fresh): Focus = {
+  def branchIf(cond: Val, retty: Type,
+               thenf: Focus => Focus, elsef: Focus => Focus): Focus = {
     val merge = fresh()
     val param = Param(fresh(), retty)
     val thenprec = wrapBranch(merge, elsef)
@@ -59,8 +61,7 @@ final case class Focus(
 
   def branchSwitch(scrut: Val, retty: Type,
                    defaultf: Focus => Focus,
-                   casevalues: Seq[Val], casefs: Seq[Focus => Focus])
-                  (implicit fresh: Fresh): Focus = {
+                   casevalues: Seq[Val], casefs: Seq[Focus => Focus]): Focus = {
     val merge = fresh()
     val param = Param(fresh(), retty)
     val defaultprec = wrapBranch(merge, defaultf)
@@ -80,9 +81,12 @@ object Focus {
   final case class NotMergeable(focus: Focus) extends Exception
 
   def entry(params: Seq[Param])(implicit fresh: Fresh): Focus =
-    Focus(Seq(), fresh(), params, Seq(), Val.Unit, complete = false)
+    entry(fresh(), params)
 
-  def complete(blocks: Seq[Block]) =
+  def entry(name: Name, params: Seq[Param])(implicit fresh: Fresh): Focus =
+    Focus(Seq(), name, params, Seq(), Val.Unit, complete = false)
+
+  def complete(blocks: Seq[Block])(implicit fresh: Fresh)=
     Focus(blocks, Name.None, Seq(), Seq(), Val.Unit, complete = true)
 
   def sequenced[T](elems: Seq[T], focus: Focus)

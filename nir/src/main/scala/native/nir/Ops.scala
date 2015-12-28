@@ -34,7 +34,7 @@ sealed abstract class Op {
     case Op.Equals(_, _)         => Type.Bool
     case Op.HashCode(_)          => Type.I32
     case Op.GetClass(_)          => Type.ClassClass
-    case Op.AsInstanceOf(_, ty)  => ty
+    case Op.AsInstanceOf(ty, _)  => ty
     case Op.IsInstanceOf(_, _)   => Type.Bool
     case Op.ArrayLength(_)       => Type.I32
     case Op.ArrayElem(ty, _, _)  => ty
@@ -79,8 +79,8 @@ object Op {
   final case class Equals      (l: Val, r: Val)                   extends Op
   final case class HashCode    (value: Val)                       extends Op
   final case class GetClass    (value: Val)                       extends Op
-  final case class AsInstanceOf(value: Val, ty: Type)             extends Op
-  final case class IsInstanceOf(value: Val, ty: Type)             extends Op
+  final case class AsInstanceOf(ty: Type, value: Val)             extends Op
+  final case class IsInstanceOf(ty: Type, value: Val)             extends Op
   final case class ArrayLength (value: Val)                       extends Op
   final case class ArrayElem   (ty: Type, value: Val, index: Val) extends Op
   final case class Box         (ty: Type, value: Val)             extends Op

@@ -886,7 +886,6 @@ abstract class GenNIR extends PluginComponent
           case (nir.Type.F(_), nir.Type.I(_)) => Conv.Fptosi
           case (nir.Type.F64, nir.Type.F32)   => Conv.Fptrunc
           case (nir.Type.F32, nir.Type.F64)   => Conv.Fpext
-          case (nir.Type.NullClass, _)        => ???
         }
         focus withOp Op.Conv(conv, toty, value)
       }
