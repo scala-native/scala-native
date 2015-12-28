@@ -3,26 +3,39 @@ package nir
 package serialization
 
 import java.nio.ByteBuffer
+import scala.collection.mutable
 import native.nir.{Tags => T}
 
-class BinaryDeserializer(bb: ByteBuffer) {
+final class BinaryDeserializer(bb: ByteBuffer) {
   import bb._
 
-  def getSeq[T](getT: => T): Seq[T] =
+  private val externs = mutable.UnrolledBuffer.empty[Name]
+
+  private def ext(n: Name): Name = {
+    externs += n
+    n
+  }
+
+  final def deserialize(): (Seq[Name], Seq[Defn]) = {
+    val defns = getDefns
+    (externs, defns)
+  }
+
+  private def getSeq[T](getT: => T): Seq[T] =
     (1 to getInt).map(_ => getT).toSeq
 
-  def getString(): String = {
+  private def getString(): String = {
     val arr = new Array[Byte](getInt)
     get(arr)
     new String(arr)
   }
 
-  def getAttrs(): Seq[Attr] = getSeq(getAttr)
-  def getAttr(): Attr = getInt match {
+  private def getAttrs(): Seq[Attr] = getSeq(getAttr)
+  private def getAttr(): Attr = getInt match {
     case T.UsgnAttr => Attr.Usgn
   }
 
-  def getBin(): Bin = getInt match {
+  private def getBin(): Bin = getInt match {
     case T.AddBin  => Bin.Add
     case T.SubBin  => Bin.Sub
     case T.MulBin  => Bin.Mul
@@ -36,7 +49,7 @@ class BinaryDeserializer(bb: ByteBuffer) {
     case T.XorBin  => Bin.Xor
   }
 
-  def getComp(): Comp = getInt match {
+  private def getComp(): Comp = getInt match {
     case T.EqComp  => Comp.Eq
     case T.NeqComp => Comp.Neq
     case T.LtComp  => Comp.Lt
@@ -45,7 +58,7 @@ class BinaryDeserializer(bb: ByteBuffer) {
     case T.GteComp => Comp.Gte
   }
 
-  def getConv(): Conv = getInt match {
+  private def getConv(): Conv = getInt match {
     case T.TruncConv    => Conv.Trunc
     case T.ZextConv     => Conv.Zext
     case T.SextConv     => Conv.Sext
@@ -60,8 +73,8 @@ class BinaryDeserializer(bb: ByteBuffer) {
     case T.BitcastConv  => Conv.Bitcast
   }
 
-  def getDefns(): Seq[Defn] = getSeq(getDefn)
-  def getDefn(): Defn = getInt match {
+  private def getDefns(): Seq[Defn] = getSeq(getDefn)
+  private def getDefn(): Defn = getInt match {
     case T.VarDefn      => Defn.Var(getName, getType, getVal)
     case T.DeclareDefn  => Defn.Declare(getName, getType)
     case T.DefineDefn   => Defn.Define(getName, getType, getBlocks)
@@ -71,32 +84,32 @@ class BinaryDeserializer(bb: ByteBuffer) {
     case T.ModuleDefn   => Defn.Module(getName, getType, getTypes, getDefns)
   }
 
-  def getBlocks(): Seq[Block] = getSeq(getBlock)
-  def getBlock(): Block = Block(getName, getParams, getInstrs)
+  private def getBlocks(): Seq[Block] = getSeq(getBlock)
+  private def getBlock(): Block = Block(getName, getParams, getInstrs)
 
-  def getInstrs(): Seq[Instr] = getSeq(getInstr)
-  def getInstr(): Instr = Instr(getName, getAttrs, getOp)
+  private def getInstrs(): Seq[Instr] = getSeq(getInstr)
+  private def getInstr(): Instr = Instr(getName, getAttrs, getOp)
 
-  def getParams(): Seq[Param] = getSeq(getParam)
-  def getParam(): Param = Param(getName, getType)
+  private def getParams(): Seq[Param] = getSeq(getParam)
+  private def getParam(): Param = Param(getName, getType)
 
-  def getNexts(): Seq[Next] = getSeq(getNext)
-  def getNext(): Next = Next(getName, getVals)
+  private def getNexts(): Seq[Next] = getSeq(getNext)
+  private def getNext(): Next = Next(getName, getVals)
 
-  def getCases(): Seq[Case] = getSeq(getCase)
-  def getCase(): Case = Case(getVal, getNext)
+  private def getCases(): Seq[Case] = getSeq(getCase)
+  private def getCase(): Case = Case(getVal, getNext)
 
-  def getNames(): Seq[Name] = getSeq(getName)
-  def getName(): Name = getInt match {
+  private def getNames(): Seq[Name] = getSeq(getName)
+  private def getName(): Name = getInt match {
     case T.NoneName        => Name.None
     case T.FreshName       => Name.Fresh(getInt)
     case T.LocalName       => Name.Local(getString)
     case T.PrimName        => Name.Prim(getString)
     case T.ForeignName     => Name.Foreign(getString)
     case T.NestedName      => Name.Nested(getName, getName)
-    case T.ClassName       => Name.Class(getString)
-    case T.ModuleName      => Name.Module(getString)
-    case T.InterfaceName   => Name.Interface(getString)
+    case T.ClassName       => ext(Name.Class(getString))
+    case T.ModuleName      => ext(Name.Module(getString))
+    case T.InterfaceName   => ext(Name.Interface(getString))
     case T.FieldName       => Name.Field(getString)
     case T.ConstructorName => Name.Constructor(getNames)
     case T.MethodName      => Name.Method(getString, getNames, getName)
@@ -106,7 +119,7 @@ class BinaryDeserializer(bb: ByteBuffer) {
     case T.ArrayName       => Name.Array(getName)
   }
 
-  def getOp(): Op = getInt match {
+  private def getOp(): Op = getInt match {
     case T.UndefinedOp    => Op.Undefined
     case T.RetOp          => Op.Ret(getVal)
     case T.ThrowOp        => Op.Throw(getVal)
@@ -148,8 +161,8 @@ class BinaryDeserializer(bb: ByteBuffer) {
     case T.FromStringOp   => Op.FromString(getType, getVal, getVal)
   }
 
-  def getTypes(): Seq[Type] = getSeq(getType)
-  def getType(): Type = getInt match {
+  private def getTypes(): Seq[Type] = getSeq(getType)
+  private def getType(): Type = getInt match {
     case T.NoneType           => Type.None
     case T.VoidType           => Type.Void
     case T.SizeType           => Type.Size
@@ -183,8 +196,8 @@ class BinaryDeserializer(bb: ByteBuffer) {
     case T.ArrayClassType     => Type.ArrayClass(getType)
   }
 
-  def getVals(): Seq[Val] = getSeq(getVal)
-  def getVal(): Val = getInt match {
+  private def getVals(): Seq[Val] = getSeq(getVal)
+  private def getVal(): Val = getInt match {
     case T.NoneVal   => Val.None
     case T.TrueVal   => Val.True
     case T.FalseVal  => Val.False

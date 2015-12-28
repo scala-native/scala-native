@@ -943,8 +943,8 @@ abstract class GenNIR extends PluginComponent
       val ty = genType(targs.head.tpe)
       val rec = genExpr(receiverp, focus)
       rec.withOp(fun.symbol match {
-        case Object_isInstanceOf => Op.IsInstanceOf(rec.value, ty)
-        case Object_asInstanceOf => Op.AsInstanceOf(rec.value, ty)
+        case Object_isInstanceOf => Op.IsInstanceOf(ty, rec.value)
+        case Object_asInstanceOf => Op.AsInstanceOf(ty, rec.value)
       })
     }
 
