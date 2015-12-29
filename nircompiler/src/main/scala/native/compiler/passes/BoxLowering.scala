@@ -9,7 +9,7 @@ object BoxLowering extends Pass {
     case Op.Box(boxty, v) =>
       val ty = boxty.unboxed
       val alloc = focus withOp Op.Alloc(ty)
-      val store = focus withOp Op.Store(ty, alloc.value, v)
+      val store = alloc withOp Op.Store(ty, alloc.value, v)
       store withValue alloc.value
     case Op.Unbox(boxty, v) =>
       val ty = boxty.unboxed

@@ -177,7 +177,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Op.FieldElem(ty, name, v) =>
       putInt(T.FieldElemOp); putName(name); putVal(v)
     case Op.MethodElem(ty, name, v) =>
-      putInt(T.MethodElemOp); putName(name); putVal(v)
+      putInt(T.MethodElemOp); putType(ty); putName(name); putVal(v)
     case Op.AllocClass(ty) =>
       putInt(T.AllocClassOp); putType(ty)
     case Op.AllocArray(ty, v) =>

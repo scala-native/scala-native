@@ -25,7 +25,8 @@ trait NativeBuiltins {
     HashCode.unapply(sym).nonEmpty                  ||
     ScalaRunTimeHashCode.unapply(sym)               ||
     Equals.unapply(sym)                             ||
-    GetClass.unapply(sym)
+    GetClass.unapply(sym)                           ||
+    ObjectCtor.unapply(sym)
 
   object nnme {
     val booleanValue = TermName("booleanValue")
@@ -375,6 +376,15 @@ trait NativeBuiltins {
     def unapply(sym: Symbol): Boolean = sym match {
       case JObject_getClass => true
       case _                => false
+    }
+  }
+
+  lazy val JObject_ctor = getDecl(ObjectClass, nme.CONSTRUCTOR)
+
+  object ObjectCtor {
+    def unapply(sym: Symbol): Boolean = sym match {
+      case JObject_ctor => true
+      case _            => false
     }
   }
 }

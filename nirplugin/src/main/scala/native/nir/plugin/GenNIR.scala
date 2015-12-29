@@ -295,10 +295,9 @@ abstract class GenNIR extends PluginComponent
           focus.withValue(Val.Name(genClassName(sym), genType(sym.tpe)))
         else if (sym.isStaticMember)
           genStaticMember(sym, focus)
-        else if (sym.isMethod) {
-          val qual = genExpr(qualp, focus)
-          genMethodCall(sym, qual.value, Seq(), qual)
-        } else {
+        else if (sym.isMethod)
+          genMethodCall(sym, qualp, Seq(), focus)
+        else {
           val ty = genType(tree.symbol.tpe)
           val qual = genExpr(qualp, focus)
           val elem = qual.withOp(Op.FieldElem(ty, genFieldName(tree.symbol), qual.value))
@@ -594,10 +593,10 @@ abstract class GenNIR extends PluginComponent
         case _: TypeApply =>
           genApplyTypeApply(app, focus)
         case Select(Super(_, _), _) =>
-          genApplySuper(app, focus)
+          genMethodCall(fun.symbol, curThis.get, args, focus)
         case Select(New(_), nme.CONSTRUCTOR) =>
           genApplyNew(app, focus)
-        case _ =>
+        case Select(receiverp, _) =>
           val sym = fun.symbol
 
           if (sym.isLabel) {
@@ -609,10 +608,8 @@ abstract class GenNIR extends PluginComponent
             genPrimitiveBox(arg, arg.tpe, focus)
           } else if (currentRun.runDefinitions.isUnbox(sym)) {
             genPrimitiveUnbox(args.head, app.tpe, focus)
-          } else if (isBuiltin(sym)) {
-            genBuiltinApply(app, focus)
           } else {
-            genNormalApply(app, focus)
+            genMethodCall(fun.symbol, receiverp, args, focus)
           }
       }
     }
@@ -948,123 +945,6 @@ abstract class GenNIR extends PluginComponent
       })
     }
 
-    def genBuiltinApply(app: Tree, focus: Focus): Focus = {
-      val Apply(fun @ Select(receiverp, _), argsp) = app
-
-      fun.symbol match {
-        case UnboxValue(fromty, toty) =>
-          val boxed = genExpr(receiverp, focus)
-          val unboxed = boxed withOp Op.Unbox(fromty, boxed.value)
-          genCoercion(unboxed.value, fromty.unboxed, toty, unboxed)
-        case BoxValue(boxty) =>
-          genValueOfApply(boxty, argsp, focus)
-        case ParseValue(ty) =>
-          genValueFromString(ty, argsp, unsigned = false, focus)
-        case ParseUnsignedValue(ty) =>
-          genValueFromString(ty, argsp, unsigned = true, focus)
-        case BoxModuleToString(boxty) =>
-          genValueToString(boxty, argsp, unsigned = false, focus)
-        case BoxModuleToUnsignedString(boxty) =>
-          genValueToString(boxty, argsp, unsigned = true, focus)
-        case DivideUnsigned(ty) =>
-          val List(l, r) = argsp
-          val left = genExpr(l, focus)
-          val right = genExpr(r, left)
-          right.withOp(Seq(Attr.Usgn), Op.Bin(Bin.Div, ty, left.value, right.value))
-        case RemainderUnsigned(ty) =>
-          val List(l, r) = argsp
-          val left = genExpr(l, focus)
-          val right = genExpr(r, left)
-          right.withOp(Seq(Attr.Usgn), Op.Bin(Bin.Mod, ty, left.value, right.value))
-        case ToUnsigned(fromty, toty) =>
-          val List(argp) = argsp
-          val unboxed = genExpr(argp, focus)
-          unboxed withOp Op.Conv(Conv.Zext, toty, unboxed.value)
-        case ToString(nir.Type.ObjectClass) =>
-          val obj = genExpr(receiverp, focus)
-          obj withOp Op.ToString(obj.value, Val.None)
-        case ToString(boxty) =>
-          val boxed = genExpr(receiverp, focus)
-          val unboxed = boxed withOp Op.Unbox(boxty, boxed.value)
-          unboxed withOp Op.ToString(unboxed.value, Val.None)
-        case HashCode(nir.Type.ObjectClass) =>
-          val obj = genExpr(receiverp, focus)
-          obj withOp Op.HashCode(obj.value)
-        case HashCode(boxty) =>
-          val boxed = genExpr(receiverp, focus)
-          val unboxed = boxed withOp Op.Unbox(boxty, boxed.value)
-          unboxed withOp Op.HashCode(unboxed.value)
-        case ScalaRunTimeHashCode() =>
-          val List(argp) = argsp
-          val unboxed = genExpr(argp, focus)
-          unboxed withOp Op.HashCode(unboxed.value)
-        case Equals() =>
-          val List(argp) = argsp
-          val obj = genExpr(receiverp, focus)
-          val arg = genExpr(argp, obj)
-          arg withOp Op.Equals(obj.value, arg.value)
-        case GetClass() =>
-          val obj = genExpr(receiverp, focus)
-          obj withOp Op.GetClass(obj.value)
-      }
-    }
-
-    def genValueToString(ty: nir.Type, argsp: Seq[Tree],
-                         unsigned: Boolean, focus: Focus) = {
-      val attrs = if (unsigned) Seq(Attr.Usgn) else Seq()
-
-      argsp match {
-        case List(valuep) =>
-          val value = genExpr(valuep, focus)
-          value.withOp(attrs, Op.ToString(value.value, Val.None))
-        case List(valuep, radixp) =>
-          val value = genExpr(valuep, focus)
-          val radix = genExpr(radixp, value)
-          radix.withOp(attrs, Op.ToString(value.value, radix.value))
-      }
-    }
-
-    def genValueFromString(ty: nir.Type, argsp: Seq[Tree],
-                           unsigned: Boolean, focus: Focus) = {
-      val attrs = if (unsigned) Seq(Attr.Usgn) else Seq()
-
-      argsp match {
-        case List(strp) =>
-          val str = genExpr(strp, focus)
-          str.withOp(attrs, Op.FromString(ty, str.value, Val.None))
-        case List(strp, radixp) =>
-          val str = genExpr(strp, focus)
-          val radix = genExpr(radixp, str)
-          radix.withOp(attrs, Op.FromString(ty, str.value, radix.value))
-      }
-    }
-
-    def genValueOfApply(boxty: nir.Type, argsp: Seq[Tree], focus: Focus) = {
-      val converted =
-        argsp match {
-          case List(s, radix) =>
-            genValueFromString(boxty.unboxed, argsp, unsigned = false, focus)
-          case List(s) if s.tpe.widen == StringTpe =>
-            genValueFromString(boxty.unboxed, argsp, unsigned = false, focus)
-          case List(valuep) =>
-            genExpr(valuep, focus)
-        }
-      converted withOp Op.Box(boxty, converted.value)
-    }
-
-    def genNormalApply(app: Apply, focus: Focus) = {
-      val Apply(fun @ Select(receiverp, _), args) = app
-      val rec = genExpr(receiverp, focus)
-
-      genMethodCall(fun.symbol, rec.value, args, rec)
-    }
-
-    def genApplySuper(app: Apply, focus: Focus) = {
-      val Apply(fun @ Select(sup, _), args) = app
-
-      genMethodCall(fun.symbol, curThis.get, args, focus)
-    }
-
     def genApplyNew(app: Apply, focus: Focus) = {
       val Apply(fun @ Select(New(tpt), nme.CONSTRUCTOR), args) = app
       val ctor = fun.symbol
@@ -1098,7 +978,7 @@ abstract class GenNIR extends PluginComponent
            | JLongKind
            | JFloatKind
            | JDoubleKind =>
-          genValueOfApply(toIRType(builtin), args, focus)
+          genValueOf(toIRType(builtin), args, focus)
       }
 
     def genNewArray(elemty: nir.Type, lengthp: Tree, focus: Focus) = {
@@ -1114,6 +994,12 @@ abstract class GenNIR extends PluginComponent
       ctor.withValue(alloc.value)
     }
 
+    def genMethodCall(sym: Symbol, selfp: Tree, argsp: Seq[Tree], focus: Focus): Focus = {
+      val self = genExpr(selfp, focus)
+
+      genMethodCall(sym, self.value, argsp, self)
+    }
+
     def genMethodCall(sym: Symbol, self: Val, argsp: Seq[Tree], focus: Focus): Focus = {
       val args      = sequenced(argsp, focus)(genExpr(_, _))
       val argvalues = args.map(_.value)
@@ -1121,6 +1007,8 @@ abstract class GenNIR extends PluginComponent
 
       if (isForeignExternModule(sym.owner))
         genForeignCall(sym, argvalues, last)
+      else if (isBuiltin(sym))
+        genBuiltinCall(sym, self, argsp, focus)
       else
         genNormalMethodCall(sym, self, argvalues, last)
     }
@@ -1140,6 +1028,102 @@ abstract class GenNIR extends PluginComponent
       val call = elem withOp Op.Call(sig, elem.value, self +: args)
 
       call
+    }
+
+    def genBuiltinCall(sym: Symbol, self: Val, argsp: Seq[Tree], focus: Focus): Focus =
+      sym match {
+        case UnboxValue(fromty, toty) =>
+          val unboxed = focus withOp Op.Unbox(fromty, self)
+          genCoercion(unboxed.value, fromty.unboxed, toty, unboxed)
+        case BoxValue(boxty) =>
+          genValueOf(boxty, argsp, focus)
+        case ParseValue(ty) =>
+          genValueFromString(ty, argsp, unsigned = false, focus)
+        case ParseUnsignedValue(ty) =>
+          genValueFromString(ty, argsp, unsigned = true, focus)
+        case BoxModuleToString(boxty) =>
+          genValueToString(boxty, argsp, unsigned = false, focus)
+        case BoxModuleToUnsignedString(boxty) =>
+          genValueToString(boxty, argsp, unsigned = true, focus)
+        case DivideUnsigned(ty) =>
+          val List(l, r) = argsp
+          val left = genExpr(l, focus)
+          val right = genExpr(r, left)
+          right.withOp(Seq(Attr.Usgn), Op.Bin(Bin.Div, ty, left.value, right.value))
+        case RemainderUnsigned(ty) =>
+          val List(l, r) = argsp
+          val left = genExpr(l, focus)
+          val right = genExpr(r, left)
+          right.withOp(Seq(Attr.Usgn), Op.Bin(Bin.Mod, ty, left.value, right.value))
+        case ToUnsigned(fromty, toty) =>
+          val List(argp) = argsp
+          val unboxed = genExpr(argp, focus)
+          unboxed withOp Op.Conv(Conv.Zext, toty, unboxed.value)
+        case ToString(nir.Type.ObjectClass) =>
+          focus withOp Op.ToString(self, Val.None)
+        case ToString(boxty) =>
+          val unboxed = focus withOp Op.Unbox(boxty, self)
+          unboxed withOp Op.ToString(unboxed.value, Val.None)
+        case HashCode(nir.Type.ObjectClass) =>
+          focus withOp Op.HashCode(self)
+        case HashCode(boxty) =>
+          val unboxed = focus withOp Op.Unbox(boxty, self)
+          unboxed withOp Op.HashCode(unboxed.value)
+        case ScalaRunTimeHashCode() =>
+          val List(argp) = argsp
+          val unboxed = genExpr(argp, focus)
+          unboxed withOp Op.HashCode(unboxed.value)
+        case Equals() =>
+          val List(argp) = argsp
+          val arg = genExpr(argp, focus)
+          arg withOp Op.Equals(self, arg.value)
+        case GetClass() =>
+          focus withOp Op.GetClass(self)
+        case ObjectCtor() =>
+          focus
+      }
+
+    def genValueToString(ty: nir.Type, argsp: Seq[Tree],
+                         unsigned: Boolean, focus: Focus) = {
+      val attrs = if (unsigned) Seq(Attr.Usgn) else Seq()
+
+      argsp match {
+        case List(valuep) =>
+          val value = genExpr(valuep, focus)
+          value.withOp(attrs, Op.ToString(value.value, Val.None))
+        case List(valuep, radixp) =>
+          val value = genExpr(valuep, focus)
+          val radix = genExpr(radixp, value)
+          radix.withOp(attrs, Op.ToString(value.value, radix.value))
+      }
+    }
+
+    def genValueFromString(ty: nir.Type, argsp: Seq[Tree],
+                           unsigned: Boolean, focus: Focus) = {
+      val attrs = if (unsigned) Seq(Attr.Usgn) else Seq()
+
+      argsp match {
+        case List(strp) =>
+          val str = genExpr(strp, focus)
+          str.withOp(attrs, Op.FromString(ty, str.value, Val.None))
+        case List(strp, radixp) =>
+          val str = genExpr(strp, focus)
+          val radix = genExpr(radixp, str)
+          radix.withOp(attrs, Op.FromString(ty, str.value, radix.value))
+      }
+    }
+
+    def genValueOf(boxty: nir.Type, argsp: Seq[Tree], focus: Focus) = {
+      val converted =
+        argsp match {
+          case List(s, radix) =>
+            genValueFromString(boxty.unboxed, argsp, unsigned = false, focus)
+          case List(s) if s.tpe.widen == StringTpe =>
+            genValueFromString(boxty.unboxed, argsp, unsigned = false, focus)
+          case List(valuep) =>
+            genExpr(valuep, focus)
+        }
+      converted withOp Op.Box(boxty, converted.value)
     }
   }
 }

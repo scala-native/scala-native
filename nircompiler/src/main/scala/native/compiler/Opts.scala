@@ -10,7 +10,7 @@ object Opts {
   lazy val empty =
     Opts(
       classpath = Seq(""),
-      outpath = "",
+      outpath = "out.ll",
       entry = ""
     )
 
