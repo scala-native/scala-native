@@ -6,32 +6,33 @@ import scala.reflect.ClassTag
 import native.nir._
 
 abstract class Pass {
-  def onOp(focus: Focus): PartialFunction[Op, Focus]
-  // onType
-  // onVal
-  // onDefn
+  def onDefn(defn: Defn): Seq[Defn] = Seq(defn)
+  def onType(ty: Type): Type = ty
+  def onVal(value: Val) = value
+  def onOp(op: Op, focus: Focus): Focus = focus withOp op
 
   final def apply(scope: Seq[Defn]) = runDefns(scope)
 
   private def runDefns(scope: Seq[Defn]): Seq[Defn] =
-    scope.map(runDefn(_))
+    scope.flatMap(runDefn(_))
 
-  private def runDefn(defn: Defn): Defn = defn match {
-    case Defn.Var(_, _, _) =>
-      defn
-    case Defn.Declare(_, _) =>
-      defn
-    case defn @ Defn.Define(_, _, blocks) =>
-      defn.copy(blocks = runBlocks(blocks))
-    case defn @ Defn.Struct(_, members) =>
-      defn.copy(members = runDefns(members))
-    case defn @ Defn.Interface(_, _, members) =>
-      defn.copy(members = runDefns(members))
-    case defn @ Defn.Class(_, _, _, members) =>
-      defn.copy(members = runDefns(members))
-    case defn @ Defn.Module(_, _, _, members) =>
-      defn.copy(members = runDefns(members))
-  }
+  private def runDefn(defn: Defn): Seq[Defn] =
+    onDefn(defn match {
+      case Defn.Var(_, _, _) =>
+        defn
+      case Defn.Declare(_, _) =>
+        defn
+      case defn @ Defn.Define(_, _, blocks) =>
+        defn.copy(blocks = runBlocks(blocks))
+      case defn @ Defn.Struct(_, members) =>
+        defn.copy(members = runDefns(members))
+      case defn @ Defn.Interface(_, _, members) =>
+        defn.copy(members = runDefns(members))
+      case defn @ Defn.Class(_, _, _, members) =>
+        defn.copy(members = runDefns(members))
+      case defn @ Defn.Module(_, _, _, members) =>
+        defn.copy(members = runDefns(members))
+    })
 
   private def runBlocks(blocks: Seq[Block]): Seq[Block] =
     blocks.flatMap(runBlock)
@@ -49,9 +50,7 @@ abstract class Pass {
     instrs.foreach {
       case Instr(name, attrs, op) =>
         val newop = mapOpValues(op, nameSubs)
-        val newfocus = onOp(focus).applyOrElse(newop, { _: Op =>
-          focus.withOp(attrs, newop)
-        })
+        val newfocus = onOp(newop, focus)
         corr += (name -> newfocus.value)
         focus = newfocus
     }

@@ -12,7 +12,8 @@ final class Compiler(opts: Opts) {
 
   def passes(): Seq[Pass] =
     Seq(
-      BoxLowering
+      BoxLowering,
+      ModuleLowering
     )
 
   def output(scope: Seq[Defn]): Unit =

@@ -56,12 +56,10 @@ object Tags {
   final val FieldName       = 1 + InterfaceName
   final val ConstructorName = 1 + FieldName
   final val MethodName      = 1 + ConstructorName
-  final val AccessorName    = 1 + MethodName
-  final val DataName        = 1 + AccessorName
-  final val VtableName      = 1 + DataName
-  final val ArrayName       = 1 + VtableName
+  final val ArrayName       = 1 + MethodName
+  final val TaggedName      = 1 + ArrayName
 
-  final val UndefinedOp    = 1 + ArrayName
+  final val UndefinedOp    = 1 + TaggedName
   final val RetOp          = 1 + UndefinedOp
   final val ThrowOp        = 1 + RetOp
   final val JumpOp         = 1 + ThrowOp

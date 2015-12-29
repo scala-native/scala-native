@@ -127,10 +127,8 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Name.Field(id)             => putInt(T.FieldName); putString(id)
     case Name.Constructor(args)     => putInt(T.ConstructorName); putNames(args)
     case Name.Method(id, args, ret) => putInt(T.MethodName); putString(id); putNames(args); putName(ret)
-    case Name.Accessor(owner)       => putInt(T.AccessorName); putName(owner)
-    case Name.Data(owner)           => putInt(T.DataName); putName(owner)
-    case Name.Vtable(owner)         => putInt(T.VtableName); putName(owner)
     case Name.Array(of)             => putInt(T.ArrayName); putName(of)
+    case Name.Tagged(n, tag)        => putInt(T.TaggedName); putName(n); putString(tag)
   }
 
   private def putOp(op: Op) = op match {

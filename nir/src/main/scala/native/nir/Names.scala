@@ -15,8 +15,6 @@ object Name {
   final case class Field      (id: String)                             extends Name
   final case class Constructor(args: Seq[Name])                        extends Name
   final case class Method     (id: String, args: Seq[Name], ret: Name) extends Name
-  final case class Accessor   (owner: Name)                            extends Name
-  final case class Data       (owner: Name)                            extends Name
-  final case class Vtable     (owner: Name)                            extends Name
   final case class Array      (name: Name)                             extends Name
+  final case class Tagged     (name: Name, tag: String)                extends Name
 }

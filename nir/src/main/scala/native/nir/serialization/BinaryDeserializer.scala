@@ -113,10 +113,8 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.FieldName       => Name.Field(getString)
     case T.ConstructorName => Name.Constructor(getNames)
     case T.MethodName      => Name.Method(getString, getNames, getName)
-    case T.AccessorName    => Name.Accessor(getName)
-    case T.DataName        => Name.Data(getName)
-    case T.VtableName      => Name.Vtable(getName)
     case T.ArrayName       => Name.Array(getName)
+    case T.TaggedName      => Name.Tagged(getName, getString)
   }
 
   private def getOp(): Op = getInt match {

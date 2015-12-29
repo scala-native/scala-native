@@ -80,6 +80,9 @@ final case class Focus(
 object Focus {
   final case class NotMergeable(focus: Focus) extends Exception
 
+  def entry(implicit fresh: Fresh): Focus =
+    entry(fresh(), Seq())
+
   def entry(params: Seq[Param])(implicit fresh: Fresh): Focus =
     entry(fresh(), params)
 
