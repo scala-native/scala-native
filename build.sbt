@@ -9,15 +9,10 @@ lazy val common = Seq(
 
 lazy val withPluginCommon = common ++ Seq(
   scalacOptions ++= Seq(
-    "-Xplugin:nirplugin/target/scala-2.11/nirplugin_2.11-0.1-SNAPSHOT.jar"
+    "-Xplugin:plugin/target/scala-2.11/plugin_2.11-0.1-SNAPSHOT.jar"
   ),
   libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.11.7"
 )
-
-lazy val gir =
-  project.in(file("gir")).
-    settings(common: _*).
-    dependsOn(util)
 
 lazy val nir =
   project.in(file("nir")).
@@ -28,23 +23,8 @@ lazy val util =
   project.in(file("util")).
     settings(common: _*)
 
-lazy val gplugin =
-  project.in(file("gplugin")).
-    settings(common: _*).
-    settings(
-      unmanagedSourceDirectories in Compile ++= Seq(
-        (scalaSource in (gir, Compile)).value,
-        (scalaSource in (util, Compile)).value
-      ),
-      libraryDependencies ++= Seq(
-        "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-        "org.scala-lang" % "scala-reflect" % scalaVersion.value
-      )
-    ).
-    dependsOn(gir)
-
-lazy val nirplugin =
-  project.in(file("nirplugin")).
+lazy val plugin =
+  project.in(file("plugin")).
     settings(common: _*).
     settings(
       unmanagedSourceDirectories in Compile ++= Seq(
@@ -58,16 +38,8 @@ lazy val nirplugin =
     ).
     dependsOn(nir)
 
-lazy val gcompiler =
-  project.in(file("gcompiler")).
-    settings(common: _*).
-    settings(
-      libraryDependencies += "commons-io" % "commons-io" % "2.4"
-    ).
-    dependsOn(gir)
-
-lazy val nircompiler =
-  project.in(file("nircompiler")).
+lazy val compiler =
+  project.in(file("compiler")).
     settings(common: _*).
     settings(
       libraryDependencies += "commons-io" % "commons-io" % "2.4"
@@ -77,12 +49,12 @@ lazy val nircompiler =
 lazy val javalib =
   project.in(file("javalib")).
     settings(withPluginCommon: _*).
-    dependsOn(gplugin)
+    dependsOn(plugin)
 
 lazy val nativelib =
   project.in(file("nativelib")).
     settings(withPluginCommon: _*).
-    dependsOn(gplugin)
+    dependsOn(plugin)
 
 lazy val sandbox =
   project.in(file("sandbox")).
@@ -90,6 +62,6 @@ lazy val sandbox =
     settings(
       scalacOptions += "-Xprint:all"
     ).
-    dependsOn(nirplugin)
+    dependsOn(plugin)
 
 

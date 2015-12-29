@@ -1,4 +1,0 @@
-<plugin>
-  <name>native</name>
-  <classname>native.gplugin.NativePlugin</classname>
-</plugin>
