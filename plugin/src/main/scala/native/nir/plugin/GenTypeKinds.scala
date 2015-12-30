@@ -7,7 +7,7 @@ import scala.tools.nsc._
 trait GenTypeKinds extends SubComponent {
   import global._, definitions._
 
-  def genClassName(sym: Symbol): nir.Name
+  def genClassName(sym: Symbol): nir.Global
 
   sealed abstract class Kind
   final case class PrimitiveKind(sym: Symbol) extends Kind

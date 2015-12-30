@@ -9,20 +9,24 @@ import native.nir.{Tags => T}
 final class BinaryDeserializer(bb: ByteBuffer) {
   import bb._
 
-  private val externs = mutable.UnrolledBuffer.empty[Name]
+  private val externs = mutable.UnrolledBuffer.empty[Global]
 
-  private def ext(n: Name): Name = {
+  private def ext(n: Global) = {
     externs += n
     n
   }
 
-  final def deserialize(): (Seq[Name], Seq[Defn]) = {
+  final def deserialize(): (Seq[Global], Seq[Defn]) = {
     val defns = getDefns
     (externs, defns)
   }
 
   private def getSeq[T](getT: => T): Seq[T] =
     (1 to getInt).map(_ => getT).toSeq
+
+  private def getOpt[T](getT: => T): Option[T] =
+    if (get == 0) None
+    else Some(getT)
 
   private def getString(): String = {
     val arr = new Array[Byte](getInt)
@@ -48,6 +52,12 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.OrBin   => Bin.Or
     case T.XorBin  => Bin.Xor
   }
+
+  private def getBlocks(): Seq[Block] = getSeq(getBlock)
+  private def getBlock(): Block = Block(getLocal, getParams, getInstrs)
+
+  private def getCases(): Seq[Case] = getSeq(getCase)
+  private def getCase(): Case = Case(getVal, getNext)
 
   private def getComp(): Comp = getInt match {
     case T.EqComp  => Comp.Eq
@@ -75,47 +85,30 @@ final class BinaryDeserializer(bb: ByteBuffer) {
 
   private def getDefns(): Seq[Defn] = getSeq(getDefn)
   private def getDefn(): Defn = getInt match {
-    case T.VarDefn      => Defn.Var(getAttrs, getName, getType, getVal)
-    case T.DeclareDefn  => Defn.Declare(getAttrs, getName, getType)
-    case T.DefineDefn   => Defn.Define(getAttrs, getName, getType, getBlocks)
-    case T.StructDefn   => Defn.Struct(getAttrs, getName, getDefns)
-    case T.IntefaceDefn => Defn.Interface(getAttrs, getName, getTypes, getDefns)
-    case T.ClassDefn    => Defn.Class(getAttrs, getName, getType, getTypes, getDefns)
-    case T.ModuleDefn   => Defn.Module(getAttrs, getName, getType, getTypes, getDefns)
+    case T.VarDefn      => Defn.Var(getAttrs, getGlobal, getType, getVal)
+    case T.DeclareDefn  => Defn.Declare(getAttrs, getGlobal, getType)
+    case T.DefineDefn   => Defn.Define(getAttrs, getGlobal, getType, getBlocks)
+    case T.StructDefn   => Defn.Struct(getAttrs, getGlobal, getDefns)
+    case T.IntefaceDefn => Defn.Interface(getAttrs, getGlobal, getTypes, getDefns)
+    case T.ClassDefn    => Defn.Class(getAttrs, getGlobal, getType, getTypes, getDefns)
+    case T.ModuleDefn   => Defn.Module(getAttrs, getGlobal, getType, getTypes, getDefns)
   }
 
-  private def getBlocks(): Seq[Block] = getSeq(getBlock)
-  private def getBlock(): Block = Block(getName, getParams, getInstrs)
+  private def getGlobals(): Seq[Global] = getSeq(getGlobal)
+  private def getGlobal(): Global = getInt match {
+    case T.AtomGlobal   => Global.Atom(getString)
+    case T.NestedGlobal => Global.Nested(getGlobal, getGlobal)
+    case T.TaggedGlobal => Global.Tagged(getGlobal, getGlobal)
+  }
 
   private def getInstrs(): Seq[Instr] = getSeq(getInstr)
-  private def getInstr(): Instr = Instr(getName, getAttrs, getOp)
+  private def getInstr(): Instr = Instr(getLocalOpt, getAttrs, getOp)
 
-  private def getParams(): Seq[Param] = getSeq(getParam)
-  private def getParam(): Param = Param(getName, getType)
+  private def getLocalOpt(): Option[Local] = getOpt(getLocal)
+  private def getLocal(): Local = Local(getInt)
 
   private def getNexts(): Seq[Next] = getSeq(getNext)
-  private def getNext(): Next = Next(getName, getVals)
-
-  private def getCases(): Seq[Case] = getSeq(getCase)
-  private def getCase(): Case = Case(getVal, getNext)
-
-  private def getNames(): Seq[Name] = getSeq(getName)
-  private def getName(): Name = getInt match {
-    case T.NoneName        => Name.None
-    case T.FreshName       => Name.Fresh(getInt)
-    case T.LocalName       => Name.Local(getString)
-    case T.PrimName        => Name.Prim(getString)
-    case T.ForeignName     => Name.Foreign(getString)
-    case T.NestedName      => Name.Nested(getName, getName)
-    case T.ClassName       => ext(Name.Class(getString))
-    case T.ModuleName      => ext(Name.Module(getString))
-    case T.InterfaceName   => ext(Name.Interface(getString))
-    case T.FieldName       => Name.Field(getString)
-    case T.ConstructorName => Name.Constructor(getNames)
-    case T.MethodName      => Name.Method(getString, getNames, getName)
-    case T.ArrayName       => Name.Array(getName)
-    case T.TaggedName      => Name.Tagged(getName, getString)
-  }
+  private def getNext(): Next = Next(getLocal, getVals)
 
   private def getOp(): Op = getInt match {
     case T.UndefinedOp    => Op.Undefined
@@ -139,8 +132,8 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.CompOp         => Op.Comp(getComp, getType, getVal, getVal)
     case T.ConvOp         => Op.Conv(getConv, getType, getVal)
 
-    case T.FieldElemOp    => Op.FieldElem(getType, getName, getVal)
-    case T.MethodElemOp   => Op.MethodElem(getType, getName, getVal)
+    case T.FieldElemOp    => Op.FieldElem(getType, getGlobal, getVal)
+    case T.MethodElemOp   => Op.MethodElem(getType, getGlobal, getVal)
     case T.AllocClassOp   => Op.AllocClass(getType)
     case T.AllocArrayOp   => Op.AllocArray(getType, getVal)
     case T.EqualsOp       => Op.Equals(getVal, getVal)
@@ -159,6 +152,9 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.FromStringOp   => Op.FromString(getType, getVal, getVal)
   }
 
+  private def getParams(): Seq[Param] = getSeq(getParam)
+  private def getParam(): Param = Param(getLocal, getType)
+
   private def getTypes(): Seq[Type] = getSeq(getType)
   private def getType(): Type = getInt match {
     case T.NoneType           => Type.None
@@ -174,7 +170,7 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.ArrayType          => Type.Array(getType, getInt)
     case T.PtrType            => Type.Ptr(getType)
     case T.FunctionType       => Type.Function(getTypes, getType)
-    case T.StructType         => Type.Struct(getName)
+    case T.StructType         => Type.Struct(ext(getGlobal))
 
     case T.UnitType           => Type.Unit
     case T.NothingType        => Type.Nothing
@@ -190,7 +186,7 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.LongClassType      => Type.LongClass
     case T.FloatClassType     => Type.FloatClass
     case T.DoubleClassType    => Type.DoubleClass
-    case T.ClassType          => Type.Class(getName)
+    case T.ClassType          => Type.Class(ext(getGlobal))
     case T.ArrayClassType     => Type.ArrayClass(getType)
   }
 
@@ -208,7 +204,8 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.F64Val    => Val.F64(getDouble)
     case T.StructVal => Val.Struct(getType, getVals)
     case T.ArrayVal  => Val.Array(getType, getVals)
-    case T.NameVal   => Val.Name(getName, getType)
+    case T.LocalVal  => Val.Local(getLocal, getType)
+    case T.GlobalVal => Val.Global(getGlobal, getType)
 
     case T.UnitVal   => Val.Unit
     case T.NullVal   => Val.Null

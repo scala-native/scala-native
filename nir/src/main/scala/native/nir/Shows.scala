@@ -27,13 +27,12 @@ object Shows {
   }
 
   implicit val showInstr: Show[Instr] = Show {
-    case Instr(Name.None, attrs, op) => sh"$attrs$op"
-    case Instr(name, attrs, op)      => sh"$name = $attrs$op"
+    case Instr(None, attrs, op)       => sh"$attrs$op"
+    case Instr(Some(name), attrs, op) => sh"$name = $attrs$op"
   }
 
   implicit val showParam: Show[Param] = Show {
-    case Param(Name.None, ty) => ty
-    case Param(name, ty)      => sh"$name: $ty"
+    case Param(name, ty) => sh"$name: $ty"
   }
 
   implicit val showNext: Show[Next] = Show {
@@ -57,16 +56,16 @@ object Shows {
       sh"jump $next"
     case Op.If(cond, thenp, elsep) =>
       sh"""if $cond
-        then $thenp
-        else $elsep"""
+      then $thenp
+      else $elsep"""
     case Op.Switch(scrut, default, cases)  =>
       sh"""switch $scrut
-        ${r(cases, sep = nl("  "))}
-        case _ => $default"""
+      ${r(cases, sep = nl("  "))}
+      case _ => $default"""
     case Op.Invoke(f, args, succ, fail) =>
       sh"""invoke $f(${r(args, sep = ", ")})
-        to $succ
-        unwind $fail"""
+      to $succ
+      unwind $fail"""
 
     case Op.Call(ty, f, args) =>
       sh"call[$ty] $f(${r(args, sep = ", ")})"
@@ -186,7 +185,8 @@ object Shows {
     case Val.F64(value)         => sh"${value}f64"
     case Val.Struct(ty, values) => sh"struct[$ty] ${r(values, ", ")}"
     case Val.Array(ty, values)  => sh"array[$ty] ${r(values, ", ")}"
-    case Val.Name(name, ty)     => sh"$name"
+    case Val.Local(name, ty)    => sh"$name"
+    case Val.Global(name, ty)   => sh"$name"
 
     case Val.Unit      => "unit"
     case Val.Null      => "null"
@@ -202,10 +202,10 @@ object Shows {
     case Defn.Var(attrs, name, ty, rhs) =>
       sh"${attrs}var $name: $ty = $rhs"
     case Defn.Declare(attrs, name, ty) =>
-      sh"${attrs}declare $name: $ty"
+      sh"${attrs}def $name: $ty"
     case Defn.Define(attrs, name, ty, blocks) =>
       val body = r(blocks.map(i(_)))
-      sh"${attrs}define $name: $ty =$body"
+      sh"${attrs}def $name: $ty =$body"
     case Defn.Struct(attrs, name, members) =>
       sh"${attrs}struct $name {${r(members, sep = ", ")}}"
 
@@ -257,20 +257,13 @@ object Shows {
     case Type.ArrayClass(ty) => sh"${ty}[]"
   }
 
-  implicit val showName: Show[Name] = Show {
-    case Name.None                  => ""
-    case Name.Fresh(id)             => sh"%$id"
-    case Name.Local(id)             => sh"%$id"
-    case Name.Prim(id)              => id
-    case Name.Foreign(id)           => sh"@$id"
-    case Name.Nested(owner, member) => sh"$owner::$member"
-    case Name.Class(id)             => sh"@c.$id"
-    case Name.Module(id)            => sh"@m.$id"
-    case Name.Interface(id)         => sh"@i.$id"
-    case Name.Field(id)             => id
-    case Name.Constructor(args)     => sh"<${r(args, sep = ", ")}>"
-    case Name.Method(id, args, ret) => sh"$id<${r(args, sep = ", ")}; $ret>"
-    case Name.Array(n)              => sh"$n[]"
-    case Name.Tagged(n, tag)        => sh"$n!$tag"
+  implicit val showGlobal: Show[Global] = Show {
+    case Global.Atom(id)              => id
+    case Global.Nested(owner, member) => sh"$owner::$member"
+    case Global.Tagged(n, tag)        => sh"${n}_$tag"
+  }
+
+  implicit val showLocal: Show[Local] = Show {
+    case Local(id) => sh"%$id"
   }
 }

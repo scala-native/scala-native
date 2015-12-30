@@ -4,7 +4,7 @@ package nir
 final class Fresh {
   private var i: Int = 0
   def apply() = {
-    val res = Name.Fresh(i)
+    val res = Local(i)
     i += 1
     res
   }

@@ -34,7 +34,7 @@ package object serialization {
                           buffer: ByteBuffer = default): Unit =
     serializeFile(serializeBinary, defns, path, buffer)
 
-  def deserializeBinaryFile(path: String): (Seq[Name], Seq[Defn]) = {
+  def deserializeBinaryFile(path: String): (Seq[Global], Seq[Defn]) = {
     val bb = {
       val channel = FileChannel.open(Paths.get(path))
       val buffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size())

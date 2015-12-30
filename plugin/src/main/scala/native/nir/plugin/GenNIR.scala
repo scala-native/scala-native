@@ -71,8 +71,6 @@ abstract class GenNIR extends PluginComponent
   }
 
   class SaltyCodePhase(prev: Phase) extends StdPhase(prev) {
-    implicit val fresh = new Fresh
-
     val curLocalInfo = new util.ScopedVar[CollectLocalInfo]
     val curClassSym  = new util.ScopedVar[Symbol]
     val curMethodSym = new util.ScopedVar[Symbol]
@@ -199,13 +197,13 @@ abstract class GenNIR extends PluginComponent
       if (vp.isEmpty) Nil else vp.head.map(_.symbol)
     }
 
-    def genParams(paramSyms: Seq[Symbol]): Seq[Param] = {
-      val self = Param(Name.Local("this"), genType(curClassSym.tpe))
+    def genParams(paramSyms: Seq[Symbol])(implicit fresh: Fresh): Seq[Param] = {
+      val self = Param(fresh(), genType(curClassSym.tpe))
       val params = paramSyms.map { sym =>
-        val name = genLocalName(sym)
+        val name = fresh()
         val ty = genType(sym.tpe)
         val param = Param(name, ty)
-        curEnv.enter(sym, Val.Name(name, ty))
+        curEnv.enter(sym, Val.Local(name, ty))
         param
       }
 
@@ -236,9 +234,10 @@ abstract class GenNIR extends PluginComponent
             }
           */
           case _ =>
+            implicit val fresh = new Fresh
             val params = genParams(paramSyms)
             scoped (
-              curThis := Val.Name(params.head.name, params.head.ty)
+              curThis := Val.Local(params.head.name, params.head.ty)
             ) {
               genExpr(body, Focus.entry(params))
             }
@@ -292,13 +291,13 @@ abstract class GenNIR extends PluginComponent
       case This(qual) =>
         focus.withValue {
           if (tree.symbol == curClassSym.get) curThis.get
-          else Val.Name(genClassName(tree.symbol), genType(tree.tpe))
+          else Val.Global(genClassName(tree.symbol), genType(tree.tpe))
         }
 
       case Select(qualp, selp) =>
         val sym = tree.symbol
         if (sym.isModule)
-          focus.withValue(Val.Name(genClassName(sym), genType(sym.tpe)))
+          focus.withValue(Val.Global(genClassName(sym), genType(sym.tpe)))
         else if (sym.isStaticMember)
           genStaticMember(sym, focus)
         else if (sym.isMethod)
@@ -314,7 +313,7 @@ abstract class GenNIR extends PluginComponent
         val sym = id.symbol
         if (!curLocalInfo.mutableVars.contains(sym))
           focus.withValue {
-            if (sym.isModule) Val.Name(genClassName(sym), genType(sym.tpe))
+            if (sym.isModule) Val.Global(genClassName(sym), genType(sym.tpe))
             else curEnv.resolve(sym)
           }
         else
@@ -415,7 +414,7 @@ abstract class GenNIR extends PluginComponent
 
     def genStaticMember(sym: Symbol, focus: Focus): Focus = {
       val ty = genType(sym.tpe)
-      val module = Val.Name(genClassName(sym.owner), genType(sym.owner.tpe))
+      val module = Val.Global(genClassName(sym.owner), genType(sym.owner.tpe))
       val elem = focus.withOp(Op.FieldElem(ty, genFieldName(sym), module))
       elem.withOp(Op.Load(ty, elem.value))
     }
@@ -1022,7 +1021,7 @@ abstract class GenNIR extends PluginComponent
     def genForeignCall(sym: Symbol, args: Seq[Val], focus: Focus): Focus = {
       val name = genForeignName(sym)
       val sig  = genDefSig(sym)
-      val call = focus withOp Op.Call(sig, Val.Name(name, Type.Ptr(sig)), args)
+      val call = focus withOp Op.Call(sig, Val.Global(name, Type.Ptr(sig)), args)
 
       call
     }

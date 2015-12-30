@@ -8,7 +8,9 @@ import native.compiler.passes._
 
 final class Compiler(opts: Opts) {
   def load(): Seq[Defn] =
-    (new Loader(opts.classpath)).load(Name.Module(opts.entry))
+    (new Loader(opts.classpath)).load(
+      Global.Tagged(Global.Atom(opts.entry), Global.Atom("m"))
+    )
 
   def passes(): Seq[Pass] =
     Seq(

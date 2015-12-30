@@ -15,7 +15,8 @@ sealed abstract class Val {
     case Val.F64(_)          => Type.F64
     case Val.Struct(ty, _)   => ty
     case Val.Array(ty, vals) => Type.Array(ty, vals.length)
-    case Val.Name(_, ty)     => ty
+    case Val.Local(_, ty)    => ty
+    case Val.Global(_, ty)   => ty
 
     case Val.Unit      => Type.Unit
     case Val.Null      => Type.NullClass
@@ -36,7 +37,8 @@ object Val {
   final case class F64   (value: Double)                    extends Val
   final case class Struct(structty: Type, values: Seq[Val]) extends Val
   final case class Array (elemty: Type, values: Seq[Val])   extends Val
-  final case class Name  (name: nir.Name, valty: Type)      extends Val
+  final case class Local (local: nir.Local, valty: Type)    extends Val
+  final case class Global(global: nir.Global, valty: Type)  extends Val
 
   //scala
   final case object Unit                           extends Val

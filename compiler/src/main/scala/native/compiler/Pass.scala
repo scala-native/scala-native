@@ -39,19 +39,21 @@ abstract class Pass {
 
   private def runBlock(block: Block): Seq[Block] = {
     var focus = Focus.entry(block.name, block.params)(new Fresh)
-    val corr = mutable.Map.empty[Name, Val]
+    val corr = mutable.Map.empty[Local, Val]
     val instrs :+ termn = block.instrs
     def nameSubs(value: Val): Val = value match {
-      case Val.Name(name, _)             => corr(name)
+      case Val.Local(name, _)            => corr(name)
       case value @ Val.Struct(_, values) => value.copy(values = values.map(nameSubs))
       case value @ Val.Array(_, values)  => value.copy(values = values.map(nameSubs))
       case _                             => value
     }
     instrs.foreach {
-      case Instr(name, attrs, op) =>
+      case Instr(nameopt, attrs, op) =>
         val newop = mapOpValues(op, nameSubs)
         val newfocus = onOp(newop, focus)
-        corr += (name -> newfocus.value)
+        nameopt.foreach { n =>
+          corr += (n -> newfocus.value)
+        }
         focus = newfocus
     }
     focus.finish(mapOpValues(termn.op, nameSubs)).blocks

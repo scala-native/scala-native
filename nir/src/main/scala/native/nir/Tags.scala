@@ -48,22 +48,11 @@ object Tags {
   final val ClassDefn    = 1 + IntefaceDefn
   final val ModuleDefn   = 1 + ClassDefn
 
-  final val NoneName        = 1 + ModuleDefn
-  final val FreshName       = 1 + NoneName
-  final val LocalName       = 1 + FreshName
-  final val PrimName        = 1 + LocalName
-  final val ForeignName     = 1 + PrimName
-  final val NestedName      = 1 + ForeignName
-  final val ClassName       = 1 + NestedName
-  final val ModuleName      = 1 + ClassName
-  final val InterfaceName   = 1 + ModuleName
-  final val FieldName       = 1 + InterfaceName
-  final val ConstructorName = 1 + FieldName
-  final val MethodName      = 1 + ConstructorName
-  final val ArrayName       = 1 + MethodName
-  final val TaggedName      = 1 + ArrayName
+  final val AtomGlobal   = 1 + ModuleDefn
+  final val NestedGlobal = 1 + AtomGlobal
+  final val TaggedGlobal = 1 + NestedGlobal
 
-  final val UndefinedOp    = 1 + TaggedName
+  final val UndefinedOp    = 1 + TaggedGlobal
   final val RetOp          = 1 + UndefinedOp
   final val ThrowOp        = 1 + RetOp
   final val JumpOp         = 1 + ThrowOp
@@ -145,8 +134,9 @@ object Tags {
   final val F64Val    = 1 + F32Val
   final val StructVal = 1 + F64Val
   final val ArrayVal  = 1 + StructVal
-  final val NameVal   = 1 + ArrayVal
-  final val UnitVal   = 1 + NameVal
+  final val LocalVal  = 1 + ArrayVal
+  final val GlobalVal = 1 + LocalVal
+  final val UnitVal   = 1 + GlobalVal
   final val NullVal   = 1 + UnitVal
   final val StringVal = 1 + NullVal
   final val ClassVal  = 1 + StringVal

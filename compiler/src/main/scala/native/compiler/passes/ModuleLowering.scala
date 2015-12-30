@@ -35,7 +35,8 @@ import native.nir._
  *
  */
 object ModuleLowering extends Pass {
-  import Name.Local._
+  private val accessortag = Global.Atom("accessor")
+  private val datatag = Global.Atom("data")
 
   override def onDefn(defn: Defn) = defn match {
     case Defn.Module(attrs, name, parent, ifaces, members) =>
@@ -43,13 +44,13 @@ object ModuleLowering extends Pass {
       val clsty = Type.Class(name)
       val ptrclsty = Type.Ptr(clsty)
       val ctorty = Type.Function(Seq(), Type.Unit)
-      val ctor = Val.Name(Name.Nested(name, Name.Constructor(Seq())), Type.Ptr(ctorty))
-      val data = Defn.Var(Seq(), Name.Tagged(name, "data"), clsty, Val.Null)
-      val dataval = Val.Name(data.name, ptrclsty)
+      val ctor = Val.Global(Global.Nested(name, Global.Atom("init")), Type.Ptr(ctorty))
+      val data = Defn.Var(Seq(), Global.Tagged(name, datatag), clsty, Val.Null)
+      val dataval = Val.Global(data.name, ptrclsty)
       val accessor =
         Defn.Define(
           Seq(),
-          Name.Tagged(name, "accessor"),
+          Global.Tagged(name, accessortag),
           Type.Function(Seq(), Type.Class(name)),
           {
             val entry = Focus.entry(new Fresh)
