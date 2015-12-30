@@ -23,6 +23,11 @@ final class BinarySerializer(buffer: ByteBuffer) {
   private def putAttrs(attrs: Seq[Attr]) = putSeq(putAttr)(attrs)
   private def putAttr(attr: Attr) = attr match {
     case Attr.Usgn => putInt(T.UsgnAttr)
+
+    case Attr.NoInline     => putInt(T.NoInlineAttr)
+    case Attr.AlwaysInline => putInt(T.AlwaysInlineAttr)
+    case Attr.InlineHint   => putInt(T.InlineHintAttr)
+    case Attr.Final        => putInt(T.FinalAttr)
   }
 
   private def putBin(bin: Bin) = bin match {
@@ -65,20 +70,20 @@ final class BinarySerializer(buffer: ByteBuffer) {
 
   private def putDefns(defns: Seq[Defn]): Unit = putSeq(putDefn)(defns)
   private def putDefn(value: Defn): Unit = value match {
-    case Defn.Var(name, ty, value) =>
-      putInt(T.VarDefn); putName(name); putType(ty); putVal(value)
-    case Defn.Declare(name, ty) =>
-      putInt(T.DeclareDefn); putName(name); putType(ty)
-    case Defn.Define(name, ty, blocks) =>
-      putInt(T.DefineDefn); putName(name); putType(ty); putBlocks(blocks)
-    case Defn.Struct(name, members) =>
-      putInt(T.StructDefn); putName(name); putDefns(members)
-    case Defn.Interface(name, ifaces, members) =>
-      putInt(T.IntefaceDefn); putName(name); putTypes(ifaces); putDefns(members)
-    case Defn.Class(name, parent, ifaces, members) =>
-      putInt(T.ClassDefn); putName(name); putType(parent); putTypes(ifaces); putDefns(members)
-    case Defn.Module(name, parent, ifaces, members) =>
-      putInt(T.ModuleDefn); putName(name); putType(parent); putTypes(ifaces); putDefns(members)
+    case Defn.Var(attrs, name, ty, value) =>
+      putInt(T.VarDefn); putAttrs(attrs); putName(name); putType(ty); putVal(value)
+    case Defn.Declare(attrs, name, ty) =>
+      putInt(T.DeclareDefn); putAttrs(attrs); putName(name); putType(ty)
+    case Defn.Define(attrs, name, ty, blocks) =>
+      putInt(T.DefineDefn); putAttrs(attrs); putName(name); putType(ty); putBlocks(blocks)
+    case Defn.Struct(attrs, name, members) =>
+      putInt(T.StructDefn); putAttrs(attrs); putName(name); putDefns(members)
+    case Defn.Interface(attrs, name, ifaces, members) =>
+      putInt(T.IntefaceDefn); putAttrs(attrs); putName(name); putTypes(ifaces); putDefns(members)
+    case Defn.Class(attrs, name, parent, ifaces, members) =>
+      putInt(T.ClassDefn); putAttrs(attrs); putName(name); putType(parent); putTypes(ifaces); putDefns(members)
+    case Defn.Module(attrs, name, parent, ifaces, members) =>
+      putInt(T.ModuleDefn); putAttrs(attrs); putName(name); putType(parent); putTypes(ifaces); putDefns(members)
   }
 
   private def putBlocks(blocks: Seq[Block]) = putSeq(putBlock)(blocks)

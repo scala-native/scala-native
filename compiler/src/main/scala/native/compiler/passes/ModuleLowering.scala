@@ -26,7 +26,7 @@ import native.nir._
  *          %cond = eq[object] prev, null
  *          if %cond then %thenp() else %elsep()
  *        block %thenp():
- *          %alloc = alloc[$name]
+ *          %alloc = alloc[class $name]
  *          call $name::<>(%new)
  *          store[$name] $name!data, %alloc
  *          ret %alloc
@@ -38,16 +38,17 @@ object ModuleLowering extends Pass {
   import Name.Local._
 
   override def onDefn(defn: Defn) = defn match {
-    case Defn.Module(name, parent, ifaces, members) =>
-      val cls = Defn.Class(name, parent, ifaces, members)
+    case Defn.Module(attrs, name, parent, ifaces, members) =>
+      val cls = Defn.Class(attrs, name, parent, ifaces, members)
       val clsty = Type.Class(name)
       val ptrclsty = Type.Ptr(clsty)
       val ctorty = Type.Function(Seq(), Type.Unit)
       val ctor = Val.Name(Name.Nested(name, Name.Constructor(Seq())), Type.Ptr(ctorty))
-      val data = Defn.Var(Name.Tagged(name, "data"), clsty, Val.Null)
+      val data = Defn.Var(Seq(), Name.Tagged(name, "data"), clsty, Val.Null)
       val dataval = Val.Name(data.name, ptrclsty)
       val accessor =
         Defn.Define(
+          Seq(),
           Name.Tagged(name, "accessor"),
           Type.Function(Seq(), Type.Class(name)),
           {

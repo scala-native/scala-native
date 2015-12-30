@@ -12,6 +12,11 @@ object Shows {
 
   implicit val showAttr: Show[Attr] = Show {
     case Attr.Usgn => "usgn"
+
+    case Attr.NoInline     => "noinline"
+    case Attr.AlwaysInline => "alwaysinline"
+    case Attr.InlineHint   => "inlinehint"
+    case Attr.Final        => "final"
   }
 
   implicit val showBlock: Show[Block] = Show { block =>
@@ -194,28 +199,28 @@ object Shows {
   }
 
   implicit val showDefn: Show[Defn] = Show {
-    case Defn.Var(name, ty, rhs) =>
-      sh"var $name: $ty = $rhs"
-    case Defn.Declare(name, ty) =>
-      sh"declare $name: $ty"
-    case Defn.Define(name, ty, blocks) =>
+    case Defn.Var(attrs, name, ty, rhs) =>
+      sh"${attrs}var $name: $ty = $rhs"
+    case Defn.Declare(attrs, name, ty) =>
+      sh"${attrs}declare $name: $ty"
+    case Defn.Define(attrs, name, ty, blocks) =>
       val body = r(blocks.map(i(_)))
-      sh"define $name: $ty =$body"
-    case Defn.Struct(name, members) =>
-      sh"struct $name {${r(members, sep = ", ")}}"
+      sh"${attrs}define $name: $ty =$body"
+    case Defn.Struct(attrs, name, members) =>
+      sh"${attrs}struct $name {${r(members, sep = ", ")}}"
 
-    case Defn.Interface(name, ifaces, members) =>
+    case Defn.Interface(attrs, name, ifaces, members) =>
       val parents = r(ifaces, sep = ", ")
       val body = r(members.map(i(_)))
-      sh"interface $name($parents) =$body"
-    case Defn.Class(name, parent, ifaces, members) =>
+      sh"${attrs}interface $name($parents) =$body"
+    case Defn.Class(attrs, name, parent, ifaces, members) =>
       val parents = r(parent +: ifaces, sep = ", ")
       val body = r(members.map(i(_)))
-      sh"class $name($parents) =$body"
-    case Defn.Module(name, parent, ifaces, members) =>
+      sh"${attrs}class $name($parents) =$body"
+    case Defn.Module(attrs, name, parent, ifaces, members) =>
       val parents = r(parent +: ifaces, sep = ", ")
       val body = r(members.map(i(_)))
-      sh"module $name($parents) =$body"
+      sh"${attrs}module $name($parents) =$body"
   }
 
   implicit val showType: Show[Type] = Show {

@@ -115,6 +115,7 @@ abstract class GenNIR extends PluginComponent
       curClassSym := cd.symbol
     ) {
       val sym     = cd.symbol
+      val attrs   = genClassAttrs(sym)
       val name    = genClassName(sym)
       val parent  = if (sym.superClass == NoSymbol) Type.None
                     else genType(sym.superClass.tpe)
@@ -125,12 +126,14 @@ abstract class GenNIR extends PluginComponent
       val members = fields ++ methods
 
       if (sym.isModuleClass || sym.isImplClass)
-        Seq(Defn.Module(name, parent, ifaces, members))
+        Seq(Defn.Module(attrs, name, parent, ifaces, members))
       else if (sym.isInterface)
-        Seq(Defn.Interface(name, ifaces, members))
+        Seq(Defn.Interface(attrs, name, ifaces, members))
       else
-        Seq(Defn.Class(name, parent, ifaces, members))
+        Seq(Defn.Class(attrs, name, parent, ifaces, members))
     }
+
+    def genClassAttrs(sym: Symbol): Seq[Attr] = Seq()
 
     def genClassInterfaces(sym: Symbol) =
       for {
@@ -148,21 +151,22 @@ abstract class GenNIR extends PluginComponent
       } yield {
         val name = genFieldName(f)
         val ty = genType(f.tpe)
-        Defn.Var(name, ty, Val.Zero(ty))
+        Defn.Var(Seq(), name, ty, Val.Zero(ty))
       }
 
     def genDef(dd: DefDef): Defn = scoped (
       curMethodSym := dd.symbol
     ) {
-      val sym = dd.symbol
-      val name = genDefName(sym)
+      val sym       = dd.symbol
+      val attrs     = genDefAttrs(sym)
+      val name      = genDefName(sym)
       val paramSyms = defParamSymbols(dd)
-      val sig = genDefSig(sym)
+      val sig       = genDefSig(sym)
 
       if (isForeignExternModule(sym.owner))
-        Defn.Declare(genForeignName(sym), sig)
+        Defn.Declare(attrs, genForeignName(sym), sig)
       else if (sym.isDeferred)
-        Defn.Declare(name, sig)
+        Defn.Declare(attrs, name, sig)
       else {
         val env = new Env
         scoped (
@@ -172,10 +176,12 @@ abstract class GenNIR extends PluginComponent
         ) {
           val focus = genDefBody(paramSyms, dd.rhs)
           val blocks = focus.finish(Op.Ret(focus.value)).blocks
-          Defn.Define(name, sig, blocks)
+          Defn.Define(attrs, name, sig, blocks)
         }
       }
     }
+
+    def genDefAttrs(sym: Symbol): Seq[Attr] = Seq()
 
     def genDefSig(sym: Symbol): nir.Type = {
       val params   = sym.asMethod.paramLists.flatten

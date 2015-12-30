@@ -75,13 +75,13 @@ final class BinaryDeserializer(bb: ByteBuffer) {
 
   private def getDefns(): Seq[Defn] = getSeq(getDefn)
   private def getDefn(): Defn = getInt match {
-    case T.VarDefn      => Defn.Var(getName, getType, getVal)
-    case T.DeclareDefn  => Defn.Declare(getName, getType)
-    case T.DefineDefn   => Defn.Define(getName, getType, getBlocks)
-    case T.StructDefn   => Defn.Struct(getName, getDefns)
-    case T.IntefaceDefn => Defn.Interface(getName, getTypes, getDefns)
-    case T.ClassDefn    => Defn.Class(getName, getType, getTypes, getDefns)
-    case T.ModuleDefn   => Defn.Module(getName, getType, getTypes, getDefns)
+    case T.VarDefn      => Defn.Var(getAttrs, getName, getType, getVal)
+    case T.DeclareDefn  => Defn.Declare(getAttrs, getName, getType)
+    case T.DefineDefn   => Defn.Define(getAttrs, getName, getType, getBlocks)
+    case T.StructDefn   => Defn.Struct(getAttrs, getName, getDefns)
+    case T.IntefaceDefn => Defn.Interface(getAttrs, getName, getTypes, getDefns)
+    case T.ClassDefn    => Defn.Class(getAttrs, getName, getType, getTypes, getDefns)
+    case T.ModuleDefn   => Defn.Module(getAttrs, getName, getType, getTypes, getDefns)
   }
 
   private def getBlocks(): Seq[Block] = getSeq(getBlock)

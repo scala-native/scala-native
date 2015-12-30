@@ -18,19 +18,19 @@ abstract class Pass {
 
   private def runDefn(defn: Defn): Seq[Defn] =
     onDefn(defn match {
-      case Defn.Var(_, _, _) =>
+      case Defn.Var(_, _, _, _) =>
         defn
-      case Defn.Declare(_, _) =>
+      case Defn.Declare(_, _, _) =>
         defn
-      case defn @ Defn.Define(_, _, blocks) =>
+      case defn @ Defn.Define(_, _, _, blocks) =>
         defn.copy(blocks = runBlocks(blocks))
-      case defn @ Defn.Struct(_, members) =>
+      case defn @ Defn.Struct(_, _, members) =>
         defn.copy(members = runDefns(members))
-      case defn @ Defn.Interface(_, _, members) =>
+      case defn @ Defn.Interface(_, _, _, members) =>
         defn.copy(members = runDefns(members))
-      case defn @ Defn.Class(_, _, _, members) =>
+      case defn @ Defn.Class(_, _, _, _, members) =>
         defn.copy(members = runDefns(members))
-      case defn @ Defn.Module(_, _, _, members) =>
+      case defn @ Defn.Module(_, _, _, _, members) =>
         defn.copy(members = runDefns(members))
     })
 
