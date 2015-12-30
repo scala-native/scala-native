@@ -190,7 +190,7 @@ object Shows {
   }
 
   implicit val showDefns: Show[Seq[Defn]] = Show { defns =>
-    r(defns.map(nl(_)))
+    r(defns, sep = nl(""))
   }
 
   implicit val showDefn: Show[Defn] = Show {
@@ -200,7 +200,7 @@ object Shows {
       sh"declare $name: $ty"
     case Defn.Define(name, ty, blocks) =>
       val body = r(blocks.map(i(_)))
-      sh"define $name: $ty = $body"
+      sh"define $name: $ty =$body"
     case Defn.Struct(name, members) =>
       sh"struct $name {${r(members, sep = ", ")}}"
 
@@ -248,7 +248,7 @@ object Shows {
     case Type.LongClass      => "long"
     case Type.FloatClass     => "float"
     case Type.DoubleClass    => "double"
-    case Type.Class(name)    => name
+    case Type.Class(name)    => sh"class $name"
     case Type.ArrayClass(ty) => sh"${ty}[]"
   }
 
@@ -259,9 +259,9 @@ object Shows {
     case Name.Prim(id)              => id
     case Name.Foreign(id)           => sh"@$id"
     case Name.Nested(owner, member) => sh"$owner::$member"
-    case Name.Class(id)             => sh"@class.$id"
-    case Name.Module(id)            => sh"@module.$id"
-    case Name.Interface(id)         => sh"@interface.$id"
+    case Name.Class(id)             => sh"@c.$id"
+    case Name.Module(id)            => sh"@m.$id"
+    case Name.Interface(id)         => sh"@i.$id"
     case Name.Field(id)             => id
     case Name.Constructor(args)     => sh"<${r(args, sep = ", ")}>"
     case Name.Method(id, args, ret) => sh"$id<${r(args, sep = ", ")}; $ret>"

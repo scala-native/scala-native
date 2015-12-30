@@ -65,7 +65,7 @@ object ModuleLowering extends Pass {
               { elsep =>
                 elsep finish Op.Ret(prev.value)
               }
-            ).blocks
+            ).finish(Op.Undefined).blocks
           }
         )
       Seq(cls, data, accessor)

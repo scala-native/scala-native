@@ -29,34 +29,39 @@ final case class Focus(
     finish(Instr(Name.None, Seq(), op))
 
   def finish(instr: Instr): Focus =
-    Focus.complete(preceding :+ Block(name, params, instrs :+ instr))
+    if (complete) this
+    else Focus.complete(preceding :+ Block(name, params, instrs :+ instr))
 
   def blocks: Seq[Block] = {
     assert(complete)
     preceding
   }
 
-  private def wrapBranch(merge: Name, f: Focus => Focus): Seq[Block] = {
-    val end = f(Focus.entry(Seq()))
-    val finalized = end.finish(Op.Jump(Next(merge, Seq(end.value))))
-    finalized.blocks
+  private def wrapBranch(merge: Name, f: Focus => Focus) = {
+    val entry = Focus.entry
+    val end = f(entry)
+    val finalized =
+      if (end.complete) end
+      else end.finish(Op.Jump(Next(merge, Seq(end.value))))
+    (entry.name, end.complete, finalized.blocks)
   }
 
   def branchIf(cond: Val, retty: Type,
                thenf: Focus => Focus, elsef: Focus => Focus): Focus = {
     val merge = fresh()
     val param = Param(fresh(), retty)
-    val thenprec = wrapBranch(merge, elsef)
-    val thenname = thenprec.last.name
-    val elseprec = wrapBranch(merge, thenf)
-    val elsename = elseprec.last.name
+    val (thenname, thencompl, thenprec) = wrapBranch(merge, thenf)
+    val (elsename, elsecompl, elseprec) = wrapBranch(merge, elsef)
     val prec =
       finish(Op.If(cond,
         Next(thenname, Seq()),
         Next(elsename, Seq()))).blocks
-    Focus(prec ++ thenprec ++ elseprec,
-          merge, Seq(param), Seq(),
-          Val.Name(param.name, retty), complete = false)
+    if (thencompl && elsecompl)
+      Focus.complete(prec ++ thenprec ++ elseprec)
+    else
+      Focus(prec ++ thenprec ++ elseprec,
+            merge, Seq(param), Seq(),
+            Val.Name(param.name, retty), complete = false)
   }
 
   def branchSwitch(scrut: Val, retty: Type,
@@ -64,10 +69,11 @@ final case class Focus(
                    casevalues: Seq[Val], casefs: Seq[Focus => Focus]): Focus = {
     val merge = fresh()
     val param = Param(fresh(), retty)
-    val defaultprec = wrapBranch(merge, defaultf)
-    val defaultname = defaultprec.last.name
-    val caseprecs = casefs.map(wrapBranch(merge, _))
-    val casenames = caseprecs.map(_.last.name)
+    val (defaultname, defaultcompl, defaultprec) = wrapBranch(merge, defaultf)
+    val cases = casefs.map(wrapBranch(merge, _))
+    val casenames = cases.map(_._1)
+    val casecompl = cases.map(_._2)
+    val caseprecs = cases.map(_._3)
     val prec =
       finish(Op.Switch(scrut,
         Next(defaultname, Seq()),
