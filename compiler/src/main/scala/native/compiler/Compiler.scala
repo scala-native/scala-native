@@ -19,7 +19,7 @@ final class Compiler(opts: Opts) {
     )
 
   def output(scope: Seq[Defn]): Unit =
-    serializeTextFile(scope, opts.outpath)
+    serializeFile(opts.gen.apply _, scope, opts.outpath)
 
   def apply(): Unit = {
     def loop(scope: Seq[Defn], passes: Seq[Pass]): Seq[Defn] =
