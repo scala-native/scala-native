@@ -62,8 +62,8 @@ object Shows {
       sh"""switch $scrut
       ${r(cases, sep = nl("  "))}
       case _ => $default"""
-    case Op.Invoke(f, args, succ, fail) =>
-      sh"""invoke $f(${r(args, sep = ", ")})
+    case Op.Invoke(ty, f, args, succ, fail) =>
+      sh"""invoke[$ty] $f(${r(args, sep = ", ")})
       to $succ
       unwind $fail"""
 
@@ -214,11 +214,11 @@ object Shows {
       val body = r(members.map(i(_)))
       sh"${attrs}interface $name($parents) =$body"
     case Defn.Class(attrs, name, parent, ifaces, members) =>
-      val parents = r(parent +: ifaces, sep = ", ")
+      val parents = r(parent ++: ifaces, sep = ", ")
       val body = r(members.map(i(_)))
       sh"${attrs}class $name($parents) =$body"
     case Defn.Module(attrs, name, parent, ifaces, members) =>
-      val parents = r(parent +: ifaces, sep = ", ")
+      val parents = r(parent ++: ifaces, sep = ", ")
       val body = r(members.map(i(_)))
       sh"${attrs}module $name($parents) =$body"
   }
@@ -239,22 +239,24 @@ object Shows {
     case Type.Function(args, ret) => sh"(${r(args, sep = ", ")}) => $ret"
     case Type.Struct(name)        => name
 
-    case Type.Unit           => "unit"
-    case Type.Nothing        => "nothing"
-    case Type.NullClass      => "null"
-    case Type.ObjectClass    => "object"
-    case Type.ClassClass     => "class"
-    case Type.StringClass    => "string"
-    case Type.CharacterClass => "char"
-    case Type.BooleanClass   => "boolean"
-    case Type.ByteClass      => "byte"
-    case Type.ShortClass     => "short"
-    case Type.IntegerClass   => "integer"
-    case Type.LongClass      => "long"
-    case Type.FloatClass     => "float"
-    case Type.DoubleClass    => "double"
-    case Type.Class(name)    => sh"class $name"
-    case Type.ArrayClass(ty) => sh"${ty}[]"
+    case Type.Unit                 => "unit"
+    case Type.Nothing              => "nothing"
+    case Type.NullClass            => "null"
+    case Type.ObjectClass          => "object"
+    case Type.ClassClass           => "class"
+    case Type.StringClass          => "string"
+    case Type.CharacterClass       => "char"
+    case Type.BooleanClass         => "boolean"
+    case Type.ByteClass            => "byte"
+    case Type.ShortClass           => "short"
+    case Type.IntegerClass         => "integer"
+    case Type.LongClass            => "long"
+    case Type.FloatClass           => "float"
+    case Type.DoubleClass          => "double"
+    case Type.Class(name)          => sh"class $name"
+    case Type.InterfaceClass(name) => sh"interface $name"
+    case Type.ModuleClass(name)    => sh"module $name"
+    case Type.ArrayClass(ty)       => sh"${ty}[]"
   }
 
   implicit val showGlobal: Show[Global] = Show {

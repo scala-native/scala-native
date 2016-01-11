@@ -33,14 +33,17 @@ import native.nir._
  *        block %elsep()
  *          ret %prev
  *
+ *  Eliminates:
+ *  - Type.ModuleClass
+ *  - Defn.Module
  */
-object ModuleLowering extends Pass {
+trait ModuleLowering extends Pass {
   private val accessortag = Global.Atom("accessor")
   private val datatag = Global.Atom("data")
 
   override def onDefn(defn: Defn) = defn match {
     case Defn.Module(attrs, name, parent, ifaces, members) =>
-      val cls = Defn.Class(attrs, name, parent, ifaces, members)
+      val cls = Defn.Class(attrs, name, parent, ifaces, onScope(members))
       val clsty = Type.Class(name)
       val ptrclsty = Type.Ptr(clsty)
       val ctorty = Type.Function(Seq(), Type.Unit)
@@ -73,5 +76,10 @@ object ModuleLowering extends Pass {
       Seq(cls, data, accessor)
     case _ =>
       super.onDefn(defn)
+  }
+
+  override def onType(ty: Type) = ty match {
+    case Type.ModuleClass(n) => Type.Class(n)
+    case _                   => super.onType(ty)
   }
 }

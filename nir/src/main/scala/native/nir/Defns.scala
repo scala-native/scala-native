@@ -21,16 +21,16 @@ object Defn {
   // scala
   final case class Interface(attrs: Seq[Attr],
                              name: Global,
-                             interfaces: Seq[Type],
+                             interfaces: Seq[Global],
                              members: Seq[Defn]) extends Defn
   final case class Class(attrs: Seq[Attr],
                          name: Global,
-                         parent: Type,
-                         interfaces: Seq[Type],
+                         parent: Option[Global],
+                         interfaces: Seq[Global],
                          members: Seq[Defn]) extends Defn
   final case class Module(attrs: Seq[Attr],
                           name: Global,
-                          parent: Type,
-                          interfaces: Seq[Type],
+                          parent: Option[Global],
+                          interfaces: Seq[Global],
                           members: Seq[Defn]) extends Defn
 }

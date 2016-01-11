@@ -120,9 +120,11 @@ object Tags {
   final val FloatClassType     = 1 + LongClassType
   final val DoubleClassType    = 1 + FloatClassType
   final val ClassType          = 1 + DoubleClassType
-  final val ArrayClassType     = 1 + ClassType
+  final val InterfaceClassType = 1 + ClassType
+  final val ModuleClassType    = 1 + InterfaceClassType
+  final val ArrayClassType     = 1 + ModuleClassType
 
-  final val NoneVal   = 1 + DoubleClassType
+  final val NoneVal   = 1 + ArrayClassType
   final val TrueVal   = 1 + NoneVal
   final val FalseVal  = 1 + TrueVal
   final val ZeroVal   = 1 + FalseVal

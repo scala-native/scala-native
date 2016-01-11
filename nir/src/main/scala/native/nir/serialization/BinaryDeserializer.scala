@@ -89,12 +89,13 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.DeclareDefn  => Defn.Declare(getAttrs, getGlobal, getType)
     case T.DefineDefn   => Defn.Define(getAttrs, getGlobal, getType, getBlocks)
     case T.StructDefn   => Defn.Struct(getAttrs, getGlobal, getDefns)
-    case T.IntefaceDefn => Defn.Interface(getAttrs, getGlobal, getTypes, getDefns)
-    case T.ClassDefn    => Defn.Class(getAttrs, getGlobal, getType, getTypes, getDefns)
-    case T.ModuleDefn   => Defn.Module(getAttrs, getGlobal, getType, getTypes, getDefns)
+    case T.IntefaceDefn => Defn.Interface(getAttrs, getGlobal, getGlobals, getDefns)
+    case T.ClassDefn    => Defn.Class(getAttrs, getGlobal, getGlobalOpt, getGlobals, getDefns)
+    case T.ModuleDefn   => Defn.Module(getAttrs, getGlobal, getGlobalOpt, getGlobals, getDefns)
   }
 
   private def getGlobals(): Seq[Global] = getSeq(getGlobal)
+  private def getGlobalOpt(): Option[Global] = getOpt(getGlobal)
   private def getGlobal(): Global = getInt match {
     case T.AtomGlobal   => Global.Atom(getString)
     case T.NestedGlobal => Global.Nested(getGlobal, getGlobal)
@@ -117,7 +118,7 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.JumpOp         => Op.Jump(getNext)
     case T.IfOp           => Op.If(getVal, getNext, getNext)
     case T.SwitchOp       => Op.Switch(getVal, getNext, getCases)
-    case T.InvokeOp       => Op.Invoke(getVal, getVals, getNext, getNext)
+    case T.InvokeOp       => Op.Invoke(getType, getVal, getVals, getNext, getNext)
 
     case T.CallOp         => Op.Call(getType, getVal, getVals)
     case T.LoadOp         => Op.Load(getType, getVal)
@@ -187,6 +188,8 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.FloatClassType     => Type.FloatClass
     case T.DoubleClassType    => Type.DoubleClass
     case T.ClassType          => Type.Class(ext(getGlobal))
+    case T.InterfaceClassType => Type.InterfaceClass(ext(getGlobal))
+    case T.ModuleClassType    => Type.ModuleClass(ext(getGlobal))
     case T.ArrayClassType     => Type.ArrayClass(getType)
   }
 

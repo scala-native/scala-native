@@ -49,13 +49,13 @@ sealed abstract class Op {
 }
 object Op {
   //control-flow
-  final case object Undefined                                                extends Op
-  final case class Ret    (value: Val)                                       extends Op
-  final case class Throw  (value: Val)                                       extends Op
-  final case class Jump   (next: Next)                                       extends Op
-  final case class If     (value: Val, thenp: Next, elsep: Next)             extends Op
-  final case class Switch (value: Val, default: Next, cases: Seq[Case])      extends Op
-  final case class Invoke (ptr: Val, args: Seq[Val], succ: Next, fail: Next) extends Op
+  final case object Undefined                                                          extends Op
+  final case class Ret    (value: Val)                                                 extends Op
+  final case class Throw  (value: Val)                                                 extends Op
+  final case class Jump   (next: Next)                                                 extends Op
+  final case class If     (value: Val, thenp: Next, elsep: Next)                       extends Op
+  final case class Switch (value: Val, default: Next, cases: Seq[Case])                extends Op
+  final case class Invoke (ty: Type, ptr: Val, args: Seq[Val], succ: Next, fail: Next) extends Op
 
   //compute
   final case class Call   (ty: Type, ptr: Val, args: Seq[Val])          extends Op

@@ -97,15 +97,16 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Defn.Struct(attrs, name, members) =>
       putInt(T.StructDefn); putAttrs(attrs); putGlobal(name); putDefns(members)
     case Defn.Interface(attrs, name, ifaces, members) =>
-      putInt(T.IntefaceDefn); putAttrs(attrs); putGlobal(name); putTypes(ifaces); putDefns(members)
+      putInt(T.IntefaceDefn); putAttrs(attrs); putGlobal(name); putGlobals(ifaces); putDefns(members)
     case Defn.Class(attrs, name, parent, ifaces, members) =>
-      putInt(T.ClassDefn); putAttrs(attrs); putGlobal(name); putType(parent); putTypes(ifaces); putDefns(members)
+      putInt(T.ClassDefn); putAttrs(attrs); putGlobal(name); putGlobalOpt(parent); putGlobals(ifaces); putDefns(members)
     case Defn.Module(attrs, name, parent, ifaces, members) =>
-      putInt(T.ModuleDefn); putAttrs(attrs); putGlobal(name); putType(parent); putTypes(ifaces); putDefns(members)
+      putInt(T.ModuleDefn); putAttrs(attrs); putGlobal(name); putGlobalOpt(parent); putGlobals(ifaces); putDefns(members)
   }
 
-  private def putGlobals(names: Seq[Global]): Unit = putSeq(putGlobal)(names)
-  private def putGlobal(name: Global): Unit = name match {
+  private def putGlobals(globals: Seq[Global]): Unit = putSeq(putGlobal)(globals)
+  private def putGlobalOpt(globalopt: Option[Global]): Unit = putOpt(putGlobal)(globalopt)
+  private def putGlobal(global: Global): Unit = global match {
     case Global.Atom(id)              => putInt(T.AtomGlobal); putString(id)
     case Global.Nested(owner, member) => putInt(T.NestedGlobal); putGlobal(owner); putGlobal(member)
     case Global.Tagged(n, tag)        => putInt(T.TaggedGlobal); putGlobal(n); putGlobal(tag)
@@ -140,8 +141,8 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.IfOp); putVal(v); putNext(thenp); putNext(elsep)
     case Op.Switch(v, default, cases) =>
       putInt(T.SwitchOp); putVal(v); putNext(default); putCases(cases)
-    case Op.Invoke(f, args, succ, fail) =>
-      putInt(T.InvokeOp); putVal(f); putVals(args); putNext(succ); putNext(fail)
+    case Op.Invoke(ty, f, args, succ, fail) =>
+      putInt(T.InvokeOp); putType(ty); putVal(f); putVals(args); putNext(succ); putNext(fail)
 
     case Op.Call(ty, v, args) =>
       putInt(T.CallOp); putType(ty); putVal(v); putVals(args)
@@ -244,6 +245,8 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Type.FloatClass          => putInt(T.FloatClassType)
     case Type.DoubleClass         => putInt(T.DoubleClassType)
     case Type.Class(n)            => putInt(T.ClassType); putGlobal(n)
+    case Type.InterfaceClass(n)   => putInt(T.InterfaceClassType); putGlobal(n)
+    case Type.ModuleClass(n)      => putInt(T.ModuleClassType); putGlobal(n)
     case Type.ArrayClass(ty)      => putInt(T.ArrayClassType); putType(ty)
   }
 

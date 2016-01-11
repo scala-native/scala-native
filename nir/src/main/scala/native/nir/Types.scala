@@ -37,19 +37,21 @@ object Type {
   final case object Unit    extends Type
   final case object Nothing extends Type
 
-  sealed abstract class ClassKind       extends Type
-  final case object NullClass           extends ClassKind
-  final case object ObjectClass         extends ClassKind
-  final case object ClassClass          extends ClassKind
-  final case object StringClass         extends ClassKind
-  final case object CharacterClass      extends ClassKind
-  final case object BooleanClass        extends ClassKind
-  final case object ByteClass           extends ClassKind
-  final case object ShortClass          extends ClassKind
-  final case object IntegerClass        extends ClassKind
-  final case object LongClass           extends ClassKind
-  final case object FloatClass          extends ClassKind
-  final case object DoubleClass         extends ClassKind
-  final case class Class(name: Global)  extends ClassKind
-  final case class ArrayClass(ty: Type) extends ClassKind
+  sealed abstract class ClassKind               extends Type
+  final case object NullClass                   extends ClassKind
+  final case object ObjectClass                 extends ClassKind
+  final case object ClassClass                  extends ClassKind
+  final case object StringClass                 extends ClassKind
+  final case object CharacterClass              extends ClassKind
+  final case object BooleanClass                extends ClassKind
+  final case object ByteClass                   extends ClassKind
+  final case object ShortClass                  extends ClassKind
+  final case object IntegerClass                extends ClassKind
+  final case object LongClass                   extends ClassKind
+  final case object FloatClass                  extends ClassKind
+  final case object DoubleClass                 extends ClassKind
+  final case class Class(name: Global)          extends ClassKind
+  final case class InterfaceClass(name: Global) extends ClassKind
+  final case class ModuleClass(name: Global)    extends ClassKind
+  final case class ArrayClass(ty: Type)         extends ClassKind
 }

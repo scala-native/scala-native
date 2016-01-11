@@ -12,22 +12,18 @@ final class Compiler(opts: Opts) {
       Global.Tagged(Global.Atom(opts.entry), Global.Atom("m"))
     )
 
-  def passes(): Seq[Pass] =
-    Seq(
-      BoxLowering,
-      ModuleLowering
-    )
+  def passes(): Seq[Pass] = Seq(Lowering)
 
-  def output(scope: Seq[Defn]): Unit =
-    serializeFile(opts.gen.apply _, scope, opts.outpath)
+  def output(module: Seq[Defn]): Unit =
+    serializeFile(opts.gen.apply _, module, opts.outpath)
 
   def apply(): Unit = {
-    def loop(scope: Seq[Defn], passes: Seq[Pass]): Seq[Defn] =
+    def loop(module: Seq[Defn], passes: Seq[Pass]): Seq[Defn] =
       passes match {
         case Seq() =>
-          scope
+          module
         case pass +: rest =>
-          loop(pass(scope), rest)
+          loop(pass.onModule(module), rest)
       }
     output(loop(load(), passes()))
   }

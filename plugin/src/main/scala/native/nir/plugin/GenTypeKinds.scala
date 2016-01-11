@@ -4,7 +4,7 @@ package plugin
 
 import scala.tools.nsc._
 
-trait GenTypeKinds extends SubComponent {
+trait GenTypeKinds extends SubComponent with NativeBuiltins {
   import global._, definitions._
 
   def genClassName(sym: Symbol): nir.Global
@@ -120,7 +120,21 @@ trait GenTypeKinds extends SubComponent {
         case BoxedFloatClass     => nir.Type.FloatClass
         case BoxedDoubleClass    => nir.Type.DoubleClass
       }
-    case ClassKind(sym) => nir.Type.Class(genClassName(sym))
-    case ArrayKind(of)  => nir.Type.ArrayClass(toIRType(of))
+    case ClassKind(sym) =>
+      val name = genClassName(sym)
+      if (isModule(sym))
+        nir.Type.ModuleClass(name)
+      else if (sym.isInterface)
+        nir.Type.InterfaceClass(name)
+      else
+        nir.Type.Class(name)
+    case ArrayKind(of) =>
+      nir.Type.ArrayClass(toIRType(of))
   }
+
+  def isModule(sym: Symbol): Boolean =
+    sym.isModuleClass || sym.isImplClass
+
+  def isForeignExternModule(sym: Symbol): Boolean =
+    isModule(sym) && sym.annotations.find(_.tpe =:= ExternClass.tpe).isDefined
 }

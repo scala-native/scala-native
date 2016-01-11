@@ -106,24 +106,22 @@ abstract class GenNIR extends PluginComponent
       }
     }
 
-    def isForeignExternModule(sym: Symbol): Boolean =
-      sym.annotations.find(_.tpe =:= ExternClass.tpe).isDefined
-
     def genClass(cd: ClassDef): Seq[Defn] = scoped (
       curClassSym := cd.symbol
     ) {
       val sym     = cd.symbol
       val attrs   = genClassAttrs(sym)
       val name    = genClassName(sym)
-      val parent  = if (sym.superClass == NoSymbol) Type.None
-                    else genType(sym.superClass.tpe)
+      val parent  = if (sym.superClass == NoSymbol) None
+                    else if (sym.superClass == ObjectClass) None
+                    else Some(genClassName(sym.superClass))
       val ifaces  = genClassInterfaces(sym)
       val fields  = genClassFields(sym).toSeq
       val defdefs = cd.impl.body.collect { case dd: DefDef => dd }
       val methods = defdefs.map(genDef)
       val members = fields ++ methods
 
-      if (sym.isModuleClass || sym.isImplClass)
+      if (isModule(sym))
         Seq(Defn.Module(attrs, name, parent, ifaces, members))
       else if (sym.isInterface)
         Seq(Defn.Interface(attrs, name, ifaces, members))
@@ -139,13 +137,13 @@ abstract class GenNIR extends PluginComponent
         psym = parent.typeSymbol
         if psym.isInterface
       } yield {
-        genType(psym.tpe)
+        genClassName(psym)
       }
 
     def genClassFields(sym: Symbol) =
       for {
         f <- sym.info.decls
-        if !f.isMethod && f.isTerm && !f.isModule
+        if !f.isMethod && f.isTerm && !isModule(f)
       } yield {
         val name = genFieldName(f)
         val ty = genType(f.tpe)
@@ -296,7 +294,7 @@ abstract class GenNIR extends PluginComponent
 
       case Select(qualp, selp) =>
         val sym = tree.symbol
-        if (sym.isModule)
+        if (isModule(sym))
           focus.withValue(Val.Global(genClassName(sym), genType(sym.tpe)))
         else if (sym.isStaticMember)
           genStaticMember(sym, focus)
@@ -313,7 +311,7 @@ abstract class GenNIR extends PluginComponent
         val sym = id.symbol
         if (!curLocalInfo.mutableVars.contains(sym))
           focus.withValue {
-            if (sym.isModule) Val.Global(genClassName(sym), genType(sym.tpe))
+            if (isModule(sym)) Val.Global(genClassName(sym), genType(sym.tpe))
             else curEnv.resolve(sym)
           }
         else
