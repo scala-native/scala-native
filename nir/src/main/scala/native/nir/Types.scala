@@ -11,7 +11,7 @@ sealed abstract class Type {
     case Type.LongClass      => Type.I64
     case Type.FloatClass     => Type.F32
     case Type.DoubleClass    => Type.F64
-    case _                   => native.util.unreachable
+    case _                   => util.unreachable
   }
 }
 object Type {

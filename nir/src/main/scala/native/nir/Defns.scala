@@ -16,7 +16,7 @@ object Defn {
                           blocks: Seq[Block]) extends Defn
   final case class Struct(attrs: Seq[Attr],
                           name: Global,
-                          members: Seq[Defn]) extends Defn
+                          fieldtys: Seq[Type]) extends Defn
 
   // scala
   final case class Interface(attrs: Seq[Attr],

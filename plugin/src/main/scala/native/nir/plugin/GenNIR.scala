@@ -232,7 +232,7 @@ abstract class GenNIR extends PluginComponent
             }
           */
           case _ =>
-            implicit val fresh = new Fresh
+            implicit val fresh = new Fresh("src")
             val params = genParams(paramSyms)
             scoped (
               curThis := Val.Local(params.head.name, params.head.ty)

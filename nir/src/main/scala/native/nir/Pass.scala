@@ -1,7 +1,11 @@
 package native
 package nir
 
+import scala.collection.mutable
+
 trait Pass {
+  val fresh = new Fresh("tx")
+
   def onCompilationUnit(defns: Seq[Defn]): Seq[Defn] =
     onScope(defns)
 
@@ -16,8 +20,8 @@ trait Pass {
         defn.copy(ty = onType(ty))
       case defn @ Defn.Define(_, _, ty, blocks) =>
         defn.copy(ty = onType(ty), blocks = onBlocks(blocks))
-      case defn @ Defn.Struct(_, _, members) =>
-        defn.copy(members = onScope(members))
+      case defn @ Defn.Struct(_, _, fieldtys) =>
+        defn.copy(fieldtys = fieldtys.map(onType))
       case defn @ Defn.Interface(_, _, _, members) =>
         defn.copy(members = onScope(members))
       case defn @ Defn.Class(_, _, _, _, members) =>
@@ -30,7 +34,7 @@ trait Pass {
     blocks.flatMap(onBlock)
 
   def onBlock(block: Block): Seq[Block] =
-    Seq(Block(block.name, block.params.flatMap(onParam), block.instrs.flatMap(onInstr)))
+    Seq(Block(onLocal(block.name), block.params.flatMap(onParam), block.instrs.flatMap(onInstr)))
 
   def onParam(param: Param): Seq[Param] =
     Seq(Param(param.name, onType(param.ty)))
@@ -42,10 +46,10 @@ trait Pass {
     case Op.Undefined                           => Op.Undefined
     case Op.Ret(v)                              => Op.Ret(onVal(v))
     case Op.Throw(v)                            => Op.Throw(onVal(v))
-    case Op.Jump(next)                          => Op.Jump(next)
-    case Op.If(v, thenp, elsep)                 => Op.If(onVal(v), thenp, elsep)
-    case Op.Switch(v, default, cases)           => Op.Switch(onVal(v), default, cases)
-    case Op.Invoke(ty, ptrv, argvs, succ, fail) => Op.Invoke(onType(ty), onVal(ptrv), argvs.map(onVal), succ, fail)
+    case Op.Jump(next)                          => Op.Jump(onNext(next))
+    case Op.If(v, thenp, elsep)                 => Op.If(onVal(v), onNext(thenp), onNext(elsep))
+    case Op.Switch(v, default, cases)           => Op.Switch(onVal(v), onNext(default), cases.map(onCast))
+    case Op.Invoke(ty, ptrv, argvs, succ, fail) => Op.Invoke(onType(ty), onVal(ptrv), argvs.map(onVal), onNext(succ), onNext(fail))
 
     case Op.Call(ty, ptrv, argvs)        => Op.Call(onType(ty), onVal(ptrv), argvs.map(onVal))
     case Op.Load(ty, ptrv)               => Op.Load(onType(ty), onVal(ptrv))
@@ -81,13 +85,13 @@ trait Pass {
   }
 
   def onVal(value: Val): Val = value match {
-    case Val.Zero(ty)           => Val.Zero(onType(ty))
-    case Val.Struct(ty, values) => Val.Struct(onType(ty), values.map(onVal))
-    case Val.Array(ty, values)  => Val.Array(onType(ty), values.map(onVal))
-    case Val.Local(n, ty)       => Val.Local(n, onType(ty))
-    case Val.Global(n, ty)      => Val.Global(n, onType(ty))
-    case Val.Class(ty)          => Val.Class(onType(ty))
-    case _                      => value
+    case Val.Zero(ty)          => Val.Zero(onType(ty))
+    case Val.Struct(n, values) => Val.Struct(n, values.map(onVal))
+    case Val.Array(ty, values) => Val.Array(onType(ty), values.map(onVal))
+    case Val.Local(n, ty)      => Val.Local(onLocal(n), onType(ty))
+    case Val.Global(n, ty)     => Val.Global(n, onType(ty))
+    case Val.Class(ty)         => Val.Class(onType(ty))
+    case _                     => value
   }
 
   def onType(ty: Type): Type = ty match {
@@ -97,4 +101,12 @@ trait Pass {
     case Type.ArrayClass(ty)    => Type.ArrayClass(onType(ty))
     case _                      => ty
   }
+
+  def onCast(c: Case): Case =
+    Case(onVal(c.value), onNext(c.next))
+
+  def onNext(next: Next): Next =
+    Next(onLocal(next.name), next.args.map(onVal))
+
+  def onLocal(local: Local): Local = local
 }

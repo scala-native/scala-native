@@ -1,10 +1,10 @@
 package native
 package nir
 
-final class Fresh {
+final class Fresh(scope: String) {
   private var i: Int = 0
   def apply() = {
-    val res = Local(i)
+    val res = Local(scope, i)
     i += 1
     res
   }

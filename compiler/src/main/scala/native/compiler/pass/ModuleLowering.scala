@@ -43,7 +43,7 @@ trait ModuleLowering extends Pass {
 
   override def onDefn(defn: Defn) = defn match {
     case Defn.Module(attrs, name, parent, ifaces, members) =>
-      val cls = Defn.Class(attrs, name, parent, ifaces, onScope(members))
+      val cls = Defn.Class(attrs, name, parent, ifaces, members)
       val clsty = Type.Class(name)
       val ptrclsty = Type.Ptr(clsty)
       val ctorty = Type.Function(Seq(), Type.Unit)
@@ -56,7 +56,7 @@ trait ModuleLowering extends Pass {
           Global.Tagged(name, accessortag),
           Type.Function(Seq(), Type.Class(name)),
           {
-            val entry = Focus.entry(new Fresh)
+            val entry = Focus.entry(fresh)
             val prev = entry withOp Op.Load(clsty, dataval)
             val cond = prev withOp Op.Comp(Comp.Eq, Type.ObjectClass, prev.value, Val.Null)
 
@@ -73,13 +73,13 @@ trait ModuleLowering extends Pass {
             ).finish(Op.Undefined).blocks
           }
         )
-      Seq(cls, data, accessor)
+      Seq(cls, data, accessor).flatMap(onDefn)
     case _ =>
       super.onDefn(defn)
   }
 
-  override def onType(ty: Type) = ty match {
+  override def onType(ty: Type) = super.onType(ty match {
     case Type.ModuleClass(n) => Type.Class(n)
-    case _                   => super.onType(ty)
-  }
+    case _                   => ty
+  })
 }

@@ -9,4 +9,11 @@ import native.nir._
  *  - Type.StringClass
  *  - Op.{StringConcat, FromString, ToString}
  */
-trait StringLowering extends Pass
+trait StringLowering extends Pass {
+  private val i8_* = Type.Ptr(Type.I8)
+
+  override def onType(ty: Type): Type = super.onType(ty match {
+    case Type.StringClass => i8_*
+    case _                => ty
+  })
+}

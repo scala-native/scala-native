@@ -88,7 +88,7 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.VarDefn      => Defn.Var(getAttrs, getGlobal, getType, getVal)
     case T.DeclareDefn  => Defn.Declare(getAttrs, getGlobal, getType)
     case T.DefineDefn   => Defn.Define(getAttrs, getGlobal, getType, getBlocks)
-    case T.StructDefn   => Defn.Struct(getAttrs, getGlobal, getDefns)
+    case T.StructDefn   => Defn.Struct(getAttrs, getGlobal, getTypes)
     case T.IntefaceDefn => Defn.Interface(getAttrs, getGlobal, getGlobals, getDefns)
     case T.ClassDefn    => Defn.Class(getAttrs, getGlobal, getGlobalOpt, getGlobals, getDefns)
     case T.ModuleDefn   => Defn.Module(getAttrs, getGlobal, getGlobalOpt, getGlobals, getDefns)
@@ -106,7 +106,7 @@ final class BinaryDeserializer(bb: ByteBuffer) {
   private def getInstr(): Instr = Instr(getLocalOpt, getAttrs, getOp)
 
   private def getLocalOpt(): Option[Local] = getOpt(getLocal)
-  private def getLocal(): Local = Local(getInt)
+  private def getLocal(): Local = Local(getString, getInt)
 
   private def getNexts(): Seq[Next] = getSeq(getNext)
   private def getNext(): Next = Next(getLocal, getVals)
@@ -205,7 +205,7 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.I64Val    => Val.I64(getLong)
     case T.F32Val    => Val.F32(getFloat)
     case T.F64Val    => Val.F64(getDouble)
-    case T.StructVal => Val.Struct(getType, getVals)
+    case T.StructVal => Val.Struct(getGlobal, getVals)
     case T.ArrayVal  => Val.Array(getType, getVals)
     case T.LocalVal  => Val.Local(getLocal, getType)
     case T.GlobalVal => Val.Global(getGlobal, getType)

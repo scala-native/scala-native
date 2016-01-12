@@ -55,17 +55,11 @@ object Shows {
     case Op.Jump(next) =>
       sh"jump $next"
     case Op.If(cond, thenp, elsep) =>
-      sh"""if $cond
-      then $thenp
-      else $elsep"""
+      sh"if $cond then $thenp else $elsep"
     case Op.Switch(scrut, default, cases)  =>
-      sh"""switch $scrut
-      ${r(cases, sep = nl("  "))}
-      case _ => $default"""
+      sh"switch $scrut { ${r(cases, sep = nl("; "))}; case _ => $default }"
     case Op.Invoke(ty, f, args, succ, fail) =>
-      sh"""invoke[$ty] $f(${r(args, sep = ", ")})
-      to $succ
-      unwind $fail"""
+      sh"invoke[$ty] $f(${r(args, sep = ", ")}) to $succ unwind $fail"
 
     case Op.Call(ty, f, args) =>
       sh"call[$ty] $f(${r(args, sep = ", ")})"
@@ -74,7 +68,7 @@ object Shows {
     case Op.Store(ty, ptr, value) =>
       sh"store[$ty] $ptr, $value"
     case Op.Elem(ty, ptr, indexes) =>
-      sh"element[$ty] $ptr, ${r(indexes, sep = ", ")}"
+      sh"elem[$ty] $ptr, ${r(indexes, sep = ", ")}"
     case Op.Extract(ty, aggr, index) =>
       sh"extract[$ty] $aggr, $index"
     case Op.Insert(ty, aggr, value, index) =>
@@ -176,22 +170,22 @@ object Shows {
     case Val.None               => ""
     case Val.True               => "true"
     case Val.False              => "false"
-    case Val.Zero(ty)           => sh"zero[$ty]"
+    case Val.Zero(ty)           => sh"zero $ty"
     case Val.I8(value)          => sh"${value}i8"
     case Val.I16(value)         => sh"${value}i16"
     case Val.I32(value)         => sh"${value}i32"
     case Val.I64(value)         => sh"${value}i64"
     case Val.F32(value)         => sh"${value}f32"
     case Val.F64(value)         => sh"${value}f64"
-    case Val.Struct(ty, values) => sh"struct[$ty] ${r(values, ", ")}"
-    case Val.Array(ty, values)  => sh"array[$ty] ${r(values, ", ")}"
+    case Val.Struct(ty, values) => sh"struct $ty {${r(values, ", ")}}"
+    case Val.Array(ty, values)  => sh"array $ty {${r(values, ", ")}}"
     case Val.Local(name, ty)    => sh"$name"
     case Val.Global(name, ty)   => sh"$name"
 
     case Val.Unit      => "unit"
     case Val.Null      => "null"
     case Val.String(v) => "\"" + v.replace("\"", "\\\"") + "\""
-    case Val.Class(ty) => sh"class[$ty]"
+    case Val.Class(ty) => sh"class $ty"
   }
 
   implicit val showDefns: Show[Seq[Defn]] = Show { defns =>
@@ -237,7 +231,7 @@ object Shows {
     case Type.Array(ty, n)        => sh"[$ty x $n]"
     case Type.Ptr(ty)             => sh"ptr ${ty}"
     case Type.Function(args, ret) => sh"(${r(args, sep = ", ")}) => $ret"
-    case Type.Struct(name)        => name
+    case Type.Struct(name)        => sh"struct $name"
 
     case Type.Unit                 => "unit"
     case Type.Nothing              => "nothing"
@@ -266,6 +260,6 @@ object Shows {
   }
 
   implicit val showLocal: Show[Local] = Show {
-    case Local(id) => sh"%$id"
+    case Local(scope, id) => sh"%$scope.$id"
   }
 }
