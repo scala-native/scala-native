@@ -1,6 +1,6 @@
 package native
 package compiler
-package passes
+package pass
 
 import native.nir._
 
@@ -19,3 +19,4 @@ object Lowering extends Pass
                    with TagLowering
                    with ThrowLowering
                    with UnitLowering
+

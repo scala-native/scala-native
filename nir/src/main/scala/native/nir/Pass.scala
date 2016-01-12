@@ -2,7 +2,7 @@ package native
 package nir
 
 trait Pass {
-  def onModule(defns: Seq[Defn]): Seq[Defn] =
+  def onCompilationUnit(defns: Seq[Defn]): Seq[Defn] =
     onScope(defns)
 
   def onScope(defns: Seq[Defn]): Seq[Defn] =

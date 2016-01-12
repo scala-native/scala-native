@@ -1,10 +1,10 @@
 package native
 package compiler
-package passes
+package pass
 
 import native.nir._
 
 /** Eliminates:
- *  - Op.Throw
+ *  - Type.NothingClass
  */
-trait ThrowLowering extends Pass
+trait NothingLowering extends Pass

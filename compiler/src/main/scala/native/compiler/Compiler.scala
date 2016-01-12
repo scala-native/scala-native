@@ -4,7 +4,6 @@ package compiler
 import scala.collection.mutable
 import native.nir._
 import native.nir.serialization._
-import native.compiler.passes._
 
 final class Compiler(opts: Opts) {
   def load(): Seq[Defn] =
@@ -12,7 +11,7 @@ final class Compiler(opts: Opts) {
       Global.Tagged(Global.Atom(opts.entry), Global.Atom("m"))
     )
 
-  def passes(): Seq[Pass] = Seq(Lowering)
+  def passes(): Seq[Pass] = Seq(pass.Lowering)
 
   def output(module: Seq[Defn]): Unit =
     serializeFile(opts.gen.apply _, module, opts.outpath)
@@ -23,7 +22,7 @@ final class Compiler(opts: Opts) {
         case Seq() =>
           module
         case pass +: rest =>
-          loop(pass.onModule(module), rest)
+          loop(pass.onCompilationUnit(module), rest)
       }
     output(loop(load(), passes()))
   }

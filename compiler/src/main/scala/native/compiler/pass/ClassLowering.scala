@@ -1,6 +1,6 @@
 package native
 package compiler
-package passes
+package pass
 
 import native.nir._
 
