@@ -303,7 +303,7 @@ abstract class GenNIR extends PluginComponent
         else {
           val ty = genType(tree.symbol.tpe)
           val qual = genExpr(qualp, focus)
-          val elem = qual.withOp(Op.FieldElem(ty, genFieldName(tree.symbol), qual.value))
+          val elem = qual.withOp(Op.ObjFieldElem(ty, genFieldName(tree.symbol), qual.value))
           elem withOp Op.Load(ty, elem.value)
         }
 
@@ -335,7 +335,7 @@ abstract class GenNIR extends PluginComponent
             val ty   = genType(sel.tpe)
             val qual = genExpr(qualp, focus)
             val rhs  = genExpr(rhsp, qual)
-            val elem = rhs.withOp(Op.FieldElem(ty, genFieldName(sel.symbol), qual.value))
+            val elem = rhs.withOp(Op.ObjFieldElem(ty, genFieldName(sel.symbol), qual.value))
             elem.withOp(Op.Store(ty, elem.value, rhs.value))
 
           case id: Ident =>
@@ -413,7 +413,7 @@ abstract class GenNIR extends PluginComponent
     def genStaticMember(sym: Symbol, focus: Focus): Focus = {
       val ty = genType(sym.tpe)
       val module = Val.Global(genClassName(sym.owner), genType(sym.owner.tpe))
-      val elem = focus.withOp(Op.FieldElem(ty, genFieldName(sym), module))
+      val elem = focus.withOp(Op.ObjFieldElem(ty, genFieldName(sym), module))
       elem.withOp(Op.Load(ty, elem.value))
     }
 
@@ -528,7 +528,7 @@ abstract class GenNIR extends PluginComponent
       val ArrayValue(tpt, elems) = av
       val ty         = genType(tpt.tpe)
       val len        = elems.length
-      val allocfocus = focus withOp Op.AllocArray(ty, Val.I32(len))
+      val allocfocus = focus withOp Op.ArrAlloc(ty, Val.I32(len))
       val rfocus     =
         if (elems.isEmpty)
           allocfocus
@@ -538,7 +538,7 @@ abstract class GenNIR extends PluginComponent
           val lastfocus = vfocus.lastOption.getOrElse(focus)
           val sfocus    = sequenced(values.zipWithIndex, lastfocus) { (vi, foc) =>
             val (value, i) = vi
-            val elem = foc withOp Op.ArrayElem(ty, allocfocus.value, Val.I32(i))
+            val elem = foc withOp Op.ArrElem(ty, allocfocus.value, Val.I32(i))
             elem withOp Op.Store(ty, elem.value, value)
           }
           sfocus.last
@@ -663,13 +663,13 @@ abstract class GenNIR extends PluginComponent
     def genPrimitiveBox(exprp: Tree, tpe: Type, focus: Focus) = {
       val expr = genExpr(exprp, focus)
 
-      expr.withOp(Op.Box(prim2ty(tpe.widen), expr.value))
+      expr.withOp(Op.PrimBox(prim2ty(tpe.widen), expr.value))
     }
 
     def genPrimitiveUnbox(exprp: Tree, tpe: Type, focus: Focus) = {
       val expr = genExpr(exprp, focus)
 
-      expr.withOp(Op.Unbox(prim2ty(tpe.widen), expr.value))
+      expr.withOp(Op.PrimUnbox(prim2ty(tpe.widen), expr.value))
     }
 
     def genPrimitiveOp(app: Apply, focus: Focus): Focus = {
@@ -789,7 +789,7 @@ abstract class GenNIR extends PluginComponent
           if (ref)
             right withOp Op.Comp(comp, nir.Type.ObjectClass, left.value, right.value)
           else {
-            val equals = right withOp Op.Equals(left.value, right.value)
+            val equals = right withOp Op.ObjEquals(left.value, right.value)
             if (negated)
               equals withOp Op.Bin(Bin.Xor, Type.Bool, Val.True, equals.value)
             else
@@ -834,7 +834,7 @@ abstract class GenNIR extends PluginComponent
     def genHashCode(tree: Tree, receiverp: Tree, focus: Focus) = {
       val recv = genExpr(receiverp, focus)
 
-      recv.withOp(Op.HashCode(recv.value))
+      recv.withOp(Op.ObjHashCode(recv.value))
     }
 
     def genArrayOp(app: Apply, code: Int, focus: Focus): Focus = {
@@ -847,13 +847,13 @@ abstract class GenNIR extends PluginComponent
       def elemty     = genType(app.tpe)
 
       if (scalaPrimitives.isArrayGet(code)) {
-        val elem = lastfocus withOp Op.ArrayElem(elemty, arrayvalue, argvalues(0))
+        val elem = lastfocus withOp Op.ArrElem(elemty, arrayvalue, argvalues(0))
         elem withOp Op.Load(elemty, elem.value)
       } else if (scalaPrimitives.isArraySet(code)) {
-        val elem = lastfocus withOp Op.ArrayElem(elemty, arrayvalue, argvalues(0))
+        val elem = lastfocus withOp Op.ArrElem(elemty, arrayvalue, argvalues(0))
         elem withOp Op.Store(elemty, elem.value, argvalues(1))
       } else
-        lastfocus withOp Op.ArrayLength(arrayvalue)
+        lastfocus withOp Op.ArrLength(arrayvalue)
     }
 
     def genSynchronized(app: Apply, focus: Focus): Focus = {
@@ -943,8 +943,8 @@ abstract class GenNIR extends PluginComponent
       val ty = genType(targs.head.tpe)
       val rec = genExpr(receiverp, focus)
       rec.withOp(fun.symbol match {
-        case Object_isInstanceOf => Op.IsInstanceOf(ty, rec.value)
-        case Object_asInstanceOf => Op.AsInstanceOf(ty, rec.value)
+        case Object_isInstanceOf => Op.ObjIs(ty, rec.value)
+        case Object_asInstanceOf => Op.ObjAs(ty, rec.value)
       })
     }
 
@@ -970,7 +970,7 @@ abstract class GenNIR extends PluginComponent
                       args: List[Tree], focus: Focus) =
       builtin match {
         case JObjectKind =>
-          focus withOp Op.Alloc(Type.ObjectClass)
+          focus withOp Op.ObjAlloc(Type.ObjectClass)
         case JStringKind =>
           ???
         case JCharKind
@@ -987,11 +987,11 @@ abstract class GenNIR extends PluginComponent
     def genNewArray(elemty: nir.Type, lengthp: Tree, focus: Focus) = {
       val length = genExpr(lengthp, focus)
 
-      length.withOp(Op.AllocArray(elemty, length.value))
+      length.withOp(Op.ArrAlloc(elemty, length.value))
     }
 
     def genNew(sym: Symbol, ctorsym: Symbol, args: List[Tree], focus: Focus) = {
-      val alloc = focus.withOp(Op.AllocClass(genType(sym.tpe)))
+      val alloc = focus.withOp(Op.ObjAlloc(genType(sym.tpe)))
       val ctor = genMethodCall(ctorsym, alloc.value, args, alloc)
 
       ctor.withValue(alloc.value)
@@ -1027,7 +1027,7 @@ abstract class GenNIR extends PluginComponent
     def genNormalMethodCall(sym: Symbol, self: Val, args: Seq[Val], focus: Focus): Focus = {
       val name = genDefName(sym)
       val sig  = genDefSig(sym)
-      val elem = focus withOp Op.MethodElem(sig, name, self)
+      val elem = focus withOp Op.ObjMethodElem(sig, name, self)
       val call = elem withOp Op.Call(sig, elem.value, self +: args)
 
       call
@@ -1036,7 +1036,7 @@ abstract class GenNIR extends PluginComponent
     def genBuiltinCall(sym: Symbol, self: Val, argsp: Seq[Tree], focus: Focus): Focus =
       sym match {
         case UnboxValue(fromty, toty) =>
-          val unboxed = focus withOp Op.Unbox(fromty, self)
+          val unboxed = focus withOp Op.PrimUnbox(fromty, self)
           genCoercion(unboxed.value, fromty.unboxed, toty, unboxed)
         case BoxValue(boxty) =>
           genValueOf(boxty, argsp, focus)
@@ -1063,25 +1063,25 @@ abstract class GenNIR extends PluginComponent
           val unboxed = genExpr(argp, focus)
           unboxed withOp Op.Conv(Conv.Zext, toty, unboxed.value)
         case ToString(nir.Type.ObjectClass) =>
-          focus withOp Op.ToString(self, Val.None)
+          focus withOp Op.ObjToString(self)
         case ToString(boxty) =>
-          val unboxed = focus withOp Op.Unbox(boxty, self)
-          unboxed withOp Op.ToString(unboxed.value, Val.None)
+          val unboxed = focus withOp Op.PrimUnbox(boxty, self)
+          unboxed withOp Op.PrimToString(boxty, unboxed.value, Val.None)
         case HashCode(nir.Type.ObjectClass) =>
-          focus withOp Op.HashCode(self)
+          focus withOp Op.ObjHashCode(self)
         case HashCode(boxty) =>
-          val unboxed = focus withOp Op.Unbox(boxty, self)
-          unboxed withOp Op.HashCode(unboxed.value)
+          val unboxed = focus withOp Op.PrimUnbox(boxty, self)
+          unboxed withOp Op.PrimHashCode(boxty, unboxed.value)
         case ScalaRunTimeHashCode() =>
           val List(argp) = argsp
           val unboxed = genExpr(argp, focus)
-          unboxed withOp Op.HashCode(unboxed.value)
+          unboxed withOp Op.ObjHashCode(unboxed.value)
         case Equals() =>
           val List(argp) = argsp
           val arg = genExpr(argp, focus)
-          arg withOp Op.Equals(self, arg.value)
+          arg withOp Op.ObjEquals(self, arg.value)
         case GetClass() =>
-          focus withOp Op.GetClass(self)
+          focus withOp Op.ObjGetClass(self)
         case ObjectCtor() =>
           focus
       }
@@ -1092,12 +1092,14 @@ abstract class GenNIR extends PluginComponent
 
       argsp match {
         case List(valuep) =>
+          val ty    = genType(valuep.tpe)
           val value = genExpr(valuep, focus)
-          value.withOp(attrs, Op.ToString(value.value, Val.None))
+          value.withOp(attrs, Op.PrimToString(ty, value.value, Val.None))
         case List(valuep, radixp) =>
+          val ty    = genType(valuep.tpe)
           val value = genExpr(valuep, focus)
           val radix = genExpr(radixp, value)
-          radix.withOp(attrs, Op.ToString(value.value, radix.value))
+          radix.withOp(attrs, Op.PrimToString(ty, value.value, radix.value))
       }
     }
 
@@ -1108,11 +1110,11 @@ abstract class GenNIR extends PluginComponent
       argsp match {
         case List(strp) =>
           val str = genExpr(strp, focus)
-          str.withOp(attrs, Op.FromString(ty, str.value, Val.None))
+          str.withOp(attrs, Op.PrimParse(ty, str.value, Val.None))
         case List(strp, radixp) =>
           val str = genExpr(strp, focus)
           val radix = genExpr(radixp, str)
-          radix.withOp(attrs, Op.FromString(ty, str.value, radix.value))
+          radix.withOp(attrs, Op.PrimParse(ty, str.value, radix.value))
       }
     }
 
@@ -1126,7 +1128,7 @@ abstract class GenNIR extends PluginComponent
           case List(valuep) =>
             genExpr(valuep, focus)
         }
-      converted withOp Op.Box(boxty, converted.value)
+      converted withOp Op.PrimBox(boxty, converted.value)
     }
   }
 }

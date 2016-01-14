@@ -156,8 +156,6 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.ExtractOp); putType(ty); putVal(v); putVal(index)
     case Op.Insert(ty, v, value, index) =>
       putInt(T.InsertOp); putType(ty); putVal(v); putVal(value); putVal(index)
-    case Op.Alloc(ty) =>
-      putInt(T.AllocOp); putType(ty)
     case Op.Alloca(ty) =>
       putInt(T.AllocaOp); putType(ty)
     case Op.Size(ty) =>
@@ -169,42 +167,52 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Op.Conv(conv, ty, v) =>
       putInt(T.ConvOp); putConv(conv); putType(ty); putVal(v)
 
-    case Op.FieldElem(ty, name, v) =>
-      putInt(T.FieldElemOp); putGlobal(name); putVal(v)
-    case Op.MethodElem(ty, name, v) =>
-      putInt(T.MethodElemOp); putType(ty); putGlobal(name); putVal(v)
-    case Op.AllocClass(ty) =>
-      putInt(T.AllocClassOp); putType(ty)
-    case Op.AllocArray(ty, v) =>
-      putInt(T.AllocArrayOp); putType(ty); putVal(v)
-    case Op.Equals(l, r) =>
-      putInt(T.EqualsOp); putVal(l); putVal(r)
-    case Op.HashCode(v) =>
-      putInt(T.HashCodeOp); putVal(v)
-    case Op.GetClass(v) =>
-      putInt(T.GetClassOp); putVal(v)
-    case Op.AsInstanceOf(ty, v) =>
-      putInt(T.AsInstanceOfOp); putType(ty); putVal(v)
-    case Op.IsInstanceOf(ty, v) =>
-      putInt(T.IsInstanceOfOp); putType(ty); putVal(v)
-    case Op.ArrayLength(v) =>
-      putInt(T.ArrayLengthOp); putVal(v)
-    case Op.ArrayElem(ty, v, index) =>
-      putInt(T.ArrayElemOp); putType(ty); putVal(v); putVal(index)
-    case Op.Box(ty, v) =>
-      putInt(T.BoxOp); putType(ty); putVal(v)
-    case Op.Unbox(ty, v) =>
-      putInt(T.UnboxOp); putType(ty); putVal(v)
+    case Op.ObjAlloc(ty) =>
+      putInt(T.ObjAllocOp); putType(ty)
+    case Op.ObjFieldElem(ty, name, v) =>
+      putInt(T.ObjFieldElemOp); putGlobal(name); putVal(v)
+    case Op.ObjMethodElem(ty, name, v) =>
+      putInt(T.ObjMethodElemOp); putType(ty); putGlobal(name); putVal(v)
+    case Op.ObjEquals(l, r) =>
+      putInt(T.ObjEqualsOp); putVal(l); putVal(r)
+    case Op.ObjHashCode(v) =>
+      putInt(T.ObjHashCodeOp); putVal(v)
+    case Op.ObjToString(v) =>
+      putInt(T.ObjToStringOp); putVal(v)
+    case Op.ObjGetClass(v) =>
+      putInt(T.ObjGetClassOp); putVal(v)
+    case Op.ObjAs(ty, v) =>
+      putInt(T.ObjAsOp); putType(ty); putVal(v)
+    case Op.ObjIs(ty, v) =>
+      putInt(T.ObjIsOp); putType(ty); putVal(v)
+    case Op.ArrAlloc(ty, v) =>
+      putInt(T.ArrAllocOp); putType(ty); putVal(v)
+    case Op.ArrLength(v) =>
+      putInt(T.ArrLengthOp); putVal(v)
+    case Op.ArrElem(ty, v, index) =>
+      putInt(T.ArrElemOp); putType(ty); putVal(v); putVal(index)
+    case Op.PrimBox(ty, v) =>
+      putInt(T.PrimBoxOp); putType(ty); putVal(v)
+    case Op.PrimUnbox(ty, v) =>
+      putInt(T.PrimUnboxOp); putType(ty); putVal(v)
+    case Op.PrimParse(ty, v, radix) =>
+      putInt(T.PrimParseOp); putType(ty); putVal(v); putVal(radix)
+    case Op.PrimHashCode(ty, v) =>
+      putInt(T.PrimHashCodeOp); putType(ty); putVal(v)
+    case Op.PrimToString(ty, v, radix) =>
+      putInt(T.PrimToStringOp); putType(ty); putVal(v); putVal(radix)
     case Op.MonitorEnter(v) =>
       putInt(T.MonitorEnterOp); putVal(v)
     case Op.MonitorExit(v) =>
       putInt(T.MonitorExitOp); putVal(v)
+    case Op.MonitorNotify(v) =>
+      putInt(T.MonitorNotifyOp); putVal(v)
+    case Op.MonitorNotifyAll(v) =>
+      putInt(T.MonitorNotifyAllOp); putVal(v)
+    case Op.MonitorWait(v, t, n) =>
+      putInt(T.MonitorWaitOp); putVal(v); putVal(t); putVal(n)
     case Op.StringConcat(l, r) =>
       putInt(T.StringConcatOp); putVal(l); putVal(r)
-    case Op.ToString(v, radix) =>
-      putInt(T.ToStringOp); putVal(v); putVal(radix)
-    case Op.FromString(ty, v, radix) =>
-      putInt(T.FromStringOp); putType(ty); putVal(v); putVal(radix)
   }
 
   private def putParams(params: Seq[Param]) = putSeq(putParam)(params)

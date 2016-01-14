@@ -20,31 +20,34 @@ sealed abstract class Op {
     case Op.Elem(ty, _, _)                    => Type.Ptr(ty)
     case Op.Extract(ty, _, _)                 => ??? // ty @ index
     case Op.Insert(ty, _, _, _)               => ty
-    case Op.Alloc(ty)                         => Type.Ptr(ty)
     case Op.Alloca(ty)                        => Type.Ptr(ty)
     case Op.Size(ty)                          => Type.Size
     case Op.Bin(_, ty, _, _)                  => ty
     case Op.Comp(_, _, _, _)                  => Type.Bool
     case Op.Conv(_, ty, _)                    => ty
 
-    case Op.FieldElem(ty, _, _)  => Type.Ptr(ty)
-    case Op.MethodElem(ty, _, _) => Type.Ptr(ty)
-    case Op.AllocClass(ty)       => ty
-    case Op.AllocArray(ty, _)    => Type.ArrayClass(ty)
-    case Op.Equals(_, _)         => Type.Bool
-    case Op.HashCode(_)          => Type.I32
-    case Op.GetClass(_)          => Type.ClassClass
-    case Op.AsInstanceOf(ty, _)  => ty
-    case Op.IsInstanceOf(_, _)   => Type.Bool
-    case Op.ArrayLength(_)       => Type.I32
-    case Op.ArrayElem(ty, _, _)  => ty
-    case Op.Box(ty, _)           => ty
-    case Op.Unbox(ty, _)         => ty.unboxed
-    case Op.MonitorEnter(_)      => Type.Unit
-    case Op.MonitorExit(_)       => Type.Unit
-    case Op.StringConcat(_, _)   => Type.StringClass
-    case Op.ToString(_, _)       => Type.StringClass
-    case Op.FromString(ty, _, _) => ty
+    case Op.ObjAlloc        (ty)       => ty
+    case Op.ObjFieldElem    (ty, _, _) => Type.Ptr(ty)
+    case Op.ObjMethodElem   (ty, _, _) => Type.Ptr(ty)
+    case Op.ObjEquals       (_, _)     => Type.Bool
+    case Op.ObjHashCode     (_)        => Type.I32
+    case Op.ObjToString     (_)        => Type.StringClass
+    case Op.ObjGetClass     (_)        => Type.ClassClass
+    case Op.ObjAs           (ty, _)    => ty
+    case Op.ObjIs           (_, _)     => Type.Bool
+    case Op.ArrAlloc        (ty, _)    => Type.ArrayClass(ty)
+    case Op.ArrLength       (_)        => Type.I32
+    case Op.ArrElem         (ty, _, _) => Type.Ptr(ty)
+    case Op.PrimBox         (ty, _)    => ty
+    case Op.PrimUnbox       (ty, _)    => ty.unboxed
+    case Op.PrimParse       (ty, _, _) => ty.unboxed
+    case Op.PrimToString    (ty, _, _) => Type.StringClass
+    case Op.MonitorEnter    (_)        => Type.Unit
+    case Op.MonitorExit     (_)        => Type.Unit
+    case Op.MonitorNotify   (_)        => Type.Unit
+    case Op.MonitorNotifyAll(_)        => Type.Unit
+    case Op.MonitorWait     (_, _, _)  => Type.Unit
+    case Op.StringConcat    (_, _)     => Type.StringClass
   }
 }
 object Op {
@@ -64,7 +67,6 @@ object Op {
   final case class Elem   (ty: Type, ptr: Val, indexes: Seq[Val])       extends Op
   final case class Extract(ty: Type, aggr: Val, index: Val)             extends Op
   final case class Insert (ty: Type, aggr: Val, value: Val, index: Val) extends Op
-  final case class Alloc  (ty: Type)                                    extends Op
   final case class Alloca (ty: Type)                                    extends Op
   final case class Size   (ty: Type)                                    extends Op
   final case class Bin    (bin: nir.Bin, ty: Type, l: Val, r: Val)      extends Op
@@ -72,22 +74,27 @@ object Op {
   final case class Conv   (conv: nir.Conv, ty: Type, value: Val)        extends Op
 
   //scala
-  final case class FieldElem   (ty: Type, name: Global, value: Val) extends Op
-  final case class MethodElem  (ty: Type, name: Global, value: Val) extends Op
-  final case class AllocClass  (ty: Type)                           extends Op
-  final case class AllocArray  (ty: Type, length: Val)              extends Op
-  final case class Equals      (l: Val, r: Val)                     extends Op
-  final case class HashCode    (value: Val)                         extends Op
-  final case class GetClass    (value: Val)                         extends Op
-  final case class AsInstanceOf(ty: Type, value: Val)               extends Op
-  final case class IsInstanceOf(ty: Type, value: Val)               extends Op
-  final case class ArrayLength (value: Val)                         extends Op
-  final case class ArrayElem   (ty: Type, value: Val, index: Val)   extends Op
-  final case class Box         (ty: Type, value: Val)               extends Op
-  final case class Unbox       (ty: Type, value: Val)               extends Op
-  final case class MonitorEnter(value: Val)                         extends Op
-  final case class MonitorExit (value: Val)                         extends Op
-  final case class StringConcat(l: Val, r: Val)                     extends Op
-  final case class ToString    (v: Val, radix: Val)                 extends Op
-  final case class FromString  (ty: Type, s: Val, radix: Val)       extends Op
+  final case class ObjAlloc        (ty: Type)                           extends Op
+  final case class ObjFieldElem    (ty: Type, name: Global, obj: Val)   extends Op
+  final case class ObjMethodElem   (ty: Type, name: Global, obj: Val)   extends Op
+  final case class ObjEquals       (l: Val, r: Val)                     extends Op
+  final case class ObjHashCode     (value: Val)                         extends Op
+  final case class ObjToString     (obj: Val)                           extends Op
+  final case class ObjGetClass     (obj: Val)                           extends Op
+  final case class ObjAs           (ty: Type, obj: Val)                 extends Op
+  final case class ObjIs           (ty: Type, obj: Val)                 extends Op
+  final case class ArrAlloc        (ty: Type, length: Val)              extends Op
+  final case class ArrLength       (value: Val)                         extends Op
+  final case class ArrElem         (ty: Type, value: Val, index: Val)   extends Op
+  final case class PrimBox         (ty: Type, value: Val)               extends Op
+  final case class PrimUnbox       (ty: Type, value: Val)               extends Op
+  final case class PrimParse       (ty: Type, v: Val, radix: Val)       extends Op
+  final case class PrimHashCode    (ty: Type, v: Val)                   extends Op
+  final case class PrimToString    (ty: Type, v: Val, radix: Val)       extends Op
+  final case class MonitorEnter    (obj: Val)                           extends Op
+  final case class MonitorExit     (obj: Val)                           extends Op
+  final case class MonitorNotify   (obj: Val)                           extends Op
+  final case class MonitorNotifyAll(obj: Val)                           extends Op
+  final case class MonitorWait     (obj: Val, timeout: Val, nanos: Val) extends Op
+  final case class StringConcat    (l: Val, r: Val)                     extends Op
 }

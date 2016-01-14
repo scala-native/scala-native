@@ -5,10 +5,10 @@ package pass
 import native.nir._
 
 /** Eliminates:
- *  - Op.{Box, Unbox}
+ *  - Op.Prim*
  *  - Type.{Character, Boolean, Byte, Short, Integer, Long, Float, Double}Class
  */
-trait BoxLowering extends Pass {
+trait PrimLowering extends Pass {
   private val i8_* = Type.Ptr(Type.I8)
 
   private val box = Map[Type, Val](
@@ -34,11 +34,11 @@ trait BoxLowering extends Pass {
   )
 
   override def onOp(op: Op) = super.onOp(op match {
-    case Op.Box(ty, value) =>
+    case Op.PrimBox(ty, value) =>
       val fun = box(ty)
       val Type.Ptr(sig) = fun.ty
       Op.Call(sig, fun, Seq(value))
-    case Op.Unbox(ty, value) =>
+    case Op.PrimUnbox(ty, value) =>
       val fun = unbox(ty)
       val Type.Ptr(sig) = fun.ty
       Op.Call(sig, fun, Seq(value))

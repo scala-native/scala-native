@@ -6,7 +6,7 @@ import native.nir._
 
 /** Eliminates:
  *  - Type.ArrayClass
- *  - Op.{AllocArray, ArrayLength, ArrayElem}
+ *  - Op.Arr*
  */
 trait ArrayLowering extends Pass {
   private val i8_* = Type.Ptr(Type.I8)

@@ -62,7 +62,7 @@ trait ModuleLowering extends Pass {
 
             cond.branchIf(cond.value, Type.Nothing,
               { thenp =>
-                val alloc = thenp withOp Op.Alloc(clsty)
+                val alloc = thenp withOp Op.ObjAlloc(clsty)
                 val call = alloc withOp Op.Call(ctorty, ctor, Seq(alloc.value))
                 val store = call withOp Op.Store(clsty, dataval, alloc.value)
                 store finish Op.Ret(alloc.value)

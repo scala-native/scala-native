@@ -7,7 +7,7 @@ import native.nir._
 /** Eliminates:
  *  - Val.String
  *  - Type.StringClass
- *  - Op.{StringConcat, FromString, ToString}
+ *  - Op.String*
  */
 trait StringLowering extends Pass {
   private val i8_* = Type.Ptr(Type.I8)

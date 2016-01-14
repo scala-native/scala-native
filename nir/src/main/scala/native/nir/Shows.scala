@@ -73,8 +73,6 @@ object Shows {
       sh"extract[$ty] $aggr, $index"
     case Op.Insert(ty, aggr, value, index) =>
       sh"insert[$ty] $aggr, $index"
-    case Op.Alloc(ty) =>
-      sh"alloc[$ty]"
     case Op.Alloca(ty) =>
       sh"alloca[$ty]"
     case Op.Size(ty) =>
@@ -86,46 +84,56 @@ object Shows {
     case Op.Conv(name, ty, v) =>
       sh"$name[$ty] $v"
 
-    case Op.FieldElem(ty, name, value) =>
-      sh"field-elem[$ty] $name, $value"
-    case Op.MethodElem(ty, name, value) =>
-      sh"method-elem[$ty] $name, $value"
-    case Op.AllocClass(ty) =>
-      sh"alloc-class[$ty]"
-    case Op.AllocArray(ty, length) =>
-      sh"alloc-array[$ty] $length"
-    case Op.Equals(left, right) =>
-      sh"equals $left, $right"
-    case Op.HashCode(value) =>
-      sh"hash-code $value"
-    case Op.GetClass(value) =>
-      sh"get-class $value"
-    case Op.AsInstanceOf(value, ty) =>
-      sh"as-instance-of[$ty] $value"
-    case Op.IsInstanceOf(value, ty) =>
-      sh"is-instance-of[$ty] $value"
-    case Op.ArrayLength(value) =>
-      sh"array-length $value"
-    case Op.ArrayElem(ty, value, index) =>
-      sh"array-elem[$ty] $value, $index"
-    case Op.Box(ty, value) =>
-      sh"box[$ty] $value"
-    case Op.Unbox(ty, value) =>
-      sh"unbox[$ty] $value"
+    case Op.ObjAlloc(ty) =>
+      sh"obj-alloc[$ty]"
+    case Op.ObjFieldElem(ty, name, value) =>
+      sh"obj-field-elem[$ty] $name, $value"
+    case Op.ObjMethodElem(ty, name, value) =>
+      sh"obj-method-elem[$ty] $name, $value"
+    case Op.ObjEquals(left, right) =>
+      sh"obj-equals $left, $right"
+    case Op.ObjHashCode(value) =>
+      sh"obj-hash-code $value"
+    case Op.ObjToString(value) =>
+      sh"obj-to-string $value"
+    case Op.ObjGetClass(value) =>
+      sh"obj-get-class $value"
+    case Op.ObjAs(value, ty) =>
+      sh"obj-as[$ty] $value"
+    case Op.ObjIs(value, ty) =>
+      sh"obj-is[$ty] $value"
+    case Op.ArrAlloc(ty, length) =>
+      sh"arr-alloc[$ty] $length"
+    case Op.ArrLength(value) =>
+      sh"arr-length $value"
+    case Op.ArrElem(ty, value, index) =>
+      sh"arr-elem[$ty] $value, $index"
+    case Op.PrimBox(ty, value) =>
+      sh"prim-box[$ty] $value"
+    case Op.PrimUnbox(ty, value) =>
+      sh"prim-unbox[$ty] $value"
+    case Op.PrimParse(ty, s, Val.None) =>
+      sh"prim-parse[$ty] $s"
+    case Op.PrimHashCode(ty, v) =>
+      sh"prim-hash-code[$ty] $v"
+    case Op.PrimParse(ty, s, radix) =>
+      sh"prim-parse[$ty] $s, $radix"
+    case Op.PrimToString(ty, v, Val.None) =>
+      sh"prim-to-string[$ty] $v"
+    case Op.PrimToString(ty, v, radix) =>
+      sh"prim-to-string[$ty] $v, $radix"
     case Op.MonitorEnter(v) =>
       sh"monitor-enter $v"
     case Op.MonitorExit(v) =>
       sh"monitor-exit $v"
+    case Op.MonitorNotify(v) =>
+      sh"monitor-notify $v"
+    case Op.MonitorNotifyAll(v) =>
+      sh"monitor-notify-all $v"
+    case Op.MonitorWait(v, t, n) =>
+      sh"monitor-wait $v, $t, $n"
     case Op.StringConcat(l, r) =>
       sh"string-concat $l, $r"
-    case Op.ToString(v, Val.None) =>
-      sh"to-string $v"
-    case Op.ToString(v, radix) =>
-      sh"to-string $v, $radix"
-    case Op.FromString(ty, s, Val.None) =>
-      sh"from-string[$ty] $s"
-    case Op.FromString(ty, s, radix) =>
-      sh"from-string[$ty] $s, $radix"
   }
 
   implicit val showBin: Show[Bin] = Show {

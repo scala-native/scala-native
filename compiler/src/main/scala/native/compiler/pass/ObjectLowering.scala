@@ -28,9 +28,9 @@ import native.nir._
  *  Eliminates:
  *  - Type.{ObjectClass, Class}
  *  - Defn.Class
- *  - Op.{FieldElem, MethodElem, AllocClass, Equals, HashCode} called on classes
+ *  - Op.Obj*
  */
-trait ClassLowering extends Pass {
+trait ObjectLowering extends Pass {
   private val i8_*   = Type.Ptr(Type.I8)
   private val vtable = Global.Atom("vtable")
   private val data   = Global.Atom("data")

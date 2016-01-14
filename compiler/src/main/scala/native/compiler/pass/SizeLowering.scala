@@ -5,20 +5,14 @@ package pass
 import native.nir._
 
 /** Eliminates:
- *  - Op.{Alloc, Size}
+ *  - Op.Size
  *  - Type.Size
  */
-trait AllocLowering extends Pass {
+trait SizeLowering extends Pass {
   private val allocSig = Type.Function(Seq(Type.Size), Type.Ptr(Type.I8))
   private val allocVal = Val.Global(Global.Atom("sm_alloc"), Type.Ptr(allocSig))
 
   override def onInstr(instr: Instr) = instr match {
-    case Instr(Some(alloc), _, Op.Alloc(ty)) =>
-      val size    = fresh()
-      val sizeTy  = Type.Size
-      val sizeVal = Val.Local(size, sizeTy)
-      Seq(Instr(size,  Op.Size(ty)),
-          Instr(alloc, Op.Call(allocSig, allocVal, Seq(sizeVal)))).flatMap(onInstr)
     case Instr(Some(size), _, Op.Size(ty)) =>
       val offset    = fresh()
       val offsetTy  = Type.Ptr(ty)
