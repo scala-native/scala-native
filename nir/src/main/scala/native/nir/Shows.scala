@@ -72,7 +72,7 @@ object Shows {
     case Op.Extract(ty, aggr, index) =>
       sh"extract[$ty] $aggr, $index"
     case Op.Insert(ty, aggr, value, index) =>
-      sh"insert[$ty] $aggr, $index"
+      sh"insert[$ty] $aggr, $value, $index"
     case Op.Alloca(ty) =>
       sh"alloca[$ty]"
     case Op.Size(ty) =>
@@ -85,23 +85,23 @@ object Shows {
       sh"$name[$ty] $v"
 
     case Op.ObjAlloc(ty) =>
-      sh"obj-alloc[$ty]"
+      sh"alloc[$ty]"
     case Op.ObjFieldElem(ty, name, value) =>
-      sh"obj-field-elem[$ty] $name, $value"
+      sh"field-elem[$ty] $value, $name"
     case Op.ObjMethodElem(ty, name, value) =>
-      sh"obj-method-elem[$ty] $name, $value"
+      sh"method-elem[$ty] $value, $name"
     case Op.ObjEquals(left, right) =>
-      sh"obj-equals $left, $right"
+      sh"equals $left, $right"
     case Op.ObjHashCode(value) =>
-      sh"obj-hash-code $value"
+      sh"hash-code $value"
     case Op.ObjToString(value) =>
-      sh"obj-to-string $value"
+      sh"to-string $value"
     case Op.ObjGetClass(value) =>
-      sh"obj-get-class $value"
+      sh"get-class $value"
     case Op.ObjAs(value, ty) =>
-      sh"obj-as[$ty] $value"
+      sh"as[$ty] $value"
     case Op.ObjIs(value, ty) =>
-      sh"obj-is[$ty] $value"
+      sh"is[$ty] $value"
     case Op.ArrAlloc(ty, length) =>
       sh"arr-alloc[$ty] $length"
     case Op.ArrLength(value) =>
@@ -185,7 +185,7 @@ object Shows {
     case Val.I64(value)         => sh"${value}i64"
     case Val.F32(value)         => sh"${value}f32"
     case Val.F64(value)         => sh"${value}f64"
-    case Val.Struct(ty, values) => sh"struct $ty {${r(values, ", ")}}"
+    case Val.Struct(n, values)  => sh"struct $n {${r(values, ", ")}}"
     case Val.Array(ty, values)  => sh"array $ty {${r(values, ", ")}}"
     case Val.Local(name, ty)    => sh"$name"
     case Val.Global(name, ty)   => sh"$name"
@@ -208,8 +208,8 @@ object Shows {
     case Defn.Define(attrs, name, ty, blocks) =>
       val body = r(blocks.map(i(_)))
       sh"${attrs}def $name: $ty =$body"
-    case Defn.Struct(attrs, name, members) =>
-      sh"${attrs}struct $name {${r(members, sep = ", ")}}"
+    case Defn.Struct(attrs, name, tys) =>
+      sh"${attrs}struct $name {${r(tys, sep = ", ")}}"
 
     case Defn.Interface(attrs, name, ifaces, members) =>
       val parents = r(ifaces, sep = ", ")
@@ -268,6 +268,6 @@ object Shows {
   }
 
   implicit val showLocal: Show[Local] = Show {
-    case Local(scope, id) => sh"%$scope.$id"
+    case Local(scope, id) => sh"%$id"
   }
 }

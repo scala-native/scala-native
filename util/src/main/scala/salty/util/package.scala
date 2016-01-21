@@ -11,6 +11,9 @@ package object util {
     def apply(res: Show.Result) = res
   }
 
-  final case object Unreachable extends Exception
-  def unreachable = throw Unreachable
+  final case object UnreachableException extends Exception
+  def unreachable = throw UnreachableException
+
+  final case class UnsupportedException(v: Any) extends Exception(v.toString)
+  def unsupported(v: Any = "") = throw UnsupportedException(v)
 }

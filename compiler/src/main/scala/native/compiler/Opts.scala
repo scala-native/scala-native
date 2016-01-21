@@ -13,7 +13,7 @@ object Opts {
       classpath = Seq(""),
       outpath = "out.ll",
       entry = "",
-      gen = codegen.GenTextualNIR
+      gen = codegen.GenTextualLLVM
     )
 
   def fromArgs(args: Seq[String], base: Opts = Opts.empty): Opts =

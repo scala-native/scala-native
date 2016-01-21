@@ -26,7 +26,7 @@ import native.nir._
  *          %cond = eq[object] prev, null
  *          if %cond then %thenp() else %elsep()
  *        block %thenp():
- *          %alloc = alloc[class $name]
+ *          %alloc = obj-alloc[class $name]
  *          call $name::<>(%new)
  *          store[$name] $name!data, %alloc
  *          ret %alloc

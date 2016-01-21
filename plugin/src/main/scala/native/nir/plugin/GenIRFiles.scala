@@ -23,11 +23,12 @@ trait GenIRFiles extends SubComponent with GenTypeKinds {
     file.file.getAbsolutePath
   }
 
-  def genIRFile(cunit: CompilationUnit, sym: Symbol, defns: Seq[nir.Defn]) = {
+  def genIRFile(cunit: CompilationUnit, sym: Symbol, defns: Seq[nir.Defn]): Unit = {
     val kind =
       if (isModule(sym)) "module"
       else if (sym.isInterface) "interface"
       else "class"
     nir.serialization.serializeBinaryFile(defns, getPathFor(cunit, sym, s".$kind.nir"))
+    nir.serialization.serializeTextFile(defns, getPathFor(cunit, sym, s".$kind.hnir"))
   }
 }
