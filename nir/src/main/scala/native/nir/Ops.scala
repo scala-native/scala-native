@@ -5,7 +5,7 @@ import native.util.unreachable
 
 sealed abstract class Op {
   final def resty = this match {
-    case    Op.Undefined
+    case    Op.Unreachable
        | _: Op.Ret
        | _: Op.Throw
        | _: Op.Jump
@@ -29,30 +29,16 @@ sealed abstract class Op {
     case Op.ObjAlloc        (ty)       => ty
     case Op.ObjFieldElem    (ty, _, _) => Type.Ptr(ty)
     case Op.ObjMethodElem   (ty, _, _) => Type.Ptr(ty)
-    case Op.ObjEquals       (_, _)     => Type.Bool
-    case Op.ObjHashCode     (_)        => Type.I32
-    case Op.ObjToString     (_)        => Type.StringClass
-    case Op.ObjGetClass     (_)        => Type.ClassClass
     case Op.ObjAs           (ty, _)    => ty
     case Op.ObjIs           (_, _)     => Type.Bool
     case Op.ArrAlloc        (ty, _)    => Type.ArrayClass(ty)
     case Op.ArrLength       (_)        => Type.I32
     case Op.ArrElem         (ty, _, _) => Type.Ptr(ty)
-    case Op.PrimBox         (ty, _)    => ty
-    case Op.PrimUnbox       (ty, _)    => ty.unboxed
-    case Op.PrimParse       (ty, _, _) => ty.unboxed
-    case Op.PrimToString    (ty, _, _) => Type.StringClass
-    case Op.MonitorEnter    (_)        => Type.Unit
-    case Op.MonitorExit     (_)        => Type.Unit
-    case Op.MonitorNotify   (_)        => Type.Unit
-    case Op.MonitorNotifyAll(_)        => Type.Unit
-    case Op.MonitorWait     (_, _, _)  => Type.Unit
-    case Op.StringConcat    (_, _)     => Type.StringClass
   }
 }
 object Op {
   //control-flow
-  final case object Undefined                                                          extends Op
+  final case object Unreachable                                                        extends Op
   final case class Ret    (value: Val)                                                 extends Op
   final case class Throw  (value: Val)                                                 extends Op
   final case class Jump   (next: Next)                                                 extends Op
@@ -77,24 +63,9 @@ object Op {
   final case class ObjAlloc        (ty: Type)                           extends Op
   final case class ObjFieldElem    (ty: Type, name: Global, obj: Val)   extends Op
   final case class ObjMethodElem   (ty: Type, name: Global, obj: Val)   extends Op
-  final case class ObjEquals       (l: Val, r: Val)                     extends Op
-  final case class ObjHashCode     (value: Val)                         extends Op
-  final case class ObjToString     (obj: Val)                           extends Op
-  final case class ObjGetClass     (obj: Val)                           extends Op
   final case class ObjAs           (ty: Type, obj: Val)                 extends Op
   final case class ObjIs           (ty: Type, obj: Val)                 extends Op
   final case class ArrAlloc        (ty: Type, length: Val)              extends Op
   final case class ArrLength       (value: Val)                         extends Op
   final case class ArrElem         (ty: Type, value: Val, index: Val)   extends Op
-  final case class PrimBox         (ty: Type, value: Val)               extends Op
-  final case class PrimUnbox       (ty: Type, value: Val)               extends Op
-  final case class PrimParse       (ty: Type, v: Val, radix: Val)       extends Op
-  final case class PrimHashCode    (ty: Type, v: Val)                   extends Op
-  final case class PrimToString    (ty: Type, v: Val, radix: Val)       extends Op
-  final case class MonitorEnter    (obj: Val)                           extends Op
-  final case class MonitorExit     (obj: Val)                           extends Op
-  final case class MonitorNotify   (obj: Val)                           extends Op
-  final case class MonitorNotifyAll(obj: Val)                           extends Op
-  final case class MonitorWait     (obj: Val, timeout: Val, nanos: Val) extends Op
-  final case class StringConcat    (l: Val, r: Val)                     extends Op
 }

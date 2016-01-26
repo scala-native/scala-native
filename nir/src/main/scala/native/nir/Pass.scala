@@ -43,7 +43,7 @@ trait Pass {
     Seq(Instr(instr.name, instr.attrs, onOp(instr.op)))
 
   def onOp(op: Op): Op = op match {
-    case Op.Undefined                           => Op.Undefined
+    case Op.Unreachable                         => Op.Unreachable
     case Op.Ret(v)                              => Op.Ret(onVal(v))
     case Op.Throw(v)                            => Op.Throw(onVal(v))
     case Op.Jump(next)                          => Op.Jump(onNext(next))
@@ -66,25 +66,11 @@ trait Pass {
     case Op.ObjAlloc(ty)            => Op.ObjAlloc(onType(ty))
     case Op.ObjFieldElem(ty, n, v)  => Op.ObjFieldElem(onType(ty), n, onVal(v))
     case Op.ObjMethodElem(ty, n, v) => Op.ObjMethodElem(onType(ty), n, onVal(v))
-    case Op.ObjEquals(l, r)         => Op.ObjEquals(onVal(l), onVal(r))
-    case Op.ObjHashCode(v)          => Op.ObjHashCode(onVal(v))
-    case Op.ObjToString(v)          => Op.ObjToString(onVal(v))
-    case Op.ObjGetClass(v)          => Op.ObjGetClass(onVal(v))
     case Op.ObjAs(ty, v)            => Op.ObjAs(onType(ty), onVal(v))
     case Op.ObjIs(ty, v)            => Op.ObjIs(onType(ty), onVal(v))
     case Op.ArrAlloc(ty, v)         => Op.ArrAlloc(onType(ty), onVal(v))
     case Op.ArrLength(v)            => Op.ArrLength(onVal(v))
     case Op.ArrElem(ty, v, i)       => Op.ArrElem(onType(ty), onVal(v), onVal(i))
-    case Op.PrimBox(ty, v)          => Op.PrimBox(onType(ty), onVal(v))
-    case Op.PrimUnbox(ty, v)        => Op.PrimUnbox(onType(ty), onVal(v))
-    case Op.PrimParse(ty, v, r)     => Op.PrimParse(onType(ty), onVal(v), onVal(r))
-    case Op.PrimToString(ty, v, r)  => Op.PrimToString(onType(ty), onVal(v), onVal(r))
-    case Op.MonitorEnter(v)         => Op.MonitorEnter(onVal(v))
-    case Op.MonitorExit(v)          => Op.MonitorExit(onVal(v))
-    case Op.MonitorNotify(v)        => Op.MonitorNotify(onVal(v))
-    case Op.MonitorNotifyAll(v)     => Op.MonitorNotifyAll(onVal(v))
-    case Op.MonitorWait(v, t, n)    => Op.MonitorWait(onVal(v), onVal(t), onVal(n))
-    case Op.StringConcat(l, r)      => Op.StringConcat(onVal(l), onVal(r))
   }
 
   def onVal(value: Val): Val = value match {

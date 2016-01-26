@@ -481,7 +481,7 @@ string conversions etc)
 
    Name         | Signature            | Description
   --------------|----------------------|------------------------------
-  `#bool_box`   | `(i1)  => boolean`   | `j.l.Boolean#valueOf`
+  `#bool_box`   | `(bool)  => boolean` | `j.l.Boolean#valueOf`
   `#char_box`   | `(i16) => character` | `j.l.Character#valueOf`
   `#byte_box`   | `(i8)  => byte`      | `j.l.Byte#valueOf`
   `#short_box`  | `(i16) => short`     | `j.l.Short#valueOf`
@@ -518,19 +518,15 @@ string conversions etc)
 
 * **Primitive from string**:
 
-   Name              | Signature              | Description
-  -------------------|------------------------|--------------------------------------------
-  `#bool_parse`      | `(string) => i1`       | `j.l.Boolean#parseBoolean`
-  `#byte_parse`      | `(string) => i8`       | `j.l.Byte#parseByte(String)`
-  `#byte_parse_rdx`  | `(string, int) => i8`  | `j.l.Byte#parseByte(String, int)`
-  `#short_parse`     | `(string) => i16`      | `j.l.Short#parseShort(String)`
-  `#short_parse_rdx` | `(string, int) => i16` | `j.l.Short#parseShort(String, int)`
-  `#int_parse`       | `(string) => i32`      | `j.l.Integer#parseInt(String)`
-  `#int_parse_rdx`   | `(string, int) => i32` | `j.l.Integer#parseInt(String, int)`
-  `#long_parse`      | `(string) => i64`      | `j.l.Long#parseLong(String)`
-  `#long_parse_rdx`  | `(string, int) => i64` | `j.l.Long#parseLong(String, int)`
-  `#float_parse`     | `(string) => f32`      | `j.l.Float#parseFloat(String)`
-  `#double_parse`    | `(string) => f64`      | `j.l.Double#parseDouble(String, int)`
+   Name          | Signature              | Description
+  ---------------|------------------------|------------------------------------
+  `#bool_parse`  | `(string) => i1`       | `j.l.Boolean#parseBoolean`
+  `#byte_parse`  | `(string, int) => i8`  | `j.l.Byte#parseByte(String, int)`
+  `#short_parse` | `(string, int) => i16` | `j.l.Short#parseShort(String, int)`
+  `#int_parse`   | `(string, int) => i32` | `j.l.Integer#parseInt(String, int)`
+  `#long_parse`  | `(string, int) => i64` | `j.l.Long#parseLong(String, int)`
+  `#float_parse` | `(string) => f32`      | `j.l.Float#parseFloat`
+  `#double_parse`| `(string) => f64`      | `j.l.Double#parseDouble`
 
 * **Primitive hash code**:
 
@@ -641,17 +637,17 @@ Intrinsics are implemented as functions with the name of intrinsic prepended by 
 prefix. Type signatures of the intrinsics are translated according to following
 type correspondance rules:
 
- NIR Type     | C Type                 | C Convenience Alias
---------------|------------------------|----------------------
- void         | void                   | nrt_void
- bool         | bool                   | nrt_bool
- i8, ..., i64 | int8_t, ..., int64_t   | nrt_i8, ..., nrt_i64
- f32, f64     | float, double          | nrt_f32, nrt_f64
- [T x N]      | T[N]                   | n/a
- ptr T        | T*                     | n/a
- struct $name | struct $name           | n/a
- size         | size_t                 | nrt_size
- class types  | void*                  | nrt_obj
+ NIR Type         | C Type                   | C Convenience Alias
+------------------|--------------------------|----------------------
+ `void`           | `void`                   | `nrt_void`
+ `bool`           | `bool`                   | `nrt_bool`
+ `i8`, ..., `i64` | `int8_t`, ..., `int64_t` | `nrt_i8`, ..., `nrt_i64`
+ `f32`, `f64`     | `float`, `double`        | `nrt_f32`, `nrt_f64`
+ `[T x N]`        | `T[N]`                   | n/a
+ `ptr T`          | `T*`                     | n/a
+ `struct $name`   | `struct $name`           | n/a
+ `size`           | `size_t`                 | `nrt_size`
+ class types      | `void*`                  | `nrt_obj`
 
 So for example `#int_box` is going to have following C signature:
 
@@ -661,13 +657,6 @@ nrt_obj nrt_int_box(nrt_i32 value);
 
 ## TODO
 
-1. Code: s/undefined/unreachable/g
-1. Code: Update pretty-printer to include `@` before global names.
-1. Code: Migrate to more conventional curly-brace-based syntax for NIR.
-1. Code: use spaces around colon ` : `
-1. Code: Parens instead of braces for struct and array values.
-1. Code: Switch default
-1. Code: Type.CharacterClass
 1. Code: Ascribe references
 1  Code: Introduce intrinsics
 1. Code: More attributes

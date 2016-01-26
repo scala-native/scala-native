@@ -5,6 +5,12 @@ import native.util.{sh, Show}, Show.{Sequence => s, Indent => i, Unindent => ui,
                                      Repeat => r, Newline => nl}
 
 object Shows {
+  private def brace(body: Show.Result): Show.Result = {
+    val open = "{"
+    val close = nl("}")
+    sh"$open$body$close"
+  }
+
   implicit val showAttrs: Show[Seq[Attr]] = Show { attrs =>
     if (attrs.isEmpty) s()
     else r(attrs, sep = " ", post = " ")
@@ -21,9 +27,9 @@ object Shows {
 
   implicit val showBlock: Show[Block] = Show { block =>
     import block._
-    val header = sh"block $name(${r(params, sep = ", ")})"
+    val header = sh"$name(${r(params, sep = ", ")}):"
     val body = i(r(instrs, sep = nl("")))
-    sh"$header =$body"
+    sh"$header$body"
   }
 
   implicit val showInstr: Show[Instr] = Show {
@@ -32,7 +38,7 @@ object Shows {
   }
 
   implicit val showParam: Show[Param] = Show {
-    case Param(name, ty) => sh"$name: $ty"
+    case Param(name, ty) => sh"$name : $ty"
   }
 
   implicit val showNext: Show[Next] = Show {
@@ -42,12 +48,12 @@ object Shows {
 
   implicit val showCase: Show[Case] = Show {
     case Case(value, next) =>
-      sh"case $value => $next"
+      sh"case $value: $next"
   }
 
   implicit val showOp: Show[Op] = Show {
-    case Op.Undefined =>
-      "undefined"
+    case Op.Unreachable =>
+      "unreachable"
     case Op.Ret(value) =>
       sh"ret $value"
     case Op.Throw(value) =>
@@ -57,7 +63,8 @@ object Shows {
     case Op.If(cond, thenp, elsep) =>
       sh"if $cond then $thenp else $elsep"
     case Op.Switch(scrut, default, cases)  =>
-      sh"switch $scrut { ${r(cases, sep = nl("; "))}; case _ => $default }"
+      val body = brace(r(cases.map(i(_)) :+ i(sh"default: $default")))
+      sh"switch $scrut $body"
     case Op.Invoke(ty, f, args, succ, fail) =>
       sh"invoke[$ty] $f(${r(args, sep = ", ")}) to $succ unwind $fail"
 
@@ -87,17 +94,9 @@ object Shows {
     case Op.ObjAlloc(ty) =>
       sh"alloc[$ty]"
     case Op.ObjFieldElem(ty, name, value) =>
-      sh"field-elem[$ty] $value, $name"
+      sh"field-elem[$ty] $value, @$name"
     case Op.ObjMethodElem(ty, name, value) =>
-      sh"method-elem[$ty] $value, $name"
-    case Op.ObjEquals(left, right) =>
-      sh"equals $left, $right"
-    case Op.ObjHashCode(value) =>
-      sh"hash-code $value"
-    case Op.ObjToString(value) =>
-      sh"to-string $value"
-    case Op.ObjGetClass(value) =>
-      sh"get-class $value"
+      sh"method-elem[$ty] $value, @$name"
     case Op.ObjAs(value, ty) =>
       sh"as[$ty] $value"
     case Op.ObjIs(value, ty) =>
@@ -108,32 +107,6 @@ object Shows {
       sh"arr-length $value"
     case Op.ArrElem(ty, value, index) =>
       sh"arr-elem[$ty] $value, $index"
-    case Op.PrimBox(ty, value) =>
-      sh"prim-box[$ty] $value"
-    case Op.PrimUnbox(ty, value) =>
-      sh"prim-unbox[$ty] $value"
-    case Op.PrimParse(ty, s, Val.None) =>
-      sh"prim-parse[$ty] $s"
-    case Op.PrimHashCode(ty, v) =>
-      sh"prim-hash-code[$ty] $v"
-    case Op.PrimParse(ty, s, radix) =>
-      sh"prim-parse[$ty] $s, $radix"
-    case Op.PrimToString(ty, v, Val.None) =>
-      sh"prim-to-string[$ty] $v"
-    case Op.PrimToString(ty, v, radix) =>
-      sh"prim-to-string[$ty] $v, $radix"
-    case Op.MonitorEnter(v) =>
-      sh"monitor-enter $v"
-    case Op.MonitorExit(v) =>
-      sh"monitor-exit $v"
-    case Op.MonitorNotify(v) =>
-      sh"monitor-notify $v"
-    case Op.MonitorNotifyAll(v) =>
-      sh"monitor-notify-all $v"
-    case Op.MonitorWait(v, t, n) =>
-      sh"monitor-wait $v, $t, $n"
-    case Op.StringConcat(l, r) =>
-      sh"string-concat $l, $r"
   }
 
   implicit val showBin: Show[Bin] = Show {
@@ -175,20 +148,21 @@ object Shows {
   }
 
   implicit val showVal: Show[Val] = Show {
-    case Val.None               => ""
-    case Val.True               => "true"
-    case Val.False              => "false"
-    case Val.Zero(ty)           => sh"zero $ty"
-    case Val.I8(value)          => sh"${value}i8"
-    case Val.I16(value)         => sh"${value}i16"
-    case Val.I32(value)         => sh"${value}i32"
-    case Val.I64(value)         => sh"${value}i64"
-    case Val.F32(value)         => sh"${value}f32"
-    case Val.F64(value)         => sh"${value}f64"
-    case Val.Struct(n, values)  => sh"struct $n {${r(values, ", ")}}"
-    case Val.Array(ty, values)  => sh"array $ty {${r(values, ", ")}}"
-    case Val.Local(name, ty)    => sh"$name"
-    case Val.Global(name, ty)   => sh"$name"
+    case Val.None                => ""
+    case Val.True                => "true"
+    case Val.False               => "false"
+    case Val.Zero(ty)            => sh"zero $ty"
+    case Val.I8(value)           => sh"${value}i8"
+    case Val.I16(value)          => sh"${value}i16"
+    case Val.I32(value)          => sh"${value}i32"
+    case Val.I64(value)          => sh"${value}i64"
+    case Val.F32(value)          => sh"${value}f32"
+    case Val.F64(value)          => sh"${value}f64"
+    case Val.Struct(n, values)   => sh"struct $n {${r(values, ", ")}}"
+    case Val.Array(ty, values)   => sh"array $ty {${r(values, ", ")}}"
+    case Val.Local(name, ty)     => sh"$name"
+    case Val.Global(name, ty)    => sh"@$name"
+    case Val.Intrinsic(name, ty) => sh"#$name"
 
     case Val.Unit      => "unit"
     case Val.Null      => "null"
@@ -201,28 +175,28 @@ object Shows {
   }
 
   implicit val showDefn: Show[Defn] = Show {
-    case Defn.Var(attrs, name, ty, rhs) =>
-      sh"${attrs}var $name: $ty = $rhs"
+    case Defn.Var(attrs, name, ty, v) =>
+      sh"${attrs}var @$name : $ty = $v"
     case Defn.Declare(attrs, name, ty) =>
-      sh"${attrs}def $name: $ty"
+      sh"${attrs}def @$name : $ty"
     case Defn.Define(attrs, name, ty, blocks) =>
-      val body = r(blocks.map(i(_)))
-      sh"${attrs}def $name: $ty =$body"
+      val body = brace(r(blocks.map(i(_))))
+      sh"${attrs}def @$name : $ty $body"
     case Defn.Struct(attrs, name, tys) =>
-      sh"${attrs}struct $name {${r(tys, sep = ", ")}}"
+      sh"${attrs}struct @$name {${r(tys, sep = ", ")}}"
 
     case Defn.Interface(attrs, name, ifaces, members) =>
       val parents = r(ifaces, sep = ", ")
-      val body = r(members.map(i(_)))
-      sh"${attrs}interface $name($parents) =$body"
+      val body = brace(r(members.map(i(_))))
+      sh"${attrs}interface @$name($parents) $body"
     case Defn.Class(attrs, name, parent, ifaces, members) =>
       val parents = r(parent ++: ifaces, sep = ", ")
-      val body = r(members.map(i(_)))
-      sh"${attrs}class $name($parents) =$body"
+      val body = brace(r(members.map(i(_))))
+      sh"${attrs}class @$name($parents) $body"
     case Defn.Module(attrs, name, parent, ifaces, members) =>
       val parents = r(parent ++: ifaces, sep = ", ")
-      val body = r(members.map(i(_)))
-      sh"${attrs}module $name($parents) =$body"
+      val body = brace(r(members.map(i(_))))
+      sh"${attrs}module @$name($parents) $body"
   }
 
   implicit val showType: Show[Type] = Show {
@@ -239,7 +213,7 @@ object Shows {
     case Type.Array(ty, n)        => sh"[$ty x $n]"
     case Type.Ptr(ty)             => sh"ptr ${ty}"
     case Type.Function(args, ret) => sh"(${r(args, sep = ", ")}) => $ret"
-    case Type.Struct(name)        => sh"struct $name"
+    case Type.Struct(name)        => sh"struct @$name"
 
     case Type.Unit                 => "unit"
     case Type.Nothing              => "nothing"
@@ -247,7 +221,7 @@ object Shows {
     case Type.ObjectClass          => "object"
     case Type.ClassClass           => "class"
     case Type.StringClass          => "string"
-    case Type.CharacterClass       => "char"
+    case Type.CharacterClass       => "character"
     case Type.BooleanClass         => "boolean"
     case Type.ByteClass            => "byte"
     case Type.ShortClass           => "short"
@@ -255,9 +229,9 @@ object Shows {
     case Type.LongClass            => "long"
     case Type.FloatClass           => "float"
     case Type.DoubleClass          => "double"
-    case Type.Class(name)          => sh"class $name"
-    case Type.InterfaceClass(name) => sh"interface $name"
-    case Type.ModuleClass(name)    => sh"module $name"
+    case Type.Class(name)          => sh"class @$name"
+    case Type.InterfaceClass(name) => sh"interface @$name"
+    case Type.ModuleClass(name)    => sh"module @$name"
     case Type.ArrayClass(ty)       => sh"${ty}[]"
   }
 

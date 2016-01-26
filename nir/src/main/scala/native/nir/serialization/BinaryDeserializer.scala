@@ -112,7 +112,7 @@ final class BinaryDeserializer(bb: ByteBuffer) {
   private def getNext(): Next = Next(getLocal, getVals)
 
   private def getOp(): Op = getInt match {
-    case T.UndefinedOp    => Op.Undefined
+    case T.UnreachableOp  => Op.Unreachable
     case T.RetOp          => Op.Ret(getVal)
     case T.ThrowOp        => Op.Throw(getVal)
     case T.JumpOp         => Op.Jump(getNext)
@@ -135,26 +135,11 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.ObjAllocOp         => Op.ObjAlloc(getType)
     case T.ObjFieldElemOp     => Op.ObjFieldElem(getType, getGlobal, getVal)
     case T.ObjMethodElemOp    => Op.ObjMethodElem(getType, getGlobal, getVal)
-    case T.ObjEqualsOp        => Op.ObjEquals(getVal, getVal)
-    case T.ObjHashCodeOp      => Op.ObjHashCode(getVal)
-    case T.ObjToStringOp      => Op.ObjToString(getVal)
-    case T.ObjGetClassOp      => Op.ObjGetClass(getVal)
     case T.ObjAsOp            => Op.ObjAs(getType, getVal)
     case T.ObjIsOp            => Op.ObjIs(getType, getVal)
     case T.ArrAllocOp         => Op.ArrAlloc(getType, getVal)
     case T.ArrLengthOp        => Op.ArrLength(getVal)
     case T.ArrElemOp          => Op.ArrElem(getType, getVal, getVal)
-    case T.PrimBoxOp          => Op.PrimBox(getType, getVal)
-    case T.PrimUnboxOp        => Op.PrimUnbox(getType, getVal)
-    case T.PrimHashCodeOp     => Op.PrimHashCode(getType, getVal)
-    case T.PrimToStringOp     => Op.PrimToString(getType, getVal, getVal)
-    case T.PrimParseOp        => Op.PrimParse(getType, getVal, getVal)
-    case T.MonitorEnterOp     => Op.MonitorEnter(getVal)
-    case T.MonitorExitOp      => Op.MonitorExit(getVal)
-    case T.MonitorNotifyOp    => Op.MonitorNotify(getVal)
-    case T.MonitorNotifyAllOp => Op.MonitorNotifyAll(getVal)
-    case T.MonitorWaitOp      => Op.MonitorWait(getVal, getVal, getVal)
-    case T.StringConcatOp     => Op.StringConcat(getVal, getVal)
   }
 
   private def getParams(): Seq[Param] = getSeq(getParam)
@@ -199,20 +184,21 @@ final class BinaryDeserializer(bb: ByteBuffer) {
 
   private def getVals(): Seq[Val] = getSeq(getVal)
   private def getVal(): Val = getInt match {
-    case T.NoneVal   => Val.None
-    case T.TrueVal   => Val.True
-    case T.FalseVal  => Val.False
-    case T.ZeroVal   => Val.Zero(getType)
-    case T.I8Val     => Val.I8(get)
-    case T.I16Val    => Val.I16(getShort)
-    case T.I32Val    => Val.I32(getInt)
-    case T.I64Val    => Val.I64(getLong)
-    case T.F32Val    => Val.F32(getFloat)
-    case T.F64Val    => Val.F64(getDouble)
-    case T.StructVal => Val.Struct(getGlobal, getVals)
-    case T.ArrayVal  => Val.Array(getType, getVals)
-    case T.LocalVal  => Val.Local(getLocal, getType)
-    case T.GlobalVal => Val.Global(getGlobal, getType)
+    case T.NoneVal      => Val.None
+    case T.TrueVal      => Val.True
+    case T.FalseVal     => Val.False
+    case T.ZeroVal      => Val.Zero(getType)
+    case T.I8Val        => Val.I8(get)
+    case T.I16Val       => Val.I16(getShort)
+    case T.I32Val       => Val.I32(getInt)
+    case T.I64Val       => Val.I64(getLong)
+    case T.F32Val       => Val.F32(getFloat)
+    case T.F64Val       => Val.F64(getDouble)
+    case T.StructVal    => Val.Struct(getGlobal, getVals)
+    case T.ArrayVal     => Val.Array(getType, getVals)
+    case T.LocalVal     => Val.Local(getLocal, getType)
+    case T.GlobalVal    => Val.Global(getGlobal, getType)
+    case T.IntrinsicVal => Val.Intrinsic(getGlobal, getType)
 
     case T.UnitVal   => Val.Unit
     case T.NullVal   => Val.Null
