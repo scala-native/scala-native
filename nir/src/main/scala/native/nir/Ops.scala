@@ -37,16 +37,18 @@ sealed abstract class Op {
   }
 }
 object Op {
-  //control-flow
+  // low-level control-flow
   final case object Unreachable                                                        extends Op
   final case class Ret    (value: Val)                                                 extends Op
-  final case class Throw  (value: Val)                                                 extends Op
   final case class Jump   (next: Next)                                                 extends Op
   final case class If     (value: Val, thenp: Next, elsep: Next)                       extends Op
   final case class Switch (value: Val, default: Next, cases: Seq[Case])                extends Op
   final case class Invoke (ty: Type, ptr: Val, args: Seq[Val], succ: Next, fail: Next) extends Op
 
-  //compute
+  // high-level control-flow
+  final case class Throw  (value: Val)                                                 extends Op
+
+  // low-level
   final case class Call   (ty: Type, ptr: Val, args: Seq[Val])          extends Op
   final case class Load   (ty: Type, ptr: Val)                          extends Op
   final case class Store  (ty: Type, ptr: Val, value: Val)              extends Op
@@ -59,7 +61,7 @@ object Op {
   final case class Comp   (comp: nir.Comp, ty: Type, l: Val, r: Val)    extends Op
   final case class Conv   (conv: nir.Conv, ty: Type, value: Val)        extends Op
 
-  //scala
+  // high-level
   final case class ObjAlloc        (ty: Type)                           extends Op
   final case class ObjFieldElem    (ty: Type, name: Global, obj: Val)   extends Op
   final case class ObjMethodElem   (ty: Type, name: Global, obj: Val)   extends Op

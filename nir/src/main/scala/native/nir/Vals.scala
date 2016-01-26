@@ -16,15 +16,16 @@ sealed abstract class Val {
     case Val.Array(ty, vals)  => Type.Array(ty, vals.length)
     case Val.Local(_, ty)     => ty
     case Val.Global(_, ty)    => ty
-    case Val.Intrinsic(_, ty) => ty
 
-    case Val.Unit      => Type.Unit
-    case Val.Null      => Type.NullClass
-    case Val.String(_) => Type.StringClass
-    case Val.Class(ty) => Type.ClassClass
+    case Val.Unit             => Type.Unit
+    case Val.Null             => Type.NullClass
+    case Val.String(_)        => Type.StringClass
+    case Val.Class(ty)        => Type.ClassClass
+    case Val.Intrinsic(_, ty) => ty
   }
 }
 object Val {
+  //low-level
   final case object None                                      extends Val
   final case object True                                      extends Val
   final case object False                                     extends Val
@@ -39,11 +40,11 @@ object Val {
   final case class Array(elemty: Type, values: Seq[Val])      extends Val
   final case class Local(local: nir.Local, valty: Type)       extends Val
   final case class Global(global: nir.Global, valty: Type)    extends Val
-  final case class Intrinsic(global: nir.Global, valty: Type) extends Val
 
-  //scala
-  final case object Unit                           extends Val
-  final case object Null                           extends Val
-  final case class String(value: java.lang.String) extends Val
-  final case class Class(classty: Type)            extends Val
+  // high-level
+  final case object Unit                                      extends Val
+  final case object Null                                      extends Val
+  final case class String(value: java.lang.String)            extends Val
+  final case class Class(classty: Type)                       extends Val
+  final case class Intrinsic(global: nir.Global, valty: Type) extends Val
 }

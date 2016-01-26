@@ -128,9 +128,9 @@ object Tags {
   final val ArrayVal     = 1 + StructVal
   final val LocalVal     = 1 + ArrayVal
   final val GlobalVal    = 1 + LocalVal
-  final val IntrinsicVal = 1 + GlobalVal
-  final val UnitVal      = 1 + IntrinsicVal
+  final val UnitVal      = 1 + GlobalVal
   final val NullVal      = 1 + UnitVal
   final val StringVal    = 1 + NullVal
   final val ClassVal     = 1 + StringVal
+  final val IntrinsicVal = 1 + ClassVal
 }

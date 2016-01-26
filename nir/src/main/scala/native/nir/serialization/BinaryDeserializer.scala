@@ -184,25 +184,25 @@ final class BinaryDeserializer(bb: ByteBuffer) {
 
   private def getVals(): Seq[Val] = getSeq(getVal)
   private def getVal(): Val = getInt match {
-    case T.NoneVal      => Val.None
-    case T.TrueVal      => Val.True
-    case T.FalseVal     => Val.False
-    case T.ZeroVal      => Val.Zero(getType)
-    case T.I8Val        => Val.I8(get)
-    case T.I16Val       => Val.I16(getShort)
-    case T.I32Val       => Val.I32(getInt)
-    case T.I64Val       => Val.I64(getLong)
-    case T.F32Val       => Val.F32(getFloat)
-    case T.F64Val       => Val.F64(getDouble)
-    case T.StructVal    => Val.Struct(getGlobal, getVals)
-    case T.ArrayVal     => Val.Array(getType, getVals)
-    case T.LocalVal     => Val.Local(getLocal, getType)
-    case T.GlobalVal    => Val.Global(getGlobal, getType)
-    case T.IntrinsicVal => Val.Intrinsic(getGlobal, getType)
+    case T.NoneVal   => Val.None
+    case T.TrueVal   => Val.True
+    case T.FalseVal  => Val.False
+    case T.ZeroVal   => Val.Zero(getType)
+    case T.I8Val     => Val.I8(get)
+    case T.I16Val    => Val.I16(getShort)
+    case T.I32Val    => Val.I32(getInt)
+    case T.I64Val    => Val.I64(getLong)
+    case T.F32Val    => Val.F32(getFloat)
+    case T.F64Val    => Val.F64(getDouble)
+    case T.StructVal => Val.Struct(getGlobal, getVals)
+    case T.ArrayVal  => Val.Array(getType, getVals)
+    case T.LocalVal  => Val.Local(getLocal, getType)
+    case T.GlobalVal => Val.Global(getGlobal, getType)
 
-    case T.UnitVal   => Val.Unit
-    case T.NullVal   => Val.Null
-    case T.StringVal => Val.String(getString)
-    case T.ClassVal  => Val.Class(getType)
+    case T.UnitVal      => Val.Unit
+    case T.NullVal      => Val.Null
+    case T.StringVal    => Val.String(getString)
+    case T.ClassVal     => Val.Class(getType)
+    case T.IntrinsicVal => Val.Intrinsic(getGlobal, getType)
   }
 }

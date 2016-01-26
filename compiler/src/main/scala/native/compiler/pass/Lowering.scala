@@ -5,10 +5,10 @@ package pass
 import native.nir._
 
 object Lowering extends Pass
+                   with IntrinsicLowering
                    with SizeLowering
                    with UnitLowering
                    with ThrowLowering
-                   with PrimLowering
                    with InterfaceLowering
                    with ObjectLowering
                    with ArrayLowering

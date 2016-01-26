@@ -5,7 +5,7 @@ import native.util.{sh, Show}, Show.{Sequence => s, Indent => i, Unindent => ui,
                                      Repeat => r, Newline => nl}
 
 object Shows {
-  private def brace(body: Show.Result): Show.Result = {
+  def brace(body: Show.Result): Show.Result = {
     val open = "{"
     val close = nl("}")
     sh"$open$body$close"
@@ -27,7 +27,8 @@ object Shows {
 
   implicit val showBlock: Show[Block] = Show { block =>
     import block._
-    val header = sh"$name(${r(params, sep = ", ")}):"
+    val paramlist = if (params.isEmpty) sh"" else sh"(${r(params, sep = ", ")})"
+    val header = sh"$name$paramlist:"
     val body = i(r(instrs, sep = nl("")))
     sh"$header$body"
   }
@@ -162,12 +163,12 @@ object Shows {
     case Val.Array(ty, values)   => sh"array $ty {${r(values, ", ")}}"
     case Val.Local(name, ty)     => sh"$name"
     case Val.Global(name, ty)    => sh"@$name"
-    case Val.Intrinsic(name, ty) => sh"#$name"
 
-    case Val.Unit      => "unit"
-    case Val.Null      => "null"
-    case Val.String(v) => "\"" + v.replace("\"", "\\\"") + "\""
-    case Val.Class(ty) => sh"class $ty"
+    case Val.Unit                => "unit"
+    case Val.Null                => "null"
+    case Val.String(v)           => "\"" + v.replace("\"", "\\\"") + "\""
+    case Val.Class(ty)           => sh"class $ty"
+    case Val.Intrinsic(name, ty) => sh"#$name"
   }
 
   implicit val showDefns: Show[Seq[Defn]] = Show { defns =>

@@ -170,7 +170,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Op.ObjAlloc(ty) =>
       putInt(T.ObjAllocOp); putType(ty)
     case Op.ObjFieldElem(ty, name, v) =>
-      putInt(T.ObjFieldElemOp); putGlobal(name); putVal(v)
+      putInt(T.ObjFieldElemOp); putType(ty); putGlobal(name); putVal(v)
     case Op.ObjMethodElem(ty, name, v) =>
       putInt(T.ObjMethodElemOp); putType(ty); putGlobal(name); putVal(v)
     case Op.ObjAs(ty, v) =>
@@ -230,25 +230,25 @@ final class BinarySerializer(buffer: ByteBuffer) {
 
   private def putVals(values: Seq[Val]): Unit = putSeq(putVal)(values)
   private def putVal(value: Val): Unit = value match {
-    case Val.None             => putInt(T.NoneVal)
-    case Val.True             => putInt(T.TrueVal)
-    case Val.False            => putInt(T.FalseVal)
-    case Val.Zero(ty)         => putInt(T.ZeroVal); putType(ty)
-    case Val.I8(v)            => putInt(T.I8Val); put(v)
-    case Val.I16(v)           => putInt(T.I16Val); putShort(v)
-    case Val.I32(v)           => putInt(T.I32Val); putInt(v)
-    case Val.I64(v)           => putInt(T.I64Val); putLong(v)
-    case Val.F32(v)           => putInt(T.F32Val); putFloat(v)
-    case Val.F64(v)           => putInt(T.F64Val); putDouble(v)
-    case Val.Struct(n, vs)    => putInt(T.StructVal); putGlobal(n); putVals(vs)
-    case Val.Array(ty, vs)    => putInt(T.ArrayVal); putType(ty); putVals(vs)
-    case Val.Local(n, ty)     => putInt(T.LocalVal); putLocal(n); putType(ty)
-    case Val.Global(n, ty)    => putInt(T.GlobalVal); putGlobal(n); putType(ty)
-    case Val.Intrinsic(n, ty) => putInt(T.IntrinsicVal); putGlobal(n); putType(ty)
+    case Val.None          => putInt(T.NoneVal)
+    case Val.True          => putInt(T.TrueVal)
+    case Val.False         => putInt(T.FalseVal)
+    case Val.Zero(ty)      => putInt(T.ZeroVal); putType(ty)
+    case Val.I8(v)         => putInt(T.I8Val); put(v)
+    case Val.I16(v)        => putInt(T.I16Val); putShort(v)
+    case Val.I32(v)        => putInt(T.I32Val); putInt(v)
+    case Val.I64(v)        => putInt(T.I64Val); putLong(v)
+    case Val.F32(v)        => putInt(T.F32Val); putFloat(v)
+    case Val.F64(v)        => putInt(T.F64Val); putDouble(v)
+    case Val.Struct(n, vs) => putInt(T.StructVal); putGlobal(n); putVals(vs)
+    case Val.Array(ty, vs) => putInt(T.ArrayVal); putType(ty); putVals(vs)
+    case Val.Local(n, ty)  => putInt(T.LocalVal); putLocal(n); putType(ty)
+    case Val.Global(n, ty) => putInt(T.GlobalVal); putGlobal(n); putType(ty)
 
-    case Val.Unit           => putInt(T.UnitVal)
-    case Val.Null           => putInt(T.NullVal)
-    case Val.String(v)      => putInt(T.StringVal); putString(v)
-    case Val.Class(ty)      => putInt(T.ClassVal); putType(ty)
+    case Val.Unit             => putInt(T.UnitVal)
+    case Val.Null             => putInt(T.NullVal)
+    case Val.String(v)        => putInt(T.StringVal); putString(v)
+    case Val.Class(ty)        => putInt(T.ClassVal); putType(ty)
+    case Val.Intrinsic(n, ty) => putInt(T.IntrinsicVal); putGlobal(n); putType(ty)
   }
 }

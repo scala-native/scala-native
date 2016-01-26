@@ -70,7 +70,7 @@ trait ModuleLowering extends Pass {
               { elsep =>
                 elsep finish Op.Ret(prev.value)
               }
-            ).finish(Op.Undefined).blocks
+            ).finish(Op.Unreachable).blocks
           }
         )
       Seq(cls, data, accessor).flatMap(onDefn)
