@@ -16,4 +16,9 @@ trait StringLowering extends Pass {
     case Type.StringClass => i8_*
     case _                => ty
   })
+
+  override def onVal(value: Val): Val = super.onVal(value match {
+    case Val.String(_) => Val.Zero(i8_*)
+    case _             => value
+  })
 }

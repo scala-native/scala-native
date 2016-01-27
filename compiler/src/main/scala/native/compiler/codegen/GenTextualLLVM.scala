@@ -16,21 +16,22 @@ object GenTextualLLVM extends GenShow {
   }
 
   implicit val showDefn: Show[Defn] = Show {
-    case Defn.Var(attrs, name, ty, rhs) =>
-      sh"@$name = global $ty $rhs"
+    case Defn.Var(attrs, name, _, rhs) =>
+      sh"@$name = global $rhs"
     case Defn.Declare(attrs, name, Type.Function(argtys, retty)) =>
       sh"declare $retty @$name(${r(argtys, sep = ", ")})"
-    case Defn.Define(attrs, name, _, blocks) =>
-      showDefine(attrs, name, blocks)
+    case Defn.Define(attrs, name, Type.Function(_, retty), blocks) =>
+      showDefine(attrs, retty, name, blocks)
     case Defn.Struct(attrs, name, tys) =>
-      sh"type %$name = {${r(tys, sep = ", ")}}"
+      sh"%$name = type {${r(tys, sep = ", ")}}"
     case defn =>
       unsupported(defn)
   }
 
-  def showDefine(attrs: Seq[Attr], name: Global, blocks: Seq[Block]) = {
+  def showDefine(attrs: Seq[Attr], retty: Type, name: Global, blocks: Seq[Block]) = {
     val body = brace(i(showBlocks(blocks)))
-    sh"define $name $body"
+    val params = sh"(${r(blocks.head.params, sep = ", ")})"
+    sh"define $retty @$name$params $body"
   }
 
   def showBlocks(blocks: Seq[Block]) = {
@@ -38,32 +39,37 @@ object GenTextualLLVM extends GenShow {
     val visited = mutable.Set.empty[CFG.Node]
     val worklist = mutable.Stack.empty[CFG.Node]
     val result = mutable.UnrolledBuffer.empty[Show.Result]
+    val entry = cfg(blocks.head.name)
 
-    worklist.push(cfg(blocks.head.name))
+    worklist.push(entry)
     while (worklist.nonEmpty) {
       val node = worklist.pop()
       if (!visited.contains(node)){
         visited += node
         node.succ.foreach(e => worklist.push(e.to))
-        result += showBlock(node.block, node.pred)
+        result += showBlock(node.block, node.pred, isEntry = node eq entry)
       }
     }
 
-    r(result, sep = nl(""))
+    r(result)
   }
 
-  def showBlock(block: Block, pred: Seq[CFG.Edge]): Show.Result = {
-    val header = sh"${block.name.id}:"
-    val phis = r(block.params.zipWithIndex.map {
-      case (Param(n, ty), i) =>
-        val branches = pred.map { e =>
-          sh"[${e.values(i)}, ${e.from.block.name}]"
-        }
-        sh"phi $ty ${r(branches, sep = ", ")}"
-    }.map(i(_)))
-    val instructions = r(block.instrs.map(i(_)))
+  def showBlock(block: Block, pred: Seq[CFG.Edge], isEntry: Boolean): Show.Result = {
+    val instructions = r(block.instrs, sep = nl(""))
 
-    sh"$header$phis$instructions"
+    if (isEntry)
+      instructions
+    else {
+      val label = ui(sh"${block.name}:")
+      val phis = r(block.params.zipWithIndex.map {
+        case (Param(n, ty), i) =>
+          val branches = pred.map { e =>
+            sh"[${e.values(i)}, ${e.from.block.name}]"
+          }
+          sh"phi $ty ${r(branches, sep = ", ")}"
+      }.map(i(_)))
+      sh"$label$phis${nl("")}$instructions"
+    }
   }
 
   implicit val showType: Show[Type] = Show {
@@ -82,19 +88,24 @@ object GenTextualLLVM extends GenShow {
     case ty                       => unsupported(ty)
   }
 
-  implicit val showVal: Show[Val] = Show {
+  def justVal(v: Val): Show.Result = v match {
     case Val.True          => "true"
     case Val.False         => "false"
-    case Val.Zero(ty)      => sh"$ty zeroinitializer"
-    case Val.I8(v)         => sh"i8 $v"
-    case Val.I16(v)        => sh"i16 $v"
-    case Val.I32(v)        => sh"i32 $v"
-    case Val.I64(v)        => sh"i64 $v"
-    case Val.Struct(n, vs) => sh"%$n { ${r(vs, sep = ", ")} }"
+    case Val.Zero(ty)      => "zeroinitializer"
+    case Val.I8(v)         => v.toString
+    case Val.I16(v)        => v.toString
+    case Val.I32(v)        => v.toString
+    case Val.I64(v)        => v.toString
+    case Val.Struct(n, vs) => sh"{ ${r(vs, sep = ", ")} }"
     case Val.Array(_, vs)  => sh"[ ${r(vs, sep = ", ")} ]"
-    case Val.Local(n, ty)  => sh"$ty %$n"
-    case Val.Global(n, ty) => sh"$ty @$n"
-    case v                 => unsupported(v)
+    case Val.Local(n, ty)  => sh"%$n"
+    case Val.Global(n, ty) => sh"@$n"
+  }
+
+  implicit val showVal: Show[Val] = Show { v =>
+    val justv = justVal(v)
+    val ty = v.ty
+    sh"$ty $justv"
   }
 
   implicit val showGlobal: Show[Global] = Show {
@@ -116,24 +127,24 @@ object GenTextualLLVM extends GenShow {
     case Op.Unreachable =>
       "unreachable"
     case Op.Ret(Val.None) =>
-      sh"ret"
+      sh"ret void"
     case Op.Ret(value) =>
       sh"ret $value"
     case Op.Jump(next) =>
       "todo: jump"
     case Op.If(cond, thenp, elsep) =>
-      "todo: if"
+      sh"br $cond, $thenp, $elsep"
     case Op.Switch(scrut, default, cases)  =>
       "todo: switch"
     case Op.Invoke(ty, f, args, succ, fail) =>
       "todo: invoke"
 
     case Op.Call(ty, f, args) =>
-      "todo: call"
+      sh"call $ty ${justVal(f)}(${r(args, sep = ", ")})"
     case Op.Load(ty, ptr) =>
-      "todo: load"
+      sh"load $ty, $ptr"
     case Op.Store(ty, ptr, value) =>
-      "todo: store"
+      sh"store $value, $ptr"
     case Op.Elem(ty, ptr, indexes) =>
       "todo: elem"
     case Op.Extract(ty, aggr, index) =>
@@ -145,18 +156,43 @@ object GenTextualLLVM extends GenShow {
     case Op.Bin(name, ty, l, r) =>
       "todo: bin"
     case Op.Comp(name, ty, l, r) =>
-      "todo: comp"
+      assert(attrs.isEmpty)
+      val cmp = ty match {
+        case Type.F(_) =>
+          name match {
+            case Comp.Eq  => "fcmp oeq"
+            case Comp.Neq => "fcmp one"
+            case Comp.Lt  => "fcmp olt"
+            case Comp.Lte => "fcmp ole"
+            case Comp.Gt  => "fcmp ogt"
+            case Comp.Gte => "fcmp oge"
+          }
+        case _ =>
+          name match {
+            case Comp.Eq  => "icmp eq"
+            case Comp.Neq => "icmp ne"
+            case Comp.Lt  => "icmp slt"
+            case Comp.Lte => "icmp sle"
+            case Comp.Gt  => "icmp sgt"
+            case Comp.Gte => "icmp sge"
+          }
+      }
+      sh"$cmp $l, ${justVal(r)}"
     case Op.Conv(name, ty, v) =>
       "todo: conv"
-
     case op =>
       sh"unsupported: ${op.toString}"
   }
 
   implicit val showNext: Show[Next] = Show {
     case Next(n, _) =>
-      sh"label $n"
+      sh"label %$n"
   }
 
   implicit def showCase: Show[Case] = ???
+
+  implicit def showParam: Show[Param] = Show {
+    case Param(n, ty) =>
+      sh"$ty %$n"
+  }
 }

@@ -46,7 +46,7 @@ trait ModuleLowering extends Pass {
       val cls = Defn.Class(attrs, name, parent, ifaces, members)
       val clsty = Type.Class(name)
       val ptrclsty = Type.Ptr(clsty)
-      val ctorty = Type.Function(Seq(), Type.Unit)
+      val ctorty = Type.Function(Seq(clsty), Type.Unit)
       val ctor = Val.Global(Global.Nested(name, Global.Atom("init")), Type.Ptr(ctorty))
       val data = Defn.Var(Seq(), Global.Tagged(name, datatag), clsty, Val.Null)
       val dataval = Val.Global(data.name, ptrclsty)

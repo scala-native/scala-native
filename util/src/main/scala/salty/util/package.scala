@@ -14,6 +14,7 @@ package object util {
   final case object UnreachableException extends Exception
   def unreachable = throw UnreachableException
 
-  final case class UnsupportedException(v: Any) extends Exception(v.toString)
-  def unsupported(v: Any = "") = throw UnsupportedException(v)
+  final case class UnsupportedException(msg: String) extends Exception(msg)
+  def unsupported(v: Any = "") =
+    throw UnsupportedException(s"$v (${v.getClass})")
 }

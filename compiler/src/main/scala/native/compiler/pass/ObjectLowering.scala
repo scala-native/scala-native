@@ -2,7 +2,8 @@ package native
 package compiler
 package pass
 
-import native.nir._
+import native.nir._, Shows._
+import native.util.sh
 
 /** Lowers classes, methods and fields down to
  *  structs with accompanying vtables.
@@ -11,8 +12,8 @@ import native.nir._
  *
  *      class $name() {
  *        .. var $fname: $fty = $fvalue
- *        .. declare $mname: $mty
- *        .. define $mname: $mty = $body
+ *        .. def $mname: $mty
+ *        .. def $mname: $mty = $body
  *      }
  *
  *  Gets lowered to:
@@ -23,7 +24,7 @@ import native.nir._
  *
  *      var $name_vconst: struct $name_vtable = struct[$name_vtable](..$mname)
  *
- *      .. define $mname: $mty = $body
+ *      .. def $mname: $mty = $body
  *
  *  Eliminates:
  *  - Type.{ObjectClass, Class}
@@ -31,10 +32,15 @@ import native.nir._
  *  - Op.Obj*
  */
 trait ObjectLowering extends Pass {
-  private val i8_*   = Type.Ptr(Type.I8)
+  private val i8_*         = Type.Ptr(Type.I8)
+
   private val vtable = Global.Atom("vtable")
   private val data   = Global.Atom("data")
   private val vconst = Global.Atom("vconst")
+  private val cls    = Global.Atom("cls")
+
+  private val nrtClassName = Global.Atom("nrt_class_t")
+  private val nrtClassTy   = Type.Struct(nrtClassName)
 
   override def onDefn(defn: Defn) = defn match {
     case Defn.Class(attrs, name, None, Seq(), members) =>
@@ -53,7 +59,8 @@ trait ObjectLowering extends Pass {
       val dataStructTy   = Type.Struct(dataStructName)
       val dataStruct     = Defn.Struct(Seq(), dataStructName, fields.map(_.ty))
 
-      val classStruct = Defn.Struct(Seq(), name, Seq(Type.Ptr(vtableStructTy), dataStructTy))
+      val classStruct   = Defn.Struct(Seq(), name, Seq(Type.Ptr(vtableStructTy), dataStructTy))
+      val classStructTy = Type.Struct(name)
 
       val vtableConstName = Global.Tagged(name, vconst)
       val vtableConstVal  = Val.Struct(vtableStructName, declareVals ++ defineVals)
@@ -65,9 +72,27 @@ trait ObjectLowering extends Pass {
       super.onDefn(defn)
   }
 
+  override def onInstr(instr: Instr) = instr match {
+    case Instr(n, attrs, Op.ObjAlloc(ty)) =>
+      val cls = fresh()
+      val clsValue = Val.Local(cls, Type.ClassClass)
+      Seq(Instr(cls, Op.ClassOf(ty)),
+          Instr(n, attrs, Intrinsic.call(Intrinsic.object_alloc, clsValue))).flatMap(onInstr)
+    case Instr(n, attrs, Op.ClassOf(ty)) =>
+      (ty match {
+        case builtin: Type.BuiltinClassKind =>
+          Seq(Instr(n, attrs, Intrinsic.call(Intrinsic.builtin_class(builtin))))
+        case Type.Class(name) =>
+          Seq(Instr(n, attrs, Intrinsic.call(Intrinsic.class_for_name, name.stringValue)))
+        case _ =>
+          ???
+      }).flatMap(onInstr)
+    case _ =>
+      super.onInstr(instr)
+  }
+
   override def onType(ty: Type) = super.onType(ty match {
-    case Type.Class(_)
-       | Type.ObjectClass => i8_*
-    case _                => ty
+    case _: Type.ClassKind => i8_*
+    case _                 => ty
   })
 }

@@ -127,19 +127,19 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.ExtractOp      => Op.Extract(getType, getVal, getVal)
     case T.InsertOp       => Op.Insert(getType, getVal, getVal, getVal)
     case T.AllocaOp       => Op.Alloca(getType)
-    case T.SizeOp         => Op.Size(getType)
     case T.BinOp          => Op.Bin(getBin, getType, getVal, getVal)
     case T.CompOp         => Op.Comp(getComp, getType, getVal, getVal)
     case T.ConvOp         => Op.Conv(getConv, getType, getVal)
 
-    case T.ObjAllocOp         => Op.ObjAlloc(getType)
-    case T.ObjFieldElemOp     => Op.ObjFieldElem(getType, getGlobal, getVal)
-    case T.ObjMethodElemOp    => Op.ObjMethodElem(getType, getGlobal, getVal)
-    case T.ObjAsOp            => Op.ObjAs(getType, getVal)
-    case T.ObjIsOp            => Op.ObjIs(getType, getVal)
-    case T.ArrAllocOp         => Op.ArrAlloc(getType, getVal)
-    case T.ArrLengthOp        => Op.ArrLength(getVal)
-    case T.ArrElemOp          => Op.ArrElem(getType, getVal, getVal)
+    case T.ObjAllocOp      => Op.ObjAlloc(getType)
+    case T.ObjFieldElemOp  => Op.ObjFieldElem(getType, getGlobal, getVal)
+    case T.ObjMethodElemOp => Op.ObjMethodElem(getType, getGlobal, getVal)
+    case T.ObjAsOp         => Op.ObjAs(getType, getVal)
+    case T.ObjIsOp         => Op.ObjIs(getType, getVal)
+    case T.ArrAllocOp      => Op.ArrAlloc(getType, getVal)
+    case T.ArrLengthOp     => Op.ArrLength(getVal)
+    case T.ArrElemOp       => Op.ArrElem(getType, getVal, getVal)
+    case T.ClassOfOp       => Op.ClassOf(getType)
   }
 
   private def getParams(): Seq[Param] = getSeq(getParam)
@@ -202,7 +202,7 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.UnitVal      => Val.Unit
     case T.NullVal      => Val.Null
     case T.StringVal    => Val.String(getString)
-    case T.ClassVal     => Val.Class(getType)
     case T.IntrinsicVal => Val.Intrinsic(getGlobal, getType)
+    case T.SizeVal      => Val.Size(getType)
   }
 }

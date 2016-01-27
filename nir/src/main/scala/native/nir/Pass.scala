@@ -7,7 +7,10 @@ trait Pass {
   val fresh = new Fresh("tx")
 
   def onCompilationUnit(defns: Seq[Defn]): Seq[Defn] =
-    onScope(defns)
+    onPostCompilationUnit(onScope(defns))
+
+  def onPostCompilationUnit(defns: Seq[Defn]): Seq[Defn] =
+    defns
 
   def onScope(defns: Seq[Defn]): Seq[Defn] =
     defns.flatMap(onDefn)
@@ -58,7 +61,6 @@ trait Pass {
     case Op.Extract(ty, aggrv, indexv)   => Op.Extract(onType(ty), onVal(aggrv), onVal(indexv))
     case Op.Insert(ty, aggrv, v, indexv) => Op.Insert(onType(ty), onVal(aggrv), onVal(v), onVal(indexv))
     case Op.Alloca(ty)                   => Op.Alloca(onType(ty))
-    case Op.Size(ty)                     => Op.Size(onType(ty))
     case Op.Bin(bin, ty, lv, rv)         => Op.Bin(bin, onType(ty), onVal(lv), onVal(rv))
     case Op.Comp(comp, ty, lv, rv)       => Op.Comp(comp, onType(ty), onVal(lv), onVal(rv))
     case Op.Conv(conv, ty, v)            => Op.Conv(conv, onType(ty), onVal(v))
@@ -71,6 +73,7 @@ trait Pass {
     case Op.ArrAlloc(ty, v)         => Op.ArrAlloc(onType(ty), onVal(v))
     case Op.ArrLength(v)            => Op.ArrLength(onVal(v))
     case Op.ArrElem(ty, v, i)       => Op.ArrElem(onType(ty), onVal(v), onVal(i))
+    case Op.ClassOf(ty)             => Op.ClassOf(onType(ty))
   }
 
   def onVal(value: Val): Val = value match {
@@ -79,7 +82,8 @@ trait Pass {
     case Val.Array(ty, values) => Val.Array(onType(ty), values.map(onVal))
     case Val.Local(n, ty)      => Val.Local(onLocal(n), onType(ty))
     case Val.Global(n, ty)     => Val.Global(n, onType(ty))
-    case Val.Class(ty)         => Val.Class(onType(ty))
+    case Val.Intrinsic(n, ty)  => Val.Intrinsic(n, onType(ty))
+    case Val.Size(ty)          => Val.Size(onType(ty))
     case _                     => value
   }
 

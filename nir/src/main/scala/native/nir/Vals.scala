@@ -14,18 +14,19 @@ sealed abstract class Val {
     case Val.F64(_)           => Type.F64
     case Val.Struct(name, _)  => Type.Struct(name)
     case Val.Array(ty, vals)  => Type.Array(ty, vals.length)
+    case Val.Chars(s)         => Type.Array(Type.I8, s.length)
     case Val.Local(_, ty)     => ty
     case Val.Global(_, ty)    => ty
 
     case Val.Unit             => Type.Unit
     case Val.Null             => Type.NullClass
     case Val.String(_)        => Type.StringClass
-    case Val.Class(ty)        => Type.ClassClass
     case Val.Intrinsic(_, ty) => ty
+    case Val.Size(ty)         => Type.Size
   }
 }
 object Val {
-  //low-level
+  // low-level
   final case object None                                      extends Val
   final case object True                                      extends Val
   final case object False                                     extends Val
@@ -38,6 +39,7 @@ object Val {
   final case class F64(value: Double)                         extends Val
   final case class Struct(name: nir.Global, values: Seq[Val]) extends Val
   final case class Array(elemty: Type, values: Seq[Val])      extends Val
+  final case class Chars(value: java.lang.String)             extends Val
   final case class Local(local: nir.Local, valty: Type)       extends Val
   final case class Global(global: nir.Global, valty: Type)    extends Val
 
@@ -45,6 +47,6 @@ object Val {
   final case object Unit                                      extends Val
   final case object Null                                      extends Val
   final case class String(value: java.lang.String)            extends Val
-  final case class Class(classty: Type)                       extends Val
   final case class Intrinsic(global: nir.Global, valty: Type) extends Val
+  final case class Size(of: Type)                             extends Val
 }

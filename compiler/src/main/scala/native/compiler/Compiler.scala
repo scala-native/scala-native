@@ -13,8 +13,11 @@ final class Compiler(opts: Opts) {
 
   def passes(): Seq[Pass] = Seq(pass.Lowering)
 
-  def output(module: Seq[Defn]): Unit =
-    serializeFile(opts.gen.apply _, module, opts.outpath)
+  def output(module: Seq[Defn]): Unit = {
+    //serializeFile(opts.gen.apply _, module, opts.outpath)
+    serializeFile(codegen.GenTextualNIR, module, opts.outpath + ".hnir")
+    serializeFile(codegen.GenTextualLLVM, module, opts.outpath + ".ll")
+  }
 
   def apply(): Unit = {
     def loop(module: Seq[Defn], passes: Seq[Pass]): Seq[Defn] =

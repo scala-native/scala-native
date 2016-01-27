@@ -43,6 +43,8 @@ object Shows {
   }
 
   implicit val showNext: Show[Next] = Show {
+    case Next(name, Seq()) =>
+      sh"$name"
     case Next(name, args) =>
       sh"$name(${r(args, sep = ", ")})"
   }
@@ -55,6 +57,8 @@ object Shows {
   implicit val showOp: Show[Op] = Show {
     case Op.Unreachable =>
       "unreachable"
+    case Op.Ret(Val.None) =>
+      sh"ret"
     case Op.Ret(value) =>
       sh"ret $value"
     case Op.Throw(value) =>
@@ -83,8 +87,6 @@ object Shows {
       sh"insert[$ty] $aggr, $value, $index"
     case Op.Alloca(ty) =>
       sh"alloca[$ty]"
-    case Op.Size(ty) =>
-      sh"size[$ty]"
     case Op.Bin(name, ty, l, r) =>
       sh"$name[$ty] $l, $r"
     case Op.Comp(name, ty, l, r) =>
@@ -108,6 +110,8 @@ object Shows {
       sh"arr-length $value"
     case Op.ArrElem(ty, value, index) =>
       sh"arr-elem[$ty] $value, $index"
+    case Op.ClassOf(ty) =>
+      sh"class-of[$ty]"
   }
 
   implicit val showBin: Show[Bin] = Show {
@@ -161,14 +165,15 @@ object Shows {
     case Val.F64(value)          => sh"${value}f64"
     case Val.Struct(n, values)   => sh"struct $n {${r(values, ", ")}}"
     case Val.Array(ty, values)   => sh"array $ty {${r(values, ", ")}}"
+    case Val.Chars(v)            => s("c\"", v, "\"")
     case Val.Local(name, ty)     => sh"$name"
     case Val.Global(name, ty)    => sh"@$name"
 
     case Val.Unit                => "unit"
     case Val.Null                => "null"
     case Val.String(v)           => "\"" + v.replace("\"", "\\\"") + "\""
-    case Val.Class(ty)           => sh"class $ty"
     case Val.Intrinsic(name, ty) => sh"#$name"
+    case Val.Size(ty)            => sh"size $ty"
   }
 
   implicit val showDefns: Show[Seq[Defn]] = Show { defns =>
@@ -243,6 +248,6 @@ object Shows {
   }
 
   implicit val showLocal: Show[Local] = Show {
-    case Local(scope, id) => sh"%$id"
+    case Local(scope, id) => sh"%$scope.$id"
   }
 }

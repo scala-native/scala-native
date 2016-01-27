@@ -3,9 +3,11 @@ package nir
 
 import Type._
 
-object Intrinsics {
+object Intrinsic {
   private def intrinsic(id: String, args: Seq[Type], ret: Type) =
     Val.Intrinsic(Global.Atom(id), Type.Ptr(Type.Function(args, ret)))
+  private def nullary(id: String, to: Type) =
+    intrinsic(id, Seq(), to)
   private def unary(id: String, from: Type, to: Type) =
     intrinsic(id, Seq(from), to)
   private def binary(id: String, from1: Type, from2: Type, to: Type) =
@@ -89,7 +91,7 @@ object Intrinsics {
   )
 
   val prim_hash_code = Map[Type, Val.Intrinsic](
-    Bool           -> unary("bool_hash_code"  , Bool, I32),
+    BooleanClass   -> unary("bool_hash_code"  , Bool, I32),
     CharacterClass -> unary("char_hash_code"  , I16 , I32),
     ByteClass      -> unary("byte_hash_code"  , I8  , I32),
     ShortClass     -> unary("short_hash_code" , I16 , I32),
@@ -99,12 +101,29 @@ object Intrinsics {
     DoubleClass    -> unary("double_hash_code", F64 , I32)
   )
 
+  val builtin_class = Map[Type.BuiltinClassKind, Val.Intrinsic](
+    NullClass      -> nullary("null_class"  , ClassClass),
+    ObjectClass    -> nullary("object_class", ClassClass),
+    ClassClass     -> nullary("class_class" , ClassClass),
+    StringClass    -> nullary("string_class", ClassClass),
+    CharacterClass -> nullary("char_class"  , ClassClass),
+    BooleanClass   -> nullary("bool_class"  , ClassClass),
+    ByteClass      -> nullary("byte_class"  , ClassClass),
+    ShortClass     -> nullary("short_class" , ClassClass),
+    IntegerClass   -> nullary("int_class"   , ClassClass),
+    LongClass      -> nullary("long_class"  , ClassClass),
+    FloatClass     -> nullary("float_class" , ClassClass),
+    DoubleClass    -> nullary("double_class", ClassClass)
+  )
+
+  val object_alloc     = unary ("object_allocate" , ClassClass,               ObjectClass)
   val object_equals    = binary("object_equals"   , ObjectClass, ObjectClass, Bool       )
   val object_to_string = unary ("object_to_string", ObjectClass,              StringClass)
   val object_hash_code = unary ("object_hash_code", ObjectClass,              I32        )
   val object_get_class = unary ("object_get_class", ObjectClass,              ClassClass )
 
-  val class_get_name = unary("class_get_name", ClassClass, StringClass)
+  val class_get_name = unary("class_get_name", ClassClass,  StringClass)
+  val class_for_name = unary("class_for_name", StringClass, ClassClass)
 
   val monitor_enter      = unary  ("monitor_enter"     , ObjectClass,           Unit)
   val monitor_exit       = unary  ("monitor_exit"      , ObjectClass,           Unit)
@@ -112,5 +131,11 @@ object Intrinsics {
   val monitor_notify_all = unary  ("monitor_notify_all", ObjectClass,           Unit)
   val monitor_wait       = ternary("monitor_wait"      , ObjectClass, I64, I32, Unit)
 
-  val string_concat = binary("string_concat", StringClass, StringClass, StringClass)
+  val string_concat    = binary("string_concat",    StringClass,  StringClass, StringClass)
+  val string_from_utf8 = binary("string_from_utf8", Type.Ptr(I8), I32,         StringClass)
+
+  def call(intr: Val.Intrinsic, args: Val*): Op = {
+    val Val.Intrinsic(_, Type.Ptr(ty)) = intr
+    Op.Call(ty, intr, args)
+  }
 }

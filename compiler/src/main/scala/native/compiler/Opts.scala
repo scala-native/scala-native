@@ -11,7 +11,7 @@ object Opts {
   lazy val empty =
     Opts(
       classpath = Seq(""),
-      outpath = "out.ll",
+      outpath = "out",
       entry = "",
       gen = codegen.GenTextualLLVM
     )

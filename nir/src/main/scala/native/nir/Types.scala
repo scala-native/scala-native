@@ -38,18 +38,19 @@ object Type {
   final case object Nothing extends Type
 
   sealed abstract class ClassKind               extends Type
-  final case object NullClass                   extends ClassKind
-  final case object ObjectClass                 extends ClassKind
-  final case object ClassClass                  extends ClassKind
-  final case object StringClass                 extends ClassKind
-  final case object CharacterClass              extends ClassKind
-  final case object BooleanClass                extends ClassKind
-  final case object ByteClass                   extends ClassKind
-  final case object ShortClass                  extends ClassKind
-  final case object IntegerClass                extends ClassKind
-  final case object LongClass                   extends ClassKind
-  final case object FloatClass                  extends ClassKind
-  final case object DoubleClass                 extends ClassKind
+  sealed abstract class BuiltinClassKind        extends ClassKind
+  final case object NullClass                   extends BuiltinClassKind
+  final case object ObjectClass                 extends BuiltinClassKind
+  final case object ClassClass                  extends BuiltinClassKind
+  final case object StringClass                 extends BuiltinClassKind
+  final case object CharacterClass              extends BuiltinClassKind
+  final case object BooleanClass                extends BuiltinClassKind
+  final case object ByteClass                   extends BuiltinClassKind
+  final case object ShortClass                  extends BuiltinClassKind
+  final case object IntegerClass                extends BuiltinClassKind
+  final case object LongClass                   extends BuiltinClassKind
+  final case object FloatClass                  extends BuiltinClassKind
+  final case object DoubleClass                 extends BuiltinClassKind
   final case class Class(name: Global)          extends ClassKind
   final case class InterfaceClass(name: Global) extends ClassKind
   final case class ModuleClass(name: Global)    extends ClassKind

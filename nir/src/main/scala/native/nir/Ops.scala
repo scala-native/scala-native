@@ -21,7 +21,6 @@ sealed abstract class Op {
     case Op.Extract(ty, _, _)                 => ??? // ty @ index
     case Op.Insert(ty, _, _, _)               => ty
     case Op.Alloca(ty)                        => Type.Ptr(ty)
-    case Op.Size(ty)                          => Type.Size
     case Op.Bin(_, ty, _, _)                  => ty
     case Op.Comp(_, _, _, _)                  => Type.Bool
     case Op.Conv(_, ty, _)                    => ty
@@ -34,6 +33,7 @@ sealed abstract class Op {
     case Op.ArrAlloc        (ty, _)    => Type.ArrayClass(ty)
     case Op.ArrLength       (_)        => Type.I32
     case Op.ArrElem         (ty, _, _) => Type.Ptr(ty)
+    case Op.ClassOf         (_)        => Type.ClassClass
   }
 }
 object Op {
@@ -56,18 +56,18 @@ object Op {
   final case class Extract(ty: Type, aggr: Val, index: Val)             extends Op
   final case class Insert (ty: Type, aggr: Val, value: Val, index: Val) extends Op
   final case class Alloca (ty: Type)                                    extends Op
-  final case class Size   (ty: Type)                                    extends Op
   final case class Bin    (bin: nir.Bin, ty: Type, l: Val, r: Val)      extends Op
   final case class Comp   (comp: nir.Comp, ty: Type, l: Val, r: Val)    extends Op
   final case class Conv   (conv: nir.Conv, ty: Type, value: Val)        extends Op
 
   // high-level
-  final case class ObjAlloc        (ty: Type)                           extends Op
-  final case class ObjFieldElem    (ty: Type, name: Global, obj: Val)   extends Op
-  final case class ObjMethodElem   (ty: Type, name: Global, obj: Val)   extends Op
-  final case class ObjAs           (ty: Type, obj: Val)                 extends Op
-  final case class ObjIs           (ty: Type, obj: Val)                 extends Op
-  final case class ArrAlloc        (ty: Type, length: Val)              extends Op
-  final case class ArrLength       (value: Val)                         extends Op
-  final case class ArrElem         (ty: Type, value: Val, index: Val)   extends Op
+  final case class ObjAlloc     (ty: Type)                         extends Op
+  final case class ObjFieldElem (ty: Type, name: Global, obj: Val) extends Op
+  final case class ObjMethodElem(ty: Type, name: Global, obj: Val) extends Op
+  final case class ObjAs        (ty: Type, obj: Val)               extends Op
+  final case class ObjIs        (ty: Type, obj: Val)               extends Op
+  final case class ArrAlloc     (ty: Type, length: Val)            extends Op
+  final case class ArrLength    (value: Val)                       extends Op
+  final case class ArrElem      (ty: Type, value: Val, index: Val) extends Op
+  final case class ClassOf      (ty: Type)                         extends Op
 }

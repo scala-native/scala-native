@@ -158,8 +158,6 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.InsertOp); putType(ty); putVal(v); putVal(value); putVal(index)
     case Op.Alloca(ty) =>
       putInt(T.AllocaOp); putType(ty)
-    case Op.Size(ty) =>
-      putInt(T.SizeOp); putType(ty)
     case Op.Bin(bin, ty, l, r) =>
       putInt(T.BinOp); putBin(bin); putType(ty); putVal(l); putVal(r)
     case Op.Comp(comp, ty, l, r) =>
@@ -183,6 +181,8 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.ArrLengthOp); putVal(v)
     case Op.ArrElem(ty, v, index) =>
       putInt(T.ArrElemOp); putType(ty); putVal(v); putVal(index)
+    case Op.ClassOf(ty) =>
+      putInt(T.ClassOfOp); putType(ty)
   }
 
   private def putParams(params: Seq[Param]) = putSeq(putParam)(params)
@@ -242,13 +242,14 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Val.F64(v)        => putInt(T.F64Val); putDouble(v)
     case Val.Struct(n, vs) => putInt(T.StructVal); putGlobal(n); putVals(vs)
     case Val.Array(ty, vs) => putInt(T.ArrayVal); putType(ty); putVals(vs)
+    case Val.Chars(s)      => putInt(T.CharsVal); putString(s)
     case Val.Local(n, ty)  => putInt(T.LocalVal); putLocal(n); putType(ty)
     case Val.Global(n, ty) => putInt(T.GlobalVal); putGlobal(n); putType(ty)
 
     case Val.Unit             => putInt(T.UnitVal)
     case Val.Null             => putInt(T.NullVal)
     case Val.String(v)        => putInt(T.StringVal); putString(v)
-    case Val.Class(ty)        => putInt(T.ClassVal); putType(ty)
     case Val.Intrinsic(n, ty) => putInt(T.IntrinsicVal); putGlobal(n); putType(ty)
+    case Val.Size(ty)         => putInt(T.SizeVal); putType(ty)
   }
 }

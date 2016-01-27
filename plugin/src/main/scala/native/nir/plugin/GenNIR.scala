@@ -9,7 +9,7 @@ import scala.util.{Either, Left, Right}
 import native.nir.Focus, Focus.sequenced
 import native.util, util._, util.ScopedVar.scoped
 import native.nir.Shows._
-import native.nir.Intrinsics._
+import native.nir.Intrinsic._
 
 abstract class GenNIR extends PluginComponent
                          with NativeBuiltins
@@ -380,9 +380,10 @@ abstract class GenNIR extends PluginComponent
            | LongTag
            | FloatTag
            | DoubleTag
-           | StringTag
-           | ClazzTag =>
+           | StringTag =>
           focus withValue genLiteralValue(lit)
+        case ClazzTag =>
+          focus withOp Op.ClassOf(genType(value.typeValue))
         case EnumTag =>
           genStaticMember(value.symbolValue, focus)
       }
@@ -411,8 +412,6 @@ abstract class GenNIR extends PluginComponent
           Val.F64(value.doubleValue)
         case StringTag =>
           Val.String(value.stringValue)
-        case ClazzTag =>
-          Val.Class(genType(value.typeValue))
       }
     }
 

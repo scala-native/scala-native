@@ -67,8 +67,7 @@ object Tags {
   final val InsertOp       = 1 + ExtractOp
   final val AllocOp        = 1 + InsertOp
   final val AllocaOp       = 1 + AllocOp
-  final val SizeOp         = 1 + AllocaOp
-  final val BinOp          = 1 + SizeOp
+  final val BinOp          = 1 + AllocaOp
   final val CompOp         = 1 + BinOp
   final val ConvOp         = 1 + CompOp
 
@@ -80,8 +79,9 @@ object Tags {
   final val ArrAllocOp         = 1 + ObjIsOp
   final val ArrLengthOp        = 1 + ArrAllocOp
   final val ArrElemOp          = 1 + ArrLengthOp
+  final val ClassOfOp          = 1 + ArrElemOp
 
-  final val NoneType           = 1 + ArrElemOp
+  final val NoneType           = 1 + ClassOfOp
   final val VoidType           = 1 + NoneType
   final val SizeType           = 1 + VoidType
   final val BoolType           = 1 + SizeType
@@ -126,11 +126,13 @@ object Tags {
   final val F64Val       = 1 + F32Val
   final val StructVal    = 1 + F64Val
   final val ArrayVal     = 1 + StructVal
-  final val LocalVal     = 1 + ArrayVal
+  final val CharsVal     = 1 + ArrayVal
+  final val LocalVal     = 1 + CharsVal
   final val GlobalVal    = 1 + LocalVal
   final val UnitVal      = 1 + GlobalVal
   final val NullVal      = 1 + UnitVal
   final val StringVal    = 1 + NullVal
   final val ClassVal     = 1 + StringVal
   final val IntrinsicVal = 1 + ClassVal
+  final val SizeVal      = 1 + IntrinsicVal
 }
