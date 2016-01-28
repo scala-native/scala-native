@@ -6,12 +6,14 @@ import native.nir._
 import native.nir.serialization._
 
 final class Compiler(opts: Opts) {
-  def load(): Seq[Defn] =
-    (new Loader(opts.classpath)).load(
-      Global.Tagged(Global.Atom(opts.entry), Global.Atom("m"))
-    )
+  def entry() =
+    Global.Tagged(Global.Atom(opts.entry), Global.Atom("m"))
 
-  def passes(): Seq[Pass] = Seq(pass.Lowering)
+  def load(): Seq[Defn] =
+    (new Loader(opts.classpath)).load(entry())
+
+  def passes(): Seq[Pass] =
+    Seq(new pass.Lowering(entry()))
 
   def output(module: Seq[Defn]): Unit = {
     //serializeFile(opts.gen.apply _, module, opts.outpath)
