@@ -15,6 +15,7 @@ sealed abstract class Type {
   }
 }
 object Type {
+  // low-level types
   final case object None                   extends Type
   final case object Void                   extends Type
   final case object Size                   extends Type
@@ -28,12 +29,13 @@ object Type {
   final object F32                         extends F(32)
   final object F64                         extends F(64)
 
+  // TODO: change from [ty x N] to [N x ty]
   final case class Array   (ty: Type, n: Int)           extends Type
   final case class Ptr     (ty: Type)                   extends Type
   final case class Function(args: Seq[Type], ret: Type) extends Type
   final case class Struct  (name: Global)               extends Type
 
-  // scala
+  // high-level types
   final case object Unit    extends Type
   final case object Nothing extends Type
 

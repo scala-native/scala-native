@@ -4,7 +4,7 @@ package nir
 import native.util.unreachable
 
 sealed abstract class Op {
-  final def resty = this match {
+  final def resty: Type = this match {
     case    Op.Unreachable
        | _: Op.Ret
        | _: Op.Throw
@@ -25,15 +25,46 @@ sealed abstract class Op {
     case Op.Comp(_, _, _, _)                  => Type.Bool
     case Op.Conv(_, ty, _)                    => ty
 
-    case Op.ObjAlloc        (ty)       => ty
-    case Op.ObjFieldElem    (ty, _, _) => Type.Ptr(ty)
-    case Op.ObjMethodElem   (ty, _, _) => Type.Ptr(ty)
-    case Op.ObjAs           (ty, _)    => ty
-    case Op.ObjIs           (_, _)     => Type.Bool
-    case Op.ArrAlloc        (ty, _)    => Type.ArrayClass(ty)
-    case Op.ArrLength       (_)        => Type.I32
-    case Op.ArrElem         (ty, _, _) => Type.Ptr(ty)
-    case Op.ClassOf         (_)        => Type.ClassClass
+    case Op.ObjAlloc(ty)            => ty
+    case Op.ObjFieldElem(ty, _, _)  => Type.Ptr(ty)
+    case Op.ObjMethodElem(ty, _, _) => Type.Ptr(ty)
+    case Op.ObjAs(ty, _)            => ty
+    case Op.ObjIs(_, _)             => Type.Bool
+    case Op.ArrAlloc(ty, _)         => Type.ArrayClass(ty)
+    case Op.ArrLength(_)            => Type.I32
+    case Op.ArrElem(ty, _, _)       => Type.Ptr(ty)
+    case Op.ClassOf(_)              => Type.ClassClass
+  }
+
+  final def vals: Seq[Val] = this match {
+    case Op.Unreachable              => Seq()
+    case Op.Ret(v)                   => Seq(v)
+    case Op.Jump(n)                  => n.args
+    case Op.If(v, n1, n2)            => v +: n1.args ++: n2.args
+    case Op.Switch(v, n, cases)      => v +: n.args ++: cases.flatMap(_.next.args)
+    case Op.Invoke(_, v, vs, n1, n2) => v +: vs ++: n1.args ++: n2.args
+    case Op.Throw(v)                 => Seq(v)
+
+    case Op.Call(_, v, vs)        => v +: vs
+    case Op.Load(_, v)            => Seq(v)
+    case Op.Store(_, v1, v2)      => Seq(v1, v2)
+    case Op.Elem(_, v, vs)        => v +: vs
+    case Op.Extract(_, v1, v2)    => Seq(v1, v2)
+    case Op.Insert(_, v1, v2, v3) => Seq(v1, v2, v3)
+    case Op.Alloca(_)             => Seq()
+    case Op.Bin(_, _, v1, v2)     => Seq(v1, v2)
+    case Op.Comp(_, _, v1, v2)    => Seq(v1, v2)
+    case Op.Conv(_, _, v)         => Seq(v)
+
+    case Op.ObjAlloc(_)            => Seq()
+    case Op.ObjFieldElem(_, _, v)  => Seq(v)
+    case Op.ObjMethodElem(_, _, v) => Seq(v)
+    case Op.ObjAs(_, v)            => Seq(v)
+    case Op.ObjIs(_, v)            => Seq(v)
+    case Op.ArrAlloc(_, v)         => Seq(v)
+    case Op.ArrLength(v)           => Seq(v)
+    case Op.ArrElem(_, v1, v2)     => Seq(v1, v2)
+    case Op.ClassOf(_)             => Seq()
   }
 }
 object Op {
@@ -52,6 +83,7 @@ object Op {
   final case class Call   (ty: Type, ptr: Val, args: Seq[Val])          extends Op
   final case class Load   (ty: Type, ptr: Val)                          extends Op
   final case class Store  (ty: Type, ptr: Val, value: Val)              extends Op
+  // TODO: ty should be a pointee type, not result elem type
   final case class Elem   (ty: Type, ptr: Val, indexes: Seq[Val])       extends Op
   final case class Extract(ty: Type, aggr: Val, index: Val)             extends Op
   final case class Insert (ty: Type, aggr: Val, value: Val, index: Val) extends Op

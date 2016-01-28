@@ -81,7 +81,7 @@ object GenTextualLLVM extends GenShow {
     case Type.I64                 => "i64"
     case Type.F32                 => "f32"
     case Type.F64                 => "f64"
-    case Type.Array(ty, n)        => sh"[$ty x $n]"
+    case Type.Array(ty, n)        => sh"[$n x $ty]"
     case Type.Ptr(ty)             => sh"${ty}*"
     case Type.Function(args, ret) => sh"$ret (${r(args, sep = ", ")})"
     case Type.Struct(name)        => sh"%$name"
@@ -98,6 +98,7 @@ object GenTextualLLVM extends GenShow {
     case Val.I64(v)        => v.toString
     case Val.Struct(n, vs) => sh"{ ${r(vs, sep = ", ")} }"
     case Val.Array(_, vs)  => sh"[ ${r(vs, sep = ", ")} ]"
+    case Val.Chars(v)      => s("c\"", v, "\"")
     case Val.Local(n, ty)  => sh"%$n"
     case Val.Global(n, ty) => sh"@$n"
   }
@@ -145,8 +146,9 @@ object GenTextualLLVM extends GenShow {
       sh"load $ty, $ptr"
     case Op.Store(ty, ptr, value) =>
       sh"store $value, $ptr"
-    case Op.Elem(ty, ptr, indexes) =>
-      "todo: elem"
+    case Op.Elem(_, ptr, indexes) =>
+      val Type.Ptr(ty) = ptr.ty
+      sh"getelementptr $ty, $ptr, ${r(indexes, sep = ", ")}"
     case Op.Extract(ty, aggr, index) =>
       "todo: extract"
     case Op.Insert(ty, aggr, value, index) =>
@@ -156,7 +158,7 @@ object GenTextualLLVM extends GenShow {
     case Op.Bin(name, ty, l, r) =>
       "todo: bin"
     case Op.Comp(name, ty, l, r) =>
-      assert(attrs.isEmpty)
+      assert(attrs.isEmpty, "TODO: unsigned")
       val cmp = ty match {
         case Type.F(_) =>
           name match {

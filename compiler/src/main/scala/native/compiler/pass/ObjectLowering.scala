@@ -27,12 +27,14 @@ import native.util.sh
  *      .. def $mname: $mty = $body
  *
  *  Eliminates:
- *  - Type.{ObjectClass, Class}
+ *  - Type.*Class
  *  - Defn.Class
- *  - Op.Obj*
+ *  - Op.Obj*, Op.ClassOf
+ *  - Val.Null
  */
 trait ObjectLowering extends Pass {
-  private val i8_*         = Type.Ptr(Type.I8)
+  private val i8_*      = Type.Ptr(Type.I8)
+  private val zero_i8_* = Val.Zero(i8_*)
 
   private val vtable = Global.Atom("vtable")
   private val data   = Global.Atom("data")
@@ -94,5 +96,10 @@ trait ObjectLowering extends Pass {
   override def onType(ty: Type) = super.onType(ty match {
     case _: Type.ClassKind => i8_*
     case _                 => ty
+  })
+
+  override def onVal(value: Val) = super.onVal(value match {
+    case Val.Null => zero_i8_*
+    case _        => value
   })
 }

@@ -13,5 +13,4 @@ object Lowering extends Pass
                    with ArrayLowering
                    with ModuleLowering
                    with NothingLowering
-                   with NullLowering
                    with StringLowering

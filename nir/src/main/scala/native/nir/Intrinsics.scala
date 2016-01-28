@@ -131,8 +131,8 @@ object Intrinsic {
   val monitor_notify_all = unary  ("monitor_notify_all", ObjectClass,           Unit)
   val monitor_wait       = ternary("monitor_wait"      , ObjectClass, I64, I32, Unit)
 
-  val string_concat    = binary("string_concat",    StringClass,  StringClass, StringClass)
-  val string_from_utf8 = binary("string_from_utf8", Type.Ptr(I8), I32,         StringClass)
+  val string_concat   = binary("string_concat",   StringClass,  StringClass, StringClass)
+  val string_from_ptr = binary("string_from_ptr", Type.Ptr(I8), I32,         StringClass)
 
   def call(intr: Val.Intrinsic, args: Val*): Op = {
     val Val.Intrinsic(_, Type.Ptr(ty)) = intr
