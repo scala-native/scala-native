@@ -33,7 +33,6 @@ sealed abstract class Op {
     case Op.ArrAlloc(ty, _)         => Type.ArrayClass(ty)
     case Op.ArrLength(_)            => Type.I32
     case Op.ArrElem(ty, _, _)       => Type.Ptr(ty)
-    case Op.ClassOf(_)              => Type.ClassClass
   }
 
   final def vals: Seq[Val] = this match {
@@ -64,7 +63,6 @@ sealed abstract class Op {
     case Op.ArrAlloc(_, v)         => Seq(v)
     case Op.ArrLength(v)           => Seq(v)
     case Op.ArrElem(_, v1, v2)     => Seq(v1, v2)
-    case Op.ClassOf(_)             => Seq()
   }
 }
 object Op {
@@ -101,5 +99,4 @@ object Op {
   final case class ArrAlloc     (ty: Type, length: Val)            extends Op
   final case class ArrLength    (value: Val)                       extends Op
   final case class ArrElem      (ty: Type, value: Val, index: Val) extends Op
-  final case class ClassOf      (ty: Type)                         extends Op
 }

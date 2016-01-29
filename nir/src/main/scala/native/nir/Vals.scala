@@ -23,6 +23,7 @@ sealed abstract class Val {
     case Val.String(_)        => Type.StringClass
     case Val.Intrinsic(_, ty) => ty
     case Val.Size(ty)         => Type.Size
+    case Val.Class(ty)        => Type.ClassClass
   }
 }
 object Val {
@@ -49,4 +50,5 @@ object Val {
   final case class String(value: java.lang.String)            extends Val
   final case class Intrinsic(global: nir.Global, valty: Type) extends Val
   final case class Size(of: Type)                             extends Val
+  final case class Class(of: Type)                            extends Val
 }

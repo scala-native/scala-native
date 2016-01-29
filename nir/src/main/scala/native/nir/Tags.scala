@@ -79,9 +79,8 @@ object Tags {
   final val ArrAllocOp         = 1 + ObjIsOp
   final val ArrLengthOp        = 1 + ArrAllocOp
   final val ArrElemOp          = 1 + ArrLengthOp
-  final val ClassOfOp          = 1 + ArrElemOp
 
-  final val NoneType           = 1 + ClassOfOp
+  final val NoneType           = 1 + ArrElemOp
   final val VoidType           = 1 + NoneType
   final val SizeType           = 1 + VoidType
   final val BoolType           = 1 + SizeType
@@ -132,7 +131,7 @@ object Tags {
   final val UnitVal      = 1 + GlobalVal
   final val NullVal      = 1 + UnitVal
   final val StringVal    = 1 + NullVal
-  final val ClassVal     = 1 + StringVal
-  final val IntrinsicVal = 1 + ClassVal
+  final val IntrinsicVal = 1 + StringVal
   final val SizeVal      = 1 + IntrinsicVal
+  final val ClassVal     = 1 + SizeVal
 }

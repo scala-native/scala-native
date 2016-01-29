@@ -6,8 +6,8 @@ import native.nir._
 
 class Lowering(val entryModule: Global)
   extends Pass
-  with MainLowering
   with IntrinsicLowering
+  with MainLowering
   with UnitLowering
   with ThrowLowering
   with InterfaceLowering

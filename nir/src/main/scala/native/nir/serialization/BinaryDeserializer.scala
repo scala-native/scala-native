@@ -139,7 +139,6 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.ArrAllocOp      => Op.ArrAlloc(getType, getVal)
     case T.ArrLengthOp     => Op.ArrLength(getVal)
     case T.ArrElemOp       => Op.ArrElem(getType, getVal, getVal)
-    case T.ClassOfOp       => Op.ClassOf(getType)
   }
 
   private def getParams(): Seq[Param] = getSeq(getParam)
@@ -204,5 +203,6 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.StringVal    => Val.String(getString)
     case T.IntrinsicVal => Val.Intrinsic(getGlobal, getType)
     case T.SizeVal      => Val.Size(getType)
+    case T.ClassVal     => Val.Class(getType)
   }
 }

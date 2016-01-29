@@ -380,10 +380,9 @@ abstract class GenNIR extends PluginComponent
            | LongTag
            | FloatTag
            | DoubleTag
-           | StringTag =>
+           | StringTag
+           | ClazzTag =>
           focus withValue genLiteralValue(lit)
-        case ClazzTag =>
-          focus withOp Op.ClassOf(genType(value.typeValue))
         case EnumTag =>
           genStaticMember(value.symbolValue, focus)
       }
@@ -412,6 +411,8 @@ abstract class GenNIR extends PluginComponent
           Val.F64(value.doubleValue)
         case StringTag =>
           Val.String(value.stringValue)
+        case ClazzTag =>
+          Val.Class(genType(value.typeValue))
       }
     }
 

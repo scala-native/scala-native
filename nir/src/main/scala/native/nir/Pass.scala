@@ -73,7 +73,6 @@ trait Pass {
     case Op.ArrAlloc(ty, v)         => Op.ArrAlloc(onType(ty), onVal(v))
     case Op.ArrLength(v)            => Op.ArrLength(onVal(v))
     case Op.ArrElem(ty, v, i)       => Op.ArrElem(onType(ty), onVal(v), onVal(i))
-    case Op.ClassOf(ty)             => Op.ClassOf(onType(ty))
   }
 
   def onVal(value: Val): Val = value match {
@@ -84,6 +83,7 @@ trait Pass {
     case Val.Global(n, ty)     => Val.Global(n, onType(ty))
     case Val.Intrinsic(n, ty)  => Val.Intrinsic(n, onType(ty))
     case Val.Size(ty)          => Val.Size(onType(ty))
+    case Val.Class(ty)         => Val.Class(onType(ty))
     case _                     => value
   }
 

@@ -110,8 +110,6 @@ object Shows {
       sh"arr-length $value"
     case Op.ArrElem(ty, value, index) =>
       sh"arr-elem[$ty] $value, $index"
-    case Op.ClassOf(ty) =>
-      sh"class-of[$ty]"
   }
 
   implicit val showBin: Show[Bin] = Show {
@@ -173,7 +171,8 @@ object Shows {
     case Val.Null                => "null"
     case Val.String(v)           => "\"" + v.replace("\"", "\\\"") + "\""
     case Val.Intrinsic(name, ty) => sh"#$name"
-    case Val.Size(ty)            => sh"size $ty"
+    case Val.Size(ty)            => sh"sizeof $ty"
+    case Val.Class(ty)           => sh"classof $ty"
   }
 
   implicit val showDefns: Show[Seq[Defn]] = Show { defns =>

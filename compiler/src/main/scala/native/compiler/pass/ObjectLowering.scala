@@ -22,6 +22,7 @@ import native.util.sh
  *      struct $name_data { .. $fty }
  *      struct $name { $name_vtable*, $name_data }
  *
+ *      var $name_cls: i8 = 0
  *      var $name_vconst: struct $name_vtable = struct[$name_vtable](..$mname)
  *
  *      .. def $mname: $mty = $body
@@ -29,8 +30,8 @@ import native.util.sh
  *  Eliminates:
  *  - Type.*Class
  *  - Defn.Class
- *  - Op.Obj*, Op.ClassOf
- *  - Val.Null
+ *  - Op.Obj*
+ *  - Val.{Null, Class}
  */
 trait ObjectLowering extends Pass {
   private val i8_*      = Type.Ptr(Type.I8)
@@ -64,31 +65,26 @@ trait ObjectLowering extends Pass {
       val classStruct   = Defn.Struct(Seq(), name, Seq(Type.Ptr(vtableStructTy), dataStructTy))
       val classStructTy = Type.Struct(name)
 
+      val classConstName = Global.Tagged(name, cls)
+      val classConstTy   = Type.I8
+      val classConstVal  = Val.Zero(Type.I8)
+      val classConst     = Defn.Var(Seq(), classConstName, classConstTy, classConstVal)
+
       val vtableConstName = Global.Tagged(name, vconst)
       val vtableConstVal  = Val.Struct(vtableStructName, declareVals ++ defineVals)
       val vtableConst     = Defn.Var(Seq(), vtableConstName, vtableStructTy, vtableConstVal)
 
-      (Seq(vtableStruct, dataStruct, classStruct, vtableConst) ++ defines).flatMap(onDefn)
+      (Seq(vtableStruct, dataStruct, classStruct, classConst, vtableConst) ++ defines).flatMap(onDefn)
 
     case _ =>
       super.onDefn(defn)
   }
 
   override def onInstr(instr: Instr) = instr match {
-    case Instr(n, attrs, Op.ObjAlloc(ty)) =>
-      val cls = fresh()
-      val clsValue = Val.Local(cls, Type.ClassClass)
-      Seq(Instr(cls, Op.ClassOf(ty)),
-          Instr(n, attrs, Intrinsic.call(Intrinsic.object_alloc, clsValue))).flatMap(onInstr)
-    case Instr(n, attrs, Op.ClassOf(ty)) =>
-      (ty match {
-        case builtin: Type.BuiltinClassKind =>
-          Seq(Instr(n, attrs, Intrinsic.call(Intrinsic.builtin_class(builtin))))
-        case Type.Class(name) =>
-          Seq(Instr(n, attrs, Intrinsic.call(Intrinsic.class_for_name, name.stringValue)))
-        case _ =>
-          ???
-      }).flatMap(onInstr)
+    case Instr(n, attrs, Op.ObjAlloc(Type.Class(clsname))) =>
+      val clsValue = Val.Global(Global.Tagged(clsname, this.cls), Type.Ptr(Type.I8))
+      val sizeValue = Val.Size(Type.Struct(clsname))
+      onInstr(Instr(n, attrs, Intrinsic.call(Intrinsic.alloc_object, clsValue, sizeValue)))
     case _ =>
       super.onInstr(instr)
   }
@@ -99,7 +95,18 @@ trait ObjectLowering extends Pass {
   })
 
   override def onVal(value: Val) = super.onVal(value match {
-    case Val.Null => zero_i8_*
-    case _        => value
+    case Val.Null =>
+      zero_i8_*
+    case Val.Class(ty) =>
+      ty match {
+        case builtin: Type.BuiltinClassKind =>
+          Intrinsic.builtin_class(builtin)
+        case Type.Class(name) =>
+          Val.Global(Global.Tagged(name, cls), Type.Ptr(Type.I8))
+        case _ =>
+          ???
+      }
+    case _ =>
+      value
   })
 }
