@@ -1,38 +1,11 @@
-# Scala Native Design
-
-This document provides a general technical overview of Scala Native and its
-key moving parts.
-
-
-## Introduction
-
-From a very high-level point of view, the pipeline for native compilation
-looks like:
-
-<img src="pipeline.png"/>
-
-1. The compilation starts by processing of the original source files
-   by the front-end compiler, followed by subsequent lowering and code
-   generation to [Native IR (NIR)](#native-ir-nir). Details of front-end
-   code generation are not covered in this document.
-
-1. A nirpath (equivalent of classpath for nir) of nir compilation units
-   is fed to the [Native Compiler (NC)](#native-compiler-nc). Additionally,
-   an entry point(s) are provided. NC computes the transitive closure of all
-   classes, modules and interfaces recursively references from the specified
-   entry points. Then, the result is lowered to the LLVM IR.
-
-1. LLVM IR is compiled by the LLVM toolchain and linked with the
-   [Native Runtime (NRT)](#native-runtime-nrt).
-
-## Native Intermediate Representation (NIR)
+# Native Intermediate Representation (NIR)
 
 NIR is high-level object-orriented SSA-based representation. The core of the
 representation is a subset of LLVM instructions, types and values, augmented
 with a number of high-level primitives that are necessary to
 efficiently compiler modern languages like Scala.
 
-### Overview
+## Overview
 
 Lets have a look at the textual form of NIR generated for a simple Scala module:
 
@@ -84,11 +57,11 @@ Here we can see a few major points:
    class-based objects. Objects may contain methods and fields. There is no overloading
    or access control so names must be mangled appropriately.
 
-### Notation
+## Notation
 
 TODO
 
-### Definitions
+## Definitions
 
 Low-level definitions:
 
@@ -131,7 +104,7 @@ High-level definitions:
 
    Scala-style modules (i.e. `object $name`) May contains state and concrete methods as members.
 
-### Types
+## Types
 
 Low-level types:
 
@@ -223,7 +196,7 @@ High-level types:
 
    Corresponds to java-style arrays.
 
-### Basic Blocks & Control-Flow
+## Basic Blocks & Control-Flow
 
 Low-level control-flow instructions:
 
@@ -273,7 +246,7 @@ High-level control flow instructions:
 
    Throws the values and starts unwinding.
 
-### Operations
+## Operations
 
 All non-control-flow instructions follow general pattern of
 `%N = ..$attrs $op`. The value produced by the instruction may be
@@ -387,7 +360,7 @@ High-level ops:
 
    Returns a pointer to the element with given index in the array.
 
-### Values
+## Values
 
 Low-level values:
 
@@ -426,7 +399,7 @@ Low-level values:
 
 1. **Intrinsic reference**: `#$name`
 
-   Reference to [intrinsic](#intrinsics) definition.
+   Reference to [intrinsic](intrinsics.md) definition.
 
 High-level values:
 
@@ -446,7 +419,7 @@ High-level values:
 
    Corresponds to `classOf[$type]` in Scala.
 
-### Attributes
+## Attributes
 
 Attributes allow one to attach additional metadata to definitions and instructions.
 
@@ -469,194 +442,3 @@ Attributes allow one to attach additional metadata to definitions and instructio
 * **Unsigned**: `usgn`
 
   Used on binary operations to signify that integer values should be treated as unsigned.
-
-### Intrinsics
-
-Intrinsics provide a set of runtime-implemented functions. Unlike regular
-FFI external definitions compiler knows about semantics of these functions and
-might optimise them based on their invariants (e.g. eliminate redundant boxing,
-string conversions etc)
-
-* **Primitive boxing**:
-
-   Name         | Signature            | Description
-  --------------|----------------------|------------------------------
-  `#bool_box`   | `(bool)  => boolean` | `j.l.Boolean#valueOf`
-  `#char_box`   | `(i16) => character` | `j.l.Character#valueOf`
-  `#byte_box`   | `(i8)  => byte`      | `j.l.Byte#valueOf`
-  `#short_box`  | `(i16) => short`     | `j.l.Short#valueOf`
-  `#int_box`    | `(i32) => integer`   | `j.l.Integer#valueOf`
-  `#long_box`   | `(i64) => long`      | `j.l.Long#valueOf`
-  `#float_box`  | `(f32) => float`     | `j.l.Float#valueOf`
-  `#double_box` | `(f64) => double`    | `j.l.Double#valueOf`
-
-* **Primitive unboxing**:
-
-   Name           | Signature            | Description
-  ----------------|----------------------|----------------------------------
-  `#bool_unbox`   | `(bool) => i1`       | `j.l.Boolean#booleanValue`
-  `#char_unbox`   | `(character) => i16` | `j.l.Character#charValue`
-  `#byte_unbox`   | `(byte) => i8`       | `j.l.Byte#byteValue`
-  `#short_unbox`  | `(boolean) => i16`   | `j.l.Short#shortValue`
-  `#int_unbox`    | `(integer) => i32`   | `j.l.Integer#intValue`
-  `#long_unbox`   | `(long) => i64`      | `j.l.Long#longValue`
-  `#float_unbox`  | `(float) => f32`     | `j.l.Float#floatValue`
-  `#double_unbox` | `(double) => f64`    | `j.l.Double#doubleValue`
-
-* **Primitive to string**:
-
-   Name               | Signature         | Description
-  --------------------|-------------------|-------------------------------
-  `#bool_to_string`   | `(i1)  => string` | `j.l.Boolean#toString`
-  `#char_to_string`   | `(i16) => string` | `j.l.Character#toString`
-  `#byte_to_string`   | `(i8)  => string` | `j.l.Byte#toString`
-  `#short_to_string`  | `(i16) => string` | `j.l.Short#toString`
-  `#int_to_string`    | `(i32) => string` | `j.l.Integer#toString`
-  `#long_to_string`   | `(i64) => string` | `j.l.Long#toString`
-  `#float_to_string`  | `(f32) => string` | `j.l.Float#toString`
-  `#double_to_string` | `(f64) => string` | `j.l.Double#toString`
-
-* **Primitive from string**:
-
-   Name          | Signature              | Description
-  ---------------|------------------------|------------------------------------
-  `#bool_parse`  | `(string) => i1`       | `j.l.Boolean#parseBoolean`
-  `#byte_parse`  | `(string, int) => i8`  | `j.l.Byte#parseByte(String, int)`
-  `#short_parse` | `(string, int) => i16` | `j.l.Short#parseShort(String, int)`
-  `#int_parse`   | `(string, int) => i32` | `j.l.Integer#parseInt(String, int)`
-  `#long_parse`  | `(string, int) => i64` | `j.l.Long#parseLong(String, int)`
-  `#float_parse` | `(string) => f32`      | `j.l.Float#parseFloat`
-  `#double_parse`| `(string) => f64`      | `j.l.Double#parseDouble`
-
-* **Primitive hash code**:
-
-   Name               | Signature      | Description
-  --------------------|----------------|-------------------------
-  `#bool_hash_code`   | `(i1)  => i32` | `j.l.Boolean#hashCode`
-  `#char_hash_code`   | `(i16) => i32` | `j.l.Character#hashCode`
-  `#byte_hash_code`   | `(i8)  => i32` | `j.l.Byte#hashCode`
-  `#short_hash_code`  | `(i16) => i32` | `j.l.Short#hashCode`
-  `#int_hash_code`    | `(i32) => i32` | `j.l.Int#hashCode`
-  `#long_hash_code`   | `(i64) => i32` | `j.l.Long#hashCode`
-  `#float_hash_code`  | `(f32) => i32` | `j.l.Float#hashCode`
-  `#double_hash_code` | `(f64) => i32` | `j.l.Double#hashCode`
-
-* **Object**:
-
-   Name               | Signature                | Description
-  --------------------|--------------------------|-----------------------
-  `#object_equals`    | `(object, object) => i1` | `j.l.Object#equals`
-  `#object_to_string` | `(object) => string`     | `j.l.Object#toString`
-  `#object_hash_code` | `(object) => i32`        | `j.l.Object#hashCode`
-  `#object_get_class` | `(object) => class`      | `j.l.Object#getClass`
-
-* **Class**:
-
-   Name             | Signature           | Description
-  ------------------|---------------------|---------------------
-  `#class_get_name` | `(class) => string` | `j.l.Class.getName`
-
-* **Monitor**:
-
-   Name                 | Signature                    | Description
-  ----------------------|------------------------------|-----------------------
-  `#monitor_enter`      | `(object) => unit`           | start of synchronized block
-  `#monitor_exit`       | `(object) => unit`           | end of synchronized block
-  `#monitor_notify`     | `(object) => unit`           | `java.lang.Object#notify`
-  `#monitor_notify_all` | `(object) => unit`           | `java.lang.Object#notifyAll`
-  `#monitor_wait`       | `(object, i64, i32) => unit` | `java.lang.Object#wait`
-
-* **String**:
-
-   Name                       | Signature              | Description
-  ----------------------------|------------------------|---------
-  `#string_char_at`           | `(string, i32) => i16` | `java.lang.String#charAt`
-  `#string_code_point_at`     | `(string, i32) => i32` | `java.lang.String#codePointAt`
-  `...`                       | `...`                  | `...`
-
-## Native Compiler (NC)
-
-The primary role of the native compiler is to translate all high-level features from
-NIR to a combination of low-level features. After that emission of LLVM code is
-trivial, as all low-level constructs map cleanly on corresponding LLVM primitives.
-
-### Assumptions
-
-The compiler assumes the following:
-
-1. There is no dynamic code loading of any kind.
-   Definitions that are not reachable may be dropped from the resulting LLVM IR.
-   Methods which have not been overriden in the reachable set of classes are effectively final.
-
-1. Resulting LLVM module is going to be linked with Native Runtime.
-
-### Lowering passes
-
-1. **Array lowering**. Translates arrays and operations on them.
-
-1. **Interface lowering**. Translates interfaces and calls on interface methods.
-
-1. **Module lowering**. Translates modules to top-level lazy vals with corresponding
-   backing module class and accessor.
-
-1. **Intrinsic lowering**. Maps intrinsic references to corresponding runtime implementation.
-
-1. **Void lowering**. Translates away `unit` and `nothing` types to `void`.
-
-1. **Object lowering**. Translates user-defined, built-in classes and `null` types.
-
-1. **Size lowering**. Translates `size` operation and `size` type.
-
-1. **Throw lowering**. Translates away `throw` instruction.
-
-## Native Runtime (NRT)
-
-NRT is a C library that provide an implementation of garbage collector and intrinsics.
-We assume that LLVM bitcode of the implementation is available to enable
-inlining across runtime-application boundary at link time.
-
-### Garbage Collector
-
-* Based on
-  ["Efficient On-the-Fly Cycle Collection"](http://dl.acm.org/citation.cfm?id=1255453).
-  Delayed reference counting with cycle detection. Optimised for low pause times that
-  are required for latency-sensitive applications.
-
-* Precise on heap, conservative on stack.
-  This allows us to have smooth handle-free interop with C code and
-  not interfere with LLVM optimisations by not having to insert
-  additional gc-related instructions into the compiled bitcode.
-
-* Safe points are inserted before return from the function call and on the
-  back edges of the loops. The insertion is performed by custom pass which is run
-  after LLVM optimisation passes.
-
-### Intrinsics
-
-Intrinsics are implemented as functions with the name of intrinsic prepended by `nrt_`
-prefix. Type signatures of the intrinsics are translated according to following
-type correspondance rules:
-
- NIR Type         | C Type                   | C Convenience Alias
-------------------|--------------------------|----------------------
- `void`           | `void`                   | `nrt_void`
- `bool`           | `bool`                   | `nrt_bool`
- `i8`, ..., `i64` | `int8_t`, ..., `int64_t` | `nrt_i8`, ..., `nrt_i64`
- `f32`, `f64`     | `float`, `double`        | `nrt_f32`, `nrt_f64`
- `[T x N]`        | `T[N]`                   | n/a
- `ptr T`          | `T*`                     | n/a
- `struct $name`   | `struct $name`           | n/a
- `size`           | `size_t`                 | `nrt_size`
- class types      | `void*`                  | `nrt_obj`
-
-So for example `#int_box` is going to have following C signature:
-
-```C
-nrt_obj nrt_int_box(nrt_i32 value);
-```
-
-## TODO
-
-1. Code: Ascribe references
-1  Code: Introduce intrinsics
-1. Code: More attributes
