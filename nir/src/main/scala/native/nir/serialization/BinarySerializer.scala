@@ -25,14 +25,19 @@ final class BinarySerializer(buffer: ByteBuffer) {
     putInt(bytes.length); put(bytes)
   }
 
+  private def putAdvice(adv: Advice) = adv match {
+    case Advice.No   => T.NoAdvice
+    case Advice.Hint => T.HintAdvice
+    case Advice.Must => T.MustAdvice
+  }
+
   private def putAttrs(attrs: Seq[Attr]) = putSeq(putAttr)(attrs)
   private def putAttr(attr: Attr) = attr match {
     case Attr.Usgn => putInt(T.UsgnAttr)
 
-    case Attr.NoInline     => putInt(T.NoInlineAttr)
-    case Attr.AlwaysInline => putInt(T.AlwaysInlineAttr)
-    case Attr.InlineHint   => putInt(T.InlineHintAttr)
-    case Attr.Final        => putInt(T.FinalAttr)
+    case Attr.Inline(adv)      => putInt(T.InlineAttr); putAdvice(adv)
+    case Attr.Overrides(name)  => putInt(T.OverridesAttr); putGlobal(name)
+    case Attr.Implements(name) => putInt(T.ImplementsAttr); putGlobal(name)
   }
 
   private def putBin(bin: Bin) = bin match {

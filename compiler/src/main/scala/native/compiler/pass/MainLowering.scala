@@ -30,8 +30,8 @@ trait MainLowering extends Pass { self: Lowering =>
     val arrVal = Val.Local(arr, Type.ArrayClass(Type.StringClass))
     val body =
       Block(fresh(), Seq(Param(argc, argcTy), Param(argv, argvTy)),
-        Seq(Instr(m, Op.Call(moduleAccessorTy, moduleAccessor, Seq())),
-            Instr(arr, Intrinsic.call(Intrinsic.init, argcVal, argvVal)),
+        Seq(Instr(arr, Intrinsic.call(Intrinsic.init, argcVal, argvVal)),
+            Instr(m, Op.Call(moduleAccessorTy, moduleAccessor, Seq())),
             Instr(Op.Call(moduleMainTy, moduleMain, Seq(mVal, arrVal))),
             Instr(Op.Ret(Val.I32(0)))))
     val sig =

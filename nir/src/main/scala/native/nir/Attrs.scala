@@ -7,8 +7,7 @@ object Attr {
   final case object Usgn extends Attr
 
   // defn attributes
-  final case object NoInline extends Attr
-  final case object AlwaysInline extends Attr
-  final case object InlineHint extends Attr
-  final case object Final extends Attr
+  final case class Inline(advice: Advice) extends Attr
+  final case class Overrides(name: Global) extends Attr
+  final case class Implements(name: Global) extends Attr
 }

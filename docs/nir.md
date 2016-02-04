@@ -429,15 +429,14 @@ Attributes allow one to attach additional metadata to definitions and instructio
   Applicable to functions.
   Corresponds to LLVM's inlinining attributes.
 
-* **Final**: `final`
-
-  Applicable to classes and methods. Signifies inability to subclass or override.
-  Final methods are guaranteed to not incur any virtual call overhead.
-
-* **Override**: `override(@$name)`
+* **Overrides**: `overrides(@$name)`
 
   Applicable to methods.
   Must be used whenever a method overrides another one in parent class.
+
+* **Implements**: `implements(@$name)`
+
+  Applicable to methods that implement an interface method.
 
 * **Unsigned**: `usgn`
 

@@ -11,18 +11,22 @@ object Shows {
     sh"$open$body$close"
   }
 
+  implicit val showAdvice: Show[Advice] = Show {
+    case Advice.No   => "no"
+    case Advice.Hint => "hint"
+    case Advice.Must => "must"
+  }
+
   implicit val showAttrs: Show[Seq[Attr]] = Show { attrs =>
     if (attrs.isEmpty) s()
     else r(attrs, sep = " ", post = " ")
   }
 
   implicit val showAttr: Show[Attr] = Show {
-    case Attr.Usgn => "usgn"
-
-    case Attr.NoInline     => "noinline"
-    case Attr.AlwaysInline => "alwaysinline"
-    case Attr.InlineHint   => "inlinehint"
-    case Attr.Final        => "final"
+    case Attr.Usgn             => "usgn"
+    case Attr.Inline(advice)   => sh"inline($advice)"
+    case Attr.Overrides(name)  => sh"overrides($name)"
+    case Attr.Implements(name) => sh"implements($name)"
   }
 
   implicit val showBlock: Show[Block] = Show { block =>

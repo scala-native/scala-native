@@ -84,7 +84,7 @@ trait ObjectLowering extends Pass {
     case Instr(n, attrs, Op.ObjAlloc(Type.Class(clsname))) =>
       val clsValue = Val.Global(Global.Tagged(clsname, this.cls), Type.Ptr(Type.I8))
       val sizeValue = Val.Size(Type.Struct(clsname))
-      onInstr(Instr(n, attrs, Intrinsic.call(Intrinsic.alloc_object, clsValue, sizeValue)))
+      onInstr(Instr(n, attrs, Intrinsic.call(Intrinsic.alloc, clsValue, sizeValue)))
     case _ =>
       super.onInstr(instr)
   }

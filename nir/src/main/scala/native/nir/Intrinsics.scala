@@ -123,8 +123,7 @@ object Intrinsic {
   val object_hash_code = unary ("object_hash_code", ObjectClass,              I32        )
   val object_get_class = unary ("object_get_class", ObjectClass,              ClassClass )
 
-  val alloc_object = binary("alloc_object", ClassClass, Size, ObjectClass)
-  val alloc_array  = binary("alloc_array",  ClassClass, I32,  ObjectClass)
+  val alloc = binary("alloc", ClassClass, Size, ObjectClass)
 
   val class_get_name = unary("class_get_name", ClassClass, StringClass)
   val class_get_size = unary("class_get_size", ClassClass, Size       )

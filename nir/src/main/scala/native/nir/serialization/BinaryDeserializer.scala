@@ -34,9 +34,19 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     new String(arr)
   }
 
+  private def getAdvice(): Advice = getInt match {
+    case T.NoAdvice   => Advice.No
+    case T.HintAdvice => Advice.Hint
+    case T.MustAdvice => Advice.Must
+  }
+
   private def getAttrs(): Seq[Attr] = getSeq(getAttr)
   private def getAttr(): Attr = getInt match {
     case T.UsgnAttr => Attr.Usgn
+
+    case T.InlineAttr     => Attr.Inline(getAdvice)
+    case T.OverridesAttr  => Attr.Overrides(getGlobal)
+    case T.ImplementsAttr => Attr.Implements(getGlobal)
   }
 
   private def getBin(): Bin = getInt match {
