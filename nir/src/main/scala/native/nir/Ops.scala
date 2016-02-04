@@ -56,8 +56,8 @@ sealed abstract class Op {
     case Op.Conv(_, _, v)         => Seq(v)
 
     case Op.ObjAlloc(_)            => Seq()
-    case Op.ObjFieldElem(_, _, v)  => Seq(v)
-    case Op.ObjMethodElem(_, _, v) => Seq(v)
+    case Op.ObjFieldElem(_, v, _)  => Seq(v)
+    case Op.ObjMethodElem(_, v, _) => Seq(v)
     case Op.ObjAs(_, v)            => Seq(v)
     case Op.ObjIs(_, v)            => Seq(v)
     case Op.ArrAlloc(_, v)         => Seq(v)
@@ -92,8 +92,8 @@ object Op {
 
   // high-level
   final case class ObjAlloc     (ty: Type)                         extends Op
-  final case class ObjFieldElem (ty: Type, name: Global, obj: Val) extends Op
-  final case class ObjMethodElem(ty: Type, name: Global, obj: Val) extends Op
+  final case class ObjFieldElem (ty: Type, obj: Val, name: Global) extends Op
+  final case class ObjMethodElem(ty: Type, obj: Val, name: Global) extends Op
   final case class ObjAs        (ty: Type, obj: Val)               extends Op
   final case class ObjIs        (ty: Type, obj: Val)               extends Op
   final case class ArrAlloc     (ty: Type, length: Val)            extends Op

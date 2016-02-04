@@ -30,7 +30,7 @@ typedef double   nrt_f64;
 
 typedef nrt_obj  nrt_to_string_f(nrt_obj);
 typedef nrt_i32  nrt_hash_code_f(nrt_obj);
-typedef nrt_bool nrt_equal_f(nrt_obj, nrt_obj);
+typedef nrt_bool nrt_equals_f(nrt_obj, nrt_obj);
 
 nrt_obj nrt_object_equals(nrt_obj obj1, nrt_obj obj2);
 nrt_obj nrt_object_to_string(nrt_obj obj);

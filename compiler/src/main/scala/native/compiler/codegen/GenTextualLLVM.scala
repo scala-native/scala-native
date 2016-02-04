@@ -184,7 +184,7 @@ object GenTextualLLVM extends GenShow {
       }
       sh"$cmp $l, ${justVal(r)}"
     case Op.Conv(name, ty, v) =>
-      "todo: conv"
+      sh"$name $v to $ty"
     case op =>
       sh"unsupported: ${op.toString}"
   }
@@ -195,6 +195,8 @@ object GenTextualLLVM extends GenShow {
   }
 
   implicit def showCase: Show[Case] = ???
+
+  implicit def showConv: Show[Conv] = nir.Shows.showConv
 
   implicit def showParam: Show[Param] = Show {
     case Param(n, ty) =>

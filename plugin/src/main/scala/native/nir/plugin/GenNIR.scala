@@ -309,7 +309,7 @@ abstract class GenNIR extends PluginComponent
         else {
           val ty = genType(tree.symbol.tpe)
           val qual = genExpr(qualp, focus)
-          val elem = qual.withOp(Op.ObjFieldElem(ty, genFieldName(tree.symbol), qual.value))
+          val elem = qual.withOp(Op.ObjFieldElem(ty, qual.value, genFieldName(tree.symbol)))
           elem withOp Op.Load(ty, elem.value)
         }
 
@@ -341,7 +341,7 @@ abstract class GenNIR extends PluginComponent
             val ty   = genType(sel.tpe)
             val qual = genExpr(qualp, focus)
             val rhs  = genExpr(rhsp, qual)
-            val elem = rhs.withOp(Op.ObjFieldElem(ty, genFieldName(sel.symbol), qual.value))
+            val elem = rhs.withOp(Op.ObjFieldElem(ty, qual.value, genFieldName(sel.symbol)))
             elem.withOp(Op.Store(ty, elem.value, rhs.value))
 
           case id: Ident =>
@@ -419,7 +419,7 @@ abstract class GenNIR extends PluginComponent
     def genStaticMember(sym: Symbol, focus: Focus): Focus = {
       val ty = genType(sym.tpe)
       val module = Val.Global(genClassName(sym.owner), genType(sym.owner.tpe))
-      val elem = focus.withOp(Op.ObjFieldElem(ty, genFieldName(sym), module))
+      val elem = focus.withOp(Op.ObjFieldElem(ty, module, genFieldName(sym)))
       elem.withOp(Op.Load(ty, elem.value))
     }
 
@@ -1033,7 +1033,7 @@ abstract class GenNIR extends PluginComponent
     def genNormalMethodCall(sym: Symbol, self: Val, args: Seq[Val], focus: Focus): Focus = {
       val name = genDefName(sym)
       val sig  = genDefSig(sym)
-      val elem = focus withOp Op.ObjMethodElem(sig, name, self)
+      val elem = focus withOp Op.ObjMethodElem(sig, self, name)
       val call = elem withOp Op.Call(sig, elem.value, self +: args)
 
       call

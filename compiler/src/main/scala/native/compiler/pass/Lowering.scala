@@ -2,6 +2,7 @@ package native
 package compiler
 package pass
 
+import analysis.ClassHierarchy
 import native.nir._
 
 class Lowering(val entryModule: Global)
@@ -15,4 +16,12 @@ class Lowering(val entryModule: Global)
   with ArrayLowering
   with ModuleLowering
   with NothingLowering
-  with StringLowering
+  with StringLowering {
+
+  var cha: ClassHierarchy.Result = _
+
+  override def onCompilationUnit(defns: Seq[Defn]): Seq[Defn] = {
+    cha = ClassHierarchy(defns)
+    super.onCompilationUnit(defns)
+  }
+}

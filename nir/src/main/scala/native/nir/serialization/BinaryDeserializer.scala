@@ -142,8 +142,8 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.ConvOp         => Op.Conv(getConv, getType, getVal)
 
     case T.ObjAllocOp      => Op.ObjAlloc(getType)
-    case T.ObjFieldElemOp  => Op.ObjFieldElem(getType, getGlobal, getVal)
-    case T.ObjMethodElemOp => Op.ObjMethodElem(getType, getGlobal, getVal)
+    case T.ObjFieldElemOp  => Op.ObjFieldElem(getType, getVal, getGlobal)
+    case T.ObjMethodElemOp => Op.ObjMethodElem(getType, getVal, getGlobal)
     case T.ObjAsOp         => Op.ObjAs(getType, getVal)
     case T.ObjIsOp         => Op.ObjIs(getType, getVal)
     case T.ArrAllocOp      => Op.ArrAlloc(getType, getVal)

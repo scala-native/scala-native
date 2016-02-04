@@ -66,8 +66,8 @@ trait Pass {
     case Op.Conv(conv, ty, v)            => Op.Conv(conv, onType(ty), onVal(v))
 
     case Op.ObjAlloc(ty)            => Op.ObjAlloc(onType(ty))
-    case Op.ObjFieldElem(ty, n, v)  => Op.ObjFieldElem(onType(ty), n, onVal(v))
-    case Op.ObjMethodElem(ty, n, v) => Op.ObjMethodElem(onType(ty), n, onVal(v))
+    case Op.ObjFieldElem(ty, v, n)  => Op.ObjFieldElem(onType(ty), onVal(v), n)
+    case Op.ObjMethodElem(ty, v, n) => Op.ObjMethodElem(onType(ty), onVal(v), n)
     case Op.ObjAs(ty, v)            => Op.ObjAs(onType(ty), onVal(v))
     case Op.ObjIs(ty, v)            => Op.ObjIs(onType(ty), onVal(v))
     case Op.ArrAlloc(ty, v)         => Op.ArrAlloc(onType(ty), onVal(v))

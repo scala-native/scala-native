@@ -172,10 +172,10 @@ final class BinarySerializer(buffer: ByteBuffer) {
 
     case Op.ObjAlloc(ty) =>
       putInt(T.ObjAllocOp); putType(ty)
-    case Op.ObjFieldElem(ty, name, v) =>
-      putInt(T.ObjFieldElemOp); putType(ty); putGlobal(name); putVal(v)
-    case Op.ObjMethodElem(ty, name, v) =>
-      putInt(T.ObjMethodElemOp); putType(ty); putGlobal(name); putVal(v)
+    case Op.ObjFieldElem(ty, v, name) =>
+      putInt(T.ObjFieldElemOp); putType(ty); putVal(v); putGlobal(name)
+    case Op.ObjMethodElem(ty, v, name) =>
+      putInt(T.ObjMethodElemOp); putType(ty); putVal(v); putGlobal(name)
     case Op.ObjAs(ty, v) =>
       putInt(T.ObjAsOp); putType(ty); putVal(v)
     case Op.ObjIs(ty, v) =>
