@@ -102,3 +102,29 @@ string conversions etc)
   `#string_char_at`           | `(string, i32) => i16` | `java.lang.String#charAt`
   `#string_code_point_at`     | `(string, i32) => i32` | `java.lang.String#codePointAt`
   `...`                       | `...`                  | `...`
+
+## Implementation
+
+Intrinsics are implemented as C functions with the name of
+intrinsic prepended by `nrt_` prefix. Type signatures of the
+intrinsics are translated according to following type
+correspondance rules:
+
+ NIR Type         | C Type                   | C Convenience Alias
+------------------|--------------------------|----------------------
+ `void`           | `void`                   | `nrt_void`
+ `bool`           | `bool`                   | `nrt_bool`
+ `i8`, ..., `i64` | `int8_t`, ..., `int64_t` | `nrt_i8`, ..., `nrt_i64`
+ `f32`, `f64`     | `float`, `double`        | `nrt_f32`, `nrt_f64`
+ `[T x N]`        | `T[N]`                   | n/a
+ `ptr T`          | `T*`                     | n/a
+ `struct $name`   | `struct $name`           | n/a
+ `size`           | `size_t`                 | `nrt_size`
+ class types      | `void*`                  | `nrt_obj`
+
+So for example `#int_box` is going to have following C signature:
+
+```C
+nrt_obj nrt_int_box(nrt_i32 value);
+```
+
