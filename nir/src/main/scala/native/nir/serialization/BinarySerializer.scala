@@ -37,7 +37,6 @@ final class BinarySerializer(buffer: ByteBuffer) {
 
     case Attr.Inline(adv)      => putInt(T.InlineAttr); putAdvice(adv)
     case Attr.Overrides(name)  => putInt(T.OverridesAttr); putGlobal(name)
-    case Attr.Implements(name) => putInt(T.ImplementsAttr); putGlobal(name)
   }
 
   private def putBin(bin: Bin) = bin match {
@@ -186,6 +185,8 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.ArrLengthOp); putVal(v)
     case Op.ArrElem(ty, v, index) =>
       putInt(T.ArrElemOp); putType(ty); putVal(v); putVal(index)
+    case Op.Copy(v) =>
+      putInt(T.CopyOp); putVal(v)
   }
 
   private def putParams(params: Seq[Param]) = putSeq(putParam)(params)

@@ -6,12 +6,11 @@ object Tags {
   final val HintAdvice = 1 + NoAdvice
   final val MustAdvice = 1 + HintAdvice
 
-  final val UsgnAttr       = 1 + MustAdvice
-  final val InlineAttr     = 1 + UsgnAttr
-  final val OverridesAttr  = 1 + InlineAttr
-  final val ImplementsAttr = 1 + OverridesAttr
+  final val UsgnAttr      = 1 + MustAdvice
+  final val InlineAttr    = 1 + UsgnAttr
+  final val OverridesAttr = 1 + InlineAttr
 
-  final val AddBin  = 1 + ImplementsAttr
+  final val AddBin  = 1 + OverridesAttr
   final val SubBin  = 1 + AddBin
   final val MulBin  = 1 + SubBin
   final val DivBin  = 1 + MulBin
@@ -82,8 +81,9 @@ object Tags {
   final val ArrAllocOp         = 1 + ObjIsOp
   final val ArrLengthOp        = 1 + ArrAllocOp
   final val ArrElemOp          = 1 + ArrLengthOp
+  final val CopyOp             = 1 + ArrElemOp
 
-  final val NoneType           = 1 + ArrElemOp
+  final val NoneType           = 1 + CopyOp
   final val VoidType           = 1 + NoneType
   final val SizeType           = 1 + VoidType
   final val BoolType           = 1 + SizeType

@@ -13,7 +13,10 @@ final class Compiler(opts: Opts) {
     (new Loader(opts.classpath)).load(entry())
 
   def passes(): Seq[Pass] =
-    Seq(new pass.Lowering(entry()))
+    Seq(
+      new pass.Lowering(entry()),
+      new pass.CopyLowering
+    )
 
   def output(module: Seq[Defn]): Unit = {
     //serializeFile(opts.gen.apply _, module, opts.outpath)

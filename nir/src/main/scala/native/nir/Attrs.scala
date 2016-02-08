@@ -9,5 +9,4 @@ object Attr {
   // defn attributes
   final case class Inline(advice: Advice) extends Attr
   final case class Overrides(name: Global) extends Attr
-  final case class Implements(name: Global) extends Attr
 }

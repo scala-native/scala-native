@@ -46,7 +46,6 @@ final class BinaryDeserializer(bb: ByteBuffer) {
 
     case T.InlineAttr     => Attr.Inline(getAdvice)
     case T.OverridesAttr  => Attr.Overrides(getGlobal)
-    case T.ImplementsAttr => Attr.Implements(getGlobal)
   }
 
   private def getBin(): Bin = getInt match {
@@ -149,6 +148,7 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.ArrAllocOp      => Op.ArrAlloc(getType, getVal)
     case T.ArrLengthOp     => Op.ArrLength(getVal)
     case T.ArrElemOp       => Op.ArrElem(getType, getVal, getVal)
+    case T.CopyOp          => Op.Copy(getVal)
   }
 
   private def getParams(): Seq[Param] = getSeq(getParam)

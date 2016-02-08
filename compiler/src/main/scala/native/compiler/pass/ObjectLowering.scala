@@ -48,17 +48,16 @@ trait ObjectLowering extends Pass { self: Lowering =>
     case Defn.Class(_, name, _, _, members) =>
       val methods    = members.collect { case defn: Defn.Define => defn }
       val cls        = cha(name).asInstanceOf[Node.Class]
-      val data       = cls.data.map(_.ty)
+      val data       = cls.fields.map(_.ty)
       val vtable     = cls.vtable
-      val vtableTys  = vtable.map { case (ty, _) => ty }
-      val vtableVals = vtable.map { case (_, v) => v }
+      val vtableTys  = vtable.map(_.ty)
 
       val vtableStructName = Global.Tagged(name, vtableTag)
       val vtableStructTy   = Type.Struct(vtableStructName)
 
       val vtableStruct    = Defn.Struct(Seq(), vtableStructName, vtableTys)
       val vtableConstName = Global.Tagged(name, vconstTag)
-      val vtableConstVal  = Val.Struct(vtableStructName, vtableVals)
+      val vtableConstVal  = Val.Struct(vtableStructName, vtable)
       val vtableConst     = Defn.Var(Seq(), vtableConstName, vtableStructTy, vtableConstVal)
 
       val classConstName = Global.Tagged(name, clsTag)
@@ -81,17 +80,53 @@ trait ObjectLowering extends Pass { self: Lowering =>
       val sizeValue = Val.Size(Type.Struct(clsname))
       onInstr(Instr(n, Intrinsic.call(Intrinsic.alloc, clsValue, sizeValue)))
 
-    case Instr(Some(n), Seq(), Op.ObjFieldElem(ty, obj, fldname)) =>
-      val fld    = cha(fldname).asInstanceOf[Node.Field]
-      val cast   = fresh()
+    case Instr(Some(n), Seq(), Op.ObjFieldElem(ty, obj, ExField(fld))) =>
       val clsptr = Type.Ptr(Type.Struct(fld.in.name))
+      val cast   = fresh()
       Seq(
         Instr(cast, Op.Conv(Conv.Bitcast, clsptr, obj)),
         Instr(n,    Op.Elem(ty, Val.Local(cast, clsptr), Seq(Val.I32(0), Val.I32(fld.index))))
       ).flatMap(onInstr)
 
-    // case Instr(n, attrs, Op.ObjMethodElem(Type.Class(clsname), methname, obj)) =>
-    //   ???
+    // Virtual method elems
+    //
+    //     %$n = method-elem[$sig] $instance, $method
+    //
+    // Lowered to:
+    //
+    //     %cast      = bitcast[struct $name*] %instance
+    //     %vtable_** = elem[struct $name.vtable*] %cast, 0i32, 0i32
+    //     %vtable_*  = load[struct $name.vtable*] vtable_**
+    //     %meth_**   = elem[$sig*] %vtable_*, 0i32, ${meth.index}
+    //     %$n        = load[$sig*] %meth_**
+    //
+    case Instr(Some(n), Seq(), Op.ObjMethodElem(sig, obj, ExVirtualMethod(meth))) =>
+      val sigptr    = Type.Ptr(sig)
+      val clsptr    = Type.Ptr(Type.Struct(meth.in.name))
+      val vtableptr = Type.Ptr(Type.Struct(Global.Tagged(meth.in.name, vtableTag)))
+      val cast      = fresh()
+      val vtable_** = fresh()
+      val vtable_*  = fresh()
+      val meth_**   = fresh()
+      Seq(
+        Instr(cast,      Op.Conv(Conv.Bitcast, clsptr, obj)),
+        Instr(vtable_**, Op.Elem(vtableptr, Val.Local(cast, clsptr), Seq(Val.I32(0), Val.I32(0)))),
+        Instr(vtable_*,  Op.Load(vtableptr, Val.Local(vtable_**, Type.Ptr(vtableptr)))),
+        Instr(meth_**,   Op.Elem(sigptr, Val.Local(vtable_*, vtableptr),
+                                         Seq(Val.I32(0), Val.I32(meth.vindex)))),
+        Instr(n,         Op.Load(sigptr, Val.Local(meth_**, Type.Ptr(sigptr))))
+      ).flatMap(onInstr)
+
+    // Static method elems
+    //
+    //    %$n = method-elem[$sig] $instance, $method
+    //
+    // Lowered to
+    //
+    //    %$n = copy @${method.name}: $sig*
+    //
+    case Instr(Some(n), Seq(), Op.ObjMethodElem(sig, obj, ExStaticMethod(meth))) =>
+      onInstr(Instr(n, Op.Copy(Val.Global(meth.name, Type.Ptr(sig)))))
 
     // case Instr(n, attrs, Op.ObjAs(Type.Class(clsname), obj)) =>
     //   ???
@@ -123,4 +158,25 @@ trait ObjectLowering extends Pass { self: Lowering =>
     case _ =>
       value
   })
+
+  object ExVirtualMethod {
+    def unapply(name: Global): Option[Node.Method] =
+      cha.get(name).collect {
+        case meth: Node.Method if meth.isVirtual => meth
+      }
+  }
+
+  object ExStaticMethod {
+    def unapply(name: Global): Option[Node.Method] =
+      cha.get(name).collect {
+        case meth: Node.Method if meth.isStatic => meth
+      }
+  }
+
+  object ExField {
+    def unapply(name: Global): Option[Node.Field] =
+      cha.get(name).collect {
+        case fld: Node.Field => fld
+      }
+  }
 }

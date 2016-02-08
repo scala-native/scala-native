@@ -73,6 +73,7 @@ trait Pass {
     case Op.ArrAlloc(ty, v)         => Op.ArrAlloc(onType(ty), onVal(v))
     case Op.ArrLength(v)            => Op.ArrLength(onVal(v))
     case Op.ArrElem(ty, v, i)       => Op.ArrElem(onType(ty), onVal(v), onVal(i))
+    case Op.Copy(v)                 => Op.Copy(onVal(v))
   }
 
   def onVal(value: Val): Val = value match {

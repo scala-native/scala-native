@@ -7,12 +7,14 @@ import native.nir._, Shows._
 import native.util.{sh, unreachable}
 
 object ClassHierarchy {
-  sealed abstract class Node
+  sealed abstract class Node {
+    def name: Global
+  }
   object Node {
     final class Interface(
-      val name:         Global,
-      var interfaces:   Seq[Node] = Seq(),
-      var methods:      Seq[Node] = Seq()
+      val name:       Global,
+      var interfaces: Seq[Node] = Seq(),
+      var methods:    Seq[Node] = Seq()
     ) extends Node
 
     final class Class(
@@ -21,29 +23,47 @@ object ClassHierarchy {
       var interfaces: Seq[Node]          = Seq(),
       var members:    Seq[Node]          = Seq()
     ) extends Node {
-      def vtable: Seq[(Type, Val)] = {
-        val parentvtable = parent.map(_.vtable).getOrElse {
-          Seq(Intrinsic.object_to_string,
-              Intrinsic.object_hash_code,
-              Intrinsic.object_equals).map {
-            case v @ Val.Intrinsic(_, ty) =>
-              (ty, v)
-          }
-        }
-        val ownvtable = members.collect {
-          case meth: Node.Method if meth.isVirtual =>
-            val ty = Type.Ptr(meth.ty)
-            (ty, Val.Global(meth.name, ty))
-        }
-        parentvtable ++ ownvtable
-      }
+      def fields: Seq[Field] =
+        parent.map(_.fields).getOrElse(Seq()) ++ ownfields
 
-      def data: Seq[Node.Field] = {
-        val parentfields = parent.map(_.data).getOrElse(Seq())
-        val ownfields = members.collect {
-          case fld: Node.Field => fld
+      def ownfields =
+        members.collect { case fld: Field => fld }
+
+      def methods: Seq[Method] =
+        parent.map(_.methods).getOrElse(Seq()) ++ ownmethods
+
+      def ownmethods: Seq[Method] =
+        members.collect { case meth: Method => meth }
+
+      def vslots: Seq[Method] =
+        parent.map(_.vslots).getOrElse(Seq()) ++ ownvslots
+
+      def ownvslots: Seq[Method] =
+        members.collect {
+          case meth: Method if meth.isVirtual && meth.overrides.isEmpty =>
+            meth
         }
-        parentfields ++ ownfields
+
+      def vtable: Seq[Val] = {
+        val base = parent.map(_.vtable).getOrElse(Seq())
+
+        def performOverrides(base: Seq[Val], members: Seq[Node]): Seq[Val] =
+          members match {
+            case Seq() =>
+              base
+            case (meth: Method) +: rest =>
+              val nbase =
+                meth.classOverride.map { basemeth =>
+                  base.updated(basemeth.vindex, meth.value)
+                }.getOrElse(base)
+              performOverrides(nbase, rest)
+            case _ +: rest =>
+              performOverrides(base, rest)
+          }
+
+        val baseWithOverrides = performOverrides(base, members)
+
+        baseWithOverrides ++ ownvslots.map(_.value)
       }
     }
 
@@ -51,12 +71,48 @@ object ClassHierarchy {
       val in:         Node,
       val name:       Global,
       val ty:         Type,
-      val concrete:   Boolean,
-      var overrides:  Option[Node] = None,
-      var overriden:  Seq[Node]    = Seq(),
-      var implements: Seq[Node]    = Seq()
+      val isConcrete: Boolean,
+      var overrides:  Seq[Method] = Seq(),
+      var overriden:  Seq[Method] = Seq()
     ) extends Node {
-      def isVirtual = !concrete || overrides.nonEmpty || overriden.nonEmpty
+      def isVirtual = !isConcrete || overrides.nonEmpty || overriden.nonEmpty
+
+      def isStatic = !isVirtual
+
+      def value =
+        if (isConcrete)
+          Val.Global(name, Type.Ptr(ty))
+        else
+          Val.Zero(Type.Ptr(ty))
+
+      def classOverride: Option[Method] =
+        (overrides.collect {
+          case meth if meth.in.isInstanceOf[Class] =>
+            meth
+        }) match {
+          case Seq()  => None
+          case Seq(m) => Some(m)
+          case _      => unreachable
+        }
+
+      def interfaceOverrides: Seq[Method] =
+        overrides.collect {
+          case meth if meth.in.isInstanceOf[Interface] =>
+            meth
+        }
+
+      def vslot: Method = {
+        assert(isVirtual)
+
+        classOverride.map(_.vslot).getOrElse(this)
+      }
+
+      def vindex: Int = {
+        assert(isVirtual)
+        assert(in.isInstanceOf[Class])
+
+        in.asInstanceOf[Class].vslots.indexOf(this) + 1
+      }
     }
 
     final class Field(
@@ -64,7 +120,7 @@ object ClassHierarchy {
       val name:  Global,
       val ty:    Type
     ) extends Node {
-      def index = in.data.indexOf(this) + 1
+      def index = in.fields.indexOf(this) + 1
     }
   }
 
@@ -78,10 +134,10 @@ object ClassHierarchy {
         nodes += (defn.name -> new Node.Field(in.asInstanceOf[Node.Class], defn.name, defn.ty))
 
       case defn: Defn.Declare =>
-        nodes += (defn.name -> new Node.Method(in, defn.name, defn.ty, concrete = false))
+        nodes += (defn.name -> new Node.Method(in, defn.name, defn.ty, isConcrete = false))
 
       case defn: Defn.Define =>
-        nodes += (defn.name -> new Node.Method(in, defn.name, defn.ty, concrete = true))
+        nodes += (defn.name -> new Node.Method(in, defn.name, defn.ty, isConcrete = true))
 
       case _ =>
         unreachable
@@ -112,11 +168,8 @@ object ClassHierarchy {
       attrs.foreach {
         case Attr.Overrides(n)  =>
           val ovnode       = nodes(n).asInstanceOf[Node.Method]
-          node.overrides   = Some(ovnode)
+          node.overrides   = node.overrides :+ ovnode
           ovnode.overriden = ovnode.overriden :+ node
-
-        case Attr.Implements(n) =>
-          node.implements = node.implements :+ nodes(n)
 
         case _ =>
           ()

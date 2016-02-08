@@ -17,8 +17,8 @@ sealed abstract class Op {
     case Op.Call(_, _, _)                     => unreachable
     case Op.Load(ty, _)                       => ty
     case Op.Store(_, _, _)                    => Type.Unit
-    case Op.Elem(ty, _, _)                    => Type.Ptr(ty)
-    case Op.Extract(ty, _, _)                 => ??? // ty @ index
+    case Op.Elem(ty, _, _)                    => Type.Ptr(ty) // todo: ty @ index
+    case Op.Extract(ty, _, _)                 => ??? // todo: ty @ index
     case Op.Insert(ty, _, _, _)               => ty
     case Op.Alloca(ty)                        => Type.Ptr(ty)
     case Op.Bin(_, ty, _, _)                  => ty
@@ -33,6 +33,7 @@ sealed abstract class Op {
     case Op.ArrAlloc(ty, _)         => Type.ArrayClass(ty)
     case Op.ArrLength(_)            => Type.I32
     case Op.ArrElem(ty, _, _)       => Type.Ptr(ty)
+    case Op.Copy(v)                 => v.ty
   }
 
   final def vals: Seq[Val] = this match {
@@ -63,6 +64,7 @@ sealed abstract class Op {
     case Op.ArrAlloc(_, v)         => Seq(v)
     case Op.ArrLength(v)           => Seq(v)
     case Op.ArrElem(_, v1, v2)     => Seq(v1, v2)
+    case Op.Copy(v)                => Seq(v)
   }
 }
 object Op {
@@ -99,4 +101,5 @@ object Op {
   final case class ArrAlloc     (ty: Type, length: Val)            extends Op
   final case class ArrLength    (value: Val)                       extends Op
   final case class ArrElem      (ty: Type, value: Val, index: Val) extends Op
+  final case class Copy         (value: Val)                       extends Op
 }

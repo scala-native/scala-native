@@ -26,7 +26,6 @@ object Shows {
     case Attr.Usgn             => "usgn"
     case Attr.Inline(advice)   => sh"inline($advice)"
     case Attr.Overrides(name)  => sh"overrides($name)"
-    case Attr.Implements(name) => sh"implements($name)"
   }
 
   implicit val showBlock: Show[Block] = Show { block =>
@@ -114,6 +113,8 @@ object Shows {
       sh"arr-length $value"
     case Op.ArrElem(ty, value, index) =>
       sh"arr-elem[$ty] $value, $index"
+    case Op.Copy(value) =>
+      sh"copy $value"
   }
 
   implicit val showBin: Show[Bin] = Show {
@@ -197,7 +198,7 @@ object Shows {
     case Defn.Interface(attrs, name, ifaces, members) =>
       val parents = r(ifaces, sep = ", ")
       val body = brace(r(members.map(i(_))))
-      sh"${attrs}interface @$name($parents) $body"
+      sh"${attrs}interface @$name : $parents $body"
     case Defn.Class(attrs, name, parent, ifaces, members) =>
       val parents = r(parent ++: ifaces, sep = ", ")
       val body = brace(r(members.map(i(_))))
@@ -205,7 +206,7 @@ object Shows {
     case Defn.Module(attrs, name, parent, ifaces, members) =>
       val parents = r(parent ++: ifaces, sep = ", ")
       val body = brace(r(members.map(i(_))))
-      sh"${attrs}module @$name($parents) $body"
+      sh"${attrs}module @$name : $parents $body"
   }
 
   implicit val showType: Show[Type] = Show {
