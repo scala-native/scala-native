@@ -28,8 +28,8 @@ abstract class GenNIR extends PluginComponent
   def undefined(focus: Focus) =
     focus.finish(Op.Unreachable)
 
-  def intrinsic(intr: Val.Intrinsic, args: Seq[Val]) = {
-    val Val.Intrinsic(_, Type.Ptr(ty)) = intr
+  def intrinsic(intr: Val.Global, args: Seq[Val]) = {
+    val Val.Global(_, Type.Ptr(ty)) = intr
     Op.Call(ty, intr, args)
   }
 
@@ -183,7 +183,17 @@ abstract class GenNIR extends PluginComponent
       }
     }
 
-    def genDefAttrs(sym: Symbol): Seq[Attr] = Seq()
+    val overridesToString = Attr.Overrides(Intrinsic.object_to_string.name)
+    val overridesEquals   = Attr.Overrides(Intrinsic.object_equals.name)
+    val overridesHashCode = Attr.Overrides(Intrinsic.object_hash_code.name)
+
+    def genDefAttrs(sym: Symbol): Seq[Attr] =
+      sym.overrides.collect {
+        case JObject_toString => overridesToString
+        case JObject_equals   => overridesEquals
+        case JObject_hashCode => overridesHashCode
+        case _                => Attr.Overrides(genDefName(sym))
+      }
 
     def genDefSig(sym: Symbol): nir.Type = {
       val params   = sym.asMethod.paramLists.flatten

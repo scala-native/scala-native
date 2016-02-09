@@ -21,7 +21,6 @@ sealed abstract class Val {
     case Val.Unit             => Type.Unit
     case Val.Null             => Type.NullClass
     case Val.String(_)        => Type.StringClass
-    case Val.Intrinsic(_, ty) => ty
     case Val.Size(ty)         => Type.Size
     case Val.Class(ty)        => Type.ClassClass
   }
@@ -42,13 +41,12 @@ object Val {
   final case class Array(elemty: Type, values: Seq[Val])      extends Val
   final case class Chars(value: java.lang.String)             extends Val
   final case class Local(local: nir.Local, valty: Type)       extends Val
-  final case class Global(global: nir.Global, valty: Type)    extends Val
+  final case class Global(name: nir.Global, valty: Type)      extends Val
 
   // high-level
   final case object Unit                                      extends Val
   final case object Null                                      extends Val
   final case class String(value: java.lang.String)            extends Val
-  final case class Intrinsic(global: nir.Global, valty: Type) extends Val
   final case class Size(of: Type)                             extends Val
   final case class Class(of: Type)                            extends Val
 }

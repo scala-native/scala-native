@@ -175,7 +175,6 @@ object Shows {
     case Val.Unit                => "unit"
     case Val.Null                => "null"
     case Val.String(v)           => "\"" + v.replace("\"", "\\\"") + "\""
-    case Val.Intrinsic(name, ty) => sh"#$name"
     case Val.Size(ty)            => sh"sizeof $ty"
     case Val.Class(ty)           => sh"classof $ty"
   }
@@ -249,6 +248,7 @@ object Shows {
     case Global.Atom(id)              => id
     case Global.Nested(owner, member) => sh"$owner::$member"
     case Global.Tagged(n, tag)        => sh"${n}_$tag"
+    case Global.Intrinsic(id)         => sh"#$id"
   }
 
   implicit val showLocal: Show[Local] = Show {

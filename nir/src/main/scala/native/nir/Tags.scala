@@ -50,11 +50,12 @@ object Tags {
   final val ClassDefn    = 1 + IntefaceDefn
   final val ModuleDefn   = 1 + ClassDefn
 
-  final val AtomGlobal   = 1 + ModuleDefn
-  final val NestedGlobal = 1 + AtomGlobal
-  final val TaggedGlobal = 1 + NestedGlobal
+  final val AtomGlobal      = 1 + ModuleDefn
+  final val NestedGlobal    = 1 + AtomGlobal
+  final val TaggedGlobal    = 1 + NestedGlobal
+  final val IntrinsicGlobal = 1 + TaggedGlobal
 
-  final val UnreachableOp  = 1 + TaggedGlobal
+  final val UnreachableOp  = 1 + IntrinsicGlobal
   final val RetOp          = 1 + UnreachableOp
   final val ThrowOp        = 1 + RetOp
   final val JumpOp         = 1 + ThrowOp
@@ -134,7 +135,6 @@ object Tags {
   final val UnitVal      = 1 + GlobalVal
   final val NullVal      = 1 + UnitVal
   final val StringVal    = 1 + NullVal
-  final val IntrinsicVal = 1 + StringVal
-  final val SizeVal      = 1 + IntrinsicVal
+  final val SizeVal      = 1 + StringVal
   final val ClassVal     = 1 + SizeVal
 }

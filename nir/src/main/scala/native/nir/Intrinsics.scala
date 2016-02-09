@@ -5,9 +5,9 @@ import Type._
 
 object Intrinsic {
   private def value(id: String, ty: Type) =
-    Val.Intrinsic(Global.Atom(id), ty)
+    Val.Global(Global.Intrinsic(id), ty)
   private def intrinsic(id: String, args: Seq[Type], ret: Type) =
-    Val.Intrinsic(Global.Atom(id), Type.Ptr(Type.Function(args, ret)))
+    Val.Global(Global.Intrinsic(id), Type.Ptr(Type.Function(args, ret)))
   private def nullary(id: String, to: Type) =
     intrinsic(id, Seq(), to)
   private def unary(id: String, from: Type, to: Type) =
@@ -17,7 +17,7 @@ object Intrinsic {
   private def ternary(id: String, from1: Type, from2: Type, from3: Type, to: Type) =
     intrinsic(id, Seq(from1, from2, from3), to)
 
-  val prim_box = Map[Type, Val.Intrinsic](
+  val prim_box = Map[Type, Val.Global](
     BooleanClass   -> unary("bool_box"  , Bool, BooleanClass  ),
     CharacterClass -> unary("char_box"  , I16 , CharacterClass),
     ByteClass      -> unary("byte_box"  , I8  , ByteClass     ),
@@ -28,7 +28,7 @@ object Intrinsic {
     DoubleClass    -> unary("double_box", F64 , DoubleClass   )
   )
 
-  val prim_unbox = Map[Type, Val.Intrinsic](
+  val prim_unbox = Map[Type, Val.Global](
     BooleanClass   -> unary("bool_unbox"  , BooleanClass  , Bool),
     CharacterClass -> unary("char_unbox"  , CharacterClass, I16 ),
     ByteClass      -> unary("byte_unbox"  , ByteClass     , I8  ),
@@ -39,7 +39,7 @@ object Intrinsic {
     DoubleClass    -> unary("double_unbox", DoubleClass   , F64 )
   )
 
-  val prim_to_string = Map[Type, Val.Intrinsic](
+  val prim_to_string = Map[Type, Val.Global](
     BooleanClass   -> unary("bool_to_string"  , Bool, StringClass),
     CharacterClass -> unary("char_to_string"  , I16 , StringClass),
     ByteClass      -> unary("byte_to_string"  , I8  , StringClass),
@@ -50,22 +50,22 @@ object Intrinsic {
     DoubleClass    -> unary("double_to_string", F64 , StringClass)
   )
 
-  val prim_to_unsigned_string = Map[Type, Val.Intrinsic](
+  val prim_to_unsigned_string = Map[Type, Val.Global](
     IntegerClass   -> unary("int_to_unsigned_string" , I32, StringClass),
     LongClass      -> unary("long_to_unsigned_string", I64, StringClass)
   )
 
-  val prim_to_string_rdx = Map[Type, Val.Intrinsic](
+  val prim_to_string_rdx = Map[Type, Val.Global](
     IntegerClass   -> binary("int_to_string_rdx" , I32, I32, StringClass),
     LongClass      -> binary("long_to_string_rdx", I64, I32, StringClass)
   )
 
-  val prim_to_unsigned_string_rdx = Map[Type, Val.Intrinsic](
+  val prim_to_unsigned_string_rdx = Map[Type, Val.Global](
     IntegerClass   -> binary("int_to_unsigned_string_rdx" , I32, I32, StringClass),
     LongClass      -> binary("long_to_unsigned_string_rdx", I64, I32, StringClass)
   )
 
-  val prim_parse = Map[Type, Val.Intrinsic](
+  val prim_parse = Map[Type, Val.Global](
     BooleanClass   -> unary("bool_parse"  , Bool, StringClass),
     ByteClass      -> unary("byte_parse"  , I8  , StringClass),
     ShortClass     -> unary("short_parse" , I16 , StringClass),
@@ -75,24 +75,24 @@ object Intrinsic {
     DoubleClass    -> unary("double_parse", F64 , StringClass)
   )
 
-  val prim_parse_unsigned = Map[Type, Val.Intrinsic](
+  val prim_parse_unsigned = Map[Type, Val.Global](
     IntegerClass   -> unary("int_parse_unsigned" , I32, StringClass),
     LongClass      -> unary("long_parse_unsigned", I64, StringClass)
   )
 
-  val prim_parse_rdx = Map[Type, Val.Intrinsic](
+  val prim_parse_rdx = Map[Type, Val.Global](
     ByteClass      -> binary("byte_parse_rdx" , I8 , I32, StringClass),
     ShortClass     -> binary("short_parse_rdx", I16, I32, StringClass),
     IntegerClass   -> binary("int_parse_rdx"  , I32, I32, StringClass),
     LongClass      -> binary("long_parse_rdx" , I64, I32, StringClass)
   )
 
-  val prim_parse_unsigned_rdx = Map[Type, Val.Intrinsic](
+  val prim_parse_unsigned_rdx = Map[Type, Val.Global](
     IntegerClass   -> binary("int_parse_unsigned_rdx" , I32, I32, StringClass),
     LongClass      -> binary("long_parse_unsigned_rdx", I64, I32, StringClass)
   )
 
-  val prim_hash_code = Map[Type, Val.Intrinsic](
+  val prim_hash_code = Map[Type, Val.Global](
     BooleanClass   -> unary("bool_hash_code"  , Bool, I32),
     CharacterClass -> unary("char_hash_code"  , I16 , I32),
     ByteClass      -> unary("byte_hash_code"  , I8  , I32),
@@ -103,7 +103,7 @@ object Intrinsic {
     DoubleClass    -> unary("double_hash_code", F64 , I32)
   )
 
-  val builtin_class = Map[Type.BuiltinClassKind, Val.Intrinsic](
+  val builtin_class = Map[Type.BuiltinClassKind, Val.Global](
     NullClass      -> value("null_class"  , ClassClass),
     ObjectClass    -> value("object_class", ClassClass),
     ClassClass     -> value("class_class" , ClassClass),
@@ -140,8 +140,8 @@ object Intrinsic {
   val init   = binary ("init",  Type.I32, Type.Ptr(Type.Ptr(Type.I8)), ArrayClass(StringClass))
   val yield_ = nullary("yield",                                        Unit                   )
 
-  def call(intr: Val.Intrinsic, args: Val*): Op = {
-    val Val.Intrinsic(_, Type.Ptr(ty)) = intr
+  def call(intr: Val.Global, args: Val*): Op = {
+    val Val.Global(_, Type.Ptr(ty)) = intr
     Op.Call(ty, intr, args)
   }
 }

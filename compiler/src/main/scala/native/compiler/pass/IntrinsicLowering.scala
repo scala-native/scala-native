@@ -16,7 +16,7 @@ trait IntrinsicLowering extends Pass {
     super.onPostCompilationUnit(defns ++ onScope(extras))
 
   override def onVal(value: Val) = super.onVal(value match {
-    case Val.Intrinsic(g @ Global.Atom(id), ptrty @ Type.Ptr(ty)) =>
+    case Val.Global(g @ Global.Intrinsic(id), ptrty @ Type.Ptr(ty)) =>
       val n = Global.Atom("nrt_" + id)
       if (!added.contains(g)) {
         val decl = Defn.Declare(Seq(), n, ty)

@@ -116,6 +116,7 @@ object GenTextualLLVM extends GenShow {
     case Global.Atom(id)              => id
     case Global.Nested(owner, member) => sh"${owner}__$member"
     case Global.Tagged(owner, tag)    => sh"${owner}.$tag"
+    case g: Global.Intrinsic          => unsupported(g)
   }
 
   implicit val showLocal: Show[Local] = Show {

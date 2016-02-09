@@ -129,6 +129,13 @@ object ClassHierarchy {
   def apply(defns: Seq[Defn]): Result = {
     val nodes = mutable.Map.empty[Global, Node]
 
+    def enterBuiltinClasses() = {
+      def Object: Node.Class = ???
+      def Object_equals: Node.Method = ???
+      def Object_hashCode: Node.Method = ???
+      def Object_toString: Node.Method = ???
+    }
+
     def enterMember(in: Node, defn: Defn): Unit = defn match {
       case defn: Defn.Var =>
         nodes += (defn.name -> new Node.Field(in.asInstanceOf[Node.Class], defn.name, defn.ty))
@@ -166,7 +173,16 @@ object ClassHierarchy {
     def enrichMethod(name: Global, attrs: Seq[Attr]): Unit = {
       val node = nodes(name).asInstanceOf[Node.Method]
       attrs.foreach {
-        case Attr.Overrides(n)  =>
+        case Attr.Overrides(Intrinsic.object_to_string.name) =>
+          ???
+
+        case Attr.Overrides(Intrinsic.object_hash_code.name) =>
+          ???
+
+        case Attr.Overrides(Intrinsic.object_equals.name) =>
+          ???
+
+        case Attr.Overrides(n) =>
           val ovnode       = nodes(n).asInstanceOf[Node.Method]
           node.overrides   = node.overrides :+ ovnode
           ovnode.overriden = ovnode.overriden :+ node
@@ -201,6 +217,7 @@ object ClassHierarchy {
       case _                                          => ()
     }
 
+    enterBuiltinClasses()
     defns.foreach(enter)
     defns.foreach(enrich)
     nodes.toMap

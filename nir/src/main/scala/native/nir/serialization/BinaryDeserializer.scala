@@ -44,8 +44,8 @@ final class BinaryDeserializer(bb: ByteBuffer) {
   private def getAttr(): Attr = getInt match {
     case T.UsgnAttr => Attr.Usgn
 
-    case T.InlineAttr     => Attr.Inline(getAdvice)
-    case T.OverridesAttr  => Attr.Overrides(getGlobal)
+    case T.InlineAttr    => Attr.Inline(getAdvice)
+    case T.OverridesAttr => Attr.Overrides(getGlobal)
   }
 
   private def getBin(): Bin = getInt match {
@@ -106,9 +106,10 @@ final class BinaryDeserializer(bb: ByteBuffer) {
   private def getGlobals(): Seq[Global] = getSeq(getGlobal)
   private def getGlobalOpt(): Option[Global] = getOpt(getGlobal)
   private def getGlobal(): Global = getInt match {
-    case T.AtomGlobal   => Global.Atom(getString)
-    case T.NestedGlobal => Global.Nested(getGlobal, getGlobal)
-    case T.TaggedGlobal => Global.Tagged(getGlobal, getGlobal)
+    case T.AtomGlobal      => Global.Atom(getString)
+    case T.NestedGlobal    => Global.Nested(getGlobal, getGlobal)
+    case T.TaggedGlobal    => Global.Tagged(getGlobal, getGlobal)
+    case T.IntrinsicGlobal => Global.Intrinsic(getString)
   }
 
   private def getInstrs(): Seq[Instr] = getSeq(getInstr)
@@ -211,7 +212,6 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.UnitVal      => Val.Unit
     case T.NullVal      => Val.Null
     case T.StringVal    => Val.String(getString)
-    case T.IntrinsicVal => Val.Intrinsic(getGlobal, getType)
     case T.SizeVal      => Val.Size(getType)
     case T.ClassVal     => Val.Class(getType)
   }

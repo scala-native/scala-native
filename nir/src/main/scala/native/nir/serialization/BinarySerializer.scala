@@ -35,8 +35,8 @@ final class BinarySerializer(buffer: ByteBuffer) {
   private def putAttr(attr: Attr) = attr match {
     case Attr.Usgn => putInt(T.UsgnAttr)
 
-    case Attr.Inline(adv)      => putInt(T.InlineAttr); putAdvice(adv)
-    case Attr.Overrides(name)  => putInt(T.OverridesAttr); putGlobal(name)
+    case Attr.Inline(adv)  => putInt(T.InlineAttr); putAdvice(adv)
+    case Attr.Overrides(n) => putInt(T.OverridesAttr); putGlobal(n)
   }
 
   private def putBin(bin: Bin) = bin match {
@@ -114,6 +114,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Global.Atom(id)              => putInt(T.AtomGlobal); putString(id)
     case Global.Nested(owner, member) => putInt(T.NestedGlobal); putGlobal(owner); putGlobal(member)
     case Global.Tagged(n, tag)        => putInt(T.TaggedGlobal); putGlobal(n); putGlobal(tag)
+    case Global.Intrinsic(id)         => putInt(T.IntrinsicGlobal); putString(id)
   }
 
   private def putInstrs(instrs: Seq[Instr]) = putSeq(putInstr)(instrs)
@@ -253,7 +254,6 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Val.Unit             => putInt(T.UnitVal)
     case Val.Null             => putInt(T.NullVal)
     case Val.String(v)        => putInt(T.StringVal); putString(v)
-    case Val.Intrinsic(n, ty) => putInt(T.IntrinsicVal); putGlobal(n); putType(ty)
     case Val.Size(ty)         => putInt(T.SizeVal); putType(ty)
     case Val.Class(ty)        => putInt(T.ClassVal); putType(ty)
   }
