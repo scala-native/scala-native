@@ -16,6 +16,8 @@ object Intrinsic {
     intrinsic(id, Seq(from1, from2), to)
   private def ternary(id: String, from1: Type, from2: Type, from3: Type, to: Type) =
     intrinsic(id, Seq(from1, from2, from3), to)
+  private def cls(id: String) =
+    Type.Class(Global.Intrinsic(id))
 
   val prim_box = Map[Type, Val.Global](
     BooleanClass   -> unary("bool_box"  , Bool, BooleanClass  ),
@@ -118,6 +120,7 @@ object Intrinsic {
     DoubleClass    -> value("double_class", ClassClass)
   )
 
+  val object_          = cls   ("object")
   val object_equals    = binary("object_equals"   , ObjectClass, ObjectClass, Bool       )
   val object_to_string = unary ("object_to_string", ObjectClass,              StringClass)
   val object_hash_code = unary ("object_hash_code", ObjectClass,              I32        )

@@ -118,9 +118,9 @@ abstract class GenNIR extends PluginComponent
       val sym     = cd.symbol
       val attrs   = genClassAttrs(sym)
       val name    = genClassName(sym)
-      val parent  = if (sym.superClass == NoSymbol) None
-                    else if (sym.superClass == ObjectClass) None
-                    else Some(genClassName(sym.superClass))
+      val parent  = if (sym.superClass == NoSymbol) unreachable
+                    else if (sym.superClass == ObjectClass) Intrinsic.object_.name
+                    else genClassName(sym.superClass)
       val ifaces  = genClassInterfaces(sym)
       val fields  = genClassFields(sym).toSeq
       val defdefs = cd.impl.body.collect { case dd: DefDef => dd }

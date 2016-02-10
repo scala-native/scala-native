@@ -12,7 +12,13 @@ import native.nir.Shows.brace
 
 object GenTextualLLVM extends GenShow {
   implicit val showDefns: Show[Seq[Defn]] = Show { defns =>
-    r(defns, sep = nl(""))
+    val sorted = defns.sortBy {
+      case _: Defn.Struct  => 1
+      case _: Defn.Var     => 2
+      case _: Defn.Declare => 3
+      case _: Defn.Define  => 4
+    }
+    r(sorted, sep = nl(""))
   }
 
   implicit val showDefn: Show[Defn] = Show {

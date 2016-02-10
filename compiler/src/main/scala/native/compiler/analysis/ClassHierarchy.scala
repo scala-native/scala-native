@@ -75,7 +75,7 @@ object ClassHierarchy {
       var overrides:  Seq[Method] = Seq(),
       var overriden:  Seq[Method] = Seq()
     ) extends Node {
-      def isVirtual = !isConcrete || overrides.nonEmpty || overriden.nonEmpty
+      def isVirtual = !isConcrete || overriden.nonEmpty
 
       def isStatic = !isVirtual
 
@@ -111,7 +111,7 @@ object ClassHierarchy {
         assert(isVirtual)
         assert(in.isInstanceOf[Class])
 
-        in.asInstanceOf[Class].vslots.indexOf(this) + 1
+        in.asInstanceOf[Class].vslots.indexOf(this)
       }
     }
 
@@ -120,7 +120,7 @@ object ClassHierarchy {
       val name:  Global,
       val ty:    Type
     ) extends Node {
-      def index = in.fields.indexOf(this) + 1
+      def index = in.fields.indexOf(this)
     }
   }
 
@@ -129,22 +129,38 @@ object ClassHierarchy {
   def apply(defns: Seq[Defn]): Result = {
     val nodes = mutable.Map.empty[Global, Node]
 
-    def enterBuiltinClasses() = {
-      def Object: Node.Class = ???
-      def Object_equals: Node.Method = ???
-      def Object_hashCode: Node.Method = ???
-      def Object_toString: Node.Method = ???
+    def enterIntrinsics(): Unit = {
+      val classes = Map(
+        Intrinsic.object_ -> Seq(
+          Intrinsic.object_equals,
+          Intrinsic.object_hash_code,
+          Intrinsic.object_to_string
+        )
+      )
+
+      classes.foreach { case (Type.Class(clsname), methods) =>
+        val clsnode = new Node.Class(clsname)
+        clsnode.members = methods.map { case Val.Global(name, Type.Ptr(ty)) =>
+          val node = new Node.Method(clsnode, name, ty, isConcrete = true)
+          nodes += name -> node
+          node
+        }
+        nodes += clsname -> clsnode
+      }
     }
 
     def enterMember(in: Node, defn: Defn): Unit = defn match {
       case defn: Defn.Var =>
-        nodes += (defn.name -> new Node.Field(in.asInstanceOf[Node.Class], defn.name, defn.ty))
+        val node = new Node.Field(in.asInstanceOf[Node.Class], defn.name, defn.ty)
+        nodes += (defn.name -> node)
 
       case defn: Defn.Declare =>
-        nodes += (defn.name -> new Node.Method(in, defn.name, defn.ty, isConcrete = false))
+        val node = new Node.Method(in, defn.name, defn.ty, isConcrete = false)
+        nodes += (defn.name -> node)
 
       case defn: Defn.Define =>
-        nodes += (defn.name -> new Node.Method(in, defn.name, defn.ty, isConcrete = true))
+        val node = new Node.Method(in, defn.name, defn.ty, isConcrete = true)
+        nodes += (defn.name -> node)
 
       case _ =>
         unreachable
@@ -173,15 +189,6 @@ object ClassHierarchy {
     def enrichMethod(name: Global, attrs: Seq[Attr]): Unit = {
       val node = nodes(name).asInstanceOf[Node.Method]
       attrs.foreach {
-        case Attr.Overrides(Intrinsic.object_to_string.name) =>
-          ???
-
-        case Attr.Overrides(Intrinsic.object_hash_code.name) =>
-          ???
-
-        case Attr.Overrides(Intrinsic.object_equals.name) =>
-          ???
-
         case Attr.Overrides(n) =>
           val ovnode       = nodes(n).asInstanceOf[Node.Method]
           node.overrides   = node.overrides :+ ovnode
@@ -192,10 +199,10 @@ object ClassHierarchy {
       }
     }
 
-    def enrichClass(name: Global, parent: Option[Global],
+    def enrichClass(name: Global, parent: Global,
                     interfaces: Seq[Global], members: Seq[Defn]): Unit = {
       val node        = nodes(name).asInstanceOf[Node.Class]
-      node.parent     = parent.map(nodes(_).asInstanceOf[Node.Class])
+      node.parent     = Some(nodes(parent).asInstanceOf[Node.Class])
       node.interfaces = interfaces.map(nodes(_))
       node.members    = members.map(m => nodes(m.name))
       members.foreach(enrich)
@@ -217,7 +224,7 @@ object ClassHierarchy {
       case _                                          => ()
     }
 
-    enterBuiltinClasses()
+    enterIntrinsics()
     defns.foreach(enter)
     defns.foreach(enrich)
     nodes.toMap

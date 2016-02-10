@@ -99,8 +99,8 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.DefineDefn   => Defn.Define(getAttrs, getGlobal, getType, getBlocks)
     case T.StructDefn   => Defn.Struct(getAttrs, getGlobal, getTypes)
     case T.IntefaceDefn => Defn.Interface(getAttrs, getGlobal, getGlobals, getDefns)
-    case T.ClassDefn    => Defn.Class(getAttrs, getGlobal, getGlobalOpt, getGlobals, getDefns)
-    case T.ModuleDefn   => Defn.Module(getAttrs, getGlobal, getGlobalOpt, getGlobals, getDefns)
+    case T.ClassDefn    => Defn.Class(getAttrs, getGlobal, getGlobal, getGlobals, getDefns)
+    case T.ModuleDefn   => Defn.Module(getAttrs, getGlobal, getGlobal, getGlobals, getDefns)
   }
 
   private def getGlobals(): Seq[Global] = getSeq(getGlobal)

@@ -1,6 +1,11 @@
 package test
 
-object Test {
+class C {
+  override def equals(other: Any) = false
+  override def hashCode = 0
   override def toString = "hi"
-  def main(args: Array[String]): Unit = this.toString
+}
+
+object Test {
+  def main(args: Array[String]): Unit = new C
 }

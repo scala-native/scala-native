@@ -103,9 +103,9 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Defn.Interface(attrs, name, ifaces, members) =>
       putInt(T.IntefaceDefn); putAttrs(attrs); putGlobal(name); putGlobals(ifaces); putDefns(members)
     case Defn.Class(attrs, name, parent, ifaces, members) =>
-      putInt(T.ClassDefn); putAttrs(attrs); putGlobal(name); putGlobalOpt(parent); putGlobals(ifaces); putDefns(members)
+      putInt(T.ClassDefn); putAttrs(attrs); putGlobal(name); putGlobal(parent); putGlobals(ifaces); putDefns(members)
     case Defn.Module(attrs, name, parent, ifaces, members) =>
-      putInt(T.ModuleDefn); putAttrs(attrs); putGlobal(name); putGlobalOpt(parent); putGlobals(ifaces); putDefns(members)
+      putInt(T.ModuleDefn); putAttrs(attrs); putGlobal(name); putGlobal(parent); putGlobals(ifaces); putDefns(members)
   }
 
   private def putGlobals(globals: Seq[Global]): Unit = putSeq(putGlobal)(globals)

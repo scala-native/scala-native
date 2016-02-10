@@ -85,7 +85,7 @@ trait ObjectLowering extends Pass { self: Lowering =>
       val cast   = fresh()
       Seq(
         Instr(cast, Op.Conv(Conv.Bitcast, clsptr, obj)),
-        Instr(n,    Op.Elem(ty, Val.Local(cast, clsptr), Seq(Val.I32(0), Val.I32(fld.index))))
+        Instr(n,    Op.Elem(ty, Val.Local(cast, clsptr), Seq(Val.I32(0), Val.I32(fld.index + 1))))
       ).flatMap(onInstr)
 
     // Virtual method elems
@@ -97,7 +97,7 @@ trait ObjectLowering extends Pass { self: Lowering =>
     //     %cast      = bitcast[struct $name*] %instance
     //     %vtable_** = elem[struct $name.vtable*] %cast, 0i32, 0i32
     //     %vtable_*  = load[struct $name.vtable*] vtable_**
-    //     %meth_**   = elem[$sig*] %vtable_*, 0i32, ${meth.index}
+    //     %meth_**   = elem[$sig*] %vtable_*, 0i32, ${meth.index + 1}
     //     %$n        = load[$sig*] %meth_**
     //
     case Instr(Some(n), Seq(), Op.ObjMethodElem(sig, obj, ExVirtualMethod(meth))) =>
@@ -110,7 +110,8 @@ trait ObjectLowering extends Pass { self: Lowering =>
       val meth_**   = fresh()
       Seq(
         Instr(cast,      Op.Conv(Conv.Bitcast, clsptr, obj)),
-        Instr(vtable_**, Op.Elem(vtableptr, Val.Local(cast, clsptr), Seq(Val.I32(0), Val.I32(0)))),
+        Instr(vtable_**, Op.Elem(vtableptr, Val.Local(cast, clsptr),
+                                            Seq(Val.I32(0), Val.I32(0)))),
         Instr(vtable_*,  Op.Load(vtableptr, Val.Local(vtable_**, Type.Ptr(vtableptr)))),
         Instr(meth_**,   Op.Elem(sigptr, Val.Local(vtable_*, vtableptr),
                                          Seq(Val.I32(0), Val.I32(meth.vindex)))),

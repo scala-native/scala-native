@@ -41,18 +41,18 @@ object Type {
 
   sealed abstract class ClassKind               extends Type
   sealed abstract class BuiltinClassKind        extends ClassKind
-  final case object NullClass                   extends BuiltinClassKind
-  final case object ObjectClass                 extends BuiltinClassKind
-  final case object ClassClass                  extends BuiltinClassKind
-  final case object StringClass                 extends BuiltinClassKind
-  final case object CharacterClass              extends BuiltinClassKind
-  final case object BooleanClass                extends BuiltinClassKind
-  final case object ByteClass                   extends BuiltinClassKind
-  final case object ShortClass                  extends BuiltinClassKind
-  final case object IntegerClass                extends BuiltinClassKind
-  final case object LongClass                   extends BuiltinClassKind
-  final case object FloatClass                  extends BuiltinClassKind
-  final case object DoubleClass                 extends BuiltinClassKind
+  final case object NullClass                   extends BuiltinClassKind // #null
+  final case object ObjectClass                 extends BuiltinClassKind // #object
+  final case object ClassClass                  extends BuiltinClassKind // #class
+  final case object StringClass                 extends BuiltinClassKind // #string
+  final case object CharacterClass              extends BuiltinClassKind // #character
+  final case object BooleanClass                extends BuiltinClassKind // #boolean
+  final case object ByteClass                   extends BuiltinClassKind // #byte
+  final case object ShortClass                  extends BuiltinClassKind // #short
+  final case object IntegerClass                extends BuiltinClassKind // #integer
+  final case object LongClass                   extends BuiltinClassKind // #long
+  final case object FloatClass                  extends BuiltinClassKind // #float
+  final case object DoubleClass                 extends BuiltinClassKind // #double
   final case class Class(name: Global)          extends ClassKind
   final case class InterfaceClass(name: Global) extends ClassKind
   final case class ModuleClass(name: Global)    extends ClassKind

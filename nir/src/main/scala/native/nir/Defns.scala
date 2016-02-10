@@ -25,12 +25,12 @@ object Defn {
                              members: Seq[Defn]) extends Defn
   final case class Class(attrs: Seq[Attr],
                          name: Global,
-                         parent: Option[Global],
+                         parent: Global,
                          interfaces: Seq[Global],
                          members: Seq[Defn]) extends Defn
   final case class Module(attrs: Seq[Attr],
                           name: Global,
-                          parent: Option[Global],
+                          parent: Global,
                           interfaces: Seq[Global],
                           members: Seq[Defn]) extends Defn
 }

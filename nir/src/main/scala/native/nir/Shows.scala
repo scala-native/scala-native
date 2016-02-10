@@ -199,11 +199,11 @@ object Shows {
       val body = brace(r(members.map(i(_))))
       sh"${attrs}interface @$name : $parents $body"
     case Defn.Class(attrs, name, parent, ifaces, members) =>
-      val parents = r(parent ++: ifaces, sep = ", ")
+      val parents = r(parent +: ifaces, sep = ", ")
       val body = brace(r(members.map(i(_))))
-      sh"${attrs}class @$name($parents) $body"
+      sh"${attrs}class @$name: $parents $body"
     case Defn.Module(attrs, name, parent, ifaces, members) =>
-      val parents = r(parent ++: ifaces, sep = ", ")
+      val parents = r(parent +: ifaces, sep = ", ")
       val body = brace(r(members.map(i(_))))
       sh"${attrs}module @$name : $parents $body"
   }
