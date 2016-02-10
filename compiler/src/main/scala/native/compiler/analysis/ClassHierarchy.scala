@@ -132,9 +132,10 @@ object ClassHierarchy {
     def enterIntrinsics(): Unit = {
       val classes = Map(
         Intrinsic.object_ -> Seq(
+          Intrinsic.object_init,
           Intrinsic.object_equals,
-          Intrinsic.object_hash_code,
-          Intrinsic.object_to_string
+          Intrinsic.object_hashCode,
+          Intrinsic.object_toString
         )
       )
 

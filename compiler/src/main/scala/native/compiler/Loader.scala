@@ -9,10 +9,6 @@ import native.nir._
 import native.nir.serialization._
 
 final class Loader(paths: Seq[String]) {
-  private lazy val c = Global.Atom("c")
-  private lazy val m = Global.Atom("m")
-  private lazy val i = Global.Atom("i")
-
   private lazy val pathmap: Map[Global, String] =
     paths.flatMap { path =>
       val base = new File(path)
@@ -27,18 +23,18 @@ final class Loader(paths: Seq[String]) {
         val relpath = fileabs.replace(baseabs + "/", "")
         val (tag, rel) =
           if (relpath.endsWith(".class.nir"))
-            (c, relpath.replace(".class.nir", ""))
+            ("c", relpath.replace(".class.nir", ""))
           // TODO: it might be better to strip $ in plugin
           else if (relpath.endsWith("$.module.nir"))
-            (m, relpath.replace("$.module.nir", ""))
+            ("m", relpath.replace("$.module.nir", ""))
           else if (relpath.endsWith(".module.nir"))
-            (m, relpath.replace(".module.nir", ""))
+            ("m", relpath.replace(".module.nir", ""))
           else if (relpath.endsWith(".interface.nir"))
-            (i, relpath.replace(".interface.nir", ""))
+            ("i", relpath.replace(".interface.nir", ""))
           else
             throw new Exception(s"can't parse file kind $relpath")
         val parts = rel.split("/").toSeq
-        val name = Global.Tagged(Global.Atom(parts.mkString(".")), tag)
+        val name = Global(parts.mkString("."), tag)
         (name -> fileabs)
       }.toSeq
     }.toMap
@@ -50,7 +46,7 @@ final class Loader(paths: Seq[String]) {
 
     while (deps.nonEmpty) {
       val dep = deps.pop()
-      if (!loaded.contains(dep)) {
+      if (!loaded.contains(dep) && !dep.isIntrinsic) {
         val (newdeps, newdefns) = deserializeBinaryFile(pathmap(dep))
         deps.pushAll(newdeps)
         defns ++= newdefns

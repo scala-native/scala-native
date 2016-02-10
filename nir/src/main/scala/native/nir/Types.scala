@@ -3,15 +3,15 @@ package nir
 
 sealed abstract class Type {
   def unboxed = this match {
-    case Type.CharacterClass => Type.I16
-    case Type.BooleanClass   => Type.Bool
-    case Type.ByteClass      => Type.I8
-    case Type.ShortClass     => Type.I16
-    case Type.IntegerClass   => Type.I32
-    case Type.LongClass      => Type.I64
-    case Type.FloatClass     => Type.F32
-    case Type.DoubleClass    => Type.F64
-    case _                   => util.unreachable
+    case Intrinsic.char   => Type.I16
+    case Intrinsic.bool   => Type.Bool
+    case Intrinsic.byte   => Type.I8
+    case Intrinsic.short  => Type.I16
+    case Intrinsic.int    => Type.I32
+    case Intrinsic.long   => Type.I64
+    case Intrinsic.float  => Type.F32
+    case Intrinsic.double => Type.F64
+    case _                => util.unreachable
   }
 }
 object Type {
@@ -36,23 +36,10 @@ object Type {
   final case class Struct  (name: Global)               extends Type
 
   // high-level types
-  final case object Unit    extends Type
-  final case object Nothing extends Type
-
   sealed abstract class ClassKind               extends Type
-  sealed abstract class BuiltinClassKind        extends ClassKind
-  final case object NullClass                   extends BuiltinClassKind // #null
-  final case object ObjectClass                 extends BuiltinClassKind // #object
-  final case object ClassClass                  extends BuiltinClassKind // #class
-  final case object StringClass                 extends BuiltinClassKind // #string
-  final case object CharacterClass              extends BuiltinClassKind // #character
-  final case object BooleanClass                extends BuiltinClassKind // #boolean
-  final case object ByteClass                   extends BuiltinClassKind // #byte
-  final case object ShortClass                  extends BuiltinClassKind // #short
-  final case object IntegerClass                extends BuiltinClassKind // #integer
-  final case object LongClass                   extends BuiltinClassKind // #long
-  final case object FloatClass                  extends BuiltinClassKind // #float
-  final case object DoubleClass                 extends BuiltinClassKind // #double
+  final case object Unit                        extends Type
+  final case object Nothing                     extends Type
+  final case object Null                        extends ClassKind
   final case class Class(name: Global)          extends ClassKind
   final case class InterfaceClass(name: Global) extends ClassKind
   final case class ModuleClass(name: Global)    extends ClassKind

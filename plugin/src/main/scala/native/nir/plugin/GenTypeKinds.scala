@@ -4,7 +4,7 @@ package plugin
 
 import scala.tools.nsc._
 
-trait GenTypeKinds extends SubComponent with NativeBuiltins {
+trait GenTypeKinds extends SubComponent with NativeIntrinsics {
   import global._, definitions._
 
   def genClassName(sym: Symbol): nir.Global
@@ -103,22 +103,22 @@ trait GenTypeKinds extends SubComponent with NativeBuiltins {
       }
     case BottomKind(sym) =>
       sym match {
-        case NullClass    => nir.Type.NullClass
+        case NullClass    => nir.Type.Null
         case NothingClass => nir.Type.Nothing
       }
     case BuiltinClassKind(sym) =>
       sym match {
-        case ObjectClass         => nir.Type.ObjectClass
-        case ClassClass          => nir.Type.ClassClass
-        case StringClass         => nir.Type.StringClass
-        case BoxedCharacterClass => nir.Type.CharacterClass
-        case BoxedBooleanClass   => nir.Type.BooleanClass
-        case BoxedByteClass      => nir.Type.ByteClass
-        case BoxedShortClass     => nir.Type.ShortClass
-        case BoxedIntClass       => nir.Type.IntegerClass
-        case BoxedLongClass      => nir.Type.LongClass
-        case BoxedFloatClass     => nir.Type.FloatClass
-        case BoxedDoubleClass    => nir.Type.DoubleClass
+        case ObjectClass         => Intrinsic.object_
+        case ClassClass          => Intrinsic.class_
+        case StringClass         => Intrinsic.string
+        case BoxedCharacterClass => Intrinsic.char
+        case BoxedBooleanClass   => Intrinsic.bool
+        case BoxedByteClass      => Intrinsic.byte
+        case BoxedShortClass     => Intrinsic.short
+        case BoxedIntClass       => Intrinsic.int
+        case BoxedLongClass      => Intrinsic.long
+        case BoxedFloatClass     => Intrinsic.float
+        case BoxedDoubleClass    => Intrinsic.double
       }
     case ClassKind(sym) =>
       val name = genClassName(sym)
@@ -133,8 +133,5 @@ trait GenTypeKinds extends SubComponent with NativeBuiltins {
   }
 
   def isModule(sym: Symbol): Boolean =
-    sym.isModuleClass || sym.isImplClass
-
-  def isForeignExternModule(sym: Symbol): Boolean =
-    isModule(sym) && sym.annotations.find(_.tpe =:= ExternClass.tpe).isDefined
+    sym.isModule || sym.isModuleClass || sym.isImplClass
 }

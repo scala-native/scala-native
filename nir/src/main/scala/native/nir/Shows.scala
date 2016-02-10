@@ -100,9 +100,9 @@ object Shows {
     case Op.ObjAlloc(ty) =>
       sh"alloc[$ty]"
     case Op.ObjFieldElem(ty, name, value) =>
-      sh"field-elem[$ty] $value, @$name"
+      sh"field-elem[$ty] $value, $name"
     case Op.ObjMethodElem(ty, name, value) =>
-      sh"method-elem[$ty] $value, @$name"
+      sh"method-elem[$ty] $value, $name"
     case Op.ObjAs(value, ty) =>
       sh"as[$ty] $value"
     case Op.ObjIs(value, ty) =>
@@ -170,7 +170,7 @@ object Shows {
     case Val.Array(ty, values)   => sh"array $ty {${r(values, ", ")}}"
     case Val.Chars(v)            => s("c\"", v, "\"")
     case Val.Local(name, ty)     => sh"$name"
-    case Val.Global(name, ty)    => sh"@$name"
+    case Val.Global(name, ty)    => sh"$name"
 
     case Val.Unit                => "unit"
     case Val.Null                => "null"
@@ -185,27 +185,27 @@ object Shows {
 
   implicit val showDefn: Show[Defn] = Show {
     case Defn.Var(attrs, name, ty, v) =>
-      sh"${attrs}var @$name : $ty = $v"
+      sh"${attrs}var $name : $ty = $v"
     case Defn.Declare(attrs, name, ty) =>
-      sh"${attrs}def @$name : $ty"
+      sh"${attrs}def $name : $ty"
     case Defn.Define(attrs, name, ty, blocks) =>
       val body = brace(r(blocks.map(i(_))))
-      sh"${attrs}def @$name : $ty $body"
+      sh"${attrs}def $name : $ty $body"
     case Defn.Struct(attrs, name, tys) =>
-      sh"${attrs}struct @$name {${r(tys, sep = ", ")}}"
+      sh"${attrs}struct $name {${r(tys, sep = ", ")}}"
 
     case Defn.Interface(attrs, name, ifaces, members) =>
       val parents = r(ifaces, sep = ", ")
       val body = brace(r(members.map(i(_))))
-      sh"${attrs}interface @$name : $parents $body"
+      sh"${attrs}interface $name : $parents $body"
     case Defn.Class(attrs, name, parent, ifaces, members) =>
       val parents = r(parent +: ifaces, sep = ", ")
       val body = brace(r(members.map(i(_))))
-      sh"${attrs}class @$name: $parents $body"
+      sh"${attrs}class $name : $parents $body"
     case Defn.Module(attrs, name, parent, ifaces, members) =>
       val parents = r(parent +: ifaces, sep = ", ")
       val body = brace(r(members.map(i(_))))
-      sh"${attrs}module @$name : $parents $body"
+      sh"${attrs}module $name : $parents $body"
   }
 
   implicit val showType: Show[Type] = Show {
@@ -222,33 +222,20 @@ object Shows {
     case Type.Array(ty, n)        => sh"[$ty x $n]"
     case Type.Ptr(ty)             => sh"ptr ${ty}"
     case Type.Function(args, ret) => sh"(${r(args, sep = ", ")}) => $ret"
-    case Type.Struct(name)        => sh"struct @$name"
+    case Type.Struct(name)        => sh"struct $name"
 
     case Type.Unit                 => "unit"
     case Type.Nothing              => "nothing"
-    case Type.NullClass            => "null"
-    case Type.ObjectClass          => "object"
-    case Type.ClassClass           => "class"
-    case Type.StringClass          => "string"
-    case Type.CharacterClass       => "character"
-    case Type.BooleanClass         => "boolean"
-    case Type.ByteClass            => "byte"
-    case Type.ShortClass           => "short"
-    case Type.IntegerClass         => "integer"
-    case Type.LongClass            => "long"
-    case Type.FloatClass           => "float"
-    case Type.DoubleClass          => "double"
-    case Type.Class(name)          => sh"class @$name"
-    case Type.InterfaceClass(name) => sh"interface @$name"
-    case Type.ModuleClass(name)    => sh"module @$name"
+    case Type.Null                 => "null"
+    case Type.Class(name)          => sh"class $name"
+    case Type.InterfaceClass(name) => sh"interface $name"
+    case Type.ModuleClass(name)    => sh"module $name"
     case Type.ArrayClass(ty)       => sh"${ty}[]"
   }
 
-  implicit val showGlobal: Show[Global] = Show {
-    case Global.Atom(id)              => id
-    case Global.Nested(owner, member) => sh"$owner::$member"
-    case Global.Tagged(n, tag)        => sh"${n}_$tag"
-    case Global.Intrinsic(id)         => sh"#$id"
+  implicit val showGlobal: Show[Global] = Show { g =>
+    val pre = if (g.isIntrinsic) "#" else "@"
+    sh"$pre${r(g.parts, sep = "_")}"
   }
 
   implicit val showLocal: Show[Local] = Show {

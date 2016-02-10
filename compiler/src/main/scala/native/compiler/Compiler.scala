@@ -7,7 +7,7 @@ import native.nir.serialization._
 
 final class Compiler(opts: Opts) {
   def entry() =
-    Global.Tagged(Global.Atom(opts.entry), Global.Atom("m"))
+    Global(opts.entry, "m")
 
   def load(): Seq[Defn] =
     (new Loader(opts.classpath)).load(entry())

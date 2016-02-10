@@ -4,14 +4,14 @@ package plugin
 
 import scala.tools.nsc.Global
 
-trait NativeBuiltins {
+trait NativeIntrinsics {
   val global: Global
   import global._, definitions._, rootMirror._
 
   lazy val PtrClass    = getRequiredClass("native.ffi.Ptr")
   lazy val ExternClass = getRequiredClass("native.ffi.extern")
 
-  def isBuiltin(sym: Symbol): Boolean =
+  def isIntrinsic(sym: Symbol): Boolean =
     UnboxValue.unapply(sym).nonEmpty                ||
     BoxValue.unapply(sym).nonEmpty                  ||
     ParseValue.unapply(sym).nonEmpty                ||
@@ -112,50 +112,50 @@ trait NativeBuiltins {
 
   object UnboxValue {
     def unapply(sym: Symbol): Option[(nir.Type, nir.Type)] = sym match {
-      case JBoolean_booleanValue => Some((nir.Type.BooleanClass, nir.Type.Bool))
-      case JCharacter_charValue  => Some((nir.Type.CharacterClass, nir.Type.I16))
+      case JBoolean_booleanValue => Some((Intrinsic.bool, nir.Type.Bool))
+      case JCharacter_charValue  => Some((Intrinsic.char, nir.Type.I16))
 
-      case JByte_byteValue   => Some((nir.Type.ByteClass, nir.Type.I8))
-      case JByte_shortValue  => Some((nir.Type.ByteClass, nir.Type.I16))
-      case JByte_intValue    => Some((nir.Type.ByteClass, nir.Type.I32))
-      case JByte_longValue   => Some((nir.Type.ByteClass, nir.Type.I64))
-      case JByte_floatValue  => Some((nir.Type.ByteClass, nir.Type.F32))
-      case JByte_doubleValue => Some((nir.Type.ByteClass, nir.Type.F64))
+      case JByte_byteValue   => Some((Intrinsic.byte, nir.Type.I8))
+      case JByte_shortValue  => Some((Intrinsic.byte, nir.Type.I16))
+      case JByte_intValue    => Some((Intrinsic.byte, nir.Type.I32))
+      case JByte_longValue   => Some((Intrinsic.byte, nir.Type.I64))
+      case JByte_floatValue  => Some((Intrinsic.byte, nir.Type.F32))
+      case JByte_doubleValue => Some((Intrinsic.byte, nir.Type.F64))
 
-      case JShort_byteValue   => Some((nir.Type.ShortClass, nir.Type.I8))
-      case JShort_shortValue  => Some((nir.Type.ShortClass, nir.Type.I16))
-      case JShort_intValue    => Some((nir.Type.ShortClass, nir.Type.I32))
-      case JShort_longValue   => Some((nir.Type.ShortClass, nir.Type.I64))
-      case JShort_floatValue  => Some((nir.Type.ShortClass, nir.Type.F32))
-      case JShort_doubleValue => Some((nir.Type.ShortClass, nir.Type.F64))
+      case JShort_byteValue   => Some((Intrinsic.short, nir.Type.I8))
+      case JShort_shortValue  => Some((Intrinsic.short, nir.Type.I16))
+      case JShort_intValue    => Some((Intrinsic.short, nir.Type.I32))
+      case JShort_longValue   => Some((Intrinsic.short, nir.Type.I64))
+      case JShort_floatValue  => Some((Intrinsic.short, nir.Type.F32))
+      case JShort_doubleValue => Some((Intrinsic.short, nir.Type.F64))
 
-      case JInt_byteValue   => Some((nir.Type.IntegerClass, nir.Type.I8))
-      case JInt_shortValue  => Some((nir.Type.IntegerClass, nir.Type.I16))
-      case JInt_intValue    => Some((nir.Type.IntegerClass, nir.Type.I32))
-      case JInt_longValue   => Some((nir.Type.IntegerClass, nir.Type.I64))
-      case JInt_floatValue  => Some((nir.Type.IntegerClass, nir.Type.F32))
-      case JInt_doubleValue => Some((nir.Type.IntegerClass, nir.Type.F64))
+      case JInt_byteValue   => Some((Intrinsic.int, nir.Type.I8))
+      case JInt_shortValue  => Some((Intrinsic.int, nir.Type.I16))
+      case JInt_intValue    => Some((Intrinsic.int, nir.Type.I32))
+      case JInt_longValue   => Some((Intrinsic.int, nir.Type.I64))
+      case JInt_floatValue  => Some((Intrinsic.int, nir.Type.F32))
+      case JInt_doubleValue => Some((Intrinsic.int, nir.Type.F64))
 
-      case JLong_byteValue   => Some((nir.Type.LongClass, nir.Type.I8))
-      case JLong_shortValue  => Some((nir.Type.LongClass, nir.Type.I16))
-      case JLong_intValue    => Some((nir.Type.LongClass, nir.Type.I32))
-      case JLong_longValue   => Some((nir.Type.LongClass, nir.Type.I64))
-      case JLong_floatValue  => Some((nir.Type.LongClass, nir.Type.F32))
-      case JLong_doubleValue => Some((nir.Type.LongClass, nir.Type.F64))
+      case JLong_byteValue   => Some((Intrinsic.long, nir.Type.I8))
+      case JLong_shortValue  => Some((Intrinsic.long, nir.Type.I16))
+      case JLong_intValue    => Some((Intrinsic.long, nir.Type.I32))
+      case JLong_longValue   => Some((Intrinsic.long, nir.Type.I64))
+      case JLong_floatValue  => Some((Intrinsic.long, nir.Type.F32))
+      case JLong_doubleValue => Some((Intrinsic.long, nir.Type.F64))
 
-      case JFloat_byteValue   => Some((nir.Type.FloatClass, nir.Type.I8))
-      case JFloat_shortValue  => Some((nir.Type.FloatClass, nir.Type.I16))
-      case JFloat_intValue    => Some((nir.Type.FloatClass, nir.Type.I32))
-      case JFloat_longValue   => Some((nir.Type.FloatClass, nir.Type.I64))
-      case JFloat_floatValue  => Some((nir.Type.FloatClass, nir.Type.F32))
-      case JFloat_doubleValue => Some((nir.Type.FloatClass, nir.Type.F64))
+      case JFloat_byteValue   => Some((Intrinsic.float, nir.Type.I8))
+      case JFloat_shortValue  => Some((Intrinsic.float, nir.Type.I16))
+      case JFloat_intValue    => Some((Intrinsic.float, nir.Type.I32))
+      case JFloat_longValue   => Some((Intrinsic.float, nir.Type.I64))
+      case JFloat_floatValue  => Some((Intrinsic.float, nir.Type.F32))
+      case JFloat_doubleValue => Some((Intrinsic.float, nir.Type.F64))
 
-      case JDouble_byteValue   => Some((nir.Type.DoubleClass, nir.Type.I8))
-      case JDouble_shortValue  => Some((nir.Type.DoubleClass, nir.Type.I16))
-      case JDouble_intValue    => Some((nir.Type.DoubleClass, nir.Type.I32))
-      case JDouble_longValue   => Some((nir.Type.DoubleClass, nir.Type.I64))
-      case JDouble_floatValue  => Some((nir.Type.DoubleClass, nir.Type.F32))
-      case JDouble_doubleValue => Some((nir.Type.DoubleClass, nir.Type.F64))
+      case JDouble_byteValue   => Some((Intrinsic.double, nir.Type.I8))
+      case JDouble_shortValue  => Some((Intrinsic.double, nir.Type.I16))
+      case JDouble_intValue    => Some((Intrinsic.double, nir.Type.I32))
+      case JDouble_longValue   => Some((Intrinsic.double, nir.Type.I64))
+      case JDouble_floatValue  => Some((Intrinsic.double, nir.Type.F32))
+      case JDouble_doubleValue => Some((Intrinsic.double, nir.Type.F64))
 
       case _                   => None
     }
@@ -172,14 +172,14 @@ trait NativeBuiltins {
 
   object BoxValue {
     def unapply(sym: Symbol): Option[nir.Type] = {
-           if (  JBoolean_valueOf.alternatives.contains(sym)) Some(nir.Type.BooleanClass)
-      else if (JCharacter_valueOf.alternatives.contains(sym)) Some(nir.Type.CharacterClass)
-      else if (     JByte_valueOf.alternatives.contains(sym)) Some(nir.Type.ByteClass)
-      else if (    JShort_valueOf.alternatives.contains(sym)) Some(nir.Type.ShortClass)
-      else if (  JInteger_valueOf.alternatives.contains(sym)) Some(nir.Type.IntegerClass)
-      else if (     JLong_valueOf.alternatives.contains(sym)) Some(nir.Type.LongClass)
-      else if (    JFloat_valueOf.alternatives.contains(sym)) Some(nir.Type.FloatClass)
-      else if (   JDouble_valueOf.alternatives.contains(sym)) Some(nir.Type.DoubleClass)
+           if (  JBoolean_valueOf.alternatives.contains(sym)) Some(Intrinsic.bool)
+      else if (JCharacter_valueOf.alternatives.contains(sym)) Some(Intrinsic.char)
+      else if (     JByte_valueOf.alternatives.contains(sym)) Some(Intrinsic.byte)
+      else if (    JShort_valueOf.alternatives.contains(sym)) Some(Intrinsic.short)
+      else if (  JInteger_valueOf.alternatives.contains(sym)) Some(Intrinsic.int)
+      else if (     JLong_valueOf.alternatives.contains(sym)) Some(Intrinsic.long)
+      else if (    JFloat_valueOf.alternatives.contains(sym)) Some(Intrinsic.float)
+      else if (   JDouble_valueOf.alternatives.contains(sym)) Some(Intrinsic.double)
       else                                                    None
     }
   }
@@ -228,15 +228,15 @@ trait NativeBuiltins {
 
   object ToString {
     def unapply(sym: Symbol): Option[nir.Type] = sym match {
-      case JObject_toString    => Some(nir.Type.ObjectClass)
-      case JBoolean_toString   => Some(nir.Type.BooleanClass)
-      case JCharacter_toString => Some(nir.Type.CharacterClass)
-      case JByte_toString      => Some(nir.Type.ByteClass)
-      case JShort_toString     => Some(nir.Type.ShortClass)
-      case JInteger_toString   => Some(nir.Type.IntegerClass)
-      case JLong_toString      => Some(nir.Type.LongClass)
-      case JFloat_toString     => Some(nir.Type.FloatClass)
-      case JDouble_toString    => Some(nir.Type.DoubleClass)
+      case JObject_toString    => Some(Intrinsic.object_)
+      case JBoolean_toString   => Some(Intrinsic.bool)
+      case JCharacter_toString => Some(Intrinsic.char)
+      case JByte_toString      => Some(Intrinsic.byte)
+      case JShort_toString     => Some(Intrinsic.short)
+      case JInteger_toString   => Some(Intrinsic.int)
+      case JLong_toString      => Some(Intrinsic.long)
+      case JFloat_toString     => Some(Intrinsic.float)
+      case JDouble_toString    => Some(Intrinsic.double)
       case _                   => None
     }
   }
@@ -252,14 +252,14 @@ trait NativeBuiltins {
 
   object BoxModuleToString {
     def unapply(sym: Symbol): Option[nir.Type] = {
-           if (  JBooleanModule_toString.alternatives.contains(sym)) Some((nir.Type.BooleanClass))
-      else if (JCharacterModule_toString.alternatives.contains(sym)) Some((nir.Type.CharacterClass))
-      else if (     JByteModule_toString.alternatives.contains(sym)) Some((nir.Type.ByteClass))
-      else if (    JShortModule_toString.alternatives.contains(sym)) Some((nir.Type.ShortClass))
-      else if (  JIntegerModule_toString.alternatives.contains(sym)) Some((nir.Type.IntegerClass))
-      else if (     JLongModule_toString.alternatives.contains(sym)) Some((nir.Type.LongClass))
-      else if (    JFloatModule_toString.alternatives.contains(sym)) Some((nir.Type.FloatClass))
-      else if (   JDoubleModule_toString.alternatives.contains(sym)) Some((nir.Type.DoubleClass))
+           if (  JBooleanModule_toString.alternatives.contains(sym)) Some((Intrinsic.bool))
+      else if (JCharacterModule_toString.alternatives.contains(sym)) Some((Intrinsic.char))
+      else if (     JByteModule_toString.alternatives.contains(sym)) Some((Intrinsic.byte))
+      else if (    JShortModule_toString.alternatives.contains(sym)) Some((Intrinsic.short))
+      else if (  JIntegerModule_toString.alternatives.contains(sym)) Some((Intrinsic.int))
+      else if (     JLongModule_toString.alternatives.contains(sym)) Some((Intrinsic.long))
+      else if (    JFloatModule_toString.alternatives.contains(sym)) Some((Intrinsic.float))
+      else if (   JDoubleModule_toString.alternatives.contains(sym)) Some((Intrinsic.double))
       else                                                           None
     }
   }
@@ -269,8 +269,8 @@ trait NativeBuiltins {
 
   object BoxModuleToUnsignedString {
     def unapply(sym: Symbol): Option[nir.Type] = {
-           if (JIntegerModule_toUnsignedString.alternatives.contains(sym)) Some((nir.Type.IntegerClass))
-      else if (   JLongModule_toUnsignedString.alternatives.contains(sym)) Some((nir.Type.LongClass))
+           if (JIntegerModule_toUnsignedString.alternatives.contains(sym)) Some((Intrinsic.int))
+      else if (   JLongModule_toUnsignedString.alternatives.contains(sym)) Some((Intrinsic.long))
       else                                                                 None
     }
   }
@@ -332,15 +332,15 @@ trait NativeBuiltins {
 
   object HashCode {
     def unapply(sym: Symbol): Option[nir.Type] = sym match {
-      case JObject_hashCode    => Some(nir.Type.ObjectClass)
-      case JBoolean_hashCode   => Some(nir.Type.BooleanClass)
-      case JCharacter_hashCode => Some(nir.Type.CharacterClass)
-      case JByte_hashCode      => Some(nir.Type.ByteClass)
-      case JShort_hashCode     => Some(nir.Type.ShortClass)
-      case JInteger_hashCode   => Some(nir.Type.IntegerClass)
-      case JLong_hashCode      => Some(nir.Type.LongClass)
-      case JFloat_hashCode     => Some(nir.Type.FloatClass)
-      case JDouble_hashCode    => Some(nir.Type.DoubleClass)
+      case JObject_hashCode    => Some(Intrinsic.object_)
+      case JBoolean_hashCode   => Some(Intrinsic.bool)
+      case JCharacter_hashCode => Some(Intrinsic.char)
+      case JByte_hashCode      => Some(Intrinsic.byte)
+      case JShort_hashCode     => Some(Intrinsic.short)
+      case JInteger_hashCode   => Some(Intrinsic.int)
+      case JLong_hashCode      => Some(Intrinsic.long)
+      case JFloat_hashCode     => Some(Intrinsic.float)
+      case JDouble_hashCode    => Some(Intrinsic.double)
       case _                   => None
     }
   }
@@ -387,4 +387,32 @@ trait NativeBuiltins {
       case _            => false
     }
   }
+
+  lazy val JObject    = ObjectClass
+  lazy val JClass     = ClassClass
+  lazy val JBoolean   = BoxedBooleanClass
+  lazy val JCharacter = BoxedCharacterClass
+  lazy val JByte      = BoxedByteClass
+  lazy val JShort     = BoxedShortClass
+  lazy val JInteger   = BoxedIntClass
+  lazy val JLong      = BoxedLongClass
+  lazy val JFloat     = BoxedFloatClass
+  lazy val JDouble    = BoxedDoubleClass
+
+  object IntrinsicClass {
+    def unapply(sym: Symbol): Option[nir.Global] = sym match {
+      case JObject    => Some(Intrinsic.object_.name)
+      case JClass     => Some(Intrinsic.class_.name)
+      case JBoolean   => Some(Intrinsic.bool.name)
+      case JCharacter => Some(Intrinsic.char.name)
+      case JByte      => Some(Intrinsic.byte.name)
+      case JShort     => Some(Intrinsic.short.name)
+      case JInteger   => Some(Intrinsic.int.name)
+      case JLong      => Some(Intrinsic.long.name)
+      case JFloat     => Some(Intrinsic.float.name)
+      case JDouble    => Some(Intrinsic.double.name)
+      case _          => None
+    }
+  }
 }
+

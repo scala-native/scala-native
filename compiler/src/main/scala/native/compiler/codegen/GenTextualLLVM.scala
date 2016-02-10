@@ -17,6 +17,7 @@ object GenTextualLLVM extends GenShow {
       case _: Defn.Var     => 2
       case _: Defn.Declare => 3
       case _: Defn.Define  => 4
+      case _               => -1
     }
     r(sorted, sep = nl(""))
   }
@@ -110,6 +111,8 @@ object GenTextualLLVM extends GenShow {
     case Val.Global(n, ty) => sh"@$n"
     case Val.Size(ty) =>
       sh"ptrtoint ($ty* getelementptr($ty, $ty* null, i32 1) to ${v.ty})"
+    case _ =>
+      unsupported(v)
   }
 
   implicit val showVal: Show[Val] = Show { v =>
@@ -118,11 +121,9 @@ object GenTextualLLVM extends GenShow {
     sh"$ty $justv"
   }
 
-  implicit val showGlobal: Show[Global] = Show {
-    case Global.Atom(id)              => id
-    case Global.Nested(owner, member) => sh"${owner}__$member"
-    case Global.Tagged(owner, tag)    => sh"${owner}.$tag"
-    case g: Global.Intrinsic          => unsupported(g)
+  implicit val showGlobal: Show[Global] = Show { g =>
+    if (g.isIntrinsic) unsupported(g)
+    else r(g.parts, "_")
   }
 
   implicit val showLocal: Show[Local] = Show {

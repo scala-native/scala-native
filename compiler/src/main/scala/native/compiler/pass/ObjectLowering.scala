@@ -37,13 +37,6 @@ trait ObjectLowering extends Pass { self: Lowering =>
   private val i8_*      = Type.Ptr(Type.I8)
   private val zero_i8_* = Val.Zero(i8_*)
 
-  private val vtableTag = Global.Atom("vtable")
-  private val vconstTag = Global.Atom("vconst")
-  private val clsTag    = Global.Atom("cls")
-
-  private val nrtClassName = Global.Atom("nrt_class_t")
-  private val nrtClassTy   = Type.Struct(nrtClassName)
-
   override def onDefn(defn: Defn) = defn match {
     case Defn.Class(_, name, _, _, members) =>
       val methods    = members.collect { case defn: Defn.Define => defn }
@@ -52,15 +45,15 @@ trait ObjectLowering extends Pass { self: Lowering =>
       val vtable     = cls.vtable
       val vtableTys  = vtable.map(_.ty)
 
-      val vtableStructName = Global.Tagged(name, vtableTag)
+      val vtableStructName = name + "vtable"
       val vtableStructTy   = Type.Struct(vtableStructName)
 
+      val vtableConstName = name + "vconst"
       val vtableStruct    = Defn.Struct(Seq(), vtableStructName, vtableTys)
-      val vtableConstName = Global.Tagged(name, vconstTag)
       val vtableConstVal  = Val.Struct(vtableStructName, vtable)
       val vtableConst     = Defn.Var(Seq(), vtableConstName, vtableStructTy, vtableConstVal)
 
-      val classConstName = Global.Tagged(name, clsTag)
+      val classConstName = name + "cls"
       val classConstTy   = Type.I8
       val classConstVal  = Val.Zero(Type.I8)
       val classConst     = Defn.Var(Seq(), classConstName, classConstTy, classConstVal)
@@ -76,7 +69,7 @@ trait ObjectLowering extends Pass { self: Lowering =>
 
   override def onInstr(instr: Instr) = instr match {
     case Instr(Some(n), Seq(), Op.ObjAlloc(Type.Class(clsname))) =>
-      val clsValue = Val.Global(Global.Tagged(clsname, clsTag), Type.Ptr(Type.I8))
+      val clsValue = Val.Global(clsname + "cls", Type.Ptr(Type.I8))
       val sizeValue = Val.Size(Type.Struct(clsname))
       onInstr(Instr(n, Intrinsic.call(Intrinsic.alloc, clsValue, sizeValue)))
 
@@ -103,7 +96,7 @@ trait ObjectLowering extends Pass { self: Lowering =>
     case Instr(Some(n), Seq(), Op.ObjMethodElem(sig, obj, ExVirtualMethod(meth))) =>
       val sigptr    = Type.Ptr(sig)
       val clsptr    = Type.Ptr(Type.Struct(meth.in.name))
-      val vtableptr = Type.Ptr(Type.Struct(Global.Tagged(meth.in.name, vtableTag)))
+      val vtableptr = Type.Ptr(Type.Struct(meth.in.name + "vtable"))
       val cast      = fresh()
       val vtable_** = fresh()
       val vtable_*  = fresh()
@@ -129,6 +122,11 @@ trait ObjectLowering extends Pass { self: Lowering =>
     case Instr(Some(n), Seq(), Op.ObjMethodElem(sig, obj, ExStaticMethod(meth))) =>
       onInstr(Instr(n, Op.Copy(Val.Global(meth.name, Type.Ptr(sig)))))
 
+    case Instr(_, _, Op.ObjMethodElem(_, _, n)) =>
+      println(s"funky method name $n")
+      println(s"node for it is ${cha(n)}")
+      ???
+
     // case Instr(n, attrs, Op.ObjAs(Type.Class(clsname), obj)) =>
     //   ???
 
@@ -149,10 +147,12 @@ trait ObjectLowering extends Pass { self: Lowering =>
       zero_i8_*
     case Val.Class(ty) =>
       ty match {
-        case builtin: Type.BuiltinClassKind =>
-          Intrinsic.builtin_class(builtin)
+        case _ if Intrinsic.intrinsic_class.contains(ty) =>
+          Intrinsic.intrinsic_class(ty)
+        case Type.Null =>
+          Intrinsic.null_class
         case Type.Class(name) =>
-          Val.Global(Global.Tagged(name, clsTag), Type.Ptr(Type.I8))
+          Val.Global(name + "cls", Type.Ptr(Type.I8))
         case _ =>
           ???
       }

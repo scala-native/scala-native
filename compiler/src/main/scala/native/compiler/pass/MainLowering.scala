@@ -2,7 +2,7 @@ package native
 package compiler
 package pass
 
-import native.nir.{ Global => G, _ }
+import native.nir._
 
 /** Introduces `main` function that set ups
  *  the runtime and calls the given entry point.
@@ -15,11 +15,8 @@ trait MainLowering extends Pass { self: Lowering =>
     val argv = fresh()
     val argvTy = Type.Ptr(Type.Ptr(Type.I8))
     val argvVal = Val.Local(argv, argvTy)
-    val moduleAccessorName =
-      G.Tagged(entryModule, G.Atom("accessor"))
-    val moduleMainName =
-      G.Nested(entryModule, G.Tagged(G.Tagged(G.Atom("main"),
-        G.Tagged(G.Atom("string"), G.Atom("arr"))), G.Atom("unit")))
+    val moduleAccessorName = entryModule + "accessor"
+    val moduleMainName = entryModule ++ Seq("main", "string", "arr", "unit")
     val moduleMainTy = Type.Function(Seq(Type.Ptr(Type.I8), Type.Ptr(Type.I8)), Type.Void)
     val moduleMain = Val.Global(moduleMainName, Type.Ptr(moduleMainTy))
     val moduleAccessorTy = Type.Function(Seq(), Type.Ptr(Type.I8))
@@ -27,7 +24,7 @@ trait MainLowering extends Pass { self: Lowering =>
     val m = fresh()
     val mVal = Val.Local(m, Type.Ptr(Type.I8))
     val arr = fresh()
-    val arrVal = Val.Local(arr, Type.ArrayClass(Type.StringClass))
+    val arrVal = Val.Local(arr, Type.ArrayClass(Intrinsic.string))
     val body =
       Block(fresh(), Seq(Param(argc, argcTy), Param(argv, argvTy)),
         Seq(Instr(arr, Intrinsic.call(Intrinsic.init, argcVal, argvVal)),
@@ -37,7 +34,7 @@ trait MainLowering extends Pass { self: Lowering =>
     val sig =
       Type.Function(Seq(argcTy, argvTy), Type.I32)
     val main =
-      Defn.Define(Seq(), G.Atom("main"), sig, Seq(body))
+      Defn.Define(Seq(), Global("main"), sig, Seq(body))
 
     super.onPostCompilationUnit(defns ++ onDefn(main))
   }

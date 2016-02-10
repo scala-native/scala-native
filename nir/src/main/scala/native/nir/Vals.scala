@@ -19,10 +19,10 @@ sealed abstract class Val {
     case Val.Global(_, ty)    => ty
 
     case Val.Unit             => Type.Unit
-    case Val.Null             => Type.NullClass
-    case Val.String(_)        => Type.StringClass
+    case Val.Null             => Type.Null
+    case Val.String(_)        => Intrinsic.string
     case Val.Size(ty)         => Type.Size
-    case Val.Class(ty)        => Type.ClassClass
+    case Val.Class(ty)        => Intrinsic.class_
   }
 }
 object Val {

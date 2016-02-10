@@ -28,11 +28,14 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     if (get == 0) None
     else Some(getT)
 
+  private def getStrings(): Seq[String] = getSeq(getString)
   private def getString(): String = {
     val arr = new Array[Byte](getInt)
     get(arr)
     new String(arr)
   }
+
+  private def getBool(): Boolean = get != 0
 
   private def getAdvice(): Advice = getInt match {
     case T.NoAdvice   => Advice.No
@@ -105,12 +108,7 @@ final class BinaryDeserializer(bb: ByteBuffer) {
 
   private def getGlobals(): Seq[Global] = getSeq(getGlobal)
   private def getGlobalOpt(): Option[Global] = getOpt(getGlobal)
-  private def getGlobal(): Global = getInt match {
-    case T.AtomGlobal      => Global.Atom(getString)
-    case T.NestedGlobal    => Global.Nested(getGlobal, getGlobal)
-    case T.TaggedGlobal    => Global.Tagged(getGlobal, getGlobal)
-    case T.IntrinsicGlobal => Global.Intrinsic(getString)
-  }
+  private def getGlobal(): Global = new Global(getStrings, getBool)
 
   private def getInstrs(): Seq[Instr] = getSeq(getInstr)
   private def getInstr(): Instr = Instr(getLocalOpt, getAttrs, getOp)
@@ -174,18 +172,6 @@ final class BinaryDeserializer(bb: ByteBuffer) {
 
     case T.UnitType           => Type.Unit
     case T.NothingType        => Type.Nothing
-    case T.NullClassType      => Type.NullClass
-    case T.ObjectClassType    => Type.ObjectClass
-    case T.ClassClassType     => Type.ClassClass
-    case T.StringClassType    => Type.StringClass
-    case T.CharacterClassType => Type.CharacterClass
-    case T.BooleanClassType   => Type.BooleanClass
-    case T.ByteClassType      => Type.ByteClass
-    case T.ShortClassType     => Type.ShortClass
-    case T.IntegerClassType   => Type.IntegerClass
-    case T.LongClassType      => Type.LongClass
-    case T.FloatClassType     => Type.FloatClass
-    case T.DoubleClassType    => Type.DoubleClass
     case T.ClassType          => Type.Class(ext(getGlobal))
     case T.InterfaceClassType => Type.InterfaceClass(ext(getGlobal))
     case T.ModuleClassType    => Type.ModuleClass(ext(getGlobal))

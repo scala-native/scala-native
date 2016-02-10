@@ -20,10 +20,13 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Some(v) => put(1.toByte); putT(v)
   }
 
+  private def putStrings(vs: Seq[String]) = putSeq(putString)(vs)
   private def putString(v: String) = {
     val bytes = v.getBytes
     putInt(bytes.length); put(bytes)
   }
+
+  private def putBool(v: Boolean) = put((if (v) 1 else 0).toByte)
 
   private def putAdvice(adv: Advice) = adv match {
     case Advice.No   => T.NoAdvice
@@ -110,11 +113,9 @@ final class BinarySerializer(buffer: ByteBuffer) {
 
   private def putGlobals(globals: Seq[Global]): Unit = putSeq(putGlobal)(globals)
   private def putGlobalOpt(globalopt: Option[Global]): Unit = putOpt(putGlobal)(globalopt)
-  private def putGlobal(global: Global): Unit = global match {
-    case Global.Atom(id)              => putInt(T.AtomGlobal); putString(id)
-    case Global.Nested(owner, member) => putInt(T.NestedGlobal); putGlobal(owner); putGlobal(member)
-    case Global.Tagged(n, tag)        => putInt(T.TaggedGlobal); putGlobal(n); putGlobal(tag)
-    case Global.Intrinsic(id)         => putInt(T.IntrinsicGlobal); putString(id)
+  private def putGlobal(global: Global): Unit = {
+    putStrings(global.parts)
+    putBool(global.isIntrinsic)
   }
 
   private def putInstrs(instrs: Seq[Instr]) = putSeq(putInstr)(instrs)
@@ -215,18 +216,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
 
     case Type.Unit                => putInt(T.UnitType)
     case Type.Nothing             => putInt(T.NothingType)
-    case Type.NullClass           => putInt(T.NullClassType)
-    case Type.ObjectClass         => putInt(T.ObjectClassType)
-    case Type.ClassClass          => putInt(T.ClassClassType)
-    case Type.StringClass         => putInt(T.StringClassType)
-    case Type.CharacterClass      => putInt(T.CharacterClassType)
-    case Type.BooleanClass        => putInt(T.BooleanClassType)
-    case Type.ByteClass           => putInt(T.ByteClassType)
-    case Type.ShortClass          => putInt(T.ShortClassType)
-    case Type.IntegerClass        => putInt(T.IntegerClassType)
-    case Type.LongClass           => putInt(T.LongClassType)
-    case Type.FloatClass          => putInt(T.FloatClassType)
-    case Type.DoubleClass         => putInt(T.DoubleClassType)
+    case Type.Null                => putInt(T.NullType)
     case Type.Class(n)            => putInt(T.ClassType); putGlobal(n)
     case Type.InterfaceClass(n)   => putInt(T.InterfaceClassType); putGlobal(n)
     case Type.ModuleClass(n)      => putInt(T.ModuleClassType); putGlobal(n)

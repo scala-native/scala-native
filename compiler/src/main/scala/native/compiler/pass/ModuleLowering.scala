@@ -38,27 +38,21 @@ import native.nir._
  *  - Defn.Module
  */
 trait ModuleLowering extends Pass {
-  private val accessortag = Global.Atom("accessor")
-  private val datatag = Global.Atom("data")
-
   override def onDefn(defn: Defn) = defn match {
     case Defn.Module(attrs, name, parent, ifaces, members) =>
       val cls = Defn.Class(attrs, name, parent, ifaces, members)
       val clsty = Type.Class(name)
       val ptrclsty = Type.Ptr(clsty)
       val ctorty = Type.Function(Seq(clsty), Type.Unit)
-      val ctor = Val.Global(Global.Nested(name, Global.Atom("init")), Type.Ptr(ctorty))
-      val data = Defn.Var(Seq(), Global.Tagged(name, datatag), clsty, Val.Null)
+      val ctor = Val.Global(name + "init", Type.Ptr(ctorty))
+      val data = Defn.Var(Seq(), name + "data", clsty, Val.Null)
       val dataval = Val.Global(data.name, ptrclsty)
       val accessor =
-        Defn.Define(
-          Seq(),
-          Global.Tagged(name, accessortag),
-          Type.Function(Seq(), Type.Class(name)),
+        Defn.Define(Seq(), name + "accessor", Type.Function(Seq(), Type.Class(name)),
           {
             val entry = Focus.entry(fresh)
             val prev = entry withOp Op.Load(clsty, dataval)
-            val cond = prev withOp Op.Comp(Comp.Eq, Type.ObjectClass, prev.value, Val.Null)
+            val cond = prev withOp Op.Comp(Comp.Eq, Intrinsic.object_, prev.value, Val.Null)
 
             cond.branchIf(cond.value, Type.Nothing,
               { thenp =>

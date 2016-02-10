@@ -20,7 +20,7 @@ trait StringLowering extends Pass {
   private var id = 0
   private def intrinsify(s: String): Val.Global = {
     if (!defns.contains(s)) {
-      val g = Global.Atom(s".str.$id")
+      val g = Global(s".str.$id")
       val v = Val.Chars(s)
       val defn = Defn.Var(Seq(), g, v.ty, v)
       defns += (s -> defn)
@@ -41,11 +41,6 @@ trait StringLowering extends Pass {
     defns ++ this.defns.values
   }
 
-  override def onType(ty: Type) = super.onType(ty match {
-    case Type.StringClass => i8_*
-    case _                => ty
-  })
-
   override def onInstr(instr: Instr) = {
     val strings = stringsOf(instr.op)
     val collected = mutable.UnrolledBuffer.empty[(String, Local)]
@@ -55,7 +50,7 @@ trait StringLowering extends Pass {
       val n2 = fresh()
       collected += (s -> n2)
       Seq(Instr(n1, Op.Elem(Type.I8, g, Seq(Val.I32(0), Val.I32(0)))),
-          Instr(n2, Intrinsic.call(Intrinsic.string_from_ptr, Val.Local(n1, i8_*), Val.I32(s.length))))
+          Instr(n2, Intrinsic.call(Intrinsic.string_fromPtr, Val.Local(n1, i8_*), Val.I32(s.length))))
     }
 
     scoped(
