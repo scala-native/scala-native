@@ -65,15 +65,16 @@ trait Pass {
     case Op.Comp(comp, ty, lv, rv)       => Op.Comp(comp, onType(ty), onVal(lv), onVal(rv))
     case Op.Conv(conv, ty, v)            => Op.Conv(conv, onType(ty), onVal(v))
 
-    case Op.ObjAlloc(ty)            => Op.ObjAlloc(onType(ty))
-    case Op.ObjFieldElem(ty, v, n)  => Op.ObjFieldElem(onType(ty), onVal(v), n)
-    case Op.ObjMethodElem(ty, v, n) => Op.ObjMethodElem(onType(ty), onVal(v), n)
-    case Op.ObjAs(ty, v)            => Op.ObjAs(onType(ty), onVal(v))
-    case Op.ObjIs(ty, v)            => Op.ObjIs(onType(ty), onVal(v))
-    case Op.ArrAlloc(ty, v)         => Op.ArrAlloc(onType(ty), onVal(v))
-    case Op.ArrLength(v)            => Op.ArrLength(onVal(v))
-    case Op.ArrElem(ty, v, i)       => Op.ArrElem(onType(ty), onVal(v), onVal(i))
-    case Op.Copy(v)                 => Op.Copy(onVal(v))
+    case Op.Alloc(ty)         => Op.Alloc(onType(ty))
+    case Op.Field(ty, v, n)   => Op.Field(onType(ty), onVal(v), n)
+    case Op.Method(ty, v, n)  => Op.Method(onType(ty), onVal(v), n)
+    case Op.Module(n)         => Op.Module(n)
+    case Op.As(ty, v)         => Op.As(onType(ty), onVal(v))
+    case Op.Is(ty, v)         => Op.Is(onType(ty), onVal(v))
+    case Op.ArrAlloc(ty, v)   => Op.ArrAlloc(onType(ty), onVal(v))
+    case Op.ArrLength(v)      => Op.ArrLength(onVal(v))
+    case Op.ArrElem(ty, v, i) => Op.ArrElem(onType(ty), onVal(v), onVal(i))
+    case Op.Copy(v)           => Op.Copy(onVal(v))
   }
 
   def onVal(value: Val): Val = value match {

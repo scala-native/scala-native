@@ -20,6 +20,16 @@ trait UnitLowering extends Pass {
       super.onInstr(instr)
   }
 
+  override def onNext(n: Next) = super.onNext {
+    val Next(label, args) = n
+    Next(label, args.filter(_ != Val.Unit))
+  }
+
+  override def onBlock(b: Block) = super.onBlock {
+    val Block(n, params, instrs) = b
+    Block(n, params.filter(_.ty != Type.Unit), instrs)
+  }
+
   override def onType(ty: Type) = super.onType(ty match {
     case Type.Unit => Type.Void
     case ty        => ty

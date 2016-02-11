@@ -25,15 +25,16 @@ sealed abstract class Op {
     case Op.Comp(_, _, _, _)                  => Type.Bool
     case Op.Conv(_, ty, _)                    => ty
 
-    case Op.ObjAlloc(ty)            => ty
-    case Op.ObjFieldElem(ty, _, _)  => Type.Ptr(ty)
-    case Op.ObjMethodElem(ty, _, _) => Type.Ptr(ty)
-    case Op.ObjAs(ty, _)            => ty
-    case Op.ObjIs(_, _)             => Type.Bool
-    case Op.ArrAlloc(ty, _)         => Type.ArrayClass(ty)
-    case Op.ArrLength(_)            => Type.I32
-    case Op.ArrElem(ty, _, _)       => Type.Ptr(ty)
-    case Op.Copy(v)                 => v.ty
+    case Op.Alloc(ty)         => ty
+    case Op.Field(ty, _, _)   => Type.Ptr(ty)
+    case Op.Method(ty, _, _)  => Type.Ptr(ty)
+    case Op.Module(n)         => Type.ModuleClass(n)
+    case Op.As(ty, _)         => ty
+    case Op.Is(_, _)          => Type.Bool
+    case Op.ArrAlloc(ty, _)   => Type.ArrayClass(ty)
+    case Op.ArrLength(_)      => Type.I32
+    case Op.ArrElem(ty, _, _) => Type.Ptr(ty)
+    case Op.Copy(v)           => v.ty
   }
 
   final def vals: Seq[Val] = this match {
@@ -56,15 +57,16 @@ sealed abstract class Op {
     case Op.Comp(_, _, v1, v2)    => Seq(v1, v2)
     case Op.Conv(_, _, v)         => Seq(v)
 
-    case Op.ObjAlloc(_)            => Seq()
-    case Op.ObjFieldElem(_, v, _)  => Seq(v)
-    case Op.ObjMethodElem(_, v, _) => Seq(v)
-    case Op.ObjAs(_, v)            => Seq(v)
-    case Op.ObjIs(_, v)            => Seq(v)
-    case Op.ArrAlloc(_, v)         => Seq(v)
-    case Op.ArrLength(v)           => Seq(v)
-    case Op.ArrElem(_, v1, v2)     => Seq(v1, v2)
-    case Op.Copy(v)                => Seq(v)
+    case Op.Alloc(_)           => Seq()
+    case Op.Field(_, v, _)     => Seq(v)
+    case Op.Method(_, v, _)    => Seq(v)
+    case Op.Module(n)          => Seq()
+    case Op.As(_, v)           => Seq(v)
+    case Op.Is(_, v)           => Seq(v)
+    case Op.ArrAlloc(_, v)     => Seq(v)
+    case Op.ArrLength(v)       => Seq(v)
+    case Op.ArrElem(_, v1, v2) => Seq(v1, v2)
+    case Op.Copy(v)            => Seq(v)
   }
 }
 object Op {
@@ -93,13 +95,14 @@ object Op {
   final case class Conv   (conv: nir.Conv, ty: Type, value: Val)        extends Op
 
   // high-level
-  final case class ObjAlloc     (ty: Type)                         extends Op
-  final case class ObjFieldElem (ty: Type, obj: Val, name: Global) extends Op
-  final case class ObjMethodElem(ty: Type, obj: Val, name: Global) extends Op
-  final case class ObjAs        (ty: Type, obj: Val)               extends Op
-  final case class ObjIs        (ty: Type, obj: Val)               extends Op
-  final case class ArrAlloc     (ty: Type, length: Val)            extends Op
-  final case class ArrLength    (value: Val)                       extends Op
-  final case class ArrElem      (ty: Type, value: Val, index: Val) extends Op
-  final case class Copy         (value: Val)                       extends Op
+  final case class Alloc    (ty: Type)                         extends Op
+  final case class Field    (ty: Type, obj: Val, name: Global) extends Op
+  final case class Method   (ty: Type, obj: Val, name: Global) extends Op
+  final case class Module   (name: Global)                     extends Op
+  final case class As       (ty: Type, obj: Val)               extends Op
+  final case class Is       (ty: Type, obj: Val)               extends Op
+  final case class ArrAlloc (ty: Type, length: Val)            extends Op
+  final case class ArrLength(value: Val)                       extends Op
+  final case class ArrElem  (ty: Type, value: Val, index: Val) extends Op
+  final case class Copy     (value: Val)                       extends Op
 }

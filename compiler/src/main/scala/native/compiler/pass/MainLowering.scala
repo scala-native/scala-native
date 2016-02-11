@@ -15,12 +15,9 @@ trait MainLowering extends Pass { self: Lowering =>
     val argv = fresh()
     val argvTy = Type.Ptr(Type.Ptr(Type.I8))
     val argvVal = Val.Local(argv, argvTy)
-    val moduleAccessorName = entryModule + "accessor"
     val moduleMainName = entryModule ++ Seq("main", "string", "arr", "unit")
     val moduleMainTy = Type.Function(Seq(Type.Ptr(Type.I8), Type.Ptr(Type.I8)), Type.Void)
     val moduleMain = Val.Global(moduleMainName, Type.Ptr(moduleMainTy))
-    val moduleAccessorTy = Type.Function(Seq(), Type.Ptr(Type.I8))
-    val moduleAccessor = Val.Global(moduleAccessorName, Type.Ptr(moduleAccessorTy))
     val m = fresh()
     val mVal = Val.Local(m, Type.Ptr(Type.I8))
     val arr = fresh()
@@ -28,7 +25,7 @@ trait MainLowering extends Pass { self: Lowering =>
     val body =
       Block(fresh(), Seq(Param(argc, argcTy), Param(argv, argvTy)),
         Seq(Instr(arr, Intrinsic.call(Intrinsic.init, argcVal, argvVal)),
-            Instr(m, Op.Call(moduleAccessorTy, moduleAccessor, Seq())),
+            Instr(m, Op.Module(entryModule)),
             Instr(Op.Call(moduleMainTy, moduleMain, Seq(mVal, arrVal))),
             Instr(Op.Ret(Val.I32(0)))))
     val sig =

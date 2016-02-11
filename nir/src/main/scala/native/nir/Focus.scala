@@ -10,7 +10,9 @@ final case class Focus(
   instrs:    Seq[Instr],
   value:     Val,
   complete:  Boolean
-)(implicit fresh: Fresh) {
+)(implicit _fresh: Fresh) {
+  def fresh = _fresh
+
   def withValue(newvalue: Val): Focus = {
     assert(!complete)
     copy(value = newvalue)
@@ -81,6 +83,11 @@ final case class Focus(
     Focus(prec ++ defaultprec ++ caseprecs.flatten,
           merge, Seq(param), Seq(),
           Val.Local(param.name, retty), complete = false)
+  }
+
+  def branchBlock(n: Local): Focus = {
+    val blocks = finish(Op.Jump(Next(n, Seq()))).blocks
+    Focus(blocks, n, Seq(), Seq(), Val.Unit, complete = false)
   }
 }
 object Focus {

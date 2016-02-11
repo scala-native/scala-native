@@ -71,10 +71,10 @@ object GenTextualLLVM extends GenShow {
       val phis = r(block.params.zipWithIndex.map {
         case (Param(n, ty), i) =>
           val branches = pred.map { e =>
-            sh"[${e.values(i)}, ${e.from.block.name}]"
+            sh"[${justVal(e.values(i))}, %${e.from.block.name}]"
           }
-          sh"phi $ty ${r(branches, sep = ", ")}"
-      }.map(i(_)))
+          sh"%$n = phi $ty ${r(branches, sep = ", ")}"
+      }.map(nl(_)))
       sh"$label$phis${nl("")}$instructions"
     }
   }
@@ -143,7 +143,7 @@ object GenTextualLLVM extends GenShow {
     case Op.Ret(value) =>
       sh"ret $value"
     case Op.Jump(next) =>
-      "todo: jump"
+      sh"br $next"
     case Op.If(cond, thenp, elsep) =>
       sh"br $cond, $thenp, $elsep"
     case Op.Switch(scrut, default, cases)  =>
@@ -165,9 +165,29 @@ object GenTextualLLVM extends GenShow {
     case Op.Insert(ty, aggr, value, index) =>
       "todo: insert"
     case Op.Alloca(ty) =>
-      sh"alloca[$ty]"
+      sh"alloca $ty"
     case Op.Bin(name, ty, l, r) =>
-      "todo: bin"
+      assert(attrs.isEmpty, "TODO: unsigned")
+      val bin = (name, ty) match {
+        case (Bin.Add,  Type.I(_)) => "add"
+        case (Bin.Sub,  Type.I(_)) => "sub"
+        case (Bin.Mul,  Type.I(_)) => "mul"
+        case (Bin.Div,  Type.I(_)) => "sdiv"
+        case (Bin.Mod,  Type.I(_)) => "srem"
+        case (Bin.Shl,  Type.I(_)) => "shl"
+        case (Bin.Lshr, Type.I(_)) => "lshr"
+        case (Bin.Ashr, Type.I(_)) => "ashr"
+        case (Bin.And,  Type.I(_)) => "and"
+        case (Bin.Or,   Type.I(_)) => "or"
+        case (Bin.Xor,  Type.I(_)) => "xor"
+        case (Bin.Add,  Type.F(_)) => "fadd"
+        case (Bin.Sub,  Type.F(_)) => "fsub"
+        case (Bin.Mul,  Type.F(_)) => "fmul"
+        case (Bin.Div,  Type.F(_)) => "fdiv"
+        case (Bin.Mod,  Type.F(_)) => "frem"
+        case _                     => unsupported((name, ty))
+      }
+      sh"$bin $l, ${justVal(r)}"
     case Op.Comp(name, ty, l, r) =>
       assert(attrs.isEmpty, "TODO: unsigned")
       val cmp = ty match {
@@ -198,8 +218,7 @@ object GenTextualLLVM extends GenShow {
   }
 
   implicit val showNext: Show[Next] = Show {
-    case Next(n, _) =>
-      sh"label %$n"
+    case Next(n, _) => sh"label %$n"
   }
 
   implicit def showCase: Show[Case] = ???

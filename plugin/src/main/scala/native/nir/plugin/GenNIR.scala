@@ -37,14 +37,6 @@ abstract class GenNIR extends PluginComponent
     def resolve(sym: Symbol): Val = env(sym)
   }
 
-  class LabelEnv(env: Env) {
-    def enterLabel(ld: LabelDef, calls: Int) = ???
-    def enterLabelCall(sym: Symbol, values: Seq[Val], focus: Focus) = ???
-    def resolveLabel(sym: Symbol) = ???
-    def resolveLabelParams(sym: Symbol) = ???
-    def resolveLabelEf(sym: Symbol) = ???
-  }
-
   class CollectLocalInfo extends Traverser {
     var mutableVars     = Set.empty[Symbol]
     var labels          = Set.empty[LabelDef]
@@ -75,7 +67,6 @@ abstract class GenNIR extends PluginComponent
     val curClassSym  = new util.ScopedVar[Symbol]
     val curMethodSym = new util.ScopedVar[Symbol]
     val curEnv       = new util.ScopedVar[Env]
-    val curLabelEnv  = new util.ScopedVar[LabelEnv]
     val curThis      = new util.ScopedVar[Val]
 
     override def run(): Unit = {
@@ -165,7 +156,6 @@ abstract class GenNIR extends PluginComponent
         val env = new Env
         scoped (
           curEnv := env,
-          curLabelEnv := new LabelEnv(env),
           curLocalInfo := (new CollectLocalInfo).collect(dd.rhs)
         ) {
           val focus = genDefBody(paramSyms, dd.rhs)
@@ -253,9 +243,7 @@ abstract class GenNIR extends PluginComponent
     def genExpr(tree: Tree, focus: Focus): Focus = tree match {
       case ld: LabelDef =>
         assert(ld.params.length == 0)
-        val label = curLabelEnv.enterLabel(ld, curLocalInfo.labelApplyCount(ld.symbol) + 1)
-        curLabelEnv.enterLabelCall(ld.symbol, Seq(), focus)
-        genLabel(ld)
+        genLabel(ld, focus)
 
       case vd: ValDef =>
         // TODO: attribute valdef name to the rhs node
@@ -289,7 +277,6 @@ abstract class GenNIR extends PluginComponent
         expr.finish(Op.Ret(expr.value))
 
       case app: Apply =>
-        println(s"apply $app")
         genApply(app, focus)
 
       case app: ApplyDynamic =>
@@ -302,10 +289,9 @@ abstract class GenNIR extends PluginComponent
         }
 
       case Select(qualp, selp) =>
-        println(s"select $tree")
         val sym = tree.symbol
         if (isModule(sym))
-          focus.withValue(Val.Global(genClassName(sym), genType(sym.tpe)))
+          focus withOp Op.Module(genClassName(sym))
         else if (sym.isStaticMember)
           genStaticMember(sym, focus)
         else if (sym.isMethod)
@@ -313,20 +299,18 @@ abstract class GenNIR extends PluginComponent
         else {
           val ty = genType(tree.symbol.tpe)
           val qual = genExpr(qualp, focus)
-          val elem = qual.withOp(Op.ObjFieldElem(ty, qual.value, genFieldName(tree.symbol)))
+          val elem = qual.withOp(Op.Field(ty, qual.value, genFieldName(tree.symbol)))
           elem withOp Op.Load(ty, elem.value)
         }
 
       case id: Ident =>
         val sym = id.symbol
-        println(s"isModule($sym) = ${isModule(sym)}")
-        if (!curLocalInfo.mutableVars.contains(sym))
-          focus.withValue {
-            if (isModule(sym)) Val.Global(genClassName(sym), genType(sym.tpe))
-            else curEnv.resolve(sym)
-          }
+        if (curLocalInfo.mutableVars.contains(sym))
+          focus withOp Op.Load(genType(sym.tpe), curEnv.resolve(sym))
+        else if (isModule(sym))
+          focus withOp Op.Module(genClassName(sym))
         else
-          focus.withOp(Op.Load(genType(sym.tpe), curEnv.resolve(sym)))
+          focus withValue(curEnv.resolve(sym))
 
       case lit: Literal =>
         genLiteral(lit, focus)
@@ -346,7 +330,7 @@ abstract class GenNIR extends PluginComponent
             val ty   = genType(sel.tpe)
             val qual = genExpr(qualp, focus)
             val rhs  = genExpr(rhsp, qual)
-            val elem = rhs.withOp(Op.ObjFieldElem(ty, qual.value, genFieldName(sel.symbol)))
+            val elem = rhs.withOp(Op.Field(ty, qual.value, genFieldName(sel.symbol)))
             elem.withOp(Op.Store(ty, elem.value, rhs.value))
 
           case id: Ident =>
@@ -424,7 +408,7 @@ abstract class GenNIR extends PluginComponent
     def genStaticMember(sym: Symbol, focus: Focus): Focus = {
       val ty = genType(sym.tpe)
       val module = Val.Global(genClassName(sym.owner), genType(sym.owner.tpe))
-      val elem = focus.withOp(Op.ObjFieldElem(ty, module, genFieldName(sym)))
+      val elem = focus.withOp(Op.Field(ty, module, genFieldName(sym)))
       elem.withOp(Op.Load(ty, elem.value))
     }
 
@@ -529,11 +513,11 @@ abstract class GenNIR extends PluginComponent
       lasttails
     }*/
 
-    def genLabel(label: LabelDef) = ??? /*{
-      val cf = curLabelEnv.resolveLabel(label.symbol)
-      val ef = curLabelEnv.resolveLabelEf(label.symbol)
-      genExpr(label.rhs, Focus(cf, ef, Val.Unit()))
-    }*/
+    def genLabel(label: LabelDef, focus: Focus) = {
+      val blockname = focus.fresh()
+      curEnv.enter(label.symbol, Val.Local(blockname, Type.Label))
+      genExpr(label.rhs, focus.branchBlock(blockname))
+    }
 
     def genArrayValue(av: ArrayValue, focus: Focus): Focus = {
       val ArrayValue(tpt, elems) = av
@@ -610,7 +594,7 @@ abstract class GenNIR extends PluginComponent
           genNormalMethodCall(fun.symbol, curThis.get, args, focus)
         case Select(New(_), nme.CONSTRUCTOR) =>
           genApplyNew(app, focus)
-        case Select(receiverp, _) =>
+        case _ =>
           val sym = fun.symbol
 
           if (sym.isLabel) {
@@ -623,20 +607,19 @@ abstract class GenNIR extends PluginComponent
           } else if (currentRun.runDefinitions.isUnbox(sym)) {
             genPrimitiveUnbox(args.head, app.tpe, focus)
           } else {
+            val Select(receiverp, _) = fun
             genMethodCall(fun.symbol, receiverp, args, focus)
           }
       }
     }
 
-    def genApplyLabel(tree: Tree, focus: Focus) = ???/*notMergeableGuard {
+    def genApplyLabel(tree: Tree, focus: Focus) = notMergeableGuard {
       val Apply(fun, args) = tree
-      val label = curLabelEnv.resolveLabel(fun.symbol)
+      val Val.Local(label, _) = curEnv.resolve(fun.symbol)
       val argsfocus = sequenced(args, focus)(genExpr(_, _))
       val lastfocus = argsfocus.lastOption.getOrElse(focus)
-      curLabelEnv.enterLabelCall(fun.symbol, argsfocus.map(_.value), lastfocus)
-      val res = tails
-      res
-    }*/
+      lastfocus finish Op.Jump(Next(label, argsfocus.map(_.value)))
+    }
 
     lazy val prim2ty = Map(
       BooleanTpe -> Intrinsic.bool,
@@ -944,8 +927,8 @@ abstract class GenNIR extends PluginComponent
       val ty = genType(targs.head.tpe)
       val rec = genExpr(receiverp, focus)
       rec.withOp(fun.symbol match {
-        case Object_isInstanceOf => Op.ObjIs(ty, rec.value)
-        case Object_asInstanceOf => Op.ObjAs(ty, rec.value)
+        case Object_isInstanceOf => Op.Is(ty, rec.value)
+        case Object_asInstanceOf => Op.As(ty, rec.value)
       })
     }
 
@@ -971,7 +954,7 @@ abstract class GenNIR extends PluginComponent
                       args: List[Tree], focus: Focus) =
       builtin match {
         case JObjectKind =>
-          focus withOp Op.ObjAlloc(Intrinsic.object_)
+          focus withOp Op.Alloc(Intrinsic.object_)
         case JStringKind =>
           ???
         case JCharKind
@@ -992,7 +975,7 @@ abstract class GenNIR extends PluginComponent
     }
 
     def genNew(sym: Symbol, ctorsym: Symbol, args: List[Tree], focus: Focus) = {
-      val alloc = focus.withOp(Op.ObjAlloc(genType(sym.tpe)))
+      val alloc = focus.withOp(Op.Alloc(genType(sym.tpe)))
       val ctor = genNormalMethodCall(ctorsym, alloc.value, args, alloc)
 
       ctor.withValue(alloc.value)
@@ -1012,7 +995,7 @@ abstract class GenNIR extends PluginComponent
       val args      = sequenced(argsp, focus)(genExpr(_, _))
       val argvalues = args.map(_.value)
       val last      = args.lastOption.getOrElse(focus)
-      val elem      = last withOp Op.ObjMethodElem(sig, self, name)
+      val elem      = last withOp Op.Method(sig, self, name)
       val call      = elem withOp Op.Call(sig, elem.value, self +: argvalues)
 
       call
@@ -1031,7 +1014,6 @@ abstract class GenNIR extends PluginComponent
         case ParseUnsignedValue(ty) =>
           genValueFromString(ty, argsp, unsigned = true, focus)
         case BoxModuleToString(boxty) =>
-          println(s"boxty: $boxty")
           genValueToString(boxty, argsp, unsigned = false, focus)
         case BoxModuleToUnsignedString(boxty) =>
           genValueToString(boxty, argsp, unsigned = true, focus)

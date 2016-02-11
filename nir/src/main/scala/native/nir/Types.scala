@@ -19,8 +19,9 @@ object Type {
   final case object None                   extends Type
   final case object Void                   extends Type
   final case object Size                   extends Type
-  final case object Bool                   extends Type
+  final case object Label                  extends Type
   sealed abstract case class I(width: Int) extends Type
+  final object Bool                        extends I(1)
   final object I8                          extends I(8)
   final object I16                         extends I(16)
   final object I32                         extends I(32)

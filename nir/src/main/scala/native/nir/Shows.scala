@@ -97,15 +97,17 @@ object Shows {
     case Op.Conv(name, ty, v) =>
       sh"$name[$ty] $v"
 
-    case Op.ObjAlloc(ty) =>
+    case Op.Alloc(ty) =>
       sh"alloc[$ty]"
-    case Op.ObjFieldElem(ty, name, value) =>
-      sh"field-elem[$ty] $value, $name"
-    case Op.ObjMethodElem(ty, name, value) =>
-      sh"method-elem[$ty] $value, $name"
-    case Op.ObjAs(value, ty) =>
+    case Op.Field(ty, name, value) =>
+      sh"field[$ty] $value, $name"
+    case Op.Method(ty, name, value) =>
+      sh"method[$ty] $value, $name"
+    case Op.Module(name) =>
+      sh"module $name"
+    case Op.As(value, ty) =>
       sh"as[$ty] $value"
-    case Op.ObjIs(value, ty) =>
+    case Op.Is(value, ty) =>
       sh"is[$ty] $value"
     case Op.ArrAlloc(ty, length) =>
       sh"arr-alloc[$ty] $length"
@@ -213,6 +215,7 @@ object Shows {
     case Type.Void                => "void"
     case Type.Size                => "size"
     case Type.Bool                => "bool"
+    case Type.Label               => "label"
     case Type.I8                  => "i8"
     case Type.I16                 => "i16"
     case Type.I32                 => "i32"

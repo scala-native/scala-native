@@ -38,6 +38,8 @@ object CFG {
             ()
           case Op.Throw(_) =>
             ()
+          case Op.Jump(Next(n, args)) =>
+            edge(node, nodes(n), args)
           case Op.If(_, Next(n1, args1), Next(n2, args2)) =>
             edge(node, nodes(n1), args1)
             edge(node, nodes(n2), args2)

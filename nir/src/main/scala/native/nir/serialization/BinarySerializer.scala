@@ -171,16 +171,18 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Op.Conv(conv, ty, v) =>
       putInt(T.ConvOp); putConv(conv); putType(ty); putVal(v)
 
-    case Op.ObjAlloc(ty) =>
-      putInt(T.ObjAllocOp); putType(ty)
-    case Op.ObjFieldElem(ty, v, name) =>
-      putInt(T.ObjFieldElemOp); putType(ty); putVal(v); putGlobal(name)
-    case Op.ObjMethodElem(ty, v, name) =>
-      putInt(T.ObjMethodElemOp); putType(ty); putVal(v); putGlobal(name)
-    case Op.ObjAs(ty, v) =>
-      putInt(T.ObjAsOp); putType(ty); putVal(v)
-    case Op.ObjIs(ty, v) =>
-      putInt(T.ObjIsOp); putType(ty); putVal(v)
+    case Op.Alloc(ty) =>
+      putInt(T.AllocOp); putType(ty)
+    case Op.Field(ty, v, name) =>
+      putInt(T.FieldOp); putType(ty); putVal(v); putGlobal(name)
+    case Op.Method(ty, v, name) =>
+      putInt(T.MethodOp); putType(ty); putVal(v); putGlobal(name)
+    case Op.Module(name) =>
+      putInt(T.ModuleOp); putGlobal(name)
+    case Op.As(ty, v) =>
+      putInt(T.AsOp); putType(ty); putVal(v)
+    case Op.Is(ty, v) =>
+      putInt(T.IsOp); putType(ty); putVal(v)
     case Op.ArrAlloc(ty, v) =>
       putInt(T.ArrAllocOp); putType(ty); putVal(v)
     case Op.ArrLength(v) =>
@@ -203,6 +205,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Type.Void                => putInt(T.VoidType)
     case Type.Size                => putInt(T.SizeType)
     case Type.Bool                => putInt(T.BoolType)
+    case Type.Label               => putInt(T.LabelType)
     case Type.I8                  => putInt(T.I8Type)
     case Type.I16                 => putInt(T.I16Type)
     case Type.I32                 => putInt(T.I32Type)

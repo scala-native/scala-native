@@ -68,12 +68,12 @@ trait ObjectLowering extends Pass { self: Lowering =>
   }
 
   override def onInstr(instr: Instr) = instr match {
-    case Instr(Some(n), Seq(), Op.ObjAlloc(Type.Class(clsname))) =>
+    case Instr(Some(n), Seq(), Op.Alloc(Type.Class(clsname))) =>
       val clsValue = Val.Global(clsname + "cls", Type.Ptr(Type.I8))
       val sizeValue = Val.Size(Type.Struct(clsname))
       onInstr(Instr(n, Intrinsic.call(Intrinsic.alloc, clsValue, sizeValue)))
 
-    case Instr(Some(n), Seq(), Op.ObjFieldElem(ty, obj, ExField(fld))) =>
+    case Instr(Some(n), Seq(), Op.Field(ty, obj, ExField(fld))) =>
       val clsptr = Type.Ptr(Type.Struct(fld.in.name))
       val cast   = fresh()
       Seq(
@@ -93,7 +93,7 @@ trait ObjectLowering extends Pass { self: Lowering =>
     //     %meth_**   = elem[$sig*] %vtable_*, 0i32, ${meth.index + 1}
     //     %$n        = load[$sig*] %meth_**
     //
-    case Instr(Some(n), Seq(), Op.ObjMethodElem(sig, obj, ExVirtualMethod(meth))) =>
+    case Instr(Some(n), Seq(), Op.Method(sig, obj, ExVirtualMethod(meth))) =>
       val sigptr    = Type.Ptr(sig)
       val clsptr    = Type.Ptr(Type.Struct(meth.in.name))
       val vtableptr = Type.Ptr(Type.Struct(meth.in.name + "vtable"))
@@ -119,18 +119,13 @@ trait ObjectLowering extends Pass { self: Lowering =>
     //
     //    %$n = copy @${method.name}: $sig*
     //
-    case Instr(Some(n), Seq(), Op.ObjMethodElem(sig, obj, ExStaticMethod(meth))) =>
+    case Instr(Some(n), Seq(), Op.Method(sig, obj, ExStaticMethod(meth))) =>
       onInstr(Instr(n, Op.Copy(Val.Global(meth.name, Type.Ptr(sig)))))
 
-    case Instr(_, _, Op.ObjMethodElem(_, _, n)) =>
-      println(s"funky method name $n")
-      println(s"node for it is ${cha(n)}")
-      ???
-
-    // case Instr(n, attrs, Op.ObjAs(Type.Class(clsname), obj)) =>
+    // case Instr(n, attrs, Op.As(Type.Class(clsname), obj)) =>
     //   ???
 
-    // case Instr(n, attrs, Op.ObjIs(Type.Class(clsname), obj)) =>
+    // case Instr(n, attrs, Op.Is(Type.Class(clsname), obj)) =>
     //   ???
 
     case _ =>

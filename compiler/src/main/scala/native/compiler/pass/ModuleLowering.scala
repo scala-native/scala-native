@@ -56,7 +56,7 @@ trait ModuleLowering extends Pass {
 
             cond.branchIf(cond.value, Type.Nothing,
               { thenp =>
-                val alloc = thenp withOp Op.ObjAlloc(clsty)
+                val alloc = thenp withOp Op.Alloc(clsty)
                 val call = alloc withOp Op.Call(ctorty, ctor, Seq(alloc.value))
                 val store = call withOp Op.Store(clsty, dataval, alloc.value)
                 store finish Op.Ret(alloc.value)
@@ -71,6 +71,15 @@ trait ModuleLowering extends Pass {
     case _ =>
       super.onDefn(defn)
   }
+
+  override def onInstr(instr: Instr) = super.onInstr(instr match {
+    case Instr(Some(n), Seq(), Op.Module(name)) =>
+      val accessorTy = Type.Function(Seq(), Type.Class(name))
+      val accessorVal = Val.Global(name + "accessor", Type.Ptr(accessorTy))
+      Instr(n, Op.Call(accessorTy, accessorVal, Seq()))
+    case _ =>
+      instr
+  })
 
   override def onType(ty: Type) = super.onType(ty match {
     case Type.ModuleClass(n) => Type.Class(n)
