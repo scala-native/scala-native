@@ -4,17 +4,23 @@ package nir
 import scala.collection.mutable
 
 final case class Focus(
-  preceding: Seq[Block],
-  name:      Local,
-  params:    Seq[Param],
-  instrs:    Seq[Instr],
-  value:     Val,
-  complete:  Boolean
+  val blocks:     Seq[Block],
+  val name:       Local,
+  val params:     Seq[Param],
+  val instrs:     Seq[Instr],
+  val value:      Val,
+  val isComplete: Boolean
 )(implicit _fresh: Fresh) {
   def fresh = _fresh
 
+  def appendBlocks(blocks: Seq[Block]) =
+    copy(blocks = this.blocks ++ blocks)
+
+  def prependBlocks(blocks: Seq[Block]) =
+    copy(blocks = blocks ++ this.blocks)
+
   def withValue(newvalue: Val): Focus = {
-    assert(!complete)
+    assert(!isComplete)
     copy(value = newvalue)
   }
 
@@ -22,7 +28,7 @@ final case class Focus(
     withOp(Seq(), op)
 
   def withOp(attrs: Seq[Attr], op: Op): Focus = {
-    assert(!complete)
+    assert(!isComplete)
     val name = fresh()
     copy(instrs = instrs :+ Instr(Some(name), attrs, op), value = Val.Local(name, op.resty))
   }
@@ -31,39 +37,34 @@ final case class Focus(
     finish(Instr(None, Seq(), op))
 
   def finish(instr: Instr): Focus =
-    if (complete) this
-    else Focus.complete(preceding :+ Block(name, params, instrs :+ instr))
-
-  def blocks: Seq[Block] = {
-    assert(complete)
-    preceding
-  }
+    if (isComplete) this
+    else Focus.complete(blocks :+ Block(name, params, instrs :+ instr))
 
   private def wrapBranch(merge: Local, f: Focus => Focus) = {
     val entry = Focus.entry
     val end = f(entry)
     val finalized =
-      if (end.complete) end
+      if (end.isComplete) end
       else end.finish(Op.Jump(Next(merge, Seq(end.value))))
-    (entry.name, end.complete, finalized.blocks)
+    (entry.name, end.isComplete, finalized.blocks)
   }
 
   def branchIf(cond: Val, retty: Type,
                thenf: Focus => Focus, elsef: Focus => Focus): Focus = {
     val merge = fresh()
     val param = Param(fresh(), retty)
-    val (thenname, thencompl, thenprec) = wrapBranch(merge, thenf)
-    val (elsename, elsecompl, elseprec) = wrapBranch(merge, elsef)
-    val prec =
+    val (thenname, thencompl, thenblocks) = wrapBranch(merge, thenf)
+    val (elsename, elsecompl, elseblocks) = wrapBranch(merge, elsef)
+    val blocks =
       finish(Op.If(cond,
         Next(thenname, Seq()),
         Next(elsename, Seq()))).blocks
     if (thencompl && elsecompl)
-      Focus.complete(prec ++ thenprec ++ elseprec)
+      Focus.complete(blocks ++ thenblocks ++ elseblocks)
     else
-      Focus(prec ++ thenprec ++ elseprec,
+      Focus(blocks ++ thenblocks ++ elseblocks,
             merge, Seq(param), Seq(),
-            Val.Local(param.name, retty), complete = false)
+            Val.Local(param.name, retty), isComplete = false)
   }
 
   def branchSwitch(scrut: Val, retty: Type,
@@ -71,23 +72,23 @@ final case class Focus(
                    casevalues: Seq[Val], casefs: Seq[Focus => Focus]): Focus = {
     val merge = fresh()
     val param = Param(fresh(), retty)
-    val (defaultname, defaultcompl, defaultprec) = wrapBranch(merge, defaultf)
+    val (defaultname, defaultcompl, defaultblocks) = wrapBranch(merge, defaultf)
     val cases = casefs.map(wrapBranch(merge, _))
     val casenames = cases.map(_._1)
     val casecompl = cases.map(_._2)
-    val caseprecs = cases.map(_._3)
-    val prec =
+    val caseblockss = cases.map(_._3)
+    val blocks =
       finish(Op.Switch(scrut,
         Next(defaultname, Seq()),
         casevalues.zip(casenames).map { case (v, n) => Case(v, Next(n, Seq())) })).blocks
-    Focus(prec ++ defaultprec ++ caseprecs.flatten,
+    Focus(blocks ++ defaultblocks ++ caseblockss.flatten,
           merge, Seq(param), Seq(),
-          Val.Local(param.name, retty), complete = false)
+          Val.Local(param.name, retty), isComplete = false)
   }
 
   def branchBlock(n: Local): Focus = {
     val blocks = finish(Op.Jump(Next(n, Seq()))).blocks
-    Focus(blocks, n, Seq(), Seq(), Val.Unit, complete = false)
+    Focus(blocks, n, Seq(), Seq(), Val.Unit, isComplete = false)
   }
 }
 object Focus {
@@ -100,10 +101,10 @@ object Focus {
     entry(fresh(), params)
 
   def entry(name: Local, params: Seq[Param])(implicit fresh: Fresh): Focus =
-    Focus(Seq(), name, params, Seq(), Val.Unit, complete = false)
+    Focus(Seq(), name, params, Seq(), Val.Unit, isComplete = false)
 
   def complete(blocks: Seq[Block])(implicit fresh: Fresh)=
-    Focus(blocks, Local("", -1), Seq(), Seq(), Val.Unit, complete = true)
+    Focus(blocks, Local("", -1), Seq(), Seq(), Val.Unit, isComplete = true)
 
   def sequenced[T](elems: Seq[T], focus: Focus)
                   (f: (T, Focus) => Focus): Seq[Focus] = {

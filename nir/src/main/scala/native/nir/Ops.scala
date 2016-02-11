@@ -7,11 +7,12 @@ sealed abstract class Op {
   final def resty: Type = this match {
     case    Op.Unreachable
        | _: Op.Ret
-       | _: Op.Throw
        | _: Op.Jump
        | _: Op.If
        | _: Op.Switch
-       | _: Op.Invoke => Type.Nothing
+       | _: Op.Invoke
+       | _: Op.Throw
+       | _: Op.Try    => Type.Nothing
 
     case Op.Call(Type.Function(_, ret), _, _) => ret
     case Op.Call(_, _, _)                     => unreachable
@@ -44,7 +45,9 @@ sealed abstract class Op {
     case Op.If(v, n1, n2)            => v +: n1.args ++: n2.args
     case Op.Switch(v, n, cases)      => v +: n.args ++: cases.flatMap(_.next.args)
     case Op.Invoke(_, v, vs, n1, n2) => v +: vs ++: n1.args ++: n2.args
-    case Op.Throw(v)                 => Seq(v)
+
+    case Op.Throw(v)    => Seq(v)
+    case Op.Try(n1, n2) => n1.args ++ n2.args
 
     case Op.Call(_, v, vs)        => v +: vs
     case Op.Load(_, v)            => Seq(v)
@@ -71,15 +74,16 @@ sealed abstract class Op {
 }
 object Op {
   // low-level control-flow
-  final case object Unreachable                                                        extends Op
-  final case class Ret    (value: Val)                                                 extends Op
-  final case class Jump   (next: Next)                                                 extends Op
-  final case class If     (value: Val, thenp: Next, elsep: Next)                       extends Op
-  final case class Switch (value: Val, default: Next, cases: Seq[Case])                extends Op
-  final case class Invoke (ty: Type, ptr: Val, args: Seq[Val], succ: Next, fail: Next) extends Op
+  final case object Unreachable                                                       extends Op
+  final case class Ret   (value: Val)                                                 extends Op
+  final case class Jump  (next: Next)                                                 extends Op
+  final case class If    (value: Val, thenp: Next, elsep: Next)                       extends Op
+  final case class Switch(value: Val, default: Next, cases: Seq[Case])                extends Op
+  final case class Invoke(ty: Type, ptr: Val, args: Seq[Val], succ: Next, fail: Next) extends Op
 
   // high-level control-flow
-  final case class Throw  (value: Val)                                                 extends Op
+  final case class Throw(value: Val)              extends Op
+  final case class Try  (normal: Next, exc: Next) extends Op
 
   // low-level
   final case class Call   (ty: Type, ptr: Val, args: Seq[Val])          extends Op

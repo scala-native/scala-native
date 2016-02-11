@@ -64,8 +64,6 @@ object Shows {
       sh"ret"
     case Op.Ret(value) =>
       sh"ret $value"
-    case Op.Throw(value) =>
-      sh"throw $value"
     case Op.Jump(next) =>
       sh"jump $next"
     case Op.If(cond, thenp, elsep) =>
@@ -75,6 +73,11 @@ object Shows {
       sh"switch $scrut $body"
     case Op.Invoke(ty, f, args, succ, fail) =>
       sh"invoke[$ty] $f(${r(args, sep = ", ")}) to $succ unwind $fail"
+
+    case Op.Throw(value) =>
+      sh"throw $value"
+    case Op.Try(normal, exc) =>
+      sh"try $normal catch $exc"
 
     case Op.Call(ty, f, args) =>
       sh"call[$ty] $f(${r(args, sep = ", ")})"

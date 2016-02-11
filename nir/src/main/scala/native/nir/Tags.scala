@@ -52,12 +52,15 @@ object Tags {
 
   final val UnreachableOp = 1 + ModuleDefn
   final val RetOp         = 1 + UnreachableOp
-  final val ThrowOp       = 1 + RetOp
-  final val JumpOp        = 1 + ThrowOp
+  final val JumpOp        = 1 + RetOp
   final val IfOp          = 1 + JumpOp
   final val SwitchOp      = 1 + IfOp
   final val InvokeOp      = 1 + SwitchOp
-  final val CallOp        = 1 + InvokeOp
+
+  final val ThrowOp = 1 + InvokeOp
+  final val TryOp   = 1 + ThrowOp
+
+  final val CallOp        = 1 + TryOp
   final val LoadOp        = 1 + CallOp
   final val StoreOp       = 1 + LoadOp
   final val ElemOp        = 1 + StoreOp

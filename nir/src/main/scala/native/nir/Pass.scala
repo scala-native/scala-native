@@ -48,11 +48,13 @@ trait Pass {
   def onOp(op: Op): Op = op match {
     case Op.Unreachable                         => Op.Unreachable
     case Op.Ret(v)                              => Op.Ret(onVal(v))
-    case Op.Throw(v)                            => Op.Throw(onVal(v))
     case Op.Jump(next)                          => Op.Jump(onNext(next))
     case Op.If(v, thenp, elsep)                 => Op.If(onVal(v), onNext(thenp), onNext(elsep))
     case Op.Switch(v, default, cases)           => Op.Switch(onVal(v), onNext(default), cases.map(onCast))
     case Op.Invoke(ty, ptrv, argvs, succ, fail) => Op.Invoke(onType(ty), onVal(ptrv), argvs.map(onVal), onNext(succ), onNext(fail))
+
+    case Op.Throw(v)       => Op.Throw(onVal(v))
+    case Op.Try(norm, exc) => Op.Try(onNext(norm), onNext(exc))
 
     case Op.Call(ty, ptrv, argvs)        => Op.Call(onType(ty), onVal(ptrv), argvs.map(onVal))
     case Op.Load(ty, ptrv)               => Op.Load(onType(ty), onVal(ptrv))

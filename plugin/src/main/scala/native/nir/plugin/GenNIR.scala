@@ -27,14 +27,16 @@ abstract class GenNIR extends PluginComponent
   def undefined(focus: Focus) =
     focus.finish(Op.Unreachable)
 
-  class Env {
+  class Env(val fresh: Fresh) {
     private val env = mutable.Map.empty[Symbol, Val]
 
-    def enter(sym: Symbol, value: Val): Val = {
-      env += ((sym, value))
-      value
-    }
+    def enter(sym: Symbol, value: Val): Unit = env += ((sym, value))
+    def enterLabel(ld: LabelDef): Unit = enter(ld.symbol, Val.Local(fresh(), Type.Label))
     def resolve(sym: Symbol): Val = env(sym)
+    def resolveLabel(ld: LabelDef): Local = {
+      val Val.Local(n, Type.Label) = resolve(ld.symbol)
+      n
+    }
   }
 
   class CollectLocalInfo extends Traverser {
@@ -89,9 +91,8 @@ abstract class GenNIR extends PluginComponent
         if (isPrimitiveValueClass(sym) || (sym == ArrayClass))
           ()
         else {
-          println(cd)
           val defns = genClass(cd)
-          println(sh"${defns.head}")
+          //println(sh"${defns.head}")
           genIRFile(cunit, sym, defns)
         }
       }
@@ -100,10 +101,12 @@ abstract class GenNIR extends PluginComponent
     def genClass(cd: ClassDef): Seq[Defn] = scoped (
       curClassSym := cd.symbol
     ) {
+      println(s"-- gen class for ${cd.symbol}")
+      //println(cd)
       val sym     = cd.symbol
       val attrs   = genClassAttrs(sym)
       val name    = genClassName(sym)
-      val parent  = if (sym.superClass == NoSymbol) unreachable
+      def parent  = if (sym.superClass == NoSymbol) Intrinsic.object_.name
                     else if (sym.superClass == ObjectClass) Intrinsic.object_.name
                     else genClassName(sym.superClass)
       val ifaces  = genClassInterfaces(sym)
@@ -144,6 +147,8 @@ abstract class GenNIR extends PluginComponent
     def genDef(dd: DefDef): Defn = scoped (
       curMethodSym := dd.symbol
     ) {
+      println(s"--- gen def ${dd.symbol}")
+      //println(dd)
       val sym       = dd.symbol
       val attrs     = genDefAttrs(sym)
       val name      = genDefName(sym)
@@ -153,7 +158,8 @@ abstract class GenNIR extends PluginComponent
       if (sym.isDeferred)
         Defn.Declare(attrs, name, sig)
       else {
-        val env = new Env
+        val fresh = new Fresh("src")
+        val env = new Env(fresh)
         scoped (
           curEnv := env,
           curLocalInfo := (new CollectLocalInfo).collect(dd.rhs)
@@ -177,15 +183,22 @@ abstract class GenNIR extends PluginComponent
         case _                => Attr.Overrides(genDefName(sym))
       }
 
-    def genDefSig(sym: Symbol): nir.Type = {
-      val params   = sym.asMethod.paramLists.flatten
-      val selfty   = genType(sym.owner.tpe)
-      val paramtys = params.map(p => genType(p.tpe))
-      val retty    =
-        if (sym.isClassConstructor) Type.Unit
-        else genType(sym.tpe.resultType)
+    def genDefSig(sym: Symbol): nir.Type = sym match {
+      case sym: ModuleSymbol =>
+        val MethodType(params, res) = sym.tpe
+        val paramtys = params.map(p => genType(p.tpe))
+        val selfty   = genType(sym.owner.tpe)
+        val retty    = genType(res)
+        Type.Function(Seq(selfty), retty)
 
-      Type.Function(selfty +: paramtys, retty)
+      case sym: MethodSymbol =>
+        val params    = sym.paramLists.flatten
+        val paramtys  = params.map(p => genType(p.tpe))
+        val selfty    = genType(sym.owner.tpe)
+        val retty     =
+          if (sym.isClassConstructor) Type.Unit
+          else genType(sym.tpe.resultType)
+        Type.Function(selfty +: paramtys, retty)
     }
 
     def defParamSymbols(dd: DefDef): List[Symbol] = {
@@ -193,10 +206,10 @@ abstract class GenNIR extends PluginComponent
       if (vp.isEmpty) Nil else vp.head.map(_.symbol)
     }
 
-    def genParams(paramSyms: Seq[Symbol])(implicit fresh: Fresh): Seq[Param] = {
-      val self = Param(fresh(), genType(curClassSym.tpe))
+    def genParams(paramSyms: Seq[Symbol]): Seq[Param] = {
+      val self = Param(curEnv.fresh(), genType(curClassSym.tpe))
       val params = paramSyms.map { sym =>
-        val name = fresh()
+        val name = curEnv.fresh()
         val ty = genType(sym.tpe)
         val param = Param(name, ty)
         curEnv.enter(sym, Val.Local(name, ty))
@@ -230,20 +243,20 @@ abstract class GenNIR extends PluginComponent
             }
           */
           case _ =>
-            implicit val fresh = new Fresh("src")
             val params = genParams(paramSyms)
             scoped (
               curThis := Val.Local(params.head.name, params.head.ty)
             ) {
-              genExpr(body, Focus.entry(params))
+              genExpr(body, Focus.entry(params)(curEnv.fresh))
             }
         }
       }
 
     def genExpr(tree: Tree, focus: Focus): Focus = tree match {
-      case ld: LabelDef =>
-        assert(ld.params.length == 0)
-        genLabel(ld, focus)
+      case label: LabelDef =>
+        assert(label.params.length == 0)
+        curEnv.enterLabel(label)
+        genLabel(label)
 
       case vd: ValDef =>
         // TODO: attribute valdef name to the rhs node
@@ -406,10 +419,10 @@ abstract class GenNIR extends PluginComponent
     }
 
     def genStaticMember(sym: Symbol, focus: Focus): Focus = {
-      val ty = genType(sym.tpe)
-      val module = Val.Global(genClassName(sym.owner), genType(sym.owner.tpe))
-      val elem = focus.withOp(Op.Field(ty, module, genFieldName(sym)))
-      elem.withOp(Op.Load(ty, elem.value))
+      val ty     = genType(sym.tpe)
+      val module = focus withOp Op.Module(genClassName(sym.owner))
+      val elem   = module withOp Op.Field(ty, module.value, genFieldName(sym))
+      elem withOp Op.Load(ty, elem.value)
     }
 
     def genTry(expr: Tree, catches: List[Tree], finalizer: Tree, focus: Focus) = ???/*{
@@ -495,28 +508,32 @@ abstract class GenNIR extends PluginComponent
       }
     }
 
-    def genMatch(prologue: List[Tree], lds: List[LabelDef], focus: Focus) = ???/*{
+    def genMatch(prologue: List[Tree], lds: List[LabelDef], focus: Focus) = {
       val prfocus = sequenced(prologue, focus)(genExpr(_, _))
       val lastfocus = prfocus.lastOption.getOrElse(focus)
+      lds.foreach(curEnv.enterLabel)
 
-      curLabelEnv.enterLabel(lds.head, curLocalInfo.labelApplyCount(lds.head.symbol) + 1)
-      for (ld <- lds.tail) {
-        curLabelEnv.enterLabel(ld, curLocalInfo.labelApplyCount(ld.symbol))
-      }
-      curLabelEnv.enterLabelCall(lds.head.symbol, Seq(), lastfocus)
-
-      var lasttails = prt
-      for (ld <- lds) {
-        lasttails = lasttails ++ genLabel(ld)
+      val first = Next(curEnv.resolveLabel(lds.head), Seq())
+      var resfocus = lastfocus finish Op.Jump(first)
+      for (ld <- lds.init) {
+        val lfocus = genLabel(ld)
+        assert(lfocus.isComplete)
+        resfocus = resfocus appendBlocks lfocus.blocks
       }
 
-      lasttails
-    }*/
+      genLabel(lds.last) prependBlocks resfocus.blocks
+    }
 
-    def genLabel(label: LabelDef, focus: Focus) = {
-      val blockname = focus.fresh()
-      curEnv.enter(label.symbol, Val.Local(blockname, Type.Label))
-      genExpr(label.rhs, focus.branchBlock(blockname))
+    def genLabel(label: LabelDef) = {
+      val Val.Local(name, _) = curEnv.resolve(label.symbol)
+      val params = label.params.map { id =>
+        val n  = curEnv.fresh()
+        val ty = genType(id.tpe)
+        curEnv.enter(id.symbol, Val.Local(n, ty))
+        Param(n, ty)
+      }
+      val entry = Focus.entry(name, params)(curEnv.fresh)
+      genExpr(label.rhs, entry)
     }
 
     def genArrayValue(av: ArrayValue, focus: Focus): Focus = {
