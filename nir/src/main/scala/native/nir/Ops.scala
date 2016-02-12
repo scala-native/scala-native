@@ -5,14 +5,7 @@ import native.util.unreachable
 
 sealed abstract class Op {
   final def resty: Type = this match {
-    case    Op.Unreachable
-       | _: Op.Ret
-       | _: Op.Jump
-       | _: Op.If
-       | _: Op.Switch
-       | _: Op.Invoke
-       | _: Op.Throw
-       | _: Op.Try    => Type.Nothing
+    case _: Op.Cf => Type.Nothing
 
     case Op.Call(Type.Function(_, ret), _, _) => ret
     case Op.Call(_, _, _)                     => unreachable
@@ -74,16 +67,17 @@ sealed abstract class Op {
 }
 object Op {
   // low-level control-flow
-  final case object Unreachable                                                       extends Op
-  final case class Ret   (value: Val)                                                 extends Op
-  final case class Jump  (next: Next)                                                 extends Op
-  final case class If    (value: Val, thenp: Next, elsep: Next)                       extends Op
-  final case class Switch(value: Val, default: Next, cases: Seq[Case])                extends Op
-  final case class Invoke(ty: Type, ptr: Val, args: Seq[Val], succ: Next, fail: Next) extends Op
+  sealed abstract class Cf extends Op
+  final case object Unreachable                                                       extends Cf
+  final case class Ret   (value: Val)                                                 extends Cf
+  final case class Jump  (next: Next)                                                 extends Cf
+  final case class If    (value: Val, thenp: Next, elsep: Next)                       extends Cf
+  final case class Switch(value: Val, default: Next, cases: Seq[Case])                extends Cf
+  final case class Invoke(ty: Type, ptr: Val, args: Seq[Val], succ: Next, fail: Next) extends Cf
 
-  // high-level control-flow
-  final case class Throw(value: Val)              extends Op
-  final case class Try  (normal: Next, exc: Next) extends Op
+  // mid-level control-flow
+  final case class Throw(value: Val)              extends Cf
+  final case class Try  (normal: Next, exc: Next) extends Cf
 
   // low-level
   final case class Call   (ty: Type, ptr: Val, args: Seq[Val])          extends Op

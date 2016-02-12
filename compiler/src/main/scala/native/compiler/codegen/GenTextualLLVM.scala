@@ -37,7 +37,7 @@ object GenTextualLLVM extends GenShow {
 
   def showDefine(attrs: Seq[Attr], retty: Type, name: Global, blocks: Seq[Block]) = {
     val body = brace(i(showBlocks(blocks)))
-    val params = sh"(${r(blocks.head.params, sep = ", ")})"
+    val params = sh"(${r(blocks.head.params: Seq[Val], sep = ", ")})"
     sh"define $retty @$name$params $body"
   }
 
@@ -69,7 +69,7 @@ object GenTextualLLVM extends GenShow {
     else {
       val label = ui(sh"${block.name}:")
       val phis = r(block.params.zipWithIndex.map {
-        case (Param(n, ty), i) =>
+        case (Val.Local(n, ty), i) =>
           val branches = pred.map { e =>
             sh"[${justVal(e.values(i))}, %${e.from.block.name}]"
           }
@@ -224,9 +224,4 @@ object GenTextualLLVM extends GenShow {
   implicit def showCase: Show[Case] = ???
 
   implicit def showConv: Show[Conv] = nir.Shows.showConv
-
-  implicit def showParam: Show[Param] = Show {
-    case Param(n, ty) =>
-      sh"$ty %$n"
-  }
 }

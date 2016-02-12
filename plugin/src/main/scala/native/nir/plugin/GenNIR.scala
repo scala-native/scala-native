@@ -206,13 +206,13 @@ abstract class GenNIR extends PluginComponent
       if (vp.isEmpty) Nil else vp.head.map(_.symbol)
     }
 
-    def genParams(paramSyms: Seq[Symbol]): Seq[Param] = {
-      val self = Param(curEnv.fresh(), genType(curClassSym.tpe))
+    def genParams(paramSyms: Seq[Symbol]): Seq[Val.Local] = {
+      val self = Val.Local(curEnv.fresh(), genType(curClassSym.tpe))
       val params = paramSyms.map { sym =>
         val name = curEnv.fresh()
         val ty = genType(sym.tpe)
-        val param = Param(name, ty)
-        curEnv.enter(sym, Val.Local(name, ty))
+        val param = Val.Local(name, ty)
+        curEnv.enter(sym, param)
         param
       }
 
@@ -283,11 +283,11 @@ abstract class GenNIR extends PluginComponent
         genExpr(expr, focus)
 
       case Try(expr, catches, finalizer) =>
-        genTry(expr, catches, finalizer, focus)
+        genTry(genType(tree.tpe), expr, catches, finalizer, focus)
 
       case Throw(exprp) =>
         val expr = genExpr(exprp, focus)
-        expr.finish(Op.Ret(expr.value))
+        expr.finish(Op.Throw(expr.value))
 
       case app: Apply =>
         genApply(app, focus)
@@ -425,18 +425,10 @@ abstract class GenNIR extends PluginComponent
       elem withOp Op.Load(ty, elem.value)
     }
 
-    def genTry(expr: Tree, catches: List[Tree], finalizer: Tree, focus: Focus) = ???/*{
-      val cf          = ir.Try(focus.cf)
-      val normal      = genExpr(expr, focus withCf cf)
-      val exceptional = genCatch(catches, focus withCf ir.CaseException(cf))
+    def genTry(retty: nir.Type, expr: Tree, catches: List[Tree], finalizer: Tree, focus: Focus) =
+      focus.branchTry(retty, normal = genExpr(expr, _), exc = genCatch(retty, catches, _, _))
 
-      genFinally(normal ++ exceptional, finalizer)
-    }*/
-
-    def genCatch(catches: List[Tree], focus: Focus) = ???/*{
-      val exc    = focus.cf
-      val switch = ir.Switch(exc, ir.GetClass(ir.Empty, exc))
-
+    def genCatch(retty: nir.Type, catches: List[Tree], exc: Val, focus: Focus) = {
       val cases =
         catches.map {
           case CaseDef(pat, _, body) =>
@@ -448,9 +440,29 @@ abstract class GenNIR extends PluginComponent
               case Bind(_, _) =>
                 (Some(pat.symbol), genType(pat.symbol.tpe))
             }
-            symopt foreach (curEnv.enter(_, ir.As(exc, excty)))
-            genExpr(body, focus withCf ir.CaseConst(switch, excty))
+
+            (Val.Class(excty), { focus: Focus =>
+              val nfocus = symopt.map { sym =>
+                val cast = focus withOp Op.As(excty, exc)
+                curEnv.enter(sym, cast.value)
+                cast
+              }.getOrElse(focus)
+              genExpr(body, nfocus)
+            })
         }
+
+      val cls = focus withOp Intrinsic.call(Intrinsic.object_getClass, exc)
+      cls.branchSwitch(cls.value, retty,
+        defaultf = _ finish Op.Throw(exc),
+        casevals = cases.map(_._1),
+        casefs   = cases.map(_._2))
+    }
+
+
+    /*{
+      val exc    = focus.cf
+      val switch = ir.Switch(exc, ir.GetClass(ir.Empty, exc))
+
       val default =
         Tails.termn(ir.Throw(ir.CaseDefault(switch), focus.ef, exc))
 
@@ -527,10 +539,9 @@ abstract class GenNIR extends PluginComponent
     def genLabel(label: LabelDef) = {
       val Val.Local(name, _) = curEnv.resolve(label.symbol)
       val params = label.params.map { id =>
-        val n  = curEnv.fresh()
-        val ty = genType(id.tpe)
-        curEnv.enter(id.symbol, Val.Local(n, ty))
-        Param(n, ty)
+        val local = Val.Local(curEnv.fresh(), genType(id.tpe))
+        curEnv.enter(id.symbol, local)
+        local
       }
       val entry = Focus.entry(name, params)(curEnv.fresh)
       genExpr(label.rhs, entry)
@@ -593,9 +604,9 @@ abstract class GenNIR extends PluginComponent
         }
 
       scrut.branchSwitch(scrut.value, retty,
-        genExpr(defaultcase, _),
-        normalcases.map { case (v, _) => v },
-        normalcases.map { case (_, body) => genExpr(body, _: Focus) })
+        defaultf = genExpr(defaultcase, _),
+        casevals = normalcases.map { case (v, _) => v },
+        casefs   = normalcases.map { case (_, body) => genExpr(body, _: Focus) })
     }
 
     def genApplyDynamic(app: ApplyDynamic, focus: Focus) =

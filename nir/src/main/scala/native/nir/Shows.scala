@@ -30,7 +30,14 @@ object Shows {
 
   implicit val showBlock: Show[Block] = Show { block =>
     import block._
-    val paramlist = if (params.isEmpty) sh"" else sh"(${r(params, sep = ", ")})"
+    val paramlist =
+      if (params.isEmpty) sh""
+      else {
+        val paramshows = params.map {
+          case Val.Local(n, ty) => sh"$n: $ty"
+        }
+        sh"(${r(paramshows)})"
+      }
     val header = sh"$name$paramlist:"
     val body = i(r(instrs, sep = nl("")))
     sh"$header$body"
@@ -39,10 +46,6 @@ object Shows {
   implicit val showInstr: Show[Instr] = Show {
     case Instr(None, attrs, op)       => sh"$attrs$op"
     case Instr(Some(name), attrs, op) => sh"$name = $attrs$op"
-  }
-
-  implicit val showParam: Show[Param] = Show {
-    case Param(name, ty) => sh"$name : $ty"
   }
 
   implicit val showNext: Show[Next] = Show {
@@ -102,9 +105,9 @@ object Shows {
 
     case Op.Alloc(ty) =>
       sh"alloc[$ty]"
-    case Op.Field(ty, name, value) =>
+    case Op.Field(ty, value, name) =>
       sh"field[$ty] $value, $name"
-    case Op.Method(ty, name, value) =>
+    case Op.Method(ty, value, name) =>
       sh"method[$ty] $value, $name"
     case Op.Module(name) =>
       sh"module $name"

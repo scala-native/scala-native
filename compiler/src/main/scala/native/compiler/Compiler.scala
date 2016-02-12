@@ -14,8 +14,8 @@ final class Compiler(opts: Opts) {
 
   def passes(): Seq[Pass] =
     Seq(
-      new pass.Lowering(entry()),
-      new pass.CopyLowering
+      new pass.HighLowering(entry()),
+      new pass.MidLowering
     )
 
   def output(module: Seq[Defn]): Unit = {

@@ -39,8 +39,8 @@ trait Pass {
   def onBlock(block: Block): Seq[Block] =
     Seq(Block(onLocal(block.name), block.params.flatMap(onParam), block.instrs.flatMap(onInstr)))
 
-  def onParam(param: Param): Seq[Param] =
-    Seq(Param(param.name, onType(param.ty)))
+  def onParam(param: Val.Local): Seq[Val.Local] =
+    Seq(Val.Local(param.name, onType(param.ty)))
 
   def onInstr(instr: Instr): Seq[Instr] =
     Seq(Instr(instr.name, instr.attrs, onOp(instr.op)))

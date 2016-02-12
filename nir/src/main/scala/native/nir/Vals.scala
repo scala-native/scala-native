@@ -40,7 +40,7 @@ object Val {
   final case class Struct(name: nir.Global, values: Seq[Val]) extends Val
   final case class Array(elemty: Type, values: Seq[Val])      extends Val
   final case class Chars(value: java.lang.String)             extends Val
-  final case class Local(local: nir.Local, valty: Type)       extends Val
+  final case class Local(name: nir.Local, valty: Type)       extends Val
   final case class Global(name: nir.Global, valty: Type)      extends Val
 
   // high-level

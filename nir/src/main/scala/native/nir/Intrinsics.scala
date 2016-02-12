@@ -130,8 +130,9 @@ object Intrinsic {
   lazy val string_fromPtr = binary("string_fromPtr", Type.Ptr(I8), I32, string)
 
   lazy val alloc  = binary ("alloc", class_, Size, object_)
-  lazy val init   = binary ("init",  Type.I32, Type.Ptr(Type.Ptr(Type.I8)), ArrayClass(string))
+  lazy val init   = binary ("init" , Type.I32, Type.Ptr(Type.Ptr(Type.I8)), ArrayClass(string))
   lazy val yield_ = nullary("yield", Unit)
+  lazy val throw_ = unary  ("throw", object_, Type.Nothing)
 
   val box = Map[Type, Val.Global](
     bool   -> bool_box  ,

@@ -10,28 +10,31 @@ import native.nir._
  *
  *  For example a module with members:
  *
- *      module $name($parent, ..$ifaces) =
+ *      module $name : $parent, ..$ifaces {
  *        ..$members
+ *      }
  *
  *  Translates to:
  *
- *      class $name($parent, ..$ifaces) =
+ *      class $name : $parent, ..$ifaces {
  *        ..$members
+ *      }
  *
- *      var $name!data: class $name = null
+ *      var ${name}_data: class $name = null
  *
- *      define $name!accessor: () => class $name =
- *        block %entry():
- *          %prev = load[class $name] $name!data
+ *      def ${name}_accessor: () => class $name = {
+ *        %entry:
+ *          %prev = load[class $name] ${name}_data
  *          %cond = eq[object] prev, null
- *          if %cond then %thenp() else %elsep()
- *        block %thenp():
+ *          if %cond then %thenp else %elsep
+ *        %thenp:
  *          %alloc = obj-alloc[class $name]
- *          call $name::<>(%new)
- *          store[$name] $name!data, %alloc
+ *          call ${name}_init(%new)
+ *          store[$name] ${name}_data, %alloc
  *          ret %alloc
- *        block %elsep()
+ *        %elsep:
  *          ret %prev
+ *      }
  *
  *  Eliminates:
  *  - Type.ModuleClass

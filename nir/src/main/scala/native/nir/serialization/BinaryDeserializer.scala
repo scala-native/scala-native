@@ -120,24 +120,26 @@ final class BinaryDeserializer(bb: ByteBuffer) {
   private def getNext(): Next = Next(getLocal, getVals)
 
   private def getOp(): Op = getInt match {
-    case T.UnreachableOp  => Op.Unreachable
-    case T.RetOp          => Op.Ret(getVal)
-    case T.ThrowOp        => Op.Throw(getVal)
-    case T.JumpOp         => Op.Jump(getNext)
-    case T.IfOp           => Op.If(getVal, getNext, getNext)
-    case T.SwitchOp       => Op.Switch(getVal, getNext, getCases)
-    case T.InvokeOp       => Op.Invoke(getType, getVal, getVals, getNext, getNext)
+    case T.UnreachableOp => Op.Unreachable
+    case T.RetOp         => Op.Ret(getVal)
+    case T.JumpOp        => Op.Jump(getNext)
+    case T.IfOp          => Op.If(getVal, getNext, getNext)
+    case T.SwitchOp      => Op.Switch(getVal, getNext, getCases)
+    case T.InvokeOp      => Op.Invoke(getType, getVal, getVals, getNext, getNext)
 
-    case T.CallOp         => Op.Call(getType, getVal, getVals)
-    case T.LoadOp         => Op.Load(getType, getVal)
-    case T.StoreOp        => Op.Store(getType, getVal, getVal)
-    case T.ElemOp         => Op.Elem(getType, getVal, getVals)
-    case T.ExtractOp      => Op.Extract(getType, getVal, getVal)
-    case T.InsertOp       => Op.Insert(getType, getVal, getVal, getVal)
-    case T.AllocaOp       => Op.Alloca(getType)
-    case T.BinOp          => Op.Bin(getBin, getType, getVal, getVal)
-    case T.CompOp         => Op.Comp(getComp, getType, getVal, getVal)
-    case T.ConvOp         => Op.Conv(getConv, getType, getVal)
+    case T.ThrowOp => Op.Throw(getVal)
+    case T.TryOp   => Op.Try(getNext, getNext)
+
+    case T.CallOp    => Op.Call(getType, getVal, getVals)
+    case T.LoadOp    => Op.Load(getType, getVal)
+    case T.StoreOp   => Op.Store(getType, getVal, getVal)
+    case T.ElemOp    => Op.Elem(getType, getVal, getVals)
+    case T.ExtractOp => Op.Extract(getType, getVal, getVal)
+    case T.InsertOp  => Op.Insert(getType, getVal, getVal, getVal)
+    case T.AllocaOp  => Op.Alloca(getType)
+    case T.BinOp     => Op.Bin(getBin, getType, getVal, getVal)
+    case T.CompOp    => Op.Comp(getComp, getType, getVal, getVal)
+    case T.ConvOp    => Op.Conv(getConv, getType, getVal)
 
     case T.AllocOp     => Op.Alloc(getType)
     case T.FieldOp     => Op.Field(getType, getVal, getGlobal)
@@ -151,25 +153,25 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.CopyOp      => Op.Copy(getVal)
   }
 
-  private def getParams(): Seq[Param] = getSeq(getParam)
-  private def getParam(): Param = Param(getLocal, getType)
+  private def getParams(): Seq[Val.Local] = getSeq(getParam)
+  private def getParam(): Val.Local = Val.Local(getLocal, getType)
 
   private def getTypes(): Seq[Type] = getSeq(getType)
   private def getType(): Type = getInt match {
-    case T.NoneType           => Type.None
-    case T.VoidType           => Type.Void
-    case T.SizeType           => Type.Size
-    case T.BoolType           => Type.Bool
-    case T.I8Type             => Type.I8
-    case T.I16Type            => Type.I16
-    case T.I32Type            => Type.I32
-    case T.I64Type            => Type.I64
-    case T.F32Type            => Type.F32
-    case T.F64Type            => Type.F64
-    case T.ArrayType          => Type.Array(getType, getInt)
-    case T.PtrType            => Type.Ptr(getType)
-    case T.FunctionType       => Type.Function(getTypes, getType)
-    case T.StructType         => Type.Struct(ext(getGlobal))
+    case T.NoneType     => Type.None
+    case T.VoidType     => Type.Void
+    case T.SizeType     => Type.Size
+    case T.BoolType     => Type.Bool
+    case T.I8Type       => Type.I8
+    case T.I16Type      => Type.I16
+    case T.I32Type      => Type.I32
+    case T.I64Type      => Type.I64
+    case T.F32Type      => Type.F32
+    case T.F64Type      => Type.F64
+    case T.ArrayType    => Type.Array(getType, getInt)
+    case T.PtrType      => Type.Ptr(getType)
+    case T.FunctionType => Type.Function(getTypes, getType)
+    case T.StructType   => Type.Struct(ext(getGlobal))
 
     case T.UnitType           => Type.Unit
     case T.NothingType        => Type.Nothing
@@ -196,10 +198,10 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.LocalVal  => Val.Local(getLocal, getType)
     case T.GlobalVal => Val.Global(getGlobal, getType)
 
-    case T.UnitVal      => Val.Unit
-    case T.NullVal      => Val.Null
-    case T.StringVal    => Val.String(getString)
-    case T.SizeVal      => Val.Size(getType)
-    case T.ClassVal     => Val.Class(getType)
+    case T.UnitVal   => Val.Unit
+    case T.NullVal   => Val.Null
+    case T.StringVal => Val.String(getString)
+    case T.SizeVal   => Val.Size(getType)
+    case T.ClassVal  => Val.Class(getType)
   }
 }

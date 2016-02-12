@@ -196,8 +196,8 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.CopyOp); putVal(v)
   }
 
-  private def putParams(params: Seq[Param]) = putSeq(putParam)(params)
-  private def putParam(param: Param) = {
+  private def putParams(params: Seq[Val.Local]) = putSeq(putParam)(params)
+  private def putParam(param: Val.Local) = {
     putLocal(param.name)
     putType(param.ty)
   }
@@ -220,13 +220,13 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Type.Function(args, ret) => putInt(T.FunctionType); putTypes(args); putType(ret)
     case Type.Struct(n)           => putInt(T.StructType); putGlobal(n)
 
-    case Type.Unit                => putInt(T.UnitType)
-    case Type.Nothing             => putInt(T.NothingType)
-    case Type.Null                => putInt(T.NullType)
-    case Type.Class(n)            => putInt(T.ClassType); putGlobal(n)
-    case Type.InterfaceClass(n)   => putInt(T.InterfaceClassType); putGlobal(n)
-    case Type.ModuleClass(n)      => putInt(T.ModuleClassType); putGlobal(n)
-    case Type.ArrayClass(ty)      => putInt(T.ArrayClassType); putType(ty)
+    case Type.Unit              => putInt(T.UnitType)
+    case Type.Nothing           => putInt(T.NothingType)
+    case Type.Null              => putInt(T.NullType)
+    case Type.Class(n)          => putInt(T.ClassType); putGlobal(n)
+    case Type.InterfaceClass(n) => putInt(T.InterfaceClassType); putGlobal(n)
+    case Type.ModuleClass(n)    => putInt(T.ModuleClassType); putGlobal(n)
+    case Type.ArrayClass(ty)    => putInt(T.ArrayClassType); putType(ty)
   }
 
   private def putVals(values: Seq[Val]): Unit = putSeq(putVal)(values)

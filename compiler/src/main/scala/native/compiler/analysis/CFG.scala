@@ -36,8 +36,6 @@ object CFG {
             ()
           case Op.Ret(_) =>
             ()
-          case Op.Throw(_) =>
-            ()
           case Op.Jump(Next(n, args)) =>
             edge(node, nodes(n), args)
           case Op.If(_, Next(n1, args1), Next(n2, args2)) =>
@@ -52,6 +50,11 @@ object CFG {
           case Op.Invoke(_, _, _, succ, fail) =>
             edge(node, nodes(succ.name), succ.args)
             edge(node, nodes(fail.name), succ.args)
+          case Op.Throw(_) =>
+            ()
+          case Op.Try(Next(n1, args1), Next(n2, args2)) =>
+            edge(node, nodes(n1), args1)
+            edge(node, nodes(n2), args2)
           case _ =>
             unreachable
         }

@@ -5,18 +5,16 @@ package pass
 import analysis.ClassHierarchy
 import native.nir._
 
-class Lowering(val entryModule: Global)
+class HighLowering(val entryModule: Global)
   extends Pass
   with IntrinsicLowering
-  with MainLowering
-  with UnitLowering
-  with ThrowLowering
+  with MainInjection
   with InterfaceLowering
   with ObjectLowering
   with ArrayLowering
   with ModuleLowering
-  with NothingLowering
-  with StringLowering {
+  with StringLowering
+  with ExceptionLowering {
 
   var cha: ClassHierarchy.Result = _
 

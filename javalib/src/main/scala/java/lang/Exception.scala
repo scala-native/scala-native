@@ -1,3 +1,3 @@
 package java.lang
 
-class Exception
+class Exception extends Throwable

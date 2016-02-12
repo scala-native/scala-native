@@ -33,17 +33,17 @@ import native.compiler.analysis.ClassHierarchy.Node
  *  - Op.Obj*
  *  - Val.{Null, Class}
  */
-trait ObjectLowering extends Pass { self: Lowering =>
+trait ObjectLowering extends Pass { self: HighLowering =>
   private val i8_*      = Type.Ptr(Type.I8)
   private val zero_i8_* = Val.Zero(i8_*)
 
   override def onDefn(defn: Defn) = defn match {
     case Defn.Class(_, name, _, _, members) =>
-      val methods    = members.collect { case defn: Defn.Define => defn }
-      val cls        = cha(name).asInstanceOf[Node.Class]
-      val data       = cls.fields.map(_.ty)
-      val vtable     = cls.vtable
-      val vtableTys  = vtable.map(_.ty)
+      val methods   = members.collect { case defn: Defn.Define => defn }
+      val cls       = cha(name).asInstanceOf[Node.Class]
+      val data      = cls.fields.map(_.ty)
+      val vtable    = cls.vtable
+      val vtableTys = vtable.map(_.ty)
 
       val vtableStructName = name + "vtable"
       val vtableStructTy   = Type.Struct(vtableStructName)
@@ -122,11 +122,11 @@ trait ObjectLowering extends Pass { self: Lowering =>
     case Instr(Some(n), Seq(), Op.Method(sig, obj, ExStaticMethod(meth))) =>
       onInstr(Instr(n, Op.Copy(Val.Global(meth.name, Type.Ptr(sig)))))
 
-    // case Instr(n, attrs, Op.As(Type.Class(clsname), obj)) =>
-    //   ???
+    case Instr(n, attrs, _: Op.As) =>
+      ???
 
-    // case Instr(n, attrs, Op.Is(Type.Class(clsname), obj)) =>
-    //   ???
+    case Instr(n, attrs, _: Op.Is) =>
+      ???
 
     case _ =>
       super.onInstr(instr)
