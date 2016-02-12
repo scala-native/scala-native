@@ -4,7 +4,7 @@ package pass
 
 import native.nir._
 
-class MidLowering
+class LateLowering
   extends Pass
   with CopyLowering
   with UnitLowering

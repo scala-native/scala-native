@@ -33,7 +33,7 @@ import native.compiler.analysis.ClassHierarchy.Node
  *  - Op.Obj*
  *  - Val.{Null, Class}
  */
-trait ObjectLowering extends Pass { self: HighLowering =>
+trait ObjectLowering extends Pass { self: EarlyLowering =>
   private val i8_*      = Type.Ptr(Type.I8)
   private val zero_i8_* = Val.Zero(i8_*)
 

@@ -7,7 +7,7 @@ import native.nir._
 /** Introduces `main` function that set ups
  *  the runtime and calls the given entry point.
  */
-trait MainInjection extends Pass { self: HighLowering =>
+trait MainInjection extends Pass { self: EarlyLowering =>
   override def onPostCompilationUnit(defns: Seq[Defn]) = {
     val argc = Val.Local(fresh(), Type.I32)
     val argv = Val.Local(fresh(), Type.Ptr(Type.Ptr(Type.I8)))

@@ -5,7 +5,7 @@ package pass
 import analysis.ClassHierarchy
 import native.nir._
 
-class HighLowering(val entryModule: Global)
+class EarlyLowering(val entryModule: Global)
   extends Pass
   with IntrinsicLowering
   with MainInjection
