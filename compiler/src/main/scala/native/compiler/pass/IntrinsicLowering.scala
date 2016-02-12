@@ -5,8 +5,7 @@ package pass
 import scala.collection.mutable
 import native.nir._
 
-/** Eliminates:
- *  - Val.Intrinsic
+/** Re-wires intrinsic references to corresponding runtime functions and values.
  */
 trait IntrinsicLowering extends Pass {
   private val added  = mutable.Set.empty[Global]

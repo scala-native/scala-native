@@ -28,12 +28,12 @@ import native.compiler.analysis.ClassHierarchy.Node
  *      .. def $mname: $mty = $body
  *
  *  Eliminates:
- *  - Type.*Class
- *  - Defn.Class
- *  - Op.Obj*
+ *  - Type.{Class, InterfaceClass, Null}
+ *  - Defn.{Class, InterfaceClass}
+ *  - Op.{Alloc, Field, Method, As, Is}
  *  - Val.{Null, Class}
  */
-trait ObjectLowering extends Pass { self: EarlyLowering =>
+trait ClassLowering extends Pass { self: EarlyLowering =>
   private val i8_*      = Type.Ptr(Type.I8)
   private val zero_i8_* = Val.Zero(i8_*)
 
@@ -62,6 +62,9 @@ trait ObjectLowering extends Pass { self: EarlyLowering =>
       val classStructTy = Type.Struct(name)
 
       (Seq(vtableStruct, classStruct, classConst, vtableConst) ++ methods).flatMap(onDefn)
+
+    case _: Defn.Interface =>
+      ???
 
     case _ =>
       super.onDefn(defn)

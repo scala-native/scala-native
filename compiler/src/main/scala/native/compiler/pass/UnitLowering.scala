@@ -3,10 +3,9 @@ package compiler
 package pass
 
 import native.nir._
+import native.util.unreachable
 
-/** Eliminates unit type and unit value.
- *
- *  Eliminates:
+/** Eliminates:
  *  - Val.Unit
  *  - Type.Unit
  */
@@ -22,7 +21,7 @@ trait UnitLowering extends Pass {
 
   override def onNext(n: Next) = super.onNext {
     val Next(label, args) = n
-    Next(label, args.filter(_ != Val.Unit))
+    Next(label, args.filter(_.ty != Type.Unit))
   }
 
   override def onBlock(b: Block) = super.onBlock {
@@ -30,8 +29,17 @@ trait UnitLowering extends Pass {
     Block(n, params.filter(_.ty != Type.Unit), instrs)
   }
 
-  override def onType(ty: Type) = super.onType(ty match {
-    case Type.Unit => Type.Void
-    case ty        => ty
-  })
+  override def onVal(value: Val) = value match {
+    case Val.Unit => unreachable
+    case _        => super.onVal(value)
+  }
+
+  override def onType(ty: Type) = ty match {
+    case Type.Unit =>
+      unreachable
+    case Type.Function(params, Type.Unit) =>
+      Type.Function(params.map(onType), Type.Void)
+    case _ =>
+      super.onType(ty)
+  }
 }

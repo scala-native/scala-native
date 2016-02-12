@@ -36,7 +36,7 @@ object Shows {
         val paramshows = params.map {
           case Val.Local(n, ty) => sh"$n: $ty"
         }
-        sh"(${r(paramshows)})"
+        sh"(${r(paramshows, sep = ", ")})"
       }
     val header = sh"$name$paramlist:"
     val body = i(r(instrs, sep = nl("")))

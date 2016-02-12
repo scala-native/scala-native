@@ -38,6 +38,7 @@ import native.nir._
  *
  *  Eliminates:
  *  - Type.ModuleClass
+ *  - Op.Module
  *  - Defn.Module
  */
 trait ModuleLowering extends Pass {
@@ -71,6 +72,7 @@ trait ModuleLowering extends Pass {
           }
         )
       Seq(cls, data, accessor).flatMap(onDefn)
+
     case _ =>
       super.onDefn(defn)
   }
@@ -80,6 +82,7 @@ trait ModuleLowering extends Pass {
       val accessorTy = Type.Function(Seq(), Type.Class(name))
       val accessorVal = Val.Global(name + "accessor", Type.Ptr(accessorTy))
       Instr(n, Op.Call(accessorTy, accessorVal, Seq()))
+
     case _ =>
       instr
   })

@@ -6,11 +6,8 @@ import scala.collection.mutable
 import native.nir._
 import native.util.ScopedVar, ScopedVar.scoped
 
-/**
-*  Eliminates:
+/** Eliminates:
  *  - Val.String
- *  - Type.StringClass
- *  - Op.String*
  */
 trait StringLowering extends Pass {
   private val i8_* = Type.Ptr(Type.I8)

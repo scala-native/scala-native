@@ -9,10 +9,9 @@ class EarlyLowering(val entryModule: Global)
   extends Pass
   with IntrinsicLowering
   with MainInjection
-  with InterfaceLowering
-  with ObjectLowering
-  with ArrayLowering
+  with ClassLowering
   with ModuleLowering
+  with ArrayLowering
   with StringLowering
   with ExceptionLowering {
 
