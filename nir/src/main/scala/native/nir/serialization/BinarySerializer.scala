@@ -60,7 +60,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
   private def putBlock(block: Block) = {
     putLocal(block.name)
     putParams(block.params)
-    putInstrs(block.instrs)
+    putInsts(block.insts)
   }
 
   private def putCases(kases: Seq[Case]) = putSeq(putCase)(kases)
@@ -118,11 +118,11 @@ final class BinarySerializer(buffer: ByteBuffer) {
     putBool(global.isIntrinsic)
   }
 
-  private def putInstrs(instrs: Seq[Instr]) = putSeq(putInstr)(instrs)
-  private def putInstr(instr: Instr) = {
-    putLocalOpt(instr.name)
-    putAttrs(instr.attrs)
-    putOp(instr.op)
+  private def putInsts(insts: Seq[Inst]) = putSeq(putInst)(insts)
+  private def putInst(inst: Inst) = {
+    putLocalOpt(inst.name)
+    putAttrs(inst.attrs)
+    putOp(inst.op)
   }
 
   private def putLocalOpt(opt: Option[Local]): Unit = putOpt(putLocal)(opt)

@@ -108,17 +108,17 @@ trait GenTypeKinds extends SubComponent with NativeIntrinsics {
       }
     case BuiltinClassKind(sym) =>
       sym match {
-        case ObjectClass         => Intrinsic.object_
-        case ClassClass          => Intrinsic.class_
-        case StringClass         => Intrinsic.string
-        case BoxedCharacterClass => Intrinsic.char
-        case BoxedBooleanClass   => Intrinsic.bool
-        case BoxedByteClass      => Intrinsic.byte
-        case BoxedShortClass     => Intrinsic.short
-        case BoxedIntClass       => Intrinsic.int
-        case BoxedLongClass      => Intrinsic.long
-        case BoxedFloatClass     => Intrinsic.float
-        case BoxedDoubleClass    => Intrinsic.double
+        case ObjectClass         => Intr.object_
+        case ClassClass          => Intr.class_
+        case StringClass         => Intr.string
+        case BoxedCharacterClass => Intr.char
+        case BoxedBooleanClass   => Intr.bool
+        case BoxedByteClass      => Intr.byte
+        case BoxedShortClass     => Intr.short
+        case BoxedIntClass       => Intr.int
+        case BoxedLongClass      => Intr.long
+        case BoxedFloatClass     => Intr.float
+        case BoxedDoubleClass    => Intr.double
       }
     case ClassKind(sym) =>
       val name = genClassName(sym)

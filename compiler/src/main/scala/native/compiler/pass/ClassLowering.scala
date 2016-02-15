@@ -70,19 +70,19 @@ trait ClassLowering extends Pass { self: EarlyLowering =>
       super.onDefn(defn)
   }
 
-  override def onInstr(instr: Instr) = instr match {
-    case Instr(Some(n), Seq(), Op.Alloc(Type.Class(clsname))) =>
+  override def onInst(inst: Inst) = inst match {
+    case Inst(Some(n), Seq(), Op.Alloc(Type.Class(clsname))) =>
       val clsValue = Val.Global(clsname + "cls", Type.Ptr(Type.I8))
       val sizeValue = Val.Size(Type.Struct(clsname))
-      onInstr(Instr(n, Intrinsic.call(Intrinsic.alloc, clsValue, sizeValue)))
+      onInst(Inst(n, Intr.call(Intr.alloc, clsValue, sizeValue)))
 
-    case Instr(Some(n), Seq(), Op.Field(ty, obj, ExField(fld))) =>
+    case Inst(Some(n), Seq(), Op.Field(ty, obj, ExField(fld))) =>
       val clsptr = Type.Ptr(Type.Struct(fld.in.name))
       val cast   = fresh()
       Seq(
-        Instr(cast, Op.Conv(Conv.Bitcast, clsptr, obj)),
-        Instr(n,    Op.Elem(ty, Val.Local(cast, clsptr), Seq(Val.I32(0), Val.I32(fld.index + 1))))
-      ).flatMap(onInstr)
+        Inst(cast, Op.Conv(Conv.Bitcast, clsptr, obj)),
+        Inst(n,    Op.Elem(ty, Val.Local(cast, clsptr), Seq(Val.I32(0), Val.I32(fld.index + 1))))
+      ).flatMap(onInst)
 
     // Virtual method elems
     //
@@ -96,7 +96,7 @@ trait ClassLowering extends Pass { self: EarlyLowering =>
     //     %meth_**   = elem[$sig*] %vtable_*, 0i32, ${meth.index + 1}
     //     %$n        = load[$sig*] %meth_**
     //
-    case Instr(Some(n), Seq(), Op.Method(sig, obj, ExVirtualMethod(meth))) =>
+    case Inst(Some(n), Seq(), Op.Method(sig, obj, ExVirtualMethod(meth))) =>
       val sigptr    = Type.Ptr(sig)
       val clsptr    = Type.Ptr(Type.Struct(meth.in.name))
       val vtableptr = Type.Ptr(Type.Struct(meth.in.name + "vtable"))
@@ -105,14 +105,14 @@ trait ClassLowering extends Pass { self: EarlyLowering =>
       val vtable_*  = fresh()
       val meth_**   = fresh()
       Seq(
-        Instr(cast,      Op.Conv(Conv.Bitcast, clsptr, obj)),
-        Instr(vtable_**, Op.Elem(vtableptr, Val.Local(cast, clsptr),
+        Inst(cast,      Op.Conv(Conv.Bitcast, clsptr, obj)),
+        Inst(vtable_**, Op.Elem(vtableptr, Val.Local(cast, clsptr),
                                             Seq(Val.I32(0), Val.I32(0)))),
-        Instr(vtable_*,  Op.Load(vtableptr, Val.Local(vtable_**, Type.Ptr(vtableptr)))),
-        Instr(meth_**,   Op.Elem(sigptr, Val.Local(vtable_*, vtableptr),
+        Inst(vtable_*,  Op.Load(vtableptr, Val.Local(vtable_**, Type.Ptr(vtableptr)))),
+        Inst(meth_**,   Op.Elem(sigptr, Val.Local(vtable_*, vtableptr),
                                          Seq(Val.I32(0), Val.I32(meth.vindex)))),
-        Instr(n,         Op.Load(sigptr, Val.Local(meth_**, Type.Ptr(sigptr))))
-      ).flatMap(onInstr)
+        Inst(n,         Op.Load(sigptr, Val.Local(meth_**, Type.Ptr(sigptr))))
+      ).flatMap(onInst)
 
     // Static method elems
     //
@@ -122,17 +122,17 @@ trait ClassLowering extends Pass { self: EarlyLowering =>
     //
     //    %$n = copy @${method.name}: $sig*
     //
-    case Instr(Some(n), Seq(), Op.Method(sig, obj, ExStaticMethod(meth))) =>
-      onInstr(Instr(n, Op.Copy(Val.Global(meth.name, Type.Ptr(sig)))))
+    case Inst(Some(n), Seq(), Op.Method(sig, obj, ExStaticMethod(meth))) =>
+      onInst(Inst(n, Op.Copy(Val.Global(meth.name, Type.Ptr(sig)))))
 
-    case Instr(n, attrs, _: Op.As) =>
+    case Inst(n, attrs, _: Op.As) =>
       ???
 
-    case Instr(n, attrs, _: Op.Is) =>
+    case Inst(n, attrs, _: Op.Is) =>
       ???
 
     case _ =>
-      super.onInstr(instr)
+      super.onInst(inst)
   }
 
   override def onType(ty: Type) = super.onType(ty match {
@@ -145,10 +145,10 @@ trait ClassLowering extends Pass { self: EarlyLowering =>
       zero_i8_*
     case Val.Class(ty) =>
       ty match {
-        case _ if Intrinsic.intrinsic_class.contains(ty) =>
-          Intrinsic.intrinsic_class(ty)
+        case _ if Intr.intrinsic_class.contains(ty) =>
+          Intr.intrinsic_class(ty)
         case Type.Null =>
-          Intrinsic.null_class
+          Intr.null_class
         case Type.Class(name) =>
           Val.Global(name + "cls", Type.Ptr(Type.I8))
         case _ =>

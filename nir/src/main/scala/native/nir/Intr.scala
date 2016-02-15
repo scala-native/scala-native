@@ -3,7 +3,7 @@ package nir
 
 import Type._
 
-object Intrinsic {
+object Intr {
   private def value(id: String, ty: Type) =
     Val.Global(Global.intrinsic(id), ty)
   private def intrinsic(id: String, args: Seq[Type], ret: Type) =

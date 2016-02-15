@@ -7,7 +7,7 @@ final case class Focus(
   val blocks:     Seq[Block],
   val name:       Local,
   val params:     Seq[Val.Local],
-  val instrs:     Seq[Instr],
+  val insts:      Seq[Inst],
   val value:      Val,
   val isComplete: Boolean
 )(implicit _fresh: Fresh) {
@@ -30,15 +30,15 @@ final case class Focus(
   def withOp(attrs: Seq[Attr], op: Op): Focus = {
     assert(!isComplete)
     val name = fresh()
-    copy(instrs = instrs :+ Instr(Some(name), attrs, op), value = Val.Local(name, op.resty))
+    copy(insts = insts :+ Inst(Some(name), attrs, op), value = Val.Local(name, op.resty))
   }
 
   def finish(op: Op): Focus =
-    finish(Instr(None, Seq(), op))
+    finish(Inst(None, Seq(), op))
 
-  def finish(instr: Instr): Focus =
+  def finish(inst: Inst): Focus =
     if (isComplete) this
-    else Focus.complete(blocks :+ Block(name, params, instrs :+ instr))
+    else Focus.complete(blocks :+ Block(name, params, insts :+ inst))
 
   private def wrapBranch(merge: Local, f: Focus => Focus, params: Seq[Val.Local] = Seq()) = {
     val entry = Focus.entry(params)
@@ -88,7 +88,7 @@ final case class Focus(
 
   def branchTry(retty: Type, normal: Focus => Focus, exc: (Val, Focus) => Focus): Focus = {
     val merge = fresh()
-    val excparam = Val.Local(fresh(), Intrinsic.object_)
+    val excparam = Val.Local(fresh(), Intr.object_)
     val param = Val.Local(fresh(), retty)
     val (normname, normcompl, normblocks) = wrapBranch(merge, normal)
     val (excname, exccompl, excblocks) = wrapBranch(merge, exc(excparam, _), Seq(excparam))

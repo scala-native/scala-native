@@ -39,13 +39,13 @@ object Shows {
         sh"(${r(paramshows, sep = ", ")})"
       }
     val header = sh"$name$paramlist:"
-    val body = i(r(instrs, sep = nl("")))
+    val body = i(r(insts, sep = nl("")))
     sh"$header$body"
   }
 
-  implicit val showInstr: Show[Instr] = Show {
-    case Instr(None, attrs, op)       => sh"$attrs$op"
-    case Instr(Some(name), attrs, op) => sh"$name = $attrs$op"
+  implicit val showInst: Show[Inst] = Show {
+    case Inst(None, attrs, op)       => sh"$attrs$op"
+    case Inst(Some(name), attrs, op) => sh"$name = $attrs$op"
   }
 
   implicit val showNext: Show[Next] = Show {

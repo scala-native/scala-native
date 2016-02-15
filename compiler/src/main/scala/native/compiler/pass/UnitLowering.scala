@@ -10,13 +10,13 @@ import native.util.unreachable
  *  - Type.Unit
  */
 trait UnitLowering extends Pass {
-  override def onInstr(instr: Instr): Seq[Instr] = instr match {
-    case Instr(Some(_), attrs, op) if op.resty == Type.Unit =>
-      onInstr(Instr(None, attrs, op))
-    case Instr(_, attrs, Op.Ret(v)) if v.ty == Type.Unit =>
-      onInstr(Instr(None, attrs, Op.Ret(Val.None)))
+  override def onInst(inst: Inst): Seq[Inst] = inst match {
+    case Inst(Some(_), attrs, op) if op.resty == Type.Unit =>
+      onInst(Inst(None, attrs, op))
+    case Inst(_, attrs, Op.Ret(v)) if v.ty == Type.Unit =>
+      onInst(Inst(None, attrs, Op.Ret(Val.None)))
     case _ =>
-      super.onInstr(instr)
+      super.onInst(inst)
   }
 
   override def onNext(n: Next) = super.onNext {
@@ -25,8 +25,8 @@ trait UnitLowering extends Pass {
   }
 
   override def onBlock(b: Block) = super.onBlock {
-    val Block(n, params, instrs) = b
-    Block(n, params.filter(_.ty != Type.Unit), instrs)
+    val Block(n, params, insts) = b
+    Block(n, params.filter(_.ty != Type.Unit), insts)
   }
 
   override def onVal(value: Val) = value match {

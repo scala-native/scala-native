@@ -11,18 +11,18 @@ import native.nir._
 trait ArrayLowering extends Pass {
   private val i8_* = Type.Ptr(Type.I8)
 
-  override def onInstr(instr: Instr) = instr match {
-    case Instr(_, _, _: Op.ArrAlloc) =>
+  override def onInst(instr: Inst) = instr match {
+    case Inst(_, _, _: Op.ArrAlloc) =>
       ???
 
-    case Instr(_, _, _: Op.ArrLength) =>
+    case Inst(_, _, _: Op.ArrLength) =>
       ???
 
-    case Instr(_, _, _: Op.ArrElem) =>
+    case Inst(_, _, _: Op.ArrElem) =>
       ???
 
     case _ =>
-      super.onInstr(instr)
+      super.onInst(instr)
   }
 
   override def onType(ty: Type): Type = super.onType(ty match {

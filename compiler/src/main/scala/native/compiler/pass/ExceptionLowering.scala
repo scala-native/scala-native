@@ -14,10 +14,10 @@ trait ExceptionLowering extends Pass {
     val Block(n, params, init :+ last) = block
     val nlast = last.op match {
       case Op.Try(n1, n2) =>
-        Seq(Instr(Op.Jump(n1)))
+        Seq(Inst(Op.Jump(n1)))
       case Op.Throw(v) =>
-        Seq(Instr(Intrinsic.call(Intrinsic.throw_, v)),
-            Instr(Op.Unreachable))
+        Seq(Inst(Intr.call(Intr.throw_, v)),
+            Inst(Op.Unreachable))
       case _ =>
         Seq(last)
     }

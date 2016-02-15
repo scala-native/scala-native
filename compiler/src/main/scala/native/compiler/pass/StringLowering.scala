@@ -38,22 +38,22 @@ trait StringLowering extends Pass {
     defns ++ this.defns.values
   }
 
-  override def onInstr(instr: Instr) = {
-    val strings = stringsOf(instr.op)
+  override def onInst(inst: Inst) = {
+    val strings = stringsOf(inst.op)
     val collected = mutable.UnrolledBuffer.empty[(String, Local)]
     val preamble = strings.toSeq.flatMap { s =>
       val g  = intrinsify(s)
       val n1 = fresh()
       val n2 = fresh()
       collected += (s -> n2)
-      Seq(Instr(n1, Op.Elem(Type.I8, g, Seq(Val.I32(0), Val.I32(0)))),
-          Instr(n2, Intrinsic.call(Intrinsic.string_fromPtr, Val.Local(n1, i8_*), Val.I32(s.length))))
+      Seq(Inst(n1, Op.Elem(Type.I8, g, Seq(Val.I32(0), Val.I32(0)))),
+          Inst(n2, Intr.call(Intr.string_fromPtr, Val.Local(n1, i8_*), Val.I32(s.length))))
     }
 
     scoped(
       locals := collected.toMap
     ) {
-      (preamble :+ instr).flatMap(super.onInstr)
+      (preamble :+ inst).flatMap(super.onInst)
     }
   }
 

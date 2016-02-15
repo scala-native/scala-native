@@ -11,18 +11,18 @@ import native.util.unreachable
  */
 trait NothingLowering extends Pass {
   override def onBlock(block: Block): Seq[Block] = {
-    val Block(n, params, instrs) = block
-    val ninstrs = mutable.UnrolledBuffer.empty[Instr]
-    def result() = super.onBlock(Block(n, params, ninstrs.toSeq))
-    instrs.foreach {
-      case instr if instr.op.resty != Type.Nothing =>
-        ninstrs += instr
-      case Instr(_, attrs, call: Op.Call) if call.resty == Type.Nothing =>
-        ninstrs += Instr(None, attrs, call)
-        ninstrs += Instr(Op.Unreachable)
+    val Block(n, params, insts) = block
+    val ninsts = mutable.UnrolledBuffer.empty[Inst]
+    def result() = super.onBlock(Block(n, params, ninsts.toSeq))
+    insts.foreach {
+      case inst if inst.op.resty != Type.Nothing =>
+        ninsts += inst
+      case Inst(_, attrs, call: Op.Call) if call.resty == Type.Nothing =>
+        ninsts += Inst(None, attrs, call)
+        ninsts += Inst(Op.Unreachable)
         return result()
-      case instr @ Instr(_, _, termn: Op.Cf) =>
-        ninstrs += instr
+      case inst @ Inst(_, _, termn: Op.Cf) =>
+        ninsts += inst
         return result()
     }
     unreachable

@@ -62,10 +62,10 @@ object GenTextualLLVM extends GenShow {
   }
 
   def showBlock(block: Block, pred: Seq[CFG.Edge], isEntry: Boolean): Show.Result = {
-    val instructions = r(block.instrs, sep = nl(""))
+    val insts = r(block.insts, sep = nl(""))
 
     if (isEntry)
-      instructions
+      insts
     else {
       val label = ui(sh"${block.name}:")
       val phis = r(block.params.zipWithIndex.map {
@@ -75,7 +75,7 @@ object GenTextualLLVM extends GenShow {
           }
           sh"%$n = phi $ty ${r(branches, sep = ", ")}"
       }.map(nl(_)))
-      sh"$label$phis${nl("")}$instructions"
+      sh"$label$phis${nl("")}$insts"
     }
   }
 
@@ -130,9 +130,9 @@ object GenTextualLLVM extends GenShow {
     case Local(scope, id) => sh"$scope.$id"
   }
 
-  implicit val showInstr: Show[Instr] = Show {
-    case Instr(None,     attrs, op) => showOp(attrs, op)
-    case Instr(Some(id), attrs, op) => sh"%$id = ${showOp(attrs, op)}"
+  implicit val showInst: Show[Inst] = Show {
+    case Inst(None,     attrs, op) => showOp(attrs, op)
+    case Inst(Some(id), attrs, op) => sh"%$id = ${showOp(attrs, op)}"
   }
 
   def showOp(attrs: Seq[Attr], op: Op): Show.Result = op match {

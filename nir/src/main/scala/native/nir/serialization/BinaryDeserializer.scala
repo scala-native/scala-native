@@ -66,7 +66,7 @@ final class BinaryDeserializer(bb: ByteBuffer) {
   }
 
   private def getBlocks(): Seq[Block] = getSeq(getBlock)
-  private def getBlock(): Block = Block(getLocal, getParams, getInstrs)
+  private def getBlock(): Block = Block(getLocal, getParams, getInsts)
 
   private def getCases(): Seq[Case] = getSeq(getCase)
   private def getCase(): Case = Case(getVal, getNext)
@@ -110,8 +110,8 @@ final class BinaryDeserializer(bb: ByteBuffer) {
   private def getGlobalOpt(): Option[Global] = getOpt(getGlobal)
   private def getGlobal(): Global = new Global(getStrings, getBool)
 
-  private def getInstrs(): Seq[Instr] = getSeq(getInstr)
-  private def getInstr(): Instr = Instr(getLocalOpt, getAttrs, getOp)
+  private def getInsts(): Seq[Inst] = getSeq(getInst)
+  private def getInst(): Inst = Inst(getLocalOpt, getAttrs, getOp)
 
   private def getLocalOpt(): Option[Local] = getOpt(getLocal)
   private def getLocal(): Local = Local(getString, getInt)

@@ -29,7 +29,7 @@ object CFG {
       nodes(b.name) = new Node(b, Seq(), Seq())
     }
     blocks.foreach {
-      case Block(n, _, _ :+ Instr(_, _, op)) =>
+      case Block(n, _, _ :+ Inst(_, _, op)) =>
         val node = nodes(n)
         op match {
           case Op.Unreachable =>

@@ -37,13 +37,13 @@ trait Pass {
     blocks.flatMap(onBlock)
 
   def onBlock(block: Block): Seq[Block] =
-    Seq(Block(onLocal(block.name), block.params.flatMap(onParam), block.instrs.flatMap(onInstr)))
+    Seq(Block(onLocal(block.name), block.params.flatMap(onParam), block.insts.flatMap(onInst)))
 
   def onParam(param: Val.Local): Seq[Val.Local] =
     Seq(Val.Local(param.name, onType(param.ty)))
 
-  def onInstr(instr: Instr): Seq[Instr] =
-    Seq(Instr(instr.name, instr.attrs, onOp(instr.op)))
+  def onInst(inst: Inst): Seq[Inst] =
+    Seq(Inst(inst.name, inst.attrs, onOp(inst.op)))
 
   def onOp(op: Op): Op = op match {
     case Op.Unreachable                         => Op.Unreachable

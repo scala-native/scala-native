@@ -16,10 +16,10 @@ trait CopyLowering extends Pass {
     val copies = mutable.Map.empty[Local, Val]
 
     blocks.foreach { b =>
-      b.instrs.foreach {
-        case Instr(Some(n), _, Op.Copy(v)) =>
+      b.insts.foreach {
+        case Inst(Some(n), _, Op.Copy(v)) =>
           copies(n) = v
-        case instr =>
+        case inst =>
           ()
       }
     }
@@ -34,11 +34,11 @@ trait CopyLowering extends Pass {
       super.onBlocks(blocks)
     }
 
-  override def onInstr(instr: Instr): Seq[Instr] = instr match {
-    case Instr(_, _, _: Op.Copy) =>
+  override def onInst(inst: Inst): Seq[Inst] = inst match {
+    case Inst(_, _, _: Op.Copy) =>
       Seq()
     case _ =>
-      super.onInstr(instr)
+      super.onInst(inst)
   }
 
   override def onVal(value: Val): Val = super.onVal(value match {

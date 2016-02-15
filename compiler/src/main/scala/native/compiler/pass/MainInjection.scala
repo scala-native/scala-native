@@ -17,13 +17,13 @@ trait MainInjection extends Pass { self: EarlyLowering =>
     val m = fresh()
     val mVal = Val.Local(m, Type.Ptr(Type.I8))
     val arr = fresh()
-    val arrVal = Val.Local(arr, Type.ArrayClass(Intrinsic.string))
+    val arrVal = Val.Local(arr, Type.ArrayClass(Intr.string))
     val body =
       Block(fresh(), Seq(argc, argv),
-        Seq(Instr(arr, Intrinsic.call(Intrinsic.init, argc, argv)),
-            Instr(m, Op.Module(entryModule)),
-            Instr(Op.Call(moduleMainTy, moduleMain, Seq(mVal, arrVal))),
-            Instr(Op.Ret(Val.I32(0)))))
+        Seq(Inst(arr, Intr.call(Intr.init, argc, argv)),
+            Inst(m, Op.Module(entryModule)),
+            Inst(Op.Call(moduleMainTy, moduleMain, Seq(mVal, arrVal))),
+            Inst(Op.Ret(Val.I32(0)))))
     val sig =
       Type.Function(Seq(argc.ty, argv.ty), Type.I32)
     val main =

@@ -129,13 +129,13 @@ object ClassHierarchy {
   def apply(defns: Seq[Defn]): Result = {
     val nodes = mutable.Map.empty[Global, Node]
 
-    def enterIntrinsics(): Unit = {
+    def enterIntrs(): Unit = {
       val classes = Map(
-        Intrinsic.object_ -> Seq(
-          Intrinsic.object_init,
-          Intrinsic.object_equals,
-          Intrinsic.object_hashCode,
-          Intrinsic.object_toString
+        Intr.object_ -> Seq(
+          Intr.object_init,
+          Intr.object_equals,
+          Intr.object_hashCode,
+          Intr.object_toString
         )
       )
 
@@ -225,7 +225,7 @@ object ClassHierarchy {
       case _                                          => ()
     }
 
-    enterIntrinsics()
+    enterIntrs()
     defns.foreach(enter)
     defns.foreach(enrich)
     nodes.toMap

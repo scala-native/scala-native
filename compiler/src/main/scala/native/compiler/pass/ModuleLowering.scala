@@ -56,7 +56,7 @@ trait ModuleLowering extends Pass {
           {
             val entry = Focus.entry(fresh)
             val prev = entry withOp Op.Load(clsty, dataval)
-            val cond = prev withOp Op.Comp(Comp.Eq, Intrinsic.object_, prev.value, Val.Null)
+            val cond = prev withOp Op.Comp(Comp.Eq, Intr.object_, prev.value, Val.Null)
 
             cond.branchIf(cond.value, Type.Nothing,
               { thenp =>
@@ -77,14 +77,14 @@ trait ModuleLowering extends Pass {
       super.onDefn(defn)
   }
 
-  override def onInstr(instr: Instr) = super.onInstr(instr match {
-    case Instr(Some(n), Seq(), Op.Module(name)) =>
+  override def onInst(inst: Inst) = super.onInst(inst match {
+    case Inst(Some(n), Seq(), Op.Module(name)) =>
       val accessorTy = Type.Function(Seq(), Type.Class(name))
       val accessorVal = Val.Global(name + "accessor", Type.Ptr(accessorTy))
-      Instr(n, Op.Call(accessorTy, accessorVal, Seq()))
+      Inst(n, Op.Call(accessorTy, accessorVal, Seq()))
 
     case _ =>
-      instr
+      inst
   })
 
   override def onType(ty: Type) = super.onType(ty match {

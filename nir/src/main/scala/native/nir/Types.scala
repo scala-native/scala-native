@@ -3,15 +3,15 @@ package nir
 
 sealed abstract class Type {
   def unboxed = this match {
-    case Intrinsic.char   => Type.I16
-    case Intrinsic.bool   => Type.Bool
-    case Intrinsic.byte   => Type.I8
-    case Intrinsic.short  => Type.I16
-    case Intrinsic.int    => Type.I32
-    case Intrinsic.long   => Type.I64
-    case Intrinsic.float  => Type.F32
-    case Intrinsic.double => Type.F64
-    case _                => util.unreachable
+    case Intr.char   => Type.I16
+    case Intr.bool   => Type.Bool
+    case Intr.byte   => Type.I8
+    case Intr.short  => Type.I16
+    case Intr.int    => Type.I32
+    case Intr.long   => Type.I64
+    case Intr.float  => Type.F32
+    case Intr.double => Type.F64
+    case _           => util.unreachable
   }
 }
 object Type {
