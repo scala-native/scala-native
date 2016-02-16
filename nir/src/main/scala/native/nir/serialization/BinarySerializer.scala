@@ -262,10 +262,10 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Val.Local(n, ty)  => putInt(T.LocalVal); putLocal(n); putType(ty)
     case Val.Global(n, ty) => putInt(T.GlobalVal); putGlobal(n); putType(ty)
 
-    case Val.Unit             => putInt(T.UnitVal)
-    case Val.Null             => putInt(T.NullVal)
-    case Val.String(v)        => putInt(T.StringVal); putString(v)
-    case Val.Size(ty)         => putInt(T.SizeVal); putType(ty)
-    case Val.Class(ty)        => putInt(T.ClassVal); putType(ty)
+    case Val.Unit      => putInt(T.UnitVal)
+    case Val.Null      => putInt(T.NullVal)
+    case Val.String(v) => putInt(T.StringVal); putString(v)
+    case Val.Size(ty)  => putInt(T.SizeVal); putType(ty)
+    case Val.Type(ty)  => putInt(T.TypeVal); putType(ty)
   }
 }

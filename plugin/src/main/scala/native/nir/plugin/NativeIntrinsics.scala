@@ -402,7 +402,7 @@ trait NativeIntrinsics {
   object IntrinsicClass {
     def unapply(sym: Symbol): Option[nir.Global] = sym match {
       case JObject    => Some(Intr.object_.name)
-      case JClass     => Some(Intr.class_.name)
+      case JClass     => ???
       case JBoolean   => Some(Intr.bool.name)
       case JCharacter => Some(Intr.char.name)
       case JByte      => Some(Intr.byte.name)

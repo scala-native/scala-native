@@ -18,37 +18,46 @@ object Intr {
     intrinsic(id, Seq(from1, from2, from3), to)
   private def cls(id: String) =
     Type.Class(Global.intrinsic(id))
+  private def struct(id: String) =
+    Type.Struct(Global.intrinsic(id))
 
   def call(intr: Val.Global, args: Val*): Op = {
     val Val.Global(_, Type.Ptr(ty)) = intr
     Op.Call(ty, intr, args)
   }
 
-  lazy val null_class = value("null_class", class_)
-
   lazy val object_          = cls   ("object")
-  lazy val object_class     = value ("object_class"   ,                   class_)
-  lazy val object_init      = unary ("object_init"    , object_,          Unit  )
-  lazy val object_equals    = binary("object_equals"  , object_, object_, Bool  )
-  lazy val object_toString  = unary ("object_toString", object_,          string)
-  lazy val object_hashCode  = unary ("object_hashCode", object_,          I32   )
-  lazy val object_getClass  = unary ("object_getClass", object_,          class_)
+  lazy val object_init      = unary ("object_init"    , object_,          Unit   )
+  lazy val object_equals    = binary("object_equals"  , object_, object_, Bool   )
+  lazy val object_toString  = unary ("object_toString", object_,          string )
+  lazy val object_hashCode  = unary ("object_hashCode", object_,          I32    )
 
   lazy val monitor           = cls    ("monitor")
-  lazy val monitor_class     = value  ("monitor_class"    ,                    class_)
   lazy val monitor_enter     = unary  ("monitor_enter"    , object_,           Unit  )
   lazy val monitor_exit      = unary  ("monitor_exit"     , object_,           Unit  )
   lazy val monitor_notify    = unary  ("monitor_notify"   , object_,           Unit  )
   lazy val monitor_notifyAll = unary  ("monitor_notifyAll", object_,           Unit  )
   lazy val monitor_wait      = ternary("monitor_wait"     , object_, I64, I32, Unit  )
 
-  lazy val class_         = cls  ("class")
-  lazy val class_class    = value("class_class"   ,         class_)
-  lazy val class_get_name = unary("class_get_name", class_, string)
-  lazy val class_get_size = unary("class_get_size", class_, Size  )
+  lazy val type_           = struct("type")
+  lazy val type_name       = unary ("type_name"      , Type.Ptr(type_), string         )
+  lazy val type_size       = unary ("type_size"      , Type.Ptr(type_), Size           )
+  lazy val type_of         = unary ("type_of"        , object_        , Type.Ptr(type_))
+  lazy val type_of_null    = value ("type_of_null"   , type_)
+  lazy val type_of_object  = value ("type_of_object" , type_)
+  lazy val type_of_monitor = value ("type_of_monitor", type_)
+  lazy val type_of_type    = value ("type_of_type"   , type_)
+  lazy val type_of_bool    = value ("type_of_bool"   , type_)
+  lazy val type_of_char    = value ("type_of_char"   , type_)
+  lazy val type_of_byte    = value ("type_of_byte"   , type_)
+  lazy val type_of_short   = value ("type_of_short"  , type_)
+  lazy val type_of_int     = value ("type_of_int"    , type_)
+  lazy val type_of_long    = value ("type_of_long"   , type_)
+  lazy val type_of_float   = value ("type_of_float"  , type_)
+  lazy val type_of_double  = value ("type_of_double" , type_)
+  lazy val type_of_string  = value ("type_of_string" , type_)
 
   lazy val bool          = cls  ("bool")
-  lazy val bool_class    = value("bool_class"   ,       class_)
   lazy val bool_box      = unary("bool_box"     , Bool, bool  )
   lazy val bool_unbox    = unary("bool_unbox"   , bool, Bool  )
   lazy val bool_toString = unary("bool_toString", Bool, string)
@@ -56,14 +65,12 @@ object Intr {
   lazy val bool_hashCode = unary("bool_hashCode", Bool, I32   )
 
   lazy val char          = cls  ("char")
-  lazy val char_class    = value("char_class"    ,       class_)
   lazy val char_box      = unary("char_box"      , I16 , char  )
   lazy val char_unbox    = unary("char_unbox"    , char, I16   )
   lazy val char_toString = unary("char_toString" , I16 , string)
   lazy val char_hashCode = unary("char_hashCode" , I16 , I32   )
 
   lazy val byte           = cls   ("byte")
-  lazy val byte_class     = value ("byte_class"    ,            class_)
   lazy val byte_box       = unary ("byte_box"      , I8  ,      byte  )
   lazy val byte_unbox     = unary ("byte_unbox"    , byte,      I8    )
   lazy val byte_toString  = unary ("byte_toString" , I8  ,      string)
@@ -72,7 +79,6 @@ object Intr {
   lazy val byte_hashCode  = unary ("byte_hashCode" , I8  ,      I32   )
 
   lazy val short           = cls   ("short")
-  lazy val short_class     = value ("short_class"    ,             class_)
   lazy val short_box       = unary ("short_box"      , I16  ,      short )
   lazy val short_unbox     = unary ("short_unbox"    , short,      I16   )
   lazy val short_toString  = unary ("short_toString" , I16  ,      string)
@@ -81,7 +87,6 @@ object Intr {
   lazy val short_hashCode  = unary ("short_hashCode" , I16  ,      I32   )
 
   lazy val int                      = cls   ("int")
-  lazy val int_class                = value ("int_class"               ,           class_)
   lazy val int_box                  = unary ("int_box"                 , I32,      int   )
   lazy val int_unbox                = unary ("int_unbox"               , int,      I32   )
   lazy val int_toString             = unary ("int_toString"            , I32,      string)
@@ -95,7 +100,6 @@ object Intr {
   lazy val int_hashCode             = unary ("int_hashCode"            , I32,      I32   )
 
   lazy val long                      = cls   ("long")
-  lazy val long_class                = value ("long_class"               ,           class_)
   lazy val long_box                  = unary ("long_box"                 , I64,      int   )
   lazy val long_unbox                = unary ("long_unbox"               , int,      I64   )
   lazy val long_toString             = unary ("long_toString"            , I64,      string)
@@ -109,7 +113,6 @@ object Intr {
   lazy val long_hashCode             = unary ("long_hashCode"            , I64,      I32   )
 
   lazy val float          = cls  ("float")
-  lazy val float_class    = value("float_class"   ,        class_)
   lazy val float_box      = unary("float_box"     , F32  , float )
   lazy val float_unbox    = unary("float_unbox"   , float, F32   )
   lazy val float_toString = unary("float_toString", F32  , string)
@@ -117,7 +120,6 @@ object Intr {
   lazy val float_hashCode = unary("float_hashCode", F32  , I32   )
 
   lazy val double          = cls  ("double")
-  lazy val double_class    = value("double_class"   ,         class_)
   lazy val double_box      = unary("double_box"     , F64   , double)
   lazy val double_unbox    = unary("double_unbox"   , double, F64   )
   lazy val double_toString = unary("double_toString", F64   , string)
@@ -125,11 +127,11 @@ object Intr {
   lazy val double_hashCode = unary("double_hashCode", F64   , I32   )
 
   lazy val string         = cls   ("string")
-  lazy val string_class   = value ("string_class",                      class_)
+  lazy val string_charAt  = binary("string_charAt",  string,  I32,      I16   )
   lazy val string_concat  = binary("string_concat",  string,  string,   string)
-  lazy val string_fromPtr = binary("string_fromPtr", Type.Ptr(I8), I32, string)
+  lazy val string_length  = unary ("string_length",  string,            I32   )
 
-  lazy val alloc  = binary ("alloc", class_, Size, object_)
+  lazy val alloc  = binary ("alloc", type_, Size, object_)
   lazy val init   = binary ("init" , Type.I32, Type.Ptr(Type.Ptr(Type.I8)), ArrayClass(string))
   lazy val yield_ = nullary("yield", Unit)
   lazy val throw_ = unary  ("throw", object_, Type.Nothing)
@@ -221,17 +223,18 @@ object Intr {
     double -> double_hashCode
   )
 
-  val intrinsic_class = Map[Type, Val.Global](
-    object_ -> object_class ,
-    monitor -> monitor_class,
-    class_  -> class_class  ,
-    bool    -> bool_class   ,
-    char    -> char_class   ,
-    byte    -> byte_class   ,
-    short   -> short_class  ,
-    int     -> int_class    ,
-    long    -> long_class   ,
-    float   -> float_class  ,
-    double  -> double_class
+  val type_of_intrinsic = Map[Type, Val.Global](
+    Type.Null -> type_of_null   ,
+    object_   -> type_of_object ,
+    monitor   -> type_of_monitor,
+    type_     -> type_of_type   ,
+    bool      -> type_of_bool   ,
+    char      -> type_of_char   ,
+    byte      -> type_of_byte   ,
+    short     -> type_of_short  ,
+    int       -> type_of_int    ,
+    long      -> type_of_long   ,
+    float     -> type_of_float  ,
+    double    -> type_of_double
   )
 }

@@ -19,11 +19,13 @@ import native.compiler.analysis.ClassHierarchy.Node
  *
  *  Gets lowered to:
  *
- *      struct $name_vtable { .. ptr $allvirtmty }
- *      struct $name { $name_vtable*, .. $allfty }
+ *      struct $name_type { #type, .. ptr $allvirtmty }
+ *      struct $name { ptr $name_type, .. $allfty }
  *
- *      var $name_cls: i8 = 0
- *      var $name_vconst: struct $name_vtable = struct[$name_vtable](..$mname)
+ *      var $name_const: struct $name_type =
+ *        struct[$name_type](
+ *          struct[#type](#type_of_type, ${cls.name}, ${cls.size})
+ *          ..$mname)
  *
  *      .. def $mname: $mty = $body
  *
@@ -45,23 +47,22 @@ trait ClassLowering extends Pass { self: EarlyLowering =>
       val vtable    = cls.vtable
       val vtableTys = vtable.map(_.ty)
 
-      val vtableStructName = name + "vtable"
-      val vtableStructTy   = Type.Struct(vtableStructName)
+      val classTypeStructName = name + "type"
+      val classTypeStructTy   = Type.Struct(classTypeStructName)
+      val classTypeStruct     = Defn.Struct(Seq(), classTypeStructName, vtableTys)
 
-      val vtableConstName = name + "vconst"
-      val vtableStruct    = Defn.Struct(Seq(), vtableStructName, vtableTys)
-      val vtableConstVal  = Val.Struct(vtableStructName, vtable)
-      val vtableConst     = Defn.Var(Seq(), vtableConstName, vtableStructTy, vtableConstVal)
+      val classStructTy   = Type.Struct(name)
+      val classStruct     = Defn.Struct(Seq(), name, Type.Ptr(classTypeStructTy) +: data)
 
-      val classConstName = name + "cls"
-      val classConstTy   = Type.I8
-      val classConstVal  = Val.Zero(Type.I8)
-      val classConst     = Defn.Var(Seq(), classConstName, classConstTy, classConstVal)
+      val className = Val.String(name.toString)
+      val classSize = Val.Size(classStructTy)
+      val classInfo = Val.Struct(Intr.type_.name, Seq(Intr.type_of_type, className, classSize))
 
-      val classStruct   = Defn.Struct(Seq(), name, Type.Ptr(vtableStructTy) +: data)
-      val classStructTy = Type.Struct(name)
+      val classConstName = name + "const"
+      val classConstVal  = Val.Struct(classTypeStructName, classInfo +: vtable)
+      val classConst     = Defn.Var(Seq(), classConstName, classTypeStructTy, classConstVal)
 
-      (Seq(vtableStruct, classStruct, classConst, vtableConst) ++ methods).flatMap(onDefn)
+      (Seq(classTypeStruct, classStruct, classConst) ++ methods).flatMap(onDefn)
 
     case _: Defn.Interface =>
       ???
@@ -72,9 +73,10 @@ trait ClassLowering extends Pass { self: EarlyLowering =>
 
   override def onInst(inst: Inst) = inst match {
     case Inst(Some(n), Op.Alloc(Type.Class(clsname))) =>
-      val clsValue = Val.Global(clsname + "cls", Type.Ptr(Type.I8))
-      val sizeValue = Val.Size(Type.Struct(clsname))
-      onInst(Inst(n, Intr.call(Intr.alloc, clsValue, sizeValue)))
+      // val clsValue = Val.Global(clsname + "const", Type.Ptr(Type.I8))
+      // val sizeValue = Val.Size(Type.Struct(clsname))
+      // onInst(Inst(n, Intr.call(Intr.alloc, clsValue, sizeValue)))
+      ???
 
     case Inst(Some(n), Op.Field(ty, obj, ExField(fld))) =>
       val clsptr = Type.Ptr(Type.Struct(fld.in.name))
@@ -107,10 +109,10 @@ trait ClassLowering extends Pass { self: EarlyLowering =>
       Seq(
         Inst(cast,      Op.Conv(Conv.Bitcast, clsptr, obj)),
         Inst(vtable_**, Op.Elem(vtableptr, Val.Local(cast, clsptr),
-                                            Seq(Val.I32(0), Val.I32(0)))),
+                                           Seq(Val.I32(0), Val.I32(0)))),
         Inst(vtable_*,  Op.Load(vtableptr, Val.Local(vtable_**, Type.Ptr(vtableptr)))),
         Inst(meth_**,   Op.Elem(sigptr, Val.Local(vtable_*, vtableptr),
-                                         Seq(Val.I32(0), Val.I32(meth.vindex)))),
+                                        Seq(Val.I32(0), Val.I32(meth.vindex)))),
         Inst(n,         Op.Load(sigptr, Val.Local(meth_**, Type.Ptr(sigptr))))
       ).flatMap(onInst)
 
@@ -143,17 +145,17 @@ trait ClassLowering extends Pass { self: EarlyLowering =>
   override def onVal(value: Val) = super.onVal(value match {
     case Val.Null =>
       zero_i8_*
-    case Val.Class(ty) =>
+
+    case Val.Type(ty) =>
       ty match {
-        case _ if Intr.intrinsic_class.contains(ty) =>
-          Intr.intrinsic_class(ty)
-        case Type.Null =>
-          Intr.null_class
+        case _ if Intr.type_of_intrinsic.contains(ty) =>
+          Intr.type_of_intrinsic(ty)
         case Type.Class(name) =>
-          Val.Global(name + "cls", Type.Ptr(Type.I8))
+          Val.Global(name + "type", Type.Ptr(Intr.type_))
         case _ =>
           ???
       }
+
     case _ =>
       value
   })

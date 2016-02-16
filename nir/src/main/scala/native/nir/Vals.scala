@@ -18,11 +18,11 @@ sealed abstract class Val {
     case Val.Local(_, ty)     => ty
     case Val.Global(_, ty)    => ty
 
-    case Val.Unit             => Type.Unit
-    case Val.Null             => Type.Null
-    case Val.String(_)        => Intr.string
-    case Val.Size(ty)         => Type.Size
-    case Val.Class(ty)        => Intr.class_
+    case Val.Unit      => Type.Unit
+    case Val.Null      => Type.Null
+    case Val.String(_) => Intr.string
+    case Val.Size(ty)  => Type.Size
+    case Val.Type(ty)  => Intr.type_
   }
 }
 object Val {
@@ -30,7 +30,7 @@ object Val {
   final case object None                                      extends Val
   final case object True                                      extends Val
   final case object False                                     extends Val
-  final case class Zero(zeroty: Type)                         extends Val
+  final case class Zero(zeroty: nir.Type)                     extends Val
   final case class I8(value: Byte)                            extends Val
   final case class I16(value: Short)                          extends Val
   final case class I32(value: Int)                            extends Val
@@ -38,15 +38,15 @@ object Val {
   final case class F32(value: Float)                          extends Val
   final case class F64(value: Double)                         extends Val
   final case class Struct(name: nir.Global, values: Seq[Val]) extends Val
-  final case class Array(elemty: Type, values: Seq[Val])      extends Val
+  final case class Array(elemty: nir.Type, values: Seq[Val])  extends Val
   final case class Chars(value: java.lang.String)             extends Val
-  final case class Local(name: nir.Local, valty: Type)       extends Val
-  final case class Global(name: nir.Global, valty: Type)      extends Val
+  final case class Local(name: nir.Local, valty: nir.Type)    extends Val
+  final case class Global(name: nir.Global, valty: nir.Type)  extends Val
 
   // high-level
-  final case object Unit                                      extends Val
-  final case object Null                                      extends Val
-  final case class String(value: java.lang.String)            extends Val
-  final case class Size(of: Type)                             extends Val
-  final case class Class(of: Type)                            extends Val
+  final case object Unit                           extends Val
+  final case object Null                           extends Val
+  final case class String(value: java.lang.String) extends Val
+  final case class Size(of: nir.Type)              extends Val
+  final case class Type(of: nir.Type)              extends Val
 }

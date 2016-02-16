@@ -218,6 +218,6 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.NullVal   => Val.Null
     case T.StringVal => Val.String(getString)
     case T.SizeVal   => Val.Size(getType)
-    case T.ClassVal  => Val.Class(getType)
+    case T.TypeVal   => Val.Type(getType)
   }
 }

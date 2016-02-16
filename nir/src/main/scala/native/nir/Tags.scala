@@ -141,5 +141,5 @@ object Tags {
   final val NullVal   = 1 + UnitVal
   final val StringVal = 1 + NullVal
   final val SizeVal   = 1 + StringVal
-  final val ClassVal  = 1 + SizeVal
+  final val TypeVal   = 1 + SizeVal
 }

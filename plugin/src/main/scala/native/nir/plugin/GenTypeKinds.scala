@@ -109,7 +109,7 @@ trait GenTypeKinds extends SubComponent with NativeIntrinsics {
     case BuiltinClassKind(sym) =>
       sym match {
         case ObjectClass         => Intr.object_
-        case ClassClass          => Intr.class_
+        case ClassClass          => ???
         case StringClass         => Intr.string
         case BoxedCharacterClass => Intr.char
         case BoxedBooleanClass   => Intr.bool

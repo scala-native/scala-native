@@ -6,59 +6,30 @@ import scala.collection.mutable
 import native.nir._
 import native.util.ScopedVar, ScopedVar.scoped
 
-/** Eliminates:
+/** Lowers strings values into intrinsified global constant.
+ *
+ *  For a  string value:
+ *
+ *      "..."
+ *
+ *  Becomes a pair of constants:
+ *
+ *      var @_str_$N_data: [i8 x ${str.length}] =
+ *        c"..."
+ *
+ *      var @_str_$N: struct #string =
+ *        struct[#string] { #type_of_string, ${str.length}, @_str_$N_data }
+ *
+ *  And the value itself is replace with:
+ *
+ *      cast[ptr i8](@_str_$N: ptr struct #string)
+ *
+ *  Eliminates:
  *  - Val.String
  */
 trait StringLowering extends Pass {
-  private val i8_* = Type.Ptr(Type.I8)
-
-  private val defns = mutable.Map.empty[String, Defn.Var]
-  private val locals = new ScopedVar[Map[String, Local]]
-  private var id = 0
-  private def intrinsify(s: String): Val.Global = {
-    if (!defns.contains(s)) {
-      val g = Global(s".str.$id")
-      val v = Val.Chars(s)
-      val defn = Defn.Var(Seq(), g, v.ty, v)
-      defns += (s -> defn)
-      id += 1
-    }
-    val defn = defns(s)
-    Val.Global(defn.name, Type.Ptr(defn.ty))
-  }
-  private def stringsOf(op: Op): Set[String] = op.vals.flatMap(stringsOf).toSet
-  private def stringsOf(v: Val): Set[String] = v match {
-    case Val.String(s)     => Set(s)
-    case Val.Struct(_, vs) => vs.flatMap(stringsOf).toSet
-    case Val.Array(_, vs)  => vs.flatMap(stringsOf).toSet
-    case _                 => Set()
-  }
-
-  override def onPostCompilationUnit(defns: Seq[Defn]) = super.onPostCompilationUnit {
-    defns ++ this.defns.values
-  }
-
-  override def onInst(inst: Inst) = {
-    val strings = stringsOf(inst.op)
-    val collected = mutable.UnrolledBuffer.empty[(String, Local)]
-    val preamble = strings.toSeq.flatMap { s =>
-      val g  = intrinsify(s)
-      val n1 = fresh()
-      val n2 = fresh()
-      collected += (s -> n2)
-      Seq(Inst(n1, Op.Elem(Type.I8, g, Seq(Val.I32(0), Val.I32(0)))),
-          Inst(n2, Intr.call(Intr.string_fromPtr, Val.Local(n1, i8_*), Val.I32(s.length))))
-    }
-
-    scoped(
-      locals := collected.toMap
-    ) {
-      (preamble :+ inst).flatMap(super.onInst)
-    }
-  }
-
   override def onVal(value: Val) = super.onVal(value match {
-    case Val.String(v) => Val.Local(locals(v), i8_*)
+    case Val.String(v) => ???
     case _             => value
   })
 }

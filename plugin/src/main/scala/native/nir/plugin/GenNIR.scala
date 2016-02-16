@@ -414,7 +414,7 @@ abstract class GenNIR extends PluginComponent
         case StringTag =>
           Val.String(value.stringValue)
         case ClazzTag =>
-          Val.Class(genType(value.typeValue))
+          ???
       }
     }
 
@@ -428,7 +428,8 @@ abstract class GenNIR extends PluginComponent
     def genTry(retty: nir.Type, expr: Tree, catches: List[Tree], finalizer: Tree, focus: Focus) =
       focus.branchTry(retty, normal = genExpr(expr, _), exc = genCatch(retty, catches, _, _))
 
-    def genCatch(retty: nir.Type, catches: List[Tree], exc: Val, focus: Focus) = {
+    // TODO: switching on types isn't supported
+    def genCatch(retty: nir.Type, catches: List[Tree], exc: Val, focus: Focus) = ???/*{
       val cases =
         catches.map {
           case CaseDef(pat, _, body) =>
@@ -456,7 +457,7 @@ abstract class GenNIR extends PluginComponent
         defaultf = _ finish Op.Throw(exc),
         casevals = cases.map(_._1),
         casefs   = cases.map(_._2))
-    }
+    }*/
 
 
     /*{
@@ -1106,8 +1107,7 @@ abstract class GenNIR extends PluginComponent
           val arg  = genExpr(argp, self)
           arg withOp Intr.call(Intr.object_equals, self.value, arg.value)
         case GetClass() =>
-          val self = genExpr(selfp, focus)
-          self withOp Intr.call(Intr.object_getClass, self.value)
+          ???
         case ObjectCtor() =>
           focus
       }

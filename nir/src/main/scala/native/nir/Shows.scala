@@ -197,11 +197,11 @@ object Shows {
     case Val.Local(name, ty)     => sh"$name"
     case Val.Global(name, ty)    => sh"$name"
 
-    case Val.Unit                => "unit"
-    case Val.Null                => "null"
-    case Val.String(v)           => "\"" + v.replace("\"", "\\\"") + "\""
-    case Val.Size(ty)            => sh"sizeof $ty"
-    case Val.Class(ty)           => sh"classof $ty"
+    case Val.Unit      => "unit"
+    case Val.Null      => "null"
+    case Val.String(v) => "\"" + v.replace("\"", "\\\"") + "\""
+    case Val.Size(ty)  => sh"sizeof $ty"
+    case Val.Type(ty)  => sh"classof $ty"
   }
 
   implicit val showDefns: Show[Seq[Defn]] = Show { defns =>
