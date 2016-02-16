@@ -43,7 +43,7 @@ trait Pass {
     Seq(Val.Local(param.name, onType(param.ty)))
 
   def onInst(inst: Inst): Seq[Inst] =
-    Seq(Inst(inst.name, inst.attrs, onOp(inst.op)))
+    Seq(Inst(inst.name, onOp(inst.op)))
 
   def onOp(op: Op): Op = op match {
     case Op.Unreachable                         => Op.Unreachable

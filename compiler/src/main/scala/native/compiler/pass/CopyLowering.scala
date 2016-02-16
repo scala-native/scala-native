@@ -17,7 +17,7 @@ trait CopyLowering extends Pass {
 
     blocks.foreach { b =>
       b.insts.foreach {
-        case Inst(Some(n), _, Op.Copy(v)) =>
+        case Inst(Some(n), Op.Copy(v)) =>
           copies(n) = v
         case inst =>
           ()
@@ -35,7 +35,7 @@ trait CopyLowering extends Pass {
     }
 
   override def onInst(inst: Inst): Seq[Inst] = inst match {
-    case Inst(_, _, _: Op.Copy) =>
+    case Inst(_, _: Op.Copy) =>
       Seq()
     case _ =>
       super.onInst(inst)

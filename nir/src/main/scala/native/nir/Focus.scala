@@ -24,17 +24,14 @@ final case class Focus(
     copy(value = newvalue)
   }
 
-  def withOp(op: Op): Focus =
-    withOp(Seq(), op)
-
-  def withOp(attrs: Seq[Attr], op: Op): Focus = {
+  def withOp(op: Op): Focus = {
     assert(!isComplete)
     val name = fresh()
-    copy(insts = insts :+ Inst(Some(name), attrs, op), value = Val.Local(name, op.resty))
+    copy(insts = insts :+ Inst(Some(name), op), value = Val.Local(name, op.resty))
   }
 
   def finish(op: Op): Focus =
-    finish(Inst(None, Seq(), op))
+    finish(Inst(None, op))
 
   def finish(inst: Inst): Focus =
     if (isComplete) this

@@ -45,18 +45,23 @@ final class BinaryDeserializer(bb: ByteBuffer) {
 
   private def getAttrs(): Seq[Attr] = getSeq(getAttr)
   private def getAttr(): Attr = getInt match {
-    case T.UsgnAttr => Attr.Usgn
-
-    case T.InlineAttr    => Attr.Inline(getAdvice)
-    case T.OverridesAttr => Attr.Overrides(getGlobal)
+    case T.InlineAttr   => Attr.Inline(getAdvice)
+    case T.OverrideAttr => Attr.Override(getGlobal)
   }
 
   private def getBin(): Bin = getInt match {
-    case T.AddBin  => Bin.Add
-    case T.SubBin  => Bin.Sub
-    case T.MulBin  => Bin.Mul
-    case T.DivBin  => Bin.Div
-    case T.ModBin  => Bin.Mod
+    case T.IaddBin => Bin.Iadd
+    case T.FaddBin => Bin.Fadd
+    case T.IsubBin => Bin.Isub
+    case T.FsubBin => Bin.Fsub
+    case T.ImulBin => Bin.Imul
+    case T.FmulBin => Bin.Fmul
+    case T.SdivBin => Bin.Sdiv
+    case T.UdivBin => Bin.Udiv
+    case T.FdivBin => Bin.Fdiv
+    case T.SremBin => Bin.Srem
+    case T.UremBin => Bin.Urem
+    case T.FremBin => Bin.Frem
     case T.ShlBin  => Bin.Shl
     case T.LshrBin => Bin.Lshr
     case T.AshrBin => Bin.Ashr
@@ -72,12 +77,23 @@ final class BinaryDeserializer(bb: ByteBuffer) {
   private def getCase(): Case = Case(getVal, getNext)
 
   private def getComp(): Comp = getInt match {
-    case T.EqComp  => Comp.Eq
-    case T.NeqComp => Comp.Neq
-    case T.LtComp  => Comp.Lt
-    case T.LteComp => Comp.Lte
-    case T.GtComp  => Comp.Gt
-    case T.GteComp => Comp.Gte
+    case T.IeqComp => Comp.Ieq
+    case T.IneComp => Comp.Ine
+    case T.UgtComp => Comp.Ugt
+    case T.UgeComp => Comp.Uge
+    case T.UltComp => Comp.Ult
+    case T.UleComp => Comp.Ule
+    case T.SgtComp => Comp.Sgt
+    case T.SgeComp => Comp.Sge
+    case T.SltComp => Comp.Slt
+    case T.SleComp => Comp.Sle
+
+    case T.FeqComp => Comp.Feq
+    case T.FneComp => Comp.Fne
+    case T.FgtComp => Comp.Fgt
+    case T.FgeComp => Comp.Fge
+    case T.FltComp => Comp.Flt
+    case T.FleComp => Comp.Fle
   }
 
   private def getConv(): Conv = getInt match {
@@ -111,7 +127,7 @@ final class BinaryDeserializer(bb: ByteBuffer) {
   private def getGlobal(): Global = new Global(getStrings, getBool)
 
   private def getInsts(): Seq[Inst] = getSeq(getInst)
-  private def getInst(): Inst = Inst(getLocalOpt, getAttrs, getOp)
+  private def getInst(): Inst = Inst(getLocalOpt, getOp)
 
   private def getLocalOpt(): Option[Local] = getOpt(getLocal)
   private def getLocal(): Local = Local(getString, getInt)

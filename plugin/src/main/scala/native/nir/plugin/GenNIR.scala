@@ -171,16 +171,16 @@ abstract class GenNIR extends PluginComponent
       }
     }
 
-    val overridesToString = Attr.Overrides(Intr.object_toString.name)
-    val overridesEquals   = Attr.Overrides(Intr.object_equals.name)
-    val overridesHashCode = Attr.Overrides(Intr.object_hashCode.name)
+    val overridesToString = Attr.Override(Intr.object_toString.name)
+    val overridesEquals   = Attr.Override(Intr.object_equals.name)
+    val overridesHashCode = Attr.Override(Intr.object_hashCode.name)
 
     def genDefAttrs(sym: Symbol): Seq[Attr] =
       sym.overrides.collect {
         case JObject_toString => overridesToString
         case JObject_equals   => overridesEquals
         case JObject_hashCode => overridesHashCode
-        case _                => Attr.Overrides(genDefName(sym))
+        case _                => Attr.Override(genDefName(sym))
       }
 
     def genDefSig(sym: Symbol): nir.Type = sym match {
@@ -727,16 +727,18 @@ abstract class GenNIR extends PluginComponent
       }
     }
 
-    def genUnaryOp(code: Int, rightp: Tree, retty: nir.Type, focus: Focus) = {
+    def genUnaryOp(code: Int, rightp: Tree, opty: nir.Type, focus: Focus) = {
       import scalaPrimitives._
       val right = genExpr(rightp, focus)
 
-      code match {
-        case POS  => right
-        case NEG  => right.withOp(Op.Bin(Bin.Sub, retty, numOfType(0, retty), right.value))
-        case NOT  => right.withOp(Op.Bin(Bin.Xor, retty, numOfType(-1, retty), right.value))
-        case ZNOT => right.withOp(Op.Bin(Bin.Xor, retty, Val.True, right.value))
-        case _    => abort("Unknown unary operation code: " + code)
+      (opty, code) match {
+        case (Type.I(_) |
+              Type.F(_), POS)  => right
+        case (Type.F(_), NEG ) => right withOp Op.Bin(Bin.Isub, opty, numOfType( 0, opty), right.value)
+        case (Type.I(_), NEG ) => right withOp Op.Bin(Bin.Fsub, opty, numOfType( 0, opty), right.value)
+        case (Type.I(_), NOT ) => right withOp Op.Bin(Bin.Xor,  opty, numOfType(-1, opty), right.value)
+        case (Type.I(_), ZNOT) => right withOp Op.Bin(Bin.Xor,  opty, Val.True,            right.value)
+        case _                 => abort("Unknown unary operation code: " + code)
       }
     }
 
@@ -744,76 +746,97 @@ abstract class GenNIR extends PluginComponent
                     focus: Focus): Focus = {
       import scalaPrimitives._
 
-      val lty   = genType(left.tpe)
-      val rty   = genType(right.tpe)
+      val lty  = genType(left.tpe)
+      val rty  = genType(right.tpe)
+      val opty = binaryOperationType(lty, rty)
 
-      code match {
-        case ADD  => genBinaryOp(Op.Bin(Bin.Add,  _, _, _), left, right, retty, focus)
-        case SUB  => genBinaryOp(Op.Bin(Bin.Sub,  _, _, _), left, right, retty, focus)
-        case MUL  => genBinaryOp(Op.Bin(Bin.Mul,  _, _, _), left, right, retty, focus)
-        case DIV  => genBinaryOp(Op.Bin(Bin.Div,  _, _, _), left, right, retty, focus)
-        case MOD  => genBinaryOp(Op.Bin(Bin.Mod,  _, _, _), left, right, retty, focus)
-        case OR   => genBinaryOp(Op.Bin(Bin.Or,   _, _, _), left, right, retty, focus)
-        case XOR  => genBinaryOp(Op.Bin(Bin.Xor,  _, _, _), left, right, retty, focus)
-        case AND  => genBinaryOp(Op.Bin(Bin.And,  _, _, _), left, right, retty, focus)
-        case LSL  => genBinaryOp(Op.Bin(Bin.Shl,  _, _, _), left, right, retty, focus)
-        case LSR  => genBinaryOp(Op.Bin(Bin.Lshr, _, _, _), left, right, retty, focus)
-        case ASR  => genBinaryOp(Op.Bin(Bin.Ashr, _, _, _), left, right, retty, focus)
+      opty match {
+        case Type.F(_) =>
+          code match {
+            case ADD => genBinaryOp(Op.Bin(Bin.Fadd,  _, _, _), left, right, opty, focus)
+            case SUB => genBinaryOp(Op.Bin(Bin.Fsub,  _, _, _), left, right, opty, focus)
+            case MUL => genBinaryOp(Op.Bin(Bin.Fmul,  _, _, _), left, right, opty, focus)
+            case DIV => genBinaryOp(Op.Bin(Bin.Fdiv,  _, _, _), left, right, opty, focus)
+            case MOD => genBinaryOp(Op.Bin(Bin.Frem,  _, _, _), left, right, opty, focus)
 
-        case LT   => genBinaryOp(Op.Comp(Comp.Lt,  _, _, _), left, right, binaryOperationType(lty, rty), focus)
-        case LE   => genBinaryOp(Op.Comp(Comp.Lte, _, _, _), left, right, binaryOperationType(lty, rty), focus)
-        case GT   => genBinaryOp(Op.Comp(Comp.Gt,  _, _, _), left, right, binaryOperationType(lty, rty), focus)
-        case GE   => genBinaryOp(Op.Comp(Comp.Gte, _, _, _), left, right, binaryOperationType(lty, rty), focus)
+            case EQ => genBinaryOp(Op.Comp(Comp.Feq, _, _, _), left, right, opty, focus)
+            case NE => genBinaryOp(Op.Comp(Comp.Fne, _, _, _), left, right, opty, focus)
+            case LT => genBinaryOp(Op.Comp(Comp.Flt, _, _, _), left, right, opty, focus)
+            case LE => genBinaryOp(Op.Comp(Comp.Fle, _, _, _), left, right, opty, focus)
+            case GT => genBinaryOp(Op.Comp(Comp.Fgt, _, _, _), left, right, opty, focus)
+            case GE => genBinaryOp(Op.Comp(Comp.Fge, _, _, _), left, right, opty, focus)
 
-        case EQ   => genEqualityOp(left, right, ref = false, negated = false, focus)
-        case NE   => genEqualityOp(left, right, ref = false, negated = true,  focus)
-        case ID   => genEqualityOp(left, right, ref = true,  negated = false, focus)
-        case NI   => genEqualityOp(left, right, ref = true,  negated = true,  focus)
+            case _ => abort("Unknown floating point type binary operation code: " + code)
+          }
 
-        case ZOR  => genIf(left, Literal(Constant(true)), right, retty, focus)
-        case ZAND => genIf(left, right, Literal(Constant(false)), retty, focus)
+        case Type.I(_) =>
+          code match {
+            case ADD => genBinaryOp(Op.Bin(Bin.Iadd, _, _, _), left, right, opty, focus)
+            case SUB => genBinaryOp(Op.Bin(Bin.Isub, _, _, _), left, right, opty, focus)
+            case MUL => genBinaryOp(Op.Bin(Bin.Imul, _, _, _), left, right, opty, focus)
+            case DIV => genBinaryOp(Op.Bin(Bin.Sdiv, _, _, _), left, right, opty, focus)
+            case MOD => genBinaryOp(Op.Bin(Bin.Srem, _, _, _), left, right, opty, focus)
 
-        case _    => abort("Unknown binary operation code: " + code)
+            case OR  => genBinaryOp(Op.Bin(Bin.Or,   _, _, _), left, right, opty, focus)
+            case XOR => genBinaryOp(Op.Bin(Bin.Xor,  _, _, _), left, right, opty, focus)
+            case AND => genBinaryOp(Op.Bin(Bin.And,  _, _, _), left, right, opty, focus)
+            case LSL => genBinaryOp(Op.Bin(Bin.Shl,  _, _, _), left, right, opty, focus)
+            case LSR => genBinaryOp(Op.Bin(Bin.Lshr, _, _, _), left, right, opty, focus)
+            case ASR => genBinaryOp(Op.Bin(Bin.Ashr, _, _, _), left, right, opty, focus)
+
+            case EQ => genBinaryOp(Op.Comp(Comp.Ieq, _, _, _), left, right, opty, focus)
+            case NE => genBinaryOp(Op.Comp(Comp.Ine, _, _, _), left, right, opty, focus)
+            case LT => genBinaryOp(Op.Comp(Comp.Slt, _, _, _), left, right, opty, focus)
+            case LE => genBinaryOp(Op.Comp(Comp.Sle, _, _, _), left, right, opty, focus)
+            case GT => genBinaryOp(Op.Comp(Comp.Sgt, _, _, _), left, right, opty, focus)
+            case GE => genBinaryOp(Op.Comp(Comp.Sge, _, _, _), left, right, opty, focus)
+
+            case ZOR  => genIf(left, Literal(Constant(true)), right, retty, focus)
+            case ZAND => genIf(left, right, Literal(Constant(false)), retty, focus)
+
+            case _ => abort("Unknown integer type binary operation code: " + code)
+          }
+
+        case _: Type.ClassKind =>
+          code match {
+            case EQ => genClassEquality(left, right, ref = false, negated = false, focus)
+            case NE => genClassEquality(left, right, ref = false, negated = true,  focus)
+            case ID => genClassEquality(left, right, ref = true,  negated = false, focus)
+            case NI => genClassEquality(left, right, ref = true,  negated = true,  focus)
+
+            case _ => abort("Unknown reference type operation code: " + code)
+          }
+
+        case ty =>
+          abort("Uknown binary operation type: " + ty)
       }
     }
 
-    def genBinaryOp(op: (nir.Type, Val, Val) => Op, leftp: Tree, rightp: Tree, retty: nir.Type,
-                    focus: Focus): Focus = {
+    def genBinaryOp(op: (nir.Type, Val, Val) => Op, leftp: Tree, rightp: Tree,
+                    opty: nir.Type, focus: Focus): Focus = {
       val left         = genExpr(leftp, focus)
-      val leftcoerced  = genCoercion(left.value, genType(leftp.tpe), retty, left)
+      val leftcoerced  = genCoercion(left.value, genType(leftp.tpe), opty, left)
       val right        = genExpr(rightp, leftcoerced)
-      val rightcoerced = genCoercion(right.value, genType(rightp.tpe), retty, right)
+      val rightcoerced = genCoercion(right.value, genType(rightp.tpe), opty, right)
 
-      rightcoerced withOp op(retty, leftcoerced.value, rightcoerced.value)
+      rightcoerced withOp op(opty, leftcoerced.value, rightcoerced.value)
     }
 
-    def genEqualityOp(leftp: Tree, rightp: Tree,
-                      ref: Boolean, negated: Boolean,
-                      focus: Focus) = {
-      val comp = if (negated) Comp.Neq else Comp.Eq
+    def genClassEquality(leftp: Tree, rightp: Tree, ref: Boolean,
+                         negated: Boolean, focus: Focus) = {
+      val left  = genExpr(leftp, focus)
+      val right = genExpr(rightp, left)
 
-      genType(leftp.tpe) match {
-        case _: nir.Type.ClassKind =>
-          val left  = genExpr(leftp, focus)
-          val right = genExpr(rightp, left)
-
-          if (ref)
-            right withOp Op.Comp(comp, Intr.object_, left.value, right.value)
-          else {
-            val call = Intr.call(Intr.object_equals, left.value, right.value)
-            val equals = right withOp call
-            if (negated)
-              equals withOp Op.Bin(Bin.Xor, Type.Bool, Val.True, equals.value)
-            else
-              equals
-          }
-
-        case kind =>
-          val lty   = genType(leftp.tpe)
-          val rty   = genType(rightp.tpe)
-          val retty = binaryOperationType(lty, rty)
-
-          genBinaryOp(Op.Comp(comp, _, _, _), leftp, rightp, retty, focus)
+      if (ref) {
+        val comp = if (negated) Comp.Ieq else Comp.Ine
+        right withOp Op.Comp(comp, Intr.object_, left.value, right.value)
+      } else {
+        val call = Intr.call(Intr.object_equals, left.value, right.value)
+        val equals = right withOp call
+        if (negated)
+          equals withOp Op.Bin(Bin.Xor, Type.Bool, Val.True, equals.value)
+        else
+          equals
       }
     }
 
@@ -828,7 +851,7 @@ abstract class GenNIR extends PluginComponent
         if (lwidth >= rwidth) lty else rty
       case (_: nir.Type.ClassKind, _: nir.Type.ClassKind) =>
         Intr.object_
-      case (ty1 , ty2) if ty1 == ty2 =>
+      case (ty1, ty2) if ty1 == ty2 =>
         ty1
       case _ =>
         abort(s"can't perform binary opeation between $lty and $rty")
@@ -1049,12 +1072,12 @@ abstract class GenNIR extends PluginComponent
           val List(l, r) = argsp
           val left = genExpr(l, focus)
           val right = genExpr(r, left)
-          right.withOp(Seq(Attr.Usgn), Op.Bin(Bin.Div, ty, left.value, right.value))
+          right withOp Op.Bin(Bin.Udiv, ty, left.value, right.value)
         case RemainderUnsigned(ty) =>
           val List(l, r) = argsp
           val left = genExpr(l, focus)
           val right = genExpr(r, left)
-          right.withOp(Seq(Attr.Usgn), Op.Bin(Bin.Mod, ty, left.value, right.value))
+          right withOp Op.Bin(Bin.Urem, ty, left.value, right.value)
         case ToUnsigned(fromty, toty) =>
           val List(argp) = argsp
           val unboxed = genExpr(argp, focus)

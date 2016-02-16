@@ -7,7 +7,7 @@ import native.nir._
 import native.util.unsupported
 import native.util.{sh, Show}
 import native.util.Show.{Sequence => s, Indent => i, Unindent => ui, Repeat => r, Newline => nl}
-import native.compiler.analysis.CFG
+import native.compiler.analysis.ControlFlow
 import native.nir.Shows.brace
 
 object GenTextualLLVM extends GenShow {
@@ -42,9 +42,9 @@ object GenTextualLLVM extends GenShow {
   }
 
   def showBlocks(blocks: Seq[Block]) = {
-    val cfg = CFG(blocks)
-    val visited = mutable.Set.empty[CFG.Node]
-    val worklist = mutable.Stack.empty[CFG.Node]
+    val cfg = ControlFlow(blocks)
+    val visited = mutable.Set.empty[ControlFlow.Node]
+    val worklist = mutable.Stack.empty[ControlFlow.Node]
     val result = mutable.UnrolledBuffer.empty[Show.Result]
     val entry = cfg(blocks.head.name)
 
@@ -61,7 +61,7 @@ object GenTextualLLVM extends GenShow {
     r(result)
   }
 
-  def showBlock(block: Block, pred: Seq[CFG.Edge], isEntry: Boolean): Show.Result = {
+  def showBlock(block: Block, pred: Seq[ControlFlow.Edge], isEntry: Boolean): Show.Result = {
     val insts = r(block.insts, sep = nl(""))
 
     if (isEntry)
@@ -131,11 +131,11 @@ object GenTextualLLVM extends GenShow {
   }
 
   implicit val showInst: Show[Inst] = Show {
-    case Inst(None,     attrs, op) => showOp(attrs, op)
-    case Inst(Some(id), attrs, op) => sh"%$id = ${showOp(attrs, op)}"
+    case Inst(None,     op) => sh"$op"
+    case Inst(Some(id), op) => sh"%$id = $op"
   }
 
-  def showOp(attrs: Seq[Attr], op: Op): Show.Result = op match {
+  implicit val showOp: Show[Op] = Show {
     case Op.Unreachable =>
       "unreachable"
     case Op.Ret(Val.None) =>
@@ -166,49 +166,26 @@ object GenTextualLLVM extends GenShow {
       "todo: insert"
     case Op.Alloca(ty) =>
       sh"alloca $ty"
-    case Op.Bin(name, ty, l, r) =>
-      assert(attrs.isEmpty, "TODO: unsigned")
-      val bin = (name, ty) match {
-        case (Bin.Add,  Type.I(_)) => "add"
-        case (Bin.Sub,  Type.I(_)) => "sub"
-        case (Bin.Mul,  Type.I(_)) => "mul"
-        case (Bin.Div,  Type.I(_)) => "sdiv"
-        case (Bin.Mod,  Type.I(_)) => "srem"
-        case (Bin.Shl,  Type.I(_)) => "shl"
-        case (Bin.Lshr, Type.I(_)) => "lshr"
-        case (Bin.Ashr, Type.I(_)) => "ashr"
-        case (Bin.And,  Type.I(_)) => "and"
-        case (Bin.Or,   Type.I(_)) => "or"
-        case (Bin.Xor,  Type.I(_)) => "xor"
-        case (Bin.Add,  Type.F(_)) => "fadd"
-        case (Bin.Sub,  Type.F(_)) => "fsub"
-        case (Bin.Mul,  Type.F(_)) => "fmul"
-        case (Bin.Div,  Type.F(_)) => "fdiv"
-        case (Bin.Mod,  Type.F(_)) => "frem"
-        case _                     => unsupported((name, ty))
-      }
+    case Op.Bin(bin, ty, l, r) =>
       sh"$bin $l, ${justVal(r)}"
     case Op.Comp(name, ty, l, r) =>
-      assert(attrs.isEmpty, "TODO: unsigned")
-      val cmp = ty match {
-        case Type.F(_) =>
-          name match {
-            case Comp.Eq  => "fcmp oeq"
-            case Comp.Neq => "fcmp one"
-            case Comp.Lt  => "fcmp olt"
-            case Comp.Lte => "fcmp ole"
-            case Comp.Gt  => "fcmp ogt"
-            case Comp.Gte => "fcmp oge"
-          }
-        case _ =>
-          name match {
-            case Comp.Eq  => "icmp eq"
-            case Comp.Neq => "icmp ne"
-            case Comp.Lt  => "icmp slt"
-            case Comp.Lte => "icmp sle"
-            case Comp.Gt  => "icmp sgt"
-            case Comp.Gte => "icmp sge"
-          }
+      val cmp = name match {
+        case Comp.Ieq => "icmp eq"
+        case Comp.Ine => "icmp ne"
+        case Comp.Ult => "icmp ult"
+        case Comp.Ule => "icmp ule"
+        case Comp.Ugt => "icmp ugt"
+        case Comp.Uge => "icmp uge"
+        case Comp.Slt => "icmp slt"
+        case Comp.Sle => "icmp sle"
+        case Comp.Sgt => "icmp sgt"
+        case Comp.Sge => "icmp sge"
+        case Comp.Feq => "fcmp oeq"
+        case Comp.Fne => "fcmp one"
+        case Comp.Flt => "fcmp olt"
+        case Comp.Fle => "fcmp ole"
+        case Comp.Fgt => "fcmp ogt"
+        case Comp.Fge => "fcmp oge"
       }
       sh"$cmp $l, ${justVal(r)}"
     case Op.Conv(name, ty, v) =>
@@ -223,5 +200,6 @@ object GenTextualLLVM extends GenShow {
 
   implicit def showCase: Show[Case] = ???
 
+  implicit def showBin: Show[Bin] = nir.Shows.showBin
   implicit def showConv: Show[Conv] = nir.Shows.showConv
 }

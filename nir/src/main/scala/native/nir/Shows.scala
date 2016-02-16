@@ -23,9 +23,8 @@ object Shows {
   }
 
   implicit val showAttr: Show[Attr] = Show {
-    case Attr.Usgn             => "usgn"
-    case Attr.Inline(advice)   => sh"inline($advice)"
-    case Attr.Overrides(name)  => sh"overrides($name)"
+    case Attr.Inline(advice)  => sh"inline($advice)"
+    case Attr.Override(name)  => sh"override($name)"
   }
 
   implicit val showBlock: Show[Block] = Show { block =>
@@ -44,8 +43,8 @@ object Shows {
   }
 
   implicit val showInst: Show[Inst] = Show {
-    case Inst(None, attrs, op)       => sh"$attrs$op"
-    case Inst(Some(name), attrs, op) => sh"$name = $attrs$op"
+    case Inst(None, op)       => sh"$op"
+    case Inst(Some(name), op) => sh"$name = $op"
   }
 
   implicit val showNext: Show[Next] = Show {
@@ -126,11 +125,18 @@ object Shows {
   }
 
   implicit val showBin: Show[Bin] = Show {
-    case Bin.Add  => "add"
-    case Bin.Sub  => "sub"
-    case Bin.Mul  => "mul"
-    case Bin.Div  => "div"
-    case Bin.Mod  => "mod"
+    case Bin.Iadd => "iadd"
+    case Bin.Fadd => "fadd"
+    case Bin.Isub => "isub"
+    case Bin.Fsub => "fsub"
+    case Bin.Imul => "imul"
+    case Bin.Fmul => "fmul"
+    case Bin.Sdiv => "sdiv"
+    case Bin.Udiv => "udiv"
+    case Bin.Fdiv => "fdiv"
+    case Bin.Srem => "srem"
+    case Bin.Urem => "urem"
+    case Bin.Frem => "frem"
     case Bin.Shl  => "shl"
     case Bin.Lshr => "lshr"
     case Bin.Ashr => "ashr"
@@ -140,12 +146,23 @@ object Shows {
   }
 
   implicit val showComp: Show[Comp] = Show {
-    case Comp.Eq  => "eq"
-    case Comp.Neq => "neq"
-    case Comp.Lt  => "lt"
-    case Comp.Lte => "lte"
-    case Comp.Gt  => "gt"
-    case Comp.Gte => "gte"
+    case Comp.Ieq => "ieq"
+    case Comp.Ine => "ine"
+    case Comp.Ugt => "ugt"
+    case Comp.Uge => "uge"
+    case Comp.Ult => "ult"
+    case Comp.Ule => "ule"
+    case Comp.Sgt => "sgt"
+    case Comp.Sge => "sge"
+    case Comp.Slt => "slt"
+    case Comp.Sle => "sle"
+
+    case Comp.Feq => "feq"
+    case Comp.Fne => "fne"
+    case Comp.Fgt => "fgt"
+    case Comp.Fge => "fge"
+    case Comp.Flt => "flt"
+    case Comp.Fle => "fle"
   }
 
   implicit val showConv: Show[Conv] = Show {

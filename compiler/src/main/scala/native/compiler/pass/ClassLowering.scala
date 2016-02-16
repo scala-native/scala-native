@@ -71,12 +71,12 @@ trait ClassLowering extends Pass { self: EarlyLowering =>
   }
 
   override def onInst(inst: Inst) = inst match {
-    case Inst(Some(n), Seq(), Op.Alloc(Type.Class(clsname))) =>
+    case Inst(Some(n), Op.Alloc(Type.Class(clsname))) =>
       val clsValue = Val.Global(clsname + "cls", Type.Ptr(Type.I8))
       val sizeValue = Val.Size(Type.Struct(clsname))
       onInst(Inst(n, Intr.call(Intr.alloc, clsValue, sizeValue)))
 
-    case Inst(Some(n), Seq(), Op.Field(ty, obj, ExField(fld))) =>
+    case Inst(Some(n), Op.Field(ty, obj, ExField(fld))) =>
       val clsptr = Type.Ptr(Type.Struct(fld.in.name))
       val cast   = fresh()
       Seq(
@@ -96,7 +96,7 @@ trait ClassLowering extends Pass { self: EarlyLowering =>
     //     %meth_**   = elem[$sig*] %vtable_*, 0i32, ${meth.index + 1}
     //     %$n        = load[$sig*] %meth_**
     //
-    case Inst(Some(n), Seq(), Op.Method(sig, obj, ExVirtualMethod(meth))) =>
+    case Inst(Some(n), Op.Method(sig, obj, ExVirtualMethod(meth))) =>
       val sigptr    = Type.Ptr(sig)
       val clsptr    = Type.Ptr(Type.Struct(meth.in.name))
       val vtableptr = Type.Ptr(Type.Struct(meth.in.name + "vtable"))
@@ -122,13 +122,13 @@ trait ClassLowering extends Pass { self: EarlyLowering =>
     //
     //    %$n = copy @${method.name}: $sig*
     //
-    case Inst(Some(n), Seq(), Op.Method(sig, obj, ExStaticMethod(meth))) =>
+    case Inst(Some(n), Op.Method(sig, obj, ExStaticMethod(meth))) =>
       onInst(Inst(n, Op.Copy(Val.Global(meth.name, Type.Ptr(sig)))))
 
-    case Inst(n, attrs, _: Op.As) =>
+    case Inst(n, _: Op.As) =>
       ???
 
-    case Inst(n, attrs, _: Op.Is) =>
+    case Inst(n, _: Op.Is) =>
       ???
 
     case _ =>

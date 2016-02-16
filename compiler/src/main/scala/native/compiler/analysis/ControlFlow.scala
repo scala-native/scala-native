@@ -12,7 +12,7 @@ import native.nir._
  *
  *  * What are the successors of given block?
  */
-object CFG {
+object ControlFlow {
   final class Edge(val from: Node, val to: Node, val values: Seq[Val])
   final class Node(val block: Block, var pred: Seq[Edge], var succ: Seq[Edge])
   type Result = Map[Local, Node]
@@ -29,7 +29,7 @@ object CFG {
       nodes(b.name) = new Node(b, Seq(), Seq())
     }
     blocks.foreach {
-      case Block(n, _, _ :+ Inst(_, _, op)) =>
+      case Block(n, _, _ :+ Inst(_, op)) =>
         val node = nodes(n)
         op match {
           case Op.Unreachable =>

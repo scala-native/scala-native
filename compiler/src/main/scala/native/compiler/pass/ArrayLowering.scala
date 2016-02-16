@@ -12,13 +12,13 @@ trait ArrayLowering extends Pass {
   private val i8_* = Type.Ptr(Type.I8)
 
   override def onInst(instr: Inst) = instr match {
-    case Inst(_, _, _: Op.ArrAlloc) =>
+    case Inst(_, _: Op.ArrAlloc) =>
       ???
 
-    case Inst(_, _, _: Op.ArrLength) =>
+    case Inst(_, _: Op.ArrLength) =>
       ???
 
-    case Inst(_, _, _: Op.ArrElem) =>
+    case Inst(_, _: Op.ArrElem) =>
       ???
 
     case _ =>

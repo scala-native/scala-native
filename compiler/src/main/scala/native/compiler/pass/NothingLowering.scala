@@ -17,11 +17,11 @@ trait NothingLowering extends Pass {
     insts.foreach {
       case inst if inst.op.resty != Type.Nothing =>
         ninsts += inst
-      case Inst(_, attrs, call: Op.Call) if call.resty == Type.Nothing =>
-        ninsts += Inst(None, attrs, call)
+      case Inst(_, call: Op.Call) if call.resty == Type.Nothing =>
+        ninsts += Inst(None, call)
         ninsts += Inst(Op.Unreachable)
         return result()
-      case inst @ Inst(_, _, termn: Op.Cf) =>
+      case inst @ Inst(_, termn: Op.Cf) =>
         ninsts += inst
         return result()
     }

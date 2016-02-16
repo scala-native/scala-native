@@ -11,10 +11,10 @@ import native.util.unreachable
  */
 trait UnitLowering extends Pass {
   override def onInst(inst: Inst): Seq[Inst] = inst match {
-    case Inst(Some(_), attrs, op) if op.resty == Type.Unit =>
-      onInst(Inst(None, attrs, op))
-    case Inst(_, attrs, Op.Ret(v)) if v.ty == Type.Unit =>
-      onInst(Inst(None, attrs, Op.Ret(Val.None)))
+    case Inst(Some(_), op) if op.resty == Type.Unit =>
+      onInst(Inst(None, op))
+    case Inst(_, Op.Ret(v)) if v.ty == Type.Unit =>
+      onInst(Inst(None, Op.Ret(Val.None)))
     case _ =>
       super.onInst(inst)
   }

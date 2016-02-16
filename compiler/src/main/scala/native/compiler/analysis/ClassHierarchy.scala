@@ -190,7 +190,7 @@ object ClassHierarchy {
     def enrichMethod(name: Global, attrs: Seq[Attr]): Unit = {
       val node = nodes(name).asInstanceOf[Node.Method]
       attrs.foreach {
-        case Attr.Overrides(n) =>
+        case Attr.Override(n) =>
           val ovnode       = nodes(n).asInstanceOf[Node.Method]
           node.overrides   = node.overrides :+ ovnode
           ovnode.overriden = ovnode.overriden :+ node

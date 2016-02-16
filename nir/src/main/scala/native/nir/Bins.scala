@@ -3,11 +3,18 @@ package nir
 
 sealed abstract class Bin
 object Bin {
-  final case object Add  extends Bin
-  final case object Sub  extends Bin
-  final case object Mul  extends Bin
-  final case object Div  extends Bin
-  final case object Mod  extends Bin
+  final case object Iadd extends Bin
+  final case object Fadd extends Bin
+  final case object Isub extends Bin
+  final case object Fsub extends Bin
+  final case object Imul extends Bin
+  final case object Fmul extends Bin
+  final case object Sdiv extends Bin
+  final case object Udiv extends Bin
+  final case object Fdiv extends Bin
+  final case object Srem extends Bin
+  final case object Urem extends Bin
+  final case object Frem extends Bin
   final case object Shl  extends Bin
   final case object Lshr extends Bin
   final case object Ashr extends Bin

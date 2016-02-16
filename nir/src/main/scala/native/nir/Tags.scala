@@ -6,30 +6,47 @@ object Tags {
   final val HintAdvice = 1 + NoAdvice
   final val MustAdvice = 1 + HintAdvice
 
-  final val UsgnAttr      = 1 + MustAdvice
-  final val InlineAttr    = 1 + UsgnAttr
-  final val OverridesAttr = 1 + InlineAttr
+  final val InlineAttr   = 1 + MustAdvice
+  final val OverrideAttr = 1 + InlineAttr
 
-  final val AddBin  = 1 + OverridesAttr
-  final val SubBin  = 1 + AddBin
-  final val MulBin  = 1 + SubBin
-  final val DivBin  = 1 + MulBin
-  final val ModBin  = 1 + DivBin
-  final val ShlBin  = 1 + ModBin
+  final val IaddBin = 1 + OverrideAttr
+  final val FaddBin = 1 + IaddBin
+  final val IsubBin = 1 + FaddBin
+  final val FsubBin = 1 + IsubBin
+  final val ImulBin = 1 + FsubBin
+  final val FmulBin = 1 + ImulBin
+  final val SdivBin = 1 + FmulBin
+  final val UdivBin = 1 + SdivBin
+  final val FdivBin = 1 + UdivBin
+  final val SremBin = 1 + FdivBin
+  final val UremBin = 1 + SremBin
+  final val FremBin = 1 + UremBin
+  final val ShlBin  = 1 + FremBin
   final val LshrBin = 1 + ShlBin
   final val AshrBin = 1 + LshrBin
   final val AndBin  = 1 + AshrBin
   final val OrBin   = 1 + AndBin
   final val XorBin  = 1 + OrBin
 
-  final val EqComp  = 1 + XorBin
-  final val NeqComp = 1 + EqComp
-  final val LtComp  = 1 + NeqComp
-  final val LteComp = 1 + LtComp
-  final val GtComp  = 1 + LteComp
-  final val GteComp = 1 + GtComp
+  final val IeqComp = 1 + XorBin
+  final val IneComp = 1 + IeqComp
+  final val UgtComp = 1 + IneComp
+  final val UgeComp = 1 + UgtComp
+  final val UltComp = 1 + UgeComp
+  final val UleComp = 1 + UltComp
+  final val SgtComp = 1 + UleComp
+  final val SgeComp = 1 + SgtComp
+  final val SltComp = 1 + SgeComp
+  final val SleComp = 1 + SltComp
 
-  final val TruncConv    = 1 + GteComp
+  final val FeqComp = 1 + SleComp
+  final val FneComp = 1 + FeqComp
+  final val FgtComp = 1 + FneComp
+  final val FgeComp = 1 + FgtComp
+  final val FltComp = 1 + FgeComp
+  final val FleComp = 1 + FltComp
+
+  final val TruncConv    = 1 + FleComp
   final val ZextConv     = 1 + TruncConv
   final val SextConv     = 1 + ZextConv
   final val FptruncConv  = 1 + SextConv
