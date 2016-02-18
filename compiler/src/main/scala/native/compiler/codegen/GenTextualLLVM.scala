@@ -88,8 +88,8 @@ object GenTextualLLVM extends GenShow {
     case Type.I16                 => "i16"
     case Type.I32                 => "i32"
     case Type.I64                 => "i64"
-    case Type.F32                 => "f32"
-    case Type.F64                 => "f64"
+    case Type.F32                 => "float"
+    case Type.F64                 => "double"
     case Type.Array(ty, n)        => sh"[$n x $ty]"
     case Type.Ptr(ty)             => sh"${ty}*"
     case Type.Function(args, ret) => sh"$ret (${r(args, sep = ", ")})"
@@ -112,6 +112,9 @@ object GenTextualLLVM extends GenShow {
     case Val.Local(n, ty)  => sh"%$n"
     case Val.Global(n, ty) => sh"@$n"
     case Val.Size(ty) =>
+      sh"ptrtoint ($ty* getelementptr($ty, $ty* null, i32 1) to ${v.ty})"
+    case Val.ArraySize(elemty, n) =>
+      val ty = sh"{ i8*, i32, [$n x $elemty]}"
       sh"ptrtoint ($ty* getelementptr($ty, $ty* null, i32 1) to ${v.ty})"
     case Val.Cast(ty, v) =>
       val cast = (v.ty, ty) match {

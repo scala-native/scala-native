@@ -18,12 +18,13 @@ sealed abstract class Val {
     case Val.Local(_, ty)     => ty
     case Val.Global(_, ty)    => ty
 
-    case Val.Unit        => Type.Unit
-    case Val.Null        => Type.Null
-    case Val.String(_)   => Intr.string
-    case Val.Size(ty)    => Type.Size
-    case Val.Type(ty)    => Intr.type_
-    case Val.Cast(ty, _) => ty
+    case Val.Unit            => Type.Unit
+    case Val.Null            => Type.Null
+    case Val.String(_)       => Intr.string
+    case Val.Size(_)         => Type.Size
+    case Val.ArraySize(_, _) => Type.Size
+    case Val.Type(_)         => Intr.type_
+    case Val.Cast(ty, _)     => ty
   }
 }
 object Val {
@@ -45,10 +46,11 @@ object Val {
   final case class Global(name: nir.Global, valty: nir.Type)  extends Val
 
   // high-level
-  final case object Unit                           extends Val
-  final case object Null                           extends Val
-  final case class String(value: java.lang.String) extends Val
-  final case class Size(of: nir.Type)              extends Val
-  final case class Type(of: nir.Type)              extends Val
-  final case class Cast(to: nir.Type, value: Val)  extends Val
+  final case object Unit                                extends Val
+  final case object Null                                extends Val
+  final case class String(value: java.lang.String)      extends Val
+  final case class Size(of: nir.Type)                   extends Val
+  final case class ArraySize(of: nir.Type, length: Val) extends Val
+  final case class Type(of: nir.Type)                   extends Val
+  final case class Cast(to: nir.Type, value: Val)       extends Val
 }

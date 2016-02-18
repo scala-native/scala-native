@@ -32,6 +32,16 @@ object Intr {
   lazy val object_toString  = unary ("object_toString", object_,          string )
   lazy val object_hashCode  = unary ("object_hashCode", object_,          I32    )
 
+  lazy val array_bool   = struct("array_bool")
+  lazy val array_char   = struct("array_char")
+  lazy val array_byte   = struct("array_byte")
+  lazy val array_short  = struct("array_short")
+  lazy val array_int    = struct("array_int")
+  lazy val array_long   = struct("array_long")
+  lazy val array_float  = struct("array_float")
+  lazy val array_double = struct("array_double")
+  lazy val array_object = struct("array_object")
+
   lazy val monitor           = cls    ("monitor")
   lazy val monitor_enter     = unary  ("monitor_enter"    , object_,           Unit  )
   lazy val monitor_exit      = unary  ("monitor_exit"     , object_,           Unit  )
@@ -39,10 +49,11 @@ object Intr {
   lazy val monitor_notifyAll = unary  ("monitor_notifyAll", object_,           Unit  )
   lazy val monitor_wait      = ternary("monitor_wait"     , object_, I64, I32, Unit  )
 
-  lazy val type_           = struct("type")
-  lazy val type_name       = unary ("type_name"      , Type.Ptr(type_), string         )
-  lazy val type_size       = unary ("type_size"      , Type.Ptr(type_), Size           )
-  lazy val type_of         = unary ("type_of"        , object_        , Type.Ptr(type_))
+  lazy val type_     = struct("type")
+  lazy val type_name = unary ("type_name"      , Type.Ptr(type_), string         )
+  lazy val type_size = unary ("type_size"      , Type.Ptr(type_), Size           )
+  lazy val type_of   = unary ("type_of"        , object_        , Type.Ptr(type_))
+
   lazy val type_of_null    = value ("type_of_null"   , type_)
   lazy val type_of_object  = value ("type_of_object" , type_)
   lazy val type_of_monitor = value ("type_of_monitor", type_)
@@ -56,6 +67,16 @@ object Intr {
   lazy val type_of_float   = value ("type_of_float"  , type_)
   lazy val type_of_double  = value ("type_of_double" , type_)
   lazy val type_of_string  = value ("type_of_string" , type_)
+
+  lazy val type_of_array_bool   = value("type_of_array_bool"  , type_)
+  lazy val type_of_array_char   = value("type_of_array_char"  , type_)
+  lazy val type_of_array_byte   = value("type_of_array_byte"  , type_)
+  lazy val type_of_array_short  = value("type_of_array_short" , type_)
+  lazy val type_of_array_int    = value("type_of_array_int"   , type_)
+  lazy val type_of_array_long   = value("type_of_array_long"  , type_)
+  lazy val type_of_array_float  = value("type_of_array_float" , type_)
+  lazy val type_of_array_double = value("type_of_array_double", type_)
+  lazy val type_of_array_object = value("type_of_array_object", type_)
 
   lazy val bool          = cls  ("bool")
   lazy val bool_box      = unary("bool_box"     , Bool, bool  )
@@ -135,6 +156,18 @@ object Intr {
   lazy val init   = binary ("init" , Type.I32, Type.Ptr(Type.Ptr(Type.I8)), ArrayClass(string))
   lazy val yield_ = nullary("yield", Unit)
   lazy val throw_ = unary  ("throw", object_, Type.Nothing)
+
+  val array = Map[Type, Type](
+    bool    -> array_bool,
+    char    -> array_char,
+    byte    -> array_byte,
+    short   -> array_short,
+    int     -> array_int,
+    long    -> array_long,
+    float   -> array_float,
+    double  -> array_double,
+    object_ -> array_object
+  )
 
   val box = Map[Type, Val.Global](
     bool   -> bool_box  ,
@@ -238,8 +271,29 @@ object Intr {
     double    -> type_of_double
   )
 
+  lazy val type_of_array = Map[Type, Val.Global](
+    bool    -> type_of_array_bool,
+    char    -> type_of_array_char,
+    byte    -> type_of_array_byte,
+    short   -> type_of_array_short,
+    int     -> type_of_array_int,
+    long    -> type_of_array_long,
+    float   -> type_of_array_float,
+    double  -> type_of_array_double,
+    object_ -> type_of_array_object
+  )
+
   val structs = Map[Global, Seq[Type]](
-    type_.name  -> Seq(Type.Ptr(type_), Type.Ptr(I8), Type.Size),
-    string.name -> Seq(Type.Ptr(type_), I32, Type.Ptr(Type.I8))
+    array_bool.name   -> Seq(Ptr(type_), I32, Array(Bool, 0)),
+    array_char.name   -> Seq(Ptr(type_), I32, Array(I16, 0)),
+    array_byte.name   -> Seq(Ptr(type_), I32, Array(I8, 0)),
+    array_short.name  -> Seq(Ptr(type_), I32, Array(I16, 0)),
+    array_int.name    -> Seq(Ptr(type_), I32, Array(I32, 0)),
+    array_long.name   -> Seq(Ptr(type_), I32, Array(I64, 0)),
+    array_float.name  -> Seq(Ptr(type_), I32, Array(F32, 0)),
+    array_double.name -> Seq(Ptr(type_), I32, Array(F64, 0)),
+    array_object.name -> Seq(Ptr(type_), I32, Array(Ptr(I8), 0)),
+    type_.name        -> Seq(Ptr(type_), Ptr(I8), Size),
+    string.name       -> Seq(Ptr(type_), I32, Ptr(Type.I8))
   )
 }
