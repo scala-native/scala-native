@@ -37,15 +37,24 @@ final class BinaryDeserializer(bb: ByteBuffer) {
 
   private def getBool(): Boolean = get != 0
 
-  private def getAdvice(): Advice = getInt match {
-    case T.NoAdvice   => Advice.No
-    case T.HintAdvice => Advice.Hint
-    case T.MustAdvice => Advice.Must
-  }
-
   private def getAttrs(): Seq[Attr] = getSeq(getAttr)
   private def getAttr(): Attr = getInt match {
-    case T.InlineAttr   => Attr.Inline(getAdvice)
+    case T.InlineHintAttr => Attr.InlineHint
+    case T.NoInlineAttr   => Attr.NoInline
+    case T.MustInlineAttr => Attr.MustInline
+
+    case T.PrivateAttr             => Attr.Private
+    case T.InternalAttr            => Attr.Internal
+    case T.AvailableExternallyAttr => Attr.AvailableExternally
+    case T.LinkOnceAttr            => Attr.LinkOnce
+    case T.WeakAttr                => Attr.Weak
+    case T.CommonAttr              => Attr.Common
+    case T.AppendingAttr           => Attr.Appending
+    case T.ExternWeakAttr          => Attr.ExternWeak
+    case T.LinkOnceODRAttr         => Attr.LinkOnceODR
+    case T.WeakODRAttr             => Attr.WeakODR
+    case T.ExternalAttr            => Attr.External
+
     case T.OverrideAttr => Attr.Override(getGlobal)
   }
 
@@ -106,9 +115,6 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.FptosiConv   => Conv.Fptosi
     case T.UitofpConv   => Conv.Uitofp
     case T.SitofpConv   => Conv.Sitofp
-    case T.PtrtointConv => Conv.Ptrtoint
-    case T.InttoptrConv => Conv.Inttoptr
-    case T.BitcastConv  => Conv.Bitcast
   }
 
   private def getDefns(): Seq[Defn] = getSeq(getDefn)
@@ -219,5 +225,6 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.StringVal => Val.String(getString)
     case T.SizeVal   => Val.Size(getType)
     case T.TypeVal   => Val.Type(getType)
+    case T.CastVal   => Val.Cast(getType, getVal)
   }
 }

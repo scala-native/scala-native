@@ -5,7 +5,7 @@ import Type._
 
 object Intr {
   private def value(id: String, ty: Type) =
-    Val.Global(Global.intrinsic(id), ty)
+    Val.Global(Global.intrinsic(id), Type.Ptr(ty))
   private def intrinsic(id: String, args: Seq[Type], ret: Type) =
     Val.Global(Global.intrinsic(id.split("_"): _*), Type.Ptr(Type.Function(args, ret)))
   private def nullary(id: String, to: Type) =
@@ -131,7 +131,7 @@ object Intr {
   lazy val string_concat  = binary("string_concat",  string,  string,   string)
   lazy val string_length  = unary ("string_length",  string,            I32   )
 
-  lazy val alloc  = binary ("alloc", type_, Size, object_)
+  lazy val alloc  = binary ("alloc", Type.Ptr(type_), Size, object_)
   lazy val init   = binary ("init" , Type.I32, Type.Ptr(Type.Ptr(Type.I8)), ArrayClass(string))
   lazy val yield_ = nullary("yield", Unit)
   lazy val throw_ = unary  ("throw", object_, Type.Nothing)
@@ -236,5 +236,9 @@ object Intr {
     long      -> type_of_long   ,
     float     -> type_of_float  ,
     double    -> type_of_double
+  )
+
+  val structs = Map[Global, Seq[Type]](
+    type_.name -> Seq(Type.Ptr(type_), string, Type.Size)
   )
 }

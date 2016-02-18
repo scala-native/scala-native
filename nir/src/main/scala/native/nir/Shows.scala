@@ -11,20 +11,29 @@ object Shows {
     sh"$open$body$close"
   }
 
-  implicit val showAdvice: Show[Advice] = Show {
-    case Advice.No   => "no"
-    case Advice.Hint => "hint"
-    case Advice.Must => "must"
-  }
-
   implicit val showAttrs: Show[Seq[Attr]] = Show { attrs =>
     if (attrs.isEmpty) s()
     else r(attrs, sep = " ", post = " ")
   }
 
   implicit val showAttr: Show[Attr] = Show {
-    case Attr.Inline(advice)  => sh"inline($advice)"
-    case Attr.Override(name)  => sh"override($name)"
+    case Attr.InlineHint => "inlinehint"
+    case Attr.NoInline   => "noinline"
+    case Attr.MustInline => "mustinline"
+
+    case Attr.Private             => "private"
+    case Attr.Internal            => "internal"
+    case Attr.AvailableExternally => "available_externally"
+    case Attr.LinkOnce            => "linkonce"
+    case Attr.Weak                => "weak"
+    case Attr.Common              => "common"
+    case Attr.Appending           => "appending"
+    case Attr.ExternWeak          => "extern_weak"
+    case Attr.LinkOnceODR         => "linkonce_odr"
+    case Attr.WeakODR             => "weak_odr"
+    case Attr.External            => "external"
+
+    case Attr.Override(name) => sh"override($name)"
   }
 
   implicit val showBlock: Show[Block] = Show { block =>
@@ -175,9 +184,6 @@ object Shows {
     case Conv.Fptosi   => "fptosi"
     case Conv.Uitofp   => "uitofp"
     case Conv.Sitofp   => "sitofp"
-    case Conv.Ptrtoint => "ptrtoint"
-    case Conv.Inttoptr => "inttoptr"
-    case Conv.Bitcast  => "bitcast"
   }
 
   implicit val showVal: Show[Val] = Show {
@@ -197,11 +203,12 @@ object Shows {
     case Val.Local(name, ty)     => sh"$name"
     case Val.Global(name, ty)    => sh"$name"
 
-    case Val.Unit      => "unit"
-    case Val.Null      => "null"
-    case Val.String(v) => "\"" + v.replace("\"", "\\\"") + "\""
-    case Val.Size(ty)  => sh"sizeof $ty"
-    case Val.Type(ty)  => sh"classof $ty"
+    case Val.Unit        => "unit"
+    case Val.Null        => "null"
+    case Val.String(v)   => "\"" + v.replace("\"", "\\\"") + "\""
+    case Val.Size(ty)    => sh"sizeof $ty"
+    case Val.Type(ty)    => sh"typeof $ty"
+    case Val.Cast(ty, v) => sh"cast[$ty] $v"
   }
 
   implicit val showDefns: Show[Seq[Defn]] = Show { defns =>
@@ -209,6 +216,8 @@ object Shows {
   }
 
   implicit val showDefn: Show[Defn] = Show {
+    case Defn.Var(attrs, name, ty, Val.None) =>
+      sh"${attrs}var $name : $ty"
     case Defn.Var(attrs, name, ty, v) =>
       sh"${attrs}var $name : $ty = $v"
     case Defn.Declare(attrs, name, ty) =>

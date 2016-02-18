@@ -87,6 +87,7 @@ trait Pass {
     case Val.Global(n, ty)     => Val.Global(n, onType(ty))
     case Val.Size(ty)          => Val.Size(onType(ty))
     case Val.Type(ty)          => Val.Type(onType(ty))
+    case Val.Cast(ty, v)       => Val.Cast(onType(ty), onVal(v))
     case _                     => value
   }
 

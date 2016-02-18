@@ -2,12 +2,23 @@ package native
 package nir
 
 object Tags {
-  final val NoAdvice   = 1
-  final val HintAdvice = 1 + NoAdvice
-  final val MustAdvice = 1 + HintAdvice
+  final val InlineHintAttr = 1
+  final val NoInlineAttr   = 1 + InlineHintAttr
+  final val MustInlineAttr = 1 + NoInlineAttr
 
-  final val InlineAttr   = 1 + MustAdvice
-  final val OverrideAttr = 1 + InlineAttr
+  final val PrivateAttr             = 1 + MustInlineAttr
+  final val InternalAttr            = 1 + PrivateAttr
+  final val AvailableExternallyAttr = 1 + InternalAttr
+  final val LinkOnceAttr            = 1 + AvailableExternallyAttr
+  final val WeakAttr                = 1 + LinkOnceAttr
+  final val CommonAttr              = 1 + WeakAttr
+  final val AppendingAttr           = 1 + CommonAttr
+  final val ExternWeakAttr          = 1 + AppendingAttr
+  final val LinkOnceODRAttr         = 1 + ExternWeakAttr
+  final val WeakODRAttr             = 1 + LinkOnceODRAttr
+  final val ExternalAttr            = 1 + WeakODRAttr
+
+  final val OverrideAttr = 1 + ExternalAttr
 
   final val IaddBin = 1 + OverrideAttr
   final val FaddBin = 1 + IaddBin
@@ -55,11 +66,8 @@ object Tags {
   final val FptosiConv   = 1 + FptouiConv
   final val UitofpConv   = 1 + FptosiConv
   final val SitofpConv   = 1 + UitofpConv
-  final val PtrtointConv = 1 + SitofpConv
-  final val InttoptrConv = 1 + PtrtointConv
-  final val BitcastConv  = 1 + InttoptrConv
 
-  final val VarDefn      = 1 + BitcastConv
+  final val VarDefn      = 1 + SitofpConv
   final val DeclareDefn  = 1 + VarDefn
   final val DefineDefn   = 1 + DeclareDefn
   final val StructDefn   = 1 + DefineDefn
@@ -67,7 +75,19 @@ object Tags {
   final val ClassDefn    = 1 + IntefaceDefn
   final val ModuleDefn   = 1 + ClassDefn
 
-  final val UnreachableOp = 1 + ModuleDefn
+  final val PrivateLink             = 1 + ModuleDefn
+  final val InternalLink            = 1 + PrivateLink
+  final val AvailableExternallyLink = 1 + InternalLink
+  final val OnceLink                = 1 + AvailableExternallyLink
+  final val WeakLink                = 1 + OnceLink
+  final val CommonLink              = 1 + WeakLink
+  final val AppendingLink           = 1 + CommonLink
+  final val ExternWeakLink          = 1 + AppendingLink
+  final val OnceODRLink             = 1 + ExternWeakLink
+  final val WeakODRLink             = 1 + OnceODRLink
+  final val ExternalLink            = 1 + WeakODRLink
+
+  final val UnreachableOp = 1 + ExternalLink
   final val RetOp         = 1 + UnreachableOp
   final val JumpOp        = 1 + RetOp
   final val IfOp          = 1 + JumpOp
@@ -142,4 +162,5 @@ object Tags {
   final val StringVal = 1 + NullVal
   final val SizeVal   = 1 + StringVal
   final val TypeVal   = 1 + SizeVal
+  final val CastVal   = 1 + TypeVal
 }

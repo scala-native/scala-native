@@ -49,7 +49,7 @@ trait ClassLowering extends Pass { self: EarlyLowering =>
 
       val classTypeStructName = name + "type"
       val classTypeStructTy   = Type.Struct(classTypeStructName)
-      val classTypeStruct     = Defn.Struct(Seq(), classTypeStructName, vtableTys)
+      val classTypeStruct     = Defn.Struct(Seq(), classTypeStructName, Intr.type_ +: vtableTys)
 
       val classStructTy   = Type.Struct(name)
       val classStruct     = Defn.Struct(Seq(), name, Type.Ptr(classTypeStructTy) +: data)
@@ -73,42 +73,24 @@ trait ClassLowering extends Pass { self: EarlyLowering =>
 
   override def onInst(inst: Inst) = inst match {
     case Inst(Some(n), Op.Alloc(Type.Class(clsname))) =>
-      // val clsValue = Val.Global(clsname + "const", Type.Ptr(Type.I8))
-      // val sizeValue = Val.Size(Type.Struct(clsname))
-      // onInst(Inst(n, Intr.call(Intr.alloc, clsValue, sizeValue)))
-      ???
+      val typeVal = Val.Global(clsname + "const", Type.Ptr(Type.Struct(clsname + "type")))
+      val castVal = Val.Cast(Type.Ptr(Intr.type_), typeVal)
+      val sizeVal = Val.Size(Type.Struct(clsname))
+      onInst(Inst(n, Intr.call(Intr.alloc, castVal, sizeVal)))
 
     case Inst(Some(n), Op.Field(ty, obj, ExField(fld))) =>
-      val clsptr = Type.Ptr(Type.Struct(fld.in.name))
-      val cast   = fresh()
-      Seq(
-        Inst(cast, Op.Conv(Conv.Bitcast, clsptr, obj)),
-        Inst(n,    Op.Elem(ty, Val.Local(cast, clsptr), Seq(Val.I32(0), Val.I32(fld.index + 1))))
-      ).flatMap(onInst)
+      val castVal = Val.Cast(Type.Ptr(Type.Struct(fld.in.name)), obj)
+      onInst(Inst(n, Op.Elem(ty, castVal, Seq(Val.I32(0), Val.I32(fld.index + 1)))))
 
-    // Virtual method elems
-    //
-    //     %$n = method-elem[$sig] $instance, $method
-    //
-    // Lowered to:
-    //
-    //     %cast      = bitcast[struct $name*] %instance
-    //     %vtable_** = elem[struct $name.vtable*] %cast, 0i32, 0i32
-    //     %vtable_*  = load[struct $name.vtable*] vtable_**
-    //     %meth_**   = elem[$sig*] %vtable_*, 0i32, ${meth.index + 1}
-    //     %$n        = load[$sig*] %meth_**
-    //
     case Inst(Some(n), Op.Method(sig, obj, ExVirtualMethod(meth))) =>
       val sigptr    = Type.Ptr(sig)
       val clsptr    = Type.Ptr(Type.Struct(meth.in.name))
       val vtableptr = Type.Ptr(Type.Struct(meth.in.name + "vtable"))
-      val cast      = fresh()
       val vtable_** = fresh()
       val vtable_*  = fresh()
       val meth_**   = fresh()
       Seq(
-        Inst(cast,      Op.Conv(Conv.Bitcast, clsptr, obj)),
-        Inst(vtable_**, Op.Elem(vtableptr, Val.Local(cast, clsptr),
+        Inst(vtable_**, Op.Elem(vtableptr, Val.Cast(clsptr, obj),
                                            Seq(Val.I32(0), Val.I32(0)))),
         Inst(vtable_*,  Op.Load(vtableptr, Val.Local(vtable_**, Type.Ptr(vtableptr)))),
         Inst(meth_**,   Op.Elem(sigptr, Val.Local(vtable_*, vtableptr),
@@ -116,14 +98,6 @@ trait ClassLowering extends Pass { self: EarlyLowering =>
         Inst(n,         Op.Load(sigptr, Val.Local(meth_**, Type.Ptr(sigptr))))
       ).flatMap(onInst)
 
-    // Static method elems
-    //
-    //    %$n = method-elem[$sig] $instance, $method
-    //
-    // Lowered to
-    //
-    //    %$n = copy @${method.name}: $sig*
-    //
     case Inst(Some(n), Op.Method(sig, obj, ExStaticMethod(meth))) =>
       onInst(Inst(n, Op.Copy(Val.Global(meth.name, Type.Ptr(sig)))))
 

@@ -28,15 +28,24 @@ final class BinarySerializer(buffer: ByteBuffer) {
 
   private def putBool(v: Boolean) = put((if (v) 1 else 0).toByte)
 
-  private def putAdvice(adv: Advice) = adv match {
-    case Advice.No   => T.NoAdvice
-    case Advice.Hint => T.HintAdvice
-    case Advice.Must => T.MustAdvice
-  }
-
   private def putAttrs(attrs: Seq[Attr]) = putSeq(putAttr)(attrs)
   private def putAttr(attr: Attr) = attr match {
-    case Attr.Inline(adv) => putInt(T.InlineAttr); putAdvice(adv)
+    case Attr.InlineHint => putInt(T.InlineHintAttr)
+    case Attr.NoInline   => putInt(T.NoInlineAttr)
+    case Attr.MustInline => putInt(T.MustInlineAttr)
+
+    case Attr.Private             => putInt(T.PrivateAttr)
+    case Attr.Internal            => putInt(T.InternalAttr)
+    case Attr.AvailableExternally => putInt(T.AvailableExternallyAttr)
+    case Attr.LinkOnce            => putInt(T.LinkOnceAttr)
+    case Attr.Weak                => putInt(T.WeakAttr)
+    case Attr.Common              => putInt(T.CommonAttr)
+    case Attr.Appending           => putInt(T.AppendingAttr)
+    case Attr.ExternWeak          => putInt(T.ExternWeakAttr)
+    case Attr.LinkOnceODR         => putInt(T.LinkOnceODRAttr)
+    case Attr.WeakODR             => putInt(T.WeakODRAttr)
+    case Attr.External            => putInt(T.ExternalAttr)
+
     case Attr.Override(n) => putInt(T.OverrideAttr); putGlobal(n)
   }
 
@@ -104,9 +113,6 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Conv.Fptosi   => putInt(T.FptosiConv)
     case Conv.Uitofp   => putInt(T.UitofpConv)
     case Conv.Sitofp   => putInt(T.SitofpConv)
-    case Conv.Ptrtoint => putInt(T.PtrtointConv)
-    case Conv.Inttoptr => putInt(T.InttoptrConv)
-    case Conv.Bitcast  => putInt(T.BitcastConv)
   }
 
   private def putDefns(defns: Seq[Defn]): Unit = putSeq(putDefn)(defns)
@@ -262,10 +268,11 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Val.Local(n, ty)  => putInt(T.LocalVal); putLocal(n); putType(ty)
     case Val.Global(n, ty) => putInt(T.GlobalVal); putGlobal(n); putType(ty)
 
-    case Val.Unit      => putInt(T.UnitVal)
-    case Val.Null      => putInt(T.NullVal)
-    case Val.String(v) => putInt(T.StringVal); putString(v)
-    case Val.Size(ty)  => putInt(T.SizeVal); putType(ty)
-    case Val.Type(ty)  => putInt(T.TypeVal); putType(ty)
+    case Val.Unit        => putInt(T.UnitVal)
+    case Val.Null        => putInt(T.NullVal)
+    case Val.String(v)   => putInt(T.StringVal); putString(v)
+    case Val.Size(ty)    => putInt(T.SizeVal); putType(ty)
+    case Val.Type(ty)    => putInt(T.TypeVal); putType(ty)
+    case Val.Cast(ty, v) => putInt(T.CastVal); putType(ty); putVal(v)
   }
 }

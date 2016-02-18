@@ -23,10 +23,12 @@ object GenTextualLLVM extends GenShow {
   }
 
   implicit val showDefn: Show[Defn] = Show {
-    case Defn.Var(attrs, name, _, rhs) =>
-      sh"@$name = global $rhs"
+    case Defn.Var(attrs, name, ty, Val.None) =>
+      sh"@$name = ${attrs}global $ty"
+    case Defn.Var(attrs, name, _, v) =>
+      sh"@$name = ${attrs}global $v"
     case Defn.Declare(attrs, name, Type.Function(argtys, retty)) =>
-      sh"declare $retty @$name(${r(argtys, sep = ", ")})"
+      sh"${attrs}declare $retty @$name(${r(argtys, sep = ", ")})"
     case Defn.Define(attrs, name, Type.Function(_, retty), blocks) =>
       showDefine(attrs, retty, name, blocks)
     case Defn.Struct(attrs, name, tys) =>
@@ -38,7 +40,7 @@ object GenTextualLLVM extends GenShow {
   def showDefine(attrs: Seq[Attr], retty: Type, name: Global, blocks: Seq[Block]) = {
     val body = brace(i(showBlocks(blocks)))
     val params = sh"(${r(blocks.head.params: Seq[Val], sep = ", ")})"
-    sh"define $retty @$name$params $body"
+    sh"${attrs}define $retty @$name$params $body"
   }
 
   def showBlocks(blocks: Seq[Block]) = {
@@ -111,6 +113,14 @@ object GenTextualLLVM extends GenShow {
     case Val.Global(n, ty) => sh"@$n"
     case Val.Size(ty) =>
       sh"ptrtoint ($ty* getelementptr($ty, $ty* null, i32 1) to ${v.ty})"
+    case Val.Cast(ty, v) =>
+      val cast = (v.ty, ty) match {
+        case (_: Type.Ptr, to: Type.Ptr) => "bitcast"
+        case (_: Type.Ptr, to: Type.I  ) => "ptrtoint"
+        case (_: Type.I,   to: Type.Ptr) => "inttoptr"
+        case _                           => unsupported(v)
+      }
+      sh"$cast ($v to $ty)"
     case _ =>
       unsupported(v)
   }
@@ -200,6 +210,7 @@ object GenTextualLLVM extends GenShow {
 
   implicit def showCase: Show[Case] = ???
 
+  implicit def showAttrs: Show[Seq[Attr]] = nir.Shows.showAttrs
   implicit def showBin: Show[Bin] = nir.Shows.showBin
   implicit def showConv: Show[Conv] = nir.Shows.showConv
 }
