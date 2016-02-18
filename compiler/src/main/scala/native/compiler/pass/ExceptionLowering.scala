@@ -9,9 +9,8 @@ import native.util.unreachable
 /** Eliminates:
  *  - Op.{Throw, Try}
  */
-trait ExceptionLowering extends Pass {
-  override def onBlock(block: Block): Seq[Block] = {
-    val Block(n, params, init :+ last) = block
+class ExceptionLowering extends Pass {
+  override def preBlock = { case Block(n, params, init :+ last) =>
     val nlast = last.op match {
       case Op.Try(n1, n2) =>
         Seq(Inst(Op.Jump(n1)))
@@ -22,6 +21,6 @@ trait ExceptionLowering extends Pass {
         Seq(last)
     }
 
-    super.onBlock(Block(n, params, init ++ nlast))
+    Seq(Block(n, params, init ++ nlast))
   }
 }

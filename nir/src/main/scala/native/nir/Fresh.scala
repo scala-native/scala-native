@@ -9,3 +9,6 @@ final class Fresh(scope: String) {
     res
   }
 }
+object Fresh {
+  def apply(scope: String) = new Fresh(scope)
+}

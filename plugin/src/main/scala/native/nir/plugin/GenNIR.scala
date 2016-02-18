@@ -101,7 +101,6 @@ abstract class GenNIR extends PluginComponent
     def genClass(cd: ClassDef): Seq[Defn] = scoped (
       curClassSym := cd.symbol
     ) {
-      println(s"-- gen class for ${cd.symbol}")
       //println(cd)
       val sym     = cd.symbol
       val attrs   = genClassAttrs(sym)
@@ -147,7 +146,6 @@ abstract class GenNIR extends PluginComponent
     def genDef(dd: DefDef): Defn = scoped (
       curMethodSym := dd.symbol
     ) {
-      println(s"--- gen def ${dd.symbol}")
       //println(dd)
       val sym       = dd.symbol
       val attrs     = genDefAttrs(sym)

@@ -12,27 +12,43 @@ final class Compiler(opts: Opts) {
   def load(): Seq[Defn] =
     (new Loader(opts.classpath)).load(entry())
 
-  def passes(): Seq[Pass] =
-    Seq(
-      new pass.EarlyLowering(entry()),
-      new pass.LateLowering
-    )
+  def passes(assembly: Seq[Defn]): Seq[Pass] = {
+    implicit val fresh = Fresh("tx")
+    implicit val hierarchy = analysis.ClassHierarchy(assembly)
 
-  def output(module: Seq[Defn]): Unit = {
-    //serializeFile(opts.gen.apply _, module, opts.outpath)
-    serializeFile(codegen.GenTextualNIR, module, opts.outpath + ".hnir")
-    serializeFile(codegen.GenTextualLLVM, module, opts.outpath + ".ll")
+    Seq(
+      new pass.MainInjection(entry()),
+      new pass.ExceptionLowering,
+      new pass.ArrayLowering,
+      new pass.ModuleLowering,
+      new pass.ClassLowering,
+      new pass.StringLowering,
+      new pass.IntrinsicLowering,
+      new pass.NothingLowering,
+      new pass.UnitLowering,
+      new pass.CopyLowering
+    )
   }
 
+  def output(assembly: Seq[Defn]): Unit =
+    serializeFile(codegen.GenTextualLLVM, assembly, opts.outpath + ".ll")
+
+  def debug(assembly: Seq[Defn], suffix: String) =
+    serializeFile(codegen.GenTextualNIR, assembly, opts.outpath + s".$suffix.hnir")
+
   def apply(): Unit = {
-    def loop(module: Seq[Defn], passes: Seq[Pass]): Seq[Defn] =
+    def loop(assembly: Seq[Defn], passes: Seq[(Pass, Int)]): Seq[Defn] =
       passes match {
         case Seq() =>
-          module
-        case pass +: rest =>
-          loop(pass.onCompilationUnit(module), rest)
+          assembly
+        case (pass, id) +: rest =>
+          val nassembly = pass(assembly)
+          debug(nassembly, (id + 1).toString + "-" + pass.getClass.getSimpleName)
+          loop(nassembly, rest)
       }
-    output(loop(load(), passes()))
+    val assembly = load()
+    debug(assembly, "0")
+    output(loop(load(), passes(assembly).zipWithIndex))
   }
 }
 object Compiler extends App {

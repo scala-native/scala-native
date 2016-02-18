@@ -3,33 +3,33 @@ package compiler
 package pass
 
 import scala.collection.mutable
+import scala.util.control.Breaks._
 import native.nir._
-import native.util.unreachable
+import native.util.{unreachable}
 
 /** Eliminates:
  *  - Type.Nothing
  */
-trait NothingLowering extends Pass {
-  override def onBlock(block: Block): Seq[Block] = {
-    val Block(n, params, insts) = block
+class NothingLowering extends Pass {
+  override def preBlock = { case Block(n, params, insts) =>
     val ninsts = mutable.UnrolledBuffer.empty[Inst]
-    def result() = super.onBlock(Block(n, params, ninsts.toSeq))
-    insts.foreach {
-      case inst if inst.op.resty != Type.Nothing =>
-        ninsts += inst
-      case Inst(_, call: Op.Call) if call.resty == Type.Nothing =>
-        ninsts += Inst(None, call)
-        ninsts += Inst(Op.Unreachable)
-        return result()
-      case inst @ Inst(_, termn: Op.Cf) =>
-        ninsts += inst
-        return result()
+    breakable {
+      insts.foreach {
+        case inst if inst.op.resty != Type.Nothing =>
+          ninsts += inst
+        case Inst(_, call: Op.Call) if call.resty == Type.Nothing =>
+          ninsts += Inst(None, call)
+          ninsts += Inst(Op.Unreachable)
+          break
+        case inst @ Inst(_, termn: Op.Cf) =>
+          ninsts += inst
+          break
+      }
     }
-    unreachable
+    Seq(Block(n, params, ninsts.toSeq))
   }
 
-  override def onType(ty: Type): Type = super.onType(ty match {
+  override def preType = {
     case Type.Nothing => Type.Void
-    case _            => ty
-  })
+  }
 }

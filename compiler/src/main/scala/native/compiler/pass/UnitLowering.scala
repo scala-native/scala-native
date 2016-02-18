@@ -9,37 +9,30 @@ import native.util.unreachable
  *  - Val.Unit
  *  - Type.Unit
  */
-trait UnitLowering extends Pass {
-  override def onInst(inst: Inst): Seq[Inst] = inst match {
+class UnitLowering extends Pass {
+  override def preInst = {
     case Inst(Some(_), op) if op.resty == Type.Unit =>
-      onInst(Inst(None, op))
+      Seq(Inst(None, op))
     case Inst(_, Op.Ret(v)) if v.ty == Type.Unit =>
-      onInst(Inst(None, Op.Ret(Val.None)))
-    case _ =>
-      super.onInst(inst)
+      Seq(Inst(None, Op.Ret(Val.None)))
   }
 
-  override def onNext(n: Next) = super.onNext {
-    val Next(label, args) = n
+  override def preNext = { case Next(label, args) =>
     Next(label, args.filter(_.ty != Type.Unit))
   }
 
-  override def onBlock(b: Block) = super.onBlock {
-    val Block(n, params, insts) = b
-    Block(n, params.filter(_.ty != Type.Unit), insts)
+  override def preBlock = { case Block(n, params, insts) =>
+    Seq(Block(n, params.filter(_.ty != Type.Unit), insts))
   }
 
-  override def onVal(value: Val) = value match {
+  override def preVal = {
     case Val.Unit => unreachable
-    case _        => super.onVal(value)
   }
 
-  override def onType(ty: Type) = ty match {
+  override def preType = {
     case Type.Unit =>
       unreachable
     case Type.Function(params, Type.Unit) =>
-      Type.Function(params.map(onType), Type.Void)
-    case _ =>
-      super.onType(ty)
+      Type.Function(params, Type.Void)
   }
 }

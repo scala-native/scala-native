@@ -41,8 +41,8 @@ import native.nir._
  *  - Op.Module
  *  - Defn.Module
  */
-trait ModuleLowering extends Pass {
-  override def onDefn(defn: Defn) = defn match {
+class ModuleLowering(implicit fresh: Fresh) extends Pass {
+  override def preDefn = {
     case Defn.Module(attrs, name, parent, ifaces, members) =>
       val cls = Defn.Class(attrs, name, parent, ifaces, members)
       val clsty = Type.Class(name)
@@ -71,24 +71,17 @@ trait ModuleLowering extends Pass {
             ).finish(Op.Unreachable).blocks
           }
         )
-      Seq(cls, data, accessor).flatMap(onDefn)
-
-    case _ =>
-      super.onDefn(defn)
+      Seq(cls, data, accessor)
   }
 
-  override def onInst(inst: Inst) = super.onInst(inst match {
+  override def preInst = {
     case Inst(Some(n), Op.Module(name)) =>
       val accessorTy = Type.Function(Seq(), Type.Class(name))
       val accessorVal = Val.Global(name + "accessor", Type.Ptr(accessorTy))
-      Inst(n, Op.Call(accessorTy, accessorVal, Seq()))
+      Seq(Inst(n, Op.Call(accessorTy, accessorVal, Seq())))
+  }
 
-    case _ =>
-      inst
-  })
-
-  override def onType(ty: Type) = super.onType(ty match {
+  override def preType = {
     case Type.ModuleClass(n) => Type.Class(n)
-    case _                   => ty
-  })
+  }
 }

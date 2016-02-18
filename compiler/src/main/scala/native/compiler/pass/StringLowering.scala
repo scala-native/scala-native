@@ -20,16 +20,15 @@ import native.util.ScopedVar, ScopedVar.scoped
  *      var @_str_$N: struct #string =
  *        struct #string { #type_of_string, ${str.length}, @_str_$N_data }
  *
- *  And the value itself is replace with:
+ *  And the value itself is replaced with:
  *
  *      cast[ptr i8] @_str_$N
  *
  *  Eliminates:
  *  - Val.String
  */
-trait StringLowering extends Pass {
-  override def onVal(value: Val) = super.onVal(value match {
+class StringLowering extends Pass {
+  override def preVal = {
     case Val.String(v) => Val.Zero(Type.Ptr(Type.I8))
-    case _             => value
-  })
+  }
 }

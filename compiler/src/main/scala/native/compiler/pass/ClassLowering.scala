@@ -4,7 +4,7 @@ package pass
 
 import native.nir._, Shows._
 import native.util.sh
-import native.compiler.analysis.ClassHierarchy.Node
+import native.compiler.analysis.ClassHierarchy
 
 /** Lowers classes, methods and fields down to
  *  structs with accompanying vtables.
@@ -35,14 +35,14 @@ import native.compiler.analysis.ClassHierarchy.Node
  *  - Op.{Alloc, Field, Method, As, Is}
  *  - Val.{Null, Class}
  */
-trait ClassLowering extends Pass { self: EarlyLowering =>
+class ClassLowering(implicit cha: ClassHierarchy.Result, fresh: Fresh) extends Pass {
   private val i8_*      = Type.Ptr(Type.I8)
   private val zero_i8_* = Val.Zero(i8_*)
 
-  override def onDefn(defn: Defn) = defn match {
+  override def preDefn = {
     case Defn.Class(_, name, _, _, members) =>
       val methods   = members.collect { case defn: Defn.Define => defn }
-      val cls       = cha(name).asInstanceOf[Node.Class]
+      val cls       = cha(name).asInstanceOf[ClassHierarchy.Node.Class]
       val data      = cls.fields.map(_.ty)
       val vtable    = cls.vtable
       val vtableTys = vtable.map(_.ty)
@@ -54,7 +54,7 @@ trait ClassLowering extends Pass { self: EarlyLowering =>
       val classStructTy   = Type.Struct(name)
       val classStruct     = Defn.Struct(Seq(), name, Type.Ptr(classTypeStructTy) +: data)
 
-      val className = Val.String(name.toString)
+      val className = Val.String(name.parts.head)
       val classSize = Val.Size(classStructTy)
       val classInfo = Val.Struct(Intr.type_.name, Seq(Intr.type_of_type, className, classSize))
 
@@ -62,25 +62,22 @@ trait ClassLowering extends Pass { self: EarlyLowering =>
       val classConstVal  = Val.Struct(classTypeStructName, classInfo +: vtable)
       val classConst     = Defn.Var(Seq(), classConstName, classTypeStructTy, classConstVal)
 
-      (Seq(classTypeStruct, classStruct, classConst) ++ methods).flatMap(onDefn)
+      Seq(classTypeStruct, classStruct, classConst) ++ methods
 
     case _: Defn.Interface =>
       ???
-
-    case _ =>
-      super.onDefn(defn)
   }
 
-  override def onInst(inst: Inst) = inst match {
+  override def preInst =  {
     case Inst(Some(n), Op.Alloc(Type.Class(clsname))) =>
       val typeVal = Val.Global(clsname + "const", Type.Ptr(Type.Struct(clsname + "type")))
       val castVal = Val.Cast(Type.Ptr(Intr.type_), typeVal)
       val sizeVal = Val.Size(Type.Struct(clsname))
-      onInst(Inst(n, Intr.call(Intr.alloc, castVal, sizeVal)))
+      Seq(Inst(n, Intr.call(Intr.alloc, castVal, sizeVal)))
 
     case Inst(Some(n), Op.Field(ty, obj, ExField(fld))) =>
       val castVal = Val.Cast(Type.Ptr(Type.Struct(fld.in.name)), obj)
-      onInst(Inst(n, Op.Elem(ty, castVal, Seq(Val.I32(0), Val.I32(fld.index + 1)))))
+      Seq(Inst(n, Op.Elem(ty, castVal, Seq(Val.I32(0), Val.I32(fld.index + 1)))))
 
     case Inst(Some(n), Op.Method(sig, obj, ExVirtualMethod(meth))) =>
       val sigptr    = Type.Ptr(sig)
@@ -96,27 +93,23 @@ trait ClassLowering extends Pass { self: EarlyLowering =>
         Inst(meth_**,   Op.Elem(sigptr, Val.Local(vtable_*, vtableptr),
                                         Seq(Val.I32(0), Val.I32(meth.vindex)))),
         Inst(n,         Op.Load(sigptr, Val.Local(meth_**, Type.Ptr(sigptr))))
-      ).flatMap(onInst)
+      )
 
     case Inst(Some(n), Op.Method(sig, obj, ExStaticMethod(meth))) =>
-      onInst(Inst(n, Op.Copy(Val.Global(meth.name, Type.Ptr(sig)))))
+      Seq(Inst(n, Op.Copy(Val.Global(meth.name, Type.Ptr(sig)))))
 
     case Inst(n, _: Op.As) =>
       ???
 
     case Inst(n, _: Op.Is) =>
       ???
-
-    case _ =>
-      super.onInst(inst)
   }
 
-  override def onType(ty: Type) = super.onType(ty match {
+  override def preType = {
     case _: Type.ClassKind => i8_*
-    case _                 => ty
-  })
+  }
 
-  override def onVal(value: Val) = super.onVal(value match {
+  override def preVal = {
     case Val.Null =>
       zero_i8_*
 
@@ -129,29 +122,27 @@ trait ClassLowering extends Pass { self: EarlyLowering =>
         case _ =>
           ???
       }
+  }
 
-    case _ =>
-      value
-  })
 
   object ExVirtualMethod {
-    def unapply(name: Global): Option[Node.Method] =
+    def unapply(name: Global): Option[ClassHierarchy.Node.Method] =
       cha.get(name).collect {
-        case meth: Node.Method if meth.isVirtual => meth
+        case meth: ClassHierarchy.Node.Method if meth.isVirtual => meth
       }
   }
 
   object ExStaticMethod {
-    def unapply(name: Global): Option[Node.Method] =
+    def unapply(name: Global): Option[ClassHierarchy.Node.Method] =
       cha.get(name).collect {
-        case meth: Node.Method if meth.isStatic => meth
+        case meth: ClassHierarchy.Node.Method if meth.isStatic => meth
       }
   }
 
   object ExField {
-    def unapply(name: Global): Option[Node.Field] =
+    def unapply(name: Global): Option[ClassHierarchy.Node.Field] =
       cha.get(name).collect {
-        case fld: Node.Field => fld
+        case fld: ClassHierarchy.Node.Field => fld
       }
   }
 }

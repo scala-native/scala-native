@@ -239,6 +239,7 @@ object Intr {
   )
 
   val structs = Map[Global, Seq[Type]](
-    type_.name -> Seq(Type.Ptr(type_), string, Type.Size)
+    type_.name  -> Seq(Type.Ptr(type_), Type.Ptr(I8), Type.Size),
+    string.name -> Seq(Type.Ptr(type_), I32, Type.Ptr(Type.I8))
   )
 }

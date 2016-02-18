@@ -7,24 +7,27 @@ import native.nir._
 
 /** Re-wires intrinsic references to corresponding runtime functions and values.
  */
-trait IntrinsicLowering extends Pass {
+class IntrinsicLowering extends Pass {
   private val added   = mutable.Set.empty[Global]
   private val externs = mutable.UnrolledBuffer.empty[Defn]
 
-  override def onPostCompilationUnit(defns: Seq[Defn]): Seq[Defn] = {
-    val structs = Intr.structs.toSeq.map {
-      case (g, fields) => Defn.Struct(Seq(), Global("nrt_" + g.parts.mkString("_")), fields)
+  private def nrt(g: Global) =
+    Global(("nrt" +: g.parts): _*)
+
+  override def preAssembly = { case defns =>
+    defns ++ Intr.structs.toSeq.map {
+      case (g, fields) =>
+        Defn.Struct(Seq(), Global(("nrt" +: g.parts): _*), fields)
     }
-    val extras = structs ++ externs
-    super.onPostCompilationUnit(onScope(extras) ++ defns)
   }
 
-  private def linkify(g: Global) =
-    Global("nrt_" + g.parts.mkString("_"))
+  override def postAssembly = { case defns =>
+    defns ++ externs
+  }
 
-  override def onVal(value: Val) = super.onVal(value match {
+  override def postVal = {
     case Val.Global(g, ptrty @ Type.Ptr(ty)) if g.isIntrinsic =>
-      val n = linkify(g)
+      val n = nrt(g)
       if (!added.contains(g)) {
         ty match {
           case _: Type.Function =>
@@ -35,16 +38,13 @@ trait IntrinsicLowering extends Pass {
         added += g
       }
       Val.Global(n, ptrty)
-    case Val.Struct(g, vals) if g.isIntrinsic =>
-      Val.Struct(linkify(g), vals)
-    case _ =>
-      value
-  })
 
-  override def onType(ty: Type) = super.onType(ty match {
-    case Type.Struct(g) if g.isIntrinsic =>
-      Type.Struct(linkify(g))
-    case _ =>
-      ty
-  })
+    case Val.Struct(g, vals) if g.isIntrinsic =>
+      Val.Struct(nrt(g), vals)
+  }
+
+  override def preType = {
+    case ty @ Type.Struct(g) if g.isIntrinsic =>
+      Type.Struct(nrt(g))
+  }
 }
