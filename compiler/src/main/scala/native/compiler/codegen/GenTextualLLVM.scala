@@ -129,8 +129,8 @@ object GenTextualLLVM extends GenShow {
   }
 
   implicit val showInst: Show[Inst] = Show {
-    case Inst(None,     op) => sh"$op"
-    case Inst(Some(id), op) => sh"%$id = $op"
+    case Inst(Local.None, op) => sh"$op"
+    case Inst(name, op)       => sh"%$name = $op"
   }
 
   implicit val showOp: Show[Op] = Show {

@@ -15,11 +15,6 @@ final class BinarySerializer(buffer: ByteBuffer) {
     seq.foreach(putT)
   }
 
-  private def putOpt[T](putT: T => Unit)(opt: Option[T]) = opt match {
-    case None    => put(0.toByte)
-    case Some(v) => put(1.toByte); putT(v)
-  }
-
   private def putStrings(vs: Seq[String]) = putSeq(putString)(vs)
   private def putString(v: String) = {
     val bytes = v.getBytes
@@ -137,7 +132,6 @@ final class BinarySerializer(buffer: ByteBuffer) {
   }
 
   private def putGlobals(globals: Seq[Global]): Unit = putSeq(putGlobal)(globals)
-  private def putGlobalOpt(globalopt: Option[Global]): Unit = putOpt(putGlobal)(globalopt)
   private def putGlobal(global: Global): Unit = {
     putStrings(global.parts)
     putBool(global.isIntrinsic)
@@ -145,11 +139,10 @@ final class BinarySerializer(buffer: ByteBuffer) {
 
   private def putInsts(insts: Seq[Inst]) = putSeq(putInst)(insts)
   private def putInst(inst: Inst) = {
-    putLocalOpt(inst.name)
+    putLocal(inst.name)
     putOp(inst.op)
   }
 
-  private def putLocalOpt(opt: Option[Local]): Unit = putOpt(putLocal)(opt)
   private def putLocal(local: Local): Unit = { putString(local.scope); putInt(local.id) }
 
   private def putNexts(nexts: Seq[Next]) = putSeq(putNext)(nexts)

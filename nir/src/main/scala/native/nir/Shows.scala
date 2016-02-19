@@ -52,8 +52,8 @@ object Shows {
   }
 
   implicit val showInst: Show[Inst] = Show {
-    case Inst(None, op)       => sh"$op"
-    case Inst(Some(name), op) => sh"$name = $op"
+    case Inst(Local.None, op) => sh"$op"
+    case Inst(name, op)       => sh"$name = $op"
   }
 
   implicit val showNext: Show[Next] = Show {

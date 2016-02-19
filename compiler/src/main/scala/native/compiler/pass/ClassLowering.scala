@@ -67,7 +67,7 @@ class ClassLowering(implicit cha: ClassHierarchy.Result, fresh: Fresh) extends P
   }
 
   override def preInst =  {
-    case Inst(Some(n), Op.Alloc(Type.Class(clsname))) =>
+    case Inst(n, Op.Alloc(Type.Class(clsname))) =>
       val clstype = Val.Global(clsname + "const", Type.Ptr(Type.Struct(clsname + "type")))
       val typeptr = Type.Ptr(Intr.type_)
       val cast    = Val.Local(fresh(), typeptr)
@@ -78,14 +78,14 @@ class ClassLowering(implicit cha: ClassHierarchy.Result, fresh: Fresh) extends P
         Inst(n,         Intr.call(Intr.alloc, cast, size))
       )
 
-    case Inst(Some(n), Op.Field(ty, obj, ExField(fld))) =>
+    case Inst(n, Op.Field(ty, obj, ExField(fld))) =>
       val cast = Val.Local(fresh(), Type.Size)
       Seq(
         Inst(cast.name, Op.Conv(Conv.Bitcast, Type.Ptr(Type.Struct(fld.in.name)), obj)),
         Inst(n,         Op.Elem(ty, cast, Seq(Val.I32(0), Val.I32(fld.index + 1))))
       )
 
-    case Inst(Some(n), Op.Method(sig, obj, ExVirtualMethod(meth))) =>
+    case Inst(n, Op.Method(sig, obj, ExVirtualMethod(meth))) =>
       val sigptr     = Type.Ptr(sig)
       val clsptr     = Type.Ptr(Type.Struct(meth.in.name))
       val typeptrty  = Type.Ptr(Type.Struct(meth.in.name + "type"))
@@ -101,7 +101,7 @@ class ClassLowering(implicit cha: ClassHierarchy.Result, fresh: Fresh) extends P
         Inst(n,               Op.Load(sigptr, methptrptr))
       )
 
-    case Inst(Some(n), Op.Method(sig, obj, ExStaticMethod(meth))) =>
+    case Inst(n, Op.Method(sig, obj, ExStaticMethod(meth))) =>
       Seq(
         Inst(n, Op.Copy(Val.Global(meth.name, Type.Ptr(sig))))
       )
@@ -112,12 +112,12 @@ class ClassLowering(implicit cha: ClassHierarchy.Result, fresh: Fresh) extends P
     case Inst(n, _: Op.Is) =>
       ???
 
-    case Inst(Some(n), Op.TypeOf(ty)) if Intr.type_of_intrinsic.contains(ty) =>
+    case Inst(n, Op.TypeOf(ty)) if Intr.type_of_intrinsic.contains(ty) =>
       Seq(
         Inst(n, Op.Copy(Intr.type_of_intrinsic(ty)))
       )
 
-    case Inst(Some(n), Op.TypeOf(Type.Class(name))) =>
+    case Inst(n, Op.TypeOf(Type.Class(name))) =>
       val clstype  = Type.Struct(name + "type")
       val clsconst = Val.Global(name + "const", Type.Ptr(clstype))
       Seq(

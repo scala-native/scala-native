@@ -24,10 +24,6 @@ final class BinaryDeserializer(bb: ByteBuffer) {
   private def getSeq[T](getT: => T): Seq[T] =
     (1 to getInt).map(_ => getT).toSeq
 
-  private def getOpt[T](getT: => T): Option[T] =
-    if (get == 0) None
-    else Some(getT)
-
   private def getStrings(): Seq[String] = getSeq(getString)
   private def getString(): String = {
     val arr = new Array[Byte](getInt)
@@ -132,13 +128,11 @@ final class BinaryDeserializer(bb: ByteBuffer) {
   }
 
   private def getGlobals(): Seq[Global] = getSeq(getGlobal)
-  private def getGlobalOpt(): Option[Global] = getOpt(getGlobal)
   private def getGlobal(): Global = new Global(getStrings, getBool)
 
   private def getInsts(): Seq[Inst] = getSeq(getInst)
-  private def getInst(): Inst = Inst(getLocalOpt, getOp)
+  private def getInst(): Inst = Inst(getLocal, getOp)
 
-  private def getLocalOpt(): Option[Local] = getOpt(getLocal)
   private def getLocal(): Local = Local(getString, getInt)
 
   private def getNexts(): Seq[Next] = getSeq(getNext)

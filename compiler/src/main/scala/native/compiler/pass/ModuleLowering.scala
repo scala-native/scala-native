@@ -76,7 +76,7 @@ class ModuleLowering(implicit fresh: Fresh) extends Pass {
   }
 
   override def preInst = {
-    case Inst(Some(n), Op.Module(name)) =>
+    case Inst(n, Op.Module(name)) =>
       val accessorTy = Type.Function(Seq(), Type.Class(name))
       val accessorVal = Val.Global(name + "accessor", Type.Ptr(accessorTy))
       Seq(Inst(n, Op.Call(accessorTy, accessorVal, Seq())))

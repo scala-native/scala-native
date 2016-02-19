@@ -29,7 +29,7 @@ import native.util.ScopedVar, ScopedVar.scoped
  */
 class StringLowering extends Pass {
   override def preInst = {
-    case Inst(Some(n), Op.StringOf(v)) =>
+    case Inst(n, Op.StringOf(v)) =>
       ???
   }
 }

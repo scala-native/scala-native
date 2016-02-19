@@ -18,7 +18,7 @@ class NothingLowering extends Pass {
         case inst if inst.op.resty != Type.Nothing =>
           ninsts += inst
         case Inst(_, call: Op.Call) if call.resty == Type.Nothing =>
-          ninsts += Inst(None, call)
+          ninsts += Inst(call)
           ninsts += Inst(Op.Unreachable)
           break
         case inst @ Inst(_, termn: Op.Cf) =>
