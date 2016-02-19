@@ -8,16 +8,16 @@ import native.util.ScopedVar, ScopedVar.scoped
 
 /** Lowers strings values into intrinsified global constant.
  *
- *  For a  string value:
+ *  Every string-of op:
  *
  *      %n = string-of "..."
  *
- *  Becomes a pair of constants:
+ *  Becomes a reference to constants:
  *
- *      var @_str_$N_data: [i8 x ${str.length}] =
+ *      const @_str_$N_data: [i8 x ${str.length}] =
  *        c"..."
  *
- *      var @_str_$N: struct #string =
+ *      const @_str_$N: struct #string =
  *        struct #string { #type_of_string, ${str.length}, @_str_$N_data }
  *
  *  And the value itself is replaced with:

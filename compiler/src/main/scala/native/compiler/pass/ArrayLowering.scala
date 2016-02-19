@@ -33,11 +33,9 @@ class ArrayLowering(implicit fresh: Fresh) extends Pass {
     case Inst(n, Op.ArrElem(ty, arr, idx)) =>
       val arrptr = Type.Ptr(Intr.array.get(ty).getOrElse(Intr.array_object))
       val cast   = Val.Local(fresh(), arrptr)
-      val elem   = Val.Local(fresh(), Type.Ptr(ty))
       Seq(
         Inst(cast.name, Op.Conv(Conv.Bitcast, arrptr, arr)),
-        Inst(elem.name, Op.Elem(ty, cast, Seq(Val.I32(0), Val.I32(2), idx))),
-        Inst(n,         Op.Load(ty, elem))
+        Inst(n,         Op.Elem(ty, cast, Seq(Val.I32(0), Val.I32(2), idx)))
       )
   }
 

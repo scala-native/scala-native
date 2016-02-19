@@ -3,7 +3,7 @@ package compiler
 package pass
 
 import native.nir._, Shows._
-import native.util.sh
+import native.util.{sh, unsupported}
 import native.compiler.analysis.ClassHierarchy
 
 /** Lowers classes, methods and fields down to
@@ -22,10 +22,8 @@ import native.compiler.analysis.ClassHierarchy
  *      struct $name_type { #type, .. ptr $allvirtmty }
  *      struct $name { ptr $name_type, .. $allfty }
  *
- *      var $name_const: struct $name_type =
- *        struct[$name_type](
- *          struct[#type](#type_of_type, ${cls.name}, ${cls.size})
- *          ..$mname)
+ *      const $name_const: struct $name_type =
+ *        struct[$name_type](#type_of_type, ..$mname)
  *
  *      .. def $mname: $mty = $body
  *
@@ -41,7 +39,6 @@ class ClassLowering(implicit cha: ClassHierarchy.Result, fresh: Fresh) extends P
 
   override def preDefn = {
     case Defn.Class(_, name, _, _, members) =>
-      val methods   = members.collect { case defn: Defn.Define => defn }
       val cls       = cha(name).asInstanceOf[ClassHierarchy.Node.Class]
       val data      = cls.fields.map(_.ty)
       val vtable    = cls.vtable
@@ -49,16 +46,17 @@ class ClassLowering(implicit cha: ClassHierarchy.Result, fresh: Fresh) extends P
 
       val classTypeStructName = name + "type"
       val classTypeStructTy   = Type.Struct(classTypeStructName)
-      val classTypeStruct     = Defn.Struct(Seq(), classTypeStructName, Intr.type_ +: vtableTys)
+      val classTypeStruct     = Defn.Struct(Seq(), classTypeStructName,
+                                            Type.Ptr(Intr.type_) +: vtableTys)
 
-      val classStructTy   = Type.Struct(name)
-      val classStruct     = Defn.Struct(Seq(), name, Type.Ptr(classTypeStructTy) +: data)
-
-      val classInfo = Val.Struct(Intr.type_.name, Seq(Intr.type_of_type))
+      val classStructTy = Type.Struct(name)
+      val classStruct   = Defn.Struct(Seq(), name, Type.Ptr(classTypeStructTy) +: data)
 
       val classConstName = name + "const"
-      val classConstVal  = Val.Struct(classTypeStructName, classInfo +: vtable)
-      val classConst     = Defn.Var(Seq(), classConstName, classTypeStructTy, classConstVal)
+      val classConstVal  = Val.Struct(classTypeStructName, Intr.type_of_type +: vtable)
+      val classConst     = Defn.Const(Seq(), classConstName, classTypeStructTy, classConstVal)
+
+      val methods = members.collect { case defn: Defn.Define => defn }
 
       Seq(classTypeStruct, classStruct, classConst) ++ methods
 

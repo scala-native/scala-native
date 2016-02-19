@@ -117,6 +117,8 @@ final class BinarySerializer(buffer: ByteBuffer) {
   private def putDefn(value: Defn): Unit = value match {
     case Defn.Var(attrs, name, ty, value) =>
       putInt(T.VarDefn); putAttrs(attrs); putGlobal(name); putType(ty); putVal(value)
+    case Defn.Const(attrs, name, ty, value) =>
+      putInt(T.ConstDefn); putAttrs(attrs); putGlobal(name); putType(ty); putVal(value)
     case Defn.Declare(attrs, name, ty) =>
       putInt(T.DeclareDefn); putAttrs(attrs); putGlobal(name); putType(ty)
     case Defn.Define(attrs, name, ty, blocks) =>

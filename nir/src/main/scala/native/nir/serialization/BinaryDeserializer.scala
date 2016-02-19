@@ -119,6 +119,7 @@ final class BinaryDeserializer(bb: ByteBuffer) {
   private def getDefns(): Seq[Defn] = getSeq(getDefn)
   private def getDefn(): Defn = getInt match {
     case T.VarDefn      => Defn.Var(getAttrs, getGlobal, getType, getVal)
+    case T.ConstDefn    => Defn.Const(getAttrs, getGlobal, getType, getVal)
     case T.DeclareDefn  => Defn.Declare(getAttrs, getGlobal, getType)
     case T.DefineDefn   => Defn.Define(getAttrs, getGlobal, getType, getBlocks)
     case T.StructDefn   => Defn.Struct(getAttrs, getGlobal, getTypes)

@@ -22,14 +22,14 @@ import native.nir._
  *
  *      var ${name}_data: class $name = null
  *
- *      def ${name}_accessor: () => class $name = {
+ *      def ${name}_accessor: () => class $name {
  *        %entry:
  *          %prev = load[class $name] ${name}_data
- *          %cond = eq[object] prev, null
+ *          %cond = ieq[object] prev, zero[object]
  *          if %cond then %thenp else %elsep
  *        %thenp:
- *          %alloc = obj-alloc[class $name]
- *          call ${name}_init(%new)
+ *          %alloc = alloc[class $name]
+ *          call ${name}_init(%alloc)
  *          store[$name] ${name}_data, %alloc
  *          ret %alloc
  *        %elsep:

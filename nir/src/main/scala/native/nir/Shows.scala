@@ -52,8 +52,8 @@ object Shows {
   }
 
   implicit val showInst: Show[Inst] = Show {
-    case Inst(Local.None, op) => sh"$op"
-    case Inst(name, op)       => sh"$name = $op"
+    case Inst(Local.empty, op) => sh"$op"
+    case Inst(name, op)        => sh"$name = $op"
   }
 
   implicit val showNext: Show[Next] = Show {
@@ -202,7 +202,7 @@ object Shows {
     case Val.None                => ""
     case Val.True                => "true"
     case Val.False               => "false"
-    case Val.Zero(ty)            => sh"zero $ty"
+    case Val.Zero(ty)            => sh"zero[$ty]"
     case Val.I8(value)           => sh"${value}i8"
     case Val.I16(value)          => sh"${value}i16"
     case Val.I32(value)          => sh"${value}i32"
@@ -225,6 +225,10 @@ object Shows {
       sh"${attrs}var $name : $ty"
     case Defn.Var(attrs, name, ty, v) =>
       sh"${attrs}var $name : $ty = $v"
+    case Defn.Const(attrs, name, ty, Val.None) =>
+      sh"${attrs}const $name : $ty"
+    case Defn.Const(attrs, name, ty, v) =>
+      sh"${attrs}const $name : $ty = $v"
     case Defn.Declare(attrs, name, ty) =>
       sh"${attrs}def $name : $ty"
     case Defn.Define(attrs, name, ty, blocks) =>

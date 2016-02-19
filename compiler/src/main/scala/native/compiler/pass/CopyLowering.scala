@@ -17,9 +17,7 @@ class CopyLowering extends Pass {
 
     blocks.foreach { b =>
       b.insts.foreach {
-        case Inst(Local.None, Op.Copy(_)) =>
-          ()
-        case Inst(n, Op.Copy(v)) =>
+        case Inst(n, Op.Copy(v)) if n.nonEmpty =>
           copies(n) = v
         case inst =>
           ()

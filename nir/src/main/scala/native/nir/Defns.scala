@@ -7,6 +7,10 @@ object Defn {
                        name: Global,
                        ty: Type,
                        value: Val) extends Defn
+  final case class Const(attrs: Seq[Attr],
+                         name: Global,
+                         ty: Type,
+                         value: Val) extends Defn
   final case class Declare(attrs: Seq[Attr],
                            name: Global,
                            ty: Type) extends Defn

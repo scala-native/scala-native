@@ -51,6 +51,8 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
       val post = pre match {
         case defn @ Defn.Var(_, _, ty, value) =>
           defn.copy(ty = txType(ty), value = txVal(value))
+        case defn @ Defn.Const(_, _, ty, value) =>
+          defn.copy(ty = txType(ty), value = txVal(value))
         case defn @ Defn.Declare(_, _, ty) =>
           defn.copy(ty = txType(ty))
         case defn @ Defn.Define(_, _, ty, blocks) =>

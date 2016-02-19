@@ -14,9 +14,10 @@ object GenTextualLLVM extends GenShow {
   implicit val showDefns: Show[Seq[Defn]] = Show { defns =>
     val sorted = defns.sortBy {
       case _: Defn.Struct  => 1
-      case _: Defn.Var     => 2
-      case _: Defn.Declare => 3
-      case _: Defn.Define  => 4
+      case _: Defn.Const   => 2
+      case _: Defn.Var     => 3
+      case _: Defn.Declare => 4
+      case _: Defn.Define  => 5
       case _               => -1
     }
     r(sorted, sep = nl(""))
@@ -27,6 +28,10 @@ object GenTextualLLVM extends GenShow {
       sh"@$name = ${attrs}global $ty"
     case Defn.Var(attrs, name, _, v) =>
       sh"@$name = ${attrs}global $v"
+    case Defn.Const(attrs, name, ty, Val.None) =>
+      sh"@$name = ${attrs}constant $ty"
+    case Defn.Const(attrs, name, _, v) =>
+      sh"@$name = ${attrs}constant $v"
     case Defn.Declare(attrs, name, Type.Function(argtys, retty)) =>
       sh"${attrs}declare $retty @$name(${r(argtys, sep = ", ")})"
     case Defn.Define(attrs, name, Type.Function(_, retty), blocks) =>
@@ -129,8 +134,8 @@ object GenTextualLLVM extends GenShow {
   }
 
   implicit val showInst: Show[Inst] = Show {
-    case Inst(Local.None, op) => sh"$op"
-    case Inst(name, op)       => sh"%$name = $op"
+    case Inst(Local.empty, op) => sh"$op"
+    case Inst(name, op)        => sh"%$name = $op"
   }
 
   implicit val showOp: Show[Op] = Show {
