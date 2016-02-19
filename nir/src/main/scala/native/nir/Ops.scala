@@ -29,6 +29,8 @@ sealed abstract class Op {
     case Op.ArrLength(_)      => Type.I32
     case Op.ArrElem(ty, _, _) => Type.Ptr(ty)
     case Op.Copy(v)           => v.ty
+    case Op.SizeOf(_)         => Type.Size
+    case Op.ArrSizeOf(_, _)   => Type.Size
   }
 
   final def vals: Seq[Val] = this match {
@@ -63,6 +65,8 @@ sealed abstract class Op {
     case Op.ArrLength(v)       => Seq(v)
     case Op.ArrElem(_, v1, v2) => Seq(v1, v2)
     case Op.Copy(v)            => Seq(v)
+    case Op.SizeOf(_)          => Seq()
+    case Op.ArrSizeOf(_, v)    => Seq(v)
   }
 }
 object Op {
@@ -103,4 +107,6 @@ object Op {
   final case class ArrLength(value: Val)                       extends Op
   final case class ArrElem  (ty: Type, value: Val, index: Val) extends Op
   final case class Copy     (value: Val)                       extends Op
+  final case class SizeOf   (ty: Type)                         extends Op
+  final case class ArrSizeOf(ty: Type, length: Val)            extends Op
 }

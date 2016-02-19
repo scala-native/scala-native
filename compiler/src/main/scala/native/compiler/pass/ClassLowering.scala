@@ -55,8 +55,7 @@ class ClassLowering(implicit cha: ClassHierarchy.Result, fresh: Fresh) extends P
       val classStruct     = Defn.Struct(Seq(), name, Type.Ptr(classTypeStructTy) +: data)
 
       val className = Val.String(name.parts.head)
-      val classSize = Val.Size(classStructTy)
-      val classInfo = Val.Struct(Intr.type_.name, Seq(Intr.type_of_type, className, classSize))
+      val classInfo = Val.Struct(Intr.type_.name, Seq(Intr.type_of_type, className))
 
       val classConstName = name + "const"
       val classConstVal  = Val.Struct(classTypeStructName, classInfo +: vtable)
@@ -70,33 +69,43 @@ class ClassLowering(implicit cha: ClassHierarchy.Result, fresh: Fresh) extends P
 
   override def preInst =  {
     case Inst(Some(n), Op.Alloc(Type.Class(clsname))) =>
-      val typeVal = Val.Global(clsname + "const", Type.Ptr(Type.Struct(clsname + "type")))
-      val castVal = Val.Cast(Type.Ptr(Intr.type_), typeVal)
-      val sizeVal = Val.Size(Type.Struct(clsname))
-      Seq(Inst(n, Intr.call(Intr.alloc, castVal, sizeVal)))
+      val clstype = Val.Global(clsname + "const", Type.Ptr(Type.Struct(clsname + "type")))
+      val typeptr = Type.Ptr(Intr.type_)
+      val cast = Val.Local(fresh(), typeptr)
+      val size = Val.Local(fresh(), Type.Size)
+      Seq(
+        Inst(cast.name, Op.Conv(Conv.Bitcast, typeptr, clstype)),
+        Inst(size.name, Op.SizeOf(Type.Struct(clsname))),
+        Inst(n,         Intr.call(Intr.alloc, cast, size))
+      )
 
     case Inst(Some(n), Op.Field(ty, obj, ExField(fld))) =>
-      val castVal = Val.Cast(Type.Ptr(Type.Struct(fld.in.name)), obj)
-      Seq(Inst(n, Op.Elem(ty, castVal, Seq(Val.I32(0), Val.I32(fld.index + 1)))))
+      val cast = Val.Local(fresh(), Type.Size)
+      Seq(
+        Inst(cast.name, Op.Conv(Conv.Bitcast, Type.Ptr(Type.Struct(fld.in.name)), obj)),
+        Inst(n,         Op.Elem(ty, cast, Seq(Val.I32(0), Val.I32(fld.index + 1))))
+      )
 
     case Inst(Some(n), Op.Method(sig, obj, ExVirtualMethod(meth))) =>
-      val sigptr    = Type.Ptr(sig)
-      val clsptr    = Type.Ptr(Type.Struct(meth.in.name))
-      val vtableptr = Type.Ptr(Type.Struct(meth.in.name + "vtable"))
-      val vtable_** = fresh()
-      val vtable_*  = fresh()
-      val meth_**   = fresh()
+      val sigptr     = Type.Ptr(sig)
+      val clsptr     = Type.Ptr(Type.Struct(meth.in.name))
+      val typeptrty  = Type.Ptr(Type.Struct(meth.in.name + "type"))
+      val cast       = Val.Local(fresh(), clsptr)
+      val typeptrptr = Val.Local(fresh(), Type.Ptr(typeptrty))
+      val typeptr    = Val.Local(fresh(), typeptrty)
+      val methptrptr = Val.Local(fresh(), Type.Ptr(sigptr))
       Seq(
-        Inst(vtable_**, Op.Elem(vtableptr, Val.Cast(clsptr, obj),
-                                           Seq(Val.I32(0), Val.I32(0)))),
-        Inst(vtable_*,  Op.Load(vtableptr, Val.Local(vtable_**, Type.Ptr(vtableptr)))),
-        Inst(meth_**,   Op.Elem(sigptr, Val.Local(vtable_*, vtableptr),
-                                        Seq(Val.I32(0), Val.I32(meth.vindex)))),
-        Inst(n,         Op.Load(sigptr, Val.Local(meth_**, Type.Ptr(sigptr))))
+        Inst(cast.name,       Op.Conv(Conv.Bitcast, clsptr, obj)),
+        Inst(typeptrptr.name, Op.Elem(typeptr.ty, cast, Seq(Val.I32(0), Val.I32(0)))),
+        Inst(typeptr.name,    Op.Load(typeptr.ty, typeptrptr)),
+        Inst(methptrptr.name, Op.Elem(sigptr, typeptr, Seq(Val.I32(0), Val.I32(meth.vindex)))),
+        Inst(n,               Op.Load(sigptr, methptrptr))
       )
 
     case Inst(Some(n), Op.Method(sig, obj, ExStaticMethod(meth))) =>
-      Seq(Inst(n, Op.Copy(Val.Global(meth.name, Type.Ptr(sig)))))
+      Seq(
+        Inst(n, Op.Copy(Val.Global(meth.name, Type.Ptr(sig))))
+      )
 
     case Inst(n, _: Op.As) =>
       ???

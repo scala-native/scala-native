@@ -66,8 +66,11 @@ object Tags {
   final val FptosiConv   = 1 + FptouiConv
   final val UitofpConv   = 1 + FptosiConv
   final val SitofpConv   = 1 + UitofpConv
+  final val PtrtointConv = 1 + SitofpConv
+  final val InttoptrConv = 1 + PtrtointConv
+  final val BitcastConv  = 1 + InttoptrConv
 
-  final val VarDefn      = 1 + SitofpConv
+  final val VarDefn      = 1 + BitcastConv
   final val DeclareDefn  = 1 + VarDefn
   final val DefineDefn   = 1 + DeclareDefn
   final val StructDefn   = 1 + DefineDefn
@@ -118,11 +121,12 @@ object Tags {
   final val ArrLengthOp = 1 + ArrAllocOp
   final val ArrElemOp   = 1 + ArrLengthOp
   final val CopyOp      = 1 + ArrElemOp
+  final val SizeOfOp    = 1 + CopyOp
+  final val ArrSizeOfOp = 1 + SizeOfOp
 
-  final val NoneType           = 1 + CopyOp
+  final val NoneType           = 1 + ArrSizeOfOp
   final val VoidType           = 1 + NoneType
-  final val SizeType           = 1 + VoidType
-  final val BoolType           = 1 + SizeType
+  final val BoolType           = 1 + VoidType
   final val LabelType          = 1 + BoolType
   final val I8Type             = 1 + LabelType
   final val I16Type            = 1 + I8Type
@@ -134,7 +138,9 @@ object Tags {
   final val PtrType            = 1 + ArrayType
   final val FunctionType       = 1 + PtrType
   final val StructType         = 1 + FunctionType
-  final val UnitType           = 1 + StructType
+
+  final val SizeType           = 1 + StructType
+  final val UnitType           = 1 + SizeType
   final val NothingType        = 1 + UnitType
   final val NullType           = 1 + NothingType
   final val ClassType          = 1 + NullType
@@ -160,7 +166,6 @@ object Tags {
   final val UnitVal   = 1 + GlobalVal
   final val NullVal   = 1 + UnitVal
   final val StringVal = 1 + NullVal
-  final val SizeVal   = 1 + StringVal
-  final val TypeVal   = 1 + SizeVal
+  final val TypeVal   = 1 + StringVal
   final val CastVal   = 1 + TypeVal
 }

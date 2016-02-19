@@ -119,6 +119,8 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
         case Op.ArrLength(v)      => Op.ArrLength(txVal(v))
         case Op.ArrElem(ty, v, i) => Op.ArrElem(txType(ty), txVal(v), txVal(i))
         case Op.Copy(v)           => Op.Copy(txVal(v))
+        case Op.SizeOf(ty)        => Op.SizeOf(txType(ty))
+        case Op.ArrSizeOf(ty, v)  => Op.ArrSizeOf(txType(ty), txVal(v))
       }
       val post = Inst(pre.name, newop)
 
@@ -134,9 +136,7 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
       case Val.Array(ty, values) => Val.Array(txType(ty), values.map(txVal))
       case Val.Local(n, ty)      => Val.Local(n, txType(ty))
       case Val.Global(n, ty)     => Val.Global(n, txType(ty))
-      case Val.Size(ty)          => Val.Size(txType(ty))
       case Val.Type(ty)          => Val.Type(txType(ty))
-      case Val.Cast(ty, v)       => Val.Cast(txType(ty), txVal(v))
       case _                     => pre
     }
 

@@ -18,7 +18,6 @@ object Type {
   // low-level types
   final case object None                   extends Type
   final case object Void                   extends Type
-  final case object Size                   extends Type
   final case object Label                  extends Type
   sealed abstract case class I(width: Int) extends Type
   final object Bool                        extends I(1)
@@ -30,16 +29,17 @@ object Type {
   final object F32                         extends F(32)
   final object F64                         extends F(64)
 
-  // TODO: change from [ty x N] to [N x ty]
+  // TODO: change from [ty x N] to [N x ty] for consistency with llvm
   final case class Array   (ty: Type, n: Int)           extends Type
   final case class Ptr     (ty: Type)                   extends Type
   final case class Function(args: Seq[Type], ret: Type) extends Type
   final case class Struct  (name: Global)               extends Type
 
   // high-level types
-  sealed abstract class ClassKind               extends Type
+  final case object Size                        extends Type
   final case object Unit                        extends Type
   final case object Nothing                     extends Type
+  sealed abstract class ClassKind               extends Type
   final case object Null                        extends ClassKind
   final case class Class(name: Global)          extends ClassKind
   final case class InterfaceClass(name: Global) extends ClassKind

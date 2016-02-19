@@ -115,6 +115,9 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.FptosiConv   => Conv.Fptosi
     case T.UitofpConv   => Conv.Uitofp
     case T.SitofpConv   => Conv.Sitofp
+    case T.PtrtointConv => Conv.Ptrtoint
+    case T.InttoptrConv => Conv.Inttoptr
+    case T.BitcastConv  => Conv.Bitcast
   }
 
   private def getDefns(): Seq[Defn] = getSeq(getDefn)
@@ -173,6 +176,8 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.ArrLengthOp => Op.ArrLength(getVal)
     case T.ArrElemOp   => Op.ArrElem(getType, getVal, getVal)
     case T.CopyOp      => Op.Copy(getVal)
+    case T.SizeOfOp    => Op.SizeOf(getType)
+    case T.ArrSizeOfOp => Op.ArrSizeOf(getType, getVal)
   }
 
   private def getParams(): Seq[Val.Local] = getSeq(getParam)
@@ -182,7 +187,6 @@ final class BinaryDeserializer(bb: ByteBuffer) {
   private def getType(): Type = getInt match {
     case T.NoneType     => Type.None
     case T.VoidType     => Type.Void
-    case T.SizeType     => Type.Size
     case T.BoolType     => Type.Bool
     case T.I8Type       => Type.I8
     case T.I16Type      => Type.I16
@@ -195,6 +199,7 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.FunctionType => Type.Function(getTypes, getType)
     case T.StructType   => Type.Struct(ext(getGlobal))
 
+    case T.SizeType           => Type.Size
     case T.UnitType           => Type.Unit
     case T.NothingType        => Type.Nothing
     case T.ClassType          => Type.Class(ext(getGlobal))
@@ -223,8 +228,6 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.UnitVal   => Val.Unit
     case T.NullVal   => Val.Null
     case T.StringVal => Val.String(getString)
-    case T.SizeVal   => Val.Size(getType)
     case T.TypeVal   => Val.Type(getType)
-    case T.CastVal   => Val.Cast(getType, getVal)
   }
 }

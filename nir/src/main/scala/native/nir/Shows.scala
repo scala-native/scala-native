@@ -131,6 +131,10 @@ object Shows {
       sh"arr-elem[$ty] $value, $index"
     case Op.Copy(value) =>
       sh"copy $value"
+    case Op.SizeOf(ty) =>
+      sh"size-of[$ty]"
+    case Op.ArrSizeOf(ty, v) =>
+      sh"arr-size-of[$ty] $v"
   }
 
   implicit val showBin: Show[Bin] = Show {
@@ -184,6 +188,9 @@ object Shows {
     case Conv.Fptosi   => "fptosi"
     case Conv.Uitofp   => "uitofp"
     case Conv.Sitofp   => "sitofp"
+    case Conv.Ptrtoint => "ptrtoint"
+    case Conv.Inttoptr => "inttoptr"
+    case Conv.Bitcast  => "bitcast"
   }
 
   implicit val showVal: Show[Val] = Show {
@@ -206,9 +213,7 @@ object Shows {
     case Val.Unit        => "unit"
     case Val.Null        => "null"
     case Val.String(v)   => "\"" + v.replace("\"", "\\\"") + "\""
-    case Val.Size(ty)    => sh"sizeof $ty"
     case Val.Type(ty)    => sh"typeof $ty"
-    case Val.Cast(ty, v) => sh"cast[$ty] $v"
   }
 
   implicit val showDefns: Show[Seq[Defn]] = Show { defns =>

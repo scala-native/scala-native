@@ -94,7 +94,6 @@ object GenTextualLLVM extends GenShow {
     case Type.Ptr(ty)             => sh"${ty}*"
     case Type.Function(args, ret) => sh"$ret (${r(args, sep = ", ")})"
     case Type.Struct(name)        => sh"%$name"
-    case Type.Size                => "i64"
     case ty                       => unsupported(ty)
   }
 
@@ -111,21 +110,7 @@ object GenTextualLLVM extends GenShow {
     case Val.Chars(v)      => s("c\"", v, "\"")
     case Val.Local(n, ty)  => sh"%$n"
     case Val.Global(n, ty) => sh"@$n"
-    case Val.Size(ty) =>
-      sh"ptrtoint ($ty* getelementptr($ty, $ty* null, i32 1) to ${v.ty})"
-    case Val.ArraySize(elemty, n) =>
-      val ty = sh"{ i8*, i32, [$n x $elemty]}"
-      sh"ptrtoint ($ty* getelementptr($ty, $ty* null, i32 1) to ${v.ty})"
-    case Val.Cast(ty, v) =>
-      val cast = (v.ty, ty) match {
-        case (_: Type.Ptr, to: Type.Ptr) => "bitcast"
-        case (_: Type.Ptr, to: Type.I  ) => "ptrtoint"
-        case (_: Type.I,   to: Type.Ptr) => "inttoptr"
-        case _                           => unsupported(v)
-      }
-      sh"$cast ($v to $ty)"
-    case _ =>
-      unsupported(v)
+    case _                 => unsupported(v)
   }
 
   implicit val showVal: Show[Val] = Show { v =>

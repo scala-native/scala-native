@@ -26,6 +26,7 @@ final class Compiler(opts: Opts) {
       new pass.IntrinsicLowering,
       new pass.NothingLowering,
       new pass.UnitLowering,
+      new pass.SizeLowering,
       new pass.CopyLowering
     )
   }

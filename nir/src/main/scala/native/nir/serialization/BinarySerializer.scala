@@ -113,6 +113,9 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Conv.Fptosi   => putInt(T.FptosiConv)
     case Conv.Uitofp   => putInt(T.UitofpConv)
     case Conv.Sitofp   => putInt(T.SitofpConv)
+    case Conv.Ptrtoint => putInt(T.PtrtointConv)
+    case Conv.Inttoptr => putInt(T.InttoptrConv)
+    case Conv.Bitcast  => putInt(T.BitcastConv)
   }
 
   private def putDefns(defns: Seq[Defn]): Unit = putSeq(putDefn)(defns)
@@ -215,6 +218,10 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.ArrElemOp); putType(ty); putVal(v); putVal(index)
     case Op.Copy(v) =>
       putInt(T.CopyOp); putVal(v)
+    case Op.SizeOf(ty) =>
+      putInt(T.SizeOfOp); putType(ty)
+    case Op.ArrSizeOf(ty, v) =>
+      putInt(T.ArrSizeOfOp); putType(ty); putVal(v)
   }
 
   private def putParams(params: Seq[Val.Local]) = putSeq(putParam)(params)
@@ -227,7 +234,6 @@ final class BinarySerializer(buffer: ByteBuffer) {
   private def putType(ty: Type): Unit = ty match {
     case Type.None                => putInt(T.NoneType)
     case Type.Void                => putInt(T.VoidType)
-    case Type.Size                => putInt(T.SizeType)
     case Type.Bool                => putInt(T.BoolType)
     case Type.Label               => putInt(T.LabelType)
     case Type.I8                  => putInt(T.I8Type)
@@ -241,6 +247,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Type.Function(args, ret) => putInt(T.FunctionType); putTypes(args); putType(ret)
     case Type.Struct(n)           => putInt(T.StructType); putGlobal(n)
 
+    case Type.Size              => putInt(T.SizeType)
     case Type.Unit              => putInt(T.UnitType)
     case Type.Nothing           => putInt(T.NothingType)
     case Type.Null              => putInt(T.NullType)
@@ -268,11 +275,9 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Val.Local(n, ty)  => putInt(T.LocalVal); putLocal(n); putType(ty)
     case Val.Global(n, ty) => putInt(T.GlobalVal); putGlobal(n); putType(ty)
 
-    case Val.Unit        => putInt(T.UnitVal)
-    case Val.Null        => putInt(T.NullVal)
-    case Val.String(v)   => putInt(T.StringVal); putString(v)
-    case Val.Size(ty)    => putInt(T.SizeVal); putType(ty)
-    case Val.Type(ty)    => putInt(T.TypeVal); putType(ty)
-    case Val.Cast(ty, v) => putInt(T.CastVal); putType(ty); putVal(v)
+    case Val.Unit      => putInt(T.UnitVal)
+    case Val.Null      => putInt(T.NullVal)
+    case Val.String(v) => putInt(T.StringVal); putString(v)
+    case Val.Type(ty)  => putInt(T.TypeVal); putType(ty)
   }
 }

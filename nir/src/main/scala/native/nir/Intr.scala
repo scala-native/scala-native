@@ -158,13 +158,13 @@ object Intr {
   lazy val throw_ = unary  ("throw", object_, Type.Nothing)
 
   val array = Map[Type, Type](
-    bool    -> array_bool,
-    char    -> array_char,
-    byte    -> array_byte,
-    short   -> array_short,
-    int     -> array_int,
-    long    -> array_long,
-    float   -> array_float,
+    bool    -> array_bool  ,
+    char    -> array_char  ,
+    byte    -> array_byte  ,
+    short   -> array_short ,
+    int     -> array_int 	 ,
+    long    -> array_long  ,
+    float   -> array_float ,
     double  -> array_double,
     object_ -> array_object
   )
@@ -229,14 +229,14 @@ object Intr {
   )
 
   val parseUnsigned = Map[Type, Val.Global](
-    int  -> int_parseUnsigned,
+    int  -> int_parseUnsigned ,
     long -> long_parseUnsigned
   )
 
   val parse_rdx = Map[Type, Val.Global](
-    byte  -> byte_parse_rdx,
+    byte  -> byte_parse_rdx ,
     short -> short_parse_rdx,
-    int   -> int_parse_rdx,
+    int   -> int_parse_rdx  ,
     long  -> long_parse_rdx
   )
 
@@ -272,28 +272,28 @@ object Intr {
   )
 
   lazy val type_of_array = Map[Type, Val.Global](
-    bool    -> type_of_array_bool,
-    char    -> type_of_array_char,
-    byte    -> type_of_array_byte,
-    short   -> type_of_array_short,
-    int     -> type_of_array_int,
-    long    -> type_of_array_long,
-    float   -> type_of_array_float,
+    bool    -> type_of_array_bool  ,
+    char    -> type_of_array_char  ,
+    byte    -> type_of_array_byte  ,
+    short   -> type_of_array_short ,
+    int     -> type_of_array_int   ,
+    long    -> type_of_array_long  ,
+    float   -> type_of_array_float ,
     double  -> type_of_array_double,
     object_ -> type_of_array_object
   )
 
   val structs = Map[Global, Seq[Type]](
-    array_bool.name   -> Seq(Ptr(type_), I32, Array(Bool, 0)),
-    array_char.name   -> Seq(Ptr(type_), I32, Array(I16, 0)),
-    array_byte.name   -> Seq(Ptr(type_), I32, Array(I8, 0)),
-    array_short.name  -> Seq(Ptr(type_), I32, Array(I16, 0)),
-    array_int.name    -> Seq(Ptr(type_), I32, Array(I32, 0)),
-    array_long.name   -> Seq(Ptr(type_), I32, Array(I64, 0)),
-    array_float.name  -> Seq(Ptr(type_), I32, Array(F32, 0)),
-    array_double.name -> Seq(Ptr(type_), I32, Array(F64, 0)),
+    array_bool.name   -> Seq(Ptr(type_), I32, Array(Bool, 0))   ,
+    array_char.name   -> Seq(Ptr(type_), I32, Array(I16, 0))    ,
+    array_byte.name   -> Seq(Ptr(type_), I32, Array(I8, 0))     ,
+    array_short.name  -> Seq(Ptr(type_), I32, Array(I16, 0))    ,
+    array_int.name    -> Seq(Ptr(type_), I32, Array(I32, 0))    ,
+    array_long.name   -> Seq(Ptr(type_), I32, Array(I64, 0))    ,
+    array_float.name  -> Seq(Ptr(type_), I32, Array(F32, 0))    ,
+    array_double.name -> Seq(Ptr(type_), I32, Array(F64, 0))    ,
     array_object.name -> Seq(Ptr(type_), I32, Array(Ptr(I8), 0)),
-    type_.name        -> Seq(Ptr(type_), Ptr(I8), Size),
+    type_.name        -> Seq(Ptr(type_), Ptr(I8))               ,
     string.name       -> Seq(Ptr(type_), I32, Ptr(Type.I8))
   )
 }
