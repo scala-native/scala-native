@@ -25,10 +25,6 @@ class UnitLowering extends Pass {
     Seq(Block(n, params.filter(_.ty != Type.Unit), insts))
   }
 
-  override def preVal = {
-    case Val.Unit => unreachable
-  }
-
   override def preType = {
     case Type.Unit =>
       unreachable

@@ -49,14 +49,15 @@ class ModuleLowering(implicit fresh: Fresh) extends Pass {
       val ptrclsty = Type.Ptr(clsty)
       val ctorty = Type.Function(Seq(clsty), Type.Unit)
       val ctor = Val.Global(name + "init", Type.Ptr(ctorty))
-      val data = Defn.Var(Seq(), name + "data", clsty, Val.Null)
+      val data = Defn.Var(Seq(), name + "data", clsty, Val.Zero(clsty))
       val dataval = Val.Global(data.name, ptrclsty)
       val accessor =
         Defn.Define(Seq(), name + "accessor", Type.Function(Seq(), Type.Class(name)),
           {
             val entry = Focus.entry(fresh)
             val prev = entry withOp Op.Load(clsty, dataval)
-            val cond = prev withOp Op.Comp(Comp.Ieq, Intr.object_, prev.value, Val.Null)
+            val cond = prev withOp Op.Comp(Comp.Ieq, Intr.object_,
+                                           prev.value, Val.Zero(Intr.object_))
 
             cond.branchIf(cond.value, Type.Nothing,
               { thenp =>

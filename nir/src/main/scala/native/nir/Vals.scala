@@ -17,11 +17,6 @@ sealed abstract class Val {
     case Val.Chars(s)         => Type.Array(Type.I8, s.length)
     case Val.Local(_, ty)     => ty
     case Val.Global(_, ty)    => ty
-
-    case Val.Unit            => Type.Unit
-    case Val.Null            => Type.Null
-    case Val.String(_)       => Intr.string
-    case Val.Type(_)         => Intr.type_
   }
 }
 object Val {
@@ -41,10 +36,4 @@ object Val {
   final case class Chars(value: java.lang.String)             extends Val
   final case class Local(name: nir.Local, valty: nir.Type)    extends Val
   final case class Global(name: nir.Global, valty: nir.Type)  extends Val
-
-  // high-level
-  final case object Unit                                extends Val
-  final case object Null                                extends Val
-  final case class String(value: java.lang.String)      extends Val
-  final case class Type(of: nir.Type)                   extends Val
 }

@@ -123,8 +123,10 @@ object Tags {
   final val CopyOp      = 1 + ArrElemOp
   final val SizeOfOp    = 1 + CopyOp
   final val ArrSizeOfOp = 1 + SizeOfOp
+  final val TypeOfOp    = 1 + ArrSizeOfOp
+  final val StringOfOp  = 1 + TypeOfOp
 
-  final val NoneType           = 1 + ArrSizeOfOp
+  final val NoneType           = 1 + StringOfOp
   final val VoidType           = 1 + NoneType
   final val BoolType           = 1 + VoidType
   final val LabelType          = 1 + BoolType
@@ -163,9 +165,4 @@ object Tags {
   final val CharsVal  = 1 + ArrayVal
   final val LocalVal  = 1 + CharsVal
   final val GlobalVal = 1 + LocalVal
-  final val UnitVal   = 1 + GlobalVal
-  final val NullVal   = 1 + UnitVal
-  final val StringVal = 1 + NullVal
-  final val TypeVal   = 1 + StringVal
-  final val CastVal   = 1 + TypeVal
 }

@@ -111,10 +111,10 @@ object Focus {
     entry(fresh(), params)
 
   def entry(name: Local, params: Seq[Val.Local])(implicit fresh: Fresh): Focus =
-    Focus(Seq(), name, params, Seq(), Val.Unit, isComplete = false)
+    Focus(Seq(), name, params, Seq(), Val.Zero(Type.Unit), isComplete = false)
 
   def complete(blocks: Seq[Block])(implicit fresh: Fresh)=
-    Focus(blocks, Local("", -1), Seq(), Seq(), Val.Unit, isComplete = true)
+    Focus(blocks, Local("", -1), Seq(), Seq(), Val.Zero(Type.Unit), isComplete = true)
 
   def sequenced[T](elems: Seq[T], focus: Focus)
                   (f: (T, Focus) => Focus): Seq[Focus] = {

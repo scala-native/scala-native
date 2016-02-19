@@ -262,7 +262,7 @@ abstract class GenNIR extends PluginComponent
         val isMutable = curLocalInfo.mutableVars.contains(vd.symbol)
         if (!isMutable) {
           curEnv.enter(vd.symbol, rhs.value)
-          rhs.withValue(Val.Unit)
+          rhs.withValue(Val.Zero(Type.Unit))
         } else {
           val ty = genType(vd.symbol.tpe)
           val alloca = rhs.withOp(Op.Alloca(ty))
@@ -360,7 +360,7 @@ abstract class GenNIR extends PluginComponent
         undefined(focus)
 
       case EmptyTree =>
-        focus.withValue(Val.Unit)
+        focus.withValue(Val.Zero(Type.Unit))
 
       case _ =>
         abort("Unexpected tree in genExpr: " +
@@ -379,10 +379,12 @@ abstract class GenNIR extends PluginComponent
            | IntTag
            | LongTag
            | FloatTag
-           | DoubleTag
-           | StringTag
-           | ClazzTag =>
+           | DoubleTag =>
           focus withValue genLiteralValue(lit)
+        case StringTag =>
+          focus withOp Op.StringOf(value.stringValue)
+        case ClazzTag =>
+          ???
         case EnumTag =>
           genStaticMember(value.symbolValue, focus)
       }
@@ -392,9 +394,9 @@ abstract class GenNIR extends PluginComponent
       val value = lit.value
       value.tag match {
         case NullTag =>
-          Val.Null
+          Val.Zero(Intr.object_)
         case UnitTag =>
-          Val.Unit
+          Val.Zero(Type.Unit)
         case BooleanTag =>
           if (value.booleanValue) Val.True else Val.False
         case ByteTag =>
@@ -409,10 +411,6 @@ abstract class GenNIR extends PluginComponent
           Val.F32(value.floatValue)
         case DoubleTag =>
           Val.F64(value.doubleValue)
-        case StringTag =>
-          Val.String(value.stringValue)
-        case ClazzTag =>
-          ???
       }
     }
 

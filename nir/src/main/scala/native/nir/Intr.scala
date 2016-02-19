@@ -293,7 +293,7 @@ object Intr {
     array_float.name  -> Seq(Ptr(type_), I32, Array(F32, 0))    ,
     array_double.name -> Seq(Ptr(type_), I32, Array(F64, 0))    ,
     array_object.name -> Seq(Ptr(type_), I32, Array(Ptr(I8), 0)),
-    type_.name        -> Seq(Ptr(type_), Ptr(I8))               ,
+    type_.name        -> Seq(Ptr(type_))               ,
     string.name       -> Seq(Ptr(type_), I32, Ptr(Type.I8))
   )
 }

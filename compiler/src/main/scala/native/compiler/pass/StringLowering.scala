@@ -10,7 +10,7 @@ import native.util.ScopedVar, ScopedVar.scoped
  *
  *  For a  string value:
  *
- *      "..."
+ *      %n = string-of "..."
  *
  *  Becomes a pair of constants:
  *
@@ -22,13 +22,14 @@ import native.util.ScopedVar, ScopedVar.scoped
  *
  *  And the value itself is replaced with:
  *
- *      cast[ptr i8] @_str_$N
+ *      %n = bitcast[ptr i8] @_str_$N
  *
  *  Eliminates:
  *  - Val.String
  */
 class StringLowering extends Pass {
-  override def preVal = {
-    case Val.String(v) => Val.Zero(Type.Ptr(Type.I8))
+  override def preInst = {
+    case Inst(Some(n), Op.StringOf(v)) =>
+      ???
   }
 }

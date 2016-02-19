@@ -54,8 +54,7 @@ class ClassLowering(implicit cha: ClassHierarchy.Result, fresh: Fresh) extends P
       val classStructTy   = Type.Struct(name)
       val classStruct     = Defn.Struct(Seq(), name, Type.Ptr(classTypeStructTy) +: data)
 
-      val className = Val.String(name.parts.head)
-      val classInfo = Val.Struct(Intr.type_.name, Seq(Intr.type_of_type, className))
+      val classInfo = Val.Struct(Intr.type_.name, Seq(Intr.type_of_type))
 
       val classConstName = name + "const"
       val classConstVal  = Val.Struct(classTypeStructName, classInfo +: vtable)
@@ -71,8 +70,8 @@ class ClassLowering(implicit cha: ClassHierarchy.Result, fresh: Fresh) extends P
     case Inst(Some(n), Op.Alloc(Type.Class(clsname))) =>
       val clstype = Val.Global(clsname + "const", Type.Ptr(Type.Struct(clsname + "type")))
       val typeptr = Type.Ptr(Intr.type_)
-      val cast = Val.Local(fresh(), typeptr)
-      val size = Val.Local(fresh(), Type.Size)
+      val cast    = Val.Local(fresh(), typeptr)
+      val size    = Val.Local(fresh(), Type.Size)
       Seq(
         Inst(cast.name, Op.Conv(Conv.Bitcast, typeptr, clstype)),
         Inst(size.name, Op.SizeOf(Type.Struct(clsname))),
@@ -112,27 +111,23 @@ class ClassLowering(implicit cha: ClassHierarchy.Result, fresh: Fresh) extends P
 
     case Inst(n, _: Op.Is) =>
       ???
+
+    case Inst(Some(n), Op.TypeOf(ty)) if Intr.type_of_intrinsic.contains(ty) =>
+      Seq(
+        Inst(n, Op.Copy(Intr.type_of_intrinsic(ty)))
+      )
+
+    case Inst(Some(n), Op.TypeOf(Type.Class(name))) =>
+      val clstype  = Type.Struct(name + "type")
+      val clsconst = Val.Global(name + "const", Type.Ptr(clstype))
+      Seq(
+        Inst(n, Op.Conv(Conv.Bitcast, Type.Ptr(Intr.type_), clsconst))
+      )
   }
 
   override def preType = {
     case _: Type.ClassKind => i8_*
   }
-
-  override def preVal = {
-    case Val.Null =>
-      zero_i8_*
-
-    case Val.Type(ty) =>
-      ty match {
-        case _ if Intr.type_of_intrinsic.contains(ty) =>
-          Intr.type_of_intrinsic(ty)
-        case Type.Class(name) =>
-          Val.Global(name + "type", Type.Ptr(Intr.type_))
-        case _ =>
-          ???
-      }
-  }
-
 
   object ExVirtualMethod {
     def unapply(name: Global): Option[ClassHierarchy.Node.Method] =

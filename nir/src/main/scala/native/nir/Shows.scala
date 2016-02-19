@@ -135,6 +135,11 @@ object Shows {
       sh"size-of[$ty]"
     case Op.ArrSizeOf(ty, v) =>
       sh"arr-size-of[$ty] $v"
+    case Op.TypeOf(ty) =>
+      sh"type-of[$ty]"
+    case Op.StringOf(v) =>
+      val quoted = "\"" + v + "\""
+      sh"string-of $quoted"
   }
 
   implicit val showBin: Show[Bin] = Show {
@@ -209,11 +214,6 @@ object Shows {
     case Val.Chars(v)            => s("c\"", v, "\"")
     case Val.Local(name, ty)     => sh"$name"
     case Val.Global(name, ty)    => sh"$name"
-
-    case Val.Unit        => "unit"
-    case Val.Null        => "null"
-    case Val.String(v)   => "\"" + v.replace("\"", "\\\"") + "\""
-    case Val.Type(ty)    => sh"typeof $ty"
   }
 
   implicit val showDefns: Show[Seq[Defn]] = Show { defns =>
