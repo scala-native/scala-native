@@ -205,18 +205,10 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.AsOp); putType(ty); putVal(v)
     case Op.Is(ty, v) =>
       putInt(T.IsOp); putType(ty); putVal(v)
-    case Op.ArrAlloc(ty, v) =>
-      putInt(T.ArrAllocOp); putType(ty); putVal(v)
-    case Op.ArrLength(v) =>
-      putInt(T.ArrLengthOp); putVal(v)
-    case Op.ArrElem(ty, v, index) =>
-      putInt(T.ArrElemOp); putType(ty); putVal(v); putVal(index)
     case Op.Copy(v) =>
       putInt(T.CopyOp); putVal(v)
     case Op.SizeOf(ty) =>
       putInt(T.SizeOfOp); putType(ty)
-    case Op.ArrSizeOf(ty, v) =>
-      putInt(T.ArrSizeOfOp); putType(ty); putVal(v)
     case Op.TypeOf(ty) =>
       putInt(T.TypeOfOp); putType(ty)
     case Op.StringOf(s) =>
@@ -233,8 +225,9 @@ final class BinarySerializer(buffer: ByteBuffer) {
   private def putType(ty: Type): Unit = ty match {
     case Type.None                => putInt(T.NoneType)
     case Type.Void                => putInt(T.VoidType)
-    case Type.Bool                => putInt(T.BoolType)
     case Type.Label               => putInt(T.LabelType)
+    case Type.Vararg              => putInt(T.VarargType)
+    case Type.Bool                => putInt(T.BoolType)
     case Type.I8                  => putInt(T.I8Type)
     case Type.I16                 => putInt(T.I16Type)
     case Type.I32                 => putInt(T.I32Type)
@@ -246,14 +239,12 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Type.Function(args, ret) => putInt(T.FunctionType); putTypes(args); putType(ret)
     case Type.Struct(n)           => putInt(T.StructType); putGlobal(n)
 
-    case Type.Size              => putInt(T.SizeType)
-    case Type.Unit              => putInt(T.UnitType)
-    case Type.Nothing           => putInt(T.NothingType)
-    case Type.Null              => putInt(T.NullType)
-    case Type.Class(n)          => putInt(T.ClassType); putGlobal(n)
-    case Type.InterfaceClass(n) => putInt(T.InterfaceClassType); putGlobal(n)
-    case Type.ModuleClass(n)    => putInt(T.ModuleClassType); putGlobal(n)
-    case Type.ArrayClass(ty)    => putInt(T.ArrayClassType); putType(ty)
+    case Type.Size                => putInt(T.SizeType)
+    case Type.Nothing             => putInt(T.NothingType)
+    case Type.Null                => putInt(T.NullType)
+    case Type.Class(n)            => putInt(T.ClassType); putGlobal(n)
+    case Type.InterfaceClass(n)   => putInt(T.InterfaceClassType); putGlobal(n)
+    case Type.ModuleClass(n)      => putInt(T.ModuleClassType); putGlobal(n)
   }
 
   private def putVals(values: Seq[Val]): Unit = putSeq(putVal)(values)

@@ -88,6 +88,8 @@ object GenTextualLLVM extends GenShow {
 
   implicit val showType: Show[Type] = Show {
     case Type.Void                => "void"
+    case Type.Label               => "label"
+    case Type.Vararg              => "..."
     case Type.Bool                => "i1"
     case Type.I8                  => "i8"
     case Type.I16                 => "i16"
@@ -169,10 +171,16 @@ object GenTextualLLVM extends GenShow {
       "todo: insert"
     case Op.Alloca(ty) =>
       sh"alloca $ty"
-    case Op.Bin(bin, ty, l, r) =>
+    case Op.Bin(opcode, ty, l, r) =>
+      val bin = opcode match {
+        case Bin.Iadd => "add"
+        case Bin.Isub => "sub"
+        case Bin.Imul => "mul"
+        case _        => opcode.toString.toLowerCase
+      }
       sh"$bin $l, ${justVal(r)}"
-    case Op.Comp(name, ty, l, r) =>
-      val cmp = name match {
+    case Op.Comp(opcode, ty, l, r) =>
+      val cmp = opcode match {
         case Comp.Ieq => "icmp eq"
         case Comp.Ine => "icmp ne"
         case Comp.Ult => "icmp ult"
@@ -204,6 +212,5 @@ object GenTextualLLVM extends GenShow {
   implicit def showCase: Show[Case] = ???
 
   implicit def showAttrs: Show[Seq[Attr]] = nir.Shows.showAttrs
-  implicit def showBin: Show[Bin] = nir.Shows.showBin
   implicit def showConv: Show[Conv] = nir.Shows.showConv
 }

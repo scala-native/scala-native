@@ -14,7 +14,7 @@ trait GenTypeKinds extends SubComponent with NativeIntrinsics {
   final case class BottomKind(sym: Symbol) extends Kind
   final case class BuiltinClassKind(sym: Symbol) extends Kind
   final case class ClassKind(sym: Symbol) extends Kind
-  final case class ArrayKind(of: Kind) extends Kind
+  final case class ArrayKind(kind: Kind) extends Kind
 
   val UnitKind     = PrimitiveKind(UnitClass)
   val BooleanKind  = PrimitiveKind(BooleanClass)
@@ -91,7 +91,7 @@ trait GenTypeKinds extends SubComponent with NativeIntrinsics {
   def toIRType(kind: Kind): nir.Type = kind match {
     case PrimitiveKind(sym) =>
       sym match {
-        case UnitClass    => nir.Type.Unit
+        case UnitClass    => nir.Intr.unit
         case BooleanClass => nir.Type.Bool
         case ByteClass    => nir.Type.I8
         case CharClass    => nir.Type.I16
@@ -128,10 +128,26 @@ trait GenTypeKinds extends SubComponent with NativeIntrinsics {
         nir.Type.InterfaceClass(name)
       else
         nir.Type.Class(name)
-    case ArrayKind(of) =>
-      nir.Type.ArrayClass(toIRType(of))
+    case arr: ArrayKind =>
+      Intr.array(genArrayElementType(arr))
   }
 
   def isModule(sym: Symbol): Boolean =
     sym.isModule || sym.isModuleClass || sym.isImplClass
+
+  def genArrayElementType(tpe: Type): nir.Type =
+    genArrayElementType(genKind(tpe))
+
+  def genArrayElementType(kind: Kind): nir.Type = kind match {
+    case ArrayKind(PrimitiveKind(UnitClass   )) => Intr.unit
+    case ArrayKind(PrimitiveKind(CharClass   )) => Intr.char
+    case ArrayKind(PrimitiveKind(BooleanClass)) => Intr.bool
+    case ArrayKind(PrimitiveKind(ByteClass   )) => Intr.byte
+    case ArrayKind(PrimitiveKind(ShortClass  )) => Intr.short
+    case ArrayKind(PrimitiveKind(IntClass    )) => Intr.int
+    case ArrayKind(PrimitiveKind(LongClass   )) => Intr.long
+    case ArrayKind(PrimitiveKind(FloatClass  )) => Intr.float
+    case ArrayKind(PrimitiveKind(DoubleClass )) => Intr.double
+    case _                                      => Intr.object_
+  }
 }

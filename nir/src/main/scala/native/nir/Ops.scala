@@ -10,7 +10,7 @@ sealed abstract class Op {
     case Op.Call(Type.Function(_, ret), _, _) => ret
     case Op.Call(_, _, _)                     => unreachable
     case Op.Load(ty, _)                       => ty
-    case Op.Store(_, _, _)                    => Type.Unit
+    case Op.Store(_, _, _)                    => Intr.unit
     case Op.Elem(ty, _, _)                    => Type.Ptr(ty) // todo: ty @ index
     case Op.Extract(ty, _, _)                 => ??? // todo: ty @ index
     case Op.Insert(ty, _, _, _)               => ty
@@ -25,12 +25,8 @@ sealed abstract class Op {
     case Op.Module(n)         => Type.ModuleClass(n)
     case Op.As(ty, _)         => ty
     case Op.Is(_, _)          => Type.Bool
-    case Op.ArrAlloc(ty, _)   => Type.ArrayClass(ty)
-    case Op.ArrLength(_)      => Type.I32
-    case Op.ArrElem(ty, _, _) => Type.Ptr(ty)
     case Op.Copy(v)           => v.ty
     case Op.SizeOf(_)         => Type.Size
-    case Op.ArrSizeOf(_, _)   => Type.Size
     case Op.TypeOf(_)         => Intr.type_
     case Op.StringOf(_)       => Intr.string
   }
@@ -63,12 +59,8 @@ sealed abstract class Op {
     case Op.Module(n)          => Seq()
     case Op.As(_, v)           => Seq(v)
     case Op.Is(_, v)           => Seq(v)
-    case Op.ArrAlloc(_, v)     => Seq(v)
-    case Op.ArrLength(v)       => Seq(v)
-    case Op.ArrElem(_, v1, v2) => Seq(v1, v2)
     case Op.Copy(v)            => Seq(v)
     case Op.SizeOf(_)          => Seq()
-    case Op.ArrSizeOf(_, v)    => Seq(v)
     case Op.TypeOf(_)          => Seq()
     case Op.StringOf(_)        => Seq()
   }
@@ -107,12 +99,8 @@ object Op {
   final case class Module   (name: Global)                     extends Op
   final case class As       (ty: Type, obj: Val)               extends Op
   final case class Is       (ty: Type, obj: Val)               extends Op
-  final case class ArrAlloc (ty: Type, length: Val)            extends Op
-  final case class ArrLength(value: Val)                       extends Op
-  final case class ArrElem  (ty: Type, value: Val, index: Val) extends Op
   final case class Copy     (value: Val)                       extends Op
   final case class SizeOf   (ty: Type)                         extends Op
-  final case class ArrSizeOf(ty: Type, length: Val)            extends Op
   final case class TypeOf   (ty: Type)                         extends Op
   final case class StringOf (value: String)                    extends Op
 }

@@ -15,7 +15,7 @@ class MainInjection(entryModule: Global)(implicit fresh: Fresh) extends Pass {
     val argc = Val.Local(fresh(), Type.I32)
     val argv = Val.Local(fresh(), Type.Ptr(Type.Ptr(Type.I8)))
     val m = Val.Local(fresh(), Type.Ptr(Type.I8))
-    val arr = Val.Local(fresh(), Type.ArrayClass(Intr.string))
+    val arr = Val.Local(fresh(), Intr.object_array)
     val body =
       Block(fresh(), Seq(argc, argv),
         Seq(Inst(arr.name, Intr.call(Intr.init, argc, argv)),

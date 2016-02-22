@@ -11,9 +11,6 @@ class IntrinsicLowering extends Pass {
   private val added   = mutable.Set.empty[Global]
   private val externs = mutable.UnrolledBuffer.empty[Defn]
 
-  private def nrt(g: Global) =
-    Global(("nrt" +: g.parts): _*)
-
   override def preAssembly = { case defns =>
     defns ++ Intr.layout.toSeq.map {
       case (g, fields) =>
@@ -27,7 +24,7 @@ class IntrinsicLowering extends Pass {
 
   override def postVal = {
     case Val.Global(g, ptrty @ Type.Ptr(ty)) if g.isIntrinsic =>
-      val n = nrt(g)
+      val n = g.nrt
       if (!added.contains(g)) {
         ty match {
           case _: Type.Function =>
@@ -40,11 +37,11 @@ class IntrinsicLowering extends Pass {
       Val.Global(n, ptrty)
 
     case Val.Struct(g, vals) if g.isIntrinsic =>
-      Val.Struct(nrt(g), vals)
+      Val.Struct(g.nrt, vals)
   }
 
   override def preType = {
     case ty @ Type.Struct(g) if g.isIntrinsic =>
-      Type.Struct(nrt(g))
+      Type.Struct(g.nrt)
   }
 }

@@ -111,20 +111,16 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
         case Op.Comp(comp, ty, lv, rv)       => Op.Comp(comp, txType(ty), txVal(lv), txVal(rv))
         case Op.Conv(conv, ty, v)            => Op.Conv(conv, txType(ty), txVal(v))
 
-        case Op.Alloc(ty)         => Op.Alloc(txType(ty))
-        case Op.Field(ty, v, n)   => Op.Field(txType(ty), txVal(v), n)
-        case Op.Method(ty, v, n)  => Op.Method(txType(ty), txVal(v), n)
-        case Op.Module(n)         => Op.Module(n)
-        case Op.As(ty, v)         => Op.As(txType(ty), txVal(v))
-        case Op.Is(ty, v)         => Op.Is(txType(ty), txVal(v))
-        case Op.ArrAlloc(ty, v)   => Op.ArrAlloc(txType(ty), txVal(v))
-        case Op.ArrLength(v)      => Op.ArrLength(txVal(v))
-        case Op.ArrElem(ty, v, i) => Op.ArrElem(txType(ty), txVal(v), txVal(i))
-        case Op.Copy(v)           => Op.Copy(txVal(v))
-        case Op.SizeOf(ty)        => Op.SizeOf(txType(ty))
-        case Op.ArrSizeOf(ty, v)  => Op.ArrSizeOf(txType(ty), txVal(v))
-        case Op.TypeOf(ty)        => Op.TypeOf(txType(ty))
-        case Op.StringOf(_)       => pre.op
+        case Op.Alloc(ty)        => Op.Alloc(txType(ty))
+        case Op.Field(ty, v, n)  => Op.Field(txType(ty), txVal(v), n)
+        case Op.Method(ty, v, n) => Op.Method(txType(ty), txVal(v), n)
+        case Op.Module(n)        => Op.Module(n)
+        case Op.As(ty, v)        => Op.As(txType(ty), txVal(v))
+        case Op.Is(ty, v)        => Op.Is(txType(ty), txVal(v))
+        case Op.Copy(v)          => Op.Copy(txVal(v))
+        case Op.SizeOf(ty)       => Op.SizeOf(txType(ty))
+        case Op.TypeOf(ty)       => Op.TypeOf(txType(ty))
+        case Op.StringOf(_)      => pre.op
       }
       val post = Inst(pre.name, newop)
 
@@ -152,7 +148,6 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
       case Type.Array(ty, n)      => Type.Array(txType(ty), n)
       case Type.Ptr(ty)           => Type.Ptr(txType(ty))
       case Type.Function(tys, ty) => Type.Function(tys.map(txType), txType(ty))
-      case Type.ArrayClass(ty)    => Type.ArrayClass(txType(ty))
       case _                      => pre
     }
 

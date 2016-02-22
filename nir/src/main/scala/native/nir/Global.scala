@@ -24,6 +24,10 @@ final class Global(val parts: Seq[String], val isIntrinsic: Boolean) {
     new Global(parts :+ tag, isIntrinsic)
   def ++(tags: Seq[String]): Global =
     new Global(parts ++ tags, isIntrinsic)
+  def nrt = {
+    assert(isIntrinsic)
+    Global(("nrt" +: parts): _*)
+  }
 }
 object Global {
   def apply(parts: String*) =

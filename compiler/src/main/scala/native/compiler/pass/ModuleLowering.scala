@@ -47,7 +47,7 @@ class ModuleLowering(implicit fresh: Fresh) extends Pass {
       val cls = Defn.Class(attrs, name, parent, ifaces, members)
       val clsty = Type.Class(name)
       val ptrclsty = Type.Ptr(clsty)
-      val ctorty = Type.Function(Seq(clsty), Type.Unit)
+      val ctorty = Type.Function(Seq(clsty), Intr.unit)
       val ctor = Val.Global(name + "init", Type.Ptr(ctorty))
       val data = Defn.Var(Seq(), name + "data", clsty, Val.Zero(clsty))
       val dataval = Val.Global(data.name, ptrclsty)

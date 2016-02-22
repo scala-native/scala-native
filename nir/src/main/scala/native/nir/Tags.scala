@@ -118,20 +118,17 @@ object Tags {
   final val ModuleOp    = 1 + MethodOp
   final val AsOp        = 1 + ModuleOp
   final val IsOp        = 1 + AsOp
-  final val ArrAllocOp  = 1 + IsOp
-  final val ArrLengthOp = 1 + ArrAllocOp
-  final val ArrElemOp   = 1 + ArrLengthOp
-  final val CopyOp      = 1 + ArrElemOp
+  final val CopyOp      = 1 + IsOp
   final val SizeOfOp    = 1 + CopyOp
-  final val ArrSizeOfOp = 1 + SizeOfOp
-  final val TypeOfOp    = 1 + ArrSizeOfOp
+  final val TypeOfOp    = 1 + SizeOfOp
   final val StringOfOp  = 1 + TypeOfOp
 
   final val NoneType           = 1 + StringOfOp
   final val VoidType           = 1 + NoneType
-  final val BoolType           = 1 + VoidType
-  final val LabelType          = 1 + BoolType
-  final val I8Type             = 1 + LabelType
+  final val LabelType          = 1 + VoidType
+  final val VarargType         = 1 + LabelType
+  final val BoolType           = 1 + VarargType
+  final val I8Type             = 1 + BoolType
   final val I16Type            = 1 + I8Type
   final val I32Type            = 1 + I16Type
   final val I64Type            = 1 + I32Type
@@ -143,8 +140,7 @@ object Tags {
   final val StructType         = 1 + FunctionType
 
   final val SizeType           = 1 + StructType
-  final val UnitType           = 1 + SizeType
-  final val NothingType        = 1 + UnitType
+  final val NothingType        = 1 + SizeType
   final val NullType           = 1 + NothingType
   final val ClassType          = 1 + NullType
   final val InterfaceClassType = 1 + ClassType

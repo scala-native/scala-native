@@ -25,34 +25,80 @@ object Intr {
   }
 
   lazy val object_          = cls   ("object")
-  lazy val object_init      = unary ("object_init"    , object_,          Unit   )
+  lazy val object_init      = unary ("object_init"    , object_,          unit   )
   lazy val object_equals    = binary("object_equals"  , object_, object_, Bool   )
   lazy val object_toString  = unary ("object_toString", object_,          string )
   lazy val object_hashCode  = unary ("object_hashCode", object_,          I32    )
   lazy val object_getType   = unary ("object_getType" , object_,          type_  )
 
-  lazy val monitor_enter     = unary  ("monitor_enter"    , object_,           Unit  )
-  lazy val monitor_exit      = unary  ("monitor_exit"     , object_,           Unit  )
-  lazy val monitor_notify    = unary  ("monitor_notify"   , object_,           Unit  )
-  lazy val monitor_notifyAll = unary  ("monitor_notifyAll", object_,           Unit  )
-  lazy val monitor_wait      = ternary("monitor_wait"     , object_, I64, I32, Unit  )
+  lazy val monitor_enter     = unary  ("monitor_enter"    , object_,           unit  )
+  lazy val monitor_exit      = unary  ("monitor_exit"     , object_,           unit  )
+  lazy val monitor_notify    = unary  ("monitor_notify"   , object_,           unit  )
+  lazy val monitor_notifyAll = unary  ("monitor_notifyAll", object_,           unit  )
+  lazy val monitor_wait      = ternary("monitor_wait"     , object_, I64, I32, unit  )
 
-  lazy val bool_array   = cls("bool_array")
-  lazy val char_array   = cls("char_array")
-  lazy val byte_array   = cls("byte_array")
-  lazy val short_array  = cls("short_array")
-  lazy val int_array    = cls("int_array")
-  lazy val long_array   = cls("long_array")
-  lazy val float_array  = cls("float_array")
-  lazy val double_array = cls("double_array")
-  lazy val object_array = cls("object_array")
+  lazy val any_array        = cls    ("any_array")
+  lazy val any_array_apply  = binary ("any_array_apply" , any_array, I32,          object_)
+  lazy val any_array_update = ternary("any_array_update", any_array, I32, object_, unit   )
+  lazy val any_array_length = unary  ("any_array_length", any_array,               I32    )
+
+  lazy val unit_array        = cls    ("unit_array")
+  lazy val unit_array_apply  = binary ("unit_array_apply" , unit_array, I32,       unit)
+  lazy val unit_array_update = ternary("unit_array_update", unit_array, I32, unit, unit)
+  lazy val unit_array_length = unary  ("unit_array_length", unit_array,            I32 )
+
+  lazy val bool_array        = cls    ("bool_array")
+  lazy val bool_array_apply  = binary ("bool_array_apply" , bool_array, I32,       Bool)
+  lazy val bool_array_update = ternary("bool_array_update", bool_array, I32, Bool, unit)
+  lazy val bool_array_length = unary  ("bool_array_length", bool_array,            I32 )
+
+  lazy val char_array        = cls    ("char_array")
+  lazy val char_array_apply  = binary ("char_array_apply" , char_array, I32,      I16 )
+  lazy val char_array_update = ternary("char_array_update", char_array, I32, I16, unit)
+  lazy val char_array_length = unary  ("char_array_length", char_array,           I32 )
+
+  lazy val byte_array        = cls    ("byte_array")
+  lazy val byte_array_apply  = binary ("byte_array_apply" , byte_array, I32,     I8  )
+  lazy val byte_array_update = ternary("byte_array_update", byte_array, I32, I8, unit)
+  lazy val byte_array_length = unary  ("byte_array_length", byte_array,          I32 )
+
+  lazy val short_array        = cls    ("short_array")
+  lazy val short_array_apply  = binary ("short_array_apply" , short_array, I32,      I16 )
+  lazy val short_array_update = ternary("short_array_update", short_array, I32, I16, unit)
+  lazy val short_array_length = unary  ("short_array_length", short_array,           I32 )
+
+  lazy val int_array        = cls    ("int_array")
+  lazy val int_array_apply  = binary ("int_array_apply" , int_array, I32,      I32 )
+  lazy val int_array_update = ternary("int_array_update", int_array, I32, I32, unit)
+  lazy val int_array_length = unary  ("int_array_length", int_array,           I32 )
+
+  lazy val long_array        = cls    ("long_array")
+  lazy val long_array_apply  = binary ("long_array_apply" , long_array, I32,      I64 )
+  lazy val long_array_update = ternary("long_array_update", long_array, I32, I64, unit)
+  lazy val long_array_length = unary  ("long_array_length", long_array,           I32 )
+
+  lazy val float_array        = cls    ("float_array")
+  lazy val float_array_apply  = binary ("float_array_apply" , float_array, I32,      F32 )
+  lazy val float_array_update = ternary("float_array_update", float_array, I32, F32, unit)
+  lazy val float_array_length = unary  ("float_array_length", float_array,           I32 )
+
+  lazy val double_array        = cls    ("double_array")
+  lazy val double_array_apply  = binary ("double_array_apply" , double_array, I32,      F64 )
+  lazy val double_array_update = ternary("double_array_update", double_array, I32, F64, unit)
+  lazy val double_array_length = unary  ("double_array_length", double_array,           I32 )
+
+  lazy val object_array        = cls    ("object_array")
+  lazy val object_array_apply  = binary ("object_array_apply" , object_array, I32,          object_)
+  lazy val object_array_update = ternary("object_array_update", object_array, I32, object_, unit   )
+  lazy val object_array_length = unary  ("object_array_length", object_array,               I32    )
 
   lazy val type_     = cls  ("type")
   lazy val type_name = unary("type_name", Type.Ptr(type_), string)
   lazy val type_size = unary("type_size", Type.Ptr(type_), Size  )
 
-  lazy val null_type    = value ("null_type"   , type_)
+  lazy val unit_type    = value ("unit_type"   , type_)
   lazy val nothing_type = value ("nothing_type", type_)
+  lazy val null_type    = value ("null_type"   , type_)
   lazy val object_type  = value ("object_type" , type_)
   lazy val type_type    = value ("type_type"   , type_)
   lazy val bool_type    = value ("bool_type"   , type_)
@@ -65,6 +111,7 @@ object Intr {
   lazy val double_type  = value ("double_type" , type_)
   lazy val string_type  = value ("string_typr" , type_)
 
+  lazy val unit_array_type   = value("unit_array_type"  , type_)
   lazy val bool_array_type   = value("bool_array_type"  , type_)
   lazy val char_array_type   = value("char_array_type"  , type_)
   lazy val byte_array_type   = value("byte_array_type"  , type_)
@@ -74,6 +121,13 @@ object Intr {
   lazy val float_array_type  = value("float_array_type" , type_)
   lazy val double_array_type = value("double_array_type", type_)
   lazy val object_array_type = value("object_array_type", type_)
+
+  lazy val unit          = cls  ("unit")
+  lazy val unit_unbox    = unary("unit_unbox",    unit, unit  )
+  lazy val unit_box      = unary("unit_box",      unit, unit  )
+  lazy val unit_toString = unary("unit_toString", unit, string)
+  lazy val unit_hashCode = unary("unit_hashCode", unit, I32   )
+  lazy val unit_value    = Val.Global(Global.intrinsic("unit_value"), Intr.unit)
 
   lazy val bool          = cls  ("bool")
   lazy val bool_box      = unary("bool_box"     , Bool, bool  )
@@ -149,12 +203,24 @@ object Intr {
   lazy val string_concat  = binary("string_concat",  string,  string,   string)
   lazy val string_length  = unary ("string_length",  string,            I32   )
 
-  lazy val alloc  = binary ("alloc", Type.Ptr(type_), Size, object_)
-  lazy val init   = binary ("init" , Type.I32, Type.Ptr(Type.Ptr(Type.I8)), ArrayClass(string))
-  lazy val yield_ = nullary("yield", Unit)
-  lazy val throw_ = unary  ("throw", object_, Type.Nothing)
+  lazy val alloc              = binary("alloc"             , Type.Ptr(type_), Size, object_     )
+  lazy val alloc_unit_array   = unary ("alloc_unit_array"  , Type.I32,              unit_array  )
+  lazy val alloc_bool_array   = unary ("alloc_bool_array"  , Type.I32,              bool_array  )
+  lazy val alloc_char_array   = unary ("alloc_char_array"  , Type.I32,              char_array  )
+  lazy val alloc_byte_array   = unary ("alloc_byte_array"  , Type.I32,              byte_array  )
+  lazy val alloc_short_array  = unary ("alloc_short_array" , Type.I32,              short_array )
+  lazy val alloc_int_array    = unary ("alloc_int_array"   , Type.I32,              int_array   )
+  lazy val alloc_long_array   = unary ("alloc_long_array"  , Type.I32,              long_array  )
+  lazy val alloc_float_array  = unary ("alloc_float_array" , Type.I32,              float_array )
+  lazy val alloc_double_array = unary ("alloc_double_array", Type.I32,              double_array)
+  lazy val alloc_object_array = unary ("alloc_object_array", Type.I32,              object_array)
 
-  lazy val array = Map[Type, Type](
+  lazy val init   = binary ("init" , Type.I32, Type.Ptr(Type.Ptr(Type.I8)), object_array)
+  lazy val yield_ = nullary("yield",                                        unit        )
+  lazy val throw_ = unary  ("throw", object_,                               Type.Nothing)
+
+  lazy val array = Map[Type, Type.Class](
+    unit    -> unit_array  ,
     bool    -> bool_array  ,
     char    -> char_array  ,
     byte    -> byte_array  ,
@@ -166,7 +232,60 @@ object Intr {
     object_ -> object_array
   )
 
+  lazy val array_apply = Map[Type, Val.Global](
+    unit    -> unit_array_apply  ,
+    bool    -> bool_array_apply  ,
+    char    -> char_array_apply  ,
+    byte    -> byte_array_apply  ,
+    short   -> short_array_apply ,
+    int     -> int_array_apply   ,
+    long    -> long_array_apply  ,
+    float   -> float_array_apply ,
+    double  -> double_array_apply,
+    object_ -> object_array_apply
+  )
+
+  lazy val array_update = Map[Type, Val.Global](
+    unit    -> unit_array_update  ,
+    bool    -> bool_array_update  ,
+    char    -> char_array_update  ,
+    byte    -> byte_array_update  ,
+    short   -> short_array_update ,
+    int     -> int_array_update   ,
+    long    -> long_array_update  ,
+    float   -> float_array_update ,
+    double  -> double_array_update,
+    object_ -> object_array_update
+  )
+
+  lazy val array_length = Map[Type, Val.Global](
+    unit    -> unit_array_length  ,
+    bool    -> bool_array_length  ,
+    char    -> char_array_length  ,
+    byte    -> byte_array_length  ,
+    short   -> short_array_length ,
+    int     -> int_array_length   ,
+    long    -> long_array_length  ,
+    float   -> float_array_length ,
+    double  -> double_array_length,
+    object_ -> object_array_length
+  )
+
+  lazy val alloc_array = Map[Type, Val.Global](
+    unit    -> alloc_unit_array  ,
+    bool    -> alloc_bool_array  ,
+    char    -> alloc_char_array  ,
+    byte    -> alloc_byte_array  ,
+    short   -> alloc_short_array ,
+    int     -> alloc_int_array   ,
+    long    -> alloc_long_array  ,
+    float   -> alloc_float_array ,
+    double  -> alloc_double_array,
+    object_ -> alloc_object_array
+  )
+
   lazy val box = Map[Type, Val.Global](
+    unit   -> unit_unbox,
     bool   -> bool_box  ,
     char   -> char_box  ,
     byte   -> byte_box  ,
@@ -178,6 +297,7 @@ object Intr {
   )
 
   lazy val unbox = Map[Type, Val.Global](
+    unit   -> unit_unbox  ,
     bool   -> bool_unbox  ,
     char   -> char_unbox  ,
     byte   -> byte_unbox  ,
@@ -190,6 +310,7 @@ object Intr {
 
   lazy val toString_ = Map[Type, Val.Global](
     object_ -> object_toString,
+    unit    -> unit_toString  ,
     bool    -> bool_toString  ,
     char    -> char_toString  ,
     byte    -> byte_toString  ,
@@ -243,6 +364,7 @@ object Intr {
   )
 
   lazy val hashCode_ = Map[Type, Val.Global](
+    unit   -> unit_hashCode  ,
     bool   -> bool_hashCode  ,
     char   -> char_hashCode  ,
     byte   -> byte_hashCode  ,
@@ -254,10 +376,11 @@ object Intr {
   )
 
   lazy val intrinsic_type = Map[Type, Val.Global](
-    Type.Null    -> null_type   ,
     Type.Nothing -> nothing_type,
+    Type.Null    -> null_type   ,
     object_      -> object_type ,
     type_        -> type_type   ,
+    unit         -> unit_type   ,
     bool         -> bool_type   ,
     char         -> char_type   ,
     byte         -> byte_type   ,
@@ -269,6 +392,7 @@ object Intr {
   )
 
   lazy val array_type = Map[Type, Val.Global](
+    unit    -> unit_array_type  ,
     bool    -> bool_array_type  ,
     char    -> char_array_type  ,
     byte    -> byte_array_type  ,
@@ -281,6 +405,8 @@ object Intr {
   )
 
   lazy val layout = Map[Global, Seq[Type]](
+    any_array.name    -> Seq(Ptr(I8), I32)                   ,
+    unit_array.name   -> Seq(Ptr(I8), I32)                   ,
     bool_array.name   -> Seq(Ptr(I8), I32, Array(Bool, 0))   ,
     char_array.name   -> Seq(Ptr(I8), I32, Array(I16, 0))    ,
     byte_array.name   -> Seq(Ptr(I8), I32, Array(I8, 0))     ,

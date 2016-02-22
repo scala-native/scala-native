@@ -19,15 +19,14 @@ final class Compiler(opts: Opts) {
     Seq(
       new pass.MainInjection(entry()),
       new pass.ExceptionLowering,
-      new pass.ArrayLowering,
       new pass.ModuleLowering,
+      new pass.UnitElimination,
       new pass.ClassLowering,
       new pass.StringLowering,
       new pass.IntrinsicLowering,
       new pass.NothingLowering,
-      new pass.UnitLowering,
       new pass.SizeLowering,
-      new pass.CopyLowering
+      new pass.CopyElimination
     )
   }
 

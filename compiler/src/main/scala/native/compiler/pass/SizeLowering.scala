@@ -19,9 +19,6 @@ class SizeLowering(implicit fresh: Fresh) extends Pass {
         Inst(elem.name, Op.Elem(typtr, Val.Zero(typtr), Seq(Val.I32(1)))),
         Inst(n,         Op.Conv(Conv.Ptrtoint, Type.I64, elem))
       )
-
-    case Inst(n, Op.ArrSizeOf(ty, len)) =>
-      ???
   }
 
   override def preType = {

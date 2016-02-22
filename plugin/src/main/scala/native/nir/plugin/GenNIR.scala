@@ -24,9 +24,6 @@ abstract class GenNIR extends PluginComponent
   override def newPhase(prev: Phase): StdPhase =
     new SaltyCodePhase(prev)
 
-  def undefined(focus: Focus) =
-    focus.finish(Op.Unreachable)
-
   class Env(val fresh: Fresh) {
     private val env = mutable.Map.empty[Symbol, Val]
 
@@ -194,7 +191,7 @@ abstract class GenNIR extends PluginComponent
         val paramtys  = params.map(p => genType(p.tpe))
         val selfty    = genType(sym.owner.tpe)
         val retty     =
-          if (sym.isClassConstructor) Type.Unit
+          if (sym.isClassConstructor) Intr.unit
           else genType(sym.tpe.resultType)
         Type.Function(selfty +: paramtys, retty)
     }
@@ -262,12 +259,12 @@ abstract class GenNIR extends PluginComponent
         val isMutable = curLocalInfo.mutableVars.contains(vd.symbol)
         if (!isMutable) {
           curEnv.enter(vd.symbol, rhs.value)
-          rhs.withValue(Val.Zero(Type.Unit))
+          rhs withValue Intr.unit_value
         } else {
           val ty = genType(vd.symbol.tpe)
           val alloca = rhs.withOp(Op.Alloca(ty))
           curEnv.enter(vd.symbol, alloca.value)
-          alloca.withOp(Op.Store(ty, alloca.value, rhs.value))
+          alloca withOp Op.Store(ty, alloca.value, rhs.value)
         }
 
       case If(cond, thenp, elsep) =>
@@ -357,10 +354,10 @@ abstract class GenNIR extends PluginComponent
         genSwitch(m, focus)
 
       case fun: Function =>
-        undefined(focus)
+        unsupported(fun)
 
       case EmptyTree =>
-        focus.withValue(Val.Zero(Type.Unit))
+        focus
 
       case _ =>
         abort("Unexpected tree in genExpr: " +
@@ -396,7 +393,7 @@ abstract class GenNIR extends PluginComponent
         case NullTag =>
           Val.Zero(Intr.object_)
         case UnitTag =>
-          Val.Zero(Type.Unit)
+          Intr.unit_value
         case BooleanTag =>
           if (value.booleanValue) Val.True else Val.False
         case ByteTag =>
@@ -546,9 +543,9 @@ abstract class GenNIR extends PluginComponent
 
     def genArrayValue(av: ArrayValue, focus: Focus): Focus = {
       val ArrayValue(tpt, elems) = av
-      val ty         = genType(tpt.tpe)
+      val elemty     = genArrayElementType(tpt.tpe)
       val len        = elems.length
-      val allocfocus = focus withOp Op.ArrAlloc(ty, Val.I32(len))
+      val allocfocus = focus withOp Intr.call(Intr.alloc_array(elemty), Val.I32(len))
       val rfocus     =
         if (elems.isEmpty)
           allocfocus
@@ -558,8 +555,7 @@ abstract class GenNIR extends PluginComponent
           val lastfocus = vfocus.lastOption.getOrElse(focus)
           val sfocus    = sequenced(values.zipWithIndex, lastfocus) { (vi, foc) =>
             val (value, i) = vi
-            val elem = foc withOp Op.ArrElem(ty, allocfocus.value, Val.I32(i))
-            elem withOp Op.Store(ty, elem.value, value)
+            foc withOp Intr.call(Intr.array_update(elemty), allocfocus.value, Val.I32(i), value)
           }
           sfocus.last
         }
@@ -607,7 +603,7 @@ abstract class GenNIR extends PluginComponent
     }
 
     def genApplyDynamic(app: ApplyDynamic, focus: Focus) =
-      undefined(focus)
+      unsupported(app)
 
     def genApply(app: Apply, focus: Focus): Focus = {
       val Apply(fun, args) = app
@@ -876,16 +872,14 @@ abstract class GenNIR extends PluginComponent
       val lastfocus  = allfocus.last
       def arrayvalue = allfocus(0).value
       def argvalues  = allfocus.tail.map(_.value)
-      def elemty     = genType(app.tpe)
+      def elemty     = genArrayElementType(array.tpe)
 
-      if (scalaPrimitives.isArrayGet(code)) {
-        val elem = lastfocus withOp Op.ArrElem(elemty, arrayvalue, argvalues(0))
-        elem withOp Op.Load(elemty, elem.value)
-      } else if (scalaPrimitives.isArraySet(code)) {
-        val elem = lastfocus withOp Op.ArrElem(elemty, arrayvalue, argvalues(0))
-        elem withOp Op.Store(elemty, elem.value, argvalues(1))
-      } else
-        lastfocus withOp Op.ArrLength(arrayvalue)
+      if (scalaPrimitives.isArrayGet(code))
+        lastfocus withOp Intr.call(Intr.array_apply(elemty), arrayvalue, argvalues(0))
+      else if (scalaPrimitives.isArraySet(code))
+        lastfocus withOp Intr.call(Intr.array_update(elemty), arrayvalue, argvalues(1), argvalues(2))
+      else
+        lastfocus withOp Intr.call(Intr.array_length(elemty), arrayvalue)
     }
 
     def genSynchronized(app: Apply, focus: Focus): Focus = {
@@ -989,8 +983,8 @@ abstract class GenNIR extends PluginComponent
       kind match {
         case builtin: BuiltinClassKind =>
           genNewBuiltin(builtin, ctor, args, focus)
-        case ArrayKind(of) =>
-          genNewArray(toIRType(of), args.head, focus)
+        case arr: ArrayKind =>
+          genNewArray(genArrayElementType(arr), args, focus)
         case ckind: ClassKind =>
           genNew(ckind.sym, ctor, args, focus)
         case ty =>
@@ -1016,10 +1010,17 @@ abstract class GenNIR extends PluginComponent
           genValueOf(toIRType(builtin), args, focus)
       }
 
-    def genNewArray(elemty: nir.Type, lengthp: Tree, focus: Focus) = {
-      val length = genExpr(lengthp, focus)
+    def genNewArray(elemty: nir.Type, lengthsp: Seq[Tree], focus: Focus) = {
+      val lengths      = sequenced(lengthsp, focus)(genExpr(_, _))
+      val lengthvalues = lengths.map(_.value)
+      val last         = lengths.lastOption.getOrElse(focus)
 
-      length.withOp(Op.ArrAlloc(elemty, length.value))
+      lengthvalues match {
+        case Seq(length) =>
+          last withOp Intr.call(Intr.alloc_array(elemty), length)
+        case _ =>
+          ???
+      }
     }
 
     def genNew(sym: Symbol, ctorsym: Symbol, args: List[Tree], focus: Focus) = {

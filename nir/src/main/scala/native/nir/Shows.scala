@@ -123,18 +123,10 @@ object Shows {
       sh"as[$ty] $value"
     case Op.Is(value, ty) =>
       sh"is[$ty] $value"
-    case Op.ArrAlloc(ty, length) =>
-      sh"arr-alloc[$ty] $length"
-    case Op.ArrLength(value) =>
-      sh"arr-length $value"
-    case Op.ArrElem(ty, value, index) =>
-      sh"arr-elem[$ty] $value, $index"
     case Op.Copy(value) =>
       sh"copy $value"
     case Op.SizeOf(ty) =>
       sh"size-of[$ty]"
-    case Op.ArrSizeOf(ty, v) =>
-      sh"arr-size-of[$ty] $v"
     case Op.TypeOf(ty) =>
       sh"type-of[$ty]"
     case Op.StringOf(v) =>
@@ -255,8 +247,9 @@ object Shows {
     case Type.None                => ""
     case Type.Void                => "void"
     case Type.Size                => "size"
-    case Type.Bool                => "bool"
     case Type.Label               => "label"
+    case Type.Vararg              => "..."
+    case Type.Bool                => "bool"
     case Type.I8                  => "i8"
     case Type.I16                 => "i16"
     case Type.I32                 => "i32"
@@ -268,13 +261,11 @@ object Shows {
     case Type.Function(args, ret) => sh"(${r(args, sep = ", ")}) => $ret"
     case Type.Struct(name)        => sh"struct $name"
 
-    case Type.Unit                 => "unit"
     case Type.Nothing              => "nothing"
     case Type.Null                 => "null"
     case Type.Class(name)          => sh"class $name"
     case Type.InterfaceClass(name) => sh"interface $name"
     case Type.ModuleClass(name)    => sh"module $name"
-    case Type.ArrayClass(ty)       => sh"${ty}[]"
   }
 
   implicit val showGlobal: Show[Global] = Show { g =>

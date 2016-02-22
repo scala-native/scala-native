@@ -9,7 +9,7 @@ import native.util.ScopedVar, ScopedVar.scoped
 /** Eliminates:
  *  - Op.Copy
  */
-class CopyLowering extends Pass {
+class CopyElimination extends Pass {
   private var locals: mutable.Map[Local, Val] = _
 
   private def collect(blocks: Seq[Block]): mutable.Map[Local, Val] = {
