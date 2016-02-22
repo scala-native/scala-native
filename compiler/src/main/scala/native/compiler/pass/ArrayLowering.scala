@@ -13,7 +13,7 @@ class ArrayLowering(implicit fresh: Fresh) extends Pass {
 
   override def preInst = {
     case Inst(n, Op.ArrAlloc(ty, len)) =>
-      val arrty = Intr.type_of_array.get(ty).getOrElse(Intr.type_of_array_object)
+      val arrty = Intr.array_type.get(ty).getOrElse(Intr.object_array_type)
       val size  = Val.Local(fresh(), Type.Size)
       Seq(
         Inst(size.name, Op.ArrSizeOf(ty, len)),
@@ -21,7 +21,7 @@ class ArrayLowering(implicit fresh: Fresh) extends Pass {
       )
 
     case Inst(n, Op.ArrLength(arr)) =>
-      val arrptr = Type.Ptr(Intr.array_object)
+      val arrptr = Type.Ptr(Intr.object_array)
       val cast   = Val.Local(fresh(), arrptr)
       val elem   = Val.Local(fresh(), Type.Ptr(Type.I32))
       Seq(
@@ -31,7 +31,7 @@ class ArrayLowering(implicit fresh: Fresh) extends Pass {
       )
 
     case Inst(n, Op.ArrElem(ty, arr, idx)) =>
-      val arrptr = Type.Ptr(Intr.array.get(ty).getOrElse(Intr.array_object))
+      val arrptr = Type.Ptr(Intr.array.get(ty).getOrElse(Intr.object_array))
       val cast   = Val.Local(fresh(), arrptr)
       Seq(
         Inst(cast.name, Op.Conv(Conv.Bitcast, arrptr, arr)),

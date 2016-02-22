@@ -23,7 +23,7 @@ import native.compiler.analysis.ClassHierarchy
  *      struct $name { ptr $name_type, .. $allfty }
  *
  *      const $name_const: struct $name_type =
- *        struct[$name_type](#type_of_type, ..$mname)
+ *        struct[$name_type](#type_type, ..$mname)
  *
  *      .. def $mname: $mty = $body
  *
@@ -53,7 +53,7 @@ class ClassLowering(implicit cha: ClassHierarchy.Result, fresh: Fresh) extends P
       val classStruct   = Defn.Struct(Seq(), name, Type.Ptr(classTypeStructTy) +: data)
 
       val classConstName = name + "const"
-      val classConstVal  = Val.Struct(classTypeStructName, Intr.type_of_type +: vtable)
+      val classConstVal  = Val.Struct(classTypeStructName, Intr.type_type +: vtable)
       val classConst     = Defn.Const(Seq(), classConstName, classTypeStructTy, classConstVal)
 
       val methods = members.collect { case defn: Defn.Define => defn }
@@ -110,9 +110,9 @@ class ClassLowering(implicit cha: ClassHierarchy.Result, fresh: Fresh) extends P
     case Inst(n, _: Op.Is) =>
       ???
 
-    case Inst(n, Op.TypeOf(ty)) if Intr.type_of_intrinsic.contains(ty) =>
+    case Inst(n, Op.TypeOf(ty)) if Intr.intrinsic_type.contains(ty) =>
       Seq(
-        Inst(n, Op.Copy(Intr.type_of_intrinsic(ty)))
+        Inst(n, Op.Copy(Intr.intrinsic_type(ty)))
       )
 
     case Inst(n, Op.TypeOf(Type.Class(name))) =>

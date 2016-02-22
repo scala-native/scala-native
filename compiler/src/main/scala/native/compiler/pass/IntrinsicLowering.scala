@@ -15,7 +15,7 @@ class IntrinsicLowering extends Pass {
     Global(("nrt" +: g.parts): _*)
 
   override def preAssembly = { case defns =>
-    defns ++ Intr.structs.toSeq.map {
+    defns ++ Intr.layout.toSeq.map {
       case (g, fields) =>
         Defn.Struct(Seq(), Global(("nrt" +: g.parts): _*), fields)
     }

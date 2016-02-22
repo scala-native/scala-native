@@ -18,8 +18,6 @@ object Intr {
     intrinsic(id, Seq(from1, from2, from3), to)
   private def cls(id: String) =
     Type.Class(Global.intrinsic(id))
-  private def struct(id: String) =
-    Type.Struct(Global.intrinsic(id))
 
   def call(intr: Val.Global, args: Val*): Op = {
     val Val.Global(_, Type.Ptr(ty)) = intr
@@ -31,52 +29,51 @@ object Intr {
   lazy val object_equals    = binary("object_equals"  , object_, object_, Bool   )
   lazy val object_toString  = unary ("object_toString", object_,          string )
   lazy val object_hashCode  = unary ("object_hashCode", object_,          I32    )
+  lazy val object_getType   = unary ("object_getType" , object_,          type_  )
 
-  lazy val array_bool   = struct("array_bool")
-  lazy val array_char   = struct("array_char")
-  lazy val array_byte   = struct("array_byte")
-  lazy val array_short  = struct("array_short")
-  lazy val array_int    = struct("array_int")
-  lazy val array_long   = struct("array_long")
-  lazy val array_float  = struct("array_float")
-  lazy val array_double = struct("array_double")
-  lazy val array_object = struct("array_object")
-
-  lazy val monitor           = cls    ("monitor")
   lazy val monitor_enter     = unary  ("monitor_enter"    , object_,           Unit  )
   lazy val monitor_exit      = unary  ("monitor_exit"     , object_,           Unit  )
   lazy val monitor_notify    = unary  ("monitor_notify"   , object_,           Unit  )
   lazy val monitor_notifyAll = unary  ("monitor_notifyAll", object_,           Unit  )
   lazy val monitor_wait      = ternary("monitor_wait"     , object_, I64, I32, Unit  )
 
-  lazy val type_     = struct("type")
-  lazy val type_name = unary ("type_name"      , Type.Ptr(type_), string         )
-  lazy val type_size = unary ("type_size"      , Type.Ptr(type_), Size           )
-  lazy val type_of   = unary ("type_of"        , object_        , Type.Ptr(type_))
+  lazy val bool_array   = cls("bool_array")
+  lazy val char_array   = cls("char_array")
+  lazy val byte_array   = cls("byte_array")
+  lazy val short_array  = cls("short_array")
+  lazy val int_array    = cls("int_array")
+  lazy val long_array   = cls("long_array")
+  lazy val float_array  = cls("float_array")
+  lazy val double_array = cls("double_array")
+  lazy val object_array = cls("object_array")
 
-  lazy val type_of_null    = value ("type_of_null"   , type_)
-  lazy val type_of_object  = value ("type_of_object" , type_)
-  lazy val type_of_monitor = value ("type_of_monitor", type_)
-  lazy val type_of_type    = value ("type_of_type"   , type_)
-  lazy val type_of_bool    = value ("type_of_bool"   , type_)
-  lazy val type_of_char    = value ("type_of_char"   , type_)
-  lazy val type_of_byte    = value ("type_of_byte"   , type_)
-  lazy val type_of_short   = value ("type_of_short"  , type_)
-  lazy val type_of_int     = value ("type_of_int"    , type_)
-  lazy val type_of_long    = value ("type_of_long"   , type_)
-  lazy val type_of_float   = value ("type_of_float"  , type_)
-  lazy val type_of_double  = value ("type_of_double" , type_)
-  lazy val type_of_string  = value ("type_of_string" , type_)
+  lazy val type_     = cls  ("type")
+  lazy val type_name = unary("type_name"      , Type.Ptr(type_), string         )
+  lazy val type_size = unary("type_size"      , Type.Ptr(type_), Size           )
 
-  lazy val type_of_array_bool   = value("type_of_array_bool"  , type_)
-  lazy val type_of_array_char   = value("type_of_array_char"  , type_)
-  lazy val type_of_array_byte   = value("type_of_array_byte"  , type_)
-  lazy val type_of_array_short  = value("type_of_array_short" , type_)
-  lazy val type_of_array_int    = value("type_of_array_int"   , type_)
-  lazy val type_of_array_long   = value("type_of_array_long"  , type_)
-  lazy val type_of_array_float  = value("type_of_array_float" , type_)
-  lazy val type_of_array_double = value("type_of_array_double", type_)
-  lazy val type_of_array_object = value("type_of_array_object", type_)
+  lazy val null_type    = value ("null_type"   , type_)
+  lazy val nothing_type = value ("nothing_type", type_)
+  lazy val object_type  = value ("object_type" , type_)
+  lazy val type_type    = value ("type_type"   , type_)
+  lazy val bool_type    = value ("bool_type"   , type_)
+  lazy val char_type    = value ("char_type"   , type_)
+  lazy val byte_type    = value ("byte_type"   , type_)
+  lazy val short_type   = value ("short_type"  , type_)
+  lazy val int_type     = value ("int_type"    , type_)
+  lazy val long_type    = value ("long_type"   , type_)
+  lazy val float_type   = value ("float_type"  , type_)
+  lazy val double_type  = value ("double_type" , type_)
+  lazy val string_type  = value ("string_typr" , type_)
+
+  lazy val bool_array_type   = value("bool_array_type"  , type_)
+  lazy val char_array_type   = value("char_array_type"  , type_)
+  lazy val byte_array_type   = value("byte_array_type"  , type_)
+  lazy val short_array_type  = value("short_array_type" , type_)
+  lazy val int_array_type    = value("int_array_type"   , type_)
+  lazy val long_array_type   = value("long_array_type"  , type_)
+  lazy val float_array_type  = value("float_array_type" , type_)
+  lazy val double_array_type = value("double_array_type", type_)
+  lazy val object_array_type = value("object_array_type", type_)
 
   lazy val bool          = cls  ("bool")
   lazy val bool_box      = unary("bool_box"     , Bool, bool  )
@@ -158,15 +155,15 @@ object Intr {
   lazy val throw_ = unary  ("throw", object_, Type.Nothing)
 
   val array = Map[Type, Type](
-    bool    -> array_bool  ,
-    char    -> array_char  ,
-    byte    -> array_byte  ,
-    short   -> array_short ,
-    int     -> array_int 	 ,
-    long    -> array_long  ,
-    float   -> array_float ,
-    double  -> array_double,
-    object_ -> array_object
+    bool    -> bool_array  ,
+    char    -> char_array  ,
+    byte    -> byte_array  ,
+    short   -> short_array ,
+    int     -> int_array 	 ,
+    long    -> long_array  ,
+    float   -> float_array ,
+    double  -> double_array,
+    object_ -> object_array
   )
 
   val box = Map[Type, Val.Global](
@@ -256,44 +253,44 @@ object Intr {
     double -> double_hashCode
   )
 
-  val type_of_intrinsic = Map[Type, Val.Global](
-    Type.Null -> type_of_null   ,
-    object_   -> type_of_object ,
-    monitor   -> type_of_monitor,
-    type_     -> type_of_type   ,
-    bool      -> type_of_bool   ,
-    char      -> type_of_char   ,
-    byte      -> type_of_byte   ,
-    short     -> type_of_short  ,
-    int       -> type_of_int    ,
-    long      -> type_of_long   ,
-    float     -> type_of_float  ,
-    double    -> type_of_double
+  val intrinsic_type = Map[Type, Val.Global](
+    Type.Null    -> null_type   ,
+    Type.Nothing -> nothing_type,
+    object_      -> object_type ,
+    type_        -> type_type   ,
+    bool         -> bool_type   ,
+    char         -> char_type   ,
+    byte         -> byte_type   ,
+    short        -> short_type  ,
+    int          -> int_type    ,
+    long         -> long_type   ,
+    float        -> float_type  ,
+    double       -> double_type
   )
 
-  lazy val type_of_array = Map[Type, Val.Global](
-    bool    -> type_of_array_bool  ,
-    char    -> type_of_array_char  ,
-    byte    -> type_of_array_byte  ,
-    short   -> type_of_array_short ,
-    int     -> type_of_array_int   ,
-    long    -> type_of_array_long  ,
-    float   -> type_of_array_float ,
-    double  -> type_of_array_double,
-    object_ -> type_of_array_object
+  lazy val array_type = Map[Type, Val.Global](
+    bool    -> bool_array_type  ,
+    char    -> char_array_type  ,
+    byte    -> byte_array_type  ,
+    short   -> short_array_type ,
+    int     -> int_array_type   ,
+    long    -> long_array_type  ,
+    float   -> float_array_type ,
+    double  -> double_array_type,
+    object_ -> object_array_type
   )
 
-  val structs = Map[Global, Seq[Type]](
-    array_bool.name   -> Seq(Ptr(type_), I32, Array(Bool, 0))   ,
-    array_char.name   -> Seq(Ptr(type_), I32, Array(I16, 0))    ,
-    array_byte.name   -> Seq(Ptr(type_), I32, Array(I8, 0))     ,
-    array_short.name  -> Seq(Ptr(type_), I32, Array(I16, 0))    ,
-    array_int.name    -> Seq(Ptr(type_), I32, Array(I32, 0))    ,
-    array_long.name   -> Seq(Ptr(type_), I32, Array(I64, 0))    ,
-    array_float.name  -> Seq(Ptr(type_), I32, Array(F32, 0))    ,
-    array_double.name -> Seq(Ptr(type_), I32, Array(F64, 0))    ,
-    array_object.name -> Seq(Ptr(type_), I32, Array(Ptr(I8), 0)),
-    type_.name        -> Seq(Ptr(type_))               ,
-    string.name       -> Seq(Ptr(type_), I32, Ptr(Type.I8))
+  val layout = Map[Global, Seq[Type]](
+    bool_array.name   -> Seq(Ptr(I8), I32, Array(Bool, 0))   ,
+    char_array.name   -> Seq(Ptr(I8), I32, Array(I16, 0))    ,
+    byte_array.name   -> Seq(Ptr(I8), I32, Array(I8, 0))     ,
+    short_array.name  -> Seq(Ptr(I8), I32, Array(I16, 0))    ,
+    int_array.name    -> Seq(Ptr(I8), I32, Array(I32, 0))    ,
+    long_array.name   -> Seq(Ptr(I8), I32, Array(I64, 0))    ,
+    float_array.name  -> Seq(Ptr(I8), I32, Array(F32, 0))    ,
+    double_array.name -> Seq(Ptr(I8), I32, Array(F64, 0))    ,
+    object_array.name -> Seq(Ptr(I8), I32, Array(Ptr(I8), 0)),
+    type_.name        -> Seq(Ptr(I8))                        ,
+    string.name       -> Seq(Ptr(I8), I32, Ptr(I8))
   )
 }
