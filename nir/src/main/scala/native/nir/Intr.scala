@@ -48,8 +48,8 @@ object Intr {
   lazy val object_array = cls("object_array")
 
   lazy val type_     = cls  ("type")
-  lazy val type_name = unary("type_name"      , Type.Ptr(type_), string         )
-  lazy val type_size = unary("type_size"      , Type.Ptr(type_), Size           )
+  lazy val type_name = unary("type_name", Type.Ptr(type_), string)
+  lazy val type_size = unary("type_size", Type.Ptr(type_), Size  )
 
   lazy val null_type    = value ("null_type"   , type_)
   lazy val nothing_type = value ("nothing_type", type_)
@@ -154,7 +154,7 @@ object Intr {
   lazy val yield_ = nullary("yield", Unit)
   lazy val throw_ = unary  ("throw", object_, Type.Nothing)
 
-  val array = Map[Type, Type](
+  lazy val array = Map[Type, Type](
     bool    -> bool_array  ,
     char    -> char_array  ,
     byte    -> byte_array  ,
@@ -166,7 +166,7 @@ object Intr {
     object_ -> object_array
   )
 
-  val box = Map[Type, Val.Global](
+  lazy val box = Map[Type, Val.Global](
     bool   -> bool_box  ,
     char   -> char_box  ,
     byte   -> byte_box  ,
@@ -177,7 +177,7 @@ object Intr {
     double -> double_box
   )
 
-  val unbox = Map[Type, Val.Global](
+  lazy val unbox = Map[Type, Val.Global](
     bool   -> bool_unbox  ,
     char   -> char_unbox  ,
     byte   -> byte_unbox  ,
@@ -188,7 +188,7 @@ object Intr {
     double -> double_unbox
   )
 
-  val toString_ = Map[Type, Val.Global](
+  lazy val toString_ = Map[Type, Val.Global](
     object_ -> object_toString,
     bool    -> bool_toString  ,
     char    -> char_toString  ,
@@ -200,22 +200,22 @@ object Intr {
     double  -> double_toString
   )
 
-  val toUnsignedString = Map[Type, Val.Global](
+  lazy val toUnsignedString = Map[Type, Val.Global](
     int  -> int_toUnsignedString ,
     long -> long_toUnsignedString
   )
 
-  val toString_rdx = Map[Type, Val.Global](
+  lazy val toString_rdx = Map[Type, Val.Global](
     int  -> int_toString_rdx ,
     long -> long_toString_rdx
   )
 
-  val toUnsignedString_rdx = Map[Type, Val.Global](
+  lazy val toUnsignedString_rdx = Map[Type, Val.Global](
     int  -> int_toUnsignedString_rdx ,
     long -> long_toUnsignedString_rdx
   )
 
-  val parse = Map[Type, Val.Global](
+  lazy val parse = Map[Type, Val.Global](
     bool   -> bool_parse  ,
     byte   -> byte_parse  ,
     short  -> short_parse ,
@@ -225,24 +225,24 @@ object Intr {
     double -> double_parse
   )
 
-  val parseUnsigned = Map[Type, Val.Global](
+  lazy val parseUnsigned = Map[Type, Val.Global](
     int  -> int_parseUnsigned ,
     long -> long_parseUnsigned
   )
 
-  val parse_rdx = Map[Type, Val.Global](
+  lazy val parse_rdx = Map[Type, Val.Global](
     byte  -> byte_parse_rdx ,
     short -> short_parse_rdx,
     int   -> int_parse_rdx  ,
     long  -> long_parse_rdx
   )
 
-  val parseUnsigned_rdx = Map[Type, Val.Global](
+  lazy val parseUnsigned_rdx = Map[Type, Val.Global](
     int  -> int_parseUnsigned_rdx,
     long -> long_parseUnsigned_rdx
   )
 
-  val hashCode_ = Map[Type, Val.Global](
+  lazy val hashCode_ = Map[Type, Val.Global](
     bool   -> bool_hashCode  ,
     char   -> char_hashCode  ,
     byte   -> byte_hashCode  ,
@@ -253,7 +253,7 @@ object Intr {
     double -> double_hashCode
   )
 
-  val intrinsic_type = Map[Type, Val.Global](
+  lazy val intrinsic_type = Map[Type, Val.Global](
     Type.Null    -> null_type   ,
     Type.Nothing -> nothing_type,
     object_      -> object_type ,
@@ -280,7 +280,7 @@ object Intr {
     object_ -> object_array_type
   )
 
-  val layout = Map[Global, Seq[Type]](
+  lazy val layout = Map[Global, Seq[Type]](
     bool_array.name   -> Seq(Ptr(I8), I32, Array(Bool, 0))   ,
     char_array.name   -> Seq(Ptr(I8), I32, Array(I16, 0))    ,
     byte_array.name   -> Seq(Ptr(I8), I32, Array(I8, 0))     ,
