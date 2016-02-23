@@ -12,8 +12,19 @@ import native.util.unreachable
  */
 class TryLowering extends Pass {
   override def preDefn = {
-    case Defn.Define(_, _, _, blocks) =>
+    case defn @ Defn.Define(_, _, _, blocks) =>
       val cfg = ControlFlow(blocks)
-      ???
+      var stack = List.empty[Next.Fail]
+      cfg.map { node =>
+        println(s"${node.block.name} ${stack}")
+        node.block.cf match {
+          case Cf.Try(succ, fail: Next.Fail) =>
+            stack = fail :: stack
+          case _ =>
+            ()
+        }
+        ()
+      }
+      Seq(defn)
   }
 }

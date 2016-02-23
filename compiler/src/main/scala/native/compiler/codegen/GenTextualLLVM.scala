@@ -43,29 +43,13 @@ object GenTextualLLVM extends GenShow {
   }
 
   def showDefine(attrs: Seq[Attr], retty: Type, name: Global, blocks: Seq[Block]) = {
-    val body = brace(i(showBlocks(blocks)))
+    val cfg = ControlFlow(blocks)
+    val blockshows = cfg.map { node =>
+      showBlock(node.block, node.pred, isEntry = node eq cfg.entry)
+    }
+    val body = brace(i(r(blockshows)))
     val params = sh"(${r(blocks.head.params: Seq[Val], sep = ", ")})"
     sh"${attrs}define $retty @$name$params $body"
-  }
-
-  def showBlocks(blocks: Seq[Block]) = {
-    val cfg = ControlFlow(blocks)
-    val visited = mutable.Set.empty[ControlFlow.Node]
-    val worklist = mutable.Stack.empty[ControlFlow.Node]
-    val result = mutable.UnrolledBuffer.empty[Show.Result]
-    val entry = cfg(blocks.head.name)
-
-    worklist.push(entry)
-    while (worklist.nonEmpty) {
-      val node = worklist.pop()
-      if (!visited.contains(node)){
-        visited += node
-        node.succ.foreach(e => worklist.push(e.to))
-        result += showBlock(node.block, node.pred, isEntry = node eq entry)
-      }
-    }
-
-    r(result)
   }
 
   def showBlock(block: Block, pred: Seq[ControlFlow.Edge], isEntry: Boolean): Show.Result = {

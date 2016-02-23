@@ -421,8 +421,7 @@ abstract class GenNIR extends PluginComponent
     def genTry(retty: nir.Type, expr: Tree, catches: List[Tree], finalizer: Tree, focus: Focus) =
       focus.branchTry(retty, normal = genExpr(expr, _), exc = genCatch(retty, catches, _, _))
 
-    // TODO: switching on types isn't supported
-    def genCatch(retty: nir.Type, catches: List[Tree], exc: Val, focus: Focus) = ???/*{
+    def genCatch(retty: nir.Type, catches: List[Tree], exc: Val, focus: Focus) = {
       val cases =
         catches.map {
           case CaseDef(pat, _, body) =>
@@ -435,7 +434,7 @@ abstract class GenNIR extends PluginComponent
                 (Some(pat.symbol), genType(pat.symbol.tpe))
             }
 
-            (Val.Class(excty), { focus: Focus =>
+            (excty, { focus: Focus =>
               val nfocus = symopt.map { sym =>
                 val cast = focus withOp Op.As(excty, exc)
                 curEnv.enter(sym, cast.value)
@@ -445,23 +444,16 @@ abstract class GenNIR extends PluginComponent
             })
         }
 
-      val cls = focus withOp Intr.call(Intr.object_getClass, exc)
-      cls.branchSwitch(cls.value, retty,
-        defaultf = _ finish Op.Throw(exc),
-        casevals = cases.map(_._1),
-        casefs   = cases.map(_._2))
-    }*/
+      def wrap(cases: Seq[(nir.Type, Focus => Focus)], focus: Focus): Focus = cases match {
+        case Seq() =>
+          focus finish Cf.Throw(exc)
+        case (excty, f) +: rest =>
+          val cond = focus withOp Op.Is(excty, exc)
+          cond.branchIf(cond.value, retty, f, wrap(rest, _))
+      }
 
-
-    /*{
-      val exc    = focus.cf
-      val switch = ir.Switch(exc, ir.GetClass(ir.Empty, exc))
-
-      val default =
-        Tails.termn(ir.Throw(ir.CaseDefault(switch), focus.ef, exc))
-
-      Tails.flatten(default +: cases)
-    }*/
+      wrap(cases, focus)
+    }
 
     def genFinally(finalizer: Tree, focus: Focus): Focus = ???/*{
       val Tails(open, closed) = tails

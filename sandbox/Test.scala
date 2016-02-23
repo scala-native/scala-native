@@ -1,9 +1,12 @@
 package test
 
 object Test {
-  def main(args: Array[String]): Unit =  {
-    val arr = new Array[Int](5)
-    val len = arr.length
-    arr(0)
+  def f = throw new Exception()
+  def main(args: Array[String]): Unit = {
+    try f
+    catch {
+      case _: Exception =>
+        ()
+    }
   }
 }

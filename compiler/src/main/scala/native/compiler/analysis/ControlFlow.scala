@@ -15,9 +15,27 @@ import native.nir._
 object ControlFlow {
   final class Edge(val from: Node, val to: Node, val next: Next)
   final class Node(val block: Block, var pred: Seq[Edge], var succ: Seq[Edge])
-  type Result = Map[Local, Node]
+  final class Graph(val entry: Node, val nodes: Map[Local, Node]) {
+    def map[T: reflect.ClassTag](f: Node => T): Seq[T] = {
+      val visited  = mutable.Set.empty[Node]
+      val worklist = mutable.Stack.empty[Node]
+      val result   = mutable.UnrolledBuffer.empty[T]
 
-  def apply(blocks: Seq[Block]): Result = {
+      worklist.push(entry)
+      while (worklist.nonEmpty) {
+        val node = worklist.pop()
+        if (!visited.contains(node)){
+          visited += node
+          node.succ.foreach(e => worklist.push(e.to))
+          result += f(node)
+        }
+      }
+
+      result.toSeq
+    }
+  }
+
+  def apply(blocks: Seq[Block]): Graph = {
     val nodes = mutable.Map.empty[Local, Node]
     def edge(from: Node, to: Node, next: Next) ={
       val e = new Edge(from, to, next)
@@ -59,6 +77,6 @@ object ControlFlow {
         }
     }
 
-    nodes.toMap
+    new Graph(nodes(blocks.head.name), nodes.toMap)
   }
 }
