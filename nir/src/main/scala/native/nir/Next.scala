@@ -1,4 +1,12 @@
 package native
 package nir
 
-final case class Next(name: Local, args: Seq[Val])
+sealed abstract class Next {
+  def name: Local
+}
+object Next {
+  final case class Succ(name: Local)                  extends Next
+  final case class Fail(name: Local)                  extends Next
+  final case class Label(name: Local, args: Seq[Val]) extends Next
+  final case class Case(value: Val, name: Local)      extends Next
+}

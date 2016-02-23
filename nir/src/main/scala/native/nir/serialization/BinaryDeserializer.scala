@@ -78,15 +78,12 @@ final class BinaryDeserializer(bb: ByteBuffer) {
   private def getBlocks(): Seq[Block] = getSeq(getBlock)
   private def getBlock(): Block = Block(getLocal, getParams, getInsts, getCf)
 
-  private def getCases(): Seq[Case] = getSeq(getCase)
-  private def getCase(): Case = Case(getVal, getNext)
-
   private def getCf(): Cf = getInt match {
     case T.UnreachableCf => Cf.Unreachable
     case T.RetCf         => Cf.Ret(getVal)
     case T.JumpCf        => Cf.Jump(getNext)
     case T.IfCf          => Cf.If(getVal, getNext, getNext)
-    case T.SwitchCf      => Cf.Switch(getVal, getNext, getCases)
+    case T.SwitchCf      => Cf.Switch(getVal, getNext, getNexts)
     case T.InvokeCf      => Cf.Invoke(getType, getVal, getVals, getNext, getNext)
 
     case T.ThrowCf => Cf.Throw(getVal)
@@ -149,7 +146,12 @@ final class BinaryDeserializer(bb: ByteBuffer) {
   private def getLocal(): Local = Local(getString, getInt)
 
   private def getNexts(): Seq[Next] = getSeq(getNext)
-  private def getNext(): Next = Next(getLocal, getVals)
+  private def getNext(): Next = getInt match {
+    case T.SuccNext  => Next.Succ(getLocal)
+    case T.FailNext  => Next.Fail(getLocal)
+    case T.LabelNext => Next.Label(getLocal, getVals)
+    case T.CaseNext  => Next.Case(getVal, getLocal)
+  }
 
   private def getOp(): Op = getInt match {
     case T.CallOp    => Op.Call(getType, getVal, getVals)

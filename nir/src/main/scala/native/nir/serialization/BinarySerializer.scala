@@ -73,12 +73,6 @@ final class BinarySerializer(buffer: ByteBuffer) {
     putCf(block.cf)
   }
 
-  private def putCases(kases: Seq[Case]) = putSeq(putCase)(kases)
-  private def putCase(kase: Case) = {
-    putVal(kase.value)
-    putNext(kase.next)
-  }
-
   private def putCf(cf: Cf) = cf match {
     case Cf.Unreachable =>
       putInt(T.UnreachableCf)
@@ -89,7 +83,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Cf.If(v, thenp, elsep) =>
       putInt(T.IfCf); putVal(v); putNext(thenp); putNext(elsep)
     case Cf.Switch(v, default, cases) =>
-      putInt(T.SwitchCf); putVal(v); putNext(default); putCases(cases)
+      putInt(T.SwitchCf); putVal(v); putNext(default); putNexts(cases)
     case Cf.Invoke(ty, f, args, succ, fail) =>
       putInt(T.InvokeCf); putType(ty); putVal(f); putVals(args); putNext(succ); putNext(fail)
 
@@ -169,9 +163,11 @@ final class BinarySerializer(buffer: ByteBuffer) {
   private def putLocal(local: Local): Unit = { putString(local.scope); putInt(local.id) }
 
   private def putNexts(nexts: Seq[Next]) = putSeq(putNext)(nexts)
-  private def putNext(next: Next) = {
-    putLocal(next.name)
-    putVals(next.args)
+  private def putNext(next: Next) = next match {
+    case Next.Succ(n)      => putInt(T.SuccNext); putLocal(n)
+    case Next.Fail(n)      => putInt(T.FailNext); putLocal(n)
+    case Next.Label(n, vs) => putInt(T.LabelNext); putLocal(n); putVals(vs)
+    case Next.Case(v, n)   => putInt(T.CaseNext); putVal(v); putLocal(n)
   }
 
   private def putOp(op: Op) = op match {

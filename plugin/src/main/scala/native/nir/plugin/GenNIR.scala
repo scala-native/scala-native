@@ -519,7 +519,7 @@ abstract class GenNIR extends PluginComponent
       val lastfocus = prfocus.lastOption.getOrElse(focus)
       lds.foreach(curEnv.enterLabel)
 
-      val first = Next(curEnv.resolveLabel(lds.head), Seq())
+      val first = Next.Label(curEnv.resolveLabel(lds.head), Seq())
       var resfocus = lastfocus finish Cf.Jump(first)
       for (ld <- lds.init) {
         val lfocus = genLabel(ld)
@@ -639,7 +639,7 @@ abstract class GenNIR extends PluginComponent
       val Val.Local(label, _) = curEnv.resolve(fun.symbol)
       val argsfocus = sequenced(args, focus)(genExpr(_, _))
       val lastfocus = argsfocus.lastOption.getOrElse(focus)
-      lastfocus finish Cf.Jump(Next(label, argsfocus.map(_.value)))
+      lastfocus finish Cf.Jump(Next.Label(label, argsfocus.map(_.value)))
     }
 
     lazy val prim2ty = Map(

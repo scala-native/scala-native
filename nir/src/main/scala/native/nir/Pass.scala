@@ -129,7 +129,7 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
       case Cf.Ret(v)                              => Cf.Ret(txVal(v))
       case Cf.Jump(next)                          => Cf.Jump(txNext(next))
       case Cf.If(v, thenp, elsep)                 => Cf.If(txVal(v), txNext(thenp), txNext(elsep))
-      case Cf.Switch(v, default, cases)           => Cf.Switch(txVal(v), txNext(default), cases.map(txCase))
+      case Cf.Switch(v, default, cases)           => Cf.Switch(txVal(v), txNext(default), cases.map(txNext))
       case Cf.Invoke(ty, ptrv, argvs, succ, fail) => Cf.Invoke(txType(ty), txVal(ptrv), argvs.map(txVal), txNext(succ), txNext(fail))
 
       case Cf.Throw(v)       => Cf.Throw(txVal(v))
@@ -165,15 +165,17 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
     hook(postType, post, post)
   }
 
-  private def txNext(next: Next) = {
+  private def txNext(next: Next): Next = {
     val pre = hook(preNext, next, next)
-    val post = Next(pre.name, pre.args.map(txVal))
+    val post = pre match {
+      case succ: Next.Succ     => succ
+      case fail: Next.Fail     => fail
+      case Next.Label(n, args) => Next.Label(n, args.map(txVal))
+      case Next.Case(v, n)     => Next.Case(txVal(v), n)
+    }
 
     hook(postNext, post, post)
   }
-
-  private def txCase(kase: Case) =
-    Case(txVal(kase.value), txNext(kase.next))
 
   final def apply(assembly: Seq[Defn]): Seq[Defn] =
     txAssembly(assembly)

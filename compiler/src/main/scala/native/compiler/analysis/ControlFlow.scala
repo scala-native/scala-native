@@ -13,14 +13,14 @@ import native.nir._
  *  * What are the successors of given block?
  */
 object ControlFlow {
-  final class Edge(val from: Node, val to: Node, val values: Seq[Val])
+  final class Edge(val from: Node, val to: Node, val next: Next)
   final class Node(val block: Block, var pred: Seq[Edge], var succ: Seq[Edge])
   type Result = Map[Local, Node]
 
   def apply(blocks: Seq[Block]): Result = {
     val nodes = mutable.Map.empty[Local, Node]
-    def edge(from: Node, to: Node, params: Seq[Val]) ={
-      val e = new Edge(from, to, params)
+    def edge(from: Node, to: Node, next: Next) ={
+      val e = new Edge(from, to, next)
       from.succ = from.succ :+ e
       to.pred = to.pred :+ e
     }
@@ -36,25 +36,24 @@ object ControlFlow {
             ()
           case Cf.Ret(_) =>
             ()
-          case Cf.Jump(Next(n, args)) =>
-            edge(node, nodes(n), args)
-          case Cf.If(_, Next(n1, args1), Next(n2, args2)) =>
-            edge(node, nodes(n1), args1)
-            edge(node, nodes(n2), args2)
+          case Cf.Jump(next) =>
+            edge(node, nodes(next.name), next)
+          case Cf.If(_, next1, next2) =>
+            edge(node, nodes(next1.name), next1)
+            edge(node, nodes(next2.name), next2)
           case Cf.Switch(_, default, cases) =>
-            cases.map {
-              case Case(_, Next(n, args)) =>
-                edge(node, nodes(n), args)
+            edge(node, nodes(default.name), default)
+            cases.foreach { case_ =>
+              edge(node, nodes(case_.name), case_)
             }
-            edge(node, nodes(default.name), default.args)
           case Cf.Invoke(_, _, _, succ, fail) =>
-            edge(node, nodes(succ.name), succ.args)
-            edge(node, nodes(fail.name), succ.args)
+            edge(node, nodes(succ.name), succ)
+            edge(node, nodes(fail.name), succ)
           case Cf.Throw(_) =>
             ()
-          case Cf.Try(Next(n1, args1), Next(n2, args2)) =>
-            edge(node, nodes(n1), args1)
-            edge(node, nodes(n2), args2)
+          case Cf.Try(next1, next2) =>
+            edge(node, nodes(next1.name), next1)
+            edge(node, nodes(next2.name), next2)
           case _ =>
             unreachable
         }

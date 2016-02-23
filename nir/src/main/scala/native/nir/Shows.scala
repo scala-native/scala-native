@@ -58,15 +58,14 @@ object Shows {
   }
 
   implicit val showNext: Show[Next] = Show {
-    case Next(name, Seq()) =>
-      sh"$name"
-    case Next(name, args) =>
+    case Next.Label(name, args) =>
       sh"$name(${r(args, sep = ", ")})"
-  }
-
-  implicit val showCase: Show[Case] = Show {
-    case Case(value, next) =>
-      sh"case $value: $next"
+    case Next.Succ(name) =>
+      sh"succ $name"
+    case Next.Fail(name) =>
+      sh"fail $name"
+    case Next.Case(value, name) =>
+      sh"case $value => name"
   }
 
   implicit val showCf: Show[Cf] = Show {

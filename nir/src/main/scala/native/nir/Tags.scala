@@ -101,7 +101,12 @@ object Tags {
   final val ThrowCf = 1 + InvokeCf
   final val TryCf   = 1 + ThrowCf
 
-  final val CallOp        = 1 + TryCf
+  final val SuccNext  = 1 + TryCf
+  final val FailNext  = 1 + SuccNext
+  final val LabelNext = 1 + FailNext
+  final val CaseNext  = 1 + LabelNext
+
+  final val CallOp        = 1 + CaseNext
   final val LoadOp        = 1 + CallOp
   final val StoreOp       = 1 + LoadOp
   final val ElemOp        = 1 + StoreOp

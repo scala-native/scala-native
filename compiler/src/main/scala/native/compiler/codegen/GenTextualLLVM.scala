@@ -79,7 +79,10 @@ object GenTextualLLVM extends GenShow {
       val phis = r(block.params.zipWithIndex.map {
         case (Val.Local(n, ty), i) =>
           val branches = pred.map { e =>
-            sh"[${justVal(e.values(i))}, %${e.from.block.name}]"
+            e.next match {
+              case Next.Label(name, values) =>
+                sh"[${justVal(values(i))}, %$name]"
+            }
           }
           sh"%$n = phi $ty ${r(branches, sep = ", ")}"
       }.map(nl(_)))
@@ -211,10 +214,8 @@ object GenTextualLLVM extends GenShow {
   }
 
   implicit val showNext: Show[Next] = Show {
-    case Next(n, _) => sh"label %$n"
+    case Next.Label(n, _) => sh"label %$n"
   }
-
-  implicit def showCase: Show[Case] = ???
 
   implicit def showAttrs: Show[Seq[Attr]] = nir.Shows.showAttrs
   implicit def showConv: Show[Conv] = nir.Shows.showConv
