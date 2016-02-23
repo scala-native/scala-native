@@ -131,21 +131,60 @@ final class BinarySerializer(buffer: ByteBuffer) {
   private def putDefns(defns: Seq[Defn]): Unit = putSeq(putDefn)(defns)
   private def putDefn(value: Defn): Unit = value match {
     case Defn.Var(attrs, name, ty, value) =>
-      putInt(T.VarDefn); putAttrs(attrs); putGlobal(name); putType(ty); putVal(value)
+      putInt(T.VarDefn)
+      putAttrs(attrs)
+      putGlobal(name)
+      putType(ty)
+      putVal(value)
+
     case Defn.Const(attrs, name, ty, value) =>
-      putInt(T.ConstDefn); putAttrs(attrs); putGlobal(name); putType(ty); putVal(value)
+      putInt(T.ConstDefn)
+      putAttrs(attrs)
+      putGlobal(name)
+      putType(ty)
+      putVal(value)
+
     case Defn.Declare(attrs, name, ty) =>
-      putInt(T.DeclareDefn); putAttrs(attrs); putGlobal(name); putType(ty)
+      putInt(T.DeclareDefn)
+      putAttrs(attrs)
+      putGlobal(name)
+      putType(ty)
+
     case Defn.Define(attrs, name, ty, blocks) =>
-      putInt(T.DefineDefn); putAttrs(attrs); putGlobal(name); putType(ty); putBlocks(blocks)
+      putInt(T.DefineDefn)
+      putAttrs(attrs)
+      putGlobal(name)
+      putType(ty)
+      putBlocks(blocks)
+
     case Defn.Struct(attrs, name, members) =>
-      putInt(T.StructDefn); putAttrs(attrs); putGlobal(name); putTypes(members)
+      putInt(T.StructDefn)
+      putAttrs(attrs)
+      putGlobal(name)
+      putTypes(members)
+
     case Defn.Interface(attrs, name, ifaces, members) =>
-      putInt(T.IntefaceDefn); putAttrs(attrs); putGlobal(name); putGlobals(ifaces); putDefns(members)
+      putInt(T.IntefaceDefn)
+      putAttrs(attrs)
+      putGlobal(name)
+      putGlobals(ifaces)
+      putDefns(members)
+
     case Defn.Class(attrs, name, parent, ifaces, members) =>
-      putInt(T.ClassDefn); putAttrs(attrs); putGlobal(name); putGlobal(parent); putGlobals(ifaces); putDefns(members)
+      putInt(T.ClassDefn)
+      putAttrs(attrs)
+      putGlobal(name)
+      putGlobal(parent)
+      putGlobals(ifaces)
+      putDefns(members)
+
     case Defn.Module(attrs, name, parent, ifaces, members) =>
-      putInt(T.ModuleDefn); putAttrs(attrs); putGlobal(name); putGlobal(parent); putGlobals(ifaces); putDefns(members)
+      putInt(T.ModuleDefn)
+      putAttrs(attrs)
+      putGlobal(name)
+      putGlobal(parent)
+      putGlobals(ifaces)
+      putDefns(members)
   }
 
   private def putGlobals(globals: Seq[Global]): Unit = putSeq(putGlobal)(globals)
@@ -172,46 +211,110 @@ final class BinarySerializer(buffer: ByteBuffer) {
 
   private def putOp(op: Op) = op match {
     case Op.Call(ty, v, args) =>
-      putInt(T.CallOp); putType(ty); putVal(v); putVals(args)
+      putInt(T.CallOp)
+      putType(ty)
+      putVal(v)
+      putVals(args)
+
     case Op.Load(ty, ptr) =>
-      putInt(T.LoadOp); putType(ty); putVal(ptr)
+      putInt(T.LoadOp)
+      putType(ty)
+      putVal(ptr)
+
     case Op.Store(ty, value, ptr) =>
-      putInt(T.StoreOp); putType(ty); putVal(value); putVal(ptr)
+      putInt(T.StoreOp)
+      putType(ty)
+      putVal(value)
+      putVal(ptr)
+
     case Op.Elem(ty, v, indexes) =>
-      putInt(T.ElemOp); putType(ty); putVal(v); putVals(indexes)
+      putInt(T.ElemOp)
+      putType(ty)
+      putVal(v)
+      putVals(indexes)
+
     case Op.Extract(ty, v, index) =>
-      putInt(T.ExtractOp); putType(ty); putVal(v); putVal(index)
+      putInt(T.ExtractOp)
+      putType(ty)
+      putVal(v)
+      putVal(index)
+
     case Op.Insert(ty, v, value, index) =>
-      putInt(T.InsertOp); putType(ty); putVal(v); putVal(value); putVal(index)
+      putInt(T.InsertOp)
+      putType(ty)
+      putVal(v)
+      putVal(value)
+      putVal(index)
+
     case Op.Alloca(ty) =>
-      putInt(T.AllocaOp); putType(ty)
+      putInt(T.AllocaOp)
+      putType(ty)
+
     case Op.Bin(bin, ty, l, r) =>
-      putInt(T.BinOp); putBin(bin); putType(ty); putVal(l); putVal(r)
+      putInt(T.BinOp)
+      putBin(bin)
+      putType(ty)
+      putVal(l)
+      putVal(r)
+
     case Op.Comp(comp, ty, l, r) =>
-      putInt(T.CompOp); putComp(comp); putType(ty); putVal(l); putVal(r)
+      putInt(T.CompOp)
+      putComp(comp)
+      putType(ty)
+      putVal(l)
+      putVal(r)
+
     case Op.Conv(conv, ty, v) =>
-      putInt(T.ConvOp); putConv(conv); putType(ty); putVal(v)
+      putInt(T.ConvOp)
+      putConv(conv)
+      putType(ty)
+      putVal(v)
 
     case Op.Alloc(ty) =>
-      putInt(T.AllocOp); putType(ty)
+      putInt(T.AllocOp)
+      putType(ty)
+
     case Op.Field(ty, v, name) =>
-      putInt(T.FieldOp); putType(ty); putVal(v); putGlobal(name)
+      putInt(T.FieldOp)
+      putType(ty)
+      putVal(v)
+      putGlobal(name)
+
     case Op.Method(ty, v, name) =>
-      putInt(T.MethodOp); putType(ty); putVal(v); putGlobal(name)
+      putInt(T.MethodOp)
+      putType(ty)
+      putVal(v)
+      putGlobal(name)
+
     case Op.Module(name) =>
-      putInt(T.ModuleOp); putGlobal(name)
+      putInt(T.ModuleOp)
+      putGlobal(name)
+
     case Op.As(ty, v) =>
-      putInt(T.AsOp); putType(ty); putVal(v)
+      putInt(T.AsOp)
+      putType(ty)
+      putVal(v)
+
     case Op.Is(ty, v) =>
-      putInt(T.IsOp); putType(ty); putVal(v)
+      putInt(T.IsOp)
+      putType(ty)
+      putVal(v)
+
     case Op.Copy(v) =>
-      putInt(T.CopyOp); putVal(v)
+      putInt(T.CopyOp)
+      putVal(v)
+
     case Op.SizeOf(ty) =>
-      putInt(T.SizeOfOp); putType(ty)
+      putInt(T.SizeOfOp)
+      putType(ty)
+
     case Op.TypeOf(ty) =>
-      putInt(T.TypeOfOp); putType(ty)
+      putInt(T.TypeOfOp)
+      putType(ty)
+
     case Op.StringOf(s) =>
-      putInt(T.StringOfOp); putString(s)
+      putInt(T.StringOfOp)
+      putString(s)
   }
 
   private def putParams(params: Seq[Val.Local]) = putSeq(putParam)(params)

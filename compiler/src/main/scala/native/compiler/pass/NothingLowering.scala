@@ -26,13 +26,13 @@ class NothingLowering extends Pass {
           ninsts += inst
       }
     }
-    Seq(Block(n, params, ninsts.toSeq, cf))
+    Seq(Block(n, params, ninsts.toSeq, ncf))
   }
 
   override def preType = {
     case Type.Nothing =>
       unsupported("nothing can only be used as the result type of the function")
     case Type.Function(params, Type.Nothing) =>
-      Type.Function(params, Type.Nothing)
+      Type.Function(params, Type.Void)
   }
 }

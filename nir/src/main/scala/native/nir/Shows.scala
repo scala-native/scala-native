@@ -54,10 +54,12 @@ object Shows {
 
   implicit val showInst: Show[Inst] = Show {
     case Inst(Local.empty, op) => sh"$op"
-    case Inst(name, op)        => sh"$name = $op"
+    case Inst(name, op)        => sh"$name: ${op.resty} = $op"
   }
 
   implicit val showNext: Show[Next] = Show {
+    case Next.Label(name, Seq()) =>
+      sh"$name"
     case Next.Label(name, args) =>
       sh"$name(${r(args, sep = ", ")})"
     case Next.Succ(name) =>
@@ -226,7 +228,7 @@ object Shows {
     case Defn.Declare(attrs, name, ty) =>
       sh"${attrs}def $name : $ty"
     case Defn.Define(attrs, name, ty, blocks) =>
-      val body = brace(r(blocks.map(i(_))))
+        val body = brace(r(blocks.map(i(_))))
       sh"${attrs}def $name : $ty $body"
     case Defn.Struct(attrs, name, tys) =>
       sh"${attrs}struct $name {${r(tys, sep = ", ")}}"

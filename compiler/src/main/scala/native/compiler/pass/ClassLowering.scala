@@ -104,11 +104,15 @@ class ClassLowering(implicit cha: ClassHierarchy.Result, fresh: Fresh) extends P
         Inst(n, Op.Copy(Val.Global(meth.name, Type.Ptr(sig))))
       )
 
-    case Inst(n, _: Op.As) =>
-      ???
+    case Inst(n, Op.As(_, v)) =>
+      Seq(
+        Inst(n, Op.Copy(v))
+      )
 
     case Inst(n, _: Op.Is) =>
-      ???
+      Seq(
+        Inst(n, Op.Copy(Val.True))
+      )
 
     case Inst(n, Op.TypeOf(ty)) if Intr.intrinsic_type.contains(ty) =>
       Seq(
