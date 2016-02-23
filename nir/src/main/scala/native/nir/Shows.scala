@@ -47,7 +47,8 @@ object Shows {
         sh"(${r(paramshows, sep = ", ")})"
       }
     val header = sh"$name$paramlist:"
-    val body = i(r(insts, sep = nl("")))
+    val instshows = insts.map(i => sh"$i") :+ sh"$cf"
+    val body = i(r(instshows, sep = nl("")))
     sh"$header$body"
   }
 
@@ -68,28 +69,30 @@ object Shows {
       sh"case $value: $next"
   }
 
-  implicit val showOp: Show[Op] = Show {
-    case Op.Unreachable =>
+  implicit val showCf: Show[Cf] = Show {
+    case Cf.Unreachable =>
       "unreachable"
-    case Op.Ret(Val.None) =>
+    case Cf.Ret(Val.None) =>
       sh"ret"
-    case Op.Ret(value) =>
+    case Cf.Ret(value) =>
       sh"ret $value"
-    case Op.Jump(next) =>
+    case Cf.Jump(next) =>
       sh"jump $next"
-    case Op.If(cond, thenp, elsep) =>
+    case Cf.If(cond, thenp, elsep) =>
       sh"if $cond then $thenp else $elsep"
-    case Op.Switch(scrut, default, cases)  =>
+    case Cf.Switch(scrut, default, cases)  =>
       val body = brace(r(cases.map(i(_)) :+ i(sh"default: $default")))
       sh"switch $scrut $body"
-    case Op.Invoke(ty, f, args, succ, fail) =>
+    case Cf.Invoke(ty, f, args, succ, fail) =>
       sh"invoke[$ty] $f(${r(args, sep = ", ")}) to $succ unwind $fail"
 
-    case Op.Throw(value) =>
+    case Cf.Throw(value) =>
       sh"throw $value"
-    case Op.Try(normal, exc) =>
+    case Cf.Try(normal, exc) =>
       sh"try $normal catch $exc"
+  }
 
+  implicit val showOp: Show[Op] = Show {
     case Op.Call(ty, f, args) =>
       sh"call[$ty] $f(${r(args, sep = ", ")})"
     case Op.Load(ty, ptr) =>

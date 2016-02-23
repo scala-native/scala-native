@@ -64,12 +64,12 @@ class ModuleLowering(implicit fresh: Fresh) extends Pass {
                 val alloc = thenp withOp Op.Alloc(clsty)
                 val call = alloc withOp Op.Call(ctorty, ctor, Seq(alloc.value))
                 val store = call withOp Op.Store(clsty, dataval, alloc.value)
-                store finish Op.Ret(alloc.value)
+                store finish Cf.Ret(alloc.value)
               },
               { elsep =>
-                elsep finish Op.Ret(prev.value)
+                elsep finish Cf.Ret(prev.value)
               }
-            ).finish(Op.Unreachable).blocks
+            ).finish(Cf.Unreachable).blocks
           }
         )
       Seq(cls, data, accessor)

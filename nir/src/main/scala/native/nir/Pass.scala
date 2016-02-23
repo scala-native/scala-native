@@ -8,6 +8,7 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
   type OnDefn = PartialFunction[Defn, Seq[Defn]]
   type OnBlock = PartialFunction[Block, Seq[Block]]
   type OnInst = PartialFunction[Inst, Seq[Inst]]
+  type OnCf = PartialFunction[Cf, Cf]
   type OnNext = PartialFunction[Next, Next]
   type OnVal = PartialFunction[Val, Val]
   type OnType = PartialFunction[Type, Type]
@@ -20,6 +21,8 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
   def postBlock: OnBlock = null
   def preInst: OnInst = null
   def postInst: OnInst = null
+  def preCf: OnCf = null
+  def postCf: OnCf = null
   def preNext: OnNext = null
   def postNext: OnNext = null
   def preVal: OnVal = null
@@ -79,7 +82,8 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
         Val.Local(param.name, txType(param.ty))
       }
       val newinsts = pre.insts.flatMap(txInst)
-      val post = Block(pre.name, newparams, newinsts)
+      val newcf = txCf(pre.cf)
+      val post = Block(pre.name, newparams, newinsts, newcf)
 
       hook(postBlock, post, Seq(post))
     }
@@ -90,16 +94,6 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
 
     pres.flatMap { pre =>
       val newop = pre.op match {
-        case Op.Unreachable                         => Op.Unreachable
-        case Op.Ret(v)                              => Op.Ret(txVal(v))
-        case Op.Jump(next)                          => Op.Jump(txNext(next))
-        case Op.If(v, thenp, elsep)                 => Op.If(txVal(v), txNext(thenp), txNext(elsep))
-        case Op.Switch(v, default, cases)           => Op.Switch(txVal(v), txNext(default), cases.map(txCase))
-        case Op.Invoke(ty, ptrv, argvs, succ, fail) => Op.Invoke(txType(ty), txVal(ptrv), argvs.map(txVal), txNext(succ), txNext(fail))
-
-        case Op.Throw(v)       => Op.Throw(txVal(v))
-        case Op.Try(norm, exc) => Op.Try(txNext(norm), txNext(exc))
-
         case Op.Call(ty, ptrv, argvs)        => Op.Call(txType(ty), txVal(ptrv), argvs.map(txVal))
         case Op.Load(ty, ptrv)               => Op.Load(txType(ty), txVal(ptrv))
         case Op.Store(ty, ptrv, v)           => Op.Store(txType(ty), txVal(ptrv), txVal(v))
@@ -126,6 +120,23 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
 
       hook(postInst, post, Seq(post))
     }
+  }
+
+  private def txCf(cf: Cf): Cf = {
+    val pre = hook(preCf, cf, cf)
+    val post = pre match {
+      case Cf.Unreachable                         => Cf.Unreachable
+      case Cf.Ret(v)                              => Cf.Ret(txVal(v))
+      case Cf.Jump(next)                          => Cf.Jump(txNext(next))
+      case Cf.If(v, thenp, elsep)                 => Cf.If(txVal(v), txNext(thenp), txNext(elsep))
+      case Cf.Switch(v, default, cases)           => Cf.Switch(txVal(v), txNext(default), cases.map(txCase))
+      case Cf.Invoke(ty, ptrv, argvs, succ, fail) => Cf.Invoke(txType(ty), txVal(ptrv), argvs.map(txVal), txNext(succ), txNext(fail))
+
+      case Cf.Throw(v)       => Cf.Throw(txVal(v))
+      case Cf.Try(norm, exc) => Cf.Try(txNext(norm), txNext(exc))
+    }
+
+    hook(postCf, post, post)
   }
 
   private def txVal(value: Val): Val = {

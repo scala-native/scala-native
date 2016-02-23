@@ -69,10 +69,11 @@ object GenTextualLLVM extends GenShow {
   }
 
   def showBlock(block: Block, pred: Seq[ControlFlow.Edge], isEntry: Boolean): Show.Result = {
-    val insts = r(block.insts, sep = nl(""))
+    val instshows = block.insts.map(i => sh"$i") :+ sh"${block.cf}"
+    val body = r(instshows, sep = nl(""))
 
     if (isEntry)
-      insts
+      body
     else {
       val label = ui(sh"${block.name}:")
       val phis = r(block.params.zipWithIndex.map {
@@ -82,7 +83,7 @@ object GenTextualLLVM extends GenShow {
           }
           sh"%$n = phi $ty ${r(branches, sep = ", ")}"
       }.map(nl(_)))
-      sh"$label$phis${nl("")}$insts"
+      sh"$label$phis${nl("")}$body"
     }
   }
 
@@ -140,22 +141,26 @@ object GenTextualLLVM extends GenShow {
     case Inst(name, op)        => sh"%$name = $op"
   }
 
-  implicit val showOp: Show[Op] = Show {
-    case Op.Unreachable =>
+  implicit val showCf: Show[Cf] = Show {
+    case Cf.Unreachable =>
       "unreachable"
-    case Op.Ret(Val.None) =>
+    case Cf.Ret(Val.None) =>
       sh"ret void"
-    case Op.Ret(value) =>
+    case Cf.Ret(value) =>
       sh"ret $value"
-    case Op.Jump(next) =>
+    case Cf.Jump(next) =>
       sh"br $next"
-    case Op.If(cond, thenp, elsep) =>
+    case Cf.If(cond, thenp, elsep) =>
       sh"br $cond, $thenp, $elsep"
-    case Op.Switch(scrut, default, cases)  =>
+    case Cf.Switch(scrut, default, cases)  =>
       "todo: switch"
-    case Op.Invoke(ty, f, args, succ, fail) =>
+    case Cf.Invoke(ty, f, args, succ, fail) =>
       "todo: invoke"
+    case cf =>
+      unsupported(cf)
+  }
 
+  implicit val showOp: Show[Op] = Show {
     case Op.Call(ty, f, args) =>
       sh"call $ty ${justVal(f)}(${r(args, sep = ", ")})"
     case Op.Load(ty, ptr) =>

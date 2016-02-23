@@ -76,10 +76,22 @@ final class BinaryDeserializer(bb: ByteBuffer) {
   }
 
   private def getBlocks(): Seq[Block] = getSeq(getBlock)
-  private def getBlock(): Block = Block(getLocal, getParams, getInsts)
+  private def getBlock(): Block = Block(getLocal, getParams, getInsts, getCf)
 
   private def getCases(): Seq[Case] = getSeq(getCase)
   private def getCase(): Case = Case(getVal, getNext)
+
+  private def getCf(): Cf = getInt match {
+    case T.UnreachableCf => Cf.Unreachable
+    case T.RetCf         => Cf.Ret(getVal)
+    case T.JumpCf        => Cf.Jump(getNext)
+    case T.IfCf          => Cf.If(getVal, getNext, getNext)
+    case T.SwitchCf      => Cf.Switch(getVal, getNext, getCases)
+    case T.InvokeCf      => Cf.Invoke(getType, getVal, getVals, getNext, getNext)
+
+    case T.ThrowCf => Cf.Throw(getVal)
+    case T.TryCf   => Cf.Try(getNext, getNext)
+  }
 
   private def getComp(): Comp = getInt match {
     case T.IeqComp => Comp.Ieq
@@ -140,16 +152,6 @@ final class BinaryDeserializer(bb: ByteBuffer) {
   private def getNext(): Next = Next(getLocal, getVals)
 
   private def getOp(): Op = getInt match {
-    case T.UnreachableOp => Op.Unreachable
-    case T.RetOp         => Op.Ret(getVal)
-    case T.JumpOp        => Op.Jump(getNext)
-    case T.IfOp          => Op.If(getVal, getNext, getNext)
-    case T.SwitchOp      => Op.Switch(getVal, getNext, getCases)
-    case T.InvokeOp      => Op.Invoke(getType, getVal, getVals, getNext, getNext)
-
-    case T.ThrowOp => Op.Throw(getVal)
-    case T.TryOp   => Op.Try(getNext, getNext)
-
     case T.CallOp    => Op.Call(getType, getVal, getVals)
     case T.LoadOp    => Op.Load(getType, getVal)
     case T.StoreOp   => Op.Store(getType, getVal, getVal)

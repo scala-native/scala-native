@@ -15,9 +15,11 @@ class UnitElimination extends Pass {
         Inst(op),
         Inst(n, Op.Copy(Intr.unit_value))
       )
+  }
 
-    case Inst(_, Op.Ret(v)) if v.ty == Intr.unit =>
-      Seq(Inst(Local.empty, Op.Ret(Val.None)))
+  override def preCf = {
+    case Cf.Ret(v) if v.ty == Intr.unit =>
+      Cf.Ret(Val.None)
   }
 
   override def preType = {

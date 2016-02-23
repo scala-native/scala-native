@@ -11,22 +11,22 @@ import native.util.unsupported
  *  - Type.Nothing
  */
 class NothingLowering extends Pass {
-  override def preBlock = { case Block(n, params, insts) =>
+  override def preBlock = { case Block(n, params, insts, cf) =>
     val ninsts = mutable.UnrolledBuffer.empty[Inst]
+    var ncf = cf
     breakable {
       insts.foreach {
-        case inst if inst.op.resty != Type.Nothing =>
-          ninsts += inst
         case Inst(_, call: Op.Call) if call.resty == Type.Nothing =>
           ninsts += Inst(call)
-          ninsts += Inst(Op.Unreachable)
+          ncf     = Cf.Unreachable
           break
-        case inst @ Inst(_, termn: Op.Cf) =>
+        case inst if inst.op.resty == Type.Nothing =>
+          unsupported("only calls can return nothing")
+        case inst =>
           ninsts += inst
-          break
       }
     }
-    Seq(Block(n, params, ninsts.toSeq))
+    Seq(Block(n, params, ninsts.toSeq, cf))
   }
 
   override def preType = {

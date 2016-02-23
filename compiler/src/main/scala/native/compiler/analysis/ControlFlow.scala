@@ -29,30 +29,30 @@ object ControlFlow {
       nodes(b.name) = new Node(b, Seq(), Seq())
     }
     blocks.foreach {
-      case Block(n, _, _ :+ Inst(_, op)) =>
+      case Block(n, _, _, cf) =>
         val node = nodes(n)
-        op match {
-          case Op.Unreachable =>
+        cf match {
+          case Cf.Unreachable =>
             ()
-          case Op.Ret(_) =>
+          case Cf.Ret(_) =>
             ()
-          case Op.Jump(Next(n, args)) =>
+          case Cf.Jump(Next(n, args)) =>
             edge(node, nodes(n), args)
-          case Op.If(_, Next(n1, args1), Next(n2, args2)) =>
+          case Cf.If(_, Next(n1, args1), Next(n2, args2)) =>
             edge(node, nodes(n1), args1)
             edge(node, nodes(n2), args2)
-          case Op.Switch(_, default, cases) =>
+          case Cf.Switch(_, default, cases) =>
             cases.map {
               case Case(_, Next(n, args)) =>
                 edge(node, nodes(n), args)
             }
             edge(node, nodes(default.name), default.args)
-          case Op.Invoke(_, _, _, succ, fail) =>
+          case Cf.Invoke(_, _, _, succ, fail) =>
             edge(node, nodes(succ.name), succ.args)
             edge(node, nodes(fail.name), succ.args)
-          case Op.Throw(_) =>
+          case Cf.Throw(_) =>
             ()
-          case Op.Try(Next(n1, args1), Next(n2, args2)) =>
+          case Cf.Try(Next(n1, args1), Next(n2, args2)) =>
             edge(node, nodes(n1), args1)
             edge(node, nodes(n2), args2)
           case _ =>

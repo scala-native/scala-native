@@ -5,8 +5,6 @@ import native.util.unreachable
 
 sealed abstract class Op {
   final def resty: Type = this match {
-    case _: Op.Cf => Type.Nothing
-
     case Op.Call(Type.Function(_, ret), _, _) => ret
     case Op.Call(_, _, _)                     => unreachable
     case Op.Load(ty, _)                       => ty
@@ -32,16 +30,6 @@ sealed abstract class Op {
   }
 
   final def vals: Seq[Val] = this match {
-    case Op.Unreachable              => Seq()
-    case Op.Ret(v)                   => Seq(v)
-    case Op.Jump(n)                  => n.args
-    case Op.If(v, n1, n2)            => v +: n1.args ++: n2.args
-    case Op.Switch(v, n, cases)      => v +: n.args ++: cases.flatMap(_.next.args)
-    case Op.Invoke(_, v, vs, n1, n2) => v +: vs ++: n1.args ++: n2.args
-
-    case Op.Throw(v)    => Seq(v)
-    case Op.Try(n1, n2) => n1.args ++ n2.args
-
     case Op.Call(_, v, vs)        => v +: vs
     case Op.Load(_, v)            => Seq(v)
     case Op.Store(_, v1, v2)      => Seq(v1, v2)
@@ -66,19 +54,6 @@ sealed abstract class Op {
   }
 }
 object Op {
-  // low-level control-flow
-  sealed abstract class Cf extends Op
-  final case object Unreachable                                                       extends Cf
-  final case class Ret   (value: Val)                                                 extends Cf
-  final case class Jump  (next: Next)                                                 extends Cf
-  final case class If    (value: Val, thenp: Next, elsep: Next)                       extends Cf
-  final case class Switch(value: Val, default: Next, cases: Seq[Case])                extends Cf
-  final case class Invoke(ty: Type, ptr: Val, args: Seq[Val], succ: Next, fail: Next) extends Cf
-
-  // mid-level control-flow
-  final case class Throw(value: Val)              extends Cf
-  final case class Try  (normal: Next, exc: Next) extends Cf
-
   // low-level
   final case class Call   (ty: Type, ptr: Val, args: Seq[Val])          extends Op
   final case class Load   (ty: Type, ptr: Val)                          extends Op

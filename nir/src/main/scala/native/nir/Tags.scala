@@ -91,17 +91,17 @@ object Tags {
   final val WeakODRLink             = 1 + OnceODRLink
   final val ExternalLink            = 1 + WeakODRLink
 
-  final val UnreachableOp = 1 + ExternalLink
-  final val RetOp         = 1 + UnreachableOp
-  final val JumpOp        = 1 + RetOp
-  final val IfOp          = 1 + JumpOp
-  final val SwitchOp      = 1 + IfOp
-  final val InvokeOp      = 1 + SwitchOp
+  final val UnreachableCf = 1 + ExternalLink
+  final val RetCf         = 1 + UnreachableCf
+  final val JumpCf        = 1 + RetCf
+  final val IfCf          = 1 + JumpCf
+  final val SwitchCf      = 1 + IfCf
+  final val InvokeCf      = 1 + SwitchCf
 
-  final val ThrowOp = 1 + InvokeOp
-  final val TryOp   = 1 + ThrowOp
+  final val ThrowCf = 1 + InvokeCf
+  final val TryCf   = 1 + ThrowCf
 
-  final val CallOp        = 1 + TryOp
+  final val CallOp        = 1 + TryCf
   final val LoadOp        = 1 + CallOp
   final val StoreOp       = 1 + LoadOp
   final val ElemOp        = 1 + StoreOp

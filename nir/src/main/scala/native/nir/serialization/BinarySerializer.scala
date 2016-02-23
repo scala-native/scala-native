@@ -70,12 +70,33 @@ final class BinarySerializer(buffer: ByteBuffer) {
     putLocal(block.name)
     putParams(block.params)
     putInsts(block.insts)
+    putCf(block.cf)
   }
 
   private def putCases(kases: Seq[Case]) = putSeq(putCase)(kases)
   private def putCase(kase: Case) = {
     putVal(kase.value)
     putNext(kase.next)
+  }
+
+  private def putCf(cf: Cf) = cf match {
+    case Cf.Unreachable =>
+      putInt(T.UnreachableCf)
+    case Cf.Ret(v) =>
+      putInt(T.RetCf); putVal(v)
+    case Cf.Jump(next) =>
+      putInt(T.JumpCf); putNext(next)
+    case Cf.If(v, thenp, elsep) =>
+      putInt(T.IfCf); putVal(v); putNext(thenp); putNext(elsep)
+    case Cf.Switch(v, default, cases) =>
+      putInt(T.SwitchCf); putVal(v); putNext(default); putCases(cases)
+    case Cf.Invoke(ty, f, args, succ, fail) =>
+      putInt(T.InvokeCf); putType(ty); putVal(f); putVals(args); putNext(succ); putNext(fail)
+
+    case Cf.Throw(v) =>
+      putInt(T.ThrowCf); putVal(v)
+    case Cf.Try(norm, exc) =>
+      putInt(T.TryCf); putNext(norm); putNext(exc)
   }
 
   private def putComp(comp: Comp) = comp match {
@@ -154,24 +175,6 @@ final class BinarySerializer(buffer: ByteBuffer) {
   }
 
   private def putOp(op: Op) = op match {
-    case Op.Unreachable =>
-      putInt(T.UnreachableOp)
-    case Op.Ret(v) =>
-      putInt(T.RetOp); putVal(v)
-    case Op.Jump(next) =>
-      putInt(T.JumpOp); putNext(next)
-    case Op.If(v, thenp, elsep) =>
-      putInt(T.IfOp); putVal(v); putNext(thenp); putNext(elsep)
-    case Op.Switch(v, default, cases) =>
-      putInt(T.SwitchOp); putVal(v); putNext(default); putCases(cases)
-    case Op.Invoke(ty, f, args, succ, fail) =>
-      putInt(T.InvokeOp); putType(ty); putVal(f); putVals(args); putNext(succ); putNext(fail)
-
-    case Op.Throw(v) =>
-      putInt(T.ThrowOp); putVal(v)
-    case Op.Try(norm, exc) =>
-      putInt(T.TryOp); putNext(norm); putNext(exc)
-
     case Op.Call(ty, v, args) =>
       putInt(T.CallOp); putType(ty); putVal(v); putVals(args)
     case Op.Load(ty, ptr) =>

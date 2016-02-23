@@ -30,19 +30,16 @@ final case class Focus(
     copy(insts = insts :+ Inst(name, op), value = Val.Local(name, op.resty))
   }
 
-  def finish(op: Op): Focus =
-    finish(Inst(Local.empty, op))
-
-  def finish(inst: Inst): Focus =
+  def finish(cf: Cf): Focus =
     if (isComplete) this
-    else Focus.complete(blocks :+ Block(name, params, insts :+ inst))
+    else Focus.complete(blocks :+ Block(name, params, insts, cf))
 
   private def wrapBranch(merge: Local, f: Focus => Focus, params: Seq[Val.Local] = Seq()) = {
     val entry = Focus.entry(params)
     val end = f(entry)
     val finalized =
       if (end.isComplete) end
-      else end.finish(Op.Jump(Next(merge, Seq(end.value))))
+      else end.finish(Cf.Jump(Next(merge, Seq(end.value))))
     (entry.name, end.isComplete, finalized.blocks)
   }
 
@@ -53,7 +50,7 @@ final case class Focus(
     val (thenname, thencompl, thenblocks) = wrapBranch(merge, thenf)
     val (elsename, elsecompl, elseblocks) = wrapBranch(merge, elsef)
     val blocks =
-      finish(Op.If(cond,
+      finish(Cf.If(cond,
         Next(thenname, Seq()),
         Next(elsename, Seq()))).blocks
     if (thencompl && elsecompl)
@@ -75,7 +72,7 @@ final case class Focus(
     val casecompl = cases.map(_._2)
     val caseblockss = cases.map(_._3)
     val blocks =
-      finish(Op.Switch(scrut,
+      finish(Cf.Switch(scrut,
         Next(defaultname, Seq()),
         casevals.zip(casenames).map { case (v, n) => Case(v, Next(n, Seq())) })).blocks
     Focus(blocks ++ defaultblocks ++ caseblockss.flatten,
@@ -90,7 +87,7 @@ final case class Focus(
     val (normname, normcompl, normblocks) = wrapBranch(merge, normal)
     val (excname, exccompl, excblocks) = wrapBranch(merge, exc(excparam, _), Seq(excparam))
     val blocks =
-      finish(Op.Try(
+      finish(Cf.Try(
         Next(normname, Seq()),
         Next(excname, Seq()))).blocks
     if (normcompl && exccompl)

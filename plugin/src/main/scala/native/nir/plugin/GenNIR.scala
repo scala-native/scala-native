@@ -160,7 +160,7 @@ abstract class GenNIR extends PluginComponent
           curLocalInfo := (new CollectLocalInfo).collect(dd.rhs)
         ) {
           val focus = genDefBody(paramSyms, dd.rhs)
-          val blocks = focus.finish(Op.Ret(focus.value)).blocks
+          val blocks = focus.finish(Cf.Ret(focus.value)).blocks
           Defn.Define(attrs, name, sig, blocks)
         }
       }
@@ -272,7 +272,7 @@ abstract class GenNIR extends PluginComponent
 
       case Return(exprp) =>
         val expr = genExpr(exprp, focus)
-        expr.finish(Op.Ret(expr.value))
+        expr.finish(Cf.Ret(expr.value))
 
       case Try(expr, catches, finalizer) if catches.isEmpty && finalizer.isEmpty =>
         genExpr(expr, focus)
@@ -282,7 +282,7 @@ abstract class GenNIR extends PluginComponent
 
       case Throw(exprp) =>
         val expr = genExpr(exprp, focus)
-        expr.finish(Op.Throw(expr.value))
+        expr.finish(Cf.Throw(expr.value))
 
       case app: Apply =>
         genApply(app, focus)
@@ -520,7 +520,7 @@ abstract class GenNIR extends PluginComponent
       lds.foreach(curEnv.enterLabel)
 
       val first = Next(curEnv.resolveLabel(lds.head), Seq())
-      var resfocus = lastfocus finish Op.Jump(first)
+      var resfocus = lastfocus finish Cf.Jump(first)
       for (ld <- lds.init) {
         val lfocus = genLabel(ld)
         assert(lfocus.isComplete)
@@ -639,7 +639,7 @@ abstract class GenNIR extends PluginComponent
       val Val.Local(label, _) = curEnv.resolve(fun.symbol)
       val argsfocus = sequenced(args, focus)(genExpr(_, _))
       val lastfocus = argsfocus.lastOption.getOrElse(focus)
-      lastfocus finish Op.Jump(Next(label, argsfocus.map(_.value)))
+      lastfocus finish Cf.Jump(Next(label, argsfocus.map(_.value)))
     }
 
     lazy val prim2ty = Map(
