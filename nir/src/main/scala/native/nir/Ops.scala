@@ -17,40 +17,16 @@ sealed abstract class Op {
     case Op.Comp(_, _, _, _)                  => Type.Bool
     case Op.Conv(_, ty, _)                    => ty
 
-    case Op.Alloc(ty)         => ty
-    case Op.Field(ty, _, _)   => Type.Ptr(ty)
-    case Op.Method(ty, _, _)  => Type.Ptr(ty)
-    case Op.Module(n)         => Type.ModuleClass(n)
-    case Op.As(ty, _)         => ty
-    case Op.Is(_, _)          => Type.Bool
-    case Op.Copy(v)           => v.ty
-    case Op.SizeOf(_)         => Type.Size
-    case Op.TypeOf(_)         => Intr.type_
-    case Op.StringOf(_)       => Intr.string
-  }
-
-  final def vals: Seq[Val] = this match {
-    case Op.Call(_, v, vs)        => v +: vs
-    case Op.Load(_, v)            => Seq(v)
-    case Op.Store(_, v1, v2)      => Seq(v1, v2)
-    case Op.Elem(_, v, vs)        => v +: vs
-    case Op.Extract(_, v1, v2)    => Seq(v1, v2)
-    case Op.Insert(_, v1, v2, v3) => Seq(v1, v2, v3)
-    case Op.Alloca(_)             => Seq()
-    case Op.Bin(_, _, v1, v2)     => Seq(v1, v2)
-    case Op.Comp(_, _, v1, v2)    => Seq(v1, v2)
-    case Op.Conv(_, _, v)         => Seq(v)
-
-    case Op.Alloc(_)           => Seq()
-    case Op.Field(_, v, _)     => Seq(v)
-    case Op.Method(_, v, _)    => Seq(v)
-    case Op.Module(n)          => Seq()
-    case Op.As(_, v)           => Seq(v)
-    case Op.Is(_, v)           => Seq(v)
-    case Op.Copy(v)            => Seq(v)
-    case Op.SizeOf(_)          => Seq()
-    case Op.TypeOf(_)          => Seq()
-    case Op.StringOf(_)        => Seq()
+    case Op.Alloc(ty)        => ty
+    case Op.Field(ty, _, _)  => Type.Ptr(ty)
+    case Op.Method(ty, _, _) => Type.Ptr(ty)
+    case Op.Module(n)        => Type.ModuleClass(n)
+    case Op.As(ty, _)        => ty
+    case Op.Is(_, _)         => Type.Bool
+    case Op.Copy(v)          => v.ty
+    case Op.SizeOf(_)        => Type.Size
+    case Op.TypeOf(_)        => Intr.type_
+    case Op.StringOf(_)      => Intr.string
   }
 }
 object Op {
