@@ -17,6 +17,10 @@ sealed abstract class Val {
     case Val.Chars(s)         => Type.Array(Type.I8, s.length)
     case Val.Local(_, ty)     => ty
     case Val.Global(_, ty)    => ty
+
+    case Val.Bitcast(to, _)   => to
+
+    case Val.String(_)        => Intr.string
   }
 }
 object Val {
@@ -36,4 +40,10 @@ object Val {
   final case class Chars(value: java.lang.String)             extends Val
   final case class Local(name: nir.Local, valty: nir.Type)    extends Val
   final case class Global(name: nir.Global, valty: nir.Type)  extends Val
+
+  // constant exprs
+  final case class Bitcast(to: Type, value: Val) extends Val
+
+  // high-level
+  final case class String(value: java.lang.String) extends Val
 }

@@ -177,7 +177,6 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.CopyOp      => Op.Copy(getVal)
     case T.SizeOfOp    => Op.SizeOf(getType)
     case T.TypeOfOp    => Op.TypeOf(getType)
-    case T.StringOfOp  => Op.StringOf(getString)
   }
 
   private def getParams(): Seq[Val.Local] = getSeq(getParam)
@@ -225,5 +224,9 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.ArrayVal  => Val.Array(getType, getVals)
     case T.LocalVal  => Val.Local(getLocal, getType)
     case T.GlobalVal => Val.Global(getGlobal, getType)
+
+    case T.BitcastVal => Val.Bitcast(getType, getVal)
+
+    case T.StringVal => Val.String(getString)
   }
 }

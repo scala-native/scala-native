@@ -127,9 +127,8 @@ object Tags {
   final val CopyOp      = 1 + IsOp
   final val SizeOfOp    = 1 + CopyOp
   final val TypeOfOp    = 1 + SizeOfOp
-  final val StringOfOp  = 1 + TypeOfOp
 
-  final val NoneType       = 1 + StringOfOp
+  final val NoneType       = 1 + TypeOfOp
   final val VoidType       = 1 + NoneType
   final val LabelType      = 1 + VoidType
   final val VarargType     = 1 + LabelType
@@ -154,19 +153,21 @@ object Tags {
   final val ModuleClassType    = 1 + InterfaceClassType
   final val ArrayClassType     = 1 + ModuleClassType
 
-  final val NoneVal   = 1 + ArrayClassType
-  final val TrueVal   = 1 + NoneVal
-  final val FalseVal  = 1 + TrueVal
-  final val ZeroVal   = 1 + FalseVal
-  final val I8Val     = 1 + ZeroVal
-  final val I16Val    = 1 + I8Val
-  final val I32Val    = 1 + I16Val
-  final val I64Val    = 1 + I32Val
-  final val F32Val    = 1 + I64Val
-  final val F64Val    = 1 + F32Val
-  final val StructVal = 1 + F64Val
-  final val ArrayVal  = 1 + StructVal
-  final val CharsVal  = 1 + ArrayVal
-  final val LocalVal  = 1 + CharsVal
-  final val GlobalVal = 1 + LocalVal
+  final val NoneVal    = 1 + ArrayClassType
+  final val TrueVal    = 1 + NoneVal
+  final val FalseVal   = 1 + TrueVal
+  final val ZeroVal    = 1 + FalseVal
+  final val I8Val      = 1 + ZeroVal
+  final val I16Val     = 1 + I8Val
+  final val I32Val     = 1 + I16Val
+  final val I64Val     = 1 + I32Val
+  final val F32Val     = 1 + I64Val
+  final val F64Val     = 1 + F32Val
+  final val StructVal  = 1 + F64Val
+  final val ArrayVal   = 1 + StructVal
+  final val CharsVal   = 1 + ArrayVal
+  final val LocalVal   = 1 + CharsVal
+  final val GlobalVal  = 1 + LocalVal
+  final val BitcastVal = 1 + GlobalVal
+  final val StringVal  = 1 + BitcastVal
 }

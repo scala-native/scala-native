@@ -94,9 +94,8 @@ object Intr {
   lazy val object_array_update = ternary("object_array_update", object_array, I32, object_, unit   )
   lazy val object_array_length = unary  ("object_array_length", object_array,               I32    )
 
-  lazy val type_     = cls  ("type")
-  lazy val type_name = unary("type_name", Ptr(type_), string)
-  lazy val type_size = unary("type_size", Ptr(type_), Size  )
+  lazy val type_     = struct("type")
+  lazy val type_name = unary ("type_name", Ptr(type_), string)
 
   lazy val unit_type    = value ("unit_type"   , type_)
   lazy val nothing_type = value ("nothing_type", type_)
@@ -111,7 +110,7 @@ object Intr {
   lazy val long_type    = value ("long_type"   , type_)
   lazy val float_type   = value ("float_type"  , type_)
   lazy val double_type  = value ("double_type" , type_)
-  lazy val string_type  = value ("string_typr" , type_)
+  lazy val string_type  = value ("string_type" , type_)
 
   lazy val unit_array_type   = value("unit_array_type"  , type_)
   lazy val bool_array_type   = value("bool_array_type"  , type_)
@@ -411,18 +410,18 @@ object Intr {
   )
 
   lazy val layout = Map[Global, Seq[Type]](
-    any_array.name    -> Seq(Ptr(I8), I32)                   ,
-    unit_array.name   -> Seq(Ptr(I8), I32)                   ,
-    bool_array.name   -> Seq(Ptr(I8), I32, Array(Bool, 0))   ,
-    char_array.name   -> Seq(Ptr(I8), I32, Array(I16, 0))    ,
-    byte_array.name   -> Seq(Ptr(I8), I32, Array(I8, 0))     ,
-    short_array.name  -> Seq(Ptr(I8), I32, Array(I16, 0))    ,
-    int_array.name    -> Seq(Ptr(I8), I32, Array(I32, 0))    ,
-    long_array.name   -> Seq(Ptr(I8), I32, Array(I64, 0))    ,
-    float_array.name  -> Seq(Ptr(I8), I32, Array(F32, 0))    ,
-    double_array.name -> Seq(Ptr(I8), I32, Array(F64, 0))    ,
-    object_array.name -> Seq(Ptr(I8), I32, Array(Ptr(I8), 0)),
-    type_.name        -> Seq(Ptr(I8))                        ,
-    string.name       -> Seq(Ptr(I8), I32, Ptr(I8))
+    any_array.name    -> Seq(Ptr(type_), I32)                   ,
+    unit_array.name   -> Seq(Ptr(type_), I32)                   ,
+    bool_array.name   -> Seq(Ptr(type_), I32, Array(Bool, 0))   ,
+    char_array.name   -> Seq(Ptr(type_), I32, Array(I16, 0))    ,
+    byte_array.name   -> Seq(Ptr(type_), I32, Array(I8, 0))     ,
+    short_array.name  -> Seq(Ptr(type_), I32, Array(I16, 0))    ,
+    int_array.name    -> Seq(Ptr(type_), I32, Array(I32, 0))    ,
+    long_array.name   -> Seq(Ptr(type_), I32, Array(I64, 0))    ,
+    float_array.name  -> Seq(Ptr(type_), I32, Array(F32, 0))    ,
+    double_array.name -> Seq(Ptr(type_), I32, Array(F64, 0))    ,
+    object_array.name -> Seq(Ptr(type_), I32, Array(Ptr(I8), 0)),
+    type_.name        -> Seq(Ptr(type_))                        ,
+    string.name       -> Seq(Ptr(type_), I32, Ptr(I8))
   )
 }

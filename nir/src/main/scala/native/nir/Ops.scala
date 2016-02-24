@@ -28,7 +28,6 @@ sealed abstract class Op {
     case Op.Copy(v)          => v.ty
     case Op.SizeOf(_)        => Type.Size
     case Op.TypeOf(_)        => Intr.type_
-    case Op.StringOf(_)      => Intr.string
   }
 }
 object Op {
@@ -55,5 +54,4 @@ object Op {
   final case class Copy     (value: Val)                       extends Op
   final case class SizeOf   (ty: Type)                         extends Op
   final case class TypeOf   (ty: Type)                         extends Op
-  final case class StringOf (value: String)                    extends Op
 }
