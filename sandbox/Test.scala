@@ -1,15 +1,12 @@
 package test
 
 object Test {
-  def f: Int = throw new Exception()
-  def g: Int = {
-    try {
-      f
-      1
-    } catch {
-      case _: Exception =>
-        2
-    }
-  }
-  def main(args: Array[String]): Unit = g
+  def g: Int = 10
+  def f(i: Int) = i + 1
+  def main(args: Array[String]): Unit =
+    f(f(g match {
+      case 0 => 1
+      case 1 => 2
+      case _ => 3
+    }))
 }

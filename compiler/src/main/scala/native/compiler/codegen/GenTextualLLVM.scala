@@ -163,14 +163,14 @@ object GenTextualLLVM extends GenShow {
     case Cf.If(cond, thenp, elsep) =>
       sh"br $cond, $thenp, $elsep"
     case Cf.Switch(scrut, default, cases)  =>
-      "todo: switch"
+      sh"switch $scrut, $default [${r(cases.map(i(_)))}${nl("]")}"
     case Cf.Invoke(ty, f, args, succ, fail) =>
       val n = cfg.nodes(succ.name).block.params.head.name
       sh"%$n.succ = invoke $ty ${justVal(f)}(${r(args, sep = ", ")}) to $succ unwind $fail"
     case Cf.Resume(value) =>
       sh"resume $value"
     case cf =>
-      s"unsupported: $cf"
+      unsupported(cf)
   }
 
   implicit val showOp: Show[Op] = Show {
@@ -220,14 +220,16 @@ object GenTextualLLVM extends GenShow {
     case Op.Conv(name, ty, v) =>
       sh"$name $v to $ty"
     case op =>
-      sh"unsupported: ${op.toString}"
+      unsupported(op)
   }
 
   implicit val showNext: Show[Next] = Show {
-    case next => sh"label %${next.name}"
+    case Next.Case(v, n) => sh"$v, label %$n"
+    case next            => sh"label %${next.name}"
   }
 
   implicit def showAttrs: Show[Seq[Attr]] = nir.Shows.showAttrs
+
   implicit def showConv: Show[Conv] = nir.Shows.showConv
 
   private object ExSucc {
