@@ -97,8 +97,9 @@ object Tags {
   final val IfCf          = 1 + JumpCf
   final val SwitchCf      = 1 + IfCf
   final val InvokeCf      = 1 + SwitchCf
+  final val ResumeCf      = 1 + InvokeCf
 
-  final val ThrowCf = 1 + InvokeCf
+  final val ThrowCf = 1 + ResumeCf
   final val TryCf   = 1 + ThrowCf
 
   final val SuccNext  = 1 + TryCf
@@ -128,23 +129,24 @@ object Tags {
   final val TypeOfOp    = 1 + SizeOfOp
   final val StringOfOp  = 1 + TypeOfOp
 
-  final val NoneType           = 1 + StringOfOp
-  final val VoidType           = 1 + NoneType
-  final val LabelType          = 1 + VoidType
-  final val VarargType         = 1 + LabelType
-  final val BoolType           = 1 + VarargType
-  final val I8Type             = 1 + BoolType
-  final val I16Type            = 1 + I8Type
-  final val I32Type            = 1 + I16Type
-  final val I64Type            = 1 + I32Type
-  final val F32Type            = 1 + I64Type
-  final val F64Type            = 1 + F32Type
-  final val ArrayType          = 1 + F64Type
-  final val PtrType            = 1 + ArrayType
-  final val FunctionType       = 1 + PtrType
-  final val StructType         = 1 + FunctionType
+  final val NoneType       = 1 + StringOfOp
+  final val VoidType       = 1 + NoneType
+  final val LabelType      = 1 + VoidType
+  final val VarargType     = 1 + LabelType
+  final val BoolType       = 1 + VarargType
+  final val I8Type         = 1 + BoolType
+  final val I16Type        = 1 + I8Type
+  final val I32Type        = 1 + I16Type
+  final val I64Type        = 1 + I32Type
+  final val F32Type        = 1 + I64Type
+  final val F64Type        = 1 + F32Type
+  final val ArrayType      = 1 + F64Type
+  final val PtrType        = 1 + ArrayType
+  final val FunctionType   = 1 + PtrType
+  final val StructType     = 1 + FunctionType
+  final val AnonStructType = 1 + StructType
 
-  final val SizeType           = 1 + StructType
+  final val SizeType           = 1 + AnonStructType
   final val NothingType        = 1 + SizeType
   final val NullType           = 1 + NothingType
   final val ClassType          = 1 + NullType

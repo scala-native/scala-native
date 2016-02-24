@@ -4,14 +4,16 @@ package nir
 import native.util.unreachable
 
 sealed abstract class Op {
+
+
   final def resty: Type = this match {
     case Op.Call(Type.Function(_, ret), _, _) => ret
     case Op.Call(_, _, _)                     => unreachable
     case Op.Load(ty, _)                       => ty
     case Op.Store(_, _, _)                    => Intr.unit
     case Op.Elem(ty, _, _)                    => Type.Ptr(ty) // todo: ty @ index
-    case Op.Extract(ty, _, _)                 => ??? // todo: ty @ index
-    case Op.Insert(ty, _, _, _)               => ty
+    case Op.Extract(aggr, indexes)            => aggr.ty.elemty(indexes)
+    case Op.Insert(aggr, _, _)                => aggr.ty
     case Op.Alloca(ty)                        => Type.Ptr(ty)
     case Op.Bin(_, ty, _, _)                  => ty
     case Op.Comp(_, _, _, _)                  => Type.Bool
@@ -31,17 +33,17 @@ sealed abstract class Op {
 }
 object Op {
   // low-level
-  final case class Call   (ty: Type, ptr: Val, args: Seq[Val])          extends Op
-  final case class Load   (ty: Type, ptr: Val)                          extends Op
-  final case class Store  (ty: Type, ptr: Val, value: Val)              extends Op
+  final case class Call   (ty: Type, ptr: Val, args: Seq[Val])       extends Op
+  final case class Load   (ty: Type, ptr: Val)                       extends Op
+  final case class Store  (ty: Type, ptr: Val, value: Val)           extends Op
   // TODO: ty should be a pointee type, not result elem type
-  final case class Elem   (ty: Type, ptr: Val, indexes: Seq[Val])       extends Op
-  final case class Extract(ty: Type, aggr: Val, index: Val)             extends Op
-  final case class Insert (ty: Type, aggr: Val, value: Val, index: Val) extends Op
-  final case class Alloca (ty: Type)                                    extends Op
-  final case class Bin    (bin: nir.Bin, ty: Type, l: Val, r: Val)      extends Op
-  final case class Comp   (comp: nir.Comp, ty: Type, l: Val, r: Val)    extends Op
-  final case class Conv   (conv: nir.Conv, ty: Type, value: Val)        extends Op
+  final case class Elem   (ty: Type, ptr: Val, indexes: Seq[Val])    extends Op
+  final case class Extract(aggr: Val, indexes: Seq[Int])             extends Op
+  final case class Insert (aggr: Val, value: Val, indexes: Seq[Int]) extends Op
+  final case class Alloca (ty: Type)                                 extends Op
+  final case class Bin    (bin: nir.Bin, ty: Type, l: Val, r: Val)   extends Op
+  final case class Comp   (comp: nir.Comp, ty: Type, l: Val, r: Val) extends Op
+  final case class Conv   (conv: nir.Conv, ty: Type, value: Val)     extends Op
 
   // high-level
   final case class Alloc    (ty: Type)                         extends Op

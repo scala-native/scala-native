@@ -13,7 +13,7 @@ import native.nir._
  *  * What are the successors of given block?
  */
 object ControlFlow {
-  final class Edge(val from: Node, val to: Node, val next: Next)
+  final case class Edge(val from: Node, val to: Node, val next: Next)
   final class Node(val block: Block, var pred: Seq[Edge], var succ: Seq[Edge])
   final class Graph(val entry: Node, val nodes: Map[Local, Node]) {
     def map[T: reflect.ClassTag](f: Node => T): Seq[T] = {
@@ -50,9 +50,10 @@ object ControlFlow {
       case Block(n, _, _, cf) =>
         val node = nodes(n)
         cf match {
-          case Cf.Unreachable =>
-            ()
-          case Cf.Ret(_) =>
+          case Cf.Unreachable |
+               _: Cf.Ret      |
+               _: Cf.Throw    |
+               _: Cf.Resume   =>
             ()
           case Cf.Jump(next) =>
             edge(node, nodes(next.name), next)
@@ -66,9 +67,7 @@ object ControlFlow {
             }
           case Cf.Invoke(_, _, _, succ, fail) =>
             edge(node, nodes(succ.name), succ)
-            edge(node, nodes(fail.name), succ)
-          case Cf.Throw(_) =>
-            ()
+            edge(node, nodes(fail.name), fail)
           case Cf.Try(next1, next2) =>
             edge(node, nodes(next1.name), next1)
             edge(node, nodes(next2.name), next2)

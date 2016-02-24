@@ -11,6 +11,16 @@ import native.compiler.analysis.ControlFlow
 import native.nir.Shows.brace
 
 object GenTextualLLVM extends GenShow {
+  private lazy val namebytes = "c\"N3nrt9ExceptionE\00\""
+  private lazy val prelude = Seq(
+    sh"@_ZTVN10__cxxabiv117__class_type_infoE = external global i8*",
+    sh"@_ZTSN3nrt9ExceptionE = linkonce_odr constant [17 x i8] $namebytes",
+    sh"@_ZTIN3nrt9ExceptionE = linkonce_odr constant { i8*, i8* } { i8* bitcast (i8** getelementptr inbounds (i8*, i8** @_ZTVN10__cxxabiv117__class_type_infoE, i64 2) to i8*), i8* getelementptr inbounds ([17 x i8], [17 x i8]* @_ZTSN3nrt9ExceptionE, i32 0, i32 0) }",
+    sh"declare i32 @__gxx_personality_v0(...)"
+  )
+  private lazy val personality =
+    sh"personality i8* bitcast (i32 (...)* @__gxx_personality_v0 to i8*)"
+
   implicit val showDefns: Show[Seq[Defn]] = Show { defns =>
     val sorted = defns.sortBy {
       case _: Defn.Struct  => 1
@@ -20,7 +30,7 @@ object GenTextualLLVM extends GenShow {
       case _: Defn.Define  => 5
       case _               => -1
     }
-    r(sorted, sep = nl(""))
+    r(prelude ++ sorted.map(d => sh"$d"), sep = nl(""))
   }
 
   implicit val showDefn: Show[Defn] = Show {
@@ -43,36 +53,46 @@ object GenTextualLLVM extends GenShow {
   }
 
   def showDefine(attrs: Seq[Attr], retty: Type, name: Global, blocks: Seq[Block]) = {
-    val cfg = ControlFlow(blocks)
+    implicit val cfg = ControlFlow(blocks)
     val blockshows = cfg.map { node =>
       showBlock(node.block, node.pred, isEntry = node eq cfg.entry)
     }
     val body = brace(i(r(blockshows)))
     val params = sh"(${r(blocks.head.params: Seq[Val], sep = ", ")})"
-    sh"${attrs}define $retty @$name$params $body"
+
+    sh"${attrs}define $retty @$name$params$attrs $personality $body"
   }
 
-  def showBlock(block: Block, pred: Seq[ControlFlow.Edge], isEntry: Boolean): Show.Result = {
-    val instshows = block.insts.map(i => sh"$i") :+ sh"${block.cf}"
-    val body = r(instshows, sep = nl(""))
+  private lazy val landingpad =
+    sh"landingpad { i8*, i32 } catch i8* bitcast ({ i8*, i8* }* @_ZTIN3nrt9ExceptionE to i8*)"
+
+  def showBlock(block: Block, pred: Seq[ControlFlow.Edge], isEntry: Boolean)
+               (implicit cfg: ControlFlow.Graph): Show.Result = {
+    val Block(name, params, insts, cf) = block
+    val body = r(insts.map(i => sh"$i") :+ sh"${block.cf}", sep = nl(""))
 
     if (isEntry)
       body
     else {
       val label = ui(sh"${block.name}:")
-      val phis = r(block.params.zipWithIndex.map {
-        case (Val.Local(n, ty), i) =>
-          val branches = pred.flatMap { e =>
-            e.next match {
-              case Next.Label(name, values) =>
-                Seq(sh"[${justVal(values(i))}, %$name]")
-              case _ =>
-                Seq()
-            }
+      val prologue = r((pred match {
+        case ExSucc(branches) =>
+          params.zipWithIndex.map {
+            case (Val.Local(name, ty), i) =>
+              val branchshows = branches.map {
+                case (from, shows) =>
+                  sh"[${shows(i)}, %$from]"
+              }
+              sh"%$name = phi $ty ${r(branchshows, sep = ", ")}"
           }
-          sh"%$n = phi $ty ${r(branches, sep = ", ")}"
-      }.map(nl(_)))
-      sh"$label$phis${nl("")}$body"
+        case ExFail() =>
+          val Seq(Val.Local(excrec, _)) = params
+          Seq(
+            sh"%$excrec = $landingpad"
+          )
+      }).map(nl(_)))
+
+      sh"$label$prologue${nl("")}$body"
     }
   }
 
@@ -91,6 +111,7 @@ object GenTextualLLVM extends GenShow {
     case Type.Ptr(ty)             => sh"${ty}*"
     case Type.Function(args, ret) => sh"$ret (${r(args, sep = ", ")})"
     case Type.Struct(name)        => sh"%$name"
+    case Type.AnonStruct(tys)     => sh"{${r(tys, sep = ", ")}}"
     case ty                       => unsupported(ty)
   }
 
@@ -130,7 +151,7 @@ object GenTextualLLVM extends GenShow {
     case Inst(name, op)        => sh"%$name = $op"
   }
 
-  implicit val showCf: Show[Cf] = Show {
+  implicit def showCf(implicit cfg: ControlFlow.Graph): Show[Cf] = Show {
     case Cf.Unreachable =>
       "unreachable"
     case Cf.Ret(Val.None) =>
@@ -144,9 +165,12 @@ object GenTextualLLVM extends GenShow {
     case Cf.Switch(scrut, default, cases)  =>
       "todo: switch"
     case Cf.Invoke(ty, f, args, succ, fail) =>
-      "todo: invoke"
+      val n = cfg.nodes(succ.name).block.params.head.name
+      sh"%$n.succ = invoke $ty ${justVal(f)}(${r(args, sep = ", ")}) to $succ unwind $fail"
+    case Cf.Resume(value) =>
+      sh"resume $value"
     case cf =>
-      "unsupported: $cf"
+      s"unsupported: $cf"
   }
 
   implicit val showOp: Show[Op] = Show {
@@ -159,10 +183,10 @@ object GenTextualLLVM extends GenShow {
     case Op.Elem(_, ptr, indexes) =>
       val Type.Ptr(ty) = ptr.ty
       sh"getelementptr $ty, $ptr, ${r(indexes, sep = ", ")}"
-    case Op.Extract(ty, aggr, index) =>
-      "todo: extract"
-    case Op.Insert(ty, aggr, value, index) =>
-      "todo: insert"
+    case Op.Extract(aggr, indexes) =>
+      sh"extractvalue $aggr, ${r(indexes, sep = ", ")}"
+    case Op.Insert(aggr, value, indexes) =>
+      sh"insertvalue $aggr, ${r(indexes, sep = ", ")}"
     case Op.Alloca(ty) =>
       sh"alloca $ty"
     case Op.Bin(opcode, ty, l, r) =>
@@ -200,9 +224,32 @@ object GenTextualLLVM extends GenShow {
   }
 
   implicit val showNext: Show[Next] = Show {
-    case next => sh"label ${next.name}"
+    case next => sh"label %${next.name}"
   }
 
   implicit def showAttrs: Show[Seq[Attr]] = nir.Shows.showAttrs
   implicit def showConv: Show[Conv] = nir.Shows.showConv
+
+  private object ExSucc {
+    def unapply(edges: Seq[ControlFlow.Edge]): Option[Seq[(Local, Seq[Show.Result])]] = {
+      Some(edges.map {
+        case ControlFlow.Edge(from, to, _: Next.Succ) =>
+          (from.block.name, Seq(sh"%${to.block.params.head.name}.succ"))
+        case ControlFlow.Edge(from, _, _: Next.Case) =>
+          (from.block.name, Seq())
+        case ControlFlow.Edge(from, _, Next.Label(_, vals)) =>
+          (from.block.name, vals.map(justVal))
+        case ControlFlow.Edge(_, _, _: Next.Fail) =>
+          return None
+      })
+    }
+  }
+
+  private object ExFail {
+    def unapply(edges: Seq[ControlFlow.Edge]): Boolean =
+      edges.forall {
+        case ControlFlow.Edge(_, _, _: Next.Fail) => true
+        case _                                    => false
+      }
+  }
 }

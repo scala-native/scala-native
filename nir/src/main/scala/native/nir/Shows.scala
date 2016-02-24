@@ -86,6 +86,8 @@ object Shows {
       sh"switch $scrut $body"
     case Cf.Invoke(ty, f, args, succ, fail) =>
       sh"invoke[$ty] $f(${r(args, sep = ", ")}) to $succ unwind $fail"
+    case Cf.Resume(excrec) =>
+      sh"resume $excrec"
 
     case Cf.Throw(value) =>
       sh"throw $value"
@@ -102,10 +104,10 @@ object Shows {
       sh"store[$ty] $ptr, $value"
     case Op.Elem(ty, ptr, indexes) =>
       sh"elem[$ty] $ptr, ${r(indexes, sep = ", ")}"
-    case Op.Extract(ty, aggr, index) =>
-      sh"extract[$ty] $aggr, $index"
-    case Op.Insert(ty, aggr, value, index) =>
-      sh"insert[$ty] $aggr, $value, $index"
+    case Op.Extract(aggr, indexes) =>
+      sh"extract $aggr, ${r(indexes, sep = ", ")}"
+    case Op.Insert(aggr, value, indexes) =>
+      sh"insert $aggr, $value, ${r(indexes, sep = ", ")}"
     case Op.Alloca(ty) =>
       sh"alloca[$ty]"
     case Op.Bin(name, ty, l, r) =>
@@ -264,6 +266,7 @@ object Shows {
     case Type.Ptr(ty)             => sh"ptr ${ty}"
     case Type.Function(args, ret) => sh"(${r(args, sep = ", ")}) => $ret"
     case Type.Struct(name)        => sh"struct $name"
+    case Type.AnonStruct(tys)     => sh"struct {${r(tys, sep = ", ")}}"
 
     case Type.Nothing              => "nothing"
     case Type.Null                 => "null"

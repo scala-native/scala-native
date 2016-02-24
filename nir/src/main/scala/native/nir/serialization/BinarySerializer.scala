@@ -15,6 +15,8 @@ final class BinarySerializer(buffer: ByteBuffer) {
     seq.foreach(putT)
   }
 
+  private def putInts(ints: Seq[Int]) = putSeq[Int](i => putInt(i))(ints)
+
   private def putStrings(vs: Seq[String]) = putSeq(putString)(vs)
   private def putString(v: String) = {
     val bytes = v.getBytes
@@ -86,6 +88,8 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.SwitchCf); putVal(v); putNext(default); putNexts(cases)
     case Cf.Invoke(ty, f, args, succ, fail) =>
       putInt(T.InvokeCf); putType(ty); putVal(f); putVals(args); putNext(succ); putNext(fail)
+    case Cf.Resume(excrec) =>
+      putInt(T.ResumeCf); putVal(excrec)
 
     case Cf.Throw(v) =>
       putInt(T.ThrowCf); putVal(v)
@@ -233,18 +237,16 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putVal(v)
       putVals(indexes)
 
-    case Op.Extract(ty, v, index) =>
+    case Op.Extract(v, indexes) =>
       putInt(T.ExtractOp)
-      putType(ty)
       putVal(v)
-      putVal(index)
+      putInts(indexes)
 
-    case Op.Insert(ty, v, value, index) =>
+    case Op.Insert(v, value, indexes) =>
       putInt(T.InsertOp)
-      putType(ty)
       putVal(v)
       putVal(value)
-      putVal(index)
+      putInts(indexes)
 
     case Op.Alloca(ty) =>
       putInt(T.AllocaOp)
@@ -340,6 +342,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Type.Ptr(ty)             => putInt(T.PtrType); putType(ty)
     case Type.Function(args, ret) => putInt(T.FunctionType); putTypes(args); putType(ret)
     case Type.Struct(n)           => putInt(T.StructType); putGlobal(n)
+    case Type.AnonStruct(tys)     => putInt(T.AnonStructType); putTypes(tys)
 
     case Type.Size                => putInt(T.SizeType)
     case Type.Nothing             => putInt(T.NothingType)

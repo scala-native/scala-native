@@ -82,7 +82,7 @@ final case class Focus(
 
   def branchTry(retty: Type, normal: Focus => Focus, exc: (Val, Focus) => Focus): Focus = {
     val merge = fresh()
-    val excparam = Val.Local(fresh(), Intr.object_)
+    val excparam = Val.Local(fresh(), Intr.excrec)
     val param = Val.Local(fresh(), retty)
     val (normname, normcompl, normblocks) = wrapBranch(merge, normal)
     val (excname, exccompl, excblocks) = wrapBranch(merge, exc(excparam, _), Seq(excparam))

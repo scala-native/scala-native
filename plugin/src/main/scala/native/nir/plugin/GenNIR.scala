@@ -421,7 +421,11 @@ abstract class GenNIR extends PluginComponent
     def genTry(retty: nir.Type, expr: Tree, catches: List[Tree], finalizer: Tree, focus: Focus) =
       focus.branchTry(retty, normal = genExpr(expr, _), exc = genCatch(retty, catches, _, _))
 
-    def genCatch(retty: nir.Type, catches: List[Tree], exc: Val, focus: Focus) = {
+    def genCatch(retty: nir.Type, catches: List[Tree], excrec: Val, focus: Focus) = {
+      val excwrap = focus   withOp Op.Extract(excrec, Seq(0))
+      val exccast = excwrap withOp Op.Conv(Conv.Bitcast, Type.Ptr(Intr.object_), excwrap.value)
+      val exc     = exccast withOp Op.Load(Intr.object_, exccast.value)
+
       val cases =
         catches.map {
           case CaseDef(pat, _, body) =>
@@ -435,24 +439,27 @@ abstract class GenNIR extends PluginComponent
             }
 
             (excty, { focus: Focus =>
-              val nfocus = symopt.map { sym =>
-                val cast = focus withOp Op.As(excty, exc)
+              val enter = symopt.map { sym =>
+                val cast = focus withOp Op.As(excty, exc.value)
                 curEnv.enter(sym, cast.value)
                 cast
               }.getOrElse(focus)
-              genExpr(body, nfocus)
+              val begin = enter withOp Intr.call(Intr.begin_catch, excwrap.value)
+              val res = genExpr(body, begin)
+              val end = res withOp Intr.call(Intr.end_catch)
+              end withValue res.value
             })
         }
 
       def wrap(cases: Seq[(nir.Type, Focus => Focus)], focus: Focus): Focus = cases match {
         case Seq() =>
-          focus finish Cf.Throw(exc)
+          focus finish Cf.Resume(excrec)
         case (excty, f) +: rest =>
-          val cond = focus withOp Op.Is(excty, exc)
+          val cond = focus withOp Op.Is(excty, exc.value)
           cond.branchIf(cond.value, retty, f, wrap(rest, _))
       }
 
-      wrap(cases, focus)
+      wrap(cases, exc)
     }
 
     def genFinally(finalizer: Tree, focus: Focus): Focus = ???/*{

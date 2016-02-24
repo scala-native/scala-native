@@ -24,6 +24,8 @@ final class BinaryDeserializer(bb: ByteBuffer) {
   private def getSeq[T](getT: => T): Seq[T] =
     (1 to getInt).map(_ => getT).toSeq
 
+  private def getInts(): Seq[Int] = getSeq(getInt)
+
   private def getStrings(): Seq[String] = getSeq(getString)
   private def getString(): String = {
     val arr = new Array[Byte](getInt)
@@ -85,6 +87,7 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.IfCf          => Cf.If(getVal, getNext, getNext)
     case T.SwitchCf      => Cf.Switch(getVal, getNext, getNexts)
     case T.InvokeCf      => Cf.Invoke(getType, getVal, getVals, getNext, getNext)
+    case T.ResumeCf      => Cf.Resume(getVal)
 
     case T.ThrowCf => Cf.Throw(getVal)
     case T.TryCf   => Cf.Try(getNext, getNext)
@@ -158,8 +161,8 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.LoadOp    => Op.Load(getType, getVal)
     case T.StoreOp   => Op.Store(getType, getVal, getVal)
     case T.ElemOp    => Op.Elem(getType, getVal, getVals)
-    case T.ExtractOp => Op.Extract(getType, getVal, getVal)
-    case T.InsertOp  => Op.Insert(getType, getVal, getVal, getVal)
+    case T.ExtractOp => Op.Extract(getVal, getInts)
+    case T.InsertOp  => Op.Insert(getVal, getVal, getInts)
     case T.AllocaOp  => Op.Alloca(getType)
     case T.BinOp     => Op.Bin(getBin, getType, getVal, getVal)
     case T.CompOp    => Op.Comp(getComp, getType, getVal, getVal)
@@ -182,21 +185,22 @@ final class BinaryDeserializer(bb: ByteBuffer) {
 
   private def getTypes(): Seq[Type] = getSeq(getType)
   private def getType(): Type = getInt match {
-    case T.NoneType     => Type.None
-    case T.VoidType     => Type.Void
-    case T.LabelType    => Type.Label
-    case T.VarargType   => Type.Vararg
-    case T.BoolType     => Type.Bool
-    case T.I8Type       => Type.I8
-    case T.I16Type      => Type.I16
-    case T.I32Type      => Type.I32
-    case T.I64Type      => Type.I64
-    case T.F32Type      => Type.F32
-    case T.F64Type      => Type.F64
-    case T.ArrayType    => Type.Array(getType, getInt)
-    case T.PtrType      => Type.Ptr(getType)
-    case T.FunctionType => Type.Function(getTypes, getType)
-    case T.StructType   => Type.Struct(ext(getGlobal))
+    case T.NoneType       => Type.None
+    case T.VoidType       => Type.Void
+    case T.LabelType      => Type.Label
+    case T.VarargType     => Type.Vararg
+    case T.BoolType       => Type.Bool
+    case T.I8Type         => Type.I8
+    case T.I16Type        => Type.I16
+    case T.I32Type        => Type.I32
+    case T.I64Type        => Type.I64
+    case T.F32Type        => Type.F32
+    case T.F64Type        => Type.F64
+    case T.ArrayType      => Type.Array(getType, getInt)
+    case T.PtrType        => Type.Ptr(getType)
+    case T.FunctionType   => Type.Function(getTypes, getType)
+    case T.StructType     => Type.Struct(ext(getGlobal))
+    case T.AnonStructType => Type.AnonStruct(getTypes)
 
     case T.SizeType           => Type.Size
     case T.NothingType        => Type.Nothing

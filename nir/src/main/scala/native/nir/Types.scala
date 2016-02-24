@@ -1,7 +1,21 @@
 package native
 package nir
 
+import native.util.unsupported
+
 sealed abstract class Type {
+  def elemty(path: Seq[Int]) = (this, path) match {
+    case (_, Seq()) =>
+      this
+    case (Type.AnonStruct(tys), idx +: rest) =>
+      tys(idx)
+    case (Type.Array(ty, n), idx +: rest) =>
+      assert(idx >= 0 && idx < n)
+      ty
+    case _ =>
+      unsupported(s"${this}.elemty($path)")
+  }
+
   def unboxed = this match {
     case Intr.unit   => Intr.unit
     case Intr.char   => Type.I16
@@ -35,6 +49,7 @@ object Type {
   final case class Ptr     (ty: Type)                   extends Type
   final case class Function(args: Seq[Type], ret: Type) extends Type
   final case class Struct  (name: Global)               extends Type
+  final case class AnonStruct(tys: Seq[Type])           extends Type
 
   // high-level types
   final case object Size                          extends Type

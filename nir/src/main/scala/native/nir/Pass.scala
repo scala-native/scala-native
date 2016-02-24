@@ -94,16 +94,16 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
 
     pres.flatMap { pre =>
       val newop = pre.op match {
-        case Op.Call(ty, ptrv, argvs)        => Op.Call(txType(ty), txVal(ptrv), argvs.map(txVal))
-        case Op.Load(ty, ptrv)               => Op.Load(txType(ty), txVal(ptrv))
-        case Op.Store(ty, ptrv, v)           => Op.Store(txType(ty), txVal(ptrv), txVal(v))
-        case Op.Elem(ty, ptrv, indexvs)      => Op.Elem(txType(ty), txVal(ptrv), indexvs.map(txVal))
-        case Op.Extract(ty, aggrv, indexv)   => Op.Extract(txType(ty), txVal(aggrv), txVal(indexv))
-        case Op.Insert(ty, aggrv, v, indexv) => Op.Insert(txType(ty), txVal(aggrv), txVal(v), txVal(indexv))
-        case Op.Alloca(ty)                   => Op.Alloca(txType(ty))
-        case Op.Bin(bin, ty, lv, rv)         => Op.Bin(bin, txType(ty), txVal(lv), txVal(rv))
-        case Op.Comp(comp, ty, lv, rv)       => Op.Comp(comp, txType(ty), txVal(lv), txVal(rv))
-        case Op.Conv(conv, ty, v)            => Op.Conv(conv, txType(ty), txVal(v))
+        case Op.Call(ty, ptrv, argvs)     => Op.Call(txType(ty), txVal(ptrv), argvs.map(txVal))
+        case Op.Load(ty, ptrv)            => Op.Load(txType(ty), txVal(ptrv))
+        case Op.Store(ty, ptrv, v)        => Op.Store(txType(ty), txVal(ptrv), txVal(v))
+        case Op.Elem(ty, ptrv, indexvs)   => Op.Elem(txType(ty), txVal(ptrv), indexvs.map(txVal))
+        case Op.Extract(aggrv, indexvs)   => Op.Extract(txVal(aggrv), indexvs)
+        case Op.Insert(aggrv, v, indexvs) => Op.Insert(txVal(aggrv), txVal(v), indexvs)
+        case Op.Alloca(ty)                => Op.Alloca(txType(ty))
+        case Op.Bin(bin, ty, lv, rv)      => Op.Bin(bin, txType(ty), txVal(lv), txVal(rv))
+        case Op.Comp(comp, ty, lv, rv)    => Op.Comp(comp, txType(ty), txVal(lv), txVal(rv))
+        case Op.Conv(conv, ty, v)         => Op.Conv(conv, txType(ty), txVal(v))
 
         case Op.Alloc(ty)        => Op.Alloc(txType(ty))
         case Op.Field(ty, v, n)  => Op.Field(txType(ty), txVal(v), n)
@@ -131,6 +131,7 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
       case Cf.If(v, thenp, elsep)                 => Cf.If(txVal(v), txNext(thenp), txNext(elsep))
       case Cf.Switch(v, default, cases)           => Cf.Switch(txVal(v), txNext(default), cases.map(txNext))
       case Cf.Invoke(ty, ptrv, argvs, succ, fail) => Cf.Invoke(txType(ty), txVal(ptrv), argvs.map(txVal), txNext(succ), txNext(fail))
+      case Cf.Resume(excrec)                      => Cf.Resume(txVal(excrec))
 
       case Cf.Throw(v)       => Cf.Throw(txVal(v))
       case Cf.Try(norm, exc) => Cf.Try(txNext(norm), txNext(exc))
