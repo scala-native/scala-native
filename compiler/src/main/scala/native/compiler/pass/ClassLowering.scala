@@ -19,7 +19,7 @@ import native.compiler.analysis.ClassHierarchy
  *
  *  Gets lowered to:
  *
- *      struct $name_type { #type, .. ptr $allvirtmty }
+ *      struct $name_type { ptr #type, .. ptr $allvirtmty }
  *      struct $name { ptr $name_type, .. $allfty }
  *
  *      const $name_const: struct $name_type =
@@ -125,6 +125,10 @@ class ClassLowering(implicit cha: ClassHierarchy.Result, fresh: Fresh) extends P
       Seq(
         Inst(n, Op.Conv(Conv.Bitcast, Type.Ptr(Intr.type_), clsconst))
       )
+
+    case inst @ Inst(_, _: Op.Alloc | _: Op.Field | _: Op.Method |
+                        _: Op.As | _: Op.Is | _: Op.TypeOf) =>
+      unsupported(inst)
   }
 
   override def preType = {

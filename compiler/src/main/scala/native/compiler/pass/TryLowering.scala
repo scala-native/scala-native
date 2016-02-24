@@ -11,7 +11,7 @@ import native.util.unreachable
  *  - Cf.Try
  */
 class TryLowering(implicit fresh: Fresh) extends Pass {
-  private def striptry(block: Block) = block.cf match {
+  private def stripTry(block: Block) = block.cf match {
     case Cf.Try(Next.Succ(n), fail) =>
       block.copy(cf = Cf.Jump(Next.Label(n, Seq())))
     case _ =>
@@ -19,7 +19,7 @@ class TryLowering(implicit fresh: Fresh) extends Pass {
   }
 
   private def invokify(block: Block, handler: Option[Next.Fail]): Seq[Block] =
-    handler.fold(Seq(striptry(block))) { fail =>
+    handler.fold(Seq(stripTry(block))) { fail =>
       val blocks = mutable.UnrolledBuffer.empty[Block]
       var name   = block.name
       var params = block.params
@@ -38,7 +38,7 @@ class TryLowering(implicit fresh: Fresh) extends Pass {
       }
 
       def finish() = {
-        blocks += striptry(Block(name, params, insts.toSeq, block.cf))
+        blocks += stripTry(Block(name, params, insts.toSeq, block.cf))
         blocks.toSeq
       }
 

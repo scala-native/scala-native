@@ -44,34 +44,39 @@ import native.nir._
 class ModuleLowering(implicit fresh: Fresh) extends Pass {
   override def preDefn = {
     case Defn.Module(attrs, name, parent, ifaces, members) =>
-      val cls = Defn.Class(attrs, name, parent, ifaces, members)
-      val clsty = Type.Class(name)
+      val cls      = Defn.Class(attrs, name, parent, ifaces, members)
+      val clsty    = Type.Class(name)
       val ptrclsty = Type.Ptr(clsty)
-      val ctorty = Type.Function(Seq(clsty), Intr.unit)
-      val ctor = Val.Global(name + "init", Type.Ptr(ctorty))
-      val data = Defn.Var(Seq(), name + "data", clsty, Val.Zero(clsty))
-      val dataval = Val.Global(data.name, ptrclsty)
+      val ctorty   = Type.Function(Seq(clsty), Intr.unit)
+      val ctor     = Val.Global(name + "init", Type.Ptr(ctorty))
+      val data     = Defn.Var(Seq(), name + "data", clsty, Val.Zero(clsty))
+      val dataval  = Val.Global(data.name, ptrclsty)
+      val entry    = fresh()
+      val thenp    = fresh()
+      val elsep    = fresh()
+      val prev     = Val.Local(fresh(), clsty)
+      val cond     = Val.Local(fresh(), Type.Bool)
+      val alloc    = Val.Local(fresh(), clsty)
       val accessor =
-        Defn.Define(Seq(), name + "accessor", Type.Function(Seq(), Type.Class(name)),
-          {
-            val entry = Focus.entry(fresh)
-            val prev = entry withOp Op.Load(clsty, dataval)
-            val cond = prev withOp Op.Comp(Comp.Ieq, Intr.object_,
-                                           prev.value, Val.Zero(Intr.object_))
+        Defn.Define(Seq(), name + "accessor", Type.Function(Seq(), Type.Class(name)), Seq(
+          Block(entry, Seq(),
+            Seq(
+              Inst(prev.name, Op.Load(clsty, dataval)),
+              Inst(cond.name, Op.Comp(Comp.Ieq, Intr.object_,
+                                      prev, Val.Zero(Intr.object_)))
+            ),
+            Cf.If(cond, Next(thenp), Next(elsep))),
+          Block(thenp, Seq(),
+            Seq(
+              Inst(alloc.name, Op.Alloc(clsty)),
+              Inst(Op.Call(ctorty, ctor, Seq(alloc))),
+              Inst(Op.Store(clsty, dataval, alloc))
+            ),
+            Cf.Ret(alloc)),
+          Block(elsep, Seq(),
+            Seq(),
+            Cf.Ret(prev))))
 
-            cond.branchIf(cond.value, Type.Nothing,
-              { thenp =>
-                val alloc = thenp withOp Op.Alloc(clsty)
-                val call = alloc withOp Op.Call(ctorty, ctor, Seq(alloc.value))
-                val store = call withOp Op.Store(clsty, dataval, alloc.value)
-                store finish Cf.Ret(alloc.value)
-              },
-              { elsep =>
-                elsep finish Cf.Ret(prev.value)
-              }
-            ).finish(Cf.Unreachable).blocks
-          }
-        )
       Seq(cls, data, accessor)
   }
 
