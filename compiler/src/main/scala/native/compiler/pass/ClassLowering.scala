@@ -39,7 +39,7 @@ class ClassLowering(implicit cha: ClassHierarchy.Result, fresh: Fresh) extends P
 
   override def preDefn = {
     case Defn.Class(_, name, _, _, members) =>
-      val cls       = cha(name).asInstanceOf[ClassHierarchy.Node.Class]
+      val cls       = cha(name).asInstanceOf[ClassHierarchy.Class]
       val data      = cls.fields.map(_.ty)
       val vtable    = cls.vtable
       val vtableTys = vtable.map(_.ty)
@@ -136,23 +136,23 @@ class ClassLowering(implicit cha: ClassHierarchy.Result, fresh: Fresh) extends P
   }
 
   object ExVirtualMethod {
-    def unapply(name: Global): Option[ClassHierarchy.Node.Method] =
+    def unapply(name: Global): Option[ClassHierarchy.Method] =
       cha.get(name).collect {
-        case meth: ClassHierarchy.Node.Method if meth.isVirtual => meth
+        case meth: ClassHierarchy.Method if meth.isVirtual => meth
       }
   }
 
   object ExStaticMethod {
-    def unapply(name: Global): Option[ClassHierarchy.Node.Method] =
+    def unapply(name: Global): Option[ClassHierarchy.Method] =
       cha.get(name).collect {
-        case meth: ClassHierarchy.Node.Method if meth.isStatic => meth
+        case meth: ClassHierarchy.Method if meth.isStatic => meth
       }
   }
 
   object ExField {
-    def unapply(name: Global): Option[ClassHierarchy.Node.Field] =
+    def unapply(name: Global): Option[ClassHierarchy.Field] =
       cha.get(name).collect {
-        case fld: ClassHierarchy.Node.Field => fld
+        case fld: ClassHierarchy.Field => fld
       }
   }
 }
