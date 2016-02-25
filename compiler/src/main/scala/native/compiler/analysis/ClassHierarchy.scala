@@ -254,7 +254,7 @@ object ClassHierarchy {
       }
 
       def idMethod(node: Method): Unit = {
-        method.id = id
+        node.id = id
         id += 1
       }
 

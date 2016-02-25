@@ -28,8 +28,8 @@ import native.compiler.analysis.ClassHierarchy
  *      .. def $mname: $mty = $body
  *
  *  Eliminates:
- *  - Type.{Class, InterfaceClass, Null}
- *  - Defn.{Class, InterfaceClass}
+ *  - Type.{Class, Null}
+ *  - Defn.{Class}
  *  - Op.{Alloc, Field, Method, As, Is}
  *  - Val.{Null, Class}
  */
@@ -60,8 +60,6 @@ class ClassLowering(implicit cha: ClassHierarchy.Result, fresh: Fresh) extends P
 
       Seq(classTypeStruct, classStruct, classConst) ++ methods
 
-    case _: Defn.Interface =>
-      ???
   }
 
   override def preInst =  {
@@ -76,14 +74,14 @@ class ClassLowering(implicit cha: ClassHierarchy.Result, fresh: Fresh) extends P
         Inst(n,         Intr.call(Intr.alloc, cast, size))
       )
 
-    case Inst(n, Op.Field(ty, obj, ExField(fld))) =>
+    case Inst(n, Op.Field(ty, obj, Field(fld))) =>
       val cast = Val.Local(fresh(), Type.Size)
       Seq(
         Inst(cast.name, Op.Conv(Conv.Bitcast, Type.Ptr(Type.Struct(fld.in.name)), obj)),
         Inst(n,         Op.Elem(ty, cast, Seq(Val.I32(0), Val.I32(fld.index + 1))))
       )
 
-    case Inst(n, Op.Method(sig, obj, ExVirtualMethod(meth))) =>
+    case Inst(n, Op.Method(sig, obj, VirtualMethod(meth))) =>
       val sigptr     = Type.Ptr(sig)
       val clsptr     = Type.Ptr(Type.Struct(meth.in.name))
       val typeptrty  = Type.Ptr(Type.Struct(meth.in.name + "type"))
@@ -99,7 +97,7 @@ class ClassLowering(implicit cha: ClassHierarchy.Result, fresh: Fresh) extends P
         Inst(n,               Op.Load(sigptr, methptrptr))
       )
 
-    case Inst(n, Op.Method(sig, obj, ExStaticMethod(meth))) =>
+    case Inst(n, Op.Method(sig, obj, StaticMethod(meth))) =>
       Seq(
         Inst(n, Op.Copy(Val.Global(meth.name, Type.Ptr(sig))))
       )
@@ -135,21 +133,21 @@ class ClassLowering(implicit cha: ClassHierarchy.Result, fresh: Fresh) extends P
     case _: Type.ClassKind => i8_*
   }
 
-  object ExVirtualMethod {
+  object VirtualMethod {
     def unapply(name: Global): Option[ClassHierarchy.Method] =
       cha.get(name).collect {
         case meth: ClassHierarchy.Method if meth.isVirtual => meth
       }
   }
 
-  object ExStaticMethod {
+  object StaticMethod {
     def unapply(name: Global): Option[ClassHierarchy.Method] =
       cha.get(name).collect {
         case meth: ClassHierarchy.Method if meth.isStatic => meth
       }
   }
 
-  object ExField {
+  object Field {
     def unapply(name: Global): Option[ClassHierarchy.Field] =
       cha.get(name).collect {
         case fld: ClassHierarchy.Field => fld
