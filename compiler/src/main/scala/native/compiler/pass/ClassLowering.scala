@@ -38,50 +38,52 @@ class ClassLowering(implicit cha: ClassHierarchy.Result, fresh: Fresh) extends P
   private val zero_i8_* = Val.Zero(i8_*)
 
   override def preDefn = {
-    case Defn.Class(_, name, _, _, members) =>
-      val cls       = cha(name).asInstanceOf[ClassHierarchy.Class]
+    case Defn.Class(_, name @ ClassRef(cls), _, _, members) =>
       val data      = cls.fields.map(_.ty)
       val vtable    = cls.vtable
       val vtableTys = vtable.map(_.ty)
 
       val classTypeStructName = name + "type"
       val classTypeStructTy   = Type.Struct(classTypeStructName)
-      val classTypeStruct     = Defn.Struct(Seq(), classTypeStructName,
-                                            Type.Ptr(Intr.type_) +: vtableTys)
+      val classTypeStructBody = Intr.type_ +: vtableTys
+      val classTypeStruct     = Defn.Struct(Seq(), classTypeStructName, classTypeStructBody)
 
       val classStructTy = Type.Struct(name)
       val classStruct   = Defn.Struct(Seq(), name, Type.Ptr(classTypeStructTy) +: data)
 
+      val typeId   = Val.I32(cls.id)
+      val typeName = Val.String(cls.name.parts.head)
+      val typeVal  = Val.Struct(Intr.type_.name, Seq(Intr.type_type, typeId, typeName))
+
       val classConstName = name + "const"
-      val classConstVal  = Val.Struct(classTypeStructName, Intr.type_type +: vtable)
+      val classConstVal  = Val.Struct(classTypeStructName, typeVal +: vtable)
       val classConst     = Defn.Const(Seq(), classConstName, classTypeStructTy, classConstVal)
 
       val methods = members.collect { case defn: Defn.Define => defn }
 
       Seq(classTypeStruct, classStruct, classConst) ++ methods
-
   }
 
   override def preInst =  {
-    case Inst(n, Op.Alloc(Type.Class(clsname))) =>
-      val clstype = Val.Global(clsname + "const", Type.Ptr(Type.Struct(clsname + "type")))
+    case Inst(n, Op.Alloc(ClassRef(cls))) =>
+      val clstype = Val.Global(cls.name + "const", Type.Ptr(Type.Struct(cls.name + "type")))
       val typeptr = Type.Ptr(Intr.type_)
       val cast    = Val.Local(fresh(), typeptr)
       val size    = Val.Local(fresh(), Type.Size)
       Seq(
         Inst(cast.name, Op.Conv(Conv.Bitcast, typeptr, clstype)),
-        Inst(size.name, Op.SizeOf(Type.Struct(clsname))),
+        Inst(size.name, Op.SizeOf(Type.Struct(cls.name))),
         Inst(n,         Intr.call(Intr.alloc, cast, size))
       )
 
-    case Inst(n, Op.Field(ty, obj, Field(fld))) =>
+    case Inst(n, Op.Field(ty, obj, FieldRef(fld))) =>
       val cast = Val.Local(fresh(), Type.Size)
       Seq(
         Inst(cast.name, Op.Conv(Conv.Bitcast, Type.Ptr(Type.Struct(fld.in.name)), obj)),
         Inst(n,         Op.Elem(ty, cast, Seq(Val.I32(0), Val.I32(fld.index + 1))))
       )
 
-    case Inst(n, Op.Method(sig, obj, VirtualMethod(meth))) =>
+    case Inst(n, Op.Method(sig, obj, VirtualMethodRef(meth))) =>
       val sigptr     = Type.Ptr(sig)
       val clsptr     = Type.Ptr(Type.Struct(meth.in.name))
       val typeptrty  = Type.Ptr(Type.Struct(meth.in.name + "type"))
@@ -97,7 +99,7 @@ class ClassLowering(implicit cha: ClassHierarchy.Result, fresh: Fresh) extends P
         Inst(n,               Op.Load(sigptr, methptrptr))
       )
 
-    case Inst(n, Op.Method(sig, obj, StaticMethod(meth))) =>
+    case Inst(n, Op.Method(sig, obj, StaticMethodRef(meth))) =>
       Seq(
         Inst(n, Op.Copy(Val.Global(meth.name, Type.Ptr(sig))))
       )
@@ -107,47 +109,73 @@ class ClassLowering(implicit cha: ClassHierarchy.Result, fresh: Fresh) extends P
         Inst(n, Op.Copy(v))
       )
 
-    case Inst(n, _: Op.Is) =>
+    case Inst(n, Op.Is(ClassRef(cls), v)) =>
+      val ty   = Val.Local(fresh(), Type.Ptr(Intr.type_))
+      val id   = Val.Local(fresh(), Type.I32)
+      val cond =
+        if (cls.range.length == 1)
+          Seq(
+            Inst(n, Op.Comp(Comp.Ieq, Type.I32, id, Val.I32(cls.id)))
+          )
+        else {
+          val ge = Val.Local(fresh(), Type.Bool)
+          val le = Val.Local(fresh(), Type.Bool)
+
+          Seq(
+            Inst(ge.name, Op.Comp(Comp.Sge, Type.I32, Val.I32(cls.range.start), id)),
+            Inst(le.name, Op.Comp(Comp.Sle, Type.I32, id, Val.I32(cls.range.end))),
+            Inst(n,       Op.Bin(Bin.And, Type.Bool, ge, le))
+          )
+        }
+
       Seq(
-        Inst(n, Op.Copy(Val.True))
-      )
+        Inst(ty.name, Intr.call(Intr.object_getType, v)),
+        Inst(id.name, Intr.call(Intr.type_getId, ty))
+      ) ++ cond
 
     case Inst(n, Op.TypeOf(ty)) if Intr.intrinsic_type.contains(ty) =>
       Seq(
         Inst(n, Op.Copy(Intr.intrinsic_type(ty)))
       )
 
-    case Inst(n, Op.TypeOf(Type.Class(name))) =>
-      val clstype  = Type.Struct(name + "type")
-      val clsconst = Val.Global(name + "const", Type.Ptr(clstype))
+    case Inst(n, Op.TypeOf(ClassRef(cls))) =>
+      val clstype  = Type.Struct(cls.name + "type")
+      val clsconst = Val.Global(cls.name + "const", Type.Ptr(cls.ty))
       Seq(
         Inst(n, Op.Conv(Conv.Bitcast, Type.Ptr(Intr.type_), clsconst))
       )
-
-    case inst @ Inst(_, _: Op.Alloc | _: Op.Field | _: Op.Method |
-                        _: Op.As | _: Op.Is | _: Op.TypeOf) =>
-      unsupported(inst)
   }
 
   override def preType = {
     case _: Type.ClassKind => i8_*
   }
 
-  object VirtualMethod {
+  object ClassRef {
+    def unapply(ty: Type): Option[ClassHierarchy.Class] = ty match {
+      case Type.Class(name) => unapply(name)
+      case _                => None
+    }
+    def unapply(name: Global): Option[ClassHierarchy.Class] =
+      cha.get(name).collect {
+        case cls: ClassHierarchy.Class => cls
+      }
+  }
+
+  object VirtualMethodRef {
     def unapply(name: Global): Option[ClassHierarchy.Method] =
       cha.get(name).collect {
         case meth: ClassHierarchy.Method if meth.isVirtual => meth
       }
   }
 
-  object StaticMethod {
+  object StaticMethodRef {
     def unapply(name: Global): Option[ClassHierarchy.Method] =
       cha.get(name).collect {
         case meth: ClassHierarchy.Method if meth.isStatic => meth
       }
   }
 
-  object Field {
+  object FieldRef {
     def unapply(name: Global): Option[ClassHierarchy.Field] =
       cha.get(name).collect {
         case fld: ClassHierarchy.Field => fld

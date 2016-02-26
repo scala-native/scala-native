@@ -21,12 +21,15 @@ object ClassHierarchy {
   final class Class(
     val name:       Global,
     var id:         Int           = -1,
-    var range:      (Int, Int)    = (-1, -1),
+    var range:      Range         = null,
     var parent:     Option[Class] = None,
     var subclasses: Seq[Class]    = Seq(),
     var interfaces: Seq[Node]     = Seq(),
     var members:    Seq[Node]     = Seq()
   ) extends Node {
+    def ty =
+      Type.Class(name)
+
     def fields: Seq[Field] =
       parent.map(_.fields).getOrElse(Seq()) ++ ownfields
 
@@ -245,7 +248,7 @@ object ClassHierarchy {
         node.subclasses.foreach(idClass)
         val end = id - 1
         node.id    = start
-        node.range = (start, end)
+        node.range = start to end
       }
 
       def idInterface(node: Interface): Unit = {

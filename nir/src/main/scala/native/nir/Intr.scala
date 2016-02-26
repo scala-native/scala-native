@@ -27,11 +27,11 @@ object Intr {
   }
 
   lazy val object_          = cls   ("object")
-  lazy val object_init      = unary ("object_init"    , object_,          unit   )
-  lazy val object_equals    = binary("object_equals"  , object_, object_, Bool   )
-  lazy val object_toString  = unary ("object_toString", object_,          string )
-  lazy val object_hashCode  = unary ("object_hashCode", object_,          I32    )
-  lazy val object_getType   = unary ("object_getType" , object_,          type_  )
+  lazy val object_init      = unary ("object_init"    , object_,          unit      )
+  lazy val object_equals    = binary("object_equals"  , object_, object_, Bool      )
+  lazy val object_toString  = unary ("object_toString", object_,          string    )
+  lazy val object_hashCode  = unary ("object_hashCode", object_,          I32       )
+  lazy val object_getType   = unary ("object_getType" , object_,          Ptr(type_))
 
   lazy val monitor_enter     = unary  ("monitor_enter"    , object_,           unit  )
   lazy val monitor_exit      = unary  ("monitor_exit"     , object_,           unit  )
@@ -94,8 +94,9 @@ object Intr {
   lazy val object_array_update = ternary("object_array_update", object_array, I32, object_, unit   )
   lazy val object_array_length = unary  ("object_array_length", object_array,               I32    )
 
-  lazy val type_     = struct("type")
-  lazy val type_name = unary ("type_name", Ptr(type_), string)
+  lazy val type_        = struct("type")
+  lazy val type_getId   = unary ("type_getId",   Ptr(type_), I32   )
+  lazy val type_getName = unary ("type_getName", Ptr(type_), string)
 
   lazy val unit_type    = value ("unit_type"   , type_)
   lazy val nothing_type = value ("nothing_type", type_)
@@ -421,7 +422,7 @@ object Intr {
     float_array.name  -> Seq(Ptr(type_), I32, Array(F32, 0))    ,
     double_array.name -> Seq(Ptr(type_), I32, Array(F64, 0))    ,
     object_array.name -> Seq(Ptr(type_), I32, Array(Ptr(I8), 0)),
-    type_.name        -> Seq(Ptr(type_))                        ,
+    type_.name        -> Seq(Ptr(type_), I32, Ptr(I8))          ,
     string.name       -> Seq(Ptr(type_), I32, Ptr(I8))
   )
 }

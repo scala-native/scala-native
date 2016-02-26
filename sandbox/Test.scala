@@ -10,13 +10,7 @@ class A // 3..9
 
 object Test { // 2
   def main(args: Array[String]): Unit = {
-    new A
-    new B
-    new C
-    new D
-    new E
-    new F
-    new G
-    ()
+    val x: Any = new E
+    x.isInstanceOf[A]
   }
 }
