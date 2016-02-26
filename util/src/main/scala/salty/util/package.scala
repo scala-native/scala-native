@@ -17,4 +17,8 @@ package object util {
   final case class UnsupportedException(msg: String) extends Exception(msg)
   def unsupported(v: Any = "") =
     throw UnsupportedException(s"$v (${v.getClass})")
+
+  final case class TodoException(msg: String) extends Exception(msg)
+  def todo(msg: String) =
+    throw TodoException(msg)
 }

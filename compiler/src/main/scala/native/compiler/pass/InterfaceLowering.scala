@@ -3,7 +3,7 @@ package compiler
 package pass
 
 import native.nir._
-import native.util.unsupported
+import native.util.todo
 import native.compiler.analysis.ClassHierarchy
 
 /** Lowers interfaces and operations on them.
@@ -26,32 +26,24 @@ import native.compiler.analysis.ClassHierarchy
  *
  *      .. def $defnname: $defnty = $body
  *
- *  Additionally a dispatch function is generated:
+ *  Additionally two dispatch tables are generated:
  *
- *      def __idispatch: (I32, I32) => ptr i8 { ... }
+ *      const __iface_instance: [[bool x C] x I] = ...
+ *      const __iface_dispatch: [[ptr i8 x C] x M] = ...
  *
- *  The function takes an class id and an interface method id and
- *  returns a dispatched method pointer or null if no match was found.
+ *  Tables are indexed by either class id (where C is total number of classes),
+ *  method id (where M is total number of inteface methods) or inteface id
+ *  (where I is total number of interfaces).
  *
- *  It's also used to check if an interface is implemented by a class.
- *  For this a zero is given as method id. Non-null result means that
- *  check is successful.
+ *  In the future we'd probably compact this arrays with one of the
+ *  well-known compression techniques like row displacement tables.
  */
 class InterfaceLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pass {
-  private val idispatchName = Global("__idispatch")
-  private val idispatchSig  = Type.Function(Seq(Type.I32, Type.I32), Type.Ptr(Type.I8))
-  private val idispatchRef  = Val.Global(idispatchName, Type.Ptr(idispatchSig))
-
-  private def idispatch(): Defn.Define = {
-    val clsId  = Val.Local(fresh(), Type.I32)
-    val methId = Val.Local(fresh(), Type.I32)
-
-    Defn.Define(Seq(), idispatchName, idispatchSig,
-      Seq(Block(fresh(), Seq(clsId, methId), Seq(), Cf.Unreachable)))
-  }
+  private def itables(): Seq[Defn] =
+    todo("interface table generation")
 
   override def preAssembly = { case defns =>
-    defns :+ idispatch()
+    defns ++ itables()
   }
 
   override def preDefn = {
@@ -63,7 +55,7 @@ class InterfaceLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extend
 
       val methods: Seq[Defn.Define] = members.collect {
         case defn: Defn.Define =>
-          unsupported("interface default methods")
+          todo("interface default methods")
       }
 
       typeConst +: methods
@@ -71,19 +63,10 @@ class InterfaceLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extend
 
   override def preInst =  {
     case Inst(n, Op.Method(sig, obj, VirtualInterfaceMethodRef(meth))) =>
-      val ty  = Val.Local(fresh(), Type.Ptr(Intr.type_))
-      val id  = Val.Local(fresh(), Type.I32)
-      val res = Val.Local(fresh(), Type.Ptr(Type.I8))
-
-      Seq(
-        Inst(ty.name,  Intr.call(Intr.object_getType, obj)),
-        Inst(id.name,  Intr.call(Intr.type_getId, ty)),
-        Inst(res.name, Op.Call(idispatchSig, idispatchRef, Seq(id, Val.I32(meth.id)))),
-        Inst(n,        Op.Conv(Conv.Bitcast, Type.Ptr(meth.ty), res))
-      )
+      todo("inteface method dispatch")
 
     case Inst(n, Op.Method(sig, obj, StaticInterfaceMethodRef(meth))) =>
-      unsupported("interface default methods")
+      todo("interface default methods")
 
     case Inst(n, Op.As(InterfaceRef(iface), v)) =>
       Seq(
@@ -91,16 +74,7 @@ class InterfaceLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extend
       )
 
     case Inst(n, Op.Is(InterfaceRef(iface), obj)) =>
-      val ty  = Val.Local(fresh(), Type.Ptr(Intr.type_))
-      val id  = Val.Local(fresh(), Type.I32)
-      val res = Val.Local(fresh(), Type.Ptr(Type.I8))
-
-      Seq(
-        Inst(ty.name,  Intr.call(Intr.object_getType, obj)),
-        Inst(id.name,  Intr.call(Intr.type_getId, ty)),
-        Inst(res.name, Op.Call(idispatchSig, idispatchRef, Seq(id, Val.I32(0)))),
-        Inst(n,        Op.Comp(Comp.Ine, Type.Ptr(Type.I8), res, Val.Zero(Type.Ptr(Type.I8))))
-      )
+      todo("interface instance check")
 
     case Inst(n, Op.TypeOf(InterfaceRef(iface))) =>
       Seq(

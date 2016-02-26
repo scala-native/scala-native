@@ -16,8 +16,10 @@ object ClassHierarchy {
     var id:           Int        = -1,
     var interfaces:   Seq[Node]  = Seq(),
     var implementors: Seq[Class] = Seq(),
-    var methods:      Seq[Node]  = Seq()
-  ) extends Node
+    var members:      Seq[Node]  = Seq()
+  ) extends Node {
+    def methods: Seq[Method] = ???
+  }
 
   final class Class(
     val name:       Global,
@@ -240,7 +242,7 @@ object ClassHierarchy {
     def enrichInterface(name: Global, interfaces: Seq[Global], members: Seq[Defn]): Unit = {
       val node        = nodes(name).asInstanceOf[Interface]
       node.interfaces = interfaces.map(nodes(_))
-      node.methods    = members.map(m => nodes(m.name))
+      node.members    = members.map(m => nodes(m.name))
       members.foreach(enrich)
     }
 
