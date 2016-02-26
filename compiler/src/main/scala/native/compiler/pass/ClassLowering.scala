@@ -23,9 +23,10 @@ import native.compiler.analysis.ClassHierarchy
  *        struct #type,
  *        .. ptr $alldeclty
  *      }
+ *
  *      struct $name {
  *        ptr $name_type,
- *        .. $allfty
+ *        .. $allfldty
  *      }
  *
  *      const $name_const: struct $name_type =
@@ -35,10 +36,10 @@ import native.compiler.analysis.ClassHierarchy
  *            ${cls.name},
  *            ${cls.id},
  *          }
- *          .. $mname
+ *          .. $alldefnname
  *        }
  *
- *      .. def $mname: $mty = $body
+ *      .. def $defnname: $defnty = $body
  *
  *  Eliminates:
  *  - Type.{Class, Null}
