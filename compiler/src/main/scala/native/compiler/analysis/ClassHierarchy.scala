@@ -12,10 +12,11 @@ object ClassHierarchy {
   }
 
   final class Interface(
-    val name:       Global,
-    var id:         Int       = -1,
-    var interfaces: Seq[Node] = Seq(),
-    var methods:    Seq[Node] = Seq()
+    val name:         Global,
+    var id:           Int        = -1,
+    var interfaces:   Seq[Node]  = Seq(),
+    var implementors: Seq[Class] = Seq(),
+    var methods:      Seq[Node]  = Seq()
   ) extends Node
 
   final class Class(
@@ -61,6 +62,8 @@ object ClassHierarchy {
           case (meth: Method) +: rest =>
             val nbase =
               meth.classOverride.map { basemeth =>
+                println(s"overrriding ${basemeth.name} with ${meth.name}")
+                println(s"basemeth in ${basemeth.in.name}")
                 base.updated(basemeth.vindex, meth.value)
               }.getOrElse(base)
             performOverrides(nbase, rest)
@@ -220,12 +223,17 @@ object ClassHierarchy {
     }
 
     def enrichClass(name: Global, parentName: Global,
-                    interfaces: Seq[Global], members: Seq[Defn]): Unit = {
+                    interfaceNames: Seq[Global], members: Seq[Defn]): Unit = {
       val node          = nodes(name).asInstanceOf[Class]
       val parent        = nodes(parentName).asInstanceOf[Class]
-      parent.subclasses = parent.subclasses :+ node
+      val interfaces    = interfaceNames.map(nodes(_).asInstanceOf[Interface])
       node.parent       = Some(parent)
+      node.interfaces   = interfaces
       node.members      = members.map(m => nodes(m.name))
+      parent.subclasses = parent.subclasses :+ node
+      interfaces.foreach { iface =>
+        iface.implementors = iface.implementors :+ node
+      }
       members.foreach(enrich)
     }
 

@@ -170,13 +170,14 @@ abstract class GenNIR extends PluginComponent
     val overridesEquals   = Attr.Override(Intr.object_equals.name)
     val overridesHashCode = Attr.Override(Intr.object_hashCode.name)
 
-    def genDefAttrs(sym: Symbol): Seq[Attr] =
+    def genDefAttrs(sym: Symbol): Seq[Attr] = {
       sym.overrides.collect {
         case JObject_toString => overridesToString
         case JObject_equals   => overridesEquals
         case JObject_hashCode => overridesHashCode
-        case _                => Attr.Override(genDefName(sym))
+        case sym              => Attr.Override(genDefName(sym))
       }
+    }
 
     def genDefSig(sym: Symbol): nir.Type = sym match {
       case sym: ModuleSymbol =>

@@ -1,16 +1,18 @@
 package test
 
-class A // 3..9
-  class B extends A // 7..9
-    class C extends B // 8..9
-      class E extends C // 9..9
-  class D extends A // 4..6
-    class G extends D // 5..5
-    class F extends D // 6..6
+trait Foo {
+  def foo: Int
+  def bar: Int = foo + 1
+}
+class Bar extends Foo{
+  def foo = 2
+}
 
 object Test { // 2
   def main(args: Array[String]): Unit = {
-    val x: Any = new E
-    x.isInstanceOf[A]
+    val x: Foo = new Bar
+    x.foo
+    val y: Any = x
+    y.isInstanceOf[Foo]
   }
 }

@@ -11,19 +11,32 @@ import native.compiler.analysis.ClassHierarchy
  *
  *  For example a class w:
  *
- *      class $name() {
- *        .. var $fname: $fty = $fvalue
- *        .. def $mname: $mty
- *        .. def $mname: $mty = $body
+ *      class $name: $parent, .. $ifaces {
+ *        .. var $fldname: $fldty = $fldinit
+ *        .. def $declname: $declty
+ *        .. def $defnname: $defnty = $body
  *      }
  *
  *  Gets lowered to:
  *
- *      struct $name_type { ptr #type, .. ptr $allvirtmty }
- *      struct $name { ptr $name_type, .. $allfty }
+ *      struct $name_type {
+ *        struct #type,
+ *        .. ptr $alldeclty
+ *      }
+ *      struct $name {
+ *        ptr $name_type,
+ *        .. $allfty
+ *      }
  *
  *      const $name_const: struct $name_type =
- *        struct[$name_type](#type_type, ..$mname)
+ *        struct $name_type {
+ *          struct #type {
+ *            #type_type,
+ *            ${cls.name},
+ *            ${cls.id},
+ *          }
+ *          .. $mname
+ *        }
  *
  *      .. def $mname: $mty = $body
  *
@@ -59,7 +72,10 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pa
       val classConstVal  = Val.Struct(classTypeStructName, typeVal +: vtable)
       val classConst     = Defn.Const(Seq(), classConstName, classTypeStructTy, classConstVal)
 
-      val methods = members.collect { case defn: Defn.Define => defn }
+      val methods = members.collect {
+        case defn: Defn.Define =>
+          defn.copy(attrs = defn.attrs.filterNot(_.isInstanceOf[Attr.Override]))
+      }
 
       Seq(classTypeStruct, classStruct, classConst) ++ methods
   }
@@ -76,14 +92,14 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pa
         Inst(n,         Intr.call(Intr.alloc, cast, size))
       )
 
-    case Inst(n, Op.Field(ty, obj, FieldRef(fld))) =>
+    case Inst(n, Op.Field(ty, obj, ClassFieldRef(fld))) =>
       val cast = Val.Local(fresh(), Type.Size)
       Seq(
         Inst(cast.name, Op.Conv(Conv.Bitcast, Type.Ptr(Type.Struct(fld.in.name)), obj)),
         Inst(n,         Op.Elem(ty, cast, Seq(Val.I32(0), Val.I32(fld.index + 1))))
       )
 
-    case Inst(n, Op.Method(sig, obj, VirtualMethodRef(meth))) =>
+    case Inst(n, Op.Method(sig, obj, VirtualClassMethodRef(meth))) =>
       val sigptr     = Type.Ptr(sig)
       val clsptr     = Type.Ptr(Type.Struct(meth.in.name))
       val typeptrty  = Type.Ptr(Type.Struct(meth.in.name + "type"))
@@ -99,7 +115,7 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pa
         Inst(n,               Op.Load(sigptr, methptrptr))
       )
 
-    case Inst(n, Op.Method(sig, obj, StaticMethodRef(meth))) =>
+    case Inst(n, Op.Method(sig, obj, StaticClassMethodRef(meth))) =>
       Seq(
         Inst(n, Op.Copy(Val.Global(meth.name, Type.Ptr(sig))))
       )
@@ -140,7 +156,7 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pa
 
     case Inst(n, Op.TypeOf(ClassRef(cls))) =>
       val clstype  = Type.Struct(cls.name + "type")
-      val clsconst = Val.Global(cls.name + "const", Type.Ptr(cls.ty))
+      val clsconst = Val.Global(cls.name + "const", Type.Ptr(clstype))
       Seq(
         Inst(n, Op.Conv(Conv.Bitcast, Type.Ptr(Intr.type_), clsconst))
       )
@@ -161,21 +177,25 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pa
       }
   }
 
-  object VirtualMethodRef {
+  object VirtualClassMethodRef {
     def unapply(name: Global): Option[ClassHierarchy.Method] =
       chg.nodes.get(name).collect {
-        case meth: ClassHierarchy.Method if meth.isVirtual => meth
+        case meth: ClassHierarchy.Method
+          if meth.isVirtual
+          && meth.in.isInstanceOf[ClassHierarchy.Method] => meth
       }
   }
 
-  object StaticMethodRef {
+  object StaticClassMethodRef {
     def unapply(name: Global): Option[ClassHierarchy.Method] =
       chg.nodes.get(name).collect {
-        case meth: ClassHierarchy.Method if meth.isStatic => meth
+        case meth: ClassHierarchy.Method
+          if meth.isStatic
+          && meth.in.isInstanceOf[ClassHierarchy.Class] => meth
       }
   }
 
-  object FieldRef {
+  object ClassFieldRef {
     def unapply(name: Global): Option[ClassHierarchy.Field] =
       chg.nodes.get(name).collect {
         case fld: ClassHierarchy.Field => fld
