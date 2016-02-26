@@ -33,7 +33,7 @@ import native.compiler.analysis.ClassHierarchy
  *  - Op.{Alloc, Field, Method, As, Is}
  *  - Val.{Null, Class}
  */
-class ClassLowering(implicit cha: ClassHierarchy.Result, fresh: Fresh) extends Pass {
+class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pass {
   private val i8_*      = Type.Ptr(Type.I8)
   private val zero_i8_* = Val.Zero(i8_*)
 
@@ -156,28 +156,28 @@ class ClassLowering(implicit cha: ClassHierarchy.Result, fresh: Fresh) extends P
       case _                => None
     }
     def unapply(name: Global): Option[ClassHierarchy.Class] =
-      cha.get(name).collect {
+      chg.nodes.get(name).collect {
         case cls: ClassHierarchy.Class => cls
       }
   }
 
   object VirtualMethodRef {
     def unapply(name: Global): Option[ClassHierarchy.Method] =
-      cha.get(name).collect {
+      chg.nodes.get(name).collect {
         case meth: ClassHierarchy.Method if meth.isVirtual => meth
       }
   }
 
   object StaticMethodRef {
     def unapply(name: Global): Option[ClassHierarchy.Method] =
-      cha.get(name).collect {
+      chg.nodes.get(name).collect {
         case meth: ClassHierarchy.Method if meth.isStatic => meth
       }
   }
 
   object FieldRef {
     def unapply(name: Global): Option[ClassHierarchy.Field] =
-      cha.get(name).collect {
+      chg.nodes.get(name).collect {
         case fld: ClassHierarchy.Field => fld
       }
   }

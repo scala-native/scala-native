@@ -131,12 +131,31 @@ object ClassHierarchy {
     def index = in.fields.indexOf(this)
   }
 
-  type Result = Map[Global, Node]
+  final class Graph(
+    val nodes:      Map[Global, Node],
+    val classes:    Seq[Class],
+    val interfaces: Seq[Interface],
+    val methods:    Seq[Method],
+    val fields:     Seq[Field]
+  )
 
-  def apply(defns: Seq[Defn]): Result = {
+  def apply(defns: Seq[Defn]): Graph = {
     val nodes      = mutable.Map.empty[Global, Node]
+    val classes    = mutable.UnrolledBuffer.empty[Class]
     val interfaces = mutable.UnrolledBuffer.empty[Interface]
     val methods    = mutable.UnrolledBuffer.empty[Method]
+    val fields     = mutable.UnrolledBuffer.empty[Field]
+
+    def enter[T <: Node](name: Global, node: T): T = {
+      nodes += name -> node
+      node match {
+        case cls:   Class     => classes    += cls
+        case iface: Interface => interfaces += iface
+        case meth:  Method    => methods    += meth
+        case fld:   Field     => fields     += fld
+      }
+      node
+    }
 
     def enterIntrs(): Unit = {
       val classes = Map(
@@ -149,51 +168,38 @@ object ClassHierarchy {
       )
 
       classes.foreach { case (Type.Class(clsname), clsmethods) =>
-        val clsnode = new Class(clsname)
+        val clsnode = enter(clsname, new Class(clsname))
         clsnode.members = clsmethods.map { case Val.Global(name, Type.Ptr(ty)) =>
-          val node = new Method(clsnode, name, ty, isConcrete = true)
-          nodes   += name -> node
-          methods += node
-          node
+          enter(name, new Method(clsnode, name, ty, isConcrete = true))
         }
-        nodes += clsname -> clsnode
       }
     }
 
     def enterMember(in: Node, defn: Defn): Unit = defn match {
       case defn: Defn.Var =>
-        val node = new Field(in.asInstanceOf[Class], defn.name, defn.ty)
-        nodes   += (defn.name -> node)
+        enter(defn.name, new Field(in.asInstanceOf[Class], defn.name, defn.ty))
 
       case defn: Defn.Declare =>
-        val node = new Method(in, defn.name, defn.ty, isConcrete = false)
-        nodes   += (defn.name -> node)
-        methods += node
+        enter(defn.name, new Method(in, defn.name, defn.ty, isConcrete = false))
 
       case defn: Defn.Define =>
-        val node = new Method(in, defn.name, defn.ty, isConcrete = true)
-        nodes   += (defn.name -> node)
-        methods += node
+        enter(defn.name, new Method(in, defn.name, defn.ty, isConcrete = true))
 
       case _ =>
         unreachable
     }
 
-    def enter(defn: Defn): Unit = defn match {
+    def enterDefn(defn: Defn): Unit = defn match {
       case defn: Defn.Interface =>
-        val node    = new Interface(defn.name)
-        nodes      += (defn.name -> node)
-        interfaces += node
+        val node = enter(defn.name, new Interface(defn.name))
         defn.members.foreach(enterMember(node, _))
 
       case defn: Defn.Class =>
-        val node = new Class(defn.name)
-        nodes   += (defn.name -> node)
+        val node = enter(defn.name, new Class(defn.name))
         defn.members.foreach(enterMember(node, _))
 
       case defn: Defn.Module =>
-        val node = new Class(defn.name)
-        nodes   += (defn.name -> node)
+        val node = enter(defn.name, new Class(defn.name))
         defn.members.foreach(enterMember(node, _))
 
       case _ =>
@@ -267,10 +273,16 @@ object ClassHierarchy {
     }
 
     enterIntrs()
-    defns.foreach(enter)
+    defns.foreach(enterDefn)
     defns.foreach(enrich)
     identify()
 
-    nodes.toMap
+    new Graph(
+      nodes      = nodes.toMap,
+      classes    = classes.toSeq,
+      interfaces = interfaces.toSeq,
+      methods    = methods.toSeq,
+      fields     = fields.toSeq
+    )
   }
 }
