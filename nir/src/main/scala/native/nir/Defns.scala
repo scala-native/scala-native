@@ -1,7 +1,10 @@
 package native
 package nir
 
-sealed abstract class Defn { def name: Global }
+sealed abstract class Defn {
+  def name: Global
+  def members: Seq[Defn] = Seq()
+}
 object Defn {
   final case class Var(attrs: Seq[Attr],
                        name: Global,
@@ -26,15 +29,15 @@ object Defn {
   final case class Interface(attrs: Seq[Attr],
                              name: Global,
                              interfaces: Seq[Global],
-                             members: Seq[Defn]) extends Defn
+                             override val members: Seq[Defn]) extends Defn
   final case class Class(attrs: Seq[Attr],
                          name: Global,
                          parent: Global,
                          interfaces: Seq[Global],
-                         members: Seq[Defn]) extends Defn
+                         override val members: Seq[Defn]) extends Defn
   final case class Module(attrs: Seq[Attr],
                           name: Global,
                           parent: Global,
                           interfaces: Seq[Global],
-                          members: Seq[Defn]) extends Defn
+                          override val members: Seq[Defn]) extends Defn
 }

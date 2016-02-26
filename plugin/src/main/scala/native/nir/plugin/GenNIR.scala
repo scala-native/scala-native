@@ -89,7 +89,7 @@ abstract class GenNIR extends PluginComponent
           ()
         else {
           val defns = genClass(cd)
-          //println(sh"${defns.head}")
+          println(sh"${defns.head}")
           genIRFile(cunit, sym, defns)
         }
       }

@@ -52,11 +52,12 @@ object Type {
   final case class AnonStruct(tys: Seq[Type])           extends Type
 
   // high-level types
-  final case object Size                          extends Type
-  final case object Nothing                       extends Type
-  sealed abstract class ClassKind                 extends Type
-  final case object Null                          extends ClassKind
-  final case class Class(name: Global)            extends ClassKind
-  final case class InterfaceClass(name: Global)   extends ClassKind
-  final case class ModuleClass(name: Global)      extends ClassKind
+  final case object Size                        extends Type
+  final case object Nothing                     extends Type
+  sealed abstract class ClassKind               extends Type
+  final case object Null                        extends ClassKind
+  final case class Class(name: Global)          extends ClassKind
+  final case class ClassValue(name: Global)     extends Type
+  final case class InterfaceClass(name: Global) extends ClassKind
+  final case class ModuleClass(name: Global)    extends ClassKind
 }

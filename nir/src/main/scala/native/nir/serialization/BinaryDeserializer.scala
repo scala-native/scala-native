@@ -198,12 +198,13 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.ArrayType      => Type.Array(getType, getInt)
     case T.PtrType        => Type.Ptr(getType)
     case T.FunctionType   => Type.Function(getTypes, getType)
-    case T.StructType     => Type.Struct(ext(getGlobal))
+    case T.StructType     => Type.Struct(getGlobal)
     case T.AnonStructType => Type.AnonStruct(getTypes)
 
     case T.SizeType           => Type.Size
     case T.NothingType        => Type.Nothing
     case T.ClassType          => Type.Class(ext(getGlobal))
+    case T.ClassValueType     => Type.ClassValue(ext(getGlobal))
     case T.InterfaceClassType => Type.InterfaceClass(ext(getGlobal))
     case T.ModuleClassType    => Type.ModuleClass(ext(getGlobal))
   }
@@ -227,6 +228,7 @@ final class BinaryDeserializer(bb: ByteBuffer) {
 
     case T.BitcastVal => Val.Bitcast(getType, getVal)
 
-    case T.StringVal => Val.String(getString)
+    case T.StringVal     => Val.String(getString)
+    case T.ClassValueVal => Val.ClassValue(getGlobal, getVals)
   }
 }

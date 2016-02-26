@@ -213,9 +213,8 @@ object Shows {
 
     case Val.Bitcast(to, v) => sh"bitcast[$to] $v"
 
-    case Val.String(v) =>
-      val quoted = "\"" + v + "\""
-      sh"string-of $quoted"
+    case Val.String(     v)         => "\"" + v + "\""
+    case Val.ClassValue(ty, values) => sh"class-value $ty {${r(values, ", ")}}"
   }
 
   implicit val showDefns: Show[Seq[Defn]] = Show { defns =>
@@ -275,6 +274,7 @@ object Shows {
     case Type.Nothing              => "nothing"
     case Type.Null                 => "null"
     case Type.Class(name)          => sh"class $name"
+    case Type.ClassValue(ty)       => sh"class-value $ty"
     case Type.InterfaceClass(name) => sh"interface $name"
     case Type.ModuleClass(name)    => sh"module $name"
   }

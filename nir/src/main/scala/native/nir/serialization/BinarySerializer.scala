@@ -344,6 +344,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Type.Nothing             => putInt(T.NothingType)
     case Type.Null                => putInt(T.NullType)
     case Type.Class(n)            => putInt(T.ClassType); putGlobal(n)
+    case Type.ClassValue(n)       => putInt(T.ClassValueType); putGlobal(n)
     case Type.InterfaceClass(n)   => putInt(T.InterfaceClassType); putGlobal(n)
     case Type.ModuleClass(n)      => putInt(T.ModuleClassType); putGlobal(n)
   }
@@ -368,6 +369,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
 
     case Val.Bitcast(ty, v) => putInt(T.BitcastVal); putType(ty); putVal(v)
 
-    case Val.String(v) => putInt(T.StringVal); putString(v)
+    case Val.String(v)         => putInt(T.StringVal); putString(v)
+    case Val.ClassValue(n, vs) => putInt(T.ClassValueVal); putGlobal(n); putVals(vs)
   }
 }
