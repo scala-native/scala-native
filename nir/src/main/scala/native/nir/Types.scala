@@ -44,7 +44,6 @@ object Type {
   sealed abstract case class F(width: Int)              extends Type
   final object F32                                      extends F(32)
   final object F64                                      extends F(64)
-  // TODO: change from [ty x N] to [N x ty] for consistency with llvm
   final case class Array   (ty: Type, n: Int)           extends Type
   final case class Ptr     (ty: Type)                   extends Type
   final case class Function(args: Seq[Type], ret: Type) extends Type
