@@ -1,5 +1,8 @@
 
+
 lazy val common = Seq(
+  organization := "org.scala-native",
+  version := "0.1-SNAPSHOT",
   libraryDependencies += "com.lihaoyi" %% "fastparse" % "0.2.1",
   libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.4" % "test",
   scalaVersion := "2.11.7",
