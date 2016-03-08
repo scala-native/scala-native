@@ -4,10 +4,14 @@ package nir
 import Type._
 
 object Nrt {
+  private def cls(id: String) =
+    Class(Global.Type("nrt", id))
+  private def struct(id: String) =
+    Struct(Global.Type("nrt", id))
   private def value(id: String, ty: Type) =
-    Val.Global(Global.intrinsic(id), Ptr(ty))
+    Val.Global(Global.Val("nrt", id), Ptr(ty))
   private def intrinsic(id: String, args: Seq[Type], ret: Type) =
-    Val.Global(Global.intrinsic(id.split("_"): _*), Ptr(Function(args, ret)))
+    Val.Global(Global.Val(("nrt" +: id.split("_")): _*), Ptr(Function(args, ret)))
   private def nullary(id: String, to: Type) =
     intrinsic(id, Seq(), to)
   private def unary(id: String, from: Type, to: Type) =
@@ -16,10 +20,6 @@ object Nrt {
     intrinsic(id, Seq(from1, from2), to)
   private def ternary(id: String, from1: Type, from2: Type, from3: Type, to: Type) =
     intrinsic(id, Seq(from1, from2, from3), to)
-  private def cls(id: String) =
-    Class(Global.intrinsic(id))
-  private def struct(id: String) =
-    Struct(Global.intrinsic(id))
 
   def call(Intr: Val.Global, args: Val*): Op = {
     val Val.Global(_, Ptr(ty)) = Intr
@@ -129,7 +129,7 @@ object Nrt {
   lazy val Unit_box      = unary("Unit_box",      Unit, Unit  )
   lazy val Unit_toString = unary("Unit_toString", Unit, String)
   lazy val Unit_hashCode = unary("Unit_hashCode", Unit, I32   )
-  lazy val Unit_value    = Val.Global(Global.intrinsic("Unit_value"), Nrt.Unit)
+  lazy val Unit_value    = Val.Global(Global.Val("Unit_value"), Nrt.Unit)
 
   lazy val Bool          = cls  ("Bool")
   lazy val Bool_box      = unary("Bool_box"     , Bool, Bool  )

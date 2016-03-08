@@ -14,7 +14,7 @@ class IntrinsicLowering extends Pass {
   override def preAssembly = { case defns =>
     defns ++ Nrt.layouts.toSeq.map {
       case (g, fields) =>
-        Defn.Struct(Seq(), Global(("nrt" +: g.parts): _*), fields)
+        Defn.Struct(Seq(), g, fields)
     }
   }
 
@@ -23,25 +23,16 @@ class IntrinsicLowering extends Pass {
   }
 
   override def postVal = {
-    case Val.Global(g, ptrty @ Type.Ptr(ty)) if g.isIntrinsic =>
-      val n = g.nrt
+    case value @ Val.Global(g, ptrty @ Type.Ptr(ty)) if g.isIntrinsic =>
       if (!added.contains(g)) {
         ty match {
           case _: Type.Function =>
-            externs += Defn.Declare(Seq(), n, ty)
+            externs += Defn.Declare(Seq(), g, ty)
           case _ =>
-            externs += Defn.Var(Seq(Attr.External), n, ty, Val.None)
+            externs += Defn.Var(Seq(Attr.External), g, ty, Val.None)
         }
         added += g
       }
-      Val.Global(n, ptrty)
-
-    case Val.Struct(g, vals) if g.isIntrinsic =>
-      Val.Struct(g.nrt, vals)
-  }
-
-  override def preType = {
-    case ty @ Type.Struct(g) if g.isIntrinsic =>
-      Type.Struct(g.nrt)
+      value
   }
 }

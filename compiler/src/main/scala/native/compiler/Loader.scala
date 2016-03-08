@@ -21,20 +21,17 @@ final class Loader(paths: Seq[String]) {
       files.map { case file: File =>
         val fileabs = file.getAbsolutePath()
         val relpath = fileabs.replace(baseabs + "/", "")
-        val (tag, rel) =
+        val (isType, rel) =
           if (relpath.endsWith(".class.nir"))
-            ("c", relpath.replace(".class.nir", ""))
-          // TODO: it might be better to strip $ in plugin
-          else if (relpath.endsWith("$.module.nir"))
-            ("m", relpath.replace("$.module.nir", ""))
+            (true, relpath.replace(".class.nir", ""))
           else if (relpath.endsWith(".module.nir"))
-            ("m", relpath.replace(".module.nir", ""))
-          else if (relpath.endsWith(".interface.nir"))
-            ("i", relpath.replace(".interface.nir", ""))
+            (false, relpath.replace(".module.nir", ""))
+          else if (relpath.endsWith(".trait.nir"))
+            (false, relpath.replace(".trait.nir", ""))
           else
             throw new Exception(s"can't parse file kind $relpath")
         val parts = rel.split("/").toSeq
-        val name = Global(parts.mkString("."), tag)
+        val name = new Global(Seq(parts.mkString(".")), isType)
         (name -> fileabs)
       }.toSeq
     }.toMap

@@ -32,13 +32,13 @@ class StringLowering extends Pass {
 
   override def postAssembly = { case defns =>
     defns ++ strings.zipWithIndex.flatMap { case (v, idx) =>
-      val data      = Global("__str", idx.toString, "data")
+      val data      = Global.Val("__str", idx.toString, "data")
       val dataTy    = Type.Array(Type.I8, v.length)
       val dataVal   = Val.Chars(v)
       val dataConst = Defn.Const(Seq(), data, dataTy, dataVal)
       val dataPtr   = Val.Bitcast(Type.Ptr(Type.I8), Val.Global(data, Type.Ptr(dataTy)))
 
-      val str      = Global("__str", idx.toString)
+      val str      = Global.Val("__str", idx.toString)
       val strTy    = Type.Struct(Nrt.String.name)
       val strVal   = Val.Struct(Nrt.String.name, Seq(Nrt.String_type, Val.I32(v.length), dataPtr))
       val strConst = Defn.Const(Seq(), str, strTy, strVal)
@@ -58,6 +58,6 @@ class StringLowering extends Pass {
         }
 
       Val.Bitcast(Type.Ptr(Type.I8),
-        Val.Global(Global("__str", idx.toString), Type.Ptr(Type.Struct(Nrt.String.name))))
+        Val.Global(Global.Val("__str", idx.toString), Type.Ptr(Type.Struct(Nrt.String.name))))
   }
 }

@@ -18,7 +18,7 @@ class MainInjection(entry: Global)(implicit fresh: Fresh) extends Pass {
     val sig    = Type.Function(Seq(argc.ty, argv.ty), Type.I32)
 
     defns :+
-      Defn.Define(Seq(), Global("main"), sig, Seq(
+      Defn.Define(Seq(), Global.Val("main"), sig, Seq(
         Block(fresh(), Seq(argc, argv),
           Seq(Inst(arr.name, Nrt.call(Nrt.init, argc, argv)),
               Inst(module.name, Op.Module(entry)),

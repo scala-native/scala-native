@@ -7,7 +7,7 @@ import native.nir.serialization._
 
 final class Compiler(opts: Opts) {
   def entry() =
-    Global(opts.entry, "m")
+    Global.Val(opts.entry)
 
   def load(): Seq[Defn] =
     (new Loader(opts.classpath)).load(entry())

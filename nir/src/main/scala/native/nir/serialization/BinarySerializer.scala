@@ -194,7 +194,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
   private def putGlobals(globals: Seq[Global]): Unit = putSeq(putGlobal)(globals)
   private def putGlobal(global: Global): Unit = {
     putStrings(global.parts)
-    putBool(global.isIntrinsic)
+    putBool(global.isType)
   }
 
   private def putInsts(insts: Seq[Inst]) = putSeq(putInst)(insts)

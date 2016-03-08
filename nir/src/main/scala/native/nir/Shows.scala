@@ -280,7 +280,7 @@ object Shows {
   }
 
   implicit val showGlobal: Show[Global] = Show { g =>
-    val pre = if (g.isIntrinsic) "#" else "@"
+    val pre = if (g.isType) "#" else "@"
     sh"$pre${r(g.parts, sep = "_")}"
   }
 
