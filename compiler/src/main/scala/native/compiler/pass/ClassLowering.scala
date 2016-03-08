@@ -31,8 +31,8 @@ import native.compiler.analysis.ClassHierarchy
  *
  *      const $name_const: struct $name_type =
  *        struct $name_type {
- *          struct #type {
- *            #type_type,
+ *          struct #Type {
+ *            #Type_type,
  *            ${cls.name},
  *            ${cls.id},
  *          }
@@ -59,7 +59,7 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pa
 
       val classTypeStructName = name + "type"
       val classTypeStructTy   = Type.Struct(classTypeStructName)
-      val classTypeStructBody = Intr.type_ +: vtableTys
+      val classTypeStructBody = Nrt.Type +: vtableTys
       val classTypeStruct     = Defn.Struct(Seq(), classTypeStructName, classTypeStructBody)
 
       val classStructTy = Type.Struct(name)
@@ -67,7 +67,7 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pa
 
       val typeId   = Val.I32(cls.id)
       val typeName = Val.String(cls.name.parts.head)
-      val typeVal  = Val.Struct(Intr.type_.name, Seq(Intr.type_type, typeId, typeName))
+      val typeVal  = Val.Struct(Nrt.Type.name, Seq(Nrt.Type_type, typeId, typeName))
 
       val classConstName = name + "const"
       val classConstVal  = Val.Struct(classTypeStructName, typeVal +: vtable)
@@ -84,13 +84,13 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pa
   override def preInst =  {
     case Inst(n, Op.Alloc(ClassRef(cls))) =>
       val clstype = Val.Global(cls.name + "const", Type.Ptr(Type.Struct(cls.name + "type")))
-      val typeptr = Type.Ptr(Intr.type_)
+      val typeptr = Type.Ptr(Nrt.Type)
       val cast    = Val.Local(fresh(), typeptr)
       val size    = Val.Local(fresh(), Type.Size)
       Seq(
         Inst(cast.name, Op.Conv(Conv.Bitcast, typeptr, clstype)),
         Inst(size.name, Op.SizeOf(Type.Struct(cls.name))),
-        Inst(n,         Intr.call(Intr.alloc, cast, size))
+        Inst(n,         Nrt.call(Nrt.alloc, cast, size))
       )
 
     case Inst(n, Op.Field(ty, obj, ClassFieldRef(fld))) =>
@@ -127,7 +127,7 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pa
       )
 
     case Inst(n, Op.Is(ClassRef(cls), v)) =>
-      val ty   = Val.Local(fresh(), Type.Ptr(Intr.type_))
+      val ty   = Val.Local(fresh(), Type.Ptr(Nrt.Type))
       val id   = Val.Local(fresh(), Type.I32)
       val cond =
         if (cls.range.length == 1)
@@ -146,20 +146,20 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pa
         }
 
       Seq(
-        Inst(ty.name, Intr.call(Intr.object_getType, v)),
-        Inst(id.name, Intr.call(Intr.type_getId, ty))
+        Inst(ty.name, Nrt.call(Nrt.Object_getType, v)),
+        Inst(id.name, Nrt.call(Nrt.Type_getId, ty))
       ) ++ cond
 
-    case Inst(n, Op.TypeOf(ty)) if Intr.intrinsic_type.contains(ty) =>
+    case Inst(n, Op.TypeOf(ty)) if Nrt.types.contains(ty) =>
       Seq(
-        Inst(n, Op.Copy(Intr.intrinsic_type(ty)))
+        Inst(n, Op.Copy(Nrt.types(ty)))
       )
 
     case Inst(n, Op.TypeOf(ClassRef(cls))) =>
       val clstype  = Type.Struct(cls.name + "type")
       val clsconst = Val.Global(cls.name + "const", Type.Ptr(clstype))
       Seq(
-        Inst(n, Op.Conv(Conv.Bitcast, Type.Ptr(Intr.type_), clsconst))
+        Inst(n, Op.Conv(Conv.Bitcast, Type.Ptr(Nrt.Type), clsconst))
       )
   }
 

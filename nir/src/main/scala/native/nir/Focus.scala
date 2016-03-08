@@ -82,7 +82,7 @@ final case class Focus(
 
   def branchTry(retty: Type, normal: Focus => Focus, exc: (Val, Focus) => Focus): Focus = {
     val merge = fresh()
-    val excparam = Val.Local(fresh(), Intr.excrec)
+    val excparam = Val.Local(fresh(), Nrt.excrec)
     val param = Val.Local(fresh(), retty)
     val (normname, normcompl, normblocks) = wrapBranch(merge, normal)
     val (excname, exccompl, excblocks) = wrapBranch(merge, exc(excparam, _), Seq(excparam))
@@ -108,10 +108,10 @@ object Focus {
     entry(fresh(), params)
 
   def entry(name: Local, params: Seq[Val.Local])(implicit fresh: Fresh): Focus =
-    Focus(Seq(), name, params, Seq(), Intr.unit_value, isComplete = false)
+    Focus(Seq(), name, params, Seq(), Nrt.Unit_value, isComplete = false)
 
   def complete(blocks: Seq[Block])(implicit fresh: Fresh)=
-    Focus(blocks, Local.empty, Seq(), Seq(), Intr.unit_value, isComplete = true)
+    Focus(blocks, Local.empty, Seq(), Seq(), Nrt.Unit_value, isComplete = true)
 
   def sequenced[T](elems: Seq[T], focus: Focus)
                   (f: (T, Focus) => Focus): Seq[Focus] = {

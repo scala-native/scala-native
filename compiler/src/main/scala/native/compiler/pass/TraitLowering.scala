@@ -19,7 +19,7 @@ import native.compiler.analysis.ClassHierarchy
  *
  *      const $name_const: struct #type =
  *        struct #type {
- *          #type_type,
+ *          #Type_type,
  *          ${iface.name},
  *          ${iface.id}
  *        }
@@ -50,8 +50,8 @@ class TraitLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pa
     case Defn.Trait(_, name @ TraitRef(iface), _, members) =>
       val typeId    = Val.I32(iface.id)
       val typeName  = Val.String(name.parts.head)
-      val typeVal   = Val.Struct(Intr.type_.name, Seq(Intr.type_type, typeId, typeName))
-      val typeConst = Defn.Const(Seq(), name + "const", Intr.type_, typeVal)
+      val typeVal   = Val.Struct(Nrt.Type.name, Seq(Nrt.Type_type, typeId, typeName))
+      val typeConst = Defn.Const(Seq(), name + "const", Nrt.Type, typeVal)
 
       val methods: Seq[Defn.Define] = members.collect {
         case defn: Defn.Define =>
@@ -78,7 +78,7 @@ class TraitLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pa
 
     case Inst(n, Op.TypeOf(TraitRef(iface))) =>
       Seq(
-        Inst(n, Op.Copy(Val.Global(iface.name + "const", Type.Ptr(Intr.type_))))
+        Inst(n, Op.Copy(Val.Global(iface.name + "const", Type.Ptr(Nrt.Type))))
       )
   }
 

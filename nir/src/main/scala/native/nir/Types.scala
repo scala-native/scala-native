@@ -17,16 +17,16 @@ sealed abstract class Type {
   }
 
   def unboxed = this match {
-    case Intr.unit   => Intr.unit
-    case Intr.char   => Type.I16
-    case Intr.bool   => Type.Bool
-    case Intr.byte   => Type.I8
-    case Intr.short  => Type.I16
-    case Intr.int    => Type.I32
-    case Intr.long   => Type.I64
-    case Intr.float  => Type.F32
-    case Intr.double => Type.F64
-    case ty          => util.unsupported(ty)
+    case Nrt.Unit   => Nrt.Unit
+    case Nrt.Char   => Type.I16
+    case Nrt.Bool   => Type.Bool
+    case Nrt.Byte   => Type.I8
+    case Nrt.Short  => Type.I16
+    case Nrt.Int    => Type.I32
+    case Nrt.Long   => Type.I64
+    case Nrt.Float  => Type.F32
+    case Nrt.Double => Type.F64
+    case ty         => util.unsupported(ty)
   }
 }
 object Type {

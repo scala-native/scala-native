@@ -64,7 +64,7 @@ class ModuleLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends P
           val needsInit     = Defn.Var(Seq(), needsInitName, Type.Bool, Val.True)
           val needsInitRef  = Val.Global(needsInitName, Type.Ptr(Type.Bool))
 
-          val ctorSig = Type.Function(Seq(Type.Class(name)), Intr.unit)
+          val ctorSig = Type.Function(Seq(Type.Class(name)), Nrt.Unit)
           val ctorRef = Val.Global(name + "init", Type.Ptr(ctorSig))
 
           val entry = fresh()

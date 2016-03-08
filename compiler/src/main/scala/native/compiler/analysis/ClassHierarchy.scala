@@ -162,13 +162,13 @@ object ClassHierarchy {
       node
     }
 
-    def enterIntrs(): Unit = {
+    def enterNrt(): Unit = {
       val classes = Map(
-        Intr.object_ -> Seq(
-          Intr.object_init,
-          Intr.object_equals,
-          Intr.object_hashCode,
-          Intr.object_toString
+        Nrt.Object -> Seq(
+          Nrt.Object_init,
+          Nrt.Object_equals,
+          Nrt.Object_hashCode,
+          Nrt.Object_toString
         )
       )
 
@@ -277,12 +277,12 @@ object ClassHierarchy {
         id += 1
       }
 
-      idClass(nodes(Intr.object_.name).asInstanceOf[Class])
+      idClass(nodes(Nrt.Object.name).asInstanceOf[Class])
       traits.foreach(idTrait(_))
       methods.foreach(idMethod(_))
     }
 
-    enterIntrs()
+    enterNrt()
     defns.foreach(enterDefn)
     defns.foreach(enrich)
     identify()

@@ -12,7 +12,7 @@ class IntrinsicLowering extends Pass {
   private val externs = mutable.UnrolledBuffer.empty[Defn]
 
   override def preAssembly = { case defns =>
-    defns ++ Intr.layout.toSeq.map {
+    defns ++ Nrt.layouts.toSeq.map {
       case (g, fields) =>
         Defn.Struct(Seq(), Global(("nrt" +: g.parts): _*), fields)
     }

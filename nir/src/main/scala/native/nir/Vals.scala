@@ -18,9 +18,9 @@ sealed abstract class Val {
     case Val.Local(_, ty)     => ty
     case Val.Global(_, ty)    => ty
 
-    case Val.Bitcast(to, _) => to
+    case Val.Bitcast(to, _)   => to
 
-    case Val.String(_)         => Intr.string
+    case Val.String(_)        => Nrt.String
     case Val.ClassValue(n, _) => Type.ClassValue(n)
   }
 }

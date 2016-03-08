@@ -13,7 +13,7 @@ import native.util.unreachable
 class ThrowLowering extends Pass {
   override def preBlock = {
     case block @ Block(_, _, insts, Cf.Throw(v)) =>
-      Seq(block.copy(insts = insts :+ Inst(Intr.call(Intr.throw_, v)),
+      Seq(block.copy(insts = insts :+ Inst(Nrt.call(Nrt.throw_, v)),
                      cf    = Cf.Unreachable))
   }
 }
