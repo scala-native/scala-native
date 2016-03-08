@@ -70,14 +70,14 @@ object Tags {
   final val InttoptrConv = 1 + PtrtointConv
   final val BitcastConv  = 1 + InttoptrConv
 
-  final val VarDefn      = 1 + BitcastConv
-  final val ConstDefn    = 1 + VarDefn
-  final val DeclareDefn  = 1 + ConstDefn
-  final val DefineDefn   = 1 + DeclareDefn
-  final val StructDefn   = 1 + DefineDefn
-  final val IntefaceDefn = 1 + StructDefn
-  final val ClassDefn    = 1 + IntefaceDefn
-  final val ModuleDefn   = 1 + ClassDefn
+  final val VarDefn     = 1 + BitcastConv
+  final val ConstDefn   = 1 + VarDefn
+  final val DeclareDefn = 1 + ConstDefn
+  final val DefineDefn  = 1 + DeclareDefn
+  final val StructDefn  = 1 + DefineDefn
+  final val TraitDefn   = 1 + StructDefn
+  final val ClassDefn   = 1 + TraitDefn
+  final val ModuleDefn  = 1 + ClassDefn
 
   final val PrivateLink             = 1 + ModuleDefn
   final val InternalLink            = 1 + PrivateLink
@@ -145,16 +145,15 @@ object Tags {
   final val StructType     = 1 + FunctionType
   final val AnonStructType = 1 + StructType
 
-  final val SizeType           = 1 + AnonStructType
-  final val NothingType        = 1 + SizeType
-  final val NullType           = 1 + NothingType
-  final val ClassType          = 1 + NullType
-  final val ClassValueType     = 1 + ArrayClassType
-  final val InterfaceClassType = 1 + ClassType
-  final val ModuleClassType    = 1 + InterfaceClassType
-  final val ArrayClassType     = 1 + ModuleClassType
+  final val SizeType       = 1 + AnonStructType
+  final val NothingType    = 1 + SizeType
+  final val NullType       = 1 + NothingType
+  final val ClassType      = 1 + NullType
+  final val ClassValueType = 1 + ClassType
+  final val TraitType      = 1 + ClassValueType
+  final val ModuleType     = 1 + TraitType
 
-  final val NoneVal       = 1 + ArrayClassType
+  final val NoneVal       = 1 + ModuleType
   final val TrueVal       = 1 + NoneVal
   final val FalseVal      = 1 + TrueVal
   final val ZeroVal       = 1 + FalseVal

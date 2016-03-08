@@ -26,18 +26,18 @@ object Defn {
                           fieldtys: Seq[Type]) extends Defn
 
   // scala
-  final case class Interface(attrs: Seq[Attr],
-                             name: Global,
-                             interfaces: Seq[Global],
-                             override val members: Seq[Defn]) extends Defn
+  final case class Trait(attrs: Seq[Attr],
+                         name: Global,
+                         traits: Seq[Global],
+                         override val members: Seq[Defn]) extends Defn
   final case class Class(attrs: Seq[Attr],
                          name: Global,
                          parent: Global,
-                         interfaces: Seq[Global],
+                         traits: Seq[Global],
                          override val members: Seq[Defn]) extends Defn
   final case class Module(attrs: Seq[Attr],
                           name: Global,
                           parent: Global,
-                          interfaces: Seq[Global],
+                          traits: Seq[Global],
                           override val members: Seq[Defn]) extends Defn
 }

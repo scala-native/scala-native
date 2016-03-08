@@ -167,8 +167,8 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putGlobal(name)
       putTypes(members)
 
-    case Defn.Interface(attrs, name, ifaces, members) =>
-      putInt(T.IntefaceDefn)
+    case Defn.Trait(attrs, name, ifaces, members) =>
+      putInt(T.TraitDefn)
       putAttrs(attrs)
       putGlobal(name)
       putGlobals(ifaces)
@@ -340,13 +340,13 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Type.Struct(n)           => putInt(T.StructType); putGlobal(n)
     case Type.AnonStruct(tys)     => putInt(T.AnonStructType); putTypes(tys)
 
-    case Type.Size                => putInt(T.SizeType)
-    case Type.Nothing             => putInt(T.NothingType)
-    case Type.Null                => putInt(T.NullType)
-    case Type.Class(n)            => putInt(T.ClassType); putGlobal(n)
-    case Type.ClassValue(n)       => putInt(T.ClassValueType); putGlobal(n)
-    case Type.InterfaceClass(n)   => putInt(T.InterfaceClassType); putGlobal(n)
-    case Type.ModuleClass(n)      => putInt(T.ModuleClassType); putGlobal(n)
+    case Type.Size          => putInt(T.SizeType)
+    case Type.Nothing       => putInt(T.NothingType)
+    case Type.Null          => putInt(T.NullType)
+    case Type.Class(n)      => putInt(T.ClassType); putGlobal(n)
+    case Type.ClassValue(n) => putInt(T.ClassValueType); putGlobal(n)
+    case Type.Trait(n)      => putInt(T.TraitType); putGlobal(n)
+    case Type.Module(n)     => putInt(T.ModuleType); putGlobal(n)
   }
 
   private def putVals(values: Seq[Val]): Unit = putSeq(putVal)(values)

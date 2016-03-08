@@ -164,7 +164,7 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pa
   }
 
   override def preType = {
-    case _: Type.ClassKind     => i8_*
+    case _: Type.RefKind       => i8_*
     case Type.ClassValue(name) => Type.Struct(name)
   }
 

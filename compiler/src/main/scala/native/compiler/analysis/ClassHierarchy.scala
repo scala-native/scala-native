@@ -11,10 +11,10 @@ object ClassHierarchy {
     def name: Global
   }
 
-  final class Interface(
+  final class Trait(
     val name:         Global,
     var id:           Int        = -1,
-    var interfaces:   Seq[Node]  = Seq(),
+    var traits:       Seq[Node]  = Seq(),
     var implementors: Seq[Class] = Seq(),
     var members:      Seq[Node]  = Seq()
   ) extends Node {
@@ -27,7 +27,7 @@ object ClassHierarchy {
     var range:      Range         = null,
     var parent:     Option[Class] = None,
     var subclasses: Seq[Class]    = Seq(),
-    var interfaces: Seq[Node]     = Seq(),
+    var traits:     Seq[Node]     = Seq(),
     var members:    Seq[Node]     = Seq()
   ) extends Node {
     def ty =
@@ -108,9 +108,9 @@ object ClassHierarchy {
         case _      => unreachable
       }
 
-    def interfaceOverrides: Seq[Method] =
+    def traitOverrides: Seq[Method] =
       overrides.collect {
-        case meth if meth.in.isInstanceOf[Interface] =>
+        case meth if meth.in.isInstanceOf[Trait] =>
           meth
       }
 
@@ -139,7 +139,7 @@ object ClassHierarchy {
   final class Graph(
     val nodes:      Map[Global, Node],
     val classes:    Seq[Class],
-    val interfaces: Seq[Interface],
+    val traits: Seq[Trait],
     val methods:    Seq[Method],
     val fields:     Seq[Field]
   )
@@ -147,7 +147,7 @@ object ClassHierarchy {
   def apply(defns: Seq[Defn]): Graph = {
     val nodes      = mutable.Map.empty[Global, Node]
     val classes    = mutable.UnrolledBuffer.empty[Class]
-    val interfaces = mutable.UnrolledBuffer.empty[Interface]
+    val traits = mutable.UnrolledBuffer.empty[Trait]
     val methods    = mutable.UnrolledBuffer.empty[Method]
     val fields     = mutable.UnrolledBuffer.empty[Field]
 
@@ -155,7 +155,7 @@ object ClassHierarchy {
       nodes += name -> node
       node match {
         case cls:   Class     => classes    += cls
-        case iface: Interface => interfaces += iface
+        case iface: Trait => traits += iface
         case meth:  Method    => methods    += meth
         case fld:   Field     => fields     += fld
       }
@@ -195,8 +195,8 @@ object ClassHierarchy {
     }
 
     def enterDefn(defn: Defn): Unit = defn match {
-      case defn: Defn.Interface =>
-        val node = enter(defn.name, new Interface(defn.name))
+      case defn: Defn.Trait =>
+        val node = enter(defn.name, new Trait(defn.name))
         defn.members.foreach(enterMember(node, _))
 
       case defn: Defn.Class =>
@@ -225,23 +225,23 @@ object ClassHierarchy {
     }
 
     def enrichClass(name: Global, parentName: Global,
-                    interfaceNames: Seq[Global], members: Seq[Defn]): Unit = {
+                    traitNames: Seq[Global], members: Seq[Defn]): Unit = {
       val node          = nodes(name).asInstanceOf[Class]
       val parent        = nodes(parentName).asInstanceOf[Class]
-      val interfaces    = interfaceNames.map(nodes(_).asInstanceOf[Interface])
+      val traits    = traitNames.map(nodes(_).asInstanceOf[Trait])
       node.parent       = Some(parent)
-      node.interfaces   = interfaces
+      node.traits   = traits
       node.members      = members.map(m => nodes(m.name))
       parent.subclasses = parent.subclasses :+ node
-      interfaces.foreach { iface =>
+      traits.foreach { iface =>
         iface.implementors = iface.implementors :+ node
       }
       members.foreach(enrich)
     }
 
-    def enrichInterface(name: Global, interfaces: Seq[Global], members: Seq[Defn]): Unit = {
-      val node        = nodes(name).asInstanceOf[Interface]
-      node.interfaces = interfaces.map(nodes(_))
+    def enrichTrait(name: Global, traits: Seq[Global], members: Seq[Defn]): Unit = {
+      val node        = nodes(name).asInstanceOf[Trait]
+      node.traits = traits.map(nodes(_))
       node.members    = members.map(m => nodes(m.name))
       members.foreach(enrich)
     }
@@ -249,7 +249,7 @@ object ClassHierarchy {
     def enrich(defn: Defn): Unit = defn match {
       case defn: Defn.Declare                         => enrichMethod(defn.name, defn.attrs)
       case defn: Defn.Define                          => enrichMethod(defn.name, defn.attrs)
-      case Defn.Interface(_, n, ifaces, members)      => enrichInterface(n, ifaces, members)
+      case Defn.Trait(_, n, ifaces, members)      => enrichTrait(n, ifaces, members)
       case Defn.Class(_, n, parent, ifaces, members)  => enrichClass(n, parent, ifaces, members)
       case Defn.Module(_, n, parent, ifaces, members) => enrichClass(n, parent, ifaces, members)
       case _                                          => ()
@@ -267,7 +267,7 @@ object ClassHierarchy {
         node.range = start to end
       }
 
-      def idInterface(node: Interface): Unit = {
+      def idTrait(node: Trait): Unit = {
         node.id = id
         id += 1
       }
@@ -278,7 +278,7 @@ object ClassHierarchy {
       }
 
       idClass(nodes(Intr.object_.name).asInstanceOf[Class])
-      interfaces.foreach(idInterface(_))
+      traits.foreach(idTrait(_))
       methods.foreach(idMethod(_))
     }
 
@@ -288,11 +288,11 @@ object ClassHierarchy {
     identify()
 
     new Graph(
-      nodes      = nodes.toMap,
-      classes    = classes.toSeq,
-      interfaces = interfaces.toSeq,
-      methods    = methods.toSeq,
-      fields     = fields.toSeq
+      nodes   = nodes.toMap,
+      classes = classes.toSeq,
+      traits  = traits.toSeq,
+      methods = methods.toSeq,
+      fields  = fields.toSeq
     )
   }
 }

@@ -130,14 +130,14 @@ final class BinaryDeserializer(bb: ByteBuffer) {
 
   private def getDefns(): Seq[Defn] = getSeq(getDefn)
   private def getDefn(): Defn = getInt match {
-    case T.VarDefn      => Defn.Var(getAttrs, getGlobal, getType, getVal)
-    case T.ConstDefn    => Defn.Const(getAttrs, getGlobal, getType, getVal)
-    case T.DeclareDefn  => Defn.Declare(getAttrs, getGlobal, getType)
-    case T.DefineDefn   => Defn.Define(getAttrs, getGlobal, getType, getBlocks)
-    case T.StructDefn   => Defn.Struct(getAttrs, getGlobal, getTypes)
-    case T.IntefaceDefn => Defn.Interface(getAttrs, getGlobal, getGlobals, getDefns)
-    case T.ClassDefn    => Defn.Class(getAttrs, getGlobal, getGlobal, getGlobals, getDefns)
-    case T.ModuleDefn   => Defn.Module(getAttrs, getGlobal, getGlobal, getGlobals, getDefns)
+    case T.VarDefn     => Defn.Var(getAttrs, getGlobal, getType, getVal)
+    case T.ConstDefn   => Defn.Const(getAttrs, getGlobal, getType, getVal)
+    case T.DeclareDefn => Defn.Declare(getAttrs, getGlobal, getType)
+    case T.DefineDefn  => Defn.Define(getAttrs, getGlobal, getType, getBlocks)
+    case T.StructDefn  => Defn.Struct(getAttrs, getGlobal, getTypes)
+    case T.TraitDefn   => Defn.Trait(getAttrs, getGlobal, getGlobals, getDefns)
+    case T.ClassDefn   => Defn.Class(getAttrs, getGlobal, getGlobal, getGlobals, getDefns)
+    case T.ModuleDefn  => Defn.Module(getAttrs, getGlobal, getGlobal, getGlobals, getDefns)
   }
 
   private def getGlobals(): Seq[Global] = getSeq(getGlobal)
@@ -201,12 +201,12 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.StructType     => Type.Struct(getGlobal)
     case T.AnonStructType => Type.AnonStruct(getTypes)
 
-    case T.SizeType           => Type.Size
-    case T.NothingType        => Type.Nothing
-    case T.ClassType          => Type.Class(ext(getGlobal))
-    case T.ClassValueType     => Type.ClassValue(ext(getGlobal))
-    case T.InterfaceClassType => Type.InterfaceClass(ext(getGlobal))
-    case T.ModuleClassType    => Type.ModuleClass(ext(getGlobal))
+    case T.SizeType       => Type.Size
+    case T.NothingType    => Type.Nothing
+    case T.ClassType      => Type.Class(ext(getGlobal))
+    case T.ClassValueType => Type.ClassValue(ext(getGlobal))
+    case T.TraitType      => Type.Trait(ext(getGlobal))
+    case T.ModuleType     => Type.Module(ext(getGlobal))
   }
 
   private def getVals(): Seq[Val] = getSeq(getVal)

@@ -22,7 +22,7 @@ sealed abstract class Op {
     case Op.Alloc(ty)        => ty
     case Op.Field(ty, _, _)  => Type.Ptr(ty)
     case Op.Method(ty, _, _) => Type.Ptr(ty)
-    case Op.Module(n)        => Type.ModuleClass(n)
+    case Op.Module(n)        => Type.Module(n)
     case Op.As(ty, _)        => ty
     case Op.Is(_, _)         => Type.Bool
     case Op.Copy(v)          => v.ty

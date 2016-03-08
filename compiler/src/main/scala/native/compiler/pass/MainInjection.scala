@@ -9,11 +9,11 @@ import native.nir._
  */
 class MainInjection(entry: Global)(implicit fresh: Fresh) extends Pass {
   override def preAssembly = { case defns =>
-    val mainTy = Type.Function(Seq(Type.ModuleClass(entry), Intr.object_array), Type.Void)
+    val mainTy = Type.Function(Seq(Type.Module(entry), Intr.object_array), Type.Void)
     val main   = Val.Global(entry ++ Seq("main", "string", "arr", "unit"), Type.Ptr(mainTy))
     val argc   = Val.Local(fresh(), Type.I32)
     val argv   = Val.Local(fresh(), Type.Ptr(Type.Ptr(Type.I8)))
-    val module = Val.Local(fresh(), Type.ModuleClass(entry))
+    val module = Val.Local(fresh(), Type.Module(entry))
     val arr    = Val.Local(fresh(), Intr.object_array)
     val sig    = Type.Function(Seq(argc.ty, argv.ty), Type.I32)
 

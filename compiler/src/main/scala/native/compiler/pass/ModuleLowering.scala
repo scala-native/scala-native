@@ -43,7 +43,7 @@ import native.compiler.analysis.ClassHierarchy
  *  the accessor is not emitted.
  *
  *  Eliminates:
- *  - Type.ModuleClass
+ *  - Type.Module
  *  - Op.Module
  *  - Defn.Module
  */
@@ -116,7 +116,7 @@ class ModuleLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends P
   }
 
   override def preType = {
-    case Type.ModuleClass(n) => Type.Class(n)
+    case Type.Module(n) => Type.Class(n)
   }
 
   def isStaticModule(name: Global): Boolean =

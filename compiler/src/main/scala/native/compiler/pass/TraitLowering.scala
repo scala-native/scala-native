@@ -38,16 +38,16 @@ import native.compiler.analysis.ClassHierarchy
  *  In the future we'd probably compact this arrays with one of the
  *  well-known compression techniques like row displacement tables.
  */
-class InterfaceLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pass {
+class TraitLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pass {
   private def itables(): Seq[Defn] =
-    todo("interface table generation")
+    todo("trait table generation")
 
   override def preAssembly = { case defns =>
     defns ++ itables()
   }
 
   override def preDefn = {
-    case Defn.Interface(_, name @ InterfaceRef(iface), _, members) =>
+    case Defn.Trait(_, name @ TraitRef(iface), _, members) =>
       val typeId    = Val.I32(iface.id)
       val typeName  = Val.String(name.parts.head)
       val typeVal   = Val.Struct(Intr.type_.name, Seq(Intr.type_type, typeId, typeName))
@@ -55,59 +55,59 @@ class InterfaceLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extend
 
       val methods: Seq[Defn.Define] = members.collect {
         case defn: Defn.Define =>
-          todo("interface default methods")
+          todo("trait default methods")
       }
 
       typeConst +: methods
   }
 
   override def preInst =  {
-    case Inst(n, Op.Method(sig, obj, VirtualInterfaceMethodRef(meth))) =>
-      todo("inteface method dispatch")
+    case Inst(n, Op.Method(sig, obj, VirtualTraitMethodRef(meth))) =>
+      todo("trait method dispatch")
 
-    case Inst(n, Op.Method(sig, obj, StaticInterfaceMethodRef(meth))) =>
-      todo("interface default methods")
+    case Inst(n, Op.Method(sig, obj, StaticTraitMethodRef(meth))) =>
+      todo("trait default methods")
 
-    case Inst(n, Op.As(InterfaceRef(iface), v)) =>
+    case Inst(n, Op.As(TraitRef(iface), v)) =>
       Seq(
         Inst(n, Op.Copy(v))
       )
 
-    case Inst(n, Op.Is(InterfaceRef(iface), obj)) =>
+    case Inst(n, Op.Is(TraitRef(iface), obj)) =>
       todo("interface instance check")
 
-    case Inst(n, Op.TypeOf(InterfaceRef(iface))) =>
+    case Inst(n, Op.TypeOf(TraitRef(iface))) =>
       Seq(
         Inst(n, Op.Copy(Val.Global(iface.name + "const", Type.Ptr(Intr.type_))))
       )
   }
 
-  object InterfaceRef {
-    def unapply(ty: Type): Option[ClassHierarchy.Interface] = ty match {
-      case Type.InterfaceClass(name) => unapply(name)
-      case _                         => None
+  object TraitRef {
+    def unapply(ty: Type): Option[ClassHierarchy.Trait] = ty match {
+      case Type.Trait(name) => unapply(name)
+      case _                => None
     }
-    def unapply(name: Global): Option[ClassHierarchy.Interface] =
+    def unapply(name: Global): Option[ClassHierarchy.Trait] =
       chg.nodes.get(name).collect {
-        case iface: ClassHierarchy.Interface => iface
+        case iface: ClassHierarchy.Trait => iface
       }
   }
 
-  object VirtualInterfaceMethodRef {
+  object VirtualTraitMethodRef {
     def unapply(name: Global): Option[ClassHierarchy.Method] =
       chg.nodes.get(name).collect {
         case meth: ClassHierarchy.Method
           if meth.isVirtual
-          && meth.in.isInstanceOf[ClassHierarchy.Interface] => meth
+          && meth.in.isInstanceOf[ClassHierarchy.Trait] => meth
       }
   }
 
-  object StaticInterfaceMethodRef {
+  object StaticTraitMethodRef {
     def unapply(name: Global): Option[ClassHierarchy.Method] =
       chg.nodes.get(name).collect {
         case meth: ClassHierarchy.Method
           if meth.isStatic
-          && meth.in.isInstanceOf[ClassHierarchy.Interface] => meth
+          && meth.in.isInstanceOf[ClassHierarchy.Trait] => meth
       }
   }
 }

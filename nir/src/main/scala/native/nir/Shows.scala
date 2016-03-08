@@ -238,10 +238,10 @@ object Shows {
     case Defn.Struct(attrs, name, tys) =>
       sh"${attrs}struct $name {${r(tys, sep = ", ")}}"
 
-    case Defn.Interface(attrs, name, ifaces, members) =>
+    case Defn.Trait(attrs, name, ifaces, members) =>
       val parents = r(ifaces, sep = ", ")
       val body = brace(r(members.map(i(_))))
-      sh"${attrs}interface $name : $parents $body"
+      sh"${attrs}trait $name : $parents $body"
     case Defn.Class(attrs, name, parent, ifaces, members) =>
       val parents = r(parent +: ifaces, sep = ", ")
       val body = brace(r(members.map(i(_))))
@@ -271,12 +271,12 @@ object Shows {
     case Type.Struct(name)        => sh"struct $name"
     case Type.AnonStruct(tys)     => sh"struct {${r(tys, sep = ", ")}}"
 
-    case Type.Nothing              => "nothing"
-    case Type.Null                 => "null"
-    case Type.Class(name)          => sh"class $name"
-    case Type.ClassValue(ty)       => sh"class-value $ty"
-    case Type.InterfaceClass(name) => sh"interface $name"
-    case Type.ModuleClass(name)    => sh"module $name"
+    case Type.Nothing          => "nothing"
+    case Type.Null             => "null"
+    case Type.Class(name)      => sh"class $name"
+    case Type.ClassValue(name) => sh"class-value $name"
+    case Type.Trait(name)      => sh"trait $name"
+    case Type.Module(name)     => sh"module $name"
   }
 
   implicit val showGlobal: Show[Global] = Show { g =>

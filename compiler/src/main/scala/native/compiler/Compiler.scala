@@ -21,7 +21,7 @@ final class Compiler(opts: Opts) {
       new pass.ModuleLowering,
       new pass.UnitElimination,
       new pass.ThrowLowering,
-      new pass.InterfaceLowering,
+      new pass.TraitLowering,
       new pass.ClassLowering,
       new pass.StringLowering,
       new pass.IntrinsicLowering,
