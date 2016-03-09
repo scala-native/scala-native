@@ -15,19 +15,6 @@ sealed abstract class Type {
     case _ =>
       unsupported(s"${this}.elemty($path)")
   }
-
-  def unboxed = this match {
-    case Nrt.Unit   => Nrt.Unit
-    case Nrt.Char   => Type.I16
-    case Nrt.Bool   => Type.Bool
-    case Nrt.Byte   => Type.I8
-    case Nrt.Short  => Type.I16
-    case Nrt.Int    => Type.I32
-    case Nrt.Long   => Type.I64
-    case Nrt.Float  => Type.F32
-    case Nrt.Double => Type.F64
-    case ty         => util.unsupported(ty)
-  }
 }
 object Type {
   // low-level types
@@ -52,6 +39,7 @@ object Type {
 
   // high-level types
   final case object Size                    extends Type
+  final case object Unit                    extends Type
   final case object Nothing                 extends Type
   sealed abstract class RefKind             extends Type
   final case object Null                    extends RefKind

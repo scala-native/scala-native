@@ -146,7 +146,8 @@ object Tags {
   final val AnonStructType = 1 + StructType
 
   final val SizeType       = 1 + AnonStructType
-  final val NothingType    = 1 + SizeType
+  final val UnitType       = 1 + SizeType
+  final val NothingType    = 1 + UnitType
   final val NullType       = 1 + NothingType
   final val ClassType      = 1 + NullType
   final val ClassValueType = 1 + ClassType
@@ -169,6 +170,7 @@ object Tags {
   final val LocalVal      = 1 + CharsVal
   final val GlobalVal     = 1 + LocalVal
   final val BitcastVal    = 1 + GlobalVal
-  final val StringVal     = 1 + BitcastVal
+  final val UnitVal       = 1 + BitcastVal
+  final val StringVal     = 1 + UnitVal
   final val ClassValueVal = 1 + StringVal
 }

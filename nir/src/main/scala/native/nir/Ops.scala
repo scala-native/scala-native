@@ -10,7 +10,7 @@ sealed abstract class Op {
     case Op.Call(Type.Function(_, ret), _, _) => ret
     case Op.Call(_, _, _)                     => unreachable
     case Op.Load(ty, _)                       => ty
-    case Op.Store(_, _, _)                    => Nrt.Unit
+    case Op.Store(_, _, _)                    => Type.Unit
     case Op.Elem(ty, _, _)                    => Type.Ptr(ty) // todo: ty @ index
     case Op.Extract(aggr, indexes)            => aggr.ty.elemty(indexes)
     case Op.Insert(aggr, _, _)                => aggr.ty

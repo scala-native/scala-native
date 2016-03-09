@@ -90,7 +90,7 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pa
       Seq(
         Inst(cast.name, Op.Conv(Conv.Bitcast, typeptr, clstype)),
         Inst(size.name, Op.SizeOf(Type.Struct(cls.name))),
-        Inst(n,         Nrt.call(Nrt.alloc, cast, size))
+        Inst(n,         Nrt.call(Nrt.Object_alloc, cast, size))
       )
 
     case Inst(n, Op.Field(ty, obj, ClassFieldRef(fld))) =>

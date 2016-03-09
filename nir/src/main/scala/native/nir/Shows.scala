@@ -213,6 +213,7 @@ object Shows {
 
     case Val.Bitcast(to, v) => sh"bitcast[$to] $v"
 
+    case Val.Unit                   => "unit"
     case Val.String(     v)         => "\"" + v + "\""
     case Val.ClassValue(ty, values) => sh"class-value $ty {${r(values, ", ")}}"
   }
@@ -255,7 +256,6 @@ object Shows {
   implicit val showType: Show[Type] = Show {
     case Type.None                => ""
     case Type.Void                => "void"
-    case Type.Size                => "size"
     case Type.Label               => "label"
     case Type.Vararg              => "..."
     case Type.Bool                => "bool"
@@ -271,6 +271,8 @@ object Shows {
     case Type.Struct(name)        => sh"struct $name"
     case Type.AnonStruct(tys)     => sh"struct {${r(tys, sep = ", ")}}"
 
+    case Type.Size             => "size"
+    case Type.Unit             => "unit"
     case Type.Nothing          => "nothing"
     case Type.Null             => "null"
     case Type.Class(name)      => sh"class $name"

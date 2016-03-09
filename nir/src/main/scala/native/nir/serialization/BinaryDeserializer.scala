@@ -202,6 +202,7 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.AnonStructType => Type.AnonStruct(getTypes)
 
     case T.SizeType       => Type.Size
+    case T.UnitType       => Type.Unit
     case T.NothingType    => Type.Nothing
     case T.ClassType      => Type.Class(ext(getGlobal))
     case T.ClassValueType => Type.ClassValue(ext(getGlobal))
@@ -228,6 +229,7 @@ final class BinaryDeserializer(bb: ByteBuffer) {
 
     case T.BitcastVal => Val.Bitcast(getType, getVal)
 
+    case T.UnitVal       => Val.Unit
     case T.StringVal     => Val.String(getString)
     case T.ClassValueVal => Val.ClassValue(getGlobal, getVals)
   }
