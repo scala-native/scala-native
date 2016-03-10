@@ -132,7 +132,6 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
       case Cf.Invoke(ty, ptrv, argvs, succ, fail) => Cf.Invoke(txType(ty), txVal(ptrv), argvs.map(txVal), txNext(succ), txNext(fail))
       case Cf.Resume(excrec)                      => Cf.Resume(txVal(excrec))
 
-      case Cf.Throw(v)       => Cf.Throw(txVal(v))
       case Cf.Try(norm, exc) => Cf.Try(txNext(norm), txNext(exc))
     }
 

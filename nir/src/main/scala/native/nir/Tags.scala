@@ -99,8 +99,7 @@ object Tags {
   final val InvokeCf      = 1 + SwitchCf
   final val ResumeCf      = 1 + InvokeCf
 
-  final val ThrowCf = 1 + ResumeCf
-  final val TryCf   = 1 + ThrowCf
+  final val TryCf = 1 + ResumeCf
 
   final val SuccNext  = 1 + TryCf
   final val FailNext  = 1 + SuccNext

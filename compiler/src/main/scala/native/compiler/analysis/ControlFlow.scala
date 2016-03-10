@@ -52,7 +52,6 @@ object ControlFlow {
         cf match {
           case Cf.Unreachable |
                _: Cf.Ret      |
-               _: Cf.Throw    |
                _: Cf.Resume   =>
             ()
           case Cf.Jump(next) =>

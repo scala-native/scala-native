@@ -63,7 +63,7 @@ object Nrt {
   lazy val Monitor_wait      = ternary("Monitor_wait"     , Object, I64, I32, Unit  )
 
   lazy val String         = nrtcls("String")
-  lazy val String_CharAt  = binary("String_CharAt",  String,  I32,      I16   )
+  lazy val String_charAt  = binary("String_charAt",  String,  I32,      I16   )
   lazy val String_concat  = binary("String_concat",  String,  String,   String)
   lazy val String_length  = unary ("String_length",  String,            I32   )
 
@@ -157,9 +157,9 @@ object Nrt {
   lazy val yield_ = nullary("yield",                    Unit       )
 
   lazy val excrec      = nir.Type.AnonStruct(Seq(Ptr(I8), I32))
-  lazy val throw_      = unary  ("throw"      , Object, Nothing)
-  lazy val begin_catch = unary  ("begin_catch", Object, Unit   )
-  lazy val end_catch   = nullary("end_catch"  ,         Unit   )
+  lazy val throw_      = unary  ("throw"      , Object,  Nothing)
+  lazy val begin_catch = unary  ("begin_catch", Ptr(I8), Unit   )
+  lazy val end_catch   = nullary("end_catch"  ,          Unit   )
 
   lazy val Array = Map[Type, Class](
     Unit      -> UnitArray  ,

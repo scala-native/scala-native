@@ -89,8 +89,7 @@ final class BinaryDeserializer(bb: ByteBuffer) {
     case T.InvokeCf      => Cf.Invoke(getType, getVal, getVals, getNext, getNext)
     case T.ResumeCf      => Cf.Resume(getVal)
 
-    case T.ThrowCf => Cf.Throw(getVal)
-    case T.TryCf   => Cf.Try(getNext, getNext)
+    case T.TryCf => Cf.Try(getNext, getNext)
   }
 
   private def getComp(): Comp = getInt match {

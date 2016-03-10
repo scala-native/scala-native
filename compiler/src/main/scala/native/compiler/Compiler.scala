@@ -20,7 +20,6 @@ final class Compiler(opts: Opts) {
       new pass.MainInjection(entry()),
       new pass.ModuleLowering,
       new pass.UnitLowering,
-      new pass.ThrowLowering,
       new pass.TraitLowering,
       new pass.ClassLowering,
       new pass.StringLowering,
