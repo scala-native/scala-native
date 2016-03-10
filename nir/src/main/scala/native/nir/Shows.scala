@@ -123,9 +123,9 @@ object Shows {
       sh"method[$ty] $value, $name"
     case Op.Module(name) =>
       sh"module $name"
-    case Op.As(value, ty) =>
+    case Op.As(ty, value) =>
       sh"as[$ty] $value"
-    case Op.Is(value, ty) =>
+    case Op.Is(ty, value) =>
       sh"is[$ty] $value"
     case Op.Copy(value) =>
       sh"copy $value"
