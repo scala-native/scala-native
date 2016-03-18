@@ -30,6 +30,8 @@ object Nrt {
     Op.Call(ty, Intr, args)
   }
 
+  lazy val String = cls("java.lang.String")
+
   lazy val BoxedUnit       = module("scala.runtime.BoxedUnit")
   lazy val BoxedUnit_value = {
     val instance = BoxedUnit.name + "instance"
@@ -54,11 +56,6 @@ object Nrt {
   lazy val Monitor_notify    = unary  ("Monitor_notify"   , Monitor,           Unit  )
   lazy val Monitor_notifyAll = unary  ("Monitor_notifyAll", Monitor,           Unit  )
   lazy val Monitor_wait      = ternary("Monitor_wait"     , Monitor, I64, I32, Unit  )
-
-  lazy val String         = nrtcls("String")
-  lazy val String_charAt  = binary("String_charAt",  String,  I32,      I16   )
-  lazy val String_concat  = binary("String_concat",  String,  String,   String)
-  lazy val String_length  = unary ("String_length",  String,            I32   )
 
   lazy val AnyArray        = nrtcls ("AnyArray")
   lazy val AnyArray_apply  = binary ("AnyArray_apply" , AnyArray, I32,         Object)
@@ -128,7 +125,6 @@ object Nrt {
   lazy val Object_type      = value("Object_type" , Type)
   lazy val Monitor_type     = value("Monitor_type", Type)
   lazy val Type_type        = value("Type_type"   , Type)
-  lazy val String_type      = value("String_type" , Type)
   lazy val BoolArray_type   = value("BoolArray_type"  , Type)
   lazy val CharArray_type   = value("CharArray_type"  , Type)
   lazy val ByteArray_type   = value("ByteArray_type"  , Type)
@@ -212,7 +208,6 @@ object Nrt {
     Null        -> Null_type       ,
     Object      -> Object_type     ,
     Type        -> Type_type       ,
-    String      -> String_type     ,
     BoolArray   -> BoolArray_type  ,
     CharArray   -> CharArray_type  ,
     ByteArray   -> ByteArray_type  ,
@@ -236,6 +231,6 @@ object Nrt {
     DoubleArray.name -> Seq(Ptr(Type), I32, nir.Type.Array(F64, 0))    ,
     ObjectArray.name -> Seq(Ptr(Type), I32, nir.Type.Array(Ptr(I8), 0)),
     Type.name        -> Seq(Ptr(Type), I32, Ptr(I8))                   ,
-    String.name      -> Seq(Ptr(Type), I32, Ptr(I8))
+    String.name      -> Seq(Ptr(Type), CharArray, I32, I32)
   )
 }
