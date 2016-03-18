@@ -30,15 +30,6 @@ object Nrt {
     Op.Call(ty, Intr, args)
   }
 
-  lazy val Character = cls("java.lang.Character")
-  lazy val Boolean   = cls("java.lang.Boolean")
-  lazy val Byte      = cls("java.lang.Byte")
-  lazy val Short     = cls("java.lang.Short")
-  lazy val Integer   = cls("java.lang.Int")
-  lazy val Long      = cls("java.lang.Long")
-  lazy val Float     = cls("java.lang.Float")
-  lazy val Double    = cls("java.lang.Double")
-
   lazy val BoxedUnit       = module("scala.runtime.BoxedUnit")
   lazy val BoxedUnit_value = {
     val instance = BoxedUnit.name + "instance"
@@ -71,12 +62,6 @@ object Nrt {
   lazy val AnyArray_apply  = binary ("AnyArray_apply" , AnyArray, I32,         Object)
   lazy val AnyArray_update = ternary("AnyArray_update", AnyArray, I32, Object, Unit  )
   lazy val AnyArray_length = unary  ("AnyArray_length", AnyArray,              I32   )
-
-  lazy val UnitArray        = nrtcls ("UnitArray")
-  lazy val UnitArray_alloc  = unary  ("UnitArray_alloc" , I32,                  UnitArray)
-  lazy val UnitArray_apply  = binary ("UnitArray_apply" , UnitArray, I32,       Unit     )
-  lazy val UnitArray_update = ternary("UnitArray_update", UnitArray, I32, Unit, Unit     )
-  lazy val UnitArray_length = unary  ("UnitArray_length", UnitArray,            I32      )
 
   lazy val BoolArray        = nrtcls ("BoolArray")
   lazy val BoolArray_alloc  = unary  ("BoolArray_alloc" , I32,                  BoolArray)
@@ -142,7 +127,6 @@ object Nrt {
   lazy val Monitor_type     = value("Monitor_type", Type)
   lazy val Type_type        = value("Type_type"   , Type)
   lazy val String_type      = value("String_type" , Type)
-  lazy val UnitArray_type   = value("UnitArray_type"  , Type)
   lazy val BoolArray_type   = value("BoolArray_type"  , Type)
   lazy val CharArray_type   = value("CharArray_type"  , Type)
   lazy val ByteArray_type   = value("ByteArray_type"  , Type)
@@ -161,69 +145,64 @@ object Nrt {
   lazy val begin_catch = unary  ("begin_catch", Ptr(I8), Unit   )
   lazy val end_catch   = nullary("end_catch"  ,          Unit   )
 
-  lazy val Array = Map[Type, Class](
-    Unit      -> UnitArray  ,
-    Bool      -> BoolArray  ,
-    Character -> CharArray  ,
-    Byte      -> ByteArray  ,
-    Short     -> ShortArray ,
-    Integer   -> IntArray 	,
-    Long      -> LongArray  ,
-    Float     -> FloatArray ,
-    Double    -> DoubleArray,
-    Object    -> ObjectArray
+  lazy val Array = Map[Char, Class](
+    'Z' -> BoolArray  ,
+    'C' -> CharArray  ,
+    'B' -> ByteArray  ,
+    'S' -> ShortArray ,
+    'I' -> IntArray   ,
+    'L' -> LongArray  ,
+    'F' -> FloatArray ,
+    'D' -> DoubleArray,
+    'O' -> ObjectArray
   )
 
-  lazy val Array_apply = Map[Type, Val.Global](
-    Unit      -> UnitArray_apply  ,
-    Bool      -> BoolArray_apply  ,
-    Character -> CharArray_apply  ,
-    Byte      -> ByteArray_apply  ,
-    Short     -> ShortArray_apply ,
-    Integer   -> IntArray_apply   ,
-    Long      -> LongArray_apply  ,
-    Float     -> FloatArray_apply ,
-    Double    -> DoubleArray_apply,
-    Object    -> ObjectArray_apply
+  lazy val Array_apply = Map[Char, Val.Global](
+    'Z' -> BoolArray_apply  ,
+    'C' -> CharArray_apply  ,
+    'B' -> ByteArray_apply  ,
+    'S' -> ShortArray_apply ,
+    'I' -> IntArray_apply   ,
+    'L' -> LongArray_apply  ,
+    'F' -> FloatArray_apply ,
+    'D' -> DoubleArray_apply,
+    'O' -> ObjectArray_apply
   )
 
-  lazy val Array_update = Map[Type, Val.Global](
-    Unit      -> UnitArray_update  ,
-    Bool      -> BoolArray_update  ,
-    Character -> CharArray_update  ,
-    Byte      -> ByteArray_update  ,
-    Short     -> ShortArray_update ,
-    Integer   -> IntArray_update   ,
-    Long      -> LongArray_update  ,
-    Float     -> FloatArray_update ,
-    Double    -> DoubleArray_update,
-    Object    -> ObjectArray_update
+  lazy val Array_update = Map[Char, Val.Global](
+    'Z' -> BoolArray_update  ,
+    'C' -> CharArray_update  ,
+    'B' -> ByteArray_update  ,
+    'S' -> ShortArray_update ,
+    'I' -> IntArray_update   ,
+    'L' -> LongArray_update  ,
+    'F' -> FloatArray_update ,
+    'D' -> DoubleArray_update,
+    'O' -> ObjectArray_update
   )
 
-  lazy val Array_length = Map[Type, Val.Global](
-    Unit      -> UnitArray_length  ,
-    Bool      -> BoolArray_length  ,
-    Character -> CharArray_length  ,
-    Byte      -> ByteArray_length  ,
-    Short     -> ShortArray_length ,
-    Integer   -> IntArray_length   ,
-    Long      -> LongArray_length  ,
-    Float     -> FloatArray_length ,
-    Double    -> DoubleArray_length,
-    Object    -> ObjectArray_length
+  lazy val Array_length = Map[Char, Val.Global](
+    'Z' -> BoolArray_length  ,
+    'C' -> CharArray_length  ,
+    'B' -> ByteArray_length  ,
+    'S' -> ShortArray_length ,
+    'I' -> IntArray_length   ,
+    'L' -> LongArray_length  ,
+    'F' -> FloatArray_length ,
+    'D' -> DoubleArray_length,
+    'O' -> ObjectArray_length
   )
 
-  lazy val Array_alloc = Map[Type, Val.Global](
-    Unit      -> UnitArray_alloc  ,
-    Bool      -> BoolArray_alloc  ,
-    Character -> CharArray_alloc  ,
-    Byte      -> ByteArray_alloc  ,
-    Short     -> ShortArray_alloc ,
-    Integer   -> IntArray_alloc   ,
-    Long      -> LongArray_alloc  ,
-    Float     -> FloatArray_alloc ,
-    Double    -> DoubleArray_alloc,
-    Object    -> ObjectArray_alloc
+  lazy val Array_alloc = Map[Char, Val.Global](
+    'Z' -> BoolArray_alloc  ,
+    'C' -> CharArray_alloc  ,
+    'B' -> ByteArray_alloc  ,
+    'S' -> ShortArray_alloc ,
+    'I' -> IntArray_alloc   ,
+    'L' -> LongArray_alloc  ,
+    'F' -> FloatArray_alloc ,
+    'D' -> DoubleArray_alloc,
+    'O' -> ObjectArray_alloc
   )
 
   lazy val types = Map[Type, Val.Global](
@@ -232,7 +211,6 @@ object Nrt {
     Object      -> Object_type     ,
     Type        -> Type_type       ,
     String      -> String_type     ,
-    UnitArray   -> UnitArray_type  ,
     BoolArray   -> BoolArray_type  ,
     CharArray   -> CharArray_type  ,
     ByteArray   -> ByteArray_type  ,
@@ -246,7 +224,6 @@ object Nrt {
 
   lazy val layouts = Map[Global, Seq[Type]](
     AnyArray.name    -> Seq(Ptr(Type), I32)                            ,
-    UnitArray.name   -> Seq(Ptr(Type), I32)                            ,
     BoolArray.name   -> Seq(Ptr(Type), I32, nir.Type.Array(Bool, 0))   ,
     CharArray.name   -> Seq(Ptr(Type), I32, nir.Type.Array(I16, 0))    ,
     ByteArray.name   -> Seq(Ptr(Type), I32, nir.Type.Array(I8, 0))     ,
