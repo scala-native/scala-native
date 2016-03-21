@@ -45,6 +45,8 @@ object Nrt {
   lazy val Object_hashCode   = unary ("Object_hashCode"  , Object,          I32      )
   lazy val Object_getType    = unary ("Object_getType"   , Object,          Ptr(Type))
   lazy val Object_getMonitor = unary ("Object_getMonitor", Object,          Monitor  )
+  lazy val Object_clone      = unary ("Object_clone"     , Object,          Object   )
+  lazy val Object_finalize   = unary ("Object_finalize"  , Object,          Unit     )
 
   lazy val Monitor           = nrtcls ("Monitor")
   lazy val Monitor_enter     = unary  ("Monitor_enter"    , Object,           Unit  )
