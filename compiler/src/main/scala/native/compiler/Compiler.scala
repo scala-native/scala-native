@@ -18,6 +18,7 @@ final class Compiler(opts: Opts) {
 
     Seq(
       new pass.MainInjection(entry()),
+      new pass.ClosureLowering,
       new pass.ModuleLowering,
       new pass.UnitLowering,
       new pass.TraitLowering,

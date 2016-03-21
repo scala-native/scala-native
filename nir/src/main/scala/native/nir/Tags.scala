@@ -117,17 +117,18 @@ object Tags {
   final val CompOp        = 1 + BinOp
   final val ConvOp        = 1 + CompOp
 
-  final val AllocOp     = 1 + ConvOp
-  final val FieldOp     = 1 + AllocOp
-  final val MethodOp    = 1 + FieldOp
-  final val ModuleOp    = 1 + MethodOp
-  final val AsOp        = 1 + ModuleOp
-  final val IsOp        = 1 + AsOp
-  final val CopyOp      = 1 + IsOp
-  final val SizeOfOp    = 1 + CopyOp
-  final val TypeOfOp    = 1 + SizeOfOp
+  final val AllocOp   = 1 + ConvOp
+  final val FieldOp   = 1 + AllocOp
+  final val MethodOp  = 1 + FieldOp
+  final val ModuleOp  = 1 + MethodOp
+  final val AsOp      = 1 + ModuleOp
+  final val IsOp      = 1 + AsOp
+  final val CopyOp    = 1 + IsOp
+  final val SizeOfOp  = 1 + CopyOp
+  final val TypeOfOp  = 1 + SizeOfOp
+  final val ClosureOp = 1 + TypeOfOp
 
-  final val NoneType       = 1 + TypeOfOp
+  final val NoneType       = 1 + ClosureOp
   final val VoidType       = 1 + NoneType
   final val LabelType      = 1 + VoidType
   final val VarargType     = 1 + LabelType

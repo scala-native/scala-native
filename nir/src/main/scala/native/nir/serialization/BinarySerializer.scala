@@ -311,6 +311,12 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Op.TypeOf(ty) =>
       putInt(T.TypeOfOp)
       putType(ty)
+
+    case Op.Closure(ty, fun, captures) =>
+      putInt(T.ClosureOp)
+      putType(ty)
+      putVal(fun)
+      putVals(captures)
   }
 
   private def putParams(params: Seq[Val.Local]) = putSeq(putParam)(params)

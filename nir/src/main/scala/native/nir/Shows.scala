@@ -133,7 +133,8 @@ object Shows {
       sh"size-of[$ty]"
     case Op.TypeOf(ty) =>
       sh"type-of[$ty]"
-
+    case Op.Closure(ty, fun, captures) =>
+      sh"closure[$ty] ${r(fun +:captures, sep = ", ")}"
   }
 
   implicit val showBin: Show[Bin] = Show {

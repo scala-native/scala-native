@@ -19,15 +19,16 @@ sealed abstract class Op {
     case Op.Comp(_, _, _, _)                  => Type.Bool
     case Op.Conv(_, ty, _)                    => ty
 
-    case Op.Alloc(ty)        => ty
-    case Op.Field(ty, _, _)  => Type.Ptr(ty)
-    case Op.Method(ty, _, _) => Type.Ptr(ty)
-    case Op.Module(n)        => Type.Module(n)
-    case Op.As(ty, _)        => ty
-    case Op.Is(_, _)         => Type.Bool
-    case Op.Copy(v)          => v.ty
-    case Op.SizeOf(_)        => Type.Size
-    case Op.TypeOf(_)        => Nrt.Type
+    case Op.Alloc(ty)         => ty
+    case Op.Field(ty, _, _)   => Type.Ptr(ty)
+    case Op.Method(ty, _, _)  => Type.Ptr(ty)
+    case Op.Module(n)         => Type.Module(n)
+    case Op.As(ty, _)         => ty
+    case Op.Is(_, _)          => Type.Bool
+    case Op.Copy(v)           => v.ty
+    case Op.SizeOf(_)         => Type.Size
+    case Op.TypeOf(_)         => Nrt.Type
+    case Op.Closure(ty, _, _) => ty
   }
 }
 object Op {
@@ -45,13 +46,14 @@ object Op {
   final case class Conv   (conv: nir.Conv, ty: Type, value: Val)     extends Op
 
   // high-level
-  final case class Alloc    (ty: Type)                         extends Op
-  final case class Field    (ty: Type, obj: Val, name: Global) extends Op
-  final case class Method   (ty: Type, obj: Val, name: Global) extends Op
-  final case class Module   (name: Global)                     extends Op
-  final case class As       (ty: Type, obj: Val)               extends Op
-  final case class Is       (ty: Type, obj: Val)               extends Op
-  final case class Copy     (value: Val)                       extends Op
-  final case class SizeOf   (ty: Type)                         extends Op
-  final case class TypeOf   (ty: Type)                         extends Op
+  final case class Alloc  (ty: Type)                               extends Op
+  final case class Field  (ty: Type, obj: Val, name: Global)       extends Op
+  final case class Method (ty: Type, obj: Val, name: Global)       extends Op
+  final case class Module (name: Global)                           extends Op
+  final case class As     (ty: Type, obj: Val)                     extends Op
+  final case class Is     (ty: Type, obj: Val)                     extends Op
+  final case class Copy   (value: Val)                             extends Op
+  final case class SizeOf (ty: Type)                               extends Op
+  final case class TypeOf (ty: Type)                               extends Op
+  final case class Closure(ty: Type, fun: Val, captures: Seq[Val]) extends Op
 }
