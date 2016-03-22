@@ -49,11 +49,11 @@ object Nrt {
   lazy val Object_finalize   = unary ("Object_finalize"  , Object,          Unit     )
 
   lazy val Monitor           = nrtcls ("Monitor")
-  lazy val Monitor_enter     = unary  ("Monitor_enter"    , Object,           Unit  )
-  lazy val Monitor_exit      = unary  ("Monitor_exit"     , Object,           Unit  )
-  lazy val Monitor_notify    = unary  ("Monitor_notify"   , Object,           Unit  )
-  lazy val Monitor_notifyAll = unary  ("Monitor_notifyAll", Object,           Unit  )
-  lazy val Monitor_wait      = ternary("Monitor_wait"     , Object, I64, I32, Unit  )
+  lazy val Monitor_enter     = unary  ("Monitor_enter"    , Monitor,           Unit  )
+  lazy val Monitor_exit      = unary  ("Monitor_exit"     , Monitor,           Unit  )
+  lazy val Monitor_notify    = unary  ("Monitor_notify"   , Monitor,           Unit  )
+  lazy val Monitor_notifyAll = unary  ("Monitor_notifyAll", Monitor,           Unit  )
+  lazy val Monitor_wait      = ternary("Monitor_wait"     , Monitor, I64, I32, Unit  )
 
   lazy val String         = nrtcls("String")
   lazy val String_charAt  = binary("String_charAt",  String,  I32,      I16   )
