@@ -282,7 +282,7 @@ object Shows {
 
   implicit val showGlobal: Show[Global] = Show { g =>
     val pre = if (g.isType) "#" else "@"
-    sh"$pre${r(g.parts, sep = "_")}"
+    sh"$pre${r(g.parts, sep = "::")}"
   }
 
   implicit val showLocal: Show[Local] = Show {

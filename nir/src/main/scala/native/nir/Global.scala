@@ -15,7 +15,7 @@ final class Global(val parts: Seq[String], val isType: Boolean) {
   }
 
   override def toString = {
-    val pre = if (isType) "Global.intrinsic" else "Global"
+    val pre = if (isType) "Global.Type" else "Global.Val"
     val args = parts.mkString("(", ", ", ")")
     s"$pre$args"
   }
