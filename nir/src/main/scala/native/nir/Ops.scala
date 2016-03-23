@@ -4,8 +4,6 @@ package nir
 import native.util.unreachable
 
 sealed abstract class Op {
-
-
   final def resty: Type = this match {
     case Op.Call(Type.Function(_, ret), _, _) => ret
     case Op.Call(_, _, _)                     => unreachable

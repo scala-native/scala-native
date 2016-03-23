@@ -9,7 +9,6 @@ import native.util.unreachable
  *  them with void.
  */
 class UnitLowering extends Pass {
-
   override def preInst = {
     case Inst(n, op) if op.resty == Type.Unit =>
       Seq(

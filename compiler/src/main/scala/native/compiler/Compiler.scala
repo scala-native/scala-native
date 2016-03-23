@@ -28,7 +28,7 @@ final class Compiler(opts: Opts) {
       new pass.NothingLowering,
       new pass.SizeLowering,
       new pass.TryLowering,
-      new pass.CopyElimination
+      new pass.CopyPropagation
     )
   }
 

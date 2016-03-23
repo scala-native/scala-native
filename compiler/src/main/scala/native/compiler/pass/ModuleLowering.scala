@@ -33,9 +33,9 @@ import native.compiler.analysis.ClassHierarchy
  *        %thenp:
  *          call ${name}_init(${name}_instance)
  *          store[bool] ${name}_needs_init, false
- *          ret void
+ *          ret
  *        %elsep:
- *          ret void
+ *          ret
  *      }
  *
  *  If a module is static (the one without init method, that was either
