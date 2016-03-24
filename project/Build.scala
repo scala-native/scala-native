@@ -1,14 +1,35 @@
 import sbt._, Keys._
+import scala.io.Source
 
 object ScalaNativeBuild extends Build {
+  val fetchScalaSource = taskKey[Unit](
+    "Fetches the scala source for the current scala version")
+
   lazy val commonSettings = Seq(
     organization := "org.scala-native",
     version := "0.1-SNAPSHOT",
     libraryDependencies += "com.lihaoyi" %% "fastparse" % "0.2.1",
     libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.4" % "test",
-    scalaVersion := "2.11.8"
-    // Can I have some exhaustivity checking? Pretty please?
-    //scalacOptions ++= Seq("-Ypatmat-exhaust-depth", "1000000")
+    scalaVersion := "2.11.8",
+
+    fetchScalaSource := {
+      val path =
+        "submodules/dotty/test/dotc/scala-collections.whitelist"
+      val whitelist = Source.fromFile(path, "UTF8").getLines()
+        .map(_.trim) // allow identation
+        .filter(!_.startsWith("#")) // allow comment lines prefixed by #
+        .map(_.takeWhile(_ != '#').trim) // allow comments in the end of line
+        .filter(_.nonEmpty)
+        .toList
+
+      whitelist.foreach { path =>
+        val base = path.replace("./scala-scala/src/library/", "")
+        val from = file("submodules/dotty-scala/src/library/" + base)
+        val to   = file("scalalib/src-base/main/scala/" + base)
+
+        IO.copyFile(from, to)
+      }
+    }
   )
 
   lazy val nir =
@@ -38,6 +59,17 @@ object ScalaNativeBuild extends Build {
       settings(commonSettings).
       settings(compileWithDottySettings)
 
+  lazy val scalalib =
+    project.in(file("scalalib")).
+      settings(commonSettings).
+      settings(compileWithDottySettings).
+      settings(
+        unmanagedSourceDirectories in Compile ++= Seq(
+          file("scalalib/src-base")
+        ),
+        scalacOptions ++= Seq("-language:Scala2")
+      )
+
   lazy val sandbox =
     project.in(file("sandbox")).
       settings(commonSettings).
@@ -48,7 +80,7 @@ object ScalaNativeBuild extends Build {
       settings(commonSettings).
       settings(
         scalaVersion := "2.11.8",
-        libraryDependencies += "org.scala-lang" %% "dotty" % "0.1-SNAPSHOT"
+        libraryDependencies += "org.scala-lang" %% "dotty" % "0.1-SNAPSHOT" changing()
       )
 
   // Compile with dotty
@@ -115,12 +147,13 @@ object ScalaNativeBuild extends Build {
 
           def doCompile(sourcesArgs: List[String]): Unit = {
             val run = (runner in compile).value
-            run.run("dotty.tools.dotc.Main", compilerCp,
-                "-classpath" :: cpStr ::
-                "-d" :: classesDirectory.getAbsolutePath() ::
+            val args =
                 options ++:
-                sourcesArgs,
-                patchedLogger) foreach sys.error
+                ("-classpath" :: cpStr ::
+                "-d" :: classesDirectory.getAbsolutePath() ::
+                sourcesArgs)
+            run.run("dotty.tools.dotc.Main", compilerCp,
+                args, patchedLogger) foreach sys.error
           }
 
           // Work around the Windows limitation on command line length.
