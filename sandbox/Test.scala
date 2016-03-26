@@ -1,6 +1,4 @@
-package test
-
 object Test {
-  def main(args: Array[String]): Unit =
+  def main(args: Seq[String]) =
     println("Hello, world!")
 }

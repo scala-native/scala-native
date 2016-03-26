@@ -1,4 +1,6 @@
 import sbt._, Keys._
+import complete.DefaultParsers._
+
 import scala.io.Source
 
 object ScalaNativeBuild extends Build {
@@ -6,11 +8,9 @@ object ScalaNativeBuild extends Build {
     "Fetches the scala source for the current scala version")
 
   lazy val commonSettings = Seq(
+    scalaVersion := "2.10.6",
     organization := "org.scala-native",
-    version := "0.1-SNAPSHOT",
-    libraryDependencies += "com.lihaoyi" %% "fastparse" % "0.2.1",
-    libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.4" % "test",
-    scalaVersion := "2.11.8",
+    version      := "0.1-SNAPSHOT",
 
     fetchScalaSource := {
       val path =
@@ -32,64 +32,12 @@ object ScalaNativeBuild extends Build {
     }
   )
 
-  lazy val nir =
-    project.in(file("nir")).
-      settings(commonSettings: _*).
-      dependsOn(util)
-
-  lazy val util =
-    project.in(file("util")).
-      settings(commonSettings: _*)
-
-  lazy val compiler =
-    project.in(file("compiler")).
-      settings(commonSettings: _*).
-      settings(
-        libraryDependencies += "commonSettingss-io" % "commonSettingss-io" % "2.4"
-      ).
-      dependsOn(nir)
-
-  lazy val javalib =
-    project.in(file("javalib")).
-      settings(commonSettings).
-      settings(compileWithDottySettings)
-
-  lazy val nativelib =
-    project.in(file("nativelib")).
-      settings(commonSettings).
-      settings(compileWithDottySettings)
-
-  lazy val scalalib =
-    project.in(file("scalalib")).
-      settings(commonSettings).
-      settings(compileWithDottySettings).
-      settings(
-        unmanagedSourceDirectories in Compile ++= Seq(
-          file("scalalib/src-base")
-        ),
-        scalacOptions ++= Seq("-language:Scala2")
-      )
-
-  lazy val sandbox =
-    project.in(file("sandbox")).
-      settings(commonSettings).
-      settings(compileWithDottySettings)
-
-  lazy val dummy =
-    project.in(file("dummy")).
-      settings(commonSettings).
-      settings(
-        scalaVersion := "2.11.8",
-        libraryDependencies += "org.scala-lang" %% "dotty" % "0.1-SNAPSHOT" changing()
-      )
-
-  // Compile with dotty
   lazy val compileWithDottySettings = {
     inConfig(Compile)(inTask(compile)(Defaults.runnerTask) ++ Seq(
       // Compile with dotty
       fork in compile := true,
 
-      scalacOptions += "-nir",
+      scalacOptions ++= Seq("-nir", "-language:Scala2"),
 
       compile := {
         val inputs = (compileInputs in compile).value
@@ -180,4 +128,62 @@ object ScalaNativeBuild extends Build {
       }
     ))
   }
+
+  lazy val nir =
+    project.in(file("nir")).
+      settings(commonSettings: _*).
+      dependsOn(util)
+
+  lazy val util =
+    project.in(file("util")).
+      settings(commonSettings: _*)
+
+  lazy val tools =
+    project.in(file("tools")).
+      settings(commonSettings: _*).
+      settings(
+        libraryDependencies += "commons-io" % "commons-io" % "2.4"
+      ).
+      dependsOn(nir)
+
+  lazy val sbtplugin =
+    project.in(file("sbtplugin")).
+      settings(commonSettings).
+      settings(
+        sbtPlugin := true
+      ).
+      dependsOn(tools)
+
+  lazy val javalib =
+    project.in(file("javalib")).
+      settings(commonSettings).
+      settings(compileWithDottySettings)
+
+  lazy val nativelib =
+    project.in(file("nativelib")).
+      settings(commonSettings).
+      settings(compileWithDottySettings)
+
+  lazy val scalalib =
+    project.in(file("scalalib")).
+      settings(commonSettings).
+      settings(compileWithDottySettings).
+      settings(
+        unmanagedSourceDirectories in Compile ++= Seq(
+          file("scalalib/src-base")
+        )
+      )
+
+  lazy val sandbox =
+    project.in(file("sandbox")).
+      settings(commonSettings).
+      settings(compileWithDottySettings)
+
+  lazy val dummy =
+    project.in(file("dummy")).
+      settings(commonSettings).
+      settings(
+        scalaVersion := "2.11.8",
+        libraryDependencies += "org.scala-lang" %% "dotty" % "0.1-SNAPSHOT" changing()
+      )
 }
