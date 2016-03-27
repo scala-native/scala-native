@@ -32,6 +32,7 @@ class StringLowering extends Pass {
 
   override def postAssembly = { case defns =>
     defns ++ strings.zipWithIndex.flatMap { case (v, idx) =>
+      /*
       val data      = Global.Val("__str", idx.toString, "data")
       val dataTy    = Type.Array(Type.I8, v.length)
       val dataVal   = Val.Chars(v)
@@ -44,11 +45,15 @@ class StringLowering extends Pass {
       val strConst = Defn.Const(Seq(), str, strTy, strVal)
 
       Seq(dataConst, strConst)
+      */
+
+      ???
     }
   }
 
   override def preVal = {
     case Val.String(v) =>
+      /*
       val idx =
         if (strings.contains(v))
           strings.indexOf(v)
@@ -59,5 +64,8 @@ class StringLowering extends Pass {
 
       Val.Bitcast(Type.Ptr(Type.I8),
         Val.Global(Global.Val("__str", idx.toString), Type.Ptr(Type.Struct(Nrt.String.name))))
+      */
+
+      ???
   }
 }
