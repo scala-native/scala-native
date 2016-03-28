@@ -2,22 +2,23 @@ package scala.scalanative
 package compiler
 
 import scala.collection.mutable
+import linker.Linker
 import nir._
 import nir.serialization._
 
 final class Compiler(opts: Opts) {
-  def entry() =
+  private lazy val entry =
     Global.Val(opts.entry)
 
-  def load(): Seq[Defn] =
-    (new Loader(opts.classpath)).load(entry())
+  private lazy val linked: Seq[Defn] =
+    (new Linker(opts.classpath)).link(entry)
 
-  def passes(assembly: Seq[Defn]): Seq[Pass] = {
+  private lazy val passes: Seq[Pass] = {
     implicit val fresh = Fresh("tx")
-    implicit val hierarchy = analysis.ClassHierarchy(assembly)
+    implicit val hierarchy = analysis.ClassHierarchy(linked)
 
     Seq(
-      new pass.MainInjection(entry()),
+      new pass.MainInjection(entry),
       new pass.ClosureLowering,
       new pass.ModuleLowering,
       new pass.UnitLowering,
@@ -32,10 +33,10 @@ final class Compiler(opts: Opts) {
     )
   }
 
-  def output(assembly: Seq[Defn]): Unit =
+  private def output(assembly: Seq[Defn]): Unit =
     serializeFile(codegen.GenTextualLLVM, assembly, opts.outpath + ".ll")
 
-  def debug(assembly: Seq[Defn], suffix: String) =
+  private def debug(assembly: Seq[Defn], suffix: String) =
     serializeFile(codegen.GenTextualNIR, assembly, opts.outpath + s".$suffix.hnir")
 
   def apply(): Unit = {
@@ -48,12 +49,14 @@ final class Compiler(opts: Opts) {
           debug(nassembly, (id + 1).toString + "-" + pass.getClass.getSimpleName)
           loop(nassembly, rest)
       }
-    val assembly = load()
-    debug(assembly, "0")
-    output(loop(load(), passes(assembly).zipWithIndex))
+    debug(linked, "0")
+    output(loop(linked, passes.zipWithIndex))
   }
 }
-object Compiler extends App {
-  val compile = new Compiler(Opts.fromArgs(args))
-  compile()
+
+object Compiler {
+  def main(args: Array[String]) = {
+    val compiler = new Compiler(Opts.fromArgs(args))
+    compiler()
+  }
 }

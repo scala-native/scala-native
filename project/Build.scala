@@ -60,12 +60,12 @@ object ScalaNativeBuild extends Build {
       ).
       dependsOn(tools)
 
-  lazy val javalib =
-    project.in(file("javalib")).
-      settings(nativeSettings)
-
   lazy val nativelib =
     project.in(file("nativelib")).
+      settings(nativeSettings)
+
+  lazy val javalib =
+    project.in(file("javalib")).
       settings(nativeSettings)
 
   lazy val scalalib =

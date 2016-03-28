@@ -1,5 +1,5 @@
 package scala.scalanative
-package compiler
+package linker
 
 import java.io.File
 import org.apache.commons.io.FileUtils
@@ -8,7 +8,7 @@ import scala.collection.mutable
 import nir._
 import nir.serialization._
 
-final class Loader(paths: Seq[String]) {
+final class Linker(paths: Seq[String]) {
   private lazy val pathmap: Map[Global, String] =
     paths.flatMap { path =>
       val base = new File(path)
@@ -36,7 +36,7 @@ final class Loader(paths: Seq[String]) {
       }.toSeq
     }.toMap
 
-  def load(entry: Global): Seq[Defn] = {
+  def link(entry: Global): Seq[Defn] = {
     val loaded = mutable.Set.empty[Global]
     var deps   = mutable.Stack[Global](entry)
     var defns  = mutable.UnrolledBuffer.empty[Defn]

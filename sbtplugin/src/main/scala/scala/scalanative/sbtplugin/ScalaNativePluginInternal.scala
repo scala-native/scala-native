@@ -1,7 +1,7 @@
 package scala.scalanative.sbtplugin
 
 import sbt._, Keys._
-import ScalaNativePlugin.AutoImport._
+import ScalaNativePlugin.autoImport._
 
 object ScalaNativePluginInternal {
   lazy val compileWithDottySettings =
@@ -23,7 +23,6 @@ object ScalaNativePluginInternal {
         def cpToString(cp: Seq[File]) =
           cp.map(_.getAbsolutePath).mkString(java.io.File.pathSeparator)
 
-        val compilerCp = classpath
         val cpStr = cpToString(classpath)
 
         // List all my dependencies (recompile if any of these changes)
@@ -71,7 +70,7 @@ object ScalaNativePluginInternal {
                 ("-classpath" :: cpStr ::
                 "-d" :: classesDirectory.getAbsolutePath() ::
                 sourcesArgs)
-            run.run("dotty.tools.dotc.Main", compilerCp,
+            run.run("dotty.tools.dotc.Main", classpath,
                 args, patchedLogger) foreach sys.error
           }
 
@@ -105,6 +104,8 @@ object ScalaNativePluginInternal {
     libraryDependencies += "org.scala-lang" %% "dotty" % "0.1-SNAPSHOT" changing(),
 
     link := {
+      println((fullClasspath in Compile).value)
+
       ???
     }
   )

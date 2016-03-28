@@ -6,6 +6,7 @@ final case class Opts(
   outpath: String,
   entry: String
 )
+
 object Opts {
   lazy val empty =
     Opts(
