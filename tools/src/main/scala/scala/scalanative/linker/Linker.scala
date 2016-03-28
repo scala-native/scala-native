@@ -1,40 +1,18 @@
 package scala.scalanative
 package linker
 
-import java.io.File
-import org.apache.commons.io.FileUtils
-import org.apache.commons.io.filefilter.{DirectoryFileFilter, RegexFileFilter}
 import scala.collection.mutable
 import nir._
 import nir.serialization._
 
 final class Linker(paths: Seq[String]) {
-  private lazy val pathmap: Map[Global, String] =
-    paths.flatMap { path =>
-      val base = new File(path)
-      val baseabs = base.getAbsolutePath()
-      val files =
-        FileUtils.listFiles(
-          base,
-          new RegexFileFilter("(.*)\\.nir"),
-          DirectoryFileFilter.DIRECTORY).toArray.toIterator
-      files.map { case file: File =>
-        val fileabs = file.getAbsolutePath()
-        val relpath = fileabs.replace(baseabs + "/", "")
-        val (isType, rel) =
-          if (relpath.endsWith(".class.nir"))
-            (true, relpath.replace(".class.nir", ""))
-          else if (relpath.endsWith(".module.nir"))
-            (false, relpath.replace(".module.nir", ""))
-          else if (relpath.endsWith(".trait.nir"))
-            (false, relpath.replace(".trait.nir", ""))
-          else
-            throw new Exception(s"can't parse file kind $relpath")
-        val parts = rel.split("/").toSeq
-        val name = new Global(Seq(parts.mkString(".")), isType)
-        (name -> fileabs)
-      }.toSeq
-    }.toMap
+  private val assemblies = paths.map(Assembly(_))
+
+  private def load(global: Global): Option[(Seq[Global], Defn)] =
+    assemblies.collectFirst {
+      case assembly if assembly.contains(global) =>
+        assembly.load(global)
+    }.flatten
 
   def link(entry: Global): Seq[Defn] = {
     val loaded = mutable.Set.empty[Global]
@@ -44,9 +22,9 @@ final class Linker(paths: Seq[String]) {
     while (deps.nonEmpty) {
       val dep = deps.pop()
       if (!loaded.contains(dep) && !dep.isIntrinsic) {
-        val (newdeps, newdefns) = deserializeBinaryFile(pathmap(dep))
+        val (newdeps, newdefn) = load(dep).get
         deps.pushAll(newdeps)
-        defns ++= newdefns
+        defns  += newdefn
         loaded += dep
       }
     }
