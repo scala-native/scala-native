@@ -14,6 +14,7 @@ sealed abstract class Assembly {
 
 object Assembly {
   final case class Dir private[Assembly] (val base: File) extends Assembly {
+    println(s"discovered dir assembly $base")
     private val entries: Map[Global, String] = {
       val baseabs = base.getAbsolutePath()
       val files =
@@ -42,6 +43,7 @@ object Assembly {
     def contains(entry: Global) = entries.contains(entry)
 
     def load(entry: Global) = entries.get(entry).map { path =>
+      println(s"loaded $entry from $base")
       val (deps, defns) = deserializeBinaryFile(path)
       assert(defns.length == 1, "non-assembly nir files may contain only a single definition")
       (deps, defns.head)

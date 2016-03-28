@@ -231,6 +231,6 @@ object Nrt {
     DoubleArray.name -> Seq(Ptr(Type), I32, nir.Type.Array(F64, 0))    ,
     ObjectArray.name -> Seq(Ptr(Type), I32, nir.Type.Array(Ptr(I8), 0)),
     Type.name        -> Seq(Ptr(Type), I32, Ptr(I8))                   ,
-    String.name      -> Seq(Ptr(Type), CharArray, I32, I32)
+    String.name      -> Seq(Ptr(Type), Ptr(I8), I32, I32)
   )
 }

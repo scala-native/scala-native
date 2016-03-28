@@ -10,7 +10,7 @@ import nir._
 class MainInjection(entry: Global)(implicit fresh: Fresh) extends Pass {
   override def preAssembly = { case defns =>
     val mainTy = Type.Function(Seq(Type.Module(entry), Nrt.ObjectArray), Type.Void)
-    val main   = Val.Global(entry ++ Seq("main", "string", "arr", "unit"), Type.Ptr(mainTy))
+    val main   = Val.Global(entry + "main_class.nrt_ObjectArray_unit", Type.Ptr(mainTy))
     val argc   = Val.Local(fresh(), Type.I32)
     val argv   = Val.Local(fresh(), Type.Ptr(Type.Ptr(Type.I8)))
     val module = Val.Local(fresh(), Type.Module(entry))

@@ -31,8 +31,7 @@ class StringLowering extends Pass {
   private val strings = mutable.UnrolledBuffer.empty[String]
 
   override def postAssembly = { case defns =>
-    defns ++ strings.zipWithIndex.flatMap { case (v, idx) =>
-      /*
+    defns /*++ strings.zipWithIndex.flatMap { case (v, idx) =>
       val data      = Global.Val("__str", idx.toString, "data")
       val dataTy    = Type.Array(Type.I8, v.length)
       val dataVal   = Val.Chars(v)
@@ -45,10 +44,7 @@ class StringLowering extends Pass {
       val strConst = Defn.Const(Seq(), str, strTy, strVal)
 
       Seq(dataConst, strConst)
-      */
-
-      ???
-    }
+    }*/
   }
 
   override def preVal = {
@@ -66,6 +62,6 @@ class StringLowering extends Pass {
         Val.Global(Global.Val("__str", idx.toString), Type.Ptr(Type.Struct(Nrt.String.name))))
       */
 
-      ???
+      Val.Zero(Type.Ptr(Type.I8))
   }
 }

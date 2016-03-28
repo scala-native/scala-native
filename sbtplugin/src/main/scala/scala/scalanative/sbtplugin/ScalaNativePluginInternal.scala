@@ -1,9 +1,16 @@
 package scala.scalanative.sbtplugin
 
-import sbt._, Keys._
+import sbt._, Keys._, complete.DefaultParsers._
+import scalanative.compiler.{Compiler => NativeCompiler, Opts => NativeOpts}
 import ScalaNativePlugin.autoImport._
 
 object ScalaNativePluginInternal {
+  private def cpToStrings(cp: Seq[File]): Seq[String] =
+    cp.map(_.getAbsolutePath)
+
+  private def cpToString(cp: Seq[File]): String =
+    cpToStrings(cp).mkString(java.io.File.pathSeparator)
+
   lazy val compileWithDottySettings =
     inConfig(Compile)(inTask(compile)(Defaults.runnerTask) ++ Seq(
       fork in compile := true,
@@ -19,9 +26,6 @@ object ScalaNativePluginInternal {
         val cacheDir = s.cacheDirectory
 
         // Discover classpaths
-
-        def cpToString(cp: Seq[File]) =
-          cp.map(_.getAbsolutePath).mkString(java.io.File.pathSeparator)
 
         val cpStr = cpToString(classpath)
 
@@ -103,10 +107,18 @@ object ScalaNativePluginInternal {
 
     libraryDependencies += "org.scala-lang" %% "dotty" % "0.1-SNAPSHOT" changing(),
 
-    link := {
-      println((fullClasspath in Compile).value)
+    artifactPath :=
+      (crossTarget in Compile).value / (moduleName.value + "-out.ll"),
 
-      ???
+    link := {
+      val entry     = (OptSpace ~> StringBasic).parsed
+      val classpath = cpToStrings((fullClasspath in Compile).value.map(_.data))
+      val outfile   = (artifactPath in Compile).value
+      val opts      = new NativeOpts(classpath, outfile.getAbsolutePath, entry)
+      val compile   = new NativeCompiler(opts)
+
+      IO.createDirectory(outfile.getParentFile)
+      compile()
     }
   )
 }

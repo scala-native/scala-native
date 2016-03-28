@@ -5,11 +5,11 @@ package pass
 import compiler.analysis.ClassHierarchy
 import nir._
 
-/** Lowers interfaces and operations on them.
+/** Lowers traits and operations on them.
  *
- *  For example an interface:
+ *  For example an trait:
  *
- *      interface $name: .. $ifaces {
+ *      trait $name: .. $traits {
  *        .. def $declname: $declty
  *        .. def $defnname: $defnty = $body
  *      }
@@ -19,35 +19,34 @@ import nir._
  *      const $name_const: struct #type =
  *        struct #type {
  *          #Type_type,
- *          ${iface.name},
- *          ${iface.id}
+ *          ${trt.name},
+ *          ${trt.id}
  *        }
  *
  *      .. def $defnname: $defnty = $body
  *
- *  Additionally two dispatch tables are generated:
+ *  Additionally a dispatch table are generated:
  *
- *      const __iface_instance: [[bool x C] x I] = ...
- *      const __iface_dispatch: [[ptr i8 x C] x M] = ...
+ *      const __trait_dispatch: [[ptr i8 x C] x T] = ...
  *
- *  Tables are indexed by either class id (where C is total number of classes),
- *  method id (where M is total number of inteface methods) or inteface id
- *  (where I is total number of interfaces).
+ *  This table lets one find a trait vtable for given class.
+ *  Dispatch table is indexed by a pair of class id and a trait id
+ *  (where C is total number of classes and T is total number of
+ *  traits in the current compilation assembly.)
  *
- *  In the future we'd probably compact this arrays with one of the
+ *  In the future we'd probably compact this array with one of the
  *  well-known compression techniques like row displacement tables.
  */
 class TraitLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pass {
-  private def itables(): Seq[Defn] =
-    ???
+  private def traitDispatch(): Seq[Defn] = Seq()
 
   override def preAssembly = { case defns =>
-    defns ++ itables()
+    defns ++ traitDispatch()
   }
 
   override def preDefn = {
-    case Defn.Trait(_, name @ TraitRef(iface), _, members) =>
-      val typeId    = Val.I32(iface.id)
+    case Defn.Trait(_, name @ TraitRef(trt), _, members) =>
+      val typeId    = Val.I32(trt.id)
       val typeName  = Val.String(name.parts.head)
       val typeVal   = Val.Struct(Nrt.Type.name, Seq(Nrt.Type_type, typeId, typeName))
       val typeConst = Defn.Const(Seq(), name + "const", Nrt.Type, typeVal)
@@ -57,7 +56,8 @@ class TraitLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pa
           ???
       }
 
-      typeConst +: methods
+      // typeConst +: methods
+      ???
   }
 
   override def preInst =  {
@@ -67,17 +67,17 @@ class TraitLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pa
     case Inst(n, Op.Method(sig, obj, StaticTraitMethodRef(meth))) =>
       ???
 
-    case Inst(n, Op.As(TraitRef(iface), v)) =>
+    case Inst(n, Op.As(TraitRef(trt), v)) =>
       Seq(
         Inst(n, Op.Copy(v))
       )
 
-    case Inst(n, Op.Is(TraitRef(iface), obj)) =>
+    case Inst(n, Op.Is(TraitRef(trt), obj)) =>
       ???
 
-    case Inst(n, Op.TypeOf(TraitRef(iface))) =>
+    case Inst(n, Op.TypeOf(TraitRef(trt))) =>
       Seq(
-        Inst(n, Op.Copy(Val.Global(iface.name + "const", Type.Ptr(Nrt.Type))))
+        Inst(n, Op.Copy(Val.Global(trt.name + "const", Type.Ptr(Nrt.Type))))
       )
   }
 
@@ -86,9 +86,10 @@ class TraitLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pa
       case Type.Trait(name) => unapply(name)
       case _                => None
     }
+
     def unapply(name: Global): Option[ClassHierarchy.Trait] =
       chg.nodes.get(name).collect {
-        case iface: ClassHierarchy.Trait => iface
+        case trt: ClassHierarchy.Trait => trt
       }
   }
 

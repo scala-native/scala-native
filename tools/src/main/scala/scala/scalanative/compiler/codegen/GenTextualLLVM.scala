@@ -139,8 +139,7 @@ object GenTextualLLVM extends GenShow {
   }
 
   implicit val showGlobal: Show[Global] = Show { g =>
-    if (g.isIntrinsic) unsupported(g)
-    else r(g.parts, "_")
+    r(g.parts, "_")
   }
 
   implicit val showLocal: Show[Local] = Show {

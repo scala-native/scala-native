@@ -22,6 +22,7 @@ final class Linker(paths: Seq[String]) {
     while (deps.nonEmpty) {
       val dep = deps.pop()
       if (!loaded.contains(dep) && !dep.isIntrinsic) {
+        println(s"looking for $dep")
         val (newdeps, newdefn) = load(dep).get
         deps.pushAll(newdeps)
         defns  += newdefn
