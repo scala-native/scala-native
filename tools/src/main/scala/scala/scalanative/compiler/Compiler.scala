@@ -34,7 +34,7 @@ final class Compiler(opts: Opts) {
   }
 
   private def output(assembly: Seq[Defn]): Unit =
-    serializeFile(codegen.GenTextualLLVM, assembly, opts.outpath + ".ll")
+    serializeFile(codegen.GenTextualLLVM, assembly, opts.outpath)
 
   private def debug(assembly: Seq[Defn], suffix: String) =
     serializeFile(codegen.GenTextualNIR, assembly, opts.outpath + s".$suffix.hnir")
