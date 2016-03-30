@@ -27,7 +27,32 @@ object ScalaNativePluginInternal {
 
         // Discover classpaths
 
-        val cpStr = cpToString(classpath)
+        val compilerClasspath = classpath.filter { entry =>
+          val path = entry.getAbsolutePath
+
+          path.contains("scala-compiler") ||
+          path.contains("org.scala-lang") ||
+          path.contains("org.scala-native")
+        }
+
+        val filterScalaLibs = filterOutScalaLibraries.value
+        println(thisProject.value.id)
+
+        val applicationClasspath =
+          if (!filterScalaLibs) classpath
+          else classpath.filter { entry =>
+            val path = entry.getAbsolutePath
+
+            !path.contains("scala-library") &&
+            !path.contains("scala-reflect") &&
+            !path.contains("scala-xml") &&
+            !path.contains("scala-parse-combinators") &&
+            !path.contains("scala-compiler")
+          }
+
+        println(s"---- filter scala libs: ${filterScalaLibs}")
+        println(s"---- application classpath:")
+        println(applicationClasspath.mkString("\n"))
 
         // List all my dependencies (recompile if any of these changes)
 
@@ -71,10 +96,10 @@ object ScalaNativePluginInternal {
             val run = (runner in compile).value
             val args =
                 options ++:
-                ("-classpath" :: cpStr ::
+                ("-classpath" :: cpToString(applicationClasspath) ::
                 "-d" :: classesDirectory.getAbsolutePath() ::
                 sourcesArgs)
-            run.run("dotty.tools.dotc.Main", classpath,
+            run.run("dotty.tools.dotc.Main", compilerClasspath,
                 args, patchedLogger) foreach sys.error
           }
 
@@ -106,6 +131,8 @@ object ScalaNativePluginInternal {
     scalaVersion := "2.11.8",
 
     libraryDependencies += "org.scala-lang" %% "dotty" % "0.1-SNAPSHOT" changing(),
+
+    filterOutScalaLibraries := true,
 
     artifactPath :=
       (crossTarget in Compile).value / (moduleName.value + "-out.ll"),

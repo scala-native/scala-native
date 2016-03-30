@@ -1,0 +1,4 @@
+<plugin>
+  <name>nir</name>
+  <classname>scala.scalanative.nscplugin.NirPlugin</classname>
+</plugin>

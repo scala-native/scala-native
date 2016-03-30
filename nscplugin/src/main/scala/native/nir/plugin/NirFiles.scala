@@ -1,11 +1,10 @@
-package native
-package nir
-package plugin
+package scala.scalanative
+package nscplugin
 
 import scala.tools.nsc._
 import scala.tools.nsc.io.AbstractFile
 
-trait GenIRFiles extends SubComponent with GenTypeKinds {
+trait NirFiles extends SubComponent with NirTypeEncoding {
   import global._
 
   private def getPathFor(cunit: CompilationUnit, sym: Symbol, suffix: String): String = {
@@ -26,7 +25,7 @@ trait GenIRFiles extends SubComponent with GenTypeKinds {
   def genIRFile(cunit: CompilationUnit, sym: Symbol, defns: Seq[nir.Defn]): Unit = {
     val kind =
       if (isModule(sym)) "module"
-      else if (sym.isInterface) "interface"
+      else if (sym.isInterface) "trait"
       else "class"
     nir.serialization.serializeBinaryFile(defns, getPathFor(cunit, sym, s".$kind.nir"))
     nir.serialization.serializeTextFile(defns, getPathFor(cunit, sym, s".$kind.hnir"))

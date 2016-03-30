@@ -1,4 +1,0 @@
-<plugin>
-  <name>nir</name>
-  <classname>native.nir.plugin.NIRPlugin</classname>
-</plugin>

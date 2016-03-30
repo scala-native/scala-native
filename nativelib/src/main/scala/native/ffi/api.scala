@@ -52,7 +52,6 @@ package object ffi {
   // def alignOf[T]: Size   = builtin
 
   implicit class CQuote(ctx: StringContext) {
-    def c(args: Any*): ffi.Ptr[ffi.Char8] =
-      macro native.internal.Macros.cquote
+    def c(args: Any*): ffi.Ptr[ffi.Char8] = builtin
   }
 }

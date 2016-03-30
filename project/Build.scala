@@ -1,10 +1,11 @@
 import sbt._, Keys._
 import complete.DefaultParsers._
 import scala.io.Source
-import scala.scalanative.sbtplugin.ScalaNativePlugin
+import scala.scalanative.sbtplugin.{ScalaNativePlugin, ScalaNativePluginInternal}
+import ScalaNativePlugin.autoImport._
 
 object ScalaNativeBuild extends Build {
-  val fetchScalaSource = taskKey[Unit](
+  val checkoutDottyLibrary = taskKey[Unit](
     "Fetches the scala source for the current scala version")
 
   lazy val commonSettings = Seq(
@@ -12,7 +13,16 @@ object ScalaNativeBuild extends Build {
     organization := "org.scala-native",
     version      := "0.1-SNAPSHOT",
 
-    fetchScalaSource := {
+    checkoutDottyLibrary := {
+      /*val librarysrcpath = "dottylib/library-src/main/scala/"
+      val librarysrcfile = file(librarysrcpath)
+      val dottysrcpath = "dottylib/dotty-src/main/scala/scala"
+      val dottysrcfile = file(dottysrcpath)
+      IO.delete(librarysrcfile)
+      IO.delete(dottysrcfile)
+      IO.createDirectory(librarysrcfile)
+      IO.createDirectory(dottysrcfile)
+
       val path =
         "submodules/dotty/test/dotc/scala-collections.whitelist"
       val whitelist = Source.fromFile(path, "UTF8").getLines()
@@ -25,10 +35,16 @@ object ScalaNativeBuild extends Build {
       whitelist.foreach { path =>
         val base = path.replace("./scala-scala/src/library/", "")
         val from = file("submodules/dotty-scala/src/library/" + base)
-        val to   = file("scalalib/src-base/main/scala/" + base)
+        val to   = file("dottylib/library-src/main/scala/" + base)
 
         IO.copyFile(from, to)
       }
+      IO.delete(file(librarysrcpath + "/scala/collection"))
+
+      IO.copyDirectory(file("submodules/dotty/src/scala/runtime"),
+          file(dottysrcpath + "/runtime"))
+      */
+      ???
     }
   )
 
@@ -52,6 +68,21 @@ object ScalaNativeBuild extends Build {
       ).
       dependsOn(nir)
 
+  lazy val nscplugin =
+    project.in(file("nscplugin")).
+      settings(commonSettings: _*).
+      settings(
+        scalaVersion := "2.11.8",
+        unmanagedSourceDirectories in Compile ++= Seq(
+          (scalaSource in (nir, Compile)).value,
+          (scalaSource in (util, Compile)).value
+        ),
+        libraryDependencies ++= Seq(
+          "org.scala-lang" % "scala-compiler" % scalaVersion.value,
+          "org.scala-lang" % "scala-reflect" % scalaVersion.value
+        )
+      )
+
   lazy val sbtplugin =
     project.in(file("sbtplugin")).
       settings(commonSettings).
@@ -68,16 +99,20 @@ object ScalaNativeBuild extends Build {
     project.in(file("javalib")).
       settings(nativeSettings)
 
-  lazy val scalalib =
-    project.in(file("scalalib")).
+  lazy val dottylib =
+    project.in(file("dottylib")).
       settings(nativeSettings).
       settings(
+        filterOutScalaLibraries := false,
+
         unmanagedSourceDirectories in Compile ++= Seq(
-          file("scalalib/src-base")
+          file("dottylib/library-src"),
+          file("dottylib/runtime-src")
         )
       )
 
   lazy val sandbox =
     project.in(file("sandbox")).
-      settings(nativeSettings)
+      settings(nativeSettings).
+      dependsOn(dottylib)
 }
