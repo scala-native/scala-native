@@ -15,8 +15,6 @@ trait NirFiles extends SubComponent with NirTypeEncoding {
     val dir = (baseDir /: pathParts.init)(_.subdirectoryNamed(_))
 
     var filename = pathParts.last
-    if (sym.isModuleClass && !sym.isImplClass)
-      filename = filename + nme.MODULE_SUFFIX_STRING
     val file = dir fileNamed (filename + suffix)
 
     file.file.getAbsolutePath

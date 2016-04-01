@@ -8,9 +8,6 @@ object ScalaNativePlugin extends AutoPlugin {
   object AutoImport {
     val link = inputKey[Unit](
       "Links NIR and compiles to LLVM IR.")
-
-    val filterOutScalaLibraries = settingKey[Boolean](
-      "Filter out scala-{compiler,reflect,library,parser-combinators}.")
   }
 
   override def projectSettings =

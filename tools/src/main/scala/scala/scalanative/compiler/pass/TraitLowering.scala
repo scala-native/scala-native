@@ -52,12 +52,10 @@ class TraitLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pa
       val typeConst = Defn.Const(Seq(), name + "const", Nrt.Type, typeVal)
 
       val methods: Seq[Defn.Define] = members.collect {
-        case defn: Defn.Define =>
-          ???
+        case defn: Defn.Define => defn
       }
 
-      // typeConst +: methods
-      ???
+      typeConst +: methods
   }
 
   override def preInst =  {

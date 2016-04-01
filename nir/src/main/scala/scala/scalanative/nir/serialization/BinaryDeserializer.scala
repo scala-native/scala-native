@@ -129,14 +129,29 @@ final class BinaryDeserializer(bb: ByteBuffer) {
 
   private def getDefns(): Seq[Defn] = getSeq(getDefn)
   private def getDefn(): Defn = getInt match {
-    case T.VarDefn     => Defn.Var(getAttrs, getGlobal, getType, getVal)
-    case T.ConstDefn   => Defn.Const(getAttrs, getGlobal, getType, getVal)
-    case T.DeclareDefn => Defn.Declare(getAttrs, getGlobal, getType)
-    case T.DefineDefn  => Defn.Define(getAttrs, getGlobal, getType, getBlocks)
-    case T.StructDefn  => Defn.Struct(getAttrs, getGlobal, getTypes)
-    case T.TraitDefn   => Defn.Trait(getAttrs, getGlobal, getGlobals, getDefns)
-    case T.ClassDefn   => Defn.Class(getAttrs, getGlobal, getGlobal, getGlobals, getDefns)
-    case T.ModuleDefn  => Defn.Module(getAttrs, getGlobal, getGlobal, getGlobals, getDefns)
+    case T.VarDefn =>
+      Defn.Var(getAttrs, getGlobal, getType, getVal)
+
+    case T.ConstDefn =>
+      Defn.Const(getAttrs, getGlobal, getType, getVal)
+
+    case T.DeclareDefn =>
+      Defn.Declare(getAttrs, getGlobal, getType)
+
+    case T.DefineDefn =>
+      Defn.Define(getAttrs, getGlobal, getType, getBlocks)
+
+    case T.StructDefn =>
+      Defn.Struct(getAttrs, getGlobal, getTypes)
+
+    case T.TraitDefn =>
+      Defn.Trait(getAttrs, getGlobal, getGlobals.map(ext), getDefns)
+
+    case T.ClassDefn =>
+      Defn.Class(getAttrs, getGlobal, ext(getGlobal), getGlobals.map(ext), getDefns)
+
+    case T.ModuleDefn =>
+      Defn.Module(getAttrs, getGlobal, ext(getGlobal), getGlobals.map(ext), getDefns)
   }
 
   private def getGlobals(): Seq[Global] = getSeq(getGlobal)

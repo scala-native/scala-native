@@ -228,9 +228,9 @@ object ClassHierarchy {
                     traitNames: Seq[Global], members: Seq[Defn]): Unit = {
       val node          = nodes(name).asInstanceOf[Class]
       val parent        = nodes(parentName).asInstanceOf[Class]
-      val traits    = traitNames.map(nodes(_).asInstanceOf[Trait])
+      val traits        = traitNames.map(nodes(_).asInstanceOf[Trait])
       node.parent       = Some(parent)
-      node.traits   = traits
+      node.traits       = traits
       node.members      = members.map(m => nodes(m.name))
       parent.subclasses = parent.subclasses :+ node
       traits.foreach { iface =>
@@ -240,9 +240,9 @@ object ClassHierarchy {
     }
 
     def enrichTrait(name: Global, traits: Seq[Global], members: Seq[Defn]): Unit = {
-      val node        = nodes(name).asInstanceOf[Trait]
-      node.traits = traits.map(nodes(_))
-      node.members    = members.map(m => nodes(m.name))
+      val node     = nodes(name).asInstanceOf[Trait]
+      node.traits  = traits.map(nodes(_))
+      node.members = members.map(m => nodes(m.name))
       members.foreach(enrich)
     }
 

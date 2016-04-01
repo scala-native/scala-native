@@ -79,7 +79,9 @@ trait NirNameEncoding extends SubComponent with NirTypeEncoding {
     }
 
     implicit lazy val showMangledGlobal: Show[nir.Global] = Show { g =>
-      sh"${r(g.parts, sep = "_")}"
+      val head +: tail = g.parts
+      val parts = head.replace("scala.scalanative.runtime", "nrt") +: tail
+      sh"${r(parts, sep = "_")}"
     }
 
     sh"$ty".toString

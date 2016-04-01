@@ -3,13 +3,31 @@ package nscplugin
 
 import scala.tools.nsc._
 
-trait NirTypeEncoding extends SubComponent {
+trait NirTypeEncoding extends NirDefinitions {
   import global._, definitions._
 
   def genClassName(sym: Symbol): nir.Global
 
-  private def genSymType(sym: Symbol, targs: List[Type] = Nil) = sym match {
-    case ArrayClass           => nir.Nrt.Array(genArrayElementCode(targs.head))
+  def extractType(t: Type): (Symbol, Seq[Type]) = t.normalize match {
+    case ThisType(ArrayClass)            => (ObjectClass, Seq())
+    case ThisType(sym)                   => (sym, Seq())
+    case SingleType(_, sym)              => (sym, Seq())
+    case ConstantType(_)                 => extractType(t.underlying)
+    case TypeRef(_, sym, args)           => (sym, args)
+    case ClassInfoType(_, _, ArrayClass) => abort("ClassInfoType to ArrayClass!")
+    case ClassInfoType(_, _, sym)        => (sym, Seq())
+    case t: AnnotatedType                => extractType(t.underlying)
+    case tpe: ErasedValueType            => (tpe.valueClazz, Seq())
+  }
+
+	def genType(t: Type): nir.Type = {
+    val (sym, args) = extractType(t)
+
+    genTypeInternal(sym, args)
+  }
+
+  private def genTypeInternal(sym: Symbol, targs: Seq[Type]) = sym match {
+    case ArrayClass           => genArrayType(targs.head)
     case ObjectClass          => nir.Nrt.Object
     case UnitClass            => nir.Type.Unit
     case CharClass            => nir.Type.I16
@@ -27,16 +45,21 @@ trait NirTypeEncoding extends SubComponent {
     case _                    => nir.Type.Class(genClassName(sym))
   }
 
-	def genType(t: Type): nir.Type = t.normalize match {
-    case ThisType(ArrayClass)            => nir.Nrt.Object
-    case ThisType(sym)                   => genSymType(sym)
-    case SingleType(_, sym)              => genSymType(sym)
-    case ConstantType(_)                 => genType(t.underlying)
-    case TypeRef(_, sym, args)           => genSymType(sym, args)
-    case ClassInfoType(_, _, ArrayClass) => abort("ClassInfoType to ArrayClass!")
-    case ClassInfoType(_, _, sym)        => genSymType(sym)
-    case t: AnnotatedType                => genType(t.underlying)
-    case tpe: ErasedValueType            => genSymType(tpe.valueClazz)
+  private def genArrayType(targ: Type): nir.Type = {
+    val (sym, _) = extractType(targ)
+    val array    = sym match {
+      case CharClass    => CharArrayClass
+      case BooleanClass => BooleanArrayClass
+      case ByteClass    => ByteArrayClass
+      case ShortClass   => ShortArrayClass
+      case IntClass     => IntArrayClass
+      case LongClass    => LongArrayClass
+      case FloatClass   => FloatArrayClass
+      case DoubleClass  => DoubleArrayClass
+      case _            => RefArrayClass
+    }
+
+    genType(array.info)
   }
 
   def isModule(sym: Symbol): Boolean =

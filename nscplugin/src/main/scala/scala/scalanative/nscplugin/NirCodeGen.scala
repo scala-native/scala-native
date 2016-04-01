@@ -296,7 +296,7 @@ abstract class NirCodeGen extends PluginComponent
         else if (sym.isStaticMember)
           genStaticMember(sym, focus)
         else if (sym.isMethod)
-          genMethodCall(sym, qualp, Seq(), focus)
+          genMethodCall(sym, statically = false, qualp, Seq(), focus)
         else {
           val ty = genType(tree.symbol.tpe)
           val qual = genExpr(qualp, focus)
@@ -404,6 +404,9 @@ abstract class NirCodeGen extends PluginComponent
           Val.String(value.stringValue)
       }
     }
+
+    def genModule(sym: Symbol, focus: Focus): Focus =
+      focus withOp Op.Module(genClassName(sym))
 
     def genStaticMember(sym: Symbol, focus: Focus): Focus = {
       val ty     = genType(sym.tpe)
@@ -538,7 +541,7 @@ abstract class NirCodeGen extends PluginComponent
       val ArrayValue(tpt, elems) = av
       val elemcode   = genArrayElementCode(tpt.tpe)
       val len        = elems.length
-      val allocfocus = focus withOp Nrt.call(Nrt.Array_alloc(elemcode), Val.I32(len))
+      val allocfocus = focus withOp ???//Nrt.call(Nrt.Array_alloc(elemcode), Val.I32(len))
       val rfocus     =
         if (elems.isEmpty)
           allocfocus
@@ -548,7 +551,7 @@ abstract class NirCodeGen extends PluginComponent
           val lastfocus = vfocus.lastOption.getOrElse(focus)
           val sfocus    = sequenced(values.zipWithIndex, lastfocus) { (vi, foc) =>
             val (value, i) = vi
-            foc withOp Nrt.call(Nrt.Array_update(elemcode), allocfocus.value, Val.I32(i), value)
+            foc withOp ???//Nrt.call(Nrt.Array_update(elemcode), allocfocus.value, Val.I32(i), value)
           }
           sfocus.last
         }
@@ -605,7 +608,7 @@ abstract class NirCodeGen extends PluginComponent
         case _: TypeApply =>
           genApplyTypeApply(app, focus)
         case Select(Super(_, _), _) =>
-          genNormalMethodCall(fun.symbol, curThis.get, args, focus)
+          genMethodCall(fun.symbol, statically = true, curThis.get, args, focus)
         case Select(New(_), nme.CONSTRUCTOR) =>
           genApplyNew(app, focus)
         case _ =>
@@ -622,7 +625,7 @@ abstract class NirCodeGen extends PluginComponent
             genPrimitiveUnbox(args.head, app.tpe, focus)
           } else {
             val Select(receiverp, _) = fun
-            genMethodCall(fun.symbol, receiverp, args, focus)
+            genMethodCall(fun.symbol, statically = false, receiverp, args, focus)
           }
       }
     }
@@ -635,17 +638,19 @@ abstract class NirCodeGen extends PluginComponent
       lastfocus finish Cf.Jump(Next.Label(label, argsfocus.map(_.value)))
     }
 
-    def genPrimitiveBox(exprp: Tree, tpe: Type, focus: Focus) = ???/*{
-      val expr = genExpr(exprp, focus)
+    def genPrimitiveBox(argp: Tree, tpe: Type, focus: Focus) = {
+      val (cls, _) = extractType(tpe)
+      val self     = genModule(BoxesRunTimeModule, focus)
 
-      expr withOp Nrt.call(Nrt.box(prim2ty(tpe.widen)), expr.value)
-    }*/
+      genMethodCall(boxToMethod(cls), statically = true, self.value, Seq(argp), self)
+    }
 
-    def genPrimitiveUnbox(exprp: Tree, tpe: Type, focus: Focus) = ???/*{
-      val expr = genExpr(exprp, focus)
+    def genPrimitiveUnbox(argp: Tree, tpe: Type, focus: Focus) = {
+      val (cls, _) = extractType(tpe)
+      val self     = genModule(BoxesRunTimeModule, focus)
 
-      expr withOp Nrt.call(Nrt.unbox(prim2ty(tpe.widen)), expr.value)
-    }*/
+      genMethodCall(unboxToMethod(cls), statically = true, self.value, Seq(argp), self)
+    }
 
     def genPrimitiveOp(app: Apply, focus: Focus): Focus = {
       import scalaPrimitives._
@@ -847,11 +852,11 @@ abstract class NirCodeGen extends PluginComponent
       def elemcode   = genArrayElementCode(array.tpe)
 
       if (scalaPrimitives.isArrayGet(code))
-        lastfocus withOp Nrt.call(Nrt.Array_apply(elemcode), arrayvalue, argvalues(0))
+        lastfocus withOp ???//Nrt.call(Nrt.Array_apply(elemcode), arrayvalue, argvalues(0))
       else if (scalaPrimitives.isArraySet(code))
-        lastfocus withOp Nrt.call(Nrt.Array_update(elemcode), arrayvalue, argvalues(1), argvalues(2))
+        lastfocus withOp ???//Nrt.call(Nrt.Array_update(elemcode), arrayvalue, argvalues(1), argvalues(2))
       else
-        lastfocus withOp Nrt.call(Nrt.Array_length(elemcode), arrayvalue)
+        lastfocus withOp ???//Nrt.call(Nrt.Array_length(elemcode), arrayvalue)
     }
 
     def genSynchronized(app: Apply, focus: Focus): Focus = {
@@ -969,7 +974,7 @@ abstract class NirCodeGen extends PluginComponent
 
       lengthvalues match {
         case Seq(length) =>
-          last withOp Nrt.call(Nrt.Array_alloc(elemcode), length)
+          last withOp ???//Nrt.call(Nrt.Array_alloc(elemcode), length)
         case _ =>
           ???
       }
@@ -977,26 +982,32 @@ abstract class NirCodeGen extends PluginComponent
 
     def genNew(cls: nir.Type.Class, ctorsym: Symbol, args: List[Tree], focus: Focus) = {
       val alloc = focus.withOp(Op.Alloc(cls))
-      val ctor = genNormalMethodCall(ctorsym, alloc.value, args, alloc)
+      val ctor = genMethodCall(ctorsym, statically = true, alloc.value, args, alloc)
 
       ctor.withValue(alloc.value)
     }
 
-    def genMethodCall(sym: Symbol, selfp: Tree, argsp: Seq[Tree], focus: Focus): Focus = {
+    def genMethodCall(sym: Symbol, statically: Boolean, selfp: Tree, argsp: Seq[Tree],
+        focus: Focus): Focus = {
       val self = genExpr(selfp, focus)
-      genNormalMethodCall(sym, self.value, argsp, self)
+
+      genMethodCall(sym, statically, self.value, argsp, self)
     }
 
-    def genNormalMethodCall(sym: Symbol, self: Val, argsp: Seq[Tree], focus: Focus): Focus = {
+    def genMethodCall(sym: Symbol, statically: Boolean, self: Val, argsp: Seq[Tree],
+        focus: Focus): Focus = {
       val name      = genDefName(sym)
       val sig       = genDefSig(sym)
       val args      = sequenced(argsp, focus)(genExpr(_, _))
       val argvalues = args.map(_.value)
       val last      = args.lastOption.getOrElse(focus)
-      val elem      = last withOp Op.Method(sig, self, name)
-      val call      = elem withOp Op.Call(sig, elem.value, self +: argvalues)
+      val method    =
+        if (statically)
+          last withValue Val.Global(name, nir.Type.Ptr(sig))
+        else
+          last withOp Op.Method(sig, self, name)
 
-      call
+      method withOp Op.Call(sig, method.value, self +: argvalues)
     }
   }
 }

@@ -10,12 +10,23 @@ final class Compiler(opts: Opts) {
   private lazy val entry =
     Global.Val(opts.entry)
 
-  private lazy val linked: Seq[Defn] =
-    (new Linker(opts.classpath)).link(entry)
+  private lazy val assembly: Seq[Defn] = {
+    val (unresolved, assembly) = (new Linker(opts.classpath)).link(entry)
+
+    if (unresolved.nonEmpty) {
+      println(s"unresolved deps:")
+      unresolved.foreach { u =>
+        println("  " + u)
+      }
+      throw new Exception
+    }
+
+    assembly
+  }
 
   private lazy val passes: Seq[Pass] = {
     implicit val fresh = Fresh("tx")
-    implicit val hierarchy = analysis.ClassHierarchy(linked)
+    implicit val hierarchy = analysis.ClassHierarchy(assembly)
 
     Seq(
       new pass.MainInjection(entry),
@@ -49,8 +60,8 @@ final class Compiler(opts: Opts) {
           debug(nassembly, (id + 1).toString + "-" + pass.getClass.getSimpleName)
           loop(nassembly, rest)
       }
-    debug(linked, "0")
-    output(loop(linked, passes.zipWithIndex))
+    debug(assembly, "0")
+    output(loop(assembly, passes.zipWithIndex))
   }
 }
 

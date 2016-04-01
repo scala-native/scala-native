@@ -6,7 +6,7 @@ import nir._
 import nir.serialization._
 
 final class Linker(paths: Seq[String]) {
-  private val assemblies = paths.map(Assembly(_))
+  private val assemblies = paths.flatMap(Assembly(_))
 
   private def load(global: Global): Option[(Seq[Global], Defn)] =
     assemblies.collectFirst {
@@ -14,22 +14,26 @@ final class Linker(paths: Seq[String]) {
         assembly.load(global)
     }.flatten
 
-  def link(entry: Global): Seq[Defn] = {
-    val loaded = mutable.Set.empty[Global]
-    var deps   = mutable.Stack[Global](entry)
-    var defns  = mutable.UnrolledBuffer.empty[Defn]
+  def link(entry: Global): (Seq[Global], Seq[Defn]) = {
+    var deps       = mutable.Stack[Global](entry)
+    var defns      = mutable.UnrolledBuffer.empty[Defn]
+    val resolved   = mutable.Set.empty[Global]
+    var unresolved = mutable.Set.empty[Global]
 
     while (deps.nonEmpty) {
       val dep = deps.pop()
-      if (!loaded.contains(dep) && !dep.isIntrinsic) {
+      if (!resolved.contains(dep) && !dep.isIntrinsic) {
         println(s"looking for $dep")
-        val (newdeps, newdefn) = load(dep).get
-        deps.pushAll(newdeps)
-        defns  += newdefn
-        loaded += dep
+        load(dep).fold {
+          unresolved += dep
+        } { case (newdeps, newdefn) =>
+          deps.pushAll(newdeps)
+          defns    += newdefn
+          resolved += dep
+        }
       }
     }
 
-    defns.toSeq
+    (unresolved.toSeq, defns.toSeq)
   }
 }

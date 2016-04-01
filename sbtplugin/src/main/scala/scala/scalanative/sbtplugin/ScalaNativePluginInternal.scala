@@ -34,25 +34,7 @@ object ScalaNativePluginInternal {
           path.contains("org.scala-lang") ||
           path.contains("org.scala-native")
         }
-
-        val filterScalaLibs = filterOutScalaLibraries.value
-        println(thisProject.value.id)
-
-        val applicationClasspath =
-          if (!filterScalaLibs) classpath
-          else classpath.filter { entry =>
-            val path = entry.getAbsolutePath
-
-            !path.contains("scala-library") &&
-            !path.contains("scala-reflect") &&
-            !path.contains("scala-xml") &&
-            !path.contains("scala-parse-combinators") &&
-            !path.contains("scala-compiler")
-          }
-
-        println(s"---- filter scala libs: ${filterScalaLibs}")
-        println(s"---- application classpath:")
-        println(applicationClasspath.mkString("\n"))
+        val applicationClasspath = classpath
 
         // List all my dependencies (recompile if any of these changes)
 
@@ -127,13 +109,7 @@ object ScalaNativePluginInternal {
       }
     ))
 
-  lazy val projectSettings = compileWithDottySettings ++ Seq(
-    scalaVersion := "2.11.8",
-
-    libraryDependencies += "org.scala-lang" %% "dotty" % "0.1-SNAPSHOT" changing(),
-
-    filterOutScalaLibraries := true,
-
+  lazy val commonProjectSettings = Seq(
     artifactPath :=
       (crossTarget in Compile).value / (moduleName.value + "-out.ll"),
 
@@ -148,4 +124,16 @@ object ScalaNativePluginInternal {
       compile()
     }
   )
+
+  lazy val projectSettings = {
+    commonProjectSettings ++ Seq(
+      addCompilerPlugin("org.scala-native" %% "nscplugin" % "0.1-SNAPSHOT")
+    )
+  }
+
+  lazy val dottyProjectSettings =
+    compileWithDottySettings ++ commonProjectSettings ++ Seq(
+      scalaVersion := "2.11.5",
+      libraryDependencies += "org.scala-lang" %% "dotty" % "0.1-SNAPSHOT" changing()
+    )
 }
