@@ -3,8 +3,11 @@ package nscplugin
 
 import scala.tools.nsc._
 
-trait NirTypeEncoding extends NirDefinitions {
-  import global._, definitions._
+trait NirTypeEncoding { self: NirCodeGen =>
+  import global._
+  import definitions._
+  import nirAddons._
+  import nirDefinitions._
 
   def genClassName(sym: Symbol): nir.Global
 

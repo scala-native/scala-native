@@ -5,7 +5,7 @@ import scala.tools.nsc._
 import scalanative.nir.Shows.{showType => _, showGlobal => _, _}
 import scalanative.util.{sh, Show}, Show.{Repeat => r}
 
-trait NirNameEncoding extends SubComponent with NirTypeEncoding {
+trait NirNameEncoding { self: NirCodeGen =>
   import global.{Name => _, _}, definitions._
 
   def genClassName(sym: Symbol): nir.Global = {

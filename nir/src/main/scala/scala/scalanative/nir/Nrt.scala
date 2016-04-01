@@ -61,11 +61,11 @@ object Nrt {
   lazy val Type_getId   = unary ("Type_getId",   Ptr(Type), I32   )
   lazy val Type_getName = unary ("Type_getName", Ptr(Type), String)
 
-  lazy val Nothing_type     = value("Nothing_type", Type)
-  lazy val Null_type        = value("Null_type"   , Type)
-  lazy val Object_type      = value("Object_type" , Type)
-  lazy val Monitor_type     = value("Monitor_type", Type)
-  lazy val Type_type        = value("Type_type"   , Type)
+  lazy val Nothing_type = value("Nothing_type", Type)
+  lazy val Null_type    = value("Null_type"   , Type)
+  lazy val Object_type  = value("Object_type" , Type)
+  lazy val Monitor_type = value("Monitor_type", Type)
+  lazy val Type_type    = value("Type_type"   , Type)
 
   lazy val init   = binary ("init" , I32, Ptr(Ptr(I8)), RefArray)
   lazy val yield_ = nullary("yield",                    Unit    )

@@ -4,7 +4,7 @@ package nscplugin
 import scala.tools.nsc._
 import scala.tools.nsc.io.AbstractFile
 
-trait NirFiles extends SubComponent with NirTypeEncoding {
+trait NirFiles { self: NirCodeGen =>
   import global._
 
   private def getPathFor(cunit: CompilationUnit, sym: Symbol, suffix: String): String = {
