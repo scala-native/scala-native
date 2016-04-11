@@ -1,13 +1,14 @@
-#ifndef NRT
-#define NRT
+#ifndef NRT_NRT
+#define NRT_NRT
 
-#include "alloc.h"
-#include "class.h"
+#include "defs.h"
+#include "exception.h"
+#include "gc.h"
 #include "monitor.h"
 #include "object.h"
-#include "string.h"
+#inlcude "type.h"
 
-nrt_obj nrt_init(int argc, char** argv);
-void    nrt_yield();
+nrt_obj* nrt_init(nrt_i32 argc, void** argv);
+nrt_unit nrt_yield();
 
 #endif

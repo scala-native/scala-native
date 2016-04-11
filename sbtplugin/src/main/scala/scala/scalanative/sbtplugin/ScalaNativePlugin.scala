@@ -6,8 +6,8 @@ object ScalaNativePlugin extends AutoPlugin {
   val autoImport = AutoImport
 
   object AutoImport {
-    val link = inputKey[Unit](
-      "Links NIR and compiles to LLVM IR.")
+    val compileNative = inputKey[Unit](
+      "Compiles to native code.")
   }
 
   override def projectSettings =
