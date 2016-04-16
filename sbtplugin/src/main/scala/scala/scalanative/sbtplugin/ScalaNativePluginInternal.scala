@@ -109,37 +109,35 @@ object ScalaNativePluginInternal {
       }
     ))
 
-  /** .nir --native--> app.ll ---|--llc--> .s
-   *  .c   --clang---> nrt.ll ---/
-   */
-  private def compileNativeInternal(opts: NativeOpts): Unit = {
-    def nir2ll() = {
-      IO.createDirectory(file(opts.outpath).getParentFile)
-      (new NativeCompiler(opts)).apply()
-    }
-
-    def rt2ll() = {
-    }
-
-    def ll2asm() = {
-    }
-
-    nir2ll()
-    rt2ll()
-    ll2asm()
+  /** Compiles application nir to llvm ir. */
+  private def compileNir(opts: NativeOpts): Unit = {
+    IO.createDirectory(file(opts.outpath).getParentFile)
+    (new NativeCompiler(opts)).apply()
   }
+
+  /** Compiles nrt to llvm ir using clang. */
+  private def compileNrt(): Unit = {}
+
+  /** Compiles runtime and application llvm ir files to assembly using llc. */
+  private def compileAsm(): Unit = {}
 
   lazy val commonProjectSettings = Seq(
     artifactPath :=
       (crossTarget in Compile).value / (moduleName.value + "-out.ll"),
 
-    compileNative := {
+    nativeCompile := {
       val entry     = (OptSpace ~> StringBasic).parsed
       val classpath = cpToStrings((fullClasspath in Compile).value.map(_.data))
       val outfile   = (artifactPath in Compile).value
       val opts      = new NativeOpts(classpath, outfile.getAbsolutePath, entry)
 
-      compileNativeInternal(opts)
+      compileNir(opts)
+      compileNrt()
+      compileAsm()
+    },
+
+    nativeRun := {
+      ???
     }
   )
 

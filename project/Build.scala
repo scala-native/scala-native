@@ -11,7 +11,7 @@ object ScalaNativeBuild extends Build {
   lazy val commonSettings = Seq(
     scalaVersion := "2.10.6",
     organization := "org.scala-native",
-    version      := "0.1-SNAPSHOT",
+    version      := scala.scalanative.nir.Versions.current,
 
     copyScalaLibrary := {
       IO.delete(file("scalalib/src/main/scala"))
@@ -34,6 +34,9 @@ object ScalaNativeBuild extends Build {
     project.in(file("nir")).
       settings(commonSettings: _*).
       dependsOn(util)
+
+  lazy val nrt =
+    project.in(file("nrt"))
 
   lazy val tools =
     project.in(file("tools")).
