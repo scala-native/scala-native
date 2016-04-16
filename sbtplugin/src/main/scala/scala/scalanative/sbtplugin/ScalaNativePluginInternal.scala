@@ -125,11 +125,14 @@ object ScalaNativePluginInternal {
     artifactPath :=
       (crossTarget in Compile).value / (moduleName.value + "-out.ll"),
 
+    nativeVerbose := false,
+
     nativeCompile := {
       val entry     = (OptSpace ~> StringBasic).parsed
       val classpath = cpToStrings((fullClasspath in Compile).value.map(_.data))
-      val outfile   = (artifactPath in Compile).value
-      val opts      = new NativeOpts(classpath, outfile.getAbsolutePath, entry)
+      val outfile   = (artifactPath in Compile).value.getAbsolutePath
+      val debug     = nativeVerbose.value
+      val opts      = new NativeOpts(classpath, outfile, entry, debug)
 
       compileNir(opts)
       compileNrt()

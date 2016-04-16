@@ -48,7 +48,8 @@ final class Compiler(opts: Opts) {
     serializeFile(codegen.GenTextualLLVM, assembly, opts.outpath)
 
   private def debug(assembly: Seq[Defn], suffix: String) =
-    serializeFile(codegen.GenTextualNIR, assembly, opts.outpath + s".$suffix.hnir")
+    if (opts.debug)
+      serializeFile(codegen.GenTextualNIR, assembly, opts.outpath + s".$suffix.hnir")
 
   def apply(): Unit = {
     def loop(assembly: Seq[Defn], passes: Seq[(Pass, Int)]): Seq[Defn] =
@@ -62,12 +63,5 @@ final class Compiler(opts: Opts) {
       }
     debug(assembly, "0")
     output(loop(assembly, passes.zipWithIndex))
-  }
-}
-
-object Compiler {
-  def main(args: Array[String]) = {
-    val compiler = new Compiler(Opts.fromArgs(args))
-    compiler()
   }
 }

@@ -12,6 +12,9 @@ object ScalaNativePlugin extends AutoPlugin {
     val nativeCompile = inputKey[Unit](
       "Compiles to native code.")
 
+    val nativeVerbose = settingKey[Boolean](
+      "Enable verbose tool logging.")
+
     val nativeRun = inputKey[Unit](
       "Runs compiled native code.")
   }
