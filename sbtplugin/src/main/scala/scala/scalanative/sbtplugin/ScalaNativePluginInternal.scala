@@ -119,7 +119,13 @@ object ScalaNativePluginInternal {
   private def compileNrt(): Unit = {}
 
   /** Compiles runtime and application llvm ir files to assembly using llc. */
+  private def compileLl(): Unit = {}
+
+  /** Compiles assembly to object file using as. */
   private def compileAsm(): Unit = {}
+
+  /** Links assembly-generated object files and generates a native binary using ld. */
+  private def linkAsm(): Unit = {}
 
   lazy val commonProjectSettings = Seq(
     artifactPath :=
@@ -136,7 +142,9 @@ object ScalaNativePluginInternal {
 
       compileNir(opts)
       compileNrt()
+      compileLl()
       compileAsm()
+      linkAsm()
     },
 
     nativeRun := {
