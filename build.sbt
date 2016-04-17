@@ -5,8 +5,11 @@ import ScalaNativePlugin.autoImport._
 val copyScalaLibrary = taskKey[Unit](
   "Checks out scala standard library from submodules/scala.")
 
-lazy val toolSettings = Seq(
-  scalaVersion := "2.10.6",
+val toolScalaVersion = "2.10.6"
+
+val libScalaVersion  = "2.11.8"
+
+lazy val baseSettings = Seq(
   organization := "org.scala-native",
   version      := scala.scalanative.nir.Versions.current,
 
@@ -18,9 +21,14 @@ lazy val toolSettings = Seq(
   }
 )
 
+lazy val toolSettings =
+  baseSettings ++ Seq(
+    scalaVersion := toolScalaVersion
+  )
+
 lazy val libSettings =
-  toolSettings ++ ScalaNativePlugin.projectSettings ++ Seq(
-    scalaVersion := "2.11.8"
+  baseSettings ++ ScalaNativePlugin.projectSettings ++ Seq(
+    scalaVersion := libScalaVersion
   )
 
 lazy val util =
@@ -32,9 +40,15 @@ lazy val nir =
     settings(toolSettings).
     dependsOn(util)
 
+// Nrt is a library project but it can't use libSettings
+// due to the fact that it contains nrt dependency in
+// ScalaNativePlugin.projectSettings.
 lazy val nrt =
   project.in(file("nrt")).
-    settings(toolSettings)
+    settings(baseSettings).
+    settings(
+      scalaVersion := libScalaVersion
+    )
 
 lazy val tools =
   project.in(file("tools")).

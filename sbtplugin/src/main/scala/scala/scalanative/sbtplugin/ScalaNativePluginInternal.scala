@@ -1,4 +1,5 @@
-package scala.scalanative.sbtplugin
+package scala.scalanative
+package sbtplugin
 
 import sbt._, Keys._, complete.DefaultParsers._
 import scalanative.compiler.{Compiler => NativeCompiler, Opts => NativeOpts}
@@ -112,11 +113,23 @@ object ScalaNativePluginInternal {
   /** Compiles application nir to llvm ir. */
   private def compileNir(opts: NativeOpts): Unit = {
     IO.createDirectory(file(opts.outpath).getParentFile)
-    (new NativeCompiler(opts)).apply()
+    val compiler = new NativeCompiler(opts)
+    compiler.apply()
   }
 
   /** Compiles nrt to llvm ir using clang. */
-  private def compileNrt(): Unit = {}
+  private def compileNrt(classpath: Seq[String]): Int = {
+    val dest     = Path.userHome / ".scalanative" / ("nrt-" + nir.Versions.current)
+    val nrtjar   = classpath.collectFirst {
+      case p if p.contains("org.scala-native") && p.contains("nrt") => p
+    }.get
+    val srcfiles = (dest ** "*.c").get.map(_.getAbsolutePath)
+    val cmd      = Seq("clang", "-S", "-emit-llvm") ++ srcfiles
+
+    IO.delete(dest)
+    IO.unzip(file(nrtjar), dest)
+    Process(cmd, dest).!
+  }
 
   /** Compiles runtime and application llvm ir files to assembly using llc. */
   private def compileLl(): Unit = {}
@@ -141,7 +154,7 @@ object ScalaNativePluginInternal {
       val opts      = new NativeOpts(classpath, outfile, entry, debug)
 
       compileNir(opts)
-      compileNrt()
+      compileNrt(classpath)
       compileLl()
       compileAsm()
       linkAsm()
@@ -154,7 +167,9 @@ object ScalaNativePluginInternal {
 
   lazy val projectSettings = {
     commonProjectSettings ++ Seq(
-      addCompilerPlugin("org.scala-native" %% "nscplugin" % "0.1-SNAPSHOT")
+      addCompilerPlugin("org.scala-native" %% "nscplugin" % "0.1-SNAPSHOT"),
+
+      libraryDependencies += "org.scala-native" %% "nrt" % nir.Versions.current
     )
   }
 
