@@ -2,11 +2,3 @@
 	path = submodules/scala
 	url = git@github.com:scala/scala.git
 	branch = 2.11.x
-[submodule "submodules/dotty-scala"]
-	path = submodules/dotty-scala
-	url = git@github.com:DarkDimius/scala.git
-	branch = dotty-library
-[submodule "submodules/dotty"]
-	path = submodules/dotty
-	url = git@github.com:densh/dotty.git
-	branch = nir
