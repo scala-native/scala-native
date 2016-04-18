@@ -12,12 +12,6 @@ object ScalaNativePluginInternal {
   private def cpToString(cp: Seq[File]): String =
     cpToStrings(cp).mkString(java.io.File.pathSeparator)
 
-  /** Compiles application nir to llvm ir. */
-  private def compileNir(opts: NativeOpts): Unit = {
-    val compiler = new NativeCompiler(opts)
-    compiler.apply()
-  }
-
   private lazy val nrt =
     Path.userHome / ".scalanative" / ("nrt-" + nir.Versions.current)
 
@@ -26,6 +20,12 @@ object ScalaNativePluginInternal {
 
   private def abs(file: File): String =
     file.getAbsolutePath
+
+  /** Compiles application nir to llvm ir. */
+  private def compileNir(opts: NativeOpts): Unit = {
+    val compiler = new NativeCompiler(opts)
+    compiler.apply()
+  }
 
   /** Compiles nrt to llvm ir using clang. */
   private def compileNrt(classpath: Seq[String]): Int = {
@@ -40,6 +40,7 @@ object ScalaNativePluginInternal {
     Process(clang, nrt).!
   }
 
+  /** Links application and runtime ir into a single bitcode file. */
   private def linkLl(target: File, appll: File, linkedll: File): Int = {
     val outpath  = abs(linkedll)
     val apppath  = abs(appll)
@@ -49,7 +50,7 @@ object ScalaNativePluginInternal {
     Process(link, target).!
   }
 
-  /** Compiles runtime and application llvm ir files to assembly using llc. */
+  /** Compiles linked application and runtime llvm ir file to assembly using llc. */
   private def compileLl(target: File, linkedll: File, linkedasm: File): Int = {
     val inpath  = abs(linkedll)
     val outpath = abs(linkedasm)
@@ -59,10 +60,22 @@ object ScalaNativePluginInternal {
   }
 
   /** Compiles assembly to object file using as. */
-  private def compileAsm(): Unit = {}
+  private def compileAsm(target: File, linkedasm: File, linkedobj: File): Unit = {
+    val inpath  = abs(linkedasm)
+    val outpath = abs(linkedobj)
+    val as      = Seq("as", s"-o", outpath, inpath)
+
+    Process(as, target).!
+  }
 
   /** Links assembly-generated object files and generates a native binary using ld. */
-  private def linkAsm(): Unit = {}
+  private def linkAsm(target: File, linkedobj: File, binary: File): Unit = {
+    val inpath  = abs(linkedobj)
+    val outpath = abs(binary)
+    val ld      = Seq("ld", "-o", outpath, "-e", "_main", inpath)
+
+    Process(ld, target).!
+  }
 
   lazy val commonProjectSettings = Seq(
     nativeVerbose := false,
@@ -74,6 +87,8 @@ object ScalaNativePluginInternal {
       val appll     = target / (moduleName.value + "-app.ll")
       val linkedll  = target / (moduleName.value + "-linked.bc")
       val linkedasm = target / (moduleName.value + "-linked.s")
+      val linkedobj = target / (moduleName.value + "-linked.o")
+      val binary    = target / (moduleName.value + "-out")
       val verbose   = nativeVerbose.value
       val opts      = new NativeOpts(classpath, appll.getAbsolutePath, entry, verbose)
 
@@ -82,8 +97,8 @@ object ScalaNativePluginInternal {
       compileNrt(classpath)
       linkLl(target, appll, linkedll)
       compileLl(target, linkedll, linkedasm)
-      compileAsm()
-      linkAsm()
+      compileAsm(target, linkedasm, linkedobj)
+      linkAsm(target, linkedobj, binary)
     },
 
     nativeRun := {
