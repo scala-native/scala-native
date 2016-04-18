@@ -48,7 +48,7 @@ final class Compiler(opts: Opts) {
     serializeFile(codegen.GenTextualLLVM, assembly, opts.outpath)
 
   private def debug(assembly: Seq[Defn], suffix: String) =
-    if (opts.debug)
+    if (opts.verbose)
       serializeFile(codegen.GenTextualNIR, assembly, opts.outpath + s".$suffix.hnir")
 
   def apply(): Unit = {
