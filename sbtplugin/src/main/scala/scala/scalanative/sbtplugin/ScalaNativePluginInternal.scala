@@ -40,41 +40,14 @@ object ScalaNativePluginInternal {
     Process(clang, nrt).!
   }
 
-  /** Links application and runtime ir into a single bitcode file. */
-  private def linkLl(target: File, appll: File, linkedll: File): Int = {
-    val outpath  = abs(linkedll)
+  /** Compiles application and runtime llvm ir file to binary using clang. */
+  private def compileLl(target: File, appll: File, binary: File): Int = {
+    val outpath  = abs(binary)
     val apppath  = abs(appll)
     val nrtpaths = (nrt ** "*.ll").get.map(abs)
-    val link     = Seq(abs(llvm / "llvm-link"), s"-o=$outpath", apppath) ++ nrtpaths
+    val clang    = Seq(abs(llvm / "clang++"), "-o", outpath, apppath) ++ nrtpaths
 
-    Process(link, target).!
-  }
-
-  /** Compiles linked application and runtime llvm ir file to assembly using llc. */
-  private def compileLl(target: File, linkedll: File, linkedasm: File): Int = {
-    val inpath  = abs(linkedll)
-    val outpath = abs(linkedasm)
-    val llc     = Seq(abs(llvm / "llc"), s"-o=$outpath", inpath)
-
-    Process(llc, target).!
-  }
-
-  /** Compiles assembly to object file using as. */
-  private def compileAsm(target: File, linkedasm: File, linkedobj: File): Unit = {
-    val inpath  = abs(linkedasm)
-    val outpath = abs(linkedobj)
-    val as      = Seq("as", s"-o", outpath, inpath)
-
-    Process(as, target).!
-  }
-
-  /** Links assembly-generated object files and generates a native binary using ld. */
-  private def linkAsm(target: File, linkedobj: File, binary: File): Unit = {
-    val inpath  = abs(linkedobj)
-    val outpath = abs(binary)
-    val ld      = Seq("ld", "-o", outpath, "-e", "_main", inpath)
-
-    Process(ld, target).!
+    Process(clang, target).!
   }
 
   lazy val commonProjectSettings = Seq(
@@ -84,21 +57,17 @@ object ScalaNativePluginInternal {
       val entry     = (OptSpace ~> StringBasic).parsed
       val classpath = cpToStrings((fullClasspath in Compile).value.map(_.data))
       val target    = (crossTarget in Compile).value
-      val appll     = target / (moduleName.value + "-app.ll")
-      val linkedll  = target / (moduleName.value + "-linked.bc")
-      val linkedasm = target / (moduleName.value + "-linked.s")
-      val linkedobj = target / (moduleName.value + "-linked.o")
+      val appll     = target / (moduleName.value + "-out.ll")
       val binary    = target / (moduleName.value + "-out")
       val verbose   = nativeVerbose.value
       val opts      = new NativeOpts(classpath, appll.getAbsolutePath, entry, verbose)
 
+      println((mainClass in Compile).value)
+
       IO.createDirectory(target)
       compileNir(opts)
       compileNrt(classpath)
-      linkLl(target, appll, linkedll)
-      compileLl(target, linkedll, linkedasm)
-      compileAsm(target, linkedasm, linkedobj)
-      linkAsm(target, linkedobj, binary)
+      compileLl(target, appll, binary)
     },
 
     nativeRun := {
