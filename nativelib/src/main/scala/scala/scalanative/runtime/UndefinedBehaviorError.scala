@@ -1,4 +1,4 @@
 package scala.scalanative
 package runtime
 
-class UndefinedBehaviorError extends Exception
+final class UndefinedBehaviorError extends java.lang.Error

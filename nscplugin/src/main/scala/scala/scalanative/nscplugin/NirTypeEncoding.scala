@@ -11,26 +11,33 @@ trait NirTypeEncoding { self: NirCodeGen =>
 
   def genClassName(sym: Symbol): nir.Global
 
-  def extractType(t: Type): (Symbol, Seq[Type]) = t.normalize match {
+  def genArrayCode(tpe: Type): Char = {
+    val (ArrayClass, Seq(targ)) = decomposeType(tpe)
+
+    genPrimCode(targ)
+  }
+
+  /** Converts a type to its type symbol and type arguments. */
+  def decomposeType(t: Type): (Symbol, Seq[Type]) = t.normalize match {
     case ThisType(ArrayClass)            => (ObjectClass, Seq())
     case ThisType(sym)                   => (sym, Seq())
     case SingleType(_, sym)              => (sym, Seq())
-    case ConstantType(_)                 => extractType(t.underlying)
+    case ConstantType(_)                 => decomposeType(t.underlying)
     case TypeRef(_, sym, args)           => (sym, args)
     case ClassInfoType(_, _, ArrayClass) => abort("ClassInfoType to ArrayClass!")
     case ClassInfoType(_, _, sym)        => (sym, Seq())
-    case t: AnnotatedType                => extractType(t.underlying)
+    case t: AnnotatedType                => decomposeType(t.underlying)
     case tpe: ErasedValueType            => (tpe.valueClazz, Seq())
   }
 
 	def genType(t: Type): nir.Type = {
-    val (sym, args) = extractType(t)
+    val (sym, args) = decomposeType(t)
 
-    genTypeInternal(sym, args)
+    genType(sym, args)
   }
 
-  private def genTypeInternal(sym: Symbol, targs: Seq[Type]) = sym match {
-    case ArrayClass           => genArrayType(targs.head)
+  def genType(sym: Symbol, targs: Seq[Type] = Seq()): nir.Type = sym match {
+    case ArrayClass           => genType(NArrayClass(genPrimCode(targs.head)))
     case ObjectClass          => nir.Nrt.Object
     case UnitClass            => nir.Type.Unit
     case CharClass            => nir.Type.I16
@@ -48,35 +55,24 @@ trait NirTypeEncoding { self: NirCodeGen =>
     case _                    => nir.Type.Class(genClassName(sym))
   }
 
-  private def genArrayType(targ: Type): nir.Type = {
-    val (sym, _) = extractType(targ)
-    val array    = sym match {
-      case CharClass    => CharArrayClass
-      case BooleanClass => BooleanArrayClass
-      case ByteClass    => ByteArrayClass
-      case ShortClass   => ShortArrayClass
-      case IntClass     => IntArrayClass
-      case LongClass    => LongArrayClass
-      case FloatClass   => FloatArrayClass
-      case DoubleClass  => DoubleArrayClass
-      case _            => RefArrayClass
-    }
+  def genPrimCode(tpe: Type): Char = {
+    val (sym, _) = decomposeType(tpe)
 
-    genType(array.info)
+    genPrimCode(sym)
+  }
+
+  def genPrimCode(elem: Symbol): Char = elem match {
+    case CharClass    => 'C'
+    case BooleanClass => 'B'
+    case ByteClass    => 'Z'
+    case ShortClass   => 'S'
+    case IntClass     => 'I'
+    case LongClass    => 'L'
+    case FloatClass   => 'F'
+    case DoubleClass  => 'D'
+    case _            => 'O'
   }
 
   def isModule(sym: Symbol): Boolean =
     sym.isModule || sym.isModuleClass || sym.isImplClass
-
-  def genArrayElementCode(tpe: Type): Char = ??? /*kind match {
-    case ArrayKind(PrimitiveKind(CharClass   )) => 'C'
-    case ArrayKind(PrimitiveKind(BooleanClass)) => 'B'
-    case ArrayKind(PrimitiveKind(ByteClass   )) => 'Z'
-    case ArrayKind(PrimitiveKind(ShortClass  )) => 'S'
-    case ArrayKind(PrimitiveKind(IntClass    )) => 'I'
-    case ArrayKind(PrimitiveKind(LongClass   )) => 'L'
-    case ArrayKind(PrimitiveKind(FloatClass  )) => 'F'
-    case ArrayKind(PrimitiveKind(DoubleClass )) => 'D'
-    case _                                      => 'O'
-  }*/
 }

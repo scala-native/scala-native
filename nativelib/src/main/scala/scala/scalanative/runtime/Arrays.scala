@@ -1,7 +1,7 @@
 package scala.scalanative
 package runtime
 
-sealed trait Array[T] extends java.lang.Cloneable {
+sealed abstract class Array[T] extends java.lang.Cloneable {
   def apply(i: Int): T
   def update(i: Int, value: T): Unit
   def length: Int

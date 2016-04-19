@@ -527,24 +527,30 @@ abstract class NirCodeGen extends PluginComponent
 
     def genArrayValue(av: ArrayValue, focus: Focus): Focus = {
       val ArrayValue(tpt, elems) = av
-      val elemcode   = genArrayElementCode(tpt.tpe)
-      val len        = elems.length
-      val allocfocus = focus withOp ???//Nrt.call(Nrt.Array_alloc(elemcode), Val.I32(len))
-      val rfocus     =
+
+      val len       = Literal(Constant(elems.length))
+      val elemcode  = genArrayCode(tpt.tpe)
+      val modulesym = NArrayModule(elemcode)
+      val methsym   = NArrayAllocMethod(elemcode)
+      val alloc     = genModuleMethodCall(modulesym, methsym, Seq(len), focus)
+      val init      =
         if (elems.isEmpty)
-          allocfocus
+          alloc
         else {
-          val vfocus    = sequenced(elems, allocfocus)(genExpr(_, _))
-          val values    = vfocus.map(_.value)
-          val lastfocus = vfocus.lastOption.getOrElse(focus)
-          val sfocus    = sequenced(values.zipWithIndex, lastfocus) { (vi, foc) =>
-            val (value, i) = vi
-            foc withOp ???//Nrt.call(Nrt.Array_update(elemcode), allocfocus.value, Val.I32(i), value)
-          }
-          sfocus.last
+          val (values, last) = genArgs(elems, alloc)
+          val updates =
+            sequenced(values.zipWithIndex, last) { (vi, focus) =>
+              val (v, i) = vi
+              val idx    = Literal(Constant(i))
+
+              genMethodCall(NArrayUpdateMethod(elemcode), statically = true,
+                            alloc.value, Seq(idx), focus)
+            }
+
+          updates.last
         }
 
-      rfocus withValue allocfocus.value
+      init withValue alloc.value
     }
 
     def genIf(condp: Tree, thenp: Tree, elsep: Tree, retty: nir.Type, focus: Focus) = {
@@ -619,26 +625,19 @@ abstract class NirCodeGen extends PluginComponent
     }
 
     def genApplyLabel(tree: Tree, focus: Focus) = notMergeableGuard {
-      val Apply(fun, args) = tree
+      val Apply(fun, args)    = tree
       val Val.Local(label, _) = curEnv.resolve(fun.symbol)
-      val argsfocus = sequenced(args, focus)(genExpr(_, _))
-      val lastfocus = argsfocus.lastOption.getOrElse(focus)
+      val argsfocus           = sequenced(args, focus)(genExpr(_, _))
+      val lastfocus           = argsfocus.lastOption.getOrElse(focus)
+
       lastfocus finish Cf.Jump(Next.Label(label, argsfocus.map(_.value)))
     }
 
-    def genPrimitiveBox(argp: Tree, tpe: Type, focus: Focus) = {
-      val (cls, _) = extractType(tpe)
-      val self     = genModule(BoxesRunTimeModule, focus)
+    def genPrimitiveBox(argp: Tree, tpe: Type, focus: Focus) =
+      genModuleMethodCall(BoxesRunTimeModule, BoxMethod(genPrimCode(tpe)), Seq(argp), focus)
 
-      genMethodCall(boxToMethod(cls), statically = true, self.value, Seq(argp), self)
-    }
-
-    def genPrimitiveUnbox(argp: Tree, tpe: Type, focus: Focus) = {
-      val (cls, _) = extractType(tpe)
-      val self     = genModule(BoxesRunTimeModule, focus)
-
-      genMethodCall(unboxToMethod(cls), statically = true, self.value, Seq(argp), self)
-    }
+    def genPrimitiveUnbox(argp: Tree, tpe: Type, focus: Focus) =
+      genModuleMethodCall(BoxesRunTimeModule, UnboxMethod(genPrimCode(tpe)), Seq(argp), focus)
 
     def genPrimitiveOp(app: Apply, focus: Focus): Focus = {
       import scalaPrimitives._
@@ -876,23 +875,24 @@ abstract class NirCodeGen extends PluginComponent
 
     def genArrayOp(app: Apply, code: Int, focus: Focus): Focus = {
       import scalaPrimitives._
-      val Apply(Select(array, _), args) = app
-      val allfocus = sequenced(array :: args, focus)(genExpr(_, _))
-      val lastfocus  = allfocus.last
-      def arrayvalue = allfocus(0).value
-      def argvalues  = allfocus.tail.map(_.value)
-      def elemcode   = genArrayElementCode(array.tpe)
+      val Apply(Select(arrayp, _), argsp) = app
 
-      if (scalaPrimitives.isArrayGet(code))
-        lastfocus withOp ???//Nrt.call(Nrt.Array_apply(elemcode), arrayvalue, argvalues(0))
-      else if (scalaPrimitives.isArraySet(code))
-        lastfocus withOp ???//Nrt.call(Nrt.Array_update(elemcode), arrayvalue, argvalues(1), argvalues(2))
-      else
-        lastfocus withOp ???//Nrt.call(Nrt.Array_length(elemcode), arrayvalue)
+      val array        = genExpr(arrayp, focus)
+      def elemcode     = genArrayCode(arrayp.tpe)
+      val method       =
+        if (scalaPrimitives.isArrayGet(code))
+          NArrayApplyMethod(elemcode)
+        else if (scalaPrimitives.isArraySet(code))
+          NArrayUpdateMethod(elemcode)
+        else
+          NArrayLengthMethod(elemcode)
+
+      genMethodCall(method, statically = true, array.value, argsp, array)
     }
 
     def genSynchronized(app: Apply, focus: Focus): Focus = {
       val Apply(Select(receiverp, _), List(argp)) = app
+
       val obj   = genExpr(receiverp, focus)
       val mon   = obj withOp Nrt.call(Nrt.Object_getMonitor, obj.value)
       val enter = mon withOp Nrt.call(Nrt.Monitor_enter, mon.value)
@@ -986,37 +986,39 @@ abstract class NirCodeGen extends PluginComponent
 
     def genApplyNew(app: Apply, focus: Focus) = {
       val Apply(fun @ Select(New(tpt), nme.CONSTRUCTOR), args) = app
-      val ctor = fun.symbol
-      val ty   = genType(tpt.tpe)
 
-      ty match {
-        // case arr: ArrayKind =>
-        //   genNewArray(genArrayElementType(arr), args, focus)
-        case cls: nir.Type.Class =>
-          genNew(cls, ctor, args, focus)
-        case ty =>
-          abort("unexpected new: " + app + "\ngen type: " + ty)
+      decomposeType(tpt.tpe) match {
+        case (ArrayClass, Seq(targ)) =>
+          genNewArray(genPrimCode(targ), args, focus)
+
+        case (cls, Seq()) =>
+          genNew(cls, fun.symbol, args, focus)
+
+        case (sym, targs) =>
+          unsupported(s"unexpected new: $sym with targs $targs")
       }
     }
 
-    def genNewArray(elemcode: Char, lengthsp: Seq[Tree], focus: Focus) = {
-      val lengths      = sequenced(lengthsp, focus)(genExpr(_, _))
-      val lengthvalues = lengths.map(_.value)
-      val last         = lengths.lastOption.getOrElse(focus)
+    def genNewArray(elemcode: Char, argsp: Seq[Tree], focus: Focus) = {
+      val module = NArrayModule(elemcode)
+      val meth   = NArrayAllocMethod(elemcode)
 
-      lengthvalues match {
-        case Seq(length) =>
-          last withOp ???//Nrt.call(Nrt.Array_alloc(elemcode), length)
-        case _ =>
-          ???
-      }
+      genModuleMethodCall(module, meth, argsp, focus)
     }
 
-    def genNew(cls: nir.Type.Class, ctorsym: Symbol, args: List[Tree], focus: Focus) = {
+    def genNew(clssym: Symbol, ctorsym: Symbol, args: List[Tree], focus: Focus) = {
+      val cls   = genType(clssym)
       val alloc = focus.withOp(Op.Alloc(cls))
-      val ctor = genMethodCall(ctorsym, statically = true, alloc.value, args, alloc)
+      val call  = genMethodCall(ctorsym, statically = true, alloc.value, args, alloc)
 
-      ctor.withValue(alloc.value)
+      call withValue alloc.value
+    }
+
+    def genModuleMethodCall(module: Symbol, method: Symbol, args: Seq[Tree],
+        focus: Focus): Focus = {
+      val self = genModule(module, focus)
+
+      genMethodCall(method, statically = true, self.value, args, self)
     }
 
     def genMethodCall(sym: Symbol, statically: Boolean, selfp: Tree, argsp: Seq[Tree],
