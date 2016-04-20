@@ -3,8 +3,9 @@ package compiler
 
 import scala.collection.mutable
 import linker.Linker
-import nir._
+import nir._, Shows._
 import nir.serialization._
+import util.sh
 
 final class Compiler(opts: Opts) {
   private lazy val entry =
@@ -15,9 +16,7 @@ final class Compiler(opts: Opts) {
 
     if (unresolved.nonEmpty) {
       println(s"unresolved deps:")
-      unresolved.foreach { u =>
-        println("  " + u)
-      }
+      unresolved.map(u => sh"  $u".toString).sorted.foreach(println(_))
       throw new Exception
     }
 

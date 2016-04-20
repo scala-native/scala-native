@@ -35,13 +35,9 @@ package object serialization {
     serializeFile(serializeBinary, defns, path, buffer)
 
   def deserializeBinaryFile(path: String): (Seq[Global], Seq[Defn]) = {
-    val bb = {
-      val channel = FileChannel.open(Paths.get(path))
-      val buffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size())
-      buffer.load
-      buffer
-    }
-    val des = new BinaryDeserializer(bb)
-    des.deserialize()
+    val bytes = Files.readAllBytes(Paths.get(path))
+    val buffer = ByteBuffer.wrap(bytes)
+    val deserializer = new BinaryDeserializer(buffer)
+    deserializer.deserialize()
   }
 }

@@ -2,6 +2,8 @@ package scala.scalanative
 package nir
 
 import scala.collection.mutable
+import Shows._
+import util.sh
 
 final case class Focus(
   val blocks:     Seq[Block],
@@ -19,13 +21,17 @@ final case class Focus(
   def prependBlocks(blocks: Seq[Block]) =
     copy(blocks = blocks ++ this.blocks)
 
+  private def assertMergeable(): Unit =
+    if (!isComplete) ()
+    else throw Focus.NotMergeable(this)
+
   def withValue(newvalue: Val): Focus = {
-    assert(!isComplete)
+    assertMergeable()
     copy(value = newvalue)
   }
 
   def withOp(op: Op): Focus = {
-    assert(!isComplete)
+    assertMergeable()
     val name = fresh()
     copy(insts = insts :+ Inst(name, op), value = Val.Local(name, op.resty))
   }
@@ -110,7 +116,7 @@ object Focus {
   def entry(name: Local, params: Seq[Val.Local])(implicit fresh: Fresh): Focus =
     Focus(Seq(), name, params, Seq(), Val.Unit, isComplete = false)
 
-  def complete(blocks: Seq[Block])(implicit fresh: Fresh)=
+  def complete(blocks: Seq[Block])(implicit fresh: Fresh) =
     Focus(blocks, Local.empty, Seq(), Seq(), Val.Unit, isComplete = true)
 
   def sequenced[T](elems: Seq[T], focus: Focus)

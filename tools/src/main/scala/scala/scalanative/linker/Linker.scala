@@ -23,7 +23,6 @@ final class Linker(paths: Seq[String]) {
     while (deps.nonEmpty) {
       val dep = deps.pop()
       if (!resolved.contains(dep) && !dep.isIntrinsic) {
-        println(s"looking for $dep")
         load(dep).fold {
           unresolved += dep
         } { case (newdeps, newdefn) =>

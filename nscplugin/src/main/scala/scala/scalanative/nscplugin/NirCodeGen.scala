@@ -32,9 +32,17 @@ abstract class NirCodeGen extends PluginComponent
   class Env(val fresh: Fresh) {
     private val env = mutable.Map.empty[Symbol, Val]
 
-    def enter(sym: Symbol, value: Val): Unit = env += ((sym, value))
-    def enterLabel(ld: LabelDef): Unit = enter(ld.symbol, Val.Local(fresh(), Type.Label))
+    def enter(sym: Symbol, value: Val): Unit =
+      env += ((sym, value))
+
+    def enterLabel(ld: LabelDef): Local = {
+      val local = fresh()
+      enter(ld.symbol, Val.Local(local, Type.Label))
+      local
+    }
+
     def resolve(sym: Symbol): Val = env(sym)
+
     def resolveLabel(ld: LabelDef): Local = {
       val Val.Local(n, Type.Label) = resolve(ld.symbol)
       n
@@ -94,9 +102,15 @@ abstract class NirCodeGen extends PluginComponent
         if (isPrimitiveValueClass(sym) || (sym == ArrayClass))
           ()
         else {
-          val defns = genClass(cd)
-          println(sh"${defns.head}")
-          genIRFile(cunit, sym, defns)
+          //println(s"generating nir for ${sym.fullName}")
+          try {
+            val defns = genClass(cd)
+            //println(sh"${defns.head}")
+            genIRFile(cunit, sym, defns)
+          } /*catch {
+            case e: Throwable =>
+              println(s"failed to generate nir for ${cd.symbol.fullName}: $e")
+          }*/
         }
       }
     }
@@ -159,15 +173,15 @@ abstract class NirCodeGen extends PluginComponent
       if (sym.isDeferred)
         Defn.Declare(attrs, name, sig)
       else {
-        val fresh = new Fresh("src")
-        val env = new Env(fresh)
+        val fresh  = new Fresh("src")
+        val env    = new Env(fresh)
+
         scoped (
-          curEnv := env,
+          curEnv       := env,
           curLocalInfo := (new CollectLocalInfo).collect(dd.rhs)
         ) {
-          val focus = genDefBody(paramSyms, dd.rhs)
-          val blocks = focus.finish(Cf.Ret(focus.value)).blocks
-          Defn.Define(attrs, name, sig, blocks)
+          val params = genParams(paramSyms)
+          Defn.Define(attrs, name, sig, genDefBody(params, dd.rhs))
         }
       }
     }
@@ -219,34 +233,39 @@ abstract class NirCodeGen extends PluginComponent
         case Focus.NotMergeable(focus) => focus
       }
 
-    def genDefBody(paramSyms: Seq[Symbol], body: Tree) =
-      notMergeableGuard {
-        body match {
-          /*
-          case Block(List(ValDef(_, nme.THIS, _, _)),
-                     label @ LabelDef(name, Ident(nme.THIS) :: _, rhs)) =>
+    def genDefBody(params: Seq[Val.Local], bodyp: Tree): Seq[nir.Block] =
+      bodyp match {
+        // Tailrec emits magical labeldefs that can hijack this reference is
+        // current method. This requires special treatment on our side.
+        case Block(List(ValDef(_, nme.THIS, _, _)),
+                   label @ LabelDef(name, Ident(nme.THIS) :: _, rhs)) =>
+          val local  = curEnv.enterLabel(label)
+          val values = params.take(label.params.length)
+          val entry  = Focus.entry(params)(curEnv.fresh)
+          val body   = notMergeableGuard(genLabel(label, hijackThis = true))
 
-            curLabelEnv.enterLabel(label, curLocalInfo.labelApplyCount(label.symbol) + 1)
-            val start = Focus.start()
-            val values = params.take(label.params.length)
-            curLabelEnv.enterLabelCall(label.symbol, values, start)
-            scoped (
-              curThis := curLabelEnv.resolveLabelParams(label.symbol).head
-            ) {
-              genLabel(label)
-            }
-          */
-          case _ =>
-            val params = genParams(paramSyms)
+          (entry finish Cf.Jump(Next.Label(local, values))).blocks ++
+          (body finish Cf.Ret(body.value)).blocks
+
+        case _ =>
+          val body =
             scoped (
               curThis := Val.Local(params.head.name, params.head.ty)
             ) {
-              genExpr(body, Focus.entry(params)(curEnv.fresh))
+              notMergeableGuard(genExpr(bodyp, Focus.entry(params)(curEnv.fresh)))
             }
-        }
+
+          (body finish Cf.Ret(body.value)).blocks
       }
 
-    def genExpr(tree: Tree, focus: Focus): Focus = tree match {
+    def p[T](msg: String)(t: T): T = {
+      //println(s"$msg")
+      t
+    }
+
+    def genExpr(tree: Tree, focus: Focus): Focus =
+      p(s"genExpr: $tree, ${focus.isComplete}")(tree) match {
+
       case label: LabelDef =>
         assert(label.params.length == 0)
         curEnv.enterLabel(label)
@@ -422,6 +441,7 @@ abstract class NirCodeGen extends PluginComponent
       val ty     = genType(sym.tpe)
       val module = focus withOp Op.Module(genClassName(sym.owner))
       val elem   = module withOp Op.Field(ty, module.value, genFieldName(sym))
+
       elem withOp Op.Load(ty, elem.value)
     }
 
@@ -514,22 +534,28 @@ abstract class NirCodeGen extends PluginComponent
       genLabel(lds.last) prependBlocks resfocus.blocks
     }
 
-    def genLabel(label: LabelDef) = {
-      val Val.Local(name, _) = curEnv.resolve(label.symbol)
-      val params = label.params.map { id =>
+    def genLabel(label: LabelDef, hijackThis: Boolean = false) = {
+      val local   = curEnv.resolveLabel(label)
+      val params  = label.params.map { id =>
         val local = Val.Local(curEnv.fresh(), genType(id.tpe))
         curEnv.enter(id.symbol, local)
         local
       }
-      val entry = Focus.entry(name, params)(curEnv.fresh)
-      genExpr(label.rhs, entry)
+      val entry   = Focus.entry(local, params)(curEnv.fresh)
+      val newThis: Val = if (hijackThis) params.head else curThis
+
+      scoped (
+        curThis := newThis
+      ) {
+        genExpr(label.rhs, entry)
+      }
     }
 
     def genArrayValue(av: ArrayValue, focus: Focus): Focus = {
       val ArrayValue(tpt, elems) = av
 
       val len       = Literal(Constant(elems.length))
-      val elemcode  = genArrayCode(tpt.tpe)
+      val elemcode  = genPrimCode(tpt.tpe)
       val modulesym = NArrayModule(elemcode)
       val methsym   = NArrayAllocMethod(elemcode)
       val alloc     = genModuleMethodCall(modulesym, methsym, Seq(len), focus)

@@ -6,8 +6,8 @@ import java.nio.ByteBuffer
 import scala.collection.mutable
 import nir.{Tags => T}
 
-final class BinaryDeserializer(bb: ByteBuffer) {
-  import bb._
+final class BinaryDeserializer(buffer: ByteBuffer) {
+  import buffer._
 
   private val externs = mutable.UnrolledBuffer.empty[Global]
 

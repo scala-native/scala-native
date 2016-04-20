@@ -38,13 +38,13 @@ object Assembly {
         (name -> fileabs)
       }.toMap
     }
-    println(s"discovered dir assembly $base")
+    //println(s"discovered dir assembly $base")
     //println(s"entries: $entries")
 
     def contains(entry: Global) = entries.contains(entry)
 
     def load(entry: Global) = entries.get(entry).map { path =>
-      println(s"loaded $entry from $base")
+      //println(s"loaded $entry from $base")
       val (deps, defns) = deserializeBinaryFile(path)
       assert(defns.length == 1, "non-assembly nir files may contain only a single definition")
       (deps, defns.head)
@@ -58,7 +58,7 @@ object Assembly {
   }
 
   def apply(path: String): Option[Assembly] = {
-    println(s"assembly for $path")
+    //println(s"assembly for $path")
     val file = new File(path)
 
     if (!file.exists) None
