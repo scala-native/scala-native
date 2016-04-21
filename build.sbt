@@ -2,23 +2,13 @@ import scala.io.Source
 import scala.scalanative.sbtplugin.{ScalaNativePlugin, ScalaNativePluginInternal}
 import ScalaNativePlugin.autoImport._
 
-val copyScalaLibrary = taskKey[Unit](
-  "Checks out scala standard library from submodules/scala.")
-
 val toolScalaVersion = "2.10.6"
 
 val libScalaVersion  = "2.11.8"
 
 lazy val baseSettings = Seq(
   organization := "org.scala-native",
-  version      := scala.scalanative.nir.Versions.current,
-
-  copyScalaLibrary := {
-    IO.delete(file("scalalib/src/main/scala"))
-    IO.copyDirectory(
-      file("submodules/scala/src/library/scala"),
-      file("scalalib/src/main/scala/scala"))
-  }
+  version      := scala.scalanative.nir.Versions.current
 )
 
 lazy val toolSettings =
@@ -91,9 +81,22 @@ lazy val javalib =
     settings(libSettings).
     dependsOn(nativelib)
 
+lazy val copyScalaLibrary = taskKey[Unit](
+  "Checks out scala standard library from submodules/scala.")
+
 lazy val scalalib =
   project.in(file("scalalib")).
     settings(libSettings).
+    settings(
+      copyScalaLibrary := {
+        IO.delete(file("scalalib/src/main/scala"))
+        IO.copyDirectory(
+          file("submodules/scala/src/library/scala"),
+          file("scalalib/src/main/scala/scala"))
+      },
+
+      compile in Compile <<= (compile in Compile) dependsOn copyScalaLibrary
+    ).
     dependsOn(javalib)
 
 lazy val sandbox =
