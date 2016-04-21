@@ -10,8 +10,10 @@ final class Integer(val intValue: scala.Int)
   @inline def floatValue(): scala.Float = intValue.toFloat
   @inline def doubleValue(): scala.Double = intValue.toDouble
 
-  @inline override def equals(that: Any): scala.Boolean =
-    this eq that.asInstanceOf[AnyRef]
+  @inline override def equals(that: Any): scala.Boolean = that match {
+    case that: Integer => byteValue == that.intValue
+    case _             => false
+  }
 
   @inline override def hashCode(): Int =
     intValue

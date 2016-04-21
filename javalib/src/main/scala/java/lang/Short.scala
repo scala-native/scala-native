@@ -10,8 +10,10 @@ final class Short private (override val shortValue: scala.Short)
   @inline def floatValue(): scala.Float = shortValue.toFloat
   @inline def doubleValue(): scala.Double = shortValue.toDouble
 
-  @inline override def equals(that: Any): scala.Boolean =
-    this eq that.asInstanceOf[AnyRef]
+  @inline override def equals(that: Any): scala.Boolean = that match {
+    case that: Short => shortValue == that.shortValue
+    case _           => false
+  }
 
   @inline override def hashCode(): Int =
     shortValue

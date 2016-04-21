@@ -10,8 +10,10 @@ final class Byte(override val byteValue: scala.Byte)
   @inline def floatValue(): scala.Float = byteValue.toFloat
   @inline def doubleValue(): scala.Double = byteValue.toDouble
 
-  @inline override def equals(that: Any): scala.Boolean =
-    this eq that.asInstanceOf[AnyRef]
+  @inline override def equals(that: Any): scala.Boolean = that match {
+    case that: Byte => byteValue == that.byteValue
+    case _          => false
+  }
 
   @inline override def hashCode(): Int =
     byteValue
