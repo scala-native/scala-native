@@ -5,6 +5,7 @@ import scala.collection.mutable
 import scala.tools.nsc.{util => _, _}
 import scala.tools.nsc.plugins._
 import scala.util.{Either, Left, Right}
+import scala.reflect.internal.Flags._
 import util._, util.ScopedVar.scoped
 import nir.Focus, Focus.sequenced
 import nir._, Shows._
@@ -102,44 +103,39 @@ abstract class NirCodeGen extends PluginComponent
         if (isPrimitiveValueClass(sym) || (sym == ArrayClass))
           ()
         else {
-          //println(s"generating nir for ${sym.fullName}")
-          try {
-            val defns = genClass(cd)
-            //println(sh"${defns.head}")
-            genIRFile(cunit, sym, defns)
-          } /*catch {
-            case e: Throwable =>
-              println(s"failed to generate nir for ${cd.symbol.fullName}: $e")
-          }*/
+          val defn = genClass(cd)
+          println(sh"$defn")
+          genIRFile(cunit, sym, Seq(defn))
         }
       }
     }
 
-    def genClass(cd: ClassDef): Seq[Defn] = scoped (
+    def genClass(cd: ClassDef): Defn = scoped (
       curClassSym := cd.symbol
     ) {
-      //println(cd)
+      println(cd)
       val sym     = cd.symbol
-      val attrs   = genClassAttrs(sym)
-      val name    = genClassName(sym)
+      val body    = cd.impl.body
+      def attrs   = genClassAttrs(sym)
+      def name    = genClassName(sym)
       def parent  = if (sym.superClass == NoSymbol) Nrt.Object.name
                     else if (sym.superClass == ObjectClass) Nrt.Object.name
                     else genClassName(sym.superClass)
-      val traits  = genClassInterfaces(sym)
-      val fields  = genClassFields(sym).toSeq
-      val defdefs = cd.impl.body.collect { case dd: DefDef => dd }
-      val methods = defdefs.map(genDef)
-      val members = fields ++ methods
+      def traits  = genClassInterfaces(sym)
+      def members = genClassMembers(sym, body)
 
       if (isModule(sym))
-        Seq(Defn.Module(attrs, name, parent, traits, members))
+        Defn.Module(attrs, name, parent, traits, members)
       else if (sym.isInterface)
-        Seq(Defn.Trait(attrs, name, traits, members))
+        Defn.Trait(attrs, name, traits, members)
       else
-        Seq(Defn.Class(attrs, name, parent, traits, members))
+        Defn.Class(attrs, name, parent, traits, members)
     }
 
-    def genClassAttrs(sym: Symbol): Seq[Attr] = Seq()
+    def genClassAttrs(sym: Symbol): Seq[Attr] =
+      sym.annotations.collect {
+        case ann if ann.symbol == ExternClass   => Attr.External
+      }
 
     def genClassInterfaces(sym: Symbol) =
       for {
@@ -148,6 +144,61 @@ abstract class NirCodeGen extends PluginComponent
         if psym.isInterface
       } yield {
         genClassName(psym)
+      }
+
+    def genClassMembers(sym: Symbol, body: Seq[Tree]): Seq[Defn] =
+      if (isExternalModule(sym)) {
+        val ctorBody =
+          body.collectFirst {
+            case dd: DefDef if dd.name == nme.CONSTRUCTOR => dd.rhs
+          }.get
+        val fieldSyms =
+          ctorBody match {
+            case Block(_ +: init, _) =>
+              init.map {
+                case Assign(ref: RefTree, Apply(extern, Seq()))
+                    if extern.symbol == ExternMethod =>
+                  ref.symbol
+                case stat =>
+                  unsupported(stat)
+              }
+          }
+
+        body.flatMap {
+          case dd @ DefDef(_, name, _, _, _, Apply(rhs: RefTree, Seq()))
+              if name != nme.CONSTRUCTOR
+              && rhs.symbol == ExternMethod =>
+            val sym   = dd.symbol
+            val attrs = genMethodAttrs(sym) :+ Attr.External
+            val name  = genMethodName(sym)
+            val sig   = genMethodSig(sym)
+
+            Seq(Defn.Declare(attrs, name, sig))
+
+          case dd: DefDef
+              if dd.name == nme.CONSTRUCTOR
+              || dd.symbol.hasFlag(ACCESSOR) =>
+            Seq()
+
+          case vd: ValDef if fieldSyms.contains(vd.symbol) =>
+            val sym   = vd.symbol
+            val attrs = Seq(Attr.External)
+            val name  = genFieldName(sym)
+            val ty    = genType(sym.info)
+
+            if (sym.hasFlag(MUTABLE))
+              Seq(Defn.Var(attrs, name, ty, Val.None))
+            else
+              Seq(Defn.Const(attrs, name, ty, Val.None))
+
+          case stat =>
+            unsupported(stat)
+        }
+      } else {
+        def fields  = genClassFields(sym).toSeq
+        def methods = body.collect { case dd: DefDef => genMethod(dd) }
+
+        fields ++ methods
       }
 
     def genClassFields(sym: Symbol) =
@@ -160,15 +211,14 @@ abstract class NirCodeGen extends PluginComponent
         Defn.Var(Seq(), name, ty, Val.Zero(ty))
       }
 
-    def genDef(dd: DefDef): Defn = scoped (
+    def genMethod(dd: DefDef): Defn = scoped (
       curMethodSym := dd.symbol
     ) {
-      //println(dd)
       val sym       = dd.symbol
-      val attrs     = genDefAttrs(sym)
-      val name      = genDefName(sym)
+      val attrs     = genMethodAttrs(sym)
+      val name      = genMethodName(sym)
       val paramSyms = defParamSymbols(dd)
-      val sig       = genDefSig(sym)
+      val sig       = genMethodSig(sym)
 
       if (sym.isDeferred)
         Defn.Declare(attrs, name, sig)
@@ -181,17 +231,20 @@ abstract class NirCodeGen extends PluginComponent
           curLocalInfo := (new CollectLocalInfo).collect(dd.rhs)
         ) {
           val params = genParams(paramSyms)
-          Defn.Define(attrs, name, sig, genDefBody(params, dd.rhs))
+          Defn.Define(attrs, name, sig, genMethodBody(params, dd.rhs))
         }
       }
     }
 
-    def genDefAttrs(sym: Symbol): Seq[Attr] =
+    def genMethodAttrs(sym: Symbol): Seq[Attr] =
       sym.overrides.map {
-        case sym => Attr.Override(genDefName(sym))
+        case sym => Attr.Override(genMethodName(sym))
+      } ++ sym.annotations.collect {
+        case ann if ann.symbol == InlineClass   => Attr.InlineHint
+        case ann if ann.symbol == NoInlineClass => Attr.NoInline
       }
 
-    def genDefSig(sym: Symbol): nir.Type = sym match {
+    def genMethodSig(sym: Symbol): nir.Type = sym match {
       case sym: ModuleSymbol =>
         val MethodType(params, res) = sym.tpe
         val paramtys = params.map(p => genType(p.tpe))
@@ -233,7 +286,7 @@ abstract class NirCodeGen extends PluginComponent
         case Focus.NotMergeable(focus) => focus
       }
 
-    def genDefBody(params: Seq[Val.Local], bodyp: Tree): Seq[nir.Block] =
+    def genMethodBody(params: Seq[Val.Local], bodyp: Tree): Seq[nir.Block] =
       bodyp match {
         // Tailrec emits magical labeldefs that can hijack this reference is
         // current method. This requires special treatment on our side.
@@ -258,14 +311,7 @@ abstract class NirCodeGen extends PluginComponent
           (body finish Cf.Ret(body.value)).blocks
       }
 
-    def p[T](msg: String)(t: T): T = {
-      //println(s"$msg")
-      t
-    }
-
-    def genExpr(tree: Tree, focus: Focus): Focus =
-      p(s"genExpr: $tree, ${focus.isComplete}")(tree) match {
-
+    def genExpr(tree: Tree, focus: Focus): Focus = tree match {
       case label: LabelDef =>
         assert(label.params.length == 0)
         curEnv.enterLabel(label)
@@ -1056,8 +1102,8 @@ abstract class NirCodeGen extends PluginComponent
 
     def genMethodCall(sym: Symbol, statically: Boolean, self: Val, argsp: Seq[Tree],
         focus: Focus): Focus = {
-      val name         = genDefName(sym)
-      val sig          = genDefSig(sym)
+      val name         = genMethodName(sym)
+      val sig          = genMethodSig(sym)
       val (args, last) = genArgs(argsp, focus)
       val method       =
         if (statically)

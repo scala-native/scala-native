@@ -22,7 +22,7 @@ trait NirNameEncoding { self: NirCodeGen =>
 
   def genFieldName(sym: Symbol) = {
     val owner = genClassName(sym.owner)
-    val id0 = sym.name.toString
+    val id0 = sym.name.decoded.toString
     val id =
       if (id0.charAt(id0.length()-1) != ' ') id0
       else id0.substring(0, id0.length()-1)
@@ -30,16 +30,19 @@ trait NirNameEncoding { self: NirCodeGen =>
     owner + id
   }
 
-  def genDefName(sym: Symbol) = {
-    val owner         = genClassName(sym.owner)
-    val id            = sym.name.toString
+  def genMethodName(sym: Symbol) = {
+    val owner         = sym.owner
+    val ownerId       = genClassName(sym.owner)
+    val id            = sym.name.decoded.toString
     val tpe           = sym.tpe.widen
     val mangledParams = tpe.params.toSeq.map(mangledType)
 
-    if (sym.name == nme.CONSTRUCTOR) {
-      owner + ("init" +: mangledParams).mkString("_")
+    if (isExternalModule(owner)) {
+      ownerId + id
+    } else if (sym.name == nme.CONSTRUCTOR) {
+      ownerId + ("init" +: mangledParams).mkString("_")
     } else {
-      owner + (id +: (mangledParams :+ mangledType(tpe.resultType))).mkString("_")
+      ownerId + (id +: (mangledParams :+ mangledType(tpe.resultType))).mkString("_")
     }
   }
 

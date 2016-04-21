@@ -9,6 +9,13 @@ trait NirDefinitions { self: NirGlobalAddons =>
   import rootMirror._
 
   object nirDefinitions {
+    lazy val InlineClass   = getRequiredClass("scala.inline")
+    lazy val NoInlineClass = getRequiredClass("scala.noinline")
+
+    lazy val NativeModule = getRequiredModule("scala.scalanative.native.package")
+    lazy val ExternMethod = getMember(NativeModule, TermName("extern"))
+    lazy val ExternClass  = getRequiredClass("scala.scalanative.native.extern")
+
     lazy val Object_wait = getMember(ObjectClass, TermName("wait"))
 
     lazy val BoxMethod = Map[Char, Symbol](
@@ -20,7 +27,7 @@ trait NirDefinitions { self: NirGlobalAddons =>
       'L' -> getDecl(BoxesRunTimeModule, TermName("boxToLong")),
       'F' -> getDecl(BoxesRunTimeModule, TermName("boxToFloat")),
       'D' -> getDecl(BoxesRunTimeModule, TermName("boxToDouble"))
-    )
+      )
 
     lazy val UnboxMethod = Map[Char, Symbol](
       'B' -> getDecl(BoxesRunTimeModule, TermName("unboxToBoolean")),

@@ -3,7 +3,8 @@ package runtime
 
 import native._
 
-@extern object Intrinsics {
+@extern
+object Intrinsics {
   def `llvm.powi.f32`(value: Float, power: Int): Float = extern
   def `llvm.powi.f64`(value: Double, power: Int): Double = extern
   def `llvm.sin.f32`(value: Float): Float = extern
