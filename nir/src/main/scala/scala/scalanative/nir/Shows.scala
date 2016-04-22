@@ -240,9 +240,9 @@ object Shows {
       sh"${attrs}struct $name {${r(tys, sep = ", ")}}"
 
     case Defn.Trait(attrs, name, ifaces, members) =>
-      val parents = r(ifaces, sep = ", ")
+      val parents = if (ifaces.nonEmpty) r(ifaces, sep = ", ", pre = " : ") else s()
       val body = brace(r(members.map(i(_))))
-      sh"${attrs}trait $name : $parents $body"
+      sh"${attrs}trait $name$parents $body"
     case Defn.Class(attrs, name, parent, ifaces, members) =>
       val parents = r(parent +: ifaces, sep = ", ")
       val body = brace(r(members.map(i(_))))

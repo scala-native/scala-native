@@ -15,7 +15,9 @@ class Throwable(s: String, private var e: Throwable) extends Object with java.io
   }
 
   def getMessage(): String = s
+
   def getCause(): Throwable = e
+
   def getLocalizedMessage(): String = getMessage()
 
   def fillInStackTrace(): Throwable = ???
@@ -33,74 +35,11 @@ class Throwable(s: String, private var e: Throwable) extends Object with java.io
     this.stackTrace = stackTrace.clone()
   }
 
-  def printStackTrace(): Unit = printStackTrace(System.err)
+  def printStackTrace(): Unit = ???
 
-  def printStackTrace(s: java.io.PrintStream): Unit =
-    printStackTraceImpl(s.println(_))
+  def printStackTrace(s: java.io.PrintStream): Unit = ???
 
-  def printStackTrace(s: java.io.PrintWriter): Unit =
-    printStackTraceImpl(s.println(_))
-
-  private[this] def printStackTraceImpl(sprintln: String => Unit): Unit = {
-    getStackTrace() // will init it if still null
-
-    // Message
-    sprintln(toString)
-
-    // Trace
-    if (stackTrace.length != 0) {
-      var i = 0
-      while (i < stackTrace.length) {
-        sprintln("  at "+stackTrace(i))
-        i += 1
-      }
-    } else {
-      sprintln("  <no stack trace available>")
-    }
-
-    // Causes
-    var wCause: Throwable = this
-    while ((wCause ne wCause.getCause) && (wCause.getCause ne null)) {
-      val parentTrace = wCause.getStackTrace
-      wCause = wCause.getCause
-      val thisTrace = wCause.getStackTrace
-
-      val thisLength = thisTrace.length
-      val parentLength = parentTrace.length
-
-      sprintln("Caused by: " + wCause.toString)
-
-      if (thisLength != 0) {
-        /* Count how many frames are shared between this stack trace and the
-         * parent stack trace, so that we can omit them when printing.
-         */
-        var sameFrameCount: Int = 0
-        while (sameFrameCount < thisLength && sameFrameCount < parentLength &&
-            thisTrace(thisLength-sameFrameCount-1) == parentTrace(parentLength-sameFrameCount-1)) {
-          sameFrameCount += 1
-        }
-
-        /* If at least one, decrement so that the first common frame is still
-         * printed. According to Harmony this is spec'ed and common practice.
-         */
-        if (sameFrameCount > 0)
-          sameFrameCount -= 1
-
-        // Print the non-common frames
-        val lengthToPrint = thisLength - sameFrameCount
-        var i = 0
-        while (i < lengthToPrint) {
-          sprintln("  at "+thisTrace(i))
-          i += 1
-        }
-
-        if (sameFrameCount > 0)
-          sprintln("  ... " + sameFrameCount + " more")
-      } else {
-        sprintln("  <no stack trace available>")
-      }
-    }
-  }
+  def printStackTrace(s: java.io.PrintWriter): Unit = ???
 
   override def toString(): String = {
     val className = getClass.getName

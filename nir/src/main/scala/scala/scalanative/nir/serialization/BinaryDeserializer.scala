@@ -11,11 +11,6 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
 
   private val externs = mutable.UnrolledBuffer.empty[Global]
 
-  private def ext(n: Global) = {
-    externs += n
-    n
-  }
-
   final def deserialize(): (Seq[Global], Seq[Defn]) = {
     val defns = getDefns
     (externs, defns)
@@ -145,17 +140,26 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
       Defn.Struct(getAttrs, getGlobal, getTypes)
 
     case T.TraitDefn =>
-      Defn.Trait(getAttrs, getGlobal, getGlobals.map(ext), getDefns)
+      Defn.Trait(getAttrs, getGlobal, getGlobals, getDefns)
 
     case T.ClassDefn =>
-      Defn.Class(getAttrs, getGlobal, ext(getGlobal), getGlobals.map(ext), getDefns)
+      Defn.Class(getAttrs, getGlobal, getGlobal, getGlobals, getDefns)
 
     case T.ModuleDefn =>
-      Defn.Module(getAttrs, getGlobal, ext(getGlobal), getGlobals.map(ext), getDefns)
+      Defn.Module(getAttrs, getGlobal, getGlobal, getGlobals, getDefns)
   }
 
   private def getGlobals(): Seq[Global] = getSeq(getGlobal)
-  private def getGlobal(): Global = new Global(getStrings, getBool)
+  private def getGlobal(): Global = {
+    val parts  = getStrings
+    val isType = getBool
+    val g      = new Global(parts, isType)
+
+    if (!g.isIntrinsic)
+      externs += new Global(Seq(parts.head), isType)
+
+    g
+  }
 
   private def getInsts(): Seq[Inst] = getSeq(getInst)
   private def getInst(): Inst = Inst(getLocal, getOp)
@@ -219,10 +223,10 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.SizeType       => Type.Size
     case T.UnitType       => Type.Unit
     case T.NothingType    => Type.Nothing
-    case T.ClassType      => Type.Class(ext(getGlobal))
-    case T.ClassValueType => Type.ClassValue(ext(getGlobal))
-    case T.TraitType      => Type.Trait(ext(getGlobal))
-    case T.ModuleType     => Type.Module(ext(getGlobal))
+    case T.ClassType      => Type.Class(getGlobal)
+    case T.ClassValueType => Type.ClassValue(getGlobal)
+    case T.TraitType      => Type.Trait(getGlobal)
+    case T.ModuleType     => Type.Module(getGlobal)
   }
 
   private def getVals(): Seq[Val] = getSeq(getVal)

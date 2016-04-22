@@ -8,10 +8,12 @@ import nir._, Shows._
 
 object ClassHierarchy {
   sealed abstract class Node {
+    def attrs: Seq[Attr]
     def name: Global
   }
 
   final class Trait(
+    val attrs:        Seq[Attr],
     val name:         Global,
     var id:           Int        = -1,
     var traits:       Seq[Node]  = Seq(),
@@ -22,6 +24,7 @@ object ClassHierarchy {
   }
 
   final class Class(
+    val attrs:      Seq[Attr],
     val name:       Global,
     var id:         Int           = -1,
     var range:      Range         = null,
@@ -64,8 +67,6 @@ object ClassHierarchy {
           case (meth: Method) +: rest =>
             val nbase =
               meth.classOverride.map { basemeth =>
-                println(s"overrriding ${basemeth.name} with ${meth.name}")
-                println(s"basemeth in ${basemeth.in.name}")
                 base.updated(basemeth.vindex, meth.value)
               }.getOrElse(base)
             performOverrides(nbase, rest)
@@ -81,6 +82,7 @@ object ClassHierarchy {
 
   final class Method(
     val in:         Node,
+    val attrs:      Seq[Attr],
     val name:       Global,
     val ty:         Type,
     val isConcrete: Boolean,
@@ -130,6 +132,7 @@ object ClassHierarchy {
 
   final class Field(
     val in:    Class,
+    val attrs: Seq[Attr],
     val name:  Global,
     val ty:    Type
   ) extends Node {
@@ -137,19 +140,19 @@ object ClassHierarchy {
   }
 
   final class Graph(
-    val nodes:      Map[Global, Node],
-    val classes:    Seq[Class],
-    val traits: Seq[Trait],
-    val methods:    Seq[Method],
-    val fields:     Seq[Field]
+    val nodes:   Map[Global, Node],
+    val classes: Seq[Class],
+    val traits:  Seq[Trait],
+    val methods: Seq[Method],
+    val fields:  Seq[Field]
   )
 
   def apply(defns: Seq[Defn]): Graph = {
-    val nodes      = mutable.Map.empty[Global, Node]
-    val classes    = mutable.UnrolledBuffer.empty[Class]
-    val traits = mutable.UnrolledBuffer.empty[Trait]
-    val methods    = mutable.UnrolledBuffer.empty[Method]
-    val fields     = mutable.UnrolledBuffer.empty[Field]
+    val nodes   = mutable.Map.empty[Global, Node]
+    val classes = mutable.UnrolledBuffer.empty[Class]
+    val traits  = mutable.UnrolledBuffer.empty[Trait]
+    val methods = mutable.UnrolledBuffer.empty[Method]
+    val fields  = mutable.UnrolledBuffer.empty[Field]
 
     def enter[T <: Node](name: Global, node: T): T = {
       nodes += name -> node
@@ -173,22 +176,22 @@ object ClassHierarchy {
       )
 
       classes.foreach { case (Type.Class(clsname), clsmethods) =>
-        val clsnode = enter(clsname, new Class(clsname))
+        val clsnode = enter(clsname, new Class(Seq(), clsname))
         clsnode.members = clsmethods.map { case Val.Global(name, Type.Ptr(ty)) =>
-          enter(name, new Method(clsnode, name, ty, isConcrete = true))
+          enter(name, new Method(clsnode, Seq(), name, ty, isConcrete = true))
         }
       }
     }
 
     def enterMember(in: Node, defn: Defn): Unit = defn match {
       case defn: Defn.Var =>
-        enter(defn.name, new Field(in.asInstanceOf[Class], defn.name, defn.ty))
+        enter(defn.name, new Field(in.asInstanceOf[Class], defn.attrs, defn.name, defn.ty))
 
       case defn: Defn.Declare =>
-        enter(defn.name, new Method(in, defn.name, defn.ty, isConcrete = false))
+        enter(defn.name, new Method(in, defn.attrs, defn.name, defn.ty, isConcrete = false))
 
       case defn: Defn.Define =>
-        enter(defn.name, new Method(in, defn.name, defn.ty, isConcrete = true))
+        enter(defn.name, new Method(in, defn.attrs, defn.name, defn.ty, isConcrete = true))
 
       case _ =>
         unreachable
@@ -196,15 +199,15 @@ object ClassHierarchy {
 
     def enterDefn(defn: Defn): Unit = defn match {
       case defn: Defn.Trait =>
-        val node = enter(defn.name, new Trait(defn.name))
+        val node = enter(defn.name, new Trait(defn.attrs, defn.name))
         defn.members.foreach(enterMember(node, _))
 
       case defn: Defn.Class =>
-        val node = enter(defn.name, new Class(defn.name))
+        val node = enter(defn.name, new Class(defn.attrs, defn.name))
         defn.members.foreach(enterMember(node, _))
 
       case defn: Defn.Module =>
-        val node = enter(defn.name, new Class(defn.name))
+        val node = enter(defn.name, new Class(defn.attrs, defn.name))
         defn.members.foreach(enterMember(node, _))
 
       case _ =>
@@ -249,7 +252,7 @@ object ClassHierarchy {
     def enrich(defn: Defn): Unit = defn match {
       case defn: Defn.Declare                         => enrichMethod(defn.name, defn.attrs)
       case defn: Defn.Define                          => enrichMethod(defn.name, defn.attrs)
-      case Defn.Trait(_, n, ifaces, members)      => enrichTrait(n, ifaces, members)
+      case Defn.Trait(_, n, ifaces, members)          => enrichTrait(n, ifaces, members)
       case Defn.Class(_, n, parent, ifaces, members)  => enrichClass(n, parent, ifaces, members)
       case Defn.Module(_, n, parent, ifaces, members) => enrichClass(n, parent, ifaces, members)
       case _                                          => ()

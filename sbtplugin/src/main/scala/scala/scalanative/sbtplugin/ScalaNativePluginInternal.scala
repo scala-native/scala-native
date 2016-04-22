@@ -62,7 +62,7 @@ object ScalaNativePluginInternal {
       val verbose   = nativeVerbose.value
       val opts      = new NativeOpts(classpath, appll.getAbsolutePath, entry, verbose)
 
-      println((mainClass in Compile).value)
+      //println((mainClass in Compile).value)
 
       IO.createDirectory(target)
       compileNir(opts)

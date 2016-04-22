@@ -73,12 +73,12 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pa
       val classConstVal  = Val.Struct(classTypeStructName, typeVal +: vtable)
       val classConst     = Defn.Const(Seq(), classConstName, classTypeStructTy, classConstVal)
 
-      val methods = members.collect {
+      val hoisted = members.collect {
         case defn: Defn.Define =>
           defn.copy(attrs = defn.attrs.filterNot(_.isInstanceOf[Attr.Override]))
       }
 
-      Seq(classTypeStruct, classStruct, classConst) ++ methods
+      Seq(classTypeStruct, classStruct, classConst) ++ hoisted
   }
 
   override def preInst =  {

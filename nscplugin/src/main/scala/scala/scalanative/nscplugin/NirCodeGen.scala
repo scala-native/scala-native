@@ -104,7 +104,6 @@ abstract class NirCodeGen extends PluginComponent
           ()
         else {
           val defn = genClass(cd)
-          println(sh"$defn")
           genIRFile(cunit, sym, Seq(defn))
         }
       }
@@ -113,7 +112,6 @@ abstract class NirCodeGen extends PluginComponent
     def genClass(cd: ClassDef): Defn = scoped (
       curClassSym := cd.symbol
     ) {
-      println(cd)
       val sym     = cd.symbol
       val body    = cd.impl.body
       def attrs   = genClassAttrs(sym)
@@ -250,16 +248,21 @@ abstract class NirCodeGen extends PluginComponent
         val paramtys = params.map(p => genType(p.tpe))
         val selfty   = genType(sym.owner.tpe)
         val retty    = genType(res)
+
         Type.Function(Seq(selfty), retty)
 
       case sym: MethodSymbol =>
         val params    = sym.paramLists.flatten
         val paramtys  = params.map(p => genType(p.tpe))
-        val selfty    = genType(sym.owner.tpe)
+        val owner     = sym.owner
+        val selfty    =
+          if (isExternalModule(owner)) None
+          else Some(genType(sym.owner.tpe))
         val retty     =
           if (sym.isClassConstructor) Type.Unit
           else genType(sym.tpe.resultType)
-        Type.Function(selfty +: paramtys, retty)
+
+        Type.Function(selfty ++: paramtys, retty)
     }
 
     def defParamSymbols(dd: DefDef): List[Symbol] = {
@@ -1105,13 +1108,17 @@ abstract class NirCodeGen extends PluginComponent
       val name         = genMethodName(sym)
       val sig          = genMethodSig(sym)
       val (args, last) = genArgs(argsp, focus)
+      val external     = isExternalModule(sym.owner)
       val method       =
-        if (statically)
+        if (statically || external)
           last withValue Val.Global(name, nir.Type.Ptr(sig))
         else
           last withOp Op.Method(sig, self, name)
+      val values =
+        if (external) args
+        else self +: args
 
-      method withOp Op.Call(sig, method.value, self +: args)
+      method withOp Op.Call(sig, method.value, values)
     }
 
     def genArgs(argsp: Seq[Tree], focus: Focus): (Seq[Val], Focus) = {

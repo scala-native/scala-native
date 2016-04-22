@@ -42,23 +42,49 @@ import nir._
  *  eliminated by earlier passes or not present in the first place),
  *  the accessor is not emitted.
  *
+ *  If a module is external (used for interop with C code) then all
+ *  the members are hoisted outside as LLVM declarations, removing
+ *  the module prefix in the name.
+ *
  *  Eliminates:
  *  - Type.Module
  *  - Op.Module
  *  - Defn.Module
  */
 class ModuleLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pass {
+  private def stripName(n: Global): Global =
+    new Global(n.parts.tail, n.isType)
+
+  private def hoist(defns: Seq[Defn]): (Seq[Defn], Seq[Defn]) = {
+    def isExternal(defn: Defn): Boolean =
+      defn.attrs.exists(_ == Attr.External)
+    val hoisted = defns.collect {
+      case defn: Defn.Declare if isExternal(defn) =>
+        defn.copy(name = stripName(defn.name),
+                  attrs = defn.attrs.filterNot(_ == Attr.External))
+      case defn: Defn.Const if isExternal(defn) =>
+        defn.copy(name = stripName(defn.name))
+      case defn: Defn.Var if isExternal(defn) =>
+        defn.copy(name = stripName(defn.name))
+    }
+    val rest = defns.filterNot(isExternal)
+
+    (hoisted, rest)
+  }
+
   override def preDefn = {
     case Defn.Module(attrs, name, parent, ifaces, members) =>
-      val cls     = chg.nodes(name).asInstanceOf[ClassHierarchy.Class]
-      val clsDefn = Defn.Class(attrs, name, parent, ifaces, members)
+      val cls             = chg.nodes(name).asInstanceOf[ClassHierarchy.Class]
+      val (hoisted, rest) = hoist(members)
+      val clsDefn         = Defn.Class(attrs, name, parent, ifaces, rest)
 
       val instanceVal = Val.ClassValue(name, cls.fields.map(fld => Val.Zero(fld.ty)))
       val instance    = Defn.Var(Seq(), name + "instance", Type.ClassValue(name), instanceVal)
       val instanceRef = Val.Global(name + "instance", Type.Ptr(Type.ClassValue(name)))
 
       val accessor =
-        if (isStaticModule(name)) Seq()
+        if (isStaticModule(name))
+          Seq()
         else {
           val needsInitName = name ++ Seq("needs", "init")
           val needsInit     = Defn.Var(Seq(), needsInitName, Type.Bool, Val.True)
@@ -94,7 +120,7 @@ class ModuleLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends P
           Seq(needsInit, ensureInit)
         }
 
-      Seq(clsDefn, instance) ++ accessor
+      Seq(clsDefn, instance) ++ accessor ++ hoisted
   }
 
   override def preInst = {
@@ -119,7 +145,31 @@ class ModuleLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends P
     case Type.Module(n) => Type.Class(n)
   }
 
+  override def preVal = {
+    case Val.Global(n @ ExternalRef(), ty) =>
+      Val.Global(stripName(n), ty)
+  }
+
   def isStaticModule(name: Global): Boolean =
     chg.nodes(name).isInstanceOf[ClassHierarchy.Class] &&
     (!chg.nodes.contains(name + "init"))
+
+  def isExternalModule(name: Global): Boolean =
+    chg.nodes.get(name) match {
+      case Some(cls: ClassHierarchy.Class) if cls.attrs.exists(_ == Attr.External) =>
+        true
+      case _ =>
+        false
+    }
+
+  object ExternalRef {
+    def unapply(name: Global): Boolean = {
+      chg.nodes.get(name) match {
+        case Some(node) if node.attrs.exists(_ == Attr.External) =>
+          true
+        case _ =>
+          false
+      }
+    }
+  }
 }

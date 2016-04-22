@@ -3,6 +3,7 @@ package nir
 
 sealed abstract class Defn {
   def name: Global
+  def attrs: Seq[Attr]
   def members: Seq[Defn] = Seq()
 }
 object Defn {
@@ -25,7 +26,7 @@ object Defn {
                           name: Global,
                           fieldtys: Seq[Type]) extends Defn
 
-  // scala
+  // high level
   final case class Trait(attrs: Seq[Attr],
                          name: Global,
                          traits: Seq[Global],

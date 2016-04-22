@@ -2,6 +2,7 @@ package scala.scalanative
 package compiler
 package codegen
 
+import java.lang.{Integer => JInt, Long => JLong, Float => JFloat, Double => JDouble}
 import scala.collection.mutable
 import util.unsupported
 import util.{sh, Show}
@@ -123,6 +124,8 @@ object GenTextualLLVM extends GenShow {
     case Val.I16(v)         => v.toString
     case Val.I32(v)         => v.toString
     case Val.I64(v)         => v.toString
+    case Val.F32(v)         => v.toString
+    case Val.F64(v)         => v.toString
     case Val.Struct(n, vs)  => sh"{ ${r(vs, sep = ", ")} }"
     case Val.Array(_, vs)   => sh"[ ${r(vs, sep = ", ")} ]"
     case Val.Chars(v)       => s("c\"", v, "\"")
