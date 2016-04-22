@@ -5,6 +5,8 @@ import native._
 
 @extern
 object Intrinsics {
+  def `llvm.sqrt.f32`(value: Float): Float = extern
+  def `llvm.sqrt.f64`(value: Double): Double = extern
   def `llvm.powi.f32`(value: Float, power: Int): Float = extern
   def `llvm.powi.f64`(value: Double, power: Int): Double = extern
   def `llvm.sin.f32`(value: Float): Float = extern
@@ -28,9 +30,11 @@ object Intrinsics {
   def `llvm.fabs.f32`(value: Float): Float = extern
   def `llvm.fabs.f64`(value: Double): Double = extern
   def `llvm.minnum.f32`(left: Float, right: Float): Float = extern
-  def `llvm.maxnum.f64`(left: Float, right: Float): Float = extern
-  def `llvm.copysign.f32`(value: Float, sgn: Float): Float = extern
-  def `llvm.copysign.f64`(value: Double, sgn: Double): Double = extern
+  def `llvm.minnum.f64`(left: Double, right: Double): Double = extern
+  def `llvm.maxnum.f32`(left: Float, right: Float): Float = extern
+  def `llvm.maxnum.f64`(left: Double, right: Double): Double = extern
+  def `llvm.copysign.f32`(magn: Float, sgn: Float): Float = extern
+  def `llvm.copysign.f64`(magn: Double, sgn: Double): Double = extern
   def `llvm.floor.f32`(value: Float): Float = extern
   def `llvm.floor.f64`(value: Double): Double = extern
   def `llvm.ceil.f32`(value: Float): Float = extern
