@@ -7,17 +7,24 @@ import scalanative.util.{sh, Show}, Show.{Repeat => r}
 
 trait NirNameEncoding { self: NirCodeGen =>
   import global.{Name => _, _}, definitions._
+  import nirAddons.nirDefinitions._
+
+  private lazy val StringClassName  = nir.Global.Type("java.lang.String")
+  private lazy val StringModuleName = nir.Global.Val("java.lang.String")
 
   def genClassName(sym: Symbol): nir.Global = {
-    val id = sym.fullName.toString
-
-    sym match {
+    val id = {
+      val fullName = sym.fullName.toString
+      if (fullName == "java.lang._String") "java.lang.String" else fullName
+    }
+    val name = sym match {
       case ObjectClass                               => nir.Nrt.Object.name
       case _ if sym.isModule                         => genClassName(sym.moduleClass)
       case _ if sym.isModuleClass || sym.isImplClass => nir.Global.Val(id)
       case _ if sym.isInterface                      => nir.Global.Type(id)
       case _                                         => nir.Global.Type(id)
     }
+    name
   }
 
   def genFieldName(sym: Symbol) = {

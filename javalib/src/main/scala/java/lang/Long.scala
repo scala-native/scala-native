@@ -24,7 +24,7 @@ final class Long(val longValue: scala.Long)
     Long.compare(longValue, that.longValue)
 
   @inline override def toString(): String =
-    Long.toString(longValue)
+    String.valueOf(longValue)
 }
 
 object Long {

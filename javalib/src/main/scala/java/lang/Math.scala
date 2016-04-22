@@ -1,5 +1,4 @@
-package java
-package lang
+package java.lang
 
 import scalanative.runtime.Intrinsics._
 

@@ -16,7 +16,7 @@ final class Integer(val intValue: scala.Int)
   }
 
   @inline override def hashCode(): Int =
-    intValue
+    Integer.hashCode(intValue)
 
   @inline override def compareTo(that: Integer): Int =
     Integer.compare(intValue, that.intValue)
@@ -67,7 +67,8 @@ object Integer {
   private def parseIntImpl(s: String, radix: scala.Int,
       signed: scala.Boolean): scala.Int = ???
 
-  @inline def toString(i: scala.Int): String = "" + i
+  @inline def toString(i: scala.Int): String =
+    String.valueOf(i)
 
   @inline def toUnsignedString(i: Int, radix: Int): String =
     toStringBase(i, radix)
@@ -158,7 +159,7 @@ object Integer {
 
   @inline def toUnsignedString(i: scala.Int): String = toUnsignedString(i, 10)
 
-  @inline def hashCode(value: Int): Int = value.hashCode
+  @inline def hashCode(value: Int): Int = value
 
   @inline def sum(a: Int, b: Int): Int = a + b
   @inline def max(a: Int, b: Int): Int = Math.max(a, b)

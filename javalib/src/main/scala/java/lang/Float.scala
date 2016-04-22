@@ -54,7 +54,7 @@ object Float {
 
   @inline def parseFloat(s: String): scala.Float = ???
 
-  @inline def toString(f: scala.Float): String = ???
+  @inline def toString(f: scala.Float): String = String.valueOf(f)
 
   @inline def compare(a: scala.Float, b: scala.Float): scala.Int = ???
 

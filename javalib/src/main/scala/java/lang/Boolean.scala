@@ -32,7 +32,7 @@ object Boolean {
     (s != null) && s.equalsIgnoreCase("true")
 
   @inline def toString(b: scala.Boolean): String =
-    "" + b
+    String.valueOf(b)
 
   @inline def compare(x: scala.Boolean, y: scala.Boolean): scala.Int =
     if (x == y) 0 else if (x) 1 else -1

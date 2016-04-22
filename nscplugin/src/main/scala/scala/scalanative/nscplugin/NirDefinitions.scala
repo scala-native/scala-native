@@ -9,6 +9,9 @@ trait NirDefinitions { self: NirGlobalAddons =>
   import rootMirror._
 
   object nirDefinitions {
+    lazy val NStringClass  = getRequiredClass("java.lang._String")
+    lazy val NStringModule = getRequiredModule("java.lang._String")
+
     lazy val InlineClass   = getRequiredClass("scala.inline")
     lazy val NoInlineClass = getRequiredClass("scala.noinline")
 

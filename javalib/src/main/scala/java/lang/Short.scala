@@ -57,7 +57,7 @@ object Short {
   }
 
   @inline def toString(s: scala.Short): String =
-    "" + s
+    String.valueOf(s)
 
   @inline def compare(x: scala.Short, y: scala.Short): scala.Int =
     x - y

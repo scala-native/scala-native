@@ -16,7 +16,7 @@ final class Byte(override val byteValue: scala.Byte)
   }
 
   @inline override def hashCode(): Int =
-    byteValue
+    Byte.hashCode(byteValue)
 
   @inline override def compareTo(that: Byte): Int =
     Byte.compare(byteValue, that.byteValue)
@@ -57,8 +57,11 @@ object Byte {
   }
 
   @inline def toString(b: scala.Byte): String =
-    "" + b
+    String.valueOf(b)
 
   @inline def compare(x: scala.Byte, y: scala.Byte): scala.Int =
     x - y
+
+  @inline def hashCode(b: scala.Byte): scala.Int =
+    b
 }
