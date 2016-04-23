@@ -62,12 +62,12 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
           defn.copy(ty = txType(ty), blocks = blocks.flatMap(txBlock))
         case defn @ Defn.Struct(_, _, fieldtys) =>
           defn.copy(fieldtys = fieldtys.map(txType))
-        case defn @ Defn.Trait(_, _, _, members) =>
-          defn.copy(members = members.flatMap(txDefn))
-        case defn @ Defn.Class(_, _, _, _, members) =>
-          defn.copy(members = members.flatMap(txDefn))
-        case defn @ Defn.Module(_, _, _, _, members) =>
-          defn.copy(members = members.flatMap(txDefn))
+        case defn @ Defn.Trait(_, _, _) =>
+          defn
+        case defn @ Defn.Class(_, _, _, _) =>
+          defn
+        case defn @ Defn.Module(_, _, _, _) =>
+          defn
       }
 
       hook(postDefn, post, Seq(post))

@@ -22,6 +22,9 @@ final class Global(val parts: Seq[String], val isType: Boolean) {
 
   def isIntrinsic: Boolean =
     parts.headOption.fold(false)(_ == "nrt")
+  def owner: Global =
+    if (parts.length <= 1) this
+    else new Global(Seq(parts.head), isType)
 
   def +(tag: String): Global =
     new Global(parts :+ tag, isType)

@@ -14,7 +14,7 @@ sealed abstract class Assembly {
 
 object Assembly {
   final case class Dir private[Assembly] (val base: File) extends Assembly {
-    private val entries: Map[Global, String] = {
+    private val entries: Map[Global, BinaryDeserializer] = {
       val baseabs = base.getAbsolutePath()
       val files =
         FileUtils.listFiles(
@@ -35,20 +35,19 @@ object Assembly {
             throw new LinkingError(s"can't recognized assembly file: $relpath")
         val parts = rel.split("/").toSeq
         val name = new Global(Seq(parts.mkString(".")), isType)
-        (name -> fileabs)
+        (name -> deserializeBinaryFile(fileabs))
       }.toMap
     }
-    //println(s"discovered dir assembly $base")
-    //println(s"entries: $entries")
+    println(s"discovered dir assembly $base")
 
-    def contains(entry: Global) = entries.contains(entry)
+    def contains(name: Global) =
+      entries.contains(name.owner)
 
-    def load(entry: Global) = entries.get(entry).map { path =>
-      //println(s"loaded $entry from $base")
-      val (deps, defns) = deserializeBinaryFile(path)
-      assert(defns.length == 1, "non-assembly nir files may contain only a single definition")
-      (deps, defns.head)
-    }
+    def load(name: Global): Option[(Seq[Global], Defn)] =
+      entries.get(name.owner).flatMap { deserializer =>
+        println(s"deserializing $name")
+        deserializer.deserialize(name)
+      }
   }
 
   final case class Jar private[Assembly] (val base: File) extends Assembly {

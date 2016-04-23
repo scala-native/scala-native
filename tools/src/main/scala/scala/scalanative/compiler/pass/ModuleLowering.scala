@@ -73,10 +73,9 @@ class ModuleLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends P
   }
 
   override def preDefn = {
-    case Defn.Module(attrs, name, parent, ifaces, members) =>
-      val cls             = chg.nodes(name).asInstanceOf[ClassHierarchy.Class]
-      val (hoisted, rest) = hoist(members)
-      val clsDefn         = Defn.Class(attrs, name, parent, ifaces, rest)
+    case Defn.Module(attrs, name, parent, ifaces) =>
+      val cls     = chg.nodes(name).asInstanceOf[ClassHierarchy.Class]
+      val clsDefn = Defn.Class(attrs, name, parent, ifaces)
 
       val instanceVal = Val.ClassValue(name, cls.fields.map(fld => Val.Zero(fld.ty)))
       val instance    = Defn.Var(Seq(), name + "instance", Type.ClassValue(name), instanceVal)
@@ -120,7 +119,11 @@ class ModuleLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends P
           Seq(needsInit, ensureInit)
         }
 
-      Seq(clsDefn, instance) ++ accessor ++ hoisted
+      Seq(clsDefn, instance) ++ accessor
+
+    // TODO: external hoisting
+    case _: Defn.Define | _: Defn.Declare | _: Defn.Var =>
+      ???
   }
 
   override def preInst = {

@@ -104,12 +104,12 @@ abstract class NirCodeGen extends PluginComponent
           ()
         else {
           val defn = genClass(cd)
-          genIRFile(cunit, sym, Seq(defn))
+          genIRFile(cunit, sym, defn)
         }
       }
     }
 
-    def genClass(cd: ClassDef): Defn = scoped (
+    def genClass(cd: ClassDef): Seq[Defn] = scoped (
       curClassSym := cd.symbol
     ) {
       val sym     = cd.symbol
@@ -123,11 +123,11 @@ abstract class NirCodeGen extends PluginComponent
       def members = genClassMembers(sym, body)
 
       if (isModule(sym))
-        Defn.Module(attrs, name, parent, traits, members)
+        Defn.Module(attrs, name, parent, traits) +: members
       else if (sym.isInterface)
-        Defn.Trait(attrs, name, traits, members)
+        Defn.Trait(attrs, name, traits) +: members
       else
-        Defn.Class(attrs, name, parent, traits, members)
+        Defn.Class(attrs, name, parent, traits) +: members
     }
 
     def genClassAttrs(sym: Symbol): Seq[Attr] =

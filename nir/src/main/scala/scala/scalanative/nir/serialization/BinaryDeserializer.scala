@@ -9,12 +9,30 @@ import nir.{Tags => T}
 final class BinaryDeserializer(buffer: ByteBuffer) {
   import buffer._
 
-  private val externs = mutable.UnrolledBuffer.empty[Global]
-
-  final def deserialize(): (Seq[Global], Seq[Defn]) = {
-    val defns = getDefns
-    (externs, defns)
+  private lazy val header: Map[Global, Int] = {
+    buffer.position(0)
+    val (_, pairs) = scoped(getSeq((getGlobal, getInt)))
+    val map = pairs.toMap
+    this.deps = null
+    println(map)
+    map
   }
+
+  private var deps: mutable.UnrolledBuffer[Global] = _
+  private def scoped[T](f: => T): (Seq[Global], T) = {
+    this.deps = mutable.UnrolledBuffer.empty[Global]
+    val res = f
+    val deps = this.deps
+    this.deps = null
+    (deps, res)
+  }
+
+  final def deserialize(g: Global): Option[(Seq[Global], Defn)] =
+    header.get(g).map { case offset =>
+      println(s"deserializing $g at $offset")
+      buffer.position(offset)
+      scoped(getDefn)
+    }
 
   private def getSeq[T](getT: => T): Seq[T] =
     (1 to getInt).map(_ => getT).toSeq
@@ -140,25 +158,20 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
       Defn.Struct(getAttrs, getGlobal, getTypes)
 
     case T.TraitDefn =>
-      Defn.Trait(getAttrs, getGlobal, getGlobals, getDefns)
+      Defn.Trait(getAttrs, getGlobal, getGlobals)
 
     case T.ClassDefn =>
-      Defn.Class(getAttrs, getGlobal, getGlobal, getGlobals, getDefns)
+      Defn.Class(getAttrs, getGlobal, getGlobal, getGlobals)
 
     case T.ModuleDefn =>
-      Defn.Module(getAttrs, getGlobal, getGlobal, getGlobals, getDefns)
+      Defn.Module(getAttrs, getGlobal, getGlobal, getGlobals)
   }
 
   private def getGlobals(): Seq[Global] = getSeq(getGlobal)
   private def getGlobal(): Global = {
-    val parts  = getStrings
-    val isType = getBool
-    val g      = new Global(parts, isType)
-
-    if (!g.isIntrinsic)
-      externs += new Global(Seq(parts.head), isType)
-
-    g
+    val name = new Global(getStrings, getBool)
+    deps += name
+    name
   }
 
   private def getInsts(): Seq[Inst] = getSeq(getInst)

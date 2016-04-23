@@ -15,21 +15,31 @@ final class Linker(paths: Seq[String]) {
     }.flatten
 
   def link(entry: Global): (Seq[Global], Seq[Defn]) = {
-    var deps       = mutable.Stack[Global](entry)
-    var defns      = mutable.UnrolledBuffer.empty[Defn]
     val resolved   = mutable.Set.empty[Global]
     var unresolved = mutable.Set.empty[Global]
+    var worklist   = mutable.Stack[Global](entry)
+    var defns      = mutable.UnrolledBuffer.empty[Defn]
 
-    while (deps.nonEmpty) {
-      val dep = deps.pop()
-      if (!resolved.contains(dep) && !dep.isIntrinsic) {
-        load(dep).fold {
-          unresolved += dep
-        } { case (newdeps, newdefn) =>
-          deps.pushAll(newdeps)
-          defns    += newdefn
-          resolved += dep
+    while (worklist.nonEmpty) {
+      val workitem = worklist.pop()
+      println(s"trying $workitem")
+
+      if (!workitem.isIntrinsic &&
+          !resolved.contains(workitem) &&
+          !unresolved.contains(workitem)) {
+        println(s"loading $workitem")
+
+        load(workitem).fold[Unit] {
+          println(s"failed to resolve $workitem")
+          unresolved += workitem
+        } { case (deps, defn) =>
+          println(s"resolved $workitem")
+          resolved  += workitem
+          defns     += defn
+          worklist ++= deps
         }
+      } else {
+        println(s"already handled $workitem")
       }
     }
 

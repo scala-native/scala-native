@@ -52,7 +52,7 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pa
   private val zero_i8_* = Val.Zero(i8_*)
 
   override def preDefn = {
-    case Defn.Class(_, name @ ClassRef(cls), _, _, members) =>
+    case Defn.Class(_, name @ ClassRef(cls), _, _) =>
       val data      = cls.fields.map(_.ty)
       val vtable    = cls.vtable
       val vtableTys = vtable.map(_.ty)
@@ -73,12 +73,11 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pa
       val classConstVal  = Val.Struct(classTypeStructName, typeVal +: vtable)
       val classConst     = Defn.Const(Seq(), classConstName, classTypeStructTy, classConstVal)
 
-      val hoisted = members.collect {
-        case defn: Defn.Define =>
-          defn.copy(attrs = defn.attrs.filterNot(_.isInstanceOf[Attr.Override]))
-      }
+      Seq(classTypeStruct, classStruct, classConst)
 
-      Seq(classTypeStruct, classStruct, classConst) ++ hoisted
+    // TODO: hoisting
+    case _: Defn.Define | _: Defn.Declare | _: Defn.Var =>
+      ???
   }
 
   override def preInst =  {

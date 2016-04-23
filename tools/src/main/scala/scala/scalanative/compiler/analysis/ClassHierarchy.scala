@@ -81,7 +81,6 @@ object ClassHierarchy {
   }
 
   final class Method(
-    val in:         Node,
     val attrs:      Seq[Attr],
     val name:       Global,
     val ty:         Type,
@@ -90,6 +89,8 @@ object ClassHierarchy {
     var overrides:  Seq[Method] = Seq(),
     var overriden:  Seq[Method] = Seq()
   ) extends Node {
+    def in: Node = ???
+
     def isVirtual = !isConcrete || overriden.nonEmpty
 
     def isStatic = !isVirtual
@@ -131,11 +132,11 @@ object ClassHierarchy {
   }
 
   final class Field(
-    val in:    Class,
     val attrs: Seq[Attr],
     val name:  Global,
     val ty:    Type
   ) extends Node {
+    def in: Class = ???
     def index = in.fields.indexOf(this)
   }
 
@@ -177,41 +178,33 @@ object ClassHierarchy {
 
       classes.foreach { case (Type.Class(clsname), clsmethods) =>
         val clsnode = enter(clsname, new Class(Seq(), clsname))
-        clsnode.members = clsmethods.map { case Val.Global(name, Type.Ptr(ty)) =>
-          enter(name, new Method(clsnode, Seq(), name, ty, isConcrete = true))
+        clsmethods.foreach { case Val.Global(name, Type.Ptr(ty)) =>
+          enter(name, new Method(Seq(), name, ty, isConcrete = true))
         }
       }
-    }
-
-    def enterMember(in: Node, defn: Defn): Unit = defn match {
-      case defn: Defn.Var =>
-        enter(defn.name, new Field(in.asInstanceOf[Class], defn.attrs, defn.name, defn.ty))
-
-      case defn: Defn.Declare =>
-        enter(defn.name, new Method(in, defn.attrs, defn.name, defn.ty, isConcrete = false))
-
-      case defn: Defn.Define =>
-        enter(defn.name, new Method(in, defn.attrs, defn.name, defn.ty, isConcrete = true))
-
-      case _ =>
-        unreachable
     }
 
     def enterDefn(defn: Defn): Unit = defn match {
       case defn: Defn.Trait =>
         val node = enter(defn.name, new Trait(defn.attrs, defn.name))
-        defn.members.foreach(enterMember(node, _))
 
       case defn: Defn.Class =>
         val node = enter(defn.name, new Class(defn.attrs, defn.name))
-        defn.members.foreach(enterMember(node, _))
 
       case defn: Defn.Module =>
         val node = enter(defn.name, new Class(defn.attrs, defn.name))
-        defn.members.foreach(enterMember(node, _))
+
+      case defn: Defn.Var =>
+        enter(defn.name, new Field(defn.attrs, defn.name, defn.ty))
+
+      case defn: Defn.Declare =>
+        enter(defn.name, new Method(defn.attrs, defn.name, defn.ty, isConcrete = false))
+
+      case defn: Defn.Define =>
+        enter(defn.name, new Method(defn.attrs, defn.name, defn.ty, isConcrete = true))
 
       case _ =>
-        ()
+        unreachable
     }
 
     def enrichMethod(name: Global, attrs: Seq[Attr]): Unit = {
@@ -228,34 +221,30 @@ object ClassHierarchy {
     }
 
     def enrichClass(name: Global, parentName: Global,
-                    traitNames: Seq[Global], members: Seq[Defn]): Unit = {
+                    traitNames: Seq[Global]): Unit = {
       val node          = nodes(name).asInstanceOf[Class]
       val parent        = nodes(parentName).asInstanceOf[Class]
       val traits        = traitNames.map(nodes(_).asInstanceOf[Trait])
       node.parent       = Some(parent)
       node.traits       = traits
-      node.members      = members.map(m => nodes(m.name))
       parent.subclasses = parent.subclasses :+ node
       traits.foreach { iface =>
         iface.implementors = iface.implementors :+ node
       }
-      members.foreach(enrich)
     }
 
-    def enrichTrait(name: Global, traits: Seq[Global], members: Seq[Defn]): Unit = {
+    def enrichTrait(name: Global, traits: Seq[Global]): Unit = {
       val node     = nodes(name).asInstanceOf[Trait]
       node.traits  = traits.map(nodes(_))
-      node.members = members.map(m => nodes(m.name))
-      members.foreach(enrich)
     }
 
     def enrich(defn: Defn): Unit = defn match {
-      case defn: Defn.Declare                         => enrichMethod(defn.name, defn.attrs)
-      case defn: Defn.Define                          => enrichMethod(defn.name, defn.attrs)
-      case Defn.Trait(_, n, ifaces, members)          => enrichTrait(n, ifaces, members)
-      case Defn.Class(_, n, parent, ifaces, members)  => enrichClass(n, parent, ifaces, members)
-      case Defn.Module(_, n, parent, ifaces, members) => enrichClass(n, parent, ifaces, members)
-      case _                                          => ()
+      case defn: Defn.Declare                => enrichMethod(defn.name, defn.attrs)
+      case defn: Defn.Define                 => enrichMethod(defn.name, defn.attrs)
+      case Defn.Trait(_, n, ifaces)          => enrichTrait(n, ifaces)
+      case Defn.Class(_, n, parent, ifaces)  => enrichClass(n, parent, ifaces)
+      case Defn.Module(_, n, parent, ifaces) => enrichClass(n, parent, ifaces)
+      case _                                 => ()
     }
 
     def identify(): Unit = {

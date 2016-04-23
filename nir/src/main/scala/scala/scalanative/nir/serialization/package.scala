@@ -34,10 +34,11 @@ package object serialization {
                           buffer: ByteBuffer = default): Unit =
     serializeFile(serializeBinary, defns, path, buffer)
 
-  def deserializeBinaryFile(path: String): (Seq[Global], Seq[Defn]) = {
-    val bytes = Files.readAllBytes(Paths.get(path))
-    val buffer = ByteBuffer.wrap(bytes)
-    val deserializer = new BinaryDeserializer(buffer)
-    deserializer.deserialize()
-  }
+  def deserializeBinaryFile(path: String): BinaryDeserializer =
+    new BinaryDeserializer({
+      println(s"opened $path")
+      val bytes = Files.readAllBytes(Paths.get(path))
+      val buffer = ByteBuffer.wrap(bytes)
+      buffer
+    })
 }

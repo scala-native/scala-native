@@ -45,17 +45,16 @@ class TraitLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pa
   }
 
   override def preDefn = {
-    case Defn.Trait(_, name @ TraitRef(trt), _, members) =>
+    case Defn.Trait(_, name @ TraitRef(trt), _) =>
       val typeId    = Val.I32(trt.id)
       val typeName  = Val.String(name.parts.head)
       val typeVal   = Val.Struct(Nrt.Type.name, Seq(Nrt.Type_type, typeId, typeName))
       val typeConst = Defn.Const(Seq(), name + "const", Nrt.Type, typeVal)
 
-      val methods: Seq[Defn.Define] = members.collect {
-        case defn: Defn.Define => defn
-      }
+      Seq(typeConst)
 
-      typeConst +: methods
+    // TODO: hoisting of trait methods
+    case _: Defn.Define => ???
   }
 
   override def preInst =  {

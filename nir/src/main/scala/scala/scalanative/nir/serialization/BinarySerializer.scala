@@ -3,21 +3,44 @@ package nir
 package serialization
 
 import java.nio.ByteBuffer
+import scala.collection.mutable
 import nir.{Tags => T}
 
 final class BinarySerializer(buffer: ByteBuffer) {
   import buffer._
 
-  final def serialize(defns: Seq[Defn]) = putDefns(defns)
+  final def serialize(defns: Seq[Defn]): Unit = {
+    val names = defns.map(_.name)
+    val positions = mutable.UnrolledBuffer.empty[Int]
 
-  private def putSeq[T](putT: T => Unit)(seq: Seq[T]) = {
+    putSeq(names) { n =>
+      putGlobal(n)
+      positions += buffer.position
+      putInt(0)
+    }
+
+    val offsets = defns.map { defn =>
+      val pos = buffer.position
+      putDefn(defn)
+      pos
+    }
+
+    positions.zip(offsets).map { case (pos, offset) =>
+      buffer.position(pos)
+      putInt(offset)
+    }
+
+    println(names.zip(positions.zip(offsets)))
+  }
+
+  private def putSeq[T](seq: Seq[T])(putT: T => Unit)= {
     putInt(seq.length)
     seq.foreach(putT)
   }
 
-  private def putInts(ints: Seq[Int]) = putSeq[Int](i => putInt(i))(ints)
+  private def putInts(ints: Seq[Int]) = putSeq[Int](ints)(putInt(_))
 
-  private def putStrings(vs: Seq[String]) = putSeq(putString)(vs)
+  private def putStrings(vs: Seq[String]) = putSeq(vs)(putString)
   private def putString(v: String) = {
     val bytes = v.getBytes
     putInt(bytes.length); put(bytes)
@@ -25,7 +48,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
 
   private def putBool(v: Boolean) = put((if (v) 1 else 0).toByte)
 
-  private def putAttrs(attrs: Seq[Attr]) = putSeq(putAttr)(attrs)
+  private def putAttrs(attrs: Seq[Attr]) = putSeq(attrs)(putAttr)
   private def putAttr(attr: Attr) = attr match {
     case Attr.InlineHint => putInt(T.InlineHintAttr)
     case Attr.NoInline   => putInt(T.NoInlineAttr)
@@ -67,7 +90,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Bin.Xor  => putInt(T.XorBin )
   }
 
-  private def putBlocks(blocks: Seq[Block]) = putSeq(putBlock)(blocks)
+  private def putBlocks(blocks: Seq[Block]) = putSeq(blocks)(putBlock)
   private def putBlock(block: Block) = {
     putLocal(block.name)
     putParams(block.params)
@@ -130,7 +153,6 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Conv.Bitcast  => putInt(T.BitcastConv)
   }
 
-  private def putDefns(defns: Seq[Defn]): Unit = putSeq(putDefn)(defns)
   private def putDefn(value: Defn): Unit = value match {
     case Defn.Var(attrs, name, ty, value) =>
       putInt(T.VarDefn)
@@ -165,37 +187,34 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putGlobal(name)
       putTypes(members)
 
-    case Defn.Trait(attrs, name, ifaces, members) =>
+    case Defn.Trait(attrs, name, ifaces) =>
       putInt(T.TraitDefn)
       putAttrs(attrs)
       putGlobal(name)
       putGlobals(ifaces)
-      putDefns(members)
 
-    case Defn.Class(attrs, name, parent, ifaces, members) =>
+    case Defn.Class(attrs, name, parent, ifaces) =>
       putInt(T.ClassDefn)
       putAttrs(attrs)
       putGlobal(name)
       putGlobal(parent)
       putGlobals(ifaces)
-      putDefns(members)
 
-    case Defn.Module(attrs, name, parent, ifaces, members) =>
+    case Defn.Module(attrs, name, parent, ifaces) =>
       putInt(T.ModuleDefn)
       putAttrs(attrs)
       putGlobal(name)
       putGlobal(parent)
       putGlobals(ifaces)
-      putDefns(members)
   }
 
-  private def putGlobals(globals: Seq[Global]): Unit = putSeq(putGlobal)(globals)
+  private def putGlobals(globals: Seq[Global]): Unit = putSeq(globals)(putGlobal)
   private def putGlobal(global: Global): Unit = {
     putStrings(global.parts)
     putBool(global.isType)
   }
 
-  private def putInsts(insts: Seq[Inst]) = putSeq(putInst)(insts)
+  private def putInsts(insts: Seq[Inst]) = putSeq(insts)(putInst)
   private def putInst(inst: Inst) = {
     putLocal(inst.name)
     putOp(inst.op)
@@ -203,7 +222,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
 
   private def putLocal(local: Local): Unit = { putString(local.scope); putInt(local.id) }
 
-  private def putNexts(nexts: Seq[Next]) = putSeq(putNext)(nexts)
+  private def putNexts(nexts: Seq[Next]) = putSeq(nexts)(putNext)
   private def putNext(next: Next) = next match {
     case Next.Succ(n)      => putInt(T.SuccNext); putLocal(n)
     case Next.Fail(n)      => putInt(T.FailNext); putLocal(n)
@@ -319,13 +338,13 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putVals(captures)
   }
 
-  private def putParams(params: Seq[Val.Local]) = putSeq(putParam)(params)
+  private def putParams(params: Seq[Val.Local]) = putSeq(params)(putParam)
   private def putParam(param: Val.Local) = {
     putLocal(param.name)
     putType(param.ty)
   }
 
-  private def putTypes(tys: Seq[Type]): Unit = putSeq(putType)(tys)
+  private def putTypes(tys: Seq[Type]): Unit = putSeq(tys)(putType)
   private def putType(ty: Type): Unit = ty match {
     case Type.None                => putInt(T.NoneType)
     case Type.Void                => putInt(T.VoidType)
@@ -354,7 +373,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Type.Module(n)     => putInt(T.ModuleType); putGlobal(n)
   }
 
-  private def putVals(values: Seq[Val]): Unit = putSeq(putVal)(values)
+  private def putVals(values: Seq[Val]): Unit = putSeq(values)(putVal)
   private def putVal(value: Val): Unit = value match {
     case Val.None          => putInt(T.NoneVal)
     case Val.True          => putInt(T.TrueVal)

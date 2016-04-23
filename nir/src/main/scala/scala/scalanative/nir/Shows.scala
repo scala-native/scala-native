@@ -232,25 +232,24 @@ object Shows {
     case Defn.Const(attrs, name, ty, v) =>
       sh"${attrs}const $name : $ty = $v"
     case Defn.Declare(attrs, name, ty) =>
-      sh"${attrs}def $name : $ty"
+      val defn = sh"def $name : $ty"
+      sh"$attrs$defn"
     case Defn.Define(attrs, name, ty, blocks) =>
-        val body = brace(r(blocks.map(i(_))))
-      sh"${attrs}def $name : $ty $body"
+      val body = brace(r(blocks.map(i(_))))
+      val defn = sh"def $name : $ty $body"
+      sh"$attrs$defn"
     case Defn.Struct(attrs, name, tys) =>
       sh"${attrs}struct $name {${r(tys, sep = ", ")}}"
 
-    case Defn.Trait(attrs, name, ifaces, members) =>
+    case Defn.Trait(attrs, name, ifaces) =>
       val parents = if (ifaces.nonEmpty) r(ifaces, sep = ", ", pre = " : ") else s()
-      val body = brace(r(members.map(i(_))))
-      sh"${attrs}trait $name$parents $body"
-    case Defn.Class(attrs, name, parent, ifaces, members) =>
+      sh"${attrs}trait $name$parents"
+    case Defn.Class(attrs, name, parent, ifaces) =>
       val parents = r(parent +: ifaces, sep = ", ")
-      val body = brace(r(members.map(i(_))))
-      sh"${attrs}class $name : $parents $body"
-    case Defn.Module(attrs, name, parent, ifaces, members) =>
+      sh"${attrs}class $name : $parents"
+    case Defn.Module(attrs, name, parent, ifaces) =>
       val parents = r(parent +: ifaces, sep = ", ")
-      val body = brace(r(members.map(i(_))))
-      sh"${attrs}module $name : $parents $body"
+      sh"${attrs}module $name : $parents"
   }
 
   implicit val showType: Show[Type] = Show {
