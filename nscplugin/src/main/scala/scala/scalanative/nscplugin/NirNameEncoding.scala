@@ -37,14 +37,16 @@ trait NirNameEncoding { self: NirCodeGen =>
     owner + id
   }
 
-  def genMethodName(sym: Symbol) = {
+  def genMethodName(sym: Symbol): nir.Global = {
     val owner         = sym.owner
     val ownerId       = genClassName(sym.owner)
     val id            = sym.name.decoded.toString
     val tpe           = sym.tpe.widen
     val mangledParams = tpe.params.toSeq.map(mangledType)
 
-    if (isExternalModule(owner)) {
+    if (sym == String_+) {
+      genMethodName(StringConcatMethod)
+    } else if (isExternalModule(owner)) {
       ownerId + id
     } else if (sym.name == nme.CONSTRUCTOR) {
       ownerId + ("init" +: mangledParams).mkString("_")

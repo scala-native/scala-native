@@ -19,6 +19,8 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val ExternMethod = getMember(NativeModule, TermName("extern"))
     lazy val ExternClass  = getRequiredClass("scala.scalanative.native.extern")
 
+    lazy val StringConcatMethod = getMember(StringClass, TermName("concat"))
+
     lazy val Object_wait = getMember(ObjectClass, TermName("wait"))
 
     lazy val BoxMethod = Map[Char, Symbol](
