@@ -81,21 +81,26 @@ lazy val javalib =
     settings(libSettings).
     dependsOn(nativelib)
 
-lazy val copyScalaLibrary = taskKey[Unit](
-  "Checks out scala standard library from submodules/scala.")
+lazy val assembleScalaLibrary = taskKey[Unit](
+  "Checks out scala standard library from submodules/scala and then applies overrides.")
 
 lazy val scalalib =
   project.in(file("scalalib")).
     settings(libSettings).
     settings(
-      copyScalaLibrary := {
+      assembleScalaLibrary := {
         IO.delete(file("scalalib/src/main/scala"))
         IO.copyDirectory(
           file("submodules/scala/src/library/scala"),
           file("scalalib/src/main/scala/scala"))
+
+        val epoch :: major :: _ = scalaVersion.value.split("\\.").toList
+        IO.copyDirectory(
+          file(s"scalalib/overrides-$epoch.$major/scala"),
+          file("scalalib/src/main/scala/scala"), overwrite = true)
       },
 
-      compile in Compile <<= (compile in Compile) dependsOn copyScalaLibrary
+      compile in Compile <<= (compile in Compile) dependsOn assembleScalaLibrary
     ).
     dependsOn(javalib)
 

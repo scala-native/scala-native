@@ -47,7 +47,8 @@ final class Compiler(opts: Opts) {
 
   private def debug(assembly: Seq[Defn], suffix: String) =
     if (opts.verbose)
-      serializeFile(codegen.GenTextualNIR, assembly, opts.outpath + s".$suffix.hnir")
+      ()
+      //serializeFile(codegen.GenTextualNIR, assembly, opts.outpath + s".$suffix.hnir")
 
   def apply(): Unit = {
     def loop(assembly: Seq[Defn], passes: Seq[(Pass, Int)]): Seq[Defn] =

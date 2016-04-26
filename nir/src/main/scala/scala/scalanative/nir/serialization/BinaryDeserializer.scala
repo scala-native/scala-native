@@ -18,11 +18,11 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
     map
   }
 
-  private var deps: mutable.UnrolledBuffer[Global] = _
+  private var deps: mutable.Set[Global] = _
   private def scoped[T](f: => T): (Seq[Global], T) = {
-    this.deps = mutable.UnrolledBuffer.empty[Global]
+    this.deps = mutable.Set.empty[Global]
     val res = f
-    val deps = this.deps
+    val deps = this.deps.toSeq
     this.deps = null
     (deps, res)
   }
