@@ -9,7 +9,7 @@ import util.sh
 
 final class Compiler(opts: Opts) {
   private lazy val entry =
-    Global.Val(opts.entry)
+    Global.Val(opts.entry, "main_class.nrt.RefArray_unit")
 
   private lazy val assembly: Seq[Defn] = {
     val (unresolved, assembly) = (new Linker(opts.classpath)).link(entry)
@@ -17,14 +17,13 @@ final class Compiler(opts: Opts) {
     if (unresolved.nonEmpty) {
       println(s"unresolved deps:")
       unresolved.map(u => sh"  $u".toString).sorted.foreach(println(_))
-      throw new Exception
     }
 
     assembly
   }
 
   private lazy val passes: Seq[Pass] = {
-    implicit val fresh = Fresh("tx")
+    implicit val fresh     = Fresh("tx")
     implicit val hierarchy = analysis.ClassHierarchy(assembly)
 
     Seq(

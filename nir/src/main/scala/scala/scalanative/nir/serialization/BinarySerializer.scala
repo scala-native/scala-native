@@ -20,17 +20,17 @@ final class BinarySerializer(buffer: ByteBuffer) {
     }
 
     val offsets = defns.map { defn =>
-      val pos = buffer.position
+      val pos: Int = buffer.position
       putDefn(defn)
       pos
     }
+    val end = buffer.position
 
     positions.zip(offsets).map { case (pos, offset) =>
       buffer.position(pos)
       putInt(offset)
     }
-
-    println(names.zip(positions.zip(offsets)))
+    buffer.position(end)
   }
 
   private def putSeq[T](seq: Seq[T])(putT: T => Unit)= {
@@ -67,6 +67,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Attr.External            => putInt(T.ExternalAttr)
 
     case Attr.Override(n) => putInt(T.OverrideAttr); putGlobal(n)
+    case Attr.Pin(ns)     => putInt(T.PinAttr); putGlobals(ns)
   }
 
   private def putBin(bin: Bin) = bin match {

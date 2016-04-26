@@ -35,6 +35,7 @@ object Shows {
     case Attr.External            => "external"
 
     case Attr.Override(name) => sh"override($name)"
+    case Attr.Pin(names)     => sh"pin(${r(names, sep = ", ")})"
   }
 
   implicit val showBlock: Show[Block] = Show { block =>

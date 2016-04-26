@@ -38,14 +38,14 @@ object Assembly {
         (name -> deserializeBinaryFile(fileabs))
       }.toMap
     }
-    println(s"discovered dir assembly $base")
+    //println(s"discovered dir assembly $base")
 
     def contains(name: Global) =
       entries.contains(name.owner)
 
     def load(name: Global): Option[(Seq[Global], Defn)] =
       entries.get(name.owner).flatMap { deserializer =>
-        println(s"deserializing $name")
+        //println(s"deserializing $name")
         deserializer.deserialize(name)
       }
   }

@@ -130,10 +130,27 @@ abstract class NirCodeGen extends PluginComponent
         Defn.Class(attrs, name, parent, traits) +: members
     }
 
-    def genClassAttrs(sym: Symbol): Seq[Attr] =
-      sym.annotations.collect {
-        case ann if ann.symbol == ExternClass   => Attr.External
+    def genClassAttrs(sym: Symbol): Seq[Attr] = {
+      def pinned = {
+        def modulePinnedInit =
+          if (isModule(sym) && !isExternalModule(sym))
+            Seq(genMethodName(sym.asClass.primaryConstructor))
+          else
+            Seq()
+        def pinnedOverrides =
+          sym.info.declarations.collect {
+            case decl if decl.overrides.nonEmpty =>
+              genMethodName(decl)
+          }
+        val all = modulePinnedInit ++ pinnedOverrides
+
+        if (all.nonEmpty) Some(Attr.Pin(all)) else None
       }
+
+      pinned ++: sym.annotations.collect {
+        case ann if ann.symbol == ExternClass => Attr.External
+      }
+    }
 
     def genClassInterfaces(sym: Symbol) =
       for {

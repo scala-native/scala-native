@@ -6,7 +6,8 @@ import java.nio.ByteBuffer
 import scala.collection.mutable
 import nir.{Tags => T}
 
-final class BinaryDeserializer(buffer: ByteBuffer) {
+final class BinaryDeserializer(_buffer: => ByteBuffer) {
+  private lazy val buffer = _buffer
   import buffer._
 
   private lazy val header: Map[Global, Int] = {
@@ -14,7 +15,6 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     val (_, pairs) = scoped(getSeq((getGlobal, getInt)))
     val map = pairs.toMap
     this.deps = null
-    println(map)
     map
   }
 
@@ -29,7 +29,6 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
 
   final def deserialize(g: Global): Option[(Seq[Global], Defn)] =
     header.get(g).map { case offset =>
-      println(s"deserializing $g at $offset")
       buffer.position(offset)
       scoped(getDefn)
     }
@@ -67,6 +66,7 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.ExternalAttr            => Attr.External
 
     case T.OverrideAttr => Attr.Override(getGlobal)
+    case T.PinAttr      => Attr.Pin(getGlobals)
   }
 
   private def getBin(): Bin = getInt match {

@@ -19,8 +19,9 @@ object Tags {
   final val ExternalAttr            = 1 + WeakODRAttr
 
   final val OverrideAttr = 1 + ExternalAttr
+  final val PinAttr      = 1 + OverrideAttr
 
-  final val IaddBin = 1 + OverrideAttr
+  final val IaddBin = 1 + PinAttr
   final val FaddBin = 1 + IaddBin
   final val IsubBin = 1 + FaddBin
   final val FsubBin = 1 + IsubBin

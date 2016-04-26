@@ -36,7 +36,7 @@ package object serialization {
 
   def deserializeBinaryFile(path: String): BinaryDeserializer =
     new BinaryDeserializer({
-      println(s"opened $path")
+      //println(s"opened $path")
       val bytes = Files.readAllBytes(Paths.get(path))
       val buffer = ByteBuffer.wrap(bytes)
       buffer

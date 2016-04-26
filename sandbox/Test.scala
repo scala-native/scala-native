@@ -9,6 +9,7 @@ object powi {
 
 object Test {
   def main(args: Array[String]): Unit = {
-    powi.`llvm.powi.f32`(42.0f, 2)
+    //powi.`llvm.powi.f32`(42.0f, 2)
+    List(1,2,3)
   }
 }

@@ -22,27 +22,21 @@ final class Linker(paths: Seq[String]) {
 
     while (worklist.nonEmpty) {
       val workitem = worklist.pop()
-      println(s"trying $workitem")
 
       if (!workitem.isIntrinsic &&
           !resolved.contains(workitem) &&
           !unresolved.contains(workitem)) {
-        println(s"loading $workitem")
 
         load(workitem).fold[Unit] {
-          println(s"failed to resolve $workitem")
           unresolved += workitem
         } { case (deps, defn) =>
-          println(s"resolved $workitem")
           resolved  += workitem
           defns     += defn
           worklist ++= deps
         }
-      } else {
-        println(s"already handled $workitem")
       }
     }
 
-    (unresolved.toSeq, defns.toSeq)
+    (unresolved.toSeq, defns.sortBy(_.name.toString).toSeq)
   }
 }
