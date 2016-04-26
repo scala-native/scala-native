@@ -9,7 +9,7 @@ import nir.serialization._
 
 sealed abstract class Assembly {
   def contains(entry: Global): Boolean
-  def load(entry: Global): Option[(Seq[Global], Defn)]
+  def load(entry: Global): Option[(Seq[Dep], Defn)]
 }
 
 object Assembly {
@@ -43,7 +43,7 @@ object Assembly {
     def contains(name: Global) =
       entries.contains(name.owner)
 
-    def load(name: Global): Option[(Seq[Global], Defn)] =
+    def load(name: Global): Option[(Seq[Dep], Defn)] =
       entries.get(name.owner).flatMap { deserializer =>
         //println(s"deserializing $name")
         deserializer.deserialize(name)

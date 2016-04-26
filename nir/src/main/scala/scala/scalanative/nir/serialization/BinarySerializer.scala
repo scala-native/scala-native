@@ -66,8 +66,9 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Attr.WeakODR             => putInt(T.WeakODRAttr)
     case Attr.External            => putInt(T.ExternalAttr)
 
-    case Attr.Override(n) => putInt(T.OverrideAttr); putGlobal(n)
-    case Attr.Pin(ns)     => putInt(T.PinAttr); putGlobals(ns)
+    case Attr.Override(n)    => putInt(T.OverrideAttr); putGlobal(n)
+    case Attr.Pin(n)         => putInt(T.PinAttr); putGlobal(n)
+    case Attr.PinIf(n, cond) => putInt(T.PinIfAttr); putGlobal(n); putGlobal(cond)
   }
 
   private def putBin(bin: Bin) = bin match {

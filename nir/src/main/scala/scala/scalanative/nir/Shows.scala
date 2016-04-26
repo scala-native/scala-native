@@ -34,8 +34,9 @@ object Shows {
     case Attr.WeakODR             => "weak_odr"
     case Attr.External            => "external"
 
-    case Attr.Override(name) => sh"override($name)"
-    case Attr.Pin(names)     => sh"pin(${r(names, sep = ", ")})"
+    case Attr.Override(name)    => sh"override($name)"
+    case Attr.Pin(name)         => sh"pin($name)"
+    case Attr.PinIf(name, cond) => sh"pin-if($name, $cond)"
   }
 
   implicit val showBlock: Show[Block] = Show { block =>

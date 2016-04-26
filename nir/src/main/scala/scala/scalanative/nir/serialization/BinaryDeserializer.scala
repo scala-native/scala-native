@@ -18,19 +18,21 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
     map
   }
 
-  private var deps: mutable.Set[Global] = _
-  private def scoped[T](f: => T): (Seq[Global], T) = {
-    this.deps = mutable.Set.empty[Global]
+  private var deps: mutable.Set[Dep] = _
+  private def scoped[T](f: => T): (mutable.Set[Dep], T) = {
+    this.deps = mutable.Set.empty[Dep]
     val res = f
-    val deps = this.deps.toSeq
+    val deps = this.deps
     this.deps = null
     (deps, res)
   }
 
-  final def deserialize(g: Global): Option[(Seq[Global], Defn)] =
+  final def deserialize(g: Global): Option[(Seq[Dep], Defn)] =
     header.get(g).map { case offset =>
       buffer.position(offset)
-      scoped(getDefn)
+      val (deps, defn) = scoped(getDefn)
+      deps -= Dep.Direct(g)
+      (deps.toSeq, defn)
     }
 
   private def getSeq[T](getT: => T): Seq[T] =
@@ -47,26 +49,34 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
 
   private def getBool(): Boolean = get != 0
 
-  private def getAttrs(): Seq[Attr] = getSeq(getAttr)
-  private def getAttr(): Attr = getInt match {
-    case T.InlineHintAttr => Attr.InlineHint
-    case T.NoInlineAttr   => Attr.NoInline
-    case T.MustInlineAttr => Attr.MustInline
+  private def getAttrs(): Seq[Attr] = {
+    val buf = mutable.UnrolledBuffer.empty[Attr]
 
-    case T.PrivateAttr             => Attr.Private
-    case T.InternalAttr            => Attr.Internal
-    case T.AvailableExternallyAttr => Attr.AvailableExternally
-    case T.LinkOnceAttr            => Attr.LinkOnce
-    case T.WeakAttr                => Attr.Weak
-    case T.CommonAttr              => Attr.Common
-    case T.AppendingAttr           => Attr.Appending
-    case T.ExternWeakAttr          => Attr.ExternWeak
-    case T.LinkOnceODRAttr         => Attr.LinkOnceODR
-    case T.WeakODRAttr             => Attr.WeakODR
-    case T.ExternalAttr            => Attr.External
+    (1 to getInt).foreach { _ =>
+      getInt match {
+        case T.InlineHintAttr => buf += Attr.InlineHint
+        case T.NoInlineAttr   => buf += Attr.NoInline
+        case T.MustInlineAttr => buf += Attr.MustInline
 
-    case T.OverrideAttr => Attr.Override(getGlobal)
-    case T.PinAttr      => Attr.Pin(getGlobals)
+        case T.PrivateAttr             => buf += Attr.Private
+        case T.InternalAttr            => buf += Attr.Internal
+        case T.AvailableExternallyAttr => buf += Attr.AvailableExternally
+        case T.LinkOnceAttr            => buf += Attr.LinkOnce
+        case T.WeakAttr                => buf += Attr.Weak
+        case T.CommonAttr              => buf += Attr.Common
+        case T.AppendingAttr           => buf += Attr.Appending
+        case T.ExternWeakAttr          => buf += Attr.ExternWeak
+        case T.LinkOnceODRAttr         => buf += Attr.LinkOnceODR
+        case T.WeakODRAttr             => buf += Attr.WeakODR
+        case T.ExternalAttr            => buf += Attr.External
+
+        case T.OverrideAttr => buf += Attr.Override(getGlobal)
+        case T.PinAttr      => deps += Dep.Direct(getGlobalNoDep)
+        case T.PinIfAttr    => deps += Dep.Conditional(getGlobalNoDep, getGlobalNoDep)
+      }
+    }
+
+    buf
   }
 
   private def getBin(): Bin = getInt match {
@@ -169,10 +179,12 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
 
   private def getGlobals(): Seq[Global] = getSeq(getGlobal)
   private def getGlobal(): Global = {
-    val name = new Global(getStrings, getBool)
-    deps += name
+    val name = getGlobalNoDep
+    deps += Dep.Direct(name)
     name
   }
+
+  private def getGlobalNoDep(): Global = new Global(getStrings, getBool)
 
   private def getInsts(): Seq[Inst] = getSeq(getInst)
   private def getInst(): Inst = Inst(getLocal, getOp)

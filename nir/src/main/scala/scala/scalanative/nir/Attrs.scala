@@ -21,7 +21,8 @@ object Attr {
   final case object WeakODR             extends Link
   final case object External            extends Link
 
-  final case class Override(name: Global)  extends Attr
-  final case class Pin(names: Seq[Global]) extends Attr
+  final case class Override(name: Global)           extends Attr
+  final case class Pin(dep: Global)                 extends Attr
+  final case class PinIf(dep: Global, cond: Global) extends Attr
 }
 

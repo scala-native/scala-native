@@ -20,8 +20,9 @@ object Tags {
 
   final val OverrideAttr = 1 + ExternalAttr
   final val PinAttr      = 1 + OverrideAttr
+  final val PinIfAttr    = 1 + PinAttr
 
-  final val IaddBin = 1 + PinAttr
+  final val IaddBin = 1 + PinIfAttr
   final val FaddBin = 1 + IaddBin
   final val IsubBin = 1 + FaddBin
   final val FsubBin = 1 + IsubBin

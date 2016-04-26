@@ -131,23 +131,13 @@ abstract class NirCodeGen extends PluginComponent
     }
 
     def genClassAttrs(sym: Symbol): Seq[Attr] = {
-      def pinned = {
-        def modulePinnedInit =
-          if (isModule(sym) && !isExternalModule(sym))
-            Seq(genMethodName(sym.asClass.primaryConstructor))
-          else
-            Seq()
-        def pinnedOverrides =
-          sym.info.declarations.collect {
-            case decl if decl.overrides.nonEmpty =>
-              genMethodName(decl)
-          }
-        val all = modulePinnedInit ++ pinnedOverrides
+      def pinned =
+        if (isModule(sym) && !isExternalModule(sym))
+          Seq(Attr.Pin(genMethodName(sym.asClass.primaryConstructor)))
+        else
+          Seq()
 
-        if (all.nonEmpty) Some(Attr.Pin(all)) else None
-      }
-
-      pinned ++: sym.annotations.collect {
+      pinned ++ sym.annotations.collect {
         case ann if ann.symbol == ExternClass => Attr.External
       }
     }
@@ -257,6 +247,17 @@ abstract class NirCodeGen extends PluginComponent
       } ++ sym.annotations.collect {
         case ann if ann.symbol == InlineClass   => Attr.InlineHint
         case ann if ann.symbol == NoInlineClass => Attr.NoInline
+      } ++ {
+        val owner = sym.owner
+        if (owner.primaryConstructor eq sym)
+          owner.info.declarations.collect {
+            case decl if decl.overrides.nonEmpty =>
+              decl.overrides.map { case ov =>
+                Attr.PinIf(genMethodName(decl), genMethodName(ov))
+              }
+          }.toSeq.flatten
+        else
+          Seq()
       }
 
     def genMethodSig(sym: Symbol): nir.Type = sym match {
