@@ -51,7 +51,6 @@ class _String private() extends CharSequence with Serializable with Comparable[_
   def equalsIgnoreCase(str: _String): scala.Boolean = ???
   override def hashCode(): scala.Int = ???
   override def toString(): String = this.asInstanceOf[String]
-
 }
 
 object _String {

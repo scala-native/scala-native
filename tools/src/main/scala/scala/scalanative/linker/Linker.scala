@@ -16,7 +16,6 @@ final class Linker(paths: Seq[String]) {
         assembly.load(global)
     }.flatten
 
-  /*
   private val writer =
     new java.io.PrintWriter(new java.io.File("out.dot"))
   private def writeStart(): Unit =
@@ -32,7 +31,6 @@ final class Linker(paths: Seq[String]) {
     writer.println("}")
     writer.close()
   }
-  */
 
   def link(entry: Global): (Seq[Global], Seq[Defn]) = {
     val resolved   = mutable.Set.empty[Global]
@@ -40,7 +38,7 @@ final class Linker(paths: Seq[String]) {
     var worklist   = mutable.Stack[Global](entry)
     var defns      = mutable.UnrolledBuffer.empty[Defn]
 
-    //writeStart()
+    writeStart()
     while (worklist.nonEmpty) {
       val workitem = worklist.pop()
 
@@ -51,7 +49,7 @@ final class Linker(paths: Seq[String]) {
         load(workitem).fold[Unit] {
           unresolved += workitem
         } { case (deps, defn) =>
-          //deps.foreach(dep => writeEdge(workitem, dep))
+          deps.foreach(dep => writeEdge(workitem, dep))
 
           resolved  += workitem
           defns     += defn
@@ -59,7 +57,7 @@ final class Linker(paths: Seq[String]) {
         }
       }
     }
-    //writeEnd()
+    writeEnd()
 
     (unresolved.toSeq, defns.sortBy(_.name.toString).toSeq)
   }
