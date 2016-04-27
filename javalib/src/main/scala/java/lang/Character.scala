@@ -911,4 +911,12 @@ object Character {
       deltas(i) += deltas(i - 1)
     deltas
   }
+
+  def codePointAt(chars: Array[scala.Char], index: scala.Int,
+      limit: scala.Int): scala.Int = ???
+  def codePointBefore(chars: Array[scala.Char], index: scala.Int): scala.Int = ???
+  def codePointCount(chars: Array[scala.Char], offset: scala.Int,
+      count: scala.Int): scala.Int = ???
+  def offsetByCodePoints(chars: Array[scala.Char], start: scala.Int,
+      count: scala.Int, index: scala.Int, codePointOffset: scala.Int): scala.Int = ???
 }

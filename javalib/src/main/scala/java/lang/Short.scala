@@ -1,6 +1,6 @@
 package java.lang
 
-final class Short private (override val shortValue: scala.Short)
+final class Short(override val shortValue: scala.Short)
     extends Number with Comparable[Short] {
   def this(s: String) = this(Short.parseShort(s))
 

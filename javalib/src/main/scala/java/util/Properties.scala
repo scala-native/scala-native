@@ -12,14 +12,7 @@ class Properties(protected val defaults: Properties)
   def setProperty(key: String, value: String): AnyRef =
     put(key, value)
 
-  // def load(reader: Reader): Unit
-  // def load(inStream: InputStream): Unit
-  // @deprecated("", "") def save(out: OutputStream, comments: String): Unit
-  // def store(writer: Writer, comments: String): Unit
-  // def store(out: OutputStream, comments: String): Unit
-  // def loadFromXML(in: InputStream): Unit
-  // def storeToXML(os: OutputStream, comment: String): Unit
-  // def storeToXML(os: OutputStream, comment: String, encoding: String): Unit
+  def load(inStream: java.io.InputStream): Unit = ???
 
   def getProperty(key: String): String =
     getProperty(key, defaultValue = null)
@@ -58,6 +51,14 @@ class Properties(protected val defaults: Properties)
     set
   }
 
+  // TODO:
+  // def load(reader: Reader): Unit
+  // @deprecated("", "") def save(out: OutputStream, comments: String): Unit
+  // def store(writer: Writer, comments: String): Unit
+  // def store(out: OutputStream, comments: String): Unit
+  // def loadFromXML(in: InputStream): Unit
+  // def storeToXML(os: OutputStream, comment: String): Unit
+  // def storeToXML(os: OutputStream, comment: String, encoding: String): Unit
   // def list(out: PrintStream): Unit
   // def list(out: PrintWriter): Unit
 }
