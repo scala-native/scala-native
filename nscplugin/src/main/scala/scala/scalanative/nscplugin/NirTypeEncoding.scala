@@ -38,7 +38,7 @@ trait NirTypeEncoding { self: NirCodeGen =>
 
   def genType(sym: Symbol, targs: Seq[Type] = Seq()): nir.Type = sym match {
     case ArrayClass           => genType(NArrayClass(genPrimCode(targs.head)))
-    case ObjectClass          => nir.Nrt.Object
+    case ObjectClass          => nir.Rt.Object
     case UnitClass            => nir.Type.Unit
     case CharClass            => nir.Type.I16
     case BooleanClass         => nir.Type.Bool

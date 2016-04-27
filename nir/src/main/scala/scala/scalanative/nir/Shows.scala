@@ -244,14 +244,16 @@ object Shows {
       sh"${attrs}struct $name {${r(tys, sep = ", ")}}"
 
     case Defn.Trait(attrs, name, ifaces) =>
-      val parents = if (ifaces.nonEmpty) r(ifaces, sep = ", ", pre = " : ") else s()
-      sh"${attrs}trait $name$parents"
+      val inherits = if (ifaces.nonEmpty) r(ifaces, sep = ", ", pre = " : ") else s()
+      sh"${attrs}trait $name$inherits"
     case Defn.Class(attrs, name, parent, ifaces) =>
-      val parents = r(parent +: ifaces, sep = ", ")
-      sh"${attrs}class $name : $parents"
+      val parents = parent ++: ifaces
+      val inherits = if (parents.nonEmpty) r(parents, sep = ", ", pre = " : ") else s()
+      sh"${attrs}class $name$inherits"
     case Defn.Module(attrs, name, parent, ifaces) =>
-      val parents = r(parent +: ifaces, sep = ", ")
-      sh"${attrs}module $name : $parents"
+      val parents = parent ++: ifaces
+      val inherits = if (parents.nonEmpty) r(parents, sep = ", ", pre = " : ") else s()
+      sh"${attrs}module $name$inherits"
   }
 
   implicit val showType: Show[Type] = Show {

@@ -21,7 +21,7 @@ sealed abstract class Val {
     case Val.Bitcast(to, _)   => to
 
     case Val.Unit             => Type.Unit
-    case Val.String(_)        => Nrt.String
+    case Val.String(_)        => Rt.String
     case Val.ClassValue(n, _) => Type.ClassValue(n)
   }
 }

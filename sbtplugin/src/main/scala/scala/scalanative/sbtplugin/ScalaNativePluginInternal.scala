@@ -27,19 +27,6 @@ object ScalaNativePluginInternal {
     compiler.apply()
   }
 
-  /** Compiles nrt to llvm ir using clang. */
-  private def compileNrt(classpath: Seq[String]): Int = {
-    val nrtjar   = classpath.collectFirst {
-      case p if p.contains("org.scala-native") && p.contains("nrt") => p
-    }.get
-    val srcfiles = (nrt ** "*.c").get.map(abs)
-    val clang    = Seq(abs(llvm / "clang"), "-S", "-emit-llvm") ++ srcfiles
-
-    IO.delete(nrt)
-    IO.unzip(file(nrtjar), nrt)
-    Process(clang, nrt).!
-  }
-
   /** Compiles application and runtime llvm ir file to binary using clang. */
   private def compileLl(target: File, appll: File, binary: File): Int = {
     val outpath  = abs(binary)
@@ -66,7 +53,6 @@ object ScalaNativePluginInternal {
 
       IO.createDirectory(target)
       compileNir(opts)
-      compileNrt(classpath)
       compileLl(target, appll, binary)
     },
 
@@ -79,7 +65,7 @@ object ScalaNativePluginInternal {
     commonProjectSettings ++ Seq(
       addCompilerPlugin("org.scala-native" %% "nscplugin" % "0.1-SNAPSHOT"),
 
-      libraryDependencies += "org.scala-native" %% "nrt" % nir.Versions.current
+      libraryDependencies += "org.scala-native" %% "native" % nir.Versions.current
     )
   }
 }

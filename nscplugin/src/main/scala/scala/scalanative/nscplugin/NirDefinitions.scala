@@ -9,6 +9,16 @@ trait NirDefinitions { self: NirGlobalAddons =>
   import rootMirror._
 
   object nirDefinitions {
+    lazy val NObjectClass            = getRequiredClass("java.lang._Object")
+    lazy val NObjectGetMonitorMethod = getDecl(NObjectClass, TermName("getMonitor"))
+    lazy val NObjectGetTypeMethod    = getDecl(NObjectClass, TermName("getType"))
+    lazy val NObjectHashCodeMethod   = getDecl(NObjectClass, TermName("_hashCode"))
+    lazy val NObjectEqualsMethod     = getDecl(NObjectClass, TermName("_equals"))
+
+    lazy val NMonitorClass       = getRequiredClass("scala.scalanative.runtime.Monitor")
+    lazy val NMonitorEnterMethod = getDecl(NMonitorClass, TermName("enter"))
+    lazy val NMonitorExitMethod  = getDecl(NMonitorClass, TermName("exit"))
+
     lazy val NStringClass  = getRequiredClass("java.lang._String")
     lazy val NStringModule = getRequiredModule("java.lang._String")
 

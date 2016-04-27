@@ -33,9 +33,14 @@ final class BinarySerializer(buffer: ByteBuffer) {
     buffer.position(end)
   }
 
-  private def putSeq[T](seq: Seq[T])(putT: T => Unit)= {
+  private def putSeq[T](seq: Seq[T])(putT: T => Unit) = {
     putInt(seq.length)
     seq.foreach(putT)
+  }
+
+  private def putOpt[T](opt: Option[T])(putT: T => Unit) = opt match {
+    case None    => put(0.toByte)
+    case Some(t) => put(1.toByte); putT(t)
   }
 
   private def putInts(ints: Seq[Int]) = putSeq[Int](ints)(putInt(_))
@@ -199,18 +204,19 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.ClassDefn)
       putAttrs(attrs)
       putGlobal(name)
-      putGlobal(parent)
+      putGlobalOpt(parent)
       putGlobals(ifaces)
 
     case Defn.Module(attrs, name, parent, ifaces) =>
       putInt(T.ModuleDefn)
       putAttrs(attrs)
       putGlobal(name)
-      putGlobal(parent)
+      putGlobalOpt(parent)
       putGlobals(ifaces)
   }
 
   private def putGlobals(globals: Seq[Global]): Unit = putSeq(globals)(putGlobal)
+  private def putGlobalOpt(globalopt: Option[Global]): Unit = putOpt(globalopt)(putGlobal)
   private def putGlobal(global: Global): Unit = {
     putStrings(global.parts)
     putBool(global.isType)

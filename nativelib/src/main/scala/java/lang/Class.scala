@@ -1,8 +1,9 @@
 package java.lang
 
+import scala.scalanative.native.Ptr
 import scala.scalanative.runtime.Type
 
-final class Class[A] private(ty: Type) {
+final class Class[A] (ty: Ptr[Type]) {
   def getComponentType(): Class[_] = ???
   def getInterfaces(): Array[Class[_]] = ???
   def getResourceAsStream(name: String): java.io.InputStream = ???

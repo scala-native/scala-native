@@ -6,12 +6,7 @@ import scala.collection.mutable
 
 object NirPrimitives {
   final val ANY_GETCLASS = 301
-
-  final val MONITOR_NOTIFY    = 1 + ANY_GETCLASS
-  final val MONITOR_NOTIFYALL = 1 + MONITOR_NOTIFY
-  final val MONITOR_WAIT      = 1 + MONITOR_NOTIFYALL
-
-  final val ARRAY_CLONE = 1 + MONITOR_WAIT
+  final val ARRAY_CLONE  = 1 + ANY_GETCLASS
 }
 
 abstract class NirPrimitives {
@@ -48,12 +43,6 @@ abstract class NirPrimitives {
   private val nirPrimitives = mutable.Map.empty[Symbol, Int]
 
   private def initWithPrimitives(addPrimitive: (Symbol, Int) => Unit): Unit = {
-    addPrimitive(Any_getClass, ANY_GETCLASS)
-
-    addPrimitive(Object_notify,    MONITOR_NOTIFY)
-    addPrimitive(Object_notifyAll, MONITOR_NOTIFYALL)
-    addPrimitive(Object_wait,      MONITOR_WAIT)
-
     addPrimitive(Array_clone, ARRAY_CLONE)
   }
 }

@@ -15,10 +15,12 @@ trait NirNameEncoding { self: NirCodeGen =>
   def genClassName(sym: Symbol): nir.Global = {
     val id = {
       val fullName = sym.fullName.toString
-      if (fullName == "java.lang._String") "java.lang.String" else fullName
+      if (fullName == "java.lang._String") "java.lang.String"
+      else if (fullName == "java.lang._Object") "java.lang.Object"
+      else fullName
     }
     val name = sym match {
-      case ObjectClass                               => nir.Nrt.Object.name
+      case ObjectClass                               => nir.Rt.Object.name
       case _ if sym.isModule                         => genClassName(sym.moduleClass)
       case _ if sym.isModuleClass || sym.isImplClass => nir.Global.Val(id)
       case _ if sym.isInterface                      => nir.Global.Type(id)
@@ -40,7 +42,11 @@ trait NirNameEncoding { self: NirCodeGen =>
   def genMethodName(sym: Symbol): nir.Global = {
     val owner         = sym.owner
     val ownerId       = genClassName(sym.owner)
-    val id            = sym.name.decoded.toString
+    val id            = {
+      val name = sym.name.decoded
+      if (owner == NObjectClass) name.substring(1) // skip the _
+      else name.toString
+    }
     val tpe           = sym.tpe.widen
     val mangledParams = tpe.params.toSeq.map(mangledType)
 

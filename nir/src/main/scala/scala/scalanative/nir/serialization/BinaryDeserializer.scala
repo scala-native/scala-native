@@ -38,6 +38,9 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
   private def getSeq[T](getT: => T): Seq[T] =
     (1 to getInt).map(_ => getT).toSeq
 
+  private def getOpt[T](getT: => T): Option[T] =
+    if (get == 0) None else Some(getT)
+
   private def getInts(): Seq[Int] = getSeq(getInt)
 
   private def getStrings(): Seq[String] = getSeq(getString)
@@ -171,13 +174,14 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
       Defn.Trait(getAttrs, getGlobal, getGlobals)
 
     case T.ClassDefn =>
-      Defn.Class(getAttrs, getGlobal, getGlobal, getGlobals)
+      Defn.Class(getAttrs, getGlobal, getGlobalOpt, getGlobals)
 
     case T.ModuleDefn =>
-      Defn.Module(getAttrs, getGlobal, getGlobal, getGlobals)
+      Defn.Module(getAttrs, getGlobal, getGlobalOpt, getGlobals)
   }
 
   private def getGlobals(): Seq[Global] = getSeq(getGlobal)
+  private def getGlobalOpt(): Option[Global] = getOpt(getGlobal)
   private def getGlobal(): Global = {
     val name = getGlobalNoDep
     deps += Dep.Direct(name)

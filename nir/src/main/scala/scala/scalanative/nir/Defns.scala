@@ -31,10 +31,10 @@ object Defn {
                          traits: Seq[Global]) extends Defn
   final case class Class(attrs: Seq[Attr],
                          name: Global,
-                         parent: Global,
+                         parent: Option[Global],
                          traits: Seq[Global]) extends Defn
   final case class Module(attrs: Seq[Attr],
                           name: Global,
-                          parent: Global,
+                          parent: Option[Global],
                           traits: Seq[Global]) extends Defn
 }
