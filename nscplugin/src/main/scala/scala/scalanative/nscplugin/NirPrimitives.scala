@@ -10,6 +10,8 @@ object NirPrimitives {
   final val MONITOR_NOTIFY    = 1 + ANY_GETCLASS
   final val MONITOR_NOTIFYALL = 1 + MONITOR_NOTIFY
   final val MONITOR_WAIT      = 1 + MONITOR_NOTIFYALL
+
+  final val ARRAY_CLONE = 1 + MONITOR_WAIT
 }
 
 abstract class NirPrimitives {
@@ -51,5 +53,7 @@ abstract class NirPrimitives {
     addPrimitive(Object_notify,    MONITOR_NOTIFY)
     addPrimitive(Object_notifyAll, MONITOR_NOTIFYALL)
     addPrimitive(Object_wait,      MONITOR_WAIT)
+
+    addPrimitive(Array_clone, ARRAY_CLONE)
   }
 }

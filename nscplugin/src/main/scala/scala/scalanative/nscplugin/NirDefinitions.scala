@@ -71,5 +71,8 @@ trait NirDefinitions { self: NirGlobalAddons =>
 
     lazy val NArrayLengthMethod: Map[Char, Symbol] =
       NArrayClass.mapValues(getMember(_, TermName("length")))
+
+    lazy val NArrayCloneMethod: Map[Char, Symbol] =
+      NArrayClass.mapValues(getMember(_, TermName("clone")))
   }
 }
