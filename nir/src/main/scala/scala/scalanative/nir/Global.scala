@@ -21,7 +21,8 @@ final class Global(val parts: Seq[String], val isType: Boolean) {
   }
 
   def isIntrinsic: Boolean =
-    parts.headOption.fold(false)(_ == "nrt")
+    parts.headOption.fold(false)(_.startsWith("scalanative_"))
+
   def owner: Global =
     if (parts.length <= 1) this
     else new Global(Seq(parts.head), isType)

@@ -10,6 +10,7 @@ object Rt {
   val RefArray = Class(Global.Type("scala.scalanative.runtime.RefArray"))
   val Rt       = Module(Global.Val("scala.scalanative.runtime"))
   val Unit     = Module(Global.Val("scala.scalanative.runtime.Unit"))
+  val Exc      = AnonStruct(Seq(Ptr(I8), I32))
 
   val mainName = Global.Val("main")
   val mainSig  = Function(Seq(I32, Ptr(Ptr(I8))), I32)

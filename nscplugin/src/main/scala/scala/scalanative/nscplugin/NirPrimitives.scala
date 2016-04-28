@@ -5,8 +5,7 @@ import scala.tools.nsc._
 import scala.collection.mutable
 
 object NirPrimitives {
-  final val ANY_GETCLASS = 301
-  final val ARRAY_CLONE  = 1 + ANY_GETCLASS
+  final val ARRAY_CLONE = 301
 }
 
 abstract class NirPrimitives {
@@ -43,6 +42,6 @@ abstract class NirPrimitives {
   private val nirPrimitives = mutable.Map.empty[Symbol, Int]
 
   private def initWithPrimitives(addPrimitive: (Symbol, Int) => Unit): Unit = {
-    addPrimitive(Array_clone, ARRAY_CLONE)
+    //addPrimitive(Array_clone, ARRAY_CLONE)
   }
 }

@@ -1,4 +1,10 @@
 package scala.scalanative
 package runtime
 
-@native.struct class Type(id: Int, name: String)
+import native.{struct, Ptr}
+
+@struct class Type(id: Int, name: String)
+
+object Type {
+  def get(obj: Object): Ptr[Type] = undefined
+}

@@ -10,17 +10,21 @@ trait NirDefinitions { self: NirGlobalAddons =>
 
   object nirDefinitions {
     lazy val NObjectClass = getRequiredClass("java.lang._Object")
-    lazy val NObjectGetMonitorMethod = getDecl(
-      NObjectClass, TermName("getMonitor"))
-    lazy val NObjectGetTypeMethod = getDecl(NObjectClass, TermName("getType"))
     lazy val NObjectHashCodeMethod = getDecl(
       NObjectClass, TermName("_hashCode"))
     lazy val NObjectEqualsMethod = getDecl(NObjectClass, TermName("_equals"))
 
     lazy val NMonitorClass = getRequiredClass(
       "scala.scalanative.runtime.Monitor")
+    lazy val NMonitorModule = getRequiredModule(
+      "scala.scalanative.runtime.Monitor")
     lazy val NMonitorEnterMethod = getDecl(NMonitorClass, TermName("enter"))
     lazy val NMonitorExitMethod  = getDecl(NMonitorClass, TermName("exit"))
+    lazy val NMonitorGetMethod   = getDecl(NMonitorModule, TermName("get"))
+
+    lazy val NTypeClass     = getRequiredClass("scala.scalanative.runtime.Type")
+    lazy val NTypeModule    = getRequiredModule("scala.scalanative.runtime.Type")
+    lazy val NTypeGetMethod = getDecl(NTypeModule, TermName("get"))
 
     lazy val NStringClass  = getRequiredClass("java.lang._String")
     lazy val NStringModule = getRequiredModule("java.lang._String")

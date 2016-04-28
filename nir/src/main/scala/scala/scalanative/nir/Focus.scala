@@ -98,10 +98,9 @@ final case class Focus(
   }
 
   def branchTry(
-    retty: Type, normal: Focus => Focus, exc: (Val, Focus) => Focus): Focus =
-    ??? /*{
+    retty: Type, normal: Focus => Focus, exc: (Val, Focus) => Focus): Focus = {
     val merge = fresh()
-    val excparam = Val.Local(fresh(), Nrt.excrec)
+    val excparam = Val.Local(fresh(), Rt.Exc)
     val param = Val.Local(fresh(), retty)
     val (normname, normcompl, normblocks) = wrapBranch(merge, normal)
     val (excname, exccompl, excblocks) = wrapBranch(merge, exc(excparam, _), Seq(excparam))
@@ -115,7 +114,7 @@ final case class Focus(
       Focus(blocks ++ normblocks ++ excblocks,
             merge, Seq(param), Seq(),
             param, isComplete = false)
-  }*/
+  }
 }
 object Focus {
   final case class NotMergeable(focus: Focus) extends Exception

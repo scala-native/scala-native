@@ -40,8 +40,8 @@ object ScalaNativePluginInternal {
   lazy val commonProjectSettings = Seq(
     nativeVerbose := false,
 
-    nativeCompile := {
-      val entry     = (OptSpace ~> StringBasic).parsed
+    run := {
+      val entry     = (mainClass in Compile).value.get.toString
       val classpath = cpToStrings((fullClasspath in Compile).value.map(_.data))
       val target    = (crossTarget in Compile).value
       val appll     = target / (moduleName.value + "-out.ll")
@@ -54,10 +54,7 @@ object ScalaNativePluginInternal {
       IO.createDirectory(target)
       compileNir(opts)
       compileLl(target, appll, binary)
-    },
-
-    nativeRun := {
-      ???
+      Process(abs(binary)).!
     }
   )
 
