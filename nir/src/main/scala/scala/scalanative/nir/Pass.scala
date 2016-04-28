@@ -5,44 +5,44 @@ import scala.collection.mutable
 
 trait Pass extends (Seq[Defn] => Seq[Defn]) {
   type OnAssembly = PartialFunction[Seq[Defn], Seq[Defn]]
-  type OnDefn = PartialFunction[Defn, Seq[Defn]]
-  type OnBlock = PartialFunction[Block, Seq[Block]]
-  type OnInst = PartialFunction[Inst, Seq[Inst]]
-  type OnCf = PartialFunction[Cf, Cf]
-  type OnNext = PartialFunction[Next, Next]
-  type OnVal = PartialFunction[Val, Val]
-  type OnType = PartialFunction[Type, Type]
+  type OnDefn     = PartialFunction[Defn, Seq[Defn]]
+  type OnBlock    = PartialFunction[Block, Seq[Block]]
+  type OnInst     = PartialFunction[Inst, Seq[Inst]]
+  type OnCf       = PartialFunction[Cf, Cf]
+  type OnNext     = PartialFunction[Next, Next]
+  type OnVal      = PartialFunction[Val, Val]
+  type OnType     = PartialFunction[Type, Type]
 
-  def preAssembly: OnAssembly = null
+  def preAssembly: OnAssembly  = null
   def postAssembly: OnAssembly = null
-  def preDefn: OnDefn = null
-  def postDefn: OnDefn = null
-  def preBlock: OnBlock = null
-  def postBlock: OnBlock = null
-  def preInst: OnInst = null
-  def postInst: OnInst = null
-  def preCf: OnCf = null
-  def postCf: OnCf = null
-  def preNext: OnNext = null
-  def postNext: OnNext = null
-  def preVal: OnVal = null
-  def postVal: OnVal = null
-  def preType: OnType = null
-  def postType: OnType = null
+  def preDefn: OnDefn          = null
+  def postDefn: OnDefn         = null
+  def preBlock: OnBlock        = null
+  def postBlock: OnBlock       = null
+  def preInst: OnInst          = null
+  def postInst: OnInst         = null
+  def preCf: OnCf              = null
+  def postCf: OnCf             = null
+  def preNext: OnNext          = null
+  def postNext: OnNext         = null
+  def preVal: OnVal            = null
+  def postVal: OnVal           = null
+  def preType: OnType          = null
+  def postType: OnType         = null
 
-  @inline private def hook[A, B](pf: PartialFunction[A, B], arg: A, default: B): B =
+  @inline private def hook[A, B](
+    pf: PartialFunction[A, B], arg: A, default: B): B =
     if (pf == null) default else pf.applyOrElse(arg, (_: A) => default)
 
   private def txAssembly(assembly: Seq[Defn]): Seq[Defn] = {
     val pre = hook(preAssembly, assembly, assembly)
 
-    val post =
-      pre.flatMap { defn =>
-        val pres = hook(preDefn, defn, Seq(defn))
-        val posts = pres.flatMap(txDefn)
+    val post = pre.flatMap { defn =>
+      val pres  = hook(preDefn, defn, Seq(defn))
+      val posts = pres.flatMap(txDefn)
 
-        posts.flatMap(post => hook(postDefn, post, Seq(post)))
-      }
+      posts.flatMap(post => hook(postDefn, post, Seq(post)))
+    }
 
     hook(postAssembly, post, post)
   }
@@ -82,8 +82,8 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
         Val.Local(param.name, txType(param.ty))
       }
       val newinsts = pre.insts.flatMap(txInst)
-      val newcf = txCf(pre.cf)
-      val post = Block(pre.name, newparams, newinsts, newcf)
+      val newcf    = txCf(pre.cf)
+      val post     = Block(pre.name, newparams, newinsts, newcf)
 
       hook(postBlock, post, Seq(post))
     }
@@ -94,27 +94,34 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
 
     pres.flatMap { pre =>
       val newop = pre.op match {
-        case Op.Call(ty, ptrv, argvs)     => Op.Call(txType(ty), txVal(ptrv), argvs.map(txVal))
-        case Op.Load(ty, ptrv)            => Op.Load(txType(ty), txVal(ptrv))
-        case Op.Store(ty, ptrv, v)        => Op.Store(txType(ty), txVal(ptrv), txVal(v))
-        case Op.Elem(ty, ptrv, indexvs)   => Op.Elem(txType(ty), txVal(ptrv), indexvs.map(txVal))
-        case Op.Extract(aggrv, indexvs)   => Op.Extract(txVal(aggrv), indexvs)
-        case Op.Insert(aggrv, v, indexvs) => Op.Insert(txVal(aggrv), txVal(v), indexvs)
-        case Op.Alloca(ty)                => Op.Alloca(txType(ty))
-        case Op.Bin(bin, ty, lv, rv)      => Op.Bin(bin, txType(ty), txVal(lv), txVal(rv))
-        case Op.Comp(comp, ty, lv, rv)    => Op.Comp(comp, txType(ty), txVal(lv), txVal(rv))
-        case Op.Conv(conv, ty, v)         => Op.Conv(conv, txType(ty), txVal(v))
+        case Op.Call(ty, ptrv, argvs) =>
+          Op.Call(txType(ty), txVal(ptrv), argvs.map(txVal))
+        case Op.Load(ty, ptrv) => Op.Load(txType(ty), txVal(ptrv))
+        case Op.Store(ty, ptrv, v) =>
+          Op.Store(txType(ty), txVal(ptrv), txVal(v))
+        case Op.Elem(ty, ptrv, indexvs) =>
+          Op.Elem(txType(ty), txVal(ptrv), indexvs.map(txVal))
+        case Op.Extract(aggrv, indexvs) => Op.Extract(txVal(aggrv), indexvs)
+        case Op.Insert(aggrv, v, indexvs) =>
+          Op.Insert(txVal(aggrv), txVal(v), indexvs)
+        case Op.Alloca(ty) => Op.Alloca(txType(ty))
+        case Op.Bin(bin, ty, lv, rv) =>
+          Op.Bin(bin, txType(ty), txVal(lv), txVal(rv))
+        case Op.Comp(comp, ty, lv, rv) =>
+          Op.Comp(comp, txType(ty), txVal(lv), txVal(rv))
+        case Op.Conv(conv, ty, v) => Op.Conv(conv, txType(ty), txVal(v))
 
-        case Op.Alloc(ty)                  => Op.Alloc(txType(ty))
-        case Op.Field(ty, v, n)            => Op.Field(txType(ty), txVal(v), n)
-        case Op.Method(ty, v, n)           => Op.Method(txType(ty), txVal(v), n)
-        case Op.Module(n)                  => Op.Module(n)
-        case Op.As(ty, v)                  => Op.As(txType(ty), txVal(v))
-        case Op.Is(ty, v)                  => Op.Is(txType(ty), txVal(v))
-        case Op.Copy(v)                    => Op.Copy(txVal(v))
-        case Op.SizeOf(ty)                 => Op.SizeOf(txType(ty))
-        case Op.TypeOf(ty)                 => Op.TypeOf(txType(ty))
-        case Op.Closure(ty, fun, captures) => Op.Closure(txType(ty), txVal(fun), captures.map(txVal))
+        case Op.Alloc(ty)        => Op.Alloc(txType(ty))
+        case Op.Field(ty, v, n)  => Op.Field(txType(ty), txVal(v), n)
+        case Op.Method(ty, v, n) => Op.Method(txType(ty), txVal(v), n)
+        case Op.Module(n)        => Op.Module(n)
+        case Op.As(ty, v)        => Op.As(txType(ty), txVal(v))
+        case Op.Is(ty, v)        => Op.Is(txType(ty), txVal(v))
+        case Op.Copy(v)          => Op.Copy(txVal(v))
+        case Op.SizeOf(ty)       => Op.SizeOf(txType(ty))
+        case Op.TypeOf(ty)       => Op.TypeOf(txType(ty))
+        case Op.Closure(ty, fun, captures) =>
+          Op.Closure(txType(ty), txVal(fun), captures.map(txVal))
       }
       val post = Inst(pre.name, newop)
 
@@ -125,13 +132,20 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
   private def txCf(cf: Cf): Cf = {
     val pre = hook(preCf, cf, cf)
     val post = pre match {
-      case Cf.Unreachable                         => Cf.Unreachable
-      case Cf.Ret(v)                              => Cf.Ret(txVal(v))
-      case Cf.Jump(next)                          => Cf.Jump(txNext(next))
-      case Cf.If(v, thenp, elsep)                 => Cf.If(txVal(v), txNext(thenp), txNext(elsep))
-      case Cf.Switch(v, default, cases)           => Cf.Switch(txVal(v), txNext(default), cases.map(txNext))
-      case Cf.Invoke(ty, ptrv, argvs, succ, fail) => Cf.Invoke(txType(ty), txVal(ptrv), argvs.map(txVal), txNext(succ), txNext(fail))
-      case Cf.Resume(excrec)                      => Cf.Resume(txVal(excrec))
+      case Cf.Unreachable => Cf.Unreachable
+      case Cf.Ret(v)      => Cf.Ret(txVal(v))
+      case Cf.Jump(next)  => Cf.Jump(txNext(next))
+      case Cf.If(v, thenp, elsep) =>
+        Cf.If(txVal(v), txNext(thenp), txNext(elsep))
+      case Cf.Switch(v, default, cases) =>
+        Cf.Switch(txVal(v), txNext(default), cases.map(txNext))
+      case Cf.Invoke(ty, ptrv, argvs, succ, fail) =>
+        Cf.Invoke(txType(ty),
+                  txVal(ptrv),
+                  argvs.map(txVal),
+                  txNext(succ),
+                  txNext(fail))
+      case Cf.Resume(excrec) => Cf.Resume(txVal(excrec))
 
       case Cf.Throw(v)       => Cf.Throw(txVal(v))
       case Cf.Try(norm, exc) => Cf.Try(txNext(norm), txNext(exc))

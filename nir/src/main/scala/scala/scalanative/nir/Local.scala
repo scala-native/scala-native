@@ -7,7 +7,7 @@ final case class Local(scope: String, id: Int) {
     case _        => s"Local($scope, $id)"
   }
 
-  final def isEmpty = this eq Local.empty
+  final def isEmpty  = this eq Local.empty
   final def nonEmpty = this ne Local.empty
 }
 object Local {

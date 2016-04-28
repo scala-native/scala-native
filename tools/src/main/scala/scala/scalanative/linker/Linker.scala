@@ -16,8 +16,7 @@ final class Linker(paths: Seq[String]) {
         assembly.load(global)
     }.flatten
 
-  private val writer =
-    new java.io.PrintWriter(new java.io.File("out.dot"))
+  private val writer = new java.io.PrintWriter(new java.io.File("out.dot"))
   private def writeStart(): Unit =
     writer.println("digraph G {\n")
   private def writeEdge(from: Global, to: Global): Unit = {
@@ -33,11 +32,11 @@ final class Linker(paths: Seq[String]) {
   }
 
   def link(entry: Global): (Seq[Global], Seq[Defn]) = {
-    val resolved    = mutable.Set.empty[Global]
-    val unresolved  = mutable.Set.empty[Global]
-    val direct      = mutable.Stack.empty[Global]
+    val resolved   = mutable.Set.empty[Global]
+    val unresolved = mutable.Set.empty[Global]
+    val direct     = mutable.Stack.empty[Global]
     var conditional = mutable.UnrolledBuffer.empty[Dep.Conditional]
-    val defns       = mutable.UnrolledBuffer.empty[Defn]
+    val defns = mutable.UnrolledBuffer.empty[Defn]
 
     writeStart()
 
@@ -45,24 +44,24 @@ final class Linker(paths: Seq[String]) {
       while (direct.nonEmpty) {
         val workitem = direct.pop()
 
-        if (!workitem.isIntrinsic &&
-            !resolved.contains(workitem) &&
+        if (!workitem.isIntrinsic && !resolved.contains(workitem) &&
             !unresolved.contains(workitem)) {
 
           load(workitem).fold[Unit] {
             unresolved += workitem
-          } { case (deps, defn) =>
-            resolved += workitem
-            defns    += defn
+          } {
+            case (deps, defn) =>
+              resolved += workitem
+              defns += defn
 
-            deps.foreach {
-              case Dep.Direct(dep) =>
-                writeEdge(workitem, dep)
-                direct.push(dep)
+              deps.foreach {
+                case Dep.Direct(dep) =>
+                  writeEdge(workitem, dep)
+                  direct.push(dep)
 
-              case cond: Dep.Conditional =>
-                conditional += cond
-            }
+                case cond: Dep.Conditional =>
+                  conditional += cond
+              }
           }
         }
       }
@@ -72,12 +71,10 @@ final class Linker(paths: Seq[String]) {
 
       conditional.foreach {
         case Dep.Conditional(dep, cond)
-            if resolved.contains(dep)
-            || unresolved.contains(dep) =>
+            if resolved.contains(dep) || unresolved.contains(dep) =>
           ()
 
-        case Dep.Conditional(dep, cond)
-            if resolved.contains(cond) =>
+        case Dep.Conditional(dep, cond) if resolved.contains(cond) =>
           writeEdge(cond, dep)
           direct.push(dep)
 

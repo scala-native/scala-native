@@ -2,12 +2,11 @@ package scala.scalanative
 package nir
 
 import util.{sh, Show}
-import Show.{Sequence => s, Indent => i, Unindent => ui,
-             Repeat => r, Newline => nl}
+import Show.{Sequence => s, Indent => i, Unindent => ui, Repeat => r, Newline => nl}
 
 object Shows {
   def brace(body: Show.Result): Show.Result = {
-    val open = "{"
+    val open  = "{"
     val close = nl("}")
     sh"$open$body$close"
   }
@@ -49,9 +48,9 @@ object Shows {
         }
         sh"(${r(paramshows, sep = ", ")})"
       }
-    val header = sh"$name$paramlist:"
+    val header    = sh"$name$paramlist:"
     val instshows = insts.map(i => sh"$i") :+ sh"$cf"
-    val body = i(r(instshows, sep = nl("")))
+    val body      = i(r(instshows, sep = nl("")))
     sh"$header$body"
   }
 
@@ -84,7 +83,7 @@ object Shows {
       sh"jump $next"
     case Cf.If(cond, thenp, elsep) =>
       sh"if $cond then $thenp else $elsep"
-    case Cf.Switch(scrut, default, cases)  =>
+    case Cf.Switch(scrut, default, cases) =>
       val body = brace(r(cases.map(i(_)) :+ i(sh"default: $default")))
       sh"switch $scrut $body"
     case Cf.Invoke(ty, f, args, succ, fail) =>
@@ -139,7 +138,7 @@ object Shows {
     case Op.TypeOf(ty) =>
       sh"type-of[$ty]"
     case Op.Closure(ty, fun, captures) =>
-      sh"closure[$ty] ${r(fun +:captures, sep = ", ")}"
+      sh"closure[$ty] ${r(fun +: captures, sep = ", ")}"
   }
 
   implicit val showBin: Show[Bin] = Show {
@@ -199,26 +198,26 @@ object Shows {
   }
 
   implicit val showVal: Show[Val] = Show {
-    case Val.None                => ""
-    case Val.True                => "true"
-    case Val.False               => "false"
-    case Val.Zero(ty)            => sh"zero[$ty]"
-    case Val.I8(value)           => sh"${value}i8"
-    case Val.I16(value)          => sh"${value}i16"
-    case Val.I32(value)          => sh"${value}i32"
-    case Val.I64(value)          => sh"${value}i64"
-    case Val.F32(value)          => sh"${value}f32"
-    case Val.F64(value)          => sh"${value}f64"
-    case Val.Struct(n, values)   => sh"struct $n {${r(values, ", ")}}"
-    case Val.Array(ty, values)   => sh"array $ty {${r(values, ", ")}}"
-    case Val.Chars(v)            => s("c\"", v, "\"")
-    case Val.Local(name, ty)     => sh"$name"
-    case Val.Global(name, ty)    => sh"$name"
+    case Val.None              => ""
+    case Val.True              => "true"
+    case Val.False             => "false"
+    case Val.Zero(ty)          => sh"zero[$ty]"
+    case Val.I8(value)         => sh"${value}i8"
+    case Val.I16(value)        => sh"${value}i16"
+    case Val.I32(value)        => sh"${value}i32"
+    case Val.I64(value)        => sh"${value}i64"
+    case Val.F32(value)        => sh"${value}f32"
+    case Val.F64(value)        => sh"${value}f64"
+    case Val.Struct(n, values) => sh"struct $n {${r(values, ", ")}}"
+    case Val.Array(ty, values) => sh"array $ty {${r(values, ", ")}}"
+    case Val.Chars(v)          => s("c\"", v, "\"")
+    case Val.Local(name, ty)   => sh"$name"
+    case Val.Global(name, ty)  => sh"$name"
 
     case Val.Bitcast(to, v) => sh"bitcast[$to] $v"
 
     case Val.Unit                   => "unit"
-    case Val.String(     v)         => "\"" + v + "\""
+    case Val.String(v)              => "\"" + v + "\""
     case Val.ClassValue(ty, values) => sh"class-value $ty {${r(values, ", ")}}"
   }
 
@@ -246,15 +245,18 @@ object Shows {
       sh"${attrs}struct $name {${r(tys, sep = ", ")}}"
 
     case Defn.Trait(attrs, name, ifaces) =>
-      val inherits = if (ifaces.nonEmpty) r(ifaces, sep = ", ", pre = " : ") else s()
+      val inherits =
+        if (ifaces.nonEmpty) r(ifaces, sep = ", ", pre = " : ") else s()
       sh"${attrs}trait $name$inherits"
     case Defn.Class(attrs, name, parent, ifaces) =>
       val parents = parent ++: ifaces
-      val inherits = if (parents.nonEmpty) r(parents, sep = ", ", pre = " : ") else s()
+      val inherits =
+        if (parents.nonEmpty) r(parents, sep = ", ", pre = " : ") else s()
       sh"${attrs}class $name$inherits"
     case Defn.Module(attrs, name, parent, ifaces) =>
       val parents = parent ++: ifaces
-      val inherits = if (parents.nonEmpty) r(parents, sep = ", ", pre = " : ") else s()
+      val inherits =
+        if (parents.nonEmpty) r(parents, sep = ", ", pre = " : ") else s()
       sh"${attrs}module $name$inherits"
   }
 

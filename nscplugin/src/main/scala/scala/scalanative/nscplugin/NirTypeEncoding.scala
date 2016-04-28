@@ -19,18 +19,19 @@ trait NirTypeEncoding { self: NirCodeGen =>
 
   /** Converts a type to its type symbol and type arguments. */
   def decomposeType(t: Type): (Symbol, Seq[Type]) = t.normalize match {
-    case ThisType(ArrayClass)            => (ObjectClass, Seq())
-    case ThisType(sym)                   => (sym, Seq())
-    case SingleType(_, sym)              => (sym, Seq())
-    case ConstantType(_)                 => decomposeType(t.underlying)
-    case TypeRef(_, sym, args)           => (sym, args)
-    case ClassInfoType(_, _, ArrayClass) => abort("ClassInfoType to ArrayClass!")
-    case ClassInfoType(_, _, sym)        => (sym, Seq())
-    case t: AnnotatedType                => decomposeType(t.underlying)
-    case tpe: ErasedValueType            => (tpe.valueClazz, Seq())
+    case ThisType(ArrayClass)  => (ObjectClass, Seq())
+    case ThisType(sym)         => (sym, Seq())
+    case SingleType(_, sym)    => (sym, Seq())
+    case ConstantType(_)       => decomposeType(t.underlying)
+    case TypeRef(_, sym, args) => (sym, args)
+    case ClassInfoType(_, _, ArrayClass) =>
+      abort("ClassInfoType to ArrayClass!")
+    case ClassInfoType(_, _, sym) => (sym, Seq())
+    case t: AnnotatedType         => decomposeType(t.underlying)
+    case tpe: ErasedValueType     => (tpe.valueClazz, Seq())
   }
 
-	def genType(t: Type): nir.Type = {
+  def genType(t: Type): nir.Type = {
     val (sym, args) = decomposeType(t)
 
     genType(sym, args)

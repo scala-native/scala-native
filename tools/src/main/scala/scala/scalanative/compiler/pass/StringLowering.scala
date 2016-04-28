@@ -7,31 +7,32 @@ import util.ScopedVar, ScopedVar.scoped
 import nir._
 
 /** Lowers strings values into intrinsified global constant.
- *
- *  Every string value:
- *
- *      "..."
- *
- *  Generate unique constants per string value:
- *
- *      const @__str_$idx_data: [i8 x ${str.length}] =
- *        c"..."
- *
- *      const @__str_$idx: struct #string =
- *        struct #string { #string_type, ${str.length}, bitcast[ptr i8] @__str_$idx_data }
- *
- *  And the value itself is replaced with:
- *
- *      bitcast[ptr i8] @__str_$idx
- *
- *  Eliminates:
- *  - Val.String
- */
+  *
+  * Every string value:
+  *
+  *     "..."
+  *
+  * Generate unique constants per string value:
+  *
+  *     const @__str_$idx_data: [i8 x ${str.length}] =
+  *       c"..."
+  *
+  *     const @__str_$idx: struct #string =
+  *       struct #string { #string_type, ${str.length}, bitcast[ptr i8] @__str_$idx_data }
+  *
+  * And the value itself is replaced with:
+  *
+  *     bitcast[ptr i8] @__str_$idx
+  *
+  * Eliminates:
+  * - Val.String
+  */
 class StringLowering extends Pass {
   private val strings = mutable.UnrolledBuffer.empty[String]
 
-  override def postAssembly = { case defns =>
-    defns /*++ strings.zipWithIndex.flatMap { case (v, idx) =>
+  override def postAssembly = {
+    case defns =>
+      defns /*++ strings.zipWithIndex.flatMap { case (v, idx) =>
       val data      = Global.Val("__str", idx.toString, "data")
       val dataTy    = Type.Array(Type.I8, v.length)
       val dataVal   = Val.Chars(v)
@@ -60,7 +61,7 @@ class StringLowering extends Pass {
 
       Val.Bitcast(Type.Ptr(Type.I8),
         Val.Global(Global.Val("__str", idx.toString), Type.Ptr(Type.Struct(Nrt.String.name))))
-      */
+       */
 
       Val.Zero(Type.Ptr(Type.I8))
   }

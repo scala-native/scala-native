@@ -16,8 +16,8 @@ object Rt {
 
   val initName = Global.Val("scala.scalanative.runtime",
                             "init_i32_ptr.ptr.i8_class.nrt.RefArray")
-  val initSig  = Function(Seq(I32, Ptr(Ptr(I8))), RefArray)
-  val init     = Val.Global(initName, initSig)
+  val initSig = Function(Seq(I32, Ptr(Ptr(I8))), RefArray)
+  val init    = Val.Global(initName, initSig)
 
   val throwName = Global.Val("scalanative_throw")
   val throwSig  = Function(Seq(Ptr(I8)), Void)

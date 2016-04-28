@@ -6,42 +6,44 @@ import compiler.analysis.ClassHierarchy
 import nir._
 
 /** Lowers traits and operations on them.
- *
- *  For example an trait:
- *
- *      trait $name: .. $traits {
- *        .. def $declname: $declty
- *        .. def $defnname: $defnty = $body
- *      }
- *
- *  Gets lowered to:
- *
- *      const $name_const: struct #type =
- *        struct #type {
- *          #Type_type,
- *          ${trt.name},
- *          ${trt.id}
- *        }
- *
- *      .. def $defnname: $defnty = $body
- *
- *  Additionally a dispatch table are generated:
- *
- *      const __trait_dispatch: [[ptr i8 x C] x T] = ...
- *
- *  This table lets one find a trait vtable for given class.
- *  Dispatch table is indexed by a pair of class id and a trait id
- *  (where C is total number of classes and T is total number of
- *  traits in the current compilation assembly.)
- *
- *  In the future we'd probably compact this array with one of the
- *  well-known compression techniques like row displacement tables.
- */
-class TraitLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pass {
+  *
+  * For example an trait:
+  *
+  *     trait $name: .. $traits {
+  *       .. def $declname: $declty
+  *       .. def $defnname: $defnty = $body
+  *     }
+  *
+  * Gets lowered to:
+  *
+  *     const $name_const: struct #type =
+  *       struct #type {
+  *         #Type_type,
+  *         ${trt.name},
+  *         ${trt.id}
+  *       }
+  *
+  *     .. def $defnname: $defnty = $body
+  *
+  * Additionally a dispatch table are generated:
+  *
+  *     const __trait_dispatch: [[ptr i8 x C] x T] = ...
+  *
+  * This table lets one find a trait vtable for given class.
+  * Dispatch table is indexed by a pair of class id and a trait id
+  * (where C is total number of classes and T is total number of
+  * traits in the current compilation assembly.)
+  *
+  * In the future we'd probably compact this array with one of the
+  * well-known compression techniques like row displacement tables.
+  */
+class TraitLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
+    extends Pass {
   private def traitDispatch(): Seq[Defn] = Seq()
 
-  override def preAssembly = { case defns =>
-    defns ++ traitDispatch()
+  override def preAssembly = {
+    case defns =>
+      defns ++ traitDispatch()
   }
 
   override def preDefn = {
@@ -57,7 +59,7 @@ class TraitLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pa
     case _: Defn.Define => ???
   }
 
-  override def preInst =  {
+  override def preInst = {
     case Inst(n, Op.Method(sig, obj, VirtualTraitMethodRef(meth))) =>
       ???
 
@@ -94,8 +96,8 @@ class TraitLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pa
     def unapply(name: Global): Option[ClassHierarchy.Method] =
       chg.nodes.get(name).collect {
         case meth: ClassHierarchy.Method
-          if meth.isVirtual
-          && meth.in.isInstanceOf[ClassHierarchy.Trait] => meth
+            if meth.isVirtual && meth.in.isInstanceOf[ClassHierarchy.Trait] =>
+          meth
       }
   }
 
@@ -103,8 +105,8 @@ class TraitLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pa
     def unapply(name: Global): Option[ClassHierarchy.Method] =
       chg.nodes.get(name).collect {
         case meth: ClassHierarchy.Method
-          if meth.isStatic
-          && meth.in.isInstanceOf[ClassHierarchy.Trait] => meth
+            if meth.isStatic && meth.in.isInstanceOf[ClassHierarchy.Trait] =>
+          meth
       }
   }
 }

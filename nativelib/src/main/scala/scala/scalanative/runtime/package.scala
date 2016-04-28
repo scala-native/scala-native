@@ -1,5 +1,7 @@
 package scala.scalanative
 
+import native.Ptr
+
 package object runtime {
   def undefined: Nothing = throw new UndefinedBehaviorError
 

@@ -15,29 +15,33 @@ package object serialization {
     (new BinarySerializer(buffer)).serialize(defns)
 
   def serializeFile(serialize: (Seq[Defn], ByteBuffer) => Unit,
-                    defns: Seq[Defn], path: String,
+                    defns: Seq[Defn],
+                    path: String,
                     buffer: ByteBuffer = default): Unit = {
     buffer.clear
     serialize(defns, buffer)
     buffer.flip
-    val channel =
-      FileChannel.open(Paths.get(path), OpenOpt.CREATE, OpenOpt.WRITE, OpenOpt.TRUNCATE_EXISTING)
-    try channel.write(buffer)
-    finally channel.close
+    val channel = FileChannel.open(Paths.get(path),
+                                   OpenOpt.CREATE,
+                                   OpenOpt.WRITE,
+                                   OpenOpt.TRUNCATE_EXISTING)
+    try channel.write(buffer) finally channel.close
   }
 
-  def serializeTextFile(defns: Seq[Defn], path: String,
+  def serializeTextFile(defns: Seq[Defn],
+                        path: String,
                         buffer: ByteBuffer = default): Unit =
     serializeFile(serializeText, defns, path, buffer)
 
-  def serializeBinaryFile(defns: Seq[Defn], path: String,
+  def serializeBinaryFile(defns: Seq[Defn],
+                          path: String,
                           buffer: ByteBuffer = default): Unit =
     serializeFile(serializeBinary, defns, path, buffer)
 
   def deserializeBinaryFile(path: String): BinaryDeserializer =
     new BinaryDeserializer({
       //println(s"opened $path")
-      val bytes = Files.readAllBytes(Paths.get(path))
+      val bytes  = Files.readAllBytes(Paths.get(path))
       val buffer = ByteBuffer.wrap(bytes)
       buffer
     })

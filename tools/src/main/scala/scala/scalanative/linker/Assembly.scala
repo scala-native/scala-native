@@ -13,29 +13,32 @@ sealed abstract class Assembly {
 }
 
 object Assembly {
-  final case class Dir private[Assembly] (val base: File) extends Assembly {
+  final case class Dir private[Assembly](val base: File) extends Assembly {
     private val entries: Map[Global, BinaryDeserializer] = {
       val baseabs = base.getAbsolutePath()
-      val files =
-        FileUtils.listFiles(
-          base,
-          new RegexFileFilter("(.*)\\.nir"),
-          DirectoryFileFilter.DIRECTORY).toArray.toIterator
-      files.map { case file: File =>
-        val fileabs = file.getAbsolutePath()
-        val relpath = fileabs.replace(baseabs + "/", "")
-        val (isType, rel) =
-          if (relpath.endsWith(".class.nir"))
-            (true, relpath.replace(".class.nir", ""))
-          else if (relpath.endsWith(".trait.nir"))
-            (true, relpath.replace(".trait.nir", ""))
-          else if (relpath.endsWith(".module.nir"))
-            (false, relpath.replace(".module.nir", ""))
-          else
-            throw new LinkingError(s"can't recognized assembly file: $relpath")
-        val parts = rel.split("/").toSeq
-        val name = new Global(Seq(parts.mkString(".")), isType)
-        (name -> deserializeBinaryFile(fileabs))
+      val files = FileUtils
+        .listFiles(base,
+                   new RegexFileFilter("(.*)\\.nir"),
+                   DirectoryFileFilter.DIRECTORY)
+        .toArray
+        .toIterator
+      files.map {
+        case file: File =>
+          val fileabs = file.getAbsolutePath()
+          val relpath = fileabs.replace(baseabs + "/", "")
+          val (isType, rel) =
+            if (relpath.endsWith(".class.nir"))
+              (true, relpath.replace(".class.nir", ""))
+            else if (relpath.endsWith(".trait.nir"))
+              (true, relpath.replace(".trait.nir", ""))
+            else if (relpath.endsWith(".module.nir"))
+              (false, relpath.replace(".module.nir", ""))
+            else
+              throw new LinkingError(
+                s"can't recognized assembly file: $relpath")
+          val parts = rel.split("/").toSeq
+          val name  = new Global(Seq(parts.mkString(".")), isType)
+          (name -> deserializeBinaryFile(fileabs))
       }.toMap
     }
     //println(s"discovered dir assembly $base")
@@ -50,7 +53,7 @@ object Assembly {
       }
   }
 
-  final case class Jar private[Assembly] (val base: File) extends Assembly {
+  final case class Jar private[Assembly](val base: File) extends Assembly {
     def contains(entry: Global) = false
 
     def load(entry: Global) = None

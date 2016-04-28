@@ -7,13 +7,14 @@ import scala.tools.nsc.io.AbstractFile
 trait NirFiles { self: NirCodeGen =>
   import global._
 
-  private def getPathFor(cunit: CompilationUnit, sym: Symbol, suffix: String): String = {
+  private def getPathFor(
+    cunit: CompilationUnit, sym: Symbol, suffix: String): String = {
     val baseDir: AbstractFile =
       settings.outputDirs.outputDirFor(cunit.source.file)
 
-    val id = genClassName(sym).parts.head
+    val id        = genClassName(sym).parts.head
     val pathParts = id.split("[./]")
-    val dir = (baseDir /: pathParts.init)(_.subdirectoryNamed(_))
+    val dir       = (baseDir /: pathParts.init)(_.subdirectoryNamed(_))
 
     var filename = pathParts.last
     val file = dir fileNamed (filename + suffix)
@@ -21,12 +22,15 @@ trait NirFiles { self: NirCodeGen =>
     file.file.getAbsolutePath
   }
 
-  def genIRFile(cunit: CompilationUnit, sym: Symbol, defns: Seq[nir.Defn]): Unit = {
+  def genIRFile(
+    cunit: CompilationUnit, sym: Symbol, defns: Seq[nir.Defn]): Unit = {
     val kind =
       if (isModule(sym)) "module"
       else if (sym.isInterface) "trait"
       else "class"
-    nir.serialization.serializeBinaryFile(defns, getPathFor(cunit, sym, s".$kind.nir"))
-    nir.serialization.serializeTextFile(defns, getPathFor(cunit, sym, s".$kind.hnir"))
+    nir.serialization.serializeBinaryFile(
+      defns, getPathFor(cunit, sym, s".$kind.nir"))
+    nir.serialization.serializeTextFile(
+      defns, getPathFor(cunit, sym, s".$kind.hnir"))
   }
 }

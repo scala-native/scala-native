@@ -10,7 +10,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
   import buffer._
 
   final def serialize(defns: Seq[Defn]): Unit = {
-    val names = defns.map(_.name)
+    val names     = defns.map(_.name)
     val positions = mutable.UnrolledBuffer.empty[Int]
 
     putSeq(names) { n =>
@@ -26,9 +26,10 @@ final class BinarySerializer(buffer: ByteBuffer) {
     }
     val end = buffer.position
 
-    positions.zip(offsets).map { case (pos, offset) =>
-      buffer.position(pos)
-      putInt(offset)
+    positions.zip(offsets).map {
+      case (pos, offset) =>
+        buffer.position(pos)
+        putInt(offset)
     }
     buffer.position(end)
   }
@@ -71,9 +72,10 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Attr.WeakODR             => putInt(T.WeakODRAttr)
     case Attr.External            => putInt(T.ExternalAttr)
 
-    case Attr.Override(n)    => putInt(T.OverrideAttr); putGlobal(n)
-    case Attr.Pin(n)         => putInt(T.PinAttr); putGlobal(n)
-    case Attr.PinIf(n, cond) => putInt(T.PinIfAttr); putGlobal(n); putGlobal(cond)
+    case Attr.Override(n) => putInt(T.OverrideAttr); putGlobal(n)
+    case Attr.Pin(n)      => putInt(T.PinAttr); putGlobal(n)
+    case Attr.PinIf(n, cond) =>
+      putInt(T.PinIfAttr); putGlobal(n); putGlobal(cond)
   }
 
   private def putBin(bin: Bin) = bin match {
@@ -89,12 +91,12 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Bin.Srem => putInt(T.SremBin)
     case Bin.Urem => putInt(T.UremBin)
     case Bin.Frem => putInt(T.FremBin)
-    case Bin.Shl  => putInt(T.ShlBin )
+    case Bin.Shl  => putInt(T.ShlBin)
     case Bin.Lshr => putInt(T.LshrBin)
     case Bin.Ashr => putInt(T.AshrBin)
-    case Bin.And  => putInt(T.AndBin )
-    case Bin.Or   => putInt(T.OrBin  )
-    case Bin.Xor  => putInt(T.XorBin )
+    case Bin.And  => putInt(T.AndBin)
+    case Bin.Or   => putInt(T.OrBin)
+    case Bin.Xor  => putInt(T.XorBin)
   }
 
   private def putBlocks(blocks: Seq[Block]) = putSeq(blocks)(putBlock)
@@ -117,7 +119,8 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Cf.Switch(v, default, cases) =>
       putInt(T.SwitchCf); putVal(v); putNext(default); putNexts(cases)
     case Cf.Invoke(ty, f, args, succ, fail) =>
-      putInt(T.InvokeCf); putType(ty); putVal(f); putVals(args); putNext(succ); putNext(fail)
+      putInt(T.InvokeCf); putType(ty); putVal(f); putVals(args); putNext(succ);
+      putNext(fail)
     case Cf.Resume(excrec) =>
       putInt(T.ResumeCf); putVal(excrec)
 
@@ -217,8 +220,10 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putGlobals(ifaces)
   }
 
-  private def putGlobals(globals: Seq[Global]): Unit = putSeq(globals)(putGlobal)
-  private def putGlobalOpt(globalopt: Option[Global]): Unit = putOpt(globalopt)(putGlobal)
+  private def putGlobals(globals: Seq[Global]): Unit =
+    putSeq(globals)(putGlobal)
+  private def putGlobalOpt(globalopt: Option[Global]): Unit =
+    putOpt(globalopt)(putGlobal)
   private def putGlobal(global: Global): Unit = {
     putStrings(global.parts)
     putBool(global.isType)
@@ -230,7 +235,9 @@ final class BinarySerializer(buffer: ByteBuffer) {
     putOp(inst.op)
   }
 
-  private def putLocal(local: Local): Unit = { putString(local.scope); putInt(local.id) }
+  private def putLocal(local: Local): Unit = {
+    putString(local.scope); putInt(local.id)
+  }
 
   private def putNexts(nexts: Seq[Next]) = putSeq(nexts)(putNext)
   private def putNext(next: Next) = next match {
@@ -356,22 +363,23 @@ final class BinarySerializer(buffer: ByteBuffer) {
 
   private def putTypes(tys: Seq[Type]): Unit = putSeq(tys)(putType)
   private def putType(ty: Type): Unit = ty match {
-    case Type.None                => putInt(T.NoneType)
-    case Type.Void                => putInt(T.VoidType)
-    case Type.Label               => putInt(T.LabelType)
-    case Type.Vararg              => putInt(T.VarargType)
-    case Type.Bool                => putInt(T.BoolType)
-    case Type.I8                  => putInt(T.I8Type)
-    case Type.I16                 => putInt(T.I16Type)
-    case Type.I32                 => putInt(T.I32Type)
-    case Type.I64                 => putInt(T.I64Type)
-    case Type.F32                 => putInt(T.F32Type)
-    case Type.F64                 => putInt(T.F64Type)
-    case Type.Array(ty, n)        => putInt(T.ArrayType); putType(ty); putInt(n)
-    case Type.Ptr(ty)             => putInt(T.PtrType); putType(ty)
-    case Type.Function(args, ret) => putInt(T.FunctionType); putTypes(args); putType(ret)
-    case Type.Struct(n)           => putInt(T.StructType); putGlobal(n)
-    case Type.AnonStruct(tys)     => putInt(T.AnonStructType); putTypes(tys)
+    case Type.None         => putInt(T.NoneType)
+    case Type.Void         => putInt(T.VoidType)
+    case Type.Label        => putInt(T.LabelType)
+    case Type.Vararg       => putInt(T.VarargType)
+    case Type.Bool         => putInt(T.BoolType)
+    case Type.I8           => putInt(T.I8Type)
+    case Type.I16          => putInt(T.I16Type)
+    case Type.I32          => putInt(T.I32Type)
+    case Type.I64          => putInt(T.I64Type)
+    case Type.F32          => putInt(T.F32Type)
+    case Type.F64          => putInt(T.F64Type)
+    case Type.Array(ty, n) => putInt(T.ArrayType); putType(ty); putInt(n)
+    case Type.Ptr(ty)      => putInt(T.PtrType); putType(ty)
+    case Type.Function(args, ret) =>
+      putInt(T.FunctionType); putTypes(args); putType(ret)
+    case Type.Struct(n)       => putInt(T.StructType); putGlobal(n)
+    case Type.AnonStruct(tys) => putInt(T.AnonStructType); putTypes(tys)
 
     case Type.Size          => putInt(T.SizeType)
     case Type.Unit          => putInt(T.UnitType)
@@ -403,8 +411,9 @@ final class BinarySerializer(buffer: ByteBuffer) {
 
     case Val.Bitcast(ty, v) => putInt(T.BitcastVal); putType(ty); putVal(v)
 
-    case Val.Unit              => putInt(T.UnitVal)
-    case Val.String(v)         => putInt(T.StringVal); putString(v)
-    case Val.ClassValue(n, vs) => putInt(T.ClassValueVal); putGlobal(n); putVals(vs)
+    case Val.Unit      => putInt(T.UnitVal)
+    case Val.String(v) => putInt(T.StringVal); putString(v)
+    case Val.ClassValue(n, vs) =>
+      putInt(T.ClassValueVal); putGlobal(n); putVals(vs)
   }
 }

@@ -7,16 +7,16 @@ import util.unreachable
 import nir._
 
 /** Analysis that's used to answer following questions:
- *
- *  * What are the predecessors of given block?
- *
- *  * What are the successors of given block?
- */
+  *
+  *  * What are the predecessors of given block?
+  *
+  *  * What are the successors of given block?
+  */
 object ControlFlow {
   final case class Edge(val from: Node, val to: Node, val next: Next)
   final class Node(val block: Block, var pred: Seq[Edge], var succ: Seq[Edge])
   final class Graph(val entry: Node, val nodes: Map[Local, Node]) {
-    def map[T: reflect.ClassTag](f: Node => T): Seq[T] = {
+    def map[T : reflect.ClassTag](f: Node => T): Seq[T] = {
       val visited  = mutable.Set.empty[Node]
       val worklist = mutable.Stack.empty[Node]
       val result   = mutable.UnrolledBuffer.empty[T]
@@ -24,7 +24,7 @@ object ControlFlow {
       worklist.push(entry)
       while (worklist.nonEmpty) {
         val node = worklist.pop()
-        if (!visited.contains(node)){
+        if (!visited.contains(node)) {
           visited += node
           node.succ.foreach(e => worklist.push(e.to))
           result += f(node)
@@ -37,7 +37,7 @@ object ControlFlow {
 
   def apply(blocks: Seq[Block]): Graph = {
     val nodes = mutable.Map.empty[Local, Node]
-    def edge(from: Node, to: Node, next: Next) ={
+    def edge(from: Node, to: Node, next: Next) = {
       val e = new Edge(from, to, next)
       from.succ = from.succ :+ e
       to.pred = to.pred :+ e
@@ -50,9 +50,7 @@ object ControlFlow {
       case Block(n, _, _, cf) =>
         val node = nodes(n)
         cf match {
-          case Cf.Unreachable |
-               _: Cf.Ret      |
-               _: Cf.Resume   =>
+          case Cf.Unreachable | _: Cf.Ret | _: Cf.Resume =>
             ()
           case Cf.Jump(next) =>
             edge(node, nodes(next.name), next)

@@ -18,7 +18,7 @@ sealed abstract class Val {
     case Val.Local(_, ty)     => ty
     case Val.Global(_, ty)    => ty
 
-    case Val.Bitcast(to, _)   => to
+    case Val.Bitcast(to, _) => to
 
     case Val.Unit             => Type.Unit
     case Val.String(_)        => Rt.String
@@ -27,9 +27,9 @@ sealed abstract class Val {
 }
 object Val {
   // low-level
-  final case object None                                      extends Val
-  final case object True                                      extends Val
-  final case object False                                     extends Val
+  final case object None  extends Val
+  final case object True  extends Val
+  final case object False extends Val
   final case class Zero(zeroty: nir.Type)                     extends Val
   final case class I8(value: Byte)                            extends Val
   final case class I16(value: Short)                          extends Val
@@ -47,7 +47,7 @@ object Val {
   final case class Bitcast(to: Type, value: Val) extends Val
 
   // high-level
-  final case object Unit                                          extends Val
+  final case object Unit extends Val
   final case class String(value: java.lang.String)                extends Val
   final case class ClassValue(name: nir.Global, values: Seq[Val]) extends Val
 }

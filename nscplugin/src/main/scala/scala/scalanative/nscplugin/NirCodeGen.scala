@@ -11,10 +11,9 @@ import nir.Focus, Focus.sequenced
 import nir._, Shows._
 import NirPrimitives._
 
-abstract class NirCodeGen extends PluginComponent
-                             with NirFiles
-                             with NirTypeEncoding
-                             with NirNameEncoding {
+abstract class NirCodeGen
+    extends PluginComponent with NirFiles with NirTypeEncoding
+    with NirNameEncoding {
   val nirAddons: NirGlobalAddons {
     val global: NirCodeGen.this.global.type
   }
@@ -51,8 +50,8 @@ abstract class NirCodeGen extends PluginComponent
   }
 
   class CollectLocalInfo extends Traverser {
-    var mutableVars     = Set.empty[Symbol]
-    var labels          = Set.empty[LabelDef]
+    var mutableVars = Set.empty[Symbol]
+    var labels      = Set.empty[LabelDef]
     val labelApplyCount = mutable.Map.empty[Symbol, Int].withDefault(_ => 0)
 
     override def traverse(tree: Tree) = {
@@ -91,17 +90,16 @@ abstract class NirCodeGen extends PluginComponent
     override def apply(cunit: CompilationUnit): Unit = {
       def collectClassDefs(tree: Tree): List[ClassDef] = {
         tree match {
-          case EmptyTree => Nil
+          case EmptyTree            => Nil
           case PackageDef(_, stats) => stats flatMap collectClassDefs
-          case cd: ClassDef => cd :: Nil
+          case cd: ClassDef         => cd :: Nil
         }
       }
       val classDefs = collectClassDefs(cunit.body)
 
       classDefs.foreach { cd =>
         val sym = cd.symbol
-        if (isPrimitiveValueClass(sym) || (sym == ArrayClass))
-          ()
+        if (isPrimitiveValueClass(sym) || (sym == ArrayClass)) ()
         else {
           val defn = genClass(cd)
           genIRFile(cunit, sym, defn)
@@ -109,39 +107,34 @@ abstract class NirCodeGen extends PluginComponent
       }
     }
 
-    def genClass(cd: ClassDef): Seq[Defn] = scoped (
-      curClassSym := cd.symbol
-    ) {
-      val sym     = cd.symbol
-      val body    = cd.impl.body
-      def attrs   = genClassAttrs(sym)
-      def name    = genClassName(sym)
-      def parent  = genClassParent(sym)
-      def traits  = genClassInterfaces(sym)
-      def members = genClassMembers(sym, body)
+    def genClass(cd: ClassDef): Seq[Defn] =
+      scoped(
+        curClassSym := cd.symbol
+      ) {
+        val sym  = cd.symbol
+        val body = cd.impl.body
+        def attrs   = genClassAttrs(sym)
+        def name    = genClassName(sym)
+        def parent  = genClassParent(sym)
+        def traits  = genClassInterfaces(sym)
+        def members = genClassMembers(sym, body)
 
-      if (isModule(sym))
-        Defn.Module(attrs, name, parent, traits) +: members
-      else if (sym.isInterface)
-        Defn.Trait(attrs, name, traits) +: members
-      else
-        Defn.Class(attrs, name, parent, traits) +: members
-    }
+        if (isModule(sym)) Defn.Module(attrs, name, parent, traits) +: members
+        else if (sym.isInterface) Defn.Trait(attrs, name, traits) +: members
+        else Defn.Class(attrs, name, parent, traits) +: members
+      }
 
     def genClassParent(sym: Symbol): Option[nir.Global] =
-      if (sym == NObjectClass)
-        None
+      if (sym == NObjectClass) None
       else if (sym.superClass == NoSymbol || sym.superClass == ObjectClass)
         Some(genClassName(NObjectClass))
-      else
-        Some(genClassName(sym.superClass))
+      else Some(genClassName(sym.superClass))
 
     def genClassAttrs(sym: Symbol): Seq[Attr] = {
       def pinned =
         if (isModule(sym) && !isExternalModule(sym))
           Seq(Attr.Pin(genMethodName(sym.asClass.primaryConstructor)))
-        else
-          Seq()
+        else Seq()
 
       pinned ++ sym.annotations.collect {
         case ann if ann.symbol == ExternClass => Attr.External
@@ -151,34 +144,30 @@ abstract class NirCodeGen extends PluginComponent
     def genClassInterfaces(sym: Symbol) =
       for {
         parent <- sym.info.parents
-        psym = parent.typeSymbol
-        if psym.isInterface
+        psym = parent.typeSymbol if psym.isInterface
       } yield {
         genClassName(psym)
       }
 
     def genClassMembers(sym: Symbol, body: Seq[Tree]): Seq[Defn] =
       if (isExternalModule(sym)) {
-        val ctorBody =
-          body.collectFirst {
-            case dd: DefDef if dd.name == nme.CONSTRUCTOR => dd.rhs
-          }.get
-        val fieldSyms =
-          ctorBody match {
-            case Block(_ +: init, _) =>
-              init.map {
-                case Assign(ref: RefTree, Apply(extern, Seq()))
-                    if extern.symbol == ExternMethod =>
-                  ref.symbol
-                case stat =>
-                  unsupported(stat)
-              }
-          }
+        val ctorBody = body.collectFirst {
+          case dd: DefDef if dd.name == nme.CONSTRUCTOR => dd.rhs
+        }.get
+        val fieldSyms = ctorBody match {
+          case Block(_ +: init, _) =>
+            init.map {
+              case Assign(ref: RefTree, Apply(extern, Seq()))
+                  if extern.symbol == ExternMethod =>
+                ref.symbol
+              case stat =>
+                unsupported(stat)
+            }
+        }
 
         body.flatMap {
           case dd @ DefDef(_, name, _, _, _, Apply(rhs: RefTree, Seq()))
-              if name != nme.CONSTRUCTOR
-              && rhs.symbol == ExternMethod =>
+              if name != nme.CONSTRUCTOR && rhs.symbol == ExternMethod =>
             val sym   = dd.symbol
             val attrs = genMethodAttrs(sym) :+ Attr.External
             val name  = genMethodName(sym)
@@ -187,8 +176,7 @@ abstract class NirCodeGen extends PluginComponent
             Seq(Defn.Declare(attrs, name, sig))
 
           case dd: DefDef
-              if dd.name == nme.CONSTRUCTOR
-              || dd.symbol.hasFlag(ACCESSOR) =>
+              if dd.name == nme.CONSTRUCTOR || dd.symbol.hasFlag(ACCESSOR) =>
             Seq()
 
           case vd: ValDef if fieldSyms.contains(vd.symbol) =>
@@ -197,10 +185,8 @@ abstract class NirCodeGen extends PluginComponent
             val name  = genFieldName(sym)
             val ty    = genType(sym.info)
 
-            if (sym.hasFlag(MUTABLE))
-              Seq(Defn.Var(attrs, name, ty, Val.None))
-            else
-              Seq(Defn.Const(attrs, name, ty, Val.None))
+            if (sym.hasFlag(MUTABLE)) Seq(Defn.Var(attrs, name, ty, Val.None))
+            else Seq(Defn.Const(attrs, name, ty, Val.None))
 
           case stat =>
             unsupported(stat)
@@ -214,38 +200,37 @@ abstract class NirCodeGen extends PluginComponent
 
     def genClassFields(sym: Symbol) =
       for {
-        f <- sym.info.decls
-        if !f.isMethod && f.isTerm && !isModule(f)
+        f <- sym.info.decls if !f.isMethod && f.isTerm && !isModule(f)
       } yield {
         val name = genFieldName(f)
-        val ty = genType(f.tpe)
+        val ty   = genType(f.tpe)
         Defn.Var(Seq(), name, ty, Val.Zero(ty))
       }
 
-    def genMethod(dd: DefDef): Defn = scoped (
-      curMethodSym := dd.symbol
-    ) {
-      val sym       = dd.symbol
-      val attrs     = genMethodAttrs(sym)
-      val name      = genMethodName(sym)
-      val paramSyms = defParamSymbols(dd)
-      val sig       = genMethodSig(sym)
+    def genMethod(dd: DefDef): Defn =
+      scoped(
+        curMethodSym := dd.symbol
+      ) {
+        val sym       = dd.symbol
+        val attrs     = genMethodAttrs(sym)
+        val name      = genMethodName(sym)
+        val paramSyms = defParamSymbols(dd)
+        val sig       = genMethodSig(sym)
 
-      if (sym.isDeferred)
-        Defn.Declare(attrs, name, sig)
-      else {
-        val fresh  = new Fresh("src")
-        val env    = new Env(fresh)
+        if (sym.isDeferred) Defn.Declare(attrs, name, sig)
+        else {
+          val fresh = new Fresh("src")
+          val env   = new Env(fresh)
 
-        scoped (
-          curEnv       := env,
-          curLocalInfo := (new CollectLocalInfo).collect(dd.rhs)
-        ) {
-          val params = genParams(paramSyms)
-          Defn.Define(attrs, name, sig, genMethodBody(params, dd.rhs))
+          scoped(
+            curEnv := env,
+            curLocalInfo := (new CollectLocalInfo).collect(dd.rhs)
+          ) {
+            val params = genParams(paramSyms)
+            Defn.Define(attrs, name, sig, genMethodBody(params, dd.rhs))
+          }
         }
       }
-    }
 
     def genMethodAttrs(sym: Symbol): Seq[Attr] =
       sym.overrides.map {
@@ -258,31 +243,31 @@ abstract class NirCodeGen extends PluginComponent
         if (owner.primaryConstructor eq sym)
           owner.info.declarations.collect {
             case decl if decl.overrides.nonEmpty =>
-              decl.overrides.map { case ov =>
-                Attr.PinIf(genMethodName(decl), genMethodName(ov))
+              decl.overrides.map {
+                case ov =>
+                  Attr.PinIf(genMethodName(decl), genMethodName(ov))
               }
           }.toSeq.flatten
-        else
-          Seq()
+        else Seq()
       }
 
     def genMethodSig(sym: Symbol): nir.Type = sym match {
       case sym: ModuleSymbol =>
         val MethodType(params, res) = sym.tpe
-        val paramtys = params.map(p => genType(p.tpe))
-        val selfty   = genType(sym.owner.tpe)
-        val retty    = genType(res)
+        val paramtys                = params.map(p => genType(p.tpe))
+        val selfty                  = genType(sym.owner.tpe)
+        val retty                   = genType(res)
 
         Type.Function(Seq(selfty), retty)
 
       case sym: MethodSymbol =>
-        val params    = sym.paramLists.flatten
-        val paramtys  = params.map(p => genType(p.tpe))
-        val owner     = sym.owner
-        val selfty    =
+        val params   = sym.paramLists.flatten
+        val paramtys = params.map(p => genType(p.tpe))
+        val owner    = sym.owner
+        val selfty =
           if (isExternalModule(owner)) None
           else Some(genType(sym.owner.tpe))
-        val retty     =
+        val retty =
           if (sym.isClassConstructor) Type.Unit
           else genType(sym.tpe.resultType)
 
@@ -297,8 +282,8 @@ abstract class NirCodeGen extends PluginComponent
     def genParams(paramSyms: Seq[Symbol]): Seq[Val.Local] = {
       val self = Val.Local(curEnv.fresh(), genType(curClassSym.tpe))
       val params = paramSyms.map { sym =>
-        val name = curEnv.fresh()
-        val ty = genType(sym.tpe)
+        val name  = curEnv.fresh()
+        val ty    = genType(sym.tpe)
         val param = Val.Local(name, ty)
         curEnv.enter(sym, param)
         param
@@ -308,8 +293,7 @@ abstract class NirCodeGen extends PluginComponent
     }
 
     def notMergeableGuard(f: => Focus): Focus =
-      try f
-      catch {
+      try f catch {
         case Focus.NotMergeable(focus) => focus
       }
 
@@ -328,12 +312,12 @@ abstract class NirCodeGen extends PluginComponent
           (body finish Cf.Ret(body.value)).blocks
 
         case _ =>
-          val body =
-            scoped (
-              curThis := Val.Local(params.head.name, params.head.ty)
-            ) {
-              notMergeableGuard(genExpr(bodyp, Focus.entry(params)(curEnv.fresh)))
-            }
+          val body = scoped(
+            curThis := Val.Local(params.head.name, params.head.ty)
+          ) {
+            notMergeableGuard(
+              genExpr(bodyp, Focus.entry(params)(curEnv.fresh)))
+          }
 
           (body finish Cf.Ret(body.value)).blocks
       }
@@ -346,13 +330,13 @@ abstract class NirCodeGen extends PluginComponent
 
       case vd: ValDef =>
         // TODO: attribute valdef name to the rhs node
-        val rhs = genExpr(vd.rhs, focus)
+        val rhs       = genExpr(vd.rhs, focus)
         val isMutable = curLocalInfo.mutableVars.contains(vd.symbol)
         if (!isMutable) {
           curEnv.enter(vd.symbol, rhs.value)
           rhs withValue Val.Unit
         } else {
-          val ty = genType(vd.symbol.tpe)
+          val ty     = genType(vd.symbol.tpe)
           val alloca = rhs.withOp(Op.Alloca(ty))
           curEnv.enter(vd.symbol, alloca.value)
           alloca withOp Op.Store(ty, alloca.value, rhs.value)
@@ -365,7 +349,8 @@ abstract class NirCodeGen extends PluginComponent
         val expr = genExpr(exprp, focus)
         expr.finish(Cf.Ret(expr.value))
 
-      case Try(expr, catches, finalizer) if catches.isEmpty && finalizer.isEmpty =>
+      case Try(expr, catches, finalizer)
+          if catches.isEmpty && finalizer.isEmpty =>
         genExpr(expr, focus)
 
       case Try(expr, catches, finalizer) =>
@@ -389,16 +374,15 @@ abstract class NirCodeGen extends PluginComponent
 
       case Select(qualp, selp) =>
         val sym = tree.symbol
-        if (isModule(sym))
-          focus withOp Op.Module(genClassName(sym))
-        else if (sym.isStaticMember)
-          genStaticMember(sym, focus)
+        if (isModule(sym)) focus withOp Op.Module(genClassName(sym))
+        else if (sym.isStaticMember) genStaticMember(sym, focus)
         else if (sym.isMethod)
           genMethodCall(sym, statically = false, qualp, Seq(), focus)
         else {
-          val ty = genType(tree.symbol.tpe)
+          val ty   = genType(tree.symbol.tpe)
           val qual = genExpr(qualp, focus)
-          val elem = qual.withOp(Op.Field(ty, qual.value, genFieldName(tree.symbol)))
+          val elem =
+            qual.withOp(Op.Field(ty, qual.value, genFieldName(tree.symbol)))
           elem withOp Op.Load(ty, elem.value)
         }
 
@@ -406,10 +390,8 @@ abstract class NirCodeGen extends PluginComponent
         val sym = id.symbol
         if (curLocalInfo.mutableVars.contains(sym))
           focus withOp Op.Load(genType(sym.tpe), curEnv.resolve(sym))
-        else if (isModule(sym))
-          focus withOp Op.Module(genClassName(sym))
-        else
-          focus withValue(curEnv.resolve(sym))
+        else if (isModule(sym)) focus withOp Op.Module(genClassName(sym))
+        else focus withValue (curEnv.resolve(sym))
 
       case lit: Literal =>
         genLiteral(lit, focus)
@@ -429,11 +411,12 @@ abstract class NirCodeGen extends PluginComponent
             val ty   = genType(sel.tpe)
             val qual = genExpr(qualp, focus)
             val rhs  = genExpr(rhsp, qual)
-            val elem = rhs.withOp(Op.Field(ty, qual.value, genFieldName(sel.symbol)))
+            val elem =
+              rhs.withOp(Op.Field(ty, qual.value, genFieldName(sel.symbol)))
             elem.withOp(Op.Store(ty, elem.value, rhs.value))
 
           case id: Ident =>
-            val ty = genType(id.tpe)
+            val ty  = genType(id.tpe)
             val rhs = genExpr(rhsp, focus)
             rhs.withOp(Op.Store(ty, curEnv.resolve(id.symbol), rhs.value))
         }
@@ -451,24 +434,15 @@ abstract class NirCodeGen extends PluginComponent
         focus
 
       case _ =>
-        abort("Unexpected tree in genExpr: " +
-              tree + "/" + tree.getClass + " at: " + tree.pos)
+        abort("Unexpected tree in genExpr: " + tree + "/" + tree.getClass +
+          " at: " + tree.pos)
     }
 
     def genLiteral(lit: Literal, focus: Focus): Focus = {
       val value = lit.value
       value.tag match {
-        case NullTag
-           | UnitTag
-           | BooleanTag
-           | ByteTag
-           | ShortTag
-           | CharTag
-           | IntTag
-           | LongTag
-           | FloatTag
-           | DoubleTag
-           | StringTag =>
+        case NullTag | UnitTag | BooleanTag | ByteTag | ShortTag | CharTag |
+            IntTag | LongTag | FloatTag | DoubleTag | StringTag =>
           focus withValue genLiteralValue(lit)
 
         case ClazzTag =>
@@ -517,53 +491,55 @@ abstract class NirCodeGen extends PluginComponent
       elem withOp Op.Load(ty, elem.value)
     }
 
-    def genTry(retty: nir.Type, expr: Tree, catches: List[Tree],
-        finalizer: Tree, focus: Focus) =
+    def genTry(retty: nir.Type,
+               expr: Tree,
+               catches: List[Tree],
+               finalizer: Tree,
+               focus: Focus) =
       focus.branchTry(retty,
-        normal = genExpr(expr, _),
-        exc = genCatch(retty, catches, _, _))
+                      normal = genExpr(expr, _),
+                      exc = genCatch(retty, catches, _, _))
 
-    def genCatch(retty: nir.Type, catches: List[Tree], excrec: Val,
-        focus: Focus) = {
-      val excwrap =
-          focus   withOp Op.Extract(excrec, Seq(0))
+    def genCatch(
+      retty: nir.Type, catches: List[Tree], excrec: Val, focus: Focus) = {
+      val excwrap = focus withOp Op.Extract(excrec, Seq(0))
       val exccast =
-          excwrap withOp Op.Conv(Conv.Bitcast, Type.Ptr(Rt.Object), excwrap.value)
-      val exc     =
-          exccast withOp Op.Load(Rt.Object, exccast.value)
+        excwrap withOp Op.Conv(
+          Conv.Bitcast, Type.Ptr(Rt.Object), excwrap.value)
+      val exc = exccast withOp Op.Load(Rt.Object, exccast.value)
 
-      val cases =
-        catches.map {
-          case CaseDef(pat, _, body) =>
-            val (symopt, excty) = pat match {
-              case Typed(Ident(nme.WILDCARD), tpt) =>
-                (None, genType(tpt.tpe))
-              case Ident(nme.WILDCARD) =>
-                (None, genType(ThrowableClass.tpe))
-              case Bind(_, _) =>
-                (Some(pat.symbol), genType(pat.symbol.tpe))
-            }
+      val cases = catches.map {
+        case CaseDef(pat, _, body) =>
+          val (symopt, excty) = pat match {
+            case Typed(Ident(nme.WILDCARD), tpt) =>
+              (None, genType(tpt.tpe))
+            case Ident(nme.WILDCARD) =>
+              (None, genType(ThrowableClass.tpe))
+            case Bind(_, _) =>
+              (Some(pat.symbol), genType(pat.symbol.tpe))
+          }
 
-            (excty, { focus: Focus =>
-              val enter = symopt.map { sym =>
-                val cast = focus withOp Op.As(excty, exc.value)
-                curEnv.enter(sym, cast.value)
-                cast
-              }.getOrElse(focus)
-              val begin = enter withOp Nrt.call(Nrt.begin_catch, excwrap.value)
-              val res = genExpr(body, begin)
-              val end = res withOp Nrt.call(Nrt.end_catch)
-              end withValue res.value
-            })
-        }
-
-      def wrap(cases: Seq[(nir.Type, Focus => Focus)], focus: Focus): Focus = cases match {
-        case Seq() =>
-          focus finish Cf.Resume(excrec)
-        case (excty, f) +: rest =>
-          val cond = focus withOp Op.Is(excty, exc.value)
-          cond.branchIf(cond.value, retty, f, wrap(rest, _))
+          (excty, { focus: Focus =>
+          val enter = symopt.map { sym =>
+            val cast = focus withOp Op.As(excty, exc.value)
+            curEnv.enter(sym, cast.value)
+            cast
+          }.getOrElse(focus)
+          val begin = enter withOp Nrt.call(Nrt.begin_catch, excwrap.value)
+          val res   = genExpr(body, begin)
+          val end   = res withOp Nrt.call(Nrt.end_catch)
+          end withValue res.value
+        })
       }
+
+      def wrap(cases: Seq[(nir.Type, Focus => Focus)], focus: Focus): Focus =
+        cases match {
+          case Seq() =>
+            focus finish Cf.Resume(excrec)
+          case (excty, f) +: rest =>
+            val cond = focus withOp Op.Is(excty, exc.value)
+            cond.branchIf(cond.value, retty, f, wrap(rest, _))
+        }
 
       wrap(cases, exc)
     }
@@ -578,7 +554,7 @@ abstract class NirCodeGen extends PluginComponent
 
       def translateMatch(last: LabelDef) = {
         val (prologue, cases) = stats.span(s => !isCaseLabelDef(s))
-        val labels = cases.map { case label: LabelDef => label }
+        val labels            = cases.map { case label: LabelDef => label }
         genMatch(prologue, labels :+ last, focus)
       }
 
@@ -586,19 +562,20 @@ abstract class NirCodeGen extends PluginComponent
         case label: LabelDef if isCaseLabelDef(label) =>
           translateMatch(label)
 
-        case Apply(TypeApply(Select(label: LabelDef, nme.asInstanceOf_Ob), _), _)
+        case Apply(
+            TypeApply(Select(label: LabelDef, nme.asInstanceOf_Ob), _), _)
             if isCaseLabelDef(label) =>
           translateMatch(label)
 
         case _ =>
-          val focs = sequenced(stats, focus)(genExpr(_, _))
+          val focs      = sequenced(stats, focus)(genExpr(_, _))
           val lastfocus = focs.lastOption.getOrElse(focus)
           genExpr(last, lastfocus)
       }
     }
 
     def genMatch(prologue: List[Tree], lds: List[LabelDef], focus: Focus) = {
-      val prfocus = sequenced(prologue, focus)(genExpr(_, _))
+      val prfocus   = sequenced(prologue, focus)(genExpr(_, _))
       val lastfocus = prfocus.lastOption.getOrElse(focus)
       lds.foreach(curEnv.enterLabel)
 
@@ -614,16 +591,16 @@ abstract class NirCodeGen extends PluginComponent
     }
 
     def genLabel(label: LabelDef, hijackThis: Boolean = false) = {
-      val local   = curEnv.resolveLabel(label)
-      val params  = label.params.map { id =>
+      val local = curEnv.resolveLabel(label)
+      val params = label.params.map { id =>
         val local = Val.Local(curEnv.fresh(), genType(id.tpe))
         curEnv.enter(id.symbol, local)
         local
       }
-      val entry   = Focus.entry(local, params)(curEnv.fresh)
+      val entry        = Focus.entry(local, params)(curEnv.fresh)
       val newThis: Val = if (hijackThis) params.head else curThis
 
-      scoped (
+      scoped(
         curThis := newThis
       ) {
         genExpr(label.rhs, entry)
@@ -638,19 +615,20 @@ abstract class NirCodeGen extends PluginComponent
       val modulesym = NArrayModule(elemcode)
       val methsym   = NArrayAllocMethod(elemcode)
       val alloc     = genModuleMethodCall(modulesym, methsym, Seq(len), focus)
-      val init      =
-        if (elems.isEmpty)
-          alloc
+      val init =
+        if (elems.isEmpty) alloc
         else {
           val (values, last) = genArgs(elems, alloc)
-          val updates =
-            sequenced(values.zipWithIndex, last) { (vi, focus) =>
-              val (v, i) = vi
-              val idx    = Literal(Constant(i))
+          val updates = sequenced(values.zipWithIndex, last) { (vi, focus) =>
+            val (v, i) = vi
+            val idx    = Literal(Constant(i))
 
-              genMethodCall(NArrayUpdateMethod(elemcode), statically = true,
-                            alloc.value, Seq(idx), focus)
-            }
+            genMethodCall(NArrayUpdateMethod(elemcode),
+                          statically = true,
+                          alloc.value,
+                          Seq(idx),
+                          focus)
+          }
 
           updates.last
         }
@@ -658,43 +636,44 @@ abstract class NirCodeGen extends PluginComponent
       init withValue alloc.value
     }
 
-    def genIf(condp: Tree, thenp: Tree, elsep: Tree, retty: nir.Type, focus: Focus) = {
+    def genIf(
+      condp: Tree, thenp: Tree, elsep: Tree, retty: nir.Type, focus: Focus) = {
       val cond = genExpr(condp, focus)
       cond.branchIf(cond.value, retty, genExpr(thenp, _), genExpr(elsep, _))
     }
 
     def genSwitch(m: Match, focus: Focus): Focus = {
       val Match(scrutp, casesp) = m
-      val scrut = genExpr(scrutp, focus)
-      val retty = genType(m.tpe)
-      val defaultcase: Tree =
-        casesp.collectFirst {
-          case c @ CaseDef(Ident(nme.WILDCARD), _, body) => body
-        }.get
-      val normalcases: Seq[(Val, Tree)] =
-        casesp.flatMap {
-          case CaseDef(Ident(nme.WILDCARD), _, _) =>
-            Seq()
-          case CaseDef(pat, guard, body) =>
-            assert(guard.isEmpty)
-            val vals: Seq[Val] =
-              pat match {
-                case lit: Literal =>
-                  List(genLiteralValue(lit))
-                case Alternative(alts) =>
-                  alts.map {
-                    case lit: Literal => genLiteralValue(lit)
-                  }
-                case _ =>
-                  Nil
+      val scrut                 = genExpr(scrutp, focus)
+      val retty                 = genType(m.tpe)
+      val defaultcase: Tree = casesp.collectFirst {
+        case c @ CaseDef(Ident(nme.WILDCARD), _, body) => body
+      }.get
+      val normalcases: Seq[(Val, Tree)] = casesp.flatMap {
+        case CaseDef(Ident(nme.WILDCARD), _, _) =>
+          Seq()
+        case CaseDef(pat, guard, body) =>
+          assert(guard.isEmpty)
+          val vals: Seq[Val] = pat match {
+            case lit: Literal =>
+              List(genLiteralValue(lit))
+            case Alternative(alts) =>
+              alts.map {
+                case lit: Literal => genLiteralValue(lit)
               }
-            vals.map((_, body))
-        }
+            case _ =>
+              Nil
+          }
+          vals.map((_, body))
+      }
 
-      scrut.branchSwitch(scrut.value, retty,
-        defaultf = genExpr(defaultcase, _),
-        casevals = normalcases.map { case (v, _) => v },
-        casefs   = normalcases.map { case (_, body) => genExpr(body, _: Focus) })
+      scrut.branchSwitch(scrut.value,
+                         retty,
+                         defaultf = genExpr(defaultcase, _),
+                         casevals = normalcases.map { case (v, _) => v },
+                         casefs = normalcases.map {
+                           case (_, body) => genExpr(body, _: Focus)
+                         })
     }
 
     def genApplyDynamic(app: ApplyDynamic, focus: Focus) =
@@ -707,7 +686,8 @@ abstract class NirCodeGen extends PluginComponent
         case _: TypeApply =>
           genApplyTypeApply(app, focus)
         case Select(Super(_, _), _) =>
-          genMethodCall(fun.symbol, statically = true, curThis.get, args, focus)
+          genMethodCall(
+            fun.symbol, statically = true, curThis.get, args, focus)
         case Select(New(_), nme.CONSTRUCTOR) =>
           genApplyNew(app, focus)
         case _ =>
@@ -724,7 +704,8 @@ abstract class NirCodeGen extends PluginComponent
             genPrimitiveUnbox(args.head, app.tpe, focus)
           } else {
             val Select(receiverp, _) = fun
-            genMethodCall(fun.symbol, statically = false, receiverp, args, focus)
+            genMethodCall(
+              fun.symbol, statically = false, receiverp, args, focus)
           }
       }
     }
@@ -739,59 +720,61 @@ abstract class NirCodeGen extends PluginComponent
     }
 
     def genPrimitiveBox(argp: Tree, tpe: Type, focus: Focus) =
-      genModuleMethodCall(BoxesRunTimeModule, BoxMethod(genPrimCode(tpe)), Seq(argp), focus)
+      genModuleMethodCall(
+        BoxesRunTimeModule, BoxMethod(genPrimCode(tpe)), Seq(argp), focus)
 
     def genPrimitiveUnbox(argp: Tree, tpe: Type, focus: Focus) =
-      genModuleMethodCall(BoxesRunTimeModule, UnboxMethod(genPrimCode(tpe)), Seq(argp), focus)
+      genModuleMethodCall(
+        BoxesRunTimeModule, UnboxMethod(genPrimCode(tpe)), Seq(argp), focus)
 
     def genPrimitiveOp(app: Apply, focus: Focus): Focus = {
       import scalaPrimitives._
 
-      val sym = app.symbol
+      val sym                                    = app.symbol
       val Apply(fun @ Select(receiver, _), args) = app
-      val code = scalaPrimitives.getPrimitive(sym, receiver.tpe)
+      val code                                   = scalaPrimitives.getPrimitive(sym, receiver.tpe)
 
       if (isArithmeticOp(code) || isLogicalOp(code) || isComparisonOp(code))
         genSimpleOp(app, receiver :: args, code, focus)
-      else if (code == CONCAT)
-        genStringConcat(receiver, args, focus)
-      else if (code == HASH)
-        genHashCode(app, receiver, focus)
+      else if (code == CONCAT) genStringConcat(receiver, args, focus)
+      else if (code == HASH) genHashCode(app, receiver, focus)
       else if (isArrayOp(code) || code == ARRAY_CLONE)
         genArrayOp(app, code, focus)
-      else if (isCoercion(code))
-        genCoercion(app, receiver, code, focus)
-      else if (code == SYNCHRONIZED)
-        genSynchronized(app, focus)
-      else if (code == ANY_GETCLASS)
-        genGetClass(receiver, focus)
+      else if (isCoercion(code)) genCoercion(app, receiver, code, focus)
+      else if (code == SYNCHRONIZED) genSynchronized(app, focus)
+      else if (code == ANY_GETCLASS) genGetClass(receiver, focus)
       else
         abort("Unknown primitive operation: " + sym.fullName + "(" +
-              fun.symbol.simpleName + ") " + " at: " + (app.pos))
+          fun.symbol.simpleName + ") " + " at: " + (app.pos))
     }
 
     lazy val jlClassName     = nir.Global.Type("java.lang.Class")
     lazy val jlClass         = nir.Type.Class(jlClassName)
     lazy val jlClassCtorName = jlClassName + "init_class.nrt.Type"
-    lazy val jlClassCtorSig  = nir.Type.Function(Seq(jlClass, Rt.Type), nir.Type.Unit)
-    lazy val jlClassCtor     = nir.Val.Global(jlClassCtorName, nir.Type.Ptr(jlClassCtorSig))
+    lazy val jlClassCtorSig =
+      nir.Type.Function(Seq(jlClass, Rt.Type), nir.Type.Unit)
+    lazy val jlClassCtor =
+      nir.Val.Global(jlClassCtorName, nir.Type.Ptr(jlClassCtorSig))
 
     def genGetClass(receiverp: Tree, focus: Focus): Focus = {
-      val recv    = genExpr(receiverp, focus)
-      val gettype = genMethodCall(NObjectGetTypeMethod, statically = true, recv.value, Seq(), recv)
+      val recv = genExpr(receiverp, focus)
+      val gettype = genMethodCall(
+        NObjectGetTypeMethod, statically = true, recv.value, Seq(), recv)
 
       genBoxClass(gettype.value, gettype)
     }
 
     def genBoxClass(type_ : Val, focus: Focus) = {
       val alloc = focus withOp Op.Alloc(jlClass)
-      val init  = alloc withOp Op.Call(jlClassCtorSig, jlClassCtor, Seq(alloc.value, type_))
+      val init =
+        alloc withOp Op.Call(
+          jlClassCtorSig, jlClassCtor, Seq(alloc.value, type_))
 
       init withValue alloc.value
     }
 
     def numOfType(num: Int, ty: nir.Type) = ty match {
-      case Type.I8  => Val.I8 (num.toByte)
+      case Type.I8  => Val.I8(num.toByte)
       case Type.I16 => Val.I16(num.toShort)
       case Type.I32 => Val.I32(num)
       case Type.I64 => Val.I64(num.toLong)
@@ -815,17 +798,23 @@ abstract class NirCodeGen extends PluginComponent
       val right = genExpr(rightp, focus)
 
       (opty, code) match {
-        case (Type.I(_) |
-              Type.F(_), POS)  => right
-        case (Type.F(_), NEG ) => right withOp Op.Bin(Bin.Isub, opty, numOfType( 0, opty), right.value)
-        case (Type.I(_), NEG ) => right withOp Op.Bin(Bin.Fsub, opty, numOfType( 0, opty), right.value)
-        case (Type.I(_), NOT ) => right withOp Op.Bin(Bin.Xor,  opty, numOfType(-1, opty), right.value)
-        case (Type.I(_), ZNOT) => right withOp Op.Bin(Bin.Xor,  opty, Val.True,            right.value)
-        case _                 => abort("Unknown unary operation code: " + code)
+        case (Type.I(_) | Type.F(_), POS) => right
+        case (Type.F(_), NEG) =>
+          right withOp Op.Bin(Bin.Isub, opty, numOfType(0, opty), right.value)
+        case (Type.I(_), NEG) =>
+          right withOp Op.Bin(Bin.Fsub, opty, numOfType(0, opty), right.value)
+        case (Type.I(_), NOT) =>
+          right withOp Op.Bin(Bin.Xor, opty, numOfType(-1, opty), right.value)
+        case (Type.I(_), ZNOT) =>
+          right withOp Op.Bin(Bin.Xor, opty, Val.True, right.value)
+        case _ => abort("Unknown unary operation code: " + code)
       }
     }
 
-    def genBinaryOp(code: Int, left: Tree, right: Tree, retty: nir.Type,
+    def genBinaryOp(code: Int,
+                    left: Tree,
+                    right: Tree,
+                    retty: nir.Type,
                     focus: Focus): Focus = {
       import scalaPrimitives._
 
@@ -836,56 +825,94 @@ abstract class NirCodeGen extends PluginComponent
       opty match {
         case Type.F(_) =>
           code match {
-            case ADD => genBinaryOp(Op.Bin(Bin.Fadd,  _, _, _), left, right, opty, focus)
-            case SUB => genBinaryOp(Op.Bin(Bin.Fsub,  _, _, _), left, right, opty, focus)
-            case MUL => genBinaryOp(Op.Bin(Bin.Fmul,  _, _, _), left, right, opty, focus)
-            case DIV => genBinaryOp(Op.Bin(Bin.Fdiv,  _, _, _), left, right, opty, focus)
-            case MOD => genBinaryOp(Op.Bin(Bin.Frem,  _, _, _), left, right, opty, focus)
+            case ADD =>
+              genBinaryOp(Op.Bin(Bin.Fadd, _, _, _), left, right, opty, focus)
+            case SUB =>
+              genBinaryOp(Op.Bin(Bin.Fsub, _, _, _), left, right, opty, focus)
+            case MUL =>
+              genBinaryOp(Op.Bin(Bin.Fmul, _, _, _), left, right, opty, focus)
+            case DIV =>
+              genBinaryOp(Op.Bin(Bin.Fdiv, _, _, _), left, right, opty, focus)
+            case MOD =>
+              genBinaryOp(Op.Bin(Bin.Frem, _, _, _), left, right, opty, focus)
 
-            case EQ => genBinaryOp(Op.Comp(Comp.Feq, _, _, _), left, right, opty, focus)
-            case NE => genBinaryOp(Op.Comp(Comp.Fne, _, _, _), left, right, opty, focus)
-            case LT => genBinaryOp(Op.Comp(Comp.Flt, _, _, _), left, right, opty, focus)
-            case LE => genBinaryOp(Op.Comp(Comp.Fle, _, _, _), left, right, opty, focus)
-            case GT => genBinaryOp(Op.Comp(Comp.Fgt, _, _, _), left, right, opty, focus)
-            case GE => genBinaryOp(Op.Comp(Comp.Fge, _, _, _), left, right, opty, focus)
+            case EQ =>
+              genBinaryOp(Op.Comp(Comp.Feq, _, _, _), left, right, opty, focus)
+            case NE =>
+              genBinaryOp(Op.Comp(Comp.Fne, _, _, _), left, right, opty, focus)
+            case LT =>
+              genBinaryOp(Op.Comp(Comp.Flt, _, _, _), left, right, opty, focus)
+            case LE =>
+              genBinaryOp(Op.Comp(Comp.Fle, _, _, _), left, right, opty, focus)
+            case GT =>
+              genBinaryOp(Op.Comp(Comp.Fgt, _, _, _), left, right, opty, focus)
+            case GE =>
+              genBinaryOp(Op.Comp(Comp.Fge, _, _, _), left, right, opty, focus)
 
-            case _ => abort("Unknown floating point type binary operation code: " + code)
+            case _ =>
+              abort(
+                "Unknown floating point type binary operation code: " + code)
           }
 
         case Type.I(_) =>
           code match {
-            case ADD => genBinaryOp(Op.Bin(Bin.Iadd, _, _, _), left, right, opty, focus)
-            case SUB => genBinaryOp(Op.Bin(Bin.Isub, _, _, _), left, right, opty, focus)
-            case MUL => genBinaryOp(Op.Bin(Bin.Imul, _, _, _), left, right, opty, focus)
-            case DIV => genBinaryOp(Op.Bin(Bin.Sdiv, _, _, _), left, right, opty, focus)
-            case MOD => genBinaryOp(Op.Bin(Bin.Srem, _, _, _), left, right, opty, focus)
+            case ADD =>
+              genBinaryOp(Op.Bin(Bin.Iadd, _, _, _), left, right, opty, focus)
+            case SUB =>
+              genBinaryOp(Op.Bin(Bin.Isub, _, _, _), left, right, opty, focus)
+            case MUL =>
+              genBinaryOp(Op.Bin(Bin.Imul, _, _, _), left, right, opty, focus)
+            case DIV =>
+              genBinaryOp(Op.Bin(Bin.Sdiv, _, _, _), left, right, opty, focus)
+            case MOD =>
+              genBinaryOp(Op.Bin(Bin.Srem, _, _, _), left, right, opty, focus)
 
-            case OR  => genBinaryOp(Op.Bin(Bin.Or,   _, _, _), left, right, opty, focus)
-            case XOR => genBinaryOp(Op.Bin(Bin.Xor,  _, _, _), left, right, opty, focus)
-            case AND => genBinaryOp(Op.Bin(Bin.And,  _, _, _), left, right, opty, focus)
-            case LSL => genBinaryOp(Op.Bin(Bin.Shl,  _, _, _), left, right, opty, focus)
-            case LSR => genBinaryOp(Op.Bin(Bin.Lshr, _, _, _), left, right, opty, focus)
-            case ASR => genBinaryOp(Op.Bin(Bin.Ashr, _, _, _), left, right, opty, focus)
+            case OR =>
+              genBinaryOp(Op.Bin(Bin.Or, _, _, _), left, right, opty, focus)
+            case XOR =>
+              genBinaryOp(Op.Bin(Bin.Xor, _, _, _), left, right, opty, focus)
+            case AND =>
+              genBinaryOp(Op.Bin(Bin.And, _, _, _), left, right, opty, focus)
+            case LSL =>
+              genBinaryOp(Op.Bin(Bin.Shl, _, _, _), left, right, opty, focus)
+            case LSR =>
+              genBinaryOp(Op.Bin(Bin.Lshr, _, _, _), left, right, opty, focus)
+            case ASR =>
+              genBinaryOp(Op.Bin(Bin.Ashr, _, _, _), left, right, opty, focus)
 
-            case EQ => genBinaryOp(Op.Comp(Comp.Ieq, _, _, _), left, right, opty, focus)
-            case NE => genBinaryOp(Op.Comp(Comp.Ine, _, _, _), left, right, opty, focus)
-            case LT => genBinaryOp(Op.Comp(Comp.Slt, _, _, _), left, right, opty, focus)
-            case LE => genBinaryOp(Op.Comp(Comp.Sle, _, _, _), left, right, opty, focus)
-            case GT => genBinaryOp(Op.Comp(Comp.Sgt, _, _, _), left, right, opty, focus)
-            case GE => genBinaryOp(Op.Comp(Comp.Sge, _, _, _), left, right, opty, focus)
+            case EQ =>
+              genBinaryOp(Op.Comp(Comp.Ieq, _, _, _), left, right, opty, focus)
+            case NE =>
+              genBinaryOp(Op.Comp(Comp.Ine, _, _, _), left, right, opty, focus)
+            case LT =>
+              genBinaryOp(Op.Comp(Comp.Slt, _, _, _), left, right, opty, focus)
+            case LE =>
+              genBinaryOp(Op.Comp(Comp.Sle, _, _, _), left, right, opty, focus)
+            case GT =>
+              genBinaryOp(Op.Comp(Comp.Sgt, _, _, _), left, right, opty, focus)
+            case GE =>
+              genBinaryOp(Op.Comp(Comp.Sge, _, _, _), left, right, opty, focus)
 
-            case ZOR  => genIf(left, Literal(Constant(true)), right, retty, focus)
-            case ZAND => genIf(left, right, Literal(Constant(false)), retty, focus)
+            case ZOR =>
+              genIf(left, Literal(Constant(true)), right, retty, focus)
+            case ZAND =>
+              genIf(left, right, Literal(Constant(false)), retty, focus)
 
-            case _ => abort("Unknown integer type binary operation code: " + code)
+            case _ =>
+              abort("Unknown integer type binary operation code: " + code)
           }
 
         case _: Type.RefKind =>
           code match {
-            case EQ => genClassEquality(left, right, ref = false, negated = false, focus)
-            case NE => genClassEquality(left, right, ref = false, negated = true,  focus)
-            case ID => genClassEquality(left, right, ref = true,  negated = false, focus)
-            case NI => genClassEquality(left, right, ref = true,  negated = true,  focus)
+            case EQ =>
+              genClassEquality(
+                left, right, ref = false, negated = false, focus)
+            case NE =>
+              genClassEquality(left, right, ref = false, negated = true, focus)
+            case ID =>
+              genClassEquality(left, right, ref = true, negated = false, focus)
+            case NI =>
+              genClassEquality(left, right, ref = true, negated = true, focus)
 
             case _ => abort("Unknown reference type operation code: " + code)
           }
@@ -895,31 +922,40 @@ abstract class NirCodeGen extends PluginComponent
       }
     }
 
-    def genBinaryOp(op: (nir.Type, Val, Val) => Op, leftp: Tree, rightp: Tree,
-                    opty: nir.Type, focus: Focus): Focus = {
-      val left         = genExpr(leftp, focus)
-      val leftcoerced  = genCoercion(left.value, genType(leftp.tpe), opty, left)
-      val right        = genExpr(rightp, leftcoerced)
-      val rightcoerced = genCoercion(right.value, genType(rightp.tpe), opty, right)
+    def genBinaryOp(op: (nir.Type, Val, Val) => Op,
+                    leftp: Tree,
+                    rightp: Tree,
+                    opty: nir.Type,
+                    focus: Focus): Focus = {
+      val left        = genExpr(leftp, focus)
+      val leftcoerced = genCoercion(left.value, genType(leftp.tpe), opty, left)
+      val right       = genExpr(rightp, leftcoerced)
+      val rightcoerced = genCoercion(
+        right.value, genType(rightp.tpe), opty, right)
 
       rightcoerced withOp op(opty, leftcoerced.value, rightcoerced.value)
     }
 
-    def genClassEquality(leftp: Tree, rightp: Tree, ref: Boolean,
-                         negated: Boolean, focus: Focus) = {
+    def genClassEquality(leftp: Tree,
+                         rightp: Tree,
+                         ref: Boolean,
+                         negated: Boolean,
+                         focus: Focus) = {
       val left = genExpr(leftp, focus)
 
       if (ref) {
         val right = genExpr(rightp, left)
-        val comp = if (negated) Comp.Ieq else Comp.Ine
+        val comp  = if (negated) Comp.Ieq else Comp.Ine
         right withOp Op.Comp(comp, Rt.Object, left.value, right.value)
       } else {
-        val equals = genMethodCall(NObjectEqualsMethod, statically = true,
-                                   left.value, Seq(rightp), left)
+        val equals = genMethodCall(NObjectEqualsMethod,
+                                   statically = true,
+                                   left.value,
+                                   Seq(rightp),
+                                   left)
         if (negated)
           equals withOp Op.Bin(Bin.Xor, Type.Bool, Val.True, equals.value)
-        else
-          equals
+        else equals
       }
     }
 
@@ -947,24 +983,21 @@ abstract class NirCodeGen extends PluginComponent
     def genHashCode(tree: Tree, receiverp: Tree, focus: Focus) = {
       val recv = genExpr(receiverp, focus)
 
-      genMethodCall(NObjectHashCodeMethod, statically = true, recv.value, Seq(), recv)
+      genMethodCall(
+        NObjectHashCodeMethod, statically = true, recv.value, Seq(), recv)
     }
 
     def genArrayOp(app: Apply, code: Int, focus: Focus): Focus = {
       import scalaPrimitives._
       val Apply(Select(arrayp, _), argsp) = app
 
-      val array        = genExpr(arrayp, focus)
-      def elemcode     = genArrayCode(arrayp.tpe)
-      val method       =
-        if (code == ARRAY_CLONE)
-          NArrayCloneMethod(elemcode)
-        else if (scalaPrimitives.isArrayGet(code))
-          NArrayApplyMethod(elemcode)
-        else if (scalaPrimitives.isArraySet(code))
-          NArrayUpdateMethod(elemcode)
-        else
-          NArrayLengthMethod(elemcode)
+      val array = genExpr(arrayp, focus)
+      def elemcode = genArrayCode(arrayp.tpe)
+      val method =
+        if (code == ARRAY_CLONE) NArrayCloneMethod(elemcode)
+        else if (scalaPrimitives.isArrayGet(code)) NArrayApplyMethod(elemcode)
+        else if (scalaPrimitives.isArraySet(code)) NArrayUpdateMethod(elemcode)
+        else NArrayLengthMethod(elemcode)
 
       genMethodCall(method, statically = true, array.value, argsp, array)
     }
@@ -972,31 +1005,35 @@ abstract class NirCodeGen extends PluginComponent
     def genSynchronized(app: Apply, focus: Focus): Focus = {
       val Apply(Select(receiverp, _), List(argp)) = app
 
-      val obj   = genExpr(receiverp, focus)
-      val mon   = genMethodCall(NObjectGetMonitorMethod, statically = true, obj.value, Seq(), obj)
-      val enter = genMethodCall(NMonitorEnterMethod, statically = true, mon.value, Seq(), mon)
-      val arg   = genExpr(argp, enter)
-      val exit  = genMethodCall(NMonitorExitMethod, statically = true, mon.value, Seq(), arg)
+      val obj = genExpr(receiverp, focus)
+      val mon = genMethodCall(
+        NObjectGetMonitorMethod, statically = true, obj.value, Seq(), obj)
+      val enter = genMethodCall(
+        NMonitorEnterMethod, statically = true, mon.value, Seq(), mon)
+      val arg = genExpr(argp, enter)
+      val exit = genMethodCall(
+        NMonitorExitMethod, statically = true, mon.value, Seq(), arg)
 
       exit withValue arg.value
     }
 
-    def genCoercion(app: Apply, receiver: Tree, code: Int, focus: Focus): Focus = {
-      val rec = genExpr(receiver, focus)
+    def genCoercion(
+      app: Apply, receiver: Tree, code: Int, focus: Focus): Focus = {
+      val rec            = genExpr(receiver, focus)
       val (fromty, toty) = coercionTypes(code)
 
       genCoercion(rec.value, fromty, toty, rec)
     }
 
-    def genCoercion(value: Val, fromty: nir.Type, toty: nir.Type, focus: Focus): Focus =
-      if (fromty == toty)
-        focus withValue value
+    def genCoercion(
+      value: Val, fromty: nir.Type, toty: nir.Type, focus: Focus): Focus =
+      if (fromty == toty) focus withValue value
       else {
         val conv = (fromty, toty) match {
-          case (nir.Type.I(lwidth), nir.Type.I(rwidth))
-            if lwidth < rwidth                => Conv.Sext
-          case (nir.Type.I(lwidth), nir.Type.I(rwidth))
-            if lwidth > rwidth                => Conv.Trunc
+          case (nir.Type.I(lwidth), nir.Type.I(rwidth)) if lwidth < rwidth =>
+            Conv.Sext
+          case (nir.Type.I(lwidth), nir.Type.I(rwidth)) if lwidth > rwidth =>
+            Conv.Trunc
           case (nir.Type.I(_), nir.Type.F(_)) => Conv.Sitofp
           case (nir.Type.F(_), nir.Type.I(_)) => Conv.Fptosi
           case (nir.Type.F64, nir.Type.F32)   => Conv.Fptrunc
@@ -1016,12 +1053,12 @@ abstract class NirCodeGen extends PluginComponent
         case B2F       => (nir.Type.I8, nir.Type.F32)
         case B2D       => (nir.Type.I8, nir.Type.F64)
 
-        case S2B       | C2B       => (nir.Type.I16, nir.Type.I8)
+        case S2B | C2B             => (nir.Type.I16, nir.Type.I8)
         case S2S | S2C | C2S | C2C => (nir.Type.I16, nir.Type.I16)
-        case S2I       | C2I       => (nir.Type.I16, nir.Type.I32)
-        case S2L       | C2L       => (nir.Type.I16, nir.Type.I64)
-        case S2F       | C2F       => (nir.Type.I16, nir.Type.F32)
-        case S2D       | C2D       => (nir.Type.I16, nir.Type.F64)
+        case S2I | C2I             => (nir.Type.I16, nir.Type.I32)
+        case S2L | C2L             => (nir.Type.I16, nir.Type.I64)
+        case S2F | C2F             => (nir.Type.I16, nir.Type.F32)
+        case S2D | C2D             => (nir.Type.I16, nir.Type.F64)
 
         case I2B       => (nir.Type.I32, nir.Type.I8)
         case I2S | I2C => (nir.Type.I32, nir.Type.I16)
@@ -1055,12 +1092,13 @@ abstract class NirCodeGen extends PluginComponent
 
     def genApplyTypeApply(app: Apply, focus: Focus) = {
       val Apply(TypeApply(fun @ Select(receiverp, _), targs), _) = app
-      val ty = genType(targs.head.tpe)
-      val rec = genExpr(receiverp, focus)
-      rec.withOp(fun.symbol match {
-        case Object_isInstanceOf => Op.Is(ty, rec.value)
-        case Object_asInstanceOf => Op.As(ty, rec.value)
-      })
+      val ty                                                     = genType(targs.head.tpe)
+      val rec                                                    = genExpr(receiverp, focus)
+      rec.withOp(
+        fun.symbol match {
+      case Object_isInstanceOf => Op.Is(ty, rec.value)
+      case Object_asInstanceOf => Op.As(ty, rec.value)
+    })
     }
 
     def genApplyNew(app: Apply, focus: Focus) = {
@@ -1085,39 +1123,46 @@ abstract class NirCodeGen extends PluginComponent
       genModuleMethodCall(module, meth, argsp, focus)
     }
 
-    def genNew(clssym: Symbol, ctorsym: Symbol, args: List[Tree], focus: Focus) = {
+    def genNew(
+      clssym: Symbol, ctorsym: Symbol, args: List[Tree], focus: Focus) = {
       val cls   = genType(clssym)
       val alloc = focus.withOp(Op.Alloc(cls))
-      val call  = genMethodCall(ctorsym, statically = true, alloc.value, args, alloc)
+      val call = genMethodCall(
+        ctorsym, statically = true, alloc.value, args, alloc)
 
       call withValue alloc.value
     }
 
-    def genModuleMethodCall(module: Symbol, method: Symbol, args: Seq[Tree],
-        focus: Focus): Focus = {
+    def genModuleMethodCall(
+      module: Symbol, method: Symbol, args: Seq[Tree], focus: Focus): Focus = {
       val self = genModule(module, focus)
 
       genMethodCall(method, statically = true, self.value, args, self)
     }
 
-    def genMethodCall(sym: Symbol, statically: Boolean, selfp: Tree, argsp: Seq[Tree],
-        focus: Focus): Focus = {
+    def genMethodCall(sym: Symbol,
+                      statically: Boolean,
+                      selfp: Tree,
+                      argsp: Seq[Tree],
+                      focus: Focus): Focus = {
       val self = genExpr(selfp, focus)
 
       genMethodCall(sym, statically, self.value, argsp, self)
     }
 
-    def genMethodCall(sym: Symbol, statically: Boolean, self: Val, argsp: Seq[Tree],
-        focus: Focus): Focus = {
+    def genMethodCall(sym: Symbol,
+                      statically: Boolean,
+                      self: Val,
+                      argsp: Seq[Tree],
+                      focus: Focus): Focus = {
       val name         = genMethodName(sym)
       val sig          = genMethodSig(sym)
       val (args, last) = genArgs(argsp, focus)
       val external     = isExternalModule(sym.owner)
-      val method       =
+      val method =
         if (statically || external)
           last withValue Val.Global(name, nir.Type.Ptr(sig))
-        else
-          last withOp Op.Method(sig, self, name)
+        else last withOp Op.Method(sig, self, name)
       val values =
         if (external) args
         else self +: args
@@ -1134,4 +1179,3 @@ abstract class NirCodeGen extends PluginComponent
     }
   }
 }
-

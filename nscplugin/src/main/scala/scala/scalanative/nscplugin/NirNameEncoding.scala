@@ -31,18 +31,18 @@ trait NirNameEncoding { self: NirCodeGen =>
 
   def genFieldName(sym: Symbol) = {
     val owner = genClassName(sym.owner)
-    val id0 = sym.name.decoded.toString
+    val id0   = sym.name.decoded.toString
     val id =
-      if (id0.charAt(id0.length()-1) != ' ') id0
-      else id0.substring(0, id0.length()-1)
+      if (id0.charAt(id0.length() - 1) != ' ') id0
+      else id0.substring(0, id0.length() - 1)
 
     owner + id
   }
 
   def genMethodName(sym: Symbol): nir.Global = {
-    val owner         = sym.owner
-    val ownerId       = genClassName(sym.owner)
-    val id            = {
+    val owner   = sym.owner
+    val ownerId = genClassName(sym.owner)
+    val id = {
       val name = sym.name.decoded
       if (owner == NObjectClass) name.substring(1) // skip the _
       else name.toString
@@ -57,7 +57,8 @@ trait NirNameEncoding { self: NirCodeGen =>
     } else if (sym.name == nme.CONSTRUCTOR) {
       ownerId + ("init" +: mangledParams).mkString("_")
     } else {
-      ownerId + (id +: (mangledParams :+ mangledType(tpe.resultType))).mkString("_")
+      ownerId + (id +: (mangledParams :+ mangledType(tpe.resultType)))
+        .mkString("_")
     }
   }
 
@@ -98,7 +99,7 @@ trait NirNameEncoding { self: NirCodeGen =>
 
     implicit lazy val showMangledGlobal: Show[nir.Global] = Show { g =>
       val head +: tail = g.parts
-      val parts = head.replace("scala.scalanative.runtime", "nrt") +: tail
+      val parts        = head.replace("scala.scalanative.runtime", "nrt") +: tail
       sh"${r(parts, sep = "_")}"
     }
 

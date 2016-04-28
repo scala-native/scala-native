@@ -8,8 +8,8 @@ import util.unreachable
 import nir._
 
 /** Eliminates:
- *  - Cf.{Try, Throw}
- */
+  * - Cf.{Try, Throw}
+  */
 class ExceptionHandlingLowering(implicit fresh: Fresh) extends Pass {
   private def stripTry(block: Block) = block.cf match {
     case Cf.Try(Next.Succ(n), fail) =>
@@ -31,10 +31,10 @@ class ExceptionHandlingLowering(implicit fresh: Fresh) extends Pass {
       def invoke(n: Local, call: Op.Call): Unit = {
         val succ = Next.Succ(fresh())
         val inv  = Cf.Invoke(call.ty, call.ptr, call.args, succ, fail)
-        blocks  += Block(name, params, insts.toSeq, inv)
-        name     = succ.name
-        params   = Seq(Val.Local(n, call.resty))
-        insts    = mutable.UnrolledBuffer.empty[Inst]
+        blocks += Block(name, params, insts.toSeq, inv)
+        name = succ.name
+        params = Seq(Val.Local(n, call.resty))
+        insts = mutable.UnrolledBuffer.empty[Inst]
       }
 
       def finish() = {
@@ -54,7 +54,7 @@ class ExceptionHandlingLowering(implicit fresh: Fresh) extends Pass {
 
   override def preDefn = {
     case defn @ Defn.Define(_, _, _, blocks) =>
-      val cfg = ControlFlow(blocks)
+      val cfg        = ControlFlow(blocks)
       val handlerfor = mutable.Map.empty[Local, Option[Next.Fail]]
       var curhandler: Option[Next.Fail] = None
 

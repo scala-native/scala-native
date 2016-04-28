@@ -13,7 +13,7 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
   private lazy val header: Map[Global, Int] = {
     buffer.position(0)
     val (_, pairs) = scoped(getSeq((getGlobal, getInt)))
-    val map = pairs.toMap
+    val map        = pairs.toMap
     this.deps = null
     map
   }
@@ -21,18 +21,19 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
   private var deps: mutable.Set[Dep] = _
   private def scoped[T](f: => T): (mutable.Set[Dep], T) = {
     this.deps = mutable.Set.empty[Dep]
-    val res = f
+    val res  = f
     val deps = this.deps
     this.deps = null
     (deps, res)
   }
 
   final def deserialize(g: Global): Option[(Seq[Dep], Defn)] =
-    header.get(g).map { case offset =>
-      buffer.position(offset)
-      val (deps, defn) = scoped(getDefn)
-      deps -= Dep.Direct(g)
-      (deps.toSeq, defn)
+    header.get(g).map {
+      case offset =>
+        buffer.position(offset)
+        val (deps, defn) = scoped(getDefn)
+        deps -= Dep.Direct(g)
+        (deps.toSeq, defn)
     }
 
   private def getSeq[T](getT: => T): Seq[T] =
@@ -75,7 +76,8 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
 
         case T.OverrideAttr => buf += Attr.Override(getGlobal)
         case T.PinAttr      => deps += Dep.Direct(getGlobalNoDep)
-        case T.PinIfAttr    => deps += Dep.Conditional(getGlobalNoDep, getGlobalNoDep)
+        case T.PinIfAttr =>
+          deps += Dep.Conditional(getGlobalNoDep, getGlobalNoDep)
       }
     }
 
@@ -104,7 +106,7 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
   }
 
   private def getBlocks(): Seq[Block] = getSeq(getBlock)
-  private def getBlock(): Block = Block(getLocal, getParams, getInsts, getCf)
+  private def getBlock(): Block       = Block(getLocal, getParams, getInsts, getCf)
 
   private def getCf(): Cf = getInt match {
     case T.UnreachableCf => Cf.Unreachable
@@ -181,7 +183,7 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
       Defn.Module(getAttrs, getGlobal, getGlobalOpt, getGlobals)
   }
 
-  private def getGlobals(): Seq[Global] = getSeq(getGlobal)
+  private def getGlobals(): Seq[Global]      = getSeq(getGlobal)
   private def getGlobalOpt(): Option[Global] = getOpt(getGlobal)
   private def getGlobal(): Global = {
     val name = getGlobalNoDep
@@ -192,7 +194,7 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
   private def getGlobalNoDep(): Global = new Global(getStrings, getBool)
 
   private def getInsts(): Seq[Inst] = getSeq(getInst)
-  private def getInst(): Inst = Inst(getLocal, getOp)
+  private def getInst(): Inst       = Inst(getLocal, getOp)
 
   private def getLocal(): Local = Local(getString, getInt)
 
@@ -229,7 +231,7 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
   }
 
   private def getParams(): Seq[Val.Local] = getSeq(getParam)
-  private def getParam(): Val.Local = Val.Local(getLocal, getType)
+  private def getParam(): Val.Local       = Val.Local(getLocal, getType)
 
   private def getTypes(): Seq[Type] = getSeq(getType)
   private def getType(): Type = getInt match {

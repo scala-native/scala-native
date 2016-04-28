@@ -8,7 +8,7 @@ object Attr {
   final case object NoInline   extends Inline
   final case object MustInline extends Inline
 
-  sealed abstract class Link            extends Attr
+  sealed abstract class Link extends Attr
   final case object Private             extends Link
   final case object Internal            extends Link
   final case object AvailableExternally extends Link
@@ -25,4 +25,3 @@ object Attr {
   final case class Pin(dep: Global)                 extends Attr
   final case class PinIf(dep: Global, cond: Global) extends Attr
 }
-

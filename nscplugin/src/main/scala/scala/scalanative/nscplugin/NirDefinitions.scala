@@ -9,13 +9,16 @@ trait NirDefinitions { self: NirGlobalAddons =>
   import rootMirror._
 
   object nirDefinitions {
-    lazy val NObjectClass            = getRequiredClass("java.lang._Object")
-    lazy val NObjectGetMonitorMethod = getDecl(NObjectClass, TermName("getMonitor"))
-    lazy val NObjectGetTypeMethod    = getDecl(NObjectClass, TermName("getType"))
-    lazy val NObjectHashCodeMethod   = getDecl(NObjectClass, TermName("_hashCode"))
-    lazy val NObjectEqualsMethod     = getDecl(NObjectClass, TermName("_equals"))
+    lazy val NObjectClass = getRequiredClass("java.lang._Object")
+    lazy val NObjectGetMonitorMethod = getDecl(
+      NObjectClass, TermName("getMonitor"))
+    lazy val NObjectGetTypeMethod = getDecl(NObjectClass, TermName("getType"))
+    lazy val NObjectHashCodeMethod = getDecl(
+      NObjectClass, TermName("_hashCode"))
+    lazy val NObjectEqualsMethod = getDecl(NObjectClass, TermName("_equals"))
 
-    lazy val NMonitorClass       = getRequiredClass("scala.scalanative.runtime.Monitor")
+    lazy val NMonitorClass = getRequiredClass(
+      "scala.scalanative.runtime.Monitor")
     lazy val NMonitorEnterMethod = getDecl(NMonitorClass, TermName("enter"))
     lazy val NMonitorExitMethod  = getDecl(NMonitorClass, TermName("exit"))
 
@@ -25,7 +28,8 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val InlineClass   = getRequiredClass("scala.inline")
     lazy val NoInlineClass = getRequiredClass("scala.noinline")
 
-    lazy val NativeModule = getRequiredModule("scala.scalanative.native.package")
+    lazy val NativeModule = getRequiredModule(
+      "scala.scalanative.native.package")
     lazy val ExternMethod = getMember(NativeModule, TermName("extern"))
     lazy val ExternClass  = getRequiredClass("scala.scalanative.native.extern")
 
@@ -42,7 +46,7 @@ trait NirDefinitions { self: NirGlobalAddons =>
       'L' -> getDecl(BoxesRunTimeModule, TermName("boxToLong")),
       'F' -> getDecl(BoxesRunTimeModule, TermName("boxToFloat")),
       'D' -> getDecl(BoxesRunTimeModule, TermName("boxToDouble"))
-      )
+    )
 
     lazy val UnboxMethod = Map[Char, Symbol](
       'B' -> getDecl(BoxesRunTimeModule, TermName("unboxToBoolean")),
