@@ -8,7 +8,9 @@ val libScalaVersion  = "2.11.8"
 
 lazy val baseSettings = Seq(
   organization := "org.scala-native",
-  version      := scala.scalanative.nir.Versions.current
+  version      := scala.scalanative.nir.Versions.current,
+
+  scalafmtConfig := Some(file(".scalafmt"))
 )
 
 lazy val toolSettings =
