@@ -158,30 +158,12 @@ object ClassHierarchy {
     def enter[T <: Node](name: Global, node: T): T = {
       nodes += name -> node
       node match {
-        case cls:   Class     => classes    += cls
-        case iface: Trait => traits += iface
-        case meth:  Method    => methods    += meth
-        case fld:   Field     => fields     += fld
+        case cls:   Class  => classes += cls
+        case iface: Trait  => traits  += iface
+        case meth:  Method => methods += meth
+        case fld:   Field  => fields  += fld
       }
       node
-    }
-
-    def enterNrt(): Unit = {
-      val classes = Map(
-        Nrt.Object -> Seq(
-          Nrt.Object_init,
-          Nrt.Object_equals,
-          Nrt.Object_hashCode,
-          Nrt.Object_toString
-        )
-      )
-
-      classes.foreach { case (Type.Class(clsname), clsmethods) =>
-        val clsnode = enter(clsname, new Class(Seq(), clsname))
-        clsmethods.foreach { case Val.Global(name, Type.Ptr(ty)) =>
-          enter(name, new Method(Seq(), name, ty, isConcrete = true))
-        }
-      }
     }
 
     def enterDefn(defn: Defn): Unit = defn match {
@@ -220,14 +202,16 @@ object ClassHierarchy {
       }
     }
 
-    def enrichClass(name: Global, parentName: Global,
+    def enrichClass(name: Global, parentName: Option[Global],
                     traitNames: Seq[Global]): Unit = {
       val node          = nodes(name).asInstanceOf[Class]
-      val parent        = nodes(parentName).asInstanceOf[Class]
+      val parent        = parentName.map(nodes(_).asInstanceOf[Class])
       val traits        = traitNames.map(nodes(_).asInstanceOf[Trait])
-      node.parent       = Some(parent)
+      node.parent       = parent
       node.traits       = traits
-      parent.subclasses = parent.subclasses :+ node
+      parent.foreach { parent =>
+        parent.subclasses = parent.subclasses :+ node
+      }
       traits.foreach { iface =>
         iface.implementors = iface.implementors :+ node
       }
@@ -269,12 +253,11 @@ object ClassHierarchy {
         id += 1
       }
 
-      idClass(nodes(Nrt.Object.name).asInstanceOf[Class])
+      idClass(nodes(Rt.Object.name).asInstanceOf[Class])
       traits.foreach(idTrait(_))
       methods.foreach(idMethod(_))
     }
 
-    enterNrt()
     defns.foreach(enterDefn)
     defns.foreach(enrich)
     identify()

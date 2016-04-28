@@ -92,6 +92,8 @@ object Shows {
     case Cf.Resume(excrec) =>
       sh"resume $excrec"
 
+    case Cf.Throw(value) =>
+      sh"throw $value"
     case Cf.Try(normal, exc) =>
       sh"try $normal catch $exc"
   }

@@ -48,8 +48,8 @@ class TraitLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pa
     case Defn.Trait(_, name @ TraitRef(trt), _) =>
       val typeId    = Val.I32(trt.id)
       val typeName  = Val.String(name.parts.head)
-      val typeVal   = Val.Struct(Nrt.Type.name, Seq(Nrt.Type_type, typeId, typeName))
-      val typeConst = Defn.Const(Seq(), name + "const", Nrt.Type, typeVal)
+      val typeVal   = Val.Struct(Rt.Type.name, Seq(typeId, typeName))
+      val typeConst = Defn.Const(Seq(), name + "const", Rt.Type, typeVal)
 
       Seq(typeConst)
 
@@ -74,7 +74,7 @@ class TraitLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh) extends Pa
 
     case Inst(n, Op.TypeOf(TraitRef(trt))) =>
       Seq(
-        Inst(n, Op.Copy(Val.Global(trt.name + "const", Type.Ptr(Nrt.Type))))
+        Inst(n, Op.Copy(Val.Global(trt.name + "const", Type.Ptr(Rt.Type))))
       )
   }
 

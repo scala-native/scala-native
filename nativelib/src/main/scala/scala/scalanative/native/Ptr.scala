@@ -1,4 +1,7 @@
 package scala.scalanative
 package native
 
-class Ptr[T]
+final class Ptr[T] private () {
+  def apply(): T
+  def update(value: T): Unit
+}

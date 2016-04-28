@@ -30,10 +30,10 @@ lazy val nir =
     settings(toolSettings).
     dependsOn(util)
 
-// Nrt is a library project but it can't use libSettings
+// rt is a library project but it can't use libSettings
 // due to the fact that it contains nrt dependency in
 // ScalaNativePlugin.projectSettings.
-lazy val nrt =
+lazy val rt =
   project.in(file("nrt")).
     settings(baseSettings).
     settings(
@@ -71,6 +71,10 @@ lazy val sbtplugin =
       sbtPlugin := true
     ).
     dependsOn(tools)
+
+lazy val rtlib =
+  project.in(file("rt")).
+    settings(baseSettings)
 
 lazy val nativelib =
   project.in(file("nativelib")).

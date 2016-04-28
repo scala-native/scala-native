@@ -101,23 +101,24 @@ object Tags {
   final val InvokeCf      = 1 + SwitchCf
   final val ResumeCf      = 1 + InvokeCf
 
-  final val TryCf = 1 + ResumeCf
+  final val ThrowCf = 1 + ResumeCf
+  final val TryCf   = 1 + ThrowCf
 
   final val SuccNext  = 1 + TryCf
   final val FailNext  = 1 + SuccNext
   final val LabelNext = 1 + FailNext
   final val CaseNext  = 1 + LabelNext
 
-  final val CallOp        = 1 + CaseNext
-  final val LoadOp        = 1 + CallOp
-  final val StoreOp       = 1 + LoadOp
-  final val ElemOp        = 1 + StoreOp
-  final val ExtractOp     = 1 + ElemOp
-  final val InsertOp      = 1 + ExtractOp
-  final val AllocaOp      = 1 + InsertOp
-  final val BinOp         = 1 + AllocaOp
-  final val CompOp        = 1 + BinOp
-  final val ConvOp        = 1 + CompOp
+  final val CallOp    = 1 + CaseNext
+  final val LoadOp    = 1 + CallOp
+  final val StoreOp   = 1 + LoadOp
+  final val ElemOp    = 1 + StoreOp
+  final val ExtractOp = 1 + ElemOp
+  final val InsertOp  = 1 + ExtractOp
+  final val AllocaOp  = 1 + InsertOp
+  final val BinOp     = 1 + AllocaOp
+  final val CompOp    = 1 + BinOp
+  final val ConvOp    = 1 + CompOp
 
   final val AllocOp   = 1 + ConvOp
   final val FieldOp   = 1 + AllocOp

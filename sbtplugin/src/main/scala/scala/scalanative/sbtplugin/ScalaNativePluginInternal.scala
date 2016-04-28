@@ -65,7 +65,7 @@ object ScalaNativePluginInternal {
     commonProjectSettings ++ Seq(
       addCompilerPlugin("org.scala-native" %% "nscplugin" % "0.1-SNAPSHOT"),
 
-      libraryDependencies += "org.scala-native" %% "native" % nir.Versions.current
+      libraryDependencies += "org.scala-native" %% "rt" % nir.Versions.current
     )
   }
 }

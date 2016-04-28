@@ -33,11 +33,10 @@ final class Compiler(opts: Opts) {
       new pass.TraitLowering,
       new pass.ClassLowering,
       new pass.StringLowering,
-      new pass.IntrinsicLowering,
       new pass.UnitLowering,
       new pass.NothingLowering,
       new pass.SizeLowering,
-      new pass.TryLowering,
+      new pass.ExceptionHandlingLowering,
       new pass.CopyPropagation
     )
   }

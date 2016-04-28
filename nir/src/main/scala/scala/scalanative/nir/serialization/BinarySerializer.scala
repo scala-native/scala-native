@@ -121,6 +121,8 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Cf.Resume(excrec) =>
       putInt(T.ResumeCf); putVal(excrec)
 
+    case Cf.Throw(v) =>
+      putInt(T.ThrowCf); putVal(v)
     case Cf.Try(norm, exc) =>
       putInt(T.TryCf); putNext(norm); putNext(exc)
   }

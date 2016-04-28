@@ -8,9 +8,9 @@ import util.unreachable
 import nir._
 
 /** Eliminates:
- *  - Cf.Try
+ *  - Cf.{Try, Throw}
  */
-class TryLowering(implicit fresh: Fresh) extends Pass {
+class ExceptionHandlingLowering(implicit fresh: Fresh) extends Pass {
   private def stripTry(block: Block) = block.cf match {
     case Cf.Try(Next.Succ(n), fail) =>
       block.copy(cf = Cf.Jump(Next.Label(n, Seq())))

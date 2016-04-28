@@ -14,5 +14,6 @@ object Cf {
   final case class Resume(excrec: Val)                                 extends Cf
 
   // high-level control
+  final case class Throw(value: Val)           extends Cf
   final case class Try(succ: Next, fail: Next) extends Cf
 }

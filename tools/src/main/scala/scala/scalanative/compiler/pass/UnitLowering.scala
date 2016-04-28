@@ -24,12 +24,12 @@ class UnitLowering extends Pass {
 
   override def preVal = {
     case Val.Unit =>
-      Nrt.BoxedUnit_value
+      ???
   }
 
   override def preType = {
     case Type.Unit =>
-      Nrt.BoxedUnit
+      Rt.Unit
 
     case Type.Function(params, Type.Unit) =>
       Type.Function(params, Type.Void)

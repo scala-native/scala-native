@@ -373,7 +373,7 @@ abstract class NirCodeGen extends PluginComponent
 
       case Throw(exprp) =>
         val expr = genExpr(exprp, focus)
-        expr finish Cf.Unreachable
+        expr finish Cf.Throw(expr.value)
 
       case app: Apply =>
         genApply(app, focus)
@@ -517,13 +517,20 @@ abstract class NirCodeGen extends PluginComponent
       elem withOp Op.Load(ty, elem.value)
     }
 
-    def genTry(retty: nir.Type, expr: Tree, catches: List[Tree], finalizer: Tree, focus: Focus) =
-      focus.branchTry(retty, normal = genExpr(expr, _), exc = genCatch(retty, catches, _, _))
+    def genTry(retty: nir.Type, expr: Tree, catches: List[Tree],
+        finalizer: Tree, focus: Focus) =
+      focus.branchTry(retty,
+        normal = genExpr(expr, _),
+        exc = genCatch(retty, catches, _, _))
 
-    def genCatch(retty: nir.Type, catches: List[Tree], excrec: Val, focus: Focus) = ???/*{
-      val excwrap = focus   withOp Op.Extract(excrec, Seq(0))
-      val exccast = excwrap withOp Op.Conv(Conv.Bitcast, Type.Ptr(Rt.Object), excwrap.value)
-      val exc     = exccast withOp Op.Load(Rt.Object, exccast.value)
+    def genCatch(retty: nir.Type, catches: List[Tree], excrec: Val,
+        focus: Focus) = {
+      val excwrap =
+          focus   withOp Op.Extract(excrec, Seq(0))
+      val exccast =
+          excwrap withOp Op.Conv(Conv.Bitcast, Type.Ptr(Rt.Object), excwrap.value)
+      val exc     =
+          exccast withOp Op.Load(Rt.Object, exccast.value)
 
       val cases =
         catches.map {
@@ -559,7 +566,7 @@ abstract class NirCodeGen extends PluginComponent
       }
 
       wrap(cases, exc)
-    }*/
+    }
 
     def genFinally(finalizer: Tree, focus: Focus): Focus = ???
 

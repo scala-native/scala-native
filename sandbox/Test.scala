@@ -1,6 +1,12 @@
 package test
 
+object _42 extends Exception
+
 object Test {
   def main(args: Array[String]): Unit =
-    List(1, 2, 3).map(_ + 1)
+    try {
+      throw _42
+    } catch {
+      case `_42` =>
+    }
 }

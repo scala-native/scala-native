@@ -1,3 +1,3 @@
 package scala.scalanative
 
-class Size
+final class Size private()

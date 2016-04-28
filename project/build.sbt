@@ -9,3 +9,5 @@ unmanagedSourceDirectories in Compile ++= {
 }
 
 libraryDependencies += "commons-io" % "commons-io" % "2.4"
+
+addSbtPlugin("com.geirsson" %% "sbt-scalafmt" % "0.2.2")
