@@ -98,8 +98,8 @@ object ClassHierarchy {
     def isStatic = !isVirtual
 
     def value =
-      if (isConcrete) Val.Global(name, Type.Ptr(ty))
-      else Val.Zero(Type.Ptr(ty))
+      if (isConcrete) Val.Global(name, Type.Ptr)
+      else Val.Zero(Type.Ptr)
 
     def classOverride: Option[Method] =
       (overrides.collect {

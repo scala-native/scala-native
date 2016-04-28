@@ -42,6 +42,7 @@ object Val {
   final case class Chars(value: java.lang.String)             extends Val
   final case class Local(name: nir.Local, valty: nir.Type)    extends Val
   final case class Global(name: nir.Global, valty: nir.Type)  extends Val
+  val Null = Zero(Type.Ptr)
 
   // constant exprs
   final case class Bitcast(to: Type, value: Val) extends Val

@@ -22,6 +22,7 @@ object Type {
   final case object Void   extends Type
   final case object Label  extends Type
   final case object Vararg extends Type
+  final case object Ptr    extends Type
 
   sealed abstract case class I(width: Int) extends Type
   final object Bool extends I(1)
@@ -35,7 +36,6 @@ object Type {
   final object F64 extends F(64)
 
   final case class Array(ty: Type, n: Int)              extends Type
-  final case class Ptr(ty: Type)                        extends Type
   final case class Function(args: Seq[Type], ret: Type) extends Type
   final case class Struct(name: Global)                 extends Type
   final case class AnonStruct(tys: Seq[Type])           extends Type

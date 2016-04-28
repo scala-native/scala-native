@@ -50,9 +50,6 @@ import nir._, Shows._
   */
 class ClassLowering(implicit ch: ClassHierarchy.Graph, fresh: Fresh)
     extends Pass {
-  private val i8_*      = Type.Ptr(Type.I8)
-  private val zero_i8_* = Val.Zero(i8_*)
-
   override def preDefn = {
     case Defn.Class(_, name @ ClassRef(cls), _, _) =>
       val data      = cls.fields.map(_.ty)
@@ -67,7 +64,7 @@ class ClassLowering(implicit ch: ClassHierarchy.Graph, fresh: Fresh)
 
       val classStructTy = Type.Struct(name)
       val classStruct =
-        Defn.Struct(Seq(), name, Type.Ptr(classTypeStructTy) +: data)
+        Defn.Struct(Seq(), name, Type.Ptr +: data)
 
       val typeId   = Val.I32(cls.id)
       val typeName = Val.String(cls.name.parts.head)
@@ -87,13 +84,11 @@ class ClassLowering(implicit ch: ClassHierarchy.Graph, fresh: Fresh)
 
   override def preInst = {
     case Inst(n, Op.Alloc(ClassRef(cls))) =>
-      val clstype = Val.Global(
-          cls.name + "const", Type.Ptr(Type.Struct(cls.name + "type")))
-      val typeptr = Type.Ptr(Rt.Type)
-      val cast    = Val.Local(fresh(), typeptr)
+      val clstype = Val.Global(cls.name + "const", Type.Ptr)
+      val cast    = Val.Local(fresh(), Type.Ptr)
       val size    = Val.Local(fresh(), Type.Size)
       Seq(
-          Inst(cast.name, Op.Conv(Conv.Bitcast, typeptr, clstype)),
+          Inst(cast.name, Op.Conv(Conv.Bitcast, Type.Ptr, clstype)),
           Inst(size.name, Op.SizeOf(Type.Struct(cls.name))),
           Inst(n, Op.Call(Rt.allocSig, Rt.alloc, Seq(cast, size)))
       )
@@ -101,33 +96,29 @@ class ClassLowering(implicit ch: ClassHierarchy.Graph, fresh: Fresh)
     case Inst(n, Op.Field(ty, obj, ClassFieldRef(fld))) =>
       val cast = Val.Local(fresh(), Type.Size)
       Seq(
-          Inst(cast.name,
-               Op.Conv(Conv.Bitcast, Type.Ptr(Type.Struct(fld.in.name)), obj)),
+          Inst(cast.name, Op.Conv(Conv.Bitcast, Type.Ptr, obj)),
           Inst(n, Op.Elem(ty, cast, Seq(Val.I32(0), Val.I32(fld.index + 1))))
       )
 
     case Inst(n, Op.Method(sig, obj, VirtualClassMethodRef(meth))) =>
-      val sigptr     = Type.Ptr(sig)
-      val clsptr     = Type.Ptr(Type.Struct(meth.in.name))
-      val typeptrty  = Type.Ptr(Type.Struct(meth.in.name + "type"))
-      val cast       = Val.Local(fresh(), clsptr)
-      val typeptrptr = Val.Local(fresh(), Type.Ptr(typeptrty))
-      val typeptr    = Val.Local(fresh(), typeptrty)
-      val methptrptr = Val.Local(fresh(), Type.Ptr(sigptr))
+      val cast       = Val.Local(fresh(), Type.Ptr)
+      val typeptrptr = Val.Local(fresh(), Type.Ptr)
+      val typeptr    = Val.Local(fresh(), Type.Ptr)
+      val methptrptr = Val.Local(fresh(), Type.Ptr)
       Seq(
-          Inst(cast.name, Op.Conv(Conv.Bitcast, clsptr, obj)),
+          Inst(cast.name, Op.Conv(Conv.Bitcast, Type.Ptr, obj)),
           Inst(typeptrptr.name,
-               Op.Elem(typeptr.ty, cast, Seq(Val.I32(0), Val.I32(0)))),
+               Op.Elem(Type.Ptr, cast, Seq(Val.I32(0), Val.I32(0)))),
           Inst(typeptr.name, Op.Load(typeptr.ty, typeptrptr)),
           Inst(
               methptrptr.name,
-              Op.Elem(sigptr, typeptr, Seq(Val.I32(0), Val.I32(meth.vindex)))),
-          Inst(n, Op.Load(sigptr, methptrptr))
+              Op.Elem(Type.Ptr, typeptr, Seq(Val.I32(0), Val.I32(meth.vindex)))),
+          Inst(n, Op.Load(Type.Ptr, methptrptr))
       )
 
     case Inst(n, Op.Method(sig, obj, StaticClassMethodRef(meth))) =>
       Seq(
-          Inst(n, Op.Copy(Val.Global(meth.name, Type.Ptr(sig))))
+          Inst(n, Op.Copy(Val.Global(meth.name, Type.Ptr)))
       )
 
     case Inst(n, Op.As(_, v)) =>
@@ -136,7 +127,7 @@ class ClassLowering(implicit ch: ClassHierarchy.Graph, fresh: Fresh)
       )
 
     case Inst(n, Op.Is(ClassRef(cls), v)) =>
-      val ty = Val.Local(fresh(), Type.Ptr(Rt.Type))
+      val ty = Val.Local(fresh(), Type.Ptr)
       val id = Val.Local(fresh(), Type.I32)
       val cond =
         if (cls.range.length == 1)
@@ -164,21 +155,21 @@ class ClassLowering(implicit ch: ClassHierarchy.Graph, fresh: Fresh)
 
     case Inst(n, Op.TypeOf(ClassRef(cls))) =>
       val clstype  = Type.Struct(cls.name + "type")
-      val clsconst = Val.Global(cls.name + "const", Type.Ptr(clstype))
+      val clsconst = Val.Global(cls.name + "const", Type.Ptr)
       Seq(
-          Inst(n, Op.Conv(Conv.Bitcast, Type.Ptr(Rt.Type), clsconst))
+          Inst(n, Op.Conv(Conv.Bitcast, Type.Ptr, clsconst))
       )
   }
 
   override def preType = {
-    case _: Type.RefKind       => i8_*
+    case _: Type.RefKind       => Type.Ptr
     case Type.ClassValue(name) => Type.Struct(name)
   }
 
   override def preVal = {
     case Val.ClassValue(clsname, values) =>
       val clstype =
-        Val.Global(clsname + "const", Type.Ptr(Type.Struct(clsname + "type")))
+        Val.Global(clsname + "const", Type.Ptr)
       Val.Struct(clsname, clstype +: values)
   }
 }

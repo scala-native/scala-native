@@ -506,8 +506,7 @@ abstract class NirCodeGen
                  focus: Focus): Focus = {
       val excwrap = focus withOp Op.Extract(excrec, Seq(0))
       val exccast =
-        excwrap withOp Op.Conv(
-            Conv.Bitcast, Type.Ptr(Rt.Object), excwrap.value)
+        excwrap withOp Op.Conv(Conv.Bitcast, Type.Ptr, excwrap.value)
       val exc = exccast withOp Op.Load(Rt.Object, exccast.value)
 
       val cases = catches.map {
@@ -762,7 +761,7 @@ abstract class NirCodeGen
     lazy val jlClassCtorSig =
       nir.Type.Function(Seq(jlClass, Rt.Type), nir.Type.Unit)
     lazy val jlClassCtor =
-      nir.Val.Global(jlClassCtorName, nir.Type.Ptr(jlClassCtorSig))
+      nir.Val.Global(jlClassCtorName, nir.Type.Ptr)
 
     def genBoxClass(type_ : Val, focus: Focus) = {
       val alloc = focus withOp Op.Alloc(jlClass)
@@ -1167,7 +1166,7 @@ abstract class NirCodeGen
       val external     = isExternalModule(sym.owner)
       val method =
         if (statically || external)
-          last withValue Val.Global(name, nir.Type.Ptr(sig))
+          last withValue Val.Global(name, nir.Type.Ptr)
         else last withOp Op.Method(sig, self, name)
       val values =
         if (external) args

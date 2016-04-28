@@ -173,7 +173,6 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
     val pre = hook(preType, ty, ty)
     val post = pre match {
       case Type.Array(ty, n)      => Type.Array(txType(ty), n)
-      case Type.Ptr(ty)           => Type.Ptr(txType(ty))
       case Type.Function(tys, ty) => Type.Function(tys.map(txType), txType(ty))
       case _                      => pre
     }

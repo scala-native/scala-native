@@ -12,9 +12,9 @@ class MainInjection(entry: Global)(implicit fresh: Fresh) extends Pass {
     case defns =>
       val mainTy = Type.Function(Seq(Type.Module(entry.owner), Rt.RefArray),
                                  Type.Unit)
-      val main   = Val.Global(entry, Type.Ptr(mainTy))
+      val main   = Val.Global(entry, Type.Ptr)
       val argc   = Val.Local(fresh(), Type.I32)
-      val argv   = Val.Local(fresh(), Type.Ptr(Type.Ptr(Type.I8)))
+      val argv   = Val.Local(fresh(), Type.Ptr)
       val module = Val.Local(fresh(), Type.Module(entry.owner))
       val rt     = Val.Local(fresh(), Rt.Rt)
       val arr    = Val.Local(fresh(), Rt.RefArray)

@@ -99,6 +99,7 @@ object GenTextualLLVM extends GenShow {
     case Type.Void                => "void"
     case Type.Label               => "label"
     case Type.Vararg              => "..."
+    case Type.Ptr                 => "i8*"
     case Type.Bool                => "i1"
     case Type.I8                  => "i8"
     case Type.I16                 => "i16"
@@ -107,7 +108,6 @@ object GenTextualLLVM extends GenShow {
     case Type.F32                 => "float"
     case Type.F64                 => "double"
     case Type.Array(ty, n)        => sh"[$n x $ty]"
-    case Type.Ptr(ty)             => sh"${ty}*"
     case Type.Function(args, ret) => sh"$ret (${r(args, sep = ", ")})"
     case Type.Struct(name)        => sh"%$name"
     case Type.AnonStruct(tys)     => sh"{${r(tys, sep = ", ")}}"
@@ -182,7 +182,7 @@ object GenTextualLLVM extends GenShow {
     case Op.Store(ty, ptr, value) =>
       sh"store $value, $ptr"
     case Op.Elem(_, ptr, indexes) =>
-      val Type.Ptr(ty) = ptr.ty
+      val ty: nir.Type = ???
       sh"getelementptr $ty, $ptr, ${r(indexes, sep = ", ")}"
     case Op.Extract(aggr, indexes) =>
       sh"extractvalue $aggr, ${r(indexes, sep = ", ")}"

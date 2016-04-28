@@ -63,6 +63,6 @@ class StringLowering extends Pass {
         Val.Global(Global.Val("__str", idx.toString), Type.Ptr(Type.Struct(Nrt.String.name))))
        */
 
-      Val.Zero(Type.Ptr(Type.I8))
+      Val.Null
   }
 }

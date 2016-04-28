@@ -3,6 +3,7 @@ package compiler
 package pass
 
 import compiler.analysis.ClassHierarchy
+import compiler.analysis.ClassHierarchyExtractors._
 import nir._
 
 /** Lowers traits and operations on them.
@@ -76,37 +77,8 @@ class TraitLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
 
     case Inst(n, Op.TypeOf(TraitRef(trt))) =>
       Seq(
-          Inst(n, Op.Copy(Val.Global(trt.name + "const", Type.Ptr(Rt.Type))))
+          Inst(n, Op.Copy(Val.Global(trt.name + "const", Type.Ptr)))
       )
   }
 
-  object TraitRef {
-    def unapply(ty: Type): Option[ClassHierarchy.Trait] = ty match {
-      case Type.Trait(name) => unapply(name)
-      case _                => None
-    }
-
-    def unapply(name: Global): Option[ClassHierarchy.Trait] =
-      chg.nodes.get(name).collect {
-        case trt: ClassHierarchy.Trait => trt
-      }
-  }
-
-  object VirtualTraitMethodRef {
-    def unapply(name: Global): Option[ClassHierarchy.Method] =
-      chg.nodes.get(name).collect {
-        case meth: ClassHierarchy.Method
-            if meth.isVirtual && meth.in.isInstanceOf[ClassHierarchy.Trait] =>
-          meth
-      }
-  }
-
-  object StaticTraitMethodRef {
-    def unapply(name: Global): Option[ClassHierarchy.Method] =
-      chg.nodes.get(name).collect {
-        case meth: ClassHierarchy.Method
-            if meth.isStatic && meth.in.isInstanceOf[ClassHierarchy.Trait] =>
-          meth
-      }
-  }
 }

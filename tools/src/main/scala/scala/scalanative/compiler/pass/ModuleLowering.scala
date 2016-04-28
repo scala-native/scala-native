@@ -52,7 +52,7 @@ class ModuleLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
       val zero      = Val.Zero(cls.ty)
       val valueName = name + "value"
       val valueDefn = Defn.Var(Seq(), valueName, Type.ClassValue(name), zero)
-      val value     = Val.Global(valueName, Type.Ptr(Type.ClassValue(name)))
+      val value     = Val.Global(valueName, Type.Ptr)
 
       val entry      = fresh()
       val existing   = fresh()
@@ -66,7 +66,7 @@ class ModuleLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
         if (isStaticModule(name)) Seq()
         else {
           val initSig = Type.Function(Seq(Type.Class(name)), Type.Unit)
-          val init    = Val.Global(name + "init", Type.Ptr(initSig))
+          val init    = Val.Global(name + "init", Type.Ptr)
 
           Seq(Inst(Op.Call(initSig, init, Seq(alloc))))
         }
@@ -107,13 +107,13 @@ class ModuleLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
         else {
           val ensureInitTy = Type.Function(Seq(), Type.Void)
           val ensureInitRef =
-            Val.Global(name + "ensure" + "init", Type.Ptr(ensureInitTy))
+            Val.Global(name + "ensure" + "init", Type.Ptr)
 
           Some(Inst(Op.Call(ensureInitTy, ensureInitRef, Seq())))
         }
 
       val instanceRef =
-        Val.Global(name + "instance", Type.Ptr(Type.ClassValue(name)))
+        Val.Global(name + "instance", Type.Ptr)
 
       ensureInit ++: Seq(
         Inst(n, Op.Conv(Conv.Bitcast, Type.Class(name), instanceRef))

@@ -49,4 +49,34 @@ object ClassHierarchyExtractors {
           node
       }
   }
+
+  object TraitRef {
+    def unapply(ty: Type)(implicit chg: Graph): Option[ClassHierarchy.Trait] = ty match {
+      case Type.Trait(name) => unapply(name)
+      case _                => None
+    }
+
+    def unapply(name: Global)(implicit chg: Graph): Option[ClassHierarchy.Trait] =
+      chg.nodes.get(name).collect {
+        case trt: ClassHierarchy.Trait => trt
+      }
+  }
+
+  object VirtualTraitMethodRef {
+    def unapply(name: Global)(implicit chg: Graph): Option[ClassHierarchy.Method] =
+      chg.nodes.get(name).collect {
+        case meth: ClassHierarchy.Method
+            if meth.isVirtual && meth.in.isInstanceOf[ClassHierarchy.Trait] =>
+          meth
+      }
+  }
+
+  object StaticTraitMethodRef {
+    def unapply(name: Global)(implicit chg: Graph): Option[ClassHierarchy.Method] =
+      chg.nodes.get(name).collect {
+        case meth: ClassHierarchy.Method
+            if meth.isStatic && meth.in.isInstanceOf[ClassHierarchy.Trait] =>
+          meth
+      }
+  }
 }

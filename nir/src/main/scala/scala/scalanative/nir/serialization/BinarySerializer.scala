@@ -367,6 +367,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Type.Void         => putInt(T.VoidType)
     case Type.Label        => putInt(T.LabelType)
     case Type.Vararg       => putInt(T.VarargType)
+    case Type.Ptr          => putInt(T.PtrType)
     case Type.Bool         => putInt(T.BoolType)
     case Type.I8           => putInt(T.I8Type)
     case Type.I16          => putInt(T.I16Type)
@@ -375,7 +376,6 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Type.F32          => putInt(T.F32Type)
     case Type.F64          => putInt(T.F64Type)
     case Type.Array(ty, n) => putInt(T.ArrayType); putType(ty); putInt(n)
-    case Type.Ptr(ty)      => putInt(T.PtrType); putType(ty)
     case Type.Function(args, ret) =>
       putInt(T.FunctionType); putTypes(args); putType(ret)
     case Type.Struct(n)       => putInt(T.StructType); putGlobal(n)
