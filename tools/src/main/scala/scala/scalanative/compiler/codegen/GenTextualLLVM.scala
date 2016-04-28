@@ -13,7 +13,7 @@ import nir._
 
 object GenTextualLLVM extends GenShow {
   private lazy val prelude = Seq(
-    sh"declare i32 @__gxx_personality_v0(...)"
+      sh"declare i32 @__gxx_personality_v0(...)"
   )
   private lazy val personality =
     sh"personality i8* bitcast (i32 (...)* @__gxx_personality_v0 to i8*)"
@@ -50,7 +50,7 @@ object GenTextualLLVM extends GenShow {
   }
 
   def showDefine(
-    attrs: Seq[Attr], retty: Type, name: Global, blocks: Seq[Block]) = {
+      attrs: Seq[Attr], retty: Type, name: Global, blocks: Seq[Block]) = {
     implicit val cfg = ControlFlow(blocks)
     val blockshows = cfg.map { node =>
       showBlock(node.block, node.pred, isEntry = node eq cfg.entry)
@@ -65,7 +65,7 @@ object GenTextualLLVM extends GenShow {
     sh"landingpad { i8*, i32 } catch i8* bitcast ({ i8*, i8*, i32, i8* }* @_ZTIPN11scalanative16ExceptionWrapperE to i8*)"
 
   def showBlock(block: Block, pred: Seq[ControlFlow.Edge], isEntry: Boolean)(
-    implicit cfg: ControlFlow.Graph): Show.Result = {
+      implicit cfg: ControlFlow.Graph): Show.Result = {
     val Block(name, params, insts, cf) = block
 
     val body = r(insts.map(i => sh"$i") :+ sh"${block.cf}", sep = nl(""))
@@ -86,7 +86,7 @@ object GenTextualLLVM extends GenShow {
         case ExFail() =>
           val Seq(Val.Local(excrec, _)) = params
           Seq(
-            sh"%$excrec = $landingpad"
+              sh"%$excrec = $landingpad"
           )
       }
       val prologue = r(shows.map(nl(_)))
@@ -234,18 +234,18 @@ object GenTextualLLVM extends GenShow {
   implicit def showConv: Show[Conv] = nir.Shows.showConv
 
   private object ExSucc {
-    def unapply(
-      edges: Seq[ControlFlow.Edge]): Option[Seq[(Local, Seq[Show.Result])]] = {
+    def unapply(edges: Seq[ControlFlow.Edge]
+        ): Option[Seq[(Local, Seq[Show.Result])]] = {
       Some(edges.map {
-      case ControlFlow.Edge(from, to, _: Next.Succ) =>
-        (from.block.name, Seq(sh"%${to.block.params.head.name}.succ"))
-      case ControlFlow.Edge(from, _, _: Next.Case) =>
-        (from.block.name, Seq())
-      case ControlFlow.Edge(from, _, Next.Label(_, vals)) =>
-        (from.block.name, vals.map(justVal))
-      case ControlFlow.Edge(_, _, _: Next.Fail) =>
-        return None
-    })
+        case ControlFlow.Edge(from, to, _: Next.Succ) =>
+          (from.block.name, Seq(sh"%${to.block.params.head.name}.succ"))
+        case ControlFlow.Edge(from, _, _: Next.Case) =>
+          (from.block.name, Seq())
+        case ControlFlow.Edge(from, _, Next.Label(_, vals)) =>
+          (from.block.name, vals.map(justVal))
+        case ControlFlow.Edge(_, _, _: Next.Fail) =>
+          return None
+      })
     }
   }
 

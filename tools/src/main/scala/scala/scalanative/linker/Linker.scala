@@ -86,6 +86,7 @@ final class Linker(paths: Seq[String]) {
     }
 
     direct.push(entry)
+    Rt.pinned.foreach(direct.push)
     while (direct.nonEmpty) {
       processDirect
       processConditional

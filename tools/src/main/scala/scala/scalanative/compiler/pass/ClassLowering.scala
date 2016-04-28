@@ -3,6 +3,7 @@ package compiler
 package pass
 
 import compiler.analysis.ClassHierarchy
+import compiler.analysis.ClassHierarchyExtractors._
 import util.{sh, unsupported}
 import nir._, Shows._
 
@@ -47,7 +48,7 @@ import nir._, Shows._
   * - Op.{Alloc, Field, Method, As, Is}
   * - Val.{Null, Class}
   */
-class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
+class ClassLowering(implicit ch: ClassHierarchy.Graph, fresh: Fresh)
     extends Pass {
   private val i8_*      = Type.Ptr(Type.I8)
   private val zero_i8_* = Val.Zero(i8_*)
@@ -87,22 +88,22 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
   override def preInst = {
     case Inst(n, Op.Alloc(ClassRef(cls))) =>
       val clstype = Val.Global(
-        cls.name + "const", Type.Ptr(Type.Struct(cls.name + "type")))
+          cls.name + "const", Type.Ptr(Type.Struct(cls.name + "type")))
       val typeptr = Type.Ptr(Rt.Type)
       val cast    = Val.Local(fresh(), typeptr)
       val size    = Val.Local(fresh(), Type.Size)
       Seq(
-        Inst(cast.name, Op.Conv(Conv.Bitcast, typeptr, clstype)),
-        Inst(size.name, Op.SizeOf(Type.Struct(cls.name))),
-        Inst(n, Op.Call(Rt.allocSig, Rt.alloc, Seq(cast, size)))
+          Inst(cast.name, Op.Conv(Conv.Bitcast, typeptr, clstype)),
+          Inst(size.name, Op.SizeOf(Type.Struct(cls.name))),
+          Inst(n, Op.Call(Rt.allocSig, Rt.alloc, Seq(cast, size)))
       )
 
     case Inst(n, Op.Field(ty, obj, ClassFieldRef(fld))) =>
       val cast = Val.Local(fresh(), Type.Size)
       Seq(
-        Inst(cast.name,
-             Op.Conv(Conv.Bitcast, Type.Ptr(Type.Struct(fld.in.name)), obj)),
-        Inst(n, Op.Elem(ty, cast, Seq(Val.I32(0), Val.I32(fld.index + 1))))
+          Inst(cast.name,
+               Op.Conv(Conv.Bitcast, Type.Ptr(Type.Struct(fld.in.name)), obj)),
+          Inst(n, Op.Elem(ty, cast, Seq(Val.I32(0), Val.I32(fld.index + 1))))
       )
 
     case Inst(n, Op.Method(sig, obj, VirtualClassMethodRef(meth))) =>
@@ -114,23 +115,24 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
       val typeptr    = Val.Local(fresh(), typeptrty)
       val methptrptr = Val.Local(fresh(), Type.Ptr(sigptr))
       Seq(
-        Inst(cast.name, Op.Conv(Conv.Bitcast, clsptr, obj)),
-        Inst(typeptrptr.name,
-             Op.Elem(typeptr.ty, cast, Seq(Val.I32(0), Val.I32(0)))),
-        Inst(typeptr.name, Op.Load(typeptr.ty, typeptrptr)),
-        Inst(methptrptr.name,
-             Op.Elem(sigptr, typeptr, Seq(Val.I32(0), Val.I32(meth.vindex)))),
-        Inst(n, Op.Load(sigptr, methptrptr))
+          Inst(cast.name, Op.Conv(Conv.Bitcast, clsptr, obj)),
+          Inst(typeptrptr.name,
+               Op.Elem(typeptr.ty, cast, Seq(Val.I32(0), Val.I32(0)))),
+          Inst(typeptr.name, Op.Load(typeptr.ty, typeptrptr)),
+          Inst(
+              methptrptr.name,
+              Op.Elem(sigptr, typeptr, Seq(Val.I32(0), Val.I32(meth.vindex)))),
+          Inst(n, Op.Load(sigptr, methptrptr))
       )
 
     case Inst(n, Op.Method(sig, obj, StaticClassMethodRef(meth))) =>
       Seq(
-        Inst(n, Op.Copy(Val.Global(meth.name, Type.Ptr(sig))))
+          Inst(n, Op.Copy(Val.Global(meth.name, Type.Ptr(sig))))
       )
 
     case Inst(n, Op.As(_, v)) =>
       Seq(
-        Inst(n, Op.Copy(v))
+          Inst(n, Op.Copy(v))
       )
 
     case Inst(n, Op.Is(ClassRef(cls), v)) =>
@@ -139,18 +141,18 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
       val cond =
         if (cls.range.length == 1)
           Seq(
-            Inst(n, Op.Comp(Comp.Ieq, Type.I32, id, Val.I32(cls.id)))
+              Inst(n, Op.Comp(Comp.Ieq, Type.I32, id, Val.I32(cls.id)))
           )
         else {
           val ge = Val.Local(fresh(), Type.Bool)
           val le = Val.Local(fresh(), Type.Bool)
 
           Seq(
-            Inst(ge.name,
-                 Op.Comp(Comp.Sge, Type.I32, Val.I32(cls.range.start), id)),
-            Inst(le.name,
-                 Op.Comp(Comp.Sle, Type.I32, id, Val.I32(cls.range.end))),
-            Inst(n, Op.Bin(Bin.And, Type.Bool, ge, le))
+              Inst(ge.name,
+                   Op.Comp(Comp.Sge, Type.I32, Val.I32(cls.range.start), id)),
+              Inst(le.name,
+                   Op.Comp(Comp.Sle, Type.I32, id, Val.I32(cls.range.end))),
+              Inst(n, Op.Bin(Bin.And, Type.Bool, ge, le))
           )
         }
 
@@ -164,7 +166,7 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
       val clstype  = Type.Struct(cls.name + "type")
       val clsconst = Val.Global(cls.name + "const", Type.Ptr(clstype))
       Seq(
-        Inst(n, Op.Conv(Conv.Bitcast, Type.Ptr(Rt.Type), clsconst))
+          Inst(n, Op.Conv(Conv.Bitcast, Type.Ptr(Rt.Type), clsconst))
       )
   }
 
@@ -178,41 +180,5 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
       val clstype =
         Val.Global(clsname + "const", Type.Ptr(Type.Struct(clsname + "type")))
       Val.Struct(clsname, clstype +: values)
-  }
-
-  object ClassRef {
-    def unapply(ty: Type): Option[ClassHierarchy.Class] = ty match {
-      case Type.Class(name) => unapply(name)
-      case _                => None
-    }
-    def unapply(name: Global): Option[ClassHierarchy.Class] =
-      chg.nodes.get(name).collect {
-        case cls: ClassHierarchy.Class => cls
-      }
-  }
-
-  object VirtualClassMethodRef {
-    def unapply(name: Global): Option[ClassHierarchy.Method] =
-      chg.nodes.get(name).collect {
-        case meth: ClassHierarchy.Method
-            if meth.isVirtual && meth.in.isInstanceOf[ClassHierarchy.Method] =>
-          meth
-      }
-  }
-
-  object StaticClassMethodRef {
-    def unapply(name: Global): Option[ClassHierarchy.Method] =
-      chg.nodes.get(name).collect {
-        case meth: ClassHierarchy.Method
-            if meth.isStatic && meth.in.isInstanceOf[ClassHierarchy.Class] =>
-          meth
-      }
-  }
-
-  object ClassFieldRef {
-    def unapply(name: Global): Option[ClassHierarchy.Field] =
-      chg.nodes.get(name).collect {
-        case fld: ClassHierarchy.Field => fld
-      }
   }
 }

@@ -33,7 +33,7 @@ class NothingLowering extends Pass {
   override def preType = {
     case Type.Nothing =>
       unsupported(
-        "nothing can only be used as the result type of the function")
+          "nothing can only be used as the result type of the function")
     case Type.Function(params, Type.Nothing) =>
       Type.Function(params, Type.Void)
   }

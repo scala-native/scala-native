@@ -16,8 +16,8 @@ class SizeLowering(implicit fresh: Fresh) extends Pass {
       val typtr = Type.Ptr(ty)
       val elem  = Val.Local(fresh(), typtr)
       Seq(
-        Inst(elem.name, Op.Elem(typtr, Val.Zero(typtr), Seq(Val.I32(1)))),
-        Inst(n, Op.Conv(Conv.Ptrtoint, Type.I64, elem))
+          Inst(elem.name, Op.Elem(typtr, Val.Zero(typtr), Seq(Val.I32(1)))),
+          Inst(n, Op.Conv(Conv.Ptrtoint, Type.I64, elem))
       )
   }
 

@@ -27,17 +27,18 @@ final class Compiler(opts: Opts) {
     implicit val hierarchy = analysis.ClassHierarchy(assembly)
 
     Seq(
-      new pass.MainInjection(entry),
-      new pass.ClosureLowering,
-      new pass.ModuleLowering,
-      new pass.TraitLowering,
-      new pass.ClassLowering,
-      new pass.StringLowering,
-      new pass.UnitLowering,
-      new pass.NothingLowering,
-      new pass.SizeLowering,
-      new pass.ExceptionHandlingLowering,
-      new pass.CopyPropagation
+        new pass.MainInjection(entry),
+        new pass.ClosureLowering,
+        new pass.ExternalHoisting,
+        new pass.ModuleLowering,
+        new pass.TraitLowering,
+        new pass.ClassLowering,
+        new pass.StringLowering,
+        new pass.UnitLowering,
+        new pass.NothingLowering,
+        new pass.SizeLowering,
+        new pass.ExceptionLowering,
+        new pass.CopyPropagation
     )
   }
 
@@ -47,7 +48,7 @@ final class Compiler(opts: Opts) {
   private def debug(assembly: Seq[Defn], suffix: String) =
     if (opts.verbose)
       serializeFile(
-        codegen.GenTextualNIR, assembly, opts.outpath + s".$suffix.hnir")
+          codegen.GenTextualNIR, assembly, opts.outpath + s".$suffix.hnir")
 
   def apply(): Unit = {
     def loop(assembly: Seq[Defn], passes: Seq[(Pass, Int)]): Seq[Defn] =
@@ -57,7 +58,7 @@ final class Compiler(opts: Opts) {
         case (pass, id) +: rest =>
           val nassembly = pass(assembly)
           debug(
-            nassembly, (id + 1).toString + "-" + pass.getClass.getSimpleName)
+              nassembly, (id + 1).toString + "-" + pass.getClass.getSimpleName)
           loop(nassembly, rest)
       }
     debug(assembly, "0")

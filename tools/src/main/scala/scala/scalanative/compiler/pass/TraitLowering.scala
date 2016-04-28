@@ -68,7 +68,7 @@ class TraitLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
 
     case Inst(n, Op.As(TraitRef(trt), v)) =>
       Seq(
-        Inst(n, Op.Copy(v))
+          Inst(n, Op.Copy(v))
       )
 
     case Inst(n, Op.Is(TraitRef(trt), obj)) =>
@@ -76,7 +76,7 @@ class TraitLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
 
     case Inst(n, Op.TypeOf(TraitRef(trt))) =>
       Seq(
-        Inst(n, Op.Copy(Val.Global(trt.name + "const", Type.Ptr(Rt.Type))))
+          Inst(n, Op.Copy(Val.Global(trt.name + "const", Type.Ptr(Rt.Type))))
       )
   }
 
