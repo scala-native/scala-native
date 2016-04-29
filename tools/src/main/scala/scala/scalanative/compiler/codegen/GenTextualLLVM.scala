@@ -182,8 +182,7 @@ object GenTextualLLVM extends GenShow {
       sh"load $ty, $ptr"
     case Op.Store(ty, ptr, value) =>
       sh"store $value, $ptr"
-    case Op.Elem(_, ptr, indexes) =>
-      val ty: nir.Type = ???
+    case Op.Elem(ty, ptr, indexes) =>
       sh"getelementptr $ty, $ptr, ${r(indexes, sep = ", ")}"
     case Op.Extract(aggr, indexes) =>
       sh"extractvalue $aggr, ${r(indexes, sep = ", ")}"

@@ -254,9 +254,10 @@ abstract class NirCodeGen
     def genMethodSig(sym: Symbol): nir.Type = sym match {
       case sym: ModuleSymbol =>
         val MethodType(params, res) = sym.tpe
-        val paramtys                = params.map(p => genType(p.tpe))
-        val selfty                  = genType(sym.owner.tpe)
-        val retty                   = genType(res)
+
+        val paramtys = params.map(p => genType(p.tpe))
+        val selfty   = genType(sym.owner.tpe)
+        val retty    = genType(res, retty = true)
 
         Type.Function(Seq(selfty), retty)
 
@@ -268,8 +269,8 @@ abstract class NirCodeGen
           if (isExternalModule(owner)) None
           else Some(genType(sym.owner.tpe))
         val retty =
-          if (sym.isClassConstructor) Type.Unit
-          else genType(sym.tpe.resultType)
+          if (sym.isClassConstructor) Type.Void
+          else genType(sym.tpe.resultType, retty = true)
 
         Type.Function(selfty ++: paramtys, retty)
     }
@@ -334,7 +335,7 @@ abstract class NirCodeGen
         val isMutable = curLocalInfo.mutableVars.contains(vd.symbol)
         if (!isMutable) {
           curEnv.enter(vd.symbol, rhs.value)
-          rhs withValue Val.Unit
+          rhs withValue Val.None
         } else {
           val ty     = genType(vd.symbol.tpe)
           val alloca = rhs.withOp(Op.Alloca(ty))
@@ -441,9 +442,12 @@ abstract class NirCodeGen
     def genLiteral(lit: Literal, focus: Focus): Focus = {
       val value = lit.value
       value.tag match {
-        case NullTag | UnitTag | BooleanTag | ByteTag | ShortTag | CharTag |
-            IntTag | LongTag | FloatTag | DoubleTag | StringTag =>
+        case NullTag | BooleanTag | ByteTag | ShortTag | CharTag | IntTag |
+            LongTag | FloatTag | DoubleTag | StringTag =>
           focus withValue genLiteralValue(lit)
+
+        case UnitTag =>
+          genModule(NBoxedUnit, focus)
 
         case ClazzTag =>
           val typeof = focus withOp Op.TypeOf(genType(value.typeValue))
@@ -459,8 +463,6 @@ abstract class NirCodeGen
       value.tag match {
         case NullTag =>
           Val.Zero(Rt.Object)
-        case UnitTag =>
-          Val.Unit
         case BooleanTag =>
           if (value.booleanValue) Val.True else Val.False
         case ByteTag =>
@@ -759,9 +761,8 @@ abstract class NirCodeGen
     lazy val jlClass         = nir.Type.Class(jlClassName)
     lazy val jlClassCtorName = jlClassName member "init_class.nrt.Type"
     lazy val jlClassCtorSig =
-      nir.Type.Function(Seq(jlClass, Rt.Type), nir.Type.Unit)
-    lazy val jlClassCtor =
-      nir.Val.Global(jlClassCtorName, nir.Type.Ptr)
+      nir.Type.Function(Seq(jlClass, Rt.Type), nir.Type.Void)
+    lazy val jlClassCtor = nir.Val.Global(jlClassCtorName, nir.Type.Ptr)
 
     def genBoxClass(type_ : Val, focus: Focus) = {
       val alloc = focus withOp Op.Alloc(jlClass)
@@ -1005,10 +1006,14 @@ abstract class NirCodeGen
       val Apply(Select(receiverp, _), List(argp)) = app
 
       val monitor = genModuleMethodCall(NMonitorModule,
-                                    NMonitorGetMethod,
-                                    Seq(receiverp), focus)
-      val enter = genMethodCall(
-          NMonitorEnterMethod, statically = true, monitor.value, Seq(), monitor)
+                                        NMonitorGetMethod,
+                                        Seq(receiverp),
+                                        focus)
+      val enter = genMethodCall(NMonitorEnterMethod,
+                                statically = true,
+                                monitor.value,
+                                Seq(),
+                                monitor)
       val arg = genExpr(argp, enter)
       val exit = genMethodCall(
           NMonitorExitMethod, statically = true, monitor.value, Seq(), arg)
@@ -1128,7 +1133,7 @@ abstract class NirCodeGen
 
     def genNew(
         clssym: Symbol, ctorsym: Symbol, args: List[Tree], focus: Focus) = {
-      val cls   = genType(clssym)
+      val cls   = genTypeSym(clssym)
       val alloc = focus.withOp(Op.Alloc(cls))
       val call = genMethodCall(
           ctorsym, statically = true, alloc.value, args, alloc)

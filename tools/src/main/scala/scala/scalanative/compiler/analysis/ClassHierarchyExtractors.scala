@@ -22,7 +22,7 @@ object ClassHierarchyExtractors {
   object VirtualClassMethodRef {
     def unapply(name: Global)(implicit chg: Graph): Option[Method] =
       chg.nodes.get(name).collect {
-        case meth: Method if meth.isVirtual && meth.in.isInstanceOf[Method] =>
+        case meth: Method if meth.isVirtual && meth.in.isInstanceOf[Class] =>
           meth
       }
   }

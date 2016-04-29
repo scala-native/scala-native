@@ -256,12 +256,10 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
     case T.StructType     => Type.Struct(getGlobal)
     case T.AnonStructType => Type.AnonStruct(getTypes)
 
-    case T.SizeType       => Type.Size
-    case T.UnitType       => Type.Unit
-    case T.NothingType    => Type.Nothing
-    case T.ClassType      => Type.Class(getGlobal)
-    case T.TraitType      => Type.Trait(getGlobal)
-    case T.ModuleType     => Type.Module(getGlobal)
+    case T.SizeType    => Type.Size
+    case T.ClassType   => Type.Class(getGlobal)
+    case T.TraitType   => Type.Trait(getGlobal)
+    case T.ModuleType  => Type.Module(getGlobal)
   }
 
   private def getVals(): Seq[Val] = getSeq(getVal)
@@ -281,7 +279,6 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
     case T.LocalVal  => Val.Local(getLocal, getType)
     case T.GlobalVal => Val.Global(getGlobal, getType)
 
-    case T.UnitVal       => Val.Unit
-    case T.StringVal     => Val.String(getString)
+    case T.StringVal => Val.String(getString)
   }
 }

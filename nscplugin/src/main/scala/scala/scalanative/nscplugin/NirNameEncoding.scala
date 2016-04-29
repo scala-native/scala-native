@@ -48,7 +48,7 @@ trait NirNameEncoding { self: NirCodeGen =>
       else name.toString
     }
     val tpe           = sym.tpe.widen
-    val mangledParams = tpe.params.toSeq.map(mangledType)
+    val mangledParams = tpe.params.toSeq.map(p => mangledType(p.info, retty = false))
 
     if (sym == String_+) {
       genMethodName(StringConcatMethod)
@@ -57,18 +57,17 @@ trait NirNameEncoding { self: NirCodeGen =>
     } else if (sym.name == nme.CONSTRUCTOR) {
       ownerId member ("init" +: mangledParams).mkString("_")
     } else {
-      ownerId member (id +: (mangledParams :+ mangledType(tpe.resultType)))
+      val mangledRetty = mangledType(tpe.resultType, retty = true)
+
+      ownerId member (id +: (mangledParams :+ mangledRetty))
         .mkString("_")
     }
   }
 
-  private def mangledType(sym: Symbol): String =
-    mangledType(sym.info)
+  private def mangledType(tpe: Type, retty: Boolean): String =
+    mangledTypeInternal(genType(tpe, retty))
 
-  private def mangledType(tpe: Type): String =
-    mangledType(genType(tpe))
-
-  private def mangledType(ty: nir.Type): String = {
+  private def mangledTypeInternal(ty: nir.Type): String = {
     implicit lazy val showMangledType: Show[nir.Type] = Show {
       case nir.Type.None                => ""
       case nir.Type.Void                => "void"
@@ -88,9 +87,6 @@ trait NirNameEncoding { self: NirCodeGen =>
       case nir.Type.AnonStruct(tys)     => sh"anon-struct.${r(tys, sep = ".")}"
 
       case nir.Type.Size         => "size"
-      case nir.Type.Unit         => "unit"
-      case nir.Type.Nothing      => "nothing"
-      case nir.Type.Null         => "null"
       case nir.Type.Class(name)  => sh"class.$name"
       case nir.Type.Trait(name)  => sh"trait.$name"
       case nir.Type.Module(name) => sh"module.$name"

@@ -383,13 +383,10 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Type.Struct(n)       => putInt(T.StructType); putGlobal(n)
     case Type.AnonStruct(tys) => putInt(T.AnonStructType); putTypes(tys)
 
-    case Type.Size          => putInt(T.SizeType)
-    case Type.Unit          => putInt(T.UnitType)
-    case Type.Nothing       => putInt(T.NothingType)
-    case Type.Null          => putInt(T.NullType)
-    case Type.Class(n)      => putInt(T.ClassType); putGlobal(n)
-    case Type.Trait(n)      => putInt(T.TraitType); putGlobal(n)
-    case Type.Module(n)     => putInt(T.ModuleType); putGlobal(n)
+    case Type.Size      => putInt(T.SizeType)
+    case Type.Class(n)  => putInt(T.ClassType); putGlobal(n)
+    case Type.Trait(n)  => putInt(T.TraitType); putGlobal(n)
+    case Type.Module(n) => putInt(T.ModuleType); putGlobal(n)
   }
 
   private def putVals(values: Seq[Val]): Unit = putSeq(values)(putVal)
@@ -410,7 +407,6 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Val.Local(n, ty)  => putInt(T.LocalVal); putLocal(n); putType(ty)
     case Val.Global(n, ty) => putInt(T.GlobalVal); putGlobal(n); putType(ty)
 
-    case Val.Unit      => putInt(T.UnitVal)
     case Val.String(v) => putInt(T.StringVal); putString(v)
   }
 }

@@ -31,16 +31,26 @@ trait NirTypeEncoding { self: NirCodeGen =>
     case tpe: ErasedValueType     => (tpe.valueClazz, Seq())
   }
 
-  def genType(t: Type): nir.Type = {
+  def genType(t: Type, retty: Boolean = false): nir.Type = {
     val (sym, args) = decomposeType(t)
 
-    genType(sym, args)
+    genTypeSym(sym, args, retty)
   }
 
-  def genType(sym: Symbol, targs: Seq[Type] = Seq()): nir.Type = sym match {
-    case ArrayClass           => genType(NArrayClass(genPrimCode(targs.head)))
+  def genTypeSym(sym: Symbol,
+                 targs: Seq[Type] = Seq(),
+                 retty: Boolean = false): nir.Type = sym match {
+    case ArrayClass =>
+      genTypeSym(NArrayClass(genPrimCode(targs.head)))
+    case UnitClass =>
+      if (retty) nir.Type.Void
+      else genTypeSym(BoxedUnitClass)
+    case NothingClass         =>
+      if (retty) nir.Type.Void
+      else genTypeSym(RuntimeNothingClass)
+    case NullClass =>
+      genTypeSym(RuntimeNullClass)
     case ObjectClass          => nir.Rt.Object
-    case UnitClass            => nir.Type.Unit
     case CharClass            => nir.Type.I16
     case BooleanClass         => nir.Type.Bool
     case ByteClass            => nir.Type.I8
@@ -49,8 +59,6 @@ trait NirTypeEncoding { self: NirCodeGen =>
     case LongClass            => nir.Type.I64
     case FloatClass           => nir.Type.F32
     case DoubleClass          => nir.Type.F64
-    case NullClass            => nir.Type.Null
-    case NothingClass         => nir.Type.Nothing
     case NPtrClass            => nir.Type.Ptr
     case _ if isModule(sym)   => nir.Type.Module(genClassName(sym))
     case _ if sym.isInterface => nir.Type.Trait(genClassName(sym))

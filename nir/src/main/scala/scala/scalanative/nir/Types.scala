@@ -42,12 +42,9 @@ object Type {
 
   // high-level types
   final case object Size    extends Type
-  final case object Unit    extends Type
-  final case object Nothing extends Type
 
   sealed abstract class RefKind extends Type
-  final case object Null extends RefKind
-  final case class Class(name: Global)      extends RefKind
-  final case class Trait(name: Global)      extends RefKind
-  final case class Module(name: Global)     extends RefKind
+  final case class Class(name: Global)  extends RefKind
+  final case class Trait(name: Global)  extends RefKind
+  final case class Module(name: Global) extends RefKind
 }

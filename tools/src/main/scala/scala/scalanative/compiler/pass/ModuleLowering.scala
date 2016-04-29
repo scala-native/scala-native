@@ -12,15 +12,15 @@ import nir._
   *
   * For example a dynamic module with members:
   *
-  *     module $name : $parent, .. $ifaces {
-  *       ..$members
-  *     }
+  *     module $name : $parent, .. $ifaces
+  *
+  *     .. $members
   *
   * Translates to:
   *
-  *     class module.$name : $parent, .. $ifaces {
-  *       .. $members
-  *     }
+  *     class module.$name : $parent, .. $ifaces
+  *
+  *     .. $members
   *
   *     var value.$name: class module.$name = zero[class module.$name]
   *
@@ -67,7 +67,7 @@ class ModuleLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
       val initCall =
         if (isStaticModule(name)) Seq()
         else {
-          val initSig = Type.Function(Seq(Type.Class(name)), Type.Unit)
+          val initSig = Type.Function(Seq(Type.Class(name)), Type.Void)
           val init    = Val.Global(name tag "init", Type.Ptr)
 
           Seq(Inst(Op.Call(initSig, init, Seq(alloc))))
@@ -105,7 +105,12 @@ class ModuleLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
 
   override def preInst = {
     case Inst(n, Op.Module(name)) =>
-      ???
+      val loadSig = Type.Function(Seq(), Type.Class(name tag "module"))
+      val load    = Val.Global(name tag "load", Type.Ptr)
+
+      Seq(
+        Inst(n, Op.Call(loadSig, load, Seq()))
+      )
   }
 
   override def preType = {

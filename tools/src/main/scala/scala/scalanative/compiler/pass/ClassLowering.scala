@@ -30,7 +30,7 @@ import nir._, Shows._
   *       .. $allfldty
   *     }
   *
-  *     const $name_const: struct $name_type =
+  *     const const.$name: struct type.$name =
   *       struct $name_type {
   *         struct #Type {
   *           #Type_type,
@@ -77,9 +77,11 @@ class ClassLowering(implicit ch: ClassHierarchy.Graph, fresh: Fresh)
 
       Seq(classTypeStruct, classStruct, classConst)
 
-    // TODO: hoisting
-    case _: Defn.Define | _: Defn.Declare | _: Defn.Var =>
-      ???
+    case Defn.Declare(_, VirtualClassMethodRef(_) | StaticClassMethodRef(_), _) =>
+      Seq()
+
+    case Defn.Var(_, ClassFieldRef(_), _, _) =>
+      Seq()
   }
 
   override def preInst = {

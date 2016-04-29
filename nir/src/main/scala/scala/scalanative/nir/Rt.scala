@@ -4,21 +4,21 @@ package nir
 import Type._
 
 object Rt {
-  val String   = Class(Global.Type("java.lang.String"))
-  val Object   = Class(Global.Type("java.lang.Object"))
-  val Type     = Struct(Global.Type("scala.scalanative.runtime.Type"))
-  val RefArray = Class(Global.Type("scala.scalanative.runtime.RefArray"))
-  val Unit     = Module(Global.Val("scala.scalanative.runtime.Unit"))
-  val Exc      = AnonStruct(Seq(Ptr, I32))
-  val RtName   = Global.Val("scala.scalanative.runtime.package")
-  val Rt       = Module(RtName)
+  val String    = Class(Global.Type("java.lang.String"))
+  val Object    = Class(Global.Type("java.lang.Object"))
+  val Type      = Struct(Global.Type("scala.scalanative.runtime.Type"))
+  val RefArray  = Class(Global.Type("scala.scalanative.runtime.RefArray"))
+  val BoxedUnit = Module(Global.Val("scala.scalanative.runtime.BoxedUnit"))
+  val Exc       = AnonStruct(Seq(Ptr, I32))
+  val RtName    = Global.Val("scala.scalanative.runtime.package")
+  val Rt        = Module(RtName)
 
   val mainName = Global.Val("main")
   val mainSig  = Function(Seq(I32, Ptr), I32)
 
   val initName = RtName member "init_i32_ptr_class.ssnr.RefArray"
-  val initSig = Function(Seq(I32, Ptr), RefArray)
-  val init    = Val.Global(initName, initSig)
+  val initSig  = Function(Seq(I32, Ptr), RefArray)
+  val init     = Val.Global(initName, initSig)
 
   val throwName = Global.Val("scalanative_throw")
   val throwSig  = Function(Seq(Ptr), Void)
@@ -48,7 +48,7 @@ object Rt {
       Type.name,
       RefArray.name,
       Rt.name,
-      Unit.name,
+      BoxedUnit.name,
       init.name
   )
 }

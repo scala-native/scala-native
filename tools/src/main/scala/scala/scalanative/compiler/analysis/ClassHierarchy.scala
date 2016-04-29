@@ -86,13 +86,12 @@ object ClassHierarchy {
       val name: Global,
       val ty: Type,
       val isConcrete: Boolean,
+      var in: Node = null,
       var id: Int = -1,
       var overrides: Seq[Method] = Seq(),
       var overriden: Seq[Method] = Seq()
   )
       extends Node {
-    def in: Node = ???
-
     def isVirtual = !isConcrete || overriden.nonEmpty
 
     def isStatic = !isVirtual
@@ -134,11 +133,12 @@ object ClassHierarchy {
   final class Field(
       val attrs: Seq[Attr],
       val name: Global,
-      val ty: Type
+      val ty: Type,
+      var in: Class = null
   )
       extends Node {
-    def in: Class = ???
-    def index     = in.fields.indexOf(this)
+
+    def index = in.fields.indexOf(this)
   }
 
   final class Graph(
@@ -169,16 +169,19 @@ object ClassHierarchy {
 
     def enterDefn(defn: Defn): Unit = defn match {
       case defn: Defn.Trait =>
-        val node = enter(defn.name, new Trait(defn.attrs, defn.name))
+        enter(defn.name, new Trait(defn.attrs, defn.name))
 
       case defn: Defn.Class =>
-        val node = enter(defn.name, new Class(defn.attrs, defn.name))
+        enter(defn.name, new Class(defn.attrs, defn.name))
 
       case defn: Defn.Module =>
-        val node = enter(defn.name, new Class(defn.attrs, defn.name))
+        val cls = new Class(defn.attrs, defn.name)
+        enter(defn.name, cls)
+        enter(defn.name tag "module", cls)
 
       case defn: Defn.Var =>
-        enter(defn.name, new Field(defn.attrs, defn.name, defn.ty))
+        enter(defn.name,
+              new Field(defn.attrs, defn.name, defn.ty))
 
       case defn: Defn.Declare =>
         enter(defn.name,
@@ -194,6 +197,7 @@ object ClassHierarchy {
 
     def enrichMethod(name: Global, attrs: Seq[Attr]): Unit = {
       val node = nodes(name).asInstanceOf[Method]
+      node.in = nodes(name.top)
       attrs.foreach {
         case Attr.Override(n) =>
           val ovnode = nodes(n).asInstanceOf[Method]
@@ -204,6 +208,9 @@ object ClassHierarchy {
           ()
       }
     }
+
+    def enrichField(name: Global): Unit =
+      nodes(name).asInstanceOf[Field].in = nodes(name.top).asInstanceOf[Class]
 
     def enrichClass(name: Global,
                     parentName: Option[Global],
@@ -229,6 +236,7 @@ object ClassHierarchy {
     def enrich(defn: Defn): Unit = defn match {
       case defn: Defn.Declare                => enrichMethod(defn.name, defn.attrs)
       case defn: Defn.Define                 => enrichMethod(defn.name, defn.attrs)
+      case defn: Defn.Var                    => enrichField(defn.name)
       case Defn.Trait(_, n, ifaces)          => enrichTrait(n, ifaces)
       case Defn.Class(_, n, parent, ifaces)  => enrichClass(n, parent, ifaces)
       case Defn.Module(_, n, parent, ifaces) => enrichClass(n, parent, ifaces)

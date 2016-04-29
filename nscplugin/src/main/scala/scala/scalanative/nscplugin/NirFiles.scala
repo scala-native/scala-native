@@ -8,7 +8,7 @@ trait NirFiles { self: NirCodeGen =>
   import global._
 
   private def getPathFor(
-    cunit: CompilationUnit, sym: Symbol, suffix: String): String = {
+      cunit: CompilationUnit, sym: Symbol, suffix: String): String = {
     val baseDir: AbstractFile =
       settings.outputDirs.outputDirFor(cunit.source.file)
 
@@ -23,13 +23,13 @@ trait NirFiles { self: NirCodeGen =>
   }
 
   def genIRFile(
-    cunit: CompilationUnit, sym: Symbol, defns: Seq[nir.Defn]): Unit = {
+      cunit: CompilationUnit, sym: Symbol, defns: Seq[nir.Defn]): Unit = {
     val kind =
       if (isModule(sym)) "value"
       else "type"
     nir.serialization.serializeBinaryFile(
-      defns, getPathFor(cunit, sym, s".$kind.nir"))
+        defns, getPathFor(cunit, sym, s".$kind.nir"))
     nir.serialization.serializeTextFile(
-      defns, getPathFor(cunit, sym, s".$kind.hnir"))
+        defns, getPathFor(cunit, sym, s".$kind.hnir"))
   }
 }

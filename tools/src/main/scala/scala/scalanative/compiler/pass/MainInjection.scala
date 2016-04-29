@@ -11,7 +11,7 @@ class MainInjection(entry: Global)(implicit fresh: Fresh) extends Pass {
   override def preAssembly = {
     case defns =>
       val mainTy = Type.Function(Seq(Type.Module(entry.top), Rt.RefArray),
-                                 Type.Unit)
+                                 Type.Void)
       val main   = Val.Global(entry, Type.Ptr)
       val argc   = Val.Local(fresh(), Type.I32)
       val argv   = Val.Local(fresh(), Type.Ptr)

@@ -11,13 +11,13 @@ trait NirDefinitions { self: NirGlobalAddons =>
   object nirDefinitions {
     lazy val NObjectClass = getRequiredClass("java.lang._Object")
     lazy val NObjectHashCodeMethod = getDecl(
-      NObjectClass, TermName("_hashCode"))
+        NObjectClass, TermName("_hashCode"))
     lazy val NObjectEqualsMethod = getDecl(NObjectClass, TermName("_equals"))
 
     lazy val NMonitorClass = getRequiredClass(
-      "scala.scalanative.runtime.Monitor")
+        "scala.scalanative.runtime.Monitor")
     lazy val NMonitorModule = getRequiredModule(
-      "scala.scalanative.runtime.Monitor")
+        "scala.scalanative.runtime.Monitor")
     lazy val NMonitorEnterMethod = getDecl(NMonitorClass, TermName("enter"))
     lazy val NMonitorExitMethod  = getDecl(NMonitorClass, TermName("exit"))
     lazy val NMonitorGetMethod   = getDecl(NMonitorModule, TermName("get"))
@@ -31,11 +31,14 @@ trait NirDefinitions { self: NirGlobalAddons =>
 
     lazy val NPtrClass = getRequiredClass("scala.scalanative.native.Ptr")
 
+    lazy val NBoxedUnit = getRequiredModule(
+        "scala.scalanative.runtime.BoxedUnit")
+
     lazy val InlineClass   = getRequiredClass("scala.inline")
     lazy val NoInlineClass = getRequiredClass("scala.noinline")
 
     lazy val NativeModule = getRequiredModule(
-      "scala.scalanative.native.package")
+        "scala.scalanative.native.package")
     lazy val ExternMethod = getMember(NativeModule, TermName("extern"))
     lazy val ExternClass  = getRequiredClass("scala.scalanative.native.extern")
 
@@ -44,37 +47,37 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val Object_wait = getMember(ObjectClass, TermName("wait"))
 
     lazy val BoxMethod = Map[Char, Symbol](
-      'B' -> getDecl(BoxesRunTimeModule, TermName("boxToBoolean")),
-      'C' -> getDecl(BoxesRunTimeModule, TermName("boxToCharacter")),
-      'Z' -> getDecl(BoxesRunTimeModule, TermName("boxToByte")),
-      'S' -> getDecl(BoxesRunTimeModule, TermName("boxToShort")),
-      'I' -> getDecl(BoxesRunTimeModule, TermName("boxToInteger")),
-      'L' -> getDecl(BoxesRunTimeModule, TermName("boxToLong")),
-      'F' -> getDecl(BoxesRunTimeModule, TermName("boxToFloat")),
-      'D' -> getDecl(BoxesRunTimeModule, TermName("boxToDouble"))
+        'B' -> getDecl(BoxesRunTimeModule, TermName("boxToBoolean")),
+        'C' -> getDecl(BoxesRunTimeModule, TermName("boxToCharacter")),
+        'Z' -> getDecl(BoxesRunTimeModule, TermName("boxToByte")),
+        'S' -> getDecl(BoxesRunTimeModule, TermName("boxToShort")),
+        'I' -> getDecl(BoxesRunTimeModule, TermName("boxToInteger")),
+        'L' -> getDecl(BoxesRunTimeModule, TermName("boxToLong")),
+        'F' -> getDecl(BoxesRunTimeModule, TermName("boxToFloat")),
+        'D' -> getDecl(BoxesRunTimeModule, TermName("boxToDouble"))
     )
 
     lazy val UnboxMethod = Map[Char, Symbol](
-      'B' -> getDecl(BoxesRunTimeModule, TermName("unboxToBoolean")),
-      'C' -> getDecl(BoxesRunTimeModule, TermName("unboxToChar")),
-      'Z' -> getDecl(BoxesRunTimeModule, TermName("unboxToByte")),
-      'S' -> getDecl(BoxesRunTimeModule, TermName("unboxToShort")),
-      'I' -> getDecl(BoxesRunTimeModule, TermName("unboxToInt")),
-      'L' -> getDecl(BoxesRunTimeModule, TermName("unboxToLong")),
-      'F' -> getDecl(BoxesRunTimeModule, TermName("unboxToFloat")),
-      'D' -> getDecl(BoxesRunTimeModule, TermName("unboxToDouble"))
+        'B' -> getDecl(BoxesRunTimeModule, TermName("unboxToBoolean")),
+        'C' -> getDecl(BoxesRunTimeModule, TermName("unboxToChar")),
+        'Z' -> getDecl(BoxesRunTimeModule, TermName("unboxToByte")),
+        'S' -> getDecl(BoxesRunTimeModule, TermName("unboxToShort")),
+        'I' -> getDecl(BoxesRunTimeModule, TermName("unboxToInt")),
+        'L' -> getDecl(BoxesRunTimeModule, TermName("unboxToLong")),
+        'F' -> getDecl(BoxesRunTimeModule, TermName("unboxToFloat")),
+        'D' -> getDecl(BoxesRunTimeModule, TermName("unboxToDouble"))
     )
 
     lazy val NArrayClass: Map[Char, Symbol] = Map(
-      'B' -> getRequiredClass("scala.scalanative.runtime.BooleanArray"),
-      'C' -> getRequiredClass("scala.scalanative.runtime.CharArray"),
-      'Z' -> getRequiredClass("scala.scalanative.runtime.ByteArray"),
-      'S' -> getRequiredClass("scala.scalanative.runtime.ShortArray"),
-      'I' -> getRequiredClass("scala.scalanative.runtime.IntArray"),
-      'L' -> getRequiredClass("scala.scalanative.runtime.LongArray"),
-      'F' -> getRequiredClass("scala.scalanative.runtime.FloatArray"),
-      'D' -> getRequiredClass("scala.scalanative.runtime.DoubleArray"),
-      'O' -> getRequiredClass("scala.scalanative.runtime.RefArray")
+        'B' -> getRequiredClass("scala.scalanative.runtime.BooleanArray"),
+        'C' -> getRequiredClass("scala.scalanative.runtime.CharArray"),
+        'Z' -> getRequiredClass("scala.scalanative.runtime.ByteArray"),
+        'S' -> getRequiredClass("scala.scalanative.runtime.ShortArray"),
+        'I' -> getRequiredClass("scala.scalanative.runtime.IntArray"),
+        'L' -> getRequiredClass("scala.scalanative.runtime.LongArray"),
+        'F' -> getRequiredClass("scala.scalanative.runtime.FloatArray"),
+        'D' -> getRequiredClass("scala.scalanative.runtime.DoubleArray"),
+        'O' -> getRequiredClass("scala.scalanative.runtime.RefArray")
     )
 
     lazy val NArrayModule: Map[Char, Symbol] =
