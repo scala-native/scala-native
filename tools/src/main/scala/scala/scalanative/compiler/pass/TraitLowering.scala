@@ -51,7 +51,7 @@ class TraitLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
       val typeId    = Val.I32(trt.id)
       val typeName  = Val.String(name.id)
       val typeVal   = Val.Struct(Rt.Type.name, Seq(typeId, typeName))
-      val typeConst = Defn.Const(Seq(), name tag "const", Rt.Type, typeVal)
+      val typeConst = Defn.Const(Seq(), name tag "type", Rt.Type, typeVal)
 
       Seq(typeConst)
 

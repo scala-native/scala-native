@@ -22,6 +22,7 @@ object Rt {
 
   val throwName = Global.Val("scalanative_throw")
   val throwSig  = Function(Seq(Ptr), Void)
+  val throw_    = Val.Global(throwName, Ptr)
 
   val beginCatchName = Global.Val("scalanative_begin_catch")
   val beginCatchSig  = Function(Seq(Ptr), Ptr)
