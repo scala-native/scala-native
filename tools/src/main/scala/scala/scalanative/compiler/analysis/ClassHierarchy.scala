@@ -13,26 +13,26 @@ object ClassHierarchy {
   }
 
   final class Trait(
-    val attrs: Seq[Attr],
-    val name: Global,
-    var id: Int = -1,
-    var traits: Seq[Node] = Seq(),
-    var implementors: Seq[Class] = Seq(),
-    var members: Seq[Node] = Seq()
+      val attrs: Seq[Attr],
+      val name: Global,
+      var id: Int = -1,
+      var traits: Seq[Node] = Seq(),
+      var implementors: Seq[Class] = Seq(),
+      var members: Seq[Node] = Seq()
   )
       extends Node {
     def methods: Seq[Method] = ???
   }
 
   final class Class(
-    val attrs: Seq[Attr],
-    val name: Global,
-    var id: Int = -1,
-    var range: Range = null,
-    var parent: Option[Class] = None,
-    var subclasses: Seq[Class] = Seq(),
-    var traits: Seq[Node] = Seq(),
-    var members: Seq[Node] = Seq()
+      val attrs: Seq[Attr],
+      val name: Global,
+      var id: Int = -1,
+      var range: Range = null,
+      var parent: Option[Class] = None,
+      var subclasses: Seq[Class] = Seq(),
+      var traits: Seq[Node] = Seq(),
+      var members: Seq[Node] = Seq()
   )
       extends Node {
     def ty =
@@ -82,13 +82,13 @@ object ClassHierarchy {
   }
 
   final class Method(
-    val attrs: Seq[Attr],
-    val name: Global,
-    val ty: Type,
-    val isConcrete: Boolean,
-    var id: Int = -1,
-    var overrides: Seq[Method] = Seq(),
-    var overriden: Seq[Method] = Seq()
+      val attrs: Seq[Attr],
+      val name: Global,
+      val ty: Type,
+      val isConcrete: Boolean,
+      var id: Int = -1,
+      var overrides: Seq[Method] = Seq(),
+      var overriden: Seq[Method] = Seq()
   )
       extends Node {
     def in: Node = ???
@@ -132,9 +132,9 @@ object ClassHierarchy {
   }
 
   final class Field(
-    val attrs: Seq[Attr],
-    val name: Global,
-    val ty: Type
+      val attrs: Seq[Attr],
+      val name: Global,
+      val ty: Type
   )
       extends Node {
     def in: Class = ???
@@ -142,11 +142,11 @@ object ClassHierarchy {
   }
 
   final class Graph(
-    val nodes: Map[Global, Node],
-    val classes: Seq[Class],
-    val traits: Seq[Trait],
-    val methods: Seq[Method],
-    val fields: Seq[Field]
+      val nodes: Map[Global, Node],
+      val classes: Seq[Class],
+      val traits: Seq[Trait],
+      val methods: Seq[Method],
+      val fields: Seq[Field]
   )
 
   def apply(defns: Seq[Defn]): Graph = {
@@ -267,11 +267,11 @@ object ClassHierarchy {
     identify()
 
     new Graph(
-      nodes = nodes.toMap,
-      classes = classes.toSeq,
-      traits = traits.toSeq,
-      methods = methods.toSeq,
-      fields = fields.toSeq
+        nodes = nodes.toMap,
+        classes = classes.toSeq,
+        traits = traits.toSeq,
+        methods = methods.toSeq,
+        fields = fields.toSeq
     )
   }
 }

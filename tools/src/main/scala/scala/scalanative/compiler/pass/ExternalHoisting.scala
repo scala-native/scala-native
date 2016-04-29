@@ -8,8 +8,10 @@ import nir._
 
 /** Hoists external members from external modules to top-level scope. */
 class ExternalHoisting(implicit chg: ClassHierarchy.Graph) extends Pass {
-  private def stripName(n: Global): Global =
-    new Global(n.parts.tail, n.isType)
+  private def stripName(n: Global): Global = {
+    val Global.Member(_, id) = n
+    Global.Val(id)
+  }
 
   private def hoist(defns: Seq[Defn]): (Seq[Defn], Seq[Defn]) = {
     def isExternal(defn: Defn): Boolean =

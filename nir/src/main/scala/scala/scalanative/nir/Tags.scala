@@ -104,7 +104,11 @@ object Tags {
   final val ThrowCf = 1 + ResumeCf
   final val TryCf   = 1 + ThrowCf
 
-  final val SuccNext  = 1 + TryCf
+  final val ValGlobal    = 1 + TryCf
+  final val TypeGlobal   = 1 + ValGlobal
+  final val MemberGlobal = 1 + TypeGlobal
+
+  final val SuccNext  = 1 + MemberGlobal
   final val FailNext  = 1 + SuccNext
   final val LabelNext = 1 + FailNext
   final val CaseNext  = 1 + LabelNext
@@ -153,8 +157,7 @@ object Tags {
   final val NothingType    = 1 + UnitType
   final val NullType       = 1 + NothingType
   final val ClassType      = 1 + NullType
-  final val ClassValueType = 1 + ClassType
-  final val TraitType      = 1 + ClassValueType
+  final val TraitType      = 1 + ClassType
   final val ModuleType     = 1 + TraitType
 
   final val NoneVal       = 1 + ModuleType
@@ -175,5 +178,4 @@ object Tags {
   final val BitcastVal    = 1 + GlobalVal
   final val UnitVal       = 1 + BitcastVal
   final val StringVal     = 1 + UnitVal
-  final val ClassValueVal = 1 + StringVal
-}
+  }

@@ -20,12 +20,12 @@ import nir._, Shows._
   *
   * Gets lowered to:
   *
-  *     struct $name_type {
+  *     struct type.$name {
   *       struct #type,
   *       .. ptr $alldeclty
   *     }
   *
-  *     struct $name {
+  *     struct class.$name {
   *       ptr $name_type,
   *       .. $allfldty
   *     }
@@ -56,21 +56,21 @@ class ClassLowering(implicit ch: ClassHierarchy.Graph, fresh: Fresh)
       val vtable    = cls.vtable
       val vtableTys = vtable.map(_.ty)
 
-      val classTypeStructName = name + "type"
+      val classTypeStructName = name tag "type"
       val classTypeStructTy   = Type.Struct(classTypeStructName)
       val classTypeStructBody = Rt.Type +: vtableTys
       val classTypeStruct =
         Defn.Struct(Seq(), classTypeStructName, classTypeStructBody)
 
-      val classStructTy = Type.Struct(name)
-      val classStruct =
-        Defn.Struct(Seq(), name, Type.Ptr +: data)
+      val classStructName = name tag "class"
+      val classStructTy   = Type.Struct(classStructName)
+      val classStruct     = Defn.Struct(Seq(), classStructName, Type.Ptr +: data)
 
       val typeId   = Val.I32(cls.id)
-      val typeName = Val.String(cls.name.parts.head)
+      val typeName = Val.String(cls.name.id)
       val typeVal  = Val.Struct(Rt.Type.name, Seq(typeId, typeName))
 
-      val classConstName = name + "const"
+      val classConstName = name tag "const"
       val classConstVal  = Val.Struct(classTypeStructName, typeVal +: vtable)
       val classConst =
         Defn.Const(Seq(), classConstName, classTypeStructTy, classConstVal)
@@ -84,7 +84,7 @@ class ClassLowering(implicit ch: ClassHierarchy.Graph, fresh: Fresh)
 
   override def preInst = {
     case Inst(n, Op.Alloc(ClassRef(cls))) =>
-      val clstype = Val.Global(cls.name + "const", Type.Ptr)
+      val clstype = Val.Global(cls.name tag "const", Type.Ptr)
       val cast    = Val.Local(fresh(), Type.Ptr)
       val size    = Val.Local(fresh(), Type.Size)
       Seq(
@@ -110,9 +110,9 @@ class ClassLowering(implicit ch: ClassHierarchy.Graph, fresh: Fresh)
           Inst(typeptrptr.name,
                Op.Elem(Type.Ptr, cast, Seq(Val.I32(0), Val.I32(0)))),
           Inst(typeptr.name, Op.Load(typeptr.ty, typeptrptr)),
-          Inst(
-              methptrptr.name,
-              Op.Elem(Type.Ptr, typeptr, Seq(Val.I32(0), Val.I32(meth.vindex)))),
+          Inst(methptrptr.name,
+               Op.Elem(
+                   Type.Ptr, typeptr, Seq(Val.I32(0), Val.I32(meth.vindex)))),
           Inst(n, Op.Load(Type.Ptr, methptrptr))
       )
 
@@ -154,22 +154,14 @@ class ClassLowering(implicit ch: ClassHierarchy.Graph, fresh: Fresh)
       ???
 
     case Inst(n, Op.TypeOf(ClassRef(cls))) =>
-      val clstype  = Type.Struct(cls.name + "type")
-      val clsconst = Val.Global(cls.name + "const", Type.Ptr)
+      val clstype  = Type.Struct(cls.name tag "type")
+      val clsconst = Val.Global(cls.name tag "const", Type.Ptr)
       Seq(
           Inst(n, Op.Conv(Conv.Bitcast, Type.Ptr, clsconst))
       )
   }
 
   override def preType = {
-    case _: Type.RefKind       => Type.Ptr
-    case Type.ClassValue(name) => Type.Struct(name)
-  }
-
-  override def preVal = {
-    case Val.ClassValue(clsname, values) =>
-      val clstype =
-        Val.Global(clsname + "const", Type.Ptr)
-      Val.Struct(clsname, clstype +: values)
+    case _: Type.RefKind => Type.Ptr
   }
 }

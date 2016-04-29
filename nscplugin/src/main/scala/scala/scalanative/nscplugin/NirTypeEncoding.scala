@@ -51,6 +51,7 @@ trait NirTypeEncoding { self: NirCodeGen =>
     case DoubleClass          => nir.Type.F64
     case NullClass            => nir.Type.Null
     case NothingClass         => nir.Type.Nothing
+    case NPtrClass            => nir.Type.Ptr
     case _ if isModule(sym)   => nir.Type.Module(genClassName(sym))
     case _ if sym.isInterface => nir.Type.Trait(genClassName(sym))
     case _                    => nir.Type.Class(genClassName(sym))

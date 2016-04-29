@@ -26,28 +26,26 @@ object Assembly {
         case file: File =>
           val fileabs = file.getAbsolutePath()
           val relpath = fileabs.replace(baseabs + "/", "")
-          val (isType, rel) =
-            if (relpath.endsWith(".class.nir"))
-              (true, relpath.replace(".class.nir", ""))
-            else if (relpath.endsWith(".trait.nir"))
-              (true, relpath.replace(".trait.nir", ""))
-            else if (relpath.endsWith(".module.nir"))
-              (false, relpath.replace(".module.nir", ""))
+          val (ctor, rel) =
+            if (relpath.endsWith(".type.nir"))
+              (Global.Type, relpath.replace(".type.nir", ""))
+            else if (relpath.endsWith(".value.nir"))
+              (Global.Val, relpath.replace(".value.nir", ""))
             else
               throw new LinkingError(
-                s"can't recognized assembly file: $relpath")
+                  s"can't recognized assembly file: $relpath")
           val parts = rel.split("/").toSeq
-          val name  = new Global(Seq(parts.mkString(".")), isType)
+          val name  = ctor(parts.mkString("."))
           (name -> deserializeBinaryFile(fileabs))
       }.toMap
     }
     //println(s"discovered dir assembly $base")
 
     def contains(name: Global) =
-      entries.contains(name.owner)
+      entries.contains(name.top)
 
     def load(name: Global): Option[(Seq[Dep], Defn)] =
-      entries.get(name.owner).flatMap { deserializer =>
+      entries.get(name.top).flatMap { deserializer =>
         //println(s"deserializing $name")
         deserializer.deserialize(name)
       }

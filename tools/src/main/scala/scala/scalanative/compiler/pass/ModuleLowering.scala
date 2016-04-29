@@ -18,21 +18,21 @@ import nir._
   *
   * Translates to:
   *
-  *     class $name : $parent, .. $ifaces {
+  *     class module.$name : $parent, .. $ifaces {
   *       .. $members
   *     }
   *
-  *     var @$name.value: class $name = zero[class $name]
+  *     var value.$name: class module.$name = zero[class module.$name]
   *
-  *     def $name.load: () => void {
+  *     def load.$name: () => class module.$name {
   *       %entry:
-  *         %self = load[class $name] @"module.$name"
-  *         %cond = ieq[class j.l.Object] %instance, zero[class $name]
+  *         %self = load[class module.$name] @"module.$name"
+  *         %cond = ieq[class j.l.Object] %instance, zero[class module.$name]
   *         if %cond then %existing else %initialize
   *       %existing:
   *         ret %self
   *       %initialize:
-  *         %alloc = alloc[class $name]
+  *         %alloc = alloc[class module.$name]
   *         call $name::init(%alloc)
   *         store[class $name] @"module.$name", %alloc
   *         ret %alloc
@@ -47,77 +47,65 @@ class ModuleLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
     extends Pass {
   override def preDefn = {
     case Defn.Module(attrs, name @ ClassRef(cls), parent, ifaces) =>
-      val clsDefn = Defn.Class(attrs, name, parent, ifaces)
+      val clsName = name tag "module"
+      val clsDefn = Defn.Class(attrs, name tag "module", parent, ifaces)
+      val clsTy   = Type.Class(clsName)
+      val clsNull = Val.Zero(clsTy)
 
-      val zero      = Val.Zero(cls.ty)
-      val valueName = name + "value"
-      val valueDefn = Defn.Var(Seq(), valueName, Type.ClassValue(name), zero)
+      val valueName = name tag "value"
+      val valueDefn = Defn.Var(Seq(), valueName, clsTy, clsNull)
       val value     = Val.Global(valueName, Type.Ptr)
 
       val entry      = fresh()
       val existing   = fresh()
       val initialize = fresh()
 
-      val self  = Val.Local(fresh(), cls.ty)
+      val self  = Val.Local(fresh(), clsTy)
       val cond  = Val.Local(fresh(), Type.Bool)
-      val alloc = Val.Local(fresh(), cls.ty)
+      val alloc = Val.Local(fresh(), clsTy)
 
       val initCall =
         if (isStaticModule(name)) Seq()
         else {
           val initSig = Type.Function(Seq(Type.Class(name)), Type.Unit)
-          val init    = Val.Global(name + "init", Type.Ptr)
+          val init    = Val.Global(name tag "init", Type.Ptr)
 
           Seq(Inst(Op.Call(initSig, init, Seq(alloc))))
         }
 
-      val loadName = name + "load"
-      val loadSig  = Type.Function(Seq(), Type.Void)
+      val loadName = name tag "load"
+      val loadSig  = Type.Function(Seq(), clsTy)
       val loadDefn = Defn.Define(
-        Seq(),
-        loadName,
-        loadSig,
-        Seq(Block(entry,
-                  Seq(),
-                  Seq(
-                    Inst(self.name, Op.Load(self.ty, value)),
-                    Inst(cond.name, Op.Comp(Comp.Ieq, Rt.Object, self, zero))
-                  ),
-                  Cf.If(cond, Next(existing), Next(initialize))),
-            Block(existing,
-                  Seq(),
-                  Seq(),
-                  Cf.Ret(self)),
-            Block(initialize,
-                  Seq(),
-                  Seq(
-                    Seq(Inst(alloc.name, Op.Alloc(cls.ty))),
-                    initCall,
-                    Seq(Inst(Op.Store(cls.ty, value, alloc)))
-                  ).flatten,
-                  Cf.Ret(alloc))))
+          Seq(),
+          loadName,
+          loadSig,
+          Seq(Block(entry,
+                    Seq(),
+                    Seq(
+                        Inst(self.name, Op.Load(clsTy, value)),
+                        Inst(cond.name,
+                             Op.Comp(Comp.Ieq, Rt.Object, self, clsNull))
+                    ),
+                    Cf.If(cond, Next(existing), Next(initialize))),
+              Block(existing,
+                    Seq(),
+                    Seq(),
+                    Cf.Ret(self)),
+              Block(initialize,
+                    Seq(),
+                    Seq(
+                        Seq(Inst(alloc.name, Op.Alloc(clsTy))),
+                        initCall,
+                        Seq(Inst(Op.Store(clsTy, value, alloc)))
+                    ).flatten,
+                    Cf.Ret(alloc))))
 
       Seq(clsDefn, valueDefn, loadDefn)
   }
 
   override def preInst = {
     case Inst(n, Op.Module(name)) =>
-      val ensureInit =
-        if (isStaticModule(name)) None
-        else {
-          val ensureInitTy = Type.Function(Seq(), Type.Void)
-          val ensureInitRef =
-            Val.Global(name + "ensure" + "init", Type.Ptr)
-
-          Some(Inst(Op.Call(ensureInitTy, ensureInitRef, Seq())))
-        }
-
-      val instanceRef =
-        Val.Global(name + "instance", Type.Ptr)
-
-      ensureInit ++: Seq(
-        Inst(n, Op.Conv(Conv.Bitcast, Type.Class(name), instanceRef))
-      )
+      ???
   }
 
   override def preType = {
@@ -126,5 +114,5 @@ class ModuleLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
 
   def isStaticModule(name: Global): Boolean =
     chg.nodes(name).isInstanceOf[ClassHierarchy.Class] &&
-    (!chg.nodes.contains(name + "init"))
+    (!chg.nodes.contains(name tag "init"))
 }

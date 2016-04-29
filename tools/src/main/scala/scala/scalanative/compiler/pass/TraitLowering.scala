@@ -17,9 +17,8 @@ import nir._
   *
   * Gets lowered to:
   *
-  *     const $name_const: struct #type =
+  *     const type.$name: struct #type =
   *       struct #type {
-  *         #Type_type,
   *         ${trt.name},
   *         ${trt.id}
   *       }
@@ -50,14 +49,14 @@ class TraitLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
   override def preDefn = {
     case Defn.Trait(_, name @ TraitRef(trt), _) =>
       val typeId    = Val.I32(trt.id)
-      val typeName  = Val.String(name.parts.head)
+      val typeName  = Val.String(name.id)
       val typeVal   = Val.Struct(Rt.Type.name, Seq(typeId, typeName))
-      val typeConst = Defn.Const(Seq(), name + "const", Rt.Type, typeVal)
+      val typeConst = Defn.Const(Seq(), name tag "const", Rt.Type, typeVal)
 
       Seq(typeConst)
 
     // TODO: hoisting of trait methods
-    case _: Defn.Define => ???
+    // case _: Defn.Define => ???
   }
 
   override def preInst = {
@@ -77,8 +76,7 @@ class TraitLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
 
     case Inst(n, Op.TypeOf(TraitRef(trt))) =>
       Seq(
-          Inst(n, Op.Copy(Val.Global(trt.name + "const", Type.Ptr)))
+          Inst(n, Op.Copy(Val.Global(trt.name tag "type", Type.Ptr)))
       )
   }
-
 }

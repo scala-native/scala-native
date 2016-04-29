@@ -224,9 +224,11 @@ final class BinarySerializer(buffer: ByteBuffer) {
     putSeq(globals)(putGlobal)
   private def putGlobalOpt(globalopt: Option[Global]): Unit =
     putOpt(globalopt)(putGlobal)
-  private def putGlobal(global: Global): Unit = {
-    putStrings(global.parts)
-    putBool(global.isType)
+  private def putGlobal(global: Global): Unit = global match {
+    case Global.Val(id)  => putInt(T.ValGlobal); putString(id)
+    case Global.Type(id) => putInt(T.TypeGlobal); putString(id)
+    case Global.Member(n, id) =>
+      putInt(T.MemberGlobal); putGlobal(n); putString(id)
   }
 
   private def putInsts(insts: Seq[Inst]) = putSeq(insts)(putInst)
@@ -386,7 +388,6 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Type.Nothing       => putInt(T.NothingType)
     case Type.Null          => putInt(T.NullType)
     case Type.Class(n)      => putInt(T.ClassType); putGlobal(n)
-    case Type.ClassValue(n) => putInt(T.ClassValueType); putGlobal(n)
     case Type.Trait(n)      => putInt(T.TraitType); putGlobal(n)
     case Type.Module(n)     => putInt(T.ModuleType); putGlobal(n)
   }
@@ -409,11 +410,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Val.Local(n, ty)  => putInt(T.LocalVal); putLocal(n); putType(ty)
     case Val.Global(n, ty) => putInt(T.GlobalVal); putGlobal(n); putType(ty)
 
-    case Val.Bitcast(ty, v) => putInt(T.BitcastVal); putType(ty); putVal(v)
-
     case Val.Unit      => putInt(T.UnitVal)
     case Val.String(v) => putInt(T.StringVal); putString(v)
-    case Val.ClassValue(n, vs) =>
-      putInt(T.ClassValueVal); putGlobal(n); putVals(vs)
   }
 }

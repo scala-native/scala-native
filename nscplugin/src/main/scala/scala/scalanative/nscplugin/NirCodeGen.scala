@@ -757,7 +757,7 @@ abstract class NirCodeGen
 
     lazy val jlClassName     = nir.Global.Type("java.lang.Class")
     lazy val jlClass         = nir.Type.Class(jlClassName)
-    lazy val jlClassCtorName = jlClassName + "init_class.nrt.Type"
+    lazy val jlClassCtorName = jlClassName member "init_class.nrt.Type"
     lazy val jlClassCtorSig =
       nir.Type.Function(Seq(jlClass, Rt.Type), nir.Type.Unit)
     lazy val jlClassCtor =

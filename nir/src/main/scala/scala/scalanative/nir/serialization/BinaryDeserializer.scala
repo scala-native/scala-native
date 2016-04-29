@@ -191,7 +191,11 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
     name
   }
 
-  private def getGlobalNoDep(): Global = new Global(getStrings, getBool)
+  private def getGlobalNoDep(): Global = getInt match {
+    case T.ValGlobal    => Global.Val(getString)
+    case T.TypeGlobal   => Global.Type(getString)
+    case T.MemberGlobal => Global.Member(getGlobal, getString)
+  }
 
   private def getInsts(): Seq[Inst] = getSeq(getInst)
   private def getInst(): Inst       = Inst(getLocal, getOp)
@@ -256,7 +260,6 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
     case T.UnitType       => Type.Unit
     case T.NothingType    => Type.Nothing
     case T.ClassType      => Type.Class(getGlobal)
-    case T.ClassValueType => Type.ClassValue(getGlobal)
     case T.TraitType      => Type.Trait(getGlobal)
     case T.ModuleType     => Type.Module(getGlobal)
   }
@@ -278,10 +281,7 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
     case T.LocalVal  => Val.Local(getLocal, getType)
     case T.GlobalVal => Val.Global(getGlobal, getType)
 
-    case T.BitcastVal => Val.Bitcast(getType, getVal)
-
     case T.UnitVal       => Val.Unit
     case T.StringVal     => Val.String(getString)
-    case T.ClassValueVal => Val.ClassValue(getGlobal, getVals)
   }
 }

@@ -115,22 +115,21 @@ object GenTextualLLVM extends GenShow {
   }
 
   def justVal(v: Val): Show.Result = v match {
-    case Val.True           => "true"
-    case Val.False          => "false"
-    case Val.Zero(ty)       => "zeroinitializer"
-    case Val.I8(v)          => v.toString
-    case Val.I16(v)         => v.toString
-    case Val.I32(v)         => v.toString
-    case Val.I64(v)         => v.toString
-    case Val.F32(v)         => v.toString
-    case Val.F64(v)         => v.toString
-    case Val.Struct(n, vs)  => sh"{ ${r(vs, sep = ", ")} }"
-    case Val.Array(_, vs)   => sh"[ ${r(vs, sep = ", ")} ]"
-    case Val.Chars(v)       => s("c\"", v, "\"")
-    case Val.Local(n, ty)   => sh"%$n"
-    case Val.Global(n, ty)  => sh"@$n"
-    case Val.Bitcast(ty, v) => sh"bitcast ($v to $ty)"
-    case _                  => unsupported(v)
+    case Val.True          => "true"
+    case Val.False         => "false"
+    case Val.Zero(ty)      => "zeroinitializer"
+    case Val.I8(v)         => v.toString
+    case Val.I16(v)        => v.toString
+    case Val.I32(v)        => v.toString
+    case Val.I64(v)        => v.toString
+    case Val.F32(v)        => v.toString
+    case Val.F64(v)        => v.toString
+    case Val.Struct(n, vs) => sh"{ ${r(vs, sep = ", ")} }"
+    case Val.Array(_, vs)  => sh"[ ${r(vs, sep = ", ")} ]"
+    case Val.Chars(v)      => s("c\"", v, "\"")
+    case Val.Local(n, ty)  => sh"%$n"
+    case Val.Global(n, ty) => sh"@$n"
+    case _                 => unsupported(v)
   }
 
   implicit val showVal: Show[Val] = Show { v =>
@@ -139,8 +138,10 @@ object GenTextualLLVM extends GenShow {
     sh"$ty $justv"
   }
 
-  implicit val showGlobal: Show[Global] = Show { g =>
-    r(g.parts, "_")
+  implicit val showGlobal: Show[Global] = Show {
+    case Global.Val(id)       => id
+    case Global.Type(id)      => id
+    case Global.Member(n, id) => sh"${n}_$id"
   }
 
   implicit val showLocal: Show[Local] = Show {

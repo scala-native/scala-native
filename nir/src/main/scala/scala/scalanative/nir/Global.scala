@@ -4,48 +4,33 @@ package nir
 import util.sh
 import nir.Shows._
 
-final class Global(val parts: Seq[String], val isType: Boolean) {
-  override def hashCode: Int = ("native.nir.Global", parts, isType).hashCode
+sealed abstract class Global {
+  def id: String
+  def top: Global.Top
 
-  override def equals(other: Any) = other match {
-    case g: Global =>
-      g.isType == isType && g.parts == parts
-    case _ =>
-      false
+  def isIntrinsic: Boolean = this match {
+    case Global.Val(id) if id.startsWith("scalanative_") => true
+    case _                                               => false
   }
 
-  override def toString = {
-    val pre  = if (isType) "Global.Type" else "Global.Val"
-    val args = parts.mkString("(", ", ", ")")
-    s"$pre$args"
+  def member(id: String): Global.Member =
+    Global.Member(this, id)
+
+  def tag(tag: String): Global = this match {
+    case Global.Val(id)       => Global.Val(s"$tag.$id")
+    case Global.Type(id)      => Global.Type(s"$tag.$id")
+    case Global.Member(n, id) => Global.Member(n, s"$tag.id")
   }
-
-  def isIntrinsic: Boolean =
-    parts.headOption.fold(false)(_.startsWith("scalanative_"))
-
-  def owner: Global =
-    if (parts.length <= 1) this
-    else new Global(Seq(parts.head), isType)
-
-  def +(tag: String): Global =
-    new Global(parts :+ tag, isType)
-  def ++(tags: Seq[String]): Global =
-    new Global(parts ++ tags, isType)
 }
 object Global {
-  object Val {
-    def apply(parts: String*) =
-      new Global(parts, isType = false)
-    def unapplySeq(g: Global) =
-      if (!g.isType) Some(g.parts)
-      else None
+  sealed abstract class Top extends Global {
+    override def top: Global.Top = this
   }
+  final case class Val(override val id: String)  extends Top
+  final case class Type(override val id: String) extends Top
 
-  object Type {
-    def apply(parts: String*) =
-      new Global(parts, isType = true)
-    def unapplySeq(g: Global) =
-      if (g.isType) Some(g.parts)
-      else None
+  final case class Member(val owner: Global, override val id: String)
+      extends Global {
+    override def top: Global.Top = owner.top
   }
 }

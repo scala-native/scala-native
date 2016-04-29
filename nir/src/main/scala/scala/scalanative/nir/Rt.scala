@@ -8,16 +8,15 @@ object Rt {
   val Object   = Class(Global.Type("java.lang.Object"))
   val Type     = Struct(Global.Type("scala.scalanative.runtime.Type"))
   val RefArray = Class(Global.Type("scala.scalanative.runtime.RefArray"))
-  val Rt       = Module(Global.Val("scala.scalanative.runtime.package"))
   val Unit     = Module(Global.Val("scala.scalanative.runtime.Unit"))
   val Exc      = AnonStruct(Seq(Ptr, I32))
+  val RtName   = Global.Val("scala.scalanative.runtime.package")
+  val Rt       = Module(RtName)
 
   val mainName = Global.Val("main")
   val mainSig  = Function(Seq(I32, Ptr), I32)
 
-  val initName = Global.Val(
-    "scala.scalanative.runtime.package",
-    "init_i32_class.scala.scalanative.native.Ptr_class.nrt.Array")
+  val initName = RtName member "init_i32_ptr_class.ssnr.RefArray"
   val initSig = Function(Seq(I32, Ptr), RefArray)
   val init    = Val.Global(initName, initSig)
 
@@ -37,19 +36,19 @@ object Rt {
   val alloc     = Val.Global(allocName, allocSig)
 
   val decls = Seq(
-    Defn.Declare(Seq(), throwName, throwSig),
-    Defn.Declare(Seq(), endCatchName, endCatchSig),
-    Defn.Declare(Seq(), beginCatchName, beginCatchSig),
-    Defn.Declare(Seq(), allocName, allocSig)
+      Defn.Declare(Seq(), throwName, throwSig),
+      Defn.Declare(Seq(), endCatchName, endCatchSig),
+      Defn.Declare(Seq(), beginCatchName, beginCatchSig),
+      Defn.Declare(Seq(), allocName, allocSig)
   )
 
   def pinned = Seq(
-    String.name,
-    Object.name,
-    Type.name,
-    RefArray.name,
-    Rt.name,
-    Unit.name,
-    init.name
+      String.name,
+      Object.name,
+      Type.name,
+      RefArray.name,
+      Rt.name,
+      Unit.name,
+      init.name
   )
 }

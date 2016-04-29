@@ -12,7 +12,7 @@ trait NirFiles { self: NirCodeGen =>
     val baseDir: AbstractFile =
       settings.outputDirs.outputDirFor(cunit.source.file)
 
-    val id        = genClassName(sym).parts.head
+    val id        = genClassName(sym).id
     val pathParts = id.split("[./]")
     val dir       = (baseDir /: pathParts.init)(_.subdirectoryNamed(_))
 
@@ -25,9 +25,8 @@ trait NirFiles { self: NirCodeGen =>
   def genIRFile(
     cunit: CompilationUnit, sym: Symbol, defns: Seq[nir.Defn]): Unit = {
     val kind =
-      if (isModule(sym)) "module"
-      else if (sym.isInterface) "trait"
-      else "class"
+      if (isModule(sym)) "value"
+      else "type"
     nir.serialization.serializeBinaryFile(
       defns, getPathFor(cunit, sym, s".$kind.nir"))
     nir.serialization.serializeTextFile(

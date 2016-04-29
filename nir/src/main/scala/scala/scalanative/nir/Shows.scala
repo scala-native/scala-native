@@ -214,11 +214,8 @@ object Shows {
     case Val.Local(name, ty)   => sh"$name"
     case Val.Global(name, ty)  => sh"$name"
 
-    case Val.Bitcast(to, v) => sh"bitcast[$to] $v"
-
-    case Val.Unit                   => "unit"
-    case Val.String(v)              => "\"" + v + "\""
-    case Val.ClassValue(ty, values) => sh"class-value $ty {${r(values, ", ")}}"
+    case Val.Unit      => "unit"
+    case Val.String(v) => "\"" + v + "\""
   }
 
   implicit val showDefns: Show[Seq[Defn]] = Show { defns =>
@@ -278,19 +275,19 @@ object Shows {
     case Type.Struct(name)        => sh"struct $name"
     case Type.AnonStruct(tys)     => sh"struct {${r(tys, sep = ", ")}}"
 
-    case Type.Size             => "size"
-    case Type.Unit             => "unit"
-    case Type.Nothing          => "nothing"
-    case Type.Null             => "null"
-    case Type.Class(name)      => sh"class $name"
-    case Type.ClassValue(name) => sh"class-value $name"
-    case Type.Trait(name)      => sh"trait $name"
-    case Type.Module(name)     => sh"module $name"
+    case Type.Size         => "size"
+    case Type.Unit         => "unit"
+    case Type.Nothing      => "nothing"
+    case Type.Null         => "null"
+    case Type.Class(name)  => sh"class $name"
+    case Type.Trait(name)  => sh"trait $name"
+    case Type.Module(name) => sh"module $name"
   }
 
-  implicit val showGlobal: Show[Global] = Show { g =>
-    val pre = if (g.isType) "#" else "@"
-    sh"$pre${r(g.parts, sep = "::")}"
+  implicit val showGlobal: Show[Global] = Show {
+    case Global.Val(id)       => sh"@$id"
+    case Global.Type(id)      => sh"#$id"
+    case Global.Member(n, id) => sh"${n: Global}::$id"
   }
 
   implicit val showLocal: Show[Local] = Show {

@@ -29,14 +29,14 @@ trait NirNameEncoding { self: NirCodeGen =>
     name
   }
 
-  def genFieldName(sym: Symbol) = {
+  def genFieldName(sym: Symbol): nir.Global = {
     val owner = genClassName(sym.owner)
     val id0   = sym.name.decoded.toString
     val id =
       if (id0.charAt(id0.length() - 1) != ' ') id0
       else id0.substring(0, id0.length() - 1)
 
-    owner + id
+    owner member id
   }
 
   def genMethodName(sym: Symbol): nir.Global = {
@@ -53,11 +53,11 @@ trait NirNameEncoding { self: NirCodeGen =>
     if (sym == String_+) {
       genMethodName(StringConcatMethod)
     } else if (isExternalModule(owner)) {
-      ownerId + id
+      ownerId member id
     } else if (sym.name == nme.CONSTRUCTOR) {
-      ownerId + ("init" +: mangledParams).mkString("_")
+      ownerId member ("init" +: mangledParams).mkString("_")
     } else {
-      ownerId + (id +: (mangledParams :+ mangledType(tpe.resultType)))
+      ownerId member (id +: (mangledParams :+ mangledType(tpe.resultType)))
         .mkString("_")
     }
   }
@@ -87,21 +87,24 @@ trait NirNameEncoding { self: NirCodeGen =>
       case nir.Type.Struct(name)        => sh"struct.$name"
       case nir.Type.AnonStruct(tys)     => sh"anon-struct.${r(tys, sep = ".")}"
 
-      case nir.Type.Size             => "size"
-      case nir.Type.Unit             => "unit"
-      case nir.Type.Nothing          => "nothing"
-      case nir.Type.Null             => "null"
-      case nir.Type.Class(name)      => sh"class.$name"
-      case nir.Type.ClassValue(name) => sh"class-value.$name"
-      case nir.Type.Trait(name)      => sh"trait.$name"
-      case nir.Type.Module(name)     => sh"module.$name"
+      case nir.Type.Size         => "size"
+      case nir.Type.Unit         => "unit"
+      case nir.Type.Nothing      => "nothing"
+      case nir.Type.Null         => "null"
+      case nir.Type.Class(name)  => sh"class.$name"
+      case nir.Type.Trait(name)  => sh"trait.$name"
+      case nir.Type.Module(name) => sh"module.$name"
     }
 
-    implicit lazy val showMangledGlobal: Show[nir.Global] = Show { g =>
-      val head +: tail = g.parts
-      val parts        = head.replace("scala.scalanative.runtime", "nrt") +: tail
-      sh"${r(parts, sep = "_")}"
+    implicit lazy val showMangledGlobal: Show[nir.Global] = Show {
+      case nir.Global.Val(id)       => showId(id)
+      case nir.Global.Type(id)      => showId(id)
+      case nir.Global.Member(n, id) => showId(id) + ".." + showId(id)
     }
+
+    def showId(id: String): String =
+      id.replace("scala.scalanative.runtime", "ssnr")
+        .replace("scala.scalanative.native", "ssnn")
 
     sh"$ty".toString
   }

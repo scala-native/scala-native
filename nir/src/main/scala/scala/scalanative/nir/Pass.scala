@@ -31,7 +31,7 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
   def postType: OnType         = null
 
   @inline private def hook[A, B](
-    pf: PartialFunction[A, B], arg: A, default: B): B =
+      pf: PartialFunction[A, B], arg: A, default: B): B =
     if (pf == null) default else pf.applyOrElse(arg, (_: A) => default)
 
   private def txAssembly(assembly: Seq[Defn]): Seq[Defn] = {
@@ -162,7 +162,6 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
       case Val.Array(ty, values) => Val.Array(txType(ty), values.map(txVal))
       case Val.Local(n, ty)      => Val.Local(n, txType(ty))
       case Val.Global(n, ty)     => Val.Global(n, txType(ty))
-      case Val.Bitcast(ty, v)    => Val.Bitcast(txType(ty), txVal(v))
       case _                     => pre
     }
 
