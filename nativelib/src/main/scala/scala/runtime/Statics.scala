@@ -21,7 +21,7 @@ object Statics {
     avalanche(hash & length)
 
   def avalanche(h: Int): Int = {
-    val h1 = h  ^ (h  >>> 16)
+    val h1 = h ^ (h >>> 16)
     val h2 = h1 * 0x85ebca6b
     val h3 = h2 ^ (h2 >>> 13)
     val h4 = h3 * 0xc2b2ae35
@@ -31,31 +31,25 @@ object Statics {
   }
 
   def longHash(lv: Long): Int =
-    if (lv.asInstanceOf[Int] == lv)
-      lv.asInstanceOf[Int]
-    else
-      longHashShifted(lv)
+    if (lv.asInstanceOf[Int] == lv) lv.asInstanceOf[Int]
+    else longHashShifted(lv)
 
   def longHashShifted(lv: Long): Int =
-      (lv ^ (lv >>> 32)).asInstanceOf[Int]
+    (lv ^ (lv >>> 32)).asInstanceOf[Int]
 
   def doubleHash(dv: Double): Int = {
     val iv = dv.asInstanceOf[Int]
 
-    if (iv == dv)
-      iv
+    if (iv == dv) iv
     else {
       val fv = dv.asInstanceOf[Float]
 
-      if (fv == dv)
-        java.lang.Float.floatToIntBits(fv)
+      if (fv == dv) java.lang.Float.floatToIntBits(fv)
       else {
         val lv = dv.asInstanceOf[Long]
 
-        if (lv == dv)
-          lv.asInstanceOf[Int]
-        else
-          longHashShifted(java.lang.Double.doubleToLongBits(dv))
+        if (lv == dv) lv.asInstanceOf[Int]
+        else longHashShifted(java.lang.Double.doubleToLongBits(dv))
       }
     }
   }
@@ -63,15 +57,12 @@ object Statics {
   def floatHash(fv: Float): Int = {
     val iv = fv.asInstanceOf[Int]
 
-    if (iv == fv)
-      iv
+    if (iv == fv) iv
     else {
       val lv = fv.asInstanceOf[Long]
 
-      if (lv == fv)
-        longHashShifted(lv)
-      else
-        java.lang.Float.floatToIntBits(fv)
+      if (lv == fv) longHashShifted(lv)
+      else java.lang.Float.floatToIntBits(fv)
     }
   }
 

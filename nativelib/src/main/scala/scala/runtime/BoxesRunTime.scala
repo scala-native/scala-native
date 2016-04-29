@@ -3,14 +3,14 @@ package scala.runtime
 import scala.math.ScalaNumber
 
 object BoxesRunTime {
-  final val CHAR = 0
-  final val BYTE = 1
-  final val SHORT = 2
-  final val INT = 3
-  final val LONG = 4
-  final val FLOAT = 5
+  final val CHAR   = 0
+  final val BYTE   = 1
+  final val SHORT  = 2
+  final val INT    = 3
+  final val LONG   = 4
+  final val FLOAT  = 5
   final val DOUBLE = 6
-  final val OTHER = 7
+  final val OTHER  = 7
 
   def typeCode(a: Object) = a match {
     case _: java.lang.Integer   => INT
@@ -23,7 +23,7 @@ object BoxesRunTime {
     case _                      => OTHER
   }
 
-/* BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING */
+  /* BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING */
 
   def boxToBoolean(v: scala.Boolean): java.lang.Boolean =
     java.lang.Boolean.valueOf(v)
@@ -33,7 +33,7 @@ object BoxesRunTime {
     java.lang.Byte.valueOf(v)
   def boxToShort(v: scala.Short): java.lang.Short =
     java.lang.Short.valueOf(v)
-  def boxToInteger(v: scala.Int): java.lang.Integer  =
+  def boxToInteger(v: scala.Int): java.lang.Integer =
     java.lang.Integer.valueOf(v)
   def boxToLong(v: scala.Long): java.lang.Long =
     java.lang.Long.valueOf(v)
@@ -42,7 +42,7 @@ object BoxesRunTime {
   def boxToDouble(v: scala.Double): java.lang.Double =
     java.lang.Double.valueOf(v)
 
-/* UNBOXING ... UNBOXING ... UNBOXING ... UNBOXING ... UNBOXING ... UNBOXING ... UNBOXING */
+  /* UNBOXING ... UNBOXING ... UNBOXING ... UNBOXING ... UNBOXING ... UNBOXING ... UNBOXING */
 
   def unboxToBoolean(o: java.lang.Object): scala.Boolean =
     if (o == null) false else o.asInstanceOf[java.lang.Boolean].booleanValue()
@@ -61,7 +61,7 @@ object BoxesRunTime {
   def unboxToDouble(o: java.lang.Object): scala.Double =
     if (o == null) 0 else o.asInstanceOf[java.lang.Double].doubleValue()
 
-/* COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON */
+  /* COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON */
 
   def equals(x: Object, y: Object) =
     if (x == y) true
@@ -92,13 +92,11 @@ object BoxesRunTime {
       case LONG   => x.longValue == y.longValue
       case FLOAT  => x.floatValue == y.floatValue
       case DOUBLE => x.doubleValue == y.doubleValue
-      case _      =>
+      case _ =>
         if (y.isInstanceOf[ScalaNumber] && !x.isInstanceOf[ScalaNumber])
           y.equals(x)
-        else if (x == null)
-          y == null
-        else
-          x.equals(y)
+        else if (x == null) y == null
+        else x.equals(y)
     }
   }
 
@@ -111,15 +109,14 @@ object BoxesRunTime {
   }
 
   def equalsNumChar(x: java.lang.Number, y: java.lang.Character) =
-    if (y == null)
-      x == null
+    if (y == null) x == null
     else {
       val ch = y.charValue()
 
       typeCode(x) match {
-        case INT    => x.intValue()    == ch
-        case LONG   => x.longValue()   == ch
-        case FLOAT  => x.floatValue()  == ch
+        case INT    => x.intValue() == ch
+        case LONG   => x.longValue() == ch
+        case FLOAT  => x.floatValue() == ch
         case DOUBLE => x.doubleValue() == ch
         case _      => x.equals(y)
       }
@@ -135,20 +132,16 @@ object BoxesRunTime {
     val iv = n.intValue
     val dv = n.doubleValue
 
-    if (iv == dv)
-      iv
+    if (iv == dv) iv
     else {
       val lv = n.longValue
 
-      if (lv == dv)
-        java.lang.Long.valueOf(lv).hashCode()
+      if (lv == dv) java.lang.Long.valueOf(lv).hashCode()
       else {
         val fv = n.floatValue
 
-        if (fv == dv)
-          java.lang.Float.valueOf(fv).hashCode()
-        else
-          n.hashCode
+        if (fv == dv) java.lang.Float.valueOf(fv).hashCode()
+        else n.hashCode
       }
     }
   }
@@ -157,15 +150,12 @@ object BoxesRunTime {
     val iv = n.intValue
     val fv = n.floatValue
 
-    if (iv == fv)
-      iv
+    if (iv == fv) iv
     else {
       val lv = n.longValue
 
-      if (lv == fv)
-        java.lang.Long.valueOf(lv).hashCode()
-      else
-        n.hashCode()
+      if (lv == fv) java.lang.Long.valueOf(lv).hashCode()
+      else n.hashCode()
     }
   }
 
@@ -182,28 +172,20 @@ object BoxesRunTime {
   }
 
   def unboxCharOrInt(arg1: Object, code: Int): Int =
-    if (code == CHAR)
-      arg1.asInstanceOf[java.lang.Character].charValue
-    else
-      arg1.asInstanceOf[java.lang.Number].intValue
+    if (code == CHAR) arg1.asInstanceOf[java.lang.Character].charValue
+    else arg1.asInstanceOf[java.lang.Number].intValue
 
   def unboxCharOrLong(arg1: Object, code: Int): Long =
-    if (code == CHAR)
-      arg1.asInstanceOf[java.lang.Character].charValue
-    else
-      arg1.asInstanceOf[java.lang.Number].longValue
+    if (code == CHAR) arg1.asInstanceOf[java.lang.Character].charValue
+    else arg1.asInstanceOf[java.lang.Number].longValue
 
   def unboxCharOrFloat(arg1: Object, code: Int): Float =
-    if (code == CHAR)
-      arg1.asInstanceOf[java.lang.Character].charValue
-    else
-      arg1.asInstanceOf[java.lang.Number].floatValue
+    if (code == CHAR) arg1.asInstanceOf[java.lang.Character].charValue
+    else arg1.asInstanceOf[java.lang.Number].floatValue
 
   def unboxCharOrDouble(arg1: Object, code: Int): Double =
-    if (code == CHAR)
-      arg1.asInstanceOf[java.lang.Character].charValue
-    else
-      arg1.asInstanceOf[java.lang.Number].doubleValue
+    if (code == CHAR) arg1.asInstanceOf[java.lang.Character].charValue
+    else arg1.asInstanceOf[java.lang.Number].doubleValue
 
 /* OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS */
 }

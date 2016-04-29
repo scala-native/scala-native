@@ -7,5 +7,3 @@ package object runtime {
 
   def init(argc: Int, argv: Ptr[Ptr[Byte]]): RefArray = ???
 }
-
-
