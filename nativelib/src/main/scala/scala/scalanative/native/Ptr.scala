@@ -4,14 +4,17 @@ package native
 import scala.language.dynamics
 import runtime.undefined
 
-/** An immutable unsafe pointer to unmanaged memory. */
+/** The C `const T *` pointer. */
 final class Ptr[T] private () {
   /** Dereference a pointer. */
   def unary_! : T = undefined
 
   /** Store a value to the address pointed at by a pointer. */
-  def := (value: T) = undefined
+  def `unary_!_=` (value: T) = undefined
 
-  /** Compute a derived pointer with given offset. */
-  def apply(offset: CSize): Ptr[T] = undefined
+  /** Compute a derived pointer by adding given offset. */
+  def +(offset: UWord): Ptr[T] = undefined
+
+  /** Compute a derived pointer by substricting given offset. */
+  def -(offset: UWord): Ptr[T] = undefined
 }
