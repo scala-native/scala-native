@@ -4,14 +4,14 @@ package nir
 import Type._
 
 object Rt {
-  val String    = Class(Global.Type("java.lang.String"))
-  val Object    = Class(Global.Type("java.lang.Object"))
-  val Type      = Struct(Global.Type("scala.scalanative.runtime.Type"))
-  val RefArray  = Class(Global.Type("scala.scalanative.runtime.RefArray"))
-  val BoxedUnit = Module(Global.Val("scala.scalanative.runtime.BoxedUnit"))
-  val Exc       = AnonStruct(Seq(Ptr, I32))
   val RtName    = Global.Val("scala.scalanative.runtime.package")
   val Rt        = Module(RtName)
+  val BoxedUnit = Module(Global.Val("scala.scalanative.runtime.BoxedUnit"))
+  val String    = Class(Global.Type("java.lang.String"))
+  val Object    = Class(Global.Type("java.lang.Object"))
+  val RefArray  = Class(Global.Type("scala.scalanative.runtime.RefArray"))
+  val Type      = Struct(Global.Type("scala.scalanative.runtime.Type"), Seq(I32, Ptr))
+  val Exc       = Struct(Global.Type("scala.scalanative.runtime.Exc"), Seq(Ptr, I32))
 
   val mainName = Global.Val("main")
   val mainSig  = Function(Seq(I32, Ptr), I32)
@@ -44,12 +44,13 @@ object Rt {
   )
 
   def pinned = Seq(
+      Rt.name,
+      init.name,
+      BoxedUnit.name,
       String.name,
       Object.name,
-      Type.name,
       RefArray.name,
-      Rt.name,
-      BoxedUnit.name,
-      init.name
+      Type.name,
+      Exc.name
   )
 }

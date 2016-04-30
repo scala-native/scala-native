@@ -253,8 +253,7 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
     case T.F64Type        => Type.F64
     case T.ArrayType      => Type.Array(getType, getInt)
     case T.FunctionType   => Type.Function(getTypes, getType)
-    case T.StructType     => Type.Struct(getGlobal)
-    case T.AnonStructType => Type.AnonStruct(getTypes)
+    case T.StructType     => Type.Struct(getGlobal, getTypes)
 
     case T.SizeType    => Type.Size
     case T.ClassType   => Type.Class(getGlobal)

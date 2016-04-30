@@ -109,8 +109,7 @@ object GenTextualLLVM extends GenShow {
     case Type.F64                 => "double"
     case Type.Array(ty, n)        => sh"[$n x $ty]"
     case Type.Function(args, ret) => sh"$ret (${r(args, sep = ", ")})"
-    case Type.Struct(name)        => sh"%$name"
-    case Type.AnonStruct(tys)     => sh"{${r(tys, sep = ", ")}}"
+    case Type.Struct(name, _)     => sh"%$name"
     case ty                       => unsupported(ty)
   }
 

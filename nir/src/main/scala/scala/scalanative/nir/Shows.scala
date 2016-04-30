@@ -271,8 +271,7 @@ object Shows {
     case Type.F64                 => "f64"
     case Type.Array(ty, n)        => sh"[$ty x $n]"
     case Type.Function(args, ret) => sh"(${r(args, sep = ", ")}) => $ret"
-    case Type.Struct(name)        => sh"struct $name"
-    case Type.AnonStruct(tys)     => sh"struct {${r(tys, sep = ", ")}}"
+    case Type.Struct(name, _)     => sh"struct $name"
 
     case Type.Size         => "size"
     case Type.Class(name)  => sh"class $name"

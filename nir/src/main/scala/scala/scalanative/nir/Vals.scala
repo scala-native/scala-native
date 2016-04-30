@@ -3,20 +3,20 @@ package nir
 
 sealed abstract class Val {
   final def ty: Type = this match {
-    case Val.None             => Type.None
-    case Val.Zero(ty)         => ty
-    case Val.True | Val.False => Type.Bool
-    case Val.I8(_)            => Type.I8
-    case Val.I16(_)           => Type.I16
-    case Val.I32(_)           => Type.I32
-    case Val.I64(_)           => Type.I64
-    case Val.F32(_)           => Type.F32
-    case Val.F64(_)           => Type.F64
-    case Val.Struct(name, _)  => Type.Struct(name)
-    case Val.Array(ty, vals)  => Type.Array(ty, vals.length)
-    case Val.Chars(s)         => Type.Array(Type.I8, s.length)
-    case Val.Local(_, ty)     => ty
-    case Val.Global(_, ty)    => ty
+    case Val.None               => Type.None
+    case Val.Zero(ty)           => ty
+    case Val.True | Val.False   => Type.Bool
+    case Val.I8(_)              => Type.I8
+    case Val.I16(_)             => Type.I16
+    case Val.I32(_)             => Type.I32
+    case Val.I64(_)             => Type.I64
+    case Val.F32(_)             => Type.F32
+    case Val.F64(_)             => Type.F64
+    case Val.Struct(name, vals) => Type.Struct(name, vals.map(_.ty))
+    case Val.Array(ty, vals)    => Type.Array(ty, vals.length)
+    case Val.Chars(s)           => Type.Array(Type.I8, s.length)
+    case Val.Local(_, ty)       => ty
+    case Val.Global(_, ty)      => ty
 
     case Val.String(_) => Rt.String
   }

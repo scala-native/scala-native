@@ -150,9 +150,8 @@ object Tags {
   final val ArrayType      = 1 + F64Type
   final val FunctionType   = 1 + ArrayType
   final val StructType     = 1 + FunctionType
-  final val AnonStructType = 1 + StructType
 
-  final val SizeType    = 1 + AnonStructType
+  final val SizeType    = 1 + StructType
   final val ClassType   = 1 + SizeType
   final val TraitType   = 1 + ClassType
   final val ModuleType  = 1 + TraitType

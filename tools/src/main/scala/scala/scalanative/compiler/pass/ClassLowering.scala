@@ -12,35 +12,33 @@ import nir._, Shows._
   *
   * For example a class w:
   *
-  *     class $name: $parent, .. $ifaces {
-  *       .. var $fldname: $fldty = $fldinit
-  *       .. def $declname: $declty
-  *       .. def $defnname: $defnty = $body
-  *     }
+  *     class $name: $parent, .. $ifaces
+  *     .. var $name::$fldname: $fldty = $fldinit
+  *     .. def $name::$declname: $declty
+  *     .. def $name::$defnname: $defnty = $body
   *
   * Gets lowered to:
   *
-  *     struct type.$name {
-  *       struct #type,
-  *       .. ptr $alldeclty
+  *     struct info.$name {
+  *       struct #ssnr.Type,
+  *       .. ptr $declty,
   *     }
   *
   *     struct class.$name {
-  *       ptr $name_type,
-  *       .. $allfldty
+  *       ptr info.$name_type,
+  *       .. $fldty,
   *     }
   *
   *     const const.$name: struct type.$name =
-  *       struct $name_type {
-  *         struct #Type {
-  *           #Type_type,
-  *           ${cls.name},
+  *       struct type.$name {
+  *         struct #ssnr.Type {
   *           ${cls.id},
+  *           ${cls.name},
   *         }
-  *         .. $alldefnname
+  *         .. $name::$defnname,
   *       }
   *
-  *     .. def $defnname: $defnty = $body
+  *     .. def $name::$defnname: $defnty = $body
   *
   * Eliminates:
   * - Type.{Class, Null}
@@ -48,34 +46,43 @@ import nir._, Shows._
   * - Op.{Alloc, Field, Method, As, Is}
   * - Val.{Null, Class}
   */
-class ClassLowering(implicit ch: ClassHierarchy.Graph, fresh: Fresh)
+class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
     extends Pass {
+  def infoStruct(cls: ClassHierarchy.Class): Type.Struct = {
+    val vtable         = cls.vtable.map(_.ty)
+    val infoStructName = cls.name tag "info"
+    val infoStructBody = Rt.Type +: vtable
+
+    Type.Struct(infoStructName, infoStructBody)
+  }
+
+  def classStruct(cls: ClassHierarchy.Class): Type.Struct = {
+    val data            = cls.fields.map(_.ty)
+    val classStructName = cls.name tag "class"
+    val classStructBody = Type.Ptr +: data
+    val classStructTy   = Type.Struct(classStructName, classStructBody)
+
+    Type.Struct(classStructName, classStructBody)
+  }
+
   override def preDefn = {
     case Defn.Class(_, name @ ClassRef(cls), _, _) =>
-      val data      = cls.fields.map(_.ty)
-      val vtable    = cls.vtable
-      val vtableTys = vtable.map(_.ty)
+      val infoStructTy   = infoStruct(cls)
+      val infoStructDefn = Defn.Struct(Seq(), infoStructTy.name, infoStructTy.tys)
 
-      val classTypeStructName = name tag "type"
-      val classTypeStructTy   = Type.Struct(classTypeStructName)
-      val classTypeStructBody = Rt.Type +: vtableTys
-      val classTypeStruct =
-        Defn.Struct(Seq(), classTypeStructName, classTypeStructBody)
-
-      val classStructName = name tag "class"
-      val classStructTy   = Type.Struct(classStructName)
-      val classStruct     = Defn.Struct(Seq(), classStructName, Type.Ptr +: data)
+      val classStructTy   = classStruct(cls)
+      val classStructDefn = Defn.Struct(Seq(), classStructTy.name, classStructTy.tys)
 
       val typeId   = Val.I32(cls.id)
       val typeName = Val.String(cls.name.id)
       val typeVal  = Val.Struct(Rt.Type.name, Seq(typeId, typeName))
 
       val classConstName = name tag "const"
-      val classConstVal  = Val.Struct(classTypeStructName, typeVal +: vtable)
-      val classConst =
-        Defn.Const(Seq(), classConstName, classTypeStructTy, classConstVal)
+      val classConstVal  = Val.Struct(infoStructTy.name, typeVal +: cls.vtable)
+      val classConstDefn =
+        Defn.Const(Seq(), classConstName, infoStructTy, classConstVal)
 
-      Seq(classTypeStruct, classStruct, classConst)
+      Seq(infoStructDefn, classStructDefn, classConstDefn)
 
     case Defn.Declare(_, VirtualClassMethodRef(_) | StaticClassMethodRef(_), _) =>
       Seq()
@@ -91,7 +98,7 @@ class ClassLowering(implicit ch: ClassHierarchy.Graph, fresh: Fresh)
       val size    = Val.Local(fresh(), Type.Size)
       Seq(
           Inst(cast.name, Op.Conv(Conv.Bitcast, Type.Ptr, clstype)),
-          Inst(size.name, Op.SizeOf(Type.Struct(cls.name))),
+          Inst(size.name, Op.SizeOf(classStruct(cls))),
           Inst(n, Op.Call(Rt.allocSig, Rt.alloc, Seq(cast, size)))
       )
 
@@ -156,10 +163,10 @@ class ClassLowering(implicit ch: ClassHierarchy.Graph, fresh: Fresh)
       ???
 
     case Inst(n, Op.TypeOf(ClassRef(cls))) =>
-      val clstype  = Type.Struct(cls.name tag "type")
-      val clsconst = Val.Global(cls.name tag "const", Type.Ptr)
+      val const = Val.Global(cls.name tag "const", Type.Ptr)
+
       Seq(
-          Inst(n, Op.Conv(Conv.Bitcast, Type.Ptr, clsconst))
+          Inst(n, Op.Conv(Conv.Bitcast, Type.Ptr, const))
       )
   }
 

@@ -7,7 +7,7 @@ sealed abstract class Type {
   def elemty(path: Seq[Int]) = (this, path) match {
     case (_, Seq()) =>
       this
-    case (Type.AnonStruct(tys), idx +: rest) =>
+    case (Type.Struct(_, tys), idx +: rest) =>
       tys(idx)
     case (Type.Array(ty, n), idx +: rest) =>
       assert(idx >= 0 && idx < n)
@@ -37,8 +37,7 @@ object Type {
 
   final case class Array(ty: Type, n: Int)              extends Type
   final case class Function(args: Seq[Type], ret: Type) extends Type
-  final case class Struct(name: Global)                 extends Type
-  final case class AnonStruct(tys: Seq[Type])           extends Type
+  final case class Struct(name: Global, tys: Seq[Type]) extends Type
 
   // high-level types
   final case object Size    extends Type
