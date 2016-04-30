@@ -1,9 +1,11 @@
 package scala.scalanative
 package native
 
+import scala.language.dynamics
 import runtime.undefined
 
-final class Ptr[+T] private () extends Dynamic {
+/** An immutable unsafe pointer to unmanaged memory. */
+final class Ptr[T] private () {
   /** Dereference a pointer. */
   def unary_! : T = undefined
 
@@ -11,11 +13,5 @@ final class Ptr[+T] private () extends Dynamic {
   def := (value: T) = undefined
 
   /** Compute a derived pointer with given offset. */
-  def apply(offset: Int): T = undefined
-
-  /** Compute a derived pointer to given field. */
-  def selectDynamic(field: String): Ptr[Any] = undefined
-
-  /** Compute a derived pointer to given field plus offset. */
-  def applyDynamic(field: String)(offset: Int): Ptr[Any] = undefined
+  def apply(offset: CSize): Ptr[T] = undefined
 }
