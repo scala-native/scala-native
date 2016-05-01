@@ -28,7 +28,7 @@ object Defn {
       extends Defn
   final case class Struct(attrs: Seq[Attr],
                           name: Global,
-                          fieldtys: Seq[Type])
+                          tys: Seq[Type])
       extends Defn
 
   // high-level

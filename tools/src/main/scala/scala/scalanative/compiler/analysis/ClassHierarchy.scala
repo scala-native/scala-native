@@ -13,28 +13,29 @@ object ClassHierarchy {
     def id: Int
   }
 
-  final class Trait(
-      val attrs: Seq[Attr],
-      val name: Global,
-      var id: Int = -1,
-      var traits: Seq[Node] = Seq(),
-      var implementors: Seq[Class] = Seq(),
-      var members: Seq[Node] = Seq()
-  )
+  final class Struct(val attrs: Seq[Attr],
+                     val name: Global,
+                     val tys: Seq[nir.Type],
+                     var id: Int = -1) extends Node
+
+  final class Trait(val attrs: Seq[Attr],
+                    val name: Global,
+                    var id: Int = -1,
+                    var traits: Seq[Node] = Seq(),
+                    var implementors: Seq[Class] = Seq(),
+                    var members: Seq[Node] = Seq())
       extends Node {
     def methods: Seq[Method] = ???
   }
 
-  final class Class(
-      val attrs: Seq[Attr],
-      val name: Global,
-      var id: Int = -1,
-      var range: Range = null,
-      var parent: Option[Class] = None,
-      var subclasses: Seq[Class] = Seq(),
-      var traits: Seq[Node] = Seq(),
-      var members: Seq[Node] = Seq()
-  )
+  final class Class(val attrs: Seq[Attr],
+                    val name: Global,
+                    var id: Int = -1,
+                    var range: Range = null,
+                    var parent: Option[Class] = None,
+                    var subclasses: Seq[Class] = Seq(),
+                    var traits: Seq[Node] = Seq(),
+                    var members: Seq[Node] = Seq())
       extends Node {
     def ty =
       Type.Class(name)
@@ -82,16 +83,14 @@ object ClassHierarchy {
     }
   }
 
-  final class Method(
-      val attrs: Seq[Attr],
-      val name: Global,
-      val ty: Type,
-      val isConcrete: Boolean,
-      var in: Node = null,
-      var id: Int = -1,
-      var overrides: Seq[Method] = Seq(),
-      var overriden: Seq[Method] = Seq()
-  )
+  final class Method(val attrs: Seq[Attr],
+                     val name: Global,
+                     val ty: Type,
+                     val isConcrete: Boolean,
+                     var in: Node = null,
+                     var id: Int = -1,
+                     var overrides: Seq[Method] = Seq(),
+                     var overriden: Seq[Method] = Seq())
       extends Node {
     def isVirtual = !isConcrete || overriden.nonEmpty
 
@@ -131,12 +130,10 @@ object ClassHierarchy {
     }
   }
 
-  final class Field(
-      val attrs: Seq[Attr],
-      val name: Global,
-      val ty: Type,
-      var in: Class = null
-  )
+  final class Field(val attrs: Seq[Attr],
+                    val name: Global,
+                    val ty: Type,
+                    var in: Class = null)
       extends Node {
     // TODO: generate field ids
     def id = -1
@@ -144,16 +141,16 @@ object ClassHierarchy {
     def index = in.fields.indexOf(this)
   }
 
-  final class Graph(
-      val nodes: Map[Global, Node],
-      val classes: Seq[Class],
-      val traits: Seq[Trait],
-      val methods: Seq[Method],
-      val fields: Seq[Field]
-  )
+  final class Graph(val nodes: Map[Global, Node],
+                    val structs: Seq[Struct],
+                    val classes: Seq[Class],
+                    val traits: Seq[Trait],
+                    val methods: Seq[Method],
+                    val fields: Seq[Field])
 
   def apply(defns: Seq[Defn]): Graph = {
     val nodes   = mutable.Map.empty[Global, Node]
+    val structs = mutable.UnrolledBuffer.empty[Struct]
     val classes = mutable.UnrolledBuffer.empty[Class]
     val traits  = mutable.UnrolledBuffer.empty[Trait]
     val methods = mutable.UnrolledBuffer.empty[Method]
@@ -162,10 +159,11 @@ object ClassHierarchy {
     def enter[T <: Node](name: Global, node: T): T = {
       nodes += name -> node
       node match {
-        case cls: Class   => classes += cls
-        case iface: Trait => traits += iface
-        case meth: Method => methods += meth
-        case fld: Field   => fields += fld
+        case defn: Class  => classes += defn
+        case defn: Trait  => traits  += defn
+        case defn: Method => methods += defn
+        case defn: Field  => fields  += defn
+        case defn: Struct => structs += defn
       }
       node
     }
@@ -193,8 +191,12 @@ object ClassHierarchy {
         enter(defn.name,
               new Method(defn.attrs, defn.name, defn.ty, isConcrete = true))
 
+      case defn: Defn.Struct =>
+        enter(defn.name,
+              new Struct(defn.attrs, defn.name, defn.tys))
+
       case _ =>
-        unreachable
+        ()
     }
 
     def enrichMethod(name: Global, attrs: Seq[Attr]): Unit = {
@@ -276,12 +278,11 @@ object ClassHierarchy {
     defns.foreach(enrich)
     identify()
 
-    new Graph(
-        nodes = nodes.toMap,
-        classes = classes.toSeq,
-        traits = traits.toSeq,
-        methods = methods.toSeq,
-        fields = fields.toSeq
-    )
+    new Graph(nodes = nodes.toMap,
+              structs = structs.toSeq,
+              classes = classes.toSeq,
+              traits = traits.toSeq,
+              methods = methods.toSeq,
+              fields = fields.toSeq)
   }
 }

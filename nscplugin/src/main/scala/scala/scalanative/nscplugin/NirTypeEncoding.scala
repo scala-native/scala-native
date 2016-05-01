@@ -9,7 +9,7 @@ trait NirTypeEncoding { self: NirCodeGen =>
   import nirAddons._
   import nirDefinitions._
 
-  def genClassName(sym: Symbol): nir.Global
+  def genTypeName(sym: Symbol): nir.Global
 
   def genArrayCode(tpe: Type): Char = {
     val (ArrayClass, Seq(targ)) = decomposeType(tpe)
@@ -60,9 +60,9 @@ trait NirTypeEncoding { self: NirCodeGen =>
     case FloatClass           => nir.Type.F32
     case DoubleClass          => nir.Type.F64
     case NPtrClass            => nir.Type.Ptr
-    case _ if isModule(sym)   => nir.Type.Module(genClassName(sym))
-    case _ if sym.isInterface => nir.Type.Trait(genClassName(sym))
-    case _                    => nir.Type.Class(genClassName(sym))
+    case _ if isModule(sym)   => nir.Type.Module(genTypeName(sym))
+    case _ if sym.isInterface => nir.Type.Trait(genTypeName(sym))
+    case _                    => nir.Type.Class(genTypeName(sym))
   }
 
   def genPrimCode(tpe: Type): Char = {
@@ -88,4 +88,10 @@ trait NirTypeEncoding { self: NirCodeGen =>
 
   def isExternalModule(sym: Symbol): Boolean =
     isModule(sym) && sym.annotations.exists(_.symbol == ExternClass)
+
+  def isStruct(sym: Symbol): Boolean =
+    sym.annotations.exists(_.symbol == StructClass)
+
+  def isField(sym: Symbol): Boolean =
+    !sym.isMethod && sym.isTerm && !isModule(sym)
 }

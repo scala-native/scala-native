@@ -12,7 +12,7 @@ trait NirNameEncoding { self: NirCodeGen =>
   private lazy val StringClassName  = nir.Global.Type("java.lang.String")
   private lazy val StringModuleName = nir.Global.Val("java.lang.String")
 
-  def genClassName(sym: Symbol): nir.Global = {
+  def genTypeName(sym: Symbol): nir.Global = {
     val id = {
       val fullName = sym.fullName.toString
       if (fullName == "java.lang._String") "java.lang.String"
@@ -21,16 +21,15 @@ trait NirNameEncoding { self: NirCodeGen =>
     }
     val name = sym match {
       case ObjectClass                               => nir.Rt.Object.name
-      case _ if sym.isModule                         => genClassName(sym.moduleClass)
+      case _ if sym.isModule                         => genTypeName(sym.moduleClass)
       case _ if sym.isModuleClass || sym.isImplClass => nir.Global.Val(id)
-      case _ if sym.isInterface                      => nir.Global.Type(id)
       case _                                         => nir.Global.Type(id)
     }
     name
   }
 
   def genFieldName(sym: Symbol): nir.Global = {
-    val owner = genClassName(sym.owner)
+    val owner = genTypeName(sym.owner)
     val id0   = sym.name.decoded.toString
     val id =
       if (id0.charAt(id0.length() - 1) != ' ') id0
@@ -41,7 +40,7 @@ trait NirNameEncoding { self: NirCodeGen =>
 
   def genMethodName(sym: Symbol): nir.Global = {
     val owner   = sym.owner
-    val ownerId = genClassName(sym.owner)
+    val ownerId = genTypeName(sym.owner)
     val id = {
       val name = sym.name.decoded
       if (owner == NObjectClass) name.substring(1) // skip the _

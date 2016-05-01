@@ -60,8 +60,8 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
           defn.copy(ty = txType(ty))
         case defn @ Defn.Define(_, _, ty, blocks) =>
           defn.copy(ty = txType(ty), blocks = blocks.flatMap(txBlock))
-        case defn @ Defn.Struct(_, _, fieldtys) =>
-          defn.copy(fieldtys = fieldtys.map(txType))
+        case defn @ Defn.Struct(_, _, tys) =>
+          defn.copy(tys = tys.map(txType))
         case defn @ Defn.Trait(_, _, _) =>
           defn
         case defn @ Defn.Class(_, _, _, _) =>

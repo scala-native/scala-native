@@ -101,23 +101,45 @@ abstract class NirCodeGen
         val sym = cd.symbol
         if (isPrimitiveValueClass(sym) || (sym == ArrayClass)) ()
         else {
-          val defn = genClass(cd)
+          val defn =
+            if (isStruct(cd.symbol)) genStruct(cd)
+            else genClass(cd)
           genIRFile(cunit, sym, defn)
         }
       }
     }
+
+    def genStruct(cd: ClassDef): Seq[Defn] = {
+      val sym = cd.symbol
+
+      val attrs  = genStructAttrs(sym)
+      val name   = genTypeName(sym)
+      val fields = genStructFields(sym)
+
+      Seq(Defn.Struct(attrs, name, fields))
+    }
+
+    def genStructAttrs(sym: Symbol): Seq[Attr] = Seq()
+
+    def genStructFields(sym: Symbol): Seq[nir.Type] = {
+      for {
+        f <- sym.info.decls if isField(f)
+      } yield {
+        genType(f.tpe)
+      }
+    }.toSeq
 
     def genClass(cd: ClassDef): Seq[Defn] =
       scoped(
           curClassSym := cd.symbol
       ) {
         val sym  = cd.symbol
-        val body = cd.impl.body
+
         def attrs   = genClassAttrs(sym)
-        def name    = genClassName(sym)
+        def name    = genTypeName(sym)
         def parent  = genClassParent(sym)
         def traits  = genClassInterfaces(sym)
-        def members = genClassMembers(sym, body)
+        def members = genClassMembers(sym, cd.impl.body)
 
         if (isModule(sym)) Defn.Module(attrs, name, parent, traits) +: members
         else if (sym.isInterface) Defn.Trait(attrs, name, traits) +: members
@@ -127,8 +149,8 @@ abstract class NirCodeGen
     def genClassParent(sym: Symbol): Option[nir.Global] =
       if (sym == NObjectClass) None
       else if (sym.superClass == NoSymbol || sym.superClass == ObjectClass)
-        Some(genClassName(NObjectClass))
-      else Some(genClassName(sym.superClass))
+        Some(genTypeName(NObjectClass))
+      else Some(genTypeName(sym.superClass))
 
     def genClassAttrs(sym: Symbol): Seq[Attr] = {
       def pinned =
@@ -146,7 +168,7 @@ abstract class NirCodeGen
         parent <- sym.info.parents
         psym = parent.typeSymbol if psym.isInterface
       } yield {
-        genClassName(psym)
+        genTypeName(psym)
       }
 
     def genClassMembers(sym: Symbol, body: Seq[Tree]): Seq[Defn] =
@@ -200,7 +222,7 @@ abstract class NirCodeGen
 
     def genClassFields(sym: Symbol) =
       for {
-        f <- sym.info.decls if !f.isMethod && f.isTerm && !isModule(f)
+        f <- sym.info.decls if isField(f)
       } yield {
         val name = genFieldName(f)
         val ty   = genType(f.tpe)
@@ -370,12 +392,12 @@ abstract class NirCodeGen
       case This(qual) =>
         focus.withValue {
           if (tree.symbol == curClassSym.get) curThis.get
-          else Val.Global(genClassName(tree.symbol), genType(tree.tpe))
+          else Val.Global(genTypeName(tree.symbol), genType(tree.tpe))
         }
 
       case Select(qualp, selp) =>
         val sym = tree.symbol
-        if (isModule(sym)) focus withOp Op.Module(genClassName(sym))
+        if (isModule(sym)) focus withOp Op.Module(genTypeName(sym))
         else if (sym.isStaticMember) genStaticMember(sym, focus)
         else if (sym.isMethod)
           genMethodCall(sym, statically = false, qualp, Seq(), focus)
@@ -391,7 +413,7 @@ abstract class NirCodeGen
         val sym = id.symbol
         if (curLocalInfo.mutableVars.contains(sym))
           focus withOp Op.Load(genType(sym.tpe), curEnv.resolve(sym))
-        else if (isModule(sym)) focus withOp Op.Module(genClassName(sym))
+        else if (isModule(sym)) focus withOp Op.Module(genTypeName(sym))
         else focus withValue (curEnv.resolve(sym))
 
       case lit: Literal =>
@@ -483,11 +505,11 @@ abstract class NirCodeGen
     }
 
     def genModule(sym: Symbol, focus: Focus): Focus =
-      focus withOp Op.Module(genClassName(sym))
+      focus withOp Op.Module(genTypeName(sym))
 
     def genStaticMember(sym: Symbol, focus: Focus): Focus = {
       val ty     = genType(sym.tpe)
-      val module = focus withOp Op.Module(genClassName(sym.owner))
+      val module = focus withOp Op.Module(genTypeName(sym.owner))
       val elem   = module withOp Op.Field(ty, module.value, genFieldName(sym))
 
       elem withOp Op.Load(ty, elem.value)

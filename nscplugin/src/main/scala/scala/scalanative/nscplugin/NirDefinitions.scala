@@ -41,6 +41,7 @@ trait NirDefinitions { self: NirGlobalAddons =>
         "scala.scalanative.native.package")
     lazy val ExternMethod = getMember(NativeModule, TermName("extern"))
     lazy val ExternClass  = getRequiredClass("scala.scalanative.native.extern")
+    lazy val StructClass  = getRequiredClass("scala.scalanative.native.struct")
 
     lazy val StringConcatMethod = getMember(StringClass, TermName("concat"))
 
