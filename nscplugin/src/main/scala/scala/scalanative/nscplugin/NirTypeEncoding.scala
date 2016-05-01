@@ -40,14 +40,10 @@ trait NirTypeEncoding { self: NirCodeGen =>
   def genTypeSym(sym: Symbol,
                  targs: Seq[Type] = Seq(),
                  retty: Boolean = false): nir.Type = sym match {
-    case ArrayClass =>
-      genTypeSym(NArrayClass(genPrimCode(targs.head)))
-    case UnitClass => nir.Type.Unit
-    case NothingClass =>
-      if (retty) nir.Type.Unit
-      else genTypeSym(RuntimeNothingClass)
-    case NullClass =>
-      genTypeSym(RuntimeNullClass)
+    case ArrayClass           => genTypeSym(NArrayClass(genPrimCode(targs.head)))
+    case UnitClass            => nir.Type.Unit
+    case NothingClass         => nir.Type.Nothing
+    case NullClass            => genTypeSym(RuntimeNullClass)
     case ObjectClass          => nir.Rt.Object
     case CharClass            => nir.Type.I16
     case BooleanClass         => nir.Type.Bool

@@ -276,6 +276,7 @@ object Shows {
 
     case Type.Size         => "size"
     case Type.Unit         => "unit"
+    case Type.Nothing      => "nothing"
     case Type.Class(name)  => sh"class $name"
     case Type.Trait(name)  => sh"trait $name"
     case Type.Module(name) => sh"module $name"

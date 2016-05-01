@@ -36,6 +36,7 @@ final class Compiler(opts: Opts) {
         new pass.ClassLowering,
         new pass.StringLowering,
         new pass.UnitLowering,
+        new pass.NothingLowering,
         new pass.SizeLowering,
         new pass.ExceptionLowering,
         new pass.CopyPropagation

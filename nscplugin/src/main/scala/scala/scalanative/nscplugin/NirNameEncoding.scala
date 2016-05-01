@@ -86,6 +86,7 @@ trait NirNameEncoding { self: NirCodeGen =>
 
       case nir.Type.Size         => "size"
       case nir.Type.Unit         => "unit"
+      case nir.Type.Nothing      => "nothing"
       case nir.Type.Class(name)  => sh"class.$name"
       case nir.Type.Trait(name)  => sh"trait.$name"
       case nir.Type.Module(name) => sh"module.$name"
