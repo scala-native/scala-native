@@ -29,18 +29,14 @@ object ScalaNativePluginInternal {
 
   /** Compiles rt to llvm ir using clang. */
   private def compileRtlib(classpath: Seq[String]): Int = {
-    println(s"looking through classpath: $classpath")
     val rtlibjar = classpath.collectFirst {
       case p if p.contains("org.scala-native") && p.contains("rtlib") => p
     }.get
-    println(s"found rtlib $rtlibjar")
     IO.delete(rtlib)
     IO.unzip(file(rtlibjar), rtlib)
 
     val srcfiles = (rtlib ** "*.cpp").get.map(abs)
-    println(s"found rtlib sources: $srcfiles")
     val clang    = Seq(abs(llvm / "clang++"), "-S", "-emit-llvm") ++ srcfiles
-
     Process(clang, rtlib).!
   }
 

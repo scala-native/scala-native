@@ -2,6 +2,7 @@ package scala.scalanative
 package nscplugin
 
 import scala.tools.nsc._
+import scala.reflect.internal.Flags._
 import scalanative.nir.Shows.{showType => _, showGlobal => _, _}
 import scalanative.util.{sh, Show}, Show.{Repeat => r}
 
@@ -34,8 +35,9 @@ trait NirNameEncoding { self: NirCodeGen =>
     val id =
       if (id0.charAt(id0.length() - 1) != ' ') id0
       else id0.substring(0, id0.length() - 1)
+    val pre = owner member id
 
-    owner member id
+    if (isExternalModule(sym.owner)) pre member "ext" else pre
   }
 
   def genMethodName(sym: Symbol): nir.Global = {
@@ -50,17 +52,23 @@ trait NirNameEncoding { self: NirCodeGen =>
     val mangledParams =
       tpe.params.toSeq.map(p => mangledType(p.info, retty = false))
 
-    if (sym == String_+) {
-      genMethodName(StringConcatMethod)
-    } else if (isExternalModule(owner)) {
-      ownerId member id
-    } else if (sym.name == nme.CONSTRUCTOR) {
-      ownerId member ("init" +: mangledParams).mkString("_")
-    } else {
-      val mangledRetty = mangledType(tpe.resultType, retty = true)
+    val prename =
+      if (sym == String_+) {
+        genMethodName(StringConcatMethod)
+      } else if (isExternalModule(owner)) {
+        ownerId member id
+      } else if (sym.name == nme.CONSTRUCTOR) {
+        ownerId member ("init" +: mangledParams).mkString("_")
+      } else {
+        val mangledRetty = mangledType(tpe.resultType, retty = true)
 
-      ownerId member (id +: (mangledParams :+ mangledRetty)).mkString("_")
-    }
+        ownerId member (id +: (mangledParams :+ mangledRetty)).mkString("_")
+      }
+
+    if (sym.hasFlag(ACCESSOR))
+      prename tag "accessor"
+    else
+      prename
   }
 
   private def mangledType(tpe: Type, retty: Boolean): String =

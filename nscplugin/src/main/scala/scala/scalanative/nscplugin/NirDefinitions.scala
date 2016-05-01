@@ -13,6 +13,7 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val NObjectHashCodeMethod = getDecl(
         NObjectClass, TermName("_hashCode"))
     lazy val NObjectEqualsMethod = getDecl(NObjectClass, TermName("_equals"))
+    lazy val NObjectInitMethod = getDecl(NObjectClass, TermName("<init>"))
 
     lazy val NMonitorClass = getRequiredClass(
         "scala.scalanative.runtime.Monitor")
@@ -41,8 +42,6 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val StructClass  = getRequiredClass("scala.scalanative.native.struct")
 
     lazy val StringConcatMethod = getMember(StringClass, TermName("concat"))
-
-    lazy val Object_wait = getMember(ObjectClass, TermName("wait"))
 
     lazy val BoxMethod = Map[Char, Symbol](
         'B' -> getDecl(BoxesRunTimeModule, TermName("boxToBoolean")),

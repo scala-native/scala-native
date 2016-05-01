@@ -7,8 +7,6 @@ class Throwable(s: String, private var e: Throwable) extends Object with java.io
 
   private[this] var stackTrace: Array[StackTraceElement] = _
 
-  fillInStackTrace()
-
   def initCause(cause: Throwable): Throwable = {
     e = cause
     this

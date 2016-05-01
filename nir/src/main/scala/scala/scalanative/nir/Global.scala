@@ -19,7 +19,7 @@ sealed abstract class Global {
   def tag(tag: String): Global = this match {
     case Global.Val(id)       => Global.Val(s"$tag.$id")
     case Global.Type(id)      => Global.Type(s"$tag.$id")
-    case Global.Member(n, id) => Global.Member(n, s"$tag.id")
+    case Global.Member(n, id) => Global.Member(n, s"$tag.$id")
   }
 }
 object Global {

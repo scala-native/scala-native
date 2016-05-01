@@ -16,7 +16,7 @@ final class Compiler(opts: Opts) {
 
     if (unresolved.nonEmpty) {
       println(s"unresolved deps:")
-      unresolved.map(u => sh"  $u".toString).sorted.foreach(println(_))
+      unresolved.map(u => sh"  `$u`".toString).sorted.foreach(println(_))
     }
 
     assembly

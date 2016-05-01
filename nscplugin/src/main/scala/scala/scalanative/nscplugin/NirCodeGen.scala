@@ -52,7 +52,6 @@ abstract class NirCodeGen
   class CollectLocalInfo extends Traverser {
     var mutableVars = Set.empty[Symbol]
     var labels      = Set.empty[LabelDef]
-    val labelApplyCount = mutable.Map.empty[Symbol, Int].withDefault(_ => 0)
 
     override def traverse(tree: Tree) = {
       tree match {
@@ -60,8 +59,6 @@ abstract class NirCodeGen
           labels += label
         case Assign(id @ Ident(_), _) =>
           mutableVars += id.symbol
-        case Apply(fun, _) if fun.symbol.isLabel =>
-          labelApplyCount(fun.symbol) = labelApplyCount(fun.symbol) + 1
         case _ =>
           ()
       }
@@ -101,9 +98,12 @@ abstract class NirCodeGen
         val sym = cd.symbol
         if (isPrimitiveValueClass(sym) || (sym == ArrayClass)) ()
         else {
+          println(cd)
           val defn =
             if (isStruct(cd.symbol)) genStruct(cd)
             else genClass(cd)
+
+          println(sh"$defn")
           genIRFile(cunit, sym, defn)
         }
       }
@@ -139,7 +139,10 @@ abstract class NirCodeGen
         def name    = genTypeName(sym)
         def parent  = genClassParent(sym)
         def traits  = genClassInterfaces(sym)
-        def members = genClassMembers(sym, cd.impl.body)
+        def fields  = genClassFields(sym).toSeq
+        def body    = cd.impl.body
+        def methods = body.collect { case dd: DefDef => genMethod(dd) }.flatten
+        def members = fields ++ methods
 
         if (isModule(sym)) Defn.Module(attrs, name, parent, traits) +: members
         else if (sym.isInterface) Defn.Trait(attrs, name, traits) +: members
@@ -154,9 +157,8 @@ abstract class NirCodeGen
 
     def genClassAttrs(sym: Symbol): Seq[Attr] = {
       def pinned =
-        if (isModule(sym) && !isExternalModule(sym))
-          Seq(Attr.Pin(genMethodName(sym.asClass.primaryConstructor)))
-        else Seq()
+        if (!isModule(sym)) Seq()
+        else Seq(Attr.Pin(genMethodName(sym.asClass.primaryConstructor)))
 
       pinned ++ sym.annotations.collect {
         case ann if ann.symbol == ExternClass => Attr.External
@@ -171,88 +173,74 @@ abstract class NirCodeGen
         genTypeName(psym)
       }
 
-    def genClassMembers(sym: Symbol, body: Seq[Tree]): Seq[Defn] =
-      if (isExternalModule(sym)) {
-        val ctorBody = body.collectFirst {
-          case dd: DefDef if dd.name == nme.CONSTRUCTOR => dd.rhs
-        }.get
-        val fieldSyms = ctorBody match {
-          case Block(_ +: init, _) =>
-            init.map {
-              case Assign(ref: RefTree, Apply(extern, Seq()))
-                  if extern.symbol == ExternMethod =>
-                ref.symbol
-              case stat =>
-                unsupported(stat)
-            }
-        }
+    def genClassFields(sym: Symbol) = {
+      val attrs = if (isExternalModule(sym)) Seq(Attr.External) else Seq()
 
-        body.flatMap {
-          case dd @ DefDef(_, name, _, _, _, Apply(rhs: RefTree, Seq()))
-              if name != nme.CONSTRUCTOR && rhs.symbol == ExternMethod =>
-            val sym   = dd.symbol
-            val attrs = genMethodAttrs(sym) :+ Attr.External
-            val name  = genMethodName(sym)
-            val sig   = genMethodSig(sym)
-
-            Seq(Defn.Declare(attrs, name, sig))
-
-          case dd: DefDef
-              if dd.name == nme.CONSTRUCTOR || dd.symbol.hasFlag(ACCESSOR) =>
-            Seq()
-
-          case vd: ValDef if fieldSyms.contains(vd.symbol) =>
-            val sym   = vd.symbol
-            val attrs = Seq(Attr.External)
-            val name  = genFieldName(sym)
-            val ty    = genType(sym.info)
-
-            if (sym.hasFlag(MUTABLE)) Seq(Defn.Var(attrs, name, ty, Val.None))
-            else Seq(Defn.Const(attrs, name, ty, Val.None))
-
-          case stat =>
-            unsupported(stat)
-        }
-      } else {
-        def fields  = genClassFields(sym).toSeq
-        def methods = body.collect { case dd: DefDef => genMethod(dd) }
-
-        fields ++ methods
-      }
-
-    def genClassFields(sym: Symbol) =
       for {
         f <- sym.info.decls if isField(f)
       } yield {
-        val name = genFieldName(f)
         val ty   = genType(f.tpe)
-        Defn.Var(Seq(), name, ty, Val.Zero(ty))
+        val name = genFieldName(f)
+        val rhs  = if (isExternalModule(sym)) Val.None else Val.Zero(ty)
+
+        Defn.Var(attrs, name, ty, rhs)
       }
+    }
 
-    def genMethod(dd: DefDef): Defn =
+    def genMethod(dd: DefDef): Seq[Defn] = {
+      val fresh  = new Fresh("src")
+      val env    = new Env(fresh)
+
       scoped(
-          curMethodSym := dd.symbol
+          curMethodSym := dd.symbol,
+          curEnv := env,
+          curLocalInfo := (new CollectLocalInfo).collect(dd.rhs)
       ) {
-        val sym       = dd.symbol
-        val attrs     = genMethodAttrs(sym)
-        val name      = genMethodName(sym)
-        val paramSyms = defParamSymbols(dd)
-        val sig       = genMethodSig(sym)
+        val sym    = dd.symbol
+        val attrs  = genMethodAttrs(sym)
+        val name   = genMethodName(sym)
+        val sig    = genMethodSig(sym)
+        val params = genParams(defParamSymbols(dd))
 
-        if (sym.isDeferred) Defn.Declare(attrs, name, sig)
-        else {
-          val fresh = new Fresh("src")
-          val env   = new Env(fresh)
+        dd.rhs match {
+          case _ if sym.isDeferred =>
+            Seq(Defn.Declare(attrs, name, sig))
 
-          scoped(
-              curEnv := env,
-              curLocalInfo := (new CollectLocalInfo).collect(dd.rhs)
-          ) {
-            val params = genParams(paramSyms)
-            Defn.Define(attrs, name, sig, genMethodBody(params, dd.rhs))
-          }
+          case Apply(ref: RefTree, Seq())
+              if ref.symbol == ExternMethod
+              && isExternalModule(curClassSym) =>
+
+            val Type.Function(_ +: paramtys, resty) = sig
+            val externalName = name member "ext"
+            val externalVal  = Val.Global(externalName, Type.Ptr)
+            val externalSig  = Type.Function(paramtys, resty)
+            val externalDefn =
+              Defn.Declare(Seq(Attr.External), externalName, externalSig)
+
+            val forwardBody = {
+              val entry = fresh()
+              val ret   = Val.Local(fresh(), resty)
+              val insts = Seq(
+                Inst(ret.name, Op.Call(externalSig, externalVal, params.tail))
+              )
+              Seq(nir.Block(entry, params, insts, Cf.Ret(ret)))
+            }
+            val forwardDefn = Defn.Define(attrs, name, sig, forwardBody)
+
+            Seq(forwardDefn, externalDefn)
+
+          case rhs =>
+            val body =
+              if (curMethodSym.get == NObjectInitMethod)
+                Seq(nir.Block(fresh(), params, Seq(),
+                              nir.Cf.Ret(nir.Val.Unit)))
+              else
+                genNormalMethodBody(params, rhs)
+
+            Seq(Defn.Define(attrs, name, sig, body))
         }
       }
+    }
 
     def genMethodAttrs(sym: Symbol): Seq[Attr] =
       sym.overrides.map {
@@ -287,14 +275,12 @@ abstract class NirCodeGen
         val params   = sym.paramLists.flatten
         val paramtys = params.map(p => genType(p.tpe))
         val owner    = sym.owner
-        val selfty =
-          if (isExternalModule(owner)) None
-          else Some(genType(sym.owner.tpe))
+        val selfty = genType(sym.owner.tpe)
         val retty =
           if (sym.isClassConstructor) Type.Void
           else genType(sym.tpe.resultType, retty = true)
 
-        Type.Function(selfty ++: paramtys, retty)
+        Type.Function(selfty +: paramtys, retty)
     }
 
     def defParamSymbols(dd: DefDef): List[Symbol] = {
@@ -320,7 +306,7 @@ abstract class NirCodeGen
         case Focus.NotMergeable(focus) => focus
       }
 
-    def genMethodBody(params: Seq[Val.Local], bodyp: Tree): Seq[nir.Block] =
+    def genNormalMethodBody(params: Seq[Val.Local], bodyp: Tree): Seq[nir.Block] =
       bodyp match {
         // Tailrec emits magical labeldefs that can hijack this reference is
         // current method. This requires special treatment on our side.
@@ -404,8 +390,12 @@ abstract class NirCodeGen
         else {
           val ty   = genType(tree.symbol.tpe)
           val qual = genExpr(qualp, focus)
+          val name = genFieldName(tree.symbol)
           val elem =
-            qual withOp Op.Field(ty, qual.value, genFieldName(tree.symbol))
+            if (isExternalModule(sym.owner))
+              qual withValue Val.Global(name, Type.Ptr)
+            else
+              qual withOp Op.Field(ty, qual.value, name)
           elem withOp Op.Load(ty, elem.value)
         }
 
@@ -434,14 +424,18 @@ abstract class NirCodeGen
             val ty   = genType(sel.tpe)
             val qual = genExpr(qualp, focus)
             val rhs  = genExpr(rhsp, qual)
+            val name = genFieldName(sel.symbol)
             val elem =
-              rhs.withOp(Op.Field(ty, qual.value, genFieldName(sel.symbol)))
-            elem.withOp(Op.Store(ty, elem.value, rhs.value))
+              if (isExternalModule(sel.symbol.owner))
+                rhs withValue Val.Global(name, Type.Ptr)
+              else
+                rhs withOp Op.Field(ty, qual.value, name)
+            elem withOp Op.Store(ty, elem.value, rhs.value)
 
           case id: Ident =>
             val ty  = genType(id.tpe)
             val rhs = genExpr(rhsp, focus)
-            rhs.withOp(Op.Store(ty, curEnv.resolve(id.symbol), rhs.value))
+            rhs withOp Op.Store(ty, curEnv.resolve(id.symbol), rhs.value)
         }
 
       case av: ArrayValue =>
@@ -1189,14 +1183,12 @@ abstract class NirCodeGen
       val name         = genMethodName(sym)
       val sig          = genMethodSig(sym)
       val (args, last) = genArgs(argsp, focus)
-      val external     = isExternalModule(sym.owner)
       val method =
-        if (statically || external)
+        if (statically)
           last withValue Val.Global(name, nir.Type.Ptr)
-        else last withOp Op.Method(sig, self, name)
-      val values =
-        if (external) args
-        else self +: args
+        else
+          last withOp Op.Method(sig, self, name)
+      val values = self +: args
 
       method withOp Op.Call(sig, method.value, values)
     }
