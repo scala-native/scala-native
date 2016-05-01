@@ -12,8 +12,8 @@ object ScalaNativePluginInternal {
   private def cpToString(cp: Seq[File]): String =
     cpToStrings(cp).mkString(java.io.File.pathSeparator)
 
-  private lazy val nrt =
-    Path.userHome / ".scalanative" / ("nrt-" + nir.Versions.current)
+  private lazy val rtlib =
+    Path.userHome / ".scalanative" / ("rtlib-" + nir.Versions.current)
 
   private lazy val llvm =
     file("/usr/local/Cellar/llvm/HEAD/bin")
@@ -27,12 +27,32 @@ object ScalaNativePluginInternal {
     compiler.apply()
   }
 
+  /** Compiles rt to llvm ir using clang. */
+  private def compileRtlib(classpath: Seq[String]): Int = {
+    println(s"looking through classpath: $classpath")
+    val rtlibjar = classpath.collectFirst {
+      case p if p.contains("org.scala-native") && p.contains("rtlib") => p
+    }.get
+    println(s"found rtlib $rtlibjar")
+    IO.delete(rtlib)
+    IO.unzip(file(rtlibjar), rtlib)
+
+    val srcfiles = (rtlib ** "*.cpp").get.map(abs)
+    println(s"found rtlib sources: $srcfiles")
+    val clang    = Seq(abs(llvm / "clang++"), "-S", "-emit-llvm") ++ srcfiles
+
+    Process(clang, rtlib).!
+  }
+
   /** Compiles application and runtime llvm ir file to binary using clang. */
   private def compileLl(target: File, appll: File, binary: File): Int = {
-    val outpath  = abs(binary)
-    val apppath  = abs(appll)
-    val nrtpaths = (nrt ** "*.ll").get.map(abs)
-    val clang    = Seq(abs(llvm / "clang++"), "-o", outpath, apppath) ++ nrtpaths
+    val outpath = abs(binary)
+    val apppath = abs(appll)
+    val rtpaths = (rtlib ** "*.ll").get.map(abs)
+    val paths   = apppath +: rtpaths
+    val flags   = Seq("-o", outpath,
+                      "-l", "gc")
+    val clang   = abs(llvm / "clang++") +: (flags ++ paths)
 
     Process(clang, target).!
   }
@@ -50,6 +70,7 @@ object ScalaNativePluginInternal {
       val opts      = new NativeOpts(classpath, appll.getAbsolutePath, entry, verbose)
 
       IO.createDirectory(target)
+      compileRtlib(classpath)
       compileNir(opts)
       compileLl(target, appll, binary)
       Process(abs(binary)).!
@@ -60,7 +81,7 @@ object ScalaNativePluginInternal {
     commonProjectSettings ++ Seq(
       addCompilerPlugin("org.scala-native" %% "nscplugin" % "0.1-SNAPSHOT"),
 
-      libraryDependencies += "org.scala-native" %% "rt" % nir.Versions.current
+      libraryDependencies += "org.scala-native" %% "rtlib" % nir.Versions.current
     )
   }
 }
