@@ -6,9 +6,9 @@ import Type._
 object Rt {
   val RtName    = Global.Val("scala.scalanative.runtime.package")
   val Rt        = Module(RtName)
-  val BoxedUnit = Module(Global.Val("scala.runtime.BoxedUnit"))
   val String    = Class(Global.Type("java.lang.String"))
   val Object    = Class(Global.Type("java.lang.Object"))
+  val BoxedUnit = Class(Global.Type("scala.runtime.BoxedUnit"))
   val RefArray  = Class(Global.Type("scala.scalanative.runtime.RefArray"))
   val Type      = Struct(Global.Type("scala.scalanative.runtime.Type"), Seq(I32, Ptr))
   val Exc       = Struct(Global.Type("scala.scalanative.runtime.Exc"), Seq(Ptr, I32))
@@ -17,7 +17,7 @@ object Rt {
   val mainSig  = Function(Seq(I32, Ptr), I32)
 
   val initName = RtName member "init_i32_ptr_class.ssnr.RefArray"
-  val initSig  = Function(Seq(I32, Ptr), RefArray)
+  val initSig  = Function(Seq(Rt, I32, Ptr), RefArray)
   val init     = Val.Global(initName, initSig)
 
   val throwName = Global.Val("scalanative_throw")
@@ -59,9 +59,9 @@ object Rt {
   def pinned = Seq(
       Rt.name,
       init.name,
-      BoxedUnit.name,
       String.name,
       Object.name,
+      BoxedUnit.name,
       RefArray.name,
       Type.name,
       Exc.name

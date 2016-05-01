@@ -12,8 +12,6 @@ object ClassHierarchy {
     def name: Global
     def id: Int
 
-    def isClass: Boolean = this.isInstanceOf[Class]
-    def isTrait: Boolean = this.isInstanceOf[Trait]
     def isExternal: Boolean = attrs.exists(_ == Attr.External)
   }
 
@@ -182,9 +180,10 @@ object ClassHierarchy {
         enter(defn.name, new Class(defn.attrs, defn.name, isModule = false))
 
       case defn: Defn.Module =>
-        val cls = new Class(defn.attrs, defn.name, isModule = true)
+        val name = defn.name tag "module"
+        val cls = new Class(defn.attrs, name, isModule = true)
         enter(defn.name, cls)
-        enter(defn.name tag "module", cls)
+        enter(name, cls)
 
       case defn: Defn.Var =>
         enter(defn.name, new Field(defn.attrs, defn.name, defn.ty))

@@ -2,6 +2,6 @@ package scala.scalanative
 package compiler
 package codegen
 
-object GenTextualNIR extends GenShow {
+class GenTextualNIR(assembly: Seq[nir.Defn]) extends GenShow(assembly) {
   val showDefns = nir.Shows.showDefns
 }

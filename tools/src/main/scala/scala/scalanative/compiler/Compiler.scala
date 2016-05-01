@@ -43,13 +43,17 @@ final class Compiler(opts: Opts) {
     )
   }
 
-  private def output(assembly: Seq[Defn]): Unit =
-    serializeFile(codegen.GenTextualLLVM, assembly, opts.outpath)
+  private def output(assembly: Seq[Defn]): Unit = {
+    val gen = new codegen.GenTextualLLVM(assembly)
+    serializeFile((defns, bb) => gen.gen(bb), assembly, opts.outpath)
+  }
 
   private def debug(assembly: Seq[Defn], suffix: String) =
-    if (opts.verbose)
+    if (opts.verbose) {
+      val gen = new codegen.GenTextualNIR(assembly)
       serializeFile(
-          codegen.GenTextualNIR, assembly, opts.outpath + s".$suffix.hnir")
+        (defns, bb) => gen.gen(bb), assembly, opts.outpath + s".$suffix.hnir")
+    }
 
   def apply(): Unit = {
     def loop(assembly: Seq[Defn], passes: Seq[(Pass, Int)]): Seq[Defn] =

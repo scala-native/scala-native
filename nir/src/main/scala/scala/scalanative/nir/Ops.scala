@@ -9,8 +9,8 @@ sealed abstract class Op {
     case Op.Call(_, _, _)                     => unreachable
     case Op.Load(ty, _)                       => ty
     case Op.Store(_, _, _)                    => Type.Unit
-    case Op.Elem(ty, _, _)                    => Type.Ptr // todo: ty @ index
-    case Op.Extract(aggr, indexes)            => aggr.ty.elemty(indexes)
+    case Op.Elem(_, _, _)                     => Type.Ptr
+    case Op.Extract(aggr, indexes)            => aggr.ty.elemty(indexes.map(Val.I32(_)))
     case Op.Insert(aggr, _, _)                => aggr.ty
     case Op.Alloca(ty)                        => Type.Ptr
     case Op.Bin(_, ty, _, _)                  => ty

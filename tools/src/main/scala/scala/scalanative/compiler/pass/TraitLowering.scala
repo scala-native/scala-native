@@ -55,7 +55,7 @@ class TraitLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
   }
 
   override def preInst = {
-    case Inst(n, Op.Method(sig, obj, MethodRef(meth))) if meth.in.isTrait =>
+    case Inst(n, Op.Method(sig, obj, MethodRef(TraitRef(_), _))) =>
       ???
   }
 }

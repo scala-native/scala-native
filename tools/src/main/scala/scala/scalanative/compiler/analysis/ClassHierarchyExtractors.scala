@@ -6,12 +6,12 @@ import ClassHierarchy._
 import nir._
 
 object ClassHierarchyExtractors {
-  trait Extractor[N <: Node] {
-    def unapply(ty: Type)(implicit chg: Graph): Option[N] = ty match {
+  trait Extractor[T] {
+    def unapply(ty: Type)(implicit chg: Graph): Option[T] = ty match {
       case ty: Type.Named => unapply(ty.name)
       case _              => None
     }
-    def unapply(name: Global)(implicit chg: Graph): Option[N]
+    def unapply(name: Global)(implicit chg: Graph): Option[T]
   }
 
   object Ref extends Extractor[Node] {
@@ -40,17 +40,17 @@ object ClassHierarchyExtractors {
       }
   }
 
-  object MethodRef extends Extractor[Method] {
-    def unapply(name: Global)(implicit chg: Graph): Option[Method] =
+  object MethodRef extends Extractor[(Global, Method)] {
+    def unapply(name: Global)(implicit chg: Graph): Option[(Global, Method)] =
       chg.nodes.get(name).collect {
-        case node: Method => node
+        case node: Method => (node.in.name, node)
       }
   }
 
-  object FieldRef extends Extractor[Field] {
-    def unapply(name: Global)(implicit chg: Graph): Option[Field] =
+  object FieldRef extends Extractor[(Global, Field)] {
+    def unapply(name: Global)(implicit chg: Graph): Option[(Global, Field)] =
       chg.nodes.get(name).collect {
-        case node: Field => node
+        case node: Field => (node.in.name, node)
       }
   }
 }

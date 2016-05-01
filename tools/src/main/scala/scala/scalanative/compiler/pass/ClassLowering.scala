@@ -82,41 +82,42 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
 
       Seq(infoStructDefn, classStructDefn, classConstDefn)
 
-    case Defn.Declare(_, MethodRef(meth), _) if meth.in.isClass =>
+    case Defn.Declare(_, MethodRef(ClassRef(_), _), _) =>
       Seq()
 
-    case Defn.Var(_, FieldRef(fld), _, _) if fld.in.isClass =>
+    case Defn.Var(_, FieldRef(ClassRef(_), _), _, _) =>
       Seq()
   }
 
   override def preInst = {
     case Inst(n, Op.Alloc(ClassRef(cls))) =>
-      val clstype = Val.Global(cls.name tag "const", Type.Ptr)
-      val cast    = Val.Local(fresh(), Type.Ptr)
+      val classTy = classStruct(cls)
       val size    = Val.Local(fresh(), Type.Size)
+      val const   = Val.Global(cls.name tag "const", Type.Ptr)
+
       Seq(
-          Inst(cast.name, Op.Conv(Conv.Bitcast, Type.Ptr, clstype)),
-          Inst(size.name, Op.Sizeof(classStruct(cls))),
-          Inst(n, Op.Call(Rt.allocSig, Rt.alloc, Seq(cast, size)))
+          Inst(size.name, Op.Sizeof(classTy)),
+          Inst(n, Op.Call(Rt.allocSig, Rt.alloc, Seq(const, size)))
       )
 
-    case Inst(n, Op.Field(ty, obj, FieldRef(fld))) if fld.in.isClass =>
-      val cast = Val.Local(fresh(), Type.Size)
+    case Inst(n, Op.Field(ty, obj, FieldRef(ClassRef(cls), fld))) =>
+      val classTy = classStruct(cls)
+
       Seq(
-          Inst(cast.name, Op.Conv(Conv.Bitcast, Type.Ptr, obj)),
-          Inst(n, Op.Elem(ty, cast, Seq(Val.I32(0), Val.I32(fld.index + 1))))
+          Inst(n,
+               Op.Elem(classTy, obj, Seq(Val.I32(0), Val.I32(fld.index + 1))))
       )
 
-    case Inst(n, Op.Method(sig, obj, MethodRef(meth)))
-        if meth.in.isClass && meth.isVirtual =>
-      val cast       = Val.Local(fresh(), Type.Ptr)
+    case Inst(n, Op.Method(sig, obj, MethodRef(ClassRef(cls), meth)))
+        if meth.isVirtual =>
+      val classTy    = classStruct(cls)
       val typeptrptr = Val.Local(fresh(), Type.Ptr)
       val typeptr    = Val.Local(fresh(), Type.Ptr)
       val methptrptr = Val.Local(fresh(), Type.Ptr)
+
       Seq(
-          Inst(cast.name, Op.Conv(Conv.Bitcast, Type.Ptr, obj)),
           Inst(typeptrptr.name,
-               Op.Elem(Type.Ptr, cast, Seq(Val.I32(0), Val.I32(0)))),
+               Op.Elem(classTy, obj, Seq(Val.I32(0), Val.I32(0)))),
           Inst(typeptr.name, Op.Load(typeptr.ty, typeptrptr)),
           Inst(methptrptr.name,
                Op.Elem(
@@ -124,8 +125,8 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
           Inst(n, Op.Load(Type.Ptr, methptrptr))
       )
 
-    case Inst(n, Op.Method(sig, obj, MethodRef(meth)))
-        if meth.in.isClass && meth.isStatic =>
+    case Inst(n, Op.Method(sig, obj, MethodRef(ClassRef(_), meth)))
+        if meth.isStatic =>
       Seq(
           Inst(n, Op.Copy(Val.Global(meth.name, Type.Ptr)))
       )

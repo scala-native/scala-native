@@ -4,18 +4,20 @@ package codegen
 
 import java.lang.{Integer => JInt, Long => JLong, Float => JFloat, Double => JDouble}
 import scala.collection.mutable
-import util.unsupported
-import util.{sh, Show}
+import util.{unsupported, unreachable, sh, Show}
 import util.Show.{Sequence => s, Indent => i, Unindent => ui, Repeat => r, Newline => nl}
 import compiler.analysis.ControlFlow
 import nir.Shows.brace
 import nir._
 
-object GenTextualLLVM extends GenShow {
-  private lazy val prelude = Seq(
-      sh"declare i32 @__gxx_personality_v0(...)"
-  )
-  private lazy val personality =
+class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly){
+  private val fresh = new Fresh("gen")
+  private val globals = assembly.collect {
+    case Defn.Var(_, n, ty, _)    => n -> ty
+    case Defn.Const(_, n, ty, _)  => n -> ty
+  }.toMap
+  private val prelude = sh"declare i32 @__gxx_personality_v0(...)"
+  private val personality =
     sh"personality i8* bitcast (i32 (...)* @__gxx_personality_v0 to i8*)"
 
   implicit val showDefns: Show[Seq[Defn]] = Show { defns =>
@@ -27,7 +29,8 @@ object GenTextualLLVM extends GenShow {
       case _: Defn.Define  => 5
       case _               => -1
     }
-    r(prelude ++ sorted.map(d => sh"$d"), sep = nl(""))
+
+    r(prelude +: sorted.map(d => sh"$d"), sep = nl(""))
   }
 
   implicit val showDefn: Show[Defn] = Show {
@@ -68,7 +71,7 @@ object GenTextualLLVM extends GenShow {
       implicit cfg: ControlFlow.Graph): Show.Result = {
     val Block(name, params, insts, cf) = block
 
-    val body = r(insts.map(i => sh"$i") :+ sh"${block.cf}", sep = nl(""))
+    val body = r(showInsts(insts, block.cf), sep = nl(""))
 
     if (isEntry) body
     else {
@@ -127,16 +130,16 @@ object GenTextualLLVM extends GenShow {
     case Val.Array(_, vs)  => sh"[ ${r(vs, sep = ", ")} ]"
     case Val.Chars(v)      => s("c\"", v, "\"")
     case Val.Local(n, ty)  => sh"%$n"
-    case Val.Global(n, ty) => sh"@$n"
+    case Val.Global(n, ty) => sh"bitcast (${globals(n)}* @$n to i8*)"
     case _                 => unsupported(v)
   }
 
   implicit val showVal: Show[Val] = Show { v =>
     val justv = justVal(v)
     val ty    = v.ty
+
     sh"$ty $justv"
   }
-
 
   private def quoted(sh: Show.Result) = s("\"", sh, "\"")
 
@@ -154,9 +157,50 @@ object GenTextualLLVM extends GenShow {
     case Local(scope, id) => sh"$scope.$id"
   }
 
-  implicit val showInst: Show[Inst] = Show {
-    case Inst(Local.empty, op) => sh"$op"
-    case Inst(name, op)        => sh"%$name = $op"
+  def showInsts(insts: Seq[Inst], cf: Cf)(implicit cfg: ControlFlow.Graph): Seq[Show.Result] = {
+    val buf = mutable.UnrolledBuffer.empty[Show.Result]
+
+    def bind(name: Local) = name match {
+      case Local.empty => sh""
+      case name        => sh"%$name = "
+    }
+
+    insts.foreach {
+      case Inst(name, Op.Call(ty, Val.Global(pointee, _), args)) =>
+        buf += sh"${bind(name)}call $ty @$pointee(${r(args, sep = ", ")})"
+
+      case Inst(name, Op.Call(ty, ptr, args)) =>
+        val pointee = fresh()
+
+        buf += sh"${bind(pointee)}bitcast $ptr to $ty*"
+        buf += sh"${bind(name)}call $ty %$pointee(${r(args, sep = ", ")})"
+
+      case Inst(name, Op.Load(ty, ptr)) =>
+        val pointee = fresh()
+
+        buf += sh"${bind(pointee)}bitcast $ptr to $ty*"
+        buf += sh"${bind(name)}load $ty, $ty* %$pointee"
+
+      case Inst(name, Op.Store(ty, ptr, value)) =>
+        val pointee = fresh()
+
+        buf += sh"${bind(pointee)}bitcast $ptr to $ty*"
+        buf += sh"${bind(name)}store $value, $ty* %$pointee"
+
+      case inst @ Inst(name, Op.Elem(ty, ptr, indexes)) =>
+        val pointee   = fresh()
+        val derived   = fresh()
+
+        buf += sh"${bind(pointee)}bitcast $ptr to $ty*"
+        buf += sh"${bind(derived)}getelementptr $ty, $ty* %$pointee, ${r(indexes, sep = ", ")}"
+        buf += sh"${bind(name)}bitcast ${ty.elemty(indexes.tail)}* %$derived to i8*"
+
+      case Inst(name, op) =>
+        buf += sh"${bind(name)}$op"
+    }
+
+    buf += sh"$cf"
+    buf.toSeq
   }
 
   implicit def showCf(implicit cfg: ControlFlow.Graph): Show[Cf] = Show {
@@ -183,13 +227,13 @@ object GenTextualLLVM extends GenShow {
 
   implicit val showOp: Show[Op] = Show {
     case Op.Call(ty, f, args) =>
-      sh"call $ty ${justVal(f)}(${r(args, sep = ", ")})"
+      unreachable
     case Op.Load(ty, ptr) =>
-      sh"load $ty, $ptr"
+      unreachable
     case Op.Store(ty, ptr, value) =>
-      sh"store $value, $ptr"
+      unreachable
     case Op.Elem(ty, ptr, indexes) =>
-      sh"getelementptr $ty, $ptr, ${r(indexes, sep = ", ")}"
+      unreachable
     case Op.Extract(aggr, indexes) =>
       sh"extractvalue $aggr, ${r(indexes, sep = ", ")}"
     case Op.Insert(aggr, value, indexes) =>
