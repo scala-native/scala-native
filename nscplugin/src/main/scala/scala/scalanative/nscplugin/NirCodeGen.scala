@@ -469,7 +469,7 @@ abstract class NirCodeGen
           focus withValue genLiteralValue(lit)
 
         case ClazzTag =>
-          val typeof = focus withOp Op.TypeOf(genType(value.typeValue))
+          val typeof = focus withOp Op.Typeof(genType(value.typeValue))
           genBoxClass(typeof.value, typeof)
 
         case EnumTag =>
@@ -780,9 +780,9 @@ abstract class NirCodeGen
 
     lazy val jlClassName     = nir.Global.Type("java.lang.Class")
     lazy val jlClass         = nir.Type.Class(jlClassName)
-    lazy val jlClassCtorName = jlClassName member "init_class.nrt.Type"
+    lazy val jlClassCtorName = jlClassName member "init_ptr"
     lazy val jlClassCtorSig =
-      nir.Type.Function(Seq(jlClass, Rt.Type), nir.Type.Void)
+      nir.Type.Function(Seq(jlClass, Type.Ptr), nir.Type.Void)
     lazy val jlClassCtor = nir.Val.Global(jlClassCtorName, nir.Type.Ptr)
 
     def genBoxClass(type_ : Val, focus: Focus) = {

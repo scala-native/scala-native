@@ -137,10 +137,17 @@ object GenTextualLLVM extends GenShow {
     sh"$ty $justv"
   }
 
-  implicit val showGlobal: Show[Global] = Show {
+
+  private def quoted(sh: Show.Result) = s("\"", sh, "\"")
+
+  private def justGlobal(g: Global): Show.Result = g match {
     case Global.Val(id)       => id
     case Global.Type(id)      => id
-    case Global.Member(n, id) => sh"${n}_$id"
+    case Global.Member(n, id) => s(justGlobal(n), "::", id)
+  }
+
+  implicit val showGlobal: Show[Global] = Show { g =>
+    quoted(justGlobal(g))
   }
 
   implicit val showLocal: Show[Local] = Show {

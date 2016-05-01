@@ -10,7 +10,9 @@ import nir._
   */
 class UnitLowering extends Pass {
   override def preInst = {
-    case Inst(n, op) if op.resty == Type.Unit =>
+    case Inst(n, op)
+        if op.resty == Type.Unit
+        || op.resty == Type.Void =>
       Seq(
           Inst(op),
           Inst(n, Op.Copy(Val.Unit))
@@ -29,7 +31,7 @@ class UnitLowering extends Pass {
 
   override def preType = {
     case Type.Unit =>
-      Rt.BoxedUnit
+      Type.Ptr
 
     case Type.Function(params, Type.Unit) =>
       Type.Function(params, Type.Void)

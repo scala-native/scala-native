@@ -133,10 +133,10 @@ object Shows {
       sh"is[$ty] $value"
     case Op.Copy(value) =>
       sh"copy $value"
-    case Op.SizeOf(ty) =>
-      sh"size-of[$ty]"
-    case Op.TypeOf(ty) =>
-      sh"type-of[$ty]"
+    case Op.Sizeof(ty) =>
+      sh"sizeof[$ty]"
+    case Op.Typeof(ty) =>
+      sh"typeof[$ty]"
     case Op.Closure(ty, fun, captures) =>
       sh"closure[$ty] ${r(fun +: captures, sep = ", ")}"
   }

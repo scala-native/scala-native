@@ -15,20 +15,42 @@ import nir._
   */
 class TypeLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
     extends Pass {
-  private def defnType(tag: String, name: Global): Defn = {
-    val typeName = name.tag(tag).tag("type")
-    val typeId   = Val.I32(chg.nodes(name).id)
-    val typeStr  = Val.String(name.id)
+  private def typeName(node: ClassHierarchy.Node): Global = node match {
+    case node: ClassHierarchy.Class if node.isModule =>
+      node.name.tag("module").tag("type")
+    case node: ClassHierarchy.Class if !node.isModule =>
+      node.name.tag("class").tag("type")
+    case node: ClassHierarchy.Trait =>
+      node.name.tag("trait").tag("type")
+    case node: ClassHierarchy.Struct =>
+      node.name.tag("struct").tag("type")
+  }
+
+  private def typeDefn(id: Int, str: String, name: Global) = {
+    val typeId   = Val.I32(id)
+    val typeStr  = Val.String(str)
     val typeVal  = Val.Struct(Rt.Type.name, Seq(typeId, typeStr))
 
-    Defn.Const(Seq(), typeName, Rt.Type, typeVal)
+    Defn.Const(Seq(), name, Rt.Type, typeVal)
+  }
+
+  private val noTypeDefn =
+    typeDefn(0, "notype", Global.Val("scalanative_notype"))
+  private val noType =
+    Val.Global(noTypeDefn.name, Type.Ptr)
+
+  override def preAssembly = { case defns =>
+    noTypeDefn +: defns
   }
 
   override def preDefn = {
-    case defn: Defn.Module => Seq(defn, defnType("module", defn.name))
-    case defn: Defn.Class  => Seq(defn, defnType("class", defn.name))
-    case defn: Defn.Trait  => Seq(defn, defnType("trait", defn.name))
-    case defn: Defn.Struct => Seq(defn, defnType("struct", defn.name))
+    case defn @ (_: Defn.Module | _: Defn.Class | _: Defn.Trait | _: Defn.Struct) =>
+      val node = chg.nodes(defn.name)
+      val id   = node.id
+      val str  = node.name.id
+      val name = typeName(node)
+
+      Seq(defn, typeDefn(id, str, name))
   }
 
   override def preInst = {
@@ -68,7 +90,12 @@ class TypeLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
     case Inst(n, Op.Is(_, obj)) =>
       ???
 
-    case Inst(n, Op.TypeOf(_)) =>
-      ???
+    case Inst(n, Op.Typeof(ty)) =>
+      val value = ty match {
+        case Ref(node) => Val.Global(typeName(node), Type.Ptr)
+        case ty        => noType
+      }
+
+      Seq(Inst(n, Op.Copy(value)))
   }
 }

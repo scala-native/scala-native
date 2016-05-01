@@ -8,7 +8,7 @@ sealed abstract class Op {
     case Op.Call(Type.Function(_, ret), _, _) => ret
     case Op.Call(_, _, _)                     => unreachable
     case Op.Load(ty, _)                       => ty
-    case Op.Store(_, _, _)                    => Type.Void
+    case Op.Store(_, _, _)                    => Type.Unit
     case Op.Elem(ty, _, _)                    => Type.Ptr // todo: ty @ index
     case Op.Extract(aggr, indexes)            => aggr.ty.elemty(indexes)
     case Op.Insert(aggr, _, _)                => aggr.ty
@@ -24,8 +24,8 @@ sealed abstract class Op {
     case Op.As(ty, _)         => ty
     case Op.Is(_, _)          => Type.Bool
     case Op.Copy(v)           => v.ty
-    case Op.SizeOf(_)         => Type.Size
-    case Op.TypeOf(_)         => Rt.Type
+    case Op.Sizeof(_)         => Type.Size
+    case Op.Typeof(_)         => Rt.Type
     case Op.Closure(ty, _, _) => ty
   }
 }
@@ -51,7 +51,7 @@ object Op {
   final case class As(ty: Type, obj: Val)                          extends Op
   final case class Is(ty: Type, obj: Val)                          extends Op
   final case class Copy(value: Val)                                extends Op
-  final case class SizeOf(ty: Type)                                extends Op
-  final case class TypeOf(ty: Type)                                extends Op
+  final case class Sizeof(ty: Type)                                extends Op
+  final case class Typeof(ty: Type)                                extends Op
   final case class Closure(ty: Type, fun: Val, captures: Seq[Val]) extends Op
 }

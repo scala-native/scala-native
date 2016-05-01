@@ -82,11 +82,10 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
 
       Seq(infoStructDefn, classStructDefn, classConstDefn)
 
-    case Defn.Declare(
-        _, VirtualClassMethodRef(_) | StaticClassMethodRef(_), _) =>
+    case Defn.Declare(_, MethodRef(meth), _) if meth.in.isClass =>
       Seq()
 
-    case Defn.Var(_, ClassFieldRef(_), _, _) =>
+    case Defn.Var(_, FieldRef(fld), _, _) if fld.in.isClass =>
       Seq()
   }
 
@@ -97,18 +96,19 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
       val size    = Val.Local(fresh(), Type.Size)
       Seq(
           Inst(cast.name, Op.Conv(Conv.Bitcast, Type.Ptr, clstype)),
-          Inst(size.name, Op.SizeOf(classStruct(cls))),
+          Inst(size.name, Op.Sizeof(classStruct(cls))),
           Inst(n, Op.Call(Rt.allocSig, Rt.alloc, Seq(cast, size)))
       )
 
-    case Inst(n, Op.Field(ty, obj, ClassFieldRef(fld))) =>
+    case Inst(n, Op.Field(ty, obj, FieldRef(fld))) if fld.in.isClass =>
       val cast = Val.Local(fresh(), Type.Size)
       Seq(
           Inst(cast.name, Op.Conv(Conv.Bitcast, Type.Ptr, obj)),
           Inst(n, Op.Elem(ty, cast, Seq(Val.I32(0), Val.I32(fld.index + 1))))
       )
 
-    case Inst(n, Op.Method(sig, obj, VirtualClassMethodRef(meth))) =>
+    case Inst(n, Op.Method(sig, obj, MethodRef(meth)))
+        if meth.in.isClass && meth.isVirtual =>
       val cast       = Val.Local(fresh(), Type.Ptr)
       val typeptrptr = Val.Local(fresh(), Type.Ptr)
       val typeptr    = Val.Local(fresh(), Type.Ptr)
@@ -124,7 +124,8 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
           Inst(n, Op.Load(Type.Ptr, methptrptr))
       )
 
-    case Inst(n, Op.Method(sig, obj, StaticClassMethodRef(meth))) =>
+    case Inst(n, Op.Method(sig, obj, MethodRef(meth)))
+        if meth.in.isClass && meth.isStatic =>
       Seq(
           Inst(n, Op.Copy(Val.Global(meth.name, Type.Ptr)))
       )

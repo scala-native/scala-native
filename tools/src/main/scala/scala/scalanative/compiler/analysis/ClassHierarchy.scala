@@ -11,6 +11,10 @@ object ClassHierarchy {
     def attrs: Seq[Attr]
     def name: Global
     def id: Int
+
+    def isClass: Boolean = this.isInstanceOf[Class]
+    def isTrait: Boolean = this.isInstanceOf[Trait]
+    def isExternal: Boolean = attrs.exists(_ == Attr.External)
   }
 
   final class Struct(val attrs: Seq[Attr],
@@ -31,6 +35,7 @@ object ClassHierarchy {
 
   final class Class(val attrs: Seq[Attr],
                     val name: Global,
+                    val isModule: Boolean,
                     var id: Int = -1,
                     var range: Range = null,
                     var parent: Option[Class] = None,
@@ -174,10 +179,10 @@ object ClassHierarchy {
         enter(defn.name, new Trait(defn.attrs, defn.name))
 
       case defn: Defn.Class =>
-        enter(defn.name, new Class(defn.attrs, defn.name))
+        enter(defn.name, new Class(defn.attrs, defn.name, isModule = false))
 
       case defn: Defn.Module =>
-        val cls = new Class(defn.attrs, defn.name)
+        val cls = new Class(defn.attrs, defn.name, isModule = true)
         enter(defn.name, cls)
         enter(defn.name tag "module", cls)
 

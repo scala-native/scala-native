@@ -131,9 +131,9 @@ object Tags {
   final val AsOp      = 1 + ModuleOp
   final val IsOp      = 1 + AsOp
   final val CopyOp    = 1 + IsOp
-  final val SizeOfOp  = 1 + CopyOp
-  final val TypeOfOp  = 1 + SizeOfOp
-  final val ClosureOp = 1 + TypeOfOp
+  final val SizeofOp  = 1 + CopyOp
+  final val TypeofOp  = 1 + SizeofOp
+  final val ClosureOp = 1 + TypeofOp
 
   final val NoneType       = 1 + ClosureOp
   final val VoidType       = 1 + NoneType

@@ -6,81 +6,51 @@ import ClassHierarchy._
 import nir._
 
 object ClassHierarchyExtractors {
-  object ClassRef {
-    def unapply(ty: Type)(implicit chg: Graph): Option[Class] =
-      ty match {
-        case Type.Class(name) => unapply(name)
-        case _                => None
-      }
+  trait Extractor[N <: Node] {
+    def unapply(ty: Type)(implicit chg: Graph): Option[N] = ty match {
+      case ty: Type.Named => unapply(ty.name)
+      case _              => None
+    }
+    def unapply(name: Global)(implicit chg: Graph): Option[N]
+  }
 
+  object Ref extends Extractor[Node] {
+    def unapply(name: Global)(implicit chg: Graph): Option[Node] =
+      chg.nodes.get(name)
+  }
+
+  object StructRef extends Extractor[Struct] {
+    def unapply(name: Global)(implicit chg: Graph): Option[Struct] =
+      chg.nodes.get(name).collect {
+        case node: Struct => node
+      }
+  }
+
+  object ClassRef extends Extractor[Class] {
     def unapply(name: Global)(implicit chg: Graph): Option[Class] =
       chg.nodes.get(name).collect {
-        case cls: Class => cls
+        case node: Class => node
       }
   }
 
-  object VirtualClassMethodRef {
+  object TraitRef extends Extractor[Trait] {
+    def unapply(name: Global)(implicit chg: Graph): Option[Trait] =
+      chg.nodes.get(name).collect {
+        case node: Trait => node
+      }
+  }
+
+  object MethodRef extends Extractor[Method] {
     def unapply(name: Global)(implicit chg: Graph): Option[Method] =
       chg.nodes.get(name).collect {
-        case meth: Method if meth.isVirtual && meth.in.isInstanceOf[Class] =>
-          meth
+        case node: Method => node
       }
   }
 
-  object StaticClassMethodRef {
-    def unapply(name: Global)(implicit chg: Graph): Option[Method] =
-      chg.nodes.get(name).collect {
-        case meth: Method if meth.isStatic && meth.in.isInstanceOf[Class] =>
-          meth
-      }
-  }
-
-  object ClassFieldRef {
+  object FieldRef extends Extractor[Field] {
     def unapply(name: Global)(implicit chg: Graph): Option[Field] =
       chg.nodes.get(name).collect {
-        case fld: Field => fld
-      }
-  }
-
-  object ExternalRef {
-    def unapply(name: Global)(implicit chg: Graph): Option[Node] =
-      chg.nodes.get(name).collect {
-        case node if node.attrs.exists(_ == Attr.External) =>
-          node
-      }
-  }
-
-  object TraitRef {
-    def unapply(ty: Type)(implicit chg: Graph): Option[ClassHierarchy.Trait] =
-      ty match {
-        case Type.Trait(name) => unapply(name)
-        case _                => None
-      }
-
-    def unapply(
-        name: Global)(implicit chg: Graph): Option[ClassHierarchy.Trait] =
-      chg.nodes.get(name).collect {
-        case trt: ClassHierarchy.Trait => trt
-      }
-  }
-
-  object VirtualTraitMethodRef {
-    def unapply(
-        name: Global)(implicit chg: Graph): Option[ClassHierarchy.Method] =
-      chg.nodes.get(name).collect {
-        case meth: ClassHierarchy.Method
-            if meth.isVirtual && meth.in.isInstanceOf[ClassHierarchy.Trait] =>
-          meth
-      }
-  }
-
-  object StaticTraitMethodRef {
-    def unapply(
-        name: Global)(implicit chg: Graph): Option[ClassHierarchy.Method] =
-      chg.nodes.get(name).collect {
-        case meth: ClassHierarchy.Method
-            if meth.isStatic && meth.in.isInstanceOf[ClassHierarchy.Trait] =>
-          meth
+        case node: Field => node
       }
   }
 }

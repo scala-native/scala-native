@@ -31,7 +31,7 @@ class ExternalHoisting(implicit chg: ClassHierarchy.Graph) extends Pass {
   }
 
   override def preVal = {
-    case Val.Global(n @ ExternalRef(), ty) =>
+    case Val.Global(n @ ClassRef(cls), ty) if cls.isExternal =>
       Val.Global(stripName(n), ty)
   }
 
