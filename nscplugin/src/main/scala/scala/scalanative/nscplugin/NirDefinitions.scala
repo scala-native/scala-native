@@ -31,9 +31,6 @@ trait NirDefinitions { self: NirGlobalAddons =>
 
     lazy val NPtrClass = getRequiredClass("scala.scalanative.native.Ptr")
 
-    lazy val NBoxedUnit = getRequiredModule(
-        "scala.scalanative.runtime.BoxedUnit")
-
     lazy val InlineClass   = getRequiredClass("scala.inline")
     lazy val NoInlineClass = getRequiredClass("scala.noinline")
 

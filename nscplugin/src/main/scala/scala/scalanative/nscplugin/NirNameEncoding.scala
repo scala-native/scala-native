@@ -46,8 +46,9 @@ trait NirNameEncoding { self: NirCodeGen =>
       if (owner == NObjectClass) name.substring(1) // skip the _
       else name.toString
     }
-    val tpe           = sym.tpe.widen
-    val mangledParams = tpe.params.toSeq.map(p => mangledType(p.info, retty = false))
+    val tpe = sym.tpe.widen
+    val mangledParams =
+      tpe.params.toSeq.map(p => mangledType(p.info, retty = false))
 
     if (sym == String_+) {
       genMethodName(StringConcatMethod)
@@ -58,8 +59,7 @@ trait NirNameEncoding { self: NirCodeGen =>
     } else {
       val mangledRetty = mangledType(tpe.resultType, retty = true)
 
-      ownerId member (id +: (mangledParams :+ mangledRetty))
-        .mkString("_")
+      ownerId member (id +: (mangledParams :+ mangledRetty)).mkString("_")
     }
   }
 
@@ -85,6 +85,7 @@ trait NirNameEncoding { self: NirCodeGen =>
       case nir.Type.Struct(name, _)     => sh"struct.$name"
 
       case nir.Type.Size         => "size"
+      case nir.Type.Unit         => "unit"
       case nir.Type.Class(name)  => sh"class.$name"
       case nir.Type.Trait(name)  => sh"trait.$name"
       case nir.Type.Module(name) => sh"module.$name"

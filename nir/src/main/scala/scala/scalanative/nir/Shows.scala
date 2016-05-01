@@ -214,6 +214,7 @@ object Shows {
     case Val.Local(name, ty)   => sh"$name"
     case Val.Global(name, ty)  => sh"$name"
 
+    case Val.Unit      => "unit"
     case Val.String(v) => "\"" + v + "\""
   }
 
@@ -274,6 +275,7 @@ object Shows {
     case Type.Struct(name, _)     => sh"struct $name"
 
     case Type.Size         => "size"
+    case Type.Unit         => "unit"
     case Type.Class(name)  => sh"class $name"
     case Type.Trait(name)  => sh"trait $name"
     case Type.Module(name) => sh"module $name"

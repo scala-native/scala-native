@@ -382,6 +382,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.FunctionType); putTypes(args); putType(ret)
     case Type.Struct(n, tys) => putInt(T.StructType); putGlobal(n); putTypes(tys)
     case Type.Size           => putInt(T.SizeType)
+    case Type.Unit           => putInt(T.UnitType)
     case Type.Class(n)       => putInt(T.ClassType); putGlobal(n)
     case Type.Trait(n)       => putInt(T.TraitType); putGlobal(n)
     case Type.Module(n)      => putInt(T.ModuleType); putGlobal(n)
@@ -405,6 +406,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Val.Local(n, ty)  => putInt(T.LocalVal); putLocal(n); putType(ty)
     case Val.Global(n, ty) => putInt(T.GlobalVal); putGlobal(n); putType(ty)
 
+    case Val.Unit      => putInt(T.UnitVal)
     case Val.String(v) => putInt(T.StringVal); putString(v)
   }
 }

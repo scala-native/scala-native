@@ -133,7 +133,7 @@ abstract class NirCodeGen
       scoped(
           curClassSym := cd.symbol
       ) {
-        val sym  = cd.symbol
+        val sym = cd.symbol
 
         def attrs   = genClassAttrs(sym)
         def name    = genTypeName(sym)
@@ -405,7 +405,7 @@ abstract class NirCodeGen
           val ty   = genType(tree.symbol.tpe)
           val qual = genExpr(qualp, focus)
           val elem =
-            qual.withOp(Op.Field(ty, qual.value, genFieldName(tree.symbol)))
+            qual withOp Op.Field(ty, qual.value, genFieldName(tree.symbol))
           elem withOp Op.Load(ty, elem.value)
         }
 
@@ -464,12 +464,9 @@ abstract class NirCodeGen
     def genLiteral(lit: Literal, focus: Focus): Focus = {
       val value = lit.value
       value.tag match {
-        case NullTag | BooleanTag | ByteTag | ShortTag | CharTag | IntTag |
-            LongTag | FloatTag | DoubleTag | StringTag =>
+        case UnitTag | NullTag | BooleanTag | ByteTag | ShortTag | CharTag |
+            IntTag | LongTag | FloatTag | DoubleTag | StringTag =>
           focus withValue genLiteralValue(lit)
-
-        case UnitTag =>
-          genModule(NBoxedUnit, focus)
 
         case ClazzTag =>
           val typeof = focus withOp Op.TypeOf(genType(value.typeValue))
@@ -483,6 +480,8 @@ abstract class NirCodeGen
     def genLiteralValue(lit: Literal): Val = {
       val value = lit.value
       value.tag match {
+        case UnitTag =>
+          Val.Unit
         case NullTag =>
           Val.Zero(Rt.Object)
         case BooleanTag =>

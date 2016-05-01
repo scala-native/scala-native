@@ -42,11 +42,9 @@ trait NirTypeEncoding { self: NirCodeGen =>
                  retty: Boolean = false): nir.Type = sym match {
     case ArrayClass =>
       genTypeSym(NArrayClass(genPrimCode(targs.head)))
-    case UnitClass =>
-      if (retty) nir.Type.Void
-      else genTypeSym(BoxedUnitClass)
-    case NothingClass         =>
-      if (retty) nir.Type.Void
+    case UnitClass => nir.Type.Unit
+    case NothingClass =>
+      if (retty) nir.Type.Unit
       else genTypeSym(RuntimeNothingClass)
     case NullClass =>
       genTypeSym(RuntimeNullClass)

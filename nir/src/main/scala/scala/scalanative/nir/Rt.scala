@@ -6,7 +6,7 @@ import Type._
 object Rt {
   val RtName    = Global.Val("scala.scalanative.runtime.package")
   val Rt        = Module(RtName)
-  val BoxedUnit = Module(Global.Val("scala.scalanative.runtime.BoxedUnit"))
+  val BoxedUnit = Module(Global.Val("scala.runtime.BoxedUnit"))
   val String    = Class(Global.Type("java.lang.String"))
   val Object    = Class(Global.Type("java.lang.Object"))
   val RefArray  = Class(Global.Type("scala.scalanative.runtime.RefArray"))
@@ -23,24 +23,37 @@ object Rt {
   val throwName = Global.Val("scalanative_throw")
   val throwSig  = Function(Seq(Ptr), Void)
   val throw_    = Val.Global(throwName, Ptr)
+  val throwDefn = Defn.Declare(Seq(), throwName, throwSig)
 
   val beginCatchName = Global.Val("scalanative_begin_catch")
   val beginCatchSig  = Function(Seq(Ptr), Ptr)
   val beginCatch     = Val.Global(beginCatchName, Ptr)
+  val beginCatchDefn =
+      Defn.Declare(Seq(), beginCatchName, beginCatchSig)
 
   val endCatchName = Global.Val("scalanative_end_catch")
   val endCatchSig  = Function(Seq(), Void)
   val endCatch     = Val.Global(endCatchName, endCatchSig)
+  val endCatchDefn = Defn.Declare(Seq(), endCatchName, endCatchSig)
 
   val allocName = Global.Val("scalanative_alloc")
   val allocSig  = Function(Seq(Ptr, Size), Ptr)
   val alloc     = Val.Global(allocName, allocSig)
+  val allocDefn = Defn.Declare(Seq(), allocName, allocSig)
 
-  val decls = Seq(
-      Defn.Declare(Seq(), throwName, throwSig),
-      Defn.Declare(Seq(), endCatchName, endCatchSig),
-      Defn.Declare(Seq(), beginCatchName, beginCatchSig),
-      Defn.Declare(Seq(), allocName, allocSig)
+  val unitName   = Global.Val("scalanative_unit")
+  val unit       = Val.Global(unitName, Ptr)
+  val unitTy     = Struct(BoxedUnit.name tag "class", Seq(Ptr))
+  val unitConst  = Val.Global(BoxedUnit.name tag "const", Ptr)
+  val unitValue  = Val.Struct(unitTy.name, Seq(unitConst))
+  val unitDefn   = Defn.Const(Seq(), unitName, unitTy, unitValue)
+
+  val defns = Seq(
+      throwDefn,
+      beginCatchDefn,
+      endCatchDefn,
+      allocDefn,
+      unitDefn
   )
 
   def pinned = Seq(

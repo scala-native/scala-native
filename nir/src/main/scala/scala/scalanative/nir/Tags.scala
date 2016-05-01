@@ -152,7 +152,8 @@ object Tags {
   final val StructType     = 1 + FunctionType
 
   final val SizeType    = 1 + StructType
-  final val ClassType   = 1 + SizeType
+  final val UnitType    = 1 + SizeType
+  final val ClassType   = 1 + UnitType
   final val TraitType   = 1 + ClassType
   final val ModuleType  = 1 + TraitType
 
@@ -171,5 +172,6 @@ object Tags {
   final val CharsVal  = 1 + ArrayVal
   final val LocalVal  = 1 + CharsVal
   final val GlobalVal = 1 + LocalVal
-  final val StringVal = 1 + GlobalVal
+  final val UnitVal   = 1 + GlobalVal
+  final val StringVal = 1 + UnitVal
 }

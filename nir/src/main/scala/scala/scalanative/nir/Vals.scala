@@ -18,6 +18,7 @@ sealed abstract class Val {
     case Val.Local(_, ty)       => ty
     case Val.Global(_, ty)      => ty
 
+    case Val.Unit      => Type.Unit
     case Val.String(_) => Rt.String
   }
 }
@@ -41,5 +42,6 @@ object Val {
   val Null = Zero(Type.Ptr)
 
   // high-level
+  final case object Unit extends Val
   final case class String(value: java.lang.String) extends Val
 }

@@ -40,7 +40,8 @@ object Type {
   final case class Struct(name: Global, tys: Seq[Type]) extends Type
 
   // high-level types
-  final case object Size    extends Type
+  final case object Size extends Type
+  final case object Unit extends Type
 
   sealed abstract class RefKind extends Type
   final case class Class(name: Global)  extends RefKind

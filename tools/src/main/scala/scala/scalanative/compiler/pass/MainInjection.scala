@@ -19,7 +19,7 @@ class MainInjection(entry: Global)(implicit fresh: Fresh) extends Pass {
       val rt     = Val.Local(fresh(), Rt.Rt)
       val arr    = Val.Local(fresh(), Rt.RefArray)
 
-      Rt.decls ++ defns :+ Defn.Define(
+      Rt.defns ++ defns :+ Defn.Define(
           Seq(),
           Rt.mainName,
           Rt.mainSig,

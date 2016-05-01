@@ -16,7 +16,8 @@ object ClassHierarchy {
   final class Struct(val attrs: Seq[Attr],
                      val name: Global,
                      val tys: Seq[nir.Type],
-                     var id: Int = -1) extends Node
+                     var id: Int = -1)
+      extends Node
 
   final class Trait(val attrs: Seq[Attr],
                     val name: Global,
@@ -160,9 +161,9 @@ object ClassHierarchy {
       nodes += name -> node
       node match {
         case defn: Class  => classes += defn
-        case defn: Trait  => traits  += defn
+        case defn: Trait  => traits += defn
         case defn: Method => methods += defn
-        case defn: Field  => fields  += defn
+        case defn: Field  => fields += defn
         case defn: Struct => structs += defn
       }
       node
@@ -192,8 +193,7 @@ object ClassHierarchy {
               new Method(defn.attrs, defn.name, defn.ty, isConcrete = true))
 
       case defn: Defn.Struct =>
-        enter(defn.name,
-              new Struct(defn.attrs, defn.name, defn.tys))
+        enter(defn.name, new Struct(defn.attrs, defn.name, defn.tys))
 
       case _ =>
         ()
