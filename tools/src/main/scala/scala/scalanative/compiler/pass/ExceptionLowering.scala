@@ -14,16 +14,16 @@ class ExceptionLowering(implicit fresh: Fresh) extends Pass {
   private def transformCf(block: Block) = block.cf match {
     case Cf.Throw(v) =>
       block.copy(
-        insts = block.insts :+ Inst(Op.Call(Rt.throwSig, Rt.throw_, Seq(v))),
-        cf = Cf.Unreachable)
+          insts = block.insts :+ Inst(Op.Call(Rt.throwSig, Rt.throw_, Seq(v))),
+          cf = Cf.Unreachable)
     case Cf.Try(Next.Succ(n), fail) =>
-      block.copy(
-        cf = Cf.Jump(Next.Label(n, Seq())))
+      block.copy(cf = Cf.Jump(Next.Label(n, Seq())))
     case _ =>
       block
   }
 
-  private def transformBlock(block: Block, handler: Option[Next.Fail]): Seq[Block] =
+  private def transformBlock(
+      block: Block, handler: Option[Next.Fail]): Seq[Block] =
     handler.fold(Seq(transformCf(block))) { fail =>
       val blocks = mutable.UnrolledBuffer.empty[Block]
       var name   = block.name

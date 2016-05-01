@@ -47,13 +47,8 @@ class TraitLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
   }
 
   override def preDefn = {
-    case Defn.Trait(_, name @ TraitRef(trt), _) =>
-      val typeId    = Val.I32(trt.id)
-      val typeName  = Val.String(name.id)
-      val typeVal   = Val.Struct(Rt.Type.name, Seq(typeId, typeName))
-      val typeConst = Defn.Const(Seq(), name tag "type", Rt.Type, typeVal)
-
-      Seq(typeConst)
+    case defn: Defn.Trait =>
+      Seq()
 
     // TODO: hoisting of trait methods
     // case _: Defn.Define => ???
@@ -65,18 +60,5 @@ class TraitLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
 
     case Inst(n, Op.Method(sig, obj, StaticTraitMethodRef(meth))) =>
       ???
-
-    case Inst(n, Op.As(TraitRef(trt), v)) =>
-      Seq(
-          Inst(n, Op.Copy(v))
-      )
-
-    case Inst(n, Op.Is(TraitRef(trt), obj)) =>
-      ???
-
-    case Inst(n, Op.TypeOf(TraitRef(trt))) =>
-      Seq(
-          Inst(n, Op.Copy(Val.Global(trt.name tag "type", Type.Ptr)))
-      )
   }
 }

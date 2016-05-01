@@ -6,6 +6,7 @@ sealed abstract class Defn {
   def attrs: Seq[Attr]
 }
 object Defn {
+  // low-level
   final case class Var(attrs: Seq[Attr],
                        name: Global,
                        ty: Type,
@@ -30,7 +31,7 @@ object Defn {
                           fieldtys: Seq[Type])
       extends Defn
 
-  // high level
+  // high-level
   final case class Trait(attrs: Seq[Attr],
                          name: Global,
                          traits: Seq[Global])

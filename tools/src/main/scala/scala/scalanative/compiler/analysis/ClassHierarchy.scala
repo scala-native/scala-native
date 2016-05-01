@@ -10,6 +10,7 @@ object ClassHierarchy {
   sealed abstract class Node {
     def attrs: Seq[Attr]
     def name: Global
+    def id: Int
   }
 
   final class Trait(
@@ -137,6 +138,8 @@ object ClassHierarchy {
       var in: Class = null
   )
       extends Node {
+    // TODO: generate field ids
+    def id = -1
 
     def index = in.fields.indexOf(this)
   }
@@ -180,8 +183,7 @@ object ClassHierarchy {
         enter(defn.name tag "module", cls)
 
       case defn: Defn.Var =>
-        enter(defn.name,
-              new Field(defn.attrs, defn.name, defn.ty))
+        enter(defn.name, new Field(defn.attrs, defn.name, defn.ty))
 
       case defn: Defn.Declare =>
         enter(defn.name,

@@ -109,7 +109,7 @@ class ModuleLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
       val load    = Val.Global(name tag "load", Type.Ptr)
 
       Seq(
-        Inst(n, Op.Call(loadSig, load, Seq()))
+          Inst(n, Op.Call(loadSig, load, Seq()))
       )
   }
 

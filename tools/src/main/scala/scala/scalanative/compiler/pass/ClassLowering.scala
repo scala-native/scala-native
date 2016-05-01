@@ -20,31 +20,27 @@ import nir._, Shows._
   * Gets lowered to:
   *
   *     struct info.$name {
-  *       struct #ssnr.Type,
+  *       ptr #ssnr.Type,
   *       .. ptr $declty,
   *     }
   *
-  *     struct class.$name {
-  *       ptr info.$name_type,
-  *       .. $fldty,
-  *     }
-  *
-  *     const const.$name: struct type.$name =
-  *       struct type.$name {
-  *         struct #ssnr.Type {
-  *           ${cls.id},
-  *           ${cls.name},
-  *         }
+  *     const info.$name: struct info.$name =
+  *       struct info.$name {
+  *         type.class.$name,
   *         .. $name::$defnname,
   *       }
+  *
+  *     struct class.$name {
+  *       ptr vtable.$name,
+  *       .. $fldty,
+  *     }
   *
   *     .. def $name::$defnname: $defnty = $body
   *
   * Eliminates:
-  * - Type.{Class, Null}
-  * - Defn.{Class}
-  * - Op.{Alloc, Field, Method, As, Is}
-  * - Val.{Null, Class}
+  * - Type.Class
+  * - Defn.Class
+  * - Op.{Alloc, Field, Method}
   */
 class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
     extends Pass {
@@ -67,11 +63,13 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
 
   override def preDefn = {
     case Defn.Class(_, name @ ClassRef(cls), _, _) =>
-      val infoStructTy   = infoStruct(cls)
-      val infoStructDefn = Defn.Struct(Seq(), infoStructTy.name, infoStructTy.tys)
+      val infoStructTy = infoStruct(cls)
+      val infoStructDefn =
+        Defn.Struct(Seq(), infoStructTy.name, infoStructTy.tys)
 
-      val classStructTy   = classStruct(cls)
-      val classStructDefn = Defn.Struct(Seq(), classStructTy.name, classStructTy.tys)
+      val classStructTy = classStruct(cls)
+      val classStructDefn =
+        Defn.Struct(Seq(), classStructTy.name, classStructTy.tys)
 
       val typeId   = Val.I32(cls.id)
       val typeName = Val.String(cls.name.id)
@@ -84,7 +82,8 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
 
       Seq(infoStructDefn, classStructDefn, classConstDefn)
 
-    case Defn.Declare(_, VirtualClassMethodRef(_) | StaticClassMethodRef(_), _) =>
+    case Defn.Declare(
+        _, VirtualClassMethodRef(_) | StaticClassMethodRef(_), _) =>
       Seq()
 
     case Defn.Var(_, ClassFieldRef(_), _, _) =>
@@ -128,45 +127,6 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
     case Inst(n, Op.Method(sig, obj, StaticClassMethodRef(meth))) =>
       Seq(
           Inst(n, Op.Copy(Val.Global(meth.name, Type.Ptr)))
-      )
-
-    case Inst(n, Op.As(_, v)) =>
-      Seq(
-          Inst(n, Op.Copy(v))
-      )
-
-    case Inst(n, Op.Is(ClassRef(cls), v)) =>
-      val ty = Val.Local(fresh(), Type.Ptr)
-      val id = Val.Local(fresh(), Type.I32)
-      val cond =
-        if (cls.range.length == 1)
-          Seq(
-              Inst(n, Op.Comp(Comp.Ieq, Type.I32, id, Val.I32(cls.id)))
-          )
-        else {
-          val ge = Val.Local(fresh(), Type.Bool)
-          val le = Val.Local(fresh(), Type.Bool)
-
-          Seq(
-              Inst(ge.name,
-                   Op.Comp(Comp.Sge, Type.I32, Val.I32(cls.range.start), id)),
-              Inst(le.name,
-                   Op.Comp(Comp.Sle, Type.I32, id, Val.I32(cls.range.end))),
-              Inst(n, Op.Bin(Bin.And, Type.Bool, ge, le))
-          )
-        }
-
-      // Seq(
-      //   Inst(ty.name, Rt.call(Rt.Object_getType, v)),
-      //   Inst(id.name, Rt.call(Rt.Type_getId, ty))
-      // ) ++ cond
-      ???
-
-    case Inst(n, Op.TypeOf(ClassRef(cls))) =>
-      val const = Val.Global(cls.name tag "const", Type.Ptr)
-
-      Seq(
-          Inst(n, Op.Conv(Conv.Bitcast, Type.Ptr, const))
       )
   }
 

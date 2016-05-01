@@ -83,8 +83,7 @@ trait NirNameEncoding { self: NirCodeGen =>
       case nir.Type.F64                 => "f64"
       case nir.Type.Array(ty, n)        => sh"arr.$ty.$n"
       case nir.Type.Function(args, ret) => sh"fun.${r(args :+ ret, sep = ".")}"
-      case nir.Type.Struct(name)        => sh"struct.$name"
-      case nir.Type.AnonStruct(tys)     => sh"anon-struct.${r(tys, sep = ".")}"
+      case nir.Type.Struct(name, _)     => sh"struct.$name"
 
       case nir.Type.Size         => "size"
       case nir.Type.Class(name)  => sh"class.$name"

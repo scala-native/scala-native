@@ -28,6 +28,7 @@ final class Compiler(opts: Opts) {
 
     Seq(
         new pass.MainInjection(entry),
+        new pass.TypeLowering,
         new pass.ClosureLowering,
         new pass.ExternalHoisting,
         new pass.ModuleLowering,
