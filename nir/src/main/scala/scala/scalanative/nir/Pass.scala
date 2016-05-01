@@ -38,10 +38,7 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
     val pre = hook(preAssembly, assembly, assembly)
 
     val post = pre.flatMap { defn =>
-      val pres  = hook(preDefn, defn, Seq(defn))
-      val posts = pres.flatMap(txDefn)
-
-      posts.flatMap(post => hook(postDefn, post, Seq(post)))
+      txDefn(defn)
     }
 
     hook(postAssembly, post, post)
