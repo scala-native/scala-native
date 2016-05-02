@@ -86,6 +86,7 @@ final class Linker(paths: Seq[String]) {
     }
 
     direct.push(entry)
+    writeEdge(Global.Val("main"), entry)
     Rt.pinned.foreach(direct.push)
     while (direct.nonEmpty) {
       processDirect

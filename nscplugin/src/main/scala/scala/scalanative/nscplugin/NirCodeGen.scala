@@ -98,12 +98,12 @@ abstract class NirCodeGen
         val sym = cd.symbol
         if (isPrimitiveValueClass(sym) || (sym == ArrayClass)) ()
         else {
-          println(cd)
+          //println(cd)
           val defn =
             if (isStruct(cd.symbol)) genStruct(cd)
             else genClass(cd)
 
-          println(sh"$defn")
+          //println(sh"$defn")
           genIRFile(cunit, sym, defn)
         }
       }
@@ -188,6 +188,7 @@ abstract class NirCodeGen
     }
 
     def genMethod(dd: DefDef): Seq[Defn] = {
+      println(s"gen method $dd")
       val fresh  = new Fresh("src")
       val env    = new Env(fresh)
 
@@ -209,15 +210,15 @@ abstract class NirCodeGen
           case Apply(ref: RefTree, Seq())
               if ref.symbol == ExternMethod
               && isExternalModule(curClassSym) =>
-
             val Type.Function(_ +: paramtys, resty) = sig
+
             val externalName = name member "ext"
             val externalVal  = Val.Global(externalName, Type.Ptr)
             val externalSig  = Type.Function(paramtys, resty)
             val externalDefn =
               Defn.Declare(Seq(Attr.External), externalName, externalSig)
 
-            val forwardBody = {
+            val forwarderBody = {
               val entry = fresh()
               val ret   = Val.Local(fresh(), resty)
               val insts = Seq(
@@ -225,9 +226,9 @@ abstract class NirCodeGen
               )
               Seq(nir.Block(entry, params, insts, Cf.Ret(ret)))
             }
-            val forwardDefn = Defn.Define(attrs, name, sig, forwardBody)
+            val forwarderDefn = Defn.Define(attrs, name, sig, forwarderBody)
 
-            Seq(forwardDefn, externalDefn)
+            Seq(forwarderDefn, externalDefn)
 
           case rhs =>
             val body =
