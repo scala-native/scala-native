@@ -11,6 +11,12 @@ object ScalaNativePlugin extends AutoPlugin {
 
     val nativeVerbose = settingKey[Boolean](
       "Enable verbose tool logging.")
+
+    val nativeClang = settingKey[File](
+      "Location of the clang++ compiler.")
+
+    val nativeClangOptions = settingKey[Seq[String]](
+      "Additional options that are passed to clang.")
   }
 
   override def projectSettings =

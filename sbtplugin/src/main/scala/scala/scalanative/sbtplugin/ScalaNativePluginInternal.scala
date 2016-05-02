@@ -15,9 +15,6 @@ object ScalaNativePluginInternal {
   private lazy val rtlib =
     Path.userHome / ".scalanative" / ("rtlib-" + nir.Versions.current)
 
-  private lazy val llvm =
-    file("/usr/local/Cellar/llvm/HEAD/bin")
-
   private def abs(file: File): String =
     file.getAbsolutePath
 
@@ -28,33 +25,42 @@ object ScalaNativePluginInternal {
   }
 
   /** Compiles rt to llvm ir using clang. */
-  private def compileRtlib(classpath: Seq[String]): Int = {
+  private def unpackRtlib(classpath: Seq[String]): Unit = {
     val rtlibjar = classpath.collectFirst {
       case p if p.contains("org.scala-native") && p.contains("rtlib") => p
     }.get
+
     IO.delete(rtlib)
     IO.unzip(file(rtlibjar), rtlib)
-
-    val srcfiles = (rtlib ** "*.cpp").get.map(abs)
-    val clang    = Seq(abs(llvm / "clang++"), "-S", "-emit-llvm") ++ srcfiles
-    Process(clang, rtlib).!
   }
 
   /** Compiles application and runtime llvm ir file to binary using clang. */
-  private def compileLl(target: File, appll: File, binary: File): Int = {
+  private def compileLl(clang: File,
+                        target: File,
+                        appll: File,
+                        binary: File,
+                        opts: Seq[String]): Unit = {
     val outpath = abs(binary)
     val apppath = abs(appll)
-    val rtpaths = (rtlib ** "*.ll").get.map(abs)
+    val rtpaths = (rtlib ** "*.cpp").get.map(abs)
     val paths   = apppath +: rtpaths
     val flags   = Seq("-o", outpath,
-                      "-l", "gc")
-    val clang   = abs(llvm / "clang++") +: (flags ++ paths)
+                      "-l", "gc") ++ opts
+    val compile = abs(clang) +: (flags ++ paths)
 
-    Process(clang, target).!
+    Process(compile, target).!
   }
 
-  lazy val commonProjectSettings = Seq(
+  lazy val projectSettings = Seq(
+    addCompilerPlugin("org.scala-native" %% "nscplugin" % "0.1-SNAPSHOT"),
+
+    libraryDependencies += "org.scala-native" %% "rtlib" % nir.Versions.current,
+
     nativeVerbose := false,
+
+    nativeClang := file(Process(Seq("which", "clang++")).lines_!.head),
+
+    nativeClangOptions := Seq(),
 
     run := {
       val entry     = (mainClass in Compile).value.get.toString
@@ -63,21 +69,15 @@ object ScalaNativePluginInternal {
       val appll     = target / (moduleName.value + "-out.ll")
       val binary    = target / (moduleName.value + "-out")
       val verbose   = nativeVerbose.value
+      val clang     = nativeClang.value
+      val clangOpts = nativeClangOptions.value
       val opts      = new NativeOpts(classpath, appll.getAbsolutePath, entry, verbose)
 
       IO.createDirectory(target)
-      compileRtlib(classpath)
+      unpackRtlib(classpath)
       compileNir(opts)
-      compileLl(target, appll, binary)
+      compileLl(clang, target, appll, binary, clangOpts)
       Process(abs(binary)).!
     }
   )
-
-  lazy val projectSettings = {
-    commonProjectSettings ++ Seq(
-      addCompilerPlugin("org.scala-native" %% "nscplugin" % "0.1-SNAPSHOT"),
-
-      libraryDependencies += "org.scala-native" %% "rtlib" % nir.Versions.current
-    )
-  }
 }
