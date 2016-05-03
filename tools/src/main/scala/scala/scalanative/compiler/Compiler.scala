@@ -11,16 +11,8 @@ final class Compiler(opts: Opts) {
   private lazy val entry =
     Global.Member(Global.Val(opts.entry), "main_class.ssnr.RefArray_unit")
 
-  private lazy val assembly: Seq[Defn] = {
-    val (unresolved, assembly) = (new Linker(opts.classpath)).link(entry)
-
-    if (unresolved.nonEmpty) {
-      println(s"unresolved deps:")
-      unresolved.map(u => sh"  `$u`".toString).sorted.foreach(println(_))
-    }
-
-    assembly
-  }
+  private lazy val assembly: Seq[Defn] =
+    new Linker(opts.classpath).linkClosed(entry)
 
   private lazy val passes: Seq[Pass] = {
     implicit val fresh     = Fresh("tx")
