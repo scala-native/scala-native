@@ -16,6 +16,21 @@ final class Linker(paths: Seq[String]) {
         assembly.load(global)
     }.flatten
 
+  private val writer = new java.io.PrintWriter(new java.io.File("out.dot"))
+  private def writeStart(): Unit =
+    writer.println("digraph G {")
+  private def writeEdge(from: Global, to: Global): Unit = {
+    def quoted(s: String) = "\"" + s + "\""
+    writer.print(quoted(sh"$from".toString))
+    writer.print("->")
+    writer.print(quoted(sh"$to".toString))
+    writer.println(";")
+  }
+  private def writeEnd(): Unit = {
+    writer.println("}")
+    writer.close()
+  }
+
   def link(entry: Global): (Seq[Global], Seq[Defn]) = {
     val resolved   = mutable.Set.empty[Global]
     val unresolved = mutable.Set.empty[Global]
@@ -39,6 +54,7 @@ final class Linker(paths: Seq[String]) {
 
               deps.foreach {
                 case Dep.Direct(dep) =>
+                  writeEdge(workitem, dep)
                   direct.push(dep)
 
                 case cond: Dep.Conditional =>
@@ -57,6 +73,7 @@ final class Linker(paths: Seq[String]) {
           ()
 
         case Dep.Conditional(dep, cond) if resolved.contains(cond) =>
+          writeEdge(cond, dep)
           direct.push(dep)
 
         case dep =>
@@ -66,12 +83,15 @@ final class Linker(paths: Seq[String]) {
       conditional = rest
     }
 
+    writeStart()
+    writeEdge(Global.Val("main"), entry)
     direct.push(entry)
     Rt.pinned.foreach(direct.push)
     while (direct.nonEmpty) {
       processDirect
       processConditional
     }
+    writeEnd()
 
     (unresolved.toSeq, defns.sortBy(_.name.toString).toSeq)
   }

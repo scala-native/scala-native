@@ -2,25 +2,15 @@ package scala.scalanative
 package nir
 
 object Tags {
-  final val InlineHintAttr = 1
+  final val MayInlineAttr  = 1
+  final val InlineHintAttr = 1 + MayInlineAttr
   final val NoInlineAttr   = 1 + InlineHintAttr
   final val MustInlineAttr = 1 + NoInlineAttr
 
-  final val PrivateAttr             = 1 + MustInlineAttr
-  final val InternalAttr            = 1 + PrivateAttr
-  final val AvailableExternallyAttr = 1 + InternalAttr
-  final val LinkOnceAttr            = 1 + AvailableExternallyAttr
-  final val WeakAttr                = 1 + LinkOnceAttr
-  final val CommonAttr              = 1 + WeakAttr
-  final val AppendingAttr           = 1 + CommonAttr
-  final val ExternWeakAttr          = 1 + AppendingAttr
-  final val LinkOnceODRAttr         = 1 + ExternWeakAttr
-  final val WeakODRAttr             = 1 + LinkOnceODRAttr
-  final val ExternalAttr            = 1 + WeakODRAttr
-
-  final val OverrideAttr = 1 + ExternalAttr
-  final val PinAttr      = 1 + OverrideAttr
-  final val PinIfAttr    = 1 + PinAttr
+  final val ExternAttr    = 1 + MustInlineAttr
+  final val OverrideAttr  = 1 + ExternAttr
+  final val PinAlwaysAttr = 1 + OverrideAttr
+  final val PinIfAttr     = 1 + PinAlwaysAttr
 
   final val IaddBin = 1 + PinIfAttr
   final val FaddBin = 1 + IaddBin

@@ -3,45 +3,45 @@ package nir
 
 sealed abstract class Defn {
   def name: Global
-  def attrs: Seq[Attr]
+  def attrs: Attrs
 }
 object Defn {
   // low-level
-  final case class Var(attrs: Seq[Attr],
+  final case class Var(attrs: Attrs,
                        name: Global,
                        ty: Type,
                        value: Val)
       extends Defn
-  final case class Const(attrs: Seq[Attr],
+  final case class Const(attrs: Attrs,
                          name: Global,
                          ty: Type,
                          value: Val)
       extends Defn
-  final case class Declare(attrs: Seq[Attr],
+  final case class Declare(attrs: Attrs,
                            name: Global,
                            ty: Type)
       extends Defn
-  final case class Define(attrs: Seq[Attr],
+  final case class Define(attrs: Attrs,
                           name: Global,
                           ty: Type,
                           blocks: Seq[Block])
       extends Defn
-  final case class Struct(attrs: Seq[Attr],
+  final case class Struct(attrs: Attrs,
                           name: Global,
                           tys: Seq[Type])
       extends Defn
 
   // high-level
-  final case class Trait(attrs: Seq[Attr],
+  final case class Trait(attrs: Attrs,
                          name: Global,
                          traits: Seq[Global])
       extends Defn
-  final case class Class(attrs: Seq[Attr],
+  final case class Class(attrs: Attrs,
                          name: Global,
                          parent: Option[Global],
                          traits: Seq[Global])
       extends Defn
-  final case class Module(attrs: Seq[Attr],
+  final case class Module(attrs: Attrs,
                           name: Global,
                           parent: Option[Global],
                           traits: Seq[Global])

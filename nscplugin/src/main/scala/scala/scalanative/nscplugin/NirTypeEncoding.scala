@@ -80,7 +80,7 @@ trait NirTypeEncoding { self: NirCodeGen =>
   def isModule(sym: Symbol): Boolean =
     sym.isModule || sym.isModuleClass || sym.isImplClass
 
-  def isExternalModule(sym: Symbol): Boolean =
+  def isExternModule(sym: Symbol): Boolean =
     isModule(sym) && sym.annotations.exists(_.symbol == ExternClass)
 
   def isStruct(sym: Symbol): Boolean =

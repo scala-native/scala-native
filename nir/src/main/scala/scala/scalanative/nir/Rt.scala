@@ -23,30 +23,30 @@ object Rt {
   val throwName = Global.Val("scalanative_throw")
   val throwSig  = Function(Seq(Ptr), Void)
   val throw_    = Val.Global(throwName, Ptr)
-  val throwDefn = Defn.Declare(Seq(), throwName, throwSig)
+  val throwDefn = Defn.Declare(Attrs.None, throwName, throwSig)
 
   val beginCatchName = Global.Val("scalanative_begin_catch")
   val beginCatchSig  = Function(Seq(Ptr), Ptr)
   val beginCatch     = Val.Global(beginCatchName, Ptr)
   val beginCatchDefn =
-      Defn.Declare(Seq(), beginCatchName, beginCatchSig)
+      Defn.Declare(Attrs.None, beginCatchName, beginCatchSig)
 
   val endCatchName = Global.Val("scalanative_end_catch")
   val endCatchSig  = Function(Seq(), Void)
   val endCatch     = Val.Global(endCatchName, endCatchSig)
-  val endCatchDefn = Defn.Declare(Seq(), endCatchName, endCatchSig)
+  val endCatchDefn = Defn.Declare(Attrs.None, endCatchName, endCatchSig)
 
   val allocName = Global.Val("scalanative_alloc")
   val allocSig  = Function(Seq(Ptr, Size), Ptr)
   val alloc     = Val.Global(allocName, allocSig)
-  val allocDefn = Defn.Declare(Seq(), allocName, allocSig)
+  val allocDefn = Defn.Declare(Attrs.None, allocName, allocSig)
 
   val unitName   = Global.Val("scalanative_unit")
   val unit       = Val.Global(unitName, Ptr)
   val unitTy     = Struct(BoxedUnit.name tag "class", Seq(Ptr))
   val unitConst  = Val.Global(BoxedUnit.name tag "const", Ptr)
   val unitValue  = Val.Struct(unitTy.name, Seq(unitConst))
-  val unitDefn   = Defn.Const(Seq(), unitName, unitTy, unitValue)
+  val unitDefn   = Defn.Const(Attrs.None, unitName, unitTy, unitValue)
 
   val defns = Seq(
       throwDefn,

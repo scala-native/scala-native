@@ -35,9 +35,11 @@ trait NirNameEncoding { self: NirCodeGen =>
     val id =
       if (id0.charAt(id0.length() - 1) != ' ') id0
       else id0.substring(0, id0.length() - 1)
-    val pre = owner member id
 
-    if (isExternalModule(sym.owner)) pre member "ext" else pre
+    if (isExternModule(sym.owner))
+      owner member id tag "extern"
+    else
+      owner member id
   }
 
   def genMethodName(sym: Symbol): nir.Global = {
@@ -55,7 +57,7 @@ trait NirNameEncoding { self: NirCodeGen =>
     val prename =
       if (sym == String_+) {
         genMethodName(StringConcatMethod)
-      } else if (isExternalModule(owner)) {
+      } else if (isExternModule(owner)) {
         ownerId member id
       } else if (sym.name == nme.CONSTRUCTOR) {
         ownerId member ("init" +: mangledParams).mkString("_")

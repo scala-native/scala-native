@@ -53,7 +53,7 @@ class ModuleLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
       val clsNull = Val.Zero(clsTy)
 
       val valueName = name tag "value"
-      val valueDefn = Defn.Var(Seq(), valueName, clsTy, clsNull)
+      val valueDefn = Defn.Var(Attrs.None, valueName, clsTy, clsNull)
       val value     = Val.Global(valueName, Type.Ptr)
 
       val entry      = fresh()
@@ -76,7 +76,7 @@ class ModuleLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
       val loadName = name tag "load"
       val loadSig  = Type.Function(Seq(), clsTy)
       val loadDefn = Defn.Define(
-          Seq(),
+          Attrs.None,
           loadName,
           loadSig,
           Seq(Block(entry,

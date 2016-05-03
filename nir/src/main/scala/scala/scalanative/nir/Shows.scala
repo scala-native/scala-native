@@ -11,30 +11,20 @@ object Shows {
     sh"$open$body$close"
   }
 
-  implicit val showAttrs: Show[Seq[Attr]] = Show { attrs =>
-    if (attrs.isEmpty) s()
-    else r(attrs, sep = " ", post = " ")
+  implicit val showAttrs: Show[Attrs] = Show { attrs =>
+    if (attrs == Attrs.None) s()
+    else r(attrs.toSeq, sep = " ", post = " ")
   }
 
   implicit val showAttr: Show[Attr] = Show {
+    case Attr.MayInline  => "mayinline"
     case Attr.InlineHint => "inlinehint"
     case Attr.NoInline   => "noinline"
     case Attr.MustInline => "mustinline"
 
-    case Attr.Private             => "private"
-    case Attr.Internal            => "internal"
-    case Attr.AvailableExternally => "available_externally"
-    case Attr.LinkOnce            => "linkonce"
-    case Attr.Weak                => "weak"
-    case Attr.Common              => "common"
-    case Attr.Appending           => "appending"
-    case Attr.ExternWeak          => "extern_weak"
-    case Attr.LinkOnceODR         => "linkonce_odr"
-    case Attr.WeakODR             => "weak_odr"
-    case Attr.External            => "external"
-
+    case Attr.Extern            => sh"extern"
     case Attr.Override(name)    => sh"override($name)"
-    case Attr.Pin(name)         => sh"pin($name)"
+    case Attr.PinAlways(name)   => sh"pin($name)"
     case Attr.PinIf(name, cond) => sh"pin-if($name, $cond)"
   }
 

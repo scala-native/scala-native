@@ -43,7 +43,7 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly){
     case Defn.Const(attrs, name, _, v) =>
       sh"@$name = ${attrs}constant $v"
     case Defn.Declare(attrs, name, Type.Function(argtys, retty)) =>
-      sh"${attrs}declare $retty @$name(${r(argtys, sep = ", ")})"
+      sh"declare ${attrs}$retty @$name(${r(argtys, sep = ", ")})"
     case Defn.Define(attrs, name, Type.Function(_, retty), blocks) =>
       showDefine(attrs, retty, name, blocks)
     case Defn.Struct(attrs, name, tys) =>
@@ -52,8 +52,7 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly){
       unsupported(defn)
   }
 
-  def showDefine(
-      attrs: Seq[Attr], retty: Type, name: Global, blocks: Seq[Block]) = {
+  def showDefine(attrs: Attrs, retty: Type, name: Global, blocks: Seq[Block]) = {
     implicit val cfg = ControlFlow(blocks)
     val blockshows = cfg.map { node =>
       showBlock(node.block, node.pred, isEntry = node eq cfg.entry)
@@ -61,7 +60,7 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly){
     val body   = brace(i(r(blockshows)))
     val params = sh"(${r(blocks.head.params: Seq[Val], sep = ", ")})"
 
-    sh"${attrs}define $retty @$name$params$attrs $personality $body"
+    sh"define ${attrs}$retty @$name$params$attrs $personality $body"
   }
 
   private lazy val landingpad =
@@ -279,7 +278,16 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly){
     case next            => sh"label %${next.name}"
   }
 
-  implicit def showAttrs: Show[Seq[Attr]] = nir.Shows.showAttrs
+  implicit def showAttrs: Show[Attrs] = Show { attrs =>
+    val buf = mutable.UnrolledBuffer.empty[Show.Result]
+
+    if (attrs.isExtern)
+      buf += "external"
+    if (attrs.inline != Attr.MayInline)
+      buf += nir.Shows.showAttr(attrs.inline)
+
+    r(buf, sep = " ", post = " ")
+  }
 
   implicit def showConv: Show[Conv] = nir.Shows.showConv
 

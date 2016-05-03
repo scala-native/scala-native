@@ -53,35 +53,25 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
 
   private def getBool(): Boolean = get != 0
 
-  private def getAttrs(): Seq[Attr] = {
+  private def getAttrs(): Attrs = {
     val buf = mutable.UnrolledBuffer.empty[Attr]
 
     (1 to getInt).foreach { _ =>
       getInt match {
+        case T.MayInlineAttr  => buf += Attr.MayInline
         case T.InlineHintAttr => buf += Attr.InlineHint
         case T.NoInlineAttr   => buf += Attr.NoInline
         case T.MustInlineAttr => buf += Attr.MustInline
 
-        case T.PrivateAttr             => buf += Attr.Private
-        case T.InternalAttr            => buf += Attr.Internal
-        case T.AvailableExternallyAttr => buf += Attr.AvailableExternally
-        case T.LinkOnceAttr            => buf += Attr.LinkOnce
-        case T.WeakAttr                => buf += Attr.Weak
-        case T.CommonAttr              => buf += Attr.Common
-        case T.AppendingAttr           => buf += Attr.Appending
-        case T.ExternWeakAttr          => buf += Attr.ExternWeak
-        case T.LinkOnceODRAttr         => buf += Attr.LinkOnceODR
-        case T.WeakODRAttr             => buf += Attr.WeakODR
-        case T.ExternalAttr            => buf += Attr.External
-
-        case T.OverrideAttr => buf += Attr.Override(getGlobal)
-        case T.PinAttr      => deps += Dep.Direct(getGlobalNoDep)
+        case T.ExternAttr    => buf  += Attr.Extern
+        case T.OverrideAttr  => buf  += Attr.Override(getGlobal)
+        case T.PinAlwaysAttr => deps += Dep.Direct(getGlobalNoDep)
         case T.PinIfAttr =>
           deps += Dep.Conditional(getGlobalNoDep, getGlobalNoDep)
       }
     }
 
-    buf
+    Attrs.fromSeq(buf)
   }
 
   private def getBin(): Bin = getInt match {

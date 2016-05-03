@@ -22,7 +22,7 @@ final class Compiler(opts: Opts) {
         new pass.MainInjection(entry),
         new pass.TypeLowering,
         new pass.ClosureLowering,
-        new pass.ExternalHoisting,
+        new pass.ExternHoisting,
         new pass.ModuleLowering,
         new pass.TraitLowering,
         new pass.ClassLowering,

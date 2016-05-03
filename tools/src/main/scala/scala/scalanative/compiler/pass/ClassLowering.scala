@@ -65,11 +65,11 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
     case Defn.Class(_, name @ ClassRef(cls), _, _) =>
       val infoStructTy = infoStruct(cls)
       val infoStructDefn =
-        Defn.Struct(Seq(), infoStructTy.name, infoStructTy.tys)
+        Defn.Struct(Attrs.None, infoStructTy.name, infoStructTy.tys)
 
       val classStructTy = classStruct(cls)
       val classStructDefn =
-        Defn.Struct(Seq(), classStructTy.name, classStructTy.tys)
+        Defn.Struct(Attrs.None, classStructTy.name, classStructTy.tys)
 
       val typeId   = Val.I32(cls.id)
       val typeName = Val.String(cls.name.id)
@@ -78,7 +78,7 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
       val classConstName = name tag "const"
       val classConstVal  = Val.Struct(infoStructTy.name, typeVal +: cls.vtable)
       val classConstDefn =
-        Defn.Const(Seq(), classConstName, infoStructTy, classConstVal)
+        Defn.Const(Attrs.None, classConstName, infoStructTy, classConstVal)
 
       Seq(infoStructDefn, classStructDefn, classConstDefn)
 

@@ -8,20 +8,18 @@ import nir._, Shows._
 
 object ClassHierarchy {
   sealed abstract class Node {
-    def attrs: Seq[Attr]
+    def attrs: Attrs
     def name: Global
     def id: Int
-
-    def isExternal: Boolean = attrs.exists(_ == Attr.External)
   }
 
-  final class Struct(val attrs: Seq[Attr],
+  final class Struct(val attrs: Attrs,
                      val name: Global,
                      val tys: Seq[nir.Type],
                      var id: Int = -1)
       extends Node
 
-  final class Trait(val attrs: Seq[Attr],
+  final class Trait(val attrs: Attrs,
                     val name: Global,
                     var id: Int = -1,
                     var traits: Seq[Node] = Seq(),
@@ -31,7 +29,7 @@ object ClassHierarchy {
     def methods: Seq[Method] = ???
   }
 
-  final class Class(val attrs: Seq[Attr],
+  final class Class(val attrs: Attrs,
                     val name: Global,
                     val isModule: Boolean,
                     var id: Int = -1,
@@ -87,7 +85,7 @@ object ClassHierarchy {
     }
   }
 
-  final class Method(val attrs: Seq[Attr],
+  final class Method(val attrs: Attrs,
                      val name: Global,
                      val ty: Type,
                      val isConcrete: Boolean,
@@ -134,7 +132,7 @@ object ClassHierarchy {
     }
   }
 
-  final class Field(val attrs: Seq[Attr],
+  final class Field(val attrs: Attrs,
                     val name: Global,
                     val ty: Type,
                     var in: Class = null)
@@ -203,17 +201,13 @@ object ClassHierarchy {
         ()
     }
 
-    def enrichMethod(name: Global, attrs: Seq[Attr]): Unit = {
+    def enrichMethod(name: Global, attrs: Attrs): Unit = {
       val node = nodes(name).asInstanceOf[Method]
       node.in = nodes(name.top)
-      attrs.foreach {
-        case Attr.Override(n) =>
-          val ovnode = nodes(n).asInstanceOf[Method]
-          node.overrides = node.overrides :+ ovnode
-          ovnode.overriden = ovnode.overriden :+ node
-
-        case _ =>
-          ()
+      attrs.overrides.foreach { n =>
+        val ovnode = nodes(n).asInstanceOf[Method]
+        node.overrides = node.overrides :+ ovnode
+        ovnode.overriden = ovnode.overriden :+ node
       }
     }
 

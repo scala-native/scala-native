@@ -31,7 +31,7 @@ class TypeLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
     val typeStr  = Val.String(str)
     val typeVal  = Val.Struct(Rt.Type.name, Seq(typeId, typeStr))
 
-    Defn.Const(Seq(), name, Rt.Type, typeVal)
+    Defn.Const(Attrs.None, name, Rt.Type, typeVal)
   }
 
   private val noTypeDefn =

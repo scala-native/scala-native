@@ -5,6 +5,7 @@ import scalanative.native._
 @extern object stdio {
   var __stdoutp: Ptr[_] = extern
   def fputc(ch: Int, stream: Ptr[_]): Int = extern
+  def bar(x: Int) = x + 1
 }
 import stdio._
 
