@@ -1,6 +1,6 @@
 package java.lang
 
-final class Integer(val intValue: scala.Int)
+final class Integer(override val intValue: scala.Int)
     extends Number with Comparable[Integer] {
   def this(s: String) = this(Integer.parseInt(s))
 

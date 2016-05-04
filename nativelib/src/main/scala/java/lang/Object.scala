@@ -1,17 +1,20 @@
 package java.lang
 
-import scala.scalanative.native.{Ptr, cast}
+import scala.scalanative.native._
 import scala.scalanative.runtime.{Monitor, Type}
 
 class _Object {
-  def _equals(obj: _Object) = ???
+  def _equals(that: _Object): scala.Boolean =
+    cast[Word](this) == cast[Word](that)
 
-  def _getClass(): Class[_] =
-    new Class(Type.get(this))
+  def _hashCode(): scala.Int =
+    cast[Word](this).hashCode
 
-  def _hashCode(): scala.Int = ???
+  def _toString(): String =
+    getClass.getName + "@" + Integer.toHexString(hashCode)
 
-  def _toString(): String = ???
+  def _getClass(): _Class[_] =
+    new _Class(Type.get(this))
 
   def _notify(): Unit =
     Monitor.get(this)._notify

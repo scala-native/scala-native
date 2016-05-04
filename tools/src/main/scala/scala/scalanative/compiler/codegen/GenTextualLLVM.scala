@@ -13,11 +13,13 @@ import nir._
 class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly){
   private val fresh = new Fresh("gen")
   private val globals = assembly.collect {
-    case Defn.Var(_, n, ty, _)    => n -> ty
-    case Defn.Const(_, n, ty, _)  => n -> ty
+    case Defn.Var(_, n, ty, _)     => n -> ty
+    case Defn.Const(_, n, ty, _)   => n -> ty
+    case Defn.Declare(_, n, sig)   => n -> sig
+    case Defn.Define(_, n, sig, _) => n -> sig
   }.toMap
   private val prelude = sh"declare i32 @__gxx_personality_v0(...)"
-  private val personality =
+  private val gxxpersonality =
     sh"personality i8* bitcast (i32 (...)* @__gxx_personality_v0 to i8*)"
 
   implicit val showDefns: Show[Seq[Defn]] = Show { defns =>
@@ -34,33 +36,66 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly){
   }
 
   implicit val showDefn: Show[Defn] = Show {
-    case Defn.Var(attrs, name, ty, Val.None) =>
-      sh"@$name = ${attrs}global $ty"
-    case Defn.Var(attrs, name, _, v) =>
-      sh"@$name = ${attrs}global $v"
-    case Defn.Const(attrs, name, ty, Val.None) =>
-      sh"@$name = ${attrs}constant $ty"
-    case Defn.Const(attrs, name, _, v) =>
-      sh"@$name = ${attrs}constant $v"
-    case Defn.Declare(attrs, name, Type.Function(argtys, retty)) =>
-      sh"declare ${attrs}$retty @$name(${r(argtys, sep = ", ")})"
-    case Defn.Define(attrs, name, Type.Function(_, retty), blocks) =>
-      showDefine(attrs, retty, name, blocks)
+    case Defn.Var(attrs, name, ty, rhs) =>
+      showGlobalDefn(name, attrs.isExtern, isConst = false, ty, rhs)
+    case Defn.Const(attrs, name, ty, rhs) =>
+      showGlobalDefn(name, attrs.isExtern, isConst = false, ty, rhs)
+    case Defn.Declare(attrs, name, sig) =>
+      showFunctionDefn(attrs, name, sig, Seq())
+    case Defn.Define(attrs, name, sig, blocks) =>
+      showFunctionDefn(attrs, name, sig, blocks)
     case Defn.Struct(attrs, name, tys) =>
       sh"%$name = type {${r(tys, sep = ", ")}}"
     case defn =>
       unsupported(defn)
   }
 
-  def showDefine(attrs: Attrs, retty: Type, name: Global, blocks: Seq[Block]) = {
-    implicit val cfg = ControlFlow(blocks)
-    val blockshows = cfg.map { node =>
-      showBlock(node.block, node.pred, isEntry = node eq cfg.entry)
-    }
-    val body   = brace(i(r(blockshows)))
-    val params = sh"(${r(blocks.head.params: Seq[Val], sep = ", ")})"
+  def showGlobalDefn(name: nir.Global,
+                     isExtern: Boolean,
+                     isConst: Boolean,
+                     ty: nir.Type,
+                     rhs: nir.Val) = {
+    val external =
+      if (isExtern) "external " else ""
+    val keyword =
+      if (isConst) "const" else "global"
+    val init =
+      rhs match {
+        case Val.None => sh"$ty"
+        case _        => sh"$rhs"
+      }
 
-    sh"define ${attrs}$retty @$name$params$attrs $personality $body"
+    sh"@$name = $external$keyword $init"
+  }
+
+  def showFunctionDefn(attrs: Attrs,
+                       name: Global,
+                       sig: Type,
+                       blocks: Seq[Block]) = {
+    val Type.Function(argtys, retty) = sig
+
+    val isDecl = blocks.isEmpty
+    val keyword =
+      if (isDecl) "declare" else "define"
+    val params =
+      if (isDecl) r(argtys, sep = ", ")
+      else r(blocks.head.params: Seq[Val], sep = ", ")
+    val postattrs: Seq[Attr] =
+      if (attrs.inline != Attr.MayInline) Seq(attrs.inline) else Seq()
+    val personality =
+      if (attrs.isExtern || isDecl) s() else gxxpersonality
+    val body =
+      if (isDecl) s()
+      else {
+        implicit val cfg = ControlFlow(blocks)
+        val blockshows =
+          cfg.map { node =>
+            showBlock(node.block, node.pred, isEntry = node eq cfg.entry)
+          }
+        s(" ", brace(i(r(blockshows))))
+      }
+
+    sh"$keyword $retty @$name($params)$postattrs$personality$body"
   }
 
   private lazy val landingpad =
@@ -278,18 +313,9 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly){
     case next            => sh"label %${next.name}"
   }
 
-  implicit def showAttrs: Show[Attrs] = Show { attrs =>
-    val buf = mutable.UnrolledBuffer.empty[Show.Result]
-
-    if (attrs.isExtern)
-      buf += "external"
-    if (attrs.inline != Attr.MayInline)
-      buf += nir.Shows.showAttr(attrs.inline)
-
-    r(buf, sep = " ", post = " ")
-  }
-
   implicit def showConv: Show[Conv] = nir.Shows.showConv
+
+  implicit def showAttrSeq: Show[Seq[Attr]] = nir.Shows.showAttrSeq
 
   private object ExSucc {
     def unapply(edges: Seq[ControlFlow.Edge]

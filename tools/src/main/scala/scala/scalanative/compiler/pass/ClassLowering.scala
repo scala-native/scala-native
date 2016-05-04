@@ -20,8 +20,8 @@ import nir._, Shows._
   * Gets lowered to:
   *
   *     struct info.$name {
-  *       ptr #ssnr.Type,
-  *       .. ptr $declty,
+  *       ptr,       // to struct #ssnr.Type
+  *       .. ptr     // to $declty
   *     }
   *
   *     const info.$name: struct info.$name =
@@ -31,7 +31,7 @@ import nir._, Shows._
   *       }
   *
   *     struct class.$name {
-  *       ptr vtable.$name,
+  *       ptr        // to struct info.$name
   *       .. $fldty,
   *     }
   *
@@ -47,7 +47,7 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
   def infoStruct(cls: ClassHierarchy.Class): Type.Struct = {
     val vtable         = cls.vtable.map(_.ty)
     val infoStructName = cls.name tag "info"
-    val infoStructBody = Rt.Type +: vtable
+    val infoStructBody = Type.Ptr +: vtable
 
     Type.Struct(infoStructName, infoStructBody)
   }
@@ -71,12 +71,11 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
       val classStructDefn =
         Defn.Struct(Attrs.None, classStructTy.name, classStructTy.tys)
 
-      val typeId   = Val.I32(cls.id)
-      val typeName = Val.String(cls.name.id)
-      val typeVal  = Val.Struct(Rt.Type.name, Seq(typeId, typeName))
+      val typeName  = name tag "class" tag "type"
+      val typeConst = Val.Global(typeName, Type.Ptr)
 
       val classConstName = name tag "const"
-      val classConstVal  = Val.Struct(infoStructTy.name, typeVal +: cls.vtable)
+      val classConstVal  = Val.Struct(infoStructTy.name, typeConst +: cls.vtable)
       val classConstDefn =
         Defn.Const(Attrs.None, classConstName, infoStructTy, classConstVal)
 
@@ -91,37 +90,33 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
 
   override def preInst = {
     case Inst(n, Op.Alloc(ClassRef(cls))) =>
-      val classTy = classStruct(cls)
+      val classty = classStruct(cls)
       val size    = Val.Local(fresh(), Type.Size)
       val const   = Val.Global(cls.name tag "const", Type.Ptr)
 
       Seq(
-          Inst(size.name, Op.Sizeof(classTy)),
+          Inst(size.name, Op.Sizeof(classty)),
           Inst(n, Op.Call(Rt.allocSig, Rt.alloc, Seq(const, size)))
       )
 
     case Inst(n, Op.Field(ty, obj, FieldRef(ClassRef(cls), fld))) =>
-      val classTy = classStruct(cls)
+      val classty = classStruct(cls)
 
       Seq(
           Inst(n,
-               Op.Elem(classTy, obj, Seq(Val.I32(0), Val.I32(fld.index + 1))))
+               Op.Elem(classty, obj, Seq(Val.I32(0), Val.I32(fld.index + 1))))
       )
 
     case Inst(n, Op.Method(sig, obj, MethodRef(ClassRef(cls), meth)))
         if meth.isVirtual =>
-      val classTy    = classStruct(cls)
-      val typeptrptr = Val.Local(fresh(), Type.Ptr)
-      val typeptr    = Val.Local(fresh(), Type.Ptr)
+      val infoty     = infoStruct(cls)
+      val infoptr    = Val.Local(fresh(), Type.Ptr)
       val methptrptr = Val.Local(fresh(), Type.Ptr)
 
       Seq(
-          Inst(typeptrptr.name,
-               Op.Elem(classTy, obj, Seq(Val.I32(0), Val.I32(0)))),
-          Inst(typeptr.name, Op.Load(typeptr.ty, typeptrptr)),
+          Inst(infoptr.name, Op.Load(Type.Ptr, obj)),
           Inst(methptrptr.name,
-               Op.Elem(
-                   Type.Ptr, typeptr, Seq(Val.I32(0), Val.I32(meth.vindex)))),
+               Op.Elem(infoty, infoptr, Seq(Val.I32(0), Val.I32(meth.vindex)))),
           Inst(n, Op.Load(Type.Ptr, methptrptr))
       )
 

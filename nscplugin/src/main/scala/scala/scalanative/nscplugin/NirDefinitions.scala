@@ -9,6 +9,12 @@ trait NirDefinitions { self: NirGlobalAddons =>
   import rootMirror._
 
   object nirDefinitions {
+    lazy val PtrClass = getRequiredClass("scala.scalanative.native.Ptr")
+    lazy val PtrLoadMethod = getDecl(PtrClass, TermName("unary_$bang"))
+    lazy val PtrStoreMethod = getDecl(PtrClass, TermName("unary_$bang_$eq"))
+    lazy val PtrAddMethod = getDecl(PtrClass, TermName("$plus"))
+    lazy val PtrSubMethod = getDecl(PtrClass, TermName("$minus"))
+
     lazy val NObjectClass = getRequiredClass("java.lang._Object")
     lazy val NObjectHashCodeMethod = getDecl(
         NObjectClass, TermName("_hashCode"))
@@ -30,13 +36,12 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val NStringClass  = getRequiredClass("java.lang._String")
     lazy val NStringModule = getRequiredModule("java.lang._String")
 
-    lazy val NPtrClass = getRequiredClass("scala.scalanative.native.Ptr")
-
     lazy val InlineClass   = getRequiredClass("scala.inline")
     lazy val NoInlineClass = getRequiredClass("scala.noinline")
 
     lazy val NativeModule = getRequiredModule(
         "scala.scalanative.native.package")
+    lazy val CastMethod   = getMember(NativeModule, TermName("cast"))
     lazy val ExternMethod = getMember(NativeModule, TermName("extern"))
     lazy val ExternClass  = getRequiredClass("scala.scalanative.native.extern")
     lazy val StructClass  = getRequiredClass("scala.scalanative.native.struct")
@@ -94,5 +99,23 @@ trait NirDefinitions { self: NirGlobalAddons =>
 
     lazy val NArrayCloneMethod: Map[Char, Symbol] =
       NArrayClass.mapValues(getMember(_, TermName("clone")))
+
+    lazy val ClassTagModule  = getRequiredModule("scala.reflect.ClassTag")
+    lazy val ClassTagApply   = getDecl(ClassTagModule, TermName("apply"))
+    lazy val ByteClassTag    = getDecl(ClassTagModule, TermName("Byte"))
+    lazy val ShortClassTag   = getDecl(ClassTagModule, TermName("Short"))
+    lazy val CharClassTag    = getDecl(ClassTagModule, TermName("Char"))
+    lazy val IntClassTag     = getDecl(ClassTagModule, TermName("Int"))
+    lazy val LongClassTag    = getDecl(ClassTagModule, TermName("Long"))
+    lazy val FloatClassTag   = getDecl(ClassTagModule, TermName("Float"))
+    lazy val DoubleClassTag  = getDecl(ClassTagModule, TermName("Double"))
+    lazy val BooleanClassTag = getDecl(ClassTagModule, TermName("Boolean"))
+    lazy val UnitClassTag    = getDecl(ClassTagModule, TermName("Unit"))
+    lazy val AnyClassTag     = getDecl(ClassTagModule, TermName("Any"))
+    lazy val ObjectClassTag  = getDecl(ClassTagModule, TermName("Object"))
+    lazy val AnyValClassTag  = getDecl(ClassTagModule, TermName("AnyVal"))
+    lazy val AnyRefClassTag  = getDecl(ClassTagModule, TermName("AnyRef"))
+    lazy val NothingClassTag = getDecl(ClassTagModule, TermName("Nothing"))
+    lazy val NullClassTag    = getDecl(ClassTagModule, TermName("Null"))
   }
 }

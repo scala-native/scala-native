@@ -16,9 +16,7 @@ import nir._
 class TypeLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
     extends Pass {
   private def typeName(node: ClassHierarchy.Node): Global = node match {
-    case node: ClassHierarchy.Class if node.isModule =>
-      node.name.tag("module").tag("type")
-    case node: ClassHierarchy.Class if !node.isModule =>
+    case node: ClassHierarchy.Class =>
       node.name.tag("class").tag("type")
     case node: ClassHierarchy.Trait =>
       node.name.tag("trait").tag("type")
@@ -59,9 +57,12 @@ class TypeLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
           Inst(n, Op.Copy(v))
       )
 
-    case Inst(n, Op.Is(ClassRef(cls), v)) =>
-      val ty = Val.Local(fresh(), Type.Ptr)
-      val id = Val.Local(fresh(), Type.I32)
+    case Inst(n, Op.Is(ClassRef(cls), obj)) =>
+      val infoptr = Val.Local(fresh(), Type.Ptr)
+      val typeptr = Val.Local(fresh(), Type.Ptr)
+      val idptr   = Val.Local(fresh(), Type.Ptr)
+      val id      = Val.Local(fresh(), Type.I32)
+
       val cond =
         if (cls.range.length == 1)
           Seq(
@@ -80,11 +81,12 @@ class TypeLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
           )
         }
 
-      // Seq(
-      //   Inst(ty.name, Rt.call(Rt.Object_getType, v)),
-      //   Inst(id.name, Rt.call(Rt.Type_getId, ty))
-      // ) ++ cond
-      ???
+      Seq(
+        Inst(infoptr.name, Op.Load(Type.Ptr, obj)),
+        Inst(typeptr.name, Op.Load(Type.Ptr, infoptr)),
+        Inst(idptr.name, Op.Elem(Rt.Type, typeptr, Seq(Val.I32(0), Val.I32(0)))),
+        Inst(id.name, Op.Load(Type.I32, idptr))
+      ) ++ cond
 
     // TODO: is trait/module/struct
     case Inst(n, Op.Is(_, obj)) =>

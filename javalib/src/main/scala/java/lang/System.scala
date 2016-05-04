@@ -2,13 +2,15 @@ package java.lang
 
 import java.io.{InputStream, PrintStream}
 import java.util.Properties
+import scala.scalanative.native._
 
 final class System private()
 
 object System {
   def arraycopy(src: Object, srcPos: scala.Int, dest: Object,
       destPos: scala.Int, length: scala.Int): Unit = ???
-  def identityHashCode(x: Object): scala.Int = ???
+  def identityHashCode(x: Object): scala.Int =
+    cast[Word](x).hashCode
   def getenv(name: String): String = ???
   def clearProperty(key: String): String = ???
   def getProperties(): Properties = ???

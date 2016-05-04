@@ -2,19 +2,24 @@ package test
 
 import scalanative.native._
 
-@extern object stdio {
-  var __stdoutp: Ptr[_] = extern
-  def fputc(ch: Int, stream: Ptr[_]): Int = extern
-  def bar(x: Int) = x + 1
+/*@extern object std {
+  def puts(ptr: Ptr[CChar]): Unit = extern
+  def malloc(size: Word): Ptr[_] = extern
 }
-import stdio._
+import std._*/
+
+class C
 
 object Test {
-  def putc(ch: Char): Unit =
-    fputc(ch.toInt, __stdoutp)
   def main(args: Array[String]): Unit = {
-    putc('h')
-    putc('i')
-    putc('\n')
+    val word1 = cast[Word](new C)
+    val word2 = cast[Word](new C)
+    word1 == word2
+
+    /*val ptr = cast[Ptr[CChar]](malloc(3))
+    !ptr = 'h'
+    !(ptr + 1) = 'i'
+    !(ptr + 2) = '\0'
+    puts(ptr)*/
   }
 }

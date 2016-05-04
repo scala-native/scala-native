@@ -29,6 +29,8 @@ abstract class NirCodeGen
   override def newPhase(prev: Phase): StdPhase =
     new SaltyCodePhase(prev)
 
+  case class ValTree(val value: nir.Val) extends Tree
+
   class Env(val fresh: Fresh) {
     private val env = mutable.Map.empty[Symbol, Val]
 
@@ -395,6 +397,9 @@ abstract class NirCodeGen
       }
 
     def genExpr(tree: Tree, focus: Focus): Focus = tree match {
+      case ValTree(value) =>
+        focus withValue value
+
       case label: LabelDef =>
         assert(label.params.length == 0)
         curEnv.enterLabel(label)
@@ -818,9 +823,10 @@ abstract class NirCodeGen
     def genPrimitiveOp(app: Apply, focus: Focus): Focus = {
       import scalaPrimitives._
 
-      val sym                                    = app.symbol
       val Apply(fun @ Select(receiver, _), args) = app
-      val code                                   = scalaPrimitives.getPrimitive(sym, receiver.tpe)
+
+      val sym  = app.symbol
+      val code = scalaPrimitives.getPrimitive(sym, receiver.tpe)
 
       if (isArithmeticOp(code) || isLogicalOp(code) || isComparisonOp(code))
         genSimpleOp(app, receiver :: args, code, focus)
@@ -828,8 +834,12 @@ abstract class NirCodeGen
       else if (code == HASH) genHashCode(app, receiver, focus)
       else if (isArrayOp(code) || code == ARRAY_CLONE)
         genArrayOp(app, code, focus)
+      else if (nirPrimitives.isPtrOp(code))
+        genPtrOp(app, code, focus)
       else if (isCoercion(code)) genCoercion(app, receiver, code, focus)
       else if (code == SYNCHRONIZED) genSynchronized(app, focus)
+      else if (code == CAST)
+        genCastOp(app, focus)
       else
         abort("Unknown primitive operation: " + sym.fullName + "(" +
             fun.symbol.simpleName + ") " + " at: " + (app.pos))
@@ -861,7 +871,7 @@ abstract class NirCodeGen
       case _        => unreachable
     }
 
-    def genSimpleOp(app: Apply, args: List[Tree], code: Int, focus: Focus) = {
+    def genSimpleOp(app: Apply, args: List[Tree], code: Int, focus: Focus): Focus = {
       val retty = genType(app.tpe)
 
       args match {
@@ -871,20 +881,26 @@ abstract class NirCodeGen
       }
     }
 
+    def negateInt(value: nir.Val, focus: Focus): Focus =
+      focus withOp Op.Bin(Bin.Isub, value.ty, numOfType(0, value.ty), value)
+    def negateFloat(value: nir.Val, focus: Focus): Focus =
+      focus withOp Op.Bin(Bin.Fsub, value.ty, numOfType(0, value.ty), value)
+    def negateBits(value: nir.Val, focus: Focus): Focus =
+      focus withOp Op.Bin(Bin.Xor, value.ty, numOfType(-1, value.ty), value)
+    def negateBool(value: nir.Val, focus: Focus): Focus =
+      focus withOp Op.Bin(Bin.Xor, Type.Bool, Val.True, value)
+
     def genUnaryOp(code: Int, rightp: Tree, opty: nir.Type, focus: Focus) = {
       import scalaPrimitives._
+
       val right = genExpr(rightp, focus)
 
       (opty, code) match {
         case (Type.I(_) | Type.F(_), POS) => right
-        case (Type.F(_), NEG) =>
-          right withOp Op.Bin(Bin.Isub, opty, numOfType(0, opty), right.value)
-        case (Type.I(_), NEG) =>
-          right withOp Op.Bin(Bin.Fsub, opty, numOfType(0, opty), right.value)
-        case (Type.I(_), NOT) =>
-          right withOp Op.Bin(Bin.Xor, opty, numOfType(-1, opty), right.value)
-        case (Type.I(_), ZNOT) =>
-          right withOp Op.Bin(Bin.Xor, opty, Val.True, right.value)
+        case (Type.F(_), NEG)  => negateFloat(right.value, right)
+        case (Type.I(_), NEG)  => negateInt(right.value, right)
+        case (Type.I(_), NOT)  => negateBits(right.value, right)
+        case (Type.I(_), ZNOT) => negateBool(right.value, right)
         case _ => abort("Unknown unary operation code: " + code)
       }
     }
@@ -1031,8 +1047,7 @@ abstract class NirCodeGen
                                    left.value,
                                    Seq(rightp),
                                    left)
-        if (negated)
-          equals withOp Op.Bin(Bin.Xor, Type.Bool, Val.True, equals.value)
+        if (negated) negateBool(equals.value, equals)
         else equals
       }
     }
@@ -1067,6 +1082,7 @@ abstract class NirCodeGen
 
     def genArrayOp(app: Apply, code: Int, focus: Focus): Focus = {
       import scalaPrimitives._
+
       val Apply(Select(arrayp, _), argsp) = app
 
       val array = genExpr(arrayp, focus)
@@ -1078,6 +1094,103 @@ abstract class NirCodeGen
         else NArrayLengthMethod(elemcode)
 
       genMethodCall(method, statically = true, array.value, argsp, array)
+    }
+
+    def extractClassFromImplicitClassTag(tree: Tree): Symbol = {
+      tree match {
+        case Typed(Apply(ref: RefTree, args), _) =>
+          ref.symbol match {
+            case ByteClassTag    => ByteClass
+            case ShortClassTag   => ShortClass
+            case CharClassTag    => CharClass
+            case IntClassTag     => IntClass
+            case LongClassTag    => LongClass
+            case FloatClassTag   => FloatClass
+            case DoubleClassTag  => DoubleClass
+            case BooleanClassTag => BooleanClass
+            case UnitClassTag    => UnitClass
+            case AnyClassTag     => AnyClass
+            case ObjectClassTag  => ObjectClass
+            case AnyValClassTag  => ObjectClass
+            case AnyRefClassTag  => ObjectClass
+            case NothingClassTag => NothingClass
+            case NullClassTag    => NullClass
+            case ClassTagApply   =>
+              val Seq(Literal(const: Constant)) = args
+              const.typeValue.typeSymbol
+            case _ =>
+              unsupported(tree)
+          }
+
+        case tree =>
+          unsupported(tree)
+      }
+    }
+
+    def boxValue(sym: Symbol, focus: Focus): Focus =
+      if (genPrimCode(sym) == 'O') focus
+      else genPrimitiveBox(ValTree(focus.value), sym.info, focus)
+
+    def unboxValue(sym: Symbol, focus: Focus): Focus =
+      if (genPrimCode(sym) == 'O') focus
+      else genPrimitiveUnbox(ValTree(focus.value), sym.info, focus)
+
+    def genPtrOp(app: Apply, code: Int, focus: Focus): Focus = {
+      val Apply(Select(ptrp, _), argsp) = app
+
+      (code, argsp) match {
+        case (PTR_LOAD, Seq(ctp)) =>
+          val sym = extractClassFromImplicitClassTag(ctp)
+          val ty  = genTypeSym(sym)
+          val ptr = genExpr(ptrp, focus)
+          boxValue(sym, ptr withOp Op.Load(ty, ptr.value))
+
+        case (PTR_STORE, Seq(valuep, ctp)) =>
+          val sym   = extractClassFromImplicitClassTag(ctp)
+          val ty    = genTypeSym(sym)
+          val ptr   = genExpr(ptrp, focus)
+          val value = unboxValue(sym, genExpr(valuep, ptr))
+          value withOp Op.Store(ty, ptr.value, value.value)
+
+        case (PTR_ADD, Seq(valuep, ctp)) =>
+          val sym   = extractClassFromImplicitClassTag(ctp)
+          val ty    = genTypeSym(sym)
+          val ptr   = genExpr(ptrp, focus)
+          val value = genExpr(valuep, ptr)
+          value withOp Op.Elem(ty, ptr.value, Seq(value.value))
+
+        case (PTR_SUB, Seq(valuep, ctp)) =>
+          val sym   = extractClassFromImplicitClassTag(ctp)
+          val ty    = genTypeSym(sym)
+          val ptr   = genExpr(ptrp, focus)
+          val value = genExpr(valuep, ptr)
+          val neg   = negateInt(value.value, value)
+          neg withOp Op.Elem(ty, ptr.value, Seq(neg.value))
+      }
+    }
+
+    def castConv(fromty: nir.Type, toty: nir.Type): Option[nir.Conv] =
+      (fromty, toty) match {
+        case (Type.I(_), Type.Ptr)        => Some(nir.Conv.Inttoptr)
+        case (Type.Ptr, Type.I(_))        => Some(nir.Conv.Ptrtoint)
+        case (_: Type.RefKind, Type.Ptr)  => Some(nir.Conv.Bitcast)
+        case (_: Type.RefKind, Type.I(_)) => Some(nir.Conv.Ptrtoint)
+        case (Type.I(_), _: Type.RefKind) => Some(nir.Conv.Inttoptr)
+        case _ if fromty == toty          => None
+        case _                            => unsupported(s"cast from $fromty to $toty")
+      }
+
+    def genCastOp(app: Apply, focus: Focus): Focus = {
+      val Apply(_, Seq(valuep, ctp)) = app
+
+      val sym    = extractClassFromImplicitClassTag(ctp)
+      val fromty = genType(valuep.tpe)
+      val toty   = genTypeSym(sym)
+      val value  = genExpr(valuep, focus)
+
+      boxValue(sym, castConv(fromty, toty).fold(value) { conv =>
+        value withOp Op.Conv(conv, toty, value.value)
+      })
     }
 
     def genSynchronized(app: Apply, focus: Focus): Focus = {

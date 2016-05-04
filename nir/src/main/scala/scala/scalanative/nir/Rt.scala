@@ -13,6 +13,13 @@ object Rt {
   val Type      = Struct(Global.Type("scala.scalanative.runtime.Type"), Seq(I32, Ptr))
   val Exc       = Struct(Global.Type("scala.scalanative.runtime.Exc"), Seq(Ptr, I32))
 
+  val unitName   = Global.Val("scala.scalanative.runtime.BoxedUnit")
+  val unit       = Val.Global(unitName, Ptr)
+  val unitTy     = Struct(BoxedUnit.name tag "class", Seq(Ptr))
+  val unitConst  = Val.Global(BoxedUnit.name tag "const", Ptr)
+  val unitValue  = Val.Struct(unitTy.name, Seq(unitConst))
+  val unitDefn   = Defn.Const(Attrs.None, unitName, unitTy, unitValue)
+
   val mainName = Global.Val("main")
   val mainSig  = Function(Seq(I32, Ptr), I32)
 
@@ -41,19 +48,12 @@ object Rt {
   val alloc     = Val.Global(allocName, allocSig)
   val allocDefn = Defn.Declare(Attrs.None, allocName, allocSig)
 
-  val unitName   = Global.Val("scalanative_unit")
-  val unit       = Val.Global(unitName, Ptr)
-  val unitTy     = Struct(BoxedUnit.name tag "class", Seq(Ptr))
-  val unitConst  = Val.Global(BoxedUnit.name tag "const", Ptr)
-  val unitValue  = Val.Struct(unitTy.name, Seq(unitConst))
-  val unitDefn   = Defn.Const(Attrs.None, unitName, unitTy, unitValue)
-
   val defns = Seq(
+      unitDefn,
       throwDefn,
       beginCatchDefn,
       endCatchDefn,
-      allocDefn,
-      unitDefn
+      allocDefn
   )
 
   def pinned = Seq(

@@ -9,7 +9,7 @@ import nir._
 /** Hoists external members from external modules to top-level scope. */
 class ExternHoisting(implicit chg: ClassHierarchy.Graph) extends Pass {
   private def stripName(n: Global): Global = {
-    val Global.Member(_, id) = n
+    val id = n.id
     assert(id.startsWith("extern."))
     Global.Val(id.substring(7))
   }

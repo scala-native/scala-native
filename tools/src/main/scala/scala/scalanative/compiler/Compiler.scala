@@ -20,10 +20,9 @@ final class Compiler(opts: Opts) {
 
     Seq(
         new pass.MainInjection(entry),
-        new pass.TypeLowering,
-        new pass.ClosureLowering,
         new pass.ExternHoisting,
         new pass.ModuleLowering,
+        new pass.TypeLowering,
         new pass.TraitLowering,
         new pass.ClassLowering,
         new pass.StringLowering,

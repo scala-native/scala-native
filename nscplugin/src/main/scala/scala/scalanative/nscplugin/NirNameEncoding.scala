@@ -39,7 +39,7 @@ trait NirNameEncoding { self: NirCodeGen =>
     if (isExternModule(sym.owner))
       owner member id tag "extern"
     else
-      owner member id
+      owner member id tag "field"
   }
 
   def genMethodName(sym: Symbol): nir.Global = {
@@ -54,23 +54,17 @@ trait NirNameEncoding { self: NirCodeGen =>
     val mangledParams =
       tpe.params.toSeq.map(p => mangledType(p.info, retty = false))
 
-    val prename =
-      if (sym == String_+) {
-        genMethodName(StringConcatMethod)
-      } else if (isExternModule(owner)) {
-        ownerId member id
-      } else if (sym.name == nme.CONSTRUCTOR) {
-        ownerId member ("init" +: mangledParams).mkString("_")
-      } else {
-        val mangledRetty = mangledType(tpe.resultType, retty = true)
+    if (sym == String_+) {
+      genMethodName(StringConcatMethod)
+    } else if (isExternModule(owner)) {
+      ownerId member id
+    } else if (sym.name == nme.CONSTRUCTOR) {
+      ownerId member ("init" +: mangledParams).mkString("_")
+    } else {
+      val mangledRetty = mangledType(tpe.resultType, retty = true)
 
-        ownerId member (id +: (mangledParams :+ mangledRetty)).mkString("_")
-      }
-
-    if (sym.hasFlag(ACCESSOR))
-      prename tag "accessor"
-    else
-      prename
+      ownerId member (id +: (mangledParams :+ mangledRetty)).mkString("_")
+    }
   }
 
   private def mangledType(tpe: Type, retty: Boolean): String =

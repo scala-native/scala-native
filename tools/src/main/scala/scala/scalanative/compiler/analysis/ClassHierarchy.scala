@@ -13,11 +13,16 @@ object ClassHierarchy {
     def id: Int
   }
 
+  sealed abstract class Top extends Node {
+    var members: Seq[Node]
+  }
+
   final class Struct(val attrs: Attrs,
                      val name: Global,
                      val tys: Seq[nir.Type],
-                     var id: Int = -1)
-      extends Node
+                     var id: Int = -1,
+                     var members: Seq[Node] = Seq())
+      extends Top
 
   final class Trait(val attrs: Attrs,
                     val name: Global,
@@ -25,7 +30,7 @@ object ClassHierarchy {
                     var traits: Seq[Node] = Seq(),
                     var implementors: Seq[Class] = Seq(),
                     var members: Seq[Node] = Seq())
-      extends Node {
+      extends Top {
     def methods: Seq[Method] = ???
   }
 
@@ -38,7 +43,7 @@ object ClassHierarchy {
                     var subclasses: Seq[Class] = Seq(),
                     var traits: Seq[Node] = Seq(),
                     var members: Seq[Node] = Seq())
-      extends Node {
+      extends Top {
     def ty =
       Type.Class(name)
 
@@ -128,7 +133,10 @@ object ClassHierarchy {
       assert(isVirtual)
       assert(in.isInstanceOf[Class])
 
-      in.asInstanceOf[Class].vslots.indexOf(this)
+      val cls = in.asInstanceOf[Class]
+      val res = cls.vslots.indexOf(this)
+      assert(res >= 0, s"failed to find vslot for ${this.name} in ${in.name} (all vslots: ${cls.vslots.map(_.name)}, all methods: ${cls.methods.map(_.name)})")
+      res
     }
   }
 
@@ -203,7 +211,9 @@ object ClassHierarchy {
 
     def enrichMethod(name: Global, attrs: Attrs): Unit = {
       val node = nodes(name).asInstanceOf[Method]
-      node.in = nodes(name.top)
+      val owner = nodes(name.top).asInstanceOf[Top]
+      node.in = owner
+      owner.members = owner.members :+ node
       attrs.overrides.foreach { n =>
         val ovnode = nodes(n).asInstanceOf[Method]
         node.overrides = node.overrides :+ ovnode
@@ -211,8 +221,12 @@ object ClassHierarchy {
       }
     }
 
-    def enrichField(name: Global): Unit =
-      nodes(name).asInstanceOf[Field].in = nodes(name.top).asInstanceOf[Class]
+    def enrichField(name: Global): Unit = {
+      val node   = nodes(name).asInstanceOf[Field]
+      val parent = nodes(name.top).asInstanceOf[Class]
+      node.in = parent
+      parent.members = parent.members :+ node
+    }
 
     def enrichClass(name: Global,
                     parentName: Option[Global],

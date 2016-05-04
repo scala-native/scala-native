@@ -6,6 +6,13 @@ import scala.collection.mutable
 
 object NirPrimitives {
   final val ARRAY_CLONE = 301
+
+  final val PTR_LOAD = 1 + ARRAY_CLONE
+  final val PTR_STORE = 1 + PTR_LOAD
+  final val PTR_ADD = 1 + PTR_STORE
+  final val PTR_SUB = 1 + PTR_ADD
+
+  final val CAST = 1 + PTR_SUB
 }
 
 abstract class NirPrimitives {
@@ -39,9 +46,17 @@ abstract class NirPrimitives {
   def isNirPrimitive(code: Int): Boolean =
     code >= 300 && code < 360
 
+  def isPtrOp(code: Int): Boolean =
+    code >= PTR_LOAD && code <= PTR_SUB
+
   private val nirPrimitives = mutable.Map.empty[Symbol, Int]
 
   private def initWithPrimitives(addPrimitive: (Symbol, Int) => Unit): Unit = {
     //addPrimitive(Array_clone, ARRAY_CLONE)
+    addPrimitive(PtrLoadMethod, PTR_LOAD)
+    addPrimitive(PtrStoreMethod, PTR_STORE)
+    addPrimitive(PtrAddMethod, PTR_ADD)
+    addPrimitive(PtrSubMethod, PTR_SUB)
+    addPrimitive(CastMethod, CAST)
   }
 }

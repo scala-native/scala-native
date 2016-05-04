@@ -13,7 +13,11 @@ object Shows {
 
   implicit val showAttrs: Show[Attrs] = Show { attrs =>
     if (attrs == Attrs.None) s()
-    else r(attrs.toSeq, sep = " ", post = " ")
+    else showAttrSeq(attrs.toSeq)
+  }
+
+  implicit val showAttrSeq: Show[Seq[Attr]] = Show { attrs =>
+    r(attrs, sep = " ", post = " ")
   }
 
   implicit val showAttr: Show[Attr] = Show {
@@ -201,7 +205,7 @@ object Shows {
     case Val.Struct(n, values) => sh"struct $n {${r(values, ", ")}}"
     case Val.Array(ty, values) => sh"array $ty {${r(values, ", ")}}"
     case Val.Chars(v)          => s("c\"", v, "\"")
-    case Val.Local(name, ty)   => sh"$name"
+    case Val.Local(name, ty)   => sh"$name: $ty"
     case Val.Global(name, ty)  => sh"$name"
 
     case Val.Unit      => "unit"

@@ -1,5 +1,6 @@
 package scala.scalanative
 
+import scala.reflect.ClassTag
 import runtime.undefined
 
 package object native {
@@ -64,10 +65,10 @@ package object native {
   type CSize = UWord
 
   /** The C unchecked cast. */
-  def cast[T](any: Any): T = runtime.undefined
+  def cast[T](any: Any)(implicit ct: ClassTag[T]): T = runtime.undefined
 
   /** The C 'sizeof' operator. */
-  def sizeof[T]: CSize = runtime.undefined
+  def sizeof[T](implicit ct: ClassTag[T]): CSize = runtime.undefined
 
   /** Used as right hand side of external method and field declarations. */
   def extern: Nothing = runtime.undefined
