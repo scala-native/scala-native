@@ -19,6 +19,8 @@ final class Compiler(opts: Opts) {
     implicit val hierarchy = analysis.ClassHierarchy(assembly)
 
     Seq(
+        new pass.LocalBoxingElimination,
+        new pass.DeadCodeElimination,
         new pass.MainInjection(entry),
         new pass.ExternHoisting,
         new pass.ModuleLowering,

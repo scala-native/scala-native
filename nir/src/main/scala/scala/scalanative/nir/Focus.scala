@@ -123,6 +123,7 @@ final case class Focus(
 }
 object Focus {
   final case class NotMergeable(focus: Focus) extends Exception
+  private val empty = Local("", -1)
 
   def entry(implicit fresh: Fresh): Focus =
     entry(fresh(), Seq())
@@ -135,7 +136,7 @@ object Focus {
     Focus(Seq(), name, params, Seq(), Val.Unit, isComplete = false)
 
   def complete(blocks: Seq[Block])(implicit fresh: Fresh) =
-    Focus(blocks, Local.empty, Seq(), Seq(), Val.Unit, isComplete = true)
+    Focus(blocks, empty, Seq(), Seq(), Val.Unit, isComplete = true)
 
   def sequenced[T](elems: Seq[T], focus: Focus)(
       f: (T, Focus) => Focus): Seq[Focus] = {

@@ -17,8 +17,8 @@ class NothingLowering extends Pass {
       var ncf = cf
       breakable {
         insts.foreach {
-          case Inst(_, call: Op.Call) if call.resty == Type.Nothing =>
-            ninsts += Inst(call)
+          case inst @ Inst(n, call: Op.Call) if call.resty == Type.Nothing =>
+            ninsts += inst
             ncf = Cf.Unreachable
             break
           case inst if inst.op.resty == Type.Nothing =>

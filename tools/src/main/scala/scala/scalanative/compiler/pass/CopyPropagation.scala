@@ -17,7 +17,7 @@ class CopyPropagation extends Pass {
 
     blocks.foreach { b =>
       b.insts.foreach {
-        case Inst(n, Op.Copy(v)) if n.nonEmpty =>
+        case Inst(n, Op.Copy(v)) =>
           copies(n) = v
         case inst =>
           ()

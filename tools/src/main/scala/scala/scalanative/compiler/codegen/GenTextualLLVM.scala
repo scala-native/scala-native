@@ -193,44 +193,50 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly){
 
   def showInsts(insts: Seq[Inst], cf: Cf)(implicit cfg: ControlFlow.Graph): Seq[Show.Result] = {
     val buf = mutable.UnrolledBuffer.empty[Show.Result]
+    def isVoid(op: Op): Boolean =
+      op.resty == Type.Void || op.resty == Type.Unit || op.resty == Type.Nothing
 
-    def bind(name: Local) = name match {
-      case Local.empty => sh""
-      case name        => sh"%$name = "
-    }
+    insts.foreach { inst =>
+      val op   = inst.op
+      val name = inst.name
+      val bind = if (isVoid(op)) s() else sh"%$name = "
 
-    insts.foreach {
-      case Inst(name, Op.Call(ty, Val.Global(pointee, _), args)) =>
-        buf += sh"${bind(name)}call $ty @$pointee(${r(args, sep = ", ")})"
+      op match {
+        case Op.Call(ty, Val.Global(pointee, _), args) =>
+          val bind = if (isVoid(op)) s() else sh"%$name = "
 
-      case Inst(name, Op.Call(ty, ptr, args)) =>
-        val pointee = fresh()
+          buf += sh"${bind}call $ty @$pointee(${r(args, sep = ", ")})"
 
-        buf += sh"${bind(pointee)}bitcast $ptr to $ty*"
-        buf += sh"${bind(name)}call $ty %$pointee(${r(args, sep = ", ")})"
+        case Op.Call(ty, ptr, args) =>
+          val pointee = fresh()
+          val bind = if (isVoid(op)) s() else sh"%$name = "
 
-      case Inst(name, Op.Load(ty, ptr)) =>
-        val pointee = fresh()
+          buf += sh"%$pointee = bitcast $ptr to $ty*"
+          buf += sh"${bind}call $ty %$pointee(${r(args, sep = ", ")})"
 
-        buf += sh"${bind(pointee)}bitcast $ptr to $ty*"
-        buf += sh"${bind(name)}load $ty, $ty* %$pointee"
+        case Op.Load(ty, ptr) =>
+          val pointee = fresh()
 
-      case Inst(name, Op.Store(ty, ptr, value)) =>
-        val pointee = fresh()
+          buf += sh"%$pointee = bitcast $ptr to $ty*"
+          buf += sh"${bind}load $ty, $ty* %$pointee"
 
-        buf += sh"${bind(pointee)}bitcast $ptr to $ty*"
-        buf += sh"${bind(name)}store $value, $ty* %$pointee"
+        case Op.Store(ty, ptr, value) =>
+          val pointee = fresh()
 
-      case inst @ Inst(name, Op.Elem(ty, ptr, indexes)) =>
-        val pointee   = fresh()
-        val derived   = fresh()
+          buf += sh"%$pointee = bitcast $ptr to $ty*"
+          buf += sh"${bind}store $value, $ty* %$pointee"
 
-        buf += sh"${bind(pointee)}bitcast $ptr to $ty*"
-        buf += sh"${bind(derived)}getelementptr $ty, $ty* %$pointee, ${r(indexes, sep = ", ")}"
-        buf += sh"${bind(name)}bitcast ${ty.elemty(indexes.tail)}* %$derived to i8*"
+        case Op.Elem(ty, ptr, indexes) =>
+          val pointee   = fresh()
+          val derived   = fresh()
 
-      case Inst(name, op) =>
-        buf += sh"${bind(name)}$op"
+          buf += sh"%$pointee = bitcast $ptr to $ty*"
+          buf += sh"%$derived = getelementptr $ty, $ty* %$pointee, ${r(indexes, sep = ", ")}"
+          buf += sh"${bind}bitcast ${ty.elemty(indexes.tail)}* %$derived to i8*"
+
+        case _ =>
+          buf += sh"${bind}$op"
+      }
     }
 
     buf += sh"$cf"

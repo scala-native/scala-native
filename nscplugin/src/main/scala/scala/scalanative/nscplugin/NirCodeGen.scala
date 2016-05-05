@@ -166,6 +166,7 @@ abstract class NirCodeGen
 
       Attrs.fromSeq(pinned ++ sym.annotations.collect {
         case ann if ann.symbol == ExternClass => Attr.Extern
+        case ann if ann.symbol == PureClass   => Attr.Pure
       })
     }
 
@@ -306,8 +307,10 @@ abstract class NirCodeGen
         sym.overrides.map {
           case sym => Attr.Override(genMethodName(sym))
         } ++ sym.annotations.collect {
-          case ann if ann.symbol == InlineClass   => Attr.InlineHint
-          case ann if ann.symbol == NoInlineClass => Attr.NoInline
+          case ann if ann.symbol == InlineClass     => Attr.InlineHint
+          case ann if ann.symbol == NoInlineClass   => Attr.NoInline
+          case ann if ann.symbol == MustInlineClass => Attr.MustInline
+          case ann if ann.symbol == PureClass       => Attr.Pure
         } ++ {
           val owner = sym.owner
           if (owner.primaryConstructor eq sym)

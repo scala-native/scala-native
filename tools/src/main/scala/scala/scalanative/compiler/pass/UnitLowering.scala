@@ -8,11 +8,9 @@ import nir._
 /** Eliminates returns of Unit values and replaces
   * them with void.
   */
-class UnitLowering extends Pass {
+class UnitLowering(implicit fresh: Fresh) extends Pass {
   override def preInst = {
-    case Inst(n, op)
-        if op.resty == Type.Unit
-        || op.resty == Type.Void =>
+    case inst @ Inst(n, op) if op.resty == Type.Unit =>
       Seq(
           Inst(op),
           Inst(n, Op.Copy(Val.Unit))

@@ -7,7 +7,8 @@ object Tags {
   final val NoInlineAttr   = 1 + InlineHintAttr
   final val MustInlineAttr = 1 + NoInlineAttr
 
-  final val ExternAttr    = 1 + MustInlineAttr
+  final val PureAttr      = 1 + MustInlineAttr
+  final val ExternAttr    = 1 + PureAttr
   final val OverrideAttr  = 1 + ExternAttr
   final val PinAlwaysAttr = 1 + OverrideAttr
   final val PinIfAttr     = 1 + PinAlwaysAttr

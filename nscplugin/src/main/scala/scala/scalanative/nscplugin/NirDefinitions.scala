@@ -36,8 +36,10 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val NStringClass  = getRequiredClass("java.lang._String")
     lazy val NStringModule = getRequiredModule("java.lang._String")
 
-    lazy val InlineClass   = getRequiredClass("scala.inline")
-    lazy val NoInlineClass = getRequiredClass("scala.noinline")
+    lazy val InlineClass     = getRequiredClass("scala.inline")
+    lazy val NoInlineClass   = getRequiredClass("scala.noinline")
+    lazy val MustInlineClass = getRequiredClass("scala.scalanative.runtime.mustinline")
+    lazy val PureClass       = getRequiredClass("scala.scalanative.runtime.pure")
 
     lazy val NativeModule = getRequiredModule(
         "scala.scalanative.native.package")

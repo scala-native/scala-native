@@ -26,6 +26,7 @@ object Shows {
     case Attr.NoInline   => "noinline"
     case Attr.MustInline => "mustinline"
 
+    case Attr.Pure              => sh"pure"
     case Attr.Extern            => sh"extern"
     case Attr.Override(name)    => sh"override($name)"
     case Attr.PinAlways(name)   => sh"pin($name)"
@@ -49,8 +50,7 @@ object Shows {
   }
 
   implicit val showInst: Show[Inst] = Show {
-    case Inst(Local.empty, op) => sh"$op"
-    case Inst(name, op)        => sh"$name = $op"
+    case Inst(name, op) => sh"$name = $op"
   }
 
   implicit val showNext: Show[Next] = Show {

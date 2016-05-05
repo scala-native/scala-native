@@ -12,6 +12,7 @@ object Attr {
   final case object NoInline   extends Inline // should never inline
   final case object MustInline extends Inline // should always inline
 
+  final case object Pure   extends Attr
   final case object Extern extends Attr
   final case class Override(name: Global) extends Attr
 
@@ -21,6 +22,7 @@ object Attr {
 }
 
 final case class Attrs(inline: Inline         = MayInline,
+                       isPure: Boolean        = false,
                        isExtern: Boolean      = false,
                        overrides: Seq[Global] = Seq(),
                        pins: Seq[Pin]         = Seq()) {
@@ -28,6 +30,7 @@ final case class Attrs(inline: Inline         = MayInline,
     val out = mutable.UnrolledBuffer.empty[Attr]
 
     if (inline != MayInline) out += inline
+    if (isPure) out += Pure
     if (isExtern) out += Extern
     overrides.foreach { out += Override(_) }
     out ++= pins
@@ -39,19 +42,21 @@ object Attrs {
   val None = new Attrs()
 
   def fromSeq(attrs: Seq[Attr]) = {
-    var inline: Inline         = None.inline
-    var isExtern               = false
-    val overrides              = mutable.UnrolledBuffer.empty[Global]
-    val pins                   = mutable.UnrolledBuffer.empty[Pin]
+    var inline    = None.inline
+    var isPure    = false
+    var isExtern  = false
+    val overrides = mutable.UnrolledBuffer.empty[Global]
+    val pins      = mutable.UnrolledBuffer.empty[Pin]
 
     attrs.foreach {
       case attr: Inline   => inline     = attr
+      case Pure           => isPure     = true
       case Extern         => isExtern   = true
       case Override(name) => overrides += name
       case attr: Pin      => pins      += attr
     }
 
-    new Attrs(inline, isExtern, overrides, pins)
+    new Attrs(inline, isPure, isExtern, overrides, pins)
   }
 }
 

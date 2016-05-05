@@ -1,8 +1,9 @@
 package scala.runtime
 
 import scala.math.ScalaNumber
+import scala.scalanative.runtime.pure
 
-object BoxesRunTime {
+@pure object BoxesRunTime {
   final val CHAR   = 0
   final val BYTE   = 1
   final val SHORT  = 2
@@ -25,40 +26,40 @@ object BoxesRunTime {
 
   /* BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING */
 
-  def boxToBoolean(v: scala.Boolean): java.lang.Boolean =
+  @pure def boxToBoolean(v: scala.Boolean): java.lang.Boolean =
     java.lang.Boolean.valueOf(v)
-  def boxToCharacter(v: scala.Char): java.lang.Character =
+  @pure def boxToCharacter(v: scala.Char): java.lang.Character =
     java.lang.Character.valueOf(v)
-  def boxToByte(v: scala.Byte): java.lang.Byte =
+  @pure def boxToByte(v: scala.Byte): java.lang.Byte =
     java.lang.Byte.valueOf(v)
-  def boxToShort(v: scala.Short): java.lang.Short =
+  @pure def boxToShort(v: scala.Short): java.lang.Short =
     java.lang.Short.valueOf(v)
-  def boxToInteger(v: scala.Int): java.lang.Integer =
+  @pure def boxToInteger(v: scala.Int): java.lang.Integer =
     java.lang.Integer.valueOf(v)
-  def boxToLong(v: scala.Long): java.lang.Long =
+  @pure def boxToLong(v: scala.Long): java.lang.Long =
     java.lang.Long.valueOf(v)
-  def boxToFloat(v: scala.Float): java.lang.Float =
+  @pure def boxToFloat(v: scala.Float): java.lang.Float =
     java.lang.Float.valueOf(v)
-  def boxToDouble(v: scala.Double): java.lang.Double =
+  @pure def boxToDouble(v: scala.Double): java.lang.Double =
     java.lang.Double.valueOf(v)
 
   /* UNBOXING ... UNBOXING ... UNBOXING ... UNBOXING ... UNBOXING ... UNBOXING ... UNBOXING */
 
-  def unboxToBoolean(o: java.lang.Object): scala.Boolean =
+  @pure def unboxToBoolean(o: java.lang.Object): scala.Boolean =
     if (o == null) false else o.asInstanceOf[java.lang.Boolean].booleanValue()
-  def unboxToChar(o: java.lang.Object): scala.Char =
+  @pure def unboxToChar(o: java.lang.Object): scala.Char =
     if (o == null) 0 else o.asInstanceOf[java.lang.Character].charValue()
-  def unboxToByte(o: java.lang.Object): scala.Byte =
+  @pure def unboxToByte(o: java.lang.Object): scala.Byte =
     if (o == null) 0 else o.asInstanceOf[java.lang.Byte].byteValue()
-  def unboxToShort(o: java.lang.Object): scala.Short =
+  @pure def unboxToShort(o: java.lang.Object): scala.Short =
     if (o == null) 0 else o.asInstanceOf[java.lang.Short].shortValue()
-  def unboxToInt(o: java.lang.Object): scala.Int =
+  @pure def unboxToInt(o: java.lang.Object): scala.Int =
     if (o == null) 0 else o.asInstanceOf[java.lang.Integer].intValue()
-  def unboxToLong(o: java.lang.Object): scala.Long =
+  @pure def unboxToLong(o: java.lang.Object): scala.Long =
     if (o == null) 0 else o.asInstanceOf[java.lang.Long].longValue()
-  def unboxToFloat(o: java.lang.Object): scala.Float =
+  @pure def unboxToFloat(o: java.lang.Object): scala.Float =
     if (o == null) 0 else o.asInstanceOf[java.lang.Float].floatValue()
-  def unboxToDouble(o: java.lang.Object): scala.Double =
+  @pure def unboxToDouble(o: java.lang.Object): scala.Double =
     if (o == null) 0 else o.asInstanceOf[java.lang.Double].doubleValue()
 
   /* COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON */
