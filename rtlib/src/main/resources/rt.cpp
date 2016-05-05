@@ -29,5 +29,9 @@ extern "C" {
         *alloc = info;
         return (void*) alloc;
     }
+
+    void scalanative_init() {
+        GC_init();
+    }
 }
 

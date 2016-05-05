@@ -7,5 +7,8 @@ package object runtime {
   def undefined: Nothing = throw new UndefinedBehaviorError
 
   /** Initialize runtime with given arguments and return the rest as Java-style array. */
-  def init(argc: Int, argv: Ptr[Ptr[Byte]]): RefArray = null
+  def init(argc: Int, argv: Ptr[Ptr[Byte]]): RefArray = {
+    Rt.scalanative_init()
+    null
+  }
 }
