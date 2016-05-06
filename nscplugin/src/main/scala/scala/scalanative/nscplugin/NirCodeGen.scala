@@ -159,12 +159,11 @@ abstract class NirCodeGen
 
     def genClassAttrs(sym: Symbol): Attrs = {
       def pinned =
-        if (!isModule(sym) || isExternModule(sym))
-          Seq()
-        else
-          Seq(Attr.PinAlways(genMethodName(sym.asClass.primaryConstructor)))
+        if (!isModule(sym) || isExternModule(sym)) Seq()
+        else Seq(Attr.PinAlways(genMethodName(sym.asClass.primaryConstructor)))
 
-      Attrs.fromSeq(pinned ++ sym.annotations.collect {
+      Attrs.fromSeq(
+          pinned ++ sym.annotations.collect {
         case ann if ann.symbol == ExternClass => Attr.Extern
         case ann if ann.symbol == PureClass   => Attr.Pure
       })
@@ -194,8 +193,8 @@ abstract class NirCodeGen
 
     def genMethod(dd: DefDef): Seq[Defn] = {
       //println(s"gen method $dd")
-      val fresh  = new Fresh("src")
-      val env    = new Env(fresh)
+      val fresh = new Fresh("src")
+      val env   = new Env(fresh)
 
       scoped(
           curMethodSym := dd.symbol,
@@ -213,8 +212,7 @@ abstract class NirCodeGen
             Seq(Defn.Declare(attrs, name, sig))
 
           case rhs
-              if dd.name == nme.CONSTRUCTOR
-              && isExternModule(curClassSym) =>
+              if dd.name == nme.CONSTRUCTOR && isExternModule(curClassSym) =>
             validateExternCtor(rhs)
             Seq()
 
@@ -222,7 +220,8 @@ abstract class NirCodeGen
             genExternMethod(attrs, name, sig, params, rhs)
 
           case rhs =>
-            Seq(Defn.Define(attrs, name, sig, genNormalMethodBody(params, rhs)))
+            Seq(Defn.Define(
+                    attrs, name, sig, genNormalMethodBody(params, rhs)))
         }
       }
     }
@@ -240,17 +239,15 @@ abstract class NirCodeGen
       val externAttrs = Attrs(isExtern = true)
 
       rhs match {
-        case Apply(ref: RefTree, Seq())
-            if ref.symbol == ExternMethod =>
+        case Apply(ref: RefTree, Seq()) if ref.symbol == ExternMethod =>
           val externVal  = Val.Global(externName, Type.Ptr)
-          val externDefn =
-            Defn.Declare(externAttrs, externName, externSig)
+          val externDefn = Defn.Declare(externAttrs, externName, externSig)
 
           val methodBody = {
             val entry = curEnv.fresh()
             val ret   = Val.Local(curEnv.fresh(), resty)
             val insts = Seq(
-              Inst(ret.name, Op.Call(externSig, externVal, params.tail))
+                Inst(ret.name, Op.Call(externSig, externVal, params.tail))
             )
             Seq(nir.Block(entry, params, insts, Cf.Ret(ret)))
           }
@@ -259,7 +256,7 @@ abstract class NirCodeGen
           Seq(methodDefn, externDefn)
 
         case rhs =>
-          val methodVal  = Val.Global(name, Type.Ptr)
+          val methodVal = Val.Global(name, Type.Ptr)
           val methodDefn =
             Defn.Define(attrs, name, sig, genNormalMethodBody(params, rhs))
 
@@ -268,18 +265,16 @@ abstract class NirCodeGen
             val ret   = Val.Local(curEnv.fresh(), resty)
             val mod   = Val.Local(curEnv.fresh(), Type.Module(moduleName))
             val insts = Seq(
-              Inst(mod.name, Op.Module(moduleName)),
-              Inst(ret.name, Op.Call(sig, methodVal, mod +: params.tail))
+                Inst(mod.name, Op.Module(moduleName)),
+                Inst(ret.name, Op.Call(sig, methodVal, mod +: params.tail))
             )
             Seq(nir.Block(entry, params.tail, insts, Cf.Ret(ret)))
           }
           val externDefn =
             Defn.Define(externAttrs, externName, externSig, externBody)
 
-          if (curMethodSym.hasFlag(ACCESSOR))
-            Seq(methodDefn)
-          else
-            Seq(methodDefn, externDefn)
+          if (curMethodSym.hasFlag(ACCESSOR)) Seq(methodDefn)
+          else Seq(methodDefn, externDefn)
       }
     }
 
@@ -290,13 +285,12 @@ abstract class NirCodeGen
             if extern.symbol == ExternMethod =>
           ref.symbol
         case _ =>
-          unsupported("extern objects may only contain " +
-                      "extern fields and methods")
+          unsupported(
+              "extern objects may only contain " + "extern fields and methods")
       }.toSet
       for {
-        f <- curClassSym.info.decls
-        if isField(f)
-        if !externs.contains(f)
+        f <- curClassSym.info.decls if isField(f)
+            if !externs.contains(f)
       } {
         unsupported("extern objects may only contain extern fields")
       }
@@ -304,25 +298,25 @@ abstract class NirCodeGen
 
     def genMethodAttrs(sym: Symbol): Attrs =
       Attrs.fromSeq(
-        sym.overrides.map {
-          case sym => Attr.Override(genMethodName(sym))
-        } ++ sym.annotations.collect {
-          case ann if ann.symbol == InlineClass     => Attr.InlineHint
-          case ann if ann.symbol == NoInlineClass   => Attr.NoInline
-          case ann if ann.symbol == MustInlineClass => Attr.MustInline
-          case ann if ann.symbol == PureClass       => Attr.Pure
-        } ++ {
-          val owner = sym.owner
-          if (owner.primaryConstructor eq sym)
-            owner.info.declarations.collect {
-              case decl if decl.overrides.nonEmpty =>
-                decl.overrides.map {
-                  case ov =>
-                    Attr.PinIf(genMethodName(decl), genMethodName(ov))
-                }
-            }.toSeq.flatten
-          else Seq()
-        }
+          sym.overrides.map {
+            case sym => Attr.Override(genMethodName(sym))
+          } ++ sym.annotations.collect {
+            case ann if ann.symbol == InlineClass     => Attr.InlineHint
+            case ann if ann.symbol == NoInlineClass   => Attr.NoInline
+            case ann if ann.symbol == MustInlineClass => Attr.MustInline
+            case ann if ann.symbol == PureClass       => Attr.Pure
+          } ++ {
+            val owner = sym.owner
+            if (owner.primaryConstructor eq sym)
+              owner.info.declarations.collect {
+                case decl if decl.overrides.nonEmpty =>
+                  decl.overrides.map {
+                    case ov =>
+                      Attr.PinIf(genMethodName(decl), genMethodName(ov))
+                  }
+              }.toSeq.flatten
+            else Seq()
+          }
       )
 
     def genMethodSig(sym: Symbol): nir.Type = sym match {
@@ -339,7 +333,7 @@ abstract class NirCodeGen
         val params   = sym.paramLists.flatten
         val paramtys = params.map(p => genType(p.tpe))
         val owner    = sym.owner
-        val selfty = genType(sym.owner.tpe)
+        val selfty   = genType(sym.owner.tpe)
         val retty =
           if (sym.isClassConstructor) Type.Void
           else genType(sym.tpe.resultType, retty = true)
@@ -370,7 +364,8 @@ abstract class NirCodeGen
         case Focus.NotMergeable(focus) => focus
       }
 
-    def genNormalMethodBody(params: Seq[Val.Local], bodyp: Tree): Seq[nir.Block] =
+    def genNormalMethodBody(
+        params: Seq[Val.Local], bodyp: Tree): Seq[nir.Block] =
       bodyp match {
         // Tailrec emits magical labeldefs that can hijack this reference is
         // current method. This requires special treatment on our side.
@@ -385,8 +380,9 @@ abstract class NirCodeGen
           (body finish Cf.Ret(body.value)).blocks
 
         case _ if curMethodSym.get == NObjectInitMethod =>
-          Seq(nir.Block(curEnv.fresh(), params, Seq(),
-                        nir.Cf.Ret(nir.Val.Unit)))
+          Seq(
+              nir.Block(
+                  curEnv.fresh(), params, Seq(), nir.Cf.Ret(nir.Val.Unit)))
 
         case _ =>
           val body = scoped(
@@ -465,8 +461,7 @@ abstract class NirCodeGen
           val elem =
             if (isExternModule(sym.owner))
               qual withValue Val.Global(name, Type.Ptr)
-            else
-              qual withOp Op.Field(ty, qual.value, name)
+            else qual withOp Op.Field(ty, qual.value, name)
           elem withOp Op.Load(ty, elem.value)
         }
 
@@ -499,8 +494,7 @@ abstract class NirCodeGen
             val elem =
               if (isExternModule(sel.symbol.owner))
                 rhs withValue Val.Global(name, Type.Ptr)
-              else
-                rhs withOp Op.Field(ty, qual.value, name)
+              else rhs withOp Op.Field(ty, qual.value, name)
             elem withOp Op.Store(ty, elem.value, rhs.value)
 
           case id: Ident =>
@@ -837,12 +831,10 @@ abstract class NirCodeGen
       else if (code == HASH) genHashCode(app, receiver, focus)
       else if (isArrayOp(code) || code == ARRAY_CLONE)
         genArrayOp(app, code, focus)
-      else if (nirPrimitives.isPtrOp(code))
-        genPtrOp(app, code, focus)
+      else if (nirPrimitives.isPtrOp(code)) genPtrOp(app, code, focus)
       else if (isCoercion(code)) genCoercion(app, receiver, code, focus)
       else if (code == SYNCHRONIZED) genSynchronized(app, focus)
-      else if (code == CAST)
-        genCastOp(app, focus)
+      else if (code == CAST) genCastOp(app, focus)
       else
         abort("Unknown primitive operation: " + sym.fullName + "(" +
             fun.symbol.simpleName + ") " + " at: " + (app.pos))
@@ -874,7 +866,8 @@ abstract class NirCodeGen
       case _        => unreachable
     }
 
-    def genSimpleOp(app: Apply, args: List[Tree], code: Int, focus: Focus): Focus = {
+    def genSimpleOp(
+        app: Apply, args: List[Tree], code: Int, focus: Focus): Focus = {
       val retty = genType(app.tpe)
 
       args match {
@@ -900,11 +893,11 @@ abstract class NirCodeGen
 
       (opty, code) match {
         case (Type.I(_) | Type.F(_), POS) => right
-        case (Type.F(_), NEG)  => negateFloat(right.value, right)
-        case (Type.I(_), NEG)  => negateInt(right.value, right)
-        case (Type.I(_), NOT)  => negateBits(right.value, right)
-        case (Type.I(_), ZNOT) => negateBool(right.value, right)
-        case _ => abort("Unknown unary operation code: " + code)
+        case (Type.F(_), NEG)             => negateFloat(right.value, right)
+        case (Type.I(_), NEG)             => negateInt(right.value, right)
+        case (Type.I(_), NOT)             => negateBits(right.value, right)
+        case (Type.I(_), ZNOT)            => negateBool(right.value, right)
+        case _                            => abort("Unknown unary operation code: " + code)
       }
     }
 
@@ -1118,7 +1111,7 @@ abstract class NirCodeGen
             case AnyRefClassTag  => ObjectClass
             case NothingClassTag => NothingClass
             case NullClassTag    => NullClass
-            case ClassTagApply   =>
+            case ClassTagApply =>
               val Seq(Literal(const: Constant)) = args
               const.typeValue.typeSymbol
             case _ =>
@@ -1139,36 +1132,39 @@ abstract class NirCodeGen
       else genPrimitiveUnbox(ValTree(focus.value), sym.info, focus)
 
     def genPtrOp(app: Apply, code: Int, focus: Focus): Focus = {
-      val Apply(Select(ptrp, _), argsp) = app
+      val Apply(Select(ptrp, _), argsp :+ ctp) = app
+
+      val sym = extractClassFromImplicitClassTag(ctp)
+      val ty  = genTypeSym(sym)
+      val ptr = genExpr(ptrp, focus)
 
       (code, argsp) match {
-        case (PTR_LOAD, Seq(ctp)) =>
-          val sym = extractClassFromImplicitClassTag(ctp)
-          val ty  = genTypeSym(sym)
-          val ptr = genExpr(ptrp, focus)
+        case (PTR_LOAD, Seq()) =>
           boxValue(sym, ptr withOp Op.Load(ty, ptr.value))
 
-        case (PTR_STORE, Seq(valuep, ctp)) =>
-          val sym   = extractClassFromImplicitClassTag(ctp)
-          val ty    = genTypeSym(sym)
-          val ptr   = genExpr(ptrp, focus)
+        case (PTR_STORE, Seq(valuep)) =>
           val value = unboxValue(sym, genExpr(valuep, ptr))
           value withOp Op.Store(ty, ptr.value, value.value)
 
-        case (PTR_ADD, Seq(valuep, ctp)) =>
-          val sym   = extractClassFromImplicitClassTag(ctp)
-          val ty    = genTypeSym(sym)
-          val ptr   = genExpr(ptrp, focus)
-          val value = genExpr(valuep, ptr)
-          value withOp Op.Elem(ty, ptr.value, Seq(value.value))
+        case (PTR_ADD, Seq(offsetp)) =>
+          val offset = genExpr(offsetp, ptr)
+          offset withOp Op.Elem(ty, ptr.value, Seq(offset.value))
 
-        case (PTR_SUB, Seq(valuep, ctp)) =>
-          val sym   = extractClassFromImplicitClassTag(ctp)
-          val ty    = genTypeSym(sym)
-          val ptr   = genExpr(ptrp, focus)
-          val value = genExpr(valuep, ptr)
-          val neg   = negateInt(value.value, value)
+        case (PTR_SUB, Seq(offsetp)) =>
+          val offset = genExpr(offsetp, ptr)
+          val neg    = negateInt(offset.value, offset)
           neg withOp Op.Elem(ty, ptr.value, Seq(neg.value))
+
+        case (PTR_APPLY, Seq(offsetp)) =>
+          val offset = genExpr(offsetp, ptr)
+          val elem   = offset withOp Op.Elem(ty, ptr.value, Seq(offset.value))
+          boxValue(sym, elem withOp Op.Load(ty, elem.value))
+
+        case (PTR_UPDATE, Seq(offsetp, valuep)) =>
+          val offset = genExpr(offsetp, ptr)
+          val value  = unboxValue(sym, genExpr(valuep, ptr))
+          val elem   = value withOp Op.Elem(ty, ptr.value, Seq(offset.value))
+          elem withOp Op.Store(ty, elem.value, value.value)
       }
     }
 
@@ -1363,10 +1359,8 @@ abstract class NirCodeGen
       val sig          = genMethodSig(sym)
       val (args, last) = genArgs(argsp, focus)
       val method =
-        if (statically)
-          last withValue Val.Global(name, nir.Type.Ptr)
-        else
-          last withOp Op.Method(sig, self, name)
+        if (statically) last withValue Val.Global(name, nir.Type.Ptr)
+        else last withOp Op.Method(sig, self, name)
       val values = self +: args
 
       method withOp Op.Call(sig, method.value, values)

@@ -13,9 +13,9 @@ class C
 object Test {
   def main(args: Array[String]): Unit = {
     val ptr = cast[Ptr[CChar]](malloc(3))
-    !ptr = 'h'
-    !(ptr + 1) = 'i'
-    !(ptr + 2) = '\0'
+    ptr(0) = 'h'
+    ptr(1) = 'i'
+    ptr(2) = '\0'
     puts(ptr)
   }
 }

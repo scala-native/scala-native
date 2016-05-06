@@ -18,4 +18,10 @@ final class Ptr[T] private () {
 
   /** Compute a derived pointer by substricting given offset. */
   def -(offset: Word)(implicit ct: ClassTag[T]): Ptr[T] = undefined
+
+  /** Read a value at given offset. Equivalent to !(offset + word). */
+  def apply(offset: Word)(implicit ct: ClassTag[T]): T = undefined
+
+  /** Store a value to given offset. Equivalent to !(offset + word) = value. */
+  def update(offset: Word, value: T)(implicit ct: ClassTag[T]): T = undefined
 }

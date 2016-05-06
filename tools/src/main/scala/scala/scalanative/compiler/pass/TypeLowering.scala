@@ -22,6 +22,8 @@ class TypeLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
       node.name.tag("trait").tag("type")
     case node: ClassHierarchy.Struct =>
       node.name.tag("struct").tag("type")
+    case _ =>
+      util.unreachable
   }
 
   private def typeDefn(id: Int, str: String, name: Global) = {

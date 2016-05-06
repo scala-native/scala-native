@@ -36,10 +36,8 @@ trait NirNameEncoding { self: NirCodeGen =>
       if (id0.charAt(id0.length() - 1) != ' ') id0
       else id0.substring(0, id0.length() - 1)
 
-    if (isExternModule(sym.owner))
-      owner member id tag "extern"
-    else
-      owner member id tag "field"
+    if (isExternModule(sym.owner)) owner member id tag "extern"
+    else owner member id tag "field"
   }
 
   def genMethodName(sym: Symbol): nir.Global = {

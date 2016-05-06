@@ -9,17 +9,19 @@ trait NirDefinitions { self: NirGlobalAddons =>
   import rootMirror._
 
   object nirDefinitions {
-    lazy val PtrClass = getRequiredClass("scala.scalanative.native.Ptr")
-    lazy val PtrLoadMethod = getDecl(PtrClass, TermName("unary_$bang"))
-    lazy val PtrStoreMethod = getDecl(PtrClass, TermName("unary_$bang_$eq"))
-    lazy val PtrAddMethod = getDecl(PtrClass, TermName("$plus"))
-    lazy val PtrSubMethod = getDecl(PtrClass, TermName("$minus"))
+    lazy val PtrClass        = getRequiredClass("scala.scalanative.native.Ptr")
+    lazy val PtrLoadMethod   = getDecl(PtrClass, TermName("unary_$bang"))
+    lazy val PtrStoreMethod  = getDecl(PtrClass, TermName("unary_$bang_$eq"))
+    lazy val PtrAddMethod    = getDecl(PtrClass, TermName("$plus"))
+    lazy val PtrSubMethod    = getDecl(PtrClass, TermName("$minus"))
+    lazy val PtrApplyMethod  = getDecl(PtrClass, TermName("apply"))
+    lazy val PtrUpdateMethod = getDecl(PtrClass, TermName("update"))
 
     lazy val NObjectClass = getRequiredClass("java.lang._Object")
     lazy val NObjectHashCodeMethod = getDecl(
         NObjectClass, TermName("_hashCode"))
     lazy val NObjectEqualsMethod = getDecl(NObjectClass, TermName("_equals"))
-    lazy val NObjectInitMethod = getDecl(NObjectClass, TermName("<init>"))
+    lazy val NObjectInitMethod   = getDecl(NObjectClass, TermName("<init>"))
 
     lazy val NMonitorClass = getRequiredClass(
         "scala.scalanative.runtime.Monitor")
@@ -36,10 +38,11 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val NStringClass  = getRequiredClass("java.lang._String")
     lazy val NStringModule = getRequiredModule("java.lang._String")
 
-    lazy val InlineClass     = getRequiredClass("scala.inline")
-    lazy val NoInlineClass   = getRequiredClass("scala.noinline")
-    lazy val MustInlineClass = getRequiredClass("scala.scalanative.runtime.mustinline")
-    lazy val PureClass       = getRequiredClass("scala.scalanative.runtime.pure")
+    lazy val InlineClass   = getRequiredClass("scala.inline")
+    lazy val NoInlineClass = getRequiredClass("scala.noinline")
+    lazy val MustInlineClass = getRequiredClass(
+        "scala.scalanative.runtime.mustinline")
+    lazy val PureClass = getRequiredClass("scala.scalanative.runtime.pure")
 
     lazy val NativeModule = getRequiredModule(
         "scala.scalanative.native.package")

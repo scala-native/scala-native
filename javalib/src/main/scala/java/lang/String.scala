@@ -1,5 +1,7 @@
 package java.lang
 
+import java.io.Serializable
+
 class _String private() extends CharSequence with Serializable with Comparable[_String] {
   def this(value: Array[scala.Char], offset: scala.Int, count: scala.Int) = this()
 
