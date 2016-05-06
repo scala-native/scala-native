@@ -14,11 +14,12 @@ sealed abstract class Val {
     case Val.F64(_)             => Type.F64
     case Val.Struct(name, vals) => Type.Struct(name, vals.map(_.ty))
     case Val.Array(ty, vals)    => Type.Array(ty, vals.length)
-    case Val.Chars(s)           => Type.Array(Type.I8, s.length)
+    case Val.Chars(s)           => Type.Array(Type.I8, s.getBytes.length + 1)
     case Val.Local(_, ty)       => ty
     case Val.Global(_, ty)      => ty
 
     case Val.Unit      => Type.Unit
+    case Val.Const(_)  => Type.Ptr
     case Val.String(_) => Rt.String
   }
 }
@@ -43,5 +44,6 @@ object Val {
 
   // high-level
   final case object Unit extends Val
+  final case class Const(value: Val)               extends Val
   final case class String(value: java.lang.String) extends Val
 }

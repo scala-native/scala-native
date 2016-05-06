@@ -65,12 +65,20 @@ package object native {
   // TODO: this should really be UWord, but uints are quite crippled atm
   type CSize = Word
 
+  /** C-style string with trailing 0. */
+  type CString = Ptr[CChar]
+
   /** The C unchecked cast. */
-  def cast[T](any: Any)(implicit ct: ClassTag[T]): T = runtime.undefined
+  def cast[T](any: Any)(implicit ct: ClassTag[T]): T = undefined
 
   /** The C 'sizeof' operator. */
-  def sizeof[T](implicit ct: ClassTag[T]): CSize = runtime.undefined
+  def sizeof[T](implicit ct: ClassTag[T]): CSize = undefined
 
   /** Used as right hand side of external method and field declarations. */
-  def extern: Nothing = runtime.undefined
+  def extern: Nothing = undefined
+
+  /** C-style string literal. */
+  implicit class CQuote(val ctx: StringContext) {
+    def c(): CString = undefined
+  }
 }

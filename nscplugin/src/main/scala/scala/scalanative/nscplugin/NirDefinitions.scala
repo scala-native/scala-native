@@ -52,6 +52,10 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val ExternClass  = getRequiredClass("scala.scalanative.native.extern")
     lazy val StructClass  = getRequiredClass("scala.scalanative.native.struct")
 
+    lazy val CQuote = getRequiredClass(
+        "scala.scalanative.native.package$CQuote")
+    lazy val CQuoteMethod = getDecl(CQuote, TermName("c"))
+
     lazy val StringConcatMethod = getMember(StringClass, TermName("concat"))
 
     lazy val BoxMethod = Map[Char, Symbol](

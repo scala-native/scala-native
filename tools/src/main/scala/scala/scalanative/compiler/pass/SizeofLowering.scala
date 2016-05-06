@@ -9,7 +9,7 @@ import nir._
 /** Eliminates:
   * - Op.SizeOf
   */
-class SizeLowering(implicit fresh: Fresh) extends Pass {
+class SizeofLowering(implicit fresh: Fresh) extends Pass {
   override def preInst = {
     case Inst(n, Op.Sizeof(ty)) =>
       val elem = Val.Local(fresh(), Type.Ptr)

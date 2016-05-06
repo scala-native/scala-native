@@ -101,14 +101,14 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
         case Op.Extract(aggrv, indexvs) => Op.Extract(txVal(aggrv), indexvs)
         case Op.Insert(aggrv, v, indexvs) =>
           Op.Insert(txVal(aggrv), txVal(v), indexvs)
-        case Op.Alloca(ty) => Op.Alloca(txType(ty))
+        case Op.Stackalloc(ty) => Op.Stackalloc(txType(ty))
         case Op.Bin(bin, ty, lv, rv) =>
           Op.Bin(bin, txType(ty), txVal(lv), txVal(rv))
         case Op.Comp(comp, ty, lv, rv) =>
           Op.Comp(comp, txType(ty), txVal(lv), txVal(rv))
         case Op.Conv(conv, ty, v) => Op.Conv(conv, txType(ty), txVal(v))
 
-        case Op.Alloc(ty)        => Op.Alloc(txType(ty))
+        case Op.Classalloc(n)    => Op.Classalloc(n)
         case Op.Field(ty, v, n)  => Op.Field(txType(ty), txVal(v), n)
         case Op.Method(ty, v, n) => Op.Method(txType(ty), txVal(v), n)
         case Op.Module(n)        => Op.Module(n)
@@ -159,6 +159,7 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
       case Val.Array(ty, values) => Val.Array(txType(ty), values.map(txVal))
       case Val.Local(n, ty)      => Val.Local(n, txType(ty))
       case Val.Global(n, ty)     => Val.Global(n, txType(ty))
+      case Val.Const(v)          => Val.Const(txVal(v))
       case _                     => pre
     }
 

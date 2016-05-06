@@ -94,7 +94,7 @@ class ModuleLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
               Block(initialize,
                     Seq(),
                     Seq(
-                        Seq(Inst(alloc.name, Op.Alloc(clsTy))),
+                        Seq(Inst(alloc.name, Op.Classalloc(clsName))),
                         initCall,
                         Seq(Inst(Op.Store(clsTy, value, alloc)))
                     ).flatten,

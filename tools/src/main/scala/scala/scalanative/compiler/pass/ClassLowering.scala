@@ -90,7 +90,7 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
   }
 
   override def preInst = {
-    case Inst(n, Op.Alloc(ClassRef(cls))) =>
+    case Inst(n, Op.Classalloc(ClassRef(cls))) =>
       val classty = classStruct(cls)
       val size    = Val.Local(fresh(), Type.I64)
       val const   = Val.Global(cls.name tag "const", Type.Ptr)

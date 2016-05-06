@@ -16,6 +16,7 @@ object NirPrimitives {
 
   final val CAST   = 1 + PTR_UPDATE
   final val SIZEOF = 1 + CAST
+  final val CQUOTE = 1 + SIZEOF
 }
 
 abstract class NirPrimitives {
@@ -64,5 +65,6 @@ abstract class NirPrimitives {
     addPrimitive(PtrUpdateMethod, PTR_UPDATE)
     addPrimitive(CastMethod, CAST)
     addPrimitive(SizeofMethod, SIZEOF)
+    addPrimitive(CQuoteMethod, CQUOTE)
   }
 }

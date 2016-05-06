@@ -14,6 +14,8 @@ sealed abstract class Assembly {
 
 object Assembly {
   final case class Dir private[Assembly](val base: File) extends Assembly {
+    //println(s"discovered dir assembly $base")
+
     private val entries: Map[Global, BinaryDeserializer] = {
       val baseabs = base.getAbsolutePath()
       val files = FileUtils
@@ -39,7 +41,6 @@ object Assembly {
           (name -> deserializeBinaryFile(fileabs))
       }.toMap
     }
-    //println(s"discovered dir assembly $base")
 
     def contains(name: Global) =
       entries.contains(name.top)

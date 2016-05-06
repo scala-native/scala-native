@@ -28,9 +28,10 @@ final class Compiler(opts: Opts) {
         new pass.TraitLowering,
         new pass.ClassLowering,
         new pass.StringLowering,
+        new pass.ConstLowering,
+        new pass.SizeofLowering,
         new pass.UnitLowering,
         new pass.NothingLowering,
-        new pass.SizeLowering,
         new pass.ExceptionLowering,
         new pass.CopyPropagation
     )

@@ -12,12 +12,12 @@ sealed abstract class Op {
     case Op.Elem(_, _, _)                     => Type.Ptr
     case Op.Extract(aggr, indexes)            => aggr.ty.elemty(indexes.map(Val.I32(_)))
     case Op.Insert(aggr, _, _)                => aggr.ty
-    case Op.Alloca(ty)                        => Type.Ptr
+    case Op.Stackalloc(ty)                    => Type.Ptr
     case Op.Bin(_, ty, _, _)                  => ty
     case Op.Comp(_, _, _, _)                  => Type.Bool
     case Op.Conv(_, ty, _)                    => ty
 
-    case Op.Alloc(ty)         => ty
+    case Op.Classalloc(n)     => Type.Class(n)
     case Op.Field(ty, _, _)   => Type.Ptr
     case Op.Method(ty, _, _)  => Type.Ptr
     case Op.Module(n)         => Type.Module(n)
@@ -41,13 +41,13 @@ object Op {
   final case class Extract(aggr: Val, indexes: Seq[Int])       extends Pure
   final case class Insert(aggr: Val, value: Val, indexes: Seq[Int])
       extends Pure
-  final case class Alloca(ty: Type)                               extends Op
+  final case class Stackalloc(ty: Type)                           extends Op
   final case class Bin(bin: nir.Bin, ty: Type, l: Val, r: Val)    extends Pure
   final case class Comp(comp: nir.Comp, ty: Type, l: Val, r: Val) extends Pure
   final case class Conv(conv: nir.Conv, ty: Type, value: Val)     extends Pure
 
   // high-level
-  final case class Alloc(ty: Type)                                 extends Op
+  final case class Classalloc(name: Global)                        extends Op
   final case class Field(ty: Type, obj: Val, name: Global)         extends Op
   final case class Method(ty: Type, obj: Val, name: Global)        extends Op
   final case class Module(name: Global)                            extends Op

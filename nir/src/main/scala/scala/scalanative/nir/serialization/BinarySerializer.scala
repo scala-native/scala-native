@@ -275,8 +275,8 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putVal(value)
       putInts(indexes)
 
-    case Op.Alloca(ty) =>
-      putInt(T.AllocaOp)
+    case Op.Stackalloc(ty) =>
+      putInt(T.StackallocOp)
       putType(ty)
 
     case Op.Bin(bin, ty, l, r) =>
@@ -299,9 +299,9 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putType(ty)
       putVal(v)
 
-    case Op.Alloc(ty) =>
-      putInt(T.AllocOp)
-      putType(ty)
+    case Op.Classalloc(n) =>
+      putInt(T.ClassallocOp)
+      putGlobal(n)
 
     case Op.Field(ty, v, name) =>
       putInt(T.FieldOp)
@@ -400,6 +400,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Val.Global(n, ty) => putInt(T.GlobalVal); putGlobal(n); putType(ty)
 
     case Val.Unit      => putInt(T.UnitVal)
+    case Val.Const(v)  => putInt(T.ConstVal); putVal(v)
     case Val.String(v) => putInt(T.StringVal); putString(v)
   }
 }

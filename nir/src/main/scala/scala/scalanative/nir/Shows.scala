@@ -104,8 +104,8 @@ object Shows {
       sh"extract $aggr, ${r(indexes, sep = ", ")}"
     case Op.Insert(aggr, value, indexes) =>
       sh"insert $aggr, $value, ${r(indexes, sep = ", ")}"
-    case Op.Alloca(ty) =>
-      sh"alloca[$ty]"
+    case Op.Stackalloc(ty) =>
+      sh"stackalloc[$ty]"
     case Op.Bin(name, ty, l, r) =>
       sh"$name[$ty] $l, $r"
     case Op.Comp(name, ty, l, r) =>
@@ -113,8 +113,8 @@ object Shows {
     case Op.Conv(name, ty, v) =>
       sh"$name[$ty] $v"
 
-    case Op.Alloc(ty) =>
-      sh"alloc[$ty]"
+    case Op.Classalloc(name) =>
+      sh"classalloc $name"
     case Op.Field(ty, value, name) =>
       sh"field[$ty] $value, $name"
     case Op.Method(ty, value, name) =>
@@ -209,6 +209,7 @@ object Shows {
     case Val.Global(name, ty)  => sh"$name"
 
     case Val.Unit      => "unit"
+    case Val.Const(v)  => sh"const $v"
     case Val.String(v) => "\"" + v + "\""
   }
 

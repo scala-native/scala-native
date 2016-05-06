@@ -104,27 +104,27 @@ object Tags {
   final val LabelNext = 1 + FailNext
   final val CaseNext  = 1 + LabelNext
 
-  final val CallOp    = 1 + CaseNext
-  final val LoadOp    = 1 + CallOp
-  final val StoreOp   = 1 + LoadOp
-  final val ElemOp    = 1 + StoreOp
-  final val ExtractOp = 1 + ElemOp
-  final val InsertOp  = 1 + ExtractOp
-  final val AllocaOp  = 1 + InsertOp
-  final val BinOp     = 1 + AllocaOp
-  final val CompOp    = 1 + BinOp
-  final val ConvOp    = 1 + CompOp
+  final val CallOp       = 1 + CaseNext
+  final val LoadOp       = 1 + CallOp
+  final val StoreOp      = 1 + LoadOp
+  final val ElemOp       = 1 + StoreOp
+  final val ExtractOp    = 1 + ElemOp
+  final val InsertOp     = 1 + ExtractOp
+  final val StackallocOp = 1 + InsertOp
+  final val BinOp        = 1 + StackallocOp
+  final val CompOp       = 1 + BinOp
+  final val ConvOp       = 1 + CompOp
 
-  final val AllocOp   = 1 + ConvOp
-  final val FieldOp   = 1 + AllocOp
-  final val MethodOp  = 1 + FieldOp
-  final val ModuleOp  = 1 + MethodOp
-  final val AsOp      = 1 + ModuleOp
-  final val IsOp      = 1 + AsOp
-  final val CopyOp    = 1 + IsOp
-  final val SizeofOp  = 1 + CopyOp
-  final val TypeofOp  = 1 + SizeofOp
-  final val ClosureOp = 1 + TypeofOp
+  final val ClassallocOp = 1 + ConvOp
+  final val FieldOp      = 1 + ClassallocOp
+  final val MethodOp     = 1 + FieldOp
+  final val ModuleOp     = 1 + MethodOp
+  final val AsOp         = 1 + ModuleOp
+  final val IsOp         = 1 + AsOp
+  final val CopyOp       = 1 + IsOp
+  final val SizeofOp     = 1 + CopyOp
+  final val TypeofOp     = 1 + SizeofOp
+  final val ClosureOp    = 1 + TypeofOp
 
   final val NoneType     = 1 + ClosureOp
   final val VoidType     = 1 + NoneType
@@ -164,5 +164,6 @@ object Tags {
   final val LocalVal  = 1 + CharsVal
   final val GlobalVal = 1 + LocalVal
   final val UnitVal   = 1 + GlobalVal
-  final val StringVal = 1 + UnitVal
+  final val ConstVal  = 1 + UnitVal
+  final val StringVal = 1 + ConstVal
 }

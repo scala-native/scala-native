@@ -156,7 +156,7 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
     case Val.F64(v)        => v.toString
     case Val.Struct(n, vs) => sh"{ ${r(vs, sep = ", ")} }"
     case Val.Array(_, vs)  => sh"[ ${r(vs, sep = ", ")} ]"
-    case Val.Chars(v)      => s("c\"", v, "\"")
+    case Val.Chars(v)      => s("c\"", v, "\\00", "\"")
     case Val.Local(n, ty)  => sh"%$n"
     case Val.Global(n, ty) => sh"bitcast (${globals(n)}* @$n to i8*)"
     case _                 => unsupported(v)
@@ -276,7 +276,7 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
       sh"extractvalue $aggr, ${r(indexes, sep = ", ")}"
     case Op.Insert(aggr, value, indexes) =>
       sh"insertvalue $aggr, ${r(indexes, sep = ", ")}"
-    case Op.Alloca(ty) =>
+    case Op.Stackalloc(ty) =>
       sh"alloca $ty"
     case Op.Bin(opcode, ty, l, r) =>
       val bin = opcode match {

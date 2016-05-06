@@ -413,10 +413,10 @@ abstract class NirCodeGen
           curEnv.enter(vd.symbol, rhs.value)
           rhs withValue Val.None
         } else {
-          val ty     = genType(vd.symbol.tpe)
-          val alloca = rhs.withOp(Op.Alloca(ty))
-          curEnv.enter(vd.symbol, alloca.value)
-          alloca withOp Op.Store(ty, alloca.value, rhs.value)
+          val ty    = genType(vd.symbol.tpe)
+          val alloc = rhs withOp Op.Stackalloc(ty)
+          curEnv.enter(vd.symbol, alloc.value)
+          alloc withOp Op.Store(ty, alloc.value, rhs.value)
         }
 
       case If(cond, thenp, elsep) =>
@@ -837,6 +837,7 @@ abstract class NirCodeGen
       else if (code == SYNCHRONIZED) genSynchronized(app, focus)
       else if (code == CAST) genCastOp(app, focus)
       else if (code == SIZEOF) genSizeofOp(app, focus)
+      else if (code == CQUOTE) genCQuoteOp(app, focus)
       else
         abort("Unknown primitive operation: " + sym.fullName + "(" +
             fun.symbol.simpleName + ") " + " at: " + (app.pos))
@@ -850,7 +851,7 @@ abstract class NirCodeGen
     lazy val jlClassCtor = nir.Val.Global(jlClassCtorName, nir.Type.Ptr)
 
     def genBoxClass(type_ : Val, focus: Focus) = {
-      val alloc = focus withOp Op.Alloc(jlClass)
+      val alloc = focus withOp Op.Classalloc(jlClassName)
       val init =
         alloc withOp Op.Call(
             jlClassCtorSig, jlClassCtor, Seq(alloc.value, type_))
@@ -1203,6 +1204,41 @@ abstract class NirCodeGen
       focus withOp Op.Sizeof(ty)
     }
 
+    def genCQuoteOp(app: Apply, focus: Focus): Focus =
+      app match {
+        // Sometimes I really miss quasiquotes.
+        //
+        // case q"""
+        //   scala.scalanative.native.`package`.CQuote(
+        //     new StringContext(scala.this.Predef.wrapRefArray(
+        //       Array[String]{${str: String}}.$asInstanceOf[Array[Object]]()
+        //     ))
+        //   ).c()
+        // """ =>
+        case Apply(
+            Select(
+            Apply(
+            _,
+            List(
+            Apply(_,
+                  List(
+                  Apply(_,
+                        List(
+                        Apply(TypeApply(Select(
+                                        ArrayValue(
+                                        _,
+                                        List(Literal(Constant(str: String)))),
+                                        _),
+                                        _),
+                              _))))))),
+            _),
+            _) =>
+          focus withValue Val.Const(Val.Chars(str))
+
+        case _ =>
+          unsupported(app)
+      }
+
     def genSynchronized(app: Apply, focus: Focus): Focus = {
       val Apply(Select(receiverp, _), List(argp)) = app
 
@@ -1334,8 +1370,7 @@ abstract class NirCodeGen
 
     def genNew(
         clssym: Symbol, ctorsym: Symbol, args: List[Tree], focus: Focus) = {
-      val cls   = genTypeSym(clssym)
-      val alloc = focus.withOp(Op.Alloc(cls))
+      val alloc = focus.withOp(Op.Classalloc(genTypeName(clssym)))
       val call = genMethodCall(
           ctorsym, statically = true, alloc.value, args, alloc)
 

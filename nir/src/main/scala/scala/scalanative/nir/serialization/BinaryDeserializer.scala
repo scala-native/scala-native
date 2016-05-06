@@ -202,27 +202,27 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
   }
 
   private def getOp(): Op = getInt match {
-    case T.CallOp    => Op.Call(getType, getVal, getVals)
-    case T.LoadOp    => Op.Load(getType, getVal)
-    case T.StoreOp   => Op.Store(getType, getVal, getVal)
-    case T.ElemOp    => Op.Elem(getType, getVal, getVals)
-    case T.ExtractOp => Op.Extract(getVal, getInts)
-    case T.InsertOp  => Op.Insert(getVal, getVal, getInts)
-    case T.AllocaOp  => Op.Alloca(getType)
-    case T.BinOp     => Op.Bin(getBin, getType, getVal, getVal)
-    case T.CompOp    => Op.Comp(getComp, getType, getVal, getVal)
-    case T.ConvOp    => Op.Conv(getConv, getType, getVal)
+    case T.CallOp       => Op.Call(getType, getVal, getVals)
+    case T.LoadOp       => Op.Load(getType, getVal)
+    case T.StoreOp      => Op.Store(getType, getVal, getVal)
+    case T.ElemOp       => Op.Elem(getType, getVal, getVals)
+    case T.ExtractOp    => Op.Extract(getVal, getInts)
+    case T.InsertOp     => Op.Insert(getVal, getVal, getInts)
+    case T.StackallocOp => Op.Stackalloc(getType)
+    case T.BinOp        => Op.Bin(getBin, getType, getVal, getVal)
+    case T.CompOp       => Op.Comp(getComp, getType, getVal, getVal)
+    case T.ConvOp       => Op.Conv(getConv, getType, getVal)
 
-    case T.AllocOp   => Op.Alloc(getType)
-    case T.FieldOp   => Op.Field(getType, getVal, getGlobal)
-    case T.MethodOp  => Op.Method(getType, getVal, getGlobal)
-    case T.ModuleOp  => Op.Module(getGlobal)
-    case T.AsOp      => Op.As(getType, getVal)
-    case T.IsOp      => Op.Is(getType, getVal)
-    case T.CopyOp    => Op.Copy(getVal)
-    case T.SizeofOp  => Op.Sizeof(getType)
-    case T.TypeofOp  => Op.Typeof(getType)
-    case T.ClosureOp => Op.Closure(getType, getVal, getVals)
+    case T.ClassallocOp => Op.Classalloc(getGlobal)
+    case T.FieldOp      => Op.Field(getType, getVal, getGlobal)
+    case T.MethodOp     => Op.Method(getType, getVal, getGlobal)
+    case T.ModuleOp     => Op.Module(getGlobal)
+    case T.AsOp         => Op.As(getType, getVal)
+    case T.IsOp         => Op.Is(getType, getVal)
+    case T.CopyOp       => Op.Copy(getVal)
+    case T.SizeofOp     => Op.Sizeof(getType)
+    case T.TypeofOp     => Op.Typeof(getType)
+    case T.ClosureOp    => Op.Closure(getType, getVal, getVals)
   }
 
   private def getParams(): Seq[Val.Local] = getSeq(getParam)
@@ -267,10 +267,12 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
     case T.F64Val    => Val.F64(getDouble)
     case T.StructVal => Val.Struct(getGlobal, getVals)
     case T.ArrayVal  => Val.Array(getType, getVals)
+    case T.CharsVal  => Val.Chars(getString)
     case T.LocalVal  => Val.Local(getLocal, getType)
     case T.GlobalVal => Val.Global(getGlobal, getType)
 
     case T.UnitVal   => Val.Unit
+    case T.ConstVal  => Val.Const(getVal)
     case T.StringVal => Val.String(getString)
   }
 }
