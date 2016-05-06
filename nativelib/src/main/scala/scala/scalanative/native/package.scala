@@ -62,7 +62,8 @@ package object native {
   type CBool = Boolean
 
   /** The C/C++ 'size_t' type. */
-  type CSize = UWord
+  // TODO: this should really be UWord, but uints are quite crippled atm
+  type CSize = Word
 
   /** The C unchecked cast. */
   def cast[T](any: Any)(implicit ct: ClassTag[T]): T = runtime.undefined

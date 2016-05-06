@@ -268,7 +268,6 @@ object Shows {
     case Type.Function(args, ret) => sh"(${r(args, sep = ", ")}) => $ret"
     case Type.Struct(name, _)     => sh"struct $name"
 
-    case Type.Size         => "size"
     case Type.Unit         => "unit"
     case Type.Nothing      => "nothing"
     case Type.Class(name)  => sh"class $name"

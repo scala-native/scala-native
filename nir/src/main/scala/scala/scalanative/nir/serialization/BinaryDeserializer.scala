@@ -63,9 +63,9 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
         case T.NoInlineAttr   => buf += Attr.NoInline
         case T.MustInlineAttr => buf += Attr.MustInline
 
-        case T.PureAttr      => buf  += Attr.Pure
-        case T.ExternAttr    => buf  += Attr.Extern
-        case T.OverrideAttr  => buf  += Attr.Override(getGlobal)
+        case T.PureAttr      => buf += Attr.Pure
+        case T.ExternAttr    => buf += Attr.Extern
+        case T.OverrideAttr  => buf += Attr.Override(getGlobal)
         case T.PinAlwaysAttr => deps += Dep.Direct(getGlobalNoDep)
         case T.PinIfAttr =>
           deps += Dep.Conditional(getGlobalNoDep, getGlobalNoDep)
@@ -230,23 +230,22 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
 
   private def getTypes(): Seq[Type] = getSeq(getType)
   private def getType(): Type = getInt match {
-    case T.NoneType       => Type.None
-    case T.VoidType       => Type.Void
-    case T.LabelType      => Type.Label
-    case T.VarargType     => Type.Vararg
-    case T.PtrType        => Type.Ptr
-    case T.BoolType       => Type.Bool
-    case T.I8Type         => Type.I8
-    case T.I16Type        => Type.I16
-    case T.I32Type        => Type.I32
-    case T.I64Type        => Type.I64
-    case T.F32Type        => Type.F32
-    case T.F64Type        => Type.F64
-    case T.ArrayType      => Type.Array(getType, getInt)
-    case T.FunctionType   => Type.Function(getTypes, getType)
-    case T.StructType     => Type.Struct(getGlobal, getTypes)
+    case T.NoneType     => Type.None
+    case T.VoidType     => Type.Void
+    case T.LabelType    => Type.Label
+    case T.VarargType   => Type.Vararg
+    case T.PtrType      => Type.Ptr
+    case T.BoolType     => Type.Bool
+    case T.I8Type       => Type.I8
+    case T.I16Type      => Type.I16
+    case T.I32Type      => Type.I32
+    case T.I64Type      => Type.I64
+    case T.F32Type      => Type.F32
+    case T.F64Type      => Type.F64
+    case T.ArrayType    => Type.Array(getType, getInt)
+    case T.FunctionType => Type.Function(getTypes, getType)
+    case T.StructType   => Type.Struct(getGlobal, getTypes)
 
-    case T.SizeType    => Type.Size
     case T.UnitType    => Type.Unit
     case T.NothingType => Type.Nothing
     case T.ClassType   => Type.Class(getGlobal)

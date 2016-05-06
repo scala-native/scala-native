@@ -190,11 +190,11 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
   }
 
   final def apply(assembly: Seq[Defn]): Seq[Defn] = txAssembly(assembly)
-  final def apply(defn: Defn): Seq[Defn] = txDefn(defn)
-  final def apply(block: Block): Seq[Block] = txBlock(block)
-  final def apply(inst: Inst): Seq[Inst] = txInst(inst)
-  final def apply(cf: Cf): Cf = txCf(cf)
-  final def apply(next: Next): Next = txNext(next)
-  final def apply(value: Val): Val = txVal(value)
-  final def apply(ty: Type): Type = txType(ty)
+  final def apply(defn: Defn): Seq[Defn]          = txDefn(defn)
+  final def apply(block: Block): Seq[Block]       = txBlock(block)
+  final def apply(inst: Inst): Seq[Inst]          = txInst(inst)
+  final def apply(cf: Cf): Cf                     = txCf(cf)
+  final def apply(next: Next): Next               = txNext(next)
+  final def apply(value: Val): Val                = txVal(value)
+  final def apply(ty: Type): Type                 = txType(ty)
 }

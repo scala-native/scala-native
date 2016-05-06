@@ -18,6 +18,7 @@ trait NirNameEncoding { self: NirCodeGen =>
       val fullName = sym.fullName.toString
       if (fullName == "java.lang._String") "java.lang.String"
       else if (fullName == "java.lang._Object") "java.lang.Object"
+      else if (fullName == "java.lang._Class") "java.lang.Class"
       else fullName
     }
     val name = sym match {
@@ -86,7 +87,6 @@ trait NirNameEncoding { self: NirCodeGen =>
       case nir.Type.Function(args, ret) => sh"fun.${r(args :+ ret, sep = ".")}"
       case nir.Type.Struct(name, _)     => sh"struct.$name"
 
-      case nir.Type.Size         => "size"
       case nir.Type.Unit         => "unit"
       case nir.Type.Nothing      => "nothing"
       case nir.Type.Class(name)  => sh"class.$name"

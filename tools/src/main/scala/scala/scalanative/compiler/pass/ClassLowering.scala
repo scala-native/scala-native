@@ -75,7 +75,8 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
       val typeConst = Val.Global(typeName, Type.Ptr)
 
       val classConstName = name tag "const"
-      val classConstVal  = Val.Struct(infoStructTy.name, typeConst +: cls.vtable)
+      val classConstVal =
+        Val.Struct(infoStructTy.name, typeConst +: cls.vtable)
       val classConstDefn =
         Defn.Const(Attrs.None, classConstName, infoStructTy, classConstVal)
 
@@ -91,7 +92,7 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
   override def preInst = {
     case Inst(n, Op.Alloc(ClassRef(cls))) =>
       val classty = classStruct(cls)
-      val size    = Val.Local(fresh(), Type.Size)
+      val size    = Val.Local(fresh(), Type.I64)
       val const   = Val.Global(cls.name tag "const", Type.Ptr)
 
       Seq(
@@ -115,8 +116,9 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
 
       Seq(
           Inst(infoptr.name, Op.Load(Type.Ptr, obj)),
-          Inst(methptrptr.name,
-               Op.Elem(infoty, infoptr, Seq(Val.I32(0), Val.I32(meth.vindex)))),
+          Inst(
+              methptrptr.name,
+              Op.Elem(infoty, infoptr, Seq(Val.I32(0), Val.I32(meth.vindex)))),
           Inst(n, Op.Load(Type.Ptr, methptrptr))
       )
 

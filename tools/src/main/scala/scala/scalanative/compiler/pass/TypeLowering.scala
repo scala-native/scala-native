@@ -27,24 +27,25 @@ class TypeLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
   }
 
   private def typeDefn(id: Int, str: String, name: Global) = {
-    val typeId   = Val.I32(id)
-    val typeStr  = Val.String(str)
-    val typeVal  = Val.Struct(Rt.Type.name, Seq(typeId, typeStr))
+    val typeId  = Val.I32(id)
+    val typeStr = Val.String(str)
+    val typeVal = Val.Struct(Rt.Type.name, Seq(typeId, typeStr))
 
     Defn.Const(Attrs.None, name, Rt.Type, typeVal)
   }
 
-  private val noTypeDefn =
-    typeDefn(0, "notype", Global.Val("scalanative_notype"))
-  private val noType =
-    Val.Global(noTypeDefn.name, Type.Ptr)
+  private val noTypeDefn = typeDefn(
+      0, "notype", Global.Val("scalanative_notype"))
+  private val noType = Val.Global(noTypeDefn.name, Type.Ptr)
 
-  override def preAssembly = { case defns =>
-    noTypeDefn +: defns
+  override def preAssembly = {
+    case defns =>
+      noTypeDefn +: defns
   }
 
   override def preDefn = {
-    case defn @ (_: Defn.Module | _: Defn.Class | _: Defn.Trait | _: Defn.Struct) =>
+    case defn @ (_: Defn.Module | _: Defn.Class | _: Defn.Trait |
+        _: Defn.Struct) =>
       val node = chg.nodes(defn.name)
       val id   = node.id
       val str  = node.name.id
@@ -84,10 +85,11 @@ class TypeLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
         }
 
       Seq(
-        Inst(infoptr.name, Op.Load(Type.Ptr, obj)),
-        Inst(typeptr.name, Op.Load(Type.Ptr, infoptr)),
-        Inst(idptr.name, Op.Elem(Rt.Type, typeptr, Seq(Val.I32(0), Val.I32(0)))),
-        Inst(id.name, Op.Load(Type.I32, idptr))
+          Inst(infoptr.name, Op.Load(Type.Ptr, obj)),
+          Inst(typeptr.name, Op.Load(Type.Ptr, infoptr)),
+          Inst(idptr.name,
+               Op.Elem(Rt.Type, typeptr, Seq(Val.I32(0), Val.I32(0)))),
+          Inst(id.name, Op.Load(Type.I32, idptr))
       ) ++ cond
 
     // TODO: is trait/module/struct

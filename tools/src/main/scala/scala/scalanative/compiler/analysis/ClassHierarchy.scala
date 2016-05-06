@@ -135,7 +135,10 @@ object ClassHierarchy {
 
       val cls = in.asInstanceOf[Class]
       val res = cls.vslots.indexOf(this)
-      assert(res >= 0, s"failed to find vslot for ${this.name} in ${in.name} (all vslots: ${cls.vslots.map(_.name)}, all methods: ${cls.methods.map(_.name)})")
+      assert(
+          res >= 0,
+          s"failed to find vslot for ${this.name} in ${in.name} (all vslots: ${cls.vslots
+            .map(_.name)}, all methods: ${cls.methods.map(_.name)})")
       res
     }
   }
@@ -187,7 +190,7 @@ object ClassHierarchy {
 
       case defn: Defn.Module =>
         val name = defn.name tag "module"
-        val cls = new Class(defn.attrs, name, isModule = true)
+        val cls  = new Class(defn.attrs, name, isModule = true)
         enter(defn.name, cls)
         enter(name, cls)
 
@@ -210,7 +213,7 @@ object ClassHierarchy {
     }
 
     def enrichMethod(name: Global, attrs: Attrs): Unit = {
-      val node = nodes(name).asInstanceOf[Method]
+      val node  = nodes(name).asInstanceOf[Method]
       val owner = nodes(name.top).asInstanceOf[Top]
       node.in = owner
       owner.members = owner.members :+ node

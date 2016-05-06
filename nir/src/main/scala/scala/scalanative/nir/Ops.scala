@@ -24,7 +24,7 @@ sealed abstract class Op {
     case Op.As(ty, _)         => ty
     case Op.Is(_, _)          => Type.Bool
     case Op.Copy(v)           => v.ty
-    case Op.Sizeof(_)         => Type.Size
+    case Op.Sizeof(_)         => Type.I64
     case Op.Typeof(_)         => Rt.Type
     case Op.Closure(ty, _, _) => ty
   }
@@ -37,13 +37,14 @@ object Op {
   final case class Load(ty: Type, ptr: Val)                 extends Op
   final case class Store(ty: Type, ptr: Val, value: Val)    extends Op
   // TODO: ty should be a pointee type, not result elem type
-  final case class Elem(ty: Type, ptr: Val, indexes: Seq[Val])      extends Pure
-  final case class Extract(aggr: Val, indexes: Seq[Int])            extends Pure
-  final case class Insert(aggr: Val, value: Val, indexes: Seq[Int]) extends Pure
-  final case class Alloca(ty: Type)                                 extends Op
-  final case class Bin(bin: nir.Bin, ty: Type, l: Val, r: Val)      extends Pure
-  final case class Comp(comp: nir.Comp, ty: Type, l: Val, r: Val)   extends Pure
-  final case class Conv(conv: nir.Conv, ty: Type, value: Val)       extends Pure
+  final case class Elem(ty: Type, ptr: Val, indexes: Seq[Val]) extends Pure
+  final case class Extract(aggr: Val, indexes: Seq[Int])       extends Pure
+  final case class Insert(aggr: Val, value: Val, indexes: Seq[Int])
+      extends Pure
+  final case class Alloca(ty: Type)                               extends Op
+  final case class Bin(bin: nir.Bin, ty: Type, l: Val, r: Val)    extends Pure
+  final case class Comp(comp: nir.Comp, ty: Type, l: Val, r: Val) extends Pure
+  final case class Conv(conv: nir.Conv, ty: Type, value: Val)     extends Pure
 
   // high-level
   final case class Alloc(ty: Type)                                 extends Op

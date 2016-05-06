@@ -193,6 +193,7 @@ abstract class NirCodeGen
 
     def genMethod(dd: DefDef): Seq[Defn] = {
       //println(s"gen method $dd")
+
       val fresh = new Fresh("src")
       val env   = new Env(fresh)
 
@@ -835,6 +836,7 @@ abstract class NirCodeGen
       else if (isCoercion(code)) genCoercion(app, receiver, code, focus)
       else if (code == SYNCHRONIZED) genSynchronized(app, focus)
       else if (code == CAST) genCastOp(app, focus)
+      else if (code == SIZEOF) genSizeofOp(app, focus)
       else
         abort("Unknown primitive operation: " + sym.fullName + "(" +
             fun.symbol.simpleName + ") " + " at: " + (app.pos))
@@ -1190,6 +1192,15 @@ abstract class NirCodeGen
       boxValue(sym, castConv(fromty, toty).fold(value) { conv =>
         value withOp Op.Conv(conv, toty, value.value)
       })
+    }
+
+    def genSizeofOp(app: Apply, focus: Focus): Focus = {
+      val Apply(_, Seq(ctp)) = app
+
+      val sym = extractClassFromImplicitClassTag(ctp)
+      val ty  = genTypeSym(sym)
+
+      focus withOp Op.Sizeof(ty)
     }
 
     def genSynchronized(app: Apply, focus: Focus): Focus = {

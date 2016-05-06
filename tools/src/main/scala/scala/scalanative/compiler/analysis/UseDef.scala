@@ -54,7 +54,8 @@ object UseDef {
       false
   }
 
-  def apply(blocks: Seq[Block])(implicit chg: ClassHierarchy.Graph): Map[Local, Def] = {
+  def apply(blocks: Seq[Block])(
+      implicit chg: ClassHierarchy.Graph): Map[Local, Def] = {
     val defs = mutable.Map.empty[Local, Def]
 
     def enterDef(n: Local) = {

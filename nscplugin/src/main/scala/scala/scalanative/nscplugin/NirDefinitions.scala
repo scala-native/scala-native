@@ -48,6 +48,7 @@ trait NirDefinitions { self: NirGlobalAddons =>
         "scala.scalanative.native.package")
     lazy val CastMethod   = getMember(NativeModule, TermName("cast"))
     lazy val ExternMethod = getMember(NativeModule, TermName("extern"))
+    lazy val SizeofMethod = getMember(NativeModule, TermName("sizeof"))
     lazy val ExternClass  = getRequiredClass("scala.scalanative.native.extern")
     lazy val StructClass  = getRequiredClass("scala.scalanative.native.struct")
 

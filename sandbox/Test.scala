@@ -17,5 +17,7 @@ object Test {
     ptr(1) = 'i'
     ptr(2) = '\0'
     puts(ptr)
+    val size: Word = sizeof[CChar]
+    size.toString
   }
 }

@@ -7,8 +7,7 @@ import util.ScopedVar, ScopedVar.scoped
 import nir._
 
 /** Eliminates:
-  * - Type.Size
-  * - Op.{SizeOf, ArrSizeOf}
+  * - Op.SizeOf
   */
 class SizeLowering(implicit fresh: Fresh) extends Pass {
   override def preInst = {
@@ -18,9 +17,5 @@ class SizeLowering(implicit fresh: Fresh) extends Pass {
           Inst(elem.name, Op.Elem(ty, Val.Null, Seq(Val.I32(1)))),
           Inst(n, Op.Conv(Conv.Ptrtoint, Type.I64, elem))
       )
-  }
-
-  override def preType = {
-    case Type.Size => Type.I64
   }
 }

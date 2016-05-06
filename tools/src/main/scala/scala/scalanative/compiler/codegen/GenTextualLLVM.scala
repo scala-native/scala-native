@@ -10,7 +10,7 @@ import compiler.analysis.ControlFlow
 import nir.Shows.brace
 import nir._
 
-class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly){
+class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
   private val fresh = new Fresh("gen")
   private val globals = assembly.collect {
     case Defn.Var(_, n, ty, _)     => n -> ty
@@ -55,15 +55,12 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly){
                      isConst: Boolean,
                      ty: nir.Type,
                      rhs: nir.Val) = {
-    val external =
-      if (isExtern) "external " else ""
-    val keyword =
-      if (isConst) "const" else "global"
-    val init =
-      rhs match {
-        case Val.None => sh"$ty"
-        case _        => sh"$rhs"
-      }
+    val external = if (isExtern) "external " else ""
+    val keyword  = if (isConst) "const" else "global"
+    val init = rhs match {
+      case Val.None => sh"$ty"
+      case _        => sh"$rhs"
+    }
 
     sh"@$name = $external$keyword $init"
   }
@@ -74,24 +71,21 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly){
                        blocks: Seq[Block]) = {
     val Type.Function(argtys, retty) = sig
 
-    val isDecl = blocks.isEmpty
-    val keyword =
-      if (isDecl) "declare" else "define"
+    val isDecl  = blocks.isEmpty
+    val keyword = if (isDecl) "declare" else "define"
     val params =
       if (isDecl) r(argtys, sep = ", ")
       else r(blocks.head.params: Seq[Val], sep = ", ")
     val postattrs: Seq[Attr] =
       if (attrs.inline != Attr.MayInline) Seq(attrs.inline) else Seq()
-    val personality =
-      if (attrs.isExtern || isDecl) s() else gxxpersonality
+    val personality = if (attrs.isExtern || isDecl) s() else gxxpersonality
     val body =
       if (isDecl) s()
       else {
         implicit val cfg = ControlFlow(blocks)
-        val blockshows =
-          cfg.map { node =>
-            showBlock(node.block, node.pred, isEntry = node eq cfg.entry)
-          }
+        val blockshows = cfg.map { node =>
+          showBlock(node.block, node.pred, isEntry = node eq cfg.entry)
+        }
         s(" ", brace(i(r(blockshows))))
       }
 
@@ -191,10 +185,12 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly){
     case Local(scope, id) => sh"$scope.$id"
   }
 
-  def showInsts(insts: Seq[Inst], cf: Cf)(implicit cfg: ControlFlow.Graph): Seq[Show.Result] = {
+  def showInsts(insts: Seq[Inst], cf: Cf)(
+      implicit cfg: ControlFlow.Graph): Seq[Show.Result] = {
     val buf = mutable.UnrolledBuffer.empty[Show.Result]
     def isVoid(op: Op): Boolean =
-      op.resty == Type.Void || op.resty == Type.Unit || op.resty == Type.Nothing
+      op.resty == Type.Void || op.resty == Type.Unit ||
+      op.resty == Type.Nothing
 
     insts.foreach { inst =>
       val op   = inst.op
@@ -209,7 +205,7 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly){
 
         case Op.Call(ty, ptr, args) =>
           val pointee = fresh()
-          val bind = if (isVoid(op)) s() else sh"%$name = "
+          val bind    = if (isVoid(op)) s() else sh"%$name = "
 
           buf += sh"%$pointee = bitcast $ptr to $ty*"
           buf += sh"${bind}call $ty %$pointee(${r(args, sep = ", ")})"
@@ -227,12 +223,14 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly){
           buf += sh"${bind}store $value, $ty* %$pointee"
 
         case Op.Elem(ty, ptr, indexes) =>
-          val pointee   = fresh()
-          val derived   = fresh()
+          val pointee = fresh()
+          val derived = fresh()
 
           buf += sh"%$pointee = bitcast $ptr to $ty*"
-          buf += sh"%$derived = getelementptr $ty, $ty* %$pointee, ${r(indexes, sep = ", ")}"
-          buf += sh"${bind}bitcast ${ty.elemty(indexes.tail)}* %$derived to i8*"
+          buf +=
+            sh"%$derived = getelementptr $ty, $ty* %$pointee, ${r(indexes, sep = ", ")}"
+          buf +=
+            sh"${bind}bitcast ${ty.elemty(indexes.tail)}* %$derived to i8*"
 
         case _ =>
           buf += sh"${bind}$op"

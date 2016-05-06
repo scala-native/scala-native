@@ -44,8 +44,9 @@ final class Compiler(opts: Opts) {
   private def debug(assembly: Seq[Defn], suffix: String) =
     if (opts.verbose) {
       val gen = new codegen.GenTextualNIR(assembly)
-      serializeFile(
-        (defns, bb) => gen.gen(bb), assembly, opts.outpath + s".$suffix.hnir")
+      serializeFile((defns, bb) => gen.gen(bb),
+                    assembly,
+                    opts.outpath + s".$suffix.hnir")
     }
 
   def apply(): Unit = {
