@@ -12,7 +12,7 @@ final class Compiler(opts: Opts) {
     Global.Member(Global.Val(opts.entry), "main_class.ssnr.RefArray_unit")
 
   private lazy val assembly: Seq[Defn] =
-    new Linker(opts.classpath).linkClosed(entry)
+    new Linker(opts.dotpath, opts.classpath).linkClosed(entry)
 
   private lazy val passes: Seq[Pass] = {
     implicit val fresh     = Fresh("tx")

@@ -17,6 +17,9 @@ object ScalaNativePlugin extends AutoPlugin {
 
     val nativeClangOptions = settingKey[Seq[String]](
       "Additional options that are passed to clang.")
+
+    val nativeEmitDependencyGraphPath = settingKey[Option[File]](
+      "If non-empty, emit linker graph to the given file path.")
   }
 
   override def projectSettings =

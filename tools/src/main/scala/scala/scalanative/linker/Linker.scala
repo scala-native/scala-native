@@ -1,14 +1,16 @@
 package scala.scalanative
 package linker
 
+import java.io.{File, PrintWriter}
 import scala.collection.mutable
 import nir._
 import nir.serialization._
 import nir.Shows._
 import util.sh
 
-final class Linker(paths: Seq[String]) {
-  private val assemblies = paths.flatMap(Assembly(_))
+final class Linker(dotpath: Option[String], paths: Seq[String]) {
+  private val assemblies: Seq[Assembly] =
+    paths.flatMap(Assembly(_))
 
   private def load(global: Global): Option[(Seq[Dep], Defn)] =
     assemblies.collectFirst {
@@ -16,20 +18,28 @@ final class Linker(paths: Seq[String]) {
         assembly.load(global)
     }.flatten
 
-  private val writer = new java.io.PrintWriter(new java.io.File("out.dot"))
+  private val writer =
+    dotpath.map(path => new PrintWriter(new File(path)))
+
   private def writeStart(): Unit =
-    writer.println("digraph G {")
-  private def writeEdge(from: Global, to: Global): Unit = {
-    def quoted(s: String) = "\"" + s + "\""
-    writer.print(quoted(sh"$from".toString))
-    writer.print("->")
-    writer.print(quoted(sh"$to".toString))
-    writer.println(";")
-  }
-  private def writeEnd(): Unit = {
-    writer.println("}")
-    writer.close()
-  }
+    writer.foreach { writer =>
+      writer.println("digraph G {")
+    }
+
+  private def writeEdge(from: Global, to: Global): Unit =
+    writer.foreach { writer =>
+      def quoted(s: String) = "\"" + s + "\""
+      writer.print(quoted(sh"$from".toString))
+      writer.print("->")
+      writer.print(quoted(sh"$to".toString))
+      writer.println(";")
+    }
+
+  private def writeEnd(): Unit =
+    writer.foreach { writer =>
+      writer.println("}")
+      writer.close()
+    }
 
   def link(entry: Global): (Seq[Global], Seq[Defn]) = {
     val resolved   = mutable.Set.empty[Global]

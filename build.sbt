@@ -20,7 +20,9 @@ lazy val toolSettings =
 
 lazy val libSettings =
   baseSettings ++ ScalaNativePlugin.projectSettings ++ Seq(
-    scalaVersion := libScalaVersion
+    scalaVersion := libScalaVersion,
+
+    nativeEmitDependencyGraphPath := Some(file("out.dot"))
   )
 
 lazy val util =

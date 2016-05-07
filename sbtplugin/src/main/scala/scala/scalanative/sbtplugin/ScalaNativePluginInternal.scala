@@ -62,6 +62,8 @@ object ScalaNativePluginInternal {
 
     nativeClangOptions := Seq(),
 
+    nativeEmitDependencyGraphPath := None,
+
     run := {
       val entry     = (mainClass in Compile).value.get.toString
       val classpath = cpToStrings((fullClasspath in Compile).value.map(_.data))
@@ -71,7 +73,12 @@ object ScalaNativePluginInternal {
       val verbose   = nativeVerbose.value
       val clang     = nativeClang.value
       val clangOpts = nativeClangOptions.value
-      val opts      = new NativeOpts(classpath, appll.getAbsolutePath, entry, verbose)
+      val dotpath   = nativeEmitDependencyGraphPath.value
+      val opts      = new NativeOpts(classpath,
+                                     abs(appll),
+                                     dotpath.map(abs),
+                                     entry,
+                                     verbose)
 
       IO.createDirectory(target)
       unpackRtlib(classpath)
