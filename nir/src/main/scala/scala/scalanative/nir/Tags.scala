@@ -124,7 +124,8 @@ object Tags {
   final val CopyOp       = 1 + IsOp
   final val SizeofOp     = 1 + CopyOp
   final val TypeofOp     = 1 + SizeofOp
-  final val ClosureOp    = 1 + TypeofOp
+  final val InfoofOp     = 1 + TypeofOp
+  final val ClosureOp    = 1 + InfoofOp
 
   final val NoneType     = 1 + ClosureOp
   final val VoidType     = 1 + NoneType

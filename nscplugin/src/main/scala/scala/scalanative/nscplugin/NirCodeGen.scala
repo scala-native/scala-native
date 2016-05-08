@@ -366,159 +366,163 @@ abstract class NirCodeGen
       }
 
     def genNormalMethodBody(
-        params: Seq[Val.Local], bodyp: Tree): Seq[nir.Block] =
-      bodyp match {
-        // Tailrec emits magical labeldefs that can hijack this reference is
-        // current method. This requires special treatment on our side.
-        case Block(List(ValDef(_, nme.THIS, _, _)),
-                   label @ LabelDef(name, Ident(nme.THIS) :: _, rhs)) =>
-          val local  = curEnv.enterLabel(label)
-          val values = params.take(label.params.length)
-          val entry  = Focus.entry(params)(curEnv.fresh)
-          val body   = notMergeableGuard(genLabel(label, hijackThis = true))
+        params: Seq[Val.Local], bodyp: Tree): Seq[nir.Block] = {
+      val body = {
+        bodyp match {
+          // Tailrec emits magical labeldefs that can hijack this reference is
+          // current method. This requires special treatment on our side.
+          case Block(List(ValDef(_, nme.THIS, _, _)),
+                     label @ LabelDef(name, Ident(nme.THIS) :: _, rhs)) =>
+            curEnv.enterLabel(label)
+            val entry  = Focus.entry(params)(curEnv.fresh)
+            val values = params.take(label.params.length)
 
-          (entry finish Cf.Jump(Next.Label(local, values))).blocks ++
-          (body finish Cf.Ret(body.value)).blocks
+            genLabel(label,
+                     hijackThis = true,
+                     previous = Some((entry, values)))
 
-        case _ if curMethodSym.get == NObjectInitMethod =>
-          Seq(
-              nir.Block(
-                  curEnv.fresh(), params, Seq(), nir.Cf.Ret(nir.Val.Unit)))
+          case _ if curMethodSym.get == NObjectInitMethod =>
+            return Seq(
+              nir.Block(curEnv.fresh(), params, Seq(), nir.Cf.Ret(nir.Val.Unit))
+            )
 
-        case _ =>
-          val body = scoped(
-              curThis := Val.Local(params.head.name, params.head.ty)
-          ) {
-            notMergeableGuard(
-                genExpr(bodyp, Focus.entry(params)(curEnv.fresh)))
-          }
-
-          (body finish Cf.Ret(body.value)).blocks
+          case _ =>
+            scoped(
+                curThis := Val.Local(params.head.name, params.head.ty)
+            ) {
+              genExpr(bodyp, Focus.entry(params)(curEnv.fresh))
+            }
+        }
       }
 
-    def genExpr(tree: Tree, focus: Focus): Focus = tree match {
-      case ValTree(value) =>
-        focus withValue value
+      (body finish Cf.Ret(body.value)).blocks
+    }
 
-      case label: LabelDef =>
-        assert(label.params.length == 0)
-        curEnv.enterLabel(label)
-        genLabel(label)
+    def genExpr(tree: Tree, focus: Focus): Focus = notMergeableGuard {
+      tree match {
+        case ValTree(value) =>
+          focus withValue value
 
-      case vd: ValDef =>
-        // TODO: attribute valdef name to the rhs node
-        val rhs       = genExpr(vd.rhs, focus)
-        val isMutable = curLocalInfo.mutableVars.contains(vd.symbol)
-        if (!isMutable) {
-          curEnv.enter(vd.symbol, rhs.value)
-          rhs withValue Val.None
-        } else {
-          val ty    = genType(vd.symbol.tpe)
-          val alloc = rhs withOp Op.Stackalloc(ty)
-          curEnv.enter(vd.symbol, alloc.value)
-          alloc withOp Op.Store(ty, alloc.value, rhs.value)
-        }
+        case label: LabelDef =>
+          assert(label.params.length == 0)
+          curEnv.enterLabel(label)
+          genLabel(label, previous = Some((focus, Seq())))
 
-      case If(cond, thenp, elsep) =>
-        genIf(cond, thenp, elsep, genType(tree.tpe), focus)
+        case vd: ValDef =>
+          // TODO: attribute valdef name to the rhs node
+          val rhs       = genExpr(vd.rhs, focus)
+          val isMutable = curLocalInfo.mutableVars.contains(vd.symbol)
+          if (!isMutable) {
+            curEnv.enter(vd.symbol, rhs.value)
+            rhs withValue Val.None
+          } else {
+            val ty    = genType(vd.symbol.tpe)
+            val alloc = rhs withOp Op.Stackalloc(ty)
+            curEnv.enter(vd.symbol, alloc.value)
+            alloc withOp Op.Store(ty, alloc.value, rhs.value)
+          }
 
-      case Return(exprp) =>
-        val expr = genExpr(exprp, focus)
-        expr.finish(Cf.Ret(expr.value))
+        case If(cond, thenp, elsep) =>
+          genIf(cond, thenp, elsep, genType(tree.tpe), focus)
 
-      case Try(expr, catches, finalizer)
-          if catches.isEmpty && finalizer.isEmpty =>
-        genExpr(expr, focus)
+        case Return(exprp) =>
+          val expr = genExpr(exprp, focus)
+          expr.finish(Cf.Ret(expr.value))
 
-      case Try(expr, catches, finalizer) =>
-        genTry(genType(tree.tpe), expr, catches, finalizer, focus)
+        case Try(expr, catches, finalizer)
+            if catches.isEmpty && finalizer.isEmpty =>
+          genExpr(expr, focus)
 
-      case Throw(exprp) =>
-        val expr = genExpr(exprp, focus)
-        expr finish Cf.Throw(expr.value)
+        case Try(expr, catches, finalizer) =>
+          genTry(genType(tree.tpe), expr, catches, finalizer, focus)
 
-      case app: Apply =>
-        genApply(app, focus)
+        case Throw(exprp) =>
+          val expr = genExpr(exprp, focus)
+          expr finish Cf.Throw(expr.value)
 
-      case app: ApplyDynamic =>
-        genApplyDynamic(app, focus)
+        case app: Apply =>
+          genApply(app, focus)
 
-      case This(qual) =>
-        focus.withValue {
-          if (tree.symbol == curClassSym.get) curThis.get
-          else Val.Global(genTypeName(tree.symbol), genType(tree.tpe))
-        }
+        case app: ApplyDynamic =>
+          genApplyDynamic(app, focus)
 
-      case Select(qualp, selp) =>
-        val sym = tree.symbol
-        if (isModule(sym)) focus withOp Op.Module(genTypeName(sym))
-        else if (sym.isStaticMember) genStaticMember(sym, focus)
-        else if (sym.isMethod)
-          genMethodCall(sym, statically = false, qualp, Seq(), focus)
-        else {
-          val ty   = genType(tree.symbol.tpe)
-          val qual = genExpr(qualp, focus)
-          val name = genFieldName(tree.symbol)
-          val elem =
-            if (isExternModule(sym.owner))
-              qual withValue Val.Global(name, Type.Ptr)
-            else qual withOp Op.Field(ty, qual.value, name)
-          elem withOp Op.Load(ty, elem.value)
-        }
+        case This(qual) =>
+          focus.withValue {
+            if (tree.symbol == curClassSym.get) curThis.get
+            else Val.Global(genTypeName(tree.symbol), genType(tree.tpe))
+          }
 
-      case id: Ident =>
-        val sym = id.symbol
-        if (curLocalInfo.mutableVars.contains(sym))
-          focus withOp Op.Load(genType(sym.tpe), curEnv.resolve(sym))
-        else if (isModule(sym)) focus withOp Op.Module(genTypeName(sym))
-        else focus withValue (curEnv.resolve(sym))
-
-      case lit: Literal =>
-        genLiteral(lit, focus)
-
-      case block: Block =>
-        genBlock(block, focus)
-
-      case Typed(Super(_, _), _) =>
-        focus.withValue(curThis)
-
-      case Typed(expr, _) =>
-        genExpr(expr, focus)
-
-      case Assign(lhsp, rhsp) =>
-        lhsp match {
-          case sel @ Select(qualp, _) =>
-            val ty   = genType(sel.tpe)
+        case Select(qualp, selp) =>
+          val sym = tree.symbol
+          if (isModule(sym)) focus withOp Op.Module(genTypeName(sym))
+          else if (sym.isStaticMember) genStaticMember(sym, focus)
+          else if (sym.isMethod)
+            genMethodCall(sym, statically = false, qualp, Seq(), focus)
+          else {
+            val ty   = genType(tree.symbol.tpe)
             val qual = genExpr(qualp, focus)
-            val rhs  = genExpr(rhsp, qual)
-            val name = genFieldName(sel.symbol)
+            val name = genFieldName(tree.symbol)
             val elem =
-              if (isExternModule(sel.symbol.owner))
-                rhs withValue Val.Global(name, Type.Ptr)
-              else rhs withOp Op.Field(ty, qual.value, name)
-            elem withOp Op.Store(ty, elem.value, rhs.value)
+              if (isExternModule(sym.owner))
+                qual withValue Val.Global(name, Type.Ptr)
+              else qual withOp Op.Field(ty, qual.value, name)
+            elem withOp Op.Load(ty, elem.value)
+          }
 
-          case id: Ident =>
-            val ty  = genType(id.tpe)
-            val rhs = genExpr(rhsp, focus)
-            rhs withOp Op.Store(ty, curEnv.resolve(id.symbol), rhs.value)
-        }
+        case id: Ident =>
+          val sym = id.symbol
+          if (curLocalInfo.mutableVars.contains(sym))
+            focus withOp Op.Load(genType(sym.tpe), curEnv.resolve(sym))
+          else if (isModule(sym)) focus withOp Op.Module(genTypeName(sym))
+          else focus withValue (curEnv.resolve(sym))
 
-      case av: ArrayValue =>
-        genArrayValue(av, focus)
+        case lit: Literal =>
+          genLiteral(lit, focus)
 
-      case m: Match =>
-        genSwitch(m, focus)
+        case block: Block =>
+          genBlock(block, focus)
 
-      case fun: Function =>
-        unsupported(fun)
+        case Typed(Super(_, _), _) =>
+          focus.withValue(curThis)
 
-      case EmptyTree =>
-        focus
+        case Typed(expr, _) =>
+          genExpr(expr, focus)
 
-      case _ =>
-        abort("Unexpected tree in genExpr: " + tree + "/" + tree.getClass +
-            " at: " + tree.pos)
+        case Assign(lhsp, rhsp) =>
+          lhsp match {
+            case sel @ Select(qualp, _) =>
+              val ty   = genType(sel.tpe)
+              val qual = genExpr(qualp, focus)
+              val rhs  = genExpr(rhsp, qual)
+              val name = genFieldName(sel.symbol)
+              val elem =
+                if (isExternModule(sel.symbol.owner))
+                  rhs withValue Val.Global(name, Type.Ptr)
+                else rhs withOp Op.Field(ty, qual.value, name)
+              elem withOp Op.Store(ty, elem.value, rhs.value)
+
+            case id: Ident =>
+              val ty  = genType(id.tpe)
+              val rhs = genExpr(rhsp, focus)
+              rhs withOp Op.Store(ty, curEnv.resolve(id.symbol), rhs.value)
+          }
+
+        case av: ArrayValue =>
+          genArrayValue(av, focus)
+
+        case m: Match =>
+          genSwitch(m, focus)
+
+        case fun: Function =>
+          unsupported(fun)
+
+        case EmptyTree =>
+          focus
+
+        case _ =>
+          abort("Unexpected tree in genExpr: " + tree + "/" + tree.getClass +
+              " at: " + tree.pos)
+      }
     }
 
     def genLiteral(lit: Literal, focus: Focus): Focus = {
@@ -566,13 +570,15 @@ abstract class NirCodeGen
     def genModule(sym: Symbol, focus: Focus): Focus =
       focus withOp Op.Module(genTypeName(sym))
 
-    def genStaticMember(sym: Symbol, focus: Focus): Focus = {
-      val ty     = genType(sym.tpe)
-      val module = focus withOp Op.Module(genTypeName(sym.owner))
-      val elem   = module withOp Op.Field(ty, module.value, genFieldName(sym))
+    def genStaticMember(sym: Symbol, focus: Focus): Focus =
+      if (sym == BoxedUnit_UNIT) focus withValue Val.Unit
+      else {
+        val ty     = genType(sym.tpe)
+        val module = focus withOp Op.Module(genTypeName(sym.owner))
+        val elem   = module withOp Op.Field(ty, module.value, genFieldName(sym))
 
-      elem withOp Op.Load(ty, elem.value)
-    }
+        elem withOp Op.Load(ty, elem.value)
+      }
 
     def genTry(retty: nir.Type,
                expr: Tree,
@@ -678,14 +684,21 @@ abstract class NirCodeGen
       genLabel(lds.last) prependBlocks resfocus.blocks
     }
 
-    def genLabel(label: LabelDef, hijackThis: Boolean = false) = {
+    def genLabel(label: LabelDef,
+                 hijackThis: Boolean = false,
+                 previous: Option[(Focus, Seq[nir.Val])] = None): Focus = {
       val local = curEnv.resolveLabel(label)
       val params = label.params.map { id =>
         val local = Val.Local(curEnv.fresh(), genType(id.tpe))
         curEnv.enter(id.symbol, local)
         local
       }
-      val entry        = Focus.entry(local, params)(curEnv.fresh)
+      val entry =
+        previous.fold {
+          Focus.entry(local, params)(curEnv.fresh)
+        } { case (focus, values) =>
+          focus.branchBlock(local, params, values)
+        }
       val newThis: Val = if (hijackThis) params.head else curThis
 
       scoped(
@@ -801,13 +814,12 @@ abstract class NirCodeGen
       }
     }
 
-    def genApplyLabel(tree: Tree, focus: Focus) = notMergeableGuard {
-      val Apply(fun, args)    = tree
+    def genApplyLabel(tree: Tree, focus: Focus) = {
+      val Apply(fun, argsp)   = tree
       val Val.Local(label, _) = curEnv.resolve(fun.symbol)
-      val argsfocus           = sequenced(args, focus)(genExpr(_, _))
-      val lastfocus           = argsfocus.lastOption.getOrElse(focus)
+      val (args, last)        = genArgs(argsp, focus)
 
-      lastfocus finish Cf.Jump(Next.Label(label, argsfocus.map(_.value)))
+      last finish Cf.Jump(Next.Label(label, args))
     }
 
     def genPrimitiveBox(argp: Tree, tpe: Type, focus: Focus) =
@@ -835,9 +847,10 @@ abstract class NirCodeGen
       else if (nirPrimitives.isPtrOp(code)) genPtrOp(app, code, focus)
       else if (isCoercion(code)) genCoercion(app, receiver, code, focus)
       else if (code == SYNCHRONIZED) genSynchronized(app, focus)
-      else if (code == CAST) genCastOp(app, focus)
-      else if (code == SIZEOF) genSizeofOp(app, focus)
+      else if (code == CCAST) genCastOp(app, focus)
+      else if (code == SIZEOF || code == INFOOF) genOfOp(app, code, focus)
       else if (code == CQUOTE) genCQuoteOp(app, focus)
+      else if (code == BOXED_UNIT) focus withValue Val.Unit
       else
         abort("Unknown primitive operation: " + sym.fullName + "(" +
             fun.symbol.simpleName + ") " + " at: " + (app.pos))
@@ -1165,7 +1178,7 @@ abstract class NirCodeGen
 
         case (PTR_UPDATE, Seq(offsetp, valuep)) =>
           val offset = genExpr(offsetp, ptr)
-          val value  = unboxValue(sym, genExpr(valuep, ptr))
+          val value  = unboxValue(sym, genExpr(valuep, offset))
           val elem   = value withOp Op.Elem(ty, ptr.value, Seq(offset.value))
           elem withOp Op.Store(ty, elem.value, value.value)
       }
@@ -1176,6 +1189,7 @@ abstract class NirCodeGen
         case (Type.I(_), Type.Ptr)        => Some(nir.Conv.Inttoptr)
         case (Type.Ptr, Type.I(_))        => Some(nir.Conv.Ptrtoint)
         case (_: Type.RefKind, Type.Ptr)  => Some(nir.Conv.Bitcast)
+        case (Type.Ptr, _: Type.RefKind)  => Some(nir.Conv.Bitcast)
         case (_: Type.RefKind, Type.I(_)) => Some(nir.Conv.Ptrtoint)
         case (Type.I(_), _: Type.RefKind) => Some(nir.Conv.Inttoptr)
         case _ if fromty == toty          => None
@@ -1183,7 +1197,7 @@ abstract class NirCodeGen
       }
 
     def genCastOp(app: Apply, focus: Focus): Focus = {
-      val Apply(_, Seq(valuep, ctp)) = app
+      val Apply(Select(Apply(_, List(valuep)), _), List(ctp)) = app
 
       val sym    = extractClassFromImplicitClassTag(ctp)
       val fromty = genType(valuep.tpe)
@@ -1195,13 +1209,22 @@ abstract class NirCodeGen
       })
     }
 
-    def genSizeofOp(app: Apply, focus: Focus): Focus = {
+    def genOfOp(app: Apply, code: Int, focus: Focus): Focus = {
       val Apply(_, Seq(ctp)) = app
 
       val sym = extractClassFromImplicitClassTag(ctp)
       val ty  = genTypeSym(sym)
 
-      focus withOp Op.Sizeof(ty)
+      if (code == SIZEOF) {
+        focus withOp Op.Sizeof(ty)
+      } else if (code == INFOOF) {
+        ty match {
+          case nir.Type.Class(n) =>
+            focus withOp Op.Infoof(n)
+          case _ =>
+            unsupported(s"infoof only works for classes, not $ty")
+        }
+      } else unreachable
     }
 
     def genCQuoteOp(app: Apply, focus: Focus): Focus =

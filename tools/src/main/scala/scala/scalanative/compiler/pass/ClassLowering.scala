@@ -127,9 +127,46 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
       Seq(
           Inst(n, Op.Copy(Val.Global(meth.name, Type.Ptr)))
       )
+
+    case Inst(n, Op.Infoof(name)) =>
+      Seq(
+        Inst(n, Op.Copy(Val.Global(name tag "const", Type.Ptr)))
+      )
+
+    case Inst(n, Op.Is(ClassRef(cls), obj)) =>
+      val infoptr = Val.Local(fresh(), Type.Ptr)
+      val typeptr = Val.Local(fresh(), Type.Ptr)
+      val idptr   = Val.Local(fresh(), Type.Ptr)
+      val id      = Val.Local(fresh(), Type.I32)
+
+      val cond =
+        if (cls.range.length == 1)
+          Seq(
+              Inst(n, Op.Comp(Comp.Ieq, Type.I32, id, Val.I32(cls.id)))
+          )
+        else {
+          val ge = Val.Local(fresh(), Type.Bool)
+          val le = Val.Local(fresh(), Type.Bool)
+
+          Seq(
+              Inst(ge.name,
+                   Op.Comp(Comp.Sge, Type.I32, Val.I32(cls.range.start), id)),
+              Inst(le.name,
+                   Op.Comp(Comp.Sle, Type.I32, id, Val.I32(cls.range.end))),
+              Inst(n, Op.Bin(Bin.And, Type.Bool, ge, le))
+          )
+        }
+
+      Seq(
+          Inst(infoptr.name, Op.Load(Type.Ptr, obj)),
+          Inst(typeptr.name, Op.Load(Type.Ptr, infoptr)),
+          Inst(idptr.name,
+               Op.Elem(Rt.Type, typeptr, Seq(Val.I32(0), Val.I32(0)))),
+          Inst(id.name, Op.Load(Type.I32, idptr))
+      ) ++ cond
   }
 
   override def preType = {
-    case _: Type.RefKind => Type.Ptr
+    case ty: Type.RefKind if ty != Type.Unit => Type.Ptr
   }
 }

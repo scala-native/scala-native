@@ -9,7 +9,7 @@ import util.sh
 
 final class Compiler(opts: Opts) {
   private lazy val entry =
-    Global.Member(Global.Val(opts.entry), "main_class.ssnr.RefArray_unit")
+    Global.Member(Global.Val(opts.entry), "main_class.ssnr.ObjectArray_unit")
 
   private lazy val assembly: Seq[Defn] =
     new Linker(opts.dotpath, opts.classpath).linkClosed(entry)
@@ -24,7 +24,8 @@ final class Compiler(opts: Opts) {
         new pass.MainInjection(entry),
         new pass.ExternHoisting,
         new pass.ModuleLowering,
-        new pass.TypeLowering,
+        new pass.TypeofLowering,
+        new pass.AsLowering,
         new pass.TraitLowering,
         new pass.ClassLowering,
         new pass.StringLowering,

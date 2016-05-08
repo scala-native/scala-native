@@ -46,16 +46,19 @@ class TraitLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
       defns ++ traitDispatch()
   }
 
+  // TODO: filter out abstract trait methods
   override def preDefn = {
     case defn: Defn.Trait =>
       Seq()
-
-    // TODO: hoisting of trait methods
-    // case _: Defn.Define => ???
   }
 
+  // TODO: trait method call
+  // TODO: trait is instance of
   override def preInst = {
     case Inst(n, Op.Method(sig, obj, MethodRef(TraitRef(_), _))) =>
+      ???
+
+    case inst @ Inst(n, Op.Is(TraitRef(trt), obj)) =>
       ???
   }
 }

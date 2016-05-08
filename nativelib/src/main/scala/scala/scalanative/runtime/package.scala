@@ -1,14 +1,28 @@
 package scala.scalanative
 
-import native.Ptr
+import scala.reflect.ClassTag
+import native._
+import runtime.GC._
 
 package object runtime {
   /** Used as a stub right hand of intrinsified methods. */
   def undefined: Nothing = throw new UndefinedBehaviorError
 
-  /** Initialize runtime with given arguments and return the rest as Java-style array. */
-  def init(argc: Int, argv: Ptr[Ptr[Byte]]): RefArray = {
-    Rt.scalanative_init()
+  /** Allocate memory in gc heap using given info pointer. */
+  def alloc(info: Ptr[_], size: CSize): Ptr[_] = {
+    val ptr = GC_malloc(size).cast[Ptr[Ptr[_]]]
+    !ptr = info
+    ptr
+  }
+
+  /** Returns info pointer for given type. */
+  def infoof[T](implicit ct: ClassTag[T]): Ptr[_] = undefined
+
+  /** Initialize runtime with given arguments and return the
+    * rest as Java-style array.
+    */
+  def init(argc: Int, argv: Ptr[Ptr[Byte]]): ObjectArray = {
+    GC_init()
     null
   }
 }

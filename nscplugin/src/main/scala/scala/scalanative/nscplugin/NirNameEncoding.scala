@@ -87,8 +87,8 @@ trait NirNameEncoding { self: NirCodeGen =>
       case nir.Type.Function(args, ret) => sh"fun.${r(args :+ ret, sep = ".")}"
       case nir.Type.Struct(name, _)     => sh"struct.$name"
 
-      case nir.Type.Unit         => "unit"
       case nir.Type.Nothing      => "nothing"
+      case nir.Type.Unit         => "unit"
       case nir.Type.Class(name)  => sh"class.$name"
       case nir.Type.Trait(name)  => sh"trait.$name"
       case nir.Type.Module(name) => sh"module.$name"

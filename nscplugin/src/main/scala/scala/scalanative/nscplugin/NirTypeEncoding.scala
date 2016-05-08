@@ -40,23 +40,23 @@ trait NirTypeEncoding { self: NirCodeGen =>
   def genTypeSym(sym: Symbol,
                  targs: Seq[Type] = Seq(),
                  retty: Boolean = false): nir.Type = sym match {
-    case ArrayClass           => genTypeSym(NArrayClass(genPrimCode(targs.head)))
-    case UnitClass            => nir.Type.Unit
-    case NothingClass         => nir.Type.Nothing
-    case NullClass            => genTypeSym(RuntimeNullClass)
-    case ObjectClass          => nir.Rt.Object
-    case CharClass            => nir.Type.I16
-    case BooleanClass         => nir.Type.Bool
-    case ByteClass            => nir.Type.I8
-    case ShortClass           => nir.Type.I16
-    case IntClass             => nir.Type.I32
-    case LongClass            => nir.Type.I64
-    case FloatClass           => nir.Type.F32
-    case DoubleClass          => nir.Type.F64
-    case PtrClass             => nir.Type.Ptr
-    case _ if isModule(sym)   => nir.Type.Module(genTypeName(sym))
-    case _ if sym.isInterface => nir.Type.Trait(genTypeName(sym))
-    case _                    => nir.Type.Class(genTypeName(sym))
+    case ArrayClass                 => genTypeSym(NArrayClass(genPrimCode(targs.head)))
+    case UnitClass | BoxedUnitClass => nir.Type.Unit
+    case NothingClass               => nir.Type.Nothing
+    case NullClass                  => genTypeSym(RuntimeNullClass)
+    case ObjectClass                => nir.Rt.Object
+    case CharClass                  => nir.Type.I16
+    case BooleanClass               => nir.Type.Bool
+    case ByteClass                  => nir.Type.I8
+    case ShortClass                 => nir.Type.I16
+    case IntClass                   => nir.Type.I32
+    case LongClass                  => nir.Type.I64
+    case FloatClass                 => nir.Type.F32
+    case DoubleClass                => nir.Type.F64
+    case PtrClass                   => nir.Type.Ptr
+    case _ if isModule(sym)         => nir.Type.Module(genTypeName(sym))
+    case _ if sym.isInterface       => nir.Type.Trait(genTypeName(sym))
+    case _                          => nir.Type.Class(genTypeName(sym))
   }
 
   def genPrimCode(tpe: Type): Char = {

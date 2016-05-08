@@ -13,7 +13,7 @@ import nir._
   * Eliminates:
   * - Op.{As, Is, Typeof}
   */
-class TypeLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
+class TypeofLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
     extends Pass {
   private def typeName(node: ClassHierarchy.Node): Global = node match {
     case node: ClassHierarchy.Class =>
@@ -60,42 +60,7 @@ class TypeLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
           Inst(n, Op.Copy(v))
       )
 
-    case Inst(n, Op.Is(ClassRef(cls), obj)) =>
-      val infoptr = Val.Local(fresh(), Type.Ptr)
-      val typeptr = Val.Local(fresh(), Type.Ptr)
-      val idptr   = Val.Local(fresh(), Type.Ptr)
-      val id      = Val.Local(fresh(), Type.I32)
-
-      val cond =
-        if (cls.range.length == 1)
-          Seq(
-              Inst(n, Op.Comp(Comp.Ieq, Type.I32, id, Val.I32(cls.id)))
-          )
-        else {
-          val ge = Val.Local(fresh(), Type.Bool)
-          val le = Val.Local(fresh(), Type.Bool)
-
-          Seq(
-              Inst(ge.name,
-                   Op.Comp(Comp.Sge, Type.I32, Val.I32(cls.range.start), id)),
-              Inst(le.name,
-                   Op.Comp(Comp.Sle, Type.I32, id, Val.I32(cls.range.end))),
-              Inst(n, Op.Bin(Bin.And, Type.Bool, ge, le))
-          )
-        }
-
-      Seq(
-          Inst(infoptr.name, Op.Load(Type.Ptr, obj)),
-          Inst(typeptr.name, Op.Load(Type.Ptr, infoptr)),
-          Inst(idptr.name,
-               Op.Elem(Rt.Type, typeptr, Seq(Val.I32(0), Val.I32(0)))),
-          Inst(id.name, Op.Load(Type.I32, idptr))
-      ) ++ cond
-
     // TODO: is trait/module/struct
-    case Inst(n, Op.Is(_, obj)) =>
-      ???
-
     case Inst(n, Op.Typeof(ty)) =>
       val value = ty match {
         case Ref(node) => Val.Global(typeName(node), Type.Ptr)

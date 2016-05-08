@@ -222,6 +222,7 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
     case T.CopyOp       => Op.Copy(getVal)
     case T.SizeofOp     => Op.Sizeof(getType)
     case T.TypeofOp     => Op.Typeof(getType)
+    case T.InfoofOp     => Op.Infoof(getGlobal)
     case T.ClosureOp    => Op.Closure(getType, getVal, getVals)
   }
 

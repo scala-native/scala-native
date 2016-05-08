@@ -25,7 +25,8 @@ sealed abstract class Op {
     case Op.Is(_, _)          => Type.Bool
     case Op.Copy(v)           => v.ty
     case Op.Sizeof(_)         => Type.I64
-    case Op.Typeof(_)         => Rt.Type
+    case Op.Typeof(_)         => Type.Ptr
+    case Op.Infoof(_)         => Type.Ptr
     case Op.Closure(ty, _, _) => ty
   }
 }
@@ -56,5 +57,6 @@ object Op {
   final case class Copy(value: Val)                                extends Op
   final case class Sizeof(ty: Type)                                extends Op
   final case class Typeof(ty: Type)                                extends Op
+  final case class Infoof(name: Global)                            extends Op
   final case class Closure(ty: Type, fun: Val, captures: Seq[Val]) extends Op
 }

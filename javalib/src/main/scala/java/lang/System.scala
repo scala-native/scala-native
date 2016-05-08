@@ -10,7 +10,7 @@ object System {
   def arraycopy(src: Object, srcPos: scala.Int, dest: Object,
       destPos: scala.Int, length: scala.Int): Unit = ???
   def identityHashCode(x: Object): scala.Int =
-    cast[Word](x).hashCode
+    x.cast[Word].hashCode
   def getenv(name: String): String = ???
   def clearProperty(key: String): String = ???
   def getProperties(): Properties = ???

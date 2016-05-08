@@ -68,9 +68,6 @@ package object native {
   /** C-style string with trailing 0. */
   type CString = Ptr[CChar]
 
-  /** The C unchecked cast. */
-  def cast[T](any: Any)(implicit ct: ClassTag[T]): T = undefined
-
   /** The C 'sizeof' operator. */
   def sizeof[T](implicit ct: ClassTag[T]): CSize = undefined
 
@@ -80,5 +77,10 @@ package object native {
   /** C-style string literal. */
   implicit class CQuote(val ctx: StringContext) {
     def c(): CString = undefined
+  }
+
+  /** C-style unchecked cast. */
+  implicit class CCast(val any: Any) {
+    def cast[T](implicit ct: ClassTag[T]): T = undefined
   }
 }

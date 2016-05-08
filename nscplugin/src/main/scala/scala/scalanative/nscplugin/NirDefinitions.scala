@@ -52,9 +52,17 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val ExternClass  = getRequiredClass("scala.scalanative.native.extern")
     lazy val StructClass  = getRequiredClass("scala.scalanative.native.struct")
 
-    lazy val CQuote = getRequiredClass(
+    lazy val RuntimeModule = getRequiredModule(
+        "scala.scalanative.runtime.package")
+    lazy val InfoofMethod = getMember(RuntimeModule, TermName("infoof"))
+
+    lazy val CQuoteClass = getRequiredClass(
         "scala.scalanative.native.package$CQuote")
-    lazy val CQuoteMethod = getDecl(CQuote, TermName("c"))
+    lazy val CQuoteMethod = getDecl(CQuoteClass, TermName("c"))
+
+    lazy val CCastClass = getRequiredClass(
+        "scala.scalanative.native.package$CCast")
+    lazy val CCastMethod = getDecl(CCastClass, TermName("cast"))
 
     lazy val StringConcatMethod = getMember(StringClass, TermName("concat"))
 
@@ -89,7 +97,7 @@ trait NirDefinitions { self: NirGlobalAddons =>
         'L' -> getRequiredClass("scala.scalanative.runtime.LongArray"),
         'F' -> getRequiredClass("scala.scalanative.runtime.FloatArray"),
         'D' -> getRequiredClass("scala.scalanative.runtime.DoubleArray"),
-        'O' -> getRequiredClass("scala.scalanative.runtime.RefArray")
+        'O' -> getRequiredClass("scala.scalanative.runtime.ObjectArray")
     )
 
     lazy val NArrayModule: Map[Char, Symbol] =

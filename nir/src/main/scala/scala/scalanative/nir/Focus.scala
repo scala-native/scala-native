@@ -120,6 +120,13 @@ final case class Focus(
             param,
             isComplete = false)
   }
+
+  def branchBlock(name: Local,
+                  params: Seq[Val.Local],
+                  values: Seq[Val]): Focus = {
+    val blocks = finish(Cf.Jump(Next.Label(name, values))).blocks
+    Focus.entry(name, params).prependBlocks(blocks)
+  }
 }
 object Focus {
   final case class NotMergeable(focus: Focus) extends Exception

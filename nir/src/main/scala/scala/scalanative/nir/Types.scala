@@ -16,7 +16,7 @@ sealed abstract class Type {
   }
 }
 object Type {
-  sealed abstract class Named extends Type {
+  sealed trait Named extends Type {
     def name: Global
   }
 
@@ -40,14 +40,14 @@ object Type {
 
   final case class Array(ty: Type, n: Int)              extends Type
   final case class Function(args: Seq[Type], ret: Type) extends Type
-  final case class Struct(name: Global, tys: Seq[Type]) extends Named
+  final case class Struct(name: Global, tys: Seq[Type]) extends Type with Named
 
   // high-level types
-  final case object Unit    extends Type
   final case object Nothing extends Type
 
-  sealed abstract class RefKind         extends Named
-  final case class Class(name: Global)  extends RefKind
-  final case class Trait(name: Global)  extends RefKind
-  final case class Module(name: Global) extends RefKind
+  sealed abstract class RefKind extends Type
+  final case object Unit extends RefKind
+  final case class Class(name: Global)  extends RefKind with Named
+  final case class Trait(name: Global)  extends RefKind with Named
+  final case class Module(name: Global) extends RefKind with Named
 }

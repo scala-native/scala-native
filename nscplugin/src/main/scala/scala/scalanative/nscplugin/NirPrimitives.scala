@@ -5,7 +5,8 @@ import scala.tools.nsc._
 import scala.collection.mutable
 
 object NirPrimitives {
-  final val ARRAY_CLONE = 301
+  final val BOXED_UNIT  = 301
+  final val ARRAY_CLONE = 1 + BOXED_UNIT
 
   final val PTR_LOAD   = 1 + ARRAY_CLONE
   final val PTR_STORE  = 1 + PTR_LOAD
@@ -14,9 +15,10 @@ object NirPrimitives {
   final val PTR_APPLY  = 1 + PTR_SUB
   final val PTR_UPDATE = 1 + PTR_APPLY
 
-  final val CAST   = 1 + PTR_UPDATE
-  final val SIZEOF = 1 + CAST
-  final val CQUOTE = 1 + SIZEOF
+  final val SIZEOF = 1 + PTR_UPDATE
+  final val INFOOF = 1 + SIZEOF
+  final val CQUOTE = 1 + INFOOF
+  final val CCAST  = 1 + CQUOTE
 }
 
 abstract class NirPrimitives {
@@ -56,15 +58,17 @@ abstract class NirPrimitives {
   private val nirPrimitives = mutable.Map.empty[Symbol, Int]
 
   private def initWithPrimitives(addPrimitive: (Symbol, Int) => Unit): Unit = {
-    //addPrimitive(Array_clone, ARRAY_CLONE)
+    addPrimitive(BoxedUnit_UNIT, BOXED_UNIT)
+    addPrimitive(Array_clone, ARRAY_CLONE)
     addPrimitive(PtrLoadMethod, PTR_LOAD)
     addPrimitive(PtrStoreMethod, PTR_STORE)
     addPrimitive(PtrAddMethod, PTR_ADD)
     addPrimitive(PtrSubMethod, PTR_SUB)
     addPrimitive(PtrApplyMethod, PTR_APPLY)
     addPrimitive(PtrUpdateMethod, PTR_UPDATE)
-    addPrimitive(CastMethod, CAST)
     addPrimitive(SizeofMethod, SIZEOF)
+    addPrimitive(InfoofMethod, INFOOF)
     addPrimitive(CQuoteMethod, CQUOTE)
+    addPrimitive(CCastMethod, CCAST)
   }
 }

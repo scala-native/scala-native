@@ -1,0 +1,69 @@
+package scala.scalanative
+package runtime
+
+%{
+   types = ['Boolean', 'Char', 'Byte', 'Short',
+            'Int', 'Long', 'Float', 'Double', 'Object']
+}%
+
+import native._
+
+@struct class ArrayHeader(val info: Ptr[_], val length: Int)
+
+sealed abstract class Array[T]
+    extends java.io.Serializable with java.lang.Cloneable {
+  /** Number of elements of the array. */
+  def length: Int =
+    // TODO: Update once we support ptr->field
+    !(this.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]]
+
+  /** Loads element at i, throws IndexOutOfBoundsException. */
+  def apply(i: Int): T
+
+  /** Stores value to element i, throws IndexOutOfBoundsException. */
+  def update(i: Int, value: T): Unit
+
+  /** Create a shallow of given array. */
+  protected override def clone(): Array[T] = undefined
+}
+
+% for T in types:
+
+final class ${T}Array private () extends Array[${T}] {
+  def apply(i: Int): ${T} =
+    if (i < 0 || i >= length)
+      throw new IndexOutOfBoundsException(i.toString)
+    else {
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[${T}]]
+      headptr(i)
+    }
+
+  def update(i: Int, value: ${T}): Unit =
+    if (i < 0 || i >= length)
+      throw new IndexOutOfBoundsException(i.toString)
+    else {
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[${T}]]
+      headptr(i) = value
+    }
+
+  protected override def clone(): ${T}Array = {
+    val newarr = ${T}Array.alloc(length)
+    ${T}Array.copy(this, 0, newarr, 0, length)
+    newarr
+  }
+}
+
+object ${T}Array {
+  def copy(from: ${T}Array, fromPos: Int,
+           to: ${T}Array, toPos: Int, length: Int): Unit = {
+    ???
+  }
+
+  def alloc(length: Int): ${T}Array = {
+    val arrinfo = infoof[${T}Array]
+    val arrsize = sizeof[ArrayHeader] + sizeof[${T}] * length
+    runtime.alloc(arrinfo, arrsize).cast[${T}Array]
+  }
+}
+
+% end

@@ -100,30 +100,30 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
     val Block(name, params, insts, cf) = block
 
     val body = r(showInsts(insts, block.cf), sep = nl(""))
-
-    if (isEntry) body
-    else {
-      val label = ui(sh"${block.name}:")
-      val shows = pred match {
-        case ExSucc(branches) =>
-          params.zipWithIndex.map {
-            case (Val.Local(name, ty), i) =>
-              val branchshows = branches.map {
-                case (from, shows) =>
-                  sh"[${shows(i)}, %$from]"
-              }
-              sh"%$name = phi $ty ${r(branchshows, sep = ", ")}"
-          }
-        case ExFail() =>
-          val Seq(Val.Local(excrec, _)) = params
-          Seq(
-              sh"%$excrec = $landingpad"
-          )
+    val label = ui(sh"${block.name}:")
+    val prologue: Show.Result =
+      if (isEntry) s()
+      else {
+        val shows = pred match {
+          case ExSucc(branches) =>
+            params.zipWithIndex.map {
+              case (Val.Local(name, ty), i) =>
+                val branchshows = branches.map {
+                  case (from, shows) =>
+                    sh"[${shows(i)}, %$from]"
+                }
+                sh"%$name = phi $ty ${r(branchshows, sep = ", ")}"
+            }
+          case ExFail() =>
+            val Seq(Val.Local(excrec, _)) = params
+            Seq(
+                sh"%$excrec = $landingpad"
+            )
+        }
+        r(shows.map(nl(_)))
       }
-      val prologue = r(shows.map(nl(_)))
 
-      sh"$label$prologue${nl("")}$body"
-    }
+    sh"$label$prologue${nl("")}$body"
   }
 
   implicit val showType: Show[Type] = Show {
