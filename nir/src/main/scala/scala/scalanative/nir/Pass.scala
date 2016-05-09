@@ -156,6 +156,7 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
     val pre = hook(preVal, value, value)
     val post = pre match {
       case Val.Zero(ty)          => Val.Zero(txType(ty))
+      case Val.Undef(ty)         => Val.Undef(txType(ty))
       case Val.Struct(n, values) => Val.Struct(n, values.map(txVal))
       case Val.Array(ty, values) => Val.Array(txType(ty), values.map(txVal))
       case Val.Local(n, ty)      => Val.Local(n, txType(ty))

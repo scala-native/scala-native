@@ -108,8 +108,8 @@ lazy val scalalib =
     ).
     dependsOn(javalib)
 
-lazy val sandbox =
-  project.in(file("sandbox")).
+lazy val demo =
+  project.in(file("demo")).
     settings(libSettings).
     settings(
       nativeVerbose := true

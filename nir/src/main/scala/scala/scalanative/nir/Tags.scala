@@ -153,7 +153,8 @@ object Tags {
   final val TrueVal   = 1 + NoneVal
   final val FalseVal  = 1 + TrueVal
   final val ZeroVal   = 1 + FalseVal
-  final val I8Val     = 1 + ZeroVal
+  final val UndefVal  = 1 + ZeroVal
+  final val I8Val     = 1 + UndefVal
   final val I16Val    = 1 + I8Val
   final val I32Val    = 1 + I16Val
   final val I64Val    = 1 + I32Val

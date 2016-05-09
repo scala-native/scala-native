@@ -54,9 +54,25 @@ trait NirTypeEncoding { self: NirCodeGen =>
     case FloatClass                 => nir.Type.F32
     case DoubleClass                => nir.Type.F64
     case PtrClass                   => nir.Type.Ptr
+    case _ if isStruct(sym)         => genStruct(sym)
     case _ if isModule(sym)         => nir.Type.Module(genTypeName(sym))
     case _ if sym.isInterface       => nir.Type.Trait(genTypeName(sym))
     case _                          => nir.Type.Class(genTypeName(sym))
+  }
+
+  def genStructFields(sym: Symbol): Seq[nir.Type] = {
+    for {
+      f <- sym.info.decls if isField(f)
+    } yield {
+      genType(f.tpe)
+    }
+  }.toSeq
+
+  def genStruct(sym: Symbol): nir.Type = {
+    val name   = genTypeName(sym)
+    val fields = genStructFields(sym)
+
+    nir.Type.Struct(name, fields)
   }
 
   def genPrimCode(tpe: Type): Char = {

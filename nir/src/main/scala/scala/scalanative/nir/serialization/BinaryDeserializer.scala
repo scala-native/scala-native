@@ -260,6 +260,7 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
     case T.TrueVal   => Val.True
     case T.FalseVal  => Val.False
     case T.ZeroVal   => Val.Zero(getType)
+    case T.UndefVal  => Val.Undef(getType)
     case T.I8Val     => Val.I8(get)
     case T.I16Val    => Val.I16(getShort)
     case T.I32Val    => Val.I32(getInt)

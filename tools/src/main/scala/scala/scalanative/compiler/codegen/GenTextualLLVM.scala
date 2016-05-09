@@ -148,6 +148,7 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
     case Val.True          => "true"
     case Val.False         => "false"
     case Val.Zero(ty)      => "zeroinitializer"
+    case Val.Undef(ty)     => "undef"
     case Val.I8(v)         => v.toString
     case Val.I16(v)        => v.toString
     case Val.I32(v)        => v.toString
@@ -232,6 +233,12 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
           buf +=
             sh"${bind}bitcast ${ty.elemty(indexes.tail)}* %$derived to i8*"
 
+        case Op.Stackalloc(ty) =>
+          val pointee = fresh()
+
+          buf += sh"%$pointee = alloca $ty"
+          buf += sh"${bind}bitcast $ty* %$pointee to i8*"
+
         case _ =>
           buf += sh"${bind}$op"
       }
@@ -272,12 +279,12 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
       unreachable
     case Op.Elem(ty, ptr, indexes) =>
       unreachable
+    case Op.Stackalloc(ty) =>
+      unreachable
     case Op.Extract(aggr, indexes) =>
       sh"extractvalue $aggr, ${r(indexes, sep = ", ")}"
     case Op.Insert(aggr, value, indexes) =>
-      sh"insertvalue $aggr, ${r(indexes, sep = ", ")}"
-    case Op.Stackalloc(ty) =>
-      sh"alloca $ty"
+      sh"insertvalue $aggr, $value, ${r(indexes, sep = ", ")}"
     case Op.Bin(opcode, ty, l, r) =>
       val bin = opcode match {
         case Bin.Iadd => "add"

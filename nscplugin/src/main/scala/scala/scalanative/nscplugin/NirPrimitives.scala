@@ -19,6 +19,7 @@ object NirPrimitives {
   final val INFOOF = 1 + SIZEOF
   final val CQUOTE = 1 + INFOOF
   final val CCAST  = 1 + CQUOTE
+  final val STACKALLOC = 1 + CCAST
 }
 
 abstract class NirPrimitives {
@@ -70,5 +71,6 @@ abstract class NirPrimitives {
     addPrimitive(InfoofMethod, INFOOF)
     addPrimitive(CQuoteMethod, CQUOTE)
     addPrimitive(CCastMethod, CCAST)
+    addPrimitive(StackallocMethod, STACKALLOC)
   }
 }

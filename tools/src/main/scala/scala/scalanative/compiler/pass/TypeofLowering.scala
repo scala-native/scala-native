@@ -55,12 +55,6 @@ class TypeofLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
   }
 
   override def preInst = {
-    case Inst(n, Op.As(_, v)) =>
-      Seq(
-          Inst(n, Op.Copy(v))
-      )
-
-    // TODO: is trait/module/struct
     case Inst(n, Op.Typeof(ty)) =>
       val value = ty match {
         case Ref(node) => Val.Global(typeName(node), Type.Ptr)

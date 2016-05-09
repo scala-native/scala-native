@@ -5,6 +5,7 @@ sealed abstract class Val {
   final def ty: Type = this match {
     case Val.None               => Type.None
     case Val.Zero(ty)           => ty
+    case Val.Undef(ty)          => ty
     case Val.True | Val.False   => Type.Bool
     case Val.I8(_)              => Type.I8
     case Val.I16(_)             => Type.I16
@@ -28,7 +29,8 @@ object Val {
   final case object None  extends Val
   final case object True  extends Val
   final case object False extends Val
-  final case class Zero(zeroty: nir.Type)                     extends Val
+  final case class Zero(of: nir.Type)                         extends Val
+  final case class Undef(of: nir.Type)                        extends Val
   final case class I8(value: Byte)                            extends Val
   final case class I16(value: Short)                          extends Val
   final case class I32(value: Int)                            extends Val

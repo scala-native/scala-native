@@ -71,6 +71,9 @@ package object native {
   /** The C 'sizeof' operator. */
   def sizeof[T](implicit ct: ClassTag[T]): CSize = undefined
 
+  /** Stack allocate value. */
+  def stackalloc[T](implicit ct: ClassTag[T]): Ptr[T] = undefined
+
   /** Used as right hand side of external method and field declarations. */
   def extern: Nothing = undefined
 

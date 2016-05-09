@@ -198,6 +198,7 @@ object Shows {
     case Val.True              => "true"
     case Val.False             => "false"
     case Val.Zero(ty)          => sh"zero[$ty]"
+    case Val.Undef(ty)         => sh"undef[$ty]"
     case Val.I8(value)         => sh"${value}i8"
     case Val.I16(value)        => sh"${value}i16"
     case Val.I32(value)        => sh"${value}i32"

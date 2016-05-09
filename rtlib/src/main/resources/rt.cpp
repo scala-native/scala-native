@@ -1,6 +1,7 @@
 #include <exception>
 #include <cxxabi.h>
 #include <gc.h>
+#include <stdio.h>
 
 namespace scalanative {
     class ExceptionWrapper: public std::exception {

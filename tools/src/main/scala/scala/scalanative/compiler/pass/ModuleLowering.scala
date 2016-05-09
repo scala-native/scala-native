@@ -84,7 +84,7 @@ class ModuleLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
                     Seq(
                         Inst(self.name, Op.Load(clsTy, value)),
                         Inst(cond.name,
-                             Op.Comp(Comp.Ieq, Rt.Object, self, clsNull))
+                             Op.Comp(Comp.Ine, Rt.Object, self, clsNull))
                     ),
                     Cf.If(cond, Next(existing), Next(initialize))),
               Block(existing,

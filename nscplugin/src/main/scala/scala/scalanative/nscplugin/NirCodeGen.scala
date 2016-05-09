@@ -111,25 +111,22 @@ abstract class NirCodeGen
       }
     }
 
-    def genStruct(cd: ClassDef): Seq[Defn] = {
-      val sym = cd.symbol
+    def genStruct(cd: ClassDef): Seq[Defn] =
+      scoped(
+          curClassSym := cd.symbol
+      ) {
+        val sym = cd.symbol
 
-      val attrs  = genStructAttrs(sym)
-      val name   = genTypeName(sym)
-      val fields = genStructFields(sym)
+        val attrs   = genStructAttrs(sym)
+        val name    = genTypeName(sym)
+        val fields  = genStructFields(sym)
+        val body    = cd.impl.body
+        val methods = genMethods(cd)
 
-      Seq(Defn.Struct(attrs, name, fields))
-    }
+        Defn.Struct(attrs, name, fields) +: methods
+      }
 
     def genStructAttrs(sym: Symbol): Attrs = Attrs.None
-
-    def genStructFields(sym: Symbol): Seq[nir.Type] = {
-      for {
-        f <- sym.info.decls if isField(f)
-      } yield {
-        genType(f.tpe)
-      }
-    }.toSeq
 
     def genClass(cd: ClassDef): Seq[Defn] =
       scoped(
@@ -142,8 +139,7 @@ abstract class NirCodeGen
         def parent  = genClassParent(sym)
         def traits  = genClassInterfaces(sym)
         def fields  = genClassFields(sym).toSeq
-        def body    = cd.impl.body
-        def methods = body.collect { case dd: DefDef => genMethod(dd) }.flatten
+        def methods = genMethods(cd)
         def members = fields ++ methods
 
         if (isModule(sym)) Defn.Module(attrs, name, parent, traits) +: members
@@ -191,6 +187,9 @@ abstract class NirCodeGen
       }
     }
 
+    def genMethods(cd: ClassDef) =
+      cd.impl.body.collect { case dd: DefDef => genMethod(dd) }.flatten
+
     def genMethod(dd: DefDef): Seq[Defn] = {
       //println(s"gen method $dd")
 
@@ -215,6 +214,11 @@ abstract class NirCodeGen
           case rhs
               if dd.name == nme.CONSTRUCTOR && isExternModule(curClassSym) =>
             validateExternCtor(rhs)
+            Seq()
+
+          case _
+              if dd.name == nme.CONSTRUCTOR && isStruct(curClassSym) =>
+            // TODO: validate
             Seq()
 
           case rhs if isExternModule(curClassSym) =>
@@ -454,11 +458,16 @@ abstract class NirCodeGen
 
         case Select(qualp, selp) =>
           val sym = tree.symbol
+          val owner = sym.owner
           if (isModule(sym)) focus withOp Op.Module(genTypeName(sym))
           else if (sym.isStaticMember) genStaticMember(sym, focus)
           else if (sym.isMethod)
             genMethodCall(sym, statically = false, qualp, Seq(), focus)
-          else {
+          else if (isStruct(owner)) {
+            val index = owner.info.decls.filter(isField).toList.indexOf(sym)
+            val qual = genExpr(qualp, focus)
+            qual withOp Op.Extract(qual.value, Seq(index))
+          } else {
             val ty   = genType(tree.symbol.tpe)
             val qual = genExpr(qualp, focus)
             val name = genFieldName(tree.symbol)
@@ -848,7 +857,8 @@ abstract class NirCodeGen
       else if (isCoercion(code)) genCoercion(app, receiver, code, focus)
       else if (code == SYNCHRONIZED) genSynchronized(app, focus)
       else if (code == CCAST) genCastOp(app, focus)
-      else if (code == SIZEOF || code == INFOOF) genOfOp(app, code, focus)
+      else if (code == SIZEOF || code == INFOOF || code == STACKALLOC)
+        genOfOp(app, code, focus)
       else if (code == CQUOTE) genCQuoteOp(app, focus)
       else if (code == BOXED_UNIT) focus withValue Val.Unit
       else
@@ -1217,6 +1227,8 @@ abstract class NirCodeGen
 
       if (code == SIZEOF) {
         focus withOp Op.Sizeof(ty)
+      } else if (code == STACKALLOC) {
+        focus withOp Op.Stackalloc(ty)
       } else if (code == INFOOF) {
         ty match {
           case nir.Type.Class(n) =>
@@ -1376,11 +1388,24 @@ abstract class NirCodeGen
         case (ArrayClass, Seq(targ)) =>
           genNewArray(genPrimCode(targ), args, focus)
 
+        case (cls, Seq()) if isStruct(cls) =>
+          genNewStruct(cls, args, focus)
+
         case (cls, Seq()) =>
           genNew(cls, fun.symbol, args, focus)
 
         case (sym, targs) =>
           unsupported(s"unexpected new: $sym with targs $targs")
+      }
+    }
+
+    def genNewStruct(clssym: Symbol, argsp: Seq[Tree], focus: Focus): Focus = {
+      val ty = genTypeSym(clssym)
+      val (args, last) = genArgs(argsp, focus)
+      val undef = last withValue Val.Undef(ty)
+
+      args.zipWithIndex.foldLeft(undef) { case (focus, (value, index)) =>
+        focus withOp Op.Insert(focus.value, value, Seq(index))
       }
     }
 
@@ -1428,8 +1453,10 @@ abstract class NirCodeGen
       val sig          = genMethodSig(sym)
       val (args, last) = genArgs(argsp, focus)
       val method =
-        if (statically) last withValue Val.Global(name, nir.Type.Ptr)
-        else last withOp Op.Method(sig, self, name)
+        if (statically || isStruct(sym.owner))
+          last withValue Val.Global(name, nir.Type.Ptr)
+        else
+          last withOp Op.Method(sig, self, name)
       val values = self +: args
 
       method withOp Op.Call(sig, method.value, values)
