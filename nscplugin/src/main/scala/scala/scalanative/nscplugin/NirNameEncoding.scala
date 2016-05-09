@@ -56,7 +56,7 @@ trait NirNameEncoding { self: NirCodeGen =>
     if (sym == String_+) {
       genMethodName(StringConcatMethod)
     } else if (isExternModule(owner)) {
-      ownerId member id
+      ownerId member id tag "extern"
     } else if (sym.name == nme.CONSTRUCTOR) {
       ownerId member ("init" +: mangledParams).mkString("_")
     } else {

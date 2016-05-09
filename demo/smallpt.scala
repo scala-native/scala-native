@@ -14,12 +14,10 @@ object Extern {
   def malloc(size: Word): Ptr[_] = extern
   def erand48(xsubi: Ptr[Short]): Double = extern
   def fopen(filename: CString, mode: CString): Ptr[_] = extern
-  def fputs(str: CString, stream: Ptr[_]): Unit = extern
-  def puts(str: CString): Unit = extern
-  //char *  itoa ( int value, char * str, int base );
-  def itoa(value: Int, buf: CString, base: Int): CString = extern
+  def fprintf(stream: Ptr[_], format: CString, args: Any*): CInt = extern
 }
 import Extern._
+
 @struct class Vec(
   val x: Double,
   val y: Double,
@@ -107,11 +105,6 @@ object Main {
 
   @inline def toInt(x: Double): Int =
     (pow(clamp(x), 1/2.2) * 255 + .5).toInt
-  @inline def toCString(i: Int): CString = {
-    val buf = malloc(sizeof[CChar] * 64).cast[Ptr[CChar]]
-    itoa(i, buf, 10)
-    buf
-  }
 
   final val inf = 1e20
   @inline def intersect(r: Ray, t: Ptr[Double], id: Ptr[Int]): Boolean = {
@@ -238,23 +231,10 @@ object Main {
     }
 
     val f = fopen(c"image0.ppm", c"w")
-    //fprintf(f, c"P3\n%d %d\n%d\n", W, H, 255)
-    fputs(c"P3\n", f)
-    fputs(toCString(W), f)
-    fputs(c" ", f)
-    fputs(toCString(H), f)
-    fputs(c"\n", f)
-    fputs(toCString(255), f)
-    fputs(c"\n", f)
+    fprintf(f, c"P3\n%d %d\n%d\n", W, H, 255)
     var i = 0
     while (i < W * H) {
-      //fprintf(f, c"%d %d %d ", toInt(c(i).x), toInt(c(i).y), toInt(c(i).z))
-      fputs(toCString(toInt(c(i).x)), f)
-      fputs(c" ", f)
-      fputs(toCString(toInt(c(i).y)), f)
-      fputs(c" ", f)
-      fputs(toCString(toInt(c(i).z)), f)
-      fputs(c" ", f)
+      fprintf(f, c"%d %d %d ", toInt(c(i).x), toInt(c(i).y), toInt(c(i).z))
       i += 1
     }
   }

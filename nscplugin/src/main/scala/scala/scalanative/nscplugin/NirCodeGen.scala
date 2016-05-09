@@ -236,50 +236,16 @@ abstract class NirCodeGen
                         sig: nir.Type,
                         params: Seq[nir.Val.Local],
                         rhs: Tree): Seq[nir.Defn] = {
-      val Type.Function(_ +: paramtys, resty) = sig
-
-      val moduleName  = genTypeName(curClassSym)
-      val externName  = name tag "extern"
-      val externSig   = Type.Function(paramtys, resty)
-      val externAttrs = Attrs(isExtern = true)
-
       rhs match {
         case Apply(ref: RefTree, Seq()) if ref.symbol == ExternMethod =>
-          val externVal  = Val.Global(externName, Type.Ptr)
-          val externDefn = Defn.Declare(externAttrs, externName, externSig)
+          val moduleName  = genTypeName(curClassSym)
+          val externAttrs = Attrs(isExtern = true)
+          val externDefn  = Defn.Declare(externAttrs, name, sig)
 
-          val methodBody = {
-            val entry = curEnv.fresh()
-            val ret   = Val.Local(curEnv.fresh(), resty)
-            val insts = Seq(
-                Inst(ret.name, Op.Call(externSig, externVal, params.tail))
-            )
-            Seq(nir.Block(entry, params, insts, Cf.Ret(ret)))
-          }
-          val methodDefn = Defn.Define(attrs, name, sig, methodBody)
-
-          Seq(methodDefn, externDefn)
+          Seq(externDefn)
 
         case rhs =>
-          val methodVal = Val.Global(name, Type.Ptr)
-          val methodDefn =
-            Defn.Define(attrs, name, sig, genNormalMethodBody(params, rhs))
-
-          val externBody = {
-            val entry = curEnv.fresh()
-            val ret   = Val.Local(curEnv.fresh(), resty)
-            val mod   = Val.Local(curEnv.fresh(), Type.Module(moduleName))
-            val insts = Seq(
-                Inst(mod.name, Op.Module(moduleName)),
-                Inst(ret.name, Op.Call(sig, methodVal, mod +: params.tail))
-            )
-            Seq(nir.Block(entry, params.tail, insts, Cf.Ret(ret)))
-          }
-          val externDefn =
-            Defn.Define(externAttrs, externName, externSig, externBody)
-
-          if (curMethodSym.hasFlag(ACCESSOR)) Seq(methodDefn)
-          else Seq(methodDefn, externDefn)
+          unsupported("methods in extern objects must have extern body")
       }
     }
 
@@ -324,11 +290,27 @@ abstract class NirCodeGen
           }
       )
 
+    def genMethodSigParams(sym: Symbol, params: Seq[Symbol]): Seq[nir.Type] = {
+      val wereRepeated = exitingPhase(currentRun.typerPhase) {
+        for {
+          params <- sym.tpe.paramss
+          param <- params
+        } yield {
+          param.name -> isScalaRepeatedParamType(param.tpe)
+        }
+      }.toMap
+
+      params.map {
+        case p if wereRepeated.getOrElse(p.name, false) => Type.Vararg
+        case p => genType(p.tpe)
+      }
+    }
+
     def genMethodSig(sym: Symbol): nir.Type = sym match {
       case sym: ModuleSymbol =>
         val MethodType(params, res) = sym.tpe
 
-        val paramtys = params.map(p => genType(p.tpe))
+        val paramtys = genMethodSigParams(sym, params)
         val selfty   = genType(sym.owner.tpe)
         val retty    = genType(res, retty = true)
 
@@ -336,14 +318,16 @@ abstract class NirCodeGen
 
       case sym: MethodSymbol =>
         val params   = sym.paramLists.flatten
-        val paramtys = params.map(p => genType(p.tpe))
+        val paramtys = genMethodSigParams(sym, params)
         val owner    = sym.owner
-        val selfty   = genType(sym.owner.tpe)
+        val selfty   =
+          if (isExternModule(sym.owner)) None
+          else Some(genType(sym.owner.tpe))
         val retty =
           if (sym.isClassConstructor) Type.Void
           else genType(sym.tpe.resultType, retty = true)
 
-        Type.Function(selfty +: paramtys, retty)
+        Type.Function(selfty ++: paramtys, retty)
     }
 
     def defParamSymbols(dd: DefDef): List[Symbol] = {
@@ -728,7 +712,7 @@ abstract class NirCodeGen
       val init =
         if (elems.isEmpty) alloc
         else {
-          val (values, last) = genArgs(elems, alloc)
+          val (values, last) = genSimpleArgs(elems, alloc)
           val updates = sequenced(values.zipWithIndex, last) { (vi, focus) =>
             val (v, i) = vi
             val idx    = Literal(Constant(i))
@@ -826,7 +810,7 @@ abstract class NirCodeGen
     def genApplyLabel(tree: Tree, focus: Focus) = {
       val Apply(fun, argsp)   = tree
       val Val.Local(label, _) = curEnv.resolve(fun.symbol)
-      val (args, last)        = genArgs(argsp, focus)
+      val (args, last)        = genSimpleArgs(argsp, focus)
 
       last finish Cf.Jump(Next.Label(label, args))
     }
@@ -1268,7 +1252,7 @@ abstract class NirCodeGen
                               _))))))),
             _),
             _) =>
-          focus withValue Val.Const(Val.Chars(str))
+          focus withValue Val.Const(Val.Chars(str.replace("\\n", "\n")))
 
         case _ =>
           unsupported(app)
@@ -1401,7 +1385,7 @@ abstract class NirCodeGen
 
     def genNewStruct(clssym: Symbol, argsp: Seq[Tree], focus: Focus): Focus = {
       val ty = genTypeSym(clssym)
-      val (args, last) = genArgs(argsp, focus)
+      val (args, last) = genSimpleArgs(argsp, focus)
       val undef = last withValue Val.Undef(ty)
 
       args.zipWithIndex.foldLeft(undef) { case (focus, (value, index)) =>
@@ -1449,25 +1433,124 @@ abstract class NirCodeGen
                       self: Val,
                       argsp: Seq[Tree],
                       focus: Focus): Focus = {
+      val owner        = sym.owner
       val name         = genMethodName(sym)
       val sig          = genMethodSig(sym)
-      val (args, last) = genArgs(argsp, focus)
+      val (args, last) = genMethodArgs(sym, argsp, focus)
       val method =
-        if (statically || isStruct(sym.owner))
+        if (statically || isStruct(owner) || isExternModule(owner))
           last withValue Val.Global(name, nir.Type.Ptr)
         else
           last withOp Op.Method(sig, self, name)
-      val values = self +: args
+      val values =
+        if (isExternModule(owner)) args
+        else self +: args
 
       method withOp Op.Call(sig, method.value, values)
     }
 
-    def genArgs(argsp: Seq[Tree], focus: Focus): (Seq[Val], Focus) = {
+    def genSimpleArgs(argsp: Seq[Tree], focus: Focus): (Seq[Val], Focus) = {
       val args      = sequenced(argsp, focus)(genExpr(_, _))
       val argvalues = args.map(_.value)
       val last      = args.lastOption.getOrElse(focus)
 
       (argvalues, last)
+    }
+
+    def genMethodArgs(sym: Symbol, argsp: Seq[Tree],
+        focus: Focus): (Seq[Val], Focus) =
+      if (!isExternModule(sym.owner))
+        genSimpleArgs(argsp, focus)
+      else {
+        val wereRepeated = exitingPhase(currentRun.typerPhase) {
+          for {
+            params <- sym.tpe.paramss
+            param <- params
+          } yield {
+            param.name -> isScalaRepeatedParamType(param.tpe)
+          }
+        }.toMap
+
+        val args = mutable.UnrolledBuffer.empty[Val]
+        var curfocus = focus
+
+        for ((argp, paramSym) <- argsp zip sym.tpe.params) {
+          val wasRepeated = wereRepeated.getOrElse(paramSym.name, false)
+          if (wasRepeated) {
+            val (vals, newfocus) = genExpandRepeatedArg(argp, curfocus).get
+            curfocus = newfocus
+            args ++= vals
+          } else {
+            curfocus = genExpr(argp, curfocus)
+            args += curfocus.value
+          }
+        }
+
+        (args, curfocus)
+      }
+
+    def genExpandRepeatedArg(argp: Tree, focus: Focus): Option[(Seq[Val], Focus)] = {
+      // Given a method `def foo(args: T*)`
+      argp match {
+        // foo(arg1, arg2, ..., argN) where N > 0
+        case MaybeAsInstanceOf(WrapArray(
+            MaybeAsInstanceOf(ArrayValue(tpt, elems)))) =>
+          val values = mutable.UnrolledBuffer.empty[Val]
+          val resfocus = elems.foldLeft(focus) {
+            case (focus, DropBoxing(argp)) =>
+              val foc = genExpr(argp, focus)
+              values += foc.value
+              foc
+          }
+          Some((values, resfocus))
+
+        // foo(argSeq:_*) - cannot be optimized
+        case _ =>
+          None
+      }
+    }
+
+    object DropBoxing {
+      def unapply(tree: Tree): Some[Tree] = tree match {
+        case Apply(fun, Seq(arg))
+            if currentRun.runDefinitions.isBox(fun.symbol) =>
+          Some(arg)
+        case _ =>
+          Some(tree)
+      }
+    }
+
+    object MaybeAsInstanceOf {
+      def unapply(tree: Tree): Some[Tree] = tree match {
+        case Apply(TypeApply(asInstanceOf_? @ Select(base, _), _), _)
+        if asInstanceOf_?.symbol == Object_asInstanceOf =>
+          Some(base)
+        case _ =>
+          Some(tree)
+      }
+    }
+
+    object WrapArray {
+      lazy val isWrapArray: Set[Symbol] = Seq(
+          nme.wrapRefArray,
+          nme.wrapByteArray,
+          nme.wrapShortArray,
+          nme.wrapCharArray,
+          nme.wrapIntArray,
+          nme.wrapLongArray,
+          nme.wrapFloatArray,
+          nme.wrapDoubleArray,
+          nme.wrapBooleanArray,
+          nme.wrapUnitArray,
+          nme.genericWrapArray).map(getMemberMethod(PredefModule, _)).toSet
+
+      def unapply(tree: Apply): Option[Tree] = tree match {
+        case Apply(wrapArray_?, List(wrapped))
+        if isWrapArray(wrapArray_?.symbol) =>
+          Some(wrapped)
+        case _ =>
+          None
+      }
     }
   }
 }
