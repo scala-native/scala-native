@@ -34,6 +34,7 @@ final class Compiler(opts: Opts) {
         new pass.UnitLowering,
         new pass.NothingLowering,
         new pass.ExceptionLowering,
+        new pass.StackallocHoisting,
         new pass.CopyPropagation
     )
   }

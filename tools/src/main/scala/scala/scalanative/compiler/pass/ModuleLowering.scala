@@ -68,7 +68,7 @@ class ModuleLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
         if (isStaticModule(name)) Seq()
         else {
           val initSig = Type.Function(Seq(Type.Class(name)), Type.Void)
-          val init    = Val.Global(name tag "init", Type.Ptr)
+          val init    = Val.Global(name member "init", Type.Ptr)
 
           Seq(Inst(Op.Call(initSig, init, Seq(alloc))))
         }
@@ -95,8 +95,8 @@ class ModuleLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
                     Seq(),
                     Seq(
                         Seq(Inst(alloc.name, Op.Classalloc(clsName))),
-                        initCall,
-                        Seq(Inst(Op.Store(clsTy, value, alloc)))
+                        Seq(Inst(Op.Store(clsTy, value, alloc))),
+                        initCall
                     ).flatten,
                     Cf.Ret(alloc))))
 
@@ -119,5 +119,5 @@ class ModuleLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
 
   def isStaticModule(name: Global): Boolean =
     chg.nodes(name).isInstanceOf[ClassHierarchy.Class] &&
-    (!chg.nodes.contains(name tag "init"))
+    (!chg.nodes.contains(name member "init"))
 }
