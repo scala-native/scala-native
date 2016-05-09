@@ -11,6 +11,8 @@ import scalanative.runtime.Math.{
 
 @extern
 object Extern {
+  var __stderrp: Ptr[_] = extern
+  var __stdoutp: Ptr[_] = extern
   def malloc(size: Word): Ptr[_] = extern
   def erand48(xsubi: Ptr[Short]): Double = extern
   def fopen(filename: CString, mode: CString): Ptr[_] = extern
@@ -25,9 +27,9 @@ import Extern._
 ) {
   @inline def +(v: Vec) = new Vec(x + v.x, y + v.y, z + v.z)
   @inline def -(v: Vec) = new Vec(x - v.x, y - v.y, z - v.z)
-  @inline def *(v: Double) = new Vec(x * v, y * v, y * v)
+  @inline def *(v: Double) = new Vec(x * v, y * v, z * v)
   @inline def mult(v: Vec) = new Vec(x * v.x, y * v.y, z * v.z)
-  @inline def norm() = this * (1/sqrt(x*x + y*y + z*z))
+  @inline def norm() = this * (1d/sqrt(x*x + y*y + z*z))
   @inline def dot(v: Vec) = x * v.x + y * v.y + z * v.z
   @inline def %(v: Vec) = new Vec(y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x)
 }
@@ -56,10 +58,10 @@ object Ray {
 ) {
   def intersect(r: Ray): Double = {
     val op = p - r.o
+    var t = 0.0d
     val eps = 1e-4d
     val b = op.dot(r.d)
     var det = b * b - op.dot(op) + rad * rad
-    var t = 0.0d
     if (det < 0) return 0
     else det = sqrt(det)
     t = b - det
@@ -97,7 +99,6 @@ object Main {
   spheres(7) = Sphere(16.5,Vec(73,16.5,78),       Vec(),Vec(1,1,1)*.999, REFR)
   spheres(8) = Sphere(600, Vec(50,681.6-.27,81.6),Vec(12,12,12),  Vec(), DIFF)
 
-  // inline double clamp(double x){ return x<0 ? 0 : x>1 ? 1 : x; }
   @inline def clamp(x: Double): Double =
     if (x < 0) 0
     else if (x > 1) 1
@@ -152,7 +153,7 @@ object Main {
       val u = ((if (abs(w.x) > .1) Vec(0, 1) else Vec(1)) % w).norm()
       val v = w % u
       val d = (u * cos(r1) * r2s + v * sin(r1) * r2s + w * sqrt(1 - r2)).norm()
-      return obj.e + f.mult(radiance(Ray(x, r.d - n * 2 * n.dot(r.d)), depth, Xi))
+      return obj.e + f.mult(radiance(Ray(x, d), depth, Xi))
     } else if (obj.refl == SPEC) {
       return obj.e + f.mult(radiance(Ray(x, r.d - n * 2 * n.dot(r.d)), depth, Xi))
     }
@@ -169,7 +170,7 @@ object Main {
     val tdir = (r.d*nnt - n*((if (into) 1 else -1)*(ddn*nnt+sqrt(cos2t)))).norm();
     val a = nt - nc
     val b = nt + nc
-    val R0 = (a * a ) / (b * b)
+    val R0 = (a * a) / (b * b)
     val c = 1 - (if (into) -ddn else tdir.dot(n))
     val Re = R0 + (1 - R0) * c * c * c * c * c
     val Tr = 1 - Re
@@ -185,9 +186,9 @@ object Main {
     )
   }
 
-  final val W = 640
-  final val H = 480
-  final val SAMPLES = 1
+  final val W = 800
+  final val H = 600
+  final val SAMPLES = 2
   def main(args: Array[String]): Unit = {
     val cam = Ray(Vec(50d, 52d, 295.6),
                   Vec(0d,-0.042612d,-1d).norm())
@@ -198,6 +199,7 @@ object Main {
     val Xi = malloc(sizeof[Short] * 3).cast[Ptr[Short]]
     var y = 0
     while (y < H) {
+      fprintf(__stderrp, c"\rRendering (%d spp) %5.2f%%", SAMPLES * 4, 100.0 * y/(H-1))
       Xi(0) = 0.toShort
       Xi(1) = 0.toShort
       Xi(2) = (y * y * y).toShort
@@ -212,8 +214,8 @@ object Main {
             while (s < SAMPLES) {
               val r1 = 2 * erand48(Xi)
               val r2 = 2 * erand48(Xi)
-              val dx = if (r1 < 1) sqrt(r1) - 1 else 1 - sqrt(2 - r1)
-              val dy = if (r2 < 1) sqrt(r2) - 1 else 1 - sqrt(2 - r1)
+              val dx = if (r1 < 1d) sqrt(r1) - 1d else 1d - sqrt(2d - r1)
+              val dy = if (r2 < 1d) sqrt(r2) - 1d else 1d - sqrt(2d - r2)
               val d = cx * (((sx + .5d + dx)/2d + x)/W - .5d) +
                       cy * (((sy + .5d + dy)/2d + y)/H - .5d) + cam.d
               r = r + radiance(Ray(cam.o+d*140, d.norm()), 0, Xi) * (1.0d/SAMPLES)

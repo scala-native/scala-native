@@ -244,6 +244,9 @@ abstract class NirCodeGen
 
           Seq(externDefn)
 
+        case _ if curMethodSym.hasFlag(ACCESSOR) =>
+          Seq()
+
         case rhs =>
           unsupported("methods in extern objects must have extern body")
       }
@@ -268,8 +271,11 @@ abstract class NirCodeGen
     }
 
     def genMethodAttrs(sym: Symbol): Attrs =
-      Attrs.fromSeq(
-          sym.overrides.map {
+      Attrs.fromSeq (
+          {
+            if (sym.hasFlag(ACCESSOR)) Seq(Attr.MustInline)
+            else Seq()
+          } ++ sym.overrides.map {
             case sym => Attr.Override(genMethodName(sym))
           } ++ sym.annotations.collect {
             case ann if ann.symbol == InlineClass     => Attr.InlineHint
@@ -306,7 +312,7 @@ abstract class NirCodeGen
       }
     }
 
-    def genMethodSig(sym: Symbol): nir.Type = sym match {
+    def genMethodSig(sym: Symbol): nir.Type.Function = sym match {
       case sym: ModuleSymbol =>
         val MethodType(params, res) = sym.tpe
 
@@ -440,7 +446,7 @@ abstract class NirCodeGen
             else Val.Global(genTypeName(tree.symbol), genType(tree.tpe))
           }
 
-        case Select(qualp, selp) =>
+        case sel @ Select(qualp, selp) =>
           val sym = tree.symbol
           val owner = sym.owner
           if (isModule(sym)) focus withOp Op.Module(genTypeName(sym))
@@ -1252,7 +1258,8 @@ abstract class NirCodeGen
                               _))))))),
             _),
             _) =>
-          focus withValue Val.Const(Val.Chars(str.replace("\\n", "\n")))
+          focus withValue Val.Const(Val.Chars(
+            str.replace("\\n", "\n").replace("\\r", "\r")))
 
         case _ =>
           unsupported(app)
@@ -1409,6 +1416,17 @@ abstract class NirCodeGen
       call withValue alloc.value
     }
 
+    def genExternAccessor(sym: Symbol, argsp: Seq[Tree], focus: Focus) = argsp match {
+      case Seq() =>
+        val ty   = genMethodSig(sym).ret
+        val name = genMethodName(sym)
+        val elem = focus withValue Val.Global(name, Type.Ptr)
+        elem withOp Op.Load(ty, elem.value)
+
+      case Seq(value) =>
+        unsupported(argsp)
+    }
+
     def genModuleMethodCall(module: Symbol,
                             method: Symbol,
                             args: Seq[Tree],
@@ -1423,9 +1441,13 @@ abstract class NirCodeGen
                       selfp: Tree,
                       argsp: Seq[Tree],
                       focus: Focus): Focus = {
-      val self = genExpr(selfp, focus)
+      if (isExternModule(sym.owner) && sym.hasFlag(ACCESSOR)) {
+        genExternAccessor(sym, argsp, focus)
+      } else {
+        val self = genExpr(selfp, focus)
 
-      genMethodCall(sym, statically, self.value, argsp, self)
+        genMethodCall(sym, statically, self.value, argsp, self)
+      }
     }
 
     def genMethodCall(sym: Symbol,

@@ -24,7 +24,7 @@ object Shows {
     case Attr.MayInline  => "mayinline"
     case Attr.InlineHint => "inlinehint"
     case Attr.NoInline   => "noinline"
-    case Attr.MustInline => "mustinline"
+    case Attr.MustInline => "alwaysinline"
 
     case Attr.Pure              => sh"pure"
     case Attr.Extern            => sh"extern"

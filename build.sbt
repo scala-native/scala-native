@@ -108,11 +108,18 @@ lazy val scalalib =
     ).
     dependsOn(javalib)
 
-lazy val demo =
-  project.in(file("demo")).
+lazy val demoNative =
+  project.in(file("demo-native")).
     settings(libSettings).
     settings(
       nativeVerbose := true,
-      nativeClangOptions := Seq("-O0")
+      nativeClangOptions := Seq("-O2")
     ).
     dependsOn(scalalib)
+
+lazy val demoJVM =
+  project.in(file("demo-jvm")).
+    settings(
+      fork in run := true,
+      javaOptions in run ++= Seq("-Xms128m", "-Xmx128m")
+    )
