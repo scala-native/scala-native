@@ -1,30 +1,15 @@
 package demo
 
-import scalanative.native._
-import scalanative.runtime.Math.{
-  `llvm.sin.f64` => sin,
-  `llvm.cos.f64` => cos,
-  `llvm.fabs.f64` => abs,
-  `llvm.pow.f64` => pow,
-  `llvm.sqrt.f64` => sqrt
-}
+import scalanative.native._, stdlib._
+import java.lang.Math.{PI, sin, cos, abs, pow, sqrt}
 
-@extern
-object Extern {
-  var __stderrp: Ptr[_] = extern
-  var __stdoutp: Ptr[_] = extern
-  def malloc(size: Word): Ptr[_] = extern
+@extern object Erand48 {
   def erand48(xsubi: Ptr[Short]): Double = extern
-  def fopen(filename: CString, mode: CString): Ptr[_] = extern
-  def fprintf(stream: Ptr[_], format: CString, args: Any*): CInt = extern
 }
-import Extern._
+import Erand48._
 
-@struct class Vec(
-  val x: Double,
-  val y: Double,
-  val z: Double
-) {
+@struct
+class Vec(val x: Double = 0, val y: Double = 0, val z: Double = 0) {
   @inline def +(v: Vec) = new Vec(x + v.x, y + v.y, z + v.z)
   @inline def -(v: Vec) = new Vec(x - v.x, y - v.y, z - v.z)
   @inline def *(v: Double) = new Vec(x * v, y * v, z * v)
@@ -34,28 +19,19 @@ import Extern._
   @inline def %(v: Vec) = new Vec(y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x)
 }
 
-object Vec {
-  @inline def apply(x: Double = 0, y: Double = 0, z: Double = 0): Vec =
-    new Vec(x, y, z)
+@struct
+class Ray(val o: Vec, val d: Vec)
+
+object Refl {
+  type Type = Int
+  final val DIFF: Refl.Type = 1
+  final val SPEC: Refl.Type = 2
+  final val REFR: Refl.Type = 3
 }
 
-@struct class Ray(
-  val o: Vec,
-  val d: Vec
-)
-
-object Ray {
-  @inline def apply(o: Vec, d: Vec): Ray =
-    new Ray(o, d)
-}
-
-@struct class Sphere(
-  val rad: Double,
-  val p: Vec,
-  val e: Vec,
-  val c: Vec,
-  val refl: Main.Refl
-) {
+@struct
+class Sphere(val rad: Double, val p: Vec, val e: Vec,
+             val c: Vec, val refl: Refl.Type) {
   def intersect(r: Ray): Double = {
     val op = p - r.o
     var t = 0.0d
@@ -74,30 +50,18 @@ object Ray {
   }
 }
 
-object Sphere {
-  def apply(rad: Double, p: Vec, e: Vec, c: Vec, refl: Main.Refl): Sphere =
-    new Sphere(rad, p, e, c, refl)
-}
-
 object Main {
-  type Refl = Int
-  final val DIFF: Refl = 1
-  final val SPEC: Refl = 2
-  final val REFR: Refl = 3
-
-  final val PI = 3.141592653589793
-
   final val SPHERES = 9
   val spheres = malloc(sizeof[Sphere] * SPHERES).cast[Ptr[Sphere]]
-  spheres(0) = Sphere(1e5, Vec( 1e5+1,40.8,81.6), Vec(),Vec(.75,.25,.25),DIFF)
-  spheres(1) = Sphere(1e5, Vec(-1e5+99,40.8,81.6),Vec(),Vec(.25,.25,.75),DIFF)
-  spheres(2) = Sphere(1e5, Vec(50,40.8, 1e5),     Vec(),Vec(.75,.75,.75),DIFF)
-  spheres(3) = Sphere(1e5, Vec(50,40.8,-1e5+170), Vec(),Vec(),           DIFF)
-  spheres(4) = Sphere(1e5, Vec(50, 1e5, 81.6),    Vec(),Vec(.75,.75,.75),DIFF)
-  spheres(5) = Sphere(1e5, Vec(50,-1e5+81.6,81.6),Vec(),Vec(.75,.75,.75),DIFF)
-  spheres(6) = Sphere(16.5,Vec(27,16.5,47),       Vec(),Vec(1,1,1)*.999, SPEC)
-  spheres(7) = Sphere(16.5,Vec(73,16.5,78),       Vec(),Vec(1,1,1)*.999, REFR)
-  spheres(8) = Sphere(600, Vec(50,681.6-.27,81.6),Vec(12,12,12),  Vec(), DIFF)
+  spheres(0) = new Sphere(1e5,  new Vec( 1e5+1,40.8,81.6),  new Vec(), new Vec(.75,.25,.25), Refl.DIFF)
+  spheres(1) = new Sphere(1e5,  new Vec(-1e5+99,40.8,81.6), new Vec(), new Vec(.25,.25,.75), Refl.DIFF)
+  spheres(2) = new Sphere(1e5,  new Vec(50,40.8, 1e5),      new Vec(), new Vec(.75,.75,.75), Refl.DIFF)
+  spheres(3) = new Sphere(1e5,  new Vec(50,40.8,-1e5+170),  new Vec(), new Vec(),            Refl.DIFF)
+  spheres(4) = new Sphere(1e5,  new Vec(50, 1e5, 81.6),     new Vec(), new Vec(.75,.75,.75), Refl.DIFF)
+  spheres(5) = new Sphere(1e5,  new Vec(50,-1e5+81.6,81.6), new Vec(), new Vec(.75,.75,.75), Refl.DIFF)
+  spheres(6) = new Sphere(16.5, new Vec(27,16.5,47),        new Vec(), new Vec(1,1,1)*.999,  Refl.SPEC)
+  spheres(7) = new Sphere(16.5, new Vec(73,16.5,78),        new Vec(), new Vec(1,1,1)*.999,  Refl.REFR)
+  spheres(8) = new Sphere(600,  new Vec(50,681.6-.27,81.6), new Vec(12,12,12), new Vec(),    Refl.DIFF)
 
   @inline def clamp(x: Double): Double =
     if (x < 0) 0
@@ -128,7 +92,7 @@ object Main {
     val t = stackalloc[Double]
     val id = stackalloc[Int]
     !id = 0
-    if (!intersect(r, t, id)) return Vec()
+    if (!intersect(r, t, id)) return new Vec()
     val obj = spheres(!id)
     val x = r.o + r.d * !t
     val n = (x - obj.p).norm
@@ -145,20 +109,20 @@ object Main {
       else return obj.e
     }
 
-    if (obj.refl == DIFF) {
+    if (obj.refl == Refl.DIFF) {
       val r1 = 2 * PI * erand48(Xi)
       val r2 = erand48(Xi)
       val r2s = sqrt(r2)
       val w = nl
-      val u = ((if (abs(w.x) > .1) Vec(0, 1) else Vec(1)) % w).norm()
+      val u = ((if (abs(w.x) > .1) new Vec(0, 1) else new Vec(1)) % w).norm()
       val v = w % u
       val d = (u * cos(r1) * r2s + v * sin(r1) * r2s + w * sqrt(1 - r2)).norm()
-      return obj.e + f.mult(radiance(Ray(x, d), depth, Xi))
-    } else if (obj.refl == SPEC) {
-      return obj.e + f.mult(radiance(Ray(x, r.d - n * 2 * n.dot(r.d)), depth, Xi))
+      return obj.e + f.mult(radiance(new Ray(x, d), depth, Xi))
+    } else if (obj.refl == Refl.SPEC) {
+      return obj.e + f.mult(radiance(new Ray(x, r.d - n * 2 * n.dot(r.d)), depth, Xi))
     }
 
-    val reflRay = Ray(x, r.d - n * 2 * n.dot(r.d))
+    val reflRay = new Ray(x, r.d - n * 2 * n.dot(r.d))
     val into = n.dot(nl) > 0
     val nc = 1d
     val nt = 1.5d
@@ -180,9 +144,9 @@ object Main {
     return obj.e + f.mult(
       if (depth > 2)
         (if (erand48(Xi) < P) radiance(reflRay, depth, Xi)*RP
-         else radiance(Ray(x, tdir), depth, Xi)*TP)
+         else radiance(new Ray(x, tdir), depth, Xi)*TP)
       else
-        radiance(reflRay, depth, Xi) * Re + radiance(Ray(x, tdir), depth, Xi) * Tr
+        radiance(reflRay, depth, Xi) * Re + radiance(new Ray(x, tdir), depth, Xi) * Tr
     )
   }
 
@@ -190,11 +154,11 @@ object Main {
   final val H = 600
   final val SAMPLES = 2
   def main(args: Array[String]): Unit = {
-    val cam = Ray(Vec(50d, 52d, 295.6),
-                  Vec(0d,-0.042612d,-1d).norm())
-    val cx = Vec(W * .5135d/H)
+    val cam = new Ray(new Vec(50d, 52d, 295.6),
+                      new Vec(0d,-0.042612d,-1d).norm())
+    val cx = new Vec(W * .5135d/H)
     val cy = (cx % cam.d).norm() * .5135d
-    var r  = Vec()
+    var r  = new Vec()
     val c  = malloc(sizeof[Vec] * W * H).cast[Ptr[Vec]]
     val Xi = malloc(sizeof[Short] * 3).cast[Ptr[Short]]
     var y = 0
@@ -218,11 +182,11 @@ object Main {
               val dy = if (r2 < 1d) sqrt(r2) - 1d else 1d - sqrt(2d - r2)
               val d = cx * (((sx + .5d + dx)/2d + x)/W - .5d) +
                       cy * (((sy + .5d + dy)/2d + y)/H - .5d) + cam.d
-              r = r + radiance(Ray(cam.o+d*140, d.norm()), 0, Xi) * (1.0d/SAMPLES)
+              r = r + radiance(new Ray(cam.o+d*140, d.norm()), 0, Xi) * (1.0d/SAMPLES)
               s += 1
             }
-            c(i) = c(i) + Vec(clamp(r.x), clamp(r.y), clamp(r.z)) * .25d
-            r = Vec()
+            c(i) = c(i) + new Vec(clamp(r.x), clamp(r.y), clamp(r.z)) * .25d
+            r = new Vec()
             sx += 1
           }
           sy += 1

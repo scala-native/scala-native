@@ -1,12 +1,8 @@
 package demo
 
-import java.lang.Math.{sin, cos, abs, pow, sqrt, random}
+import java.lang.Math.{PI, sin, cos, abs, pow, sqrt, random}
 
-class Vec(
-  val x: Double,
-  val y: Double,
-  val z: Double
-) {
+class Vec(val x: Double = 0, val y: Double = 0, val z: Double = 0) {
   @inline def +(v: Vec) = new Vec(x + v.x, y + v.y, z + v.z)
   @inline def -(v: Vec) = new Vec(x - v.x, y - v.y, z - v.z)
   @inline def *(v: Double) = new Vec(x * v, y * v, z * v)
@@ -16,28 +12,17 @@ class Vec(
   @inline def %(v: Vec) = new Vec(y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x)
 }
 
-object Vec {
-  @inline def apply(x: Double = 0, y: Double = 0, z: Double = 0): Vec =
-    new Vec(x, y, z)
+class Ray(val o: Vec, val d: Vec)
+
+object Refl {
+  type T = Int
+  final val DIFF: Refl.T = 1
+  final val SPEC: Refl.T = 2
+  final val REFR: Refl.T = 3
 }
 
-class Ray(
-  val o: Vec,
-  val d: Vec
-)
-
-object Ray {
-  @inline def apply(o: Vec, d: Vec): Ray =
-    new Ray(o, d)
-}
-
-class Sphere(
-  val rad: Double,
-  val p: Vec,
-  val e: Vec,
-  val c: Vec,
-  val refl: Main.Refl
-) {
+class Sphere(val rad: Double, val p: Vec, val e: Vec,
+             val c: Vec, val refl: Refl.T) {
   def intersect(r: Ray): Double = {
     val op = p - r.o
     var t = 0.0d
@@ -56,30 +41,18 @@ class Sphere(
   }
 }
 
-object Sphere {
-  def apply(rad: Double, p: Vec, e: Vec, c: Vec, refl: Main.Refl): Sphere =
-    new Sphere(rad, p, e, c, refl)
-}
-
 object Main {
-  type Refl = Int
-  final val DIFF: Refl = 1
-  final val SPEC: Refl = 2
-  final val REFR: Refl = 3
-
-  final val PI = 3.141592653589793
-
   val spheres =
     Array[Sphere](
-      Sphere(1e5, Vec( 1e5+1,40.8,81.6), Vec(),Vec(.75,.25,.25),DIFF),
-      Sphere(1e5, Vec(-1e5+99,40.8,81.6),Vec(),Vec(.25,.25,.75),DIFF),
-      Sphere(1e5, Vec(50,40.8, 1e5),     Vec(),Vec(.75,.75,.75),DIFF),
-      Sphere(1e5, Vec(50,40.8,-1e5+170), Vec(),Vec(),           DIFF),
-      Sphere(1e5, Vec(50, 1e5, 81.6),    Vec(),Vec(.75,.75,.75),DIFF),
-      Sphere(1e5, Vec(50,-1e5+81.6,81.6),Vec(),Vec(.75,.75,.75),DIFF),
-      Sphere(16.5,Vec(27,16.5,47),       Vec(),Vec(1,1,1)*.999, SPEC),
-      Sphere(16.5,Vec(73,16.5,78),       Vec(),Vec(1,1,1)*.999, REFR),
-      Sphere(600, Vec(50,681.6-.27,81.6),Vec(12,12,12),  Vec(), DIFF)
+      new Sphere(1e5,  new Vec( 1e5+1,40.8,81.6),  new Vec(), new Vec(.75,.25,.25), Refl.DIFF),
+      new Sphere(1e5,  new Vec(-1e5+99,40.8,81.6), new Vec(), new Vec(.25,.25,.75), Refl.DIFF),
+      new Sphere(1e5,  new Vec(50,40.8, 1e5),      new Vec(), new Vec(.75,.75,.75), Refl.DIFF),
+      new Sphere(1e5,  new Vec(50,40.8,-1e5+170),  new Vec(), new Vec(),            Refl.DIFF),
+      new Sphere(1e5,  new Vec(50, 1e5, 81.6),     new Vec(), new Vec(.75,.75,.75), Refl.DIFF),
+      new Sphere(1e5,  new Vec(50,-1e5+81.6,81.6), new Vec(), new Vec(.75,.75,.75), Refl.DIFF),
+      new Sphere(16.5, new Vec(27,16.5,47),        new Vec(), new Vec(1,1,1)*.999,  Refl.SPEC),
+      new Sphere(16.5, new Vec(73,16.5,78),        new Vec(), new Vec(1,1,1)*.999,  Refl.REFR),
+      new Sphere(600,  new Vec(50,681.6-.27,81.6), new Vec(12,12,12),  new Vec(),   Refl.DIFF)
     )
 
   @inline def clamp(x: Double): Double =
@@ -106,15 +79,12 @@ object Main {
     return t(0) < inf
   }
 
-  def erand48(): Double =
-    random()
-
   def radiance(r: Ray, _depth: Int): Vec = {
     var depth = _depth
     val t = new Array[Double](1)
     val id = new Array[Int](1)
     id(0) = 0
-    if (!intersect(r, t, id)) return Vec()
+    if (!intersect(r, t, id)) return new Vec()
     val obj = spheres(id(0))
     val x = r.o + r.d * t(0)
     val n = (x - obj.p).norm
@@ -127,24 +97,24 @@ object Main {
 
     depth += 1
     if (depth > 5) {
-      if (erand48() < p) f = f * (1/ p)
+      if (random() < p) f = f * (1/ p)
       else return obj.e
     }
 
-    if (obj.refl == DIFF) {
-      val r1 = 2 * PI * erand48()
-      val r2 = erand48()
+    if (obj.refl == Refl.DIFF) {
+      val r1 = 2 * PI * random()
+      val r2 = random()
       val r2s = sqrt(r2)
       val w = nl
-      val u = ((if (abs(w.x) > .1) Vec(0, 1) else Vec(1)) % w).norm()
+      val u = ((if (abs(w.x) > .1) new Vec(0, 1) else new Vec(1)) % w).norm()
       val v = w % u
       val d = (u * cos(r1) * r2s + v * sin(r1) * r2s + w * sqrt(1 - r2)).norm()
-      return obj.e + f.mult(radiance(Ray(x, d), depth))
-    } else if (obj.refl == SPEC) {
-      return obj.e + f.mult(radiance(Ray(x, r.d - n * 2 * n.dot(r.d)), depth))
+      return obj.e + f.mult(radiance(new Ray(x, d), depth))
+    } else if (obj.refl == Refl.SPEC) {
+      return obj.e + f.mult(radiance(new Ray(x, r.d - n * 2 * n.dot(r.d)), depth))
     }
 
-    val reflRay = Ray(x, r.d - n * 2 * n.dot(r.d))
+    val reflRay = new Ray(x, r.d - n * 2 * n.dot(r.d))
     val into = n.dot(nl) > 0
     val nc = 1d
     val nt = 1.5d
@@ -165,10 +135,10 @@ object Main {
     val TP = Tr/(1 - P)
     return obj.e + f.mult(
       if (depth > 2)
-        (if (erand48() < P) radiance(reflRay, depth)*RP
-         else radiance(Ray(x, tdir), depth)*TP)
+        (if (random() < P) radiance(reflRay, depth)*RP
+         else radiance(new Ray(x, tdir), depth)*TP)
       else
-        radiance(reflRay, depth) * Re + radiance(Ray(x, tdir), depth) * Tr
+        radiance(reflRay, depth) * Re + radiance(new Ray(x, tdir), depth) * Tr
     )
   }
 
@@ -176,12 +146,12 @@ object Main {
   final val H = 600
   final val SAMPLES = 2
   def main(args: Array[String]): Unit = {
-    val cam = Ray(Vec(50d, 52d, 295.6),
-                  Vec(0d,-0.042612d,-1d).norm())
-    val cx = Vec(W * .5135d/H)
+    val cam = new Ray(new Vec(50d, 52d, 295.6),
+                      new Vec(0d,-0.042612d,-1d).norm())
+    val cx = new Vec(W * .5135d/H)
     val cy = (cx % cam.d).norm() * .5135d
-    var r  = Vec()
-    val c  = Array.fill[Vec](W * H)(Vec())
+    var r  = new Vec()
+    val c  = Array.fill[Vec](W * H)(new Vec())
     var y = 0
     while (y < H) {
       var x = 0
@@ -193,17 +163,17 @@ object Main {
           while (sx < 2) {
             var s = 0
             while (s < SAMPLES) {
-              val r1 = 2 * erand48()
-              val r2 = 2 * erand48()
+              val r1 = 2 * random()
+              val r2 = 2 * random()
               val dx = if (r1 < 1d) sqrt(r1) - 1d else 1d - sqrt(2d - r1)
               val dy = if (r2 < 1d) sqrt(r2) - 1d else 1d - sqrt(2d - r2)
               val d = cx * (((sx + .5d + dx)/2d + x)/W - .5d) +
                       cy * (((sy + .5d + dy)/2d + y)/H - .5d) + cam.d
-              r = r + radiance(Ray(cam.o+d*140, d.norm()), 0) * (1.0d/SAMPLES)
+              r = r + radiance(new Ray(cam.o+d*140, d.norm()), 0) * (1.0d/SAMPLES)
               s += 1
             }
-            c(i) = c(i) + Vec(clamp(r.x), clamp(r.y), clamp(r.z)) * .25d
-            r = Vec()
+            c(i) = c(i) + new Vec(clamp(r.x), clamp(r.y), clamp(r.z)) * .25d
+            r = new Vec()
             sx += 1
           }
           sy += 1
