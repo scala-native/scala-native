@@ -61,21 +61,7 @@ updates.](http://twitter.com/scala_native)
   phase that's common for just-in-time compilers.
   Your code is immediately fast and ready for action.
 
-## Documentation
+## License
 
-Documentation is available in [docs subfolder](/docs/00_toc.md).
-
-## How to contribute
-
-1. Check the list of [open issues](https://github.com/scala-native/scala-native/issues) and see
-   if you are interested in fixing any of them. If you have encountered a problem or have
-   a feature suggestion feel free to open a new issue.
-1. Fork the [main repo](https://github.com/scala-native/scala-native) and start hacking up
-   the fix. If you have problems with getting started, contact
-   [@densh](https://github.com/densh) to help you out.
-1. Whenever you fix an issue, add a test that shows that it was indeed fixed. If you
-   introduce a new feature, add a new test suite with a bunch of tests that cover common
-   use cases. If you propose a performance enhancement, include before & after results of
-   a corresponding jmh performance benchmark run in the commit message.
-1. Fire up a pull request. Don't forget to sign the
-   [Scala CLA](http://typesafe.com/contribute/cla/scala).
+Scala Native is distributed under [the Scala license](
+https://github.com/scala-native/scala-native/blob/master/LICENSE).
