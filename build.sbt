@@ -121,5 +121,5 @@ lazy val demoJVM =
   project.in(file("demo-jvm")).
     settings(
       fork in run := true,
-      javaOptions in run ++= Seq("-Xms128m", "-Xmx128m")
+      javaOptions in run ++= Seq("-Xms64m", "-Xmx64m")
     )

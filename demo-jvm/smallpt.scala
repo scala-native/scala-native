@@ -154,6 +154,7 @@ object Main {
     val c  = Array.fill[Vec](W * H)(new Vec())
     var y = 0
     while (y < H) {
+      print(f"\rRendering (${SAMPLES * 4}%d spp) ${100.0 * y/(H-1)}%5.2f%%")
       var x = 0
       while (x < W) {
         val i = (H - y - 1) * W + x

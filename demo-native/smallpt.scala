@@ -3,11 +3,6 @@ package demo
 import scalanative.native._, stdlib._
 import java.lang.Math.{PI, sin, cos, abs, pow, sqrt}
 
-@extern object Erand48 {
-  def erand48(xsubi: Ptr[Short]): Double = extern
-}
-import Erand48._
-
 @struct
 class Vec(val x: Double = 0, val y: Double = 0, val z: Double = 0) {
   @inline def +(v: Vec) = new Vec(x + v.x, y + v.y, z + v.z)
@@ -49,6 +44,11 @@ class Sphere(val rad: Double, val p: Vec, val e: Vec,
     }
   }
 }
+
+@extern object Erand48 {
+  def erand48(xsubi: Ptr[Short]): Double = extern
+}
+import Erand48._
 
 object Main {
   final val SPHERES = 9
