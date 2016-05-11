@@ -1,7 +1,7 @@
 # Scala Native
 
 Scala Native is a new ahead-of-time compiler and lightweight managed runtime
-designed specifically for Scala. Project is current in pre-release stage.
+designed specifically for Scala. Project is currently in pre-release stage.
 [Follow us on twitter to be first to know about upcoming
 updates.](http://twitter.com/scala_native)
 
@@ -26,11 +26,6 @@ updates.](http://twitter.com/scala_native)
   exactly as you want it to. You're in control.
 
 * **Extern objects**.
-
-  Calling C code has never been easier.
-  With the help of extern objects you can
-  seamlessly call native code without any
-  runtime overhead.
 
   ```scala
   @extern object stdlib {
