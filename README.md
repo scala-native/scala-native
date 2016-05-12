@@ -7,6 +7,19 @@ designed specifically for Scala. Project is currently in pre-release stage.
 [Follow us on twitter to be first to know about upcoming
 updates.](http://twitter.com/scala_native)
 
+## How to build?
+
+This requires SBT to be installed on your machine. Refer to [this link](http://www.scala-sbt.org/release/docs/Setup.html) for instructions.
+
+```
+$ git clone https://github.com/scala-native/scala-native.git --recursive
+$ cd scala-native/
+$ sbt rtlib/publishLocal nscplugin/publishLocal
+$ sbt package
+```
+
+If you face any issues with your development environment setup, refer to [developer guide](docs/develop.md)
+
 ## Features
 
 * **Low-level primitives**.
