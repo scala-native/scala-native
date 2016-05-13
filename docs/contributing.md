@@ -21,7 +21,7 @@ any changes.
 
 ## General workflow
 
-This the general workflow for contributing to Scala.js.
+This the general workflow for contributing to Scala Native.
 
 1.  Make sure you have signed the
     [Scala CLA](http://typesafe.com/contribute/cla/scala).
