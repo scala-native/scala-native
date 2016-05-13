@@ -1,5 +1,7 @@
 # Scala Native
 
+[![Join the chat at https://gitter.im/scala-native/scala-native](https://badges.gitter.im/scala-native/scala-native.svg)](https://gitter.im/scala-native/scala-native?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Scala Native is a new ahead-of-time compiler and lightweight managed runtime
 designed specifically for Scala. Project is currently in pre-release stage.
 [Follow us on twitter to be first to know about upcoming
