@@ -4,7 +4,7 @@ package pass
 
 import nir._
 
-/** Nrtoduces `main` function that set ups
+/** Introduces `main` function that sets up
   * the runtime and calls the given entry point.
   */
 class MainInjection(entry: Global)(implicit fresh: Fresh) extends Pass {
