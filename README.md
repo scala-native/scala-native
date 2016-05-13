@@ -56,6 +56,10 @@ updates.](http://twitter.com/scala_native)
   phase that's common for just-in-time compilers.
   Your code is immediately fast and ready for action.
 
+## Documentation
+
+* [Contributing guidelines.](/docs/contributing.md)
+
 ## License
 
 Scala Native is distributed under [the Scala license](
