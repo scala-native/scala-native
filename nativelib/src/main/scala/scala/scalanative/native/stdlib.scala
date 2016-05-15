@@ -7,4 +7,5 @@ package native
   def fopen(filename: CString, mode: CString): Ptr[_] = extern
   def fprintf(stream: Ptr[_], format: CString, args: Any*): CInt = extern
   def malloc(size: Word): Ptr[_] = extern
+  def getenv(name: CString): CString = extern
 }
