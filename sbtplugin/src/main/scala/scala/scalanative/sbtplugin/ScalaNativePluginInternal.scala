@@ -58,7 +58,7 @@ object ScalaNativePluginInternal {
 
     nativeVerbose := false,
 
-    nativeClang := file(Process(Seq("which", "clang++")).lines_!.head),
+    nativeClang := file(Process(Seq("which", Option(System.getenv("CXX")).getOrElse("clang++"))).lines_!.head),
 
     nativeClangOptions := Seq(),
 
