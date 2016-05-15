@@ -1,2 +1,3 @@
 scalalib/src/
 target/
+*.dot
