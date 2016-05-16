@@ -2,6 +2,8 @@
 
 [![Join the chat at https://gitter.im/scala-native/scala-native](https://badges.gitter.im/scala-native/scala-native.svg)](https://gitter.im/scala-native/scala-native?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
+[![Build Status](https://travis-ci.org/scala-native/scala-native.png?branch=master)](https://travis-ci.org/scala-native/scala-native)
+
 Scala Native is a new ahead-of-time compiler and lightweight managed runtime
 designed specifically for Scala. Project is currently in pre-release stage.
 [Follow us on twitter to be first to know about upcoming
@@ -58,9 +60,19 @@ updates.](http://twitter.com/scala_native)
   phase that's common for just-in-time compilers.
   Your code is immediately fast and ready for action.
 
+## Community
+
+* Have a question?
+  Ask it on [Stack Overflow with tag `scala-native`](http://stackoverflow.com/questions/tagged/scala-native).
+* Want to chat?
+  Join [our Gitter chat channel](https://gitter.im/scala-native/scala-native).
+* Found a bug or want to propose a new feature?
+  Open [an issue on Github](https://github.com/scala-native/scala-native/issues).
+
 ## Documentation
 
-* [Contributing guidelines.](/docs/contributing.md)
+* [How to build?](/docs/building.md)
+* [How to contribute?](/docs/contributing.md)
 
 ## License
 

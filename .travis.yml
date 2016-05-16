@@ -1,0 +1,17 @@
+sudo: required
+os: osx
+osx_image: xcode7.3
+#language: scala
+scala:
+  - "2.11.8"
+cache:
+  directories:
+    - $HOME/.ivy2/cache
+before_script:
+  - brew update
+  - brew install sbt
+  - brew install bdw-gc
+  - brew link bdw-gc
+script:
+  - java -version
+  - sbt 'rtlib/publishLocal' 'nscplugin/publishLocal' 'compile' 'sandbox/run' 'demoNative/run'
