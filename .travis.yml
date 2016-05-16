@@ -1,0 +1,17 @@
+os:
+  - linux
+language: scala
+scala:
+  - "2.11.8"
+jdk:
+  - oraclejdk8
+cache:
+  directories:
+    - $HOME/.ivy2/cache
+before_install:
+  - brew update
+install:
+  - brew install clang
+  - brew install bdw-gc
+script:
+  - sbt 'rtlib/publishLocal' 'nscplugin/publishLocal'
