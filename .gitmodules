@@ -1,4 +1,4 @@
 [submodule "submodules/scala"]
 	path = submodules/scala
-	url = git@github.com:scala/scala.git
+  url = https://github.com/scala/scala.git
 	branch = 2.11.x
