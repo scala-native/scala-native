@@ -58,7 +58,17 @@ object ScalaNativePluginInternal {
 
     nativeVerbose := false,
 
-    nativeClang := file(Process(Seq("which", "clang++")).lines_!.head),
+    nativeClang := {
+      val binaryName = "clang++"
+
+      Process(Seq("which", binaryName))
+        .lines_!
+        .headOption
+        .map(file(_))
+        .getOrElse{
+          throw new MessageOnlyException(s"no $binaryName found in $$PATH. Install clang")
+        }
+    },
 
     nativeClangOptions := Seq(),
 
