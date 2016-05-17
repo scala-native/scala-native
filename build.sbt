@@ -93,9 +93,33 @@ lazy val scalalib =
     settings(libSettings).
     settings(
       assembleScalaLibrary := {
+        import org.eclipse.jgit.api._
+
+        val s = streams.value
+        val trgDir = target.value / "scalaSources" / scalaVersion.value
+
+        if (!trgDir.exists) {
+          s.log.info(s"Fetching Scala source version ${scalaVersion.value}")
+
+          // Make parent dirs and stuff
+          IO.createDirectory(trgDir)
+
+          // Clone scala source code
+          new CloneCommand()
+            .setDirectory(trgDir)
+            .setURI("https://github.com/scala/scala.git")
+            .call()
+        }
+
+        // Checkout proper ref. We do this anyway so we fail if
+        // something is wrong
+        val git = Git.open(trgDir)
+        s.log.info(s"Checking out Scala source version ${scalaVersion.value}")
+        git.checkout().setName(s"v${scalaVersion.value}").call()
+
         IO.delete(file("scalalib/src/main/scala"))
         IO.copyDirectory(
-          file("submodules/scala/src/library/scala"),
+          (trgDir / "src" / "library" / "scala"),
           file("scalalib/src/main/scala/scala"))
 
         val epoch :: major :: _ = scalaVersion.value.split("\\.").toList
@@ -109,7 +133,7 @@ lazy val scalalib =
     dependsOn(javalib)
 
 lazy val demoNative =
-  project.in(file("demo-native")).
+  project.in(file("demo/native")).
     settings(libSettings).
     settings(
       nativeVerbose := true,
@@ -118,7 +142,7 @@ lazy val demoNative =
     dependsOn(scalalib)
 
 lazy val demoJVM =
-  project.in(file("demo-jvm")).
+  project.in(file("demo/jvm")).
     settings(
       fork in run := true,
       javaOptions in run ++= Seq("-Xms64m", "-Xmx64m")
