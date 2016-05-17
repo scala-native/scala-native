@@ -2,8 +2,10 @@ package scala.scalanative
 package linker
 
 import java.io.File
-import org.apache.commons.io.FileUtils
-import org.apache.commons.io.filefilter.{DirectoryFileFilter, RegexFileFilter}
+import java.nio.file.{Files, Paths, Path, FileVisitOption}
+import java.nio.file.attribute.BasicFileAttributes
+import java.util.function.BiPredicate
+import scala.collection.JavaConverters._
 import nir._
 import nir.serialization._
 
@@ -16,29 +18,36 @@ object Assembly {
   final case class Dir private[Assembly](val base: File) extends Assembly {
     //println(s"discovered dir assembly $base")
 
+    class NirMatcher extends BiPredicate[Path, BasicFileAttributes] {
+      def test(path: Path, b: BasicFileAttributes) =
+        path.toString.endsWith(".nir")
+    }
+
+    def matchFiles(f: String): Iterator[Path] =
+      Files
+        .find(Paths.get(f),
+              Integer.MAX_VALUE,
+              new NirMatcher(),
+              FileVisitOption.FOLLOW_LINKS)
+        .iterator
+        .asScala
+
     private val entries: Map[Global, BinaryDeserializer] = {
       val baseabs = base.getAbsolutePath()
-      val files = FileUtils
-        .listFiles(base,
-                   new RegexFileFilter("(.*)\\.nir"),
-                   DirectoryFileFilter.DIRECTORY)
-        .toArray
-        .toIterator
-      files.map {
-        case file: File =>
-          val fileabs = file.getAbsolutePath()
-          val relpath = fileabs.replace(baseabs + "/", "")
-          val (ctor, rel) =
-            if (relpath.endsWith(".type.nir"))
-              (Global.Type, relpath.replace(".type.nir", ""))
-            else if (relpath.endsWith(".value.nir"))
-              (Global.Val, relpath.replace(".value.nir", ""))
-            else
-              throw new LinkingError(
-                  s"can't recognized assembly file: $relpath")
-          val parts = rel.split("/").toSeq
-          val name  = ctor(parts.mkString("."))
-          (name -> deserializeBinaryFile(fileabs))
+
+      matchFiles(baseabs).map { path: Path =>
+        val fileabs = path.toAbsolutePath().toString
+        val relpath = fileabs.replace(baseabs + "/", "")
+        val (ctor, rel) =
+          if (relpath.endsWith(".type.nir"))
+            (Global.Type, relpath.replace(".type.nir", ""))
+          else if (relpath.endsWith(".value.nir"))
+            (Global.Val, relpath.replace(".value.nir", ""))
+          else
+            throw new LinkingError(s"can't recognized assembly file: $relpath")
+        val parts = rel.split("/").toSeq
+        val name  = ctor(parts.mkString("."))
+        (name -> deserializeBinaryFile(fileabs))
       }.toMap
     }
 

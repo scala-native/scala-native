@@ -37,9 +37,6 @@ lazy val nir =
 lazy val tools =
   project.in(file("tools")).
     settings(toolSettings).
-    settings(
-      libraryDependencies += "commons-io" % "commons-io" % "2.4"
-    ).
     dependsOn(nir, util)
 
 lazy val nscplugin =
