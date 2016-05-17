@@ -1,3 +1,6 @@
 scalalib/src/
 target/
+submodules/scala
 *.dot
+.idea
+.idea_modules
