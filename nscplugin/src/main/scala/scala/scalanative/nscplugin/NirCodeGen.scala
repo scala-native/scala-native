@@ -1511,17 +1511,17 @@ abstract class NirCodeGen
 
     def genExpandRepeatedArg(
         argp: Tree, focus: Focus): Option[(Seq[Val], Focus)] = {
-      // Given a method `def foo(args: T*)`
+      // Given an extern method `def foo(args: Vararg*)`
       argp match {
-        // foo(arg1, arg2, ..., argN) where N > 0
+        // foo(vararg1, ..., varargN) where N > 0
         case MaybeAsInstanceOf(
             WrapArray(MaybeAsInstanceOf(ArrayValue(tpt, elems)))) =>
           val values = mutable.UnrolledBuffer.empty[Val]
           val resfocus = elems.foldLeft(focus) {
-            case (focus, DropBoxing(argp)) =>
-              val foc = genExpr(argp, focus)
-              values += foc.value
-              foc
+            case (focus, Vararg(sym, argp)) =>
+              val arg = unboxValue(sym, genExpr(argp, focus))
+              values += arg.value
+              arg
           }
           Some((values, resfocus))
 
@@ -1531,13 +1531,13 @@ abstract class NirCodeGen
       }
     }
 
-    object DropBoxing {
-      def unapply(tree: Tree): Some[Tree] = tree match {
-        case Apply(fun, Seq(arg))
-            if currentRun.runDefinitions.isBox(fun.symbol) =>
-          Some(arg)
+    object Vararg {
+      def unapply(tree: Tree): Option[(Symbol, Tree)] = tree match {
+        case Apply(fun, Seq(argp, ctp)) if fun.symbol == VarargMethod =>
+          val sym = extractClassFromImplicitClassTag(ctp)
+          Some((sym, argp))
         case _ =>
-          Some(tree)
+          None
       }
     }
 

@@ -53,6 +53,10 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val ExternClass      = getRequiredClass("scala.scalanative.native.extern")
     lazy val StructClass      = getRequiredClass("scala.scalanative.native.struct")
 
+    lazy val VarargModule = getRequiredModule(
+        "scala.scalanative.native.Vararg")
+    lazy val VarargMethod = getMember(VarargModule, TermName("apply"))
+
     lazy val RuntimeModule = getRequiredModule(
         "scala.scalanative.runtime.package")
     lazy val InfoofMethod = getMember(RuntimeModule, TermName("infoof"))

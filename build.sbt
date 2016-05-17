@@ -123,3 +123,13 @@ lazy val demoJVM =
       fork in run := true,
       javaOptions in run ++= Seq("-Xms64m", "-Xmx64m")
     )
+
+lazy val sandbox =
+  project.in(file("sandbox")).
+    settings(libSettings).
+    settings(
+      nativeVerbose := true,
+      nativeClangOptions := Seq("-O2")
+    ).
+    dependsOn(scalalib)
+
