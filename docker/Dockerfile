@@ -43,14 +43,10 @@ WORKDIR /tmp
 
 RUN git clone https://github.com/scala-native/scala-native.git
 
-WORKDIR /tmp/scala-native/submodules
-
-RUN rm -rf scala && git clone https://github.com/scala/scala.git
-
 WORKDIR /tmp/scala-native
 
 RUN ln -s /usr/bin/clang++-3.7 /usr/bin/clang++
-RUN sed -i 's|__stdoutp|stdout|;s|__stderrp|stderr|' demo-native/smallpt.scala nativelib/src/main/scala/scala/scalanative/native/stdlib.scala
+RUN sed -i 's|__stdoutp|stdout|;s|__stderrp|stderr|' demo/native/smallpt.scala nativelib/src/main/scala/scala/scalanative/native/stdlib.scala
 
 RUN sbt 'rtlib/publishLocal' && sbt 'nscplugin/publishLocal'
 
