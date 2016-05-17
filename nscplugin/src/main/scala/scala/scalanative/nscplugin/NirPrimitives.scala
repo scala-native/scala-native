@@ -15,10 +15,10 @@ object NirPrimitives {
   final val PTR_APPLY  = 1 + PTR_SUB
   final val PTR_UPDATE = 1 + PTR_APPLY
 
-  final val SIZEOF = 1 + PTR_UPDATE
-  final val INFOOF = 1 + SIZEOF
-  final val CQUOTE = 1 + INFOOF
-  final val CCAST  = 1 + CQUOTE
+  final val SIZEOF     = 1 + PTR_UPDATE
+  final val INFOOF     = 1 + SIZEOF
+  final val CQUOTE     = 1 + INFOOF
+  final val CCAST      = 1 + CQUOTE
   final val STACKALLOC = 1 + CCAST
 }
 

@@ -216,8 +216,7 @@ abstract class NirCodeGen
             validateExternCtor(rhs)
             Seq()
 
-          case _
-              if dd.name == nme.CONSTRUCTOR && isStruct(curClassSym) =>
+          case _ if dd.name == nme.CONSTRUCTOR && isStruct(curClassSym) =>
             // TODO: validate
             Seq()
 
@@ -271,36 +270,34 @@ abstract class NirCodeGen
     }
 
     def genMethodAttrs(sym: Symbol): Attrs =
-      Attrs.fromSeq (
-          {
-            if (sym.hasFlag(ACCESSOR)) Seq(Attr.MustInline)
-            else Seq()
-          } ++ sym.overrides.map {
-            case sym => Attr.Override(genMethodName(sym))
-          } ++ sym.annotations.collect {
-            case ann if ann.symbol == InlineClass     => Attr.InlineHint
-            case ann if ann.symbol == NoInlineClass   => Attr.NoInline
-            case ann if ann.symbol == MustInlineClass => Attr.MustInline
-            case ann if ann.symbol == PureClass       => Attr.Pure
-          } ++ {
-            val owner = sym.owner
-            if (owner.primaryConstructor eq sym)
-              owner.info.declarations.collect {
-                case decl if decl.overrides.nonEmpty =>
-                  decl.overrides.map {
-                    case ov =>
-                      Attr.PinIf(genMethodName(decl), genMethodName(ov))
-                  }
-              }.toSeq.flatten
-            else Seq()
-          }
-      )
+      Attrs.fromSeq({
+        if (sym.hasFlag(ACCESSOR)) Seq(Attr.MustInline)
+        else Seq()
+      } ++ sym.overrides.map {
+        case sym => Attr.Override(genMethodName(sym))
+      } ++ sym.annotations.collect {
+        case ann if ann.symbol == InlineClass     => Attr.InlineHint
+        case ann if ann.symbol == NoInlineClass   => Attr.NoInline
+        case ann if ann.symbol == MustInlineClass => Attr.MustInline
+        case ann if ann.symbol == PureClass       => Attr.Pure
+      } ++ {
+        val owner = sym.owner
+        if (owner.primaryConstructor eq sym)
+          owner.info.declarations.collect {
+            case decl if decl.overrides.nonEmpty =>
+              decl.overrides.map {
+                case ov =>
+                  Attr.PinIf(genMethodName(decl), genMethodName(ov))
+              }
+          }.toSeq.flatten
+        else Seq()
+      })
 
     def genMethodSigParams(sym: Symbol, params: Seq[Symbol]): Seq[nir.Type] = {
       val wereRepeated = exitingPhase(currentRun.typerPhase) {
         for {
           params <- sym.tpe.paramss
-          param <- params
+          param  <- params
         } yield {
           param.name -> isScalaRepeatedParamType(param.tpe)
         }
@@ -308,7 +305,7 @@ abstract class NirCodeGen
 
       params.map {
         case p if wereRepeated.getOrElse(p.name, false) => Type.Vararg
-        case p => genType(p.tpe)
+        case p                                          => genType(p.tpe)
       }
     }
 
@@ -326,7 +323,7 @@ abstract class NirCodeGen
         val params   = sym.paramLists.flatten
         val paramtys = genMethodSigParams(sym, params)
         val owner    = sym.owner
-        val selfty   =
+        val selfty =
           if (isExternModule(sym.owner)) None
           else Some(genType(sym.owner.tpe))
         val retty =
@@ -377,7 +374,8 @@ abstract class NirCodeGen
 
           case _ if curMethodSym.get == NObjectInitMethod =>
             return Seq(
-              nir.Block(curEnv.fresh(), params, Seq(), nir.Cf.Ret(nir.Val.Unit))
+                nir.Block(
+                    curEnv.fresh(), params, Seq(), nir.Cf.Ret(nir.Val.Unit))
             )
 
           case _ =>
@@ -447,7 +445,7 @@ abstract class NirCodeGen
           }
 
         case sel @ Select(qualp, selp) =>
-          val sym = tree.symbol
+          val sym   = tree.symbol
           val owner = sym.owner
           if (isModule(sym)) focus withOp Op.Module(genTypeName(sym))
           else if (sym.isStaticMember) genStaticMember(sym, focus)
@@ -455,7 +453,7 @@ abstract class NirCodeGen
             genMethodCall(sym, statically = false, qualp, Seq(), focus)
           else if (isStruct(owner)) {
             val index = owner.info.decls.filter(isField).toList.indexOf(sym)
-            val qual = genExpr(qualp, focus)
+            val qual  = genExpr(qualp, focus)
             qual withOp Op.Extract(qual.value, Seq(index))
           } else {
             val ty   = genType(tree.symbol.tpe)
@@ -692,12 +690,12 @@ abstract class NirCodeGen
         curEnv.enter(id.symbol, local)
         local
       }
-      val entry =
-        previous.fold {
-          Focus.entry(local, params)(curEnv.fresh)
-        } { case (focus, values) =>
+      val entry = previous.fold {
+        Focus.entry(local, params)(curEnv.fresh)
+      } {
+        case (focus, values) =>
           focus.branchBlock(local, params, values)
-        }
+      }
       val newThis: Val = if (hijackThis) params.head else curThis
 
       scoped(
@@ -1249,17 +1247,17 @@ abstract class NirCodeGen
                   List(
                   Apply(_,
                         List(
-                        Apply(TypeApply(Select(
-                                        ArrayValue(
-                                        _,
-                                        List(Literal(Constant(str: String)))),
-                                        _),
-                                        _),
+                        Apply(TypeApply(
+                              Select(
+                              ArrayValue(_,
+                                         List(Literal(Constant(str: String)))),
+                              _),
+                              _),
                               _))))))),
             _),
             _) =>
-          focus withValue Val.Const(Val.Chars(
-            str.replace("\\n", "\n").replace("\\r", "\r")))
+          focus withValue Val.Const(
+              Val.Chars(str.replace("\\n", "\n").replace("\\r", "\r")))
 
         case _ =>
           unsupported(app)
@@ -1391,12 +1389,13 @@ abstract class NirCodeGen
     }
 
     def genNewStruct(clssym: Symbol, argsp: Seq[Tree], focus: Focus): Focus = {
-      val ty = genTypeSym(clssym)
+      val ty           = genTypeSym(clssym)
       val (args, last) = genSimpleArgs(argsp, focus)
-      val undef = last withValue Val.Undef(ty)
+      val undef        = last withValue Val.Undef(ty)
 
-      args.zipWithIndex.foldLeft(undef) { case (focus, (value, index)) =>
-        focus withOp Op.Insert(focus.value, value, Seq(index))
+      args.zipWithIndex.foldLeft(undef) {
+        case (focus, (value, index)) =>
+          focus withOp Op.Insert(focus.value, value, Seq(index))
       }
     }
 
@@ -1416,16 +1415,17 @@ abstract class NirCodeGen
       call withValue alloc.value
     }
 
-    def genExternAccessor(sym: Symbol, argsp: Seq[Tree], focus: Focus) = argsp match {
-      case Seq() =>
-        val ty   = genMethodSig(sym).ret
-        val name = genMethodName(sym)
-        val elem = focus withValue Val.Global(name, Type.Ptr)
-        elem withOp Op.Load(ty, elem.value)
+    def genExternAccessor(sym: Symbol, argsp: Seq[Tree], focus: Focus) =
+      argsp match {
+        case Seq() =>
+          val ty   = genMethodSig(sym).ret
+          val name = genMethodName(sym)
+          val elem = focus withValue Val.Global(name, Type.Ptr)
+          elem withOp Op.Load(ty, elem.value)
 
-      case Seq(value) =>
-        unsupported(argsp)
-    }
+        case Seq(value) =>
+          unsupported(argsp)
+      }
 
     def genModuleMethodCall(module: Symbol,
                             method: Symbol,
@@ -1462,8 +1462,7 @@ abstract class NirCodeGen
       val method =
         if (statically || isStruct(owner) || isExternModule(owner))
           last withValue Val.Global(name, nir.Type.Ptr)
-        else
-          last withOp Op.Method(sig, self, name)
+        else last withOp Op.Method(sig, self, name)
       val values =
         if (isExternModule(owner)) args
         else self +: args
@@ -1479,15 +1478,14 @@ abstract class NirCodeGen
       (argvalues, last)
     }
 
-    def genMethodArgs(sym: Symbol, argsp: Seq[Tree],
-        focus: Focus): (Seq[Val], Focus) =
-      if (!isExternModule(sym.owner))
-        genSimpleArgs(argsp, focus)
+    def genMethodArgs(
+        sym: Symbol, argsp: Seq[Tree], focus: Focus): (Seq[Val], Focus) =
+      if (!isExternModule(sym.owner)) genSimpleArgs(argsp, focus)
       else {
         val wereRepeated = exitingPhase(currentRun.typerPhase) {
           for {
             params <- sym.tpe.paramss
-            param <- params
+            param  <- params
           } yield {
             param.name -> isScalaRepeatedParamType(param.tpe)
           }
@@ -1511,12 +1509,13 @@ abstract class NirCodeGen
         (args, curfocus)
       }
 
-    def genExpandRepeatedArg(argp: Tree, focus: Focus): Option[(Seq[Val], Focus)] = {
+    def genExpandRepeatedArg(
+        argp: Tree, focus: Focus): Option[(Seq[Val], Focus)] = {
       // Given a method `def foo(args: T*)`
       argp match {
         // foo(arg1, arg2, ..., argN) where N > 0
-        case MaybeAsInstanceOf(WrapArray(
-            MaybeAsInstanceOf(ArrayValue(tpt, elems)))) =>
+        case MaybeAsInstanceOf(
+            WrapArray(MaybeAsInstanceOf(ArrayValue(tpt, elems)))) =>
           val values = mutable.UnrolledBuffer.empty[Val]
           val resfocus = elems.foldLeft(focus) {
             case (focus, DropBoxing(argp)) =>
@@ -1545,7 +1544,7 @@ abstract class NirCodeGen
     object MaybeAsInstanceOf {
       def unapply(tree: Tree): Some[Tree] = tree match {
         case Apply(TypeApply(asInstanceOf_? @ Select(base, _), _), _)
-        if asInstanceOf_?.symbol == Object_asInstanceOf =>
+            if asInstanceOf_?.symbol == Object_asInstanceOf =>
           Some(base)
         case _ =>
           Some(tree)
@@ -1553,22 +1552,22 @@ abstract class NirCodeGen
     }
 
     object WrapArray {
-      lazy val isWrapArray: Set[Symbol] = Seq(
-          nme.wrapRefArray,
-          nme.wrapByteArray,
-          nme.wrapShortArray,
-          nme.wrapCharArray,
-          nme.wrapIntArray,
-          nme.wrapLongArray,
-          nme.wrapFloatArray,
-          nme.wrapDoubleArray,
-          nme.wrapBooleanArray,
-          nme.wrapUnitArray,
-          nme.genericWrapArray).map(getMemberMethod(PredefModule, _)).toSet
+      lazy val isWrapArray: Set[Symbol] =
+        Seq(nme.wrapRefArray,
+            nme.wrapByteArray,
+            nme.wrapShortArray,
+            nme.wrapCharArray,
+            nme.wrapIntArray,
+            nme.wrapLongArray,
+            nme.wrapFloatArray,
+            nme.wrapDoubleArray,
+            nme.wrapBooleanArray,
+            nme.wrapUnitArray,
+            nme.genericWrapArray).map(getMemberMethod(PredefModule, _)).toSet
 
       def unapply(tree: Apply): Option[Tree] = tree match {
         case Apply(wrapArray_?, List(wrapped))
-        if isWrapArray(wrapArray_?.symbol) =>
+            if isWrapArray(wrapArray_?.symbol) =>
           Some(wrapped)
         case _ =>
           None
