@@ -14,7 +14,7 @@ updates.](http://twitter.com/scala_native)
 This requires SBT to be installed on your machine. Refer to [this link](http://www.scala-sbt.org/release/docs/Setup.html) for instructions.
 
 ```
-$ git clone https://github.com/scala-native/scala-native.git --recursive
+$ git clone https://github.com/scala-native/scala-native.git
 $ cd scala-native/
 $ sbt rtlib/publishLocal nscplugin/publishLocal
 $ sbt package
