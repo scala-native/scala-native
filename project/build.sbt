@@ -10,4 +10,4 @@ unmanagedSourceDirectories in Compile ++= {
 
 libraryDependencies += "org.eclipse.jgit" % "org.eclipse.jgit.pgm" % "3.2.0.201312181205-r"
 
-addSbtPlugin("com.geirsson" %% "sbt-scalafmt" % "0.2.3")
+addSbtPlugin("com.geirsson" %% "sbt-scalafmt" % "0.2.5")
