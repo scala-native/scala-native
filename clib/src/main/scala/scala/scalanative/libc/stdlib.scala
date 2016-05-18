@@ -1,5 +1,7 @@
 package scala.scalanative
-package native
+package libc
+
+import native._
 
 @extern object stdlib {
   var __stderrp: Ptr[_] = extern

@@ -80,6 +80,11 @@ lazy val nativelib =
   project.in(file("nativelib")).
     settings(libSettings)
 
+lazy val clib =
+  project.in(file("clib")).
+    settings(libSettings).
+    dependsOn(nativelib)
+
 lazy val javalib =
   project.in(file("javalib")).
     settings(libSettings).
@@ -139,7 +144,7 @@ lazy val demoNative =
       nativeVerbose := true,
       nativeClangOptions := Seq("-O2")
     ).
-    dependsOn(scalalib)
+    dependsOn(scalalib, clib)
 
 lazy val demoJVM =
   project.in(file("demo/jvm")).
