@@ -157,5 +157,5 @@ lazy val sandbox =
       nativeVerbose := true,
       nativeClangOptions := Seq("-O2")
     ).
-    dependsOn(scalalib)
+    dependsOn(scalalib, clib)
 
