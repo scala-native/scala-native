@@ -14,4 +14,4 @@ before_script:
   - brew link bdw-gc
 script:
   - java -version
-  - sbt 'rtlib/publishLocal' 'nscplugin/publishLocal' "demoNative/run"
+  - sbt 'rtlib/publishLocal' 'nscplugin/publishLocal' 'compile' 'sandbox/run' 'demoNative/run'
