@@ -3,6 +3,11 @@
 #include <gc.h>
 #include <stdio.h>
 
+namespace __cxxabiv1 {
+extern "C" void *__cxa_begin_catch (void *);
+extern "C" void __cxa_end_catch ();
+}
+
 namespace scalanative {
     class ExceptionWrapper: public std::exception {
     public:

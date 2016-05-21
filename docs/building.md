@@ -9,11 +9,9 @@ $ sbt rtlib/publishLocal nscplugin/publishLocal
 $ sbt package
 ```
 
-If you face any issues with your development environment setup, refer to [developer guide](docs/develop.md)
+If you face any issues with your development environment setup, refer to below instructions for your OS respectively, you will need clang and BOEHM GC, too.
 
-## Resolving issue with gc.h
-
-You will also need a version of the BOEHM GC either provided by the Operating System repositories or compiled from source. Refer to below instructions for your OS respectively.
+## Setup the environment
 
 ## Fedora
 
@@ -35,8 +33,13 @@ You can use brew as shown below
 brew install bdw-gc
 ```
 
-or, compile yourself
+## FreeBSD
 
+```
+pkg install sbt llvm38 boehm-gc
+```
+
+## Source code
 
 ```
 git clone git://github.com/ivmai/bdwgc.git
