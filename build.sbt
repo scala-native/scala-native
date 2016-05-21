@@ -139,7 +139,7 @@ lazy val demoNative =
     settings(libSettings).
     settings(
       nativeVerbose := true,
-      nativeClangOptions := Seq("-O2")
+      nativeClangOptions ++= Seq("-O2")
     ).
     dependsOn(scalalib, clib)
 
@@ -155,7 +155,7 @@ lazy val sandbox =
     settings(libSettings).
     settings(
       nativeVerbose := true,
-      nativeClangOptions := Seq("-O2")
+      nativeClangOptions ++= Seq("-O2")
     ).
     dependsOn(scalalib, clib)
 

@@ -60,17 +60,20 @@ object ScalaNativePluginInternal {
 
     nativeClang := {
       val binaryName = "clang++"
+      val binaryNames = Seq(("3", "8"), ("3", "7")).flatMap {
+        case (major, minor) => Seq(s"$binaryName$major$minor", s"$binaryName-$major.$minor")
+      } :+ binaryName
 
-      Process(Seq("which", binaryName))
+      Process("which" +: binaryNames)
         .lines_!
-        .headOption
         .map(file(_))
+        .headOption
         .getOrElse{
-          throw new MessageOnlyException(s"no $binaryName found in $$PATH. Install clang")
+          throw new MessageOnlyException(s"no ${binaryNames.mkString(", ")} found in $$PATH. Install clang")
         }
     },
 
-    nativeClangOptions := Seq(),
+    nativeClangOptions := Seq("-I/usr/local/include", "-L/usr/local/lib"),
 
     nativeEmitDependencyGraphPath := None,
 
