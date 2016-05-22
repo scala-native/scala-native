@@ -1,4 +1,3 @@
-import scala.io.Source
 import scala.scalanative.sbtplugin.{ScalaNativePlugin, ScalaNativePluginInternal}
 import ScalaNativePlugin.autoImport._
 
@@ -8,22 +7,31 @@ val libScalaVersion  = "2.11.8"
 
 lazy val baseSettings = Seq(
   organization := "org.scala-native",
-  version      := scala.scalanative.nir.Versions.current,
-
+  version      := nativeVersion,
   scalafmtConfig := Some(file(".scalafmt"))
 )
 
 lazy val toolSettings =
-  baseSettings ++ Seq(
-    scalaVersion := toolScalaVersion
-  )
+  baseSettings ++
+    Seq(
+      scalaVersion := toolScalaVersion,
+      scalacOptions ++= Seq(
+        "-deprecation",
+        "-unchecked",
+        "-feature",
+        "-encoding", "utf8"
+      )
+    )
 
 lazy val libSettings =
-  baseSettings ++ ScalaNativePlugin.projectSettings ++ Seq(
-    scalaVersion := libScalaVersion,
-
-    nativeEmitDependencyGraphPath := Some(file("out.dot"))
-  )
+  baseSettings ++
+    ScalaNativePlugin.projectSettings ++
+    Seq(
+      scalaVersion := libScalaVersion,
+      scalacOptions ++= Seq("-encoding", "utf8"),
+      javacOptions ++= Seq("-encoding", "utf8"),
+      nativeEmitDependencyGraphPath := Some(file("out.dot"))
+    )
 
 lazy val util =
   project.in(file("util")).
@@ -121,7 +129,7 @@ lazy val scalalib =
 
         IO.delete(file("scalalib/src/main/scala"))
         IO.copyDirectory(
-          (trgDir / "src" / "library" / "scala"),
+          trgDir / "src" / "library" / "scala",
           file("scalalib/src/main/scala/scala"))
 
         val epoch :: major :: _ = scalaVersion.value.split("\\.").toList
@@ -158,4 +166,3 @@ lazy val sandbox =
       nativeClangOptions ++= Seq("-O2")
     ).
     dependsOn(scalalib, clib)
-

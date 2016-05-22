@@ -1,6 +1,7 @@
 package scala.scalanative
 package native
 
+import scala.language.implicitConversions
 import runtime.undefined
 import reflect.ClassTag
 
