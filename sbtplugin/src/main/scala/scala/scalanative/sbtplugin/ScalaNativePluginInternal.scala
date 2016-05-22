@@ -103,6 +103,8 @@ object ScalaNativePluginInternal {
                                      entry,
                                      verbose)
 
+      checkThatClangIsRecentEnough(clang)
+
       IO.createDirectory(target)
       unpackRtlib(classpath)
       val links = compileNir(opts).map(_.name)
@@ -110,4 +112,43 @@ object ScalaNativePluginInternal {
       Process(abs(binary)).!
     }
   )
+
+  /**
+    * Tests whether the clang compiler is recent enough.
+    * <p/>
+    * This is determined through looking up a built-in #define which is
+    * more reliable than testing for a specific version.
+    * <p/>
+    * It might be better to use feature checking macros:
+    * http://clang.llvm.org/docs/LanguageExtensions.html#feature-checking-macros
+    */
+  private def checkThatClangIsRecentEnough(pathToClangBinary: File): Unit = {
+    def maybeFile(f: File) = f match {
+      case file if file.exists => Some(abs(file))
+      case none => None
+    }
+
+    def definesBuiltIn(pathToClangBinary: Option[String]): Option[Seq[String]] = {
+      def commandLineToListBuiltInDefines(clang: String) =
+        Seq("echo", "") #| Seq(clang, "-dM", "-E", "-")
+      def splitIntoLines(s: String) = s.split(f"%n")
+      def removeLeadingDefine(s: String) = s.substring(s.indexOf(' ') +1)
+
+      for {
+        clang  <- pathToClangBinary
+        output  = commandLineToListBuiltInDefines(clang).!!
+        lines   = splitIntoLines(output)
+      } yield lines map removeLeadingDefine
+    }
+
+    val clang = maybeFile(pathToClangBinary)
+    val defines: Seq[String] = definesBuiltIn(clang).to[Seq].flatten
+    val clangIsRecentEnough = defines.contains("__DECIMAL_DIG__ __LDBL_DECIMAL_DIG__")
+
+    if (!clangIsRecentEnough) {
+      throw new MessageOnlyException(s"No recent installation of clang found " +
+        s"at $pathToClangBinary.\nSee https://github.com/scala-native/scala-" +
+        s"native/blob/master/docs/building.md for details.")
+    }
+  }
 }
