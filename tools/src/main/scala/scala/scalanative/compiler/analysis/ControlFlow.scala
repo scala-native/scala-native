@@ -16,7 +16,7 @@ object ControlFlow {
   final case class Edge(val from: Node, val to: Node, val next: Next)
   final class Node(val block: Block, var pred: Seq[Edge], var succ: Seq[Edge])
   final class Graph(val entry: Node, val nodes: Map[Local, Node]) {
-    def map[T : reflect.ClassTag](f: Node => T): Seq[T] = {
+    def map[T: reflect.ClassTag](f: Node => T): Seq[T] = {
       val visited  = mutable.Set.empty[Node]
       val worklist = mutable.Stack.empty[Node]
       val result   = mutable.UnrolledBuffer.empty[T]

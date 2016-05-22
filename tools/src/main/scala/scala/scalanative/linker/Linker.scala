@@ -40,10 +40,10 @@ final class Linker(dotpath: Option[String], paths: Seq[String]) {
     }
 
   def link(entry: Global): (Seq[Global], Seq[Defn]) = {
-    val resolved = mutable.Set.empty[Global]
+    val resolved   = mutable.Set.empty[Global]
     val unresolved = mutable.Set.empty[Global]
-    val defns = mutable.UnrolledBuffer.empty[Defn]
-    val direct = mutable.Stack.empty[Global]
+    val defns      = mutable.UnrolledBuffer.empty[Defn]
+    val direct     = mutable.Stack.empty[Global]
     var conditional = mutable.UnrolledBuffer.empty[Dep.Conditional]
 
     def processDirect =

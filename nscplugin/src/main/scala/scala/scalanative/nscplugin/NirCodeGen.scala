@@ -12,7 +12,9 @@ import nir._, Shows._
 import NirPrimitives._
 
 abstract class NirCodeGen
-    extends PluginComponent with NirFiles with NirTypeEncoding
+    extends PluginComponent
+    with NirFiles
+    with NirTypeEncoding
     with NirNameEncoding {
   val nirAddons: NirGlobalAddons {
     val global: NirCodeGen.this.global.type
@@ -263,7 +265,7 @@ abstract class NirCodeGen
       }.toSet
       for {
         f <- curClassSym.info.decls if isField(f)
-            if !externs.contains(f)
+        if !externs.contains(f)
       } {
         unsupported("extern objects may only contain extern fields")
       }
@@ -850,7 +852,8 @@ abstract class NirCodeGen
       else if (code == CQUOTE) genCQuoteOp(app, focus)
       else if (code == BOXED_UNIT) focus withValue Val.Unit
       else
-        abort("Unknown primitive operation: " + sym.fullName + "(" +
+        abort(
+            "Unknown primitive operation: " + sym.fullName + "(" +
             fun.symbol.simpleName + ") " + " at: " + (app.pos))
     }
 
@@ -1248,10 +1251,9 @@ abstract class NirCodeGen
                   Apply(_,
                         List(
                         Apply(TypeApply(
-                              Select(
-                              ArrayValue(_,
-                                         List(Literal(Constant(str: String)))),
-                              _),
+                              Select(ArrayValue(
+                                     _, List(Literal(Constant(str: String)))),
+                                     _),
                               _),
                               _))))))),
             _),

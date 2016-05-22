@@ -99,7 +99,7 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
       implicit cfg: ControlFlow.Graph): Show.Result = {
     val Block(name, params, insts, cf) = block
 
-    val body = r(showInsts(insts, block.cf), sep = nl(""))
+    val body  = r(showInsts(insts, block.cf), sep = nl(""))
     val label = ui(sh"${block.name}:")
     val prologue: Show.Result =
       if (isEntry) s()
@@ -329,8 +329,8 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
   implicit def showAttrSeq: Show[Seq[Attr]] = nir.Shows.showAttrSeq
 
   private object ExSucc {
-    def unapply(edges: Seq[ControlFlow.Edge]
-        ): Option[Seq[(Local, Seq[Show.Result])]] = {
+    def unapply(edges: Seq[ControlFlow.Edge])
+      : Option[Seq[(Local, Seq[Show.Result])]] = {
       Some(edges.map {
         case ControlFlow.Edge(from, to, _: Next.Succ) =>
           (from.block.name, Seq(sh"%${to.block.params.head.name}.succ"))
