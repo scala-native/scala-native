@@ -32,37 +32,28 @@ trait NirNameEncoding { self: NirCodeGen =>
 
   def genFieldName(sym: Symbol): nir.Global = {
     val owner = genTypeName(sym.owner)
-    val id0   = sym.name.decoded.toString
-    val id =
-      if (id0.charAt(id0.length() - 1) != ' ') id0
-      else id0.substring(0, id0.length() - 1)
+    val id = nativeIdOf(sym)
+    val tag = if (isExternModule(sym.owner)) "extern" else "field"
 
-    if (isExternModule(sym.owner)) owner member id tag "extern"
-    else owner member id tag "field"
+    owner member id tag tag
   }
 
   def genMethodName(sym: Symbol): nir.Global = {
-    val owner   = sym.owner
-    val ownerId = genTypeName(sym.owner)
-    val id = {
-      val name = sym.name.decoded
-      if (owner == NObjectClass) name.substring(1) // skip the _
-      else name.toString
-    }
+    val owner = genTypeName(sym.owner)
+    val id = nativeIdOf(sym)
     val tpe = sym.tpe.widen
     val mangledParams =
       tpe.params.toSeq.map(p => mangledType(p.info, retty = false))
 
     if (sym == String_+) {
       genMethodName(StringConcatMethod)
-    } else if (isExternModule(owner)) {
-      ownerId member id tag "extern"
+    } else if (isExternModule(sym.owner)) {
+      owner member id tag "extern"
     } else if (sym.name == nme.CONSTRUCTOR) {
-      ownerId member ("init" +: mangledParams).mkString("_")
+      owner member ("init" +: mangledParams).mkString("_")
     } else {
       val mangledRetty = mangledType(tpe.resultType, retty = true)
-
-      ownerId member (id +: (mangledParams :+ mangledRetty)).mkString("_")
+      owner member (id +: (mangledParams :+ mangledRetty)).mkString("_")
     }
   }
 
@@ -105,5 +96,21 @@ trait NirNameEncoding { self: NirCodeGen =>
         .replace("scala.scalanative.native", "ssnn")
 
     sh"$ty".toString
+  }
+
+  private def nativeIdOf(sym: Symbol): String = {
+    sym.getAnnotation(NameClass).flatMap(_.stringArg(0)).getOrElse {
+      if (isField(sym)) {
+        val id0   = sym.name.decoded.toString
+        if (id0.charAt(id0.length() - 1) != ' ') id0
+        else id0.substring(0, id0.length() - 1)
+      } else if (sym.isMethod) {
+        val name = sym.name.decoded
+        if (sym.owner == NObjectClass) name.substring(1) // skip the _
+        else name.toString
+      } else {
+        scalanative.util.unreachable
+      }
+    }
   }
 }

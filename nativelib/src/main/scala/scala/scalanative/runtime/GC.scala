@@ -4,6 +4,8 @@ package runtime
 import native._
 
 @extern object GC {
-  def GC_malloc(size: CSize): Ptr[_] = extern
-  def GC_init(): Unit = extern
+  @name("GC_malloc")
+  def malloc(size: CSize): Ptr[_] = extern
+  @name("GC_init")
+  def init(): Unit = extern
 }

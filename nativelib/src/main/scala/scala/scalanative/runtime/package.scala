@@ -2,7 +2,6 @@ package scala.scalanative
 
 import scala.reflect.ClassTag
 import native._
-import runtime.GC._
 
 package object runtime {
   /** Used as a stub right hand of intrinsified methods. */
@@ -10,7 +9,7 @@ package object runtime {
 
   /** Allocate memory in gc heap using given info pointer. */
   def alloc(info: Ptr[_], size: CSize): Ptr[_] = {
-    val ptr = GC_malloc(size).cast[Ptr[Ptr[_]]]
+    val ptr = GC.malloc(size).cast[Ptr[Ptr[_]]]
     !ptr = info
     ptr
   }
@@ -22,7 +21,7 @@ package object runtime {
     * rest as Java-style array.
     */
   def init(argc: Int, argv: Ptr[Ptr[Byte]]): ObjectArray = {
-    GC_init()
+    GC.init()
     null
   }
 }

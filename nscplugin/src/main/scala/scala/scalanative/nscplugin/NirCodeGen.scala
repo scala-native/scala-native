@@ -102,12 +102,10 @@ abstract class NirCodeGen
         val sym = cd.symbol
         if (isPrimitiveValueClass(sym) || (sym == ArrayClass)) ()
         else {
-          //println(cd)
           val defn =
             if (isStruct(cd.symbol)) genStruct(cd)
             else genClass(cd)
 
-          //println(sh"$defn")
           genIRFile(cunit, sym, defn)
         }
       }
@@ -193,8 +191,6 @@ abstract class NirCodeGen
       cd.impl.body.collect { case dd: DefDef => genMethod(dd) }.flatten
 
     def genMethod(dd: DefDef): Seq[Defn] = {
-      //println(s"gen method $dd")
-
       val fresh = new Fresh("src")
       val env   = new Env(fresh)
 
