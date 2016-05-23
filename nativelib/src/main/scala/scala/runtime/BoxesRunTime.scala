@@ -1,7 +1,7 @@
 package scala.runtime
 
 import scala.math.ScalaNumber
-import scala.scalanative.runtime.pure
+import scala.scalanative.native.pure
 
 @pure object BoxesRunTime {
   final val CHAR   = 0

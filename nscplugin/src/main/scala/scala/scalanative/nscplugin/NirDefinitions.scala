@@ -38,11 +38,13 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val NStringClass  = getRequiredClass("java.lang._String")
     lazy val NStringModule = getRequiredModule("java.lang._String")
 
+    lazy val PureClass     = getRequiredClass("scala.scalanative.native.pure")
+    lazy val ExternClass   = getRequiredClass("scala.scalanative.native.extern")
+    lazy val StructClass   = getRequiredClass("scala.scalanative.native.struct")
     lazy val InlineClass   = getRequiredClass("scala.inline")
     lazy val NoInlineClass = getRequiredClass("scala.noinline")
-    lazy val MustInlineClass = getRequiredClass(
-        "scala.scalanative.runtime.mustinline")
-    lazy val PureClass = getRequiredClass("scala.scalanative.runtime.pure")
+    lazy val AlwaysInlineClass = getRequiredClass(
+        "scala.scalanative.native.alwaysinline")
 
     lazy val NativeModule = getRequiredModule(
         "scala.scalanative.native.package")
@@ -50,8 +52,6 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val ExternMethod     = getMember(NativeModule, TermName("extern"))
     lazy val SizeofMethod     = getMember(NativeModule, TermName("sizeof"))
     lazy val StackallocMethod = getMember(NativeModule, TermName("stackalloc"))
-    lazy val ExternClass      = getRequiredClass("scala.scalanative.native.extern")
-    lazy val StructClass      = getRequiredClass("scala.scalanative.native.struct")
 
     lazy val VarargModule = getRequiredModule(
         "scala.scalanative.native.Vararg")

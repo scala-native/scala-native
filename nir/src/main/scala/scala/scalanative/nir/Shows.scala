@@ -21,14 +21,15 @@ object Shows {
   }
 
   implicit val showAttr: Show[Attr] = Show {
-    case Attr.MayInline  => "mayinline"
-    case Attr.InlineHint => "inlinehint"
-    case Attr.NoInline   => "noinline"
-    case Attr.MustInline => "alwaysinline"
+    case Attr.MayInline    => "mayinline"
+    case Attr.InlineHint   => "inlinehint"
+    case Attr.NoInline     => "noinline"
+    case Attr.AlwaysInline => "alwaysinline"
 
-    case Attr.Pure              => sh"pure"
-    case Attr.Extern            => sh"extern"
-    case Attr.Override(name)    => sh"override($name)"
+    case Attr.Pure           => sh"pure"
+    case Attr.Extern         => sh"extern"
+    case Attr.Override(name) => sh"override($name)"
+
     case Attr.PinAlways(name)   => sh"pin($name)"
     case Attr.PinIf(name, cond) => sh"pin-if($name, $cond)"
   }

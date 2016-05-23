@@ -7,10 +7,10 @@ import nir.Attr._
 sealed abstract class Attr
 object Attr {
   sealed abstract class Inline extends Attr
-  final case object MayInline  extends Inline // no information
-  final case object InlineHint extends Inline // user hinted at inlining
-  final case object NoInline   extends Inline // should never inline
-  final case object MustInline extends Inline // should always inline
+  final case object MayInline    extends Inline // no information
+  final case object InlineHint   extends Inline // user hinted at inlining
+  final case object NoInline     extends Inline // should never inline
+  final case object AlwaysInline extends Inline // should always inline
 
   final case object Pure   extends Attr
   final case object Extern extends Attr

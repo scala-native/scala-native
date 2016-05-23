@@ -58,14 +58,15 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
 
     (1 to getInt).foreach { _ =>
       getInt match {
-        case T.MayInlineAttr  => buf += Attr.MayInline
-        case T.InlineHintAttr => buf += Attr.InlineHint
-        case T.NoInlineAttr   => buf += Attr.NoInline
-        case T.MustInlineAttr => buf += Attr.MustInline
+        case T.MayInlineAttr    => buf += Attr.MayInline
+        case T.InlineHintAttr   => buf += Attr.InlineHint
+        case T.NoInlineAttr     => buf += Attr.NoInline
+        case T.AlwaysInlineAttr => buf += Attr.AlwaysInline
 
-        case T.PureAttr      => buf += Attr.Pure
-        case T.ExternAttr    => buf += Attr.Extern
-        case T.OverrideAttr  => buf += Attr.Override(getGlobal)
+        case T.PureAttr     => buf += Attr.Pure
+        case T.ExternAttr   => buf += Attr.Extern
+        case T.OverrideAttr => buf += Attr.Override(getGlobal)
+
         case T.PinAlwaysAttr => deps += Dep.Direct(getGlobalNoDep)
         case T.PinIfAttr =>
           deps += Dep.Conditional(getGlobalNoDep, getGlobalNoDep)

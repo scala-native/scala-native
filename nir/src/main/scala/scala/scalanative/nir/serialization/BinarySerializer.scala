@@ -56,15 +56,16 @@ final class BinarySerializer(buffer: ByteBuffer) {
 
   private def putAttrs(attrs: Attrs) = putSeq(attrs.toSeq)(putAttr)
   private def putAttr(attr: Attr) = attr match {
-    case Attr.MayInline  => putInt(T.MayInlineAttr)
-    case Attr.InlineHint => putInt(T.InlineHintAttr)
-    case Attr.NoInline   => putInt(T.NoInlineAttr)
-    case Attr.MustInline => putInt(T.MustInlineAttr)
+    case Attr.MayInline    => putInt(T.MayInlineAttr)
+    case Attr.InlineHint   => putInt(T.InlineHintAttr)
+    case Attr.NoInline     => putInt(T.NoInlineAttr)
+    case Attr.AlwaysInline => putInt(T.AlwaysInlineAttr)
 
-    case Attr.Pure         => putInt(T.PureAttr)
-    case Attr.Extern       => putInt(T.ExternAttr)
-    case Attr.Override(n)  => putInt(T.OverrideAttr); putGlobal(n)
-    case Attr.PinAlways(n) => putInt(T.PinAlwaysAttr); putGlobal(n)
+    case Attr.Pure        => putInt(T.PureAttr)
+    case Attr.Extern      => putInt(T.ExternAttr)
+    case Attr.Override(n) => putInt(T.OverrideAttr); putGlobal(n)
+
+    case Attr.PinAlways(n)   => putInt(T.PinAlwaysAttr); putGlobal(n)
     case Attr.PinIf(n, cond) =>
       putInt(T.PinIfAttr); putGlobal(n); putGlobal(cond)
   }
