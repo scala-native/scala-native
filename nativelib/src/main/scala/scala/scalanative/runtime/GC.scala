@@ -3,6 +3,7 @@ package runtime
 
 import native._
 
+@link("gc")
 @extern object GC {
   @name("GC_malloc")
   def malloc(size: CSize): Ptr[_] = extern

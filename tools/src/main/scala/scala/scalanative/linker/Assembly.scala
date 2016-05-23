@@ -38,14 +38,14 @@ final case class Assembly(base: File) {
   def contains(name: Global) =
     entries.contains(name.top)
 
-  def load(name: Global): Option[(Seq[Dep], Defn)] =
+  def load(name: Global): Option[(Seq[Dep], Seq[Attr.Link], Defn)] =
     entries.get(name.top).flatMap { deserializer =>
-      //println(s"deserializing $name")
       deserializer.deserialize(name)
     }
 
   def close = classPath.close()
 }
+
 object Assembly {
   def apply(path: String): Option[Assembly] = {
     val file = new File(path)

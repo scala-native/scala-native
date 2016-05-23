@@ -20,6 +20,10 @@ object ScalaNativePlugin extends AutoPlugin {
 
     val nativeEmitDependencyGraphPath = settingKey[Option[File]](
       "If non-empty, emit linker graph to the given file path.")
+
+    val nativeLinkAs = settingKey[Map[String, String]](
+      "Given a native library, provide the linkage kind (static or dynamic). " +
+      "If key is not present in the map, dynamic is picked as a default.")
   }
 
   override def projectSettings =

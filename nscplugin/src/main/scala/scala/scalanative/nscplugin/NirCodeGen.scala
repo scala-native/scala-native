@@ -157,12 +157,15 @@ abstract class NirCodeGen
       def pinned =
         if (!isModule(sym) || isExternModule(sym)) Seq()
         else Seq(Attr.PinAlways(genMethodName(sym.asClass.primaryConstructor)))
-
-      Attrs.fromSeq(
-          pinned ++ sym.annotations.collect {
+      val attrs = sym.annotations.collect {
         case ann if ann.symbol == ExternClass => Attr.Extern
         case ann if ann.symbol == PureClass   => Attr.Pure
-      })
+        case ann if ann.symbol == LinkClass =>
+          val Apply(_, Seq(Literal(Constant(name: String)))) = ann.tree
+          Attr.Link(name)
+      }
+
+      Attrs.fromSeq(pinned ++ attrs)
     }
 
     def genClassInterfaces(sym: Symbol) =

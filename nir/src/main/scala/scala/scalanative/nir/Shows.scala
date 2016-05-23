@@ -30,6 +30,7 @@ object Shows {
     case Attr.Extern         => sh"extern"
     case Attr.Override(name) => sh"override($name)"
 
+    case Attr.Link(name)        => sh"link($name)"
     case Attr.PinAlways(name)   => sh"pin($name)"
     case Attr.PinIf(name, cond) => sh"pin-if($name, $cond)"
   }

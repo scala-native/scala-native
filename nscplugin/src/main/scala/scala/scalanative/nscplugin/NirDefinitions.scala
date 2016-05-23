@@ -40,6 +40,7 @@ trait NirDefinitions { self: NirGlobalAddons =>
 
     lazy val PureClass     = getRequiredClass("scala.scalanative.native.pure")
     lazy val NameClass     = getRequiredClass("scala.scalanative.native.name")
+    lazy val LinkClass     = getRequiredClass("scala.scalanative.native.link")
     lazy val ExternClass   = getRequiredClass("scala.scalanative.native.extern")
     lazy val StructClass   = getRequiredClass("scala.scalanative.native.struct")
     lazy val InlineClass   = getRequiredClass("scala.inline")

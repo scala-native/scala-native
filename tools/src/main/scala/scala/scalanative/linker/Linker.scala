@@ -11,7 +11,7 @@ import util.sh
 final class Linker(dotpath: Option[String], paths: Seq[String]) {
   private val assemblies: Seq[Assembly] = paths.flatMap(Assembly(_))
 
-  private def load(global: Global): Option[(Seq[Dep], Defn)] =
+  private def load(global: Global): Option[(Seq[Dep], Seq[Attr.Link], Defn)] =
     assemblies.collectFirst {
       case assembly if assembly.contains(global) =>
         assembly.load(global)
@@ -39,9 +39,10 @@ final class Linker(dotpath: Option[String], paths: Seq[String]) {
       writer.close()
     }
 
-  def link(entry: Global): (Seq[Global], Seq[Defn]) = {
+  def link(entry: Global): (Seq[Global], Seq[Attr.Link], Seq[Defn]) = {
     val resolved   = mutable.Set.empty[Global]
     val unresolved = mutable.Set.empty[Global]
+    val links      = mutable.Set.empty[Attr.Link]
     val defns      = mutable.UnrolledBuffer.empty[Defn]
     val direct     = mutable.Stack.empty[Global]
     var conditional = mutable.UnrolledBuffer.empty[Dep.Conditional]
@@ -56,9 +57,10 @@ final class Linker(dotpath: Option[String], paths: Seq[String]) {
           load(workitem).fold[Unit] {
             unresolved += workitem
           } {
-            case (deps, defn) =>
+            case (deps, newlinks, defn) =>
               resolved += workitem
               defns += defn
+              links ++= newlinks
 
               deps.foreach {
                 case Dep.Direct(dep) =>
@@ -101,11 +103,11 @@ final class Linker(dotpath: Option[String], paths: Seq[String]) {
     }
     writeEnd()
 
-    (unresolved.toSeq, defns.sortBy(_.name.toString).toSeq)
+    (unresolved.toSeq, links.toSeq, defns.sortBy(_.name.toString).toSeq)
   }
 
-  def linkClosed(entry: Global): Seq[Defn] = {
-    val (unresolved, defns) = link(entry)
+  def linkClosed(entry: Global): (Seq[Attr.Link], Seq[Defn]) = {
+    val (unresolved, links, defns) = link(entry)
 
     assemblies.foreach(_.close)
 
@@ -115,6 +117,6 @@ final class Linker(dotpath: Option[String], paths: Seq[String]) {
       throw new LinkingError("Failed to resolve all dependencies.")
     }
 
-    defns
+    (links, defns)
   }
 }

@@ -16,6 +16,8 @@ object Attr {
   final case object Extern extends Attr
   final case class Override(name: Global) extends Attr
 
+  // Linker attributes
+  final case class Link(name: String)               extends Attr
   sealed abstract class Pin                         extends Attr
   final case class PinAlways(dep: Global)           extends Pin
   final case class PinIf(dep: Global, cond: Global) extends Pin
@@ -25,7 +27,8 @@ final case class Attrs(inline: Inline = MayInline,
                        isPure: Boolean = false,
                        isExtern: Boolean = false,
                        overrides: Seq[Global] = Seq(),
-                       pins: Seq[Pin] = Seq()) {
+                       pins: Seq[Pin] = Seq(),
+                       links: Seq[Attr.Link] = Seq()) {
   def toSeq: Seq[Attr] = {
     val out = mutable.UnrolledBuffer.empty[Attr]
 
@@ -34,6 +37,7 @@ final case class Attrs(inline: Inline = MayInline,
     if (isExtern) out += Extern
     overrides.foreach { out += Override(_) }
     out ++= pins
+    out ++= links
 
     out
   }
@@ -47,15 +51,17 @@ object Attrs {
     var isExtern = false
     val overrides = mutable.UnrolledBuffer.empty[Global]
     val pins      = mutable.UnrolledBuffer.empty[Pin]
+    val links     = mutable.UnrolledBuffer.empty[Attr.Link]
 
     attrs.foreach {
-      case attr: Inline   => inline = attr
-      case Pure           => isPure = true
-      case Extern         => isExtern = true
-      case Override(name) => overrides += name
-      case attr: Pin      => pins += attr
+      case attr: Inline    => inline = attr
+      case Pure            => isPure = true
+      case Extern          => isExtern = true
+      case Override(name)  => overrides += name
+      case attr: Pin       => pins += attr
+      case link: Attr.Link => links += link
     }
 
-    new Attrs(inline, isPure, isExtern, overrides, pins)
+    new Attrs(inline, isPure, isExtern, overrides, pins, links)
   }
 }
