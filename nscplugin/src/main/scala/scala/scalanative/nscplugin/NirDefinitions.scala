@@ -20,7 +20,6 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val PtrApplyMethod  = getDecl(PtrClass, TermName("apply"))
     lazy val PtrUpdateMethod = getDecl(PtrClass, TermName("update"))
 
-    lazy val PureClass   = getRequiredClass("scala.scalanative.native.pure")
     lazy val NameClass   = getRequiredClass("scala.scalanative.native.name")
     lazy val LinkClass   = getRequiredClass("scala.scalanative.native.link")
     lazy val ExternClass = getRequiredClass("scala.scalanative.native.extern")
@@ -153,5 +152,10 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val AnyRefClassTag  = getDecl(ClassTagModule, TermName("AnyRef"))
     lazy val NothingClassTag = getDecl(ClassTagModule, TermName("Nothing"))
     lazy val NullClassTag    = getDecl(ClassTagModule, TermName("Null"))
+
+    lazy val PureModules: Set[Symbol] =
+      Set(PredefModule, BoxesRunTimeModule).map(_.moduleClass)
+    lazy val PureMethods: Set[Symbol] =
+      (BoxMethod.values ++ UnboxMethod.values).toSet
   }
 }

@@ -159,13 +159,13 @@ abstract class NirCodeGen
         else Seq(Attr.PinAlways(genMethodName(sym.asClass.primaryConstructor)))
       val attrs = sym.annotations.collect {
         case ann if ann.symbol == ExternClass => Attr.Extern
-        case ann if ann.symbol == PureClass   => Attr.Pure
         case ann if ann.symbol == LinkClass =>
           val Apply(_, Seq(Literal(Constant(name: String)))) = ann.tree
           Attr.Link(name)
       }
+      val pure = if (PureModules.contains(sym)) Seq(Attr.Pure) else Seq()
 
-      Attrs.fromSeq(pinned ++ attrs)
+      Attrs.fromSeq(pinned ++ pure ++ attrs)
     }
 
     def genClassInterfaces(sym: Symbol) =
@@ -280,7 +280,8 @@ abstract class NirCodeGen
         case ann if ann.symbol == NoInlineClass   => Attr.NoInline
         case ann if ann.symbol == InlineHintClass => Attr.InlineHint
         case ann if ann.symbol == InlineClass     => Attr.AlwaysInline
-        case ann if ann.symbol == PureClass       => Attr.Pure
+      } ++ {
+        if (PureMethods.contains(sym)) Seq(Attr.Pure) else Seq()
       } ++ {
         val owner = sym.owner
         if (owner.primaryConstructor eq sym)
