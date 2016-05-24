@@ -26,8 +26,8 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val ExternClass = getRequiredClass("scala.scalanative.native.extern")
     lazy val StructClass = getRequiredClass("scala.scalanative.native.struct")
 
-    lazy val AlwaysInlineClass = getRequiredClass(
-        "scala.scalanative.native.alwaysinline")
+    lazy val InlineHintClass = getRequiredClass(
+        "scala.scalanative.native.inlinehint")
 
     lazy val NativeModule = getRequiredModule(
         "scala.scalanative.native.package")

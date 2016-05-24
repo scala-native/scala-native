@@ -277,10 +277,10 @@ abstract class NirCodeGen
       } ++ sym.overrides.map {
         case sym => Attr.Override(genMethodName(sym))
       } ++ sym.annotations.collect {
-        case ann if ann.symbol == InlineClass       => Attr.InlineHint
-        case ann if ann.symbol == NoInlineClass     => Attr.NoInline
-        case ann if ann.symbol == AlwaysInlineClass => Attr.AlwaysInline
-        case ann if ann.symbol == PureClass         => Attr.Pure
+        case ann if ann.symbol == NoInlineClass   => Attr.NoInline
+        case ann if ann.symbol == InlineHintClass => Attr.InlineHint
+        case ann if ann.symbol == InlineClass     => Attr.AlwaysInline
+        case ann if ann.symbol == PureClass       => Attr.Pure
       } ++ {
         val owner = sym.owner
         if (owner.primaryConstructor eq sym)
