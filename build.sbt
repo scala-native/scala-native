@@ -52,6 +52,7 @@ lazy val nscplugin =
     settings(toolSettings).
     settings(
       scalaVersion := "2.11.8",
+      crossVersion := CrossVersion.full,
       unmanagedSourceDirectories in Compile ++= Seq(
         (scalaSource in (nir, Compile)).value,
         (scalaSource in (util, Compile)).value

@@ -52,7 +52,7 @@ object ScalaNativePluginInternal {
   }
 
   lazy val projectSettings = Seq(
-    addCompilerPlugin("org.scala-native" %% "nscplugin" % "0.1-SNAPSHOT"),
+    addCompilerPlugin("org.scala-native" % "nscplugin" % "0.1-SNAPSHOT" cross CrossVersion.full),
 
     libraryDependencies += "org.scala-native" %% "rtlib" % nir.Versions.current,
 
