@@ -60,7 +60,12 @@ object BooleanArray {
   def alloc(length: Int): BooleanArray = {
     val arrinfo = infoof[BooleanArray]
     val arrsize = sizeof[ArrayHeader] + sizeof[Boolean] * length
-    runtime.alloc(arrinfo, arrsize).cast[BooleanArray]
+    val arr = runtime.alloc(arrinfo, arrsize)
+    
+    // set the length
+    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length
+    
+    arr.cast[BooleanArray]    
   }
 }
 
@@ -99,7 +104,10 @@ object CharArray {
   def alloc(length: Int): CharArray = {
     val arrinfo = infoof[CharArray]
     val arrsize = sizeof[ArrayHeader] + sizeof[Char] * length
-    runtime.alloc(arrinfo, arrsize).cast[CharArray]
+    val arr = runtime.alloc(arrinfo, arrsize)    
+    // set the length
+    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
+    arr.cast[CharArray]    
   }
 }
 
@@ -138,7 +146,10 @@ object ByteArray {
   def alloc(length: Int): ByteArray = {
     val arrinfo = infoof[ByteArray]
     val arrsize = sizeof[ArrayHeader] + sizeof[Byte] * length
-    runtime.alloc(arrinfo, arrsize).cast[ByteArray]
+    val arr = runtime.alloc(arrinfo, arrsize)    
+    // set the length
+    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
+    arr.cast[ByteArray]    
   }
 }
 
@@ -177,7 +188,10 @@ object ShortArray {
   def alloc(length: Int): ShortArray = {
     val arrinfo = infoof[ShortArray]
     val arrsize = sizeof[ArrayHeader] + sizeof[Short] * length
-    runtime.alloc(arrinfo, arrsize).cast[ShortArray]
+    val arr = runtime.alloc(arrinfo, arrsize)    
+    // set the length
+    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
+    arr.cast[ShortArray]    
   }
 }
 
@@ -216,7 +230,10 @@ object IntArray {
   def alloc(length: Int): IntArray = {
     val arrinfo = infoof[IntArray]
     val arrsize = sizeof[ArrayHeader] + sizeof[Int] * length
-    runtime.alloc(arrinfo, arrsize).cast[IntArray]
+    val arr = runtime.alloc(arrinfo, arrsize)    
+    // set the length
+    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
+    arr.cast[IntArray]    
   }
 }
 
@@ -255,7 +272,10 @@ object LongArray {
   def alloc(length: Int): LongArray = {
     val arrinfo = infoof[LongArray]
     val arrsize = sizeof[ArrayHeader] + sizeof[Long] * length
-    runtime.alloc(arrinfo, arrsize).cast[LongArray]
+    val arr = runtime.alloc(arrinfo, arrsize)    
+    // set the length
+    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
+    arr.cast[LongArray]    
   }
 }
 
@@ -294,7 +314,10 @@ object FloatArray {
   def alloc(length: Int): FloatArray = {
     val arrinfo = infoof[FloatArray]
     val arrsize = sizeof[ArrayHeader] + sizeof[Float] * length
-    runtime.alloc(arrinfo, arrsize).cast[FloatArray]
+    val arr = runtime.alloc(arrinfo, arrsize)
+    // set the length
+    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
+    arr.cast[FloatArray]    
   }
 }
 
@@ -333,7 +356,10 @@ object DoubleArray {
   def alloc(length: Int): DoubleArray = {
     val arrinfo = infoof[DoubleArray]
     val arrsize = sizeof[ArrayHeader] + sizeof[Double] * length
-    runtime.alloc(arrinfo, arrsize).cast[DoubleArray]
+    val arr = runtime.alloc(arrinfo, arrsize)    
+    // set the length
+    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
+    arr.cast[DoubleArray]    
   }
 }
 
@@ -372,7 +398,10 @@ object ObjectArray {
   def alloc(length: Int): ObjectArray = {
     val arrinfo = infoof[ObjectArray]
     val arrsize = sizeof[ArrayHeader] + sizeof[Object] * length
-    runtime.alloc(arrinfo, arrsize).cast[ObjectArray]
+    val arr = runtime.alloc(arrinfo, arrsize)    
+    // set the length
+    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
+    arr.cast[ObjectArray]    
   }
 }
 
