@@ -2,6 +2,7 @@ package scala.scalanative
 package compiler
 
 import scala.collection.mutable
+import codegen.{GenTextualLLVM, GenTextualNIR}
 import linker.Linker
 import nir._, Shows._
 import nir.serialization._
@@ -11,7 +12,7 @@ final class Compiler(opts: Opts) {
   private lazy val entry =
     Global.Member(Global.Val(opts.entry), "main_class.ssnr.ObjectArray_unit")
 
-  private lazy val assembly: Seq[Defn] =
+  private lazy val (links, assembly): (Seq[Attr.Link], Seq[Defn]) =
     new Linker(opts.dotpath, opts.classpath).linkClosed(entry)
 
   private lazy val passes: Seq[Pass] = {
@@ -39,20 +40,20 @@ final class Compiler(opts: Opts) {
     )
   }
 
-  private def output(assembly: Seq[Defn]): Unit = {
-    val gen = new codegen.GenTextualLLVM(assembly)
+  private def codegen(assembly: Seq[Defn]): Unit = {
+    val gen = new GenTextualLLVM(assembly)
     serializeFile((defns, bb) => gen.gen(bb), assembly, opts.outpath)
   }
 
   private def debug(assembly: Seq[Defn], suffix: String) =
     if (opts.verbose) {
-      val gen = new codegen.GenTextualNIR(assembly)
+      val gen = new GenTextualNIR(assembly)
       serializeFile((defns, bb) => gen.gen(bb),
                     assembly,
                     opts.outpath + s".$suffix.hnir")
     }
 
-  def apply(): Unit = {
+  def apply(): Seq[Attr.Link] = {
     def loop(assembly: Seq[Defn], passes: Seq[(Pass, Int)]): Seq[Defn] =
       passes match {
         case Seq() =>
@@ -63,7 +64,10 @@ final class Compiler(opts: Opts) {
               nassembly, (id + 1).toString + "-" + pass.getClass.getSimpleName)
           loop(nassembly, rest)
       }
+
     debug(assembly, "0")
-    output(loop(assembly, passes.zipWithIndex))
+    codegen(loop(assembly, passes.zipWithIndex))
+
+    links
   }
 }

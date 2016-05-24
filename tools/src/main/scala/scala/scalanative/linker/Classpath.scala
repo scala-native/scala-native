@@ -27,10 +27,10 @@ final class LocalClasspath(path: Path) extends Classpath {
 }
 
 final class JarClasspath(path: Path) extends Classpath {
-  private val fsUri: URI = URI.create(s"jar:${path.toUri}")
+  private val fsUri: URI                   = URI.create(s"jar:${path.toUri}")
   private val options: Map[String, String] = Map("create" -> "false")
-  private val fs: FileSystem = FileSystems.newFileSystem(fsUri, options.asJava)
-  private val roots: Seq[Path] = fs.getRootDirectories.asScala.toSeq
+  private val fs: FileSystem               = FileSystems.newFileSystem(fsUri, options.asJava)
+  private val roots: Seq[Path]             = fs.getRootDirectories.asScala.toSeq
 
   override def contents(): Seq[VirtualFile] = {
     roots

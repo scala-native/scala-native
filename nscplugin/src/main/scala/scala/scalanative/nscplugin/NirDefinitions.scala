@@ -9,6 +9,9 @@ trait NirDefinitions { self: NirGlobalAddons =>
   import rootMirror._
 
   object nirDefinitions {
+
+    // Native library
+
     lazy val PtrClass        = getRequiredClass("scala.scalanative.native.Ptr")
     lazy val PtrLoadMethod   = getDecl(PtrClass, TermName("unary_$bang"))
     lazy val PtrStoreMethod  = getDecl(PtrClass, TermName("unary_$bang_$eq"))
@@ -17,11 +20,34 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val PtrApplyMethod  = getDecl(PtrClass, TermName("apply"))
     lazy val PtrUpdateMethod = getDecl(PtrClass, TermName("update"))
 
-    lazy val NObjectClass = getRequiredClass("java.lang._Object")
-    lazy val NObjectHashCodeMethod = getDecl(
-        NObjectClass, TermName("_hashCode"))
-    lazy val NObjectEqualsMethod = getDecl(NObjectClass, TermName("_equals"))
-    lazy val NObjectInitMethod   = getDecl(NObjectClass, TermName("<init>"))
+    lazy val NameClass   = getRequiredClass("scala.scalanative.native.name")
+    lazy val LinkClass   = getRequiredClass("scala.scalanative.native.link")
+    lazy val ExternClass = getRequiredClass("scala.scalanative.native.extern")
+    lazy val StructClass = getRequiredClass("scala.scalanative.native.struct")
+
+    lazy val InlineHintClass = getRequiredClass(
+        "scala.scalanative.native.inlinehint")
+
+    lazy val NativeModule = getRequiredModule(
+        "scala.scalanative.native.package")
+    lazy val CastMethod       = getMember(NativeModule, TermName("cast"))
+    lazy val ExternMethod     = getMember(NativeModule, TermName("extern"))
+    lazy val SizeofMethod     = getMember(NativeModule, TermName("sizeof"))
+    lazy val StackallocMethod = getMember(NativeModule, TermName("stackalloc"))
+
+    lazy val VarargModule = getRequiredModule(
+        "scala.scalanative.native.Vararg")
+    lazy val VarargMethod = getMember(VarargModule, TermName("apply"))
+
+    lazy val CQuoteClass = getRequiredClass(
+        "scala.scalanative.native.package$CQuote")
+    lazy val CQuoteMethod = getDecl(CQuoteClass, TermName("c"))
+
+    lazy val CCastClass = getRequiredClass(
+        "scala.scalanative.native.package$CCast")
+    lazy val CCastMethod = getDecl(CCastClass, TermName("cast"))
+
+    // Native runtime
 
     lazy val NMonitorClass = getRequiredClass(
         "scala.scalanative.runtime.Monitor")
@@ -35,63 +61,9 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val NTypeModule    = getRequiredModule("scala.scalanative.runtime.Type")
     lazy val NTypeGetMethod = getDecl(NTypeModule, TermName("get"))
 
-    lazy val NStringClass  = getRequiredClass("java.lang._String")
-    lazy val NStringModule = getRequiredModule("java.lang._String")
-
-    lazy val InlineClass   = getRequiredClass("scala.inline")
-    lazy val NoInlineClass = getRequiredClass("scala.noinline")
-    lazy val MustInlineClass = getRequiredClass(
-        "scala.scalanative.runtime.mustinline")
-    lazy val PureClass = getRequiredClass("scala.scalanative.runtime.pure")
-
-    lazy val NativeModule = getRequiredModule(
-        "scala.scalanative.native.package")
-    lazy val CastMethod       = getMember(NativeModule, TermName("cast"))
-    lazy val ExternMethod     = getMember(NativeModule, TermName("extern"))
-    lazy val SizeofMethod     = getMember(NativeModule, TermName("sizeof"))
-    lazy val StackallocMethod = getMember(NativeModule, TermName("stackalloc"))
-    lazy val ExternClass      = getRequiredClass("scala.scalanative.native.extern")
-    lazy val StructClass      = getRequiredClass("scala.scalanative.native.struct")
-
-    lazy val VarargModule = getRequiredModule(
-        "scala.scalanative.native.Vararg")
-    lazy val VarargMethod = getMember(VarargModule, TermName("apply"))
-
     lazy val RuntimeModule = getRequiredModule(
         "scala.scalanative.runtime.package")
     lazy val InfoofMethod = getMember(RuntimeModule, TermName("infoof"))
-
-    lazy val CQuoteClass = getRequiredClass(
-        "scala.scalanative.native.package$CQuote")
-    lazy val CQuoteMethod = getDecl(CQuoteClass, TermName("c"))
-
-    lazy val CCastClass = getRequiredClass(
-        "scala.scalanative.native.package$CCast")
-    lazy val CCastMethod = getDecl(CCastClass, TermName("cast"))
-
-    lazy val StringConcatMethod = getMember(StringClass, TermName("concat"))
-
-    lazy val BoxMethod = Map[Char, Symbol](
-        'B' -> getDecl(BoxesRunTimeModule, TermName("boxToBoolean")),
-        'C' -> getDecl(BoxesRunTimeModule, TermName("boxToCharacter")),
-        'Z' -> getDecl(BoxesRunTimeModule, TermName("boxToByte")),
-        'S' -> getDecl(BoxesRunTimeModule, TermName("boxToShort")),
-        'I' -> getDecl(BoxesRunTimeModule, TermName("boxToInteger")),
-        'L' -> getDecl(BoxesRunTimeModule, TermName("boxToLong")),
-        'F' -> getDecl(BoxesRunTimeModule, TermName("boxToFloat")),
-        'D' -> getDecl(BoxesRunTimeModule, TermName("boxToDouble"))
-    )
-
-    lazy val UnboxMethod = Map[Char, Symbol](
-        'B' -> getDecl(BoxesRunTimeModule, TermName("unboxToBoolean")),
-        'C' -> getDecl(BoxesRunTimeModule, TermName("unboxToChar")),
-        'Z' -> getDecl(BoxesRunTimeModule, TermName("unboxToByte")),
-        'S' -> getDecl(BoxesRunTimeModule, TermName("unboxToShort")),
-        'I' -> getDecl(BoxesRunTimeModule, TermName("unboxToInt")),
-        'L' -> getDecl(BoxesRunTimeModule, TermName("unboxToLong")),
-        'F' -> getDecl(BoxesRunTimeModule, TermName("unboxToFloat")),
-        'D' -> getDecl(BoxesRunTimeModule, TermName("unboxToDouble"))
-    )
 
     lazy val NArrayClass: Map[Char, Symbol] = Map(
         'B' -> getRequiredClass("scala.scalanative.runtime.BooleanArray"),
@@ -123,6 +95,46 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val NArrayCloneMethod: Map[Char, Symbol] =
       NArrayClass.mapValues(getMember(_, TermName("clone")))
 
+    // Java library
+
+    lazy val NObjectClass = getRequiredClass("java.lang._Object")
+    lazy val NObjectHashCodeMethod = getDecl(
+        NObjectClass, TermName("_hashCode"))
+    lazy val NObjectEqualsMethod = getDecl(NObjectClass, TermName("_equals"))
+    lazy val NObjectInitMethod   = getDecl(NObjectClass, TermName("<init>"))
+
+    lazy val NStringClass  = getRequiredClass("java.lang._String")
+    lazy val NStringModule = getRequiredModule("java.lang._String")
+
+    // Scala library & runtime
+
+    lazy val InlineClass   = getRequiredClass("scala.inline")
+    lazy val NoInlineClass = getRequiredClass("scala.noinline")
+
+    lazy val StringConcatMethod = getMember(StringClass, TermName("concat"))
+
+    lazy val BoxMethod = Map[Char, Symbol](
+        'B' -> getDecl(BoxesRunTimeModule, TermName("boxToBoolean")),
+        'C' -> getDecl(BoxesRunTimeModule, TermName("boxToCharacter")),
+        'Z' -> getDecl(BoxesRunTimeModule, TermName("boxToByte")),
+        'S' -> getDecl(BoxesRunTimeModule, TermName("boxToShort")),
+        'I' -> getDecl(BoxesRunTimeModule, TermName("boxToInteger")),
+        'L' -> getDecl(BoxesRunTimeModule, TermName("boxToLong")),
+        'F' -> getDecl(BoxesRunTimeModule, TermName("boxToFloat")),
+        'D' -> getDecl(BoxesRunTimeModule, TermName("boxToDouble"))
+    )
+
+    lazy val UnboxMethod = Map[Char, Symbol](
+        'B' -> getDecl(BoxesRunTimeModule, TermName("unboxToBoolean")),
+        'C' -> getDecl(BoxesRunTimeModule, TermName("unboxToChar")),
+        'Z' -> getDecl(BoxesRunTimeModule, TermName("unboxToByte")),
+        'S' -> getDecl(BoxesRunTimeModule, TermName("unboxToShort")),
+        'I' -> getDecl(BoxesRunTimeModule, TermName("unboxToInt")),
+        'L' -> getDecl(BoxesRunTimeModule, TermName("unboxToLong")),
+        'F' -> getDecl(BoxesRunTimeModule, TermName("unboxToFloat")),
+        'D' -> getDecl(BoxesRunTimeModule, TermName("unboxToDouble"))
+    )
+
     lazy val ClassTagModule  = getRequiredModule("scala.reflect.ClassTag")
     lazy val ClassTagApply   = getDecl(ClassTagModule, TermName("apply"))
     lazy val ByteClassTag    = getDecl(ClassTagModule, TermName("Byte"))
@@ -140,5 +152,10 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val AnyRefClassTag  = getDecl(ClassTagModule, TermName("AnyRef"))
     lazy val NothingClassTag = getDecl(ClassTagModule, TermName("Nothing"))
     lazy val NullClassTag    = getDecl(ClassTagModule, TermName("Null"))
+
+    lazy val PureModules: Set[Symbol] =
+      Set(PredefModule, BoxesRunTimeModule).map(_.moduleClass)
+    lazy val PureMethods: Set[Symbol] =
+      (BoxMethod.values ++ UnboxMethod.values).toSet
   }
 }

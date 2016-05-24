@@ -19,7 +19,7 @@ object ScalaNativePluginInternal {
     file.getAbsolutePath
 
   /** Compiles application nir to llvm ir. */
-  private def compileNir(opts: NativeOpts): Unit = {
+  private def compileNir(opts: NativeOpts): Seq[nir.Attr.Link] = {
     val compiler = new NativeCompiler(opts)
     compiler.apply()
   }
@@ -39,14 +39,21 @@ object ScalaNativePluginInternal {
                         target: File,
                         appll: File,
                         binary: File,
+                        links: Seq[String],
+                        linkAs: Map[String, String],
                         opts: Seq[String]): Unit = {
-    val outpath = abs(binary)
-    val apppath = abs(appll)
-    val rtpaths = (rtlib ** "*.cpp").get.map(abs)
-    val paths   = apppath +: rtpaths
-    val flags   = Seq("-o", outpath,
-                      "-l", "gc") ++ opts
-    val compile = abs(clang) +: (flags ++ paths)
+    val outpath  = abs(binary)
+    val apppath  = abs(appll)
+    val rtpaths  = (rtlib ** "*.cpp").get.map(abs)
+    val paths    = apppath +: rtpaths
+    val linkopts = links.zip(links.map(linkAs.get(_))).flatMap {
+      case (name, Some("static"))         => Seq("-static", "-l", name)
+      case (name, Some("dynamic") | None) => Seq("-l", name)
+      case (name, Some(kind)) =>
+        throw new MessageOnlyException(s"uknown linkage kind $kind for $name")
+    }
+    val flags    = Seq("-o", outpath) ++ linkopts ++ opts
+    val compile  = abs(clang) +: (flags ++ paths)
 
     Process(compile, target).!
   }
@@ -77,6 +84,8 @@ object ScalaNativePluginInternal {
 
     nativeEmitDependencyGraphPath := None,
 
+    nativeLinkAs := Map(),
+
     run := {
       val entry     = (mainClass in Compile).value.get.toString
       val classpath = cpToStrings((fullClasspath in Compile).value.map(_.data))
@@ -87,6 +96,7 @@ object ScalaNativePluginInternal {
       val clang     = nativeClang.value
       val clangOpts = nativeClangOptions.value
       val dotpath   = nativeEmitDependencyGraphPath.value
+      val linkAs    = nativeLinkAs.value
       val opts      = new NativeOpts(classpath,
                                      abs(appll),
                                      dotpath.map(abs),
@@ -95,8 +105,8 @@ object ScalaNativePluginInternal {
 
       IO.createDirectory(target)
       unpackRtlib(classpath)
-      compileNir(opts)
-      compileLl(clang, target, appll, binary, clangOpts)
+      val links = compileNir(opts).map(_.name)
+      compileLl(clang, target, appll, binary, links, linkAs, clangOpts)
       Process(abs(binary)).!
     }
   )

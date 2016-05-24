@@ -12,7 +12,9 @@ import nir._, Shows._
 import NirPrimitives._
 
 abstract class NirCodeGen
-    extends PluginComponent with NirFiles with NirTypeEncoding
+    extends PluginComponent
+    with NirFiles
+    with NirTypeEncoding
     with NirNameEncoding {
   val nirAddons: NirGlobalAddons {
     val global: NirCodeGen.this.global.type
@@ -100,12 +102,10 @@ abstract class NirCodeGen
         val sym = cd.symbol
         if (isPrimitiveValueClass(sym) || (sym == ArrayClass)) ()
         else {
-          //println(cd)
           val defn =
             if (isStruct(cd.symbol)) genStruct(cd)
             else genClass(cd)
 
-          //println(sh"$defn")
           genIRFile(cunit, sym, defn)
         }
       }
@@ -157,12 +157,15 @@ abstract class NirCodeGen
       def pinned =
         if (!isModule(sym) || isExternModule(sym)) Seq()
         else Seq(Attr.PinAlways(genMethodName(sym.asClass.primaryConstructor)))
-
-      Attrs.fromSeq(
-          pinned ++ sym.annotations.collect {
+      val attrs = sym.annotations.collect {
         case ann if ann.symbol == ExternClass => Attr.Extern
-        case ann if ann.symbol == PureClass   => Attr.Pure
-      })
+        case ann if ann.symbol == LinkClass =>
+          val Apply(_, Seq(Literal(Constant(name: String)))) = ann.tree
+          Attr.Link(name)
+      }
+      val pure = if (PureModules.contains(sym)) Seq(Attr.Pure) else Seq()
+
+      Attrs.fromSeq(pinned ++ pure ++ attrs)
     }
 
     def genClassInterfaces(sym: Symbol) =
@@ -191,8 +194,6 @@ abstract class NirCodeGen
       cd.impl.body.collect { case dd: DefDef => genMethod(dd) }.flatten
 
     def genMethod(dd: DefDef): Seq[Defn] = {
-      //println(s"gen method $dd")
-
       val fresh = new Fresh("src")
       val env   = new Env(fresh)
 
@@ -263,7 +264,7 @@ abstract class NirCodeGen
       }.toSet
       for {
         f <- curClassSym.info.decls if isField(f)
-            if !externs.contains(f)
+        if !externs.contains(f)
       } {
         unsupported("extern objects may only contain extern fields")
       }
@@ -271,15 +272,16 @@ abstract class NirCodeGen
 
     def genMethodAttrs(sym: Symbol): Attrs =
       Attrs.fromSeq({
-        if (sym.hasFlag(ACCESSOR)) Seq(Attr.MustInline)
+        if (sym.hasFlag(ACCESSOR)) Seq(Attr.AlwaysInline)
         else Seq()
       } ++ sym.overrides.map {
         case sym => Attr.Override(genMethodName(sym))
       } ++ sym.annotations.collect {
-        case ann if ann.symbol == InlineClass     => Attr.InlineHint
         case ann if ann.symbol == NoInlineClass   => Attr.NoInline
-        case ann if ann.symbol == MustInlineClass => Attr.MustInline
-        case ann if ann.symbol == PureClass       => Attr.Pure
+        case ann if ann.symbol == InlineHintClass => Attr.InlineHint
+        case ann if ann.symbol == InlineClass     => Attr.AlwaysInline
+      } ++ {
+        if (PureMethods.contains(sym)) Seq(Attr.Pure) else Seq()
       } ++ {
         val owner = sym.owner
         if (owner.primaryConstructor eq sym)
@@ -850,7 +852,8 @@ abstract class NirCodeGen
       else if (code == CQUOTE) genCQuoteOp(app, focus)
       else if (code == BOXED_UNIT) focus withValue Val.Unit
       else
-        abort("Unknown primitive operation: " + sym.fullName + "(" +
+        abort(
+            "Unknown primitive operation: " + sym.fullName + "(" +
             fun.symbol.simpleName + ") " + " at: " + (app.pos))
     }
 
@@ -1248,10 +1251,9 @@ abstract class NirCodeGen
                   Apply(_,
                         List(
                         Apply(TypeApply(
-                              Select(
-                              ArrayValue(_,
-                                         List(Literal(Constant(str: String)))),
-                              _),
+                              Select(ArrayValue(
+                                     _, List(Literal(Constant(str: String)))),
+                                     _),
                               _),
                               _))))))),
             _),

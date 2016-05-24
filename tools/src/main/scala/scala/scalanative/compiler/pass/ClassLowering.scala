@@ -130,7 +130,7 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
 
     case Inst(n, Op.Infoof(name)) =>
       Seq(
-        Inst(n, Op.Copy(Val.Global(name tag "const", Type.Ptr)))
+          Inst(n, Op.Copy(Val.Global(name tag "const", Type.Ptr)))
       )
 
     case Inst(n, Op.Is(ClassRef(cls), obj)) =>

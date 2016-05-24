@@ -12,28 +12,32 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
 
   private lazy val header: Map[Global, Int] = {
     buffer.position(0)
-    val (_, pairs) = scoped(getSeq((getGlobal, getInt)))
-    val map        = pairs.toMap
+    val (_, _, pairs) = scoped(getSeq((getGlobal, getInt)))
+    val map           = pairs.toMap
     this.deps = null
     map
   }
 
-  private var deps: mutable.Set[Dep] = _
-  private def scoped[T](f: => T): (mutable.Set[Dep], T) = {
+  private var deps: mutable.Set[Dep]   = _
+  private var links: mutable.Set[Attr.Link] = _
+  private def scoped[T](f: => T): (mutable.Set[Dep], mutable.Set[Attr.Link], T) = {
     this.deps = mutable.Set.empty[Dep]
-    val res  = f
-    val deps = this.deps
+    this.links = mutable.Set.empty[Attr.Link]
+    val res   = f
+    val deps  = this.deps
+    val links = this.links
     this.deps = null
-    (deps, res)
+    this.links = null
+    (deps, links, res)
   }
 
-  final def deserialize(g: Global): Option[(Seq[Dep], Defn)] =
+  final def deserialize(g: Global): Option[(Seq[Dep], Seq[Attr.Link], Defn)] =
     header.get(g).map {
       case offset =>
         buffer.position(offset)
-        val (deps, defn) = scoped(getDefn)
+        val (deps, links, defn) = scoped(getDefn)
         deps -= Dep.Direct(g)
-        (deps.toSeq, defn)
+        (deps.toSeq, links.toSeq, defn)
     }
 
   private def getSeq[T](getT: => T): Seq[T] =
@@ -58,14 +62,16 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
 
     (1 to getInt).foreach { _ =>
       getInt match {
-        case T.MayInlineAttr  => buf += Attr.MayInline
-        case T.InlineHintAttr => buf += Attr.InlineHint
-        case T.NoInlineAttr   => buf += Attr.NoInline
-        case T.MustInlineAttr => buf += Attr.MustInline
+        case T.MayInlineAttr    => buf += Attr.MayInline
+        case T.InlineHintAttr   => buf += Attr.InlineHint
+        case T.NoInlineAttr     => buf += Attr.NoInline
+        case T.AlwaysInlineAttr => buf += Attr.AlwaysInline
 
-        case T.PureAttr      => buf += Attr.Pure
-        case T.ExternAttr    => buf += Attr.Extern
-        case T.OverrideAttr  => buf += Attr.Override(getGlobal)
+        case T.PureAttr     => buf += Attr.Pure
+        case T.ExternAttr   => buf += Attr.Extern
+        case T.OverrideAttr => buf += Attr.Override(getGlobal)
+
+        case T.LinkAttr      => links += Attr.Link(getString)
         case T.PinAlwaysAttr => deps += Dep.Direct(getGlobalNoDep)
         case T.PinIfAttr =>
           deps += Dep.Conditional(getGlobalNoDep, getGlobalNoDep)

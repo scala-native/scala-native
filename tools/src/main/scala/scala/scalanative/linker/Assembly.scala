@@ -8,7 +8,7 @@ import scala.scalanative.nir._
 import scala.scalanative.nir.serialization._
 
 final case class Assembly(base: File) {
-  private val baseabs = base.getAbsolutePath()
+  private val baseabs  = base.getAbsolutePath()
   private val basePath = Paths.get(baseabs)
   private val classPath =
     if (baseabs.endsWith(".jar")) new JarClasspath(basePath)
@@ -18,7 +18,7 @@ final case class Assembly(base: File) {
     classPath.contents
       .filter(_.relativePath.toString.endsWith(".nir"))
       .map { vfile =>
-        val path = vfile.relativePath
+        val path    = vfile.relativePath
         val fileabs = path.toAbsolutePath().toString
         val relpath = fileabs.replace(baseabs + "/", "")
         val (ctor, rel) =
@@ -29,7 +29,7 @@ final case class Assembly(base: File) {
           else
             throw new LinkingError(s"can't recognized assembly file: $relpath")
         val parts = rel.split("/").toSeq
-        val name = ctor(parts.filter(_ != "").mkString("."))
+        val name  = ctor(parts.filter(_ != "").mkString("."))
         (name -> new BinaryDeserializer(vfile.bytes))
       }
       .toMap
@@ -38,14 +38,14 @@ final case class Assembly(base: File) {
   def contains(name: Global) =
     entries.contains(name.top)
 
-  def load(name: Global): Option[(Seq[Dep], Defn)] =
+  def load(name: Global): Option[(Seq[Dep], Seq[Attr.Link], Defn)] =
     entries.get(name.top).flatMap { deserializer =>
-      //println(s"deserializing $name")
       deserializer.deserialize(name)
     }
 
   def close = classPath.close()
 }
+
 object Assembly {
   def apply(path: String): Option[Assembly] = {
     val file = new File(path)

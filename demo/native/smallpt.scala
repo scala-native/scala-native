@@ -164,7 +164,7 @@ object Main {
     val Xi = malloc(sizeof[Short] * 3).cast[Ptr[Short]]
     var y = 0
     while (y < H) {
-      fprintf(__stderrp, c"\rRendering (%d spp) %5.2f%%", SAMPLES * 4, 100.0 * y/(H-1))
+      fprintf(stderr, c"\rRendering (%d spp) %5.2f%%", SAMPLES * 4, 100.0 * y/(H-1))
       Xi(0) = 0.toShort
       Xi(1) = 0.toShort
       Xi(2) = (y * y * y).toShort

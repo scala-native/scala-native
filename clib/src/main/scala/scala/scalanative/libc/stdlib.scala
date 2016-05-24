@@ -5,8 +5,11 @@ import native._
 
 @extern
 object stdlib {
-  var __stderrp: Ptr[_] = extern
-  var __stdoutp: Ptr[_] = extern
+  @name("__stderrp")
+  var stderr: Ptr[_] = extern
+  @name("__stdoutp")
+  var stdout: Ptr[_] = extern
+
   def fopen(filename: CString, mode: CString): Ptr[_]               = extern
   def fprintf(stream: Ptr[_], format: CString, args: Vararg*): CInt = extern
   def malloc(size: Word): Ptr[_]                                    = extern

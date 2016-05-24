@@ -45,7 +45,7 @@ RUN git clone https://github.com/scala-native/scala-native.git
 
 WORKDIR /tmp/scala-native
 
-RUN sed -i 's|__stdoutp|stdout|;s|__stderrp|stderr|' demo/native/smallpt.scala clib/src/main/scala/scala/scalanative/libc/stdlib.scala sandbox/Test.scala
+RUN sed -i 's|__stdoutp|stdout|;s|__stderrp|stderr|' clib/src/main/scala/scala/scalanative/libc/stdlib.scala
 
 RUN sbt 'rtlib/publishLocal' && sbt 'nscplugin/publishLocal'
 
