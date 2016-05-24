@@ -12,15 +12,25 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
 
   private lazy val header: Map[Global, Int] = {
     buffer.position(0)
+
+    val magic    = getInt
+    val compat   = getInt
+    val revision = getInt
+
+    assert(magic == Versions.magic, "Can't read non-NIR file.")
+    assert(compat == Versions.compat || revision <= Versions.revision,
+           "Can't read binary-incompatible version of NIR.")
+
     val (_, _, pairs) = scoped(getSeq((getGlobal, getInt)))
     val map           = pairs.toMap
     this.deps = null
     map
   }
 
-  private var deps: mutable.Set[Dep]   = _
+  private var deps: mutable.Set[Dep]        = _
   private var links: mutable.Set[Attr.Link] = _
-  private def scoped[T](f: => T): (mutable.Set[Dep], mutable.Set[Attr.Link], T) = {
+  private def scoped[T](
+      f: => T): (mutable.Set[Dep], mutable.Set[Attr.Link], T) = {
     this.deps = mutable.Set.empty[Dep]
     this.links = mutable.Set.empty[Attr.Link]
     val res   = f

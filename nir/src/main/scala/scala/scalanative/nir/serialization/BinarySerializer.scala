@@ -13,6 +13,10 @@ final class BinarySerializer(buffer: ByteBuffer) {
     val names     = defns.map(_.name)
     val positions = mutable.UnrolledBuffer.empty[Int]
 
+    putInt(Versions.magic)
+    putInt(Versions.compat)
+    putInt(Versions.revision)
+
     putSeq(names) { n =>
       putGlobal(n)
       positions += buffer.position
@@ -65,8 +69,8 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Attr.Extern      => putInt(T.ExternAttr)
     case Attr.Override(n) => putInt(T.OverrideAttr); putGlobal(n)
 
-    case Attr.Link(s)        => putInt(T.LinkAttr); putString(s)
-    case Attr.PinAlways(n)   => putInt(T.PinAlwaysAttr); putGlobal(n)
+    case Attr.Link(s)      => putInt(T.LinkAttr); putString(s)
+    case Attr.PinAlways(n) => putInt(T.PinAlwaysAttr); putGlobal(n)
     case Attr.PinIf(n, cond) =>
       putInt(T.PinIfAttr); putGlobal(n); putGlobal(cond)
   }
