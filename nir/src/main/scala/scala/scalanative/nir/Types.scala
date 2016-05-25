@@ -23,7 +23,6 @@ object Type {
   // low-level types
   final case object None   extends Type
   final case object Void   extends Type
-  final case object Label  extends Type
   final case object Vararg extends Type
   final case object Ptr    extends Type
 

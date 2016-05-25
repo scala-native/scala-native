@@ -74,19 +74,7 @@ object Tags {
   final val ClassDefn   = 1 + TraitDefn
   final val ModuleDefn  = 1 + ClassDefn
 
-  final val PrivateLink             = 1 + ModuleDefn
-  final val InternalLink            = 1 + PrivateLink
-  final val AvailableExternallyLink = 1 + InternalLink
-  final val OnceLink                = 1 + AvailableExternallyLink
-  final val WeakLink                = 1 + OnceLink
-  final val CommonLink              = 1 + WeakLink
-  final val AppendingLink           = 1 + CommonLink
-  final val ExternWeakLink          = 1 + AppendingLink
-  final val OnceODRLink             = 1 + ExternWeakLink
-  final val WeakODRLink             = 1 + OnceODRLink
-  final val ExternalLink            = 1 + WeakODRLink
-
-  final val UnreachableCf = 1 + ExternalLink
+  final val UnreachableCf = 1 + ModuleDefn
   final val RetCf         = 1 + UnreachableCf
   final val JumpCf        = 1 + RetCf
   final val IfCf          = 1 + JumpCf
@@ -131,8 +119,7 @@ object Tags {
 
   final val NoneType     = 1 + ClosureOp
   final val VoidType     = 1 + NoneType
-  final val LabelType    = 1 + VoidType
-  final val VarargType   = 1 + LabelType
+  final val VarargType   = 1 + VoidType
   final val PtrType      = 1 + VarargType
   final val BoolType     = 1 + PtrType
   final val I8Type       = 1 + BoolType

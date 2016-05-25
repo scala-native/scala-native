@@ -239,7 +239,6 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
   private def getType(): Type = getInt match {
     case T.NoneType     => Type.None
     case T.VoidType     => Type.Void
-    case T.LabelType    => Type.Label
     case T.VarargType   => Type.Vararg
     case T.PtrType      => Type.Ptr
     case T.BoolType     => Type.Bool

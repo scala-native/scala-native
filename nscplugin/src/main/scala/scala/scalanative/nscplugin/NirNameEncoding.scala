@@ -64,7 +64,6 @@ trait NirNameEncoding { self: NirCodeGen =>
     implicit lazy val showMangledType: Show[nir.Type] = Show {
       case nir.Type.None                => ""
       case nir.Type.Void                => "void"
-      case nir.Type.Label               => "label"
       case nir.Type.Vararg              => "..."
       case nir.Type.Ptr                 => "ptr"
       case nir.Type.Bool                => "bool"
