@@ -41,14 +41,14 @@ abstract class NirCodeGen
 
     def enterLabel(ld: LabelDef): Local = {
       val local = fresh()
-      enter(ld.symbol, Val.Local(local, Type.Label))
+      enter(ld.symbol, Val.Local(local, Type.Ptr))
       local
     }
 
     def resolve(sym: Symbol): Val = env(sym)
 
     def resolveLabel(ld: LabelDef): Local = {
-      val Val.Local(n, Type.Label) = resolve(ld.symbol)
+      val Val.Local(n, Type.Ptr) = resolve(ld.symbol)
       n
     }
   }

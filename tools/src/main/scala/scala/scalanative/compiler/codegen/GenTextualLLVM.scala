@@ -128,7 +128,6 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
 
   implicit val showType: Show[Type] = Show {
     case Type.Void                => "void"
-    case Type.Label               => "label"
     case Type.Vararg              => "..."
     case Type.Ptr                 => "i8*"
     case Type.Bool                => "i1"
