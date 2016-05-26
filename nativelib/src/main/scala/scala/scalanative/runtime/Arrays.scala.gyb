@@ -1,6 +1,10 @@
 package scala.scalanative
 package runtime
 
+// Note:
+// Arrays.scala is currently implemented textual templating that is expanded through project/gyb.py script. 
+// Update the Arrays.scala.gyb and re-generate the source
+
 %{
    types = ['Boolean', 'Char', 'Byte', 'Short',
             'Int', 'Long', 'Float', 'Double', 'Object']
@@ -62,7 +66,10 @@ object ${T}Array {
   def alloc(length: Int): ${T}Array = {
     val arrinfo = infoof[${T}Array]
     val arrsize = sizeof[ArrayHeader] + sizeof[${T}] * length
-    runtime.alloc(arrinfo, arrsize).cast[${T}Array]
+    val arr = runtime.alloc(arrinfo, arrsize)    
+    // set the length
+    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
+    arr.cast[${T}Array]        
   }
 }
 
