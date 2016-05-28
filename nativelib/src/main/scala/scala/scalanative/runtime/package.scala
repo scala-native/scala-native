@@ -14,6 +14,16 @@ package object runtime {
     ptr
   }
 
+  /** 
+   * Allocate memory in gc heap using given info pointer.
+   * The allocated memory cannot be used to store pointers.
+   */
+  def allocPointerFree(info: Ptr[_], size: CSize): Ptr[_] = {
+    val ptr = GC.malloc_pointer_free(size).cast[Ptr[Ptr[_]]]
+    !ptr = info
+    ptr
+  }
+
   /** Returns info pointer for given type. */
   def infoof[T](implicit ct: ClassTag[T]): Ptr[_] = undefined
 

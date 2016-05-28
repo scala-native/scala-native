@@ -7,7 +7,7 @@ package runtime
 
 %{
    types = ['Boolean', 'Char', 'Byte', 'Short',
-            'Int', 'Long', 'Float', 'Double', 'Object']
+            'Int', 'Long', 'Float', 'Double']
 }%
 
 import native._
@@ -30,6 +30,48 @@ sealed abstract class Array[T]
   /** Create a shallow of given array. */
   protected override def clone(): Array[T] = undefined
 }
+
+final class ObjectArray private () extends Array[Object] {
+  def apply(i: Int): Object =
+    if (i < 0 || i >= length)
+      throw new IndexOutOfBoundsException(i.toString)
+    else {
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Object]]
+      headptr(i)
+    }
+
+  def update(i: Int, value: Object): Unit =
+    if (i < 0 || i >= length)
+      throw new IndexOutOfBoundsException(i.toString)
+    else {
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Object]]
+      headptr(i) = value
+    }
+
+  protected override def clone(): ObjectArray = {
+    val newarr = ObjectArray.alloc(length)
+    ObjectArray.copy(this, 0, newarr, 0, length)
+    newarr
+  }
+}
+
+object ObjectArray {
+  def copy(from: ObjectArray, fromPos: Int,
+           to: ObjectArray, toPos: Int, length: Int): Unit = {
+    ???
+  }
+
+  def alloc(length: Int): ObjectArray = {
+    val arrinfo = infoof[ObjectArray]
+    val arrsize = sizeof[ArrayHeader] + sizeof[Object] * length
+    // no pointer free -> use runtime.alloc 
+    val arr = runtime.alloc(arrinfo, arrsize)    
+    // set the length
+    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
+    arr.cast[ObjectArray]        
+  }
+}
+
 
 % for T in types:
 
@@ -66,7 +108,8 @@ object ${T}Array {
   def alloc(length: Int): ${T}Array = {
     val arrinfo = infoof[${T}Array]
     val arrsize = sizeof[ArrayHeader] + sizeof[${T}] * length
-    val arr = runtime.alloc(arrinfo, arrsize)    
+    // pointer free -> use runtime.allocPointerFree 
+    val arr = runtime.allocPointerFree(arrinfo, arrsize)    
     // set the length
     !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
     arr.cast[${T}Array]        
