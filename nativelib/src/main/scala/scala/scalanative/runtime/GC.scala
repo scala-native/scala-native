@@ -3,6 +3,11 @@ package runtime
 
 import native._
 
+/**
+ * The Boehm GC conservative garbage collector
+ *
+ * @see [[http://hboehm.info/gc/gcinterface.html C Interface]]
+ */
 @link("gc")
 @extern object GC {
   @name("GC_malloc")

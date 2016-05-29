@@ -2,8 +2,8 @@ package scala.scalanative
 package runtime
 
 // Note:
-// Arrays.scala is currently implemented textual templating that is expanded through project/gyb.py script. 
-// Update the Arrays.scala.gyb and re-generate the source
+// Arrays.scala is currently implemented as textual templating that is expanded through project/gyb.py script. 
+// Update Arrays.scala.gyb and re-generate the source
 
 %{
    types = ['Boolean', 'Char', 'Byte', 'Short',
@@ -30,6 +30,8 @@ sealed abstract class Array[T]
   /** Create a shallow of given array. */
   protected override def clone(): Array[T] = undefined
 }
+
+// note: Array[Ptr[_]] is implemented as a ObjectArray
 
 final class ObjectArray private () extends Array[Object] {
   def apply(i: Int): Object =
@@ -72,6 +74,7 @@ object ObjectArray {
   }
 }
 
+// all primitive Arrays use runtime.allocPointerFree to allocate memory 
 
 % for T in types:
 
