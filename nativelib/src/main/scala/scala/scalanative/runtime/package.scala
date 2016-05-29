@@ -20,6 +20,8 @@ package object runtime {
    */
   def allocPointerFree(info: Ptr[_], size: CSize): Ptr[_] = {
     val ptr = GC.malloc_pointer_free(size).cast[Ptr[Ptr[_]]]
+    // initialize to 0
+    clib_string.memset(ptr, 0, size)
     !ptr = info
     ptr
   }
