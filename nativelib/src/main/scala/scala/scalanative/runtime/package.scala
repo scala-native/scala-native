@@ -16,6 +16,7 @@ package object runtime {
 
   /** 
    * Allocate memory in gc heap using given info pointer.
+   *
    * The allocated memory cannot be used to store pointers.
    */
   def allocPointerFree(info: Ptr[_], size: CSize): Ptr[_] = {

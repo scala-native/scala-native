@@ -2,7 +2,7 @@ package scala.scalanative
 
 import native._
 
-/*
+/**
  * C stdlib functions needed by nativelib
  *
  * Note: clib depends on nativelib.
