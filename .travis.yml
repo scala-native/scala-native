@@ -12,6 +12,17 @@ before_script:
   - brew install sbt
   - brew install bdw-gc
   - brew link bdw-gc
+  - brew install jq
+  - if [ "$TRAVIS_PULL_REQUEST" != "false" ] ; then
+      author=$(curl -s "https://api.github.com/repos/$TRAVIS_REPO_SLUG/pulls/$TRAVIS_PULL_REQUEST" | jq -r ".user.login");
+      if [ $? -ne 0 ] ; then exit 1; fi;
+      signed=$(curl -s http://www.lightbend.com/contribute/cla/scala/check/$author | jq -r ".signed");
+      if [ $? -ne 0 ] ; then exit 1; fi;
+      if [ "$signed" = "false" ] ; then
+        echo "Please sign the Scala CLA to contribute to Scala Native";
+        exit 1;
+      fi;
+    fi;
 script:
   - java -version
   - sbt 'rtlib/publishLocal' 'nscplugin/publishLocal' 'compile' 'sandbox/run' 'demoNative/run'
