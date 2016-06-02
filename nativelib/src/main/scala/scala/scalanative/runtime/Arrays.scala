@@ -2,11 +2,15 @@
 package scala.scalanative
 package runtime
 
-// Note:
+// Note 1:
 // Arrays.scala is currently implemented as textual templating that is expanded through project/gyb.py script. 
 // Update Arrays.scala.gyb and re-generate the source
 
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 12)
+// Note 2:
+// Array of primitiveTypes don't contain pointers, runtime.allocAtomic() is called for memory allocation   
+// Array of Object do contain pointers. runtime.alloc() is called for memory allocation
+
+// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 16)
 
 import native._
 
@@ -28,8 +32,6 @@ sealed abstract class Array[T]
   /** Create a shallow of given array. */
   protected override def clone(): Array[T] = undefined
 }
-
-// note: Array[Ptr[_]] is implemented as a ObjectArray
 
 final class ObjectArray private () extends Array[Object] {
   def apply(i: Int): Object =
@@ -64,7 +66,6 @@ object ObjectArray {
   def alloc(length: Int): ObjectArray = {
     val arrinfo = infoof[ObjectArray]
     val arrsize = sizeof[ArrayHeader] + sizeof[Object] * length
-    // no pointer free -> use runtime.alloc 
     val arr = runtime.alloc(arrinfo, arrsize)    
     // set the length
     !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
@@ -72,9 +73,7 @@ object ObjectArray {
   }
 }
 
-// all primitive Arrays use runtime.allocPointerFree to allocate memory 
-
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 80)
+// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 79)
 
 final class BooleanArray private () extends Array[Boolean] {
   def apply(i: Int): Boolean =
@@ -109,15 +108,14 @@ object BooleanArray {
   def alloc(length: Int): BooleanArray = {
     val arrinfo = infoof[BooleanArray]
     val arrsize = sizeof[ArrayHeader] + sizeof[Boolean] * length
-    // pointer free -> use runtime.allocPointerFree 
-    val arr = runtime.allocPointerFree(arrinfo, arrsize)    
+    val arr = runtime.allocAtomic(arrinfo, arrsize)    
     // set the length
     !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
     arr.cast[BooleanArray]        
   }
 }
 
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 80)
+// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 79)
 
 final class CharArray private () extends Array[Char] {
   def apply(i: Int): Char =
@@ -152,15 +150,14 @@ object CharArray {
   def alloc(length: Int): CharArray = {
     val arrinfo = infoof[CharArray]
     val arrsize = sizeof[ArrayHeader] + sizeof[Char] * length
-    // pointer free -> use runtime.allocPointerFree 
-    val arr = runtime.allocPointerFree(arrinfo, arrsize)    
+    val arr = runtime.allocAtomic(arrinfo, arrsize)    
     // set the length
     !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
     arr.cast[CharArray]        
   }
 }
 
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 80)
+// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 79)
 
 final class ByteArray private () extends Array[Byte] {
   def apply(i: Int): Byte =
@@ -195,15 +192,14 @@ object ByteArray {
   def alloc(length: Int): ByteArray = {
     val arrinfo = infoof[ByteArray]
     val arrsize = sizeof[ArrayHeader] + sizeof[Byte] * length
-    // pointer free -> use runtime.allocPointerFree 
-    val arr = runtime.allocPointerFree(arrinfo, arrsize)    
+    val arr = runtime.allocAtomic(arrinfo, arrsize)    
     // set the length
     !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
     arr.cast[ByteArray]        
   }
 }
 
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 80)
+// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 79)
 
 final class ShortArray private () extends Array[Short] {
   def apply(i: Int): Short =
@@ -238,15 +234,14 @@ object ShortArray {
   def alloc(length: Int): ShortArray = {
     val arrinfo = infoof[ShortArray]
     val arrsize = sizeof[ArrayHeader] + sizeof[Short] * length
-    // pointer free -> use runtime.allocPointerFree 
-    val arr = runtime.allocPointerFree(arrinfo, arrsize)    
+    val arr = runtime.allocAtomic(arrinfo, arrsize)    
     // set the length
     !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
     arr.cast[ShortArray]        
   }
 }
 
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 80)
+// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 79)
 
 final class IntArray private () extends Array[Int] {
   def apply(i: Int): Int =
@@ -281,15 +276,14 @@ object IntArray {
   def alloc(length: Int): IntArray = {
     val arrinfo = infoof[IntArray]
     val arrsize = sizeof[ArrayHeader] + sizeof[Int] * length
-    // pointer free -> use runtime.allocPointerFree 
-    val arr = runtime.allocPointerFree(arrinfo, arrsize)    
+    val arr = runtime.allocAtomic(arrinfo, arrsize)    
     // set the length
     !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
     arr.cast[IntArray]        
   }
 }
 
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 80)
+// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 79)
 
 final class LongArray private () extends Array[Long] {
   def apply(i: Int): Long =
@@ -324,15 +318,14 @@ object LongArray {
   def alloc(length: Int): LongArray = {
     val arrinfo = infoof[LongArray]
     val arrsize = sizeof[ArrayHeader] + sizeof[Long] * length
-    // pointer free -> use runtime.allocPointerFree 
-    val arr = runtime.allocPointerFree(arrinfo, arrsize)    
+    val arr = runtime.allocAtomic(arrinfo, arrsize)    
     // set the length
     !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
     arr.cast[LongArray]        
   }
 }
 
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 80)
+// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 79)
 
 final class FloatArray private () extends Array[Float] {
   def apply(i: Int): Float =
@@ -367,15 +360,14 @@ object FloatArray {
   def alloc(length: Int): FloatArray = {
     val arrinfo = infoof[FloatArray]
     val arrsize = sizeof[ArrayHeader] + sizeof[Float] * length
-    // pointer free -> use runtime.allocPointerFree 
-    val arr = runtime.allocPointerFree(arrinfo, arrsize)    
+    val arr = runtime.allocAtomic(arrinfo, arrsize)    
     // set the length
     !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
     arr.cast[FloatArray]        
   }
 }
 
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 80)
+// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 79)
 
 final class DoubleArray private () extends Array[Double] {
   def apply(i: Int): Double =
@@ -410,8 +402,7 @@ object DoubleArray {
   def alloc(length: Int): DoubleArray = {
     val arrinfo = infoof[DoubleArray]
     val arrsize = sizeof[ArrayHeader] + sizeof[Double] * length
-    // pointer free -> use runtime.allocPointerFree 
-    val arr = runtime.allocPointerFree(arrinfo, arrsize)    
+    val arr = runtime.allocAtomic(arrinfo, arrsize)    
     // set the length
     !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
     arr.cast[DoubleArray]        

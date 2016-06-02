@@ -1,12 +1,16 @@
 package scala.scalanative
 package runtime
 
-// Note:
+// Note 1:
 // Arrays.scala is currently implemented as textual templating that is expanded through project/gyb.py script. 
 // Update Arrays.scala.gyb and re-generate the source
 
+// Note 2:
+// Array of primitiveTypes don't contain pointers, runtime.allocAtomic() is called for memory allocation   
+// Array of Object do contain pointers. runtime.alloc() is called for memory allocation
+
 %{
-   types = ['Boolean', 'Char', 'Byte', 'Short',
+   primitiveTypes = ['Boolean', 'Char', 'Byte', 'Short',
             'Int', 'Long', 'Float', 'Double']
 }%
 
@@ -30,8 +34,6 @@ sealed abstract class Array[T]
   /** Create a shallow of given array. */
   protected override def clone(): Array[T] = undefined
 }
-
-// note: Array[Ptr[_]] is implemented as a ObjectArray
 
 final class ObjectArray private () extends Array[Object] {
   def apply(i: Int): Object =
@@ -66,7 +68,6 @@ object ObjectArray {
   def alloc(length: Int): ObjectArray = {
     val arrinfo = infoof[ObjectArray]
     val arrsize = sizeof[ArrayHeader] + sizeof[Object] * length
-    // no pointer free -> use runtime.alloc 
     val arr = runtime.alloc(arrinfo, arrsize)    
     // set the length
     !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
@@ -74,9 +75,7 @@ object ObjectArray {
   }
 }
 
-// all primitive Arrays use runtime.allocPointerFree to allocate memory 
-
-% for T in types:
+% for T in primitiveTypes:
 
 final class ${T}Array private () extends Array[${T}] {
   def apply(i: Int): ${T} =
@@ -111,8 +110,7 @@ object ${T}Array {
   def alloc(length: Int): ${T}Array = {
     val arrinfo = infoof[${T}Array]
     val arrsize = sizeof[ArrayHeader] + sizeof[${T}] * length
-    // pointer free -> use runtime.allocPointerFree 
-    val arr = runtime.allocPointerFree(arrinfo, arrsize)    
+    val arr = runtime.allocAtomic(arrinfo, arrsize)    
     // set the length
     !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
     arr.cast[${T}Array]        
