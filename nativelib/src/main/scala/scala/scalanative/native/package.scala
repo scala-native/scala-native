@@ -4,6 +4,7 @@ import scala.reflect.ClassTag
 import runtime.undefined
 
 package object native {
+
   /** Int on 32-bit architectures and Long on 64-bit ones. */
   type Word = Long
 

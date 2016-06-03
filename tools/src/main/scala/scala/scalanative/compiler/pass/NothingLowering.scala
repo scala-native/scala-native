@@ -8,8 +8,8 @@ import util.unsupported
 import nir._
 
 /** Eliminates:
-  * - Type.Nothing
-  */
+ *  - Type.Nothing
+ */
 class NothingLowering extends Pass {
   override def preBlock = {
     case Block(n, params, insts, cf) =>

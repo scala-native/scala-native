@@ -8,8 +8,8 @@ import util.unreachable
 import nir._
 
 /** Eliminates:
-  * - Cf.{Try, Throw}
-  */
+ *  - Cf.{Try, Throw}
+ */
 class ExceptionLowering(implicit fresh: Fresh) extends Pass {
   private def transformCf(block: Block) = block.cf match {
     case Cf.Throw(v) =>

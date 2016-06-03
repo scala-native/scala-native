@@ -7,8 +7,8 @@ import util.ScopedVar, ScopedVar.scoped
 import nir._
 
 /** Eliminates:
-  * - Op.Copy
-  */
+ *  - Op.Copy
+ */
 class CopyPropagation extends Pass {
   private var locals: mutable.Map[Local, Val] = _
 

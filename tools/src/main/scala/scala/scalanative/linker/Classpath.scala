@@ -6,9 +6,7 @@ import java.nio.file._
 
 import scala.collection.JavaConverters._
 
-/**
-  * A values which represents a member of a classpath.
-  */
+/** A values which represents a member of a classpath. */
 sealed abstract class Classpath {
   def contents(): Seq[VirtualFile]
   def close(): Unit
@@ -45,9 +43,7 @@ final class JarClasspath(path: Path) extends Classpath {
   override def close(): Unit = fs.close()
 }
 
-/**
-  * A memory cached file-like object contained in some member of a classpath.
-  */
+/** A memory cached file-like object contained in some member of a classpath. */
 final class VirtualFile(val relativePath: Path) {
   def uri: URI = relativePath.toUri
   lazy val bytes: ByteBuffer =

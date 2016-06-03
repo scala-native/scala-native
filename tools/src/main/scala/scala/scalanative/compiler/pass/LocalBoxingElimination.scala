@@ -6,10 +6,10 @@ import scala.collection.mutable
 import nir._
 
 /** Eliminates redundant box/unbox operations within
-  * a single basic block. This is quite simplistic approach
-  * but we need this to remove boxing around pointer operations
-  * that happen to have generic signatures.
-  */
+ *  a single basic block. This is quite simplistic approach
+ *  but we need this to remove boxing around pointer operations
+ *  that happen to have generic signatures.
+ */
 class LocalBoxingElimination extends Pass {
   import LocalBoxingElimination._
 
