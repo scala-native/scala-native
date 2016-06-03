@@ -535,6 +535,8 @@ object Character {
     }
   }
 
+  def toChars(codePoint: Int, dst: Array[Char], start: Int): Int = ???
+
   @inline def toString(c: scala.Char): String = ???
 
   @inline def compare(x: scala.Char, y: scala.Char): Int =
