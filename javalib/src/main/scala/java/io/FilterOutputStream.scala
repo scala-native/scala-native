@@ -1,6 +1,7 @@
 package java.io
 
-class FilterOutputStream(protected val out: OutputStream) extends OutputStream {
+class FilterOutputStream(protected val out: OutputStream)
+    extends OutputStream {
   def write(b: Int): Unit =
     out.write(b)
 

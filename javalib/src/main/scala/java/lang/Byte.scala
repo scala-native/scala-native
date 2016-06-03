@@ -1,14 +1,15 @@
 package java.lang
 
 final class Byte(override val byteValue: scala.Byte)
-    extends Number with Comparable[Byte] {
+    extends Number
+    with Comparable[Byte] {
   def this(s: String) = this(Byte.parseByte(s))
 
   @inline override def shortValue(): scala.Short = byteValue.toShort
-  @inline def intValue(): scala.Int = byteValue.toInt
-  @inline def longValue(): scala.Long = byteValue.toLong
-  @inline def floatValue(): scala.Float = byteValue.toFloat
-  @inline def doubleValue(): scala.Double = byteValue.toDouble
+  @inline def intValue(): scala.Int              = byteValue.toInt
+  @inline def longValue(): scala.Long            = byteValue.toLong
+  @inline def floatValue(): scala.Float          = byteValue.toFloat
+  @inline def doubleValue(): scala.Double        = byteValue.toDouble
 
   @inline override def equals(that: Any): scala.Boolean = that match {
     case that: Byte => byteValue == that.byteValue
@@ -41,7 +42,7 @@ object Byte {
   def MAX_VALUE: scala.Byte = 127
 
   @inline def valueOf(byteValue: scala.Byte): Byte = new Byte(byteValue)
-  @inline def valueOf(s: String): Byte = valueOf(parseByte(s))
+  @inline def valueOf(s: String): Byte             = valueOf(parseByte(s))
 
   @inline def valueOf(s: String, radix: Int): Byte =
     valueOf(parseByte(s, radix))

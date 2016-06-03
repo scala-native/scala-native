@@ -6,7 +6,8 @@ import java.nio._
 import java.nio.charset._
 
 class InputStreamReader(private[this] var in: InputStream,
-    private[this] var decoder: CharsetDecoder) extends Reader {
+                        private[this] var decoder: CharsetDecoder)
+    extends Reader {
 
   private[this] var closed: Boolean = false
 
@@ -31,13 +32,14 @@ class InputStreamReader(private[this] var in: InputStream,
    *  Class invariant: contains chars already decoded but not yet *read* by
    *  the user of this instance.
    */
-  private[this] var outBuf: CharBuffer = InputStreamReader.CommonEmptyCharBuffer
+  private[this] var outBuf: CharBuffer =
+    InputStreamReader.CommonEmptyCharBuffer
 
   def this(in: InputStream, charset: Charset) =
     this(in,
-        charset.newDecoder
-               .onMalformedInput(CodingErrorAction.REPLACE)
-               .onUnmappableCharacter(CodingErrorAction.REPLACE))
+         charset.newDecoder
+           .onMalformedInput(CodingErrorAction.REPLACE)
+           .onUnmappableCharacter(CodingErrorAction.REPLACE))
 
   def this(in: InputStream) =
     this(in, Charset.defaultCharset)
@@ -79,7 +81,7 @@ class InputStreamReader(private[this] var in: InputStream,
     } else if (!endOfInput) {
       // Try and decode directly into the destination array
       val directOut = CharBuffer.wrap(cbuf, off, len)
-      val result = readImpl(directOut)
+      val result    = readImpl(directOut)
       if (result != InputStreamReader.Overflow) {
         result
       } else {
@@ -97,7 +99,8 @@ class InputStreamReader(private[this] var in: InputStream,
   }
 
   // In a separate method because this is (hopefully) not a common case
-  private def readMoreThroughOutBuf(cbuf: Array[Char], off: Int, len: Int): Int = {
+  private def readMoreThroughOutBuf(
+      cbuf: Array[Char], off: Int, len: Int): Int = {
     // Return outBuf to its full capacity
     outBuf.limit(outBuf.capacity)
     outBuf.position(0)
@@ -108,12 +111,12 @@ class InputStreamReader(private[this] var in: InputStream,
         outBuf = CharBuffer.allocate(desiredOutBufSize)
       val charsRead = readImpl(outBuf)
       if (charsRead == InputStreamReader.Overflow)
-        loopWithOutBuf(desiredOutBufSize*2)
+        loopWithOutBuf(desiredOutBufSize * 2)
       else
         charsRead
     }
 
-    val charsRead = loopWithOutBuf(2*len)
+    val charsRead = loopWithOutBuf(2 * len)
     assert(charsRead != 0) // can be -1, though
     outBuf.flip()
 
@@ -128,7 +131,7 @@ class InputStreamReader(private[this] var in: InputStream,
   @tailrec
   private def readImpl(out: CharBuffer): Int = {
     val initPos = out.position
-    val result = decoder.decode(inBuf, out, endOfInput)
+    val result  = decoder.decode(inBuf, out, endOfInput)
 
     if (out.position != initPos) {
       /* Good, we made progress, so we can return.
@@ -142,9 +145,10 @@ class InputStreamReader(private[this] var in: InputStream,
       out.position - initPos
     } else if (result.isUnderflow) {
       if (endOfInput) {
-        assert(!inBuf.hasRemaining,
-            "CharsetDecoder.decode() should not have returned UNDERFLOW when "+
-            "both endOfInput and inBuf.hasRemaining are true. It should have "+
+        assert(
+            !inBuf.hasRemaining,
+            "CharsetDecoder.decode() should not have returned UNDERFLOW when " +
+            "both endOfInput and inBuf.hasRemaining are true. It should have " +
             "returned a MalformedInput error instead.")
         // Flush
         if (decoder.flush(out).isOverflow) {
@@ -203,7 +207,6 @@ class InputStreamReader(private[this] var in: InputStream,
     if (closed)
       throw new IOException("Stream closed")
   }
-
 }
 
 object InputStreamReader {

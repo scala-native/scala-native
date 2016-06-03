@@ -3,9 +3,11 @@ package java.io
 import java.nio.charset.Charset
 import java.util.Formatter
 
-class PrintStream private (_out: OutputStream, autoFlush: Boolean,
-    charset: Charset)
-    extends FilterOutputStream(_out) with Appendable with Closeable {
+class PrintStream private (
+    _out: OutputStream, autoFlush: Boolean, charset: Charset)
+    extends FilterOutputStream(_out)
+    with Appendable
+    with Closeable {
 
   /* The way we handle charsets here is a bit tricky, because we want to
    * minimize the area of reachability for normal programs.
@@ -62,8 +64,8 @@ class PrintStream private (_out: OutputStream, autoFlush: Boolean,
     new OutputStreamWriter(this, c)
   }
 
-  private var closing: Boolean = false
-  private var closed: Boolean = false
+  private var closing: Boolean   = false
+  private var closed: Boolean    = false
   private var errorFlag: Boolean = false
 
   override def flush(): Unit =
@@ -94,13 +96,13 @@ class PrintStream private (_out: OutputStream, autoFlush: Boolean,
        * but, experimentally, the JDK seems to behave that way.
        */
       errorFlag || (out match {
-        case out: PrintStream => out.checkError()
-        case _                => false
-      })
+            case out: PrintStream => out.checkError()
+            case _                => false
+          })
     }
   }
 
-  protected[io] def setError(): Unit = errorFlag = true
+  protected[io] def setError(): Unit   = errorFlag = true
   protected[io] def clearError(): Unit = errorFlag = false
 
   /* Note that calling directly the write() methods will happily bypass the
@@ -210,9 +212,9 @@ class PrintStream private (_out: OutputStream, autoFlush: Boolean,
     }
   }
 
-  @inline private[this] def ensureOpenAndTrapIOExceptions(body: => Unit): Unit = {
+  @inline private[this] def ensureOpenAndTrapIOExceptions(
+      body: => Unit): Unit = {
     if (closed) setError()
     else trapIOExceptions(body)
   }
-
 }

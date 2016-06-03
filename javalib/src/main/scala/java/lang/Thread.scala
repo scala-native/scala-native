@@ -3,7 +3,7 @@ package java.lang
 class Thread private (runnable: Runnable) extends Runnable {
   if (runnable ne Thread.MainRunnable) ???
 
-  private var interruptedState = false
+  private var interruptedState   = false
   private[this] var name: String = "main" // default name of the main thread
 
   def run(): Unit = ()
@@ -26,7 +26,8 @@ class Thread private (runnable: Runnable) extends Runnable {
 
   def getUncaughtExceptionHandler(): UncaughtExceptionHandler = ???
 
-  def setUncaughtExceptionHandler(handler: UncaughtExceptionHandler): Unit = ???
+  def setUncaughtExceptionHandler(handler: UncaughtExceptionHandler): Unit =
+    ???
 
   def setDaemon(on: scala.Boolean): Unit = ???
 
@@ -37,7 +38,7 @@ class Thread private (runnable: Runnable) extends Runnable {
 
 object Thread {
   private val MainRunnable = new Runnable { def run(): Unit = () }
-  private val MainThread = new Thread(MainRunnable)
+  private val MainThread   = new Thread(MainRunnable)
 
   def currentThread(): Thread = MainThread
 

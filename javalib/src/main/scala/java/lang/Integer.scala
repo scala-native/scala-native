@@ -1,14 +1,15 @@
 package java.lang
 
 final class Integer(override val intValue: scala.Int)
-    extends Number with Comparable[Integer] {
+    extends Number
+    with Comparable[Integer] {
   def this(s: String) = this(Integer.parseInt(s))
 
-  @inline override def byteValue(): scala.Byte = intValue.toByte
+  @inline override def byteValue(): scala.Byte   = intValue.toByte
   @inline override def shortValue(): scala.Short = intValue.toShort
-  @inline def longValue(): scala.Long = intValue.toLong
-  @inline def floatValue(): scala.Float = intValue.toFloat
-  @inline def doubleValue(): scala.Double = intValue.toDouble
+  @inline def longValue(): scala.Long            = intValue.toLong
+  @inline def floatValue(): scala.Float          = intValue.toFloat
+  @inline def doubleValue(): scala.Double        = intValue.toDouble
 
   @inline override def equals(that: Any): scala.Boolean = that match {
     case that: Integer => byteValue == that.intValue
@@ -41,14 +42,14 @@ final class Integer(override val intValue: scala.Int)
 }
 
 object Integer {
-  final val TYPE = classOf[scala.Int]
+  final val TYPE      = classOf[scala.Int]
   final val MIN_VALUE = -2147483648
   final val MAX_VALUE = 2147483647
-  final val SIZE = 32
-  final val BYTES = 4
+  final val SIZE      = 32
+  final val BYTES     = 4
 
   @inline def valueOf(intValue: scala.Int): Integer = new Integer(intValue)
-  @inline def valueOf(s: String): Integer = valueOf(parseInt(s))
+  @inline def valueOf(s: String): Integer           = valueOf(parseInt(s))
 
   @inline def valueOf(s: String, radix: Int): Integer =
     valueOf(parseInt(s, radix))
@@ -64,8 +65,8 @@ object Integer {
     parseIntImpl(s, radix, signed = false)
 
   @inline
-  private def parseIntImpl(s: String, radix: scala.Int,
-      signed: scala.Boolean): scala.Int = ???
+  private def parseIntImpl(
+      s: String, radix: scala.Int, signed: scala.Boolean): scala.Int = ???
 
   @inline def toString(i: scala.Int): String =
     String.valueOf(i)
@@ -151,8 +152,8 @@ object Integer {
     else 31 - numberOfLeadingZeros(i & -i)
 
   def toBinaryString(i: scala.Int): String = toStringBase(i, 2)
-  def toHexString(i: scala.Int): String = toStringBase(i, 16)
-  def toOctalString(i: scala.Int): String = toStringBase(i, 8)
+  def toHexString(i: scala.Int): String    = toStringBase(i, 16)
+  def toOctalString(i: scala.Int): String  = toStringBase(i, 8)
 
   @inline // because radix is almost certainly constant at call site
   def toString(i: Int, radix: Int): String = ???
@@ -165,5 +166,6 @@ object Integer {
   @inline def max(a: Int, b: Int): Int = Math.max(a, b)
   @inline def min(a: Int, b: Int): Int = Math.min(a, b)
 
-  @inline private[this] def toStringBase(i: scala.Int, base: scala.Int): String = ???
+  @inline private[this] def toStringBase(
+      i: scala.Int, base: scala.Int): String = ???
 }

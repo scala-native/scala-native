@@ -3,8 +3,12 @@ package java.util
 import scala.annotation.tailrec
 import scala.collection.JavaConversions._
 
-class LinkedList[E]() extends AbstractSequentialList[E]
-    with List[E] with Deque[E] with Cloneable with Serializable {
+class LinkedList[E]()
+    extends AbstractSequentialList[E]
+    with List[E]
+    with Deque[E]
+    with Cloneable
+    with Serializable {
 
   def this(c: Collection[_ <: E]) = {
     this()
@@ -110,10 +114,9 @@ class LinkedList[E]() extends AbstractSequentialList[E]
     _removeOccurrence(listIterator, o)
 
   override def addAll(c: Collection[_ <: E]): Boolean = {
-    val iter = c.iterator
+    val iter    = c.iterator
     val changed = iter.hasNext()
-    while (iter.hasNext())
-      addLast(iter.next())
+    while (iter.hasNext()) addLast(iter.next())
 
     changed
   }
@@ -129,14 +132,12 @@ class LinkedList[E]() extends AbstractSequentialList[E]
     else if (index == size - 1) last
     else {
       var current: Node[E] = null
-      if (index <= size/2) {
+      if (index <= size / 2) {
         current = head
-        for (_ <- 0 until index)
-          current = current.next
+        for (_ <- 0 until index) current = current.next
       } else {
         current = last
-        for (_ <- index until (size - 1))
-          current = current.prev
+        for (_ <- index until (size - 1)) current = current.prev
       }
       current
     }
@@ -149,7 +150,7 @@ class LinkedList[E]() extends AbstractSequentialList[E]
 
   override def set(index: Int, element: E): E = {
     checkIndexInBounds(index)
-    val node = getNodeAt(index)
+    val node     = getNodeAt(index)
     val oldValue = node.value
     node.value = element
     oldValue
@@ -260,15 +261,17 @@ class LinkedList[E]() extends AbstractSequentialList[E]
     new ListIterator[E] {
 
       private var last: Double = -1
-      private var i: Double = index
+      private var i: Double    = index
 
       private var currentNode: Node[E] =
-        if (index == size) null else
-        getNodeAt(index)
+        if (index == size) null
+        else
+          getNodeAt(index)
 
       private var lastNode: Node[E] =
-        if (currentNode ne null) null else
-        LinkedList.this.last
+        if (currentNode ne null) null
+        else
+          LinkedList.this.last
 
       def hasNext(): Boolean =
         i < size
@@ -354,9 +357,8 @@ class LinkedList[E]() extends AbstractSequentialList[E]
   def descendingIterator(): Iterator[E] = {
     new Iterator[E] {
 
-      private var removeEnabled = false
-      private var nextNode: Node[E] =
-        LinkedList.this.last
+      private var removeEnabled     = false
+      private var nextNode: Node[E] = LinkedList.this.last
 
       def hasNext(): Boolean =
         nextNode ne null
@@ -386,14 +388,11 @@ class LinkedList[E]() extends AbstractSequentialList[E]
 
   override def clone(): AnyRef =
     new LinkedList[E](this)
-
 }
 
 object LinkedList {
 
-  protected[LinkedList] final class Node[T](
-      var value: T,
-      var prev: Node[T] = null,
-      var next: Node[T] = null)
-
+  protected[LinkedList] final class Node[T](var value: T,
+                                            var prev: Node[T] = null,
+                                            var next: Node[T] = null)
 }

@@ -2,8 +2,9 @@ package java.io
 
 import java.nio.CharBuffer
 
-abstract class Reader private[this] (_lock: Option[Object])
-    extends Readable with Closeable {
+abstract class Reader private[this](_lock: Option[Object])
+    extends Readable
+    with Closeable {
 
   protected val lock = _lock.getOrElse(this)
 
@@ -13,13 +14,13 @@ abstract class Reader private[this] (_lock: Option[Object])
   def read(target: CharBuffer): Int = {
     if (!target.hasRemaining) 0
     else if (target.hasArray) {
-      val charsRead = read(target.array,
-          target.position + target.arrayOffset, target.remaining)
+      val charsRead = read(
+          target.array, target.position + target.arrayOffset, target.remaining)
       if (charsRead != -1)
         target.position(target.position + charsRead)
       charsRead
     } else {
-      val buf = new Array[Char](target.remaining)
+      val buf       = new Array[Char](target.remaining)
       val charsRead = read(buf)
       if (charsRead != -1)
         target.put(buf, 0, charsRead)
@@ -56,5 +57,4 @@ abstract class Reader private[this] (_lock: Option[Object])
     throw new IOException("Reset not supported")
 
   def close(): Unit
-
 }

@@ -5,8 +5,9 @@ import scala.annotation.tailrec
 import java.nio._
 import java.nio.charset._
 
-class OutputStreamWriter(private[this] var out: OutputStream,
-    private[this] var enc: CharsetEncoder) extends Writer {
+class OutputStreamWriter(
+    private[this] var out: OutputStream, private[this] var enc: CharsetEncoder)
+    extends Writer {
 
   private[this] var closed: Boolean = false
 
@@ -25,9 +26,9 @@ class OutputStreamWriter(private[this] var out: OutputStream,
 
   def this(out: OutputStream, cs: Charset) =
     this(out,
-        cs.newEncoder
-          .onMalformedInput(CodingErrorAction.REPLACE)
-          .onUnmappableCharacter(CodingErrorAction.REPLACE))
+         cs.newEncoder
+           .onMalformedInput(CodingErrorAction.REPLACE)
+           .onUnmappableCharacter(CodingErrorAction.REPLACE))
 
   def this(out: OutputStream) =
     this(out, Charset.defaultCharset)
@@ -50,11 +51,12 @@ class OutputStreamWriter(private[this] var out: OutputStream,
   private def writeImpl(cbuf: CharBuffer): Unit = {
     ensureOpen()
 
-    val cbuf1 = if (inBuf != "") {
-      val fullInput = CharBuffer.wrap(inBuf + cbuf.toString)
-      inBuf = ""
-      fullInput
-    } else cbuf
+    val cbuf1 =
+      if (inBuf != "") {
+        val fullInput = CharBuffer.wrap(inBuf + cbuf.toString)
+        inBuf = ""
+        fullInput
+      } else cbuf
 
     @inline
     @tailrec
@@ -86,12 +88,13 @@ class OutputStreamWriter(private[this] var out: OutputStream,
     @inline
     @tailrec
     def loopEncode(): Unit = {
-      val cbuf = CharBuffer.wrap(inBuf)
+      val cbuf   = CharBuffer.wrap(inBuf)
       val result = enc.encode(cbuf, outBuf, true)
       if (result.isUnderflow) {
-        assert(!cbuf.hasRemaining,
-            "CharsetEncoder.encode() should not have returned UNDERFLOW when "+
-            "both endOfInput and inBuf.hasRemaining are true. It should have "+
+        assert(
+            !cbuf.hasRemaining,
+            "CharsetEncoder.encode() should not have returned UNDERFLOW when " +
+            "both endOfInput and inBuf.hasRemaining are true. It should have " +
             "returned a MalformedInput error instead.")
       } else if (result.isOverflow) {
         makeRoomInOutBuf()
@@ -156,5 +159,4 @@ class OutputStreamWriter(private[this] var out: OutputStream,
     out.write(outBuf.array, outBuf.arrayOffset, outBuf.position)
     outBuf.clear()
   }
-
 }

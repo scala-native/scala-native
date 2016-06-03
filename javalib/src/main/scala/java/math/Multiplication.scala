@@ -76,22 +76,23 @@ private[math] object Multiplication {
    *  @return {@code val * factor}
    */
   def multiplyByPosInt(bi: BigInteger, factor: Int): BigInteger = {
-    val resSign: Int = bi.sign
+    val resSign: Int  = bi.sign
     val aNumberLength = bi.numberLength
-    val aDigits = bi.digits
+    val aDigits       = bi.digits
 
     if (resSign == 0) {
       BigInteger.ZERO
     } else if (aNumberLength == 1) {
       val res: Long = unsignedMultAddAdd(aDigits(0), factor, 0, 0)
-      val resLo = res.toInt
-      val resHi = (res >>> 32).toInt
+      val resLo     = res.toInt
+      val resHi     = (res >>> 32).toInt
       if (resHi == 0) new BigInteger(resSign, resLo)
       else new BigInteger(resSign, 2, Array(resLo, resHi))
     } else {
       val resLength = aNumberLength + 1
       val resDigits = new Array[Int](resLength)
-      resDigits(aNumberLength) = multiplyByInt(resDigits, aDigits, aNumberLength, factor)
+      resDigits(aNumberLength) = multiplyByInt(
+          resDigits, aDigits, aNumberLength, factor)
       val result = new BigInteger(resSign, resLength, resDigits)
       result.cutOffLeadingZeroes()
       result
@@ -130,7 +131,7 @@ private[math] object Multiplication {
     }
     BitLevel.shiftLeftOneBit(res, res, aLen << 1)
     carry = 0
-    var i = 0
+    var i     = 0
     var index = 0
     while (i < aLen) {
       val t = unsignedMultAddAdd(a(i), a(i), res(index), carry)
@@ -154,7 +155,8 @@ private[math] object Multiplication {
    *  @return value of expression
    */
   def unsignedMultAddAdd(a: Int, b: Int, c: Int, d: Int): Long =
-    (a & 0xFFFFFFFFL) * (b & 0xFFFFFFFFL) + (c & 0xFFFFFFFFL) + (d & 0xFFFFFFFFL)
+    (a & 0xFFFFFFFFL) * (b & 0xFFFFFFFFL) + (c & 0xFFFFFFFFL) +
+    (d & 0xFFFFFFFFL)
 
   /** Performs the multiplication with the Karatsuba's algorithm.
    *
@@ -185,7 +187,7 @@ private[math] object Multiplication {
        * Karatsuba: u = u1*B + u0 v = v1*B + v0 u*v = (u1*v1)*B^2 +
        * ((u1-u0)*(v0-v1) + u1*v1 + u0*v0)*B + u0*v0
        */
-      val ndiv2 = (op1.numberLength & 0xFFFFFFFE) << 4
+      val ndiv2    = (op1.numberLength & 0xFFFFFFFE) << 4
       val upperOp1 = op1.shiftRight(ndiv2)
       val upperOp2 = op2.shiftRight(ndiv2)
       val lowerOp1 = op1.subtract(upperOp1.shiftLeft(ndiv2))
@@ -193,7 +195,8 @@ private[math] object Multiplication {
 
       var upper = karatsuba(upperOp1, upperOp2)
       val lower = karatsuba(lowerOp1, lowerOp2)
-      var middle = karatsuba(upperOp1.subtract(lowerOp1), lowerOp2.subtract(upperOp2))
+      var middle = karatsuba(
+          upperOp1.subtract(lowerOp1), lowerOp2.subtract(upperOp2))
       middle = middle.add(upper).add(lower)
       middle = middle.shiftLeft(ndiv2)
       upper = upper.shiftLeft(ndiv2 << 1)
@@ -201,8 +204,11 @@ private[math] object Multiplication {
     }
   }
 
-  def multArraysPAP(aDigits: Array[Int], aLen: Int, bDigits: Array[Int],
-      bLen: Int, resDigits: Array[Int]): Unit = {
+  def multArraysPAP(aDigits: Array[Int],
+                    aLen: Int,
+                    bDigits: Array[Int],
+                    bLen: Int,
+                    resDigits: Array[Int]): Unit = {
     if (!(aLen == 0 || bLen == 0)) {
       if (aLen == 1)
         resDigits(bLen) = multiplyByInt(resDigits, bDigits, bLen, aDigits(0))
@@ -304,22 +310,22 @@ private[math] object Multiplication {
    *  @return a {@code BigInteger} of value {@code op1 * op2}
    */
   def multiplyPAP(a: BigInteger, b: BigInteger): BigInteger = {
-    val aLen = a.numberLength
-    val bLen = b.numberLength
+    val aLen      = a.numberLength
+    val bLen      = b.numberLength
     val resLength = aLen + bLen
     val resSign =
       if (a.sign != b.sign) -1
       else 1
 
     if (resLength == 2) {
-      val v = unsignedMultAddAdd(a.digits(0), b.digits(0), 0, 0)
+      val v       = unsignedMultAddAdd(a.digits(0), b.digits(0), 0, 0)
       val valueLo = v.toInt
       val valueHi = (v >>> 32).toInt
       if (valueHi == 0) new BigInteger(resSign, valueLo)
       else new BigInteger(resSign, 2, Array(valueLo, valueHi))
     } else {
-      val aDigits = a.digits
-      val bDigits = b.digits
+      val aDigits   = a.digits
+      val bDigits   = b.digits
       val resDigits = new Array[Int](resLength)
       multArraysPAP(aDigits, aLen, bDigits, bLen, resDigits)
       val result = new BigInteger(resSign, resLength, resDigits)
@@ -340,7 +346,7 @@ private[math] object Multiplication {
           if (acc.numberLength == 1) {
             acc.multiply(acc)
           } else {
-            val a = new Array[Int](acc.numberLength << 1)
+            val a  = new Array[Int](acc.numberLength << 1)
             val sq = square(acc.digits, acc.numberLength, a)
             new BigInteger(1, sq)
           }
@@ -367,12 +373,14 @@ private[math] object Multiplication {
       BigTenPows(exp.toInt)
     } else if (exp <= 50) {
       BigInteger.TEN.pow(exp.toInt)
-    } else if (exp <= Int.MaxValue) { // "LARGE POWERS"
+    } else if (exp <= Int.MaxValue) {
+      // "LARGE POWERS"
       BigFivePows(1).pow(exp.toInt).shiftLeft(exp.toInt)
-    } else { //"HUGE POWERS"
+    } else {
+      //"HUGE POWERS"
       val powerOfFive = BigFivePows(1).pow(Integer.MAX_VALUE)
       var res: BigInteger = powerOfFive
-      var longExp = exp - Int.MaxValue
+      var longExp         = exp - Int.MaxValue
       val intExp = (exp % Int.MaxValue).toInt
       while (longExp > Int.MaxValue) {
         res = res.multiply(powerOfFive)
@@ -416,8 +424,8 @@ private[math] object Multiplication {
     }
   }
 
-  private def multiplyByInt(res: Array[Int], a: Array[Int], aSize: Int,
-      factor: Int): Int = {
+  private def multiplyByInt(
+      res: Array[Int], a: Array[Int], aSize: Int, factor: Int): Int = {
     var carry = 0
     for (i <- 0 until aSize) {
       val t = unsignedMultAddAdd(a(i), factor, carry, 0)
@@ -427,8 +435,11 @@ private[math] object Multiplication {
     carry
   }
 
-  private def multPAP(a: Array[Int], b: Array[Int], t: Array[Int],
-      aLen: Int, bLen: Int): Unit = {
+  private def multPAP(a: Array[Int],
+                      b: Array[Int],
+                      t: Array[Int],
+                      aLen: Int,
+                      bLen: Int): Unit = {
     if (a == b && aLen == bLen) {
       square(a, aLen, t)
     } else {

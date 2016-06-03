@@ -15,7 +15,8 @@ object Objects {
     else if (a == null || b == null) false
     else {
       (a, b) match {
-        case (a1: Array[AnyRef], a2: Array[AnyRef])   => Arrays.deepEquals(a1, a2)
+        case (a1: Array[AnyRef], a2: Array[AnyRef]) =>
+          Arrays.deepEquals(a1, a2)
         case (a1: Array[Long], a2: Array[Long])       => Arrays.equals(a1, a2)
         case (a1: Array[Int], a2: Array[Int])         => Arrays.equals(a1, a2)
         case (a1: Array[Short], a2: Array[Short])     => Arrays.equals(a1, a2)

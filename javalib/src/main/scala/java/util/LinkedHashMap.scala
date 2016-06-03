@@ -2,9 +2,9 @@ package java.util
 
 import scala.collection.mutable
 
-class LinkedHashMap[K, V] private (inner: mutable.LinkedHashMap[Box[K], V],
-    accessOrder: Boolean) extends HashMap[K, V](inner) {
-  self =>
+class LinkedHashMap[K, V] private (
+    inner: mutable.LinkedHashMap[Box[K], V], accessOrder: Boolean)
+    extends HashMap[K, V](inner) { self =>
 
   def this() =
     this(mutable.LinkedHashMap.empty[Box[K], V], false)
@@ -66,6 +66,5 @@ class LinkedHashMap[K, V] private (inner: mutable.LinkedHashMap[Box[K], V],
 object LinkedHashMap {
 
   private[LinkedHashMap] final val DEFAULT_INITIAL_CAPACITY = 16
-  private[LinkedHashMap] final val DEFAULT_LOAD_FACTOR = 0.75f
-
+  private[LinkedHashMap] final val DEFAULT_LOAD_FACTOR      = 0.75f
 }

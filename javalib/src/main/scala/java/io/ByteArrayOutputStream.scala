@@ -5,7 +5,7 @@ import scala.annotation.tailrec
 class ByteArrayOutputStream(initBufSize: Int) extends OutputStream {
 
   protected var buf: Array[Byte] = new Array(initBufSize)
-  protected var count: Int = 0
+  protected var count: Int       = 0
 
   def this() = this(32)
 
@@ -52,9 +52,8 @@ class ByteArrayOutputStream(initBufSize: Int) extends OutputStream {
 
   private def growBuf(minIncrement: Int): Unit = {
     val newSize = Math.max(count + minIncrement, buf.length * 2)
-    val newBuf = new Array[Byte](newSize)
+    val newBuf  = new Array[Byte](newSize)
     System.arraycopy(buf, 0, newBuf, 0, count)
     buf = newBuf
   }
-
 }
