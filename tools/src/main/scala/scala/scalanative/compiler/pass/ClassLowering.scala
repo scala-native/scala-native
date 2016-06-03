@@ -8,40 +8,40 @@ import util.{sh, unsupported}
 import nir._, Shows._
 
 /** Lowers classes, methods and fields down to
-  * structs with accompanying vtables.
-  *
-  * For example a class w:
-  *
-  *     class $name: $parent, .. $ifaces
-  *     .. var $name::$fldname: $fldty = $fldinit
-  *     .. def $name::$declname: $declty
-  *     .. def $name::$defnname: $defnty = $body
-  *
-  * Gets lowered to:
-  *
-  *     struct info.$name {
-  *       ptr,       // to struct #ssnr.Type
-  *       .. ptr     // to $declty
-  *     }
-  *
-  *     const info.$name: struct info.$name =
-  *       struct info.$name {
-  *         type.class.$name,
-  *         .. $name::$defnname,
-  *       }
-  *
-  *     struct class.$name {
-  *       ptr        // to struct info.$name
-  *       .. $fldty,
-  *     }
-  *
-  *     .. def $name::$defnname: $defnty = $body
-  *
-  * Eliminates:
-  * - Type.Class
-  * - Defn.Class
-  * - Op.{Alloc, Field, Method}
-  */
+ *  structs with accompanying vtables.
+ *
+ *  For example a class w:
+ *
+ *      class $name: $parent, .. $ifaces
+ *      .. var $name::$fldname: $fldty = $fldinit
+ *      .. def $name::$declname: $declty
+ *      .. def $name::$defnname: $defnty = $body
+ *
+ *  Gets lowered to:
+ *
+ *      struct info.$name {
+ *        ptr,       // to struct #ssnr.Type
+ *        .. ptr     // to $declty
+ *      }
+ *
+ *      const info.$name: struct info.$name =
+ *        struct info.$name {
+ *          type.class.$name,
+ *          .. $name::$defnname,
+ *        }
+ *
+ *      struct class.$name {
+ *        ptr        // to struct info.$name
+ *        .. $fldty,
+ *      }
+ *
+ *      .. def $name::$defnname: $defnty = $body
+ *
+ *  Eliminates:
+ *  - Type.Class
+ *  - Defn.Class
+ *  - Op.{Alloc, Field, Method}
+ */
 class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
     extends Pass {
   def infoStruct(cls: ClassHierarchy.Class): Type.Struct = {

@@ -7,6 +7,7 @@ import runtime.undefined
 
 /** The C `const T *` pointer. */
 final class Ptr[T] private () {
+
   /** Dereference a pointer. */
   def unary_!(implicit ct: ClassTag[T]): T = undefined
 

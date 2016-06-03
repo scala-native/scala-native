@@ -7,12 +7,12 @@ import compiler.analysis.ClassHierarchyExtractors._
 import nir._
 
 /** Generates type instances for all classes, modules,
-  * traits and structs. Lowers typeof and instance checks
-  * to operations based on runtime types.
-  *
-  * Eliminates:
-  * - Op.{As, Is, Typeof}
-  */
+ *  traits and structs. Lowers typeof and instance checks
+ *  to operations based on runtime types.
+ *
+ *  Eliminates:
+ *  - Op.{As, Is, Typeof}
+ */
 class TypeofLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
     extends Pass {
   private def typeName(node: ClassHierarchy.Node): Global = node match {

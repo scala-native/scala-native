@@ -2,10 +2,10 @@ package scala.scalanative
 package nir
 
 /** Serialization tags are unique type ids used to identify
-  * types in the binary representation of NIR. There are some
-  * holes in the numbering of the types to allow for
-  * binary-compatible leeway with adding new IR nodes.
-  */
+ *  types in the binary representation of NIR. There are some
+ *  holes in the numbering of the types to allow for
+ *  binary-compatible leeway with adding new IR nodes.
+ */
 object Tags {
 
   // Attibutes

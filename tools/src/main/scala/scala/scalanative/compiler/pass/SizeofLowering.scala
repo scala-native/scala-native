@@ -7,8 +7,8 @@ import util.ScopedVar, ScopedVar.scoped
 import nir._
 
 /** Eliminates:
-  * - Op.SizeOf
-  */
+ *  - Op.SizeOf
+ */
 class SizeofLowering(implicit fresh: Fresh) extends Pass {
   override def preInst = {
     case Inst(n, Op.Sizeof(ty)) =>

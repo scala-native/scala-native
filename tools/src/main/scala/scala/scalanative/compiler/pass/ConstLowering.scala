@@ -6,8 +6,8 @@ import scala.collection.mutable
 import nir._
 
 /** Eliminates:
-  * - Val.Const
-  */
+ *  - Val.Const
+ */
 class ConstLowering extends Pass {
   private val consts = mutable.UnrolledBuffer.empty[Val]
   private def constName(idx: Int): Global =

@@ -5,8 +5,8 @@ package pass
 import nir._
 
 /** Introduces `main` function that sets up
-  * the runtime and calls the given entry point.
-  */
+ *  the runtime and calls the given entry point.
+ */
 class MainInjection(entry: Global)(implicit fresh: Fresh) extends Pass {
   override def preAssembly = {
     case defns =>
