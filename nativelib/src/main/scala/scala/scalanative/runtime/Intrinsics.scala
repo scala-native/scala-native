@@ -4,7 +4,7 @@ package runtime
 import native._
 
 @extern
-object Math {
+object Intrinsics {
   def `llvm.sqrt.f32`(value: Float): Float                        = extern
   def `llvm.sqrt.f64`(value: Double): Double                      = extern
   def `llvm.powi.f32`(value: Float, power: Int): Float            = extern

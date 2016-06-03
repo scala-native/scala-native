@@ -17,9 +17,7 @@ import native._
 @struct class ArrayHeader(val info: Ptr[_], val length: Int)
 
 sealed abstract class Array[T]
-    extends java.io.Serializable
-    with java.lang.Cloneable {
-
+    extends java.io.Serializable with java.lang.Cloneable {
   /** Number of elements of the array. */
   def length: Int =
     // TODO: Update once we support ptr->field
@@ -82,8 +80,7 @@ final class BooleanArray private () extends Array[Boolean] {
     if (i < 0 || i >= length)
       throw new IndexOutOfBoundsException(i.toString)
     else {
-      val headptr =
-        (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Boolean]]
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Boolean]]
       headptr(i)
     }
 
@@ -91,8 +88,7 @@ final class BooleanArray private () extends Array[Boolean] {
     if (i < 0 || i >= length)
       throw new IndexOutOfBoundsException(i.toString)
     else {
-      val headptr =
-        (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Boolean]]
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Boolean]]
       headptr(i) = value
     }
 
@@ -104,11 +100,8 @@ final class BooleanArray private () extends Array[Boolean] {
 }
 
 object BooleanArray {
-  def copy(from: BooleanArray,
-           fromPos: Int,
-           to: BooleanArray,
-           toPos: Int,
-           length: Int): Unit = {
+  def copy(from: BooleanArray, fromPos: Int,
+           to: BooleanArray, toPos: Int, length: Int): Unit = {
     ???
   }
 
@@ -129,8 +122,7 @@ final class CharArray private () extends Array[Char] {
     if (i < 0 || i >= length)
       throw new IndexOutOfBoundsException(i.toString)
     else {
-      val headptr =
-        (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Char]]
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Char]]
       headptr(i)
     }
 
@@ -138,8 +130,7 @@ final class CharArray private () extends Array[Char] {
     if (i < 0 || i >= length)
       throw new IndexOutOfBoundsException(i.toString)
     else {
-      val headptr =
-        (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Char]]
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Char]]
       headptr(i) = value
     }
 
@@ -151,11 +142,8 @@ final class CharArray private () extends Array[Char] {
 }
 
 object CharArray {
-  def copy(from: CharArray,
-           fromPos: Int,
-           to: CharArray,
-           toPos: Int,
-           length: Int): Unit = {
+  def copy(from: CharArray, fromPos: Int,
+           to: CharArray, toPos: Int, length: Int): Unit = {
     ???
   }
 
@@ -176,8 +164,7 @@ final class ByteArray private () extends Array[Byte] {
     if (i < 0 || i >= length)
       throw new IndexOutOfBoundsException(i.toString)
     else {
-      val headptr =
-        (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Byte]]
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Byte]]
       headptr(i)
     }
 
@@ -185,8 +172,7 @@ final class ByteArray private () extends Array[Byte] {
     if (i < 0 || i >= length)
       throw new IndexOutOfBoundsException(i.toString)
     else {
-      val headptr =
-        (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Byte]]
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Byte]]
       headptr(i) = value
     }
 
@@ -198,11 +184,8 @@ final class ByteArray private () extends Array[Byte] {
 }
 
 object ByteArray {
-  def copy(from: ByteArray,
-           fromPos: Int,
-           to: ByteArray,
-           toPos: Int,
-           length: Int): Unit = {
+  def copy(from: ByteArray, fromPos: Int,
+           to: ByteArray, toPos: Int, length: Int): Unit = {
     ???
   }
 
@@ -223,8 +206,7 @@ final class ShortArray private () extends Array[Short] {
     if (i < 0 || i >= length)
       throw new IndexOutOfBoundsException(i.toString)
     else {
-      val headptr =
-        (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Short]]
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Short]]
       headptr(i)
     }
 
@@ -232,8 +214,7 @@ final class ShortArray private () extends Array[Short] {
     if (i < 0 || i >= length)
       throw new IndexOutOfBoundsException(i.toString)
     else {
-      val headptr =
-        (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Short]]
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Short]]
       headptr(i) = value
     }
 
@@ -245,11 +226,8 @@ final class ShortArray private () extends Array[Short] {
 }
 
 object ShortArray {
-  def copy(from: ShortArray,
-           fromPos: Int,
-           to: ShortArray,
-           toPos: Int,
-           length: Int): Unit = {
+  def copy(from: ShortArray, fromPos: Int,
+           to: ShortArray, toPos: Int, length: Int): Unit = {
     ???
   }
 
@@ -290,11 +268,8 @@ final class IntArray private () extends Array[Int] {
 }
 
 object IntArray {
-  def copy(from: IntArray,
-           fromPos: Int,
-           to: IntArray,
-           toPos: Int,
-           length: Int): Unit = {
+  def copy(from: IntArray, fromPos: Int,
+           to: IntArray, toPos: Int, length: Int): Unit = {
     ???
   }
 
@@ -315,8 +290,7 @@ final class LongArray private () extends Array[Long] {
     if (i < 0 || i >= length)
       throw new IndexOutOfBoundsException(i.toString)
     else {
-      val headptr =
-        (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Long]]
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Long]]
       headptr(i)
     }
 
@@ -324,8 +298,7 @@ final class LongArray private () extends Array[Long] {
     if (i < 0 || i >= length)
       throw new IndexOutOfBoundsException(i.toString)
     else {
-      val headptr =
-        (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Long]]
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Long]]
       headptr(i) = value
     }
 
@@ -337,11 +310,8 @@ final class LongArray private () extends Array[Long] {
 }
 
 object LongArray {
-  def copy(from: LongArray,
-           fromPos: Int,
-           to: LongArray,
-           toPos: Int,
-           length: Int): Unit = {
+  def copy(from: LongArray, fromPos: Int,
+           to: LongArray, toPos: Int, length: Int): Unit = {
     ???
   }
 
@@ -362,8 +332,7 @@ final class FloatArray private () extends Array[Float] {
     if (i < 0 || i >= length)
       throw new IndexOutOfBoundsException(i.toString)
     else {
-      val headptr =
-        (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Float]]
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Float]]
       headptr(i)
     }
 
@@ -371,8 +340,7 @@ final class FloatArray private () extends Array[Float] {
     if (i < 0 || i >= length)
       throw new IndexOutOfBoundsException(i.toString)
     else {
-      val headptr =
-        (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Float]]
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Float]]
       headptr(i) = value
     }
 
@@ -384,11 +352,8 @@ final class FloatArray private () extends Array[Float] {
 }
 
 object FloatArray {
-  def copy(from: FloatArray,
-           fromPos: Int,
-           to: FloatArray,
-           toPos: Int,
-           length: Int): Unit = {
+  def copy(from: FloatArray, fromPos: Int,
+           to: FloatArray, toPos: Int, length: Int): Unit = {
     ???
   }
 
@@ -409,8 +374,7 @@ final class DoubleArray private () extends Array[Double] {
     if (i < 0 || i >= length)
       throw new IndexOutOfBoundsException(i.toString)
     else {
-      val headptr =
-        (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Double]]
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Double]]
       headptr(i)
     }
 
@@ -418,8 +382,7 @@ final class DoubleArray private () extends Array[Double] {
     if (i < 0 || i >= length)
       throw new IndexOutOfBoundsException(i.toString)
     else {
-      val headptr =
-        (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Double]]
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Double]]
       headptr(i) = value
     }
 
@@ -431,11 +394,8 @@ final class DoubleArray private () extends Array[Double] {
 }
 
 object DoubleArray {
-  def copy(from: DoubleArray,
-           fromPos: Int,
-           to: DoubleArray,
-           toPos: Int,
-           length: Int): Unit = {
+  def copy(from: DoubleArray, fromPos: Int,
+           to: DoubleArray, toPos: Int, length: Int): Unit = {
     ???
   }
 
@@ -449,52 +409,3 @@ object DoubleArray {
   }
 }
 
-<<<<<<< HEAD
-=======
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 35)
-
-final class ObjectArray private () extends Array[Object] {
-  def apply(i: Int): Object =
-    if (i < 0 || i >= length)
-      throw new IndexOutOfBoundsException(i.toString)
-    else {
-      val headptr =
-        (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Object]]
-      headptr(i)
-    }
-
-  def update(i: Int, value: Object): Unit =
-    if (i < 0 || i >= length)
-      throw new IndexOutOfBoundsException(i.toString)
-    else {
-      val headptr =
-        (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Object]]
-      headptr(i) = value
-    }
-
-  protected override def clone(): ObjectArray = {
-    val newarr = ObjectArray.alloc(length)
-    ObjectArray.copy(this, 0, newarr, 0, length)
-    newarr
-  }
-}
-
-object ObjectArray {
-  def copy(from: ObjectArray,
-           fromPos: Int,
-           to: ObjectArray,
-           toPos: Int,
-           length: Int): Unit = {
-    ???
-  }
-
-  def alloc(length: Int): ObjectArray = {
-    val arrinfo = infoof[ObjectArray]
-    val arrsize = sizeof[ArrayHeader] + sizeof[Object] * length
-    val arr = runtime.alloc(arrinfo, arrsize)    
-    // set the length
-    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
-    arr.cast[ObjectArray]        
-  }
-}
->>>>>>> master
