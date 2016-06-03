@@ -7,26 +7,26 @@ import util.ScopedVar, ScopedVar.scoped
 import nir._
 
 /** Lowers strings values into intrinsified global constant.
-  *
-  * Every string value:
-  *
-  *     "..."
-  *
-  * Generate unique constants per string value:
-  *
-  *     const @__str_$idx_data: [i8 x ${str.length}] =
-  *       c"..."
-  *
-  *     const @__str_$idx: struct #string =
-  *       struct #string { #string_type, ${str.length}, bitcast[ptr i8] @__str_$idx_data }
-  *
-  * And the value itself is replaced with:
-  *
-  *     bitcast[ptr i8] @__str_$idx
-  *
-  * Eliminates:
-  * - Val.String
-  */
+ *
+ *  Every string value:
+ *
+ *      "..."
+ *
+ *  Generate unique constants per string value:
+ *
+ *      const @__str_$idx_data: [i8 x ${str.length}] =
+ *        c"..."
+ *
+ *      const @__str_$idx: struct #string =
+ *        struct #string { #string_type, ${str.length}, bitcast[ptr i8] @__str_$idx_data }
+ *
+ *  And the value itself is replaced with:
+ *
+ *      bitcast[ptr i8] @__str_$idx
+ *
+ *  Eliminates:
+ *  - Val.String
+ */
 class StringLowering extends Pass {
   private val strings = mutable.UnrolledBuffer.empty[String]
 

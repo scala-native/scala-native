@@ -32,16 +32,16 @@ trait NirNameEncoding { self: NirCodeGen =>
 
   def genFieldName(sym: Symbol): nir.Global = {
     val owner = genTypeName(sym.owner)
-    val id = nativeIdOf(sym)
-    val tag = if (isExternModule(sym.owner)) "extern" else "field"
+    val id    = nativeIdOf(sym)
+    val tag   = if (isExternModule(sym.owner)) "extern" else "field"
 
     owner member id tag tag
   }
 
   def genMethodName(sym: Symbol): nir.Global = {
     val owner = genTypeName(sym.owner)
-    val id = nativeIdOf(sym)
-    val tpe = sym.tpe.widen
+    val id    = nativeIdOf(sym)
+    val tpe   = sym.tpe.widen
     val mangledParams =
       tpe.params.toSeq.map(p => mangledType(p.info, retty = false))
 
@@ -100,7 +100,7 @@ trait NirNameEncoding { self: NirCodeGen =>
   private def nativeIdOf(sym: Symbol): String = {
     sym.getAnnotation(NameClass).flatMap(_.stringArg(0)).getOrElse {
       if (isField(sym)) {
-        val id0   = sym.name.decoded.toString
+        val id0 = sym.name.decoded.toString
         if (id0.charAt(id0.length() - 1) != ' ') id0
         else id0.substring(0, id0.length() - 1)
       } else if (sym.isMethod) {

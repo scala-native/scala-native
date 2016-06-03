@@ -5,9 +5,7 @@ package pass
 import util.unreachable
 import nir._
 
-/** Eliminates returns of Unit values and replaces
-  * them with void.
-  */
+/** Eliminates returns of Unit values and replaces them with void. */
 class UnitLowering(implicit fresh: Fresh) extends Pass {
   override def preInst = {
     case inst @ Inst(n, op) if op.resty == Type.Unit =>

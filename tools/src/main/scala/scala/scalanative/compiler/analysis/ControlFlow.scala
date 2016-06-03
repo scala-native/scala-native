@@ -7,11 +7,11 @@ import util.unreachable
 import nir._
 
 /** Analysis that's used to answer following questions:
-  *
-  *  * What are the predecessors of given block?
-  *
-  *  * What are the successors of given block?
-  */
+ *
+ *  * What are the predecessors of given block?
+ *
+ *  * What are the successors of given block?
+ */
 object ControlFlow {
   final case class Edge(val from: Node, val to: Node, val next: Next)
   final class Node(val block: Block, var pred: Seq[Edge], var succ: Seq[Edge])

@@ -7,42 +7,42 @@ import compiler.analysis.ClassHierarchyExtractors._
 import nir._
 
 /** Lowers modules into module classes with singleton
-  * instance stored in a global variable that is accessed
-  * through a dedicated accessor function.
-  *
-  * For example a dynamic module with members:
-  *
-  *     module $name : $parent, .. $ifaces
-  *
-  *     .. $members
-  *
-  * Translates to:
-  *
-  *     class module.$name : $parent, .. $ifaces
-  *
-  *     .. $members
-  *
-  *     var value.$name: class module.$name = zero[class module.$name]
-  *
-  *     def load.$name: () => class module.$name {
-  *       %entry:
-  *         %self = load[class module.$name] @"module.$name"
-  *         %cond = ieq[class j.l.Object] %instance, zero[class module.$name]
-  *         if %cond then %existing else %initialize
-  *       %existing:
-  *         ret %self
-  *       %initialize:
-  *         %alloc = alloc[class module.$name]
-  *         call $name::init(%alloc)
-  *         store[class $name] @"module.$name", %alloc
-  *         ret %alloc
-  *     }
-  *
-  * Eliminates:
-  * - Type.Module
-  * - Op.Module
-  * - Defn.Module
-  */
+ *  instance stored in a global variable that is accessed
+ *  through a dedicated accessor function.
+ *
+ *  For example a dynamic module with members:
+ *
+ *      module $name : $parent, .. $ifaces
+ *
+ *      .. $members
+ *
+ *  Translates to:
+ *
+ *      class module.$name : $parent, .. $ifaces
+ *
+ *      .. $members
+ *
+ *      var value.$name: class module.$name = zero[class module.$name]
+ *
+ *      def load.$name: () => class module.$name {
+ *        %entry:
+ *          %self = load[class module.$name] @"module.$name"
+ *          %cond = ieq[class j.l.Object] %instance, zero[class module.$name]
+ *          if %cond then %existing else %initialize
+ *        %existing:
+ *          ret %self
+ *        %initialize:
+ *          %alloc = alloc[class module.$name]
+ *          call $name::init(%alloc)
+ *          store[class $name] @"module.$name", %alloc
+ *          ret %alloc
+ *      }
+ *
+ *  Eliminates:
+ *  - Type.Module
+ *  - Op.Module
+ *  - Defn.Module
+ */
 class ModuleLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
     extends Pass {
   override def preDefn = {
