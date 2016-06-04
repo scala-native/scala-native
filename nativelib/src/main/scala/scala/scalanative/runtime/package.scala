@@ -2,6 +2,7 @@ package scala.scalanative
 
 import scala.reflect.ClassTag
 import native._
+import runtime.Intrinsics._
 
 package object runtime {
   /** Used as a stub right hand of intrinsified methods. */
@@ -15,14 +16,24 @@ package object runtime {
   }
 
   /** 
+   * Allocate and initialize memory in gc heap.
+   *
+   * The allocated memory cannot be used to store pointers.
+   */
+  private def allocAtomicAndInit(size: CSize): Ptr[Byte] = {
+    val ptr = GC.malloc_atomic(size).cast[Ptr[Byte]]
+    // initialize to 0
+    `llvm.memset.p0i8.i64`(ptr, 0, size, 1, false) 
+    ptr
+  }
+
+  /** 
    * Allocate memory in gc heap using given info pointer.
    *
    * The allocated memory cannot be used to store pointers.
    */
   def allocAtomic(info: Ptr[_], size: CSize): Ptr[_] = {
-    val ptr = GC.malloc_atomic(size).cast[Ptr[Ptr[_]]]
-    // initialize to 0
-    clib_string.memset(ptr, 0, size)
+    val ptr = allocAtomicAndInit(size).cast[Ptr[Ptr[_]]]
     !ptr = info
     ptr
   }

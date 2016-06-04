@@ -3,8 +3,14 @@ package runtime
 
 import native._
 
+/**
+ * @see [[http://llvm.org/releases/3.7.0/docs/LangRef.html#intrinsic-functions LLVM intrinsics functions]]
+ */
+
 @extern
 object Intrinsics {
+  // mathematical functions
+  
   def `llvm.sqrt.f32`(value: Float): Float                        = extern
   def `llvm.sqrt.f64`(value: Double): Double                      = extern
   def `llvm.powi.f32`(value: Float, power: Int): Float            = extern
@@ -64,4 +70,39 @@ object Intrinsics {
   def `llvm.cttz.i16`(source: Short, iszeroundef: Boolean): Short = extern
   def `llvm.cttz.i32`(source: Int, iszeroundef: Boolean): Int     = extern
   def `llvm.cttz.i64`(source: Long, iszeroundef: Boolean): Long   = extern
+  
+  // memory functions
+  
+  /**
+   * The ‘llvm.memset.i32‘ intrinsics fill a block of memory with a particular byte value...
+   *
+   * @see [[http://llvm.org/releases/3.7.0/docs/LangRef.html#llvm-memset-intrinsics more]]
+   */
+   
+  def `llvm.memset.p0i8.i32`(dest: Ptr[Byte], value: Byte, len: Int, align: Int, isvolatile: Boolean): Unit = extern
+  
+  /**
+   * The ‘llvm.memset.i64‘ intrinsics fill a block of memory with a particular byte value...
+   *
+   * @see [[http://llvm.org/releases/3.7.0/docs/LangRef.html#llvm-memset-intrinsics more]]
+   */
+   
+  def `llvm.memset.p0i8.i64`(dest: Ptr[Byte], value: Byte, len: Long, align: Int, isvolatile: Boolean): Unit = extern   
+   
+  
+  /**
+   * The ‘llvm.memcpy.p0i8.p0i8.i32‘ intrinsics copy a block of memory from the source location to the destination location....
+   *
+   * @see [[http://llvm.org/releases/3.7.0/docs/LangRef.html#llvm-memcpy-intrinsic more]]
+   */
+   
+  def `llvm.memcpy.p0i8.p0i8.i32`(dest: Ptr[Byte], src: Ptr[Byte], len: Int, align: Int, isvolatile: Boolean): Unit = extern
+  
+  /**
+   * The ‘llvm.memcpy.p0i8.p0i8.i64‘ intrinsics copy a block of memory from the source location to the destination location....
+   *
+   * @see [[http://llvm.org/releases/3.7.0/docs/LangRef.html#llvm-memcpy-intrinsic more]]
+   */
+   
+  def `llvm.memcpy.p0i8.p0i8.i64`(dest: Ptr[Byte], src: Ptr[Byte], len: Long, align: Int, isvolatile: Boolean): Unit = extern  
 }
