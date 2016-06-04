@@ -5,10 +5,14 @@ import scala.collection.mutable
 import scala.collection.JavaConversions._
 
 private[util] class NavigableView[E](original: NavigableSet[E],
-    inner: () => mutable.SortedSet[Box[E]],
-    lowerBound: Option[E], lowerInclusive: Boolean,
-    upperBound: Option[E], upperInclusive: Boolean)
-    extends AbstractCollection[E] with NavigableSet[E] with SortedSet[E] {
+                                     inner: () => mutable.SortedSet[Box[E]],
+                                     lowerBound: Option[E],
+                                     lowerInclusive: Boolean,
+                                     upperBound: Option[E],
+                                     upperInclusive: Boolean)
+    extends AbstractCollection[E]
+    with NavigableSet[E]
+    with SortedSet[E] {
 
   def size(): Int =
     iterator.size
@@ -20,12 +24,12 @@ private[util] class NavigableView[E](original: NavigableSet[E],
     val comp = comparator()
     lowerBound.foreach { bound =>
       val cmp = comp.compare(e, bound)
-      if (cmp < 0 || (!lowerInclusive && cmp==0))
+      if (cmp < 0 || (!lowerInclusive && cmp == 0))
         throw new IllegalArgumentException()
     }
     upperBound.foreach { bound =>
       val cmp = comp.compare(e, bound)
-      if (cmp > 0 || (!upperInclusive && cmp==0))
+      if (cmp > 0 || (!upperInclusive && cmp == 0))
         throw new IllegalArgumentException()
     }
     original.add(e)
@@ -60,13 +64,12 @@ private[util] class NavigableView[E](original: NavigableSet[E],
     _iterator(inner().iterator.map(_.inner))
 
   def descendingIterator(): Iterator[E] =
-     _iterator(iterator.toList.reverse.iterator)
+    _iterator(iterator.toList.reverse.iterator)
 
   override def removeAll(c: Collection[_]): Boolean = {
     val iter = c.iterator()
     var changed = false
-    while (iter.hasNext)
-      changed = remove(iter.next) || changed
+    while (iter.hasNext) changed = remove(iter.next) || changed
     changed
   }
 
@@ -124,11 +127,13 @@ private[util] class NavigableView[E](original: NavigableSet[E],
     else null.asInstanceOf[E]
   }
 
-  def subSet(fromElement: E, fromInclusive: Boolean, toElement: E,
-      toInclusive: Boolean): NavigableSet[E] = {
-    val innerNow = inner()
+  def subSet(fromElement: E,
+             fromInclusive: Boolean,
+             toElement: E,
+             toInclusive: Boolean): NavigableSet[E] = {
+    val innerNow  = inner()
     val boxedFrom = Box(fromElement)
-    val boxedTo = Box(toElement)
+    val boxedTo   = Box(toElement)
 
     val subSetFun = { () =>
       val toTs =
@@ -138,35 +143,35 @@ private[util] class NavigableView[E](original: NavigableSet[E],
       else toTs.from(boxedFrom) - boxedFrom
     }
 
-    new NavigableView(this, subSetFun,
-        Some(fromElement), fromInclusive,
-        Some(toElement), toInclusive)
+    new NavigableView(this,
+                      subSetFun,
+                      Some(fromElement),
+                      fromInclusive,
+                      Some(toElement),
+                      toInclusive)
   }
 
   def headSet(toElement: E, inclusive: Boolean): NavigableSet[E] = {
     val innerNow = inner()
-    val boxed = Box(toElement)
+    val boxed    = Box(toElement)
 
     val headSetFun =
       if (inclusive) () => innerNow.to(boxed)
       else () => innerNow.until(boxed)
 
-    new NavigableView(this, headSetFun,
-        None, true,
-        Some(toElement), inclusive)
+    new NavigableView(this, headSetFun, None, true, Some(toElement), inclusive)
   }
 
   def tailSet(fromElement: E, inclusive: Boolean): NavigableSet[E] = {
     val innerNow = inner()
-    val boxed = Box(fromElement)
+    val boxed    = Box(fromElement)
 
     val tailSetFun =
       if (inclusive) () => innerNow.from(boxed)
       else () => innerNow.from(boxed) - boxed
 
-    new NavigableView(this, tailSetFun,
-        Some(fromElement), inclusive,
-        None, true)
+    new NavigableView(
+        this, tailSetFun, Some(fromElement), inclusive, None, true)
   }
 
   def subSet(fromElement: E, toElement: E): NavigableSet[E] =
@@ -180,10 +185,10 @@ private[util] class NavigableView[E](original: NavigableSet[E],
 
   def descendingSet(): NavigableSet[E] = {
     val descSetFun = { () =>
-        val innerNow = inner()
-        val retSet = new mutable.TreeSet[Box[E]]()(innerNow.ordering.reverse)
-        retSet.addAll(innerNow)
-        retSet
+      val innerNow = inner()
+      val retSet   = new mutable.TreeSet[Box[E]]()(innerNow.ordering.reverse)
+      retSet.addAll(innerNow)
+      retSet
     }
 
     new NavigableView(this, descSetFun, None, true, None, true)

@@ -6,42 +6,49 @@ object Math {
   final val E  = 2.718281828459045
   final val PI = 3.141592653589793
 
-  @inline def abs(a: scala.Int): scala.Int = if (a < 0) -a else a
-  @inline def abs(a: scala.Long): scala.Long = if (a < 0) -a else a
-  @inline def abs(a: scala.Float): scala.Float = `llvm.fabs.f32`(a)
+  @inline def abs(a: scala.Int): scala.Int       = if (a < 0) -a else a
+  @inline def abs(a: scala.Long): scala.Long     = if (a < 0) -a else a
+  @inline def abs(a: scala.Float): scala.Float   = `llvm.fabs.f32`(a)
   @inline def abs(a: scala.Double): scala.Double = `llvm.fabs.f64`(a)
 
   @inline def max(a: scala.Int, b: scala.Int): scala.Int = if (a > b) a else b
-  @inline def max(a: scala.Long, b: scala.Long): scala.Long = if (a > b) a else b
-  @inline def max(a: scala.Float, b: scala.Float): scala.Float = `llvm.maxnum.f32`(a, b)
-  @inline def max(a: scala.Double, b: scala.Double): scala.Double = `llvm.maxnum.f64`(a, b)
+  @inline def max(a: scala.Long, b: scala.Long): scala.Long =
+    if (a > b) a else b
+  @inline def max(a: scala.Float, b: scala.Float): scala.Float =
+    `llvm.maxnum.f32`(a, b)
+  @inline def max(a: scala.Double, b: scala.Double): scala.Double =
+    `llvm.maxnum.f64`(a, b)
 
   @inline def min(a: scala.Int, b: scala.Int): scala.Int = if (a < b) a else b
-  @inline def min(a: scala.Long, b: scala.Long): scala.Long = if (a < b) a else b
-  @inline def min(a: scala.Float, b: scala.Float): scala.Float = `llvm.minnum.f32`(a, b)
-  @inline def min(a: scala.Double, b: scala.Double): scala.Double = `llvm.maxnum.f64`(a, b)
+  @inline def min(a: scala.Long, b: scala.Long): scala.Long =
+    if (a < b) a else b
+  @inline def min(a: scala.Float, b: scala.Float): scala.Float =
+    `llvm.minnum.f32`(a, b)
+  @inline def min(a: scala.Double, b: scala.Double): scala.Double =
+    `llvm.maxnum.f64`(a, b)
 
-  @inline def ceil(a: scala.Double): scala.Double = `llvm.ceil.f64`(a)
+  @inline def ceil(a: scala.Double): scala.Double  = `llvm.ceil.f64`(a)
   @inline def floor(a: scala.Double): scala.Double = `llvm.floor.f64`(a)
-  @inline def rint(a: scala.Double): scala.Double = `llvm.rint.f64`(a)
+  @inline def rint(a: scala.Double): scala.Double  = `llvm.rint.f64`(a)
 
-  @inline def round(a: scala.Float): scala.Int = `llvm.round.f32`(a).toInt
+  @inline def round(a: scala.Float): scala.Int   = `llvm.round.f32`(a).toInt
   @inline def round(a: scala.Double): scala.Long = `llvm.round.f64`(a).toLong
 
   @inline def sqrt(a: scala.Double): scala.Double = `llvm.sqrt.f64`(a)
-  @inline def pow(a: scala.Double, b: scala.Double): scala.Double = `llvm.pow.f64`(a, b)
+  @inline def pow(a: scala.Double, b: scala.Double): scala.Double =
+    `llvm.pow.f64`(a, b)
 
-  @inline def exp(a: scala.Double): scala.Double = `llvm.exp.f64`(a)
-  @inline def log(a: scala.Double): scala.Double = `llvm.log.f64`(a)
+  @inline def exp(a: scala.Double): scala.Double   = `llvm.exp.f64`(a)
+  @inline def log(a: scala.Double): scala.Double   = `llvm.log.f64`(a)
   @inline def log10(a: scala.Double): scala.Double = `llvm.log10.f64`(a)
   @inline def log1p(a: scala.Double): scala.Double = log(a + 1)
 
-  @inline def sin(a: scala.Double): scala.Double = `llvm.sin.f64`(a)
-  @inline def cos(a: scala.Double): scala.Double = `llvm.cos.f64`(a)
-  @inline def tan(a: scala.Double): scala.Double = ???
-  @inline def asin(a: scala.Double): scala.Double = ???
-  @inline def acos(a: scala.Double): scala.Double = ???
-  @inline def atan(a: scala.Double): scala.Double = ???
+  @inline def sin(a: scala.Double): scala.Double                    = `llvm.sin.f64`(a)
+  @inline def cos(a: scala.Double): scala.Double                    = `llvm.cos.f64`(a)
+  @inline def tan(a: scala.Double): scala.Double                    = ???
+  @inline def asin(a: scala.Double): scala.Double                   = ???
+  @inline def acos(a: scala.Double): scala.Double                   = ???
+  @inline def atan(a: scala.Double): scala.Double                   = ???
   @inline def atan2(y: scala.Double, x: scala.Double): scala.Double = ???
 
   @inline def random(): scala.Double = ???
@@ -75,7 +82,8 @@ object Math {
     else if (a == 0)
       MinPositiveValue
     else {
-      def iter(x: scala.Double, xi: scala.Double, n: scala.Double): scala.Double = {
+      def iter(
+          x: scala.Double, xi: scala.Double, n: scala.Double): scala.Double = {
         if (Math.abs(xi - x) >= 1E-16) {
           val c0 = (xi + x) / 2
           val c =
@@ -86,10 +94,9 @@ object Math {
           if (n == c) xi
           else if (a < c) iter(x = x, xi = c, n = c)
           else iter(x = c, xi = xi, n = c)
-        }
-        else xi
+        } else xi
       }
-      val d = Math.max(Math.abs(a) * 2E-16, MinPositiveValue)
+      val d  = Math.max(Math.abs(a) * 2E-16, MinPositiveValue)
       val ad = a + d
       val xi0 =
         if (ad == PositiveInfinity) MaxValue
@@ -120,7 +127,8 @@ object Math {
 
   def hypot(a: scala.Double, b: scala.Double): scala.Double = {
     // http://en.wikipedia.org/wiki/Hypot#Implementation
-    if (abs(a) == scala.Double.PositiveInfinity || abs(b) == scala.Double.PositiveInfinity)
+    if (abs(a) == scala.Double.PositiveInfinity ||
+        abs(b) == scala.Double.PositiveInfinity)
       scala.Double.PositiveInfinity
     else if (a.isNaN || b.isNaN)
       scala.Double.NaN
@@ -180,35 +188,35 @@ object Math {
         -1.0
       else {
         val expa = exp(a)
-        val ret = expma / (expa + expma)
+        val ret  = expma / (expa + expma)
         1.0 - (2.0 * ret)
       }
     }
   }
 
   def addExact(a: scala.Int, b: scala.Int): scala.Int = {
-    val res = a + b
+    val res       = a + b
     val resSgnBit = res < 0
     if (resSgnBit == (a < 0) || resSgnBit == (b < 0)) res
     else throw new ArithmeticException("Integer overflow")
   }
 
   def addExact(a: scala.Long, b: scala.Long): scala.Long = {
-    val res = a + b
+    val res       = a + b
     val resSgnBit = res < 0
     if (resSgnBit == (a < 0) || resSgnBit == (b < 0)) res
     else throw new ArithmeticException("Long overflow")
   }
 
   def subtractExact(a: scala.Int, b: scala.Int): scala.Int = {
-    val res = a - b
+    val res       = a - b
     val resSgnBit = res < 0
     if (resSgnBit == (a < 0) || resSgnBit == (b > 0)) res
     else throw new ArithmeticException("Integer overflow")
   }
 
   def subtractExact(a: scala.Long, b: scala.Long): scala.Long = {
-    val res = a - b
+    val res       = a - b
     val resSgnBit = res < 0
     if (resSgnBit == (a < 0) || resSgnBit == (b > 0)) res
     else throw new ArithmeticException("Long overflow")

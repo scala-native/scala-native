@@ -40,5 +40,4 @@ class StringWriter extends Writer {
   def flush(): Unit = ()
 
   def close(): Unit = ()
-
 }

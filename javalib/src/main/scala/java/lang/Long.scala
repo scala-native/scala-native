@@ -3,14 +3,15 @@ package java.lang
 import scala.annotation.{switch, tailrec}
 
 final class Long(val longValue: scala.Long)
-    extends Number with Comparable[Long] {
+    extends Number
+    with Comparable[Long] {
   def this(s: String) = this(Long.parseLong(s))
 
-  @inline override def byteValue(): scala.Byte = longValue.toByte
+  @inline override def byteValue(): scala.Byte   = longValue.toByte
   @inline override def shortValue(): scala.Short = longValue.toShort
-  @inline def intValue(): scala.Int = longValue.toInt
-  @inline def floatValue(): scala.Float = longValue.toFloat
-  @inline def doubleValue(): scala.Double = longValue.toDouble
+  @inline def intValue(): scala.Int              = longValue.toInt
+  @inline def floatValue(): scala.Float          = longValue.toFloat
+  @inline def doubleValue(): scala.Double        = longValue.toDouble
 
   @inline override def equals(that: Any): scala.Boolean = that match {
     case that: Long => longValue == that.longValue
@@ -28,11 +29,11 @@ final class Long(val longValue: scala.Long)
 }
 
 object Long {
-  final val TYPE = classOf[scala.Long]
+  final val TYPE      = classOf[scala.Long]
   final val MIN_VALUE = -9223372036854775808L
   final val MAX_VALUE = 9223372036854775807L
-  final val SIZE = 64
-  final val BYTES = 8
+  final val SIZE      = 64
+  final val BYTES     = 8
 
   @inline def toString(i: scala.Long, radix: Int): String = ???
 
@@ -52,10 +53,11 @@ object Long {
   @inline def parseUnsignedLong(s: String): scala.Long =
     parseUnsignedLong(s, 10)
 
-  def parseUnsignedLongInternal(s: String, radix: Int, start: Int): scala.Long = ???
+  def parseUnsignedLongInternal(
+      s: String, radix: Int, start: Int): scala.Long = ???
 
   @inline def valueOf(longValue: scala.Long): Long = new Long(longValue)
-  @inline def valueOf(s: String): Long = valueOf(parseLong(s))
+  @inline def valueOf(s: String): Long             = valueOf(parseLong(s))
 
   @inline def valueOf(s: String, radix: Int): Long =
     valueOf(parseLong(s, radix))
@@ -71,9 +73,11 @@ object Long {
 
   @inline def compareUnsigned(x: scala.Long, y: scala.Long): scala.Int = ???
 
-  def divideUnsigned(dividend: scala.Long, divisor: scala.Long): scala.Long = ???
+  def divideUnsigned(dividend: scala.Long, divisor: scala.Long): scala.Long =
+    ???
 
-  def remainderUnsigned(dividend: scala.Long, divisor: scala.Long): scala.Long = ???
+  def remainderUnsigned(
+      dividend: scala.Long, divisor: scala.Long): scala.Long = ???
 
   def highestOneBit(i: scala.Long): scala.Long = ???
 

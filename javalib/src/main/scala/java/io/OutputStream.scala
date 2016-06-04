@@ -21,5 +21,4 @@ abstract class OutputStream extends Object with Closeable with Flushable {
   def flush(): Unit = ()
 
   def close(): Unit = ()
-
 }

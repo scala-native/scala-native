@@ -1,6 +1,7 @@
 package java.lang
 
-final class Boolean(val booleanValue: scala.Boolean) extends Comparable[Boolean] {
+final class Boolean(val booleanValue: scala.Boolean)
+    extends Comparable[Boolean] {
   def this(s: String) = this(Boolean.parseBoolean(s))
 
   @inline override def equals(that: Any): scala.Boolean =
@@ -14,12 +15,11 @@ final class Boolean(val booleanValue: scala.Boolean) extends Comparable[Boolean]
 
   @inline override def toString(): String =
     Boolean.toString(booleanValue)
-
 }
 
 object Boolean {
-  final val TYPE = classOf[scala.Boolean]
-  final val TRUE: Boolean = new Boolean(true)
+  final val TYPE           = classOf[scala.Boolean]
+  final val TRUE: Boolean  = new Boolean(true)
   final val FALSE: Boolean = new Boolean(false)
 
   @inline def valueOf(booleanValue: scala.Boolean): Boolean =

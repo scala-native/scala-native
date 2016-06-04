@@ -26,5 +26,4 @@ object Map {
     def equals(o: Any): Boolean
     def hashCode(): Int
   }
-
 }

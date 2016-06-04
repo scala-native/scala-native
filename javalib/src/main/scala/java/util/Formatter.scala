@@ -17,13 +17,13 @@ class Formatter {
   def this(fileName: String, charsetName: String) = this()
   def this(fileName: String) = this()
 
-  def close(): Unit = ???
-  def flush(): Unit = ???
+  def close(): Unit                                                 = ???
+  def flush(): Unit                                                 = ???
   def format(locale: Locale, format: String, args: Any*): Formatter = ???
-  def format(format: String, args: Any*): Formatter = ???
-  def ioException(): IOException = ???
-  def locale(): Locale = ???
-  def out(): Appendable = ???
+  def format(format: String, args: Any*): Formatter                 = ???
+  def ioException(): IOException                                    = ???
+  def locale(): Locale                                              = ???
+  def out(): Appendable                                             = ???
 }
 
 object Formatter

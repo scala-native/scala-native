@@ -20,11 +20,13 @@ abstract class AbstractCollection[E] protected () extends Collection[E] {
   def toArray[T <: AnyRef](a: Array[T]): Array[T] = {
     val toFill: Array[T] =
       if (a.size >= size) a
-      else jlr.Array.newInstance(a.getClass.getComponentType, size).asInstanceOf[Array[T]]
+      else
+        jlr.Array
+          .newInstance(a.getClass.getComponentType, size)
+          .asInstanceOf[Array[T]]
 
     val iter = iterator
-    for (i <- 0 until size)
-      toFill(i) = iter.next().asInstanceOf[T]
+    for (i <- 0 until size) toFill(i) = iter.next().asInstanceOf[T]
     if (toFill.size > size)
       toFill(size) = null.asInstanceOf[T]
     toFill

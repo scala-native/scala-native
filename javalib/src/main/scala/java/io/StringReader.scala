@@ -3,8 +3,8 @@ package java.io
 class StringReader(s: String) extends Reader {
 
   private[this] var closed = false
-  private[this] var pos = 0
-  private[this] var mark = 0
+  private[this] var pos    = 0
+  private[this] var mark   = 0
 
   override def close(): Unit = {
     closed = true
@@ -68,5 +68,4 @@ class StringReader(s: String) extends Reader {
     if (closed)
       throw new IOException("Operation on closed stream")
   }
-
 }

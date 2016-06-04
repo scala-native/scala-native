@@ -68,7 +68,9 @@ lazy val sbtplugin =
   project.in(file("sbtplugin")).
     settings(toolSettings).
     settings(
-      sbtPlugin := true
+      sbtPlugin := true,
+      // Scalafmt fails to format source of sbt plugins.
+      scalafmtTest := {}
     ).
     dependsOn(tools)
 
@@ -138,6 +140,8 @@ lazy val scalalib =
           file(s"scalalib/overrides-$epoch.$major/scala"),
           file("scalalib/src/main/scala/scala"), overwrite = true)
       },
+
+      scalafmtTest := {},
 
       compile in Compile <<= (compile in Compile) dependsOn assembleScalaLibrary
     ).

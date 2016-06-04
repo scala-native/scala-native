@@ -2,7 +2,7 @@ package java.lang
 
 class ThreadLocal[T] {
   private var hasValue: Boolean = false
-  private var v: T = _
+  private var v: T              = _
 
   protected def initialValue(): T = null.asInstanceOf[T]
 
