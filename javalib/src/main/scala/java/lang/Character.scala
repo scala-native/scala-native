@@ -2,7 +2,6 @@ package java.lang
 
 import java.util.Arrays
 
-@inline
 class Character(private val value: scala.Char) extends Comparable[Character] {
 
   def charValue(): scala.Char = value
@@ -17,7 +16,7 @@ class Character(private val value: scala.Char) extends Comparable[Character] {
   override def toString(): String =
     Character.toString(value)
 
-  override def hashCode(): Int = value.##
+  override def hashCode(): Int = value.toInt
 
   /*
    * Methods on scala.Char

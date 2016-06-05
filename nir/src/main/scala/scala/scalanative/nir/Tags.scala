@@ -115,9 +115,9 @@ object Tags {
 
   final val Global = Cf + 32
 
-  final val ValGlobal    = 1 + Global
-  final val TypeGlobal   = 1 + ValGlobal
-  final val MemberGlobal = 1 + TypeGlobal
+  final val NoneGlobal   = 1 + Global
+  final val TopGlobal    = 1 + NoneGlobal
+  final val MemberGlobal = 1 + TopGlobal
 
   // Nexts
 

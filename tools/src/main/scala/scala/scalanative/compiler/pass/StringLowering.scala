@@ -3,66 +3,49 @@ package compiler
 package pass
 
 import scala.collection.mutable
+import compiler.analysis.ClassHierarchy
+import compiler.analysis.ClassHierarchyExtractors._
 import util.ScopedVar, ScopedVar.scoped
 import nir._
 
-/** Lowers strings values into intrinsified global constant.
- *
- *  Every string value:
- *
- *      "..."
- *
- *  Generate unique constants per string value:
- *
- *      const @__str_$idx_data: [i8 x ${str.length}] =
- *        c"..."
- *
- *      const @__str_$idx: struct #string =
- *        struct #string { #string_type, ${str.length}, bitcast[ptr i8] @__str_$idx_data }
- *
- *  And the value itself is replaced with:
- *
- *      bitcast[ptr i8] @__str_$idx
+/** Lowers strings values into intrinsified global constants.
  *
  *  Eliminates:
  *  - Val.String
  */
-class StringLowering extends Pass {
+class StringLowering(implicit chg: ClassHierarchy.Graph) extends Pass {
   private val strings = mutable.UnrolledBuffer.empty[String]
 
-  override def postAssembly = {
-    case defns =>
-      defns /*++ strings.zipWithIndex.flatMap { case (v, idx) =>
-      val data      = Global.Val("__str", idx.toString, "data")
-      val dataTy    = Type.Array(Type.I8, v.length)
-      val dataVal   = Val.Chars(v)
-      val dataConst = Defn.Const(Seq(), data, dataTy, dataVal)
-      val dataPtr   = Val.Bitcast(Type.Ptr(Type.I8), Val.Global(data, Type.Ptr(dataTy)))
-
-      val str      = Global.Val("__str", idx.toString)
-      val strTy    = Type.Struct(Nrt.String.name)
-      val strVal   = Val.Struct(Nrt.String.name, Seq(Nrt.String_type, Val.I32(v.length), dataPtr))
-      val strConst = Defn.Const(Seq(), str, strTy, strVal)
-
-      Seq(dataConst, strConst)
-    }*/
+  /** Names of the fields of the java.lang.String in the memory layout order. */
+  private val stringFieldNames = {
+    val node  = ClassRef.unapply(Rt.String.name).get
+    val names = node.fields.sortBy(_.index).map(_.name)
+    assert(names.length == 4, "java.lang.String is expected to have 4 fields.")
+    names
   }
 
   override def preVal = {
     case Val.String(v) =>
-      /*
-      val idx =
-        if (strings.contains(v))
-          strings.indexOf(v)
-        else {
-          strings += v
-          strings.length - 1
-        }
+      val node = ClassRef.unapply(Rt.String.name).get
 
-      Val.Bitcast(Type.Ptr(Type.I8),
-        Val.Global(Global.Val("__str", idx.toString), Type.Ptr(Type.Struct(Nrt.String.name))))
-       */
+      val stringInfo  = Val.Global(Rt.String.name tag "const", Type.Ptr)
+      val charArrInfo = Val.Global(Rt.CharArray.name tag "const", Type.Ptr)
+      val chars       = v.toCharArray
+      val charsLength = Val.I32(chars.length)
+      val charsConst = Val.Const(
+          Val.Struct(
+              Global.None,
+              Seq(charArrInfo,
+                  charsLength,
+                  Val.Array(Type.I16, chars.map(c => Val.I16(c.toShort))))))
 
-      Val.Null
+      val fieldValues = stringFieldNames.map {
+        case Global.Member(_, "field.value")  => charsConst
+        case Global.Member(_, "field.offset") => Val.I32(0)
+        case Global.Member(_, "field.count")  => charsLength
+        case _                                => Val.I32(v.hashCode)
+      }
+
+      Val.Const(Val.Struct(Global.None, stringInfo +: fieldValues))
   }
 }

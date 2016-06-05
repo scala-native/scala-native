@@ -127,20 +127,21 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
   }
 
   implicit val showType: Show[Type] = Show {
-    case Type.Void                => "void"
-    case Type.Vararg              => "..."
-    case Type.Ptr                 => "i8*"
-    case Type.Bool                => "i1"
-    case Type.I8                  => "i8"
-    case Type.I16                 => "i16"
-    case Type.I32                 => "i32"
-    case Type.I64                 => "i64"
-    case Type.F32                 => "float"
-    case Type.F64                 => "double"
-    case Type.Array(ty, n)        => sh"[$n x $ty]"
-    case Type.Function(args, ret) => sh"$ret (${r(args, sep = ", ")})"
-    case Type.Struct(name, _)     => sh"%$name"
-    case ty                       => unsupported(ty)
+    case Type.Void                     => "void"
+    case Type.Vararg                   => "..."
+    case Type.Ptr                      => "i8*"
+    case Type.Bool                     => "i1"
+    case Type.I8                       => "i8"
+    case Type.I16                      => "i16"
+    case Type.I32                      => "i32"
+    case Type.I64                      => "i64"
+    case Type.F32                      => "float"
+    case Type.F64                      => "double"
+    case Type.Array(ty, n)             => sh"[$n x $ty]"
+    case Type.Function(args, ret)      => sh"$ret (${r(args, sep = ", ")})"
+    case Type.Struct(Global.None, tys) => sh"{ ${r(tys, sep = ", ")} }"
+    case Type.Struct(name, _)          => sh"%$name"
+    case ty                            => unsupported(ty)
   }
 
   def justVal(v: Val): Show.Result = v match {
@@ -154,7 +155,7 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
     case Val.I64(v)        => v.toString
     case Val.F32(v)        => v.toString
     case Val.F64(v)        => v.toString
-    case Val.Struct(n, vs) => sh"{ ${r(vs, sep = ", ")} }"
+    case Val.Struct(_, vs) => sh"{ ${r(vs, sep = ", ")} }"
     case Val.Array(_, vs)  => sh"[ ${r(vs, sep = ", ")} ]"
     case Val.Chars(v)      => s("c\"", v, "\\00", "\"")
     case Val.Local(n, ty)  => sh"%$n"
@@ -172,8 +173,8 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
   private def quoted(sh: Show.Result) = s("\"", sh, "\"")
 
   private def justGlobal(g: Global): Show.Result = g match {
-    case Global.Val(id)       => id
-    case Global.Type(id)      => id
+    case Global.None          => unsupported(g)
+    case Global.Top(id)       => id
     case Global.Member(n, id) => s(justGlobal(n), "::", id)
   }
 

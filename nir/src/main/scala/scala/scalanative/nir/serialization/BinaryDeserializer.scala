@@ -194,13 +194,15 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
   private def getGlobalOpt(): Option[Global] = getOpt(getGlobal)
   private def getGlobal(): Global = {
     val name = getGlobalNoDep
-    deps += Dep.Direct(name)
+    if (name != Global.None) {
+      deps += Dep.Direct(name)
+    }
     name
   }
 
   private def getGlobalNoDep(): Global = getInt match {
-    case T.ValGlobal    => Global.Val(getString)
-    case T.TypeGlobal   => Global.Type(getString)
+    case T.NoneGlobal   => Global.None
+    case T.TopGlobal    => Global.Top(getString)
     case T.MemberGlobal => Global.Member(getGlobal, getString)
   }
 

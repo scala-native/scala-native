@@ -4,14 +4,17 @@ package nscplugin
 import scala.tools.nsc._
 import scala.reflect.internal.Flags._
 import scalanative.nir.Shows.{showType => _, showGlobal => _, _}
-import scalanative.util.{sh, Show}, Show.{Repeat => r}
+import scalanative.util.{unreachable, sh, Show}, Show.{Repeat => r}
 
 trait NirNameEncoding { self: NirCodeGen =>
   import global.{Name => _, _}, definitions._
   import nirAddons.nirDefinitions._
 
-  private lazy val StringClassName  = nir.Global.Type("java.lang.String")
-  private lazy val StringModuleName = nir.Global.Val("java.lang.String")
+  def genName(sym: Symbol): nir.Global =
+    if (sym.isType) genTypeName(sym)
+    else if (sym.isMethod) genMethodName(sym)
+    else if (isField(sym)) genFieldName(sym)
+    else unreachable
 
   def genTypeName(sym: Symbol): nir.Global = {
     val id = {
@@ -22,10 +25,10 @@ trait NirNameEncoding { self: NirCodeGen =>
       else fullName
     }
     val name = sym match {
-      case ObjectClass                               => nir.Rt.Object.name
-      case _ if sym.isModule                         => genTypeName(sym.moduleClass)
-      case _ if sym.isModuleClass || sym.isImplClass => nir.Global.Val(id)
-      case _                                         => nir.Global.Type(id)
+      case ObjectClass            => nir.Rt.Object.name
+      case _ if sym.isModule      => genTypeName(sym.moduleClass)
+      case _ if sym.isModuleClass => nir.Global.Top(id + "$")
+      case _                      => nir.Global.Top(id)
     }
     name
   }
@@ -85,8 +88,8 @@ trait NirNameEncoding { self: NirCodeGen =>
     }
 
     implicit lazy val showMangledGlobal: Show[nir.Global] = Show {
-      case nir.Global.Val(id)       => showId(id)
-      case nir.Global.Type(id)      => showId(id)
+      case nir.Global.None          => unreachable
+      case nir.Global.Top(id)       => showId(id)
       case nir.Global.Member(n, id) => showId(id) + ".." + showId(id)
     }
 
@@ -102,10 +105,10 @@ trait NirNameEncoding { self: NirCodeGen =>
       if (isField(sym)) {
         val id0 = sym.name.decoded.toString
         if (id0.charAt(id0.length() - 1) != ' ') id0
-        else id0.substring(0, id0.length() - 1)
+        else id0.substring(0, id0.length() - 1) // strip trailing ' '
       } else if (sym.isMethod) {
         val name = sym.name.decoded
-        if (sym.owner == NObjectClass) name.substring(1) // skip the _
+        if (sym.owner == NObjectClass) name.substring(1) // strip the _
         else name.toString
       } else {
         scalanative.util.unreachable

@@ -63,7 +63,7 @@ object LocalBoxingElimination {
   private final case class Unbox(code: Char, from: nir.Val, to: nir.Val)
       extends Record
 
-  private val BoxesRunTime = Global.Val("scala.runtime.BoxesRunTime")
+  private val BoxesRunTime = Global.Top("scala.runtime.BoxesRunTime$")
   private val BoxTo: Map[Global, Char] = Seq(
       'B' -> "boxToBoolean_bool_class.java.lang.Boolean",
       'C' -> "boxToCharacter_i16_class.java.lang.Character",

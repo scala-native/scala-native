@@ -11,7 +11,7 @@ class ExternHoisting(implicit chg: ClassHierarchy.Graph) extends Pass {
   private def stripName(n: Global): Global = {
     val id = n.id
     assert(id.startsWith("extern."))
-    Global.Val(id.substring(7))
+    Global.Top(id.substring(7)) // strip extern. prefix
   }
 
   override def preDefn = {

@@ -35,7 +35,7 @@ class TypeofLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
   }
 
   private val noTypeDefn = typeDefn(
-      0, "notype", Global.Val("scalanative_notype"))
+      0, "notype", Global.Top("scalanative_notype"))
   private val noType = Val.Global(noTypeDefn.name, Type.Ptr)
 
   override def preAssembly = {

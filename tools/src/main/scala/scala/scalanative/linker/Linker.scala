@@ -94,7 +94,7 @@ final class Linker(dotpath: Option[String], paths: Seq[String]) {
     }
 
     writeStart()
-    writeEdge(Global.Val("main"), entry)
+    writeEdge(Global.Top("main"), entry)
     direct.push(entry)
     Rt.pinned.foreach(direct.push)
     while (direct.nonEmpty) {

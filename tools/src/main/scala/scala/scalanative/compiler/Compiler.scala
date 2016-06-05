@@ -10,7 +10,7 @@ import util.sh
 
 final class Compiler(opts: Opts) {
   private lazy val entry =
-    Global.Member(Global.Val(opts.entry), "main_class.ssnr.ObjectArray_unit")
+    Global.Member(Global.Top(opts.entry), "main_class.ssnr.ObjectArray_unit")
 
   private lazy val (links, assembly): (Seq[Attr.Link], Seq[Defn]) =
     new Linker(opts.dotpath, opts.classpath).linkClosed(entry)
