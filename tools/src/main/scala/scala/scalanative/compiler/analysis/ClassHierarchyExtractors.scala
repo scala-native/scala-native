@@ -9,7 +9,7 @@ object ClassHierarchyExtractors {
   trait Extractor[T] {
     def unapply(ty: Type)(implicit chg: Graph): Option[T] = ty match {
       case ty: Type.Named => unapply(ty.name)
-      case _              => None
+      case _              => scala.None
     }
     def unapply(name: Global)(implicit chg: Graph): Option[T]
   }

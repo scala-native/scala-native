@@ -56,7 +56,7 @@ class LocalBoxingElimination extends Pass {
   }
 }
 
-object LocalBoxingElimination {
+object LocalBoxingElimination extends PassCompanion {
   private sealed abstract class Record
   private final case class Box(code: Char, from: nir.Val, to: nir.Val)
       extends Record
@@ -104,4 +104,6 @@ object LocalBoxingElimination {
       case _                => None
     }
   }
+
+  def apply(ctx: Ctx) = new LocalBoxingElimination
 }

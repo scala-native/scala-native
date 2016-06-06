@@ -32,3 +32,7 @@ class ConstLowering extends Pass {
       Val.Global(constName(constFor(v)), Type.Ptr)
   }
 }
+
+object ConstLowering extends PassCompanion {
+  def apply(ctx: Ctx) = new ConstLowering
+}

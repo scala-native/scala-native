@@ -11,10 +11,10 @@ final class _String()
     extends Serializable
     with Comparable[_String]
     with CharSequence {
-  @pin private var value: Array[Char]  = new Array[Char](0)
-  @pin private var offset: Int         = 0
-  @pin private var count: Int          = 0
-  @pin private var cachedHashCode: Int = _
+  protected[_String] var value: Array[Char]  = new Array[Char](0)
+  protected[_String] var offset: Int         = 0
+  protected[_String] var count: Int          = 0
+  protected[_String] var cachedHashCode: Int = _
 
   def this(data: Array[scala.Byte], high: Int, start: Int, length: Int) = {
     this()

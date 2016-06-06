@@ -43,3 +43,7 @@ class CopyPropagation extends Pass {
       locals(loc)
   }
 }
+
+object CopyPropagation extends PassCompanion {
+  def apply(ctx: Ctx) = new CopyPropagation
+}

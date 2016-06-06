@@ -39,7 +39,7 @@ final class Linker(dotpath: Option[String], paths: Seq[String]) {
       writer.close()
     }
 
-  def link(entry: Global): (Seq[Global], Seq[Attr.Link], Seq[Defn]) = {
+  def link(entries: Seq[Global]): (Seq[Global], Seq[Attr.Link], Seq[Defn]) = {
     val resolved   = mutable.Set.empty[Global]
     val unresolved = mutable.Set.empty[Global]
     val links      = mutable.Set.empty[Attr.Link]
@@ -94,9 +94,8 @@ final class Linker(dotpath: Option[String], paths: Seq[String]) {
     }
 
     writeStart()
-    writeEdge(Global.Top("main"), entry)
-    direct.push(entry)
-    Rt.pinned.foreach(direct.push)
+    entries.foreach(writeEdge(Global.Top("main"), _))
+    direct.pushAll(entries)
     while (direct.nonEmpty) {
       processDirect
       processConditional
@@ -106,8 +105,8 @@ final class Linker(dotpath: Option[String], paths: Seq[String]) {
     (unresolved.toSeq, links.toSeq, defns.sortBy(_.name.toString).toSeq)
   }
 
-  def linkClosed(entry: Global): (Seq[Attr.Link], Seq[Defn]) = {
-    val (unresolved, links, defns) = link(entry)
+  def linkClosed(entries: Seq[Global]): (Seq[Attr.Link], Seq[Defn]) = {
+    val (unresolved, links, defns) = link(entries)
 
     assemblies.foreach(_.close)
 

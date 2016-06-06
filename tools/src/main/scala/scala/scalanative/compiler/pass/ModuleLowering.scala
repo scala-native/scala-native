@@ -121,3 +121,7 @@ class ModuleLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
     chg.nodes(name).isInstanceOf[ClassHierarchy.Class] &&
     (!chg.nodes.contains(name member "init"))
 }
+
+object ModuleLowering extends PassCompanion {
+  def apply(ctx: Ctx) = new ModuleLowering()(ctx.chg, ctx.fresh)
+}

@@ -64,3 +64,9 @@ class TypeofLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
       Seq(Inst(n, Op.Copy(value)))
   }
 }
+
+object TypeofLowering extends PassCompanion {
+  def apply(ctx: Ctx) = new TypeofLowering()(ctx.chg, ctx.fresh)
+
+  override val depends = Seq(Rt.Type.name)
+}

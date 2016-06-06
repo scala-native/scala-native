@@ -11,10 +11,12 @@ import nir._
  *  - Cf.{Try, Throw}
  */
 class ExceptionLowering(implicit fresh: Fresh) extends Pass {
+  import ExceptionLowering._
+
   private def transformCf(block: Block) = block.cf match {
     case Cf.Throw(v) =>
       block.copy(
-          insts = block.insts :+ Inst(Op.Call(Rt.throwSig, Rt.throw_, Seq(v))),
+          insts = block.insts :+ Inst(Op.Call(throwSig, throw_, Seq(v))),
           cf = Cf.Unreachable)
     case Cf.Try(Next.Succ(n), fail) =>
       block.copy(cf = Cf.Jump(Next.Label(n, Seq())))
@@ -83,4 +85,17 @@ class ExceptionLowering(implicit fresh: Fresh) extends Pass {
 
       Seq(defn.copy(blocks = nblocks))
   }
+}
+
+object ExceptionLowering extends PassCompanion {
+  def apply(ctx: Ctx) = new ExceptionLowering()(ctx.fresh)
+
+  val throwName = Global.Top("scalanative_throw")
+  val throwSig  = Type.Function(Seq(Type.Ptr), Type.Void)
+  val throw_    = Val.Global(throwName, Type.Ptr)
+
+  override val injects = Seq(
+      Defn.Declare(Attrs.None, Rt.beginCatchName, Rt.beginCatchSig),
+      Defn.Declare(Attrs.None, Rt.endCatchName, Rt.endCatchSig),
+      Defn.Declare(Attrs.None, throwName, throwSig))
 }

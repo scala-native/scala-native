@@ -13,6 +13,8 @@ sealed abstract class Global {
     case _                                               => false
   }
 
+  def isTop: Boolean = this.isInstanceOf[Global.Top]
+
   def member(id: String): Global.Member =
     Global.Member(this, id)
 

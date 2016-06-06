@@ -30,3 +30,7 @@ class ExternHoisting(implicit chg: ClassHierarchy.Graph) extends Pass {
       Val.Global(stripName(n), ty)
   }
 }
+
+object ExternHoisting extends PassCompanion {
+  def apply(ctx: Ctx) = new ExternHoisting()(ctx.chg)
+}

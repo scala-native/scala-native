@@ -13,6 +13,12 @@ object ClassHierarchy {
     def id: Int
   }
 
+  final case object None extends Node {
+    def attrs = Attrs.None
+    def name  = Global.None
+    def id    = 0
+  }
+
   sealed abstract class Top extends Node {
     var members: Seq[Node]
   }
@@ -39,7 +45,7 @@ object ClassHierarchy {
                     val isModule: Boolean,
                     var id: Int = -1,
                     var range: Range = null,
-                    var parent: Option[Class] = None,
+                    var parent: Option[Class] = scala.None,
                     var subclasses: Seq[Class] = Seq(),
                     var traits: Seq[Node] = Seq(),
                     var members: Seq[Node] = Seq())
@@ -112,7 +118,7 @@ object ClassHierarchy {
         case meth if meth.in.isInstanceOf[Class] =>
           meth
       }) match {
-        case Seq()  => None
+        case Seq()  => scala.None
         case Seq(m) => Some(m)
         case _      => unreachable
       }
@@ -213,14 +219,19 @@ object ClassHierarchy {
     }
 
     def enrichMethod(name: Global, attrs: Attrs): Unit = {
-      val node  = nodes(name).asInstanceOf[Method]
-      val owner = nodes(name.top).asInstanceOf[Top]
-      node.in = owner
-      owner.members = owner.members :+ node
-      attrs.overrides.foreach { n =>
-        val ovnode = nodes(n).asInstanceOf[Method]
-        node.overrides = node.overrides :+ ovnode
-        ovnode.overriden = ovnode.overriden :+ node
+      val node = nodes(name).asInstanceOf[Method]
+
+      if (node.name.isTop)
+        node.in = None
+      else {
+        val owner = nodes(name.top).asInstanceOf[Top]
+        node.in = owner
+        owner.members = owner.members :+ node
+        attrs.overrides.foreach { n =>
+          val ovnode = nodes(n).asInstanceOf[Method]
+          node.overrides = node.overrides :+ ovnode
+          ovnode.overriden = ovnode.overriden :+ node
+        }
       }
     }
 
