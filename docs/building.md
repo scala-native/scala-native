@@ -33,6 +33,14 @@ You can use brew as shown below
 brew install bdw-gc
 ```
 
+### OS X Yosemite
+
+OS X Yosemite uses outdated version of `clang` so you might have to install a newer version via brew:
+
+```
+brew install homebrew/versions/llvm38
+```
+
 ## FreeBSD
 
 ```
