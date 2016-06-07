@@ -1,5 +1,6 @@
 package java.lang
 
+import scalanative.native._
 import java.io.Serializable
 import java.util._
 import java.util.regex._
@@ -10,10 +11,10 @@ final class _String()
     extends Serializable
     with Comparable[_String]
     with CharSequence {
-  private var value               = new Array[Char](0)
-  private var offset              = 0
-  private var count               = 0
-  private var cachedHashCode: Int = _
+  protected[_String] var value: Array[Char]  = new Array[Char](0)
+  protected[_String] var offset: Int         = 0
+  protected[_String] var count: Int          = 0
+  protected[_String] var cachedHashCode: Int = _
 
   def this(data: Array[scala.Byte], high: Int, start: Int, length: Int) = {
     this()
@@ -796,7 +797,7 @@ object _String {
 
   import scala.language.implicitConversions
   @inline private implicit def _string2string(s: _String): String =
-    s.asInstanceOf[_String]
-  @inline private implicit def string2_string(s: String): _String =
     s.asInstanceOf[String]
+  @inline private implicit def string2_string(s: String): _String =
+    s.asInstanceOf[_String]
 }

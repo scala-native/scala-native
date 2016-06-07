@@ -23,3 +23,7 @@ class DeadCodeElimination(implicit chg: ClassHierarchy.Graph) extends Pass {
       Seq(defn.copy(blocks = newBlocks))
   }
 }
+
+object DeadCodeElimination extends PassCompanion {
+  def apply(ctx: Ctx) = new DeadCodeElimination()(ctx.chg)
+}

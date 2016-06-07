@@ -62,3 +62,7 @@ class TraitLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
       ???
   }
 }
+
+object TraitLowering extends PassCompanion {
+  def apply(ctx: Ctx) = new TraitLowering()(ctx.chg, ctx.fresh)
+}

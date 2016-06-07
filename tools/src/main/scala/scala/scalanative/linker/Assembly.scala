@@ -21,15 +21,9 @@ final case class Assembly(base: File) {
         val path    = vfile.relativePath
         val fileabs = path.toAbsolutePath().toString
         val relpath = fileabs.replace(baseabs + "/", "")
-        val (ctor, rel) =
-          if (relpath.endsWith(".type.nir"))
-            (Global.Type, relpath.replace(".type.nir", ""))
-          else if (relpath.endsWith(".value.nir"))
-            (Global.Val, relpath.replace(".value.nir", ""))
-          else
-            throw new LinkingError(s"can't recognized assembly file: $relpath")
-        val parts = rel.split("/").toSeq
-        val name  = ctor(parts.filter(_ != "").mkString("."))
+        val parts   = relpath.replace(".nir", "").split("/").toSeq
+        val name    = Global.Top(parts.filter(_ != "").mkString("."))
+
         (name -> new BinaryDeserializer(vfile.bytes))
       }
       .toMap

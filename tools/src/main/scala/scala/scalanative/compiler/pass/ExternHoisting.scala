@@ -11,7 +11,7 @@ class ExternHoisting(implicit chg: ClassHierarchy.Graph) extends Pass {
   private def stripName(n: Global): Global = {
     val id = n.id
     assert(id.startsWith("extern."))
-    Global.Val(id.substring(7))
+    Global.Top(id.substring(7)) // strip extern. prefix
   }
 
   override def preDefn = {
@@ -29,4 +29,8 @@ class ExternHoisting(implicit chg: ClassHierarchy.Graph) extends Pass {
     case Val.Global(n @ Ref(node), ty) if node.attrs.isExtern =>
       Val.Global(stripName(n), ty)
   }
+}
+
+object ExternHoisting extends PassCompanion {
+  def apply(ctx: Ctx) = new ExternHoisting()(ctx.chg)
 }

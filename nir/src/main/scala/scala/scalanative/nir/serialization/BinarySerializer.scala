@@ -222,8 +222,8 @@ final class BinarySerializer(buffer: ByteBuffer) {
   private def putGlobalOpt(globalopt: Option[Global]): Unit =
     putOpt(globalopt)(putGlobal)
   private def putGlobal(global: Global): Unit = global match {
-    case Global.Val(id)  => putInt(T.ValGlobal); putString(id)
-    case Global.Type(id) => putInt(T.TypeGlobal); putString(id)
+    case Global.None    => putInt(T.NoneGlobal)
+    case Global.Top(id) => putInt(T.TopGlobal); putString(id)
     case Global.Member(n, id) =>
       putInt(T.MemberGlobal); putGlobal(n); putString(id)
   }

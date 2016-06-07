@@ -11,7 +11,7 @@ import nir._
 class ConstLowering extends Pass {
   private val consts = mutable.UnrolledBuffer.empty[Val]
   private def constName(idx: Int): Global =
-    Global.Val("__const." + idx.toString)
+    Global.Top("__const." + idx.toString)
   private def constFor(v: Val): Int =
     if (consts.contains(v)) consts.indexOf(v)
     else {
@@ -27,8 +27,12 @@ class ConstLowering extends Pass {
       }
   }
 
-  override def preVal = {
+  override def postVal = {
     case Val.Const(v) =>
       Val.Global(constName(constFor(v)), Type.Ptr)
   }
+}
+
+object ConstLowering extends PassCompanion {
+  def apply(ctx: Ctx) = new ConstLowering
 }

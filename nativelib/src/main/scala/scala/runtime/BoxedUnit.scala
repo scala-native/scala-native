@@ -1,6 +1,6 @@
 package scala.runtime
 
-final class BoxedUnit private () extends java.io.Serializable {
+class BoxedUnit extends java.io.Serializable {
   override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
   override def hashCode(): Int            = 0
   override def toString: String           = "()"

@@ -19,3 +19,7 @@ class SizeofLowering(implicit fresh: Fresh) extends Pass {
       )
   }
 }
+
+object SizeofLowering extends PassCompanion {
+  def apply(ctx: Ctx) = new SizeofLowering()(ctx.fresh)
+}

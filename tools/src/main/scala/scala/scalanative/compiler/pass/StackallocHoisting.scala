@@ -30,3 +30,7 @@ class StackallocHoisting extends Pass {
       Seq(defn.copy(blocks = newBlocks))
   }
 }
+
+object StackallocHoisting extends PassCompanion {
+  def apply(ctx: Ctx) = new StackallocHoisting
+}

@@ -44,6 +44,8 @@ import nir._, Shows._
  */
 class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
     extends Pass {
+  import ClassLowering._
+
   def infoStruct(cls: ClassHierarchy.Class): Type.Struct = {
     val vtable         = cls.vtable.map(_.ty)
     val infoStructName = cls.name tag "info"
@@ -97,7 +99,7 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
 
       Seq(
           Inst(size.name, Op.Sizeof(classty)),
-          Inst(n, Op.Call(Rt.allocSig, Rt.alloc, Seq(const, size)))
+          Inst(n, Op.Call(allocSig, alloc, Seq(const, size)))
       )
 
     case Inst(n, Op.Field(ty, obj, FieldRef(ClassRef(cls), fld))) =>
@@ -169,4 +171,14 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
   override def preType = {
     case ty: Type.RefKind if ty != Type.Unit => Type.Ptr
   }
+}
+
+object ClassLowering extends PassCompanion {
+  def apply(ctx: Ctx) = new ClassLowering()(ctx.chg, ctx.fresh)
+
+  val allocName = Global.Top("scalanative_alloc")
+  val allocSig  = Type.Function(Seq(Type.Ptr, Type.I64), Type.Ptr)
+  val alloc     = Val.Global(allocName, allocSig)
+
+  override val injects = Seq(Defn.Declare(Attrs.None, allocName, allocSig))
 }

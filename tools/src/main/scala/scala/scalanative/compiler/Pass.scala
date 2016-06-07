@@ -1,7 +1,8 @@
 package scala.scalanative
-package nir
+package compiler
 
 import scala.collection.mutable
+import nir._
 
 trait Pass extends (Seq[Defn] => Seq[Defn]) {
   type OnAssembly = PartialFunction[Seq[Defn], Seq[Defn]]
@@ -200,4 +201,10 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
   final def apply(next: Next): Next               = txNext(next)
   final def apply(value: Val): Val                = txVal(value)
   final def apply(ty: Type): Type                 = txType(ty)
+}
+
+trait PassCompanion {
+  def apply(ctx: Ctx): Pass
+  def depends: Seq[Global] = Seq()
+  def injects: Seq[Defn]   = Seq()
 }

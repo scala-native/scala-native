@@ -38,3 +38,7 @@ class NothingLowering extends Pass {
       Type.Function(params, Type.Void)
   }
 }
+
+object NothingLowering extends PassCompanion {
+  def apply(ctx: Ctx) = new NothingLowering
+}

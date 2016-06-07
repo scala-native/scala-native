@@ -10,34 +10,42 @@ import util.sh
 
 final class Compiler(opts: Opts) {
   private lazy val entry =
-    Global.Member(Global.Val(opts.entry), "main_class.ssnr.ObjectArray_unit")
+    Global.Member(Global.Top(opts.entry), "main_class.ssnr.ObjectArray_unit")
 
-  private lazy val (links, assembly): (Seq[Attr.Link], Seq[Defn]) =
-    new Linker(opts.dotpath, opts.classpath).linkClosed(entry)
+  private lazy val passCompanions: Seq[PassCompanion] = Seq(
+      pass.LocalBoxingElimination,
+      pass.DeadCodeElimination,
+      pass.MainInjection,
+      pass.ExternHoisting,
+      pass.ModuleLowering,
+      pass.TypeofLowering,
+      pass.AsLowering,
+      pass.TraitLowering,
+      pass.ClassLowering,
+      pass.StringLowering,
+      pass.ConstLowering,
+      pass.SizeofLowering,
+      pass.UnitLowering,
+      pass.NothingLowering,
+      pass.ExceptionLowering,
+      pass.StackallocHoisting,
+      pass.CopyPropagation)
 
-  private lazy val passes: Seq[Pass] = {
-    implicit val fresh     = Fresh("tx")
-    implicit val hierarchy = analysis.ClassHierarchy(assembly)
+  private lazy val (links, assembly): (Seq[Attr.Link], Seq[Defn]) = {
+    val deps           = passCompanions.flatMap(_.depends).distinct
+    val injects        = passCompanions.flatMap(_.injects).distinct
+    val linker         = new Linker(opts.dotpath, opts.classpath)
+    val (links, defns) = linker.linkClosed(entry +: deps)
 
-    Seq(
-        new pass.LocalBoxingElimination,
-        new pass.DeadCodeElimination,
-        new pass.MainInjection(entry),
-        new pass.ExternHoisting,
-        new pass.ModuleLowering,
-        new pass.TypeofLowering,
-        new pass.AsLowering,
-        new pass.TraitLowering,
-        new pass.ClassLowering,
-        new pass.StringLowering,
-        new pass.ConstLowering,
-        new pass.SizeofLowering,
-        new pass.UnitLowering,
-        new pass.NothingLowering,
-        new pass.ExceptionLowering,
-        new pass.StackallocHoisting,
-        new pass.CopyPropagation
-    )
+    (links, defns ++ injects)
+  }
+
+  private lazy val passes = {
+    val ctx = Ctx(fresh = Fresh("tx"),
+                  entry = entry,
+                  chg = analysis.ClassHierarchy(assembly))
+
+    passCompanions.map(_.apply(ctx))
   }
 
   private def codegen(assembly: Seq[Defn]): Unit = {
@@ -58,14 +66,17 @@ final class Compiler(opts: Opts) {
       passes match {
         case Seq() =>
           assembly
+
         case (pass, id) +: rest =>
           val nassembly = pass(assembly)
-          debug(
-              nassembly, (id + 1).toString + "-" + pass.getClass.getSimpleName)
+          val n         = id + 1
+          val padded    = if (n < 10) "0" + n else "" + n
+
+          debug(nassembly, padded + "-" + pass.getClass.getSimpleName)
           loop(nassembly, rest)
       }
 
-    debug(assembly, "0")
+    debug(assembly, "00")
     codegen(loop(assembly, passes.zipWithIndex))
 
     links

@@ -1,7 +1,7 @@
 package scala.scalanative
 package nir
 
-import util.{sh, Show}
+import util.{unreachable, sh, Show}
 import Show.{Sequence => s, Indent => i, Unindent => ui, Repeat => r, Newline => nl}
 
 object Shows {
@@ -196,22 +196,23 @@ object Shows {
   }
 
   implicit val showVal: Show[Val] = Show {
-    case Val.None              => ""
-    case Val.True              => "true"
-    case Val.False             => "false"
-    case Val.Zero(ty)          => sh"zero[$ty]"
-    case Val.Undef(ty)         => sh"undef[$ty]"
-    case Val.I8(value)         => sh"${value}i8"
-    case Val.I16(value)        => sh"${value}i16"
-    case Val.I32(value)        => sh"${value}i32"
-    case Val.I64(value)        => sh"${value}i64"
-    case Val.F32(value)        => sh"${value}f32"
-    case Val.F64(value)        => sh"${value}f64"
-    case Val.Struct(n, values) => sh"struct $n {${r(values, ", ")}}"
-    case Val.Array(ty, values) => sh"array $ty {${r(values, ", ")}}"
-    case Val.Chars(v)          => s("c\"", v, "\"")
-    case Val.Local(name, ty)   => sh"$name: $ty"
-    case Val.Global(name, ty)  => sh"$name"
+    case Val.None                        => unreachable
+    case Val.True                        => "true"
+    case Val.False                       => "false"
+    case Val.Zero(ty)                    => sh"zero[$ty]"
+    case Val.Undef(ty)                   => sh"undef[$ty]"
+    case Val.I8(value)                   => sh"${value}i8"
+    case Val.I16(value)                  => sh"${value}i16"
+    case Val.I32(value)                  => sh"${value}i32"
+    case Val.I64(value)                  => sh"${value}i64"
+    case Val.F32(value)                  => sh"${value}f32"
+    case Val.F64(value)                  => sh"${value}f64"
+    case Val.Struct(Global.None, values) => sh"struct {${r(values, ", ")}}"
+    case Val.Struct(n, values)           => sh"struct $n {${r(values, ", ")}}"
+    case Val.Array(ty, values)           => sh"array $ty {${r(values, ", ")}}"
+    case Val.Chars(v)                    => s("c\"", v, "\"")
+    case Val.Local(name, ty)             => sh"$name: $ty"
+    case Val.Global(name, ty)            => sh"$name"
 
     case Val.Unit      => "unit"
     case Val.Const(v)  => sh"const $v"
@@ -258,20 +259,21 @@ object Shows {
   }
 
   implicit val showType: Show[Type] = Show {
-    case Type.None                => ""
-    case Type.Void                => "void"
-    case Type.Vararg              => "..."
-    case Type.Ptr                 => "ptr"
-    case Type.Bool                => "bool"
-    case Type.I8                  => "i8"
-    case Type.I16                 => "i16"
-    case Type.I32                 => "i32"
-    case Type.I64                 => "i64"
-    case Type.F32                 => "f32"
-    case Type.F64                 => "f64"
-    case Type.Array(ty, n)        => sh"[$ty x $n]"
-    case Type.Function(args, ret) => sh"(${r(args, sep = ", ")}) => $ret"
-    case Type.Struct(name, _)     => sh"struct $name"
+    case Type.None                     => unreachable
+    case Type.Void                     => "void"
+    case Type.Vararg                   => "..."
+    case Type.Ptr                      => "ptr"
+    case Type.Bool                     => "bool"
+    case Type.I8                       => "i8"
+    case Type.I16                      => "i16"
+    case Type.I32                      => "i32"
+    case Type.I64                      => "i64"
+    case Type.F32                      => "f32"
+    case Type.F64                      => "f64"
+    case Type.Array(ty, n)             => sh"[$ty x $n]"
+    case Type.Function(args, ret)      => sh"(${r(args, sep = ", ")}) => $ret"
+    case Type.Struct(Global.None, tys) => sh"{${r(tys, sep = ", ")}}"
+    case Type.Struct(name, _)          => sh"struct $name"
 
     case Type.Unit         => "unit"
     case Type.Nothing      => "nothing"
@@ -281,8 +283,8 @@ object Shows {
   }
 
   implicit val showGlobal: Show[Global] = Show {
-    case Global.Val(id)       => sh"@$id"
-    case Global.Type(id)      => sh"#$id"
+    case Global.None          => unreachable
+    case Global.Top(id)       => sh"@$id"
     case Global.Member(n, id) => sh"${n: Global}::$id"
   }
 

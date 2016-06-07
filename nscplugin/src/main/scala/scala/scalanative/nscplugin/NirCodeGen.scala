@@ -154,9 +154,20 @@ abstract class NirCodeGen
       else Some(genTypeName(sym.superClass))
 
     def genClassAttrs(sym: Symbol): Attrs = {
-      def pinned =
-        if (!isModule(sym) || isExternModule(sym)) Seq()
-        else Seq(Attr.PinAlways(genMethodName(sym.asClass.primaryConstructor)))
+      def pinned = {
+        val ctor =
+          if (!isModule(sym) || isExternModule(sym)) Seq()
+          else
+            Seq(Attr.PinAlways(genMethodName(sym.asClass.primaryConstructor)))
+        val annotated = for {
+          decl <- sym.info.decls
+          if decl.hasAnnotation(PinClass)
+        } yield {
+          Attr.PinAlways(genName(decl))
+        }
+
+        annotated.toSeq ++ ctor
+      }
       val attrs = sym.annotations.collect {
         case ann if ann.symbol == ExternClass => Attr.Extern
         case ann if ann.symbol == LinkClass =>
@@ -857,7 +868,7 @@ abstract class NirCodeGen
             fun.symbol.simpleName + ") " + " at: " + (app.pos))
     }
 
-    lazy val jlClassName     = nir.Global.Type("java.lang.Class")
+    lazy val jlClassName     = nir.Global.Top("java.lang.Class")
     lazy val jlClass         = nir.Type.Class(jlClassName)
     lazy val jlClassCtorName = jlClassName member "init_ptr"
     lazy val jlClassCtorSig =

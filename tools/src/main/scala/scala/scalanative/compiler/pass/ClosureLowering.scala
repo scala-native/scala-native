@@ -15,3 +15,7 @@ class ClosureLowering extends Pass {
       ???
   }
 }
+
+object ClosureLowering extends PassCompanion {
+  def apply(ctx: Ctx) = new ClosureLowering
+}

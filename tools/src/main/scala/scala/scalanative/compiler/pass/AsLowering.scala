@@ -13,3 +13,7 @@ class AsLowering extends Pass {
       Seq(Inst(n, Op.Copy(v)))
   }
 }
+
+object AsLowering extends PassCompanion {
+  def apply(ctx: Ctx) = new AsLowering
+}
