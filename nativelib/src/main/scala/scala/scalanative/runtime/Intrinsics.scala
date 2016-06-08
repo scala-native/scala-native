@@ -3,8 +3,11 @@ package runtime
 
 import native._
 
+/**
+ * @see [[http://llvm.org/releases/3.7.0/docs/LangRef.html#intrinsic-functions LLVM intrinsics functions]]
+ */
 @extern
-object Math {
+object Intrinsics {
   def `llvm.sqrt.f32`(value: Float): Float                        = extern
   def `llvm.sqrt.f64`(value: Double): Double                      = extern
   def `llvm.powi.f32`(value: Float, power: Int): Float            = extern
@@ -64,4 +67,24 @@ object Math {
   def `llvm.cttz.i16`(source: Short, iszeroundef: Boolean): Short = extern
   def `llvm.cttz.i32`(source: Int, iszeroundef: Boolean): Int     = extern
   def `llvm.cttz.i64`(source: Long, iszeroundef: Boolean): Long   = extern
+  def `llvm.memset.p0i8.i32`(dest: Ptr[Byte],
+                             value: Byte,
+                             len: Int,
+                             align: Int,
+                             isvolatile: Boolean): Unit = extern
+  def `llvm.memset.p0i8.i64`(dest: Ptr[Byte],
+                             value: Byte,
+                             len: Long,
+                             align: Int,
+                             isvolatile: Boolean): Unit = extern
+  def `llvm.memcpy.p0i8.p0i8.i32`(dest: Ptr[Byte],
+                                  src: Ptr[Byte],
+                                  len: Int,
+                                  align: Int,
+                                  isvolatile: Boolean): Unit = extern
+  def `llvm.memcpy.p0i8.p0i8.i64`(dest: Ptr[Byte],
+                                  src: Ptr[Byte],
+                                  len: Long,
+                                  align: Int,
+                                  isvolatile: Boolean): Unit = extern
 }

@@ -2,20 +2,22 @@
 package scala.scalanative
 package runtime
 
-// Note:
-// Arrays.scala is currently implemented textual templating that is expanded through project/gyb.py script. 
-// Update the Arrays.scala.gyb and re-generate the source
+// Note 1:
+// Arrays.scala is currently implemented as textual templating that is expanded through project/gyb.py script. 
+// Update Arrays.scala.gyb and re-generate the source
 
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 12)
+// Note 2:
+// Array of primitiveTypes don't contain pointers, runtime.allocAtomic() is called for memory allocation   
+// Array of Object do contain pointers. runtime.alloc() is called for memory allocation
+
+// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 16)
 
 import native._
 
 @struct class ArrayHeader(val info: Ptr[_], val length: Int)
 
 sealed abstract class Array[T]
-    extends java.io.Serializable
-    with java.lang.Cloneable {
-
+    extends java.io.Serializable with java.lang.Cloneable {
   /** Number of elements of the array. */
   def length: Int =
     // TODO: Update once we support ptr->field
@@ -31,15 +33,54 @@ sealed abstract class Array[T]
   protected override def clone(): Array[T] = undefined
 }
 
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 35)
+final class ObjectArray private () extends Array[Object] {
+  def apply(i: Int): Object =
+    if (i < 0 || i >= length)
+      throw new IndexOutOfBoundsException(i.toString)
+    else {
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Object]]
+      headptr(i)
+    }
+
+  def update(i: Int, value: Object): Unit =
+    if (i < 0 || i >= length)
+      throw new IndexOutOfBoundsException(i.toString)
+    else {
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Object]]
+      headptr(i) = value
+    }
+
+  protected override def clone(): ObjectArray = {
+    val newarr = ObjectArray.alloc(length)
+    ObjectArray.copy(this, 0, newarr, 0, length)
+    newarr
+  }
+}
+
+object ObjectArray {
+  def copy(from: ObjectArray, fromPos: Int,
+           to: ObjectArray, toPos: Int, length: Int): Unit = {
+    ???
+  }
+
+  def alloc(length: Int): ObjectArray = {
+    val arrinfo = infoof[ObjectArray]
+    val arrsize = sizeof[ArrayHeader] + sizeof[Object] * length
+    val arr = runtime.alloc(arrinfo, arrsize)    
+    // set the length
+    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
+    arr.cast[ObjectArray]        
+  }
+}
+
+// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 79)
 
 final class BooleanArray private () extends Array[Boolean] {
   def apply(i: Int): Boolean =
     if (i < 0 || i >= length)
       throw new IndexOutOfBoundsException(i.toString)
     else {
-      val headptr =
-        (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Boolean]]
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Boolean]]
       headptr(i)
     }
 
@@ -47,8 +88,7 @@ final class BooleanArray private () extends Array[Boolean] {
     if (i < 0 || i >= length)
       throw new IndexOutOfBoundsException(i.toString)
     else {
-      val headptr =
-        (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Boolean]]
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Boolean]]
       headptr(i) = value
     }
 
@@ -60,33 +100,29 @@ final class BooleanArray private () extends Array[Boolean] {
 }
 
 object BooleanArray {
-  def copy(from: BooleanArray,
-           fromPos: Int,
-           to: BooleanArray,
-           toPos: Int,
-           length: Int): Unit = {
+  def copy(from: BooleanArray, fromPos: Int,
+           to: BooleanArray, toPos: Int, length: Int): Unit = {
     ???
   }
 
   def alloc(length: Int): BooleanArray = {
     val arrinfo = infoof[BooleanArray]
     val arrsize = sizeof[ArrayHeader] + sizeof[Boolean] * length
-    val arr = runtime.alloc(arrinfo, arrsize)    
+    val arr = runtime.allocAtomic(arrinfo, arrsize)    
     // set the length
     !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
     arr.cast[BooleanArray]        
   }
 }
 
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 35)
+// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 79)
 
 final class CharArray private () extends Array[Char] {
   def apply(i: Int): Char =
     if (i < 0 || i >= length)
       throw new IndexOutOfBoundsException(i.toString)
     else {
-      val headptr =
-        (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Char]]
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Char]]
       headptr(i)
     }
 
@@ -94,8 +130,7 @@ final class CharArray private () extends Array[Char] {
     if (i < 0 || i >= length)
       throw new IndexOutOfBoundsException(i.toString)
     else {
-      val headptr =
-        (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Char]]
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Char]]
       headptr(i) = value
     }
 
@@ -107,33 +142,29 @@ final class CharArray private () extends Array[Char] {
 }
 
 object CharArray {
-  def copy(from: CharArray,
-           fromPos: Int,
-           to: CharArray,
-           toPos: Int,
-           length: Int): Unit = {
+  def copy(from: CharArray, fromPos: Int,
+           to: CharArray, toPos: Int, length: Int): Unit = {
     ???
   }
 
   def alloc(length: Int): CharArray = {
     val arrinfo = infoof[CharArray]
     val arrsize = sizeof[ArrayHeader] + sizeof[Char] * length
-    val arr = runtime.alloc(arrinfo, arrsize)    
+    val arr = runtime.allocAtomic(arrinfo, arrsize)    
     // set the length
     !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
     arr.cast[CharArray]        
   }
 }
 
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 35)
+// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 79)
 
 final class ByteArray private () extends Array[Byte] {
   def apply(i: Int): Byte =
     if (i < 0 || i >= length)
       throw new IndexOutOfBoundsException(i.toString)
     else {
-      val headptr =
-        (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Byte]]
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Byte]]
       headptr(i)
     }
 
@@ -141,8 +172,7 @@ final class ByteArray private () extends Array[Byte] {
     if (i < 0 || i >= length)
       throw new IndexOutOfBoundsException(i.toString)
     else {
-      val headptr =
-        (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Byte]]
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Byte]]
       headptr(i) = value
     }
 
@@ -154,33 +184,29 @@ final class ByteArray private () extends Array[Byte] {
 }
 
 object ByteArray {
-  def copy(from: ByteArray,
-           fromPos: Int,
-           to: ByteArray,
-           toPos: Int,
-           length: Int): Unit = {
+  def copy(from: ByteArray, fromPos: Int,
+           to: ByteArray, toPos: Int, length: Int): Unit = {
     ???
   }
 
   def alloc(length: Int): ByteArray = {
     val arrinfo = infoof[ByteArray]
     val arrsize = sizeof[ArrayHeader] + sizeof[Byte] * length
-    val arr = runtime.alloc(arrinfo, arrsize)    
+    val arr = runtime.allocAtomic(arrinfo, arrsize)    
     // set the length
     !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
     arr.cast[ByteArray]        
   }
 }
 
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 35)
+// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 79)
 
 final class ShortArray private () extends Array[Short] {
   def apply(i: Int): Short =
     if (i < 0 || i >= length)
       throw new IndexOutOfBoundsException(i.toString)
     else {
-      val headptr =
-        (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Short]]
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Short]]
       headptr(i)
     }
 
@@ -188,8 +214,7 @@ final class ShortArray private () extends Array[Short] {
     if (i < 0 || i >= length)
       throw new IndexOutOfBoundsException(i.toString)
     else {
-      val headptr =
-        (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Short]]
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Short]]
       headptr(i) = value
     }
 
@@ -201,25 +226,22 @@ final class ShortArray private () extends Array[Short] {
 }
 
 object ShortArray {
-  def copy(from: ShortArray,
-           fromPos: Int,
-           to: ShortArray,
-           toPos: Int,
-           length: Int): Unit = {
+  def copy(from: ShortArray, fromPos: Int,
+           to: ShortArray, toPos: Int, length: Int): Unit = {
     ???
   }
 
   def alloc(length: Int): ShortArray = {
     val arrinfo = infoof[ShortArray]
     val arrsize = sizeof[ArrayHeader] + sizeof[Short] * length
-    val arr = runtime.alloc(arrinfo, arrsize)    
+    val arr = runtime.allocAtomic(arrinfo, arrsize)    
     // set the length
     !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
     arr.cast[ShortArray]        
   }
 }
 
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 35)
+// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 79)
 
 final class IntArray private () extends Array[Int] {
   def apply(i: Int): Int =
@@ -246,33 +268,29 @@ final class IntArray private () extends Array[Int] {
 }
 
 object IntArray {
-  def copy(from: IntArray,
-           fromPos: Int,
-           to: IntArray,
-           toPos: Int,
-           length: Int): Unit = {
+  def copy(from: IntArray, fromPos: Int,
+           to: IntArray, toPos: Int, length: Int): Unit = {
     ???
   }
 
   def alloc(length: Int): IntArray = {
     val arrinfo = infoof[IntArray]
     val arrsize = sizeof[ArrayHeader] + sizeof[Int] * length
-    val arr = runtime.alloc(arrinfo, arrsize)    
+    val arr = runtime.allocAtomic(arrinfo, arrsize)    
     // set the length
     !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
     arr.cast[IntArray]        
   }
 }
 
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 35)
+// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 79)
 
 final class LongArray private () extends Array[Long] {
   def apply(i: Int): Long =
     if (i < 0 || i >= length)
       throw new IndexOutOfBoundsException(i.toString)
     else {
-      val headptr =
-        (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Long]]
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Long]]
       headptr(i)
     }
 
@@ -280,8 +298,7 @@ final class LongArray private () extends Array[Long] {
     if (i < 0 || i >= length)
       throw new IndexOutOfBoundsException(i.toString)
     else {
-      val headptr =
-        (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Long]]
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Long]]
       headptr(i) = value
     }
 
@@ -293,33 +310,29 @@ final class LongArray private () extends Array[Long] {
 }
 
 object LongArray {
-  def copy(from: LongArray,
-           fromPos: Int,
-           to: LongArray,
-           toPos: Int,
-           length: Int): Unit = {
+  def copy(from: LongArray, fromPos: Int,
+           to: LongArray, toPos: Int, length: Int): Unit = {
     ???
   }
 
   def alloc(length: Int): LongArray = {
     val arrinfo = infoof[LongArray]
     val arrsize = sizeof[ArrayHeader] + sizeof[Long] * length
-    val arr = runtime.alloc(arrinfo, arrsize)    
+    val arr = runtime.allocAtomic(arrinfo, arrsize)    
     // set the length
     !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
     arr.cast[LongArray]        
   }
 }
 
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 35)
+// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 79)
 
 final class FloatArray private () extends Array[Float] {
   def apply(i: Int): Float =
     if (i < 0 || i >= length)
       throw new IndexOutOfBoundsException(i.toString)
     else {
-      val headptr =
-        (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Float]]
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Float]]
       headptr(i)
     }
 
@@ -327,8 +340,7 @@ final class FloatArray private () extends Array[Float] {
     if (i < 0 || i >= length)
       throw new IndexOutOfBoundsException(i.toString)
     else {
-      val headptr =
-        (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Float]]
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Float]]
       headptr(i) = value
     }
 
@@ -340,33 +352,29 @@ final class FloatArray private () extends Array[Float] {
 }
 
 object FloatArray {
-  def copy(from: FloatArray,
-           fromPos: Int,
-           to: FloatArray,
-           toPos: Int,
-           length: Int): Unit = {
+  def copy(from: FloatArray, fromPos: Int,
+           to: FloatArray, toPos: Int, length: Int): Unit = {
     ???
   }
 
   def alloc(length: Int): FloatArray = {
     val arrinfo = infoof[FloatArray]
     val arrsize = sizeof[ArrayHeader] + sizeof[Float] * length
-    val arr = runtime.alloc(arrinfo, arrsize)    
+    val arr = runtime.allocAtomic(arrinfo, arrsize)    
     // set the length
     !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
     arr.cast[FloatArray]        
   }
 }
 
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 35)
+// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 79)
 
 final class DoubleArray private () extends Array[Double] {
   def apply(i: Int): Double =
     if (i < 0 || i >= length)
       throw new IndexOutOfBoundsException(i.toString)
     else {
-      val headptr =
-        (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Double]]
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Double]]
       headptr(i)
     }
 
@@ -374,8 +382,7 @@ final class DoubleArray private () extends Array[Double] {
     if (i < 0 || i >= length)
       throw new IndexOutOfBoundsException(i.toString)
     else {
-      val headptr =
-        (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Double]]
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Double]]
       headptr(i) = value
     }
 
@@ -387,67 +394,18 @@ final class DoubleArray private () extends Array[Double] {
 }
 
 object DoubleArray {
-  def copy(from: DoubleArray,
-           fromPos: Int,
-           to: DoubleArray,
-           toPos: Int,
-           length: Int): Unit = {
+  def copy(from: DoubleArray, fromPos: Int,
+           to: DoubleArray, toPos: Int, length: Int): Unit = {
     ???
   }
 
   def alloc(length: Int): DoubleArray = {
     val arrinfo = infoof[DoubleArray]
     val arrsize = sizeof[ArrayHeader] + sizeof[Double] * length
-    val arr = runtime.alloc(arrinfo, arrsize)    
+    val arr = runtime.allocAtomic(arrinfo, arrsize)    
     // set the length
     !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
     arr.cast[DoubleArray]        
   }
 }
 
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 35)
-
-final class ObjectArray private () extends Array[Object] {
-  def apply(i: Int): Object =
-    if (i < 0 || i >= length)
-      throw new IndexOutOfBoundsException(i.toString)
-    else {
-      val headptr =
-        (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Object]]
-      headptr(i)
-    }
-
-  def update(i: Int, value: Object): Unit =
-    if (i < 0 || i >= length)
-      throw new IndexOutOfBoundsException(i.toString)
-    else {
-      val headptr =
-        (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Object]]
-      headptr(i) = value
-    }
-
-  protected override def clone(): ObjectArray = {
-    val newarr = ObjectArray.alloc(length)
-    ObjectArray.copy(this, 0, newarr, 0, length)
-    newarr
-  }
-}
-
-object ObjectArray {
-  def copy(from: ObjectArray,
-           fromPos: Int,
-           to: ObjectArray,
-           toPos: Int,
-           length: Int): Unit = {
-    ???
-  }
-
-  def alloc(length: Int): ObjectArray = {
-    val arrinfo = infoof[ObjectArray]
-    val arrsize = sizeof[ArrayHeader] + sizeof[Object] * length
-    val arr = runtime.alloc(arrinfo, arrsize)    
-    // set the length
-    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
-    arr.cast[ObjectArray]        
-  }
-}
