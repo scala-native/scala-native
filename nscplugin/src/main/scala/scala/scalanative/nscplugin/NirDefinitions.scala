@@ -64,7 +64,11 @@ trait NirDefinitions { self: NirGlobalAddons =>
 
     lazy val RuntimeModule = getRequiredModule(
         "scala.scalanative.runtime.package")
-    lazy val InfoofMethod = getMember(RuntimeModule, TermName("infoof"))
+    lazy val InfoofMethod   = getMember(RuntimeModule, TermName("infoof"))
+    lazy val DivUIntMethod  = getMember(RuntimeModule, TermName("divUInt"))
+    lazy val DivULongMethod = getMember(RuntimeModule, TermName("divULong"))
+    lazy val RemUIntMethod  = getMember(RuntimeModule, TermName("remUInt"))
+    lazy val RemULongMethod = getMember(RuntimeModule, TermName("remULong"))
 
     lazy val NArrayClass: Map[Char, Symbol] = Map(
         'B' -> getRequiredClass("scala.scalanative.runtime.BooleanArray"),

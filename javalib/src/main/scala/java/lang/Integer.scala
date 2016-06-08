@@ -1,5 +1,7 @@
 package java.lang
 
+import scalanative.runtime.{divUInt, remUInt}
+
 final class Integer(override val intValue: scala.Int)
     extends Number
     with Comparable[Integer] {
@@ -103,9 +105,11 @@ object Integer {
     (((t2 + (t2 >> 4)) & 0xF0F0F0F) * 0x1010101) >> 24
   }
 
-  @inline def divideUnsigned(dividend: Int, divisor: Int): Int = ???
+  @inline def divideUnsigned(dividend: Int, divisor: Int): Int =
+    divUInt(dividend, divisor)
 
-  @inline def remainderUnsigned(dividend: Int, divisor: Int): Int = ???
+  @inline def remainderUnsigned(dividend: Int, divisor: Int): Int =
+    remUInt(dividend, divisor)
 
   @inline def highestOneBit(i: Int): Int =
     if (i == 0) 0

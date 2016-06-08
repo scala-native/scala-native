@@ -862,6 +862,8 @@ abstract class NirCodeGen
         genOfOp(app, code, focus)
       else if (code == CQUOTE) genCQuoteOp(app, focus)
       else if (code == BOXED_UNIT) focus withValue Val.Unit
+      else if (code >= DIV_UINT && code <= REM_ULONG)
+        genUnsignedDivision(app, code, focus)
       else
         abort(
             "Unknown primitive operation: " + sym.fullName + "(" +
@@ -1275,6 +1277,19 @@ abstract class NirCodeGen
         case _ =>
           unsupported(app)
       }
+
+    def genUnsignedDivision(app: Tree, code: Int, focus: Focus): Focus = {
+      val Apply(_, Seq(leftp, rightp)) = app
+
+      val bin = code match {
+        case DIV_UINT | DIV_ULONG => nir.Bin.Udiv
+        case REM_UINT | REM_ULONG => nir.Bin.Urem
+      }
+      val left  = genExpr(leftp, focus)
+      val right = genExpr(rightp, left)
+
+      right withOp Op.Bin(bin, genType(leftp.tpe), left.value, right.value)
+    }
 
     def genSynchronized(app: Apply, focus: Focus): Focus = {
       val Apply(Select(receiverp, _), List(argp)) = app
