@@ -3,10 +3,23 @@ package compiler
 package pass
 
 import scala.collection.mutable
+import scala.annotation.tailrec
 import util.ScopedVar, ScopedVar.scoped
 import nir._
 
-/** Eliminates:
+/** Propagates all copies down the use chain.
+ *
+ *  For example:
+ *
+ *      %foo = copy 1i32
+ *      %bar = copy %foo
+ *      %baz = iadd[i32] %bar, 2i32
+ *
+ *  Becomes:
+ *
+ *      %baz = iadd[i32] 1i32, 2i32
+ *
+ *  Eliminates:
  *  - Op.Copy
  */
 class CopyPropagation extends Pass {
@@ -39,8 +52,18 @@ class CopyPropagation extends Pass {
   }
 
   override def preVal = {
-    case Val.Local(loc, _) if locals.contains(loc) =>
-      locals(loc)
+    case value =>
+      @tailrec
+      def loop(value: Val): Val =
+        value match {
+          case Val.Local(local, _) if locals.contains(local) =>
+            loop(locals(local))
+
+          case value =>
+            value
+        }
+
+      loop(value)
   }
 }
 
