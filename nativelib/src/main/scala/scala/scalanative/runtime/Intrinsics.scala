@@ -3,6 +3,9 @@ package runtime
 
 import native._
 
+/**
+ * @see [[http://llvm.org/releases/3.7.0/docs/LangRef.html#intrinsic-functions LLVM intrinsics functions]]
+ */
 @extern
 object Intrinsics {
   def `llvm.sqrt.f32`(value: Float): Float                        = extern
