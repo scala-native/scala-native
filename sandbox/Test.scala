@@ -4,11 +4,9 @@ import scalanative.runtime.GC
 
 object Test {
   def main(args: Array[String]): Unit = {
-    import scalanative.runtime
-    val ptrBytes = GC.malloc (100).cast[Ptr[Byte]]
-    val ptrInt = ptrBytes.cast[Ptr[Int]]
-    !ptrInt = 1
-
-    ()
+    val l = 43.toUInt
+    val r = 2.toUInt
+    fprintf(stdout, c"43 div 2 == %d\n", (l / r).toInt)
+    fprintf(stdout, c"43 rem 2 == %d\n", (l % r).toInt)
   }
 }

@@ -1,6 +1,7 @@
 package scala.scalanative
 package native
 
+import scalanative.runtime.{divUInt, remUInt}
 import java.lang.{Integer => JInteger}
 
 /** `UInt`, a 32-bit unsigned integer. */
@@ -247,7 +248,7 @@ final class UInt private[scala](private val underlying: Int)
 
   /** Returns the quotient of this value and `x`. */
   @inline final def /(x: UInt): UInt =
-    new UInt(JInteger.divideUnsigned(underlying, x.underlying))
+    new UInt(divUInt(underlying, x.underlying))
 
   /** Returns the quotient of this value and `x`. */
   @inline final def /(x: ULong): ULong = this.toULong / x
@@ -260,7 +261,7 @@ final class UInt private[scala](private val underlying: Int)
 
   /** Returns the remainder of the division of this value by `x`. */
   @inline final def %(x: UInt): UInt =
-    new UInt(JInteger.remainderUnsigned(underlying, x.underlying))
+    new UInt(remUInt(underlying, x.underlying))
 
   /** Returns the remainder of the division of this value by `x`. */
   @inline final def %(x: ULong): ULong = this.toULong % x

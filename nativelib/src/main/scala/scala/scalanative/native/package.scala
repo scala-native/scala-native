@@ -63,7 +63,6 @@ package object native {
   type CBool = Boolean
 
   /** The C/C++ 'size_t' type. */
-  // TODO: this should really be UWord, but uints are quite crippled atm
   type CSize = Word
 
   /** C-style string with trailing 0. */
@@ -86,5 +85,37 @@ package object native {
   /** C-style unchecked cast. */
   implicit class CCast(val any: Any) {
     def cast[T](implicit ct: ClassTag[T]): T = undefined
+  }
+
+  /** Scala Native extensions to the standard Byte. */
+  implicit class NativeRichByte(val value: Byte) extends AnyVal {
+    @inline def toUByte: UByte   = new UByte(value)
+    @inline def toUShort: UShort = toUByte.toUShort
+    @inline def toUInt: UInt     = toUByte.toUInt
+    @inline def toULong: ULong   = toUByte.toULong
+  }
+
+  /** Scala Native extensions to the standard Short. */
+  implicit class NativeRichShort(val value: Short) extends AnyVal {
+    @inline def toUByte: UByte   = toUShort.toUByte
+    @inline def toUShort: UShort = new UShort(value)
+    @inline def toUInt: UInt     = toUShort.toUInt
+    @inline def toULong: ULong   = toUShort.toULong
+  }
+
+  /** Scala Native extensions to the standard Int. */
+  implicit class NativeRichInt(val value: Int) extends AnyVal {
+    @inline def toUByte: UByte   = toUInt.toUByte
+    @inline def toUShort: UShort = toUInt.toUShort
+    @inline def toUInt: UInt     = new UInt(value)
+    @inline def toULong: ULong   = toUInt.toULong
+  }
+
+  /** Scala Native extensions to the standard Long. */
+  implicit class NativeRichLong(val value: Long) extends AnyVal {
+    @inline def toUByte: UByte   = toULong.toUByte
+    @inline def toUShort: UShort = toULong.toUShort
+    @inline def toUInt: UInt     = toULong.toUInt
+    @inline def toULong: ULong   = new ULong(value)
   }
 }

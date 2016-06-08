@@ -1,5 +1,6 @@
 package java.lang
 
+import scalanative.runtime.{divULong, remULong}
 import scala.annotation.{switch, tailrec}
 
 final class Long(val longValue: scala.Long)
@@ -74,10 +75,11 @@ object Long {
   @inline def compareUnsigned(x: scala.Long, y: scala.Long): scala.Int = ???
 
   def divideUnsigned(dividend: scala.Long, divisor: scala.Long): scala.Long =
-    ???
+    divULong(dividend, divisor)
 
   def remainderUnsigned(
-      dividend: scala.Long, divisor: scala.Long): scala.Long = ???
+      dividend: scala.Long, divisor: scala.Long): scala.Long =
+    remULong(dividend, divisor)
 
   def highestOneBit(i: scala.Long): scala.Long = ???
 

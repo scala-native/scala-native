@@ -1,6 +1,7 @@
 package scala.scalanative
 package native
 
+import scalanative.runtime.{divULong, remULong}
 import java.lang.{Long => JLong}
 
 /** `ULong`, a 64-bit unsigned integer. */
@@ -247,7 +248,7 @@ final class ULong private[scala](private val underlying: Long)
 
   /** Returns the quotient of this value and `x`. */
   @inline final def /(x: ULong): ULong =
-    new ULong(JLong.divideUnsigned(underlying, x.underlying))
+    new ULong(divULong(underlying, x.underlying))
 
   /** Returns the remainder of the division of this value by `x`. */
   @inline final def %(x: UByte): ULong = this % x.toULong
@@ -260,7 +261,7 @@ final class ULong private[scala](private val underlying: Long)
 
   /** Returns the remainder of the division of this value by `x`. */
   @inline final def %(x: ULong): ULong =
-    new ULong(JLong.remainderUnsigned(underlying, x.underlying))
+    new ULong(remULong(underlying, x.underlying))
 
   @inline final override def toString(): String =
     JLong.toUnsignedString(underlying)

@@ -20,6 +20,10 @@ object NirPrimitives {
   final val CQUOTE     = 1 + INFOOF
   final val CCAST      = 1 + CQUOTE
   final val STACKALLOC = 1 + CCAST
+  final val DIV_UINT   = 1 + STACKALLOC
+  final val DIV_ULONG  = 1 + DIV_UINT
+  final val REM_UINT   = 1 + DIV_ULONG
+  final val REM_ULONG  = 1 + REM_UINT
 }
 
 abstract class NirPrimitives {
@@ -72,5 +76,9 @@ abstract class NirPrimitives {
     addPrimitive(CQuoteMethod, CQUOTE)
     addPrimitive(CCastMethod, CCAST)
     addPrimitive(StackallocMethod, STACKALLOC)
+    addPrimitive(DivUIntMethod, DIV_UINT)
+    addPrimitive(DivULongMethod, DIV_ULONG)
+    addPrimitive(RemUIntMethod, REM_UINT)
+    addPrimitive(RemULongMethod, REM_ULONG)
   }
 }
