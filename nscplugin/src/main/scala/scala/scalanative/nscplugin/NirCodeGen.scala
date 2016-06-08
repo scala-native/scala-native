@@ -452,10 +452,10 @@ abstract class NirCodeGen
           genApplyDynamic(app, focus)
 
         case This(qual) =>
-          focus.withValue {
-            if (tree.symbol == curClassSym.get) curThis.get
-            else Val.Global(genTypeName(tree.symbol), genType(tree.tpe))
-          }
+          if (tree.symbol == curClassSym.get)
+            focus withValue curThis.get
+          else
+            genModule(tree.symbol, focus)
 
         case sel @ Select(qualp, selp) =>
           val sym   = tree.symbol
