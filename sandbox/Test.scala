@@ -1,10 +1,14 @@
 import scalanative.native._
 import scalanative.libc.stdlib._
+import scalanative.runtime.GC
 
 object Test {
   def main(args: Array[String]): Unit = {
-    val s = "hello"
-    fprintf(stdout, c"s.length: %d", s.length)
-    fprintf(stdout, c"s(0): %d", s.charAt(0).toInt)
+    import scalanative.runtime
+    val ptrBytes = GC.malloc (100).cast[Ptr[Byte]]
+    val ptrInt = ptrBytes.cast[Ptr[Int]]
+    !ptrInt = 1
+
+    ()
   }
 }
