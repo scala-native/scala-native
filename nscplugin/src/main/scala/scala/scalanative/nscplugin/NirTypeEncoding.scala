@@ -40,7 +40,7 @@ trait NirTypeEncoding { self: NirCodeGen =>
   def genTypeSym(sym: Symbol,
                  targs: Seq[Type] = Seq(),
                  retty: Boolean = false): nir.Type = sym match {
-    case ArrayClass                 => genTypeSym(NArrayClass(genPrimCode(targs.head)))
+    case ArrayClass                 => genTypeSym(RuntimeArrayClass(genPrimCode(targs.head)))
     case UnitClass | BoxedUnitClass => nir.Type.Unit
     case NothingClass               => nir.Type.Nothing
     case NullClass                  => genTypeSym(RuntimeNullClass)
@@ -59,6 +59,17 @@ trait NirTypeEncoding { self: NirCodeGen =>
     case _ if sym.isInterface       => nir.Type.Trait(genTypeName(sym))
     case _                          => nir.Type.Class(genTypeName(sym))
   }
+
+  def genTypeValue(ty: Type): nir.Val = {
+    val (sym, _) = decomposeType(ty)
+    genTypeSymValue(sym)
+  }
+
+  def genTypeSymValue(sym: Symbol): nir.Val =
+    genPrimCode(sym) match {
+      case 'O'  => nir.Val.Global(genTypeName(sym), nir.Type.Ptr)
+      case code => genTypeSymValue(RuntimePrimitiveStruct(code))
+    }
 
   def genStructFields(sym: Symbol): Seq[nir.Type] = {
     for {

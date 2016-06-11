@@ -1,0 +1,15 @@
+package scala.scalanative
+package runtime
+
+import native._
+
+%{
+    primitives = ['Boolean', 'Char', 'Byte', 'Short',
+                  'Int', 'Long', 'Float', 'Double']
+}%
+
+% for T in primitives:
+
+@struct class ${T}Struct private ()
+
+% end

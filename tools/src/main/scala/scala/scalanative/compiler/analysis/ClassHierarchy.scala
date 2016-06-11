@@ -13,13 +13,7 @@ object ClassHierarchy {
     def id: Int
   }
 
-  final case object None extends Node {
-    def attrs = Attrs.None
-    def name  = Global.None
-    def id    = 0
-  }
-
-  sealed abstract class Top extends Node {
+  sealed abstract class Scope extends Node {
     var members: Seq[Node]
   }
 
@@ -28,7 +22,7 @@ object ClassHierarchy {
                      val tys: Seq[nir.Type],
                      var id: Int = -1,
                      var members: Seq[Node] = Seq())
-      extends Top
+      extends Scope
 
   final class Trait(val attrs: Attrs,
                     val name: Global,
@@ -36,7 +30,7 @@ object ClassHierarchy {
                     var traits: Seq[Node] = Seq(),
                     var implementors: Seq[Class] = Seq(),
                     var members: Seq[Node] = Seq())
-      extends Top {
+      extends Scope {
     def methods: Seq[Method] = ???
   }
 
@@ -49,7 +43,7 @@ object ClassHierarchy {
                     var subclasses: Seq[Class] = Seq(),
                     var traits: Seq[Node] = Seq(),
                     var members: Seq[Node] = Seq())
-      extends Top {
+      extends Scope {
     def ty =
       Type.Class(name)
 
@@ -94,13 +88,31 @@ object ClassHierarchy {
 
       baseWithOverrides ++ ownvslots.map(_.value)
     }
+
+    def vtableStruct: Type.Struct =
+      Type.Struct(Global.None, vtable.map(_.ty))
+
+    def vtableValue: Val.Struct =
+      Val.Struct(Global.None, vtable)
+
+    def typeStruct: Type.Struct =
+      Type.Struct(Global.None, Seq(Type.I32, Type.Ptr, vtableStruct))
+
+    def typeValue: Val.Struct =
+      Val.Struct(Global.None,
+                 Seq(Val.I32(id),
+                     Val.String(name.id),
+                     vtableValue))
+
+    def typeConst: Val =
+      Val.Global(name tag "class" tag "type", Type.Ptr)
   }
 
   final class Method(val attrs: Attrs,
                      val name: Global,
-                     val ty: Type,
+                     val ty: nir.Type,
                      val isConcrete: Boolean,
-                     var in: Node = null,
+                     var in: Option[Scope] = None,
                      var id: Int = -1,
                      var overrides: Seq[Method] = Seq(),
                      var overriden: Seq[Method] = Seq())
@@ -115,7 +127,7 @@ object ClassHierarchy {
 
     def classOverride: Option[Method] =
       (overrides.collect {
-        case meth if meth.in.isInstanceOf[Class] =>
+        case meth if meth.in.fold(false)(_.isInstanceOf[Class]) =>
           meth
       }) match {
         case Seq()  => scala.None
@@ -125,7 +137,7 @@ object ClassHierarchy {
 
     def traitOverrides: Seq[Method] =
       overrides.collect {
-        case meth if meth.in.isInstanceOf[Trait] =>
+        case meth if meth.in.fold(false)(_.isInstanceOf[Trait]) =>
           meth
       }
 
@@ -137,13 +149,13 @@ object ClassHierarchy {
 
     def vindex: Int = {
       assert(isVirtual)
-      assert(in.isInstanceOf[Class])
+      assert(in.fold(false)(_.isInstanceOf[Class]))
 
-      val cls = in.asInstanceOf[Class]
+      val cls = in.get.asInstanceOf[Class]
       val res = cls.vslots.indexOf(this)
       assert(
           res >= 0,
-          s"failed to find vslot for ${this.name} in ${in.name} (all vslots: ${cls.vslots
+          s"failed to find vslot for ${this.name} in ${in.map(_.name)} (all vslots: ${cls.vslots
             .map(_.name)}, all methods: ${cls.methods.map(_.name)})")
       res
     }
@@ -151,7 +163,7 @@ object ClassHierarchy {
 
   final class Field(val attrs: Attrs,
                     val name: Global,
-                    val ty: Type,
+                    val ty: nir.Type,
                     var in: Class = null)
       extends Node {
     // TODO: generate field ids
@@ -221,11 +233,9 @@ object ClassHierarchy {
     def enrichMethod(name: Global, attrs: Attrs): Unit = {
       val node = nodes(name).asInstanceOf[Method]
 
-      if (node.name.isTop)
-        node.in = None
-      else {
-        val owner = nodes(name.top).asInstanceOf[Top]
-        node.in = owner
+      if (!node.name.isTop) {
+        val owner = nodes(name.top).asInstanceOf[Scope]
+        node.in = Some(owner)
         owner.members = owner.members :+ node
         attrs.overrides.foreach { n =>
           val ovnode = nodes(n).asInstanceOf[Method]

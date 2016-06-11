@@ -2,11 +2,11 @@ package scala.scalanative
 package runtime
 
 // Note 1:
-// Arrays.scala is currently implemented as textual templating that is expanded through project/gyb.py script. 
+// Arrays.scala is currently implemented as textual templating that is expanded through project/gyb.py script.
 // Update Arrays.scala.gyb and re-generate the source
 
 // Note 2:
-// Array of primitiveTypes don't contain pointers, runtime.allocAtomic() is called for memory allocation   
+// Array of primitiveTypes don't contain pointers, runtime.allocAtomic() is called for memory allocation
 // Array of Object do contain pointers. runtime.alloc() is called for memory allocation
 
 %{
@@ -66,12 +66,12 @@ object ObjectArray {
   }
 
   def alloc(length: Int): ObjectArray = {
-    val arrinfo = infoof[ObjectArray]
+    val arrty = typeof[ObjectArray]
     val arrsize = sizeof[ArrayHeader] + sizeof[Object] * length
-    val arr = runtime.alloc(arrinfo, arrsize)    
+    val arr = runtime.alloc(arrty, arrsize)
     // set the length
-    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
-    arr.cast[ObjectArray]        
+    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length
+    arr.cast[ObjectArray]
   }
 }
 
@@ -108,12 +108,12 @@ object ${T}Array {
   }
 
   def alloc(length: Int): ${T}Array = {
-    val arrinfo = infoof[${T}Array]
+    val arrty = typeof[${T}Array]
     val arrsize = sizeof[ArrayHeader] + sizeof[${T}] * length
-    val arr = runtime.allocAtomic(arrinfo, arrsize)    
+    val arr = runtime.allocAtomic(arrty, arrsize)
     // set the length
-    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
-    arr.cast[${T}Array]        
+    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length
+    arr.cast[${T}Array]
   }
 }
 

@@ -28,16 +28,15 @@ class StringLowering(implicit chg: ClassHierarchy.Graph) extends Pass {
 
   override def preVal = {
     case Val.String(v) =>
-      val node = ClassRef.unapply(StringName).get
+      val StringCls    = ClassRef.unapply(StringName).get
+      val CharArrayCls = ClassRef.unapply(CharArrayName).get
 
-      val stringInfo  = Val.Global(StringName tag "const", Type.Ptr)
-      val charArrInfo = Val.Global(CharArrayName tag "const", Type.Ptr)
       val chars       = v.toCharArray
       val charsLength = Val.I32(chars.length)
       val charsConst = Val.Const(
           Val.Struct(
               Global.None,
-              Seq(charArrInfo,
+              Seq(CharArrayCls.typeConst,
                   charsLength,
                   Val.Array(Type.I16, chars.map(c => Val.I16(c.toShort))))))
 
@@ -49,7 +48,7 @@ class StringLowering(implicit chg: ClassHierarchy.Graph) extends Pass {
         case _                        => util.unreachable
       }
 
-      Val.Const(Val.Struct(Global.None, stringInfo +: fieldValues))
+      Val.Const(Val.Struct(Global.None, StringCls.typeConst +: fieldValues))
   }
 }
 

@@ -50,27 +50,40 @@ trait NirDefinitions { self: NirGlobalAddons =>
 
     // Native runtime
 
-    lazy val NMonitorClass = getRequiredClass(
+    lazy val RuntimeMonitorClass = getRequiredClass(
         "scala.scalanative.runtime.Monitor")
-    lazy val NMonitorModule = getRequiredModule(
+    lazy val RuntimeMonitorModule = getRequiredModule(
         "scala.scalanative.runtime.Monitor")
-    lazy val NMonitorEnterMethod = getDecl(NMonitorClass, TermName("enter"))
-    lazy val NMonitorExitMethod  = getDecl(NMonitorClass, TermName("exit"))
-    lazy val NMonitorGetMethod   = getDecl(NMonitorModule, TermName("get"))
+    lazy val RuntimeMonitorEnterMethod = getDecl(
+        RuntimeMonitorClass, TermName("enter"))
+    lazy val RuntimeMonitorExitMethod = getDecl(
+        RuntimeMonitorClass, TermName("exit"))
 
-    lazy val NTypeClass     = getRequiredClass("scala.scalanative.runtime.Type")
-    lazy val NTypeModule    = getRequiredModule("scala.scalanative.runtime.Type")
-    lazy val NTypeGetMethod = getDecl(NTypeModule, TermName("get"))
+    lazy val RuntimeTypeClass = getRequiredClass(
+        "scala.scalanative.runtime.Type")
 
     lazy val RuntimeModule = getRequiredModule(
         "scala.scalanative.runtime.package")
-    lazy val InfoofMethod   = getMember(RuntimeModule, TermName("infoof"))
+    lazy val TypeofMethod = getMember(RuntimeModule, TermName("typeof"))
+    lazy val GetMonitorMethod = getMember(
+        RuntimeModule, TermName("getMonitor"))
     lazy val DivUIntMethod  = getMember(RuntimeModule, TermName("divUInt"))
     lazy val DivULongMethod = getMember(RuntimeModule, TermName("divULong"))
     lazy val RemUIntMethod  = getMember(RuntimeModule, TermName("remUInt"))
     lazy val RemULongMethod = getMember(RuntimeModule, TermName("remULong"))
 
-    lazy val NArrayClass: Map[Char, Symbol] = Map(
+    lazy val RuntimePrimitiveStruct: Map[Char, Symbol] = Map(
+        'B' -> getRequiredClass("scala.scalanative.runtime.BooleanStruct"),
+        'C' -> getRequiredClass("scala.scalanative.runtime.CharStruct"),
+        'Z' -> getRequiredClass("scala.scalanative.runtime.ByteStruct"),
+        'S' -> getRequiredClass("scala.scalanative.runtime.ShortStruct"),
+        'I' -> getRequiredClass("scala.scalanative.runtime.IntStruct"),
+        'L' -> getRequiredClass("scala.scalanative.runtime.LongStruct"),
+        'F' -> getRequiredClass("scala.scalanative.runtime.FloatStruct"),
+        'D' -> getRequiredClass("scala.scalanative.runtime.DoubleStruct")
+    )
+
+    lazy val RuntimeArrayClass: Map[Char, Symbol] = Map(
         'B' -> getRequiredClass("scala.scalanative.runtime.BooleanArray"),
         'C' -> getRequiredClass("scala.scalanative.runtime.CharArray"),
         'Z' -> getRequiredClass("scala.scalanative.runtime.ByteArray"),
@@ -82,23 +95,23 @@ trait NirDefinitions { self: NirGlobalAddons =>
         'O' -> getRequiredClass("scala.scalanative.runtime.ObjectArray")
     )
 
-    lazy val NArrayModule: Map[Char, Symbol] =
-      NArrayClass.mapValues(_.companion)
+    lazy val RuntimeArrayModule: Map[Char, Symbol] =
+      RuntimeArrayClass.mapValues(_.companion)
 
-    lazy val NArrayAllocMethod: Map[Char, Symbol] =
-      NArrayModule.mapValues(getMember(_, TermName("alloc")))
+    lazy val RuntimeArrayAllocMethod: Map[Char, Symbol] =
+      RuntimeArrayModule.mapValues(getMember(_, TermName("alloc")))
 
-    lazy val NArrayApplyMethod: Map[Char, Symbol] =
-      NArrayClass.mapValues(getMember(_, TermName("apply")))
+    lazy val RuntimeArrayApplyMethod: Map[Char, Symbol] =
+      RuntimeArrayClass.mapValues(getMember(_, TermName("apply")))
 
-    lazy val NArrayUpdateMethod: Map[Char, Symbol] =
-      NArrayClass.mapValues(getMember(_, TermName("update")))
+    lazy val RuntimeArrayUpdateMethod: Map[Char, Symbol] =
+      RuntimeArrayClass.mapValues(getMember(_, TermName("update")))
 
-    lazy val NArrayLengthMethod: Map[Char, Symbol] =
-      NArrayClass.mapValues(getMember(_, TermName("length")))
+    lazy val RuntimeArrayLengthMethod: Map[Char, Symbol] =
+      RuntimeArrayClass.mapValues(getMember(_, TermName("length")))
 
-    lazy val NArrayCloneMethod: Map[Char, Symbol] =
-      NArrayClass.mapValues(getMember(_, TermName("clone")))
+    lazy val RuntimeArrayCloneMethod: Map[Char, Symbol] =
+      RuntimeArrayClass.mapValues(getMember(_, TermName("clone")))
 
     // Java library
 

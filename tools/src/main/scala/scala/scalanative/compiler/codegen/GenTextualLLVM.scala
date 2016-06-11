@@ -39,7 +39,7 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
     case Defn.Var(attrs, name, ty, rhs) =>
       showGlobalDefn(name, attrs.isExtern, isConst = false, ty, rhs)
     case Defn.Const(attrs, name, ty, rhs) =>
-      showGlobalDefn(name, attrs.isExtern, isConst = false, ty, rhs)
+      showGlobalDefn(name, attrs.isExtern, isConst = true, ty, rhs)
     case Defn.Declare(attrs, name, sig) =>
       showFunctionDefn(attrs, name, sig, Seq())
     case Defn.Define(attrs, name, sig, blocks) =>
@@ -56,7 +56,7 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
                      ty: nir.Type,
                      rhs: nir.Val) = {
     val external = if (isExtern) "external " else ""
-    val keyword  = if (isConst) "const" else "global"
+    val keyword  = if (isConst) "constant" else "global"
     val init = rhs match {
       case Val.None => sh"$ty"
       case _        => sh"$rhs"

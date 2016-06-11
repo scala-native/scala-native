@@ -1,7 +1,7 @@
 package java.lang
 
 import scala.scalanative.native._
-import scala.scalanative.runtime.{Monitor, Type}
+import scala.scalanative.runtime
 
 class _Object {
   def _equals(that: _Object): scala.Boolean =
@@ -14,22 +14,22 @@ class _Object {
     getClass.getName + "@" + Integer.toHexString(hashCode)
 
   def _getClass(): _Class[_] =
-    new _Class(Type.get(this))
+    new _Class(runtime.getType(this))
 
   def _notify(): Unit =
-    Monitor.get(this)._notify
+    runtime.getMonitor(this)._notify
 
   def _notifyAll(): Unit =
-    Monitor.get(this)._notifyAll
+    runtime.getMonitor(this)._notifyAll
 
   def _wait(): Unit =
-    Monitor.get(this)._wait
+    runtime.getMonitor(this)._wait
 
   def _wait(timeout: scala.Long): Unit =
-    Monitor.get(this)._wait(timeout)
+    runtime.getMonitor(this)._wait(timeout)
 
   def _wait(timeout: scala.Long, nanos: Int): Unit =
-    Monitor.get(this)._wait(timeout, nanos)
+    runtime.getMonitor(this)._wait(timeout, nanos)
 
   protected def _clone(): _Object = ???
 

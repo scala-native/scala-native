@@ -543,8 +543,8 @@ abstract class NirCodeGen
           focus withValue genLiteralValue(lit)
 
         case ClazzTag =>
-          val typeof = focus withOp Op.Typeof(genType(value.typeValue))
-          genBoxClass(typeof.value, typeof)
+          val ty = focus withValue genTypeValue(value.typeValue)
+          genBoxClass(ty.value, ty)
 
         case EnumTag =>
           genStaticMember(value.symbolValue, focus)
@@ -723,8 +723,8 @@ abstract class NirCodeGen
 
       val len       = Literal(Constant(elems.length))
       val elemcode  = genPrimCode(tpt.tpe)
-      val modulesym = NArrayModule(elemcode)
-      val methsym   = NArrayAllocMethod(elemcode)
+      val modulesym = RuntimeArrayModule(elemcode)
+      val methsym   = RuntimeArrayAllocMethod(elemcode)
       val alloc     = genModuleMethodCall(modulesym, methsym, Seq(len), focus)
       val init =
         if (elems.isEmpty) alloc
@@ -734,7 +734,7 @@ abstract class NirCodeGen
             val (v, i) = vi
             val idx    = Literal(Constant(i))
 
-            genMethodCall(NArrayUpdateMethod(elemcode),
+            genMethodCall(RuntimeArrayUpdateMethod(elemcode),
                           statically = true,
                           alloc.value,
                           Seq(idx),
@@ -848,26 +848,35 @@ abstract class NirCodeGen
       val sym  = app.symbol
       val code = scalaPrimitives.getPrimitive(sym, receiver.tpe)
 
-      if (isArithmeticOp(code) || isLogicalOp(code) || isComparisonOp(code))
+      if (isArithmeticOp(code) || isLogicalOp(code) || isComparisonOp(code)) {
         genSimpleOp(app, receiver :: args, code, focus)
-      else if (code == CONCAT) genStringConcat(receiver, args, focus)
-      else if (code == HASH) genHashCode(app, receiver, focus)
-      else if (isArrayOp(code) || code == ARRAY_CLONE)
+      } else if (code == CONCAT) {
+        genStringConcat(receiver, args, focus)
+      } else if (code == HASH) {
+        genHashCode(app, receiver, focus)
+      } else if (isArrayOp(code) || code == ARRAY_CLONE) {
         genArrayOp(app, code, focus)
-      else if (nirPrimitives.isPtrOp(code)) genPtrOp(app, code, focus)
-      else if (isCoercion(code)) genCoercion(app, receiver, code, focus)
-      else if (code == SYNCHRONIZED) genSynchronized(app, focus)
-      else if (code == CCAST) genCastOp(app, focus)
-      else if (code == SIZEOF || code == INFOOF || code == STACKALLOC)
+      } else if (nirPrimitives.isPtrOp(code)) {
+        genPtrOp(app, code, focus)
+      } else if (isCoercion(code)) {
+        genCoercion(app, receiver, code, focus)
+      } else if (code == SYNCHRONIZED) {
+        genSynchronized(app, focus)
+      } else if (code == CCAST) {
+        genCastOp(app, focus)
+      } else if (code == SIZEOF || code == TYPEOF || code == STACKALLOC) {
         genOfOp(app, code, focus)
-      else if (code == CQUOTE) genCQuoteOp(app, focus)
-      else if (code == BOXED_UNIT) focus withValue Val.Unit
-      else if (code >= DIV_UINT && code <= REM_ULONG)
+      } else if (code == CQUOTE) {
+        genCQuoteOp(app, focus)
+      } else if (code == BOXED_UNIT) {
+        focus withValue Val.Unit
+      } else if (code >= DIV_UINT && code <= REM_ULONG) {
         genUnsignedDivision(app, code, focus)
-      else
+      } else {
         abort(
             "Unknown primitive operation: " + sym.fullName + "(" +
             fun.symbol.simpleName + ") " + " at: " + (app.pos))
+      }
     }
 
     lazy val jlClassName     = nir.Global.Top("java.lang.Class")
@@ -1114,10 +1123,12 @@ abstract class NirCodeGen
       val array = genExpr(arrayp, focus)
       def elemcode = genArrayCode(arrayp.tpe)
       val method =
-        if (code == ARRAY_CLONE) NArrayCloneMethod(elemcode)
-        else if (scalaPrimitives.isArrayGet(code)) NArrayApplyMethod(elemcode)
-        else if (scalaPrimitives.isArraySet(code)) NArrayUpdateMethod(elemcode)
-        else NArrayLengthMethod(elemcode)
+        if (code == ARRAY_CLONE) RuntimeArrayCloneMethod(elemcode)
+        else if (scalaPrimitives.isArrayGet(code))
+          RuntimeArrayApplyMethod(elemcode)
+        else if (scalaPrimitives.isArraySet(code))
+          RuntimeArrayUpdateMethod(elemcode)
+        else RuntimeArrayLengthMethod(elemcode)
 
       genMethodCall(method, statically = true, array.value, argsp, array)
     }
@@ -1231,15 +1242,10 @@ abstract class NirCodeGen
 
       if (code == SIZEOF) {
         focus withOp Op.Sizeof(ty)
+      } else if (code == TYPEOF) {
+        focus withValue genTypeSymValue(sym)
       } else if (code == STACKALLOC) {
         focus withOp Op.Stackalloc(ty)
-      } else if (code == INFOOF) {
-        ty match {
-          case nir.Type.Class(n) =>
-            focus withOp Op.Infoof(n)
-          case _ =>
-            unsupported(s"infoof only works for classes, not $ty")
-        }
       } else unreachable
     }
 
@@ -1294,18 +1300,21 @@ abstract class NirCodeGen
     def genSynchronized(app: Apply, focus: Focus): Focus = {
       val Apply(Select(receiverp, _), List(argp)) = app
 
-      val monitor = genModuleMethodCall(NMonitorModule,
-                                        NMonitorGetMethod,
+      val monitor = genModuleMethodCall(RuntimeModule,
+                                        GetMonitorMethod,
                                         Seq(receiverp),
                                         focus)
-      val enter = genMethodCall(NMonitorEnterMethod,
+      val enter = genMethodCall(RuntimeMonitorEnterMethod,
                                 statically = true,
                                 monitor.value,
                                 Seq(),
                                 monitor)
       val arg = genExpr(argp, enter)
-      val exit = genMethodCall(
-          NMonitorExitMethod, statically = true, monitor.value, Seq(), arg)
+      val exit = genMethodCall(RuntimeMonitorExitMethod,
+                               statically = true,
+                               monitor.value,
+                               Seq(),
+                               arg)
 
       exit withValue arg.value
     }
@@ -1428,8 +1437,8 @@ abstract class NirCodeGen
     }
 
     def genNewArray(elemcode: Char, argsp: Seq[Tree], focus: Focus) = {
-      val module = NArrayModule(elemcode)
-      val meth   = NArrayAllocMethod(elemcode)
+      val module = RuntimeArrayModule(elemcode)
+      val meth   = RuntimeArrayAllocMethod(elemcode)
 
       genModuleMethodCall(module, meth, argsp, focus)
     }

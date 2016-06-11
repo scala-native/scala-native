@@ -16,8 +16,8 @@ object NirPrimitives {
   final val PTR_UPDATE = 1 + PTR_APPLY
 
   final val SIZEOF     = 1 + PTR_UPDATE
-  final val INFOOF     = 1 + SIZEOF
-  final val CQUOTE     = 1 + INFOOF
+  final val TYPEOF     = 1 + SIZEOF
+  final val CQUOTE     = 1 + TYPEOF
   final val CCAST      = 1 + CQUOTE
   final val STACKALLOC = 1 + CCAST
   final val DIV_UINT   = 1 + STACKALLOC
@@ -72,7 +72,7 @@ abstract class NirPrimitives {
     addPrimitive(PtrApplyMethod, PTR_APPLY)
     addPrimitive(PtrUpdateMethod, PTR_UPDATE)
     addPrimitive(SizeofMethod, SIZEOF)
-    addPrimitive(InfoofMethod, INFOOF)
+    addPrimitive(TypeofMethod, TYPEOF)
     addPrimitive(CQuoteMethod, CQUOTE)
     addPrimitive(CCastMethod, CCAST)
     addPrimitive(StackallocMethod, STACKALLOC)

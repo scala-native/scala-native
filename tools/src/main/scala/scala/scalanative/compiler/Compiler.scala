@@ -18,7 +18,7 @@ final class Compiler(opts: Opts) {
       pass.MainInjection,
       pass.ExternHoisting,
       pass.ModuleLowering,
-      pass.TypeofLowering,
+      pass.RuntimeTypeInfoInjection,
       pass.AsLowering,
       pass.TraitLowering,
       pass.ClassLowering,

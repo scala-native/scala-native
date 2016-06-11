@@ -7,7 +7,7 @@ import nir._
 
 object ClassHierarchyExtractors {
   trait Extractor[T] {
-    def unapply(ty: Type)(implicit chg: Graph): Option[T] = ty match {
+    def unapply(ty: nir.Type)(implicit chg: Graph): Option[T] = ty match {
       case ty: Type.Named => unapply(ty.name)
       case _              => scala.None
     }
@@ -17,6 +17,13 @@ object ClassHierarchyExtractors {
   object Ref extends Extractor[Node] {
     def unapply(name: Global)(implicit chg: Graph): Option[Node] =
       chg.nodes.get(name)
+  }
+
+  object ScopeRef extends Extractor[Scope] {
+    def unapply(name: Global)(implicit chg: Graph): Option[Scope] =
+      chg.nodes.get(name).collect {
+        case node: Scope => node
+      }
   }
 
   object StructRef extends Extractor[Struct] {
@@ -40,10 +47,11 @@ object ClassHierarchyExtractors {
       }
   }
 
-  object MethodRef extends Extractor[(Global, Method)] {
-    def unapply(name: Global)(implicit chg: Graph): Option[(Global, Method)] =
+  object MethodRef extends Extractor[(Option[Global], Method)] {
+    def unapply(
+        name: Global)(implicit chg: Graph): Option[(Option[Global], Method)] =
       chg.nodes.get(name).collect {
-        case node: Method => (node.in.name, node)
+        case node: Method => (node.in.map(_.name), node)
       }
   }
 
