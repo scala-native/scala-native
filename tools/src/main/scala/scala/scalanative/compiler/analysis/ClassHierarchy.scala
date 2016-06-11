@@ -70,7 +70,7 @@ object ClassHierarchy {
 
     def ownvslots: Seq[Method] =
       members.collect {
-        case meth: Method if meth.isVirtual && meth.overrides.isEmpty =>
+        case meth: Method if meth.isVirtual =>
           meth
       }
 

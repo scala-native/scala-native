@@ -1065,7 +1065,7 @@ abstract class NirCodeGen
 
       if (ref) {
         val right = genExpr(rightp, left)
-        val comp  = if (negated) Comp.Ieq else Comp.Ine
+        val comp  = if (negated) Comp.Ine else Comp.Ieq
         right withOp Op.Comp(comp, Rt.Object, left.value, right.value)
       } else {
         val equals = genMethodCall(NObjectEqualsMethod,
