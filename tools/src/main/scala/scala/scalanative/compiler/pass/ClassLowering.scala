@@ -118,9 +118,10 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
 
       Seq(
           Inst(infoptr.name, Op.Load(Type.Ptr, obj)),
-          Inst(
-              methptrptr.name,
-              Op.Elem(infoty, infoptr, Seq(Val.I32(0), Val.I32(meth.vindex)))),
+          Inst(methptrptr.name,
+               Op.Elem(infoty,
+                       infoptr,
+                       Seq(Val.I32(0), Val.I32(meth.vindex + 1)))),
           Inst(n, Op.Load(Type.Ptr, methptrptr))
       )
 
