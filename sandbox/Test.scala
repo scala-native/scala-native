@@ -2,11 +2,26 @@ import scalanative.native._
 import scalanative.libc.stdlib._
 import scalanative.runtime.GC
 
+class A {
+  def whoAmI() = c"A"
+
+  def sayHello(): Unit = {
+    val who = whoAmI()
+
+    fprintf(stdout, c"%s say hello\n", who)
+  }
+}
+
+class B extends A {
+  override def whoAmI() = c"B"
+}
+
 object Test {
-  def main(args: Array[String]): Unit = {
-    val l = 43.toUInt
-    val r = 2.toUInt
-    fprintf(stdout, c"43 div 2 == %d\n", (l / r).toInt)
-    fprintf(stdout, c"43 rem 2 == %d\n", (l % r).toInt)
+  def main (args : Array [String]) = {
+    val a = new A
+    a.sayHello()
+
+    val b = new B
+    b.sayHello()
   }
 }
