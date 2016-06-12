@@ -8,9 +8,9 @@ import nir._, Shows._
 
 object ClassHierarchy {
   sealed abstract class Node {
+    var id: Int = -1
     def attrs: Attrs
     def name: Global
-    def id: Int
   }
 
   sealed abstract class Scope extends Node {
@@ -20,15 +20,12 @@ object ClassHierarchy {
   final class Struct(val attrs: Attrs,
                      val name: Global,
                      val tys: Seq[nir.Type],
-                     var id: Int = -1,
                      var members: Seq[Node] = Seq())
       extends Scope
 
   final class Trait(val attrs: Attrs,
                     val name: Global,
-                    var id: Int = -1,
-                    var traits: Seq[Node] = Seq(),
-                    var implementors: Seq[Class] = Seq(),
+                    var traits: Seq[Trait] = Seq(),
                     var members: Seq[Node] = Seq())
       extends Scope {
     def methods: Seq[Method] = ???
@@ -37,48 +34,50 @@ object ClassHierarchy {
   final class Class(val attrs: Attrs,
                     val name: Global,
                     val isModule: Boolean,
-                    var id: Int = -1,
                     var range: Range = null,
                     var parent: Option[Class] = scala.None,
                     var subclasses: Seq[Class] = Seq(),
-                    var traits: Seq[Node] = Seq(),
+                    var traits: Seq[Trait] = Seq(),
                     var members: Seq[Node] = Seq())
       extends Scope {
     def ty =
       Type.Class(name)
 
-    def fields: Seq[Field] =
-      parent.map(_.fields).getOrElse(Seq()) ++ ownfields
+    def alltraits: Seq[Trait] =
+      (parent.fold(Seq.empty[Trait])(_.alltraits) ++ traits).distinct
 
-    def ownfields =
+    def allfields: Seq[Field] =
+      parent.fold(Seq.empty[Field])(_.allfields) ++ fields
+
+    def fields =
       members.collect { case fld: Field => fld }
 
-    def methods: Seq[Method] =
-      parent.map(_.methods).getOrElse(Seq()) ++ ownmethods
+    def allmethods: Seq[Method] =
+      parent.fold(Seq.empty[Method])(_.allmethods) ++ methods
 
-    def ownmethods: Seq[Method] =
+    def methods: Seq[Method] =
       members.collect { case meth: Method => meth }
 
-    def vslots: Seq[Method] =
-      parent.map(_.vslots).getOrElse(Seq()) ++ ownvslots
+    def allvslots: Seq[Method] =
+      parent.fold(Seq.empty[Method])(_.allvslots) ++ vslots
 
-    def ownvslots: Seq[Method] =
+    def vslots: Seq[Method] =
       members.collect {
         case meth: Method if meth.isVirtual =>
           meth
       }
 
     def vtable: Seq[Val] = {
-      val base = parent.map(_.vtable).getOrElse(Seq())
+      val base = parent.fold(Seq.empty[Val])(_.vtable)
 
       def performOverrides(base: Seq[Val], members: Seq[Node]): Seq[Val] =
         members match {
           case Seq() =>
             base
           case (meth: Method) +: rest =>
-            val nbase = meth.classOverride.map { basemeth =>
+            val nbase = meth.classOverride.fold(base) { basemeth =>
               base.updated(basemeth.vindex, meth.value)
-            }.getOrElse(base)
+            }
             performOverrides(nbase, rest)
           case _ +: rest =>
             performOverrides(base, rest)
@@ -86,7 +85,7 @@ object ClassHierarchy {
 
       val baseWithOverrides = performOverrides(base, members)
 
-      baseWithOverrides ++ ownvslots.map(_.value)
+      baseWithOverrides ++ vslots.map(_.value)
     }
 
     def vtableStruct: Type.Struct =
@@ -113,7 +112,6 @@ object ClassHierarchy {
                      val ty: nir.Type,
                      val isConcrete: Boolean,
                      var in: Option[Scope] = None,
-                     var id: Int = -1,
                      var overrides: Seq[Method] = Seq(),
                      var overriden: Seq[Method] = Seq())
       extends Node {
@@ -144,7 +142,7 @@ object ClassHierarchy {
     def vslot: Method = {
       assert(isVirtual)
 
-      classOverride.map(_.vslot).getOrElse(this)
+      classOverride.fold(this)(_.vslot)
     }
 
     def vindex: Int = {
@@ -152,11 +150,11 @@ object ClassHierarchy {
       assert(in.fold(false)(_.isInstanceOf[Class]))
 
       val cls = in.get.asInstanceOf[Class]
-      val res = cls.vslots.indexOf(this)
-      assert(
-          res >= 0,
-          s"failed to find vslot for ${this.name} in ${in.map(_.name)} (all vslots: ${cls.vslots
-            .map(_.name)}, all methods: ${cls.methods.map(_.name)})")
+      val res = cls.allvslots.indexOf(this)
+      assert(res >= 0,
+             s"failed to find vslot for ${this.name} in ${in.map(_.name)} (" +
+             s"all vslots: ${cls.allvslots.map(_.name)}, " +
+             s"all methods: ${cls.allmethods.map(_.name)})")
       res
     }
   }
@@ -166,10 +164,7 @@ object ClassHierarchy {
                     val ty: nir.Type,
                     var in: Class = null)
       extends Node {
-    // TODO: generate field ids
-    def id = -1
-
-    def index = in.fields.indexOf(this)
+    def index = in.allfields.indexOf(this)
   }
 
   final class Graph(val nodes: Map[Global, Node],
@@ -190,11 +185,11 @@ object ClassHierarchy {
     def enter[T <: Node](name: Global, node: T): T = {
       nodes += name -> node
       node match {
-        case defn: Class  => classes += defn
-        case defn: Trait  => traits += defn
-        case defn: Method => methods += defn
-        case defn: Field  => fields += defn
-        case defn: Struct => structs += defn
+        case defn: Class  => node.id = classes.length; classes += defn
+        case defn: Trait  => node.id = traits.length; traits += defn
+        case defn: Method => node.id = methods.length; methods += defn
+        case defn: Field  => node.id = fields.length; fields += defn
+        case defn: Struct => node.id = structs.length; structs += defn
       }
       node
     }
@@ -263,14 +258,11 @@ object ClassHierarchy {
       parent.foreach { parent =>
         parent.subclasses = parent.subclasses :+ node
       }
-      traits.foreach { iface =>
-        iface.implementors = iface.implementors :+ node
-      }
     }
 
     def enrichTrait(name: Global, traits: Seq[Global]): Unit = {
       val node = nodes(name).asInstanceOf[Trait]
-      node.traits = traits.map(nodes(_))
+      node.traits = traits.map(n => nodes(n).asInstanceOf[Trait])
     }
 
     def enrich(defn: Defn): Unit = defn match {
@@ -283,36 +275,24 @@ object ClassHierarchy {
       case _                                 => ()
     }
 
-    def identify(): Unit = {
-      var id = 1
+    def assignClassRanges(): Unit = {
+      var id = 0
 
-      def idClass(node: Class): Unit = {
+      def loop(node: Class): Unit = {
         val start = id
         id += 1
-        node.subclasses.foreach(idClass)
+        node.subclasses.foreach(loop)
         val end = id - 1
         node.id = start
         node.range = start to end
       }
 
-      def idTrait(node: Trait): Unit = {
-        node.id = id
-        id += 1
-      }
-
-      def idMethod(node: Method): Unit = {
-        node.id = id
-        id += 1
-      }
-
-      idClass(nodes(Rt.Object.name).asInstanceOf[Class])
-      traits.foreach(idTrait(_))
-      methods.foreach(idMethod(_))
+      loop(nodes(Rt.Object.name).asInstanceOf[Class])
     }
 
     defns.foreach(enterDefn)
     defns.foreach(enrich)
-    identify()
+    assignClassRanges()
 
     new Graph(nodes = nodes.toMap,
               structs = structs.toSeq,

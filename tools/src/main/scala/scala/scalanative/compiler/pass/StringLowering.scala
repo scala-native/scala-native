@@ -21,7 +21,7 @@ class StringLowering(implicit chg: ClassHierarchy.Graph) extends Pass {
   /** Names of the fields of the java.lang.String in the memory layout order. */
   private val stringFieldNames = {
     val node  = ClassRef.unapply(StringName).get
-    val names = node.fields.sortBy(_.index).map(_.name)
+    val names = node.allfields.sortBy(_.index).map(_.name)
     assert(names.length == 4, "java.lang.String is expected to have 4 fields.")
     names
   }

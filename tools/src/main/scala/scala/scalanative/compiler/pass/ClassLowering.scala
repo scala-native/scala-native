@@ -36,7 +36,7 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
   import ClassLowering._
 
   def classStruct(cls: ClassHierarchy.Class): Type.Struct = {
-    val data            = cls.fields.map(_.ty)
+    val data            = cls.allfields.map(_.ty)
     val classStructName = cls.name tag "class"
     val classStructBody = Type.Ptr +: data
     val classStructTy   = Type.Struct(classStructName, classStructBody)
