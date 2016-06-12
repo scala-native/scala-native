@@ -2,7 +2,7 @@ package scala.scalanative
 package compiler
 package pass
 
-import compiler.analysis.ClassHierarchy
+import compiler.analysis.ClassHierarchy._
 import compiler.analysis.ClassHierarchyExtractors._
 import nir._
 
@@ -43,8 +43,7 @@ import nir._
  *  - Op.Module
  *  - Defn.Module
  */
-class ModuleLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
-    extends Pass {
+class ModuleLowering(implicit top: Top, fresh: Fresh) extends Pass {
   override def preDefn = {
     case Defn.Module(attrs, name @ ClassRef(cls), parent, ifaces) =>
       val clsName = name tag "module"
@@ -118,10 +117,10 @@ class ModuleLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
   }
 
   def isStaticModule(name: Global): Boolean =
-    chg.nodes(name).isInstanceOf[ClassHierarchy.Class] &&
-    (!chg.nodes.contains(name member "init"))
+    top.nodes(name).isInstanceOf[Class] &&
+    (!top.nodes.contains(name member "init"))
 }
 
 object ModuleLowering extends PassCompanion {
-  def apply(ctx: Ctx) = new ModuleLowering()(ctx.chg, ctx.fresh)
+  def apply(ctx: Ctx) = new ModuleLowering()(ctx.top, ctx.fresh)
 }

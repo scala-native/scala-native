@@ -3,7 +3,7 @@ package compiler
 package pass
 
 import scala.collection.mutable
-import compiler.analysis.ClassHierarchy
+import compiler.analysis.ClassHierarchy._
 import compiler.analysis.ClassHierarchyExtractors._
 import util.ScopedVar, ScopedVar.scoped
 import nir._
@@ -13,7 +13,7 @@ import nir._
  *  Eliminates:
  *  - Val.String
  */
-class StringLowering(implicit chg: ClassHierarchy.Graph) extends Pass {
+class StringLowering(implicit top: Top) extends Pass {
   import StringLowering._
 
   private val strings = mutable.UnrolledBuffer.empty[String]
@@ -53,7 +53,7 @@ class StringLowering(implicit chg: ClassHierarchy.Graph) extends Pass {
 }
 
 object StringLowering extends PassCompanion {
-  def apply(ctx: Ctx) = new StringLowering()(ctx.chg)
+  def apply(ctx: Ctx) = new StringLowering()(ctx.top)
 
   val StringName               = Rt.String.name
   val StringValueName          = StringName member "value" tag "field"

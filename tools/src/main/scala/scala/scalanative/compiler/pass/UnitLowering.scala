@@ -2,12 +2,14 @@ package scala.scalanative
 package compiler
 package pass
 
-import util.unreachable
+import util.{unreachable, ScopedVar}, ScopedVar.scoped
 import nir._
 
 /** Eliminates returns of Unit values and replaces them with void. */
 class UnitLowering(implicit fresh: Fresh) extends Pass {
   import UnitLowering._
+
+  private var defnRetty: Type = _
 
   override def preInst = {
     case inst @ Inst(n, op) if op.resty == Type.Unit =>
@@ -17,9 +19,14 @@ class UnitLowering(implicit fresh: Fresh) extends Pass {
       )
   }
 
+  override def preDefn = {
+    case defn @ Defn.Define(_, _, Type.Function(_, retty), blocks) =>
+      defnRetty = retty
+      Seq(defn)
+  }
+
   override def preCf = {
-    case Cf.Ret(v) if v.ty == Type.Unit =>
-      Cf.Ret(Val.None)
+    case Cf.Ret(_) if defnRetty == Type.Unit => Cf.Ret(Val.None)
   }
 
   override def preVal = {

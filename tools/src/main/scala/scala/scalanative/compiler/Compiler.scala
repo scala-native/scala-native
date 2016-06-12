@@ -43,7 +43,7 @@ final class Compiler(opts: Opts) {
   private lazy val passes = {
     val ctx = Ctx(fresh = Fresh("tx"),
                   entry = entry,
-                  chg = analysis.ClassHierarchy(assembly))
+                  top = analysis.ClassHierarchy(assembly))
 
     passCompanions.map(_.apply(ctx))
   }

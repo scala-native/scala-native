@@ -2,23 +2,23 @@ package scala.scalanative
 package compiler
 package pass
 
-import compiler.analysis.ClassHierarchy
+import compiler.analysis.ClassHierarchy._
 import compiler.analysis.ClassHierarchyExtractors._
 import nir._
 
 /** Generates type instances for all classes, modules,
  *  traits and structs.
  */
-class RuntimeTypeInfoInjection(
-    implicit chg: ClassHierarchy.Graph, fresh: Fresh)
-    extends Pass {
-  private def typeName(node: ClassHierarchy.Scope): Global = node match {
-    case node: ClassHierarchy.Class =>
+class RuntimeTypeInfoInjection(implicit top: Top, fresh: Fresh) extends Pass {
+  private def typeName(node: Scope): Global = node match {
+    case node: Class =>
       node.name tag "class" tag "type"
-    case node: ClassHierarchy.Trait =>
+    case node: Trait =>
       node.name tag "trait" tag "type"
-    case node: ClassHierarchy.Struct =>
+    case node: Struct =>
       node.name tag "struct" tag "type"
+    case _ =>
+      util.unreachable
   }
 
   override def preDefn = {
@@ -29,7 +29,7 @@ class RuntimeTypeInfoInjection(
       Seq(classDefn, typeDefn)
 
     case defn @ (_: Defn.Module | _: Defn.Trait | _: Defn.Struct) =>
-      val node = chg.nodes(defn.name).asInstanceOf[ClassHierarchy.Scope]
+      val node = top.nodes(defn.name).asInstanceOf[Scope]
 
       val typeId   = Val.I32(node.id)
       val typeStr  = Val.String(node.name.id)
@@ -46,7 +46,7 @@ class RuntimeTypeInfoInjection(
 }
 
 object RuntimeTypeInfoInjection extends PassCompanion {
-  def apply(ctx: Ctx) = new RuntimeTypeInfoInjection()(ctx.chg, ctx.fresh)
+  def apply(ctx: Ctx) = new RuntimeTypeInfoInjection()(ctx.top, ctx.fresh)
 
   override val depends = Seq(Rt.Type.name)
 }

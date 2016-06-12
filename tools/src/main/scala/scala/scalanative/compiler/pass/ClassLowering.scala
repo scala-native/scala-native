@@ -2,7 +2,7 @@ package scala.scalanative
 package compiler
 package pass
 
-import compiler.analysis.ClassHierarchy
+import compiler.analysis.ClassHierarchy._
 import compiler.analysis.ClassHierarchyExtractors._
 import util.{sh, unsupported}
 import nir._, Shows._
@@ -31,11 +31,10 @@ import nir._, Shows._
  *  - Defn.Class
  *  - Op.{Alloc, Field, Method}
  */
-class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
-    extends Pass {
+class ClassLowering(implicit top: Top, fresh: Fresh) extends Pass {
   import ClassLowering._
 
-  def classStruct(cls: ClassHierarchy.Class): Type.Struct = {
+  def classStruct(cls: Class): Type.Struct = {
     val data            = cls.allfields.map(_.ty)
     val classStructName = cls.name tag "class"
     val classStructBody = Type.Ptr +: data
@@ -52,10 +51,10 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
 
       Seq(classStructDefn)
 
-    case Defn.Declare(_, MethodRef(Some(ClassRef(_)), _), _) =>
+    case Defn.Declare(_, MethodRef(_: Class, _), _) =>
       Seq()
 
-    case Defn.Var(_, FieldRef(ClassRef(_), _), _, _) =>
+    case Defn.Var(_, FieldRef(_: Class, _), _, _) =>
       Seq()
   }
 
@@ -68,7 +67,7 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
           Inst(n, Op.Call(allocSig, alloc, Seq(cls.typeConst, size)))
       )
 
-    case Inst(n, Op.Field(ty, obj, FieldRef(ClassRef(cls), fld))) =>
+    case Inst(n, Op.Field(ty, obj, FieldRef(cls: Class, fld))) =>
       val classty = classStruct(cls)
 
       Seq(
@@ -76,7 +75,7 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
                Op.Elem(classty, obj, Seq(Val.I32(0), Val.I32(fld.index + 1))))
       )
 
-    case Inst(n, Op.Method(sig, obj, MethodRef(Some(ClassRef(cls)), meth)))
+    case Inst(n, Op.Method(sig, obj, MethodRef(cls: Class, meth)))
         if meth.isVirtual =>
       val typeptr    = Val.Local(fresh(), Type.Ptr)
       val methptrptr = Val.Local(fresh(), Type.Ptr)
@@ -92,7 +91,7 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
           Inst(n, Op.Load(Type.Ptr, methptrptr))
       )
 
-    case Inst(n, Op.Method(sig, obj, MethodRef(Some(ClassRef(_)), meth)))
+    case Inst(n, Op.Method(sig, obj, MethodRef(_: Class, meth)))
         if meth.isStatic =>
       Seq(
           Inst(n, Op.Copy(Val.Global(meth.name, Type.Ptr)))
@@ -131,7 +130,7 @@ class ClassLowering(implicit chg: ClassHierarchy.Graph, fresh: Fresh)
 }
 
 object ClassLowering extends PassCompanion {
-  def apply(ctx: Ctx) = new ClassLowering()(ctx.chg, ctx.fresh)
+  def apply(ctx: Ctx) = new ClassLowering()(ctx.top, ctx.fresh)
 
   val allocName = Global.Top("scalanative_alloc")
   val allocSig  = Type.Function(Seq(Type.Ptr, Type.I64), Type.Ptr)

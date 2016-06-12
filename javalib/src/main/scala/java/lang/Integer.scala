@@ -71,7 +71,7 @@ object Integer {
       s: String, radix: scala.Int, signed: scala.Boolean): scala.Int = ???
 
   @inline def toString(i: scala.Int): String =
-    String.valueOf(i)
+    ???
 
   @inline def toUnsignedString(i: Int, radix: Int): String =
     toStringBase(i, radix)

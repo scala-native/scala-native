@@ -65,7 +65,7 @@ object Shows {
     case Next.Fail(name) =>
       sh"fail $name"
     case Next.Case(value, name) =>
-      sh"case $value => name"
+      sh"case $value => $name"
   }
 
   implicit val showCf: Show[Cf] = Show {

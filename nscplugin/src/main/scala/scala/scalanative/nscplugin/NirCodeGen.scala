@@ -220,7 +220,7 @@ abstract class NirCodeGen
         val params = genParams(defParamSymbols(dd))
 
         dd.rhs match {
-          case _ if sym.isDeferred =>
+          case EmptyTree =>
             Seq(Defn.Declare(attrs, name, sig))
 
           case rhs
@@ -317,8 +317,13 @@ abstract class NirCodeGen
       }.toMap
 
       params.map {
-        case p if wereRepeated.getOrElse(p.name, false) => Type.Vararg
-        case p                                          => genType(p.tpe)
+        case p
+            if wereRepeated.getOrElse(p.name, false) &&
+            isExternModule(sym.owner) =>
+          Type.Vararg
+
+        case p =>
+          genType(p.tpe)
       }
     }
 
@@ -337,10 +342,10 @@ abstract class NirCodeGen
         val paramtys = genMethodSigParams(sym, params)
         val owner    = sym.owner
         val selfty =
-          if (isExternModule(sym.owner)) None
-          else Some(genType(sym.owner.tpe))
+          if (isExternModule(owner) || owner.isImplClass) None
+          else Some(genType(owner.tpe))
         val retty =
-          if (sym.isClassConstructor) Type.Void
+          if (sym.isClassConstructor) Type.Unit
           else genType(sym.tpe.resultType, retty = true)
 
         Type.Function(selfty ++: paramtys, retty)
@@ -352,7 +357,10 @@ abstract class NirCodeGen
     }
 
     def genParams(paramSyms: Seq[Symbol]): Seq[Val.Local] = {
-      val self = Val.Local(curEnv.fresh(), genType(curClassSym.tpe))
+      val owner = curMethodSym.owner
+      val self =
+        if (isExternModule(owner) || owner.isImplClass) None
+        else Some(Val.Local(curEnv.fresh(), genType(curClassSym.tpe)))
       val params = paramSyms.map { sym =>
         val name  = curEnv.fresh()
         val ty    = genType(sym.tpe)
@@ -361,7 +369,7 @@ abstract class NirCodeGen
         param
       }
 
-      self +: params
+      self ++: params
     }
 
     def notMergeableGuard(f: => Focus): Focus =
@@ -737,7 +745,7 @@ abstract class NirCodeGen
             genMethodCall(RuntimeArrayUpdateMethod(elemcode),
                           statically = true,
                           alloc.value,
-                          Seq(idx),
+                          Seq(idx, ValTree(v)),
                           focus)
           }
 
@@ -851,7 +859,7 @@ abstract class NirCodeGen
       if (isArithmeticOp(code) || isLogicalOp(code) || isComparisonOp(code)) {
         genSimpleOp(app, receiver :: args, code, focus)
       } else if (code == CONCAT) {
-        genStringConcat(receiver, args, focus)
+        genStringConcat(receiver, args.head, focus)
       } else if (code == HASH) {
         genHashCode(app, receiver, focus)
       } else if (isArrayOp(code) || code == ARRAY_CLONE) {
@@ -883,7 +891,7 @@ abstract class NirCodeGen
     lazy val jlClass         = nir.Type.Class(jlClassName)
     lazy val jlClassCtorName = jlClassName member "init_ptr"
     lazy val jlClassCtorSig =
-      nir.Type.Function(Seq(jlClass, Type.Ptr), nir.Type.Void)
+      nir.Type.Function(Seq(jlClass, Type.Ptr), nir.Type.Unit)
     lazy val jlClassCtor = nir.Val.Global(jlClassCtorName, nir.Type.Ptr)
 
     def genBoxClass(type_ : Val, focus: Focus) = {
@@ -951,7 +959,7 @@ abstract class NirCodeGen
       val rty  = genType(right.tpe)
       val opty = binaryOperationType(lty, rty)
 
-      opty match {
+      val binres = opty match {
         case Type.F(_) =>
           code match {
             case ADD =>
@@ -1049,6 +1057,8 @@ abstract class NirCodeGen
         case ty =>
           abort("Uknown binary operation type: " + ty)
       }
+
+      genCoercion(binres.value, binres.value.ty, retty, binres)
     }
 
     def genBinaryOp(op: (nir.Type, Val, Val) => Op,
@@ -1104,8 +1114,21 @@ abstract class NirCodeGen
         abort(s"can't perform binary opeation between $lty and $rty")
     }
 
-    def genStringConcat(selfp: Tree, argsp: List[Tree], focus: Focus): Focus =
-      genMethodCall(String_+, statically = true, selfp, argsp, focus)
+    def genStringConcat(leftp: Tree, rightp: Tree, focus: Focus): Focus = {
+      val left = {
+        val unboxed = genExpr(leftp, focus)
+        val boxed   = boxValue(leftp.tpe.typeSymbol, unboxed)
+        genMethodCall(
+            Object_toString, statically = false, boxed.value, Seq(), boxed)
+      }
+      val right = genExpr(rightp, left)
+
+      genMethodCall(String_+,
+                    statically = true,
+                    left.value,
+                    Seq(ValTree(right.value)),
+                    right)
+    }
 
     // TODO: this doesn't seem to get called on foo.## expressions
     def genHashCode(tree: Tree, receiverp: Tree, focus: Focus) = {
@@ -1501,7 +1524,7 @@ abstract class NirCodeGen
           last withValue Val.Global(name, nir.Type.Ptr)
         else last withOp Op.Method(sig, self, name)
       val values =
-        if (isExternModule(owner)) args
+        if (isExternModule(owner) || owner.isImplClass) args
         else self +: args
 
       method withOp Op.Call(sig, method.value, values)
