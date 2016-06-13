@@ -1,13 +1,17 @@
 package scala.scalanative
 package runtime
 
-// Note:
-// Arrays.scala is currently implemented textual templating that is expanded through project/gyb.py script. 
-// Update the Arrays.scala.gyb and re-generate the source
+// Note 1:
+// Arrays.scala is currently implemented as textual templating that is expanded through project/gyb.py script. 
+// Update Arrays.scala.gyb and re-generate the source
+
+// Note 2:
+// Array of primitiveTypes don't contain pointers, runtime.allocAtomic() is called for memory allocation   
+// Array of Object do contain pointers. runtime.alloc() is called for memory allocation
 
 %{
-   types = ['Boolean', 'Char', 'Byte', 'Short',
-            'Int', 'Long', 'Float', 'Double', 'Object']
+   primitiveTypes = ['Boolean', 'Char', 'Byte', 'Short',
+            'Int', 'Long', 'Float', 'Double']
 }%
 
 import native._
@@ -31,7 +35,47 @@ sealed abstract class Array[T]
   protected override def clone(): Array[T] = undefined
 }
 
-% for T in types:
+final class ObjectArray private () extends Array[Object] {
+  def apply(i: Int): Object =
+    if (i < 0 || i >= length)
+      throw new IndexOutOfBoundsException(i.toString)
+    else {
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Object]]
+      headptr(i)
+    }
+
+  def update(i: Int, value: Object): Unit =
+    if (i < 0 || i >= length)
+      throw new IndexOutOfBoundsException(i.toString)
+    else {
+      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Object]]
+      headptr(i) = value
+    }
+
+  protected override def clone(): ObjectArray = {
+    val newarr = ObjectArray.alloc(length)
+    ObjectArray.copy(this, 0, newarr, 0, length)
+    newarr
+  }
+}
+
+object ObjectArray {
+  def copy(from: ObjectArray, fromPos: Int,
+           to: ObjectArray, toPos: Int, length: Int): Unit = {
+    ???
+  }
+
+  def alloc(length: Int): ObjectArray = {
+    val arrinfo = infoof[ObjectArray]
+    val arrsize = sizeof[ArrayHeader] + sizeof[Object] * length
+    val arr = runtime.alloc(arrinfo, arrsize)    
+    // set the length
+    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
+    arr.cast[ObjectArray]        
+  }
+}
+
+% for T in primitiveTypes:
 
 final class ${T}Array private () extends Array[${T}] {
   def apply(i: Int): ${T} =
@@ -66,7 +110,7 @@ object ${T}Array {
   def alloc(length: Int): ${T}Array = {
     val arrinfo = infoof[${T}Array]
     val arrsize = sizeof[ArrayHeader] + sizeof[${T}] * length
-    val arr = runtime.alloc(arrinfo, arrsize)    
+    val arr = runtime.allocAtomic(arrinfo, arrsize)    
     // set the length
     !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
     arr.cast[${T}Array]        

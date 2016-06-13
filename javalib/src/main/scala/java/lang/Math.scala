@@ -1,6 +1,6 @@
 package java.lang
 
-import scalanative.runtime.Math._
+import scalanative.runtime.Intrinsics._
 
 object Math {
   final val E  = 2.718281828459045
