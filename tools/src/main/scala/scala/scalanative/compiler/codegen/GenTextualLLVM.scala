@@ -18,7 +18,10 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
     case Defn.Declare(_, n, sig)   => n -> sig
     case Defn.Define(_, n, sig, _) => n -> sig
   }.toMap
-  private val prelude = sh"declare i32 @__gxx_personality_v0(...)"
+  private val prelude = Seq(
+      sh"declare i32 @__gxx_personality_v0(...)",
+      sh"@_ZTIPN11scalanative16ExceptionWrapperE = external constant { i8*, i8*, i32, i8* }"
+  )
   private val gxxpersonality =
     sh"personality i8* bitcast (i32 (...)* @__gxx_personality_v0 to i8*)"
 
@@ -32,14 +35,14 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
       case _               => -1
     }
 
-    r(prelude +: sorted.map(d => sh"$d"), sep = nl(""))
+    r(prelude ++: sorted.map(d => sh"$d"), sep = nl(""))
   }
 
   implicit val showDefn: Show[Defn] = Show {
     case Defn.Var(attrs, name, ty, rhs) =>
       showGlobalDefn(name, attrs.isExtern, isConst = false, ty, rhs)
     case Defn.Const(attrs, name, ty, rhs) =>
-      showGlobalDefn(name, attrs.isExtern, isConst = false, ty, rhs)
+      showGlobalDefn(name, attrs.isExtern, isConst = true, ty, rhs)
     case Defn.Declare(attrs, name, sig) =>
       showFunctionDefn(attrs, name, sig, Seq())
     case Defn.Define(attrs, name, sig, blocks) =>
@@ -56,7 +59,7 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
                      ty: nir.Type,
                      rhs: nir.Val) = {
     val external = if (isExtern) "external " else ""
-    val keyword  = if (isConst) "const" else "global"
+    val keyword  = if (isConst) "constant" else "global"
     val init = rhs match {
       case Val.None => sh"$ty"
       case _        => sh"$rhs"
@@ -189,24 +192,23 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
   def showInsts(insts: Seq[Inst], cf: Cf)(
       implicit cfg: ControlFlow.Graph): Seq[Show.Result] = {
     val buf = mutable.UnrolledBuffer.empty[Show.Result]
-    def isVoid(op: Op): Boolean =
-      op.resty == Type.Void || op.resty == Type.Unit ||
-      op.resty == Type.Nothing
+    def isVoid(ty: Type): Boolean =
+      ty == Type.Void || ty == Type.Unit || ty == Type.Nothing
 
     insts.foreach { inst =>
       val op   = inst.op
       val name = inst.name
-      val bind = if (isVoid(op)) s() else sh"%$name = "
+      val bind = if (isVoid(op.resty)) s() else sh"%$name = "
 
       op match {
         case Op.Call(ty, Val.Global(pointee, _), args) =>
-          val bind = if (isVoid(op)) s() else sh"%$name = "
+          val bind = if (isVoid(op.resty)) s() else sh"%$name = "
 
           buf += sh"${bind}call $ty @$pointee(${r(args, sep = ", ")})"
 
         case Op.Call(ty, ptr, args) =>
           val pointee = fresh()
-          val bind    = if (isVoid(op)) s() else sh"%$name = "
+          val bind    = if (isVoid(op.resty)) s() else sh"%$name = "
 
           buf += sh"%$pointee = bitcast $ptr to $ty*"
           buf += sh"${bind}call $ty %$pointee(${r(args, sep = ", ")})"
@@ -244,7 +246,35 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
       }
     }
 
-    buf += sh"$cf"
+    cf match {
+      case Cf.Invoke(ty, Val.Global(pointee, _), args, succ, fail) =>
+        val Type.Function(_, resty) = ty
+
+        val name = cfg.nodes(succ.name).block.params.headOption.map(_.name)
+        val bind = name.fold(sh"") { name =>
+          sh"%$name.succ = "
+        }
+
+        buf +=
+          sh"${bind}invoke $ty @$pointee(${r(args, sep = ", ")}) to $succ unwind $fail"
+
+      case Cf.Invoke(ty, ptr, args, succ, fail) =>
+        val Type.Function(_, resty) = ty
+
+        val name = cfg.nodes(succ.name).block.params.headOption.map(_.name)
+        val bind = name.fold(sh"") { name =>
+          sh"%$name.succ = "
+        }
+        val pointee = fresh()
+
+        buf += sh"%$pointee = bitcast $ptr to $ty*"
+        buf +=
+          sh"${bind}invoke $ty %$pointee(${r(args, sep = ", ")}) to $succ unwind $fail"
+
+      case _ =>
+        buf += sh"$cf"
+    }
+
     buf.toSeq
   }
 
@@ -262,8 +292,7 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
     case Cf.Switch(scrut, default, cases) =>
       sh"switch $scrut, $default [${r(cases.map(i(_)))}${nl("]")}"
     case Cf.Invoke(ty, f, args, succ, fail) =>
-      val n = cfg.nodes(succ.name).block.params.head.name
-      sh"%$n.succ = invoke $ty ${justVal(f)}(${r(args, sep = ", ")}) to $succ unwind $fail"
+      unreachable
     case Cf.Resume(value) =>
       sh"resume $value"
     case cf =>
@@ -333,7 +362,10 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
       : Option[Seq[(Local, Seq[Show.Result])]] = {
       Some(edges.map {
         case ControlFlow.Edge(from, to, _: Next.Succ) =>
-          (from.block.name, Seq(sh"%${to.block.params.head.name}.succ"))
+          val succ = to.block.params.headOption.map { p =>
+            sh"%${p.name}.succ"
+          }
+          (from.block.name, succ.toSeq)
         case ControlFlow.Edge(from, _, _: Next.Case) =>
           (from.block.name, Seq())
         case ControlFlow.Edge(from, _, Next.Label(_, vals)) =>

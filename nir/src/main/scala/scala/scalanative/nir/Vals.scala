@@ -43,6 +43,7 @@ object Val {
   final case class Local(name: nir.Local, valty: nir.Type)    extends Val
   final case class Global(name: nir.Global, valty: nir.Type)  extends Val
   val Null = Zero(Type.Ptr)
+  def Bool(bool: Boolean) = if (bool) True else False
 
   // high-level
   final case object Unit extends Val

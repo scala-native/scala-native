@@ -18,7 +18,7 @@ final class Compiler(opts: Opts) {
       pass.MainInjection,
       pass.ExternHoisting,
       pass.ModuleLowering,
-      pass.TypeofLowering,
+      pass.RuntimeTypeInfoInjection,
       pass.AsLowering,
       pass.TraitLowering,
       pass.ClassLowering,
@@ -43,7 +43,7 @@ final class Compiler(opts: Opts) {
   private lazy val passes = {
     val ctx = Ctx(fresh = Fresh("tx"),
                   entry = entry,
-                  chg = analysis.ClassHierarchy(assembly))
+                  top = analysis.ClassHierarchy(assembly))
 
     passCompanions.map(_.apply(ctx))
   }

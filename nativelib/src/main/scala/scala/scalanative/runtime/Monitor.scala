@@ -11,7 +11,5 @@ final class Monitor private () {
 }
 
 object Monitor {
-  private val dummy = new Monitor()
-
-  def get(obj: Object): Monitor = dummy
+  val dummy = new Monitor()
 }

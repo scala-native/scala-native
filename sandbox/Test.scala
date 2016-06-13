@@ -1,10 +1,10 @@
 import scalanative.native._
 import scalanative.libc.stdlib._
-import scalanative.runtime.GC
 
-object Main {
+object Test {
   def main(args: Array[String]): Unit = {
-    val (a, b) = (1, 2)
-    fprintf(stdout, c"(%d, %d)", a, b)
+    val list = List(1, 2, 3)
+    val sum = list.sum
+    fprintf(stdout, c"sum is %d\n", sum)
   }
 }

@@ -6,7 +6,7 @@ import Type._
 object Rt {
   val Object = Class(Global.Top("java.lang.Object"))
   val String = Class(Global.Top("java.lang.String"))
-  val Exc    = Struct(Global.Top("scala.scalanative.runtime.Exc"), Seq(Ptr, I32))
+  val Exc    = Struct(Global.None, Seq(Ptr, I32))
   val Type = Struct(
       Global.Top("scala.scalanative.runtime.Type"), Seq(I32, Ptr))
 

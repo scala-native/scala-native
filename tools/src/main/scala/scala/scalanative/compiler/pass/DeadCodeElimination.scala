@@ -3,11 +3,11 @@ package compiler
 package pass
 
 import scala.collection.mutable
-import analysis.ClassHierarchy
+import analysis.ClassHierarchy.Top
 import nir._, Shows._
 import util.sh
 
-class DeadCodeElimination(implicit chg: ClassHierarchy.Graph) extends Pass {
+class DeadCodeElimination(implicit top: Top) extends Pass {
   override def preDefn = {
     case defn: Defn.Define =>
       val usedef = analysis.UseDef(defn.blocks)
@@ -25,5 +25,5 @@ class DeadCodeElimination(implicit chg: ClassHierarchy.Graph) extends Pass {
 }
 
 object DeadCodeElimination extends PassCompanion {
-  def apply(ctx: Ctx) = new DeadCodeElimination()(ctx.chg)
+  def apply(ctx: Ctx) = new DeadCodeElimination()(ctx.top)
 }

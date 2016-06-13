@@ -3,6 +3,7 @@ package compiler
 package analysis
 
 import scala.collection.mutable
+import ClassHierarchy.Top
 import ClassHierarchyExtractors._
 import nir._
 
@@ -40,7 +41,7 @@ object UseDef {
     collect.deps.distinct
   }
 
-  private def isPure(op: Op)(implicit chg: ClassHierarchy.Graph) = op match {
+  private def isPure(op: Op)(implicit top: Top) = op match {
     case Op.Call(_, Val.Global(Ref(node), _), _) =>
       node.attrs.isPure
 
@@ -54,8 +55,7 @@ object UseDef {
       false
   }
 
-  def apply(blocks: Seq[Block])(
-      implicit chg: ClassHierarchy.Graph): Map[Local, Def] = {
+  def apply(blocks: Seq[Block])(implicit top: Top): Map[Local, Def] = {
     val defs = mutable.Map.empty[Local, Def]
 
     def enterDef(n: Local) = {

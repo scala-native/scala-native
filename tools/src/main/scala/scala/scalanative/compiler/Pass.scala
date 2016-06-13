@@ -117,8 +117,6 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
         case Op.Is(ty, v)        => Op.Is(txType(ty), txVal(v))
         case Op.Copy(v)          => Op.Copy(txVal(v))
         case Op.Sizeof(ty)       => Op.Sizeof(txType(ty))
-        case Op.Typeof(ty)       => Op.Typeof(txType(ty))
-        case Op.Infoof(n)        => Op.Infoof(n)
         case Op.Closure(ty, fun, captures) =>
           Op.Closure(txType(ty), txVal(fun), captures.map(txVal))
       }

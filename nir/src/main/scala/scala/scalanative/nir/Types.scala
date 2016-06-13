@@ -4,13 +4,13 @@ package nir
 import util.unsupported
 
 sealed abstract class Type {
-  def elemty(path: Seq[Val]) = (this, path) match {
+  def elemty(path: Seq[Val]): Type = (this, path) match {
     case (_, Seq()) =>
       this
     case (Type.Struct(_, tys), Val.I32(idx) +: rest) =>
-      tys(idx)
+      tys(idx).elemty(rest)
     case (Type.Array(ty, n), idx +: rest) =>
-      ty
+      ty.elemty(rest)
     case _ =>
       unsupported(s"${this}.elemty($path)")
   }

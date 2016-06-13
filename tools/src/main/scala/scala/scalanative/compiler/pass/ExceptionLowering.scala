@@ -40,7 +40,9 @@ class ExceptionLowering(implicit fresh: Fresh) extends Pass {
         val inv  = Cf.Invoke(call.ty, call.ptr, call.args, succ, fail)
         blocks += Block(name, params, insts.toSeq, inv)
         name = succ.name
-        params = Seq(Val.Local(n, call.resty))
+        params =
+          if (call.resty != Type.Void) Seq(Val.Local(n, call.resty))
+          else Seq()
         insts = mutable.UnrolledBuffer.empty[Inst]
       }
 

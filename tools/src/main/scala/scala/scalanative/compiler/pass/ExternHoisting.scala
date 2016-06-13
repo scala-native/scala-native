@@ -2,12 +2,12 @@ package scala.scalanative
 package compiler
 package pass
 
-import compiler.analysis.ClassHierarchy
+import compiler.analysis.ClassHierarchy._
 import compiler.analysis.ClassHierarchyExtractors._
 import nir._
 
 /** Hoists external members from external modules to top-level scope. */
-class ExternHoisting(implicit chg: ClassHierarchy.Graph) extends Pass {
+class ExternHoisting(implicit top: Top) extends Pass {
   private def stripName(n: Global): Global = {
     val id = n.id
     assert(id.startsWith("extern."))
@@ -32,5 +32,5 @@ class ExternHoisting(implicit chg: ClassHierarchy.Graph) extends Pass {
 }
 
 object ExternHoisting extends PassCompanion {
-  def apply(ctx: Ctx) = new ExternHoisting()(ctx.chg)
+  def apply(ctx: Ctx) = new ExternHoisting()(ctx.top)
 }

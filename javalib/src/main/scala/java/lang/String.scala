@@ -593,7 +593,7 @@ final class _String()
   def startsWith(prefix: _String): scala.Boolean =
     startsWith(prefix, 0)
 
-  def subString(start: Int): _String =
+  def substring(start: Int): _String =
     if (start == 0) {
       this
     } else if (0 <= start && start <= count) {
@@ -602,7 +602,7 @@ final class _String()
       throw new StringIndexOutOfBoundsException(start)
     }
 
-  def subString(start: Int, end: Int): _String =
+  def substring(start: Int, end: Int): _String =
     if (start == 0 && end == count) {
       this
     } else {
@@ -691,7 +691,7 @@ final class _String()
     Pattern.compile(expr).split(this, max)
 
   def subSequence(start: Int, end: Int): CharSequence =
-    subString(start, end)
+    substring(start, end)
 
   def codePointAt(index: Int): Int =
     if (index < 0 || index >= count) {
