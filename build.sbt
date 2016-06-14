@@ -151,7 +151,6 @@ lazy val demoNative =
   project.in(file("demo/native")).
     settings(libSettings).
     settings(
-      nativeVerbose := true,
       nativeClangOptions ++= Seq("-O2")
     ).
     dependsOn(scalalib, clib)
