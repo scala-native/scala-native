@@ -5,10 +5,10 @@ import native._
 
 @extern
 object stdlib {
-  @name("__stderrp")
-  var stderr: Ptr[_] = extern
-  @name("__stdoutp")
-  var stdout: Ptr[_] = extern
+  @name("scalanative_stderr")
+  def stderr: Ptr[_] = extern
+  @name("scalanative_stdout")
+  def stdout: Ptr[_] = extern
 
   def fopen(filename: CString, mode: CString): Ptr[_]               = extern
   def fprintf(stream: Ptr[_], format: CString, args: Vararg*): CInt = extern

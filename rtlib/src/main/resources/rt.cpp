@@ -39,5 +39,13 @@ extern "C" {
     void scalanative_init() {
         GC_init();
     }
+
+    void* scalanative_stderr() {
+        return stderr;
+    }
+
+    void* scalanative_stdout() {
+        return stdout;
+    }
 }
 
