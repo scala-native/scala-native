@@ -25,6 +25,10 @@ class AsLowering extends Pass {
       Seq(Inst(n, Op.Conv(Conv.Fpext, to, v)))
     case Inst(n, Op.As(to @ Type.F(w1), Of(v, Type.F(w2)))) if w1 < w2 =>
       Seq(Inst(n, Op.Conv(Conv.Fptrunc, to, v)))
+    case Inst(n, Op.As(Type.Ptr, Of(v, _: Type.RefKind))) =>
+      Seq(Inst(n, Op.Conv(Conv.Bitcast, Type.Ptr, v)))
+    case Inst(n, Op.As(to @ (_: Type.RefKind), Of(v, Type.Ptr))) =>
+      Seq(Inst(n, Op.Conv(Conv.Bitcast, to, v)))
     case inst @ Inst(n, Op.As(to, Of(v, from))) =>
       util.unsupported(inst)
   }
