@@ -40,13 +40,13 @@ object ScalaNativePluginInternal {
                         appll: File,
                         binary: File,
                         links: Seq[String],
-                        linkAs: Map[String, String],
+                        linkage: Map[String, String],
                         opts: Seq[String]): Unit = {
     val outpath  = abs(binary)
     val apppath  = abs(appll)
     val rtpaths  = (rtlib ** "*.cpp").get.map(abs)
     val paths    = apppath +: rtpaths
-    val linkopts = links.zip(links.map(linkAs.get(_))).flatMap {
+    val linkopts = links.zip(links.map(linkage.get(_))).flatMap {
       case (name, Some("static"))         => Seq("-static", "-l", name)
       case (name, Some("dynamic") | None) => Seq("-l", name)
       case (name, Some(kind)) =>
@@ -84,19 +84,23 @@ object ScalaNativePluginInternal {
 
     nativeEmitDependencyGraphPath := None,
 
-    nativeLinkAs := Map(),
+    nativeLibraryLinkage := Map(),
 
-    run := {
+    artifactPath in nativeLink := {
+      (crossTarget in Compile).value / (moduleName.value + "-out")
+    },
+
+    nativeLink := {
       val entry     = (mainClass in Compile).value.get.toString + "$"
       val classpath = cpToStrings((fullClasspath in Compile).value.map(_.data))
       val target    = (crossTarget in Compile).value
       val appll     = target / (moduleName.value + "-out.ll")
-      val binary    = target / (moduleName.value + "-out")
+      val binary    = (artifactPath in nativeLink).value
       val verbose   = nativeVerbose.value
       val clang     = nativeClang.value
       val clangOpts = nativeClangOptions.value
       val dotpath   = nativeEmitDependencyGraphPath.value
-      val linkAs    = nativeLinkAs.value
+      val linkage   = nativeLibraryLinkage.value
       val opts      = new NativeOpts(classpath,
                                      abs(appll),
                                      dotpath.map(abs),
@@ -108,7 +112,14 @@ object ScalaNativePluginInternal {
       IO.createDirectory(target)
       unpackRtlib(classpath)
       val links = compileNir(opts).map(_.name)
-      compileLl(clang, target, appll, binary, links, linkAs, clangOpts)
+      compileLl(clang, target, appll, binary, links, linkage, clangOpts)
+
+      binary
+    },
+
+    run := {
+      val binary = nativeLink.value
+
       Process(abs(binary)).!
     }
   )
