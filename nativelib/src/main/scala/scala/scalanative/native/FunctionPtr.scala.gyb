@@ -1,0 +1,30 @@
+package scala.scalanative
+package native
+
+import scalanative.runtime.undefined
+import scala.reflect.ClassTag
+
+/** C-style function pointer. */
+sealed abstract class FunctionPtr
+
+object FunctionPtr {
+
+% for N in range(0, 23):
+%    Ts = ", ".join(["T" + str(i) for i in range(1, N + 1)] + ["R"])
+
+  implicit def fromFunction${N}[${Ts}](f: Function${N}[${Ts}]): FunctionPtr${N}[${Ts}] = undefined
+
+% end
+
+}
+
+% for N in range(0, 23):
+%   args = ", ".join("arg" + str(i) + ": T" + str(i) for i in range(1, N+1))
+%   cttys = ["T" + str(i) for i in range(1, N+1)] + ["R"]
+%   ctargs = ", ".join("ct" + str(i+1) + ": ClassTag[" + ty + "]" for (i, ty) in enumerate(cttys))
+
+final class FunctionPtr${N}[${", ".join(["T" + str(i) for i in range(1, N+1)] + ["R"])}] {
+  def apply(${args})(implicit ${ctargs}): R = undefined
+}
+
+% end

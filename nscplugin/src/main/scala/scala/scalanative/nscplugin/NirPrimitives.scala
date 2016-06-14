@@ -15,7 +15,10 @@ object NirPrimitives {
   final val PTR_APPLY  = 1 + PTR_SUB
   final val PTR_UPDATE = 1 + PTR_APPLY
 
-  final val SIZEOF     = 1 + PTR_UPDATE
+  final val FUN_PTR_CALL = 1 + PTR_UPDATE
+  final val FUN_PTR_FROM = 1 + FUN_PTR_CALL
+
+  final val SIZEOF     = 1 + FUN_PTR_FROM
   final val TYPEOF     = 1 + SIZEOF
   final val CQUOTE     = 1 + TYPEOF
   final val CCAST      = 1 + CQUOTE
@@ -71,6 +74,8 @@ abstract class NirPrimitives {
     addPrimitive(PtrSubMethod, PTR_SUB)
     addPrimitive(PtrApplyMethod, PTR_APPLY)
     addPrimitive(PtrUpdateMethod, PTR_UPDATE)
+    FunctionPtrApply.foreach(addPrimitive(_, FUN_PTR_CALL))
+    FunctionPtrFrom.foreach(addPrimitive(_, FUN_PTR_FROM))
     addPrimitive(SizeofMethod, SIZEOF)
     addPrimitive(TypeofMethod, TYPEOF)
     addPrimitive(CQuoteMethod, CQUOTE)

@@ -905,6 +905,8 @@ abstract class NirCodeGen
         genArrayOp(app, code, focus)
       } else if (nirPrimitives.isPtrOp(code)) {
         genPtrOp(app, code, focus)
+      } else if (code == FUN_PTR_CALL || code == FUN_PTR_FROM) {
+        genFunPtrOp(app, code, focus)
       } else if (isCoercion(code)) {
         genCoercion(app, receiver, code, focus)
       } else if (code == SYNCHRONIZED) {
@@ -1268,6 +1270,57 @@ abstract class NirCodeGen
           val value  = unboxValue(sym, genExpr(valuep, offset))
           val elem   = value withOp Op.Elem(ty, ptr.value, Seq(offset.value))
           elem withOp Op.Store(ty, elem.value, value.value)
+      }
+    }
+
+    def genFunPtrOp(app: Apply, code: Int, focus: Focus): Focus = {
+      code match {
+        case FUN_PTR_CALL =>
+          val Apply(sel @ Select(funp, _), allargsp) = app
+
+          val arity = FunctionPtrApply.indexOf(sel.symbol)
+
+          val fun           = genExpr(funp, focus)
+          val (argsp, ctsp) = allargsp.splitAt(arity)
+          val ctsyms        = ctsp.map(extractClassFromImplicitClassTag)
+          val cttys         = ctsyms.map(ctsym => genType(ctsym.info))
+          val sig           = Type.Function(cttys.init, cttys.last)
+
+          val args = mutable.UnrolledBuffer.empty[nir.Val]
+          var last = fun
+          ctsyms.init.zip(argsp).foreach {
+            case (sym, argp) =>
+              last = unboxValue(sym, genExpr(argp, last))
+              args += last.value
+          }
+
+          last withOp Op.Call(sig, fun.value, args)
+
+        case FUN_PTR_FROM =>
+          val Apply(_, Seq(Block(_, Block(_, Typed(appnew, _)))))   = app
+          val Apply(Select(New(tpt), termNames.CONSTRUCTOR), Seq()) = appnew
+
+          val body = consumeLazyAnonDef(tpt.tpe.typeSymbol).impl.body
+          val meth = body.collectFirst {
+            case dd: DefDef
+                if dd.name == nme.apply && !dd.symbol.hasFlag(BRIDGE) =>
+              dd
+          }.get
+
+          val DefDef(_, _, _, Seq(params), _, Apply(ref: RefTree, args)) = meth
+          params.zip(args).foreach {
+            case (param, arg: RefTree) =>
+              assert(param.symbol == arg.symbol)
+            case _ =>
+              unsupported("")
+          }
+          val Select(from, _) = ref
+          assert(isExternModule(from.symbol))
+
+          focus withValue Val.Global(genMethodName(ref.symbol), Type.Ptr)
+
+        case _ =>
+          unreachable
       }
     }
 
