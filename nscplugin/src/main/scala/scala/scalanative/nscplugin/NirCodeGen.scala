@@ -76,11 +76,24 @@ abstract class NirCodeGen
   }
 
   class SaltyCodePhase(prev: Phase) extends StdPhase(prev) {
-    val curLocalInfo = new util.ScopedVar[CollectLocalInfo]
-    val curClassSym  = new util.ScopedVar[Symbol]
-    val curMethodSym = new util.ScopedVar[Symbol]
-    val curEnv       = new util.ScopedVar[Env]
-    val curThis      = new util.ScopedVar[Val]
+    private val curLocalInfo = new util.ScopedVar[CollectLocalInfo]
+    private val curClassSym  = new util.ScopedVar[Symbol]
+    private val curMethodSym = new util.ScopedVar[Symbol]
+    private val curEnv       = new util.ScopedVar[Env]
+    private val curThis      = new util.ScopedVar[Val]
+
+    private val lazyAnonDefs = mutable.Map.empty[Symbol, ClassDef]
+
+    private def consumeLazyAnonDef(sym: Symbol) = {
+      lazyAnonDefs
+        .get(sym)
+        .fold {
+          sys.error(s"Couldn't find anon def for $sym")
+        } { cd =>
+          lazyAnonDefs.remove(cd.symbol)
+          cd
+        }
+    }
 
     override def run(): Unit = {
       scalaPrimitives.init()
@@ -89,25 +102,47 @@ abstract class NirCodeGen
     }
 
     override def apply(cunit: CompilationUnit): Unit = {
-      def collectClassDefs(tree: Tree): List[ClassDef] = {
-        tree match {
-          case EmptyTree            => Nil
-          case PackageDef(_, stats) => stats flatMap collectClassDefs
-          case cd: ClassDef         => cd :: Nil
+      try {
+        def collectClassDefs(tree: Tree): List[ClassDef] = {
+          tree match {
+            case EmptyTree            => Nil
+            case PackageDef(_, stats) => stats flatMap collectClassDefs
+            case cd: ClassDef         => cd :: Nil
+          }
         }
-      }
-      val classDefs = collectClassDefs(cunit.body)
 
-      classDefs.foreach { cd =>
-        val sym = cd.symbol
-        if (isPrimitiveValueClass(sym) || (sym == ArrayClass)) ()
-        else {
-          val defn =
-            if (isStruct(cd.symbol)) genStruct(cd)
-            else genClass(cd)
-
-          genIRFile(cunit, sym, defn)
+        val (anonDefs, classDefs) = collectClassDefs(cunit.body).partition {
+          cd =>
+            cd.symbol.isAnonymousFunction
         }
+
+        lazyAnonDefs ++= anonDefs.map(cd => cd.symbol -> cd)
+
+        val nirDefns = mutable.UnrolledBuffer.empty[(Symbol, Seq[nir.Defn])]
+
+        classDefs.foreach { cd =>
+          val sym = cd.symbol
+
+          if (isPrimitiveValueClass(sym) || (sym == ArrayClass)) {
+            ()
+          } else if (isStruct(cd.symbol)) {
+            nirDefns += cd.symbol -> genStruct(cd)
+          } else {
+            nirDefns += cd.symbol -> genClass(cd)
+          }
+        }
+
+        lazyAnonDefs.foreach {
+          case (sym, cd) =>
+            nirDefns += sym -> genClass(cd)
+        }
+
+        nirDefns.foreach {
+          case (sym, defn) =>
+            genIRFile(cunit, sym, defn)
+        }
+      } finally {
+        lazyAnonDefs.clear()
       }
     }
 
