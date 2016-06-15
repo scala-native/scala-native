@@ -87,4 +87,14 @@ object Intrinsics {
                                   len: Long,
                                   align: Int,
                                   isvolatile: Boolean): Unit = extern
+  def `llvm.memmove.p0i8.p0i8.i32`(dest: Ptr[Byte],
+                                   src: Ptr[Byte],
+                                   len: Int,
+                                   align: Int,
+                                   isvolatile: Boolean): Unit = extern
+  def `llvm.memmove.p0i8.p0i8.i64`(dest: Ptr[Byte],
+                                   src: Ptr[Byte],
+                                   len: Long,
+                                   align: Int,
+                                   isvolatile: Boolean): Unit = extern
 }

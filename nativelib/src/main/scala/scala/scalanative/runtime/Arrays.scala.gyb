@@ -2,21 +2,31 @@ package scala.scalanative
 package runtime
 
 // Note 1:
-// Arrays.scala is currently implemented as textual templating that is expanded through project/gyb.py script.
+// Arrays.scala is currently implemented as textual templating that is expanded through project/gyb.py script. 
 // Update Arrays.scala.gyb and re-generate the source
+// $ ./project/gyb.py \ 
+//     nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb > \
+//     nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala
+
 
 // Note 2:
 // Array of primitiveTypes don't contain pointers, runtime.allocAtomic() is called for memory allocation
 // Array of Object do contain pointers. runtime.alloc() is called for memory allocation
 
+// Note 3:
+// PrimitiveArray.helperClone can allocate memory with GC.malloc_atomic() because 
+// it will overwrite all data (no need to call llvm.memset)
+
+
+import native._
+import Intrinsics._
+
+@struct class ArrayHeader(val info: Ptr[_], val length: Int)
+
 %{
    primitiveTypes = ['Boolean', 'Char', 'Byte', 'Short',
             'Int', 'Long', 'Float', 'Double']
 }%
-
-import native._
-
-@struct class ArrayHeader(val info: Ptr[_], val length: Int)
 
 sealed abstract class Array[T]
     extends java.io.Serializable with java.lang.Cloneable {
@@ -24,7 +34,7 @@ sealed abstract class Array[T]
   def length: Int =
     // TODO: Update once we support ptr->field
     !(this.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]]
-
+    
   /** Loads element at i, throws IndexOutOfBoundsException. */
   def apply(i: Int): T
 
@@ -32,89 +42,137 @@ sealed abstract class Array[T]
   def update(i: Int, value: T): Unit
 
   /** Create a shallow of given array. */
-  protected override def clone(): Array[T] = undefined
+  protected override def clone(): Array[T] = undefined  
+}
+
+object Array {
+  def copy (from: AnyRef, fromPos: Int, to: AnyRef, toPos: Int, len: Int): Unit = {
+    if (from == null)
+      throw new NullPointerException()
+    
+    if (to == null)
+      throw new NullPointerException()
+    
+    val fromTypeId = instanceTypeId(from)
+    val toTypeId = instanceTypeId(to)
+    
+    val stride = if (fromTypeId == arrayObjectTypeId && toTypeId == arrayObjectTypeId)
+      sizeof[Object]
+    
+% for T in primitiveTypes:
+
+    else if (fromTypeId == array${T}TypeId && toTypeId == array${T}TypeId) 
+      sizeof[${T}]
+      
+% end
+
+    else
+      throw new ArrayStoreException ("Invalid array copy.")
+      
+    validateBoundaries (from.asInstanceOf[Array[_]], fromPos, to.asInstanceOf[Array[_]], toPos, len)
+    
+    val fromPtr: Ptr[Byte] = (from.cast[Ptr[Byte]] + sizeof[ArrayHeader] + stride * fromPos).cast[Ptr[Byte]]
+    
+    val toPtr: Ptr[Byte] = (to.cast[Ptr[Byte]] + sizeof[ArrayHeader] + stride * toPos).cast[Ptr[Byte]]
+        
+    `llvm.memmove.p0i8.p0i8.i64`(toPtr, fromPtr, stride * len, 1, false)
+  }
+  
+  // the id's chosen by the compiler/linker for differents types of array
+
+  val arrayObjectTypeId = typeId (typeof[scalanative.runtime.ObjectArray])
+  
+% for T in primitiveTypes:
+
+  val array${T}TypeId = typeId (typeof[scalanative.runtime.${T}Array])
+  
+% end  
+    
+  private def typeId (ptr : Ptr[Type]): Int = {
+    (!ptr).id    
+  }
+  
+  private def instanceTypeId (any : AnyRef): Int = {
+    typeId(runtime.getType(any))
+  }
+  
+  @inline private[runtime] def validateBoundaries (from: Array[_], fromPos: Int, to: Array[_], toPos: Int, len: Int): Unit = {
+    if (len < 0)
+      throw new IndexOutOfBoundsException("length is negative")
+
+    if (fromPos < 0 || fromPos + len > from.length)
+      throw new IndexOutOfBoundsException(fromPos.toString)
+
+    if (toPos < 0 || toPos + len > to.length)
+      throw new IndexOutOfBoundsException(toPos.toString)    
+  }
+  
+  @inline private[runtime] def pointerAt(arr: Array[_], sizeOneElement: CSize, i: Int): Ptr[_] = {
+    if (i < 0 || i >= arr.length)
+      throw new IndexOutOfBoundsException(i.toString)
+    else {
+      (arr.cast[Ptr[Byte]] + sizeof[ArrayHeader] + sizeOneElement * i).cast[Ptr[_]]
+    }
+  }
+  
+  @inline private[runtime] def helperClone(from: Array[_], length: Int, stride: CSize): Ptr[_] = {
+    val arrsize = sizeof[ArrayHeader] + stride * length
+    val arr = GC.malloc(arrsize)
+    `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]], from.cast[Ptr[Byte]], arrsize, 1, false)
+    arr        
+  }  
+  
+  def alloc(length: Int, arrinfo:  Ptr[Type], stride: CSize): Ptr[_] = {
+    val arrsize = sizeof[ArrayHeader] + stride * length
+    val arr = runtime.alloc(arrinfo, arrsize)
+    // set the length
+    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
+    arr        
+  } 
+}
+
+object PrimitiveArray {
+  @inline private[runtime] def helperClone(src: Array[_], length: Int, stride: CSize): Ptr[_] = {
+    val arrsize = sizeof[ArrayHeader] + stride * length
+    val arr = GC.malloc_atomic(arrsize)
+    `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]], src.cast[Ptr[Byte]], arrsize, 1, false)
+    arr
+  }
+  
+  def alloc(length: Int, arrinfo:  Ptr[Type], stride: CSize): Ptr[_] = {
+    val arrsize = sizeof[ArrayHeader] + stride * length
+    // Primitive arrays don't contain pointers 
+    val arr = runtime.allocAtomic(arrinfo, arrsize)
+    // set the length
+    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
+    arr        
+  }
 }
 
 final class ObjectArray private () extends Array[Object] {
-  def apply(i: Int): Object =
-    if (i < 0 || i >= length)
-      throw new IndexOutOfBoundsException(i.toString)
-    else {
-      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Object]]
-      headptr(i)
-    }
+  def apply(i: Int): Object = ! (Array.pointerAt(this, sizeof[Object], i).cast[Ptr[Object]])
 
-  def update(i: Int, value: Object): Unit =
-    if (i < 0 || i >= length)
-      throw new IndexOutOfBoundsException(i.toString)
-    else {
-      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[Object]]
-      headptr(i) = value
-    }
+  def update(i: Int, value: Object): Unit = ! (Array.pointerAt(this, sizeof[Object], i).cast[Ptr[Object]]) = value
 
-  protected override def clone(): ObjectArray = {
-    val newarr = ObjectArray.alloc(length)
-    ObjectArray.copy(this, 0, newarr, 0, length)
-    newarr
-  }
+  protected override def clone(): ObjectArray = Array.helperClone (this, length, sizeof[Object]).cast[ObjectArray]
 }
 
 object ObjectArray {
-  def copy(from: ObjectArray, fromPos: Int,
-           to: ObjectArray, toPos: Int, length: Int): Unit = {
-    ???
-  }
-
-  def alloc(length: Int): ObjectArray = {
-    val arrty = typeof[ObjectArray]
-    val arrsize = sizeof[ArrayHeader] + sizeof[Object] * length
-    val arr = runtime.alloc(arrty, arrsize)
-    // set the length
-    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length
-    arr.cast[ObjectArray]
-  }
+  def alloc(length: Int): ObjectArray = Array.alloc(length, typeof[ObjectArray], sizeof[Object]).cast[ObjectArray]
 }
 
 % for T in primitiveTypes:
 
 final class ${T}Array private () extends Array[${T}] {
-  def apply(i: Int): ${T} =
-    if (i < 0 || i >= length)
-      throw new IndexOutOfBoundsException(i.toString)
-    else {
-      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[${T}]]
-      headptr(i)
-    }
+  def apply(i: Int): ${T} = ! (Array.pointerAt(this, sizeof[${T}], i).cast[Ptr[${T}]])
 
-  def update(i: Int, value: ${T}): Unit =
-    if (i < 0 || i >= length)
-      throw new IndexOutOfBoundsException(i.toString)
-    else {
-      val headptr = (this.cast[Ptr[Byte]] + sizeof[ArrayHeader]).cast[Ptr[${T}]]
-      headptr(i) = value
-    }
+  def update(i: Int, value: ${T}): Unit = ! (Array.pointerAt(this, sizeof[${T}], i).cast[Ptr[${T}]]) = value
 
-  protected override def clone(): ${T}Array = {
-    val newarr = ${T}Array.alloc(length)
-    ${T}Array.copy(this, 0, newarr, 0, length)
-    newarr
-  }
+  protected override def clone(): ${T}Array = PrimitiveArray.helperClone (this, length, sizeof[${T}]).cast[${T}Array]
 }
 
 object ${T}Array {
-  def copy(from: ${T}Array, fromPos: Int,
-           to: ${T}Array, toPos: Int, length: Int): Unit = {
-    ???
-  }
-
-  def alloc(length: Int): ${T}Array = {
-    val arrty = typeof[${T}Array]
-    val arrsize = sizeof[ArrayHeader] + sizeof[${T}] * length
-    val arr = runtime.allocAtomic(arrty, arrsize)
-    // set the length
-    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length
-    arr.cast[${T}Array]
-  }
+  def alloc(length: Int): ${T}Array = PrimitiveArray.alloc(length, typeof[${T}Array], sizeof[${T}]).cast[${T}Array]  
 }
 
 % end

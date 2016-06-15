@@ -11,7 +11,10 @@ object System {
                 srcPos: scala.Int,
                 dest: Object,
                 destPos: scala.Int,
-                length: scala.Int): Unit = ???
+                length: scala.Int): Unit = {
+    scalanative.runtime.Array.copy(src, srcPos, dest, destPos, length)
+  }
+
   def identityHashCode(x: Object): scala.Int =
     x.cast[Word].hashCode
   def getenv(name: String): String                      = ???
