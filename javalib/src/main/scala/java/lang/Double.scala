@@ -3,23 +3,34 @@ package java.lang
 final class Double(val doubleValue: scala.Double)
     extends Number
     with Comparable[Double] {
-  def this(s: String) = this(Double.parseDouble(s))
+  def this(s: _String) =
+    this(Double.parseDouble(s))
 
-  @inline override def byteValue(): scala.Byte   = doubleValue.toByte
-  @inline override def shortValue(): scala.Short = doubleValue.toShort
-  @inline def intValue(): scala.Int              = doubleValue.toInt
-  @inline def longValue(): scala.Long            = doubleValue.toLong
-  @inline def floatValue(): scala.Float          = doubleValue.toFloat
+  @inline override def byteValue(): scala.Byte =
+    doubleValue.toByte
 
-  override def equals(that: Any): scala.Boolean = that match {
-    case that: Double =>
-      val a = doubleValue
-      val b = that.doubleValue
-      (a == b) || (Double.isNaN(a) && Double.isNaN(b))
+  @inline override def shortValue(): scala.Short =
+    doubleValue.toShort
 
-    case _ =>
-      false
-  }
+  @inline def intValue(): scala.Int =
+    doubleValue.toInt
+
+  @inline def longValue(): scala.Long =
+    doubleValue.toLong
+
+  @inline def floatValue(): scala.Float =
+    doubleValue.toFloat
+
+  override def equals(that: Any): scala.Boolean =
+    that match {
+      case that: Double =>
+        val a = doubleValue
+        val b = that.doubleValue
+        (a == b) || (Double.isNaN(a) && Double.isNaN(b))
+
+      case _ =>
+        false
+    }
 
   @inline override def hashCode(): Int =
     Double.hashCode(doubleValue)
@@ -48,30 +59,135 @@ object Double {
   final val MIN_EXPONENT      = -1022
   final val SIZE              = 64
 
-  @inline def valueOf(doubleValue: scala.Double): Double =
-    new Double(doubleValue)
+  @inline def compare(x: scala.Double, y: scala.Double): scala.Int =
+    if (x > y) 1
+    else if (x < y) -1
+    else if (x == y && 0.0d != x) 0
+    else {
+      if (isNaN(x)) {
+        if (isNaN(y)) 0
+        else 1
+      } else if (isNaN(y)) {
+        -1
+      } else {
+        val d1 = doubleToRawLongBits(x)
+        val d2 = doubleToRawLongBits(y)
+        ((d1 >> 63) - (d2 >> 63)).toInt
+      }
+    }
 
-  @inline def valueOf(s: String): Double = valueOf(parseDouble(s))
+  @inline def doubleToLongBits(value: scala.Double): scala.Long =
+    if (value != value) 0x7ff8000000000000L
+    else doubleToRawLongBits(value)
 
-  def parseDouble(s: String): scala.Double = ???
+  @inline def doubleToRawLongBits(value: scala.Double): scala.Long =
+    value.asInstanceOf[scala.Long]
 
-  @inline def toString(d: scala.Double): String =
-    "" + d
+  @inline def hashCode(value: scala.Double): scala.Int = {
+    val v = doubleToLongBits(value)
+    (v ^ (v >>> 32)).toInt
+  }
 
-  def compare(a: scala.Double, b: scala.Double): scala.Int = ???
-
-  @inline def isNaN(v: scala.Double): scala.Boolean =
-    v != v
+  def isFinite(d: scala.Double): scala.Boolean =
+    !isInfinite(d)
 
   @inline def isInfinite(v: scala.Double): scala.Boolean =
     v == POSITIVE_INFINITY || v == NEGATIVE_INFINITY
 
-  @inline def longBitsToDouble(bits: scala.Long): scala.Double =
-    ???
+  @inline def isNaN(v: scala.Double): scala.Boolean =
+    v != v
 
-  @inline def doubleToLongBits(value: scala.Double): scala.Long =
-    ???
+  @inline def longBitsToDouble(value: scala.Long): scala.Double =
+    value.asInstanceOf[scala.Double]
 
-  @inline def hashCode(value: scala.Double): scala.Int =
-    ???
+  @inline def max(a: scala.Double, b: scala.Double): scala.Double =
+    Math.max(a, b)
+
+  @inline def min(a: scala.Double, b: scala.Double): scala.Double =
+    Math.min(a, b)
+
+  @inline def parseDouble(s: _String): scala.Double =
+    NumberParser.parseDouble(s)
+
+  @inline def sum(a: scala.Double, b: scala.Double): scala.Double =
+    a + b
+
+  def toHexString(d: scala.Double): _String = {
+    if (d != d) {
+      "NaN"
+    } else if (d == POSITIVE_INFINITY) {
+      "Infinity"
+    } else if (d == NEGATIVE_INFINITY) {
+      "-Infinity"
+    } else {
+      val bitValue = doubleToLongBits(d)
+      val negative = (bitValue & 0x8000000000000000L) != 0
+      val exponent = (bitValue & 0x7FF0000000000000L) >>> 52
+      var significand = bitValue & 0x000FFFFFFFFFFFFFL
+      if (exponent == 0 && significand == 0) {
+        if (negative) "-0x0.0p0"
+        else "0x0.0p0"
+      } else {
+        val hexString = new java.lang.StringBuilder(24)
+
+        if (negative) {
+          hexString.append("-0x")
+        } else {
+          hexString.append("0x")
+        }
+
+        if (exponent == 0) {
+          hexString.append("0.")
+          var fractionDigits = 13
+          while ((significand != 0) && ((significand & 0xF) == 0)) {
+            significand >>>= 4
+            fractionDigits -= 1
+          }
+
+          val hexSignificand = java.lang.Long.toHexString(significand)
+          if (significand != 0 && fractionDigits > hexSignificand.length) {
+            var digitDiff = fractionDigits - hexSignificand.length - 1
+            while (digitDiff != 0) {
+              hexString.append('0')
+              digitDiff -= 1
+            }
+          }
+
+          hexString.append(hexSignificand)
+          hexString.append("p-1022")
+        } else {
+          hexString.append("1.")
+          var fractionDigits = 13
+          while ((significand != 0) && ((significand & 0xF) == 0)) {
+            significand >>>= 4
+            fractionDigits -= 1
+          }
+
+          val hexSignificand = java.lang.Long.toHexString(significand)
+          if (significand != 0 && fractionDigits > hexSignificand.length) {
+            var digitDiff = fractionDigits - hexSignificand.length - 1
+            while (digitDiff != 0) {
+              hexString.append('0')
+              digitDiff -= 1
+            }
+          }
+
+          hexString.append(hexSignificand)
+          hexString.append('p')
+          hexString.append(Long.toString(exponent - 1023))
+        }
+
+        hexString.toString
+      }
+    }
+  }
+
+  @inline def toString(d: scala.Double): _String =
+    NumberConverter.convert(d)
+
+  @inline def valueOf(d: scala.Double): Double =
+    new Double(d)
+
+  @inline def valueOf(s: _String): Double =
+    valueOf(parseDouble(s))
 }
