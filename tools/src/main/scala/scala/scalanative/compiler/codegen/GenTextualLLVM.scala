@@ -2,7 +2,7 @@ package scala.scalanative
 package compiler
 package codegen
 
-import java.lang.{Integer => JInt, Long => JLong, Float => JFloat, Double => JDouble}
+import java.{lang => jl}
 import scala.collection.mutable
 import util.{unsupported, unreachable, sh, Show}
 import util.Show.{Sequence => s, Indent => i, Unindent => ui, Repeat => r, Newline => nl}
@@ -156,8 +156,8 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
     case Val.I16(v)        => v.toString
     case Val.I32(v)        => v.toString
     case Val.I64(v)        => v.toString
-    case Val.F32(v)        => v.toString
-    case Val.F64(v)        => v.toString
+    case Val.F32(v)        => llvmFloatHex(v)
+    case Val.F64(v)        => llvmDoubleHex(v)
     case Val.Struct(_, vs) => sh"{ ${r(vs, sep = ", ")} }"
     case Val.Array(_, vs)  => sh"[ ${r(vs, sep = ", ")} ]"
     case Val.Chars(v)      => s("c\"", v, "\\00", "\"")
@@ -165,6 +165,12 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
     case Val.Global(n, ty) => sh"bitcast (${globals(n)}* @$n to i8*)"
     case _                 => unsupported(v)
   }
+
+  def llvmFloatHex(value: Float): String =
+    "0x" + jl.Long.toHexString(jl.Double.doubleToRawLongBits(value.toDouble))
+
+  def llvmDoubleHex(value: Double): String =
+    "0x" + jl.Long.toHexString(jl.Double.doubleToRawLongBits(value))
 
   implicit val showVal: Show[Val] = Show { v =>
     val justv = justVal(v)

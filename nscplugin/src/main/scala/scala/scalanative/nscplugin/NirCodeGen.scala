@@ -411,6 +411,7 @@ abstract class NirCodeGen
       (body finish Cf.Ret(body.value)).blocks
     }
 
+    var indent = 0
     def genExpr(tree: Tree, focus: Focus): Focus = notMergeableGuard {
       tree match {
         case ValTree(value) =>
@@ -632,13 +633,16 @@ abstract class NirCodeGen
               curEnv.enter(sym, cast.value)
               cast
             }.getOrElse(focus)
-            val begin =
-              enter withOp Op.Call(Rt.beginCatchSig,
-                                   Rt.beginCatch,
-                                   Seq(excwrap.value))
-            val res = genExpr(body, begin)
-            val end = res withOp Op.Call(Rt.endCatchSig, Rt.endCatch, Seq())
-            end withValue res.value
+
+            notMergeableGuard {
+              val begin =
+                enter withOp Op.Call(Rt.beginCatchSig,
+                                     Rt.beginCatch,
+                                     Seq(excwrap.value))
+              val res = genExpr(body, begin)
+              val end = res withOp Op.Call(Rt.endCatchSig, Rt.endCatch, Seq())
+              end withValue res.value
+            }
           }
 
           (excty, f)
