@@ -63,6 +63,9 @@ abstract class NirPrimitives {
   def isPtrOp(code: Int): Boolean =
     code >= PTR_LOAD && code <= PTR_UPDATE
 
+  def isFunPtrOp(code: Int): Boolean =
+    code == FUN_PTR_CALL || code == FUN_PTR_FROM
+
   private val nirPrimitives = mutable.Map.empty[Symbol, Int]
 
   private def initWithPrimitives(addPrimitive: (Symbol, Int) => Unit): Unit = {
