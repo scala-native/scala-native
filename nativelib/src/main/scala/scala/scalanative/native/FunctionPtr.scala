@@ -553,20 +553,20 @@ object FunctionPtr {
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/FunctionPtr.scala.gyb", line: 25)
 
-final class FunctionPtr0[R] {
+final class FunctionPtr0[R] extends FunctionPtr {
   def apply()(implicit ct1: ClassTag[R]): R = undefined
 }
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/FunctionPtr.scala.gyb", line: 25)
 
-final class FunctionPtr1[T1, R] {
+final class FunctionPtr1[T1, R] extends FunctionPtr {
   def apply(arg1: T1)(implicit ct1: ClassTag[T1], ct2: ClassTag[R]): R =
     undefined
 }
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/FunctionPtr.scala.gyb", line: 25)
 
-final class FunctionPtr2[T1, T2, R] {
+final class FunctionPtr2[T1, T2, R] extends FunctionPtr {
   def apply(arg1: T1, arg2: T2)(
       implicit ct1: ClassTag[T1], ct2: ClassTag[T2], ct3: ClassTag[R]): R =
     undefined
@@ -574,7 +574,7 @@ final class FunctionPtr2[T1, T2, R] {
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/FunctionPtr.scala.gyb", line: 25)
 
-final class FunctionPtr3[T1, T2, T3, R] {
+final class FunctionPtr3[T1, T2, T3, R] extends FunctionPtr {
   def apply(arg1: T1, arg2: T2, arg3: T3)(implicit ct1: ClassTag[T1],
                                           ct2: ClassTag[T2],
                                           ct3: ClassTag[T3],
@@ -583,7 +583,7 @@ final class FunctionPtr3[T1, T2, T3, R] {
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/FunctionPtr.scala.gyb", line: 25)
 
-final class FunctionPtr4[T1, T2, T3, T4, R] {
+final class FunctionPtr4[T1, T2, T3, T4, R] extends FunctionPtr {
   def apply(arg1: T1, arg2: T2, arg3: T3, arg4: T4)(implicit ct1: ClassTag[T1],
                                                     ct2: ClassTag[T2],
                                                     ct3: ClassTag[T3],
@@ -594,7 +594,7 @@ final class FunctionPtr4[T1, T2, T3, T4, R] {
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/FunctionPtr.scala.gyb", line: 25)
 
-final class FunctionPtr5[T1, T2, T3, T4, T5, R] {
+final class FunctionPtr5[T1, T2, T3, T4, T5, R] extends FunctionPtr {
   def apply(arg1: T1, arg2: T2, arg3: T3, arg4: T4, arg5: T5)(
       implicit ct1: ClassTag[T1],
       ct2: ClassTag[T2],
@@ -606,7 +606,7 @@ final class FunctionPtr5[T1, T2, T3, T4, T5, R] {
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/FunctionPtr.scala.gyb", line: 25)
 
-final class FunctionPtr6[T1, T2, T3, T4, T5, T6, R] {
+final class FunctionPtr6[T1, T2, T3, T4, T5, T6, R] extends FunctionPtr {
   def apply(arg1: T1, arg2: T2, arg3: T3, arg4: T4, arg5: T5, arg6: T6)(
       implicit ct1: ClassTag[T1],
       ct2: ClassTag[T2],
@@ -619,7 +619,7 @@ final class FunctionPtr6[T1, T2, T3, T4, T5, T6, R] {
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/FunctionPtr.scala.gyb", line: 25)
 
-final class FunctionPtr7[T1, T2, T3, T4, T5, T6, T7, R] {
+final class FunctionPtr7[T1, T2, T3, T4, T5, T6, T7, R] extends FunctionPtr {
   def apply(
       arg1: T1, arg2: T2, arg3: T3, arg4: T4, arg5: T5, arg6: T6, arg7: T7)(
       implicit ct1: ClassTag[T1],
@@ -634,7 +634,8 @@ final class FunctionPtr7[T1, T2, T3, T4, T5, T6, T7, R] {
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/FunctionPtr.scala.gyb", line: 25)
 
-final class FunctionPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R] {
+final class FunctionPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R]
+    extends FunctionPtr {
   def apply(arg1: T1,
             arg2: T2,
             arg3: T3,
@@ -655,7 +656,8 @@ final class FunctionPtr8[T1, T2, T3, T4, T5, T6, T7, T8, R] {
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/FunctionPtr.scala.gyb", line: 25)
 
-final class FunctionPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R] {
+final class FunctionPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R]
+    extends FunctionPtr {
   def apply(arg1: T1,
             arg2: T2,
             arg3: T3,
@@ -678,7 +680,8 @@ final class FunctionPtr9[T1, T2, T3, T4, T5, T6, T7, T8, T9, R] {
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/FunctionPtr.scala.gyb", line: 25)
 
-final class FunctionPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R] {
+final class FunctionPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R]
+    extends FunctionPtr {
   def apply(arg1: T1,
             arg2: T2,
             arg3: T3,
@@ -703,7 +706,8 @@ final class FunctionPtr10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R] {
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/FunctionPtr.scala.gyb", line: 25)
 
-final class FunctionPtr11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R] {
+final class FunctionPtr11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R]
+    extends FunctionPtr {
   def apply(arg1: T1,
             arg2: T2,
             arg3: T3,
@@ -730,7 +734,8 @@ final class FunctionPtr11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R] {
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/FunctionPtr.scala.gyb", line: 25)
 
-final class FunctionPtr12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R] {
+final class FunctionPtr12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R]
+    extends FunctionPtr {
   def apply(arg1: T1,
             arg2: T2,
             arg3: T3,
@@ -760,7 +765,8 @@ final class FunctionPtr12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R] 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/FunctionPtr.scala.gyb", line: 25)
 
 final class FunctionPtr13[
-    T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, R] {
+    T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, R]
+    extends FunctionPtr {
   def apply(arg1: T1,
             arg2: T2,
             arg3: T3,
@@ -792,7 +798,8 @@ final class FunctionPtr13[
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/FunctionPtr.scala.gyb", line: 25)
 
 final class FunctionPtr14[
-    T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, R] {
+    T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, R]
+    extends FunctionPtr {
   def apply(arg1: T1,
             arg2: T2,
             arg3: T3,
@@ -826,7 +833,8 @@ final class FunctionPtr14[
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/FunctionPtr.scala.gyb", line: 25)
 
 final class FunctionPtr15[
-    T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, R] {
+    T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, R]
+    extends FunctionPtr {
   def apply(arg1: T1,
             arg2: T2,
             arg3: T3,
@@ -862,7 +870,8 @@ final class FunctionPtr15[
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/FunctionPtr.scala.gyb", line: 25)
 
 final class FunctionPtr16[
-    T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, R] {
+    T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, R]
+    extends FunctionPtr {
   def apply(arg1: T1,
             arg2: T2,
             arg3: T3,
@@ -916,7 +925,8 @@ final class FunctionPtr17[T1,
                           T15,
                           T16,
                           T17,
-                          R] {
+                          R]
+    extends FunctionPtr {
   def apply(arg1: T1,
             arg2: T2,
             arg3: T3,
@@ -973,7 +983,8 @@ final class FunctionPtr18[T1,
                           T16,
                           T17,
                           T18,
-                          R] {
+                          R]
+    extends FunctionPtr {
   def apply(arg1: T1,
             arg2: T2,
             arg3: T3,
@@ -1033,7 +1044,8 @@ final class FunctionPtr19[T1,
                           T17,
                           T18,
                           T19,
-                          R] {
+                          R]
+    extends FunctionPtr {
   def apply(arg1: T1,
             arg2: T2,
             arg3: T3,
@@ -1096,7 +1108,8 @@ final class FunctionPtr20[T1,
                           T18,
                           T19,
                           T20,
-                          R] {
+                          R]
+    extends FunctionPtr {
   def apply(arg1: T1,
             arg2: T2,
             arg3: T3,
@@ -1162,7 +1175,8 @@ final class FunctionPtr21[T1,
                           T19,
                           T20,
                           T21,
-                          R] {
+                          R]
+    extends FunctionPtr {
   def apply(arg1: T1,
             arg2: T2,
             arg3: T3,
@@ -1231,7 +1245,8 @@ final class FunctionPtr22[T1,
                           T20,
                           T21,
                           T22,
-                          R] {
+                          R]
+    extends FunctionPtr {
   def apply(arg1: T1,
             arg2: T2,
             arg3: T3,

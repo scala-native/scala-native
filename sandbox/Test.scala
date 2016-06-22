@@ -1,4 +1,4 @@
-import scalanative.native._, FunctionPtr._
+import scalanative.native._
 import scalanative.libc.stdlib._
 
 @extern
