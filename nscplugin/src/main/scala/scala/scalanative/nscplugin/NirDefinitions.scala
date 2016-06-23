@@ -48,6 +48,16 @@ trait NirDefinitions { self: NirGlobalAddons =>
         "scala.scalanative.native.package$CCast")
     lazy val CCastMethod = getDecl(CCastClass, TermName("cast"))
 
+    lazy val FunctionPtr = (0 to 22).map { n =>
+      getRequiredClass("scala.scalanative.native.FunctionPtr" + n)
+    }
+    lazy val FunctionPtrApply = FunctionPtr.map(getDecl(_, TermName("apply")))
+    lazy val FunctionPtrModule = getRequiredModule(
+        "scala.scalanative.native.FunctionPtr")
+    lazy val FunctionPtrFrom = (0 to 22).map { n =>
+      getDecl(FunctionPtrModule, TermName("fromFunction" + n))
+    }
+
     // Native runtime
 
     lazy val RuntimeMonitorClass = getRequiredClass(

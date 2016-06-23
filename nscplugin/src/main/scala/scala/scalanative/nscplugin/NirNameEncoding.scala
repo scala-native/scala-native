@@ -10,6 +10,9 @@ trait NirNameEncoding { self: NirCodeGen =>
   import global.{Name => _, _}, definitions._
   import nirAddons.nirDefinitions._
 
+  def genAnonName(owner: Symbol, anon: Symbol) =
+    genName(owner) member anon.fullName.toString tag "extern"
+
   def genName(sym: Symbol): nir.Global =
     if (sym.isType) genTypeName(sym)
     else if (sym.isMethod) genMethodName(sym)

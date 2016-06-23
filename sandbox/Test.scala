@@ -1,11 +1,15 @@
 import scalanative.native._
 import scalanative.libc.stdlib._
 
+@extern
+object atexit {
+  @name("atexit")
+  def apply(f: FunctionPtr0[Unit]): Unit = extern
+}
+
 object Test {
   def main(args: Array[String]): Unit = {
-    val p = (n: CString) => {
-      fprintf(stderr, c"Hello %s!\n", n)
-    }
-    p(c"World")
+    atexit { () => fprintf(stdout, c"first\n"); () }
+    atexit { () => fprintf(stdout, c"second\n"); () }
   }
 }
