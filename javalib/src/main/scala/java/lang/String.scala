@@ -796,8 +796,8 @@ object _String {
   }
 
   import scala.language.implicitConversions
-  @inline private implicit def _string2string(s: _String): String =
+  @inline private[java] implicit def _string2string(s: _String): String =
     s.asInstanceOf[String]
-  @inline private implicit def string2_string(s: String): _String =
+  @inline private[java] implicit def string2_string(s: String): _String =
     s.asInstanceOf[_String]
 }
