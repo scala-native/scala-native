@@ -1,11 +1,4 @@
-import scalanative.native._
-import scalanative.libc.stdlib._
-
-@extern
-object atexit {
-  @name("atexit")
-  def apply(f: FunctionPtr0[Unit]): Unit = extern
-}
+import scalanative.native._, stdlib._, stdio._
 
 object Test {
   def main(args: Array[String]): Unit = {

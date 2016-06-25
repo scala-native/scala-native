@@ -1,7 +1,5 @@
 package scala.scalanative
-package libc
-
-import native._
+package native
 
 @extern
 object ctype {
