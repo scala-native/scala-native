@@ -1166,7 +1166,7 @@ abstract class NirCodeGen
       case (ty1, ty2) if ty1 == ty2 =>
         ty1
       case _ =>
-        abort(s"can't perform binary opeation between $lty and $rty")
+        abort(s"can't perform binary operation between $lty and $rty")
     }
 
     def genStringConcat(leftp: Tree, rightp: Tree, focus: Focus): Focus = {
