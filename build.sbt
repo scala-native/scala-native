@@ -8,6 +8,7 @@ val libScalaVersion  = "2.11.8"
 lazy val baseSettings = Seq(
   organization := "org.scala-native",
   version      := nativeVersion,
+  sources in doc in Compile := Nil,  // doc generation currently broken
   scalafmtConfig := Some(file(".scalafmt"))
 )
 
