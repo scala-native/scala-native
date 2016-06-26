@@ -26,13 +26,6 @@ object stdlib {
   def system(command: CString): CInt = extern
   def getenv(name: CString): CString = extern
 
-  // Signals
-
-  def signal(
-      sig: CInt, handler: FunctionPtr1[CInt, Unit]): FunctionPtr1[CInt, Unit] =
-    extern
-  def raise(sig: CInt): CInt = extern
-
   // Pseudo-random number generation
 
   def rand(): CInt                    = extern
@@ -57,7 +50,6 @@ object stdlib {
 
   // Types
 
-  @struct class sig_atomic_t private ()
   @struct class jmp_buf private ()
 
   // Macros
@@ -66,24 +58,6 @@ object stdlib {
   def EXIT_SUCCESS: CInt = extern
   @name("scalanative_libc_exit_failure")
   def EXIT_FAILURE: CInt = extern
-  @name("scalanative_libc_sig_dfl")
-  def SIG_DFL: FunctionPtr1[CInt, Unit] = extern
-  @name("scalanative_libc_sig_ign")
-  def SIG_IGN: FunctionPtr1[CInt, Unit] = extern
-  @name("scalanative_libc_sig_err")
-  def SIG_ERR: FunctionPtr1[CInt, Unit] = extern
-  @name("scalanative_libc_sigabrt")
-  def SIGABRT: CInt = extern
-  @name("scalanative_libc_sigfpe")
-  def SIGFPE: CInt = extern
-  @name("scalanative_libc_sigill")
-  def SIGILL: CInt = extern
-  @name("scalanative_libc_sigint")
-  def SIGINT: CInt = extern
-  @name("scalanative_libc_sigsegv")
-  def SIGSEGV: CInt = extern
-  @name("scalanative_libc_sigterm")
-  def SIGTERM: CInt = extern
   @name("scalanative_libc_rand_max")
   def RAND_MAX: CInt = extern
 }
