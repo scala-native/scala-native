@@ -14,5 +14,5 @@ private[niocharset] object UTF_16LE
     extends UTF_16_Common(
         // scalastyle:ignore
         "UTF-16LE",
-        Array("UnicodeLittleUnmarked", "UTF_16LE", "X-UTF-16LE"),
+        "UnicodeLittleUnmarked" :: "UTF_16LE" :: "X-UTF-16LE" :: Nil,
         endianness = UTF_16_Common.LittleEndian)
