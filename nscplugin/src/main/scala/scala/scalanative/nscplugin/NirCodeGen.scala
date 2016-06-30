@@ -81,7 +81,7 @@ abstract class NirCodeGen
     private val curMethodSym  = new util.ScopedVar[Symbol]
     private val curMethodInfo = new util.ScopedVar[CollectMethodInfo]
     private val curMethodEnv  = new util.ScopedVar[MethodEnv]
-    private val curMethodThis = new util.ScopedVar[Val]
+    private val curMethodThis = new util.ScopedVar[Option[Val]]
 
     private val lazyAnonDefs = mutable.Map.empty[Symbol, ClassDef]
 
@@ -443,12 +443,12 @@ abstract class NirCodeGen
                           nir.Cf.Ret(nir.Val.Unit))
             )
 
-          case _ if isStatic =>
-            genExpr(bodyp, Focus.entry(params)(curMethodEnv.fresh))
-
           case _ =>
             scoped(
-                curMethodThis := Val.Local(params.head.name, params.head.ty)
+                curMethodThis := {
+                  if (isStatic) None
+                  else Some(Val.Local(params.head.name, params.head.ty))
+                }
             ) {
               genExpr(bodyp, Focus.entry(params)(curMethodEnv.fresh))
             }
@@ -508,8 +508,8 @@ abstract class NirCodeGen
           genApplyDynamic(app, focus)
 
         case This(qual) =>
-          if (tree.symbol == curClassSym.get)
-            focus withValue curMethodThis.get
+          if (curMethodThis.nonEmpty && tree.symbol == curClassSym.get)
+            focus withValue curMethodThis.get.get
           else
             genModule(tree.symbol, focus)
 
@@ -549,7 +549,7 @@ abstract class NirCodeGen
           genBlock(block, focus)
 
         case Typed(Super(_, _), _) =>
-          focus.withValue(curMethodThis)
+          focus.withValue(curMethodThis.get.get)
 
         case Typed(expr, _) =>
           genExpr(expr, focus)
@@ -769,14 +769,13 @@ abstract class NirCodeGen
         case (focus, values) =>
           focus.branchBlock(local, params, values)
       }
+      val newThis = if (hijackThis) Some(params.head) else curMethodThis.get
 
-      if (hijackThis)
-        scoped(
-            curMethodThis := params.head
-        ) {
-          genExpr(label.rhs, entry)
-        } else
+      scoped(
+          curMethodThis := newThis
+      ) {
         genExpr(label.rhs, entry)
+      }
     }
 
     def genArrayValue(av: ArrayValue, focus: Focus): Focus = {
@@ -861,8 +860,11 @@ abstract class NirCodeGen
         case _: TypeApply =>
           genApplyTypeApply(app, focus)
         case Select(Super(_, _), _) =>
-          genMethodCall(
-              fun.symbol, statically = true, curMethodThis.get, args, focus)
+          genMethodCall(fun.symbol,
+                        statically = true,
+                        curMethodThis.get.get,
+                        args,
+                        focus)
         case Select(New(_), nme.CONSTRUCTOR) =>
           genApplyNew(app, focus)
         case _ =>
