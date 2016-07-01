@@ -37,8 +37,15 @@ lazy val publishSettings = Seq(
     val snapshot = version.value.trim.endsWith("SNAPSHOT")
 
     (travis, pr, branch, snapshot) match {
-      case (true, false, "master", true) => publish
-      case _                             => Def.task ()
+      case (true, false, "master", true) =>
+        println("on master, ready to publish")
+        publish
+
+      case _ =>
+        println("not on master due to: " +
+                s"travis = $travis, pr = $pr, " +
+                s"branch = $branch, snapshot = $snapshot")
+        Def.task ()
     }
   },
 
@@ -49,6 +56,7 @@ lazy val publishSettings = Seq(
       user     <- sys.env.get("MAVEN_USER")
       password <- sys.env.get("MAVEN_PASSWORD")
     } yield {
+      println("got credentials from environment variables")
       Credentials(realm, domain, user, password)
     }
   }.toList,
