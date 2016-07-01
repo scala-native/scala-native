@@ -30,7 +30,9 @@ lazy val publishSettings = Seq(
       Some("releases" at nexus + "service/local/staging/deploy/maven2")
   },
 
-  publishIfOnMaster := Def.taskDyn {
+  publishIfOnMaster := {
+    println("attempting publish if on master")
+
     val travis   = Try(sys.env("TRAVIS")).getOrElse("false") == "true"
     val pr       = Try(sys.env("TRAVIS_PULL_REQUEST")).getOrElse("false") != "false"
     val branch   = Try(sys.env("TRAVIS_BRANCH")).getOrElse("")
@@ -39,32 +41,45 @@ lazy val publishSettings = Seq(
     (travis, pr, branch, snapshot) match {
       case (true, false, "master", true) =>
         println("on master, ready to publish")
-        publish
+        publish.value
 
       case _ =>
         println("not on master due to: " +
                 s"travis = $travis, pr = $pr, " +
                 s"branch = $branch, snapshot = $snapshot")
-        Def.task ()
+        ()
     }
   },
 
   credentials ++= {
-    for {
-      realm    <- sys.env.get("MAVEN_REALM")
-      domain   <- sys.env.get("MAVEN_DOMAIN")
-      user     <- sys.env.get("MAVEN_USER")
-      password <- sys.env.get("MAVEN_PASSWORD")
-    } yield {
-      println("got credentials from environment variables")
-      Credentials(realm, domain, user, password)
+    val lst = {
+      for {
+        realm    <- sys.env.get("MAVEN_REALM")
+        domain   <- sys.env.get("MAVEN_DOMAIN")
+        user     <- sys.env.get("MAVEN_USER")
+        password <- sys.env.get("MAVEN_PASSWORD")
+      } yield {
+        println("got credentials from environment variables")
+        Credentials(realm, domain, user, password)
+      }
+    }.toList
+    if (lst.isEmpty) {
+      val hasRealm  = sys.env.contains("MAVEN_REALM")
+      val hasDomain = sys.env.contains("MAVEN_DOMAIN")
+      val hasUser   = sys.env.contains("MAVEN_USER")
+      val hasPass   = sys.env.contains("MAVEN_PASSWORD")
+
+      println("couldn't get some credentials: " +
+              s"realm = $hasRealm, domain = $hasDomain, " +
+              s"user = $hasUser, pass = $hasPass")
     }
-  }.toList,
+    lst
+  },
 
   pomIncludeRepository := { x => false },
   pomExtra := (
     <url>https://github.com/scala-native/scala-native</url>
-    <inceptionYear>2014</inceptionYear>
+    <inceptionYear>2015</inceptionYear>
     <licenses>
       <license>
         <name>BSD-like</name>
@@ -95,7 +110,9 @@ lazy val noPublishSettings = Seq(
   packagedArtifacts := Map.empty,
   publish := {},
   publishLocal := {},
-  publishIfOnMaster := {}
+  publishIfOnMaster := {
+    println("no publish")
+  }
 )
 
 lazy val toolSettings =
