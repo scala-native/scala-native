@@ -7,6 +7,12 @@ scala:
 cache:
   directories:
     - $HOME/.ivy2/cache
+env:
+  global:
+    - MAVEN_REALM="Sonatype Nexus Repository Manager"
+    - MAVEN_DOMAIN="oss.sonatype.org"
+    - secure: "dCNET+eP7i774tNQk+fpZer8rYRr+ooW4bX/+nSzIE/fX5WfbPMR/of8uOLzbjE9euzVph56+THLqWDVhXdgEQN98zwfyXRJ3410DXwOzDRdu1j/9Yg32q9z0U2MReOu2jNUjYlK63p4q84ac1X6Fk79yBt23rhwKYmCVsk+quzpTbrIK1/0kGbrdb+k6Vduries3Yk7mPkkq7G+XfDZs7gjDD3U6RuDFqcVgGkTvB8bDw4IZv/eCBT3j/OH7ltAh3laMH008yJu4fdkZReIoMkZJIkQ6Q7d8jqStPHHBL2BxZHsnctcJ2UCBsZNH4MF39er7FScjK/kfXLQeStU+lSGqAgpLdfvQOXp4WZqCAMSfMAWiY1hOW9J8ckJs24gBenhOqtR8J77im+b7u7EVnXPolsYVClRDr4pfsrjWBZ7WXbQCSuim3jnrcZwzHFXAsOS7L0c7B7wVJ00oJUHpCwWagbK1cH6b2Es6lABG3w6CTWEIzXPBwfvUA3Xq7hmwsBZTG2g7al1k5cXJJ4/5Hz6FDPhCeHBEi1tsWg5DPjuC6rKF6KDWXbNzn1L7PHb+09vPwKRL7q+4Vaffmmq3VB3XNNfyPNbYrOAPjPFxy+woYu+3VcbktP41ZD9vFEkiyrpaae1rmTjlukZ05T4CvaB03LoVctDuJYDiY50xjU="
+    - secure: "jsL2owEC2Wh/RWLFFXRWXlE6jaKKpnMbQXqYNKIurKlmHJcliMt7jGveOQYXhCzijYw/6e0uf+rY0kgK7j0y+/i+JTO90kMrbgIC+YNYrx6Yskup9gp0h6gctuGr5Rf8OeQ1xOl2ap0KTQR7PiRxg4RzTINocNAJ2zL+hzJ0L/mW3OdkqEhryUQtPT2uzgfNSnLGz7UNw4H3Fm0ZyC8jZB+cpvE0pN+9OEtwogL9WOG5VhP/X/QqhvLvnDIvcIIXA2nDoeVbnsQkEFl9vluHMqr4qPZW2AWBWVFB3SoJamesclBm3v7m0Gz5fV5qZNr6MNDfiNl4o0o3LBcikQxlbKbOwzNKxbzMH9VSdN+8G9gVd4JFvL+hrz2kMpjiaewKzg7S8ks0DR11OcZNzXfmhYVVmMrhBhJ6xgVECCjbcLoxT4QPysmp9Ke6tfUkbjb1GHe3TKnXXz+yeUFZuV5hf2/IR+7/pWkspql1hBbraYLcZ4Zp++MNzuI9iRxWBZb6YPscIAUqP6QBXGedXeWTeFPOiWmDydrr0dNVyUlNiG9qFLdv5wAeDrmI8zL6dozWhbNmEtviOUpPYZbXa4XbH0M95A8qGnFFrRXmDEUgAXNjGwV04hu/6DGtNnDNIQoZSnv85litT7fGPrkvHhCT1EaO/fv0//We7VGBcUkh7mI="
 before_script:
   - brew update
   - brew install sbt
@@ -31,4 +37,4 @@ before_script:
     fi;
 script:
   - java -version
-  - sbt 'rtlib/publishLocal' 'nscplugin/publishLocal' 'compile' 'sandbox/run' 'demoNative/run' 'scalafmtTest'
+  - sbt 'rtlib/publishLocal' 'nscplugin/publishLocal' 'compile' 'sandbox/run' 'demoNative/run' 'scalafmtTest' 'publishIfOnMaster'

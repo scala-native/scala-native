@@ -1,3 +1,4 @@
+import scala.util.Try
 import scala.scalanative.sbtplugin.{ScalaNativePlugin, ScalaNativePluginInternal}
 import ScalaNativePlugin.autoImport._
 
@@ -8,8 +9,85 @@ val libScalaVersion  = "2.11.8"
 lazy val baseSettings = Seq(
   organization := "org.scala-native",
   version      := nativeVersion,
+
   sources in doc in Compile := Nil,  // doc generation currently broken
+
   scalafmtConfig := Some(file(".scalafmt"))
+)
+
+val publishIfOnMaster = taskKey[Unit](
+  "Publish snapshot to sonatype on every commit to master.")
+
+lazy val publishSettings = Seq(
+  publishArtifact in Compile := true,
+  publishArtifact in Test := false,
+  publishMavenStyle := true,
+  publishTo <<= version { v: String =>
+    val nexus = "https://oss.sonatype.org/"
+    if (v.trim.endsWith("SNAPSHOT"))
+      Some("snapshots" at nexus + "content/repositories/snapshots")
+    else
+      Some("releases" at nexus + "service/local/staging/deploy/maven2")
+  },
+
+  publishIfOnMaster := Def.taskDyn {
+    val travis   = Try(sys.env("TRAVIS")).getOrElse("false") == "true"
+    val pr       = Try(sys.env("TRAVIS_PULL_REQUEST")).getOrElse("false") != "false"
+    val branch   = Try(sys.env("TRAVIS_BRANCH")).getOrElse("")
+    val snapshot = version.value.trim.endsWith("SNAPSHOT")
+
+    (travis, pr, branch, snapshot) match {
+      case (true, false, "master", true) => publish
+      case _                             => Def.task ()
+    }
+  },
+
+  credentials ++= {
+    for {
+      realm    <- sys.env.get("MAVEN_REALM")
+      domain   <- sys.env.get("MAVEN_DOMAIN")
+      user     <- sys.env.get("MAVEN_USER")
+      password <- sys.env.get("MAVEN_PASSWORD")
+    } yield {
+      Credentials(realm, domain, user, password)
+    }
+  }.toList,
+
+  pomIncludeRepository := { x => false },
+  pomExtra := (
+    <url>https://github.com/scala-native/scala-native</url>
+    <inceptionYear>2014</inceptionYear>
+    <licenses>
+      <license>
+        <name>BSD-like</name>
+        <url>http://www.scala-lang.org/downloads/license.html</url>
+        <distribution>repo</distribution>
+      </license>
+    </licenses>
+    <scm>
+      <url>git@github.com:scala-native/scala-native.git</url>
+      <connection>scm:git@github.com:scala-native/scala-native.git</connection>
+    </scm>
+    <issueManagement>
+      <system>GitHub Issues</system>
+      <url>https://github.com/scala-native/scala-native/issues</url>
+    </issueManagement>
+    <developers>
+      <developer>
+        <id>densh</id>
+        <name>Denys Shabalin</name>
+        <url>http://den.sh</url>
+      </developer>
+    </developers>
+  )
+)
+
+lazy val noPublishSettings = Seq(
+  publishArtifact := false,
+  packagedArtifacts := Map.empty,
+  publish := {},
+  publishLocal := {},
+  publishIfOnMaster := {}
 )
 
 lazy val toolSettings =
@@ -36,21 +114,25 @@ lazy val libSettings =
 
 lazy val util =
   project.in(file("util")).
-    settings(toolSettings)
+    settings(toolSettings).
+    settings(publishSettings)
 
 lazy val nir =
   project.in(file("nir")).
     settings(toolSettings).
+    settings(publishSettings).
     dependsOn(util)
 
 lazy val tools =
   project.in(file("tools")).
     settings(toolSettings).
+    settings(publishSettings).
     dependsOn(nir, util)
 
 lazy val nscplugin =
   project.in(file("nscplugin")).
     settings(toolSettings).
+    settings(publishSettings).
     settings(
       scalaVersion := "2.11.8",
       crossVersion := CrossVersion.full,
@@ -68,6 +150,7 @@ lazy val nscplugin =
 lazy val sbtplugin =
   project.in(file("sbtplugin")).
     settings(toolSettings).
+    settings(publishSettings).
     settings(
       sbtPlugin := true,
       // Scalafmt fails to format source of sbt plugins.
@@ -81,17 +164,20 @@ lazy val sbtplugin =
 lazy val rtlib =
   project.in(file("rtlib")).
     settings(baseSettings).
+    settings(publishSettings).
     settings(
       scalaVersion := libScalaVersion
     )
 
 lazy val nativelib =
   project.in(file("nativelib")).
-    settings(libSettings)
+    settings(libSettings).
+    settings(publishSettings)
 
 lazy val javalib =
   project.in(file("javalib")).
     settings(libSettings).
+    settings(publishSettings).
     dependsOn(nativelib)
 
 lazy val assembleScalaLibrary = taskKey[Unit](
@@ -100,6 +186,7 @@ lazy val assembleScalaLibrary = taskKey[Unit](
 lazy val scalalib =
   project.in(file("scalalib")).
     settings(libSettings).
+    settings(publishSettings).
     settings(
       assembleScalaLibrary := {
         import org.eclipse.jgit.api._
@@ -146,6 +233,7 @@ lazy val scalalib =
 lazy val demoNative =
   project.in(file("demo/native")).
     settings(libSettings).
+    settings(noPublishSettings).
     settings(
       nativeClangOptions ++= Seq("-O2")
     ).
@@ -153,6 +241,7 @@ lazy val demoNative =
 
 lazy val demoJVM =
   project.in(file("demo/jvm")).
+    settings(noPublishSettings).
     settings(
       fork in run := true,
       javaOptions in run ++= Seq("-Xms64m", "-Xmx64m")
@@ -161,6 +250,7 @@ lazy val demoJVM =
 lazy val sandbox =
   project.in(file("sandbox")).
     settings(libSettings).
+    settings(noPublishSettings).
     settings(
       nativeVerbose := true,
       nativeClangOptions ++= Seq("-O2")
