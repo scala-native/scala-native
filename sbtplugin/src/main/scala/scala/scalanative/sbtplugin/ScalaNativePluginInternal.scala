@@ -58,10 +58,21 @@ object ScalaNativePluginInternal {
     Process(compile, target).!
   }
 
-  lazy val projectSettings = Seq(
-    addCompilerPlugin("org.scala-native" % "nscplugin" % "0.1-SNAPSHOT" cross CrossVersion.full),
+  lazy val runtimeDependencies = Seq(
+    "org.scala-native" %% "javalib"    % nativeVersion,
+    "org.scala-native" %% "scalalib"   % nativeVersion,
+    "org.scala-native" %% "nativelib"  % nativeVersion
+  )
 
-    libraryDependencies += "org.scala-native" %% "rtlib" % nir.Versions.current,
+  lazy val projectSettings = Seq(
+    addCompilerPlugin("org.scala-native" % "nscplugin" % nativeVersion cross CrossVersion.full),
+
+    libraryDependencies ++= Seq(
+      "org.scala-native" %% "rtlib" % nativeVersion,
+      compilerPlugin("org.scala-native" %  "tools_2.10" % nativeVersion),
+      compilerPlugin("org.scala-native" %  "nir_2.10"   % nativeVersion),
+      compilerPlugin("org.scala-native" %  "util_2.10"  % nativeVersion)
+    ),
 
     nativeVerbose := false,
 
