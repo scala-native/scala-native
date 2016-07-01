@@ -1,6 +1,4 @@
 import scala.util.Try
-import scala.scalanative.sbtplugin.{ScalaNativePlugin, ScalaNativePluginInternal}
-import ScalaNativePlugin.autoImport._
 
 val toolScalaVersion = "2.10.6"
 
