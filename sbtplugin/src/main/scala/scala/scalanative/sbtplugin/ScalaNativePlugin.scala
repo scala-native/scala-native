@@ -31,7 +31,4 @@ object ScalaNativePlugin extends AutoPlugin {
 
   override def projectSettings =
     ScalaNativePluginInternal.projectSettings
-
-  lazy val runtimeDependencies =
-    ScalaNativePluginInternal.runtimeDependencies
 }
