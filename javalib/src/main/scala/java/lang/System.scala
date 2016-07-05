@@ -26,4 +26,16 @@ object System {
   var in: InputStream  = _
   var out: PrintStream = _
   var err: PrintStream = _
+
+  def currentTimeMillis(): scala.Long = {
+    val tmp = stackalloc[time.timespec]
+    time.clock_gettime(Clock.CLOCK_REALTIME, tmp)
+    (!tmp).tv_sec * 1000L + (!tmp).tv_nsec / 1000L
+  }
+
+  def nanoTime(): scala.Long = {
+    val tmp = stackalloc[time.timespec]
+    time.clock_gettime(Clock.CLOCK_MONOTONIC, tmp)
+    (!tmp).tv_sec * 1000000000L + (!tmp).tv_nsec
+  }
 }
