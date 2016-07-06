@@ -15,7 +15,7 @@ lazy val baseSettings = Seq(
   scalafmtConfig := Some(file(".scalafmt"))
 )
 
-val publishIfOnMaster = taskKey[Unit](
+lazy val publishSnapshot = taskKey[Unit](
   "Publish snapshot to sonatype on every commit to master.")
 
 lazy val publishSettings = Seq(
@@ -30,9 +30,7 @@ lazy val publishSettings = Seq(
       Some("releases" at nexus + "service/local/staging/deploy/maven2")
   },
 
-  publishIfOnMaster := {
-    println("attempting publish if on master")
-
+  publishSnapshot := Def.taskDyn {
     val travis   = Try(sys.env("TRAVIS")).getOrElse("false") == "true"
     val pr       = Try(sys.env("TRAVIS_PULL_REQUEST")).getOrElse("false") != "false"
     val branch   = Try(sys.env("TRAVIS_BRANCH")).getOrElse("")
@@ -40,41 +38,27 @@ lazy val publishSettings = Seq(
 
     (travis, pr, branch, snapshot) match {
       case (true, false, "master", true) =>
-        println("on master, ready to publish")
-        publish.value
+        println("on master, going to publish a snapshot")
+        publish
 
       case _ =>
-        println("not on master due to: " +
+        println("not going to publish a snapshot due to: " +
                 s"travis = $travis, pr = $pr, " +
                 s"branch = $branch, snapshot = $snapshot")
-        ()
+        Def.task()
     }
-  },
+  }.value,
 
   credentials ++= {
-    val lst = {
-      for {
-        realm    <- sys.env.get("MAVEN_REALM")
-        domain   <- sys.env.get("MAVEN_DOMAIN")
-        user     <- sys.env.get("MAVEN_USER")
-        password <- sys.env.get("MAVEN_PASSWORD")
-      } yield {
-        println("got credentials from environment variables")
-        Credentials(realm, domain, user, password)
-      }
-    }.toList
-    if (lst.isEmpty) {
-      val hasRealm  = sys.env.contains("MAVEN_REALM")
-      val hasDomain = sys.env.contains("MAVEN_DOMAIN")
-      val hasUser   = sys.env.contains("MAVEN_USER")
-      val hasPass   = sys.env.contains("MAVEN_PASSWORD")
-
-      println("couldn't get some credentials: " +
-              s"realm = $hasRealm, domain = $hasDomain, " +
-              s"user = $hasUser, pass = $hasPass")
+    for {
+      realm    <- sys.env.get("MAVEN_REALM")
+      domain   <- sys.env.get("MAVEN_DOMAIN")
+      user     <- sys.env.get("MAVEN_USER")
+      password <- sys.env.get("MAVEN_PASSWORD")
+    } yield {
+      Credentials(realm, domain, user, password)
     }
-    lst
-  },
+  }.toSeq,
 
   pomIncludeRepository := { x => false },
   pomExtra := (
@@ -110,7 +94,7 @@ lazy val noPublishSettings = Seq(
   packagedArtifacts := Map.empty,
   publish := {},
   publishLocal := {},
-  publishIfOnMaster := {
+  publishSnapshot := {
     println("no publish")
   }
 )

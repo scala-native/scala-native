@@ -37,4 +37,4 @@ before_script:
     fi;
 script:
   - java -version
-  - sbt 'rtlib/publishLocal' 'nscplugin/publishLocal' 'publishLocal' 'sandbox/run' 'demoNative/run' 'scalafmtTest' 'publishIfOnMaster'
+  - sbt 'rtlib/publishLocal' 'nscplugin/publishLocal' 'publishLocal' 'sandbox/run' 'demoNative/run' 'scalafmtTest' 'publishSnapshot'
