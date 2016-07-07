@@ -3,8 +3,9 @@ package java.io
 import java.nio.charset.Charset
 import java.util.Formatter
 
-class PrintStream private (
-    _out: OutputStream, autoFlush: Boolean, charset: Charset)
+class PrintStream private (_out: OutputStream,
+                           autoFlush: Boolean,
+                           charset: Charset)
     extends FilterOutputStream(_out)
     with Appendable
     with Closeable {

@@ -54,8 +54,9 @@ object Long {
   @inline def parseUnsignedLong(s: String): scala.Long =
     parseUnsignedLong(s, 10)
 
-  def parseUnsignedLongInternal(
-      s: String, radix: Int, start: Int): scala.Long = ???
+  def parseUnsignedLongInternal(s: String,
+                                radix: Int,
+                                start: Int): scala.Long = ???
 
   @inline def valueOf(longValue: scala.Long): Long = new Long(longValue)
   @inline def valueOf(s: String): Long             = valueOf(parseLong(s))
@@ -77,8 +78,8 @@ object Long {
   def divideUnsigned(dividend: scala.Long, divisor: scala.Long): scala.Long =
     divULong(dividend, divisor)
 
-  def remainderUnsigned(
-      dividend: scala.Long, divisor: scala.Long): scala.Long =
+  def remainderUnsigned(dividend: scala.Long,
+                        divisor: scala.Long): scala.Long =
     remULong(dividend, divisor)
 
   def highestOneBit(i: scala.Long): scala.Long = ???

@@ -89,10 +89,8 @@ object ClassHierarchy {
     lazy val typeStruct: Type.Struct =
       Type.Struct(Global.None, Seq(Type.I32, Type.Ptr, vtableStruct))
 
-    lazy val typeValue: Val.Struct = Val.Struct(Global.None,
-                                                Seq(Val.I32(id),
-                                                    Val.String(name.id),
-                                                    vtableValue))
+    lazy val typeValue: Val.Struct = Val
+      .Struct(Global.None, Seq(Val.I32(id), Val.String(name.id), vtableValue))
 
     lazy val typeConst: Val = Val.Global(name tag "class" tag "type", Type.Ptr)
 
@@ -179,15 +177,13 @@ object ClassHierarchy {
       val res = cls.allvslots.indexOf(this)
       assert(res >= 0,
              s"failed to find vslot for ${this.name} in ${in.name} (" +
-             s"all vslots: ${cls.allvslots.map(_.name)}, " +
-             s"all methods: ${cls.allmethods.map(_.name)})")
+               s"all vslots: ${cls.allvslots.map(_.name)}, " +
+               s"all methods: ${cls.allmethods.map(_.name)})")
       res
     }
   }
 
-  final class Field(val attrs: Attrs,
-                    val name: Global,
-                    val ty: nir.Type)
+  final class Field(val attrs: Attrs, val name: Global, val ty: nir.Type)
       extends Node {
     def index = {
       assert(inClass)
@@ -240,8 +236,11 @@ object ClassHierarchy {
 
       case defn: Defn.Module =>
         val name = defn.name tag "module"
-        val cls = new Class(
-            defn.attrs, name, defn.parent, defn.traits, isModule = true)
+        val cls = new Class(defn.attrs,
+                            name,
+                            defn.parent,
+                            defn.traits,
+                            isModule = true)
         enter(defn.name, cls)
         enter(name, cls)
 

@@ -12,8 +12,9 @@ abstract class CharsetEncoder protected (
 
   import CharsetEncoder._
 
-  protected def this(
-      cs: Charset, _averageBytesPerChar: Float, _maxBytesPerChar: Float) =
+  protected def this(cs: Charset,
+                     _averageBytesPerChar: Float,
+                     _maxBytesPerChar: Float) =
     this(cs, _averageBytesPerChar, _averageBytesPerChar, Array('?'.toByte))
 
   // Config
@@ -95,8 +96,9 @@ abstract class CharsetEncoder protected (
   final def averageBytesPerChar(): Float = _averageBytesPerChar
   final def maxBytesPerChar(): Float     = _maxBytesPerChar
 
-  final def encode(
-      in: CharBuffer, out: ByteBuffer, endOfInput: Boolean): CoderResult = {
+  final def encode(in: CharBuffer,
+                   out: ByteBuffer,
+                   endOfInput: Boolean): CoderResult = {
 
     if (status == FLUSHED || (!endOfInput && status == END))
       throw new IllegalStateException
@@ -115,16 +117,15 @@ abstract class CharsetEncoder protected (
           throw new CoderMalfunctionError(ex)
       }
 
-      val result2 =
-        if (result1.isUnderflow) {
-          val remaining = in.remaining
-          if (endOfInput && remaining > 0)
-            CoderResult.malformedForLength(remaining)
-          else
-            result1
-        } else {
+      val result2 = if (result1.isUnderflow) {
+        val remaining = in.remaining
+        if (endOfInput && remaining > 0)
+          CoderResult.malformedForLength(remaining)
+        else
           result1
-        }
+      } else {
+        result1
+      }
 
       if (result2.isUnderflow || result2.isOverflow) {
         result2

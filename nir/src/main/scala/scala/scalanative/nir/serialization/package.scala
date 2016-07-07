@@ -25,7 +25,8 @@ package object serialization {
                                    OpenOpt.CREATE,
                                    OpenOpt.WRITE,
                                    OpenOpt.TRUNCATE_EXISTING)
-    try channel.write(buffer) finally channel.close
+    try channel.write(buffer)
+    finally channel.close
   }
 
   def serializeTextFile(defns: Seq[Defn],

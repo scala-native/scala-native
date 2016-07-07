@@ -78,8 +78,9 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     count = newSize
   }
 
-  final def append0(
-      chars: Array[Char], offset: scala.Int, length: scala.Int): Unit = {
+  final def append0(chars: Array[Char],
+                    offset: scala.Int,
+                    length: scala.Int): Unit = {
     if (offset > chars.length || offset < 0) {
       throw new ArrayIndexOutOfBoundsException("")
     }
@@ -117,8 +118,9 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     count = newSize
   }
 
-  final def append0(
-      chars: CharSequence, start: scala.Int, end: scala.Int): Unit = {
+  final def append0(chars: CharSequence,
+                    start: scala.Int,
+                    end: scala.Int): Unit = {
     val chars0 = if (chars != null) chars else "null"
     if (start < 0 || end < 0 || start > end || end > chars0.length()) {
       throw new IndexOutOfBoundsException()
@@ -225,7 +227,7 @@ abstract class AbstractStringBuilder private (unit: Unit) {
       }
       throw new StringIndexOutOfBoundsException(
           "offset " + start + ", length " + length + ", char[].length" +
-          chars.length)
+            chars.length)
     }
     throw new StringIndexOutOfBoundsException(index)
   }
@@ -268,18 +270,17 @@ abstract class AbstractStringBuilder private (unit: Unit) {
   def length(): scala.Int = count
 
   private def move(size: scala.Int, index: scala.Int): Unit = {
-    val newSize =
-      if (value.length - count >= size) {
-        if (!shared) {
-          System.arraycopy(value, index, value, index + size, count - index)
-          return
-        }
-        value.length
-      } else {
-        val a = count + size
-        val b = (value.length << 1) + 2
-        if (a > b) a else b
+    val newSize = if (value.length - count >= size) {
+      if (!shared) {
+        System.arraycopy(value, index, value, index + size, count - index)
+        return
       }
+      value.length
+    } else {
+      val a = count + size
+      val b = (value.length << 1) + 2
+      if (a > b) a else b
+    }
 
     val newData = new Array[scala.Char](newSize)
     System.arraycopy(value, 0, newData, 0, index)
@@ -299,13 +300,16 @@ abstract class AbstractStringBuilder private (unit: Unit) {
         val diff         = end - start - stringLength
         if (diff > 0) {
           if (!shared) {
-            System.arraycopy(
-                value, end, value, start + stringLength, count - end)
+            System
+              .arraycopy(value, end, value, start + stringLength, count - end)
           } else {
             val newData = new Array[scala.Char](value.length)
             System.arraycopy(value, 0, newData, 0, start)
-            System.arraycopy(
-                value, end, newData, start + stringLength, count - end)
+            System.arraycopy(value,
+                             end,
+                             newData,
+                             start + stringLength,
+                             count - end)
             value = newData
             shared = false
           }
@@ -346,13 +350,13 @@ abstract class AbstractStringBuilder private (unit: Unit) {
         val endHigh = value(end - 1)
         val surAtFront =
           allowFrontSur && frontLow >= 0xdc00 && frontLow <= 0xdfff &&
-          frontHigh >= 0xd800 && frontHigh <= 0xdbff
+            frontHigh >= 0xd800 && frontHigh <= 0xdbff
         if (surAtFront && (count < 3)) {
           return
         }
         val surAtEnd =
           allowEndSur && endHigh >= 0xd800 && endHigh <= 0xdbff &&
-          endLow >= 0xdc00 && endLow <= 0xdfff
+            endLow >= 0xdc00 && endLow <= 0xdfff
         allowFrontSur = true
         allowEndSur = true
 
@@ -608,10 +612,10 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     return Character.codePointCount(value, beginIndex, endIndex - beginIndex)
   }
 
-  def offsetByCodePoints(
-      index: scala.Int, codePointOffset: scala.Int): scala.Int = {
-    return Character.offsetByCodePoints(
-        value, 0, count, index, codePointOffset)
+  def offsetByCodePoints(index: scala.Int,
+                         codePointOffset: scala.Int): scala.Int = {
+    return Character
+      .offsetByCodePoints(value, 0, count, index, codePointOffset)
   }
 }
 

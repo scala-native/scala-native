@@ -6,8 +6,8 @@ import scala.collection.mutable
 import scala.annotation.tailrec
 import scala.language.existentials
 
-class PriorityQueue[E] protected (
-    ordering: Ordering[_ >: E], _comparator: Comparator[_ >: E])
+class PriorityQueue[E] protected (ordering: Ordering[_ >: E],
+                                  _comparator: Comparator[_ >: E])
     extends AbstractQueue[E]
     with Serializable {
   self =>

@@ -5,7 +5,7 @@ import scalanative.runtime.{divULong, remULong}
 import java.lang.{Long => JLong}
 
 /** `ULong`, a 64-bit unsigned integer. */
-final class ULong private[scala](private val underlying: Long)
+final class ULong private[scala] (private val underlying: Long)
     extends AnyVal
     with java.io.Serializable
     with Comparable[ULong] {

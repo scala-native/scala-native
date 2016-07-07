@@ -31,8 +31,9 @@ private[nio] final class GenBuffer[B <: Buffer](val self: B) extends AnyVal {
   }
 
   @inline
-  def generic_get(
-      dst: Array[ElementType], offset: Int, length: Int): BufferType = {
+  def generic_get(dst: Array[ElementType],
+                  offset: Int,
+                  length: Int): BufferType = {
     validateArrayIndexRange(dst, offset, length)
     load(getPosAndAdvanceRead(length), dst, offset, length)
     self
@@ -64,8 +65,9 @@ private[nio] final class GenBuffer[B <: Buffer](val self: B) extends AnyVal {
   }
 
   @inline
-  def generic_put(
-      src: Array[ElementType], offset: Int, length: Int): BufferType = {
+  def generic_put(src: Array[ElementType],
+                  offset: Int,
+                  length: Int): BufferType = {
     ensureNotReadOnly()
     validateArrayIndexRange(src, offset, length)
     store(getPosAndAdvanceWrite(length), src, offset, length)

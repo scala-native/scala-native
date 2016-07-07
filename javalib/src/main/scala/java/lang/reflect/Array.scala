@@ -5,8 +5,8 @@ import java.lang.Class
 object Array {
   def newInstance(componentType: Class[_], length: Int): AnyRef = ???
 
-  def newInstance(
-      componentType: Class[_], dimensions: scala.Array[Int]): AnyRef = ???
+  def newInstance(componentType: Class[_],
+                  dimensions: scala.Array[Int]): AnyRef = ???
 
   def getLength(array: AnyRef): Int = array match {
     // yes, this is kind of stupid, but that's how it is

@@ -91,8 +91,8 @@ private[math] object Multiplication {
     } else {
       val resLength = aNumberLength + 1
       val resDigits = new Array[Int](resLength)
-      resDigits(aNumberLength) = multiplyByInt(
-          resDigits, aDigits, aNumberLength, factor)
+      resDigits(aNumberLength) =
+        multiplyByInt(resDigits, aDigits, aNumberLength, factor)
       val result = new BigInteger(resSign, resLength, resDigits)
       result.cutOffLeadingZeroes()
       result
@@ -156,7 +156,7 @@ private[math] object Multiplication {
    */
   def unsignedMultAddAdd(a: Int, b: Int, c: Int, d: Int): Long =
     (a & 0xFFFFFFFFL) * (b & 0xFFFFFFFFL) + (c & 0xFFFFFFFFL) +
-    (d & 0xFFFFFFFFL)
+      (d & 0xFFFFFFFFL)
 
   /** Performs the multiplication with the Karatsuba's algorithm.
    *
@@ -195,8 +195,8 @@ private[math] object Multiplication {
 
       var upper = karatsuba(upperOp1, upperOp2)
       val lower = karatsuba(lowerOp1, lowerOp2)
-      var middle = karatsuba(
-          upperOp1.subtract(lowerOp1), lowerOp2.subtract(upperOp2))
+      var middle =
+        karatsuba(upperOp1.subtract(lowerOp1), lowerOp2.subtract(upperOp2))
       middle = middle.add(upper).add(lower)
       middle = middle.shiftLeft(ndiv2)
       upper = upper.shiftLeft(ndiv2 << 1)
@@ -424,8 +424,10 @@ private[math] object Multiplication {
     }
   }
 
-  private def multiplyByInt(
-      res: Array[Int], a: Array[Int], aSize: Int, factor: Int): Int = {
+  private def multiplyByInt(res: Array[Int],
+                            a: Array[Int],
+                            aSize: Int,
+                            factor: Int): Int = {
     var carry = 0
     for (i <- 0 until aSize) {
       val t = unsignedMultAddAdd(a(i), factor, carry, 0)

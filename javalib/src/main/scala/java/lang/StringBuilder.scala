@@ -70,8 +70,9 @@ final class StringBuilder
     this
   }
 
-  def append(
-      seq: CharSequence, start: scala.Int, end: scala.Int): StringBuilder = {
+  def append(seq: CharSequence,
+             start: scala.Int,
+             end: scala.Int): StringBuilder = {
     append0(seq, start, end)
     this
   }

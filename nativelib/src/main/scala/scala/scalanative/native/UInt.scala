@@ -5,7 +5,7 @@ import scalanative.runtime.{divUInt, remUInt}
 import java.lang.{Integer => JInteger}
 
 /** `UInt`, a 32-bit unsigned integer. */
-final class UInt private[scala](private val underlying: Int)
+final class UInt private[scala] (private val underlying: Int)
     extends AnyVal
     with java.io.Serializable
     with Comparable[UInt] {

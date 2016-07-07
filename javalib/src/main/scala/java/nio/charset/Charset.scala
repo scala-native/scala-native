@@ -3,8 +3,8 @@ package java.nio.charset
 import scala.collection.mutable
 import java.nio.{ByteBuffer, CharBuffer}
 
-abstract class Charset protected (
-    canonicalName: String, aliases: Array[String])
+abstract class Charset protected (canonicalName: String,
+                                  aliases: Array[String])
     extends AnyRef
     with Comparable[Charset] {
   final def name(): String = canonicalName
@@ -68,8 +68,7 @@ object Charset {
     CharsetMap.contains(charsetName.toLowerCase)
 
   private lazy val CharsetMap = {
-    val m =
-      mutable.Map.empty[String, Charset] // TODO Check if a better map is needed
+    val m = mutable.Map.empty[String, Charset] // TODO Check if a better map is needed
 
     // All these lists where obtained by experimentation on the JDK
 

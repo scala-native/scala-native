@@ -15,9 +15,9 @@ object ByteBuffer {
     wrap(array, 0, array.length)
 }
 
-abstract class ByteBuffer private[nio](_capacity: Int,
-                                       private[nio] val _array: Array[Byte],
-                                       private[nio] val _arrayOffset: Int)
+abstract class ByteBuffer private[nio] (_capacity: Int,
+                                        private[nio] val _array: Array[Byte],
+                                        private[nio] val _arrayOffset: Int)
     extends Buffer(_capacity)
     with Comparable[ByteBuffer] {
 
@@ -151,12 +151,16 @@ abstract class ByteBuffer private[nio](_capacity: Int,
   private[nio] def store(index: Int, elem: Byte): Unit
 
   @inline
-  private[nio] def load(
-      startIndex: Int, dst: Array[Byte], offset: Int, length: Int): Unit =
+  private[nio] def load(startIndex: Int,
+                        dst: Array[Byte],
+                        offset: Int,
+                        length: Int): Unit =
     GenBuffer(this).generic_load(startIndex, dst, offset, length)
 
   @inline
-  private[nio] def store(
-      startIndex: Int, src: Array[Byte], offset: Int, length: Int): Unit =
+  private[nio] def store(startIndex: Int,
+                         src: Array[Byte],
+                         offset: Int,
+                         length: Int): Unit =
     GenBuffer(this).generic_store(startIndex, src, offset, length)
 }

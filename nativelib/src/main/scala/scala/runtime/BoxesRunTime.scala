@@ -187,5 +187,5 @@ object BoxesRunTime {
     if (code == CHAR) arg1.asInstanceOf[java.lang.Character].charValue
     else arg1.asInstanceOf[java.lang.Number].doubleValue
 
-/* OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS */
+  /* OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS */
 }

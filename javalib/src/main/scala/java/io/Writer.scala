@@ -1,6 +1,6 @@
 package java.io
 
-abstract class Writer private[this](_lock: Option[Object])
+abstract class Writer private[this] (_lock: Option[Object])
     extends Appendable
     with Closeable
     with Flushable {

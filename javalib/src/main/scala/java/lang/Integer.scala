@@ -67,8 +67,9 @@ object Integer {
     parseIntImpl(s, radix, signed = false)
 
   @inline
-  private def parseIntImpl(
-      s: String, radix: scala.Int, signed: scala.Boolean): scala.Int = ???
+  private def parseIntImpl(s: String,
+                           radix: scala.Int,
+                           signed: scala.Boolean): scala.Int = ???
 
   @inline def toString(i: scala.Int): String =
     ???
@@ -170,6 +171,6 @@ object Integer {
   @inline def max(a: Int, b: Int): Int = Math.max(a, b)
   @inline def min(a: Int, b: Int): Int = Math.min(a, b)
 
-  @inline private[this] def toStringBase(
-      i: scala.Int, base: scala.Int): String = ???
+  @inline private[this] def toStringBase(i: scala.Int,
+                                         base: scala.Int): String = ???
 }

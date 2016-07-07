@@ -379,19 +379,18 @@ private[math] object Conversion {
   }
 
   def divideLongByBillion(a: Long): Long = {
-    val (quot, rem) =
-      if (a >= 0) {
-        val bLong = 1000000000L
-        (a / bLong, a % bLong)
-      } else {
-        /*
-         * Make the dividend positive shifting it right by 1 bit then get
-         * the quotient an remainder and correct them properly
-         */
-        val aPos: Long = a >>> 1
-        val bPos: Long = 1000000000L >>> 1
-        (aPos / bPos, (aPos % bPos << 1) + (a & 1))
-      }
+    val (quot, rem) = if (a >= 0) {
+      val bLong = 1000000000L
+      (a / bLong, a % bLong)
+    } else {
+      /*
+       * Make the dividend positive shifting it right by 1 bit then get
+       * the quotient an remainder and correct them properly
+       */
+      val aPos: Long = a >>> 1
+      val bPos: Long = 1000000000L >>> 1
+      (aPos / bPos, (aPos % bPos << 1) + (a & 1))
+    }
     (rem << 32) | (quot & 0xFFFFFFFFL)
   }
 

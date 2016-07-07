@@ -47,21 +47,20 @@ private[niocharset] abstract class UTF_16_Common protected (
           val b1 = in.get() & 0xff
           val b2 = in.get() & 0xff
 
-          val wasBOM =
-            if (endianness == AutoEndian) {
-              // Read BOM
-              if (b1 == 0xfe && b2 == 0xff) {
-                endianness = BigEndian
-                true
-              } else if (b1 == 0xff && b2 == 0xfe) {
-                endianness = LittleEndian
-                true
-              } else {
-                // Not a valid BOM: default to BigEndian and start reading
-                endianness = BigEndian
-                false
-              }
-            } else false
+          val wasBOM = if (endianness == AutoEndian) {
+            // Read BOM
+            if (b1 == 0xfe && b2 == 0xff) {
+              endianness = BigEndian
+              true
+            } else if (b1 == 0xff && b2 == 0xfe) {
+              endianness = LittleEndian
+              true
+            } else {
+              // Not a valid BOM: default to BigEndian and start reading
+              endianness = BigEndian
+              false
+            }
+          } else false
 
           if (wasBOM) {
             loop()
