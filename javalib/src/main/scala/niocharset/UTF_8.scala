@@ -14,10 +14,7 @@ import java.nio._
 import java.nio.charset._
 
 private[niocharset] object UTF_8
-    extends Charset("UTF-8",
-                    Array( // scalastyle:ignore
-                          "UTF8",
-                          "unicode-1-1-utf-8")) {
+    extends Charset("UTF-8", "UTF8" :: "unicode-1-1-utf-8" :: Nil) {
 
   import java.lang.Character._
 

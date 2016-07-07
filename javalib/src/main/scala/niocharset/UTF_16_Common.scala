@@ -18,7 +18,7 @@ import java.nio.charset._
 private[niocharset] abstract class UTF_16_Common protected (
     // scalastyle:ignore
     name: String,
-    aliases: Array[String],
+    aliases: List[String],
     private val endianness: Int)
     extends Charset(name, aliases) {
 

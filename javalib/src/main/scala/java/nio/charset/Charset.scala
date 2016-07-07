@@ -3,8 +3,7 @@ package java.nio.charset
 import scala.collection.mutable
 import java.nio.{ByteBuffer, CharBuffer}
 
-abstract class Charset protected (
-    canonicalName: String, aliases: Array[String])
+abstract class Charset protected (canonicalName: String, aliases: Seq[String])
     extends AnyRef
     with Comparable[Charset] {
   final def name(): String = canonicalName

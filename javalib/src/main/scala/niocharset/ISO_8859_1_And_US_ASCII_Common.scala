@@ -22,7 +22,7 @@ import java.nio.charset._
 private[niocharset] abstract class ISO_8859_1_And_US_ASCII_Common protected (
     // scalastyle:ignore
     name: String,
-    aliases: Array[String],
+    aliases: List[String],
     private val maxValue: Int)
     extends Charset(name, aliases) {
 
