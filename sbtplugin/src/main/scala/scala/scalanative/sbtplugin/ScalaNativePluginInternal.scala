@@ -67,6 +67,8 @@ object ScalaNativePluginInternal {
 
     addCompilerPlugin("org.scala-native" % "nscplugin" % nativeVersion cross CrossVersion.full),
 
+    resolvers += Resolver.sonatypeRepo("snapshots"),
+
     nativeVerbose := false,
 
     nativeClang := {
