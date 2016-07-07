@@ -271,8 +271,8 @@ private[math] object Logical {
   }
 
   /** @return sign = 1, magnitude = positive.magnitude & ~(-negative.magnitude) */
-  def andNotPositiveNegative(
-      positive: BigInteger, negative: BigInteger): BigInteger = {
+  def andNotPositiveNegative(positive: BigInteger,
+                             negative: BigInteger): BigInteger = {
     // PRE: positive > 0 && negative < 0
     val iNeg = negative.getFirstNonzeroDigit
     val iPos = positive.getFirstNonzeroDigit
@@ -304,8 +304,8 @@ private[math] object Logical {
   }
 
   /** @return sign = -1, magnitude = -(-negative.magnitude & ~positive.magnitude) */
-  def andNotNegativePositive(
-      negative: BigInteger, positive: BigInteger): BigInteger = {
+  def andNotNegativePositive(negative: BigInteger,
+                             positive: BigInteger): BigInteger = {
     // scalastyle:off return
     // PRE: negative < 0 && positive > 0
     var limit: Int = 0

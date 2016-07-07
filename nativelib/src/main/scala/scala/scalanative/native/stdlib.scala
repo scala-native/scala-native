@@ -42,8 +42,9 @@ object stdlib {
     extern
   def strtoul(str: CString, str_end: Ptr[CString], base: CInt): CUnsignedLong =
     extern
-  def strtoull(
-      str: CString, str_end: Ptr[CString], base: CInt): CUnsignedLongLong =
+  def strtoull(str: CString,
+               str_end: Ptr[CString],
+               base: CInt): CUnsignedLongLong =
     extern
   def strtof(str: CString, str_end: Ptr[CString]): CFloat  = extern
   def strtod(str: CString, str_end: Ptr[CString]): CDouble = extern

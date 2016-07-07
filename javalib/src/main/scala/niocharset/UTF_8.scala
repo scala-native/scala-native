@@ -176,8 +176,9 @@ private[niocharset] object UTF_8
   )
 
   @inline
-  private class DecodedMultiByte(
-      val failure: CoderResult, val high: Char, val low: Char)
+  private class DecodedMultiByte(val failure: CoderResult,
+                                 val high: Char,
+                                 val low: Char)
 
   private object DecodedMultiByte {
     @inline def apply(failure: CoderResult): DecodedMultiByte =
@@ -277,8 +278,8 @@ private[niocharset] object UTF_8
       loop(inStart, outStart)
     }
 
-    private def decodeLoopNoArray(
-        in: ByteBuffer, out: CharBuffer): CoderResult = {
+    private def decodeLoopNoArray(in: ByteBuffer,
+                                  out: CharBuffer): CoderResult = {
       @inline
       @tailrec
       def loop(): CoderResult = {
@@ -383,8 +384,10 @@ private[niocharset] object UTF_8
       }
     }
 
-    @inline private def decode4(
-        b1: Int, b2: Int, b3: Int, b4: Int): DecodedMultiByte = {
+    @inline private def decode4(b1: Int,
+                                b2: Int,
+                                b3: Int,
+                                b4: Int): DecodedMultiByte = {
       if (isInvalidNextByte(b2))
         DecodedMultiByte(CoderResult.malformedForLength(1))
       else if (isInvalidNextByte(b3))
@@ -394,7 +397,7 @@ private[niocharset] object UTF_8
       else {
         val codePoint =
           (((b1 & 0x7) << 18) | ((b2 & 0x3f) << 12) |
-              ((b3 & 0x3f) << 6) | (b4 & 0x3f))
+                ((b3 & 0x3f) << 6) | (b4 & 0x3f))
         // By construction, 0 <= codePoint <= 0x1fffff
         if (codePoint < 0x10000 || codePoint > MAX_CODE_POINT) {
           // It should have been encoded with 1, 2, or 3 bytes
@@ -503,8 +506,8 @@ private[niocharset] object UTF_8
       loop(inStart, outStart)
     }
 
-    private def encodeLoopNoArray(
-        in: CharBuffer, out: ByteBuffer): CoderResult = {
+    private def encodeLoopNoArray(in: CharBuffer,
+                                  out: ByteBuffer): CoderResult = {
       @inline
       @tailrec
       def loop(): CoderResult = {

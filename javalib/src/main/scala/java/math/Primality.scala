@@ -349,7 +349,8 @@ private[math] object Primality {
     } else {
       // To check if 'n' is divisible by some prime of the table
       for (i <- 1 until Primes.length) {
-        if (Division.remainderArrayByInt(n.digits, n.numberLength, Primes(i)) == 0)
+        if (Division
+              .remainderArrayByInt(n.digits, n.numberLength, Primes(i)) == 0)
           return false
       }
 
@@ -479,7 +480,7 @@ private[math] object Primality {
         do {
           x = new BigInteger(bitLength, rnd)
         } while ((x.compareTo(n) >= BigInteger.EQUALS) || x.sign == 0 ||
-        x.isOne)
+          x.isOne)
       }
 
       y = x.modPow(q, n)

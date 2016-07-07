@@ -170,8 +170,12 @@ private[util] class NavigableView[E](original: NavigableSet[E],
       if (inclusive) () => innerNow.from(boxed)
       else () => innerNow.from(boxed) - boxed
 
-    new NavigableView(
-        this, tailSetFun, Some(fromElement), inclusive, None, true)
+    new NavigableView(this,
+                      tailSetFun,
+                      Some(fromElement),
+                      inclusive,
+                      None,
+                      true)
   }
 
   def subSet(fromElement: E, toElement: E): NavigableSet[E] =

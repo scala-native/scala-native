@@ -80,38 +80,164 @@ object FunctionPtr {
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/FunctionPtr.scala.gyb", line: 14)
 
-  implicit def fromFunction12[
-      T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R](
+  implicit def fromFunction12[T1,
+                              T2,
+                              T3,
+                              T4,
+                              T5,
+                              T6,
+                              T7,
+                              T8,
+                              T9,
+                              T10,
+                              T11,
+                              T12,
+                              R](
       f: Function12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R])
     : FunctionPtr12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R] =
     undefined
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/FunctionPtr.scala.gyb", line: 14)
 
-  implicit def fromFunction13[
-      T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, R](
-      f: Function13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, R])
-    : FunctionPtr13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, R] =
+  implicit def fromFunction13[T1,
+                              T2,
+                              T3,
+                              T4,
+                              T5,
+                              T6,
+                              T7,
+                              T8,
+                              T9,
+                              T10,
+                              T11,
+                              T12,
+                              T13,
+                              R](f: Function13[T1,
+                                               T2,
+                                               T3,
+                                               T4,
+                                               T5,
+                                               T6,
+                                               T7,
+                                               T8,
+                                               T9,
+                                               T10,
+                                               T11,
+                                               T12,
+                                               T13,
+                                               R]): FunctionPtr13[T1,
+                                                                  T2,
+                                                                  T3,
+                                                                  T4,
+                                                                  T5,
+                                                                  T6,
+                                                                  T7,
+                                                                  T8,
+                                                                  T9,
+                                                                  T10,
+                                                                  T11,
+                                                                  T12,
+                                                                  T13,
+                                                                  R] =
     undefined
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/FunctionPtr.scala.gyb", line: 14)
 
-  implicit def fromFunction14[
-      T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, R](
-      f: Function14[
-          T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, R])
-    : FunctionPtr14[
-        T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, R] =
+  implicit def fromFunction14[T1,
+                              T2,
+                              T3,
+                              T4,
+                              T5,
+                              T6,
+                              T7,
+                              T8,
+                              T9,
+                              T10,
+                              T11,
+                              T12,
+                              T13,
+                              T14,
+                              R](
+      f: Function14[T1,
+                    T2,
+                    T3,
+                    T4,
+                    T5,
+                    T6,
+                    T7,
+                    T8,
+                    T9,
+                    T10,
+                    T11,
+                    T12,
+                    T13,
+                    T14,
+                    R]): FunctionPtr14[T1,
+                                       T2,
+                                       T3,
+                                       T4,
+                                       T5,
+                                       T6,
+                                       T7,
+                                       T8,
+                                       T9,
+                                       T10,
+                                       T11,
+                                       T12,
+                                       T13,
+                                       T14,
+                                       R] =
     undefined
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/FunctionPtr.scala.gyb", line: 14)
 
-  implicit def fromFunction15[
-      T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, R](
-      f: Function15[
-          T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, R])
-    : FunctionPtr15[
-        T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, R] =
+  implicit def fromFunction15[T1,
+                              T2,
+                              T3,
+                              T4,
+                              T5,
+                              T6,
+                              T7,
+                              T8,
+                              T9,
+                              T10,
+                              T11,
+                              T12,
+                              T13,
+                              T14,
+                              T15,
+                              R](
+      f: Function15[T1,
+                    T2,
+                    T3,
+                    T4,
+                    T5,
+                    T6,
+                    T7,
+                    T8,
+                    T9,
+                    T10,
+                    T11,
+                    T12,
+                    T13,
+                    T14,
+                    T15,
+                    R]): FunctionPtr15[T1,
+                                       T2,
+                                       T3,
+                                       T4,
+                                       T5,
+                                       T6,
+                                       T7,
+                                       T8,
+                                       T9,
+                                       T10,
+                                       T11,
+                                       T12,
+                                       T13,
+                                       T14,
+                                       T15,
+                                       R] =
     undefined
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/FunctionPtr.scala.gyb", line: 14)
@@ -567,8 +693,9 @@ final class FunctionPtr1[T1, R] extends FunctionPtr {
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/FunctionPtr.scala.gyb", line: 25)
 
 final class FunctionPtr2[T1, T2, R] extends FunctionPtr {
-  def apply(arg1: T1, arg2: T2)(
-      implicit ct1: ClassTag[T1], ct2: ClassTag[T2], ct3: ClassTag[R]): R =
+  def apply(arg1: T1, arg2: T2)(implicit ct1: ClassTag[T1],
+                                ct2: ClassTag[T2],
+                                ct3: ClassTag[R]): R =
     undefined
 }
 
@@ -620,16 +747,20 @@ final class FunctionPtr6[T1, T2, T3, T4, T5, T6, R] extends FunctionPtr {
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/FunctionPtr.scala.gyb", line: 25)
 
 final class FunctionPtr7[T1, T2, T3, T4, T5, T6, T7, R] extends FunctionPtr {
-  def apply(
-      arg1: T1, arg2: T2, arg3: T3, arg4: T4, arg5: T5, arg6: T6, arg7: T7)(
-      implicit ct1: ClassTag[T1],
-      ct2: ClassTag[T2],
-      ct3: ClassTag[T3],
-      ct4: ClassTag[T4],
-      ct5: ClassTag[T5],
-      ct6: ClassTag[T6],
-      ct7: ClassTag[T7],
-      ct8: ClassTag[R]): R = undefined
+  def apply(arg1: T1,
+            arg2: T2,
+            arg3: T3,
+            arg4: T4,
+            arg5: T5,
+            arg6: T6,
+            arg7: T7)(implicit ct1: ClassTag[T1],
+                      ct2: ClassTag[T2],
+                      ct3: ClassTag[T3],
+                      ct4: ClassTag[T4],
+                      ct5: ClassTag[T5],
+                      ct6: ClassTag[T6],
+                      ct7: ClassTag[T7],
+                      ct8: ClassTag[R]): R = undefined
 }
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/FunctionPtr.scala.gyb", line: 25)

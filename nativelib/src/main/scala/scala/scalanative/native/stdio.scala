@@ -10,18 +10,24 @@ object stdio {
   def fclose(stream: Ptr[FILE]): CInt                     = extern
   def fflush(stream: Ptr[FILE]): CInt                     = extern
   def setbuf(stream: Ptr[FILE], buffer: Ptr[CChar]): Unit = extern
-  def setvbuf(
-      stream: Ptr[FILE], buffer: Ptr[CChar], mode: CInt, size: CSize): CInt =
+  def setvbuf(stream: Ptr[FILE],
+              buffer: Ptr[CChar],
+              mode: CInt,
+              size: CSize): CInt =
     extern
   def fwide(stream: Ptr[FILE], mode: CInt): CInt = extern
 
   // Direct input/output
 
-  def fread(
-      buffer: Ptr[_], size: CSize, count: CSize, stream: Ptr[FILE]): CSize =
+  def fread(buffer: Ptr[_],
+            size: CSize,
+            count: CSize,
+            stream: Ptr[FILE]): CSize =
     extern
-  def fwrite(
-      buffer: Ptr[_], size: CSize, count: CSize, stream: Ptr[FILE]): CSize =
+  def fwrite(buffer: Ptr[_],
+             size: CSize,
+             count: CSize,
+             stream: Ptr[FILE]): CSize =
     extern
 
   // Unformatted input/output
@@ -46,8 +52,10 @@ object stdio {
   def printf(format: CString, args: Vararg*): CInt                     = extern
   def fprintf(stream: Ptr[FILE], format: CString, args: Vararg*): CInt = extern
   def sprintf(buffer: CString, format: CString, args: Vararg*): CInt   = extern
-  def snprintf(
-      buffer: CString, bufsz: CInt, format: CString, args: Vararg*): CInt =
+  def snprintf(buffer: CString,
+               bufsz: CInt,
+               format: CString,
+               args: Vararg*): CInt =
     extern
 
   // File positioning

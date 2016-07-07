@@ -12,8 +12,7 @@ import scala.collection.JavaConversions._
 object Collections {
 
   final lazy val EMPTY_SET: Set[_] = {
-    new ImmutableSet(
-        new AbstractSet[Any] with Serializable {
+    new ImmutableSet(new AbstractSet[Any] with Serializable {
       override def size(): Int = 0
 
       override def iterator(): Iterator[Any] = emptyIterator[Any]
@@ -31,8 +30,7 @@ object Collections {
   }
 
   final lazy val EMPTY_MAP: Map[_, _] = {
-    new ImmutableMap(
-        new AbstractMap[Any, Any] with Serializable {
+    new ImmutableMap(new AbstractMap[Any, Any] with Serializable {
       override def entrySet(): Set[Map.Entry[Any, Any]] =
         EMPTY_SET.asInstanceOf[Set[Map.Entry[Any, Any]]]
     })
@@ -196,8 +194,8 @@ object Collections {
     (0 until source.size).foreach(i => dest(i) = source.get(i))
   }
 
-  private def copyImpl[T](
-      source: Iterator[_ <: T], dest: List[T] with RandomAccess): Unit = {
+  private def copyImpl[T](source: Iterator[_ <: T],
+                          dest: List[T] with RandomAccess): Unit = {
     val destEnd = dest.size()
     var i = 0
     while (source.hasNext) {
@@ -209,8 +207,8 @@ object Collections {
     }
   }
 
-  private def copyImpl[T](
-      source: List[_ <: T] with RandomAccess, dest: ListIterator[T]): Unit = {
+  private def copyImpl[T](source: List[_ <: T] with RandomAccess,
+                          dest: ListIterator[T]): Unit = {
     for (i <- 0 until source.size) {
       if (dest.hasNext) {
         dest.next()
@@ -221,8 +219,8 @@ object Collections {
     }
   }
 
-  private def copyImpl[T](
-      source: Iterator[_ <: T], dest: ListIterator[T]): Unit = {
+  private def copyImpl[T](source: Iterator[_ <: T],
+                          dest: ListIterator[T]): Unit = {
     while (source.hasNext) {
       if (dest.hasNext) {
         dest.next()
@@ -257,8 +255,10 @@ object Collections {
         def indexModulo(i: Int): Int = modulo(i, listSize)
 
         @tailrec
-        def rotateNext(
-            cycleStartIndex: Int, count: Int, index: Int, value: T): Unit = {
+        def rotateNext(cycleStartIndex: Int,
+                       count: Int,
+                       index: Int,
+                       value: T): Unit = {
           val nextValue = list(index)
           val newCount  = count + 1
           list(index) = value
@@ -329,8 +329,9 @@ object Collections {
     indexOfSubListImpl(source, target, fromStart = false)
 
   @inline
-  private def indexOfSubListImpl(
-      source: List[_], target: List[_], fromStart: Boolean): Int = {
+  private def indexOfSubListImpl(source: List[_],
+                                 target: List[_],
+                                 fromStart: Boolean): Int = {
     val targetSize = target.size
     if (targetSize == 0) {
       if (fromStart) 0
@@ -424,8 +425,9 @@ object Collections {
     }
   }
 
-  def checkedMap[K, V](
-      m: Map[K, V], keyType: Class[K], valueType: Class[V]): Map[K, V] =
+  def checkedMap[K, V](m: Map[K, V],
+                       keyType: Class[K],
+                       valueType: Class[V]): Map[K, V] =
     new CheckedMap[K, V, Map[K, V]](m, keyType, valueType)
 
   def checkedSortedMap[K, V](m: SortedMap[K, V],
@@ -476,8 +478,7 @@ object Collections {
   }
 
   def singletonList[T](o: T): List[T] = {
-    new ImmutableList(
-        new AbstractList[T] with Serializable {
+    new ImmutableList(new AbstractList[T] with Serializable {
       def size(): Int = 1
 
       def get(index: Int): T =
@@ -487,8 +488,7 @@ object Collections {
   }
 
   def singletonMap[K, V](key: K, value: V): Map[K, V] = {
-    new ImmutableMap(
-        new AbstractMap[K, V] with Serializable {
+    new ImmutableMap(new AbstractMap[K, V] with Serializable {
       def entrySet(): Set[Map.Entry[K, V]] =
         singleton(new AbstractMap.SimpleImmutableEntry(key, value))
     })
@@ -980,7 +980,8 @@ object Collections {
     clazz.cast(elem)
 
   private class CheckedCollection[E, Coll <: Collection[E]](
-      protected val inner: Coll, protected val elemClazz: Class[E])
+      protected val inner: Coll,
+      protected val elemClazz: Class[E])
       extends WrappedCollection[E, Coll] {
 
     override def add(e: E): Boolean = {
@@ -1037,8 +1038,8 @@ object Collections {
     override def listIterator(): ListIterator[E] = listIterator(0)
 
     override def listIterator(index: Int): ListIterator[E] =
-      new CheckedListIterator[E](
-          this.inner.listIterator(index), this.elemClazz)
+      new CheckedListIterator[E](this.inner.listIterator(index),
+                                 this.elemClazz)
 
     override def subList(fromIndex: Int, toIndex: Int): List[E] =
       checkedList(super.subList(fromIndex, toIndex), this.elemClazz)
@@ -1103,8 +1104,9 @@ object Collections {
     }
   }
 
-  private class CheckedSortedMap[K, V](
-      inner: SortedMap[K, V], keyClazz: Class[K], valueClazz: Class[V])
+  private class CheckedSortedMap[K, V](inner: SortedMap[K, V],
+                                       keyClazz: Class[K],
+                                       valueClazz: Class[V])
       extends CheckedMap[K, V, SortedMap[K, V]](inner, keyClazz, valueClazz)
       with WrappedSortedMap[K, V] {
 
@@ -1118,8 +1120,8 @@ object Collections {
       checkedSortedMap(super.tailMap(fromKey), keyClazz, valueClazz)
   }
 
-  private class CheckedListIterator[E](
-      protected val inner: ListIterator[E], protected val elemClazz: Class[E])
+  private class CheckedListIterator[E](protected val inner: ListIterator[E],
+                                       protected val elemClazz: Class[E])
       extends WrappedListIterator[E] {
     override def set(e: E): Unit = {
       checkElem(e)

@@ -8,7 +8,7 @@ class Character(private val value: scala.Char) extends Comparable[Character] {
 
   override def equals(that: Any): scala.Boolean =
     that.isInstanceOf[Character] &&
-    (value == that.asInstanceOf[Character].charValue)
+      (value == that.asInstanceOf[Character].charValue)
 
   override def compareTo(that: Character): Int =
     Character.compare(charValue, that.charValue)
@@ -276,7 +276,7 @@ object Character {
   def isWhitespace(codePoint: scala.Int): scala.Boolean = {
     def isSeparator(tpe: Int): scala.Boolean =
       tpe == SPACE_SEPARATOR || tpe == LINE_SEPARATOR ||
-      tpe == PARAGRAPH_SEPARATOR
+        tpe == PARAGRAPH_SEPARATOR
     if (codePoint < 256) {
       codePoint == '\t' || codePoint == '\n' || codePoint == '\u000B' ||
       codePoint == '\f' || codePoint == '\r' ||
@@ -296,7 +296,7 @@ object Character {
 
   @inline private[this] def isSpaceCharImpl(tpe: Int): scala.Boolean =
     tpe == SPACE_SEPARATOR || tpe == LINE_SEPARATOR ||
-    tpe == PARAGRAPH_SEPARATOR
+      tpe == PARAGRAPH_SEPARATOR
 
   // --- UTF-16 surrogate pairs handling ---
   // See http://en.wikipedia.org/wiki/UTF-16
@@ -317,7 +317,7 @@ object Character {
 
   @inline def toCodePoint(high: scala.Char, low: scala.Char): Int =
     ((high & SurrogateUsefulPartMask) << 10) +
-    (low & SurrogateUsefulPartMask) + 0x10000
+      (low & SurrogateUsefulPartMask) + 0x10000
 
   // --- End of UTF-16 surrogate pairs handling ---
 
@@ -418,7 +418,8 @@ object Character {
     isJavaLetterOrDigitImpl(ch, getType(ch))
 
   @inline private[this] def isJavaLetterOrDigitImpl(
-      codePoint: Int, tpe: Int): scala.Boolean = {
+      codePoint: Int,
+      tpe: Int): scala.Boolean = {
     isJavaLetterImpl(tpe) || tpe == COMBINING_SPACING_MARK ||
     tpe == NON_SPACING_MARK || isIdentifierIgnorableImpl(codePoint, tpe)
   }
@@ -458,7 +459,8 @@ object Character {
     isJavaIdentifierPartImpl(codePoint, getType(codePoint))
 
   @inline private[this] def isJavaIdentifierPartImpl(
-      codePoint: Int, tpe: Int): scala.Boolean = {
+      codePoint: Int,
+      tpe: Int): scala.Boolean = {
     isLetterImpl(tpe) || tpe == CURRENCY_SYMBOL ||
     tpe == CONNECTOR_PUNCTUATION || tpe == DECIMAL_DIGIT_NUMBER ||
     tpe == LETTER_NUMBER || tpe == COMBINING_SPACING_MARK ||
@@ -495,7 +497,8 @@ object Character {
     isIdentifierIgnorableImpl(codePoint, getType(codePoint))
 
   @inline private[this] def isIdentifierIgnorableImpl(
-      codePoint: Int, tpe: Int): scala.Boolean = {
+      codePoint: Int,
+      tpe: Int): scala.Boolean = {
     ('\u0000' <= codePoint && codePoint <= '\u0008') ||
     ('\u000E' <= codePoint && codePoint <= '\u001B') ||
     ('\u007F' <= codePoint && codePoint <= '\u009F') || tpe == FORMAT

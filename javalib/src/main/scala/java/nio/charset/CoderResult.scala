@@ -76,6 +76,6 @@ object CoderResult {
     }
 
   private def unmappableForLengthImpl(length: Int): CoderResult =
-    uniqueUnmappable.getOrElseUpdate(
-        length, new CoderResult(Unmappable, length))
+    uniqueUnmappable
+      .getOrElseUpdate(length, new CoderResult(Unmappable, length))
 }

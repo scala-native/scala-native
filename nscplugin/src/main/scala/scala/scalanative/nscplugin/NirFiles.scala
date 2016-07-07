@@ -7,8 +7,9 @@ import scala.tools.nsc.io.AbstractFile
 trait NirFiles { self: NirCodeGen =>
   import global._
 
-  private def getPathFor(
-      cunit: CompilationUnit, sym: Symbol, suffix: String): String = {
+  private def getPathFor(cunit: CompilationUnit,
+                         sym: Symbol,
+                         suffix: String): String = {
     val baseDir: AbstractFile =
       settings.outputDirs.outputDirFor(cunit.source.file)
 
@@ -22,11 +23,12 @@ trait NirFiles { self: NirCodeGen =>
     file.file.getAbsolutePath
   }
 
-  def genIRFile(
-      cunit: CompilationUnit, sym: Symbol, defns: Seq[nir.Defn]): Unit = {
-    nir.serialization.serializeBinaryFile(
-        defns, getPathFor(cunit, sym, s".nir"))
-    nir.serialization.serializeTextFile(
-        defns, getPathFor(cunit, sym, s".hnir"))
+  def genIRFile(cunit: CompilationUnit,
+                sym: Symbol,
+                defns: Seq[nir.Defn]): Unit = {
+    nir.serialization
+      .serializeBinaryFile(defns, getPathFor(cunit, sym, s".nir"))
+    nir.serialization
+      .serializeTextFile(defns, getPathFor(cunit, sym, s".hnir"))
   }
 }

@@ -176,8 +176,8 @@ private[math] object BitLevel {
     if (!(count == 0 || bi.signum() == 0)) {
       val intCount = count >> 5 // count of integers
       bi.numberLength -= intCount
-      val shift = shiftRight(
-          bi.digits, bi.numberLength, bi.digits, intCount, count & 31)
+      val shift =
+        shiftRight(bi.digits, bi.numberLength, bi.digits, intCount, count & 31)
 
       if (!shift && sign < 0) {
         // remainder not zero: add one to the result
@@ -280,8 +280,9 @@ private[math] object BitLevel {
    *                {@link BigInteger#digits}.
    *  @param srcLen the length of {@code source}; may be less than {@code source.length}
    */
-  def shiftLeftOneBit(
-      result: Array[Int], source: Array[Int], srcLen: Int): Unit = {
+  def shiftLeftOneBit(result: Array[Int],
+                      source: Array[Int],
+                      srcLen: Int): Unit = {
     var carry = 0
     for (i <- 0 until srcLen) {
       val iVal = source(i)

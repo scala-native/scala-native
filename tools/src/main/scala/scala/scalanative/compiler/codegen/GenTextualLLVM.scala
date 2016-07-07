@@ -237,9 +237,9 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
 
           buf += sh"%$pointee = bitcast $ptr to $ty*"
           buf +=
-            sh"%$derived = getelementptr $ty, $ty* %$pointee, ${r(indexes, sep = ", ")}"
+          sh"%$derived = getelementptr $ty, $ty* %$pointee, ${r(indexes, sep = ", ")}"
           buf +=
-            sh"${bind}bitcast ${ty.elemty(indexes.tail)}* %$derived to i8*"
+          sh"${bind}bitcast ${ty.elemty(indexes.tail)}* %$derived to i8*"
 
         case Op.Stackalloc(ty) =>
           val pointee = fresh()
@@ -262,7 +262,7 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
         }
 
         buf +=
-          sh"${bind}invoke $ty @$pointee(${r(args, sep = ", ")}) to $succ unwind $fail"
+        sh"${bind}invoke $ty @$pointee(${r(args, sep = ", ")}) to $succ unwind $fail"
 
       case Cf.Invoke(ty, ptr, args, succ, fail) =>
         val Type.Function(_, resty) = ty
@@ -275,7 +275,7 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
 
         buf += sh"%$pointee = bitcast $ptr to $ty*"
         buf +=
-          sh"${bind}invoke $ty %$pointee(${r(args, sep = ", ")}) to $succ unwind $fail"
+        sh"${bind}invoke $ty %$pointee(${r(args, sep = ", ")}) to $succ unwind $fail"
 
       case _ =>
         buf += sh"$cf"

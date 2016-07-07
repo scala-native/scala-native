@@ -86,10 +86,7 @@ class ModuleLowering(implicit top: Top, fresh: Fresh) extends Pass {
                              Op.Comp(Comp.Ine, Rt.Object, self, clsNull))
                     ),
                     Cf.If(cond, Next(existing), Next(initialize))),
-              Block(existing,
-                    Seq(),
-                    Seq(),
-                    Cf.Ret(self)),
+              Block(existing, Seq(), Seq(), Cf.Ret(self)),
               Block(initialize,
                     Seq(),
                     Seq(
@@ -118,7 +115,7 @@ class ModuleLowering(implicit top: Top, fresh: Fresh) extends Pass {
 
   def isStaticModule(name: Global): Boolean =
     top.nodes(name).isInstanceOf[Class] &&
-    (!top.nodes.contains(name member "init"))
+      (!top.nodes.contains(name member "init"))
 }
 
 object ModuleLowering extends PassCompanion {

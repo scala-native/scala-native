@@ -2,7 +2,7 @@ package scala.scalanative
 package native
 
 /** `UByte`, a 8-bit unsigned integer. */
-final class UByte private[scala](private val underlying: Byte)
+final class UByte private[scala] (private val underlying: Byte)
     extends AnyVal
     with java.io.Serializable
     with Comparable[UByte] {

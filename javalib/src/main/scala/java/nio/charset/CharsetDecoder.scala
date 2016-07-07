@@ -4,8 +4,9 @@ import scala.annotation.{switch, tailrec}
 
 import java.nio._
 
-abstract class CharsetDecoder protected (
-    cs: Charset, _averageCharsPerByte: Float, _maxCharsPerByte: Float) {
+abstract class CharsetDecoder protected (cs: Charset,
+                                         _averageCharsPerByte: Float,
+                                         _maxCharsPerByte: Float) {
 
   import CharsetDecoder._
 
@@ -71,8 +72,9 @@ abstract class CharsetDecoder protected (
   final def averageCharsPerByte(): Float = _averageCharsPerByte
   final def maxCharsPerByte(): Float     = _maxCharsPerByte
 
-  final def decode(
-      in: ByteBuffer, out: CharBuffer, endOfInput: Boolean): CoderResult = {
+  final def decode(in: ByteBuffer,
+                   out: CharBuffer,
+                   endOfInput: Boolean): CoderResult = {
 
     if (status == FLUSHED || (!endOfInput && status == END))
       throw new IllegalStateException
@@ -91,16 +93,15 @@ abstract class CharsetDecoder protected (
           throw new CoderMalfunctionError(ex)
       }
 
-      val result2 =
-        if (result1.isUnderflow) {
-          val remaining = in.remaining
-          if (endOfInput && remaining > 0)
-            CoderResult.malformedForLength(remaining)
-          else
-            result1
-        } else {
+      val result2 = if (result1.isUnderflow) {
+        val remaining = in.remaining
+        if (endOfInput && remaining > 0)
+          CoderResult.malformedForLength(remaining)
+        else
           result1
-        }
+      } else {
+        result1
+      }
 
       if (result2.isUnderflow || result2.isOverflow) {
         result2

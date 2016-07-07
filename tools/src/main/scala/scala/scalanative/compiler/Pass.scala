@@ -31,8 +31,9 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
   def preType: OnType          = null
   def postType: OnType         = null
 
-  @inline private def hook[A, B](
-      pf: PartialFunction[A, B], arg: A, default: B): B =
+  @inline private def hook[A, B](pf: PartialFunction[A, B],
+                                 arg: A,
+                                 default: B): B =
     if (pf == null) default else pf.applyOrElse(arg, (_: A) => default)
 
   private def txAssembly(assembly: Seq[Defn]): Seq[Defn] = {

@@ -2,7 +2,7 @@ package scala.scalanative
 package native
 
 /** `UShort`, a 16-bit unsigned integer. */
-final class UShort private[scala](private val underlying: Short)
+final class UShort private[scala] (private val underlying: Short)
     extends AnyVal
     with java.io.Serializable
     with Comparable[UShort] {

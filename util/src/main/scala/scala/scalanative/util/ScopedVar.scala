@@ -25,8 +25,9 @@ object ScopedVar {
     }
   }
 
-  private class AssignmentStackElement[T](
-      scVar: ScopedVar[T], oldInit: Boolean, oldValue: T) {
+  private class AssignmentStackElement[T](scVar: ScopedVar[T],
+                                          oldInit: Boolean,
+                                          oldValue: T) {
     private[ScopedVar] def pop(): Unit = {
       scVar.init = oldInit
       scVar.value = oldValue
@@ -37,6 +38,7 @@ object ScopedVar {
 
   def scoped[T](ass: Assignment[_]*)(body: => T): T = {
     val stack = ass.map(_.push())
-    try body finally stack.reverse.foreach(_.pop())
+    try body
+    finally stack.reverse.foreach(_.pop())
   }
 }

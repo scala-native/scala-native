@@ -34,8 +34,10 @@ final class _String()
     }
   }
 
-  def this(
-      data: Array[scala.Byte], start: Int, length: Int, encoding: Charset) = {
+  def this(data: Array[scala.Byte],
+           start: Int,
+           length: Int,
+           encoding: Charset) = {
     this()
     offset = 0
     val charBuffer = encoding.decode(ByteBuffer.wrap(data, start, length))
@@ -43,8 +45,10 @@ final class _String()
     count = charBuffer.length
   }
 
-  def this(
-      data: Array[scala.Byte], start: Int, length: Int, encoding: _String) =
+  def this(data: Array[scala.Byte],
+           start: Int,
+           length: Int,
+           encoding: _String) =
     this(data, start, length, Charset.forName(encoding))
 
   def this(data: Array[scala.Byte], start: Int, length: Int) =
@@ -188,8 +192,8 @@ final class _String()
         System.arraycopy(value, offset, buffer, 0, count)
       }
 
-      System.arraycopy(
-          string.value, string.offset, buffer, count, string.count)
+      System
+        .arraycopy(string.value, string.offset, buffer, count, string.count)
 
       new _String(0, buffer.length, buffer)
     }
@@ -259,8 +263,10 @@ final class _String()
   }
 
   @Deprecated
-  def getBytes(
-      start: Int, _end: Int, data: Array[scala.Byte], _index: Int): Unit = {
+  def getBytes(start: Int,
+               _end: Int,
+               data: Array[scala.Byte],
+               _index: Int): Unit = {
     var end = _end
     if (0 <= start && start <= end && end <= count) {
       end += offset
@@ -711,8 +717,8 @@ final class _String()
     if (beginIndex < 0 || endIndex > count || beginIndex > endIndex) {
       throw new IndexOutOfBoundsException()
     } else {
-      Character.codePointCount(
-          value, beginIndex + offset, endIndex - beginIndex)
+      Character
+        .codePointCount(value, beginIndex + offset, endIndex - beginIndex)
     }
 
   def contains(cs: CharSequence): scala.Boolean =

@@ -6,8 +6,8 @@ object signal {
 
   // Signals
 
-  def signal(
-      sig: CInt, handler: FunctionPtr1[CInt, Unit]): FunctionPtr1[CInt, Unit] =
+  def signal(sig: CInt,
+             handler: FunctionPtr1[CInt, Unit]): FunctionPtr1[CInt, Unit] =
     extern
   def raise(sig: CInt): CInt = extern
 

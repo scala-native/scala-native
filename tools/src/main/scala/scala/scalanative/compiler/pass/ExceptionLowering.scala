@@ -24,8 +24,8 @@ class ExceptionLowering(implicit fresh: Fresh) extends Pass {
       block
   }
 
-  private def transformBlock(
-      block: Block, handler: Option[Next.Fail]): Seq[Block] =
+  private def transformBlock(block: Block,
+                             handler: Option[Next.Fail]): Seq[Block] =
     handler.fold(Seq(transformCf(block))) { fail =>
       val blocks = mutable.UnrolledBuffer.empty[Block]
       var name   = block.name
