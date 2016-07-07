@@ -9,8 +9,6 @@ import nir.Shows._
 import util.sh
 
 final class Linker(dotpath: Option[String], paths: Seq[String]) {
-  println(s"new Linker($dotpath, $paths)")
-
   private val assemblies: Seq[Assembly] = paths.flatMap(Assembly(_))
 
   private def load(global: Global): Option[(Seq[Dep], Seq[Attr.Link], Defn)] =
