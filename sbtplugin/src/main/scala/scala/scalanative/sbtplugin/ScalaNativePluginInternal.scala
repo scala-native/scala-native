@@ -12,8 +12,8 @@ object ScalaNativePluginInternal {
   private def cpToString(cp: Seq[File]): String =
     cpToStrings(cp).mkString(java.io.File.pathSeparator)
 
-  private lazy val rtlib =
-    Path.userHome / ".scalanative" / ("rtlib-" + nir.Versions.current)
+  private lazy val nativelib =
+    Path.userHome / ".scalanative" / ("nativelib-" + nir.Versions.current)
 
   private def abs(file: File): String =
     file.getAbsolutePath
@@ -26,12 +26,12 @@ object ScalaNativePluginInternal {
 
   /** Compiles rt to llvm ir using clang. */
   private def unpackRtlib(classpath: Seq[String]): Unit = {
-    val rtlibjar = classpath.collectFirst {
-      case p if p.contains("org.scala-native") && p.contains("rtlib") => p
+    val nativelibjar = classpath.collectFirst {
+      case p if p.contains("org.scala-native") && p.contains("nativelib") => p
     }.get
 
-    IO.delete(rtlib)
-    IO.unzip(file(rtlibjar), rtlib)
+    IO.delete(nativelib)
+    IO.unzip(file(nativelibjar), nativelib)
   }
 
   /** Compiles application and runtime llvm ir file to binary using clang. */
@@ -44,8 +44,8 @@ object ScalaNativePluginInternal {
                         opts: Seq[String]): Unit = {
     val outpath  = abs(binary)
     val apppath  = abs(appll)
-    val rtpaths  = (rtlib ** "*.cpp").get.map(abs)
-    val paths    = apppath +: rtpaths
+    val cpppaths = (nativelib ** "*.cpp").get.map(abs)
+    val paths    = apppath +: cpppaths
     val linkopts = links.zip(links.map(linkage.get(_))).flatMap {
       case (name, Some("static"))         => Seq("-static", "-l", name)
       case (name, Some("dynamic") | None) => Seq("-l", name)
@@ -59,9 +59,13 @@ object ScalaNativePluginInternal {
   }
 
   lazy val projectSettings = Seq(
-    addCompilerPlugin("org.scala-native" % "nscplugin" % "0.1-SNAPSHOT" cross CrossVersion.full),
+    libraryDependencies ++= Seq(
+      "org.scala-native" %% "nativelib" % nativeVersion,
+      "org.scala-native" %% "javalib"   % nativeVersion,
+      "org.scala-native" %% "scalalib"  % nativeVersion
+    ),
 
-    libraryDependencies += "org.scala-native" %% "rtlib" % nir.Versions.current,
+    addCompilerPlugin("org.scala-native" % "nscplugin" % nativeVersion cross CrossVersion.full),
 
     nativeVerbose := false,
 

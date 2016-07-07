@@ -1,6 +1,4 @@
 import scala.util.Try
-import scala.scalanative.sbtplugin.{ScalaNativePlugin, ScalaNativePluginInternal}
-import ScalaNativePlugin.autoImport._
 
 val toolScalaVersion = "2.10.6"
 
@@ -108,18 +106,20 @@ lazy val toolSettings =
         "-unchecked",
         "-feature",
         "-encoding", "utf8"
-      )
+      ),
+      javacOptions ++= Seq("-encoding", "utf8")
     )
 
 lazy val libSettings =
-  baseSettings ++
-    ScalaNativePlugin.projectSettings ++
-    Seq(
-      scalaVersion := libScalaVersion,
-      scalacOptions ++= Seq("-encoding", "utf8"),
-      javacOptions ++= Seq("-encoding", "utf8"),
-      nativeEmitDependencyGraphPath := Some(file("out.dot"))
-    )
+  (baseSettings ++ ScalaNativePlugin.projectSettings.tail) :+
+  (scalaVersion := libScalaVersion)
+
+lazy val projectSettings =
+  ScalaNativePlugin.projectSettings ++ Seq(
+    scalaVersion := libScalaVersion,
+    nativeVerbose := true,
+    nativeClangOptions ++= Seq("-O2")
+  )
 
 lazy val util =
   project.in(file("util")).
@@ -166,17 +166,6 @@ lazy val sbtplugin =
       scalafmtTest := {}
     ).
     dependsOn(tools)
-
-// rt is a library project but it can't use libSettings
-// due to the fact that it contains nrt dependency in
-// ScalaNativePlugin.projectSettings.
-lazy val rtlib =
-  project.in(file("rtlib")).
-    settings(baseSettings).
-    settings(publishSettings).
-    settings(
-      scalaVersion := libScalaVersion
-    )
 
 lazy val nativelib =
   project.in(file("nativelib")).
@@ -235,18 +224,11 @@ lazy val scalalib =
 
       scalafmtTest := {},
 
-      compile in Compile <<= (compile in Compile) dependsOn assembleScalaLibrary
-    ).
-    dependsOn(javalib)
+      compile in Compile <<= (compile in Compile) dependsOn assembleScalaLibrary,
 
-lazy val demoNative =
-  project.in(file("demo/native")).
-    settings(libSettings).
-    settings(noPublishSettings).
-    settings(
-      nativeClangOptions ++= Seq("-O2")
+      publishLocal <<= publishLocal dependsOn assembleScalaLibrary
     ).
-    dependsOn(scalalib)
+    dependsOn(nativelib, javalib)
 
 lazy val demoJVM =
   project.in(file("demo/jvm")).
@@ -256,12 +238,12 @@ lazy val demoJVM =
       javaOptions in run ++= Seq("-Xms64m", "-Xmx64m")
     )
 
+lazy val demoNative =
+  project.in(file("demo/native")).
+    settings(projectSettings).
+    settings(noPublishSettings)
+
 lazy val sandbox =
   project.in(file("sandbox")).
-    settings(libSettings).
-    settings(noPublishSettings).
-    settings(
-      nativeVerbose := true,
-      nativeClangOptions ++= Seq("-O2")
-    ).
-    dependsOn(scalalib)
+    settings(projectSettings).
+    settings(noPublishSettings)
