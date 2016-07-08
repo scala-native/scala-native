@@ -1111,6 +1111,14 @@ abstract class NirCodeGen
             case _ => abort("Unknown reference type operation code: " + code)
           }
 
+        case Type.Ptr =>
+          code match {
+            case EQ | ID =>
+              genBinaryOp(Op.Comp(Comp.Ieq, _, _, _), left, right, opty, focus)
+            case NE | NI =>
+              genBinaryOp(Op.Comp(Comp.Ine, _, _, _), left, right, opty, focus)
+          }
+
         case ty =>
           abort("Uknown binary operation type: " + ty)
       }

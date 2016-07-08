@@ -118,7 +118,7 @@ lazy val projectSettings =
   ScalaNativePlugin.projectSettings ++ Seq(
     scalaVersion := libScalaVersion,
     nativeVerbose := true,
-    nativeClangOptions ++= Seq("-O2")
+    nativeClangOptions ++= Seq("-O0")
   )
 
 lazy val util =

@@ -82,15 +82,15 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val RemUIntMethod  = getMember(RuntimeModule, TermName("remUInt"))
     lazy val RemULongMethod = getMember(RuntimeModule, TermName("remULong"))
 
-    lazy val RuntimePrimitiveStruct: Map[Char, Symbol] = Map(
-        'B' -> getRequiredClass("scala.scalanative.runtime.BooleanStruct"),
-        'C' -> getRequiredClass("scala.scalanative.runtime.CharStruct"),
-        'Z' -> getRequiredClass("scala.scalanative.runtime.ByteStruct"),
-        'S' -> getRequiredClass("scala.scalanative.runtime.ShortStruct"),
-        'I' -> getRequiredClass("scala.scalanative.runtime.IntStruct"),
-        'L' -> getRequiredClass("scala.scalanative.runtime.LongStruct"),
-        'F' -> getRequiredClass("scala.scalanative.runtime.FloatStruct"),
-        'D' -> getRequiredClass("scala.scalanative.runtime.DoubleStruct")
+    lazy val RuntimePrimitive: Map[Char, Symbol] = Map(
+        'B' -> getRequiredClass("scala.scalanative.runtime.PrimitiveBoolean"),
+        'C' -> getRequiredClass("scala.scalanative.runtime.PrimitiveChar"),
+        'Z' -> getRequiredClass("scala.scalanative.runtime.PrimitiveByte"),
+        'S' -> getRequiredClass("scala.scalanative.runtime.PrimitiveShort"),
+        'I' -> getRequiredClass("scala.scalanative.runtime.PrimitiveInt"),
+        'L' -> getRequiredClass("scala.scalanative.runtime.PrimitiveLong"),
+        'F' -> getRequiredClass("scala.scalanative.runtime.PrimitiveFloat"),
+        'D' -> getRequiredClass("scala.scalanative.runtime.PrimitiveDouble")
     )
 
     lazy val RuntimeArrayClass: Map[Char, Symbol] = Map(

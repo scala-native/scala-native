@@ -1,38 +1,43 @@
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 1)
+// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 1)
 package scala.scalanative
 package runtime
 
 // Note 1:
-// Arrays.scala is currently implemented as textual templating that is expanded through project/gyb.py script. 
+// Arrays.scala is currently implemented as textual templating that is expanded through project/gyb.py script.
 // Update Arrays.scala.gyb and re-generate the source
-// $ ./project/gyb.py \ 
+// $ ./project/gyb.py \
 //     nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb > \
 //     nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala
-
 
 // Note 2:
 // Array of primitiveTypes don't contain pointers, runtime.allocAtomic() is called for memory allocation
 // Array of Object do contain pointers. runtime.alloc() is called for memory allocation
 
 // Note 3:
-// PrimitiveArray.helperClone can allocate memory with GC.malloc_atomic() because 
+// PrimitiveArray.helperClone can allocate memory with GC.malloc_atomic() because
 // it will overwrite all data (no need to call llvm.memset)
 
-
-import native._
-import Intrinsics._
+import scalanative.native._
+import scalanative.runtime.Intrinsics._
+import scala.annotation.unchecked.uncheckedStable
 
 @struct class ArrayHeader(val info: Ptr[_], val length: Int)
 
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 30)
+// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 29)
 
 sealed abstract class Array[T]
     extends java.io.Serializable with java.lang.Cloneable {
   /** Number of elements of the array. */
-  def length: Int =
+  @inline def length: Int =
     // TODO: Update once we support ptr->field
     !(this.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]]
-    
+
+  /** Size between elements in the array. */
+  def stride: CSize
+
+  /** Pointer to the element. */
+  def at(i: Int): Ptr[T]
+
   /** Loads element at i, throws IndexOutOfBoundsException. */
   def apply(i: Int): T
 
@@ -40,156 +45,56 @@ sealed abstract class Array[T]
   def update(i: Int, value: T): Unit
 
   /** Create a shallow of given array. */
-  protected override def clone(): Array[T] = undefined  
+  protected override def clone(): Array[T] = ??? // overriden in concrete classes
 }
 
 object Array {
-  def copy (from: AnyRef, fromPos: Int, to: AnyRef, toPos: Int, len: Int): Unit = {
-    if (from == null)
-      throw new NullPointerException()
-    
-    if (to == null)
-      throw new NullPointerException()
-    
-    val fromTypeId = instanceTypeId(from)
-    val toTypeId = instanceTypeId(to)
-    
-    val stride = if (fromTypeId == arrayObjectTypeId && toTypeId == arrayObjectTypeId)
-      sizeof[Object]
-    
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 63)
-
-    else if (fromTypeId == arrayBooleanTypeId && toTypeId == arrayBooleanTypeId) 
-      sizeof[Boolean]
-      
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 63)
-
-    else if (fromTypeId == arrayCharTypeId && toTypeId == arrayCharTypeId) 
-      sizeof[Char]
-      
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 63)
-
-    else if (fromTypeId == arrayByteTypeId && toTypeId == arrayByteTypeId) 
-      sizeof[Byte]
-      
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 63)
-
-    else if (fromTypeId == arrayShortTypeId && toTypeId == arrayShortTypeId) 
-      sizeof[Short]
-      
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 63)
-
-    else if (fromTypeId == arrayIntTypeId && toTypeId == arrayIntTypeId) 
-      sizeof[Int]
-      
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 63)
-
-    else if (fromTypeId == arrayLongTypeId && toTypeId == arrayLongTypeId) 
-      sizeof[Long]
-      
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 63)
-
-    else if (fromTypeId == arrayFloatTypeId && toTypeId == arrayFloatTypeId) 
-      sizeof[Float]
-      
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 63)
-
-    else if (fromTypeId == arrayDoubleTypeId && toTypeId == arrayDoubleTypeId) 
-      sizeof[Double]
-      
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 68)
-
-    else
-      throw new ArrayStoreException ("Invalid array copy.")
-      
-    validateBoundaries (from.asInstanceOf[Array[_]], fromPos, to.asInstanceOf[Array[_]], toPos, len)
-    
-    val fromPtr: Ptr[Byte] = (from.cast[Ptr[Byte]] + sizeof[ArrayHeader] + stride * fromPos).cast[Ptr[Byte]]
-    
-    val toPtr: Ptr[Byte] = (to.cast[Ptr[Byte]] + sizeof[ArrayHeader] + stride * toPos).cast[Ptr[Byte]]
-        
-    `llvm.memmove.p0i8.p0i8.i64`(toPtr, fromPtr, stride * len, 1, false)
-  }
-  
-  // the id's chosen by the compiler/linker for differents types of array
-
-  val arrayObjectTypeId = typeId (typeof[scalanative.runtime.ObjectArray])
-  
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 86)
-
-  val arrayBooleanTypeId = typeId (typeof[scalanative.runtime.BooleanArray])
-  
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 86)
-
-  val arrayCharTypeId = typeId (typeof[scalanative.runtime.CharArray])
-  
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 86)
-
-  val arrayByteTypeId = typeId (typeof[scalanative.runtime.ByteArray])
-  
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 86)
-
-  val arrayShortTypeId = typeId (typeof[scalanative.runtime.ShortArray])
-  
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 86)
-
-  val arrayIntTypeId = typeId (typeof[scalanative.runtime.IntArray])
-  
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 86)
-
-  val arrayLongTypeId = typeId (typeof[scalanative.runtime.LongArray])
-  
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 86)
-
-  val arrayFloatTypeId = typeId (typeof[scalanative.runtime.FloatArray])
-  
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 86)
-
-  val arrayDoubleTypeId = typeId (typeof[scalanative.runtime.DoubleArray])
-  
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 90)
-    
-  private def typeId (ptr : Ptr[Type]): Int = {
-    (!ptr).id    
-  }
-  
-  private def instanceTypeId (any : AnyRef): Int = {
-    typeId(runtime.getType(any))
-  }
-  
-  @inline private[runtime] def validateBoundaries (from: Array[_], fromPos: Int, to: Array[_], toPos: Int, len: Int): Unit = {
-    if (len < 0)
-      throw new IndexOutOfBoundsException("length is negative")
-
-    if (fromPos < 0 || fromPos + len > from.length)
-      throw new IndexOutOfBoundsException(fromPos.toString)
-
-    if (toPos < 0 || toPos + len > to.length)
-      throw new IndexOutOfBoundsException(toPos.toString)    
-  }
-  
-  @inline private[runtime] def pointerAt(arr: Array[_], sizeOneElement: CSize, i: Int): Ptr[_] = {
-    if (i < 0 || i >= arr.length)
-      throw new IndexOutOfBoundsException(i.toString)
-    else {
-      (arr.cast[Ptr[Byte]] + sizeof[ArrayHeader] + sizeOneElement * i).cast[Ptr[_]]
+  def copy(from: AnyRef, fromPos: Int,
+           to: AnyRef, toPos: Int, len: Int): Unit = {
+    if (!from.isInstanceOf[Array[_]]) {
+      throw new IllegalArgumentException("from argument must be an array")
+    } else if (!to.isInstanceOf[Array[_]]) {
+      throw new IllegalArgumentException("to argument must be an array")
+    } else {
+      copy(from.asInstanceOf[Array[_]], fromPos,
+           to.asInstanceOf[Array[_]], toPos, len)
     }
   }
-  
+
+  def copy(from: Array[_], fromPos: Int,
+           to: Array[_], toPos: Int, len: Int): Unit = {
+    if (from == null || to == null) {
+      throw new NullPointerException()
+    } else if (getType(from) != getType(to)) {
+      throw new ArrayStoreException("Invalid array copy.")
+    } else if (len < 0) {
+      throw new IndexOutOfBoundsException("length is negative")
+    } else if (fromPos < 0 || fromPos + len > from.length) {
+      throw new IndexOutOfBoundsException(fromPos.toString)
+    } else if (toPos < 0 || toPos + len > to.length) {
+      throw new IndexOutOfBoundsException(toPos.toString)
+    } else {
+      val fromPtr = from.at(fromPos).cast[Ptr[Byte]]
+      val toPtr   = to.at(toPos).cast[Ptr[Byte]]
+
+      `llvm.memmove.p0i8.p0i8.i64`(toPtr, fromPtr, to.stride * len, 1, false)
+    }
+  }
+
   @inline private[runtime] def helperClone(from: Array[_], length: Int, stride: CSize): Ptr[_] = {
     val arrsize = sizeof[ArrayHeader] + stride * length
-    val arr = GC.malloc(arrsize)
+    val arr     = GC.malloc(arrsize)
     `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]], from.cast[Ptr[Byte]], arrsize, 1, false)
-    arr        
-  }  
-  
-  def alloc(length: Int, arrinfo:  Ptr[Type], stride: CSize): Ptr[_] = {
+    arr
+  }
+
+  @inline def alloc(length: Int, arrinfo:  Ptr[Type], stride: CSize): Ptr[_] = {
     val arrsize = sizeof[ArrayHeader] + stride * length
-    val arr = runtime.alloc(arrinfo, arrsize)
+    val arr     = runtime.alloc(arrinfo, arrsize)
     // set the length
-    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
-    arr        
-  } 
+    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length
+    arr
+  }
 }
 
 object PrimitiveArray {
@@ -199,138 +104,273 @@ object PrimitiveArray {
     `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]], src.cast[Ptr[Byte]], arrsize, 1, false)
     arr
   }
-  
-  def alloc(length: Int, arrinfo:  Ptr[Type], stride: CSize): Ptr[_] = {
+
+  @inline def alloc(length: Int, arrinfo:  Ptr[Type], stride: CSize): Ptr[_] = {
     val arrsize = sizeof[ArrayHeader] + stride * length
-    // Primitive arrays don't contain pointers 
+    // Primitive arrays don't contain pointers
     val arr = runtime.allocAtomic(arrinfo, arrsize)
     // set the length
-    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length    
-    arr        
+    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length
+    arr
   }
 }
 
 final class ObjectArray private () extends Array[Object] {
-  def apply(i: Int): Object = ! (Array.pointerAt(this, sizeof[Object], i).cast[Ptr[Object]])
+  @inline def stride: CSize =
+    sizeof[Object]
 
-  def update(i: Int, value: Object): Unit = ! (Array.pointerAt(this, sizeof[Object], i).cast[Ptr[Object]]) = value
+  @inline def at(i: Int): Ptr[Object] =
+    if (i < 0 || i >= length)
+      throw new IndexOutOfBoundsException(i.toString)
+    else {
+      val first = this.cast[Ptr[Byte]] + sizeof[ArrayHeader]
+      val ith   = first + stride * i
 
-  protected override def clone(): ObjectArray = Array.helperClone (this, length, sizeof[Object]).cast[ObjectArray]
+      ith.cast[Ptr[Object]]
+    }
+
+  @inline def apply(i: Int): Object = !at(i)
+
+  @inline def update(i: Int, value: Object): Unit = !at(i) = value
+
+  @inline protected override def clone(): ObjectArray =
+    Array.helperClone (this, length, sizeof[Object]).cast[ObjectArray]
 }
 
 object ObjectArray {
-  def alloc(length: Int): ObjectArray = Array.alloc(length, typeof[ObjectArray], sizeof[Object]).cast[ObjectArray]
+  @inline def alloc(length: Int): ObjectArray =
+    Array.alloc(length, typeof[ObjectArray], sizeof[Object]).cast[ObjectArray]
 }
 
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 165)
+// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 148)
 
 final class BooleanArray private () extends Array[Boolean] {
-  def apply(i: Int): Boolean = ! (Array.pointerAt(this, sizeof[Boolean], i).cast[Ptr[Boolean]])
+  @inline def stride: CSize =
+    sizeof[Boolean]
 
-  def update(i: Int, value: Boolean): Unit = ! (Array.pointerAt(this, sizeof[Boolean], i).cast[Ptr[Boolean]]) = value
+  @inline def at(i: Int): Ptr[Boolean] =
+    if (i < 0 || i >= length)
+      throw new IndexOutOfBoundsException(i.toString)
+    else {
+      val first = this.cast[Ptr[Byte]] + sizeof[ArrayHeader]
+      val ith   = first + stride * i
 
-  protected override def clone(): BooleanArray = PrimitiveArray.helperClone (this, length, sizeof[Boolean]).cast[BooleanArray]
+      ith.cast[Ptr[Boolean]]
+    }
+
+  @inline def apply(i: Int): Boolean = !at(i)
+
+  @inline def update(i: Int, value: Boolean): Unit = !at(i) = value
+
+  @inline protected override def clone(): BooleanArray =
+    PrimitiveArray.helperClone (this, length, sizeof[Boolean]).cast[BooleanArray]
 }
 
 object BooleanArray {
-  def alloc(length: Int): BooleanArray = PrimitiveArray.alloc(length, typeof[BooleanArray], sizeof[Boolean]).cast[BooleanArray]  
+  @inline def alloc(length: Int): BooleanArray =
+    PrimitiveArray.alloc(length, typeof[BooleanArray], sizeof[Boolean]).cast[BooleanArray]
 }
 
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 165)
+// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 148)
 
 final class CharArray private () extends Array[Char] {
-  def apply(i: Int): Char = ! (Array.pointerAt(this, sizeof[Char], i).cast[Ptr[Char]])
+  @inline def stride: CSize =
+    sizeof[Char]
 
-  def update(i: Int, value: Char): Unit = ! (Array.pointerAt(this, sizeof[Char], i).cast[Ptr[Char]]) = value
+  @inline def at(i: Int): Ptr[Char] =
+    if (i < 0 || i >= length)
+      throw new IndexOutOfBoundsException(i.toString)
+    else {
+      val first = this.cast[Ptr[Byte]] + sizeof[ArrayHeader]
+      val ith   = first + stride * i
 
-  protected override def clone(): CharArray = PrimitiveArray.helperClone (this, length, sizeof[Char]).cast[CharArray]
+      ith.cast[Ptr[Char]]
+    }
+
+  @inline def apply(i: Int): Char = !at(i)
+
+  @inline def update(i: Int, value: Char): Unit = !at(i) = value
+
+  @inline protected override def clone(): CharArray =
+    PrimitiveArray.helperClone (this, length, sizeof[Char]).cast[CharArray]
 }
 
 object CharArray {
-  def alloc(length: Int): CharArray = PrimitiveArray.alloc(length, typeof[CharArray], sizeof[Char]).cast[CharArray]  
+  @inline def alloc(length: Int): CharArray =
+    PrimitiveArray.alloc(length, typeof[CharArray], sizeof[Char]).cast[CharArray]
 }
 
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 165)
+// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 148)
 
 final class ByteArray private () extends Array[Byte] {
-  def apply(i: Int): Byte = ! (Array.pointerAt(this, sizeof[Byte], i).cast[Ptr[Byte]])
+  @inline def stride: CSize =
+    sizeof[Byte]
 
-  def update(i: Int, value: Byte): Unit = ! (Array.pointerAt(this, sizeof[Byte], i).cast[Ptr[Byte]]) = value
+  @inline def at(i: Int): Ptr[Byte] =
+    if (i < 0 || i >= length)
+      throw new IndexOutOfBoundsException(i.toString)
+    else {
+      val first = this.cast[Ptr[Byte]] + sizeof[ArrayHeader]
+      val ith   = first + stride * i
 
-  protected override def clone(): ByteArray = PrimitiveArray.helperClone (this, length, sizeof[Byte]).cast[ByteArray]
+      ith.cast[Ptr[Byte]]
+    }
+
+  @inline def apply(i: Int): Byte = !at(i)
+
+  @inline def update(i: Int, value: Byte): Unit = !at(i) = value
+
+  @inline protected override def clone(): ByteArray =
+    PrimitiveArray.helperClone (this, length, sizeof[Byte]).cast[ByteArray]
 }
 
 object ByteArray {
-  def alloc(length: Int): ByteArray = PrimitiveArray.alloc(length, typeof[ByteArray], sizeof[Byte]).cast[ByteArray]  
+  @inline def alloc(length: Int): ByteArray =
+    PrimitiveArray.alloc(length, typeof[ByteArray], sizeof[Byte]).cast[ByteArray]
 }
 
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 165)
+// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 148)
 
 final class ShortArray private () extends Array[Short] {
-  def apply(i: Int): Short = ! (Array.pointerAt(this, sizeof[Short], i).cast[Ptr[Short]])
+  @inline def stride: CSize =
+    sizeof[Short]
 
-  def update(i: Int, value: Short): Unit = ! (Array.pointerAt(this, sizeof[Short], i).cast[Ptr[Short]]) = value
+  @inline def at(i: Int): Ptr[Short] =
+    if (i < 0 || i >= length)
+      throw new IndexOutOfBoundsException(i.toString)
+    else {
+      val first = this.cast[Ptr[Byte]] + sizeof[ArrayHeader]
+      val ith   = first + stride * i
 
-  protected override def clone(): ShortArray = PrimitiveArray.helperClone (this, length, sizeof[Short]).cast[ShortArray]
+      ith.cast[Ptr[Short]]
+    }
+
+  @inline def apply(i: Int): Short = !at(i)
+
+  @inline def update(i: Int, value: Short): Unit = !at(i) = value
+
+  @inline protected override def clone(): ShortArray =
+    PrimitiveArray.helperClone (this, length, sizeof[Short]).cast[ShortArray]
 }
 
 object ShortArray {
-  def alloc(length: Int): ShortArray = PrimitiveArray.alloc(length, typeof[ShortArray], sizeof[Short]).cast[ShortArray]  
+  @inline def alloc(length: Int): ShortArray =
+    PrimitiveArray.alloc(length, typeof[ShortArray], sizeof[Short]).cast[ShortArray]
 }
 
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 165)
+// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 148)
 
 final class IntArray private () extends Array[Int] {
-  def apply(i: Int): Int = ! (Array.pointerAt(this, sizeof[Int], i).cast[Ptr[Int]])
+  @inline def stride: CSize =
+    sizeof[Int]
 
-  def update(i: Int, value: Int): Unit = ! (Array.pointerAt(this, sizeof[Int], i).cast[Ptr[Int]]) = value
+  @inline def at(i: Int): Ptr[Int] =
+    if (i < 0 || i >= length)
+      throw new IndexOutOfBoundsException(i.toString)
+    else {
+      val first = this.cast[Ptr[Byte]] + sizeof[ArrayHeader]
+      val ith   = first + stride * i
 
-  protected override def clone(): IntArray = PrimitiveArray.helperClone (this, length, sizeof[Int]).cast[IntArray]
+      ith.cast[Ptr[Int]]
+    }
+
+  @inline def apply(i: Int): Int = !at(i)
+
+  @inline def update(i: Int, value: Int): Unit = !at(i) = value
+
+  @inline protected override def clone(): IntArray =
+    PrimitiveArray.helperClone (this, length, sizeof[Int]).cast[IntArray]
 }
 
 object IntArray {
-  def alloc(length: Int): IntArray = PrimitiveArray.alloc(length, typeof[IntArray], sizeof[Int]).cast[IntArray]  
+  @inline def alloc(length: Int): IntArray =
+    PrimitiveArray.alloc(length, typeof[IntArray], sizeof[Int]).cast[IntArray]
 }
 
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 165)
+// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 148)
 
 final class LongArray private () extends Array[Long] {
-  def apply(i: Int): Long = ! (Array.pointerAt(this, sizeof[Long], i).cast[Ptr[Long]])
+  @inline def stride: CSize =
+    sizeof[Long]
 
-  def update(i: Int, value: Long): Unit = ! (Array.pointerAt(this, sizeof[Long], i).cast[Ptr[Long]]) = value
+  @inline def at(i: Int): Ptr[Long] =
+    if (i < 0 || i >= length)
+      throw new IndexOutOfBoundsException(i.toString)
+    else {
+      val first = this.cast[Ptr[Byte]] + sizeof[ArrayHeader]
+      val ith   = first + stride * i
 
-  protected override def clone(): LongArray = PrimitiveArray.helperClone (this, length, sizeof[Long]).cast[LongArray]
+      ith.cast[Ptr[Long]]
+    }
+
+  @inline def apply(i: Int): Long = !at(i)
+
+  @inline def update(i: Int, value: Long): Unit = !at(i) = value
+
+  @inline protected override def clone(): LongArray =
+    PrimitiveArray.helperClone (this, length, sizeof[Long]).cast[LongArray]
 }
 
 object LongArray {
-  def alloc(length: Int): LongArray = PrimitiveArray.alloc(length, typeof[LongArray], sizeof[Long]).cast[LongArray]  
+  @inline def alloc(length: Int): LongArray =
+    PrimitiveArray.alloc(length, typeof[LongArray], sizeof[Long]).cast[LongArray]
 }
 
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 165)
+// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 148)
 
 final class FloatArray private () extends Array[Float] {
-  def apply(i: Int): Float = ! (Array.pointerAt(this, sizeof[Float], i).cast[Ptr[Float]])
+  @inline def stride: CSize =
+    sizeof[Float]
 
-  def update(i: Int, value: Float): Unit = ! (Array.pointerAt(this, sizeof[Float], i).cast[Ptr[Float]]) = value
+  @inline def at(i: Int): Ptr[Float] =
+    if (i < 0 || i >= length)
+      throw new IndexOutOfBoundsException(i.toString)
+    else {
+      val first = this.cast[Ptr[Byte]] + sizeof[ArrayHeader]
+      val ith   = first + stride * i
 
-  protected override def clone(): FloatArray = PrimitiveArray.helperClone (this, length, sizeof[Float]).cast[FloatArray]
+      ith.cast[Ptr[Float]]
+    }
+
+  @inline def apply(i: Int): Float = !at(i)
+
+  @inline def update(i: Int, value: Float): Unit = !at(i) = value
+
+  @inline protected override def clone(): FloatArray =
+    PrimitiveArray.helperClone (this, length, sizeof[Float]).cast[FloatArray]
 }
 
 object FloatArray {
-  def alloc(length: Int): FloatArray = PrimitiveArray.alloc(length, typeof[FloatArray], sizeof[Float]).cast[FloatArray]  
+  @inline def alloc(length: Int): FloatArray =
+    PrimitiveArray.alloc(length, typeof[FloatArray], sizeof[Float]).cast[FloatArray]
 }
 
-// ###sourceLocation(file: "/home/francois/proyectos/oss/scala-native-fbd/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 165)
+// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 148)
 
 final class DoubleArray private () extends Array[Double] {
-  def apply(i: Int): Double = ! (Array.pointerAt(this, sizeof[Double], i).cast[Ptr[Double]])
+  @inline def stride: CSize =
+    sizeof[Double]
 
-  def update(i: Int, value: Double): Unit = ! (Array.pointerAt(this, sizeof[Double], i).cast[Ptr[Double]]) = value
+  @inline def at(i: Int): Ptr[Double] =
+    if (i < 0 || i >= length)
+      throw new IndexOutOfBoundsException(i.toString)
+    else {
+      val first = this.cast[Ptr[Byte]] + sizeof[ArrayHeader]
+      val ith   = first + stride * i
 
-  protected override def clone(): DoubleArray = PrimitiveArray.helperClone (this, length, sizeof[Double]).cast[DoubleArray]
+      ith.cast[Ptr[Double]]
+    }
+
+  @inline def apply(i: Int): Double = !at(i)
+
+  @inline def update(i: Int, value: Double): Unit = !at(i) = value
+
+  @inline protected override def clone(): DoubleArray =
+    PrimitiveArray.helperClone (this, length, sizeof[Double]).cast[DoubleArray]
 }
 
 object DoubleArray {
-  def alloc(length: Int): DoubleArray = PrimitiveArray.alloc(length, typeof[DoubleArray], sizeof[Double]).cast[DoubleArray]  
+  @inline def alloc(length: Int): DoubleArray =
+    PrimitiveArray.alloc(length, typeof[DoubleArray], sizeof[Double]).cast[DoubleArray]
 }
 

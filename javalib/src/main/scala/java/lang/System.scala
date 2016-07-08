@@ -17,12 +17,14 @@ object System {
 
   def identityHashCode(x: Object): scala.Int =
     x.cast[Word].hashCode
+
   def getenv(name: String): String                      = ???
   def clearProperty(key: String): String                = ???
   def getProperties(): Properties                       = ???
   def getProperty(key: String): String                  = ???
   def getProperty(key: String, default: String): String = ???
   def setProperty(key: String, value: String): String   = ???
+
   var in: InputStream  = _
   var out: PrintStream = _
   var err: PrintStream = _
