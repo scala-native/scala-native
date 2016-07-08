@@ -1,12 +1,16 @@
-import scalanative.native._
+import scalanative.native._, stdio._
+import java.nio._
+import java.nio.charset._
 
 object Test  {
-  var foo = 1
-  var funptr: FunctionPtr0[Unit] = { () =>
-    stdio.printf(c"value: %d", foo)
-    ()
-  }
   def main(args: Array[String]): Unit = {
-    funptr()
+    val s = "A java string"
+    val ca = s.toCharArray()
+    val cb = CharBuffer.wrap(ca, 0, s.length())
+    val buffer = Charset.defaultCharset().encode(cb)
+    val bytes = buffer.array()
+    bytes.foreach { b =>
+      putc(b, stdio.stdout)
+    }
   }
 }

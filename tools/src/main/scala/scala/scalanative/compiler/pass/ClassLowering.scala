@@ -113,7 +113,7 @@ class ClassLowering(implicit top: Top, fresh: Fresh) extends Pass {
                  Op.Elem(Rt.Type, typeptr, Seq(Val.I32(0), Val.I32(0)))),
             Inst(id.name, Op.Load(Type.I32, idptr)),
             Inst(ge.name,
-                 Op.Comp(Comp.Sge, Type.I32, Val.I32(cls.range.start), id)),
+                 Op.Comp(Comp.Sle, Type.I32, Val.I32(cls.range.start), id)),
             Inst(le.name,
                  Op.Comp(Comp.Sle, Type.I32, id, Val.I32(cls.range.end))),
             Inst(n, Op.Bin(Bin.And, Type.Bool, ge, le))

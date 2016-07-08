@@ -10,6 +10,6 @@ import native._
 
 % for T in primitives:
 
-@struct class ${T}Struct private ()
+@struct class Primitive${T} private ()
 
 % end
