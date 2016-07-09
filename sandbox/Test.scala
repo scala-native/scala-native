@@ -4,6 +4,11 @@ import java.nio.charset._
 
 object Test  {
   def main(args: Array[String]): Unit = {
+    val a:Ptr[_] = null;
+    if(a==null){
+      println("1");
+    }
+
     val s = "A java string"
     val ca = s.toCharArray()
     val cb = CharBuffer.wrap(ca, 0, s.length())
