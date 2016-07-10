@@ -163,7 +163,21 @@ lazy val sbtplugin =
     settings(
       sbtPlugin := true,
       // Scalafmt fails to format source of sbt plugins.
-      scalafmtTest := {}
+      scalafmtTest := {},
+      // Support for scripted tests
+      ScriptedPlugin.scriptedSettings,
+      scriptedLaunchOpts := { scriptedLaunchOpts.value ++
+        Seq("-Xmx1024M", "-XX:MaxPermSize=256M", "-Dplugin.version=" + version.value)
+      },
+      sbtTestDirectory := (baseDirectory in ThisBuild).value / "tests",
+      // publish the other projects before running scripted tests.
+      scripted <<= scripted dependsOn (publishLocal in util,
+                                       publishLocal in nir,
+                                       publishLocal in tools,
+                                       publishLocal in nscplugin,
+                                       publishLocal in nativelib,
+                                       publishLocal in javalib,
+                                       publishLocal in scalalib)
     ).
     dependsOn(tools)
 
