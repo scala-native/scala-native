@@ -124,9 +124,18 @@ object ScalaNativePluginInternal {
     },
 
     run := {
-      val binary = nativeLink.value
+      val log = streams.value.log
+      val binary = abs(nativeLink.value)
+      val args = spaceDelimited("<arg>").parsed
 
-      Process(abs(binary)).!
+      log.info("Running " + binary + " " + args.mkString(" "))
+      val exitCode = Process(binary, args).!
+
+      val message =
+        if (exitCode == 0) None
+        else Some("Nonzero exit code: " + exitCode)
+
+      Defaults.toError(message)
     }
   )
 
