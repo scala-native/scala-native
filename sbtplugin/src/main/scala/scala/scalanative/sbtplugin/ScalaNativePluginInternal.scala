@@ -97,7 +97,7 @@ object ScalaNativePluginInternal {
     },
 
     nativeLink := {
-      val entry     = (mainClass in Compile).value.get.toString + "$"
+      val entry     = (selectMainClass in Compile).value.get.toString + "$"
       val classpath = cpToStrings((fullClasspath in Compile).value.map(_.data))
       val target    = (crossTarget in Compile).value
       val appll     = target / (moduleName.value + "-out.ll")
