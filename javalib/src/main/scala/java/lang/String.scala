@@ -781,7 +781,7 @@ object _String {
 
   def valueOf(value: scala.Long): _String = Long.toString(value)
 
-  def valueOf(value: scala.Boolean): _String = if (value) "true" else "false"
+  def valueOf(value: scala.Boolean): _String = Boolean.toString(value)
 
   def valueOf(value: AnyRef): _String =
     if (value != null) valueOf(value.toString) else "null"
