@@ -81,6 +81,16 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val DivULongMethod = getMember(RuntimeModule, TermName("divULong"))
     lazy val RemUIntMethod  = getMember(RuntimeModule, TermName("remUInt"))
     lazy val RemULongMethod = getMember(RuntimeModule, TermName("remULong"))
+    lazy val ByteToUIntMethod =
+      getMember(RuntimeModule, TermName("byteToUInt"))
+    lazy val ByteToULongMethod =
+      getMember(RuntimeModule, TermName("byteToULong"))
+    lazy val ShortToUIntMethod =
+      getMember(RuntimeModule, TermName("shortToUInt"))
+    lazy val ShortToULongMethod =
+      getMember(RuntimeModule, TermName("shortToULong"))
+    lazy val IntToULongMethod =
+      getMember(RuntimeModule, TermName("intToULong"))
 
     lazy val RuntimePrimitive: Map[Char, Symbol] = Map(
         'B' -> getRequiredClass("scala.scalanative.runtime.PrimitiveBoolean"),

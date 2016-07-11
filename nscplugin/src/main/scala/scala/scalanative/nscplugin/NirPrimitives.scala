@@ -23,10 +23,16 @@ object NirPrimitives {
   final val CQUOTE     = 1 + TYPEOF
   final val CCAST      = 1 + CQUOTE
   final val STACKALLOC = 1 + CCAST
-  final val DIV_UINT   = 1 + STACKALLOC
-  final val DIV_ULONG  = 1 + DIV_UINT
-  final val REM_UINT   = 1 + DIV_ULONG
-  final val REM_ULONG  = 1 + REM_UINT
+
+  final val DIV_UINT       = 1 + STACKALLOC
+  final val DIV_ULONG      = 1 + DIV_UINT
+  final val REM_UINT       = 1 + DIV_ULONG
+  final val REM_ULONG      = 1 + REM_UINT
+  final val BYTE_TO_UINT   = 1 + REM_ULONG
+  final val BYTE_TO_ULONG  = 1 + BYTE_TO_UINT
+  final val SHORT_TO_UINT  = 1 + BYTE_TO_ULONG
+  final val SHORT_TO_ULONG = 1 + SHORT_TO_UINT
+  final val INT_TO_ULONG   = 1 + SHORT_TO_ULONG
 }
 
 abstract class NirPrimitives {
@@ -88,5 +94,10 @@ abstract class NirPrimitives {
     addPrimitive(DivULongMethod, DIV_ULONG)
     addPrimitive(RemUIntMethod, REM_UINT)
     addPrimitive(RemULongMethod, REM_ULONG)
+    addPrimitive(ByteToUIntMethod, BYTE_TO_UINT)
+    addPrimitive(ByteToULongMethod, BYTE_TO_ULONG)
+    addPrimitive(ShortToUIntMethod, SHORT_TO_UINT)
+    addPrimitive(ShortToULongMethod, SHORT_TO_ULONG)
+    addPrimitive(IntToULongMethod, INT_TO_ULONG)
   }
 }
