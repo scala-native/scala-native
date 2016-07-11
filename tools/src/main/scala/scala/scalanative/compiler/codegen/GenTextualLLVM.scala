@@ -350,6 +350,8 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
       sh"$cmp $l, ${justVal(r)}"
     case Op.Conv(name, ty, v) =>
       sh"$name $v to $ty"
+    case Op.Select(cond, v1, v2) =>
+      sh"select $cond, $v1, $v2"
     case op =>
       unsupported(op)
   }

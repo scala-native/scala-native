@@ -151,6 +151,7 @@ object Tags {
   final val CopyOp       = 1 + IsOp
   final val SizeofOp     = 1 + CopyOp
   final val ClosureOp    = 1 + SizeofOp
+  final val SelectOp     = 1 + ClosureOp
 
   // Types
 

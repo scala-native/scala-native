@@ -38,6 +38,9 @@ package object runtime {
   /** Intrinsified int to unsigned long conversion. */
   def intToULong(v: Int): Long = undefined
 
+  /** Select value without branching. */
+  def select[T](cond: Boolean, thenp: T, elsep: T)(implicit ct: ClassTag[T]): T = undefined
+
   /** Allocate memory in gc heap using given info pointer. */
   def alloc(ty: Ptr[Type], size: CSize): Ptr[_] = {
     val ptr = GC.malloc(size).cast[Ptr[Ptr[Type]]]

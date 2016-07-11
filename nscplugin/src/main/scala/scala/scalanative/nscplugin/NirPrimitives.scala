@@ -33,6 +33,8 @@ object NirPrimitives {
   final val SHORT_TO_UINT  = 1 + BYTE_TO_ULONG
   final val SHORT_TO_ULONG = 1 + SHORT_TO_UINT
   final val INT_TO_ULONG   = 1 + SHORT_TO_ULONG
+
+  final val SELECT = 1 + INT_TO_ULONG
 }
 
 abstract class NirPrimitives {
@@ -99,5 +101,6 @@ abstract class NirPrimitives {
     addPrimitive(ShortToUIntMethod, SHORT_TO_UINT)
     addPrimitive(ShortToULongMethod, SHORT_TO_ULONG)
     addPrimitive(IntToULongMethod, INT_TO_ULONG)
+    addPrimitive(SelectMethod, SELECT)
   }
 }

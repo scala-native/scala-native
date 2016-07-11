@@ -937,6 +937,8 @@ abstract class NirCodeGen
         focus withValue Val.Unit
       } else if (code >= DIV_UINT && code <= INT_TO_ULONG) {
         genUnsignedOp(app, code, focus)
+      } else if (code == SELECT) {
+        genSelectOp(app, focus)
       } else {
         abort(
             "Unknown primitive operation: " + sym.fullName + "(" +
@@ -1457,6 +1459,18 @@ abstract class NirCodeGen
 
           right withOp Op.Bin(bin, genType(leftp.tpe), left.value, right.value)
       }
+
+    def genSelectOp(app: Tree, focus: Focus): Focus = {
+      val Apply(_, Seq(condp, thenp, elsep, ctp)) = app
+
+      val sym   = extractClassFromImplicitClassTag(ctp)
+      val cond  = genExpr(condp, focus)
+      val then_ = unboxValue(sym, genExpr(thenp, cond))
+      val else_ = unboxValue(sym, genExpr(elsep, then_))
+      val sel   = else_ withOp Op.Select(cond.value, then_.value, else_.value)
+
+      boxValue(sym, sel)
+    }
 
     def genSynchronized(app: Apply, focus: Focus): Focus = {
       val Apply(Select(receiverp, _), List(argp)) = app

@@ -114,6 +114,8 @@ object Shows {
       sh"$name[$ty] $l, $r"
     case Op.Conv(name, ty, v) =>
       sh"$name[$ty] $v"
+    case Op.Select(cond, thenv, elsev) =>
+      sh"select $cond, $thenv, $elsev"
 
     case Op.Classalloc(name) =>
       sh"classalloc $name"

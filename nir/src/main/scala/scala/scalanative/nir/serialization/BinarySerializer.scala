@@ -305,6 +305,12 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putType(ty)
       putVal(v)
 
+    case Op.Select(cond, thenv, elsev) =>
+      putInt(T.SelectOp)
+      putVal(cond)
+      putVal(thenv)
+      putVal(elsev)
+
     case Op.Classalloc(n) =>
       putInt(T.ClassallocOp)
       putGlobal(n)

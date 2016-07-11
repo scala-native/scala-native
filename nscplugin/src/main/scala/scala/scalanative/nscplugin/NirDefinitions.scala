@@ -91,6 +91,7 @@ trait NirDefinitions { self: NirGlobalAddons =>
       getMember(RuntimeModule, TermName("shortToULong"))
     lazy val IntToULongMethod =
       getMember(RuntimeModule, TermName("intToULong"))
+    lazy val SelectMethod = getMember(RuntimeModule, TermName("select"))
 
     lazy val RuntimePrimitive: Map[Char, Symbol] = Map(
         'B' -> getRequiredClass("scala.scalanative.runtime.PrimitiveBoolean"),
