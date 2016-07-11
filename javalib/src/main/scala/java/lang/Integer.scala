@@ -1,11 +1,11 @@
 package java.lang
 
-import scalanative.runtime.{divUInt, remUInt, undefined, Intrinsics}
+import scalanative.runtime.{select, divUInt, remUInt, intToULong, Intrinsics}
 
 final class Integer(override val intValue: scala.Int)
     extends Number
     with Comparable[Integer] {
-  def this(s: String) =
+  @inline def this(s: String) =
     this(Integer.parseInt(s))
 
   @inline override def byteValue(): scala.Byte =
@@ -39,21 +39,6 @@ final class Integer(override val intValue: scala.Int)
 
   @inline override def toString(): String =
     Integer.toString(intValue)
-
-  /* Methods of java.lang.Byte and java.lang.Short.
-   * When calling a method of j.l.Byte or j.l.Short on a primitive value,
-   * it appears to be called directly on the primitive value, which has type
-   * IntType. Call resolution, by the analyzer and the optimizer, will then
-   * look for the method in the class j.l.Integer instead of j.l.Byte or
-   * j.l.Short. This is why we add here the methods of these two classes that
-   * are not already in j.l.Integer.
-   */
-
-  @inline def compareTo(that: Byte): scala.Int =
-    Integer.compare(intValue, that.intValue)
-
-  @inline def compareTo(that: Short): scala.Int =
-    Integer.compare(intValue, that.intValue)
 }
 
 object Integer {
@@ -62,6 +47,7 @@ object Integer {
   final val MAX_VALUE = 2147483647
   final val SIZE      = 32
   final val BYTES     = 4
+
   private final val decimalScale: Array[scala.Int] = Array(1000000000,
                                                            100000000,
                                                            10000000,
@@ -108,54 +94,12 @@ object Integer {
                                    'x',
                                    'y',
                                    'z')
-  @inline
-  private def parse(s: String,
-                    offset: scala.Int,
-                    radix: scala.Int,
-                    negative: scala.Boolean): scala.Int = {
-    val max    = MIN_VALUE / radix
-    val length = s.length()
-    var result = 0
-    var offset = 1
-    while (offset < length) {
-      val digit = Character.digit(s.charAt(offset), radix)
-      if (digit == -1) throw new NumberFormatException(s)
-      if (max > result) throw new NumberFormatException(s)
-      offset += 1
 
-      val next = result * radix - digit
-      if (next > result) throw new NumberFormatException(s)
-      result = next
-    }
+  @inline def bitCount(i: scala.Int): scala.Int =
+    Intrinsics.`llvm.ctpop.i32`(i)
 
-    if (!negative) {
-      result = -result
-      if (result < 0) throw new NumberFormatException(s)
-    }
-
-    result
-  }
-
-  def bitCount(i: scala.Int): scala.Int = {
-    /* See http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
-     *
-     * The original algorithm uses *logical* shift rights. Here we use
-     * *arithmetic* shift rights instead. >> is shorter than >>>, especially
-     * since the latter needs (a >>> b) | 0 in JS. It might also be the case
-     * that >>> is a bit slower for that reason on some VMs.
-     *
-     * Using >> is valid because:
-     * * For the 2 first >>, the possible sign bit extension is &'ed away
-     * * For (t2 >> 4), t2 cannot be negative because it is at most the result
-     *   of 2 * 0x33333333, which does not overflow and is positive.
-     * * For the last >> 24, the left operand cannot be negative either.
-     *   Assume it was, that means the result of a >>> would be >= 128, but
-     *   the correct result must be <= 32. So by contradiction, it is positive.
-     */
-    val t1 = i - ((i >> 1) & 0x55555555)
-    val t2 = (t1 & 0x33333333) + ((t1 >> 2) & 0x33333333)
-    (((t2 + (t2 >> 4)) & 0xF0F0F0F) * 0x1010101) >> 24
-  }
+  @inline def byteValue(i: scala.Int): scala.Byte =
+    i.toByte
 
   @inline def compare(x: scala.Int, y: scala.Int): scala.Int =
     if (x == y) 0 else if (x < y) -1 else 1
@@ -163,7 +107,7 @@ object Integer {
   @inline def compareUnsigned(x: scala.Int, y: scala.Int): scala.Int =
     compare(x ^ scala.Int.MinValue, y ^ scala.Int.MinValue)
 
-  @inline def decode(nm: String): Integer = {
+  def decode(nm: String): Integer = {
     val length = nm.length()
     if (length == 0) throw new NumberFormatException()
 
@@ -210,19 +154,19 @@ object Integer {
     else result
   }
 
-  @inline def getInteger(nm: String, v: Integer): Integer =
+  def getInteger(nm: String, v: Integer): Integer =
     if (nm == null || nm.length() == 0) {
-      valueOf(v)
+      v
     } else {
       val prop = System.getProperty(nm)
       if (prop == null) {
-        valueOf(v)
+        v
       } else {
         try {
           decode(prop)
         } catch {
           case e: NumberFormatException =>
-            valueOf(v)
+            v
         }
       }
     }
@@ -231,8 +175,7 @@ object Integer {
     value
 
   @inline def highestOneBit(i: scala.Int): scala.Int =
-    if (i == 0) 0
-    else (1 << 31) >>> numberOfLeadingZeros(i)
+    select(i == 0, 0, (1 << 31) >>> numberOfLeadingZeros(i))
 
   @inline def lowestOneBit(i: scala.Int): scala.Int =
     i & -i
@@ -252,35 +195,51 @@ object Integer {
   @inline def parseInt(s: String): scala.Int =
     parseInt(s, 10)
 
-  @noinline def parseInt(s: String, radix: scala.Int): scala.Int = {
+  def parseInt(s: String, radix: scala.Int): scala.Int = {
     if (s == null || radix < Character.MIN_RADIX ||
-        radix > Character.MAX_RADIX) throw new NumberFormatException(s)
-    val length   = s.length()
-    val negative = s.charAt(0) == '-'
+        radix > Character.MAX_RADIX) {
+      throw new NumberFormatException()
+    }
 
-    if (length == 0)
+    val length = s.length()
+    if (length == 0) {
       throw new NumberFormatException(s)
-    else if (negative && length == 1)
+    }
+
+    val negative = s.charAt(0) == '-'
+    if (negative && length == 1) {
       throw new NumberFormatException(s)
-    else
-      parse(s, 1, radix, negative)
+    }
+
+    parse(s, 1, radix, negative)
   }
 
-  @inline def parseUnsignedInt(s: String): scala.Int =
-    parseUnsignedInt(s, 10)
+  private def parse(s: String,
+                    _offset: scala.Int,
+                    radix: scala.Int,
+                    negative: scala.Boolean): scala.Int = {
+    val max    = MIN_VALUE / radix
+    val length = s.length()
+    var result = 0
+    var offset = _offset
 
-  @noinline def parseUnsignedInt(s: String, radix: scala.Int): scala.Int = {
-    if (s == null || radix < Character.MIN_RADIX ||
-        radix > Character.MAX_RADIX) throw new NumberFormatException(s)
-    val length   = s.length()
-    val negative = s.charAt(0) == '-'
+    while (offset < length) {
+      val digit = Character.digit(s.charAt(offset), radix)
+      offset += 1
+      if (digit == -1) throw new NumberFormatException(s)
+      if (max > result) throw new NumberFormatException(s)
 
-    if (length == 0)
-      throw new NumberFormatException(s)
-    else if (negative && length == 1)
-      throw new NumberFormatException(s)
-    else
-      parse(s, 1, radix, negative)
+      val next = result * radix - digit
+      if (next > result) throw new NumberFormatException(s)
+      result = next
+    }
+
+    if (!negative) {
+      result = -result
+      if (result < 0) throw new NumberFormatException(s)
+    }
+
+    result
   }
 
   @inline
@@ -308,20 +267,11 @@ object Integer {
     a + b
 
   def toBinaryString(i: scala.Int): String = {
-    // toUnsignedString(i, 1)
-    var count = 1
-    if (i < 0) {
-      count = 32
-    } else {
-      var j = i
-      while (j != 0) {
-        count += 1
-        j >>>= 1
-      }
-    }
-
-    var k = i
+    var count =
+      if (i == 0) 1
+      else 32 - numberOfLeadingZeros(i)
     val buffer = new Array[Char](count)
+    var k = i
     do {
       count -= 1
       buffer(count) = ((k & 1) + '0').toChar
@@ -332,20 +282,11 @@ object Integer {
   }
 
   def toHexString(i: scala.Int): String = {
-    // toUnsignedString(i, 4)
-    var count = 1
-    if (i < 0) {
-      count = 8
-    } else {
-      var j = i
-      while (j != 0) {
-        count += 1
-        j >>>= 4
-      }
-    }
-
-    var k = i
+    var count =
+      if (i == 0) 1
+      else ((32 - numberOfLeadingZeros(i)) + 3) / 4
     val buffer = new Array[Char](count)
+    var k = i
     do {
       var t = k & 15
       if (t > 9) {
@@ -362,20 +303,11 @@ object Integer {
   }
 
   def toOctalString(i: scala.Int): String = {
-    // toUnsignedString(i, 3)
-    var count = 1
-    if (i < 0) {
-      count = 11
-    } else {
-      var j = i
-      while (j != 0) {
-        count += 1
-        j >>>= 3
-      }
-    }
-
-    var k = i
+    var count =
+      if (i == 0) 1
+      else ((32 - numberOfLeadingZeros(i)) + 2) / 3
     val buffer = new Array[Char](count)
+    var k = i
     do {
       count -= 1
       buffer(count) = ((k & 7) + '0').toChar
@@ -385,7 +317,7 @@ object Integer {
     new String(buffer)
   }
 
-  @inline def toString(i: scala.Int): String = {
+  def toString(i: scala.Int): String = {
     if (i == 0) {
       "0"
     } else {
@@ -408,8 +340,8 @@ object Integer {
           val res = quot / 10
           var digit_value = quot - ((res << 3) + (res << 1))
           digit_value += '0'
-          last_digit += 1
           buffer(last_digit) = digit_value.toChar
+          last_digit += 1
           quot = res
         } while (quot != 0)
 
@@ -417,12 +349,10 @@ object Integer {
         val count = last_digit
         do {
           val tmp = buffer(last_digit)
-
-          last_digit -= 1
           buffer(last_digit) = buffer(first_digit)
-
-          first_digit += 1
+          last_digit -= 1
           buffer(first_digit) = tmp
+          first_digit += 1
         } while (first_digit < last_digit)
 
         new String(buffer, 0, count)
@@ -449,8 +379,8 @@ object Integer {
           number = decimalScale(k)
           if (positive_value < number) {
             if (start) {
-              last_digit += 1
               buffer(last_digit) = '0'
+              last_digit += 1
             }
           }
 
@@ -484,33 +414,39 @@ object Integer {
           }
 
           if (start) {
-            last_digit += 1
             buffer(last_digit) = (count + '0').toChar
+            last_digit += 1
           }
 
           k += 1
         }
 
-        last_digit += 1
         buffer(last_digit) = (positive_value + '0').toChar
-        last_digit -= 1
+        last_digit += 1
         count = last_digit
+        last_digit -= 1
 
         new String(buffer, 0, count)
       }
     }
   }
 
-  @inline def toString(_i: scala.Int, _radix: scala.Int): String = {
+  def toString(_i: scala.Int, _radix: scala.Int): String = {
     if (_i == 0) {
       "0"
     } else {
       val radix =
         if (_radix < Character.MIN_RADIX || _radix > Character.MAX_RADIX) 10
         else _radix
+      var i     = _i
+      var j     = _i
+      var count = 2
       val negative = _i < 0
-      var (count, j) = if (negative) (2, _i) else (1, -_i)
-      var i          = _i
+      if (!negative) {
+        count = 1
+        j = -i
+      }
+      i /= radix
       while (i != 0) {
         count += 1
         i = i / radix
@@ -524,8 +460,9 @@ object Integer {
         } else {
           ch += '0'
         }
+        count -= 1
         buffer(count) = ch.toChar
-        j = j / radix
+        j /= radix
       } while (j != 0)
 
       if (negative) {
@@ -537,33 +474,7 @@ object Integer {
   }
 
   @inline def toUnsignedLong(x: scala.Int): scala.Long =
-    undefined
-
-  @inline def toUnsignedString(i: scala.Int): String =
-    toUnsignedString(i, 10)
-
-  @inline def toUnsignedString(_i: scala.Int, _radix: scala.Int): String = {
-    val buffer = new Array[scala.Char](32)
-    val length = buffer.length
-
-    var j = 0
-    while (j < length) {
-      buffer(j) = '0'
-      j += 1
-    }
-
-    var i       = _i
-    var charPos = 32
-    val radix = 1 << _radix
-    val mask  = radix - 1
-    do {
-      charPos -= 1
-      buffer(charPos) = digits(i & mask)
-      i >>>= -radix
-    } while (i != 0)
-
-    new String(buffer)
-  }
+    intToULong(x)
 
   @inline def valueOf(i: scala.Int): Integer =
     new Integer(i)
@@ -573,4 +484,10 @@ object Integer {
 
   @inline def valueOf(s: String, radix: scala.Int): Integer =
     valueOf(parseInt(s, radix))
+
+  // TODO:
+  // def parseUnsignedInt(s: String): scala.Int = parseUnsignedInt(s, 10)
+  // def parseUnsignedInt(s: String, radix: scala.Int): scala.Int = ???
+  // def toUnsignedString(i: scala.Int): String = toUnsignedString(i, 10)
+  // def toUnsignedString(_i: scala.Int, _radix: scala.Int): String = ???
 }
