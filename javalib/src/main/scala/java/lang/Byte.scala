@@ -1,11 +1,11 @@
 package java.lang
 
-import scalanative.runtime.undefined
+import scalanative.runtime.{byteToUInt, byteToULong}
 
 final class Byte(override val byteValue: scala.Byte)
     extends Number
     with Comparable[Byte] {
-  def this(s: String) =
+  @inline def this(s: String) =
     this(Byte.parseByte(s))
 
   @inline override def shortValue(): scala.Short =
@@ -42,8 +42,9 @@ final class Byte(override val byteValue: scala.Byte)
 }
 
 object Byte {
-  final val TYPE = classOf[scala.Byte]
-  final val SIZE = 8
+  final val TYPE  = classOf[scala.Byte]
+  final val SIZE  = 8
+  final val BYTES = 1
 
   /* MIN_VALUE and MAX_VALUE should be 'final val's. But it is impossible to
    * write a proper Byte literal in Scala, that would both considered a Byte
@@ -53,9 +54,8 @@ object Byte {
    * defs. Source-compatibility is not an issue because user code is compiled
    * against the JDK .class files anyway.
    */
-  def MIN_VALUE: scala.Byte = -128
-
-  def MAX_VALUE: scala.Byte = 127
+  @inline def MIN_VALUE: scala.Byte = -128
+  @inline def MAX_VALUE: scala.Byte = 127
 
   @inline def compare(x: scala.Byte, y: scala.Byte): scala.Int =
     x - y
@@ -72,6 +72,9 @@ object Byte {
   @inline def hashCode(b: scala.Byte): scala.Int =
     b.toInt
 
+  @inline def parseByte(s: String): scala.Byte =
+    parseByte(s, 10)
+
   @inline def parseByte(s: String, radix: scala.Int): scala.Byte = {
     val i = Integer.parseInt(s, radix)
     if (i < MIN_VALUE || i > MAX_VALUE)
@@ -80,17 +83,14 @@ object Byte {
       i.toByte
   }
 
-  @inline def parseByte(s: String): scala.Byte =
-    parseByte(s, 10)
-
   @inline def toString(b: scala.Byte): String =
     Integer.toString(b)
 
-  def toUnsignedInt(x: scala.Byte): scala.Int =
-    undefined
+  @inline def toUnsignedInt(x: scala.Byte): scala.Int =
+    byteToUInt(x)
 
-  def toUnsignedLong(x: scala.Byte): scala.Long =
-    undefined
+  @inline def toUnsignedLong(x: scala.Byte): scala.Long =
+    byteToULong(x)
 
   @inline def valueOf(byteValue: scala.Byte): Byte =
     new Byte(byteValue)
