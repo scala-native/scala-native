@@ -28,6 +28,7 @@ final class Compiler(opts: Opts) {
       pass.UnitLowering,
       pass.NothingLowering,
       pass.ExceptionLowering,
+      pass.Amd64AbiLowering,
       pass.StackallocHoisting,
       pass.CopyPropagation)
 

@@ -138,6 +138,7 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
     case Type.I16                      => "i16"
     case Type.I32                      => "i32"
     case Type.I64                      => "i64"
+    case Type.I(w)                     => sh"i$w"
     case Type.F32                      => "float"
     case Type.F64                      => "double"
     case Type.Array(ty, n)             => sh"[$n x $ty]"

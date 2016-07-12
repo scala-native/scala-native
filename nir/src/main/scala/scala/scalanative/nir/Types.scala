@@ -26,7 +26,7 @@ object Type {
   final case object Vararg extends Type
   final case object Ptr    extends Type
 
-  sealed abstract case class I(width: Int) extends Type
+  case class I(width: Int) extends Type
   final object Bool extends I(1)
   final object I8   extends I(8)
   final object I16  extends I(16)
