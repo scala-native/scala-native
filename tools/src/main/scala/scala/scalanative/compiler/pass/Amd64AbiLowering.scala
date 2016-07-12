@@ -11,16 +11,18 @@ class Amd64AbiLowering(implicit fresh: Fresh) extends Pass {
 
   def coerceArguments(args: Seq[Type]): Seq[Type] = args flatMap coerceArgument
 
+  def size(t: Type): Int = t match {
+    case Type.Bool => 1
+    case Type.I(w) => w / 8
+    case Type.F(w) => w / 8
+    case Type.Ptr  => 8
+    case Type.Array(e, n) => size(e) * n
+    case Type.Struct(_, e) => e.map(size).sum
+  }
+
   def coerceArgument(arg: Type): Seq[Type] = arg match {
     case struct @ Type.Struct(name, tys) =>
-      def size(t: Type): Int = t match {
-        case Type.Bool => 1
-        case Type.I(w) => w / 8
-        case Type.F(w) => w / 8
-        case Type.Ptr  => 8
-        case Type.Array(e, n) => size(e) * n
-        case Type.Struct(_, e) => e.map(size).sum
-      }
+
       size(struct) match {
         case s if s <= 8 => // One parameter
           Seq(Type.I(s * 8))
@@ -53,8 +55,11 @@ class Amd64AbiLowering(implicit fresh: Fresh) extends Pass {
   private var returnCoercionType: Type = _
   private val SmallParamStructType = Type.Struct(Global.None, Seq(Type.I64, Type.I64))
 
+  private var bigParamAllocs: Seq[Val.Local] = _
+  private var bigParamAllocType: Type = _
+
   override def preDefn: OnDefn = {
-    case defn @ Defn.Define(attrs, name, Type.Function(argtys, retty), entryBlock +: otherBlocks) =>
+    case defn @ Defn.Define(attrs, name, Type.Function(argtys, retty), blocks) =>
       smallParamAlloc = Val.Local(fresh(), Type.Ptr)
       returnCoercionType = coerceReturnType(retty)
       returnPointerParam = returnCoercionType match {
@@ -62,6 +67,19 @@ class Amd64AbiLowering(implicit fresh: Fresh) extends Pass {
           Val.Local(fresh(), Type.Ptr)
         case _ => null
       }
+      val allocs = for {
+        block <- blocks
+        Inst(_, Op.Call(ty: Type.Function, _, _)) <- block.insts
+      } yield for {
+          argty <- ty.args
+          coerced = coerceArgument(argty)
+          if coerced == Seq(Type.Ptr) && argty != Type.Ptr
+        } yield argty
+      val maxArgs = (0 +: allocs.map(_.size)).max
+      val maxArgSize = (0 +: allocs.flatten.map(size)).max
+      bigParamAllocType = Type.Array(Type.I8, maxArgSize)
+      bigParamAllocs = Seq.fill(maxArgs)(Val.Local(fresh(), Type.Ptr))
+
       Seq(defn)
   }
 
@@ -73,6 +91,8 @@ class Amd64AbiLowering(implicit fresh: Fresh) extends Pass {
       val newEntryBlock = entryBlock match {
         case Block(blockName, params, insts, cf) =>
           val allocSmallParam = Inst(smallParamAlloc.name, Op.Stackalloc(SmallParamStructType))
+
+          val allocBigParams = bigParamAllocs.map { case Val.Local(n, _) => Inst(n, Op.Stackalloc(bigParamAllocType)) }
 
           val argCoercions: Seq[(Seq[Val.Local], Seq[Inst])] =
             for(param <- params) yield coerceArgument(param.valty) match {
@@ -103,7 +123,7 @@ class Amd64AbiLowering(implicit fresh: Fresh) extends Pass {
             case _ => Seq()
           }
 
-          Block(blockName, additionalParams ++ argCoercions.flatMap(_._1), Seq(allocSmallParam) ++ argCoercions.flatMap(_._2) ++ insts, cf)
+          Block(blockName, additionalParams ++ argCoercions.flatMap(_._1), Seq(allocSmallParam) ++ allocBigParams ++ argCoercions.flatMap(_._2) ++ insts, cf)
       }
       val defn = Defn.Define(attrs, name, coerceFunctionType(ty), newEntryBlock +: otherBlocks)
       Seq(defn)
@@ -111,14 +131,15 @@ class Amd64AbiLowering(implicit fresh: Fresh) extends Pass {
 
   override def postInst: OnInst = {
     case Inst(res, Op.Call(functy: Type.Function, ptr, args)) =>
+      var bigParamIndex = 0
       val argCoertions: Seq[(Seq[Val], Seq[Inst])] =
         for(arg <- args) yield coerceArgument(arg.ty) match {
           case Seq(ty) if ty == arg.ty =>
             (Seq(arg), Seq())
           case Seq(Type.Ptr) =>
-            val alloc = Val.Local(fresh(), Type.Ptr)
+            val alloc = bigParamAllocs(bigParamIndex)
+            bigParamIndex += 1
             (Seq(alloc), Seq(
-              Inst(alloc.name, Op.Stackalloc(arg.ty)),
               Inst(Op.Store(arg.ty, alloc, arg))
             ))
           case coerced =>
