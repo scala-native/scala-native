@@ -58,6 +58,9 @@ class Amd64AbiLowering(implicit fresh: Fresh) extends Pass {
   private var bigParamAllocs: Seq[Val.Local] = _
   private var bigParamAllocType: Type = _
 
+  private var bigReturnAlloc: Val.Local = _
+  private var bigReturnType: Type = _
+
   override def preDefn: OnDefn = {
     case defn @ Defn.Define(attrs, name, Type.Function(argtys, retty), blocks) =>
       smallParamAlloc = Val.Local(fresh(), Type.Ptr)
@@ -80,6 +83,16 @@ class Amd64AbiLowering(implicit fresh: Fresh) extends Pass {
       bigParamAllocType = Type.Array(Type.I8, maxArgSize)
       bigParamAllocs = Seq.fill(maxArgs)(Val.Local(fresh(), Type.Ptr))
 
+      val rets = for {
+        block <- blocks
+        Inst(_, Op.Call(Type.Function(_, retty), _, _)) <- block.insts
+        coerced = coerceReturnType(retty)
+        if coerced == Type.Ptr && retty != Type.Ptr
+      } yield retty
+      val maxRetSize = (0 +: rets.map(size)).max
+      bigReturnType = Type.Array(Type.I8, maxRetSize)
+      bigReturnAlloc = Val.Local(fresh(), Type.Ptr)
+
       Seq(defn)
   }
 
@@ -91,6 +104,8 @@ class Amd64AbiLowering(implicit fresh: Fresh) extends Pass {
       val newEntryBlock = entryBlock match {
         case Block(blockName, params, insts, cf) =>
           val allocSmallParam = Inst(smallParamAlloc.name, Op.Stackalloc(SmallParamStructType))
+
+          val allocBigRet = Inst(bigReturnAlloc.name, Op.Stackalloc(bigReturnType))
 
           val allocBigParams = bigParamAllocs.map { case Val.Local(n, _) => Inst(n, Op.Stackalloc(bigParamAllocType)) }
 
@@ -123,7 +138,9 @@ class Amd64AbiLowering(implicit fresh: Fresh) extends Pass {
             case _ => Seq()
           }
 
-          Block(blockName, additionalParams ++ argCoercions.flatMap(_._1), Seq(allocSmallParam) ++ allocBigParams ++ argCoercions.flatMap(_._2) ++ insts, cf)
+          Block(blockName, additionalParams ++ argCoercions.flatMap(_._1),
+            Seq(allocSmallParam, allocBigRet) ++ allocBigParams ++ argCoercions.flatMap(_._2) ++ insts,
+            cf)
       }
       val defn = Defn.Define(attrs, name, coerceFunctionType(ty), newEntryBlock +: otherBlocks)
       Seq(defn)
@@ -166,10 +183,8 @@ class Amd64AbiLowering(implicit fresh: Fresh) extends Pass {
         case x if x == functy.ret =>
           (Some(res), Seq(), Seq(), Seq())
         case Type.Ptr =>
-          val alloc = Val.Local(fresh(), Type.Ptr)
-          val pre = Inst(alloc.name, Op.Stackalloc(functy.ret))
-          val post = Inst(res, Op.Load(functy.ret, alloc))
-          (None, Seq(pre), Seq(post), Seq(alloc))
+          val post = Inst(res, Op.Load(functy.ret, bigReturnAlloc))
+          (None, Seq(), Seq(post), Seq(bigReturnAlloc))
         case ty =>
           val ret = Val.Local(fresh(), ty)
           val post = Seq(
