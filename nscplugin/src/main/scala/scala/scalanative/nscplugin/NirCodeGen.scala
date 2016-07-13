@@ -1165,6 +1165,10 @@ abstract class NirCodeGen
     }
 
     def binaryOperationType(lty: nir.Type, rty: nir.Type) = (lty, rty) match {
+      case (nir.Type.Ptr, _: nir.Type.RefKind) =>
+        lty
+      case (_: nir.Type.RefKind, nir.Type.Ptr) =>
+        rty
       case (nir.Type.I(lwidth), nir.Type.I(rwidth)) =>
         if (lwidth >= rwidth) lty else rty
       case (nir.Type.I(_), nir.Type.F(_)) =>
@@ -1507,6 +1511,10 @@ abstract class NirCodeGen
       if (fromty == toty) focus withValue value
       else {
         val conv = (fromty, toty) match {
+          case (nir.Type.Ptr, _: nir.Type.RefKind) =>
+            Conv.Bitcast
+          case (_: nir.Type.RefKind, nir.Type.Ptr) =>
+            Conv.Bitcast
           case (nir.Type.I(lwidth), nir.Type.I(rwidth)) if lwidth < rwidth =>
             Conv.Sext
           case (nir.Type.I(lwidth), nir.Type.I(rwidth)) if lwidth > rwidth =>
