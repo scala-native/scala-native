@@ -109,6 +109,8 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
         case Op.Comp(comp, ty, lv, rv) =>
           Op.Comp(comp, txType(ty), txVal(lv), txVal(rv))
         case Op.Conv(conv, ty, v) => Op.Conv(conv, txType(ty), txVal(v))
+        case Op.Select(v1, v2, v3) =>
+          Op.Select(txVal(v1), txVal(v2), txVal(v3))
 
         case Op.Classalloc(n)    => Op.Classalloc(n)
         case Op.Field(ty, v, n)  => Op.Field(txType(ty), txVal(v), n)

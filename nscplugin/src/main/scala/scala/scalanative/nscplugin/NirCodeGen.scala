@@ -935,8 +935,10 @@ abstract class NirCodeGen
         genCQuoteOp(app, focus)
       } else if (code == BOXED_UNIT) {
         focus withValue Val.Unit
-      } else if (code >= DIV_UINT && code <= REM_ULONG) {
-        genUnsignedDivision(app, code, focus)
+      } else if (code >= DIV_UINT && code <= INT_TO_ULONG) {
+        genUnsignedOp(app, code, focus)
+      } else if (code == SELECT) {
+        genSelectOp(app, focus)
       } else {
         abort(
             "Unknown primitive operation: " + sym.fullName + "(" +
@@ -1437,17 +1439,37 @@ abstract class NirCodeGen
           unsupported(app)
       }
 
-    def genUnsignedDivision(app: Tree, code: Int, focus: Focus): Focus = {
-      val Apply(_, Seq(leftp, rightp)) = app
+    def genUnsignedOp(app: Tree, code: Int, focus: Focus): Focus =
+      app match {
+        case Apply(_, Seq(argp)) =>
+          assert(code >= BYTE_TO_UINT && code <= INT_TO_ULONG)
 
-      val bin = code match {
-        case DIV_UINT | DIV_ULONG => nir.Bin.Udiv
-        case REM_UINT | REM_ULONG => nir.Bin.Urem
+          val toty = genType(app.tpe)
+          val arg  = genExpr(argp, focus)
+
+          arg withOp Op.Conv(Conv.Zext, toty, arg.value)
+
+        case Apply(_, Seq(leftp, rightp)) =>
+          val bin = code match {
+            case DIV_UINT | DIV_ULONG => nir.Bin.Udiv
+            case REM_UINT | REM_ULONG => nir.Bin.Urem
+          }
+          val left  = genExpr(leftp, focus)
+          val right = genExpr(rightp, left)
+
+          right withOp Op.Bin(bin, genType(leftp.tpe), left.value, right.value)
       }
-      val left  = genExpr(leftp, focus)
-      val right = genExpr(rightp, left)
 
-      right withOp Op.Bin(bin, genType(leftp.tpe), left.value, right.value)
+    def genSelectOp(app: Tree, focus: Focus): Focus = {
+      val Apply(_, Seq(condp, thenp, elsep, ctp)) = app
+
+      val sym   = extractClassFromImplicitClassTag(ctp)
+      val cond  = genExpr(condp, focus)
+      val then_ = unboxValue(sym, genExpr(thenp, cond))
+      val else_ = unboxValue(sym, genExpr(elsep, then_))
+      val sel   = else_ withOp Op.Select(cond.value, then_.value, else_.value)
+
+      boxValue(sym, sel)
     }
 
     def genSynchronized(app: Apply, focus: Focus): Focus = {

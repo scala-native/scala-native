@@ -23,6 +23,24 @@ package object runtime {
   /** Intrinsified unsigned remainder on longs. */
   def remULong(l: Long, r: Long): Long = undefined
 
+  /** Intrinsified byte to unsigned int converstion. */
+  def byteToUInt(b: Byte): Int = undefined
+
+  /** Intrinsified byte to unsigned long conversion. */
+  def byteToULong(b: Byte): Long = undefined
+
+  /** Intrinsified short to unsigned int conversion. */
+  def shortToUInt(v: Short): Int = undefined
+
+  /** Intrinsified short to unsigned long conversion. */
+  def shortToULong(v: Short): Long = undefined
+
+  /** Intrinsified int to unsigned long conversion. */
+  def intToULong(v: Int): Long = undefined
+
+  /** Select value without branching. */
+  def select[T](cond: Boolean, thenp: T, elsep: T)(implicit ct: ClassTag[T]): T = undefined
+
   /** Allocate memory in gc heap using given info pointer. */
   def alloc(ty: Ptr[Type], size: CSize): Ptr[_] = {
     val ptr = GC.malloc(size).cast[Ptr[Ptr[Type]]]

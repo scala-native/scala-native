@@ -230,6 +230,7 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
     case T.BinOp        => Op.Bin(getBin, getType, getVal, getVal)
     case T.CompOp       => Op.Comp(getComp, getType, getVal, getVal)
     case T.ConvOp       => Op.Conv(getConv, getType, getVal)
+    case T.SelectOp     => Op.Select(getVal, getVal, getVal)
 
     case T.ClassallocOp => Op.Classalloc(getGlobal)
     case T.FieldOp      => Op.Field(getType, getVal, getGlobal)
