@@ -12,6 +12,11 @@ trait NirDefinitions { self: NirGlobalAddons =>
 
     // Native library
 
+    lazy val UByteClass  = getRequiredClass("scala.scalanative.native.UByte")
+    lazy val UShortClass = getRequiredClass("scala.scalanative.native.UShort")
+    lazy val UIntClass   = getRequiredClass("scala.scalanative.native.UInt")
+    lazy val ULongClass  = getRequiredClass("scala.scalanative.native.ULong")
+
     lazy val PtrClass        = getRequiredClass("scala.scalanative.native.Ptr")
     lazy val PtrLoadMethod   = getDecl(PtrClass, TermName("unary_$bang"))
     lazy val PtrStoreMethod  = getDecl(PtrClass, TermName("unary_$bang_$eq"))
@@ -59,6 +64,8 @@ trait NirDefinitions { self: NirGlobalAddons =>
     }
 
     // Native runtime
+
+    lazy val RuntimePackage = getPackage("scala.scalanative.runtime")
 
     lazy val RuntimeMonitorClass = getRequiredClass(
         "scala.scalanative.runtime.Monitor")
@@ -134,6 +141,9 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val RuntimeArrayCloneMethod: Map[Char, Symbol] =
       RuntimeArrayClass.mapValues(getMember(_, TermName("clone")))
 
+    lazy val RuntimeBoxesModule = getRequiredModule(
+        "scala.scalanative.runtime.Boxes")
+
     // Java library
 
     lazy val NObjectClass = getRequiredClass("java.lang._Object")
@@ -155,9 +165,13 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val BoxMethod = Map[Char, Symbol](
         'B' -> getDecl(BoxesRunTimeModule, TermName("boxToBoolean")),
         'C' -> getDecl(BoxesRunTimeModule, TermName("boxToCharacter")),
+        'z' -> getDecl(RuntimeBoxesModule, TermName("boxToUByte")),
         'Z' -> getDecl(BoxesRunTimeModule, TermName("boxToByte")),
+        's' -> getDecl(RuntimeBoxesModule, TermName("boxToUShort")),
         'S' -> getDecl(BoxesRunTimeModule, TermName("boxToShort")),
+        'i' -> getDecl(RuntimeBoxesModule, TermName("boxToUInt")),
         'I' -> getDecl(BoxesRunTimeModule, TermName("boxToInteger")),
+        'l' -> getDecl(RuntimeBoxesModule, TermName("boxToULong")),
         'L' -> getDecl(BoxesRunTimeModule, TermName("boxToLong")),
         'F' -> getDecl(BoxesRunTimeModule, TermName("boxToFloat")),
         'D' -> getDecl(BoxesRunTimeModule, TermName("boxToDouble"))
@@ -166,9 +180,13 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val UnboxMethod = Map[Char, Symbol](
         'B' -> getDecl(BoxesRunTimeModule, TermName("unboxToBoolean")),
         'C' -> getDecl(BoxesRunTimeModule, TermName("unboxToChar")),
+        'z' -> getDecl(RuntimeBoxesModule, TermName("unboxToUByte")),
         'Z' -> getDecl(BoxesRunTimeModule, TermName("unboxToByte")),
+        's' -> getDecl(RuntimeBoxesModule, TermName("unboxToUShort")),
         'S' -> getDecl(BoxesRunTimeModule, TermName("unboxToShort")),
+        'i' -> getDecl(RuntimeBoxesModule, TermName("unboxToUInt")),
         'I' -> getDecl(BoxesRunTimeModule, TermName("unboxToInt")),
+        'l' -> getDecl(RuntimeBoxesModule, TermName("unboxToULong")),
         'L' -> getDecl(BoxesRunTimeModule, TermName("unboxToLong")),
         'F' -> getDecl(BoxesRunTimeModule, TermName("unboxToFloat")),
         'D' -> getDecl(BoxesRunTimeModule, TermName("unboxToDouble"))
@@ -193,7 +211,8 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val NullClassTag    = getDecl(ClassTagModule, TermName("Null"))
 
     lazy val PureModules: Set[Symbol] =
-      Set(PredefModule, BoxesRunTimeModule).map(_.moduleClass)
+      Set(PredefModule, BoxesRunTimeModule, NativeModule, RuntimeBoxesModule)
+        .map(_.moduleClass)
     lazy val PureMethods: Set[Symbol] =
       (BoxMethod.values ++ UnboxMethod.values).toSet
   }

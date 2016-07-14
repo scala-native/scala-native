@@ -895,13 +895,19 @@ abstract class NirCodeGen
       last finish Cf.Jump(Next.Label(label, args))
     }
 
-    def genPrimitiveBox(argp: Tree, tpe: Type, focus: Focus) =
-      genModuleMethodCall(
-          BoxesRunTimeModule, BoxMethod(genPrimCode(tpe)), Seq(argp), focus)
+    def genPrimitiveBox(argp: Tree, tpe: Type, focus: Focus) = {
+      val method = BoxMethod(genPrimCode(tpe))
+      val module = method.owner
 
-    def genPrimitiveUnbox(argp: Tree, tpe: Type, focus: Focus) =
-      genModuleMethodCall(
-          BoxesRunTimeModule, UnboxMethod(genPrimCode(tpe)), Seq(argp), focus)
+      genModuleMethodCall(module, method, Seq(argp), focus)
+    }
+
+    def genPrimitiveUnbox(argp: Tree, tpe: Type, focus: Focus) = {
+      val method = UnboxMethod(genPrimCode(tpe))
+      val module = method.owner
+
+      genModuleMethodCall(module, method, Seq(argp), focus)
+    }
 
     def genPrimitiveOp(app: Apply, focus: Focus): Focus = {
       import scalaPrimitives._
@@ -1266,7 +1272,7 @@ abstract class NirCodeGen
       val Apply(Select(ptrp, _), argsp :+ ctp) = app
 
       val sym = extractClassFromImplicitClassTag(ctp)
-      val ty  = genTypeSym(sym)
+      val ty  = genTypeSym(sym, boxUnsigned = false)
       val ptr = genExpr(ptrp, focus)
 
       (code, argsp) match {
@@ -1592,6 +1598,12 @@ abstract class NirCodeGen
 
         case (cls, Seq()) if isStruct(cls) =>
           genNewStruct(cls, args, focus)
+
+        case (sym @ (UByteClass | UIntClass | UShortClass | ULongClass), Seq())
+          // We can't just compare the curClassSym with RuntimeBoxesModule
+          // as it's not the same when you're actually compiling Boxes module.
+          if curClassSym.fullName.toString != "scala.scalanative.runtime.Boxes" =>
+          genPrimitiveBox(args.head, sym.info, focus)
 
         case (cls, Seq()) =>
           genNew(cls, fun.symbol, args, focus)
