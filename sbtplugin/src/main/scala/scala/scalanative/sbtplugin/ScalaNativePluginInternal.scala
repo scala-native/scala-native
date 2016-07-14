@@ -4,6 +4,7 @@ package sbtplugin
 import sbt._, Keys._, complete.DefaultParsers._
 import scalanative.compiler.{Compiler => NativeCompiler, Opts => NativeOpts}
 import ScalaNativePlugin.autoImport._
+import scala.util.Try
 
 object ScalaNativePluginInternal {
   private def cpToStrings(cp: Seq[File]): Seq[String] =
@@ -86,7 +87,15 @@ object ScalaNativePluginInternal {
         }
     },
 
-    nativeClangOptions := Seq("-I/usr/local/include", "-L/usr/local/lib"),
+    nativeClangOptions := {
+      val includes = ("/usr/local/include" #:: Try(
+        Process("llvm-config --includedir").lines_!)
+        .getOrElse(Stream.empty)).map(s => s"-I$s")
+      val libs = ("/usr/local/lib" #:: Try(
+        Process("llvm-config --libdir").lines_!)
+        .getOrElse(Stream.empty)).map(s => s"-L$s")
+      includes #::: libs
+    },
 
     nativeEmitDependencyGraphPath := None,
 
