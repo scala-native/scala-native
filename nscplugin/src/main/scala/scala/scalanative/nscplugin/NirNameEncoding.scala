@@ -77,6 +77,7 @@ trait NirNameEncoding { self: NirCodeGen =>
       case nir.Type.I16                 => "i16"
       case nir.Type.I32                 => "i32"
       case nir.Type.I64                 => "i64"
+      case nir.Type.I(w)                => sh"i$w"
       case nir.Type.F32                 => "f32"
       case nir.Type.F64                 => "f64"
       case nir.Type.Array(ty, n)        => sh"arr.$ty.$n"

@@ -264,6 +264,7 @@ object Shows {
     case Type.I16                      => "i16"
     case Type.I32                      => "i32"
     case Type.I64                      => "i64"
+    case Type.I(w)                     => sh"i$w"
     case Type.F32                      => "f32"
     case Type.F64                      => "f64"
     case Type.Array(ty, n)             => sh"[$ty x $n]"
