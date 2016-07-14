@@ -784,7 +784,7 @@ object _String {
   def valueOf(value: scala.Boolean): _String = Boolean.toString(value)
 
   def valueOf(value: AnyRef): _String =
-    if (value != null) valueOf(value.toString) else "null"
+    if (value != null) value.toString else "null"
 
   def format(fmt: _String, args: Array[AnyRef]): _String =
     format(Locale.getDefault(), fmt, args)

@@ -1,10 +1,10 @@
-import scalanative.native._, stdio._
-import java.nio._
-import java.nio.charset._
+import scalanative.native._
 
 object Test  {
   def main(args: Array[String]): Unit = {
-    var x = 2
-    val v = scalanative.runtime.select(x > 0, 1, 2)
+    val u42 = 42.toUByte
+    val buf = stackalloc[UByte]
+    !buf = 42.toUByte
+    stdio.printf(c"%d\n", u42)
   }
 }

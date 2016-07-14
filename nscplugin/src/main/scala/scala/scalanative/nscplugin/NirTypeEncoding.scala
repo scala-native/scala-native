@@ -39,25 +39,30 @@ trait NirTypeEncoding { self: NirCodeGen =>
 
   def genTypeSym(sym: Symbol,
                  targs: Seq[Type] = Seq(),
-                 retty: Boolean = false): nir.Type = sym match {
-    case ArrayClass                 => genTypeSym(RuntimeArrayClass(genPrimCode(targs.head)))
-    case UnitClass | BoxedUnitClass => nir.Type.Unit
-    case NothingClass               => nir.Type.Nothing
-    case NullClass                  => genTypeSym(RuntimeNullClass)
-    case ObjectClass                => nir.Rt.Object
-    case CharClass                  => nir.Type.I16
-    case BooleanClass               => nir.Type.Bool
-    case ByteClass                  => nir.Type.I8
-    case ShortClass                 => nir.Type.I16
-    case IntClass                   => nir.Type.I32
-    case LongClass                  => nir.Type.I64
-    case FloatClass                 => nir.Type.F32
-    case DoubleClass                => nir.Type.F64
-    case PtrClass                   => nir.Type.Ptr
-    case _ if isStruct(sym)         => genStruct(sym)
-    case _ if isModule(sym)         => nir.Type.Module(genTypeName(sym))
-    case _ if sym.isInterface       => nir.Type.Trait(genTypeName(sym))
-    case _                          => nir.Type.Class(genTypeName(sym))
+                 retty: Boolean = false,
+                 boxUnsigned: Boolean = true): nir.Type = sym match {
+    case ArrayClass                  => genTypeSym(RuntimeArrayClass(genPrimCode(targs.head)))
+    case UnitClass | BoxedUnitClass  => nir.Type.Unit
+    case NothingClass                => nir.Type.Nothing
+    case NullClass                   => genTypeSym(RuntimeNullClass)
+    case ObjectClass                 => nir.Rt.Object
+    case CharClass                   => nir.Type.I16
+    case BooleanClass                => nir.Type.Bool
+    case ByteClass                   => nir.Type.I8
+    case UByteClass if !boxUnsigned  => nir.Type.I8
+    case ShortClass                  => nir.Type.I16
+    case UShortClass if !boxUnsigned => nir.Type.I16
+    case IntClass                    => nir.Type.I32
+    case UIntClass if !boxUnsigned   => nir.Type.I32
+    case LongClass                   => nir.Type.I64
+    case ULongClass if !boxUnsigned  => nir.Type.I64
+    case FloatClass                  => nir.Type.F32
+    case DoubleClass                 => nir.Type.F64
+    case PtrClass                    => nir.Type.Ptr
+    case _ if isStruct(sym)          => genStruct(sym)
+    case _ if isModule(sym)          => nir.Type.Module(genTypeName(sym))
+    case _ if sym.isInterface        => nir.Type.Trait(genTypeName(sym))
+    case _                           => nir.Type.Class(genTypeName(sym))
   }
 
   def genTypeValue(ty: Type): nir.Val = {
@@ -95,9 +100,13 @@ trait NirTypeEncoding { self: NirCodeGen =>
   def genPrimCode(elem: Symbol): Char = elem match {
     case CharClass    => 'C'
     case BooleanClass => 'B'
+    case UByteClass   => 'z'
     case ByteClass    => 'Z'
+    case UShortClass  => 's'
     case ShortClass   => 'S'
+    case UIntClass    => 'i'
     case IntClass     => 'I'
+    case ULongClass   => 'l'
     case LongClass    => 'L'
     case FloatClass   => 'F'
     case DoubleClass  => 'D'
