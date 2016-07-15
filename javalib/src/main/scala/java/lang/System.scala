@@ -26,6 +26,15 @@ object System {
   def setProperty(key: String, value: String): String   = ???
 
   var in: InputStream  = _
-  var out: PrintStream = _
-  var err: PrintStream = _
+  var out: PrintStream = new PrintStream(new CFileOutputStream(stdio.stdout))
+  var err: PrintStream = new PrintStream(new CFileOutputStream(stdio.stderr))
+
+  private class CFileOutputStream(stream: Ptr[stdio.FILE])
+      extends java.io.OutputStream {
+    private val buf = stdlib.malloc(1).cast[Ptr[UByte]]
+    def write(b: Int): Unit = {
+      !buf = b.toUByte
+      stdio.fwrite(buf, 1, 1, stream)
+    }
+  }
 }
