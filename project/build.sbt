@@ -13,3 +13,7 @@ libraryDependencies += "org.eclipse.jgit" % "org.eclipse.jgit.pgm" % "3.2.0.2013
 addSbtPlugin("com.geirsson" %% "sbt-scalafmt" % "0.2.10")
 
 addSbtPlugin("com.eed3si9n" % "sbt-dirty-money" % "0.1.0")
+
+libraryDependencies <+= (sbtVersion) { sv =>
+  "org.scala-sbt" % "scripted-plugin" % sv
+}

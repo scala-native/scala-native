@@ -1,0 +1,6 @@
+> run
+
+# replace Hello.scala by a program that will throw an exception
+$ copy-file changes/Hello-1.scala src/main/scala/Hello.scala
+
+-> run
