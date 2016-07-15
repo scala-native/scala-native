@@ -24,7 +24,10 @@ package object runtime {
   def remULong(l: Long, r: Long): Long = undefined
 
   /** Intrinsified byte to unsigned int converstion. */
-  def byteToUInt(b: Byte): Int = undefined
+  def byteToUInt(b: Byte): Int = {
+    if (b > 0) 0 + b
+    else Byte.MaxValue.toInt + (-b)
+  }
 
   /** Intrinsified byte to unsigned long conversion. */
   def byteToULong(b: Byte): Long = undefined
@@ -74,4 +77,3 @@ package object runtime {
     null
   }
 }
-
