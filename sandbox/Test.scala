@@ -1,3 +1,5 @@
+import scalanative.native._
+
 object Test  {
   def main(args: Array[String]): Unit = {
     val p1: Ptr[_] = null
