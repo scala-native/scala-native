@@ -2,6 +2,7 @@ package scala.scalanative
 
 import scala.reflect.ClassTag
 import runtime.undefined
+import runtime.GC
 
 package object native {
 
@@ -117,5 +118,35 @@ package object native {
     @inline def toUShort: UShort = toULong.toUShort
     @inline def toUInt: UInt     = toULong.toUInt
     @inline def toULong: ULong   = new ULong(value)
+  }
+
+  /** Convert a CString to a java.lang.String */
+  def fromCString(cstr: CString)(implicit charset: java.nio.charset.Charset): String = {
+    val len = string.strlen (cstr).toInt
+    val bytes = new Array[Byte] (len)
+
+    var c = 0
+    while (c < len) {
+      bytes(c) = !(cstr + c)
+      c += 1
+    }
+
+    new String(bytes, charset)
+  }
+
+  /** Convert a java.lang.String to a CString */
+  def toCString(str: String)(implicit charset: java.nio.charset.Charset): CString = {
+    val bytes = str.getBytes (charset)
+    val cstr = GC.malloc_atomic (bytes.length + 1).cast[Ptr[Byte]]
+
+    var c = 0    
+    while (c < bytes.length) {
+      !(cstr + c) = bytes(c)
+      c += 1
+    }
+
+    !(cstr + c) = 0.toByte
+
+    cstr.asInstanceOf[CString]
   }
 }
