@@ -2,3 +2,4 @@ scalalib/src/
 target/
 *.dot
 *.ppm
+.idea
