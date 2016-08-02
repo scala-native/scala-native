@@ -1,5 +1,6 @@
 package scala.scalanative
 
+import java.nio.charset.Charset
 import scala.reflect.ClassTag
 import runtime.undefined
 import runtime.GC
@@ -120,10 +121,11 @@ package object native {
     @inline def toULong: ULong   = new ULong(value)
   }
 
-  /** Convert a CString to a java.lang.String */
-  def fromCString(cstr: CString)(implicit charset: java.nio.charset.Charset): String = {
-    val len = string.strlen (cstr).toInt
-    val bytes = new Array[Byte] (len)
+  /** Convert a CString to a String using given charset. */
+  def fromCString(cstr: CString,
+                  charset: Charset = Charset.defaultCharset()): String = {
+    val len   = string.strlen(cstr).toInt
+    val bytes = new Array[Byte](len)
 
     var c = 0
     while (c < len) {
@@ -134,12 +136,13 @@ package object native {
     new String(bytes, charset)
   }
 
-  /** Convert a java.lang.String to a CString */
-  def toCString(str: String)(implicit charset: java.nio.charset.Charset): CString = {
-    val bytes = str.getBytes (charset)
-    val cstr = GC.malloc_atomic (bytes.length + 1).cast[Ptr[Byte]]
+  /** Convert a java.lang.String to a CString using given charset. */
+  def toCString(str: String,
+                charset: Charset = Charset.defaultCharset()): CString = {
+    val bytes = str.getBytes(charset)
+    val cstr  = GC.malloc_atomic(bytes.length + 1).cast[Ptr[Byte]]
 
-    var c = 0    
+    var c = 0
     while (c < bytes.length) {
       !(cstr + c) = bytes(c)
       c += 1
@@ -147,6 +150,6 @@ package object native {
 
     !(cstr + c) = 0.toByte
 
-    cstr.asInstanceOf[CString]
+    cstr
   }
 }
