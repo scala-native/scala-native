@@ -1376,26 +1376,30 @@ abstract class NirCodeGen
 
     def castConv(fromty: nir.Type, toty: nir.Type): Option[nir.Conv] =
       (fromty, toty) match {
-        case (Type.I(_), Type.Ptr)        => Some(nir.Conv.Inttoptr)
-        case (Type.Ptr, Type.I(_))        => Some(nir.Conv.Ptrtoint)
-        case (_: Type.RefKind, Type.Ptr)  => Some(nir.Conv.Bitcast)
-        case (Type.Ptr, _: Type.RefKind)  => Some(nir.Conv.Bitcast)
-        case (_: Type.RefKind, Type.I(_)) => Some(nir.Conv.Ptrtoint)
-        case (Type.I(_), _: Type.RefKind) => Some(nir.Conv.Inttoptr)
-        case _ if fromty == toty          => None
-        case _                            => unsupported(s"cast from $fromty to $toty")
+        case (Type.I(_), Type.Ptr)                => Some(nir.Conv.Inttoptr)
+        case (Type.Ptr, Type.I(_))                => Some(nir.Conv.Ptrtoint)
+        case (_: Type.RefKind, Type.Ptr)          => Some(nir.Conv.Bitcast)
+        case (Type.Ptr, _: Type.RefKind)          => Some(nir.Conv.Bitcast)
+        case (_: Type.RefKind, Type.I(_))         => Some(nir.Conv.Ptrtoint)
+        case (Type.I(_), _: Type.RefKind)         => Some(nir.Conv.Inttoptr)
+        case (Type.I(w1), Type.F(w2)) if w1 == w2 => Some(nir.Conv.Bitcast)
+        case (Type.F(w1), Type.I(w2)) if w1 == w2 => Some(nir.Conv.Bitcast)
+        case _ if fromty == toty                  => None
+        case _ =>
+          unsupported(s"cast from $fromty to $toty")
       }
 
     def genCastOp(app: Apply, focus: Focus): Focus = {
-      val Apply(Select(Apply(_, List(valuep)), _), List(ctp)) = app
+      val Apply(Select(Apply(_, List(valuep)), _), List(fromctp, toctp)) = app
 
-      val sym    = extractClassFromImplicitClassTag(ctp)
-      val fromty = genType(valuep.tpe)
-      val toty   = genTypeSym(sym)
-      val value  = genExpr(valuep, focus)
+      val fromsym = extractClassFromImplicitClassTag(fromctp)
+      val tosym   = extractClassFromImplicitClassTag(toctp)
+      val fromty  = genTypeSym(fromsym)
+      val toty    = genTypeSym(tosym)
+      val from    = unboxValue(fromsym, genExpr(valuep, focus))
 
-      boxValue(sym, castConv(fromty, toty).fold(value) { conv =>
-        value withOp Op.Conv(conv, toty, value.value)
+      boxValue(tosym, castConv(fromty, toty).fold(from) { conv =>
+        from withOp Op.Conv(conv, toty, from.value)
       })
     }
 
