@@ -95,31 +95,43 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
       val newop = pre.op match {
         case Op.Call(ty, ptrv, argvs) =>
           Op.Call(txType(ty), txVal(ptrv), argvs.map(txVal))
-        case Op.Load(ty, ptrv) => Op.Load(txType(ty), txVal(ptrv))
+        case Op.Load(ty, ptrv) =>
+          Op.Load(txType(ty), txVal(ptrv))
         case Op.Store(ty, ptrv, v) =>
           Op.Store(txType(ty), txVal(ptrv), txVal(v))
         case Op.Elem(ty, ptrv, indexvs) =>
           Op.Elem(txType(ty), txVal(ptrv), indexvs.map(txVal))
-        case Op.Extract(aggrv, indexvs) => Op.Extract(txVal(aggrv), indexvs)
+        case Op.Extract(aggrv, indexvs) =>
+          Op.Extract(txVal(aggrv), indexvs)
         case Op.Insert(aggrv, v, indexvs) =>
           Op.Insert(txVal(aggrv), txVal(v), indexvs)
-        case Op.Stackalloc(ty) => Op.Stackalloc(txType(ty))
+        case Op.Stackalloc(ty, v) =>
+          Op.Stackalloc(txType(ty), txVal(v))
         case Op.Bin(bin, ty, lv, rv) =>
           Op.Bin(bin, txType(ty), txVal(lv), txVal(rv))
         case Op.Comp(comp, ty, lv, rv) =>
           Op.Comp(comp, txType(ty), txVal(lv), txVal(rv))
-        case Op.Conv(conv, ty, v) => Op.Conv(conv, txType(ty), txVal(v))
+        case Op.Conv(conv, ty, v) =>
+          Op.Conv(conv, txType(ty), txVal(v))
         case Op.Select(v1, v2, v3) =>
           Op.Select(txVal(v1), txVal(v2), txVal(v3))
 
-        case Op.Classalloc(n)    => Op.Classalloc(n)
-        case Op.Field(ty, v, n)  => Op.Field(txType(ty), txVal(v), n)
-        case Op.Method(ty, v, n) => Op.Method(txType(ty), txVal(v), n)
-        case Op.Module(n)        => Op.Module(n)
-        case Op.As(ty, v)        => Op.As(txType(ty), txVal(v))
-        case Op.Is(ty, v)        => Op.Is(txType(ty), txVal(v))
-        case Op.Copy(v)          => Op.Copy(txVal(v))
-        case Op.Sizeof(ty)       => Op.Sizeof(txType(ty))
+        case Op.Classalloc(n) =>
+          Op.Classalloc(n)
+        case Op.Field(ty, v, n) =>
+          Op.Field(txType(ty), txVal(v), n)
+        case Op.Method(ty, v, n) =>
+          Op.Method(txType(ty), txVal(v), n)
+        case Op.Module(n) =>
+          Op.Module(n)
+        case Op.As(ty, v) =>
+          Op.As(txType(ty), txVal(v))
+        case Op.Is(ty, v) =>
+          Op.Is(txType(ty), txVal(v))
+        case Op.Copy(v) =>
+          Op.Copy(txVal(v))
+        case Op.Sizeof(ty) =>
+          Op.Sizeof(txType(ty))
         case Op.Closure(ty, fun, captures) =>
           Op.Closure(txType(ty), txVal(fun), captures.map(txVal))
       }

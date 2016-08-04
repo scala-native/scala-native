@@ -106,8 +106,10 @@ object Shows {
       sh"extract $aggr, ${r(indexes, sep = ", ")}"
     case Op.Insert(aggr, value, indexes) =>
       sh"insert $aggr, $value, ${r(indexes, sep = ", ")}"
-    case Op.Stackalloc(ty) =>
+    case Op.Stackalloc(ty, Val.None) =>
       sh"stackalloc[$ty]"
+    case Op.Stackalloc(ty, n) =>
+      sh"stackalloc[$ty] $n"
     case Op.Bin(name, ty, l, r) =>
       sh"$name[$ty] $l, $r"
     case Op.Comp(name, ty, l, r) =>

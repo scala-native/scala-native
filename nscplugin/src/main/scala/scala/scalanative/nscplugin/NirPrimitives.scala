@@ -91,7 +91,7 @@ abstract class NirPrimitives {
     addPrimitive(TypeofMethod, TYPEOF)
     addPrimitive(CQuoteMethod, CQUOTE)
     addPrimitive(CCastMethod, CCAST)
-    addPrimitive(StackallocMethod, STACKALLOC)
+    StackallocMethods.foreach(addPrimitive(_, STACKALLOC))
     addPrimitive(DivUIntMethod, DIV_UINT)
     addPrimitive(DivULongMethod, DIV_ULONG)
     addPrimitive(RemUIntMethod, REM_UINT)
