@@ -2,10 +2,10 @@ package java.lang
 
 import scalanative.native._
 
-final class Double(val doubleValue: scala.Double)
+final class Double(override val doubleValue: scala.Double)
     extends Number
     with Comparable[Double] {
-  def this(s: String) =
+  @inline def this(s: String) =
     this(Double.parseDouble(s))
 
   @inline override def byteValue(): scala.Byte =
@@ -23,7 +23,7 @@ final class Double(val doubleValue: scala.Double)
   @inline def floatValue(): scala.Float =
     doubleValue.toFloat
 
-  override def equals(that: Any): scala.Boolean =
+  @inline override def equals(that: Any): scala.Boolean =
     that match {
       case that: Double =>
         val a = doubleValue
@@ -51,15 +51,17 @@ final class Double(val doubleValue: scala.Double)
 }
 
 object Double {
-  final val TYPE              = classOf[scala.Double]
-  final val POSITIVE_INFINITY = 1.0 / 0.0
-  final val NEGATIVE_INFINITY = 1.0 / -0.0
-  final val NaN               = 0.0 / 0.0
-  final val MAX_VALUE         = scala.Double.MaxValue
-  final val MIN_VALUE         = scala.Double.MinPositiveValue
+  final val BYTES             = 8
   final val MAX_EXPONENT      = 1023
+  final val MAX_VALUE         = 1.79769313486231570E+308
   final val MIN_EXPONENT      = -1022
+  final val MIN_NORMAL        = 2.2250738585072014E-308
+  final val MIN_VALUE         = 5E-324
+  final val NaN               = 0.0 / 0.0
+  final val NEGATIVE_INFINITY = 1.0 / -0.0
+  final val POSITIVE_INFINITY = 1.0 / 0.0
   final val SIZE              = 64
+  final val TYPE              = classOf[scala.Double]
 
   @inline def compare(x: scala.Double, y: scala.Double): scala.Int =
     if (x > y) 1
@@ -108,8 +110,16 @@ object Double {
   @inline def min(a: scala.Double, b: scala.Double): scala.Double =
     Math.min(a, b)
 
-  @inline def parseDouble(s: String): scala.Double =
-    NumberParser.parseDouble(s)
+  def parseDouble(s: String): scala.Double = {
+    val cstr = toCString(s)
+    val end  = stackalloc[CString]
+
+    errno.errno = 0
+    val res = stdlib.strtod(cstr, end)
+
+    if (errno.errno == 0) res
+    else throw new NumberFormatException(s)
+  }
 
   @inline def sum(a: scala.Double, b: scala.Double): scala.Double =
     a + b
@@ -184,8 +194,19 @@ object Double {
     }
   }
 
-  @inline def toString(d: scala.Double): String =
-    NumberConverter.convert(d)
+  @inline def toString(d: scala.Double): String = {
+    if (isNaN(d)) {
+      "NaN"
+    } else if (d == POSITIVE_INFINITY) {
+      "Infinity"
+    } else if (d == NEGATIVE_INFINITY) {
+      "-Infinity"
+    } else {
+      val cstr = stackalloc[CChar](32)
+      stdio.snprintf(cstr, 32, c"%f", d)
+      fromCString(cstr)
+    }
+  }
 
   @inline def valueOf(d: scala.Double): Double =
     new Double(d)

@@ -1,11 +1,11 @@
 package java.lang
 
-import scalanative.native._
+import scalanative.native, native._
 
-final class Float(val floatValue: scala.Float)
+final class Float(override val floatValue: scala.Float)
     extends Number
     with Comparable[Float] {
-  def this(s: String) =
+  @inline def this(s: String) =
     this(Float.parseFloat(s))
 
   @inline override def byteValue(): scala.Byte =
@@ -23,7 +23,7 @@ final class Float(val floatValue: scala.Float)
   @inline def doubleValue(): scala.Double =
     floatValue.toDouble
 
-  override def equals(that: Any): scala.Boolean =
+  @inline override def equals(that: Any): scala.Boolean =
     that match {
       case that: Float =>
         val a = floatValue
@@ -51,15 +51,17 @@ final class Float(val floatValue: scala.Float)
 }
 
 object Float {
-  final val TYPE              = classOf[scala.Float]
-  final val POSITIVE_INFINITY = 1.0f / 0.0f
-  final val NEGATIVE_INFINITY = 1.0f / -0.0f
-  final val NaN               = 0.0f / 0.0f
-  final val MAX_VALUE         = scala.Float.MaxValue
-  final val MIN_VALUE         = scala.Float.MinPositiveValue
+  final val BYTES             = 4
   final val MAX_EXPONENT      = 127
+  final val MAX_VALUE         = 3.40282346638528860e+38f
   final val MIN_EXPONENT      = -126
+  final val MIN_NORMAL        = 1.17549435E-38f
+  final val MIN_VALUE         = 1.40129846432481707e-45f
+  final val NaN               = 0.0f / 0.0f
+  final val NEGATIVE_INFINITY = 1.0f / -0.0f
+  final val POSITIVE_INFINITY = 1.0f / 0.0f
   final val SIZE              = 32
+  final val TYPE              = classOf[scala.Float]
 
   @inline def compare(x: scala.Float, y: scala.Float): scala.Int =
     if (x > y) 1
@@ -106,8 +108,16 @@ object Float {
   @inline def min(a: scala.Float, b: scala.Float): scala.Float =
     Math.min(a, b)
 
-  @inline def parseFloat(s: String): scala.Float =
-    NumberParser.parseFloat(s)
+  def parseFloat(s: String): scala.Float = {
+    val cstr = toCString(s)
+    val end  = stackalloc[CString]
+
+    errno.errno = 0
+    val res = stdlib.strtof(cstr, end)
+
+    if (errno.errno == 0) res
+    else throw new NumberFormatException(s)
+  }
 
   @inline def sum(a: scala.Float, b: scala.Float): scala.Float =
     a + b
@@ -184,8 +194,19 @@ object Float {
       }
     }
 
-  @inline def toString(f: scala.Float): String =
-    NumberConverter.convert(f)
+  def toString(f: scala.Float): String = {
+    if (isNaN(f)) {
+      "NaN"
+    } else if (f == POSITIVE_INFINITY) {
+      "Infinity"
+    } else if (f == NEGATIVE_INFINITY) {
+      "-Infinity"
+    } else {
+      val cstr = stackalloc[CChar](32)
+      stdio.snprintf(cstr, 32, c"%f", f.toDouble)
+      fromCString(cstr)
+    }
+  }
 
   @inline def valueOf(s: String): Float =
     valueOf(parseFloat(s))
