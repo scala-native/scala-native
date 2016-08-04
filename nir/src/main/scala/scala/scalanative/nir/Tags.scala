@@ -142,7 +142,8 @@ object Tags {
   final val BinOp        = 1 + StackallocOp
   final val CompOp       = 1 + BinOp
   final val ConvOp       = 1 + CompOp
-  final val ClassallocOp = 1 + ConvOp
+  final val SelectOp     = 1 + ConvOp
+  final val ClassallocOp = 1 + SelectOp
   final val FieldOp      = 1 + ClassallocOp
   final val MethodOp     = 1 + FieldOp
   final val ModuleOp     = 1 + MethodOp
@@ -151,7 +152,6 @@ object Tags {
   final val CopyOp       = 1 + IsOp
   final val SizeofOp     = 1 + CopyOp
   final val ClosureOp    = 1 + SizeofOp
-  final val SelectOp     = 1 + ClosureOp
 
   // Types
 

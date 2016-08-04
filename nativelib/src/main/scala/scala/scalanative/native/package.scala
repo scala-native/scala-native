@@ -73,8 +73,11 @@ package object native {
   /** The C 'sizeof' operator. */
   def sizeof[T](implicit ct: ClassTag[T]): CSize = undefined
 
-  /** Stack allocate value. */
+  /** Stack allocate a value of given type. */
   def stackalloc[T](implicit ct: ClassTag[T]): Ptr[T] = undefined
+
+  /** Stack allocate n values of given type. */
+  def stackalloc[T](n: Int)(implicit ct: ClassTag[T]): Ptr[T] = undefined
 
   /** Used as right hand side of external method and field declarations. */
   def extern: Nothing = undefined
@@ -85,8 +88,8 @@ package object native {
   }
 
   /** C-style unchecked cast. */
-  implicit class CCast(val any: Any) {
-    def cast[T](implicit ct: ClassTag[T]): T = undefined
+  implicit class CCast[From](val from: From) {
+    def cast[To](implicit fromct: ClassTag[From], toct: ClassTag[To]): To = undefined
   }
 
   /** Scala Native extensions to the standard Byte. */

@@ -281,9 +281,10 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putVal(value)
       putInts(indexes)
 
-    case Op.Stackalloc(ty) =>
+    case Op.Stackalloc(ty, n) =>
       putInt(T.StackallocOp)
       putType(ty)
+      putVal(n)
 
     case Op.Bin(bin, ty, l, r) =>
       putInt(T.BinOp)

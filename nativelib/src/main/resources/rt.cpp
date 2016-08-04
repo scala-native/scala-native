@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <math.h>
+#include <errno.h>
 
 namespace __cxxabiv1 {
 extern "C" void *__cxa_begin_catch (void *);
@@ -179,6 +180,26 @@ extern "C" {
 
     int scalanative_math_errexcept() {
         return MATH_ERREXCEPT;
+    }
+
+    int scalanative_errno() {
+        return errno;
+    }
+
+    void scalanative_set_errno(int value) {
+        errno = value;
+    }
+
+    int scalanative_edom() {
+        return EDOM;
+    }
+
+    int scalanative_eilseq() {
+        return EILSEQ;
+    }
+
+    int scalanaitve_erange() {
+        return ERANGE;
     }
 }
 

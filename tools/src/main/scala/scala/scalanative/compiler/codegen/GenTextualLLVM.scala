@@ -241,10 +241,11 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
           buf +=
           sh"${bind}bitcast ${ty.elemty(indexes.tail)}* %$derived to i8*"
 
-        case Op.Stackalloc(ty) =>
+        case Op.Stackalloc(ty, n) =>
           val pointee = fresh()
+          val elems   = if (n == Val.None) sh"" else sh", $n"
 
-          buf += sh"%$pointee = alloca $ty"
+          buf += sh"%$pointee = alloca $ty$elems"
           buf += sh"${bind}bitcast $ty* %$pointee to i8*"
 
         case _ =>
@@ -306,15 +307,15 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
   }
 
   implicit val showOp: Show[Op] = Show {
-    case Op.Call(ty, f, args) =>
+    case Op.Call(_, _, _) =>
       unreachable
-    case Op.Load(ty, ptr) =>
+    case Op.Load(_, _) =>
       unreachable
-    case Op.Store(ty, ptr, value) =>
+    case Op.Store(_, _, _) =>
       unreachable
-    case Op.Elem(ty, ptr, indexes) =>
+    case Op.Elem(_, _, _) =>
       unreachable
-    case Op.Stackalloc(ty) =>
+    case Op.Stackalloc(_, _) =>
       unreachable
     case Op.Extract(aggr, indexes) =>
       sh"extractvalue $aggr, ${r(indexes, sep = ", ")}"
@@ -340,12 +341,12 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
         case Comp.Sle => "icmp sle"
         case Comp.Sgt => "icmp sgt"
         case Comp.Sge => "icmp sge"
-        case Comp.Feq => "fcmp oeq"
-        case Comp.Fne => "fcmp one"
-        case Comp.Flt => "fcmp olt"
-        case Comp.Fle => "fcmp ole"
-        case Comp.Fgt => "fcmp ogt"
-        case Comp.Fge => "fcmp oge"
+        case Comp.Feq => "fcmp ueq"
+        case Comp.Fne => "fcmp une"
+        case Comp.Flt => "fcmp ult"
+        case Comp.Fle => "fcmp ule"
+        case Comp.Fgt => "fcmp ugt"
+        case Comp.Fge => "fcmp uge"
       }
       sh"$cmp $l, ${justVal(r)}"
     case Op.Conv(name, ty, v) =>

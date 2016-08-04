@@ -470,7 +470,6 @@ abstract class NirCodeGen
           genLabel(label, previous = Some((focus, Seq())))
 
         case vd: ValDef =>
-          // TODO: attribute valdef name to the rhs node
           val rhs       = genExpr(vd.rhs, focus)
           val isMutable = curMethodInfo.mutableVars.contains(vd.symbol)
           if (!isMutable) {
@@ -478,7 +477,7 @@ abstract class NirCodeGen
             rhs withValue Val.None
           } else {
             val ty    = genType(vd.symbol.tpe)
-            val alloc = rhs withOp Op.Stackalloc(ty)
+            val alloc = rhs withOp Op.Stackalloc(ty, Val.None)
             curMethodEnv.enter(vd.symbol, alloc.value)
             alloc withOp Op.Store(ty, alloc.value, rhs.value)
           }
@@ -508,19 +507,22 @@ abstract class NirCodeGen
           genApplyDynamic(app, focus)
 
         case This(qual) =>
-          if (curMethodThis.nonEmpty && tree.symbol == curClassSym.get)
+          if (curMethodThis.nonEmpty && tree.symbol == curClassSym.get) {
             focus withValue curMethodThis.get.get
-          else
+          } else {
             genModule(tree.symbol, focus)
+          }
 
         case sel @ Select(qualp, selp) =>
           val sym   = tree.symbol
           val owner = sym.owner
-          if (isModule(sym)) focus withOp Op.Module(genTypeName(sym))
-          else if (sym.isStaticMember) genStaticMember(sym, focus)
-          else if (sym.isMethod)
+          if (isModule(sym)) {
+            focus withOp Op.Module(genTypeName(sym))
+          } else if (sym.isStaticMember) {
+            genStaticMember(sym, focus)
+          } else if (sym.isMethod) {
             genMethodCall(sym, statically = false, qualp, Seq(), focus)
-          else if (isStruct(owner)) {
+          } else if (isStruct(owner)) {
             val index = owner.info.decls.filter(isField).toList.indexOf(sym)
             val qual  = genExpr(qualp, focus)
             qual withOp Op.Extract(qual.value, Seq(index))
@@ -537,10 +539,13 @@ abstract class NirCodeGen
 
         case id: Ident =>
           val sym = id.symbol
-          if (curMethodInfo.mutableVars.contains(sym))
+          if (curMethodInfo.mutableVars.contains(sym)) {
             focus withOp Op.Load(genType(sym.tpe), curMethodEnv.resolve(sym))
-          else if (isModule(sym)) focus withOp Op.Module(genTypeName(sym))
-          else focus withValue (curMethodEnv.resolve(sym))
+          } else if (isModule(sym)) {
+            focus withOp Op.Module(genTypeName(sym))
+          } else {
+            focus withValue (curMethodEnv.resolve(sym))
+          }
 
         case lit: Literal =>
           genLiteral(lit, focus)
@@ -562,9 +567,11 @@ abstract class NirCodeGen
               val rhs  = genExpr(rhsp, qual)
               val name = genFieldName(sel.symbol)
               val elem =
-                if (isExternModule(sel.symbol.owner))
+                if (isExternModule(sel.symbol.owner)) {
                   rhs withValue Val.Global(name, Type.Ptr)
-                else rhs withOp Op.Field(ty, qual.value, name)
+                } else {
+                  rhs withOp Op.Field(ty, qual.value, name)
+                }
               elem withOp Op.Store(ty, elem.value, rhs.value)
 
             case id: Ident =>
@@ -935,8 +942,10 @@ abstract class NirCodeGen
         genSynchronized(app, focus)
       } else if (code == CCAST) {
         genCastOp(app, focus)
-      } else if (code == SIZEOF || code == TYPEOF || code == STACKALLOC) {
+      } else if (code == SIZEOF || code == TYPEOF) {
         genOfOp(app, code, focus)
+      } else if (code == STACKALLOC) {
+        genStackalloc(app, focus)
       } else if (code == CQUOTE) {
         genCQuoteOp(app, focus)
       } else if (code == BOXED_UNIT) {
@@ -1376,26 +1385,30 @@ abstract class NirCodeGen
 
     def castConv(fromty: nir.Type, toty: nir.Type): Option[nir.Conv] =
       (fromty, toty) match {
-        case (Type.I(_), Type.Ptr)        => Some(nir.Conv.Inttoptr)
-        case (Type.Ptr, Type.I(_))        => Some(nir.Conv.Ptrtoint)
-        case (_: Type.RefKind, Type.Ptr)  => Some(nir.Conv.Bitcast)
-        case (Type.Ptr, _: Type.RefKind)  => Some(nir.Conv.Bitcast)
-        case (_: Type.RefKind, Type.I(_)) => Some(nir.Conv.Ptrtoint)
-        case (Type.I(_), _: Type.RefKind) => Some(nir.Conv.Inttoptr)
-        case _ if fromty == toty          => None
-        case _                            => unsupported(s"cast from $fromty to $toty")
+        case (Type.I(_), Type.Ptr)                => Some(nir.Conv.Inttoptr)
+        case (Type.Ptr, Type.I(_))                => Some(nir.Conv.Ptrtoint)
+        case (_: Type.RefKind, Type.Ptr)          => Some(nir.Conv.Bitcast)
+        case (Type.Ptr, _: Type.RefKind)          => Some(nir.Conv.Bitcast)
+        case (_: Type.RefKind, Type.I(_))         => Some(nir.Conv.Ptrtoint)
+        case (Type.I(_), _: Type.RefKind)         => Some(nir.Conv.Inttoptr)
+        case (Type.I(w1), Type.F(w2)) if w1 == w2 => Some(nir.Conv.Bitcast)
+        case (Type.F(w1), Type.I(w2)) if w1 == w2 => Some(nir.Conv.Bitcast)
+        case _ if fromty == toty                  => None
+        case _ =>
+          unsupported(s"cast from $fromty to $toty")
       }
 
     def genCastOp(app: Apply, focus: Focus): Focus = {
-      val Apply(Select(Apply(_, List(valuep)), _), List(ctp)) = app
+      val Apply(Select(Apply(_, List(valuep)), _), List(fromctp, toctp)) = app
 
-      val sym    = extractClassFromImplicitClassTag(ctp)
-      val fromty = genType(valuep.tpe)
-      val toty   = genTypeSym(sym)
-      val value  = genExpr(valuep, focus)
+      val fromsym = extractClassFromImplicitClassTag(fromctp)
+      val tosym   = extractClassFromImplicitClassTag(toctp)
+      val fromty  = genTypeSym(fromsym)
+      val toty    = genTypeSym(tosym)
+      val from    = unboxValue(fromsym, genExpr(valuep, focus))
 
-      boxValue(sym, castConv(fromty, toty).fold(value) { conv =>
-        value withOp Op.Conv(conv, toty, value.value)
+      boxValue(tosym, castConv(fromty, toty).fold(from) { conv =>
+        from withOp Op.Conv(conv, toty, from.value)
       })
     }
 
@@ -1405,13 +1418,24 @@ abstract class NirCodeGen
       val sym = extractClassFromImplicitClassTag(ctp)
       val ty  = genTypeSym(sym)
 
-      if (code == SIZEOF) {
-        focus withOp Op.Sizeof(ty)
-      } else if (code == TYPEOF) {
-        focus withValue genTypeSymValue(sym)
-      } else if (code == STACKALLOC) {
-        focus withOp Op.Stackalloc(ty)
-      } else unreachable
+      code match {
+        case SIZEOF => focus withOp Op.Sizeof(ty)
+        case TYPEOF => focus withValue genTypeSymValue(sym)
+        case _      => unreachable
+      }
+    }
+
+    def genStackalloc(app: Apply, focus: Focus): Focus = {
+      val (sizeopt, ctp) = app match {
+        case Apply(_, Seq(ctp)) =>
+          (None, ctp)
+        case Apply(_, Seq(sizep, ctp)) =>
+          (Some(sizep), ctp)
+      }
+      val ty   = genTypeSym(extractClassFromImplicitClassTag(ctp))
+      val size = sizeopt.fold(focus withValue Val.None)(genExpr(_, focus))
+
+      size withOp Op.Stackalloc(ty, size.value)
     }
 
     def genCQuoteOp(app: Apply, focus: Focus): Focus =
