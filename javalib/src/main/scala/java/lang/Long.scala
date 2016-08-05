@@ -140,7 +140,7 @@ object Long {
     value.toInt ^ (value >>> 32).toInt
 
   @inline def highestOneBit(i: scala.Long): scala.Long =
-    select(i == 0L, 0L, (1 << 63) >>> numberOfLeadingZeros(i))
+    ((1L << 63) >>> numberOfLeadingZeros(i)) & i
 
   @inline def lowestOneBit(i: scala.Long): scala.Long =
     i & (-i)

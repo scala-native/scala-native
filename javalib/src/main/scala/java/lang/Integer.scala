@@ -175,7 +175,7 @@ object Integer {
     value
 
   @inline def highestOneBit(i: scala.Int): scala.Int =
-    select(i == 0, 0, (1 << 31) >>> numberOfLeadingZeros(i))
+    ((1 << 31) >>> numberOfLeadingZeros(i)) & i
 
   @inline def lowestOneBit(i: scala.Int): scala.Int =
     i & -i
