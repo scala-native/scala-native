@@ -50,7 +50,7 @@ object ControlFlow {
       case Block(n, _, _, cf) =>
         val node = nodes(n)
         cf match {
-          case Cf.Unreachable | _: Cf.Ret | _: Cf.Resume | _: Cf.Throw =>
+          case Cf.Unreachable | _: Cf.Ret | _: Cf.Throw =>
             ()
           case Cf.Jump(next) =>
             edge(node, nodes(next.name), next)

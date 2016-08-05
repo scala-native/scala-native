@@ -107,8 +107,7 @@ object Tags {
   final val IfCf          = 1 + JumpCf
   final val SwitchCf      = 1 + IfCf
   final val InvokeCf      = 1 + SwitchCf
-  final val ResumeCf      = 1 + InvokeCf
-  final val ThrowCf       = 1 + ResumeCf
+  final val ThrowCf       = 1 + InvokeCf
   final val TryCf         = 1 + ThrowCf
 
   // Globals

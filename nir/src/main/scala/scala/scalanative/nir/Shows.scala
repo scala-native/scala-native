@@ -84,8 +84,6 @@ object Shows {
       sh"switch $scrut $body"
     case Cf.Invoke(ty, f, args, succ, fail) =>
       sh"invoke[$ty] $f(${r(args, sep = ", ")}) to $succ unwind $fail"
-    case Cf.Resume(excrec) =>
-      sh"resume $excrec"
 
     case Cf.Throw(value) =>
       sh"throw $value"

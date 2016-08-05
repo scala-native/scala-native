@@ -106,7 +106,7 @@ final case class Focus(
                 normal: Focus => Focus,
                 exc: (Val, Focus) => Focus): Focus = {
     val merge    = fresh()
-    val excparam = Val.Local(fresh(), Rt.Exc)
+    val excparam = Val.Local(fresh(), Rt.Object)
     val param    = Val.Local(fresh(), retty)
 
     val (normname, normcompl, normblocks) = wrapBranch(merge, normal)
