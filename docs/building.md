@@ -5,7 +5,7 @@ This requires SBT to be installed on your machine. Refer to [this link](http://w
 ```
 $ git clone https://github.com/scala-native/scala-native.git
 $ cd scala-native/
-$ sbt rtlib/publishLocal nscplugin/publishLocal
+$ sbt 'nscplugin/publishLocal' 'nativelib/publishLocal' 'publishLocal'
 $ sbt package
 ```
 
@@ -33,7 +33,7 @@ You can use brew as shown below
 brew install bdw-gc
 ```
 
-### OS X Yosemite
+### OS X Yosemite or older
 
 OS X Yosemite uses outdated version of `clang` so you might have to install a newer version via brew:
 
