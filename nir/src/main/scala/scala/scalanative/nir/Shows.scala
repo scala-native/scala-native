@@ -1,6 +1,7 @@
 package scala.scalanative
 package nir
 
+import scala.scalanative.nir.ArgAttr.Byval
 import util.{unreachable, sh, Show}
 import Show.{Sequence => s, Indent => i, Unindent => ui, Repeat => r, Newline => nl}
 
@@ -277,6 +278,19 @@ object Shows {
     case Type.Class(name)  => sh"class $name"
     case Type.Trait(name)  => sh"trait $name"
     case Type.Module(name) => sh"module $name"
+  }
+
+  implicit val showArg: Show[Arg] = Show {
+    case Arg(ty, attrs) => sh"$attrs$ty"
+  }
+
+  implicit val showArgAttrs: Show[ArgAttrs] = Show {
+    case ArgAttrs.empty => s()
+    case attrs          => r(attrs.toSeq, sep = " ", post = " ")
+  }
+
+  implicit val showArgAttr: Show[ArgAttr] = Show {
+    case Byval(ty) => sh"byval[$ty]"
   }
 
   implicit val showGlobal: Show[Global] = Show {

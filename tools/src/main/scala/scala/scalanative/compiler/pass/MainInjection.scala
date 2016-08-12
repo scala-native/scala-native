@@ -12,8 +12,9 @@ class MainInjection(entry: Global)(implicit fresh: Fresh) extends Pass {
 
   override def preAssembly = {
     case defns =>
-      val mainTy =
-        Type.Function(Seq(Type.Module(entry.top), ObjectArray), Type.Void)
+      val mainTy = Type.Function(
+          Seq(Arg(Type.Module(entry.top)), Arg(ObjectArray)),
+          Type.Void)
       val main   = Val.Global(entry, Type.Ptr)
       val argc   = Val.Local(fresh(), Type.I32)
       val argv   = Val.Local(fresh(), Type.Ptr)
@@ -45,11 +46,12 @@ object MainInjection extends PassCompanion {
 
   val Rt       = Type.Module(Global.Top("scala.scalanative.runtime.package$"))
   val initName = Rt.name member "init_i32_ptr_class.ssnr.ObjectArray"
-  val initSig  = Type.Function(Seq(Rt, Type.I32, Type.Ptr), ObjectArray)
-  val init     = Val.Global(initName, initSig)
+  val initSig =
+    Type.Function(Seq(Arg(Rt), Arg(Type.I32), Arg(Type.Ptr)), ObjectArray)
+  val init = Val.Global(initName, initSig)
 
   val mainName = Global.Top("main")
-  val mainSig  = Type.Function(Seq(Type.I32, Type.Ptr), Type.I32)
+  val mainSig  = Type.Function(Seq(Arg(Type.I32), Arg(Type.Ptr)), Type.I32)
 
   override val depends = Seq(ObjectArray.name, Rt.name, init.name)
 }

@@ -66,7 +66,7 @@ class ModuleLowering(implicit top: Top, fresh: Fresh) extends Pass {
       val initCall =
         if (isStaticModule(name)) Seq()
         else {
-          val initSig = Type.Function(Seq(Type.Class(name)), Type.Void)
+          val initSig = Type.Function(Seq(Arg(Type.Class(name))), Type.Void)
           val init    = Val.Global(name member "init", Type.Ptr)
 
           Seq(Inst(Op.Call(initSig, init, Seq(alloc))))

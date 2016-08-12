@@ -9,7 +9,17 @@ import scala.scalanative.nir._
  */
 class Amd64AbiLowering(implicit fresh: Fresh) extends Pass {
 
-  def coerceArguments(args: Seq[Type]): Seq[Type] = args flatMap coerceArgument
+  sealed trait CoercionResult
+  final case class Unchanged(ty: Type)  extends CoercionResult
+  final case class Decompose(ty: Type*) extends CoercionResult
+  final case class ByPointer(ty: Type)  extends CoercionResult
+
+  def coerceArguments(args: Seq[Arg]): Seq[Arg] =
+    args map (a => coerceArgument(a.ty)) flatMap {
+      case Unchanged(t) => Seq(Arg(t))
+      case d: Decompose => d.ty map (Arg(_))
+      case ByPointer(t) => Seq(Arg(Type.Ptr, ArgAttrs(byval = Some(t))))
+    }
 
   def size(t: Type): Int = t match {
     case Type.Bool         => 1
@@ -20,46 +30,43 @@ class Amd64AbiLowering(implicit fresh: Fresh) extends Pass {
     case Type.Struct(_, e) => e.map(size).sum
   }
 
-  def coerceArgument(arg: Type): Seq[Type] = arg match {
+  def coerceArgument(arg: Type): CoercionResult = arg match {
     case struct @ Type.Struct(name, tys) =>
       size(struct) match {
         case s if s <= 8 => // One parameter
-          Seq(Type.I(s * 8))
+          Decompose(Type.I(s * 8))
         case s if s <= 16 => // Two parameters
-          Seq(Type.I64, Type.I((s - 8) * 8))
+          Decompose(Type.I64, Type.I((s - 8) * 8))
         case _ => // Pointer
-          Seq(Type.Ptr)
+          ByPointer(struct)
       }
     // TODO: Once we get vector types their lowering should be handled here too
-    case x => Seq(x)
+    case x => Unchanged(x)
   }
 
-  def coerceReturnType(ret: Type): Type = coerceArgument(ret) match {
-    case Seq(t) => t
-    case s      => Type.Struct(Global.None, s)
+  def coerceReturnType(ret: Type): CoercionResult = coerceArgument(ret)
+
+  def coerceFunctionType(t: Type.Function): Type = {
+    val ret  = coerceReturnType(t.ret)
+    val args = coerceArguments(t.args)
+    ret match {
+      case ByPointer(_)  => Type.Function(Arg(Type.Ptr) +: args, Type.Void)
+      case Unchanged(ty) => Type.Function(args, ty)
+      case d: Decompose  => Type.Function(args, Type.Struct(Global.None, d.ty))
+    }
   }
 
-  def coerceFunctionType(t: Type): Type = {
-    val Type.Function(argtys, retty) = t
-    val ret                          = coerceReturnType(retty)
-    val args                         = coerceArguments(argtys)
-    if (ret != retty && ret == Type.Ptr)
-      Type.Function(Type.Ptr +: args, Type.Void)
-    else
-      Type.Function(args, ret)
-  }
-
-  private var smallParamAlloc: Val.Local    = _
-  private var returnPointerParam: Val.Local = _
-  private var returnCoercionType: Type      = _
+  private var smallParamAlloc: Val.Local         = _
+  private var returnPointerParam: Val.Local      = _
+  private var returnCoercionType: CoercionResult = _
   private val SmallParamStructType =
     Type.Struct(Global.None, Seq(Type.I64, Type.I64))
 
   private var bigParamAllocs: Seq[Val.Local] = _
   private var bigParamAllocType: Type        = _
 
-  private var bigReturnAlloc: Val.Local = _
-  private var bigReturnType: Type       = _
+  private var bigReturnAlloc: Val.Local   = _
+  private var bigReturnType: Option[Type] = _
 
   override def preDefn: OnDefn = {
     case defn @ Defn
@@ -67,7 +74,7 @@ class Amd64AbiLowering(implicit fresh: Fresh) extends Pass {
       smallParamAlloc = Val.Local(fresh(), Type.Ptr)
       returnCoercionType = coerceReturnType(retty)
       returnPointerParam = returnCoercionType match {
-        case Type.Ptr if retty != Type.Ptr =>
+        case ByPointer(_) =>
           Val.Local(fresh(), Type.Ptr)
         case _ => null
       }
@@ -76,10 +83,10 @@ class Amd64AbiLowering(implicit fresh: Fresh) extends Pass {
         Inst(_, Op.Call(ty: Type.Function, _, _)) <- block.insts
       } yield
         for {
-          argty <- ty.args
-          coerced = coerceArgument(argty)
-          if coerced == Seq(Type.Ptr) && argty != Type.Ptr
-        } yield argty
+          arg <- ty.args
+          coerced = coerceArgument(arg.ty)
+          if coerced.isInstanceOf[ByPointer]
+        } yield arg.ty
       val maxArgs    = (0 +: allocs.map(_.size)).max
       val maxArgSize = (0 +: allocs.flatten.map(size)).max
       bigParamAllocType = Type.Array(Type.I8, maxArgSize)
@@ -89,10 +96,12 @@ class Amd64AbiLowering(implicit fresh: Fresh) extends Pass {
         block                                           <- blocks
         Inst(_, Op.Call(Type.Function(_, retty), _, _)) <- block.insts
         coerced = coerceReturnType(retty)
-        if coerced == Type.Ptr && retty != Type.Ptr
+        if coerced.isInstanceOf[ByPointer]
       } yield retty
       val maxRetSize = (0 +: rets.map(size)).max
-      bigReturnType = Type.Array(Type.I8, maxRetSize)
+      bigReturnType =
+        if (maxRetSize > 0) Some(Type.Array(Type.I8, maxRetSize))
+        else None: Option[Type]
       bigReturnAlloc = Val.Local(fresh(), Type.Ptr)
 
       Seq(defn)
@@ -102,15 +111,17 @@ class Amd64AbiLowering(implicit fresh: Fresh) extends Pass {
     case Defn.Declare(attrs, name, ty: Type.Function) =>
       Seq(Defn.Declare(attrs, name, coerceFunctionType(ty)))
 
-    case Defn
-          .Define(attrs, name, ty: Type.Function, entryBlock +: otherBlocks) =>
+    case Defn.Define(attrs,
+                      name,
+                      ty: Type.Function,
+                      entryBlock +: otherBlocks) =>
       val newEntryBlock = entryBlock match {
         case Block(blockName, params, insts, cf) =>
           val allocSmallParam =
             Inst(smallParamAlloc.name, Op.Stackalloc(SmallParamStructType))
 
           val allocBigRet =
-            Inst(bigReturnAlloc.name, Op.Stackalloc(bigReturnType))
+            bigReturnType.map(t => Inst(bigReturnAlloc.name, Op.Stackalloc(t)))
 
           val allocBigParams = bigParamAllocs.map {
             case Val.Local(n, _) => Inst(n, Op.Stackalloc(bigParamAllocType))
@@ -120,15 +131,15 @@ class Amd64AbiLowering(implicit fresh: Fresh) extends Pass {
             for (param <- params)
               yield
                 coerceArgument(param.valty) match {
-                  case Seq(ty) if ty == param.ty =>
+                  case Unchanged(_) =>
                     (Seq(param), Seq())
-                  case Seq(Type.Ptr) =>
+                  case ByPointer(_) =>
                     val ptr = Val.Local(fresh(), Type.Ptr)
                     (Seq(ptr),
                      Seq(
                          Inst(param.name, Op.Load(param.ty, ptr))
                      ))
-                  case tys =>
+                  case Decompose(tys @ _ *) =>
                     val newArgs          = tys.map(ty => Val.Local(fresh(), ty))
                     val coerceStructType = Type.Struct(Global.None, tys)
                     val storeInsts = newArgs.zipWithIndex.flatMap {
@@ -148,7 +159,7 @@ class Amd64AbiLowering(implicit fresh: Fresh) extends Pass {
                 }
 
           val additionalParams: Seq[Val.Local] = returnCoercionType match {
-            case Type.Ptr if ty.ret != Type.Ptr =>
+            case ByPointer(_) =>
               Seq(returnPointerParam)
             case _ => Seq()
           }
@@ -156,7 +167,7 @@ class Amd64AbiLowering(implicit fresh: Fresh) extends Pass {
           Block(
               blockName,
               additionalParams ++ argCoercions.flatMap(_._1),
-              Seq(allocSmallParam, allocBigRet) ++ allocBigParams ++ argCoercions
+              Seq(allocSmallParam) ++ allocBigRet ++ allocBigParams ++ argCoercions
                 .flatMap(_._2) ++ insts,
               cf)
       }
@@ -173,16 +184,16 @@ class Amd64AbiLowering(implicit fresh: Fresh) extends Pass {
       val argCoertions: Seq[(Seq[Val], Seq[Inst])] = for (arg <- args)
         yield
           coerceArgument(arg.ty) match {
-            case Seq(ty) if ty == arg.ty =>
+            case Unchanged(_) =>
               (Seq(arg), Seq())
-            case Seq(Type.Ptr) =>
+            case ByPointer(_) =>
               val alloc = bigParamAllocs(bigParamIndex)
               bigParamIndex += 1
               (Seq(alloc),
                Seq(
                    Inst(Op.Store(arg.ty, alloc, arg))
                ))
-            case coerced =>
+            case Decompose(coerced @ _ *) =>
               val newArgs       = coerced map (t => Val.Local(fresh(), t))
               val coerceType    = Type.Struct(Global.None, coerced)
               val coercedStruct = Val.Local(fresh(), coerceType)
@@ -205,17 +216,18 @@ class Amd64AbiLowering(implicit fresh: Fresh) extends Pass {
       val coercedRetType = coerceReturnType(functy.ret)
       val retCoercions: (Option[Local], Seq[Inst], Seq[Inst], Seq[Val]) =
         coercedRetType match {
-          case Type.Void | Type.Unit | Type.Nothing =>
+          case Unchanged(Type.Void | Type.Unit | Type.Nothing) =>
             (None, Seq(), Seq(), Seq())
-          case x if x == functy.ret =>
+          case Unchanged(_) =>
             (Some(res), Seq(), Seq(), Seq())
-          case Type.Ptr =>
+          case ByPointer(_) =>
             val post = Inst(res, Op.Load(functy.ret, bigReturnAlloc))
             (None, Seq(), Seq(post), Seq(bigReturnAlloc))
-          case ty =>
-            val ret = Val.Local(fresh(), ty)
+          case Decompose(tys @ _ *) =>
+            val struct = Type.Struct(Global.None, tys)
+            val ret    = Val.Local(fresh(), struct)
             val post = Seq(
-                Inst(Op.Store(ty, smallParamAlloc, ret)),
+                Inst(Op.Store(struct, smallParamAlloc, ret)),
                 Inst(res, Op.Load(functy.ret, smallParamAlloc))
             )
             (Some(ret.name), Seq(), post, Seq())
@@ -235,14 +247,15 @@ class Amd64AbiLowering(implicit fresh: Fresh) extends Pass {
   override def postBlock: OnBlock = {
     case block @ Block(name, params, insts, Cf.Ret(v)) =>
       returnCoercionType match {
-        case Type.Ptr if v.ty != Type.Ptr =>
+        case ByPointer(_) =>
           val storeInst = Inst(Op.Store(v.ty, returnPointerParam, v))
           Seq(Block(name, params, insts :+ storeInst, Cf.Ret(Val.None)))
-        case s @ Type.Struct(_, tys) =>
-          val ret = Val.Local(fresh(), s)
+        case Decompose(tys @ _ *) =>
+          val struct = Type.Struct(Global.None, tys)
+          val ret    = Val.Local(fresh(), struct)
           val retInsts = Seq(
               Inst(Op.Store(v.ty, smallParamAlloc, v)),
-              Inst(ret.name, Op.Load(s, smallParamAlloc))
+              Inst(ret.name, Op.Load(struct, smallParamAlloc))
           )
           Seq(Block(name, params, insts ++ retInsts, Cf.Ret(ret)))
         case _ => Seq(block)

@@ -5,6 +5,7 @@ package serialization
 import java.nio.ByteBuffer
 import scala.collection.mutable
 import nir.{Tags => T}
+import scala.scalanative.nir.ArgAttr.Byval
 
 final class BinarySerializer(buffer: ByteBuffer) {
   import buffer._
@@ -371,7 +372,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Type.F64          => putInt(T.F64Type)
     case Type.Array(ty, n) => putInt(T.ArrayType); putType(ty); putInt(n)
     case Type.Function(args, ret) =>
-      putInt(T.FunctionType); putTypes(args); putType(ret)
+      putInt(T.FunctionType); putArgs(args); putType(ret)
     case Type.Struct(n, tys) =>
       putInt(T.StructType); putGlobal(n); putTypes(tys)
 
@@ -380,6 +381,15 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Type.Class(n)  => putInt(T.ClassType); putGlobal(n)
     case Type.Trait(n)  => putInt(T.TraitType); putGlobal(n)
     case Type.Module(n) => putInt(T.ModuleType); putGlobal(n)
+  }
+
+  private def putArgs(args: Seq[Arg]): Unit = putSeq(args)(putArg)
+  private def putArg(arg: Arg): Unit = {
+    putType(arg.ty)
+    putSeq(arg.attrs.toSeq)(putArgAttr)
+  }
+  private def putArgAttr(attr: ArgAttr): Unit = attr match {
+    case Byval(ty) => putInt(T.Byval); putType(ty)
   }
 
   private def putVals(values: Seq[Val]): Unit = putSeq(values)(putVal)

@@ -93,7 +93,7 @@ object ExceptionLowering extends PassCompanion {
   def apply(ctx: Ctx) = new ExceptionLowering()(ctx.fresh)
 
   val throwName = Global.Top("scalanative_throw")
-  val throwSig  = Type.Function(Seq(Type.Ptr), Type.Void)
+  val throwSig  = Type.Function(Seq(Arg(Type.Ptr)), Type.Void)
   val throw_    = Val.Global(throwName, Type.Ptr)
 
   override val injects = Seq(

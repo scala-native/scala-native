@@ -11,7 +11,7 @@ object Rt {
     Struct(Global.Top("scala.scalanative.runtime.Type"), Seq(I32, Ptr))
 
   val beginCatchName = Global.Top("scalanative_begin_catch")
-  val beginCatchSig  = Function(Seq(Ptr), Ptr)
+  val beginCatchSig  = Function(Seq(Arg(Ptr, ArgAttrs(Option.empty))), Ptr)
   val beginCatch     = Val.Global(beginCatchName, Ptr)
 
   val endCatchName = Global.Top("scalanative_end_catch")

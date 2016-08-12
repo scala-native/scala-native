@@ -37,9 +37,11 @@ object Type {
   final object F32 extends F(32)
   final object F64 extends F(64)
 
-  final case class Array(ty: Type, n: Int)              extends Type
-  final case class Function(args: Seq[Type], ret: Type) extends Type
-  final case class Struct(name: Global, tys: Seq[Type]) extends Type with Named
+  final case class Array(ty: Type, n: Int)             extends Type
+  final case class Function(args: Seq[Arg], ret: Type) extends Type
+  final case class Struct(name: Global, tys: Seq[Type])
+      extends Type
+      with Named
 
   // high-level types
   final case object Nothing extends Type

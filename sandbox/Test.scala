@@ -52,9 +52,20 @@ object dummy {
 
 }
 
+@struct
+class Vec(val x: Double = 0, val y: Double = 0, val z: Double = 0) {
+  @inline def +(v: Vec) = new Vec(x + v.x, y + v.y, z + v.z)
+  @inline def -(v: Vec) = new Vec(x - v.x, y - v.y, z - v.z)
+  @inline def *(v: Double) = new Vec(x * v, y * v, z * v)
+  @inline def mult(v: Vec) = new Vec(x * v.x, y * v.y, z * v.z)
+  @inline def dot(v: Vec) = x * v.x + y * v.y + z * v.z
+  @inline def %(v: Vec) = new Vec(y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x)
+}
+
 object Test {
   import dummy._
   def main(args: Array[String]): Unit = {
-
+    val vec = new Vec(1, 2, 3)
+    stdio.fprintf(stdio.stdout, c"%f\n", vec.z)
   }
 }
