@@ -5,9 +5,12 @@ package scala.scalanative.nir
  */
 case class Arg(ty: Type, attrs: ArgAttrs = ArgAttrs.empty)
 
-case class ArgAttrs(byval: Option[Type] = None) {
+case class ArgAttrs(byval: Option[Type] = None, sret: Option[Type] = None) {
 
-  def toSeq: Seq[ArgAttr] = byval.map(ArgAttr.Byval).toSeq
+  def toSeq: Seq[ArgAttr] = Seq(
+    byval.map(ArgAttr.Byval),
+    sret.map(ArgAttr.Sret)
+  ).flatten
 
 }
 
@@ -19,6 +22,7 @@ object ArgAttrs {
     attrs.foldLeft(ArgAttrs.empty) { (attrs, attr) =>
       attr match {
         case ArgAttr.Byval(ty) => attrs.copy(byval = Some(ty))
+        case ArgAttr.Sret(ty) => attrs.copy(sret = Some(ty))
       }
     }
 
@@ -29,5 +33,7 @@ sealed abstract class ArgAttr
 object ArgAttr {
 
   case class Byval(ty: Type) extends ArgAttr
+
+  case class Sret(ty: Type) extends ArgAttr
 
 }

@@ -389,7 +389,8 @@ final class BinarySerializer(buffer: ByteBuffer) {
     putSeq(arg.attrs.toSeq)(putArgAttr)
   }
   private def putArgAttr(attr: ArgAttr): Unit = attr match {
-    case Byval(ty) => putInt(T.Byval); putType(ty)
+    case ArgAttr.Byval(ty) => putInt(T.Byval); putType(ty)
+    case ArgAttr.Sret(ty) => putInt(T.Sret); putType(ty)
   }
 
   private def putVals(values: Seq[Val]): Unit = putSeq(values)(putVal)

@@ -50,7 +50,7 @@ class Amd64AbiLowering(implicit fresh: Fresh) extends Pass {
     val ret  = coerceReturnType(t.ret)
     val args = coerceArguments(t.args)
     ret match {
-      case ByPointer(_)  => Type.Function(Arg(Type.Ptr) +: args, Type.Void)
+      case ByPointer(ty)  => Type.Function(Arg(Type.Ptr, ArgAttrs(sret = Some(ty))) +: args, Type.Void)
       case Unchanged(ty) => Type.Function(args, ty)
       case d: Decompose  => Type.Function(args, Type.Struct(Global.None, d.ty))
     }
@@ -111,7 +111,8 @@ class Amd64AbiLowering(implicit fresh: Fresh) extends Pass {
     case Defn.Declare(attrs, name, ty: Type.Function) =>
       Seq(Defn.Declare(attrs, name, coerceFunctionType(ty)))
 
-    case Defn.Define(attrs,
+    case Defn
+.Define(attrs,
                       name,
                       ty: Type.Function,
                       entryBlock +: otherBlocks) =>

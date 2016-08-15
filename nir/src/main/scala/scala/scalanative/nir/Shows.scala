@@ -1,7 +1,7 @@
 package scala.scalanative
 package nir
 
-import scala.scalanative.nir.ArgAttr.Byval
+import scala.scalanative.nir.ArgAttr.{Sret, Byval}
 import util.{unreachable, sh, Show}
 import Show.{Sequence => s, Indent => i, Unindent => ui, Repeat => r, Newline => nl}
 
@@ -291,6 +291,7 @@ object Shows {
 
   implicit val showArgAttr: Show[ArgAttr] = Show {
     case Byval(ty) => sh"byval[$ty]"
+    case Sret(ty)  => sh"sret[$ty]"
   }
 
   implicit val showGlobal: Show[Global] = Show {

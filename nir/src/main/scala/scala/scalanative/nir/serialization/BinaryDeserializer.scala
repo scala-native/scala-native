@@ -274,6 +274,7 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
   private def getArgAttrs(): ArgAttrs = ArgAttrs.fromSeq(getSeq(getArgAttr))
   private def getArgAttr(): ArgAttr = getInt match {
     case T.Byval => ArgAttr.Byval(getType)
+    case T.Sret  => ArgAttr.Sret(getType)
   }
 
   private def getVals(): Seq[Val] = getSeq(getVal)

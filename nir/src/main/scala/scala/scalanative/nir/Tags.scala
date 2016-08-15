@@ -205,5 +205,6 @@ object Tags {
   final val ArgAttr = Val + 32
 
   final val Byval = ArgAttr + 1
+  final val Sret  = Byval + 1
 
 }

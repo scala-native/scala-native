@@ -79,15 +79,26 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
 
     def showDefnArg(arg: Arg, value: Val.Local): (Show.Result, Seq[Show.Result]) = arg match {
       case Arg(_, ArgAttrs.empty) => (sh"${value: Val}", Seq.empty)
-      case Arg(Type.Ptr, ArgAttrs(Some(pointee))) =>
+      case Arg(Type.Ptr, ArgAttrs(Some(pointee), None)) =>
         val pointer = fresh()
         (sh"$pointee* byval %$pointer",
+          Seq(sh"%${value.name} = bitcast $pointee* %$pointer to i8*"))
+      case Arg(Type.Ptr, ArgAttrs(None, Some(pointee))) =>
+        val pointer = fresh()
+        (sh"$pointee* sret %$pointer",
           Seq(sh"%${value.name} = bitcast $pointee* %$pointer to i8*"))
       case x => unsupported(x)
     }
 
+    def showDeclArg(arg: Arg): Show.Result = arg match {
+      case Arg(ty, ArgAttrs.empty) => sh"$ty"
+      case Arg(Type.Ptr, ArgAttrs(Some(pointee), None)) => sh"$pointee* byval"
+      case Arg(Type.Ptr, ArgAttrs(None, Some(pointee))) => sh"$pointee* sret"
+      case x => unsupported(x)
+    }
+
     val (params, preInstrs) =
-      if (isDecl) (r(argtys, sep = ", "), Seq())
+      if (isDecl) (r(argtys.map(showDeclArg), sep = ", "), Seq())
       else {
         val results = (argtys zip blocks.head.params).map((showDefnArg _).tupled)
         (r(results.map(_._1), sep = ", "), results.flatMap(_._2))
@@ -164,7 +175,8 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
 
   implicit val showArg: Show[Arg] = Show {
     case Arg(ty, ArgAttrs.empty) => sh"$ty"
-    case Arg(Type.Ptr, ArgAttrs(Some(pointee))) => sh"$pointee*"
+    case Arg(Type.Ptr, ArgAttrs(Some(pointee), None)) => sh"$pointee*"
+    case Arg(Type.Ptr, ArgAttrs(None, Some(pointee))) => sh"$pointee*"
     case arg => unsupported(arg)
   }
 
@@ -224,7 +236,11 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
 
     def showCallArgs(args: Seq[Arg], vals: Seq[Val]): (Seq[Show.Result], Seq[Show.Result]) = {
       val res = (args zip vals) map {
-        case (Arg(Type.Ptr, ArgAttrs(Some(pointee))), v) =>
+        case (Arg(Type.Ptr, ArgAttrs(Some(pointee), None)), v) =>
+          val bitcasted = fresh()
+          ( Seq(sh"%$bitcasted = bitcast $v to $pointee*")
+          , sh"$pointee* %$bitcasted")
+        case (Arg(Type.Ptr, ArgAttrs(None, Some(pointee))), v) =>
           val bitcasted = fresh()
           ( Seq(sh"%$bitcasted = bitcast $v to $pointee*")
           , sh"$pointee* %$bitcasted")
