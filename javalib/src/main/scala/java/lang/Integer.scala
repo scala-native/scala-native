@@ -345,8 +345,8 @@ object Integer {
           quot = res
         } while (quot != 0)
 
-        last_digit -= 1
         val count = last_digit
+        last_digit -= 1
         do {
           val tmp = buffer(last_digit)
           buffer(last_digit) = buffer(first_digit)
