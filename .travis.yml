@@ -54,4 +54,4 @@ before_script:
     fi;
 script:
   - java -version
-  - sbt 'cleanCache' 'cleanLocal' 'nscplugin/publishLocal' 'nativelib/publishLocal' 'publishLocal' 'sandbox/run' 'demoNative/run' 'scalafmtTest' 'scripted' 'publishSnapshot'
+  - sbt 'set resolvers := List()' 'set resolvers in javalib := List()' 'set resolvers in scalalib := List()' 'set resolvers in nativelib := List()' 'set resolvers in demoNative := List()' 'set resolvers in sandbox := List()' 'cleanCache' 'cleanLocal' 'nscplugin/publishLocal' 'nativelib/publishLocal' 'publishLocal' 'sandbox/run' 'demoNative/run' 'scalafmtTest' 'scripted' 'publishSnapshot'
