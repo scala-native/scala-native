@@ -153,8 +153,11 @@ object Main {
     var r  = new Vec()
     val c  = Array.fill[Vec](W * H)(new Vec())
     var y = 0
+
+    def printOverPreviousLine(str:String) = { print(f"\u001b[1A"); print(str) }
+
     while (y < H) {
-      print(f"\rRendering (${SAMPLES * 4}%d spp) ${100.0 * y/(H-1)}%5.2f%%")
+      printOverPreviousLine(f"\rRendering (${SAMPLES * 4}%d spp) ${100.0 * y/(H-1)}%5.2f%%")
       var x = 0
       while (x < W) {
         val i = (H - y - 1) * W + x
