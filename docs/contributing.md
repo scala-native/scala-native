@@ -10,8 +10,8 @@ source code of the Oracle JDK or OpenJDK!***
 This is for license considerations: these JDKs are under a GPL-based license,
 which is not compatible with our BSD 3-clause license.
 
-The only existing JDK source code that we can look at is the dead Apache
-Harmony project.
+The only existing JDK source code that we can look at is the dead [Apache
+Harmony project](https://github.com/apache/harmony).
 
 ## Coding style
 
