@@ -10,8 +10,15 @@ source code of the Oracle JDK or OpenJDK!***
 This is for license considerations: these JDKs are under a GPL-based license,
 which is not compatible with our BSD 3-clause license.
 
-The only existing JDK source code that we can look at is the dead Apache
-Harmony project.
+Non Compatible license:
+
+* Android libcore (GPL)
+* OpenJDK (GPL)
+
+Compatible license source code:
+
+* [Scala.js](https://github.com/scala-js/scala-js/tree/master/javalib/src/main/scala/java) (Scala License <=> BSD 3-clause)
+* [Apache Harmony project](https://github.com/apache/harmony) (Apache 2) (Discontinued)
 
 ## Coding style
 
