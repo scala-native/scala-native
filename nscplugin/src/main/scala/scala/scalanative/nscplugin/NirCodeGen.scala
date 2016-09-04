@@ -1170,7 +1170,7 @@ abstract class NirCodeGen
         right withOp Op.Comp(comp, Rt.Object, left.value, right.value)
       } else {
         val equals = genMethodCall(NObjectEqualsMethod,
-                                   statically = true,
+                                   statically = false,
                                    left.value,
                                    Seq(rightp),
                                    left)
