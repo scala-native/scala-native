@@ -169,7 +169,7 @@ lazy val sbtplugin =
       scriptedLaunchOpts := { scriptedLaunchOpts.value ++
         Seq("-Xmx1024M", "-XX:MaxPermSize=256M", "-Dplugin.version=" + version.value)
       },
-      sbtTestDirectory := (baseDirectory in ThisBuild).value / "tests",
+      sbtTestDirectory := (baseDirectory in ThisBuild).value / "scripted-tests",
       // publish the other projects before running scripted tests.
       scripted <<= scripted dependsOn (publishLocal in util,
                                        publishLocal in nir,
@@ -254,6 +254,11 @@ lazy val demoJVM =
 
 lazy val demoNative =
   project.in(file("demo/native")).
+    settings(projectSettings).
+    settings(noPublishSettings)
+
+lazy val tests =
+  project.in(file("unit-tests")).
     settings(projectSettings).
     settings(noPublishSettings)
 
