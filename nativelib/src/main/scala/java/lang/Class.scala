@@ -4,7 +4,18 @@ import scala.scalanative.native.Ptr
 import scala.scalanative.runtime.Type
 
 final class _Class[A](val ty: Ptr[Type]) {
-  def getName(): String                 = ???
+  def getName(): String = (!ty).name
+
+  override def hashCode: Int = ty.cast[Long].##
+
+  override def equals(other: Any): scala.Boolean = other match {
+    case other: _Class[_] =>
+      ty.cast[Long] == other.ty.cast[Long]
+    case _ =>
+      false
+  }
+
+  // TODO:
   def getInterfaces(): Array[_Class[_]] = ???
   def getSuperclass(): _Class[_]        = ???
   def getComponentType(): _Class[_]     = ???
