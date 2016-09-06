@@ -54,4 +54,4 @@ before_script:
     fi;
 script:
   - java -version
-  - sbt 'cleanCache' 'cleanLocal' 'nscplugin/publishLocal' 'nativelib/publishLocal' 'publishLocal' 'sandbox/run' 'demoNative/run' 'scalafmtTest' 'scripted' 'publishSnapshot'
+  - sbt 'cleanCache' 'cleanLocal' 'nscplugin/publishLocal' 'nativelib/publishLocal' 'publishLocal' 'sandbox/run' 'demoNative/run' 'scalafmtTest' 'tests/run' 'scripted' 'publishSnapshot'

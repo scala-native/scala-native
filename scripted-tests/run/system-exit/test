@@ -1,0 +1,6 @@
+> run
+
+# replace Exit.scala by a program that exits with code 1
+$ copy-file changes/Exit-1.scala src/main/scala/Exit.scala
+
+-> run
