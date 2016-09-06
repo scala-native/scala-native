@@ -26,8 +26,9 @@ final class Compiler(opts: Opts) {
       pass.ConstLowering,
       pass.SizeofLowering,
       pass.UnitLowering,
+      pass.ThrowLowering,
       pass.NothingLowering,
-      pass.ExceptionLowering,
+      pass.TryLowering,
       pass.StackallocHoisting,
       pass.CopyPropagation)
 

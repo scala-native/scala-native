@@ -118,8 +118,6 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Cf.Invoke(ty, f, args, succ, fail) =>
       putInt(T.InvokeCf); putType(ty); putVal(f); putVals(args); putNext(succ);
       putNext(fail)
-    case Cf.Resume(excrec) =>
-      putInt(T.ResumeCf); putVal(excrec)
 
     case Cf.Throw(v) =>
       putInt(T.ThrowCf); putVal(v)

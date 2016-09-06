@@ -19,11 +19,19 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
     case Defn.Define(_, n, sig, _) => n -> sig
   }.toMap
   private val prelude = Seq(
+      sh"declare i32 @llvm.eh.typeid.for(i8*)",
       sh"declare i32 @__gxx_personality_v0(...)",
-      sh"@_ZTIPN11scalanative16ExceptionWrapperE = external constant { i8*, i8*, i32, i8* }"
+      sh"declare i8* @__cxa_begin_catch(i8*)",
+      sh"declare void @__cxa_end_catch()",
+      sh"@_ZTIN11scalanative16ExceptionWrapperE = external constant { i8*, i8*, i8* }"
   )
   private val gxxpersonality =
     sh"personality i8* bitcast (i32 (...)* @__gxx_personality_v0 to i8*)"
+  private val excrecty = sh"{ i8*, i32 }"
+  private val landingpad =
+    sh"landingpad { i8*, i32 } catch i8* bitcast ({ i8*, i8*, i8* }* @_ZTIN11scalanative16ExceptionWrapperE to i8*)"
+  private val typeid =
+    sh"call i32 @llvm.eh.typeid.for(i8* bitcast ({ i8*, i8*, i8* }* @_ZTIN11scalanative16ExceptionWrapperE to i8*))"
 
   implicit val showDefns: Show[Seq[Defn]] = Show { defns =>
     val sorted = defns.sortBy {
@@ -86,47 +94,63 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
       if (isDecl) s()
       else {
         implicit val cfg = ControlFlow(blocks)
-        val blockshows = cfg.map { node =>
+        val showblocks = cfg.map { node =>
           showBlock(node.block, node.pred, isEntry = node eq cfg.entry)
         }
-        s(" ", brace(i(r(blockshows))))
+        s(" ", brace(r(showblocks)))
       }
 
     sh"$keyword $retty @$name($params)$postattrs$personality$body"
   }
 
-  private lazy val landingpad =
-    sh"landingpad { i8*, i32 } catch i8* bitcast ({ i8*, i8*, i32, i8* }* @_ZTIPN11scalanative16ExceptionWrapperE to i8*)"
-
   def showBlock(block: Block, pred: Seq[ControlFlow.Edge], isEntry: Boolean)(
       implicit cfg: ControlFlow.Graph): Show.Result = {
     val Block(name, params, insts, cf) = block
 
-    val body  = r(showInsts(insts, block.cf), sep = nl(""))
-    val label = ui(sh"${block.name}:")
+    val body  = r(showInsts(insts, block.cf).map(i(_)))
+    val label = sh"${block.name}:"
     val prologue: Show.Result =
       if (isEntry) s()
       else {
         val shows = pred match {
           case ExSucc(branches) =>
             params.zipWithIndex.map {
-              case (Val.Local(name, ty), i) =>
+              case (Val.Local(name, ty), n) =>
                 val branchshows = branches.map {
                   case (from, shows) =>
-                    sh"[${shows(i)}, %$from]"
+                    sh"[${shows(n)}, %$from]"
                 }
-                sh"%$name = phi $ty ${r(branchshows, sep = ", ")}"
+
+                i(sh"%$name = phi $ty ${r(branchshows, sep = ", ")}")
             }
+
           case ExFail() =>
-            val Seq(Val.Local(excrec, _)) = params
+            val Seq(Val.Local(exc, _)) = params
+
+            val rec, r0, r1, id, cmp, fail, succ, w0, w1, w2 = fresh()
+
             Seq(
-                sh"%$excrec = $landingpad"
+                i(sh"%$rec = $landingpad"),
+                i(sh"%$r0 = extractvalue $excrecty %$rec, 0"),
+                i(sh"%$r1 = extractvalue $excrecty %$rec, 1"),
+                i(sh"%$id = $typeid"),
+                i(sh"%$cmp = icmp eq i32 %$r1, %$id"),
+                i(sh"br i1 %$cmp, label %$succ, label %$fail"),
+                nl(sh"$fail:"),
+                i(sh"resume $excrecty %$rec"),
+                nl(sh"$succ:"),
+                i(sh"%$w0 = call i8* @__cxa_begin_catch(i8* %$r0)"),
+                i(sh"%$w1 = bitcast i8* %$w0 to i8**"),
+                i(sh"%$w2 = getelementptr i8*, i8** %$w1, i32 1"),
+                i(sh"%$exc = load i8*, i8** %$w2"),
+                i(sh"call void @__cxa_end_catch()")
             )
         }
-        r(shows.map(nl(_)))
+
+        r(shows.map(s(_)))
       }
 
-    sh"$label$prologue${nl("")}$body"
+    sh"${nl("")}$label$prologue$body"
   }
 
   implicit val showType: Show[Type] = Show {
@@ -300,8 +324,6 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
       sh"switch $scrut, $default [${r(cases.map(i(_)))}${nl("]")}"
     case Cf.Invoke(ty, f, args, succ, fail) =>
       unreachable
-    case Cf.Resume(value) =>
-      sh"resume $value"
     case cf =>
       unsupported(cf)
   }

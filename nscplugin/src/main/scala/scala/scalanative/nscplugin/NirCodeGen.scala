@@ -665,39 +665,26 @@ abstract class NirCodeGen
 
     def genCatch(retty: nir.Type,
                  catches: List[Tree],
-                 excrec: Val,
+                 exc: Val,
                  focus: Focus): Focus = {
-      val excwrap = focus withOp Op.Extract(excrec, Seq(0))
-      val exccast =
-        excwrap withOp Op.Conv(Conv.Bitcast, Type.Ptr, excwrap.value)
-      val exc = exccast withOp Op.Load(Rt.Object, exccast.value)
-
       val cases = catches.map {
         case CaseDef(pat, _, body) =>
-          val (symopt, excty) = pat match {
+          val (excty, symopt) = pat match {
             case Typed(Ident(nme.WILDCARD), tpt) =>
-              (None, genType(tpt.tpe))
+              (genType(tpt.tpe), None)
             case Ident(nme.WILDCARD) =>
-              (None, genType(ThrowableClass.tpe))
+              (genType(ThrowableClass.tpe), None)
             case Bind(_, _) =>
-              (Some(pat.symbol), genType(pat.symbol.tpe))
+              (genType(pat.symbol.tpe), Some(pat.symbol))
           }
           val f = { focus: Focus =>
             val enter = symopt.map { sym =>
-              val cast = focus withOp Op.As(excty, exc.value)
+              val cast = focus withOp Op.As(excty, exc)
               curMethodEnv.enter(sym, cast.value)
               cast
             }.getOrElse(focus)
 
-            notMergeableGuard {
-              val begin =
-                enter withOp Op.Call(Rt.beginCatchSig,
-                                     Rt.beginCatch,
-                                     Seq(excwrap.value))
-              val res = genExpr(body, begin)
-              val end = res withOp Op.Call(Rt.endCatchSig, Rt.endCatch, Seq())
-              end withValue res.value
-            }
+            genExpr(body, enter)
           }
 
           (excty, f)
@@ -706,13 +693,13 @@ abstract class NirCodeGen
       def wrap(cases: Seq[(nir.Type, Focus => Focus)], focus: Focus): Focus =
         cases match {
           case Seq() =>
-            focus finish Cf.Resume(excrec)
+            focus finish Cf.Throw(exc)
           case (excty, f) +: rest =>
-            val cond = focus withOp Op.Is(excty, exc.value)
+            val cond = focus withOp Op.Is(excty, exc)
             cond.branchIf(cond.value, retty, f, wrap(rest, _))
         }
 
-      wrap(cases, exc)
+      wrap(cases, focus)
     }
 
     def genFinally(finalizer: Tree, focus: Focus): Focus = ???

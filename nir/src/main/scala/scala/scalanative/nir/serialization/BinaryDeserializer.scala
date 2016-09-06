@@ -18,7 +18,7 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
     val revision = getInt
 
     assert(magic == Versions.magic, "Can't read non-NIR file.")
-    assert(compat == Versions.compat || revision <= Versions.revision,
+    assert(compat == Versions.compat && revision <= Versions.revision,
            "Can't read binary-incompatible version of NIR.")
 
     val (_, _, pairs) = scoped(getSeq((getGlobal, getInt)))
@@ -122,7 +122,6 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
     case T.IfCf          => Cf.If(getVal, getNext, getNext)
     case T.SwitchCf      => Cf.Switch(getVal, getNext, getNexts)
     case T.InvokeCf      => Cf.Invoke(getType, getVal, getVals, getNext, getNext)
-    case T.ResumeCf      => Cf.Resume(getVal)
 
     case T.ThrowCf => Cf.Throw(getVal)
     case T.TryCf   => Cf.Try(getNext, getNext)

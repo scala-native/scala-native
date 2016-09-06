@@ -144,9 +144,12 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
   private def txCf(cf: Cf): Cf = {
     val pre = hook(preCf, cf, cf)
     val post = pre match {
-      case Cf.Unreachable => Cf.Unreachable
-      case Cf.Ret(v)      => Cf.Ret(txVal(v))
-      case Cf.Jump(next)  => Cf.Jump(txNext(next))
+      case Cf.Unreachable =>
+        Cf.Unreachable
+      case Cf.Ret(v) =>
+        Cf.Ret(txVal(v))
+      case Cf.Jump(next) =>
+        Cf.Jump(txNext(next))
       case Cf.If(v, thenp, elsep) =>
         Cf.If(txVal(v), txNext(thenp), txNext(elsep))
       case Cf.Switch(v, default, cases) =>
@@ -157,10 +160,11 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
                   argvs.map(txVal),
                   txNext(succ),
                   txNext(fail))
-      case Cf.Resume(excrec) => Cf.Resume(txVal(excrec))
 
-      case Cf.Throw(v)       => Cf.Throw(txVal(v))
-      case Cf.Try(norm, exc) => Cf.Try(txNext(norm), txNext(exc))
+      case Cf.Throw(v) =>
+        Cf.Throw(txVal(v))
+      case Cf.Try(norm, exc) =>
+        Cf.Try(txNext(norm), txNext(exc))
     }
 
     hook(postCf, post, post)

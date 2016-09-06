@@ -1,16 +1,10 @@
 #include <exception>
-#include <cxxabi.h>
 #include <gc.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <math.h>
 #include <errno.h>
-
-namespace __cxxabiv1 {
-extern "C" void *__cxa_begin_catch (void *);
-extern "C" void __cxa_end_catch ();
-}
 
 namespace scalanative {
     class ExceptionWrapper: public std::exception {
@@ -22,26 +16,13 @@ namespace scalanative {
 
 extern "C" {
     void scalanative_throw(void* obj) {
-        throw new scalanative::ExceptionWrapper(obj);
-    }
-
-    void* scalanative_begin_catch(void* wrapper) {
-        __cxxabiv1::__cxa_begin_catch(wrapper);
-        return ((scalanative::ExceptionWrapper*) wrapper)->obj;
-    }
-
-    void scalanative_end_catch() {
-        __cxxabiv1::__cxa_end_catch();
+        throw scalanative::ExceptionWrapper(obj);
     }
 
     void* scalanative_alloc(void* info, size_t size) {
         void** alloc = (void**) GC_malloc(size);
         *alloc = info;
         return (void*) alloc;
-    }
-
-    void scalanative_init() {
-        GC_init();
     }
 
     void* scalanative_libc_stdin() {
