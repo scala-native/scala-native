@@ -27,6 +27,9 @@ object ScalaNativePlugin extends AutoPlugin {
 
     val nativeLink = taskKey[File](
       "Generates native binary without running it.")
+
+    val nativeSharedLibrary = settingKey[Boolean](
+      "Will create a shared library instead of a program with a main method.")
   }
 
   override def projectSettings =
