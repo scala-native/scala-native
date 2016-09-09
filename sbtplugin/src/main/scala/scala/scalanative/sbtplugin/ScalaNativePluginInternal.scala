@@ -94,7 +94,8 @@ object ScalaNativePluginInternal {
       val libs = ("/usr/local/lib" #:: Try(
         Process("llvm-config --libdir").lines_!)
         .getOrElse(Stream.empty)).map(s => s"-L$s")
-      includes #::: libs
+
+      includes #::: libs ++ maybeInjectShared(nativeSharedLibrary.value)
     },
 
     nativeEmitDependencyGraphPath := None,
@@ -105,22 +106,26 @@ object ScalaNativePluginInternal {
       (crossTarget in Compile).value / (moduleName.value + "-out")
     },
 
+    nativeSharedLibrary := false,
+
     nativeLink := {
-      val entry     = (selectMainClass in Compile).value.get.toString + "$"
-      val classpath = cpToStrings((fullClasspath in Compile).value.map(_.data))
-      val target    = (crossTarget in Compile).value
-      val appll     = target / (moduleName.value + "-out.ll")
-      val binary    = (artifactPath in nativeLink).value
-      val verbose   = nativeVerbose.value
-      val clang     = nativeClang.value
-      val clangOpts = nativeClangOptions.value
-      val dotpath   = nativeEmitDependencyGraphPath.value
-      val linkage   = nativeLibraryLinkage.value
-      val opts      = new NativeOpts(classpath,
-                                     abs(appll),
-                                     dotpath.map(abs),
-                                     entry,
-                                     verbose)
+      val entry         = (selectMainClass in Compile).value.get.toString + "$"
+      val classpath     = cpToStrings((fullClasspath in Compile).value.map(_.data))
+      val target        = (crossTarget in Compile).value
+      val appll         = target / (moduleName.value + "-out.ll")
+      val binary        = (artifactPath in nativeLink).value
+      val verbose       = nativeVerbose.value
+      val clang         = nativeClang.value
+      val clangOpts     = nativeClangOptions.value
+      val dotpath       = nativeEmitDependencyGraphPath.value
+      val linkage       = nativeLibraryLinkage.value
+      val sharedLibrary = nativeSharedLibrary.value
+      val opts          = new NativeOpts(classpath,
+                                         abs(appll),
+                                         dotpath.map(abs),
+                                         entry,
+                                         verbose,
+                                         sharedLibrary)
 
       checkThatClangIsRecentEnough(clang)
 
@@ -147,6 +152,9 @@ object ScalaNativePluginInternal {
       Defaults.toError(message)
     }
   )
+
+  private def maybeInjectShared(lib: Boolean): Seq[String] =
+    if (lib) Seq("-shared") else Seq.empty
 
   /**
     * Tests whether the clang compiler is recent enough.
