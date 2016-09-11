@@ -28,7 +28,7 @@ object ScalaNativePluginInternal {
   /** Compiles rt to llvm ir using clang. */
   private def unpackRtlib(classpath: Seq[String]): Unit = {
     val nativelibjar = classpath.collectFirst {
-      case p if p.contains("org.scala-native") && p.contains("nativelib") => p
+      case p if p.contains("scala-native") && p.contains("nativelib") => p
     }.get
 
     IO.delete(nativelib)
