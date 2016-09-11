@@ -71,7 +71,14 @@ class Amd64AbiLowering(implicit fresh: Fresh) extends Pass {
   override def preDefn: OnDefn = {
     case defn @ Defn
           .Define(attrs, name, Type.Function(argtys, retty), blocks) =>
-      smallParamAlloc = Val.Local(fresh(), Type.Ptr)
+      val smallParamAllocNeeded = blocks.exists(_.insts.exists {
+        case Inst(_, Op.Call(ty: Type.Function, _, _)) =>
+          ty.args.exists(_.ty.isInstanceOf[Type.Struct])
+        case _ => false
+      })
+      smallParamAlloc =
+        if(smallParamAllocNeeded) Val.Local(fresh(), Type.Ptr)
+        else null
       returnCoercionType = coerceReturnType(retty)
       returnPointerParam = returnCoercionType match {
         case ByPointer(_) =>
@@ -119,7 +126,7 @@ class Amd64AbiLowering(implicit fresh: Fresh) extends Pass {
       val newEntryBlock = entryBlock match {
         case Block(blockName, params, insts, cf) =>
           val allocSmallParam =
-            Inst(smallParamAlloc.name, Op.Stackalloc(SmallParamStructType))
+            Option(smallParamAlloc).map(a => Inst(a.name, Op.Stackalloc(SmallParamStructType)))
 
           val allocBigRet =
             bigReturnType.map(t => Inst(bigReturnAlloc.name, Op.Stackalloc(t)))
@@ -168,7 +175,7 @@ class Amd64AbiLowering(implicit fresh: Fresh) extends Pass {
           Block(
               blockName,
               additionalParams ++ argCoercions.flatMap(_._1),
-              Seq(allocSmallParam) ++ allocBigRet ++ allocBigParams ++ argCoercions
+              allocSmallParam.toSeq ++ allocBigRet ++ allocBigParams ++ argCoercions
                 .flatMap(_._2) ++ insts,
               cf)
       }

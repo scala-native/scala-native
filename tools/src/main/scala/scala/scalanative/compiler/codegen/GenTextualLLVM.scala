@@ -235,7 +235,7 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
       ty == Type.Void || ty == Type.Unit || ty == Type.Nothing
 
     def showCallArgs(args: Seq[Arg], vals: Seq[Val]): (Seq[Show.Result], Seq[Show.Result]) = {
-      val res = (args zip vals) map {
+      val res = (args.zipAll(vals, Arg(Type.Vararg), Val.Undef(Type.Nothing): Val)) map {
         case (Arg(Type.Ptr, ArgAttrs(Some(pointee), None)), v) =>
           val bitcasted = fresh()
           ( Seq(sh"%$bitcasted = bitcast $v to $pointee*")

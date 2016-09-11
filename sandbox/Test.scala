@@ -65,7 +65,10 @@ class Vec(val x: Double = 0, val y: Double = 0, val z: Double = 0) {
 object Test {
   import dummy._
   def main(args: Array[String]): Unit = {
-    val vec = new Vec(1, 2, 3)
-    stdio.fprintf(stdio.stdout, c"%f\n", vec.z)
+//    val vec = new Vec(1, 2, 3)
+    val s = genI8
+    stdio.fprintf(stdio.stdout, c"%d %d %d %d %d %d %d %d\n", s._1, s._2, s._3, s._4, s._5, s._6, s._7, s._8)
   }
+
+  @noinline def genI8 = new i8(1, 2, 3, 4, 5, 6, 7, 8)
 }
