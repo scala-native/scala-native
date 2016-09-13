@@ -5,6 +5,7 @@ import java.lang.System.exit
 object Main {
   val suites = Seq[Suite](
       tests.SuiteSuite,
+      java.lang.IntegerSuite,
       java.lang.FloatSuite,
       java.lang.DoubleSuite,
       java.util.RandomSuite,

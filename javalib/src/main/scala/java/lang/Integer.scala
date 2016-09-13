@@ -26,7 +26,7 @@ final class Integer(override val intValue: scala.Int)
   @inline override def equals(that: Any): scala.Boolean =
     that match {
       case that: Integer =>
-        byteValue == that.intValue
+        intValue == that.intValue
       case _ =>
         false
     }
@@ -206,12 +206,14 @@ object Integer {
       throw new NumberFormatException(s)
     }
 
+    val positive = s.charAt(0) == '+'
     val negative = s.charAt(0) == '-'
-    if (negative && length == 1) {
+    val offset   = if (positive || negative) 1 else 0
+    if (offset > 0 && length == 1) {
       throw new NumberFormatException(s)
     }
 
-    parse(s, 1, radix, negative)
+    parse(s, offset, radix, negative)
   }
 
   private def parse(s: String,
