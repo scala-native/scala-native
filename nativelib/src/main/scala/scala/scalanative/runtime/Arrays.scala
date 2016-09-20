@@ -1,4 +1,4 @@
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 1)
+// ###sourceLocation(file: "/root/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 1)
 package scala.scalanative
 package runtime
 
@@ -23,7 +23,7 @@ import scala.annotation.unchecked.uncheckedStable
 
 @struct class ArrayHeader(val info: Ptr[_], val length: Int)
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 29)
+// ###sourceLocation(file: "/root/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 29)
 
 sealed abstract class Array[T]
     extends java.io.Serializable with java.lang.Cloneable {
@@ -51,7 +51,9 @@ sealed abstract class Array[T]
 object Array {
   def copy(from: AnyRef, fromPos: Int,
            to: AnyRef, toPos: Int, len: Int): Unit = {
-    if (!from.isInstanceOf[Array[_]]) {
+    if (from == null || to == null) {
+      throw new NullPointerException()
+    } else if (!from.isInstanceOf[Array[_]]) {
       throw new IllegalArgumentException("from argument must be an array")
     } else if (!to.isInstanceOf[Array[_]]) {
       throw new IllegalArgumentException("to argument must be an array")
@@ -73,6 +75,8 @@ object Array {
       throw new IndexOutOfBoundsException(fromPos.toString)
     } else if (toPos < 0 || toPos + len > to.length) {
       throw new IndexOutOfBoundsException(toPos.toString)
+    } else if (len == 0) {
+      ()
     } else {
       val fromPtr = from.at(fromPos).cast[Ptr[Byte]]
       val toPtr   = to.at(toPos).cast[Ptr[Byte]]
@@ -142,7 +146,7 @@ object ObjectArray {
     Array.alloc(length, typeof[ObjectArray], sizeof[Object]).cast[ObjectArray]
 }
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 148)
+// ###sourceLocation(file: "/root/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 152)
 
 final class BooleanArray private () extends Array[Boolean] {
   @inline def stride: CSize =
@@ -171,7 +175,7 @@ object BooleanArray {
     PrimitiveArray.alloc(length, typeof[BooleanArray], sizeof[Boolean]).cast[BooleanArray]
 }
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 148)
+// ###sourceLocation(file: "/root/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 152)
 
 final class CharArray private () extends Array[Char] {
   @inline def stride: CSize =
@@ -200,7 +204,7 @@ object CharArray {
     PrimitiveArray.alloc(length, typeof[CharArray], sizeof[Char]).cast[CharArray]
 }
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 148)
+// ###sourceLocation(file: "/root/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 152)
 
 final class ByteArray private () extends Array[Byte] {
   @inline def stride: CSize =
@@ -229,7 +233,7 @@ object ByteArray {
     PrimitiveArray.alloc(length, typeof[ByteArray], sizeof[Byte]).cast[ByteArray]
 }
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 148)
+// ###sourceLocation(file: "/root/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 152)
 
 final class ShortArray private () extends Array[Short] {
   @inline def stride: CSize =
@@ -258,7 +262,7 @@ object ShortArray {
     PrimitiveArray.alloc(length, typeof[ShortArray], sizeof[Short]).cast[ShortArray]
 }
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 148)
+// ###sourceLocation(file: "/root/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 152)
 
 final class IntArray private () extends Array[Int] {
   @inline def stride: CSize =
@@ -287,7 +291,7 @@ object IntArray {
     PrimitiveArray.alloc(length, typeof[IntArray], sizeof[Int]).cast[IntArray]
 }
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 148)
+// ###sourceLocation(file: "/root/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 152)
 
 final class LongArray private () extends Array[Long] {
   @inline def stride: CSize =
@@ -316,7 +320,7 @@ object LongArray {
     PrimitiveArray.alloc(length, typeof[LongArray], sizeof[Long]).cast[LongArray]
 }
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 148)
+// ###sourceLocation(file: "/root/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 152)
 
 final class FloatArray private () extends Array[Float] {
   @inline def stride: CSize =
@@ -345,7 +349,7 @@ object FloatArray {
     PrimitiveArray.alloc(length, typeof[FloatArray], sizeof[Float]).cast[FloatArray]
 }
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 148)
+// ###sourceLocation(file: "/root/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 152)
 
 final class DoubleArray private () extends Array[Double] {
   @inline def stride: CSize =
