@@ -2,15 +2,24 @@
 Welcome to Scala Native
 =======================
 
-Welcome Scala Native's documentation.
+Welcome to Scala Native's documentation.
+
+User's Guide
+============
 
 .. toctree::
-   :maxdepth: 2
+  :maxdepth: 2
 
-Indices and tables
-==================
+  user/setup
+  user/sbt
+  user/faq
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+Contributor's Guide
+===================
+
+.. toctree::
+  :maxdepth: 2
+
+  contrib/contrib
+
 
