@@ -12,6 +12,9 @@ User's Guide
 
   user/setup
   user/sbt
+  user/lang
+  user/interop
+  user/lib
   user/faq
 
 Contributor's Guide

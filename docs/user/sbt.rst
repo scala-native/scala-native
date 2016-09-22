@@ -28,4 +28,4 @@ and now you can write your first application in ``./src/main/scala/HelloWorld.sc
 
 now simply run sbt run to get everything compiled and have the expected output!
 
-Continue to :ref:`faq`.
+Continue to :ref:`lang`.
