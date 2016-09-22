@@ -2,27 +2,13 @@
 Welcome to Scala Native
 =======================
 
-Welcome to Scala Native's documentation.
-
-User's Guide
-============
-
-.. toctree::
-  :maxdepth: 2
-
-  user/setup
-  user/sbt
-  user/lang
-  user/interop
-  user/lib
-  user/faq
-
-Contributor's Guide
-===================
+Welcome to Scala Native's documentation. This documentation is divided into
+two separate guides. First one walks you through all the things you need to
+know as an end-user. The second one is mostly aimed at contributors and people
+who would like to know more about how things work under the hood.
 
 .. toctree::
-  :maxdepth: 2
+  :maxdepth: 3
 
-  contrib/contrib
-
-
+  user/index
+  contrib/index
