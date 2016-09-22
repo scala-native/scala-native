@@ -6,3 +6,4 @@ Contributor's Guide
   :maxdepth: 2
 
   contrib
+  nir
