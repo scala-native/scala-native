@@ -280,6 +280,16 @@ object Shows {
     case Type.Module(name) => sh"module $name"
   }
 
+  implicit val showArg: Show[Arg] = Show {
+    case Arg(ty, None)           => sh"$ty"
+    case Arg(ty, Some(passConv)) => sh"$passConv $ty"
+  }
+
+  implicit val showPassConvention: Show[PassConv] = Show {
+    case PassConv.Byval(ty) => sh"byval[$ty]"
+    case PassConv.Sret(ty)  => sh"sret[$ty]"
+  }
+
   implicit val showGlobal: Show[Global] = Show {
     case Global.None          => unreachable
     case Global.Top(id)       => sh"@$id"
