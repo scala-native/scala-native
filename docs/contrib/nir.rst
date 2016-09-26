@@ -17,10 +17,6 @@ Lets have a look at the textual form of NIR generated for a simple Scala module:
 
 .. code-block:: scala
 
-    package test
-
-    import System.out.println
-
     object Test {
       def main(args: Array[String]): Unit =
         println("Hello, world!")
@@ -30,21 +26,19 @@ Would map to:
 
 .. code-block:: text
 
-    pin(@test.Test::init) module @test.Test : #java.lang.Object
+    pin(@Test$::init) module @Test$ : @java.lang.Object
 
-    def @test.Test::main_class.ssnr.ObjectArray_unit : (module @test.Test, class #scala.scalanative.runtime.ObjectArray) => unit {
-      %src.2(%src.0: module @test.Test, %src.1: class #scala.scalanative.runtime.ObjectArray):
-        %src.3 = module @java.lang.System
-        %src.4 = field[...] %src.3: module @java.lang.System, @java.lang.System::field.out
-        %src.5 = load[...] %src.4: ptr
-        %src.6 = method[...] %src.5: class #java.io.PrintStream, #java.io.PrintStream::println_class.java.lang.String_unit
-        %src.7 = call[...] %src.6: ptr(%src.5: class #java.io.PrintStream, "Hello, world!")
-        ret %src.7: unit
+    def @Test$::main_class.ssnr.ObjectArray_unit : (module @Test$, class @scala.scalanative.runtime.ObjectArray) => unit {
+      %src.2(%src.0: module @Test$, %src.1: class @scala.scalanative.runtime.ObjectArray):
+        %src.3 = module @scala.Predef$
+        %src.4 = method[(module @scala.Predef$, class @java.lang.Object) => unit] %src.3: module @scala.Predef$, @scala.Predef$::println_class.java.lang.Object_unit
+        %src.5 = call[(module @scala.Predef$, class @java.lang.Object) => unit] %src.4: ptr(%src.3: module @scala.Predef$, "Hello, world!")
+        ret %src.5: unit
     }
 
-    def @test.Test::init : (module @test.Test) => void {
-      %src.1(%src.0: module @test.Test):
-        %src.2 = call[(class #java.lang.Object) => void] #java.lang.Object::init(%src.0: module @test.Test)
+    def @Test$::init : (module @Test$) => unit {
+      %src.1(%src.0: module @Test$):
+        %src.2 = call[(class @java.lang.Object) => unit] @java.lang.Object::init(%src.0: module @Test$)
         ret unit
     }
 
@@ -78,9 +72,9 @@ Var
 ```
 .. code-block:: text
 
-    ..$attrs var @name: $type = $value
+    ..$attrs var @$name: $ty = $value
 
-Corresponds to LLVM's `global <http://llvm.org/docs/LangRef.html#global-variables>`_
+Corresponds to LLVM's `global variables <http://llvm.org/docs/LangRef.html#global-variables>`_
 when used in the top-level scope and to fields, when used as a member of
 classes and modules.
 
@@ -90,11 +84,12 @@ Const
 
     ..$attrs const @$name: $type = $value
 
-Corresponds to LLVM's `const <http://llvm.org/docs/LangRef.html#global-variables>`_
-when used in the top-level scope.
+Corresponds to LLVM's `global constant <http://llvm.org/docs/LangRef.html#global-variables>`_.
+Constants may only reside on the top-level and can not be members of classes and
+modules.
 
-Decl
-````
+Declare
+````````
 .. code-block:: text
 
     ..$attrs def @$name: $type
@@ -104,8 +99,8 @@ Correspond to LLVM's
 when used on the top-level of the compilation unit and
 to abstract methods when used inside classes and traits.
 
-Defn
-````
+Define
+``````
 .. code-block:: text
 
     ..$attrs def @$name: $type { ..$blocks }
@@ -122,14 +117,13 @@ Struct
     ..$attrs struct @$name { ..$types }
 
 Corresponds to LLVM's
-`%$name = type { ... } <http://llvm.org/docs/LangRef.html#structure-types>`_
-struct definition.
+`named struct <http://llvm.org/docs/LangRef.html#structure-types>`_.
 
 Trait
 `````
 .. code-block:: text
 
-    ..$attrs trait @$name : ..$interfaces
+    ..$attrs trait @$name : ..$traits
 
 Scala-like traits. May contain abstract and concrete methods as members.
 
@@ -145,9 +139,9 @@ Module
 ``````
 .. code-block:: text
 
-    ..$attrs module @$name : $parent, ..$interfaces
+    ..$attrs module @$name : $parent, ..$traits
 
-Scala-like modules (i.e. ``object $name``) May contains vars and concrete
+Scala-like modules (i.e. ``object $name``) May only contain vars and concrete
 methods as members.
 
 Types
@@ -161,14 +155,32 @@ Void
 
 Corresponds to LLVM's `void <http://llvm.org/docs/LangRef.html#void-type>`_.
 
+Vararg
+``````
+.. code-block:: text
+
+    ...
+
+Corresponds to LLVM's `varargs <http://www.llvm.org/docs/LangRef.html#function-type>`_.
+May only be nested inside function types.
+
+Pointer
+```````
+.. code-block:: text
+
+    ptr
+
+Corresponds to LLVM's `pointer type <http://llvm.org/docs/LangRef.html#pointer-type>`_
+with a major distinction of not preserving the type of memory that's being
+pointed at. Pointers are going to become untyped in LLVM in near future too.
+
 Boolean
 ```````
 .. code-block:: text
 
     bool
 
-Corresponds to LLVM's `i1 <http://llvm.org/docs/LangRef.html#integer-type>`_ and
-C's `bool <http://pubs.opengroup.org/onlinepubs/009695399/basedefs/stdbool.h.html>`_.
+Corresponds to LLVM's `i1 <http://llvm.org/docs/LangRef.html#integer-type>`_.
 
 Integer
 ```````
@@ -180,6 +192,7 @@ Integer
     i64
 
 Corresponds to LLVM `integer types <http://llvm.org/docs/LangRef.html#integer-type>`_.
+Unlike LLVM we do not support arbitrary width integer types at the moment.
 
 Float
 `````
@@ -198,17 +211,6 @@ Array
 
 Corresponds to LLVM's `aggregate array type <http://llvm.org/docs/LangRef.html#array-type>`_.
 
-Pointer
-```````
-.. code-block:: text
-
-    ptr
-
-Corresponds to LLVM's `pointer type <http://llvm.org/docs/LangRef.html#pointer-type>`_
-with a major distinction of not preserving the type of memory that's being
-pointed at. Pointers are going to become untyped in LLVM in near future too,
-currently we just always compile them to `i8*`.
-
 Function
 ````````
 .. code-block:: text
@@ -222,8 +224,10 @@ Struct
 .. code-block:: text
 
     struct @$name
+    struct { ..$types }
 
-Corresponds to LLVM's `aggregate structure type <http://llvm.org/docs/LangRef.html#structure-type>`_.
+Has two forms: named and anonymous. Corresponds to LLVM's
+`aggregate structure type <http://www.llvm.org/docs/LangRef.html#t-struct>`_.
 
 Unit
 ````
@@ -231,7 +235,7 @@ Unit
 
     unit
 
-Corresponds to ``scala.Unit``.
+A reference type that corresponds to ``scala.Unit``.
 
 Nothing
 ```````
@@ -239,7 +243,7 @@ Nothing
 
     nothing
 
-Corresponds to ``scala.Nothing``.
+Corresponds to ``scala.Nothing``. May only be used a function return type.
 
 Class
 `````
@@ -317,25 +321,19 @@ switch
        default      => $nextN(..$valuesN)
     }
 
-Jumps to one of the basic blocks if `$value` matches corresponding `$valueN`.
-Corresponds to LLVM's
+Jumps to one of the basic blocks if ``$value`` is equal to
+corresponding ``$valueN``. Corresponds to LLVM's
 `switch <http://llvm.org/docs/LangRef.html#switch-instruction>`_.
 
 invoke
 ``````
 .. code-block:: text
 
-    invoke[$type] $funptr(..$values) to $success unwind $failure
+    invoke[$type] $ptr(..$values) to $success unwind $failure
 
 Invoke function pointer, jump to success in case value is returned,
 unwind to failure if exception was thrown. Corresponds to LLVM's
 `invoke <http://llvm.org/docs/LangRef.html#invoke-instruction>`_.
-
-resume
-``````
-.. code-block:: text
-
-    resume $excrec
 
 throw
 `````
@@ -354,16 +352,15 @@ try
 Operands
 --------
 
-All non-control-flow instructions follow general pattern of
-``%N = ..$attrs $op``. The value produced by the instruction may be
-omitted if instruction is used purely for side-effect. Operations
-follow the pattern of ``$opname[..$types] ..$values``.
+All non-control-flow instructions follow a general pattern of
+``%$name = $opname[..$types] ..$values``. Purely side-effecting operands
+like ``store`` produce ``unit`` value.
 
 call
 ````
 .. code-block:: text
 
-    call[$type] $ptrvalue(..$values)
+    call[$type] $ptr(..$values)
 
 Calls given function of given function type and argument values.
 Corresponds to LLVM's
@@ -373,30 +370,27 @@ load
 ````
 .. code-block:: text
 
-    load[$type] $ptrvalue
+    load[$type] $ptr
 
-Load value of given type from memory.
-Corresponds to LLVM's
+Load value of given type from memory. Corresponds to LLVM's
 `load <http://llvm.org/docs/LangRef.html#load-instruction>`_.
 
 store
 `````
 .. code-block:: text
 
-    store[$type] $ptrvalue, $value
+    store[$type] $ptr, $value
 
-Store value of given type to memory.
-Corresponds to LLVM's
+Store value of given type to memory. Corresponds to LLVM's
 `store <http://llvm.org/docs/LangRef.html#store-instruction>`_.
 
 elem
 ````
 .. code-block:: text
 
-    elem[$type] $ptrvalue, ..$indexes
+    elem[$type] $ptr, ..$indexes
 
-Compute derived pointer starting from given pointer value.
-Corresponds to LLVM's
+Compute derived pointer starting from given pointer. Corresponds to LLVM's
 `getelementptr <http://llvm.org/docs/LangRef.html#getelementptr-instruction>`_.
 
 extract
@@ -415,15 +409,15 @@ insert
 
     insert[$type] $aggrvalue, $value, $index
 
-Create a new aggregate value based on existing one with element at index replaced with new value.
-Corresponds to LLVM's
+Create a new aggregate value based on existing one with element at index
+replaced with new value. Corresponds to LLVM's
 `insertvalue <http://llvm.org/docs/LangRef.html#insertvalue-instruction>`_.
 
-alloca
-``````
+stackalloc
+``````````
 .. code-block:: text
 
-    alloca[$type]
+    stackalloc[$type]
 
 Stack allocate a slot of memory big enough to store given type.
 Corresponds to LLVM's
@@ -435,11 +429,13 @@ bin
 
     $bin[$type] $value1, $value2`
 
+
 Where ``$bin`` is one of the following:
-``add``, ``sub``, ``mul``, ``div``, ``mod``, ``shl``, ``lshr``
-``ashr``, ``and``, ``or``, ``xor``. Depending on the type, maps
-to either integer or floating point
-`binary operation <http://llvm.org/docs/LangRef.html#binary-operations>`_ in LLVM.
+``iadd``, ``fadd``, ``isub``, ``fsub``, ``imul``, ``fmul``,
+``sdiv``, ``udiv``, ``fdiv``, ``srem``, ``urem``, ``frem``,
+``shl``, ``lshr``, ``ashr`` , ``and``, ``or``, ``xor``.
+Depending on the type and signedness, maps to either integer or floating point
+`binary operations <http://llvm.org/docs/LangRef.html#binary-operations>`_ in LLVM.
 
 comp
 ````
@@ -463,7 +459,7 @@ Where ``$conv`` is one of the following: ``trunc``, ``zext``, ``sext``, ``fptrun
 ``fpext``, ``fptoui``, ``fptosi``, ``uitofp``, ``sitofp``, ``ptrtoint``, ``inttoptr``,
 ``bitcast``.
 Corresponds to LLVM
-`conversion instruction <http://llvm.org/docs/LangRef.html#conversion-operations>`_
+`conversion instructions <http://llvm.org/docs/LangRef.html#conversion-operations>`_
 with the same name.
 
 sizeof
@@ -505,7 +501,7 @@ as
 
     as[$type] $value
 
-Corresponds to `$value.asInstanceOf[$type]` in Scala.
+Corresponds to ``$value.asInstanceOf[$type]`` in Scala.
 
 is
 ``
@@ -513,7 +509,7 @@ is
 
     is[$type] $value
 
-Corresponds to `$value.isInstanceOf[$type]` in Scala.
+Corresponds to ``$value.isInstanceOf[$type]`` in Scala.
 
 Values
 ------
@@ -525,7 +521,7 @@ Boolean
     true
     false
 
-Corresponds to LLVM's `true` and `false`.
+Corresponds to LLVM's ``true`` and ``false``.
 
 Zero
 ````
@@ -533,7 +529,7 @@ Zero
 
     zero $type
 
-Corresponds to LLVM's `zeroinitializer`.
+Corresponds to LLVM's ``zeroinitializer``.
 
 Integer
 ```````
@@ -575,7 +571,7 @@ Local
 `````
 .. code-block:: text
 
-    %N
+    %$name
 
 Named reference to result of previously executed
 instructions or basic block parameters.
@@ -594,7 +590,7 @@ Unit
 
     unit
 
-Corresponds to `()` in Scala.
+Corresponds to ``()`` in Scala.
 
 Null
 ````
@@ -616,3 +612,104 @@ Attributes
 ----------
 
 Attributes allow one to attach additional metadata to definitions and instructions.
+
+Inlining
+````````
+
+mayinline
+*********
+.. code-block:: text
+
+    mayinline
+
+Default state: optimiser is allowed to inline given method.
+
+inlinehint
+**********
+.. code-block:: text
+
+    inlinehint
+
+Optimiser is incentivized to inline given methods but is it allowed not to.
+
+noinline
+********
+.. code-block:: text
+
+    noinline
+
+Optimiser must never inline given method.
+
+alwaysinline
+************
+.. code-block:: text
+
+    alwaysinline
+
+Optimiser must always inline given method.
+
+Linking
+```````
+
+link
+****
+.. code-block:: text
+
+    link($name)
+
+Automatically put ``$name`` on a list of native libraries to link with if the
+given definition is reachable.
+
+pin
+***
+.. code-block:: text
+
+    pin(@$name)
+
+Require ``$name`` to be reachable, whenever current definition is reachable.
+Used to introduce indirect linking dependencies. For example, module definitions
+depend on its constructors using this attribute.
+
+pin-if
+******
+.. code-block:: text
+
+    pin-if(@$name, @$cond)
+
+Require ``$name`` to be reachable if current and ``$cond`` definitions are
+both reachable. Used to introduce conditional indirect linking dependencies.
+For example, class constructors conditionally depend on methods overriden in
+given class if the method that are being overriden are reachable.
+
+Misc
+````
+
+pure
+****
+.. code-block:: text
+
+    pure
+
+Let optimiser assume that calls to given method are effectively pure.
+Meaning that if the same method is called twice with exactly the same argument
+values, it can re-use the result of first invocation without calling the method
+twice.
+
+extern
+******
+.. code-block:: text
+
+    extern
+
+Use C-friendly calling convention and don't name-mangle given method.
+
+override
+********
+.. code-block:: text
+
+    override(@$name)
+
+Attributed method overrides ``@$name`` method if ``@$name`` is reachable.
+``$name`` must be defined in one of the super classes or traits of
+the parent class.
+
