@@ -192,6 +192,7 @@ object ScalaNativePluginInternal {
       "org.scala-native" % "nscplugin" % nativeVersion cross CrossVersion.full),
     nativeLibraryLinkage := Map(),
     nativeSharedLibrary := false,
+    nativeProfileDispatch := false,
     nativeClang := {
       discover("clang", Seq(("3", "8"), ("3", "7")))
     },
@@ -282,6 +283,13 @@ object ScalaNativePluginInternal {
 
       val result = compileIfChanged(inputFiles)
       binary
+    },
+    scalacOptions in Compile := {
+      val previous = (scalacOptions in Compile).value
+      if (nativeProfileDispatch.value)
+        previous ++ Seq("-P:nir:methodCallProfiling")
+      else
+        previous
     },
     run := {
       val logger = streams.value.log
