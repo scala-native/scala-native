@@ -1695,6 +1695,19 @@ abstract class NirCodeGen
           unsupported(argsp)
       }
 
+    def withDispatchInfo(about: Symbol, focus: Focus): Focus =
+      if (about.fullName != "scala.Predef.println" && !about.fullName.contains("<init>")) {
+        val printlnSym = getDecl(PredefModule, TermName("println")).alternatives.tail.head
+        val arg = {
+          val msg = Literal(Constant(s"Calling '${about.fullName}'"))
+          msg.setType(StringTpe)
+          msg
+        }
+        genModuleMethodCall(PredefModule, printlnSym, Seq(arg), focus)
+      }
+      else
+        focus
+
     def genModuleMethodCall(module: Symbol,
                             method: Symbol,
                             args: Seq[Tree],
@@ -1723,10 +1736,14 @@ abstract class NirCodeGen
                       self: Val,
                       argsp: Seq[Tree],
                       focus: Focus): Focus = {
+
+      val withProfiling =
+        withDispatchInfo(sym, focus)
+
       val owner        = sym.owner
       val name         = genMethodName(sym)
       val sig          = genMethodSig(sym)
-      val (args, last) = genMethodArgs(sym, argsp, focus)
+      val (args, last) = genMethodArgs(sym, argsp, withProfiling)
       val method =
         if (statically || isStruct(owner) || isExternModule(owner))
           last withValue Val.Global(name, nir.Type.Ptr)
