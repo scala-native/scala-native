@@ -67,36 +67,36 @@ object LocalBoxingElimination extends PassCompanion {
   private val RuntimeBoxes = Global.Top("scala.scalanative.runtime.Boxes$")
 
   private val BoxTo: Map[Global, Char] = Seq(
-      ('B', BoxesRunTime, "boxToBoolean_bool_class.java.lang.Boolean"),
-      ('C', BoxesRunTime, "boxToCharacter_i16_class.java.lang.Character"),
-      ('z', RuntimeBoxes, "boxToUByte_i8_class.java.lang.Object"),
-      ('Z', BoxesRunTime, "boxToByte_i8_class.java.lang.Byte"),
-      ('s', RuntimeBoxes, "boxToUShort_i16_class.java.lang.Object"),
-      ('S', BoxesRunTime, "boxToShort_i16_class.java.lang.Short"),
-      ('i', RuntimeBoxes, "boxToUInt_i32_class.java.lang.Object"),
-      ('I', BoxesRunTime, "boxToInteger_i32_class.java.lang.Integer"),
-      ('l', RuntimeBoxes, "boxToULong_i64_class.java.lang.Object"),
-      ('L', BoxesRunTime, "boxToLong_i64_class.java.lang.Long"),
-      ('F', BoxesRunTime, "boxToFloat_f32_class.java.lang.Float"),
-      ('D', BoxesRunTime, "boxToDouble_f64_class.java.lang.Double")
+    ('B', BoxesRunTime, "boxToBoolean_bool_class.java.lang.Boolean"),
+    ('C', BoxesRunTime, "boxToCharacter_i16_class.java.lang.Character"),
+    ('z', RuntimeBoxes, "boxToUByte_i8_class.java.lang.Object"),
+    ('Z', BoxesRunTime, "boxToByte_i8_class.java.lang.Byte"),
+    ('s', RuntimeBoxes, "boxToUShort_i16_class.java.lang.Object"),
+    ('S', BoxesRunTime, "boxToShort_i16_class.java.lang.Short"),
+    ('i', RuntimeBoxes, "boxToUInt_i32_class.java.lang.Object"),
+    ('I', BoxesRunTime, "boxToInteger_i32_class.java.lang.Integer"),
+    ('l', RuntimeBoxes, "boxToULong_i64_class.java.lang.Object"),
+    ('L', BoxesRunTime, "boxToLong_i64_class.java.lang.Long"),
+    ('F', BoxesRunTime, "boxToFloat_f32_class.java.lang.Float"),
+    ('D', BoxesRunTime, "boxToDouble_f64_class.java.lang.Double")
   ).map {
     case (code, module, id) =>
       Global.Member(module, id) -> code
   }.toMap
 
   private val UnboxTo: Map[Global, Char] = Seq(
-      ('B', BoxesRunTime, "unboxToBoolean_class.java.lang.Object_bool"),
-      ('C', BoxesRunTime, "unboxToChar_class.java.lang.Object_i16"),
-      ('z', RuntimeBoxes, "unboxToUByte_class.java.lang.Object_i8"),
-      ('Z', BoxesRunTime, "unboxToByte_class.java.lang.Object_i8"),
-      ('s', RuntimeBoxes, "unboxToUShort_class.java.lang.Object_i16"),
-      ('S', BoxesRunTime, "unboxToShort_class.java.lang.Object_i16"),
-      ('i', RuntimeBoxes, "unboxToUInt_class.java.lang.Object_i32"),
-      ('I', BoxesRunTime, "unboxToInt_class.java.lang.Object_i32"),
-      ('l', RuntimeBoxes, "unboxToULong_class.java.lang.Object_i64"),
-      ('L', BoxesRunTime, "unboxToLong_class.java.lang.Object_i64"),
-      ('F', BoxesRunTime, "unboxToFloat_class.java.lang.Object_f32"),
-      ('D', BoxesRunTime, "unboxToDouble_class.java.lang.Object_f64")
+    ('B', BoxesRunTime, "unboxToBoolean_class.java.lang.Object_bool"),
+    ('C', BoxesRunTime, "unboxToChar_class.java.lang.Object_i16"),
+    ('z', RuntimeBoxes, "unboxToUByte_class.java.lang.Object_i8"),
+    ('Z', BoxesRunTime, "unboxToByte_class.java.lang.Object_i8"),
+    ('s', RuntimeBoxes, "unboxToUShort_class.java.lang.Object_i16"),
+    ('S', BoxesRunTime, "unboxToShort_class.java.lang.Object_i16"),
+    ('i', RuntimeBoxes, "unboxToUInt_class.java.lang.Object_i32"),
+    ('I', BoxesRunTime, "unboxToInt_class.java.lang.Object_i32"),
+    ('l', RuntimeBoxes, "unboxToULong_class.java.lang.Object_i64"),
+    ('L', BoxesRunTime, "unboxToLong_class.java.lang.Object_i64"),
+    ('F', BoxesRunTime, "unboxToFloat_class.java.lang.Object_f32"),
+    ('D', BoxesRunTime, "unboxToDouble_class.java.lang.Object_f64")
   ).map {
     case (code, module, id) =>
       Global.Member(module, id) -> code

@@ -14,8 +14,8 @@ class SizeofLowering(implicit fresh: Fresh) extends Pass {
     case Inst(n, Op.Sizeof(ty)) =>
       val elem = Val.Local(fresh(), Type.Ptr)
       Seq(
-          Inst(elem.name, Op.Elem(ty, Val.Null, Seq(Val.I32(1)))),
-          Inst(n, Op.Conv(Conv.Ptrtoint, Type.I64, elem))
+        Inst(elem.name, Op.Elem(ty, Val.Null, Seq(Val.I32(1)))),
+        Inst(n, Op.Conv(Conv.Ptrtoint, Type.I64, elem))
       )
   }
 }

@@ -4,7 +4,7 @@ package nir
 sealed abstract class Cf
 object Cf {
   // low-level control
-  final case object Unreachable extends Cf
+  final case object Unreachable                             extends Cf
   final case class Ret(value: Val)                          extends Cf
   final case class Jump(next: Next)                         extends Cf
   final case class If(value: Val, thenp: Next, elsep: Next) extends Cf

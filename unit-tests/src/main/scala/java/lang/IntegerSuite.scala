@@ -19,21 +19,21 @@ object IntegerSuite extends tests.Suite {
     assert(Integer.parseInt("00").equals(0))
 
     assert(
-        Integer.parseInt(Integer.MAX_VALUE.toString).equals(Integer.MAX_VALUE))
+      Integer.parseInt(Integer.MAX_VALUE.toString).equals(Integer.MAX_VALUE))
     assert(
-        Integer.parseInt(Integer.MIN_VALUE.toString).equals(Integer.MIN_VALUE))
+      Integer.parseInt(Integer.MIN_VALUE.toString).equals(Integer.MIN_VALUE))
 
     assertThrows[NumberFormatException](Integer.parseInt(null))
     assertThrows[NumberFormatException](Integer.parseInt(""))
     assertThrows[NumberFormatException](
-        Integer.parseInt("123", Character.MIN_RADIX - 1))
+      Integer.parseInt("123", Character.MIN_RADIX - 1))
     assertThrows[NumberFormatException](
-        Integer.parseInt("123", Character.MAX_RADIX + 1))
+      Integer.parseInt("123", Character.MAX_RADIX + 1))
     assertThrows[NumberFormatException](Integer.parseInt("123a", 10))
     assertThrows[NumberFormatException](
-        Integer.parseInt((Integer.MAX_VALUE.toLong + 1).toString))
+      Integer.parseInt((Integer.MAX_VALUE.toLong + 1).toString))
     assertThrows[NumberFormatException](
-        Integer.parseInt((Integer.MIN_VALUE.toLong - 1).toString))
+      Integer.parseInt((Integer.MIN_VALUE.toLong - 1).toString))
 
   }
 
@@ -52,8 +52,8 @@ object IntegerSuite extends tests.Suite {
     assert(new Integer(-1).equals(new Integer(-1)))
     assert(new Integer(123).equals(new Integer(123)))
     assert(
-        new Integer(Integer.MAX_VALUE) equals new Integer(Integer.MAX_VALUE))
+      new Integer(Integer.MAX_VALUE) equals new Integer(Integer.MAX_VALUE))
     assert(
-        new Integer(Integer.MIN_VALUE) equals new Integer(Integer.MIN_VALUE))
+      new Integer(Integer.MIN_VALUE) equals new Integer(Integer.MIN_VALUE))
   }
 }

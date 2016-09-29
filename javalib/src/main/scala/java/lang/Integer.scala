@@ -111,8 +111,8 @@ object Integer {
     val length = nm.length()
     if (length == 0) throw new NumberFormatException()
 
-    var i     = 0
-    var first = nm.charAt(i)
+    var i        = 0
+    var first    = nm.charAt(i)
     val negative = first == '-'
     if (negative) {
       if (length == 1) throw new NumberFormatException(nm)
@@ -273,7 +273,7 @@ object Integer {
       if (i == 0) 1
       else 32 - numberOfLeadingZeros(i)
     val buffer = new Array[Char](count)
-    var k = i
+    var k      = i
     do {
       count -= 1
       buffer(count) = ((k & 1) + '0').toChar
@@ -288,7 +288,7 @@ object Integer {
       if (i == 0) 1
       else ((32 - numberOfLeadingZeros(i)) + 3) / 4
     val buffer = new Array[Char](count)
-    var k = i
+    var k      = i
     do {
       var t = k & 15
       if (t > 9) {
@@ -309,7 +309,7 @@ object Integer {
       if (i == 0) 1
       else ((32 - numberOfLeadingZeros(i)) + 2) / 3
     val buffer = new Array[Char](count)
-    var k = i
+    var k      = i
     do {
       count -= 1
       buffer(count) = ((k & 7) + '0').toChar
@@ -339,7 +339,7 @@ object Integer {
         var last_digit = first_digit
         var quot       = positive_value
         do {
-          val res = quot / 10
+          val res         = quot / 10
           var digit_value = quot - ((res << 3) + (res << 1))
           digit_value += '0'
           buffer(last_digit) = digit_value.toChar
@@ -440,9 +440,9 @@ object Integer {
       val radix =
         if (_radix < Character.MIN_RADIX || _radix > Character.MAX_RADIX) 10
         else _radix
-      var i     = _i
-      var j     = _i
-      var count = 2
+      var i        = _i
+      var j        = _i
+      var count    = 2
       val negative = _i < 0
       if (!negative) {
         count = 1

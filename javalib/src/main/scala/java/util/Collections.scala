@@ -21,12 +21,12 @@ object Collections {
 
   final lazy val EMPTY_LIST: List[_] = {
     new ImmutableList(
-        new AbstractList[Any] with Serializable with RandomAccess {
-      override def get(index: Int): Any =
-        throw new IndexOutOfBoundsException(index.toString)
+      new AbstractList[Any] with Serializable with RandomAccess {
+        override def get(index: Int): Any =
+          throw new IndexOutOfBoundsException(index.toString)
 
-      override def size(): Int = 0
-    })
+        override def size(): Int = 0
+      })
   }
 
   final lazy val EMPTY_MAP: Map[_, _] = {
@@ -197,7 +197,7 @@ object Collections {
   private def copyImpl[T](source: Iterator[_ <: T],
                           dest: List[T] with RandomAccess): Unit = {
     val destEnd = dest.size()
-    var i = 0
+    var i       = 0
     while (source.hasNext) {
       if (i < destEnd)
         dest.set(i, source.next())

@@ -226,8 +226,8 @@ abstract class AbstractStringBuilder private (unit: Unit) {
         return
       }
       throw new StringIndexOutOfBoundsException(
-          "offset " + start + ", length " + length + ", char[].length" +
-            chars.length)
+        "offset " + start + ", length " + length + ", char[].length" +
+          chars.length)
     }
     throw new StringIndexOutOfBoundsException(index)
   }
@@ -347,7 +347,7 @@ abstract class AbstractStringBuilder private (unit: Unit) {
       var mid           = count / 2
       while (i < mid) {
         var frontLow = value(i + 1)
-        val endHigh = value(end - 1)
+        val endHigh  = value(end - 1)
         val surAtFront =
           allowFrontSur && frontLow >= 0xdc00 && frontLow <= 0xdfff &&
             frontHigh >= 0xd800 && frontHigh <= 0xdbff
@@ -397,8 +397,8 @@ abstract class AbstractStringBuilder private (unit: Unit) {
       }
     } else {
       val newData = new Array[scala.Char](value.length)
-      var i   = 0
-      var end = count
+      var i       = 0
+      var end     = count
       while (i < count) {
         val high = value(i)
         if ((i + 1) < count && high >= 0xd800 && high <= 0xdbff) {
@@ -538,7 +538,7 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     lastIndexOf(string, count)
 
   def lastIndexOf(subString: String, _start: scala.Int): scala.Int = {
-    var start = _start
+    var start    = _start
     val subCount = subString.length
     if (subCount <= count && start >= 0) {
       if (subCount > 0) {

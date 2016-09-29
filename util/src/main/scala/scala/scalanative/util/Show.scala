@@ -7,7 +7,7 @@ trait Show[T] { def apply(t: T): Show.Result }
 object Show {
   sealed abstract class Result {
     override def toString = {
-      val sb = new StringBuilder
+      val sb          = new StringBuilder
       var indentation = 0
       def nl(res: Result) = {
         sb.append("\n")
@@ -49,7 +49,7 @@ object Show {
       sb.toString
     }
   }
-  final case object None extends Result
+  final case object None                 extends Result
   final case class Str(value: String)    extends Result
   final case class Sequence(xs: Result*) extends Result
   final case class Repeat(xs: Seq[Result],

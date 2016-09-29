@@ -63,18 +63,18 @@ private[math] object Elementary {
     // scalastyle:off return
     var resDigits: Array[Int] = null
     var resSign: Int          = 0
-    val op1Sign     = op1.sign
-    val op2Sign     = op2.sign
-    val op1Len: Int = op1.numberLength
-    val op2Len: Int = op2.numberLength
+    val op1Sign               = op1.sign
+    val op2Sign               = op2.sign
+    val op1Len: Int           = op1.numberLength
+    val op2Len: Int           = op2.numberLength
 
     if (op1Sign == 0) {
       op2
     } else if (op2Sign == 0) {
       op1
     } else if (op1Len + op2Len == 2) {
-      val a: Long = op1.digits(0) & UINT_MAX
-      val b: Long = op2.digits(0) & UINT_MAX
+      val a: Long      = op1.digits(0) & UINT_MAX
+      val b: Long      = op2.digits(0) & UINT_MAX
       var res: Long    = 0L
       var valueLo: Int = 0
       var valueHi: Int = 0
@@ -296,10 +296,10 @@ private[math] object Elementary {
     // scalastyle:off return
     var resSign               = 0
     var resDigits: Array[Int] = null
-    val op1Sign = op1.sign
-    val op2Sign = op2.sign
-    val op1Len  = op1.numberLength
-    val op2Len  = op2.numberLength
+    val op1Sign               = op1.sign
+    val op2Sign               = op2.sign
+    val op1Len                = op1.numberLength
+    val op2Len                = op2.numberLength
 
     if (op2Sign == 0) {
       op1

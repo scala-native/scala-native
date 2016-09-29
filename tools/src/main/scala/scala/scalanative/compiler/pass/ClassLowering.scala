@@ -63,16 +63,15 @@ class ClassLowering(implicit top: Top, fresh: Fresh) extends Pass {
       val size = Val.Local(fresh(), Type.I64)
 
       Seq(
-          Inst(size.name, Op.Sizeof(classStruct(cls))),
-          Inst(n, Op.Call(allocSig, alloc, Seq(cls.typeConst, size)))
+        Inst(size.name, Op.Sizeof(classStruct(cls))),
+        Inst(n, Op.Call(allocSig, alloc, Seq(cls.typeConst, size)))
       )
 
     case Inst(n, Op.Field(ty, obj, FieldRef(cls: Class, fld))) =>
       val classty = classStruct(cls)
 
       Seq(
-          Inst(n,
-               Op.Elem(classty, obj, Seq(Val.I32(0), Val.I32(fld.index + 1))))
+        Inst(n, Op.Elem(classty, obj, Seq(Val.I32(0), Val.I32(fld.index + 1))))
       )
 
     case Inst(n, Op.Method(sig, obj, MethodRef(cls: Class, meth)))
@@ -81,20 +80,20 @@ class ClassLowering(implicit top: Top, fresh: Fresh) extends Pass {
       val methptrptr = Val.Local(fresh(), Type.Ptr)
 
       Seq(
-          Inst(typeptr.name, Op.Load(Type.Ptr, obj)),
-          Inst(methptrptr.name,
-               Op.Elem(cls.typeStruct,
-                       typeptr,
-                       Seq(Val.I32(0),
-                           Val.I32(2), // index of vtable in type struct
-                           Val.I32(meth.vindex)))),
-          Inst(n, Op.Load(Type.Ptr, methptrptr))
+        Inst(typeptr.name, Op.Load(Type.Ptr, obj)),
+        Inst(methptrptr.name,
+             Op.Elem(cls.typeStruct,
+                     typeptr,
+                     Seq(Val.I32(0),
+                         Val.I32(2), // index of vtable in type struct
+                         Val.I32(meth.vindex)))),
+        Inst(n, Op.Load(Type.Ptr, methptrptr))
       )
 
     case Inst(n, Op.Method(sig, obj, MethodRef(_: Class, meth)))
         if meth.isStatic =>
       Seq(
-          Inst(n, Op.Copy(Val.Global(meth.name, Type.Ptr)))
+        Inst(n, Op.Copy(Val.Global(meth.name, Type.Ptr)))
       )
 
     case Inst(n, Op.Is(ClassRef(cls), obj)) =>
@@ -109,14 +108,14 @@ class ClassLowering(implicit top: Top, fresh: Fresh) extends Pass {
         val le    = Val.Local(fresh(), Type.Bool)
 
         Seq(
-            Inst(idptr.name,
-                 Op.Elem(Rt.Type, typeptr, Seq(Val.I32(0), Val.I32(0)))),
-            Inst(id.name, Op.Load(Type.I32, idptr)),
-            Inst(ge.name,
-                 Op.Comp(Comp.Sle, Type.I32, Val.I32(cls.range.start), id)),
-            Inst(le.name,
-                 Op.Comp(Comp.Sle, Type.I32, id, Val.I32(cls.range.end))),
-            Inst(n, Op.Bin(Bin.And, Type.Bool, ge, le))
+          Inst(idptr.name,
+               Op.Elem(Rt.Type, typeptr, Seq(Val.I32(0), Val.I32(0)))),
+          Inst(id.name, Op.Load(Type.I32, idptr)),
+          Inst(ge.name,
+               Op.Comp(Comp.Sle, Type.I32, Val.I32(cls.range.start), id)),
+          Inst(le.name,
+               Op.Comp(Comp.Sle, Type.I32, id, Val.I32(cls.range.end))),
+          Inst(n, Op.Bin(Bin.And, Type.Bool, ge, le))
         )
       }
 

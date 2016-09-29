@@ -10,7 +10,7 @@ abstract class OutputStream extends Object with Closeable with Flushable {
     if (off < 0 || len < 0 || len > b.length - off)
       throw new IndexOutOfBoundsException()
 
-    var n = off
+    var n    = off
     val stop = off + len
     while (n < stop) {
       write(b(n))

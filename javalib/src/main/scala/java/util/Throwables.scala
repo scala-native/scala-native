@@ -86,7 +86,7 @@ class IllegalFormatWidthException(private val w: Int)
 
 class IllformedLocaleException(s: String, errorIndex: Int)
     extends RuntimeException(
-        s + (if (errorIndex < 0) "" else " [at index " + errorIndex + "]")) {
+      s + (if (errorIndex < 0) "" else " [at index " + errorIndex + "]")) {
   def this() = this(null, -1)
   def this(s: String) = this(s, -1)
   def getErrorIndex(): Int = errorIndex

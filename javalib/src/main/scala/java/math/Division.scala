@@ -163,7 +163,7 @@ private[math] object Division {
           var carry: Long = 0
           for (k <- 0 until normBLength) {
             carry +=
-            (normA(j - normBLength + k) & UINT_MAX) + (normB(k) & UINT_MAX)
+              (normA(j - normBLength + k) & UINT_MAX) + (normB(k) & UINT_MAX)
             normA(j - normBLength + k) = carry.toInt
             carry >>>= 32
           }
@@ -200,8 +200,8 @@ private[math] object Division {
     val valLen    = bi.numberLength
     val valSign   = bi.sign
     if (valLen == 1) {
-      val a: Long = valDigits(0) & UINT_MAX
-      val b: Long = divisor & UINT_MAX
+      val a: Long   = valDigits(0) & UINT_MAX
+      val b: Long   = divisor & UINT_MAX
       var quo: Long = a / b
       var rem: Long = a % b
       if (valSign != divisorSign)
@@ -210,11 +210,11 @@ private[math] object Division {
         rem = -rem
       new QuotAndRem(BigInteger.valueOf(quo), BigInteger.valueOf(rem))
     } else {
-      val quotientLength = valLen
-      val quotientSign   = if (valSign == divisorSign) 1 else -1
-      val quotientDigits = new Array[Int](quotientLength)
+      val quotientLength              = valLen
+      val quotientSign                = if (valSign == divisorSign) 1 else -1
+      val quotientDigits              = new Array[Int](quotientLength)
       var remainderDigits: Array[Int] = Array()
-      val div = divideArrayByInt(quotientDigits, valDigits, valLen, divisor)
+      val div                         = divideArrayByInt(quotientDigits, valDigits, valLen, divisor)
       remainderDigits = Array(div)
       val result0 =
         new BigInteger(quotientSign, quotientLength, quotientDigits)
@@ -240,9 +240,9 @@ private[math] object Division {
                        src: Array[Int],
                        srcLength: Int,
                        divisor: Int): Int = {
-    var rem: Long = 0
+    var rem: Long   = 0
     val bLong: Long = divisor & UINT_MAX
-    var i = srcLength - 1
+    var i           = srcLength - 1
     while (i >= 0) {
       val temp: Long = (rem << 32) | (src(i) & UINT_MAX)
       var quot: Long = 0L
@@ -291,8 +291,8 @@ private[math] object Division {
    *          left half and the unsigned integer quotient in the right half
    */
   def divideLongByInt(a: Long, b: Int): Long = {
-    var quot: Long = 0L
-    var rem: Long  = 0L
+    var quot: Long  = 0L
+    var rem: Long   = 0L
     val bLong: Long = b & UINT_MAX
     if (a >= 0) {
       quot = a / bLong
@@ -351,7 +351,7 @@ private[math] object Division {
 
     // STEP 4: Compute q^(-1) (mod 2^j) and y := (x2-x1) * q^(-1) (mod 2^j)
     val qInv = modPow2Inverse(q, j)
-    var y = x2.subtract(x1).multiply(qInv)
+    var y    = x2.subtract(x1).multiply(qInv)
     inplaceModPow2(y, j)
     if (y.sign < 0)
       y = y.add(BigInteger.getPowerOfTwo(j))
@@ -368,7 +368,7 @@ private[math] object Division {
   def finalSubtraction(res: Array[Int], modulus: BigInteger): BigInteger = {
     // skipping leading zeros
     val modulusLen = modulus.numberLength
-    var doSub = res(modulusLen) != 0
+    var doSub      = res(modulusLen) != 0
     if (!doSub) {
       val modulusDigits = modulus.digits
       doSub = true
@@ -429,7 +429,7 @@ private[math] object Division {
       // (op2.bitLength() < 32) implies by INV (op1.bitLength() < 32)
       if ((op2.numberLength == 1) && (op2.digits(0) > 0)) {
         op2 = BigInteger.valueOf(
-            Division.gcdBinary(op1.intValue(), op2.intValue()))
+          Division.gcdBinary(op1.intValue(), op2.intValue()))
       } else {
         // Implements one step of the Euclidean algorithm
         // To reduce one operand if it's much smaller than the other one
@@ -498,7 +498,7 @@ private[math] object Division {
    *  @param n a positive exponent of {@code 2}.
    */
   def inplaceModPow2(x: BigInteger, n: Int): Unit = {
-    val fd = n >> 5
+    val fd                = n >> 5
     var leadingZeros: Int = 0
     if (!(x.numberLength < fd || x.bitLength() <= n)) {
       leadingZeros = 32 - (n & 31)
@@ -530,9 +530,9 @@ private[math] object Division {
     val s = new BigInteger(1, 1, new Array[Int](max + 1))
 
     s.digits(0) = 1
-    var coefU = 0
-    var coefV = 0
-    val n = modulo.bitLength()
+    var coefU  = 0
+    var coefV  = 0
+    val n      = modulo.bitLength()
     var k: Int = 0
 
     while (!isPowerOfTwo(u, coefU) && !isPowerOfTwo(v, coefV)) {
@@ -617,7 +617,7 @@ private[math] object Division {
     val s: BigInteger = new BigInteger(1, 1, new Array[Int](max + 1))
     s.digits(0) = 1
 
-    var k = 0
+    var k    = 0
     val lsbu = u.getLowestSetBit
     val lsbv = v.getLowestSetBit
     if (lsbu > lsbv) {
@@ -787,7 +787,7 @@ private[math] object Division {
    *  @see BigInteger#modPow(BigInteger, BigInteger)
    */
   def pow2ModPow(base: BigInteger, exponent: BigInteger, j: Int): BigInteger = {
-    var res = BigInteger.ONE
+    var res         = BigInteger.ONE
     val e           = exponent.copy()
     val baseMod2toN = base.copy()
     /*
@@ -863,14 +863,14 @@ private[math] object Division {
                     modulus: BigInteger,
                     n2: Int): BigInteger = {
     // fill odd low pows of a2
-    val pows = new Array[BigInteger](8)
+    val pows            = new Array[BigInteger](8)
     var res: BigInteger = x2
     var lowexp: Int     = 0
 
     var acc3: Int = 0
     pows(0) = a2
     val x3 = monPro(a2, a2, modulus, n2)
-    var i = 1
+    var i  = 1
     while (i <= 7) {
       pows(i) = monPro(pows(i - 1), x3, modulus, n2)
       i += 1
@@ -925,7 +925,7 @@ private[math] object Division {
 
   /** Calculate the first digit of the inverse. */
   private def calcN(a: BigInteger): Int = {
-    val m0: Long = a.digits(0) & UINT_MAX
+    val m0: Long         = a.digits(0) & UINT_MAX
     var n2: Long         = 1L
     var powerOfTwo: Long = 2L
     do {
@@ -960,8 +960,8 @@ private[math] object Division {
 
   /** Returns {@code bi == abs(2^exp)}. */
   private def isPowerOfTwo(bi: BigInteger, exp: Int): Boolean = {
-    val cond1 = (exp >> 5) == (bi.numberLength - 1)
-    val cond2 = bi.digits(bi.numberLength - 1) == (1 << (exp & 31))
+    val cond1  = (exp >> 5) == (bi.numberLength - 1)
+    val cond2  = bi.digits(bi.numberLength - 1) == (1 << (exp & 31))
     var result = cond1 && cond2
 
     if (result) {
@@ -979,12 +979,12 @@ private[math] object Division {
                            n2: Int): Unit = {
     import Multiplication._
 
-    val modulusDigits = modulus.digits
-    val modulusLen    = modulus.numberLength
+    val modulusDigits    = modulus.digits
+    val modulusLen       = modulus.numberLength
     var outerCarry: Long = 0
     for (i <- 0 until modulusLen) {
       var innnerCarry: Long = 0
-      val m = Multiplication.unsignedMultAddAdd(res(i), n2, 0, 0).toInt
+      val m                 = Multiplication.unsignedMultAddAdd(res(i), n2, 0, 0).toInt
       for (j <- 0 until modulusLen) {
         innnerCarry = unsignedMultAddAdd(m,
                                          modulusDigits(j),
