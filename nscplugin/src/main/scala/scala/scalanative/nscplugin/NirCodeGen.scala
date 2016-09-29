@@ -11,7 +11,7 @@ import nir.Focus, Focus.{sequenced, merged}
 import nir._, Shows._
 import NirPrimitives._
 
-abstract class NirCodeGen(nirOpts: => NirOptions)
+abstract class NirCodeGen
     extends PluginComponent
     with NirFiles
     with NirTypeEncoding
@@ -1695,22 +1695,6 @@ abstract class NirCodeGen(nirOpts: => NirOptions)
           unsupported(argsp)
       }
 
-    def withDispatchInfo(about: Symbol, focus: Focus): Focus =
-      if (nirOpts.profileMethodCalls
-          && about.fullName != "scala.Predef.println"
-          && !about.fullName.contains("<init>")) {
-
-        println("Adding profiling info...")
-        val printlnSym = getDecl(PredefModule, TermName("println")).alternatives.tail.head
-        val arg = {
-          val msg = Literal(Constant(s"Calling '${about.fullName}'"))
-          msg.setType(StringTpe)
-          msg
-        }
-        genModuleMethodCall(PredefModule, printlnSym, Seq(arg), focus)
-
-      } else focus
-
     def genModuleMethodCall(module: Symbol,
                             method: Symbol,
                             args: Seq[Tree],
@@ -1740,13 +1724,10 @@ abstract class NirCodeGen(nirOpts: => NirOptions)
                       argsp: Seq[Tree],
                       focus: Focus): Focus = {
 
-      val withProfiling =
-        withDispatchInfo(sym, focus)
-
       val owner        = sym.owner
       val name         = genMethodName(sym)
       val sig          = genMethodSig(sym)
-      val (args, last) = genMethodArgs(sym, argsp, withProfiling)
+      val (args, last) = genMethodArgs(sym, argsp, focus)
       val method =
         if (statically || isStruct(owner) || isExternModule(owner))
           last withValue Val.Global(name, nir.Type.Ptr)
