@@ -3,3 +3,4 @@ target/
 *.dot
 *.ppm
 .idea
+_build/
