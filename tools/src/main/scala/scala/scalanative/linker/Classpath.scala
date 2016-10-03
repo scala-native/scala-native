@@ -33,11 +33,11 @@ final class JarClasspath(path: Path) extends Classpath {
   override def contents(): Seq[VirtualFile] = {
     roots
       .flatMap(
-          path =>
-            Files
-              .walk(path, Integer.MAX_VALUE, FileVisitOption.FOLLOW_LINKS)
-              .iterator()
-              .asScala)
+        path =>
+          Files
+            .walk(path, Integer.MAX_VALUE, FileVisitOption.FOLLOW_LINKS)
+            .iterator()
+            .asScala)
       .map(path => new VirtualFile(path))
   }
 

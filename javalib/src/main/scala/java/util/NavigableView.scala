@@ -67,7 +67,7 @@ private[util] class NavigableView[E](original: NavigableSet[E],
     _iterator(iterator.toList.reverse.iterator)
 
   override def removeAll(c: Collection[_]): Boolean = {
-    val iter = c.iterator()
+    val iter    = c.iterator()
     var changed = false
     while (iter.hasNext) changed = remove(iter.next) || changed
     changed

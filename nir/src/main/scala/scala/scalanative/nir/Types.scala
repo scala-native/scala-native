@@ -27,15 +27,15 @@ object Type {
   final case object Ptr    extends Type
 
   sealed abstract case class I(width: Int) extends Type
-  final object Bool extends I(1)
-  final object I8   extends I(8)
-  final object I16  extends I(16)
-  final object I32  extends I(32)
-  final object I64  extends I(64)
+  final object Bool                        extends I(1)
+  final object I8                          extends I(8)
+  final object I16                         extends I(16)
+  final object I32                         extends I(32)
+  final object I64                         extends I(64)
 
   sealed abstract case class F(width: Int) extends Type
-  final object F32 extends F(32)
-  final object F64 extends F(64)
+  final object F32                         extends F(32)
+  final object F64                         extends F(64)
 
   final case class Array(ty: Type, n: Int)              extends Type
   final case class Function(args: Seq[Type], ret: Type) extends Type
@@ -44,8 +44,8 @@ object Type {
   // high-level types
   final case object Nothing extends Type
 
-  sealed abstract class RefKind extends Type
-  final case object Unit extends RefKind
+  sealed abstract class RefKind         extends Type
+  final case object Unit                extends RefKind
   final case class Class(name: Global)  extends RefKind with Named
   final case class Trait(name: Global)  extends RefKind with Named
   final case class Module(name: Global) extends RefKind with Named

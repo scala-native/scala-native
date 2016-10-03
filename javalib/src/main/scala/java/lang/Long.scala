@@ -66,7 +66,7 @@ object Long {
     } else {
       var i          = 0
       var firstDigit = nm.charAt(i)
-      val negative = firstDigit == '-'
+      val negative   = firstDigit == '-'
 
       if (negative) {
         if (length == 1) {
@@ -176,7 +176,7 @@ object Long {
                     _offset: Int,
                     radix: Int,
                     negative: scala.Boolean): scala.Long = {
-    val max = MIN_VALUE / radix
+    val max    = MIN_VALUE / radix
     var result = 0
     var offset = _offset
     val length = s.length()
@@ -230,7 +230,7 @@ object Long {
       if (l == 0L) 1
       else 64 - numberOfLeadingZeros(l)
     val buffer = new Array[Char](count)
-    var k = l
+    var k      = l
     do {
       count -= 1
       buffer(count) = ((k & 1) + '0').toChar
@@ -245,7 +245,7 @@ object Long {
       if (l == 0L) 1
       else ((64 - numberOfLeadingZeros(l)) + 3) / 4
     val buffer = new Array[Char](count)
-    var k = l
+    var k      = l
     do {
       var t = (k & 15).toInt
       if (t > 9) {
@@ -266,7 +266,7 @@ object Long {
       if (l == 0L) 1
       else ((64 - numberOfLeadingZeros(l)) + 2) / 3
     val buffer = new Array[Char](count)
-    var k = l
+    var k      = l
     do {
       count -= 1
       buffer(count) = ((k & 7) + '0').toChar
@@ -287,8 +287,8 @@ object Long {
         if (_radix < Character.MIN_RADIX || _radix > Character.MAX_RADIX) 10
         else _radix
       val negative = _l < 0
-      var count = 2
-      var j     = _l
+      var count    = 2
+      var j        = _l
       if (!negative) {
         count = 1
         j = -_l

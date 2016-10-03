@@ -62,15 +62,15 @@ class TraitLowering(implicit top: Top, fresh: Fresh) extends Pass {
       val methptrptr = Val.Local(fresh(), Type.Ptr)
 
       Seq(
-          Inst(typeptr.name, Op.Load(Type.Ptr, obj)),
-          Inst(idptr.name,
-               Op.Elem(Rt.Type, typeptr, Seq(Val.I32(0), Val.I32(0)))),
-          Inst(id.name, Op.Load(Type.I32, idptr)),
-          Inst(methptrptr.name,
-               Op.Elem(dispatchTy,
-                       dispatchVal,
-                       Seq(Val.I32(0), id, Val.I32(meth.id)))),
-          Inst(n, Op.Load(Type.Ptr, methptrptr))
+        Inst(typeptr.name, Op.Load(Type.Ptr, obj)),
+        Inst(idptr.name,
+             Op.Elem(Rt.Type, typeptr, Seq(Val.I32(0), Val.I32(0)))),
+        Inst(id.name, Op.Load(Type.I32, idptr)),
+        Inst(methptrptr.name,
+             Op.Elem(dispatchTy,
+                     dispatchVal,
+                     Seq(Val.I32(0), id, Val.I32(meth.id)))),
+        Inst(n, Op.Load(Type.Ptr, methptrptr))
       )
 
     case inst @ Inst(n, Op.Is(TraitRef(trt), obj)) =>
@@ -80,15 +80,15 @@ class TraitLowering(implicit top: Top, fresh: Fresh) extends Pass {
       val boolptr = Val.Local(fresh(), Type.Ptr)
 
       Seq(
-          Inst(typeptr.name, Op.Load(Type.Ptr, obj)),
-          Inst(idptr.name,
-               Op.Elem(Rt.Type, typeptr, Seq(Val.I32(0), Val.I32(0)))),
-          Inst(id.name, Op.Load(Type.I32, idptr)),
-          Inst(boolptr.name,
-               Op.Elem(instanceTy,
-                       instanceVal,
-                       Seq(Val.I32(0), id, Val.I32(trt.id)))),
-          Inst(n, Op.Load(Type.Bool, boolptr))
+        Inst(typeptr.name, Op.Load(Type.Ptr, obj)),
+        Inst(idptr.name,
+             Op.Elem(Rt.Type, typeptr, Seq(Val.I32(0), Val.I32(0)))),
+        Inst(id.name, Op.Load(Type.I32, idptr)),
+        Inst(boolptr.name,
+             Op.Elem(instanceTy,
+                     instanceVal,
+                     Seq(Val.I32(0), id, Val.I32(trt.id)))),
+        Inst(n, Op.Load(Type.Bool, boolptr))
       )
   }
 }

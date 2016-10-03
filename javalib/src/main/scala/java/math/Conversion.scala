@@ -129,7 +129,7 @@ private[math] object Conversion {
       "0"
     } else if (numberLength == 1) {
       val highDigit = digits(numberLength - 1)
-      var v = highDigit & 0xFFFFFFFFL
+      var v         = highDigit & 0xFFFFFFFFL
       if (sign < 0)
         v = -v
       java.lang.Long.toString(v, radix)
@@ -138,9 +138,9 @@ private[math] object Conversion {
     } else {
       var bitsForRadixDigit: Double = 0.0
       bitsForRadixDigit = Math.log(radix) / Math.log(2)
-      val addForSign    = if (sign < 0) 1 else 0
-      val biAbsLen      = bi.abs().bitLength()
-      val resLenInChars = (biAbsLen / bitsForRadixDigit + addForSign).toInt + 1
+      val addForSign     = if (sign < 0) 1 else 0
+      val biAbsLen       = bi.abs().bitLength()
+      val resLenInChars  = (biAbsLen / bitsForRadixDigit + addForSign).toInt + 1
       var result: String = ""
       var currentChar    = resLenInChars
       var resDigit: Int  = 0
@@ -148,7 +148,7 @@ private[math] object Conversion {
       if (radix != 16) {
         val temp = new Array[Int](numberLength)
         System.arraycopy(digits, 0, temp, 0, numberLength)
-        var tempLen = numberLength
+        var tempLen     = numberLength
         val charsPerInt = DigitFitInInt(radix)
         val bigRadix    = BigRadices(radix - 2)
 
@@ -169,7 +169,7 @@ private[math] object Conversion {
           }
           innerLoop()
 
-          val delta = charsPerInt - previous + currentChar
+          val delta  = charsPerInt - previous + currentChar
           var i: Int = 0
           while (i < delta && currentChar > 0) {
             currentChar -= 1
@@ -213,9 +213,9 @@ private[math] object Conversion {
    *  @see BigDecimal#toString()
    */
   def toDecimalScaledString(bi: BigInteger): String = {
-    val sign: Int          = bi.sign
-    val numberLength: Int  = bi.numberLength
-    val digits: Array[Int] = bi.digits
+    val sign: Int             = bi.sign
+    val numberLength: Int     = bi.numberLength
+    val digits: Array[Int]    = bi.digits
     var resLengthInChars: Int = 0
     var currentChar: Int      = 0
 
@@ -251,7 +251,7 @@ private[math] object Conversion {
           } while (v != 0)
         }
       } else {
-        val temp = new Array[Int](numberLength)
+        val temp    = new Array[Int](numberLength)
         var tempLen = numberLength
         System.arraycopy(digits, 0, temp, 0, tempLen)
 
@@ -285,7 +285,7 @@ private[math] object Conversion {
           innerLoop()
 
           val delta = 9 - previous + currentChar
-          var i = 0
+          var i     = 0
           while ((i < delta) && (currentChar > 0)) {
             currentChar -= 1
             result = '0' + result
@@ -333,7 +333,7 @@ private[math] object Conversion {
       // +7 - For "special case 2" (see below) we have 7 free chars for inserting necessary scaled digits.
       val resLengthInChars = 18
       val negNumber        = value < 0
-      var result = ""
+      var result           = ""
       //  Allocated [resLengthInChars+1] characters.
       // a free latest character may be used for "special case 1" (see below)
       var currentChar = resLengthInChars
@@ -402,11 +402,11 @@ private[math] object Conversion {
       if (bi.sign > 0) Double.PositiveInfinity
       else Double.NegativeInfinity
     } else {
-      val bitLen = bi.abs().bitLength()
+      val bitLen         = bi.abs().bitLength()
       var exponent: Long = bitLen - 1
-      val delta = bitLen - 54
-      val lVal  = bi.abs().shiftRight(delta).longValue()
-      var mantissa = lVal & 0x1FFFFFFFFFFFFFL
+      val delta          = bitLen - 54
+      val lVal           = bi.abs().shiftRight(delta).longValue()
+      var mantissa       = lVal & 0x1FFFFFFFFFFFFFL
 
       if (exponent == 1023 && mantissa == 0X1FFFFFFFFFFFFFL) {
         if (bi.sign > 0) Double.PositiveInfinity

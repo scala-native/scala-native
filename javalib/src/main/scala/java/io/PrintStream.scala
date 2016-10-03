@@ -97,9 +97,9 @@ class PrintStream private (_out: OutputStream,
        * but, experimentally, the JDK seems to behave that way.
        */
       errorFlag || (out match {
-            case out: PrintStream => out.checkError()
-            case _                => false
-          })
+        case out: PrintStream => out.checkError()
+        case _                => false
+      })
     }
   }
 

@@ -6,8 +6,7 @@ import scala.annotation.tailrec
 
 abstract class AbstractList[E] protected ()
     extends AbstractCollection[E]
-    with List[E] {
-  self =>
+    with List[E] { self =>
 
   override def add(element: E): Boolean = {
     add(size, element)

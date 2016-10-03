@@ -16,8 +16,8 @@ class ThrowLowering(implicit fresh: Fresh) extends Pass {
   override def preBlock = {
     case block @ Block(_, _, insts, Cf.Throw(v)) =>
       Seq(
-          block.copy(insts = insts :+ Inst(Op.Call(throwSig, throw_, Seq(v))),
-                     cf = Cf.Unreachable))
+        block.copy(insts = insts :+ Inst(Op.Call(throwSig, throw_, Seq(v))),
+                   cf = Cf.Unreachable))
   }
 }
 

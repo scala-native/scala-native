@@ -236,7 +236,7 @@ object Arrays {
               iA = ix
           }
           val ix = iA + (if (ord.compare(next, a(iA)) < 0) 0 else 1)
-          var i = i0 + m
+          var i  = i0 + m
           while (i > ix) {
             a(i) = a(i - 1)
             i -= 1
@@ -366,7 +366,7 @@ object Arrays {
               iA = ix
           }
           val ix = iA + (if (ord.compare(next, a(iA)) < 0) 0 else 1)
-          var i = i0 + m
+          var i  = i0 + m
           while (i > ix) {
             a(i) = a(i - 1)
             i -= 1
@@ -571,7 +571,7 @@ object Arrays {
   @inline
   private def equalsImpl[T](a: Array[T], b: Array[T]): Boolean = {
     (a eq b) || (a != null && b != null && a.length == b.length &&
-        a.indices.forall(i => a(i) == b(i)))
+    a.indices.forall(i => a(i) == b(i)))
   }
 
   @noinline def fill(a: Array[Long], value: Long): Unit =
@@ -717,7 +717,7 @@ object Arrays {
                                from: Int,
                                to: Int): Array[T] = {
     copyOfRangeImpl[T](original, from, to)(
-        ClassTag(original.getClass.getComponentType)).asInstanceOf[Array[T]]
+      ClassTag(original.getClass.getComponentType)).asInstanceOf[Array[T]]
   }
 
   @noinline
@@ -727,7 +727,7 @@ object Arrays {
       to: Int,
       newType: Class[_ <: Array[T]]): Array[T] = {
     copyOfRangeImpl[AnyRef](original.asInstanceOf[Array[AnyRef]], from, to)(
-        ClassTag(newType.getComponentType)).asInstanceOf[Array[T]]
+      ClassTag(newType.getComponentType)).asInstanceOf[Array[T]]
   }
 
   @noinline
@@ -842,7 +842,7 @@ object Arrays {
     if (a == null) 0
     else
       a.foldLeft(1)((acc, x) =>
-            31 * acc + (if (x == null) 0 else elementHashCode(x)))
+        31 * acc + (if (x == null) 0 else elementHashCode(x)))
   }
 
   @noinline def deepHashCode(a: Array[AnyRef]): Int = {
@@ -935,13 +935,13 @@ object Arrays {
   private def checkRangeIndices(length: Int, start: Int, end: Int): Unit = {
     if (start > end)
       throw new IllegalArgumentException(
-          "fromIndex(" + start + ") > toIndex(" + end + ")")
+        "fromIndex(" + start + ") > toIndex(" + end + ")")
     if (start < 0)
       throw new ArrayIndexOutOfBoundsException(
-          "Array index out of range: " + start)
+        "Array index out of range: " + start)
     if (end > length)
       throw new ArrayIndexOutOfBoundsException(
-          "Array index out of range: " + end)
+        "Array index out of range: " + end)
   }
 
   @inline

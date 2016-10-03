@@ -89,7 +89,8 @@ package object native {
 
   /** C-style unchecked cast. */
   implicit class CCast[From](val from: From) {
-    def cast[To](implicit fromct: ClassTag[From], toct: ClassTag[To]): To = undefined
+    def cast[To](implicit fromct: ClassTag[From], toct: ClassTag[To]): To =
+      undefined
   }
 
   /** Scala Native extensions to the standard Byte. */

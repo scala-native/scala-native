@@ -2,7 +2,13 @@ package scala.scalanative
 package nir
 
 import util.{unreachable, sh, Show}
-import Show.{Sequence => s, Indent => i, Unindent => ui, Repeat => r, Newline => nl}
+import Show.{
+  Sequence => s,
+  Indent => i,
+  Unindent => ui,
+  Repeat => r,
+  Newline => nl
+}
 
 object Shows {
   def brace(body: Show.Result): Show.Result = {

@@ -10,8 +10,7 @@ class TreeSet[E](_comparator: Comparator[_ >: E])
     extends AbstractSet[E]
     with NavigableSet[E]
     with Cloneable
-    with Serializable {
-  self =>
+    with Serializable { self =>
 
   def this() =
     this(null.asInstanceOf[Comparator[_ >: E]])
@@ -121,14 +120,14 @@ class TreeSet[E](_comparator: Comparator[_ >: E])
     inner.clear()
 
   override def addAll(c: Collection[_ <: E]): Boolean = {
-    val iter = c.iterator()
+    val iter    = c.iterator()
     var changed = false
     while (iter.hasNext) changed = add(iter.next()) || changed
     changed
   }
 
   override def removeAll(c: Collection[_]): Boolean = {
-    val iter = c.iterator()
+    val iter    = c.iterator()
     var changed = false
     while (iter.hasNext) changed =
       inner.remove(Box(iter.next).asInstanceOf[Box[E]]) || changed

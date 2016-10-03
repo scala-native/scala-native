@@ -378,10 +378,10 @@ private[math] object Multiplication {
       BigFivePows(1).pow(exp.toInt).shiftLeft(exp.toInt)
     } else {
       //"HUGE POWERS"
-      val powerOfFive = BigFivePows(1).pow(Integer.MAX_VALUE)
+      val powerOfFive     = BigFivePows(1).pow(Integer.MAX_VALUE)
       var res: BigInteger = powerOfFive
       var longExp         = exp - Int.MaxValue
-      val intExp = (exp % Int.MaxValue).toInt
+      val intExp          = (exp % Int.MaxValue).toInt
       while (longExp > Int.MaxValue) {
         res = res.multiply(powerOfFive)
         longExp -= Int.MaxValue
@@ -447,7 +447,7 @@ private[math] object Multiplication {
     } else {
       for (i <- 0 until aLen) {
         var carry = 0
-        val aI = a(i)
+        val aI    = a(i)
         for (j <- 0 until bLen) {
           val added = unsignedMultAddAdd(aI, b(j), t(i + j), carry.toInt)
           t(i + j) = added.toInt

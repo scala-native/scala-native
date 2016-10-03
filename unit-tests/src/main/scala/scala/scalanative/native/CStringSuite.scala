@@ -6,7 +6,7 @@ import string._
 object CStringSuite extends tests.Suite {
   test("fromCString") {
     val cstrFrom = c"1234"
-    val szTo = fromCString(cstrFrom)
+    val szTo     = fromCString(cstrFrom)
 
     assert(szTo.size == 4)
     assert(szTo.charAt(0) == '1')

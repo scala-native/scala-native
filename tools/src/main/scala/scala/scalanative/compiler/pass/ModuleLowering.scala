@@ -75,26 +75,26 @@ class ModuleLowering(implicit top: Top, fresh: Fresh) extends Pass {
       val loadName = name tag "load"
       val loadSig  = Type.Function(Seq(), clsTy)
       val loadDefn = Defn.Define(
-          Attrs.None,
-          loadName,
-          loadSig,
-          Seq(Block(entry,
-                    Seq(),
-                    Seq(
-                        Inst(self.name, Op.Load(clsTy, value)),
-                        Inst(cond.name,
-                             Op.Comp(Comp.Ine, Rt.Object, self, clsNull))
-                    ),
-                    Cf.If(cond, Next(existing), Next(initialize))),
-              Block(existing, Seq(), Seq(), Cf.Ret(self)),
-              Block(initialize,
-                    Seq(),
-                    Seq(
-                        Seq(Inst(alloc.name, Op.Classalloc(clsName))),
-                        Seq(Inst(Op.Store(clsTy, value, alloc))),
-                        initCall
-                    ).flatten,
-                    Cf.Ret(alloc))))
+        Attrs.None,
+        loadName,
+        loadSig,
+        Seq(
+          Block(entry,
+                Seq(),
+                Seq(
+                  Inst(self.name, Op.Load(clsTy, value)),
+                  Inst(cond.name, Op.Comp(Comp.Ine, Rt.Object, self, clsNull))
+                ),
+                Cf.If(cond, Next(existing), Next(initialize))),
+          Block(existing, Seq(), Seq(), Cf.Ret(self)),
+          Block(initialize,
+                Seq(),
+                Seq(
+                  Seq(Inst(alloc.name, Op.Classalloc(clsName))),
+                  Seq(Inst(Op.Store(clsTy, value, alloc))),
+                  initCall
+                ).flatten,
+                Cf.Ret(alloc))))
 
       Seq(clsDefn, valueDefn, loadDefn)
   }
@@ -105,7 +105,7 @@ class ModuleLowering(implicit top: Top, fresh: Fresh) extends Pass {
       val load    = Val.Global(name tag "load", Type.Ptr)
 
       Seq(
-          Inst(n, Op.Call(loadSig, load, Seq()))
+        Inst(n, Op.Call(loadSig, load, Seq()))
       )
   }
 

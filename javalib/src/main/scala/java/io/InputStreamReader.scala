@@ -147,10 +147,10 @@ class InputStreamReader(private[this] var in: InputStream,
     } else if (result.isUnderflow) {
       if (endOfInput) {
         assert(
-            !inBuf.hasRemaining,
-            "CharsetDecoder.decode() should not have returned UNDERFLOW when " +
-              "both endOfInput and inBuf.hasRemaining are true. It should have " +
-              "returned a MalformedInput error instead.")
+          !inBuf.hasRemaining,
+          "CharsetDecoder.decode() should not have returned UNDERFLOW when " +
+            "both endOfInput and inBuf.hasRemaining are true. It should have " +
+            "returned a MalformedInput error instead.")
         // Flush
         if (decoder.flush(out).isOverflow) {
           InputStreamReader.Overflow
@@ -165,10 +165,10 @@ class InputStreamReader(private[this] var in: InputStream,
           inBuf.compact()
           if (!inBuf.hasRemaining) {
             throw new AssertionError(
-                "Scala.js implementation restriction: " +
-                  inBuf.capacity + " bytes do not seem to be enough for " +
-                  getEncoding + " to decode a single code point. " +
-                  "Please report this as a bug.")
+              "Scala.js implementation restriction: " +
+                inBuf.capacity + " bytes do not seem to be enough for " +
+                getEncoding + " to decode a single code point. " +
+                "Please report this as a bug.")
           }
           inBuf.limit(inBuf.position)
           inBuf.position(0)

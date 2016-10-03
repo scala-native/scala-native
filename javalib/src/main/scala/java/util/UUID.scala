@@ -95,8 +95,8 @@ final class UUID private (private val i1: Int,
     }
 
     paddedHex8(i1) + "-" + paddedHex4(i2 >>> 16) + "-" +
-    paddedHex4(i2 & 0xffff) + "-" + paddedHex4(i3 >>> 16) + "-" + paddedHex4(
-        i3 & 0xffff) + paddedHex8(i4)
+      paddedHex4(i2 & 0xffff) + "-" + paddedHex4(i3 >>> 16) + "-" + paddedHex4(
+      i3 & 0xffff) + paddedHex8(i4)
   }
 
   override def hashCode(): Int =

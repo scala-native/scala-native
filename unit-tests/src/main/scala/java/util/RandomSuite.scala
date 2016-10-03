@@ -179,7 +179,7 @@ object RandomSuite extends tests.Suite {
       val exp = exps.map(_.toByte)
       val buf = new Array[Byte](exp.length)
       random.nextBytes(buf)
-      var i = 0
+      var i   = 0
       var res = true
       assert {
         while (i < buf.size && res == true) {
@@ -192,31 +192,31 @@ object RandomSuite extends tests.Suite {
 
     test(Array[Int](62, 89, 68, -91, 10, 0, 85))
     test(
-        Array[Int](-89,
-                   -76,
-                   88,
-                   121,
-                   -25,
-                   47,
-                   58,
-                   -8,
-                   78,
-                   20,
-                   -77,
-                   84,
-                   -3,
-                   -33,
-                   58,
-                   -9,
-                   11,
-                   57,
-                   -118,
-                   40,
-                   -74,
-                   -86,
-                   78,
-                   123,
-                   58))
+      Array[Int](-89,
+                 -76,
+                 88,
+                 121,
+                 -25,
+                 47,
+                 58,
+                 -8,
+                 78,
+                 20,
+                 -77,
+                 84,
+                 -3,
+                 -33,
+                 58,
+                 -9,
+                 11,
+                 57,
+                 -118,
+                 40,
+                 -74,
+                 -86,
+                 78,
+                 123,
+                 58))
     test(Array[Int](-77, 112, -116))
     test(Array[Int]())
     test(Array[Int](-84, -96, 108))

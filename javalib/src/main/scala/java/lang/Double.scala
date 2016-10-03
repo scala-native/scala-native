@@ -132,9 +132,9 @@ object Double {
     } else if (d == NEGATIVE_INFINITY) {
       "-Infinity"
     } else {
-      val bitValue = doubleToLongBits(d)
-      val negative = (bitValue & 0x8000000000000000L) != 0
-      val exponent = (bitValue & 0x7FF0000000000000L) >>> 52
+      val bitValue    = doubleToLongBits(d)
+      val negative    = (bitValue & 0x8000000000000000L) != 0
+      val exponent    = (bitValue & 0x7FF0000000000000L) >>> 52
       var significand = bitValue & 0x000FFFFFFFFFFFFFL
       if (exponent == 0 && significand == 0) {
         if (negative) "-0x0.0p0"

@@ -22,18 +22,18 @@ class MainInjection(entry: Global)(implicit fresh: Fresh) extends Pass {
       val arr    = Val.Local(fresh(), ObjectArray)
 
       defns :+ Defn.Define(
-          Attrs.None,
-          mainName,
-          mainSig,
-          Seq(
-              Block(fresh(),
-                    Seq(argc, argv),
-                    Seq(Inst(rt.name, Op.Module(Rt.name)),
-                        Inst(arr.name,
-                             Op.Call(initSig, init, Seq(rt, argc, argv))),
-                        Inst(module.name, Op.Module(entry.top)),
-                        Inst(Op.Call(mainTy, main, Seq(module, arr)))),
-                    Cf.Ret(Val.I32(0)))))
+        Attrs.None,
+        mainName,
+        mainSig,
+        Seq(
+          Block(fresh(),
+                Seq(argc, argv),
+                Seq(Inst(rt.name, Op.Module(Rt.name)),
+                    Inst(arr.name,
+                         Op.Call(initSig, init, Seq(rt, argc, argv))),
+                    Inst(module.name, Op.Module(entry.top)),
+                    Inst(Op.Call(mainTy, main, Seq(module, arr)))),
+                Cf.Ret(Val.I32(0)))))
   }
 }
 

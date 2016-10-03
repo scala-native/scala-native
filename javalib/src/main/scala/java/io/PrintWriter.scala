@@ -21,9 +21,9 @@ class PrintWriter(protected[io] var out: Writer, autoFlush: Boolean)
     this(new BufferedOutputStream(new FileOutputStream(file)))
   def this(file: File, csn: String) =
     this(
-        new OutputStreamWriter(
-            new BufferedOutputStream(new FileOutputStream(file)),
-            csn))
+      new OutputStreamWriter(
+        new BufferedOutputStream(new FileOutputStream(file)),
+        csn))
   def this(fileName: String) = this(new File(fileName))
   def this(fileName: String, csn: String) = this(new File(fileName), csn)
 
@@ -56,9 +56,9 @@ class PrintWriter(protected[io] var out: Writer, autoFlush: Boolean)
        * but, experimentally, the JDK seems to behave that way.
        */
       errorFlag || (out match {
-            case out: PrintWriter => out.checkError()
-            case _                => false
-          })
+        case out: PrintWriter => out.checkError()
+        case _                => false
+      })
     }
   }
 

@@ -60,10 +60,9 @@ final case class Focus(
     val (thenname, thencompl, thenblocks) = wrapBranch(merge, thenf)
     val (elsename, elsecompl, elseblocks) = wrapBranch(merge, elsef)
     val blocks =
-      finish(
-          Cf.If(cond,
-                Next.Label(thenname, Seq()),
-                Next.Label(elsename, Seq()))).blocks
+      finish(Cf.If(cond,
+                   Next.Label(thenname, Seq()),
+                   Next.Label(elsename, Seq()))).blocks
     if (thencompl && elsecompl)
       Focus.complete(blocks ++ thenblocks ++ elseblocks)
     else
@@ -89,11 +88,11 @@ final case class Focus(
     val casecompl   = cases.map(_._2)
     val caseblockss = cases.map(_._3)
     val blocks = finish(
-        Cf.Switch(scrut,
-                  Next.Label(defaultname, Seq()),
-                  casevals.zip(casenames).map {
-                case (v, n) => Next.Case(v, n)
-              })).blocks
+      Cf.Switch(scrut,
+                Next.Label(defaultname, Seq()),
+                casevals.zip(casenames).map {
+                  case (v, n) => Next.Case(v, n)
+                })).blocks
     Focus(blocks ++ defaultblocks ++ caseblockss.flatten,
           merge,
           Seq(param),

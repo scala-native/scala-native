@@ -57,8 +57,8 @@ class TryLowering(implicit fresh: Fresh) extends Pass {
 
   override def preDefn = {
     case defn @ Defn.Define(_, _, _, blocks) =>
-      val cfg        = ControlFlow(blocks)
-      val handlerfor = mutable.Map.empty[Local, Option[Next.Fail]]
+      val cfg                           = ControlFlow(blocks)
+      val handlerfor                    = mutable.Map.empty[Local, Option[Next.Fail]]
       var curhandler: Option[Next.Fail] = None
 
       val nblocks = cfg.map { node =>

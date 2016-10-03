@@ -26,7 +26,9 @@ import scala.annotation.unchecked.uncheckedStable
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 29)
 
 sealed abstract class Array[T]
-    extends java.io.Serializable with java.lang.Cloneable {
+    extends java.io.Serializable
+    with java.lang.Cloneable {
+
   /** Number of elements of the array. */
   @inline def length: Int =
     // TODO: Update once we support ptr->field
@@ -45,24 +47,34 @@ sealed abstract class Array[T]
   def update(i: Int, value: T): Unit
 
   /** Create a shallow of given array. */
-  protected override def clone(): Array[T] = ??? // overriden in concrete classes
+  protected override def clone(): Array[T] =
+    ??? // overriden in concrete classes
 }
 
 object Array {
-  def copy(from: AnyRef, fromPos: Int,
-           to: AnyRef, toPos: Int, len: Int): Unit = {
+  def copy(from: AnyRef,
+           fromPos: Int,
+           to: AnyRef,
+           toPos: Int,
+           len: Int): Unit = {
     if (!from.isInstanceOf[Array[_]]) {
       throw new IllegalArgumentException("from argument must be an array")
     } else if (!to.isInstanceOf[Array[_]]) {
       throw new IllegalArgumentException("to argument must be an array")
     } else {
-      copy(from.asInstanceOf[Array[_]], fromPos,
-           to.asInstanceOf[Array[_]], toPos, len)
+      copy(from.asInstanceOf[Array[_]],
+           fromPos,
+           to.asInstanceOf[Array[_]],
+           toPos,
+           len)
     }
   }
 
-  def copy(from: Array[_], fromPos: Int,
-           to: Array[_], toPos: Int, len: Int): Unit = {
+  def copy(from: Array[_],
+           fromPos: Int,
+           to: Array[_],
+           toPos: Int,
+           len: Int): Unit = {
     if (from == null || to == null) {
       throw new NullPointerException()
     } else if (getType(from) != getType(to)) {
@@ -81,14 +93,20 @@ object Array {
     }
   }
 
-  @inline private[runtime] def helperClone(from: Array[_], length: Int, stride: CSize): Ptr[_] = {
+  @inline private[runtime] def helperClone(from: Array[_],
+                                           length: Int,
+                                           stride: CSize): Ptr[_] = {
     val arrsize = sizeof[ArrayHeader] + stride * length
     val arr     = GC.malloc(arrsize)
-    `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]], from.cast[Ptr[Byte]], arrsize, 1, false)
+    `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
+                                from.cast[Ptr[Byte]],
+                                arrsize,
+                                1,
+                                false)
     arr
   }
 
-  @inline def alloc(length: Int, arrinfo:  Ptr[Type], stride: CSize): Ptr[_] = {
+  @inline def alloc(length: Int, arrinfo: Ptr[Type], stride: CSize): Ptr[_] = {
     val arrsize = sizeof[ArrayHeader] + stride * length
     val arr     = runtime.alloc(arrinfo, arrsize)
     // set the length
@@ -98,14 +116,20 @@ object Array {
 }
 
 object PrimitiveArray {
-  @inline private[runtime] def helperClone(src: Array[_], length: Int, stride: CSize): Ptr[_] = {
+  @inline private[runtime] def helperClone(src: Array[_],
+                                           length: Int,
+                                           stride: CSize): Ptr[_] = {
     val arrsize = sizeof[ArrayHeader] + stride * length
-    val arr = GC.malloc_atomic(arrsize)
-    `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]], src.cast[Ptr[Byte]], arrsize, 1, false)
+    val arr     = GC.malloc_atomic(arrsize)
+    `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
+                                src.cast[Ptr[Byte]],
+                                arrsize,
+                                1,
+                                false)
     arr
   }
 
-  @inline def alloc(length: Int, arrinfo:  Ptr[Type], stride: CSize): Ptr[_] = {
+  @inline def alloc(length: Int, arrinfo: Ptr[Type], stride: CSize): Ptr[_] = {
     val arrsize = sizeof[ArrayHeader] + stride * length
     // Primitive arrays don't contain pointers
     val arr = runtime.allocAtomic(arrinfo, arrsize)
@@ -134,7 +158,7 @@ final class ObjectArray private () extends Array[Object] {
   @inline def update(i: Int, value: Object): Unit = !at(i) = value
 
   @inline protected override def clone(): ObjectArray =
-    Array.helperClone (this, length, sizeof[Object]).cast[ObjectArray]
+    Array.helperClone(this, length, sizeof[Object]).cast[ObjectArray]
 }
 
 object ObjectArray {
@@ -163,12 +187,16 @@ final class BooleanArray private () extends Array[Boolean] {
   @inline def update(i: Int, value: Boolean): Unit = !at(i) = value
 
   @inline protected override def clone(): BooleanArray =
-    PrimitiveArray.helperClone (this, length, sizeof[Boolean]).cast[BooleanArray]
+    PrimitiveArray
+      .helperClone(this, length, sizeof[Boolean])
+      .cast[BooleanArray]
 }
 
 object BooleanArray {
   @inline def alloc(length: Int): BooleanArray =
-    PrimitiveArray.alloc(length, typeof[BooleanArray], sizeof[Boolean]).cast[BooleanArray]
+    PrimitiveArray
+      .alloc(length, typeof[BooleanArray], sizeof[Boolean])
+      .cast[BooleanArray]
 }
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 148)
@@ -192,12 +220,14 @@ final class CharArray private () extends Array[Char] {
   @inline def update(i: Int, value: Char): Unit = !at(i) = value
 
   @inline protected override def clone(): CharArray =
-    PrimitiveArray.helperClone (this, length, sizeof[Char]).cast[CharArray]
+    PrimitiveArray.helperClone(this, length, sizeof[Char]).cast[CharArray]
 }
 
 object CharArray {
   @inline def alloc(length: Int): CharArray =
-    PrimitiveArray.alloc(length, typeof[CharArray], sizeof[Char]).cast[CharArray]
+    PrimitiveArray
+      .alloc(length, typeof[CharArray], sizeof[Char])
+      .cast[CharArray]
 }
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 148)
@@ -221,12 +251,14 @@ final class ByteArray private () extends Array[Byte] {
   @inline def update(i: Int, value: Byte): Unit = !at(i) = value
 
   @inline protected override def clone(): ByteArray =
-    PrimitiveArray.helperClone (this, length, sizeof[Byte]).cast[ByteArray]
+    PrimitiveArray.helperClone(this, length, sizeof[Byte]).cast[ByteArray]
 }
 
 object ByteArray {
   @inline def alloc(length: Int): ByteArray =
-    PrimitiveArray.alloc(length, typeof[ByteArray], sizeof[Byte]).cast[ByteArray]
+    PrimitiveArray
+      .alloc(length, typeof[ByteArray], sizeof[Byte])
+      .cast[ByteArray]
 }
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 148)
@@ -250,12 +282,14 @@ final class ShortArray private () extends Array[Short] {
   @inline def update(i: Int, value: Short): Unit = !at(i) = value
 
   @inline protected override def clone(): ShortArray =
-    PrimitiveArray.helperClone (this, length, sizeof[Short]).cast[ShortArray]
+    PrimitiveArray.helperClone(this, length, sizeof[Short]).cast[ShortArray]
 }
 
 object ShortArray {
   @inline def alloc(length: Int): ShortArray =
-    PrimitiveArray.alloc(length, typeof[ShortArray], sizeof[Short]).cast[ShortArray]
+    PrimitiveArray
+      .alloc(length, typeof[ShortArray], sizeof[Short])
+      .cast[ShortArray]
 }
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 148)
@@ -279,7 +313,7 @@ final class IntArray private () extends Array[Int] {
   @inline def update(i: Int, value: Int): Unit = !at(i) = value
 
   @inline protected override def clone(): IntArray =
-    PrimitiveArray.helperClone (this, length, sizeof[Int]).cast[IntArray]
+    PrimitiveArray.helperClone(this, length, sizeof[Int]).cast[IntArray]
 }
 
 object IntArray {
@@ -308,12 +342,14 @@ final class LongArray private () extends Array[Long] {
   @inline def update(i: Int, value: Long): Unit = !at(i) = value
 
   @inline protected override def clone(): LongArray =
-    PrimitiveArray.helperClone (this, length, sizeof[Long]).cast[LongArray]
+    PrimitiveArray.helperClone(this, length, sizeof[Long]).cast[LongArray]
 }
 
 object LongArray {
   @inline def alloc(length: Int): LongArray =
-    PrimitiveArray.alloc(length, typeof[LongArray], sizeof[Long]).cast[LongArray]
+    PrimitiveArray
+      .alloc(length, typeof[LongArray], sizeof[Long])
+      .cast[LongArray]
 }
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 148)
@@ -337,12 +373,14 @@ final class FloatArray private () extends Array[Float] {
   @inline def update(i: Int, value: Float): Unit = !at(i) = value
 
   @inline protected override def clone(): FloatArray =
-    PrimitiveArray.helperClone (this, length, sizeof[Float]).cast[FloatArray]
+    PrimitiveArray.helperClone(this, length, sizeof[Float]).cast[FloatArray]
 }
 
 object FloatArray {
   @inline def alloc(length: Int): FloatArray =
-    PrimitiveArray.alloc(length, typeof[FloatArray], sizeof[Float]).cast[FloatArray]
+    PrimitiveArray
+      .alloc(length, typeof[FloatArray], sizeof[Float])
+      .cast[FloatArray]
 }
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 148)
@@ -366,11 +404,12 @@ final class DoubleArray private () extends Array[Double] {
   @inline def update(i: Int, value: Double): Unit = !at(i) = value
 
   @inline protected override def clone(): DoubleArray =
-    PrimitiveArray.helperClone (this, length, sizeof[Double]).cast[DoubleArray]
+    PrimitiveArray.helperClone(this, length, sizeof[Double]).cast[DoubleArray]
 }
 
 object DoubleArray {
   @inline def alloc(length: Int): DoubleArray =
-    PrimitiveArray.alloc(length, typeof[DoubleArray], sizeof[Double]).cast[DoubleArray]
+    PrimitiveArray
+      .alloc(length, typeof[DoubleArray], sizeof[Double])
+      .cast[DoubleArray]
 }
-

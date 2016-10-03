@@ -5,7 +5,13 @@ package codegen
 import java.{lang => jl}
 import scala.collection.mutable
 import util.{unsupported, unreachable, sh, Show}
-import util.Show.{Sequence => s, Indent => i, Unindent => ui, Repeat => r, Newline => nl}
+import util.Show.{
+  Sequence => s,
+  Indent => i,
+  Unindent => ui,
+  Repeat => r,
+  Newline => nl
+}
 import compiler.analysis.ControlFlow
 import nir.Shows.brace
 import nir._
@@ -19,11 +25,11 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
     case Defn.Define(_, n, sig, _) => n -> sig
   }.toMap
   private val prelude = Seq(
-      sh"declare i32 @llvm.eh.typeid.for(i8*)",
-      sh"declare i32 @__gxx_personality_v0(...)",
-      sh"declare i8* @__cxa_begin_catch(i8*)",
-      sh"declare void @__cxa_end_catch()",
-      sh"@_ZTIN11scalanative16ExceptionWrapperE = external constant { i8*, i8*, i8* }"
+    sh"declare i32 @llvm.eh.typeid.for(i8*)",
+    sh"declare i32 @__gxx_personality_v0(...)",
+    sh"declare i8* @__cxa_begin_catch(i8*)",
+    sh"declare void @__cxa_end_catch()",
+    sh"@_ZTIN11scalanative16ExceptionWrapperE = external constant { i8*, i8*, i8* }"
   )
   private val gxxpersonality =
     sh"personality i8* bitcast (i32 (...)* @__gxx_personality_v0 to i8*)"
@@ -130,20 +136,20 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
             val rec, r0, r1, id, cmp, fail, succ, w0, w1, w2 = fresh()
 
             Seq(
-                i(sh"%$rec = $landingpad"),
-                i(sh"%$r0 = extractvalue $excrecty %$rec, 0"),
-                i(sh"%$r1 = extractvalue $excrecty %$rec, 1"),
-                i(sh"%$id = $typeid"),
-                i(sh"%$cmp = icmp eq i32 %$r1, %$id"),
-                i(sh"br i1 %$cmp, label %$succ, label %$fail"),
-                nl(sh"$fail:"),
-                i(sh"resume $excrecty %$rec"),
-                nl(sh"$succ:"),
-                i(sh"%$w0 = call i8* @__cxa_begin_catch(i8* %$r0)"),
-                i(sh"%$w1 = bitcast i8* %$w0 to i8**"),
-                i(sh"%$w2 = getelementptr i8*, i8** %$w1, i32 1"),
-                i(sh"%$exc = load i8*, i8** %$w2"),
-                i(sh"call void @__cxa_end_catch()")
+              i(sh"%$rec = $landingpad"),
+              i(sh"%$r0 = extractvalue $excrecty %$rec, 0"),
+              i(sh"%$r1 = extractvalue $excrecty %$rec, 1"),
+              i(sh"%$id = $typeid"),
+              i(sh"%$cmp = icmp eq i32 %$r1, %$id"),
+              i(sh"br i1 %$cmp, label %$succ, label %$fail"),
+              nl(sh"$fail:"),
+              i(sh"resume $excrecty %$rec"),
+              nl(sh"$succ:"),
+              i(sh"%$w0 = call i8* @__cxa_begin_catch(i8* %$r0)"),
+              i(sh"%$w1 = bitcast i8* %$w0 to i8**"),
+              i(sh"%$w2 = getelementptr i8*, i8** %$w1, i32 1"),
+              i(sh"%$exc = load i8*, i8** %$w2"),
+              i(sh"call void @__cxa_end_catch()")
             )
         }
 
@@ -261,9 +267,9 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
 
           buf += sh"%$pointee = bitcast $ptr to $ty*"
           buf +=
-          sh"%$derived = getelementptr $ty, $ty* %$pointee, ${r(indexes, sep = ", ")}"
+            sh"%$derived = getelementptr $ty, $ty* %$pointee, ${r(indexes, sep = ", ")}"
           buf +=
-          sh"${bind}bitcast ${ty.elemty(indexes.tail)}* %$derived to i8*"
+            sh"${bind}bitcast ${ty.elemty(indexes.tail)}* %$derived to i8*"
 
         case Op.Stackalloc(ty, n) =>
           val pointee = fresh()
@@ -287,7 +293,7 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
         }
 
         buf +=
-        sh"${bind}invoke $ty @$pointee(${r(args, sep = ", ")}) to $succ unwind $fail"
+          sh"${bind}invoke $ty @$pointee(${r(args, sep = ", ")}) to $succ unwind $fail"
 
       case Cf.Invoke(ty, ptr, args, succ, fail) =>
         val Type.Function(_, resty) = ty
@@ -300,7 +306,7 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
 
         buf += sh"%$pointee = bitcast $ptr to $ty*"
         buf +=
-        sh"${bind}invoke $ty %$pointee(${r(args, sep = ", ")}) to $succ unwind $fail"
+          sh"${bind}invoke $ty %$pointee(${r(args, sep = ", ")}) to $succ unwind $fail"
 
       case _ =>
         buf += sh"$cf"
