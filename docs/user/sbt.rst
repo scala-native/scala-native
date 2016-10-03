@@ -23,9 +23,9 @@ and now you can write your first application in ``./src/main/scala/HelloWorld.sc
 
     object Main {
       def main(args: Array[String]): Unit =
-      println("Hello, world!")
+        println("Hello, world!")
     }
 
-now simply run sbt run to get everything compiled and have the expected output!
+now simply run ``sbt run`` to get everything compiled and have the expected output!
 
 Continue to :ref:`lang`.
