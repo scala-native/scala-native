@@ -71,8 +71,7 @@ updates.](http://twitter.com/scala_native)
 
 ## Documentation
 
-* [How to build?](/docs/building.md)
-* [How to contribute?](/docs/contributing.md)
+[scala-native.readthedocs.io](http://scala-native.readthedocs.io/en/latest/)
 
 ## License
 

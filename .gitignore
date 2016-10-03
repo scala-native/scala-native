@@ -1,5 +1,6 @@
 scalalib/src/
 target/
+_build/
 *.dot
 *.ppm
 .idea
