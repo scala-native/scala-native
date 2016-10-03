@@ -90,4 +90,12 @@ Class Status
 ===== ======
 ===== ======
 
+Facades
+=======
+
+Hardware libraries
+------------------
+
+Telldus Tellstick: https://github.com/mkotsbak/scala-native-telldus-core
+
 Continue to :ref:`faq`.
