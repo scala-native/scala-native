@@ -35,6 +35,9 @@ object ScalaNativePlugin extends AutoPlugin {
 
     val nativeProfileDispatch = settingKey[Boolean](
       "Gather information about types encountered in method dispatch at runtime.")
+
+    val nativeProfileInfo = settingKey[Option[File]](
+      "Where to store or find the profiling information.")
   }
 
   override def projectSettings: Seq[Setting[_]] = (

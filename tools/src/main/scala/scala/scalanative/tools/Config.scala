@@ -4,6 +4,8 @@ package tools
 import scalanative.io.VirtualDirectory
 import nir.Global
 
+import java.io.File
+
 sealed trait Config {
 
   /** Entry point for linking. */
@@ -21,6 +23,9 @@ sealed trait Config {
   /** Is virtual dispatch profiling enabled? */
   def profileDispatch: Boolean
 
+  /** Where to put virtual dispatch info? */
+  def profileDispatchInfo: Option[File]
+
   /** Create new config with given entry point. */
   def withEntry(value: Global): Config
 
@@ -35,6 +40,9 @@ sealed trait Config {
 
   /** Create a new config with virtual dispatch profiling enabled or disabled */
   def withProfileDispatch(value: Boolean): Config
+
+  /** Create a new config where dispatch info is stored to the specified file */
+  def withProfileDispatchInfo(value: Option[File]): Config
 }
 
 object Config {
@@ -45,13 +53,15 @@ object Config {
          paths = Seq.empty,
          targetDirectory = VirtualDirectory.empty,
          injectMain = true,
-         profileDispatch = false)
+         profileDispatch = false,
+         profileDispatchInfo = None)
 
   private final case class Impl(entry: Global,
                                 paths: Seq[LinkerPath],
                                 targetDirectory: VirtualDirectory,
                                 injectMain: Boolean,
-                                profileDispatch: Boolean)
+                                profileDispatch: Boolean,
+                                profileDispatchInfo: Option[File])
       extends Config {
     def withEntry(value: Global): Config =
       copy(entry = value)
@@ -67,5 +77,8 @@ object Config {
 
     def withProfileDispatch(value: Boolean): Config =
       copy(profileDispatch = value)
+
+    def withProfileDispatchInfo(value: Option[File]): Config =
+      copy(profileDispatchInfo = value)
   }
 }
