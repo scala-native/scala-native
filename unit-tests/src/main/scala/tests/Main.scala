@@ -9,7 +9,10 @@ object Main {
       java.lang.FloatSuite,
       java.lang.DoubleSuite,
       java.util.RandomSuite,
-      scala.scalanative.native.CStringSuite
+      scala.scalanative.native.CStringSuite,
+      scala.ArrayIntCopySuite,
+      scala.ArrayDoubleCopySuite,
+      scala.ArrayObjectCopySuite
   )
 
   def main(args: Array[String]): Unit = {

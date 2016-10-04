@@ -53,7 +53,9 @@ sealed abstract class Array[T]
 object Array {
   def copy(from: AnyRef, fromPos: Int,
            to: AnyRef, toPos: Int, len: Int): Unit = {
-    if (!from.isInstanceOf[Array[_]]) {
+    if (from == null || to == null) {
+      throw new NullPointerException()
+    } else if (!from.isInstanceOf[Array[_]]) {
       throw new IllegalArgumentException("from argument must be an array")
     } else if (!to.isInstanceOf[Array[_]]) {
       throw new IllegalArgumentException("to argument must be an array")
@@ -75,6 +77,8 @@ object Array {
       throw new IndexOutOfBoundsException(fromPos.toString)
     } else if (toPos < 0 || toPos + len > to.length) {
       throw new IndexOutOfBoundsException(toPos.toString)
+    } else if (len == 0) {
+      ()
     } else {
       val fromPtr = from.at(fromPos).cast[Ptr[Byte]]
       val toPtr   = to.at(toPos).cast[Ptr[Byte]]
