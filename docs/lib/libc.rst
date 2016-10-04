@@ -1,10 +1,7 @@
-.. _lib:
-
-Library Support
-===============
+.. _libc:
 
 C Standard Library
-------------------
+==================
 
 Scala Native provides bindings for the core subset of the
 `C standard library <http://en.cppreference.com/w/c/header>`_:
@@ -80,22 +77,5 @@ wctype.h_      N/A
 .. _scala.scalanative.native.stdlib: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/native/stdlib.scala
 .. _scala.scalanative.native.string: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/native/string.scala
 
-Java Standard Library
----------------------
+Continue to :ref:`facades`.
 
-Scala Native supports a subset of the JDK core libraries reimplemented in Scala.
-
-===== ======
-Class Status
-===== ======
-===== ======
-
-Facades
-=======
-
-Hardware libraries
-------------------
-
-Telldus Tellstick: https://github.com/mkotsbak/scala-native-telldus-core
-
-Continue to :ref:`faq`.

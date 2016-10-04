@@ -1,3 +1,4 @@
+.. _contrib:
 
 Contributor's Guide
 ===================
@@ -5,5 +6,5 @@ Contributor's Guide
 .. toctree::
   :maxdepth: 2
 
-  contrib
+  contributing
   nir

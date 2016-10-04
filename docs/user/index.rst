@@ -1,3 +1,4 @@
+.. _user:
 
 User's Guide
 ============
@@ -9,7 +10,3 @@ User's Guide
   sbt
   lang
   interop
-  lib
-  faq
-
-
