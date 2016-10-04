@@ -1,4 +1,128 @@
+#include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+
+typedef struct node {
+    char* value;
+    node* next;
+} node;
+
+typedef struct linkedmap {
+    char* key;
+    node* head;
+    linkedmap* next;
+} linkedmap;
+
+node* node_init(char* value) {
+    node* n = (node*) malloc(sizeof(node));
+
+    if (n == NULL)
+        return NULL;
+
+    char* value_field = (char*) calloc(strlen(value), sizeof(char));
+    strcpy(value_field, value);
+
+    n->value = value_field;
+    n->next = NULL;
+
+    return n;
+}
+
+linkedmap* linkedmap_init(char* key, char* value) {
+    node* n = node_init(value);
+
+    linkedmap* map = (linkedmap*) malloc(sizeof(linkedmap));
+
+    if (map == NULL)
+        return NULL;
+
+    char* key_field = (char*) calloc(strlen(key), sizeof(char));
+    strcpy(key_field, key);
+
+    map->key = key_field;
+    map->head = n;
+    map->next = NULL;
+
+    return map;
+}
+
+void node_insert(node* n, char* value) {
+    node* prev = n;
+    while (prev->next != NULL)
+        prev = prev->next;
+
+    node* new_node = node_init(value);
+    prev->next = new_node;
+}
+
+bool node_contains(node* node, char* value) {
+    if (node == NULL)
+        return false;
+    else if (strcmp(node->value, value) == 0)
+        return true;
+    else
+        return node_contains(node->next, value);
+}
+
+bool linkedmap_contains(linkedmap* map, char* key) {
+    if (map == NULL)
+        return false;
+    else if (strcmp(map->key, key) == 0)
+        return true;
+    else
+        return linkedmap_contains(map->next, key);
+}
+
+node* linkedmap_get(linkedmap* map, char* key) {
+    if (map == NULL)
+        return NULL;
+    else if (strcmp(map->key, key) == 0)
+        return map->head;
+    else
+        return linkedmap_get(map->next, key);
+}
+
+bool linkedmap_contains_pair(linkedmap* map, char* key, char* value) {
+    node* n = linkedmap_get(map, key);
+
+    if (n == NULL)
+        return false;
+    else
+        return node_contains(n, value);
+}
+
+void linkedmap_insert(linkedmap* map, char* key, char* value) {
+    if (linkedmap_contains(map, key)) {
+        node* n = linkedmap_get(map, key);
+
+        if (!node_contains(n, value)) {
+            node_insert(n, value);
+        }
+    } else {
+        linkedmap* new_node = linkedmap_init(key, value);
+
+        while (map->next != NULL)
+            map = map->next;
+
+        map->next = new_node;
+    }
+}
+
+void node_print(node* n) {
+    while (n != NULL) {
+        fprintf(stdout, "    %s\n", n->value);
+        n = n->next;
+    }
+}
+
+void linkedmap_print(linkedmap* map) {
+    while (map != NULL) {
+        fprintf(stdout, "Key = %s:\n", map->key);
+        node_print(map->head);
+        fprintf(stdout, "\n");
+        map = map->next;
+    }
+}
 
 typedef struct tpe
 {
@@ -23,29 +147,34 @@ typedef struct jstring
     chararray* value;
 } jstring;
 
-void print_jstring(jstring* str) {
-    int length = str->count;
-    char chars[length + 1];
+char* to_string(jstring* str) {
+    size_t length = str->count;
+    char* cs = (char*) calloc(length + 1, sizeof(char));
     for (int i = 0; i < length; ++i) {
-        chars[i] = (char) str->value->chars[i];
+        cs[i] = (char) str->value->chars[i];
     }
-    chars[length] = '\0';
-    fprintf(stdout, "%s\n", chars);
+    cs[length] = '\0';
+
+    return cs;
 }
+
+linkedmap* method_calls = NULL;
 
 extern "C" {
     void method_call_log(jstring* callee_t, jstring* method_name) {
-        fprintf(stdout, "callee_t: ");
-        print_jstring(callee_t);
-        fprintf(stdout, "method_name: ");
-        print_jstring(method_name);
-        // int length = tid->count;
-        // for (int i = 0; i < length; ++i) {
-        //     fprintf(stdout, "[i = %d] c = %d\n", i, tid->value->chars[i]);
-        // }
-        // fprintf(stdout, "-------------------\n");
-        // for (int i = 0; i < 100; ++i) {
-        //     fprintf(stdout, "[i = %d] scala-native says something that has length '%d'.\n", i, (int) *(tid + i));
-        // }
+        char* c = to_string(callee_t);
+        char* m = to_string(method_name);
+        if (method_calls == NULL) {
+            method_calls = linkedmap_init(m, c);
+        } else {
+            if (!linkedmap_contains_pair(method_calls, m, c)) {
+                linkedmap_insert(method_calls, m, c);
+            }
+        }
     }
+
+    void method_call_dump() {
+        linkedmap_print(method_calls);
+    }
+
 }

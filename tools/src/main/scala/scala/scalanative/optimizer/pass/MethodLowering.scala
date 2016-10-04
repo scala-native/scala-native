@@ -21,11 +21,13 @@ class MethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
       val typeidptr  = Val.Local(fresh(), Type.Ptr)
       val methptrptr = Val.Local(fresh(), Type.Ptr)
 
+      val instname = s"${n.scope}.${n.id}"
+
       Seq(
         Let(typeptr.name, Op.Load(Type.Ptr, obj)),
         Let(tpe.name, Op.Load(cls.typeStruct, typeptr)),
         Let(typeidptr.name, Op.Extract(tpe, Seq(1))),
-        Let(Op.Call(profileMethodSig, profileMethod, Seq(typeidptr, Val.String(meth.name.id)))),
+        Let(Op.Call(profileMethodSig, profileMethod, Seq(typeidptr, Val.String(s"$instname:${meth.name.id}")))),
         Let(methptrptr.name,
             Op.Elem(cls.typeStruct,
                     typeptr,

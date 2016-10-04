@@ -37,6 +37,7 @@ class MainInjection(entry: Global)(implicit fresh: Fresh) extends Pass {
           Inst.Let(arr.name, Op.Call(RtInitSig, RtInit, Seq(rt, argc, argv))),
           Inst.Let(module.name, Op.Module(entry.top)),
           Inst.Let(Op.Call(entryMainTy, entryMain, Seq(module, arr))),
+          Inst.Let(Op.Call(DumpLogSig, DumpLog, Seq())),
           Inst.Ret(Val.I32(0))))
   }
 }
@@ -59,11 +60,15 @@ object MainInjection extends PassCompanion {
   val Init     = Val.Global(Global.Top("scalanative_init"), Type.Ptr)
   val InitDecl = Defn.Declare(Attrs.None, Init.name, InitSig)
 
+  val DumpLogSig  = Type.Function(Seq(), Type.Void)
+  val DumpLog     = Val.Global(Global.Top("method_call_dump"), Type.Ptr)
+  val DumpLogDecl = Defn.Declare(Attrs.None, DumpLog.name, DumpLogSig)
+
   override val depends =
     Seq(ObjectArray.name, Rt.name, RtInit.name)
 
   override val injects =
-    Seq(InitDecl)
+    Seq(InitDecl, DumpLogDecl)
 
   override def apply(config: tools.Config, top: Top) =
     if (config.injectMain) new MainInjection(config.entry)(top.fresh)
