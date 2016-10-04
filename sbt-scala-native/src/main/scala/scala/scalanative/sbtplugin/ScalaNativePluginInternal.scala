@@ -229,6 +229,7 @@ object ScalaNativePluginInternal {
       val linkerReporter    = nativeLinkerReporter.value
       val optimizerReporter = nativeOptimizerReporter.value
       val sharedLibrary     = nativeSharedLibrary.value
+      val profile           = nativeProfileDispatch.value
       val logger            = streams.value.log
 
       val config = tools.Config.empty
@@ -237,6 +238,7 @@ object ScalaNativePluginInternal {
           tools.LinkerPath(VirtualDirectory.real(p))))
         .withTargetDirectory(VirtualDirectory.real(target))
         .withInjectMain(!nativeSharedLibrary.value)
+        .withProfileDispatch(profile)
 
       checkThatClangIsRecentEnough(clang)
 
@@ -283,13 +285,6 @@ object ScalaNativePluginInternal {
 
       val result = compileIfChanged(inputFiles)
       binary
-    },
-    scalacOptions in Compile := {
-      val previous = (scalacOptions in Compile).value
-      if (nativeProfileDispatch.value)
-        previous ++ Seq("-P:nir:methodCallProfiling")
-      else
-        previous
     },
     run := {
       val logger = streams.value.log

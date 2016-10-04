@@ -108,18 +108,18 @@ void linkedmap_insert(linkedmap* map, char* key, char* value) {
     }
 }
 
-void node_print(node* n) {
+void node_print(node* n, FILE* out) {
     while (n != NULL) {
-        fprintf(stdout, "    %s\n", n->value);
+        fprintf(out, "    %s\n", n->value);
         n = n->next;
     }
 }
 
-void linkedmap_print(linkedmap* map) {
+void linkedmap_print(linkedmap* map, FILE* out) {
     while (map != NULL) {
-        fprintf(stdout, "Key = %s:\n", map->key);
-        node_print(map->head);
-        fprintf(stdout, "\n");
+        fprintf(out, "Key = %s:\n", map->key);
+        node_print(map->head, out);
+        fprintf(out, "\n");
         map = map->next;
     }
 }
@@ -160,6 +160,10 @@ char* to_string(jstring* str) {
 
 linkedmap* method_calls = NULL;
 
+void method_call_dump(FILE* out) {
+    linkedmap_print(method_calls, out);
+}
+
 extern "C" {
     void method_call_log(jstring* callee_t, jstring* method_name) {
         char* c = to_string(callee_t);
@@ -173,8 +177,18 @@ extern "C" {
         }
     }
 
-    void method_call_dump() {
-        linkedmap_print(method_calls);
+    void method_call_dump_file(jstring* file_name) {
+        FILE* file = fopen(to_string(file_name), "w");
+        if (file == NULL) {
+            fprintf(stderr, "Couldn't open file %s for writing.\n", to_string(file_name));
+            exit(1);
+        }
+        method_call_dump(file);
     }
+
+    void method_call_dump_console() {
+        method_call_dump(stdout);
+    }
+
 
 }
