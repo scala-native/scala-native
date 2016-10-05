@@ -111,14 +111,17 @@ lazy val toolSettings =
     )
 
 lazy val libSettings =
-  (baseSettings ++ ScalaNativePlugin.projectSettings.tail) :+
-  (scalaVersion := libScalaVersion)
+  (baseSettings ++ ScalaNativePlugin.projectSettings.tail) ++ Seq(
+    scalaVersion := libScalaVersion,
+    resolvers := Nil
+  )
 
 lazy val projectSettings =
   ScalaNativePlugin.projectSettings ++ Seq(
     scalaVersion := libScalaVersion,
     nativeVerbose := true,
-    nativeClangOptions ++= Seq("-O0")
+    nativeClangOptions ++= Seq("-O0"),
+    resolvers := Nil
   )
 
 lazy val util =
