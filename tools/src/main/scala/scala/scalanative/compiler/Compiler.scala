@@ -69,6 +69,9 @@ final class Compiler(opts: Opts) {
         case Seq() =>
           assembly
 
+        case (pass.EmptyPass, _) +: rest =>
+          loop(assembly, rest)
+
         case (pass, id) +: rest =>
           val nassembly = pass(assembly)
           val n         = id + 1
