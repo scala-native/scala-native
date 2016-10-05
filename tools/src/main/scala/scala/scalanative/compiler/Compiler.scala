@@ -13,12 +13,10 @@ final class Compiler(opts: Opts) {
     Global.Member(Global.Top(opts.entry), "main_class.ssnr.ObjectArray_unit")
 
   private lazy val passCompanions: Seq[PassCompanion] = Seq(
-      Seq(
-          pass.LocalBoxingElimination,
-          pass.DeadCodeElimination
-      ),
-      maybeInjectMain,
-      Seq(pass.ExternHoisting,
+      Seq(pass.LocalBoxingElimination,
+          pass.DeadCodeElimination,
+          pass.MainInjection,
+          pass.ExternHoisting,
           pass.ModuleLowering,
           pass.RuntimeTypeInfoInjection,
           pass.AsLowering,
@@ -34,9 +32,6 @@ final class Compiler(opts: Opts) {
           pass.StackallocHoisting,
           pass.CopyPropagation)).flatten
 
-  private def maybeInjectMain: Seq[PassCompanion] =
-    if (!opts.sharedLibrary) Seq(pass.MainInjection) else Seq.empty
-
   private lazy val (links, assembly): (Seq[Attr.Link], Seq[Defn]) = {
     val deps           = passCompanions.flatMap(_.depends).distinct
     val injects        = passCompanions.flatMap(_.injects).distinct
@@ -49,7 +44,8 @@ final class Compiler(opts: Opts) {
   private lazy val passes = {
     val ctx = Ctx(fresh = Fresh("tx"),
                   entry = entry,
-                  top = analysis.ClassHierarchy(assembly))
+                  top = analysis.ClassHierarchy(assembly),
+                  options = opts)
 
     passCompanions.map(_.apply(ctx))
   }
@@ -72,6 +68,9 @@ final class Compiler(opts: Opts) {
       passes match {
         case Seq() =>
           assembly
+
+        case (pass.EmptyPass, _) +: rest =>
+          loop(assembly, rest)
 
         case (pass, id) +: rest =>
           val nassembly = pass(assembly)

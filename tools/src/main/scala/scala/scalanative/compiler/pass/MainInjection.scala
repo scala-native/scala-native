@@ -38,7 +38,9 @@ class MainInjection(entry: Global)(implicit fresh: Fresh) extends Pass {
 }
 
 object MainInjection extends PassCompanion {
-  def apply(ctx: Ctx) = new MainInjection(ctx.entry)(ctx.fresh)
+  def apply(ctx: Ctx) =
+    if (!ctx.options.sharedLibrary) new MainInjection(ctx.entry)(ctx.fresh)
+    else EmptyPass
 
   val ObjectArray =
     Type.Class(Global.Top("scala.scalanative.runtime.ObjectArray"))
