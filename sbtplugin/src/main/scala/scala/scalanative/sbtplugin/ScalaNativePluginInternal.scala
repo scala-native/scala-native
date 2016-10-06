@@ -109,7 +109,10 @@ object ScalaNativePluginInternal {
     nativeSharedLibrary := false,
 
     nativeLink := {
-      val entry         = (selectMainClass in Compile).value.get.toString + "$"
+      val mainClass     = (selectMainClass in Compile).value.getOrElse(
+        throw new MessageOnlyException("No main class detected.")
+      )
+      val entry         = mainClass.toString + "$"
       val classpath     = cpToStrings((fullClasspath in Compile).value.map(_.data))
       val target        = (crossTarget in Compile).value
       val appll         = target / (moduleName.value + "-out.ll")
