@@ -13,6 +13,9 @@ object ScalaNativePlugin extends AutoPlugin {
       "Enable verbose tool logging.")
 
     val nativeClang = settingKey[File](
+      "Location of the clang compiler.")
+
+    val nativeClangPP = settingKey[File](
       "Location of the clang++ compiler.")
 
     val nativeClangOptions = settingKey[Seq[String]](
