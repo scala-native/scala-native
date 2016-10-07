@@ -13,11 +13,28 @@ object ScalaNativePluginInternal {
   private def cpToString(cp: Seq[File]): String =
     cpToStrings(cp).mkString(java.io.File.pathSeparator)
 
-  private lazy val nativelib =
+  private lazy val nativelib: File =
     Path.userHome / ".scalanative" / ("nativelib-" + nir.Versions.current)
 
   private def abs(file: File): String =
     file.getAbsolutePath
+
+  private def discover(binaryName: String,
+                       binaryVersions: Seq[(String, String)]): File = {
+    val binaryNames = binaryVersions.flatMap {
+      case (major, minor) =>
+        Seq(s"$binaryName$major$minor", s"$binaryName-$major.$minor")
+    } :+ binaryName
+
+    Process("which" +: binaryNames)
+      .lines_!
+      .map(file(_))
+      .headOption
+      .getOrElse {
+        throw new MessageOnlyException(
+          s"no ${binaryNames.mkString(", ")} found in $$PATH. Install clang")
+      }
+  }
 
   /** Compiles application nir to llvm ir. */
   private def compileNir(opts: NativeOpts): Seq[nir.Attr.Link] = {
@@ -26,17 +43,37 @@ object ScalaNativePluginInternal {
   }
 
   /** Compiles rt to llvm ir using clang. */
-  private def unpackRtlib(classpath: Seq[String]): Unit = {
+  private def unpackRtlib(clang: File,
+                          clangpp: File,
+                          classpath: Seq[String]): Unit = {
     val nativelibjar = classpath.collectFirst {
-      case p if p.contains("scala-native") && p.contains("nativelib") => p
+      case p if p.contains("scala-native") && p.contains("nativelib") =>
+        file(p)
     }.get
+    val jarhash      = Hash(nativelibjar).toSeq
+    val jarhashfile  = nativelib / "jarhash"
+    def bootstrapped =
+      nativelib.exists &&
+      jarhashfile.exists &&
+      jarhash == IO.readBytes(jarhashfile).toSeq
 
-    IO.delete(nativelib)
-    IO.unzip(file(nativelibjar), nativelib)
+    if (!bootstrapped) {
+      IO.delete(nativelib)
+      IO.unzip(nativelibjar, nativelib)
+      IO.write(jarhashfile, Hash(nativelibjar))
+
+      val cpaths     = (nativelib ** "*.c").get.map(abs)
+      val cpppaths   = (nativelib ** "*.cpp").get.map(abs)
+      val compilec   = abs(clang) +: "-c" +: cpaths
+      val compilecpp = abs(clangpp) +: "-c" +: cpppaths
+
+      Process(compilec, nativelib).!
+      Process(compilecpp, nativelib).!
+    }
   }
 
   /** Compiles application and runtime llvm ir file to binary using clang. */
-  private def compileLl(clang: File,
+  private def compileLl(clangpp: File,
                         target: File,
                         appll: File,
                         binary: File,
@@ -45,8 +82,8 @@ object ScalaNativePluginInternal {
                         opts: Seq[String]): Unit = {
     val outpath  = abs(binary)
     val apppath  = abs(appll)
-    val cpppaths = (nativelib ** "*.cpp").get.map(abs)
-    val paths    = apppath +: cpppaths
+    val opaths   = (nativelib ** "*.o").get.map(abs)
+    val paths    = apppath +: opaths
     val linkopts = links.zip(links.map(linkage.get(_))).flatMap {
       case (name, Some("static"))         => Seq("-static", "-l", name)
       case (name, Some("dynamic") | None) => Seq("-l", name)
@@ -54,7 +91,7 @@ object ScalaNativePluginInternal {
         throw new MessageOnlyException(s"uknown linkage kind $kind for $name")
     }
     val flags    = Seq("-o", outpath) ++ linkopts ++ opts
-    val compile  = abs(clang) +: (flags ++ paths)
+    val compile  = abs(clangpp) +: (flags ++ paths)
 
     Process(compile, target).!
   }
@@ -72,20 +109,9 @@ object ScalaNativePluginInternal {
 
     nativeVerbose := false,
 
-    nativeClang := {
-      val binaryName = "clang++"
-      val binaryNames = Seq(("3", "8"), ("3", "7")).flatMap {
-        case (major, minor) => Seq(s"$binaryName$major$minor", s"$binaryName-$major.$minor")
-      } :+ binaryName
+    nativeClang := discover("clang", Seq(("3", "8"), ("3", "7"))),
 
-      Process("which" +: binaryNames)
-        .lines_!
-        .map(file(_))
-        .headOption
-        .getOrElse{
-          throw new MessageOnlyException(s"no ${binaryNames.mkString(", ")} found in $$PATH. Install clang")
-        }
-    },
+    nativeClangPP := discover("clang++", Seq(("3", "8"), ("3", "7"))),
 
     nativeClangOptions := {
       val includes = ("/usr/local/include" #:: Try(
@@ -119,6 +145,7 @@ object ScalaNativePluginInternal {
       val binary        = (artifactPath in nativeLink).value
       val verbose       = nativeVerbose.value
       val clang         = nativeClang.value
+      val clangpp       = nativeClangPP.value
       val clangOpts     = nativeClangOptions.value
       val dotpath       = nativeEmitDependencyGraphPath.value
       val linkage       = nativeLibraryLinkage.value
@@ -133,9 +160,9 @@ object ScalaNativePluginInternal {
       checkThatClangIsRecentEnough(clang)
 
       IO.createDirectory(target)
-      unpackRtlib(classpath)
+      unpackRtlib(clang, clangpp, classpath)
       val links = compileNir(opts).map(_.name)
-      compileLl(clang, target, appll, binary, links, linkage, clangOpts)
+      compileLl(clangpp, target, appll, binary, links, linkage, clangOpts)
 
       binary
     },
@@ -146,7 +173,7 @@ object ScalaNativePluginInternal {
       val args = spaceDelimited("<arg>").parsed
 
       log.info("Running " + binary + " " + args.mkString(" "))
-      val exitCode = Process(binary, args).!
+      val exitCode = Process(binary +: args).!
 
       val message =
         if (exitCode == 0) None
