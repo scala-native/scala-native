@@ -3,9 +3,10 @@ package compiler
 package codegen
 
 import java.{lang => jl}
+
 import scala.collection.mutable
-import util.{unsupported, unreachable, sh, Show}
-import util.Show.{Sequence => s, Indent => i, Unindent => ui, Repeat => r, Newline => nl}
+import util.{Show, sh, unreachable, unsupported}
+import util.Show.{Indent => i, Newline => nl, Repeat => r, Sequence => s, Unindent => ui}
 import compiler.analysis.ControlFlow
 import nir.Shows.brace
 import nir._
@@ -84,9 +85,38 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
 
     val isDecl  = blocks.isEmpty
     val keyword = if (isDecl) "declare" else "define"
-    val params =
-      if (isDecl) r(argtys, sep = ", ")
-      else r(blocks.head.params: Seq[Val], sep = ", ")
+
+    def showDefnArg(arg: Arg,
+                    value: Val.Local): (Show.Result, Seq[Show.Result]) =
+      arg match {
+        case Arg(_, None) => (sh"${value: Val}", Seq.empty)
+        case Arg(Type.Ptr, Some(PassConv.Byval(pointee))) =>
+          val pointer = fresh()
+          (sh"$pointee* byval %$pointer",
+           Seq(sh"%${value.name} = bitcast $pointee* %$pointer to i8*"))
+        case Arg(Type.Ptr, Some(PassConv.Sret(pointee))) =>
+          val pointer = fresh()
+          (sh"$pointee* sret %$pointer",
+           Seq(sh"%${value.name} = bitcast $pointee* %$pointer to i8*"))
+        case x => unsupported(x)
+      }
+
+    def showDeclArg(arg: Arg): Show.Result = arg match {
+      case Arg(ty, None) => sh"$ty"
+      case Arg(Type.Ptr, Some(PassConv.Byval(pointee))) =>
+        sh"$pointee* byval"
+      case Arg(Type.Ptr, Some(PassConv.Sret(pointee))) =>
+        sh"$pointee* sret"
+      case x => unsupported(x)
+    }
+
+    val (params, preInstrs) =
+      if (isDecl) (r(argtys.map(showDeclArg), sep = ", "), Seq())
+      else {
+        val results =
+          (argtys zip blocks.head.params).map((showDefnArg _).tupled)
+        (r(results.map(_._1), sep = ", "), results.flatMap(_._2))
+      }
     val postattrs: Seq[Attr] =
       if (attrs.inline != Attr.MayInline) Seq(attrs.inline) else Seq()
     val personality = if (attrs.isExtern || isDecl) s() else gxxpersonality
@@ -95,7 +125,11 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
       else {
         implicit val cfg = ControlFlow(blocks)
         val showblocks = cfg.map { node =>
-          showBlock(node.block, node.pred, isEntry = node eq cfg.entry)
+          val isEntry = node eq cfg.entry
+          showBlock(node.block,
+                    node.pred,
+                    isEntry = isEntry,
+                    if (isEntry) r(preInstrs.map(nl)) else s())
         }
         s(" ", brace(r(showblocks)))
       }
@@ -103,7 +137,10 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
     sh"$keyword $retty @$name($params)$postattrs$personality$body"
   }
 
-  def showBlock(block: Block, pred: Seq[ControlFlow.Edge], isEntry: Boolean)(
+  def showBlock(block: Block,
+                pred: Seq[ControlFlow.Edge],
+                isEntry: Boolean,
+                preInstructions: Show.Result)(
       implicit cfg: ControlFlow.Graph): Show.Result = {
     val Block(name, params, insts, cf) = block
 
@@ -150,7 +187,7 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
         r(shows.map(s(_)))
       }
 
-    sh"${nl("")}$label$prologue$body"
+    sh"${nl("")}$label$prologue$preInstructions${nl("")}$body"
   }
 
   implicit val showType: Show[Type] = Show {
@@ -169,6 +206,13 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
     case Type.Struct(Global.None, tys) => sh"{ ${r(tys, sep = ", ")} }"
     case Type.Struct(name, _)          => sh"%$name"
     case ty                            => unsupported(ty)
+  }
+
+  implicit val showArg: Show[Arg] = Show {
+    case Arg(ty, None)                                => sh"$ty"
+    case Arg(Type.Ptr, Some(PassConv.Byval(pointee))) => sh"$pointee*"
+    case Arg(Type.Ptr, Some(PassConv.Sret(pointee)))  => sh"$pointee*"
+    case arg                                          => unsupported(arg)
   }
 
   def justVal(v: Val): Show.Result = v match {
@@ -225,6 +269,23 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
     def isVoid(ty: Type): Boolean =
       ty == Type.Void || ty == Type.Unit || ty == Type.Nothing
 
+    def showCallArgs(args: Seq[Arg],
+                     vals: Seq[Val]): (Seq[Show.Result], Seq[Show.Result]) = {
+      val res = (args zip vals) map {
+        case (Arg(Type.Ptr, Some(PassConv.Byval(pointee))), v) =>
+          val bitcasted = fresh()
+          (Seq(sh"%$bitcasted = bitcast $v to $pointee*"),
+           sh"$pointee* %$bitcasted")
+        case (Arg(Type.Ptr, Some(PassConv.Sret(pointee))), v) =>
+          val bitcasted = fresh()
+          (Seq(sh"%$bitcasted = bitcast $v to $pointee*"),
+           sh"$pointee* %$bitcasted")
+        case (Arg(_, None), v) => (Seq(), sh"$v")
+        case _                 => unsupported()
+      }
+      (res.flatMap(_._1), res.map(_._2))
+    }
+
     insts.foreach { inst =>
       val op   = inst.op
       val name = inst.name
@@ -234,14 +295,24 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
         case Op.Call(ty, Val.Global(pointee, _), args) =>
           val bind = if (isVoid(op.resty)) s() else sh"%$name = "
 
-          buf += sh"${bind}call $ty @$pointee(${r(args, sep = ", ")})"
+          val Type.Function(argtys, _) = ty
+
+          val (preinsts, argshows) = showCallArgs(argtys, args)
+
+          buf ++= preinsts
+          buf += sh"${bind}call ${ty: Type} @$pointee(${r(argshows, sep = ", ")})"
 
         case Op.Call(ty, ptr, args) =>
           val pointee = fresh()
           val bind    = if (isVoid(op.resty)) s() else sh"%$name = "
 
+          val Type.Function(argtys, _) = ty
+
+          val (preinsts, argshows) = showCallArgs(argtys, args)
+
+          buf ++= preinsts
           buf += sh"%$pointee = bitcast $ptr to $ty*"
-          buf += sh"${bind}call $ty %$pointee(${r(args, sep = ", ")})"
+          buf += sh"${bind}call ${ty: Type} %$pointee(${r(argshows, sep = ", ")})"
 
         case Op.Load(ty, ptr) =>
           val pointee = fresh()

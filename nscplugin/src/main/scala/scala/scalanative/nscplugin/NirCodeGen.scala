@@ -377,7 +377,7 @@ abstract class NirCodeGen
           val selfty   = genType(sym.owner.tpe)
           val retty    = genType(res, retty = true)
 
-          Type.Function(Seq(selfty), retty)
+          Type.Function(Seq(Arg(selfty)), retty)
 
         case sym: MethodSymbol =>
           val params   = sym.paramLists.flatten
@@ -390,7 +390,7 @@ abstract class NirCodeGen
             if (sym.isClassConstructor) Type.Unit
             else genType(sym.tpe.resultType, retty = true)
 
-          Type.Function(selfty ++: paramtys, retty)
+          Type.Function((selfty ++: paramtys).map(Arg(_)), retty)
       }
 
     def genParams(
@@ -952,7 +952,7 @@ abstract class NirCodeGen
     lazy val jlClass         = nir.Type.Class(jlClassName)
     lazy val jlClassCtorName = jlClassName member "init_ptr"
     lazy val jlClassCtorSig =
-      nir.Type.Function(Seq(jlClass, Type.Ptr), nir.Type.Unit)
+      nir.Type.Function(Seq(Arg(jlClass), Arg(Type.Ptr)), nir.Type.Unit)
     lazy val jlClassCtor = nir.Val.Global(jlClassCtorName, nir.Type.Ptr)
 
     def genBoxClass(type_ : Val, focus: Focus) = {
@@ -1316,7 +1316,7 @@ abstract class NirCodeGen
           val (argsp, ctsp) = allargsp.splitAt(arity)
           val ctsyms        = ctsp.map(extractClassFromImplicitClassTag)
           val cttys         = ctsyms.map(ctsym => genType(ctsym.info))
-          val sig           = Type.Function(cttys.init, cttys.last)
+          val sig           = Type.Function(cttys.init.map(Arg(_)), cttys.last)
 
           val args = mutable.UnrolledBuffer.empty[nir.Val]
           var last = fun

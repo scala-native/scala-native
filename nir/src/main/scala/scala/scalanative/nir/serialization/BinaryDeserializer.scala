@@ -259,7 +259,7 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
     case T.F32Type      => Type.F32
     case T.F64Type      => Type.F64
     case T.ArrayType    => Type.Array(getType, getInt)
-    case T.FunctionType => Type.Function(getTypes, getType)
+    case T.FunctionType => Type.Function(getArgs, getType)
     case T.StructType   => Type.Struct(getGlobal, getTypes)
 
     case T.UnitType    => Type.Unit
@@ -267,6 +267,13 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
     case T.ClassType   => Type.Class(getGlobal)
     case T.TraitType   => Type.Trait(getGlobal)
     case T.ModuleType  => Type.Module(getGlobal)
+  }
+
+  private def getArgs(): Seq[Arg] = getSeq(getArg)
+  private def getArg(): Arg       = Arg(getType, getOpt(getPassConvention))
+  private def getPassConvention(): PassConv = getInt match {
+    case T.Byval => PassConv.Byval(getType)
+    case T.Sret  => PassConv.Sret(getType)
   }
 
   private def getVals(): Seq[Val] = getSeq(getVal)

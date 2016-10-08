@@ -25,7 +25,7 @@ object ThrowLowering extends PassCompanion {
   def apply(ctx: Ctx) = new ThrowLowering()(ctx.fresh)
 
   val throwName = Global.Top("scalanative_throw")
-  val throwSig  = Type.Function(Seq(Type.Ptr), Type.Void)
+  val throwSig  = Type.Function(Seq(Arg(Type.Ptr)), Type.Void)
   val throw_    = Val.Global(throwName, Type.Ptr)
 
   override val injects = Seq(Defn.Declare(Attrs.None, throwName, throwSig))

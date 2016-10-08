@@ -132,7 +132,7 @@ object ClassLowering extends PassCompanion {
   def apply(ctx: Ctx) = new ClassLowering()(ctx.top, ctx.fresh)
 
   val allocName = Global.Top("scalanative_alloc")
-  val allocSig  = Type.Function(Seq(Type.Ptr, Type.I64), Type.Ptr)
+  val allocSig  = Type.Function(Seq(Arg(Type.Ptr), Arg(Type.I64)), Type.Ptr)
   val alloc     = Val.Global(allocName, allocSig)
 
   override val injects = Seq(Defn.Declare(Attrs.None, allocName, allocSig))
