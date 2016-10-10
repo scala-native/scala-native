@@ -7,9 +7,7 @@ import compiler.analysis.ControlFlow
 import util.unreachable
 import nir._
 
-/** Eliminates:
- *  - Cf.Try
- */
+/** Lowers try-catch with nested function calls into LLVM-style invokes. */
 class TryLowering(implicit fresh: Fresh) extends Pass {
   private def transformCf(block: Block) = block.cf match {
     case Cf.Try(Next.Succ(n), fail) =>

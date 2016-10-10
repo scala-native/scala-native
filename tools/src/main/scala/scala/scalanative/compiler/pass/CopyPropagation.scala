@@ -18,9 +18,6 @@ import nir._
  *  Becomes:
  *
  *      %baz = iadd[i32] 1i32, 2i32
- *
- *  Eliminates:
- *  - Op.Copy
  */
 class CopyPropagation extends Pass {
   private var locals: mutable.Map[Local, Val] = _

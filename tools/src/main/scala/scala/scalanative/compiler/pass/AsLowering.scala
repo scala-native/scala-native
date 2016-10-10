@@ -4,9 +4,7 @@ package pass
 
 import nir._
 
-/** Eliminates:
- *  - Op.As
- */
+/** Translates high-level casts to corresponding low-level instructions. */
 class AsLowering extends Pass {
   override def preInst = {
     case Inst(n, Op.As(ty1, Of(v, ty2))) if ty1 == ty2 =>

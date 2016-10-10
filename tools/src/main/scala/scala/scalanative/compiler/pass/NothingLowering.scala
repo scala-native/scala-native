@@ -7,9 +7,7 @@ import scala.util.control.Breaks._
 import util.unsupported
 import nir._
 
-/** Eliminates:
- *  - Type.Nothing
- */
+/** Short-circuits method calls that return nothing. */
 class NothingLowering extends Pass {
   override def preBlock = {
     case Block(n, params, insts, cf) =>

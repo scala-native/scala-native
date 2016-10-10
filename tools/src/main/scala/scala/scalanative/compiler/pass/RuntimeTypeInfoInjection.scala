@@ -6,9 +6,7 @@ import compiler.analysis.ClassHierarchy._
 import compiler.analysis.ClassHierarchyExtractors._
 import nir._
 
-/** Generates type instances for all classes, modules,
- *  traits and structs.
- */
+/** Generates type instances for all classes, modules, traits and structs. */
 class RuntimeTypeInfoInjection(implicit top: Top, fresh: Fresh) extends Pass {
   private def typeName(node: Scope): Global = node match {
     case node: Class =>

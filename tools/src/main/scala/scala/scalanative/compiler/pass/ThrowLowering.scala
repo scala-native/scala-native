@@ -7,9 +7,7 @@ import compiler.analysis.ControlFlow
 import util.unreachable
 import nir._
 
-/** Eliminates:
- *  - Cf.Throw
- */
+/** Lowers throw terminator into calls to runtime's throw. */
 class ThrowLowering(implicit fresh: Fresh) extends Pass {
   import ThrowLowering._
 

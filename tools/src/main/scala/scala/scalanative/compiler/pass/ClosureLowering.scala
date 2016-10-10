@@ -6,9 +6,7 @@ import scala.collection.mutable
 import util.ScopedVar, ScopedVar.scoped
 import nir._
 
-/** Eliminates:
- *  - Op.Closure
- */
+/** Translates high-level closures to corresponding class allocation. */
 class ClosureLowering extends Pass {
   override def preInst = {
     case Inst(_, _: Op.Closure) =>

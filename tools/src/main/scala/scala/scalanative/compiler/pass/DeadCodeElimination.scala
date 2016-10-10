@@ -7,6 +7,7 @@ import analysis.ClassHierarchy.Top
 import nir._, Shows._
 import util.sh
 
+/** Eliminates pure computations that are not being used. */
 class DeadCodeElimination(implicit top: Top) extends Pass {
   override def preDefn = {
     case defn: Defn.Define =>

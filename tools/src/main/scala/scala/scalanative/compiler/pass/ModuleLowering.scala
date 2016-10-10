@@ -37,11 +37,6 @@ import nir._
  *          store[class $name] @"module.$name", %alloc
  *          ret %alloc
  *      }
- *
- *  Eliminates:
- *  - Type.Module
- *  - Op.Module
- *  - Defn.Module
  */
 class ModuleLowering(implicit top: Top, fresh: Fresh) extends Pass {
   override def preDefn = {

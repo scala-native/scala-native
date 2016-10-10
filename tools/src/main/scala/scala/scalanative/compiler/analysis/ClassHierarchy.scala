@@ -200,6 +200,39 @@ object ClassHierarchy {
       extends Scope {
     def name  = Global.None
     def attrs = Attrs.None
+
+    lazy val dispatchName = Global.Top("__dispatch")
+    lazy val dispatchVal  = Val.Global(dispatchName, Type.Ptr)
+    lazy val (dispatchTy, dispatchDefn) = {
+      val traitMethods = methods.filter(_.inTrait).sortBy(_.id)
+
+      val columns = classes.sortBy(_.id).map { cls =>
+        val row = Array.fill[Val](traitMethods.length)(Val.Null)
+        cls.imap.foreach {
+          case (meth, value) =>
+            row(meth.id) = value
+        }
+        Val.Array(Type.Ptr, row)
+      }
+      val table = Val.Array(Type.Array(Type.Ptr, traitMethods.length), columns)
+
+      (table.ty, Defn.Const(Attrs.None, dispatchName, table.ty, table))
+    }
+
+    lazy val instanceName = Global.Top("__instance")
+    lazy val instanceVal  = Val.Global(instanceName, Type.Ptr)
+    lazy val (instanceTy, instanceDefn) = {
+      val columns = classes.sortBy(_.id).map { cls =>
+        val row = new Array[Boolean](traits.length)
+        cls.alltraits.foreach { trt =>
+          row(trt.id) = true
+        }
+        Val.Array(Type.Bool, row.map(Val.Bool))
+      }
+      val table = Val.Array(Type.Array(Type.Bool, traits.length), columns)
+
+      (table.ty, Defn.Const(Attrs.None, instanceName, table.ty, table))
+    }
   }
 
   def apply(defns: Seq[Defn]): Top = {

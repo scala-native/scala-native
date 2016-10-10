@@ -7,29 +7,8 @@ import compiler.analysis.ClassHierarchyExtractors._
 import util.{sh, unsupported}
 import nir._, Shows._
 
-/** Lowers classes, methods and fields down to
- *  structs with accompanying vtables.
- *
- *  For example a class w:
- *
- *      class $name: $parent, .. $ifaces
- *      .. var $name::$fldname: $fldty = $fldinit
- *      .. def $name::$declname: $declty
- *      .. def $name::$defnname: $defnty = $body
- *
- *  Gets lowered to:
- *
- *      struct class.$name {
- *        ptr        // pointer to rtti
- *        .. $fldty,
- *      }
- *
- *      .. def $name::$defnname: $defnty = $body
- *
- *  Eliminates:
- *  - Type.Class
- *  - Defn.Class
- *  - Op.{Alloc, Field, Method}
+/** Lowers class definitions, and field accesses to structs
+ *  and corresponding derived pointer computation.
  */
 class ClassLowering(implicit top: Top, fresh: Fresh) extends Pass {
   import ClassLowering._
@@ -74,53 +53,6 @@ class ClassLowering(implicit top: Top, fresh: Fresh) extends Pass {
           Inst(n,
                Op.Elem(classty, obj, Seq(Val.I32(0), Val.I32(fld.index + 1))))
       )
-
-    case Inst(n, Op.Method(sig, obj, MethodRef(cls: Class, meth)))
-        if meth.isVirtual =>
-      val typeptr    = Val.Local(fresh(), Type.Ptr)
-      val methptrptr = Val.Local(fresh(), Type.Ptr)
-
-      Seq(
-          Inst(typeptr.name, Op.Load(Type.Ptr, obj)),
-          Inst(methptrptr.name,
-               Op.Elem(cls.typeStruct,
-                       typeptr,
-                       Seq(Val.I32(0),
-                           Val.I32(2), // index of vtable in type struct
-                           Val.I32(meth.vindex)))),
-          Inst(n, Op.Load(Type.Ptr, methptrptr))
-      )
-
-    case Inst(n, Op.Method(sig, obj, MethodRef(_: Class, meth)))
-        if meth.isStatic =>
-      Seq(
-          Inst(n, Op.Copy(Val.Global(meth.name, Type.Ptr)))
-      )
-
-    case Inst(n, Op.Is(ClassRef(cls), obj)) =>
-      val typeptr = Val.Local(fresh(), Type.Ptr)
-
-      val cond = if (cls.range.length == 1) {
-        Seq(Inst(n, Op.Comp(Comp.Ieq, Type.Ptr, typeptr, cls.typeConst)))
-      } else {
-        val idptr = Val.Local(fresh(), Type.Ptr)
-        val id    = Val.Local(fresh(), Type.I32)
-        val ge    = Val.Local(fresh(), Type.Bool)
-        val le    = Val.Local(fresh(), Type.Bool)
-
-        Seq(
-            Inst(idptr.name,
-                 Op.Elem(Rt.Type, typeptr, Seq(Val.I32(0), Val.I32(0)))),
-            Inst(id.name, Op.Load(Type.I32, idptr)),
-            Inst(ge.name,
-                 Op.Comp(Comp.Sle, Type.I32, Val.I32(cls.range.start), id)),
-            Inst(le.name,
-                 Op.Comp(Comp.Sle, Type.I32, id, Val.I32(cls.range.end))),
-            Inst(n, Op.Bin(Bin.And, Type.Bool, ge, le))
-        )
-      }
-
-      Inst(typeptr.name, Op.Load(Type.Ptr, obj)) +: cond
   }
 
   override def preType = {

@@ -20,6 +20,8 @@ final class Compiler(opts: Opts) {
           pass.ModuleLowering,
           pass.RuntimeTypeInfoInjection,
           pass.AsLowering,
+          pass.IsLowering,
+          pass.MethodLowering,
           pass.TraitLowering,
           pass.ClassLowering,
           pass.StringLowering,
