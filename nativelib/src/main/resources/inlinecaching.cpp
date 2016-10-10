@@ -117,7 +117,7 @@ void node_print(node* n, FILE* out) {
 
 void linkedmap_print(linkedmap* map, FILE* out) {
     while (map != NULL) {
-        fprintf(out, "Key = %s:\n", map->key);
+        fprintf(out, "= %s:\n", map->key);
         node_print(map->head, out);
         fprintf(out, "\n");
         map = map->next;
@@ -184,6 +184,8 @@ extern "C" {
             exit(1);
         }
         method_call_dump(file);
+
+        fclose(file);
     }
 
     void method_call_dump_console() {
