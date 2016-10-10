@@ -23,6 +23,7 @@ object Driver {
     new Impl(
       Seq(pass.GlobalBoxingElimination,
           pass.DeadCodeElimination,
+          pass.InlineCaching,
           pass.GlobalValueNumbering,
           pass.MainInjection,
           pass.ExternHoisting,
