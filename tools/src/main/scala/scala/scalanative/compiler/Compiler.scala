@@ -13,26 +13,26 @@ final class Compiler(opts: Opts) {
     Global.Member(Global.Top(opts.entry), "main_class.ssnr.ObjectArray_unit")
 
   private lazy val passCompanions: Seq[PassCompanion] = Seq(
-      Seq(pass.LocalBoxingElimination,
-          pass.DeadCodeElimination,
-          pass.MainInjection,
-          pass.ExternHoisting,
-          pass.ModuleLowering,
-          pass.RuntimeTypeInfoInjection,
-          pass.AsLowering,
-          pass.IsLowering,
-          pass.MethodLowering,
-          pass.TraitLowering,
-          pass.ClassLowering,
-          pass.StringLowering,
-          pass.ConstLowering,
-          pass.UnitLowering,
-          pass.ThrowLowering,
-          pass.NothingLowering,
-          pass.TryLowering,
-          pass.AllocLowering,
-          pass.SizeofLowering,
-          pass.CopyPropagation)).flatten
+      pass.LocalBoxingElimination,
+      pass.DeadCodeElimination,
+      pass.MainInjection,
+      pass.ExternHoisting,
+      pass.ModuleLowering,
+      pass.RuntimeTypeInfoInjection,
+      pass.AsLowering,
+      pass.IsLowering,
+      pass.MethodLowering,
+      pass.TraitLowering,
+      pass.ClassLowering,
+      pass.StringLowering,
+      pass.ConstLowering,
+      pass.UnitLowering,
+      pass.ThrowLowering,
+      pass.NothingLowering,
+      pass.TryLowering,
+      pass.AllocLowering,
+      pass.SizeofLowering,
+      pass.CopyPropagation)
 
   private lazy val (links, assembly): (Seq[Attr.Link], Seq[Defn]) = {
     val deps           = passCompanions.flatMap(_.depends).distinct
