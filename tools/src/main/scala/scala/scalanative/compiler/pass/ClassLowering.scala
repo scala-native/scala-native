@@ -13,18 +13,9 @@ import nir._, Shows._
 class ClassLowering(implicit top: Top, fresh: Fresh) extends Pass {
   import ClassLowering._
 
-  def classStruct(cls: Class): Type.Struct = {
-    val data            = cls.allfields.map(_.ty)
-    val classStructName = cls.name tag "class"
-    val classStructBody = Type.Ptr +: data
-    val classStructTy   = Type.Struct(classStructName, classStructBody)
-
-    Type.Struct(classStructName, classStructBody)
-  }
-
   override def preDefn = {
     case Defn.Class(_, name @ ClassRef(cls), _, _) =>
-      val classStructTy = classStruct(cls)
+      val classStructTy = cls.classStruct
       val classStructDefn =
         Defn.Struct(Attrs.None, classStructTy.name, classStructTy.tys)
 
@@ -38,16 +29,8 @@ class ClassLowering(implicit top: Top, fresh: Fresh) extends Pass {
   }
 
   override def preInst = {
-    case Inst(n, Op.Classalloc(ClassRef(cls))) =>
-      val size = Val.Local(fresh(), Type.I64)
-
-      Seq(
-          Inst(size.name, Op.Sizeof(classStruct(cls))),
-          Inst(n, Op.Call(allocSig, alloc, Seq(cls.typeConst, size)))
-      )
-
     case Inst(n, Op.Field(ty, obj, FieldRef(cls: Class, fld))) =>
-      val classty = classStruct(cls)
+      val classty = cls.classStruct
 
       Seq(
           Inst(n,
@@ -63,9 +46,4 @@ class ClassLowering(implicit top: Top, fresh: Fresh) extends Pass {
 object ClassLowering extends PassCompanion {
   def apply(ctx: Ctx) = new ClassLowering()(ctx.top, ctx.fresh)
 
-  val allocName = Global.Top("scalanative_alloc")
-  val allocSig  = Type.Function(Seq(Arg(Type.Ptr), Arg(Type.I64)), Type.Ptr)
-  val alloc     = Val.Global(allocName, allocSig)
-
-  override val injects = Seq(Defn.Declare(Attrs.None, allocName, allocSig))
 }

@@ -94,6 +94,15 @@ object ClassHierarchy {
 
     lazy val typeConst: Val = Val.Global(name tag "class" tag "type", Type.Ptr)
 
+    lazy val classStruct: Type.Struct = {
+      val data            = allfields.map(_.ty)
+      val classStructName = name tag "class"
+      val classStructBody = Type.Ptr +: data
+      val classStructTy   = Type.Struct(classStructName, classStructBody)
+
+      Type.Struct(classStructName, classStructBody)
+    }
+
     lazy val vtable: Seq[Val] = {
       val base = parent.fold(Seq.empty[Val])(_.vtable)
 

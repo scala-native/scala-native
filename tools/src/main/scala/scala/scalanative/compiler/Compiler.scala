@@ -26,12 +26,12 @@ final class Compiler(opts: Opts) {
           pass.ClassLowering,
           pass.StringLowering,
           pass.ConstLowering,
-          pass.SizeofLowering,
           pass.UnitLowering,
           pass.ThrowLowering,
           pass.NothingLowering,
           pass.TryLowering,
-          pass.StackallocHoisting,
+          pass.AllocLowering,
+          pass.SizeofLowering,
           pass.CopyPropagation)).flatten
 
   private lazy val (links, assembly): (Seq[Attr.Link], Seq[Defn]) = {
