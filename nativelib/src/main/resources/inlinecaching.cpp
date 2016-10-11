@@ -187,6 +187,18 @@ void method_call_dump(FILE* out) {
 }
 
 extern "C" {
+
+    int jstring_compare(jstring* str0, jstring* str1, jstring* comment) {
+        char* c0 = to_string(comment);
+        char* s0 = to_string(str0);
+        char* s1 = to_string(str1);
+        int res = strcmp(s0, s1) == 0;
+        free(c0);
+        free(s0);
+        free(s1);
+        return res;
+    }
+
     void method_call_log(jstring* callee_t, jstring* method_name) {
         char* c = to_string(callee_t);
         char* m = to_string(method_name);
