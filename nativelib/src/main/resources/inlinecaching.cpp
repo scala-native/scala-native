@@ -16,10 +16,18 @@ typedef struct linkedmap {
 node* node_init(char* value) {
     node* n = (node*) malloc(sizeof(node));
 
-    if (n == NULL)
-        return NULL;
+    if (n == NULL) {
+        fprintf(stdout, "Couldn't init node.\n");
+        exit(1);
+    }
 
     char* value_field = (char*) calloc(strlen(value), sizeof(char));
+
+    if (value_field == NULL) {
+        fprintf(stdout, "Coudln't init value field.\n");
+        exit(1);
+    }
+
     strcpy(value_field, value);
 
     n->value = value_field;
@@ -33,10 +41,18 @@ linkedmap* linkedmap_init(char* key, char* value) {
 
     linkedmap* map = (linkedmap*) malloc(sizeof(linkedmap));
 
-    if (map == NULL)
-        return NULL;
+    if (map == NULL) {
+        fprintf(stdout, "Coudln't init linkedmap.\n");
+        exit(1);
+    }
 
     char* key_field = (char*) calloc(strlen(key), sizeof(char));
+
+    if (key_field == NULL) {
+        fprintf(stdout, "Couldn't init key field.\n");
+        exit(1);
+    }
+
     strcpy(key_field, key);
 
     map->key = key_field;
@@ -150,6 +166,12 @@ typedef struct jstring
 char* to_string(jstring* str) {
     size_t length = str->count;
     char* cs = (char*) calloc(length + 1, sizeof(char));
+
+    if (cs == NULL) {
+        fprintf(stdout, "Couldn't alloc memory to convert to string.\n");
+        exit(1);
+    }
+
     for (int i = 0; i < length; ++i) {
         cs[i] = (char) str->value->chars[i];
     }
@@ -175,6 +197,9 @@ extern "C" {
                 linkedmap_insert(method_calls, m, c);
             }
         }
+
+        free(c);
+        free(m);
     }
 
     void method_call_dump_file(jstring* file_name) {
