@@ -11,6 +11,10 @@ Start within a new folder, and create a file ``project/plugins.sbt`` as follows:
 
     addSbtPlugin("org.scala-native" % "sbtplugin"  % "0.1-SNAPSHOT")
 
+Create a file ``project/build.properties`` to define the sbt version as follows::
+
+    sbt.version=0.13.12
+    
 define a new ``build.sbt``::
 
     enablePlugins(ScalaNativePlugin)
