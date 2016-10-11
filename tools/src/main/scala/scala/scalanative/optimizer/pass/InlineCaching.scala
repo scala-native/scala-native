@@ -13,7 +13,7 @@ import nir._, Inst.Let
 /**
  * Inline caching based on information gathered at runtime.
  */
-class InlineCaching(dispatchInfo: Map[String, Seq[String]], maxCandidates: Int)(implicit fresh: Fresh, top: Top) extends Pass {
+class InlineCaching(dispatchInfo: Map[String, Seq[Int]], maxCandidates: Int)(implicit fresh: Fresh, top: Top) extends Pass {
   import InlineCaching._
 
   println("#" * 181)
@@ -83,7 +83,7 @@ class InlineCaching(dispatchInfo: Map[String, Seq[String]], maxCandidates: Int)(
       val instname = s"${n.scope}.${n.id}"
       val key = s"$instname:${meth.name.id}"
 
-      dispatchInfo get key getOrElse Seq() match {
+      dispatchInfo get key getOrElse Seq() flatMap (top classWithId _) match {
         case candidates if 1 to maxCandidates contains candidates.length =>
 
           // load type String
@@ -100,12 +100,11 @@ class InlineCaching(dispatchInfo: Map[String, Seq[String]], maxCandidates: Int)(
           val cmpTpeInst = (tpe: String) =>
             Let(Op.Call(compareJstringSig, compareJstring, Seq(typeidptr, Val.String(tpe), Val.String(instname))))
 
-          val individualBlocks: Seq[(String, Local, Block)] = candidates map { c =>
-            val ClassRef(clss) = Global.Top(c)
+          val individualBlocks: Seq[(String, Local, Block)] = candidates map { clss =>
             val blockName = fresh()
             val impl = findImpl(meth, clss)
             val staticCall = Let(fresh(), Op.Copy(Val.Global(impl, Type.Ptr)))
-            (c, blockName, Block(blockName, Nil, Seq(staticCall, Inst.Jump(Next.Label(b1.name, Seq(Val.Local(staticCall.name, Type.Ptr)))))))
+            (clss.name.id, blockName, Block(blockName, Nil, Seq(staticCall, Inst.Jump(Next.Label(b1.name, Seq(Val.Local(staticCall.name, Type.Ptr)))))))
           }
 
           val fallback = {

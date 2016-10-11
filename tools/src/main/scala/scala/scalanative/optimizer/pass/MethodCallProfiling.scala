@@ -15,7 +15,7 @@ class MethodCallProfiling(implicit top: Top, fresh: Fresh) extends Pass {
         if meth.isVirtual =>
       val tpe        = Val.Local(fresh(), cls.typeStruct)
       val typeptr    = Val.Local(fresh(), Type.Ptr)
-      val typeidptr  = Val.Local(fresh(), Type.Ptr)
+      val typeid     = Val.Local(fresh(), Type.I32)
       val methptrptr = Val.Local(fresh(), Type.Ptr)
 
       val instname = s"${n.scope}.${n.id}"
@@ -23,8 +23,8 @@ class MethodCallProfiling(implicit top: Top, fresh: Fresh) extends Pass {
       Seq(
           Let(typeptr.name, Op.Load(Type.Ptr, obj)),
           Let(tpe.name, Op.Load(cls.typeStruct, typeptr)),
-          Let(typeidptr.name, Op.Extract(tpe, Seq(1))),
-          Let(Op.Call(profileMethodSig, profileMethod, Seq(typeidptr, Val.String(s"$instname:${meth.name.id}")))),
+          Let(typeid.name, Op.Extract(tpe, Seq(0))),
+          Let(Op.Call(profileMethodSig, profileMethod, Seq(typeid, Val.String(s"$instname:${meth.name.id}")))),
           inst
       )
   }
@@ -38,7 +38,7 @@ object MethodCallProfiling extends PassCompanion {
       EmptyPass
 
   val profileMethodName = Global.Top("method_call_log")
-  val profileMethodSig  = Type.Function(Seq(Arg(Rt.String), Arg(Rt.String)), Type.Void)
+  val profileMethodSig  = Type.Function(Seq(Arg(Type.I32), Arg(Rt.String)), Type.Void)
   val profileMethod     = Val.Global(profileMethodName, profileMethodSig)
 
   override val injects = Seq(Defn.Declare(Attrs.None, profileMethodName, profileMethodSig))

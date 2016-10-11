@@ -3,7 +3,7 @@
 #include <string.h>
 
 typedef struct node {
-    char* value;
+    int value;
     node* next;
 } node;
 
@@ -13,7 +13,7 @@ typedef struct linkedmap {
     linkedmap* next;
 } linkedmap;
 
-node* node_init(char* value) {
+node* node_init(int value) {
     node* n = (node*) malloc(sizeof(node));
 
     if (n == NULL) {
@@ -21,22 +21,13 @@ node* node_init(char* value) {
         exit(1);
     }
 
-    char* value_field = (char*) calloc(strlen(value), sizeof(char));
-
-    if (value_field == NULL) {
-        fprintf(stdout, "Coudln't init value field.\n");
-        exit(1);
-    }
-
-    strcpy(value_field, value);
-
-    n->value = value_field;
+    n->value = value;
     n->next = NULL;
 
     return n;
 }
 
-linkedmap* linkedmap_init(char* key, char* value) {
+linkedmap* linkedmap_init(char* key, int value) {
     node* n = node_init(value);
 
     linkedmap* map = (linkedmap*) malloc(sizeof(linkedmap));
@@ -62,7 +53,7 @@ linkedmap* linkedmap_init(char* key, char* value) {
     return map;
 }
 
-void node_insert(node* n, char* value) {
+void node_insert(node* n, int value) {
     node* prev = n;
     while (prev->next != NULL)
         prev = prev->next;
@@ -71,10 +62,10 @@ void node_insert(node* n, char* value) {
     prev->next = new_node;
 }
 
-bool node_contains(node* node, char* value) {
+bool node_contains(node* node, int value) {
     if (node == NULL)
         return false;
-    else if (strcmp(node->value, value) == 0)
+    else if (node->value == value)
         return true;
     else
         return node_contains(node->next, value);
@@ -98,7 +89,7 @@ node* linkedmap_get(linkedmap* map, char* key) {
         return linkedmap_get(map->next, key);
 }
 
-bool linkedmap_contains_pair(linkedmap* map, char* key, char* value) {
+bool linkedmap_contains_pair(linkedmap* map, char* key, int value) {
     node* n = linkedmap_get(map, key);
 
     if (n == NULL)
@@ -107,7 +98,7 @@ bool linkedmap_contains_pair(linkedmap* map, char* key, char* value) {
         return node_contains(n, value);
 }
 
-void linkedmap_insert(linkedmap* map, char* key, char* value) {
+void linkedmap_insert(linkedmap* map, char* key, int value) {
     if (linkedmap_contains(map, key)) {
         node* n = linkedmap_get(map, key);
 
@@ -126,7 +117,7 @@ void linkedmap_insert(linkedmap* map, char* key, char* value) {
 
 void node_print(node* n, FILE* out) {
     while (n != NULL) {
-        fprintf(out, "    %s\n", n->value);
+        fprintf(out, "    %d\n", n->value);
         n = n->next;
     }
 }
@@ -199,18 +190,16 @@ extern "C" {
         return res;
     }
 
-    void method_call_log(jstring* callee_t, jstring* method_name) {
-        char* c = to_string(callee_t);
+    void method_call_log(int callee_t, jstring* method_name) {
         char* m = to_string(method_name);
         if (method_calls == NULL) {
-            method_calls = linkedmap_init(m, c);
+            method_calls = linkedmap_init(m, callee_t);
         } else {
-            if (!linkedmap_contains_pair(method_calls, m, c)) {
-                linkedmap_insert(method_calls, m, c);
+            if (!linkedmap_contains_pair(method_calls, m, callee_t)) {
+                linkedmap_insert(method_calls, m, callee_t);
             }
         }
 
-        free(c);
         free(m);
     }
 

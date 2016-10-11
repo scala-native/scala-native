@@ -7,7 +7,7 @@ import scala.util.matching.Regex
 
 object DispatchInfoParser extends JavaTokenParsers {
 
-  def apply(in: String): Map[String, Seq[String]] =
+  def apply(in: String): Map[String, Seq[Int]] =
     parseAll(dispatchInfo, in) match {
       case Success(info, _) =>
         info
@@ -26,14 +26,14 @@ object DispatchInfoParser extends JavaTokenParsers {
         s"""$scp.$id:$names"""
     }
 
-  def dispatchMethod: Parser[(String, Seq[String])] =
-    dispatchHeader ~ rep1(dispatchType) ^^ {
+  def dispatchMethod: Parser[(String, Seq[Int])] =
+    dispatchHeader ~ rep1(wholeNumber) ^^ {
       case header ~ tpes =>
-        (header, tpes)
+        (header, tpes map (_.toInt))
     }
 
 
-  def dispatchInfo: Parser[Map[String, Seq[String]]] =
+  def dispatchInfo: Parser[Map[String, Seq[Int]]] =
     rep(dispatchMethod) ^^ (_.toMap)
 
 }

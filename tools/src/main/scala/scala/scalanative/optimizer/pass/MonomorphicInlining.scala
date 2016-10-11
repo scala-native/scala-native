@@ -11,7 +11,7 @@ import nir._, Shows._, Inst.Let
 /**
  * Inline monomorphic call sites
  */
-class MonomorphicInlining(dispatchInfo: Map[String, Seq[String]])(implicit top: Top) extends Pass {
+class MonomorphicInlining(dispatchInfo: Map[String, Seq[Int]])(implicit top: Top) extends Pass {
   import MonomorphicInlining._
 
   private def findImpl(meth: Method, clss: Class): String =
@@ -49,10 +49,9 @@ class MonomorphicInlining(dispatchInfo: Map[String, Seq[String]])(implicit top: 
       val instname = s"${n.scope}.${n.id}"
       val key = s"$instname:${meth.name.id}"
 
-      dispatchInfo get key getOrElse Seq() match {
+      dispatchInfo get key getOrElse Seq() flatMap (top classWithId _) match {
 
-        case Seq(mono) =>
-          val ClassRef(clss) = Global.Top(mono)
+        case Seq(clss) =>
           val implName = findImpl(meth, clss)
           Seq(Let(n, Op.Copy(Val.Global(Global.Top(implName), Type.Ptr))))
 
