@@ -27,9 +27,11 @@ object DispatchInfoParser extends JavaTokenParsers {
     }
 
   def dispatchMethod: Parser[(String, Seq[Int])] =
-    dispatchHeader ~ rep1(wholeNumber) ^^ {
+    dispatchHeader ~ rep1(wholeNumber ~ ("(" ~> wholeNumber <~ ")")) ^^ {
       case header ~ tpes =>
-        (header, tpes map (_.toInt))
+        (header, tpes.map { case t ~ occ => (t.toInt, occ.toInt) }.
+          sortBy(_._2).
+          map(_._1).reverse)
     }
 
 

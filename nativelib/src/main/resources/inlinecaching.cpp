@@ -4,6 +4,7 @@
 
 typedef struct node {
     int value;
+    unsigned long occurrences;
     node* next;
 } node;
 
@@ -22,6 +23,7 @@ node* node_init(int value) {
     }
 
     n->value = value;
+    n->occurrences = 1;
     n->next = NULL;
 
     return n;
@@ -89,6 +91,17 @@ node* linkedmap_get(linkedmap* map, char* key) {
         return linkedmap_get(map->next, key);
 }
 
+node* node_get(node* start, int value) {
+    if (start == NULL)
+        return NULL;
+
+    if (start->value == value)
+        return start;
+    else
+        return node_get(start->next, value);
+}
+
+
 bool linkedmap_contains_pair(linkedmap* map, char* key, int value) {
     node* n = linkedmap_get(map, key);
 
@@ -104,6 +117,8 @@ void linkedmap_insert(linkedmap* map, char* key, int value) {
 
         if (!node_contains(n, value)) {
             node_insert(n, value);
+        } else {
+            node_get(n, value)->occurrences += 1;
         }
     } else {
         linkedmap* new_node = linkedmap_init(key, value);
@@ -117,7 +132,7 @@ void linkedmap_insert(linkedmap* map, char* key, int value) {
 
 void node_print(node* n, FILE* out) {
     while (n != NULL) {
-        fprintf(out, "    %d\n", n->value);
+        fprintf(out, "    %d (%lu)\n", n->value, n->occurrences);
         n = n->next;
     }
 }
@@ -172,9 +187,11 @@ char* to_string(jstring* str) {
 }
 
 linkedmap* method_calls = NULL;
+unsigned long calls_count = 0L;
 
 void method_call_dump(FILE* out) {
     linkedmap_print(method_calls, out);
+    fprintf(out, "\n\nThere have been %lu virtual calls.\n", calls_count);
 }
 
 extern "C" {
@@ -195,9 +212,7 @@ extern "C" {
         if (method_calls == NULL) {
             method_calls = linkedmap_init(m, callee_t);
         } else {
-            if (!linkedmap_contains_pair(method_calls, m, callee_t)) {
-                linkedmap_insert(method_calls, m, callee_t);
-            }
+            linkedmap_insert(method_calls, m, callee_t);
         }
 
         free(m);
@@ -218,5 +233,8 @@ extern "C" {
         method_call_dump(stdout);
     }
 
+    void method_call_count() {
+        calls_count += 1;
+    }
 
 }
