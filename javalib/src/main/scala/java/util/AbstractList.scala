@@ -122,12 +122,12 @@ abstract class AbstractList[E] protected ()
     iter.take(toIndex - fromIndex).foreach(_ => iter.remove())
   }
 
-  protected[this] def checkIndexInBounds(index: Int): Unit = {
+  protected[util] def checkIndexInBounds(index: Int): Unit = {
     if (index < 0 || index >= size)
       throw new IndexOutOfBoundsException(index.toString)
   }
 
-  protected[this] def checkIndexOnBounds(index: Int): Unit = {
+  protected[util] def checkIndexOnBounds(index: Int): Unit = {
     if (index < 0 || index > size)
       throw new IndexOutOfBoundsException(index.toString)
   }

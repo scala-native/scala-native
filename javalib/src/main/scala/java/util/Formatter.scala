@@ -25,6 +25,10 @@ class Formatter {
   def ioException(): IOException                             = ???
   def locale(): Locale                                       = ???
   def out(): Appendable                                      = ???
+
+  // avoid linking error
+
+  override def toString() = super.toString()
 }
 
 object Formatter
