@@ -15,6 +15,7 @@ class NothingLowering extends Pass {
     case Block(n, params, insts, cf) =>
       val ninsts = mutable.UnrolledBuffer.empty[Inst]
       var ncf = cf
+
       breakable {
         insts.foreach {
           case inst @ Inst(n, call: Op.Call) if call.resty == Type.Nothing =>
@@ -27,13 +28,14 @@ class NothingLowering extends Pass {
             ninsts += inst
         }
       }
+
       Seq(Block(n, params, ninsts.toSeq, ncf))
   }
 
   override def preType = {
     case Type.Nothing =>
-      unsupported(
-          "nothing can only be used as the result type of the function")
+      Type.Ptr
+
     case Type.Function(params, Type.Nothing) =>
       Type.Function(params, Type.Void)
   }
