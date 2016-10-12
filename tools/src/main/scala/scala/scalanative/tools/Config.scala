@@ -26,6 +26,9 @@ sealed trait Config {
   /** Where to put virtual dispatch info? */
   def profileDispatchInfo: Option[File]
 
+  /** Maximum number of candidates to consider a call-site for inline caching */
+  def inlineCachingMaxCandidates: Int
+
   /** Create new config with given entry point. */
   def withEntry(value: Global): Config
 
@@ -43,6 +46,9 @@ sealed trait Config {
 
   /** Create a new config where dispatch info is stored to the specified file */
   def withProfileDispatchInfo(value: Option[File]): Config
+
+  /** Create a new config with a max number of candidates for inline caching */
+  def withInlineCachingMaxCandidates(value: Int): Config
 }
 
 object Config {
@@ -54,14 +60,16 @@ object Config {
          targetDirectory = VirtualDirectory.empty,
          injectMain = true,
          profileDispatch = false,
-         profileDispatchInfo = None)
+         profileDispatchInfo = None,
+         inlineCachingMaxCandidates = 2)
 
   private final case class Impl(entry: Global,
                                 paths: Seq[LinkerPath],
                                 targetDirectory: VirtualDirectory,
                                 injectMain: Boolean,
                                 profileDispatch: Boolean,
-                                profileDispatchInfo: Option[File])
+                                profileDispatchInfo: Option[File],
+                                inlineCachingMaxCandidates: Int)
       extends Config {
     def withEntry(value: Global): Config =
       copy(entry = value)
@@ -80,5 +88,8 @@ object Config {
 
     def withProfileDispatchInfo(value: Option[File]): Config =
       copy(profileDispatchInfo = value)
+
+    def withInlineCachingMaxCandidates(value: Int): Config =
+      copy(inlineCachingMaxCandidates = value)
   }
 }

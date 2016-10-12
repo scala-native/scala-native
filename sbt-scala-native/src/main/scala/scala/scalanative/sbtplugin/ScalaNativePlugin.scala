@@ -38,6 +38,10 @@ object ScalaNativePlugin extends AutoPlugin {
 
     val nativeProfileInfo = settingKey[Option[File]](
       "Where to store or find the profiling information.")
+
+    val nativeInlineCachingMaxCandidates = settingKey[Int](
+      "Maximum number of types observed at runtime to consider a call site " +
+      "for inline caching.")
   }
 
   override def projectSettings: Seq[Setting[_]] = (

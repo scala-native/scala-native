@@ -194,6 +194,7 @@ object ScalaNativePluginInternal {
     nativeSharedLibrary := false,
     nativeProfileDispatch := false,
     nativeProfileInfo := None,
+    nativeInlineCachingMaxCandidates := 2,
     nativeClang := {
       discover("clang", Seq(("3", "8"), ("3", "7")))
     },
@@ -232,6 +233,7 @@ object ScalaNativePluginInternal {
       val sharedLibrary     = nativeSharedLibrary.value
       val profile           = nativeProfileDispatch.value
       val profileInfo       = nativeProfileInfo.value
+      val maxCandidates     = nativeInlineCachingMaxCandidates.value
       val logger            = streams.value.log
 
       val config = tools.Config.empty
@@ -242,6 +244,7 @@ object ScalaNativePluginInternal {
         .withInjectMain(!nativeSharedLibrary.value)
         .withProfileDispatch(profile)
         .withProfileDispatchInfo(profileInfo)
+        .withInlineCachingMaxCandidates(maxCandidates)
 
       checkThatClangIsRecentEnough(clang)
 
