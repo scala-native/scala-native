@@ -89,22 +89,19 @@ class InlineCaching(dispatchInfo: Map[String, Seq[Int]], maxCandidates: Int)(imp
           // load type String
           val tpe        = Val.Local(fresh(), cls.typeStruct)
           val typeptr    = Val.Local(fresh(), Type.Ptr)
-          val typeidptr  = Val.Local(fresh(), Type.Ptr)
+          val typeid     = Val.Local(fresh(), Type.I32)
 
           val loadTpeNameInsts = Seq(
             Let(typeptr.name, Op.Load(Type.Ptr, obj)),
             Let(tpe.name, Op.Load(cls.typeStruct, typeptr)),
-            Let(typeidptr.name, Op.Extract(tpe, Seq(1)))
+            Let(typeid.name, Op.Extract(tpe, Seq(0)))
           )
 
-          val cmpTpeInst = (tpe: String) =>
-            Let(Op.Call(compareJstringSig, compareJstring, Seq(typeidptr, Val.String(tpe), Val.String(instname))))
-
-          val individualBlocks: Seq[(String, Local, Block)] = candidates map { clss =>
+          val individualBlocks: Seq[(Class, Local, Block)] = candidates map { clss =>
             val blockName = fresh()
             val impl = findImpl(meth, clss)
             val staticCall = Let(fresh(), Op.Copy(Val.Global(impl, Type.Ptr)))
-            (clss.name.id, blockName, Block(blockName, Nil, Seq(staticCall, Inst.Jump(Next.Label(b1.name, Seq(Val.Local(staticCall.name, Type.Ptr)))))))
+            (clss, blockName, Block(blockName, Nil, Seq(staticCall, Inst.Jump(Next.Label(b1.name, Seq(Val.Local(staticCall.name, Type.Ptr)))))))
           }
 
           val fallback = {
@@ -114,21 +111,25 @@ class InlineCaching(dispatchInfo: Map[String, Seq[Int]], maxCandidates: Int)(imp
           }
 
           val makeTypeComparison =
-            (tpeName: String, thn: Local) => {
-              val cmpTpe = cmpTpeInst(tpeName)
+            (tpeName: Int, thn: Local) => {
+
+              val cmpTpe     = Val.Local(fresh(), Type.Bool)
+
+              val typeComp = Seq(
+                Let(cmpTpe.name, Op.Comp(Comp.Ieq, Type.I32, Val.I32(tpeName), typeid))
+              )
+
+              // val cmpTpe = cmpTpeInst(tpeName)
               (els: Local) =>
                 Block(
                   name = fresh(),
                   params = Nil,
-                  insts = Seq(
-                    cmpTpe,
-                    Inst.If(Val.Local(cmpTpe.name, Type.Bool), Next(thn), Next(els))
-                  )
+                  insts = typeComp :+  Inst.If(Val.Local(cmpTpe.name, Type.Bool), Next(thn), Next(els))
                 )
             }
 
-          val typeComparisons: Seq[Local => Block] = individualBlocks map { case (tpe, _, block) =>
-            makeTypeComparison(tpe, block.name)
+          val typeComparisons: Seq[Local => Block] = individualBlocks map { case (clss, _, block) =>
+            makeTypeComparison(clss.id, block.name)
           }
 
           val finallyTypeComparisons: Seq[Block] =
@@ -173,11 +174,4 @@ object InlineCaching extends PassCompanion {
       case _ =>
         EmptyPass
     }
-
-  val compareJstringName = Global.Top("jstring_compare")
-  val compareJstringSig  = Type.Function(Seq(Arg(Rt.String), Arg(Rt.String), Arg(Rt.String)), Type.Bool)
-  val compareJstring     = Val.Global(compareJstringName, compareJstringSig)
-
-  override val injects = Seq(Defn.Declare(Attrs.None, compareJstringName, compareJstringSig))
-
 }
