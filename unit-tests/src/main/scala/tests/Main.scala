@@ -12,6 +12,7 @@ object Main {
       scala.scalanative.issues._337,
       scala.scalanative.native.CStringSuite,
       scala.scalanative.native.CInteropSuite,
+      scala.scalanative.native.InstanceOfSuite,
       scala.ArrayIntCopySuite,
       scala.ArrayDoubleCopySuite,
       scala.ArrayObjectCopySuite
