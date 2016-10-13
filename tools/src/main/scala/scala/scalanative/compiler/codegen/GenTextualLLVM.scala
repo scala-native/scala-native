@@ -271,19 +271,20 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
 
     def showCallArgs(args: Seq[Arg],
                      vals: Seq[Val]): (Seq[Show.Result], Seq[Show.Result]) = {
-      val res = (args zip vals) map {
-        case (Arg(Type.Ptr, Some(PassConv.Byval(pointee))), v) =>
+      val res = args.map(Some(_)).zipAll(vals, None, Val.None) map {
+        case (_, Val.None) => (Seq.empty, Seq.empty)
+        case (Some(Arg(Type.Ptr, Some(PassConv.Byval(pointee)))), v) =>
           val bitcasted = fresh()
           (Seq(sh"%$bitcasted = bitcast $v to $pointee*"),
-           sh"$pointee* %$bitcasted")
-        case (Arg(Type.Ptr, Some(PassConv.Sret(pointee))), v) =>
+           Seq(sh"$pointee* %$bitcasted"))
+        case (Some(Arg(Type.Ptr, Some(PassConv.Sret(pointee)))), v) =>
           val bitcasted = fresh()
           (Seq(sh"%$bitcasted = bitcast $v to $pointee*"),
-           sh"$pointee* %$bitcasted")
-        case (Arg(_, None), v) => (Seq(), sh"$v")
-        case _                 => unsupported()
+           Seq(sh"$pointee* %$bitcasted"))
+        case (Some(Arg(_, None)) | None, v) => (Seq(), Seq(sh"$v"))
+        case _                              => unsupported()
       }
-      (res.flatMap(_._1), res.map(_._2))
+      (res.flatMap(_._1), res.flatMap(_._2))
     }
 
     insts.foreach { inst =>

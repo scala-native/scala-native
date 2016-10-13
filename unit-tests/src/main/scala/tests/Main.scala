@@ -10,6 +10,7 @@ object Main {
       java.lang.DoubleSuite,
       java.util.RandomSuite,
       scala.scalanative.native.CStringSuite,
+      scala.scalanative.native.CInteropSuite,
       scala.ArrayIntCopySuite,
       scala.ArrayDoubleCopySuite,
       scala.ArrayObjectCopySuite
