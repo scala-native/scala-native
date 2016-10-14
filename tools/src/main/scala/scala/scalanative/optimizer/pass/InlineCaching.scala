@@ -200,16 +200,20 @@ class InlineCaching(dispatchInfo: Map[String, Seq[Int]],
           // performance.
           val candidates = allCandidates take maxCandidates
 
-          val tpe     = Val.Local(fresh(), cls.typeStruct)
-          val typeptr = Val.Local(fresh(), Type.Ptr)
-          val typeid  = Val.Local(fresh(), Type.I32)
+          val typeptr   = Val.Local(fresh(), Type.Ptr)
+          val typeidptr = Val.Local(fresh(), Type.Ptr)
+          val typeid    = Val.Local(fresh(), Type.I32)
 
           // Instructions to load the type id of `obj` at runtime.
           // The result is in `typeid`.
+
           val loadTypeId: Seq[Let] = Seq(
               Let(typeptr.name, Op.Load(Type.Ptr, obj)),
-              Let(tpe.name, Op.Load(cls.typeStruct, typeptr)),
-              Let(typeid.name, Op.Extract(tpe, Seq(0)))
+              Let(typeidptr.name,
+                   Op.Elem(cls.typeStruct,
+                           typeptr,
+                           Seq(Val.I32(0), Val.I32(0)))),
+              Let(typeid.name, Op.Load(Type.I32, typeidptr))
           )
 
           // The blocks that give the address for an inlined call
