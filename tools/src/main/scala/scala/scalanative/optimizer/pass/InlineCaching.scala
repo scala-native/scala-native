@@ -55,7 +55,14 @@ class InlineCaching(dispatchInfo: Map[String, Seq[Int]],
       case _ => None
     }
 
-    direct orElse inClass orElse single
+    lazy val vtable = {
+      clss.vtable lift meth.vindex flatMap {
+        case v: Val.Global => Some(v.name)
+        case _             => None
+      }
+    }
+
+    direct orElse inClass orElse single orElse vtable
   }
 
   /**
