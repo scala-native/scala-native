@@ -122,10 +122,19 @@ object Shows {
 
     case Op.Classalloc(name) =>
       sh"classalloc $name"
+<<<<<<< 94479c705d7c81ed249b64d55f1df9e19558f770
     case Op.Field(value, name) =>
       sh"field $value, $name"
     case Op.Method(value, name) =>
       sh"method $value, $name"
+=======
+    case Op.Field(ty, value, name) =>
+      sh"field[$ty] $value, $name"
+    case Op.Method(ty, value, name) =>
+      sh"method[$ty] $value, $name"
+    case Op.DynMethod(obj, sign) =>
+      sh"dynmethod $obj $sign"
+>>>>>>> Add DynMethod operator to nir
     case Op.Module(name) =>
       sh"module $name"
     case Op.As(ty, value) =>

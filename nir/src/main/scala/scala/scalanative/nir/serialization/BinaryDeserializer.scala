@@ -232,8 +232,9 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
     case T.SelectOp     => Op.Select(getVal, getVal, getVal)
 
     case T.ClassallocOp => Op.Classalloc(getGlobal)
-    case T.FieldOp      => Op.Field(getVal, getGlobal)
-    case T.MethodOp     => Op.Method(getVal, getGlobal)
+    case T.FieldOp      => Op.Field(getType, getVal, getGlobal)
+    case T.MethodOp     => Op.Method(getType, getVal, getGlobal)
+    case T.DynMethodOp  => Op.DynMethod(getVal, getString)
     case T.ModuleOp     => Op.Module(getGlobal)
     case T.AsOp         => Op.As(getType, getVal)
     case T.IsOp         => Op.Is(getType, getVal)

@@ -848,8 +848,26 @@ abstract class NirCodeGen
       init withValue alloc.value
     }
 
-    def genApplyDynamic(app: ApplyDynamic, focus: Focus) =
-      unsupported(app)
+    def genApplyDynamic(app: ApplyDynamic, focus: Focus) = {
+      val ApplyDynamic(obj, args) = app
+      val sym = app.symbol
+
+      val self = genExpr(obj, focus)
+
+      genDynMethodCall(sym, self.value, args, self)
+
+    }
+
+    def genDynMethodCall(sym: Symbol, self: Val, argsp: Seq[Tree], focus: Focus): Focus = {
+      val methodName   = genMethodName(sym)
+      val sig          = genMethodSig(sym)
+      val (args, last) = genMethodArgs(sym, argsp, focus)
+
+      val method = last withOp Op.DynMethod(self, methodName.toString)
+      val values = self +: args
+
+      method withOp Op.Call(sig, method.value, values)
+    }
 
     def genApply(app: Apply, focus: Focus): Focus = {
       val Apply(fun, args) = app

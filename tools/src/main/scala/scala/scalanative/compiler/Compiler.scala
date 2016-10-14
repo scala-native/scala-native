@@ -13,6 +13,7 @@ final class Compiler(opts: Opts) {
     Global.Member(Global.Top(opts.entry), "main_class.ssnr.ObjectArray_unit")
 
   private lazy val passCompanions: Seq[PassCompanion] = Seq(
+    pass.DynMethodLowering,
     pass.GlobalBoxingElimination,
     pass.DeadCodeElimination,
     pass.GlobalValueNumbering,
@@ -35,6 +36,7 @@ final class Compiler(opts: Opts) {
     pass.SizeofLowering,
     pass.CopyPropagation,
     pass.DeadCodeElimination)
+
 
   private lazy val (links, assembly): (Seq[Attr.Link], Seq[Defn]) = {
     val deps           = passCompanions.flatMap(_.depends).distinct

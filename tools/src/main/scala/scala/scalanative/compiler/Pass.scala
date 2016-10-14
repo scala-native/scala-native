@@ -135,10 +135,12 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
 
     case Op.Classalloc(n) =>
       Op.Classalloc(n)
-    case Op.Field(v, n) =>
-      Op.Field(txVal(v), n)
-    case Op.Method(v, n) =>
-      Op.Method(txVal(v), n)
+    case Op.Field(ty, v, n) =>
+      Op.Field(txType(ty), txVal(v), n)
+    case Op.Method(ty, v, n) =>
+      Op.Method(txType(ty), txVal(v), n)
+    case Op.DynMethod(obj, sign) =>
+      Op.DynMethod(txVal(obj), sign)
     case Op.Module(n) =>
       Op.Module(n)
     case Op.As(ty, v) =>

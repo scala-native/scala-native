@@ -345,6 +345,11 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putVal(v)
       putGlobal(name)
 
+    case Op.DynMethod(obj, sign) =>
+      putInt(T.DynMethodOp)
+      putVal(obj)
+      putString(sign)
+
     case Op.Module(name) =>
       putInt(T.ModuleOp)
       putGlobal(name)
