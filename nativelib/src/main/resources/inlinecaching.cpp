@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <mutex>
 
 typedef struct node {
     int value;
@@ -188,6 +189,7 @@ char* to_string(jstring* str) {
 
 linkedmap* method_calls = NULL;
 unsigned long calls_count = 0L;
+std::mutex method_calls_mutex;
 
 void method_call_dump(FILE* out) {
     linkedmap_print(method_calls, out);
@@ -208,6 +210,7 @@ extern "C" {
     }
 
     void method_call_log(int callee_t, jstring* method_name) {
+        method_calls_mutex.lock();
         char* m = to_string(method_name);
         if (method_calls == NULL) {
             method_calls = linkedmap_init(m, callee_t);
@@ -216,6 +219,7 @@ extern "C" {
         }
 
         free(m);
+        method_calls_mutex.unlock();
     }
 
     void method_call_dump_file(jstring* file_name) {
