@@ -13,17 +13,17 @@ class MethodCallProfiling(implicit top: Top, fresh: Fresh) extends Pass {
   override def preInst = {
     case inst @ Let(n, Op.Method(obj, MethodRef(cls: Class, meth)))
         if meth.isVirtual =>
-      val tpe        = Val.Local(fresh(), cls.typeStruct)
-      val typeptr    = Val.Local(fresh(), Type.Ptr)
-      val typeid     = Val.Local(fresh(), Type.I32)
-      val methptrptr = Val.Local(fresh(), Type.Ptr)
+      val typeptr   = Val.Local(fresh(), Type.Ptr)
+      val typeidptr = Val.Local(fresh(), Type.Ptr)
+      val typeid    = Val.Local(fresh(), Type.I32)
 
       val instname = s"${n.scope}.${n.id}"
 
       Seq(
           Let(typeptr.name, Op.Load(Type.Ptr, obj)),
-          Let(tpe.name, Op.Load(cls.typeStruct, typeptr)),
-          Let(typeid.name, Op.Extract(tpe, Seq(0))),
+          Let(typeidptr.name,
+               Op.Elem(cls.typeStruct, typeptr, Seq(Val.I32(0), Val.I32(0)))),
+          Let(typeid.name, Op.Load(Type.I32, typeidptr)),
           Let(Op.Call(callCountSig, callCount, Seq())),
           Let(
               Op.Call(profileMethodSig,
