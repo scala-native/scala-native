@@ -7,7 +7,7 @@ import scala.util.control.Breaks._
 import compiler.analysis.ClassHierarchy._
 import compiler.analysis.ClassHierarchyExtractors._
 import util.unsupported
-import nir._
+import nir._, Inst.Let
 
 /** Hoists all stack allocations to the entry basic block and
  *  maps class allocations to calls to the gc allocator.
@@ -24,26 +24,25 @@ class AllocLowering(implicit fresh: Fresh, top: Top) extends Pass {
   }
 
   override def preInst = {
-    case inst @ Inst(_, alloc: Op.Stackalloc) =>
+    case inst @ Let(_, alloc: Op.Stackalloc) =>
       stackallocs += inst
       Seq()
 
-    case Inst(n, Op.Classalloc(ClassRef(cls))) =>
+    case Let(n, Op.Classalloc(ClassRef(cls))) =>
       val size = Val.Local(fresh(), Type.I64)
 
       Seq(
-          Inst(size.name, Op.Sizeof(cls.classStruct)),
-          Inst(n, Op.Call(allocSig, alloc, Seq(cls.typeConst, size)))
+          Let(size.name, Op.Sizeof(cls.classStruct)),
+          Let(n, Op.Call(allocSig, alloc, Seq(cls.typeConst, size)))
       )
   }
 
   override def postDefn = {
     case defn: Defn.Define =>
-      val Block(n, params, insts, cf) +: rest = defn.blocks
+      val label +: rest = defn.insts
+      val newinsts      = label +: (stackallocs ++: rest)
 
-      val newBlocks = Block(n, params, stackallocs ++: insts, cf) +: rest
-
-      Seq(defn.copy(blocks = newBlocks))
+      Seq(defn.copy(insts = newinsts))
   }
 }
 

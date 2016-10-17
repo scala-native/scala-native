@@ -3,7 +3,7 @@ package compiler
 package pass
 
 import scala.collection.mutable
-import nir._
+import nir._, Inst.Let
 
 /** Eliminates redundant box/unbox operations within
  *  a single basic block. This is quite simplistic approach
@@ -13,35 +13,35 @@ import nir._
 class LocalBoxingElimination extends Pass {
   import LocalBoxingElimination._
 
-  override def preBlock = {
-    case block =>
+  override def preDefn = {
+    case defn: Defn.Define =>
       val records = mutable.UnrolledBuffer.empty[Record]
 
-      val newInsts = block.insts.map {
-        case inst @ Inst(to, op @ Op.Call(_, BoxRef(code), Seq(_, from))) =>
+      val newinsts = defn.insts.map {
+        case inst @ Let(to, op @ Op.Call(_, BoxRef(code), Seq(_, from))) =>
           records.collectFirst {
             // if a box for given value already exists, re-use the box
             case Box(rcode, rfrom, rto) if rcode == code && from == rfrom =>
-              Inst(to, Op.Copy(rto))
+              Let(to, Op.Copy(rto))
 
             // if we re-box previously unboxed value, re-use the original box
             case Unbox(rcode, rfrom, rto) if rcode == code && from == rto =>
-              Inst(to, Op.Copy(rfrom))
+              Let(to, Op.Copy(rfrom))
           }.getOrElse {
             // otherwise do actual boxing
             records += Box(code, from, Val.Local(to, op.resty))
             inst
           }
 
-        case inst @ Inst(to, op @ Op.Call(_, UnboxRef(code), Seq(_, from))) =>
+        case inst @ Let(to, op @ Op.Call(_, UnboxRef(code), Seq(_, from))) =>
           records.collectFirst {
             // if we unbox previously boxed value, return original value
             case Box(rcode, rfrom, rto) if rcode == code && from == rto =>
-              Inst(to, Op.Copy(rfrom))
+              Let(to, Op.Copy(rfrom))
 
             // if an unbox for this value already exists, re-use unbox
             case Unbox(rcode, rfrom, rto) if rcode == code && from == rfrom =>
-              Inst(to, Op.Copy(rto))
+              Let(to, Op.Copy(rto))
           }.getOrElse {
             // otherwise do actual unboxing
             records += Unbox(code, from, Val.Local(to, op.resty))
@@ -52,7 +52,7 @@ class LocalBoxingElimination extends Pass {
           inst
       }
 
-      Seq(block.copy(insts = newInsts))
+      Seq(defn.copy(insts = newinsts))
   }
 }
 

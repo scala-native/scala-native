@@ -5,7 +5,7 @@ package pass
 import compiler.analysis.ClassHierarchy._
 import compiler.analysis.ClassHierarchyExtractors._
 import util.{sh, unsupported}
-import nir._, Shows._
+import nir._, Inst.Let, Shows._
 
 /** Lowers class definitions, and field accesses to structs
  *  and corresponding derived pointer computation.
@@ -29,12 +29,12 @@ class ClassLowering(implicit top: Top, fresh: Fresh) extends Pass {
   }
 
   override def preInst = {
-    case Inst(n, Op.Field(ty, obj, FieldRef(cls: Class, fld))) =>
+    case Let(n, Op.Field(ty, obj, FieldRef(cls: Class, fld))) =>
       val classty = cls.classStruct
 
       Seq(
-          Inst(n,
-               Op.Elem(classty, obj, Seq(Val.I32(0), Val.I32(fld.index + 1))))
+          Let(n,
+              Op.Elem(classty, obj, Seq(Val.I32(0), Val.I32(fld.index + 1))))
       )
   }
 

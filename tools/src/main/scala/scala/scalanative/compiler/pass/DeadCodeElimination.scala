@@ -11,17 +11,26 @@ import util.sh
 class DeadCodeElimination(implicit top: Top) extends Pass {
   override def preDefn = {
     case defn: Defn.Define =>
-      val usedef = analysis.UseDef(defn.blocks)
+      val insts    = defn.insts
+      val cfg      = analysis.ControlFlow.Graph(insts)
+      val usedef   = analysis.UseDef(cfg)
+      val newinsts = mutable.UnrolledBuffer.empty[Inst]
 
-      val newBlocks = defn.blocks.map { block =>
-        val newInsts = block.insts.filter {
-          case Inst(n, op) => usedef(n).alive
+      cfg.all.foreach { block =>
+        if (usedef(block.name).alive) {
+          newinsts += block.label
+          block.insts.foreach {
+            case inst @ Inst.Let(n, op) =>
+              if (usedef(n).alive) newinsts += inst
+            case inst: Inst.Cf =>
+              newinsts += inst
+            case _ =>
+              ()
+          }
         }
-
-        block.copy(insts = newInsts)
       }
 
-      Seq(defn.copy(blocks = newBlocks))
+      Seq(defn.copy(insts = newinsts))
   }
 }
 

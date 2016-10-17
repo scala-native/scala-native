@@ -99,20 +99,23 @@ object Tags {
 
   // Control-flow ops
 
-  final val Cf = Defn + 32
+  final val Inst = Defn + 32
 
-  final val UnreachableCf = 1 + Cf
-  final val RetCf         = 1 + UnreachableCf
-  final val JumpCf        = 1 + RetCf
-  final val IfCf          = 1 + JumpCf
-  final val SwitchCf      = 1 + IfCf
-  final val InvokeCf      = 1 + SwitchCf
-  final val ThrowCf       = 1 + InvokeCf
-  final val TryCf         = 1 + ThrowCf
+  final val NoneInst        = 1 + Inst
+  final val LabelInst       = 1 + NoneInst
+  final val LetInst         = 1 + LabelInst
+  final val UnreachableInst = 1 + LetInst
+  final val RetInst         = 1 + UnreachableInst
+  final val JumpInst        = 1 + RetInst
+  final val IfInst          = 1 + JumpInst
+  final val SwitchInst      = 1 + IfInst
+  final val InvokeInst      = 1 + SwitchInst
+  final val ThrowInst       = 1 + InvokeInst
+  final val TryInst         = 1 + ThrowInst
 
   // Globals
 
-  final val Global = Cf + 32
+  final val Global = Inst + 32
 
   final val NoneGlobal   = 1 + Global
   final val TopGlobal    = 1 + NoneGlobal

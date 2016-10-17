@@ -5,149 +5,83 @@ import scala.collection.mutable
 import Shows._
 import util.sh
 
-final case class Focus(
-    val blocks: Seq[Block],
-    val name: Local,
-    val params: Seq[Val.Local],
-    val insts: Seq[Inst],
-    val value: Val,
-    val isComplete: Boolean
-)(implicit _fresh: Fresh) {
-  def fresh = _fresh
+final class Focus private (
+    private val _labeled: Boolean = false,
+    private val _insts: Seq[Inst] = Seq(),
+    private val _value: Val = Val.Unit)(implicit fresh: Fresh) {
+  private def copy(_labeled: Boolean = this._labeled,
+                   _insts: Seq[Inst] = this._insts,
+                   _value: Val = this._value) =
+    new Focus(_labeled, _insts, _value)
 
-  def appendBlocks(blocks: Seq[Block]) =
-    copy(blocks = this.blocks ++ blocks)
+  def value: Val = _value
 
-  def prependBlocks(blocks: Seq[Block]) =
-    copy(blocks = blocks ++ this.blocks)
+  def finish(end: Inst.Cf): Seq[Inst] =
+    withInst(end)._insts
 
-  private def assertMergeable(): Unit =
-    if (!isComplete) ()
-    else throw Focus.NotMergeable(this)
-
-  def withValue(newvalue: Val): Focus = {
-    assertMergeable()
-    copy(value = newvalue)
-  }
+  def withValue(v: Val): Focus =
+    copy(_value = v)
 
   def withOp(op: Op): Focus = {
-    assertMergeable()
     val name = fresh()
-    copy(insts = insts :+ Inst(name, op), value = Val.Local(name, op.resty))
+    withInst(Inst.Let(name, op)).withValue(Val.Local(name, op.resty))
   }
 
-  def finish(cf: Cf): Focus =
-    if (isComplete) this
-    else Focus.complete(blocks :+ Block(name, params, insts, cf))
+  def withRet(value: Val): Focus =
+    withInst(Inst.Ret(value))
 
-  private def wrapBranch(merge: Local,
-                         f: Focus => Focus,
-                         params: Seq[Val.Local] = Seq()) = {
-    val entry = Focus.entry(params)
-    val end   = f(entry)
-    val finalized =
-      if (end.isComplete) end
-      else end.finish(Cf.Jump(Next.Label(merge, Seq(end.value))))
-    (entry.name, end.isComplete, finalized.blocks)
+  def withThrow(value: Val): Focus =
+    withInst(Inst.Throw(value))
+
+  def withJump(to: Local, values: Val*): Focus =
+    withInst(Inst.Jump(Next.Label(to, values)))
+
+  def withIf(cond: Val, thenp: Next, elsep: Next): Focus =
+    withInst(Inst.If(cond, thenp, elsep))
+
+  def withLabel(name: Local, params: Val.Local*): Focus =
+    withInst(Inst.Label(name, params))
+
+  def withSwitch(scrut: Val,
+                 default: Local,
+                 casevals: Seq[Val],
+                 casetos: Seq[Local]): Focus = {
+    val cases = casevals.zip(casetos).map {
+      case (v, to) =>
+        Next.Case(v, to)
+    }
+    withInst(Inst.Switch(scrut, Next(default), cases))
   }
 
-  def branchIf(cond: Val,
-               retty: Type,
-               thenf: Focus => Focus,
-               elsef: Focus => Focus): Focus = {
-    val merge                             = fresh()
-    val param                             = Val.Local(fresh(), retty)
-    val (thenname, thencompl, thenblocks) = wrapBranch(merge, thenf)
-    val (elsename, elsecompl, elseblocks) = wrapBranch(merge, elsef)
-    val blocks =
-      finish(
-          Cf.If(cond,
-                Next.Label(thenname, Seq()),
-                Next.Label(elsename, Seq()))).blocks
-    if (thencompl && elsecompl)
-      Focus.complete(blocks ++ thenblocks ++ elseblocks)
-    else
-      Focus(blocks ++ thenblocks ++ elseblocks,
-            merge,
-            Seq(param),
-            Seq(),
-            param,
-            isComplete = false)
-  }
+  def withTry(succ: Local, fail: Local) =
+    withInst(Inst.Try(Next.Succ(succ), Next.Fail(fail)))
 
-  def branchSwitch(scrut: Val,
-                   retty: Type,
-                   defaultf: Focus => Focus,
-                   casevals: Seq[Val],
-                   casefs: Seq[Focus => Focus]): Focus = {
-    val merge = fresh()
-    val param = Val.Local(fresh(), retty)
-    val (defaultname, defaultcompl, defaultblocks) =
-      wrapBranch(merge, defaultf)
-    val cases       = casefs.map(wrapBranch(merge, _))
-    val casenames   = cases.map(_._1)
-    val casecompl   = cases.map(_._2)
-    val caseblockss = cases.map(_._3)
-    val blocks = finish(
-        Cf.Switch(scrut,
-                  Next.Label(defaultname, Seq()),
-                  casevals.zip(casenames).map {
-                case (v, n) => Next.Case(v, n)
-              })).blocks
-    Focus(blocks ++ defaultblocks ++ caseblockss.flatten,
-          merge,
-          Seq(param),
-          Seq(),
-          param,
-          isComplete = false)
-  }
-
-  def branchTry(retty: Type,
-                normal: Focus => Focus,
-                exc: (Val, Focus) => Focus): Focus = {
-    val merge    = fresh()
-    val excparam = Val.Local(fresh(), Rt.Object)
-    val param    = Val.Local(fresh(), retty)
-
-    val (normname, normcompl, normblocks) = wrapBranch(merge, normal)
-    val (excname, exccompl, excblocks) =
-      wrapBranch(merge, exc(excparam, _), Seq(excparam))
-    val blocks = finish(Cf.Try(Next.Succ(normname), Next.Fail(excname))).blocks
-
-    if (normcompl && exccompl)
-      Focus.complete(blocks ++ normblocks ++ excblocks)
-    else
-      Focus(blocks ++ normblocks ++ excblocks,
-            merge,
-            Seq(param),
-            Seq(),
-            param,
-            isComplete = false)
-  }
-
-  def branchBlock(name: Local,
-                  params: Seq[Val.Local],
-                  values: Seq[Val]): Focus = {
-    val blocks = finish(Cf.Jump(Next.Label(name, values))).blocks
-    Focus.entry(name, params).prependBlocks(blocks)
+  def withInst(inst: Inst): Focus = inst match {
+    case _: Inst.Label =>
+      if (_labeled) {
+        copy(_labeled = true, _insts = _insts :+ Inst.Unreachable :+ inst)
+      } else {
+        copy(_labeled = true, _insts = _insts :+ inst)
+      }
+    case _: Inst.Cf =>
+      if (_labeled) {
+        copy(_labeled = false, _insts = _insts :+ inst)
+      } else {
+        val label = Inst.Label(fresh(), Seq())
+        copy(_labeled = false, _insts = _insts :+ label :+ inst)
+      }
+    case _ =>
+      if (_labeled) {
+        copy(_labeled = true, _insts = _insts :+ inst)
+      } else {
+        val label = Inst.Label(fresh(), Seq())
+        copy(_labeled = true, _insts = _insts :+ label :+ inst)
+      }
   }
 }
+
 object Focus {
-  final case class NotMergeable(focus: Focus) extends Exception
-  private val empty = Local("", -1)
-
-  def entry(implicit fresh: Fresh): Focus =
-    entry(fresh(), Seq())
-
-  def entry(params: Seq[Val.Local])(implicit fresh: Fresh): Focus =
-    entry(fresh(), params)
-
-  def entry(name: Local, params: Seq[Val.Local])(
-      implicit fresh: Fresh): Focus =
-    Focus(Seq(), name, params, Seq(), Val.Unit, isComplete = false)
-
-  def complete(blocks: Seq[Block])(implicit fresh: Fresh) =
-    Focus(blocks, empty, Seq(), Seq(), Val.Unit, isComplete = true)
+  def start()(implicit fresh: Fresh) = new Focus()
 
   def sequenced[T](elems: Seq[T], focus: Focus)(
       f: (T, Focus) => Focus): Seq[Focus] = {
@@ -158,5 +92,18 @@ object Focus {
       efoc
     }
     focs.toSeq
+  }
+
+  def merged(ty: nir.Type, focus: Focus, branches: Seq[Focus => Focus])(
+      implicit fresh: Fresh): Focus = {
+    val mergen = fresh()
+    var lastfocus = focus
+    branches.foreach { branch =>
+      lastfocus = branch(lastfocus)
+      lastfocus = lastfocus.withJump(mergen, lastfocus.value)
+    }
+
+    val mergev = Val.Local(fresh(), ty)
+    lastfocus.withLabel(mergen, mergev).withValue(mergev)
   }
 }

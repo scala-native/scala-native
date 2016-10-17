@@ -3,14 +3,14 @@ package compiler
 package pass
 
 import scala.collection.mutable
-import util.ScopedVar, ScopedVar.scoped
+import util.unsupported
 import nir._
 
 /** Translates high-level closures to corresponding class allocation. */
 class ClosureLowering extends Pass {
   override def preInst = {
-    case Inst(_, _: Op.Closure) =>
-      ???
+    case inst @ Inst.Let(_, _: Op.Closure) =>
+      unsupported(inst)
   }
 }
 

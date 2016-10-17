@@ -7,7 +7,7 @@ import java.{lang => jl}
 import scala.collection.mutable
 import util.{Show, sh, unreachable, unsupported}
 import util.Show.{Indent => i, Newline => nl, Repeat => r, Sequence => s, Unindent => ui}
-import compiler.analysis.ControlFlow
+import compiler.analysis.ControlFlow.{Graph => CFG, Block, Edge}
 import nir.Shows.brace
 import nir._
 
@@ -80,10 +80,10 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
   def showFunctionDefn(attrs: Attrs,
                        name: Global,
                        sig: Type,
-                       blocks: Seq[Block]) = {
+                       insts: Seq[Inst]) = {
     val Type.Function(argtys, retty) = sig
 
-    val isDecl  = blocks.isEmpty
+    val isDecl  = insts.isEmpty
     val keyword = if (isDecl) "declare" else "define"
 
     def showDefnArg(arg: Arg,
@@ -113,8 +113,11 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
     val (params, preInstrs) =
       if (isDecl) (r(argtys.map(showDeclArg), sep = ", "), Seq())
       else {
-        val results =
-          (argtys zip blocks.head.params).map((showDefnArg _).tupled)
+        val params = insts.head match {
+          case Inst.Label(_, params) => params
+          case _                     => unreachable
+        }
+        val results = (argtys zip params).map((showDefnArg _).tupled)
         (r(results.map(_._1), sep = ", "), results.flatMap(_._2))
       }
     val postattrs: Seq[Attr] =
@@ -123,11 +126,10 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
     val body =
       if (isDecl) s()
       else {
-        implicit val cfg = ControlFlow(blocks)
-        val showblocks = cfg.map { node =>
-          val isEntry = node eq cfg.entry
-          showBlock(node.block,
-                    node.pred,
+        implicit val cfg = CFG(insts)
+        val showblocks = cfg.map { block =>
+          val isEntry = block eq cfg.entry
+          showBlock(block,
                     isEntry = isEntry,
                     if (isEntry) r(preInstrs.map(nl)) else s())
         }
@@ -137,19 +139,16 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
     sh"$keyword $retty @$name($params)$postattrs$personality$body"
   }
 
-  def showBlock(block: Block,
-                pred: Seq[ControlFlow.Edge],
-                isEntry: Boolean,
-                preInstructions: Show.Result)(
-      implicit cfg: ControlFlow.Graph): Show.Result = {
-    val Block(name, params, insts, cf) = block
+  def showBlock(block: Block, isEntry: Boolean, preInstructions: Show.Result)(
+      implicit cfg: CFG): Show.Result = {
+    val Block(name, params, insts) = block
 
-    val body  = r(showInsts(insts, block.cf).map(i(_)))
+    val body  = r(showInsts(insts).map(i(_)))
     val label = sh"${block.name}:"
     val prologue: Show.Result =
       if (isEntry) s()
       else {
-        val shows = pred match {
+        val shows = block.pred match {
           case ExSucc(branches) =>
             params.zipWithIndex.map {
               case (Val.Local(name, ty), n) =>
@@ -263,97 +262,43 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
     case Local(scope, id) => sh"$scope.$id"
   }
 
-  def showInsts(insts: Seq[Inst], cf: Cf)(
-      implicit cfg: ControlFlow.Graph): Seq[Show.Result] = {
+  def showInsts(insts: Seq[Inst])(implicit cfg: CFG): Seq[Show.Result] = {
     val buf = mutable.UnrolledBuffer.empty[Show.Result]
-    def isVoid(ty: Type): Boolean =
-      ty == Type.Void || ty == Type.Unit || ty == Type.Nothing
+    insts.foreach(showInst(buf, _))
+    buf.toSeq
+  }
 
-    def showCallArgs(args: Seq[Arg],
-                     vals: Seq[Val]): (Seq[Show.Result], Seq[Show.Result]) = {
-      val res = args.map(Some(_)).zipAll(vals, None, Val.None) map {
-        case (_, Val.None) => (Seq.empty, Seq.empty)
-        case (Some(Arg(Type.Ptr, Some(PassConv.Byval(pointee)))), v) =>
-          val bitcasted = fresh()
-          (Seq(sh"%$bitcasted = bitcast $v to $pointee*"),
-           Seq(sh"$pointee* %$bitcasted"))
-        case (Some(Arg(Type.Ptr, Some(PassConv.Sret(pointee)))), v) =>
-          val bitcasted = fresh()
-          (Seq(sh"%$bitcasted = bitcast $v to $pointee*"),
-           Seq(sh"$pointee* %$bitcasted"))
-        case (Some(Arg(_, None)) | None, v) => (Seq(), Seq(sh"$v"))
-        case _                              => unsupported()
-      }
-      (res.flatMap(_._1), res.flatMap(_._2))
-    }
+  def showInst(buf: mutable.UnrolledBuffer[Show.Result], inst: Inst)(
+      implicit cfg: CFG): Unit =
+    inst match {
+      case _: Inst.Label =>
+        unreachable
 
-    insts.foreach { inst =>
-      val op   = inst.op
-      val name = inst.name
-      val bind = if (isVoid(op.resty)) s() else sh"%$name = "
+      case inst: Inst.Let =>
+        showLet(buf, inst)
 
-      op match {
-        case Op.Call(ty, Val.Global(pointee, _), args) =>
-          val bind = if (isVoid(op.resty)) s() else sh"%$name = "
+      case Inst.Unreachable =>
+        buf += sh"unreachable"
 
-          val Type.Function(argtys, _) = ty
+      case Inst.Ret(Val.None) =>
+        buf += sh"ret void"
 
-          val (preinsts, argshows) = showCallArgs(argtys, args)
+      case Inst.Ret(value) =>
+        buf += sh"ret $value"
 
-          buf ++= preinsts
-          buf += sh"${bind}call ${ty: Type} @$pointee(${r(argshows, sep = ", ")})"
+      case Inst.Jump(next) =>
+        buf += sh"br $next"
 
-        case Op.Call(ty, ptr, args) =>
-          val pointee = fresh()
-          val bind    = if (isVoid(op.resty)) s() else sh"%$name = "
+      case Inst.If(cond, thenp, elsep) =>
+        buf += sh"br $cond, $thenp, $elsep"
 
-          val Type.Function(argtys, _) = ty
+      case Inst.Switch(scrut, default, cases) =>
+        buf += sh"switch $scrut, $default [${r(cases.map(i(_)))}${nl("]")}"
 
-          val (preinsts, argshows) = showCallArgs(argtys, args)
-
-          buf ++= preinsts
-          buf += sh"%$pointee = bitcast $ptr to $ty*"
-          buf += sh"${bind}call ${ty: Type} %$pointee(${r(argshows, sep = ", ")})"
-
-        case Op.Load(ty, ptr) =>
-          val pointee = fresh()
-
-          buf += sh"%$pointee = bitcast $ptr to $ty*"
-          buf += sh"${bind}load $ty, $ty* %$pointee"
-
-        case Op.Store(ty, ptr, value) =>
-          val pointee = fresh()
-
-          buf += sh"%$pointee = bitcast $ptr to $ty*"
-          buf += sh"${bind}store $value, $ty* %$pointee"
-
-        case Op.Elem(ty, ptr, indexes) =>
-          val pointee = fresh()
-          val derived = fresh()
-
-          buf += sh"%$pointee = bitcast $ptr to $ty*"
-          buf +=
-          sh"%$derived = getelementptr $ty, $ty* %$pointee, ${r(indexes, sep = ", ")}"
-          buf +=
-          sh"${bind}bitcast ${ty.elemty(indexes.tail)}* %$derived to i8*"
-
-        case Op.Stackalloc(ty, n) =>
-          val pointee = fresh()
-          val elems   = if (n == Val.None) sh"" else sh", $n"
-
-          buf += sh"%$pointee = alloca $ty$elems"
-          buf += sh"${bind}bitcast $ty* %$pointee to i8*"
-
-        case _ =>
-          buf += sh"${bind}$op"
-      }
-    }
-
-    cf match {
-      case Cf.Invoke(ty, Val.Global(pointee, _), args, succ, fail) =>
+      case Inst.Invoke(ty, Val.Global(pointee, _), args, succ, fail) =>
         val Type.Function(_, resty) = ty
 
-        val name = cfg.nodes(succ.name).block.params.headOption.map(_.name)
+        val name = cfg.find(succ.name).params.headOption.map(_.name)
         val bind = name.fold(sh"") { name =>
           sh"%$name.succ = "
         }
@@ -361,10 +306,10 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
         buf +=
         sh"${bind}invoke $ty @$pointee(${r(args, sep = ", ")}) to $succ unwind $fail"
 
-      case Cf.Invoke(ty, ptr, args, succ, fail) =>
+      case Inst.Invoke(ty, ptr, args, succ, fail) =>
         val Type.Function(_, resty) = ty
 
-        val name = cfg.nodes(succ.name).block.params.headOption.map(_.name)
+        val name = cfg.find(succ.name).params.headOption.map(_.name)
         val bind = name.fold(sh"") { name =>
           sh"%$name.succ = "
         }
@@ -374,30 +319,94 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
         buf +=
         sh"${bind}invoke $ty %$pointee(${r(args, sep = ", ")}) to $succ unwind $fail"
 
-      case _ =>
-        buf += sh"$cf"
+      case Inst.None =>
+        ()
+
+      case cf =>
+        unsupported(cf)
     }
 
-    buf.toSeq
+  def showCallArgs(args: Seq[Arg],
+                   vals: Seq[Val]): (Seq[Show.Result], Seq[Show.Result]) = {
+    val res = args.map(Some(_)).zipAll(vals, None, Val.None) map {
+      case (_, Val.None) => (Seq.empty, Seq.empty)
+      case (Some(Arg(Type.Ptr, Some(PassConv.Byval(pointee)))), v) =>
+        val bitcasted = fresh()
+        (Seq(sh"%$bitcasted = bitcast $v to $pointee*"),
+         Seq(sh"$pointee* %$bitcasted"))
+      case (Some(Arg(Type.Ptr, Some(PassConv.Sret(pointee)))), v) =>
+        val bitcasted = fresh()
+        (Seq(sh"%$bitcasted = bitcast $v to $pointee*"),
+         Seq(sh"$pointee* %$bitcasted"))
+      case (Some(Arg(_, None)) | None, v) => (Seq(), Seq(sh"$v"))
+      case _                              => unsupported()
+    }
+    (res.flatMap(_._1), res.flatMap(_._2))
   }
 
-  implicit def showCf(implicit cfg: ControlFlow.Graph): Show[Cf] = Show {
-    case Cf.Unreachable =>
-      "unreachable"
-    case Cf.Ret(Val.None) =>
-      sh"ret void"
-    case Cf.Ret(value) =>
-      sh"ret $value"
-    case Cf.Jump(next) =>
-      sh"br $next"
-    case Cf.If(cond, thenp, elsep) =>
-      sh"br $cond, $thenp, $elsep"
-    case Cf.Switch(scrut, default, cases) =>
-      sh"switch $scrut, $default [${r(cases.map(i(_)))}${nl("]")}"
-    case Cf.Invoke(ty, f, args, succ, fail) =>
-      unreachable
-    case cf =>
-      unsupported(cf)
+  def showLet(buf: mutable.UnrolledBuffer[Show.Result], inst: Inst.Let): Unit = {
+    def isVoid(ty: Type): Boolean =
+      ty == Type.Void || ty == Type.Unit || ty == Type.Nothing
+
+    val op   = inst.op
+    val name = inst.name
+    val bind = if (isVoid(op.resty)) s() else sh"%$name = "
+
+    op match {
+      case Op.Call(ty, Val.Global(pointee, _), args) =>
+        val bind = if (isVoid(op.resty)) s() else sh"%$name = "
+
+        val Type.Function(argtys, _) = ty
+
+        val (preinsts, argshows) = showCallArgs(argtys, args)
+
+        buf ++= preinsts
+        buf += sh"${bind}call ${ty: Type} @$pointee(${r(argshows, sep = ", ")})"
+
+      case Op.Call(ty, ptr, args) =>
+        val pointee = fresh()
+        val bind    = if (isVoid(op.resty)) s() else sh"%$name = "
+
+        val Type.Function(argtys, _) = ty
+
+        val (preinsts, argshows) = showCallArgs(argtys, args)
+
+        buf ++= preinsts
+        buf += sh"%$pointee = bitcast $ptr to $ty*"
+        buf += sh"${bind}call ${ty: Type} %$pointee(${r(argshows, sep = ", ")})"
+
+      case Op.Load(ty, ptr) =>
+        val pointee = fresh()
+
+        buf += sh"%$pointee = bitcast $ptr to $ty*"
+        buf += sh"${bind}load $ty, $ty* %$pointee"
+
+      case Op.Store(ty, ptr, value) =>
+        val pointee = fresh()
+
+        buf += sh"%$pointee = bitcast $ptr to $ty*"
+        buf += sh"${bind}store $value, $ty* %$pointee"
+
+      case Op.Elem(ty, ptr, indexes) =>
+        val pointee = fresh()
+        val derived = fresh()
+
+        buf += sh"%$pointee = bitcast $ptr to $ty*"
+        buf +=
+        sh"%$derived = getelementptr $ty, $ty* %$pointee, ${r(indexes, sep = ", ")}"
+        buf +=
+        sh"${bind}bitcast ${ty.elemty(indexes.tail)}* %$derived to i8*"
+
+      case Op.Stackalloc(ty, n) =>
+        val pointee = fresh()
+        val elems   = if (n == Val.None) sh"" else sh", $n"
+
+        buf += sh"%$pointee = alloca $ty$elems"
+        buf += sh"${bind}bitcast $ty* %$pointee to i8*"
+
+      case _ =>
+        buf += sh"${bind}$op"
+    }
   }
 
   implicit val showOp: Show[Op] = Show {
@@ -461,29 +470,28 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
   implicit def showAttrSeq: Show[Seq[Attr]] = nir.Shows.showAttrSeq
 
   private object ExSucc {
-    def unapply(edges: Seq[ControlFlow.Edge])
-      : Option[Seq[(Local, Seq[Show.Result])]] = {
+    def unapply(edges: Seq[Edge]): Option[Seq[(Local, Seq[Show.Result])]] = {
       Some(edges.map {
-        case ControlFlow.Edge(from, to, _: Next.Succ) =>
-          val succ = to.block.params.headOption.map { p =>
+        case Edge(from, to, _: Next.Succ) =>
+          val succ = to.params.headOption.map { p =>
             sh"%${p.name}.succ"
           }
-          (from.block.name, succ.toSeq)
-        case ControlFlow.Edge(from, _, _: Next.Case) =>
-          (from.block.name, Seq())
-        case ControlFlow.Edge(from, _, Next.Label(_, vals)) =>
-          (from.block.name, vals.map(justVal))
-        case ControlFlow.Edge(_, _, _: Next.Fail) =>
+          (from.name, succ.toSeq)
+        case Edge(from, _, _: Next.Case) =>
+          (from.name, Seq())
+        case Edge(from, _, Next.Label(_, vals)) =>
+          (from.name, vals.map(justVal))
+        case Edge(_, _, _: Next.Fail) =>
           return None
       })
     }
   }
 
   private object ExFail {
-    def unapply(edges: Seq[ControlFlow.Edge]): Boolean =
+    def unapply(edges: Seq[Edge]): Boolean =
       edges.forall {
-        case ControlFlow.Edge(_, _, _: Next.Fail) => true
-        case _                                    => false
+        case Edge(_, _, _: Next.Fail) => true
+        case _                        => false
       }
   }
 }

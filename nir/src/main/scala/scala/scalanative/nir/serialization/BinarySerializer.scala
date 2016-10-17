@@ -96,33 +96,60 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Bin.Xor  => putInt(T.XorBin)
   }
 
-  private def putBlocks(blocks: Seq[Block]) = putSeq(blocks)(putBlock)
-  private def putBlock(block: Block) = {
-    putLocal(block.name)
-    putParams(block.params)
-    putInsts(block.insts)
-    putCf(block.cf)
-  }
+  private def putInsts(insts: Seq[Inst]) = putSeq(insts)(putInst)
+  private def putInst(cf: Inst) = cf match {
+    case Inst.None =>
+      putInt(T.NoneInst)
 
-  private def putCf(cf: Cf) = cf match {
-    case Cf.Unreachable =>
-      putInt(T.UnreachableCf)
-    case Cf.Ret(v) =>
-      putInt(T.RetCf); putVal(v)
-    case Cf.Jump(next) =>
-      putInt(T.JumpCf); putNext(next)
-    case Cf.If(v, thenp, elsep) =>
-      putInt(T.IfCf); putVal(v); putNext(thenp); putNext(elsep)
-    case Cf.Switch(v, default, cases) =>
-      putInt(T.SwitchCf); putVal(v); putNext(default); putNexts(cases)
-    case Cf.Invoke(ty, f, args, succ, fail) =>
-      putInt(T.InvokeCf); putType(ty); putVal(f); putVals(args); putNext(succ);
+    case Inst.Label(name, params) =>
+      putInt(T.LabelInst)
+      putLocal(name)
+      putParams(params)
+
+    case Inst.Let(name, op) =>
+      putInt(T.LetInst)
+      putLocal(name)
+      putOp(op)
+
+    case Inst.Unreachable =>
+      putInt(T.UnreachableInst)
+
+    case Inst.Ret(v) =>
+      putInt(T.RetInst)
+      putVal(v)
+
+    case Inst.Jump(next) =>
+      putInt(T.JumpInst)
+      putNext(next)
+
+    case Inst.If(v, thenp, elsep) =>
+      putInt(T.IfInst)
+      putVal(v)
+      putNext(thenp)
+      putNext(elsep)
+
+    case Inst.Switch(v, default, cases) =>
+      putInt(T.SwitchInst)
+      putVal(v)
+      putNext(default)
+      putNexts(cases)
+
+    case Inst.Invoke(ty, f, args, succ, fail) =>
+      putInt(T.InvokeInst)
+      putType(ty)
+      putVal(f)
+      putVals(args)
+      putNext(succ)
       putNext(fail)
 
-    case Cf.Throw(v) =>
-      putInt(T.ThrowCf); putVal(v)
-    case Cf.Try(norm, exc) =>
-      putInt(T.TryCf); putNext(norm); putNext(exc)
+    case Inst.Throw(v) =>
+      putInt(T.ThrowInst)
+      putVal(v)
+
+    case Inst.Try(norm, exc) =>
+      putInt(T.TryInst)
+      putNext(norm)
+      putNext(exc)
   }
 
   private def putComp(comp: Comp) = comp match {
@@ -181,12 +208,12 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putGlobal(name)
       putType(ty)
 
-    case Defn.Define(attrs, name, ty, blocks) =>
+    case Defn.Define(attrs, name, ty, insts) =>
       putInt(T.DefineDefn)
       putAttrs(attrs)
       putGlobal(name)
       putType(ty)
-      putBlocks(blocks)
+      putInsts(insts)
 
     case Defn.Struct(attrs, name, members) =>
       putInt(T.StructDefn)
@@ -224,12 +251,6 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Global.Top(id) => putInt(T.TopGlobal); putString(id)
     case Global.Member(n, id) =>
       putInt(T.MemberGlobal); putGlobal(n); putString(id)
-  }
-
-  private def putInsts(insts: Seq[Inst]) = putSeq(insts)(putInst)
-  private def putInst(inst: Inst) = {
-    putLocal(inst.name)
-    putOp(inst.op)
   }
 
   private def putLocal(local: Local): Unit = {

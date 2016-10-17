@@ -5,7 +5,7 @@ package pass
 import scala.collection.mutable
 import scala.annotation.tailrec
 import util.ScopedVar, ScopedVar.scoped
-import nir._
+import nir._, Inst.Let
 
 /** Propagates all copies down the use chain.
  *
@@ -22,16 +22,14 @@ import nir._
 class CopyPropagation extends Pass {
   private var locals: mutable.Map[Local, Val] = _
 
-  private def collect(blocks: Seq[Block]): mutable.Map[Local, Val] = {
+  private def collect(insts: Seq[Inst]): mutable.Map[Local, Val] = {
     val copies = mutable.Map.empty[Local, Val]
 
-    blocks.foreach { b =>
-      b.insts.foreach {
-        case Inst(n, Op.Copy(v)) =>
-          copies(n) = v
-        case inst =>
-          ()
-      }
+    insts.foreach {
+      case Let(n, Op.Copy(v)) =>
+        copies(n) = v
+      case inst =>
+        ()
     }
 
     copies
@@ -39,12 +37,12 @@ class CopyPropagation extends Pass {
 
   override def preDefn = {
     case defn: Defn.Define =>
-      locals = collect(defn.blocks)
+      locals = collect(defn.insts)
       Seq(defn)
   }
 
   override def preInst = {
-    case Inst(_, _: Op.Copy) =>
+    case Let(_, _: Op.Copy) =>
       Seq()
   }
 
