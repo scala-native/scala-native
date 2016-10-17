@@ -1,6 +1,6 @@
 package java.lang.reflect
 
-import scalanative.runtime._
+import scalanative.runtime.{Array => _, _}
 import java.lang._Class
 
 object Array {
