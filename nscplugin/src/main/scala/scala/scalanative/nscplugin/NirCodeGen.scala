@@ -346,7 +346,7 @@ abstract class NirCodeGen
         else Seq()
       })
 
-    def genMethodSigParams(sym: Symbol, params: Seq[Symbol]): Seq[nir.Type] = {
+    def genMethodSigParams(sym: Symbol): Seq[nir.Type] = {
       val wereRepeated = exitingPhase(currentRun.typerPhase) {
         for {
           params <- sym.tpe.paramss
@@ -356,7 +356,7 @@ abstract class NirCodeGen
         }
       }.toMap
 
-      params.map {
+      sym.tpe.params.map {
         case p
             if wereRepeated.getOrElse(p.name, false) &&
             isExternModule(sym.owner) =>
@@ -368,30 +368,21 @@ abstract class NirCodeGen
     }
 
     def genMethodSig(
-        sym: Symbol, forceStatic: Boolean = false): nir.Type.Function =
-      sym match {
-        case sym: ModuleSymbol =>
-          val MethodType(params, res) = sym.tpe
+        sym: Symbol, forceStatic: Boolean = false): nir.Type.Function = {
+      require(sym.isMethod)
 
-          val paramtys = genMethodSigParams(sym, params)
-          val selfty   = genType(sym.owner.tpe)
-          val retty    = genType(res, retty = true)
+      val tpe      = sym.tpe
+      val owner    = sym.owner
+      val paramtys = genMethodSigParams(sym)
+      val selfty   =
+        if (forceStatic || isExternModule(owner) || owner.isImplClass) None
+        else Some(genType(owner.tpe))
+      val retty =
+        if (sym.isClassConstructor) Type.Unit
+        else genType(sym.tpe.resultType, retty = true)
 
-          Type.Function(Seq(Arg(selfty)), retty)
-
-        case sym: MethodSymbol =>
-          val params   = sym.paramLists.flatten
-          val paramtys = genMethodSigParams(sym, params)
-          val owner    = sym.owner
-          val selfty =
-            if (forceStatic || isExternModule(owner) || owner.isImplClass) None
-            else Some(genType(owner.tpe))
-          val retty =
-            if (sym.isClassConstructor) Type.Unit
-            else genType(sym.tpe.resultType, retty = true)
-
-          Type.Function((selfty ++: paramtys).map(Arg(_)), retty)
-      }
+      Type.Function((selfty ++: paramtys).map(Arg(_)), retty)
+    }
 
     def genParams(
         owner: Symbol, dd: DefDef, isStatic: Boolean): Seq[Val.Local] = {
