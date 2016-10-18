@@ -1,4 +1,5 @@
 #include <gc.h>
+#include "gc.h"
 
 // At the moment we rely on the conservative
 // mode of Boehm GC as our garbage collector.
