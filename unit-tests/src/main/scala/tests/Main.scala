@@ -9,6 +9,7 @@ object Main {
       java.lang.FloatSuite,
       java.lang.DoubleSuite,
       java.util.RandomSuite,
+      scala.scalanative.issues._337,
       scala.scalanative.native.CStringSuite,
       scala.scalanative.native.CInteropSuite,
       scala.ArrayIntCopySuite,
