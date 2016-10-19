@@ -5,8 +5,7 @@ package pass
 import scala.collection.mutable
 import nir._
 
-/** Eliminates:
- *  - Val.Const
+/** Maps const values to top-level deduplicated constants.
  */
 class ConstLowering extends Pass {
   private val consts = mutable.UnrolledBuffer.empty[Val]

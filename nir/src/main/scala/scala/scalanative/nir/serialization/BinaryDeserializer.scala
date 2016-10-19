@@ -112,19 +112,22 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
     case T.XorBin  => Bin.Xor
   }
 
-  private def getBlocks(): Seq[Block] = getSeq(getBlock)
-  private def getBlock(): Block       = Block(getLocal, getParams, getInsts, getCf)
+  private def getInsts(): Seq[Inst] = getSeq(getInst)
+  private def getInst(): Inst = getInt match {
+    case T.NoneInst  => Inst.None
+    case T.LabelInst => Inst.Label(getLocal, getParams)
+    case T.LetInst   => Inst.Let(getLocal, getOp)
 
-  private def getCf(): Cf = getInt match {
-    case T.UnreachableCf => Cf.Unreachable
-    case T.RetCf         => Cf.Ret(getVal)
-    case T.JumpCf        => Cf.Jump(getNext)
-    case T.IfCf          => Cf.If(getVal, getNext, getNext)
-    case T.SwitchCf      => Cf.Switch(getVal, getNext, getNexts)
-    case T.InvokeCf      => Cf.Invoke(getType, getVal, getVals, getNext, getNext)
+    case T.UnreachableInst => Inst.Unreachable
+    case T.RetInst         => Inst.Ret(getVal)
+    case T.JumpInst        => Inst.Jump(getNext)
+    case T.IfInst          => Inst.If(getVal, getNext, getNext)
+    case T.SwitchInst      => Inst.Switch(getVal, getNext, getNexts)
+    case T.InvokeInst =>
+      Inst.Invoke(getType, getVal, getVals, getNext, getNext)
 
-    case T.ThrowCf => Cf.Throw(getVal)
-    case T.TryCf   => Cf.Try(getNext, getNext)
+    case T.ThrowInst => Inst.Throw(getVal)
+    case T.TryInst   => Inst.Try(getNext, getNext)
   }
 
   private def getComp(): Comp = getInt match {
@@ -174,7 +177,7 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
       Defn.Declare(getAttrs, getGlobal, getType)
 
     case T.DefineDefn =>
-      Defn.Define(getAttrs, getGlobal, getType, getBlocks)
+      Defn.Define(getAttrs, getGlobal, getType, getInsts)
 
     case T.StructDefn =>
       Defn.Struct(getAttrs, getGlobal, getTypes)
@@ -204,9 +207,6 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
     case T.TopGlobal    => Global.Top(getString)
     case T.MemberGlobal => Global.Member(getGlobal, getString)
   }
-
-  private def getInsts(): Seq[Inst] = getSeq(getInst)
-  private def getInst(): Inst       = Inst(getLocal, getOp)
 
   private def getLocal(): Local = Local(getString, getInt)
 

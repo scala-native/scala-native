@@ -3,7 +3,7 @@ package compiler
 package pass
 
 import util.{unreachable, ScopedVar}, ScopedVar.scoped
-import nir._
+import nir._, Inst.Let
 
 /** Eliminates returns of Unit values and replaces them with void. */
 class UnitLowering(implicit fresh: Fresh) extends Pass {
@@ -12,21 +12,20 @@ class UnitLowering(implicit fresh: Fresh) extends Pass {
   private var defnRetty: Type = _
 
   override def preInst = {
-    case inst @ Inst(n, op) if op.resty == Type.Unit =>
+    case inst @ Let(n, op) if op.resty == Type.Unit =>
       Seq(
-          Inst(op),
-          Inst(n, Op.Copy(Val.Unit))
+          Let(op),
+          Let(n, Op.Copy(Val.Unit))
       )
+
+    case Inst.Ret(_) if defnRetty == Type.Unit =>
+      Seq(Inst.Ret(Val.None))
   }
 
   override def preDefn = {
     case defn @ Defn.Define(_, _, Type.Function(_, retty), blocks) =>
       defnRetty = retty
       Seq(defn)
-  }
-
-  override def preCf = {
-    case Cf.Ret(_) if defnRetty == Type.Unit => Cf.Ret(Val.None)
   }
 
   override def preVal = {

@@ -6,6 +6,7 @@ import scala.collection.mutable
 import ClassHierarchy.Top
 import ClassHierarchyExtractors._
 import nir._
+import util.unreachable
 
 object UseDef {
   final case class Def(name: Local,
@@ -29,41 +30,33 @@ object UseDef {
     }
   }
 
-  private def deps(inst: Inst): Seq[Local] = {
-    val collect = new CollectLocalValDeps
-    collect(inst)
-    collect.deps.distinct
+  private def collect(inst: Inst): Seq[Local] = {
+    val collector = new CollectLocalValDeps
+    collector(inst)
+    collector.deps.distinct
   }
 
-  private def deps(cf: Cf): Seq[Local] = {
-    val collect = new CollectLocalValDeps
-    collect(cf)
-    collect.deps.distinct
-  }
-
-  private def isPure(op: Op)(implicit top: Top) = op match {
-    case Op.Call(_, Val.Global(Ref(node), _), _) =>
+  private def isPure(inst: Inst)(implicit top: Top) = inst match {
+    case Inst.Let(_, Op.Call(_, Val.Global(Ref(node), _), _)) =>
       node.attrs.isPure
-
-    case Op.Module(Ref(node)) =>
+    case Inst.Let(_, Op.Module(Ref(node))) =>
       node.attrs.isPure
-
-    case _: Op.Pure =>
+    case Inst.Let(_, _: Op.Pure) =>
       true
-
     case _ =>
       false
   }
 
-  def apply(blocks: Seq[Block])(implicit top: Top): Map[Local, Def] = {
-    val defs = mutable.Map.empty[Local, Def]
+  def apply(cfg: ControlFlow.Graph)(implicit top: Top): Map[Local, Def] = {
+    val defs   = mutable.Map.empty[Local, Def]
+    val blocks = cfg.all
 
-    def enterDef(n: Local) = {
+    def enter(n: Local) = {
       val deps = mutable.UnrolledBuffer.empty[Def]
       val uses = mutable.UnrolledBuffer.empty[Def]
       defs += ((n, Def(n, deps, uses)))
     }
-    def enterDeps(n: Local, deps: Seq[Local]) = {
+    def deps(n: Local, deps: Seq[Local]) = {
       val ndef = defs(n)
       deps.foreach { dep =>
         val ddef = defs(dep)
@@ -71,41 +64,41 @@ object UseDef {
         ndef.deps += ddef
       }
     }
-    def alive(n: Local): Unit = aliveDef(defs(n))
-    def aliveDef(ndef: Def): Unit =
+    def alive(ndef: Def): Unit =
       if (!ndef.alive) {
         ndef.alive = true
-        ndef.deps.foreach(aliveDef)
+        ndef.deps.foreach(alive)
       }
 
     // enter definitions
     blocks.foreach { block =>
-      enterDef(block.name)
+      enter(block.name)
       block.params.foreach { param =>
-        enterDef(param.name)
+        enter(param.name)
       }
       block.insts.foreach {
-        case Inst(n, _) => enterDef(n)
-        case _          => ()
+        case Inst.Let(n, _) => enter(n)
+        case _              => ()
       }
     }
 
     // enter deps & uses
     blocks.foreach { block =>
       block.insts.foreach {
-        case inst @ Inst(n, _) => enterDeps(n, deps(inst))
+        case inst: Inst.Let =>
+          deps(inst.name, collect(inst))
+          if (!isPure(inst)) deps(block.name, Seq(inst.name))
+        case inst: Inst.Cf =>
+          deps(block.name, collect(inst))
+        case Inst.None =>
+          ()
+        case inst =>
+          unreachable
       }
-      enterDeps(block.name, deps(block.cf))
     }
 
     // trace live code
-    blocks.foreach { block =>
-      block.insts.foreach {
-        case Inst(n, op) =>
-          if (!isPure(op)) alive(n)
-      }
-      deps(block.cf).foreach(alive)
-    }
+    alive(defs(cfg.entry.name))
 
     defs.toMap
   }

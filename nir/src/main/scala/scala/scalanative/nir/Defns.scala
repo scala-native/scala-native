@@ -15,7 +15,7 @@ object Defn {
   final case class Define(attrs: Attrs,
                           name: Global,
                           ty: Type,
-                          blocks: Seq[Block])
+                          insts: Seq[Inst])
       extends Defn
   final case class Struct(attrs: Attrs, name: Global, tys: Seq[Type])
       extends Defn

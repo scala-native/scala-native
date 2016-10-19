@@ -20,8 +20,8 @@ object Versions {
    * when 1.3-based release happens all of the code needs to recompiled with
    * new version of the toolchain.
    */
-  final val compat: Int   = 5
-  final val revision: Int = 6
+  final val compat: Int   = 6
+  final val revision: Int = 7
 
   /* Current public release version of Scala Native. */
   final val current: String = "0.1-SNAPSHOT"

@@ -7,17 +7,16 @@ import compiler.analysis.ControlFlow
 import util.unreachable
 import nir._
 
-/** Eliminates:
- *  - Cf.Throw
- */
+/** Lowers throw terminator into calls to runtime's throw. */
 class ThrowLowering(implicit fresh: Fresh) extends Pass {
   import ThrowLowering._
 
-  override def preBlock = {
-    case block @ Block(_, _, insts, Cf.Throw(v)) =>
+  override def preInst = {
+    case Inst.Throw(v) =>
       Seq(
-          block.copy(insts = insts :+ Inst(Op.Call(throwSig, throw_, Seq(v))),
-                     cf = Cf.Unreachable))
+          Inst.Let(Op.Call(throwSig, throw_, Seq(v))),
+          Inst.Unreachable
+      )
   }
 }
 

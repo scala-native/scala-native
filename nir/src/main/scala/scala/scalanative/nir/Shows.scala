@@ -35,26 +35,6 @@ object Shows {
     case Attr.PinIf(name, cond) => sh"pin-if($name, $cond)"
   }
 
-  implicit val showBlock: Show[Block] = Show { block =>
-    import block._
-    val paramlist =
-      if (params.isEmpty) sh""
-      else {
-        val paramshows = params.map {
-          case Val.Local(n, ty) => sh"$n: $ty"
-        }
-        sh"(${r(paramshows, sep = ", ")})"
-      }
-    val header    = sh"$name$paramlist:"
-    val instshows = insts.map(i => sh"$i") :+ sh"$cf"
-    val body      = i(r(instshows, sep = nl("")))
-    sh"$header$body"
-  }
-
-  implicit val showInst: Show[Inst] = Show {
-    case Inst(name, op) => sh"$name = $op"
-  }
-
   implicit val showNext: Show[Next] = Show {
     case Next.Label(name, Seq()) =>
       sh"$name"
@@ -68,26 +48,41 @@ object Shows {
       sh"case $value => $name"
   }
 
-  implicit val showCf: Show[Cf] = Show {
-    case Cf.Unreachable =>
+  implicit val showInst: Show[Inst] = Show {
+    case Inst.None =>
+      sh"none"
+    case Inst.Label(name, params) =>
+      val paramlist =
+        if (params.isEmpty) sh""
+        else {
+          val paramshows = params.map {
+            case Val.Local(n, ty) => sh"$n: $ty"
+          }
+          sh"(${r(paramshows, sep = ", ")})"
+        }
+      sh"$name$paramlist:"
+    case Inst.Let(name, op) =>
+      sh"$name = $op"
+
+    case Inst.Unreachable =>
       "unreachable"
-    case Cf.Ret(Val.None) =>
+    case Inst.Ret(Val.None) =>
       sh"ret"
-    case Cf.Ret(value) =>
+    case Inst.Ret(value) =>
       sh"ret $value"
-    case Cf.Jump(next) =>
+    case Inst.Jump(next) =>
       sh"jump $next"
-    case Cf.If(cond, thenp, elsep) =>
+    case Inst.If(cond, thenp, elsep) =>
       sh"if $cond then $thenp else $elsep"
-    case Cf.Switch(scrut, default, cases) =>
+    case Inst.Switch(scrut, default, cases) =>
       val body = brace(r(cases.map(i(_)) :+ i(sh"default: $default")))
       sh"switch $scrut $body"
-    case Cf.Invoke(ty, f, args, succ, fail) =>
+    case Inst.Invoke(ty, f, args, succ, fail) =>
       sh"invoke[$ty] $f(${r(args, sep = ", ")}) to $succ unwind $fail"
 
-    case Cf.Throw(value) =>
+    case Inst.Throw(value) =>
       sh"throw $value"
-    case Cf.Try(normal, exc) =>
+    case Inst.Try(normal, exc) =>
       sh"try $normal catch $exc"
   }
 
@@ -194,7 +189,7 @@ object Shows {
   }
 
   implicit val showVal: Show[Val] = Show {
-    case Val.None                        => unreachable
+    case Val.None                        => "none"
     case Val.True                        => "true"
     case Val.False                       => "false"
     case Val.Zero(ty)                    => sh"zero[$ty]"
@@ -233,8 +228,11 @@ object Shows {
     case Defn.Declare(attrs, name, ty) =>
       val defn = sh"def $name : $ty"
       sh"$attrs$defn"
-    case Defn.Define(attrs, name, ty, blocks) =>
-      val body = brace(r(blocks.map(i(_))))
+    case Defn.Define(attrs, name, ty, insts) =>
+      val body = brace(r(insts.map {
+        case inst: Inst.Label => i(showInst(inst))
+        case inst             => i(showInst(inst), 2)
+      }))
       val defn = sh"def $name : $ty $body"
       sh"$attrs$defn"
     case Defn.Struct(attrs, name, tys) =>
@@ -257,7 +255,7 @@ object Shows {
   }
 
   implicit val showType: Show[Type] = Show {
-    case Type.None                     => unreachable
+    case Type.None                     => "none"
     case Type.Void                     => "void"
     case Type.Vararg                   => "..."
     case Type.Ptr                      => "ptr"

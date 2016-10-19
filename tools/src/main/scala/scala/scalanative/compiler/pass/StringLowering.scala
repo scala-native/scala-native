@@ -8,11 +8,7 @@ import compiler.analysis.ClassHierarchyExtractors._
 import util.ScopedVar, ScopedVar.scoped
 import nir._
 
-/** Lowers strings values into intrinsified global constants.
- *
- *  Eliminates:
- *  - Val.String
- */
+/** Maps string values to intrinsified global constants. */
 class StringLowering(implicit top: Top) extends Pass {
   import StringLowering._
 
