@@ -8,7 +8,44 @@ import nir._, Inst.Let
 
 /** Translates instance checks to range checks on type ids. */
 class IsLowering(implicit fresh: Fresh, top: Top) extends Pass {
-  override def preInst = {
+
+  override def preInst = eliminateIs
+
+  private def eliminateIs: PartialFunction[Inst, Seq[Inst]] = {
+    case Let(n, Op.Is(_, Val.Zero(_))) =>
+      Seq(Let(n, Op.Copy(Val.False)))
+
+    case isInst @ Let(n, Op.Is(ty, obj)) =>
+      val isNullV = Val.Local(fresh(), Type.Bool)
+      val isIsV   = Val.Local(fresh(), Type.Bool)
+
+      val thenL = fresh()
+      val elseL = fresh()
+      val contL = fresh()
+
+      val thenResultV = Val.Local(fresh(), Type.Bool)
+      val elseResultV = Val.Local(fresh(), Type.Bool)
+
+      Seq(
+          // if
+          Let(isNullV.name,
+              Op.Comp(Comp.Ieq, Type.Ptr, obj, Val.Zero(Type.Ptr))),
+          Inst.If(isNullV, Next(thenL), Next(elseL)),
+          // then
+          Inst.Label(thenL, Seq.empty),
+          Let(thenResultV.name, Op.Copy(Val.False)),
+          Inst.Jump(Next.Label(contL, Seq(thenResultV))),
+          // else
+          Inst.Label(elseL, Seq.empty)) ++
+      doEliminateIs(Let(elseResultV.name, Op.Is(ty, obj))) ++
+      Seq(Inst.Jump(Next.Label(contL, Seq(elseResultV))),
+          // cont
+          Inst.Label(contL, Seq(isIsV)),
+          Let(n, Op.Copy(isIsV)))
+    case other => Seq(other)
+  }
+
+  private def doEliminateIs: PartialFunction[Inst, Seq[Inst]] = {
     case Let(n, Op.Is(ClassRef(cls), obj)) if cls.range.length == 1 =>
       val typeptr = Val.Local(fresh(), Type.Ptr)
 
@@ -53,6 +90,7 @@ class IsLowering(implicit fresh: Fresh, top: Top) extends Pass {
                       Seq(Val.I32(0), id, Val.I32(trt.id)))),
           Let(n, Op.Load(Type.Bool, boolptr))
       )
+    case other => Seq(other)
   }
 }
 
