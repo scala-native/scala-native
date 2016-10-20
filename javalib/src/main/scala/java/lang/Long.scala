@@ -161,15 +161,22 @@ object Long {
     parseLong(s, 10)
 
   @inline def parseLong(s: String, radix: Int): scala.Long = {
-    val length   = s.length()
-    val negative = s.charAt(0) == '-'
-
-    if (s == null || radix > Character.MIN_RADIX ||
+    if (s == null || radix < Character.MIN_RADIX ||
         radix > Character.MAX_RADIX) throw new NumberFormatException(s)
-    if (length == 0) throw new NumberFormatException(s)
-    if (negative && length == 1) throw new NumberFormatException(s)
 
-    parse(s, 1, radix, negative)
+    val length = s.length()
+
+    if (length == 0) throw new NumberFormatException(s)
+
+    val negative    = s.charAt(0) == '-'
+    val hasPlusSign = s.charAt(0) == '+'
+
+    if ((negative || hasPlusSign) && length == 1)
+      throw new NumberFormatException(s)
+
+    val offset = if (negative || hasPlusSign) 1 else 0
+
+    parse(s, offset, radix, negative)
   }
 
   private def parse(s: String,
@@ -177,7 +184,7 @@ object Long {
                     radix: Int,
                     negative: scala.Boolean): scala.Long = {
     val max = MIN_VALUE / radix
-    var result = 0
+    var result = 0L
     var offset = _offset
     val length = s.length()
     while (offset < length) {
