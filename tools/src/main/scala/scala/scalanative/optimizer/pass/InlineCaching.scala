@@ -7,21 +7,17 @@ import scala.io.Source
 import analysis.ClassHierarchy._
 import analysis.ClassHierarchyExtractors._
 import analysis.ControlFlow, ControlFlow.Block
-import scalanative.util.unreachable
 import nir._, Inst.Let
 
 /**
  * Inline caching based on information gathered at runtime.
+ * Transforms polymorphic call sites to a sequence of type tests and static
+ * dispatches. Falls back to virtual dispatch if all type tests fail.
  */
 class InlineCaching(dispatchInfo: Map[String, Seq[Int]],
                     maxCandidates: Int)(implicit fresh: Fresh, top: Top)
     extends Pass {
   import InlineCaching._
-
-  println("#" * 181)
-  println("Dispatch info:")
-  println(dispatchInfo)
-  println("#" * 181)
 
   /**
    * Finds the implementation of `meth` for an instance of `clss`.
@@ -55,6 +51,7 @@ class InlineCaching(dispatchInfo: Map[String, Seq[Int]],
       case _ => None
     }
 
+    // Lookup using the vtable
     lazy val vtable = {
       clss.vtable lift meth.vindex flatMap {
         case v: Val.Global => Some(v.name)
@@ -80,14 +77,14 @@ class InlineCaching(dispatchInfo: Map[String, Seq[Int]],
    *             where we split.
    *
    */
-  private def splitAt(fn: Inst => Boolean)(
-      block: Block): (Block, Let, Block) = {
+  private def splitAt(fn: Inst => Boolean)(block: Block): (Block, Let, Block) = {
     assert(block.insts exists fn)
     val (l0, (x @ Let(name, op)) +: rest) = block.insts span (!fn(_))
 
     val merge = fresh()
     val b0    = block.copy(insts = l0)
-    val b1    = Block(merge, Seq(Val.Local(x.name, op.resty)), rest :+ block.insts.last)
+    val b1 =
+      Block(merge, Seq(Val.Local(x.name, op.resty)), rest :+ block.insts.last)
 
     (b0, x, b1)
   }
@@ -115,12 +112,19 @@ class InlineCaching(dispatchInfo: Map[String, Seq[Int]],
   private def isVirtualDispatch(inst: Inst): Boolean =
     inst match {
       case Let(_, Op.Method(_, MethodRef(_: Class, meth)))
-        if meth.isVirtual =>
+          if meth.isVirtual =>
         true
       case _ =>
         false
     }
 
+  /**
+   * Convert a block to the corresponding sequence of instruction
+   *
+   * @param block The block to convert
+   * @return The sequence of instruction that corresponds to the same implicit
+   *         block.
+   */
   private def blockToInsts(block: Block): Seq[Inst] =
     block.label +: block.insts
 
@@ -144,8 +148,9 @@ class InlineCaching(dispatchInfo: Map[String, Seq[Int]],
           blockName,
           Nil,
           Seq(
-            staticCall,
-            Inst.Jump(Next.Label(next, Seq(Val.Local(staticCall.name, Type.Ptr))))
+              staticCall,
+              Inst.Jump(
+                  Next.Label(next, Seq(Val.Local(staticCall.name, Type.Ptr))))
           )
       )
     }
@@ -170,10 +175,10 @@ class InlineCaching(dispatchInfo: Map[String, Seq[Int]],
           params = Nil,
           insts = Seq(
               Let(comparison.name,
-                   Op.Comp(Comp.Ieq,
-                           Type.I32,
-                           Val.I32(desiredType),
-                           actualType)),
+                  Op.Comp(Comp.Ieq,
+                          Type.I32,
+                          Val.I32(desiredType),
+                          actualType)),
               Inst.If(comparison, Next(correspondingBlock), Next(els))
           )
       )
@@ -206,13 +211,12 @@ class InlineCaching(dispatchInfo: Map[String, Seq[Int]],
 
           // Instructions to load the type id of `obj` at runtime.
           // The result is in `typeid`.
-
           val loadTypeId: Seq[Let] = Seq(
               Let(typeptr.name, Op.Load(Type.Ptr, obj)),
               Let(typeidptr.name,
-                   Op.Elem(cls.typeStruct,
-                           typeptr,
-                           Seq(Val.I32(0), Val.I32(0)))),
+                  Op.Elem(cls.typeStruct,
+                          typeptr,
+                          Seq(Val.I32(0), Val.I32(0)))),
               Let(typeid.name, Op.Load(Type.I32, typeidptr))
           )
 
@@ -232,20 +236,21 @@ class InlineCaching(dispatchInfo: Map[String, Seq[Int]],
           val fallback: Block = {
             val newInstName = fresh()
             val newInst     = inst.copy(name = newInstName)
-            Block(fresh(),
-                  Nil,
-                  Seq(
+            Block(
+                fresh(),
+                Nil,
+                Seq(
                     newInst,
                     Inst.Jump(
                         Next.Label(merge.name,
                                    Seq(Val.Local(newInstName, inst.op.resty))))
-                  )
-            )
+                ))
           }
 
           // Execute start, load the typeid and jump to the first type test.
           val start: Local => Block = typeComp =>
-            init.copy(insts = init.insts ++ loadTypeId :+ Inst.Jump(Next(typeComp)))
+            init.copy(
+                insts = init.insts ++ loadTypeId :+ Inst.Jump(Next(typeComp)))
 
           linkBlocks(start +: typeComparisons)(fallback) ++
           staticBlocks ++
@@ -262,7 +267,7 @@ class InlineCaching(dispatchInfo: Map[String, Seq[Int]],
 
   override def preDefn = {
     case define: Defn.Define =>
-      val graph = ControlFlow.Graph(define.insts)
+      val graph     = ControlFlow.Graph(define.insts)
       val newBlocks = graph.all flatMap addInlineCaching
       Seq(define.copy(insts = newBlocks flatMap blockToInsts))
   }
