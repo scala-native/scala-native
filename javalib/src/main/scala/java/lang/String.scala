@@ -202,34 +202,30 @@ final class _String()
   def endsWith(suffix: _String): scala.Boolean =
     regionMatches(count - suffix.count, suffix, 0, suffix.count)
 
-  override def equals(obj: Any): scala.Boolean = {
-    if (obj == this) {
+  override def equals(obj: Any): scala.Boolean = obj match {
+    case s: _String if s eq this =>
       true
-    } else {
-      obj match {
-        case s: _String =>
-          val thisHash = this.hashCode()
-          val thatHash = s.hashCode()
+    case s: _String =>
+      val thisHash = this.hashCode()
+      val thatHash = s.hashCode()
 
-          if (count != s.count ||
-              (thisHash != thatHash && thisHash != 0 && thatHash != 0)) {
-            false
+      if (count != s.count ||
+          (thisHash != thatHash && thisHash != 0 && thatHash != 0)) {
+        false
+      } else {
+        var i = 0
+        while (i < count) {
+          if (value(offset + i) != s.value(s.offset + i)) {
+            return false
           } else {
-            var i = 0
-            while (i < count) {
-              if (value(offset + i) != s.value(s.offset + i)) {
-                return false
-              } else {
-                i += 1
-              }
-            }
-
-            true
+            i += 1
           }
-        case _ =>
-          false
+        }
+
+        true
       }
-    }
+    case _ =>
+      false
   }
 
   def equalsIgnoreCase(string: _String): scala.Boolean = {

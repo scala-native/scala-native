@@ -10,7 +10,7 @@ final class _Class[A](val ty: Ptr[Type]) {
 
   override def equals(other: Any): scala.Boolean = other match {
     case other: _Class[_] =>
-      ty.cast[Long] == other.ty.cast[Long]
+      ty == other.ty
     case _ =>
       false
   }

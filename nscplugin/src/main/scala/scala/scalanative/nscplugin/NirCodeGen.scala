@@ -1160,11 +1160,18 @@ abstract class NirCodeGen
         val comp  = if (negated) Comp.Ine else Comp.Ieq
         right withOp Op.Comp(comp, Rt.Object, left.value, right.value)
       } else {
-        val equals = genMethodCall(NObjectEqualsMethod,
-                                   statically = true,
-                                   left.value,
-                                   Seq(rightp),
-                                   left)
+        val isnull = left withOp Op.Comp(Comp.Ieq, Rt.Object, left.value, Val.Zero(Rt.Object))
+        val cond = ValTree(isnull.value)
+        val thenp = ContTree { focus =>
+          val right = genExpr(rightp, focus)
+          right withOp Op.Comp(Comp.Ieq, Rt.Object, right.value, Val.Zero(Rt.Object))
+        }
+        val elsep = ContTree { focus =>
+          genMethodCall(NObjectEqualsMethod, statically = false,
+                        left.value, Seq(rightp), focus)
+        }
+        val equals = genIf(Type.Bool, cond, thenp, elsep, isnull)
+
         if (negated) negateBool(equals.value, equals)
         else equals
       }

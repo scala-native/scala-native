@@ -9,13 +9,16 @@ object Main {
       java.lang.FloatSuite,
       java.lang.DoubleSuite,
       java.util.RandomSuite,
+      scala.scalanative.issues._260,
+      scala.scalanative.issues._314,
       scala.scalanative.issues._337,
       scala.scalanative.native.CStringSuite,
       scala.scalanative.native.CInteropSuite,
       scala.scalanative.native.InstanceOfSuite,
       scala.ArrayIntCopySuite,
       scala.ArrayDoubleCopySuite,
-      scala.ArrayObjectCopySuite
+      scala.ArrayObjectCopySuite,
+      scala.EqualitySuite
   )
 
   def main(args: Array[String]): Unit = {
