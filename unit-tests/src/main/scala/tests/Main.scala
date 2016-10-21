@@ -6,6 +6,7 @@ object Main {
   val suites = Seq[Suite](
       tests.SuiteSuite,
       java.lang.IntegerSuite,
+      java.lang.LongSuite,
       java.lang.FloatSuite,
       java.lang.DoubleSuite,
       java.util.RandomSuite,
