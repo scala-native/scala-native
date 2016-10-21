@@ -451,9 +451,83 @@ object Integer {
   @inline def valueOf(s: String, radix: scala.Int): Integer =
     valueOf(parseInt(s, radix))
 
-  // TODO:
-  // def parseUnsignedInt(s: String): scala.Int = parseUnsignedInt(s, 10)
-  // def parseUnsignedInt(s: String, radix: scala.Int): scala.Int = ???
-  // def toUnsignedString(i: scala.Int): String = toUnsignedString(i, 10)
-  // def toUnsignedString(_i: scala.Int, _radix: scala.Int): String = ???
+  @inline def parseUnsignedInt(s: String): scala.Int = parseUnsignedInt(s, 10)
+
+  def parseUnsignedInt(s: String, radix: scala.Int): scala.Int = {
+    if (s == null || radix < Character.MIN_RADIX ||
+        radix > Character.MAX_RADIX) throw new NumberFormatException(s)
+
+    val len = s.length()
+
+    if (len == 0) throw new NumberFormatException(s)
+
+    val hasPlusSign = s.charAt(0) == '+'
+
+    if (hasPlusSign && len == 1) throw new NumberFormatException(s)
+
+    val offset = if (hasPlusSign) 1 else 0
+
+    parseUnsigned(s, offset, radix)
+  }
+
+  private def parseUnsigned(s: String, _offset: Int, radix: Int): scala.Int = {
+    val unsignedIntMaxValue = -1
+    val max                 = divideUnsigned(unsignedIntMaxValue, radix)
+    var result = 0
+    var offset = _offset
+    val length = s.length()
+
+    while (offset < length) {
+      val digit = Character.digit(s.charAt(offset), radix)
+      offset += 1
+
+      if (digit == -1) throw new NumberFormatException(s)
+
+      if (compareUnsigned(result, max) > 0) throw new NumberFormatException(s)
+
+      result = result * radix + digit
+
+      if (compareUnsigned(digit, result) > 0)
+        throw new NumberFormatException(s)
+    }
+
+    result
+  }
+
+  @inline def toUnsignedString(i: scala.Int): String = toUnsignedString(i, 10)
+
+  def toUnsignedString(_i: scala.Int, _radix: scala.Int): String = {
+    if (_i == 0) {
+      "0"
+    } else {
+
+      val radix =
+        if (_radix < Character.MIN_RADIX || _radix > Character.MAX_RADIX) {
+          10
+        } else _radix
+
+      var j = _i
+      var l = _i
+
+      // calculate string size
+      var count = 1
+      l = divideUnsigned(l, radix)
+      while (l != 0) {
+        count += 1
+        l = divideUnsigned(l, radix)
+      }
+
+      // populate string with characters
+      val buffer = new Array[Char](count)
+      do {
+        val digit = remainderUnsigned(j, radix)
+        val ch    = Character.forDigit(digit.toInt, radix)
+        count -= 1
+        buffer(count) = ch
+        j = divideUnsigned(j, radix)
+      } while (j != 0)
+
+      new String(buffer)
+    }
+  }
 }
