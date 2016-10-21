@@ -277,14 +277,12 @@ object ClassHierarchy {
                         isModule = false))
 
       case defn: Defn.Module =>
-        val name = defn.name tag "module"
-        val cls = new Class(defn.attrs,
-                            name,
-                            defn.parent,
-                            defn.traits,
-                            isModule = true)
-        enter(defn.name, cls)
-        enter(name, cls)
+        enter(defn.name,
+              new Class(defn.attrs,
+                        defn.name,
+                        defn.parent,
+                        defn.traits,
+                        isModule = true))
 
       case defn: Defn.Var =>
         enter(defn.name, new Field(defn.attrs, defn.name, defn.ty))
