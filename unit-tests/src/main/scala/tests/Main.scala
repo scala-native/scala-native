@@ -16,6 +16,7 @@ object Main {
       scala.scalanative.native.CStringSuite,
       scala.scalanative.native.CInteropSuite,
       scala.scalanative.native.InstanceOfSuite,
+      scala.scalanative.native.UnsignedSizeOfSuite,
       scala.ArrayIntCopySuite,
       scala.ArrayDoubleCopySuite,
       scala.ArrayObjectCopySuite,
