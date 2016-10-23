@@ -64,7 +64,7 @@ trait NirNameEncoding { self: NirCodeGen =>
   }
 
   private def mangledType(tpe: Type, retty: Boolean): String =
-    mangledTypeInternal(genType(tpe, retty))
+    mangledTypeInternal(genType(tpe))
 
   private def mangledTypeInternal(ty: nir.Type): String = {
     implicit lazy val showMangledType: Show[nir.Type] = Show {

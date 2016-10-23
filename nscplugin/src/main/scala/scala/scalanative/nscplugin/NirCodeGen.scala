@@ -383,7 +383,7 @@ abstract class NirCodeGen
         else Some(genType(owner.tpe))
       val retty =
         if (sym.isClassConstructor) Type.Unit
-        else genType(sym.tpe.resultType, retty = true)
+        else genType(sym.tpe.resultType)
 
       Type.Function((selfty ++: paramtys).map(Arg(_)), retty)
     }
@@ -482,7 +482,7 @@ abstract class NirCodeGen
           genExpr(expr, focus)
 
         case Try(expr, catches, finalizer) =>
-          genTry(genType(tree.tpe), expr, catches, finalizer, focus)
+          genTryCatchFinally(genType(tree.tpe), expr, catches, finalizer, focus)
 
         case Throw(exprp) =>
           val expr = genExpr(exprp, focus)
@@ -689,26 +689,66 @@ abstract class NirCodeGen
       merged(retty, switch, defaultf +: casefs)
     }
 
-    def genTry(retty: nir.Type,
+    def genTryCatchFinally(retty: nir.Type,
                expr: Tree,
                catches: List[Tree],
                finalizer: Tree,
                focus: Focus): Focus = {
       val normaln, excn = fresh()
 
-      val res  = Val.Local(fresh(), retty)
-      val exc  = Val.Local(fresh(), Rt.Object)
+      val res = Val.Local(fresh(), retty)
+      val exc = Val.Local(fresh(), Rt.Object)
       val try_ = focus.withTry(normaln, excn)
 
-      merged(retty, try_, Seq(
-        focus => genExpr(expr, focus.withLabel(normaln)),
-        focus => genCatch(retty, exc, catches, focus.withLabel(excn, exc))
+      // val tryBodyJump, catchJump = fresh()
+
+      val m: Focus = merged(retty, try_, Seq(
+        focus => {
+          val tryBody = genExpr(expr, focus.withLabel(normaln))
+          // jump out of enclosing try/catch, execute finally body
+          // and then jump back right after that try/catch
+          // (or jump back here?)
+
+          tryBody //.withJump(tryBodyJump)
+        },
+        focus => {
+          genCatch(retty, exc, catches, finalizer, focus.withLabel(excn, exc)) //.withJump(catchJump)
+        }
       ))
+
+      // val tryBodyFinalizer = genExpr(finalizer, m.withLabel(tryBodyJump)).withJump(catchJump)
+      // tryBodyFinalizer.withLabel(catchJump)
+      m
+    }
+
+    private def wrapWithFinally(retty: nir.Type,
+                                     expr: Tree,
+                                     finalizer: Tree,
+                           focus: Focus): Focus = {
+      val exprBodyN, finallyBodyN = fresh()
+
+      val exc = Val.Local(fresh(), Rt.Object)
+
+      val _try = focus
+        .withTry(exprBodyN, finallyBodyN)
+
+      val exceptionalFinally = merged(retty, _try, Seq(
+        // try
+        focus => genExpr(expr, focus.withLabel(exprBodyN)),
+        // finally block entered in case of an exception
+        focus => {
+          val finallyBody = genExpr(finalizer, focus.withLabel(finallyBodyN, exc))
+          finallyBody.withThrow(exc)
+        }
+      ))
+      // finally block entered in case of normal execution
+      genExpr(finalizer, exceptionalFinally)
     }
 
     def genCatch(retty: nir.Type,
                  exc: Val,
                  catches: List[Tree],
+                 finalizer: Tree,
                  focus: Focus): Focus = {
       val cases = catches.map {
         case CaseDef(pat, _, body) =>
@@ -727,7 +767,7 @@ abstract class NirCodeGen
               cast
             }.getOrElse(focus)
 
-            genExpr(body, enter)
+            wrapWithFinally(retty, body, finalizer, enter)
           }
 
           (excty, f)
@@ -736,7 +776,7 @@ abstract class NirCodeGen
       def wrap(cases: Seq[(nir.Type, Focus => Focus)], focus: Focus): Focus =
         cases match {
           case Seq() =>
-            focus.withThrow(exc)
+            genExpr(finalizer, focus).withThrow(exc)
           case (excty, f) +: rest =>
             val cond = focus withOp Op.Is(excty, exc)
             genIf(retty, ValTree(cond.value),

@@ -13,6 +13,12 @@ abstract class Suite {
   def assert(cond: Boolean): Unit =
     if (!cond) throw AssertionFailed else ()
 
+  def assert(cond: Boolean, msg: String): Unit =
+    if (!cond) {
+      println(msg)
+      throw AssertionFailed
+    } else ()
+
   def assertNot(cond: Boolean): Unit =
     if (cond) throw AssertionFailed else ()
 
@@ -51,10 +57,12 @@ abstract class Suite {
 
   def run(): Boolean = {
     println("* " + this.getClass.getName)
-    tests.forall { test =>
+    var allPassed = true
+    tests.foreach { test =>
       val res = test.run()
       println((if (res) "  [ok] " else "  [fail] ") + test.name)
-      res
+      allPassed = allPassed && res
     }
+    allPassed
   }
 }
