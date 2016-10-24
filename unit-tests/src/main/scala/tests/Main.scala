@@ -13,6 +13,7 @@ object Main {
       scala.scalanative.issues._260,
       scala.scalanative.issues._314,
       scala.scalanative.issues._337,
+      scala.scalanative.issues._350,
       scala.scalanative.native.CStringSuite,
       scala.scalanative.native.CInteropSuite,
       scala.scalanative.native.InstanceOfSuite,

@@ -15,7 +15,7 @@ package object runtime {
   def divUInt(l: Int, r: Int): Int = undefined
 
   /** Intrinsified unsigned devision on longs. */
-  def divULong(l: Long, r: Long): Int = undefined
+  def divULong(l: Long, r: Long): Long = undefined
 
   /** Intrinsified unsigned remainder on ints. */
   def remUInt(l: Int, r: Int): Int = undefined
@@ -24,10 +24,7 @@ package object runtime {
   def remULong(l: Long, r: Long): Long = undefined
 
   /** Intrinsified byte to unsigned int converstion. */
-  def byteToUInt(b: Byte): Int = {
-    if (b > 0) 0 + b
-    else Byte.MaxValue.toInt + (-b)
-  }
+  def byteToUInt(b: Byte): Int = undefined
 
   /** Intrinsified byte to unsigned long conversion. */
   def byteToULong(b: Byte): Long = undefined
