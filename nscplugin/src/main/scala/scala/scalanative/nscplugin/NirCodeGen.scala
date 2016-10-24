@@ -1535,9 +1535,10 @@ abstract class NirCodeGen
     }
 
     def genCoercion(
-        value: Val, fromty: nir.Type, toty: nir.Type, focus: Focus): Focus =
-      if (fromty == toty) focus withValue value
-      else {
+        value: Val, fromty: nir.Type, toty: nir.Type, focus: Focus): Focus = {
+      if (fromty == toty) {
+        focus withValue value
+      } else {
         val conv = (fromty, toty) match {
           case (nir.Type.Ptr, _: nir.Type.RefKind) =>
             Conv.Bitcast
@@ -1558,6 +1559,7 @@ abstract class NirCodeGen
         }
         focus withOp Op.Conv(conv, toty, value)
       }
+    }
 
     def coercionTypes(code: Int) = {
       import scalaPrimitives._
