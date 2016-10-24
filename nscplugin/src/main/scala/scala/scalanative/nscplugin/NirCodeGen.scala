@@ -1414,10 +1414,9 @@ abstract class NirCodeGen
       val Apply(_, Seq(ctp)) = app
 
       val sym = extractClassFromImplicitClassTag(ctp)
-      val ty  = genTypeSym(sym)
 
       code match {
-        case SIZEOF => focus withOp Op.Sizeof(ty)
+        case SIZEOF => focus withOp Op.Sizeof(genTypeSym(sym, boxUnsigned = false))
         case TYPEOF => focus withValue genTypeSymValue(sym)
         case _      => unreachable
       }
