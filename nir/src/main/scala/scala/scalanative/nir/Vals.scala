@@ -1,6 +1,9 @@
 package scala.scalanative
 package nir
 
+import java.lang.Float.floatToRawIntBits
+import java.lang.Double.doubleToRawLongBits
+
 sealed abstract class Val {
   final def ty: Type = this match {
     case Val.None               => Type.None
@@ -26,17 +29,33 @@ sealed abstract class Val {
 }
 object Val {
   // low-level
-  final case object None                                      extends Val
-  final case object True                                      extends Val
-  final case object False                                     extends Val
-  final case class Zero(of: nir.Type)                         extends Val
-  final case class Undef(of: nir.Type)                        extends Val
-  final case class I8(value: Byte)                            extends Val
-  final case class I16(value: Short)                          extends Val
-  final case class I32(value: Int)                            extends Val
-  final case class I64(value: Long)                           extends Val
-  final case class F32(value: Float)                          extends Val
-  final case class F64(value: Double)                         extends Val
+  final case object None               extends Val
+  final case object True               extends Val
+  final case object False              extends Val
+  final case class Zero(of: nir.Type)  extends Val
+  final case class Undef(of: nir.Type) extends Val
+  final case class I8(value: Byte)     extends Val
+  final case class I16(value: Short)   extends Val
+  final case class I32(value: Int)     extends Val
+  final case class I64(value: Long)    extends Val
+  final case class F32(value: Float) extends Val {
+    override def equals(that: Any): Boolean = that match {
+      case F32(thatValue) =>
+        val theseBits = floatToRawIntBits(value)
+        val thoseBits = floatToRawIntBits(thatValue)
+        theseBits == thoseBits
+      case _ => false
+    }
+  }
+  final case class F64(value: Double) extends Val {
+    override def equals(that: Any): Boolean = that match {
+      case F64(thatValue) =>
+        val theseBits = doubleToRawLongBits(value)
+        val thoseBits = doubleToRawLongBits(thatValue)
+        theseBits == thoseBits
+      case _ => false
+    }
+  }
   final case class Struct(name: nir.Global, values: Seq[Val]) extends Val
   final case class Array(elemty: nir.Type, values: Seq[Val])  extends Val
   final case class Chars(value: java.lang.String)             extends Val

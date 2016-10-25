@@ -26,9 +26,11 @@ final class Float(override val floatValue: scala.Float)
   @inline override def equals(that: Any): scala.Boolean =
     that match {
       case that: Float =>
-        val a = floatValue
-        val b = that.floatValue
-        (a == b) || (Float.isNaN(a) && Float.isNaN(b))
+        // As floats with different NaNs are considered equal,
+        // use floatToIntBits instead of floatToRawIntBits
+        val a = Float.floatToIntBits(floatValue)
+        val b = Float.floatToIntBits(that.floatValue)
+        a == b
 
       case _ =>
         false
