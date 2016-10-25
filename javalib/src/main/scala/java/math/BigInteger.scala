@@ -708,12 +708,12 @@ class BigInteger extends Number with Comparable[BigInteger] {
     val temp: BigInteger  = this
     val bitLen            = bitLength()
     val firstNonZeroDigit = getFirstNonzeroDigit
-    var bytesLen = (bitLen >> 3) + 1
+    var bytesLen          = (bitLen >> 3) + 1
     /*
      * Puts the little-endian int array representing the magnitude of this
      * BigInteger into the big-endian byte array.
      */
-    val bytes = new Array[Byte](bytesLen)
+    val bytes           = new Array[Byte](bytesLen)
     var firstByteNumber = 0
     var digitIndex      = firstNonZeroDigit
     var bytesInInteger  = 4
@@ -830,7 +830,7 @@ class BigInteger extends Number with Comparable[BigInteger] {
 
   /** Puts a big-endian byte array into a little-endian applying two complement. */
   private def putBytesNegativeToIntegers(byteValues: Array[Byte]): Unit = {
-    var bytesLen = byteValues.length
+    var bytesLen  = byteValues.length
     val highBytes = bytesLen & 3
     numberLength = (bytesLen >> 2) + (if (highBytes == 0) 0 else 1)
     digits = new Array[Int](numberLength)
@@ -887,7 +887,7 @@ class BigInteger extends Number with Comparable[BigInteger] {
 
   /** Puts a big-endian byte array into a little-endian int array. */
   private def putBytesPositiveToIntegers(byteValues: Array[Byte]): Unit = {
-    var bytesLen = byteValues.length
+    var bytesLen  = byteValues.length
     val highBytes = bytesLen & 3
     numberLength = (bytesLen >> 2) + (if (highBytes == 0) 0 else 1)
     digits = new Array[Int](numberLength)
@@ -936,14 +936,14 @@ class BigInteger extends Number with Comparable[BigInteger] {
      * multiplication method. See D. Knuth, The Art of Computer Programming,
      * vol. 2.
      */
-    val charsPerInt = Conversion.DigitFitInInt(radix)
+    val charsPerInt          = Conversion.DigitFitInInt(radix)
     var bigRadixDigitsLength = stringLength / charsPerInt
-    val topChars = stringLength % charsPerInt
+    val topChars             = stringLength % charsPerInt
     if (topChars != 0)
       bigRadixDigitsLength += 1
 
-    val _digits  = new Array[Int](bigRadixDigitsLength)
-    val bigRadix = Conversion.BigRadices(radix - 2)
+    val _digits       = new Array[Int](bigRadixDigitsLength)
+    val bigRadix      = Conversion.BigRadices(radix - 2)
     var digitIndex    = 0
     var substrEnd     = startChar + (if (topChars == 0) charsPerInt else topChars)
     var newDigit: Int = 0

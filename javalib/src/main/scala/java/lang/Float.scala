@@ -130,9 +130,9 @@ object Float {
     } else if (f == NEGATIVE_INFINITY) {
       "-Infinity"
     } else {
-      val bitValue = floatToIntBits(f)
-      val negative = (bitValue & 0x80000000) != 0
-      val exponent = (bitValue & 0x7f800000) >>> 23
+      val bitValue    = floatToIntBits(f)
+      val negative    = (bitValue & 0x80000000) != 0
+      val exponent    = (bitValue & 0x7f800000) >>> 23
       var significand = (bitValue & 0x007FFFFF) << 1
 
       if (exponent == 0 && significand == 0) {

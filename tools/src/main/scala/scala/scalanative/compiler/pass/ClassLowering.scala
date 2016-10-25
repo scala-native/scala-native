@@ -33,8 +33,7 @@ class ClassLowering(implicit top: Top, fresh: Fresh) extends Pass {
       val classty = cls.classStruct
 
       Seq(
-          Let(n,
-              Op.Elem(classty, obj, Seq(Val.I32(0), Val.I32(fld.index + 1))))
+        Let(n, Op.Elem(classty, obj, Seq(Val.I32(0), Val.I32(fld.index + 1))))
       )
   }
 

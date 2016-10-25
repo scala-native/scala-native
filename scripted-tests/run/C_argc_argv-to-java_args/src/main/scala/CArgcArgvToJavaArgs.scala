@@ -6,5 +6,5 @@ object CArgcArgvToJavaArgs {
     assert(args(0).equals("hello"))
     assert(args(1).equals("hola"))
     assert(args(2).equals("salut"))
- }
+  }
 }

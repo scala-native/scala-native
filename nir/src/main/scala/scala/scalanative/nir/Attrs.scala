@@ -6,14 +6,14 @@ import nir.Attr._
 
 sealed abstract class Attr
 object Attr {
-  sealed abstract class Inline extends Attr
+  sealed abstract class Inline   extends Attr
   final case object MayInline    extends Inline // no information
   final case object InlineHint   extends Inline // user hinted at inlining
   final case object NoInline     extends Inline // should never inline
   final case object AlwaysInline extends Inline // should always inline
 
-  final case object Pure   extends Attr
-  final case object Extern extends Attr
+  final case object Pure                  extends Attr
+  final case object Extern                extends Attr
   final case class Override(name: Global) extends Attr
 
   // Linker attributes
@@ -46,9 +46,9 @@ object Attrs {
   val None = new Attrs()
 
   def fromSeq(attrs: Seq[Attr]) = {
-    var inline   = None.inline
-    var isPure   = false
-    var isExtern = false
+    var inline    = None.inline
+    var isPure    = false
+    var isExtern  = false
     val overrides = mutable.UnrolledBuffer.empty[Global]
     val pins      = mutable.UnrolledBuffer.empty[Pin]
     val links     = mutable.UnrolledBuffer.empty[Attr.Link]

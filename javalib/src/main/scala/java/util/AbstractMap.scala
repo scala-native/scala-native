@@ -168,7 +168,7 @@ abstract class AbstractMap[K, V] protected () extends java.util.Map[K, V] {
       o match {
         case m: Map[_, _] =>
           (self.size == m.size &&
-                entrySet.forall(item => m.get(item.getKey) === item.getValue))
+            entrySet.forall(item => m.get(item.getKey) === item.getValue))
         case _ => false
       }
     }
@@ -180,7 +180,7 @@ abstract class AbstractMap[K, V] protected () extends java.util.Map[K, V] {
   override def toString(): String = {
     entrySet.iterator
       .map(
-          e => s"${e.getKey}=${e.getValue}"
+        e => s"${e.getKey}=${e.getValue}"
       )
       .mkString("{", ", ", "}")
   }

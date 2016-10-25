@@ -5,6 +5,7 @@ import native._
 import runtime.Intrinsics._
 
 package object runtime {
+
   /** Used as a stub right hand of intrinsified methods. */
   def undefined: Nothing = throw new UndefinedBehaviorError
 
@@ -39,7 +40,8 @@ package object runtime {
   def intToULong(v: Int): Long = undefined
 
   /** Select value without branching. */
-  def select[T](cond: Boolean, thenp: T, elsep: T)(implicit ct: ClassTag[T]): T = undefined
+  def select[T](cond: Boolean, thenp: T, elsep: T)(
+      implicit ct: ClassTag[T]): T = undefined
 
   /** Allocate memory in gc heap using given info pointer. */
   def alloc(ty: Ptr[Type], size: CSize): Ptr[_] = {
@@ -49,9 +51,9 @@ package object runtime {
   }
 
   /** Allocate memory in gc heap using given info pointer.
-    *
-    * The allocated memory cannot be used to store pointers.
-    */
+   *
+   * The allocated memory cannot be used to store pointers.
+   */
   def allocAtomic(ty: Ptr[Type], size: CSize): Ptr[_] = {
     val ptr = GC.malloc_atomic(size).cast[Ptr[Ptr[Type]]]
     // initialize to 0
@@ -67,8 +69,8 @@ package object runtime {
   def getMonitor(obj: Object): Monitor = Monitor.dummy
 
   /** Initialize runtime with given arguments and return the
-    * rest as Java-style array.
-    */
+   * rest as Java-style array.
+   */
   def init(argc: Int, argv: Ptr[Ptr[Byte]]): ObjectArray = {
     GC.init()
 
@@ -76,9 +78,9 @@ package object runtime {
 
     // skip the executable name in argv(0)
     var c = 0
-    while (c < argc-1) {
+    while (c < argc - 1) {
       // use the default Charset (UTF_8 atm)
-      args(c) = fromCString(argv(c+1))
+      args(c) = fromCString(argv(c + 1))
       c += 1
     }
 

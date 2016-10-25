@@ -7,8 +7,7 @@ import scala.collection.JavaConversions._
 class HashMap[K, V] protected (inner: mutable.Map[Box[K], V])
     extends AbstractMap[K, V]
     with Serializable
-    with Cloneable {
-  self =>
+    with Cloneable { self =>
 
   def this() =
     this(mutable.HashMap.empty[Box[K], V])

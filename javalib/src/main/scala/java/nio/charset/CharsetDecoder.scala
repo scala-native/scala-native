@@ -31,10 +31,10 @@ abstract class CharsetDecoder protected (cs: Charset,
   final def replaceWith(newReplacement: String): CharsetDecoder = {
     if (newReplacement == null || newReplacement == "")
       throw new IllegalArgumentException(
-          "Invalid replacement: " + newReplacement)
+        "Invalid replacement: " + newReplacement)
     if (newReplacement.length > maxCharsPerByte)
       throw new IllegalArgumentException(
-          "Replacement string cannot be longer than maxCharsPerByte")
+        "Replacement string cannot be longer than maxCharsPerByte")
     _replacement = newReplacement
     implReplaceWith(newReplacement)
     this

@@ -96,7 +96,7 @@ object Focus {
 
   def merged(ty: nir.Type, focus: Focus, branches: Seq[Focus => Focus])(
       implicit fresh: Fresh): Focus = {
-    val mergen = fresh()
+    val mergen    = fresh()
     var lastfocus = focus
     branches.foreach { branch =>
       lastfocus = branch(lastfocus)
