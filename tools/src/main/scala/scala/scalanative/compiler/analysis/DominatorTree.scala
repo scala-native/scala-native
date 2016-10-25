@@ -18,7 +18,7 @@ object DominatorTree {
    */
   def build(cfg: ControlFlow.Graph): Map[Block, Set[Block]] = {
     val domination = mutable.HashMap.empty[Block, Set[Block]]
-    var workList = immutable.Queue(cfg.entry)
+    var workList   = immutable.Queue(cfg.entry)
 
     while (workList.nonEmpty) {
       val (block, dequeued) = workList.dequeue
@@ -28,16 +28,16 @@ object DominatorTree {
       val predDomination =
         visitedPreds.toList.map(pred => domination.getOrElse(pred, Set.empty))
       val correctPredDomination = predDomination.filterNot(
-          predDominators =>
-            predDominators
-              .contains(block)) // removes the potential dominators that are dominated by this block (counters loop problems)
+        predDominators =>
+          predDominators
+            .contains(block)) // removes the potential dominators that are dominated by this block (counters loop problems)
 
       val blockDomination =
         if (correctPredDomination.isEmpty)
           Set.empty[Block]
         else
           correctPredDomination.tail.foldLeft(correctPredDomination.head)(
-              (a, b) => a.intersect(b))
+            (a, b) => a.intersect(b))
 
       val oldDomination = domination.getOrElse(block, Set.empty)
       val newDomination = blockDomination + block // a block dominates itself

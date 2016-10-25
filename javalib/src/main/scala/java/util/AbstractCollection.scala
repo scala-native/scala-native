@@ -66,7 +66,7 @@ abstract class AbstractCollection[E] protected () extends Collection[E] {
     removeWhere(_ => true)
 
   private def removeWhere(p: Any => Boolean): Boolean = {
-    val iter = iterator()
+    val iter    = iterator()
     var changed = false
     while (iter.hasNext) {
       if (p(iter.next())) {

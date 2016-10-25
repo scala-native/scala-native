@@ -105,7 +105,7 @@ object Character {
 
   def codePointBefore(seq: Array[scala.Char], _index: scala.Int): scala.Int = {
     var index = _index
-    val len = seq.length
+    val len   = seq.length
     if (index < 1 || index > len) {
       throw new ArrayIndexOutOfBoundsException(index)
     }

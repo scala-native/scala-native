@@ -26,9 +26,9 @@ sealed abstract class Val {
 }
 object Val {
   // low-level
-  final case object None  extends Val
-  final case object True  extends Val
-  final case object False extends Val
+  final case object None                                      extends Val
+  final case object True                                      extends Val
+  final case object False                                     extends Val
   final case class Zero(of: nir.Type)                         extends Val
   final case class Undef(of: nir.Type)                        extends Val
   final case class I8(value: Byte)                            extends Val
@@ -42,11 +42,11 @@ object Val {
   final case class Chars(value: java.lang.String)             extends Val
   final case class Local(name: nir.Local, valty: nir.Type)    extends Val
   final case class Global(name: nir.Global, valty: nir.Type)  extends Val
-  val Null = Zero(Type.Ptr)
+  val Null                = Zero(Type.Ptr)
   def Bool(bool: Boolean) = if (bool) True else False
 
   // high-level
-  final case object Unit extends Val
+  final case object Unit                           extends Val
   final case class Const(value: Val)               extends Val
   final case class String(value: java.lang.String) extends Val
 }

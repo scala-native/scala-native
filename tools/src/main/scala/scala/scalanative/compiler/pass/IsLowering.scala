@@ -37,11 +37,11 @@ class IsLowering(implicit fresh: Fresh, top: Top) extends Pass {
           Inst.Jump(Next.Label(contL, Seq(thenResultV))),
           // else
           Inst.Label(elseL, Seq.empty)) ++
-      doEliminateIs(Let(elseResultV.name, Op.Is(ty, obj))) ++
-      Seq(Inst.Jump(Next.Label(contL, Seq(elseResultV))),
-          // cont
-          Inst.Label(contL, Seq(isIsV)),
-          Let(n, Op.Copy(isIsV)))
+        doEliminateIs(Let(elseResultV.name, Op.Is(ty, obj))) ++
+        Seq(Inst.Jump(Next.Label(contL, Seq(elseResultV))),
+            // cont
+            Inst.Label(contL, Seq(isIsV)),
+            Let(n, Op.Copy(isIsV)))
     case other => Seq(other)
   }
 
@@ -50,8 +50,8 @@ class IsLowering(implicit fresh: Fresh, top: Top) extends Pass {
       val typeptr = Val.Local(fresh(), Type.Ptr)
 
       Seq(
-          Let(typeptr.name, Op.Load(Type.Ptr, obj)),
-          Let(n, Op.Comp(Comp.Ieq, Type.Ptr, typeptr, cls.typeConst))
+        Let(typeptr.name, Op.Load(Type.Ptr, obj)),
+        Let(n, Op.Comp(Comp.Ieq, Type.Ptr, typeptr, cls.typeConst))
       )
 
     case Let(n, Op.Is(ClassRef(cls), obj)) =>
@@ -62,15 +62,14 @@ class IsLowering(implicit fresh: Fresh, top: Top) extends Pass {
       val le      = Val.Local(fresh(), Type.Bool)
 
       Seq(
-          Let(typeptr.name, Op.Load(Type.Ptr, obj)),
-          Let(idptr.name,
-              Op.Elem(Rt.Type, typeptr, Seq(Val.I32(0), Val.I32(0)))),
-          Let(id.name, Op.Load(Type.I32, idptr)),
-          Let(ge.name,
-              Op.Comp(Comp.Sle, Type.I32, Val.I32(cls.range.start), id)),
-          Let(le.name,
-              Op.Comp(Comp.Sle, Type.I32, id, Val.I32(cls.range.end))),
-          Let(n, Op.Bin(Bin.And, Type.Bool, ge, le))
+        Let(typeptr.name, Op.Load(Type.Ptr, obj)),
+        Let(idptr.name,
+            Op.Elem(Rt.Type, typeptr, Seq(Val.I32(0), Val.I32(0)))),
+        Let(id.name, Op.Load(Type.I32, idptr)),
+        Let(ge.name,
+            Op.Comp(Comp.Sle, Type.I32, Val.I32(cls.range.start), id)),
+        Let(le.name, Op.Comp(Comp.Sle, Type.I32, id, Val.I32(cls.range.end))),
+        Let(n, Op.Bin(Bin.And, Type.Bool, ge, le))
       )
 
     case Let(n, Op.Is(TraitRef(trt), obj)) =>
@@ -80,15 +79,15 @@ class IsLowering(implicit fresh: Fresh, top: Top) extends Pass {
       val boolptr = Val.Local(fresh(), Type.Ptr)
 
       Seq(
-          Let(typeptr.name, Op.Load(Type.Ptr, obj)),
-          Let(idptr.name,
-              Op.Elem(Rt.Type, typeptr, Seq(Val.I32(0), Val.I32(0)))),
-          Let(id.name, Op.Load(Type.I32, idptr)),
-          Let(boolptr.name,
-              Op.Elem(top.instanceTy,
-                      top.instanceVal,
-                      Seq(Val.I32(0), id, Val.I32(trt.id)))),
-          Let(n, Op.Load(Type.Bool, boolptr))
+        Let(typeptr.name, Op.Load(Type.Ptr, obj)),
+        Let(idptr.name,
+            Op.Elem(Rt.Type, typeptr, Seq(Val.I32(0), Val.I32(0)))),
+        Let(id.name, Op.Load(Type.I32, idptr)),
+        Let(boolptr.name,
+            Op.Elem(top.instanceTy,
+                    top.instanceVal,
+                    Seq(Val.I32(0), id, Val.I32(trt.id)))),
+        Let(n, Op.Load(Type.Bool, boolptr))
       )
     case other => Seq(other)
   }

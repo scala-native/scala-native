@@ -69,20 +69,20 @@ class ModuleLowering(implicit top: Top, fresh: Fresh) extends Pass {
       val loadName = clsName tag "load"
       val loadSig  = Type.Function(Seq(), clsTy)
       val loadDefn = Defn.Define(
-          Attrs.None,
-          loadName,
-          loadSig,
-          Seq(Inst.Label(entry, Seq()),
-              Inst.Let(self.name, Op.Load(clsTy, value)),
-              Inst.Let(cond.name, Op.Comp(Comp.Ine, Rt.Object, self, clsNull)),
-              Inst.If(cond, Next(existing), Next(initialize)),
-              Inst.Label(existing, Seq()),
-              Inst.Ret(self),
-              Inst.Label(initialize, Seq()),
-              Inst.Let(alloc.name, Op.Classalloc(clsName)),
-              Inst.Let(Op.Store(clsTy, value, alloc)),
-              initCall,
-              Inst.Ret(alloc)))
+        Attrs.None,
+        loadName,
+        loadSig,
+        Seq(Inst.Label(entry, Seq()),
+            Inst.Let(self.name, Op.Load(clsTy, value)),
+            Inst.Let(cond.name, Op.Comp(Comp.Ine, Rt.Object, self, clsNull)),
+            Inst.If(cond, Next(existing), Next(initialize)),
+            Inst.Label(existing, Seq()),
+            Inst.Ret(self),
+            Inst.Label(initialize, Seq()),
+            Inst.Let(alloc.name, Op.Classalloc(clsName)),
+            Inst.Let(Op.Store(clsTy, value, alloc)),
+            initCall,
+            Inst.Ret(alloc)))
 
       Seq(clsDefn, valueDefn, loadDefn)
   }
@@ -93,7 +93,7 @@ class ModuleLowering(implicit top: Top, fresh: Fresh) extends Pass {
       val load    = Val.Global(name tag "load", Type.Ptr)
 
       Seq(
-          Inst.Let(n, Op.Call(loadSig, load, Seq()))
+        Inst.Let(n, Op.Call(loadSig, load, Seq()))
       )
   }
 

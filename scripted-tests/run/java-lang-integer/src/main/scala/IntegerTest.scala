@@ -15,4 +15,3 @@ object IntegerTest {
     assert(Integer.toString(-1234).equals("-1234"))
   }
 }
-

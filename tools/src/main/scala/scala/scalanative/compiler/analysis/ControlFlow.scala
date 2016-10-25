@@ -16,8 +16,8 @@ object ControlFlow {
   final case class Edge(val from: Block, val to: Block, val next: Next)
 
   final case class Block(name: Local, params: Seq[Val.Local], insts: Seq[Inst]) {
-    val pred = mutable.UnrolledBuffer.empty[Edge]
-    val succ = mutable.UnrolledBuffer.empty[Edge]
+    val pred  = mutable.UnrolledBuffer.empty[Edge]
+    val succ  = mutable.UnrolledBuffer.empty[Edge]
     def label = Inst.Label(name, params)
   }
 
@@ -50,7 +50,7 @@ object ControlFlow {
     }
 
     lazy val eh: Map[Local, Option[Local]] = {
-      val handlers = mutable.Map.empty[Local, Option[Local]]
+      val handlers               = mutable.Map.empty[Local, Option[Local]]
       var current: Option[Local] = None
 
       foreach { block =>
@@ -88,7 +88,7 @@ object ControlFlow {
           // copy all instruction up until and including
           // first control-flow instruction after the label
           val body = mutable.UnrolledBuffer.empty[Inst]
-          var i = k
+          var i    = k
           do {
             i += 1
             body += insts(i)

@@ -14,8 +14,8 @@ class ThrowLowering(implicit fresh: Fresh) extends Pass {
   override def preInst = {
     case Inst.Throw(v) =>
       Seq(
-          Inst.Let(Op.Call(throwSig, throw_, Seq(v))),
-          Inst.Unreachable
+        Inst.Let(Op.Call(throwSig, throw_, Seq(v))),
+        Inst.Unreachable
       )
   }
 }

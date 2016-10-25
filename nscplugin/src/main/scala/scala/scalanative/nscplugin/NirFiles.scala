@@ -18,7 +18,7 @@ trait NirFiles { self: NirCodeGen =>
     val dir       = (baseDir /: pathParts.init)(_.subdirectoryNamed(_))
 
     var filename = pathParts.last
-    val file = dir fileNamed (filename + suffix)
+    val file     = dir fileNamed (filename + suffix)
 
     file.file.getAbsolutePath
   }

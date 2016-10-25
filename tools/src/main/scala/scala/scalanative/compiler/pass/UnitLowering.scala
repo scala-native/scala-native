@@ -14,8 +14,8 @@ class UnitLowering(implicit fresh: Fresh) extends Pass {
   override def preInst = {
     case inst @ Let(n, op) if op.resty == Type.Unit =>
       Seq(
-          Let(op),
-          Let(n, Op.Copy(Val.Unit))
+        Let(op),
+        Let(n, Op.Copy(Val.Unit))
       )
 
     case Inst.Ret(_) if defnRetty == Type.Unit =>
