@@ -16,6 +16,19 @@ object ScalaNativePluginInternal {
   private lazy val nativelib: File =
     Path.userHome / ".scalanative" / ("nativelib-" + nir.Versions.current)
 
+  private lazy val includes = {
+    val includedir =
+      Try(Process("llvm-config --includedir").lines_!.toSeq)
+        .getOrElse(Seq.empty)
+    ("/usr/local/include" +: includedir).map(s => s"-I$s")
+  }
+
+  private lazy val libs = {
+    val libdir =
+      Try(Process("llvm-config --libdir").lines_!.toSeq).getOrElse(Seq.empty)
+    ("/usr/local/lib" +: libdir).map(s => s"-L$s")
+  }
+
   private def abs(file: File): String =
     file.getAbsolutePath
 
@@ -60,8 +73,8 @@ object ScalaNativePluginInternal {
 
       val cpaths     = (nativelib ** "*.c").get.map(abs)
       val cpppaths   = (nativelib ** "*.cpp").get.map(abs)
-      val compilec   = abs(clang) +: "-c" +: cpaths
-      val compilecpp = abs(clangpp) +: "-c" +: cpppaths
+      val compilec   = abs(clang) +: (includes ++ ("-c" +: cpaths))
+      val compilecpp = abs(clangpp) +: (includes ++ ("-c" +: cpppaths))
 
       Process(compilec, nativelib).!
       Process(compilecpp, nativelib).!
@@ -102,24 +115,21 @@ object ScalaNativePluginInternal {
       "org.scala-native" % "nscplugin" % nativeVersion cross CrossVersion.full),
     resolvers += Resolver.sonatypeRepo("snapshots"),
     nativeVerbose := false,
-    nativeClang := discover("clang", Seq(("3", "8"), ("3", "7"))),
-    nativeClangPP := discover("clang++", Seq(("3", "8"), ("3", "7"))),
-    nativeClangOptions := {
-      val includes = ("/usr/local/include" #:: Try(
-        Process("llvm-config --includedir").lines_!).getOrElse(Stream.empty))
-        .map(s => s"-I$s")
-      val libs =
-        ("/usr/local/lib" #:: Try(Process("llvm-config --libdir").lines_!)
-          .getOrElse(Stream.empty)).map(s => s"-L$s")
-
-      includes #::: libs ++ maybeInjectShared(nativeSharedLibrary.value)
-    },
     nativeEmitDependencyGraphPath := None,
     nativeLibraryLinkage := Map(),
+    nativeSharedLibrary := false,
+    nativeClang := {
+      discover("clang", Seq(("3", "8"), ("3", "7")))
+    },
+    nativeClangPP := {
+      discover("clang++", Seq(("3", "8"), ("3", "7")))
+    },
+    nativeClangOptions := {
+      includes ++ libs ++ maybeInjectShared(nativeSharedLibrary.value)
+    },
     artifactPath in nativeLink := {
       (crossTarget in Compile).value / (moduleName.value + "-out")
     },
-    nativeSharedLibrary := false,
     nativeLink := {
       val mainClass = (selectMainClass in Compile).value.getOrElse(
         throw new MessageOnlyException("No main class detected.")
