@@ -25,7 +25,7 @@ check_binary "$GREP"
 
 check_latest () {
   echo "Checking latest version from github..."
-  latest_version=$($CURL -s https://api.github.com/repos/olafurpg/scalafmt/releases/latest | $GREP -Eo '"tag_name":(.*)' | $GREP -Eo 'v[0-9\.]+')
+  latest_version=$($CURL -u dummy4dummy:dummy2dummy -s https://api.github.com/repos/olafurpg/scalafmt/releases/latest | $GREP -Eo '"tag_name":(.*)' | $GREP -Eo 'v[0-9\.]+')
   if [[ $latest_version = "" ]]; then
     echo "The github call failed, either because of an internet connection issue or rate limits..."
     exit 1
@@ -42,7 +42,7 @@ if [[ -e $version_file ]]; then
 fi
 
 print_usage (){
-  echo -e "scalafmt runner verson: 0.1"
+  echo -e "scalafmt runner verson: 0.1.1"
   echo -e "Usage: ./scalafmt [RUNNER OPTS] [SCALAFMT OPTS]"
   echo -e "--version [VERSION] \t Version to invoke for scalafmt (fmt: 0.4.2, not v0.4.2)"
   echo -e "--dir [DIR] \t\t Directory to store scalafmt jars, default is $HOME/.scalafmt-bin/"
@@ -96,7 +96,7 @@ for arg in "$1" "$2" "$3"; do
     esac
 done
 
-if [[ ! -e $version_file && $upgrade = false ]]; then
+if [[ ! -e $version_file && $upgrade = false && -z $scalafmt_version ]]; then
   echo "No version file, checking for latest..."
   check_latest
   echo "Setting latest version to: $latest_version"
