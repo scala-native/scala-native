@@ -72,8 +72,6 @@ package object runtime {
    * rest as Java-style array.
    */
   def init(argc: Int, argv: Ptr[Ptr[Byte]]): ObjectArray = {
-    GC.init()
-
     val args = new scala.Array[String](argc - 1)
 
     // skip the executable name in argv(0)
