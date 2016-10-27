@@ -31,15 +31,14 @@ trait NirTypeEncoding { self: NirCodeGen =>
     case tpe: ErasedValueType     => (tpe.valueClazz, Seq())
   }
 
-  def genType(t: Type, retty: Boolean = false): nir.Type = {
+  def genType(t: Type): nir.Type = {
     val (sym, args) = decomposeType(t)
 
-    genTypeSym(sym, args, retty)
+    genTypeSym(sym, args)
   }
 
   def genTypeSym(sym: Symbol,
                  targs: Seq[Type] = Seq(),
-                 retty: Boolean = false,
                  boxUnsigned: Boolean = true): nir.Type = sym match {
     case ArrayClass                  => genTypeSym(RuntimeArrayClass(genPrimCode(targs.head)))
     case UnitClass | BoxedUnitClass  => nir.Type.Unit

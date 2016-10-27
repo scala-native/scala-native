@@ -16,6 +16,7 @@ object Main {
     scala.scalanative.issues._350,
     scala.scalanative.native.CStringSuite,
     scala.scalanative.native.CInteropSuite,
+    scala.scalanative.native.FinallySuite,
     scala.scalanative.native.InstanceOfSuite,
     scala.scalanative.native.UnsignedSizeOfSuite,
     scala.ArrayIntCopySuite,
