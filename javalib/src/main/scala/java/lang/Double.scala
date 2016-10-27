@@ -26,9 +26,11 @@ final class Double(override val doubleValue: scala.Double)
   @inline override def equals(that: Any): scala.Boolean =
     that match {
       case that: Double =>
-        val a = doubleValue
-        val b = that.doubleValue
-        (a == b) || (Double.isNaN(a) && Double.isNaN(b))
+        // As doubles with different NaNs are considered equal,
+        // use doubleToLongBits instead of doubleToRawLongBits
+        val a = Double.doubleToLongBits(doubleValue)
+        val b = Double.doubleToLongBits(that.doubleValue)
+        a == b
 
       case _ =>
         false
