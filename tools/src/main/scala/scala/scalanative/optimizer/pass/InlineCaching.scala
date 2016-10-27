@@ -161,9 +161,9 @@ class InlineCaching(dispatchInfo: Map[String, Seq[Int]],
                               call: Op.Call,
                               clss: Class): Local => Block =
     next => {
-      val blockName  = fresh()
-      val impl       = findImpl(meth, clss) getOrElse ???
-      val result     = fresh()
+      val blockName = fresh()
+      val impl      = findImpl(meth, clss) getOrElse ???
+      val result    = fresh()
 
       Block(
         blockName,
@@ -248,7 +248,8 @@ class InlineCaching(dispatchInfo: Map[String, Seq[Int]],
             // If all type tests fail, we fallback to virtual dispatch.
             val fallback: Block = {
               val newMethod = inst.copy(name = fresh())
-              val newCall   = Let(call.copy(ptr = Val.Local(newMethod.name, Type.Ptr)))
+              val newCall = Let(
+                call.copy(ptr = Val.Local(newMethod.name, Type.Ptr)))
               Block(fresh(),
                     Nil,
                     Seq(
