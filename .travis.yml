@@ -55,4 +55,4 @@ before_script:
 script:
   - java -version
   - bin/scalafmt --version 0.4.7 --test
-  - sbt 'cleanCache' 'cleanLocal' 'nscplugin/publishLocal' 'nativelib/publishLocal' 'publishLocal' 'sandbox/run' 'demoNative/run' 'tests/run' 'scripted' 'publishSnapshot'
+  - sbt 'cleanCache' 'cleanLocal' 'nscplugin/publishLocal' 'nativelib/publishLocal' 'publishLocal' 'sandbox/run' 'demoNative/run' 'tests/run' 'tools/test' 'scripted' 'publishSnapshot'

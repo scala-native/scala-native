@@ -12,7 +12,7 @@ import nir._, Inst.Let
  */
 class MethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
   override def preInst = {
-    case Let(n, Op.Method(sig, obj, MethodRef(cls: Class, meth)))
+    case Let(n, Op.Method(obj, MethodRef(cls: Class, meth)))
         if meth.isVirtual =>
       val typeptr    = Val.Local(fresh(), Type.Ptr)
       val methptrptr = Val.Local(fresh(), Type.Ptr)
@@ -28,13 +28,12 @@ class MethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
         Let(n, Op.Load(Type.Ptr, methptrptr))
       )
 
-    case Let(n, Op.Method(sig, obj, MethodRef(_: Class, meth)))
-        if meth.isStatic =>
+    case Let(n, Op.Method(obj, MethodRef(_: Class, meth))) if meth.isStatic =>
       Seq(
         Let(n, Op.Copy(Val.Global(meth.name, Type.Ptr)))
       )
 
-    case Let(n, Op.Method(sig, obj, MethodRef(trt: Trait, meth))) =>
+    case Let(n, Op.Method(obj, MethodRef(trt: Trait, meth))) =>
       val typeptr    = Val.Local(fresh(), Type.Ptr)
       val idptr      = Val.Local(fresh(), Type.Ptr)
       val id         = Val.Local(fresh(), Type.I32)

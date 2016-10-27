@@ -1,0 +1,35 @@
+package scala.scalanative
+package nir
+
+import util.sh
+import Shows._
+
+import fastparse.all.Parsed
+import org.scalatest._
+
+class AttrParserTest extends FlatSpec with Matchers {
+
+  val global = Global.Top("test")
+
+  "The NIR parser" should "parse attributes" in {
+    import Attr._
+    val attrs: Seq[Attr] = Seq(MayInline,
+                               InlineHint,
+                               NoInline,
+                               AlwaysInline,
+                               Pure,
+                               Extern,
+                               Override(global),
+                               Link("test"),
+                               PinAlways(global),
+                               PinIf(global, global))
+
+    attrs foreach { attr =>
+      val Parsed.Success(result, _) =
+        parser.Attr.parser.parse(sh"$attr".toString)
+      result should be(attr)
+    }
+
+  }
+
+}

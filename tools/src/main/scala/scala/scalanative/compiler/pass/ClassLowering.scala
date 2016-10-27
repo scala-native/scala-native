@@ -29,7 +29,7 @@ class ClassLowering(implicit top: Top, fresh: Fresh) extends Pass {
   }
 
   override def preInst = {
-    case Let(n, Op.Field(ty, obj, FieldRef(cls: Class, fld))) =>
+    case Let(n, Op.Field(obj, FieldRef(cls: Class, fld))) =>
       val classty = cls.classStruct
 
       Seq(

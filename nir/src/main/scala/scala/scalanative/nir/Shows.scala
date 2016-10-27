@@ -1,6 +1,8 @@
 package scala.scalanative
 package nir
 
+import scala.util.matching.Regex
+
 import util.{unreachable, sh, Show}
 import Show.{
   Sequence => s,
@@ -120,10 +122,10 @@ object Shows {
 
     case Op.Classalloc(name) =>
       sh"classalloc $name"
-    case Op.Field(ty, value, name) =>
-      sh"field[$ty] $value, $name"
-    case Op.Method(ty, value, name) =>
-      sh"method[$ty] $value, $name"
+    case Op.Field(value, name) =>
+      sh"field $value, $name"
+    case Op.Method(value, name) =>
+      sh"method $value, $name"
     case Op.Module(name) =>
       sh"module $name"
     case Op.As(ty, value) =>
@@ -209,13 +211,13 @@ object Shows {
     case Val.Struct(Global.None, values) => sh"struct {${r(values, ", ")}}"
     case Val.Struct(n, values)           => sh"struct $n {${r(values, ", ")}}"
     case Val.Array(ty, values)           => sh"array $ty {${r(values, ", ")}}"
-    case Val.Chars(v)                    => s("c\"", v, "\"")
+    case Val.Chars(v)                    => s("c\"", escapeNewLine(escapeQuotes(v)), "\"")
     case Val.Local(name, ty)             => sh"$name: $ty"
-    case Val.Global(name, ty)            => sh"$name"
+    case Val.Global(name, ty)            => sh"$name[$ty]"
 
     case Val.Unit      => "unit"
     case Val.Const(v)  => sh"const $v"
-    case Val.String(v) => "\"" + v + "\""
+    case Val.String(v) => "\"" + escapeNewLine(escapeQuotes(v)) + "\""
   }
 
   implicit val showDefns: Show[Seq[Defn]] = Show { defns =>
@@ -303,4 +305,16 @@ object Shows {
   implicit val showLocal: Show[Local] = Show {
     case Local(scope, id) => sh"%$scope.$id"
   }
+
+  def escapeNewLine(s: String): String =
+    """([^\\]|^)\n""".r.replaceAllIn(s, _.matched.toSeq match {
+      case Seq(sngl)     => s"""\\\\n"""
+      case Seq(fst, snd) => s"""${fst}\\\\n"""
+    })
+
+  private def escapeQuotes(s: String): String =
+    """([^\\]|^)"""".r.replaceAllIn(s, _.matched.toSeq match {
+      case Seq(sngl)     => s"\\\\$sngl"
+      case Seq(fst, snd) => s"$fst\\\\$snd"
+    })
 }
