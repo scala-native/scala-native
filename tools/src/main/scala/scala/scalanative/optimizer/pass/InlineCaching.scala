@@ -63,30 +63,36 @@ class InlineCaching(dispatchInfo: Map[String, Seq[Int]],
   }
 
   /**
-   * Split the block `block` at the first instruction for which `fn` is true.
+   * Split the block `block` at the first sequence of instructions for which
+   * `test` is true.
+   * The instructions are grouped using `select` and then each group is given to
+   * `test`.
    *
-   * @param block The block to split. It must contain an instruction for which
-   *              `fn` evaluates to true.
-   * @param fn    The function that determines where to split the block.
-   * @return A triplet consisting of:
-   *           - a block whose instructions are those of `block` until one where
-   *             `fn` evaluates to true is found.
-   *           - the first instruction for which `fn` evaluates to true
-   *           - a block consisting of all the instructions coming after. It has
-   *             one parameter whose name is the same as that of the instruction
-   *             where we split.
-   *
+   * @param test      The test to select where to split the block.
+   * @param select    How to group all the instructions in the block (eg. use a
+   *                  sliding window of length 2)
+   * @param makeParam A function that generates parameters for the block coming
+   *                  after the split from the instructions where we split.
+   * @param block     The block to split.
    */
-  private def splitAt(fn: Inst => Boolean)(block: Block): (Block, Let, Block) = {
-    assert(block.insts exists fn)
-    val (l0, (x @ Let(name, op)) +: rest) = block.insts span (!fn(_))
+  private def splitAt[T <: Inst](test: Seq[Inst] => Boolean)(
+      select: Seq[Inst] => Seq[Seq[Inst]])(
+      makeParams: Seq[T] => Seq[Val.Local])(
+      block: Block): Option[(Block, Seq[Inst], Block)] = {
+    val slices = select(block.insts)
+    slices span (!test(_)) match {
+      case (_, Seq()) =>
+        None
+      case (before, (insts: Seq[T]) +: after) =>
+        val merge = fresh()
+        val b0    = block.copy(insts = before.map(_.head))
+        val b1 =
+          Block(merge,
+                makeParams(insts),
+                after.tail.map(_.head) ++ after.last.tail)
 
-    val merge = fresh()
-    val b0    = block.copy(insts = l0)
-    val b1 =
-      Block(merge, Seq(Val.Local(x.name, op.resty)), rest :+ block.insts.last)
-
-    (b0, x, b1)
+        Some((b0, insts, b1))
+    }
   }
 
   /**
@@ -104,19 +110,30 @@ class InlineCaching(dispatchInfo: Map[String, Seq[Int]],
     }
 
   /**
-   * Determines if `inst` is a virtual dispatch
+   * Determines if `insts` is a virtual dispatch.
    *
-   * @param inst The instruction to tests
+   * @param inst The instructions to tests
    * @return true if `inst` is a virtual dispatch, false otherwise.
    */
-  private def isVirtualDispatch(inst: Inst): Boolean =
-    inst match {
-      case Let(_, Op.Method(_, MethodRef(_: Class, meth)))
-          if meth.isVirtual =>
-        true
-      case _ =>
-        false
-    }
+  private def isVirtualDispatch(insts: Seq[Inst]): Boolean = insts match {
+    case Seq(Let(n, Op.Method(_, MethodRef(_: Class, meth))),
+             Let(_, Op.Call(_, Val.Local(ptr, _), _)))
+        if meth.isVirtual && ptr == n =>
+      true
+    case _ =>
+      false
+  }
+
+  /**
+   * Creates a single val from the last instruction in `lets`. Useful to create
+   * the parameters of a new block when splitting blocks.
+   *
+   * @param lets The instructions whose value we want to pass
+   * @return A single `Val.Local` whose name and type are the same as the last
+   *         instruction in `lets`.
+   */
+  private def reuseLast(lets: Seq[Let]): Seq[Val.Local] =
+    Seq(Val.Local(lets.last.name, lets.last.op.resty))
 
   /**
    * Convert a block to the corresponding sequence of instruction
@@ -133,25 +150,28 @@ class InlineCaching(dispatchInfo: Map[String, Seq[Int]],
    * implementation of `meth` for an instance of `clss`.
    *
    * @param meth The method to retrieve
+   * @param call The original method call
    * @param clss The class for which we're looking for an implementation
    * @return A function that accepts a `Local` representing the name of the
    *         block to jump to after retrieving the address of the method.
    *         The destination block must accept one parameter of type `Ptr`,
    *         which is the address of the method.
    */
-  private def makeStaticBlock(meth: Method, clss: Class): Local => Block =
+  private def makeStaticBlock(meth: Method,
+                              call: Op.Call,
+                              clss: Class): Local => Block =
     next => {
       val blockName  = fresh()
       val impl       = findImpl(meth, clss) getOrElse ???
-      val staticCall = Let(Op.Copy(Val.Global(impl, Type.Ptr)))
+      val result     = fresh()
+
       Block(
-          blockName,
-          Nil,
-          Seq(
-              staticCall,
-              Inst.Jump(
-                  Next.Label(next, Seq(Val.Local(staticCall.name, Type.Ptr))))
-          )
+        blockName,
+        Nil,
+        Seq(
+          Let(result, call.copy(ptr = Val.Global(impl, Type.Ptr))),
+          Inst.Jump(Next.Label(next, Seq(Val.Local(result, call.resty))))
+        )
       )
     }
 
@@ -171,16 +191,13 @@ class InlineCaching(dispatchInfo: Map[String, Seq[Int]],
 
     (els: Local) =>
       Block(
-          name = fresh(),
-          params = Nil,
-          insts = Seq(
-              Let(comparison.name,
-                  Op.Comp(Comp.Ieq,
-                          Type.I32,
-                          Val.I32(desiredType),
-                          actualType)),
-              Inst.If(comparison, Next(correspondingBlock), Next(els))
-          )
+        name = fresh(),
+        params = Nil,
+        insts = Seq(
+          Let(comparison.name,
+              Op.Comp(Comp.Ieq, Type.I32, Val.I32(desiredType), actualType)),
+          Inst.If(comparison, Next(correspondingBlock), Next(els))
+        )
       )
   }
 
@@ -190,80 +207,82 @@ class InlineCaching(dispatchInfo: Map[String, Seq[Int]],
    * @param block The block on which to add inline caching.
    * @return A block that is semantically equivalent to `block`
    */
-  private def addInlineCaching(block: Block): Seq[Block] = {
-    if (block.insts exists isVirtualDispatch) {
-      val (init,
-           inst @ Let(n, Op.Method(obj, MethodRef(cls: Class, meth))),
-           merge) = splitAt(isVirtualDispatch)(block)
+  private def addInlineCaching(block: Block): Seq[Block] =
+    splitAt(isVirtualDispatch)(_.sliding(2).toSeq)(reuseLast)(block) match {
+      case Some(
+          (init,
+           Seq(inst @ Let(n, Op.Method(obj, MethodRef(cls: Class, meth))),
+               Let(_, call @ Op.Call(resty, ptr, args))),
+           merge)) =>
+        val reuse: Seq[Let] => Seq[Val.Local] = lets =>
+          Seq(Val.Local(lets.last.name, lets.last.op.resty))
 
-      val instname = s"${n.scope}.${n.id}"
-      val key      = s"$instname:${meth.name.id}"
+        val instname = s"${n.scope}.${n.id}"
+        val key      = s"$instname:${meth.name.id}"
 
-      dispatchInfo getOrElse (key, Seq()) flatMap (top classWithId _) match {
-        case allCandidates if allCandidates.nonEmpty =>
-          // We don't inline calls to all candidates, only the most frequent for
-          // performance.
-          val candidates = allCandidates take maxCandidates
+        dispatchInfo getOrElse (key, Seq()) flatMap (top classWithId _) match {
+          case allCandidates if allCandidates.nonEmpty =>
+            // We don't inline calls to all candidates, only the most frequent for
+            // performance.
+            val candidates = allCandidates take maxCandidates
 
-          val typeptr   = Val.Local(fresh(), Type.Ptr)
-          val typeidptr = Val.Local(fresh(), Type.Ptr)
-          val typeid    = Val.Local(fresh(), Type.I32)
+            val typeptr   = Val.Local(fresh(), Type.Ptr)
+            val typeidptr = Val.Local(fresh(), Type.Ptr)
+            val typeid    = Val.Local(fresh(), Type.I32)
 
-          // Instructions to load the type id of `obj` at runtime.
-          // The result is in `typeid`.
-          val loadTypeId: Seq[Let] = Seq(
+            // Instructions to load the type id of `obj` at runtime.
+            // The result is in `typeid`.
+            val loadTypeId: Seq[Let] = Seq(
               Let(typeptr.name, Op.Load(Type.Ptr, obj)),
-              Let(typeidptr.name,
-                  Op.Elem(cls.typeStruct,
-                          typeptr,
-                          Seq(Val.I32(0), Val.I32(0)))),
+              Let(
+                typeidptr.name,
+                Op.Elem(cls.typeStruct, typeptr, Seq(Val.I32(0), Val.I32(0)))),
               Let(typeid.name, Op.Load(Type.I32, typeidptr))
-          )
+            )
 
-          // The blocks that give the address for an inlined call
-          val staticBlocks: Seq[Block] =
-            candidates map (makeStaticBlock(meth, _)(merge.name))
+            // The blocks that give the address for an inlined call
+            val staticBlocks: Seq[Block] =
+              candidates map (makeStaticBlock(meth, call, _)(merge.name))
 
-          // The type comparisons. The argument is the block to go to if the
-          // type test fails.
-          val typeComparisons: Seq[Local => Block] =
-            staticBlocks zip candidates map {
-              case (block, clss) =>
-                makeTypeComparison(typeid, clss.id, block.name)
+            // The type comparisons. The argument is the block to go to if the
+            // type test fails.
+            val typeComparisons: Seq[Local => Block] =
+              staticBlocks zip candidates map {
+                case (block, clss) =>
+                  makeTypeComparison(typeid, clss.id, block.name)
+              }
+
+            // If all type tests fail, we fallback to virtual dispatch.
+            val fallback: Block = {
+              val newMethod = inst.copy(name = fresh())
+              val newCall   = Let(call.copy(ptr = Val.Local(newMethod.name, Type.Ptr)))
+              Block(fresh(),
+                    Nil,
+                    Seq(
+                      newMethod,
+                      newCall,
+                      Inst.Jump(
+                        Next.Label(merge.name,
+                                   Seq(Val.Local(newCall.name, call.resty))))
+                    ))
             }
 
-          // If all type tests fail, we fallback to virtual dispatch.
-          val fallback: Block = {
-            val newInstName = fresh()
-            val newInst     = inst.copy(name = newInstName)
-            Block(
-                fresh(),
-                Nil,
-                Seq(
-                    newInst,
-                    Inst.Jump(
-                        Next.Label(merge.name,
-                                   Seq(Val.Local(newInstName, inst.op.resty))))
-                ))
-          }
-
-          // Execute start, load the typeid and jump to the first type test.
-          val start: Local => Block = typeComp =>
-            init.copy(
+            // Execute start, load the typeid and jump to the first type test.
+            val start: Local => Block = typeComp =>
+              init.copy(
                 insts = init.insts ++ loadTypeId :+ Inst.Jump(Next(typeComp)))
 
-          linkBlocks(start +: typeComparisons)(fallback) ++
-          staticBlocks ++
-          Seq(fallback) ++
-          addInlineCaching(merge)
+            linkBlocks(start +: typeComparisons)(fallback) ++
+              staticBlocks ++
+              Seq(fallback) ++
+              addInlineCaching(merge)
 
-        case _ =>
-          Seq(block)
-      }
-    } else {
-      Seq(block)
+          case _ =>
+            Seq(block)
+        }
+      case _ =>
+        Seq(block)
     }
-  }
 
   override def preDefn = {
     case define: Defn.Define =>
