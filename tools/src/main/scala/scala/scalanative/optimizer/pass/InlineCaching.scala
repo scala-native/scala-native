@@ -185,7 +185,7 @@ class InlineCaching(dispatchInfo: Map[String, Seq[Int]],
    *         block to jump to if the two types are different.
    */
   private def makeTypeComparison(actualType: Val,
-                                 desiredType: Int,
+                                 desiredType: Val,
                                  correspondingBlock: Local): Local => Block = {
     val comparison = Val.Local(fresh(), Type.Bool)
 
@@ -195,7 +195,7 @@ class InlineCaching(dispatchInfo: Map[String, Seq[Int]],
         params = Nil,
         insts = Seq(
           Let(comparison.name,
-              Op.Comp(Comp.Ieq, Type.I32, Val.I32(desiredType), actualType)),
+              Op.Comp(Comp.Ieq, Type.Ptr, actualType, desiredType)),
           Inst.If(comparison, Next(correspondingBlock), Next(els))
         )
       )
@@ -226,18 +226,11 @@ class InlineCaching(dispatchInfo: Map[String, Seq[Int]],
             // performance.
             val candidates = allCandidates take maxCandidates
 
-            val typeptr   = Val.Local(fresh(), Type.Ptr)
-            val typeidptr = Val.Local(fresh(), Type.Ptr)
-            val typeid    = Val.Local(fresh(), Type.I32)
-
+            val typeptr = Val.Local(fresh(), Type.Ptr)
             // Instructions to load the type id of `obj` at runtime.
             // The result is in `typeid`.
-            val loadTypeId: Seq[Let] = Seq(
-              Let(typeptr.name, Op.Load(Type.Ptr, obj)),
-              Let(
-                typeidptr.name,
-                Op.Elem(cls.typeStruct, typeptr, Seq(Val.I32(0), Val.I32(0)))),
-              Let(typeid.name, Op.Load(Type.I32, typeidptr))
+            val loadTypePtr: Seq[Let] = Seq(
+              Let(typeptr.name, Op.Load(Type.Ptr, obj))
             )
 
             // The blocks that give the address for an inlined call
@@ -249,7 +242,7 @@ class InlineCaching(dispatchInfo: Map[String, Seq[Int]],
             val typeComparisons: Seq[Local => Block] =
               staticBlocks zip candidates map {
                 case (block, clss) =>
-                  makeTypeComparison(typeid, clss.id, block.name)
+                  makeTypeComparison(typeptr, clss.typeConst, block.name)
               }
 
             // If all type tests fail, we fallback to virtual dispatch.
@@ -270,7 +263,7 @@ class InlineCaching(dispatchInfo: Map[String, Seq[Int]],
             // Execute start, load the typeid and jump to the first type test.
             val start: Local => Block = typeComp =>
               init.copy(
-                insts = init.insts ++ loadTypeId :+ Inst.Jump(Next(typeComp)))
+                insts = init.insts ++ loadTypePtr :+ Inst.Jump(Next(typeComp)))
 
             linkBlocks(start +: typeComparisons)(fallback) ++
               staticBlocks ++
