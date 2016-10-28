@@ -86,15 +86,6 @@ object ClassHierarchy {
 
     lazy val vtableValue: Val.Struct = Val.Struct(Global.None, vtable)
 
-    //lazy val dyntableStruct: Type.Struct =
-      //Type.Struct(Global.None, Seq(Type.Ptr))
-
-    //lazy val dyntableValue = Val.Global(dynDispatchTableName, Type.Ptr)
-
-    //lazy val dynDispatchTableName: Global = ??? 
-
-    lazy val dynDispatchTableStruct: Type.Struct = Type.Struct(Global.None, Seq(Type.Ptr)) 
-
     lazy val dynDispatchTableValue = {
       val meth: Option[Method] = if(name.toString.contains("F")) {
         allmethods.find(_.name.toString.contains("fooo_class.java"))
@@ -113,10 +104,10 @@ object ClassHierarchy {
     }
 
     lazy val typeStruct: Type.Struct =
-      Type.Struct(Global.None, Seq(Type.I32, Type.Ptr, dynDispatchTableStruct, vtableStruct))
+      Type.Struct(Global.None, Seq(Type.I32, Type.Ptr, Type.Ptr, vtableStruct))
 
     lazy val typeValue: Val.Struct = Val
-      .Struct(Global.None, Seq(Val.I32(id), Val.String(name.id), dynDispatchTableValue, vtableValue))
+      .Struct(Global.None, Seq(Val.I32(id), Val.String(name.id), Val.Const(dynDispatchTableValue), vtableValue))
 
     lazy val typeConst: Val = Val.Global(name tag "class" tag "type", Type.Ptr)
 

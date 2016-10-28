@@ -4,13 +4,13 @@
 
 char* to_string_helper(jstring* str);
 
-void* scalanative_dyndispatch(void* ty, void* sign, int sign_length) {
+void* scalanative_dyndispatch(void** ty, void* sign, int sign_length) {
 	//jstring* str = (jstring*) sign;
 	//printf("dispatch %s\n", to_string_helper(sign));
-	return ty;
+	return *ty;
 }
 
-char* to_string_helper(jstring* str) {
+/*char* to_string_helper(jstring* str) {
     size_t length = str->count;
     char* cs = (char*) scalanative_alloc(NULL, (length + 1) * sizeof(char));
 
@@ -20,4 +20,4 @@ char* to_string_helper(jstring* str) {
     cs[length] = '\0';
 
     return cs;
-}
+}*/
