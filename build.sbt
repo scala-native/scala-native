@@ -294,6 +294,12 @@ lazy val tests =
       }.taskValue
     )
 
+lazy val benchmarks =
+  project
+    .in(file("benchmarks"))
+    .settings(projectSettings)
+    .settings(noPublishSettings)
+
 lazy val sandbox =
   project
     .in(file("sandbox"))
