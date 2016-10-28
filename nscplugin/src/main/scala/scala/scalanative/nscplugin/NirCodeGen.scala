@@ -859,13 +859,15 @@ abstract class NirCodeGen
     }
 
     def genDynMethodCall(sym: Symbol, self: Val, argsp: Seq[Tree], focus: Focus): Focus = {
-      val methodName   = genMethodName(sym)
+
       val sig          = genMethodSig(sym)
+      val methodName   = genMethodName(sym).id
       val (args, last) = genMethodArgs(sym, argsp, focus)
 
       val method = last withOp Op.DynMethod(self, methodName.toString)
       val values = self +: args
 
+      //unsupported(methodName)
       method withOp Op.Call(sig, method.value, values)
     }
 

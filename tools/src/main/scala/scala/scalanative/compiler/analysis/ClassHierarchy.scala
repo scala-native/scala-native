@@ -3,7 +3,7 @@ package compiler
 package analysis
 
 import scala.collection.mutable
-import util.{sh, unreachable}
+import util.{sh, unreachable, unsupported}
 import nir._, Shows._
 
 object ClassHierarchy {
@@ -86,11 +86,37 @@ object ClassHierarchy {
 
     lazy val vtableValue: Val.Struct = Val.Struct(Global.None, vtable)
 
+    //lazy val dyntableStruct: Type.Struct =
+      //Type.Struct(Global.None, Seq(Type.Ptr))
+
+    //lazy val dyntableValue = Val.Global(dynDispatchTableName, Type.Ptr)
+
+    //lazy val dynDispatchTableName: Global = ??? 
+
+    lazy val dynDispatchTableStruct: Type.Struct = Type.Struct(Global.None, Seq(Type.Ptr)) 
+
+    lazy val dynDispatchTableValue = {
+      val meth: Option[Method] = if(name.toString.contains("F")) {
+        allmethods.find(_.name.toString.contains("fooo_class.java"))
+        /*unsupported(name.toString +
+          "traits " + traits.map(_.name).toString +
+          "members" + members.map(_.name).toString +
+          "allmethods " + allmethods.map(_.name).toString +
+          "allfields " +allfields.map(_.name).toString + 
+          "alloverrides " + alloverrides.map{ case (m1, m2) => (m1.name, m2.name) }.toString +
+          "imap " + imap.map{ case (m, _) => m.name }.toString +
+          "vslots " + vslots.map(_.name).toString)*/
+      } else None
+
+      Val.Struct(Global.None, Seq(meth.map(_.value).getOrElse(allmethods(0).value)))
+      //unsupported(vtable)
+    }
+
     lazy val typeStruct: Type.Struct =
-      Type.Struct(Global.None, Seq(Type.I32, Type.Ptr, vtableStruct))
+      Type.Struct(Global.None, Seq(Type.I32, Type.Ptr, dynDispatchTableStruct, vtableStruct))
 
     lazy val typeValue: Val.Struct = Val
-      .Struct(Global.None, Seq(Val.I32(id), Val.String(name.id), vtableValue))
+      .Struct(Global.None, Seq(Val.I32(id), Val.String(name.id), dynDispatchTableValue, vtableValue))
 
     lazy val typeConst: Val = Val.Global(name tag "class" tag "type", Type.Ptr)
 
