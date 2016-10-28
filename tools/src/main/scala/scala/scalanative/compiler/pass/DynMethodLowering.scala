@@ -19,8 +19,7 @@ class DynMethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
       val typeptr             = Val.Local(fresh(), Type.Ptr)
       val dyndispatchTablePtr = Val.Local(fresh(), Type.Ptr)
       val methptrptr          = Val.Local(fresh(), Type.Ptr)
-
-      //unsupported(s"DynMethod lowering missing ($dyn)")
+      
 
       val tt: Seq[Type] = Seq(Rt.Type.tys, Seq(Type.Struct(Global.None, Seq(Type.Ptr)))).flatten
       val tpe = Struct(Global.None, tt)
@@ -33,7 +32,7 @@ class DynMethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
                   Seq(Val.I32(0),
                       Val.I32(2),
                       Val.I32(0)))),
-        Let(methptrptr.name, Op.Call(dyndispatchSig, dyndispatch, Seq(dyndispatchTablePtr, Val.String(sign), Val.I32(sign.size)))),
+        Let(methptrptr.name, Op.Call(dyndispatchSig, dyndispatch, Seq(dyndispatchTablePtr, Val.Const(Val.Chars(sign)), Val.I32(sign.size)))),
         Let(n, Op.Load(Type.Ptr, methptrptr))
       )
 
