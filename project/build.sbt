@@ -28,3 +28,8 @@ scalacOptions ++= Seq(
   "-encoding",
   "utf8"
 )
+
+libraryDependencies += "com.lihaoyi" %% "fastparse" % "0.4.1"
+
+libraryDependencies += compilerPlugin(
+  "org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full)

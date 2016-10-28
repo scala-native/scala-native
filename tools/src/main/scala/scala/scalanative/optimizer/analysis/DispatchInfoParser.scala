@@ -2,41 +2,35 @@ package scala.scalanative
 package optimizer
 package analysis
 
-import scala.util.parsing.combinator._
-import scala.util.matching.Regex
+import fastparse.WhitespaceApi
+import fastparse.noApi._
 
-object DispatchInfoParser extends JavaTokenParsers {
+object DispatchInfoParser {
+
+  private val IgnoreWhitespace = WhitespaceApi.Wrapper {
+    import fastparse.all._
+    NoTrace(CharIn(Seq(' ', '\t', '\n')).rep)
+  }
+  import IgnoreWhitespace._
+
+  val number: P[Int] = P(CharIn('0' to '9').rep(1).!.map(_.toInt))
+
+  val dispatchHeader: P[String] =
+    P("=" ~ CharsWhile(_ != ':').! ~ ":" ~ CharsWhile(_ != ':').! ~ ":") map {
+      case (src, name) => s"$src:$name"
+    }
+
+  val dispatchMethod: P[(String, Seq[Int])] =
+    dispatchHeader ~ (number ~ "(" ~ number ~ ")").rep(1) map {
+      case (header, tpes) => (header, tpes.sortBy(_._2).map(_._1).reverse)
+    }
+
+  val dispatchInfo: P[Map[String, Seq[Int]]] =
+    dispatchMethod.rep ~ End map (_.toMap)
 
   def apply(in: String): Map[String, Seq[Int]] =
-    parseAll(dispatchInfo, in) match {
-      case Success(info, _) =>
-        info
-      case Failure(msg, next) =>
-        throw new Exception(msg + "\n" + next.source.toString)
-      case Error(msg, next) =>
-        throw new Exception(msg)
+    dispatchInfo.parse(in) match {
+      case Parsed.Success(info, _) => info
+      case Parsed.Failure(_, _, _) => Map.empty
     }
-
-  def dispatchType: Parser[String] =
-    rep1sep(ident, ".") ^^ { _ mkString "." }
-
-  def dispatchHeader: Parser[String] =
-    "=" ~> ident ~ "." ~ wholeNumber ~ ":" ~ dispatchType ~ ":" ^^ {
-      case scp ~ "." ~ id ~ ":" ~ names ~ ":" =>
-        s"""$scp.$id:$names"""
-    }
-
-  def dispatchMethod: Parser[(String, Seq[Int])] =
-    dispatchHeader ~ rep1(wholeNumber ~ ("(" ~> wholeNumber <~ ")")) ^^ {
-      case header ~ tpes =>
-        (header,
-         tpes.map { case t ~ occ => (t.toInt, occ.toInt) }
-           .sortBy(_._2)
-           .map(_._1)
-           .reverse)
-    }
-
-  def dispatchInfo: Parser[Map[String, Seq[Int]]] =
-    rep(dispatchMethod) ^^ (_.toMap)
-
 }
