@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <string>
 #include "CountingMap.hpp"
-#include <mutex>
 #include "gc.h"
 
 typedef struct tpe
@@ -41,7 +40,6 @@ char* to_string(jstring* str) {
 }
 
 CountingMap method_calls;
-std::mutex method_calls_mutex;
 
 void method_call_dump(FILE* out) {
     method_calls.print(out);
@@ -50,12 +48,8 @@ void method_call_dump(FILE* out) {
 extern "C" {
 
     void method_call_log(int callee_t, jstring* method_name) {
-        method_calls_mutex.lock();
-
         string m(to_string(method_name));
         method_calls.insert_occ(m, callee_t);
-
-        method_calls_mutex.unlock();
     }
 
     void method_call_dump_file(jstring* file_name) {
