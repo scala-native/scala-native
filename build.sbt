@@ -263,6 +263,28 @@ lazy val tests =
     .in(file("unit-tests"))
     .settings(projectSettings)
     .settings(noPublishSettings)
+    .settings(
+      sourceGenerators in Compile += Def.task {
+        val dir    = sourceDirectory.value
+        val prefix = dir.getAbsolutePath + "/main/scala/"
+        val suites = (dir ** "*Suite.scala").get.map { f =>
+          f.getAbsolutePath
+            .replace(prefix, "")
+            .replace(".scala", "")
+            .split("/")
+            .mkString(".")
+        }.filter(_ != "tests.Suite").mkString("Seq(", ", ", ")")
+        val file = (sourceManaged in Compile).value / "tests" / "Disover.scala"
+        IO.write(file,
+                 s"""
+          package tests
+          object Discover {
+            val suites: Seq[tests.Suite] = $suites
+          }
+        """)
+        Seq(file)
+      }.taskValue
+    )
 
 lazy val sandbox =
   project
