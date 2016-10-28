@@ -142,10 +142,10 @@ object FloatSuite extends tests.Suite {
 
     val x = Float.NaN
     val y = intBitsToFloat(floatToRawIntBits(x) | 1)
-    // assertNot(x == y) // FIXME this works on the JVM, but fails on native.
+    assertNot(x == y)
 
     val z = intBitsToFloat(floatToIntBits(x) | 1)
-    // assertNot(x == z) // FIXME this works on the JVM, but fails on native.
+    assertNot(x == z)
   }
 
   test("eq") {

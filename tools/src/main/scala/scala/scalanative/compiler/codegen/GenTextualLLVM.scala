@@ -450,12 +450,12 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
         case Comp.Sle => "icmp sle"
         case Comp.Sgt => "icmp sgt"
         case Comp.Sge => "icmp sge"
-        case Comp.Feq => "fcmp ueq"
+        case Comp.Feq => "fcmp oeq"
         case Comp.Fne => "fcmp une"
-        case Comp.Flt => "fcmp ult"
-        case Comp.Fle => "fcmp ule"
-        case Comp.Fgt => "fcmp ugt"
-        case Comp.Fge => "fcmp uge"
+        case Comp.Flt => "fcmp olt"
+        case Comp.Fle => "fcmp ole"
+        case Comp.Fgt => "fcmp ogt"
+        case Comp.Fge => "fcmp oge"
       }
       sh"$cmp $l, ${justVal(r)}"
     case Op.Conv(name, ty, v) =>
