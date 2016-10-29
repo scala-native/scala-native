@@ -1199,13 +1199,25 @@ abstract class NirCodeGen
     }
 
     def genStringConcat(leftp: Tree, rightp: Tree, focus: Focus): Focus = {
+      def stringify(sym: Symbol, focus: Focus) =
+        if (sym == StringClass) {
+          focus
+        } else {
+          genMethodCall(Object_toString, statically = false, focus.value, Seq(), focus)
+        }
+
       val left = {
+        val typesym = leftp.tpe.typeSymbol
         val unboxed = genExpr(leftp, focus)
-        val boxed   = boxValue(leftp.tpe.typeSymbol, unboxed)
-        genMethodCall(
-            Object_toString, statically = false, boxed.value, Seq(), boxed)
+        val boxed   = boxValue(typesym, unboxed)
+        stringify(typesym, boxed)
       }
-      val right = genExpr(rightp, left)
+
+      val right = {
+        val typesym = rightp.tpe.typeSymbol
+        val boxed   = genExpr(rightp, left)
+        stringify(typesym, boxed)
+      }
 
       genMethodCall(String_+,
                     statically = true,
