@@ -51,10 +51,13 @@ abstract class Suite {
 
   def run(): Boolean = {
     println("* " + this.getClass.getName)
-    tests.forall { test =>
-      val res = test.run()
-      println((if (res) "  [ok] " else "  [fail] ") + test.name)
-      res
+    var failed = false
+    tests.foreach { test =>
+      val result = test.run()
+      val status = if (result) "  [ok] " else "  [fail] "
+      println(status + test.name)
+      failed = failed || result
     }
+    !failed
   }
 }
