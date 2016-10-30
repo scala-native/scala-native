@@ -86,28 +86,29 @@ object ClassHierarchy {
 
     lazy val vtableValue: Val.Struct = Val.Struct(Global.None, vtable)
 
-    lazy val dynDispatchTableValue = {
-      val meth: Option[Method] = if(name.toString.contains("F")) {
-        allmethods.find(_.name.toString.contains("fooo_class.java"))
-        /*unsupported(name.toString +
-          "traits " + traits.map(_.name).toString +
-          "members" + members.map(_.name).toString +
-          "allmethods " + allmethods.map(_.name).toString +
-          "allfields " +allfields.map(_.name).toString + 
-          "alloverrides " + alloverrides.map{ case (m1, m2) => (m1.name, m2.name) }.toString +
-          "imap " + imap.map{ case (m, _) => m.name }.toString +
-          "vslots " + vslots.map(_.name).toString)*/
-      } else None
+    lazy val dynDispatchTableValue: Val.Struct =
+      Val.Struct(Global.None, Seq(
+        Val.I32(allmethods.size),
+        Val.Const(
+          Val.Array(
+            Type.Struct(Global.None, Seq(Type.Ptr,Type.Ptr)),
+            allmethods.map(m =>
+              Val.Struct(Global.None, Seq(Val.Const(Val.Chars(genSignature(m))), m.value))
+            )
+          )
+        )
+      ))
 
-      Val.Struct(Global.None, Seq(meth.map(_.value).getOrElse(allmethods(0).value)))
-      //unsupported(vtable)
-    }
+    lazy val dynDispatchTableStruct: Type.Struct = Type.Struct(Global.None, Seq(Type.I32, Type.Ptr));
+
+
+    def genSignature(method: Method): String = method.name.id
 
     lazy val typeStruct: Type.Struct =
-      Type.Struct(Global.None, Seq(Type.I32, Type.Ptr, Type.Ptr, vtableStruct))
+      Type.Struct(Global.None, Seq(Type.I32, Type.Ptr, dynDispatchTableStruct, vtableStruct))
 
     lazy val typeValue: Val.Struct = Val
-      .Struct(Global.None, Seq(Val.I32(id), Val.String(name.id), Val.Const(dynDispatchTableValue), vtableValue))
+      .Struct(Global.None, Seq(Val.I32(id), Val.String(name.id), dynDispatchTableValue, vtableValue))
 
     lazy val typeConst: Val = Val.Global(name tag "class" tag "type", Type.Ptr)
 

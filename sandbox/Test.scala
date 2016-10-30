@@ -2,14 +2,18 @@ import scalanative.native._, stdlib._, stdio._
 
 object Test {
   def main(args: Array[String]): Unit = {
-    val x: { def fooo(str: String): Unit } = new F();
-    x.fooo(" dyn")
-    new F().fooo(" non-dyn")
+    val x: { def bar(str: String): Unit; def fooo(str1: String, str2: String): Unit } = new F();
+    x.bar(" dyn")
+    x.fooo("sakjbd", "ajhs")
+    new F().bar(" non-dyn")
+    new F().fooo("ska", "hey")
   }
 
   class F {
 
-    def fooo(str: String) = println("hi " + str)
+    def bar(str: String) = println("hi " + str)
+
+    def fooo(str1: String, str2: String) = println(str1+str2)
 
   }
 }
