@@ -16,8 +16,12 @@ object ControlFlow {
   final case class Edge(val from: Block, val to: Block, val next: Next)
 
   final case class Block(name: Local, params: Seq[Val.Local], insts: Seq[Inst]) {
-    val pred  = mutable.UnrolledBuffer.empty[Edge]
-    val succ  = mutable.UnrolledBuffer.empty[Edge]
+    val inEdges  = mutable.UnrolledBuffer.empty[Edge]
+    val outEdges = mutable.UnrolledBuffer.empty[Edge]
+
+    def pred = inEdges.map(_.from)
+    def succ = outEdges.map(_.to)
+
     def label = Inst.Label(name, params)
   }
 
@@ -33,7 +37,7 @@ object ControlFlow {
         val node = worklist.pop()
         if (!visited.contains(node)) {
           visited += node
-          node.succ.foreach(e => worklist.push(e.to))
+          node.outEdges.foreach(e => worklist.push(e.to))
           f(node)
         }
       }
@@ -79,8 +83,8 @@ object ControlFlow {
 
       def edge(from: Block, to: Block, next: Next) = {
         val e = new Edge(from, to, next)
-        from.succ += e
-        to.pred += e
+        from.outEdges += e
+        to.inEdges += e
       }
 
       val blocks: Seq[Block] = insts.zipWithIndex.collect {
