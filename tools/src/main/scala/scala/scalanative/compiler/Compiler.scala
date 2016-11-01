@@ -15,6 +15,7 @@ final class Compiler(opts: Opts) {
   private lazy val passCompanions: Seq[PassCompanion] = Seq(
     pass.GlobalBoxingElimination,
     pass.DeadCodeElimination,
+    pass.GlobalValueNumbering,
     pass.MainInjection,
     pass.ExternHoisting,
     pass.ModuleLowering,
