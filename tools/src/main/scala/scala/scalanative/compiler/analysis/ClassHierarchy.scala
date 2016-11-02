@@ -86,20 +86,35 @@ object ClassHierarchy {
 
     lazy val vtableValue: Val.Struct = Val.Struct(Global.None, vtable)
 
-    lazy val dynDispatchTableValue: Val.Struct =
-      Val.Struct(Global.None, Seq(
-        Val.I32(allmethods.size),
-        Val.Const(
-          Val.Array(
-            Type.Struct(Global.None, Seq(Type.Ptr,Type.Ptr)),
-            allmethods.map(m =>
-              Val.Struct(Global.None, Seq(Val.Const(Val.Chars(genSignature(m))), m.value))
-            )
-          )
-        )
-      ))
+    lazy val perfectHashMap: PerfectHashMap[String, Val] = {
+      //println(methods.map(_.name))
+      PerfectHashMap(hash, methods.map(m => (genSignature(m), m.value)))
+    }
 
-    lazy val dynDispatchTableStruct: Type.Struct = Type.Struct(Global.None, Seq(Type.I32, Type.Ptr));
+    def hash(key: String, d: Int): Int = 
+      key.foldLeft(d){ case (h, c) => 7 * h + c.toInt } & 0x7fffffff
+
+    lazy val dynDispatchTableValue: Val = {
+      lazy val defaultPtr: Val = allmethods.head.value
+      Val.Struct(
+        Global.None,
+        Seq(
+          Val.I32(perfectHashMap.size),
+          Val.Const(Val.Array(Type.I32, perfectHashMap.keys.map(Val.I32))),
+          Val.Const(Val.Array(Type.Ptr, perfectHashMap.values.map(_.getOrElse(defaultPtr))))
+        )
+      )
+    }
+
+    lazy val dynDispatchTableStruct = Type.Struct(Global.None, Seq(Type.I32, Type.Ptr, Type.Ptr))
+      /*Type.Struct(
+        Global.None, 
+        Seq(
+          Type.I32,
+          Type.Array(Type.I32, perfectHashMap.size),
+          Type.Array(Type.Ptr, perfectHashMap.size)
+        )
+      );*/
 
 
     def genSignature(method: Method): String = method.name.id
