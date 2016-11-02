@@ -54,5 +54,4 @@ script:
   - pushd sbt-cross
   - sbt publishLocal
   - popd
-  - bin/scalafmt --test && sbt 'cleanCache' 'cleanLocal' 'nscplugin/publishLocal' 'nativelib/publishLocal' 'publishLocal' 'sandbox/run' 'demoNative/run' 'tests/run' 'tools/test' 'benchmarks/run' 'scripted' 'publishSnapshot'
-
+  - bin/scalafmt --test && sbt 'cleanCache' 'cleanLocal' 'nscplugin/publishLocal' 'nativelib/publishLocal' 'publishLocal' 'sandbox/run' 'demoNative/run' 'tests/run' 'tools/test' 'testingCompiler/test' 'benchmarks/run' 'scripted' 'publishSnapshot'

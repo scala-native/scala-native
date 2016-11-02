@@ -365,3 +365,53 @@ lazy val benchmarks =
       }.taskValue
     )
     .enablePlugins(ScalaNativePlugin)
+
+lazy val testingOptimizer =
+  project
+    .in(file("testing-optimizer"))
+    .settings(toolSettings)
+    .settings(
+      fullClasspath in Test := {
+        val testingcompilercp = (fullClasspath in testingCompiler in Compile).value.files.map(_.getAbsolutePath)
+        val testingcompilerjar = (Keys.`package` in testingCompiler in Compile).value.getAbsolutePath
+        sys.props("sbt.paths.testingcompiler.cp") = (testingcompilercp :+ testingcompilerjar) mkString java.io.File.pathSeparator
+        (fullClasspath in Test).value
+      }
+    )
+    .settings(
+        libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.0" % Test
+    )
+    .dependsOn(testingCompilerInterface)
+
+lazy val testingCompilerInterface =
+  project
+    .in(file("testing-compiler-interface"))
+    .settings(libSettings)
+    .settings(
+      crossPaths := false,
+      crossVersion := CrossVersion.Disabled,
+      autoScalaLibrary := false
+    )
+
+lazy val testingCompiler =
+  project
+    .in(file("testing-compiler"))
+    .settings(libSettings)
+    .settings(noPublishSettings)
+    .settings(
+      libraryDependencies ++= Seq(
+        "org.scala-lang" % "scala-compiler" % scalaVersion.value,
+        "org.scala-lang" % "scala-reflect"  % scalaVersion.value,
+        "org.scalatest" %% "scalatest" % "3.0.0" % Test
+      )
+    ).dependsOn(testingCompilerInterface, nativelib)
+    .settings(
+      fullClasspath in Test := {
+        val testcp = (fullClasspath in Test).value.files.map(_.getAbsolutePath).mkString(java.io.File.pathSeparator)
+        sys.props("sbt.class.directory") = testcp
+
+        val nscpluginjar = (Keys.`package` in nscplugin in Compile).value
+        sys.props("sbt.paths.scalanative.jar") = nscpluginjar.getAbsolutePath
+        (fullClasspath in Test).value
+      }
+    )
