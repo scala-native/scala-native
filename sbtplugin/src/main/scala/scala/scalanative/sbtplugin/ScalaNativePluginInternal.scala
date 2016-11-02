@@ -15,11 +15,11 @@ object ScalaNativePluginInternal {
 
   private lazy val nativelib: File =
     Path.userHome / ".scalanative" / ("nativelib-" + nir.Versions.current)
-
+ 
   private lazy val includes = {
     val includedir =
-      Try(Process("llvm-config --includedir").lines_!.toSeq)
-        .getOrElse(Seq.empty)
+      Try(Process("llvm-config --includedir").lines_!.toSeq).getOrElse(Seq.empty)
+
     ("/usr/local/include" +: includedir).map(s => s"-I$s")
   }
 
@@ -46,49 +46,81 @@ object ScalaNativePluginInternal {
   }
 
   /** Compiles application nir to llvm ir. */
-  private def compileNir(opts: NativeOpts): Seq[nir.Attr.Link] = {
+  private def compileApplication(opts: NativeOpts): Seq[nir.Attr.Link] = {
     val compiler = new NativeCompiler(opts)
     compiler.apply()
   }
 
+  private val nl = System.lineSeparator
+  private def runWithLogger(description: String, command: Seq[String], 
+      workingDirectory: File, log: Logger, bailOut: => Unit): Unit = {
+
+    log.info(
+      description + nl +
+        workingDirectory.toString + nl +
+        command.mkString(nl, nl + "\t", "")
+    )
+    val exitCode = Process(command, workingDirectory) ! log
+    if(exitCode != 0) {
+      bailOut
+      sys.error("failed to: " + description)
+    }
+  }
+
   /** Compiles rt to llvm ir using clang. */
-  private def unpackRtlib(clang: File,
+  private def unpackAndCompileRuntime(clang: File,
                           clangpp: File,
-                          classpath: Seq[String]): Unit = {
+                          classpath: Seq[String],
+                          log: Logger): Unit = {
     val nativelibjar = classpath.collectFirst {
       case p if p.contains("scala-native") && p.contains("nativelib") =>
         file(p)
     }.get
     val jarhash     = Hash(nativelibjar).toSeq
     val jarhashfile = nativelib / "jarhash"
+
+    val cpaths     = (nativelib ** "*.c").get.map(abs)
+    val cpppaths   = (nativelib ** "*.cpp").get.map(abs)
+    def compilec   = abs(clang) +: (includes ++ ("-c" +: cpaths))
+    def compilecpp = abs(clangpp) +: (includes ++ ("-c" +: cpppaths))
+
+    val compilecCommandFile = nativelib / "compilec"
+    val compilecppCommandFile = nativelib / "compilecpp"
+
     def bootstrapped =
-      nativelib.exists &&
+        nativelib.exists &&
         jarhashfile.exists &&
-        jarhash == IO.readBytes(jarhashfile).toSeq
+        jarhash == IO.readBytes(jarhashfile).toSeq &&
+        compilecCommandFile.exists &&
+        compilec.toString == IO.readLines(compilecCommandFile).mkString(nl) &&
+        compilecppCommandFile.exists &&
+        compilecpp.toString == IO.readLines(compilecppCommandFile).mkString(nl)
 
     if (!bootstrapped) {
+      log.info("bootstraping native runtime")
+
       IO.delete(nativelib)
+
+      IO.write(compilecCommandFile, compilec.toString)
+      IO.write(compilecppCommandFile, compilecpp.toString)
+
       IO.unzip(nativelibjar, nativelib)
       IO.write(jarhashfile, Hash(nativelibjar))
 
-      val cpaths     = (nativelib ** "*.c").get.map(abs)
-      val cpppaths   = (nativelib ** "*.cpp").get.map(abs)
-      val compilec   = abs(clang) +: (includes ++ ("-c" +: cpaths))
-      val compilecpp = abs(clangpp) +: (includes ++ ("-c" +: cpppaths))
-
-      Process(compilec, nativelib).!
-      Process(compilecpp, nativelib).!
+      runWithLogger("Compiling c runtime", compilec, nativelib, log, bailOut = IO.delete(nativelib))
+      runWithLogger("Compiling c++ runtime", compilecpp, nativelib, log, bailOut = IO.delete(nativelib))
     }
   }
 
-  /** Compiles application and runtime llvm ir file to binary using clang. */
-  private def compileLl(clangpp: File,
+  /** Link application and runtime llvm ir file to binary using clang. */
+  private def linkApplication(clangpp: File,
                         target: File,
                         appll: File,
                         binary: File,
                         links: Seq[String],
                         linkage: Map[String, String],
-                        opts: Seq[String]): Unit = {
+                        opts: Seq[String],
+                        log: Logger): Unit = {
     val outpath = abs(binary)
     val apppath = abs(appll)
     val opaths  = (nativelib ** "*.o").get.map(abs)
@@ -102,10 +134,11 @@ object ScalaNativePluginInternal {
     val flags   = Seq("-o", outpath) ++ linkopts ++ opts
     val compile = abs(clangpp) +: (flags ++ paths)
 
-    Process(compile, target).!
+    runWithLogger("Compiling application", compile, target, log, bailOut = ())
   }
 
   lazy val projectSettings = Seq(
+    // ** Do not put anything above libraryDependencies **
     libraryDependencies ++= Seq(
       "org.scala-native" %% "nativelib" % nativeVersion,
       "org.scala-native" %% "javalib"   % nativeVersion,
@@ -146,6 +179,7 @@ object ScalaNativePluginInternal {
       val dotpath       = nativeEmitDependencyGraphPath.value
       val linkage       = nativeLibraryLinkage.value
       val sharedLibrary = nativeSharedLibrary.value
+      val log           = streams.value.log
       val opts = new NativeOpts(classpath,
                                 abs(appll),
                                 dotpath.map(abs),
@@ -156,9 +190,10 @@ object ScalaNativePluginInternal {
       checkThatClangIsRecentEnough(clang)
 
       IO.createDirectory(target)
-      unpackRtlib(clang, clangpp, classpath)
-      val links = compileNir(opts).map(_.name)
-      compileLl(clangpp, target, appll, binary, links, linkage, clangOpts)
+
+      unpackAndCompileRuntime(clang, clangpp, classpath, log) // runtime => llvm ir
+      val links = compileApplication(opts).map(_.name)        // app nir => llvm ir
+      linkApplication(clangpp, target, appll, binary, links, linkage, clangOpts, log)
 
       binary
     },
@@ -168,7 +203,7 @@ object ScalaNativePluginInternal {
       val args   = spaceDelimited("<arg>").parsed
 
       log.info("Running " + binary + " " + args.mkString(" "))
-      val exitCode = Process(binary +: args).!
+      val exitCode = Process(binary +: args) ! log
 
       val message =
         if (exitCode == 0) None
