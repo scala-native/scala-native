@@ -8,9 +8,6 @@ import ControlFlow.Block
 
 object DominatorTree {
 
-  private def pred(block: Block) = block.pred.map(_.from)
-  private def succ(block: Block) = block.succ.map(_.to)
-
   /** Fixpoint-based method to build the dominator tree
    *  from the CFG. The dominator tree is simply represented
    *  as a Map from a CFG block to the set of blocks dominating
@@ -24,7 +21,7 @@ object DominatorTree {
       val (block, dequeued) = workList.dequeue
       workList = dequeued.filterNot(_ == block) // remove duplicates
 
-      val visitedPreds = pred(block).filter(domination.contains)
+      val visitedPreds = block.pred.filter(domination.contains)
       val predDomination =
         visitedPreds.toList.map(pred => domination.getOrElse(pred, Set.empty))
       val correctPredDomination = predDomination.filterNot(
@@ -44,7 +41,7 @@ object DominatorTree {
 
       if (oldDomination != newDomination) {
         domination += (block -> newDomination)
-        workList ++= succ(block)
+        workList ++= block.succ
       }
     }
 

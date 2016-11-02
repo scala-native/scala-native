@@ -154,7 +154,7 @@ class GenTextualLLVM(assembly: Seq[Defn]) extends GenShow(assembly) {
     val prologue: Show.Result =
       if (isEntry) s()
       else {
-        val shows = block.pred match {
+        val shows = block.inEdges match {
           case ExSucc(branches) =>
             params.zipWithIndex.map {
               case (Val.Local(name, ty), n) =>
