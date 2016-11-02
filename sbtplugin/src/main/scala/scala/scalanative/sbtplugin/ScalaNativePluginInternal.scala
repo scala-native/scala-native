@@ -106,6 +106,7 @@ object ScalaNativePluginInternal {
   }
 
   lazy val projectSettings = Seq(
+    isScalaNativeProject := true,
     libraryDependencies ++= Seq(
       "org.scala-native" %% "nativelib" % nativeVersion,
       "org.scala-native" %% "javalib"   % nativeVersion,

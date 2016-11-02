@@ -2,11 +2,17 @@ package scala.scalanative
 package sbtplugin
 
 import sbt._
+import KeyRanks._
 
 object ScalaNativePlugin extends AutoPlugin {
   val autoImport = AutoImport
 
   object AutoImport {
+    val isScalaNativeProject = SettingKey[Boolean]("isScalaNativeP",
+        "Tests whether the current project is a Scala-Native project. " +
+        "Do not set the value of this setting (only use it as read-only).",
+        BSetting)
+
     val nativeVersion = nir.Versions.current
 
     val nativeVerbose = settingKey[Boolean]("Enable verbose tool logging.")
@@ -32,6 +38,11 @@ object ScalaNativePlugin extends AutoPlugin {
       "Will create a shared library instead of a program with a main method.")
   }
 
+  import autoImport._
+
   override def projectSettings =
     ScalaNativePluginInternal.projectSettings
+
+  override def globalSettings: Seq[Setting[_]] = 
+    super.globalSettings ++ Seq(isScalaNativeProject := false)
 }
