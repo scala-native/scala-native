@@ -40,7 +40,7 @@ object ScalaNativePluginInternal {
   val nativeMissingDependencies =
     taskKey[Seq[String]]("List all symbols not available at link time")
 
-  private lazy val nativelib: File =
+  lazy val nativelib: File =
     Path.userHome / ".scalanative" / ("nativelib-" + nir.Versions.current)
 
   private lazy val includes = {

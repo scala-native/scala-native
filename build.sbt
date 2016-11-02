@@ -1,6 +1,7 @@
 import scala.util.Try
 import scalanative.tools.OptimizerReporter
 import scalanative.sbtplugin.ScalaNativePluginInternal.nativeOptimizerReporter
+import java.io.File.pathSeparator
 
 val toolScalaVersion = "2.10.6"
 
@@ -14,6 +15,24 @@ lazy val baseSettings = Seq(
 
 lazy val publishSnapshot =
   taskKey[Unit]("Publish snapshot to sonatype on every commit to master.")
+
+lazy val setUpTestingCompiler = Def.task {
+  val nscpluginjar = (Keys.`package` in nscplugin in Compile).value
+  val nativelibjar = (Keys.`package` in nativelib in Compile).value
+  val scalalibjar  = (Keys.`package` in scalalib in Compile).value
+  val javalibjar   = (Keys.`package` in javalib in Compile).value
+  val testingcompilercp =
+    (fullClasspath in testingCompiler in Compile).value.files
+  val testingcompilerjar = (Keys.`package` in testingCompiler in Compile).value
+
+  sys.props("scalanative.nscplugin.jar") = nscpluginjar.getAbsolutePath
+  sys.props("scalanative.testingcompiler.cp") =
+    (testingcompilercp :+ testingcompilerjar) map (_.getAbsolutePath) mkString pathSeparator
+  sys.props("scalanative.nativeruntime.cp") =
+    Seq(nativelibjar, scalalibjar, javalibjar) mkString pathSeparator
+  sys.props("scalanative.nativelib.dir") =
+    scalanative.sbtplugin.ScalaNativePluginInternal.nativelib.getAbsolutePath
+}
 
 lazy val publishSettings = Seq(
   publishArtifact in Compile := true,
@@ -142,12 +161,15 @@ lazy val tools =
           "org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full),
         "org.scalatest" %% "scalatest" % "3.0.0" % "test"
       ),
+      fullClasspath in Test := ((fullClasspath in Test) dependsOn setUpTestingCompiler).value,
       publishLocal := publishLocal
         .dependsOn(publishLocal in nir)
         .dependsOn(publishLocal in util)
-        .value
+        .value,
+      // Running tests in parallel results in `FileSystemAlreadyExistsException`
+      parallelExecution in Test := false
     )
-    .dependsOn(nir, util)
+    .dependsOn(nir, util, testingCompilerInterface % Test)
 
 lazy val nscplugin =
   project
@@ -374,3 +396,26 @@ lazy val benchmarks =
       }.taskValue
     )
     .enablePlugins(ScalaNativePlugin)
+
+lazy val testingCompilerInterface =
+  project
+    .in(file("testing-compiler-interface"))
+    .settings(libSettings)
+    .settings(
+      crossPaths := false,
+      crossVersion := CrossVersion.Disabled,
+      autoScalaLibrary := false
+    )
+
+lazy val testingCompiler =
+  project
+    .in(file("testing-compiler"))
+    .settings(libSettings)
+    .settings(noPublishSettings)
+    .settings(
+      libraryDependencies ++= Seq(
+        "org.scala-lang" % "scala-compiler" % scalaVersion.value,
+        "org.scala-lang" % "scala-reflect"  % scalaVersion.value
+      )
+    )
+    .dependsOn(testingCompilerInterface, nativelib)
