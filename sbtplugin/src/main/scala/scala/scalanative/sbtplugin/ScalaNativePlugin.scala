@@ -8,10 +8,11 @@ object ScalaNativePlugin extends AutoPlugin {
   val autoImport = AutoImport
 
   object AutoImport {
-    val isScalaNativeProject = SettingKey[Boolean]("isScalaNativeP",
-        "Tests whether the current project is a Scala-Native project. " +
+    val isScalaNativeProject = SettingKey[Boolean](
+      "isScalaNativeP",
+      "Tests whether the current project is a Scala-Native project. " +
         "Do not set the value of this setting (only use it as read-only).",
-        BSetting)
+      BSetting)
 
     val nativeVersion = nir.Versions.current
 
@@ -43,6 +44,6 @@ object ScalaNativePlugin extends AutoPlugin {
   override def projectSettings =
     ScalaNativePluginInternal.projectSettings
 
-  override def globalSettings: Seq[Setting[_]] = 
+  override def globalSettings: Seq[Setting[_]] =
     super.globalSettings ++ Seq(isScalaNativeProject := false)
 }

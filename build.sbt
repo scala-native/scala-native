@@ -58,17 +58,19 @@ lazy val publishSettings = Seq(
   },
   homepage := Some(url("http://www.scala-native.org")),
   startYear := Some(2015),
-  licenses := Seq("BSD-like" -> url("http://www.scala-lang.org/downloads/license.html")),
+  licenses := Seq(
+    "BSD-like" -> url("http://www.scala-lang.org/downloads/license.html")),
   developers += Developer(
     email = "denys.shabalin@epfl.ch",
     id = "densh",
     name = "Denys Shabalin",
     url = url("http://den.sh")
   ),
-  scmInfo := Some(ScmInfo(
-    browseUrl = url("https://github.com/scala-native/scala-native"),
-    connection = "scm:git:git@github.com:scala-native/scala-native.git"
-  )),
+  scmInfo := Some(
+    ScmInfo(
+      browseUrl = url("https://github.com/scala-native/scala-native"),
+      connection = "scm:git:git@github.com:scala-native/scala-native.git"
+    )),
   pomExtra := (
     <issueManagement>
       <system>GitHub Issues</system>

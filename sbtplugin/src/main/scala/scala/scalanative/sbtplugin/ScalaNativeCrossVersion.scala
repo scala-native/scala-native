@@ -7,7 +7,7 @@ import sbt._
 import scala.scalanative.nir.Versions
 
 object ScalaNativeCrossVersion {
-  
+
   val currentBinaryVersion = {
     val ReleaseVersion = raw"""(\d+)\.(\d+)\.(\d+)""".r
 
@@ -30,9 +30,11 @@ object ScalaNativeCrossVersion {
       case CrossVersion.Disabled =>
         CrossVersion.binaryMapped(scalaNativeVersionUnmapped)
       case cross: CrossVersion.Binary =>
-        CrossVersion.binaryMapped(cross.remapVersion andThen scalaNativeVersionMap)
+        CrossVersion.binaryMapped(
+          cross.remapVersion andThen scalaNativeVersionMap)
       case cross: CrossVersion.Full =>
-        CrossVersion.fullMapped(cross.remapVersion andThen scalaNativeVersionMap)
+        CrossVersion.fullMapped(
+          cross.remapVersion andThen scalaNativeVersionMap)
     }
   }
 
