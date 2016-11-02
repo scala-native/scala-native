@@ -63,7 +63,7 @@ In order for a Pull Request to be considered, it has to meet these requirements:
 
 1.  Live up to the current code standard:
 
-    - Be formatted with `scalafmt`_.
+    - Be formatted with `./bin/scalafmt`_.
     - Not violate `DRY`_.
     - `Boy Scout Rule`_ should be applied.
 
