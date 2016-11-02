@@ -81,14 +81,18 @@ object ClassHierarchy {
         meth
     }
 
+    lazy val alldynmethods: Seq[Method] = {
+      val signatureSet = methods.map(genSignature).toSet
+      parent.fold(Seq.empty[Method])(_.alldynmethods).filterNot(m => signatureSet(genSignature(m))) ++ methods
+    }
+
     lazy val vtableStruct: Type.Struct =
       Type.Struct(Global.None, vtable.map(_.ty))
 
     lazy val vtableValue: Val.Struct = Val.Struct(Global.None, vtable)
 
     lazy val perfectHashMap: PerfectHashMap[String, Val] = {
-      //println(methods.map(_.name))
-      PerfectHashMap(hash, methods.map(m => (genSignature(m), m.value)))
+      PerfectHashMap(hash, alldynmethods.map(m => (genSignature(m), m.value)))
     }
 
     def hash(key: String, d: Int): Int = 
