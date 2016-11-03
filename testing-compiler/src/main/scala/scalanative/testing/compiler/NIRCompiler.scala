@@ -1,5 +1,4 @@
-package scala.scalanative.testing
-package compiler
+package scala.scalanative
 
 import scala.reflect.internal.util.{BatchSourceFile, NoFile, SourceFile}
 import scala.reflect.internal.util.Position
@@ -59,8 +58,8 @@ class NIRCompiler(outputDir: File) extends api.NIRCompiler {
         _,
         filter)))
 
-
-  private def reportError(error: String) = throw new api.CompilationFailedException(error)
+  private def reportError(error: String) =
+    throw new api.CompilationFailedException(error)
 
   /**
    * Reporter that ignores INFOs and WARNINGs, but directly aborts the compilation
@@ -100,10 +99,10 @@ class NIRCompiler(outputDir: File) extends api.NIRCompiler {
    * Option to add the scala-native compiler plugin
    */
   private case object ScalaNative
-      extends CompilerPlugin(jarPath = sys props "sbt.paths.scalanative.jar",
+      extends CompilerPlugin(jarPath = sys props "scalanative.nscplugin.jar",
                              classpath =
-                               List(sys props "sbt.class.directory",
-                                    sys props "sbt.paths.scalanative.jar"))
+                               List(sys props "scalanative.testingcompiler.cp",
+                                    sys props "scalanative.nscplugin.jar"))
 
   /**
    * Returns an instance of `Global` configured according to the given options.

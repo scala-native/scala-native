@@ -1,4 +1,4 @@
-package scala.scalanative.testing.compiler.api;
+package scala.scalanative.api;
 
 import java.io.File;
 

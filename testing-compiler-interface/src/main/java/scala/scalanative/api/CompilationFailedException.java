@@ -1,4 +1,4 @@
-package scala.scalanative.testing.compiler.api;
+package scala.scalanative.api;
 
 public class CompilationFailedException extends Exception {
     public CompilationFailedException(String message) {

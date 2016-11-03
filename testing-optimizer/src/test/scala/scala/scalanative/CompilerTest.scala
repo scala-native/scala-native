@@ -6,10 +6,10 @@ import org.scalatest._
 
 class CompilerTest extends FlatSpec with Matchers with Inspectors {
 
-  "The compiler" should "be able to get NIR files"in {
+  "The compiler" should "be able to get NIR files" in {
     val files = Compiler { _ getNIR "class A" }
     files should have length 1
-    files(0).getName should be ("A.hnir")
+    files(0).getName should be("A.hnir")
   }
 
   it should "compile whole directories" in {
@@ -36,10 +36,11 @@ class CompilerTest extends FlatSpec with Matchers with Inspectors {
     }
   }
 
-  it should "compile to a specified directory"in {
-    val temporaryDir = java.nio.file.Files.createTempDirectory("my-target").toFile()
+  it should "compile to a specified directory" in {
+    val temporaryDir =
+      java.nio.file.Files.createTempDirectory("my-target").toFile()
     val nirFiles = Compiler(outDir = temporaryDir) { _ getNIR "class A" }
-    forAll (nirFiles) { _.getParentFile should be(temporaryDir) }
+    forAll(nirFiles) { _.getParentFile should be(temporaryDir) }
   }
 
 }

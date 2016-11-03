@@ -1,6 +1,7 @@
 import scala.util.Try
 import scalanative.tools.OptimizerReporter
 import scalanative.sbtplugin.ScalaNativePluginInternal.nativeOptimizerReporter
+import java.io.File.pathSeparator
 
 val toolScalaVersion = "2.10.6"
 
@@ -14,6 +15,22 @@ lazy val baseSettings = Seq(
 
 lazy val publishSnapshot =
   taskKey[Unit]("Publish snapshot to sonatype on every commit to master.")
+
+lazy val setUpTestingCompiler = Def.task {
+  val nscpluginjar = (Keys.`package` in nscplugin in Compile).value
+  val nativelibjar = (Keys.`package` in nativelib in Compile).value
+  val scalalibjar  = (Keys.`package` in scalalib in Compile).value
+  val javalibjar   = (Keys.`package` in javalib in Compile).value
+  val testingcompilercp =
+    (fullClasspath in testingCompiler in Compile).value.files
+  val testingcompilerjar = (Keys.`package` in testingCompiler in Compile).value
+
+  sys.props("scalanative.nscplugin.jar") = nscpluginjar.getAbsolutePath
+  sys.props("scalanative.testingcompiler.cp") =
+    (testingcompilercp :+ testingcompilerjar) map (_.getAbsolutePath) mkString pathSeparator
+  sys.props("scalanative.nativeruntime.cp") =
+    Seq(nativelibjar, scalalibjar, javalibjar) mkString pathSeparator
+}
 
 lazy val publishSettings = Seq(
   publishArtifact in Compile := true,
@@ -371,17 +388,10 @@ lazy val testingOptimizer =
     .in(file("testing-optimizer"))
     .settings(toolSettings)
     .settings(
-      fullClasspath in Test := {
-        val testingcompilercp = (fullClasspath in testingCompiler in Compile).value.files.map(_.getAbsolutePath)
-        val testingcompilerjar = (Keys.`package` in testingCompiler in Compile).value.getAbsolutePath
-        sys.props("sbt.paths.testingcompiler.cp") = (testingcompilercp :+ testingcompilerjar) mkString java.io.File.pathSeparator
-        (fullClasspath in Test).value
-      }
+      fullClasspath in Test := ((fullClasspath in Test) dependsOn setUpTestingCompiler).value,
+      libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.0" % Test
     )
-    .settings(
-        libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.0" % Test
-    )
-    .dependsOn(testingCompilerInterface)
+    .dependsOn(testingCompilerInterface, tools)
 
 lazy val testingCompilerInterface =
   project
@@ -401,17 +411,7 @@ lazy val testingCompiler =
     .settings(
       libraryDependencies ++= Seq(
         "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-        "org.scala-lang" % "scala-reflect"  % scalaVersion.value,
-        "org.scalatest" %% "scalatest" % "3.0.0" % Test
+        "org.scala-lang" % "scala-reflect"  % scalaVersion.value
       )
-    ).dependsOn(testingCompilerInterface, nativelib)
-    .settings(
-      fullClasspath in Test := {
-        val testcp = (fullClasspath in Test).value.files.map(_.getAbsolutePath).mkString(java.io.File.pathSeparator)
-        sys.props("sbt.class.directory") = testcp
-
-        val nscpluginjar = (Keys.`package` in nscplugin in Compile).value
-        sys.props("sbt.paths.scalanative.jar") = nscpluginjar.getAbsolutePath
-        (fullClasspath in Test).value
-      }
     )
+    .dependsOn(testingCompilerInterface, nativelib)
