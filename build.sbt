@@ -137,6 +137,14 @@ lazy val tools =
     .in(file("tools"))
     .settings(toolSettings)
     .settings(publishSettings)
+    .settings(
+      libraryDependencies ++= Seq(
+        "com.lihaoyi" %% "fastparse"  % "0.4.2",
+        "com.lihaoyi" %% "scalaparse" % "0.4.2",
+        compilerPlugin(
+          "org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full),
+        "org.scalatest" %% "scalatest" % "3.0.0" % "test"
+      ))
     .dependsOn(nir, util)
 
 lazy val nscplugin =

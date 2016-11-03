@@ -19,8 +19,8 @@ sealed abstract class Op {
     case Op.Select(_, v, _)                   => v.ty
 
     case Op.Classalloc(n)     => Type.Class(n)
-    case Op.Field(ty, _, _)   => Type.Ptr
-    case Op.Method(ty, _, _)  => Type.Ptr
+    case Op.Field(_, _)       => Type.Ptr
+    case Op.Method(_, _)      => Type.Ptr
     case Op.Module(n)         => Type.Module(n)
     case Op.As(ty, _)         => ty
     case Op.Is(_, _)          => Type.Bool
@@ -48,8 +48,8 @@ object Op {
 
   // high-level
   final case class Classalloc(name: Global)                        extends Op
-  final case class Field(ty: Type, obj: Val, name: Global)         extends Op
-  final case class Method(ty: Type, obj: Val, name: Global)        extends Op
+  final case class Field(obj: Val, name: Global)                   extends Op
+  final case class Method(obj: Val, name: Global)                  extends Op
   final case class Module(name: Global)                            extends Op
   final case class As(ty: Type, obj: Val)                          extends Op
   final case class Is(ty: Type, obj: Val)                          extends Op

@@ -335,15 +335,13 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.ClassallocOp)
       putGlobal(n)
 
-    case Op.Field(ty, v, name) =>
+    case Op.Field(v, name) =>
       putInt(T.FieldOp)
-      putType(ty)
       putVal(v)
       putGlobal(name)
 
-    case Op.Method(ty, v, name) =>
+    case Op.Method(v, name) =>
       putInt(T.MethodOp)
-      putType(ty)
       putVal(v)
       putGlobal(name)
 

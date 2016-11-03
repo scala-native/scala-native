@@ -160,11 +160,11 @@ object GlobalValueNumbering extends PassCompanion {
                 Select(condB, thenvB, elsevB)) =>
             eqVals(Seq(condA, thenvA, elsevA), Seq(condB, thenvB, elsevB))
 
-          case (Field(tyA, objA, nameA), Field(tyB, objB, nameB)) =>
-            eqType(tyA, tyB) && eqVal(objA, objB) && eqGlobal(nameA, nameB)
+          case (Field(objA, nameA), Field(objB, nameB)) =>
+            eqVal(objA, objB) && eqGlobal(nameA, nameB)
 
-          case (Method(tyA, objA, nameA), Method(tyB, objB, nameB)) =>
-            eqType(tyA, tyB) && eqVal(objA, objB) && eqGlobal(nameA, nameB)
+          case (Method(objA, nameA), Method(objB, nameB)) =>
+            eqVal(objA, objB) && eqGlobal(nameA, nameB)
 
           case (Module(nameA), Module(nameB)) =>
             eqGlobal(nameA, nameB)
@@ -287,8 +287,8 @@ object GlobalValueNumbering extends PassCompanion {
         case Conv(conv, ty, value)      => Seq("Conv", ty, value)
         case Select(cond, thenv, elsev) => Seq("Select", cond, thenv, elsev)
 
-        case Field(ty, obj, name)       => Seq("Field", obj, name)
-        case Method(ty, obj, name)      => Seq("Method", ty, obj, name)
+        case Field(obj, name)           => Seq("Field", obj, name)
+        case Method(obj, name)          => Seq("Method", obj, name)
         case As(ty, obj)                => Seq("As", ty, obj)
         case Is(ty, obj)                => Seq("Is", ty, obj)
         case Copy(value)                => Seq("Copy", value)

@@ -521,7 +521,7 @@ abstract class NirCodeGen
             val elem =
               if (isExternModule(sym.owner))
                 qual withValue Val.Global(name, Type.Ptr)
-              else qual withOp Op.Field(ty, qual.value, name)
+              else qual withOp Op.Field(qual.value, name)
             elem withOp Op.Load(ty, elem.value)
           }
 
@@ -558,7 +558,7 @@ abstract class NirCodeGen
                 if (isExternModule(sel.symbol.owner)) {
                   rhs withValue Val.Global(name, Type.Ptr)
                 } else {
-                  rhs withOp Op.Field(ty, qual.value, name)
+                  rhs withOp Op.Field(qual.value, name)
                 }
               elem withOp Op.Store(ty, elem.value, rhs.value)
 
@@ -754,7 +754,7 @@ abstract class NirCodeGen
       else {
         val ty     = genType(sym.tpe)
         val module = focus withOp Op.Module(genTypeName(sym.owner))
-        val elem   = module withOp Op.Field(ty, module.value, genFieldName(sym))
+        val elem   = module withOp Op.Field(module.value, genFieldName(sym))
 
         elem withOp Op.Load(ty, elem.value)
       }
@@ -1730,7 +1730,7 @@ abstract class NirCodeGen
       val method =
         if (statically || isStruct(owner) || isExternModule(owner))
           last withValue Val.Global(name, nir.Type.Ptr)
-        else last withOp Op.Method(sig, self, name)
+        else last withOp Op.Method(self, name)
       val values =
         if (isExternModule(owner) || owner.isImplClass) args
         else self +: args
