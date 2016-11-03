@@ -4,7 +4,7 @@ package compiler
 
 import org.scalatest._
 
-class CompilerTest extends FlatSpec with Matchers {
+class CompilerTest extends FlatSpec with Matchers with Inspectors {
 
   "The compiler" should "be able to get NIR files"in {
     val files = Compiler { _ getNIR "class A" }
@@ -34,6 +34,12 @@ class CompilerTest extends FlatSpec with Matchers {
     assertThrows[api.CompilationFailedException] {
       Compiler { _ getNIR "invalid" }
     }
+  }
+
+  it should "compile to a specified directory"in {
+    val temporaryDir = java.nio.file.Files.createTempDirectory("my-target").toFile()
+    val nirFiles = Compiler(outDir = temporaryDir) { _ getNIR "class A" }
+    forAll (nirFiles) { _.getParentFile should be(temporaryDir) }
   }
 
 }

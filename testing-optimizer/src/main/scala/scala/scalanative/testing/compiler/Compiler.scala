@@ -30,14 +30,31 @@ object Compiler {
     val clazz = classLoader.loadClass("scala.scalanative.testing.compiler.NIRCompiler")
     clazz.newInstance match {
       case compiler: NIRCompiler => compiler
-      case other                 => throw new Exception("WTF: " + other.getClass.getName)
+      case other                 => throw new ReflectiveOperationException(s"Expected an object of type `scala.scalanative.testing.compiler.NIRCompiler`, but found `${other.getClass.getName}`.")
     }
   }
 
-  def apply[T](fn: NIRCompiler => T): T =
-    withSources(Map.empty) { case (_, compiler) => fn(compiler) }
+  def getCompiler(outDir: File): NIRCompiler = {
+    val clazz = classLoader.loadClass("scala.scalanative.testing.compiler.NIRCompiler")
+    val constructor = clazz.getConstructor(classOf[File])
+    constructor.newInstance(outDir) match {
+      case compiler: NIRCompiler => compiler
+      case other                 => throw new ReflectiveOperationException(s"Expected an object of type `scala.scalanative.testing.compiler.NIRCompiler`, but found `${other.getClass.getName}`.")
+    }
+  }
 
-  def withSources[T](sources: Map[String, String])(fn: (File, api.NIRCompiler) => T): T = {
+  def apply[T](outDir: File)(fn: NIRCompiler => T): T =
+    withSources(outDir)(Map.empty) { case (_, compiler) => fn(compiler) }
+
+  def apply[T](fn: NIRCompiler => T): T =
+    withSources(Map.empty[String, String]) { case (_, compiler) => fn(compiler) }
+
+  def withSources[T](outDir: File)(sources: Map[String, String])(fn: (File, NIRCompiler) => T): T = {
+    val sourcesDir = writeSources(sources)
+    fn(sourcesDir, getCompiler(outDir))
+  }
+
+  def withSources[T](sources: Map[String, String])(fn: (File, NIRCompiler) => T): T = {
     val sourcesDir = writeSources(sources)
     fn(sourcesDir, getCompiler())
   }
