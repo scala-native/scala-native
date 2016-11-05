@@ -92,32 +92,17 @@ object ClassHierarchy {
     lazy val vtableValue: Val.Struct = Val.Struct(Global.None, vtable)
 
     lazy val perfectHashMap: PerfectHashMap[String, Val] = {
-      PerfectHashMap(hhash, alldynmethods.map(m => (genSignature(m), m.value)))
-    }
-
-    //def hash(key: String, d: Int): Int = 
-    //  key.foldLeft(d){ case (h, c) => 7 * h + c.toInt } & 0x7fffffff
-
-    def hhash(key: String, d: Long): Long = {
-      val h = if (d == 0) 0x01000193 else d
-      //Use the FNV algorithm from http://isthe.com/chongo/tech/comp/fnv/ 
-      key.foldLeft(d){ case (h, c) => ((d * 0x01000193) ^ c) & 0xffffffff }
+      PerfectHashMap(hash, alldynmethods.map(m => (genSignature(m), m.value)))
     }
 
     def hash(buf: String, seed: Long): Long = buf.foldLeft(seed) {
-      case (hash, c) => 
+      case (hash, c) =>
         val inter = hash ^ c.toInt
         inter + (inter << 1) + (inter << 4) + (inter << 5) + (inter << 7) + (inter << 8) + (inter << 40);
-    } //& 0x7fffffffffffffffl
-
-    def hash64(str: String, seed: Long): Long = {
-      str.foldLeft(seed){ case (h, c) =>
-        val hash = h ^ (c.toInt & 0xFF)
-        hash * 1099511628211L
-      }
     }
 
     lazy val dynDispatchTableValue: Val = {
+      // If there a value for null pointer ?
       lazy val defaultPtr: Val = allmethods.head.value
       Val.Struct(
         Global.None,
@@ -130,14 +115,6 @@ object ClassHierarchy {
     }
 
     lazy val dynDispatchTableStruct = Type.Struct(Global.None, Seq(Type.I32, Type.Ptr, Type.Ptr))
-      /*Type.Struct(
-        Global.None, 
-        Seq(
-          Type.I32,
-          Type.Array(Type.I32, perfectHashMap.size),
-          Type.Array(Type.Ptr, perfectHashMap.size)
-        )
-      );*/
 
 
     def genSignature(method: Method): String = method.name.id
