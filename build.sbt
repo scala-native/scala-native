@@ -56,31 +56,26 @@ lazy val publishSettings = Seq(
   pomIncludeRepository := { x =>
     false
   },
+  homepage := Some(url("http://www.scala-native.org")),
+  startYear := Some(2015),
+  licenses := Seq(
+    "BSD-like" -> url("http://www.scala-lang.org/downloads/license.html")),
+  developers += Developer(
+    email = "denys.shabalin@epfl.ch",
+    id = "densh",
+    name = "Denys Shabalin",
+    url = url("http://den.sh")
+  ),
+  scmInfo := Some(
+    ScmInfo(
+      browseUrl = url("https://github.com/scala-native/scala-native"),
+      connection = "scm:git:git@github.com:scala-native/scala-native.git"
+    )),
   pomExtra := (
-    <url>https://github.com/scala-native/scala-native</url>
-    <inceptionYear>2015</inceptionYear>
-    <licenses>
-      <license>
-        <name>BSD-like</name>
-        <url>http://www.scala-lang.org/downloads/license.html</url>
-        <distribution>repo</distribution>
-      </license>
-    </licenses>
-    <scm>
-      <url>git@github.com:scala-native/scala-native.git</url>
-      <connection>scm:git@github.com:scala-native/scala-native.git</connection>
-    </scm>
     <issueManagement>
       <system>GitHub Issues</system>
       <url>https://github.com/scala-native/scala-native/issues</url>
     </issueManagement>
-    <developers>
-      <developer>
-        <id>densh</id>
-        <name>Denys Shabalin</name>
-        <url>http://den.sh</url>
-      </developer>
-    </developers>
   )
 )
 

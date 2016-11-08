@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+nix-shell bin/clang.nix -A clangEnv
