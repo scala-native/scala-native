@@ -1,7 +1,7 @@
 package scala.scalanative.issues
 
-object _314 extends tests.Suite {
-  test("github.com/scala-native/scala-native/issues/314") {
+object _314Suite extends tests.Suite {
+  test("#314") {
     // Division by zero is undefined behavior in production mode.
     // Optimizer can assume it never happens and remove unused result.
     assert {
