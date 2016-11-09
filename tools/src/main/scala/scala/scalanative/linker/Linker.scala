@@ -7,11 +7,13 @@ import nir._
 import nir.serialization._
 import nir.Shows._
 import util.sh
+import util.unsupported
+
 
 final class Linker(dotpath: Option[String], paths: Seq[String]) {
   private val assemblies: Seq[Assembly] = paths.flatMap(Assembly(_))
 
-  private def load(global: Global): Option[(Seq[Dep], Seq[Attr.Link], Defn)] =
+  private def load(global: Global): Option[(Seq[Dep], Seq[Attr.Link], Seq[Attr.WeakPin], Seq[String], Defn)] =
     assemblies.collectFirst {
       case assembly if assembly.contains(global) =>
         assembly.load(global)
@@ -24,10 +26,19 @@ final class Linker(dotpath: Option[String], paths: Seq[String]) {
       writer.println("digraph G {")
     }
 
-  private def writeEdge(from: Global, to: Global): Unit =
+  private def writeEdge(from: String, to: Global): Unit =
     writer.foreach { writer =>
       def quoted(s: String) = "\"" + s + "\""
       writer.print(quoted(sh"$from".toString))
+      writer.print("->")
+      writer.print(quoted(sh"$to".toString))
+      writer.println(";")
+    }
+
+  private def writeEdge(from: Global, to: Global): Unit =
+    writer.foreach { writer =>
+      def quoted(s: String) = "\"" + s + "\""
+      writer.print(sh"$from".toString)
       writer.print("->")
       writer.print(quoted(sh"$to".toString))
       writer.println(";")
@@ -44,6 +55,8 @@ final class Linker(dotpath: Option[String], paths: Seq[String]) {
     val unresolved  = mutable.Set.empty[Global]
     val links       = mutable.Set.empty[Attr.Link]
     val defns       = mutable.UnrolledBuffer.empty[Defn]
+    val weak        = mutable.Set.empty[Attr.WeakPin]
+    val dyn         = mutable.Set.empty[String]
     val direct      = mutable.Stack.empty[Global]
     var conditional = mutable.UnrolledBuffer.empty[Dep.Conditional]
 
@@ -57,10 +70,19 @@ final class Linker(dotpath: Option[String], paths: Seq[String]) {
           load(workitem).fold[Unit] {
             unresolved += workitem
           } {
-            case (deps, newlinks, defn) =>
+            case (deps, newlinks, newWeaks, newDyns, defn) =>
               resolved += workitem
               defns += defn
               links ++= newlinks
+
+              (dynMethods(weak.toSeq ++ newWeaks, newDyns) ++ dynMethods(newWeaks, dyn.toSeq)).foreach {
+                dep =>
+                  writeEdge(dep._1, dep._2)
+                  direct.push(dep._2)
+              }
+
+              weak ++= newWeaks
+              dyn ++= newDyns
 
               deps.foreach {
                 case Dep.Direct(dep) =>
@@ -73,6 +95,13 @@ final class Linker(dotpath: Option[String], paths: Seq[String]) {
           }
         }
       }
+
+    def dynMethods(weaks: Seq[Attr.WeakPin], newDyns: Seq[String]): Seq[(String, Global)] = {
+      weaks.flatMap {
+        case Attr.WeakPin(g @ Global.Member(_, id)) =>
+          newDyns.collect{ case sign if sign == id => (sign, g) }.toSeq
+      }.toSeq
+    }
 
     def processConditional = {
       val rest = mutable.UnrolledBuffer.empty[Dep.Conditional]
