@@ -85,6 +85,7 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
         case T.PinAlwaysAttr => deps += Dep.Direct(getGlobalNoDep)
         case T.PinIfAttr =>
           deps += Dep.Conditional(getGlobalNoDep, getGlobalNoDep)
+        case T.WeakPin => getGlobalNoDep
       }
     }
 

@@ -173,18 +173,19 @@ abstract class NirCodeGen
 
     def genNormalClass(cd: ClassDef): Unit = {
       val sym = cd.symbol
-      def attrs  = genClassAttrs(sym)
+      def attrs  = genClassAttrs(cd)
       def name   = genTypeName(sym)
       def parent = genClassParent(sym)
       def traits = genClassInterfaces(sym)
+
+      genClassFields(sym)
+      genMethods(cd)
 
       curClassDefns += {
         if (isModule(sym)) Defn.Module(attrs, name, parent, traits)
         else if (sym.isInterface) Defn.Trait(attrs, name, traits)
         else Defn.Class(attrs, name, parent, traits)
       }
-      genClassFields(sym)
-      genMethods(cd)
     }
 
     def genClassParent(sym: Symbol): Option[nir.Global] =
@@ -193,7 +194,8 @@ abstract class NirCodeGen
         Some(genTypeName(NObjectClass))
       else Some(genTypeName(sym.superClass))
 
-    def genClassAttrs(sym: Symbol): Attrs = {
+    def genClassAttrs(cd: ClassDef): Attrs = {
+      val sym = cd.symbol
       def pinned = {
         val ctor =
           if (!isModule(sym) || isExternModule(sym)) Seq()
@@ -216,7 +218,12 @@ abstract class NirCodeGen
       }
       val pure = if (PureModules.contains(sym)) Seq(Attr.Pure) else Seq()
 
-      Attrs.fromSeq(pinned ++ pure ++ attrs)
+      val weak = cd.impl.body.collect {
+        case dd: DefDef =>
+          Attr.WeakPin(genMethodName(dd.symbol))
+      }
+
+      Attrs.fromSeq(pinned ++ pure ++ attrs ++ weak)
     }
 
     def genClassInterfaces(sym: Symbol) =
@@ -243,7 +250,7 @@ abstract class NirCodeGen
       cd.impl.body.foreach {
         case dd: DefDef =>
           genMethod(dd)
-        case _ =>
+        case _  =>
           ()
       }
 

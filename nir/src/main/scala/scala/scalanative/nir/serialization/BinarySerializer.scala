@@ -73,6 +73,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Attr.PinAlways(n) => putInt(T.PinAlwaysAttr); putGlobal(n)
     case Attr.PinIf(n, cond) =>
       putInt(T.PinIfAttr); putGlobal(n); putGlobal(cond)
+    case Attr.WeakPin(n)   => putInt(T.WeakPin); putGlobal(n) 
   }
 
   private def putBin(bin: Bin) = bin match {

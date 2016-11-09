@@ -21,6 +21,7 @@ object Attr {
   sealed abstract class Pin                         extends Attr
   final case class PinAlways(dep: Global)           extends Pin
   final case class PinIf(dep: Global, cond: Global) extends Pin
+  final case class WeakPin(dep: Global)             extends Pin
 }
 
 final case class Attrs(inline: Inline = MayInline,

@@ -41,6 +41,7 @@ object Shows {
     case Attr.Link(name)        => sh"link($name)"
     case Attr.PinAlways(name)   => sh"pin($name)"
     case Attr.PinIf(name, cond) => sh"pin-if($name, $cond)"
+    case Attr.WeakPin(name)     => sh"weak-pin($name)"
   }
 
   implicit val showNext: Show[Next] = Show {
