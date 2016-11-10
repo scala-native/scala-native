@@ -12,6 +12,8 @@ object Attr {
   final case object NoInline     extends Inline // should never inline
   final case object AlwaysInline extends Inline // should always inline
 
+  final case object StructDisp   extends Attr //attr for defs that can be used for structural dispatch
+
   final case object Pure                  extends Attr
   final case object Extern                extends Attr
   final case class Override(name: Global) extends Attr
@@ -27,6 +29,7 @@ object Attr {
 final case class Attrs(inline: Inline = MayInline,
                        isPure: Boolean = false,
                        isExtern: Boolean = false,
+                       usedForStructDisp: Boolean = false,
                        overrides: Seq[Global] = Seq(),
                        pins: Seq[Pin] = Seq(),
                        links: Seq[Attr.Link] = Seq()) {
@@ -36,6 +39,7 @@ final case class Attrs(inline: Inline = MayInline,
     if (inline != MayInline) out += inline
     if (isPure) out += Pure
     if (isExtern) out += Extern
+    if (usedForStructDisp) out += StructDisp
     overrides.foreach { out += Override(_) }
     out ++= pins
     out ++= links
@@ -50,6 +54,7 @@ object Attrs {
     var inline    = None.inline
     var isPure    = false
     var isExtern  = false
+    var usedForStructDisp = false
     val overrides = mutable.UnrolledBuffer.empty[Global]
     val pins      = mutable.UnrolledBuffer.empty[Pin]
     val links     = mutable.UnrolledBuffer.empty[Attr.Link]
@@ -61,8 +66,9 @@ object Attrs {
       case Override(name)  => overrides += name
       case attr: Pin       => pins += attr
       case link: Attr.Link => links += link
+      case StructDisp      => usedForStructDisp = true
     }
 
-    new Attrs(inline, isPure, isExtern, overrides, pins, links)
+    new Attrs(inline, isPure, isExtern, usedForStructDisp, overrides, pins, links)
   }
 }

@@ -23,6 +23,7 @@ object Tags {
   final val PinAlwaysAttr    = 1 + LinkAttr
   final val PinIfAttr        = 1 + PinAlwaysAttr
   final val WeakPin          = 1 + PinIfAttr
+  final val StructDisp       = 1 + WeakPin
 
   // Binary ops
 

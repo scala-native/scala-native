@@ -59,6 +59,7 @@ final class Linker(dotpath: Option[String], paths: Seq[String]) {
     val dyn         = mutable.Set.empty[String]
     val direct      = mutable.Stack.empty[Global]
     var conditional = mutable.UnrolledBuffer.empty[Dep.Conditional]
+    val structuralMethods = mutable.Set.empty[Global]
 
     def processDirect =
       while (direct.nonEmpty) {
@@ -79,6 +80,7 @@ final class Linker(dotpath: Option[String], paths: Seq[String]) {
                 dep =>
                   writeEdge(dep._1, dep._2)
                   direct.push(dep._2)
+                  structuralMethods += dep._2
               }
 
               weak ++= newWeaks
@@ -131,7 +133,13 @@ final class Linker(dotpath: Option[String], paths: Seq[String]) {
     }
     writeEnd()
 
-    (unresolved.toSeq, links.toSeq, defns.sortBy(_.name.toString).toSeq)
+    val defnss = defns.sortBy(_.name.toString).toSeq.map {
+      case Defn.Define(attrs, name, ty, insts) if structuralMethods.contains(name) =>
+        Defn.Define(Attrs.fromSeq(attrs.toSeq :+ Attr.StructDisp), name, ty, insts)
+      case defn => defn
+    }
+
+    (unresolved.toSeq, links.toSeq, defnss)
   }
 
   def linkClosed(entries: Seq[Global]): (Seq[Attr.Link], Seq[Defn]) = {

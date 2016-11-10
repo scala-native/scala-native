@@ -34,6 +34,8 @@ object Shows {
     case Attr.NoInline     => "noinline"
     case Attr.AlwaysInline => "alwaysinline"
 
+    case Attr.StructDisp   => "structdisp"
+
     case Attr.Pure           => sh"pure"
     case Attr.Extern         => sh"extern"
     case Attr.Override(name) => sh"override($name)"

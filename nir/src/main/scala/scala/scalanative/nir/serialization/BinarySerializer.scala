@@ -65,6 +65,8 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Attr.NoInline     => putInt(T.NoInlineAttr)
     case Attr.AlwaysInline => putInt(T.AlwaysInlineAttr)
 
+    case Attr.StructDisp  => putInt(T.StructDisp)
+
     case Attr.Pure        => putInt(T.PureAttr)
     case Attr.Extern      => putInt(T.ExternAttr)
     case Attr.Override(n) => putInt(T.OverrideAttr); putGlobal(n)

@@ -88,6 +88,8 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
         case T.NoInlineAttr     => buf += Attr.NoInline
         case T.AlwaysInlineAttr => buf += Attr.AlwaysInline
 
+        case T.StructDisp   => buf += Attr.StructDisp
+
         case T.PureAttr     => buf += Attr.Pure
         case T.ExternAttr   => buf += Attr.Extern
         case T.OverrideAttr => buf += Attr.Override(getGlobal)
