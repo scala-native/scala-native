@@ -158,12 +158,13 @@ lazy val tools =
           "org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full),
         "org.scalatest" %% "scalatest" % "3.0.0" % "test"
       ),
+      fullClasspath in Test := ((fullClasspath in Test) dependsOn setUpTestingCompiler).value,
       publishLocal := publishLocal
         .dependsOn(publishLocal in nir)
         .dependsOn(publishLocal in util)
         .value
     )
-    .dependsOn(nir, util)
+    .dependsOn(nir, util, testingCompilerInterface % Test)
 
 lazy val nscplugin =
   project
@@ -382,16 +383,6 @@ lazy val benchmarks =
       }.taskValue
     )
     .enablePlugins(ScalaNativePlugin)
-
-lazy val testingOptimizer =
-  project
-    .in(file("testing-optimizer"))
-    .settings(toolSettings)
-    .settings(
-      fullClasspath in Test := ((fullClasspath in Test) dependsOn setUpTestingCompiler).value,
-      libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.0" % Test
-    )
-    .dependsOn(testingCompilerInterface, tools)
 
 lazy val testingCompilerInterface =
   project

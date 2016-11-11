@@ -4,9 +4,7 @@ import java.nio.file.Files
 import java.io.{File, PrintWriter}
 import java.net.URLClassLoader
 
-import api.NIRCompiler
-
-object Compiler {
+object NIRCompiler {
 
   private val allow: String => Boolean =
     n =>
@@ -30,11 +28,11 @@ object Compiler {
     new URLClassLoader(parts.toArray, parent)
   }
 
-  def getCompiler(): NIRCompiler = {
+  def getCompiler(): api.NIRCompiler = {
     val clazz =
       classLoader.loadClass("scala.scalanative.NIRCompiler")
     clazz.newInstance match {
-      case compiler: NIRCompiler => compiler
+      case compiler: api.NIRCompiler => compiler
       case other =>
         throw new ReflectiveOperationException(
           "Expected an object of type `scala.scalanative.NIRCompiler`, " +
@@ -42,12 +40,12 @@ object Compiler {
     }
   }
 
-  def getCompiler(outDir: File): NIRCompiler = {
+  def getCompiler(outDir: File): api.NIRCompiler = {
     val clazz =
       classLoader.loadClass("scala.scalanative.NIRCompiler")
     val constructor = clazz.getConstructor(classOf[File])
     constructor.newInstance(outDir) match {
-      case compiler: NIRCompiler => compiler
+      case compiler: api.NIRCompiler => compiler
       case other =>
         throw new ReflectiveOperationException(
           "Expected an object of type `scala.scalanative.NIRCompiler`, but " +
@@ -55,22 +53,22 @@ object Compiler {
     }
   }
 
-  def apply[T](outDir: File)(fn: NIRCompiler => T): T =
+  def apply[T](outDir: File)(fn: api.NIRCompiler => T): T =
     withSources(outDir)(Map.empty) { case (_, compiler) => fn(compiler) }
 
-  def apply[T](fn: NIRCompiler => T): T =
+  def apply[T](fn: api.NIRCompiler => T): T =
     withSources(Map.empty[String, String]) {
       case (_, compiler) => fn(compiler)
     }
 
   def withSources[T](outDir: File)(sources: Map[String, String])(
-      fn: (File, NIRCompiler) => T): T = {
+      fn: (File, api.NIRCompiler) => T): T = {
     val sourcesDir = writeSources(sources)
     fn(sourcesDir, getCompiler(outDir))
   }
 
   def withSources[T](sources: Map[String, String])(
-      fn: (File, NIRCompiler) => T): T = {
+      fn: (File, api.NIRCompiler) => T): T = {
     val sourcesDir = writeSources(sources)
     fn(sourcesDir, getCompiler())
   }

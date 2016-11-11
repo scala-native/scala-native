@@ -1,12 +1,10 @@
 package scala.scalanative
-package testing
-package optimizer
 
 import tools._
 
 import org.scalatest._
 
-class FrameworkTest extends OptimizerSpec with Matchers {
+class FrameworkTest extends NativeSpec with Matchers {
 
   "The test framework" should "return the definitions for a single class" in {
     withDefinitions("""class A {

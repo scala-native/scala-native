@@ -8,12 +8,12 @@ import fastparse.all.Parsed
 
 import org.scalatest.FlatSpec
 
-abstract class OptimizerSpec extends FlatSpec {
+abstract class NativeSpec extends FlatSpec {
   def withDefinitions[T](code: String)(fn: Seq[nir.Defn] => T): T =
     withDefinitions(Map("source.scala" -> code))(fn)
 
   def withDefinitions[T](sources: Map[String, String])(fn: Seq[nir.Defn] => T): T =
-    Compiler.withSources(sources) {
+    NIRCompiler.withSources(sources) {
       case (sourcesDir, compiler) =>
         val nirFiles = compiler.getNIR(sourcesDir)
         val definitions =
