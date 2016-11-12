@@ -20,58 +20,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package queens
+package storage
 
-object Queens extends benchmarks.Benchmark[Boolean] {
-  var freeMaxs: Array[Boolean] = _
-  var freeRows: Array[Boolean] = _
-  var freeMins: Array[Boolean] = _
-  var queenRows: Array[Int]    = _
+import java.util.Arrays
 
-  override def run(): Boolean = {
-    var result = true
-    (0 until 10).foreach { i =>
-      result = result && queens()
+import som.Random
+
+class StorageBenchmark extends benchmarks.Benchmark[Int] {
+  private var count: Int = _
+
+  override def run(): Int = {
+    val random = new Random()
+    count = 0
+    buildTreeDepth(7, random)
+    count
+  }
+
+  def buildTreeDepth(depth: Int, random: Random): Object = {
+    count += 1
+    if (depth == 1) {
+      new Array[Object](random.next() % 10 + 1)
+    } else {
+      Array.fill(4)(buildTreeDepth(depth - 1, random))
     }
-    result
   }
 
-  def queens(): Boolean = {
-    freeRows = Array.fill(8)(true)
-    freeMaxs = Array.fill(16)(true)
-    freeMins = Array.fill(16)(true)
-    queenRows = Array.fill(8)(-1)
-
-    placeQueen(0)
-  }
-
-  def placeQueen(c: Int): Boolean = {
-    (0 until 8).foreach { r =>
-      if (getRowColumn(r, c)) {
-        queenRows(r) = c
-        setRowColumn(r, c, false)
-
-        if (c == 7) {
-          return true
-        }
-
-        if (placeQueen(c + 1)) {
-          return true
-        }
-        setRowColumn(r, c, true)
-      }
-    }
-    false
-  }
-
-  def getRowColumn(r: Int, c: Int): Boolean =
-    freeRows(r) && freeMaxs(c + r) && freeMins(c - r + 7)
-
-  def setRowColumn(r: Int, c: Int, v: Boolean): Unit = {
-    freeRows(r) = v
-    freeMaxs(c + r) = v
-    freeMins(c - r + 7) = v
-  }
-
-  override def check(result: Boolean) = result
+  override def check(result: Int) = result == 5461
 }

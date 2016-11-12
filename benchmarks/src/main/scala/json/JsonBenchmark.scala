@@ -27,9 +27,11 @@ package json
  * comparison of what the SOM implementation does.
  * @author smarr
  */
-object Json extends benchmarks.Benchmark[JsonValue] {
-  override def run(): JsonValue =
+class JsonBenchmark extends benchmarks.Benchmark[JsonValue] {
+  override def run(): JsonValue = {
+    disableBenchmark()
     (new JsonPureStringParser(rapBenchmarkMinified)).parse()
+  }
 
   override def check(result: JsonValue): Boolean = {
     if (!result.isObject()) { return false }

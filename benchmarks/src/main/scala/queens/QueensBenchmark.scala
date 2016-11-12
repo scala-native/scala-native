@@ -20,53 +20,59 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package list
+package queens
 
-object List extends benchmarks.Benchmark[Int] {
-  final class Element(var value: Any, var next: Element = null) {
-    def length(): Int = {
-      if (next == null) {
-        return 1
-      } else {
-        return 1 + next.length()
+class QueensBenchmark extends benchmarks.Benchmark[Boolean] {
+  var freeMaxs: Array[Boolean] = _
+  var freeRows: Array[Boolean] = _
+  var freeMins: Array[Boolean] = _
+  var queenRows: Array[Int]    = _
+
+  override def run(): Boolean = {
+    disableBenchmark()
+    var result = true
+    (0 until 10).foreach { i =>
+      result = result && queens()
+    }
+    result
+  }
+
+  def queens(): Boolean = {
+    freeRows = Array.fill(8)(true)
+    freeMaxs = Array.fill(16)(true)
+    freeMins = Array.fill(16)(true)
+    queenRows = Array.fill(8)(-1)
+
+    placeQueen(0)
+  }
+
+  def placeQueen(c: Int): Boolean = {
+    (0 until 8).foreach { r =>
+      if (getRowColumn(r, c)) {
+        queenRows(r) = c
+        setRowColumn(r, c, false)
+
+        if (c == 7) {
+          return true
+        }
+
+        if (placeQueen(c + 1)) {
+          return true
+        }
+        setRowColumn(r, c, true)
       }
     }
-  }
-
-  override def run(): Int = {
-    val result = tail(makeList(15), makeList(10), makeList(6))
-    result.length()
-  }
-
-  def makeList(length: Int): Element = {
-    if (length == 0) { return null } else {
-      val e = new Element(length)
-      e.next = makeList(length - 1)
-      return e
-    }
-  }
-
-  def isShorterThan(x: Element, y: Element): Boolean = {
-    var xTail = x
-    var yTail = y
-
-    while (yTail != null) {
-      if (xTail == null) { return true }
-      xTail = xTail.next
-      yTail = yTail.next
-    }
-
     false
   }
 
-  def tail(x: Element, y: Element, z: Element): Element = {
-    if (isShorterThan(y, x)) {
-      tail(tail(x.next, y, z), tail(y.next, z, x), tail(z.next, x, y))
-    } else {
-      z
-    }
+  def getRowColumn(r: Int, c: Int): Boolean =
+    freeRows(r) && freeMaxs(c + r) && freeMins(c - r + 7)
+
+  def setRowColumn(r: Int, c: Int, v: Boolean): Unit = {
+    freeRows(r) = v
+    freeMaxs(c + r) = v
+    freeMins(c - r + 7) = v
   }
 
-  override def check(result: Int): Boolean =
-    result == 10
+  override def check(result: Boolean) = result
 }

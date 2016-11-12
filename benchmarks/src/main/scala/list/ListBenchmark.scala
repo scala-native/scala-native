@@ -20,31 +20,53 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package sieve
+package list
 
-object Sieve extends benchmarks.Benchmark[Int] {
-  override def run(): Int = {
-    val flags = Array.fill(5000)(true)
-    return sieve(flags, 5000)
-  }
-
-  def sieve(flags: Array[Boolean], size: Int): Int = {
-    var primeCount = 0
-
-    (2 until size).foreach { i =>
-      if (flags(i - 1)) {
-        primeCount += 1
-        var k = i + i
-        while (k <= size) {
-          flags(k - 1) = false
-          k += i
-        }
+class ListBenchmark extends benchmarks.Benchmark[Int] {
+  final class Element(var value: Any, var next: Element = null) {
+    def length(): Int = {
+      if (next == null) {
+        return 1
+      } else {
+        return 1 + next.length()
       }
     }
+  }
 
-    primeCount
+  override def run(): Int = {
+    val result = tail(makeList(15), makeList(10), makeList(6))
+    result.length()
+  }
+
+  def makeList(length: Int): Element = {
+    if (length == 0) { return null } else {
+      val e = new Element(length)
+      e.next = makeList(length - 1)
+      return e
+    }
+  }
+
+  def isShorterThan(x: Element, y: Element): Boolean = {
+    var xTail = x
+    var yTail = y
+
+    while (yTail != null) {
+      if (xTail == null) { return true }
+      xTail = xTail.next
+      yTail = yTail.next
+    }
+
+    false
+  }
+
+  def tail(x: Element, y: Element, z: Element): Element = {
+    if (isShorterThan(y, x)) {
+      tail(tail(x.next, y, z), tail(y.next, z, x), tail(z.next, x, y))
+    } else {
+      z
+    }
   }
 
   override def check(result: Int): Boolean =
-    result == 669
+    result == 10
 }

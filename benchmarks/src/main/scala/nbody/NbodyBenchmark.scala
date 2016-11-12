@@ -3,17 +3,31 @@
  *
  * Based on nbody.java and adapted basde on the SOM version.
  */
-import nbody.NBodySystem;
+package nbody
 
-object NBody extends benchmarks.Benchmark[Nothing] {
-  def loop(innerIterations: Int) {
+class NbodyBenchmark extends benchmarks.Benchmark[(Int, Double)] {
+
+  private val sizes = List(250000, 1)
+  private var i     = 0
+
+  override def run(): (Int, Double) = {
+    disableBenchmark()
+    val size = sizes(i % sizes.length)
+    i = i + 1
+    (size, run(size))
+  }
+
+  override def check(t: (Int, Double)): Boolean =
+    check(t._2, t._1)
+
+  def run(innerIterations: Int): Double = {
     val system = new NBodySystem();
 
     (0 until innerIterations).foreach { i =>
       system.advance(0.01);
     }
 
-    check(system.energy(), innerIterations);
+    system.energy()
   }
 
   def check(result: Double, innerIterations: Int): Boolean = {
@@ -29,10 +43,4 @@ object NBody extends benchmarks.Benchmark[Nothing] {
     System.out.println("Result is: " + result);
     false
   }
-
-  override def run(): Nothing =
-    throw new RuntimeException("Should never be reached");
-
-  override def check(result: Nothing): Boolean =
-    throw new RuntimeException("Should never be reached")
 }

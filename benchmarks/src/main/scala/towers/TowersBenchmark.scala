@@ -22,7 +22,7 @@
  */
 package towers
 
-object Towers extends benchmarks.Benchmark[Int] {
+class TowersBenchmark extends benchmarks.Benchmark[Int] {
   final class TowersDisk(val size: Int, var next: TowersDisk = null)
 
   var piles: Array[TowersDisk] = _

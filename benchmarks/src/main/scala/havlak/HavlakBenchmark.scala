@@ -19,16 +19,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-import havlak.LoopTesterApp
+package havlak
 
-final class Havlak extends benchmarks.Benchmark[Nothing] {
-  def loop(innerIterations: Int): Boolean =
-    check(
-      (new LoopTesterApp()).main(innerIterations, 50, 10 /* was 100 */, 10, 5),
-      innerIterations)
+class HavlakBenchmark extends benchmarks.Benchmark[(Int, Array[Int])] {
 
-  def check(result: Object, innerIterations: Int): Boolean = {
-    val r = result.asInstanceOf[Array[Int]]
+  private val innerIterations = List(15000, 1500, 150, 15, 1)
+  private var i               = 0
+
+  override def run(): (Int, Array[Int]) = {
+    disableBenchmark()
+    val iterations = innerIterations(i % innerIterations.length)
+    i = i + 1
+    (iterations, run(iterations))
+  }
+
+  def run(innerIterations: Int): Array[Int] =
+    new LoopTesterApp().main(innerIterations, 50, 10 /* was 100 */, 10, 5)
+
+  override def check(t: (Int, Array[Int])): Boolean =
+    check(t._2, t._1)
+
+  def check(r: Array[Int], innerIterations: Int): Boolean = {
 
     if (innerIterations == 15000) { return r(0) == 46602 && r(1) == 5213 }
     if (innerIterations == 1500) { return r(0) == 6102 && r(1) == 5213 }
@@ -41,10 +52,4 @@ final class Havlak extends benchmarks.Benchmark[Nothing] {
     System.out.println("Result is: " + r(0) + ", " + r(1))
     return false
   }
-
-  override def run(): Nothing =
-    throw new RuntimeException("Should never be reached")
-
-  override def check(result: Nothing): Boolean =
-    throw new RuntimeException("Should never be reached")
 }

@@ -294,14 +294,37 @@ lazy val tests =
       }.taskValue
     )
 
-lazy val benchmarks =
-  project
-    .in(file("benchmarks"))
-    .settings(projectSettings)
-    .settings(noPublishSettings)
-
 lazy val sandbox =
   project
     .in(file("sandbox"))
     .settings(projectSettings)
     .settings(noPublishSettings)
+
+lazy val benchmarks =
+  project
+    .in(file("benchmarks"))
+    .settings(projectSettings)
+    .settings(noPublishSettings)
+    .settings(
+      sourceGenerators in Compile += Def.task {
+        val dir    = sourceDirectory.value
+        val prefix = dir.getAbsolutePath + "/main/scala/"
+        val benchmarks = (dir ** "*Benchmark.scala").get.map { f =>
+          f.getAbsolutePath
+            .replace(prefix, "")
+            .replace(".scala", "")
+            .split("/")
+            .mkString(".")
+        }.filter(_ != "benchmarks.Benchmark")
+          .mkString("Seq(new ", ", new ", ")")
+        val file = (sourceManaged in Compile).value / "benchmarks" / "Discover.scala"
+        IO.write(file,
+                 s"""
+          package benchmarks
+          object Discover {
+            val discovered: Seq[benchmarks.Benchmark[_]] = $benchmarks
+          }
+        """)
+        Seq(file)
+      }.taskValue
+    )

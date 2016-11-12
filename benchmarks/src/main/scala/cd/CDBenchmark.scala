@@ -23,7 +23,21 @@ package cd
 
 import som._
 
-final class CD extends benchmarks.Benchmark[Nothing] {
+class CDBenchmark extends benchmarks.Benchmark[(Int, Int)] {
+
+  private val numAircrafts = Array(1000, 500, 250, 100, 10)
+  private var i            = 0
+
+  override def run(): (Int, Int) = {
+    disableBenchmark()
+    val aircrafts = numAircrafts(i % numAircrafts.length)
+    i = i + 1
+    (aircrafts, benchmark(aircrafts))
+  }
+
+  override def check(t: (Int, Int)): Boolean =
+    check(t._2, t._1)
+
   def benchmark(numAircrafts: Int): Int = {
     val numFrames        = 200
     val simulator        = new Simulator(numAircrafts);
@@ -39,9 +53,6 @@ final class CD extends benchmarks.Benchmark[Nothing] {
     actualCollisions
   }
 
-  def loop(iterations: Int): Boolean =
-    check(benchmark(iterations), iterations)
-
   def check(actualCollisions: Int, numAircrafts: Int): Boolean = {
     if (numAircrafts == 1000) { return actualCollisions == 14484 }
     if (numAircrafts == 500) { return actualCollisions == 14484 }
@@ -54,10 +65,4 @@ final class CD extends benchmarks.Benchmark[Nothing] {
 
     return false
   }
-
-  def run(): Nothing =
-    throw new RuntimeException("Should never be reached");
-
-  def check(result: Nothing): Boolean =
-    throw new RuntimeException("Should never be reached");
 }

@@ -10,7 +10,7 @@ final class Simulator(numAircraft: Int) {
 
   def simulate(time: Double): Vector[Aircraft] = {
     val frame = new Vector[Aircraft]();
-    (0 until aircraft.size()).foreach { i =>
+    (0 until aircraft.size() by 2).foreach { i =>
       frame.append(
         new Aircraft(aircraft.at(i),
                      new Vector3D(time, Math.cos(time) * 2 + i * 3, 10)))

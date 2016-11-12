@@ -46,11 +46,15 @@ package deltablue
  */
 import scala.collection.mutable.{ArrayBuffer, ListBuffer, Stack}
 
-object DeltaBlue {
-  def main(args: Array[String]) = {
+class DeltaBlueBenchmark extends benchmarks.Benchmark[Unit] {
+
+  override def run(): Unit = {
     chainTest(100)
     projectionTest(100)
   }
+
+  override def check(t: Unit): Boolean =
+    true
 
   /**
    * This is the standard DeltaBlue benchmark. A long chain of equality

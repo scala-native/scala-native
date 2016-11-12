@@ -20,7 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-object Permute extends benchmarks.Benchmark[Int] {
+package permute
+
+class PermuteBenchmark extends benchmarks.Benchmark[Int] {
   var count: Int    = _
   var v: Array[Int] = _
 

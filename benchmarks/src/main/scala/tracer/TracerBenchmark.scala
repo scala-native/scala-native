@@ -16,7 +16,7 @@
 
 package tracer
 
-object Tracer extends App {
+class TracerBenchmark extends benchmarks.Benchmark[Unit] {
 
   val config = EngineConfiguration(
     imageWidth = 100,
@@ -30,7 +30,10 @@ object Tracer extends App {
     renderReflections = true
   )
 
-  def main(args: Array[String]) = {
+  override def run(): Unit =
     new RenderScene().renderScene(config, null)
-  }
+
+  override def check(t: Unit): Boolean =
+    true
+
 }

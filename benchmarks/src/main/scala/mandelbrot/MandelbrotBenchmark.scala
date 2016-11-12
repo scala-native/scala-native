@@ -40,16 +40,21 @@
 //  modified by Peter Zotov
 
 // http://benchmarksgame.alioth.debian.org/u64q/program.php?test=mandelbrot&lang=yarv&id=3
+package mandelbrot
 
-object Mandelbrot extends benchmarks.Benchmark[Nothing] {
-  def loop(innerIterations: Int): Boolean =
-    check(mandelbrot(innerIterations), innerIterations)
+class MandelbrotBenchmark extends benchmarks.Benchmark[(Int, Int)] {
 
-  override def run(): Nothing =
-    throw new RuntimeException("Should never be reached")
+  private val sizes = List(750, 500, 1)
+  private var i     = 0
 
-  override def check(result: Nothing): Boolean =
-    throw new RuntimeException("Should never be reached")
+  override def run(): (Int, Int) = {
+    val size = sizes(i % sizes.length)
+    i = i + 1
+    (size, mandelbrot(size))
+  }
+
+  override def check(t: (Int, Int)): Boolean =
+    check(t._2, t._1)
 
   def check(result: Int, innerIterations: Int): Boolean = {
     if (innerIterations == 500) {

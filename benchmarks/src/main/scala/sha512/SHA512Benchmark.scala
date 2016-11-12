@@ -40,11 +40,16 @@ package sha512
 /**
  * SHA-512 hashing.
  */
-object SHA512 {
-  def main(args: Array[String]) = {
-    if (!Test.selfTest(verbose = false))
-      throw new AssertionError("Tests failed")
+class SHA512Benchmark extends benchmarks.Benchmark[Boolean] {
+  override def run(): Boolean = {
+    disableBenchmark()
+    // Doesn't link.
+    // Test.selfTest(verbose = false)
+    true
   }
+
+  override def check(t: Boolean): Boolean =
+    t
 }
 
 object Test {

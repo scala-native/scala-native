@@ -48,8 +48,10 @@ package richards
 /**
  * Richards simulates the task dispatcher of an operating system.
  */
-object Richards {
-  def main(args: Array[String]) = {
+class RichardsBenchmark extends benchmarks.Benchmark[(Int, Int)] {
+  import Richards._
+
+  override def run(): (Int, Int) = {
     val scheduler = new Scheduler()
     scheduler.addIdleTask(ID_IDLE, 0, null, COUNT)
 
@@ -73,21 +75,13 @@ object Richards {
 
     scheduler.schedule()
 
-    if (scheduler.queueCount != EXPECTED_QUEUE_COUNT ||
-        scheduler.holdCount != EXPECTED_HOLD_COUNT) {
-      print(
-        s"Error during execution: queueCount = ${scheduler.queueCount}, holdCount = ${scheduler.holdCount}.")
-    }
-    if (EXPECTED_QUEUE_COUNT != scheduler.queueCount) {
-      throw new Exception("bad scheduler queue-count")
-    }
-    if (EXPECTED_HOLD_COUNT != scheduler.holdCount) {
-      throw new Exception("bad scheduler hold-count")
-    }
+    (scheduler.queueCount, scheduler.holdCount)
   }
 
-  final val DATA_SIZE = 4
-  final val COUNT     = 1000
+  override def check(t: (Int, Int)): Boolean = {
+    val (queueCount, holdCount) = t
+    queueCount == EXPECTED_QUEUE_COUNT && holdCount == EXPECTED_HOLD_COUNT
+  }
 
   /**
    * These two constants specify how many times a packet is queued and
@@ -99,6 +93,12 @@ object Richards {
   final val EXPECTED_QUEUE_COUNT = 2322
   final val EXPECTED_HOLD_COUNT  = 928
 
+}
+
+object Richards {
+  final val DATA_SIZE = 4
+  final val COUNT     = 1000
+
   final val ID_IDLE       = 0
   final val ID_WORKER     = 1
   final val ID_HANDLER_A  = 2
@@ -109,6 +109,7 @@ object Richards {
 
   final val KIND_DEVICE = 0
   final val KIND_WORK   = 1
+
 }
 
 /**

@@ -12,15 +12,22 @@ package sudoku
 
 import scala.language.implicitConversions
 
-object Sudoku {
-  def main(args: Array[String]) = {
-    solve(grid1) match {
-      case Some(values) =>
-        if (!grid1Solutions.contains(asString(values)))
-          println("Invalid solution found: " + asString(values))
-      case _ => println("No solution found")
-    }
+class SudokuBenchmark
+    extends benchmarks.Benchmark[Option[
+      scala.collection.mutable.Map[String, String]]] {
+
+  override def run(): Option[Grid] = {
+    disableBenchmark()
+    solve(grid1)
   }
+
+  override def check(grid: Option[Grid]): Boolean =
+    grid match {
+      case Some(values) =>
+        grid1Solutions.contains(asString(values))
+      case None =>
+        false
+    }
 
   def cross(as: String, bs: String) =
     for (a <- as.map(_.toString); b <- bs.map(_.toString)) yield a + b

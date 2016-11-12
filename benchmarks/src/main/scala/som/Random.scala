@@ -10,8 +10,7 @@ class Random {
 }
 
 object Random {
-  def main(args: Array[String]): Unit = {
-    System.out.println("Testing random number generator ...")
+  def testRNG(): Unit = {
     val rnd = new Random()
 
     try {
