@@ -25,6 +25,7 @@ class Formatter {
   def ioException(): IOException                             = ???
   def locale(): Locale                                       = ???
   def out(): Appendable                                      = ???
+  override def toString(): String                            = ???
 }
 
 object Formatter

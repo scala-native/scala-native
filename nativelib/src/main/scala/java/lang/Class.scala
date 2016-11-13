@@ -6,7 +6,7 @@ import scala.scalanative.runtime.Type
 final class _Class[A](val ty: Ptr[Type]) {
   def getName(): String = (!ty).name
 
-  override def hashCode: Int = ty.cast[Long].##
+  override def hashCode: Int = getName().##
 
   override def equals(other: Any): scala.Boolean = other match {
     case other: _Class[_] =>
@@ -27,4 +27,7 @@ object _Class {
     cls.asInstanceOf[Class[A]]
   private[java] implicit def class2_class[A](cls: Class[A]): _Class[A] =
     cls.asInstanceOf[_Class[A]]
+
+  // def isAssignableFrom(cls: _Class[_]): scala.Boolean = ???
+  // def isInstance(obj: _Object): scala.Boolean = ???
 }

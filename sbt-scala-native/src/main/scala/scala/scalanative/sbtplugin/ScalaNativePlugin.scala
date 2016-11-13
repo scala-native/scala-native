@@ -38,4 +38,7 @@ object ScalaNativePlugin extends AutoPlugin {
     ScalaNativePluginInternal.projectSettings ++
       ScalaNativePluginInternal.scalaNativeEcosystemSettings
   )
+
+  override def derivedProjects(proj: ProjectDefinition[_]): Seq[Project] =
+    ScalaNativePluginInternal.derivedProjects(proj)
 }
