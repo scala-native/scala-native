@@ -170,17 +170,44 @@ object ScalaNativePluginInternal {
 
       checkThatClangIsRecentEnough(clang)
 
-      IO.createDirectory(target)
-      val unpackSuccess = unpackRtlib(clang, clangpp, classpath)
+      val nirFiles   = (Keys.target.value ** "*.nir").get.toSet
+      val configFile = (streams.value.cacheDirectory / "native-config")
+      val inputFiles = nirFiles + configFile
 
-      if (unpackSuccess) {
-        val links = compileNir(opts).map(_.name)
-        compileLl(clangpp, target, appll, binary, links, linkage, clangOpts)
+      writeConfigHash(configFile,
+                      opts,
+                      clang,
+                      clangpp,
+                      classpath,
+                      target,
+                      appll,
+                      binary,
+                      linkage,
+                      clangOpts)
 
-        binary
-      } else {
-        throw new MessageOnlyException("Couldn't unpack nativelib.")
-      }
+      val compileIfChanged =
+        FileFunction.cached(streams.value.cacheDirectory / "native-cache",
+                            FilesInfo.hash) {
+          _ =>
+            IO.createDirectory(target)
+            val unpackSuccess = unpackRtlib(clang, clangpp, classpath)
+            if (unpackSuccess) {
+              val links = compileNir(opts).map(_.name)
+              compileLl(clangpp,
+                        target,
+                        appll,
+                        binary,
+                        links,
+                        linkage,
+                        clangOpts)
+              Set(binary)
+            } else {
+              throw new MessageOnlyException("Couldn't unpack nativelib.")
+            }
+        }
+
+      val _ = compileIfChanged(inputFiles)
+      binary
     },
     run := {
       val log    = streams.value.log
@@ -197,6 +224,11 @@ object ScalaNativePluginInternal {
       Defaults.toError(message)
     }
   )
+
+  private def writeConfigHash(file: File, config: Any*): Unit = {
+    val _ = config.## // Force evaluation of lazy structures
+    IO.write(file, Hash(config.toString))
+  }
 
   private def maybeInjectShared(lib: Boolean): Seq[String] =
     if (lib) Seq("-shared") else Seq.empty
