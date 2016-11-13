@@ -282,7 +282,7 @@ lazy val tests =
             .split("/")
             .mkString(".")
         }.filter(_ != "tests.Suite").mkString("Seq(", ", ", ")")
-        val file = (sourceManaged in Compile).value / "tests" / "Disover.scala"
+        val file = (sourceManaged in Compile).value / "tests" / "Discover.scala"
         IO.write(file,
                  s"""
           package tests
