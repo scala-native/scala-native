@@ -82,7 +82,7 @@ object ClassHierarchy {
     }
 
     lazy val alldynmethods: Seq[Method] = {
-      val dynmethods = methods.filter(m => m.attrs.usedForStructDisp)
+      val dynmethods = methods.filter(m => m.attrs.isDyn)
       val signatureSet = dynmethods.map(genSignature).toSet
       parent.fold(Seq.empty[Method])(_.alldynmethods).filterNot(m => signatureSet(genSignature(m))) ++ dynmethods
     }

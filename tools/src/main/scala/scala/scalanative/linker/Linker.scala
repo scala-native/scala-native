@@ -13,7 +13,7 @@ import util.unsupported
 final class Linker(dotpath: Option[String], paths: Seq[String]) {
   private val assemblies: Seq[Assembly] = paths.flatMap(Assembly(_))
 
-  private def load(global: Global): Option[(Seq[Dep], Seq[Attr.Link], Seq[Attr.WeakPin], Seq[String], Defn)] =
+  private def load(global: Global): Option[(Seq[Dep], Seq[Attr.Link], Seq[String], Defn)] =
     assemblies.collectFirst {
       case assembly if assembly.contains(global) =>
         assembly.load(global)
@@ -55,7 +55,7 @@ final class Linker(dotpath: Option[String], paths: Seq[String]) {
     val unresolved  = mutable.Set.empty[Global]
     val links       = mutable.Set.empty[Attr.Link]
     val defns       = mutable.UnrolledBuffer.empty[Defn]
-    val weak        = mutable.Set.empty[Attr.WeakPin]
+    val weak        = mutable.Set.empty[Global] // use multi map for constant lookup with new signatures ?
     val dyn         = mutable.Set.empty[String]
     val direct      = mutable.Stack.empty[Global]
     var conditional = mutable.UnrolledBuffer.empty[Dep.Conditional]
@@ -71,20 +71,19 @@ final class Linker(dotpath: Option[String], paths: Seq[String]) {
           load(workitem).fold[Unit] {
             unresolved += workitem
           } {
-            case (deps, newlinks, newWeaks, newDyns, defn) =>
+            case (deps, newlinks, newDyns, defn) =>
               resolved += workitem
               defns += defn
               links ++= newlinks
-
-              (dynMethods(weak.toSeq ++ newWeaks, newDyns) ++ dynMethods(newWeaks, dyn.toSeq)).foreach {
-                dep =>
-                  writeEdge(dep._1, dep._2)
-                  direct.push(dep._2)
-                  structuralMethods += dep._2
-              }
-
-              weak ++= newWeaks
               dyn ++= newDyns
+
+              // Comparing new signatures with old weak dependencies
+              newDyns.flatMap(s => weak.collect { case g if g.id == s => g } ).foreach {
+                global =>
+                  writeEdge(global.id, global)
+                  direct.push(global)
+                  structuralMethods += global
+              }
 
               deps.foreach {
                 case Dep.Direct(dep) =>
@@ -93,17 +92,21 @@ final class Linker(dotpath: Option[String], paths: Seq[String]) {
 
                 case cond: Dep.Conditional =>
                   conditional += cond
+
+                case Dep.Weak(g) =>
+                  // comparing new dependencies with all signatures
+                  if(dyn(g.id)) {
+                    writeEdge(g.id, g)
+                    direct.push(g)
+                    structuralMethods += g
+                  }
+
+                  weak += g
               }
           }
         }
       }
 
-    def dynMethods(weaks: Seq[Attr.WeakPin], newDyns: Seq[String]): Seq[(String, Global)] = {
-      weaks.flatMap {
-        case Attr.WeakPin(g @ Global.Member(_, id)) =>
-          newDyns.collect{ case sign if sign == id => (sign, g) }.toSeq
-      }.toSeq
-    }
 
     def processConditional = {
       val rest = mutable.UnrolledBuffer.empty[Dep.Conditional]
@@ -135,7 +138,7 @@ final class Linker(dotpath: Option[String], paths: Seq[String]) {
 
     val defnss = defns.sortBy(_.name.toString).toSeq.map {
       case Defn.Define(attrs, name, ty, insts) if structuralMethods.contains(name) =>
-        Defn.Define(Attrs.fromSeq(attrs.toSeq :+ Attr.StructDisp), name, ty, insts)
+        Defn.Define(Attrs.fromSeq(attrs.toSeq :+ Attr.Dyn), name, ty, insts)
       case defn => defn
     }
 

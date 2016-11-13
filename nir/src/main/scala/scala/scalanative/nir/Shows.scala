@@ -34,7 +34,7 @@ object Shows {
     case Attr.NoInline     => "noinline"
     case Attr.AlwaysInline => "alwaysinline"
 
-    case Attr.StructDisp   => "structdisp"
+    case Attr.Dyn          => "dyn"
 
     case Attr.Pure           => sh"pure"
     case Attr.Extern         => sh"extern"
@@ -43,7 +43,7 @@ object Shows {
     case Attr.Link(name)        => sh"link($name)"
     case Attr.PinAlways(name)   => sh"pin($name)"
     case Attr.PinIf(name, cond) => sh"pin-if($name, $cond)"
-    case Attr.WeakPin(name)     => sh"weak-pin($name)"
+    case Attr.PinWeak(name)     => sh"pin-weak($name)"
   }
 
   implicit val showNext: Show[Next] = Show {
@@ -125,19 +125,12 @@ object Shows {
 
     case Op.Classalloc(name) =>
       sh"classalloc $name"
-<<<<<<< 94479c705d7c81ed249b64d55f1df9e19558f770
     case Op.Field(value, name) =>
       sh"field $value, $name"
     case Op.Method(value, name) =>
       sh"method $value, $name"
-=======
-    case Op.Field(ty, value, name) =>
-      sh"field[$ty] $value, $name"
-    case Op.Method(ty, value, name) =>
-      sh"method[$ty] $value, $name"
-    case Op.DynMethod(obj, sign) =>
-      sh"dynmethod $obj $sign"
->>>>>>> Add DynMethod operator to nir
+    case Op.Dynmethod(obj, signature) =>
+      sh"dynmethod $obj $signature"
     case Op.Module(name) =>
       sh"module $name"
     case Op.As(ty, value) =>

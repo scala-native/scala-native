@@ -22,43 +22,39 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
     assert(compat == Versions.compat && revision <= Versions.revision,
            "Can't read binary-incompatible version of NIR.")
 
-    val (_, _, _, _, pairs) = scoped(getSeq((getGlobal, getInt)))
+    val (_, _, _, pairs) = scoped(getSeq((getGlobal, getInt)))
     val map           = pairs.toMap
     this.deps = null
     map
   }
 
-  private var deps:  mutable.Set[Dep]           = _
-  private var links: mutable.Set[Attr.Link]     = _
-  private var weaks: mutable.Set[Attr.WeakPin]  = _
-  private var dyns:   mutable.Set[String]       = _
+  private var deps:  mutable.Set[Dep]       = _
+  private var links: mutable.Set[Attr.Link] = _
+  private var dyns: mutable.Set[String]     = _
 
   private def scoped[T](
-      f: => T): (mutable.Set[Dep], mutable.Set[Attr.Link], mutable.Set[Attr.WeakPin], mutable.Set[String], T) = {
+      f: => T): (mutable.Set[Dep], mutable.Set[Attr.Link], mutable.Set[String], T) = {
     this.deps  = mutable.Set.empty[Dep]
     this.links = mutable.Set.empty[Attr.Link]
-    this.weaks = mutable.Set.empty[Attr.WeakPin]
     this.dyns  = mutable.Set.empty[String]
     val res    = f
     val deps   = this.deps
     val links  = this.links
-    val weaks  = this.weaks
     val dyns   = this.dyns
     this.deps  = null
     this.links = null
-    this.weaks = null
     this.dyns  = null
-    (deps, links, weaks, dyns, res)
+    (deps, links, dyns, res)
   }
 
 
-  final def deserialize(g: Global): Option[(Seq[Dep], Seq[Attr.Link], Seq[Attr.WeakPin], Seq[String], Defn)] =
+  final def deserialize(g: Global): Option[(Seq[Dep], Seq[Attr.Link], Seq[String], Defn)] =
     header.get(g).map {
       case offset =>
         buffer.position(offset)
-        val (deps, links, weaks, dyns, defn) = scoped(getDefn)
+        val (deps, links, dyns, defn) = scoped(getDefn)
         deps -= Dep.Direct(g)
-        (deps.toSeq, links.toSeq, weaks.toSeq, dyns.toSeq, defn)
+        (deps.toSeq, links.toSeq, dyns.toSeq, defn)
     }
 
   private def getSeq[T](getT: => T): Seq[T] =
@@ -88,7 +84,7 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
         case T.NoInlineAttr     => buf += Attr.NoInline
         case T.AlwaysInlineAttr => buf += Attr.AlwaysInline
 
-        case T.StructDisp   => buf += Attr.StructDisp
+        case T.DynAttr          => buf += Attr.Dyn
 
         case T.PureAttr     => buf += Attr.Pure
         case T.ExternAttr   => buf += Attr.Extern
@@ -96,9 +92,9 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
 
         case T.LinkAttr      => links += Attr.Link(getString)
         case T.PinAlwaysAttr => deps += Dep.Direct(getGlobalNoDep)
+        case T.PinWeakAttr   => deps += Dep.Weak(getGlobalNoDep)
         case T.PinIfAttr =>
           deps += Dep.Conditional(getGlobalNoDep, getGlobalNoDep)
-        case T.WeakPin => weaks += Attr.WeakPin(getGlobalNoDep)
       }
     }
 
@@ -246,12 +242,12 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
     case T.SelectOp     => Op.Select(getVal, getVal, getVal)
 
     case T.ClassallocOp => Op.Classalloc(getGlobal)
-    case T.FieldOp      => Op.Field(getType, getVal, getGlobal)
-    case T.MethodOp     => Op.Method(getType, getVal, getGlobal)
-    case T.DynMethodOp  =>
-      val dynMethod = Op.DynMethod(getVal, getString)
-      dyns += dynMethod.sign
-      dynMethod
+    case T.FieldOp      => Op.Field(getVal, getGlobal)
+    case T.MethodOp     => Op.Method(getVal, getGlobal)
+    case T.DynmethodOp  =>
+      val dynmethod = Op.Dynmethod(getVal, getString)
+      dyns += dynmethod.signature
+      dynmethod
 
       
     case T.ModuleOp     => Op.Module(getGlobal)

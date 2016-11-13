@@ -220,7 +220,7 @@ abstract class NirCodeGen
 
       val weak = cd.impl.body.collect {
         case dd: DefDef =>
-          Attr.WeakPin(genMethodName(dd.symbol))
+          Attr.PinWeak(genMethodName(dd.symbol))
       }
 
       Attrs.fromSeq(pinned ++ pure ++ attrs ++ weak)
@@ -871,10 +871,9 @@ abstract class NirCodeGen
       val methodName   = genMethodName(sym).id
       val (args, last) = genMethodArgs(sym, argsp, focus)
 
-      val method = last withOp Op.DynMethod(self, methodName.toString)
+      val method = last withOp Op.Dynmethod(self, methodName.toString)
       val values = self +: args
 
-      //unsupported(methodName)
       method withOp Op.Call(sig, method.value, values)
     }
 
