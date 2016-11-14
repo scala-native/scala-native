@@ -3,6 +3,7 @@ package java.lang
 import java.io.{InputStream, PrintStream}
 import java.util.Properties
 import scala.scalanative.native._
+import scala.scalanative.runtime.time
 
 final class System private ()
 
@@ -28,6 +29,8 @@ object System {
   def getProperty(key: String): String                  = ???
   def getProperty(key: String, default: String): String = ???
   def setProperty(key: String, value: String): String   = ???
+
+  def nanoTime(): CLong = time.scalanative_nano_time
 
   var in: InputStream  = _
   var out: PrintStream = new PrintStream(new CFileOutputStream(stdio.stdout))

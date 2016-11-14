@@ -125,7 +125,13 @@ object ScalaNativePluginInternal {
       discover("clang++", Seq(("3", "8"), ("3", "7")))
     },
     nativeClangOptions := {
-      includes ++ libs ++ maybeInjectShared(nativeSharedLibrary.value)
+      // We need to add `-lrt` for the POSIX realtime lib, which doesn't exist
+      // on macOS.
+      val lrt = Option(sys props "os.name") match {
+        case Some("Linux") => Seq("-lrt")
+        case _             => Seq()
+      }
+      includes ++ libs ++ maybeInjectShared(nativeSharedLibrary.value) ++ lrt
     },
     artifactPath in nativeLink := {
       (crossTarget in Compile).value / (moduleName.value + "-out")
