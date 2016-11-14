@@ -495,6 +495,14 @@ method
 
 Returns a pointer to the given method of given object.
 
+dynmethod
+`````````
+.. code-block:: text
+
+    dynmethod $obj, $signature
+
+Returns a pointer to the given method of given object and signature.
+
 as
 ``
 .. code-block:: text
@@ -681,8 +689,24 @@ both reachable. Used to introduce conditional indirect linking dependencies.
 For example, class constructors conditionally depend on methods overriden in
 given class if the method that are being overriden are reachable.
 
+pin-weak
+********
+.. code-block:: text
+
+    pin-weak(@$name)
+
+Require ``$name`` to be reachable if there is a reachable dynmethod with matching signature.
+
 Misc
 ````
+
+dyn
+***
+.. code-block:: text
+
+    dyn
+
+Indication that a method can be called using a structural type dispatch.
 
 pure
 ****
