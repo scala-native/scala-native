@@ -34,23 +34,9 @@ FreeBSD::
 
     $ pkg install llvm38 boehm-gc
 
-nixOS::
+nix/nixOS::
 
-    $ nix-env -i clang-wrapper-3.7.1 boehm-gc-7.2f
-
-    # clang.nix
-    let
-      pkgs = import <nixpkgs> {};
-      stdenv = pkgs.stdenv;
-    in rec {
-      clangEnv = stdenv.mkDerivation rec {
-        name = "clang-env";
-        buildInputs = [
-          stdenv
-          pkgs.boehmgc
-        ];
-      };
-    }
+    $ wget https://github.com/scala-native/scala-native/blob/master/bin/clang.nix
 
     $ nix-shell clang.nix -A clangEnv
 

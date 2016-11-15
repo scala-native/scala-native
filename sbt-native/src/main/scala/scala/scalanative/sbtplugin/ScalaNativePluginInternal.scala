@@ -1,6 +1,8 @@
 package scala.scalanative
 package sbtplugin
 
+import sbtcross.CrossPlugin.autoImport._
+
 import sbt._, Keys._, complete.DefaultParsers._
 import scalanative.compiler.{Compiler => NativeCompiler, Opts => NativeOpts}
 import ScalaNativePlugin.autoImport._
@@ -32,16 +34,35 @@ object ScalaNativePluginInternal {
   private def abs(file: File): String =
     file.getAbsolutePath
 
+  private val nl = System.lineSeparator
+
   private def discover(binaryName: String,
                        binaryVersions: Seq[(String, String)]): File = {
-    val binaryNames = binaryVersions.flatMap {
-      case (major, minor) =>
-        Seq(s"$binaryName$major$minor", s"$binaryName-$major.$minor")
-    } :+ binaryName
 
-    Process("which" +: binaryNames).lines_!.map(file(_)).headOption.getOrElse {
-      throw new MessageOnlyException(
-        s"no ${binaryNames.mkString(", ")} found in $$PATH. Install clang")
+    val docInstallUrl =
+      "http://scala-native.readthedocs.io/en/latest/user/setup.html#installing-llvm-clang-and-boehm-gc"
+
+    val envName =
+      if (binaryName == "clang") "CLANG"
+      else if (binaryName == "clang++") "CLANGPP"
+      else binaryName
+
+    sys.env.get(s"${envName}_PATH") match {
+      case Some(path) => file(path)
+      case None => {
+        val binaryNames = binaryVersions.flatMap {
+          case (major, minor) =>
+            Seq(s"$binaryName$major$minor", s"$binaryName-$major.$minor")
+        } :+ binaryName
+
+        Process("which" +: binaryNames).lines_!
+          .map(file(_))
+          .headOption
+          .getOrElse {
+            throw new MessageOnlyException(
+              s"no ${binaryNames.mkString(", ")} found in $$PATH. Install clang ($docInstallUrl)")
+          }
+      }
     }
   }
 
@@ -51,15 +72,24 @@ object ScalaNativePluginInternal {
     compiler.apply()
   }
 
+  private def running(command: Seq[String]): String =
+    "running" + nl + command.mkString(nl + "\t")
+
   /** Compiles *.c[pp] in `cwd`. */
-  def compileCSources(clang: File, clangpp: File, cwd: File): Boolean = {
+  def compileCSources(clang: File,
+                      clangpp: File,
+                      cwd: File,
+                      logger: Logger): Boolean = {
     val cpaths     = (cwd ** "*.c").get.map(abs)
     val cpppaths   = (cwd ** "*.cpp").get.map(abs)
     val compilec   = abs(clang) +: (includes ++ ("-c" +: cpaths))
     val compilecpp = abs(clangpp) +: (includes ++ ("-c" +: cpppaths))
 
-    val cExit   = Process(compilec, cwd).!
-    val cppExit = Process(compilecpp, cwd).!
+    logger.info(running(compilec))
+    val cExit = Process(compilec, cwd) ! logger
+
+    logger.info(running(compilecpp))
+    val cppExit = Process(compilecpp, cwd) ! logger
 
     cExit == 0 && cppExit == 0
   }
@@ -67,7 +97,9 @@ object ScalaNativePluginInternal {
   /** Compiles rt to llvm ir using clang. */
   private def unpackRtlib(clang: File,
                           clangpp: File,
-                          classpath: Seq[String]): Boolean = {
+                          classpath: Seq[String],
+                          logger: Logger): Boolean = {
+
     val nativelibjar = classpath.collectFirst {
       case p if p.contains("scala-native") && p.contains("nativelib") =>
         file(p)
@@ -84,7 +116,7 @@ object ScalaNativePluginInternal {
       IO.unzip(nativelibjar, nativelib)
       IO.write(jarhashfile, Hash(nativelibjar))
 
-      compileCSources(clang, clangpp, nativelib)
+      compileCSources(clang, clangpp, nativelib, logger)
     } else {
       true
     }
@@ -97,7 +129,8 @@ object ScalaNativePluginInternal {
                         binary: File,
                         links: Seq[String],
                         linkage: Map[String, String],
-                        opts: Seq[String]): Unit = {
+                        opts: Seq[String],
+                        logger: Logger): Unit = {
     val outpath = abs(binary)
     val apppath = abs(appll)
     val opaths  = (nativelib ** "*.o").get.map(abs)
@@ -111,14 +144,16 @@ object ScalaNativePluginInternal {
     val flags   = Seq("-o", outpath) ++ linkopts ++ opts
     val compile = abs(clangpp) +: (flags ++ paths)
 
-    Process(compile, target).!
+    logger.info(running(compile))
+
+    Process(compile, target) ! logger
   }
 
   lazy val projectSettings = Seq(
     libraryDependencies ++= Seq(
-      "org.scala-native" %% "nativelib" % nativeVersion,
-      "org.scala-native" %% "javalib"   % nativeVersion,
-      "org.scala-native" %% "scalalib"  % nativeVersion
+      "org.scala-native" %%% "nativelib" % nativeVersion,
+      "org.scala-native" %%% "javalib"   % nativeVersion,
+      "org.scala-native" %%% "scalalib"  % nativeVersion
     ),
     addCompilerPlugin(
       "org.scala-native" % "nscplugin" % nativeVersion cross CrossVersion.full),
@@ -161,6 +196,7 @@ object ScalaNativePluginInternal {
       val dotpath       = nativeEmitDependencyGraphPath.value
       val linkage       = nativeLibraryLinkage.value
       val sharedLibrary = nativeSharedLibrary.value
+      val logger        = streams.value.log
       val opts = new NativeOpts(classpath,
                                 abs(appll),
                                 dotpath.map(abs),
@@ -190,7 +226,7 @@ object ScalaNativePluginInternal {
                             FilesInfo.hash) {
           _ =>
             IO.createDirectory(target)
-            val unpackSuccess = unpackRtlib(clang, clangpp, classpath)
+            val unpackSuccess = unpackRtlib(clang, clangpp, classpath, logger)
             if (unpackSuccess) {
               val links = compileNir(opts).map(_.name)
               compileLl(clangpp,
@@ -199,7 +235,8 @@ object ScalaNativePluginInternal {
                         binary,
                         links,
                         linkage,
-                        clangOpts)
+                        clangOpts,
+                        logger)
               Set(binary)
             } else {
               throw new MessageOnlyException("Couldn't unpack nativelib.")
@@ -210,11 +247,11 @@ object ScalaNativePluginInternal {
       binary
     },
     run := {
-      val log    = streams.value.log
+      val logger = streams.value.log
       val binary = abs(nativeLink.value)
       val args   = spaceDelimited("<arg>").parsed
 
-      log.info("Running " + binary + " " + args.mkString(" "))
+      logger.info(running(binary +: args))
       val exitCode = Process(binary +: args).!
 
       val message =
@@ -226,9 +263,14 @@ object ScalaNativePluginInternal {
   )
 
   private def writeConfigHash(file: File, config: Any*): Unit = {
-    val _ = config.## // Force evaluation of lazy structures
+    val force = config.## // Force evaluation of lazy structures
     IO.write(file, Hash(config.toString))
   }
+
+  val scalaNativeEcosystemSettings = Seq(
+    crossVersion := ScalaNativeCrossVersion.binary,
+    crossPlatform := NativePlatform
+  )
 
   private def maybeInjectShared(lib: Boolean): Seq[String] =
     if (lib) Seq("-shared") else Seq.empty
