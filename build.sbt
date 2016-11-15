@@ -17,9 +17,9 @@ lazy val publishSettings = Seq(
   publishArtifact in Compile := true,
   publishArtifact in Test := false,
   publishMavenStyle := true,
-  publishTo <<= version { v: String =>
+  publishTo := {
     val nexus = "https://oss.sonatype.org/"
-    if (v.trim.endsWith("SNAPSHOT"))
+    if (version.value.trim.endsWith("SNAPSHOT"))
       Some("snapshots" at nexus + "content/repositories/snapshots")
     else
       Some("releases" at nexus + "service/local/staging/deploy/maven2")
@@ -139,7 +139,12 @@ lazy val tools =
         compilerPlugin(
           "org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full),
         "org.scalatest" %% "scalatest" % "3.0.0" % "test"
-      ))
+      ),
+      publishLocal := publishLocal
+        .dependsOn(publishLocal in nir)
+        .dependsOn(publishLocal in util)
+        .value
+    )
     .dependsOn(nir, util)
 
 lazy val nscplugin =
@@ -161,30 +166,38 @@ lazy val nscplugin =
       publishArtifact in (Compile, packageDoc) := false
     )
 
-lazy val sbtplugin =
-  project
-    .in(file("sbtplugin"))
-    .settings(toolSettings)
-    .settings(publishSettings)
-    .settings(
+lazy val sbtPluginSettings =
+  toolSettings ++
+    publishSettings ++
+    ScriptedPlugin.scriptedSettings ++
+    Seq(
       sbtPlugin := true,
-      // Support for scripted tests
-      ScriptedPlugin.scriptedSettings,
-      scriptedLaunchOpts := {
-        scriptedLaunchOpts.value ++
-          Seq("-Xmx1024M",
-              "-XX:MaxPermSize=256M",
-              "-Dplugin.version=" + version.value)
-      },
+      scriptedLaunchOpts ++=
+        Seq("-Xmx1024M",
+            "-XX:MaxPermSize=256M",
+            "-Dplugin.version=" + version.value)
+    )
+
+lazy val sbtScalaNative =
+  project
+    .in(file("sbt-scala-native"))
+    .settings(sbtPluginSettings)
+    .settings(
+      resolvers += Resolver.sonatypeRepo("snapshots"),
+      addSbtPlugin("org.scala-native" % "sbt-cross" % "0.1.0-SNAPSHOT"),
+      moduleName := "sbt-scala-native",
       sbtTestDirectory := (baseDirectory in ThisBuild).value / "scripted-tests",
       // publish the other projects before running scripted tests.
-      scripted <<= scripted.dependsOn(publishLocal in util,
-                                      publishLocal in nir,
-                                      publishLocal in tools,
-                                      publishLocal in nscplugin,
-                                      publishLocal in nativelib,
-                                      publishLocal in javalib,
-                                      publishLocal in scalalib)
+      scripted := scripted
+        .dependsOn(publishLocal in util,
+                   publishLocal in nir,
+                   publishLocal in tools,
+                   publishLocal in nscplugin,
+                   publishLocal in nativelib,
+                   publishLocal in javalib,
+                   publishLocal in scalalib)
+        .evaluated,
+      publishLocal := publishLocal.dependsOn(publishLocal in tools).value
     )
     .dependsOn(tools)
 
@@ -201,12 +214,12 @@ lazy val nativelib =
         IO.withTemporaryDirectory { tmp =>
           IO.copyDirectory(baseDirectory.value, tmp)
           scala.scalanative.sbtplugin.ScalaNativePluginInternal
-            .compileCSources(clang, clangpp, tmp)
+            .compileCSources(clang, clangpp, tmp, streams.value.log)
         }
       if (compileSuccess) {
         (compile in Compile).value
       } else {
-        error("Compilation failed")
+        sys.error("Compilation failed")
       }
     })
 
@@ -260,8 +273,10 @@ lazy val scalalib =
                          file("scalalib/src/main/scala/scala"),
                          overwrite = true)
       },
-      compile in Compile <<= (compile in Compile) dependsOn assembleScalaLibrary,
-      publishLocal <<= publishLocal dependsOn assembleScalaLibrary
+      compile in Compile := (compile in Compile)
+        .dependsOn(assembleScalaLibrary)
+        .value,
+      publishLocal := publishLocal.dependsOn(assembleScalaLibrary).value
     )
     .dependsOn(nativelib, javalib)
 
@@ -279,6 +294,7 @@ lazy val demoNative =
     .in(file("demo/native"))
     .settings(projectSettings)
     .settings(noPublishSettings)
+    .enablePlugins(ScalaNativePlugin)
 
 lazy val tests =
   project
@@ -307,12 +323,14 @@ lazy val tests =
         Seq(file)
       }.taskValue
     )
+    .enablePlugins(ScalaNativePlugin)
 
 lazy val sandbox =
   project
     .in(file("sandbox"))
     .settings(projectSettings)
     .settings(noPublishSettings)
+    .enablePlugins(ScalaNativePlugin)
 
 lazy val benchmarks =
   project
@@ -342,3 +360,4 @@ lazy val benchmarks =
         Seq(file)
       }.taskValue
     )
+    .enablePlugins(ScalaNativePlugin)

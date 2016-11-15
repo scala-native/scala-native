@@ -24,7 +24,6 @@ matrix:
         - brew install bdw-gc
         - brew link bdw-gc
         - brew install jq
-
 cache:
   directories:
     - $HOME/.ivy2/cache
@@ -54,6 +53,5 @@ before_script:
     fi;
 script:
   - java -version
-  - bin/scalafmt --test
-  - sbt 'cleanCache' 'cleanLocal' 'nscplugin/publishLocal' 'nativelib/publishLocal' 'publishLocal' 'sandbox/run' 'demoNative/run' 'tests/run' 'tools/test' 'benchmarks/run' 'scripted' 'publishSnapshot'
- 
+  - bin/scalafmt --test && sbt 'cleanCache' 'cleanLocal' 'nscplugin/publishLocal' 'nativelib/publishLocal' 'publishLocal' 'sandbox/run' 'demoNative/run' 'tests/run' 'tools/test' 'benchmarks/run' 'scripted' 'publishSnapshot'
+
