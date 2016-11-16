@@ -38,6 +38,22 @@ nixOS::
 
     $ nix-env -i clang-wrapper-3.7.1 boehm-gc-7.2f
 
+    # clang.nix
+    let
+      pkgs = import <nixpkgs> {};
+      stdenv = pkgs.stdenv;
+    in rec {
+      clangEnv = stdenv.mkDerivation rec {
+        name = "clang-env";
+        buildInputs = [
+          stdenv
+          pkgs.boehmgc
+        ];
+      };
+    }
+
+    $ nix-shell clang.nix -A clangEnv
+
 Continue to :ref:`sbt`.
 
 .. _Boehm GC: http://www.hboehm.info/gc/

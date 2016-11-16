@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 check_binary(){
   command -v "$0" >/dev/null 2>&1 || { echo >&2 "Missing dependency $0, exiting."; exit 1; }
