@@ -189,7 +189,26 @@ lazy val sbtplugin =
     .dependsOn(tools)
 
 lazy val nativelib =
-  project.in(file("nativelib")).settings(libSettings).settings(publishSettings)
+  project
+    .in(file("nativelib"))
+    .settings(libSettings)
+    .settings(publishSettings)
+    .settings(compile in Compile := {
+      val clang   = nativeClang.value
+      val clangpp = nativeClangPP.value
+      val source  = baseDirectory.value
+      val compileSuccess =
+        IO.withTemporaryDirectory { tmp =>
+          IO.copyDirectory(baseDirectory.value, tmp)
+          scala.scalanative.sbtplugin.ScalaNativePluginInternal
+            .compileCSources(clang, clangpp, tmp)
+        }
+      if (compileSuccess) {
+        (compile in Compile).value
+      } else {
+        error("Compilation failed")
+      }
+    })
 
 lazy val javalib =
   project
