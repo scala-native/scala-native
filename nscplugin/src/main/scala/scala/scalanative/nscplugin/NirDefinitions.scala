@@ -109,7 +109,8 @@ trait NirDefinitions { self: NirGlobalAddons =>
       'I' -> getRequiredClass("scala.scalanative.runtime.PrimitiveInt"),
       'L' -> getRequiredClass("scala.scalanative.runtime.PrimitiveLong"),
       'F' -> getRequiredClass("scala.scalanative.runtime.PrimitiveFloat"),
-      'D' -> getRequiredClass("scala.scalanative.runtime.PrimitiveDouble")
+      'D' -> getRequiredClass("scala.scalanative.runtime.PrimitiveDouble"),
+      'U' -> getRequiredClass("scala.scalanative.runtime.PrimitiveUnit")
     )
 
     lazy val RuntimeArrayClass: Map[Char, Symbol] = Map(
