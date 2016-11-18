@@ -37,3 +37,7 @@ import native._
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Primitives.scala.gyb", line: 12)
 
 @struct class PrimitiveDouble private ()
+
+// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Primitives.scala.gyb", line: 12)
+
+@struct class PrimitiveUnit private ()

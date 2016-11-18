@@ -72,8 +72,12 @@ trait NirTypeEncoding { self: NirCodeGen =>
 
   def genTypeSymValue(sym: Symbol): nir.Val =
     genPrimCode(sym) match {
-      case 'O'  => nir.Val.Global(genTypeName(sym), nir.Type.Ptr)
-      case code => genTypeSymValue(RuntimePrimitive(code))
+      case 'O' if sym != UnitClass =>
+        nir.Val.Global(genTypeName(sym), nir.Type.Ptr)
+      case 'O' =>
+        genTypeSymValue(RuntimePrimitive('U'))
+      case code =>
+        genTypeSymValue(RuntimePrimitive(code))
     }
 
   def genStructFields(sym: Symbol): Seq[nir.Type] = {
