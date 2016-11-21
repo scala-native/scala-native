@@ -24,7 +24,7 @@ systems Scala Native has been used with:
 
 Ubuntu::
 
-    $ sudo apt-get install libgc-dev
+    $ sudo apt-get install clang libgc-dev
 
 macOS::
 
