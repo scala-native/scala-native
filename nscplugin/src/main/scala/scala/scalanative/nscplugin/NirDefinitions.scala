@@ -66,7 +66,7 @@ trait NirDefinitions { self: NirGlobalAddons =>
 
     // Native runtime
 
-    lazy val RuntimePackage = getPackage("scala.scalanative.runtime")
+    lazy val RuntimePackage = getPackage(TermName("scala.scalanative.runtime"))
 
     lazy val RuntimeMonitorClass = getRequiredClass(
       "scala.scalanative.runtime.Monitor")
