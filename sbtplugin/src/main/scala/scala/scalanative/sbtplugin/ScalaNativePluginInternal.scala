@@ -2,17 +2,13 @@ package scala.scalanative
 package sbtplugin
 
 import sbt._, Keys._, complete.DefaultParsers._
-import scalanative.compiler.{Compiler => NativeCompiler, Opts => NativeOpts}
-import ScalaNativePlugin.autoImport._
 import scala.util.Try
+import scalanative.nir
+import scalanative.tools
+import scalanative.io.VirtualDirectory
+import scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 
 object ScalaNativePluginInternal {
-  private def cpToStrings(cp: Seq[File]): Seq[String] =
-    cp.map(_.getAbsolutePath)
-
-  private def cpToString(cp: Seq[File]): String =
-    cpToStrings(cp).mkString(java.io.File.pathSeparator)
-
   private lazy val nativelib: File =
     Path.userHome / ".scalanative" / ("nativelib-" + nir.Versions.current)
 
@@ -46,9 +42,13 @@ object ScalaNativePluginInternal {
   }
 
   /** Compiles application nir to llvm ir. */
-  private def compileNir(opts: NativeOpts): Seq[nir.Attr.Link] = {
-    val compiler = new NativeCompiler(opts)
-    compiler.apply()
+  private def compileNir(config: tools.Config): Seq[nir.Attr.Link] = {
+    val driver       = tools.Driver(config)
+    val (links, raw) = tools.link(config, driver)
+    val optimized    = tools.optimize(config, driver, raw)
+    tools.codegen(config, optimized)
+
+    links
   }
 
   /** Compiles *.c[pp] in `cwd`. */
@@ -65,13 +65,16 @@ object ScalaNativePluginInternal {
   }
 
   /** Compiles rt to llvm ir using clang. */
-  private def unpackRtlib(clang: File,
-                          clangpp: File,
-                          classpath: Seq[String]): Boolean = {
-    val nativelibjar = classpath.collectFirst {
-      case p if p.contains("scala-native") && p.contains("nativelib") =>
-        file(p)
-    }.get
+  private def unpackNativelib(clang: File,
+                              clangpp: File,
+                              classpath: Seq[File]): Boolean = {
+    val nativelibjar = classpath
+      .map(abs)
+      .collectFirst {
+        case p if p.contains("scala-native") && p.contains("nativelib") =>
+          file(p)
+      }
+      .get
     val jarhash     = Hash(nativelibjar).toSeq
     val jarhashfile = nativelib / "jarhash"
     def bootstrapped =
@@ -149,24 +152,25 @@ object ScalaNativePluginInternal {
       val mainClass = (selectMainClass in Compile).value.getOrElse(
         throw new MessageOnlyException("No main class detected.")
       )
-      val entry         = mainClass.toString + "$"
-      val classpath     = cpToStrings((fullClasspath in Compile).value.map(_.data))
+      val entry         = nir.Global.Top(mainClass.toString + "$")
+      val classpath     = (fullClasspath in Compile).value.map(_.data)
       val target        = (crossTarget in Compile).value
-      val appll         = target / (moduleName.value + "-out.ll")
+      val appll         = target / "out.ll"
       val binary        = (artifactPath in nativeLink).value
-      val verbose       = nativeVerbose.value
       val clang         = nativeClang.value
       val clangpp       = nativeClangPP.value
       val clangOpts     = nativeClangOptions.value
       val dotpath       = nativeEmitDependencyGraphPath.value
       val linkage       = nativeLibraryLinkage.value
       val sharedLibrary = nativeSharedLibrary.value
-      val opts = new NativeOpts(classpath,
-                                abs(appll),
-                                dotpath.map(abs),
-                                entry,
-                                verbose,
-                                sharedLibrary)
+
+      val config = tools.Config.empty
+        .withEntry(entry)
+        .withPaths(classpath.map(p => tools.Path(VirtualDirectory.real(p))))
+        .withTargetDirectory(VirtualDirectory.real(target))
+        .withInjectMain(!nativeSharedLibrary.value)
+        .withCheck(false)
+        .withVerbose(nativeVerbose.value)
 
       checkThatClangIsRecentEnough(clang)
 
@@ -175,7 +179,7 @@ object ScalaNativePluginInternal {
       val inputFiles = nirFiles + configFile
 
       writeConfigHash(configFile,
-                      opts,
+                      config,
                       clang,
                       clangpp,
                       classpath,
@@ -190,9 +194,9 @@ object ScalaNativePluginInternal {
                             FilesInfo.hash) {
           _ =>
             IO.createDirectory(target)
-            val unpackSuccess = unpackRtlib(clang, clangpp, classpath)
+            val unpackSuccess = unpackNativelib(clang, clangpp, classpath)
             if (unpackSuccess) {
-              val links = compileNir(opts).map(_.name)
+              val links = compileNir(config).map(_.name)
               compileLl(clangpp,
                         target,
                         appll,

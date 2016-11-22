@@ -8,114 +8,99 @@ import nir.serialization._
 import nir.Shows._
 import util.sh
 
-final class Linker(dotpath: Option[String], paths: Seq[String]) {
-  private val assemblies: Seq[Assembly] = paths.flatMap(Assembly(_))
+sealed trait Linker {
 
-  private def load(global: Global): Option[(Seq[Dep], Seq[Attr.Link], Defn)] =
-    assemblies.collectFirst {
-      case assembly if assembly.contains(global) =>
-        assembly.load(global)
-    }.flatten
+  /** Link the whole world under closed world assumption. */
+  def link(entries: Seq[Global]): (Seq[Attr.Link], Seq[Defn])
+}
 
-  private val writer = dotpath.map(path => new PrintWriter(new File(path)))
+object Linker {
 
-  private def writeStart(): Unit =
-    writer.foreach { writer =>
-      writer.println("digraph G {")
-    }
+  /** Create a new linker given tools configuration. */
+  def apply(config: tools.Config): Linker = new Impl(config)
 
-  private def writeEdge(from: Global, to: Global): Unit =
-    writer.foreach { writer =>
-      def quoted(s: String) = "\"" + s + "\""
-      writer.print(quoted(sh"$from".toString))
-      writer.print("->")
-      writer.print(quoted(sh"$to".toString))
-      writer.println(";")
-    }
+  private final class Impl(config: tools.Config) extends Linker {
+    private def load(
+        global: Global): Option[(Seq[Dep], Seq[Attr.Link], Defn)] =
+      config.paths.collectFirst {
+        case path if path.contains(global) =>
+          path.load(global)
+      }.flatten
 
-  private def writeEnd(): Unit =
-    writer.foreach { writer =>
-      writer.println("}")
-      writer.close()
-    }
+    private def impl(
+        entries: Seq[Global]): (Seq[Global], Seq[Attr.Link], Seq[Defn]) = {
+      val resolved    = mutable.Set.empty[Global]
+      val unresolved  = mutable.Set.empty[Global]
+      val links       = mutable.Set.empty[Attr.Link]
+      val defns       = mutable.UnrolledBuffer.empty[Defn]
+      val direct      = mutable.Stack.empty[Global]
+      var conditional = mutable.UnrolledBuffer.empty[Dep.Conditional]
 
-  def link(entries: Seq[Global]): (Seq[Global], Seq[Attr.Link], Seq[Defn]) = {
-    val resolved    = mutable.Set.empty[Global]
-    val unresolved  = mutable.Set.empty[Global]
-    val links       = mutable.Set.empty[Attr.Link]
-    val defns       = mutable.UnrolledBuffer.empty[Defn]
-    val direct      = mutable.Stack.empty[Global]
-    var conditional = mutable.UnrolledBuffer.empty[Dep.Conditional]
+      def processDirect =
+        while (direct.nonEmpty) {
+          val workitem = direct.pop()
 
-    def processDirect =
-      while (direct.nonEmpty) {
-        val workitem = direct.pop()
+          if (!workitem.isIntrinsic && !resolved.contains(workitem) &&
+              !unresolved.contains(workitem)) {
 
-        if (!workitem.isIntrinsic && !resolved.contains(workitem) &&
-            !unresolved.contains(workitem)) {
+            load(workitem).fold[Unit] {
+              unresolved += workitem
+            } {
+              case (deps, newlinks, defn) =>
+                resolved += workitem
+                defns += defn
+                links ++= newlinks
 
-          load(workitem).fold[Unit] {
-            unresolved += workitem
-          } {
-            case (deps, newlinks, defn) =>
-              resolved += workitem
-              defns += defn
-              links ++= newlinks
+                deps.foreach {
+                  case Dep.Direct(dep) =>
+                    direct.push(dep)
 
-              deps.foreach {
-                case Dep.Direct(dep) =>
-                  writeEdge(workitem, dep)
-                  direct.push(dep)
-
-                case cond: Dep.Conditional =>
-                  conditional += cond
-              }
+                  case cond: Dep.Conditional =>
+                    conditional += cond
+                }
+            }
           }
         }
+
+      def processConditional = {
+        val rest = mutable.UnrolledBuffer.empty[Dep.Conditional]
+
+        conditional.foreach {
+          case Dep.Conditional(dep, cond)
+              if resolved.contains(dep) || unresolved.contains(dep) =>
+            ()
+
+          case Dep.Conditional(dep, cond) if resolved.contains(cond) =>
+            direct.push(dep)
+
+          case dep =>
+            rest += dep
+        }
+
+        conditional = rest
       }
 
-    def processConditional = {
-      val rest = mutable.UnrolledBuffer.empty[Dep.Conditional]
-
-      conditional.foreach {
-        case Dep.Conditional(dep, cond)
-            if resolved.contains(dep) || unresolved.contains(dep) =>
-          ()
-
-        case Dep.Conditional(dep, cond) if resolved.contains(cond) =>
-          writeEdge(cond, dep)
-          direct.push(dep)
-
-        case dep =>
-          rest += dep
+      direct.pushAll(entries)
+      while (direct.nonEmpty) {
+        processDirect
+        processConditional
       }
 
-      conditional = rest
+      (unresolved.toSeq, links.toSeq, defns.sortBy(_.name.toString).toSeq)
     }
 
-    writeStart()
-    entries.foreach(writeEdge(Global.Top("main"), _))
-    direct.pushAll(entries)
-    while (direct.nonEmpty) {
-      processDirect
-      processConditional
+    def link(entries: Seq[Global]): (Seq[Attr.Link], Seq[Defn]) = {
+      val (unresolved, links, defns) = impl(entries)
+
+      config.paths.foreach(_.close)
+
+      if (unresolved.nonEmpty) {
+        println(s"Unresolved dependencies:")
+        unresolved.map(u => sh"  `$u`".toString).sorted.foreach(println(_))
+        throw new linker.Error("Failed to resolve all dependencies.")
+      }
+
+      (links, defns)
     }
-    writeEnd()
-
-    (unresolved.toSeq, links.toSeq, defns.sortBy(_.name.toString).toSeq)
-  }
-
-  def linkClosed(entries: Seq[Global]): (Seq[Attr.Link], Seq[Defn]) = {
-    val (unresolved, links, defns) = link(entries)
-
-    assemblies.foreach(_.close)
-
-    if (unresolved.nonEmpty) {
-      println(s"Unresolved dependencies:")
-      unresolved.map(u => sh"  `$u`".toString).sorted.foreach(println(_))
-      throw new LinkingError("Failed to resolve all dependencies.")
-    }
-
-    (links, defns)
   }
 }
