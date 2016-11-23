@@ -24,6 +24,7 @@ matrix:
         - brew install bdw-gc
         - brew link bdw-gc
         - brew install jq
+
 cache:
   directories:
     - $HOME/.ivy2/cache
@@ -53,10 +54,7 @@ before_script:
     fi;
 script:
   - java -version
-  - bin/scalafmt --version 0.4.7 --test
-  - git clone https://github.com/MasseGuillaume/sbt-cross-project.git
-  - pushd sbt-cross-project
-  - git checkout simple2
-  - sbt publishLocal
-  - popd
+  - bin/install-scalafmt.sh
+  - bin/scalafmt --test
   - sbt 'cleanCache' 'cleanLocal' 'nscplugin/publishLocal' 'nativelib/publishLocal' 'publishLocal' 'sandbox/run' 'demoNative/run' 'tests/run' 'tools/test' 'benchmarks/run' 'scripted' 'publishSnapshot'
+ 
