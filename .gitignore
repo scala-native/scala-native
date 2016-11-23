@@ -5,3 +5,5 @@ _build/
 *.ppm
 .idea
 _build/
+bin/coursier
+bin/scalafmt
