@@ -32,7 +32,8 @@ final case class Assembly(base: File) {
   def contains(name: Global) =
     entries.contains(name.top)
 
-  def load(name: Global): Option[(Seq[Dep], Seq[Attr.Link], Defn)] =
+  def load(
+      name: Global): Option[(Seq[Dep], Seq[Attr.Link], Seq[String], Defn)] =
     entries.get(name.top).flatMap { deserializer =>
       deserializer.deserialize(name)
     }

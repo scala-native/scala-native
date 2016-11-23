@@ -34,6 +34,8 @@ object Shows {
     case Attr.NoInline     => "noinline"
     case Attr.AlwaysInline => "alwaysinline"
 
+    case Attr.Dyn => "dyn"
+
     case Attr.Pure           => sh"pure"
     case Attr.Extern         => sh"extern"
     case Attr.Override(name) => sh"override($name)"
@@ -41,6 +43,7 @@ object Shows {
     case Attr.Link(name)        => sh"link($name)"
     case Attr.PinAlways(name)   => sh"pin($name)"
     case Attr.PinIf(name, cond) => sh"pin-if($name, $cond)"
+    case Attr.PinWeak(name)     => sh"pin-weak($name)"
   }
 
   implicit val showNext: Show[Next] = Show {
@@ -126,6 +129,8 @@ object Shows {
       sh"field $value, $name"
     case Op.Method(value, name) =>
       sh"method $value, $name"
+    case Op.Dynmethod(obj, signature) =>
+      sh"dynmethod $obj $signature"
     case Op.Module(name) =>
       sh"module $name"
     case Op.As(ty, value) =>

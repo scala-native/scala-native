@@ -21,6 +21,7 @@ sealed abstract class Op {
     case Op.Classalloc(n)     => Type.Class(n)
     case Op.Field(_, _)       => Type.Ptr
     case Op.Method(_, _)      => Type.Ptr
+    case Op.Dynmethod(_, _)   => Type.Ptr
     case Op.Module(n)         => Type.Module(n)
     case Op.As(ty, _)         => ty
     case Op.Is(_, _)          => Type.Bool
@@ -50,6 +51,7 @@ object Op {
   final case class Classalloc(name: Global)                        extends Op
   final case class Field(obj: Val, name: Global)                   extends Op
   final case class Method(obj: Val, name: Global)                  extends Op
+  final case class Dynmethod(obj: Val, signature: String)          extends Op
   final case class Module(name: Global)                            extends Op
   final case class As(ty: Type, obj: Val)                          extends Op
   final case class Is(ty: Type, obj: Val)                          extends Op

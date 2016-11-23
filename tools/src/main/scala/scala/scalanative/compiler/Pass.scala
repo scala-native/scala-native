@@ -139,6 +139,8 @@ trait Pass extends (Seq[Defn] => Seq[Defn]) {
       Op.Field(txVal(v), n)
     case Op.Method(v, n) =>
       Op.Method(txVal(v), n)
+    case Op.Dynmethod(obj, signature) =>
+      Op.Dynmethod(txVal(obj), signature)
     case Op.Module(n) =>
       Op.Module(n)
     case Op.As(ty, v) =>
