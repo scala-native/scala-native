@@ -37,7 +37,6 @@ final class Compiler(opts: Opts) {
     pass.CopyPropagation,
     pass.DeadCodeElimination)
 
-
   private lazy val (links, assembly): (Seq[Attr.Link], Seq[Defn]) = {
     val deps           = passCompanions.flatMap(_.depends).distinct
     val injects        = passCompanions.flatMap(_.injects).distinct

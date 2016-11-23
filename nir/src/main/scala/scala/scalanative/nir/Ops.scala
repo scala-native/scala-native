@@ -19,8 +19,8 @@ sealed abstract class Op {
     case Op.Select(_, v, _)                   => v.ty
 
     case Op.Classalloc(n)     => Type.Class(n)
-    case Op.Field(_, _)   => Type.Ptr
-    case Op.Method(_, _)  => Type.Ptr
+    case Op.Field(_, _)       => Type.Ptr
+    case Op.Method(_, _)      => Type.Ptr
     case Op.Dynmethod(_, _)   => Type.Ptr
     case Op.Module(n)         => Type.Module(n)
     case Op.As(ty, _)         => ty

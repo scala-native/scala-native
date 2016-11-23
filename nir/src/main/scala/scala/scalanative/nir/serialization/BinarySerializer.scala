@@ -65,7 +65,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Attr.NoInline     => putInt(T.NoInlineAttr)
     case Attr.AlwaysInline => putInt(T.AlwaysInlineAttr)
 
-    case Attr.Dyn         => putInt(T.DynAttr)
+    case Attr.Dyn => putInt(T.DynAttr)
 
     case Attr.Pure        => putInt(T.PureAttr)
     case Attr.Extern      => putInt(T.ExternAttr)
@@ -75,7 +75,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Attr.PinAlways(n) => putInt(T.PinAlwaysAttr); putGlobal(n)
     case Attr.PinIf(n, cond) =>
       putInt(T.PinIfAttr); putGlobal(n); putGlobal(cond)
-    case Attr.PinWeak(n)   => putInt(T.PinWeakAttr); putGlobal(n)
+    case Attr.PinWeak(n) => putInt(T.PinWeakAttr); putGlobal(n)
   }
 
   private def putBin(bin: Bin) = bin match {

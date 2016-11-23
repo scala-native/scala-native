@@ -34,7 +34,7 @@ object Shows {
     case Attr.NoInline     => "noinline"
     case Attr.AlwaysInline => "alwaysinline"
 
-    case Attr.Dyn          => "dyn"
+    case Attr.Dyn => "dyn"
 
     case Attr.Pure           => sh"pure"
     case Attr.Extern         => sh"extern"

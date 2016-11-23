@@ -23,32 +23,32 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
            "Can't read binary-incompatible version of NIR.")
 
     val (_, _, _, pairs) = scoped(getSeq((getGlobal, getInt)))
-    val map           = pairs.toMap
+    val map              = pairs.toMap
     this.deps = null
     map
   }
 
-  private var deps:  mutable.Set[Dep]       = _
+  private var deps: mutable.Set[Dep]        = _
   private var links: mutable.Set[Attr.Link] = _
   private var dyns: mutable.Set[String]     = _
 
-  private def scoped[T](
-      f: => T): (mutable.Set[Dep], mutable.Set[Attr.Link], mutable.Set[String], T) = {
-    this.deps  = mutable.Set.empty[Dep]
+  private def scoped[T](f: => T)
+    : (mutable.Set[Dep], mutable.Set[Attr.Link], mutable.Set[String], T) = {
+    this.deps = mutable.Set.empty[Dep]
     this.links = mutable.Set.empty[Attr.Link]
-    this.dyns  = mutable.Set.empty[String]
-    val res    = f
-    val deps   = this.deps
-    val links  = this.links
-    val dyns   = this.dyns
-    this.deps  = null
+    this.dyns = mutable.Set.empty[String]
+    val res   = f
+    val deps  = this.deps
+    val links = this.links
+    val dyns  = this.dyns
+    this.deps = null
     this.links = null
-    this.dyns  = null
+    this.dyns = null
     (deps, links, dyns, res)
   }
 
-
-  final def deserialize(g: Global): Option[(Seq[Dep], Seq[Attr.Link], Seq[String], Defn)] =
+  final def deserialize(
+      g: Global): Option[(Seq[Dep], Seq[Attr.Link], Seq[String], Defn)] =
     header.get(g).map {
       case offset =>
         buffer.position(offset)
@@ -84,7 +84,7 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
         case T.NoInlineAttr     => buf += Attr.NoInline
         case T.AlwaysInlineAttr => buf += Attr.AlwaysInline
 
-        case T.DynAttr          => buf += Attr.Dyn
+        case T.DynAttr => buf += Attr.Dyn
 
         case T.PureAttr     => buf += Attr.Pure
         case T.ExternAttr   => buf += Attr.Extern
@@ -244,18 +244,17 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
     case T.ClassallocOp => Op.Classalloc(getGlobal)
     case T.FieldOp      => Op.Field(getVal, getGlobal)
     case T.MethodOp     => Op.Method(getVal, getGlobal)
-    case T.DynmethodOp  =>
+    case T.DynmethodOp =>
       val dynmethod = Op.Dynmethod(getVal, getString)
       dyns += dynmethod.signature
       dynmethod
 
-      
-    case T.ModuleOp     => Op.Module(getGlobal)
-    case T.AsOp         => Op.As(getType, getVal)
-    case T.IsOp         => Op.Is(getType, getVal)
-    case T.CopyOp       => Op.Copy(getVal)
-    case T.SizeofOp     => Op.Sizeof(getType)
-    case T.ClosureOp    => Op.Closure(getType, getVal, getVals)
+    case T.ModuleOp  => Op.Module(getGlobal)
+    case T.AsOp      => Op.As(getType, getVal)
+    case T.IsOp      => Op.Is(getType, getVal)
+    case T.CopyOp    => Op.Copy(getVal)
+    case T.SizeofOp  => Op.Sizeof(getType)
+    case T.ClosureOp => Op.Closure(getType, getVal, getVals)
   }
 
   private def getParams(): Seq[Val.Local] = getSeq(getParam)
