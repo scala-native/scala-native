@@ -20,7 +20,6 @@ class DynmethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
       val dyndispatchTablePtr = Val.Local(fresh(), Type.Ptr)
       val methptrptr          = Val.Local(fresh(), Type.Ptr)
       
-
       val tt: Seq[Type] = Seq(Rt.Type.tys, Seq(Type.Struct(Global.None, Seq(Type.Ptr)))).flatten
       val tpe = Struct(Global.None, tt)
 

@@ -84,7 +84,17 @@ object ClassHierarchy {
     lazy val alldynmethods: Seq[Method] = {
       val dynmethods = methods.filter(m => m.attrs.isDyn)
       val signatureSet = dynmethods.map(genSignature).toSet
-      parent.fold(Seq.empty[Method])(_.alldynmethods).filterNot(m => signatureSet(genSignature(m))) ++ dynmethods
+      val meths = dynmethods.foldLeft(Map[String, Method]()) {
+        case (acc, m) =>
+          val signature = genSignature(m)
+          if(!acc.contains(signature)) {
+            acc + (signature -> m)
+          } else {
+            acc
+          }
+      }.values
+
+      parent.fold(Seq.empty[Method])(_.alldynmethods).filterNot(m => signatureSet(genSignature(m))) ++ meths
     }
 
     lazy val vtableStruct: Type.Struct =
@@ -93,7 +103,7 @@ object ClassHierarchy {
     lazy val vtableValue: Val.Struct = Val.Struct(Global.None, vtable)
 
     lazy val perfectHashMap: PerfectHashMap[String, Val] = {
-      PerfectHashMap(hash, alldynmethods.map(m => (genSignature(m), m.value)))
+      PerfectHashMap(hash, alldynmethods.foldLeft(Map[String, Val]())((acc, m) => acc + (genSignature(m) -> m.value)))
     }
 
     def hash(buf: String, seed: Long): Long = buf.foldLeft(seed) {
@@ -118,7 +128,15 @@ object ClassHierarchy {
     lazy val dynDispatchTableStruct = Type.Struct(Global.None, Seq(Type.I32, Type.Ptr, Type.Ptr))
 
 
-    def genSignature(method: Method): String = method.name.id
+    def genSignature(method: Method): String = {
+      val fullSignature = method.name.id
+      val index = fullSignature.lastIndexOf("_")
+      if(index != -1) {
+        fullSignature.substring(0, index)
+      } else {
+        fullSignature
+      }
+    }
 
     lazy val typeStruct: Type.Struct =
       Type.Struct(Global.None, Seq(Type.I32, Type.Ptr, dynDispatchTableStruct, vtableStruct))

@@ -4,29 +4,33 @@ package analysis
 
 
 object PerfectHashMap {
-    val MAX_D_VALUE = 1000
+  val MAX_D_VALUE = 1000
 
-  def apply[K, V](hashFunc: (K, Long) => Long, entries: Seq[(K, V)]): PerfectHashMap[K, V] = {
+  def apply[K, V](hashFunc: (K, Long) => Long, entries: Map[K, V]): PerfectHashMap[K, V] = {
 
     def createMinimalPerfectHash(hashMapSize: Int): Option[(Map[Int, Int], Map[Int, Option[V]])] = {
 
       /**
         * Creates a list of buckets, grouping them by the hash of the key.
         */
-      def createBuckets(keys: Seq[K]): List[Seq[K]] = {
+      def createBuckets(keys: Set[K]): List[Seq[K]] = {
         val bucketMap = keys.groupBy(key => mod(hashFunc(key, 0), hashMapSize))
-        (0 until hashMapSize).map(i => bucketMap.getOrElse(i, Seq())).toList
+        (0 until hashMapSize).map(
+          i => bucketMap.get(i) match {
+            case Some(set) => set.toSeq
+            case None => Seq()
+        }).toList
       }
 
       // Sort the buckets in descending order by size
-      val buckets = createBuckets(entries.map(_._1)).sortBy(_.size)(Ordering[Int].reverse)
+      val buckets = createBuckets(entries.keySet).sortBy(_.size)(Ordering[Int].reverse)
 
       /**
         * find a spot of all buckets with more than 1 element
         */
       def placeBuckets(buckets: List[Seq[K]],
-                 keys: Map[Int, Int],
-                 values: Map[Int, Option[V]]): Option[(Map[Int, Int], Map[Int, Option[V]])] = buckets match {
+                       keys: Map[Int, Int],
+                       values: Map[Int, Option[V]]): Option[(Map[Int, Int], Map[Int, Option[V]])] = buckets match {
         case bucket :: tail if bucket.size > 1 =>
 
           /**
@@ -34,7 +38,7 @@ object PerfectHashMap {
             * Returns None, if no placement is found.
             *
             */
-        def findSlots(d: Int, item: Int, slots: List[Int]): Option[(Int, List[Int])] = {
+          def findSlots(d: Int, item: Int, slots: List[Int]): Option[(Int, List[Int])] = {
             if(d > MAX_D_VALUE) {
               None
             } else {
@@ -57,7 +61,7 @@ object PerfectHashMap {
 
               val newValues = bucket.foldLeft(Map[Int, Option[V]]()){
                 case (acc, key) =>
-                  val value = entries.find{ case (k, v) => k == key}.get._2
+                  val value = entries(key)
                   val valueIndex = mod(hashFunc(key, d), hashMapSize)
                   acc + (valueIndex -> Some(value))
               }
@@ -78,7 +82,7 @@ object PerfectHashMap {
               val keyIndex = mod(hashFunc(elem, 0), hashMapSize)
               val keyValue = - freeValue - 1
               val valueIndex = freeValue
-              val valueValue = Some(entries.find{ case (k, v) => k == elem}.get._2)
+              val valueValue = Some(entries(elem))
 
               (accKeys + (keyIndex -> keyValue), accValues + (valueIndex -> valueValue))
           })
@@ -89,7 +93,8 @@ object PerfectHashMap {
     def helper(size: Int): PerfectHashMap[K, V] = createMinimalPerfectHash(size) match {
       case Some((keys, values)) =>
         new PerfectHashMap[K, V](mapToSeq(keys, 0, size), mapToSeq(values, None, size), hashFunc)
-      case None => helper(size + 1)
+      case None =>
+        helper(size + 1)
     }
 
     helper(entries.size)
@@ -108,7 +113,7 @@ object PerfectHashMap {
 }
 
 class PerfectHashMap[K, V](val keys: Seq[Int], val values: Seq[Option[V]], hashFunc: (K, Long) => Long) {
-
+  
   lazy val size = keys.length
 
   def perfectLookup(key: K): V = {

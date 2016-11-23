@@ -94,8 +94,17 @@ final class Linker(dotpath: Option[String], paths: Seq[String]) {
                   conditional += cond
 
                 case Dep.Weak(g) =>
+                      def genSignature(global: Global): String = {
+                        val fullSignature = global.id
+                        val index = fullSignature.lastIndexOf("_")
+                        if(index != -1) {
+                          fullSignature.substring(0, index)
+                        } else {
+                          fullSignature
+                        }
+                      }
                   // comparing new dependencies with all signatures
-                  if(dyn(g.id)) {
+                  if(dyn(genSignature(g))) {
                     writeEdge(g.id, g)
                     direct.push(g)
                     structuralMethods += g
