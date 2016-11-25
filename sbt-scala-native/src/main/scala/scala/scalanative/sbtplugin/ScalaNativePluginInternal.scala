@@ -19,6 +19,12 @@ import scala.util.Try
 import System.{lineSeparator => nl}
 
 object ScalaNativePluginInternal {
+  val nativeLinkerReporter = settingKey[tools.LinkerReporter](
+    "A reporter that gets notified whenever a linking event happens.")
+
+  val nativeOptimizerReporter = settingKey[tools.OptimizerReporter](
+    "A reporter that gets notified whenever an optimizer event happens.")
+
   private lazy val nativelib: File =
     Path.userHome / ".scalanative" / ("nativelib-" + nir.Versions.current)
 
@@ -68,23 +74,29 @@ object ScalaNativePluginInternal {
     }
   }
 
-  /** Compiles application nir to llvm ir. */
-  private def compileNir(config: tools.Config,
-                         logger: Logger): Seq[nir.Attr.Link] = {
-    val driver                   = tools.Driver(config)
-    val (unresolved, links, raw) = tools.link(config, driver)
+  private def reportLinkingErrors(unresolved: Seq[nir.Global],
+                                  logger: Logger): Nothing = {
+    import nir.Shows._
 
-    if (!unresolved.isEmpty) {
-      import nir.Shows._
-
-      unresolved.map(u => sh"$u".toString).sorted.foreach { signature =>
-        logger.error(s"cannot link: $signature")
-      }
-
-      throw new MessageOnlyException("unable to link")
+    unresolved.map(u => sh"$u".toString).sorted.foreach { signature =>
+      logger.error(s"cannot link: $signature")
     }
 
-    val optimized = tools.optimize(config, driver, raw)
+    throw new MessageOnlyException("unable to link")
+  }
+
+  /** Compiles application nir to llvm ir. */
+  private def compileNir(
+      config: tools.Config,
+      logger: Logger,
+      linkerReporter: tools.LinkerReporter,
+      optimizerReporter: tools.OptimizerReporter): Seq[nir.Attr.Link] = {
+    val driver                   = tools.OptimizerDriver(config)
+    val (unresolved, links, raw) = tools.link(config, driver, linkerReporter)
+
+    if (unresolved.nonEmpty) { reportLinkingErrors(unresolved, logger) }
+
+    val optimized = tools.optimize(config, driver, raw, optimizerReporter)
     tools.codegen(config, optimized)
 
     links
@@ -178,8 +190,6 @@ object ScalaNativePluginInternal {
     ),
     addCompilerPlugin(
       "org.scala-native" % "nscplugin" % nativeVersion cross CrossVersion.full),
-    nativeVerbose := false,
-    nativeEmitDependencyGraphPath := None,
     nativeLibraryLinkage := Map(),
     nativeSharedLibrary := false,
     nativeClang := {
@@ -200,30 +210,32 @@ object ScalaNativePluginInternal {
     artifactPath in nativeLink := {
       (crossTarget in Compile).value / (moduleName.value + "-out")
     },
+    nativeLinkerReporter := tools.LinkerReporter.empty,
+    nativeOptimizerReporter := tools.OptimizerReporter.empty,
     nativeLink := ResourceScope { implicit in =>
       val mainClass = (selectMainClass in Compile).value.getOrElse(
         throw new MessageOnlyException("No main class detected.")
       )
-      val entry         = nir.Global.Top(mainClass.toString + "$")
-      val classpath     = (fullClasspath in Compile).value.map(_.data)
-      val target        = (crossTarget in Compile).value
-      val appll         = target / "out.ll"
-      val binary        = (artifactPath in nativeLink).value
-      val clang         = nativeClang.value
-      val clangpp       = nativeClangPP.value
-      val clangOpts     = nativeClangOptions.value
-      val dotpath       = nativeEmitDependencyGraphPath.value
-      val linkage       = nativeLibraryLinkage.value
-      val sharedLibrary = nativeSharedLibrary.value
-      val logger        = streams.value.log
+      val entry             = nir.Global.Top(mainClass.toString + "$")
+      val classpath         = (fullClasspath in Compile).value.map(_.data)
+      val target            = (crossTarget in Compile).value
+      val appll             = target / "out.ll"
+      val binary            = (artifactPath in nativeLink).value
+      val clang             = nativeClang.value
+      val clangpp           = nativeClangPP.value
+      val clangOpts         = nativeClangOptions.value
+      val linkage           = nativeLibraryLinkage.value
+      val linkerReporter    = nativeLinkerReporter.value
+      val optimizerReporter = nativeOptimizerReporter.value
+      val sharedLibrary     = nativeSharedLibrary.value
+      val logger            = streams.value.log
 
       val config = tools.Config.empty
         .withEntry(entry)
-        .withPaths(classpath.map(p => tools.Path(VirtualDirectory.real(p))))
+        .withPaths(classpath.map(p =>
+          tools.LinkerPath(VirtualDirectory.real(p))))
         .withTargetDirectory(VirtualDirectory.real(target))
         .withInjectMain(!nativeSharedLibrary.value)
-        .withCheck(false)
-        .withVerbose(nativeVerbose.value)
 
       checkThatClangIsRecentEnough(clang)
 
@@ -252,12 +264,13 @@ object ScalaNativePluginInternal {
               unpackNativelib(clang, clangpp, classpath, logger)
 
             if (unpackSuccess) {
-              val links = compileNir(config, logger).map(_.name)
+              val links =
+                compileNir(config, logger, linkerReporter, optimizerReporter)
               compileLl(clangpp,
                         target,
                         appll,
                         binary,
-                        links,
+                        links.map(_.name),
                         linkage,
                         clangOpts,
                         logger)
