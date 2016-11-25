@@ -4,9 +4,14 @@ package sbtplugin
 import sbt._
 
 object ScalaNativePlugin extends AutoPlugin {
+  override def requires: Plugins = plugins.JvmPlugin
+
   val autoImport = AutoImport
 
-  object AutoImport {
+  object AutoImport extends NativeCross {
+
+    val ScalaNativeCrossVersion = sbtplugin.ScalaNativeCrossVersion
+
     val nativeVersion = nir.Versions.current
 
     val nativeVerbose = settingKey[Boolean]("Enable verbose tool logging.")
@@ -32,6 +37,8 @@ object ScalaNativePlugin extends AutoPlugin {
       "Will create a shared library instead of a program with a main method.")
   }
 
-  override def projectSettings =
-    ScalaNativePluginInternal.projectSettings
+  override def projectSettings: Seq[Setting[_]] = (
+    ScalaNativePluginInternal.projectSettings ++
+      ScalaNativePluginInternal.scalaNativeEcosystemSettings
+  )
 }
