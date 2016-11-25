@@ -30,15 +30,17 @@ package object tools {
   val Path = linker.Path
 
   /** Given the classpath and entry point, link under closed-world assumption. */
-  def link(config: Config,
-           driver: Driver): (Seq[nir.Attr.Link], Seq[nir.Defn]) = {
+  def link(
+      config: Config,
+      driver: Driver): (Seq[nir.Global], Seq[nir.Attr.Link], Seq[nir.Defn]) = {
     val deps    = driver.passes.flatMap(_.depends).distinct
     val injects = driver.passes.flatMap(_.injects).distinct
     val entry =
       nir.Global.Member(config.entry, "main_class.ssnr.ObjectArray_unit")
-    val (links, defns) = (linker.Linker(config)).link(entry +: deps)
+    val (unresolved, links, defns) =
+      (linker.Linker(config)).link(entry +: deps)
 
-    (links, defns ++ injects)
+    (unresolved, links, defns ++ injects)
   }
 
   /** Transform high-level closed world to its lower-level counterpart. */
