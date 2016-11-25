@@ -27,7 +27,7 @@ Compatible license source code:
 Coding style
 ------------
 
-Scala Native is formatted via `scalafmt`_. Make sure that all of your
+Scala Native is formatted via `bin/scalafmt`_. Make sure that all of your
 contributions are properly formatted before suggesting any changes.
 
 General workflow
