@@ -1,14 +1,20 @@
 package scala.scalanative
 package sbtplugin
 
+import util._
 import sbtcross.CrossPlugin.autoImport._
+import ScalaNativePlugin.autoImport._
 
-import sbt._, Keys._, complete.DefaultParsers._
-import scala.util.Try
 import scalanative.nir
 import scalanative.tools
 import scalanative.io.VirtualDirectory
-import scalanative.sbtplugin.ScalaNativePlugin.autoImport._
+
+import sbt._, Keys._, complete.DefaultParsers._
+import xsbti.{Maybe, Reporter, Position, Severity, Problem}
+import KeyRanks.DTask
+
+import scala.util.Try
+
 import System.{lineSeparator => nl}
 
 object ScalaNativePluginInternal {
@@ -62,10 +68,22 @@ object ScalaNativePluginInternal {
   }
 
   /** Compiles application nir to llvm ir. */
-  private def compileNir(config: tools.Config): Seq[nir.Attr.Link] = {
-    val driver       = tools.Driver(config)
-    val (links, raw) = tools.link(config, driver)
-    val optimized    = tools.optimize(config, driver, raw)
+  private def compileNir(config: tools.Config,
+                         logger: Logger): Seq[nir.Attr.Link] = {
+    val driver                   = tools.Driver(config)
+    val (unresolved, links, raw) = tools.link(config, driver)
+
+    if (!unresolved.isEmpty) {
+      import nir.Shows._
+
+      unresolved.map(u => sh"$u".toString).sorted.foreach { signature =>
+        logger.error(s"cannot link: $signature")
+      }
+
+      throw new MessageOnlyException("unable to link")
+    }
+
+    val optimized = tools.optimize(config, driver, raw)
     tools.codegen(config, optimized)
 
     links
@@ -234,7 +252,7 @@ object ScalaNativePluginInternal {
               unpackNativelib(clang, clangpp, classpath, logger)
 
             if (unpackSuccess) {
-              val links = compileNir(config).map(_.name)
+              val links = compileNir(config, logger).map(_.name)
               compileLl(clangpp,
                         target,
                         appll,
@@ -249,7 +267,7 @@ object ScalaNativePluginInternal {
             }
         }
 
-      val _ = compileIfChanged(inputFiles)
+      val result = compileIfChanged(inputFiles)
       binary
     },
     run := {

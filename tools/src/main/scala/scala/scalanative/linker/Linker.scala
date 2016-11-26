@@ -11,7 +11,7 @@ import util.sh
 sealed trait Linker {
 
   /** Link the whole world under closed world assumption. */
-  def link(entries: Seq[Global]): (Seq[Attr.Link], Seq[Defn])
+  def link(entries: Seq[Global]): (Seq[Global], Seq[Attr.Link], Seq[Defn])
 }
 
 object Linker {
@@ -27,8 +27,7 @@ object Linker {
           path.load(global)
       }.flatten
 
-    private def impl(
-        entries: Seq[Global]): (Seq[Global], Seq[Attr.Link], Seq[Defn]) = {
+    def link(entries: Seq[Global]): (Seq[Global], Seq[Attr.Link], Seq[Defn]) = {
       val resolved    = mutable.Set.empty[Global]
       val unresolved  = mutable.Set.empty[Global]
       val links       = mutable.Set.empty[Attr.Link]
@@ -86,21 +85,9 @@ object Linker {
         processConditional
       }
 
-      (unresolved.toSeq, links.toSeq, defns.sortBy(_.name.toString).toSeq)
-    }
-
-    def link(entries: Seq[Global]): (Seq[Attr.Link], Seq[Defn]) = {
-      val (unresolved, links, defns) = impl(entries)
-
       config.paths.foreach(_.close)
 
-      if (unresolved.nonEmpty) {
-        println(s"Unresolved dependencies:")
-        unresolved.map(u => sh"  `$u`".toString).sorted.foreach(println(_))
-        throw new linker.Error("Failed to resolve all dependencies.")
-      }
-
-      (links, defns)
+      (unresolved.toSeq, links.toSeq, defns.sortBy(_.name.toString).toSeq)
     }
   }
 }
