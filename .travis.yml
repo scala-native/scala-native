@@ -53,5 +53,9 @@ before_script:
     fi;
 script:
   - java -version
+  - git clone https://github.com/scala-native/sbt-cross.git
+  - pushd sbt-cross
+  - sbt publishLocal
+  - popd
   - bin/scalafmt --test && sbt 'cleanCache' 'cleanLocal' 'nscplugin/publishLocal' 'nativelib/publishLocal' 'publishLocal' 'sandbox/run' 'demoNative/run' 'tests/run' 'tools/test' 'benchmarks/run' 'scripted' 'publishSnapshot'
 

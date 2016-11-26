@@ -1,5 +1,3 @@
-resolvers += Resolver.sonatypeRepo("snapshots")
-
 unmanagedSourceDirectories in Compile ++= {
   val root = baseDirectory.value.getParentFile
 
