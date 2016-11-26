@@ -183,7 +183,6 @@ lazy val sbtScalaNative =
     .in(file("sbt-scala-native"))
     .settings(sbtPluginSettings)
     .settings(
-      resolvers += Resolver.sonatypeRepo("snapshots"),
       addSbtPlugin("org.scala-native" % "sbt-cross" % "0.1.0-SNAPSHOT"),
       moduleName := "sbt-scala-native",
       sbtTestDirectory := (baseDirectory in ThisBuild).value / "scripted-tests",
