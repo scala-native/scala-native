@@ -17,6 +17,8 @@ Create a file ``project/build.properties`` to define the sbt version as follows:
     
 define a new ``build.sbt``::
 
+    resolvers += Resolver.sonatypeRepo("snapshots")
+
     enablePlugins(ScalaNativePlugin)
 
     scalaVersion := "2.11.8"
@@ -31,5 +33,10 @@ and now you can write your first application in ``./src/main/scala/HelloWorld.sc
     }
 
 now simply run ``sbt run`` to get everything compiled and have the expected output!
+
+Cross compilation to JS, JVM and Native
+---------------------------------------
+
+We created `sbt-cross <https://github.com/scala-native/sbt-cross>`_ to be a drop-in replacement of Scala.js' crossProject. Please refer to the documentation in the README.
 
 Continue to :ref:`lang`.
