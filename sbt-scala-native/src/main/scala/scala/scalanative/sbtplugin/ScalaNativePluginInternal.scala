@@ -8,6 +8,7 @@ import ScalaNativePlugin.autoImport._
 import scalanative.nir
 import scalanative.tools
 import scalanative.io.VirtualDirectory
+import scalanative.util.{Scope => ResourceScope}
 
 import sbt._, Keys._, complete.DefaultParsers._
 import xsbti.{Maybe, Reporter, Position, Severity, Problem}
@@ -199,7 +200,7 @@ object ScalaNativePluginInternal {
     artifactPath in nativeLink := {
       (crossTarget in Compile).value / (moduleName.value + "-out")
     },
-    nativeLink := {
+    nativeLink := ResourceScope { implicit in =>
       val mainClass = (selectMainClass in Compile).value.getOrElse(
         throw new MessageOnlyException("No main class detected.")
       )

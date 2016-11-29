@@ -5,6 +5,7 @@ import nir.{Global, Dep, Attr, Defn}
 import nir.serialization.BinaryDeserializer
 import java.nio.file.FileSystems
 import scalanative.io.VirtualDirectory
+import scalanative.util.Scope
 
 sealed trait Path {
 
@@ -13,9 +14,6 @@ sealed trait Path {
 
   /** Load given global and info about its dependencies. */
   def load(name: Global): Option[(Seq[Dep], Seq[Attr.Link], Defn)]
-
-  /** Dispose of given nir path. */
-  def close(): Unit
 }
 
 object Path {
@@ -45,7 +43,5 @@ object Path {
       entries.get(name.top).flatMap { deserializer =>
         deserializer.deserialize(name)
       }
-
-    def close = directory.close()
   }
 }

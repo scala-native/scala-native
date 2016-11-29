@@ -6,7 +6,7 @@ import scala.collection.mutable
 import nir._
 import nir.serialization._
 import nir.Shows._
-import util.sh
+import util.Scope
 
 sealed trait Linker {
 
@@ -84,8 +84,6 @@ object Linker {
         processDirect
         processConditional
       }
-
-      config.paths.foreach(_.close)
 
       (unresolved.toSeq, links.toSeq, defns.sortBy(_.name.toString).toSeq)
     }
