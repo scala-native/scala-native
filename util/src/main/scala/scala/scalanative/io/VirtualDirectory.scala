@@ -8,6 +8,7 @@ import java.net.URI
 import java.nio.ByteBuffer
 import java.nio.file._
 import java.nio.channels._
+import scalanative.util.{acquire, defer, Scope}
 
 sealed trait VirtualDirectory {
 
@@ -30,19 +31,16 @@ sealed trait VirtualDirectory {
 
   /** List all files in this directory. */
   def files: Seq[VirtualFile]
-
-  /** Dispose of virtual directoy. */
-  def close(): Unit
 }
 
 object VirtualDirectory {
 
   /** Map-backed virtual directory. */
-  def virtual(): VirtualDirectory =
+  def virtual()(implicit in: Scope): VirtualDirectory =
     new MapDirectory()
 
   /** Either real, non-virtual directory or real jar-backed virtual directory. */
-  def real(file: File): VirtualDirectory = {
+  def real(file: File)(implicit in: Scope): VirtualDirectory = {
     val exists = file.exists
     val isDir  = file.isDirectory
     val isJar  = file.getAbsolutePath.endsWith(".jar")
@@ -59,12 +57,13 @@ object VirtualDirectory {
   }
 
   /** Root file system directory. */
-  val root: VirtualDirectory = real(new File("/"))
+  val root: VirtualDirectory = real(new File("/"))(Scope.forever)
 
   /** Empty directory that contains no files. */
   val empty: VirtualDirectory = EmptyDirectory
 
-  private final class MapDirectory extends VirtualDirectory {
+  private final class MapDirectory(implicit in: Scope)
+      extends VirtualDirectory {
     private val entries  = mutable.Map.empty[Path, VirtualFile]
     private val contents = mutable.Map.empty[Path, ByteBuffer]
 
@@ -86,7 +85,7 @@ object VirtualDirectory {
       contents(path) = cloneBuffer(buffer)
     }
 
-    override def close(): Unit = {
+    defer {
       entries.clear()
       contents.clear()
     }
@@ -114,7 +113,8 @@ object VirtualDirectory {
     }
   }
 
-  private final class LocalDirectory(path: Path) extends NioDirectory {
+  private final class LocalDirectory(path: Path)(implicit in: Scope)
+      extends NioDirectory {
     override protected def resolve(path: Path): Path =
       this.path.resolve(path)
 
@@ -131,14 +131,14 @@ object VirtualDirectory {
       channel.close()
       VirtualFile(this, path)
     }
-
-    override def close(): Unit = ()
   }
 
-  private final class JarDirectory(path: Path) extends NioDirectory {
+  private final class JarDirectory(path: Path)(implicit in: Scope)
+      extends NioDirectory {
     private val fileSystem: FileSystem =
-      FileSystems.newFileSystem(URI.create(s"jar:${path.toUri}"),
-                                Map("create" -> "false").asJava)
+      acquire(
+        FileSystems.newFileSystem(URI.create(s"jar:${path.toUri}"),
+                                  Map("create" -> "false").asJava))
 
     override def files: Seq[VirtualFile] = {
       val roots = fileSystem.getRootDirectories.asScala.toSeq
@@ -154,8 +154,6 @@ object VirtualDirectory {
     override def create(path: Path): VirtualFile =
       throw new UnsupportedOperationException(
         "Can't create files in jar directory.")
-
-    override def close(): Unit = fileSystem.close()
   }
 
   private final object EmptyDirectory extends VirtualDirectory {
@@ -169,7 +167,5 @@ object VirtualDirectory {
 
     override def write(path: Path, buffer: ByteBuffer): Unit =
       throw new UnsupportedOperationException("Can't write to jar directory.")
-
-    override def close(): Unit = ()
   }
 }
