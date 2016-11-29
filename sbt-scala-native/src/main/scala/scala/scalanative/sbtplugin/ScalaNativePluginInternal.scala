@@ -19,11 +19,15 @@ import scala.util.Try
 import System.{lineSeparator => nl}
 
 object ScalaNativePluginInternal {
+
   val nativeLinkerReporter = settingKey[tools.LinkerReporter](
     "A reporter that gets notified whenever a linking event happens.")
 
   val nativeOptimizerReporter = settingKey[tools.OptimizerReporter](
     "A reporter that gets notified whenever an optimizer event happens.")
+
+  val nativeExternalDependencies =
+    taskKey[Seq[String]]("List all external dependencies.")
 
   private lazy val nativelib: File =
     Path.userHome / ".scalanative" / ("nativelib-" + nir.Versions.current)
@@ -182,7 +186,30 @@ object ScalaNativePluginInternal {
     Process(compile, target) ! logger
   }
 
-  lazy val projectSettings = Seq(
+  private def externalDependenciesTask[T](compileTask: TaskKey[T]) =
+    nativeExternalDependencies := ResourceScope { implicit scope =>
+      import nir.Shows._
+
+      val forceCompile = compileTask.value
+
+      val classes = classDirectory.value
+      val progDir = VirtualDirectory.real(classes)
+      val prog    = linker.Path(progDir)
+
+      val config =
+        tools.Config.empty.withPaths(Seq(prog)).withTargetDirectory(progDir)
+
+      val (unresolved, _, _) = (linker.Linker(config)).link(prog.globals.toSeq)
+
+      unresolved.map(u => sh"$u".toString).sorted
+    }
+
+  lazy val projectSettings =
+    unscopedSettings ++
+      inConfig(Compile)(externalDependenciesTask(compile)) ++
+      inConfig(Test)(externalDependenciesTask(compile in Test))
+
+  lazy val unscopedSettings = Seq(
     libraryDependencies ++= Seq(
       "org.scala-native" %%% "nativelib" % nativeVersion,
       "org.scala-native" %%% "javalib"   % nativeVersion,
@@ -212,18 +239,21 @@ object ScalaNativePluginInternal {
     },
     nativeLinkerReporter := tools.LinkerReporter.empty,
     nativeOptimizerReporter := tools.OptimizerReporter.empty,
-    nativeLink := ResourceScope { implicit in =>
+    nativeLink := ResourceScope { implicit scope =>
+      val clangpp   = nativeClangPP.value
+      val clangOpts = nativeClangOptions.value
+      val clang     = nativeClang.value
+      checkThatClangIsRecentEnough(clang)
+
       val mainClass = (selectMainClass in Compile).value.getOrElse(
         throw new MessageOnlyException("No main class detected.")
       )
-      val entry             = nir.Global.Top(mainClass.toString + "$")
-      val classpath         = (fullClasspath in Compile).value.map(_.data)
-      val target            = (crossTarget in Compile).value
-      val appll             = target / "out.ll"
-      val binary            = (artifactPath in nativeLink).value
-      val clang             = nativeClang.value
-      val clangpp           = nativeClangPP.value
-      val clangOpts         = nativeClangOptions.value
+      val entry     = nir.Global.Top(mainClass.toString + "$")
+      val classpath = (fullClasspath in Compile).value.map(_.data)
+      val target    = (crossTarget in Compile).value
+      val appll     = target / "out.ll"
+      val binary    = (artifactPath in nativeLink).value
+
       val linkage           = nativeLibraryLinkage.value
       val linkerReporter    = nativeLinkerReporter.value
       val optimizerReporter = nativeOptimizerReporter.value
@@ -236,8 +266,6 @@ object ScalaNativePluginInternal {
           tools.LinkerPath(VirtualDirectory.real(p))))
         .withTargetDirectory(VirtualDirectory.real(target))
         .withInjectMain(!nativeSharedLibrary.value)
-
-      checkThatClangIsRecentEnough(clang)
 
       val nirFiles   = (Keys.target.value ** "*.nir").get.toSet
       val configFile = (streams.value.cacheDirectory / "native-config")

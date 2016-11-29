@@ -14,6 +14,9 @@ sealed trait Path {
 
   /** Load given global and info about its dependencies. */
   def load(name: Global): Option[(Seq[Dep], Seq[Attr.Link], Defn)]
+
+  /** Load all globals */
+  def globals: Set[Global]
 }
 
 object Path {
@@ -43,5 +46,7 @@ object Path {
       entries.get(name.top).flatMap { deserializer =>
         deserializer.deserialize(name)
       }
+
+    def globals: Set[Global] = entries.values.flatMap(_.globals).toSet
   }
 }
