@@ -15,6 +15,8 @@ sealed trait Linker {
 
 object Linker {
 
+  val fresh = new Fresh("proxy")
+
   /** Create a new linker given tools configuration. */
   def apply(config: tools.Config,
             reporter: Reporter = Reporter.empty): Linker =
@@ -45,7 +47,6 @@ object Linker {
       def processDirect =
         while (direct.nonEmpty) {
           val workitem = direct.pop()
-
           if (!workitem.isIntrinsic && !resolved.contains(workitem) &&
               !unresolved.contains(workitem)) {
 
@@ -101,6 +102,48 @@ object Linker {
           }
         }
 
+      def genReflProxy(defn: Defn.Define): Defn.Define = {
+        val Global.Member(owner, id) = defn.name
+        val defnType                 = defn.ty.asInstanceOf[Type.Function]
+
+        val ty = Type.Function(defnType.args, defnType.ret match {
+          case Type.Unit => Type.Unit
+          case _         => Type.Class(Global.Top("java.lang.Object"))
+        })
+
+        val label =
+          Inst.Label(fresh(), ty.args.map(arg => Val.Local(fresh(), arg)))
+        val call =
+          Inst.Let(fresh(), Op.Call(defn.ty, label.params.head, label.params, Next.None))
+
+        val box = Type.box.get(defnType.ret) match {
+          case Some(boxTy) =>
+            Inst
+              .Let(fresh(), Op.Box(boxTy, Val.Local(call.name, defnType.ret)))
+          case None =>
+            Inst
+              .Let(fresh(), Op.As(ty.ret, Val.Local(call.name, defnType.ret)))
+        }
+        val retInst = ty.ret match {
+          case Type.Unit => Inst.Ret(Val.Unit)
+          case _         => Inst.Ret(Val.Local(box.name, ty.ret))
+        }
+
+        Defn.Define(
+          Attrs.fromSeq(Seq(Attr.Dyn)),
+          Global.Member(owner, id + "_proxy"),
+          ty,
+          Seq(
+            label,
+            call,
+            box,
+            retInst
+          )
+        )
+      }
+
+      def isReflProxy(global: Global): Boolean = false
+
       def processConditional = {
         val rest = mutable.UnrolledBuffer.empty[Dep.Conditional]
 
@@ -131,12 +174,20 @@ object Linker {
         processConditional
       }
 
+      val proxies =
+        structuralMethods.map(g =>
+          genReflProxy(defns.find(_.name == g).get.asInstanceOf[Defn.Define]))
+
+
       val defnss = defns.map {
-        case Defn.Define(attrs, name, ty, insts)
+        case defn @ Defn.Define(attrs, name, ty, insts)
             if structuralMethods.contains(name) =>
-          Defn.Define(Attrs.fromSeq(attrs.toSeq :+ Attr.Dyn), name, ty, insts)
+          Defn.Define(Attrs.fromSeq(attrs.toSeq /* :+ Attr.Dyn*/ ),
+                      name,
+                      ty,
+                      insts)
         case defn => defn
-      }
+      } ++ proxies
 
       onComplete()
 

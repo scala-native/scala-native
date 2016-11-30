@@ -139,9 +139,9 @@ object ClassHierarchy {
       val fullSignature = method.name.id
       val index         = fullSignature.lastIndexOf("_")
       if (index != -1) {
-        fullSignature.substring(0, index)
+        fullSignature.substring(0, index) + "_proxy"
       } else {
-        fullSignature
+        fullSignature + "_proxy"
       }
     }
 

@@ -883,14 +883,17 @@ abstract class NirCodeGen
 
     def genDynMethodCall(sym: Symbol, self: Val, argsp: Seq[Tree], focus: Focus): Focus = {
 
-      val sig          = genMethodSig(sym)
+      val methodSig    = genMethodSig(sym).asInstanceOf[Type.Function]
+
+      val sig          = Type.Function(methodSig.args, nir.Type.Class(nir.Global.Top("java.lang.Object")))
       val methodName   = genSignature(genMethodName(sym))
       val (args, last) = genMethodArgs(sym, argsp, focus)
 
       val method = last withOp Op.Dynmethod(self, methodName.toString)
       val values = self +: args
 
-      method withOp Op.Call(sig, method.value, values, curUnwind)
+      val call = method withOp Op.Call(sig, method.value, values, curUnwind)
+      call withOp Op.As(nir.Type.box.getOrElse(methodSig.ret, methodSig.ret), call.value)
     }
 
     def genSignature(methodName: nir.Global): String = {
