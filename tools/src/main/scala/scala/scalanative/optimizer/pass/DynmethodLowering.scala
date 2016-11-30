@@ -2,21 +2,52 @@ package scala.scalanative
 package optimizer
 package pass
 
-import scala.scalanative.nir.{Inst, Op}
+import scala.scalanative.nir._
 import scala.scalanative.optimizer.analysis.ClassHierarchy.Top
 import scala.scalanative.tools.Config
-import scala.scalanative.util.unsupported
 
 /** Eliminates:
  *  - Op.Dynmethod
  */
-class DynmethodLowering extends Pass {
+class DynmethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
+  import DynmethodLowering._
+
   override def preInst = {
-    case Inst.Let(_, Op.Dynmethod(_, _)) =>
-      unsupported(s"Dynmethod is not supported.")
+    case Inst.Let(n, dyn @ Op.Dynmethod(obj, signature)) =>
+      val typeptr             = Val.Local(fresh(), Type.Ptr)
+      val dyndispatchTablePtr = Val.Local(fresh(), Type.Ptr)
+      val methptrptr          = Val.Local(fresh(), Type.Ptr)
+
+      val tpe = Type.Struct(
+        Global.None,
+        Seq(Rt.Type.tys, Seq(Type.Struct(Global.None, Seq(Type.Ptr)))).flatten)
+
+      Seq(
+        Inst.Let(typeptr.name, Op.Load(Type.Ptr, obj)),
+        Inst.Let(
+          dyndispatchTablePtr.name,
+          Op.Elem(tpe, typeptr, Seq(Val.I32(0), Val.I32(2), Val.I32(0)))),
+        Inst.Let(methptrptr.name,
+                 Op.Call(dyndispatchSig,
+                         dyndispatch,
+                         Seq(dyndispatchTablePtr,
+                             Val.Const(Val.Chars(signature)),
+                             Val.I32(signature.length)))),
+        Inst.Let(n, Op.Load(Type.Ptr, methptrptr))
+      )
+
   }
 }
 
 object DynmethodLowering extends PassCompanion {
-  def apply(config: Config, top: Top): Pass = new DynmethodLowering
+  def apply(config: Config, top: Top): Pass =
+    new DynmethodLowering()(top.fresh, top)
+
+  val dyndispatchName = Global.Top("scalanative_dyndispatch")
+  val dyndispatchSig =
+    Type.Function(Seq(Type.Ptr, Type.Ptr, Type.I32), Type.Ptr)
+  val dyndispatch = Val.Global(dyndispatchName, dyndispatchSig)
+
+  override val injects = Seq(
+    Defn.Declare(Attrs.None, dyndispatchName, dyndispatchSig))
 }

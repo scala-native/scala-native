@@ -81,16 +81,80 @@ object ClassHierarchy {
         meth
     }
 
+    lazy val alldynmethods: Seq[Method] = {
+      val signatureSet = methods.map(genSignature).toSet
+      val meths = methods
+        .foldLeft(Map[String, Method]()) {
+          case (acc, m) =>
+            val signature = genSignature(m)
+            if (!acc.contains(signature)) {
+              acc + (signature -> m)
+            } else {
+              acc
+            }
+        }
+        .values
+
+      parent
+        .fold(Seq.empty[Method])(_.alldynmethods)
+        .filterNot(m => signatureSet(genSignature(m))) ++ meths
+    }
+
     lazy val vtableStruct: Type.Struct =
       Type.Struct(Global.None, vtable.map(_.ty))
 
     lazy val vtableValue: Val.Struct = Val.Struct(Global.None, vtable)
 
-    lazy val typeStruct: Type.Struct =
-      Type.Struct(Global.None, Seq(Type.I32, Type.Ptr, vtableStruct))
+    lazy val perfectHashMap: PerfectHashMap[String, Val] = {
+      PerfectHashMap(hash,
+                     alldynmethods.foldLeft(Map[String, Val]())((acc, m) =>
+                       acc + (genSignature(m) -> m.value)))
+    }
 
-    lazy val typeValue: Val.Struct = Val
-      .Struct(Global.None, Seq(Val.I32(id), Val.String(name.id), vtableValue))
+    def hash(buf: String, seed: Long): Long = buf.foldLeft(seed) {
+      case (hash, c) =>
+        val inter = hash ^ c.toInt
+        inter + (inter << 1) + (inter << 4) + (inter << 5) + (inter << 7) + (inter << 8) + (inter << 40);
+    }
+
+    lazy val dynDispatchTableValue: Val = {
+      // If there a value for null pointer ?
+      lazy val defaultPtr: Val = allmethods.head.value
+      Val.Struct(
+        Global.None,
+        Seq(
+          Val.I32(perfectHashMap.size),
+          Val.Const(Val.Array(Type.I32, perfectHashMap.keys.map(Val.I32))),
+          Val.Const(
+            Val.Array(Type.Ptr,
+                      perfectHashMap.values.map(_.getOrElse(defaultPtr))))
+        )
+      )
+    }
+
+    lazy val dynDispatchTableStruct =
+      Type.Struct(Global.None, Seq(Type.I32, Type.Ptr, Type.Ptr))
+
+    def genSignature(method: Method): String = {
+      val fullSignature = method.name.id
+      val index         = fullSignature.lastIndexOf("_")
+      if (index != -1) {
+        fullSignature.substring(0, index)
+      } else {
+        fullSignature
+      }
+    }
+
+    lazy val typeStruct: Type.Struct =
+      Type.Struct(
+        Global.None,
+        Seq(Type.I32, Type.Ptr, dynDispatchTableStruct, vtableStruct))
+
+    lazy val typeValue: Val.Struct = Val.Struct(Global.None,
+                                                Seq(Val.I32(id),
+                                                    Val.String(name.id),
+                                                    dynDispatchTableValue,
+                                                    vtableValue))
 
     lazy val typeConst: Val = Val.Global(name tag "class" tag "type", Type.Ptr)
 
