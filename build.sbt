@@ -30,6 +30,8 @@ lazy val setUpTestingCompiler = Def.task {
     (testingcompilercp :+ testingcompilerjar) map (_.getAbsolutePath) mkString pathSeparator
   sys.props("scalanative.nativeruntime.cp") =
     Seq(nativelibjar, scalalibjar, javalibjar) mkString pathSeparator
+  sys.props("scalanative.nativelib.dir") =
+    scalanative.sbtplugin.ScalaNativePluginInternal.nativelib.getAbsolutePath
 }
 
 lazy val publishSettings = Seq(
@@ -162,7 +164,9 @@ lazy val tools =
       publishLocal := publishLocal
         .dependsOn(publishLocal in nir)
         .dependsOn(publishLocal in util)
-        .value
+        .value,
+      // Running tests in parallel results in `FileSystemAlreadyExistsException`
+      parallelExecution in Test := false
     )
     .dependsOn(nir, util, testingCompilerInterface % Test)
 

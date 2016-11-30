@@ -32,7 +32,7 @@ object ScalaNativePluginInternal {
   val nativeExternalDependencies =
     taskKey[Seq[String]]("List all external dependencies.")
 
-  private lazy val nativelib: File =
+  lazy val nativelib: File =
     Path.userHome / ".scalanative" / ("nativelib-" + nir.Versions.current)
 
   private def abs(file: File): String =

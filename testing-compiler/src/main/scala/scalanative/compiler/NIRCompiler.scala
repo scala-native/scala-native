@@ -18,35 +18,26 @@ class NIRCompiler(outputDir: File) extends api.NIRCompiler {
 
   def this() = this(Files.createTempDirectory("scala-native-target").toFile())
 
-  /**
-   * Compiles the given code, and returns the `.hnir` files.
-   */
-  override def getNIR(code: String): Array[File] = {
+  override def compile(code: String): Array[File] = {
     val source = new BatchSourceFile(NoFile, code)
-    getNIR(Seq(source)).toArray
+    compile(Seq(source)).toArray
   }
 
-  /**
-   * Compiles the given file, and returns the `.hnir` files.
-   */
-  override def getNIR(base: File): Array[File] = {
+  override def compile(base: File): Array[File] = {
     val sources = getFiles(base, _.getName endsWith ".scala")
     val sourceFiles = sources map { s =>
       val abstractFile = AbstractFile.getFile(s)
       new BatchSourceFile(abstractFile)
     }
-    getNIR(sourceFiles).toArray
+    compile(sourceFiles).toArray
   }
 
-  /**
-   * Compiles the given files, and returns the `.hnir` files.
-   */
-  private def getNIR(sources: Seq[SourceFile]): Seq[File] = {
+  private def compile(sources: Seq[SourceFile]): Seq[File] = {
     val global = getCompiler(options = ScalaNative)
     import global._
     val run = new Run
     run.compileSources(sources.toList)
-    getFiles(outputDir, _.getName endsWith ".hnir")
+    getFiles(outputDir, _ => true)
   }
 
   /**

@@ -1,13 +1,16 @@
 package scala.scalanative
 
+import java.io.File
+
 import org.scalatest._
 
 class NIRCompilerTest extends FlatSpec with Matchers with Inspectors {
 
-  "The compiler" should "be able to get NIR files" in {
-    val files = NIRCompiler { _ getNIR "class A" }
-    files should have length 1
-    files(0).getName should be("A.hnir")
+  "The compiler" should "return products of compilation" in {
+    val files =
+      NIRCompiler { _ compile "class A" }.filter(_.isFile).map(_.getName)
+    val expectedNames = Seq("A.class", "A.hnir", "A.nir")
+    files should contain theSameElementsAs expectedNames
   }
 
   it should "compile whole directories" in {
@@ -21,23 +24,41 @@ class NIRCompilerTest extends FlatSpec with Matchers with Inspectors {
 
     NIRCompiler.withSources(sources) {
       case (sourcesDir, compiler) =>
-        val nirFiles = compiler.getNIR(sourcesDir) map (_.getName)
+        val nirFiles =
+          compiler.compile(sourcesDir) filter (_.isFile) map (_.getName)
         val expectedNames =
-          Seq("E$.hnir", "A.hnir", "B.hnir", "C.hnir", "D.hnir")
+          Seq("A.class",
+              "A.hnir",
+              "A.nir",
+              "B.class",
+              "B.hnir",
+              "B.nir",
+              "C.class",
+              "C.hnir",
+              "C.nir",
+              "D.class",
+              "D.hnir",
+              "D.nir",
+              "E$.class",
+              "E$.hnir",
+              "E$.nir",
+              "E.class")
         nirFiles should contain theSameElementsAs expectedNames
     }
   }
 
   it should "report compilation errors" in {
     assertThrows[api.CompilationFailedException] {
-      NIRCompiler { _ getNIR "invalid" }
+      NIRCompiler { _ compile "invalid" }
     }
   }
 
   it should "compile to a specified directory" in {
     val temporaryDir =
       java.nio.file.Files.createTempDirectory("my-target").toFile()
-    val nirFiles = NIRCompiler(outDir = temporaryDir) { _ getNIR "class A" }
+    val nirFiles =
+      NIRCompiler(outDir = temporaryDir) { _ compile "class A" }
+        .filter(_.isFile)
     forAll(nirFiles) { _.getParentFile should be(temporaryDir) }
   }
 
