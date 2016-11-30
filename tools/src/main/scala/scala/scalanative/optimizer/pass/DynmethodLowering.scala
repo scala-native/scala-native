@@ -2,9 +2,8 @@ package scala.scalanative
 package optimizer
 package pass
 
-import scala.scalanative.nir._
-import scala.scalanative.optimizer.analysis.ClassHierarchy.Top
-import scala.scalanative.tools.Config
+import analysis.ClassHierarchy._
+import nir._
 
 /** Eliminates:
  *  - Op.Dynmethod
@@ -32,7 +31,8 @@ class DynmethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
                          dyndispatch,
                          Seq(dyndispatchTablePtr,
                              Val.Const(Val.Chars(signature)),
-                             Val.I32(signature.length)))),
+                             Val.I32(signature.length)),
+                         Next.None)),
         Inst.Let(n, Op.Load(Type.Ptr, methptrptr))
       )
 
@@ -40,7 +40,7 @@ class DynmethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
 }
 
 object DynmethodLowering extends PassCompanion {
-  def apply(config: Config, top: Top): Pass =
+  def apply(config: tools.Config, top: Top): Pass =
     new DynmethodLowering()(top.fresh, top)
 
   val dyndispatchName = Global.Top("scalanative_dyndispatch")
