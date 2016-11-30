@@ -53,6 +53,8 @@ object Show {
         str("noinline")
       case Attr.AlwaysInline =>
         str("alwaysinline")
+      case Attr.Dyn =>
+        str("dyn")
       case Attr.Pure =>
         str("pure")
       case Attr.Extern =>
@@ -74,6 +76,10 @@ object Show {
         global_(name)
         str(", ")
         global_(cond)
+        str(")")
+      case Attr.PinWeak(name) =>
+        str("pin-weak(")
+        global_(name)
         str(")")
     }
 
@@ -246,6 +252,12 @@ object Show {
         val_(value)
         str(", ")
         global_(name)
+      case Op.Dynmethod(value, signature) =>
+        str("dynmethod ")
+        val_(value)
+        str(", \"")
+        str(escapeQuotes(signature))
+        str("\"")
       case Op.Module(name, unwind) =>
         str("module ")
         global_(name)

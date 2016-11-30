@@ -29,6 +29,7 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
 
   private var deps: mutable.Set[Dep]        = _
   private var links: mutable.Set[Attr.Link] = _
+
   private def scoped[T](
       f: => T): (mutable.Set[Dep], mutable.Set[Attr.Link], T) = {
     this.deps = mutable.Set.empty[Dep]
@@ -79,12 +80,15 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
         case T.NoInlineAttr     => buf += Attr.NoInline
         case T.AlwaysInlineAttr => buf += Attr.AlwaysInline
 
+        case T.DynAttr => buf += Attr.Dyn
+
         case T.PureAttr     => buf += Attr.Pure
         case T.ExternAttr   => buf += Attr.Extern
         case T.OverrideAttr => buf += Attr.Override(getGlobal)
 
         case T.LinkAttr      => links += Attr.Link(getString)
         case T.PinAlwaysAttr => deps += Dep.Direct(getGlobalNoDep)
+        case T.PinWeakAttr   =>
         case T.PinIfAttr =>
           deps += Dep.Conditional(getGlobalNoDep, getGlobalNoDep)
       }
@@ -230,6 +234,7 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
     case T.ClassallocOp => Op.Classalloc(getGlobal)
     case T.FieldOp      => Op.Field(getVal, getGlobal)
     case T.MethodOp     => Op.Method(getVal, getGlobal)
+    case T.DynmethodOp  => Op.Dynmethod(getVal, getString)
     case T.ModuleOp     => Op.Module(getGlobal, getNext)
     case T.AsOp         => Op.As(getType, getVal)
     case T.IsOp         => Op.Is(getType, getVal)

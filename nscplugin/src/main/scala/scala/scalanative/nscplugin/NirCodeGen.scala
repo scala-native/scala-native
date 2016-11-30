@@ -864,8 +864,37 @@ abstract class NirCodeGen
       init withValue alloc.value
     }
 
-    def genApplyDynamic(app: ApplyDynamic, focus: Focus) =
-      unsupported(app)
+    def genApplyDynamic(app: ApplyDynamic, focus: Focus) = {
+      val ApplyDynamic(obj, args) = app
+      val sym = app.symbol
+
+      val self = genExpr(obj, focus)
+
+      genDynMethodCall(sym, self.value, args, self)
+
+    }
+
+    def genDynMethodCall(sym: Symbol, self: Val, argsp: Seq[Tree], focus: Focus): Focus = {
+
+      val sig          = genMethodSig(sym)
+      val methodName   = genSignature(genMethodName(sym))
+      val (args, last) = genMethodArgs(sym, argsp, focus)
+
+      val method = last withOp Op.Dynmethod(self, methodName.toString)
+      val values = self +: args
+
+      method withOp Op.Call(sig, method.value, values, curUnwind)
+    }
+
+    def genSignature(methodName: nir.Global): String = {
+      val fullSignature = methodName.id
+      val index = fullSignature.lastIndexOf("_")
+      if(index != -1) {
+        fullSignature.substring(0, index)
+      } else {
+        fullSignature
+      }
+    }
 
     def genApply(app: Apply, focus: Focus): Focus = {
       val Apply(fun, args) = app

@@ -23,6 +23,8 @@ object Tags {
   final val LinkAttr         = 1 + OverrideAttr
   final val PinAlwaysAttr    = 1 + LinkAttr
   final val PinIfAttr        = 1 + PinAlwaysAttr
+  final val PinWeakAttr      = 1 + PinIfAttr
+  final val DynAttr          = 1 + PinWeakAttr
 
   // Binary ops
 
@@ -155,6 +157,7 @@ object Tags {
   final val BoxOp        = 1 + ClosureOp
   final val UnboxOp      = 1 + BoxOp
   final val ThrowOp      = 1 + UnboxOp
+  final val DynmethodOp  = 1 + ThrowOp
 
   // Types
 
