@@ -1,4 +1,6 @@
 import scala.util.Try
+import scalanative.tools.OptimizerReporter
+import scalanative.sbtplugin.ScalaNativePluginInternal.nativeOptimizerReporter
 
 val toolScalaVersion = "2.10.6"
 
@@ -112,7 +114,6 @@ lazy val libSettings =
 lazy val projectSettings =
   ScalaNativePlugin.projectSettings ++ Seq(
     scalaVersion := libScalaVersion,
-    nativeVerbose := true,
     nativeClangOptions ++= Seq("-O0"),
     resolvers := Nil
   )
@@ -329,6 +330,10 @@ lazy val sandbox =
     .in(file("sandbox"))
     .settings(projectSettings)
     .settings(noPublishSettings)
+    .settings(
+      nativeOptimizerReporter := OptimizerReporter.toDirectory(
+        crossTarget.value)
+    )
     .enablePlugins(ScalaNativePlugin)
 
 lazy val benchmarks =

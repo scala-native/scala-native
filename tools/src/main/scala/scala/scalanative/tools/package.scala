@@ -21,33 +21,40 @@ import scalanative.io.withScratchBuffer
 //   1. run code gen and check the string
 
 package object tools {
-  type World = optimizer.analysis.ClassHierarchy.Top
+  type LinkerPath = linker.Path
+  val LinkerPath = linker.Path
 
-  type Driver = optimizer.Driver
-  val Driver = optimizer.Driver
+  type LinkerReporter = linker.Reporter
+  val LinkerReporter = linker.Reporter
 
-  type Path = linker.Path
-  val Path = linker.Path
+  type OptimizerDriver = optimizer.Driver
+  val OptimizerDriver = optimizer.Driver
+
+  type OptimizerReporter = optimizer.Reporter
+  val OptimizerReporter = optimizer.Reporter
 
   /** Given the classpath and entry point, link under closed-world assumption. */
-  def link(
-      config: Config,
-      driver: Driver): (Seq[nir.Global], Seq[nir.Attr.Link], Seq[nir.Defn]) = {
+  def link(config: Config,
+           driver: OptimizerDriver,
+           reporter: LinkerReporter = LinkerReporter.empty)
+    : (Seq[nir.Global], Seq[nir.Attr.Link], Seq[nir.Defn]) = {
     val deps    = driver.passes.flatMap(_.depends).distinct
     val injects = driver.passes.flatMap(_.injects).distinct
     val entry =
       nir.Global.Member(config.entry, "main_class.ssnr.ObjectArray_unit")
     val (unresolved, links, defns) =
-      (linker.Linker(config)).link(entry +: deps)
+      (linker.Linker(config, reporter)).link(entry +: deps)
 
     (unresolved, links, defns ++ injects)
   }
 
   /** Transform high-level closed world to its lower-level counterpart. */
-  def optimize(config: Config,
-               driver: Driver,
-               assembly: Seq[nir.Defn]): Seq[nir.Defn] =
-    optimizer.Optimizer(config, driver, assembly)
+  def optimize(
+      config: Config,
+      driver: OptimizerDriver,
+      assembly: Seq[nir.Defn],
+      reporter: OptimizerReporter = OptimizerReporter.empty): Seq[nir.Defn] =
+    optimizer.Optimizer(config, driver, assembly, reporter)
 
   /** Given low-level assembly, emit LLVM IR for it to the buildDirectory. */
   def codegen(config: Config, assembly: Seq[nir.Defn]): Unit = {

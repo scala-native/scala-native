@@ -3,12 +3,18 @@ package optimizer
 
 import nir._
 
+/** Optimizer reporters can override one of the corresponding methods to
+ *  get notified whenever one of the optimization events happens.
+ */
 object Optimizer {
 
   /** Run all of the passes on given assembly. */
   def apply(config: tools.Config,
-            driver: tools.Driver,
-            assembly: Seq[Defn]): Seq[Defn] = {
+            driver: Driver,
+            assembly: Seq[Defn],
+            reporter: Reporter): Seq[Defn] = {
+    import reporter._
+
     val world  = analysis.ClassHierarchy(assembly)
     val passes = driver.passes.map(_.apply(config, world))
 
@@ -21,9 +27,17 @@ object Optimizer {
           loop(assembly, rest)
 
         case (pass, id) +: rest =>
-          loop(pass(assembly), rest)
+          val passResult = pass(assembly)
+          onPass(pass, passResult)
+          loop(passResult, rest)
       }
 
-    loop(assembly, passes.zipWithIndex)
+    onStart(assembly)
+
+    val result = loop(assembly, passes.zipWithIndex)
+
+    onComplete(result)
+
+    result
   }
 }

@@ -1,6 +1,8 @@
 package scala.scalanative
 package sbtplugin
 
+import scalanative.tools
+
 import sbt._
 
 object ScalaNativePlugin extends AutoPlugin {
@@ -14,17 +16,12 @@ object ScalaNativePlugin extends AutoPlugin {
 
     val nativeVersion = nir.Versions.current
 
-    val nativeVerbose = settingKey[Boolean]("Enable verbose tool logging.")
-
     val nativeClang = settingKey[File]("Location of the clang compiler.")
 
     val nativeClangPP = settingKey[File]("Location of the clang++ compiler.")
 
     val nativeClangOptions =
       settingKey[Seq[String]]("Additional options that are passed to clang.")
-
-    val nativeEmitDependencyGraphPath = settingKey[Option[File]](
-      "If non-empty, emit linker graph to the given file path.")
 
     val nativeLibraryLinkage = settingKey[Map[String, String]](
       "Given a native library, provide the linkage kind (static or dynamic). " +

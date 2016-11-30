@@ -39,22 +39,34 @@ object VirtualDirectory {
   def virtual()(implicit in: Scope): VirtualDirectory =
     new MapDirectory()
 
-  /** Either real, non-virtual directory or real jar-backed virtual directory. */
-  def real(file: File)(implicit in: Scope): VirtualDirectory = {
-    val exists = file.exists
-    val isDir  = file.isDirectory
-    val isJar  = file.getAbsolutePath.endsWith(".jar")
+  /** Real, non-virtual directory on local file system. */
+  def local(file: File): VirtualDirectory = {
+    def absolute = file.getAbsolutePath
+    assert(file.exists, s"Local directory doesn't exist: $absolute")
+    assert(file.isDirectory, s"Not a directory: $absolute")
 
-    (exists, isDir, isJar) match {
-      case (true, true, false) =>
-        new LocalDirectory(file.toPath)
-      case (true, false, true) =>
-        new JarDirectory(file.toPath)
-      case _ =>
-        throw new Exception(
-          s"unrecognized nir path entry: ${file.getAbsolutePath}")
-    }
+    new LocalDirectory(file.toPath)
   }
+
+  /** Virtual directory that represents contents of the jar file. */
+  def jar(file: File)(implicit in: Scope): VirtualDirectory = {
+    val absolute = file.getAbsolutePath
+    assert(file.exists, s"Jar doesn't exist: $absolute")
+    assert(absolute.endsWith(".jar"), s"Not a jar: $absolute")
+
+    new JarDirectory(file.toPath)
+  }
+
+  /** Virtual directory based on either local directory or a jar. */
+  def real(file: File)(implicit in: Scope): VirtualDirectory =
+    if (file.isDirectory) {
+      local(file)
+    } else if (file.getAbsolutePath.endsWith(".jar")) {
+      jar(file)
+    } else {
+      throw new UnsupportedOperationException(
+        "Neither a jar, nor a directory.")
+    }
 
   /** Root file system directory. */
   val root: VirtualDirectory = real(new File("/"))(Scope.forever)
@@ -113,8 +125,7 @@ object VirtualDirectory {
     }
   }
 
-  private final class LocalDirectory(path: Path)(implicit in: Scope)
-      extends NioDirectory {
+  private final class LocalDirectory(path: Path) extends NioDirectory {
     override protected def resolve(path: Path): Path =
       this.path.resolve(path)
 
