@@ -41,6 +41,8 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
     (deps, links, res)
   }
 
+  final def globals: Set[Global] = header.keySet
+
   final def deserialize(g: Global): Option[(Seq[Dep], Seq[Attr.Link], Defn)] =
     header.get(g).map {
       case offset =>
