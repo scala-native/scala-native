@@ -1,7 +1,7 @@
 package java.lang
 
-import scala.scalanative.native.Ptr
-import scala.scalanative.runtime.Type
+import scalanative.native.Ptr
+import scalanative.runtime.{Array => _, _}
 
 final class _Class[A](val ty: Ptr[Type]) {
   def getName(): String = (!ty).name
@@ -15,10 +15,21 @@ final class _Class[A](val ty: Ptr[Type]) {
       false
   }
 
+  def getComponentType(): _Class[_] = {
+    if (ty == typeof[BooleanArray]) classOf[scala.Boolean]
+    else if (ty == typeof[CharArray]) classOf[scala.Char]
+    else if (ty == typeof[ByteArray]) classOf[scala.Byte]
+    else if (ty == typeof[ShortArray]) classOf[scala.Short]
+    else if (ty == typeof[IntArray]) classOf[scala.Int]
+    else if (ty == typeof[LongArray]) classOf[scala.Long]
+    else if (ty == typeof[FloatArray]) classOf[scala.Float]
+    else if (ty == typeof[DoubleArray]) classOf[scala.Double]
+    else classOf[java.lang.Object]
+  }
+
   // TODO:
   def getInterfaces(): Array[_Class[_]] = ???
   def getSuperclass(): _Class[_]        = ???
-  def getComponentType(): _Class[_]     = ???
   def isArray(): scala.Boolean          = ???
 }
 
