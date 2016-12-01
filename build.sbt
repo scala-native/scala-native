@@ -108,6 +108,7 @@ lazy val toolSettings =
 lazy val libSettings =
   (baseSettings ++ ScalaNativePlugin.projectSettings.tail) ++ Seq(
     scalaVersion := libScalaVersion,
+    crossVersion := CrossVersion.binary,
     resolvers := Nil
   )
 
@@ -199,7 +200,7 @@ lazy val sbtScalaNative =
         .evaluated,
       publishLocal := publishLocal.dependsOn(publishLocal in tools).value
     )
-    .dependsOn(tools)
+    .dependsOn(tools, testInterface)
 
 lazy val nativelib =
   project
@@ -267,6 +268,9 @@ lazy val scalalib =
         IO.delete(file("scalalib/src/main/scala"))
         IO.copyDirectory(trgDir / "src" / "library" / "scala",
                          file("scalalib/src/main/scala/scala"))
+
+        IO.delete(file(
+          "scalalib/src/main/scala/scala/concurrent/impl/AbstractPromise.java"))
 
         val epoch :: major :: _ = scalaVersion.value.split("\\.").toList
         IO.copyDirectory(file(s"scalalib/overrides-$epoch.$major/scala"),
@@ -336,6 +340,17 @@ lazy val sandbox =
     )
     .enablePlugins(ScalaNativePlugin)
 
+lazy val testInterface =
+  project
+    .in(file("test-interface"))
+    .settings(
+      name := "test-interface",
+      baseSettings,
+      scalaVersion := libScalaVersion,
+      libraryDependencies += "org.scala-sbt" % "test-interface" % "1.0",
+      crossScalaVersions := Seq(libScalaVersion, toolScalaVersion)
+    )
+
 lazy val benchmarks =
   project
     .in(file("benchmarks"))
@@ -365,3 +380,31 @@ lazy val benchmarks =
       }.taskValue
     )
     .enablePlugins(ScalaNativePlugin)
+
+commands ++= Seq(
+  Command.command("cleanAll") { state =>
+    "clean" ::
+      "cleanCache" ::
+        "cleanLocal" ::
+          state
+  },
+  Command.command("publishLocalAll") { state =>
+    "project testInterface" ::
+      "+ publishLocal" ::
+        "project /" ::
+          "reload" ::
+            "nscplugin/publishLocal" ::
+              "nativelib/publishLocal" ::
+                "publishLocal" ::
+                  state
+  },
+  Command.command("testAll") { state =>
+    "tools/test" ::
+      "sandbox/run" ::
+        "demoNative/run" ::
+          "tests/run" ::
+            "benchmarks/run" ::
+              "scripted" ::
+                state
+  }
+)

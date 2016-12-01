@@ -5,11 +5,13 @@ unmanagedSourceDirectories in Compile ++= {
     "util",
     "nir",
     "tools",
-    "sbt-scala-native"
+    "sbt-scala-native",
+    "test-interface"
   ).map(dir => root / s"$dir/src/main/scala")
 }
 
 libraryDependencies ++= Seq(
+  "org.scala-sbt"    % "test-interface"       % "1.0",
   "org.scala-sbt"    % "scripted-plugin"      % sbtVersion.value,
   "org.eclipse.jgit" % "org.eclipse.jgit.pgm" % "3.2.0.201312181205-r",
   "com.lihaoyi"      %% "fastparse"           % "0.4.2",

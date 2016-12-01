@@ -7,3 +7,4 @@ _build/
 _build/
 bin/.coursier
 bin/.scalafmt
+.native-test-*

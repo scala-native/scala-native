@@ -57,15 +57,15 @@ class AbstractMethodError(s: String) extends IncompatibleClassChangeError(s) {
   def this() = this(null)
 }
 
-class AssertionError private (s: String) extends Error(s) {
-  def this() = this(null)
-  def this(o: Object) = this(o.toString)
-  def this(b: scala.Boolean) = this(b.toString)
-  def this(c: scala.Char) = this(c.toString)
-  def this(i: scala.Int) = this(i.toString)
-  def this(l: scala.Long) = this(l.toString)
-  def this(f: scala.Float) = this(f.toString)
-  def this(d: scala.Double) = this(d.toString)
+class AssertionError private (s: String, e: Throwable) extends Error(s, e) {
+  def this() = this(null, null)
+  def this(o: Object) = this(o.toString, null)
+  def this(b: scala.Boolean) = this(b.toString, null)
+  def this(c: scala.Char) = this(c.toString, null)
+  def this(i: scala.Int) = this(i.toString, null)
+  def this(l: scala.Long) = this(l.toString, null)
+  def this(f: scala.Float) = this(f.toString, null)
+  def this(d: scala.Double) = this(d.toString, null)
 }
 
 class BootstrapMethodError(s: String, e: Throwable) extends LinkageError(s) {

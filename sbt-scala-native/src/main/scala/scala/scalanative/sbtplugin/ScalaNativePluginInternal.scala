@@ -182,16 +182,82 @@ object ScalaNativePluginInternal {
     Process(compile, target) ! logger
   }
 
-  lazy val projectSettings = Seq(
+  lazy val projectSettings =
+    unscopedSettings ++
+      inConfig(Compile)(scopedSettings) ++
+      inConfig(Test)(scopedSettings) ++
+      inScope(Global)(defaultSettings)
+
+  lazy val unscopedSettings = Seq(
     libraryDependencies ++= Seq(
-      "org.scala-native" %%% "nativelib" % nativeVersion,
-      "org.scala-native" %%% "javalib"   % nativeVersion,
-      "org.scala-native" %%% "scalalib"  % nativeVersion
+      "org.scala-native" %% "nativelib" % nativeVersion,
+      "org.scala-native" %% "javalib"   % nativeVersion,
+      "org.scala-native" %% "scalalib"  % nativeVersion,
+      "org.scala-native" %% "test-interface" % nativeVersion % "test"
     ),
     addCompilerPlugin(
       "org.scala-native" % "nscplugin" % nativeVersion cross CrossVersion.full),
     nativeLibraryLinkage := Map(),
     nativeSharedLibrary := false,
+    test := Def.taskDyn {
+      val derivedRef = LocalProject(derivedProjectName(name.value))
+      (test in derivedRef)
+    }.value
+  )
+
+  def derivedProjectName(id: String): String =
+    s"native-test-$id"
+
+  /*
+    To run test with native we extract them from `definedTests in Test` and
+    then we generate code to execute them
+
+    We need to split them into separate project to break a cycle:
+    sourceGenerators => definedTests => compile => sourceGenerator
+
+    project foo generates native-test-foo
+    foo/test redirects to native-test-foo/test
+   */
+  def derivedProjects(proj: ProjectDefinition[_]): Seq[Project] =
+    if (proj.projectOrigin != ProjectOrigin.DerivedProject) {
+      val id           = derivedProjectName(proj.id)
+      val reference    = LocalProject(proj.id)
+      val prepareTests = taskKey[Unit]("Set path to test binary.")
+      Seq(
+        Project(id, file("." + id))
+          .settings(
+            description := "Synthetic project that holds the test main.")
+          .settings(ScalaNativePlugin.projectSettings)
+          .settings(
+            scalaVersion := (scalaVersion in reference).value,
+            prepareTests := {
+              sys.props("scala.native.testbinary") =
+                (nativeLink in Test).value.toString
+            },
+            test := (test in Test).dependsOn(prepareTests).value,
+            definedTests in Test := {
+              (definedTests in Test in reference).value
+                .map(TestUtilities.remapTestDefinition)
+            },
+            sourceGenerators in Test += Def.task {
+              val out = (sourceManaged in Test).value / "Main.scala"
+              val tests = (definedTests in Test in reference).value.map(
+                TestUtilities.remapTestDefinition)
+              IO.write(out, TestUtilities.createTestMain(tests))
+              Seq(out)
+            }.taskValue,
+            publishArtifact := false,
+            packagedArtifacts := Map.empty,
+            publish := {},
+            publishLocal := {}
+          )
+          .dependsOn(reference % "compile->compile;test->test")
+      )
+    } else {
+      Seq()
+    }
+
+  lazy val defaultSettings = Seq(
     nativeClang := {
       discover("clang", Seq(("3", "8"), ("3", "7")))
     },
@@ -207,18 +273,24 @@ object ScalaNativePluginInternal {
       }
       includes ++ libs ++ maybeInjectShared(nativeSharedLibrary.value) ++ lrt
     },
+    nativeSharedLibrary := false,
+    testFrameworks += new TestFramework("scala.scalanative.test.Framework")
+  )
+
+  private lazy val scopedSettings = Seq(
+    nativeLibraryLinkage := Map(),
     artifactPath in nativeLink := {
-      (crossTarget in Compile).value / (moduleName.value + "-out")
+      crossTarget.value / (moduleName.value + "-out")
     },
     nativeLinkerReporter := tools.LinkerReporter.empty,
     nativeOptimizerReporter := tools.OptimizerReporter.empty,
-    nativeLink := ResourceScope { implicit in =>
-      val mainClass = (selectMainClass in Compile).value.getOrElse(
+    nativeLink := ResourceScope { implicit scope =>
+      val mainClass = (selectMainClass).value.getOrElse(
         throw new MessageOnlyException("No main class detected.")
       )
       val entry             = nir.Global.Top(mainClass.toString + "$")
-      val classpath         = (fullClasspath in Compile).value.map(_.data)
-      val target            = (crossTarget in Compile).value
+      val classpath         = fullClasspath.value.map(_.data).filter(_.exists)
+      val target            = crossTarget.value
       val appll             = target / "out.ll"
       val binary            = (artifactPath in nativeLink).value
       val clang             = nativeClang.value
@@ -289,7 +361,7 @@ object ScalaNativePluginInternal {
       val args   = spaceDelimited("<arg>").parsed
 
       logger.info(running(binary +: args))
-      val exitCode = Process(binary +: args).!
+      val exitCode = Process(binary +: args) ! logger
 
       val message =
         if (exitCode == 0) None
