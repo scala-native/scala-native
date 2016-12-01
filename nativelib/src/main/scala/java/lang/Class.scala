@@ -6,7 +6,7 @@ import scalanative.runtime.{Array => _, _}
 final class _Class[A](val ty: Ptr[Type]) {
   def getName(): String = (!ty).name
 
-  override def hashCode: Int = ty.cast[Long].##
+  override def hashCode: Int = ty.cast[scala.Long].##
 
   override def equals(other: Any): scala.Boolean = other match {
     case other: _Class[_] =>
