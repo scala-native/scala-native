@@ -8,43 +8,57 @@ import tools.Config
 import util.unsupported
 
 /**
-  * Created by lukaskellenberger on 01.12.16.
-  */
+ * Created by lukaskellenberger on 01.12.16.
+ */
 class BoxingLowering(implicit val fresh: Fresh) extends Pass {
   override def preInst = {
     case Inst.Let(name, box @ Op.Box(code, from)) =>
       val (module, id) = BoxingLowering.BoxTo(code)
 
-      val ty = Type.Function(Seq(Arg(Type.Module(module)), Arg(from.ty)), box.resty)
+      val ty =
+        Type.Function(Seq(Arg(Type.Module(module)), Arg(from.ty)), box.resty)
 
-      Seq(Inst.Let(name, Op.Call(
-        ty,
-        Val.Global(Global.Member(module, id), Type.Ptr),
-        Seq(
-          Val.Undef(Type.Module(module)),
-          from
-        )
-      )))
+      Seq(
+        Inst.Let(name,
+                 Op.Call(
+                   ty,
+                   Val.Global(Global.Member(module, id), Type.Ptr),
+                   Seq(
+                     Val.Undef(Type.Module(module)),
+                     from
+                   )
+                 )))
 
     case Inst.Let(name, unbox @ Op.Unbox(code, from)) =>
       val (module, id) = BoxingLowering.UnboxTo(code)
 
-      val ty = Type.Function(Seq(Arg(Type.Module(module)), Arg(from.ty)), unbox.resty)
+      val ty =
+        Type.Function(Seq(Arg(Type.Module(module)), Arg(from.ty)), unbox.resty)
 
-      Seq(Inst.Let(name, Op.Call(
-        ty,
-        Val.Global(Global.Member(module, id), Type.Ptr),
-        Seq(
-          Val.Undef(Type.Module(module)),
-          from
-        )
-      )))
+      Seq(
+        Inst.Let(name,
+                 Op.Call(
+                   ty,
+                   Val.Global(Global.Member(module, id), Type.Ptr),
+                   Seq(
+                     Val.Undef(Type.Module(module)),
+                     from
+                   )
+                 )))
   }
 }
 
 object BoxingLowering extends PassCompanion {
-  override def apply(config: Config, top: Top) = new BoxingLowering()(top.fresh)
+  override def apply(config: Config, top: Top) =
+    new BoxingLowering()(top.fresh)
 
+  override def depends: Seq[Global] =
+    Seq(
+      BoxesRunTime,
+      RuntimeBoxes
+    ) ++
+      BoxTo.values.map { case (owner, id) => Global.Member(owner, id) } ++
+      UnboxTo.values.map { case (owner, id) => Global.Member(owner, id) }
 
   private val BoxesRunTime = Global.Top("scala.runtime.BoxesRunTime$")
   private val RuntimeBoxes = Global.Top("scala.scalanative.runtime.Boxes$")
