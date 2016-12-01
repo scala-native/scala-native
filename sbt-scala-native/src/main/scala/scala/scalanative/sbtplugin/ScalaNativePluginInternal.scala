@@ -1,6 +1,8 @@
 package scala.scalanative
 package sbtplugin
 
+import scala.sys.process.ProcessLogger
+
 import util._
 import sbtcross.CrossPlugin.autoImport._
 import ScalaNativePlugin.autoImport._
@@ -9,6 +11,7 @@ import scalanative.nir
 import scalanative.tools
 import scalanative.io.VirtualDirectory
 import scalanative.util.{Scope => ResourceScope}
+import scalanative.llvm.LLVM
 
 import sbt._, Keys._, complete.DefaultParsers._
 import xsbti.{Maybe, Reporter, Position, Severity, Problem}
@@ -32,51 +35,11 @@ object ScalaNativePluginInternal {
   private lazy val nativelib: File =
     Path.userHome / ".scalanative" / ("nativelib-" + nir.Versions.current)
 
-  private lazy val includes = {
-    val includedir =
-      Try(Process("llvm-config --includedir").lines_!.toSeq)
-        .getOrElse(Seq.empty)
-    ("/usr/local/include" +: includedir).map(s => s"-I$s")
-  }
-
-  private lazy val libs = {
-    val libdir =
-      Try(Process("llvm-config --libdir").lines_!.toSeq).getOrElse(Seq.empty)
-    ("/usr/local/lib" +: libdir).map(s => s"-L$s")
-  }
-
   private def abs(file: File): String =
     file.getAbsolutePath
 
-  private def discover(binaryName: String,
-                       binaryVersions: Seq[(String, String)]): File = {
-
-    val docInstallUrl =
-      "http://scala-native.readthedocs.io/en/latest/user/setup.html#installing-llvm-clang-and-boehm-gc"
-
-    val envName =
-      if (binaryName == "clang") "CLANG"
-      else if (binaryName == "clang++") "CLANGPP"
-      else binaryName
-
-    sys.env.get(s"${envName}_PATH") match {
-      case Some(path) => file(path)
-      case None => {
-        val binaryNames = binaryVersions.flatMap {
-          case (major, minor) =>
-            Seq(s"$binaryName$major$minor", s"$binaryName-$major.$minor")
-        } :+ binaryName
-
-        Process("which" +: binaryNames).lines_!
-          .map(file(_))
-          .headOption
-          .getOrElse {
-            throw new MessageOnlyException(
-              s"no ${binaryNames.mkString(", ")} found in $$PATH. Install clang ($docInstallUrl)")
-          }
-      }
-    }
-  }
+  private def running(command: Seq[String]): String =
+    "running" + nl + command.mkString(nl + "\t")
 
   private def reportLinkingErrors(unresolved: Seq[nir.Global],
                                   logger: Logger): Nothing = {
@@ -106,28 +69,6 @@ object ScalaNativePluginInternal {
     links
   }
 
-  private def running(command: Seq[String]): String =
-    "running" + nl + command.mkString(nl + "\t")
-
-  /** Compiles *.c[pp] in `cwd`. */
-  def compileCSources(clang: File,
-                      clangpp: File,
-                      cwd: File,
-                      logger: Logger): Boolean = {
-    val cpaths     = (cwd ** "*.c").get.map(abs)
-    val cpppaths   = (cwd ** "*.cpp").get.map(abs)
-    val compilec   = abs(clang) +: (includes ++ ("-c" +: cpaths))
-    val compilecpp = abs(clangpp) +: (includes ++ ("-c" +: cpppaths))
-
-    logger.info(running(compilec))
-    val cExit = Process(compilec, cwd) ! logger
-
-    logger.info(running(compilecpp))
-    val cppExit = Process(compilecpp, cwd) ! logger
-
-    cExit == 0 && cppExit == 0
-  }
-
   /** Compiles rt to llvm ir using clang. */
   private def unpackNativelib(clang: File,
                               clangpp: File,
@@ -153,37 +94,10 @@ object ScalaNativePluginInternal {
       IO.unzip(nativelibjar, nativelib)
       IO.write(jarhashfile, Hash(nativelibjar))
 
-      compileCSources(clang, clangpp, nativelib, logger)
+      LLVM.compileCSources(clang, clangpp, nativelib, processLogger(logger))
     } else {
       true
     }
-  }
-
-  /** Compiles application and runtime llvm ir file to binary using clang. */
-  private def compileLl(clangpp: File,
-                        target: File,
-                        appll: File,
-                        binary: File,
-                        links: Seq[String],
-                        linkage: Map[String, String],
-                        opts: Seq[String],
-                        logger: Logger): Unit = {
-    val outpath = abs(binary)
-    val apppath = abs(appll)
-    val opaths  = (nativelib ** "*.o").get.map(abs)
-    val paths   = apppath +: opaths
-    val linkopts = links.zip(links.map(linkage.get(_))).flatMap {
-      case (name, Some("static"))         => Seq("-static", "-l", name)
-      case (name, Some("dynamic") | None) => Seq("-l", name)
-      case (name, Some(kind)) =>
-        throw new MessageOnlyException(s"uknown linkage kind $kind for $name")
-    }
-    val flags   = Seq("-o", outpath) ++ linkopts ++ opts
-    val compile = abs(clangpp) +: (flags ++ paths)
-
-    logger.info(running(compile))
-
-    Process(compile, target) ! logger
   }
 
   private def externalDependenciesTask[T](compileTask: TaskKey[T]) =
@@ -220,10 +134,10 @@ object ScalaNativePluginInternal {
     nativeLibraryLinkage := Map(),
     nativeSharedLibrary := false,
     nativeClang := {
-      discover("clang", Seq(("3", "8"), ("3", "7")))
+      LLVM.discover("clang", Seq(("3", "8"), ("3", "7")))
     },
     nativeClangPP := {
-      discover("clang++", Seq(("3", "8"), ("3", "7")))
+      LLVM.discover("clang++", Seq(("3", "8"), ("3", "7")))
     },
     nativeClangOptions := {
       // We need to add `-lrt` for the POSIX realtime lib, which doesn't exist
@@ -232,7 +146,8 @@ object ScalaNativePluginInternal {
         case Some("Linux") => Seq("-lrt")
         case _             => Seq()
       }
-      includes ++ libs ++ maybeInjectShared(nativeSharedLibrary.value) ++ lrt
+      LLVM.includes ++ LLVM.libs ++ maybeInjectShared(
+        nativeSharedLibrary.value) ++ lrt
     },
     artifactPath in nativeLink := {
       (crossTarget in Compile).value / (moduleName.value + "-out")
@@ -243,7 +158,7 @@ object ScalaNativePluginInternal {
       val clangpp   = nativeClangPP.value
       val clangOpts = nativeClangOptions.value
       val clang     = nativeClang.value
-      checkThatClangIsRecentEnough(clang)
+      LLVM.checkThatClangIsRecentEnough(clang)
 
       val mainClass = (selectMainClass in Compile).value.getOrElse(
         throw new MessageOnlyException("No main class detected.")
@@ -294,14 +209,15 @@ object ScalaNativePluginInternal {
             if (unpackSuccess) {
               val links =
                 compileNir(config, logger, linkerReporter, optimizerReporter)
-              compileLl(clangpp,
-                        target,
-                        appll,
-                        binary,
-                        links.map(_.name),
-                        linkage,
-                        clangOpts,
-                        logger)
+              LLVM.compileLl(clangpp,
+                             target,
+                             nativelib,
+                             appll,
+                             binary,
+                             links.map(_.name),
+                             linkage,
+                             clangOpts,
+                             processLogger(logger))
               Set(binary)
             } else {
               throw new MessageOnlyException("Couldn't unpack nativelib.")
@@ -340,45 +256,6 @@ object ScalaNativePluginInternal {
   private def maybeInjectShared(lib: Boolean): Seq[String] =
     if (lib) Seq("-shared") else Seq.empty
 
-  /**
-   * Tests whether the clang compiler is recent enough.
-   * <p/>
-   * This is determined through looking up a built-in #define which is
-   * more reliable than testing for a specific version.
-   * <p/>
-   * It might be better to use feature checking macros:
-   * http://clang.llvm.org/docs/LanguageExtensions.html#feature-checking-macros
-   */
-  private def checkThatClangIsRecentEnough(pathToClangBinary: File): Unit = {
-    def maybeFile(f: File) = f match {
-      case file if file.exists => Some(abs(file))
-      case none                => None
-    }
-
-    def definesBuiltIn(
-        pathToClangBinary: Option[String]): Option[Seq[String]] = {
-      def commandLineToListBuiltInDefines(clang: String) =
-        Seq("echo", "") #| Seq(clang, "-dM", "-E", "-")
-      def splitIntoLines(s: String)      = s.split(f"%n")
-      def removeLeadingDefine(s: String) = s.substring(s.indexOf(' ') + 1)
-
-      for {
-        clang <- pathToClangBinary
-        output = commandLineToListBuiltInDefines(clang).!!
-        lines  = splitIntoLines(output)
-      } yield lines map removeLeadingDefine
-    }
-
-    val clang                = maybeFile(pathToClangBinary)
-    val defines: Seq[String] = definesBuiltIn(clang).to[Seq].flatten
-    val clangIsRecentEnough =
-      defines.contains("__DECIMAL_DIG__ __LDBL_DECIMAL_DIG__")
-
-    if (!clangIsRecentEnough) {
-      throw new MessageOnlyException(
-        s"No recent installation of clang found " +
-          s"at $pathToClangBinary.\nSee https://github.com/scala-native/scala-" +
-          s"native/blob/master/docs/building.md for details.")
-    }
-  }
+  private def processLogger(logger: Logger): ProcessLogger =
+    ProcessLogger(l => logger.info(l), l => logger.error(l))
 }
