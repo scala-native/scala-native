@@ -20,46 +20,39 @@ class InlineCaching(dispatchInfo: Map[String, Seq[Int]],
   import InlineCaching._
 
   /**
-   * Finds the implementation of `meth` for an instance of `clss`.
+   * Finds the implementation of `meth` for an instance of `in`.
    *
-   * @param meth The method we're looking for inside class `clss`.
-   * @param clss The type for which we want a method.
+   * @param meth The method we're looking for inside scope `in`.
+   * @param in   The scope containing the method we're looking for.
    * @return The `Global` representing the concrete implementation of `meth`
-   *         that should be used for class `clss`.
+   *         that should be used for `in`.
    */
-  private def findImpl(meth: Method, clss: Class): Option[Global] = {
-    lazy val allMethods =
-      clss.allmethods.filter(m => m.isConcrete && m.name.id == meth.name.id)
-
-    // Is the method directly defined in the class we're interested in?
-    lazy val direct =
-      if (meth.in == clss) Some(clss.name member meth.name.id) else None
-
-    // Is there a matching method in the class we're interested in?
-    lazy val inClass = allMethods find (_.in == clss) map (_.name)
-
-    // Did we find a single match in all the methods?
-    lazy val single = allMethods match {
-      case Seq(m) =>
-        m.in match {
-          case c: Class if c.isModule =>
-            val className = c.name.id.drop("module.".length)
-            Some(Global.Top(className) member m.name.id)
-          case other =>
-            Some(other.name member m.name.id)
-        }
-      case _ => None
-    }
-
-    // Lookup using the vtable
-    lazy val vtable = {
-      clss.vtable lift meth.vindex flatMap {
-        case v: Val.Global => Some(v.name)
-        case _             => None
+  private def findImpl(meth: Method, in: Scope): Option[Global] = {
+    def inScope(in: Scope): Option[Global] =
+      in.methods collectFirst {
+        case m if m.isConcrete && m.name.id == meth.name.id => m.name
       }
-    }
 
-    direct orElse inClass orElse single orElse vtable
+    lazy val parents =
+      in match {
+        case clss: Class =>
+          (clss.parentName.flatMap(top.classWithName) +:
+            clss.traitNames.reverse.map(top.traitWithName)).flatten
+
+        case trt: Trait =>
+          trt.traitNames.reverse.flatMap(top.traitWithName)
+
+        case _ =>
+          Seq.empty
+      }
+
+    lazy val direct =
+      (in +: parents).flatMap(inScope).headOption
+
+    lazy val inParent =
+      parents.flatMap(findImpl(meth, _)).headOption
+
+    direct orElse inParent
   }
 
   /**
