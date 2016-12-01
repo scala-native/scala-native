@@ -68,6 +68,7 @@ object Show {
 
   implicit def showResult[R <: Result]: Show[R] = apply(identity)
   implicit def showString[T <: String]: Show[T] = apply(Show.Str(_))
+  implicit def showChar[T <: Char]: Show[T]     = apply(c => Show.Str(c.toString))
   implicit def showByte[T <: Byte]: Show[T]     = apply(i => Show.Str(i.toString))
   implicit def showShort[T <: Short]: Show[T] =
     apply(i => Show.Str(i.toString))

@@ -120,6 +120,11 @@ object Shows {
     case Op.Select(cond, thenv, elsev) =>
       sh"select $cond, $thenv, $elsev"
 
+    case Op.Box(code, obj) =>
+      sh"box $code $obj"
+    case Op.Unbox(code, obj) =>
+      sh"unbox $code $obj"
+
     case Op.Classalloc(name) =>
       sh"classalloc $name"
     case Op.Field(value, name) =>

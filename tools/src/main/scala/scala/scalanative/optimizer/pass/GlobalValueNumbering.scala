@@ -109,7 +109,7 @@ object GlobalValueNumbering extends PassCompanion {
     op match {
       // Always idempotent:
       case (_: Pure | _: Method | _: As | _: Is | _: Copy | _: Sizeof |
-          _: Module | _: Field) =>
+          _: Module | _: Field | _: Box | _: Unbox) =>
         true
 
       // Never idempotent:
@@ -179,6 +179,12 @@ object GlobalValueNumbering extends PassCompanion {
 
           case (Sizeof(tyA), Sizeof(tyB)) =>
             eqType(tyA, tyB)
+
+          case (Box(codeA, objA), Box(codeB, objB)) =>
+            codeA == codeB && eqVal(objA, objB)
+
+          case (Unbox(codeA, objA), Unbox(codeB, objB)) =>
+            codeB == codeB && eqVal(objA, objB)
 
           case _ => false // non-matching pairs of ops, or not idempotent ones
         }
@@ -285,6 +291,9 @@ object GlobalValueNumbering extends PassCompanion {
         case Comp(comp, ty, l, r)       => Seq("Comp", comp, ty, l, r)
         case Conv(conv, ty, value)      => Seq("Conv", ty, value)
         case Select(cond, thenv, elsev) => Seq("Select", cond, thenv, elsev)
+
+        case Box(code, obj)   => Seq("Box", code.toString, obj)
+        case Unbox(code, obj) => Seq("Unbox", code.toString, obj)
 
         case Field(obj, name)           => Seq("Field", obj, name)
         case Method(obj, name)          => Seq("Method", obj, name)

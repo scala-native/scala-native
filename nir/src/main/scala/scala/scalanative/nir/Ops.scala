@@ -18,6 +18,9 @@ sealed abstract class Op {
     case Op.Conv(_, ty, _)                    => ty
     case Op.Select(_, v, _)                   => v.ty
 
+    case Op.Box(code, _)   => Boxes.box(code)
+    case Op.Unbox(code, _) => Boxes.unbox(code)
+
     case Op.Classalloc(n)     => Type.Class(n)
     case Op.Field(_, _)       => Type.Ptr
     case Op.Method(_, _)      => Type.Ptr
@@ -45,6 +48,9 @@ object Op {
   final case class Comp(comp: nir.Comp, ty: Type, l: Val, r: Val) extends Pure
   final case class Conv(conv: nir.Conv, ty: Type, value: Val)     extends Pure
   final case class Select(cond: Val, thenv: Val, elsev: Val)      extends Pure
+
+  final case class Box(code: Char, obj: Val)   extends Op
+  final case class Unbox(code: Char, obj: Val) extends Op
 
   // high-level
   final case class Classalloc(name: Global)                        extends Op

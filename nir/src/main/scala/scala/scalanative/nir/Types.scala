@@ -50,3 +50,36 @@ object Type {
   final case class Trait(name: Global)  extends RefKind with Named
   final case class Module(name: Global) extends RefKind with Named
 }
+
+object Boxes {
+  val box = Map(
+    'B' -> Type.Class(Global.Top("java.lang.Boolean")),
+    'C' -> Type.Class(Global.Top("java.lang.Character")),
+    'z' -> Type.Class(Global.Top("scala.scalanative.native.UByte")),
+    'Z' -> Type.Class(Global.Top("java.lang.Byte")),
+    's' -> Type.Class(Global.Top("scala.scalanative.native.UShort")),
+    'S' -> Type.Class(Global.Top("java.lang.Short")),
+    'i' -> Type.Class(Global.Top("scala.scalanative.native.UInt")),
+    'I' -> Type.Class(Global.Top("java.lang.Integer")),
+    'l' -> Type.Class(Global.Top("scala.scalanative.native.ULong")),
+    'L' -> Type.Class(Global.Top("java.lang.Long")),
+    'F' -> Type.Class(Global.Top("java.lang.Float")),
+    'D' -> Type.Class(Global.Top("java.lang.Double"))
+  )
+
+  val unbox = Map(
+    'B' -> Type.Bool,
+    'C' -> Type.I16,
+    'z' -> Type.I8,
+    'Z' -> Type.I8,
+    's' -> Type.I16,
+    'S' -> Type.I16,
+    'i' -> Type.I32,
+    'I' -> Type.I32,
+    'l' -> Type.I64,
+    'L' -> Type.I64,
+    'F' -> Type.F32,
+    'D' -> Type.F64
+  )
+
+}
