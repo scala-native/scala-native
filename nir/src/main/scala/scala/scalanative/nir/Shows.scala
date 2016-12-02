@@ -120,11 +120,6 @@ object Shows {
     case Op.Select(cond, thenv, elsev) =>
       sh"select $cond, $thenv, $elsev"
 
-    case Op.Box(code, obj) =>
-      sh"box $code $obj"
-    case Op.Unbox(code, obj) =>
-      sh"unbox $code $obj"
-
     case Op.Classalloc(name) =>
       sh"classalloc $name"
     case Op.Field(value, name) =>
@@ -143,6 +138,10 @@ object Shows {
       sh"sizeof[$ty]"
     case Op.Closure(ty, fun, captures) =>
       sh"closure[$ty] ${r(fun +: captures, sep = ", ")}"
+    case Op.Box(ty, obj) =>
+      sh"box[$ty] $obj"
+    case Op.Unbox(ty, obj) =>
+      sh"unbox[$ty] $obj"
   }
 
   implicit val showBin: Show[Bin] = Show {

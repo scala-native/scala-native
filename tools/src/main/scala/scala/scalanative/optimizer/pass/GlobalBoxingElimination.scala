@@ -50,37 +50,37 @@ class GlobalBoxingElimination extends Pass {
 
       // Original box elimination code
       val newinsts = defn.insts.map {
-        case inst @ Let(to, op @ Op.Box(code, from)) =>
+        case inst @ Let(to, op @ Op.Box(ty, from)) =>
           records.collectFirst {
             // if a box for given value already exists, re-use the box
-            case Box(rcode, rfrom, rto)
-                if rcode == code && from == rfrom && canReuse(to, rto) =>
+            case Box(rty, rfrom, rto)
+                if rty == ty && from == rfrom && canReuse(to, rto) =>
               Let(to, Op.Copy(rto))
 
             // if we re-box previously unboxed value, re-use the original box
-            case Unbox(rcode, rfrom, rto)
-                if rcode == code && from == rto && canReuse(to, rfrom) =>
+            case Unbox(rty, rfrom, rto)
+                if rty == ty && from == rto && canReuse(to, rfrom) =>
               Let(to, Op.Copy(rfrom))
           }.getOrElse {
             // otherwise do actual boxing
-            records += Box(code, from, Val.Local(to, op.resty))
+            records += Box(ty, from, Val.Local(to, op.resty))
             inst
           }
 
-        case inst @ Let(to, op @ Op.Unbox(code, from)) =>
+        case inst @ Let(to, op @ Op.Unbox(ty, from)) =>
           records.collectFirst {
             // if we unbox previously boxed value, return original value
-            case Box(rcode, rfrom, rto)
-                if rcode == code && from == rto && canReuse(to, rfrom) =>
+            case Box(rty, rfrom, rto)
+                if rty == ty && from == rto && canReuse(to, rfrom) =>
               Let(to, Op.Copy(rfrom))
 
             // if an unbox for this value already exists, re-use unbox
-            case Unbox(rcode, rfrom, rto)
-                if rcode == code && from == rfrom && canReuse(to, rto) =>
+            case Unbox(rty, rfrom, rto)
+                if rty == ty && from == rfrom && canReuse(to, rto) =>
               Let(to, Op.Copy(rto))
           }.getOrElse {
             // otherwise do actual unboxing
-            records += Unbox(code, from, Val.Local(to, op.resty))
+            records += Unbox(ty, from, Val.Local(to, op.resty))
             inst
           }
 
@@ -94,9 +94,9 @@ class GlobalBoxingElimination extends Pass {
 
 object GlobalBoxingElimination extends PassCompanion {
   private sealed abstract class Record
-  private final case class Box(code: Char, from: nir.Val, to: nir.Val)
+  private final case class Box(ty: Type, from: nir.Val, to: nir.Val)
       extends Record
-  private final case class Unbox(code: Char, from: nir.Val, to: nir.Val)
+  private final case class Unbox(ty: Type, from: nir.Val, to: nir.Val)
       extends Record
 
   override def apply(config: tools.Config, top: Top) =

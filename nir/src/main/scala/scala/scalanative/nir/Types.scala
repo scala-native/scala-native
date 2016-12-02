@@ -67,19 +67,18 @@ object Boxes {
     'D' -> Type.Class(Global.Top("java.lang.Double"))
   )
 
-  val unbox = Map(
-    'B' -> Type.Bool,
-    'C' -> Type.I16,
-    'z' -> Type.I8,
-    'Z' -> Type.I8,
-    's' -> Type.I16,
-    'S' -> Type.I16,
-    'i' -> Type.I32,
-    'I' -> Type.I32,
-    'l' -> Type.I64,
-    'L' -> Type.I64,
-    'F' -> Type.F32,
-    'D' -> Type.F64
+  val unbox = Map[Type, Type](
+    Type.Class(Global.Top("java.lang.Boolean"))               -> Type.Bool,
+    Type.Class(Global.Top("java.lang.Character"))             -> Type.I16,
+    Type.Class(Global.Top("scala.scalanative.native.UByte"))  -> Type.I8,
+    Type.Class(Global.Top("java.lang.Byte"))                  -> Type.I8,
+    Type.Class(Global.Top("scala.scalanative.native.UShort")) -> Type.I16,
+    Type.Class(Global.Top("java.lang.Short"))                 -> Type.I16,
+    Type.Class(Global.Top("scala.scalanative.native.UInt"))   -> Type.I32,
+    Type.Class(Global.Top("java.lang.Integer"))               -> Type.I32,
+    Type.Class(Global.Top("scala.scalanative.native.ULong"))  -> Type.I64,
+    Type.Class(Global.Top("java.lang.Long"))                  -> Type.I64,
+    Type.Class(Global.Top("java.lang.Float"))                 -> Type.F32,
+    Type.Class(Global.Top("java.lang.Double"))                -> Type.F64
   )
-
 }

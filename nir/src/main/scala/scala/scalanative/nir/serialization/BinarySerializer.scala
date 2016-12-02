@@ -373,14 +373,14 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putVal(fun)
       putVals(captures)
 
-    case Op.Box(code, obj) =>
-      putInt(T.Box)
-      putChar(code)
+    case Op.Box(ty, obj) =>
+      putInt(T.BoxOp)
+      putType(ty)
       putVal(obj)
 
-    case Op.Unbox(code, obj) =>
-      putInt(T.Unbox)
-      putChar(code)
+    case Op.Unbox(ty, obj) =>
+      putInt(T.UnboxOp)
+      putType(ty)
       putVal(obj)
 
   }
