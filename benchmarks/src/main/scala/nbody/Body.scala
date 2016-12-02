@@ -5,46 +5,58 @@
  */
 package nbody
 
-import Body._
+final class Body private () {
+  private[this] var x: Double    = 0.0
+  private[this] var y: Double    = 0.0
+  private[this] var z: Double    = 0.0
+  private[this] var vx: Double   = 0.0
+  private[this] var vy: Double   = 0.0
+  private[this] var vz: Double   = 0.0
+  private[this] var mass: Double = 0.0
 
-final class Body(
-    private var x: Double,
-    private var y: Double,
-    private var z: Double,
-    private var vx: Double,
-    private var vy: Double,
-    private var vz: Double,
-    private val mass: Double
-) {
-  def getX(): Double = x
-  def getY(): Double = y
-  def getZ(): Double = z
-
-  def getVX(): Double = vx
-  def getVY(): Double = vy
-  def getVZ(): Double = vz
-
+  def getX(): Double    = x
+  def getY(): Double    = y
+  def getZ(): Double    = z
+  def getVX(): Double   = vx
+  def getVY(): Double   = vy
+  def getVZ(): Double   = vz
   def getMass(): Double = mass
 
-  def setX(x: Double): Unit = { this.x = x }
-  def setY(y: Double): Unit = { this.y = y }
-  def setZ(z: Double): Unit = { this.z = z }
-
+  def setX(x: Double): Unit   = { this.x = x }
+  def setY(y: Double): Unit   = { this.y = y }
+  def setZ(z: Double): Unit   = { this.z = z }
   def setVX(vx: Double): Unit = { this.vx = vx }
   def setVY(vy: Double): Unit = { this.vy = vy }
   def setVZ(vz: Double): Unit = { this.vz = vz }
 
   def offsetMomentum(px: Double, py: Double, pz: Double): Unit = {
-    vx = 0.0 - (px / SOLAR_MASS)
-    vy = 0.0 - (py / SOLAR_MASS)
-    vz = 0.0 - (pz / SOLAR_MASS)
+    vx = 0.0 - (px / Body.SOLAR_MASS)
+    vy = 0.0 - (py / Body.SOLAR_MASS)
+    vz = 0.0 - (pz / Body.SOLAR_MASS)
+  }
+
+  def this(x: Double,
+           y: Double,
+           z: Double,
+           vx: Double,
+           vy: Double,
+           vz: Double,
+           mass: Double) {
+    this()
+    this.x = x
+    this.y = y
+    this.z = z
+    this.vx = vx * Body.DAYS_PER_YER
+    this.vy = vy * Body.DAYS_PER_YER
+    this.vz = vz * Body.DAYS_PER_YER
+    this.mass = mass * Body.SOLAR_MASS
   }
 }
 
 object Body {
-  final val PI           = 3.141592653589793d
-  final val SOLAR_MASS   = 4 * PI * PI
-  final val DAYS_PER_YER = 365.24d
+  private final val PI           = 3.141592653589793
+  private final val SOLAR_MASS   = 4 * PI * PI
+  private final val DAYS_PER_YER = 365.24
 
   def jupiter() =
     new Body(4.84143144246472090e+00,

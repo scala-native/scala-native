@@ -29,7 +29,6 @@ class CDBenchmark extends benchmarks.Benchmark[(Int, Int)] {
   private var i            = 0
 
   override def run(): (Int, Int) = {
-    disableBenchmark()
     val aircrafts = numAircrafts(i % numAircrafts.length)
     i = i + 1
     (aircrafts, benchmark(aircrafts))

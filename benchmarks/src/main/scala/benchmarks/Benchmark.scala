@@ -41,6 +41,13 @@ abstract class Benchmark[T] {
   def run(): T
   def check(t: T): Boolean
 
+  def iterations(): Int = {
+    // Run once to estimate how long this benchmark takes
+    val nsPerBenchmark = 3e9.toLong
+    val timeEstimate   = estimateTime()
+    Math.max(1, (nsPerBenchmark / timeEstimate).toInt)
+  }
+
   private class BenchmarkDisabledException extends Exception
   final def disableBenchmark(): Nothing = throw new BenchmarkDisabledException
 
