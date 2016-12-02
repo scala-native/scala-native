@@ -5,11 +5,8 @@ package pass
 import nir._
 import analysis.ClassHierarchy.Top
 import tools.Config
-import util.unsupported
 
-/**
- * Created by lukaskellenberger on 01.12.16.
- */
+/** Translates Box/Unbox ops into static method calls. */
 class BoxingLowering(implicit val fresh: Fresh) extends Pass {
   override def preInst = {
     case Inst.Let(name, box @ Op.Box(code, from)) =>
@@ -53,12 +50,10 @@ object BoxingLowering extends PassCompanion {
     new BoxingLowering()(top.fresh)
 
   override def depends: Seq[Global] =
-    Seq(
-      BoxesRunTime,
-      RuntimeBoxes
-    ) ++
+    Seq(BoxesRunTime, RuntimeBoxes)  ++
       BoxTo.values.map { case (owner, id) => Global.Member(owner, id) } ++
       UnboxTo.values.map { case (owner, id) => Global.Member(owner, id) }
+
 
   private val BoxesRunTime = Global.Top("scala.runtime.BoxesRunTime$")
   private val RuntimeBoxes = Global.Top("scala.scalanative.runtime.Boxes$")
