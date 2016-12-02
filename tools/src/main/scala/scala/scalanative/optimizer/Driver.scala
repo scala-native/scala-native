@@ -18,8 +18,8 @@ sealed trait Driver {
 
 object Driver {
 
-  /** Create driver with default pipeline for this configuration. */
-  def apply(config: tools.Config): Driver =
+  /** Create driver with default pipeline. */
+  def apply(): Driver =
     new Impl(
       Seq(pass.GlobalBoxingElimination,
           pass.DeadCodeElimination,

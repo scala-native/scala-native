@@ -58,7 +58,7 @@ object ScalaNativePluginInternal {
       logger: Logger,
       linkerReporter: tools.LinkerReporter,
       optimizerReporter: tools.OptimizerReporter): Seq[nir.Attr.Link] = {
-    val driver                   = tools.OptimizerDriver(config)
+    val driver                   = tools.OptimizerDriver()
     val (unresolved, links, raw) = tools.link(config, driver, linkerReporter)
 
     if (unresolved.nonEmpty) { reportLinkingErrors(unresolved, logger) }
