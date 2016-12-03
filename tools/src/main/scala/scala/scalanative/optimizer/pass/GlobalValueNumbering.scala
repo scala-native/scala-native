@@ -180,11 +180,11 @@ object GlobalValueNumbering extends PassCompanion {
           case (Sizeof(tyA), Sizeof(tyB)) =>
             eqType(tyA, tyB)
 
-          case (Box(codeA, objA), Box(codeB, objB)) =>
-            codeA == codeB && eqVal(objA, objB)
+          case (Box(tyA, objA), Box(tyB, objB)) =>
+            tyA == tyB && eqVal(objA, objB)
 
-          case (Unbox(codeA, objA), Unbox(codeB, objB)) =>
-            codeB == codeB && eqVal(objA, objB)
+          case (Unbox(tyA, objA), Unbox(tyB, objB)) =>
+            tyA == tyB && eqVal(objA, objB)
 
           case _ => false // non-matching pairs of ops, or not idempotent ones
         }

@@ -895,12 +895,12 @@ abstract class NirCodeGen
 
     def genPrimitiveBox(argp: Tree, tpe: Type, focus: Focus) = {
       val last = genExpr(argp, focus)
-      last withOp Op.Box(Boxes.box(genPrimCode(tpe)), last.value)
+      last withOp Op.Box(genBoxType(tpe), last.value)
     }
 
     def genPrimitiveUnbox(argp: Tree, tpe: Type, focus: Focus) = {
       val last = genExpr(argp, focus)
-      last withOp Op.Unbox(Boxes.box(genPrimCode(tpe)), last.value)
+      last withOp Op.Unbox(genBoxType(tpe), last.value)
     }
 
     def genPrimitiveOp(app: Apply, focus: Focus): Focus = {
