@@ -27,7 +27,6 @@ class HavlakBenchmark extends benchmarks.Benchmark[(Int, Array[Int])] {
   private var i               = 0
 
   override def run(): (Int, Array[Int]) = {
-    disableBenchmark()
     val iterations = innerIterations(i % innerIterations.length)
     i = i + 1
     (iterations, run(iterations))

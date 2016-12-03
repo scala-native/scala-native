@@ -29,7 +29,6 @@ package json
  */
 class JsonBenchmark extends benchmarks.Benchmark[JsonValue] {
   override def run(): JsonValue = {
-    disableBenchmark()
     (new JsonPureStringParser(rapBenchmarkMinified)).parse()
   }
 
