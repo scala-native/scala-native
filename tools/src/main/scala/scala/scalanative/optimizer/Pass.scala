@@ -135,11 +135,6 @@ trait Pass {
     case Op.Select(v1, v2, v3) =>
       Op.Select(txVal(v1), txVal(v2), txVal(v3))
 
-    case Op.Box(code, obj) =>
-      Op.Box(code, txVal(obj))
-    case Op.Unbox(code, obj) =>
-      Op.Unbox(code, txVal(obj))
-
     case Op.Classalloc(n) =>
       Op.Classalloc(n)
     case Op.Field(v, n) =>
@@ -158,6 +153,10 @@ trait Pass {
       Op.Sizeof(txType(ty))
     case Op.Closure(ty, fun, captures) =>
       Op.Closure(txType(ty), txVal(fun), captures.map(txVal))
+    case Op.Box(code, obj) =>
+      Op.Box(code, txVal(obj))
+    case Op.Unbox(code, obj) =>
+      Op.Unbox(code, txVal(obj))
   }
 
   private def txVal(value: Val): Val = {

@@ -292,9 +292,6 @@ object GlobalValueNumbering extends PassCompanion {
         case Conv(conv, ty, value)      => Seq("Conv", ty, value)
         case Select(cond, thenv, elsev) => Seq("Select", cond, thenv, elsev)
 
-        case Box(code, obj)   => Seq("Box", code.toString, obj)
-        case Unbox(code, obj) => Seq("Unbox", code.toString, obj)
-
         case Field(obj, name)           => Seq("Field", obj, name)
         case Method(obj, name)          => Seq("Method", obj, name)
         case As(ty, obj)                => Seq("As", ty, obj)
@@ -305,6 +302,8 @@ object GlobalValueNumbering extends PassCompanion {
         case Classalloc(name) => Seq("Classalloc", name)
         case Module(name)     => Seq("Module", name)
         case Sizeof(ty)       => Seq("Sizeof", ty)
+        case Box(code, obj)   => Seq("Box", code.toString, obj)
+        case Unbox(code, obj) => Seq("Unbox", code.toString, obj)
       }
 
       combineHashes(opFields.map(this.apply))

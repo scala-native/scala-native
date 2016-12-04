@@ -28,7 +28,7 @@ sealed abstract class Op {
     case Op.Sizeof(_)         => Type.I64
     case Op.Closure(ty, _, _) => ty
     case Op.Box(ty, _)        => ty
-    case Op.Unbox(ty, _)      => Boxes.unbox(ty)
+    case Op.Unbox(ty, _)      => Type.unbox(ty)
 
   }
 }

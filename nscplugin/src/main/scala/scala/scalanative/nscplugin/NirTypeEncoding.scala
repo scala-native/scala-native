@@ -121,23 +121,32 @@ trait NirTypeEncoding { self: NirCodeGen =>
     val (sym, _) = decomposeType(tpe)
 
     sym match {
-      case BooleanClass => nir.Type.Class(nir.Global.Top("java.lang.Boolean"))
-      case CharClass    => nir.Type.Class(nir.Global.Top("java.lang.Character"))
+      case BooleanClass =>
+        nir.Type.Class(nir.Global.Top("java.lang.Boolean"))
+      case CharClass =>
+        nir.Type.Class(nir.Global.Top("java.lang.Character"))
       case UByteClass =>
         nir.Type.Class(nir.Global.Top("scala.scalanative.native.UByte"))
-      case ByteClass => nir.Type.Class(nir.Global.Top("java.lang.Byte"))
+      case ByteClass =>
+        nir.Type.Class(nir.Global.Top("java.lang.Byte"))
       case UShortClass =>
         nir.Type.Class(nir.Global.Top("scala.scalanative.native.UShort"))
-      case ShortClass => nir.Type.Class(nir.Global.Top("java.lang.Short"))
+      case ShortClass =>
+        nir.Type.Class(nir.Global.Top("java.lang.Short"))
       case UIntClass =>
         nir.Type.Class(nir.Global.Top("scala.scalanative.native.UInt"))
-      case IntClass => nir.Type.Class(nir.Global.Top("java.lang.Integer"))
+      case IntClass =>
+        nir.Type.Class(nir.Global.Top("java.lang.Integer"))
       case ULongClass =>
         nir.Type.Class(nir.Global.Top("scala.scalanative.native.ULong"))
-      case LongClass   => nir.Type.Class(nir.Global.Top("java.lang.Long"))
-      case FloatClass  => nir.Type.Class(nir.Global.Top("java.lang.Float"))
-      case DoubleClass => nir.Type.Class(nir.Global.Top("java.lang.Double"))
-      case _           => unsupported("Box type must be primitive type.")
+      case LongClass =>
+        nir.Type.Class(nir.Global.Top("java.lang.Long"))
+      case FloatClass =>
+        nir.Type.Class(nir.Global.Top("java.lang.Float"))
+      case DoubleClass =>
+        nir.Type.Class(nir.Global.Top("java.lang.Double"))
+      case _ =>
+        unsupported("Box type must be primitive type.")
     }
   }
 
