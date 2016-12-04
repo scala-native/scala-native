@@ -143,4 +143,16 @@ class OpParserTest extends FlatSpec with Matchers {
     result should be(closure)
   }
 
+  it should "parse `Op.Box`" in {
+    val box: Op                   = Op.Box(noTpe, Val.None)
+    val Parsed.Success(result, _) = parser.Op.Box.parse(sh"$box".toString)
+    result should be(box)
+  }
+
+  it should "parse `Op.Unbox`" in {
+    val unbox: Op                 = Op.Unbox(noTpe, Val.None)
+    val Parsed.Success(result, _) = parser.Op.Unbox.parse(sh"$unbox".toString)
+    result should be(unbox)
+  }
+
 }
