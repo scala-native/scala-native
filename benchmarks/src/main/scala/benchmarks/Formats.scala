@@ -16,7 +16,7 @@ object Format {
   def apply(name: String): Format = formats.getOrElse(name, TextFormat)
 
   private val formats: Map[String, Format] =
-    Map("text" -> TextFormat)
+    Map("text" -> TextFormat, "csv" -> CSVFormat)
 }
 
 /** A verbose human-friendly format. */
@@ -50,6 +50,20 @@ object TextFormat extends Format {
     Formattable.format(title +: rows)
   }
 
+}
+
+/** Displays the benchmark results as CSV. */
+object CSVFormat extends Format {
+  override def show(results: Seq[BenchmarkResult]): String = {
+    val rows =
+      results.collect {
+        case completed: BenchmarkCompleted =>
+          CompletedRow(completed)
+      }
+
+    rows.map(_.elements.mkString(",")).mkString(EOL)
+
+  }
 }
 
 /** Trait for objects that can be formatted into a table */
