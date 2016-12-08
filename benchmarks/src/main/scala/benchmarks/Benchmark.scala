@@ -3,39 +3,15 @@ package benchmarks
 sealed abstract class BenchmarkResult(val name: String, val success: Boolean)
 
 case class BenchmarkCompleted(override val name: String,
-                              minNs: Long,
-                              maxNs: Long,
-                              avgNs: Long,
-                              iterations: Int,
+                              timesNs: Seq[Long],
                               override val success: Boolean)
-    extends BenchmarkResult(name, success) {
-  override def toString: String = {
-    def format(n: Double, decimals: Int = 3): String = {
-      val s = n.toString
-      s.substring(0, s.indexOf('.') + decimals + 1)
-    }
-
-    val minMs = format(minNs / 1e6)
-    val maxMs = format(maxNs / 1e6)
-    val avgMs = format(avgNs / 1e6)
-    (if (success) "  [ok] " else "  [fail] ") + name +
-      s": $iterations iterations, min ${minMs}ms, max ${maxMs}ms," +
-      s" avg ${avgMs}ms"
-  }
-}
+    extends BenchmarkResult(name, success)
 
 case class BenchmarkFailed(override val name: String, cause: Throwable)
-    extends BenchmarkResult(name, false) {
-  override def toString: String =
-    s"""  [fail] $name threw an exception:
-       |$cause""".stripMargin
-}
+    extends BenchmarkResult(name, false)
 
 case class BenchmarkDisabled(override val name: String)
-    extends BenchmarkResult(name, true) {
-  override def toString: String =
-    s""" [???] $name is disabled."""
-}
+    extends BenchmarkResult(name, true)
 
 abstract class Benchmark[T] {
   def run(): T
@@ -59,30 +35,21 @@ abstract class Benchmark[T] {
 
   final def loop(iterations: Int): BenchmarkResult =
     try {
-      var min: Long        = Long.MaxValue
-      var max: Long        = Long.MinValue
-      var success: Boolean = true
+      var success: Boolean   = true
+      var i: Int             = 0
+      val times: Array[Long] = new Array[Long](iterations)
 
-      val t0 = System.nanoTime()
-      for (_ <- 1 to iterations) {
+      while (i < iterations) {
         val start  = System.nanoTime()
         val result = run()
         val end    = System.nanoTime()
 
         success = success && check(result)
-        val elapsed = end - start
-        if (elapsed > max) max = elapsed
-        if (elapsed < min) min = elapsed
+        times(i) = end - start
+        i = i + 1
       }
-      val totalTime = System.nanoTime() - t0
-      val average   = totalTime / iterations
 
-      BenchmarkCompleted(this.getClass.getName,
-                         min,
-                         max,
-                         average,
-                         iterations,
-                         success)
+      BenchmarkCompleted(this.getClass.getName, times, success)
     } catch {
       case _: BenchmarkDisabledException =>
         BenchmarkDisabled(this.getClass.getName)
