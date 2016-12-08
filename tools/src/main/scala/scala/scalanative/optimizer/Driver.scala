@@ -28,6 +28,7 @@ object Driver {
           pass.ExternHoisting,
           pass.ModuleLowering,
           pass.RuntimeTypeInfoInjection,
+          pass.BoxingLowering,
           pass.AsLowering,
           pass.IsLowering,
           pass.MethodLowering,

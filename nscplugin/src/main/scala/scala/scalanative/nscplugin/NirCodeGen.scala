@@ -894,17 +894,13 @@ abstract class NirCodeGen
     }
 
     def genPrimitiveBox(argp: Tree, tpe: Type, focus: Focus) = {
-      val method = BoxMethod(genPrimCode(tpe))
-      val module = method.owner
-
-      genModuleMethodCall(module, method, Seq(argp), focus)
+      val last = genExpr(argp, focus)
+      last withOp Op.Box(genBoxType(tpe), last.value)
     }
 
     def genPrimitiveUnbox(argp: Tree, tpe: Type, focus: Focus) = {
-      val method = UnboxMethod(genPrimCode(tpe))
-      val module = method.owner
-
-      genModuleMethodCall(module, method, Seq(argp), focus)
+      val last = genExpr(argp, focus)
+      last withOp Op.Unbox(genBoxType(tpe), last.value)
     }
 
     def genPrimitiveOp(app: Apply, focus: Focus): Focus = {

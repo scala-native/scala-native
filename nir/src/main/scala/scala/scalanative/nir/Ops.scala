@@ -27,6 +27,9 @@ sealed abstract class Op {
     case Op.Copy(v)           => v.ty
     case Op.Sizeof(_)         => Type.I64
     case Op.Closure(ty, _, _) => ty
+    case Op.Box(ty, _)        => ty
+    case Op.Unbox(ty, _)      => Type.unbox(ty)
+
   }
 }
 object Op {
@@ -56,4 +59,7 @@ object Op {
   final case class Copy(value: Val)                                extends Op
   final case class Sizeof(ty: Type)                                extends Op
   final case class Closure(ty: Type, fun: Val, captures: Seq[Val]) extends Op
+  final case class Box(ty: Type, obj: Val)                         extends Op
+  final case class Unbox(ty: Type, obj: Val)                       extends Op
+
 }

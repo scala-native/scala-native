@@ -81,6 +81,12 @@ object Op extends Base[nir.Op] {
     P("closure[" ~ Type.parser ~ "]" ~ Val.parser.rep(sep = ",") map {
       case (ty, fun +: captures) => nir.Op.Closure(ty, fun, captures)
     })
+  val Box = P("box[" ~ Type.parser ~ "]" ~ Val.parser map {
+    case (ty, obj) => nir.Op.Box(ty, obj)
+  })
+  val Unbox = P("unbox[" ~ Type.parser ~ "]" ~ Val.parser map {
+    case (ty, obj) => nir.Op.Unbox(ty, obj)
+  })
   override val parser: P[nir.Op] =
-    Call | Load | Store | Elem | Extract | Insert | Stackalloc | Bin | Comp | Conv | Select | Classalloc | Field | Method | Module | As | Is | Copy | Sizeof | Closure
+    Call | Load | Store | Elem | Extract | Insert | Stackalloc | Bin | Comp | Conv | Select | Classalloc | Field | Method | Module | As | Is | Copy | Sizeof | Closure | Box | Unbox
 }

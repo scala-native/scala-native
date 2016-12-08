@@ -372,6 +372,17 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putType(ty)
       putVal(fun)
       putVals(captures)
+
+    case Op.Box(ty, obj) =>
+      putInt(T.BoxOp)
+      putType(ty)
+      putVal(obj)
+
+    case Op.Unbox(ty, obj) =>
+      putInt(T.UnboxOp)
+      putType(ty)
+      putVal(obj)
+
   }
 
   private def putParams(params: Seq[Val.Local]) = putSeq(params)(putParam)

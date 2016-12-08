@@ -49,4 +49,19 @@ object Type {
   final case class Class(name: Global)  extends RefKind with Named
   final case class Trait(name: Global)  extends RefKind with Named
   final case class Module(name: Global) extends RefKind with Named
+
+  val unbox = Map[Type, Type](
+    Type.Class(Global.Top("java.lang.Boolean"))               -> Type.Bool,
+    Type.Class(Global.Top("java.lang.Character"))             -> Type.I16,
+    Type.Class(Global.Top("scala.scalanative.native.UByte"))  -> Type.I8,
+    Type.Class(Global.Top("java.lang.Byte"))                  -> Type.I8,
+    Type.Class(Global.Top("scala.scalanative.native.UShort")) -> Type.I16,
+    Type.Class(Global.Top("java.lang.Short"))                 -> Type.I16,
+    Type.Class(Global.Top("scala.scalanative.native.UInt"))   -> Type.I32,
+    Type.Class(Global.Top("java.lang.Integer"))               -> Type.I32,
+    Type.Class(Global.Top("scala.scalanative.native.ULong"))  -> Type.I64,
+    Type.Class(Global.Top("java.lang.Long"))                  -> Type.I64,
+    Type.Class(Global.Top("java.lang.Float"))                 -> Type.F32,
+    Type.Class(Global.Top("java.lang.Double"))                -> Type.F64
+  )
 }

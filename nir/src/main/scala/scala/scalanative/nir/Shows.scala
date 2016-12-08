@@ -138,6 +138,10 @@ object Shows {
       sh"sizeof[$ty]"
     case Op.Closure(ty, fun, captures) =>
       sh"closure[$ty] ${r(fun +: captures, sep = ", ")}"
+    case Op.Box(ty, obj) =>
+      sh"box[$ty] $obj"
+    case Op.Unbox(ty, obj) =>
+      sh"unbox[$ty] $obj"
   }
 
   implicit val showBin: Show[Bin] = Show {

@@ -242,6 +242,8 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
     case T.CopyOp       => Op.Copy(getVal)
     case T.SizeofOp     => Op.Sizeof(getType)
     case T.ClosureOp    => Op.Closure(getType, getVal, getVals)
+    case T.BoxOp        => Op.Box(getType, getVal)
+    case T.UnboxOp      => Op.Unbox(getType, getVal)
   }
 
   private def getParams(): Seq[Val.Local] = getSeq(getParam)
