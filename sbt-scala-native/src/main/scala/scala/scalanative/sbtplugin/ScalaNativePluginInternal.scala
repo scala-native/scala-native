@@ -27,7 +27,13 @@ object ScalaNativePluginInternal {
     "A reporter that gets notified whenever an optimizer event happens.")
 
   val nativeExternalDependencies =
-    taskKey[Seq[String]]("List all external dependencies.")
+    taskKey[Seq[String]]("List all external dependencies at link time.")
+
+  val nativeAvailableDependencies =
+    taskKey[Seq[String]]("List all symbols available at link time")
+
+  val nativeMissingDependencies =
+    taskKey[Seq[String]]("List all symbols not available at link time")
 
   private lazy val nativelib: File =
     Path.userHome / ".scalanative" / ("nativelib-" + nir.Versions.current)
@@ -204,10 +210,32 @@ object ScalaNativePluginInternal {
       unresolved.map(u => sh"$u".toString).sorted
     }
 
+  private def availableDependenciesTask[T](compileTask: TaskKey[T]) =
+    nativeAvailableDependencies := ResourceScope { implicit scope =>
+      import nir.Shows._
+
+      val forceCompile = compileTask.value
+
+      val globals = fullClasspath.value.flatMap(p =>
+        tools.LinkerPath(VirtualDirectory.real(p.data)).globals.toSeq)
+
+      globals.map(u => sh"$u".toString).sorted
+    }
+
+  def nativeMissingDependenciesTask =
+    nativeMissingDependencies := {
+      (nativeExternalDependencies.value.toSet --
+        nativeAvailableDependencies.value.toSet).toList.sorted
+    }
+
   lazy val projectSettings =
     unscopedSettings ++
       inConfig(Compile)(externalDependenciesTask(compile)) ++
-      inConfig(Test)(externalDependenciesTask(compile in Test))
+      inConfig(Test)(externalDependenciesTask(compile in Test)) ++
+      inConfig(Compile)(availableDependenciesTask(compile)) ++
+      inConfig(Test)(availableDependenciesTask(compile in Test)) ++
+      inConfig(Compile)(nativeMissingDependenciesTask) ++
+      inConfig(Test)(nativeMissingDependenciesTask)
 
   lazy val unscopedSettings = Seq(
     libraryDependencies ++= Seq(

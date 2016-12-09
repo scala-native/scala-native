@@ -1,7 +1,7 @@
 import sbt._
 import Keys._
 
-import scala.scalanative.sbtplugin.ScalaNativePluginInternal.nativeExternalDependencies
+import scala.scalanative.sbtplugin.ScalaNativePluginInternal._
 
 object Check {
   lazy val check =
@@ -10,6 +10,8 @@ object Check {
   val setup = Seq(
     check := {
       val deps = (nativeExternalDependencies in Compile).value.toSet
+
+      val missing = (nativeMissingDependencies in Compile).value.toSet
 
       // most propably not implemented
       val applets = Set(
@@ -41,6 +43,8 @@ object Check {
         "@java.awt.event.MouseListener::mousePressed_class.java.awt.event.MouseEvent_unit",
         "@java.awt.event.MouseListener::mouseReleased_class.java.awt.event.MouseEvent_unit"
       )
+
+      assert((awt -- missing).isEmpty)
 
       assert(((applets ++ awt) -- deps).isEmpty)
 
