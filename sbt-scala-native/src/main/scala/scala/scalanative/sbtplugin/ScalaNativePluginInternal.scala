@@ -405,8 +405,8 @@ object ScalaNativePluginInternal {
     if (!clangIsRecentEnough) {
       throw new MessageOnlyException(
         s"No recent installation of clang found " +
-          s"at $pathToClangBinary.\nSee https://github.com/scala-native/scala-" +
-          s"native/blob/master/docs/building.md for details.")
+          s"at $pathToClangBinary.\nSee http://scala-native.readthedocs.io" +
+          s"/en/latest/user/setup.html for details.")
     }
   }
 }
