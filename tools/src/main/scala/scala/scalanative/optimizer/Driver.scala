@@ -18,8 +18,8 @@ sealed trait Driver {
 
 object Driver {
 
-  /** Create driver with default pipeline for this configuration. */
-  def apply(config: tools.Config): Driver =
+  /** Create driver with default pipeline. */
+  def apply(): Driver =
     new Impl(
       Seq(pass.GlobalBoxingElimination,
           pass.DeadCodeElimination,
@@ -50,10 +50,13 @@ object Driver {
     new Impl(Seq.empty)
 
   private final class Impl(val passes: Seq[PassCompanion]) extends Driver {
-    def takeUpTo(pass: PassCompanion): Driver = ???
+    def takeUpTo(pass: PassCompanion): Driver =
+      takeBefore(pass).append(pass)
 
-    def takeBefore(pass: PassCompanion): Driver = ???
+    def takeBefore(pass: PassCompanion): Driver =
+      new Impl(passes takeWhile (_ != pass))
 
-    def append(pass: PassCompanion): Driver = ???
+    def append(pass: PassCompanion): Driver =
+      new Impl(passes :+ pass)
   }
 }
