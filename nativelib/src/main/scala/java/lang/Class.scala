@@ -4,16 +4,7 @@ import scalanative.native.Ptr
 import scalanative.runtime.{Array => _, _}
 
 final class _Class[A](val ty: Ptr[Type]) {
-  def getName(): String = (!ty).name
-
-  override def hashCode: Int = ty.cast[scala.Long].##
-
-  override def equals(other: Any): scala.Boolean = other match {
-    case other: _Class[_] =>
-      ty == other.ty
-    case _ =>
-      false
-  }
+  def cast(obj: Object): A = ???
 
   def getComponentType(): _Class[_] = {
     if (ty == typeof[BooleanArray]) classOf[scala.Boolean]
@@ -27,10 +18,54 @@ final class _Class[A](val ty: Ptr[Type]) {
     else classOf[java.lang.Object]
   }
 
-  // TODO:
   def getInterfaces(): Array[_Class[_]] = ???
-  def getSuperclass(): _Class[_]        = ???
-  def isArray(): scala.Boolean          = ???
+
+  def getName(): String =
+    (!ty).name
+
+  def getSimpleName(): String =
+    getName.split('.').last.split('$').last
+
+  def getSuperclass(): Class[_ >: A] = ???
+
+  def isArray(): scala.Boolean =
+    (ty == typeof[BooleanArray] ||
+      ty == typeof[CharArray] ||
+      ty == typeof[ByteArray] ||
+      ty == typeof[ShortArray] ||
+      ty == typeof[IntArray] ||
+      ty == typeof[LongArray] ||
+      ty == typeof[FloatArray] ||
+      ty == typeof[DoubleArray] ||
+      ty == typeof[ObjectArray])
+
+  def isAssignableFrom(that: Class[_]): scala.Boolean = ???
+
+  def isInstance(obj: Object): scala.Boolean = ???
+
+  def isInterface(): scala.Boolean = ???
+
+  def isPrimitive(): scala.Boolean =
+    (ty == typeof[PrimitiveBoolean] ||
+      ty == typeof[PrimitiveChar] ||
+      ty == typeof[PrimitiveByte] ||
+      ty == typeof[PrimitiveShort] ||
+      ty == typeof[PrimitiveInt] ||
+      ty == typeof[PrimitiveLong] ||
+      ty == typeof[PrimitiveFloat] ||
+      ty == typeof[PrimitiveDouble] ||
+      ty == typeof[PrimitiveUnit])
+
+  override def equals(other: Any): scala.Boolean =
+    other match {
+      case other: _Class[_] =>
+        ty == other.ty
+      case _ =>
+        false
+    }
+
+  override def hashCode: Int =
+    ty.cast[scala.Long].##
 }
 
 object _Class {
