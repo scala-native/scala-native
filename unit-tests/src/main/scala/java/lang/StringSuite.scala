@@ -18,4 +18,10 @@ object StringSuite extends tests.Suite {
     assert("foobar" == "foo" + "bar")
     assert("foobarbaz" == "foo" + "bar" + "baz")
   }
+
+  test("String.indexOf") {
+    assert("test".indexOf("e", 100) == -1) // indexOf outside the range
+    assert("".indexOf("e", 0) == -1)       // empty
+    assert("test".indexOf("e", 0) == 1)    // pos1
+  }
 }

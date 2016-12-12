@@ -378,9 +378,12 @@ final class _String()
             return -1
           }
 
-          val o1 = offset + i
-          val o2 = subOffset
-          while (o2 < end && value(o1) == target(o2)) {}
+          var o1 = offset + i
+          var o2 = subOffset
+          while (o2 < end && value(o1) == target(o2)) {
+            o2 = o2 + 1
+            o1 = o1 + 1
+          }
           if (o2 == end) {
             return i
           }
