@@ -22,7 +22,7 @@ class Throwable(s: String, private var e: Throwable)
 
   def fillInStackTrace(): Throwable = ???
 
-  def getStackTrace(): Array[StackTraceElement] =  ???
+  def getStackTrace(): Array[StackTraceElement] = ???
 
   def setStackTrace(stackTrace: Array[StackTraceElement]): Unit = {
     var i = 0
