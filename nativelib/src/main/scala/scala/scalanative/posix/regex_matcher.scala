@@ -12,11 +12,12 @@ trait MatchResult {
   def group(group: Int): String
 }
 
-
-final class Matcher private[regex] (
-  private var _pattern: PosixPattern, private var _input: String,
-  private var regionStart: Int, private var regionEnd: Int)
-    extends AnyRef with MatchResult {
+final class Matcher private[regex] (private var _pattern: PosixPattern,
+                                    private var _input: String,
+                                    private var regionStart: Int,
+                                    private var regionEnd: Int)
+    extends AnyRef
+    with MatchResult {
 
   def pattern(): PosixPattern = _pattern
 
@@ -27,11 +28,11 @@ final class Matcher private[regex] (
 
   def groupCount(): Int = ???
 
-  def start(): Int = ???
-  def end(): Int = ???
+  def start(): Int    = ???
+  def end(): Int      = ???
   def group(): String = ???
 
-  def start(group: Int): Int = ???
-  def end(group: Int): Int = ???
+  def start(group: Int): Int    = ???
+  def end(group: Int): Int      = ???
   def group(group: Int): String = ???
 }
