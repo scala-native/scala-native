@@ -66,16 +66,19 @@ trait NirTypeEncoding { self: NirCodeGen =>
   }
 
   def genTypeValue(ty: Type): nir.Val = {
-    val (sym, _) = decomposeType(ty)
-    genTypeSymValue(sym)
+    val (sym, targs) = decomposeType(ty)
+
+    genTypeSymValue(sym, targs)
   }
 
-  def genTypeSymValue(sym: Symbol): nir.Val =
+  def genTypeSymValue(sym: Symbol, targs: Seq[Type] = Seq.empty): nir.Val =
     genPrimCode(sym) match {
-      case 'O' if sym != UnitClass =>
-        nir.Val.Global(genTypeName(sym), nir.Type.Ptr)
-      case 'O' =>
+      case _ if sym == UnitClass =>
         genTypeSymValue(RuntimePrimitive('U'))
+      case _ if sym == ArrayClass =>
+        genTypeSymValue(RuntimeArrayClass(genPrimCode(targs.head)))
+      case 'O' =>
+        nir.Val.Global(genTypeName(sym), nir.Type.Ptr)
       case code =>
         genTypeSymValue(RuntimePrimitive(code))
     }
