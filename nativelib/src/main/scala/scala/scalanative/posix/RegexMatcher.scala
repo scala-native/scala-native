@@ -1,4 +1,4 @@
-package scala.scalanative.posix.regex
+package scala.scalanative.posix
 
 trait MatchResult {
   def groupCount(): Int
@@ -12,7 +12,7 @@ trait MatchResult {
   def group(group: Int): String
 }
 
-final class Matcher private[regex] (private var _pattern: PosixPattern,
+final class RegexMatcher private[posix] (private var _pattern: PosixPattern,
                                     private var _input: String,
                                     private var regionStart: Int,
                                     private var regionEnd: Int)
