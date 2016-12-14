@@ -1,4 +1,4 @@
-package scala.scalanative.posix.regex
+package scala.scalanative.posix
 
 import scalanative.native._, stdlib._, stdio._
 
@@ -14,16 +14,22 @@ object Regex {
 
 case class PosixRegexError(error: Int)
 
-final class PosixPattern private (_compiled: Ptr[Int],
+trait RegexPattern {
+  def flags(): Int
+  def pattern(): String
+  override def toString(): String
+}
+
+class PosixPattern private (_compiled: Ptr[Int],
                                   _pattern: String,
                                   _flags: Int)
-    extends Serializable {
+    extends Serializable with RegexPattern {
   def flags(): Int                = _flags
   def pattern(): String           = _pattern
   def compiled(): Ptr[Int]        = _compiled
   override def toString(): String = _pattern
-  def matcher(input: String): Matcher =
-    new Matcher(this, input, 0, input.length)
+  def matcher(input: String): RegexMatcher =
+    new RegexMatcher(this, input, 0, input.length)
 }
 
 object PosixPattern {
