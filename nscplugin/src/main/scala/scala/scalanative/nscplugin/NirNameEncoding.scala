@@ -9,15 +9,21 @@ import scalanative.util.{unreachable, sh, Show}, Show.{Repeat => r}
 trait NirNameEncoding { self: NirCodeGen =>
   import global.{Name => _, _}, definitions._
   import nirAddons.nirDefinitions._
+  import SimpleType.{fromSymbol, fromType}
 
   def genAnonName(owner: Symbol, anon: Symbol) =
     genName(owner) member anon.fullName.toString tag "extern"
 
   def genName(sym: Symbol): nir.Global =
-    if (sym.isType) genTypeName(sym)
-    else if (sym.isMethod) genMethodName(sym)
-    else if (isField(sym)) genFieldName(sym)
-    else unreachable
+    if (sym.isType) {
+      genTypeName(sym)
+    } else if (sym.isMethod) {
+      genMethodName(sym)
+    } else if (sym.isField) {
+      genFieldName(sym)
+    } else {
+      unreachable
+    }
 
   def genTypeName(sym: Symbol): nir.Global = {
     val id = {
@@ -39,8 +45,7 @@ trait NirNameEncoding { self: NirCodeGen =>
   def genFieldName(sym: Symbol): nir.Global = {
     val owner = genTypeName(sym.owner)
     val id    = nativeIdOf(sym)
-    val tag   = if (isExternModule(sym.owner)) "extern" else "field"
-
+    val tag   = if (sym.owner.isExternModule) "extern" else "field"
     owner member id tag tag
   }
 
@@ -48,24 +53,24 @@ trait NirNameEncoding { self: NirCodeGen =>
     val owner = genTypeName(sym.owner)
     val id    = nativeIdOf(sym)
     val tpe   = sym.tpe.widen
-    val mangledParams =
-      tpe.params.toSeq.map(p => mangledType(p.info, retty = false))
+
+    val mangledParams = tpe.params.toSeq.map(p => mangledType(p.info))
 
     if (sym == String_+) {
       genMethodName(StringConcatMethod)
-    } else if (isExternModule(sym.owner)) {
+    } else if (sym.owner.isExternModule) {
       owner member id tag "extern"
     } else if (sym.name == nme.CONSTRUCTOR) {
       owner member ("init" +: mangledParams).mkString("_")
     } else {
-      val mangledRetty = mangledType(tpe.resultType, retty = true)
+      val mangledRetty = mangledType(tpe.resultType)
       owner member (id.replace("_", "__") +: (mangledParams :+ mangledRetty))
         .mkString("_")
     }
   }
 
-  private def mangledType(tpe: Type, retty: Boolean): String =
-    mangledTypeInternal(genType(tpe, retty))
+  private def mangledType(tpe: Type): String =
+    mangledTypeInternal(genType(tpe, box = false))
 
   private def mangledTypeInternal(ty: nir.Type): String = {
     implicit lazy val showMangledType: Show[nir.Type] = Show {
@@ -107,7 +112,7 @@ trait NirNameEncoding { self: NirCodeGen =>
 
   private def nativeIdOf(sym: Symbol): String = {
     sym.getAnnotation(NameClass).flatMap(_.stringArg(0)).getOrElse {
-      if (isField(sym)) {
+      if (sym.isField) {
         val id0 = sym.name.decoded.toString
         if (id0.charAt(id0.length() - 1) != ' ') id0
         else id0.substring(0, id0.length() - 1) // strip trailing ' '

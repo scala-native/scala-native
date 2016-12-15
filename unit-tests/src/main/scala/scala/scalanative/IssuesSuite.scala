@@ -37,6 +37,29 @@ object IssuesSuite extends tests.Suite {
     }
   }
 
+  test("#326") {
+    abstract class A
+    case class S[T](a: T) extends A
+
+    def check(a: A) = a match {
+      case S(d: Double) => "double"
+      case S(d: Int)    => "int"
+      case _            => "neither"
+    }
+
+    def main(args: Array[String]): Unit = {
+      val (dbl, int, obj) = (S(2.3), S(2), S(S(2)))
+      assert(check(dbl) == "double")
+      assert(check(int) == "int")
+      assert(check(obj) == "neither")
+    }
+  }
+
+  test("#327") {
+    val a = BigInt(1)
+    assert(a.toInt == 1)
+  }
+
   test("#337") {
     case class TestObj(value: Int)
     val obj = TestObj(10)
