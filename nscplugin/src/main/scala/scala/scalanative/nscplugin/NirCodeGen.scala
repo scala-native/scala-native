@@ -1751,6 +1751,7 @@ abstract class NirCodeGen
                       self: Val,
                       argsp: Seq[Tree],
                       focus: Focus): Focus = {
+
       val owner        = sym.owner
       val name         = genMethodName(sym)
       val sig          = genMethodSig(sym)

@@ -243,6 +243,18 @@ object ClassHierarchy {
 
       (table.ty, Defn.Const(Attrs.None, instanceName, table.ty, table))
     }
+
+    def classWithName(name: Global): Option[Class] =
+      classes find (_.name == name)
+
+    def classWithId(id: Int): Option[Class] =
+      classes find (_.id == id)
+
+    def traitWithName(name: Global): Option[Trait] =
+      traits find (_.name == name)
+
+    def traitWithId(id: Int): Option[Trait] =
+      traits find (_.id == id)
   }
 
   def apply(defns: Seq[Defn]): Top = {

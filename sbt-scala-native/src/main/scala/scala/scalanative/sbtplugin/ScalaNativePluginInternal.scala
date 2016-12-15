@@ -247,6 +247,9 @@ object ScalaNativePluginInternal {
       "org.scala-native" % "nscplugin" % nativeVersion cross CrossVersion.full),
     nativeLibraryLinkage := Map(),
     nativeSharedLibrary := false,
+    nativeProfileDispatch := false,
+    nativeProfileInfo := None,
+    nativeInlineCachingMaxCandidates := 2,
     nativeClang := {
       discover("clang", Seq(("3", "8"), ("3", "7")))
     },
@@ -286,6 +289,9 @@ object ScalaNativePluginInternal {
       val linkerReporter    = nativeLinkerReporter.value
       val optimizerReporter = nativeOptimizerReporter.value
       val sharedLibrary     = nativeSharedLibrary.value
+      val profile           = nativeProfileDispatch.value
+      val profileInfo       = nativeProfileInfo.value
+      val maxCandidates     = nativeInlineCachingMaxCandidates.value
       val logger            = streams.value.log
 
       val config = tools.Config.empty
@@ -294,6 +300,9 @@ object ScalaNativePluginInternal {
           tools.LinkerPath(VirtualDirectory.real(p))))
         .withTargetDirectory(VirtualDirectory.real(target))
         .withInjectMain(!nativeSharedLibrary.value)
+        .withProfileDispatch(profile)
+        .withProfileDispatchInfo(profileInfo)
+        .withInlineCachingMaxCandidates(maxCandidates)
 
       val nirFiles   = (Keys.target.value ** "*.nir").get.toSet
       val configFile = (streams.value.cacheDirectory / "native-config")

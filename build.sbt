@@ -141,6 +141,12 @@ lazy val tools =
           "org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full),
         "org.scalatest" %% "scalatest" % "3.0.0" % "test"
       ),
+      libraryDependencies ++= {
+        if (scalaVersion.value startsWith "2.11")
+          Seq("org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4")
+        else
+          Seq()
+      },
       publishLocal := publishLocal
         .dependsOn(publishLocal in nir)
         .dependsOn(publishLocal in util)

@@ -32,6 +32,16 @@ object ScalaNativePlugin extends AutoPlugin {
 
     val nativeSharedLibrary = settingKey[Boolean](
       "Will create a shared library instead of a program with a main method.")
+
+    val nativeProfileDispatch = settingKey[Boolean](
+      "Gather information about types encountered in method dispatch at runtime.")
+
+    val nativeProfileInfo = settingKey[Option[File]](
+      "Where to store or find the profiling information.")
+
+    val nativeInlineCachingMaxCandidates = settingKey[Int](
+      "Maximum number of types observed at runtime to consider a call site " +
+        "for inline caching.")
   }
 
   override def projectSettings: Seq[Setting[_]] = (
