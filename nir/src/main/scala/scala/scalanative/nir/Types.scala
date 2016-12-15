@@ -16,6 +16,7 @@ sealed abstract class Type {
   }
 
   final def show: String = nir.Show(this)
+
 }
 
 object Type {

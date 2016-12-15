@@ -82,22 +82,12 @@ object ClassHierarchy {
     }
 
     lazy val alldynmethods: Seq[Method] = {
-      val signatureSet = methods.map(genSignature).toSet
-      val meths = methods
-        .foldLeft(Map[String, Method]()) {
-          case (acc, m) =>
-            val signature = genSignature(m)
-            if (!acc.contains(signature)) {
-              acc + (signature -> m)
-            } else {
-              acc
-            }
-        }
-        .values
+      val dynMeth = methods.filter(m => m.attrs.isDyn)
+      val signSet = dynMeth.map(m => m.name.id).toSet
 
       parent
         .fold(Seq.empty[Method])(_.alldynmethods)
-        .filterNot(m => signatureSet(genSignature(m))) ++ meths
+        .filterNot(m => signSet.contains(m.name.id)) ++ dynMeth
     }
 
     lazy val vtableStruct: Type.Struct =
@@ -118,18 +108,27 @@ object ClassHierarchy {
     }
 
     lazy val dynDispatchTableValue: Val = {
-      // If there a value for null pointer ?
-      lazy val defaultPtr: Val = allmethods.head.value
-      Val.Struct(
-        Global.None,
-        Seq(
-          Val.I32(perfectHashMap.size),
-          Val.Const(Val.Array(Type.I32, perfectHashMap.keys.map(Val.I32))),
-          Val.Const(
-            Val.Array(Type.Ptr,
-                      perfectHashMap.values.map(_.getOrElse(defaultPtr))))
+      if (alldynmethods.size == 1) {
+        Val.Struct(
+          Global.None,
+          Seq(
+            Val.I32(alldynmethods.size),
+            alldynmethods.head.value,
+            Val.Null
+          )
         )
-      )
+      } else {
+        Val.Struct(
+          Global.None,
+          Seq(
+            Val.I32(perfectHashMap.size),
+            Val.Const(Val.Array(Type.I32, perfectHashMap.keys.map(Val.I32))),
+            Val.Const(
+              Val.Array(Type.Ptr,
+                        perfectHashMap.values.map(_.getOrElse(Val.Null))))
+          )
+        )
+      }
     }
 
     lazy val dynDispatchTableStruct =

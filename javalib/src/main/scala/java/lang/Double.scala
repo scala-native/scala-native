@@ -50,6 +50,99 @@ final class Double(override val doubleValue: scala.Double)
 
   @inline def isInfinite(): scala.Boolean =
     Double.isInfinite(doubleValue)
+
+  /*
+   * Methods on scala.Double
+   * The following methods are only here to properly support reflective calls
+   * on boxed primitive values. YOU WILL NOT BE ABLE TO USE THESE METHODS, since
+   * we use the true javalib to lookup symbols, this file contains only
+   * implementations.
+   */
+  protected def toByte: scala.Byte     = doubleValue.toByte
+  protected def toShort: scala.Short   = doubleValue.toShort
+  protected def toChar: scala.Char     = doubleValue.toChar
+  protected def toInt: scala.Int       = doubleValue.toInt
+  protected def toLong: scala.Long     = doubleValue.toLong
+  protected def toFloat: scala.Float   = doubleValue.toFloat
+  protected def toDouble: scala.Double = doubleValue
+
+  protected def unary_+ : scala.Double = doubleValue
+  protected def unary_- : scala.Double = -doubleValue
+
+  protected def +(x: String): String = doubleValue + x
+
+  protected def <(x: scala.Byte): scala.Boolean   = doubleValue < x
+  protected def <(x: scala.Short): scala.Boolean  = doubleValue < x
+  protected def <(x: scala.Char): scala.Boolean   = doubleValue < x
+  protected def <(x: scala.Int): scala.Boolean    = doubleValue < x
+  protected def <(x: scala.Long): scala.Boolean   = doubleValue < x
+  protected def <(x: scala.Float): scala.Boolean  = doubleValue < x
+  protected def <(x: scala.Double): scala.Boolean = doubleValue < x
+
+  protected def <=(x: scala.Byte): scala.Boolean   = doubleValue <= x
+  protected def <=(x: scala.Short): scala.Boolean  = doubleValue <= x
+  protected def <=(x: scala.Char): scala.Boolean   = doubleValue <= x
+  protected def <=(x: scala.Int): scala.Boolean    = doubleValue <= x
+  protected def <=(x: scala.Long): scala.Boolean   = doubleValue <= x
+  protected def <=(x: scala.Float): scala.Boolean  = doubleValue <= x
+  protected def <=(x: scala.Double): scala.Boolean = doubleValue <= x
+
+  protected def >(x: scala.Byte): scala.Boolean   = doubleValue > x
+  protected def >(x: scala.Short): scala.Boolean  = doubleValue > x
+  protected def >(x: scala.Char): scala.Boolean   = doubleValue > x
+  protected def >(x: scala.Int): scala.Boolean    = doubleValue > x
+  protected def >(x: scala.Long): scala.Boolean   = doubleValue > x
+  protected def >(x: scala.Float): scala.Boolean  = doubleValue > x
+  protected def >(x: scala.Double): scala.Boolean = doubleValue > x
+
+  protected def >=(x: scala.Byte): scala.Boolean   = doubleValue >= x
+  protected def >=(x: scala.Short): scala.Boolean  = doubleValue >= x
+  protected def >=(x: scala.Char): scala.Boolean   = doubleValue >= x
+  protected def >=(x: scala.Int): scala.Boolean    = doubleValue >= x
+  protected def >=(x: scala.Long): scala.Boolean   = doubleValue >= x
+  protected def >=(x: scala.Float): scala.Boolean  = doubleValue >= x
+  protected def >=(x: scala.Double): scala.Boolean = doubleValue >= x
+
+  protected def +(x: scala.Byte): scala.Double   = doubleValue + x
+  protected def +(x: scala.Short): scala.Double  = doubleValue + x
+  protected def +(x: scala.Char): scala.Double   = doubleValue + x
+  protected def +(x: scala.Int): scala.Double    = doubleValue + x
+  protected def +(x: scala.Long): scala.Double   = doubleValue + x
+  protected def +(x: scala.Float): scala.Double  = doubleValue + x
+  protected def +(x: scala.Double): scala.Double = doubleValue + x
+
+  protected def -(x: scala.Byte): scala.Double   = doubleValue - x
+  protected def -(x: scala.Short): scala.Double  = doubleValue - x
+  protected def -(x: scala.Char): scala.Double   = doubleValue - x
+  protected def -(x: scala.Int): scala.Double    = doubleValue - x
+  protected def -(x: scala.Long): scala.Double   = doubleValue - x
+  protected def -(x: scala.Float): scala.Double  = doubleValue - x
+  protected def -(x: scala.Double): scala.Double = doubleValue - x
+
+  protected def *(x: scala.Byte): scala.Double   = doubleValue * x
+  protected def *(x: scala.Short): scala.Double  = doubleValue * x
+  protected def *(x: scala.Char): scala.Double   = doubleValue * x
+  protected def *(x: scala.Int): scala.Double    = doubleValue * x
+  protected def *(x: scala.Long): scala.Double   = doubleValue * x
+  protected def *(x: scala.Float): scala.Double  = doubleValue * x
+  protected def *(x: scala.Double): scala.Double = doubleValue * x
+
+  protected def /(x: scala.Byte): scala.Double   = doubleValue / x
+  protected def /(x: scala.Short): scala.Double  = doubleValue / x
+  protected def /(x: scala.Char): scala.Double   = doubleValue / x
+  protected def /(x: scala.Int): scala.Double    = doubleValue / x
+  protected def /(x: scala.Long): scala.Double   = doubleValue / x
+  protected def /(x: scala.Float): scala.Double  = doubleValue / x
+  protected def /(x: scala.Double): scala.Double = doubleValue / x
+
+  protected def %(x: scala.Byte): scala.Double   = doubleValue % x
+  protected def %(x: scala.Short): scala.Double  = doubleValue % x
+  protected def %(x: scala.Char): scala.Double   = doubleValue % x
+  protected def %(x: scala.Int): scala.Double    = doubleValue % x
+  protected def %(x: scala.Long): scala.Double   = doubleValue % x
+  protected def %(x: scala.Float): scala.Double  = doubleValue % x
+  protected def %(x: scala.Double): scala.Double = doubleValue % x
+
 }
 
 object Double {

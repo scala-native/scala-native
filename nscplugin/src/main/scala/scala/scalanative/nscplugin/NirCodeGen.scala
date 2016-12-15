@@ -875,25 +875,78 @@ abstract class NirCodeGen
       val ApplyDynamic(obj, args) = app
       val sym = app.symbol
 
-      val self = genExpr(obj, focus)
+      val params = sym.tpe.params
 
-      genDynMethodCall(sym, self.value, args, self)
+      val isEqOrNeq = (sym.name == nme.eq || sym.name == nme.ne) &&
+        params.size == 1 && params.head.tpe.typeSymbol == ObjectClass
+
+
+      val isEqOrNeq2 = (sym.name.toString == "$eq$eq" || sym.name.toString == "$not$eq")
+
+
+      if(isEqOrNeq) {
+        val last = genClassEquality(obj, args.head, genPrimCode(params.head) == 'O', sym.name == nme.ne, focus)
+        last withOp Op.Box(nir.Type.Class(nir.Global.Top("java.lang.Boolean")), last.value)
+      } else if (isEqOrNeq2) {
+        val last = genClassEquality(obj, args.head, ref = false, sym.name.toString == "$not$eq", focus)
+        last withOp Op.Box(nir.Type.Class(nir.Global.Top("java.lang.Boolean")), last.value)
+      } else {
+
+        val self = genExpr(obj, focus)
+
+        genDynMethodCall(sym, self.value, args, self)
+      }
 
     }
 
     def genDynMethodCall(sym: Symbol, self: Val, argsp: Seq[Tree], focus: Focus): Focus = {
 
       val methodSig    = genMethodSig(sym).asInstanceOf[Type.Function]
+      val params = sym.tpe.params
 
-      val sig          = Type.Function(methodSig.args, nir.Type.Class(nir.Global.Top("java.lang.Object")))
-      val methodName   = genSignature(genMethodName(sym))
-      val (args, last) = genMethodArgs(sym, argsp, focus)
 
-      val method = last withOp Op.Dynmethod(self, methodName.toString)
-      val values = self +: args
+      def isArrayLikeOp = {
+        sym.name == nme.update &&
+          params.size == 2 && params.head.tpe.typeSymbol == IntClass
+      }
 
-      val call = method withOp Op.Call(sig, method.value, values, curUnwind)
-      call withOp Op.As(nir.Type.box.getOrElse(methodSig.ret, methodSig.ret), call.value)
+      def genNormalDynamicCall(arrayUpdate: Boolean, focus: Focus) = {
+
+        val methodName   = if (arrayUpdate) "update_i32_class.java.lang.Object" else genSignature(genMethodName(sym))
+
+        val sig =
+          Type.Function(
+            methodSig.args.head ::
+              methodSig.args.tail.map(ty => Type.box.getOrElse(ty, ty)).toList,
+            nir.Type.Class(nir.Global.Top("java.lang.Object")))
+
+
+        val (args, last) = genMethodArgs(sym, argsp, focus)
+
+
+        val method = last withOp Op.Dynmethod(self, methodName.toString)
+        val values = self +: args
+
+        val call = method withOp Op.Call(sig, method.value, values, curUnwind)
+        call withOp Op.As(nir.Type.box.getOrElse(methodSig.ret, methodSig.ret), call.value)
+      }
+
+      if(isArrayLikeOp) {
+        val last = focus withOp Op.Is(nir.Type.Class(nir.Global.Top("scala.scalanative.runtime.ObjectArray")), self)
+        val cond = ValTree(last.value)
+
+        val thenp = ContTree { focus =>
+          genNormalDynamicCall(true, focus)
+        }
+        val elsep = ContTree { focus =>
+          genNormalDynamicCall(false, focus)
+        }
+        genIf(Type.Class(nir.Global.Top("java.lang.Object")), cond, thenp, elsep, last)
+
+      } else {
+        genNormalDynamicCall(false, focus)
+      }
+
     }
 
     def genSignature(methodName: nir.Global): String = {

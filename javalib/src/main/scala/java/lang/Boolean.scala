@@ -16,6 +16,22 @@ final class Boolean(val booleanValue: scala.Boolean)
 
   @inline override def toString(): String =
     Boolean.toString(booleanValue)
+
+  /*
+   * Methods on scala.Boolean
+   * The following methods are only here to properly support reflective calls
+   * on boxed primitive values. YOU WILL NOT BE ABLE TO USE THESE METHODS, since
+   * we use the true javalib to lookup symbols, this file contains only
+   * implementations.
+   */
+
+  protected def unary_! : scala.Boolean             = !booleanValue
+  protected def ||(x: scala.Boolean): scala.Boolean = booleanValue || x
+  protected def &&(x: scala.Boolean): scala.Boolean = booleanValue && x
+  protected def |(x: scala.Boolean): scala.Boolean  = booleanValue | x
+  protected def &(x: scala.Boolean): scala.Boolean  = booleanValue & x
+  protected def ^(x: scala.Boolean): scala.Boolean  = booleanValue ^ x
+
 }
 
 object Boolean {

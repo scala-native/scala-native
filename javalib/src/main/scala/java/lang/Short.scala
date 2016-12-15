@@ -39,6 +39,125 @@ final class Short(override val shortValue: scala.Short)
 
   @inline override def toString(): String =
     Short.toString(shortValue)
+
+  /*
+   * Methods on scala.Short
+   * The following methods are only here to properly support reflective calls
+   * on boxed primitive values. YOU WILL NOT BE ABLE TO USE THESE METHODS, since
+   * we use the true javalib to lookup symbols, this file contains only
+   * implementations.
+   */
+  protected def toByte: scala.Byte     = shortValue.toByte
+  protected def toShort: scala.Short   = shortValue
+  protected def toChar: scala.Char     = shortValue.toChar
+  protected def toInt: scala.Int       = shortValue.toInt
+  protected def toLong: scala.Long     = shortValue.toLong
+  protected def toFloat: scala.Float   = shortValue.toFloat
+  protected def toDouble: scala.Double = shortValue.toDouble
+
+  protected def unary_~ : scala.Int = ~shortValue.toInt
+  protected def unary_+ : scala.Int = shortValue.toInt
+  protected def unary_- : scala.Int = -shortValue.toInt
+
+  protected def +(x: String): String = shortValue + x
+
+  protected def <<(x: scala.Int): scala.Int   = shortValue << x
+  protected def <<(x: scala.Long): scala.Int  = shortValue << x
+  protected def >>>(x: scala.Int): scala.Int  = shortValue >>> x
+  protected def >>>(x: scala.Long): scala.Int = shortValue >>> x
+  protected def >>(x: scala.Int): scala.Int   = shortValue >> x
+  protected def >>(x: scala.Long): scala.Int  = shortValue >> x
+
+  protected def <(x: scala.Byte): scala.Boolean   = shortValue < x
+  protected def <(x: scala.Short): scala.Boolean  = shortValue < x
+  protected def <(x: scala.Char): scala.Boolean   = shortValue < x
+  protected def <(x: scala.Int): scala.Boolean    = shortValue < x
+  protected def <(x: scala.Long): scala.Boolean   = shortValue < x
+  protected def <(x: scala.Float): scala.Boolean  = shortValue < x
+  protected def <(x: scala.Double): scala.Boolean = shortValue < x
+
+  protected def <=(x: scala.Byte): scala.Boolean   = shortValue <= x
+  protected def <=(x: scala.Short): scala.Boolean  = shortValue <= x
+  protected def <=(x: scala.Char): scala.Boolean   = shortValue <= x
+  protected def <=(x: scala.Int): scala.Boolean    = shortValue <= x
+  protected def <=(x: scala.Long): scala.Boolean   = shortValue <= x
+  protected def <=(x: scala.Float): scala.Boolean  = shortValue <= x
+  protected def <=(x: scala.Double): scala.Boolean = shortValue <= x
+
+  protected def >(x: scala.Byte): scala.Boolean   = shortValue > x
+  protected def >(x: scala.Short): scala.Boolean  = shortValue > x
+  protected def >(x: scala.Char): scala.Boolean   = shortValue > x
+  protected def >(x: scala.Int): scala.Boolean    = shortValue > x
+  protected def >(x: scala.Long): scala.Boolean   = shortValue > x
+  protected def >(x: scala.Float): scala.Boolean  = shortValue > x
+  protected def >(x: scala.Double): scala.Boolean = shortValue > x
+
+  protected def >=(x: scala.Byte): scala.Boolean   = shortValue >= x
+  protected def >=(x: scala.Short): scala.Boolean  = shortValue >= x
+  protected def >=(x: scala.Char): scala.Boolean   = shortValue >= x
+  protected def >=(x: scala.Int): scala.Boolean    = shortValue >= x
+  protected def >=(x: scala.Long): scala.Boolean   = shortValue >= x
+  protected def >=(x: scala.Float): scala.Boolean  = shortValue >= x
+  protected def >=(x: scala.Double): scala.Boolean = shortValue >= x
+
+  protected def |(x: scala.Byte): scala.Int  = shortValue | x
+  protected def |(x: scala.Short): scala.Int = shortValue | x
+  protected def |(x: scala.Char): scala.Int  = shortValue | x
+  protected def |(x: scala.Int): scala.Int   = shortValue | x
+  protected def |(x: scala.Long): scala.Long = shortValue | x
+
+  protected def &(x: scala.Byte): scala.Int  = shortValue & x
+  protected def &(x: scala.Short): scala.Int = shortValue & x
+  protected def &(x: scala.Char): scala.Int  = shortValue & x
+  protected def &(x: scala.Int): scala.Int   = shortValue & x
+  protected def &(x: scala.Long): scala.Long = shortValue & x
+
+  protected def ^(x: scala.Byte): scala.Int  = shortValue ^ x
+  protected def ^(x: scala.Short): scala.Int = shortValue ^ x
+  protected def ^(x: scala.Char): scala.Int  = shortValue ^ x
+  protected def ^(x: scala.Int): scala.Int   = shortValue ^ x
+  protected def ^(x: scala.Long): scala.Long = shortValue ^ x
+
+  protected def +(x: scala.Byte): scala.Int      = shortValue + x
+  protected def +(x: scala.Short): scala.Int     = shortValue + x
+  protected def +(x: scala.Char): scala.Int      = shortValue + x
+  protected def +(x: scala.Int): scala.Int       = shortValue + x
+  protected def +(x: scala.Long): scala.Long     = shortValue + x
+  protected def +(x: scala.Float): scala.Float   = shortValue + x
+  protected def +(x: scala.Double): scala.Double = shortValue + x
+
+  protected def -(x: scala.Byte): scala.Int      = shortValue - x
+  protected def -(x: scala.Short): scala.Int     = shortValue - x
+  protected def -(x: scala.Char): scala.Int      = shortValue - x
+  protected def -(x: scala.Int): scala.Int       = shortValue - x
+  protected def -(x: scala.Long): scala.Long     = shortValue - x
+  protected def -(x: scala.Float): scala.Float   = shortValue - x
+  protected def -(x: scala.Double): scala.Double = shortValue - x
+
+  protected def *(x: scala.Byte): scala.Int      = shortValue * x
+  protected def *(x: scala.Short): scala.Int     = shortValue * x
+  protected def *(x: scala.Char): scala.Int      = shortValue * x
+  protected def *(x: scala.Int): scala.Int       = shortValue * x
+  protected def *(x: scala.Long): scala.Long     = shortValue * x
+  protected def *(x: scala.Float): scala.Float   = shortValue * x
+  protected def *(x: scala.Double): scala.Double = shortValue * x
+
+  protected def /(x: scala.Byte): scala.Int      = shortValue / x
+  protected def /(x: scala.Short): scala.Int     = shortValue / x
+  protected def /(x: scala.Char): scala.Int      = shortValue / x
+  protected def /(x: scala.Int): scala.Int       = shortValue / x
+  protected def /(x: scala.Long): scala.Long     = shortValue / x
+  protected def /(x: scala.Float): scala.Float   = shortValue / x
+  protected def /(x: scala.Double): scala.Double = shortValue / x
+
+  protected def %(x: scala.Byte): scala.Int      = shortValue % x
+  protected def %(x: scala.Short): scala.Int     = shortValue % x
+  protected def %(x: scala.Char): scala.Int      = shortValue % x
+  protected def %(x: scala.Int): scala.Int       = shortValue % x
+  protected def %(x: scala.Long): scala.Long     = shortValue % x
+  protected def %(x: scala.Float): scala.Float   = shortValue % x
+  protected def %(x: scala.Double): scala.Double = shortValue % x
+
 }
 
 object Short {
