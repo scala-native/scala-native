@@ -24,6 +24,7 @@ object Driver {
       Seq(pass.GlobalBoxingElimination,
           pass.DeadCodeElimination,
           pass.GlobalValueNumbering,
+          pass.CopyPropagation,
           pass.MainInjection,
           pass.ExternHoisting,
           pass.ModuleLowering,
