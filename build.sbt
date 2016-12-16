@@ -118,6 +118,43 @@ lazy val projectSettings =
     resolvers := Nil
   )
 
+lazy val root =
+  project
+    .in(file("."))
+    .settings(
+      clean := {
+        val forceCleanCache = cleanCache.toTask("").value
+        val forceCleanLocal = cleanLocal.toTask("").value
+        clean.value
+      },
+      publishLocal := {
+        val forcePublishLocal0 = (publishLocal in nscplugin).value
+        val forcePublishLocal1 = (publishLocal in nativelib).value
+        val forcePublishLocal2 = publishLocal.value
+      },
+      test := {
+        val forceRun0 = (run in sandbox).toTask("").value
+        val forceRun1 = (run in demoNative).toTask("").value
+        val forceRun2 = (run in tests).toTask("").value
+        val forceTest = (test in Test in tools).value
+        val forceRun3 = (run in benchmarks).toTask("").value
+        (scripted in sbtScalaNative).toTask("").value
+      }
+    )
+    .aggregate(util,
+               nir,
+               tools,
+               nscplugin,
+               sbtScalaNative,
+               nativelib,
+               scalalib,
+               javalib,
+               demoJVM,
+               demoNative,
+               tests,
+               sandbox,
+               benchmarks)
+
 lazy val util =
   project.in(file("util")).settings(toolSettings).settings(publishSettings)
 
