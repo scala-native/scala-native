@@ -32,6 +32,13 @@ object ScalaNativePlugin extends AutoPlugin {
 
     val nativeSharedLibrary = settingKey[Boolean](
       "Will create a shared library instead of a program with a main method.")
+
+    val nativeEnableProfiling = settingKey[Boolean](
+      "Whether to enable profiling of the produced binary.")
+
+    val nativeProfilingLocation =
+      settingKey[File]("Directory where to write the results of profiling.")
+
   }
 
   override def projectSettings: Seq[Setting[_]] = (
