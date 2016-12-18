@@ -1,6 +1,8 @@
 package scala.scalanative
 package optimizer
 package analysis
+import scala.scalanative.nir.{Global, Type, Val}
+import scala.scalanative.optimizer.analysis.ClassHierarchy.Method
 
 /**
  *
@@ -46,7 +48,7 @@ object PerfectHashMap {
         case bucket :: tail if bucket.size > 1 =>
           /**
            * Finds slots for all element of a bucket.
-           * Returns None, if no placement is found.
+           * Returns None, if no placement is found and MAX_D_VALUE is reached
            *
            */
           def findSlots(d: Int,
@@ -140,7 +142,7 @@ class PerfectHashMap[K, V](val keys: Seq[Int],
                            val values: Seq[Option[V]],
                            hashFunc: (K, Long) => Long) {
 
-  lazy val size = keys.length
+  lazy val size: Int = keys.length
 
   def perfectLookup(key: K): V = {
     val h1 = PerfectHashMap.mod(hashFunc(key, 0), size)
@@ -152,5 +154,45 @@ class PerfectHashMap[K, V](val keys: Seq[Int],
       val h2 = PerfectHashMap.mod(hashFunc(key, d), size)
       values(h2).get
     }
+  }
+}
+
+object DynmethodPerfectHashMap {
+  def apply(dynmethods: Seq[Method]): Val.Struct = {
+
+    val entries = dynmethods.foldLeft(Map[String, Val]()) { (acc, m) =>
+      acc + (Global.genSignature(m.name, proxy = true) -> m.value)
+    }
+
+    val perfectHashMap = PerfectHashMap[String, Val](hash, entries)
+
+    /**
+      To make the dispatch faster, when there is only one method,
+      the method pointer is at the place of the key array pointer and there is no values array.
+     **/
+    Val.Struct(
+      Global.None,
+      Val.I32(perfectHashMap.size) ::
+        (perfectHashMap.size match {
+          case 0 =>
+            List(Val.Null, Val.Null)
+          case 1 =>
+            List(perfectHashMap.values.head.get, Val.Null)
+          case _ =>
+            List(
+              Val.Const(Val.Array(Type.I32, perfectHashMap.keys.map(Val.I32))),
+              Val.Const(
+                Val.Array(Type.Ptr,
+                          perfectHashMap.values.map(_.getOrElse(Val.Null)))
+              )
+            )
+        })
+    )
+  }
+
+  private def hash(key: String, seed: Long): Long = key.foldLeft(seed) {
+    case (hash, c) =>
+      val inter = hash ^ c.toInt
+      inter + (inter << 1) + (inter << 4) + (inter << 5) + (inter << 7) + (inter << 8) + (inter << 40);
   }
 }

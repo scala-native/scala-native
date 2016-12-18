@@ -5,8 +5,8 @@ package pass
 import analysis.ClassHierarchy._
 import nir._
 
-/** Eliminates:
- *  - Op.Dynmethod
+/** Translates high-level structural-type method calls into
+ *  low-level dispatch based on a dynmethodtable
  */
 class DynmethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
   import DynmethodLowering._
@@ -27,10 +27,6 @@ class DynmethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
       val methptrptrElsee     = Val.Local(fresh(), Type.Ptr)
       val methptrptr          = Val.Local(fresh(), Type.Ptr)
 
-      val tpe1 = Type.Struct(
-        Global.None,
-        Seq(Rt.Type.tys, Seq(Type.Struct(Global.None, Seq(Type.Ptr)))).flatten)
-
       val tpe2 = Type.Struct(
         Global.None,
         Seq(Type.I32,
@@ -38,17 +34,22 @@ class DynmethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
             Type.Struct(Global.None, Seq(Type.I32, Type.Ptr, Type.Ptr))))
 
       Seq(
+        // Load the type information pointer
         Inst.Let(typeptr.name, Op.Load(Type.Ptr, obj)),
+        // Load the pointer of the table size
         Inst.Let(
           methodCountPtr.name,
           Op.Elem(tpe2, typeptr, Seq(Val.I32(0), Val.I32(2), Val.I32(0)))),
+        // Load the table size
         Inst.Let(methodCount.name, Op.Load(Type.I32, methodCountPtr)),
+        // Test if size is 1
         Inst.Let(
           cond.name,
           Op.Comp(Comp.Ieq, Type.I32, methodCount, Val.I32(1))
         ),
         Inst.If(cond, thenn, elsee),
         Inst.Label(thenn.name, Seq()),
+        // If size is 1, method pointer is in the second place of the struct, no need the call C function
         Inst.Let(
           methptrptrThenn.name,
           Op.Elem(tpe2, typeptr, Seq(Val.I32(0), Val.I32(2), Val.I32(1)))),
@@ -56,9 +57,11 @@ class DynmethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
           Next.Label(endifName,
                      Seq(Val.Local(methptrptrThenn.name, Type.Ptr)))),
         Inst.Label(elsee.name, Seq()),
+        // If the size is greater than 1, call the C function "scalanative_dyndispatch"
+        // with the signature and it's length as argument
         Inst.Let(
           dyndispatchTablePtr.name,
-          Op.Elem(tpe1, typeptr, Seq(Val.I32(0), Val.I32(2), Val.I32(0)))),
+          Op.Elem(tpe2, typeptr, Seq(Val.I32(0), Val.I32(2), Val.I32(0)))),
         Inst.Let(
           methptrptrElsee.name,
           Op.Call(dyndispatchSig,

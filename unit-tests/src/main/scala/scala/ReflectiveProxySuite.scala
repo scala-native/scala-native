@@ -93,13 +93,11 @@ object ReflectiveProxySuite extends tests.Suite {
     assert(fDouble(-1.5) == -1.0714285714285714)
 
     def fBoolean(x: Any { def &&(x: Boolean): Boolean }): Boolean =
-      x && true // scalastyle:ignore
+      x && true
     assert(!fBoolean(false))
     assert(fBoolean(true))
   }
 
-  /*
-  == missing
   test("should work with equality operators on primitive types") {
     def fNum(obj: Any { def ==(x: Int): Boolean }): Boolean = obj == 5
     assert(fNum(5.toByte))
@@ -116,7 +114,7 @@ object ReflectiveProxySuite extends tests.Suite {
     assert(!fNum(5.6f))
     assert(fNum(5.0))
     assert(!fNum(7.9))
-    def fBool(obj: Any { def ==(x: Boolean): Boolean }): Boolean = obj == false // scalastyle:ignore
+    def fBool(obj: Any { def ==(x: Boolean): Boolean }): Boolean = obj == false
     assert(!fBool(true))
     assert(fBool(false))
 
@@ -135,11 +133,11 @@ object ReflectiveProxySuite extends tests.Suite {
     assert(fNumN(5.6f))
     assert(!fNumN(5.0))
     assert(fNumN(7.9))
-    def fBoolN(obj: Any { def !=(x: Boolean): Boolean }): Boolean = obj != false // scalastyle:ignore
+    def fBoolN(obj: Any { def !=(x: Boolean): Boolean }): Boolean =
+      obj != false
     assert(fBoolN(true))
     assert(!fBoolN(false))
-
-  }*/
+  }
 
   test("should work with Arrays") {
     type UPD   = { def update(i: Int, x: String): Unit }
@@ -230,7 +228,7 @@ object ReflectiveProxySuite extends tests.Suite {
     assert(y.foo(Some("hello")).asInstanceOf[Any] == 1)
   }
 
-  test("should work on java.lang.Object.{ notify, notifyAll } - #303") {
+  test("should work on java.lang.Object.{ notify, notifyAll }") {
     type ObjNotifyLike = Any {
       def notify(): Unit
       def notifyAll(): Unit
@@ -247,8 +245,7 @@ object ReflectiveProxySuite extends tests.Suite {
   }
 
   /*
-  Not working clone not implementated
-  test("should work on java.lang.Object.clone - #303") {
+  test("should work on java.lang.Object.clone") {
     type ObjCloneLike = Any { def clone(): AnyRef }
     def objCloneTest(obj: ObjCloneLike): AnyRef = obj.clone()
 
@@ -263,9 +260,7 @@ object ReflectiveProxySuite extends tests.Suite {
     assert(bClone.x == 1)
   }*/
 
-  /*
-  ne eq missing
-  test("should work on scala.AnyRef.{ eq, ne } - #303") {
+  test("should work on scala.AnyRef.{ eq, ne }") {
     type ObjEqLike = Any {
       def eq(that: AnyRef): Boolean
       def ne(that: AnyRef): Boolean
@@ -278,15 +273,15 @@ object ReflectiveProxySuite extends tests.Suite {
     val a1 = new A
     val a2 = new A
 
-    assert(!objEqTest(a1,a2))
-    assert(objEqTest(a1,a1))
+    assert(!objEqTest(a1, a2))
+    assert(objEqTest(a1, a1))
 
-    assert(objNeTest(a1,a2))
-    assert(!objNeTest(a1,a1))
-  }*/
+    assert(objNeTest(a1, a2))
+    assert(!objNeTest(a1, a1))
+  }
 
-  test("should work with default arguments - #390") {
-    def pimpIt(a: Int) = new { // scalastyle:ignore
+  test("should work with default arguments") {
+    def pimpIt(a: Int) = new {
       def foo(b: Int, c: Int = 1): Int = a + b + c
     }
 
@@ -294,7 +289,7 @@ object ReflectiveProxySuite extends tests.Suite {
     assert(pimpIt(2).foo(2, 4) == 8)
   }
 
-  test("should unbox all types of arguments - #899") {
+  test("should unbox all types of arguments") {
     class Foo {
       def makeInt: Int          = 5
       def testInt(x: Int): Unit = assert(x == 5)

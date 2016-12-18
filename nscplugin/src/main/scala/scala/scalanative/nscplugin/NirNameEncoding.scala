@@ -53,10 +53,11 @@ trait NirNameEncoding { self: NirCodeGen =>
     val id    = nativeIdOf(sym)
     val tpe   = sym.tpe.widen
     val mangledParams =
-      tpe.params.toSeq.map(p => mangledType(p.info))
+      tpe.params.map(p => mangledType(p.info))
 
     val mangledRetty = mangledType(tpe.resultType)
-    (owner member (id +: (mangledParams :+ mangledRetty)).mkString("_")).toString
+    (owner member (id.replace("_", "__") +: (mangledParams :+ mangledRetty))
+      .mkString("_")).toString
   }
 
   def genMethodName(sym: Symbol): nir.Global = {
