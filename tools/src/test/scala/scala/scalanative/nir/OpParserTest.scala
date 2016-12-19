@@ -101,6 +101,13 @@ class OpParserTest extends FlatSpec with Matchers {
     result should be(method)
   }
 
+  it should "parse `Op.Dynmethod`" in {
+    val signature     = "signature"
+    val dynmethod: Op = Op.Dynmethod(Val.None, signature)
+    val Parsed.Success(result, _) =
+      parser.Op.Dynmethod.parse(dynmethod.show)
+    result should be(dynmethod)
+  }
   it should "parse `Op.Module` without unwind" in {
     val module: Op                = Op.Module(global, Next.None)
     val Parsed.Success(result, _) = parser.Op.Module.parse(module.show)

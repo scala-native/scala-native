@@ -39,7 +39,6 @@ object ReflectiveProxy {
   private def genProxyArgs(defnTy: Type.Function) =
     defnTy.args.map(argty => Type.box.getOrElse(argty, argty))
 
-
   private def genProxyTy(defnTy: Type.Function, args: Seq[Type]) =
     Type.Function(args, defnTy.ret match {
       case Type.Unit => Type.Unit
@@ -75,7 +74,8 @@ object ReflectiveProxy {
           }
           .toList
 
-    Inst.Let(Op.Call(defnTy, Val.Local(method.name, Type.Ptr), callParams, Next.None))
+    Inst.Let(
+      Op.Call(defnTy, Val.Local(method.name, Type.Ptr), callParams, Next.None))
   }
 
   private def genRetValBox(callName: Local,
@@ -109,6 +109,8 @@ object ReflectiveProxy {
             } else {
               acc
             }
+          case (acc, _) =>
+            acc
         }
         .values
 
