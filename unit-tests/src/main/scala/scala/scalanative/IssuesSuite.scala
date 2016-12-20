@@ -97,4 +97,15 @@ object IssuesSuite extends tests.Suite {
     // this used not to link
     val cls = classOf[Array[Unit]]
   }
+
+  test("#449") {
+    import scalanative.native.Ptr
+    import scala.scalanative.runtime.ByteArray
+    val bytes = new Array[Byte](2)
+    bytes(0) = 'b'.toByte
+    bytes(1) = 'a'.toByte
+    val p: Ptr[Byte] = bytes.asInstanceOf[ByteArray].at(0)
+    assert(!p == 'b'.toByte)
+    assert(!(p + 1) == 'a'.toByte)
+  }
 }
