@@ -325,63 +325,58 @@ object Integer {
       } else if (i == MIN_VALUE) {
         "-2147483648"
       } else {
-        val buffer = new Array[Char](11)
-        var positive_value =
-          if (i < 0) -i
-          else i
-        var first_digit = 0
+        val buffer         = new Array[Char](11)
+        var positive_value = if (negative) -i else i
+        var first_digit    = 0
         if (negative) {
           buffer(0) = '-'
           first_digit += 1
         }
 
-        var last_digit  = first_digit
-        var count       = 0
-        var number: Int = 0
-        var start       = false
-        var k           = 0
+        var last_digit = first_digit
+        var count      = 0
+        var number     = 0
+        var start      = false
+        var k          = 0
         while (k < 9) {
           count = 0
           number = decimalScale(k)
+
           if (positive_value < number) {
             if (start) {
               buffer(last_digit) = '0'
               last_digit += 1
             }
-          }
+          } else {
+            if (k > 0) {
+              number = decimalScale(k) << 3
+              if (positive_value >= number) {
+                positive_value -= number
+                count += 8
+              }
 
-          if (k > 0) {
-            number = decimalScale(k) << 3
+              number = decimalScale(k) << 2
+              if (positive_value >= number) {
+                positive_value -= number
+                count += 4
+              }
+            }
+            number = decimalScale(k) << 1
             if (positive_value >= number) {
               positive_value -= number
-              count += 8
+              count += 2
             }
-
-            number = decimalScale(k) << 2
-            if (positive_value >= number) {
-              positive_value -= number
-              count += 4
+            if (positive_value >= decimalScale(k)) {
+              positive_value -= decimalScale(k)
+              count += 1
             }
-          }
-
-          number = decimalScale(k) << 1
-          if (positive_value >= number) {
-            positive_value -= number
-            count += 2
-          }
-
-          if (positive_value >= decimalScale(k)) {
-            positive_value -= decimalScale(k)
-            count += 1
-          }
-
-          if (count > 0 && !start) {
-            start = true
-          }
-
-          if (start) {
-            buffer(last_digit) = (count + '0').toChar
-            last_digit += 1
+            if (count > 0 && !start) {
+              start = true
+            }
+            if (start) {
+              buffer(last_digit) = (count + '0').toChar
+              last_digit += 1
+            }
           }
 
           k += 1
