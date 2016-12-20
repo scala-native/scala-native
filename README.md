@@ -38,6 +38,9 @@ updates.](http://twitter.com/scala_native)
 
   val ptr = stdlib.malloc(32)
   ```
+  
+  Use the `@link("libraryname")` annotation to automatically link with
+  a native library whenever an annotated extern object is used. (e.g. `@link("png")` to link with "libpng")
 
   Calling C code has never been easier.
   With the help of extern objects you can
