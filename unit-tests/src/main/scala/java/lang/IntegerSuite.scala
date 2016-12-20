@@ -1,110 +1,123 @@
 package java.lang
 
 object IntegerSuite extends tests.Suite {
+  val signedMaxValue     = Integer.MAX_VALUE
+  val signedMaxValueText = "2147483647"
+  val signedMinValue     = Integer.MIN_VALUE
+  val signedMinValueText = "-2147483648"
+
+  val signedMaxPlusOneText  = "2147483648"
+  val signedMinMinusOneText = "-2147483649"
 
   val unsignedMaxValue       = -1
   val unsignedMaxValueText   = "4294967295"
   val unsignedMaxPlusOneText = "4294967296"
 
   test("parseInt") {
-    assert(Integer.parseInt("-1").equals(-1))
-    assert(Integer.parseInt("+1").equals(1))
-    assert(Integer.parseInt("1").equals(1))
+    import Integer.{parseInt => parse}
 
-    assert(Integer.parseInt("-123").equals(-123))
-    assert(Integer.parseInt("+123").equals(123))
-    assert(Integer.parseInt("123").equals(123))
+    assert(parse("-1") == -1)
+    assert(parse("+1") == 1)
+    assert(parse("1") == 1)
+    assert(parse("-123") == -123)
+    assert(parse("+123") == 123)
+    assert(parse("123") == 123)
+    assert(parse("-100", 2) == -4)
+    assert(parse("+100", 2) == 4)
+    assert(parse("100", 2) == 4)
+    assert(parse("-0") == 0)
+    assert(parse("+0") == 0)
+    assert(parse("00") == 0)
+    assert(parse(signedMaxValueText) == signedMaxValue)
+    assert(parse(signedMinValueText) == signedMinValue)
 
-    assert(Integer.parseInt("-100", 2).equals(-4))
-    assert(Integer.parseInt("+100", 2).equals(4))
-    assert(Integer.parseInt("100", 2).equals(4))
-
-    assert(Integer.parseInt("-0").equals(0))
-    assert(Integer.parseInt("+0").equals(0))
-    assert(Integer.parseInt("00").equals(0))
-
-    assert(
-      Integer.parseInt(Integer.MAX_VALUE.toString).equals(Integer.MAX_VALUE))
-    assert(
-      Integer.parseInt(Integer.MIN_VALUE.toString).equals(Integer.MIN_VALUE))
-
-    assertThrows[NumberFormatException](Integer.parseInt(null))
-    assertThrows[NumberFormatException](Integer.parseInt(""))
-    assertThrows[NumberFormatException](
-      Integer.parseInt("123", Character.MIN_RADIX - 1))
-    assertThrows[NumberFormatException](
-      Integer.parseInt("123", Character.MAX_RADIX + 1))
-    assertThrows[NumberFormatException](Integer.parseInt("123a", 10))
-    assertThrows[NumberFormatException](
-      Integer.parseInt((Integer.MAX_VALUE.toLong + 1).toString))
-    assertThrows[NumberFormatException](
-      Integer.parseInt((Integer.MIN_VALUE.toLong - 1).toString))
-
+    assertThrows[NumberFormatException](parse(null))
+    assertThrows[NumberFormatException](parse("+"))
+    assertThrows[NumberFormatException](parse("-"))
+    assertThrows[NumberFormatException](parse(""))
+    assertThrows[NumberFormatException](parse("123", Character.MIN_RADIX - 1))
+    assertThrows[NumberFormatException](parse("123", Character.MAX_RADIX + 1))
+    assertThrows[NumberFormatException](parse("123a", 10))
+    assertThrows[NumberFormatException](parse(signedMinMinusOneText))
+    assertThrows[NumberFormatException](parse(signedMaxPlusOneText))
   }
 
   test("parseUnsignedInt") {
-    assert(Integer.parseUnsignedInt("1").equals(1))
-    assert(Integer.parseUnsignedInt("+1").equals(1))
+    import Integer.{parseUnsignedInt => parse}
 
-    assert(Integer.parseUnsignedInt("0").equals(0))
-    assert(Integer.parseUnsignedInt("00").equals(0))
+    assert(parse("1") == 1)
+    assert(parse("+1") == 1)
+    assert(parse("0") == 0)
+    assert(parse("00") == 0)
+    assert(parse("+100", 2) == 4)
+    assert(parse("100", 2) == 4)
+    assert(parse(unsignedMaxValueText) == unsignedMaxValue)
 
-    assert(Integer.parseUnsignedInt("+100", 2).equals(4))
-    assert(Integer.parseUnsignedInt("100", 2).equals(4))
-
-    assert(
-      Integer.parseUnsignedInt(unsignedMaxValueText).equals(unsignedMaxValue))
-
-    assertThrows[NumberFormatException](Integer.parseUnsignedInt(null))
-    assertThrows[NumberFormatException](Integer.parseUnsignedInt("+"))
-    assertThrows[NumberFormatException](Integer.parseUnsignedInt("-"))
-    assertThrows[NumberFormatException](Integer.parseUnsignedInt(""))
-    assertThrows[NumberFormatException](Integer.parseUnsignedInt("-1"))
-    assertThrows[NumberFormatException](
-      Integer.parseUnsignedInt("123", Character.MIN_RADIX - 1))
-    assertThrows[NumberFormatException](
-      Integer.parseUnsignedInt("123", Character.MAX_RADIX + 1))
-    assertThrows[NumberFormatException](Integer.parseUnsignedInt("123a", 10))
-    assertThrows[NumberFormatException](
-      Integer.parseUnsignedInt(unsignedMaxPlusOneText))
+    assertThrows[NumberFormatException](parse(null))
+    assertThrows[NumberFormatException](parse("+"))
+    assertThrows[NumberFormatException](parse("-"))
+    assertThrows[NumberFormatException](parse(""))
+    assertThrows[NumberFormatException](parse("-1"))
+    assertThrows[NumberFormatException](parse("123", Character.MIN_RADIX - 1))
+    assertThrows[NumberFormatException](parse("123", Character.MAX_RADIX + 1))
+    assertThrows[NumberFormatException](parse("123a", 10))
+    assertThrows[NumberFormatException](parse(unsignedMaxPlusOneText))
 
     val octalMulOverflow = "137777777770"
     // in binary:
     // octalMulOverflow:  01011111111111111111111111111111000
     // max unsigned:      00011111111111111111111111111111111
-    assertThrows[NumberFormatException](
-      Integer.parseUnsignedInt(octalMulOverflow, 8))
+    assertThrows[NumberFormatException](parse(octalMulOverflow, 8))
   }
 
   test("toString") {
-    assert(Integer.toUnsignedString(0).equals("0"))
-    assert(Integer.toString(1).equals("1"))
-    assert(Integer.toString(-1).equals("-1"))
-    assert(Integer.toString(123).equals("123"))
-    assert(Integer.toString(-123).equals("-123"))
-    assert(Integer.toString(1234).equals("1234"))
-    assert(Integer.toString(-1234).equals("-1234"))
+    import java.lang.Integer.{toString => toStr}
+
+    assert(toStr(0) == "0")
+    assert(toStr(1) == "1")
+    assert(toStr(12) == "12")
+    assert(toStr(123) == "123")
+    assert(toStr(1234) == "1234")
+    assert(toStr(12345) == "12345")
+    assert(toStr(10) == "10")
+    assert(toStr(100) == "100")
+    assert(toStr(1000) == "1000")
+    assert(toStr(10000) == "10000")
+    assert(toStr(100000) == "100000")
+    assert(toStr(101010) == "101010")
+    assert(toStr(111111) == "111111")
+    assert(toStr(-1) == "-1")
+    assert(toStr(-12) == "-12")
+    assert(toStr(-123) == "-123")
+    assert(toStr(-1234) == "-1234")
+    assert(toStr(-12345) == "-12345")
+    assert(toStr(signedMaxValue) == signedMaxValueText)
+    assert(toStr(signedMinValue) == signedMinValueText)
   }
 
   test("toUnsignedString") {
-    assert(Integer.toUnsignedString(0).equals("0"))
-    assert(Integer.toUnsignedString(1).equals("1"))
-    assert(
-      Integer.toUnsignedString(unsignedMaxValue).equals(unsignedMaxValueText))
-    assert(Integer.toUnsignedString(123).equals("123"))
-    assert(Integer.toUnsignedString(-123).equals("4294967173"))
-    assert(Integer.toUnsignedString(1234).equals("1234"))
-    assert(Integer.toUnsignedString(-1234).equals("4294966062"))
+    import java.lang.Integer.{toUnsignedString => toStr}
+
+    assert(toStr(0) == "0")
+    assert(toStr(1) == "1")
+    assert(toStr(12) == "12")
+    assert(toStr(123) == "123")
+    assert(toStr(1234) == "1234")
+    assert(toStr(12345) == "12345")
+    assert(toStr(-1) == "4294967295")
+    assert(toStr(-12) == "4294967284")
+    assert(toStr(-123) == "4294967173")
+    assert(toStr(-1234) == "4294966062")
+    assert(toStr(-12345) == "4294954951")
+    assert(toStr(unsignedMaxValue) == unsignedMaxValueText)
   }
 
   test("equals") {
-    assert(new Integer(0).equals(new Integer(0)))
-    assert(new Integer(1).equals(new Integer(1)))
-    assert(new Integer(-1).equals(new Integer(-1)))
-    assert(new Integer(123).equals(new Integer(123)))
-    assert(
-      new Integer(Integer.MAX_VALUE) equals new Integer(Integer.MAX_VALUE))
-    assert(
-      new Integer(Integer.MIN_VALUE) equals new Integer(Integer.MIN_VALUE))
+    assert(new Integer(0) == new Integer(0))
+    assert(new Integer(1) == new Integer(1))
+    assert(new Integer(-1) == new Integer(-1))
+    assert(new Integer(123) == new Integer(123))
+    assert(new Integer(Integer.MAX_VALUE) == new Integer(Integer.MAX_VALUE))
+    assert(new Integer(Integer.MIN_VALUE) == new Integer(Integer.MIN_VALUE))
   }
 }

@@ -1,99 +1,123 @@
 package java.lang
 
 object LongSuite extends tests.Suite {
-  val unsignedMaxValueText   = "18446744073709551615"
-  val unsignedMaxPlusOneText = "18446744073709551616"
-  val unsignedMaxValue       = -1L
+  val signedMaxValue     = Long.MAX_VALUE
+  val signedMaxValueText = "9223372036854775807"
+  val signedMinValue     = Long.MIN_VALUE
+  val signedMinValueText = "-9223372036854775808"
 
   val signedMaxPlusOneText  = "9223372036854775808"
   val signedMinMinusOneText = "-9223372036854775809"
 
+  val unsignedMaxValue       = -1L
+  val unsignedMaxValueText   = "18446744073709551615"
+  val unsignedMaxPlusOneText = "18446744073709551616"
+
   test("parseLong") {
-    assert(Long.parseLong("-1").equals(-1L))
-    assert(Long.parseLong("+1").equals(1L))
-    assert(Long.parseLong("1").equals(1L))
+    import Long.{parseLong => parse}
 
-    assert(Long.parseLong("-123").equals(-123L))
-    assert(Long.parseLong("+123").equals(123L))
-    assert(Long.parseLong("123").equals(123L))
+    assert(parse("-1") == -1L)
+    assert(parse("+1") == 1L)
+    assert(parse("1") == 1L)
+    assert(parse("-123") == -123L)
+    assert(parse("+123") == 123L)
+    assert(parse("123") == 123L)
+    assert(parse("-100", 2) == -4L)
+    assert(parse("+100", 2) == 4L)
+    assert(parse("100", 2) == 4L)
+    assert(parse("-0") == 0L)
+    assert(parse("+0") == 0L)
+    assert(parse("00") == 0L)
+    assert(parse(signedMaxValueText) == signedMaxValue)
+    assert(parse(signedMinValueText) == signedMinValue)
 
-    assert(Long.parseLong("-100", 2).equals(-4L))
-    assert(Long.parseLong("+100", 2).equals(4L))
-    assert(Long.parseLong("100", 2).equals(4L))
-
-    assert(Long.parseLong("-0").equals(0L))
-    assert(Long.parseLong("+0").equals(0L))
-    assert(Long.parseLong("00").equals(0L))
-
-    assert(Long.parseLong(Long.MAX_VALUE.toString).equals(Long.MAX_VALUE))
-    assert(Long.parseLong(Long.MIN_VALUE.toString).equals(Long.MIN_VALUE))
-
-    assertThrows[NumberFormatException](Long.parseLong(null))
-    assertThrows[NumberFormatException](Long.parseLong("+"))
-    assertThrows[NumberFormatException](Long.parseLong("-"))
-    assertThrows[NumberFormatException](Long.parseLong(""))
-    assertThrows[NumberFormatException](
-      Long.parseLong("123", Character.MIN_RADIX - 1))
-    assertThrows[NumberFormatException](
-      Long.parseLong("123", Character.MAX_RADIX + 1))
-    assertThrows[NumberFormatException](Long.parseLong("123a", 10))
-    assertThrows[NumberFormatException](Long.parseLong(signedMinMinusOneText))
-    assertThrows[NumberFormatException](Long.parseLong(signedMaxPlusOneText))
+    assertThrows[NumberFormatException](parse(null))
+    assertThrows[NumberFormatException](parse("+"))
+    assertThrows[NumberFormatException](parse("-"))
+    assertThrows[NumberFormatException](parse(""))
+    assertThrows[NumberFormatException](parse("123", Character.MIN_RADIX - 1))
+    assertThrows[NumberFormatException](parse("123", Character.MAX_RADIX + 1))
+    assertThrows[NumberFormatException](parse("123a", 10))
+    assertThrows[NumberFormatException](parse(signedMinMinusOneText))
+    assertThrows[NumberFormatException](parse(signedMaxPlusOneText))
   }
 
   test("parseUnsignedLong") {
-    assert(Long.parseUnsignedLong("1").equals(1L))
-    assert(Long.parseUnsignedLong("+1").equals(1L))
+    import Long.{parseUnsignedLong => parse}
 
-    assert(Long.parseUnsignedLong("0").equals(0L))
-    assert(Long.parseUnsignedLong("00").equals(0L))
+    assert(parse("1") == 1)
+    assert(parse("+1") == 1)
+    assert(parse("0") == 0)
+    assert(parse("00") == 0)
+    assert(parse("+100", 2) == 4)
+    assert(parse("100", 2) == 4)
+    assert(parse(unsignedMaxValueText) == unsignedMaxValue)
 
-    assert(Long.parseUnsignedLong("+100", 2).equals(4L))
-    assert(Long.parseUnsignedLong("100", 2).equals(4L))
-
-    assert(
-      Long.parseUnsignedLong(unsignedMaxValueText).equals(unsignedMaxValue))
-
-    assertThrows[NumberFormatException](Long.parseUnsignedLong(null))
-    assertThrows[NumberFormatException](Long.parseUnsignedLong("+"))
-    assertThrows[NumberFormatException](Long.parseUnsignedLong("-"))
-    assertThrows[NumberFormatException](Long.parseUnsignedLong(""))
-    assertThrows[NumberFormatException](Long.parseUnsignedLong("-1"))
-    assertThrows[NumberFormatException](
-      Long.parseUnsignedLong("123", Character.MIN_RADIX - 1))
-    assertThrows[NumberFormatException](
-      Long.parseUnsignedLong("123", Character.MAX_RADIX + 1))
-    assertThrows[NumberFormatException](Long.parseUnsignedLong("123a", 10))
-    assertThrows[NumberFormatException](
-      Long.parseUnsignedLong(unsignedMaxPlusOneText))
+    assertThrows[NumberFormatException](parse(null))
+    assertThrows[NumberFormatException](parse("+"))
+    assertThrows[NumberFormatException](parse("-"))
+    assertThrows[NumberFormatException](parse(""))
+    assertThrows[NumberFormatException](parse("-1"))
+    assertThrows[NumberFormatException](parse("123", Character.MIN_RADIX - 1))
+    assertThrows[NumberFormatException](parse("123", Character.MAX_RADIX + 1))
+    assertThrows[NumberFormatException](parse("123a", 10))
+    assertThrows[NumberFormatException](parse(unsignedMaxPlusOneText))
 
     val octalMulOverflow = "5777777777777777777770"
     // in binary:
     // octalMulOverflow:  0101111111111111111111111111111111111111111111111111111111111111000
     // max unsigned:      0001111111111111111111111111111111111111111111111111111111111111111
-    assertThrows[NumberFormatException](
-      Long.parseUnsignedLong(octalMulOverflow, 8))
+    assertThrows[NumberFormatException](parse(octalMulOverflow, 8))
   }
 
   test("toString") {
-    assert(Long.toString(0L).equals("0"))
-    assert(Long.toString(1L).equals("1"))
-    assert(Long.toString(-1L).equals("-1"))
-    assert(Long.toString(123L).equals("123"))
-    assert(Long.toString(-123L).equals("-123"))
-    assert(Long.toString(1234L).equals("1234"))
-    assert(Long.toString(-1234L).equals("-1234"))
+    import java.lang.Long.{toString => toStr}
+
+    assert(toStr(0L) == "0")
+    assert(toStr(1L) == "1")
+    assert(toStr(12L) == "12")
+    assert(toStr(123L) == "123")
+    assert(toStr(1234L) == "1234")
+    assert(toStr(12345L) == "12345")
+    assert(toStr(10L) == "10")
+    assert(toStr(100L) == "100")
+    assert(toStr(1000L) == "1000")
+    assert(toStr(10000L) == "10000")
+    assert(toStr(100000L) == "100000")
+    assert(toStr(101010L) == "101010")
+    assert(toStr(111111L) == "111111")
+    assert(toStr(-1L) == "-1")
+    assert(toStr(-12L) == "-12")
+    assert(toStr(-123L) == "-123")
+    assert(toStr(-1234L) == "-1234")
+    assert(toStr(-12345L) == "-12345")
+    assert(toStr(signedMaxValue) == signedMaxValueText)
+    assert(toStr(signedMinValue) == signedMinValueText)
   }
 
   test("toUnsignedString") {
-    assert(Long.toUnsignedString(0L).equals("0"))
-    assert(Long.toUnsignedString(1L).equals("1"))
-    assert(
-      Long.toUnsignedString(unsignedMaxValue).equals(unsignedMaxValueText))
-    assert(Long.toUnsignedString(123L).equals("123"))
-    assert(Long.toUnsignedString(-123L).equals("18446744073709551493"))
-    assert(Long.toUnsignedString(1234L).equals("1234"))
-    assert(Long.toUnsignedString(-1234L).equals("18446744073709550382"))
+    import java.lang.Long.{toUnsignedString => toStr}
+
+    assert(toStr(0L) == "0")
+    assert(toStr(1L) == "1")
+    assert(toStr(12L) == "12")
+    assert(toStr(123L) == "123")
+    assert(toStr(1234L) == "1234")
+    assert(toStr(12345L) == "12345")
+    assert(toStr(-1L) == "18446744073709551615")
+    assert(toStr(-12L) == "18446744073709551604")
+    assert(toStr(-123L) == "18446744073709551493")
+    assert(toStr(-1234L) == "18446744073709550382")
+    assert(toStr(-12345L) == "18446744073709539271")
+    assert(toStr(unsignedMaxValue) == unsignedMaxValueText)
   }
 
+  test("equals") {
+    assert(new Long(0) == new Long(0))
+    assert(new Long(1) == new Long(1))
+    assert(new Long(-1) == new Long(-1))
+    assert(new Long(123) == new Long(123))
+    assert(new Long(Long.MAX_VALUE) == new Long(Long.MAX_VALUE))
+    assert(new Long(Long.MIN_VALUE) == new Long(Long.MIN_VALUE))
+  }
 }
