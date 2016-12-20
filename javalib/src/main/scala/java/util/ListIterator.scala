@@ -7,4 +7,8 @@ trait ListIterator[E] extends Iterator[E] {
   def previousIndex(): Int
   def nextIndex(): Int
   def set(e: E): Unit
+
+  // Workaround for #375
+  def next(): E
+  def hasNext(): Boolean
 }
