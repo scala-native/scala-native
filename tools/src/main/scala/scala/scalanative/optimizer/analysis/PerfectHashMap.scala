@@ -14,7 +14,7 @@ import scala.scalanative.optimizer.analysis.ClassHierarchy.Method
 object PerfectHashMap {
   val MAX_D_VALUE = 1000
 
-  def apply[K, V](hashFunc: (K, Long) => Long,
+  def apply[K, V](hashFunc: (K, Int) => Int,
                   entries: Map[K, V]): PerfectHashMap[K, V] = {
 
     def createMinimalPerfectHash(
@@ -132,15 +132,15 @@ object PerfectHashMap {
     (0 until size).map(i => mapWithDefault(i))
   }
 
-  def mod(a: Long, b: Int): Int = {
+  def mod(a: Int, b: Int): Int = {
     val m = a % b
-    (if (m < 0) m + b else m).toInt
+    if (m < 0) m + b else m
   }
 }
 
 class PerfectHashMap[K, V](val keys: Seq[Int],
                            val values: Seq[Option[V]],
-                           hashFunc: (K, Long) => Long) {
+                           hashFunc: (K, Int) => Int) {
 
   lazy val size: Int = keys.length
 
@@ -190,9 +190,9 @@ object DynmethodPerfectHashMap {
     )
   }
 
-  private def hash(key: String, seed: Long): Long = key.foldLeft(seed) {
+  private def hash(key: String, seed: Int): Int = key.foldLeft(seed) {
     case (hash, c) =>
       val inter = hash ^ c.toInt
-      inter + (inter << 1) + (inter << 4) + (inter << 5) + (inter << 7) + (inter << 8) + (inter << 40);
+      inter + (inter << 1) + (inter << 4) + (inter << 5) + (inter << 7) + (inter << 8) + (inter << 25);
   }
 }

@@ -3,16 +3,16 @@
 #include <string.h>
 #include "perfecthashmap.h"
 
-int mod(long a, int b);
-long hash(char* signature, int sign_length, long d);
+int mod(int a, int b);
+int hash(char* signature, int sign_length, int d);
 
 void* scalanative_dyndispatch(PerfectHashMap* perfectHashMap, char* sign, int sign_length) {
-	long size = (long) perfectHashMap->size;
-	long lh1 = mod(hash(sign, sign_length, 0), size);
+	int size = perfectHashMap->size;
+	int lh1 = mod(hash(sign, sign_length, 0), size);
 
 
 	int h1 = mod(lh1, size);
-	long d = (long) perfectHashMap->keys[h1];
+	int d = perfectHashMap->keys[h1];
 
 
 	if(d < 0) {
@@ -23,15 +23,15 @@ void* scalanative_dyndispatch(PerfectHashMap* perfectHashMap, char* sign, int si
 	}
 }
 
-long hash(char* buf, int len, long seed) {
+int hash(char* buf, int len, int seed) {
     for (int i = 0; i < len; i++) {
       seed ^= buf[i];
-      seed += (seed << 1) + (seed << 4) + (seed << 5) + (seed << 7) + (seed << 8)+ (seed << 40);
+      seed += (seed << 1) + (seed << 4) + (seed << 5) + (seed << 7) + (seed << 8) + (seed << 25);
     }
     return seed;
 }
 
-int mod(long a, int b) {
+int mod(int a, int b) {
 	int m = a % b;
 	if(m < 0) {
 		return m + b;

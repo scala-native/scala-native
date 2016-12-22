@@ -877,23 +877,19 @@ abstract class NirCodeGen
 
       val params = sym.tpe.params
 
-      val isEqOrNeq = (sym.name == nme.eq || sym.name == nme.ne) &&
+      val isEqOrNe = (sym.name == nme.eq || sym.name == nme.ne) &&
         params.size == 1 && params.head.tpe.typeSymbol == ObjectClass
 
+      val isEqEqOrBangEq = (sym.name == EqEqMethodName || sym.name == NotEqMethodName) &&
+        params.size == 1
 
-      val isEqOrNeq2 = (sym.name.toString == "$eq$eq" || sym.name.toString == "$not$eq")
-
-
-      if(isEqOrNeq) {
-        val last = genClassEquality(obj, args.head, genPrimCode(params.head) == 'O', sym.name == nme.ne, focus)
-        last withOp Op.Box(nir.Type.Class(nir.Global.Top("java.lang.Boolean")), last.value)
-      } else if (isEqOrNeq2) {
-        val last = genClassEquality(obj, args.head, ref = false, sym.name.toString == "$not$eq", focus)
+      // If the method is 'eq', 'ne', '=='or '!=' generate class equality instead of dyn-call
+      if(isEqOrNe || isEqEqOrBangEq) {
+        val neg = sym.name == nme.ne || sym.name == NotEqMethodName
+        val last = genClassEquality(obj, args.head, ref = false, negated = neg, focus)
         last withOp Op.Box(nir.Type.Class(nir.Global.Top("java.lang.Boolean")), last.value)
       } else {
-
         val self = genExpr(obj, focus)
-
         genDynMethodCall(sym, self.value, args, self)
       }
 
@@ -901,8 +897,8 @@ abstract class NirCodeGen
 
     def genDynMethodCall(sym: Symbol, self: Val, argsp: Seq[Tree], focus: Focus): Focus = {
 
-      val methodSig    = genMethodSig(sym).asInstanceOf[Type.Function]
-      val params = sym.tpe.params
+      val methodSig = genMethodSig(sym).asInstanceOf[Type.Function]
+      val params    = sym.tpe.params
 
 
       def isArrayLikeOp = {
@@ -910,9 +906,11 @@ abstract class NirCodeGen
           params.size == 2 && params.head.tpe.typeSymbol == IntClass
       }
 
-      def genNormalDynamicCall(arrayUpdate: Boolean, focus: Focus) = {
+      def genDynCall(arrayUpdate: Boolean, focus: Focus) = {
 
-        val methodName   = if (arrayUpdate) "update_i32_class.java.lang.Object" else nir.Global.genSignature(genMethodName(sym))
+        // In the case of an array update we need to manually erase the return type.
+        val methodName =
+          if (arrayUpdate) "update_i32_class.java.lang.Object" else nir.Global.genSignature(genMethodName(sym))
 
         val sig =
           Type.Function(
@@ -921,30 +919,37 @@ abstract class NirCodeGen
             nir.Type.Class(nir.Global.Top("java.lang.Object")))
 
 
-        val (args, last) = genMethodArgs(sym, argsp, focus)
+        val callerType    = methodSig.args.head
+        val boxedArgTypes = methodSig.args.tail.map(ty => nir.Type.box.getOrElse(ty, ty)).toList
 
+        val retType       = nir.Type.Class(nir.Global.Top("java.lang.Object"))
+        val signature     = nir.Type.Function(callerType :: boxedArgTypes, retType)
+
+
+        val (args, last) = genMethodArgs(sym, argsp, focus)
 
         val method = last withOp Op.Dynmethod(self, methodName.toString)
         val values = self +: args
 
-        val call = method withOp Op.Call(sig, method.value, values, curUnwind)
+        val call = method withOp Op.Call(signature, method.value, values, curUnwind)
         call withOp Op.As(nir.Type.box.getOrElse(methodSig.ret, methodSig.ret), call.value)
       }
 
+      // If the signature matches an array update, tests at runtime if it really is an array update.
       if(isArrayLikeOp) {
         val last = focus withOp Op.Is(nir.Type.Class(nir.Global.Top("scala.scalanative.runtime.ObjectArray")), self)
         val cond = ValTree(last.value)
 
         val thenp = ContTree { focus =>
-          genNormalDynamicCall(true, focus)
+          genDynCall(arrayUpdate = true, focus)
         }
         val elsep = ContTree { focus =>
-          genNormalDynamicCall(false, focus)
+          genDynCall(arrayUpdate = false, focus)
         }
-        genIf(Type.Class(nir.Global.Top("java.lang.Object")), cond, thenp, elsep, last)
+        genIf(nir.Type.Class(nir.Global.Top("java.lang.Object")), cond, thenp, elsep, last)
 
       } else {
-        genNormalDynamicCall(false, focus)
+        genDynCall(arrayUpdate = false, focus)
       }
 
     }
