@@ -267,6 +267,8 @@ object ScalaNativePluginInternal {
     },
     nativeLinkerReporter := tools.LinkerReporter.empty,
     nativeOptimizerReporter := tools.OptimizerReporter.empty,
+    nativeEnableProfiling := false,
+    nativeProfilingLocation := file("/dev/null"),
     nativeLink := ResourceScope { implicit scope =>
       val clangpp   = nativeClangPP.value
       val clangOpts = nativeClangOptions.value
@@ -286,6 +288,8 @@ object ScalaNativePluginInternal {
       val linkerReporter    = nativeLinkerReporter.value
       val optimizerReporter = nativeOptimizerReporter.value
       val sharedLibrary     = nativeSharedLibrary.value
+      val enableProfiling   = nativeEnableProfiling.value
+      val profilingLocation = nativeProfilingLocation.value
       val logger            = streams.value.log
 
       val config = tools.Config.empty
@@ -294,6 +298,8 @@ object ScalaNativePluginInternal {
           tools.LinkerPath(VirtualDirectory.real(p))))
         .withTargetDirectory(VirtualDirectory.real(target))
         .withInjectMain(!nativeSharedLibrary.value)
+        .withEnableProfiling(enableProfiling)
+        .withProfilingLocation(profilingLocation)
 
       val nirFiles   = (Keys.target.value ** "*.nir").get.toSet
       val configFile = (streams.value.cacheDirectory / "native-config")
