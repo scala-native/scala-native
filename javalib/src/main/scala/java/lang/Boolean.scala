@@ -18,6 +18,8 @@ final class Boolean(val booleanValue: scala.Boolean)
     Boolean.toString(booleanValue)
 
   /*
+   * Ported from ScalaJS
+   *
    * Methods on scala.Boolean
    * The following methods are only here to properly support reflective calls
    * on boxed primitive values. YOU WILL NOT BE ABLE TO USE THESE METHODS, since

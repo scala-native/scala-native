@@ -1,8 +1,7 @@
 package scala
 
-/**
- * Created by lukaskellenberger on 13.12.16.
- */
+// Ported from ScalaJS
+
 object ReflectiveProxySuite extends tests.Suite {
 
   test("should allow subtyping in return types") {
@@ -98,7 +97,8 @@ object ReflectiveProxySuite extends tests.Suite {
     assert(fBoolean(true))
   }
 
-  test("should work with equality operators on primitive types") {
+  // Change to test once #445 is fixed
+  testFails("should work with equality operators on primitive types", 445) {
     def fNum(obj: Any { def ==(x: Int): Boolean }): Boolean = obj == 5
     assert(fNum(5.toByte))
     assert(!fNum(6.toByte))

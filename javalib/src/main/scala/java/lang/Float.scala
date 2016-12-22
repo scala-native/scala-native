@@ -52,6 +52,8 @@ final class Float(override val floatValue: scala.Float)
     Float.isInfinite(floatValue)
 
   /*
+   * Ported from ScalaJS
+   *
    * Methods on scala.Float
    * The following methods are only here to properly support reflective calls
    * on boxed primitive values. YOU WILL NOT BE ABLE TO USE THESE METHODS, since

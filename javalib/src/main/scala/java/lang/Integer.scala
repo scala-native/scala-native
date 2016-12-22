@@ -41,6 +41,8 @@ final class Integer(override val intValue: scala.Int)
     Integer.toString(intValue)
 
   /*
+   * Ported from ScalaJS
+   *
    * Methods on scala.Int
    * The following methods are only here to properly support reflective calls
    * on boxed primitive values. YOU WILL NOT BE ABLE TO USE THESE METHODS, since

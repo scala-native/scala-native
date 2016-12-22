@@ -41,6 +41,8 @@ final class Long(val longValue: scala.Long)
     Long.toString(longValue)
 
   /*
+   * Ported from ScalaJS
+   *
    * Methods on scala.Long
    * The following methods are only here to properly support reflective calls
    * on boxed primitive values. YOU WILL NOT BE ABLE TO USE THESE METHODS, since

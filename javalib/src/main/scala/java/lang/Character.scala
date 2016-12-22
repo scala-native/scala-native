@@ -24,6 +24,8 @@ class Character(val charValue: scala.Char)
     Character.hashCode(charValue)
 
   /*
+   * Ported from ScalaJS
+   *
    * Methods on scala.Char
    * The following methods are only here to properly support reflective calls
    * on boxed primitive values. YOU WILL NOT BE ABLE TO USE THESE METHODS, since
