@@ -9,10 +9,23 @@ import nir._
 import util.unreachable
 
 object UseDef {
-  final case class Def(name: Local,
-                       deps: mutable.UnrolledBuffer[Def],
-                       uses: mutable.UnrolledBuffer[Def],
-                       var alive: Boolean = false)
+  sealed abstract class Def {
+    def name: Local
+    def deps: mutable.UnrolledBuffer[Def]
+    def uses: mutable.UnrolledBuffer[Def]
+    var alive: Boolean = false
+  }
+
+  final case class InstDef(name: Local,
+                           deps: mutable.UnrolledBuffer[Def],
+                           uses: mutable.UnrolledBuffer[Def])
+      extends Def
+
+  final case class BlockDef(name: Local,
+                            deps: mutable.UnrolledBuffer[Def],
+                            uses: mutable.UnrolledBuffer[Def],
+                            params: Seq[Def])
+      extends Def
 
   private class CollectLocalValDeps extends Pass {
     val deps = mutable.UnrolledBuffer.empty[Local]
@@ -51,10 +64,17 @@ object UseDef {
     val defs   = mutable.Map.empty[Local, Def]
     val blocks = cfg.all
 
-    def enter(n: Local) = {
+    def enterBlock(n: Local, params: Seq[Local]) = {
+      params.foreach(enterInst)
+      val deps      = mutable.UnrolledBuffer.empty[Def]
+      val uses      = mutable.UnrolledBuffer.empty[Def]
+      val paramDefs = params.map(defs)
+      defs += ((n, BlockDef(n, deps, uses, paramDefs)))
+    }
+    def enterInst(n: Local) = {
       val deps = mutable.UnrolledBuffer.empty[Def]
       val uses = mutable.UnrolledBuffer.empty[Def]
-      defs += ((n, Def(n, deps, uses)))
+      defs += ((n, InstDef(n, deps, uses)))
     }
     def deps(n: Local, deps: Seq[Local]) = {
       val ndef = defs(n)
@@ -72,12 +92,9 @@ object UseDef {
 
     // enter definitions
     blocks.foreach { block =>
-      enter(block.name)
-      block.params.foreach { param =>
-        enter(param.name)
-      }
+      enterBlock(block.name, block.params.map(_.name))
       block.insts.foreach {
-        case Inst.Let(n, _) => enter(n)
+        case Inst.Let(n, _) => enterInst(n)
         case _              => ()
       }
     }
