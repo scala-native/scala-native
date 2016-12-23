@@ -12,7 +12,7 @@ import scala.scalanative.optimizer.analysis.ClassHierarchy.Method
  *
  */
 object PerfectHashMap {
-  val MAX_D_VALUE = 1000
+  val MAX_D_VALUE = 10000
 
   def apply[K, V](hashFunc: (K, Int) => Int,
                   entries: Map[K, V]): PerfectHashMap[K, V] = {
@@ -190,7 +190,7 @@ object DynmethodPerfectHashMap {
     )
   }
 
-  private def hash(key: String, seed: Int): Int = key.foldLeft(seed) {
+  def hash(key: String, seed: Int): Int = key.foldLeft(seed) {
     case (hash, c) =>
       val inter = hash ^ c.toInt
       inter + (inter << 1) + (inter << 4) + (inter << 5) + (inter << 7) + (inter << 8) + (inter << 25);
