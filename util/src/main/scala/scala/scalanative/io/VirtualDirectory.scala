@@ -154,12 +154,14 @@ object VirtualDirectory {
     override def files: Seq[VirtualFile] = {
       val roots = fileSystem.getRootDirectories.asScala.toSeq
 
-      roots.flatMap { path =>
-        Files
-          .walk(path, Integer.MAX_VALUE, FileVisitOption.FOLLOW_LINKS)
-          .iterator()
-          .asScala
-      }.map(VirtualFile(this, _))
+      roots
+        .flatMap { path =>
+          Files
+            .walk(path, Integer.MAX_VALUE, FileVisitOption.FOLLOW_LINKS)
+            .iterator()
+            .asScala
+        }
+        .map(VirtualFile(this, _))
     }
 
     override def create(path: Path): VirtualFile =

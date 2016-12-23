@@ -52,7 +52,7 @@ object BoxingLowering extends PassCompanion {
 
   override def depends: Seq[Global] =
     Seq(BoxesRunTime, RuntimeBoxes) ++
-      BoxTo.values.map { case (owner, id) => Global.Member(owner, id) } ++
+      BoxTo.values.map { case (owner, id)   => Global.Member(owner, id) } ++
       UnboxTo.values.map { case (owner, id) => Global.Member(owner, id) }
 
   private val BoxesRunTime = Global.Top("scala.runtime.BoxesRunTime$")

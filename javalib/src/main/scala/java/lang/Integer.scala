@@ -49,15 +49,7 @@ object Integer {
   final val BYTES     = 4
 
   private final val decimalScale: Array[scala.Int] = Array(1000000000,
-                                                           100000000,
-                                                           10000000,
-                                                           1000000,
-                                                           100000,
-                                                           10000,
-                                                           1000,
-                                                           100,
-                                                           10,
-                                                           1)
+    100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1)
 
   @inline def bitCount(i: scala.Int): scala.Int =
     Intrinsics.`llvm.ctpop.i32`(i)

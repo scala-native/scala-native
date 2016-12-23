@@ -21,30 +21,32 @@ object Driver {
   /** Create driver with default pipeline for this configuration. */
   def apply(config: tools.Config): Driver =
     new Impl(
-      Seq(pass.GlobalBoxingElimination,
-          pass.UnitSimplification,
-          pass.DeadCodeElimination,
-          pass.GlobalValueNumbering,
-          pass.MainInjection,
-          pass.ExternHoisting,
-          pass.ModuleLowering,
-          pass.RuntimeTypeInfoInjection,
-          pass.BoxingLowering,
-          pass.AsLowering,
-          pass.IsLowering,
-          pass.MethodLowering,
-          pass.TraitLowering,
-          pass.ClassLowering,
-          pass.StringLowering,
-          pass.ConstLowering,
-          pass.UnitLowering,
-          pass.ThrowLowering,
-          pass.NothingLowering,
-          pass.TryLowering,
-          pass.AllocLowering,
-          pass.SizeofLowering,
-          pass.CopyPropagation,
-          pass.DeadCodeElimination))
+      Seq(
+        pass.GlobalBoxingElimination,
+        pass.UnitSimplification,
+        pass.DeadCodeElimination,
+        pass.GlobalValueNumbering,
+        pass.MainInjection,
+        pass.ExternHoisting,
+        pass.ModuleLowering,
+        pass.RuntimeTypeInfoInjection,
+        pass.BoxingLowering,
+        pass.AsLowering,
+        pass.IsLowering,
+        pass.MethodLowering,
+        pass.TraitLowering,
+        pass.ClassLowering,
+        pass.StringLowering,
+        pass.ConstLowering,
+        pass.UnitLowering,
+        pass.ThrowLowering,
+        pass.NothingLowering,
+        pass.TryLowering,
+        pass.AllocLowering,
+        pass.SizeofLowering,
+        pass.CopyPropagation,
+        pass.DeadCodeElimination
+      ))
 
   /** Create an empty pass-lesss driver. */
   def empty: Driver =

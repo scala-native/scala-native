@@ -27,8 +27,9 @@ lazy val publishSettings = Seq(
       Some("releases" at nexus + "service/local/staging/deploy/maven2")
   },
   publishSnapshot := Def.taskDyn {
-    val travis   = Try(sys.env("TRAVIS")).getOrElse("false") == "true"
-    val pr       = Try(sys.env("TRAVIS_PULL_REQUEST")).getOrElse("false") != "false"
+    val travis = Try(sys.env("TRAVIS")).getOrElse("false") == "true"
+    val pr = Try(sys.env("TRAVIS_PULL_REQUEST"))
+        .getOrElse("false") != "false"
     val branch   = Try(sys.env("TRAVIS_BRANCH")).getOrElse("")
     val snapshot = version.value.trim.endsWith("SNAPSHOT")
 
@@ -305,13 +306,16 @@ lazy val tests =
       sourceGenerators in Compile += Def.task {
         val dir    = sourceDirectory.value
         val prefix = dir.getAbsolutePath + "/main/scala/"
-        val suites = (dir ** "*Suite.scala").get.map { f =>
-          f.getAbsolutePath
-            .replace(prefix, "")
-            .replace(".scala", "")
-            .split("/")
-            .mkString(".")
-        }.filter(_ != "tests.Suite").mkString("Seq(", ", ", ")")
+        val suites = (dir ** "*Suite.scala").get
+          .map { f =>
+            f.getAbsolutePath
+              .replace(prefix, "")
+              .replace(".scala", "")
+              .split("/")
+              .mkString(".")
+          }
+          .filter(_ != "tests.Suite")
+          .mkString("Seq(", ", ", ")")
         val file = (sourceManaged in Compile).value / "tests" / "Discover.scala"
         IO.write(file,
                  s"""
@@ -345,22 +349,26 @@ lazy val benchmarks =
       sourceGenerators in Compile += Def.task {
         val dir    = sourceDirectory.value
         val prefix = dir.getAbsolutePath + "/main/scala/"
-        val benchmarks = (dir ** "*Benchmark.scala").get.map { f =>
-          f.getAbsolutePath
-            .replace(prefix, "")
-            .replace(".scala", "")
-            .split("/")
-            .mkString(".")
-        }.filter(_ != "benchmarks.Benchmark")
+        val benchmarks = (dir ** "*Benchmark.scala").get
+          .map { f =>
+            f.getAbsolutePath
+              .replace(prefix, "")
+              .replace(".scala", "")
+              .split("/")
+              .mkString(".")
+          }
+          .filter(_ != "benchmarks.Benchmark")
           .mkString("Seq(new ", ", new ", ")")
         val file = (sourceManaged in Compile).value / "benchmarks" / "Discover.scala"
-        IO.write(file,
-                 s"""
+        IO.write(
+          file,
+          s"""
           package benchmarks
           object Discover {
             val discovered: Seq[benchmarks.Benchmark[_]] = $benchmarks
           }
-        """)
+        """
+        )
         Seq(file)
       }.taskValue
     )

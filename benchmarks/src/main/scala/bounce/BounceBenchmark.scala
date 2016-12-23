@@ -26,8 +26,8 @@ import som.Random
 
 class BounceBenchmark extends benchmarks.Benchmark[Int] {
   private class Ball(random: Random) {
-    private var x: Int    = random.next() % 500
-    private var y: Int    = random.next() % 500
+    private var x: Int    = random.next()  % 500
+    private var y: Int    = random.next()  % 500
     private var xVel: Int = (random.next() % 300) - 150
     private var yVel: Int = (random.next() % 300) - 150
 

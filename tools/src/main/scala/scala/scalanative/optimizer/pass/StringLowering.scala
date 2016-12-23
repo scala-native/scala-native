@@ -35,7 +35,8 @@ class StringLowering(implicit top: Top) extends Pass {
           Seq(CharArrayCls.typeConst,
               charsLength,
               Val.I32(0), // padding to get next field aligned properly
-              Val.Array(Type.I16, chars.map(c => Val.I16(c.toShort))))))
+              Val.Array(Type.I16, chars.map(c => Val.I16(c.toShort))))
+        ))
 
       val fieldValues = stringFieldNames.map {
         case StringValueName          => charsConst

@@ -10,7 +10,7 @@ if [ ! -f $HERE/.coursier ]; then
 fi
 
 if [ ! -f $HERE/.scalafmt ]; then
-  $HERE/.coursier bootstrap com.geirsson:scalafmt-cli_2.11:0.4.7 --main org.scalafmt.cli.Cli -o $HERE/.scalafmt
+  $HERE/.coursier bootstrap com.geirsson:scalafmt-cli_2.11:0.5.1 --main org.scalafmt.cli.Cli -o $HERE/.scalafmt
   chmod +x $HERE/.scalafmt
 fi
 
