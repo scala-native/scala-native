@@ -29,14 +29,12 @@ object CodeGen {
 
   private final class Impl(assembly: Seq[Defn]) extends CodeGen {
     private val fresh = new Fresh("gen")
-    private val globals = assembly
-      .collect {
-        case Defn.Var(_, n, ty, _)     => n -> ty
-        case Defn.Const(_, n, ty, _)   => n -> ty
-        case Defn.Declare(_, n, sig)   => n -> sig
-        case Defn.Define(_, n, sig, _) => n -> sig
-      }
-      .toMap
+    private val globals = assembly.collect {
+      case Defn.Var(_, n, ty, _)     => n -> ty
+      case Defn.Const(_, n, ty, _)   => n -> ty
+      case Defn.Declare(_, n, sig)   => n -> sig
+      case Defn.Define(_, n, sig, _) => n -> sig
+    }.toMap
     private val prelude = Seq(
       sh"declare i32 @llvm.eh.typeid.for(i8*)",
       sh"declare i32 @__gxx_personality_v0(...)",

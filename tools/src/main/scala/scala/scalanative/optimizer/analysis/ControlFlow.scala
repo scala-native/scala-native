@@ -100,11 +100,9 @@ object ControlFlow {
           new Block(n, params, body)
       }
 
-      val nodes = blocks
-        .map { b =>
-          b.name -> b
-        }
-        .toMap
+      val nodes = blocks.map { b =>
+        b.name -> b
+      }.toMap
 
       blocks.foreach {
         case node @ Block(n, _, _ :+ cf) =>

@@ -339,11 +339,9 @@ object Collections {
     } else {
       val indices        = 0 to source.size - targetSize
       val indicesInOrder = if (fromStart) indices else indices.reverse
-      indicesInOrder
-        .find { i =>
-          source.subList(i, i + target.size).equals(target)
-        }
-        .getOrElse(-1)
+      indicesInOrder.find { i =>
+        source.subList(i, i + target.size).equals(target)
+      }.getOrElse(-1)
     }
   }
 

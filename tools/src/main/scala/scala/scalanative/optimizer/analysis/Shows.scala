@@ -11,15 +11,13 @@ object Shows {
     showLocal(block.name).toString
 
   def showCFG(cfg: ControlFlow.Graph): String = {
-    cfg.all
-      .map { block =>
-        val succStr =
-          block.succ.map(blockToString).mkString("(", ",", ")")
-        val predStr =
-          block.pred.map(blockToString).mkString("(", ",", ")")
-        s"${blockToString(block)} -> ${succStr}, pred = ${predStr}"
-      }
-      .mkString("\n")
+    cfg.all.map { block =>
+      val succStr =
+        block.succ.map(blockToString).mkString("(", ",", ")")
+      val predStr =
+        block.pred.map(blockToString).mkString("(", ",", ")")
+      s"${blockToString(block)} -> ${succStr}, pred = ${predStr}"
+    }.mkString("\n")
   }
 
   def showDominatorTree(domination: Map[Block, Set[Block]]): String = {

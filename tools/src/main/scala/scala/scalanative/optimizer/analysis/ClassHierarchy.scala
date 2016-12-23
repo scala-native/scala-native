@@ -123,18 +123,16 @@ object ClassHierarchy {
       }
       val traitMethods = alltraits.flatMap(_.allmethods).distinct
 
-      traitMethods
-        .map { tmethod =>
-          var impl: Val = Val.Null
-          traitOverrides.foreach {
-            case (meth, ovmeth) =>
-              if (ovmeth == tmethod) {
-                impl = meth.value
-              }
-          }
-          tmethod -> impl
+      traitMethods.map { tmethod =>
+        var impl: Val = Val.Null
+        traitOverrides.foreach {
+          case (meth, ovmeth) =>
+            if (ovmeth == tmethod) {
+              impl = meth.value
+            }
         }
-        .toMap
+        tmethod -> impl
+      }.toMap
     }
 
     lazy val alloverrides: Seq[(Method, Method)] = {
