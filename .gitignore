@@ -6,4 +6,4 @@ _build/
 .idea
 _build/
 bin/.coursier
-bin/.scalafmt
+bin/.scalafmt*
