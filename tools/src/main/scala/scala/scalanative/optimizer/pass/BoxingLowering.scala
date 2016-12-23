@@ -52,7 +52,7 @@ object BoxingLowering extends PassCompanion {
 
   override def depends: Seq[Global] =
     Seq(BoxesRunTime, RuntimeBoxes) ++
-      BoxTo.values.map { case (owner, id) => Global.Member(owner, id) } ++
+      BoxTo.values.map { case (owner, id)   => Global.Member(owner, id) } ++
       UnboxTo.values.map { case (owner, id) => Global.Member(owner, id) }
 
   private val BoxesRunTime = Global.Top("scala.runtime.BoxesRunTime$")
@@ -88,9 +88,10 @@ object BoxingLowering extends PassCompanion {
      BoxesRunTime,
      "boxToDouble_f64_class.java.lang.Double")
   ).map {
-    case (name, module, id) =>
-      Type.Class(Global.Top(name)) -> (module, id)
-  }.toMap
+      case (name, module, id) =>
+        Type.Class(Global.Top(name)) -> (module, id)
+    }
+    .toMap
 
   val UnboxTo: Map[Type, (Global, String)] = Seq(
     ("java.lang.Boolean",
@@ -126,7 +127,8 @@ object BoxingLowering extends PassCompanion {
      BoxesRunTime,
      "unboxToDouble_class.java.lang.Object_f64")
   ).map {
-    case (name, module, id) =>
-      Type.Class(Global.Top(name)) -> (module, id)
-  }.toMap
+      case (name, module, id) =>
+        Type.Class(Global.Top(name)) -> (module, id)
+    }
+    .toMap
 }

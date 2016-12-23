@@ -37,7 +37,9 @@ class MainInjection(entry: Global)(implicit fresh: Fresh) extends Pass {
           Inst.Let(arr.name, Op.Call(RtInitSig, RtInit, Seq(rt, argc, argv))),
           Inst.Let(module.name, Op.Module(entry.top)),
           Inst.Let(Op.Call(entryMainTy, entryMain, Seq(module, arr))),
-          Inst.Ret(Val.I32(0))))
+          Inst.Ret(Val.I32(0))
+        )
+      )
   }
 }
 

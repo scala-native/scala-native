@@ -94,7 +94,8 @@ class OutputStreamWriter(private[this] var out: OutputStream,
           !cbuf.hasRemaining,
           "CharsetEncoder.encode() should not have returned UNDERFLOW when " +
             "both endOfInput and inBuf.hasRemaining are true. It should have " +
-            "returned a MalformedInput error instead.")
+            "returned a MalformedInput error instead."
+        )
       } else if (result.isOverflow) {
         makeRoomInOutBuf()
         loopEncode()

@@ -123,16 +123,18 @@ object ClassHierarchy {
       }
       val traitMethods = alltraits.flatMap(_.allmethods).distinct
 
-      traitMethods.map { tmethod =>
-        var impl: Val = Val.Null
-        traitOverrides.foreach {
-          case (meth, ovmeth) =>
-            if (ovmeth == tmethod) {
-              impl = meth.value
-            }
+      traitMethods
+        .map { tmethod =>
+          var impl: Val = Val.Null
+          traitOverrides.foreach {
+            case (meth, ovmeth) =>
+              if (ovmeth == tmethod) {
+                impl = meth.value
+              }
+          }
+          tmethod -> impl
         }
-        tmethod -> impl
-      }.toMap
+        .toMap
     }
 
     lazy val alloverrides: Seq[(Method, Method)] = {
@@ -184,10 +186,12 @@ object ClassHierarchy {
 
       val cls = in.asInstanceOf[Class]
       val res = cls.allvslots.indexOf(this)
-      assert(res >= 0,
-             s"failed to find vslot for ${this.name} in ${in.name} (" +
-               s"all vslots: ${cls.allvslots.map(_.name)}, " +
-               s"all methods: ${cls.allmethods.map(_.name)})")
+      assert(
+        res >= 0,
+        s"failed to find vslot for ${this.name} in ${in.name} (" +
+          s"all vslots: ${cls.allvslots.map(_.name)}, " +
+          s"all methods: ${cls.allmethods.map(_.name)})"
+      )
       res
     }
   }

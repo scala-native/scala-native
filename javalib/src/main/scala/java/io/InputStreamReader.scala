@@ -150,7 +150,8 @@ class InputStreamReader(private[this] var in: InputStream,
           !inBuf.hasRemaining,
           "CharsetDecoder.decode() should not have returned UNDERFLOW when " +
             "both endOfInput and inBuf.hasRemaining are true. It should have " +
-            "returned a MalformedInput error instead.")
+            "returned a MalformedInput error instead."
+        )
         // Flush
         if (decoder.flush(out).isOverflow) {
           InputStreamReader.Overflow

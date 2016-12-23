@@ -133,7 +133,8 @@ class SudokuBenchmark
     "417369825632158947958724316825437169791586432346912758289643571573291684164875293")
   val hard1Solutions = List(
     "874196325359742618261538497145679832783254169926813754417325986598461273632987541",
-    "834596217659712438271438569745169382923854671186273954417325896562987143398641725")
+    "834596217659712438271438569745169382923854671186273954417325896562987143398641725"
+  )
 
   def test() {
     require(squares.length == 81)
@@ -144,7 +145,8 @@ class SudokuBenchmark
       units("C2") == Vector(
         Vector("A2", "B2", "C2", "D2", "E2", "F2", "G2", "H2", "I2"),
         Vector("C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9"),
-        Vector("A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3")))
+        Vector("A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3")
+      ))
     require(
       peers("C2") == Set("A2",
                          "B2",
@@ -202,13 +204,16 @@ class SudokuBenchmark
     // Chose the unfilled square s with the fewest possibilities
     val (s, n) = values.filter(_._2.length > 1).minBy(_._2.length)
 
-    values(s).toStream.map { d =>
-      val solution = values.clone
-      if (assign(solution, s, d.toString))
-        search(solution)
-      else
-        None
-    }.find(_.isDefined).flatten
+    values(s).toStream
+      .map { d =>
+        val solution = values.clone
+        if (assign(solution, s, d.toString))
+          search(solution)
+        else
+          None
+      }
+      .find(_.isDefined)
+      .flatten
   }
 
   // ################ Utilities ################

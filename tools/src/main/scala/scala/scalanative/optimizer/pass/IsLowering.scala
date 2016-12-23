@@ -27,16 +27,17 @@ class IsLowering(implicit fresh: Fresh, top: Top) extends Pass {
       val elseResultV = Val.Local(fresh(), Type.Bool)
 
       Seq(
-          // if
-          Let(isNullV.name,
-              Op.Comp(Comp.Ieq, Type.Ptr, obj, Val.Zero(Type.Ptr))),
-          Inst.If(isNullV, Next(thenL), Next(elseL)),
-          // then
-          Inst.Label(thenL, Seq.empty),
-          Let(thenResultV.name, Op.Copy(Val.False)),
-          Inst.Jump(Next.Label(contL, Seq(thenResultV))),
-          // else
-          Inst.Label(elseL, Seq.empty)) ++
+        // if
+        Let(isNullV.name,
+            Op.Comp(Comp.Ieq, Type.Ptr, obj, Val.Zero(Type.Ptr))),
+        Inst.If(isNullV, Next(thenL), Next(elseL)),
+        // then
+        Inst.Label(thenL, Seq.empty),
+        Let(thenResultV.name, Op.Copy(Val.False)),
+        Inst.Jump(Next.Label(contL, Seq(thenResultV))),
+        // else
+        Inst.Label(elseL, Seq.empty)
+      ) ++
         doEliminateIs(Let(elseResultV.name, Op.Is(ty, obj))) ++
         Seq(Inst.Jump(Next.Label(contL, Seq(elseResultV))),
             // cont

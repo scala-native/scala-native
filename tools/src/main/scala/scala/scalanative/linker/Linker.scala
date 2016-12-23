@@ -27,10 +27,12 @@ object Linker {
 
     private def load(
         global: Global): Option[(Seq[Dep], Seq[Attr.Link], Defn)] =
-      config.paths.collectFirst {
-        case path if path.contains(global) =>
-          path.load(global)
-      }.flatten
+      config.paths
+        .collectFirst {
+          case path if path.contains(global) =>
+            path.load(global)
+        }
+        .flatten
 
     def link(entries: Seq[Global]): (Seq[Global], Seq[Attr.Link], Seq[Defn]) = {
       val resolved    = mutable.Set.empty[Global]
