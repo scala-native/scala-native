@@ -51,38 +51,42 @@ class GlobalBoxingElimination extends Pass {
       // Original box elimination code
       val newinsts = defn.insts.map {
         case inst @ Let(to, op @ Op.Box(ty, from)) =>
-          records.collectFirst {
-            // if a box for given value already exists, re-use the box
-            case Box(rty, rfrom, rto)
-                if rty == ty && from == rfrom && canReuse(to, rto) =>
-              Let(to, Op.Copy(rto))
+          records
+            .collectFirst {
+              // if a box for given value already exists, re-use the box
+              case Box(rty, rfrom, rto)
+                  if rty == ty && from == rfrom && canReuse(to, rto) =>
+                Let(to, Op.Copy(rto))
 
-            // if we re-box previously unboxed value, re-use the original box
-            case Unbox(rty, rfrom, rto)
-                if rty == ty && from == rto && canReuse(to, rfrom) =>
-              Let(to, Op.Copy(rfrom))
-          }.getOrElse {
-            // otherwise do actual boxing
-            records += Box(ty, from, Val.Local(to, op.resty))
-            inst
-          }
+              // if we re-box previously unboxed value, re-use the original box
+              case Unbox(rty, rfrom, rto)
+                  if rty == ty && from == rto && canReuse(to, rfrom) =>
+                Let(to, Op.Copy(rfrom))
+            }
+            .getOrElse {
+              // otherwise do actual boxing
+              records += Box(ty, from, Val.Local(to, op.resty))
+              inst
+            }
 
         case inst @ Let(to, op @ Op.Unbox(ty, from)) =>
-          records.collectFirst {
-            // if we unbox previously boxed value, return original value
-            case Box(rty, rfrom, rto)
-                if rty == ty && from == rto && canReuse(to, rfrom) =>
-              Let(to, Op.Copy(rfrom))
+          records
+            .collectFirst {
+              // if we unbox previously boxed value, return original value
+              case Box(rty, rfrom, rto)
+                  if rty == ty && from == rto && canReuse(to, rfrom) =>
+                Let(to, Op.Copy(rfrom))
 
-            // if an unbox for this value already exists, re-use unbox
-            case Unbox(rty, rfrom, rto)
-                if rty == ty && from == rfrom && canReuse(to, rto) =>
-              Let(to, Op.Copy(rto))
-          }.getOrElse {
-            // otherwise do actual unboxing
-            records += Unbox(ty, from, Val.Local(to, op.resty))
-            inst
-          }
+              // if an unbox for this value already exists, re-use unbox
+              case Unbox(rty, rfrom, rto)
+                  if rty == ty && from == rfrom && canReuse(to, rto) =>
+                Let(to, Op.Copy(rto))
+            }
+            .getOrElse {
+              // otherwise do actual unboxing
+              records += Unbox(ty, from, Val.Local(to, op.resty))
+              inst
+            }
 
         case inst =>
           inst
