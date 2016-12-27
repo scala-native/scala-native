@@ -2,11 +2,11 @@ package scala.scalanative
 package optimizer
 package pass
 
-import scala.collection.mutable.{ Map => MutableMap }
+import scala.collection.mutable.{Map => MutableMap}
 
 import analysis.ClassHierarchy.Top
-import analysis.ControlFlow.{ Block, Graph }
-import nir.{ Defn, Inst, Local, Op, Val }
+import analysis.ControlFlow.{Block, Graph}
+import nir.{Defn, Inst, Local, Op, Val}
 import tools.Config
 
 /** Performs common subexpression elimination */
@@ -85,7 +85,8 @@ class CommonSubexpressionElimination extends Pass {
    *         available to `inst` under the name `local`.
    */
   private def available(inst: Inst, inBlock: Block): Map[Op, Local] = {
-    val truncatedBlock = inBlock.copy(insts = inBlock.insts.takeWhile(_ != inst))
+    val truncatedBlock =
+      inBlock.copy(insts = inBlock.insts.takeWhile(_ != inst))
     availableAfter(truncatedBlock)
   }
 
@@ -140,4 +141,3 @@ object CommonSubexpressionElimination extends PassCompanion {
   override def apply(config: Config, top: Top) =
     new CommonSubexpressionElimination
 }
-
