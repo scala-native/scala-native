@@ -26,7 +26,7 @@ object Inst extends Base[nir.Inst] {
       case (cond, thenp, elsep) => nir.Inst.If(cond, thenp, elsep)
     })
   val Switch =
-    P("switch" ~ Val.parser ~ "{" ~ Next.parser.rep ~ "default:" ~ Next.parser ~ "}" map {
+    P("switch" ~ Val.parser ~ "{" ~ Next.parser.rep ~ "default" ~ "=>" ~ Next.parser ~ "}" map {
       case (scrut, cases, default) => nir.Inst.Switch(scrut, default, cases)
     })
   val Invoke =

@@ -64,7 +64,7 @@ object Shows {
         if (params.isEmpty) sh""
         else {
           val paramshows = params.map {
-            case Val.Local(n, ty) => sh"$n: $ty"
+            case Val.Local(n, ty) => sh"$n : $ty"
           }
           sh"(${r(paramshows, sep = ", ")})"
         }
@@ -83,7 +83,7 @@ object Shows {
     case Inst.If(cond, thenp, elsep) =>
       sh"if $cond then $thenp else $elsep"
     case Inst.Switch(scrut, default, cases) =>
-      val body = brace(r(cases.map(i(_)) :+ i(sh"default: $default")))
+      val body = brace(r(cases.map(i(_)) :+ i(sh"default => $default")))
       sh"switch $scrut $body"
     case Inst.Invoke(ty, f, args, succ, fail) =>
       sh"invoke[$ty] $f(${r(args, sep = ", ")}) to $succ unwind $fail"
@@ -216,8 +216,8 @@ object Shows {
     case Val.Struct(n, values)           => sh"struct $n {${r(values, ", ")}}"
     case Val.Array(ty, values)           => sh"array $ty {${r(values, ", ")}}"
     case Val.Chars(v)                    => s("c\"", escapeNewLine(escapeQuotes(v)), "\"")
-    case Val.Local(name, ty)             => sh"$name: $ty"
-    case Val.Global(name, ty)            => sh"$name[$ty]"
+    case Val.Local(name, ty)             => sh"$name : $ty"
+    case Val.Global(name, ty)            => sh"$name : $ty"
 
     case Val.Unit      => "unit"
     case Val.Const(v)  => sh"const $v"
