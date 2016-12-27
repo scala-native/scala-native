@@ -40,7 +40,7 @@ object Val extends Base[nir.Val] {
       case (name, ty) => nir.Val.Local(name, ty)
     })
   val Global =
-    P(nir.parser.Global.parser ~ "[" ~ nir.parser.Type.parser ~ "]" map {
+    P(nir.parser.Global.parser ~ ":" ~ Type.parser map {
       case (name, valty) => nir.Val.Global(name, valty)
     })
   val Unit   = P("unit".! map (_ => nir.Val.Unit))

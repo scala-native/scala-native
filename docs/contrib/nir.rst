@@ -29,20 +29,20 @@ Would map to:
     pin(@Test$::init) module @Test$ : @java.lang.Object
 
     def @Test$::main_class.ssnr.ObjectArray_unit : (module @Test$, class @scala.scalanative.runtime.ObjectArray) => unit {
-      %src.2(%src.0: module @Test$, %src.1: class @scala.scalanative.runtime.ObjectArray):
+      %src.2(%src.0 : module @Test$, %src.1 : class @scala.scalanative.runtime.ObjectArray):
         %src.3 = module @scala.Predef$
-        %src.4 = method[(module @scala.Predef$, class @java.lang.Object) => unit] %src.3: module @scala.Predef$, @scala.Predef$::println_class.java.lang.Object_unit
-        %src.5 = call[(module @scala.Predef$, class @java.lang.Object) => unit] %src.4: ptr(%src.3: module @scala.Predef$, "Hello, world!")
-        ret %src.5: unit
+        %src.4 = method %src.3 : module @scala.Predef$, @scala.Predef$::println_class.java.lang.Object_unit
+        %src.5 = call[(module @scala.Predef$, class @java.lang.Object) => unit] %src.4 : ptr(%src.3 : module @scala.Predef$, "Hello, world!")
+        ret %src.5 : unit
     }
 
     def @Test$::init : (module @Test$) => unit {
-      %src.1(%src.0: module @Test$):
-        %src.2 = call[(class @java.lang.Object) => unit] @java.lang.Object::init(%src.0: module @Test$)
+      %src.1(%src.0 : module @Test$):
+        %src.2 = call[(class @java.lang.Object) => unit] @java.lang.Object::init : ptr(%src.0 : module @Test$)
         ret unit
     }
 
-Here we can see a few major points:
+Here we can see a few distinctive features of the representation:
 
 1. At its core NIR is very much a classical SSA-based representation.
    The code consists of basic blocks of instructions. Instructions take
@@ -52,18 +52,19 @@ Here we can see a few major points:
 2. Basic blocks have parameters. Parameters directly correspond to phi
    instructions in the classical SSA.
 
-3. The representation is strongly typed. All parameters have corresponding type
-   annotations. Instructions may take type arguments (they are ommited
-   here for brevity.)
+3. The representation is strongly typed. All parameters have explicit type
+   annotations. Instructions may be overloaded for different types via type
+   parameters.
 
-4. Unlike LLVM, it has support for high-level features such as java-like
-   classes. Classes may contain methods and fields. There is no overloading
-   or access control modifiers so names must be mangled appropriately.
+4. Unlike LLVM, it has support for high-level object-oriented features such as
+   garbage-collected classes, traits and modules. They may contain methods and
+   fields. There is no overloading or access control modifiers so names must be
+   mangled appropriately.
 
-5. All definitions live in a single top-level scope. During compilation they
-   are lazily loaded until all reachable definitions have been discovered.
-   `pin` and `pin-if` attributes are used to expressed additional dependencies.
-   Nesting/ownership is of definitions is expressed through names.
+5. All definitions live in a single top-level scope indexed by globally
+   unique names. During compilation they are lazily loaded until all
+   reachable definitions have been discovered. `pin` and `pin-if` attributes
+   are used to express additional dependencies.
 
 Definitions
 -----------
