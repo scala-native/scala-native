@@ -26,6 +26,7 @@ object Driver {
         pass.UnitSimplification,
         pass.DeadCodeElimination,
         pass.Canonicalization,
+        pass.InstCombine,
         pass.GlobalValueNumbering,
         pass.MainInjection,
         pass.ExternHoisting,
