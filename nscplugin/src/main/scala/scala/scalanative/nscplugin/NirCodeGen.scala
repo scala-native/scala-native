@@ -1441,7 +1441,7 @@ abstract class NirCodeGen
           val Apply(Select(New(tpt), termNames.CONSTRUCTOR), ctorargs) = ctor
 
           assert(ctorargs.isEmpty,
-                 "Can't get function pointer to a closure with captures.")
+                 s"Can't get function pointer to a closure with captures: ${ctorargs} in application ${app}")
 
           val anondef = consumeLazyAnonDef(tpt.tpe.typeSymbol)
           val body    = anondef.impl.body
@@ -1922,8 +1922,8 @@ abstract class NirCodeGen
 
     object MaybeBlock {
       def unapply(tree: Tree): Some[Tree] = tree match {
-        case Block(Seq(), expr) => Some(expr)
-        case _                  => Some(tree)
+        case Block(Seq(), MaybeBlock(expr)) => Some(expr)
+        case _                              => Some(tree)
       }
     }
 
