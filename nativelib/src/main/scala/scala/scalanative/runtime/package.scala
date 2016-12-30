@@ -1,6 +1,5 @@
 package scala.scalanative
 
-import scala.reflect.ClassTag
 import native._
 import runtime.Intrinsics._
 
@@ -10,7 +9,7 @@ package object runtime {
   def undefined: Nothing = throw new UndefinedBehaviorError
 
   /** Returns info pointer for given type. */
-  def typeof[T](implicit ct: ClassTag[T]): Ptr[Type] = undefined
+  def typeof[T](implicit tag: Tag[T]): Ptr[Type] = undefined
 
   /** Intrinsified unsigned devision on ints. */
   def divUInt(l: Int, r: Int): Int = undefined
@@ -40,8 +39,8 @@ package object runtime {
   def intToULong(v: Int): Long = undefined
 
   /** Select value without branching. */
-  def select[T](cond: Boolean, thenp: T, elsep: T)(
-      implicit ct: ClassTag[T]): T = undefined
+  def select[T](cond: Boolean, thenp: T, elsep: T)(implicit tag: Tag[T]): T =
+    undefined
 
   /** Allocate memory in gc heap using given info pointer. */
   def alloc(ty: Ptr[Type], size: CSize): Ptr[_] = {
