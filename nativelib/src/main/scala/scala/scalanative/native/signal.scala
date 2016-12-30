@@ -7,7 +7,7 @@ object signal {
   // Signals
 
   def signal(sig: CInt,
-             handler: FunctionPtr1[CInt, Unit]): FunctionPtr1[CInt, Unit] =
+             handler: CFunctionPtr1[CInt, Unit]): CFunctionPtr1[CInt, Unit] =
     extern
   def raise(sig: CInt): CInt = extern
 
@@ -18,11 +18,11 @@ object signal {
   // Macros
 
   @name("scalanative_libc_sig_dfl")
-  def SIG_DFL: FunctionPtr1[CInt, Unit] = extern
+  def SIG_DFL: CFunctionPtr1[CInt, Unit] = extern
   @name("scalanative_libc_sig_ign")
-  def SIG_IGN: FunctionPtr1[CInt, Unit] = extern
+  def SIG_IGN: CFunctionPtr1[CInt, Unit] = extern
   @name("scalanative_libc_sig_err")
-  def SIG_ERR: FunctionPtr1[CInt, Unit] = extern
+  def SIG_ERR: CFunctionPtr1[CInt, Unit] = extern
   @name("scalanative_libc_sigabrt")
   def SIGABRT: CInt = extern
   @name("scalanative_libc_sigfpe")

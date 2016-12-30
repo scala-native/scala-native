@@ -19,12 +19,12 @@ object stdio {
 
   // Direct input/output
 
-  def fread(buffer: Ptr[_],
+  def fread(buffer: Ptr[Byte],
             size: CSize,
             count: CSize,
             stream: Ptr[FILE]): CSize =
     extern
-  def fwrite(buffer: Ptr[_],
+  def fwrite(buffer: Ptr[Byte],
              size: CSize,
              count: CSize,
              stream: Ptr[FILE]): CSize =
@@ -46,16 +46,17 @@ object stdio {
 
   // Formatted input/output
 
-  def scanf(format: CString, args: Vararg*): CInt                      = extern
-  def fscanf(stream: Ptr[FILE], format: CString, args: Vararg*): CInt  = extern
-  def sscanf(buffer: CString, format: CString, args: Vararg*): CInt    = extern
-  def printf(format: CString, args: Vararg*): CInt                     = extern
-  def fprintf(stream: Ptr[FILE], format: CString, args: Vararg*): CInt = extern
-  def sprintf(buffer: CString, format: CString, args: Vararg*): CInt   = extern
+  def scanf(format: CString, args: CVararg*): CInt                     = extern
+  def fscanf(stream: Ptr[FILE], format: CString, args: CVararg*): CInt = extern
+  def sscanf(buffer: CString, format: CString, args: CVararg*): CInt   = extern
+  def printf(format: CString, args: CVararg*): CInt                    = extern
+  def fprintf(stream: Ptr[FILE], format: CString, args: CVararg*): CInt =
+    extern
+  def sprintf(buffer: CString, format: CString, args: CVararg*): CInt = extern
   def snprintf(buffer: CString,
                bufsz: CInt,
                format: CString,
-               args: Vararg*): CInt =
+               args: CVararg*): CInt =
     extern
 
   // File positioning

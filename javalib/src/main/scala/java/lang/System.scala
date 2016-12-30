@@ -38,9 +38,9 @@ object System {
 
   private class CFileOutputStream(stream: Ptr[stdio.FILE])
       extends java.io.OutputStream {
-    private val buf = stdlib.malloc(1).cast[Ptr[UByte]]
+    private val buf = stdlib.malloc(1)
     def write(b: Int): Unit = {
-      !buf = b.toUByte
+      !buf = b.toUByte.toByte
       stdio.fwrite(buf, 1, 1, stream)
     }
   }
