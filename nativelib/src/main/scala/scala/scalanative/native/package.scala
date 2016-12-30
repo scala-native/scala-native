@@ -1,9 +1,7 @@
 package scala.scalanative
 
 import java.nio.charset.Charset
-import scala.reflect.ClassTag
-import runtime.undefined
-import runtime.GC
+import runtime.{undefined, Tag, GC}
 
 package object native {
 
@@ -71,13 +69,13 @@ package object native {
   type CString = Ptr[CChar]
 
   /** The C 'sizeof' operator. */
-  def sizeof[T](implicit ct: ClassTag[T]): CSize = undefined
+  def sizeof[T](implicit tag: Tag[T]): CSize = undefined
 
   /** Stack allocate a value of given type. */
-  def stackalloc[T](implicit ct: ClassTag[T]): Ptr[T] = undefined
+  def stackalloc[T](implicit tag: Tag[T]): Ptr[T] = undefined
 
   /** Stack allocate n values of given type. */
-  def stackalloc[T](n: Int)(implicit ct: ClassTag[T]): Ptr[T] = undefined
+  def stackalloc[T](n: Int)(implicit tag: Tag[T]): Ptr[T] = undefined
 
   /** Used as right hand side of external method and field declarations. */
   def extern: Nothing = undefined
@@ -89,7 +87,7 @@ package object native {
 
   /** C-style unchecked cast. */
   implicit class CCast[From](val from: From) {
-    def cast[To](implicit fromct: ClassTag[From], toct: ClassTag[To]): To =
+    def cast[To](implicit fromtag: Tag[From], totag: Tag[To]): To =
       undefined
   }
 

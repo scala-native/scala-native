@@ -64,6 +64,23 @@ trait NirDefinitions { self: NirGlobalAddons =>
       getDecl(FunctionPtrModule, TermName("fromFunction" + n))
     }
 
+    lazy val TagModule        = getRequiredModule("scala.scalanative.runtime.Tag")
+    lazy val UnitTagMethod    = getDecl(TagModule, TermName("Unit"))
+    lazy val BooleanTagMethod = getDecl(TagModule, TermName("Boolean"))
+    lazy val CharTagMethod    = getDecl(TagModule, TermName("Char"))
+    lazy val ByteTagMethod    = getDecl(TagModule, TermName("Byte"))
+    lazy val UByteTagMethod   = getDecl(TagModule, TermName("UByte"))
+    lazy val ShortTagMethod   = getDecl(TagModule, TermName("Short"))
+    lazy val UShortTagMethod  = getDecl(TagModule, TermName("UShort"))
+    lazy val IntTagMethod     = getDecl(TagModule, TermName("Int"))
+    lazy val UIntTagMethod    = getDecl(TagModule, TermName("UInt"))
+    lazy val LongTagMethod    = getDecl(TagModule, TermName("Long"))
+    lazy val ULongTagMethod   = getDecl(TagModule, TermName("ULong"))
+    lazy val FloatTagMethod   = getDecl(TagModule, TermName("Float"))
+    lazy val DoubleTagMethod  = getDecl(TagModule, TermName("Double"))
+    lazy val PtrTagMethod     = getDecl(TagModule, TermName("Ptr"))
+    lazy val RefTagMethod     = getDecl(TagModule, TermName("Ref"))
+
     // Native runtime
 
     lazy val RuntimePackage = getPackage(TermName("scala.scalanative.runtime"))

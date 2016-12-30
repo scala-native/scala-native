@@ -10,7 +10,7 @@ trait NirTypeEncoding { self: NirCodeGen =>
   import nirDefinitions._
   import SimpleType.{fromType, fromSymbol}
 
-  final case class SimpleType(sym: Symbol, targs: Seq[SimpleType]) {
+  final case class SimpleType(sym: Symbol, targs: Seq[SimpleType] = Seq.empty) {
     def isInterface: Boolean =
       sym.isInterface
 
