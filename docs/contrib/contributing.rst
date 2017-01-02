@@ -27,7 +27,7 @@ Compatible license source code:
 Coding style
 ------------
 
-Scala Native is formatted via `bin/scalafmt`_. Make sure that all of your
+Scala Native is formatted via `./bin/scalafmt`. Make sure that all of your
 contributions are properly formatted before suggesting any changes.
 
 General workflow
@@ -63,7 +63,7 @@ In order for a Pull Request to be considered, it has to meet these requirements:
 
 1.  Live up to the current code standard:
 
-    - Be formatted with `./bin/scalafmt`_.
+    - Be formatted with `./bin/scalafmt`.
     - Not violate `DRY`_.
     - `Boy Scout Rule`_ should be applied.
 
@@ -129,7 +129,6 @@ followed by details of the commit, in the form of free text, or bulleted list.
 
 .. _Scala.js: https://github.com/scala-js/scala-js/tree/master/javalib/src/main/scala/java
 .. _Apache Harmony project: https://github.com/apache/harmony
-.. _scalafmt: https://github.com/olafurpg/scalafmt
 .. _Scala CLA: http://typesafe.com/contribute/cla/scala
 .. _Pull Request: https://help.github.com/articles/using-pull-requests
 .. _DRY: http://programmer.97things.oreilly.com/wiki/index.php/Don%27t_Repeat_Yourself
