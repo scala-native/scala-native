@@ -2,7 +2,7 @@ package scala.scalanative
 package native
 
 import scala.language.implicitConversions
-import runtime.{undefined, Tag}
+import scalanative.runtime.undefined
 
 /** Type of a C-style vararg in an extern method. */
 final abstract class CVararg

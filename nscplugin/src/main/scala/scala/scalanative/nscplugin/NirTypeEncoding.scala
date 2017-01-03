@@ -71,8 +71,38 @@ trait NirTypeEncoding { self: NirCodeGen =>
     // format: on
     case sym if CStructClass.contains(sym) =>
       nir.Type.Struct(nir.Global.None, st.targs.map(genType(_, box = false)))
+    case CArrayClass =>
+      genCArrayType(st)
     case _ =>
       genRefType(st)
+  }
+
+  def genCArrayType(st: SimpleType): nir.Type = st.targs match {
+    case Seq() =>
+      nir.Type.Array(nir.Rt.Object, 0)
+    case Seq(targ, tnat) =>
+      val ty = genType(targ, box = false)
+      val n  = genNatType(tnat)
+      nir.Type.Array(ty, n)
+  }
+
+  def genNatType(st: SimpleType): Int = {
+    def base(st: SimpleType): Int = st.sym match {
+      case sym if NatBaseClass.contains(sym) =>
+        NatBaseClass.indexOf(sym)
+      case _ =>
+        scalanative.util.unsupported("base nat type expected")
+    }
+    def digits(st: SimpleType): List[Int] = st.sym match {
+      case sym if NatBaseClass.contains(sym) =>
+        base(st) :: Nil
+      case NatDigitClass =>
+        base(st.targs(0)) :: digits(st.targs(1))
+      case _ =>
+        scalanative.util.unsupported("nat type expected")
+    }
+
+    digits(st).foldLeft(0)(_ * 10 + _)
   }
 
   def genRefType(st: SimpleType): nir.Type = st.sym match {

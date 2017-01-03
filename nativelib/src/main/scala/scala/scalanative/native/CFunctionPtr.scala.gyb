@@ -1,7 +1,7 @@
 package scala.scalanative
 package native
 
-import scalanative.runtime.{undefined, Tag}
+import scalanative.runtime.undefined
 
 /** C-style function pointer. */
 sealed abstract class CFunctionPtr

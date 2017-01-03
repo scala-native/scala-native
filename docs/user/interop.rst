@@ -54,7 +54,7 @@ C Type                Scala Type
 void                  Unit
 bool                  CBool
 char, signed char     CChar
-unsigned char         CUnsignedShort (1)
+unsigned char         CUnsignedChar (1)
 short                 CShort
 unsigned short        CUnsignedShort (1)
 int                   CInt
@@ -130,10 +130,10 @@ Memory layout types are auxiliary types that let one specify memory layout of
 unmanaged memory. They are meant to be used purely in combination with pointers
 and do not have a corresponding first-class values backing them.
 
-* ``CStructN[T1, ..., TN]``.
-  Pointer to a C structure with up to 22 fields.
+* ``Ptr[CStructN[T1, ..., TN]]``.
+  Pointer to a C struct with up to 22 fields.
   Type parameters are the types of corresponding fields.
-  One may access fields of the structure using ``_N`` helper
+  One may access fields of the struct using ``_N`` helper
   methods on a pointer value::
 
       val ptr = stackalloc[CStruct[Int, Int]]
@@ -143,6 +143,23 @@ and do not have a corresponding first-class values backing them.
 
   Here ``_N`` computes a derived pointer that corresponds to memory
   occupied by field number N.
+
+* ``Ptr[CArray[T, N]]``.
+  Pointer to a C array with statically-known length ``N``. Length is encoded as
+  a type-level natural number. Natural numbers are types that are composed of
+  base naturals ``Nat._0, ... Nat._9`` and an additional ``Nat.Digit``
+  constructor. So for example number ``1024`` is going to be encoded as
+  following:
+
+      import scalanative.Nat._
+      type _1024 = Digit[_1, Digit[_0, Digit[_2, _4]]]
+
+  Once you have a natural for the length, it can be used as an array length:
+
+      val ptr = stackalloc[CArray[Byte, _1024]]
+
+  Addresses of the first twenty two elements are accessible via ``_N``
+  accessors. The rest are accessible via ``ptr._1 + index``.
 
 Byte strings
 ````````````

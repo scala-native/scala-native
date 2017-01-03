@@ -49,4 +49,20 @@ object SizeofSuite extends tests.Suite {
   test("CStruct2[Byte, Int]") {
     assert(sizeof[CStruct2[Byte, Int]] == 8)
   }
+
+  type _32   = Nat.Digit[Nat._3, Nat._2]
+  type _128  = Nat.Digit[Nat._1, Nat.Digit[Nat._2, Nat._8]]
+  type _1024 = Nat.Digit[Nat._1, Nat.Digit[Nat._0, Nat.Digit[Nat._2, Nat._4]]]
+
+  test("CArray[Byte, _32]") {
+    assert(sizeof[CArray[Byte, _32]] == 32)
+  }
+
+  test("CArray[Byte, _128]") {
+    assert(sizeof[CArray[Byte, _128]] == 128)
+  }
+
+  test("CArray[Byte, _1024]") {
+    assert(sizeof[CArray[Byte, _1024]] == 1024)
+  }
 }

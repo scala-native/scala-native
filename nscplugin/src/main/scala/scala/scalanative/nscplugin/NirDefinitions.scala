@@ -71,8 +71,15 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val CStructClass = (0 to 22).map { n =>
       getRequiredClass("scala.scalanative.native.CStruct" + n)
     }
+    lazy val CArrayClass =
+      getRequiredClass("scala.scalanative.native.CArray")
+    lazy val NatBaseClass = (0 to 9).map { n =>
+      getRequiredClass("scala.scalanative.native.Nat$_" + n)
+    }
+    lazy val NatDigitClass =
+      getRequiredClass("scala.scalanative.native.Nat$Digit")
 
-    lazy val TagModule        = getRequiredModule("scala.scalanative.runtime.Tag")
+    lazy val TagModule        = getRequiredModule("scala.scalanative.native.Tag")
     lazy val UnitTagMethod    = getDecl(TagModule, TermName("Unit"))
     lazy val BooleanTagMethod = getDecl(TagModule, TermName("Boolean"))
     lazy val CharTagMethod    = getDecl(TagModule, TermName("Char"))
@@ -88,6 +95,11 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val DoubleTagMethod  = getDecl(TagModule, TermName("Double"))
     lazy val PtrTagMethod     = getDecl(TagModule, TermName("Ptr"))
     lazy val RefTagMethod     = getDecl(TagModule, TermName("Ref"))
+    lazy val NatBaseTagMethod = (0 to 9).map { n =>
+      getDecl(TagModule, TermName("Nat" + n))
+    }
+    lazy val NatDigitTagMethod = getDecl(TagModule, TermName("NatDigit"))
+    lazy val CArrayTagMethod   = getDecl(TagModule, TermName("CArray"))
     lazy val CStructTagMethod = (0 to 22).map { n =>
       getDecl(TagModule, TermName("CStruct" + n))
     }
