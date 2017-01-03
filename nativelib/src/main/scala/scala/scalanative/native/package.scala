@@ -1,7 +1,7 @@
 package scala.scalanative
 
 import java.nio.charset.Charset
-import runtime.{undefined, Tag, GC}
+import runtime.{undefined, GC}
 
 package object native {
 

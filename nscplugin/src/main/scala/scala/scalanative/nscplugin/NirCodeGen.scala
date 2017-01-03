@@ -1295,27 +1295,33 @@ abstract class NirCodeGen
             val sts = args.flatMap(unwrapTagOption(_).toSeq)
             if (sts.length == args.length) Some(sts) else None
           }
+          def just(sym: Symbol) = Some(SimpleType(sym))
+          def wrap(sym: Symbol) = allsts.map(SimpleType(sym, _))
 
           ref.symbol match {
-            case UnitTagMethod    => Some(SimpleType(UnitClass))
-            case BooleanTagMethod => Some(SimpleType(BooleanClass))
-            case CharTagMethod    => Some(SimpleType(CharClass))
-            case ByteTagMethod    => Some(SimpleType(ByteClass))
-            case UByteTagMethod   => Some(SimpleType(UByteClass))
-            case ShortTagMethod   => Some(SimpleType(ShortClass))
-            case UShortTagMethod  => Some(SimpleType(UShortClass))
-            case IntTagMethod     => Some(SimpleType(IntClass))
-            case UIntTagMethod    => Some(SimpleType(UIntClass))
-            case LongTagMethod    => Some(SimpleType(LongClass))
-            case ULongTagMethod   => Some(SimpleType(ULongClass))
-            case FloatTagMethod   => Some(SimpleType(FloatClass))
-            case DoubleTagMethod  => Some(SimpleType(DoubleClass))
-            case PtrTagMethod =>
-              allsts.map(SimpleType(PtrClass, _))
-            case RefTagMethod =>
-              Some(SimpleType(unwrapClassTagOption(args.head).get))
+            case UnitTagMethod    => just(UnitClass)
+            case BooleanTagMethod => just(BooleanClass)
+            case CharTagMethod    => just(CharClass)
+            case ByteTagMethod    => just(ByteClass)
+            case UByteTagMethod   => just(UByteClass)
+            case ShortTagMethod   => just(ShortClass)
+            case UShortTagMethod  => just(UShortClass)
+            case IntTagMethod     => just(IntClass)
+            case UIntTagMethod    => just(UIntClass)
+            case LongTagMethod    => just(LongClass)
+            case ULongTagMethod   => just(ULongClass)
+            case FloatTagMethod   => just(FloatClass)
+            case DoubleTagMethod  => just(DoubleClass)
+            case PtrTagMethod     => just(PtrClass)
+            case RefTagMethod     => just(unwrapClassTagOption(args.head).get)
+            case sym if NatBaseTagMethod.contains(sym) =>
+              just(NatBaseClass(NatBaseTagMethod.indexOf(sym)))
+            case NatDigitTagMethod =>
+              wrap(NatDigitClass)
+            case CArrayTagMethod =>
+              wrap(CArrayClass)
             case sym if CStructTagMethod.contains(sym) =>
-              allsts.map(SimpleType(CStructClass(args.length), _))
+              wrap(CStructClass(args.length))
             case _ =>
               None
           }

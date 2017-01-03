@@ -1,14 +1,11 @@
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Tag.scala.gyb", line: 1)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 1)
 package scala.scalanative
-package runtime
+package native
 
 import scala.reflect.ClassTag
-import native._
+import scalanative.runtime.undefined
 
 final abstract class Tag[P]
-
-// TODO: CArray tag
-// TODO: Nat tag
 
 object Tag {
   implicit val Unit: Tag[Unit]                    = undefined
@@ -27,39 +24,55 @@ object Tag {
   implicit def Ptr[T: Tag]: Tag[Ptr[T]]           = undefined
   implicit def Ref[T <: AnyRef: ClassTag]: Tag[T] = undefined
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Tag.scala.gyb", line: 33)
+  implicit def Nat0: Tag[Nat._0] = undefined
+  implicit def Nat1: Tag[Nat._1] = undefined
+  implicit def Nat2: Tag[Nat._2] = undefined
+  implicit def Nat3: Tag[Nat._3] = undefined
+  implicit def Nat4: Tag[Nat._4] = undefined
+  implicit def Nat5: Tag[Nat._5] = undefined
+  implicit def Nat6: Tag[Nat._6] = undefined
+  implicit def Nat7: Tag[Nat._7] = undefined
+  implicit def Nat8: Tag[Nat._8] = undefined
+  implicit def Nat9: Tag[Nat._9] = undefined
+  implicit def NatDigit[N <: Nat.Base: Tag, M <: Nat: Tag]
+    : Tag[Nat.Digit[N, M]] =
+    undefined
+
+  implicit def CArray[T: Tag, N <: Nat: Tag]: Tag[CArray[T, N]] = undefined
+
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 45)
 
   implicit def CStruct0: Tag[CStruct0] = undefined
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Tag.scala.gyb", line: 33)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 45)
 
   implicit def CStruct1[T1: Tag]: Tag[CStruct1[T1]] = undefined
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Tag.scala.gyb", line: 33)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 45)
 
   implicit def CStruct2[T1: Tag, T2: Tag]: Tag[CStruct2[T1, T2]] = undefined
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Tag.scala.gyb", line: 33)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 45)
 
   implicit def CStruct3[T1: Tag, T2: Tag, T3: Tag]: Tag[CStruct3[T1, T2, T3]] =
     undefined
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Tag.scala.gyb", line: 33)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 45)
 
   implicit def CStruct4[T1: Tag, T2: Tag, T3: Tag, T4: Tag]
     : Tag[CStruct4[T1, T2, T3, T4]] = undefined
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Tag.scala.gyb", line: 33)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 45)
 
   implicit def CStruct5[T1: Tag, T2: Tag, T3: Tag, T4: Tag, T5: Tag]
     : Tag[CStruct5[T1, T2, T3, T4, T5]] = undefined
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Tag.scala.gyb", line: 33)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 45)
 
   implicit def CStruct6[T1: Tag, T2: Tag, T3: Tag, T4: Tag, T5: Tag, T6: Tag]
     : Tag[CStruct6[T1, T2, T3, T4, T5, T6]] = undefined
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Tag.scala.gyb", line: 33)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 45)
 
   implicit def CStruct7[T1: Tag,
                         T2: Tag,
@@ -70,7 +83,7 @@ object Tag {
                         T7: Tag]: Tag[CStruct7[T1, T2, T3, T4, T5, T6, T7]] =
     undefined
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Tag.scala.gyb", line: 33)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 45)
 
   implicit def CStruct8[T1: Tag,
                         T2: Tag,
@@ -82,7 +95,7 @@ object Tag {
                         T8: Tag]
     : Tag[CStruct8[T1, T2, T3, T4, T5, T6, T7, T8]] = undefined
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Tag.scala.gyb", line: 33)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 45)
 
   implicit def CStruct9[T1: Tag,
                         T2: Tag,
@@ -95,7 +108,7 @@ object Tag {
                         T9: Tag]
     : Tag[CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9]] = undefined
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Tag.scala.gyb", line: 33)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 45)
 
   implicit def CStruct10[T1: Tag,
                          T2: Tag,
@@ -109,7 +122,7 @@ object Tag {
                          T10: Tag]
     : Tag[CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10]] = undefined
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Tag.scala.gyb", line: 33)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 45)
 
   implicit def CStruct11[T1: Tag,
                          T2: Tag,
@@ -124,7 +137,7 @@ object Tag {
                          T11: Tag]
     : Tag[CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11]] = undefined
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Tag.scala.gyb", line: 33)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 45)
 
   implicit def CStruct12[T1: Tag,
                          T2: Tag,
@@ -141,7 +154,7 @@ object Tag {
     : Tag[CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12]] =
     undefined
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Tag.scala.gyb", line: 33)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 45)
 
   implicit def CStruct13[T1: Tag,
                          T2: Tag,
@@ -159,7 +172,7 @@ object Tag {
     : Tag[CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13]] =
     undefined
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Tag.scala.gyb", line: 33)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 45)
 
   implicit def CStruct14[T1: Tag,
                          T2: Tag,
@@ -178,7 +191,7 @@ object Tag {
     CStruct14[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14]] =
     undefined
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Tag.scala.gyb", line: 33)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 45)
 
   implicit def CStruct15[T1: Tag,
                          T2: Tag,
@@ -211,7 +224,7 @@ object Tag {
               T14,
               T15]] = undefined
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Tag.scala.gyb", line: 33)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 45)
 
   implicit def CStruct16[T1: Tag,
                          T2: Tag,
@@ -246,7 +259,7 @@ object Tag {
               T15,
               T16]] = undefined
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Tag.scala.gyb", line: 33)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 45)
 
   implicit def CStruct17[T1: Tag,
                          T2: Tag,
@@ -283,7 +296,7 @@ object Tag {
               T16,
               T17]] = undefined
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Tag.scala.gyb", line: 33)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 45)
 
   implicit def CStruct18[T1: Tag,
                          T2: Tag,
@@ -322,7 +335,7 @@ object Tag {
               T17,
               T18]] = undefined
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Tag.scala.gyb", line: 33)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 45)
 
   implicit def CStruct19[T1: Tag,
                          T2: Tag,
@@ -363,7 +376,7 @@ object Tag {
               T18,
               T19]] = undefined
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Tag.scala.gyb", line: 33)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 45)
 
   implicit def CStruct20[T1: Tag,
                          T2: Tag,
@@ -406,7 +419,7 @@ object Tag {
               T19,
               T20]] = undefined
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Tag.scala.gyb", line: 33)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 45)
 
   implicit def CStruct21[T1: Tag,
                          T2: Tag,
@@ -451,7 +464,7 @@ object Tag {
               T20,
               T21]] = undefined
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Tag.scala.gyb", line: 33)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 45)
 
   implicit def CStruct22[T1: Tag,
                          T2: Tag,
@@ -498,5 +511,5 @@ object Tag {
               T21,
               T22]] = undefined
 
-// ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Tag.scala.gyb", line: 37)
+// ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/Tag.scala.gyb", line: 49)
 }
