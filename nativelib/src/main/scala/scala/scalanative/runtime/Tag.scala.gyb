@@ -1,0 +1,34 @@
+package scala.scalanative
+package runtime
+
+import scala.reflect.ClassTag
+import native._
+
+final abstract class Tag[P]
+
+object Tag {
+  implicit val Unit: Tag[Unit]                    = undefined
+  implicit val Boolean: Tag[Boolean]              = undefined
+  implicit val Char: Tag[Char]                    = undefined
+  implicit val Byte: Tag[Byte]                    = undefined
+  implicit val UByte: Tag[UByte]                  = undefined
+  implicit val Short: Tag[Short]                  = undefined
+  implicit val UShort: Tag[UShort]                = undefined
+  implicit val Int: Tag[Int]                      = undefined
+  implicit val UInt: Tag[UInt]                    = undefined
+  implicit val Long: Tag[Long]                    = undefined
+  implicit val ULong: Tag[ULong]                  = undefined
+  implicit val Float: Tag[Float]                  = undefined
+  implicit val Double: Tag[Double]                = undefined
+  implicit def Ptr[T: Tag]: Tag[Ptr[T]]           = undefined
+  implicit def Ref[T <: AnyRef: ClassTag]: Tag[T] = undefined
+
+  % for N in range(0, 23):
+  %   Ts      = ["T" + str(i) for i in range(1, N + 1)]
+  %   BoundTs = "" if N == 0 else "[" + ", ".join(map(lambda T: T + ": Tag", Ts)) + "]"
+  %   JustTs  = "" if N == 0 else "[" + ", ".join(Ts) + "]"
+
+  implicit def CStruct${N}${BoundTs}: Tag[CStruct${N}${JustTs}] = undefined
+
+  % end
+}

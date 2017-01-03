@@ -12,7 +12,7 @@ import native._
 @extern
 object GC {
   @name("GC_malloc")
-  def malloc(size: CSize): Ptr[_] = extern
+  def malloc(size: CSize): Ptr[Byte] = extern
   @name("GC_malloc_atomic")
-  def malloc_atomic(size: CSize): Ptr[_] = extern
+  def malloc_atomic(size: CSize): Ptr[Byte] = extern
 }

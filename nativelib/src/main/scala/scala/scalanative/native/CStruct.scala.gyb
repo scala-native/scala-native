@@ -1,0 +1,11 @@
+package scala.scalanative
+package native
+
+final abstract class CStruct0
+
+% for N in range(1, 23):
+%    Ts = ", ".join("T" + str(i) for i in range(1, N + 1))
+
+final abstract class CStruct${N}[${Ts}]
+
+% end

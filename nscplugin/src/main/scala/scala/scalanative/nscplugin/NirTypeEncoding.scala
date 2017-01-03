@@ -68,8 +68,11 @@ trait NirTypeEncoding { self: NirCodeGen =>
     case UIntClass    => if (!box) nir.Type.I32  else genRefType(st)
     case ULongClass   => if (!box) nir.Type.I64  else genRefType(st)
     case PtrClass     => nir.Type.Ptr
-    case _            => genRefType(st)
     // format: on
+    case sym if CStructClass.contains(sym) =>
+      nir.Type.Struct(nir.Global.None, st.targs.map(genType(_, box = false)))
+    case _ =>
+      genRefType(st)
   }
 
   def genRefType(st: SimpleType): nir.Type = st.sym match {
@@ -79,7 +82,6 @@ trait NirTypeEncoding { self: NirCodeGen =>
     case NullClass    => genRefType(RuntimeNullClass)
     case ArrayClass =>
       genRefType(RuntimeArrayClass(genPrimCode(st.targs.head)))
-
     case _ if st.isStruct      => genStruct(st)
     case _ if st.isScalaModule => nir.Type.Module(genTypeName(st.sym))
     case _ if st.isInterface   => nir.Type.Trait(genTypeName(st.sym))

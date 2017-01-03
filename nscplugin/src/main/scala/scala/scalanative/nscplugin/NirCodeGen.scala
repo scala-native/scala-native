@@ -1291,6 +1291,11 @@ abstract class NirCodeGen
     def unwrapTagOption(tree: Tree): Option[SimpleType] = {
       tree match {
         case Apply(ref: RefTree, args) =>
+          def allsts = {
+            val sts = args.flatMap(unwrapTagOption(_).toSeq)
+            if (sts.length == args.length) Some(sts) else None
+          }
+
           ref.symbol match {
             case UnitTagMethod    => Some(SimpleType(UnitClass))
             case BooleanTagMethod => Some(SimpleType(BooleanClass))
@@ -1306,11 +1311,11 @@ abstract class NirCodeGen
             case FloatTagMethod   => Some(SimpleType(FloatClass))
             case DoubleTagMethod  => Some(SimpleType(DoubleClass))
             case PtrTagMethod =>
-              unwrapTagOption(args.head).map { st =>
-                SimpleType(PtrClass, Seq(st))
-              }
+              allsts.map(SimpleType(PtrClass, _))
             case RefTagMethod =>
               Some(SimpleType(unwrapClassTagOption(args.head).get))
+            case sym if CStructTagMethod.contains(sym) =>
+              allsts.map(SimpleType(CStructClass(args.length), _))
             case _ =>
               None
           }
@@ -1348,39 +1353,56 @@ abstract class NirCodeGen
     }
 
     def genPtrOp(app: Apply, code: Int, focus: Focus): Focus = {
-      val Apply(Select(ptrp, _), argsp :+ tagp) = app
+      val Apply(sel @ Select(ptrp, _), argsp) = app
 
-      val st  = unwrapTag(tagp)
-      val ty  = genType(st, box = false)
       val ptr = genExpr(ptrp, focus)
 
       (code, argsp) match {
-        case (PTR_LOAD, Seq()) =>
+        case (PTR_LOAD, Seq(tagp)) =>
+          val st = unwrapTag(tagp)
+          val ty = genType(st, box = false)
           boxValue(st, ptr withOp Op.Load(ty, ptr.value))
 
-        case (PTR_STORE, Seq(valuep)) =>
+        case (PTR_STORE, Seq(valuep, tagp)) =>
+          val st    = unwrapTag(tagp)
+          val ty    = genType(st, box = false)
           val value = unboxValue(st, partial = false, genExpr(valuep, ptr))
           value withOp Op.Store(ty, ptr.value, value.value)
 
-        case (PTR_ADD, Seq(offsetp)) =>
+        case (PTR_ADD, Seq(offsetp, tagp)) =>
+          val st     = unwrapTag(tagp)
+          val ty     = genType(st, box = false)
           val offset = genExpr(offsetp, ptr)
           offset withOp Op.Elem(ty, ptr.value, Seq(offset.value))
 
-        case (PTR_SUB, Seq(offsetp)) =>
+        case (PTR_SUB, Seq(offsetp, tagp)) =>
+          val st     = unwrapTag(tagp)
+          val ty     = genType(st, box = false)
           val offset = genExpr(offsetp, ptr)
           val neg    = negateInt(offset.value, offset)
           neg withOp Op.Elem(ty, ptr.value, Seq(neg.value))
 
-        case (PTR_APPLY, Seq(offsetp)) =>
+        case (PTR_APPLY, Seq(offsetp, tagp)) =>
+          val st     = unwrapTag(tagp)
+          val ty     = genType(st, box = false)
           val offset = genExpr(offsetp, ptr)
           val elem   = offset withOp Op.Elem(ty, ptr.value, Seq(offset.value))
           boxValue(st, elem withOp Op.Load(ty, elem.value))
 
-        case (PTR_UPDATE, Seq(offsetp, valuep)) =>
+        case (PTR_UPDATE, Seq(offsetp, valuep, tagp)) =>
+          val st     = unwrapTag(tagp)
+          val ty     = genType(st, box = false)
           val offset = genExpr(offsetp, ptr)
           val value  = unboxValue(st, partial = false, genExpr(valuep, offset))
           val elem   = value withOp Op.Elem(ty, ptr.value, Seq(offset.value))
           elem withOp Op.Store(ty, elem.value, value.value)
+
+        case (PTR_FIELD, Seq(tagp, _)) =>
+          val st    = unwrapTag(tagp)
+          val ty    = genType(st, box = false)
+          val index = PtrFieldMethod.indexOf(sel.symbol)
+          val path  = Seq(nir.Val.I32(0), nir.Val.I32(index))
+          ptr withOp Op.Elem(ty, ptr.value, path)
       }
     }
 
@@ -1389,7 +1411,7 @@ abstract class NirCodeGen
         case FUN_PTR_CALL =>
           val Apply(sel @ Select(funp, _), allargsp) = app
 
-          val arity = FunctionPtrApply.indexOf(sel.symbol)
+          val arity = CFunctionPtrApply.indexOf(sel.symbol)
 
           val (argsp, tagsp) = allargsp.splitAt(arity)
 
@@ -1859,7 +1881,7 @@ abstract class NirCodeGen
             WrapArray(MaybeAsInstanceOf(ArrayValue(tpt, elems)))) =>
           val values = mutable.UnrolledBuffer.empty[Val]
           val resfocus = elems.foldLeft(focus) {
-            case (focus, Vararg(st, argp)) =>
+            case (focus, CVararg(st, argp)) =>
               val arg = unboxValue(st, partial = false, genExpr(argp, focus))
               values += arg.value
               arg
@@ -1872,9 +1894,9 @@ abstract class NirCodeGen
       }
     }
 
-    object Vararg {
+    object CVararg {
       def unapply(tree: Tree): Option[(SimpleType, Tree)] = tree match {
-        case Apply(fun, Seq(argp, tagp)) if fun.symbol == VarargMethod =>
+        case Apply(fun, Seq(argp, tagp)) if fun.symbol == CVarargMethod =>
           val st = unwrapTag(tagp)
           Some((st, argp))
         case _ =>
