@@ -1,5 +1,5 @@
 package scala.scalanative
-package native
+package runtime
 
 /** An annotation that is used to mark classes to be
  *  optimized as immutable pass-by-value structures.

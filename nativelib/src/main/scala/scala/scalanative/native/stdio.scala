@@ -83,8 +83,8 @@ object stdio {
 
   // Types
 
-  @struct class FILE private ()
-  @struct class fpos_t private ()
+  type FILE   = CStruct0
+  type fpos_t = CStruct0
 
   // Macros
 
