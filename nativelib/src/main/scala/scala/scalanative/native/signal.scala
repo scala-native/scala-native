@@ -11,10 +11,6 @@ object signal {
     extern
   def raise(sig: CInt): CInt = extern
 
-  // Types
-
-  @struct class sig_atomic_t private ()
-
   // Macros
 
   @name("scalanative_libc_sig_dfl")

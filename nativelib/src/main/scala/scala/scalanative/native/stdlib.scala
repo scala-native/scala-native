@@ -49,10 +49,6 @@ object stdlib {
   def strtof(str: CString, str_end: Ptr[CString]): CFloat  = extern
   def strtod(str: CString, str_end: Ptr[CString]): CDouble = extern
 
-  // Types
-
-  @struct class jmp_buf private ()
-
   // Macros
 
   @name("scalanative_libc_exit_success")

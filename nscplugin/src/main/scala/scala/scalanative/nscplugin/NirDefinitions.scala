@@ -31,7 +31,6 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val NameClass   = getRequiredClass("scala.scalanative.native.name")
     lazy val LinkClass   = getRequiredClass("scala.scalanative.native.link")
     lazy val ExternClass = getRequiredClass("scala.scalanative.native.extern")
-    lazy val StructClass = getRequiredClass("scala.scalanative.native.struct")
     lazy val PinClass    = getRequiredClass("scala.scalanative.native.pin")
 
     lazy val InlineHintClass = getRequiredClass(
@@ -105,6 +104,8 @@ trait NirDefinitions { self: NirGlobalAddons =>
     }
 
     // Native runtime
+
+    lazy val StructClass = getRequiredClass("scala.scalanative.runtime.struct")
 
     lazy val RuntimePackage = getPackage(TermName("scala.scalanative.runtime"))
 
