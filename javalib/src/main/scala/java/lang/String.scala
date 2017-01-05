@@ -170,8 +170,8 @@ final class _String()
       if (count < string.count) offset + count
       else offset + string.count
     while (o1 < end) {
-      val c1: Char    = compareValue(value(o1))
-      val c2: Char    = compareValue(string.value(o2))
+      val c1: Char = compareValue(value(o1))
+      val c2: Char = compareValue(string.value(o2))
       o1 += 1
       o2 += 1
       val result: Int = c1 - c2

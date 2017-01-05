@@ -507,8 +507,8 @@ object Character {
   }
 
   /* Conversions */
-  def toUpperCase(c: scala.Char): scala.Char = c.toString.toUpperCase()(0)
-  def toLowerCase(c: scala.Char): scala.Char = c.toString.toLowerCase()(0)
+  def toUpperCase(c: scala.Char): scala.Char = ???
+  def toLowerCase(c: scala.Char): scala.Char = ???
 
   def toChars(codePoint: Int): Array[Char] = {
     if (!isValidCodePoint(codePoint))
