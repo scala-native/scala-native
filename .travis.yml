@@ -15,7 +15,7 @@ matrix:
         - wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
         - sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
         - sudo apt-get -qq update
-        - sudo apt-get install -y libgc-dev clang++-3.7 llvm-3.7 llvm-3.7-dev llvm-3.7-runtime llvm-3.7-tool
+        - sudo apt-get install -y libgc-dev clang++-3.7 llvm-3.7 llvm-3.7-dev llvm-3.7-runtime llvm-3.7-tool libunwind7-dev
     - os: osx
       osx_image: xcode7.3
       before_install:
