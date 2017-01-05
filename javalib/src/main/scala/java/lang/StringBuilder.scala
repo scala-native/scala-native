@@ -30,20 +30,33 @@ final class StringBuilder
   }
 
   def append(b: scala.Boolean): StringBuilder = {
-    append0(if (b) "true" else "false"); this
+    append0(if (b) "true" else "false")
+    this
   }
-  def append(c: scala.Char): StringBuilder = { append0(c); this }
+
+  def append(c: scala.Char): StringBuilder = {
+    append0(c)
+    this
+  }
+
   def append(i: scala.Int): StringBuilder = {
-    append0(Integer.toString(i)); this
+    append0(Integer.toString(i))
+    this
   }
+
   def append(l: scala.Long): StringBuilder = {
-    append0(Long.toString(l)); this
+    append0(Long.toString(l))
+    this
   }
+
   def append(f: scala.Float): StringBuilder = {
-    append0(Float.toString(f)); this
+    append0(Float.toString(f))
+    this
   }
+
   def append(d: scala.Double): StringBuilder = {
-    append0(Double.toString(d)); this
+    append0(Double.toString(d))
+    this
   }
 
   def append(obj: Object): StringBuilder = {
@@ -52,16 +65,30 @@ final class StringBuilder
     this
   }
 
-  def append(str: String): StringBuilder = { append0(str); this }
+  def append(str: String): StringBuilder = {
+    append0(str)
+    this
+  }
 
-  // TODO:
-  // def append(sb: StringBuffer): StringBuilder
+  def append(sb: StringBuffer): StringBuilder = {
+    if (sb == null) {
+      appendNull()
+    } else {
+      append0(sb.getValue(), 0, sb.length())
+    }
+    this
+  }
 
-  def append(str: Array[scala.Char]): StringBuilder = { append0(str); this }
+  def append(str: Array[scala.Char]): StringBuilder = {
+    append0(str)
+    this
+  }
+
   def append(str: Array[scala.Char],
              offset: scala.Int,
              len: scala.Int): StringBuilder = {
-    append0(str, offset, len); this
+    append0(str, offset, len)
+    this
   }
 
   def append(seq: CharSequence): StringBuilder = {
