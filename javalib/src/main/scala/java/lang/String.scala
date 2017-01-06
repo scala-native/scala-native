@@ -153,9 +153,9 @@ final class _String()
       if (count < string.count) offset + count
       else offset + string.count
     while (o1 < end) {
+      val result: Int = value(o1) - string.value(o2)
       o1 += 1
       o2 += 1
-      val result: Int = value(o1) - string.value(o2)
       if (result != 0) {
         return result
       }
@@ -170,10 +170,10 @@ final class _String()
       if (count < string.count) offset + count
       else offset + string.count
     while (o1 < end) {
+      val c1: Char = compareValue(value(o1))
+      val c2: Char = compareValue(string.value(o2))
       o1 += 1
       o2 += 1
-      val c1: Char    = compareValue(value(o1))
-      val c2: Char    = compareValue(string.value(o2))
       val result: Int = c1 - c2
       if (result != 0) {
         return result
@@ -237,10 +237,10 @@ final class _String()
       var o1 = offset
       var o2 = string.offset
       while (o1 < offset + count) {
-        o1 += 1
-        o2 += 1
         val c1 = value(o1)
         val c2 = string.value(o2)
+        o1 += 1
+        o2 += 1
         if (c1 != c2 && toUpperCase(c1) != toUpperCase(c2) &&
             toLowerCase(c1) != toLowerCase(c2)) {
           return false
@@ -271,8 +271,8 @@ final class _String()
         var index = _index
         var i     = offset + start
         while (i < end) {
-          index += 1
           data(index) = value(i).toByte
+          index += 1
           i += 1
         }
       } catch {
@@ -514,10 +514,10 @@ final class _String()
         val target = string.value
 
         while (thisStart < end) {
-          thisStart += 1
-          start += 1
           val c1 = value(thisStart)
           val c2 = target(start)
+          thisStart += 1
+          start += 1
           if (c1 != c2 && toUpperCase(c1) != toUpperCase(c2) &&
               toLowerCase(c1) != toLowerCase(c2)) {
             return false
@@ -540,8 +540,8 @@ final class _String()
       System.arraycopy(value, offset, buffer, 0, count)
 
       do {
-        index += 1
         buffer(index) = newChar
+        index += 1
         index = indexOf(oldChar, index)
       } while (index != -1)
 
