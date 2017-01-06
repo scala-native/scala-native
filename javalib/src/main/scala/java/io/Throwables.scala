@@ -6,6 +6,10 @@ class IOException(s: String, e: Throwable) extends Exception(s, e) {
   def this() = this(null, null)
 }
 
+class FileNotFoundException(s: String) extends IOException(s) {
+  def this() = this(null)
+}
+
 class EOFException(s: String) extends IOException(s) {
   def this() = this(null)
 }

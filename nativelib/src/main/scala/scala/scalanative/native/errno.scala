@@ -13,4 +13,6 @@ object errno {
   def EILSEQ: CInt = extern
   @name("scalanative_erange")
   def ERANGE: CInt = extern
+  @name("scalanative_eexist")
+  def EEXIST: CInt = extern
 }
