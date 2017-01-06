@@ -1,6 +1,7 @@
 package java.io
 
 abstract class OutputStream extends Object with Closeable with Flushable {
+
   def write(b: Int): Unit
 
   def write(b: Array[Byte]): Unit =

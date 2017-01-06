@@ -166,3 +166,7 @@ int scalanative_eilseq() {
 int scalanaitve_erange() {
     return ERANGE;
 }
+
+int scalanative_eexist() {
+    return EEXIST;
+}

@@ -60,9 +60,11 @@ object Charset {
   def defaultCharset(): Charset =
     UTF_8
 
-  def forName(charsetName: String): Charset =
-    CharsetMap.getOrElse(charsetName.toLowerCase,
-                         throw new UnsupportedCharsetException(charsetName))
+  def forName(charsetName: String): Charset = {
+    val m = CharsetMap
+    m.getOrElse(charsetName.toLowerCase,
+                throw new UnsupportedCharsetException(charsetName))
+  }
 
   def isSupported(charsetName: String): Boolean =
     CharsetMap.contains(charsetName.toLowerCase)
@@ -124,4 +126,5 @@ object Charset {
 
     m
   }
+
 }

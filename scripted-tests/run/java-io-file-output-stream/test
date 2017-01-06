@@ -1,0 +1,9 @@
+> deleteFile
+> createFileWithAlreadyWrittenText
+> run owerwriteConstructor
+> constructorFileCheck
+> deleteFile
+> createFileWithAlreadyWrittenText
+> run appendConstructor
+> constructorFileAppendTrueCheck
+> deleteFile
