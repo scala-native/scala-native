@@ -1,6 +1,19 @@
 package scala.scalanative
+import native.CFunctionPtr1
 
 object IssuesSuite extends tests.Suite {
+
+  def foo(arg: Int): Unit                        = ()
+  def crash(arg: CFunctionPtr1[Int, Unit]): Unit = ()
+  def lifted208Test(): Unit                      = crash(foo _)
+
+  test("#208") {
+    // If we put the test directly, behind the scenes, this will
+    // create a nested closure with a pointer to the outer one
+    // and the latter is not supported in scala-native
+    lifted208Test()
+  }
+
   test("#253") {
     class Cell(val value: Int)
 
