@@ -56,6 +56,24 @@ This the general workflow for contributing to Scala Native.
 6.  Once the code has passed review the Pull Request can be merged into
     the distribution.
 
+Git workflow
+------------
+
+Scala Native repositories maintain a linear merge-free history on the master
+branch. All of the incoming pull requests are merged using squash and merge
+policy (i.e. one merged pull request corresponds to one squashed commit to the
+master branch.)
+
+You do not need to squash commits manually. It's typical to add new commits
+to the PR branch to accomodate changes that were suggested by the reviewers.
+Squashing things manually and/or rewriting history on the PR branch is all-right
+as long as it's clear that concerns raised by reviewers have been addressed.
+
+Maintaining a long-standing work-in-progress (WIP) branch requires one to rebase
+on top of latest master using ``git rebase --onto`` from time to time.
+It's strongly recommended not to perform any merges on your branches that you
+are planning to use as a PR branch.
+
 Pull Request Requirements
 -------------------------
 
