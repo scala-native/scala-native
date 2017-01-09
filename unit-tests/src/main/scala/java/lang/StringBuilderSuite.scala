@@ -34,6 +34,7 @@ object StringBuilderSuite extends tests.Suite {
     assertEquals("asdf", newBuilder.insert(0, "asdf").toString)
     assertEquals("null", newBuilder.insert(0, null: AnyRef).toString)
     assertEquals("null", newBuilder.insert(0, null: String).toString)
+    assertEquals("nu", newBuilder.insert(0, null: CharSequence, 0, 2).toString)
     assertEquals("true", newBuilder.insert(0, true).toString)
     assertEquals("a", newBuilder.insert(0, 'a').toString)
     assertEquals("abcd",
@@ -55,18 +56,9 @@ object StringBuilderSuite extends tests.Suite {
                  initBuilder("abef")
                    .insert(2, Array('a', 'b', 'c', 'd', 'e'), 2, 2)
                    .toString)
-  }
 
-  testFails("insert null start=0 end=2", issue = -1) {
-    assertEquals("nu", newBuilder.insert(0, null: CharSequence, 0, 2).toString)
-  }
-
-  testFails("insert underflow", issue = -1) {
     expectThrows(classOf[StringIndexOutOfBoundsException],
                  initBuilder("abcd").insert(-1, "whatever"))
-  }
-
-  test("insert overflow") {
     expectThrows(classOf[StringIndexOutOfBoundsException],
                  initBuilder("abcd").insert(5, "whatever"))
   }
@@ -75,6 +67,11 @@ object StringBuilderSuite extends tests.Suite {
     assertEquals("2.5", newBuilder.insert(0, 2.5f).toString)
     assertEquals("3.5", newBuilder.insert(0, 3.5).toString)
   }
+
+  // TODO: segfaults with EXC_BAD_ACCESS (code=1, address=0x0)
+  // testFails("insert string builder", issue = -1) {
+  //   assertEquals("abcdef", initBuilder("abef").insert(2, initBuilder("abcde"), 2, 4).toString)
+  // }
 
   test("should_allow_string_interpolation_to_survive_null_and_undefined") {
     assertEquals("null", s"${null}")

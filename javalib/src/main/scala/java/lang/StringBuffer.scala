@@ -218,11 +218,11 @@ final class StringBuffer
     }
 
   def insert(index: scala.Int,
-             s: CharSequence,
+             seq: CharSequence,
              start: scala.Int,
              end: scala.Int): StringBuffer =
     synchronized {
-      insert0(index, s, start, end)
+      insert0(index, seq, start, end)
       return this
     }
 

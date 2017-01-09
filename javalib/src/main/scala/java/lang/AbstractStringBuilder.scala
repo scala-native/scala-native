@@ -242,7 +242,7 @@ abstract class AbstractStringBuilder private (unit: Unit) {
   }
 
   final def insert0(index: scala.Int, string: String): Unit = {
-    if (0 <= length && index <= count) {
+    if (0 <= index && index <= count) {
       val string0 = if (string != null) string else "null"
       val min     = string0.length
       if (min != 0) {

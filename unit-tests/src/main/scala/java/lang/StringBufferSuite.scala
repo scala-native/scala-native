@@ -50,14 +50,9 @@ object StringBufferSuite extends tests.Suite {
     assertEquals(
       "abcdef",
       initBuf("abef").insert(2, Array('a', 'b', 'c', 'd', 'e'), 2, 2).toString)
-  }
 
-  testFails("insert underflow", issue = -1) {
     expectThrows(classOf[StringIndexOutOfBoundsException],
                  initBuf("abcd").insert(-1, "whatever"))
-  }
-
-  test("insert overflow") {
     expectThrows(classOf[StringIndexOutOfBoundsException],
                  initBuf("abcd").insert(5, "whatever"))
   }
@@ -68,7 +63,7 @@ object StringBufferSuite extends tests.Suite {
   }
 
   // TODO: segfaults with EXC_BAD_ACCESS (code=1, address=0x0)
-  // testFails("insert string buffer") {
+  // testFails("insert string buffer", issue = -1) {
   //   assertEquals("abcdef", initBuf("abef").insert(2, initBuf("abcde"), 2, 4).toString)
   // }
 

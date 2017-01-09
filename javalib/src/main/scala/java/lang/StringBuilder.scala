@@ -181,7 +181,7 @@ final class StringBuilder
              seq: CharSequence,
              start: scala.Int,
              end: scala.Int): StringBuilder = {
-    insert0(offset, if (seq == null) "null" else seq.toString)
+    insert0(offset, seq, start, end)
     this
   }
 
