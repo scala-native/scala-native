@@ -102,7 +102,7 @@ object StringBuilderSuite extends tests.Suite {
                  initBuilder("0123").replace(-1, 3, "x"))
   }
 
-  testFails("setCharAt", issue = -1) {
+  test("setCharAt") {
     val b = newBuilder
     b.append("foobar")
 
@@ -112,8 +112,8 @@ object StringBuilderSuite extends tests.Suite {
     b.setCharAt(5, 'h')
     assertEquals("foxbah", b.toString)
 
-    expectThrows(classOf[IndexOutOfBoundsException], b.setCharAt(-1, 'h'))
-    expectThrows(classOf[IndexOutOfBoundsException], b.setCharAt(6, 'h'))
+    expectThrows(classOf[StringIndexOutOfBoundsException], b.setCharAt(-1, 'h'))
+    expectThrows(classOf[StringIndexOutOfBoundsException], b.setCharAt(6, 'h'))
   }
 
   test("ensureCapacity") {
@@ -121,11 +121,11 @@ object StringBuilderSuite extends tests.Suite {
     newBuilder.ensureCapacity(10)
   }
 
-  testFails("should_properly_setLength", issue = -1) {
+  test("should_properly_setLength") {
     val b = newBuilder
     b.append("foobar")
 
-    expectThrows(classOf[IndexOutOfBoundsException], b.setLength(-3))
+    expectThrows(classOf[StringIndexOutOfBoundsException], b.setLength(-3))
 
     assertEquals("foo", { b.setLength(3); b.toString })
     assertEquals("foo\u0000\u0000\u0000", { b.setLength(6); b.toString })

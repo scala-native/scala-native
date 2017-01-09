@@ -90,7 +90,7 @@ object StringBufferSuite extends tests.Suite {
                  initBuf("0123").replace(-1, 3, "x"))
   }
 
-  testFails("setCharAt", issue = -1) {
+  test("setCharAt") {
     val buf = newBuf
     buf.append("foobar")
 
@@ -100,8 +100,8 @@ object StringBufferSuite extends tests.Suite {
     buf.setCharAt(5, 'h')
     assertEquals("foxbah", buf.toString)
 
-    expectThrows(classOf[IndexOutOfBoundsException], buf.setCharAt(-1, 'h'))
-    expectThrows(classOf[IndexOutOfBoundsException], buf.setCharAt(6, 'h'))
+    expectThrows(classOf[StringIndexOutOfBoundsException], buf.setCharAt(-1, 'h'))
+    expectThrows(classOf[StringIndexOutOfBoundsException], buf.setCharAt(6, 'h'))
   }
 
   test("ensureCapacity") {
@@ -109,11 +109,11 @@ object StringBufferSuite extends tests.Suite {
     newBuf.ensureCapacity(10)
   }
 
-  testFails("should_properly_setLength", issue = -1) {
+  test("should_properly_setLength") {
     val buf = newBuf
     buf.append("foobar")
 
-    expectThrows(classOf[IndexOutOfBoundsException], buf.setLength(-3))
+    expectThrows(classOf[StringIndexOutOfBoundsException], buf.setLength(-3))
 
     assertEquals("foo", { buf.setLength(3); buf.toString })
     assertEquals("foo\u0000\u0000\u0000", { buf.setLength(6); buf.toString })
