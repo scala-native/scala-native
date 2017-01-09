@@ -67,26 +67,14 @@ object StringBufferSuite extends tests.Suite {
   //   assertEquals("abcdef", initBuf("abef").insert(2, initBuf("abcde"), 2, 4).toString)
   // }
 
-  testFails("deleteCharAt 1", issue = -1) {
+  test("deleteCharAt") {
     assertEquals("023", initBuf("0123").deleteCharAt(1).toString)
-  }
-
-  testFails("deleteCharAt 2", issue = -1) {
     assertEquals("123", initBuf("0123").deleteCharAt(0).toString)
-  }
-
-  testFails("deleteCharAt 3", issue = -1) {
     assertEquals("012", initBuf("0123").deleteCharAt(3).toString)
-  }
-
-  test("deleteCharAt underflow") {
     expectThrows(classOf[StringIndexOutOfBoundsException],
-                 initBuf("0123").deleteCharAt(-1))
-  }
-
-  test("deleteCharAt overflow") {
+        initBuf("0123").deleteCharAt(-1))
     expectThrows(classOf[StringIndexOutOfBoundsException],
-                 initBuf("0123").deleteCharAt(4))
+        initBuf("0123").deleteCharAt(4))
   }
 
   test("replace") {

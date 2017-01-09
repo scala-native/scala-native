@@ -182,6 +182,7 @@ abstract class AbstractStringBuilder private (unit: Unit) {
         shared = false
       }
     }
+    count -= 1
   }
 
   def ensureCapacity(min: scala.Int): Unit = {

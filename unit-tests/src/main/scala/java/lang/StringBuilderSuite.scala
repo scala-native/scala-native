@@ -77,26 +77,14 @@ object StringBuilderSuite extends tests.Suite {
     assertEquals("null", s"${null}")
   }
 
-  testFails("deleteCharAt 1", issue = -1) {
+  test("deleteCharAt") {
     assertEquals("023", initBuilder("0123").deleteCharAt(1).toString)
-  }
-
-  testFails("deleteCharAt 2", issue = -1) {
     assertEquals("123", initBuilder("0123").deleteCharAt(0).toString)
-  }
-
-  testFails("deleteCharAt 3", issue = -1) {
     assertEquals("012", initBuilder("0123").deleteCharAt(3).toString)
-  }
-
-  test("deleteCharAt underflow") {
     expectThrows(classOf[StringIndexOutOfBoundsException],
-                 initBuilder("0123").deleteCharAt(-1))
-  }
-
-  test("deleteCharAt overflow") {
+        initBuilder("0123").deleteCharAt(-1))
     expectThrows(classOf[StringIndexOutOfBoundsException],
-                 initBuilder("0123").deleteCharAt(4))
+        initBuilder("0123").deleteCharAt(4))
   }
 
   test("replace") {
