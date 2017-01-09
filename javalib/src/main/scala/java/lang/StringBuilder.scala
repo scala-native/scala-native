@@ -172,6 +172,11 @@ final class StringBuilder
     this
   }
 
+  def insert(index: Int, chars: Array[scala.Char]): StringBuilder = {
+    insert0(index, chars)
+    this
+  }
+
   def insert(offset: scala.Int,
              seq: CharSequence,
              start: scala.Int,
