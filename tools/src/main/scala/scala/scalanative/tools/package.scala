@@ -58,7 +58,7 @@ package object tools {
 
   /** Given low-level assembly, emit LLVM IR for it to the buildDirectory. */
   def codegen(config: Config, assembly: Seq[nir.Defn]): Unit = {
-    val gen = scalanative.codegen.CodeGen(assembly)
+    val gen = scalanative.codegen.CodeGen(config, assembly)
 
     withScratchBuffer { buffer =>
       gen.gen(buffer)
