@@ -64,4 +64,9 @@ object StringSuite extends tests.Suite {
     "This is a test".getBytes(10, 14, b, 0)
     assert(new String(b) equals "test")
   }
+
+  test("literals have consistent hash code implementation") {
+    assert(
+      "foobar".hashCode == new String(Array('f', 'o', 'o', 'b', 'a', 'r')).hashCode)
+  }
 }

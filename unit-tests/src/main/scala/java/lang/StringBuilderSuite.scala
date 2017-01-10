@@ -82,9 +82,9 @@ object StringBuilderSuite extends tests.Suite {
     assertEquals("123", initBuilder("0123").deleteCharAt(0).toString)
     assertEquals("012", initBuilder("0123").deleteCharAt(3).toString)
     expectThrows(classOf[StringIndexOutOfBoundsException],
-        initBuilder("0123").deleteCharAt(-1))
+                 initBuilder("0123").deleteCharAt(-1))
     expectThrows(classOf[StringIndexOutOfBoundsException],
-        initBuilder("0123").deleteCharAt(4))
+                 initBuilder("0123").deleteCharAt(4))
   }
 
   test("replace") {
@@ -112,7 +112,8 @@ object StringBuilderSuite extends tests.Suite {
     b.setCharAt(5, 'h')
     assertEquals("foxbah", b.toString)
 
-    expectThrows(classOf[StringIndexOutOfBoundsException], b.setCharAt(-1, 'h'))
+    expectThrows(classOf[StringIndexOutOfBoundsException],
+                 b.setCharAt(-1, 'h'))
     expectThrows(classOf[StringIndexOutOfBoundsException], b.setCharAt(6, 'h'))
   }
 
@@ -131,7 +132,7 @@ object StringBuilderSuite extends tests.Suite {
     assertEquals("foo\u0000\u0000\u0000", { b.setLength(6); b.toString })
   }
 
-  testFails("appendCodePoint", issue = -1) {
+  testFails("appendCodePoint", issue = 482) {
     val b = newBuilder
     b.appendCodePoint(0x61)
     assertEquals("a", b.toString)

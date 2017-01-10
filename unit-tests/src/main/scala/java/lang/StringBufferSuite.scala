@@ -72,9 +72,9 @@ object StringBufferSuite extends tests.Suite {
     assertEquals("123", initBuf("0123").deleteCharAt(0).toString)
     assertEquals("012", initBuf("0123").deleteCharAt(3).toString)
     expectThrows(classOf[StringIndexOutOfBoundsException],
-        initBuf("0123").deleteCharAt(-1))
+                 initBuf("0123").deleteCharAt(-1))
     expectThrows(classOf[StringIndexOutOfBoundsException],
-        initBuf("0123").deleteCharAt(4))
+                 initBuf("0123").deleteCharAt(4))
   }
 
   test("replace") {
@@ -100,8 +100,10 @@ object StringBufferSuite extends tests.Suite {
     buf.setCharAt(5, 'h')
     assertEquals("foxbah", buf.toString)
 
-    expectThrows(classOf[StringIndexOutOfBoundsException], buf.setCharAt(-1, 'h'))
-    expectThrows(classOf[StringIndexOutOfBoundsException], buf.setCharAt(6, 'h'))
+    expectThrows(classOf[StringIndexOutOfBoundsException],
+                 buf.setCharAt(-1, 'h'))
+    expectThrows(classOf[StringIndexOutOfBoundsException],
+                 buf.setCharAt(6, 'h'))
   }
 
   test("ensureCapacity") {
@@ -119,7 +121,7 @@ object StringBufferSuite extends tests.Suite {
     assertEquals("foo\u0000\u0000\u0000", { buf.setLength(6); buf.toString })
   }
 
-  testFails("appendCodePoint", issue = -1) {
+  testFails("appendCodePoint", issue = 482) {
     val buf = newBuf
     buf.appendCodePoint(0x61)
     assertEquals("a", buf.toString)

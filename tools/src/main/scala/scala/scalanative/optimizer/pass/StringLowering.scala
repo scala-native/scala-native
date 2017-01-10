@@ -42,12 +42,27 @@ class StringLowering(implicit top: Top) extends Pass {
         case StringValueName          => charsConst
         case StringOffsetName         => Val.I32(0)
         case StringCountName          => charsLength
-        case StringCachedHashCodeName => Val.I32(v.hashCode)
+        case StringCachedHashCodeName => Val.I32(stringHashCode(v))
         case _                        => util.unreachable
       }
 
       Val.Const(Val.Struct(Global.None, StringCls.typeConst +: fieldValues))
   }
+
+  // Update java.lang.String::hashCode whenever you change this method.
+  private def stringHashCode(s: String): Int =
+    if (s.length == 0) {
+      0
+    } else {
+      val value = s.toCharArray
+      var hash  = 0
+      var i     = 0
+      while (i < value.length) {
+        hash = value(i) + ((hash << 5) - hash)
+        i += 1
+      }
+      hash
+    }
 }
 
 object StringLowering extends PassCompanion {
