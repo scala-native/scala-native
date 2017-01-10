@@ -206,9 +206,8 @@ final class _String()
     case s: _String if s eq this =>
       true
     case s: _String =>
-      val thisHash = this.hashCode()
-      val thatHash = s.hashCode()
-
+      val thisHash = this.hashCode
+      val thatHash = s.hashCode
       if (count != s.count ||
           (thisHash != thatHash && thisHash != 0 && thatHash != 0)) {
         false
@@ -221,7 +220,6 @@ final class _String()
             i += 1
           }
         }
-
         true
       }
     case _ =>
@@ -307,19 +305,25 @@ final class _String()
     }
   }
 
+  // Update StringLowering::stringHashCode whenever you change this method.
   override def hashCode(): Int = {
-    if (cachedHashCode == 0) {
-      cachedHashCode = {
+    val currentHashCode = cachedHashCode
+    if (currentHashCode == 0) {
+      if (count == 0) {
+        0
+      } else {
         var hash = 0
         var i    = offset
         while (i < count + offset) {
           hash = value(i) + ((hash << 5) - hash)
           i += 1
         }
+        cachedHashCode = hash
         hash
       }
+    } else {
+      currentHashCode
     }
-    cachedHashCode
   }
 
   def indexOf(c: Int, _start: Int): Int = {
