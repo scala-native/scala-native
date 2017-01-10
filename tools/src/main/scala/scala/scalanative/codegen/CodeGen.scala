@@ -25,9 +25,11 @@ sealed trait CodeGen {
 object CodeGen {
 
   /** Create a new code generator for given assembly. */
-  def apply(assembly: Seq[Defn]): CodeGen = new Impl(assembly)
+  def apply(config: tools.Config, assembly: Seq[Defn]): CodeGen =
+    new Impl(config.target, assembly)
 
-  private final class Impl(assembly: Seq[Defn]) extends CodeGen {
+  private final class Impl(target: String, assembly: Seq[Defn])
+      extends CodeGen {
     private val fresh = new Fresh("gen")
     private val globals = assembly.collect {
       case Defn.Var(_, n, ty, _)     => n -> ty
@@ -54,6 +56,13 @@ object CodeGen {
       buffer.put(showDefns(assembly).toString.getBytes)
 
     implicit val showDefns: Show[Seq[Defn]] = Show { defns =>
+      val targetTriple =
+        if (target.nonEmpty) {
+          val triple = "\"" + target + "\""
+          Seq(sh"target triple = $triple")
+        } else {
+          Seq()
+        }
       val sorted = defns.sortBy {
         case _: Defn.Struct  => 1
         case _: Defn.Const   => 2
@@ -63,7 +72,7 @@ object CodeGen {
         case _               => -1
       }
 
-      r(prelude ++: sorted.map(d => sh"$d"), sep = nl(""))
+      r(targetTriple ++: prelude ++: sorted.map(d => sh"$d"), sep = nl(""))
     }
 
     implicit val showDefn: Show[Defn] = Show {
