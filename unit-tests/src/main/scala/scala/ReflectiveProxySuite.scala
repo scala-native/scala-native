@@ -244,7 +244,7 @@ object ReflectiveProxySuite extends tests.Suite {
     assert(objNotifyTest(new A()) == 1)
   }
 
-  /*
+  /* uncomment once clone is implemented on object
   test("should work on java.lang.Object.clone") {
     type ObjCloneLike = Any { def clone(): AnyRef }
     def objCloneTest(obj: ObjCloneLike): AnyRef = obj.clone()
@@ -260,24 +260,60 @@ object ReflectiveProxySuite extends tests.Suite {
     assert(bClone.x == 1)
   }*/
 
-  test("should work on scala.AnyRef.{ eq, ne }") {
-    type ObjEqLike = Any {
+  test("should not work on scala.AnyRef.{ eq, ne, synchronized }") {
+    type ObjWithAnyRefPrimitives = Any {
       def eq(that: AnyRef): Boolean
       def ne(that: AnyRef): Boolean
+      def synchronized[T](f: T): Any
     }
-    def objEqTest(obj: ObjEqLike, that: AnyRef): Boolean = obj eq that
-    def objNeTest(obj: ObjEqLike, that: AnyRef): Boolean = obj ne that
+
+    def objEqTest(obj: ObjWithAnyRefPrimitives, that: AnyRef): Boolean =
+      obj eq that
+    def objNeTest(obj: ObjWithAnyRefPrimitives, that: AnyRef): Boolean =
+      obj ne that
+    def objSynchronizedTest(obj: ObjWithAnyRefPrimitives, f: String): Any =
+      obj.synchronized(f)
 
     class A
 
     val a1 = new A
     val a2 = new A
 
-    assert(!objEqTest(a1, a2))
-    assert(objEqTest(a1, a1))
+    assertThrows[java.lang.NoSuchMethodException](objEqTest(a1, a1))
+    assertThrows[java.lang.NoSuchMethodException](objNeTest(a1, a2))
+    assertThrows[java.lang.NoSuchMethodException](
+      objSynchronizedTest(a1, "hello"))
+  }
 
-    assert(objNeTest(a1, a2))
-    assert(!objNeTest(a1, a1))
+  class AnyValWithAnyRefPrimitiveMethods(val x: Int) extends AnyVal {
+    def eq(that: AnyRef): Boolean  = (x + 1) == that
+    def ne(that: AnyRef): Boolean  = (x + 1) != that
+    def synchronized[T](f: T): Any = f + "there"
+  }
+
+  test("should work with { eq, ne, synchronized } on AnyVal") {
+    type ObjWithAnyRefPrimitives = Any {
+      def eq(that: AnyRef): Boolean
+      def ne(that: AnyRef): Boolean
+      def synchronized[T](f: T): Any
+    }
+
+    def objEqTest(obj: ObjWithAnyRefPrimitives, that: AnyRef): Boolean =
+      obj eq that
+    def objNeTest(obj: ObjWithAnyRefPrimitives, that: AnyRef): Boolean =
+      obj ne that
+    def objSynchronizedTest(obj: ObjWithAnyRefPrimitives, f: String): Any =
+      obj.synchronized(f)
+
+    val a = new AnyValWithAnyRefPrimitiveMethods(5)
+
+    assert(objEqTest(a, 6: Integer))
+    assert(!objEqTest(a, 5: Integer))
+
+    assert(!objNeTest(a, 6: Integer))
+    assert(objNeTest(a, 5: Integer))
+
+    assert("hellothere" == objSynchronizedTest(a, "hello"))
   }
 
   test("should work with default arguments") {

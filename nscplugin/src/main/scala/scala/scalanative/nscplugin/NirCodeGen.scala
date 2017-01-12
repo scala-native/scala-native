@@ -877,14 +877,11 @@ abstract class NirCodeGen
 
       val params = sym.tpe.params
 
-      val isEqOrNe = (sym.name == nme.eq || sym.name == nme.ne) &&
-        params.size == 1 && params.head.tpe.typeSymbol == ObjectClass
-
       val isEqEqOrBangEq = (sym.name == EqEqMethodName || sym.name == NotEqMethodName) &&
         params.size == 1
 
-      // If the method is 'eq', 'ne', '=='or '!=' generate class equality instead of dyn-call
-      if(isEqOrNe || isEqEqOrBangEq) {
+      // If the method is '=='or '!=' generate class equality instead of dyn-call
+      if(isEqEqOrBangEq) {
         val neg = sym.name == nme.ne || sym.name == NotEqMethodName
         val last = genClassEquality(obj, args.head, ref = false, negated = neg, focus)
         last withOp Op.Box(nir.Type.Class(nir.Global.Top("java.lang.Boolean")), last.value)
