@@ -120,4 +120,18 @@ object IntegerSuite extends tests.Suite {
     assert(new Integer(Integer.MAX_VALUE) == new Integer(Integer.MAX_VALUE))
     assert(new Integer(Integer.MIN_VALUE) == new Integer(Integer.MIN_VALUE))
   }
+
+  test("highestOneBit") {
+    assert(Integer.highestOneBit(1) == 1)
+    assert(Integer.highestOneBit(2) == 2)
+    assert(Integer.highestOneBit(3) == 2)
+    assert(Integer.highestOneBit(4) == 4)
+    assert(Integer.highestOneBit(5) == 4)
+    assert(Integer.highestOneBit(6) == 4)
+    assert(Integer.highestOneBit(7) == 4)
+    assert(Integer.highestOneBit(8) == 8)
+    assert(Integer.highestOneBit(9) == 8)
+    assert(Integer.highestOneBit(63) == 32)
+    assert(Integer.highestOneBit(64) == 64)
+  }
 }
