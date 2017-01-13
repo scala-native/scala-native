@@ -337,9 +337,8 @@ final class _String()
         while (i < offset + count) {
           if (value(i) == c) {
             return i - offset
-          } else {
-            i += 1
           }
+          i += 1
         }
       } else if (c > Character.MAX_VALUE && c <= Character.MAX_CODE_POINT) {
         var i = start
@@ -350,7 +349,6 @@ final class _String()
           } else if (codePoint >= Character.MIN_SUPPLEMENTARY_CODE_POINT) {
             i += 1
           }
-
           i += 1
         }
       }
@@ -358,9 +356,11 @@ final class _String()
     -1
   }
 
-  def indexOf(c: Int): Int = indexOf(c, 0)
+  def indexOf(c: Int): Int =
+    indexOf(c, 0)
 
-  def indexOf(string: _String): Int = indexOf(string, 0)
+  def indexOf(string: _String): Int =
+    indexOf(string, 0)
 
   def indexOf(subString: _String, _start: Int): Int = {
     var start = _start
@@ -371,28 +371,23 @@ final class _String()
     if (subCount > 0) {
       if (subCount + start > count) {
         return -1
-      } else {
-        val target    = subString.value
-        val subOffset = subString.offset
-        val firstChar = target(subOffset)
-        val end       = subOffset + subCount
-        while (true) {
-          val i = indexOf(firstChar, start)
-          if (i == -1 || subCount + i > count) {
-            return -1
-          }
-
-          var o1 = offset + i
-          var o2 = subOffset
-          while (o2 < end && value(o1) == target(o2)) {
-            o2 = o2 + 1
-            o1 = o1 + 1
-          }
-          if (o2 == end) {
-            return i
-          }
-          start = i + 1
+      }
+      val target    = subString.value
+      val subOffset = subString.offset
+      val firstChar = target(subOffset)
+      val end       = subOffset + subCount
+      while (true) {
+        val i = indexOf(firstChar, start)
+        if (i == -1 || subCount + i > count) {
+          return -1
         }
+        var o1 = offset + i
+        var o2 = subOffset
+        while ({ o2 += 1; o2 } < end && value({ o1 += 1; o1 }) == target(o2)) ()
+        if (o2 == end) {
+          return i
+        }
+        start = i + 1
       }
     }
     if (start < count) start else count
@@ -400,6 +395,9 @@ final class _String()
 
   // See https://github.com/scala-native/scala-native/issues/486
   def intern(): _String = this
+
+  def lastIndexOf(c: Int): Int =
+    lastIndexOf(c, count - 1)
 
   def lastIndexOf(c: Int, _start: Int): Int = {
     var start = _start
@@ -433,7 +431,8 @@ final class _String()
     -1
   }
 
-  def lastIndexOf(c: Int): Int = lastIndexOf(c, count - 1)
+  def lastIndexOf(string: String): Int =
+    lastIndexOf(string, count)
 
   def lastIndexOf(subString: _String, _start: Int): Int = {
     var start    = _start
@@ -452,9 +451,9 @@ final class _String()
           if (i == -1) {
             return -1
           }
-          val o1 = offset + i
-          val o2 = subOffset
-          while (o2 < end && value(o1) == target(o2)) {}
+          var o1 = offset + i
+          var o2 = subOffset
+          while ({ o2 += 1; o2 } < end && value({ o1 += 1; o1 }) == target(o2)) ()
           if (o2 == end) {
             return i
           }

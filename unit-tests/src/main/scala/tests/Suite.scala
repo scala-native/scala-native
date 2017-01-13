@@ -20,7 +20,7 @@ abstract class Suite {
     try {
       f
     } catch {
-      case exc: Exception =>
+      case exc: Throwable =>
         if (exc.getClass.equals(implicitly[ClassTag[T]].runtimeClass))
           return
         else
@@ -36,7 +36,7 @@ abstract class Suite {
     try {
       f
     } catch {
-      case exc: Exception =>
+      case exc: Throwable =>
         if (exc.getClass.equals(cls))
           return
         else
@@ -55,7 +55,7 @@ abstract class Suite {
         body
         true
       } catch {
-        case _: Exception => false
+        case _: Throwable => false
       }
     })
 
@@ -65,7 +65,7 @@ abstract class Suite {
         body
         false
       } catch {
-        case _: Exception => true
+        case _: Throwable => true
       }
     })
 
