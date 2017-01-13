@@ -31,7 +31,7 @@ abstract class LinkerSpec extends FlatSpec {
   def link[T](entry: String,
               sources: Map[String, String],
               driver: Option[Driver] = None)(
-      fn: (Config, Seq[nir.Attr.Link], Seq[nir.Defn]) => T): T =
+      fn: (Config, Seq[nir.Attr.Link], Seq[nir.Defn], Seq[String]) => T): T =
     Scope { implicit in =>
       val outDir     = Files.createTempDirectory("native-test-out").toFile()
       val compiler   = NIRCompiler.getCompiler(outDir)
@@ -40,9 +40,9 @@ abstract class LinkerSpec extends FlatSpec {
       val config     = makeConfig(outDir, entry)
       val driver_    = driver.fold(Driver(config))(identity)
 
-      val (_, links, defns) = tools.link(config, driver_)
+      val (_, links, defns, dyns) = tools.link(config, driver_)
 
-      fn(config, links, defns)
+      fn(config, links, defns, dyns)
     }
 
   private def makePaths(outDir: File)(implicit in: Scope) = {

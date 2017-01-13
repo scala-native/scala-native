@@ -158,13 +158,25 @@ class PerfectHashMap[K, V](val keys: Seq[Int],
 }
 
 object DynmethodPerfectHashMap {
-  def apply(dynmethods: Seq[Method]): Val.Struct = {
+  def apply(dynmethods: Seq[Method], allSignatures: Seq[String]): Val.Struct = {
 
     val entries = dynmethods.foldLeft(Map[String, Val]()) { (acc, m) =>
       acc + (Global.genSignature(m.name, proxy = true) -> m.value)
     }
+    val allEntries = if (entries.isEmpty) {
+      entries
+    } else {
+      allSignatures.map(Global.toProxySignature).foldLeft(entries) {
+        (acc, signature) =>
+          if (!acc.contains(signature)) {
+            acc + (signature -> Val.Null)
+          } else {
+            acc
+          }
+      }
+    }
 
-    val perfectHashMap = PerfectHashMap[String, Val](hash, entries)
+    val perfectHashMap = PerfectHashMap[String, Val](hash, allEntries)
 
     /**
       To make the dispatch faster, when there is only one method,

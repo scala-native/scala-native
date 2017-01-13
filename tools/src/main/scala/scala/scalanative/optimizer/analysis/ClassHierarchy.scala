@@ -59,6 +59,7 @@ object ClassHierarchy {
     var parent: Option[Class]  = None
     var subclasses: Seq[Class] = Seq()
     var traits: Seq[Trait]     = Seq()
+    var dyns: Seq[String]      = Seq()
 
     lazy val ty = Type.Class(name)
 
@@ -97,8 +98,8 @@ object ClassHierarchy {
 
     lazy val vtableValue: Val.Struct = Val.Struct(Global.None, vtable)
 
-    lazy val dynDispatchTableValue: Val = DynmethodPerfectHashMap(
-      alldynmethods)
+    lazy val dynDispatchTableValue: Val =
+      DynmethodPerfectHashMap(alldynmethods, dyns)
 
     lazy val dynDispatchTableStruct =
       Type.Struct(Global.None, Seq(Type.I32, Type.Ptr, Type.Ptr))
@@ -273,7 +274,7 @@ object ClassHierarchy {
     }
   }
 
-  def apply(defns: Seq[Defn]): Top = {
+  def apply(defns: Seq[Defn], dyns: Seq[String]): Top = {
     val nodes   = mutable.Map.empty[Global, Node]
     val structs = mutable.UnrolledBuffer.empty[Struct]
     val classes = mutable.UnrolledBuffer.empty[Class]
@@ -370,6 +371,7 @@ object ClassHierarchy {
       parent.foreach { parent =>
         parent.subclasses = parent.subclasses :+ node
       }
+      node.dyns = dyns
     }
 
     def enrichTraits(): Unit = traits.foreach { node =>

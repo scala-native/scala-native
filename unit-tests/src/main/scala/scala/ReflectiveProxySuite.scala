@@ -258,7 +258,7 @@ object ReflectiveProxySuite extends tests.Suite {
 
     assert(!(b eq bClone))
     assert(bClone.x == 1)
-  }*/
+  } */
 
   test("should not work on scala.AnyRef.{ eq, ne, synchronized }") {
     type ObjWithAnyRefPrimitives = Any {
@@ -350,5 +350,46 @@ object ReflectiveProxySuite extends tests.Suite {
     }
 
     test(new Foo)
+  }
+
+  test("NoSuchMethodException with no dyn method") {
+    class A
+    def callFoo(obj: { def foo(): Int }) = obj.foo()
+    assertThrows[java.lang.NoSuchMethodException] {
+      callFoo((new A).asInstanceOf[{ def foo(): Int }])
+    }
+  }
+
+  test("NoSuchMethodException with one dyn method") {
+    class A {
+      def bar(): Int = 42
+    }
+    def callBar(obj: { def bar(): Int }) = obj.bar()
+    def callFoo(obj: { def foo(): Int }) = obj.foo()
+
+    assert(callBar(new A()) == 42)
+
+    assertThrows[java.lang.NoSuchMethodException] {
+      callFoo((new A).asInstanceOf[{ def foo(): Int }])
+    }
+  }
+
+  test("NoSuchMethodException with method defined in other class") {
+    class A {
+      def bar(): Int = 42
+    }
+
+    class B {
+      def foo(): Int = 43
+    }
+
+    def callBar(obj: { def bar(): Int }) = obj.bar()
+    def callFoo(obj: { def foo(): Int }) = obj.foo()
+
+    assert(callBar(new A()) == 42)
+
+    assertThrows[java.lang.NoSuchMethodException] {
+      callFoo((new A).asInstanceOf[{ def foo(): Int }])
+    }
   }
 }
