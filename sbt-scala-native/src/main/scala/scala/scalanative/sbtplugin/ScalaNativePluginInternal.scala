@@ -182,16 +182,23 @@ object ScalaNativePluginInternal {
     val opaths  = (nativelib ** "*.o").get.map(abs)
     val paths   = apppath +: opaths
     val links = {
-      val os = Option(sys props "os.name").getOrElse("")
+      val os   = Option(sys props "os.name").getOrElse("")
+      val arch = compileTarget.split("-").head
       val librt = os match {
         case "Linux" => Seq("rt")
         case _       => Seq.empty
       }
-      librt ++ applinks
+      val libunwind = os match {
+        case "Mac OS X" => Seq.empty
+        case _          => Seq("unwind", "unwind-" + arch)
+      }
+      librt ++ libunwind ++ applinks
     }
     val linkopts = links.zip(links.map(linkage.get(_))).flatMap {
-      case (name, Some("static"))         => Seq("-static", "-l", name)
-      case (name, Some("dynamic") | None) => Seq("-l", name)
+      case (name, Some("static")) =>
+        Seq("-static", "-l" + name)
+      case (name, Some("dynamic") | None) =>
+        Seq("-l" + name)
       case (name, Some(kind)) =>
         throw new MessageOnlyException(s"uknown linkage kind $kind for $name")
     }
