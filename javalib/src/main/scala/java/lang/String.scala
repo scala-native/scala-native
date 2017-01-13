@@ -398,7 +398,8 @@ final class _String()
     if (start < count) start else count
   }
 
-//  def intern(): _String = ???
+  // See https://github.com/scala-native/scala-native/issues/486
+  def intern(): _String = this
 
   def lastIndexOf(c: Int, _start: Int): Int = {
     var start = _start

@@ -69,4 +69,11 @@ object StringSuite extends tests.Suite {
     assert(
       "foobar".hashCode == new String(Array('f', 'o', 'o', 'b', 'a', 'r')).hashCode)
   }
+
+  testFails("intern", issue = 486) {
+    val chars = Array('f', 'o', 'o', 'b', 'a', 'r')
+    val s1 = new String(chars)
+    val s2 = new String(chars)
+    assert(s1.intern eq s2.intern)
+  }
 }
