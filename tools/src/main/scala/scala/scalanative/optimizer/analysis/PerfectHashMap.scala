@@ -160,23 +160,23 @@ class PerfectHashMap[K, V](val keys: Seq[Int],
 object DynmethodPerfectHashMap {
   def apply(dynmethods: Seq[Method], allSignatures: Seq[String]): Val.Struct = {
 
-    val entries = dynmethods.foldLeft(Map[String, Val]()) { (acc, m) =>
-      acc + (Global.genSignature(m.name, proxy = true) -> m.value)
-    }
-    val allEntries = if (entries.isEmpty) {
-      entries
-    } else {
-      allSignatures.map(Global.toProxySignature).foldLeft(entries) {
-        (acc, signature) =>
-          if (!acc.contains(signature)) {
-            acc + (signature -> Val.Null)
-          } else {
-            acc
-          }
+    val signaturesWithIndex =
+      allSignatures.zipWithIndex.foldLeft(Map[String, Int]()) {
+        case (acc, (signature, index)) => acc + (signature -> index)
       }
+
+    val entries = dynmethods.foldLeft(Map[Int, (Int, Val)]()) {
+      case (acc, m) =>
+        val index = signaturesWithIndex(Global.genSignature(m.name))
+        acc + (index -> (index, m.value))
     }
 
-    val perfectHashMap = PerfectHashMap[String, Val](hash, allEntries)
+    val perfectHashMap = PerfectHashMap[Int, (Int, Val)](hash, entries)
+
+    val (keys, values) = perfectHashMap.values.map {
+      case Some((k, v)) => (Val.I32(k), v)
+      case None         => (Val.I32(-1), Val.Null)
+    }.unzip
 
     /**
       To make the dispatch faster, when there is only one method,
@@ -187,24 +187,18 @@ object DynmethodPerfectHashMap {
       Val.I32(perfectHashMap.size) ::
         (perfectHashMap.size match {
           case 0 =>
-            List(Val.Null, Val.Null)
+            List(Val.Null, Val.Null, Val.Null)
           case 1 =>
-            List(perfectHashMap.values.head.get, Val.Null)
+            List(perfectHashMap.values.head.get._2, Val.Null, Val.Null)
           case _ =>
             List(
               Val.Const(Val.Array(Type.I32, perfectHashMap.keys.map(Val.I32))),
-              Val.Const(
-                Val.Array(Type.Ptr,
-                          perfectHashMap.values.map(_.getOrElse(Val.Null)))
-              )
+              Val.Const(Val.Array(Type.I32, keys)),
+              Val.Const(Val.Array(Type.Ptr, values))
             )
         })
     )
   }
 
-  def hash(key: String, seed: Int): Int = key.foldLeft(seed) {
-    case (hash, c) =>
-      val inter = hash ^ c.toInt
-      inter + (inter << 1) + (inter << 4) + (inter << 5) + (inter << 7) + (inter << 8) + (inter << 25);
-  }
+  def hash(key: Int, seed: Int): Int = key ^ seed
 }

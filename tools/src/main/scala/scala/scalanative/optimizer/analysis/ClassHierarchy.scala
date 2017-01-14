@@ -102,7 +102,7 @@ object ClassHierarchy {
       DynmethodPerfectHashMap(alldynmethods, dyns)
 
     lazy val dynDispatchTableStruct =
-      Type.Struct(Global.None, Seq(Type.I32, Type.Ptr, Type.Ptr))
+      Type.Struct(Global.None, Seq(Type.I32, Type.Ptr, Type.Ptr, Type.Ptr))
 
     lazy val typeStruct: Type.Struct =
       Type.Struct(
@@ -240,6 +240,8 @@ object ClassHierarchy {
     def name  = Global.None
     def attrs = Attrs.None
 
+    var dyns: Seq[String] = Seq()
+
     lazy val dispatchName = Global.Top("__dispatch")
     lazy val dispatchVal  = Val.Global(dispatchName, Type.Ptr)
     lazy val (dispatchTy, dispatchDefn) = {
@@ -340,6 +342,7 @@ object ClassHierarchy {
                       methods = methods,
                       fields = fields)
     top.members = nodes.values.toSeq
+    top.dyns = dyns
 
     def enrichMethods(): Unit = methods.foreach { node =>
       if (node.name.isTop) {

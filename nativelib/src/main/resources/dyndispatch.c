@@ -4,31 +4,36 @@
 #include "perfecthashmap.h"
 
 int mod(int a, int b);
-int hash(char* signature, int sign_length, int d);
+int hash(int key, int d);
 
-void* scalanative_dyndispatch(PerfectHashMap* perfectHashMap, char* sign, int sign_length) {
+void* scalanative_dyndispatch(PerfectHashMap* perfectHashMap, int key) {
 	int size = perfectHashMap->size;
-	int lh1 = mod(hash(sign, sign_length, 0), size);
+	int lh1 = mod(hash(key, 0), size);
 
 
 	int h1 = mod(lh1, size);
-	int d = perfectHashMap->keys[h1];
+	int salt = perfectHashMap->salts[h1];
 
 
-	if(d < 0) {
-		return &(perfectHashMap->values[- d - 1]);
+	if(salt < 0) {
+	    int index = - salt - 1;
+	    if(perfectHashMap->keys[index] == key) {
+		    return &(perfectHashMap->values[index]);
+	    } else {
+	        return NULL;
+	    }
 	} else {
-		int h2 = mod(hash(sign, sign_length, d), size);
-		return &(perfectHashMap->values[h2]);
+		int index = mod(hash(key, salt), size);
+		if(perfectHashMap->keys[index] == key) {
+            return &(perfectHashMap->values[index]);
+        } else {
+            return NULL;
+        }
 	}
 }
 
-int hash(char* buf, int len, int seed) {
-    for (int i = 0; i < len; i++) {
-      seed ^= buf[i];
-      seed += (seed << 1) + (seed << 4) + (seed << 5) + (seed << 7) + (seed << 8) + (seed << 25);
-    }
-    return seed;
+int hash(int key, int seed) {
+    return key ^ seed;
 }
 
 int mod(int a, int b) {
