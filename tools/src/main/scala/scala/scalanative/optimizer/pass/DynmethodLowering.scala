@@ -16,13 +16,7 @@ class DynmethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
       val typeptr             = Val.Local(fresh(), Type.Ptr)
       val methodCountPtr      = Val.Local(fresh(), Type.Ptr)
       val methodCount         = Val.Local(fresh(), Type.I32)
-      val condOne             = Val.Local(fresh(), Type.Bool)
-      val labelOne            = Next(fresh())
-      val labelElse           = Next(fresh())
-      val endifName           = fresh()
       val dyndispatchTablePtr = Val.Local(fresh(), Type.Ptr)
-      val methptrptrThenn     = Val.Local(fresh(), Type.Ptr)
-      val methptrptrElsee     = Val.Local(fresh(), Type.Ptr)
       val methptrptr          = Val.Local(fresh(), Type.Ptr)
 
       val rtiType = Type.Struct(
@@ -93,47 +87,25 @@ class DynmethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
                            typeptr,
                            Seq(Val.I32(0), Val.I32(2), Val.I32(0)))),
           // Load the table size
-          Inst.Let(methodCount.name, Op.Load(Type.I32, methodCountPtr)) //,
+          Inst.Let(methodCount.name, Op.Load(Type.I32, methodCountPtr))
         ),
         throwIfCond(Op.Comp(Comp.Ieq, Type.I32, methodCount, Val.I32(0))),
         Seq(
-          // Test if size is 1
-          Inst.Let(
-            condOne.name,
-            Op.Comp(Comp.Ieq, Type.I32, methodCount, Val.I32(1))
-          ),
-          Inst.If(condOne, labelOne, labelElse),
-          Inst.Label(labelOne.name, Seq()),
-          // If size is 1, method pointer is in the second place of the struct, no need the call C function
-          Inst.Let(methptrptrThenn.name,
-                   Op.Elem(rtiType,
-                           typeptr,
-                           Seq(Val.I32(0), Val.I32(2), Val.I32(1)))),
-          Inst.Jump(
-            Next.Label(endifName,
-                       Seq(Val.Local(methptrptrThenn.name, Type.Ptr)))),
-          Inst.Label(labelElse.name, Seq()),
-          // If the size is greater than 1, call the C function "scalanative_dyndispatch"
-          // with the signature and it's length as argument
+          // If the size is greater than 0, call the C function "scalanative_dyndispatch"
           Inst.Let(dyndispatchTablePtr.name,
                    Op.Elem(rtiType,
                            typeptr,
                            Seq(Val.I32(0), Val.I32(2), Val.I32(0)))),
-          Inst.Let(methptrptrElsee.name,
+          Inst.Let(methptrptr.name,
                    Op.Call(dyndispatchSig,
                            dyndispatch,
                            Seq(dyndispatchTablePtr, Val.I32(methodIndex)),
-                           Next.None)),
-          Inst.Jump(
-            Next.Label(endifName,
-                       Seq(Val.Local(methptrptrElsee.name, Type.Ptr)))),
-          Inst.Label(endifName, Seq(methptrptr))
+                           Next.None))
         ),
         throwIfNull(methptrptr),
         Seq(
           Inst.Let(n, Op.Load(Type.Ptr, methptrptr))
-        ),
-        throwIfNull(Val.Local(n, Type.Ptr))
+        )
       ).flatten
 
   }

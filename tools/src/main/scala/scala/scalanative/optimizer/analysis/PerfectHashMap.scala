@@ -178,18 +178,12 @@ object DynmethodPerfectHashMap {
       case None         => (Val.I32(-1), Val.Null)
     }.unzip
 
-    /**
-      To make the dispatch faster, when there is only one method,
-      the method pointer is at the place of the key array pointer and there is no values array.
-     **/
     Val.Struct(
       Global.None,
       Val.I32(perfectHashMap.size) ::
         (perfectHashMap.size match {
           case 0 =>
             List(Val.Null, Val.Null, Val.Null)
-          case 1 =>
-            List(perfectHashMap.values.head.get._2, Val.Null, Val.Null)
           case _ =>
             List(
               Val.Const(Val.Array(Type.I32, perfectHashMap.keys.map(Val.I32))),
