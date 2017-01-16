@@ -244,10 +244,7 @@ object CodeGen {
       case Type.Vararg => str("...")
       case Type.Ptr    => str("i8*")
       case Type.Bool   => str("i1")
-      case Type.I8     => str("i8")
-      case Type.I16    => str("i16")
-      case Type.I32    => str("i32")
-      case Type.I64    => str("i64")
+      case Type.I(w)   => str("i"); str(w.width.value)
       case Type.F32    => str("float")
       case Type.F64    => str("double")
       case Type.Array(ty, n) =>

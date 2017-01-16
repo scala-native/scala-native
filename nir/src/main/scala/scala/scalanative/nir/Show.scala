@@ -525,10 +525,7 @@ object Show {
       case Type.Vararg => str("...")
       case Type.Ptr    => str("ptr")
       case Type.Bool   => str("bool")
-      case Type.I8     => str("i8")
-      case Type.I16    => str("i16")
-      case Type.I32    => str("i32")
-      case Type.I64    => str("i64")
+      case Type.I(w)   => str("i"); str(w.width.value)
       case Type.F32    => str("f32")
       case Type.F64    => str("f64")
 
