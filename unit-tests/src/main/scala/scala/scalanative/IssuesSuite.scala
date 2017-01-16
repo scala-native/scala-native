@@ -1,5 +1,6 @@
 package scala.scalanative
-import native.CFunctionPtr1
+import native.{CFunctionPtr1, CFunctionPtr0}
+import native.{CInt, CFloat, CDouble}
 
 object IssuesSuite extends tests.Suite {
 
@@ -99,6 +100,35 @@ object IssuesSuite extends tests.Suite {
     m(hello) = world
     val h = m.getOrElse(hello, "Failed !")
     assert(h equals world)
+  }
+
+  val fptrBoxed: CFunctionPtr0[Integer]  = () => new Integer(1)
+  val fptr: CFunctionPtr0[CInt]          = () => 1
+  val fptrFloat: CFunctionPtr0[CFloat]   = () => 1.0.toFloat
+  val fptrDouble: CFunctionPtr0[CDouble] = () => 1.0
+  def intIdent(x: Int): Int              = x
+  test("#382") {
+    /// that gave NPE
+
+    import scala.scalanative.native._
+    intIdent(fptr())
+    assert(fptr() == 1)
+
+    // Reported issue
+    println(fptr())
+    println(fptrFloat())
+    println(fptrBoxed())
+
+    // Other variations which must work as well
+    val x1 = fptr()
+    println(x1)
+    val x2 = fptrFloat()
+    println(x2)
+
+    // Should be possible
+    val conv1: Int = (1: Float).cast[Int]
+    // Should fail
+    //val conv2: Int = (1: Double).cast[Int]
   }
 
   test("#404") {
