@@ -1,7 +1,5 @@
 package java.lang
 
-import java.lang.Math
-
 object MathSuite extends tests.Suite {
   test("max") {
     val a = 123.123d
