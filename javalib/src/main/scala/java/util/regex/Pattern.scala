@@ -73,6 +73,11 @@ final class Pattern private (_compiled: Ptr[Int],
       }
     }
   }
+  protected override def finalize(): Unit = {
+    // Note that a pattern does not exist without _compiled being alloc-ed, so
+    // this free should never apply to non-alloc-ed memory
+    free(_compiled.asInstanceOf[Ptr[Byte]])
+  }
 }
 
 object Pattern {
