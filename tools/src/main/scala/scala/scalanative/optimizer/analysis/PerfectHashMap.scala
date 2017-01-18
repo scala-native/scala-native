@@ -194,5 +194,7 @@ object DynmethodPerfectHashMap {
     )
   }
 
-  def hash(key: Int, seed: Int): Int = key ^ seed
+  def hash(key: Int, salt: Int): Int = {
+    (key + (salt * 31)) ^ salt
+  }
 }

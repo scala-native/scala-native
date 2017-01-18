@@ -32,11 +32,11 @@ void* scalanative_dyndispatch(PerfectHashMap* perfectHashMap, int key) {
 	}
 }
 
-int hash(int key, int seed) {
-    return key ^ seed;
+inline int hash(int key, int salt) {
+    return (key + (salt * 31)) ^ salt;
 }
 
-int mod(int a, int b) {
+inline int mod(int a, int b) {
 	int m = a % b;
 	if(m < 0) {
 		return m + b;
