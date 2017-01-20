@@ -22,25 +22,19 @@ object CodeGen {
 
   private final class Impl(target: String, assembly: Seq[Defn])
       extends CodeGen {
-    private val builder = new ShowBuilder
-    import builder._
+    import Impl._
 
-    private val fresh = new Fresh("gen")
-    private val globals = assembly.collect {
+    var currentBlockName: Local = _
+    var currentBlockSplit: Int  = _
+    val globals = assembly.collect {
       case Defn.Var(_, n, ty, _)     => n -> ty
       case Defn.Const(_, n, ty, _)   => n -> ty
       case Defn.Declare(_, n, sig)   => n -> sig
       case Defn.Define(_, n, sig, _) => n -> sig
     }.toMap
-    private val prelude = Seq(
-      )
-    private val gxxpersonality =
-      "personality i8* bitcast (i32 (...)* @__gxx_personality_v0 to i8*)"
-    private val excrecty = "{ i8*, i32 }"
-    private val landingpad =
-      "landingpad { i8*, i32 } catch i8* bitcast ({ i8*, i8*, i8* }* @_ZTIN11scalanative16ExceptionWrapperE to i8*)"
-    private val typeid =
-      "call i32 @llvm.eh.typeid.for(i8* bitcast ({ i8*, i8*, i8* }* @_ZTIN11scalanative16ExceptionWrapperE to i8*))"
+    val fresh   = new Fresh("gen")
+    val builder = new ShowBuilder
+    import builder._
 
     def gen(buffer: java.nio.ByteBuffer) = {
       genDefns(assembly)
@@ -52,6 +46,7 @@ object CodeGen {
         str("target triple = \"")
         str(target)
         str("\"")
+        newline()
       }
 
       genPrelude()
@@ -153,7 +148,7 @@ object CodeGen {
       if (!isDecl) {
         str(" {")
         val cfg = CFG(insts)
-        cfg.map { block =>
+        cfg.foreach { block =>
           genBlock(block)(cfg)
         }
         newline()
@@ -163,76 +158,84 @@ object CodeGen {
 
     def genBlock(block: Block)(implicit cfg: CFG): Unit = {
       val Block(name, params, insts, isEntry) = block
+      currentBlockName = name
+      currentBlockSplit = 0
 
-      newline()
-      genLocal(block.name)
-      str(":")
+      genBlockHeader()
       indent()
-      if (!isEntry) genBlockPrologue(block)
+      genBlockPrologue(block)
       rep(insts) { inst =>
         genInst(inst)
       }
       unindent()
     }
 
+    def genBlockHeader(): Unit = {
+      newline()
+      genBlockSplitName()
+      str(":")
+    }
+
+    def genBlockSplitName(): Unit = {
+      genLocal(currentBlockName)
+      str(".")
+      str(currentBlockSplit)
+    }
+
     def genBlockPrologue(block: Block)(implicit cfg: CFG): Unit = {
-      val Block(name, params, insts, isEntry) = block
+      val params = block.params
 
-      block match {
-        case IsRegularBlock() =>
-          params.zipWithIndex.map {
-            case (Val.Local(name, ty), n) =>
-              newline()
-              str("%")
-              genLocal(name)
-              str(" = phi ")
-              genType(ty)
-              str(" ")
-              rep(block.inEdges, sep = ", ") { edge =>
-                str("[")
-                edge match {
-                  case Edge(from, _, _: Next.Succ) =>
-                    str("%")
-                    genLocal(block.params.head.name)
-                    str(".succ")
-                    str(", %")
-                    genLocal(from.name)
-                  case Edge(from, _, Next.Label(_, vals)) =>
-                    genJustVal(vals(n))
-                    str(", %")
-                    genLocal(from.name)
-                }
-                str("]")
+      if (block.isEntry) {
+        ()
+      } else if (block.isRegular) {
+        params.zipWithIndex.foreach {
+          case (Val.Local(name, ty), n) =>
+            newline()
+            str("%")
+            genLocal(name)
+            str(" = phi ")
+            genType(ty)
+            str(" ")
+            rep(block.inEdges, sep = ", ") { edge =>
+              str("[")
+              edge match {
+                case Edge(from, _, Next.Label(_, vals)) =>
+                  genJustVal(vals(n))
+                  str(", %")
+                  genLocal(from.name)
+                  str(".")
+                  str(from.splitCount)
               }
-          }
+              str("]")
+            }
+        }
+      } else if (block.isExceptionHandler) {
+        val Seq(Val.Local(exc, _)) = params
 
-        case IsExceptionHandlerBlock() =>
-          val Seq(Val.Local(exc, _)) = params
+        val rec, r0, r1, id, cmp = fresh().show
+        val fail, succ           = fresh().show.substring(1)
+        val w0, w1, w2           = fresh().show
 
-          val rec, r0, r1, id, cmp = fresh().show
-          val fail, succ           = fresh().show.substring(1)
-          val w0, w1, w2           = fresh().show
+        def line(s: String) = { newline(); str(s) }
 
-          def line(s: String) = { newline(); str(s) }
-
-          line(s"$rec = $landingpad")
-          line(s"$r0 = extractvalue $excrecty $rec, 0")
-          line(s"$r1 = extractvalue $excrecty $rec, 1")
-          line(s"$id = $typeid")
-          line(s"$cmp = icmp eq i32 $r1, $id")
-          line(s"br i1 $cmp, label %$succ, label %$fail")
-          unindent()
-          line(s"$fail:")
-          indent()
-          line(s"resume $excrecty $rec")
-          unindent()
-          line(s"$succ:")
-          indent()
-          line(s"$w0 = call i8* @__cxa_begin_catch(i8* $r0)")
-          line(s"$w1 = bitcast i8* $w0 to i8**")
-          line(s"$w2 = getelementptr i8*, i8** $w1, i32 1")
-          line(s"${exc.show} = load i8*, i8** $w2")
-          line(s"call void @__cxa_end_catch()")
+        line(s"$rec = $landingpad")
+        line(s"$r0 = extractvalue $excrecty $rec, 0")
+        line(s"$r1 = extractvalue $excrecty $rec, 1")
+        line(s"$id = $typeid")
+        line(s"$cmp = icmp eq i32 $r1, $id")
+        line(s"br i1 $cmp, label %$succ, label %$fail")
+        unindent()
+        line(s"$fail:")
+        indent()
+        line(s"resume $excrecty $rec")
+        unindent()
+        line(s"$succ:")
+        indent()
+        line(s"$w0 = call i8* @__cxa_begin_catch(i8* $r0)")
+        line(s"$w1 = bitcast i8* $w0 to i8**")
+        line(s"$w2 = getelementptr i8*, i8** $w1, i32 1")
+        line(s"${exc.show} = load i8*, i8** $w2")
+        line(s"call void @__cxa_end_catch()")
       }
     }
 
@@ -345,7 +348,7 @@ object CodeGen {
         str(id)
     }
 
-    def genInst(inst: Inst)(implicit cfg: CFG): Unit = inst match {
+    def genInst(inst: Inst): Unit = inst match {
       case inst: Inst.Let =>
         genLet(inst)
 
@@ -392,64 +395,6 @@ object CodeGen {
         newline()
         str("]")
 
-      case Inst.Invoke(ty, Val.Global(pointee, _), args, succ, fail) =>
-        val Type.Function(_, resty) = ty
-
-        val nameOption = cfg.find(succ.name).params.headOption.map(_.name)
-
-        newline()
-        nameOption.fold[Unit] {
-          ()
-        } { name =>
-          str("%")
-          genLocal(name)
-          str(".succ = ")
-        }
-        str("invoke ")
-        genType(ty)
-        str(" @")
-        genGlobal(pointee)
-        str("(")
-        rep(args, sep = ", ")(genVal)
-        str(") to ")
-        genNext(succ)
-        str(" unwind ")
-        genNext(fail)
-
-      case Inst.Invoke(ty, ptr, args, succ, fail) =>
-        val Type.Function(_, resty) = ty
-
-        val nameOption = cfg.find(succ.name).params.headOption.map(_.name)
-        val pointee    = fresh()
-
-        newline()
-        str("%")
-        genLocal(pointee)
-        str(" = bitcast ")
-        genVal(ptr)
-        str(" to ")
-        genType(ty)
-        str("*")
-
-        newline()
-        nameOption.fold[Unit] {
-          ()
-        } { name =>
-          str("%")
-          genLocal(name)
-          str(".succ = ")
-        }
-        str("invoke ")
-        genType(ty)
-        str(" %")
-        genLocal(pointee)
-        str("(")
-        rep(args, sep = ", ")(genVal)
-        str(") to ")
-        genNext(succ)
-        str(" unwind ")
-        genNext(fail)
-
       case Inst.None =>
         ()
 
@@ -472,42 +417,8 @@ object CodeGen {
         }
 
       op match {
-        case Op.Call(ty, Val.Global(pointee, _), args) =>
-          val Type.Function(argtys, _) = ty
-
-          newline()
-          genBind()
-          str("call ")
-          genType(ty)
-          str(" @")
-          genGlobal(pointee)
-          str("(")
-          rep(args, sep = ", ")(genVal)
-          str(")")
-
-        case Op.Call(ty, ptr, args) =>
-          val Type.Function(argtys, _) = ty
-
-          val pointee = fresh()
-
-          newline()
-          str("%")
-          genLocal(pointee)
-          str(" = bitcast ")
-          genVal(ptr)
-          str(" to ")
-          genType(ty)
-          str("*")
-
-          newline()
-          genBind()
-          str("call ")
-          genType(ty)
-          str(" %")
-          genLocal(pointee)
-          str("(")
-          rep(args, sep = ", ")(genVal)
-          str(")")
+        case call: Op.Call =>
+          genCall(genBind, call)
 
         case Op.Load(ty, ptr) =>
           val pointee = fresh()
@@ -612,6 +523,102 @@ object CodeGen {
       }
     }
 
+    def genCall(genBind: () => Unit, call: Op.Call): Unit = call match {
+      case Op.Call(ty, Val.Global(pointee, _), args, Next.None) =>
+        val Type.Function(argtys, _) = ty
+
+        newline()
+        genBind()
+        str("call ")
+        genType(ty)
+        str(" @")
+        genGlobal(pointee)
+        str("(")
+        rep(args, sep = ", ")(genVal)
+        str(")")
+
+      case Op.Call(ty, Val.Global(pointee, _), args, unwind) =>
+        val Type.Function(argtys, _) = ty
+
+        val succ = fresh()
+
+        newline()
+        genBind()
+        str("invoke ")
+        genType(ty)
+        str(" @")
+        genGlobal(pointee)
+        str("(")
+        rep(args, sep = ", ")(genVal)
+        str(")")
+        str(" to label %")
+        currentBlockSplit += 1
+        genBlockSplitName()
+        str(" unwind ")
+        genNext(unwind)
+
+        unindent()
+        genBlockHeader()
+        indent()
+
+      case Op.Call(ty, ptr, args, Next.None) =>
+        val Type.Function(argtys, _) = ty
+
+        val pointee = fresh()
+
+        newline()
+        str("%")
+        genLocal(pointee)
+        str(" = bitcast ")
+        genVal(ptr)
+        str(" to ")
+        genType(ty)
+        str("*")
+
+        newline()
+        genBind()
+        str("call ")
+        genType(ty)
+        str(" %")
+        genLocal(pointee)
+        str("(")
+        rep(args, sep = ", ")(genVal)
+        str(")")
+
+      case Op.Call(ty, ptr, args, unwind) =>
+        val Type.Function(_, resty) = ty
+
+        val pointee = fresh()
+
+        newline()
+        str("%")
+        genLocal(pointee)
+        str(" = bitcast ")
+        genVal(ptr)
+        str(" to ")
+        genType(ty)
+        str("*")
+
+        newline()
+        genBind()
+        str("invoke ")
+        genType(ty)
+        str(" %")
+        genLocal(pointee)
+        str("(")
+        rep(args, sep = ", ")(genVal)
+        str(")")
+        str(" to label %")
+        currentBlockSplit += 1
+        genBlockSplitName()
+        str(" unwind ")
+        genNext(unwind)
+
+        unindent()
+        genBlockHeader()
+        indent()
+    }
+
     def genOp(op: Op): Unit = op match {
       case Op.Extract(aggr, indexes) =>
         str("extractvalue ")
@@ -683,9 +690,11 @@ object CodeGen {
         genVal(v)
         str(", label %")
         genLocal(n)
+        str(".0")
       case next =>
         str("label %")
         genLocal(next.name)
+        str(".0")
     }
 
     def genConv(conv: Conv): Unit =
@@ -693,24 +702,15 @@ object CodeGen {
 
     def genAttr(attr: Attr): Unit =
       str(attr.show)
+  }
 
-    private object IsRegularBlock {
-      def unapply(block: Block): Boolean =
-        block.inEdges.forall {
-          case Edge(_, _, _: Next.Succ)  => true
-          case Edge(_, _, _: Next.Case)  => true
-          case Edge(_, _, _: Next.Label) => true
-          case _                         => false
-        }
-
-    }
-
-    private object IsExceptionHandlerBlock {
-      def unapply(block: Block): Boolean =
-        block.inEdges.forall {
-          case Edge(_, _, _: Next.Fail) => true
-          case _                        => false
-        }
-    }
+  private object Impl {
+    val gxxpersonality =
+      "personality i8* bitcast (i32 (...)* @__gxx_personality_v0 to i8*)"
+    val excrecty = "{ i8*, i32 }"
+    val landingpad =
+      "landingpad { i8*, i32 } catch i8* bitcast ({ i8*, i8*, i8* }* @_ZTIN11scalanative16ExceptionWrapperE to i8*)"
+    val typeid =
+      "call i32 @llvm.eh.typeid.for(i8* bitcast ({ i8*, i8*, i8* }* @_ZTIN11scalanative16ExceptionWrapperE to i8*))"
   }
 }

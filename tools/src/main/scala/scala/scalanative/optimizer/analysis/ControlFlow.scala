@@ -22,12 +22,34 @@ object ControlFlow {
     val inEdges  = mutable.UnrolledBuffer.empty[Edge]
     val outEdges = mutable.UnrolledBuffer.empty[Edge]
 
-    def pred = inEdges.map(_.from)
-    def succ = outEdges.map(_.to)
+    lazy val splitCount: Int = {
+      var count = 0
+      insts.foreach {
+        case Inst.Let(_, call: Op.Call) if call.unwind ne Next.None =>
+          count += 1
+        case _ =>
+          ()
+      }
+      count
+    }
 
+    def pred  = inEdges.map(_.from)
+    def succ  = outEdges.map(_.to)
     def label = Inst.Label(name, params)
+    def show  = name.show
 
-    def show = name.show
+    def isRegular: Boolean =
+      inEdges.forall {
+        case Edge(_, _, _: Next.Case)  => true
+        case Edge(_, _, _: Next.Label) => true
+        case _                         => false
+      }
+
+    def isExceptionHandler: Boolean =
+      inEdges.forall {
+        case Edge(_, _, _: Next.Unwind) => true
+        case _                          => false
+      }
   }
 
   final class Graph(val entry: Block,
@@ -50,35 +72,10 @@ object ControlFlow {
 
     def map[T: reflect.ClassTag](f: Block => T): Seq[T] = {
       val result = mutable.UnrolledBuffer.empty[T]
-
       foreach { block =>
         result += f(block)
       }
-
       result
-    }
-
-    lazy val eh: Map[Local, Option[Local]] = {
-      val handlers               = mutable.Map.empty[Local, Option[Local]]
-      var current: Option[Local] = None
-
-      foreach { block =>
-        handlers.get(block.name).foreach { handler =>
-          current = handler
-        }
-
-        block.insts.last match {
-          case Inst.Try(succ, fail: Next.Fail) =>
-            handlers(succ.name) = Some(fail.name)
-            handlers(fail.name) = current
-          case _ =>
-            ()
-        }
-
-        handlers(block.name) = current
-      }
-
-      handlers.toMap
     }
   }
 
@@ -110,9 +107,15 @@ object ControlFlow {
       }.toMap
 
       blocks.foreach {
-        case node @ Block(n, _, _ :+ cf, _) =>
+        case node @ Block(n, _, insts :+ cf, _) =>
+          insts.foreach {
+            case Inst.Let(_, op: Op.Unwind) if op.unwind ne Next.None =>
+              edge(node, nodes(op.unwind.name), op.unwind)
+            case _ =>
+              ()
+          }
           cf match {
-            case Inst.Unreachable | _: Inst.Ret | _: Inst.Throw =>
+            case Inst.Unreachable | _: Inst.Ret =>
               ()
             case Inst.Jump(next) =>
               edge(node, nodes(next.name), next)
@@ -124,12 +127,6 @@ object ControlFlow {
               cases.foreach { case_ =>
                 edge(node, nodes(case_.name), case_)
               }
-            case Inst.Invoke(_, _, _, succ, fail) =>
-              edge(node, nodes(succ.name), succ)
-              edge(node, nodes(fail.name), fail)
-            case Inst.Try(next1, next2) =>
-              edge(node, nodes(next1.name), next1)
-              edge(node, nodes(next2.name), next2)
             case inst =>
               unsupported(inst)
           }

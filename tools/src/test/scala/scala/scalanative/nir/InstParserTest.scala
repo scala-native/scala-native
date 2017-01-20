@@ -58,10 +58,4 @@ class InstParserTest extends FlatSpec with Matchers {
     val Parsed.Success(result, _) = parser.Inst.Switch.parse(switch.show)
     result should be(switch)
   }
-
-  it should "parse `Inst.Invoke`" in {
-    val invoke: Inst              = Inst.Invoke(noTpe, Val.None, Seq.empty, next, next)
-    val Parsed.Success(result, _) = parser.Inst.Invoke.parse(invoke.show)
-    result should be(invoke)
-  }
 }

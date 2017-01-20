@@ -8,15 +8,9 @@ class NextParserTest extends FlatSpec with Matchers {
 
   val local = Local("test", 1)
 
-  "The NIR parser" should "parse `Next.Succ`" in {
-    val succ: Next                = Next.Succ(local)
-    val Parsed.Success(result, _) = parser.Next.Succ.parse(succ.show)
-    result should be(succ)
-  }
-
-  it should "parse `Next.Fail`" in {
-    val fail: Next                = Next.Fail(local)
-    val Parsed.Success(result, _) = parser.Next.Fail.parse(fail.show)
+  it should "parse `Next.Unwind`" in {
+    val fail: Next                = Next.Unwind(local)
+    val Parsed.Success(result, _) = parser.Next.Unwind.parse(fail.show)
     result should be(fail)
   }
 

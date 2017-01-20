@@ -85,11 +85,8 @@ object Show {
         str("(")
         rep(args, sep = ", ")(val_)
         str(")")
-      case Next.Succ(name) =>
-        str("succ ")
-        local_(name)
-      case Next.Fail(name) =>
-        str("fail ")
+      case Next.Unwind(name) =>
+        str("unwind ")
         local_(name)
       case Next.Case(v, name) =>
         str("case ")
@@ -152,29 +149,10 @@ object Show {
         unindent()
         newline()
         str("}")
-      case Inst.Invoke(ty, f, args, succ, fail) =>
-        str("invoke[")
-        type_(ty)
-        str("] ")
-        val_(f)
-        str("(")
-        rep(args, sep = ", ")(val_)
-        str(") to ")
-        next_(succ)
-        str(" unwind ")
-        next_(fail)
-      case Inst.Throw(value) =>
-        str("throw ")
-        val_(value)
-      case Inst.Try(normal, exc) =>
-        str("try ")
-        next_(normal)
-        str(" catch ")
-        next_(exc)
     }
 
     def op_(op: Op): Unit = op match {
-      case Op.Call(ty, f, args) =>
+      case Op.Call(ty, f, args, unwind) =>
         str("call[")
         type_(ty)
         str("] ")
@@ -182,6 +160,10 @@ object Show {
         str("(")
         rep(args, sep = ", ")(val_)
         str(")")
+        if (unwind ne Next.None) {
+          str(" ")
+          next_(unwind)
+        }
       case Op.Load(ty, ptr) =>
         str("load[")
         type_(ty)
@@ -264,9 +246,13 @@ object Show {
         val_(value)
         str(", ")
         global_(name)
-      case Op.Module(name) =>
+      case Op.Module(name, unwind) =>
         str("module ")
         global_(name)
+        if (unwind ne Next.None) {
+          str(" ")
+          next_(unwind)
+        }
       case Op.As(ty, v) =>
         str("as[")
         type_(ty)
@@ -299,6 +285,13 @@ object Show {
         type_(ty)
         str("] ")
         val_(v)
+      case Op.Throw(v, unwind) =>
+        str("throw ")
+        val_(v)
+        if (unwind ne Next.None) {
+          str(" ")
+          next_(unwind)
+        }
     }
 
     def bin_(bin: Bin): Unit = bin match {

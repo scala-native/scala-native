@@ -84,8 +84,10 @@ abstract class NirCodeGen
     private val curMethodInfo = new util.ScopedVar[CollectMethodInfo]
     private val curMethodEnv  = new util.ScopedVar[MethodEnv]
     private val curMethodThis = new util.ScopedVar[Option[Val]]
+    private val curUnwind     = new util.ScopedVar[nir.Next]
 
-    private val lazyAnonDefs = mutable.Map.empty[Symbol, ClassDef]
+    private val lazyAnonDefs =
+      mutable.Map.empty[Symbol, ClassDef]
 
     private def consumeLazyAnonDef(sym: Symbol) = {
       lazyAnonDefs
@@ -257,7 +259,8 @@ abstract class NirCodeGen
       scoped(
           curMethodSym := dd.symbol,
           curMethodEnv := env,
-          curMethodInfo := (new CollectMethodInfo).collect(dd.rhs)
+          curMethodInfo := (new CollectMethodInfo).collect(dd.rhs),
+          curUnwind := Next.None
       ) {
         val sym      = dd.symbol
         val owner    = curClassSym.get
@@ -490,7 +493,7 @@ abstract class NirCodeGen
 
         case Throw(exprp) =>
           val expr = genExpr(exprp, focus)
-          expr.withThrow(expr.value)
+          expr.withThrow(expr.value, curUnwind)
 
         case app: Apply =>
           genApply(app, focus)
@@ -509,7 +512,7 @@ abstract class NirCodeGen
           val sym   = tree.symbol
           val owner = sym.owner
           if (sym.isModule) {
-            focus withOp Op.Module(genTypeName(sym))
+            focus withOp Op.Module(genTypeName(sym), curUnwind)
           } else if (sym.isStaticMember) {
             genStaticMember(sym, focus)
           } else if (sym.isMethod) {
@@ -537,7 +540,7 @@ abstract class NirCodeGen
             val ty = genType(sym.tpe, box = false)
             focus withOp Op.Load(ty, curMethodEnv.resolve(sym))
           } else if (sym.isModule) {
-            focus withOp Op.Module(genTypeName(sym))
+            focus withOp Op.Module(genTypeName(sym), curUnwind)
           } else {
             focus withValue (curMethodEnv.resolve(sym))
           }
@@ -703,22 +706,26 @@ abstract class NirCodeGen
                catches: List[Tree],
                finalizer: Tree,
                focus: Focus): Focus = {
-      val normaln, excn = fresh()
+      val unwind = fresh()
+      val exc    = Val.Local(fresh(), Rt.Object)
 
-      val res  = Val.Local(fresh(), retty)
-      val exc  = Val.Local(fresh(), Rt.Object)
-      val try_ = focus.withTry(normaln, excn)
+      val normal = { (focus: Focus) =>
+        scoped(curUnwind := Next.Unwind(unwind)) {
+          genExpr(expr, focus)
+        }
+      }
 
-      merged(retty, try_, Seq(
-        focus => genExpr(expr, focus.withLabel(normaln)),
-        focus => genCatch(retty, exc, catches, focus.withLabel(excn, exc))
-      ))
+      val exception = { (focus: Focus) =>
+        genCatch(retty, catches, focus.withLabel(unwind, exc).withValue(exc))
+      }
+
+      merged(retty, focus, Seq(normal, exception))
     }
 
     def genCatch(retty: nir.Type,
-                 exc: Val,
                  catches: List[Tree],
                  focus: Focus): Focus = {
+      val exc   = focus.value
       val cases = catches.map {
         case CaseDef(pat, _, body) =>
           val (excty, symopt) = pat match {
@@ -745,7 +752,7 @@ abstract class NirCodeGen
       def wrap(cases: Seq[(nir.Type, Focus => Focus)], focus: Focus): Focus =
         cases match {
           case Seq() =>
-            focus.withThrow(exc)
+            focus.withThrow(exc, curUnwind)
           case (excty, f) +: rest =>
             val cond = focus withOp Op.Is(excty, exc)
             genIf(retty, ValTree(cond.value),
@@ -756,13 +763,13 @@ abstract class NirCodeGen
     }
 
     def genModule(sym: Symbol, focus: Focus): Focus =
-      focus withOp Op.Module(genTypeName(sym))
+      focus withOp Op.Module(genTypeName(sym), curUnwind)
 
     def genStaticMember(sym: Symbol, focus: Focus): Focus =
       if (sym == BoxedUnit_UNIT) focus withValue Val.Unit
       else {
         val ty     = genType(sym.tpe, box = false)
-        val module = focus withOp Op.Module(genTypeName(sym.owner))
+        val module = focus withOp Op.Module(genTypeName(sym.owner), curUnwind)
         val elem   = module withOp Op.Field(module.value, genFieldName(sym))
 
         elem withOp Op.Load(ty, elem.value)
@@ -968,7 +975,7 @@ abstract class NirCodeGen
       val alloc = focus withOp Op.Classalloc(jlClassName)
       val init =
         alloc withOp Op.Call(
-            jlClassCtorSig, jlClassCtor, Seq(alloc.value, type_))
+            jlClassCtorSig, jlClassCtor, Seq(alloc.value, type_), curUnwind)
 
       init withValue alloc.value
     }
@@ -1434,7 +1441,7 @@ abstract class NirCodeGen
               args += last.value
           }
 
-          last withOp Op.Call(sig, fun.value, args)
+          last withOp Op.Call(sig, fun.value, args, curUnwind)
 
         case FUN_PTR_FROM =>
           val Apply(_, Seq(MaybeBlock(Typed(ctor, funtpt))))           = app
@@ -1835,7 +1842,7 @@ abstract class NirCodeGen
           self +: args
         }
 
-      method withOp Op.Call(sig, method.value, values)
+      method withOp Op.Call(sig, method.value, values, curUnwind)
     }
 
     def genSimpleArgs(argsp: Seq[Tree], focus: Focus): (Seq[Val], Focus) = {

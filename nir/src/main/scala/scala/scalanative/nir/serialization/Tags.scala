@@ -1,5 +1,6 @@
 package scala.scalanative
 package nir
+package serialization
 
 /** Serialization tags are unique type ids used to identify
  *  types in the binary representation of NIR. There are some
@@ -109,9 +110,6 @@ object Tags {
   final val JumpInst        = 1 + RetInst
   final val IfInst          = 1 + JumpInst
   final val SwitchInst      = 1 + IfInst
-  final val InvokeInst      = 1 + SwitchInst
-  final val ThrowInst       = 1 + InvokeInst
-  final val TryInst         = 1 + ThrowInst
 
   // Globals
 
@@ -125,10 +123,10 @@ object Tags {
 
   final val Next = Global + 32
 
-  final val SuccNext  = 1 + Next
-  final val FailNext  = 1 + SuccNext
-  final val LabelNext = 1 + FailNext
-  final val CaseNext  = 1 + LabelNext
+  final val NoneNext   = 1 + Next
+  final val UnwindNext = 1 + NoneNext
+  final val LabelNext  = 1 + UnwindNext
+  final val CaseNext   = 1 + LabelNext
 
   // Ops
 
@@ -156,6 +154,7 @@ object Tags {
   final val ClosureOp    = 1 + SizeofOp
   final val BoxOp        = 1 + ClosureOp
   final val UnboxOp      = 1 + BoxOp
+  final val ThrowOp      = 1 + UnboxOp
 
   // Types
 

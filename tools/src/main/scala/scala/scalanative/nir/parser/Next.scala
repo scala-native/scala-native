@@ -12,11 +12,10 @@ object Next extends Base[nir.Next] {
     P(Local.parser ~ ("(" ~ Val.parser.rep(sep = ",") ~ ")").? map {
       case (name, args) => nir.Next.Label(name, args getOrElse Seq())
     })
-  val Succ = P("succ" ~ Local.parser map (nir.Next.Succ(_)))
-  val Fail = P("fail" ~ Local.parser map (nir.Next.Fail(_)))
+  val Unwind = P("unwind" ~ Local.parser map (nir.Next.Unwind(_)))
   val Case =
     P("case" ~ Val.parser ~ "=>" ~ Local.parser map {
       case (value, name) => nir.Next.Case(value, name)
     })
-  override val parser: P[nir.Next] = Label | Succ | Fail | Case
+  override val parser: P[nir.Next] = Label | Unwind | Case
 }

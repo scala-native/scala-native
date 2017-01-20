@@ -28,8 +28,8 @@ final class Focus private (
   def withRet(value: Val): Focus =
     withInst(Inst.Ret(value))
 
-  def withThrow(value: Val): Focus =
-    withInst(Inst.Throw(value))
+  def withThrow(value: Val, unwind: Next): Focus =
+    withOp(Op.Throw(value, unwind)).withInst(Inst.Unreachable)
 
   def withJump(to: Local, values: Val*): Focus =
     withInst(Inst.Jump(Next.Label(to, values)))
@@ -50,9 +50,6 @@ final class Focus private (
     }
     withInst(Inst.Switch(scrut, Next(default), cases))
   }
-
-  def withTry(succ: Local, fail: Local) =
-    withInst(Inst.Try(Next.Succ(succ), Next.Fail(fail)))
 
   def withInst(inst: Inst): Focus = inst match {
     case _: Inst.Label =>
