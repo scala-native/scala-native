@@ -141,12 +141,9 @@ object Show {
         str("switch ")
         val_(scrut)
         str(" {")
-        indent()
         rep(cases) { next =>
           next_(next)
-          newline()
         }
-        unindent()
       case Inst.Invoke(ty, f, args, succ, fail) =>
         str("invoke[")
         type_(ty)
@@ -424,8 +421,8 @@ object Show {
 
     def defns_(defns: Seq[Defn]): Unit =
       rep(defns) { defn =>
-        defn_(defn)
         newline()
+        defn_(defn)
       }
 
     def defn_(defn: Defn): Unit = defn match {
@@ -462,12 +459,16 @@ object Show {
         str(" : ")
         type_(ty)
         str(" {")
-        indent()
         rep(insts) {
-          case inst: Inst.Label => inst_(inst)
-          case inst             => str("  "); inst_(inst)
+          case inst: Inst.Label =>
+            newline()
+            inst_(inst)
+          case inst =>
+            newline()
+            str("  ")
+            inst_(inst)
         }
-        unindent()
+        newline()
         str("}")
       case Defn.Struct(attrs, name, tys) =>
         attrs_(attrs)
@@ -526,7 +527,7 @@ object Show {
       case Type.Function(args, ret) =>
         str("(")
         rep(args, sep = ", ")(type_)
-        str(" => ")
+        str(") => ")
         type_(ret)
       case Type.Struct(Global.None, tys) =>
         str("{")

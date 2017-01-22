@@ -15,7 +15,10 @@ import nir._
 object ControlFlow {
   final case class Edge(val from: Block, val to: Block, val next: Next)
 
-  final case class Block(name: Local, params: Seq[Val.Local], insts: Seq[Inst]) {
+  final case class Block(name: Local,
+                         params: Seq[Val.Local],
+                         insts: Seq[Inst],
+                         isEntry: Boolean) {
     val inEdges  = mutable.UnrolledBuffer.empty[Edge]
     val outEdges = mutable.UnrolledBuffer.empty[Edge]
 
@@ -99,7 +102,7 @@ object ControlFlow {
             i += 1
             body += insts(i)
           } while (!insts(i).isInstanceOf[Inst.Cf])
-          new Block(n, params, body)
+          new Block(n, params, body, isEntry = k == 0)
       }
 
       val nodes = blocks.map { b =>
@@ -107,7 +110,7 @@ object ControlFlow {
       }.toMap
 
       blocks.foreach {
-        case node @ Block(n, _, _ :+ cf) =>
+        case node @ Block(n, _, _ :+ cf, _) =>
           cf match {
             case Inst.Unreachable | _: Inst.Ret | _: Inst.Throw =>
               ()

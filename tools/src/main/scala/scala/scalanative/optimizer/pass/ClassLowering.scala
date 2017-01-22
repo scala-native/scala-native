@@ -4,7 +4,7 @@ package pass
 
 import analysis.ClassHierarchy._
 import analysis.ClassHierarchyExtractors._
-import util.{sh, unsupported}
+import util.unsupported
 import nir._
 
 /** Lowers class definitions, and field accesses to structs
