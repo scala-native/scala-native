@@ -26,6 +26,8 @@ sealed abstract class Val {
     case Val.Const(_)  => Type.Ptr
     case Val.String(_) => Rt.String
   }
+
+  final def show: String = nir.Show(this)
 }
 object Val {
   // low-level

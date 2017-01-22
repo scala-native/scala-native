@@ -1,3 +1,6 @@
-package scala.scalanative.nir
+package scala.scalanative
+package nir
 
-case class Arg(ty: Type, passConvention: Option[PassConv] = None)
+final case class Arg(ty: Type, passConvention: Option[PassConv] = None) {
+  final def show: String = nir.Show(this)
+}

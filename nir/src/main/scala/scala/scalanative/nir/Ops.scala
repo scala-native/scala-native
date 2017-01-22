@@ -31,6 +31,8 @@ sealed abstract class Op {
     case Op.Unbox(ty, _)      => Type.unbox(ty)
 
   }
+
+  final def show: String = nir.Show(this)
 }
 object Op {
   sealed abstract class Pure extends Op

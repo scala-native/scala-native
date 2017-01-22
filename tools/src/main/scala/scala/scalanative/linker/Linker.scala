@@ -5,7 +5,6 @@ import java.io.{File, PrintWriter}
 import scala.collection.mutable
 import nir._
 import nir.serialization._
-import nir.Shows._
 import util.Scope
 
 sealed trait Linker {

@@ -13,7 +13,6 @@ import util.Show.{
   Unindent => ui
 }
 import optimizer.analysis.ControlFlow.{Graph => CFG, Block, Edge}
-import nir.Shows.brace
 import nir._
 
 sealed trait CodeGen {
@@ -148,8 +147,8 @@ object CodeGen {
           val results = (argtys zip params).map((showDefnArg _).tupled)
           (r(results.map(_._1), sep = ", "), results.flatMap(_._2))
         }
-      val postattrs: Seq[Attr] =
-        if (attrs.inline != Attr.MayInline) Seq(attrs.inline) else Seq()
+      val postattrs =
+        if (attrs.inline != Attr.MayInline) s(attrs.inline: Attr) else s()
       val personality = if (attrs.isExtern || isDecl) s() else gxxpersonality
       val body =
         if (isDecl) s()
@@ -164,7 +163,7 @@ object CodeGen {
           s(" ", brace(r(showblocks)))
         }
 
-      sh"$keyword $retty @$name($params)$postattrs$personality$body"
+      sh"$keyword $retty @$name($params) $postattrs $personality$body"
     }
 
     def showBlock(
@@ -496,9 +495,9 @@ object CodeGen {
       case next            => sh"label %${next.name}"
     }
 
-    implicit def showConv: Show[Conv] = nir.Shows.showConv
+    implicit def showConv: Show[Conv] = Show(_.show)
 
-    implicit def showAttrSeq: Show[Seq[Attr]] = nir.Shows.showAttrSeq
+    implicit def showAttr: Show[Attr] = Show(_.show)
 
     private object ExSucc {
       def unapply(edges: Seq[Edge]): Option[Seq[(Local, Seq[Show.Result])]] = {
@@ -524,6 +523,12 @@ object CodeGen {
           case Edge(_, _, _: Next.Fail) => true
           case _                        => false
         }
+    }
+
+    private def brace(body: Show.Result): Show.Result = {
+      val open  = "{"
+      val close = nl("}")
+      sh"$open$body$close"
     }
   }
 }

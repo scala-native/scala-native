@@ -23,6 +23,8 @@ object ControlFlow {
     def succ = outEdges.map(_.to)
 
     def label = Inst.Label(name, params)
+
+    def show = name.show
   }
 
   final class Graph(val entry: Block,

@@ -4,7 +4,10 @@ package nir
 sealed abstract class Defn {
   def name: Global
   def attrs: Attrs
+
+  final def show: String = nir.Show(this)
 }
+
 object Defn {
   // low-level
   final case class Var(attrs: Attrs, name: Global, ty: Type, value: Val)

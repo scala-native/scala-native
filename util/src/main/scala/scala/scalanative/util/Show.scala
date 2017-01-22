@@ -3,6 +3,42 @@ package util
 
 import scala.language.implicitConversions
 
+final class ShowBuilder {
+  private val sb          = new java.lang.StringBuilder
+  private var indentation = 0
+
+  def str(value: Any): Unit =
+    sb.append(value.toString)
+
+  def rep[T](values: Seq[T], sep: String = "")(f: T => Unit): Unit =
+    if (values.isEmpty) {
+      ()
+    } else {
+      values.init.foreach { value =>
+        f(value)
+        str(sep)
+      }
+      f(values.last)
+    }
+
+  def indent(n: Int = 1): Unit = {
+    indentation += n
+    newline()
+  }
+
+  def unindent(n: Int = 1): Unit = {
+    indentation -= n
+    newline()
+  }
+
+  def newline(): Unit = {
+    sb.append("\n")
+    sb.append(" " * indentation)
+  }
+
+  override def toString = sb.toString
+}
+
 trait Show[T] { def apply(t: T): Show.Result }
 object Show {
   sealed abstract class Result {
