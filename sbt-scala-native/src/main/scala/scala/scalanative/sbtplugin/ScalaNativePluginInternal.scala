@@ -91,9 +91,7 @@ object ScalaNativePluginInternal {
 
   private def reportLinkingErrors(unresolved: Seq[nir.Global],
                                   logger: Logger): Nothing = {
-    import nir.Shows._
-
-    unresolved.map(u => sh"$u".toString).sorted.foreach { signature =>
+    unresolved.map(_.show).sorted.foreach { signature =>
       logger.error(s"cannot link: $signature")
     }
 
@@ -213,8 +211,6 @@ object ScalaNativePluginInternal {
 
   private def externalDependenciesTask[T](compileTask: TaskKey[T]) =
     nativeExternalDependencies := ResourceScope { implicit scope =>
-      import nir.Shows._
-
       val forceCompile = compileTask.value
 
       val classes = classDirectory.value
@@ -226,19 +222,17 @@ object ScalaNativePluginInternal {
 
       val (unresolved, _, _) = (linker.Linker(config)).link(prog.globals.toSeq)
 
-      unresolved.map(u => sh"$u".toString).sorted
+      unresolved.map(_.show).sorted
     }
 
   private def availableDependenciesTask[T](compileTask: TaskKey[T]) =
     nativeAvailableDependencies := ResourceScope { implicit scope =>
-      import nir.Shows._
-
       val forceCompile = compileTask.value
 
       val globals = fullClasspath.value.flatMap(p =>
         tools.LinkerPath(VirtualDirectory.real(p.data)).globals.toSeq)
 
-      globals.map(u => sh"$u".toString).sorted
+      globals.map(_.show).sorted
     }
 
   def nativeMissingDependenciesTask =

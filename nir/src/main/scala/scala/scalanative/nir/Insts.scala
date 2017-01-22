@@ -1,7 +1,10 @@
 package scala.scalanative
 package nir
 
-sealed abstract class Inst
+sealed abstract class Inst {
+  final def show: String = nir.Show(this)
+}
+
 object Inst {
   sealed abstract class Cf extends Inst
 

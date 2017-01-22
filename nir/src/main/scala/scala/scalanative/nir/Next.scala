@@ -3,6 +3,8 @@ package nir
 
 sealed abstract class Next {
   def name: Local
+
+  final def show: String = nir.Show(this)
 }
 object Next {
   final case class Succ(name: Local)                  extends Next

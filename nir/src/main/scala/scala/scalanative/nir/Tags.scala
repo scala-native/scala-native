@@ -204,12 +204,4 @@ object Tags {
   final val UnitVal   = 1 + GlobalVal
   final val ConstVal  = 1 + UnitVal
   final val StringVal = 1 + ConstVal
-
-  // Argument Passing Conventions
-
-  final val PassConv = Val + 32
-
-  final val Byval = PassConv + 1
-  final val Sret  = Byval + 1
-
 }

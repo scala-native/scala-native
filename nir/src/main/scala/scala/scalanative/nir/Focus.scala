@@ -2,8 +2,6 @@ package scala.scalanative
 package nir
 
 import scala.collection.mutable
-import Shows._
-import util.sh
 
 final class Focus private (
     private val _labeled: Boolean = false,

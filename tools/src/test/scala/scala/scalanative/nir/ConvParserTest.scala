@@ -1,9 +1,6 @@
 package scala.scalanative
 package nir
 
-import util.sh
-import Shows._
-
 import fastparse.all.Parsed
 import org.scalatest._
 
@@ -24,10 +21,8 @@ class ConvParserTest extends FlatSpec with Matchers {
                                Inttoptr,
                                Bitcast)
     convs foreach { conv =>
-      val Parsed.Success(result, _) =
-        parser.Conv.parser.parse(sh"$conv".toString)
+      val Parsed.Success(result, _) = parser.Conv.parser.parse(conv.show)
       result should be(conv)
     }
   }
-
 }

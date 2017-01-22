@@ -3,8 +3,6 @@ package linker
 
 import java.io.{File, PrintWriter}
 import nir.Global
-import nir.Shows._
-import util.sh
 
 /** Linking reporters can override one of the corresponding methods to
  *  get notified whenever one of the linking events happens.
@@ -50,9 +48,9 @@ object Reporter {
 
     private def writeEdge(from: Global, to: Global): Unit = {
       def quoted(s: String) = "\"" + s + "\""
-      writer.print(quoted(sh"$from".toString))
+      writer.print(quoted(from.show))
       writer.print("->")
-      writer.print(quoted(sh"$to".toString))
+      writer.print(quoted(to.show))
       writer.println(";")
     }
 

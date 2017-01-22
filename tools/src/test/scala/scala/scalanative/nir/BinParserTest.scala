@@ -1,9 +1,6 @@
 package scala.scalanative
 package nir
 
-import util.sh
-import Shows._
-
 import fastparse.all.Parsed
 import org.scalatest._
 
@@ -31,10 +28,8 @@ class BinParserTest extends FlatSpec with Matchers {
                              Xor)
 
     bins foreach { bin =>
-      val Parsed.Success(result, _) =
-        parser.Bin.parser.parse(sh"$bin".toString)
+      val Parsed.Success(result, _) = parser.Bin.parser.parse(bin.show)
       result should be(bin)
     }
   }
-
 }

@@ -13,9 +13,8 @@ class MainInjection(entry: Global)(implicit fresh: Fresh) extends Pass {
 
   override def preAssembly = {
     case defns =>
-      val entryMainTy = Type.Function(
-        Seq(Arg(Type.Module(entry.top)), Arg(ObjectArray)),
-        Type.Void)
+      val entryMainTy =
+        Type.Function(Seq(Type.Module(entry.top), ObjectArray), Type.Void)
       val entryMainName =
         Global.Member(entry, "main_class.ssnr.ObjectArray_unit")
       val entryMain = Val.Global(entryMainName, Type.Ptr)
@@ -58,18 +57,18 @@ object MainInjection extends PassCompanion {
   val Rt =
     Type.Module(Global.Top("scala.scalanative.runtime.package$"))
   val RtInitSig =
-    Type.Function(Seq(Arg(Rt), Arg(Type.I32), Arg(Type.Ptr)), ObjectArray)
+    Type.Function(Seq(Rt, Type.I32, Type.Ptr), ObjectArray)
   val RtInit =
     Val.Global(Rt.name member "init_i32_ptr_class.ssnr.ObjectArray", Type.Ptr)
 
   val MainName = Global.Top("main")
-  val MainSig  = Type.Function(Seq(Arg(Type.I32), Arg(Type.Ptr)), Type.I32)
+  val MainSig  = Type.Function(Seq(Type.I32, Type.Ptr), Type.I32)
 
   val ThrowableName = Global.Top("java.lang.Throwable")
   val Throwable     = Type.Class(ThrowableName)
 
   val PrintStackTraceSig =
-    Type.Function(Seq(Arg(Throwable)), Type.Unit)
+    Type.Function(Seq(Throwable), Type.Unit)
   val PrintStackTraceName =
     Global.Member(ThrowableName, "printStackTrace_unit")
   val PrintStackTrace =

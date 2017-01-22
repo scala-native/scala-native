@@ -8,7 +8,7 @@ import scala.util.{Either, Left, Right}
 import scala.reflect.internal.Flags._
 import util._, util.ScopedVar.scoped
 import nir.Focus, Focus.{sequenced, merged}
-import nir._, Shows._
+import nir._
 import NirPrimitives._
 
 abstract class NirCodeGen
@@ -388,7 +388,7 @@ abstract class NirCodeGen
         if (sym.isClassConstructor) Type.Unit
         else genType(sym.tpe.resultType, box = false)
 
-      Type.Function((selfty ++: paramtys).map(Arg(_)), retty)
+      Type.Function(selfty ++: paramtys, retty)
     }
 
     def genParams(
@@ -961,7 +961,7 @@ abstract class NirCodeGen
     lazy val jlClass         = nir.Type.Class(jlClassName)
     lazy val jlClassCtorName = jlClassName member "init_ptr"
     lazy val jlClassCtorSig =
-      nir.Type.Function(Seq(Arg(jlClass), Arg(Type.Ptr)), nir.Type.Unit)
+      nir.Type.Function(Seq(jlClass, Type.Ptr), nir.Type.Unit)
     lazy val jlClassCtor = nir.Val.Global(jlClassCtorName, nir.Type.Ptr)
 
     def genBoxClass(type_ : Val, focus: Focus) = {
@@ -1424,7 +1424,7 @@ abstract class NirCodeGen
           val fun    = genExpr(funp, focus)
           val tagsts = tagsp.map(unwrapTag)
           val tagtys = tagsts.map(genType(_, box = false))
-          val sig    = Type.Function(tagtys.init.map(Arg(_)), tagtys.last)
+          val sig    = Type.Function(tagtys.init, tagtys.last)
 
           val args = mutable.UnrolledBuffer.empty[nir.Val]
           var last = fun

@@ -3,21 +3,16 @@ package optimizer
 package analysis
 
 import ControlFlow.Block
-import nir.Shows._
 
 object Shows {
-
-  private def blockToString(block: Block): String =
-    showLocal(block.name).toString
-
   def showCFG(cfg: ControlFlow.Graph): String = {
     cfg.all
       .map { block =>
         val succStr =
-          block.succ.map(blockToString).mkString("(", ",", ")")
+          block.succ.map(_.show).mkString("(", ",", ")")
         val predStr =
-          block.pred.map(blockToString).mkString("(", ",", ")")
-        s"${blockToString(block)} -> ${succStr}, pred = ${predStr}"
+          block.pred.map(_.show).mkString("(", ",", ")")
+        s"${block.show} -> ${succStr}, pred = ${predStr}"
       }
       .mkString("\n")
   }
@@ -27,7 +22,7 @@ object Shows {
       .sortBy(_._1.name.id)
       .map {
         case (block, set) =>
-          s"${blockToString(block)} -> ${set.map(blockToString).mkString("(", ",", ")")}"
+          s"${block.show} -> ${set.map(_.show).mkString("(", ",", ")")}"
       }
       .mkString("\n")
   }

@@ -4,7 +4,10 @@ package nir
 import scala.collection.mutable
 import nir.Attr._
 
-sealed abstract class Attr
+sealed abstract class Attr {
+  final def show: String = nir.Show(this)
+}
+
 object Attr {
   sealed abstract class Inline   extends Attr
   final case object MayInline    extends Inline // no information

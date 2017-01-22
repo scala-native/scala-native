@@ -3,9 +3,7 @@ package optimizer
 package pass
 
 import analysis.ClassHierarchy.Top
-import util.sh
 import nir._
-import Shows._
 import tools._
 
 class AsLoweringTest extends OptimizerSpec {
@@ -30,7 +28,7 @@ class AsLoweringTest extends OptimizerSpec {
   private class AsLoweringCheck extends Pass {
     override def preInst = {
       case inst @ Inst.Let(_, _: Op.As) =>
-        val asString = sh"${inst: Inst}".toString
+        val asString = inst.show
         fail(s"""Found an occurrence of `Op.As` in:
                 |  $asString""".stripMargin)
     }
