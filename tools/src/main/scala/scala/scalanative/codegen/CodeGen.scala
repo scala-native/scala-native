@@ -113,39 +113,15 @@ object CodeGen {
       val isDecl  = insts.isEmpty
       val keyword = if (isDecl) "declare" else "define"
 
-      def showDefnArg(arg: Arg,
-                      value: Val.Local): (Show.Result, Seq[Show.Result]) =
-        arg match {
-          case Arg(_, None) => (sh"${value: Val}", Seq.empty)
-          case Arg(Type.Ptr, Some(PassConv.Byval(pointee))) =>
-            val pointer = fresh()
-            (sh"$pointee* byval %$pointer",
-             Seq(sh"%${value.name} = bitcast $pointee* %$pointer to i8*"))
-          case Arg(Type.Ptr, Some(PassConv.Sret(pointee))) =>
-            val pointer = fresh()
-            (sh"$pointee* sret %$pointer",
-             Seq(sh"%${value.name} = bitcast $pointee* %$pointer to i8*"))
-          case x => unsupported(x)
-        }
-
-      def showDeclArg(arg: Arg): Show.Result = arg match {
-        case Arg(ty, None) => sh"$ty"
-        case Arg(Type.Ptr, Some(PassConv.Byval(pointee))) =>
-          sh"$pointee* byval"
-        case Arg(Type.Ptr, Some(PassConv.Sret(pointee))) =>
-          sh"$pointee* sret"
-        case x => unsupported(x)
-      }
-
-      val (params, preInstrs) =
-        if (isDecl) (r(argtys.map(showDeclArg), sep = ", "), Seq())
-        else {
+      val params =
+        if (isDecl) {
+          r(argtys, sep = ", ")
+        } else {
           val params = insts.head match {
             case Inst.Label(_, params) => params
             case _                     => unreachable
           }
-          val results = (argtys zip params).map((showDefnArg _).tupled)
-          (r(results.map(_._1), sep = ", "), results.flatMap(_._2))
+          r(params: Seq[Val], sep = ", ")
         }
       val postattrs =
         if (attrs.inline != Attr.MayInline) s(attrs.inline: Attr) else s()
@@ -156,9 +132,7 @@ object CodeGen {
           implicit val cfg = CFG(insts)
           val showblocks = cfg.map { block =>
             val isEntry = block eq cfg.entry
-            showBlock(block,
-                      isEntry = isEntry,
-                      if (isEntry) r(preInstrs.map(nl)) else s())
+            showBlock(block, isEntry = isEntry)
           }
           s(" ", brace(r(showblocks)))
         }
@@ -166,10 +140,8 @@ object CodeGen {
       sh"$keyword $retty @$name($params) $postattrs $personality$body"
     }
 
-    def showBlock(
-        block: Block,
-        isEntry: Boolean,
-        preInstructions: Show.Result)(implicit cfg: CFG): Show.Result = {
+    def showBlock(block: Block, isEntry: Boolean)(
+        implicit cfg: CFG): Show.Result = {
       val Block(name, params, insts) = block
 
       val body  = r(showInsts(insts).map(i(_)))
@@ -215,7 +187,7 @@ object CodeGen {
           r(shows.map(s(_)))
         }
 
-      sh"${nl("")}$label$prologue$preInstructions${nl("")}$body"
+      sh"${nl("")}$label$prologue${nl("")}$body"
     }
 
     implicit val showType: Show[Type] = Show {
@@ -234,13 +206,6 @@ object CodeGen {
       case Type.Struct(Global.None, tys) => sh"{ ${r(tys, sep = ", ")} }"
       case Type.Struct(name, _)          => sh"%$name"
       case ty                            => unsupported(ty)
-    }
-
-    implicit val showArg: Show[Arg] = Show {
-      case Arg(ty, None)                                => sh"$ty"
-      case Arg(Type.Ptr, Some(PassConv.Byval(pointee))) => sh"$pointee*"
-      case Arg(Type.Ptr, Some(PassConv.Sret(pointee)))  => sh"$pointee*"
-      case arg                                          => unsupported(arg)
     }
 
     def justVal(v: Val): Show.Result = v match {
@@ -355,24 +320,6 @@ object CodeGen {
           unsupported(cf)
       }
 
-    def showCallArgs(args: Seq[Arg],
-                     vals: Seq[Val]): (Seq[Show.Result], Seq[Show.Result]) = {
-      val res = args.map(Some(_)).zipAll(vals, None, Val.None) map {
-        case (_, Val.None) => (Seq.empty, Seq.empty)
-        case (Some(Arg(Type.Ptr, Some(PassConv.Byval(pointee)))), v) =>
-          val bitcasted = fresh()
-          (Seq(sh"%$bitcasted = bitcast $v to $pointee*"),
-           Seq(sh"$pointee* %$bitcasted"))
-        case (Some(Arg(Type.Ptr, Some(PassConv.Sret(pointee)))), v) =>
-          val bitcasted = fresh()
-          (Seq(sh"%$bitcasted = bitcast $v to $pointee*"),
-           Seq(sh"$pointee* %$bitcasted"))
-        case (Some(Arg(_, None)) | None, v) => (Seq(), Seq(sh"$v"))
-        case _                              => unsupported()
-      }
-      (res.flatMap(_._1), res.flatMap(_._2))
-    }
-
     def showLet(buf: mutable.UnrolledBuffer[Show.Result],
                 inst: Inst.Let): Unit = {
       def isVoid(ty: Type): Boolean =
@@ -388,10 +335,7 @@ object CodeGen {
 
           val Type.Function(argtys, _) = ty
 
-          val (preinsts, argshows) = showCallArgs(argtys, args)
-
-          buf ++= preinsts
-          buf += sh"${bind}call ${ty: Type} @$pointee(${r(argshows, sep = ", ")})"
+          buf += sh"${bind}call ${ty: Type} @$pointee(${r(args, sep = ", ")})"
 
         case Op.Call(ty, ptr, args) =>
           val pointee = fresh()
@@ -399,11 +343,8 @@ object CodeGen {
 
           val Type.Function(argtys, _) = ty
 
-          val (preinsts, argshows) = showCallArgs(argtys, args)
-
-          buf ++= preinsts
           buf += sh"%$pointee = bitcast $ptr to $ty*"
-          buf += sh"${bind}call ${ty: Type} %$pointee(${r(argshows, sep = ", ")})"
+          buf += sh"${bind}call ${ty: Type} %$pointee(${r(args, sep = ", ")})"
 
         case Op.Load(ty, ptr) =>
           val pointee = fresh()

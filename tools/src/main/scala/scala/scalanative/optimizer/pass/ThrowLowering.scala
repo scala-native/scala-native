@@ -23,7 +23,7 @@ class ThrowLowering(implicit fresh: Fresh) extends Pass {
 
 object ThrowLowering extends PassCompanion {
   val throwName = Global.Top("scalanative_throw")
-  val throwSig  = Type.Function(Seq(Arg(Type.Ptr)), Type.Void)
+  val throwSig  = Type.Function(Seq(Type.Ptr), Type.Void)
   val throw_    = Val.Global(throwName, Type.Ptr)
 
   override val injects =

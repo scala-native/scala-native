@@ -13,7 +13,6 @@ object Show {
     value
   }
 
-  def apply(v: Arg): String   = { val b = newBuilder; b.arg_(v); b.toString }
   def apply(v: Attr): String  = { val b = newBuilder; b.attr_(v); b.toString }
   def apply(v: Attrs): String = { val b = newBuilder; b.attrs_(v); b.toString }
   def apply(v: Bin): String   = { val b = newBuilder; b.bin_(v); b.toString }
@@ -27,11 +26,8 @@ object Show {
   def apply(v: Local): String = { val b = newBuilder; b.local_(v); b.toString }
   def apply(v: Next): String  = { val b = newBuilder; b.next_(v); b.toString }
   def apply(v: Op): String    = { val b = newBuilder; b.op_(v); b.toString }
-  def apply(v: PassConv): String = {
-    val b = newBuilder; b.passConv_(v); b.toString
-  }
-  def apply(v: Type): String = { val b = newBuilder; b.type_(v); b.toString }
-  def apply(v: Val): String  = { val b = newBuilder; b.val_(v); b.toString }
+  def apply(v: Type): String  = { val b = newBuilder; b.type_(v); b.toString }
+  def apply(v: Val): String   = { val b = newBuilder; b.val_(v); b.toString }
 
   final class NirShowBuilder(val builder: ShowBuilder) extends AnyVal {
     import builder._
@@ -529,7 +525,7 @@ object Show {
         str("]")
       case Type.Function(args, ret) =>
         str("(")
-        rep(args, sep = ", ")(arg_)
+        rep(args, sep = ", ")(type_)
         str(" => ")
         type_(ret)
       case Type.Struct(Global.None, tys) =>
@@ -549,26 +545,6 @@ object Show {
       case Type.Module(name) =>
         str("module ")
         global_(name)
-    }
-
-    def arg_(arg: Arg): Unit = arg match {
-      case Arg(ty, None) =>
-        type_(ty)
-      case Arg(ty, Some(passConv)) =>
-        passConv_(passConv)
-        str(" ")
-        type_(ty)
-    }
-
-    def passConv_(passConv: PassConv): Unit = passConv match {
-      case PassConv.Byval(ty) =>
-        str("byval[")
-        type_(ty)
-        str("]")
-      case PassConv.Sret(ty) =>
-        str("sret[")
-        type_(ty)
-        str("]")
     }
 
     def global_(global: Global): Unit = global match {

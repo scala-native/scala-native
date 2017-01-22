@@ -93,7 +93,7 @@ trait NirNameEncoding { self: NirCodeGen =>
         sb.str(n)
       case nir.Type.Function(args, ret) =>
         sb.str("fun.")
-        sb.rep(args, sep = ".")(arg => printType(arg.ty))
+        sb.rep(args, sep = ".")(printType)
       case nir.Type.Struct(name, _) =>
         sb.str("struct.")
         printGlobal(name)

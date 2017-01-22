@@ -178,11 +178,14 @@ trait Pass {
   private def txType(ty: Type): Type = {
     val pre = hook(preType, ty, ty)
     val post = pre match {
-      case Type.Array(ty, n) => Type.Array(txType(ty), n)
+      case Type.Array(ty, n) =>
+        Type.Array(txType(ty), n)
       case Type.Function(args, ty) =>
-        Type.Function(args.map(a => a.copy(ty = txType(a.ty))), txType(ty))
-      case Type.Struct(n, tys) => Type.Struct(n, tys.map(txType))
-      case _                   => pre
+        Type.Function(args.map(txType), txType(ty))
+      case Type.Struct(n, tys) =>
+        Type.Struct(n, tys.map(txType))
+      case _ =>
+        pre
     }
 
     hook(postType, post, post)
