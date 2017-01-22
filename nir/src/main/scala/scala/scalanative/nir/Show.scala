@@ -141,9 +141,17 @@ object Show {
         str("switch ")
         val_(scrut)
         str(" {")
+        indent()
         rep(cases) { next =>
+          newline()
           next_(next)
         }
+        newline()
+        str("default => ")
+        next_(default)
+        unindent()
+        newline()
+        str("}")
       case Inst.Invoke(ty, f, args, succ, fail) =>
         str("invoke[")
         type_(ty)
@@ -169,7 +177,7 @@ object Show {
       case Op.Call(ty, f, args) =>
         str("call[")
         type_(ty)
-        str(" ")
+        str("] ")
         val_(f)
         str("(")
         rep(args, sep = ", ")(val_)
@@ -244,7 +252,7 @@ object Show {
         val_(elsev)
 
       case Op.Classalloc(name) =>
-        str("clasalloc ")
+        str("classalloc ")
         global_(name)
       case Op.Field(value, name) =>
         str("field ")
@@ -279,7 +287,7 @@ object Show {
       case Op.Closure(ty, fun, captures) =>
         str("closure[")
         type_(ty)
-        str(" ")
+        str("] ")
         rep(fun +: captures, sep = ", ")(val_)
       case Op.Box(ty, v) =>
         str("box[")
@@ -464,9 +472,10 @@ object Show {
             newline()
             inst_(inst)
           case inst =>
+            indent()
             newline()
-            str("  ")
             inst_(inst)
+            unindent()
         }
         newline()
         str("}")
@@ -537,9 +546,11 @@ object Show {
         str("struct ")
         global_(name)
 
-      case Type.Unit        => str("unit")
-      case Type.Nothing     => str("nothing")
-      case Type.Class(name) => str("class ")
+      case Type.Unit    => str("unit")
+      case Type.Nothing => str("nothing")
+      case Type.Class(name) =>
+        str("class ")
+        global_(name)
       case Type.Trait(name) =>
         str("trait ")
         global_(name)
