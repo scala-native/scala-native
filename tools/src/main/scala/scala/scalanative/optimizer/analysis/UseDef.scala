@@ -37,7 +37,7 @@ object UseDef {
     }
 
     override def preNext = {
-      case next =>
+      case next if next ne Next.None =>
         deps += next.name
         next
     }
@@ -50,9 +50,9 @@ object UseDef {
   }
 
   private def isPure(inst: Inst)(implicit top: Top) = inst match {
-    case Inst.Let(_, Op.Call(_, Val.Global(Ref(node), _), _)) =>
+    case Inst.Let(_, Op.Call(_, Val.Global(Ref(node), _), _, _)) =>
       node.attrs.isPure
-    case Inst.Let(_, Op.Module(Ref(node))) =>
+    case Inst.Let(_, Op.Module(Ref(node), _)) =>
       node.attrs.isPure
     case Inst.Let(_, _: Op.Pure) =>
       true

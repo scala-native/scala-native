@@ -33,7 +33,7 @@ class AllocLowering(implicit fresh: Fresh, top: Top) extends Pass {
 
       Seq(
         Let(size.name, Op.Sizeof(cls.classStruct)),
-        Let(n, Op.Call(allocSig, alloc, Seq(cls.typeConst, size)))
+        Let(n, Op.Call(allocSig, alloc, Seq(cls.typeConst, size), Next.None))
       )
   }
 

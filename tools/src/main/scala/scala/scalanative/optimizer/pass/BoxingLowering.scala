@@ -24,7 +24,8 @@ class BoxingLowering(implicit val fresh: Fresh) extends Pass {
                    Seq(
                      Val.Undef(Type.Module(module)),
                      from
-                   )
+                   ),
+                   Next.None
                  )))
 
     case Inst.Let(name, unbox @ Op.Unbox(ty, from)) =>
@@ -41,7 +42,8 @@ class BoxingLowering(implicit val fresh: Fresh) extends Pass {
                    Seq(
                      Val.Undef(Type.Module(module)),
                      from
-                   )
+                   ),
+                   Next.None
                  )))
   }
 }

@@ -42,7 +42,6 @@ object Driver {
         pass.UnitLowering,
         pass.ThrowLowering,
         pass.NothingLowering,
-        pass.TryLowering,
         pass.AllocLowering,
         pass.SizeofLowering,
         pass.CopyPropagation,

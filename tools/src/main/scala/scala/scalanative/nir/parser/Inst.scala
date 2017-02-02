@@ -29,18 +29,7 @@ object Inst extends Base[nir.Inst] {
     P("switch" ~ Val.parser ~ "{" ~ Next.parser.rep ~ "default" ~ "=>" ~ Next.parser ~ "}" map {
       case (scrut, cases, default) => nir.Inst.Switch(scrut, default, cases)
     })
-  val Invoke =
-    P(
-      "invoke[" ~ Type.parser ~ "]" ~ Val.parser ~ "(" ~ Val.parser.rep(sep =
-        ",") ~ ")" ~ "to" ~ Next.parser ~ "unwind" ~ Next.parser map {
-        case (ty, ptr, args, succ, fail) =>
-          nir.Inst.Invoke(ty, ptr, args, succ, fail)
-      })
-  val Throw = P("throw" ~ Val.parser map (nir.Inst.Throw(_)))
-  val Try =
-    P("try" ~ Next.parser ~ "catch" ~ Next.parser map {
-      case (normal, exc) => nir.Inst.Try(normal, exc)
-    })
+
   override val parser: P[nir.Inst] =
-    None | Label | Let | Unreachable | Ret | Jump | If | Switch | Invoke | Throw | Try
+    None | Label | Let | Unreachable | Ret | Jump | If | Switch
 }

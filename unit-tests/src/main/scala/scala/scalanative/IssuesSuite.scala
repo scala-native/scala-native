@@ -121,4 +121,39 @@ object IssuesSuite extends tests.Suite {
     assert(!p == 'b'.toByte)
     assert(!(p + 1) == 'a'.toByte)
   }
+
+  test("#349") {
+    var events = List.empty[String]
+
+    def log(s: String): Unit = events ::= s
+
+    def throwExc(): Unit =
+      throw new Exception
+
+    def foo(): Unit = {
+      try {
+        try {
+          throwExc()
+        } catch {
+          case e: Throwable =>
+            log("a")
+        }
+
+        try {
+          throw new Exception
+        } catch {
+          case e: IllegalArgumentException =>
+            log("b")
+        }
+
+      } catch {
+        case e: Throwable =>
+          log("c")
+      }
+    }
+
+    assert(events.isEmpty)
+    foo()
+    assert(events == List("c", "a"))
+  }
 }
