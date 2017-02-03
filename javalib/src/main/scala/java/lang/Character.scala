@@ -964,7 +964,19 @@ object Character {
     deltas
   }
 
+  // Create tables to support toUpperCase and toLowerCase transformations
+  // using the Unicode 7.0 database. This implementation uses the
+  // CaseFolding.txt file referenced below.
+  // Ranges: the codePoints with lower and upper bound pairs or
+  //         individual codePoints.
+  // Deltas: the difference between the upper and lower case codePoints
+  //         for ranges and individual codePoints.
+  // Steps:  values of O indicate the lower bound or individual codePoint.
+  //         Steps of 1 or 2 indicate the spacing of the upper or lower case
+  //         codePoints with the same index as the upper bound of a range.
+  //
   // http://www.unicode.org/Public/7.0.0/ucd/CaseFolding.txt
+  //
   //  import scala.io.Source
   //  import java.io.InputStream
   //  def toInt(hex: String): Int = Integer.parseInt(hex, 16)
@@ -974,7 +986,7 @@ object Character {
   //  val records = lines.filterNot(line => line.startsWith("#") || line.isEmpty())
   //  val arrays = records.map { x => x.split(";")  }
   //  val tuples = arrays.map { c => (c(0), c(1).trim(), c(2).trim, c(3).trim) }
-  //  // filter for 'simple case folding C + S' and greater than FFFF? && (t._1.size == 4)
+  //  // filter for 'simple case folding C + S'
   //  val fTuples = tuples.filter(t => (t._2 == "C" || t._2 == "S") ).toList
   //  val upperLower = fTuples.map(t => (toInt(t._1), toInt(t._3)))
   //  val pairs = upperLower.map { case (u, l) => (u, l, u - l) }
