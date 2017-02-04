@@ -23,14 +23,14 @@ object StringSuite extends tests.Suite {
     assert("test".compareTo("tess") > 0)
   }
 
-  testFails("compareToIgnoreCase", issue = 380) {
+  test("compareToIgnoreCase") {
     assert("test".compareToIgnoreCase("Utest") < 0)
     assert("test".compareToIgnoreCase("Test") == 0)
     assert("Test".compareToIgnoreCase("stest") > 0)
     assert("tesT".compareToIgnoreCase("teSs") > 0)
   }
 
-  testFails("equalsIgnoreCase", issue = 380) {
+  test("equalsIgnoreCase") {
     assert("test".equalsIgnoreCase("TEST"))
     assert("TEst".equalsIgnoreCase("teST"))
     assert(!("SEst".equalsIgnoreCase("TEss")))
