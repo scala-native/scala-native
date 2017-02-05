@@ -29,6 +29,8 @@ object ExceptionSuite extends tests.Suite {
     // It's startsWith and not == as there could be additional stack
     // activations before main in the stack trace. For example on linux
     // there would be additional __libc_start_main and _start frames.
+
+    // fails on nix https://github.com/scala-native/scala-native/issues/516
     assert(sw.toString.startsWith(expected))
   }
 
