@@ -16,6 +16,7 @@ in rec {
       stdenv
       sbtOracle
       boehmgc
+      libunwind
       clang
     ];
   };
