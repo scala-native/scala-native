@@ -27,6 +27,7 @@ object Driver {
         pass.DeadCodeElimination,
         pass.BlockParamReduction,
         pass.CfChainsSimplification,
+        pass.BasicBlocksFusion,
         pass.Canonicalization,
         pass.GlobalValueNumbering,
         pass.MainInjection,
