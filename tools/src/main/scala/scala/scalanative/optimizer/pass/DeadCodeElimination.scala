@@ -6,8 +6,7 @@ import scala.collection.mutable
 import analysis.ClassHierarchy.Top
 import analysis.UseDef
 import analysis.ControlFlow
-import nir._, Shows._
-import util.sh
+import nir._
 
 /** Eliminates pure computations that are not being used, as well as unused block parameters. */
 class DeadCodeElimination(implicit top: Top) extends Pass {
@@ -59,7 +58,7 @@ object DeadCodeElimination extends PassCompanion {
 
           case _ =>
             throw new IllegalStateException(
-              s"Expected a BlockDef in usedef for ${showLocal(name)}")
+              s"Expected a BlockDef in usedef for ${name.show}")
         }
     }
   }

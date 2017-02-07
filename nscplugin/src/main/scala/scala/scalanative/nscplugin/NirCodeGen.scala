@@ -8,7 +8,7 @@ import scala.util.{Either, Left, Right}
 import scala.reflect.internal.Flags._
 import util._, util.ScopedVar.scoped
 import nir.Focus, Focus.{sequenced, merged}
-import nir._, Shows._
+import nir._
 import NirPrimitives._
 
 abstract class NirCodeGen
@@ -84,8 +84,10 @@ abstract class NirCodeGen
     private val curMethodInfo = new util.ScopedVar[CollectMethodInfo]
     private val curMethodEnv  = new util.ScopedVar[MethodEnv]
     private val curMethodThis = new util.ScopedVar[Option[Val]]
+    private val curUnwind     = new util.ScopedVar[nir.Next]
 
-    private val lazyAnonDefs = mutable.Map.empty[Symbol, ClassDef]
+    private val lazyAnonDefs =
+      mutable.Map.empty[Symbol, ClassDef]
 
     private def consumeLazyAnonDef(sym: Symbol) = {
       lazyAnonDefs
@@ -257,7 +259,8 @@ abstract class NirCodeGen
       scoped(
           curMethodSym := dd.symbol,
           curMethodEnv := env,
-          curMethodInfo := (new CollectMethodInfo).collect(dd.rhs)
+          curMethodInfo := (new CollectMethodInfo).collect(dd.rhs),
+          curUnwind := Next.None
       ) {
         val sym      = dd.symbol
         val owner    = curClassSym.get
@@ -388,7 +391,7 @@ abstract class NirCodeGen
         if (sym.isClassConstructor) Type.Unit
         else genType(sym.tpe.resultType, box = false)
 
-      Type.Function((selfty ++: paramtys).map(Arg(_)), retty)
+      Type.Function(selfty ++: paramtys, retty)
     }
 
     def genParams(
@@ -490,7 +493,7 @@ abstract class NirCodeGen
 
         case Throw(exprp) =>
           val expr = genExpr(exprp, focus)
-          expr.withThrow(expr.value)
+          expr.withThrow(expr.value, curUnwind)
 
         case app: Apply =>
           genApply(app, focus)
@@ -509,7 +512,7 @@ abstract class NirCodeGen
           val sym   = tree.symbol
           val owner = sym.owner
           if (sym.isModule) {
-            focus withOp Op.Module(genTypeName(sym))
+            focus withOp Op.Module(genTypeName(sym), curUnwind)
           } else if (sym.isStaticMember) {
             genStaticMember(sym, focus)
           } else if (sym.isMethod) {
@@ -537,7 +540,7 @@ abstract class NirCodeGen
             val ty = genType(sym.tpe, box = false)
             focus withOp Op.Load(ty, curMethodEnv.resolve(sym))
           } else if (sym.isModule) {
-            focus withOp Op.Module(genTypeName(sym))
+            focus withOp Op.Module(genTypeName(sym), curUnwind)
           } else {
             focus withValue (curMethodEnv.resolve(sym))
           }
@@ -703,22 +706,26 @@ abstract class NirCodeGen
                catches: List[Tree],
                finalizer: Tree,
                focus: Focus): Focus = {
-      val normaln, excn = fresh()
+      val unwind = fresh()
+      val exc    = Val.Local(fresh(), Rt.Object)
 
-      val res  = Val.Local(fresh(), retty)
-      val exc  = Val.Local(fresh(), Rt.Object)
-      val try_ = focus.withTry(normaln, excn)
+      val normal = { (focus: Focus) =>
+        scoped(curUnwind := Next.Unwind(unwind)) {
+          genExpr(expr, focus)
+        }
+      }
 
-      merged(retty, try_, Seq(
-        focus => genExpr(expr, focus.withLabel(normaln)),
-        focus => genCatch(retty, exc, catches, focus.withLabel(excn, exc))
-      ))
+      val exception = { (focus: Focus) =>
+        genCatch(retty, catches, focus.withLabel(unwind, exc).withValue(exc))
+      }
+
+      merged(retty, focus, Seq(normal, exception))
     }
 
     def genCatch(retty: nir.Type,
-                 exc: Val,
                  catches: List[Tree],
                  focus: Focus): Focus = {
+      val exc   = focus.value
       val cases = catches.map {
         case CaseDef(pat, _, body) =>
           val (excty, symopt) = pat match {
@@ -745,7 +752,7 @@ abstract class NirCodeGen
       def wrap(cases: Seq[(nir.Type, Focus => Focus)], focus: Focus): Focus =
         cases match {
           case Seq() =>
-            focus.withThrow(exc)
+            focus.withThrow(exc, curUnwind)
           case (excty, f) +: rest =>
             val cond = focus withOp Op.Is(excty, exc)
             genIf(retty, ValTree(cond.value),
@@ -756,13 +763,13 @@ abstract class NirCodeGen
     }
 
     def genModule(sym: Symbol, focus: Focus): Focus =
-      focus withOp Op.Module(genTypeName(sym))
+      focus withOp Op.Module(genTypeName(sym), curUnwind)
 
     def genStaticMember(sym: Symbol, focus: Focus): Focus =
       if (sym == BoxedUnit_UNIT) focus withValue Val.Unit
       else {
         val ty     = genType(sym.tpe, box = false)
-        val module = focus withOp Op.Module(genTypeName(sym.owner))
+        val module = focus withOp Op.Module(genTypeName(sym.owner), curUnwind)
         val elem   = module withOp Op.Field(module.value, genFieldName(sym))
 
         elem withOp Op.Load(ty, elem.value)
@@ -961,14 +968,14 @@ abstract class NirCodeGen
     lazy val jlClass         = nir.Type.Class(jlClassName)
     lazy val jlClassCtorName = jlClassName member "init_ptr"
     lazy val jlClassCtorSig =
-      nir.Type.Function(Seq(Arg(jlClass), Arg(Type.Ptr)), nir.Type.Unit)
+      nir.Type.Function(Seq(jlClass, Type.Ptr), nir.Type.Unit)
     lazy val jlClassCtor = nir.Val.Global(jlClassCtorName, nir.Type.Ptr)
 
     def genBoxClass(type_ : Val, focus: Focus) = {
       val alloc = focus withOp Op.Classalloc(jlClassName)
       val init =
         alloc withOp Op.Call(
-            jlClassCtorSig, jlClassCtor, Seq(alloc.value, type_))
+            jlClassCtorSig, jlClassCtor, Seq(alloc.value, type_), curUnwind)
 
       init withValue alloc.value
     }
@@ -1258,36 +1265,83 @@ abstract class NirCodeGen
       genMethodCall(method, statically = true, array.value, argsp, array)
     }
 
-    def extractClassFromImplicitClassTag(tree: Tree): Symbol = {
+    def unwrapClassTagOption(tree: Tree): Option[Symbol] =
       tree match {
         case Typed(Apply(ref: RefTree, args), _) =>
           ref.symbol match {
-            case ByteClassTag    => ByteClass
-            case ShortClassTag   => ShortClass
-            case CharClassTag    => CharClass
-            case IntClassTag     => IntClass
-            case LongClassTag    => LongClass
-            case FloatClassTag   => FloatClass
-            case DoubleClassTag  => DoubleClass
-            case BooleanClassTag => BooleanClass
-            case UnitClassTag    => UnitClass
-            case AnyClassTag     => AnyClass
-            case ObjectClassTag  => ObjectClass
-            case AnyValClassTag  => ObjectClass
-            case AnyRefClassTag  => ObjectClass
-            case NothingClassTag => NothingClass
-            case NullClassTag    => NullClass
+            case ByteClassTag    => Some(ByteClass)
+            case ShortClassTag   => Some(ShortClass)
+            case CharClassTag    => Some(CharClass)
+            case IntClassTag     => Some(IntClass)
+            case LongClassTag    => Some(LongClass)
+            case FloatClassTag   => Some(FloatClass)
+            case DoubleClassTag  => Some(DoubleClass)
+            case BooleanClassTag => Some(BooleanClass)
+            case UnitClassTag    => Some(UnitClass)
+            case AnyClassTag     => Some(AnyClass)
+            case ObjectClassTag  => Some(ObjectClass)
+            case AnyValClassTag  => Some(ObjectClass)
+            case AnyRefClassTag  => Some(ObjectClass)
+            case NothingClassTag => Some(NothingClass)
+            case NullClassTag    => Some(NullClass)
             case ClassTagApply =>
               val Seq(Literal(const: Constant)) = args
-              const.typeValue.typeSymbol
+              Some(const.typeValue.typeSymbol)
             case _ =>
-              unsupported(tree)
+              None
           }
 
         case tree =>
-          unsupported(tree)
+          None
+      }
+
+    def unwrapTagOption(tree: Tree): Option[SimpleType] = {
+      tree match {
+        case Apply(ref: RefTree, args) =>
+          def allsts = {
+            val sts = args.flatMap(unwrapTagOption(_).toSeq)
+            if (sts.length == args.length) Some(sts) else None
+          }
+          def just(sym: Symbol) = Some(SimpleType(sym))
+          def wrap(sym: Symbol) = allsts.map(SimpleType(sym, _))
+
+          ref.symbol match {
+            case UnitTagMethod    => just(UnitClass)
+            case BooleanTagMethod => just(BooleanClass)
+            case CharTagMethod    => just(CharClass)
+            case ByteTagMethod    => just(ByteClass)
+            case UByteTagMethod   => just(UByteClass)
+            case ShortTagMethod   => just(ShortClass)
+            case UShortTagMethod  => just(UShortClass)
+            case IntTagMethod     => just(IntClass)
+            case UIntTagMethod    => just(UIntClass)
+            case LongTagMethod    => just(LongClass)
+            case ULongTagMethod   => just(ULongClass)
+            case FloatTagMethod   => just(FloatClass)
+            case DoubleTagMethod  => just(DoubleClass)
+            case PtrTagMethod     => just(PtrClass)
+            case RefTagMethod     => just(unwrapClassTagOption(args.head).get)
+            case sym if NatBaseTagMethod.contains(sym) =>
+              just(NatBaseClass(NatBaseTagMethod.indexOf(sym)))
+            case NatDigitTagMethod =>
+              wrap(NatDigitClass)
+            case CArrayTagMethod =>
+              wrap(CArrayClass)
+            case sym if CStructTagMethod.contains(sym) =>
+              wrap(CStructClass(args.length))
+            case _ =>
+              None
+          }
+
+        case tree =>
+          None
       }
     }
+
+    def unwrapTag(tree: Tree): SimpleType =
+      unwrapTagOption(tree).getOrElse {
+        unsupported(s"can't recover runtime tag from $tree")
+      }
 
     def boxValue(st: SimpleType, focus: Focus): Focus =
       if (genPrimCode(st.sym) == 'O') {
@@ -1312,39 +1366,56 @@ abstract class NirCodeGen
     }
 
     def genPtrOp(app: Apply, code: Int, focus: Focus): Focus = {
-      val Apply(Select(ptrp, _), argsp :+ ctp) = app
+      val Apply(sel @ Select(ptrp, _), argsp) = app
 
-      val sym = extractClassFromImplicitClassTag(ctp)
-      val ty  = genType(sym, box = false)
       val ptr = genExpr(ptrp, focus)
 
       (code, argsp) match {
-        case (PTR_LOAD, Seq()) =>
-          boxValue(sym, ptr withOp Op.Load(ty, ptr.value))
+        case (PTR_LOAD, Seq(tagp)) =>
+          val st = unwrapTag(tagp)
+          val ty = genType(st, box = false)
+          boxValue(st, ptr withOp Op.Load(ty, ptr.value))
 
-        case (PTR_STORE, Seq(valuep)) =>
-          val value = unboxValue(sym, partial = false, genExpr(valuep, ptr))
+        case (PTR_STORE, Seq(valuep, tagp)) =>
+          val st    = unwrapTag(tagp)
+          val ty    = genType(st, box = false)
+          val value = unboxValue(st, partial = false, genExpr(valuep, ptr))
           value withOp Op.Store(ty, ptr.value, value.value)
 
-        case (PTR_ADD, Seq(offsetp)) =>
+        case (PTR_ADD, Seq(offsetp, tagp)) =>
+          val st     = unwrapTag(tagp)
+          val ty     = genType(st, box = false)
           val offset = genExpr(offsetp, ptr)
           offset withOp Op.Elem(ty, ptr.value, Seq(offset.value))
 
-        case (PTR_SUB, Seq(offsetp)) =>
+        case (PTR_SUB, Seq(offsetp, tagp)) =>
+          val st     = unwrapTag(tagp)
+          val ty     = genType(st, box = false)
           val offset = genExpr(offsetp, ptr)
           val neg    = negateInt(offset.value, offset)
           neg withOp Op.Elem(ty, ptr.value, Seq(neg.value))
 
-        case (PTR_APPLY, Seq(offsetp)) =>
+        case (PTR_APPLY, Seq(offsetp, tagp)) =>
+          val st     = unwrapTag(tagp)
+          val ty     = genType(st, box = false)
           val offset = genExpr(offsetp, ptr)
           val elem   = offset withOp Op.Elem(ty, ptr.value, Seq(offset.value))
-          boxValue(sym, elem withOp Op.Load(ty, elem.value))
+          boxValue(st, elem withOp Op.Load(ty, elem.value))
 
-        case (PTR_UPDATE, Seq(offsetp, valuep)) =>
+        case (PTR_UPDATE, Seq(offsetp, valuep, tagp)) =>
+          val st     = unwrapTag(tagp)
+          val ty     = genType(st, box = false)
           val offset = genExpr(offsetp, ptr)
-          val value  = unboxValue(sym, partial = false, genExpr(valuep, offset))
+          val value  = unboxValue(st, partial = false, genExpr(valuep, offset))
           val elem   = value withOp Op.Elem(ty, ptr.value, Seq(offset.value))
           elem withOp Op.Store(ty, elem.value, value.value)
+
+        case (PTR_FIELD, Seq(tagp, _)) =>
+          val st    = unwrapTag(tagp)
+          val ty    = genType(st, box = false)
+          val index = PtrFieldMethod.indexOf(sel.symbol)
+          val path  = Seq(nir.Val.I32(0), nir.Val.I32(index))
+          ptr withOp Op.Elem(ty, ptr.value, path)
       }
     }
 
@@ -1353,30 +1424,31 @@ abstract class NirCodeGen
         case FUN_PTR_CALL =>
           val Apply(sel @ Select(funp, _), allargsp) = app
 
-          val arity = FunctionPtrApply.indexOf(sel.symbol)
+          val arity = CFunctionPtrApply.indexOf(sel.symbol)
 
-          val fun           = genExpr(funp, focus)
-          val (argsp, ctsp) = allargsp.splitAt(arity)
-          val ctsyms        = ctsp.map(extractClassFromImplicitClassTag)
-          val cttys         = ctsyms.map(genType(_, box = false))
-          val sig           = Type.Function(cttys.init.map(Arg(_)), cttys.last)
+          val (argsp, tagsp) = allargsp.splitAt(arity)
+
+          val fun    = genExpr(funp, focus)
+          val tagsts = tagsp.map(unwrapTag)
+          val tagtys = tagsts.map(genType(_, box = false))
+          val sig    = Type.Function(tagtys.init, tagtys.last)
 
           val args = mutable.UnrolledBuffer.empty[nir.Val]
           var last = fun
-          ctsyms.init.zip(argsp).foreach {
-            case (sym, argp) =>
-              last = unboxValue(sym, partial = false, genExpr(argp, last))
+          tagsts.init.zip(argsp).foreach {
+            case (st, argp) =>
+              last = unboxValue(st, partial = false, genExpr(argp, last))
               args += last.value
           }
 
-          last withOp Op.Call(sig, fun.value, args)
+          last withOp Op.Call(sig, fun.value, args, curUnwind)
 
         case FUN_PTR_FROM =>
           val Apply(_, Seq(MaybeBlock(Typed(ctor, funtpt))))           = app
           val Apply(Select(New(tpt), termNames.CONSTRUCTOR), ctorargs) = ctor
 
           assert(ctorargs.isEmpty,
-                 "Can't get function pointer to a closure with captures.")
+                 s"Can't get function pointer to a closure with captures: ${ctorargs} in application ${app}")
 
           val anondef = consumeLazyAnonDef(tpt.tpe.typeSymbol)
           val body    = anondef.impl.body
@@ -1429,39 +1501,39 @@ abstract class NirCodeGen
       }
 
     def genCastOp(app: Apply, focus: Focus): Focus = {
-      val Apply(Select(Apply(_, List(valuep)), _), List(fromctp, toctp)) = app
+      val Apply(Select(Apply(_, List(valuep)), _), List(fromtagp, totagp)) = app
 
-      val fromsym = extractClassFromImplicitClassTag(fromctp)
-      val tosym   = extractClassFromImplicitClassTag(toctp)
-      val fromty  = genType(fromsym, box = false)
-      val toty    = genType(tosym, box = false)
-      val from    = unboxValue(fromsym, partial = false, genExpr(valuep, focus))
+      val fromst = unwrapTag(fromtagp)
+      val tost   = unwrapTag(totagp)
+      val fromty = genType(fromst, box = false)
+      val toty   = genType(tost, box = false)
+      val from   = unboxValue(fromst, partial = false, genExpr(valuep, focus))
 
-      boxValue(tosym, castConv(fromty, toty).fold(from) { conv =>
+      boxValue(tost, castConv(fromty, toty).fold(from) { conv =>
         from withOp Op.Conv(conv, toty, from.value)
       })
     }
 
     def genOfOp(app: Apply, code: Int, focus: Focus): Focus = {
-      val Apply(_, Seq(ctp)) = app
+      val Apply(_, Seq(tagp)) = app
 
-      val sym = extractClassFromImplicitClassTag(ctp)
+      val st = unwrapTag(tagp)
 
       code match {
-        case SIZEOF => focus withOp Op.Sizeof(genType(sym, box = false))
-        case TYPEOF => focus withValue genTypeValue(sym)
+        case SIZEOF => focus withOp Op.Sizeof(genType(st, box = false))
+        case TYPEOF => focus withValue genTypeValue(st)
         case _      => unreachable
       }
     }
 
     def genStackalloc(app: Apply, focus: Focus): Focus = {
-      val (sizeopt, ctp) = app match {
-        case Apply(_, Seq(ctp)) =>
-          (None, ctp)
-        case Apply(_, Seq(sizep, ctp)) =>
-          (Some(sizep), ctp)
+      val (sizeopt, tagp) = app match {
+        case Apply(_, Seq(tagp)) =>
+          (None, tagp)
+        case Apply(_, Seq(sizep, tagp)) =>
+          (Some(sizep), tagp)
       }
-      val ty   = genType(extractClassFromImplicitClassTag(ctp), box = false)
+      val ty   = genType(unwrapTag(tagp), box = false)
       val size = sizeopt.fold(focus withValue Val.None)(genExpr(_, focus))
 
       size withOp Op.Stackalloc(ty, size.value)
@@ -1524,17 +1596,19 @@ abstract class NirCodeGen
           right withOp Op.Bin(bin, ty, left.value, right.value)
       }
 
-    def genSelectOp(app: Tree, focus: Focus): Focus = {
-      val Apply(_, Seq(condp, thenp, elsep, ctp)) = app
 
-      val sym   = extractClassFromImplicitClassTag(ctp)
+    def genSelectOp(app: Tree, focus: Focus): Focus = {
+      val Apply(_, Seq(condp, thenp, elsep, tagp)) = app
+
+      val st    = unwrapTag(tagp)
       val cond  = genExpr(condp, focus)
-      val then_ = unboxValue(sym, partial = false, genExpr(thenp, cond))
-      val else_ = unboxValue(sym, partial = false, genExpr(elsep, then_))
+      val then_ = unboxValue(st, partial = false, genExpr(thenp, cond))
+      val else_ = unboxValue(st, partial = false, genExpr(elsep, then_))
       val sel   = else_ withOp Op.Select(cond.value, then_.value, else_.value)
 
-      boxValue(sym, sel)
+      boxValue(st, sel)
     }
+
 
     def genSynchronized(app: Apply, focus: Focus): Focus = {
       val Apply(Select(receiverp, _), List(argp)) = app
@@ -1768,7 +1842,7 @@ abstract class NirCodeGen
           self +: args
         }
 
-      method withOp Op.Call(sig, method.value, values)
+      method withOp Op.Call(sig, method.value, values, curUnwind)
     }
 
     def genSimpleArgs(argsp: Seq[Tree], focus: Focus): (Seq[Val], Focus) = {
@@ -1820,8 +1894,8 @@ abstract class NirCodeGen
             WrapArray(MaybeAsInstanceOf(ArrayValue(tpt, elems)))) =>
           val values = mutable.UnrolledBuffer.empty[Val]
           val resfocus = elems.foldLeft(focus) {
-            case (focus, Vararg(sym, argp)) =>
-              val arg = unboxValue(sym, partial = false, genExpr(argp, focus))
+            case (focus, CVararg(st, argp)) =>
+              val arg = unboxValue(st, partial = false, genExpr(argp, focus))
               values += arg.value
               arg
           }
@@ -1833,11 +1907,11 @@ abstract class NirCodeGen
       }
     }
 
-    object Vararg {
-      def unapply(tree: Tree): Option[(Symbol, Tree)] = tree match {
-        case Apply(fun, Seq(argp, ctp)) if fun.symbol == VarargMethod =>
-          val sym = extractClassFromImplicitClassTag(ctp)
-          Some((sym, argp))
+    object CVararg {
+      def unapply(tree: Tree): Option[(SimpleType, Tree)] = tree match {
+        case Apply(fun, Seq(argp, tagp)) if fun.symbol == CVarargMethod =>
+          val st = unwrapTag(tagp)
+          Some((st, argp))
         case _ =>
           None
       }
@@ -1855,8 +1929,8 @@ abstract class NirCodeGen
 
     object MaybeBlock {
       def unapply(tree: Tree): Some[Tree] = tree match {
-        case Block(Seq(), expr) => Some(expr)
-        case _                  => Some(tree)
+        case Block(Seq(), MaybeBlock(expr)) => Some(expr)
+        case _                              => Some(tree)
       }
     }
 

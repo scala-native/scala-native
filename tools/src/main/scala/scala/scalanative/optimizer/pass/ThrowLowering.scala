@@ -13,17 +13,16 @@ class ThrowLowering(implicit fresh: Fresh) extends Pass {
   import ThrowLowering._
 
   override def preInst = {
-    case Inst.Throw(v) =>
+    case Inst.Let(_, Op.Throw(v, unwind)) =>
       Seq(
-        Inst.Let(Op.Call(throwSig, throw_, Seq(v))),
-        Inst.Unreachable
+        Inst.Let(Op.Call(throwSig, throw_, Seq(v), unwind))
       )
   }
 }
 
 object ThrowLowering extends PassCompanion {
   val throwName = Global.Top("scalanative_throw")
-  val throwSig  = Type.Function(Seq(Arg(Type.Ptr)), Type.Void)
+  val throwSig  = Type.Function(Seq(Type.Ptr), Type.Void)
   val throw_    = Val.Global(throwName, Type.Ptr)
 
   override val injects =

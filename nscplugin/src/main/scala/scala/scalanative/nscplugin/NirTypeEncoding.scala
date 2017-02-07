@@ -10,7 +10,7 @@ trait NirTypeEncoding { self: NirCodeGen =>
   import nirDefinitions._
   import SimpleType.{fromType, fromSymbol}
 
-  final case class SimpleType(sym: Symbol, targs: Seq[SimpleType]) {
+  final case class SimpleType(sym: Symbol, targs: Seq[SimpleType] = Seq.empty) {
     def isInterface: Boolean =
       sym.isInterface
 
@@ -68,8 +68,41 @@ trait NirTypeEncoding { self: NirCodeGen =>
     case UIntClass    => if (!box) nir.Type.I32  else genRefType(st)
     case ULongClass   => if (!box) nir.Type.I64  else genRefType(st)
     case PtrClass     => nir.Type.Ptr
-    case _            => genRefType(st)
     // format: on
+    case sym if CStructClass.contains(sym) =>
+      nir.Type.Struct(nir.Global.None, st.targs.map(genType(_, box = false)))
+    case CArrayClass =>
+      genCArrayType(st)
+    case _ =>
+      genRefType(st)
+  }
+
+  def genCArrayType(st: SimpleType): nir.Type = st.targs match {
+    case Seq() =>
+      nir.Type.Array(nir.Rt.Object, 0)
+    case Seq(targ, tnat) =>
+      val ty = genType(targ, box = false)
+      val n  = genNatType(tnat)
+      nir.Type.Array(ty, n)
+  }
+
+  def genNatType(st: SimpleType): Int = {
+    def base(st: SimpleType): Int = st.sym match {
+      case sym if NatBaseClass.contains(sym) =>
+        NatBaseClass.indexOf(sym)
+      case _ =>
+        scalanative.util.unsupported("base nat type expected")
+    }
+    def digits(st: SimpleType): List[Int] = st.sym match {
+      case sym if NatBaseClass.contains(sym) =>
+        base(st) :: Nil
+      case NatDigitClass =>
+        base(st.targs(0)) :: digits(st.targs(1))
+      case _ =>
+        scalanative.util.unsupported("nat type expected")
+    }
+
+    digits(st).foldLeft(0)(_ * 10 + _)
   }
 
   def genRefType(st: SimpleType): nir.Type = st.sym match {
@@ -79,7 +112,6 @@ trait NirTypeEncoding { self: NirCodeGen =>
     case NullClass    => genRefType(RuntimeNullClass)
     case ArrayClass =>
       genRefType(RuntimeArrayClass(genPrimCode(st.targs.head)))
-
     case _ if st.isStruct      => genStruct(st)
     case _ if st.isScalaModule => nir.Type.Module(genTypeName(st.sym))
     case _ if st.isInterface   => nir.Type.Trait(genTypeName(st.sym))

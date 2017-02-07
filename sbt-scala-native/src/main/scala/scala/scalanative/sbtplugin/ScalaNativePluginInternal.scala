@@ -20,6 +20,11 @@ import System.{lineSeparator => nl}
 
 object ScalaNativePluginInternal {
 
+  val nativeUnpackNativelib =
+    taskKey[Unit]("Unpack and precompile native lib.")
+
+  val nativeTarget = taskKey[String]("Target triple.")
+
   val nativeLinkerReporter = settingKey[tools.LinkerReporter](
     "A reporter that gets notified whenever a linking event happens.")
 
@@ -35,7 +40,7 @@ object ScalaNativePluginInternal {
   val nativeMissingDependencies =
     taskKey[Seq[String]]("List all symbols not available at link time")
 
-  private lazy val nativelib: File =
+  lazy val nativelib: File =
     Path.userHome / ".scalanative" / ("nativelib-" + nir.Versions.current)
 
   private lazy val includes = {
@@ -86,9 +91,7 @@ object ScalaNativePluginInternal {
 
   private def reportLinkingErrors(unresolved: Seq[nir.Global],
                                   logger: Logger): Nothing = {
-    import nir.Shows._
-
-    unresolved.map(u => sh"$u".toString).sorted.foreach { signature =>
+    unresolved.map(_.show).sorted.foreach { signature =>
       logger.error(s"cannot link: $signature")
     }
 
@@ -134,35 +137,32 @@ object ScalaNativePluginInternal {
     cExit == 0 && cppExit == 0
   }
 
-  /** Compiles rt to llvm ir using clang. */
-  private def unpackNativelib(clang: File,
-                              clangpp: File,
-                              classpath: Seq[File],
-                              logger: Logger): Boolean = {
-    val nativelibjar = classpath
-      .map(abs)
-      .collectFirst {
-        case p if p.contains("scala-native") && p.contains("nativelib") =>
-          file(p)
-      }
-      .get
-
-    val jarhash     = Hash(nativelibjar).toSeq
-    val jarhashfile = nativelib / "jarhash"
-    def bootstrapped =
-      nativelib.exists &&
-        jarhashfile.exists &&
-        jarhash == IO.readBytes(jarhashfile).toSeq
-
-    if (!bootstrapped) {
-      IO.delete(nativelib)
-      IO.unzip(nativelibjar, nativelib)
-      IO.write(jarhashfile, Hash(nativelibjar))
-
-      compileCSources(clang, clangpp, nativelib, logger)
-    } else {
-      true
+  /** Detect target platform. */
+  private def compileTargetProbe(clang: File,
+                                 cwd: File,
+                                 logger: Logger): Boolean = {
+    val targetcfile  = cwd / "target.c"
+    val targetllfile = cwd / "target.ll"
+    val targetfile   = cwd / "target"
+    val compilec     = Seq(abs(clang), "-S", "-emit-llvm", abs(targetcfile))
+    IO.write(targetcfile, "int probe;")
+    logger.info(running(compilec))
+    val exit = Process(compilec, cwd) ! logger
+    if (exit != 0) {
+      return false
     }
+
+    val targetvalue = IO
+      .readLines(targetllfile)
+      .collectFirst {
+        case line if line.startsWith("target triple") =>
+          line.split("\"").apply(1)
+      }
+      .getOrElse {
+        return false
+      }
+    IO.write(targetfile, targetvalue)
+    true
   }
 
   /** Compiles application and runtime llvm ir file to binary using clang. */
@@ -170,7 +170,8 @@ object ScalaNativePluginInternal {
                         target: File,
                         appll: File,
                         binary: File,
-                        links: Seq[String],
+                        compileTarget: String,
+                        applinks: Seq[String],
                         linkage: Map[String, String],
                         opts: Seq[String],
                         logger: Logger): Unit = {
@@ -178,14 +179,30 @@ object ScalaNativePluginInternal {
     val apppath = abs(appll)
     val opaths  = (nativelib ** "*.o").get.map(abs)
     val paths   = apppath +: opaths
+    val links = {
+      val os   = Option(sys props "os.name").getOrElse("")
+      val arch = compileTarget.split("-").head
+      val librt = os match {
+        case "Linux" => Seq("rt")
+        case _       => Seq.empty
+      }
+      val libunwind = os match {
+        case "Mac OS X" => Seq.empty
+        case _          => Seq("unwind", "unwind-" + arch)
+      }
+      librt ++ libunwind ++ applinks
+    }
     val linkopts = links.zip(links.map(linkage.get(_))).flatMap {
-      case (name, Some("static"))         => Seq("-static", "-l", name)
-      case (name, Some("dynamic") | None) => Seq("-l", name)
+      case (name, Some("static")) =>
+        Seq("-static", "-l" + name)
+      case (name, Some("dynamic") | None) =>
+        Seq("-l" + name)
       case (name, Some(kind)) =>
         throw new MessageOnlyException(s"uknown linkage kind $kind for $name")
     }
-    val flags   = Seq("-o", outpath) ++ linkopts ++ opts
-    val compile = abs(clangpp) +: (flags ++ paths)
+    val targetopt = Seq("-target", compileTarget)
+    val flags     = Seq("-o", outpath) ++ linkopts ++ targetopt ++ opts
+    val compile   = abs(clangpp) +: (flags ++ paths)
 
     logger.info(running(compile))
 
@@ -194,8 +211,6 @@ object ScalaNativePluginInternal {
 
   private def externalDependenciesTask[T](compileTask: TaskKey[T]) =
     nativeExternalDependencies := ResourceScope { implicit scope =>
-      import nir.Shows._
-
       val forceCompile = compileTask.value
 
       val classes = classDirectory.value
@@ -207,19 +222,17 @@ object ScalaNativePluginInternal {
 
       val (unresolved, _, _) = (linker.Linker(config)).link(prog.globals.toSeq)
 
-      unresolved.map(u => sh"$u".toString).sorted
+      unresolved.map(_.show).sorted
     }
 
   private def availableDependenciesTask[T](compileTask: TaskKey[T]) =
     nativeAvailableDependencies := ResourceScope { implicit scope =>
-      import nir.Shows._
-
       val forceCompile = compileTask.value
 
       val globals = fullClasspath.value.flatMap(p =>
         tools.LinkerPath(VirtualDirectory.real(p.data)).globals.toSeq)
 
-      globals.map(u => sh"$u".toString).sorted
+      globals.map(_.show).sorted
     }
 
   def nativeMissingDependenciesTask =
@@ -254,23 +267,53 @@ object ScalaNativePluginInternal {
       discover("clang++", Seq(("3", "8"), ("3", "7")))
     },
     nativeClangOptions := {
-      // We need to add `-lrt` for the POSIX realtime lib, which doesn't exist
-      // on macOS.
-      val lrt = Option(sys props "os.name") match {
-        case Some("Linux") => Seq("-lrt")
-        case _             => Seq()
-      }
-      includes ++ libs ++ maybeInjectShared(nativeSharedLibrary.value) ++ lrt
+      includes ++ libs ++ maybeInjectShared(nativeSharedLibrary.value)
+    },
+    nativeTarget := {
+      val doUnpack = nativeUnpackNativelib.value
+      IO.read(nativelib / "target")
     },
     artifactPath in nativeLink := {
       (crossTarget in Compile).value / (moduleName.value + "-out")
     },
     nativeLinkerReporter := tools.LinkerReporter.empty,
     nativeOptimizerReporter := tools.OptimizerReporter.empty,
+    nativeUnpackNativelib := {
+      val clang   = nativeClang.value
+      val clangpp = nativeClangPP.value
+      val nativelibjar = (fullClasspath in Compile).value
+        .map(entry => abs(entry.data))
+        .collectFirst {
+          case p if p.contains("scala-native") && p.contains("nativelib") =>
+            file(p)
+        }
+        .get
+      val logger = streams.value.log
+
+      val jarhash     = Hash(nativelibjar).toSeq
+      val jarhashfile = nativelib / "jarhash"
+      def bootstrapped =
+        nativelib.exists &&
+          jarhashfile.exists &&
+          jarhash == IO.readBytes(jarhashfile).toSeq
+
+      if (!bootstrapped) {
+        IO.delete(nativelib)
+        IO.unzip(nativelibjar, nativelib)
+        IO.write(jarhashfile, Hash(nativelibjar))
+
+        val compiledC      = compileCSources(clang, clangpp, nativelib, logger)
+        val detectedTarget = compileTargetProbe(clang, nativelib, logger)
+
+        if (!compiledC || !detectedTarget) {
+          throw new MessageOnlyException("failed to unpack nativelib")
+        }
+      }
+    },
     nativeLink := ResourceScope { implicit scope =>
+      val clang     = nativeClang.value
       val clangpp   = nativeClangPP.value
       val clangOpts = nativeClangOptions.value
-      val clang     = nativeClang.value
       checkThatClangIsRecentEnough(clang)
 
       val mainClass = (selectMainClass in Compile).value.getOrElse(
@@ -294,6 +337,7 @@ object ScalaNativePluginInternal {
           tools.LinkerPath(VirtualDirectory.real(p))))
         .withTargetDirectory(VirtualDirectory.real(target))
         .withInjectMain(!nativeSharedLibrary.value)
+        .withTarget(nativeTarget.value)
 
       val nirFiles   = (Keys.target.value ** "*.nir").get.toSet
       val configFile = (streams.value.cacheDirectory / "native-config")
@@ -312,28 +356,20 @@ object ScalaNativePluginInternal {
 
       val compileIfChanged =
         FileFunction.cached(streams.value.cacheDirectory / "native-cache",
-                            FilesInfo.hash) {
-          _ =>
-            IO.createDirectory(target)
-
-            val unpackSuccess =
-              unpackNativelib(clang, clangpp, classpath, logger)
-
-            if (unpackSuccess) {
-              val links =
-                compileNir(config, logger, linkerReporter, optimizerReporter)
-              compileLl(clangpp,
-                        target,
-                        appll,
-                        binary,
-                        links.map(_.name),
-                        linkage,
-                        clangOpts,
-                        logger)
-              Set(binary)
-            } else {
-              throw new MessageOnlyException("Couldn't unpack nativelib.")
-            }
+                            FilesInfo.hash) { _ =>
+          IO.createDirectory(target)
+          val links =
+            compileNir(config, logger, linkerReporter, optimizerReporter)
+          compileLl(clangpp,
+                    target,
+                    appll,
+                    binary,
+                    nativeTarget.value,
+                    links.map(_.name),
+                    linkage,
+                    clangOpts,
+                    logger)
+          Set(binary)
         }
 
       val result = compileIfChanged(inputFiles)

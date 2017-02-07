@@ -1,7 +1,10 @@
 package scala.scalanative
 package nir
 
-sealed abstract class Comp
+sealed abstract class Comp {
+  final def show: String = nir.Show(this)
+}
+
 object Comp {
   sealed abstract class Icmp extends Comp
   final case object Ieq      extends Icmp

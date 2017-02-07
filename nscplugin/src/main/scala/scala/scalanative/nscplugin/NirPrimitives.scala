@@ -14,8 +14,9 @@ object NirPrimitives {
   final val PTR_SUB    = 1 + PTR_ADD
   final val PTR_APPLY  = 1 + PTR_SUB
   final val PTR_UPDATE = 1 + PTR_APPLY
+  final val PTR_FIELD  = 1 + PTR_UPDATE
 
-  final val FUN_PTR_CALL = 1 + PTR_UPDATE
+  final val FUN_PTR_CALL = 1 + PTR_FIELD
   final val FUN_PTR_FROM = 1 + FUN_PTR_CALL
 
   final val SIZEOF     = 1 + FUN_PTR_FROM
@@ -69,7 +70,7 @@ abstract class NirPrimitives {
     code >= 300 && code < 360
 
   def isPtrOp(code: Int): Boolean =
-    code >= PTR_LOAD && code <= PTR_UPDATE
+    code >= PTR_LOAD && code <= PTR_FIELD
 
   def isFunPtrOp(code: Int): Boolean =
     code == FUN_PTR_CALL || code == FUN_PTR_FROM
@@ -85,8 +86,9 @@ abstract class NirPrimitives {
     addPrimitive(PtrSubMethod, PTR_SUB)
     addPrimitive(PtrApplyMethod, PTR_APPLY)
     addPrimitive(PtrUpdateMethod, PTR_UPDATE)
-    FunctionPtrApply.foreach(addPrimitive(_, FUN_PTR_CALL))
-    FunctionPtrFrom.foreach(addPrimitive(_, FUN_PTR_FROM))
+    PtrFieldMethod.foreach(addPrimitive(_, PTR_FIELD))
+    CFunctionPtrApply.foreach(addPrimitive(_, FUN_PTR_CALL))
+    CFunctionPtrFrom.foreach(addPrimitive(_, FUN_PTR_FROM))
     addPrimitive(SizeofMethod, SIZEOF)
     addPrimitive(TypeofMethod, TYPEOF)
     addPrimitive(CQuoteMethod, CQUOTE)

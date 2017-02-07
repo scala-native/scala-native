@@ -4,7 +4,7 @@ package nir
 import util.unsupported
 
 sealed abstract class Type {
-  def elemty(path: Seq[Val]): Type = (this, path) match {
+  final def elemty(path: Seq[Val]): Type = (this, path) match {
     case (_, Seq()) =>
       this
     case (Type.Struct(_, tys), Val.I32(idx) +: rest) =>
@@ -14,7 +14,10 @@ sealed abstract class Type {
     case _ =>
       unsupported(s"${this}.elemty($path)")
   }
+
+  final def show: String = nir.Show(this)
 }
+
 object Type {
   sealed trait Named extends Type {
     def name: Global
@@ -38,7 +41,7 @@ object Type {
   final object F64                         extends F(64)
 
   final case class Array(ty: Type, n: Int)              extends Type
-  final case class Function(args: Seq[Arg], ret: Type)  extends Type
+  final case class Function(args: Seq[Type], ret: Type) extends Type
   final case class Struct(name: Global, tys: Seq[Type]) extends Type with Named
 
   // high-level types

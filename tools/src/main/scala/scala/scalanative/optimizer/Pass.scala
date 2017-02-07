@@ -94,17 +94,6 @@ trait Pass {
           Inst.If(txVal(v), txNext(thenp), txNext(elsep))
         case Inst.Switch(v, default, cases) =>
           Inst.Switch(txVal(v), txNext(default), cases.map(txNext))
-        case Inst.Invoke(ty, ptrv, argvs, succ, fail) =>
-          Inst.Invoke(txType(ty),
-                      txVal(ptrv),
-                      argvs.map(txVal),
-                      txNext(succ),
-                      txNext(fail))
-
-        case Inst.Throw(v) =>
-          Inst.Throw(txVal(v))
-        case Inst.Try(norm, exc) =>
-          Inst.Try(txNext(norm), txNext(exc))
       }
 
       hook(postInst, post, Seq(post))
@@ -112,8 +101,8 @@ trait Pass {
   }
 
   private def txOp(op: Op): Op = op match {
-    case Op.Call(ty, ptrv, argvs) =>
-      Op.Call(txType(ty), txVal(ptrv), argvs.map(txVal))
+    case Op.Call(ty, ptrv, argvs, unwind) =>
+      Op.Call(txType(ty), txVal(ptrv), argvs.map(txVal), txNext(unwind))
     case Op.Load(ty, ptrv) =>
       Op.Load(txType(ty), txVal(ptrv))
     case Op.Store(ty, ptrv, v) =>
@@ -141,8 +130,8 @@ trait Pass {
       Op.Field(txVal(v), n)
     case Op.Method(v, n) =>
       Op.Method(txVal(v), n)
-    case Op.Module(n) =>
-      Op.Module(n)
+    case Op.Module(n, unwind) =>
+      Op.Module(n, txNext(unwind))
     case Op.As(ty, v) =>
       Op.As(txType(ty), txVal(v))
     case Op.Is(ty, v) =>
@@ -157,6 +146,8 @@ trait Pass {
       Op.Box(code, txVal(obj))
     case Op.Unbox(code, obj) =>
       Op.Unbox(code, txVal(obj))
+    case Op.Throw(v, unwind) =>
+      Op.Throw(txVal(v), txNext(unwind))
   }
 
   private def txVal(value: Val): Val = {
@@ -178,11 +169,14 @@ trait Pass {
   private def txType(ty: Type): Type = {
     val pre = hook(preType, ty, ty)
     val post = pre match {
-      case Type.Array(ty, n) => Type.Array(txType(ty), n)
+      case Type.Array(ty, n) =>
+        Type.Array(txType(ty), n)
       case Type.Function(args, ty) =>
-        Type.Function(args.map(a => a.copy(ty = txType(a.ty))), txType(ty))
-      case Type.Struct(n, tys) => Type.Struct(n, tys.map(txType))
-      case _                   => pre
+        Type.Function(args.map(txType), txType(ty))
+      case Type.Struct(n, tys) =>
+        Type.Struct(n, tys.map(txType))
+      case _ =>
+        pre
     }
 
     hook(postType, post, post)
@@ -191,8 +185,8 @@ trait Pass {
   private def txNext(next: Next): Next = {
     val pre = hook(preNext, next, next)
     val post = pre match {
-      case succ: Next.Succ     => succ
-      case fail: Next.Fail     => fail
+      case Next.None           => Next.None
+      case unwind: Next.Unwind => unwind
       case Next.Label(n, args) => Next.Label(n, args.map(txVal))
       case Next.Case(v, n)     => Next.Case(txVal(v), n)
     }

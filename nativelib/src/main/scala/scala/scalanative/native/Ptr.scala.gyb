@@ -1,0 +1,33 @@
+package scala.scalanative
+package native
+
+import runtime._
+
+/** The C `const T *` pointer. */
+final abstract class Ptr[T] {
+
+  /** Dereference a pointer. */
+  def unary_!(implicit tag: Tag[T]): T = undefined
+
+  /** Store a value to the address pointed at by a pointer. */
+  def `unary_!_=`(value: T)(implicit tag: Tag[T]): Unit = undefined
+
+  /** Compute a derived pointer by adding given offset. */
+  def +(offset: Word)(implicit tag: Tag[T]): Ptr[T] = undefined
+
+  /** Compute a derived pointer by subtracting given offset. */
+  def -(offset: Word)(implicit tag: Tag[T]): Ptr[T] = undefined
+
+  /** Read a value at given offset. Equivalent to !(offset + word). */
+  def apply(offset: Word)(implicit tag: Tag[T]): T = undefined
+
+  /** Store a value to given offset. Equivalent to !(offset + word) = value. */
+  def update(offset: Word, value: T)(implicit tag: Tag[T]): T = undefined
+
+% for N in range(1, 23):
+
+  /** Get a derived pointer to the ${N}-th field of the struct. */
+  def _${N}[F](implicit T: Tag[T], F: CField${N}[T, F]): Ptr[F] = undefined
+
+% end
+}

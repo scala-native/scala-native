@@ -9,9 +9,6 @@ object math {
   def abs(x: CInt): CInt                                      = extern
   def labs(x: CLong): CLong                                   = extern
   def llabs(x: CLongLong): CLongLong                          = extern
-  def div(x: CInt, y: CInt): div_t                            = extern
-  def ldiv(x: CLong, y: CLong): ldiv_t                        = extern
-  def lldiv(x: CLongLong, y: CLongLong): lldiv_t              = extern
   def fabsf(arg: CFloat): CFloat                              = extern
   def fabs(arg: CDouble): CDouble                             = extern
   def fmodf(x: CFloat, y: CFloat): CFloat                     = extern
@@ -143,12 +140,6 @@ object math {
   def nextafter(from: CDouble, to: CDouble): CDouble  = extern
   def copysignf(x: CFloat, y: CFloat): CFloat         = extern
   def copysign(x: CDouble, y: CDouble): CDouble       = extern
-
-  // Types
-
-  @struct class div_t(val x: CInt, val y: CInt)
-  @struct class ldiv_t(val x: CLong, val y: CLong)
-  @struct class lldiv_t(val x: CLongLong, val y: CLongLong)
 
   // Macros
 

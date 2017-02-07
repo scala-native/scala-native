@@ -14,14 +14,12 @@ updates.](http://twitter.com/scala_native)
 * **Low-level primitives**.
 
   ```scala
-  @struct class Vec(
-    val x: Double,
-    val y: Double,
-    val z: Double
-  )
+  type Vec = CStruct3[Double, Double, Double]
 
-  val vec = stackalloc[Vec] // pointer to stack allocation
-  !vec = new Vec(1, 2, 3)   // store value to stack
+  val vec = stackalloc[Vec] // allocate c struct on stack
+  !vec._1 = 10.0            // initialize fields
+  !vec._2 = 20.0
+  !vec._3 = 30.0
   length(vec)               // pass by reference
   ```
 
@@ -33,7 +31,7 @@ updates.](http://twitter.com/scala_native)
 
   ```scala
   @extern object stdlib {
-    def malloc(size: CSize): Ptr[_] = extern
+    def malloc(size: CSize): Ptr[Byte] = extern
   }
 
   val ptr = stdlib.malloc(32)

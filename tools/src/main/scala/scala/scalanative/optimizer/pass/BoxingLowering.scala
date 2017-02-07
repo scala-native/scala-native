@@ -14,7 +14,7 @@ class BoxingLowering(implicit val fresh: Fresh) extends Pass {
       val (module, id) = BoxingLowering.BoxTo(ty)
 
       val boxTy =
-        Type.Function(Seq(Arg(Type.Module(module)), Arg(Type.unbox(ty))), ty)
+        Type.Function(Seq(Type.Module(module), Type.unbox(ty)), ty)
 
       Seq(
         Inst.Let(name,
@@ -24,14 +24,15 @@ class BoxingLowering(implicit val fresh: Fresh) extends Pass {
                    Seq(
                      Val.Undef(Type.Module(module)),
                      from
-                   )
+                   ),
+                   Next.None
                  )))
 
     case Inst.Let(name, unbox @ Op.Unbox(ty, from)) =>
       val (module, id) = BoxingLowering.UnboxTo(ty)
 
       val unboxTy =
-        Type.Function(Seq(Arg(Type.Module(module)), Arg(ty)), Type.unbox(ty))
+        Type.Function(Seq(Type.Module(module), ty), Type.unbox(ty))
 
       Seq(
         Inst.Let(name,
@@ -41,7 +42,8 @@ class BoxingLowering(implicit val fresh: Fresh) extends Pass {
                    Seq(
                      Val.Undef(Type.Module(module)),
                      from
-                   )
+                   ),
+                   Next.None
                  )))
   }
 }

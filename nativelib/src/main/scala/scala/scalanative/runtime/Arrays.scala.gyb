@@ -20,7 +20,7 @@ import scalanative.native._
 import scalanative.runtime.Intrinsics._
 import scala.annotation.unchecked.uncheckedStable
 
-@struct class ArrayHeader(val info: Ptr[_], val length: Int)
+@struct class ArrayHeader(val info: Ptr[Byte], val length: Int)
 
 %{
    primitiveTypes = ['Boolean', 'Char', 'Byte', 'Short',
@@ -32,7 +32,7 @@ sealed abstract class Array[T]
   /** Number of elements of the array. */
   @inline def length: Int =
     // TODO: Update once we support ptr->field
-    !(this.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]]
+    !(this.cast[Ptr[Byte]] + sizeof[Ptr[Byte]]).cast[Ptr[Int]]
 
   /** Size between elements in the array. */
   def stride: CSize
@@ -87,36 +87,36 @@ object Array {
     }
   }
 
-  @inline private[runtime] def helperClone(from: Array[_], length: Int, stride: CSize): Ptr[_] = {
+  @inline private[runtime] def helperClone(from: Array[_], length: Int, stride: CSize): Ptr[Byte] = {
     val arrsize = sizeof[ArrayHeader] + stride * length
     val arr     = GC.malloc(arrsize)
     `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]], from.cast[Ptr[Byte]], arrsize, 1, false)
     arr
   }
 
-  @inline def alloc(length: Int, arrinfo:  Ptr[Type], stride: CSize): Ptr[_] = {
+  @inline def alloc(length: Int, arrinfo:  Ptr[Type], stride: CSize): Ptr[Byte] = {
     val arrsize = sizeof[ArrayHeader] + stride * length
     val arr     = runtime.alloc(arrinfo, arrsize)
     // set the length
-    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length
+    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[Byte]]).cast[Ptr[Int]] = length
     arr
   }
 }
 
 object PrimitiveArray {
-  @inline private[runtime] def helperClone(src: Array[_], length: Int, stride: CSize): Ptr[_] = {
+  @inline private[runtime] def helperClone(src: Array[_], length: Int, stride: CSize): Ptr[Byte] = {
     val arrsize = sizeof[ArrayHeader] + stride * length
     val arr = GC.malloc_atomic(arrsize)
     `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]], src.cast[Ptr[Byte]], arrsize, 1, false)
     arr
   }
 
-  @inline def alloc(length: Int, arrinfo:  Ptr[Type], stride: CSize): Ptr[_] = {
+  @inline def alloc(length: Int, arrinfo:  Ptr[Type], stride: CSize): Ptr[Byte] = {
     val arrsize = sizeof[ArrayHeader] + stride * length
     // Primitive arrays don't contain pointers
     val arr = runtime.allocAtomic(arrinfo, arrsize)
     // set the length
-    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[_]]).cast[Ptr[Int]] = length
+    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[Byte]]).cast[Ptr[Int]] = length
     arr
   }
 }

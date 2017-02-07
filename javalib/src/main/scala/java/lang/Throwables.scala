@@ -1,5 +1,9 @@
 package java.lang
 
+import scala.collection.mutable
+import scalanative.native._
+import scalanative.runtime.unwind
+
 class Throwable(s: String, private var e: Throwable)
     extends Object
     with java.io.Serializable {
@@ -7,7 +11,9 @@ class Throwable(s: String, private var e: Throwable)
   def this(s: String) = this(s, null)
   def this(e: Throwable) = this(if (e == null) null else e.toString, e)
 
-  private[this] var stackTrace: Array[StackTraceElement] = _
+  private var stackTrace: Array[StackTraceElement] = _
+
+  fillInStackTrace()
 
   def initCause(cause: Throwable): Throwable = {
     e = cause
@@ -20,9 +26,30 @@ class Throwable(s: String, private var e: Throwable)
 
   def getLocalizedMessage(): String = getMessage()
 
-  def fillInStackTrace(): Throwable = ???
+  def fillInStackTrace(): Throwable = {
+    val cursor  = stackalloc[scala.Byte](2048)
+    val context = stackalloc[scala.Byte](2048)
+    val offset  = stackalloc[scala.Byte](8)
+    val name    = stackalloc[CChar](256)
+    var buffer  = mutable.ArrayBuffer.empty[StackTraceElement]
 
-  def getStackTrace(): Array[StackTraceElement] = ???
+    unwind.get_context(context)
+    unwind.init_local(cursor, context)
+    while (unwind.step(cursor) > 0) {
+      unwind.get_proc_name(cursor, name, 256, offset)
+      buffer += new StackTraceElement(fromCString(name))
+    }
+
+    this.stackTrace = buffer.toArray
+    this
+  }
+
+  def getStackTrace(): Array[StackTraceElement] = {
+    if (stackTrace eq null) {
+      stackTrace = Array.empty
+    }
+    stackTrace
+  }
 
   def setStackTrace(stackTrace: Array[StackTraceElement]): Unit = {
     var i = 0
@@ -35,11 +62,74 @@ class Throwable(s: String, private var e: Throwable)
     this.stackTrace = stackTrace.clone()
   }
 
-  def printStackTrace(): Unit = ???
+  def printStackTrace(): Unit =
+    printStackTrace(System.err)
 
-  def printStackTrace(s: java.io.PrintStream): Unit = ???
+  def printStackTrace(ps: java.io.PrintStream): Unit =
+    printStackTrace(ps.println(_: String))
 
-  def printStackTrace(s: java.io.PrintWriter): Unit = ???
+  def printStackTrace(pw: java.io.PrintWriter): Unit =
+    printStackTrace(pw.println(_: String))
+
+  private def printStackTrace(println: String => Unit): Unit = {
+    // Init to empty stack trace if it's null
+    getStackTrace()
+
+    // Print curent stack trace
+    println(toString)
+    if (stackTrace.nonEmpty) {
+      var i = 0
+      while (i < stackTrace.length) {
+        println("\tat " + stackTrace(i))
+        i += 1
+      }
+    } else {
+      println("\t<no stack trace available>")
+    }
+
+    // Print causes
+    var parentStack = stackTrace
+    var throwable   = getCause()
+    while (throwable != null) {
+      println("Caused by: " + throwable)
+
+      val currentStack = throwable.stackTrace
+      if (currentStack.nonEmpty) {
+        val duplicates = countDuplicates(currentStack, parentStack)
+        var i          = 0
+        while (i < currentStack.length - duplicates) {
+          println("\tat " + currentStack(i))
+          i += 1
+        }
+        if (duplicates > 0) {
+          println("\t... " + duplicates + " more")
+        }
+      } else {
+        println("\t<no stack trace available>")
+      }
+
+      parentStack = currentStack
+      throwable = throwable.getCause
+    }
+  }
+
+  private def countDuplicates(currentStack: Array[StackTraceElement],
+                              parentStack: Array[StackTraceElement]): Int = {
+    var duplicates  = 0
+    var parentIndex = parentStack.length - 1
+    var i           = currentStack.length - 1
+    while (i >= 0 && parentIndex >= 0) {
+      val parentFrame = parentStack(parentIndex)
+      if (parentFrame == currentStack(i)) {
+        duplicates += 1
+      } else {
+        return duplicates
+      }
+      i -= 1
+      parentIndex -= 1
+    }
+    duplicates
+  }
 
   override def toString(): String = {
     val className = getClass.getName

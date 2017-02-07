@@ -24,11 +24,13 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val PtrSubMethod    = getDecl(PtrClass, TermName("$minus"))
     lazy val PtrApplyMethod  = getDecl(PtrClass, TermName("apply"))
     lazy val PtrUpdateMethod = getDecl(PtrClass, TermName("update"))
+    lazy val PtrFieldMethod = (1 to 22).map { i =>
+      getDecl(PtrClass, TermName("_" + i))
+    }
 
     lazy val NameClass   = getRequiredClass("scala.scalanative.native.name")
     lazy val LinkClass   = getRequiredClass("scala.scalanative.native.link")
     lazy val ExternClass = getRequiredClass("scala.scalanative.native.extern")
-    lazy val StructClass = getRequiredClass("scala.scalanative.native.struct")
     lazy val PinClass    = getRequiredClass("scala.scalanative.native.pin")
 
     lazy val InlineHintClass = getRequiredClass(
@@ -42,9 +44,9 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val StackallocMethods =
       getMember(NativeModule, TermName("stackalloc")).alternatives
 
-    lazy val VarargModule = getRequiredModule(
-      "scala.scalanative.native.Vararg")
-    lazy val VarargMethod = getMember(VarargModule, TermName("apply"))
+    lazy val CVarargModule = getRequiredModule(
+      "scala.scalanative.native.CVararg")
+    lazy val CVarargMethod = getMember(CVarargModule, TermName("apply"))
 
     lazy val CQuoteClass = getRequiredClass(
       "scala.scalanative.native.package$CQuote")
@@ -54,17 +56,56 @@ trait NirDefinitions { self: NirGlobalAddons =>
       "scala.scalanative.native.package$CCast")
     lazy val CCastMethod = getDecl(CCastClass, TermName("cast"))
 
-    lazy val FunctionPtr = (0 to 22).map { n =>
-      getRequiredClass("scala.scalanative.native.FunctionPtr" + n)
+    lazy val CFunctionPtrClass = (0 to 22).map { n =>
+      getRequiredClass("scala.scalanative.native.CFunctionPtr" + n)
     }
-    lazy val FunctionPtrApply = FunctionPtr.map(getDecl(_, TermName("apply")))
-    lazy val FunctionPtrModule = getRequiredModule(
-      "scala.scalanative.native.FunctionPtr")
-    lazy val FunctionPtrFrom = (0 to 22).map { n =>
-      getDecl(FunctionPtrModule, TermName("fromFunction" + n))
+    lazy val CFunctionPtrApply =
+      CFunctionPtrClass.map(getDecl(_, TermName("apply")))
+    lazy val CFunctionPtrModule = getRequiredModule(
+      "scala.scalanative.native.CFunctionPtr")
+    lazy val CFunctionPtrFrom = (0 to 22).map { n =>
+      getDecl(CFunctionPtrModule, TermName("fromFunction" + n))
+    }
+
+    lazy val CStructClass = (0 to 22).map { n =>
+      getRequiredClass("scala.scalanative.native.CStruct" + n)
+    }
+    lazy val CArrayClass =
+      getRequiredClass("scala.scalanative.native.CArray")
+    lazy val NatBaseClass = (0 to 9).map { n =>
+      getRequiredClass("scala.scalanative.native.Nat$_" + n)
+    }
+    lazy val NatDigitClass =
+      getRequiredClass("scala.scalanative.native.Nat$Digit")
+
+    lazy val TagModule        = getRequiredModule("scala.scalanative.native.Tag")
+    lazy val UnitTagMethod    = getDecl(TagModule, TermName("Unit"))
+    lazy val BooleanTagMethod = getDecl(TagModule, TermName("Boolean"))
+    lazy val CharTagMethod    = getDecl(TagModule, TermName("Char"))
+    lazy val ByteTagMethod    = getDecl(TagModule, TermName("Byte"))
+    lazy val UByteTagMethod   = getDecl(TagModule, TermName("UByte"))
+    lazy val ShortTagMethod   = getDecl(TagModule, TermName("Short"))
+    lazy val UShortTagMethod  = getDecl(TagModule, TermName("UShort"))
+    lazy val IntTagMethod     = getDecl(TagModule, TermName("Int"))
+    lazy val UIntTagMethod    = getDecl(TagModule, TermName("UInt"))
+    lazy val LongTagMethod    = getDecl(TagModule, TermName("Long"))
+    lazy val ULongTagMethod   = getDecl(TagModule, TermName("ULong"))
+    lazy val FloatTagMethod   = getDecl(TagModule, TermName("Float"))
+    lazy val DoubleTagMethod  = getDecl(TagModule, TermName("Double"))
+    lazy val PtrTagMethod     = getDecl(TagModule, TermName("Ptr"))
+    lazy val RefTagMethod     = getDecl(TagModule, TermName("Ref"))
+    lazy val NatBaseTagMethod = (0 to 9).map { n =>
+      getDecl(TagModule, TermName("Nat" + n))
+    }
+    lazy val NatDigitTagMethod = getDecl(TagModule, TermName("NatDigit"))
+    lazy val CArrayTagMethod   = getDecl(TagModule, TermName("CArray"))
+    lazy val CStructTagMethod = (0 to 22).map { n =>
+      getDecl(TagModule, TermName("CStruct" + n))
     }
 
     // Native runtime
+
+    lazy val StructClass = getRequiredClass("scala.scalanative.runtime.struct")
 
     lazy val RuntimePackage = getPackage(TermName("scala.scalanative.runtime"))
 

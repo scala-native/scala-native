@@ -3,8 +3,8 @@ package optimizer
 package analysis
 
 import scala.collection.mutable
-import util.{sh, unreachable}
-import nir._, Shows._
+import util.unreachable
+import nir._
 
 object ClassHierarchy {
   sealed abstract class Node {
