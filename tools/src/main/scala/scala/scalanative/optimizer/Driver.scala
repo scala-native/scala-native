@@ -25,6 +25,7 @@ object Driver {
         pass.GlobalBoxingElimination,
         pass.UnitSimplification,
         pass.DeadCodeElimination,
+        pass.BlockParamReduction,
         pass.CfChainsSimplification,
         pass.Canonicalization,
         pass.GlobalValueNumbering,
