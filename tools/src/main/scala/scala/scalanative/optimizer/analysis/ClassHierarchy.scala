@@ -61,7 +61,7 @@ object ClassHierarchy {
     var traits: Seq[Trait]     = Seq()
     var dyns: Seq[String]      = Seq()
 
-    lazy val ty = Type.Class(name)
+    val ty = Type.Class(name)
 
     lazy val alltraits: Seq[Trait] = {
       val base = parent.fold(Seq.empty[Trait])(_.alltraits)
@@ -412,12 +412,37 @@ object ClassHierarchy {
       }
     }
 
+    def forceLazilyInitializedFields(): Unit = {
+      traits.foreach { trt =>
+        trt.alltraits
+        trt.allmethods
+      }
+      classes.foreach { cls =>
+        cls.alltraits
+        cls.allmethods
+        cls.allfields
+        cls.allmethods
+        cls.allvslots
+        cls.vslots
+        cls.vtableStruct
+        cls.vtableValue
+        cls.typeStruct
+        cls.typeValue
+        cls.typeConst
+        cls.classStruct
+        cls.vtable
+        cls.imap
+        cls.alloverrides
+      }
+    }
+
     enrichMethods()
     enrichFields()
     enrichClasses()
     enrichTraits()
     assignClassIds()
     assignMethodIds()
+    forceLazilyInitializedFields()
 
     top
   }

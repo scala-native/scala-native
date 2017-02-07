@@ -9,24 +9,21 @@ import tools.Config
 /** Translates Box/Unbox ops into static method calls. */
 class BoxingLowering(implicit val fresh: Fresh) extends Pass {
 
-  override def preInst = {
+  override def onInst(inst: Inst): Inst = inst match {
     case Inst.Let(name, box @ Op.Box(ty, from)) =>
       val (module, id) = BoxingLowering.BoxTo(ty)
 
       val boxTy =
         Type.Function(Seq(Type.Module(module), Type.unbox(ty)), ty)
 
-      Seq(
-        Inst.Let(name,
-                 Op.Call(
-                   boxTy,
-                   Val.Global(Global.Member(module, id), Type.Ptr),
-                   Seq(
-                     Val.Undef(Type.Module(module)),
-                     from
-                   ),
-                   Next.None
-                 )))
+      Inst.Let(name,
+               Op.Call(boxTy,
+                       Val.Global(Global.Member(module, id), Type.Ptr),
+                       Seq(
+                         Val.Undef(Type.Module(module)),
+                         from
+                       ),
+                       Next.None))
 
     case Inst.Let(name, unbox @ Op.Unbox(ty, from)) =>
       val (module, id) = BoxingLowering.UnboxTo(ty)
@@ -34,17 +31,17 @@ class BoxingLowering(implicit val fresh: Fresh) extends Pass {
       val unboxTy =
         Type.Function(Seq(Type.Module(module), ty), Type.unbox(ty))
 
-      Seq(
-        Inst.Let(name,
-                 Op.Call(
-                   unboxTy,
-                   Val.Global(Global.Member(module, id), Type.Ptr),
-                   Seq(
-                     Val.Undef(Type.Module(module)),
-                     from
-                   ),
-                   Next.None
-                 )))
+      Inst.Let(name,
+               Op.Call(unboxTy,
+                       Val.Global(Global.Member(module, id), Type.Ptr),
+                       Seq(
+                         Val.Undef(Type.Module(module)),
+                         from
+                       ),
+                       Next.None))
+
+    case inst =>
+      inst
   }
 }
 

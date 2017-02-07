@@ -12,16 +12,14 @@ import Inst.Let
 class BlockParamReduction extends Pass {
   import BlockParamReduction._
 
-  override def preDefn = {
-    case defn: Defn.Define =>
-      val cfg = ControlFlow.Graph(defn.insts)
+  override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
+    val cfg = ControlFlow.Graph(insts)
 
-      val suppliedArgs = SuppliedArguments(cfg)
-      val changeParams = new ParamChanger(suppliedArgs)
+    val suppliedArgs = SuppliedArguments(cfg)
+    val changeParams = new ParamChanger(suppliedArgs)
 
-      changeParams(defn)
+    changeParams.onInsts(insts)
   }
-
 }
 
 object BlockParamReduction extends PassCompanion {
@@ -32,7 +30,7 @@ object BlockParamReduction extends PassCompanion {
     /* On block labels, copy the known argument values, and remove the
      * corresponding parameters
      */
-    override def preInst = {
+    override def onInsts(insts: Seq[Inst]) = insts.flatMap {
       case Inst.Label(name, params) =>
         val paramVals = suppliedArgs.paramValues(name)
 
@@ -46,16 +44,24 @@ object BlockParamReduction extends PassCompanion {
 
         val newLabel = Inst.Label(name, newParams)
         newLabel +: argCopies
+
+      case cf: Inst.Cf =>
+        Seq(super.onInst(cf))
+
+      case inst =>
+        Seq(inst)
     }
 
     // On nexts, ignore the deleted parameters of the target block
-    override def preNext = {
+    override def onNext(next: Next) = next match {
       case Next.Label(name, args) =>
         val newArgs = args.zip(suppliedArgs.paramValues(name)).collect {
           case (arg, None) => arg
         }
         Next.Label(name, newArgs)
+
+      case _ =>
+        next
     }
   }
-
 }

@@ -12,23 +12,10 @@ import scala.collection.mutable
 class BasicBlocksFusion extends Pass {
   import BasicBlocksFusion._
 
-  override def preDefn = {
-    case defn: Defn.Define =>
-      val cfg = ControlFlow.Graph(defn.insts)
+  override def onInsts(insts: Seq[Inst]) = {
+    val cfg = ControlFlow.Graph(insts)
 
-      /* This is an ugly trick to ensure that there are no unreachable blocks.
-       * This pass is very dependent on that, and does not really require DCE
-       * before it, except for that
-       */
-      val noDeadBlocksCode = cfg.map { b =>
-        b.label +: b.insts
-      }.flatten
-
-      val noDeadBlocksCfg = ControlFlow.Graph(noDeadBlocksCode)
-
-      val newInsts = fuseBlocks(noDeadBlocksCode, noDeadBlocksCfg)
-
-      Seq(defn.copy(insts = newInsts))
+    fuseBlocks(insts, cfg)
   }
 
   private def fuseBlocks(insts: Seq[Inst], cfg: ControlFlow.Graph): Seq[Inst] = {

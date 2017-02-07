@@ -41,7 +41,7 @@ object SuppliedArguments {
 
   def apply(cfg: ControlFlow.Graph): SuppliedArguments = {
     val argGatherer = new ArgGatherer
-    cfg.all.foreach(b => argGatherer(b.insts.last))
+    cfg.all.foreach(b => argGatherer.onInst(b.insts.last))
     new SuppliedArguments(cfg, argGatherer.result)
   }
 
@@ -51,10 +51,14 @@ object SuppliedArguments {
 
     def result = supplied.toMap
 
-    override def preNext = {
-      case next @ Next.Label(name, args) =>
-        addArgs(name, args)
-        next
+    override def onNext(next: Next) = {
+      next match {
+        case next @ Next.Label(name, args) =>
+          addArgs(name, args)
+        case _ =>
+          ()
+      }
+      next
     }
 
     private def addArgs(name: Local, args: Seq[Val]): Unit = {

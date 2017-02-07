@@ -2,9 +2,10 @@ package scala.scalanative
 package optimizer
 package pass
 
+import scala.collection.mutable
 import util.{unreachable, ScopedVar}, ScopedVar.scoped
 import analysis.ClassHierarchy.Top
-import nir._, Inst.Let
+import nir._
 
 /** Eliminates returns of Unit values and replaces them with void. */
 class UnitLowering(implicit fresh: Fresh) extends Pass {
@@ -12,33 +13,51 @@ class UnitLowering(implicit fresh: Fresh) extends Pass {
 
   private var defnRetty: Type = _
 
-  override def preInst = {
-    case inst @ Let(n, op) if op.resty == Type.Unit =>
-      Seq(
-        Let(op),
-        Let(n, Op.Copy(Val.Unit))
-      )
-
-    case Inst.Ret(_) if defnRetty == Type.Unit =>
-      Seq(Inst.Ret(Val.None))
+  override def onDefn(defn: Defn) = super.onDefn {
+    defn match {
+      case defn @ Defn.Define(_, _, Type.Function(_, retty), blocks) =>
+        defnRetty = retty
+      case _ =>
+        ()
+    }
+    defn
   }
 
-  override def preDefn = {
-    case defn @ Defn.Define(_, _, Type.Function(_, retty), blocks) =>
-      defnRetty = retty
-      Seq(defn)
+  override def onInsts(insts: Seq[Inst]) = {
+    val buf = mutable.UnrolledBuffer.empty[Inst]
+
+    insts.foreach {
+      case inst @ Inst.Let(n, op) if op.resty == Type.Unit =>
+        buf += Inst.Let(super.onOp(op))
+        buf += Inst.Let(n, Op.Copy(unit))
+
+      case Inst.Ret(_) if defnRetty == Type.Unit =>
+        buf += Inst.Ret(Val.None)
+
+      case inst =>
+        buf += super.onInst(inst)
+    }
+
+    buf
   }
 
-  override def preVal = {
-    case Val.Unit => unit
+  override def onVal(value: Val) = value match {
+    case Val.Unit =>
+      unit
+
+    case _ =>
+      super.onVal(value)
   }
 
-  override def preType = {
+  override def onType(ty: Type) = ty match {
     case Type.Unit =>
       Type.Ptr
 
     case Type.Function(params, Type.Unit) =>
       Type.Function(params, Type.Void)
+
+    case _ =>
+      super.onType(ty)
   }
 }
 

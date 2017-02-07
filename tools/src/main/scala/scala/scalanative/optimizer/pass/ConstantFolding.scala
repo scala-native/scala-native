@@ -125,18 +125,19 @@ class ConstantFolding extends Pass {
       thenv
     case Op.Select(Val.False, _, elsev) =>
       elsev
-
   }
 
-  override def preInst = {
+  override def onInst(inst: Inst): Inst = inst match {
     case inst @ Inst.Let(n, op) =>
       val newInst = emulate.lift(op) match {
         case Some(newVal) => Let(n, Op.Copy(newVal))
         case None         => inst
       }
-      Seq(newInst)
-  }
+      newInst
 
+    case _ =>
+      inst
+  }
 }
 
 object ConstantFolding extends PassCompanion {

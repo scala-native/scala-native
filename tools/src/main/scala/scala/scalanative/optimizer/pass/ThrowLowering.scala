@@ -12,11 +12,12 @@ import nir._
 class ThrowLowering(implicit fresh: Fresh) extends Pass {
   import ThrowLowering._
 
-  override def preInst = {
+  override def onInst(inst: Inst) = inst match {
     case Inst.Let(_, Op.Throw(v, unwind)) =>
-      Seq(
-        Inst.Let(Op.Call(throwSig, throw_, Seq(v), unwind))
-      )
+      Inst.Let(Op.Call(throwSig, throw_, Seq(v), unwind))
+
+    case _ =>
+      inst
   }
 }
 

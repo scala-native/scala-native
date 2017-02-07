@@ -97,6 +97,15 @@ object ScalaNativePluginInternal {
     throw new MessageOnlyException("unable to link")
   }
 
+  def time[T](msg: String)(f: => T): T = {
+    import java.lang.System.nanoTime
+    val start = nanoTime()
+    val res   = f
+    val end   = nanoTime()
+    println(s"--- $msg (${(end - start) / 1000000} ms)")
+    res
+  }
+
   /** Compiles application nir to llvm ir. */
   private def compileNir(
       config: tools.Config,
@@ -104,14 +113,19 @@ object ScalaNativePluginInternal {
       linkerReporter: tools.LinkerReporter,
       optimizerReporter: tools.OptimizerReporter): Seq[nir.Attr.Link] = {
     val driver = tools.OptimizerDriver(config)
-    val (unresolved, links, raw, dyns) =
+
+    val (unresolved, links, raw, dyns) = time("linking") {
       tools.link(config, driver, linkerReporter)
+    }
 
     if (unresolved.nonEmpty) { reportLinkingErrors(unresolved, logger) }
 
-    val optimized =
+    val optimized = time("optimizing") {
       tools.optimize(config, driver, raw, dyns, optimizerReporter)
-    tools.codegen(config, optimized)
+    }
+    time("codegen") {
+      tools.codegen(config, optimized)
+    }
 
     links
   }
@@ -176,7 +190,7 @@ object ScalaNativePluginInternal {
                         applinks: Seq[String],
                         linkage: Map[String, String],
                         opts: Seq[String],
-                        logger: Logger): Unit = {
+                        logger: Logger): Unit = time("LLVM") {
     val outpath = abs(binary)
     val apppath = abs(appll)
     val opaths  = (nativelib ** "*.o").get.map(abs)

@@ -1,12 +1,22 @@
 package scala.scalanative
 package optimizer
 
+import scala.collection.mutable
 import nir._
 
 /** Optimizer reporters can override one of the corresponding methods to
  *  get notified whenever one of the optimization events happens.
  */
 object Optimizer {
+
+  def time[T](msg: String)(f: => T): T = {
+    import java.lang.System.nanoTime
+    val start = nanoTime()
+    val res   = f
+    val end   = nanoTime()
+    println(s"--- $msg (${(end - start) / 1000000} ms)")
+    res
+  }
 
   /** Run all of the passes on given assembly. */
   def apply(config: tools.Config,
@@ -16,19 +26,23 @@ object Optimizer {
             reporter: Reporter): Seq[Defn] = {
     import reporter._
 
-    val world  = analysis.ClassHierarchy(assembly, dyns)
+    val world = time("class hierarchy analysis") {
+      analysis.ClassHierarchy(assembly, dyns)
+    }
     val passes = driver.passes.map(_.apply(config, world))
 
-    def loop(assembly: Seq[Defn], passes: Seq[(Pass, Int)]): Seq[Defn] =
+    def loop(defns: Seq[Defn], passes: Seq[(Pass, Int)]): Seq[Defn] =
       passes match {
         case Seq() =>
-          assembly
+          defns
 
         case (pass.EmptyPass, _) +: rest =>
-          loop(assembly, rest)
+          loop(defns, rest)
 
         case (pass, id) +: rest =>
-          val passResult = pass(assembly)
+          val passResult = time(s"pass #$id ${pass.getClass.getName}") {
+            pass.onDefns(defns)
+          }
           onPass(pass, passResult)
           loop(passResult, rest)
       }

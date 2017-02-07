@@ -25,14 +25,15 @@ object Driver {
         pass.GlobalBoxingElimination,
         pass.UnitSimplification,
         pass.DeadCodeElimination,
-        pass.BlockParamReduction,
-        pass.CfChainsSimplification,
-        pass.BasicBlocksFusion,
-        pass.Canonicalization,
-        pass.PartialEvaluation,
-        pass.InstCombine,
-        pass.ConstantFolding,
-        pass.GlobalValueNumbering,
+        // pass.BlockParamReduction,
+        // pass.CfChainsSimplification,
+        // pass.DeadBlockElimination,
+        // pass.BasicBlocksFusion,
+        // pass.Canonicalization,
+        // pass.PartialEvaluation,
+        // pass.InstCombine,
+        // pass.ConstantFolding,
+        // pass.GlobalValueNumbering,
         pass.DynmethodLowering,
         pass.MainInjection,
         pass.ExternHoisting,
@@ -52,7 +53,7 @@ object Driver {
         pass.AllocLowering,
         pass.SizeofLowering,
         pass.CopyPropagation,
-        pass.DeadCodeElimination
+        pass.DeadBlockElimination
       ))
 
   /** Create an empty pass-lesss driver. */

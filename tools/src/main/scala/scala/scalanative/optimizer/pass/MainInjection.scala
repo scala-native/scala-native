@@ -11,41 +11,40 @@ import nir._
 class MainInjection(entry: Global)(implicit fresh: Fresh) extends Pass {
   import MainInjection._
 
-  override def preAssembly = {
-    case defns =>
-      val entryMainTy =
-        Type.Function(Seq(Type.Module(entry.top), ObjectArray), Type.Void)
-      val entryMainName =
-        Global.Member(entry, "main_class.ssnr.ObjectArray_unit")
-      val entryMain = Val.Global(entryMainName, Type.Ptr)
+  override def onDefns(defns: Seq[Defn]) = {
+    val entryMainTy =
+      Type.Function(Seq(Type.Module(entry.top), ObjectArray), Type.Void)
+    val entryMainName =
+      Global.Member(entry, "main_class.ssnr.ObjectArray_unit")
+    val entryMain = Val.Global(entryMainName, Type.Ptr)
 
-      val argc   = Val.Local(fresh(), Type.I32)
-      val argv   = Val.Local(fresh(), Type.Ptr)
-      val module = Val.Local(fresh(), Type.Module(entry.top))
-      val rt     = Val.Local(fresh(), Rt)
-      val arr    = Val.Local(fresh(), ObjectArray)
-      val exc    = Val.Local(fresh(), nir.Rt.Object)
-      val unwind = Next.Unwind(fresh())
+    val argc   = Val.Local(fresh(), Type.I32)
+    val argv   = Val.Local(fresh(), Type.Ptr)
+    val module = Val.Local(fresh(), Type.Module(entry.top))
+    val rt     = Val.Local(fresh(), Rt)
+    val arr    = Val.Local(fresh(), ObjectArray)
+    val exc    = Val.Local(fresh(), nir.Rt.Object)
+    val unwind = Next.Unwind(fresh())
 
-      defns :+ Defn.Define(
-        Attrs.None,
-        MainName,
-        MainSig,
-        Seq(
-          Inst.Label(fresh(), Seq(argc, argv)),
-          Inst.Let(Op.Call(InitSig, Init, Seq(), unwind)),
-          Inst.Let(rt.name, Op.Module(Rt.name, unwind)),
-          Inst.Let(arr.name,
-                   Op.Call(RtInitSig, RtInit, Seq(rt, argc, argv), unwind)),
-          Inst.Let(module.name, Op.Module(entry.top, unwind)),
-          Inst.Let(Op.Call(entryMainTy, entryMain, Seq(module, arr), unwind)),
-          Inst.Ret(Val.I32(0)),
-          Inst.Label(unwind.name, Seq(exc)),
-          Inst.Let(
-            Op.Call(PrintStackTraceSig, PrintStackTrace, Seq(exc), Next.None)),
-          Inst.Ret(Val.I32(1))
-        )
+    defns :+ Defn.Define(
+      Attrs.None,
+      MainName,
+      MainSig,
+      Seq(
+        Inst.Label(fresh(), Seq(argc, argv)),
+        Inst.Let(Op.Call(InitSig, Init, Seq(), unwind)),
+        Inst.Let(rt.name, Op.Module(Rt.name, unwind)),
+        Inst.Let(arr.name,
+                 Op.Call(RtInitSig, RtInit, Seq(rt, argc, argv), unwind)),
+        Inst.Let(module.name, Op.Module(entry.top, unwind)),
+        Inst.Let(Op.Call(entryMainTy, entryMain, Seq(module, arr), unwind)),
+        Inst.Ret(Val.I32(0)),
+        Inst.Label(unwind.name, Seq(exc)),
+        Inst.Let(
+          Op.Call(PrintStackTraceSig, PrintStackTrace, Seq(exc), Next.None)),
+        Inst.Ret(Val.I32(1))
       )
+    )
   }
 }
 

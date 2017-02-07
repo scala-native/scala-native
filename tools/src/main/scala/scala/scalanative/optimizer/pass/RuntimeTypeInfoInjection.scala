@@ -2,6 +2,7 @@ package scala.scalanative
 package optimizer
 package pass
 
+import scala.collection.mutable
 import analysis.ClassHierarchy._
 import analysis.ClassHierarchyExtractors._
 import nir._
@@ -19,27 +20,41 @@ class RuntimeTypeInfoInjection(implicit top: Top, fresh: Fresh) extends Pass {
       util.unreachable
   }
 
-  override def preDefn = {
-    case classDefn @ Defn.Class(_, name @ ClassRef(cls), _, _) =>
-      val typeDefn =
-        Defn.Const(Attrs.None, typeName(cls), cls.typeStruct, cls.typeValue)
+  override def onDefns(defns: Seq[Defn]) = {
+    val buf = mutable.UnrolledBuffer.empty[Defn]
 
-      Seq(classDefn, typeDefn)
+    defns.foreach {
+      case classDefn @ Defn.Class(_, name @ ClassRef(cls), _, _) =>
+        val typeDefn =
+          Defn.Const(Attrs.None, typeName(cls), cls.typeStruct, cls.typeValue)
 
-    case defn @ (_: Defn.Module | _: Defn.Trait | _: Defn.Struct) =>
-      val node = top.nodes(defn.name).asInstanceOf[Scope]
+        buf += classDefn
+        buf += typeDefn
 
-      val typeId   = Val.I32(node.id)
-      val typeStr  = Val.String(node.name.id)
-      val typeVal  = Val.Struct(Rt.Type.name, Seq(typeId, typeStr))
-      val typeDefn = Defn.Const(Attrs.None, typeName(node), Rt.Type, typeVal)
+      case defn @ (_: Defn.Module | _: Defn.Trait | _: Defn.Struct) =>
+        val node = top.nodes(defn.name).asInstanceOf[Scope]
 
-      Seq(defn, typeDefn)
+        val typeId   = Val.I32(node.id)
+        val typeStr  = Val.String(node.name.id)
+        val typeVal  = Val.Struct(Rt.Type.name, Seq(typeId, typeStr))
+        val typeDefn = Defn.Const(Attrs.None, typeName(node), Rt.Type, typeVal)
+
+        buf += defn
+        buf += typeDefn
+
+      case defn =>
+        buf += super.onDefn(defn)
+    }
+
+    buf
   }
 
-  override def preVal = {
+  override def onVal(value: Val) = value match {
     case Val.Global(ScopeRef(node), _) =>
       Val.Global(typeName(node), Type.Ptr)
+
+    case _ =>
+      super.onVal(value)
   }
 }
 

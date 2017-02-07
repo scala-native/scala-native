@@ -26,11 +26,13 @@ class AsLoweringTest extends OptimizerSpec {
                        |}""".stripMargin
 
   private class AsLoweringCheck extends Pass {
-    override def preInst = {
+    override def onInst(inst: Inst) = inst match {
       case inst @ Inst.Let(_, _: Op.As) =>
         val asString = inst.show
         fail(s"""Found an occurrence of `Op.As` in:
                 |  $asString""".stripMargin)
+      case inst =>
+        inst
     }
   }
 
