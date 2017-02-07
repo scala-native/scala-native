@@ -25,7 +25,7 @@ object Type extends Base[nir.Type] {
       case (ty, n) => nir.Type.Array(ty, n)
     })
   val Function =
-    P("(" ~ Arg.parser.rep(sep = ",") ~ ")" ~ "=>" ~ Type.parser map {
+    P("(" ~ Type.parser.rep(sep = ",") ~ ")" ~ "=>" ~ Type.parser map {
       case (args, ret) => nir.Type.Function(args, ret)
     })
   val NoneStruct =

@@ -9,12 +9,15 @@ object Op extends Base[nir.Op] {
 
   import Base.IgnoreWhitespace._
 
+  private val unwind: P[Next] =
+    P(Next.parser.?).map(_.getOrElse(nir.Next.None))
+
   val Call =
     P(
       "call[" ~ Type.parser ~ "]" ~ Val.parser ~ "(" ~ Val.parser.rep(
-        sep = ",") ~ ")" map {
-        case (ty, f, args) => nir.Op.Call(ty, f, args)
-      })
+        sep = ",") ~ ")" ~ unwind).map {
+      case (ty, f, args, unwind) => nir.Op.Call(ty, f, args, unwind)
+    }
   val Load =
     P("load[" ~ Type.parser ~ "]" ~ Val.parser map {
       case (ty, ptr) => nir.Op.Load(ty, ptr)
@@ -66,7 +69,10 @@ object Op extends Base[nir.Op] {
     P("method" ~ Val.parser ~ "," ~ Global.parser map {
       case (value, name) => nir.Op.Method(value, name)
     })
-  val Module = P("module" ~ Global.parser map (nir.Op.Module(_)))
+  val Module = P("module" ~ Global.parser ~ unwind).map {
+    case (name, unwind) =>
+      nir.Op.Module(name, unwind)
+  }
   val As =
     P("as[" ~ Type.parser ~ "]" ~ Val.parser map {
       case (ty, value) => nir.Op.As(ty, value)
@@ -87,6 +93,9 @@ object Op extends Base[nir.Op] {
   val Unbox = P("unbox[" ~ Type.parser ~ "]" ~ Val.parser map {
     case (ty, obj) => nir.Op.Unbox(ty, obj)
   })
+  val Throw = P("throw" ~ Val.parser ~ unwind).map {
+    case (value, unwind) => nir.Op.Throw(value, unwind)
+  }
   override val parser: P[nir.Op] =
-    Call | Load | Store | Elem | Extract | Insert | Stackalloc | Bin | Comp | Conv | Select | Classalloc | Field | Method | Module | As | Is | Copy | Sizeof | Closure | Box | Unbox
+    Call | Load | Store | Elem | Extract | Insert | Stackalloc | Bin | Comp | Conv | Select | Classalloc | Field | Method | Module | As | Is | Copy | Sizeof | Closure | Box | Unbox | Throw
 }

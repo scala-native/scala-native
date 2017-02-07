@@ -3,8 +3,7 @@ package nscplugin
 
 import scala.tools.nsc._
 import scala.reflect.internal.Flags._
-import scalanative.nir.Shows.{showType => _, showGlobal => _, _}
-import scalanative.util.{unreachable, sh, Show}, Show.{Repeat => r}
+import scalanative.util.unreachable
 
 trait NirNameEncoding { self: NirCodeGen =>
   import global.{Name => _, _}, definitions._
@@ -64,7 +63,7 @@ trait NirNameEncoding { self: NirCodeGen =>
       owner member ("init" +: mangledParams).mkString("_")
     } else {
       val mangledRetty = mangledType(tpe.resultType)
-      owner member (id.replace("_", "__") +: (mangledParams :+ mangledRetty))
+      owner member (id.replace("_", "$underscore$") +: (mangledParams :+ mangledRetty))
         .mkString("_")
     }
   }
@@ -73,41 +72,63 @@ trait NirNameEncoding { self: NirCodeGen =>
     mangledTypeInternal(genType(tpe, box = false))
 
   private def mangledTypeInternal(ty: nir.Type): String = {
-    implicit lazy val showMangledType: Show[nir.Type] = Show {
-      case nir.Type.None         => ""
-      case nir.Type.Void         => "void"
-      case nir.Type.Vararg       => "..."
-      case nir.Type.Ptr          => "ptr"
-      case nir.Type.Bool         => "bool"
-      case nir.Type.I8           => "i8"
-      case nir.Type.I16          => "i16"
-      case nir.Type.I32          => "i32"
-      case nir.Type.I64          => "i64"
-      case nir.Type.F32          => "f32"
-      case nir.Type.F64          => "f64"
-      case nir.Type.Array(ty, n) => sh"arr.$ty.$n"
+    val sb = new scalanative.util.ShowBuilder
+
+    def printType(ty: nir.Type): Unit = ty match {
+      case nir.Type.None   => sb.str("")
+      case nir.Type.Void   => sb.str("void")
+      case nir.Type.Vararg => sb.str("...")
+      case nir.Type.Ptr    => sb.str("ptr")
+      case nir.Type.Bool   => sb.str("bool")
+      case nir.Type.I8     => sb.str("i8")
+      case nir.Type.I16    => sb.str("i16")
+      case nir.Type.I32    => sb.str("i32")
+      case nir.Type.I64    => sb.str("i64")
+      case nir.Type.F32    => sb.str("f32")
+      case nir.Type.F64    => sb.str("f64")
+      case nir.Type.Array(ty, n) =>
+        sb.str("arr.")
+        printType(ty)
+        sb.str(".")
+        sb.str(n)
       case nir.Type.Function(args, ret) =>
-        sh"fun.${r(args.map(_.ty) :+ ret, sep = ".")}"
-      case nir.Type.Struct(name, _) => sh"struct.$name"
+        sb.str("fun.")
+        sb.rep(args, sep = ".")(printType)
+      case nir.Type.Struct(name, _) =>
+        sb.str("struct.")
+        printGlobal(name)
 
-      case nir.Type.Nothing      => "nothing"
-      case nir.Type.Unit         => "unit"
-      case nir.Type.Class(name)  => sh"class.$name"
-      case nir.Type.Trait(name)  => sh"trait.$name"
-      case nir.Type.Module(name) => sh"module.$name"
+      case nir.Type.Nothing => sb.str("nothing")
+      case nir.Type.Unit    => sb.str("unit")
+      case nir.Type.Class(name) =>
+        sb.str("class.")
+        printGlobal(name)
+      case nir.Type.Trait(name) =>
+        sb.str("trait.")
+        printGlobal(name)
+      case nir.Type.Module(name) =>
+        sb.str("module.")
+        printGlobal(name)
     }
 
-    implicit lazy val showMangledGlobal: Show[nir.Global] = Show {
-      case nir.Global.None          => unreachable
-      case nir.Global.Top(id)       => showId(id)
-      case nir.Global.Member(n, id) => showId(id) + ".." + showId(id)
+    def printGlobal(global: nir.Global): Unit = global match {
+      case nir.Global.None =>
+        unreachable
+      case nir.Global.Top(id) =>
+        printId(id)
+      case nir.Global.Member(n, id) =>
+        printId(id)
+        sb.str("..")
+        printId(id)
     }
 
-    def showId(id: String): String =
-      id.replace("scala.scalanative.runtime", "ssnr")
-        .replace("scala.scalanative.native", "ssnn")
+    def printId(id: String): Unit =
+      sb.str(
+        id.replace("scala.scalanative.runtime", "ssnr")
+          .replace("scala.scalanative.native", "ssnn"))
 
-    sh"$ty".toString
+    printType(ty)
+    sb.toString
   }
 
   private def nativeIdOf(sym: Symbol): String = {

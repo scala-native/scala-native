@@ -1,7 +1,10 @@
 package scala.scalanative
 package nir
 
-sealed abstract class Bin
+sealed abstract class Bin {
+  final def show: String = nir.Show(this)
+}
+
 object Bin {
   final case object Iadd extends Bin
   final case object Fadd extends Bin

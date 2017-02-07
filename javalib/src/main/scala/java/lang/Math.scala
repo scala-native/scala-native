@@ -144,7 +144,7 @@ object Math {
     if (a > b) a else b
 
   @inline def min(a: scala.Double, b: scala.Double): scala.Double =
-    `llvm.maxnum.f64`(a, b)
+    `llvm.minnum.f64`(a, b)
 
   @inline def min(a: scala.Float, b: scala.Float): scala.Float =
     `llvm.minnum.f32`(a, b)

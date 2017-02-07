@@ -24,7 +24,7 @@ systems Scala Native has been used with:
 
 Ubuntu::
 
-    $ sudo apt-get install clang libgc-dev
+    $ sudo apt-get install clang libgc-dev libunwind-dev
 
 macOS::
 
@@ -32,7 +32,7 @@ macOS::
 
 FreeBSD::
 
-    $ pkg install llvm38 boehm-gc
+    $ pkg install llvm38 boehm-gc libunwind
 
 nix/nixOS::
 

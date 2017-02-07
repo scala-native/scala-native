@@ -1,7 +1,10 @@
 package scala.scalanative
 package nir
 
-sealed abstract class Conv
+sealed abstract class Conv {
+  final def show: String = nir.Show(this)
+}
+
 object Conv {
   final case object Trunc    extends Conv
   final case object Zext     extends Conv

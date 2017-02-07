@@ -1,19 +1,9 @@
 package scala.scalanative
 package nir
 
-import util.sh
-import nir.Shows._
-
 sealed abstract class Global {
   def id: String
   def top: Global.Top
-
-  def isIntrinsic: Boolean = this match {
-    case Global.Top(id) if id.startsWith("scalanative_") => true
-    case _                                               => false
-  }
-
-  def isTop: Boolean = this.isInstanceOf[Global.Top]
 
   def member(id: String): Global.Member =
     Global.Member(this, id)
@@ -23,6 +13,15 @@ sealed abstract class Global {
     case Global.Member(n, id) => Global.Member(n, s"$tag.$id")
     case _                    => util.unreachable
   }
+
+  final def isIntrinsic: Boolean = this match {
+    case Global.Top(id) if id.startsWith("scalanative_") => true
+    case _                                               => false
+  }
+
+  final def isTop: Boolean = this.isInstanceOf[Global.Top]
+
+  final def show: String = nir.Show(this)
 }
 object Global {
   final case object None extends Global {

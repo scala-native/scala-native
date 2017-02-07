@@ -8,7 +8,7 @@ object SuiteSuite extends Suite {
     assert(true)
   }
 
-  testNot("does not expect false") {
+  testFails("does not expect false", issue = -1) {
     assert(false)
   }
 
@@ -16,7 +16,7 @@ object SuiteSuite extends Suite {
     assertNot(false)
   }
 
-  testNot("does not expect true") {
+  testFails("does not expect true", issue = -1) {
     assertNot(true)
   }
 
@@ -26,13 +26,13 @@ object SuiteSuite extends Suite {
     }
   }
 
-  testNot("expects A and throws B") {
+  testFails("expects A and throws B", issue = -1) {
     assertThrows[A] {
       throw new B
     }
   }
 
-  testNot("expects A and doesn't throw") {
+  testFails("expects A and doesn't throw", issue = -1) {
     assertThrows[A] {}
   }
 }

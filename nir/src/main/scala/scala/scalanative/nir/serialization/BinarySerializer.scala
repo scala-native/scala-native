@@ -4,7 +4,7 @@ package serialization
 
 import java.nio.ByteBuffer
 import scala.collection.mutable
-import nir.{Tags => T}
+import nir.serialization.{Tags => T}
 
 final class BinarySerializer(buffer: ByteBuffer) {
   import buffer._
@@ -133,23 +133,6 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putVal(v)
       putNext(default)
       putNexts(cases)
-
-    case Inst.Invoke(ty, f, args, succ, fail) =>
-      putInt(T.InvokeInst)
-      putType(ty)
-      putVal(f)
-      putVals(args)
-      putNext(succ)
-      putNext(fail)
-
-    case Inst.Throw(v) =>
-      putInt(T.ThrowInst)
-      putVal(v)
-
-    case Inst.Try(norm, exc) =>
-      putInt(T.TryInst)
-      putNext(norm)
-      putNext(exc)
   }
 
   private def putComp(comp: Comp) = comp match {
@@ -259,18 +242,19 @@ final class BinarySerializer(buffer: ByteBuffer) {
 
   private def putNexts(nexts: Seq[Next]) = putSeq(nexts)(putNext)
   private def putNext(next: Next) = next match {
-    case Next.Succ(n)      => putInt(T.SuccNext); putLocal(n)
-    case Next.Fail(n)      => putInt(T.FailNext); putLocal(n)
+    case Next.None         => putInt(T.NoneNext)
+    case Next.Unwind(n)    => putInt(T.UnwindNext); putLocal(n)
     case Next.Label(n, vs) => putInt(T.LabelNext); putLocal(n); putVals(vs)
     case Next.Case(v, n)   => putInt(T.CaseNext); putVal(v); putLocal(n)
   }
 
   private def putOp(op: Op) = op match {
-    case Op.Call(ty, v, args) =>
+    case Op.Call(ty, v, args, unwind) =>
       putInt(T.CallOp)
       putType(ty)
       putVal(v)
       putVals(args)
+      putNext(unwind)
 
     case Op.Load(ty, ptr) =>
       putInt(T.LoadOp)
@@ -345,9 +329,10 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putVal(v)
       putGlobal(name)
 
-    case Op.Module(name) =>
+    case Op.Module(name, unwind) =>
       putInt(T.ModuleOp)
       putGlobal(name)
+      putNext(unwind)
 
     case Op.As(ty, v) =>
       putInt(T.AsOp)
@@ -383,6 +368,10 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putType(ty)
       putVal(obj)
 
+    case Op.Throw(v, unwind) =>
+      putInt(T.ThrowOp)
+      putVal(v)
+      putNext(unwind)
   }
 
   private def putParams(params: Seq[Val.Local]) = putSeq(params)(putParam)
@@ -406,7 +395,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Type.F64          => putInt(T.F64Type)
     case Type.Array(ty, n) => putInt(T.ArrayType); putType(ty); putInt(n)
     case Type.Function(args, ret) =>
-      putInt(T.FunctionType); putArgs(args); putType(ret)
+      putInt(T.FunctionType); putTypes(args); putType(ret)
     case Type.Struct(n, tys) =>
       putInt(T.StructType); putGlobal(n); putTypes(tys)
 
@@ -415,16 +404,6 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Type.Class(n)  => putInt(T.ClassType); putGlobal(n)
     case Type.Trait(n)  => putInt(T.TraitType); putGlobal(n)
     case Type.Module(n) => putInt(T.ModuleType); putGlobal(n)
-  }
-
-  private def putArgs(args: Seq[Arg]): Unit = putSeq(args)(putArg)
-  private def putArg(arg: Arg): Unit = {
-    putType(arg.ty)
-    putOpt(arg.passConvention)(putPassConvention)
-  }
-  private def putPassConvention(attr: PassConv): Unit = attr match {
-    case PassConv.Byval(ty) => putInt(T.Byval); putType(ty)
-    case PassConv.Sret(ty)  => putInt(T.Sret); putType(ty)
   }
 
   private def putVals(values: Seq[Val]): Unit = putSeq(values)(putVal)

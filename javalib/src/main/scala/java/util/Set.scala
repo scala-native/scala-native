@@ -6,10 +6,11 @@ trait Set[E] extends Collection[E] {
   def contains(obj: Any): scala.Boolean
   def isEmpty(): scala.Boolean
   def iterator(): Iterator[E]
+  def clear(): Unit
+  def remove(obj: Any): scala.Boolean
 
   //TODO:
   //def addAll(coll: Collection[_ <: E]): scala.Boolean
-  //def clear(): Unit
   //def hashCode(): scala.Int
   //def removeAll(coll: Collection[_]): scala.Boolean
   //def retainAll(coll: Collection[_]): scala.Boolean
@@ -17,5 +18,4 @@ trait Set[E] extends Collection[E] {
   //def toArray[T](array: Array[T]): Array[T]
   //def contains(coll: Collection[_]): scala.Boolean
   //def equals(obj: Any): scala.Boolean
-  //def remove(obj: Any): scala.Boolean
 }

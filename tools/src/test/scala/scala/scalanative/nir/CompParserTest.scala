@@ -1,9 +1,6 @@
 package scala.scalanative
 package nir
 
-import util.sh
-import Shows._
-
 import fastparse.all.Parsed
 import org.scalatest._
 
@@ -29,10 +26,8 @@ class CompParserTest extends FlatSpec with Matchers {
                                Fle)
 
     comps foreach { comp =>
-      val Parsed.Success(result, _) =
-        parser.Comp.parser.parse(sh"$comp".toString)
+      val Parsed.Success(result, _) = parser.Comp.parser.parse(comp.show)
       result should be(comp)
     }
   }
-
 }

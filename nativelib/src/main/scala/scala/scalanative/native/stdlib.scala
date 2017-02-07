@@ -6,20 +6,20 @@ object stdlib {
 
   // Memory management
 
-  def malloc(size: CSize): Ptr[_]                        = extern
-  def calloc(num: CSize, size: CSize): Ptr[_]            = extern
-  def realloc(ptr: Ptr[_], newSize: CSize): Ptr[_]       = extern
-  def free(ptr: Ptr[_]): Unit                            = extern
+  def malloc(size: CSize): Ptr[Byte]                     = extern
+  def calloc(num: CSize, size: CSize): Ptr[Byte]         = extern
+  def realloc(ptr: Ptr[Byte], newSize: CSize): Ptr[Byte] = extern
+  def free(ptr: Ptr[Byte]): Unit                         = extern
   def aligned_alloc(alignment: CSize, size: CSize): Unit = extern
 
   // Program utilities
 
-  def abort(): Unit                                 = extern
-  def exit(exitCode: CInt): Unit                    = extern
-  def quick_exit(exitCode: CInt): Unit              = extern
-  def _Exit(exitCode: CInt): Unit                   = extern
-  def atexit(func: FunctionPtr0[Unit]): CInt        = extern
-  def at_quick_exit(func: FunctionPtr0[Unit]): CInt = extern
+  def abort(): Unit                                  = extern
+  def exit(exitCode: CInt): Unit                     = extern
+  def quick_exit(exitCode: CInt): Unit               = extern
+  def _Exit(exitCode: CInt): Unit                    = extern
+  def atexit(func: CFunctionPtr0[Unit]): CInt        = extern
+  def at_quick_exit(func: CFunctionPtr0[Unit]): CInt = extern
 
   // Communicating with the environment
 
@@ -48,10 +48,6 @@ object stdlib {
     extern
   def strtof(str: CString, str_end: Ptr[CString]): CFloat  = extern
   def strtod(str: CString, str_end: Ptr[CString]): CDouble = extern
-
-  // Types
-
-  @struct class jmp_buf private ()
 
   // Macros
 

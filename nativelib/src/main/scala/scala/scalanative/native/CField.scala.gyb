@@ -1,0 +1,24 @@
+package scala.scalanative
+package native
+
+import scalanative.runtime.undefined
+
+% for N in range(1, 23):
+
+final abstract class CField${N}[P, F]
+
+object CField${N} {
+
+  implicit def array[T, N <: Nat]: CField${N}[CArray[T, N], T] = undefined
+
+% for K in range(N, 23):
+%   FK = "F" + str(N)
+%   Fs = ", ".join(["F" + str(i) for i in range(1, K + 1)])
+
+  implicit def struct${K}[${Fs}]: CField${N}[CStruct${K}[${Fs}], ${FK}] = undefined
+
+% end
+
+}
+
+% end

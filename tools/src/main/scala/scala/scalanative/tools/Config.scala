@@ -18,6 +18,9 @@ sealed trait Config {
   /** Should a main method be injected? */
   def injectMain: Boolean
 
+  /** Target triple. */
+  def target: String
+
   /** Create new config with given entry point. */
   def withEntry(value: Global): Config
 
@@ -29,6 +32,9 @@ sealed trait Config {
 
   /** Create a new config with given inject main flag. */
   def withInjectMain(value: Boolean): Config
+
+  /** Create a new config with given target triple. */
+  def withTarget(value: String): Config
 }
 
 object Config {
@@ -38,12 +44,14 @@ object Config {
     Impl(entry = Global.None,
          paths = Seq.empty,
          targetDirectory = VirtualDirectory.empty,
-         injectMain = true)
+         injectMain = true,
+         target = "")
 
   private final case class Impl(entry: Global,
                                 paths: Seq[LinkerPath],
                                 targetDirectory: VirtualDirectory,
-                                injectMain: Boolean)
+                                injectMain: Boolean,
+                                target: String)
       extends Config {
     def withEntry(value: Global): Config =
       copy(entry = value)
@@ -56,5 +64,8 @@ object Config {
 
     def withInjectMain(value: Boolean): Config =
       copy(injectMain = value)
+
+    def withTarget(value: String): Config =
+      copy(target = value)
   }
 }

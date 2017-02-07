@@ -1,6 +1,19 @@
 package scala.scalanative
+import native.CFunctionPtr1
 
 object IssuesSuite extends tests.Suite {
+
+  def foo(arg: Int): Unit                        = ()
+  def crash(arg: CFunctionPtr1[Int, Unit]): Unit = ()
+  def lifted208Test(): Unit                      = crash(foo _)
+
+  test("#208") {
+    // If we put the test directly, behind the scenes, this will
+    // create a nested closure with a pointer to the outer one
+    // and the latter is not supported in scala-native
+    lifted208Test()
+  }
+
   test("#253") {
     class Cell(val value: Int)
 
@@ -107,5 +120,40 @@ object IssuesSuite extends tests.Suite {
     val p: Ptr[Byte] = bytes.asInstanceOf[ByteArray].at(0)
     assert(!p == 'b'.toByte)
     assert(!(p + 1) == 'a'.toByte)
+  }
+
+  test("#349") {
+    var events = List.empty[String]
+
+    def log(s: String): Unit = events ::= s
+
+    def throwExc(): Unit =
+      throw new Exception
+
+    def foo(): Unit = {
+      try {
+        try {
+          throwExc()
+        } catch {
+          case e: Throwable =>
+            log("a")
+        }
+
+        try {
+          throw new Exception
+        } catch {
+          case e: IllegalArgumentException =>
+            log("b")
+        }
+
+      } catch {
+        case e: Throwable =>
+          log("c")
+      }
+    }
+
+    assert(events.isEmpty)
+    foo()
+    assert(events == List("c", "a"))
   }
 }

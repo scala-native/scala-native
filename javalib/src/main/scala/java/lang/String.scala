@@ -153,9 +153,9 @@ final class _String()
       if (count < string.count) offset + count
       else offset + string.count
     while (o1 < end) {
+      val result: Int = value(o1) - string.value(o2)
       o1 += 1
       o2 += 1
-      val result: Int = value(o1) - string.value(o2)
       if (result != 0) {
         return result
       }
@@ -170,10 +170,10 @@ final class _String()
       if (count < string.count) offset + count
       else offset + string.count
     while (o1 < end) {
+      val c1: Char = compareValue(value(o1))
+      val c2: Char = compareValue(string.value(o2))
       o1 += 1
       o2 += 1
-      val c1: Char    = compareValue(value(o1))
-      val c2: Char    = compareValue(string.value(o2))
       val result: Int = c1 - c2
       if (result != 0) {
         return result
@@ -206,9 +206,8 @@ final class _String()
     case s: _String if s eq this =>
       true
     case s: _String =>
-      val thisHash = this.hashCode()
-      val thatHash = s.hashCode()
-
+      val thisHash = this.hashCode
+      val thatHash = s.hashCode
       if (count != s.count ||
           (thisHash != thatHash && thisHash != 0 && thatHash != 0)) {
         false
@@ -221,7 +220,6 @@ final class _String()
             i += 1
           }
         }
-
         true
       }
     case _ =>
@@ -237,10 +235,10 @@ final class _String()
       var o1 = offset
       var o2 = string.offset
       while (o1 < offset + count) {
-        o1 += 1
-        o2 += 1
         val c1 = value(o1)
         val c2 = string.value(o2)
+        o1 += 1
+        o2 += 1
         if (c1 != c2 && toUpperCase(c1) != toUpperCase(c2) &&
             toLowerCase(c1) != toLowerCase(c2)) {
           return false
@@ -271,8 +269,8 @@ final class _String()
         var index = _index
         var i     = offset + start
         while (i < end) {
-          index += 1
           data(index) = value(i).toByte
+          index += 1
           i += 1
         }
       } catch {
@@ -307,19 +305,25 @@ final class _String()
     }
   }
 
+  // Update StringLowering::stringHashCode whenever you change this method.
   override def hashCode(): Int = {
-    if (cachedHashCode == 0) {
-      cachedHashCode = {
+    val currentHashCode = cachedHashCode
+    if (currentHashCode == 0) {
+      if (count == 0) {
+        0
+      } else {
         var hash = 0
         var i    = offset
         while (i < count + offset) {
           hash = value(i) + ((hash << 5) - hash)
           i += 1
         }
+        cachedHashCode = hash
         hash
       }
+    } else {
+      currentHashCode
     }
-    cachedHashCode
   }
 
   def indexOf(c: Int, _start: Int): Int = {
@@ -333,9 +337,8 @@ final class _String()
         while (i < offset + count) {
           if (value(i) == c) {
             return i - offset
-          } else {
-            i += 1
           }
+          i += 1
         }
       } else if (c > Character.MAX_VALUE && c <= Character.MAX_CODE_POINT) {
         var i = start
@@ -346,7 +349,6 @@ final class _String()
           } else if (codePoint >= Character.MIN_SUPPLEMENTARY_CODE_POINT) {
             i += 1
           }
-
           i += 1
         }
       }
@@ -354,9 +356,11 @@ final class _String()
     -1
   }
 
-  def indexOf(c: Int): Int = indexOf(c, 0)
+  def indexOf(c: Int): Int =
+    indexOf(c, 0)
 
-  def indexOf(string: _String): Int = indexOf(string, 0)
+  def indexOf(string: _String): Int =
+    indexOf(string, 0)
 
   def indexOf(subString: _String, _start: Int): Int = {
     var start = _start
@@ -367,34 +371,33 @@ final class _String()
     if (subCount > 0) {
       if (subCount + start > count) {
         return -1
-      } else {
-        val target    = subString.value
-        val subOffset = subString.offset
-        val firstChar = target(subOffset)
-        val end       = subOffset + subCount
-        while (true) {
-          val i = indexOf(firstChar, start)
-          if (i == -1 || subCount + i > count) {
-            return -1
-          }
-
-          var o1 = offset + i
-          var o2 = subOffset
-          while (o2 < end && value(o1) == target(o2)) {
-            o2 = o2 + 1
-            o1 = o1 + 1
-          }
-          if (o2 == end) {
-            return i
-          }
-          start = i + 1
+      }
+      val target    = subString.value
+      val subOffset = subString.offset
+      val firstChar = target(subOffset)
+      val end       = subOffset + subCount
+      while (true) {
+        val i = indexOf(firstChar, start)
+        if (i == -1 || subCount + i > count) {
+          return -1
         }
+        var o1 = offset + i
+        var o2 = subOffset
+        while ({ o2 += 1; o2 } < end && value({ o1 += 1; o1 }) == target(o2)) ()
+        if (o2 == end) {
+          return i
+        }
+        start = i + 1
       }
     }
     if (start < count) start else count
   }
 
-//  def intern(): _String = ???
+  // See https://github.com/scala-native/scala-native/issues/486
+  def intern(): _String = this
+
+  def lastIndexOf(c: Int): Int =
+    lastIndexOf(c, count - 1)
 
   def lastIndexOf(c: Int, _start: Int): Int = {
     var start = _start
@@ -428,7 +431,8 @@ final class _String()
     -1
   }
 
-  def lastIndexOf(c: Int): Int = lastIndexOf(c, count - 1)
+  def lastIndexOf(string: String): Int =
+    lastIndexOf(string, count)
 
   def lastIndexOf(subString: _String, _start: Int): Int = {
     var start    = _start
@@ -447,9 +451,9 @@ final class _String()
           if (i == -1) {
             return -1
           }
-          val o1 = offset + i
-          val o2 = subOffset
-          while (o2 < end && value(o1) == target(o2)) {}
+          var o1 = offset + i
+          var o2 = subOffset
+          while ({ o2 += 1; o2 } < end && value({ o1 += 1; o1 }) == target(o2)) ()
           if (o2 == end) {
             return i
           }
@@ -514,10 +518,10 @@ final class _String()
         val target = string.value
 
         while (thisStart < end) {
-          thisStart += 1
-          start += 1
           val c1 = value(thisStart)
           val c2 = target(start)
+          thisStart += 1
+          start += 1
           if (c1 != c2 && toUpperCase(c1) != toUpperCase(c2) &&
               toLowerCase(c1) != toLowerCase(c2)) {
             return false
@@ -540,8 +544,8 @@ final class _String()
       System.arraycopy(value, offset, buffer, 0, count)
 
       do {
-        index += 1
         buffer(index) = newChar
+        index += 1
         index = indexOf(oldChar, index)
       } while (index != -1)
 

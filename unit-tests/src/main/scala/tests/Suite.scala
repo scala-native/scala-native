@@ -20,7 +20,7 @@ abstract class Suite {
     try {
       f
     } catch {
-      case exc: Exception =>
+      case exc: Throwable =>
         if (exc.getClass.equals(implicitly[ClassTag[T]].runtimeClass))
           return
         else
@@ -29,23 +29,43 @@ abstract class Suite {
     throw AssertionFailed
   }
 
+  def assertEquals[T](left: T, right: T): Unit =
+    assert(left == right)
+
+  private def assertThrowsImpl(cls: Class[_], f: => Unit): Unit = {
+    try {
+      f
+    } catch {
+      case exc: Throwable =>
+        if (exc.getClass.equals(cls))
+          return
+        else
+          throw AssertionFailed
+    }
+    throw AssertionFailed
+  }
+
+  def expectThrows[T <: Throwable, U](expectedThrowable: Class[T],
+                                      code: => U): Unit =
+    assertThrowsImpl(expectedThrowable, code)
+
   def test(name: String)(body: => Unit): Unit =
     tests += Test(name, { () =>
       try {
         body
         true
       } catch {
-        case _: Exception => false
+        case _: Throwable => false
       }
     })
 
-  def testNot(name: String)(body: => Unit): Unit =
+  def testFails(name: String, issue: Int)(body: => Unit): Unit =
     tests += Test(name, { () =>
       try {
         body
         false
       } catch {
-        case _: Exception => true
+        case _: Throwable => true
       }
     })
 

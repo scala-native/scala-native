@@ -114,7 +114,7 @@ object GlobalValueNumbering extends PassCompanion {
 
       // Never idempotent:
       case (_: Load | _: Store | _: Stackalloc | _: Classalloc | _: Call |
-          _: Closure) =>
+          _: Closure | _: Throw) =>
         false
     }
   }
@@ -165,7 +165,7 @@ object GlobalValueNumbering extends PassCompanion {
           case (Method(objA, nameA), Method(objB, nameB)) =>
             eqVal(objA, objB) && eqGlobal(nameA, nameB)
 
-          case (Module(nameA), Module(nameB)) =>
+          case (Module(nameA, _), Module(nameB, _)) =>
             eqGlobal(nameA, nameB)
 
           case (As(tyA, objA), As(tyB, objB)) =>
@@ -278,7 +278,7 @@ object GlobalValueNumbering extends PassCompanion {
     def hashOp(op: Op): Hash = {
       import Op._
       val opFields: Seq[Any] = op match {
-        case Call(ty, ptr, args)    => "Call" +: ty +: ptr +: args
+        case Call(ty, ptr, args, _) => "Call" +: ty +: ptr +: args
         case Load(ty, ptr)          => Seq("Load", ty, ptr)
         case Store(ty, ptr, value)  => Seq("Store", ty, ptr, value)
         case Elem(ty, ptr, indexes) => "Elem" +: ty +: ptr +: indexes
@@ -299,8 +299,9 @@ object GlobalValueNumbering extends PassCompanion {
         case Copy(value)                => Seq("Copy", value)
         case Closure(ty, fun, captures) => "Closure" +: ty +: fun +: captures
 
+        case Throw(value, _)  => Seq("Throw", value)
         case Classalloc(name) => Seq("Classalloc", name)
-        case Module(name)     => Seq("Module", name)
+        case Module(name, _)  => Seq("Module", name)
         case Sizeof(ty)       => Seq("Sizeof", ty)
         case Box(code, obj)   => Seq("Box", code.toString, obj)
         case Unbox(code, obj) => Seq("Unbox", code.toString, obj)

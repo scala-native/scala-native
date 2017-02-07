@@ -1,6 +1,5 @@
 package scala.scalanative
 
-import scala.reflect.ClassTag
 import native._
 import runtime.Intrinsics._
 
@@ -10,7 +9,7 @@ package object runtime {
   def undefined: Nothing = throw new UndefinedBehaviorError
 
   /** Returns info pointer for given type. */
-  def typeof[T](implicit ct: ClassTag[T]): Ptr[Type] = undefined
+  def typeof[T](implicit tag: Tag[T]): Ptr[Type] = undefined
 
   /** Intrinsified unsigned devision on ints. */
   def divUInt(l: Int, r: Int): Int = undefined
@@ -40,26 +39,26 @@ package object runtime {
   def intToULong(v: Int): Long = undefined
 
   /** Select value without branching. */
-  def select[T](cond: Boolean, thenp: T, elsep: T)(
-      implicit ct: ClassTag[T]): T = undefined
+  def select[T](cond: Boolean, thenp: T, elsep: T)(implicit tag: Tag[T]): T =
+    undefined
 
   /** Allocate memory in gc heap using given info pointer. */
-  def alloc(ty: Ptr[Type], size: CSize): Ptr[_] = {
+  def alloc(ty: Ptr[Type], size: CSize): Ptr[Byte] = {
     val ptr = GC.malloc(size).cast[Ptr[Ptr[Type]]]
     !ptr = ty
-    ptr
+    ptr.cast[Ptr[Byte]]
   }
 
   /** Allocate memory in gc heap using given info pointer.
    *
    * The allocated memory cannot be used to store pointers.
    */
-  def allocAtomic(ty: Ptr[Type], size: CSize): Ptr[_] = {
+  def allocAtomic(ty: Ptr[Type], size: CSize): Ptr[Byte] = {
     val ptr = GC.malloc_atomic(size).cast[Ptr[Ptr[Type]]]
     // initialize to 0
     `llvm.memset.p0i8.i64`(ptr.cast[Ptr[Byte]], 0, size, 1, false)
     !ptr = ty
-    ptr
+    ptr.cast[Ptr[Byte]]
   }
 
   /** Read type information of given object. */

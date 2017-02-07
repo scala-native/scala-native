@@ -1,0 +1,49 @@
+package scala.scalanative
+package native
+
+import scala.reflect.ClassTag
+import scalanative.runtime.undefined
+
+final abstract class Tag[P]
+
+object Tag {
+  implicit val Unit: Tag[Unit]                    = undefined
+  implicit val Boolean: Tag[Boolean]              = undefined
+  implicit val Char: Tag[Char]                    = undefined
+  implicit val Byte: Tag[Byte]                    = undefined
+  implicit val UByte: Tag[UByte]                  = undefined
+  implicit val Short: Tag[Short]                  = undefined
+  implicit val UShort: Tag[UShort]                = undefined
+  implicit val Int: Tag[Int]                      = undefined
+  implicit val UInt: Tag[UInt]                    = undefined
+  implicit val Long: Tag[Long]                    = undefined
+  implicit val ULong: Tag[ULong]                  = undefined
+  implicit val Float: Tag[Float]                  = undefined
+  implicit val Double: Tag[Double]                = undefined
+  implicit def Ptr[T: Tag]: Tag[Ptr[T]]           = undefined
+  implicit def Ref[T <: AnyRef: ClassTag]: Tag[T] = undefined
+
+  implicit def Nat0: Tag[Nat._0] = undefined
+  implicit def Nat1: Tag[Nat._1] = undefined
+  implicit def Nat2: Tag[Nat._2] = undefined
+  implicit def Nat3: Tag[Nat._3] = undefined
+  implicit def Nat4: Tag[Nat._4] = undefined
+  implicit def Nat5: Tag[Nat._5] = undefined
+  implicit def Nat6: Tag[Nat._6] = undefined
+  implicit def Nat7: Tag[Nat._7] = undefined
+  implicit def Nat8: Tag[Nat._8] = undefined
+  implicit def Nat9: Tag[Nat._9] = undefined
+  implicit def NatDigit[N <: Nat.Base: Tag, M <: Nat: Tag]: Tag[Nat.Digit[N, M]] =
+    undefined
+
+  implicit def CArray[T: Tag, N <: Nat: Tag]: Tag[CArray[T, N]] = undefined
+
+  % for N in range(0, 23):
+  %   Ts      = ["T" + str(i) for i in range(1, N + 1)]
+  %   BoundTs = "" if N == 0 else "[" + ", ".join(map(lambda T: T + ": Tag", Ts)) + "]"
+  %   JustTs  = "" if N == 0 else "[" + ", ".join(Ts) + "]"
+
+  implicit def CStruct${N}${BoundTs}: Tag[CStruct${N}${JustTs}] = undefined
+
+  % end
+}

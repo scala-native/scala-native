@@ -1,9 +1,6 @@
 package scala.scalanative
 package nir
 
-import util.sh
-import Shows._
-
 import fastparse.all.Parsed
 import org.scalatest._
 
@@ -25,11 +22,8 @@ class AttrParserTest extends FlatSpec with Matchers {
                                PinIf(global, global))
 
     attrs foreach { attr =>
-      val Parsed.Success(result, _) =
-        parser.Attr.parser.parse(sh"$attr".toString)
+      val Parsed.Success(result, _) = parser.Attr.parser.parse(attr.show)
       result should be(attr)
     }
-
   }
-
 }

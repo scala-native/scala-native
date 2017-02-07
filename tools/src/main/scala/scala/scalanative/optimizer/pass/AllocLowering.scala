@@ -33,7 +33,7 @@ class AllocLowering(implicit fresh: Fresh, top: Top) extends Pass {
 
       Seq(
         Let(size.name, Op.Sizeof(cls.classStruct)),
-        Let(n, Op.Call(allocSig, alloc, Seq(cls.typeConst, size)))
+        Let(n, Op.Call(allocSig, alloc, Seq(cls.typeConst, size), Next.None))
       )
   }
 
@@ -48,7 +48,7 @@ class AllocLowering(implicit fresh: Fresh, top: Top) extends Pass {
 
 object AllocLowering extends PassCompanion {
   val allocName = Global.Top("scalanative_alloc")
-  val allocSig  = Type.Function(Seq(Arg(Type.Ptr), Arg(Type.I64)), Type.Ptr)
+  val allocSig  = Type.Function(Seq(Type.Ptr, Type.I64), Type.Ptr)
   val alloc     = Val.Global(allocName, allocSig)
 
   override val injects =

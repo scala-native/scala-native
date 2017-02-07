@@ -25,8 +25,13 @@ object Driver {
         pass.GlobalBoxingElimination,
         pass.UnitSimplification,
         pass.DeadCodeElimination,
+        pass.BlockParamReduction,
+        pass.CfChainsSimplification,
+        pass.BasicBlocksFusion,
         pass.Canonicalization,
         pass.PartialEvaluation,
+        pass.InstCombine,
+        pass.ConstantFolding,
         pass.GlobalValueNumbering,
         pass.MainInjection,
         pass.ExternHoisting,
@@ -43,7 +48,6 @@ object Driver {
         pass.UnitLowering,
         pass.ThrowLowering,
         pass.NothingLowering,
-        pass.TryLowering,
         pass.AllocLowering,
         pass.SizeofLowering,
         pass.CopyPropagation,
@@ -55,10 +59,13 @@ object Driver {
     new Impl(Seq.empty)
 
   private final class Impl(val passes: Seq[PassCompanion]) extends Driver {
-    def takeUpTo(pass: PassCompanion): Driver = ???
+    def takeUpTo(pass: PassCompanion): Driver =
+      takeBefore(pass).append(pass)
 
-    def takeBefore(pass: PassCompanion): Driver = ???
+    def takeBefore(pass: PassCompanion): Driver =
+      new Impl(passes takeWhile (_ != pass))
 
-    def append(pass: PassCompanion): Driver = ???
+    def append(pass: PassCompanion): Driver =
+      new Impl(passes :+ pass)
   }
 }
