@@ -111,24 +111,24 @@ object ScalaNativePluginInternal {
       config: tools.Config,
       logger: Logger,
       linkerReporter: tools.LinkerReporter,
-      optimizerReporter: tools.OptimizerReporter): Seq[nir.Attr.Link] = {
-    val driver = tools.OptimizerDriver(config)
+      optimizerReporter: tools.OptimizerReporter): Seq[nir.Attr.Link] =
+    time("native total") {
+      val driver = tools.OptimizerDriver(config)
+      val (unresolved, links, raw, dyns) = time("linking") {
+        tools.link(config, driver, linkerReporter)
+      }
 
-    val (unresolved, links, raw, dyns) = time("linking") {
-      tools.link(config, driver, linkerReporter)
+      if (unresolved.nonEmpty) { reportLinkingErrors(unresolved, logger) }
+
+      val optimized = time("optimizing") {
+        tools.optimize(config, driver, raw, dyns, optimizerReporter)
+      }
+      time("codegen") {
+        tools.codegen(config, optimized)
+      }
+
+      links
     }
-
-    if (unresolved.nonEmpty) { reportLinkingErrors(unresolved, logger) }
-
-    val optimized = time("optimizing") {
-      tools.optimize(config, driver, raw, dyns, optimizerReporter)
-    }
-    time("codegen") {
-      tools.codegen(config, optimized)
-    }
-
-    links
-  }
 
   private def running(command: Seq[String]): String =
     "running" + nl + command.mkString(nl + "\t")
@@ -190,7 +190,7 @@ object ScalaNativePluginInternal {
                         applinks: Seq[String],
                         linkage: Map[String, String],
                         opts: Seq[String],
-                        logger: Logger): Unit = time("LLVM") {
+                        logger: Logger): Unit = time("llvm") {
     val outpath = abs(binary)
     val apppath = abs(appll)
     val opaths  = (nativelib ** "*.o").get.map(abs)
@@ -330,70 +330,72 @@ object ScalaNativePluginInternal {
       }
     },
     nativeLink := ResourceScope { implicit scope =>
-      val clang     = nativeClang.value
-      val clangpp   = nativeClangPP.value
-      val clangOpts = nativeClangOptions.value
-      checkThatClangIsRecentEnough(clang)
+      time("total") {
+        val clang     = nativeClang.value
+        val clangpp   = nativeClangPP.value
+        val clangOpts = nativeClangOptions.value
+        checkThatClangIsRecentEnough(clang)
 
-      val mainClass = (selectMainClass in Compile).value.getOrElse(
-        throw new MessageOnlyException("No main class detected.")
-      )
-      val entry     = nir.Global.Top(mainClass.toString + "$")
-      val classpath = (fullClasspath in Compile).value.map(_.data)
-      val target    = (crossTarget in Compile).value
-      val appll     = target / "out.ll"
-      val binary    = (artifactPath in nativeLink).value
+        val mainClass = (selectMainClass in Compile).value.getOrElse(
+          throw new MessageOnlyException("No main class detected.")
+        )
+        val entry     = nir.Global.Top(mainClass.toString + "$")
+        val classpath = (fullClasspath in Compile).value.map(_.data)
+        val target    = (crossTarget in Compile).value
+        val appll     = target / "out.ll"
+        val binary    = (artifactPath in nativeLink).value
 
-      val linkage           = nativeLibraryLinkage.value
-      val linkerReporter    = nativeLinkerReporter.value
-      val optimizerReporter = nativeOptimizerReporter.value
-      val sharedLibrary     = nativeSharedLibrary.value
-      val logger            = streams.value.log
+        val linkage           = nativeLibraryLinkage.value
+        val linkerReporter    = nativeLinkerReporter.value
+        val optimizerReporter = nativeOptimizerReporter.value
+        val sharedLibrary     = nativeSharedLibrary.value
+        val logger            = streams.value.log
 
-      val config = tools.Config.empty
-        .withEntry(entry)
-        .withPaths(classpath.map(p =>
-          tools.LinkerPath(VirtualDirectory.real(p))))
-        .withTargetDirectory(VirtualDirectory.real(target))
-        .withInjectMain(!nativeSharedLibrary.value)
-        .withTarget(nativeTarget.value)
+        val config = tools.Config.empty
+          .withEntry(entry)
+          .withPaths(classpath.map(p =>
+            tools.LinkerPath(VirtualDirectory.real(p))))
+          .withTargetDirectory(VirtualDirectory.real(target))
+          .withInjectMain(!nativeSharedLibrary.value)
+          .withTarget(nativeTarget.value)
 
-      val nirFiles   = (Keys.target.value ** "*.nir").get.toSet
-      val configFile = (streams.value.cacheDirectory / "native-config")
-      val inputFiles = nirFiles + configFile
+        val nirFiles   = (Keys.target.value ** "*.nir").get.toSet
+        val configFile = (streams.value.cacheDirectory / "native-config")
+        val inputFiles = nirFiles + configFile
 
-      writeConfigHash(configFile,
-                      config,
-                      clang,
-                      clangpp,
-                      classpath,
+        writeConfigHash(configFile,
+                        config,
+                        clang,
+                        clangpp,
+                        classpath,
+                        target,
+                        appll,
+                        binary,
+                        linkage,
+                        clangOpts)
+
+        val compileIfChanged =
+          FileFunction.cached(streams.value.cacheDirectory / "native-cache",
+                              FilesInfo.hash) { _ =>
+            IO.createDirectory(target)
+            val links =
+              compileNir(config, logger, linkerReporter, optimizerReporter)
+            compileLl(clangpp,
                       target,
+                      nativelib.value,
                       appll,
                       binary,
+                      nativeTarget.value,
+                      links.map(_.name),
                       linkage,
-                      clangOpts)
+                      clangOpts,
+                      logger)
+            Set(binary)
+          }
 
-      val compileIfChanged =
-        FileFunction.cached(streams.value.cacheDirectory / "native-cache",
-                            FilesInfo.hash) { _ =>
-          IO.createDirectory(target)
-          val links =
-            compileNir(config, logger, linkerReporter, optimizerReporter)
-          compileLl(clangpp,
-                    target,
-                    nativelib.value,
-                    appll,
-                    binary,
-                    nativeTarget.value,
-                    links.map(_.name),
-                    linkage,
-                    clangOpts,
-                    logger)
-          Set(binary)
-        }
-
-      val result = compileIfChanged(inputFiles)
-      binary
+        val result = compileIfChanged(inputFiles)
+        binary
+      }
     },
     run := {
       val logger = streams.value.log

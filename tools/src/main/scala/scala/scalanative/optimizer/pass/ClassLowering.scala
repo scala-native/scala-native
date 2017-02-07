@@ -14,29 +14,17 @@ import nir._
 class ClassLowering(implicit top: Top, fresh: Fresh) extends Pass {
   import ClassLowering._
 
-  override def onDefns(defns: Seq[Defn]): Seq[Defn] = {
-    val buf = mutable.UnrolledBuffer.empty[Defn]
-
-    defns.foreach {
-      case Defn.Class(_, name @ ClassRef(cls), _, _) =>
-        val classStructTy = cls.classStruct
-        val classStructDefn =
-          Defn.Struct(Attrs.None, classStructTy.name, classStructTy.tys)
-
-        buf += super.onDefn(classStructDefn)
-
+  override def onDefns(defns: Seq[Defn]): Seq[Defn] =
+    super.onDefns(defns.filter {
+      case _: Defn.Class =>
+        false
       case Defn.Declare(_, MethodRef(_: Class, _), _) =>
-        ()
-
+        false
       case Defn.Var(_, FieldRef(_: Class, _), _, _) =>
-        ()
-
+        false
       case defn =>
-        buf += super.onDefn(defn)
-    }
-
-    buf
-  }
+        true
+    })
 
   override def onInst(inst: Inst) = super.onInst {
     inst match {

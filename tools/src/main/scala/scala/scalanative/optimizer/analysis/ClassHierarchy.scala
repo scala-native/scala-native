@@ -26,6 +26,17 @@ object ClassHierarchy {
 
     def fields: Seq[Field] =
       members.collect { case fld: Field => fld }
+
+    def typeName: Global = this match {
+      case node: Class =>
+        node.name tag "class" tag "type"
+      case node: Trait =>
+        node.name tag "trait" tag "type"
+      case node: Struct =>
+        node.name tag "struct" tag "type"
+      case _ =>
+        util.unreachable
+    }
   }
 
   final class Struct(val attrs: Attrs,

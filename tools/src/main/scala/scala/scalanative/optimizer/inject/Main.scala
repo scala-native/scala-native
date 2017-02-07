@@ -1,17 +1,18 @@
 package scala.scalanative
 package optimizer
-package pass
+package inject
 
+import scala.collection.mutable.Buffer
 import analysis.ClassHierarchy.Top
 import nir._
 
 /** Introduces `main` function that sets up
  *  the runtime and calls the given entry point.
  */
-class MainInjection(entry: Global)(implicit fresh: Fresh) extends Pass {
-  import MainInjection._
+class Main(entry: Global)(implicit fresh: Fresh) extends Inject {
+  import Main._
 
-  override def onDefns(defns: Seq[Defn]) = {
+  override def apply(buf: Buffer[Defn]): Unit = {
     val entryMainTy =
       Type.Function(Seq(Type.Module(entry.top), ObjectArray), Type.Void)
     val entryMainName =
@@ -26,7 +27,7 @@ class MainInjection(entry: Global)(implicit fresh: Fresh) extends Pass {
     val exc    = Val.Local(fresh(), nir.Rt.Object)
     val unwind = Next.Unwind(fresh())
 
-    defns :+ Defn.Define(
+    buf += Defn.Define(
       Attrs.None,
       MainName,
       MainSig,
@@ -48,7 +49,7 @@ class MainInjection(entry: Global)(implicit fresh: Fresh) extends Pass {
   }
 }
 
-object MainInjection extends PassCompanion {
+object Main extends InjectCompanion {
   val ObjectArray =
     Type.Class(Global.Top("scala.scalanative.runtime.ObjectArray"))
 
@@ -83,6 +84,6 @@ object MainInjection extends PassCompanion {
     Seq(InitDecl)
 
   override def apply(config: tools.Config, top: Top) =
-    if (config.injectMain) new MainInjection(config.entry)(top.fresh)
-    else EmptyPass
+    if (config.injectMain) new Main(config.entry)(top.fresh)
+    else NoPass
 }

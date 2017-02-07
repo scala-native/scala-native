@@ -6,7 +6,15 @@ import tools.Config
 import scala.collection.mutable
 import nir._
 
-trait Pass {
+sealed trait AnyPass
+
+object NoPass extends AnyPass
+
+trait Inject extends AnyPass {
+  def apply(buffer: mutable.Buffer[Defn]): Unit
+}
+
+trait Pass extends AnyPass {
   def onDefns(assembly: Seq[Defn]): Seq[Defn] =
     assembly.map(onDefn)
 

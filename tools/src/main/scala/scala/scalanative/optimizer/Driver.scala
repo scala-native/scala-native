@@ -6,19 +6,26 @@ import tools.Mode
 sealed trait Driver {
 
   /** Companion of all the passes in the driver's pipeline. */
-  def passes: Seq[PassCompanion]
+  def passes: Seq[AnyPassCompanion]
 
   /** Take all passes including the given one. */
-  def takeUpTo(pass: PassCompanion): Driver
+  def takeUpTo(pass: AnyPassCompanion): Driver
 
   /** Take all passes including the given one. */
-  def takeBefore(pass: PassCompanion): Driver
+  def takeBefore(pass: AnyPassCompanion): Driver
 
   /** Append a pass to the pipeline. */
-  def append(pass: PassCompanion): Driver
+  def append(pass: AnyPassCompanion): Driver
 }
 
 object Driver {
+
+  private val injectionPasses: Seq[InjectCompanion] = Seq(
+    inject.Main,
+    inject.TraitDispatchTables,
+    inject.RuntimeTypeInformation,
+    inject.ClassStruct
+  )
 
   private val fastOptPasses = Seq(
     pass.GlobalBoxingElimination,
@@ -40,10 +47,9 @@ object Driver {
 
   private val loweringPasses = Seq(
     pass.DynmethodLowering,
-    pass.MainInjection,
     pass.ExternHoisting,
     pass.ModuleLowering,
-    pass.RuntimeTypeInfoInjection,
+    pass.TypeValueLowering,
     pass.BoxingLowering,
     pass.AsLowering,
     pass.IsLowering,
@@ -67,21 +73,21 @@ object Driver {
       case Mode.Debug   => fastOptPasses
       case Mode.Release => fullOptPasses
     }
-    new Impl(optPasses ++ loweringPasses)
+    new Impl(injectionPasses ++ optPasses ++ loweringPasses)
   }
 
   /** Create an empty pass-lesss driver. */
   def empty: Driver =
     new Impl(Seq.empty)
 
-  private final class Impl(val passes: Seq[PassCompanion]) extends Driver {
-    def takeUpTo(pass: PassCompanion): Driver =
+  private final class Impl(val passes: Seq[AnyPassCompanion]) extends Driver {
+    def takeUpTo(pass: AnyPassCompanion): Driver =
       takeBefore(pass).append(pass)
 
-    def takeBefore(pass: PassCompanion): Driver =
+    def takeBefore(pass: AnyPassCompanion): Driver =
       new Impl(passes takeWhile (_ != pass))
 
-    def append(pass: PassCompanion): Driver =
+    def append(pass: AnyPassCompanion): Driver =
       new Impl(passes :+ pass)
   }
 }

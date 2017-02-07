@@ -26,30 +26,54 @@ object Optimizer {
             reporter: Reporter): Seq[Defn] = {
     import reporter._
 
+    val injects    = driver.passes.filter(_.isInjectionPass)
+    val transforms = driver.passes.filterNot(_.isInjectionPass)
+
     val world = time("class hierarchy analysis") {
       analysis.ClassHierarchy(assembly, dyns)
     }
-    val passes = driver.passes.map(_.apply(config, world))
 
-    def loop(defns: Seq[Defn], passes: Seq[(Pass, Int)]): Seq[Defn] =
+    val injected = {
+      val buf = mutable.UnrolledBuffer.empty[Defn]
+      buf ++= assembly
+      injects.foreach { make =>
+        make(config, world) match {
+          case NoPass         => ()
+          case inject: Inject => inject(buf)
+        }
+      }
+      buf
+    }
+
+    def loop(defns: Seq[Defn], passes: Seq[(AnyPass, Int)]): Seq[Defn] =
       passes match {
         case Seq() =>
           defns
 
-        case (pass.EmptyPass, _) +: rest =>
+        case (NoPass, _) +: rest =>
           loop(defns, rest)
 
-        case (pass, id) +: rest =>
-          val passResult = time(s"pass #$id ${pass.getClass.getName}") {
-            pass.onDefns(defns)
-          }
+        case (pass: Pass, id) +: rest =>
+          val passResult = pass.onDefns(defns)
           onPass(pass, passResult)
           loop(passResult, rest)
       }
 
     onStart(assembly)
 
-    val result = loop(assembly, passes.zipWithIndex)
+    val procs   = java.lang.Runtime.getRuntime.availableProcessors * 4
+    val batches = injected.groupBy(d => Math.abs(d.name.##) % procs)
+    val result = batches.par
+      .map {
+        case (id, defns) =>
+          val passes = transforms.map(_.apply(config, world))
+          time("optimizing batch #" + id) {
+            loop(defns, passes.zipWithIndex)
+          }
+      }
+      .seq
+      .flatten
+      .toSeq
 
     onComplete(result)
 
