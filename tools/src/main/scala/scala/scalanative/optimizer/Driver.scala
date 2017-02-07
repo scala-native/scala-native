@@ -29,6 +29,7 @@ object Driver {
         pass.CfChainsSimplification,
         pass.BasicBlocksFusion,
         pass.Canonicalization,
+        pass.InstCombine,
         pass.ConstantFolding,
         pass.GlobalValueNumbering,
         pass.MainInjection,
