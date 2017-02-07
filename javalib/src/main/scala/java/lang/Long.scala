@@ -298,7 +298,7 @@ object Long {
       var j        = _l
       if (!negative) {
         count = 1
-        j = -_l
+        j = - _l
       }
 
       var l = _l
