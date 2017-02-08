@@ -14,7 +14,7 @@ object Optimizer {
     val start = nanoTime()
     val res   = f
     val end   = nanoTime()
-    println(s"--- $msg (${(end - start) / 1000000} ms)")
+    println(s"[info] $msg (${(end - start) / 1000000} ms)")
     res
   }
 

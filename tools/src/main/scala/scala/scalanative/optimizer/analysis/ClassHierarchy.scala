@@ -84,6 +84,12 @@ object ClassHierarchy {
         meth
     }
 
+    lazy val vtableStruct: Type.Struct =
+      Type.Struct(Global.None, vtable.map(_.ty))
+
+    lazy val vtableValue: Val.Struct =
+      Val.Struct(Global.None, vtable)
+
     lazy val dynmethods: Seq[Method] =
       methods.filter(_.attrs.isDyn)
 
@@ -94,11 +100,6 @@ object ClassHierarchy {
         .fold(Seq.empty[Method])(_.alldynmethods)
         .filterNot(m => signatureSet.contains(m.name.id)) ++ dynmethods
     }
-
-    lazy val vtableStruct: Type.Struct =
-      Type.Struct(Global.None, vtable.map(_.ty))
-
-    lazy val vtableValue: Val.Struct = Val.Struct(Global.None, vtable)
 
     lazy val dynDispatchTableValue: Val =
       DynmethodPerfectHashMap(alldynmethods, dyns)
@@ -238,11 +239,10 @@ object ClassHierarchy {
                   override val methods: Seq[Method],
                   override val fields: Seq[Field])
       extends Scope {
+    var dyns  = Seq.empty[String]
     val fresh = nir.Fresh("tx")
     def name  = Global.None
     def attrs = Attrs.None
-
-    var dyns: Seq[String] = Seq()
 
     lazy val dispatchName = Global.Top("__dispatch")
     lazy val dispatchVal  = Val.Global(dispatchName, Type.Ptr)
