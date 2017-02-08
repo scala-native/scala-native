@@ -12,7 +12,7 @@ class ConstLowering extends Pass {
   private val consts   = mutable.UnrolledBuffer.empty[Val]
   private val constfor = mutable.Map.empty[Val, Int]
   private def constName(idx: Int): Global =
-    Global.Top("__const." + this.## + "." + idx.toString)
+    Global.Member(Global.Top("__const"), " " + this.## + "." + idx.toString)
   private def constFor(v: Val): Int =
     if (constfor.contains(v)) {
       constfor(v)

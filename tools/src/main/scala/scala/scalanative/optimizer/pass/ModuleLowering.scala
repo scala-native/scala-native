@@ -49,7 +49,7 @@ class ModuleLowering(implicit top: Top, fresh: Fresh) extends Pass {
         val clsTy   = Type.Class(clsName)
         val clsNull = Val.Zero(clsTy)
 
-        val valueName = clsName tag "value"
+        val valueName = clsName member "value"
         val valueDefn = Defn.Var(Attrs.None, valueName, clsTy, clsNull)
         val value     = Val.Global(valueName, Type.Ptr)
 
@@ -70,7 +70,7 @@ class ModuleLowering(implicit top: Top, fresh: Fresh) extends Pass {
           Inst.Let(Op.Call(initSig, init, Seq(alloc), Next.None))
         }
 
-        val loadName = clsName tag "load"
+        val loadName = clsName member "load"
         val loadSig  = Type.Function(Seq(), clsTy)
         val loadDefn = Defn.Define(
           Attrs.None,
@@ -105,7 +105,7 @@ class ModuleLowering(implicit top: Top, fresh: Fresh) extends Pass {
   override def onInst(inst: Inst): Inst = inst match {
     case Inst.Let(n, Op.Module(name, unwind)) =>
       val loadSig = Type.Function(Seq(), Type.Class(name))
-      val load    = Val.Global(name tag "load", Type.Ptr)
+      val load    = Val.Global(name member "load", Type.Ptr)
 
       Inst.Let(n, Op.Call(loadSig, load, Seq(), unwind))
 

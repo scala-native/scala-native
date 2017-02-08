@@ -3,54 +3,106 @@ package codegen
 
 import java.{lang => jl}
 import java.nio.ByteBuffer
+import java.nio.file.Paths
 import scala.collection.mutable
-import util.{ShowBuilder, unsupported}
-import optimizer.analysis.ControlFlow.{Graph => CFG, Block, Edge}
-import nir._
-
-sealed trait CodeGen {
-
-  /** Generate code for the assembly to given byte buffer. */
-  def gen(buffer: ByteBuffer): Unit
-}
+import scalanative.util.{ShowBuilder, unsupported}
+import scalanative.io.{VirtualDirectory, withScratchBuffer}
+import scalanative.optimizer.analysis.ControlFlow.{Graph => CFG, Block, Edge}
+import scalanative.nir._
 
 object CodeGen {
 
-  /** Create a new code generator for given assembly. */
-  def apply(config: tools.Config, assembly: Seq[Defn]): CodeGen =
-    new Impl(config.target, assembly)
+  /** Generate code for given assembly. */
+  def apply(config: tools.Config, assembly: Seq[Defn]): Unit = {
+    val env     = assembly.map(defn => defn.name -> defn).toMap
+    val batches = mutable.Map.empty[String, mutable.Buffer[Defn]]
+    assembly.foreach { defn =>
+      val top = defn.name.top.id
+      val key =
+        if (top.startsWith("__")) top
+        else if (top == "main") "__main"
+        else {
+          val pkg = top.split("\\.").init.mkString(".")
+          if (pkg == "") "__empty"
+          else pkg
+        }
+      if (!batches.contains(key)) {
+        batches(key) = mutable.UnrolledBuffer.empty[Defn]
+      }
+      batches(key) += defn
+    }
 
-  private final class Impl(target: String, assembly: Seq[Defn])
-      extends CodeGen {
+    batches.par.foreach {
+      case (k, defns) =>
+        val impl    = new Impl(config.target, env, defns, config.targetDirectory)
+        val outpath = k + ".ll"
+        withScratchBuffer { buffer =>
+          impl.gen(buffer)
+          buffer.flip
+          config.targetDirectory.write(Paths.get(outpath), buffer)
+        }
+    }
+  }
+
+  private final class Impl(target: String,
+                           env: Map[Global, Defn],
+                           defns: Seq[Defn],
+                           targetDirectory: VirtualDirectory) {
     import Impl._
 
     var currentBlockName: Local = _
     var currentBlockSplit: Int  = _
-    val globals = assembly.collect {
-      case Defn.Var(_, n, ty, _)     => n -> ty
-      case Defn.Const(_, n, ty, _)   => n -> ty
-      case Defn.Declare(_, n, sig)   => n -> sig
-      case Defn.Define(_, n, sig, _) => n -> sig
-    }.toMap
-    val fresh   = new Fresh("gen")
-    val builder = new ShowBuilder
+
+    val fresh     = new Fresh("gen")
+    val deps      = mutable.Set.empty[Global]
+    val generated = mutable.Set.empty[Global]
+    val builder   = new ShowBuilder
     import builder._
 
-    def gen(buffer: java.nio.ByteBuffer) = {
-      genDefns(assembly)
+    def gen(buffer: ByteBuffer) = {
+      genDefns(defns)
+      val body = builder.toString.getBytes
+      builder.clear
+      genPrelude()
+      genDeps()
       buffer.put(builder.toString.getBytes)
+      buffer.put(body)
     }
 
-    def genDefns(defns: Seq[Defn]): Unit = {
-      if (target.nonEmpty) {
-        str("target triple = \"")
-        str(target)
-        str("\"")
+    def genDeps() = deps.foreach { n =>
+      if (!generated.contains(n)) {
         newline()
+        genDefn {
+          env(n) match {
+            case defn: Defn.Struct =>
+              defn
+            case defn @ Defn.Var(attrs, _, _, _) =>
+              defn.copy(attrs.copy(isExtern = true), rhs = Val.None)
+            case defn @ Defn.Const(attrs, _, ty, _) =>
+              defn.copy(attrs.copy(isExtern = true), rhs = Val.None)
+            case defn @ Defn.Declare(attrs, _, _) =>
+              defn.copy(attrs.copy(isExtern = true))
+            case defn @ Defn.Define(attrs, _, _, _) =>
+              defn.copy(attrs.copy(isExtern = true), insts = Seq())
+          }
+        }
       }
+    }
 
-      genPrelude()
+    def touch(n: Global): Unit =
+      deps += n
 
+    def lookup(n: Global): Type = {
+      touch(n)
+      env(n) match {
+        case Defn.Var(_, _, ty, _)     => ty
+        case Defn.Const(_, _, ty, _)   => ty
+        case Defn.Declare(_, _, sig)   => sig
+        case Defn.Define(_, _, sig, _) => sig
+      }
+    }
+
+    def genDefns(defns: Seq[Defn]): Unit =
       defns
         .sortBy {
           case _: Defn.Struct  => 1
@@ -64,9 +116,14 @@ object CodeGen {
           newline()
           genDefn(defn)
         }
-    }
 
     def genPrelude(): Unit = {
+      if (target.nonEmpty) {
+        str("target triple = \"")
+        str(target)
+        str("\"")
+        newline()
+      }
       line("declare i32 @llvm.eh.typeid.for(i8*)")
       line("declare i32 @__gxx_personality_v0(...)")
       line("declare i8* @__cxa_begin_catch(i8*)")
@@ -75,19 +132,22 @@ object CodeGen {
         "@_ZTIN11scalanative16ExceptionWrapperE = external constant { i8*, i8*, i8* }")
     }
 
-    def genDefn(defn: Defn): Unit = defn match {
-      case Defn.Struct(attrs, name, tys) =>
-        genStruct(attrs, name, tys)
-      case Defn.Var(attrs, name, ty, rhs) =>
-        genGlobalDefn(name, attrs.isExtern, isConst = false, ty, rhs)
-      case Defn.Const(attrs, name, ty, rhs) =>
-        genGlobalDefn(name, attrs.isExtern, isConst = true, ty, rhs)
-      case Defn.Declare(attrs, name, sig) =>
-        genFunctionDefn(attrs, name, sig, Seq())
-      case Defn.Define(attrs, name, sig, blocks) =>
-        genFunctionDefn(attrs, name, sig, blocks)
-      case defn =>
-        unsupported(defn)
+    def genDefn(defn: Defn): Unit = {
+      defn match {
+        case Defn.Struct(attrs, name, tys) =>
+          genStruct(attrs, name, tys)
+        case Defn.Var(attrs, name, ty, rhs) =>
+          genGlobalDefn(name, attrs.isExtern, isConst = false, ty, rhs)
+        case Defn.Const(attrs, name, ty, rhs) =>
+          genGlobalDefn(name, attrs.isExtern, isConst = true, ty, rhs)
+        case Defn.Declare(attrs, name, sig) =>
+          genFunctionDefn(attrs, name, sig, Seq())
+        case Defn.Define(attrs, name, sig, blocks) =>
+          genFunctionDefn(attrs, name, sig, blocks)
+        case defn =>
+          unsupported(defn)
+      }
+      generated += defn.name
     }
 
     def genStruct(attrs: Attrs, name: Global, tys: Seq[Type]): Unit = {
@@ -111,7 +171,7 @@ object CodeGen {
       str(" ")
       rhs match {
         case Val.None => genType(ty)
-        case _        => genVal(rhs)
+        case rhs      => genVal(rhs)
       }
     }
 
@@ -263,6 +323,7 @@ object CodeGen {
         rep(tys, sep = ", ")(genType)
         str(" }")
       case Type.Struct(name, _) =>
+        touch(name)
         str("%")
         genGlobal(name)
       case ty =>
@@ -297,7 +358,7 @@ object CodeGen {
         genLocal(n)
       case Val.Global(n, ty) =>
         str("bitcast (")
-        genType(globals(n))
+        genType(lookup(n))
         str("* @")
         genGlobal(n)
         str(" to i8*)")
@@ -325,6 +386,8 @@ object CodeGen {
       case Global.None =>
         unsupported(g)
       case Global.Top(id) =>
+        str(id)
+      case Global.Member(Global.Top("__extern"), id) =>
         str(id)
       case Global.Member(n, id) =>
         genJustGlobal(n)
@@ -524,6 +587,8 @@ object CodeGen {
       case Op.Call(ty, Val.Global(pointee, _), args, Next.None) =>
         val Type.Function(argtys, _) = ty
 
+        touch(pointee)
+
         newline()
         genBind()
         str("call ")
@@ -538,6 +603,8 @@ object CodeGen {
         val Type.Function(argtys, _) = ty
 
         val succ = fresh()
+
+        touch(pointee)
 
         newline()
         genBind()

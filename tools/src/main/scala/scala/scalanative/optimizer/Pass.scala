@@ -20,9 +20,9 @@ trait Pass extends AnyPass {
 
   def onDefn(defn: Defn): Defn = defn match {
     case defn @ Defn.Var(_, _, ty, value) =>
-      defn.copy(ty = onType(ty), value = onVal(value))
+      defn.copy(ty = onType(ty), rhs = onVal(value))
     case defn @ Defn.Const(_, _, ty, value) =>
-      defn.copy(ty = onType(ty), value = onVal(value))
+      defn.copy(ty = onType(ty), rhs = onVal(value))
     case defn @ Defn.Declare(_, _, ty) =>
       defn.copy(ty = onType(ty))
     case defn @ Defn.Define(_, _, ty, insts) =>

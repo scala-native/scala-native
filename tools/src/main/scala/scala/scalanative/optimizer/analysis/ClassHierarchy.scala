@@ -27,16 +27,7 @@ object ClassHierarchy {
     def fields: Seq[Field] =
       members.collect { case fld: Field => fld }
 
-    def typeName: Global = this match {
-      case node: Class =>
-        node.name tag "class" tag "type"
-      case node: Trait =>
-        node.name tag "trait" tag "type"
-      case node: Struct =>
-        node.name tag "struct" tag "type"
-      case _ =>
-        util.unreachable
-    }
+    def typeName: Global = this.name member "type"
   }
 
   final class Struct(val attrs: Attrs,
@@ -130,11 +121,11 @@ object ClassHierarchy {
             vtableValue)
       )
 
-    lazy val typeConst: Val = Val.Global(name tag "class" tag "type", Type.Ptr)
+    lazy val typeConst: Val = Val.Global(name member "type", Type.Ptr)
 
     lazy val classStruct: Type.Struct = {
       val data            = allfields.map(_.ty)
-      val classStructName = name tag "class"
+      val classStructName = name member "layout"
       val classStructBody = Type.Ptr +: data
       val classStructTy   = Type.Struct(classStructName, classStructBody)
 

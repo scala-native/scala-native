@@ -184,7 +184,7 @@ object ScalaNativePluginInternal {
   private def compileLl(clangpp: File,
                         target: File,
                         nativelib: File,
-                        appll: File,
+                        appll: Seq[File],
                         binary: File,
                         compileTarget: String,
                         applinks: Seq[String],
@@ -192,9 +192,20 @@ object ScalaNativePluginInternal {
                         opts: Seq[String],
                         logger: Logger): Unit = time("llvm") {
     val outpath = abs(binary)
-    val apppath = abs(appll)
-    val opaths  = (nativelib ** "*.o").get.map(abs)
-    val paths   = apppath +: opaths
+    val apppaths = appll.par
+      .map { appll =>
+        val apppath = abs(appll)
+        val outpath = apppath + ".o"
+        val compile = Seq(abs(clangpp), "-c", apppath, "-o", apppath + ".o")
+        logger.info(running(compile))
+        Process(compile, target) ! logger
+        outpath
+      }
+      .seq
+      .toSeq
+
+    val opaths = (nativelib ** "*.o").get.map(abs)
+    val paths  = apppaths ++ opaths
     val links = {
       val os   = Option(sys props "os.name").getOrElse("")
       val arch = compileTarget.split("-").head
@@ -342,7 +353,7 @@ object ScalaNativePluginInternal {
         val entry     = nir.Global.Top(mainClass.toString + "$")
         val classpath = (fullClasspath in Compile).value.map(_.data)
         val target    = (crossTarget in Compile).value
-        val appll     = target / "out.ll"
+        val appll     = (target ** "*.ll").get.toSeq
         val binary    = (artifactPath in nativeLink).value
 
         val linkage           = nativeLibraryLinkage.value

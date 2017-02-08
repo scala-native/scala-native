@@ -3,14 +3,16 @@ package scala.scalanative
 import java.nio.ByteBuffer
 
 package object io {
-  // We allocate huge direct buffer, but due to virtual memory
+  // We allocate a pool of direct buffers. Due to virtual memory
   // semantics, only the used part is going to be actually provided
   // by the underlying OS.
-  private val scratchBuffer = ByteBuffer.allocateDirect(128 * 1024 * 1024)
+  private val pool = new ByteBufferPool
 
   def withScratchBuffer(f: ByteBuffer => Unit): Unit = {
-    scratchBuffer.clear
-    f(scratchBuffer)
+    val buffer = pool.claim()
+    buffer.clear
+    try f(buffer)
+    finally pool.reclaim(buffer)
   }
 
   def cloneBuffer(original: ByteBuffer): ByteBuffer = {

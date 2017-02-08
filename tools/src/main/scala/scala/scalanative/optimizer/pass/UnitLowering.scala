@@ -64,8 +64,8 @@ class UnitLowering(implicit fresh: Fresh) extends Pass {
 object UnitLowering extends PassCompanion {
   val unitName  = Global.Top("scala.scalanative.runtime.BoxedUnit$")
   val unit      = Val.Global(unitName, Type.Ptr)
-  val unitTy    = Type.Struct(unitName tag "class", Seq(Type.Ptr))
-  val unitConst = Val.Global(unitName tag "class" tag "type", Type.Ptr)
+  val unitTy    = Type.Struct(unitName member "layout", Seq(Type.Ptr))
+  val unitConst = Val.Global(unitName member "type", Type.Ptr)
   val unitValue = Val.Struct(unitTy.name, Seq(unitConst))
   val unitDefn  = Defn.Const(Attrs.None, unitName, unitTy, unitValue)
 

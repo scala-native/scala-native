@@ -58,13 +58,6 @@ package object tools {
     optimizer.Optimizer(config, driver, assembly, dyns, reporter)
 
   /** Given low-level assembly, emit LLVM IR for it to the buildDirectory. */
-  def codegen(config: Config, assembly: Seq[nir.Defn]): Unit = {
-    val gen = scalanative.codegen.CodeGen(config, assembly)
-
-    withScratchBuffer { buffer =>
-      gen.gen(buffer)
-      buffer.flip
-      config.targetDirectory.write(Paths.get("out.ll"), buffer)
-    }
-  }
+  def codegen(config: Config, assembly: Seq[nir.Defn]): Unit =
+    scalanative.codegen.CodeGen(config, assembly)
 }
