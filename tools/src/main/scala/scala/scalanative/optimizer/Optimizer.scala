@@ -28,10 +28,7 @@ object Optimizer {
 
     val injects    = driver.passes.filter(_.isInjectionPass)
     val transforms = driver.passes.filterNot(_.isInjectionPass)
-
-    val world = time("class hierarchy analysis") {
-      analysis.ClassHierarchy(assembly, dyns)
-    }
+    val world      = analysis.ClassHierarchy(assembly, dyns)
 
     val injected = {
       val buf = mutable.UnrolledBuffer.empty[Defn]
@@ -40,6 +37,7 @@ object Optimizer {
         make(config, world) match {
           case NoPass         => ()
           case inject: Inject => inject(buf)
+          case _              => util.unreachable
         }
       }
       buf
@@ -67,9 +65,7 @@ object Optimizer {
       .map {
         case (id, defns) =>
           val passes = transforms.map(_.apply(config, world))
-          time("optimizing batch #" + id) {
-            loop(defns, passes.zipWithIndex)
-          }
+          loop(defns, passes.zipWithIndex)
       }
       .seq
       .flatten

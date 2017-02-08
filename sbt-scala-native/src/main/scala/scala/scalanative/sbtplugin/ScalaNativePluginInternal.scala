@@ -97,13 +97,15 @@ object ScalaNativePluginInternal {
     throw new MessageOnlyException("unable to link")
   }
 
-  def time[T](msg: String)(f: => T): T = {
-    import java.lang.System.nanoTime
-    val start = nanoTime()
-    val res   = f
-    val end   = nanoTime()
-    println(s"--- $msg (${(end - start) / 1000000} ms)")
-    res
+  implicit class RichLogger(logger: Logger) {
+    def time[T](msg: String)(f: => T): T = {
+      import java.lang.System.nanoTime
+      val start = nanoTime()
+      val res   = f
+      val end   = nanoTime()
+      logger.info(s"$msg (${(end - start) / 1000000} ms)")
+      res
+    }
   }
 
   /** Compiles application nir to llvm ir. */
@@ -111,24 +113,23 @@ object ScalaNativePluginInternal {
       config: tools.Config,
       logger: Logger,
       linkerReporter: tools.LinkerReporter,
-      optimizerReporter: tools.OptimizerReporter): Seq[nir.Attr.Link] =
-    time("native total") {
-      val driver = tools.OptimizerDriver(config)
-      val (unresolved, links, raw, dyns) = time("linking") {
-        tools.link(config, driver, linkerReporter)
-      }
-
-      if (unresolved.nonEmpty) { reportLinkingErrors(unresolved, logger) }
-
-      val optimized = time("optimizing") {
-        tools.optimize(config, driver, raw, dyns, optimizerReporter)
-      }
-      time("codegen") {
-        tools.codegen(config, optimized)
-      }
-
-      links
+      optimizerReporter: tools.OptimizerReporter): Seq[nir.Attr.Link] = {
+    val driver = tools.OptimizerDriver(config)
+    val (unresolved, links, raw, dyns) = logger.time("Linking NIR") {
+      tools.link(config, driver, linkerReporter)
     }
+
+    if (unresolved.nonEmpty) { reportLinkingErrors(unresolved, logger) }
+
+    val optimized = logger.time("Optimizing NIR") {
+      tools.optimize(config, driver, raw, dyns, optimizerReporter)
+    }
+    logger.time("Generating LLVM IR") {
+      tools.codegen(config, optimized)
+    }
+
+    links
+  }
 
   private def running(command: Seq[String]): String =
     "running" + nl + command.mkString(nl + "\t")
@@ -143,10 +144,10 @@ object ScalaNativePluginInternal {
     val compilec   = abs(clang) +: (includes ++ ("-c" +: cpaths))
     val compilecpp = abs(clangpp) +: (includes ++ ("-c" +: cpppaths))
 
-    logger.info(running(compilec))
+    logger.debug(running(compilec))
     val cExit = Process(compilec, cwd) ! logger
 
-    logger.info(running(compilecpp))
+    logger.debug(running(compilecpp))
     val cppExit = Process(compilecpp, cwd) ! logger
 
     cExit == 0 && cppExit == 0
@@ -161,7 +162,7 @@ object ScalaNativePluginInternal {
     val targetfile   = cwd / "target"
     val compilec     = Seq(abs(clang), "-S", "-emit-llvm", abs(targetcfile))
     IO.write(targetcfile, "int probe;")
-    logger.info(running(compilec))
+    logger.debug(running(compilec))
     val exit = Process(compilec, cwd) ! logger
     if (exit != 0) {
       return false
@@ -190,51 +191,53 @@ object ScalaNativePluginInternal {
                         applinks: Seq[String],
                         linkage: Map[String, String],
                         opts: Seq[String],
-                        logger: Logger): Unit = time("llvm") {
-    val outpath = abs(binary)
-    val apppaths = appll.par
-      .map { appll =>
-        val apppath = abs(appll)
-        val outpath = apppath + ".o"
-        val compile = Seq(abs(clangpp), "-c", apppath, "-o", apppath + ".o")
-        logger.info(running(compile))
-        Process(compile, target) ! logger
-        outpath
-      }
-      .seq
-      .toSeq
+                        logger: Logger): Unit =
+    logger.time("Compiling LLVM IR to native code") {
+      val outpath = abs(binary)
+      val apppaths = appll.par
+        .map { appll =>
+          val apppath = abs(appll)
+          val outpath = apppath + ".o"
+          val compile = Seq(abs(clangpp), "-c", apppath, "-o", apppath + ".o")
+          logger.debug(running(compile))
+          Process(compile, target) ! logger
+          outpath
+        }
+        .seq
+        .toSeq
 
-    val opaths = (nativelib ** "*.o").get.map(abs)
-    val paths  = apppaths ++ opaths
-    val links = {
-      val os   = Option(sys props "os.name").getOrElse("")
-      val arch = compileTarget.split("-").head
-      val librt = os match {
-        case "Linux" => Seq("rt")
-        case _       => Seq.empty
+      val opaths = (nativelib ** "*.o").get.map(abs)
+      val paths  = apppaths ++ opaths
+      val links = {
+        val os   = Option(sys props "os.name").getOrElse("")
+        val arch = compileTarget.split("-").head
+        val librt = os match {
+          case "Linux" => Seq("rt")
+          case _       => Seq.empty
+        }
+        val libunwind = os match {
+          case "Mac OS X" => Seq.empty
+          case _          => Seq("unwind", "unwind-" + arch)
+        }
+        librt ++ libunwind ++ applinks
       }
-      val libunwind = os match {
-        case "Mac OS X" => Seq.empty
-        case _          => Seq("unwind", "unwind-" + arch)
+      val linkopts = links.zip(links.map(linkage.get(_))).flatMap {
+        case (name, Some("static")) =>
+          Seq("-static", "-l" + name)
+        case (name, Some("dynamic") | None) =>
+          Seq("-l" + name)
+        case (name, Some(kind)) =>
+          throw new MessageOnlyException(
+            s"uknown linkage kind $kind for $name")
       }
-      librt ++ libunwind ++ applinks
+      val targetopt = Seq("-target", compileTarget)
+      val flags     = Seq("-o", outpath) ++ linkopts ++ targetopt ++ opts
+      val compile   = abs(clangpp) +: (flags ++ paths)
+
+      logger.debug(running(compile))
+
+      Process(compile, target) ! logger
     }
-    val linkopts = links.zip(links.map(linkage.get(_))).flatMap {
-      case (name, Some("static")) =>
-        Seq("-static", "-l" + name)
-      case (name, Some("dynamic") | None) =>
-        Seq("-l" + name)
-      case (name, Some(kind)) =>
-        throw new MessageOnlyException(s"uknown linkage kind $kind for $name")
-    }
-    val targetopt = Seq("-target", compileTarget)
-    val flags     = Seq("-o", outpath) ++ linkopts ++ targetopt ++ opts
-    val compile   = abs(clangpp) +: (flags ++ paths)
-
-    logger.info(running(compile))
-
-    Process(compile, target) ! logger
-  }
 
   private def externalDependenciesTask[T](compileTask: TaskKey[T]) =
     nativeExternalDependencies := ResourceScope { implicit scope =>
@@ -341,7 +344,9 @@ object ScalaNativePluginInternal {
       }
     },
     nativeLink := ResourceScope { implicit scope =>
-      time("total") {
+      val logger = streams.value.log
+
+      logger.time("Total") {
         val clang     = nativeClang.value
         val clangpp   = nativeClangPP.value
         val clangOpts = nativeClangOptions.value
@@ -360,7 +365,6 @@ object ScalaNativePluginInternal {
         val linkerReporter    = nativeLinkerReporter.value
         val optimizerReporter = nativeOptimizerReporter.value
         val sharedLibrary     = nativeSharedLibrary.value
-        val logger            = streams.value.log
 
         val config = tools.Config.empty
           .withEntry(entry)
@@ -413,7 +417,7 @@ object ScalaNativePluginInternal {
       val binary = abs(nativeLink.value)
       val args   = spaceDelimited("<arg>").parsed
 
-      logger.info(running(binary +: args))
+      logger.debug(running(binary +: args))
       val exitCode = Process(binary +: args).!
 
       val message =
