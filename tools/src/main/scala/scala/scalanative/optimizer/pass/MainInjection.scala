@@ -4,11 +4,13 @@ package pass
 
 import analysis.ClassHierarchy.Top
 import nir._
+import tools.Config
 
 /** Introduces `main` function that sets up
  *  the runtime and calls the given entry point.
  */
-class MainInjection(entry: Global)(implicit fresh: Fresh) extends Pass {
+class MainInjection(config: Config, entry: Global)(implicit fresh: Fresh)
+    extends Pass {
   import MainInjection._
 
   override def preAssembly = {
@@ -27,22 +29,41 @@ class MainInjection(entry: Global)(implicit fresh: Fresh) extends Pass {
       val exc    = Val.Local(fresh(), nir.Rt.Object)
       val unwind = Next.Unwind(fresh())
 
+      val profilingInit =
+        if (config.enableProfiling)
+          Inst.Let(
+            Op.Call(profiling_initSig,
+                    profiling_init,
+                    Seq(Val.String(config.profilingLocation.getAbsolutePath)),
+                    Next.None))
+        else
+          Inst.None
+
+      val profilingDump =
+        if (config.enableProfiling)
+          Inst.Let(Op.Call(block_dumpSig, block_dump, Seq.empty, Next.None))
+        else
+          Inst.None
+
       defns :+ Defn.Define(
         Attrs.None,
         MainName,
         MainSig,
         Seq(
           Inst.Label(fresh(), Seq(argc, argv)),
+          profilingInit,
           Inst.Let(Op.Call(InitSig, Init, Seq(), unwind)),
           Inst.Let(rt.name, Op.Module(Rt.name, unwind)),
           Inst.Let(arr.name,
                    Op.Call(RtInitSig, RtInit, Seq(rt, argc, argv), unwind)),
           Inst.Let(module.name, Op.Module(entry.top, unwind)),
           Inst.Let(Op.Call(entryMainTy, entryMain, Seq(module, arr), unwind)),
+          profilingDump,
           Inst.Ret(Val.I32(0)),
           Inst.Label(unwind.name, Seq(exc)),
           Inst.Let(
             Op.Call(PrintStackTraceSig, PrintStackTrace, Seq(exc), Next.None)),
+          profilingDump,
           Inst.Ret(Val.I32(1))
         )
       )
@@ -77,13 +98,22 @@ object MainInjection extends PassCompanion {
   val Init     = Val.Global(Global.Top("scalanative_init"), Type.Ptr)
   val InitDecl = Defn.Declare(Attrs.None, Init.name, InitSig)
 
+  val profiling_initSig = Type.Function(Seq(nir.Rt.String), Type.Void)
+  val profiling_init    = Val.Global(Global.Top("profiling_init"), Type.Ptr)
+  val profiling_initDecl =
+    Defn.Declare(Attrs.None, profiling_init.name, profiling_initSig)
+
+  val block_dumpSig  = Type.Function(Seq.empty, Type.Void)
+  val block_dump     = Val.Global(Global.Top("block_dump"), Type.Ptr)
+  val block_dumpDecl = Defn.Declare(Attrs.None, block_dump.name, block_dumpSig)
+
   override val depends =
     Seq(ObjectArray.name, Rt.name, RtInit.name, PrintStackTraceName)
 
   override val injects =
-    Seq(InitDecl)
+    Seq(InitDecl, block_dumpDecl, profiling_initDecl)
 
-  override def apply(config: tools.Config, top: Top) =
-    if (config.injectMain) new MainInjection(config.entry)(top.fresh)
+  override def apply(config: Config, top: Top) =
+    if (config.injectMain) new MainInjection(config, config.entry)(top.fresh)
     else EmptyPass
 }

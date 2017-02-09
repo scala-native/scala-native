@@ -182,6 +182,7 @@ object ScalaNativePluginInternal {
     val links = {
       val os   = Option(sys props "os.name").getOrElse("")
       val arch = compileTarget.split("-").head
+      val zlib = Seq("z")
       val librt = os match {
         case "Linux" => Seq("rt")
         case _       => Seq.empty
@@ -190,7 +191,7 @@ object ScalaNativePluginInternal {
         case "Mac OS X" => Seq.empty
         case _          => Seq("unwind", "unwind-" + arch)
       }
-      librt ++ libunwind ++ applinks
+      zlib ++ librt ++ libunwind ++ applinks
     }
     val linkopts = links.zip(links.map(linkage.get(_))).flatMap {
       case (name, Some("static")) =>
@@ -278,6 +279,8 @@ object ScalaNativePluginInternal {
     },
     nativeLinkerReporter := tools.LinkerReporter.empty,
     nativeOptimizerReporter := tools.OptimizerReporter.empty,
+    nativeEnableProfiling := false,
+    nativeProfilingLocation := file("/dev/null"),
     nativeUnpackNativelib := {
       val clang   = nativeClang.value
       val clangpp = nativeClangPP.value
@@ -329,6 +332,8 @@ object ScalaNativePluginInternal {
       val linkerReporter    = nativeLinkerReporter.value
       val optimizerReporter = nativeOptimizerReporter.value
       val sharedLibrary     = nativeSharedLibrary.value
+      val enableProfiling   = nativeEnableProfiling.value
+      val profilingLocation = nativeProfilingLocation.value
       val logger            = streams.value.log
 
       val config = tools.Config.empty
@@ -338,6 +343,8 @@ object ScalaNativePluginInternal {
         .withTargetDirectory(VirtualDirectory.real(target))
         .withInjectMain(!nativeSharedLibrary.value)
         .withTarget(nativeTarget.value)
+        .withEnableProfiling(enableProfiling)
+        .withProfilingLocation(profilingLocation)
 
       val nirFiles   = (Keys.target.value ** "*.nir").get.toSet
       val configFile = (streams.value.cacheDirectory / "native-config")
