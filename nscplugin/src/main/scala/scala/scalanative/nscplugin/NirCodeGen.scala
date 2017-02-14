@@ -176,18 +176,19 @@ abstract class NirCodeGen
 
     def genNormalClass(cd: ClassDef): Unit = {
       val sym = cd.symbol
-      def attrs  = genClassAttrs(sym)
+      def attrs  = genClassAttrs(cd)
       def name   = genTypeName(sym)
       def parent = genClassParent(sym)
       def traits = genClassInterfaces(sym)
+
+      genClassFields(sym)
+      genMethods(cd)
 
       curClassDefns += {
         if (sym.isScalaModule) Defn.Module(attrs, name, parent, traits)
         else if (sym.isInterface) Defn.Trait(attrs, name, traits)
         else Defn.Class(attrs, name, parent, traits)
       }
-      genClassFields(sym)
-      genMethods(cd)
     }
 
     def genClassParent(sym: Symbol): Option[nir.Global] =
@@ -196,7 +197,8 @@ abstract class NirCodeGen
         Some(genTypeName(NObjectClass))
       else Some(genTypeName(sym.superClass))
 
-    def genClassAttrs(sym: Symbol): Attrs = {
+    def genClassAttrs(cd: ClassDef): Attrs = {
+      val sym = cd.symbol
       def pinned = {
         val ctor =
           if (!sym.isScalaModule || sym.isExternModule) {
@@ -221,7 +223,12 @@ abstract class NirCodeGen
       }
       val pure = if (PureModules.contains(sym)) Seq(Attr.Pure) else Seq()
 
-      Attrs.fromSeq(pinned ++ pure ++ attrs)
+      val weak = cd.impl.body.collect {
+        case dd: DefDef =>
+          Attr.PinWeak(genMethodName(dd.symbol))
+      }
+
+      Attrs.fromSeq(pinned ++ pure ++ attrs ++ weak)
     }
 
     def genClassInterfaces(sym: Symbol) =
@@ -864,8 +871,85 @@ abstract class NirCodeGen
       init withValue alloc.value
     }
 
-    def genApplyDynamic(app: ApplyDynamic, focus: Focus) =
-      unsupported(app)
+    def genApplyDynamic(app: ApplyDynamic, focus: Focus) = {
+      val ApplyDynamic(obj, args) = app
+      val sym = app.symbol
+
+      val params = sym.tpe.params
+
+      val isEqEqOrBangEq = (sym.name == EqEqMethodName || sym.name == NotEqMethodName) &&
+        params.size == 1
+
+      // If the method is '=='or '!=' generate class equality instead of dyn-call
+      if(isEqEqOrBangEq) {
+        val neg = sym.name == nme.ne || sym.name == NotEqMethodName
+        val last = genClassEquality(obj, args.head, ref = false, negated = neg, focus)
+        last withOp Op.Box(nir.Type.Class(nir.Global.Top("java.lang.Boolean")), last.value)
+      } else {
+        val self = genExpr(obj, focus)
+        genDynMethodCall(sym, self.value, args, self)
+      }
+
+    }
+
+    def genDynMethodCall(sym: Symbol, self: Val, argsp: Seq[Tree], focus: Focus): Focus = {
+
+      val methodSig = genMethodSig(sym).asInstanceOf[Type.Function]
+      val params    = sym.tpe.params
+
+
+      def isArrayLikeOp = {
+        sym.name == nme.update &&
+          params.size == 2 && params.head.tpe.typeSymbol == IntClass
+      }
+
+      def genDynCall(arrayUpdate: Boolean, focus: Focus) = {
+
+        // In the case of an array update we need to manually erase the return type.
+        val methodName =
+          if (arrayUpdate) "update_i32_class.java.lang.Object" else nir.Global.genSignature(genMethodName(sym))
+
+        val sig =
+          Type.Function(
+            methodSig.args.head ::
+              methodSig.args.tail.map(ty => Type.box.getOrElse(ty, ty)).toList,
+            nir.Type.Class(nir.Global.Top("java.lang.Object")))
+
+
+        val callerType    = methodSig.args.head
+        val boxedArgTypes = methodSig.args.tail.map(ty => nir.Type.box.getOrElse(ty, ty)).toList
+
+        val retType       = nir.Type.Class(nir.Global.Top("java.lang.Object"))
+        val signature     = nir.Type.Function(callerType :: boxedArgTypes, retType)
+
+
+        val (args, last) = genMethodArgs(sym, argsp, focus)
+
+        val method = last withOp Op.Dynmethod(self, methodName.toString)
+        val values = self +: args
+
+        val call = method withOp Op.Call(signature, method.value, values, curUnwind)
+        call withOp Op.As(nir.Type.box.getOrElse(methodSig.ret, methodSig.ret), call.value)
+      }
+
+      // If the signature matches an array update, tests at runtime if it really is an array update.
+      if(isArrayLikeOp) {
+        val last = focus withOp Op.Is(nir.Type.Class(nir.Global.Top("scala.scalanative.runtime.ObjectArray")), self)
+        val cond = ValTree(last.value)
+
+        val thenp = ContTree { focus =>
+          genDynCall(arrayUpdate = true, focus)
+        }
+        val elsep = ContTree { focus =>
+          genDynCall(arrayUpdate = false, focus)
+        }
+        genIf(nir.Type.Class(nir.Global.Top("java.lang.Object")), cond, thenp, elsep, last)
+
+      } else {
+        genDynCall(arrayUpdate = false, focus)
+      }
+
+    }
 
     def genApply(app: Apply, focus: Focus): Focus = {
       val Apply(fun, args) = app

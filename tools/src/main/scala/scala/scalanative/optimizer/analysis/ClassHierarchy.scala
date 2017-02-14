@@ -59,6 +59,7 @@ object ClassHierarchy {
     var parent: Option[Class]  = None
     var subclasses: Seq[Class] = Seq()
     var traits: Seq[Trait]     = Seq()
+    var dyns: Seq[String]      = Seq()
 
     lazy val ty = Type.Class(name)
 
@@ -81,16 +82,42 @@ object ClassHierarchy {
         meth
     }
 
+    lazy val dynmethods: Seq[Method] =
+      methods.filter(_.attrs.isDyn)
+
+    lazy val alldynmethods: Seq[Method] = {
+      val signatureSet = dynmethods.map(m => m.name.id).toSet
+
+      parent
+        .fold(Seq.empty[Method])(_.alldynmethods)
+        .filterNot(m => signatureSet.contains(m.name.id)) ++ dynmethods
+    }
+
     lazy val vtableStruct: Type.Struct =
       Type.Struct(Global.None, vtable.map(_.ty))
 
     lazy val vtableValue: Val.Struct = Val.Struct(Global.None, vtable)
 
-    lazy val typeStruct: Type.Struct =
-      Type.Struct(Global.None, Seq(Type.I32, Type.Ptr, vtableStruct))
+    lazy val dynDispatchTableValue: Val =
+      DynmethodPerfectHashMap(alldynmethods, dyns)
 
-    lazy val typeValue: Val.Struct = Val
-      .Struct(Global.None, Seq(Val.I32(id), Val.String(name.id), vtableValue))
+    lazy val dynDispatchTableStruct =
+      Type.Struct(Global.None, Seq(Type.I32, Type.Ptr, Type.Ptr, Type.Ptr))
+
+    lazy val typeStruct: Type.Struct =
+      Type.Struct(
+        Global.None,
+        Seq(Type.I32, Type.Ptr, dynDispatchTableStruct, vtableStruct)
+      )
+
+    lazy val typeValue: Val.Struct =
+      Val.Struct(
+        Global.None,
+        Seq(Val.I32(id),
+            Val.String(name.id),
+            dynDispatchTableValue,
+            vtableValue)
+      )
 
     lazy val typeConst: Val = Val.Global(name tag "class" tag "type", Type.Ptr)
 
@@ -213,6 +240,8 @@ object ClassHierarchy {
     def name  = Global.None
     def attrs = Attrs.None
 
+    var dyns: Seq[String] = Seq()
+
     lazy val dispatchName = Global.Top("__dispatch")
     lazy val dispatchVal  = Val.Global(dispatchName, Type.Ptr)
     lazy val (dispatchTy, dispatchDefn) = {
@@ -247,7 +276,7 @@ object ClassHierarchy {
     }
   }
 
-  def apply(defns: Seq[Defn]): Top = {
+  def apply(defns: Seq[Defn], dyns: Seq[String]): Top = {
     val nodes   = mutable.Map.empty[Global, Node]
     val structs = mutable.UnrolledBuffer.empty[Struct]
     val classes = mutable.UnrolledBuffer.empty[Class]
@@ -313,6 +342,7 @@ object ClassHierarchy {
                       methods = methods,
                       fields = fields)
     top.members = nodes.values.toSeq
+    top.dyns = dyns
 
     def enrichMethods(): Unit = methods.foreach { node =>
       if (node.name.isTop) {
@@ -344,6 +374,7 @@ object ClassHierarchy {
       parent.foreach { parent =>
         parent.subclasses = parent.subclasses :+ node
       }
+      node.dyns = dyns
     }
 
     def enrichTraits(): Unit = traits.foreach { node =>

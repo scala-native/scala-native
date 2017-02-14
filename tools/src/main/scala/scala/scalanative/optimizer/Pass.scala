@@ -130,6 +130,8 @@ trait Pass {
       Op.Field(txVal(v), n)
     case Op.Method(v, n) =>
       Op.Method(txVal(v), n)
+    case Op.Dynmethod(obj, signature) =>
+      Op.Dynmethod(txVal(obj), signature)
     case Op.Module(n, unwind) =>
       Op.Module(n, txNext(unwind))
     case Op.As(ty, v) =>

@@ -48,6 +48,18 @@ trait NirNameEncoding { self: NirCodeGen =>
     owner member id tag tag
   }
 
+  def genMethodSignature(sym: Symbol): String = {
+    val owner = genTypeName(sym.owner)
+    val id    = nativeIdOf(sym)
+    val tpe   = sym.tpe.widen
+    val mangledParams =
+      tpe.params.map(p => mangledType(p.info))
+
+    val mangledRetty = mangledType(tpe.resultType)
+    (owner member (id.replace("_", "__") +: (mangledParams :+ mangledRetty))
+      .mkString("_")).toString
+  }
+
   def genMethodName(sym: Symbol): nir.Global = {
     val owner = genTypeName(sym.owner)
     val id    = nativeIdOf(sym)

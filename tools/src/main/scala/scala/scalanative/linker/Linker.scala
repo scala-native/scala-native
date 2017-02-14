@@ -1,16 +1,18 @@
 package scala.scalanative
 package linker
 
-import java.io.{File, PrintWriter}
 import scala.collection.mutable
 import nir._
 import nir.serialization._
 import util.Scope
 
+import ReflectiveProxy._
+
 sealed trait Linker {
 
   /** Link the whole world under closed world assumption. */
-  def link(entries: Seq[Global]): (Seq[Global], Seq[Attr.Link], Seq[Defn])
+  def link(entries: Seq[Global])
+    : (Seq[Global], Seq[Attr.Link], Seq[Defn], Seq[String])
 }
 
 object Linker {
@@ -24,25 +26,28 @@ object Linker {
       extends Linker {
     import reporter._
 
-    private def load(
-        global: Global): Option[(Seq[Dep], Seq[Attr.Link], Defn)] =
+    private def load(global: Global)
+      : Option[(Seq[Dep], Seq[Attr.Link], Seq[String], Defn)] =
       config.paths.collectFirst {
         case path if path.contains(global) =>
           path.load(global)
       }.flatten
 
-    def link(entries: Seq[Global]): (Seq[Global], Seq[Attr.Link], Seq[Defn]) = {
+    def link(entries: Seq[Global])
+      : (Seq[Global], Seq[Attr.Link], Seq[Defn], Seq[String]) = {
       val resolved    = mutable.Set.empty[Global]
       val unresolved  = mutable.Set.empty[Global]
       val links       = mutable.Set.empty[Attr.Link]
       val defns       = mutable.UnrolledBuffer.empty[Defn]
       val direct      = mutable.Stack.empty[Global]
       var conditional = mutable.UnrolledBuffer.empty[Dep.Conditional]
+      val weaks       = mutable.Set.empty[Global]
+      val signatures  = mutable.Set.empty[String]
+      val dyndefns    = mutable.Set.empty[Global]
 
       def processDirect =
         while (direct.nonEmpty) {
           val workitem = direct.pop()
-
           if (!workitem.isIntrinsic && !resolved.contains(workitem) &&
               !unresolved.contains(workitem)) {
 
@@ -50,10 +55,24 @@ object Linker {
               unresolved += workitem
               onUnresolved(workitem)
             } {
-              case (deps, newlinks, defn) =>
+              case (deps, newlinks, newsignatures, defn) =>
                 resolved += workitem
                 defns += defn
                 links ++= newlinks
+                signatures ++= newsignatures
+
+                // Comparing new signatures with already collected weak dependencies
+                newsignatures
+                  .flatMap(signature =>
+                    weaks.collect {
+                      case weak if Global.genSignature(weak) == signature =>
+                        weak
+                  })
+                  .foreach { global =>
+                    direct.push(global)
+                    dyndefns += global
+                  }
+
                 onResolved(workitem)
 
                 deps.foreach {
@@ -64,7 +83,17 @@ object Linker {
                   case cond @ Dep.Conditional(dep, condition) =>
                     conditional += cond
                     onConditionalDependency(workitem, dep, condition)
+
+                  case Dep.Weak(global) =>
+                    // comparing new dependencies with all signatures
+                    if (signatures(Global.genSignature(global))) {
+                      direct.push(global)
+                      onDirectDependency(workitem, global)
+                      dyndefns += global
+                    }
+                    weaks += global
                 }
+
             }
           }
         }
@@ -99,9 +128,17 @@ object Linker {
         processConditional
       }
 
+      val reflectiveProxies =
+        genAllReflectiveProxies(dyndefns, defns)
+
+      val defnss = defns ++ reflectiveProxies
+
       onComplete()
 
-      (unresolved.toSeq, links.toSeq, defns.sortBy(_.name.toString).toSeq)
+      (unresolved.toSeq,
+       links.toSeq,
+       defnss.sortBy(_.name.toString),
+       signatures.toSeq)
     }
   }
 }

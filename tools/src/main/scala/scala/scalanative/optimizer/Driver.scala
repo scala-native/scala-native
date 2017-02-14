@@ -33,6 +33,7 @@ object Driver {
         pass.InstCombine,
         pass.ConstantFolding,
         pass.GlobalValueNumbering,
+        pass.DynmethodLowering,
         pass.MainInjection,
         pass.ExternHoisting,
         pass.ModuleLowering,

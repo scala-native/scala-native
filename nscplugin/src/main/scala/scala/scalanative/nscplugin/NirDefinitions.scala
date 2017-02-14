@@ -103,6 +103,11 @@ trait NirDefinitions { self: NirGlobalAddons =>
       getDecl(TagModule, TermName("CStruct" + n))
     }
 
+    // scala names
+
+    lazy val EqEqMethodName  = newTermName("$eq$eq")
+    lazy val NotEqMethodName = newTermName("$bang$eq")
+
     // Native runtime
 
     lazy val StructClass = getRequiredClass("scala.scalanative.runtime.struct")

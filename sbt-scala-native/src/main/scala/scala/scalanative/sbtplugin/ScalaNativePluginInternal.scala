@@ -104,12 +104,14 @@ object ScalaNativePluginInternal {
       logger: Logger,
       linkerReporter: tools.LinkerReporter,
       optimizerReporter: tools.OptimizerReporter): Seq[nir.Attr.Link] = {
-    val driver                   = tools.OptimizerDriver(config)
-    val (unresolved, links, raw) = tools.link(config, driver, linkerReporter)
+    val driver = tools.OptimizerDriver(config)
+    val (unresolved, links, raw, dyns) =
+      tools.link(config, driver, linkerReporter)
 
     if (unresolved.nonEmpty) { reportLinkingErrors(unresolved, logger) }
 
-    val optimized = tools.optimize(config, driver, raw, optimizerReporter)
+    val optimized =
+      tools.optimize(config, driver, raw, dyns, optimizerReporter)
     tools.codegen(config, optimized)
 
     links
@@ -220,7 +222,8 @@ object ScalaNativePluginInternal {
       val config =
         tools.Config.empty.withPaths(Seq(prog)).withTargetDirectory(progDir)
 
-      val (unresolved, _, _) = (linker.Linker(config)).link(prog.globals.toSeq)
+      val (unresolved, _, _, _) =
+        (linker.Linker(config)).link(prog.globals.toSeq)
 
       unresolved.map(_.show).sorted
     }

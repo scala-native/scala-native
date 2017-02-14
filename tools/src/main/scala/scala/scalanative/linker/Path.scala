@@ -13,7 +13,7 @@ sealed trait Path {
   def contains(name: Global): Boolean
 
   /** Load given global and info about its dependencies. */
-  def load(name: Global): Option[(Seq[Dep], Seq[Attr.Link], Defn)]
+  def load(name: Global): Option[(Seq[Dep], Seq[Attr.Link], Seq[String], Defn)]
 
   /** Load all globals */
   def globals: Set[Global]
@@ -42,7 +42,8 @@ object Path {
     def contains(name: Global) =
       entries.contains(name.top)
 
-    def load(name: Global): Option[(Seq[Dep], Seq[Attr.Link], Defn)] =
+    def load(
+        name: Global): Option[(Seq[Dep], Seq[Attr.Link], Seq[String], Defn)] =
       entries.get(name.top).flatMap { deserializer =>
         deserializer.deserialize(name)
       }

@@ -12,10 +12,11 @@ object Optimizer {
   def apply(config: tools.Config,
             driver: Driver,
             assembly: Seq[Defn],
+            dyns: Seq[String],
             reporter: Reporter): Seq[Defn] = {
     import reporter._
 
-    val world  = analysis.ClassHierarchy(assembly)
+    val world  = analysis.ClassHierarchy(assembly, dyns)
     val passes = driver.passes.map(_.apply(config, world))
 
     def loop(assembly: Seq[Defn], passes: Seq[(Pass, Int)]): Seq[Defn] =

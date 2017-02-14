@@ -16,6 +16,7 @@ sealed abstract class Type {
   }
 
   final def show: String = nir.Show(this)
+
 }
 
 object Type {
@@ -66,5 +67,15 @@ object Type {
     Type.Class(Global.Top("java.lang.Long"))                  -> Type.I64,
     Type.Class(Global.Top("java.lang.Float"))                 -> Type.F32,
     Type.Class(Global.Top("java.lang.Double"))                -> Type.F64
+  )
+
+  val box = Map[Type, Type](
+    Type.Bool -> Type.Class(Global.Top("java.lang.Boolean")),
+    Type.I8   -> Type.Class(Global.Top("java.lang.Byte")),
+    Type.I16  -> Type.Class(Global.Top("java.lang.Short")),
+    Type.I32  -> Type.Class(Global.Top("java.lang.Integer")),
+    Type.I64  -> Type.Class(Global.Top("java.lang.Long")),
+    Type.F32  -> Type.Class(Global.Top("java.lang.Float")),
+    Type.F64  -> Type.Class(Global.Top("java.lang.Double"))
   )
 }

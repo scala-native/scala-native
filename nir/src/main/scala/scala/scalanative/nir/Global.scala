@@ -40,4 +40,23 @@ object Global {
       extends Global {
     override def top: Global.Top = owner.top
   }
+
+  def genSignature(methodName: nir.Global, proxy: Boolean = false): String = {
+    val fullSignature = methodName.id
+    val index         = fullSignature.lastIndexOf("_")
+    val signature =
+      if (index != -1) {
+        fullSignature.substring(0, index)
+      } else {
+        fullSignature
+      }
+    if (proxy) {
+      toProxySignature(signature)
+    } else {
+      signature
+    }
+  }
+
+  def toProxySignature(signature: String) = signature + "_proxy"
+
 }

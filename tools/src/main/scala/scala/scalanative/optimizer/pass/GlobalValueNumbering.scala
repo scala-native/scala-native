@@ -108,8 +108,8 @@ object GlobalValueNumbering extends PassCompanion {
     import Op._
     op match {
       // Always idempotent:
-      case (_: Pure | _: Method | _: As | _: Is | _: Copy | _: Sizeof |
-          _: Module | _: Field | _: Box | _: Unbox) =>
+      case (_: Pure | _: Method | _: Dynmethod | _: As | _: Is | _: Copy |
+          _: Sizeof | _: Module | _: Field | _: Box | _: Unbox) =>
         true
 
       // Never idempotent:
@@ -164,6 +164,9 @@ object GlobalValueNumbering extends PassCompanion {
 
           case (Method(objA, nameA), Method(objB, nameB)) =>
             eqVal(objA, objB) && eqGlobal(nameA, nameB)
+
+          case (Dynmethod(objA, signatureA), Dynmethod(objB, signatureB)) =>
+            eqVal(objA, objB) && signatureA == signatureB
 
           case (Module(nameA, _), Module(nameB, _)) =>
             eqGlobal(nameA, nameB)
@@ -294,6 +297,7 @@ object GlobalValueNumbering extends PassCompanion {
 
         case Field(obj, name)           => Seq("Field", obj, name)
         case Method(obj, name)          => Seq("Method", obj, name)
+        case Dynmethod(obj, signature)  => Seq("Dynmethod", obj, signature)
         case As(ty, obj)                => Seq("As", ty, obj)
         case Is(ty, obj)                => Seq("Is", ty, obj)
         case Copy(value)                => Seq("Copy", value)

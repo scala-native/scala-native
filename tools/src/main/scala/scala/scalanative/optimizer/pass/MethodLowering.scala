@@ -23,7 +23,7 @@ class MethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
             Op.Elem(cls.typeStruct,
                     typeptr,
                     Seq(Val.I32(0),
-                        Val.I32(2), // index of vtable in type struct
+                        Val.I32(3), // index of vtable in type struct
                         Val.I32(meth.vindex)))),
         Let(n, Op.Load(Type.Ptr, methptrptr))
       )

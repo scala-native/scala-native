@@ -15,6 +15,8 @@ object Attr {
   final case object NoInline     extends Inline // should never inline
   final case object AlwaysInline extends Inline // should always inline
 
+  final case object Dyn extends Attr
+
   final case object Pure                  extends Attr
   final case object Extern                extends Attr
   final case class Override(name: Global) extends Attr
@@ -24,11 +26,13 @@ object Attr {
   sealed abstract class Pin                         extends Attr
   final case class PinAlways(dep: Global)           extends Pin
   final case class PinIf(dep: Global, cond: Global) extends Pin
+  final case class PinWeak(dep: Global)             extends Pin
 }
 
 final case class Attrs(inline: Inline = MayInline,
                        isPure: Boolean = false,
                        isExtern: Boolean = false,
+                       isDyn: Boolean = false,
                        overrides: Seq[Global] = Seq(),
                        pins: Seq[Pin] = Seq(),
                        links: Seq[Attr.Link] = Seq()) {
@@ -38,6 +42,7 @@ final case class Attrs(inline: Inline = MayInline,
     if (inline != MayInline) out += inline
     if (isPure) out += Pure
     if (isExtern) out += Extern
+    if (isDyn) out += Dyn
     overrides.foreach { out += Override(_) }
     out ++= pins
     out ++= links
@@ -52,6 +57,7 @@ object Attrs {
     var inline    = None.inline
     var isPure    = false
     var isExtern  = false
+    var isDyn     = false
     val overrides = mutable.UnrolledBuffer.empty[Global]
     val pins      = mutable.UnrolledBuffer.empty[Pin]
     val links     = mutable.UnrolledBuffer.empty[Attr.Link]
@@ -60,11 +66,12 @@ object Attrs {
       case attr: Inline    => inline = attr
       case Pure            => isPure = true
       case Extern          => isExtern = true
+      case Dyn             => isDyn = true
       case Override(name)  => overrides += name
       case attr: Pin       => pins += attr
       case link: Attr.Link => links += link
     }
 
-    new Attrs(inline, isPure, isExtern, overrides, pins, links)
+    new Attrs(inline, isPure, isExtern, isDyn, overrides, pins, links)
   }
 }
