@@ -382,11 +382,7 @@ object ScalaNativePluginInternal {
         (target ** "*.ll").get.foreach(_.delete)
         (target ** "*.o").get.foreach(_.delete)
         val links =
-          compileNir(config,
-                     logger,
-                     linkerReporter,
-                     optimizerReporter,
-                     target)
+          compileNir(config, logger, linkerReporter, optimizerReporter, target)
         val appll = (target ** "*.ll").get.toSeq
         compileLl(clangpp,
                   target,
