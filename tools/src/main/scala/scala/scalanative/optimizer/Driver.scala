@@ -51,6 +51,7 @@ object Driver {
         pass.NothingLowering,
         pass.AllocLowering,
         pass.SizeofLowering,
+        pass.CommonSubexpressionElimination,
         pass.CopyPropagation,
         pass.DeadCodeElimination
       ))
