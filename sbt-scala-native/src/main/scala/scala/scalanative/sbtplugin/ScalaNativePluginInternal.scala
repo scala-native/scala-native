@@ -126,7 +126,6 @@ object ScalaNativePluginInternal {
       tools.optimize(config, driver, raw, dyns, optimizerReporter)
     }
     logger.time("Generating LLVM IR") {
-      (cwd ** "*.ll").get.foreach(_.delete)
       tools.codegen(config, optimized)
     }
 
@@ -195,8 +194,6 @@ object ScalaNativePluginInternal {
                         opts: Seq[String],
                         logger: Logger): Unit =
     logger.time("Compiling LLVM IR to native code") {
-      (target ** "*.o").get.foreach(_.delete)
-
       val outpath = abs(binary)
       val apppaths = appll.par
         .map { appll =>
@@ -212,10 +209,6 @@ object ScalaNativePluginInternal {
 
       val opaths = (nativelib ** "*.o").get.map(abs)
       val paths  = apppaths ++ opaths
-      println("appll: " + appll)
-      println("apppaths: " + apppaths)
-      println("paths: " + opaths)
-
       val links = {
         val os   = Option(sys props "os.name").getOrElse("")
         val arch = compileTarget.split("-").head
@@ -366,7 +359,6 @@ object ScalaNativePluginInternal {
         val entry     = nir.Global.Top(mainClass.toString + "$")
         val classpath = (fullClasspath in Compile).value.map(_.data)
         val target    = (crossTarget in Compile).value
-        val appll     = (target ** "*.ll").get.toSeq
         val binary    = (artifactPath in nativeLink).value
 
         val linkage           = nativeLibraryLinkage.value
@@ -386,41 +378,27 @@ object ScalaNativePluginInternal {
         val configFile = (streams.value.cacheDirectory / "native-config")
         val inputFiles = nirFiles + configFile
 
-        writeConfigHash(configFile,
-                        config,
-                        clang,
-                        clangpp,
-                        classpath,
-                        target,
-                        appll,
-                        binary,
-                        linkage,
-                        clangOpts)
+        IO.createDirectory(target)
+        (target ** "*.ll").get.foreach(_.delete)
+        (target ** "*.o").get.foreach(_.delete)
+        val links =
+          compileNir(config,
+                     logger,
+                     linkerReporter,
+                     optimizerReporter,
+                     target)
+        val appll = (target ** "*.ll").get.toSeq
+        compileLl(clangpp,
+                  target,
+                  nativelib.value,
+                  appll,
+                  binary,
+                  nativeTarget.value,
+                  links.map(_.name),
+                  linkage,
+                  clangOpts,
+                  logger)
 
-        val compileIfChanged =
-          FileFunction.cached(streams.value.cacheDirectory / "native-cache",
-                              FilesInfo.hash) { _ =>
-            IO.createDirectory(target)
-            val links =
-              compileNir(config,
-                         logger,
-                         linkerReporter,
-                         optimizerReporter,
-                         target)
-            compileLl(clangpp,
-                      target,
-                      nativelib.value,
-                      appll,
-                      binary,
-                      nativeTarget.value,
-                      links.map(_.name),
-                      linkage,
-                      clangOpts,
-                      logger)
-            Set(binary)
-          }
-
-        val result = compileIfChanged(inputFiles)
         binary
       }
     },
