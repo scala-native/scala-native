@@ -109,12 +109,11 @@ object ScalaNativePluginInternal {
   }
 
   /** Compiles application nir to llvm ir. */
-  private def compileNir(
-      config: tools.Config,
-      logger: Logger,
-      linkerReporter: tools.LinkerReporter,
-      optimizerReporter: tools.OptimizerReporter,
-      cwd: File): Seq[nir.Attr.Link] = {
+  private def compileNir(config: tools.Config,
+                         logger: Logger,
+                         linkerReporter: tools.LinkerReporter,
+                         optimizerReporter: tools.OptimizerReporter,
+                         cwd: File): Seq[nir.Attr.Link] = {
 
     val driver = tools.OptimizerDriver(config)
     val (unresolved, links, raw, dyns) = logger.time("Linking NIR") {
@@ -210,7 +209,6 @@ object ScalaNativePluginInternal {
         }
         .seq
         .toSeq
-
 
       val opaths = (nativelib ** "*.o").get.map(abs)
       val paths  = apppaths ++ opaths
@@ -404,7 +402,11 @@ object ScalaNativePluginInternal {
                               FilesInfo.hash) { _ =>
             IO.createDirectory(target)
             val links =
-              compileNir(config, logger, linkerReporter, optimizerReporter, target)
+              compileNir(config,
+                         logger,
+                         linkerReporter,
+                         optimizerReporter,
+                         target)
             compileLl(clangpp,
                       target,
                       nativelib.value,

@@ -13,7 +13,8 @@ import nir._, Inst.Let
  */
 class MethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
   override def onInsts(insts: Seq[Inst]) = {
-    val buf                   = mutable.UnrolledBuffer.empty[Inst]
+    val buf = mutable.UnrolledBuffer.empty[Inst]
+
     def let(n: Local, op: Op) = buf += Let(n, op)
 
     insts.foreach {

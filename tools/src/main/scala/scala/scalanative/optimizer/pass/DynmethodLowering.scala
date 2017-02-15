@@ -2,6 +2,7 @@ package scala.scalanative
 package optimizer
 package pass
 
+import scala.collection.mutable
 import analysis.ClassHierarchy._
 import nir._
 
@@ -11,29 +12,33 @@ import nir._
 class DynmethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
   import DynmethodLowering._
 
-  override def preInst = {
-    case Inst.Let(n, dyn @ Op.Dynmethod(obj, signature)) =>
-      val typeptr             = Val.Local(fresh(), Type.Ptr)
-      val methodCountPtr      = Val.Local(fresh(), Type.Ptr)
-      val methodCount         = Val.Local(fresh(), Type.I32)
-      val dyndispatchTablePtr = Val.Local(fresh(), Type.Ptr)
-      val methptrptr          = Val.Local(fresh(), Type.Ptr)
+  override def onInsts(insts: Seq[Inst]) = {
+    val buf = mutable.UnrolledBuffer.empty[Inst]
 
-      val rtiType = Type.Struct(
-        Global.None,
-        Seq(Type.I32,
-            Type.Ptr,
-            Type.Struct(Global.None, Seq(Type.I32, Type.Ptr, Type.Ptr))))
+    def let(n: Local, op: Op) = buf += Inst.Let(n, op)
 
-      def throwInstrs(): Seq[Inst] = {
+    insts.foreach {
+      case Inst.Let(n, dyn @ Op.Dynmethod(obj, signature)) =>
+        val typeptr             = Val.Local(fresh(), Type.Ptr)
+        val methodCountPtr      = Val.Local(fresh(), Type.Ptr)
+        val methodCount         = Val.Local(fresh(), Type.I32)
+        val dyndispatchTablePtr = Val.Local(fresh(), Type.Ptr)
+        val methptrptr          = Val.Local(fresh(), Type.Ptr)
 
-        val excptn = Val.Local(fresh(), Type.Class(excptnGlobal))
-        val unit   = Val.Local(fresh(), Type.Unit)
-        val init   = Val.Local(fresh(), Type.Ptr)
+        val rtiType = Type.Struct(
+          Global.None,
+          Seq(Type.I32,
+              Type.Ptr,
+              Type.Struct(Global.None, Seq(Type.I32, Type.Ptr, Type.Ptr))))
 
-        Seq(
-          Inst.Let(excptn.name, Op.Classalloc(excptnGlobal)),
-          Inst.Let(
+        def throwInstrs(): Seq[Inst] = {
+
+          val excptn = Val.Local(fresh(), Type.Class(excptnGlobal))
+          val unit   = Val.Local(fresh(), Type.Unit)
+          val init   = Val.Local(fresh(), Type.Ptr)
+
+          let(excptn.name, Op.Classalloc(excptnGlobal))
+          let(
             unit.name,
             Op.Call(
               Type.Function(
@@ -50,64 +55,53 @@ class DynmethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
               ),
               Next.None
             )
-          ),
-          Inst.Let(fresh(), Op.Throw(excptn, Next.None)),
-          Inst.Unreachable
-        )
-      }
-
-      def throwIfCond(cond: Op.Comp): Seq[Inst] = {
-        val condNull     = Val.Local(fresh(), Type.Bool)
-        val labelIsNull  = Next(fresh())
-        val labelEndNull = Next(fresh())
-
-        Seq(
-          Seq(
-            Inst.Let(condNull.name, cond),
-            Inst.If(condNull, labelIsNull, labelEndNull),
-            Inst.Label(labelIsNull.name, Seq())
-          ),
-          throwInstrs(),
-          Seq(
-            Inst.Label(labelEndNull.name, Seq())
           )
-        ).flatten
-      }
-      def throwIfNull(local: Val.Local) =
-        throwIfCond(Op.Comp(Comp.Ieq, Type.Ptr, local, Val.Null))
+          let(fresh(), Op.Throw(excptn, Next.None))
+          buf += Inst.Unreachable
+        }
 
-      val methodIndex = top.dyns.zipWithIndex.find(_._1 == signature).get._2
+        def throwIfCond(cond: Op.Comp): Seq[Inst] = {
+          val condNull     = Val.Local(fresh(), Type.Bool)
+          val labelIsNull  = Next(fresh())
+          val labelEndNull = Next(fresh())
 
-      Seq(
-        Seq( // Load the type information pointer
-          Inst.Let(typeptr.name, Op.Load(Type.Ptr, obj)),
-          // Load the pointer of the table size
-          Inst.Let(methodCountPtr.name,
-                   Op.Elem(rtiType,
-                           typeptr,
-                           Seq(Val.I32(0), Val.I32(2), Val.I32(0)))),
-          // Load the table size
-          Inst.Let(methodCount.name, Op.Load(Type.I32, methodCountPtr))
-        ),
-        throwIfCond(Op.Comp(Comp.Ieq, Type.I32, methodCount, Val.I32(0))),
-        Seq(
-          // If the size is greater than 0, call the C function "scalanative_dyndispatch"
-          Inst.Let(dyndispatchTablePtr.name,
-                   Op.Elem(rtiType,
-                           typeptr,
-                           Seq(Val.I32(0), Val.I32(2), Val.I32(0)))),
-          Inst.Let(methptrptr.name,
-                   Op.Call(dyndispatchSig,
-                           dyndispatch,
-                           Seq(dyndispatchTablePtr, Val.I32(methodIndex)),
-                           Next.None))
-        ),
-        throwIfNull(methptrptr),
-        Seq(
-          Inst.Let(n, Op.Load(Type.Ptr, methptrptr))
-        )
-      ).flatten
+          let(condNull.name, cond)
+          buf += Inst.If(condNull, labelIsNull, labelEndNull)
+          buf += Inst.Label(labelIsNull.name, Seq())
+          throwInstrs()
+          buf += Inst.Label(labelEndNull.name, Seq())
+        }
 
+        def throwIfNull(local: Val.Local) =
+          throwIfCond(Op.Comp(Comp.Ieq, Type.Ptr, local, Val.Null))
+
+        val methodIndex = top.dyns.zipWithIndex.find(_._1 == signature).get._2
+
+        // Load the type information pointer
+        let(typeptr.name, Op.Load(Type.Ptr, obj))
+        // Load the pointer of the table size
+        let(methodCountPtr.name,
+            Op.Elem(rtiType, typeptr, Seq(Val.I32(0), Val.I32(2), Val.I32(0))))
+        // Load the table size
+        let(methodCount.name, Op.Load(Type.I32, methodCountPtr))
+        throwIfCond(Op.Comp(Comp.Ieq, Type.I32, methodCount, Val.I32(0)))
+        // If the size is greater than 0,
+        // call the C function "scalanative_dyndispatch"
+        let(dyndispatchTablePtr.name,
+            Op.Elem(rtiType, typeptr, Seq(Val.I32(0), Val.I32(2), Val.I32(0))))
+        let(methptrptr.name,
+            Op.Call(dyndispatchSig,
+                    dyndispatch,
+                    Seq(dyndispatchTablePtr, Val.I32(methodIndex)),
+                    Next.None))
+        throwIfNull(methptrptr)
+        let(n, Op.Load(Type.Ptr, methptrptr))
+
+      case inst =>
+        buf += inst
+    }
+
+    buf
   }
 }
 
