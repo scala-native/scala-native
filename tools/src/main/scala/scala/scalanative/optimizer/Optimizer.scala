@@ -28,7 +28,7 @@ object Optimizer {
 
     val injects    = driver.passes.filter(_.isInjectionPass)
     val transforms = driver.passes.filterNot(_.isInjectionPass)
-    val world      = analysis.ClassHierarchy(assembly, dyns)
+    val world      = time("CHA")(analysis.ClassHierarchy(assembly, dyns))
 
     val injected = {
       val buf = mutable.UnrolledBuffer.empty[Defn]
