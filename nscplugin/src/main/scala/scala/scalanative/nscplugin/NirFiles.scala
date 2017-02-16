@@ -11,9 +11,7 @@ import scalanative.io.VirtualDirectory.root
 trait NirFiles { self: NirCodeGen =>
   import global._
 
-  private def getPathFor(cunit: CompilationUnit,
-                         sym: Symbol,
-                         suffix: String): Path = {
+  def getPathFor(cunit: CompilationUnit, sym: Symbol): Path = {
     val baseDir: AbstractFile =
       settings.outputDirs.outputDirFor(cunit.source.file)
 
@@ -22,24 +20,18 @@ trait NirFiles { self: NirCodeGen =>
     val dir       = (baseDir /: pathParts.init)(_.subdirectoryNamed(_))
 
     var filename = pathParts.last
-    val file     = dir fileNamed (filename + suffix)
+    val file     = dir fileNamed (filename + ".nir")
 
     Paths.get(file.file.getAbsolutePath)
   }
 
-  def genIRFile(cunit: CompilationUnit,
-                sym: Symbol,
-                defns: Seq[nir.Defn]): Unit = {
-    withScratchBuffer { buffer =>
-      serializeBinary(defns, buffer)
-      buffer.flip
-      root.write(getPathFor(cunit, sym, s".nir"), buffer)
+  def genIRFiles(files: Seq[(Path, Seq[nir.Defn])]): Unit =
+    files.foreach {
+      case (path, defns) =>
+        withScratchBuffer { buffer =>
+          serializeBinary(defns, buffer)
+          buffer.flip
+          root.write(path, buffer)
+        }
     }
-
-    withScratchBuffer { buffer =>
-      serializeText(defns, buffer)
-      buffer.flip
-      root.write(getPathFor(cunit, sym, s".hnir"), buffer)
-    }
-  }
 }
