@@ -15,27 +15,27 @@ class DeadCodeElimination(implicit top: Top) extends Pass {
   override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
     val cfg        = ControlFlow.Graph(insts)
     val usedef     = UseDef(cfg)
-    val newinsts   = mutable.UnrolledBuffer.empty[Inst]
     val removeArgs = new ArgRemover(usedef, cfg.entry.name)
+    val buf        = new nir.Buffer
 
     cfg.all.foreach { block =>
       if (usedef(block.name).alive) {
         val newParams = block.params.filter { p =>
           (block.name == cfg.entry.name) || usedef(p.name).alive
         }
-        newinsts += block.label.copy(params = newParams)
+        buf += block.label.copy(params = newParams)
         block.insts.foreach {
           case inst @ Inst.Let(n, op) =>
-            if (usedef(n).alive) newinsts += inst
+            if (usedef(n).alive) buf += inst
           case inst: Inst.Cf =>
-            newinsts += removeArgs.onInst(inst)
+            buf += removeArgs.onInst(inst)
           case _ =>
             ()
         }
       }
     }
 
-    newinsts
+    buf.toSeq
   }
 }
 

@@ -37,7 +37,7 @@ class CopyPropagation extends Pass {
   }
 
   override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
-    val buf = mutable.UnrolledBuffer.empty[Inst]
+    val buf = new nir.Buffer
     locals = collect(insts)
     insts.foreach {
       case Let(_, _: Op.Copy) =>
@@ -45,7 +45,7 @@ class CopyPropagation extends Pass {
       case inst =>
         buf += super.onInst(inst)
     }
-    buf
+    buf.toSeq
   }
 
   override def onVal(value: Val) = value match {

@@ -24,21 +24,22 @@ class UnitLowering(implicit fresh: Fresh) extends Pass {
   }
 
   override def onInsts(insts: Seq[Inst]) = {
-    val buf = mutable.UnrolledBuffer.empty[Inst]
+    val buf = new nir.Buffer
+    import buf._
 
     insts.foreach {
       case inst @ Inst.Let(n, op) if op.resty == Type.Unit =>
-        buf += Inst.Let(super.onOp(op))
-        buf += Inst.Let(n, Op.Copy(unit))
+        let(super.onOp(op))
+        let(n, Op.Copy(unit))
 
       case Inst.Ret(_) if defnRetty == Type.Unit =>
-        buf += Inst.Ret(Val.None)
+        ret(Val.None)
 
       case inst =>
         buf += super.onInst(inst)
     }
 
-    buf
+    buf.toSeq
   }
 
   override def onVal(value: Val) = value match {

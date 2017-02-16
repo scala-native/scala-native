@@ -13,14 +13,14 @@ import scala.collection.mutable
 class DeadBlockElimination extends Pass {
   override def onInsts(insts: Seq[Inst]) = {
     val cfg = ControlFlow.Graph(insts)
-    val buf = mutable.UnrolledBuffer.empty[Inst]
+    val buf = new nir.Buffer
 
     cfg.foreach { b =>
       buf += b.label
       buf ++= b.insts
     }
 
-    buf
+    buf.toSeq
   }
 }
 

@@ -11,18 +11,18 @@ import nir._
 /** Short-circuits method calls that return nothing. */
 class NothingLowering extends Pass {
   override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
-    val buf = mutable.UnrolledBuffer.empty[Inst]
+    val buf = new nir.Buffer
 
     insts.foreach {
       case inst @ Inst.Let(n, call: Op.Call) if call.resty == Type.Nothing =>
         buf += super.onInst(inst)
-        buf += Inst.Unreachable
+        buf.unreachable
 
       case inst =>
         buf += super.onInst(inst)
     }
 
-    buf
+    buf.toSeq
   }
 
   override def onType(ty: Type): Type = ty match {
