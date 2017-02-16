@@ -11,7 +11,7 @@ class DriverSpec extends FlatSpec with Matchers {
   private def makeCompanion: PassCompanion =
     new PassCompanion {
       override def apply(config: Config, top: Top): Pass =
-        pass.EmptyPass
+        new Pass {}
     }
 
   private val P0 = makeCompanion

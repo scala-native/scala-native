@@ -10,7 +10,7 @@ class AsLoweringTest extends OptimizerSpec {
 
   "The `AsLoweringPhase`" should "have an effect (this is a self-test)" in {
     val driver = Some(Driver.empty.append(AsLoweringCheck))
-    assertThrows[org.scalatest.exceptions.TestFailedException] {
+    assertThrows[Exception] {
       optimize("A$", code, driver) { case (_, _, _) => () }
     }
   }
