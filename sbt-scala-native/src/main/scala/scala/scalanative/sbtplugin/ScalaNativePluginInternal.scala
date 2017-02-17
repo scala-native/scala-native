@@ -2,7 +2,9 @@ package scala.scalanative
 package sbtplugin
 
 import util._
+
 import sbtcrossproject.CrossPlugin.autoImport._
+import gc.GarbageCollector
 import ScalaNativePlugin.autoImport._
 
 import scalanative.nir
@@ -137,9 +139,10 @@ object ScalaNativePluginInternal {
   def compileCSources(clang: File,
                       clangpp: File,
                       cwd: File,
+                      gc: GarbageCollector,
                       logger: Logger): Boolean = {
-    val cpaths   = (cwd ** "*.c").get.map(abs)
-    val cpppaths = (cwd ** "*.cpp").get.map(abs)
+    val cpaths   = gc.filterFiles((cwd ** "*.c").get).map(abs)
+    val cpppaths = gc.filterFiles((cwd ** "*.cpp").get).map(abs)
     val paths    = cpaths ++ cpppaths
 
     paths.par
@@ -191,6 +194,7 @@ object ScalaNativePluginInternal {
                         applinks: Seq[String],
                         compileOpts: Seq[String],
                         linkingOpts: Seq[String],
+                        gc: GarbageCollector,
                         logger: Logger): Unit =
     logger.time("Compiling LLVM IR to native code") {
       val outpath = abs(binary)
@@ -219,7 +223,7 @@ object ScalaNativePluginInternal {
           case "Mac OS X" => Seq.empty
           case _          => Seq("unwind", "unwind-" + arch)
         }
-        librt ++ libunwind ++ applinks
+        librt ++ libunwind ++ applinks ++ gc.links
       }
       val linkopts  = links.map("-l" + _) ++ linkingOpts
       val targetopt = Seq("-target", compileTarget)
@@ -331,7 +335,8 @@ object ScalaNativePluginInternal {
         IO.unzip(jar, nativelib)
         IO.write(jarhashfile, Hash(jar))
 
-        val compiledC      = compileCSources(clang, clangpp, nativelib, logger)
+        val compiledC =
+          compileCSources(clang, clangpp, nativelib, nativeGC.value, logger)
         val detectedTarget = compileTargetProbe(clang, nativelib, logger)
 
         if (!compiledC || !detectedTarget) {
@@ -397,6 +402,7 @@ object ScalaNativePluginInternal {
                   links.map(_.name),
                   compileOpts,
                   linkingOpts,
+                  nativeGC.value,
                   logger)
 
         binary

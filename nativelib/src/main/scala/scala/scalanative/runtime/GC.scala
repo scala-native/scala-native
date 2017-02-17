@@ -8,11 +8,10 @@ import native._
  *
  * @see [[http://hboehm.info/gc/gcinterface.html C Interface]]
  */
-@link("gc")
 @extern
 object GC {
-  @name("GC_malloc")
+  @name("scalanative_alloc_raw")
   def malloc(size: CSize): Ptr[Byte] = extern
-  @name("GC_malloc_atomic")
+  @name("scalanative_alloc_raw_atomic")
   def malloc_atomic(size: CSize): Ptr[Byte] = extern
 }
