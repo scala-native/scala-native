@@ -31,7 +31,7 @@ lazy val setUpTestingCompiler = Def.task {
   sys.props("scalanative.nativeruntime.cp") =
     Seq(nativelibjar, scalalibjar, javalibjar) mkString pathSeparator
   sys.props("scalanative.nativelib.dir") =
-    scalanative.sbtplugin.ScalaNativePluginInternal.nativelib.getAbsolutePath
+    ((crossTarget in Compile).value / "nativelib").getAbsolutePath
 }
 
 lazy val publishSettings = Seq(
