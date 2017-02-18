@@ -4,8 +4,11 @@ package io
 import java.nio.ByteBuffer
 
 final class ByteBufferPool {
-  private def alloc   = ByteBuffer.allocateDirect(128 * 1024 * 1024)
-  private var buffers = List.empty[ByteBuffer]
+  private var buffers: List[ByteBuffer] = Nil
+
+  private def alloc(): ByteBuffer = {
+    ByteBuffer.allocateDirect(32 * 1024 * 1024)
+  }
 
   def reclaim(buffer: ByteBuffer): Unit = synchronized {
     buffers = buffer :: buffers
