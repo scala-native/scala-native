@@ -134,7 +134,6 @@ lazy val libSettings =
 lazy val projectSettings =
   ScalaNativePlugin.projectSettings ++ Seq(
     scalaVersion := libScalaVersion,
-    nativeClangOptions ++= Seq("-O0"),
     resolvers := Nil
   )
 
@@ -369,7 +368,7 @@ lazy val benchmarks =
     .settings(projectSettings)
     .settings(noPublishSettings)
     .settings(
-      nativeClangOptions ++= Seq("-O2"),
+      nativeMode := "release",
       sourceGenerators in Compile += Def.task {
         val dir    = sourceDirectory.value
         val prefix = dir.getAbsolutePath + "/main/scala/"

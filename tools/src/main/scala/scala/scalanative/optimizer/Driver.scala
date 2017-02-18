@@ -64,7 +64,7 @@ object Driver {
     pass.AllocLowering,
     pass.SizeofLowering,
     pass.CopyPropagation,
-    pass.DeadBlockElimination
+    pass.DeadCodeElimination
   )
 
   /** Create driver with default pipeline for this configuration. */

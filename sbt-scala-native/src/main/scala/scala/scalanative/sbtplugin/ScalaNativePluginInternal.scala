@@ -189,8 +189,8 @@ object ScalaNativePluginInternal {
                         binary: File,
                         compileTarget: String,
                         applinks: Seq[String],
-                        linkage: Map[String, String],
-                        opts: Seq[String],
+                        compileOpts: Seq[String],
+                        linkingOpts: Seq[String],
                         logger: Logger): Unit =
     logger.time("Compiling LLVM IR to native code") {
       val outpath = abs(binary)
@@ -198,7 +198,7 @@ object ScalaNativePluginInternal {
         .map { appll =>
           val apppath = abs(appll)
           val outpath = apppath + ".o"
-          val compile = Seq(abs(clangpp), "-c", apppath, "-o", apppath + ".o")
+          val compile = Seq(abs(clangpp), "-c", apppath, "-o", apppath + ".o") ++ compileOpts
           logger.running(compile)
           Process(compile, target) ! logger
           outpath
@@ -221,21 +221,12 @@ object ScalaNativePluginInternal {
         }
         librt ++ libunwind ++ applinks
       }
-      val linkopts = links.zip(links.map(linkage.get(_))).flatMap {
-        case (name, Some("static")) =>
-          Seq("-static", "-l" + name)
-        case (name, Some("dynamic") | None) =>
-          Seq("-l" + name)
-        case (name, Some(kind)) =>
-          throw new MessageOnlyException(
-            s"uknown linkage kind $kind for $name")
-      }
+      val linkopts  = links.map("-l" + _) ++ linkingOpts
       val targetopt = Seq("-target", compileTarget)
-      val flags     = Seq("-o", outpath) ++ linkopts ++ targetopt ++ opts
+      val flags     = Seq("-o", outpath) ++ linkopts ++ targetopt
       val compile   = abs(clangpp) +: (flags ++ paths)
 
       logger.running(compile)
-
       Process(compile, target) ! logger
     }
 
@@ -289,7 +280,6 @@ object ScalaNativePluginInternal {
     ),
     addCompilerPlugin(
       "org.scala-native" % "nscplugin" % nativeVersion cross CrossVersion.full),
-    nativeLibraryLinkage := Map(),
     nativeSharedLibrary := false,
     nativeClang := {
       discover("clang", Seq(("3", "8"), ("3", "7")))
@@ -297,12 +287,19 @@ object ScalaNativePluginInternal {
     nativeClangPP := {
       discover("clang++", Seq(("3", "8"), ("3", "7")))
     },
-    nativeClangOptions := {
+    nativeCompileOptions := {
+      mode(nativeMode.value) match {
+        case tools.Mode.Debug   => Seq("-O0")
+        case tools.Mode.Release => Seq("-O2")
+      }
+    },
+    nativeLinkingOptions := {
       includes ++ libs ++ maybeInjectShared(nativeSharedLibrary.value)
     },
     nativeTarget := {
       IO.read(nativeNativelib.value / "target")
     },
+    nativeMode := "debug",
     artifactPath in nativeLink := {
       (crossTarget in Compile).value / (moduleName.value + "-out")
     },
@@ -347,10 +344,11 @@ object ScalaNativePluginInternal {
       val logger = streams.value.log
 
       logger.time("Total") {
-        val nativelib = nativeNativelib.value
-        val clang     = nativeClang.value
-        val clangpp   = nativeClangPP.value
-        val clangOpts = nativeClangOptions.value
+        val nativelib   = nativeNativelib.value
+        val clang       = nativeClang.value
+        val clangpp     = nativeClangPP.value
+        val compileOpts = nativeCompileOptions.value
+        val linkingOpts = nativeLinkingOptions.value
         checkThatClangIsRecentEnough(clang)
 
         val mainClass = (selectMainClass in Compile).value.getOrElse(
@@ -365,7 +363,6 @@ object ScalaNativePluginInternal {
         IO.delete(llTarget)
         IO.createDirectory(llTarget)
 
-        val linkage           = nativeLibraryLinkage.value
         val linkerReporter    = nativeLinkerReporter.value
         val optimizerReporter = nativeOptimizerReporter.value
         val sharedLibrary     = nativeSharedLibrary.value
@@ -377,6 +374,7 @@ object ScalaNativePluginInternal {
           .withTargetDirectory(VirtualDirectory.real(llTarget))
           .withInjectMain(!nativeSharedLibrary.value)
           .withTarget(nativeTarget.value)
+          .withMode(mode(nativeMode.value))
 
         val nirFiles   = (Keys.target.value ** "*.nir").get.toSet
         val configFile = (streams.value.cacheDirectory / "native-config")
@@ -396,8 +394,8 @@ object ScalaNativePluginInternal {
                   binary,
                   nativeTarget.value,
                   links.map(_.name),
-                  linkage,
-                  clangOpts,
+                  compileOpts,
+                  linkingOpts,
                   logger)
 
         binary
@@ -472,5 +470,13 @@ object ScalaNativePluginInternal {
           s"at $pathToClangBinary.\nSee http://scala-native.readthedocs.io" +
           s"/en/latest/user/setup.html for details.")
     }
+  }
+
+  private def mode(mode: String) = mode match {
+    case "debug"   => tools.Mode.Debug
+    case "release" => tools.Mode.Release
+    case value =>
+      throw new MessageOnlyException(
+        "nativeMode can be either \"debug\" or \"release\", not: " + value)
   }
 }

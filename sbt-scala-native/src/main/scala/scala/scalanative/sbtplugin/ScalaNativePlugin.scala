@@ -20,18 +20,22 @@ object ScalaNativePlugin extends AutoPlugin {
 
     val nativeClangPP = settingKey[File]("Location of the clang++ compiler.")
 
-    val nativeClangOptions =
-      settingKey[Seq[String]]("Additional options that are passed to clang.")
+    val nativeCompileOptions =
+      settingKey[Seq[String]](
+        "Additional options are passed to clang during compilation.")
 
-    val nativeLibraryLinkage = settingKey[Map[String, String]](
-      "Given a native library, provide the linkage kind (static or dynamic). " +
-        "If key is not present in the map, dynamic is picked as a default.")
+    val nativeLinkingOptions =
+      settingKey[Seq[String]](
+        "Additional options that are pased to clang during linking.")
 
     val nativeLink =
       taskKey[File]("Generates native binary without running it.")
 
     val nativeSharedLibrary = settingKey[Boolean](
       "Will create a shared library instead of a program with a main method.")
+
+    val nativeMode =
+      settingKey[String]("Compilation mode, either \"debug\" or \"release\".")
   }
 
   override def projectSettings: Seq[Setting[_]] = (

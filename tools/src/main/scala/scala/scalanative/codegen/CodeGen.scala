@@ -14,33 +14,54 @@ object CodeGen {
 
   /** Generate code for given assembly. */
   def apply(config: tools.Config, assembly: Seq[Defn]): Unit = {
-    val env     = assembly.map(defn => defn.name -> defn).toMap
-    val batches = mutable.Map.empty[String, mutable.Buffer[Defn]]
-    assembly.foreach { defn =>
-      val top = defn.name.top.id
-      val key =
-        if (top.startsWith("__")) top
-        else if (top == "main") "__main"
-        else {
-          val pkg = top.split("\\.").init.mkString(".")
-          if (pkg == "") "__empty"
-          else pkg
+    val env = assembly.map(defn => defn.name -> defn).toMap
+
+    def debug(): Unit = {
+      val batches = mutable.Map.empty[String, mutable.Buffer[Defn]]
+      assembly.foreach { defn =>
+        val top = defn.name.top.id
+        val key =
+          if (top.startsWith("__")) top
+          else if (top == "main") "__main"
+          else {
+            val pkg = top.split("\\.").init.mkString(".")
+            if (pkg == "") "__empty"
+            else pkg
+          }
+        if (!batches.contains(key)) {
+          batches(key) = mutable.UnrolledBuffer.empty[Defn]
         }
-      if (!batches.contains(key)) {
-        batches(key) = mutable.UnrolledBuffer.empty[Defn]
+        batches(key) += defn
       }
-      batches(key) += defn
+      batches.par.foreach {
+        case (k, defns) =>
+          val impl =
+            new Impl(config.target, env, defns, config.targetDirectory)
+          val outpath = k + ".ll"
+          withScratchBuffer { buffer =>
+            impl.gen(buffer)
+            buffer.flip
+            config.targetDirectory.write(Paths.get(outpath), buffer)
+          }
+      }
     }
 
-    batches.par.foreach {
-      case (k, defns) =>
+    def release(): Unit = {
+      withScratchBuffer { buffer =>
+        val defns   = assembly
         val impl    = new Impl(config.target, env, defns, config.targetDirectory)
-        val outpath = k + ".ll"
+        val outpath = "out.ll"
         withScratchBuffer { buffer =>
           impl.gen(buffer)
           buffer.flip
           config.targetDirectory.write(Paths.get(outpath), buffer)
         }
+      }
+    }
+
+    config.mode match {
+      case tools.Mode.Debug   => debug()
+      case tools.Mode.Release => release()
     }
   }
 
