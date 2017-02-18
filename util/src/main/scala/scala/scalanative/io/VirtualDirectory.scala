@@ -65,7 +65,7 @@ object VirtualDirectory {
       jar(file)
     } else {
       throw new UnsupportedOperationException(
-        "Neither a jar, nor a directory.")
+        "Neither a jar, nor a directory: " + file)
     }
 
   /** Root file system directory. */

@@ -20,8 +20,8 @@ import System.{lineSeparator => nl}
 
 object ScalaNativePluginInternal {
 
-  val nativeUnpackNativelib =
-    taskKey[Unit]("Unpack and precompile native lib.")
+  val nativeNativelib =
+    taskKey[File]("Unpack and precompile native lib.")
 
   val nativeTarget = taskKey[String]("Target triple.")
 
@@ -39,8 +39,6 @@ object ScalaNativePluginInternal {
 
   val nativeMissingDependencies =
     taskKey[Seq[String]]("List all symbols not available at link time")
-
-  lazy val nativelib = taskKey[File]("nativelib")
 
   private lazy val includes = {
     val includedir =
@@ -106,6 +104,9 @@ object ScalaNativePluginInternal {
       logger.info(s"$msg (${(end - start) / 1000000} ms)")
       res
     }
+
+    def running(command: Seq[String]): Unit =
+      logger.info("running" + nl + command.mkString(nl + "\t"))
   }
 
   /** Compiles application nir to llvm ir. */
@@ -132,26 +133,24 @@ object ScalaNativePluginInternal {
     links
   }
 
-  private def running(command: Seq[String]): String =
-    "running" + nl + command.mkString(nl + "\t")
-
   /** Compiles *.c[pp] in `cwd`. */
   def compileCSources(clang: File,
                       clangpp: File,
                       cwd: File,
                       logger: Logger): Boolean = {
-    val cpaths     = (cwd ** "*.c").get.map(abs)
-    val cpppaths   = (cwd ** "*.cpp").get.map(abs)
-    val compilec   = abs(clang) +: (includes ++ ("-c" +: cpaths))
-    val compilecpp = abs(clangpp) +: (includes ++ ("-c" +: cpppaths))
+    val cpaths   = (cwd ** "*.c").get.map(abs)
+    val cpppaths = (cwd ** "*.cpp").get.map(abs)
+    val paths    = cpaths ++ cpppaths
 
-    logger.debug(running(compilec))
-    val cExit = Process(compilec, cwd) ! logger
-
-    logger.debug(running(compilecpp))
-    val cppExit = Process(compilecpp, cwd) ! logger
-
-    cExit == 0 && cppExit == 0
+    paths.par
+      .map { path =>
+        val compiler = abs(if (path.endsWith(".cpp")) clangpp else clang)
+        val compilec = compiler +: (includes :+ "-c" :+ path :+ "-o" :+ path + ".o")
+        logger.running(compilec)
+        Process(compilec, cwd) ! logger
+      }
+      .seq
+      .forall(_ == 0)
   }
 
   /** Detect target platform. */
@@ -163,7 +162,7 @@ object ScalaNativePluginInternal {
     val targetfile   = cwd / "target"
     val compilec     = Seq(abs(clang), "-S", "-emit-llvm", abs(targetcfile))
     IO.write(targetcfile, "int probe;")
-    logger.debug(running(compilec))
+    logger.running(compilec)
     val exit = Process(compilec, cwd) ! logger
     if (exit != 0) {
       return false
@@ -200,7 +199,7 @@ object ScalaNativePluginInternal {
           val apppath = abs(appll)
           val outpath = apppath + ".o"
           val compile = Seq(abs(clangpp), "-c", apppath, "-o", apppath + ".o")
-          logger.debug(running(compile))
+          logger.running(compile)
           Process(compile, target) ! logger
           outpath
         }
@@ -235,7 +234,7 @@ object ScalaNativePluginInternal {
       val flags     = Seq("-o", outpath) ++ linkopts ++ targetopt ++ opts
       val compile   = abs(clangpp) +: (flags ++ paths)
 
-      logger.debug(running(compile))
+      logger.running(compile)
 
       Process(compile, target) ! logger
     }
@@ -292,7 +291,6 @@ object ScalaNativePluginInternal {
       "org.scala-native" % "nscplugin" % nativeVersion cross CrossVersion.full),
     nativeLibraryLinkage := Map(),
     nativeSharedLibrary := false,
-    nativelib := (crossTarget in Compile).value / "nativelib",
     nativeClang := {
       discover("clang", Seq(("3", "8"), ("3", "7")))
     },
@@ -303,19 +301,18 @@ object ScalaNativePluginInternal {
       includes ++ libs ++ maybeInjectShared(nativeSharedLibrary.value)
     },
     nativeTarget := {
-      val doUnpack = nativeUnpackNativelib.value
-      IO.read(nativelib.value / "target")
+      IO.read(nativeNativelib.value / "target")
     },
     artifactPath in nativeLink := {
       (crossTarget in Compile).value / (moduleName.value + "-out")
     },
     nativeLinkerReporter := tools.LinkerReporter.empty,
     nativeOptimizerReporter := tools.OptimizerReporter.empty,
-    nativeUnpackNativelib := {
-      val nativelibFile = nativelib.value
-      val clang         = nativeClang.value
-      val clangpp       = nativeClangPP.value
-      val nativelibjar = (fullClasspath in Compile).value
+    nativeNativelib := {
+      val nativelib = (crossTarget in Compile).value / "nativelib"
+      val clang     = nativeClang.value
+      val clangpp   = nativeClangPP.value
+      val jar = (fullClasspath in Compile).value
         .map(entry => abs(entry.data))
         .collectFirst {
           case p if p.contains("scala-native") && p.contains("nativelib") =>
@@ -324,30 +321,33 @@ object ScalaNativePluginInternal {
         .get
       val logger = streams.value.log
 
-      val jarhash     = Hash(nativelibjar).toSeq
-      val jarhashfile = nativelibFile / "jarhash"
+      val jarhash     = Hash(jar).toSeq
+      val jarhashfile = nativelib / "jarhash"
       def bootstrapped =
-        nativelibFile.exists &&
+        nativelib.exists &&
           jarhashfile.exists &&
           jarhash == IO.readBytes(jarhashfile).toSeq
 
       if (!bootstrapped) {
-        IO.delete(nativelibFile)
-        IO.unzip(nativelibjar, nativelibFile)
-        IO.write(jarhashfile, Hash(nativelibjar))
+        IO.delete(nativelib)
+        IO.unzip(jar, nativelib)
+        IO.write(jarhashfile, Hash(jar))
 
-        val compiledC      = compileCSources(clang, clangpp, nativelibFile, logger)
-        val detectedTarget = compileTargetProbe(clang, nativelibFile, logger)
+        val compiledC      = compileCSources(clang, clangpp, nativelib, logger)
+        val detectedTarget = compileTargetProbe(clang, nativelib, logger)
 
         if (!compiledC || !detectedTarget) {
           throw new MessageOnlyException("failed to unpack nativelib")
         }
       }
+
+      nativelib
     },
     nativeLink := ResourceScope { implicit scope =>
       val logger = streams.value.log
 
       logger.time("Total") {
+        val nativelib = nativeNativelib.value
         val clang     = nativeClang.value
         val clangpp   = nativeClangPP.value
         val clangOpts = nativeClangOptions.value
@@ -356,10 +356,14 @@ object ScalaNativePluginInternal {
         val mainClass = (selectMainClass in Compile).value.getOrElse(
           throw new MessageOnlyException("No main class detected.")
         )
-        val entry     = nir.Global.Top(mainClass.toString + "$")
-        val classpath = (fullClasspath in Compile).value.map(_.data)
-        val target    = (crossTarget in Compile).value
-        val binary    = (artifactPath in nativeLink).value
+        val entry       = nir.Global.Top(mainClass.toString + "$")
+        val classpath   = (fullClasspath in Compile).value.map(_.data)
+        val crossTarget = (Keys.crossTarget in Compile).value
+        val llTarget    = crossTarget / "ll"
+        val binary      = (artifactPath in nativeLink).value
+
+        IO.delete(llTarget)
+        IO.createDirectory(llTarget)
 
         val linkage           = nativeLibraryLinkage.value
         val linkerReporter    = nativeLinkerReporter.value
@@ -370,7 +374,7 @@ object ScalaNativePluginInternal {
           .withEntry(entry)
           .withPaths(classpath.map(p =>
             tools.LinkerPath(VirtualDirectory.real(p))))
-          .withTargetDirectory(VirtualDirectory.real(target))
+          .withTargetDirectory(VirtualDirectory.real(llTarget))
           .withInjectMain(!nativeSharedLibrary.value)
           .withTarget(nativeTarget.value)
 
@@ -378,15 +382,16 @@ object ScalaNativePluginInternal {
         val configFile = (streams.value.cacheDirectory / "native-config")
         val inputFiles = nirFiles + configFile
 
-        IO.createDirectory(target)
-        (target ** "*.ll").get.foreach(_.delete)
-        (target ** "*.o").get.foreach(_.delete)
         val links =
-          compileNir(config, logger, linkerReporter, optimizerReporter, target)
-        val appll = (target ** "*.ll").get.toSeq
+          compileNir(config,
+                     logger,
+                     linkerReporter,
+                     optimizerReporter,
+                     llTarget)
+        val appll = (llTarget ** "*.ll").get.toSeq
         compileLl(clangpp,
-                  target,
-                  nativelib.value,
+                  llTarget,
+                  nativelib,
                   appll,
                   binary,
                   nativeTarget.value,
@@ -403,7 +408,7 @@ object ScalaNativePluginInternal {
       val binary = abs(nativeLink.value)
       val args   = spaceDelimited("<arg>").parsed
 
-      logger.debug(running(binary +: args))
+      logger.running(binary +: args)
       val exitCode = Process(binary +: args).!
 
       val message =
