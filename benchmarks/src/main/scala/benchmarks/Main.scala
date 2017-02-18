@@ -8,7 +8,9 @@ object Main {
 
     val format = args.lift(0).map(Format(_)).getOrElse(TextFormat)
     val results = benchmarks.map { bench =>
-      bench.loop(bench.iterations)
+      val iterations = bench.iterations
+      bench.loop(iterations)
+      bench.loop(iterations)
     }
     val success = results.forall(_.success)
 
