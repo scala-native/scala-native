@@ -21,6 +21,9 @@ sealed trait Config {
   /** Target triple. */
   def target: String
 
+  /** Compilation mode. */
+  def mode: Mode
+
   /** Create new config with given entry point. */
   def withEntry(value: Global): Config
 
@@ -35,6 +38,9 @@ sealed trait Config {
 
   /** Create a new config with given target triple. */
   def withTarget(value: String): Config
+
+  /** Create a new config with given compilation mode. */
+  def withMode(value: Mode): Config
 }
 
 object Config {
@@ -45,13 +51,15 @@ object Config {
          paths = Seq.empty,
          targetDirectory = VirtualDirectory.empty,
          injectMain = true,
-         target = "")
+         target = "",
+         mode = Mode.Debug)
 
   private final case class Impl(entry: Global,
                                 paths: Seq[LinkerPath],
                                 targetDirectory: VirtualDirectory,
                                 injectMain: Boolean,
-                                target: String)
+                                target: String,
+                                mode: Mode)
       extends Config {
     def withEntry(value: Global): Config =
       copy(entry = value)
@@ -67,5 +75,8 @@ object Config {
 
     def withTarget(value: String): Config =
       copy(target = value)
+
+    def withMode(value: Mode): Config =
+      copy(mode = value)
   }
 }

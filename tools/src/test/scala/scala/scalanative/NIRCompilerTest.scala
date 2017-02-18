@@ -9,7 +9,7 @@ class NIRCompilerTest extends FlatSpec with Matchers with Inspectors {
   "The compiler" should "return products of compilation" in {
     val files =
       NIRCompiler { _ compile "class A" }.filter(_.isFile).map(_.getName)
-    val expectedNames = Seq("A.class", "A.hnir", "A.nir")
+    val expectedNames = Seq("A.class", "A.nir")
     files should contain theSameElementsAs expectedNames
   }
 
@@ -28,19 +28,14 @@ class NIRCompilerTest extends FlatSpec with Matchers with Inspectors {
           compiler.compile(sourcesDir) filter (_.isFile) map (_.getName)
         val expectedNames =
           Seq("A.class",
-              "A.hnir",
               "A.nir",
               "B.class",
-              "B.hnir",
               "B.nir",
               "C.class",
-              "C.hnir",
               "C.nir",
               "D.class",
-              "D.hnir",
               "D.nir",
               "E$.class",
-              "E$.hnir",
               "E$.nir",
               "E.class")
         nirFiles should contain theSameElementsAs expectedNames

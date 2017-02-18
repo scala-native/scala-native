@@ -15,34 +15,27 @@ import nir._, Inst.Let
 class AllocLowering(implicit fresh: Fresh, top: Top) extends Pass {
   import AllocLowering._
 
-  private val stackallocs = mutable.UnrolledBuffer.empty[Inst]
+  override def onInsts(insts: Seq[Inst]) = {
+    val entry, buf = new nir.Buffer
+    import buf._
 
-  override def preDefn = {
-    case defn: Defn.Define =>
-      stackallocs.clear
-      Seq(defn)
-  }
+    val label +: rest = insts
+    entry += label
 
-  override def preInst = {
-    case inst @ Let(_, alloc: Op.Stackalloc) =>
-      stackallocs += inst
-      Seq()
+    val newinsts = rest.foreach {
+      case inst @ Let(_, alloc: Op.Stackalloc) =>
+        entry += inst
 
-    case Let(n, Op.Classalloc(ClassRef(cls))) =>
-      val size = Val.Local(fresh(), Type.I64)
+      case Let(n, Op.Classalloc(ClassRef(cls))) =>
+        val size = let(Op.Sizeof(cls.classStruct))
+        let(n, Op.Call(allocSig, alloc, Seq(cls.typeConst, size), Next.None))
 
-      Seq(
-        Let(size.name, Op.Sizeof(cls.classStruct)),
-        Let(n, Op.Call(allocSig, alloc, Seq(cls.typeConst, size), Next.None))
-      )
-  }
+      case inst =>
+        buf += inst
+    }
 
-  override def postDefn = {
-    case defn: Defn.Define =>
-      val label +: rest = defn.insts
-      val newinsts      = label +: (stackallocs ++: rest)
-
-      Seq(defn.copy(insts = newinsts))
+    entry ++= buf
+    entry.toSeq
   }
 }
 

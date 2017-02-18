@@ -26,6 +26,8 @@ object ClassHierarchy {
 
     def fields: Seq[Field] =
       members.collect { case fld: Field => fld }
+
+    def typeName: Global = this.name member "type"
   }
 
   final class Struct(val attrs: Attrs,
@@ -61,7 +63,7 @@ object ClassHierarchy {
     var traits: Seq[Trait]     = Seq()
     var dyns: Seq[String]      = Seq()
 
-    lazy val ty = Type.Class(name)
+    val ty = Type.Class(name)
 
     lazy val alltraits: Seq[Trait] = {
       val base = parent.fold(Seq.empty[Trait])(_.alltraits)
@@ -82,6 +84,12 @@ object ClassHierarchy {
         meth
     }
 
+    lazy val vtableStruct: Type.Struct =
+      Type.Struct(Global.None, vtable.map(_.ty))
+
+    lazy val vtableValue: Val.Struct =
+      Val.Struct(Global.None, vtable)
+
     lazy val dynmethods: Seq[Method] =
       methods.filter(_.attrs.isDyn)
 
@@ -92,11 +100,6 @@ object ClassHierarchy {
         .fold(Seq.empty[Method])(_.alldynmethods)
         .filterNot(m => signatureSet.contains(m.name.id)) ++ dynmethods
     }
-
-    lazy val vtableStruct: Type.Struct =
-      Type.Struct(Global.None, vtable.map(_.ty))
-
-    lazy val vtableValue: Val.Struct = Val.Struct(Global.None, vtable)
 
     lazy val dynDispatchTableValue: Val =
       DynmethodPerfectHashMap(alldynmethods, dyns)
@@ -119,11 +122,11 @@ object ClassHierarchy {
             vtableValue)
       )
 
-    lazy val typeConst: Val = Val.Global(name tag "class" tag "type", Type.Ptr)
+    lazy val typeConst: Val = Val.Global(name member "type", Type.Ptr)
 
     lazy val classStruct: Type.Struct = {
       val data            = allfields.map(_.ty)
-      val classStructName = name tag "class"
+      val classStructName = name member "layout"
       val classStructBody = Type.Ptr +: data
       val classStructTy   = Type.Struct(classStructName, classStructBody)
 
@@ -236,11 +239,10 @@ object ClassHierarchy {
                   override val methods: Seq[Method],
                   override val fields: Seq[Field])
       extends Scope {
+    var dyns  = Seq.empty[String]
     val fresh = nir.Fresh("tx")
     def name  = Global.None
     def attrs = Attrs.None
-
-    var dyns: Seq[String] = Seq()
 
     lazy val dispatchName = Global.Top("__dispatch")
     lazy val dispatchVal  = Val.Global(dispatchName, Type.Ptr)
@@ -412,12 +414,37 @@ object ClassHierarchy {
       }
     }
 
+    def forceLazilyInitializedFields(): Unit = {
+      traits.foreach { trt =>
+        trt.alltraits
+        trt.allmethods
+      }
+      classes.foreach { cls =>
+        cls.alltraits
+        cls.allmethods
+        cls.allfields
+        cls.allmethods
+        cls.allvslots
+        cls.vslots
+        cls.vtableStruct
+        cls.vtableValue
+        cls.typeStruct
+        cls.typeValue
+        cls.typeConst
+        cls.classStruct
+        cls.vtable
+        cls.imap
+        cls.alloverrides
+      }
+    }
+
     enrichMethods()
     enrichFields()
     enrichClasses()
     enrichTraits()
     assignClassIds()
     assignMethodIds()
+    forceLazilyInitializedFields()
 
     top
   }

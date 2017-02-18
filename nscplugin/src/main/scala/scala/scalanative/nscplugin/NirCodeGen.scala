@@ -1,6 +1,7 @@
 package scala.scalanative
 package nscplugin
 
+import java.nio.file.Path
 import scala.collection.mutable, mutable.UnrolledBuffer
 import scala.tools.nsc.{util => _, _}
 import scala.tools.nsc.plugins._
@@ -88,8 +89,10 @@ abstract class NirCodeGen
 
     private val lazyAnonDefs =
       mutable.Map.empty[Symbol, ClassDef]
+    private val resultDefns =
+      mutable.UnrolledBuffer.empty[(Path, Seq[Defn])]
 
-    private def consumeLazyAnonDef(sym: Symbol) = {
+    private def consumeLazyAnonDef(sym: Symbol): ClassDef = {
       lazyAnonDefs
         .get(sym)
         .fold {
@@ -107,6 +110,8 @@ abstract class NirCodeGen
       scalaPrimitives.init()
       nirPrimitives.init()
       super.run()
+      genIRFiles(resultDefns)
+      resultDefns.clear()
     }
 
     override def apply(cunit: CompilationUnit): Unit = {
@@ -141,8 +146,8 @@ abstract class NirCodeGen
         }
 
         allDefns.foreach {
-          case (sym, defn) =>
-            genIRFile(cunit, sym, defn)
+          case (sym, defns) =>
+            resultDefns += ((getPathFor(cunit, sym), defns))
         }
       } finally {
         lazyAnonDefs.clear()

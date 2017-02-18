@@ -7,11 +7,13 @@ import nir._, Inst.Let
 
 /** Translates high-level casts to corresponding low-level instructions. */
 class AsLowering extends Pass {
-  override def preInst = {
+  override def onInst(inst: Inst) = inst match {
     case Let(n, Op.As(_: Type.RefKind, Of(v, _: Type.RefKind))) =>
-      Seq(Let(n, Op.Copy(v)))
+      Let(n, Op.Copy(v))
     case inst @ Let(n, Op.As(to, Of(v, from))) =>
       util.unsupported(s"can't cast from $from to $to")
+    case _ =>
+      inst
   }
 
   object Of {

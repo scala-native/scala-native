@@ -10,17 +10,30 @@ import nir._
 
 /** Short-circuits method calls that return nothing. */
 class NothingLowering extends Pass {
-  override def preInst = {
-    case inst @ Inst.Let(n, call: Op.Call) if call.resty == Type.Nothing =>
-      Seq(inst, Inst.Unreachable)
+  override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
+    val buf = new nir.Buffer
+
+    insts.foreach {
+      case inst @ Inst.Let(n, call: Op.Call) if call.resty == Type.Nothing =>
+        buf += super.onInst(inst)
+        buf.unreachable
+
+      case inst =>
+        buf += super.onInst(inst)
+    }
+
+    buf.toSeq
   }
 
-  override def preType = {
+  override def onType(ty: Type): Type = ty match {
     case Type.Nothing =>
       Type.Ptr
 
     case Type.Function(params, Type.Nothing) =>
       Type.Function(params, Type.Void)
+
+    case _ =>
+      super.onType(ty)
   }
 }
 

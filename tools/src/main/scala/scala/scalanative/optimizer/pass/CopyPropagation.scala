@@ -36,19 +36,20 @@ class CopyPropagation extends Pass {
     copies
   }
 
-  override def preDefn = {
-    case defn: Defn.Define =>
-      locals = collect(defn.insts)
-      Seq(defn)
+  override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
+    val buf = new nir.Buffer
+    locals = collect(insts)
+    insts.foreach {
+      case Let(_, _: Op.Copy) =>
+        ()
+      case inst =>
+        buf += super.onInst(inst)
+    }
+    buf.toSeq
   }
 
-  override def preInst = {
-    case Let(_, _: Op.Copy) =>
-      Seq()
-  }
-
-  override def preVal = {
-    case value =>
+  override def onVal(value: Val) = value match {
+    case value: Val.Local =>
       @tailrec
       def loop(value: Val): Val =
         value match {
@@ -58,8 +59,10 @@ class CopyPropagation extends Pass {
           case value =>
             value
         }
-
       loop(value)
+
+    case _ =>
+      super.onVal(value)
   }
 }
 

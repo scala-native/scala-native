@@ -13,7 +13,7 @@ import Inst._
 class CfChainsSimplification(implicit fresh: Fresh, top: Top) extends Pass {
   import CfChainsSimplification._
 
-  override def preDefn = {
+  override def onDefn(defn: Defn): Defn = defn match {
     case defn: Defn.Define =>
       val cfg = ControlFlow.Graph(defn.insts)
 
@@ -21,7 +21,10 @@ class CfChainsSimplification(implicit fresh: Fresh, top: Top) extends Pass {
         (b.label +: b.insts.dropRight(1)) ++ simplifyCf(b.insts.last, cfg)
       }
 
-      Seq(defn.copy(insts = newInsts))
+      defn.copy(insts = newInsts)
+
+    case _ =>
+      defn
   }
 
   private def simplifyCf(cfInst: Inst, cfg: ControlFlow.Graph): Seq[Inst] = {
@@ -66,11 +69,9 @@ class CfChainsSimplification(implicit fresh: Fresh, top: Top) extends Pass {
             }
 
             if (canSkip) {
-              val evaluation   = nextBlockParams.zip(args).toMap
-              val replacer     = new ArgumentReplacer(evaluation)
-              val replacedArgs = replacer(nextCf)
-              assert(replacedArgs.size == 1)
-              replacedArgs.head
+              val evaluation = nextBlockParams.zip(args).toMap
+              val replacer   = new ArgumentReplacer(evaluation)
+              replacer.onInst(nextCf)
             } else {
               cfInst
             }
@@ -222,11 +223,12 @@ object CfChainsSimplification extends PassCompanion {
    */
   class ArgumentReplacer(evaluation: Map[Local, Val]) extends Pass {
 
-    override def preVal = {
+    override def onVal(value: Val) = value match {
       case local @ Val.Local(name, _) =>
         evaluation.getOrElse(name, local)
+      case _ =>
+        super.onVal(value)
     }
-
   }
 
 }

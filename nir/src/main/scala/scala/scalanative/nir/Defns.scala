@@ -10,9 +10,9 @@ sealed abstract class Defn {
 
 object Defn {
   // low-level
-  final case class Var(attrs: Attrs, name: Global, ty: Type, value: Val)
+  final case class Var(attrs: Attrs, name: Global, ty: Type, rhs: Val)
       extends Defn
-  final case class Const(attrs: Attrs, name: Global, ty: Type, value: Val)
+  final case class Const(attrs: Attrs, name: Global, ty: Type, rhs: Val)
       extends Defn
   final case class Declare(attrs: Attrs, name: Global, ty: Type) extends Defn
   final case class Define(attrs: Attrs,

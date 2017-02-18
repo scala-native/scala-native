@@ -13,18 +13,12 @@ import nir._
 class TraitLowering(implicit top: Top, fresh: Fresh) extends Pass {
   import TraitLowering._
 
-  override def preAssembly = {
-    case assembly =>
-      assembly :+ top.dispatchDefn :+ top.instanceDefn
-  }
-
-  override def preDefn = {
-    case _: Defn.Trait =>
-      Seq()
-
-    case Defn.Declare(_, MethodRef(_: Trait, _), _) =>
-      Seq()
-  }
+  override def onDefns(defns: Seq[Defn]): Seq[Defn] =
+    defns.filter {
+      case _: Defn.Trait                              => false
+      case Defn.Declare(_, MethodRef(_: Trait, _), _) => false
+      case _                                          => true
+    }
 }
 
 object TraitLowering extends PassCompanion {

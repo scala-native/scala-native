@@ -9,9 +9,12 @@ import nir._
 
 /** Translates high-level closures to corresponding class allocation. */
 class ClosureLowering extends Pass {
-  override def preInst = {
-    case inst @ Inst.Let(_, _: Op.Closure) =>
+  override def onInst(inst: Inst) = inst match {
+    case Inst.Let(_, _: Op.Closure) =>
       unsupported(inst)
+
+    case _ =>
+      inst
   }
 }
 

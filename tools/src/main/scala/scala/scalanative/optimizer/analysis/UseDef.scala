@@ -30,22 +30,30 @@ object UseDef {
   private class CollectLocalValDeps extends Pass {
     val deps = mutable.UnrolledBuffer.empty[Local]
 
-    override def preVal = {
-      case v @ Val.Local(n, _) =>
-        deps += n
-        v
+    override def onVal(value: Val) = {
+      value match {
+        case v @ Val.Local(n, _) =>
+          deps += n
+        case _ =>
+          ()
+      }
+      super.onVal(value)
     }
 
-    override def preNext = {
-      case next if next ne Next.None =>
-        deps += next.name
-        next
+    override def onNext(next: Next) = {
+      next match {
+        case next if next ne Next.None =>
+          deps += next.name
+        case _ =>
+          ()
+      }
+      super.onNext(next)
     }
   }
 
   private def collect(inst: Inst): Seq[Local] = {
     val collector = new CollectLocalValDeps
-    collector(inst)
+    collector.onInst(inst)
     collector.deps.distinct
   }
 

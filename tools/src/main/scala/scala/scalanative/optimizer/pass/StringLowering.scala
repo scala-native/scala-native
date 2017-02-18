@@ -22,7 +22,7 @@ class StringLowering(implicit top: Top) extends Pass {
     names
   }
 
-  override def preVal = {
+  override def onVal(value: Val) = value match {
     case Val.String(v) =>
       val StringCls    = ClassRef.unapply(StringName).get
       val CharArrayCls = ClassRef.unapply(CharArrayName).get
@@ -47,6 +47,9 @@ class StringLowering(implicit top: Top) extends Pass {
       }
 
       Val.Const(Val.Struct(Global.None, StringCls.typeConst +: fieldValues))
+
+    case _ =>
+      super.onVal(value)
   }
 
   // Update java.lang.String::hashCode whenever you change this method.

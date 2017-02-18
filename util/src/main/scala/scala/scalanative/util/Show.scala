@@ -4,7 +4,7 @@ package util
 import scala.language.implicitConversions
 
 final class ShowBuilder {
-  private val sb          = new java.lang.StringBuilder
+  private var sb          = new java.lang.StringBuilder
   private var indentation = 0
 
   def str(value: Any): Unit =
@@ -33,6 +33,11 @@ final class ShowBuilder {
   def newline(): Unit = {
     sb.append("\n")
     sb.append("  " * indentation)
+  }
+
+  def clear(): Unit = {
+    indentation = 0
+    sb = new java.lang.StringBuilder
   }
 
   override def toString = sb.toString

@@ -15,14 +15,11 @@ import nir._
 class GlobalValueNumbering extends Pass {
   import GlobalValueNumbering._
 
-  override def preDefn = {
-    case defn: Defn.Define =>
-      val cfg        = ControlFlow.Graph(defn.insts)
-      val domination = DominatorTree.build(cfg)
+  override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
+    val cfg        = ControlFlow.Graph(insts)
+    val domination = DominatorTree.build(cfg)
 
-      val newInsts = performSimpleValueNumbering(cfg, domination)
-
-      Seq(defn.copy(insts = newInsts))
+    performSimpleValueNumbering(cfg, domination)
   }
 
   private def performSimpleValueNumbering(

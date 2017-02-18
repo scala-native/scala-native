@@ -9,27 +9,30 @@ import nir._
 /** Maps const values to top-level deduplicated constants.
  */
 class ConstLowering extends Pass {
-  private val consts = mutable.UnrolledBuffer.empty[Val]
+  private val consts   = mutable.UnrolledBuffer.empty[Val]
+  private val constfor = mutable.Map.empty[Val, Int]
   private def constName(idx: Int): Global =
-    Global.Top("__const." + idx.toString)
+    Global.Member(Global.Top("__const"), " " + this.## + "." + idx.toString)
   private def constFor(v: Val): Int =
-    if (consts.contains(v)) consts.indexOf(v)
-    else {
+    if (constfor.contains(v)) {
+      constfor(v)
+    } else {
       consts += v
+      constfor(v) = consts.length - 1
       consts.length - 1
     }
 
-  override def postAssembly = {
-    case defns =>
-      defns ++ consts.zipWithIndex.map {
-        case (v, idx) =>
-          Defn.Const(Attrs.None, constName(idx), v.ty, v)
-      }
-  }
+  override def onDefns(defns: Seq[Defn]): Seq[Defn] =
+    super.onDefns(defns) ++ consts.zipWithIndex.map {
+      case (v, idx) =>
+        Defn.Const(Attrs.None, constName(idx), v.ty, v)
+    }
 
-  override def postVal = {
+  override def onVal(value: Val): Val = value match {
     case Val.Const(v) =>
-      Val.Global(constName(constFor(v)), Type.Ptr)
+      Val.Global(constName(constFor(onVal(v))), Type.Ptr)
+    case _ =>
+      super.onVal(value)
   }
 }
 

@@ -12,32 +12,30 @@ import nir._
 class DeadCodeElimination(implicit top: Top) extends Pass {
   import DeadCodeElimination._
 
-  override def preDefn = {
-    case defn: Defn.Define =>
-      val insts      = defn.insts
-      val cfg        = ControlFlow.Graph(insts)
-      val usedef     = UseDef(cfg)
-      val newinsts   = mutable.UnrolledBuffer.empty[Inst]
-      val removeArgs = new ArgRemover(usedef, cfg.entry.name)
+  override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
+    val cfg        = ControlFlow.Graph(insts)
+    val usedef     = UseDef(cfg)
+    val removeArgs = new ArgRemover(usedef, cfg.entry.name)
+    val buf        = new nir.Buffer
 
-      cfg.all.foreach { block =>
-        if (usedef(block.name).alive) {
-          val newParams = block.params.filter { p =>
-            (block.name == cfg.entry.name) || usedef(p.name).alive
-          }
-          newinsts += block.label.copy(params = newParams)
-          block.insts.foreach {
-            case inst @ Inst.Let(n, op) =>
-              if (usedef(n).alive) newinsts += inst
-            case inst: Inst.Cf =>
-              newinsts ++= removeArgs(inst)
-            case _ =>
-              ()
-          }
+    cfg.all.foreach { block =>
+      if (usedef(block.name).alive) {
+        val newParams = block.params.filter { p =>
+          (block.name == cfg.entry.name) || usedef(p.name).alive
+        }
+        buf += block.label.copy(params = newParams)
+        block.insts.foreach {
+          case inst @ Inst.Let(n, op) =>
+            if (usedef(n).alive) buf += inst
+          case inst: Inst.Cf =>
+            buf += removeArgs.onInst(inst)
+          case _ =>
+            ()
         }
       }
+    }
 
-      Seq(defn.copy(insts = newinsts))
+    buf.toSeq
   }
 }
 
@@ -47,7 +45,7 @@ object DeadCodeElimination extends PassCompanion {
 
   class ArgRemover(usedef: Map[Local, UseDef.Def], entryName: Local)
       extends Pass {
-    override def preNext = {
+    override def onNext(next: Next) = next match {
       case Next.Label(name, args) if (name != entryName) =>
         usedef(name) match {
           case UseDef.BlockDef(_, _, _, params) =>
@@ -60,6 +58,9 @@ object DeadCodeElimination extends PassCompanion {
             throw new IllegalStateException(
               s"Expected a BlockDef in usedef for ${name.show}")
         }
+
+      case _ =>
+        next
     }
   }
 }

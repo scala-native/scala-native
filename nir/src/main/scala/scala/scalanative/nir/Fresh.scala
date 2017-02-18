@@ -1,12 +1,13 @@
 package scala.scalanative
 package nir
 
+import java.util.concurrent.atomic.AtomicInteger
+
 final class Fresh(scope: String) {
-  private var i: Int = 0
+  private var i = new AtomicInteger(0)
   def apply() = {
-    val res = Local(scope, i)
-    i += 1
-    res
+    val value = i.getAndIncrement()
+    Local(scope, value)
   }
 }
 object Fresh {

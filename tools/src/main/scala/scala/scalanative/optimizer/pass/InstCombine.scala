@@ -17,28 +17,29 @@ class InstCombine()(implicit fresh: Fresh) extends Pass {
   import InstCombine._
   import ConstantFolding._
 
-  override def preDefn = {
-    case defn: Defn.Define =>
-      // This stores the encountered definitions for non-params locals
-      val defop    = mutable.HashMap.empty[Local, Op]
-      val resolver = new DefOp(defop)
-      val cfg      = ControlFlow.Graph(defn.insts)
+  override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
+    // This stores the encountered definitions for non-params locals
+    val buf      = new nir.Buffer
+    val defop    = mutable.HashMap.empty[Local, Op]
+    val resolver = new DefOp(defop)
+    val cfg      = ControlFlow.Graph(insts)
 
-      /* Because of the pre-order traversal of the CFG, the definitions will be
-       * seen before their use
-       */
-      val newInsts = cfg.map { b =>
-        b.label +: b.insts.flatMap { inst =>
-          val simplifiedSeq = simplify(inst, resolver)
-          simplifiedSeq.foreach {
-            case Let(n, op) => defop += (n -> op)
-            case _          =>
-          }
-          simplifiedSeq
+    /* Because of the pre-order traversal of the CFG, the definitions will be
+     * seen before their use
+     */
+    cfg.foreach { b =>
+      buf += b.label
+      b.insts.foreach { inst =>
+        val simplifiedSeq = simplify(inst, resolver)
+        simplifiedSeq.foreach {
+          case Let(n, op) => defop += (n -> op)
+          case _          =>
         }
-      }.flatten
+        buf ++= simplifiedSeq
+      }
+    }
 
-      Seq(defn.copy(insts = newInsts))
+    buf.toSeq
   }
 
   private def simplify(inst: Inst, defop: DefOp): Seq[Inst] = {
