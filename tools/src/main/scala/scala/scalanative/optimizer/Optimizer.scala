@@ -9,13 +9,20 @@ import nir._
  */
 object Optimizer {
 
-  def time[T](msg: String)(f: => T): T = {
+  private def time[T](msg: String)(f: => T): T = {
     import java.lang.System.nanoTime
     val start = nanoTime()
     val res   = f
     val end   = nanoTime()
     println(s"[info] $msg (${(end - start) / 1000000} ms)")
     res
+  }
+
+  private def partition(defns: Seq[Defn]) = {
+    val batches = java.lang.Runtime.getRuntime.availableProcessors * 4
+    defns.groupBy { defn =>
+      Math.abs(System.identityHashCode(defn)) % batches
+    }
   }
 
   /** Run all of the passes on given assembly. */
@@ -59,9 +66,7 @@ object Optimizer {
 
     onStart(assembly)
 
-    val procs   = java.lang.Runtime.getRuntime.availableProcessors * 4
-    val batches = injected.groupBy(d => Math.abs(d.name.##) % procs)
-    val result = batches.par
+    val result = partition(injected).par
       .map {
         case (id, defns) =>
           val passes = transforms.map(_.apply(config, world))
