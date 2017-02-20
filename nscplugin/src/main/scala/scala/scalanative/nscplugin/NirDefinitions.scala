@@ -194,11 +194,12 @@ trait NirDefinitions { self: NirGlobalAddons =>
 
     // Java library
 
-    lazy val NObjectClass = getRequiredClass("java.lang._Object")
+    lazy val NObjectClass      = getRequiredClass("java.lang._Object")
+    lazy val NObjectInitMethod = getDecl(NObjectClass, TermName("<init>"))
     lazy val NObjectHashCodeMethod =
-      getDecl(NObjectClass, TermName("_hashCode"))
-    lazy val NObjectEqualsMethod = getDecl(NObjectClass, TermName("_equals"))
-    lazy val NObjectInitMethod   = getDecl(NObjectClass, TermName("<init>"))
+      getDecl(NObjectClass, TermName("__scala_$hash$hash"))
+    lazy val NObjectEqualsMethod =
+      getDecl(NObjectClass, TermName("__scala_$eq$eq"))
 
     lazy val NStringClass  = getRequiredClass("java.lang._String")
     lazy val NStringModule = getRequiredModule("java.lang._String")
@@ -224,6 +225,14 @@ trait NirDefinitions { self: NirGlobalAddons =>
       'F' -> getDecl(BoxesRunTimeModule, TermName("boxToFloat")),
       'D' -> getDecl(BoxesRunTimeModule, TermName("boxToDouble"))
     )
+
+    lazy val HashMethods = Seq(
+        getDecl(BoxesRunTimeModule, TermName("hashFromObject")),
+        getDecl(BoxesRunTimeModule, TermName("hashFromNumber")),
+        getDecl(BoxesRunTimeModule, TermName("hashFromFloat")),
+        getDecl(BoxesRunTimeModule, TermName("hashFromDouble")),
+        getDecl(BoxesRunTimeModule, TermName("hashFromLong"))
+      ) ++ getMember(ScalaRunTimeModule, TermName("hash")).alternatives
 
     lazy val UnboxMethod = Map[Char, Symbol](
       'B' -> getDecl(BoxesRunTimeModule, TermName("unboxToBoolean")),

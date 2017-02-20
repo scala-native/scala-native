@@ -1026,7 +1026,7 @@ abstract class NirCodeGen
       } else if (code == CONCAT) {
         genStringConcat(receiver, args.head, focus)
       } else if (code == HASH) {
-        genHashCode(app, receiver, focus)
+        genHashCode(args.head, focus)
       } else if (isArrayOp(code) || code == ARRAY_CLONE) {
         genArrayOp(app, code, focus)
       } else if (nirPrimitives.isPtrOp(code)) {
@@ -1333,12 +1333,10 @@ abstract class NirCodeGen
                     right)
     }
 
-    // TODO: this doesn't seem to get called on foo.## expressions
-    def genHashCode(tree: Tree, receiverp: Tree, focus: Focus) = {
-      val recv = genExpr(receiverp, focus)
-
-      genMethodCall(
-          NObjectHashCodeMethod, statically = true, recv.value, Seq(), recv)
+    def genHashCode(argp: Tree, focus: Focus) = {
+      val meth = NObjectHashCodeMethod
+      val arg  = boxValue(argp.tpe, genExpr(argp, focus))
+      genMethodCall(meth, statically = false, arg.value, Seq(), arg)
     }
 
     def genArrayOp(app: Apply, code: Int, focus: Focus): Focus = {

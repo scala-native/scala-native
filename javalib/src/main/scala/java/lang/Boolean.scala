@@ -1,7 +1,9 @@
 package java.lang
 
-final class Boolean(val booleanValue: scala.Boolean)
-    extends Comparable[Boolean] {
+final class Boolean(val _value: scala.Boolean) extends Comparable[Boolean] {
+  def booleanValue(): scala.Boolean =
+    _value
+
   @inline def this(s: String) =
     this(Boolean.parseBoolean(s))
 
@@ -9,13 +11,13 @@ final class Boolean(val booleanValue: scala.Boolean)
     this eq that.asInstanceOf[AnyRef]
 
   @inline override def hashCode(): Int =
-    Boolean.hashCode(booleanValue)
+    Boolean.hashCode(_value)
 
   @inline override def compareTo(that: Boolean): Int =
-    Boolean.compare(booleanValue, that.booleanValue)
+    Boolean.compare(_value, that._value)
 
   @inline override def toString(): String =
-    Boolean.toString(booleanValue)
+    Boolean.toString(_value)
 
   /*
    * Ported from ScalaJS
@@ -27,13 +29,12 @@ final class Boolean(val booleanValue: scala.Boolean)
    * implementations.
    */
 
-  protected def unary_! : scala.Boolean             = !booleanValue
-  protected def ||(x: scala.Boolean): scala.Boolean = booleanValue || x
-  protected def &&(x: scala.Boolean): scala.Boolean = booleanValue && x
-  protected def |(x: scala.Boolean): scala.Boolean  = booleanValue | x
-  protected def &(x: scala.Boolean): scala.Boolean  = booleanValue & x
-  protected def ^(x: scala.Boolean): scala.Boolean  = booleanValue ^ x
-
+  protected def unary_! : scala.Boolean             = ! _value
+  protected def ||(x: scala.Boolean): scala.Boolean = _value || x
+  protected def &&(x: scala.Boolean): scala.Boolean = _value && x
+  protected def |(x: scala.Boolean): scala.Boolean  = _value | x
+  protected def &(x: scala.Boolean): scala.Boolean  = _value & x
+  protected def ^(x: scala.Boolean): scala.Boolean  = _value ^ x
 }
 
 object Boolean {

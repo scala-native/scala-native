@@ -104,5 +104,6 @@ abstract class NirPrimitives {
     addPrimitive(ShortToULongMethod, SHORT_TO_ULONG)
     addPrimitive(IntToULongMethod, INT_TO_ULONG)
     addPrimitive(SelectMethod, SELECT)
+    HashMethods.foreach(addPrimitive(_, HASH))
   }
 }
