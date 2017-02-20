@@ -37,6 +37,16 @@ object IssuesSuite extends tests.Suite {
     assert("hola".equals(sz))
   }
 
+  test("#275") {
+    val arr = new Array[Int](10)
+    assert(arr.getClass.getName == "scala.scalanative.runtime.IntArray")
+    assert(arr.toList == List(0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+
+    val arr2 = arr.map(_ + 1)
+    assert(arr2.getClass.getName == "scala.scalanative.runtime.IntArray")
+    assert(arr2.toList == List(1, 1, 1, 1, 1, 1, 1, 1, 1, 1))
+  }
+
   test("#314") {
     // Division by zero is undefined behavior in production mode.
     // Optimizer can assume it never happens and remove unused result.

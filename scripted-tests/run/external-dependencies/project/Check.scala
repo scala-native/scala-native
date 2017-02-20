@@ -59,7 +59,7 @@ object Check {
         "@java.lang.StringBuffer::init",
         "@java.lang.StringBuffer::toString_class.java.lang.String",
         "@java.lang.System$",
-        "@java.lang.System$::field.out",
+        "@java.lang.System$::out_class.java.io.PrintStream",
         "@scala.LowPriorityImplicits",
         "@scala.LowPriorityImplicits::wrapIntArray_class.ssnr.IntArray_class.scala.collection.mutable.WrappedArray",
         "@scala.Predef$",
