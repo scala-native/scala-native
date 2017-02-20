@@ -429,12 +429,23 @@ abstract class NirCodeGen
     def genNormalMethodBody(params: Seq[Val.Local],
                             bodyp: Tree,
                             isStatic: Boolean): Seq[nir.Inst] = {
+      val entry = {
+        val start = Focus.start().withLabel(fresh(), params: _*)
+        val vars  = curMethodInfo.mutableVars.toSeq
+
+        vars.foldLeft(start) {
+          case (focus, sym) =>
+            val ty    = genType(sym.info, box = false)
+            val alloc = focus withOp Op.Stackalloc(ty, Val.None)
+            curMethodEnv.enter(sym, alloc.value)
+            alloc
+        }
+      }
       val body = bodyp match {
         // Tailrec emits magical labeldefs that can hijack this reference is
         // current method. This requires special treatment on our side.
         case Block(List(ValDef(_, nme.THIS, _, _)),
                    label @ LabelDef(name, Ident(nme.THIS) :: _, rhs)) =>
-          val entry  = Focus.start().withLabel(fresh(), params: _*)
           val local  = curMethodEnv.enterLabel(label)
           val values = params.take(label.params.length)
           val jump   = entry.withJump(local, values: _*)
@@ -454,7 +465,7 @@ abstract class NirCodeGen
                 else Some(Val.Local(params.head.name, params.head.ty))
               }
           ) {
-            genExpr(bodyp, Focus.start().withLabel(fresh(), params: _*))
+            genExpr(bodyp, entry)
           }
       }
 
@@ -482,9 +493,8 @@ abstract class NirCodeGen
             rhs withValue Val.None
           } else {
             val ty    = genType(vd.symbol.tpe, box = false)
-            val alloc = rhs withOp Op.Stackalloc(ty, Val.None)
-            curMethodEnv.enter(vd.symbol, alloc.value)
-            alloc withOp Op.Store(ty, alloc.value, rhs.value)
+            val alloc = curMethodEnv.resolve(vd.symbol)
+            rhs withOp Op.Store(ty, alloc, rhs.value)
           }
 
         case If(cond, thenp, elsep) =>

@@ -16,16 +16,10 @@ class AllocLowering(implicit fresh: Fresh, top: Top) extends Pass {
   import AllocLowering._
 
   override def onInsts(insts: Seq[Inst]) = {
-    val entry, buf = new nir.Buffer
+    val buf = new nir.Buffer
     import buf._
 
-    val label +: rest = insts
-    entry += label
-
-    val newinsts = rest.foreach {
-      case inst @ Let(_, alloc: Op.Stackalloc) =>
-        entry += inst
-
+    insts.foreach {
       case Let(n, Op.Classalloc(ClassRef(cls))) =>
         val size = let(Op.Sizeof(cls.classStruct))
         let(n, Op.Call(allocSig, alloc, Seq(cls.typeConst, size), Next.None))
@@ -34,8 +28,7 @@ class AllocLowering(implicit fresh: Fresh, top: Top) extends Pass {
         buf += inst
     }
 
-    entry ++= buf
-    entry.toSeq
+    buf.toSeq
   }
 }
 
