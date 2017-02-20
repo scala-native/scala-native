@@ -10,13 +10,16 @@ import scalanative.io.{withScratchBuffer, VirtualDirectory}
 trait Reporter {
 
   /** Gets called whenever optimizations starts. */
-  def onStart(assembly: Seq[Defn]): Unit = ()
+  def onStart(batchId: Int, batchDefns: Seq[Defn]): Unit = ()
 
-  /** Gets called right after pass transforms the assembly. */
-  def onPass(pass: Pass, assembly: Seq[nir.Defn]): Unit = ()
+  /** Gets called right after pass transforms the batchDefns. */
+  def onPass(batchId: Int,
+             passId: Int,
+             pass: Pass,
+             batchDefns: Seq[nir.Defn]): Unit = ()
 
   /** Gets called with final result of optimization. */
-  def onComplete(assembly: Seq[Defn]): Unit = ()
+  def onComplete(batchId: Int, batchDefns: Seq[Defn]): Unit = ()
 }
 
 object Reporter {
@@ -26,26 +29,27 @@ object Reporter {
 
   /** Dump textual NIR after every pass to given directory. */
   def toDirectory(file: File): Reporter = new Reporter {
-    private var last: Int             = _
-    private var dir: VirtualDirectory = _
+    lazy val dir = VirtualDirectory.local(file)
 
-    private def debug(assembly: Seq[Defn], suffix: String) =
+    private def debug(batchDefns: Seq[Defn], suffix: String) =
       withScratchBuffer { buffer =>
-        serializeText(assembly, buffer)
+        serializeText(batchDefns, buffer)
         buffer.flip
         dir.write(Paths.get(s"out.$suffix.hnir"), buffer)
       }
 
-    override def onStart(assembly: Seq[Defn]): Unit = {
-      last = 0
-      dir = VirtualDirectory.local(file)
-      debug(assembly, "00")
-    }
+    private def padded(value: Int): String =
+      if (value < 10) "0" + value else "" + value
 
-    override def onPass(pass: Pass, assembly: Seq[nir.Defn]): Unit = {
-      last += 1
-      val padded = if (last < 10) "0" + last else "" + last
-      debug(assembly, padded + "-" + pass.getClass.getSimpleName)
-    }
+    override def onStart(batchId: Int, batchDefns: Seq[Defn]): Unit =
+      debug(batchDefns, padded(batchId) + ".00")
+
+    override def onPass(batchId: Int,
+                        passId: Int,
+                        pass: Pass,
+                        batchDefns: Seq[nir.Defn]): Unit =
+      debug(
+        batchDefns,
+        padded(batchId) + "." + padded(passId + 1) + "-" + pass.getClass.getSimpleName)
   }
 }

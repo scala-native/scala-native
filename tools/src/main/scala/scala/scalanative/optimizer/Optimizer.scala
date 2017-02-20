@@ -50,34 +50,33 @@ object Optimizer {
       buf
     }
 
-    def loop(defns: Seq[Defn], passes: Seq[(AnyPass, Int)]): Seq[Defn] =
+    def loop(batchId: Int,
+             batchDefns: Seq[Defn],
+             passes: Seq[(AnyPass, Int)]): Seq[Defn] =
       passes match {
         case Seq() =>
-          defns
+          batchDefns
 
         case (NoPass, _) +: rest =>
-          loop(defns, rest)
+          loop(batchId, batchDefns, rest)
 
-        case (pass: Pass, id) +: rest =>
-          val passResult = pass.onDefns(defns)
-          onPass(pass, passResult)
-          loop(passResult, rest)
+        case (pass: Pass, passId) +: rest =>
+          val passResult = pass.onDefns(batchDefns)
+          onPass(batchId, passId, pass, passResult)
+          loop(batchId, passResult, rest)
       }
 
-    onStart(assembly)
-
-    val result = partition(injected).par
+    partition(injected).par
       .map {
-        case (id, defns) =>
+        case (batchId, batchDefns) =>
+          onStart(batchId, batchDefns)
           val passes = transforms.map(_.apply(config, world))
-          loop(defns, passes.zipWithIndex)
+          val res    = loop(batchId, batchDefns, passes.zipWithIndex)
+          onComplete(batchId, res)
+          res
       }
       .seq
       .flatten
       .toSeq
-
-    onComplete(result)
-
-    result
   }
 }
