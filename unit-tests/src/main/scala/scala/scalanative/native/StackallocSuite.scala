@@ -64,4 +64,38 @@ object StackallocSuite extends tests.Suite {
     assert(!ptr._3 == 30)
     assert(!ptr._4 == 40)
   }
+
+  test("stack-allocated list") {
+    import CList._
+    var i               = 0
+    var head: Ptr[Node] = null
+    while (i < 4) {
+      head = stackalloc[Node].init(i, head)
+      i += 1
+    }
+    assert(head.sum == 6)
+  }
+}
+
+object CList {
+  type Node = CStruct2[Int, Ptr[_]]
+
+  implicit class NodeOps(val self: Ptr[Node]) extends AnyVal {
+    def init(value: Int, next: Ptr[Node]) = {
+      !self._1 = value
+      !self._2 = next
+      self
+    }
+    def value = !self._1
+    def next  = (!self._2).cast[Ptr[Node]]
+    def sum: Int = {
+      var res  = 0
+      var head = self
+      while (head != null) {
+        res += head.value
+        head = head.next
+      }
+      res
+    }
+  }
 }
