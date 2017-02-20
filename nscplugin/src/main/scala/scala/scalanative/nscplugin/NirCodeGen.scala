@@ -391,7 +391,7 @@ abstract class NirCodeGen
 
     def genMethodSig(
         sym: Symbol, forceStatic: Boolean = false): nir.Type.Function = {
-      require(sym.isMethod)
+      require(sym.isMethod || sym.isStaticMember)
 
       val tpe      = sym.tpe
       val owner    = sym.owner
@@ -788,13 +788,13 @@ abstract class NirCodeGen
       focus withOp Op.Module(genTypeName(sym), curUnwind)
 
     def genStaticMember(sym: Symbol, focus: Focus): Focus =
-      if (sym == BoxedUnit_UNIT) focus withValue Val.Unit
-      else {
+      if (sym == BoxedUnit_UNIT) {
+        focus withValue Val.Unit
+      } else {
         val ty     = genType(sym.tpe, box = false)
         val module = focus withOp Op.Module(genTypeName(sym.owner), curUnwind)
-        val elem   = module withOp Op.Field(module.value, genFieldName(sym))
-
-        elem withOp Op.Load(ty, elem.value)
+        genMethodCall(sym, statically = true, module.value,
+                      Seq(ValTree(module.value)), module)
       }
 
     def genBlock(block: Block, focus: Focus) = {
