@@ -1299,6 +1299,10 @@ abstract class NirCodeGen
         lty
       case (_: nir.Type.RefKind, nir.Type.Ptr) =>
         rty
+      case (nir.Type.Bool, nir.Type.Bool) =>
+        nir.Type.Bool
+      case (nir.Type.I(lwidth, _), nir.Type.I(rwidth, _)) if lwidth < 32 && rwidth < 32 =>
+        nir.Type.Int
       case (nir.Type.I(lwidth, _), nir.Type.I(rwidth, _)) =>
         if (lwidth >= rwidth) lty else rty
       case (nir.Type.I(_, _), nir.Type.F(_)) =>
@@ -1754,16 +1758,26 @@ abstract class NirCodeGen
             Conv.Bitcast
           case (_: nir.Type.RefKind, nir.Type.Ptr) =>
             Conv.Bitcast
-          case (nir.Type.I(lwidth, _), nir.Type.I(rwidth, _)) if lwidth < rwidth =>
-            Conv.Sext
-          case (nir.Type.I(lwidth, _), nir.Type.I(rwidth, _)) if lwidth > rwidth =>
-            Conv.Trunc
-          case (nir.Type.I(lwidth, _), nir.Type.I(rwidth, _)) if lwidth == rwidth =>
-            Conv.Bitcast
-          case (_: nir.Type.I, _: nir.Type.F) =>
+          case (nir.Type.I(fromw, froms), nir.Type.I(tow, tos)) =>
+            if (fromw < tow) {
+              if (froms) {
+                Conv.Sext
+              } else {
+                Conv.Zext
+              }
+            } else if (fromw > tow) {
+              Conv.Trunc
+            } else {
+              Conv.Bitcast
+            }
+          case (nir.Type.I(_, true), _: nir.Type.F) =>
             Conv.Sitofp
-          case (_: nir.Type.F, _: nir.Type.I) =>
+          case (nir.Type.I(_, false), _: nir.Type.F) =>
+            Conv.Uitofp
+          case (_: nir.Type.F, nir.Type.I(_, true)) =>
             Conv.Fptosi
+          case (_: nir.Type.F, nir.Type.I(_, false)) =>
+            Conv.Fptoui
           case (nir.Type.Double, nir.Type.Float) =>
             Conv.Fptrunc
           case (nir.Type.Float, nir.Type.Double) =>
