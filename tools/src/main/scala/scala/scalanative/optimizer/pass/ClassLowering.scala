@@ -33,7 +33,7 @@ class ClassLowering(implicit top: Top, fresh: Fresh) extends Pass {
 
         Inst.Let(
           n,
-          Op.Elem(classty, obj, Seq(Val.I32(0), Val.I32(fld.index + 1))))
+          Op.Elem(classty, obj, Seq(Val.Int(0), Val.Int(fld.index + 1))))
 
       case _ =>
         inst

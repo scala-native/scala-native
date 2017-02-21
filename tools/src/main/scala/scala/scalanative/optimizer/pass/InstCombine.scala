@@ -134,28 +134,28 @@ class InstCombine()(implicit fresh: Fresh) extends Pass {
     (lhsDef, rhsDef, op) match {
 
       // (x << a) * b = x * (2^a * b)  [i32]
-      case (Some(Op.Bin(Shl, Type.I32, x, Val.I32(a))),
+      case (Some(Op.Bin(Shl, Type.Int, x, Val.Int(a))),
             _,
-            Op.Bin(Imul, Type.I32, _, Val.I32(b))) =>
-        Op.Bin(Imul, Type.I32, x, Val.I32(math.pow(2, a & 31).toInt * b))
+            Op.Bin(Imul, Type.Int, _, Val.Int(b))) =>
+        Op.Bin(Imul, Type.Int, x, Val.Int(math.pow(2, a & 31).toInt * b))
 
       // (x << a) * b = x * (2^a * b)  [i64]
-      case (Some(Op.Bin(Shl, Type.I64, x, Val.I64(a))),
+      case (Some(Op.Bin(Shl, Type.Long, x, Val.Long(a))),
             _,
-            Op.Bin(Imul, Type.I64, _, Val.I64(b))) =>
-        Op.Bin(Imul, Type.I64, x, Val.I64(math.pow(2, a & 63).toLong * b))
+            Op.Bin(Imul, Type.Long, _, Val.Long(b))) =>
+        Op.Bin(Imul, Type.Long, x, Val.Long(math.pow(2, a & 63).toLong * b))
 
       // (x * a) << b = x * (a * 2^b)  [i32]
-      case (Some(Op.Bin(Imul, Type.I32, x, Val.I32(a))),
+      case (Some(Op.Bin(Imul, Type.Int, x, Val.Int(a))),
             _,
-            Op.Bin(Shl, Type.I32, _, Val.I32(b))) =>
-        Op.Bin(Imul, Type.I32, x, Val.I32(a * math.pow(2, b & 31).toInt))
+            Op.Bin(Shl, Type.Int, _, Val.Int(b))) =>
+        Op.Bin(Imul, Type.Int, x, Val.Int(a * math.pow(2, b & 31).toInt))
 
       // (x * a) << b = x * (a * 2^b)  [i64]
-      case (Some(Op.Bin(Imul, Type.I64, x, Val.I64(a))),
+      case (Some(Op.Bin(Imul, Type.Long, x, Val.Long(a))),
             _,
-            Op.Bin(Shl, Type.I64, _, Val.I64(b))) =>
-        Op.Bin(Imul, Type.I64, x, Val.I64(a * math.pow(2, b & 63).toLong))
+            Op.Bin(Shl, Type.Long, _, Val.Long(b))) =>
+        Op.Bin(Imul, Type.Long, x, Val.Long(a * math.pow(2, b & 63).toLong))
 
       // x + (0 - y) = x - y
       case (_, Some(Op.Bin(Isub, _, IVal(0), y)), Op.Bin(Iadd, ty, x, _)) =>
@@ -216,70 +216,70 @@ class InstCombine()(implicit fresh: Fresh) extends Pass {
       // (x << a) << b = x << (a + b)  [i32]
       case Let(n,
                Op.Bin(Shl,
-                      Type.I32,
-                      defop(Op.Bin(Shl, Type.I32, x, Val.I32(a))),
-                      Val.I32(b))) =>
+                      Type.Int,
+                      defop(Op.Bin(Shl, Type.Int, x, Val.Int(a))),
+                      Val.Int(b))) =>
         val totShift = (a & 31) + (b & 31)
         if (totShift >= 32)
-          Seq(Let(n, Op.Copy(Val.I32(0))))
+          Seq(Let(n, Op.Copy(Val.Int(0))))
         else
-          Seq(Let(n, Op.Bin(Shl, Type.I32, x, Val.I32(totShift))))
+          Seq(Let(n, Op.Bin(Shl, Type.Int, x, Val.Int(totShift))))
 
       // (x << a) << b = x << (a + b)  [i64]
       case Let(n,
                Op.Bin(Shl,
-                      Type.I64,
-                      defop(Op.Bin(Shl, Type.I64, x, Val.I64(a))),
-                      Val.I64(b))) =>
+                      Type.Long,
+                      defop(Op.Bin(Shl, Type.Long, x, Val.Long(a))),
+                      Val.Long(b))) =>
         val totShift = (a & 63) + (b & 63)
         if (totShift >= 64)
-          Seq(Let(n, Op.Copy(Val.I64(0))))
+          Seq(Let(n, Op.Copy(Val.Long(0))))
         else
-          Seq(Let(n, Op.Bin(Shl, Type.I64, x, Val.I64(totShift))))
+          Seq(Let(n, Op.Bin(Shl, Type.Long, x, Val.Long(totShift))))
 
       // (x >>> a) >>> b = x >>> (a + b)  [i32]
       case Let(n,
                Op.Bin(Lshr,
-                      Type.I32,
-                      defop(Op.Bin(Lshr, Type.I32, x, Val.I32(a))),
-                      Val.I32(b))) =>
+                      Type.Int,
+                      defop(Op.Bin(Lshr, Type.Int, x, Val.Int(a))),
+                      Val.Int(b))) =>
         val totShift = (a & 31) + (b & 31)
         if (totShift >= 32)
-          Seq(Let(n, Op.Copy(Val.I32(0))))
+          Seq(Let(n, Op.Copy(Val.Int(0))))
         else
-          Seq(Let(n, Op.Bin(Lshr, Type.I32, x, Val.I32(totShift))))
+          Seq(Let(n, Op.Bin(Lshr, Type.Int, x, Val.Int(totShift))))
 
       // (x >>> a) >>> b = x >>> (a + b)  [i64]
       case Let(n,
                Op.Bin(Lshr,
-                      Type.I64,
-                      defop(Op.Bin(Lshr, Type.I64, x, Val.I64(a))),
-                      Val.I64(b))) =>
+                      Type.Long,
+                      defop(Op.Bin(Lshr, Type.Long, x, Val.Long(a))),
+                      Val.Long(b))) =>
         val totShift = (a & 63) + (b & 63)
         if (totShift >= 64)
-          Seq(Let(n, Op.Copy(Val.I64(0))))
+          Seq(Let(n, Op.Copy(Val.Long(0))))
         else
-          Seq(Let(n, Op.Bin(Lshr, Type.I64, x, Val.I64(totShift))))
+          Seq(Let(n, Op.Bin(Lshr, Type.Long, x, Val.Long(totShift))))
 
       // (x >> a) >> b = x >> (a + b)  [i32]
       case Let(n,
                Op.Bin(Lshr,
-                      Type.I32,
-                      defop(Op.Bin(Lshr, Type.I32, x, Val.I32(a))),
-                      Val.I32(b))) =>
+                      Type.Int,
+                      defop(Op.Bin(Lshr, Type.Int, x, Val.Int(a))),
+                      Val.Int(b))) =>
         val shiftSum = (a & 31) + (b & 31)
         val totShift = math.min(shiftSum, 31)
-        Seq(Let(n, Op.Bin(Lshr, Type.I32, x, Val.I32(totShift))))
+        Seq(Let(n, Op.Bin(Lshr, Type.Int, x, Val.Int(totShift))))
 
       // (x >> a) >> b = x >> (a + b)  [i64]
       case Let(n,
                Op.Bin(Lshr,
-                      Type.I64,
-                      defop(Op.Bin(Lshr, Type.I64, x, Val.I64(a))),
-                      Val.I64(b))) =>
+                      Type.Long,
+                      defop(Op.Bin(Lshr, Type.Long, x, Val.Long(a))),
+                      Val.Long(b))) =>
         val shiftSum = (a & 63) + (b & 63)
         val totShift = math.min(shiftSum, 63)
-        Seq(Let(n, Op.Bin(Lshr, Type.I64, x, Val.I64(totShift))))
+        Seq(Let(n, Op.Bin(Lshr, Type.Long, x, Val.Long(totShift))))
 
       // ((x + a) == b) = (x == (b - a))
       case Let(

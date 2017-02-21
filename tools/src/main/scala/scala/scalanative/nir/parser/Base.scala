@@ -67,13 +67,13 @@ object Base {
   def neg(p: P[String]): P[String] = "-".!.? ~ p map {
     case (a, b) => a.getOrElse("") + b
   }
-  val I8: P[Byte]         = neg(DecNum.!) ~ &("i8") map (_.toByte)
-  val I16: P[Short]       = neg((HexNum | DecNum).!) ~ &("i16") map (_.toInt.toShort)
-  val I32: P[Int]         = neg((HexNum | DecNum).!) ~ &("i32") map (_.toInt)
-  val I64: P[Long]        = neg((HexNum | DecNum).!) ~ &("i64") map (_.toLong)
+  val Byte: P[Byte]       = neg(DecNum.!) map (_.toByte)
+  val Short: P[Short]     = neg((HexNum | DecNum).!) map (_.toInt.toShort)
+  val Int: P[Int]         = neg((HexNum | DecNum).!) map (_.toInt)
+  val Long: P[Long]       = neg((HexNum | DecNum).!) map (_.toLong)
   val Infinity: P[String] = P("Infinityf".!) map (_.init)
-  val F32: P[Float]       = neg(Infinity | Literals.Literals.Float.!) ~ &("32") map (_.toFloat)
-  val F64: P[Double]      = neg(Infinity | Literals.Literals.Float.!) ~ &("64") map (_.toDouble)
+  val Float: P[Float]     = neg(Infinity | Literals.Literals.Float.!) map (_.toFloat)
+  val Double: P[Double]   = neg(Infinity | Literals.Literals.Float.!) map (_.toDouble)
   val stringLit: P[String] = P(Literals.Literals.NoInterp.String.! map {
     _.init.tail
   })

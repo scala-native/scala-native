@@ -14,12 +14,12 @@ object Type extends Base[nir.Type] {
   val Vararg = P("...".! map (_ => nir.Type.Vararg))
   val Ptr    = P("ptr".! map (_ => nir.Type.Ptr))
   val Bool   = P("bool".! map (_ => nir.Type.Bool))
-  val I8     = P("i8".! map (_ => nir.Type.I8))
-  val I16    = P("i16".! map (_ => nir.Type.I16))
-  val I32    = P("i32".! map (_ => nir.Type.I32))
-  val I64    = P("i64".! map (_ => nir.Type.I64))
-  val F32    = P("f32".! map (_ => nir.Type.F32))
-  val F64    = P("f64".! map (_ => nir.Type.F64))
+  val Byte   = P("byte".! map (_ => nir.Type.Byte))
+  val Short  = P("short".! map (_ => nir.Type.Short))
+  val Int    = P("int".! map (_ => nir.Type.Int))
+  val Long   = P("long".! map (_ => nir.Type.Long))
+  val Float  = P("float".! map (_ => nir.Type.Float))
+  val Double = P("double".! map (_ => nir.Type.Double))
   val Array =
     P("[" ~ Type.parser ~ "x" ~ int ~ "]" map {
       case (ty, n) => nir.Type.Array(ty, n)
@@ -40,5 +40,5 @@ object Type extends Base[nir.Type] {
   val Module  = P("module" ~ Global.parser map (nir.Type.Module(_)))
 
   override val parser: P[nir.Type] =
-    None | Void | Vararg | Ptr | Bool | I8 | I16 | I32 | I64 | F32 | F64 | Array | Function | NoneStruct | Struct | Unit | Nothing | Class | Trait | Module
+    None | Void | Vararg | Ptr | Bool | Byte | Short | Int | Long | Float | Double | Array | Function | NoneStruct | Struct | Unit | Nothing | Class | Trait | Module
 }

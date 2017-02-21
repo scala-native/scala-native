@@ -15,8 +15,8 @@ class SizeofLowering(implicit fresh: Fresh) extends Pass {
 
     insts.foreach {
       case Inst.Let(n, Op.Sizeof(ty)) =>
-        val elem = let(Op.Elem(ty, Val.Null, Seq(Val.I32(1))))
-        let(n, Op.Conv(Conv.Ptrtoint, Type.I64, elem))
+        val elem = let(Op.Elem(ty, Val.Null, Seq(Val.Int(1))))
+        let(n, Op.Conv(Conv.Ptrtoint, Type.Long, elem))
 
       case inst =>
         buf += inst

@@ -325,6 +325,8 @@ lazy val tests =
     .settings(projectSettings)
     .settings(noPublishSettings)
     .settings(
+      // nativeOptimizerReporter := OptimizerReporter.toDirectory(
+      //   crossTarget.value),
       sourceGenerators in Compile += Def.task {
         val dir    = sourceDirectory.value
         val prefix = dir.getAbsolutePath + "/main/scala/"

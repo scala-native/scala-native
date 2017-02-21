@@ -38,39 +38,39 @@ class TypeParserTest extends FlatSpec with Matchers {
     result should be(bool)
   }
 
-  it should "parse `Type.I8`" in {
-    val i8: Type                  = Type.I8
-    val Parsed.Success(result, _) = parser.Type.I8.parse(i8.show)
+  it should "parse `Type.Byte`" in {
+    val i8: Type                  = Type.Byte
+    val Parsed.Success(result, _) = parser.Type.Byte.parse(i8.show)
     result should be(i8)
   }
 
-  it should "parse `Type.I16`" in {
-    val i16: Type                 = Type.I16
-    val Parsed.Success(result, _) = parser.Type.I16.parse(i16.show)
+  it should "parse `Type.Short`" in {
+    val i16: Type                 = Type.Short
+    val Parsed.Success(result, _) = parser.Type.Short.parse(i16.show)
     result should be(i16)
   }
 
-  it should "parse `Type.I32`" in {
-    val i32: Type                 = Type.I32
-    val Parsed.Success(result, _) = parser.Type.I32.parse(i32.show)
+  it should "parse `Type.Int`" in {
+    val i32: Type                 = Type.Int
+    val Parsed.Success(result, _) = parser.Type.Int.parse(i32.show)
     result should be(i32)
   }
 
-  it should "parse `Type.I64`" in {
-    val i64: Type                 = Type.I64
-    val Parsed.Success(result, _) = parser.Type.I64.parse(i64.show)
+  it should "parse `Type.Long`" in {
+    val i64: Type                 = Type.Long
+    val Parsed.Success(result, _) = parser.Type.Long.parse(i64.show)
     result should be(i64)
   }
 
-  it should "parse `Type.F32`" in {
-    val f32: Type                 = Type.F32
-    val Parsed.Success(result, _) = parser.Type.F32.parse(f32.show)
+  it should "parse `Type.Float`" in {
+    val f32: Type                 = Type.Float
+    val Parsed.Success(result, _) = parser.Type.Float.parse(f32.show)
     result should be(f32)
   }
 
-  it should "parse `Type.F64`" in {
-    val f64: Type                 = Type.F64
-    val Parsed.Success(result, _) = parser.Type.F64.parse(f64.show)
+  it should "parse `Type.Double`" in {
+    val f64: Type                 = Type.Double
+    val Parsed.Success(result, _) = parser.Type.Double.parse(f64.show)
     result should be(f64)
   }
 

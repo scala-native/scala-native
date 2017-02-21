@@ -55,20 +55,20 @@ class IsLowering(implicit fresh: Fresh, top: Top) extends Pass {
 
       case ClassRef(cls) =>
         val typeptr = let(Op.Load(Type.Ptr, obj))
-        val idptr   = let(Op.Elem(Rt.Type, typeptr, Seq(Val.I32(0), Val.I32(0))))
-        val id      = let(Op.Load(Type.I32, idptr))
-        val ge      = let(Op.Comp(Comp.Sle, Type.I32, Val.I32(cls.range.start), id))
-        val le      = let(Op.Comp(Comp.Sle, Type.I32, id, Val.I32(cls.range.end)))
+        val idptr   = let(Op.Elem(Rt.Type, typeptr, Seq(Val.Int(0), Val.Int(0))))
+        val id      = let(Op.Load(Type.Int, idptr))
+        val ge      = let(Op.Comp(Comp.Sle, Type.Int, Val.Int(cls.range.start), id))
+        val le      = let(Op.Comp(Comp.Sle, Type.Int, id, Val.Int(cls.range.end)))
         let(Op.Bin(Bin.And, Type.Bool, ge, le))
 
       case TraitRef(trt) =>
         val typeptr = let(Op.Load(Type.Ptr, obj))
-        val idptr   = let(Op.Elem(Rt.Type, typeptr, Seq(Val.I32(0), Val.I32(0))))
-        val id      = let(Op.Load(Type.I32, idptr))
+        val idptr   = let(Op.Elem(Rt.Type, typeptr, Seq(Val.Int(0), Val.Int(0))))
+        val id      = let(Op.Load(Type.Int, idptr))
         val boolptr = let(
           Op.Elem(top.instanceTy,
                   top.instanceVal,
-                  Seq(Val.I32(0), id, Val.I32(trt.id))))
+                  Seq(Val.Int(0), id, Val.Int(trt.id))))
         let(Op.Load(Type.Bool, boolptr))
 
       case _ =>

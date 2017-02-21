@@ -174,20 +174,20 @@ object DynmethodPerfectHashMap {
     val perfectHashMap = PerfectHashMap[Int, (Int, Val)](hash, entries)
 
     val (keys, values) = perfectHashMap.values.map {
-      case Some((k, v)) => (Val.I32(k), v)
-      case None         => (Val.I32(-1), Val.Null)
+      case Some((k, v)) => (Val.Int(k), v)
+      case None         => (Val.Int(-1), Val.Null)
     }.unzip
 
     Val.Struct(
       Global.None,
-      Val.I32(perfectHashMap.size) ::
+      Val.Int(perfectHashMap.size) ::
         (perfectHashMap.size match {
           case 0 =>
             List(Val.Null, Val.Null, Val.Null)
           case _ =>
             List(
-              Val.Const(Val.Array(Type.I32, perfectHashMap.keys.map(Val.I32))),
-              Val.Const(Val.Array(Type.I32, keys)),
+              Val.Const(Val.Array(Type.Int, perfectHashMap.keys.map(Val.Int))),
+              Val.Const(Val.Array(Type.Int, keys)),
               Val.Const(Val.Array(Type.Ptr, values))
             )
         })

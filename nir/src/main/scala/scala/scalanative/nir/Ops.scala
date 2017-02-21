@@ -10,7 +10,7 @@ sealed abstract class Op {
     case Op.Load(ty, _)                          => ty
     case Op.Store(_, _, _)                       => Type.Unit
     case Op.Elem(_, _, _)                        => Type.Ptr
-    case Op.Extract(aggr, indexes)               => aggr.ty.elemty(indexes.map(Val.I32(_)))
+    case Op.Extract(aggr, indexes)               => aggr.ty.elemty(indexes.map(Val.Int(_)))
     case Op.Insert(aggr, _, _)                   => aggr.ty
     case Op.Stackalloc(ty, _)                    => Type.Ptr
     case Op.Bin(_, ty, _, _)                     => ty
@@ -27,7 +27,7 @@ sealed abstract class Op {
     case Op.As(ty, _)         => ty
     case Op.Is(_, _)          => Type.Bool
     case Op.Copy(v)           => v.ty
-    case Op.Sizeof(_)         => Type.I64
+    case Op.Sizeof(_)         => Type.Long
     case Op.Closure(ty, _, _) => ty
     case Op.Box(ty, _)        => ty
     case Op.Unbox(ty, _)      => Type.unbox(ty)

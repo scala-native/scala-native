@@ -23,9 +23,9 @@ class MethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
         val methptrptr = let(
           Op.Elem(cls.typeStruct,
                   typeptr,
-                  Seq(Val.I32(0),
-                      Val.I32(3), // index of vtable in type struct
-                      Val.I32(meth.vindex))))
+                  Seq(Val.Int(0),
+                      Val.Int(3), // index of vtable in type struct
+                      Val.Int(meth.vindex))))
         let(n, Op.Load(Type.Ptr, methptrptr))
 
       case Let(n, Op.Method(obj, MethodRef(_: Class, meth)))
@@ -34,12 +34,12 @@ class MethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
 
       case Let(n, Op.Method(obj, MethodRef(trt: Trait, meth))) =>
         val typeptr = let(Op.Load(Type.Ptr, obj))
-        val idptr   = let(Op.Elem(Rt.Type, typeptr, Seq(Val.I32(0), Val.I32(0))))
-        val id      = let(Op.Load(Type.I32, idptr))
+        val idptr   = let(Op.Elem(Rt.Type, typeptr, Seq(Val.Int(0), Val.Int(0))))
+        val id      = let(Op.Load(Type.Int, idptr))
         val methptrptr = let(
           Op.Elem(top.dispatchTy,
                   top.dispatchVal,
-                  Seq(Val.I32(0), id, Val.I32(meth.id))))
+                  Seq(Val.Int(0), id, Val.Int(meth.id))))
         let(n, Op.Load(Type.Ptr, methptrptr))
 
       case inst =>

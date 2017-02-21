@@ -35,14 +35,14 @@ class ConstantFolding extends Pass {
 
     case Op.Bin(Udiv, ty, _, IVal(0)) =>
       Val.Undef(ty)
-    case Op.Bin(Udiv, _, Val.I8(a), Val.I8(b)) =>
-      Val.I8(Unsigned.Div(a, b))
-    case Op.Bin(Udiv, _, Val.I16(a), Val.I16(b)) =>
-      Val.I16(Unsigned.Div(a, b))
-    case Op.Bin(Udiv, _, Val.I32(a), Val.I32(b)) =>
-      Val.I32(Unsigned.Div(a, b))
-    case Op.Bin(Udiv, _, Val.I64(a), Val.I64(b)) =>
-      Val.I64(Unsigned.Div(a, b))
+    case Op.Bin(Udiv, _, Val.Byte(a), Val.Byte(b)) =>
+      Val.Byte(Unsigned.Div(a, b))
+    case Op.Bin(Udiv, _, Val.Short(a), Val.Short(b)) =>
+      Val.Short(Unsigned.Div(a, b))
+    case Op.Bin(Udiv, _, Val.Int(a), Val.Int(b)) =>
+      Val.Int(Unsigned.Div(a, b))
+    case Op.Bin(Udiv, _, Val.Long(a), Val.Long(b)) =>
+      Val.Long(Unsigned.Div(a, b))
 
     case Op.Bin(Srem, ty, _, IVal(0)) =>
       Val.Undef(ty)
@@ -51,14 +51,14 @@ class ConstantFolding extends Pass {
 
     case Op.Bin(Urem, ty, _, IVal(0)) =>
       Val.Undef(ty)
-    case Op.Bin(Urem, _, Val.I8(a), Val.I8(b)) =>
-      Val.I8(Unsigned.Rem(a, b))
-    case Op.Bin(Urem, _, Val.I16(a), Val.I16(b)) =>
-      Val.I16(Unsigned.Rem(a, b))
-    case Op.Bin(Urem, _, Val.I32(a), Val.I32(b)) =>
-      Val.I32(Unsigned.Rem(a, b))
-    case Op.Bin(Urem, _, Val.I64(a), Val.I64(b)) =>
-      Val.I64(Unsigned.Rem(a, b))
+    case Op.Bin(Urem, _, Val.Byte(a), Val.Byte(b)) =>
+      Val.Byte(Unsigned.Rem(a, b))
+    case Op.Bin(Urem, _, Val.Short(a), Val.Short(b)) =>
+      Val.Short(Unsigned.Rem(a, b))
+    case Op.Bin(Urem, _, Val.Int(a), Val.Int(b)) =>
+      Val.Int(Unsigned.Rem(a, b))
+    case Op.Bin(Urem, _, Val.Long(a), Val.Long(b)) =>
+      Val.Long(Unsigned.Rem(a, b))
 
     case Op.Bin(Shl, ty, IVal(a), IVal(b)) =>
       IVal(a << b, ty)
@@ -108,13 +108,13 @@ class ConstantFolding extends Pass {
     case Op.Conv(Trunc, ty, IVal(i)) =>
       IVal(i, ty)
 
-    case Op.Conv(Zext, ty, Val.I8(b)) =>
+    case Op.Conv(Zext, ty, Val.Byte(b)) =>
       IVal(java.lang.Byte.toUnsignedLong(b), ty)
-    case Op.Conv(Zext, ty, Val.I16(s)) =>
+    case Op.Conv(Zext, ty, Val.Short(s)) =>
       IVal(java.lang.Short.toUnsignedLong(s), ty)
-    case Op.Conv(Zext, ty, Val.I32(i)) =>
+    case Op.Conv(Zext, ty, Val.Int(i)) =>
       IVal(java.lang.Integer.toUnsignedLong(i), ty)
-    case Op.Conv(Zext, ty, Val.I64(l)) =>
+    case Op.Conv(Zext, ty, Val.Long(l)) =>
       IVal(l, ty)
 
     case Op.Conv(Sext, ty, IVal(i)) =>
@@ -147,10 +147,10 @@ object ConstantFolding extends PassCompanion {
   object IVal {
     def unapply(v: Val): Option[Long] = {
       v match {
-        case Val.I8(b)  => Some(b)
-        case Val.I16(s) => Some(s)
-        case Val.I32(i) => Some(i)
-        case Val.I64(l) => Some(l)
+        case Val.Byte(b)  => Some(b)
+        case Val.Short(s) => Some(s)
+        case Val.Int(i)   => Some(i)
+        case Val.Long(l)  => Some(l)
 
         case Val.False => Some(0)
         case Val.True  => Some(-1)
@@ -161,10 +161,11 @@ object ConstantFolding extends PassCompanion {
 
     def apply(value: Long, ty: Type): Val = {
       ty match {
-        case Type.I8  => Val.I8(value.toByte)
-        case Type.I16 => Val.I16(value.toShort)
-        case Type.I32 => Val.I32(value.toInt)
-        case Type.I64 => Val.I64(value)
+        case Type.Byte  => Val.Byte(value.toByte)
+        case Type.Short => Val.Short(value.toShort)
+        case Type.Char  => Val.Short(value.toShort)
+        case Type.Int   => Val.Int(value.toInt)
+        case Type.Long  => Val.Long(value)
 
         case Type.Bool if (value == 0)  => Val.False
         case Type.Bool if (value == -1) => Val.True
