@@ -13,6 +13,30 @@ lazy val baseSettings = Seq(
   sources in doc in Compile := Nil // doc generation currently broken
 )
 
+addCommandAlias(
+  "rebuild",
+  Seq(
+    "clean",
+    "cleanCache",
+    "cleanLocal",
+    "nscplugin/publishLocal",
+    "nativelib/publishLocal",
+    "publishLocal"
+  ).mkString(";", ";", "")
+)
+
+addCommandAlias(
+  "test-all",
+  Seq(
+    "sandbox/run",
+    "demoNative/run",
+    "tests/run",
+    "tools/test",
+    "benchmarks/run",
+    "scripted"
+  ).mkString(";", ";", "")
+)
+
 lazy val publishSnapshot =
   taskKey[Unit]("Publish snapshot to sonatype on every commit to master.")
 
