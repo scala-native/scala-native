@@ -152,42 +152,56 @@ object IssuesSuite extends tests.Suite {
   }
 
   test("#445") {
+    val char: Any   = 66.toChar
     val byte: Any   = 66.toByte
     val short: Any  = 66.toShort
     val int: Any    = 66.toInt
     val long: Any   = 66.toLong
     val float: Any  = 66.toFloat
     val double: Any = 66.toDouble
+    assert(char == char)
+    assert(char == byte)
+    assert(char == short)
+    assert(char == int)
+    assert(char == long)
+    assert(char == float)
+    assert(char == double)
+    assert(byte == char)
     assert(byte == byte)
     assert(byte == short)
     assert(byte == int)
     assert(byte == long)
     assert(byte == float)
     assert(byte == double)
+    assert(short == char)
     assert(short == byte)
     assert(short == short)
     assert(short == int)
     assert(short == long)
     assert(short == float)
     assert(short == double)
+    assert(int == char)
     assert(int == byte)
     assert(int == short)
     assert(int == int)
     assert(int == long)
     assert(int == float)
     assert(int == double)
+    assert(long == char)
     assert(long == byte)
     assert(long == short)
     assert(long == int)
     assert(long == long)
     assert(long == float)
     assert(long == double)
+    assert(float == char)
     assert(float == byte)
     assert(float == short)
     assert(float == int)
     assert(float == long)
     assert(float == float)
     assert(float == double)
+    assert(double == char)
     assert(double == byte)
     assert(double == short)
     assert(double == int)

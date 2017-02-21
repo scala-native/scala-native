@@ -32,10 +32,10 @@ class _Object {
     runtime.getMonitor(this)._wait(timeout, nanos)
 
   @inline def __scala_==(other: _Object): scala.Boolean =
-    if (this eq null) other eq null else __equals(other)
+    __equals(other)
 
   @inline def __scala_## : scala.Int =
-    if (this eq null) 0 else this.hashCode
+    __hashCode
 
   protected def __clone(): _Object = ???
 

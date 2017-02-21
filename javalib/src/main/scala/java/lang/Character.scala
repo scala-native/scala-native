@@ -28,12 +28,15 @@ class Character(val _value: scala.Char)
 
   @inline override def __scala_==(other: _Object): scala.Boolean =
     other match {
-      case other: java.lang.Character =>
-        _value == other._value
-      case y: java.lang.Number =>
-        other.__scala_==(this)
-      case _ =>
-        super.__scala_==(other)
+      case other: java.lang.Character => _value == other._value
+      case other: java.lang.Byte      => _value == other._value
+      case other: java.lang.Short     => _value == other._value
+      case other: java.lang.Integer   => _value == other._value
+      case other: java.lang.Long      => _value == other._value
+      case other: java.lang.Float     => _value == other._value
+      case other: java.lang.Double    => _value == other._value
+      case other: java.lang.Number    => other.__scala_==(this)
+      case _                          => super.__scala_==(other)
     }
 
   /*
