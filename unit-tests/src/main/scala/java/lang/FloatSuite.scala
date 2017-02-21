@@ -84,9 +84,9 @@ object FloatSuite extends tests.Suite {
     val szero = 1.0f - 1.0f
     assert(pzero == szero)
 
-    val bpzero: java.lang.Float = pzero
-    val bnzero: java.lang.Float = nzero
-    assertNot(bpzero == bnzero)
+    val bpzero: Any = pzero
+    val bnzero: Any = nzero
+    assert(bpzero == bnzero)
     val bszero: java.lang.Float = szero
     assert(bpzero == bszero)
 

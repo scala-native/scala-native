@@ -2,34 +2,37 @@ package java.lang
 
 import scalanative.native, native._
 
-final class Float(override val floatValue: scala.Float)
+final class Float(val _value: scala.Float)
     extends Number
     with Comparable[Float] {
   @inline def this(s: String) =
     this(Float.parseFloat(s))
 
   @inline override def byteValue(): scala.Byte =
-    floatValue.toByte
+    _value.toByte
 
   @inline override def shortValue(): scala.Short =
-    floatValue.toShort
+    _value.toShort
 
-  @inline def intValue(): scala.Int =
-    floatValue.toInt
+  @inline override def intValue(): scala.Int =
+    _value.toInt
 
-  @inline def longValue(): scala.Long =
-    floatValue.toLong
+  @inline override def longValue(): scala.Long =
+    _value.toLong
 
-  @inline def doubleValue(): scala.Double =
-    floatValue.toDouble
+  @inline override def floatValue(): scala.Float =
+    _value
+
+  @inline override def doubleValue(): scala.Double =
+    _value.toDouble
 
   @inline override def equals(that: Any): scala.Boolean =
     that match {
       case that: Float =>
         // As floats with different NaNs are considered equal,
         // use floatToIntBits instead of floatToRawIntBits
-        val a = Float.floatToIntBits(floatValue)
-        val b = Float.floatToIntBits(that.floatValue)
+        val a = Float.floatToIntBits(_value)
+        val b = Float.floatToIntBits(that._value)
         a == b
 
       case _ =>
@@ -37,19 +40,41 @@ final class Float(override val floatValue: scala.Float)
     }
 
   @inline override def hashCode(): Int =
-    Float.hashCode(floatValue)
+    Float.hashCode(_value)
 
   @inline override def compareTo(that: Float): Int =
-    Float.compare(floatValue, that.floatValue)
+    Float.compare(_value, that._value)
 
   @inline override def toString(): String =
-    Float.toString(floatValue)
+    Float.toString(_value)
+
+  @inline override def __scala_==(other: _Object): scala.Boolean =
+    other match {
+      case other: java.lang.Byte    => _value == other._value.toFloat
+      case other: java.lang.Short   => _value == other._value.toFloat
+      case other: java.lang.Integer => _value == other._value.toFloat
+      case other: java.lang.Long    => _value == other._value.toFloat
+      case other: java.lang.Float   => _value == other._value
+      case other: java.lang.Double  => _value.toDouble == other._value
+      case _                        => super.__scala_==(other)
+    }
+
+  @inline override def __scala_## : scala.Int = {
+    val fv = _value
+    val iv = _value.toInt
+    if (iv == fv) iv
+    else {
+      val lv = _value.toLong
+      if (lv == fv) Long.hashCode(lv)
+      else Float.hashCode(fv)
+    }
+  }
 
   @inline def isNaN(): scala.Boolean =
-    Float.isNaN(floatValue)
+    Float.isNaN(_value)
 
   @inline def isInfinite(): scala.Boolean =
-    Float.isInfinite(floatValue)
+    Float.isInfinite(_value)
 
   /*
    * Ported from ScalaJS
@@ -60,91 +85,90 @@ final class Float(override val floatValue: scala.Float)
    * we use the true javalib to lookup symbols, this file contains only
    * implementations.
    */
-  protected def toByte: scala.Byte     = floatValue.toByte
-  protected def toShort: scala.Short   = floatValue.toShort
-  protected def toChar: scala.Char     = floatValue.toChar
-  protected def toInt: scala.Int       = floatValue.toInt
-  protected def toLong: scala.Long     = floatValue.toLong
-  protected def toFloat: scala.Float   = floatValue
-  protected def toDouble: scala.Double = floatValue.toDouble
+  protected def toByte: scala.Byte     = _value.toByte
+  protected def toShort: scala.Short   = _value.toShort
+  protected def toChar: scala.Char     = _value.toChar
+  protected def toInt: scala.Int       = _value.toInt
+  protected def toLong: scala.Long     = _value.toLong
+  protected def toFloat: scala.Float   = _value
+  protected def toDouble: scala.Double = _value.toDouble
 
-  protected def unary_+ : scala.Float = floatValue
-  protected def unary_- : scala.Float = -floatValue
+  protected def unary_+ : scala.Float = _value
+  protected def unary_- : scala.Float = - _value
 
-  protected def +(x: String): String = floatValue + x
+  protected def +(x: String): String = _value + x
 
-  protected def <(x: scala.Byte): scala.Boolean   = floatValue < x
-  protected def <(x: scala.Short): scala.Boolean  = floatValue < x
-  protected def <(x: scala.Char): scala.Boolean   = floatValue < x
-  protected def <(x: scala.Int): scala.Boolean    = floatValue < x
-  protected def <(x: scala.Long): scala.Boolean   = floatValue < x
-  protected def <(x: scala.Float): scala.Boolean  = floatValue < x
-  protected def <(x: scala.Double): scala.Boolean = floatValue < x
+  protected def <(x: scala.Byte): scala.Boolean   = _value < x
+  protected def <(x: scala.Short): scala.Boolean  = _value < x
+  protected def <(x: scala.Char): scala.Boolean   = _value < x
+  protected def <(x: scala.Int): scala.Boolean    = _value < x
+  protected def <(x: scala.Long): scala.Boolean   = _value < x
+  protected def <(x: scala.Float): scala.Boolean  = _value < x
+  protected def <(x: scala.Double): scala.Boolean = _value < x
 
-  protected def <=(x: scala.Byte): scala.Boolean   = floatValue <= x
-  protected def <=(x: scala.Short): scala.Boolean  = floatValue <= x
-  protected def <=(x: scala.Char): scala.Boolean   = floatValue <= x
-  protected def <=(x: scala.Int): scala.Boolean    = floatValue <= x
-  protected def <=(x: scala.Long): scala.Boolean   = floatValue <= x
-  protected def <=(x: scala.Float): scala.Boolean  = floatValue <= x
-  protected def <=(x: scala.Double): scala.Boolean = floatValue <= x
+  protected def <=(x: scala.Byte): scala.Boolean   = _value <= x
+  protected def <=(x: scala.Short): scala.Boolean  = _value <= x
+  protected def <=(x: scala.Char): scala.Boolean   = _value <= x
+  protected def <=(x: scala.Int): scala.Boolean    = _value <= x
+  protected def <=(x: scala.Long): scala.Boolean   = _value <= x
+  protected def <=(x: scala.Float): scala.Boolean  = _value <= x
+  protected def <=(x: scala.Double): scala.Boolean = _value <= x
 
-  protected def >(x: scala.Byte): scala.Boolean   = floatValue > x
-  protected def >(x: scala.Short): scala.Boolean  = floatValue > x
-  protected def >(x: scala.Char): scala.Boolean   = floatValue > x
-  protected def >(x: scala.Int): scala.Boolean    = floatValue > x
-  protected def >(x: scala.Long): scala.Boolean   = floatValue > x
-  protected def >(x: scala.Float): scala.Boolean  = floatValue > x
-  protected def >(x: scala.Double): scala.Boolean = floatValue > x
+  protected def >(x: scala.Byte): scala.Boolean   = _value > x
+  protected def >(x: scala.Short): scala.Boolean  = _value > x
+  protected def >(x: scala.Char): scala.Boolean   = _value > x
+  protected def >(x: scala.Int): scala.Boolean    = _value > x
+  protected def >(x: scala.Long): scala.Boolean   = _value > x
+  protected def >(x: scala.Float): scala.Boolean  = _value > x
+  protected def >(x: scala.Double): scala.Boolean = _value > x
 
-  protected def >=(x: scala.Byte): scala.Boolean   = floatValue >= x
-  protected def >=(x: scala.Short): scala.Boolean  = floatValue >= x
-  protected def >=(x: scala.Char): scala.Boolean   = floatValue >= x
-  protected def >=(x: scala.Int): scala.Boolean    = floatValue >= x
-  protected def >=(x: scala.Long): scala.Boolean   = floatValue >= x
-  protected def >=(x: scala.Float): scala.Boolean  = floatValue >= x
-  protected def >=(x: scala.Double): scala.Boolean = floatValue >= x
+  protected def >=(x: scala.Byte): scala.Boolean   = _value >= x
+  protected def >=(x: scala.Short): scala.Boolean  = _value >= x
+  protected def >=(x: scala.Char): scala.Boolean   = _value >= x
+  protected def >=(x: scala.Int): scala.Boolean    = _value >= x
+  protected def >=(x: scala.Long): scala.Boolean   = _value >= x
+  protected def >=(x: scala.Float): scala.Boolean  = _value >= x
+  protected def >=(x: scala.Double): scala.Boolean = _value >= x
 
-  protected def +(x: scala.Byte): scala.Float    = floatValue + x
-  protected def +(x: scala.Short): scala.Float   = floatValue + x
-  protected def +(x: scala.Char): scala.Float    = floatValue + x
-  protected def +(x: scala.Int): scala.Float     = floatValue + x
-  protected def +(x: scala.Long): scala.Float    = floatValue + x
-  protected def +(x: scala.Float): scala.Float   = floatValue + x
-  protected def +(x: scala.Double): scala.Double = floatValue + x
+  protected def +(x: scala.Byte): scala.Float    = _value + x
+  protected def +(x: scala.Short): scala.Float   = _value + x
+  protected def +(x: scala.Char): scala.Float    = _value + x
+  protected def +(x: scala.Int): scala.Float     = _value + x
+  protected def +(x: scala.Long): scala.Float    = _value + x
+  protected def +(x: scala.Float): scala.Float   = _value + x
+  protected def +(x: scala.Double): scala.Double = _value + x
 
-  protected def -(x: scala.Byte): scala.Float    = floatValue - x
-  protected def -(x: scala.Short): scala.Float   = floatValue - x
-  protected def -(x: scala.Char): scala.Float    = floatValue - x
-  protected def -(x: scala.Int): scala.Float     = floatValue - x
-  protected def -(x: scala.Long): scala.Float    = floatValue - x
-  protected def -(x: scala.Float): scala.Float   = floatValue - x
-  protected def -(x: scala.Double): scala.Double = floatValue - x
+  protected def -(x: scala.Byte): scala.Float    = _value - x
+  protected def -(x: scala.Short): scala.Float   = _value - x
+  protected def -(x: scala.Char): scala.Float    = _value - x
+  protected def -(x: scala.Int): scala.Float     = _value - x
+  protected def -(x: scala.Long): scala.Float    = _value - x
+  protected def -(x: scala.Float): scala.Float   = _value - x
+  protected def -(x: scala.Double): scala.Double = _value - x
 
-  protected def *(x: scala.Byte): scala.Float    = floatValue * x
-  protected def *(x: scala.Short): scala.Float   = floatValue * x
-  protected def *(x: scala.Char): scala.Float    = floatValue * x
-  protected def *(x: scala.Int): scala.Float     = floatValue * x
-  protected def *(x: scala.Long): scala.Float    = floatValue * x
-  protected def *(x: scala.Float): scala.Float   = floatValue * x
-  protected def *(x: scala.Double): scala.Double = floatValue * x
+  protected def *(x: scala.Byte): scala.Float    = _value * x
+  protected def *(x: scala.Short): scala.Float   = _value * x
+  protected def *(x: scala.Char): scala.Float    = _value * x
+  protected def *(x: scala.Int): scala.Float     = _value * x
+  protected def *(x: scala.Long): scala.Float    = _value * x
+  protected def *(x: scala.Float): scala.Float   = _value * x
+  protected def *(x: scala.Double): scala.Double = _value * x
 
-  protected def /(x: scala.Byte): scala.Float    = floatValue / x
-  protected def /(x: scala.Short): scala.Float   = floatValue / x
-  protected def /(x: scala.Char): scala.Float    = floatValue / x
-  protected def /(x: scala.Int): scala.Float     = floatValue / x
-  protected def /(x: scala.Long): scala.Float    = floatValue / x
-  protected def /(x: scala.Float): scala.Float   = floatValue / x
-  protected def /(x: scala.Double): scala.Double = floatValue / x
+  protected def /(x: scala.Byte): scala.Float    = _value / x
+  protected def /(x: scala.Short): scala.Float   = _value / x
+  protected def /(x: scala.Char): scala.Float    = _value / x
+  protected def /(x: scala.Int): scala.Float     = _value / x
+  protected def /(x: scala.Long): scala.Float    = _value / x
+  protected def /(x: scala.Float): scala.Float   = _value / x
+  protected def /(x: scala.Double): scala.Double = _value / x
 
-  protected def %(x: scala.Byte): scala.Float    = floatValue % x
-  protected def %(x: scala.Short): scala.Float   = floatValue % x
-  protected def %(x: scala.Char): scala.Float    = floatValue % x
-  protected def %(x: scala.Int): scala.Float     = floatValue % x
-  protected def %(x: scala.Long): scala.Float    = floatValue % x
-  protected def %(x: scala.Float): scala.Float   = floatValue % x
-  protected def %(x: scala.Double): scala.Double = floatValue % x
-
+  protected def %(x: scala.Byte): scala.Float    = _value % x
+  protected def %(x: scala.Short): scala.Float   = _value % x
+  protected def %(x: scala.Char): scala.Float    = _value % x
+  protected def %(x: scala.Int): scala.Float     = _value % x
+  protected def %(x: scala.Long): scala.Float    = _value % x
+  protected def %(x: scala.Float): scala.Float   = _value % x
+  protected def %(x: scala.Double): scala.Double = _value % x
 }
 
 object Float {

@@ -148,7 +148,7 @@ trait NirNameEncoding { self: NirCodeGen =>
         else id0.substring(0, id0.length() - 1) // strip trailing ' '
       } else if (sym.isMethod) {
         val name = sym.name.decoded
-        if (sym.owner == NObjectClass) name.substring(1) // strip the _
+        if (sym.owner == NObjectClass) name.substring(2) // strip the __
         else name.toString
       } else {
         scalanative.util.unreachable

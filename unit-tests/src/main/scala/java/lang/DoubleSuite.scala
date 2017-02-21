@@ -88,9 +88,9 @@ object DoubleSuite extends tests.Suite {
     val szero = 1.0 - 1.0
     assert(pzero == szero)
 
-    val bpzero: java.lang.Double = pzero
-    val bnzero: java.lang.Double = nzero
-    assertNot(bpzero == bnzero)
+    val bpzero: Any = pzero
+    val bnzero: Any = nzero
+    assert(bpzero == bnzero)
     val bszero: java.lang.Double = szero
     assert(bpzero == bszero)
 
@@ -146,10 +146,10 @@ object DoubleSuite extends tests.Suite {
 
     val x = Double.NaN
     val y = longBitsToDouble(doubleToRawLongBits(x) | 1)
-    // assertNot(x == y) // FIXME this works on the JVM, but fails on native.
+    assertNot(x == y)
 
     val z = longBitsToDouble(doubleToLongBits(x) | 1)
-    // assertNot(x == z) // FIXME this works on the JVM, but fails on native.
+    assertNot(x == z)
   }
 
   test("eq") {
