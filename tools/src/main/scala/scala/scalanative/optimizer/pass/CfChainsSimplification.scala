@@ -205,8 +205,8 @@ class CfChainsSimplification(implicit fresh: Fresh, top: Top) extends Pass {
 
   def staticValue(value: Val): Boolean = {
     value match {
-      case _: Val.I8 | _: Val.I16 | _: Val.I32 | _: Val.I64 | _: Val.F32 |
-          _: Val.F64 =>
+      case _: Val.Byte | _: Val.Short | _: Val.Int | _: Val.Long |
+          _: Val.Float | _: Val.Double =>
         true
       case _ => false
     }

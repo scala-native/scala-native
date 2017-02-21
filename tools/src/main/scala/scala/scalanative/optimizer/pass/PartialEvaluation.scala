@@ -98,30 +98,32 @@ class PartialEvaluation extends Pass {
       copy(n, IVal(0, ty))
 
     /* Shl */
-    case Let(n, Op.Bin(Shl, Type.I32, lhs, Val.I32(a))) if ((a & 31) == 0) =>
+    case Let(n, Op.Bin(Shl, Type.Int, lhs, Val.Int(a))) if ((a & 31) == 0) =>
       copy(n, lhs)
 
-    case Let(n, Op.Bin(Shl, Type.I64, lhs, Val.I64(a))) if ((a & 63) == 0) =>
+    case Let(n, Op.Bin(Shl, Type.Long, lhs, Val.Long(a))) if ((a & 63) == 0) =>
       copy(n, lhs)
 
     case Let(n, Op.Bin(Shl, ty, IVal(0), _)) =>
       copy(n, IVal(0, ty))
 
     /* Lshr */
-    case Let(n, Op.Bin(Lshr, Type.I32, lhs, Val.I32(a))) if ((a & 31) == 0) =>
+    case Let(n, Op.Bin(Lshr, Type.Int, lhs, Val.Int(a))) if ((a & 31) == 0) =>
       copy(n, lhs)
 
-    case Let(n, Op.Bin(Lshr, Type.I64, lhs, Val.I64(a))) if ((a & 63) == 0) =>
+    case Let(n, Op.Bin(Lshr, Type.Long, lhs, Val.Long(a)))
+        if ((a & 63) == 0) =>
       copy(n, lhs)
 
     case Let(n, Op.Bin(Lshr, ty, IVal(0), rhs)) =>
       copy(n, IVal(0, ty))
 
     /* Ashr */
-    case Let(n, Op.Bin(Ashr, Type.I32, lhs, Val.I32(a))) if ((a & 31) == 0) =>
+    case Let(n, Op.Bin(Ashr, Type.Int, lhs, Val.Int(a))) if ((a & 31) == 0) =>
       copy(n, lhs)
 
-    case Let(n, Op.Bin(Ashr, Type.I64, lhs, Val.I64(a))) if ((a & 63) == 0) =>
+    case Let(n, Op.Bin(Ashr, Type.Long, lhs, Val.Long(a)))
+        if ((a & 63) == 0) =>
       copy(n, lhs)
 
     case Let(n, Op.Bin(Ashr, ty, IVal(0), rhs)) =>
@@ -237,17 +239,17 @@ object PartialEvaluation extends PassCompanion {
   object PowerOf2 {
     def unapply(v: Val): Option[Val] = {
       v match {
-        case Val.I8(b) =>
-          extractPow2(b).map(p => Val.I8(p.toByte))
+        case Val.Byte(b) =>
+          extractPow2(b).map(p => Val.Byte(p.toByte))
 
-        case Val.I16(s) =>
-          extractPow2(s).map(p => Val.I16(p.toShort))
+        case Val.Short(s) =>
+          extractPow2(s).map(p => Val.Short(p.toShort))
 
-        case Val.I32(i) =>
-          extractPow2(i).map(p => Val.I32(p.toInt))
+        case Val.Int(i) =>
+          extractPow2(i).map(p => Val.Int(p.toInt))
 
-        case Val.I64(l) =>
-          extractPow2(l).map(p => Val.I64(p.toLong))
+        case Val.Long(l) =>
+          extractPow2(l).map(p => Val.Long(p.toLong))
 
         case _ => None
       }
@@ -270,17 +272,17 @@ object PartialEvaluation extends PassCompanion {
   }
 
   private def minValue(ty: Type): Long = ty match {
-    case Type.I8  => Byte.MinValue
-    case Type.I16 => Short.MinValue
-    case Type.I32 => Int.MinValue
-    case Type.I64 => Long.MinValue
+    case Type.Byte  => Byte.MinValue
+    case Type.Short => Short.MinValue
+    case Type.Int   => Int.MinValue
+    case Type.Long  => Long.MinValue
   }
 
   private def maxValue(ty: Type): Long = ty match {
-    case Type.I8  => Byte.MaxValue
-    case Type.I16 => Short.MaxValue
-    case Type.I32 => Int.MaxValue
-    case Type.I64 => Long.MaxValue
+    case Type.Byte  => Byte.MaxValue
+    case Type.Short => Short.MaxValue
+    case Type.Int   => Int.MaxValue
+    case Type.Long  => Long.MaxValue
   }
 
   private def uminValue(ty: Type): Long =

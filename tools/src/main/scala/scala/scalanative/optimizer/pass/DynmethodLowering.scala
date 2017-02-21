@@ -49,17 +49,17 @@ class DynmethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
         val typeptr = let(Op.Load(Type.Ptr, obj))
         // Load the pointer of the table size
         val methodCountPtr = let(
-          Op.Elem(rtiType, typeptr, Seq(Val.I32(0), Val.I32(2), Val.I32(0))))
+          Op.Elem(rtiType, typeptr, Seq(Val.Int(0), Val.Int(2), Val.Int(0))))
         // Load the table size
-        val methodCount = let(Op.Load(Type.I32, methodCountPtr))
-        throwIfCond(Op.Comp(Comp.Ieq, Type.I32, methodCount, Val.I32(0)))
+        val methodCount = let(Op.Load(Type.Int, methodCountPtr))
+        throwIfCond(Op.Comp(Comp.Ieq, Type.Int, methodCount, Val.Int(0)))
         // If the size is greater than 0, call the dyndispatch runtime function
         val dyndispatchTablePtr = let(
-          Op.Elem(rtiType, typeptr, Seq(Val.I32(0), Val.I32(2), Val.I32(0))))
+          Op.Elem(rtiType, typeptr, Seq(Val.Int(0), Val.Int(2), Val.Int(0))))
         val methptrptr = let(
           Op.Call(dyndispatchSig,
                   dyndispatch,
-                  Seq(dyndispatchTablePtr, Val.I32(methodIndex)),
+                  Seq(dyndispatchTablePtr, Val.Int(methodIndex)),
                   Next.None))
         throwIfNull(methptrptr)
         let(n, Op.Load(Type.Ptr, methptrptr))
@@ -78,13 +78,13 @@ object DynmethodLowering extends PassCompanion {
 
   val rtiType = Type.Struct(
     Global.None,
-    Seq(Type.I32,
+    Seq(Type.Int,
         Type.Ptr,
-        Type.Struct(Global.None, Seq(Type.I32, Type.Ptr, Type.Ptr))))
+        Type.Struct(Global.None, Seq(Type.Int, Type.Ptr, Type.Ptr))))
 
   val dyndispatchName = Global.Top("scalanative_dyndispatch")
   val dyndispatchSig =
-    Type.Function(Seq(Type.Ptr, Type.I32), Type.Ptr)
+    Type.Function(Seq(Type.Ptr, Type.Int), Type.Ptr)
   val dyndispatch = Val.Global(dyndispatchName, dyndispatchSig)
 
   val excptnGlobal = Global.Top("java.lang.NoSuchMethodException")

@@ -7,5 +7,5 @@ object Rt {
   val Object = Class(Global.Top("java.lang.Object"))
   val String = Class(Global.Top("java.lang.String"))
   val Type =
-    Struct(Global.Top("scala.scalanative.runtime.Type"), Seq(I32, Ptr))
+    Struct(Global.Top("scala.scalanative.runtime.Type"), Seq(Int, Ptr))
 }

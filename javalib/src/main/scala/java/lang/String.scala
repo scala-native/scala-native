@@ -152,8 +152,9 @@ final class _String()
     val end =
       if (count < string.count) offset + count
       else offset + string.count
+    val target = string.value
     while (o1 < end) {
-      val result: Int = value(o1) - string.value(o2)
+      val result = value(o1) - target(o2)
       o1 += 1
       o2 += 1
       if (result != 0) {

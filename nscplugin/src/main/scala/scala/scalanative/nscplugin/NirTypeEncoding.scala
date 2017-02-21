@@ -55,18 +55,18 @@ trait NirTypeEncoding { self: NirCodeGen =>
 
   def genType(st: SimpleType, box: Boolean): nir.Type = st.sym match {
     // format: off
-    case CharClass    => if (!box) nir.Type.CharI16  else genRefType(BoxedCharacterClass)
+    case CharClass    => if (!box) nir.Type.Char  else genRefType(BoxedCharacterClass)
     case BooleanClass => if (!box) nir.Type.Bool else genRefType(BoxedBooleanClass)
-    case ByteClass    => if (!box) nir.Type.I8   else genRefType(BoxedByteClass)
-    case ShortClass   => if (!box) nir.Type.I16  else genRefType(BoxedShortClass)
-    case IntClass     => if (!box) nir.Type.I32  else genRefType(BoxedIntClass)
-    case LongClass    => if (!box) nir.Type.I64  else genRefType(BoxedLongClass)
-    case FloatClass   => if (!box) nir.Type.F32  else genRefType(BoxedFloatClass)
-    case DoubleClass  => if (!box) nir.Type.F64  else genRefType(BoxedDoubleClass)
-    case UByteClass   => if (!box) nir.Type.UnsignedI8   else genRefType(st)
-    case UShortClass  => if (!box) nir.Type.UnsignedI16  else genRefType(st)
-    case UIntClass    => if (!box) nir.Type.UnsignedI32  else genRefType(st)
-    case ULongClass   => if (!box) nir.Type.UnsignedI64  else genRefType(st)
+    case ByteClass    => if (!box) nir.Type.Byte   else genRefType(BoxedByteClass)
+    case ShortClass   => if (!box) nir.Type.Short  else genRefType(BoxedShortClass)
+    case IntClass     => if (!box) nir.Type.Int  else genRefType(BoxedIntClass)
+    case LongClass    => if (!box) nir.Type.Long  else genRefType(BoxedLongClass)
+    case FloatClass   => if (!box) nir.Type.Float  else genRefType(BoxedFloatClass)
+    case DoubleClass  => if (!box) nir.Type.Double  else genRefType(BoxedDoubleClass)
+    case UByteClass   => if (!box) nir.Type.UByte   else genRefType(st)
+    case UShortClass  => if (!box) nir.Type.UShort  else genRefType(st)
+    case UIntClass    => if (!box) nir.Type.UInt  else genRefType(st)
+    case ULongClass   => if (!box) nir.Type.ULong  else genRefType(st)
     case PtrClass     => nir.Type.Ptr
     // format: on
     case sym if CStructClass.contains(sym) =>

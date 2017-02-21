@@ -74,14 +74,14 @@ object ClassHierarchy {
     def vtableValue: Val.Struct =
       Val.Struct(Global.None, vtable)
     def dynDispatchTableStruct =
-      Type.Struct(Global.None, Seq(Type.I32, Type.Ptr, Type.Ptr, Type.Ptr))
+      Type.Struct(Global.None, Seq(Type.Int, Type.Ptr, Type.Ptr, Type.Ptr))
     def typeStruct: Type.Struct =
       Type.Struct(
         Global.None,
-        Seq(Type.I32, Type.Ptr, dynDispatchTableStruct, vtableStruct))
+        Seq(Type.Int, Type.Ptr, dynDispatchTableStruct, vtableStruct))
     def typeValue: Val.Struct =
       Val.Struct(Global.None,
-                 Seq(Val.I32(id),
+                 Seq(Val.Int(id),
                      Val.String(name.id),
                      dynDispatchTableValue,
                      vtableValue))

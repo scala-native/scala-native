@@ -87,14 +87,16 @@ trait NirNameEncoding { self: NirCodeGen =>
     val sb = new scalanative.util.ShowBuilder
 
     def printType(ty: nir.Type): Unit = ty match {
-      case nir.Type.None   => sb.str("")
-      case nir.Type.Void   => sb.str("void")
-      case nir.Type.Vararg => sb.str("...")
-      case nir.Type.Ptr    => sb.str("ptr")
-      case nir.Type.Bool   => sb.str("bool")
-      case nir.Type.I(w)   => sb.str("i"); sb.str(w.width.value)
-      case nir.Type.F32    => sb.str("f32")
-      case nir.Type.F64    => sb.str("f64")
+      case nir.Type.None        => sb.str("")
+      case nir.Type.Void        => sb.str("void")
+      case nir.Type.Vararg      => sb.str("...")
+      case nir.Type.Ptr         => sb.str("ptr")
+      case nir.Type.Bool        => sb.str("bool")
+      case nir.Type.Char        => sb.str("char")
+      case nir.Type.I(w, false) => sb.str("u"); sb.str(w)
+      case nir.Type.I(w, true)  => sb.str("i"); sb.str(w)
+      case nir.Type.Float       => sb.str("f32")
+      case nir.Type.Double      => sb.str("f64")
       case nir.Type.Array(ty, n) =>
         sb.str("arr.")
         printType(ty)

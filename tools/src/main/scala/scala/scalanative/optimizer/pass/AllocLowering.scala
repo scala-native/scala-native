@@ -34,7 +34,7 @@ class AllocLowering(implicit fresh: Fresh, top: Top) extends Pass {
 
 object AllocLowering extends PassCompanion {
   val allocName = Global.Top("scalanative_alloc")
-  val allocSig  = Type.Function(Seq(Type.Ptr, Type.I64), Type.Ptr)
+  val allocSig  = Type.Function(Seq(Type.Ptr, Type.Long), Type.Ptr)
   val alloc     = Val.Global(allocName, allocSig)
 
   override val injects =

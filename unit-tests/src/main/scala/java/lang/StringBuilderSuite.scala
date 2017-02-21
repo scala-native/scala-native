@@ -132,7 +132,7 @@ object StringBuilderSuite extends tests.Suite {
     assertEquals("foo\u0000\u0000\u0000", { b.setLength(6); b.toString })
   }
 
-  testFails("appendCodePoint", issue = 482) {
+  test("appendCodePoint") {
     val b = newBuilder
     b.appendCodePoint(0x61)
     assertEquals("a", b.toString)

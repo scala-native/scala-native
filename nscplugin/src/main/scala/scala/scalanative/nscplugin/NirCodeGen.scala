@@ -647,17 +647,17 @@ abstract class NirCodeGen
         case BooleanTag =>
           if (value.booleanValue) Val.True else Val.False
         case ByteTag =>
-          Val.I8(value.intValue.toByte)
+          Val.Byte(value.intValue.toByte)
         case ShortTag | CharTag =>
-          Val.I16(value.intValue.toShort)
+          Val.Short(value.intValue.toShort)
         case IntTag =>
-          Val.I32(value.intValue)
+          Val.Int(value.intValue)
         case LongTag =>
-          Val.I64(value.longValue)
+          Val.Long(value.longValue)
         case FloatTag =>
-          Val.F32(value.floatValue)
+          Val.Float(value.floatValue)
         case DoubleTag =>
-          Val.F64(value.doubleValue)
+          Val.Double(value.doubleValue)
         case StringTag =>
           Val.String(value.stringValue)
       }
@@ -1085,13 +1085,13 @@ abstract class NirCodeGen
     }
 
     def numOfType(num: Int, ty: nir.Type) = ty match {
-      case _: Type.I8  => Val.I8(num.toByte)
-      case _: Type.I16 => Val.I16(num.toShort)
-      case _: Type.I32 => Val.I32(num)
-      case _: Type.I64 => Val.I64(num.toLong)
-      case Type.F32 => Val.F32(num.toFloat)
-      case Type.F64 => Val.F64(num.toDouble)
-      case _        => unreachable
+      case Type.Byte   | Type.UByte              => Val.Byte(num.toByte)
+      case Type.Short  | Type.UShort | Type.Char => Val.Short(num.toShort)
+      case Type.Int    | Type.UInt               => Val.Int(num)
+      case Type.Long   | Type.ULong              => Val.Long(num.toLong)
+      case Type.Float                            => Val.Float(num.toFloat)
+      case Type.Double                           => Val.Double(num.toDouble)
+      case _                                     => util.unsupported(s"num = $num, ty = ${ty.show}")
     }
 
     def genSimpleOp(
@@ -1120,11 +1120,11 @@ abstract class NirCodeGen
       val right = genExpr(rightp, focus)
 
       (opty, code) match {
-        case (Type.I(_) | Type.F(_), POS) => right
-        case (Type.F(_), NEG)             => negateFloat(right.value, right)
-        case (Type.I(_), NEG)             => negateInt(right.value, right)
-        case (Type.I(_), NOT)             => negateBits(right.value, right)
-        case (Type.I(_), ZNOT)            => negateBool(right.value, right)
+        case (_: Type.I | _: Type.F, POS) => right
+        case (_: Type.F, NEG)             => negateFloat(right.value, right)
+        case (_: Type.I, NEG)             => negateInt(right.value, right)
+        case (_: Type.I, NOT)             => negateBits(right.value, right)
+        case (_: Type.I, ZNOT)            => negateBool(right.value, right)
         case _                            => abort("Unknown unary operation code: " + code)
       }
     }
@@ -1141,7 +1141,7 @@ abstract class NirCodeGen
       val opty = binaryOperationType(lty, rty)
 
       val binres = opty match {
-        case Type.F(_) =>
+        case _: Type.F =>
           code match {
             case ADD =>
               genBinaryOp(Op.Bin(Bin.Fadd, _, _, _), left, right, opty, focus)
@@ -1172,7 +1172,7 @@ abstract class NirCodeGen
                   "Unknown floating point type binary operation code: " + code)
           }
 
-        case Type.I(_) =>
+        case _: Type.I =>
           code match {
             case ADD =>
               genBinaryOp(Op.Bin(Bin.Iadd, _, _, _), left, right, opty, focus)
@@ -1299,11 +1299,15 @@ abstract class NirCodeGen
         lty
       case (_: nir.Type.RefKind, nir.Type.Ptr) =>
         rty
-      case (nir.Type.I(lwidth), nir.Type.I(rwidth)) =>
+      case (nir.Type.Bool, nir.Type.Bool) =>
+        nir.Type.Bool
+      case (nir.Type.I(lwidth, _), nir.Type.I(rwidth, _)) if lwidth < 32 && rwidth < 32 =>
+        nir.Type.Int
+      case (nir.Type.I(lwidth, _), nir.Type.I(rwidth, _)) =>
         if (lwidth >= rwidth) lty else rty
-      case (nir.Type.I(_), nir.Type.F(_)) =>
+      case (nir.Type.I(_, _), nir.Type.F(_)) =>
         rty
-      case (nir.Type.F(_), nir.Type.I(_)) =>
+      case (nir.Type.F(_), nir.Type.I(_, _)) =>
         lty
       case (nir.Type.F(lwidth), nir.Type.F(rwidth)) =>
         if (lwidth >= rwidth) lty else rty
@@ -1516,7 +1520,7 @@ abstract class NirCodeGen
           val st    = unwrapTag(tagp)
           val ty    = genType(st, box = false)
           val index = PtrFieldMethod.indexOf(sel.symbol)
-          val path  = Seq(nir.Val.I32(0), nir.Val.I32(index))
+          val path  = Seq(nir.Val.Int(0), nir.Val.Int(index))
           ptr withOp Op.Elem(ty, ptr.value, path)
       }
     }
@@ -1589,14 +1593,14 @@ abstract class NirCodeGen
 
     def castConv(fromty: nir.Type, toty: nir.Type): Option[nir.Conv] =
       (fromty, toty) match {
-        case (Type.I(_), Type.Ptr)                => Some(nir.Conv.Inttoptr)
-        case (Type.Ptr, Type.I(_))                => Some(nir.Conv.Ptrtoint)
+        case (_: Type.I, Type.Ptr)                => Some(nir.Conv.Inttoptr)
+        case (Type.Ptr, _: Type.I)                => Some(nir.Conv.Ptrtoint)
         case (_: Type.RefKind, Type.Ptr)          => Some(nir.Conv.Bitcast)
         case (Type.Ptr, _: Type.RefKind)          => Some(nir.Conv.Bitcast)
-        case (_: Type.RefKind, Type.I(_))         => Some(nir.Conv.Ptrtoint)
-        case (Type.I(_), _: Type.RefKind)         => Some(nir.Conv.Inttoptr)
-        case (Type.I(src1), Type.F(src2)) if src1.width == src2.width => Some(nir.Conv.Bitcast)
-        case (Type.F(src1), Type.I(src2)) if src1.width == src2.width => Some(nir.Conv.Bitcast)
+        case (_: Type.RefKind, _: Type.I)         => Some(nir.Conv.Ptrtoint)
+        case (_: Type.I, _: Type.RefKind)         => Some(nir.Conv.Inttoptr)
+        case (Type.I(w1, _), Type.F(w2)) if w1 == w2 => Some(nir.Conv.Bitcast)
+        case (Type.F(w1), Type.I(w2, _)) if w1 == w2 => Some(nir.Conv.Bitcast)
         case _ if fromty == toty                  => None
         case _ =>
           unsupported(s"cast from $fromty to $toty")
@@ -1752,19 +1756,29 @@ abstract class NirCodeGen
             Conv.Bitcast
           case (_: nir.Type.RefKind, nir.Type.Ptr) =>
             Conv.Bitcast
-          case (nir.Type.I(lwidth), nir.Type.I(rwidth)) if lwidth < rwidth =>
-            Conv.Sext
-          case (nir.Type.I(lwidth), nir.Type.I(rwidth)) if lwidth > rwidth =>
-            Conv.Trunc
-          case (nir.Type.I(_), nir.Type.I(_)) =>
-            Conv.Bitcast
-          case (nir.Type.I(_), nir.Type.F(_)) =>
+          case (nir.Type.I(fromw, froms), nir.Type.I(tow, tos)) =>
+            if (fromw < tow) {
+              if (froms) {
+                Conv.Sext
+              } else {
+                Conv.Zext
+              }
+            } else if (fromw > tow) {
+              Conv.Trunc
+            } else {
+              Conv.Bitcast
+            }
+          case (nir.Type.I(_, true), _: nir.Type.F) =>
             Conv.Sitofp
-          case (nir.Type.F(_), nir.Type.I(_)) =>
+          case (nir.Type.I(_, false), _: nir.Type.F) =>
+            Conv.Uitofp
+          case (_: nir.Type.F, nir.Type.I(_, true)) =>
             Conv.Fptosi
-          case (nir.Type.F64, nir.Type.F32) =>
+          case (_: nir.Type.F, nir.Type.I(_, false)) =>
+            Conv.Fptoui
+          case (nir.Type.Double, nir.Type.Float) =>
             Conv.Fptrunc
-          case (nir.Type.F32, nir.Type.F64) =>
+          case (nir.Type.Float, nir.Type.Double) =>
             Conv.Fpext
         }
         focus withOp Op.Conv(conv, toty, value)
@@ -1775,47 +1789,61 @@ abstract class NirCodeGen
       import scalaPrimitives._
 
       code match {
-        case B2B       => (nir.Type.I8, nir.Type.I8)
-        case B2S | B2C => (nir.Type.I8, nir.Type.I16)
-        case B2I       => (nir.Type.I8, nir.Type.I32)
-        case B2L       => (nir.Type.I8, nir.Type.I64)
-        case B2F       => (nir.Type.I8, nir.Type.F32)
-        case B2D       => (nir.Type.I8, nir.Type.F64)
+        case B2B => (nir.Type.Byte, nir.Type.Byte  )
+        case B2S => (nir.Type.Byte, nir.Type.Short )
+        case B2C => (nir.Type.Byte, nir.Type.Char  )
+        case B2I => (nir.Type.Byte, nir.Type.Int   )
+        case B2L => (nir.Type.Byte, nir.Type.Long  )
+        case B2F => (nir.Type.Byte, nir.Type.Float )
+        case B2D => (nir.Type.Byte, nir.Type.Double)
 
-        case S2B | C2B             => (nir.Type.I16, nir.Type.I8)
-        case S2S | S2C | C2S | C2C => (nir.Type.I16, nir.Type.I16)
-        case S2I | C2I             => (nir.Type.I16, nir.Type.I32)
-        case S2L | C2L             => (nir.Type.I16, nir.Type.I64)
-        case S2F | C2F             => (nir.Type.I16, nir.Type.F32)
-        case S2D | C2D             => (nir.Type.I16, nir.Type.F64)
+        case S2B => (nir.Type.Short, nir.Type.Byte  )
+        case S2S => (nir.Type.Short, nir.Type.Short )
+        case S2C => (nir.Type.Short, nir.Type.Char  )
+        case S2I => (nir.Type.Short, nir.Type.Int   )
+        case S2L => (nir.Type.Short, nir.Type.Long  )
+        case S2F => (nir.Type.Short, nir.Type.Float )
+        case S2D => (nir.Type.Short, nir.Type.Double)
 
-        case I2B       => (nir.Type.I32, nir.Type.I8)
-        case I2S | I2C => (nir.Type.I32, nir.Type.I16)
-        case I2I       => (nir.Type.I32, nir.Type.I32)
-        case I2L       => (nir.Type.I32, nir.Type.I64)
-        case I2F       => (nir.Type.I32, nir.Type.F32)
-        case I2D       => (nir.Type.I32, nir.Type.F64)
+        case C2B => (nir.Type.Char, nir.Type.Byte  )
+        case C2S => (nir.Type.Char, nir.Type.Short )
+        case C2C => (nir.Type.Char, nir.Type.Char  )
+        case C2I => (nir.Type.Char, nir.Type.Int   )
+        case C2L => (nir.Type.Char, nir.Type.Long  )
+        case C2F => (nir.Type.Char, nir.Type.Float )
+        case C2D => (nir.Type.Char, nir.Type.Double)
 
-        case L2B       => (nir.Type.I64, nir.Type.I8)
-        case L2S | L2C => (nir.Type.I64, nir.Type.I16)
-        case L2I       => (nir.Type.I64, nir.Type.I32)
-        case L2L       => (nir.Type.I64, nir.Type.I64)
-        case L2F       => (nir.Type.I64, nir.Type.F32)
-        case L2D       => (nir.Type.I64, nir.Type.F64)
+        case I2B => (nir.Type.Int, nir.Type.Byte  )
+        case I2S => (nir.Type.Int, nir.Type.Short )
+        case I2C => (nir.Type.Int, nir.Type.Char  )
+        case I2I => (nir.Type.Int, nir.Type.Int   )
+        case I2L => (nir.Type.Int, nir.Type.Long  )
+        case I2F => (nir.Type.Int, nir.Type.Float )
+        case I2D => (nir.Type.Int, nir.Type.Double)
 
-        case F2B       => (nir.Type.F32, nir.Type.I8)
-        case F2S | F2C => (nir.Type.F32, nir.Type.I16)
-        case F2I       => (nir.Type.F32, nir.Type.I32)
-        case F2L       => (nir.Type.F32, nir.Type.I64)
-        case F2F       => (nir.Type.F32, nir.Type.F32)
-        case F2D       => (nir.Type.F32, nir.Type.F64)
+        case L2B => (nir.Type.Long, nir.Type.Byte  )
+        case L2S => (nir.Type.Long, nir.Type.Short )
+        case L2C => (nir.Type.Long, nir.Type.Char  )
+        case L2I => (nir.Type.Long, nir.Type.Int   )
+        case L2L => (nir.Type.Long, nir.Type.Long  )
+        case L2F => (nir.Type.Long, nir.Type.Float )
+        case L2D => (nir.Type.Long, nir.Type.Double)
 
-        case D2B       => (nir.Type.F64, nir.Type.I8)
-        case D2S | D2C => (nir.Type.F64, nir.Type.I16)
-        case D2I       => (nir.Type.F64, nir.Type.I32)
-        case D2L       => (nir.Type.F64, nir.Type.I64)
-        case D2F       => (nir.Type.F64, nir.Type.F32)
-        case D2D       => (nir.Type.F64, nir.Type.F64)
+        case F2B => (nir.Type.Float, nir.Type.Byte  )
+        case F2S => (nir.Type.Float, nir.Type.Short )
+        case F2C => (nir.Type.Float, nir.Type.Char  )
+        case F2I => (nir.Type.Float, nir.Type.Int   )
+        case F2L => (nir.Type.Float, nir.Type.Long  )
+        case F2F => (nir.Type.Float, nir.Type.Float )
+        case F2D => (nir.Type.Float, nir.Type.Double)
+
+        case D2B => (nir.Type.Double, nir.Type.Byte  )
+        case D2S => (nir.Type.Double, nir.Type.Short )
+        case D2C => (nir.Type.Double, nir.Type.Char  )
+        case D2I => (nir.Type.Double, nir.Type.Int   )
+        case D2L => (nir.Type.Double, nir.Type.Long  )
+        case D2F => (nir.Type.Double, nir.Type.Float )
+        case D2D => (nir.Type.Double, nir.Type.Double)
       }
     }
 
@@ -1959,7 +1987,7 @@ abstract class NirCodeGen
       genSimpleArgsWithPt(argsp, focus, argsp.map(_ => None))
 
     def genSimpleArgsWithPt(argsp: Seq[Tree], focus: Focus, argspPt: Seq[Option[scalanative.nir.Type]]): (Seq[Val], Focus) = {
-      val args1      = sequenced(argsp, focus)(genExpr(_, _))
+      val args1     = sequenced(argsp, focus)(genExpr(_, _))
       val argvalues = args1.map(_.value)
 
       // Under certain circumstances e.g., the result of the c-function pointer dereference
@@ -1971,11 +1999,11 @@ abstract class NirCodeGen
         case (argFocus, Some(argPt)) =>
           (argFocus.value.ty, argPt) match {
             case (argFocusTpe: scalanative.nir.Type.I, _: scalanative.nir.Type.RefKind) =>
-              scalanative.nir.Type.unboxInverse.get(argFocusTpe).map { boxedTpe =>
+              scalanative.nir.Type.box.get(argFocusTpe).map { boxedTpe =>
                 argFocus withOp Op.Box(boxedTpe, argFocus.value)
               } getOrElse(argFocus)
             case (argFocusTpe: scalanative.nir.Type.F, _: scalanative.nir.Type.RefKind) =>
-              scalanative.nir.Type.unboxInverse.get(argFocusTpe).map { boxedTpe =>
+              scalanative.nir.Type.box.get(argFocusTpe).map { boxedTpe =>
                 argFocus withOp Op.Box(boxedTpe, argFocus.value)
               } getOrElse(argFocus)
             case _ =>
@@ -1984,9 +2012,9 @@ abstract class NirCodeGen
 
       }
 
-      val args2 = sequenced(args1.zip(argspPt), focus)(inferImplicitArgConv(_, _))
+      val args2       = sequenced(args1.zip(argspPt), focus)(inferImplicitArgConv(_, _))
       val argsValues2 = args2.map(_.value)
-      val last      = args2.lastOption.getOrElse(focus)
+      val last        = args2.lastOption.getOrElse(focus)
 
       (argsValues2, last)
     }

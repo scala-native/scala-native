@@ -241,4 +241,8 @@ object IssuesSuite extends tests.Suite {
     foo()
     assert(events == List("c", "a"))
   }
+
+  test("#482") {
+    assert('\uD800'.toInt == 55296)
+  }
 }

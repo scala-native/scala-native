@@ -10,15 +10,15 @@ sealed abstract class Val {
     case Val.Zero(ty)           => ty
     case Val.Undef(ty)          => ty
     case Val.True | Val.False   => Type.Bool
-    case Val.I8(_)              => Type.I8
-    case Val.I16(_)             => Type.I16
-    case Val.I32(_)             => Type.I32
-    case Val.I64(_)             => Type.I64
-    case Val.F32(_)             => Type.F32
-    case Val.F64(_)             => Type.F64
+    case Val.Byte(_)            => Type.Byte
+    case Val.Short(_)           => Type.Short
+    case Val.Int(_)             => Type.Int
+    case Val.Long(_)            => Type.Long
+    case Val.Float(_)           => Type.Float
+    case Val.Double(_)          => Type.Double
     case Val.Struct(name, vals) => Type.Struct(name, vals.map(_.ty))
     case Val.Array(ty, vals)    => Type.Array(ty, vals.length)
-    case Val.Chars(s)           => Type.Array(Type.I8, s.getBytes.length + 1)
+    case Val.Chars(s)           => Type.Array(Type.Byte, s.getBytes.length + 1)
     case Val.Local(_, ty)       => ty
     case Val.Global(_, ty)      => ty
 
@@ -31,27 +31,27 @@ sealed abstract class Val {
 }
 object Val {
   // low-level
-  final case object None               extends Val
-  final case object True               extends Val
-  final case object False              extends Val
-  final case class Zero(of: nir.Type)  extends Val
-  final case class Undef(of: nir.Type) extends Val
-  final case class I8(value: Byte)     extends Val
-  final case class I16(value: Short)   extends Val
-  final case class I32(value: Int)     extends Val
-  final case class I64(value: Long)    extends Val
-  final case class F32(value: Float) extends Val {
+  final case object None                     extends Val
+  final case object True                     extends Val
+  final case object False                    extends Val
+  final case class Zero(of: nir.Type)        extends Val
+  final case class Undef(of: nir.Type)       extends Val
+  final case class Byte(value: scala.Byte)   extends Val
+  final case class Short(value: scala.Short) extends Val
+  final case class Int(value: scala.Int)     extends Val
+  final case class Long(value: scala.Long)   extends Val
+  final case class Float(value: scala.Float) extends Val {
     override def equals(that: Any): Boolean = that match {
-      case F32(thatValue) =>
+      case Float(thatValue) =>
         val theseBits = floatToRawIntBits(value)
         val thoseBits = floatToRawIntBits(thatValue)
         theseBits == thoseBits
       case _ => false
     }
   }
-  final case class F64(value: Double) extends Val {
+  final case class Double(value: scala.Double) extends Val {
     override def equals(that: Any): Boolean = that match {
-      case F64(thatValue) =>
+      case Double(thatValue) =>
         val theseBits = doubleToRawLongBits(value)
         val thoseBits = doubleToRawLongBits(thatValue)
         theseBits == thoseBits

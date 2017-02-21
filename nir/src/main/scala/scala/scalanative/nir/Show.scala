@@ -376,24 +376,24 @@ object Show {
         str("undef[")
         type_(ty)
         str("]")
-      case Val.I8(value) =>
+      case Val.Byte(value) =>
+        str("byte ")
         str(value)
-        str("i8")
-      case Val.I16(value) =>
+      case Val.Short(value) =>
+        str("short ")
         str(value)
-        str("i16")
-      case Val.I32(value) =>
+      case Val.Int(value) =>
+        str("int ")
         str(value)
-        str("i32")
-      case Val.I64(value) =>
+      case Val.Long(value) =>
+        str("long ")
         str(value)
-        str("i64")
-      case Val.F32(value) =>
+      case Val.Float(value) =>
+        str("float ")
         str(value)
-        str("f32")
-      case Val.F64(value) =>
+      case Val.Double(value) =>
+        str("double ")
         str(value)
-        str("f64")
       case Val.Struct(n, values) =>
         str("struct ")
         if (n ne Global.None) {
@@ -523,11 +523,19 @@ object Show {
       case Type.None   => str("none")
       case Type.Void   => str("void")
       case Type.Vararg => str("...")
-      case Type.Ptr    => str("ptr")
       case Type.Bool   => str("bool")
-      case Type.I(w)   => str("i"); str(w.width.value)
-      case Type.F32    => str("f32")
-      case Type.F64    => str("f64")
+      case Type.Ptr    => str("ptr")
+      case Type.Char   => str("char")
+      case Type.Byte   => str("byte")
+      case Type.UByte  => str("ubyte")
+      case Type.Short  => str("short")
+      case Type.UShort => str("ushort")
+      case Type.Int    => str("int")
+      case Type.UInt   => str("uint")
+      case Type.Long   => str("long")
+      case Type.ULong  => str("ulong")
+      case Type.Float  => str("float")
+      case Type.Double => str("double")
 
       case Type.Array(ty, n) =>
         str("[")

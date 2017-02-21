@@ -39,39 +39,39 @@ class ValParserTest extends FlatSpec with Matchers {
     result should be(undef)
   }
 
-  it should "parse `Val.I8`" in {
-    val i8: Val                   = Val.I8(1)
-    val Parsed.Success(result, _) = parser.Val.I8.parse(i8.show)
+  it should "parse `Val.Byte`" in {
+    val i8: Val                   = Val.Byte(1)
+    val Parsed.Success(result, _) = parser.Val.Byte.parse(i8.show)
     result should be(i8)
   }
 
-  it should "parse `Val.I16`" in {
-    val i16: Val                  = Val.I16(2)
-    val Parsed.Success(result, _) = parser.Val.I16.parse(i16.show)
+  it should "parse `Val.Short`" in {
+    val i16: Val                  = Val.Short(2)
+    val Parsed.Success(result, _) = parser.Val.Short.parse(i16.show)
     result should be(i16)
   }
 
-  it should "parse `Val.I32`" in {
-    val i32: Val                  = Val.I32(3)
-    val Parsed.Success(result, _) = parser.Val.I32.parse(i32.show)
+  it should "parse `Val.Int`" in {
+    val i32: Val                  = Val.Int(3)
+    val Parsed.Success(result, _) = parser.Val.Int.parse(i32.show)
     result should be(i32)
   }
 
-  it should "parse `Val.I64`" in {
-    val i64: Val                  = Val.I64(4)
-    val Parsed.Success(result, _) = parser.Val.I64.parse(i64.show)
+  it should "parse `Val.Long`" in {
+    val i64: Val                  = Val.Long(4)
+    val Parsed.Success(result, _) = parser.Val.Long.parse(i64.show)
     result should be(i64)
   }
 
-  it should "parse `Val.F32`" in {
-    val f32: Val                  = Val.F32(5.6.toFloat)
-    val Parsed.Success(result, _) = parser.Val.F32.parse(f32.show)
+  it should "parse `Val.Float`" in {
+    val f32: Val                  = Val.Float(5.6.toFloat)
+    val Parsed.Success(result, _) = parser.Val.Float.parse(f32.show)
     result should be(f32)
   }
 
-  it should "parse `Val.F64`" in {
-    val f64: Val                  = Val.F64(7.8)
-    val Parsed.Success(result, _) = parser.Val.F64.parse(f64.show)
+  it should "parse `Val.Double`" in {
+    val f64: Val                  = Val.Double(7.8)
+    val Parsed.Success(result, _) = parser.Val.Double.parse(f64.show)
     result should be(f64)
   }
 

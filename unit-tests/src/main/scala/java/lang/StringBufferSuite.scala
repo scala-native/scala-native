@@ -121,7 +121,7 @@ object StringBufferSuite extends tests.Suite {
     assertEquals("foo\u0000\u0000\u0000", { buf.setLength(6); buf.toString })
   }
 
-  testFails("appendCodePoint", issue = 482) {
+  test("appendCodePoint") {
     val buf = newBuf
     buf.appendCodePoint(0x61)
     assertEquals("a", buf.toString)

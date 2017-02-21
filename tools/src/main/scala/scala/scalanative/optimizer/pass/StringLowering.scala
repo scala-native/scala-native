@@ -28,21 +28,21 @@ class StringLowering(implicit top: Top) extends Pass {
       val CharArrayCls = ClassRef.unapply(CharArrayName).get
 
       val chars       = v.toCharArray
-      val charsLength = Val.I32(chars.length)
+      val charsLength = Val.Int(chars.length)
       val charsConst = Val.Const(
         Val.Struct(
           Global.None,
           Seq(CharArrayCls.typeConst,
               charsLength,
-              Val.I32(0), // padding to get next field aligned properly
-              Val.Array(Type.I16, chars.map(c => Val.I16(c.toShort))))
+              Val.Int(0), // padding to get next field aligned properly
+              Val.Array(Type.Short, chars.map(c => Val.Short(c.toShort))))
         ))
 
       val fieldValues = stringFieldNames.map {
         case StringValueName          => charsConst
-        case StringOffsetName         => Val.I32(0)
+        case StringOffsetName         => Val.Int(0)
         case StringCountName          => charsLength
-        case StringCachedHashCodeName => Val.I32(stringHashCode(v))
+        case StringCachedHashCodeName => Val.Int(stringHashCode(v))
         case _                        => util.unreachable
       }
 

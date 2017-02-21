@@ -9,17 +9,17 @@ object Val extends Base[nir.Val] {
   import Base._
   import IgnoreWhitespace._
 
-  val None  = P("none".! map (_ => nir.Val.None))
-  val True  = P("true".! map (_ => nir.Val.True))
-  val False = P("false".! map (_ => nir.Val.False))
-  val Zero  = P("zero[" ~ Type.parser ~ "]" map (nir.Val.Zero(_)))
-  val Undef = P("undef[" ~ Type.parser ~ "]" map (nir.Val.Undef(_)))
-  val I8    = P(Base.I8 ~ "i8" map (nir.Val.I8(_)))
-  val I16   = P(Base.I16 ~ "i16" map (nir.Val.I16(_)))
-  val I32   = P(Base.I32 ~ "i32" map (nir.Val.I32(_)))
-  val I64   = P(Base.I64 ~ "i64" map (nir.Val.I64(_)))
-  val F32   = P(Base.F32 ~ "32" map (nir.Val.F32(_)))
-  val F64   = P(Base.F64 ~ "64" map (nir.Val.F64(_)))
+  val None   = P("none".! map (_ => nir.Val.None))
+  val True   = P("true".! map (_ => nir.Val.True))
+  val False  = P("false".! map (_ => nir.Val.False))
+  val Zero   = P("zero[" ~ Type.parser ~ "]" map (nir.Val.Zero(_)))
+  val Undef  = P("undef[" ~ Type.parser ~ "]" map (nir.Val.Undef(_)))
+  val Byte   = P("byte" ~ Base.Byte map (nir.Val.Byte(_)))
+  val Short  = P("short" ~ Base.Short map (nir.Val.Short(_)))
+  val Int    = P("int" ~ Base.Int map (nir.Val.Int(_)))
+  val Long   = P("long" ~ Base.Long map (nir.Val.Long(_)))
+  val Float  = P("float" ~ Base.Float map (nir.Val.Float(_)))
+  val Double = P("double" ~ Base.Double map (nir.Val.Double(_)))
   val NoneStruct =
     P(
       "struct" ~ "{" ~ Val.parser.rep(sep = ",") ~ "}" map (nir.Val
@@ -48,6 +48,6 @@ object Val extends Base[nir.Val] {
   val String = P(stringLit map (nir.Val.String(_)))
 
   override val parser: P[nir.Val] =
-    None | True | False | Zero | Undef | I64 | I32 | I16 | I8 | F64 | F32 | NoneStruct | Struct | Array | Chars | Local | Global | Unit | Const | String
+    None | True | False | Zero | Undef | Long | Int | Short | Byte | Double | Float | NoneStruct | Struct | Array | Chars | Local | Global | Unit | Const | String
 
 }
