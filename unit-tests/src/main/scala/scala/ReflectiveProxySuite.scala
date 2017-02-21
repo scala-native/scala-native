@@ -97,8 +97,7 @@ object ReflectiveProxySuite extends tests.Suite {
     assert(fBoolean(true))
   }
 
-  // Change to test once #445 is fixed
-  testFails("should work with equality operators on primitive types", 445) {
+  test("should work with equality operators on primitive types") {
     def fNum(obj: Any { def ==(x: Int): Boolean }): Boolean = obj == 5
     assert(fNum(5.toByte))
     assert(!fNum(6.toByte))

@@ -43,13 +43,14 @@ final class Byte(val _value: scala.Byte) extends Number with Comparable[Byte] {
 
   @inline override def __scala_==(other: _Object): scala.Boolean =
     other match {
-      case other: java.lang.Byte    => _value == other._value
-      case other: java.lang.Short   => _value.toShort == other._value
-      case other: java.lang.Integer => _value.toInt == other._value
-      case other: java.lang.Long    => _value.toLong == other._value
-      case other: java.lang.Float   => _value.toFloat == other._value
-      case other: java.lang.Double  => _value.toDouble == other._value
-      case _                        => super.__scala_==(other)
+      case other: java.lang.Byte      => _value == other._value
+      case other: java.lang.Short     => _value == other._value
+      case other: java.lang.Integer   => _value == other._value
+      case other: java.lang.Long      => _value == other._value
+      case other: java.lang.Float     => _value == other._value
+      case other: java.lang.Double    => _value == other._value
+      case other: java.lang.Character => _value == other._value
+      case _                          => super.__scala_==(other)
     }
 
   /*
