@@ -9,8 +9,7 @@ val libScalaVersion = "2.11.8"
 
 lazy val baseSettings = Seq(
   organization := "org.scala-native",
-  version := nativeVersion,
-  sources in doc in Compile := Nil // doc generation currently broken
+  version := nativeVersion
 )
 
 addCommandAlias(
@@ -166,7 +165,11 @@ lazy val toolSettings =
 lazy val libSettings =
   (baseSettings ++ ScalaNativePlugin.projectSettings.tail) ++ Seq(
     scalaVersion := libScalaVersion,
-    resolvers := Nil
+    resolvers := Nil,
+    scalacOptions ++= Seq(
+      "-encoding",
+      "utf8"
+    )
   )
 
 lazy val projectSettings =
@@ -227,8 +230,7 @@ lazy val nscplugin =
       libraryDependencies ++= Seq(
         "org.scala-lang" % "scala-compiler" % scalaVersion.value,
         "org.scala-lang" % "scala-reflect"  % scalaVersion.value
-      ),
-      publishArtifact in (Compile, packageDoc) := false
+      )
     )
 
 lazy val sbtPluginSettings =
@@ -248,7 +250,6 @@ lazy val sbtScalaNative =
     .in(file("sbt-scala-native"))
     .settings(sbtPluginSettings)
     .settings(
-      version := "0.0.0.1", //published on Bintray
       resolvers += Resolver.url(
         "bintray-scala-native-sbt-plugins",
         url("http://dl.bintray.com/scala-native/sbt-plugins"))(
@@ -297,6 +298,9 @@ lazy val javalib =
     .in(file("javalib"))
     .settings(libSettings)
     .settings(mavenPublishSettings)
+    .settings(
+      sources in doc in Compile := Nil // doc generation currently broken
+    )
     .dependsOn(nativelib)
 
 lazy val assembleScalaLibrary = taskKey[Unit](

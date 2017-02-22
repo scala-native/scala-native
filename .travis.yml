@@ -51,4 +51,4 @@ before_script:
 script:
   - java -version
   - bin/scalafmt --test
-  - sbt ";rebuild ;test-all ;publishSnapshot"
+  - sbt ";rebuild ;test-all"
