@@ -20,7 +20,8 @@ class RuntimeTypeInformation(implicit top: Top, fresh: Fresh) extends Inject {
   def injectType(buf: Buffer[Defn], node: Scope): Unit = {
     val typeId   = Val.Int(node.id)
     val typeStr  = Val.String(node.name.id)
-    val typeVal  = Val.Struct(Rt.Type.name, Seq(typeId, typeStr))
+    val typeSize = Val.Long(-1)
+    val typeVal  = Val.Struct(Rt.Type.name, Seq(typeId, typeStr, typeSize))
     val typeDefn = Defn.Const(Attrs.None, node.typeName, Rt.Type, typeVal)
 
     buf += typeDefn
