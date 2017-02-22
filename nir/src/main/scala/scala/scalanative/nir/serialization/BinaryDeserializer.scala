@@ -135,6 +135,7 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
     case T.JumpInst        => Inst.Jump(getNext)
     case T.IfInst          => Inst.If(getVal, getNext, getNext)
     case T.SwitchInst      => Inst.Switch(getVal, getNext, getNexts)
+    case T.ThrowInst       => Inst.Throw(getVal, getNext)
   }
 
   private def getComp(): Comp = getInt match {
@@ -253,8 +254,6 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
     case T.ClosureOp => Op.Closure(getType, getVal, getVals)
     case T.BoxOp     => Op.Box(getType, getVal)
     case T.UnboxOp   => Op.Unbox(getType, getVal)
-    case T.ThrowOp   => Op.Throw(getVal, getNext)
-
   }
 
   private def getParams(): Seq[Val.Local] = getSeq(getParam)

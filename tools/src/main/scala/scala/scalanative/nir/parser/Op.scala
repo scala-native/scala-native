@@ -97,9 +97,6 @@ object Op extends Base[nir.Op] {
   val Unbox = P("unbox[" ~ Type.parser ~ "]" ~ Val.parser map {
     case (ty, obj) => nir.Op.Unbox(ty, obj)
   })
-  val Throw = P("throw" ~ Val.parser ~ unwind).map {
-    case (value, unwind) => nir.Op.Throw(value, unwind)
-  }
   override val parser: P[nir.Op] =
-    Call | Load | Store | Elem | Extract | Insert | Stackalloc | Bin | Comp | Conv | Select | Classalloc | Field | Method | Module | As | Is | Copy | Sizeof | Closure | Box | Unbox | Throw
+    Call | Load | Store | Elem | Extract | Insert | Stackalloc | Bin | Comp | Conv | Select | Classalloc | Field | Method | Module | As | Is | Copy | Sizeof | Closure | Box | Unbox
 }

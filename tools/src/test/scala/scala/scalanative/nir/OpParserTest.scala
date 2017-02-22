@@ -161,18 +161,4 @@ class OpParserTest extends FlatSpec with Matchers {
     val Parsed.Success(result, _) = parser.Op.Unbox.parse(unbox.show)
     result should be(unbox)
   }
-
-  it should "parse `Op.Throw` without unwind" in {
-    val throw_ : Op               = Op.Throw(Val.Zero(Type.Ptr), Next.None)
-    val Parsed.Success(result, _) = parser.Op.Throw.parse(throw_.show)
-    result should be(throw_)
-  }
-
-  it should "parse `Op.Throw` with unwind" in {
-    val throw_ : Op =
-      Op.Throw(Val.Zero(Type.Ptr), Next.Unwind(Local("foobar", 0)))
-    val Parsed.Success(result, _) = parser.Op.Throw.parse(throw_.show)
-    result should be(throw_)
-  }
-
 }

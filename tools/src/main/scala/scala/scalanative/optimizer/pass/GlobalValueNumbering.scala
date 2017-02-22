@@ -111,7 +111,7 @@ object GlobalValueNumbering extends PassCompanion {
 
       // Never idempotent:
       case (_: Load | _: Store | _: Stackalloc | _: Classalloc | _: Call |
-          _: Closure | _: Throw) =>
+          _: Closure) =>
         false
     }
   }
@@ -300,7 +300,6 @@ object GlobalValueNumbering extends PassCompanion {
         case Copy(value)                => Seq("Copy", value)
         case Closure(ty, fun, captures) => "Closure" +: ty +: fun +: captures
 
-        case Throw(value, _)  => Seq("Throw", value)
         case Classalloc(name) => Seq("Classalloc", name)
         case Module(name, _)  => Seq("Module", name)
         case Sizeof(ty)       => Seq("Sizeof", ty)

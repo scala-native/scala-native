@@ -155,6 +155,13 @@ object Show {
         unindent()
         newline()
         str("}")
+      case Inst.Throw(v, unwind) =>
+        str("throw ")
+        val_(v)
+        if (unwind ne Next.None) {
+          str(" ")
+          next_(unwind)
+        }
     }
 
     def op_(op: Op): Unit = op match {
@@ -297,13 +304,6 @@ object Show {
         type_(ty)
         str("] ")
         val_(v)
-      case Op.Throw(v, unwind) =>
-        str("throw ")
-        val_(v)
-        if (unwind ne Next.None) {
-          str(" ")
-          next_(unwind)
-        }
     }
 
     def bin_(bin: Bin): Unit = bin match {

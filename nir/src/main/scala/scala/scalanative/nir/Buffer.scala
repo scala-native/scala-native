@@ -27,6 +27,8 @@ final class Buffer {
     buffer += Inst.If(value, thenp, elsep)
   def switch(value: Val, default: Next, cases: Seq[Next]): Unit =
     buffer += Inst.Switch(value, default, cases)
+  def raise(value: Val, unwind: Next): Unit =
+    buffer += Inst.Throw(value, unwind)
   def +=(inst: Inst): Unit =
     buffer += inst
   def ++=(insts: Seq[Inst]): Unit =

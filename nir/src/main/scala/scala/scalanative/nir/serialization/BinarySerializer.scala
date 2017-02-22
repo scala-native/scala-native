@@ -136,6 +136,11 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putVal(v)
       putNext(default)
       putNexts(cases)
+
+    case Inst.Throw(v, unwind) =>
+      putInt(T.ThrowInst)
+      putVal(v)
+      putNext(unwind)
   }
 
   private def putComp(comp: Comp) = comp match {
@@ -375,11 +380,6 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.UnboxOp)
       putType(ty)
       putVal(obj)
-
-    case Op.Throw(v, unwind) =>
-      putInt(T.ThrowOp)
-      putVal(v)
-      putNext(unwind)
   }
 
   private def putParams(params: Seq[Val.Local]) = putSeq(params)(putParam)

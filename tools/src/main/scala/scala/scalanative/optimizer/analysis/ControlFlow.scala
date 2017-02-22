@@ -127,6 +127,10 @@ object ControlFlow {
               cases.foreach { case_ =>
                 edge(node, nodes(case_.name), case_)
               }
+            case Inst.Throw(_, next) =>
+              if (next ne Next.None) {
+                edge(node, nodes(next.name), next)
+              }
             case inst =>
               unsupported(inst)
           }
