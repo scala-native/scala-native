@@ -231,7 +231,11 @@ lazy val sbtScalaNative =
     .in(file("sbt-scala-native"))
     .settings(sbtPluginSettings)
     .settings(
-      addSbtPlugin("org.scala-native" % "sbt-cross" % "0.1.0-SNAPSHOT"),
+      resolvers += Resolver.url(
+        "bintray-scala-native-sbt-plugins",
+        url("http://dl.bintray.com/scala-native/sbt-plugins"))(
+        Resolver.ivyStylePatterns),
+      addSbtPlugin("org.scala-native" % "sbt-crossproject" % "0.1.0"),
       moduleName := "sbt-scala-native",
       sbtTestDirectory := (baseDirectory in ThisBuild).value / "scripted-tests",
       // publish the other projects before running scripted tests.

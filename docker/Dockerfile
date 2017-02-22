@@ -6,7 +6,7 @@ WORKDIR /tmp
 
 RUN git clone https://github.com/scala-native/scala-native.git native
 
-RUN git clone https://github.com/scala-native/sbt-cross.git
+RUN git clone https://github.com/scala-native/sbt-crossproject.git
   
 WORKDIR /tmp/native
 
@@ -14,7 +14,7 @@ RUN  nix-shell bin/scala-native.nix -A clangEnv --run "clangEnv installed"
 
 RUN  nix-shell bin/scala-native.nix -A clangEnv --run "cd .. && sbt scalaVersion"
 
-RUN  nix-shell bin/scala-native.nix -A clangEnv --run "cd .. && cd sbt-cross && sbt publishLocal"
+RUN  nix-shell bin/scala-native.nix -A clangEnv --run "cd .. && cd sbt-crossproject && sbt publishLocal"
 
 RUN  nix-shell bin/scala-native.nix -A clangEnv --run "sbt ';rtlib/publishLocal ;nscplugin/publishLocal'"
 
