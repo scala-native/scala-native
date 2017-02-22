@@ -2,5 +2,5 @@
 
 * Be a member of https://bintray.com/scala-native
 * `sbt`
-* `> bintrayChangeCredential`
+* `> bintrayChangeCredentials`
 * `> publish`
