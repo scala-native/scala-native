@@ -2,7 +2,7 @@ package scala.scalanative
 package sbtplugin
 
 import sbt._
-import sbtcross._
+import sbtcrossproject._
 
 case object NativePlatform extends Platform {
   def identifier: String = "native"

@@ -37,7 +37,7 @@ now simply run ``sbt run`` to get everything compiled and have the expected outp
 Cross compilation between JS, JVM and Native
 --------------------------------------------
 
-We created `sbt-cross <https://github.com/scala-native/sbt-cross>`_ to be a
+We created `sbt-crossproject <https://github.com/scala-native/sbt-crossproject>`_ to be a
 drop-in replacement of Scala.js' crossProject. Please refer to the documentation
 in the README.
 

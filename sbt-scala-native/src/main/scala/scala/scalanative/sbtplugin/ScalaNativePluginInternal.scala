@@ -2,7 +2,7 @@ package scala.scalanative
 package sbtplugin
 
 import util._
-import sbtcross.CrossPlugin.autoImport._
+import sbtcrossproject.CrossPlugin.autoImport._
 import ScalaNativePlugin.autoImport._
 
 import scalanative.nir

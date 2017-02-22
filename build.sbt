@@ -58,18 +58,30 @@ lazy val setUpTestingCompiler = Def.task {
     ((crossTarget in Compile).value / "nativelib").getAbsolutePath
 }
 
-lazy val publishSettings = Seq(
-  publishArtifact in Compile := true,
-  publishArtifact in Test := false,
-  publishMavenStyle := true,
-  publishTo := {
+// to publish plugin (we only need to do this once, it's already done!)
+// follow: http://www.scala-sbt.org/0.13/docs/Bintray-For-Plugins.html
+// then add a new package
+// name: sbt-scala-native, license: BSD-like, version control: git@github.com:scala-native/scala-native.git
+// to be available without a resolver
+// follow: http://www.scala-sbt.org/0.13/docs/Bintray-For-Plugins.html#Linking+your+package+to+the+sbt+organization
+lazy val bintrayPublishSettings = Seq(
+    bintrayRepository := "sbt-plugins",
+    bintrayOrganization := Some("scala-native")
+  ) ++ publishSettings
+
+lazy val mavenPublishSettings = Seq(
+    publishMavenStyle := true,
+    pomIncludeRepository := { x =>
+    false
+  },
+    publishTo := {
     val nexus = "https://oss.sonatype.org/"
     if (version.value.trim.endsWith("SNAPSHOT"))
       Some("snapshots" at nexus + "content/repositories/snapshots")
     else
       Some("releases" at nexus + "service/local/staging/deploy/maven2")
   },
-  publishSnapshot := Def.taskDyn {
+    publishSnapshot := Def.taskDyn {
     val travis = Try(sys.env("TRAVIS")).getOrElse("false") == "true"
     val pr = Try(sys.env("TRAVIS_PULL_REQUEST"))
         .getOrElse("false") != "false"
@@ -89,7 +101,7 @@ lazy val publishSettings = Seq(
         Def.task()
     }
   }.value,
-  credentials ++= {
+    credentials ++= {
     for {
       realm    <- sys.env.get("MAVEN_REALM")
       domain   <- sys.env.get("MAVEN_DOMAIN")
@@ -98,10 +110,12 @@ lazy val publishSettings = Seq(
     } yield {
       Credentials(realm, domain, user, password)
     }
-  }.toSeq,
-  pomIncludeRepository := { x =>
-    false
-  },
+  }.toSeq
+  ) ++ publishSettings
+
+lazy val publishSettings = Seq(
+  publishArtifact in Compile := true,
+  publishArtifact in Test := false,
   homepage := Some(url("http://www.scala-native.org")),
   startYear := Some(2015),
   licenses := Seq(
@@ -162,20 +176,23 @@ lazy val projectSettings =
   )
 
 lazy val util =
-  project.in(file("util")).settings(toolSettings).settings(publishSettings)
+  project
+    .in(file("util"))
+    .settings(toolSettings)
+    .settings(mavenPublishSettings)
 
 lazy val nir =
   project
     .in(file("nir"))
     .settings(toolSettings)
-    .settings(publishSettings)
+    .settings(mavenPublishSettings)
     .dependsOn(util)
 
 lazy val tools =
   project
     .in(file("tools"))
     .settings(toolSettings)
-    .settings(publishSettings)
+    .settings(mavenPublishSettings)
     .settings(
       libraryDependencies ++= Seq(
         "com.lihaoyi"    %% "fastparse"  % "0.4.2",
@@ -199,7 +216,7 @@ lazy val nscplugin =
   project
     .in(file("nscplugin"))
     .settings(toolSettings)
-    .settings(publishSettings)
+    .settings(mavenPublishSettings)
     .settings(
       scalaVersion := "2.11.8",
       crossVersion := CrossVersion.full,
@@ -216,7 +233,7 @@ lazy val nscplugin =
 
 lazy val sbtPluginSettings =
   toolSettings ++
-    publishSettings ++
+    bintrayPublishSettings ++
     ScriptedPlugin.scriptedSettings ++
     Seq(
       sbtPlugin := true,
@@ -231,7 +248,12 @@ lazy val sbtScalaNative =
     .in(file("sbt-scala-native"))
     .settings(sbtPluginSettings)
     .settings(
-      addSbtPlugin("org.scala-native" % "sbt-cross" % "0.1.0-SNAPSHOT"),
+      version := "0.0.0.1", //published on Bintray
+      resolvers += Resolver.url(
+        "bintray-scala-native-sbt-plugins",
+        url("http://dl.bintray.com/scala-native/sbt-plugins"))(
+        Resolver.ivyStylePatterns),
+      addSbtPlugin("org.scala-native" % "sbt-crossproject" % "0.1.0"),
       moduleName := "sbt-scala-native",
       sbtTestDirectory := (baseDirectory in ThisBuild).value / "scripted-tests",
       // publish the other projects before running scripted tests.
@@ -252,7 +274,7 @@ lazy val nativelib =
   project
     .in(file("nativelib"))
     .settings(libSettings)
-    .settings(publishSettings)
+    .settings(mavenPublishSettings)
     .settings(compile in Compile := {
       val clang   = nativeClang.value
       val clangpp = nativeClangPP.value
@@ -274,7 +296,7 @@ lazy val javalib =
   project
     .in(file("javalib"))
     .settings(libSettings)
-    .settings(publishSettings)
+    .settings(mavenPublishSettings)
     .dependsOn(nativelib)
 
 lazy val assembleScalaLibrary = taskKey[Unit](
@@ -284,7 +306,7 @@ lazy val scalalib =
   project
     .in(file("scalalib"))
     .settings(libSettings)
-    .settings(publishSettings)
+    .settings(mavenPublishSettings)
     .settings(
       assembleScalaLibrary := {
         import org.eclipse.jgit.api._

@@ -18,8 +18,15 @@ libraryDependencies ++= Seq(
     "org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full)
 )
 
-addSbtPlugin("org.scala-native" % "sbt-cross"       % "0.1.0-SNAPSHOT")
-addSbtPlugin("com.eed3si9n"     % "sbt-dirty-money" % "0.1.0")
+// until we include it sbt general plugins
+resolvers += Resolver.url(
+  "bintray-scala-native-sbt-plugins",
+  url("http://dl.bintray.com/scala-native/sbt-plugins"))(
+  Resolver.ivyStylePatterns)
+
+addSbtPlugin("org.scala-native" % "sbt-crossproject" % "0.1.0")
+addSbtPlugin("com.eed3si9n"     % "sbt-dirty-money"  % "0.1.0")
+addSbtPlugin("me.lessis"        % "bintray-sbt"      % "0.3.0")
 
 scalacOptions ++= Seq(
   "-deprecation",
