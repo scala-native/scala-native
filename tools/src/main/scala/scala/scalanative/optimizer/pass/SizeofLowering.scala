@@ -2,21 +2,22 @@ package scala.scalanative
 package optimizer
 package pass
 
-import scala.collection.mutable
 import analysis.ClassHierarchy.Top
-import util.ScopedVar, ScopedVar.scoped
 import nir._
+import scala.scalanative.optimizer.analysis.MemoryLayout
 
 /** Maps sizeof computation to pointer arithmetics over null pointer. */
-class SizeofLowering(implicit fresh: Fresh) extends Pass {
+class SizeofLowering(top: Top) extends Pass {
+  implicit val fresh: Fresh = top.fresh
+
   override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
     val buf = new nir.Buffer
     import buf._
 
     insts.foreach {
+
       case Inst.Let(n, Op.Sizeof(ty)) =>
-        val elem = let(Op.Elem(ty, Val.Null, Seq(Val.Int(1))))
-        let(n, Op.Conv(Conv.Ptrtoint, Type.Long, elem))
+        let(n, Op.Copy(Val.Long(MemoryLayout.sizeOf(ty))))
 
       case inst =>
         buf += inst
@@ -28,5 +29,5 @@ class SizeofLowering(implicit fresh: Fresh) extends Pass {
 
 object SizeofLowering extends PassCompanion {
   override def apply(config: tools.Config, top: Top) =
-    new SizeofLowering()(top.fresh)
+    new SizeofLowering(top)
 }

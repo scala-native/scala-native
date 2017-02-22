@@ -2,6 +2,8 @@ package java.lang
 
 import scala.scalanative.native._
 import scala.scalanative.runtime
+import scala.scalanative.runtime._
+import scalanative.runtime.Intrinsics._
 
 class _Object {
   @inline def __equals(that: _Object): scala.Boolean =
@@ -37,7 +39,17 @@ class _Object {
   @inline def __scala_## : scala.Int =
     __hashCode
 
-  protected def __clone(): _Object = ???
+  protected def __clone(): _Object = {
+    val typePtr: Ptr[Type] = getType(this)
+    val size               = (!typePtr).size
+    val clone              = GC.malloc(size)
+    `llvm.memcpy.p0i8.p0i8.i64`(clone.cast[Ptr[scala.Byte]],
+                                this.cast[Ptr[scala.Byte]],
+                                size,
+                                1,
+                                false)
+    clone.cast[_Object]
+  }
 
   protected def __finalize(): Unit = ()
 }

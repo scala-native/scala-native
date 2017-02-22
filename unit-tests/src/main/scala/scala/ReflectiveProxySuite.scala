@@ -243,7 +243,6 @@ object ReflectiveProxySuite extends tests.Suite {
     assert(objNotifyTest(new A()) == 1)
   }
 
-  /* uncomment once clone is implemented on object
   test("should work on java.lang.Object.clone") {
     type ObjCloneLike = Any { def clone(): AnyRef }
     def objCloneTest(obj: ObjCloneLike): AnyRef = obj.clone()
@@ -252,12 +251,12 @@ object ReflectiveProxySuite extends tests.Suite {
       override def clone(): AnyRef = super.clone()
     }
 
-    val b = new B(1)
+    val b      = new B(1)
     val bClone = objCloneTest(b).asInstanceOf[B]
 
     assert(!(b eq bClone))
     assert(bClone.x == 1)
-  } */
+  }
 
   test("should not work on scala.AnyRef.{ eq, ne, synchronized }") {
     type ObjWithAnyRefPrimitives = Any {

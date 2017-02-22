@@ -4,6 +4,7 @@ package nir
 import util.unsupported
 
 sealed abstract class Type {
+
   final def elemty(path: Seq[Val]): Type = (this, path) match {
     case (_, Seq()) =>
       this
@@ -16,7 +17,6 @@ sealed abstract class Type {
   }
 
   final def show: String = nir.Show(this)
-
 }
 
 object Type {
@@ -61,6 +61,7 @@ object Type {
 
   final case class Array(ty: Type, n: Int)              extends Type
   final case class Function(args: Seq[Type], ret: Type) extends Type
+
   final case class Struct(name: Global, tys: Seq[Type]) extends Type with Named
 
   // high-level types
@@ -89,4 +90,5 @@ object Type {
   )
 
   val box = unbox.map { case (k, v) => (v, k) }
+
 }
