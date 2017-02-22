@@ -61,6 +61,8 @@ trait Pass extends AnyPass {
       Inst.If(onVal(v), onNext(thenp), onNext(elsep))
     case Inst.Switch(v, default, cases) =>
       Inst.Switch(onVal(v), onNext(default), cases.map(onNext))
+    case Inst.Throw(v, unwind) =>
+      Inst.Throw(onVal(v), onNext(unwind))
   }
 
   def onOp(op: Op): Op = op match {
@@ -111,8 +113,6 @@ trait Pass extends AnyPass {
       Op.Box(code, onVal(obj))
     case Op.Unbox(code, obj) =>
       Op.Unbox(code, onVal(obj))
-    case Op.Throw(v, unwind) =>
-      Op.Throw(onVal(v), onNext(unwind))
   }
 
   def onVal(value: Val): Val = value match {

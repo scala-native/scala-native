@@ -112,6 +112,7 @@ object Tags {
   final val JumpInst        = 1 + RetInst
   final val IfInst          = 1 + JumpInst
   final val SwitchInst      = 1 + IfInst
+  final val ThrowInst       = 1 + SwitchInst
 
   // Globals
 
@@ -156,8 +157,7 @@ object Tags {
   final val ClosureOp    = 1 + SizeofOp
   final val BoxOp        = 1 + ClosureOp
   final val UnboxOp      = 1 + BoxOp
-  final val ThrowOp      = 1 + UnboxOp
-  final val DynmethodOp  = 1 + ThrowOp
+  final val DynmethodOp  = 1 + UnboxOp
 
   // Types
 

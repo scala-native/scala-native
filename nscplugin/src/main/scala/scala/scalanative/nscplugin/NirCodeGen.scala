@@ -673,10 +673,10 @@ abstract class NirCodeGen
       val cond  = genExpr(condp, focus)
       val br    = cond.withIf(cond.value, Next(thenn), Next(elsen))
 
-      merged(retty, br, Seq(
-        focus => genExpr(thenp, focus.withLabel(thenn)),
-        focus => genExpr(elsep, focus.withLabel(elsen))
-      ))
+      val thenbr = genExpr(thenp, Focus.start.withLabel(thenn))
+      val elsebr = genExpr(elsep, Focus.start.withLabel(elsen))
+
+      merged(retty, Seq(br, thenbr, elsebr))
     }
 
     def genSwitch(m: Match, focus: Focus): Focus = {
@@ -704,47 +704,60 @@ abstract class NirCodeGen
           vals.map((_, body))
       }
 
-      val defaultn = fresh()
-      val defaultf =
-        (focus: Focus) => genExpr(defaultp, focus.withLabel(defaultn))
+      val defaultn  = fresh()
+      val defaultbr = genExpr(defaultp, Focus.start.withLabel(defaultn))
 
       val casens    = caseps.map { _ => fresh() }
       val casevals  = caseps.map { case (v, _) => v }
       val caseexprs = caseps.map { case (_, e) => e }
-      val casefs = caseexprs.zip(casens).map {
+      val casebrs = caseexprs.zip(casens).map {
         case (expr, n) =>
-          (focus: Focus) => genExpr(expr, focus.withLabel(n))
+          genExpr(expr, Focus.start.withLabel(n))
       }
 
-      val retty  = genType(m.tpe, box = false)
-      val scrut  = genExpr(scrutp, focus)
-      val switch = scrut.withSwitch(scrut.value, defaultn, casevals, casens)
+      val retty    = genType(m.tpe, box = false)
+      val scrut    = genExpr(scrutp, focus)
+      val switchbr = scrut.withSwitch(scrut.value, defaultn, casevals, casens)
 
-      merged(retty, switch, defaultf +: casefs)
+      merged(retty, switchbr +: defaultbr +: casebrs)
     }
 
     def genTry(retty: nir.Type,
                expr: Tree,
                catches: List[Tree],
-               finalizer: Tree,
+               finallyp: Tree,
                focus: Focus): Focus = {
-      val unwind = fresh()
-      val exc    = Val.Local(fresh(), Rt.Object)
+      val unwindn = fresh()
+      val excn    = fresh()
+      val normaln = fresh()
+      val mergen  = fresh()
+      val excv    = Val.Local(fresh(), Rt.Object)
+      val mergev  = Val.Local(fresh(), retty)
+      val initial = focus.finish(nir.Inst.Jump(nir.Next(normaln)))
 
-      val normal = { (focus: Focus) =>
-        scoped(curUnwind := Next.Unwind(unwind)) {
-          genExpr(expr, focus)
+      val normal = {
+        scoped(curUnwind := Next.Unwind(unwindn)) {
+          val start = Focus.start.withLabel(normaln)
+          val focus = genExpr(expr, start)
+          val jump  = nir.Inst.Jump(nir.Next.Label(mergen, Seq(focus.value)))
+          focus.finish(jump)
         }
       }
 
-      val exception = { (focus: Focus) =>
-        genCatch(retty, catches, focus.withLabel(unwind, exc).withValue(exc))
+      val exceptional = {
+        val start = Focus.start.withLabel(unwindn, excv).withValue(excv)
+        val focus = genCatch(retty, mergen, catches, start)
+        val jump  = nir.Inst.Jump(nir.Next.Label(mergen, Seq(focus.value)))
+        focus.finish(jump)
       }
 
-      merged(retty, focus, Seq(normal, exception))
+      val insts = initial ++ genFinally(finallyp, normal ++ exceptional)
+
+      Focus.start(insts).withLabel(mergen, mergev).withValue(mergev)
     }
 
     def genCatch(retty: nir.Type,
+                 merge: Local,
                  catches: List[Tree],
                  focus: Focus): Focus = {
       val exc   = focus.value
@@ -764,8 +777,8 @@ abstract class NirCodeGen
               curMethodEnv.enter(sym, cast.value)
               cast
             }.getOrElse(focus)
-
-            genExpr(body, enter)
+            val res = genExpr(body, enter)
+            res.withJump(merge, res.value)
           }
 
           (excty, f)
@@ -782,6 +795,39 @@ abstract class NirCodeGen
         }
 
       wrap(cases, focus)
+    }
+
+    def genFinally(finallyp: Tree, insts: Seq[nir.Inst]): Seq[Inst] = {
+      val labels = insts.collect {
+        case Inst.Label(n, _) => n
+      }.toSet
+      def internal(cf: Inst.Cf) = cf match {
+        case inst @ Inst.Jump(n) =>
+          labels.contains(n.name)
+        case inst @ Inst.If(_, n1, n2) =>
+          labels.contains(n1.name) && labels.contains(n2.name)
+        case inst @ Inst.Switch(_, n, ns) =>
+          labels.contains(n.name) && ns.forall(n => labels.contains(n.name))
+        case inst @ Inst.Throw(_, n) =>
+          (n ne Next.None) && labels.contains(n.name)
+        case _ =>
+          false
+      }
+      val extra = new nir.Buffer
+      val transformed = insts.map {
+        case cf: Inst.Cf if internal(cf) =>
+          cf
+        case cf: Inst.Cf =>
+          val finallyn = fresh()
+          val start    = Focus.start.withLabel(finallyn)
+          val focus    = genExpr(finallyp, start)
+          extra ++= focus.finish(cf)
+          Inst.Jump(Next(finallyn))
+        case inst =>
+          inst
+      }
+
+      transformed ++ extra.toSeq
     }
 
     def genModule(sym: Symbol, focus: Focus): Focus =

@@ -25,8 +25,7 @@ class DynmethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
                     excInit,
                     Seq(exc, Val.String(signature)),
                     Next.None))
-          let(Op.Throw(exc, Next.None))
-          unreachable
+          raise(exc, Next.None)
         }
 
         def throwIfCond(cond: Op.Comp): Unit = {

@@ -5,8 +5,10 @@ package parser
 import fastparse.all._
 
 object Inst extends Base[nir.Inst] {
-
   import Base.IgnoreWhitespace._
+
+  private val unwind: P[Next] =
+    P(Next.parser.?).map(_.getOrElse(nir.Next.None))
 
   val None = P("none".! map (_ => nir.Inst.None))
   val Label =
@@ -29,7 +31,9 @@ object Inst extends Base[nir.Inst] {
     P("switch" ~ Val.parser ~ "{" ~ Next.parser.rep ~ "default" ~ "=>" ~ Next.parser ~ "}" map {
       case (scrut, cases, default) => nir.Inst.Switch(scrut, default, cases)
     })
-
+  val Throw = P("throw" ~ Val.parser ~ unwind).map {
+    case (value, unwind) => nir.Inst.Throw(value, unwind)
+  }
   override val parser: P[nir.Inst] =
-    None | Label | Let | Unreachable | Ret | Jump | If | Switch
+    None | Label | Let | Unreachable | Ret | Jump | If | Switch | Throw
 }

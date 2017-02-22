@@ -291,7 +291,10 @@ object CodeGen {
             }
         }
       } else if (block.isExceptionHandler) {
-        val Seq(Val.Local(exc, _)) = params
+        val exc = params match {
+          case Seq()                  => fresh()
+          case Seq(Val.Local(exc, _)) => exc
+        }
 
         val rec, r0, r1, id, cmp = fresh().show
         val fail, succ           = fresh().show.substring(1)

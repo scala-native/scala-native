@@ -12,6 +12,8 @@ final class Focus private (
                    _value: Val = this._value) =
     new Focus(_labeled, _insts, _value)
 
+  def insts: Seq[Inst] = _insts
+
   def value: Val = _value
 
   def finish(end: Inst.Cf): Seq[Inst] =
@@ -29,7 +31,7 @@ final class Focus private (
     withInst(Inst.Ret(value))
 
   def withThrow(value: Val, unwind: Next): Focus =
-    withOp(Op.Throw(value, unwind)).withInst(Inst.Unreachable)
+    withInst(Inst.Throw(value, unwind))
 
   def withJump(to: Local, values: Val*): Focus =
     withInst(Inst.Jump(Next.Label(to, values)))
@@ -76,7 +78,11 @@ final class Focus private (
 }
 
 object Focus {
-  def start()(implicit fresh: Fresh) = new Focus()
+  def start()(implicit fresh: Fresh) =
+    new Focus()
+
+  def start(insts: Seq[Inst])(implicit fresh: Fresh) =
+    new Focus(_insts = insts)
 
   def sequenced[T](elems: Seq[T], focus: Focus)(
       f: (T, Focus) => Focus): Seq[Focus] = {
@@ -89,16 +95,13 @@ object Focus {
     focs.toSeq
   }
 
-  def merged(ty: nir.Type, focus: Focus, branches: Seq[Focus => Focus])(
+  def merged(ty: nir.Type, branches: Seq[Focus])(
       implicit fresh: Fresh): Focus = {
-    val mergen    = fresh()
-    var lastfocus = focus
-    branches.foreach { branch =>
-      lastfocus = branch(lastfocus)
-      lastfocus = lastfocus.withJump(mergen, lastfocus.value)
+    val mergebr = fresh()
+    val mergev  = Val.Local(fresh(), ty)
+    val insts = branches.flatMap { branch =>
+      branch.finish(Inst.Jump(Next.Label(mergebr, Seq(branch.value))))
     }
-
-    val mergev = Val.Local(fresh(), ty)
-    lastfocus.withLabel(mergen, mergev).withValue(mergev)
+    new Focus(_insts = insts).withLabel(mergebr, mergev).withValue(mergev)
   }
 }

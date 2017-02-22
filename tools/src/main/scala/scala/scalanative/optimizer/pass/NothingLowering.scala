@@ -9,12 +9,19 @@ import util.unsupported
 import nir._
 
 /** Short-circuits method calls that return nothing. */
-class NothingLowering extends Pass {
+class NothingLowering(implicit fresh: Fresh) extends Pass {
+  import NothingLowering._
+
   override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
     val buf = new nir.Buffer
 
     insts.foreach {
-      case inst @ Inst.Let(n, call: Op.Call) if call.resty == Type.Nothing =>
+      case Inst.Throw(v, unwind) =>
+        buf += super.onInst(
+          Inst.Let(Op.Call(throwSig, throw_, Seq(v), unwind)))
+        buf.unreachable
+
+      case inst @ Inst.Let(n, op) if op.resty == Type.Nothing =>
         buf += super.onInst(inst)
         buf.unreachable
 
@@ -38,6 +45,13 @@ class NothingLowering extends Pass {
 }
 
 object NothingLowering extends PassCompanion {
+  val throwName = Global.Top("scalanative_throw")
+  val throwSig  = Type.Function(Seq(Type.Ptr), Type.Void)
+  val throw_    = Val.Global(throwName, Type.Ptr)
+
+  override val injects =
+    Seq(Defn.Declare(Attrs.None, throwName, throwSig))
+
   override def apply(config: tools.Config, top: Top) =
-    new NothingLowering
+    new NothingLowering()(top.fresh)
 }

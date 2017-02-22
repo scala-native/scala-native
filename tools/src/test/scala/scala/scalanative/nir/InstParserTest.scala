@@ -58,4 +58,18 @@ class InstParserTest extends FlatSpec with Matchers {
     val Parsed.Success(result, _) = parser.Inst.Switch.parse(switch.show)
     result should be(switch)
   }
+
+  it should "parse `Inst.Throw` with unwind" in {
+    val throw_ : Inst =
+      Inst.Throw(Val.Zero(Type.Ptr), Next.Unwind(Local("foobar", 0)))
+    val Parsed.Success(result, _) = parser.Inst.Throw.parse(throw_.show)
+    result should be(throw_)
+  }
+
+  it should "parse `Inst.Throw` without unwind" in {
+    val throw_ : Inst             = Inst.Throw(Val.Zero(Type.Ptr), Next.None)
+    val Parsed.Success(result, _) = parser.Inst.Throw.parse(throw_.show)
+    result should be(throw_)
+  }
+
 }

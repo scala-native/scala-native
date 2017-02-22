@@ -20,4 +20,5 @@ object Inst {
   final case class If(value: Val, thenp: Next, elsep: Next) extends Cf
   final case class Switch(value: Val, default: Next, cases: Seq[Next])
       extends Cf
+  final case class Throw(value: Val, unwind: Next) extends Cf
 }

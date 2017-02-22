@@ -13,15 +13,15 @@ object Versions {
    *
    * For example here is a possible sequence of release number changes:
    *
-   *     0.0 -> 0.1 -> 0.2 -> 1.3 -> ...
+   *     1.1 -> 1.1 -> 1.2 -> 2.3 -> ...
    *
    * NIR emitted via 0.0-compatible compiler should read without any changes
    * in 0.2-based compiler, but not the other way around. On the other hand
    * when 1.3-based release happens all of the code needs to recompiled with
    * new version of the toolchain.
    */
-  final val compat: Int   = 8
-  final val revision: Int = 11
+  final val compat: Int   = 1
+  final val revision: Int = 1
 
   /* Current public release version of Scala Native. */
   final val current: String = "0.1.0-SNAPSHOT"
