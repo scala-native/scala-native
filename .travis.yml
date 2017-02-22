@@ -50,8 +50,5 @@ before_script:
     fi;
 script:
   - java -version
-  - git clone https://github.com/scala-native/sbt-cross.git
-  - pushd sbt-cross
-  - sbt publishLocal
-  - popd
-  - bin/scalafmt --test && sbt ";rebuild ;test-all ;publishSnapshot"
+  - bin/scalafmt --test
+  - sbt ";rebuild ;test-all ;publishSnapshot"
