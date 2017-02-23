@@ -7,17 +7,13 @@ If you have reached this section you probably have a system that is now able to 
 
 Start within a new folder, and create a file ``project/plugins.sbt`` as follows::
 
-    resolvers += Resolver.sonatypeRepo("snapshots")
-
-    addSbtPlugin("org.scala-native" % "sbt-scala-native"  % "0.1.0-SNAPSHOT")
+    addSbtPlugin("org.scala-native" % "sbt-scala-native"  % "0.1.0")
 
 Create a file ``project/build.properties`` to define the sbt version as follows::
 
-    sbt.version=0.13.13
+    sbt.version = 0.13.13
 
 define a new ``build.sbt``::
-
-    resolvers += Resolver.sonatypeRepo("snapshots")
 
     enablePlugins(ScalaNativePlugin)
 
