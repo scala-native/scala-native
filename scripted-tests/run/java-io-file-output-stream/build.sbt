@@ -2,7 +2,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.FileInputStream
 
-ScalaNativePlugin.projectSettings
+enablePlugins(ScalaNativePlugin)
 
 scalaVersion := "2.11.8"
 

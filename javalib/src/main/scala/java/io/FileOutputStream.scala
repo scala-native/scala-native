@@ -1,91 +1,48 @@
 package java.io
 
-class FileOutputStream(fd: FileDescriptor)
-    extends OutputStream
-    with Closeable {
+import scala.scalanative.posix.{fcntl, stat, unistd}
+import scala.scalanative.native._
+import scala.scalanative.runtime.GC
 
-  private val fileSystem: IFileSystem = OSFileSystem
+class FileOutputStream(fd: FileDescriptor) extends OutputStream {
+  def this(file: File, append: Boolean) =
+    this(FileOutputStream.fileDescriptor(file, append))
+  def this(file: File) = this(file, false)
+  def this(name: String, append: Boolean) = this(new File(name), append)
+  def this(name: String) = this(new File(name))
 
-  @throws(classOf[FileNotFoundException])
-  def this(file: File) = {
-    this(new FileDescriptor())
-    fd.descriptor = fileSystem.open(file.setProperPath(), IFileSystem.O_WRONLY)
-  }
+  override def close(): Unit =
+    fcntl.close(fd.fd)
 
-  @throws(classOf[FileNotFoundException])
-  def this(file: File, append: Boolean) = {
-    this(new FileDescriptor())
-    fd.descriptor = fileSystem.open(
-      file.setProperPath(),
-      if (append) IFileSystem.O_APPEND else IFileSystem.O_WRONLY)
-  }
-
-  @throws(classOf[FileNotFoundException])
-  def this(filename: String) = {
-    this(new FileDescriptor)
-    fd.descriptor =
-      fileSystem.open(new File(filename).setProperPath(), IFileSystem.O_WRONLY)
-  }
-
-  @throws(classOf[FileNotFoundException])
-  def this(filename: String, append: Boolean) = {
-    this(new FileDescriptor())
-    fd.descriptor = fileSystem.open(
-      new File(filename).setProperPath(),
-      if (append) IFileSystem.O_APPEND else IFileSystem.O_WRONLY)
-  }
-
-  @throws(classOf[IOException])
-  override def close(): Unit = if (fd != null) {
-    // if fd is null, then the underlying file is not opened, so nothing
-    // to close
-
-    synchronized {
-      if (fd.descriptor >= 0) {
-        fileSystem.close(fd.descriptor)
-        fd.descriptor = -1
-      }
-    }
-  }
-
-  override protected def finalize(): Unit = {
+  override protected def finalize(): Unit =
     close()
+
+  // def getChannel(): FileChannel
+
+  final def getFD(): FileDescriptor =
+    fd
+
+  override def write(b: Array[Byte]): Unit =
+    write(b, 0, b.length)
+
+  override def write(b: Array[Byte], off: Int, len: Int): Unit = {
+    val buffer = GC.malloc(len)
+    var i      = off
+    while (i < len) {
+      !(buffer + i) = b(off + i)
+      i += 1
+    }
+    unistd.write(fd.fd, buffer, len)
   }
 
-  @throws(classOf[IOException])
-  final def getFD(): FileDescriptor = fd
+  override def write(b: Int): Unit =
+    write(Array(b.toByte))
+}
 
-  @throws(classOf[IOException])
-  override def write(buffer: Array[Byte]) = write(buffer, 0, buffer.length)
-
-  @throws(classOf[IOException])
-  override def write(buffer: Array[Byte], offset: Int, count: Int) = {
-    if (buffer == null) {
-      throw new NullPointerException()
-    }
-    if (count < 0 || offset < 0 || offset > buffer.length
-        || count > buffer.length - offset) {
-      throw new IndexOutOfBoundsException()
-    }
-
-    if (count != 0) {
-      openCheck()
-      fileSystem.write(fd.descriptor, buffer, offset, count)
-    }
-  }
-
-  @throws(classOf[IOException])
-  override def write(oneByte: Int): Unit = {
-    openCheck()
-    val byteArray: Array[Byte] = new Array[Byte](1)
-    byteArray(0) = oneByte.toByte
-    fileSystem.write(fd.descriptor, byteArray, 0, 1);
-  }
-
-  @throws(classOf[IOException])
-  private def openCheck() = synchronized {
-    if (fd.descriptor < 0) {
-      throw new IOException()
-    }
+object FileOutputStream {
+  private def fileDescriptor(file: File, append: Boolean) = {
+    val mode = if (append) fcntl.O_WRONLY | fcntl.O_APPEND else fcntl.O_WRONLY
+    val fd   = fcntl.open(toCString(file.getPath), mode)
+    new FileDescriptor(fd)
   }
 }
