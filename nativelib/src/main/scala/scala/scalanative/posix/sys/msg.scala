@@ -4,15 +4,20 @@ import scala.scalanative.native._
 import scala.scalanative.posix.sys.types.{ssize_t, key_t}
 
 /**
-  * Created by remi on 01/03/17.
-  */
+ * Created by remi on 01/03/17.
+ */
 @extern
 object msg {
 
   def msgctl(msqid: CInt, cmd: CInt, buf: Ptr[CStruct9]): CInt = extern
-  def msgget(key: key_t, msgflg: CInt): CInt = extern
-  def msgsnd(msqid: CInt, msgp: Ptr[Byte], msgz: CSize, msgflg: CInt): CInt = extern
-  def msgrcv(msqid: CInt, msgp: Ptr[Byte], msgz: CSize, msgtyp: CLong, msgflg: CInt): ssize_t = extern
+  def msgget(key: key_t, msgflg: CInt): CInt                   = extern
+  def msgsnd(msqid: CInt, msgp: Ptr[Byte], msgz: CSize, msgflg: CInt): CInt =
+    extern
+  def msgrcv(msqid: CInt,
+             msgp: Ptr[Byte],
+             msgz: CSize,
+             msgtyp: CLong,
+             msgflg: CInt): ssize_t = extern
 
   // Macros
   @name("scalanative_msg_info")

@@ -5,36 +5,74 @@ import scala.scalanative.native._
 import scala.scalanative.posix.sys.types.ssize_t
 
 /**
-  * Created by remi on 01/03/17.
-  */
+ * Created by remi on 01/03/17.
+ */
 @extern
 object socket {
 
   def socket(domain: CInt, _type: CInt, protocol: CInt): CInt = extern
-  def socketpair(domain: CInt, _type: CInt, protocol: CInt, sv: CArray[CInt, _2]): CInt = extern
-  def bind(sockfd: CInt, addr: Ptr[CStruct2], addrlen: socklen_t): CInt = extern
-  def getsockname(sockfd: CInt, addr: Ptr[CStruct2], addrlen: Ptr[socklen_t]): CInt = extern
-  def connect(sockfd: CInt, addr: Ptr[CStruct2], addrlen: socklen_t): CInt = extern
-  def getpeername(sockfd: CInt, addr: Ptr[CStruct2], addrlen: Ptr[socklen_t]): CInt = extern
-  def send(sockfd: CInt, buf: Ptr[Byte], len: CSize, flags: CInt): ssize_t = extern
-  def sendto(sockfd: CInt, buf: Ptr[Byte], len: CSize, flags: CInt, dest_addr: Ptr[CStruct2], addrlen: socklen_t): ssize_t = extern
+  def socketpair(domain: CInt,
+                 _type: CInt,
+                 protocol: CInt,
+                 sv: CArray[CInt, _2]): CInt = extern
+  def bind(sockfd: CInt, addr: Ptr[CStruct2], addrlen: socklen_t): CInt =
+    extern
+  def getsockname(sockfd: CInt,
+                  addr: Ptr[CStruct2],
+                  addrlen: Ptr[socklen_t]): CInt = extern
+  def connect(sockfd: CInt, addr: Ptr[CStruct2], addrlen: socklen_t): CInt =
+    extern
+  def getpeername(sockfd: CInt,
+                  addr: Ptr[CStruct2],
+                  addrlen: Ptr[socklen_t]): CInt = extern
+  def send(sockfd: CInt, buf: Ptr[Byte], len: CSize, flags: CInt): ssize_t =
+    extern
+  def sendto(sockfd: CInt,
+             buf: Ptr[Byte],
+             len: CSize,
+             flags: CInt,
+             dest_addr: Ptr[CStruct2],
+             addrlen: socklen_t): ssize_t                             = extern
   def sendmsg(sockfd: CInt, msg: Ptr[CStruct7], flags: CInt): ssize_t = extern
-  def sendmmsg(sockfd: CInt, msgvec: Ptr[CStruct7], vlen: CUnsignedInt, flags: CUnsignedInt): CInt = extern
-  def recv(sockfd: CInt, buf: Ptr[Byte], len: CSize, flags: CInt): ssize_t = extern
-  def recvfrom(sockfd: CInt, buf: Ptr[Byte], len: CSize, flags: CInt, src_addr: Ptr[CStruct2], addrlen: socklen_t): ssize_t = extern
+  def sendmmsg(sockfd: CInt,
+               msgvec: Ptr[CStruct7],
+               vlen: CUnsignedInt,
+               flags: CUnsignedInt): CInt = extern
+  def recv(sockfd: CInt, buf: Ptr[Byte], len: CSize, flags: CInt): ssize_t =
+    extern
+  def recvfrom(sockfd: CInt,
+               buf: Ptr[Byte],
+               len: CSize,
+               flags: CInt,
+               src_addr: Ptr[CStruct2],
+               addrlen: socklen_t): ssize_t                           = extern
   def recvmsg(sockfd: CInt, msg: Ptr[CStruct7], flags: CInt): ssize_t = extern
-  def recvmmsg(sockfd: CInt, msgvec: Ptr[CStruct7], vlen: CUnsignedInt, flags: CUnsignedInt, timeout: Ptr[CStruct2]): CInt = extern
-  def getsockopt(sockfd: CInt, level: CInt, optname: CInt, optval: Ptr[Byte], optlen: Ptr[socklen_t]): CInt = extern
-  def setsockopt(sockfd: CInt, level: CInt, optname: CInt, optval: Ptr[Byte], optlen: socklen_t): CInt = extern
+  def recvmmsg(sockfd: CInt,
+               msgvec: Ptr[CStruct7],
+               vlen: CUnsignedInt,
+               flags: CUnsignedInt,
+               timeout: Ptr[CStruct2]): CInt = extern
+  def getsockopt(sockfd: CInt,
+                 level: CInt,
+                 optname: CInt,
+                 optval: Ptr[Byte],
+                 optlen: Ptr[socklen_t]): CInt = extern
+  def setsockopt(sockfd: CInt,
+                 level: CInt,
+                 optname: CInt,
+                 optval: Ptr[Byte],
+                 optlen: socklen_t): CInt       = extern
   def listen(sockfd: CInt, backlog: CInt): CInt = extern
-  def accept(sockfd: CInt, addr: Ptr[CStruct2], addlen: Ptr[socklen_t]): CInt = extern
-  def accept4(sockfd: CInt, addr: Ptr[CStruct2], addlen: Ptr[socklen_t], flags: CInt): CInt = extern
+  def accept(sockfd: CInt, addr: Ptr[CStruct2], addlen: Ptr[socklen_t]): CInt =
+    extern
+  def accept4(sockfd: CInt,
+              addr: Ptr[CStruct2],
+              addlen: Ptr[socklen_t],
+              flags: CInt): CInt              = extern
   def shutdown(sockfd: CInt, how: CInt): CInt = extern
-
 
   // Types
   type socklen_t = CInt
-
 
   //Macros
   @name("scalanative_af_unix")
