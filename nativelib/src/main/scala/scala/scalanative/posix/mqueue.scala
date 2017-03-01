@@ -3,6 +3,8 @@ package scala.scalanative.posix
 import scala.scalanative.native._
 import scala.scalanative.posix.sys.types.{ssize_t, mode_t}
 
+// http://man7.org/linux/man-pages/man7/mq_overview.7.html
+
 @extern
 object mqueue {
 

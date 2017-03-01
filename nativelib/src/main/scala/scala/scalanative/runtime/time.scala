@@ -12,6 +12,8 @@ object time {
 import scala.scalanative.native._
 import scala.scalanative.posix.sys.types.{timer_t, pid_t, clockid_t}
 
+// http://man7.org/linux/man-pages/man7/time.7.html
+
 @extern
 object time {
   def scalanative_nano_time: CLong = extern
