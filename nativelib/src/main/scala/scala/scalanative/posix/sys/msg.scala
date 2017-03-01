@@ -9,6 +9,13 @@ import scala.scalanative.posix.sys.types.{ssize_t, key_t}
 @extern
 object msg {
 
+
+  /*
+  @see http://man7.org/linux/man-pages/man2/msgctl.2.html
+  @see http://man7.org/linux/man-pages/man2/msgget.2.html
+   */
+
+  // msgctl
   def msgctl(msqid: CInt, cmd: CInt, buf: Ptr[CStruct9]): CInt = extern
   def msgget(key: key_t, msgflg: CInt): CInt                   = extern
   def msgsnd(msqid: CInt, msgp: Ptr[Byte], msgz: CSize, msgflg: CInt): CInt =

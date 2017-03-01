@@ -4,6 +4,8 @@ import scala.scalanative.native.Nat._2
 import scala.scalanative.native._
 import scala.scalanative.posix.sys.types.ssize_t
 
+// http://man7.org/linux/man-pages/man7/socket.7.html
+
 /**
  * Created by remi on 01/03/17.
  */
