@@ -36,7 +36,7 @@ object IFileSystem {
 
 trait IFileSystem {
   @throws(classOf[FileNotFoundException])
-  def open(fileName: Array[Byte], mode: Int): Long
+  def open(fileName: String, mode: Int): Long
 
   @throws(classOf[IOException])
   def close(fileDescriptor: Long): Unit

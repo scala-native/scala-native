@@ -49,6 +49,10 @@ object stdlib {
   def strtof(str: CString, str_end: Ptr[CString]): CFloat  = extern
   def strtod(str: CString, str_end: Ptr[CString]): CDouble = extern
 
+  // File management
+
+  def realpath(file_name: CString, resolved_name: CString): CString = extern
+
   // Macros
 
   @name("scalanative_libc_exit_success")

@@ -26,6 +26,9 @@ package object native {
   /** The C 'unsigned long' type. */
   type CUnsignedLong = UWord
 
+  /** The C 'unsigned long int' type. */
+  type CUnsignedLongInt = ULong
+
   /** The C 'unsigned long long' type. */
   type CUnsignedLongLong = ULong
 
@@ -40,6 +43,9 @@ package object native {
 
   /** The C 'long' type. */
   type CLong = Word
+
+  /** The C 'long int' type. */
+  type CLongInt = Long
 
   /** The C 'long long' type. */
   type CLongLong = Long

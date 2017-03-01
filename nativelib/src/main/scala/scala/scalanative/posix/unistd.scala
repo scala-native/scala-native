@@ -2,6 +2,7 @@ package scala.scalanative.posix
 
 import scala.scalanative.native.{
   CInt,
+  CLongLong,
   CUnsignedInt,
   CSize,
   CString,
@@ -12,6 +13,9 @@ import scala.scalanative.native.{
 
 @extern
 object unistd {
+
+  type off_t = CLongLong
+
   def sleep(seconds: CUnsignedInt): Int                           = extern
   def usleep(usecs: CUnsignedInt): Int                            = extern
   def unlink(path: CString): CInt                                 = extern
@@ -21,6 +25,17 @@ object unistd {
   def write(fildes: CInt, buf: Ptr[_], nbyte: CSize): CInt        = extern
   def read(fildes: CInt, buf: Ptr[_], nbyte: CSize): CInt         = extern
   def close(fildes: CInt): CInt                                   = extern
+  def fsync(fildes: CInt): CInt                                   = extern
+  def lseek(fildes: CInt, offset: off_t, whence: CInt): off_t     = extern
+
+  @name("scalanative_stdin_fileno")
+  def STDIN_FILENO: CInt = extern
+
+  @name("scalanative_stdout_fileno")
+  def STDOUT_FILENO: CInt = extern
+
+  @name("scalanative_stderr_fileno")
+  def STDERR_FILENO: CInt = extern
 
   // Macros
 

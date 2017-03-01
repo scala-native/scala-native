@@ -30,3 +30,5 @@ abstract class ObjectStreamException protected (s: String)
 class NotSerializableException(s: String) extends ObjectStreamException(s) {
   def this() = this(null)
 }
+
+class SyncFailedException(s: String) extends IOException(s)
