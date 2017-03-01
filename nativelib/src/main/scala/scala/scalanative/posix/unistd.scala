@@ -146,7 +146,7 @@ object unistd {
   def ftruncate(fd: CInt, length: off_t): CInt = extern
 
   def brk(addr: Ptr[Byte]): CInt = extern
-  
+
   //def sbrk(increment: intptr_t): Unit = extern
 
 
