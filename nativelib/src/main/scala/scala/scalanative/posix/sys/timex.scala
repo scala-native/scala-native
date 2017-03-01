@@ -3,12 +3,12 @@ package scala.scalanative.posix.sys
 import scala.scalanative.native._
 
 /**
-  * Created by remi on 01/03/17.
-  */
+ * Created by remi on 01/03/17.
+ */
 @extern
 object timex {
 
-  def adjtimex(buf: Ptr[CStruct20]): CInt = extern
+  def adjtimex(buf: Ptr[CStruct20]): CInt    = extern
   def ntp_adjtime(buf: Ptr[CStruct20]): CInt = extern
 
   // Macros

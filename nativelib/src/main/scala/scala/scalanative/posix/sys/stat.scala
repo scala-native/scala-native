@@ -5,27 +5,37 @@ import scala.scalanative.native._
 import scala.scalanative.posix.sys.types.{dev_t, mode_t}
 
 /**
-  * Created by remi on 01/03/17.
-  */
+ * Created by remi on 01/03/17.
+ */
 @extern
 object stat {
 
-  def stat(pathname: CString, buf: Ptr[CStruct13]): CInt = extern
-  def fstat(fd: CInt, buf: Ptr[CStruct13]): CInt = extern
+  def stat(pathname: CString, buf: Ptr[CStruct13]): CInt  = extern
+  def fstat(fd: CInt, buf: Ptr[CStruct13]): CInt          = extern
   def lstat(pathname: CString, bug: Ptr[CStruct13]): CInt = extern
-  def fstatat(dirfd: CInt, pathname: CString, buf: Ptr[CStruct13], flags: CInt): CInt = extern
+  def fstatat(dirfd: CInt,
+              pathname: CString,
+              buf: Ptr[CStruct13],
+              flags: CInt): CInt                   = extern
   def chmod(pathname: CString, mode: mode_t): CInt = extern
-  def fchmod(fd: CInt, mode: mode_t): CInt = extern
-  def fchmodat(dirfd: CInt, pathname: CString, mode: mode_t, flags: CInt): CInt = extern
-  def umask(mask: mode_t): mode_t = extern
-  def getumask(): mode_t = extern
-  def mkdir(pathname: CString, mode: mode_t): CInt = extern
+  def fchmod(fd: CInt, mode: mode_t): CInt         = extern
+  def fchmodat(dirfd: CInt,
+               pathname: CString,
+               mode: mode_t,
+               flags: CInt): CInt                                 = extern
+  def umask(mask: mode_t): mode_t                                 = extern
+  def getumask(): mode_t                                          = extern
+  def mkdir(pathname: CString, mode: mode_t): CInt                = extern
   def mkdirat(dirfd: CInt, pathname: CString, mode: mode_t): CInt = extern
-  def mknod(pathname: CString, mode: mode_t, dev: dev_t): CInt = extern
-  def mknodat(dirfd: CInt, pathname: CString, mode: mode_t, dev: dev_t): CInt = extern
-  def mkfifo(pathname: CString, mode: mode_t): CInt = extern
+  def mknod(pathname: CString, mode: mode_t, dev: dev_t): CInt    = extern
+  def mknodat(dirfd: CInt, pathname: CString, mode: mode_t, dev: dev_t): CInt =
+    extern
+  def mkfifo(pathname: CString, mode: mode_t): CInt                = extern
   def mkfifoat(dirfd: CInt, pathname: CString, mode: mode_t): CInt = extern
-  def utimensat(dirfd: CInt, pathname: CString, times: CArray[CStruct2, _2], flags: CInt): CInt = extern
+  def utimensat(dirfd: CInt,
+                pathname: CString,
+                times: CArray[CStruct2, _2],
+                flags: CInt): CInt                          = extern
   def futimens(fd: CInt, times: CArray[CStruct2, _2]): CInt = extern
 
   // Macros
@@ -53,6 +63,5 @@ object stat {
   def S_WOTH = extern
   @name("scalanative_s_ixoth")
   def S_IXOTH = extern
-
 
 }

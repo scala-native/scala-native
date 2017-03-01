@@ -4,8 +4,8 @@ import scala.scalanative.native.{CInt, extern}
 import scala.scalanative.posix.sys.types.{gid_t, uid_t}
 
 /**
-  * Created by remi on 01/03/17.
-  */
+ * Created by remi on 01/03/17.
+ */
 @extern
 object fsuid {
 

@@ -99,10 +99,6 @@ object unistd {
 
   def getresgid(rgid: Ptr[gid_t], egid: Ptr[gid_t], sgid: Ptr[gid_t]): CInt = extern
 
-  def setresuid(ruid: uid_t, euid: uid_t, suid: uid_t): CInt = extern
-
-  def setresgid(rgid: gid_t, egid: gid_t, sgid: gid_t): CInt = extern
-
   def fork(): pid_t = extern
 
   def vfork(): pid_t = extern
@@ -148,7 +144,6 @@ object unistd {
   def brk(addr: Ptr[Byte]): CInt = extern
 
   //def sbrk(increment: intptr_t): Unit = extern
-
 
   // Macros
   @name("scalanative_stdin_fileno")
