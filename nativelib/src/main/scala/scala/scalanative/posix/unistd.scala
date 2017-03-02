@@ -1,4 +1,5 @@
-package scala.scalanative.posix
+package scala.scalanative
+package posix
 
 import scala.scalanative.native.Nat._2
 import scala.scalanative.native.{CArray, CInt, CLongLong, CSize, CString, CUnsignedInt, Ptr, extern, name}
