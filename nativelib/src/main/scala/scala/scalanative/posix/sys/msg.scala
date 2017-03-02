@@ -1,7 +1,8 @@
 package scala.scalanative.posix.sys
 
 import scala.scalanative.native._
-import scala.scalanative.posix.sys.types.{ssize_t, key_t}
+import scala.scalanative.posix.sys.types._
+import scala.scalanative.runtime.time.time_t
 
 /**
  * Created by remi on 01/03/17.
@@ -9,14 +10,8 @@ import scala.scalanative.posix.sys.types.{ssize_t, key_t}
 @extern
 object msg {
 
-
-  /*
-  @see http://man7.org/linux/man-pages/man2/msgctl.2.html
-  @see http://man7.org/linux/man-pages/man2/msgget.2.html
-   */
-
   // msgctl
-  def msgctl(msqid: CInt, cmd: CInt, buf: Ptr[CStruct9]): CInt = extern
+  def msgctl(msqid: CInt, cmd: CInt, buf: Ptr[msqid_ds]): CInt = extern
   def msgget(key: key_t, msgflg: CInt): CInt                   = extern
   def msgsnd(msqid: CInt, msgp: Ptr[Byte], msgz: CSize, msgflg: CInt): CInt =
     extern
@@ -25,6 +20,13 @@ object msg {
              msgz: CSize,
              msgtyp: CLong,
              msgflg: CInt): ssize_t = extern
+
+
+  // Types
+  type msgqnum_t = CUnsignedInt
+  type msglen_t = CUnsignedInt
+  type ipc_perm = CStruct7[key_t, uid_t, gid_t, uid_t, gid_t, CUnsignedShort, CUnsignedShort]
+  type msqid_ds = CStruct9[ipc_perm, time_t, time_t, time_t, CUnsignedLong, msgqnum_t, msglen_t, pid_t, pid_t]
 
   // Macros
   @name("scalanative_msg_info")

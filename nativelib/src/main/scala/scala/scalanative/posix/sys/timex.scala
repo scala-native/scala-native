@@ -1,6 +1,8 @@
 package scala.scalanative.posix.sys
 
 import scala.scalanative.native._
+import scala.scalanative.posix.sys.types.suseconds_t
+import scala.scalanative.runtime.time.time_t
 
 /**
  * Created by remi on 01/03/17.
@@ -8,8 +10,12 @@ import scala.scalanative.native._
 @extern
 object timex {
 
-  def adjtimex(buf: Ptr[CStruct20]): CInt    = extern
-  def ntp_adjtime(buf: Ptr[CStruct20]): CInt = extern
+  def adjtimex(buf: Ptr[timex]): CInt    = extern
+  def ntp_adjtime(buf: Ptr[timex]): CInt = extern
+
+  // Types
+  type timeval = CStruct2[time_t, suseconds_t]
+  type timex = CStruct20[CInt, CLong, CLong, CLong, CLong, CInt, CLong, CLong, CLong, timeval, CLong, CLong, CLong, CInt, CLong, CLong, CLong, CLong, CLong, CInt]
 
   // Macros
   @name("scalamative_adj_offset")
