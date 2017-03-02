@@ -2,7 +2,8 @@ package scala.scalanative.posix.sys
 
 import scala.scalanative.native.Nat._2
 import scala.scalanative.native._
-import scala.scalanative.posix.sys.types.{dev_t, mode_t}
+import scala.scalanative.posix.sys.types._
+import scala.scalanative.runtime.time.{timespec, time_t}
 
 /**
  * Created by remi on 01/03/17.
@@ -10,12 +11,12 @@ import scala.scalanative.posix.sys.types.{dev_t, mode_t}
 @extern
 object stat {
 
-  def stat(pathname: CString, buf: Ptr[CStruct13]): CInt  = extern
-  def fstat(fd: CInt, buf: Ptr[CStruct13]): CInt          = extern
-  def lstat(pathname: CString, bug: Ptr[CStruct13]): CInt = extern
+  def stat(pathname: CString, buf: Ptr[stat]): CInt  = extern
+  def fstat(fd: CInt, buf: Ptr[stat]): CInt          = extern
+  def lstat(pathname: CString, bug: Ptr[stat]): CInt = extern
   def fstatat(dirfd: CInt,
               pathname: CString,
-              buf: Ptr[CStruct13],
+              buf: Ptr[stat],
               flags: CInt): CInt                   = extern
   def chmod(pathname: CString, mode: mode_t): CInt = extern
   def fchmod(fd: CInt, mode: mode_t): CInt         = extern
@@ -34,9 +35,12 @@ object stat {
   def mkfifoat(dirfd: CInt, pathname: CString, mode: mode_t): CInt = extern
   def utimensat(dirfd: CInt,
                 pathname: CString,
-                times: CArray[CStruct2, _2],
+                times: CArray[timespec, _2],
                 flags: CInt): CInt                          = extern
-  def futimens(fd: CInt, times: CArray[CStruct2, _2]): CInt = extern
+  def futimens(fd: CInt, times: CArray[timespec, _2]): CInt = extern
+
+  // Types
+  type stat = CStruct13[dev_t, ino_t, mode_t, nlink_t, uid_t, gid_t, dev_t, off_t, time_t, time_t, time_t, blksize_t, blkcnt_t]
 
   // Macros
   @name("scalanative_s_isuid")

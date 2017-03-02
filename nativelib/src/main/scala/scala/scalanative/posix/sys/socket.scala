@@ -1,8 +1,10 @@
 package scala.scalanative.posix.sys
 
-import scala.scalanative.native.Nat._2
+import scala.scalanative.native.Nat._
 import scala.scalanative.native._
 import scala.scalanative.posix.sys.types.ssize_t
+import scala.scalanative.posix.sys.uio.iovec
+import scala.scalanative.runtime.time.timespec
 
 // http://man7.org/linux/man-pages/man7/socket.7.html
 
@@ -17,15 +19,15 @@ object socket {
                  _type: CInt,
                  protocol: CInt,
                  sv: CArray[CInt, _2]): CInt = extern
-  def bind(sockfd: CInt, addr: Ptr[CStruct2], addrlen: socklen_t): CInt =
+  def bind(sockfd: CInt, addr: Ptr[sockaddr], addrlen: socklen_t): CInt =
     extern
   def getsockname(sockfd: CInt,
-                  addr: Ptr[CStruct2],
+                  addr: Ptr[sockaddr],
                   addrlen: Ptr[socklen_t]): CInt = extern
-  def connect(sockfd: CInt, addr: Ptr[CStruct2], addrlen: socklen_t): CInt =
+  def connect(sockfd: CInt, addr: Ptr[sockaddr], addrlen: socklen_t): CInt =
     extern
   def getpeername(sockfd: CInt,
-                  addr: Ptr[CStruct2],
+                  addr: Ptr[sockaddr],
                   addrlen: Ptr[socklen_t]): CInt = extern
   def send(sockfd: CInt, buf: Ptr[Byte], len: CSize, flags: CInt): ssize_t =
     extern
@@ -33,11 +35,11 @@ object socket {
              buf: Ptr[Byte],
              len: CSize,
              flags: CInt,
-             dest_addr: Ptr[CStruct2],
+             dest_addr: Ptr[sockaddr],
              addrlen: socklen_t): ssize_t                             = extern
-  def sendmsg(sockfd: CInt, msg: Ptr[CStruct7], flags: CInt): ssize_t = extern
+  def sendmsg(sockfd: CInt, msg: Ptr[msghdr], flags: CInt): ssize_t = extern
   def sendmmsg(sockfd: CInt,
-               msgvec: Ptr[CStruct7],
+               msgvec: Ptr[mmsghdr],
                vlen: CUnsignedInt,
                flags: CUnsignedInt): CInt = extern
   def recv(sockfd: CInt, buf: Ptr[Byte], len: CSize, flags: CInt): ssize_t =
@@ -46,14 +48,14 @@ object socket {
                buf: Ptr[Byte],
                len: CSize,
                flags: CInt,
-               src_addr: Ptr[CStruct2],
+               src_addr: Ptr[sockaddr],
                addrlen: socklen_t): ssize_t                           = extern
-  def recvmsg(sockfd: CInt, msg: Ptr[CStruct7], flags: CInt): ssize_t = extern
+  def recvmsg(sockfd: CInt, msg: Ptr[msghdr], flags: CInt): ssize_t = extern
   def recvmmsg(sockfd: CInt,
-               msgvec: Ptr[CStruct7],
+               msgvec: Ptr[mmsghdr],
                vlen: CUnsignedInt,
                flags: CUnsignedInt,
-               timeout: Ptr[CStruct2]): CInt = extern
+               timeout: Ptr[timespec]): CInt = extern
   def getsockopt(sockfd: CInt,
                  level: CInt,
                  optname: CInt,
@@ -65,16 +67,20 @@ object socket {
                  optval: Ptr[Byte],
                  optlen: socklen_t): CInt       = extern
   def listen(sockfd: CInt, backlog: CInt): CInt = extern
-  def accept(sockfd: CInt, addr: Ptr[CStruct2], addlen: Ptr[socklen_t]): CInt =
+  def accept(sockfd: CInt, addr: Ptr[sockaddr], addlen: Ptr[socklen_t]): CInt =
     extern
   def accept4(sockfd: CInt,
-              addr: Ptr[CStruct2],
+              addr: Ptr[sockaddr],
               addlen: Ptr[socklen_t],
               flags: CInt): CInt              = extern
   def shutdown(sockfd: CInt, how: CInt): CInt = extern
 
   // Types
   type socklen_t = CInt
+  type sa_family_t = CUnsignedInt
+  type sockaddr = CStruct2[sa_family_t, CArray[CChar, Digit[_1, _4]]]
+  type msghdr = CStruct7[Ptr[Byte], socklen_t, Ptr[iovec], CInt, Ptr[Byte], socklen_t, CInt]
+  type mmsghdr = CStruct2[msghdr, CUnsignedInt]
 
   //Macros
   @name("scalanative_af_unix")

@@ -1,6 +1,8 @@
 package scala.scalanative
 package native
 
+import scala.scalanative.posix.sys.types.pid_t
+
 @extern
 object signal {
 
@@ -10,6 +12,10 @@ object signal {
              handler: CFunctionPtr1[CInt, Unit]): CFunctionPtr1[CInt, Unit] =
     extern
   def raise(sig: CInt): CInt = extern
+
+  // Type
+  type sigval = Unit // Union[2]
+  type sigevent = CStruct6[CInt, CInt, sigval, CFunctionPtr1[sigval, Unit], Ptr[Byte], pid_t]
 
   // Macros
 
