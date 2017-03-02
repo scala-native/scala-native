@@ -21,12 +21,20 @@ object msg {
              msgtyp: CLong,
              msgflg: CInt): ssize_t = extern
 
-
   // Types
   type msgqnum_t = CUnsignedInt
-  type msglen_t = CUnsignedInt
-  type ipc_perm = CStruct7[key_t, uid_t, gid_t, uid_t, gid_t, CUnsignedShort, CUnsignedShort]
-  type msqid_ds = CStruct9[ipc_perm, time_t, time_t, time_t, CUnsignedLong, msgqnum_t, msglen_t, pid_t, pid_t]
+  type msglen_t  = CUnsignedInt
+  type ipc_perm =
+    CStruct7[key_t, uid_t, gid_t, uid_t, gid_t, CUnsignedShort, CUnsignedShort]
+  type msqid_ds = CStruct9[ipc_perm,
+                           time_t,
+                           time_t,
+                           time_t,
+                           CUnsignedLong,
+                           msgqnum_t,
+                           msglen_t,
+                           pid_t,
+                           pid_t]
 
   // Macros
   @name("scalanative_msg_info")

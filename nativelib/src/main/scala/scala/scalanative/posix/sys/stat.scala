@@ -40,7 +40,19 @@ object stat {
   def futimens(fd: CInt, times: CArray[timespec, _2]): CInt = extern
 
   // Types
-  type stat = CStruct13[dev_t, ino_t, mode_t, nlink_t, uid_t, gid_t, dev_t, off_t, time_t, time_t, time_t, blksize_t, blkcnt_t]
+  type stat = CStruct13[dev_t,
+                        ino_t,
+                        mode_t,
+                        nlink_t,
+                        uid_t,
+                        gid_t,
+                        dev_t,
+                        off_t,
+                        time_t,
+                        time_t,
+                        time_t,
+                        blksize_t,
+                        blkcnt_t]
 
   // Macros
   @name("scalanative_s_isuid")

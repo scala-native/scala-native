@@ -15,7 +15,8 @@ object signal {
 
   // Type
   type sigval = Unit // Union[2]
-  type sigevent = CStruct6[CInt, CInt, sigval, CFunctionPtr1[sigval, Unit], Ptr[Byte], pid_t]
+  type sigevent =
+    CStruct6[CInt, CInt, sigval, CFunctionPtr1[sigval, Unit], Ptr[Byte], pid_t]
 
   // Macros
 
