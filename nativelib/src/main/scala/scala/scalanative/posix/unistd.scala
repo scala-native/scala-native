@@ -86,7 +86,6 @@ object unistd {
   def getegid(): gid_t = extern
 
   def getgroups(size: CInt, list: Ptr[gid_t]): CInt = extern
-<<<<<<< 8b3d34f2b9cbc5163e4b005fd039ddf5e61c7e5a
 
   def setuid(uid: uid_t): CInt = extern
 

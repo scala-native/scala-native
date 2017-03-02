@@ -15,7 +15,26 @@ object timex {
 
   // Types
   type timeval = CStruct2[time_t, suseconds_t]
-  type timex = CStruct20[CInt, CLong, CLong, CLong, CLong, CInt, CLong, CLong, CLong, timeval, CLong, CLong, CLong, CInt, CLong, CLong, CLong, CLong, CLong, CInt]
+  type timex = CStruct20[CInt,
+                         CLong,
+                         CLong,
+                         CLong,
+                         CLong,
+                         CInt,
+                         CLong,
+                         CLong,
+                         CLong,
+                         timeval,
+                         CLong,
+                         CLong,
+                         CLong,
+                         CInt,
+                         CLong,
+                         CLong,
+                         CLong,
+                         CLong,
+                         CLong,
+                         CInt]
 
   // Macros
   @name("scalamative_adj_offset")

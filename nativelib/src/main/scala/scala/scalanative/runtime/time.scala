@@ -22,11 +22,9 @@ object time {
   def clock(): clock_t                                = extern
   def time(tloc: Ptr[time_t]): time_t                 = extern
   def difftime(time1: time_t, time0: time_t): CDouble = extern
-  def mktime(tm: Ptr[tm]): time_t               = extern
-  def strftime(s: CString,
-               max: CSize,
-               format: CString,
-               tm: Ptr[tm]): CSize = extern
+  def mktime(tm: Ptr[tm]): time_t                     = extern
+  def strftime(s: CString, max: CSize, format: CString, tm: Ptr[tm]): CSize =
+    extern
   def strptime(s: CString, format: CString, tm: Ptr[tm]): CString =
     extern
   def gmtime(timep: Ptr[time_t]): Ptr[tm]    = extern
@@ -35,13 +33,13 @@ object time {
     extern
   def localtime_r(timep: Ptr[time_t], result: Ptr[tm]): Ptr[tm] =
     extern
-  def asctime(tm: Ptr[tm]): CString                       = extern
-  def asctime_r(tm: Ptr[tm], buf: CString): CString       = extern
+  def asctime(tm: Ptr[tm]): CString                             = extern
+  def asctime_r(tm: Ptr[tm], buf: CString): CString             = extern
   def ctime(timep: Ptr[time_t]): CString                        = extern
   def ctime_r(timep: Ptr[time_t], buf: CString): CString        = extern
   def stime(t: Ptr[time_t]): CInt                               = extern
-  def timegm(tm: Ptr[tm]): time_t                         = extern
-  def timelocal(tm: Ptr[tm]): time_t                      = extern
+  def timegm(tm: Ptr[tm]): time_t                               = extern
+  def timelocal(tm: Ptr[tm]): time_t                            = extern
   def dysize(year: CInt): CInt                                  = extern
   def nanosleep(req: Ptr[timespec], rem: Ptr[timespec]): CInt   = extern
   def clock_getres(clk_id: clockid_t, res: Ptr[timespec]): CInt = extern
@@ -62,14 +60,14 @@ object time {
                     old_value: Ptr[timespec]): CInt                    = extern
   def timer_gettime(timerid: timer_t, curr_value: Ptr[timespec]): CInt = extern
   def timer_getoverrun(timerid: timer_t): CInt                         = extern
-  def getdate(string: CString): Ptr[tm]                          = extern
-  def getdate_r(string: CString, res: Ptr[tm]): CInt             = extern
+  def getdate(string: CString): Ptr[tm]                                = extern
+  def getdate_r(string: CString, res: Ptr[tm]): CInt                   = extern
 
   // Types
-  type clock_t = CLong
-  type time_t  = CInt
+  type clock_t  = CLong
+  type time_t   = CInt
   type timespec = CStruct2[time_t, CUnsignedLong]
-  type tm = CStruct9[CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt]
+  type tm       = CStruct9[CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt]
 
   // Macros
   @name("scalanative_clock_realtime")

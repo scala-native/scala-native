@@ -36,7 +36,7 @@ object socket {
              len: CSize,
              flags: CInt,
              dest_addr: Ptr[sockaddr],
-             addrlen: socklen_t): ssize_t                             = extern
+             addrlen: socklen_t): ssize_t                           = extern
   def sendmsg(sockfd: CInt, msg: Ptr[msghdr], flags: CInt): ssize_t = extern
   def sendmmsg(sockfd: CInt,
                msgvec: Ptr[mmsghdr],
@@ -49,7 +49,7 @@ object socket {
                len: CSize,
                flags: CInt,
                src_addr: Ptr[sockaddr],
-               addrlen: socklen_t): ssize_t                           = extern
+               addrlen: socklen_t): ssize_t                         = extern
   def recvmsg(sockfd: CInt, msg: Ptr[msghdr], flags: CInt): ssize_t = extern
   def recvmmsg(sockfd: CInt,
                msgvec: Ptr[mmsghdr],
@@ -76,10 +76,16 @@ object socket {
   def shutdown(sockfd: CInt, how: CInt): CInt = extern
 
   // Types
-  type socklen_t = CInt
+  type socklen_t   = CInt
   type sa_family_t = CUnsignedInt
-  type sockaddr = CStruct2[sa_family_t, CArray[CChar, Digit[_1, _4]]]
-  type msghdr = CStruct7[Ptr[Byte], socklen_t, Ptr[iovec], CInt, Ptr[Byte], socklen_t, CInt]
+  type sockaddr    = CStruct2[sa_family_t, CArray[CChar, Digit[_1, _4]]]
+  type msghdr = CStruct7[Ptr[Byte],
+                         socklen_t,
+                         Ptr[iovec],
+                         CInt,
+                         Ptr[Byte],
+                         socklen_t,
+                         CInt]
   type mmsghdr = CStruct2[msghdr, CUnsignedInt]
 
   //Macros
