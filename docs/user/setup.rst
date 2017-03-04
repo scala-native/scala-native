@@ -36,7 +36,7 @@ FreeBSD::
 
 nix/nixOS::
 
-    $ wget https://github.com/scala-native/scala-native/blob/master/bin/scala-native.nix
+    $ wget https://raw.githubusercontent.com/scala-native/scala-native/master/bin/scala-native.nix
 
     $ nix-shell scala-native.nix -A clangEnv
 
