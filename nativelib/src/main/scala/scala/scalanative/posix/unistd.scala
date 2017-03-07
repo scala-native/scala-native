@@ -28,9 +28,10 @@ object unistd {
 
   def write(fd: CInt, buf: Ptr[Byte], count: CSize): ssize_t = extern
 
-  def pipe(pipefd: CArray[CInt, _2]): CInt = extern
-
-  def pipe2(pipefd: CArray[CInt, _2], flags: CInt): CInt = extern
+  //http://man7.org/linux/man-pages/man7/pipe.7.html
+  def pipe(pipefd: Ptr[CArray[CInt, _2]]): CInt               = extern
+  
+  def pipe2(pipefd: Ptr[CArray[CInt, _2]], flags: CInt): CInt = extern
 
   def pause(): CInt = extern
 
