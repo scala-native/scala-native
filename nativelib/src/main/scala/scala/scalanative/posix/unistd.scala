@@ -30,7 +30,7 @@ object unistd {
 
   //http://man7.org/linux/man-pages/man7/pipe.7.html
   def pipe(pipefd: Ptr[CArray[CInt, _2]]): CInt               = extern
-  
+
   def pipe2(pipefd: Ptr[CArray[CInt, _2]], flags: CInt): CInt = extern
 
   def pause(): CInt = extern
