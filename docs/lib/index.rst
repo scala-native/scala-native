@@ -8,5 +8,4 @@ Libraries
 
   javalib
   libc
-  facades
 
