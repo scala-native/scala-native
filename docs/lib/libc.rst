@@ -77,5 +77,5 @@ wctype.h_      N/A
 .. _scala.scalanative.native.stdlib: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/native/stdlib.scala
 .. _scala.scalanative.native.string: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/native/string.scala
 
-Continue to :ref:`facades`.
+Continue to :ref:`faq`.
 
