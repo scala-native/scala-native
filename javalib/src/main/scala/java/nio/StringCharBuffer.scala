@@ -1,5 +1,7 @@
 package java.nio
 
+// Ported from Scala.js
+
 private[nio] final class StringCharBuffer private (_capacity: Int,
                                                    _csq: CharSequence,
                                                    _csqOffset: Int,

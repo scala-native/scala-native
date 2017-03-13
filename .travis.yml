@@ -75,4 +75,4 @@ before_script:
 script:
   - java -version
   - bin/scalafmt --test
-  - sbt ";rebuild ;test-all"
+  - sbt -J-Xmx2G ";rebuild ;test-all"

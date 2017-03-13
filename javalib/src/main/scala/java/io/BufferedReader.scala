@@ -141,4 +141,10 @@ class BufferedReader(in: Reader, sz: Int) extends Reader {
     if (closed)
       throw new IOException("Operation on closed stream")
   }
+
+  private[io] def chompNewLine(): Unit = {
+    if ((pos != end || fillBuffer()) && buf(pos) == '\n') {
+      pos += 1
+    }
+  }
 }

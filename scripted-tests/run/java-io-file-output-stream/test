@@ -1,4 +1,7 @@
 > deleteFile
+> run owerwriteConstructor
+> constructorFileCheck
+> deleteFile
 > createFileWithAlreadyWrittenText
 > run owerwriteConstructor
 > constructorFileCheck

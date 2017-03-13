@@ -1,5 +1,7 @@
 package java.nio
 
+// Ported from Scala.js
+
 private[nio] final class HeapCharBuffer private (_capacity: Int,
                                                  _array0: Array[Char],
                                                  _arrayOffset0: Int,

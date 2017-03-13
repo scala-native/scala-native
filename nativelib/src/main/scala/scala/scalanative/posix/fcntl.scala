@@ -1,10 +1,14 @@
 package scala.scalanative
-package native
+package posix
+
+import scala.scalanative.native._
+
+import stat.mode_t
 
 @extern
 object fcntl {
 
-  def open(pathname: CString, flags: CInt): CInt = extern
+  def open(pathname: CString, flags: CInt, mode: CVararg*): CInt = extern
 
   def close(fd: CInt): CInt = extern
 
@@ -19,6 +23,9 @@ object fcntl {
 
   @name("scalanative_o_append")
   def O_APPEND: CInt = extern
+
+  @name("scalanative_o_creat")
+  def O_CREAT: CInt = extern
 
   @name("scalanative_w_ok")
   def W_OK: CInt = extern

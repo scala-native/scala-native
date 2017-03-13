@@ -1,5 +1,7 @@
 package java.nio
 
+// Ported from Scala.js
+
 private[nio] object GenBuffer {
   def apply[B <: Buffer](self: B): GenBuffer[B] =
     new GenBuffer(self)

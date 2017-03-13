@@ -1,7 +1,7 @@
 package java.io
 
 import scalanative.native._, stdlib._, stdio._, string._
-import scala.scalanative.posix.unistd
+import scala.scalanative.posix.{fcntl, unistd}
 import unistd._
 import scala.scalanative.runtime.GC
 
@@ -30,22 +30,26 @@ class FileInputStream(fd: FileDescriptor) extends InputStream {
 
   override def read(): Int = {
     val buffer = new Array[Byte](1)
-    read(buffer)
-    buffer(0)
+    if (read(buffer) <= 0) -1
+    else buffer(0)
   }
 
   override def read(buffer: Array[Byte]): Int =
     read(buffer, 0, buffer.length)
 
   override def read(buffer: Array[Byte], offset: Int, count: Int): Int = {
-    val buf = GC.malloc(count)
-    unistd.read(fd.fd, buf, count)
-    var i = 0
-    while (i < count) {
-      buffer(offset + i) = buf(i)
-      i += 1
+    val buf       = GC.malloc(count)
+    val readCount = unistd.read(fd.fd, buf, count)
+
+    if (readCount <= 0) -1
+    else {
+      var i = 0
+      while (i < readCount) {
+        buffer(offset + i) = buf(i)
+        i += 1
+      }
+      readCount
     }
-    count
   }
 
   override def skip(n: Long): Long =

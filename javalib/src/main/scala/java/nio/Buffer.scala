@@ -1,5 +1,7 @@
 package java.nio
 
+// Ported from Scala.js
+
 abstract class Buffer private[nio] (val _capacity: Int) {
   private[nio] type ElementType
 
