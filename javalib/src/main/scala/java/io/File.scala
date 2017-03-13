@@ -3,9 +3,11 @@ package java.io
 import scala.collection.mutable.UnrolledBuffer
 
 import scala.annotation.tailrec
-import scalanative.runtime.GC
-import scalanative.native._, stdlib._, stdio._, string._, Nat._, dirent._
-import scalanative.posix.unistd._
+import scalanative.runtime.{GC, Platform}
+import scala.scalanative.posix.{dirent, fcntl, limits, stat, unistd, utime}
+import scala.scalanative.native._, stdlib._, stdio._, string._
+import dirent._
+import unistd._
 
 class File(_path: String) extends Serializable with Comparable[File] {
   import File._
@@ -22,6 +24,8 @@ class File(_path: String) extends Serializable with Comparable[File] {
 
   def this(parent: File, child: String) =
     this(Option(parent).map(_.path).getOrElse(null), child)
+
+  // def this(uri: URI)
 
   def compareTo(file: File): Int = {
     if (caseSensitive) getPath().compareTo(file.getPath())
@@ -87,7 +91,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
     that match {
       case that: File if caseSensitive => this.path == that.path
       case that: File =>
-        toLowerCaseNaive(this.path) == toLowerCaseNaive(that.path)
+        this.path.toLowerCase == that.path.toLowerCase
       case _ => false
     }
 
@@ -151,7 +155,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
 
   override def hashCode(): Int =
     if (caseSensitive) path.hashCode ^ 1234321
-    else toLowerCaseNaive(path).hashCode ^ 1234321
+    else path.toLowerCase.hashCode ^ 1234321
 
   def isAbsolute(): Boolean =
     File.isAbsolute(path)
@@ -295,6 +299,10 @@ class File(_path: String) extends Serializable with Comparable[File] {
     rename(toCString(properPath), toCString(dest.properPath)) == 0
 
   override def toString(): String = path
+
+  // def deleteOnExit(): Unit
+  // def toURL(): URL
+  // def toURI(): URI
 
 }
 
@@ -492,52 +500,13 @@ object File {
     buffer
   }
 
+  val pathSeparatorChar: Char        = if (Platform.isWindows) ';' else ':'
+  val pathSeparator: String          = pathSeparatorChar.toString
   val separatorChar: Char            = if (Platform.isWindows) '\\' else '/'
   val separator: String              = separatorChar.toString
   private var counter: Int           = 0;
   private var counterBase: Int       = 0;
   private val caseSensitive: Boolean = !Platform.isWindows
-
-  //temporary workaround, while waiting on a working implementation of toLowerCase
-  private def toLowerCaseNaive(str: String): String = {
-    def toLowerChar(c: Char): Char = c match {
-      case 'A' => 'a'
-      case 'B' => 'b'
-      case 'C' => 'c'
-      case 'D' => 'd'
-      case 'E' => 'e'
-      case 'F' => 'f'
-      case 'G' => 'g'
-      case 'H' => 'h'
-      case 'I' => 'i'
-      case 'J' => 'j'
-      case 'K' => 'k'
-      case 'L' => 'l'
-      case 'M' => 'm'
-      case 'N' => 'n'
-      case 'O' => 'o'
-      case 'P' => 'p'
-      case 'Q' => 'q'
-      case 'R' => 'r'
-      case 'S' => 's'
-      case 'T' => 't'
-      case 'U' => 'u'
-      case 'V' => 'v'
-      case 'W' => 'w'
-      case 'X' => 'x'
-      case 'Y' => 'y'
-      case 'Z' => 'z'
-      case x   => x
-    }
-    var chars = str.toCharArray
-    var i     = 0
-    while (i < chars.length) {
-      val lC = toLowerChar(chars(i))
-      chars(i) = lC
-      i += 1
-    }
-    return new String(chars)
-  }
 
   def listRoots(): Array[File] =
     if (Platform.isWindows) ???
@@ -581,28 +550,3 @@ object File {
   }
 
 }
-
-// TODO: Extract
-
-//TODO:
-//private def checkURI(uri : URI): Unit
-
-//def deleteOnExit(): Unit = ??? /*atexit{ () => delete() }*/
-
-/*@throws(classOf[IOException])
-private def writeObject(stream: ObjectOutputStream): Unit */
-
-/*@throws(classOf[IOException])
-@throws(classOf[ClassNotFoundException])
-private def readObject(stream: ObjectInputStream): Unit */
-
-//def toURI(): URI
-
-/*@throws(classOf[java.net.MalformedURLException])
-def toURL(): URL*/
-
-/*def File(uri: URI): File = {
-    this()
-    checkURI(uri)
-    path = fixSlashes(uri.getPath())
-}*/

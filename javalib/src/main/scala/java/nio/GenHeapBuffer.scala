@@ -1,5 +1,7 @@
 package java.nio
 
+// Ported from Scala.js
+
 private[nio] object GenHeapBuffer {
   def apply[B <: Buffer](self: B): GenHeapBuffer[B] =
     new GenHeapBuffer(self)

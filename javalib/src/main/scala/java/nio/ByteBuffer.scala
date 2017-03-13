@@ -1,5 +1,7 @@
 package java.nio
 
+// Ported from Scala.js
+
 object ByteBuffer {
   private final val HashSeed = -547316498 // "java.nio.ByteBuffer".##
 

@@ -1,7 +1,9 @@
 package scala.scalanative
-package native
+package posix
 
-import posix.unistd.off_t
+import scala.scalanative.native._
+
+import unistd.off_t
 
 @extern
 object stat {
@@ -13,16 +15,15 @@ object stat {
   type gid_t     = CUnsignedInt
   type blksize_t = CLong
   type blkcnt_t  = CLongLong
-  type time_t    = CLongInt
   type stat = CStruct13[dev_t, // st_dev
                         dev_t, // st_rdev
                         ino_t, // st_ino
                         uid_t, // st_uid
                         gid_t, // st_gid
                         off_t, // st_size
-                        time_t, // st_atime
-                        time_t, // st_mtime
-                        time_t, // st_ctime
+                        time.time_t, // st_atime
+                        time.time_t, // st_mtime
+                        time.time_t, // st_ctime
                         blkcnt_t, // st_blocks
                         blksize_t, // st_blksize
                         nlink_t, // st_nlink

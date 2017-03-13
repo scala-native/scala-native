@@ -1,7 +1,7 @@
 package scala.scalanative
 package runtime
 
-import scala.scalanative.native._
+import scala.scalanative.native.{CString, extern, name}
 
 @extern
 object Platform {
@@ -14,4 +14,6 @@ object Platform {
   @name("scalanative_windows_get_user_country")
   def windowsGetUserCountry(): CString = extern
 
+  @name("scalanative_litle_endian")
+  def littleEndian(): Boolean = extern
 }

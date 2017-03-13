@@ -27,6 +27,8 @@ object unistd {
   def close(fildes: CInt): CInt                                   = extern
   def fsync(fildes: CInt): CInt                                   = extern
   def lseek(fildes: CInt, offset: off_t, whence: CInt): off_t     = extern
+  def ftruncate(fildes: CInt, length: off_t): CInt                = extern
+  def truncate(path: CString, length: off_t): CInt                = extern
 
   @name("scalanative_stdin_fileno")
   def STDIN_FILENO: CInt = extern
