@@ -4,7 +4,7 @@ package sbtplugin
 import util._
 
 import sbtcrossproject.CrossPlugin.autoImport._
-import gc.GarbageCollector
+import gc._
 import ScalaNativePlugin.autoImport._
 
 import scalanative.nir
@@ -141,8 +141,9 @@ object ScalaNativePluginInternal {
                       cwd: File,
                       gc: GarbageCollector,
                       logger: Logger): Boolean = {
-    val cpaths   = gc.filterFiles((cwd ** "*.c").get).map(abs)
-    val cpppaths = gc.filterFiles((cwd ** "*.cpp").get).map(abs)
+
+    val cpaths   = gc.filterFiles((cwd ** "*.c").get, cwd).map(abs)
+    val cpppaths = gc.filterFiles((cwd ** "*.cpp").get, cwd).map(abs)
     val paths    = cpaths ++ cpppaths
 
     paths.par
@@ -310,6 +311,7 @@ object ScalaNativePluginInternal {
     },
     nativeLinkerReporter := tools.LinkerReporter.empty,
     nativeOptimizerReporter := tools.OptimizerReporter.empty,
+    nativeGC := BoehmGC,
     nativeNativelib := {
       val nativelib = (crossTarget in Compile).value / "nativelib"
       val clang     = nativeClang.value
