@@ -5,44 +5,17 @@ import native.Nat.{_2}
 
 import posix.unistd
 import native.stdio
+import native.stdlib
 
 /**
  * Created by remi on 02/03/17.
  */
 object SyscallsSuite extends tests.Suite {
-  /*
-  test("simple pipe") {
-
-    val p = stackalloc[CArray[CInt, _2]]
-    val err = unistd.pipe(p)
-
-    assert(err == 0)
-
-    val pid = unistd.fork()
-
-    assert(pid != -1)
-
-    // http://www2.cs.uregina.ca/~hamilton/courses/330/notes/unix/pipes/pipes.html
-    val message = "Hi Mom!"
-
-
-    if(pid == 0) {
-      assert(unistd.write(!p._1, toCString(message), message.length + 1) == message.length + 1)
-    } else {
-      val cstr = stackalloc[CChar](32)
-      assert(unistd.read(!p._2, cstr, message.length + 1) == message.length + 1)
-      val out = fromCString(cstr)
-      println(out)
-
-      wait(pid)
-
-      assert(out == message)
-    }
-  }*/
 
   test("pipe + dup + getpid + getppid") {
 
     val p   = stackalloc[CArray[CInt, _2]]
+
     val err = unistd.pipe(p)
 
     assert(err == 0)
@@ -56,40 +29,40 @@ object SyscallsSuite extends tests.Suite {
 
     assert(pid != -1)
 
-    println((!p._1, !p._2))
-
     if (pid == 0) {
-      val msg: (CInt, CInt) = (unistd.getpid(), unistd.getppid())
 
-      assert(unistd.write(fd2, toBytePtr(msg._1), 4) == 4)
-      assert(unistd.write(fd2, toBytePtr(msg._2), 4) == 4)
+      var msg = stackalloc[Byte](8)
+
+      fillPtr(msg, unistd.getpid())
+      fillPtr(msg + 4, unistd.getppid())
+
+      assert(unistd.write(fd2, msg, 8) == 8)
+
+
     } else {
-      val msg: (Ptr[Byte], Ptr[Byte]) =
-        (stackalloc[Byte](4), stackalloc[Byte](4))
-      assert(unistd.read(fd1, msg._1, 4) == 4)
-      assert(unistd.read(fd1, msg._2, 4) == 4)
+
+      var msg1 = stackalloc[Byte](4)
+      var msg2 = stackalloc[Byte](4)
+
+      assert(unistd.read(fd1, msg1, 4) == 4)
+      assert(unistd.read(fd1, msg2, 4) == 4)
 
       wait(pid)
 
-      assert(pid == toCInt(msg._1) && unistd.getpid() == toCInt(msg._2))
+      assert(pid == toCInt(msg1) && unistd.getpid() == toCInt(msg2))
 
     }
   }
 
-  def toBytePtr(a: CInt): Ptr[Byte] = {
-    val p = stackalloc[Byte](4)
-
-    for (i <- 3 to 0) {
-      !(p + i) = ((a >> 3 - i) & 0xFF).toByte;
-    }
-
-    p
-
+  def fillPtr(p: Ptr[Byte], a: CInt) = {
+    p(0) = (a >> 24).toByte
+    p(1) = ((a >> 16) & 0xFF).toByte
+    p(2) = ((a >> 8) & 0xFF).toByte
+    p(3) = (a & 0xFF).toByte
   }
 
   def toCInt(p: Ptr[Byte]): CInt = {
-    (!p << 24) | (!(p + 1) << 16) | (!(p + 2) << 8) | !(p + 3)
-
+    (p(0).toInt << 24) | (p(1).toInt << 16) | (p(2).toInt << 8) | p(3)
   }
 
 }
