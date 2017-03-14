@@ -1,3 +1,5 @@
 #!/usr/bin/env bash
 
-nix-shell bin/scala-native.nix -A clangEnv
+HERE="`dirname $0`"
+
+nix-shell $HERE/scala-native.nix -A clangEnv
