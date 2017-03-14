@@ -49,7 +49,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Scala Native'
-copyright = u'2016, Denys Shabalin'
+copyright = u'2016-2017, EPFL'
 author = u'Denys Shabalin'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -174,7 +174,13 @@ html_static_path = ['_static']
 
 # Custom sidebar templates, maps document names to template names.
 #
-# html_sidebars = {}
+html_sidebars = {
+    '**': [
+        'globaltoc.html',
+        'relations.html',
+        'searchbox.html',
+    ],
+}
 
 # Additional templates that should be rendered to pages, maps page names to
 # template names.
