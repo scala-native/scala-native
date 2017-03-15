@@ -2,8 +2,8 @@ package scala.scalanative.posix
 
 import scala.scalanative.native._
 import scala.scalanative.native.signal.sigevent
-import scala.scalanative.posix.sys.types.{ssize_t, mode_t}
-import scala.scalanative.runtime.time.timespec
+import scala.scalanative.native.time.timespec
+import scala.scalanative.posix.sys.types.{mode_t, ssize_t}
 
 // http://man7.org/linux/man-pages/man7/mq_overview.7.html
 
