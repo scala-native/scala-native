@@ -4,15 +4,13 @@ import native._
 import native.Nat.{_2}
 
 import posix.unistd
-import native.stdio
-import native.stdlib
 
 /**
  * Created by remi on 02/03/17.
  */
 object SyscallsSuite extends tests.Suite {
 
-  test("pipe + dup + getpid + getppid") {
+  test("pipe + dup + getpid + getppid + fork + read + write") {
 
     val p = stackalloc[CArray[CInt, _2]]
 
@@ -63,7 +61,7 @@ object SyscallsSuite extends tests.Suite {
   }
 
   def toCInt(p: Ptr[Byte]): CInt = {
-    ((p(0) << 24) | ((p(1) << 16) & 0xFF0000) | ((p(2) << 8) & 0xFF00) | (p(3) & 0xFF))
+    (p(0) << 24) | ((p(1) << 16) & 0xFF0000) | ((p(2) << 8) & 0xFF00) | (p(3) & 0xFF)
   }
 
 }

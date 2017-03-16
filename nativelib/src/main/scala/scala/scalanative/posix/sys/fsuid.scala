@@ -1,7 +1,8 @@
-package scala.scalanative.posix.sys
+package scala.scalanative
+package posix.sys
 
-import scala.scalanative.native.{CInt, extern}
-import scala.scalanative.posix.sys.types.{gid_t, uid_t}
+import native.{CInt, extern}
+import types.{gid_t, uid_t}
 
 // part of http://man7.org/linux/man-pages/man7/credentials.7.html
 

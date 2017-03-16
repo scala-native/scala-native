@@ -1,6 +1,7 @@
-package scala.scalanative.posix.sys
+package scala.scalanative
+package posix.sys
 
-import scala.scalanative.native.{CUnsignedInt, extern, CInt}
+import native.{CUnsignedInt, extern, CInt}
 
 /**
  * Created by remi on 28/02/17.

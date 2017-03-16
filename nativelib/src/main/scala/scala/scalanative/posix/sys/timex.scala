@@ -1,8 +1,9 @@
-package scala.scalanative.posix.sys
+package scala.scalanative
+package posix.sys
 
-import scala.scalanative.native._
-import scala.scalanative.posix.sys.types.suseconds_t
-import scala.scalanative.runtime.time.time_t
+import native._
+import types.suseconds_t
+import native.time.time_t
 
 /**
  * Created by remi on 01/03/17.

@@ -1,10 +1,11 @@
-package scala.scalanative.posix.sys
+package scala.scalanative
+package posix.sys
 
-import scala.scalanative.native.Nat._
-import scala.scalanative.native._
-import scala.scalanative.posix.sys.types.ssize_t
-import scala.scalanative.posix.sys.uio.iovec
-import scala.scalanative.runtime.time.timespec
+import native.Nat._
+import native._
+import native.time.timespec
+import types.ssize_t
+import uio.iovec
 
 // http://man7.org/linux/man-pages/man7/socket.7.html
 

@@ -1,7 +1,7 @@
 package scala.scalanative
 package posix
 
-import scala.scalanative.native._
+import native._
 
 @extern
 object fcntl {
