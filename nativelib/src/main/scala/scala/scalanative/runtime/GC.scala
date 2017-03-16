@@ -14,4 +14,6 @@ object GC {
   def malloc(size: CSize): Ptr[Byte] = extern
   @name("scalanative_alloc_raw_atomic")
   def malloc_atomic(size: CSize): Ptr[Byte] = extern
+  @name("scalanative_collect")
+  def collect(): Unit = extern
 }

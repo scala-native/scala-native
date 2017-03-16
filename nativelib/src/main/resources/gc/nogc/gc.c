@@ -36,3 +36,5 @@ void* scalanative_alloc(void* info, size_t size) {
     *alloc = info;
     return (void*) alloc;
 }
+
+void scalanative_collect() {}

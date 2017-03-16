@@ -2,16 +2,15 @@ import scala.util.Try
 import scalanative.tools.OptimizerReporter
 import scalanative.sbtplugin.ScalaNativePluginInternal.nativeOptimizerReporter
 import java.io.File.pathSeparator
-import scala.scalanative.sbtplugin.gc._
 
 val toolScalaVersion = "2.10.6"
 
 val libScalaVersion = "2.11.8"
 
 lazy val baseSettings = Seq(
-    organization := "org.scala-native",
-    version := nativeVersion
-  ) ++ gcSettings
+  organization := "org.scala-native",
+  version := nativeVersion
+)
 
 addCommandAlias(
   "rebuild",
@@ -35,10 +34,6 @@ addCommandAlias(
     "benchmarks/run",
     "scripted"
   ).mkString(";", ";", "")
-)
-
-lazy val gcSettings = Seq(
-  nativeGC := BoehmGC
 )
 
 lazy val publishSnapshot =
@@ -181,7 +176,7 @@ lazy val projectSettings =
   ScalaNativePlugin.projectSettings ++ Seq(
     scalaVersion := libScalaVersion,
     resolvers := Nil
-  ) ++ gcSettings
+  )
 
 lazy val util =
   project

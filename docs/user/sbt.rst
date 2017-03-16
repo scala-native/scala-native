@@ -43,6 +43,7 @@ Name                     Type            Description
 ``nativeClangPP``        ``File``        Path to ``clang++`` command
 ``nativeCompileOptions`` ``Seq[String]`` Extra options passed to clang verbatim
 ``nativeMode``           ``String``      Either ``"debug"`` or ``"release"`` (1)
+``nativeGC``             ``String``      Either ``"nogc"`` or ``"boehmgc"``
 ======================== =============== =======================================
 
 See `Compilation modes`_ for details.

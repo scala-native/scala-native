@@ -4,7 +4,6 @@ package sbtplugin
 import util._
 
 import sbtcrossproject.CrossPlugin.autoImport._
-import gc._
 import ScalaNativePlugin.autoImport._
 
 import scalanative.nir
@@ -19,6 +18,7 @@ import KeyRanks.DTask
 import scala.util.Try
 
 import System.{lineSeparator => nl}
+import java.io.File
 
 object ScalaNativePluginInternal {
 
@@ -139,11 +139,11 @@ object ScalaNativePluginInternal {
   def compileCSources(clang: File,
                       clangpp: File,
                       cwd: File,
-                      gc: GarbageCollector,
+                      gc: String,
                       logger: Logger): Boolean = {
 
-    val cpaths   = gc.filterFiles((cwd ** "*.c").get, cwd).map(abs)
-    val cpppaths = gc.filterFiles((cwd ** "*.cpp").get, cwd).map(abs)
+    val cpaths   = filterGCSources(gc, (cwd ** "*.c").get, cwd).map(abs)
+    val cpppaths = filterGCSources(gc, (cwd ** "*.cpp").get, cwd).map(abs)
     val paths    = cpaths ++ cpppaths
 
     paths.par
@@ -195,7 +195,7 @@ object ScalaNativePluginInternal {
                         applinks: Seq[String],
                         compileOpts: Seq[String],
                         linkingOpts: Seq[String],
-                        gc: GarbageCollector,
+                        gc: String,
                         logger: Logger): Unit =
     logger.time("Compiling LLVM IR to native code") {
       val outpath = abs(binary)
@@ -224,7 +224,7 @@ object ScalaNativePluginInternal {
           case "Mac OS X" => Seq.empty
           case _          => Seq("unwind", "unwind-" + arch)
         }
-        librt ++ libunwind ++ applinks ++ gc.links
+        librt ++ libunwind ++ applinks ++ garbageCollector(gc).links
       }
       val linkopts  = links.map("-l" + _) ++ linkingOpts
       val targetopt = Seq("-target", compileTarget)
@@ -311,7 +311,7 @@ object ScalaNativePluginInternal {
     },
     nativeLinkerReporter := tools.LinkerReporter.empty,
     nativeOptimizerReporter := tools.OptimizerReporter.empty,
-    nativeGC := BoehmGC,
+    nativeGC := "boehmgc",
     nativeNativelib := {
       val nativelib = (crossTarget in Compile).value / "nativelib"
       val clang     = nativeClang.value
@@ -487,5 +487,32 @@ object ScalaNativePluginInternal {
     case value =>
       throw new MessageOnlyException(
         "nativeMode can be either \"debug\" or \"release\", not: " + value)
+  }
+
+  private def garbageCollector(gc: String) = gc match {
+    case "nogc"    => NoGC
+    case "boehmgc" => BoehmGC
+    case value =>
+      throw new MessageOnlyException(
+        "nativeGC can be either \"nogc\" or \"boehmgc\", not: " + value)
+  }
+
+  /**
+   * Removes all files specific to other gcs.
+   */
+  private def filterGCSources(gcName: String,
+                              files: Seq[File],
+                              nativelib: File) = {
+    val gc = garbageCollector(gcName)
+    // Directory in nativelib containing the garbage collectors
+    val garbageCollectorsDir = "gc"
+    val specificDir          = s"$garbageCollectorsDir/${gc.dir}"
+
+    def isOtherGC(path: String, nativelib: File) = {
+      val nativeGCPath = nativelib.toPath.resolve(garbageCollectorsDir)
+      path.contains(nativeGCPath.toString) && !path.contains(specificDir)
+    }
+
+    files.filterNot(f => isOtherGC(f.getPath().toString, nativelib))
   }
 }

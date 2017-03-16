@@ -18,5 +18,9 @@ void* scalanative_alloc_raw(size_t size) {
 }
 
 void* scalanative_alloc_raw_atomic(size_t size) {
-    return scalanative_alloc_raw(size);
+    return GC_malloc_atomic(size);
+}
+
+void scalanative_collect() {
+    GC_gcollect();
 }
