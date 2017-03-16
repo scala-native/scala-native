@@ -23,7 +23,12 @@ object System {
   def identityHashCode(x: Object): scala.Int =
     x.cast[Word].hashCode
 
-  def getenv(name: String): String                      = ???
+  def getenv(name: String): String = {
+    val cResult = stdlib.getenv(toCString(name))
+    fromCString(cResult)
+  }
+
+  def getenv(): Map[String, String]                     = ???
   def clearProperty(key: String): String                = ???
   def getProperties(): Properties                       = ???
   def getProperty(key: String): String                  = ???
