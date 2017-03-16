@@ -1,6 +1,7 @@
-package scala.scalanative.posix
+package scala.scalanative
+package posix
 
-import scala.scalanative.native.extern
+import native.extern
 
 /**
  * Created by remi on 28/02/17.

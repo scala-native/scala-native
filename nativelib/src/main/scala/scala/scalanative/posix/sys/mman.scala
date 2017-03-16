@@ -1,7 +1,8 @@
-package scala.scalanative.posix.sys
+package scala.scalanative
+package posix.sys
 
-import scala.scalanative.native._
-import scala.scalanative.posix.sys.types.{mode_t, off_t}
+import native._
+import types.{mode_t, off_t}
 
 /**
  * Created by remi on 14/03/17.

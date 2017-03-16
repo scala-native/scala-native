@@ -1,8 +1,9 @@
-package scala.scalanative.posix
+package scala.scalanative
+package posix
 
-import scala.scalanative.native._
-import scala.scalanative.posix.sys.types.pid_t
-import scala.scalanative.runtime.time.timespec
+import native._
+import native.time.timespec
+import sys.types.pid_t
 
 /**
  * Created by remi on 14/03/17.

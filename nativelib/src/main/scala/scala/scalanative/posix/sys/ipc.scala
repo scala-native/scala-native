@@ -1,6 +1,7 @@
-package scala.scalanative.posix.sys
+package scala.scalanative
+package posix.sys
 
-import scala.scalanative.native.{name, extern}
+import native.{name, extern}
 
 /**
  * Created by remi on 01/03/17.
