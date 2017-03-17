@@ -56,9 +56,11 @@ abstract class FileChannel protected () extends AbstractInterruptibleChannel wit
 
 object FileChannel {
   sealed trait MapMode
-  case object PRIVATE    extends MapMode
-  case object READ_ONLY  extends MapMode
-  case object READ_WRITE extends MapMode
+  object MapMode {
+    case object PRIVATE    extends MapMode
+    case object READ_ONLY  extends MapMode
+    case object READ_WRITE extends MapMode
+  }
 
   // TODO:
   def open(path: Path, options: Set[_ <: OpenOption], attrs: FileAttribute[_]*): FileChannel =
