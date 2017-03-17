@@ -26,7 +26,7 @@ object System {
   def getenv(name: String): String = {
     val cResult = Option(stdlib.getenv(toCString(name)))
     cResult match {
-      case None => null
+      case None    => null
       case Some(x) => fromCString(x)
     }
   }
