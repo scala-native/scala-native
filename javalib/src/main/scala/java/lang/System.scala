@@ -24,8 +24,11 @@ object System {
     x.cast[Word].hashCode
 
   def getenv(name: String): String = {
-    val cResult = stdlib.getenv(toCString(name))
-    fromCString(cResult)
+    val cResult = Option(stdlib.getenv(toCString(name)))
+    cResult match {
+      case None => null
+      case Some(x) => fromCString(x)
+    }
   }
 
   def getenv(): Map[String, String]                     = ???
