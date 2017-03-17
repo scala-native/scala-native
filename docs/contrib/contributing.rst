@@ -3,26 +3,27 @@
 Contributing guidelines
 =======================
 
-Very important notice about the Javalib
----------------------------------------
+Very important notice about Javalib
+-----------------------------------
 
-Scala Native contains a reimplementation of part of the JDK in Scala.
+Scala Native contains a re-implementation of part of Java.
 
-***To contribute to this code, it is strictly forbidden to even look at the
-source code of the Oracle JDK or OpenJDK!***
+Although the `GPL and Scala License are compatible`_ and the `GPL and
+Scala CLA are compatible`_, EPFL wish to distribute scala native
+under a permissive license.
 
-This is for license considerations: these JDKs are under a GPL-based license,
-which is not compatible with our BSD 3-clause license.
+When you sign the `Scala CLA`_ you are confirming that your
+contributions are your own creation. This is especially important, as
+it denies you the ability to copy any source code, e.g. Android,
+OpenJDK, Apache Harmony, GNU Classpath or Scala.js.
 
-Non Compatible license:
+However, we are prepared to accept contributions that include code
+copied from `Scala.js`_ or `Apache Harmony project`_ on a case-by-case
+basis. Such contributions must raise this and you may be asked to
+explicitly confirm that such code is your own creation. In such cases,
+you must fulfil your obligations and include the relevant copyright /
+license information.
 
-* Android libcore (GPL)
-* OpenJDK (GPL)
-
-Compatible license source code:
-
-* `Scala.js`_ (Scala License <=> BSD 3-clause)
-* `Apache Harmony project`_ (Apache 2) (Discontinued)
 
 Coding style
 ------------
@@ -152,3 +153,5 @@ followed by details of the commit, in the form of free text, or bulleted list.
 .. _DRY: http://programmer.97things.oreilly.com/wiki/index.php/Don%27t_Repeat_Yourself
 .. _Boy Scout Rule: http://programmer.97things.oreilly.com/wiki/index.php/The_Boy_Scout_Rule
 .. _Git Workflow: http://sandofsky.com/blog/git-workflow.html
+.. _GPL and Scala License are compatible: https://www.gnu.org/licenses/license-list.html#ModifiedBSD
+.. _GPL and Scala CLA are compatible: https://www.gnu.org/licenses/license-list.html#apache2
