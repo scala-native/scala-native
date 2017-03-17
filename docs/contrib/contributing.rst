@@ -21,10 +21,8 @@ authorship of your contribution.
 
 However, we are prepared to accept contributions that include code
 copied from `Scala.js`_ or `Apache Harmony project`_ on a case-by-case
-basis. Such contributions must raise this and you may be asked to
-explicitly confirm that such code is your own creation. In such cases,
-you must fulfil your obligations and include the relevant copyright /
-license information.
+basis. In such cases, you must fulfil your obligations and include the
+relevant copyright / license information.
 
 
 Coding style
