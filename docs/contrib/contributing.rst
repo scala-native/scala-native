@@ -15,7 +15,9 @@ under a permissive license.
 When you sign the `Scala CLA`_ you are confirming that your
 contributions are your own creation. This is especially important, as
 it denies you the ability to copy any source code, e.g. Android,
-OpenJDK, Apache Harmony, GNU Classpath or Scala.js.
+OpenJDK, Apache Harmony, GNU Classpath or Scala.js. To be clear, you
+are personally liable if you provide false information regarding the
+authorship of your contribution.
 
 However, we are prepared to accept contributions that include code
 copied from `Scala.js`_ or `Apache Harmony project`_ on a case-by-case
