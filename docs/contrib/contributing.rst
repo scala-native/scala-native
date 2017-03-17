@@ -6,7 +6,7 @@ Contributing guidelines
 Very important notice about Javalib
 -----------------------------------
 
-Scala Native contains a re-implementation of part of Java.
+Scala Native contains a re-implementation of part of the JDK.
 
 Although the `GPL and Scala License are compatible`_ and the `GPL and
 Scala CLA are compatible`_, EPFL wish to distribute scala native
