@@ -22,9 +22,9 @@ object time {
 
   // Types
 
-  type tm       = CStruct9[CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt]
-  type time_t   = CStruct0
-  type clock_t  = CStruct0
+  type tm      = CStruct9[CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt]
+  type time_t  = CLong
+  type clock_t = CLong
 
   // Macros
 
