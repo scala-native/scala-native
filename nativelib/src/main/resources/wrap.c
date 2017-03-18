@@ -144,10 +144,6 @@ clock_t scalanative_libc_clocks_per_sec() {
   return CLOCKS_PER_SEC;
 }
 
-int scalanative_libc_time_utc() {
-  return TIME_UTC;
-}
-
 int scalanative_math_errno() {
     return MATH_ERRNO;
 }
