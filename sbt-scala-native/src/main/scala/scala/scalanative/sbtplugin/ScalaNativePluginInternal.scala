@@ -278,6 +278,8 @@ object ScalaNativePluginInternal {
       inConfig(Compile)(nativeMissingDependenciesTask) ++
       inConfig(Test)(nativeMissingDependenciesTask)
 
+  private val clangVersions = Seq(("3", "8"), ("3", "7"))
+
   lazy val unscopedSettings = Seq(
     libraryDependencies ++= Seq(
       "org.scala-native" %%% "nativelib" % nativeVersion,
@@ -287,11 +289,17 @@ object ScalaNativePluginInternal {
     addCompilerPlugin(
       "org.scala-native" % "nscplugin" % nativeVersion cross CrossVersion.full),
     nativeSharedLibrary := false,
-    nativeClang := {
-      discover("clang", Seq(("3", "8"), ("3", "7")))
+    nativeClang := None,
+    nativeClangPP := None,
+    nativeFindClang := {
+      nativeClang.value.getOrElse(
+        discover("clang", clangVersions)
+      )
     },
-    nativeClangPP := {
-      discover("clang++", Seq(("3", "8"), ("3", "7")))
+    nativeFindClangPP := {
+      nativeClang.value.getOrElse(
+        discover("clang++", clangVersions)
+      )
     },
     nativeCompileOptions := {
       mode(nativeMode.value) match {
@@ -314,8 +322,8 @@ object ScalaNativePluginInternal {
     nativeGC := "boehm",
     nativeNativelib := {
       val nativelib = (crossTarget in Compile).value / "nativelib"
-      val clang     = nativeClang.value
-      val clangpp   = nativeClangPP.value
+      val clang     = nativeFindClang.value
+      val clangpp   = nativeFindClangPP.value
       val jar = (fullClasspath in Compile).value
         .map(entry => abs(entry.data))
         .collectFirst {
@@ -353,8 +361,8 @@ object ScalaNativePluginInternal {
 
       logger.time("Total") {
         val nativelib   = nativeNativelib.value
-        val clang       = nativeClang.value
-        val clangpp     = nativeClangPP.value
+        val clang       = nativeFindClang.value
+        val clangpp     = nativeFindClangPP.value
         val compileOpts = nativeCompileOptions.value
         val linkingOpts = nativeLinkingOptions.value
         checkThatClangIsRecentEnough(clang)

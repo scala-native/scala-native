@@ -16,9 +16,17 @@ object ScalaNativePlugin extends AutoPlugin {
 
     val nativeVersion = nir.Versions.current
 
-    val nativeClang = settingKey[File]("Location of the clang compiler.")
+    val nativeClang =
+      settingKey[Option[File]]("Location of the clang compiler.")
 
-    val nativeClangPP = settingKey[File]("Location of the clang++ compiler.")
+    val nativeClangPP =
+      settingKey[Option[File]]("Location of the clang++ compiler.")
+
+    val nativeFindClang =
+      taskKey[File]("Find the location of the clang compiler.")
+
+    val nativeFindClangPP =
+      taskKey[File]("Find the location of the clang++ compiler.")
 
     val nativeCompileOptions =
       settingKey[Seq[String]](
@@ -38,7 +46,7 @@ object ScalaNativePlugin extends AutoPlugin {
       settingKey[String]("Compilation mode, either \"debug\" or \"release\".")
 
     val nativeGC =
-      taskKey[String]("GC choice, either \"none\" or \"boehm\".")
+      settingKey[String]("GC choice, either \"none\" or \"boehm\".")
   }
 
   override def projectSettings: Seq[Setting[_]] = (
