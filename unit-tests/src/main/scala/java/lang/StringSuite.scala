@@ -95,4 +95,31 @@ object StringSuite extends tests.Suite {
     assert("fubår".lastIndexOf("a", 4) == -1)
     assert("fubår".lastIndexOf(97, 4) == -1)
   }
+
+  test("toUpperCase") {
+    assert("".toUpperCase() equals "")
+    // ascii
+    assert("Hello".toUpperCase() equals "HELLO")
+    // latin
+    assert("Perché".toUpperCase() equals "PERCHÉ")
+    // high - 0x10400 or \ud801\udc00
+    assert("𐐨aaaa".toUpperCase equals "𐐀AAAA")
+    assert("aaaa𐐨".toUpperCase equals "AAAA𐐀")
+    assert("aa𐐨aa".toUpperCase equals "AA𐐀AA")
+    // partial in surrogate range
+    // case of poor slicing of string
+    assert("\ud801aaaa".toUpperCase equals "\ud801AAAA")
+    assert("aaaa\ud801".toUpperCase equals "AAAA\ud801")
+    assert("\udc00aaaa".toUpperCase equals "\udc00AAAA")
+    assert("aaaa\udc00".toUpperCase equals "AAAA\udc00")
+  }
+
+  test("toLowerCase") {
+    assert("".toLowerCase() equals "")
+    assert("Hello".toLowerCase() equals "hello")
+    assert("PERCHÉ".toLowerCase() equals "perché")
+    assert("𐐀AAAA".toLowerCase equals "𐐨aaaa")
+    assert("AAAA𐐀".toLowerCase equals "aaaa𐐨")
+    assert("AA𐐀AA".toLowerCase equals "aa𐐨aa")
+  }
 }
