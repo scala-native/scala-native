@@ -200,7 +200,7 @@ pointers and do not have a corresponding first-class values backing them.
       val ptr = native.stackalloc[native.CStruct2[Int, Int]]
       !ptr._1 = 10
       !ptr._2 = 20
-      println(s"first ${!ptr_.1}, second ${!ptr._2}")
+      println(s"first ${!ptr._1}, second ${!ptr._2}")
 
   Here ``_N`` computes a derived pointer that corresponds to memory
   occupied by field number N.
