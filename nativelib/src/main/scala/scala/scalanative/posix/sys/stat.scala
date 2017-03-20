@@ -4,7 +4,7 @@ package posix.sys
 import native.Nat._2
 import native._
 import types._
-import runtime.time.{timespec, time_t}
+import native.time.{timespec, time_t}
 
 /**
  * Created by remi on 01/03/17.
