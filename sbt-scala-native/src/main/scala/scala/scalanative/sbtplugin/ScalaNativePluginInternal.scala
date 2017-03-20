@@ -108,7 +108,7 @@ object ScalaNativePluginInternal {
     }
 
     def running(command: Seq[String]): Unit =
-      logger.info("running" + nl + command.mkString(nl + "\t"))
+      logger.debug("running" + nl + command.mkString(nl + "\t"))
   }
 
   /** Compiles application nir to llvm ir. */
