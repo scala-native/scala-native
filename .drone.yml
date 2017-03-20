@@ -1,0 +1,24 @@
+pipeline:
+  sftp_cache_restore:
+    image: plugins/sftp-cache
+    restore: true
+    mount:
+      - /drone/.ivy2
+      - /drone/.sbt
+      - /drone/.git
+
+  test:
+    image: scalanative/scalanative-drone:0.2.4
+    commands:
+      - export SBT_OPTS="-Xmx8G -Dsbt.log.noformat=true"
+      - sbt rebuild
+      - sbt test-all
+
+  # Save folders in distributed cache
+  sftp_cache_rebuild:
+    image: plugins/sftp-cache
+    rebuild: true
+    mount:
+      - /drone/.ivy2
+      - /drone/.sbt
+      - /drone/.git
