@@ -251,8 +251,9 @@ object ScalaNativePluginInternal {
     nativeAvailableDependencies := ResourceScope { implicit scope =>
       val forceCompile = compileTask.value
 
-      val globals = fullClasspath.value.flatMap(p =>
-        tools.LinkerPath(VirtualDirectory.real(p.data)).globals.toSeq)
+      val globals = fullClasspath.value
+        .collect { case p if p.data.exists => p.data }
+        .flatMap(p => tools.LinkerPath(VirtualDirectory.real(p)).globals.toSeq)
 
       globals.map(_.show).sorted
     }
