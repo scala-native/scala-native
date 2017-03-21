@@ -1,25 +1,21 @@
-#include <gc.h>
-#include "gc.h"
-#include <stdio.h>
 #include <stdlib.h>
+#include <sys/mman.h>
 
-// Dummy GC that allocates memory in 4M chunks and never frees.
+// Dummy GC that maps 1tb of memory and allocates but never frees.
 
 void* start = 0;
 void* last = 0;
 
-#define CHUNK 4*1024*1024
+#define CHUNK 1024*1024*1024*1024L
 
 void scalanative_init() {
-    start = malloc(CHUNK);
+    start = mmap(NULL, CHUNK, PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     last = start;
 }
 
 void* scalanative_alloc_raw(size_t size) {
-    size = size + (16 - size % 16);
-    if(size >= CHUNK) {
-        return malloc(size);
-    } else if (start != 0 && last + size < start + CHUNK) {
+    size = size + (8 - size % 8);
+    if (start != 0) {
         void* alloc = last;
         last += size;
         return alloc;
