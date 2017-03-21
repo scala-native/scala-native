@@ -12,3 +12,15 @@ void* scalanative_alloc(void* info, size_t size) {
     *alloc = info;
     return (void*) alloc;
 }
+
+void* scalanative_alloc_raw(size_t size) {
+    return GC_malloc(size);
+}
+
+void* scalanative_alloc_raw_atomic(size_t size) {
+    return GC_malloc_atomic(size);
+}
+
+void scalanative_collect() {
+    GC_gcollect();
+}

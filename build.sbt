@@ -280,7 +280,11 @@ lazy val nativelib =
         IO.withTemporaryDirectory { tmp =>
           IO.copyDirectory(baseDirectory.value, tmp)
           scala.scalanative.sbtplugin.ScalaNativePluginInternal
-            .compileCSources(clang, clangpp, tmp, streams.value.log)
+            .compileCSources(clang,
+                             clangpp,
+                             tmp,
+                             nativeGC.value,
+                             streams.value.log)
         }
       if (compileSuccess) {
         (compile in Compile).value

@@ -4,6 +4,7 @@ import java.io.{InputStream, PrintStream}
 import java.util.Properties
 import scala.scalanative.native._
 import scala.scalanative.runtime.time
+import scala.scalanative.runtime.GC
 
 final class System private ()
 
@@ -35,6 +36,8 @@ object System {
   var in: InputStream  = _
   var out: PrintStream = new PrintStream(new CFileOutputStream(stdio.stdout))
   var err: PrintStream = new PrintStream(new CFileOutputStream(stdio.stderr))
+
+  def gc(): Unit = GC.collect()
 
   private class CFileOutputStream(stream: Ptr[stdio.FILE])
       extends java.io.OutputStream {
