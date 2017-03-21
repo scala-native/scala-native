@@ -311,7 +311,7 @@ object ScalaNativePluginInternal {
     },
     nativeLinkerReporter := tools.LinkerReporter.empty,
     nativeOptimizerReporter := tools.OptimizerReporter.empty,
-    nativeGC := "boehmgc",
+    nativeGC := "boehm",
     nativeNativelib := {
       val nativelib = (crossTarget in Compile).value / "nativelib"
       val clang     = nativeClang.value
@@ -490,11 +490,11 @@ object ScalaNativePluginInternal {
   }
 
   private def garbageCollector(gc: String) = gc match {
-    case "nogc"    => NoGC
-    case "boehmgc" => BoehmGC
+    case "none"  => GarbageCollector.None
+    case "boehm" => GarbageCollector.Boehm
     case value =>
       throw new MessageOnlyException(
-        "nativeGC can be either \"nogc\" or \"boehmgc\", not: " + value)
+        "nativeGC can be either \"none\" or \"boehm\", not: " + value)
   }
 
   /**

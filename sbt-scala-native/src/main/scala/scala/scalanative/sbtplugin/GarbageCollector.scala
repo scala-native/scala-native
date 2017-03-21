@@ -9,6 +9,7 @@ import java.io.File
  */
 sealed abstract class GarbageCollector(val dir: String,
                                        val links: Seq[String] = Nil)
-
-object NoGC extends GarbageCollector("nogc")
-object BoehmGC extends GarbageCollector("boehm", Seq("gc"))
+object GarbageCollector {
+  object None  extends GarbageCollector("none")
+  object Boehm extends GarbageCollector("boehm", Seq("gc"))
+}

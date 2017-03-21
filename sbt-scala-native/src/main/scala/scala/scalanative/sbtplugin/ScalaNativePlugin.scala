@@ -38,7 +38,7 @@ object ScalaNativePlugin extends AutoPlugin {
       settingKey[String]("Compilation mode, either \"debug\" or \"release\".")
 
     val nativeGC =
-      settingKey[String]("GC choice, either \"nogc\" or \"boehmgc\".")
+      settingKey[String]("GC choice, either \"none\" or \"boehm\".")
   }
 
   override def projectSettings: Seq[Setting[_]] = (
