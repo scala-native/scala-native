@@ -43,7 +43,6 @@ Name                     Type            Description
 ``nativeClangPP``        ``File``        Path to ``clang++`` command
 ``nativeCompileOptions`` ``Seq[String]`` Extra options passed to clang verbatim
 ``nativeMode``           ``String``      Either ``"debug"`` or ``"release"`` (1)
-``nativeGC``             ``String``      Either ``"none"`` or ``"boehm"``
 ======================== =============== =======================================
 
 See `Compilation modes`_ for details.
@@ -59,6 +58,7 @@ Name           Description
 ``run``        Compile, link and run the generated binary
 ``package``    Similar to standard package with addition of NIR
 ``publish``    Similar to standard publish with addition of NIR (1)
+``nativeGC``   Set the GC, either ``"none"`` or ``"boehm"``
 ============== ====================================================
 
 See `Publishing`_ for details.
