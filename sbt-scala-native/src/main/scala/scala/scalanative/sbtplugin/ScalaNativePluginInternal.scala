@@ -287,8 +287,8 @@ object ScalaNativePluginInternal {
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
     initialize := {
       val res = initialize.value
-      if (sys.props("java.specification.version") != "1.8")
-        sys.error("Java 8 is required for this project.")
+      if (sys.props("java.specification.version").toDouble < 1.8)
+        sys.error("Java 8 or more recent is required for this project.")
     },
     addCompilerPlugin(
       "org.scala-native" % "nscplugin" % nativeVersion cross CrossVersion.full),
