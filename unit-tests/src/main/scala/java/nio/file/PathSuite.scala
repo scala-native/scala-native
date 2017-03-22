@@ -93,4 +93,13 @@ object PathSuite extends tests.Suite {
     assert(Paths.get("/").getRoot.toString == "/")
   }
 
+  test("Path.isAbsolute") {
+    assert(!Paths.get("").isAbsolute)
+    assert(!Paths.get("foo").isAbsolute)
+    assert(!Paths.get("foo/bar").isAbsolute)
+    assert(Paths.get("/foo").isAbsolute)
+    assert(Paths.get("/foo/bar").isAbsolute)
+    assert(Paths.get("/foo///bar").isAbsolute)
+    assert(Paths.get("/").isAbsolute)
+  }
 }
