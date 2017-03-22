@@ -10,8 +10,8 @@ import java.util.{ArrayList, Set}
 import scala.scalanative.native.{CUnsignedLong, statvfs, toCString}
 
 class UnixFileSystem(override val provider: FileSystemProvider,
-                     val defaultDirectory: String,
-                     val root: String)
+                     val root: String,
+                     val defaultDirectory: String)
     extends FileSystem {
   private var closed: Boolean = false
 
