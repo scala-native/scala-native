@@ -3,21 +3,30 @@
 
 // Dummy GC that maps 1tb of memory and allocates but never frees.
 
-void* start = 0;
-void* last = 0;
+void* current = 0;
 
+// Map 1TB
 #define CHUNK 1024*1024*1024*1024L
+// Allow read and write
+#define DUMMY_GC_PROT (PROT_READ | PROT_WRITE)
+// Map private anonymous memory, and prevent from reserving swap
+#define DUMMY_GC_FLAGS (MAP_NORESERVE | MAP_PRIVATE | MAP_ANONYMOUS)
+// Map anonymous memory (not a file)
+#define DUMMY_GC_FD -1
+#define DUMMY_GC_FD_OFFSET 0
+
+
 
 void scalanative_init() {
-    start = mmap(NULL, CHUNK, PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    last = start;
+    current = mmap(NULL, CHUNK, DUMMY_GC_PROT, DUMMY_GC_FLAGS, DUMMY_GC_FD, DUMMY_GC_FD_OFFSET);
 }
 
+// Allocates without bound checks, fails once it runs out of memory
 void* scalanative_alloc_raw(size_t size) {
     size = size + (8 - size % 8);
-    if (start != 0) {
-        void* alloc = last;
-        last += size;
+    if (current != 0) {
+        void* alloc = current;
+        current += size;
         return alloc;
     } else {
         scalanative_init();
