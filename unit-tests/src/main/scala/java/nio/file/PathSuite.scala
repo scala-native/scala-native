@@ -73,4 +73,14 @@ object PathSuite extends tests.Suite {
     assert(Paths.get("/foo/bar/baz").subpath(2, 3).toString == "baz")
   }
 
+  test("Path.getParent") {
+    assert(Paths.get("").getParent == null)
+    assert(Paths.get("foo").getParent == null)
+    assert(Paths.get("/").getParent == null)
+    assert(Paths.get("//").getParent == null)
+    assert(Paths.get("foo/bar").getParent.toString == "foo")
+    assert(Paths.get("/foo/bar").getParent.toString == "/foo")
+    assert(Paths.get("/foo").getParent.toString == "/")
+  }
+
 }

@@ -29,7 +29,8 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
 
   override def getParent(): Path = {
     val nameCount = getNameCount()
-    if (nameCount == 0) null
+    if (nameCount == 0 || (nameCount == 1 && !isAbsolute)) null
+    else if (isAbsolute) new UnixPath(fs, "/" + subpath(0, nameCount - 1).toString)
     else subpath(0, nameCount - 1)
   }
 
