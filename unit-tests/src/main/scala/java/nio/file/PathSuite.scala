@@ -45,4 +45,12 @@ object PathSuite extends tests.Suite {
     assert(Paths.get("foo/bar/baz").endsWith(Paths.get("foo/bar/baz")))
     assert(!Paths.get("foo/bar/baz").endsWith(Paths.get("/foo/bar/baz")))
   }
+
+  test("Path.getFileName") {
+    assert(Paths.get("").getFileName.toString == "")
+    assert(Paths.get("foo").getFileName.toString == "foo")
+    assert(Paths.get("/foo").getFileName.toString == "foo")
+    assert(Paths.get("foo/bar").getFileName.toString == "bar")
+    assert(Paths.get("/foo/bar").getFileName.toString == "bar")
+  }
 }
