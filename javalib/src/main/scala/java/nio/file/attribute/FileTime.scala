@@ -32,7 +32,7 @@ final class FileTime private (instant: Instant) extends Comparable[FileTime] {
 object FileTime {
   def from(value: Long, unit: TimeUnit): FileTime =
     fromMillis(TimeUnit.MILLISECONDS.convert(value, unit))
-  def fromMillis(value: Long):FileTime =
+  def fromMillis(value: Long): FileTime =
     from(Instant.ofEpochMilli(value))
   def from(instant: Instant): FileTime =
     new FileTime(instant)

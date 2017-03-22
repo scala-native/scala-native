@@ -12,4 +12,7 @@ typedef long long scalanative_blkcnt_t;
 typedef long scalanative_blksize_t;
 typedef unsigned long scalanative_nlink_t;
 
+typedef unsigned long scalanative_fsblkcnt_t;
+typedef unsigned long scalanative_fsfilcnt_t;
+
 #endif // __TYPES_H

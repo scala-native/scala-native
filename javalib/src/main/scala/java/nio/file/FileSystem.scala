@@ -9,7 +9,7 @@ import java.util.Set
 abstract class FileSystem extends Closeable {
   def close(): Unit
   def getFileStores(): Iterable[FileStore]
-  def getPath(first: String, more: String*): Path
+  def getPath(first: String, more: Array[String]): Path
   def getPathMatcher(syntaxAndPattern: String): PathMatcher
   def getRootDirectories(): Iterable[Path]
   def getSeparator(): String

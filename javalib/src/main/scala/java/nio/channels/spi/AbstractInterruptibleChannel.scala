@@ -2,7 +2,9 @@ package java.nio.channels.spi
 
 import java.nio.channels.{Channel, InterruptibleChannel}
 
-abstract class AbstractInterruptibleChannel protected () extends Channel with InterruptibleChannel {
+abstract class AbstractInterruptibleChannel protected ()
+    extends Channel
+    with InterruptibleChannel {
 
   private var closed: Boolean = false
 

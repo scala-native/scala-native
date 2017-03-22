@@ -5,7 +5,13 @@ import java.nio.file.{OpenOption, Path}
 import java.nio.file.attribute.FileAttribute
 import spi.AbstractInterruptibleChannel
 
-abstract class FileChannel protected () extends AbstractInterruptibleChannel with SeekableByteChannel with GatheringByteChannel with ScatteringByteChannel {
+import java.util.Set
+
+abstract class FileChannel protected ()
+    extends AbstractInterruptibleChannel
+    with SeekableByteChannel
+    with GatheringByteChannel
+    with ScatteringByteChannel {
 
   def force(metadata: Boolean): Unit
 
@@ -14,7 +20,9 @@ abstract class FileChannel protected () extends AbstractInterruptibleChannel wit
 
   def lock(position: Long, size: Long, shared: Boolean): FileLock
 
-  def map(mode: FileChannel.MapMode, position: Long, size: Long): MappedByteBuffer
+  def map(mode: FileChannel.MapMode,
+          position: Long,
+          size: Long): MappedByteBuffer
 
   def position(): Long
 
@@ -33,7 +41,9 @@ abstract class FileChannel protected () extends AbstractInterruptibleChannel wit
 
   def transferFrom(src: ReadableByteChannel, position: Long, count: Long): Long
 
-  def transferTo(position: Long, count: Long, target: WritableByteChannel): Long
+  def transferTo(position: Long,
+                 count: Long,
+                 target: WritableByteChannel): Long
 
   def truncate(size: Long): FileChannel
 
@@ -51,7 +61,6 @@ abstract class FileChannel protected () extends AbstractInterruptibleChannel wit
 
   def write(buffers: Array[ByteBuffer], offset: Int, length: Int): Long
 
-
 }
 
 object FileChannel {
@@ -63,11 +72,13 @@ object FileChannel {
   }
 
   // TODO:
-  def open(path: Path, options: Set[_ <: OpenOption], attrs: FileAttribute[_]*): FileChannel =
+  def open(path: Path,
+           options: Set[_ <: OpenOption],
+           attrs: Array[FileAttribute[_]]): FileChannel =
     ???
 
   // TODO:
-  def open(path: Path, options: OpenOption*): FileChannel =
+  def open(path: Path, options: Array[OpenOption]): FileChannel =
     ???
 
 }
