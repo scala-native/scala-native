@@ -102,4 +102,23 @@ object PathSuite extends tests.Suite {
     assert(Paths.get("/foo///bar").isAbsolute)
     assert(Paths.get("/").isAbsolute)
   }
+
+  test("Path.iterator") {
+    import scala.language.implicitConversions
+    implicit def iteratorToSeq[T: scala.reflect.ClassTag](it: java.util.Iterator[T]): Seq[T] = {
+      import scala.collection.mutable.UnrolledBuffer
+      val buf = new UnrolledBuffer[T]()
+      while (it.hasNext) buf += it.next()
+      buf
+    }
+
+    assert(Paths.get("").iterator.map(_.toString) == Seq(""))
+    assert(Paths.get("foo").iterator.map(_.toString) == Seq("foo"))
+    assert(Paths.get("foo/bar").iterator.map(_.toString) == Seq("foo", "bar"))
+    assert(Paths.get("foo//bar").iterator.map(_.toString) == Seq("foo", "bar"))
+    assert(Paths.get("/foo").iterator.map(_.toString) == Seq("foo"))
+    assert(Paths.get("/foo/bar").iterator.map(_.toString) == Seq("foo", "bar"))
+    assert(Paths.get("/foo//bar").iterator.map(_.toString) == Seq("foo", "bar"))
+
+  }
 }
