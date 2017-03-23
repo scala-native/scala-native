@@ -1,5 +1,7 @@
 package java.io
 
+import java.nio.file.{FileSystems, Path}
+
 import scala.collection.mutable.UnrolledBuffer
 
 import scala.annotation.tailrec
@@ -74,6 +76,9 @@ class File(_path: String) extends Serializable with Comparable[File] {
 
   def exists(): Boolean =
     access(toCString(path), fcntl.F_OK) == 0
+
+  def toPath(): Path =
+    FileSystems.getDefault().getPath(this.getPath(), Array.empty)
 
   def getPath(): String = path
 

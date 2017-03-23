@@ -52,7 +52,9 @@ object Files {
       } else {
         throw new FileAlreadyExistsException(targetFile.getAbsolutePath)
       }
-    copy(in, out)
+
+    try copy(in, out)
+    finally out.close()
   }
 
   def copy(source: Path, out: OutputStream): Long = {
@@ -62,7 +64,8 @@ object Files {
 
   def copy(source: Path, target: Path, options: Array[CopyOption]): Path = {
     val in = new FileInputStream(source.toFile)
-    copy(in, target, options)
+    try copy(in, target, options)
+    finally in.close()
     target
   }
 
