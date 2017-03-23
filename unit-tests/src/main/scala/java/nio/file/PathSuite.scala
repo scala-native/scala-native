@@ -10,6 +10,8 @@ object PathSuite extends tests.Suite {
     assert(Paths.get("foo//bar").getNameCount == 2)
     assert(Paths.get("foo/bar/baz").getNameCount == 3)
     assert(Paths.get("/foo/bar/baz").getNameCount == 3)
+    assert(Paths.get("././").getNameCount == 2)
+    assert(Paths.get("././ ").getNameCount == 3)
   }
 
   test("Path.getName") {
@@ -83,6 +85,8 @@ object PathSuite extends tests.Suite {
     assert(Paths.get("foo/bar").getParent.toString == "foo")
     assert(Paths.get("/foo/bar").getParent.toString == "/foo")
     assert(Paths.get("/foo").getParent.toString == "/")
+    assert(Paths.get("foo/.").getParent.toString == "foo")
+    assert(Paths.get("./.").getParent.toString == ".")
   }
 
   test("Path.getRoot") {
@@ -154,4 +158,44 @@ object PathSuite extends tests.Suite {
     assert(!Paths.get("/").startsWith("/foo"))
   }
 
+  test("Path.relativize") {
+    assert(Paths.get("").relativize(Paths.get("")).toString == "")
+    assert(Paths.get("foo").relativize(Paths.get("foo/bar")).toString == "bar")
+    assert(Paths.get("foo/bar").relativize(Paths.get("foo")).toString == "..")
+    assert(Paths.get("foo").relativize(Paths.get("bar")).toString == "../bar")
+    assert(
+      Paths
+        .get("foo/bar")
+        .relativize(Paths.get("foo/baz"))
+        .toString == "../baz")
+    assert(Paths.get("").relativize(Paths.get("foo")).toString == "foo")
+    assert(
+      Paths
+        .get("foo/../bar")
+        .relativize(Paths.get("bar"))
+        .toString == "../../../bar")
+
+    assertThrows[IllegalArgumentException] {
+      assert(Paths.get("/").relativize(Paths.get("")).toString == "")
+    }
+
+    assert(Paths.get("/").relativize(Paths.get("/")).toString == "")
+    assert(
+      Paths.get("/foo").relativize(Paths.get("/foo/bar")).toString == "bar")
+    assert(
+      Paths.get("/foo/bar").relativize(Paths.get("/foo")).toString == "..")
+    assert(
+      Paths.get("/foo").relativize(Paths.get("/bar")).toString == "../bar")
+    assert(
+      Paths
+        .get("/foo/bar")
+        .relativize(Paths.get("/foo/baz"))
+        .toString == "../baz")
+    assert(Paths.get("/").relativize(Paths.get("/foo")).toString == "foo")
+    assert(
+      Paths
+        .get("/foo/../bar")
+        .relativize(Paths.get("/bar"))
+        .toString == "../../../bar")
+  }
 }

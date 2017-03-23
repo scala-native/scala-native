@@ -11,7 +11,7 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
     extends Path {
   import UnixPath._
 
-  lazy val path: String = normalized(rawPath)
+  lazy val path: String = removeRedundantSlashes(rawPath)
 
   override def getFileSystem(): FileSystem =
     fs
@@ -91,7 +91,7 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
     endsWith(new UnixPath(fs, other))
 
   override def normalize(): Path =
-    new UnixPath(fs, path)
+    new UnixPath(fs, normalized(path))
 
   override def resolve(other: Path): Path =
     if (other.isAbsolute) other
@@ -110,11 +110,16 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
   override def relativize(other: Path): Path = {
     if (isAbsolute ^ other.isAbsolute) {
       throw new IllegalArgumentException("'other' is different type of Path")
+    } else if (path.isEmpty) {
+      other
     } else if (other.startsWith(this)) {
       other.subpath(getNameCount, other.getNameCount)
+    } else if (getParent() == null) {
+      new UnixPath(fs, "../" + other.toString())
     } else {
-      new UnixPath(fs,
-                   "../" + getParent().relativize(other).toFile().getPath())
+      val next = getParent().relativize(other).toString()
+      if (next.isEmpty) new UnixPath(fs, "..")
+      else new UnixPath(fs, "../" + next)
     }
   }
 
@@ -188,7 +193,6 @@ private object UnixPath {
           case (acc, seg)  => seg :: acc
         }
           .reverse
-          .filterNot(_.isEmpty)
     if (absolute) components.mkString("/", "/", "")
     else components.mkString("", "/", "")
   }
@@ -204,5 +208,25 @@ private object UnixPath {
     }
     buffer
   }
+
+  def removeRedundantSlashes(str: String): String =
+    if (str.length < 2) str
+    else {
+      val buffer   = new StringBuffer(str)
+      var previous = buffer.charAt(0)
+      var i        = 1
+      while (i < buffer.length) {
+        val current = buffer.charAt(i)
+        if (previous == '/' && current == '/') {
+          buffer.deleteCharAt(i)
+        } else {
+          previous = current
+          i += 1
+        }
+      }
+      val result = buffer.toString
+      if (result.length > 1 && result.endsWith("/")) result.init
+      else result
+    }
 
 }
