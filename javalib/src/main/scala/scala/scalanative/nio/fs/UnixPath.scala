@@ -94,9 +94,9 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
     new UnixPath(fs, normalized(path))
 
   override def resolve(other: Path): Path =
-    if (other.isAbsolute) other
-    else if (other.getNameCount == 0) this
-    else new UnixPath(fs, rawPath + "/" + other.toFile().getPath())
+    if (other.isAbsolute || path.isEmpty) other
+    else if (other.toString.isEmpty) this
+    else new UnixPath(fs, rawPath + "/" + other.toString())
 
   override def resolve(other: String): Path =
     resolve(new UnixPath(fs, other))
