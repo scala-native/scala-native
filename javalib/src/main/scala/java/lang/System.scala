@@ -25,11 +25,51 @@ object System {
   def identityHashCode(x: Object): scala.Int =
     x.cast[Word].hashCode
 
-  def clearProperty(key: String): String                = ???
-  def getProperties(): Properties                       = ???
-  def getProperty(key: String): String                  = ???
-  def getProperty(key: String, default: String): String = ???
-  def setProperty(key: String, value: String): String   = ???
+  private def loadProperties() = {
+    val sysProps = new Properties()
+    sysProps.setProperty("java.version", "1.8")
+    sysProps.setProperty("java.vm.specification.version", "1.8")
+    sysProps.setProperty("java.vm.specification.vendor", "Oracle Corporation")
+    sysProps.setProperty("java.vm.specification.name", "Java Virtual Machine Specification")
+    sysProps.setProperty("java.vm.name", "Scala-Native")
+    sysProps.setProperty("java.specification.version", "1.8")
+    sysProps.setProperty("java.specification.version", "1.8")
+    sysProps.setProperty("java.specification.vendor", "Oracle Corporation")
+    sysProps.setProperty("java.specification.name", "Java Platform API Specification")
+    sysProps.setProperty("line.separator", lineSeparator())
+
+    if(Platform.isWindows) {
+      sysProps.setProperty("file.separator", "\\")
+      sysProps.setProperty("path.separator", ";")
+    }
+    else {
+      sysProps.setProperty("file.separator", "/")
+      sysProps.setProperty("path.separator", ":")
+    }
+
+    sysProps
+  }
+
+  private var systemProperties = loadProperties()
+
+  def lineSeparator(): String = {
+    if(Platform.isWindows) "\r\n"
+    else "\n"
+  }
+
+  def getProperties(): Properties                       = systemProperties
+
+  def clearProperty(key: String): String =
+    systemProperties.remove(key).asInstanceOf[String]
+
+  def getProperty(key: String): String =
+    systemProperties.getProperty(key)
+
+  def getProperty(key: String, default: String): String =
+    systemProperties.getProperty(key, default)
+
+  def setProperty(key: String, value: String): String =
+    systemProperties.setProperty(key, value).asInstanceOf[String]
 
   def getenv(): Map[String, String] = envVars
   def getenv(key: String): String   = envVars.get(key)
