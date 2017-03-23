@@ -52,6 +52,8 @@ object PathSuite extends tests.Suite {
     assert(Paths.get("/foo").getFileName.toString == "foo")
     assert(Paths.get("foo/bar").getFileName.toString == "bar")
     assert(Paths.get("/foo/bar").getFileName.toString == "bar")
+    assert(Paths.get("/").getFileName == null)
+    assert(Paths.get("///").getFileName == null)
   }
 
   test("Path.subpath") {
@@ -105,7 +107,8 @@ object PathSuite extends tests.Suite {
 
   test("Path.iterator") {
     import scala.language.implicitConversions
-    implicit def iteratorToSeq[T: scala.reflect.ClassTag](it: java.util.Iterator[T]): Seq[T] = {
+    implicit def iteratorToSeq[T: scala.reflect.ClassTag](
+        it: java.util.Iterator[T]): Seq[T] = {
       import scala.collection.mutable.UnrolledBuffer
       val buf = new UnrolledBuffer[T]()
       while (it.hasNext) buf += it.next()
@@ -118,7 +121,21 @@ object PathSuite extends tests.Suite {
     assert(Paths.get("foo//bar").iterator.map(_.toString) == Seq("foo", "bar"))
     assert(Paths.get("/foo").iterator.map(_.toString) == Seq("foo"))
     assert(Paths.get("/foo/bar").iterator.map(_.toString) == Seq("foo", "bar"))
-    assert(Paths.get("/foo//bar").iterator.map(_.toString) == Seq("foo", "bar"))
+    assert(
+      Paths.get("/foo//bar").iterator.map(_.toString) == Seq("foo", "bar"))
+  }
 
+  test("Path.normalize") {
+    assert(Paths.get("").normalize.toString == "")
+    assert(Paths.get("foo").normalize.toString == "foo")
+    assert(Paths.get("foo/bar").normalize.toString == "foo/bar")
+    assert(Paths.get("foo//bar").normalize.toString == "foo/bar")
+    assert(Paths.get("foo/../bar").normalize.toString == "bar")
+    assert(Paths.get("foo/../../bar").normalize.toString == "../bar")
+    assert(Paths.get("/foo/../../bar").normalize.toString == "/bar")
+    assert(Paths.get("/").normalize.toString == "/")
+    assert(Paths.get("/foo").normalize.toString == "/foo")
+    assert(Paths.get("/foo/bar").normalize.toString == "/foo/bar")
+    assert(Paths.get("/foo//bar").normalize.toString == "/foo/bar")
   }
 }

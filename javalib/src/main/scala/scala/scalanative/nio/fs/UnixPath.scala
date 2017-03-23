@@ -24,8 +24,9 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
     else null
 
   override def getFileName(): Path =
-    if (path.nonEmpty) new UnixPath(fs, split(path, '/').last)
-    else null
+    if (path == "/") null
+    else if (path.isEmpty) this
+    else new UnixPath(fs, split(path, '/').last)
 
   override def getParent(): Path = {
     val nameCount = getNameCount()
@@ -159,7 +160,7 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
   override def equals(obj: Any): Boolean =
     obj match {
       case other: UnixPath =>
-        this.fs == other.fs && this.path == other.path
+        this.fs == other.fs && this.rawPath == other.rawPath
       case _ => false
     }
 
@@ -170,16 +171,22 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
 
 private object UnixPath {
   def normalized(path: String): String = {
-    split(path, '/')
-      .foldLeft(List.empty[String]) {
-        case (acc, "..") => if (acc.isEmpty) List("..") else acc.tail
-        case (acc, ".")  => acc
-        case (acc, "")   => acc
-        case (acc, seg)  => seg :: acc
-      }
-      .reverse
-      .filterNot(_.isEmpty)
-      .mkString("/", "/", "")
+    val absolute = path.startsWith("/")
+    val components =
+      split(path, '/')
+        .foldLeft(List.empty[String]) {
+          case (acc, "..") =>
+            if (acc.isEmpty && absolute) Nil
+            else if (acc.isEmpty) List("..")
+            else acc.tail
+          case (acc, ".") => acc
+          case (acc, "")  => acc
+          case (acc, seg) => seg :: acc
+        }
+        .reverse
+        .filterNot(_.isEmpty)
+    if (absolute) components.mkString("/", "/", "")
+    else components.mkString("", "/", "")
   }
 
   // TODO: Remove once `String.split` is supported.
