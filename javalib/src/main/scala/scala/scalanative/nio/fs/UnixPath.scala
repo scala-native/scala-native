@@ -54,10 +54,12 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
     new UnixPath(fs, (beginIndex until endIndex).map(getName).mkString("/"))
 
   override def startsWith(other: Path): Boolean =
-    if (!isAbsolute()) this.toAbsolutePath.startsWith(other)
-    else if (fs.provider == other.getFileSystem.provider) {
+    if (fs.provider == other.getFileSystem.provider) {
       val otherLength = other.getNameCount()
-      if (otherLength > getNameCount()) false
+      val thisLength  = getNameCount()
+
+      if (otherLength > thisLength) false
+      else if (isAbsolute ^ other.isAbsolute) false
       else {
         (0 until otherLength).forall(i => getName(i) == other.getName(i))
       }
@@ -106,7 +108,9 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
     resolveSibling(new UnixPath(fs, other))
 
   override def relativize(other: Path): Path = {
-    if (other.startsWith(this)) {
+    if (isAbsolute ^ other.isAbsolute) {
+      throw new IllegalArgumentException("'other' is different type of Path")
+    } else if (other.startsWith(this)) {
       other.subpath(getNameCount, other.getNameCount)
     } else {
       new UnixPath(fs,
@@ -171,7 +175,7 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
 
 private object UnixPath {
   def normalized(path: String): String = {
-    val absolute = path.startsWith("/")
+    val absolute   = path.startsWith("/")
     val components =
       split(path, '/')
         .foldLeft(List.empty[String]) {
@@ -179,12 +183,12 @@ private object UnixPath {
             if (acc.isEmpty && absolute) Nil
             else if (acc.isEmpty) List("..")
             else acc.tail
-          case (acc, ".") => acc
-          case (acc, "")  => acc
-          case (acc, seg) => seg :: acc
+          case (acc, ".")  => acc
+          case (acc, "")   => acc
+          case (acc, seg)  => seg :: acc
         }
-        .reverse
-        .filterNot(_.isEmpty)
+          .reverse
+          .filterNot(_.isEmpty)
     if (absolute) components.mkString("/", "/", "")
     else components.mkString("", "/", "")
   }
