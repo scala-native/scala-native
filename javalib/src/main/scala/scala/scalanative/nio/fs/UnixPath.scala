@@ -183,7 +183,7 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
 
 private object UnixPath {
   def normalized(path: String): String = {
-    val absolute   = path.startsWith("/")
+    val absolute = path.startsWith("/")
     val components =
       split(path, '/')
         .foldLeft(List.empty[String]) {
@@ -191,11 +191,11 @@ private object UnixPath {
             if (acc.isEmpty && absolute) Nil
             else if (acc.isEmpty) List("..")
             else acc.tail
-          case (acc, ".")  => acc
-          case (acc, "")   => acc
-          case (acc, seg)  => seg :: acc
+          case (acc, ".") => acc
+          case (acc, "")  => acc
+          case (acc, seg) => seg :: acc
         }
-          .reverse
+        .reverse
     if (absolute) components.mkString("/", "/", "")
     else components.mkString("", "/", "")
   }
