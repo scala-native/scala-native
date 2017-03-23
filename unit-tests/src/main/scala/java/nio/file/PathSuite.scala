@@ -233,4 +233,56 @@ object PathSuite extends tests.Suite {
     assert(
       Paths.get("/foo/../bar").resolve(Paths.get("/bar")).toString == "/bar")
   }
+
+  test("Path.resolveSibling()") {
+    assert(Paths.get("").resolveSibling(Paths.get("")).toString == "")
+    assert(Paths.get("/").resolveSibling(Paths.get("")).toString == "")
+    assert(
+      Paths
+        .get("foo")
+        .resolveSibling(Paths.get("foo/bar"))
+        .toString == "foo/bar")
+    assert(
+      Paths
+        .get("foo/bar")
+        .resolveSibling(Paths.get("foo"))
+        .toString == "foo/foo")
+    assert(Paths.get("foo").resolveSibling(Paths.get("bar")).toString == "bar")
+    assert(
+      Paths
+        .get("foo/bar")
+        .resolveSibling(Paths.get("foo/baz"))
+        .toString == "foo/foo/baz")
+    assert(Paths.get("").resolveSibling(Paths.get("foo")).toString == "foo")
+    assert(
+      Paths
+        .get("foo/../bar")
+        .resolveSibling(Paths.get("bar"))
+        .toString == "foo/../bar")
+
+    assert(Paths.get("/").resolveSibling(Paths.get("/")).toString == "/")
+    assert(
+      Paths
+        .get("/foo")
+        .resolveSibling(Paths.get("/foo/bar"))
+        .toString == "/foo/bar")
+    assert(
+      Paths
+        .get("/foo/bar")
+        .resolveSibling(Paths.get("/foo"))
+        .toString == "/foo")
+    assert(
+      Paths.get("/foo").resolveSibling(Paths.get("/bar")).toString == "/bar")
+    assert(
+      Paths
+        .get("/foo/bar")
+        .resolveSibling(Paths.get("/foo/baz"))
+        .toString == "/foo/baz")
+    assert(Paths.get("/").resolveSibling(Paths.get("/foo")).toString == "/foo")
+    assert(
+      Paths
+        .get("/foo/../bar")
+        .resolveSibling(Paths.get("/bar"))
+        .toString == "/bar")
+  }
 }

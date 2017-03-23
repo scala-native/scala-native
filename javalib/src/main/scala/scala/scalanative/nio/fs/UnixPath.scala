@@ -101,8 +101,11 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
   override def resolve(other: String): Path =
     resolve(new UnixPath(fs, other))
 
-  override def resolveSibling(other: Path): Path =
-    resolve(other.getParent)
+  override def resolveSibling(other: Path): Path = {
+    val parent = getParent()
+    if (parent == null) other
+    else parent.resolve(other)
+  }
 
   override def resolveSibling(other: String): Path =
     resolveSibling(new UnixPath(fs, other))
