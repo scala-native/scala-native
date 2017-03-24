@@ -74,7 +74,15 @@ object Files {
   }
 
   def createDirectories(dir: Path, attrs: Array[FileAttribute[_]]): Path =
-    ???
+    if (exists(dir, Array.empty) && !isDirectory(dir, Array.empty))
+      throw new FileAlreadyExistsException(dir.toString)
+    else if (exists(dir, Array.empty)) dir
+    else {
+      val parent = dir.getParent()
+      if (parent != null) createDirectories(parent, attrs)
+      createDirectory(dir, attrs)
+      dir
+    }
 
   def createDirectory(dir: Path, attrs: Array[FileAttribute[_]]): Path =
     if (exists(dir, Array.empty))
@@ -170,7 +178,11 @@ object Files {
     ???
 
   def isDirectory(path: Path, options: Array[LinkOption]): Boolean =
-    ???
+    if (options.contains(LinkOption.NOFOLLOW_LINKS)) {
+      exists(path, options) && !isSymbolicLink(path)
+    } else {
+      exists(path, options) && path.toFile().isDirectory()
+    }
 
   def isExecutable(path: Path): Boolean =
     ???

@@ -211,6 +211,52 @@ object FilesSuite extends tests.Suite {
     }
   }
 
+  test(
+    "Files.createDirectories can create directories if none of the hierarchy exists") {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val p1  = dir.resolve("p1")
+      val p2  = p1.resolve("p2")
+      val p3  = p2.resolve("p3")
+
+      assert(!Files.exists(p1))
+      assert(!Files.exists(p2))
+      assert(!Files.exists(p3))
+
+      Files.createDirectories(p3)
+      assert(Files.exists(p3))
+    }
+  }
+
+  test(
+    "Files.createDirectories can create directories if some of the hierarchy exists") {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val p1  = dir.resolve("p1")
+      val p2  = p1.resolve("p2")
+      val p3  = p2.resolve("p3")
+      val p4  = p3.resolve("p4")
+
+      assert(!Files.exists(p1))
+      assert(!Files.exists(p2))
+      assert(!Files.exists(p3))
+      assert(!Files.exists(p4))
+
+      Files.createDirectories(p2)
+
+      assert(Files.exists(p1))
+      assert(Files.exists(p2))
+      assert(!Files.exists(p3))
+      assert(!Files.exists(p4))
+
+      Files.createDirectories(p4)
+      assert(Files.exists(p1))
+      assert(Files.exists(p2))
+      assert(Files.exists(p3))
+      assert(Files.exists(p4))
+    }
+  }
+
   private def withTemporaryDirectory(fn: File => Unit) {
     val file = File.createTempFile("test", ".tmp")
     assert(file.delete())
