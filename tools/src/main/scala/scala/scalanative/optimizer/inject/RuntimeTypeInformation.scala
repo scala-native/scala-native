@@ -35,9 +35,6 @@ class RuntimeTypeInformation(implicit top: Top, fresh: Fresh) extends Inject {
 }
 
 object RuntimeTypeInformation extends InjectCompanion {
-  override val depends =
-    Seq(Rt.Type.name)
-
   override def apply(config: tools.Config, top: Top) =
     new RuntimeTypeInformation()(top, top.fresh)
 }

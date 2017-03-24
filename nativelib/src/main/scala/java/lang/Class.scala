@@ -20,8 +20,7 @@ final class _Class[A](val ty: Ptr[Type]) {
 
   def getInterfaces(): Array[_Class[_]] = ???
 
-  def getName(): String =
-    (!ty).name
+  def getName(): String = ty.name
 
   def getSimpleName(): String =
     getName.split('.').last.split('$').last
