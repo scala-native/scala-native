@@ -5,6 +5,15 @@ import runtime.Intrinsics._
 
 package object runtime {
 
+  /** Runtime Type Information. */
+  type Type = CStruct3[Int, String, Long]
+
+  implicit class TypeOps(val self: Ptr[Type]) extends AnyVal {
+    def id: Int      = !(self._1)
+    def name: String = !(self._2)
+    def size: Long   = !(self._3)
+  }
+
   /** Used as a stub right hand of intrinsified methods. */
   def undefined: Nothing = throw new UndefinedBehaviorError
 

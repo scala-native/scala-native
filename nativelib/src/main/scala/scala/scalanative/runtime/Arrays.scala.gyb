@@ -1,31 +1,8 @@
 package scala.scalanative
 package runtime
 
-// Note 1:
-// Arrays.scala is currently implemented as textual templating that is expanded through project/gyb.py script.
-// Update Arrays.scala.gyb and re-generate the source
-// $ ./project/gyb.py \
-//     nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb > \
-//     nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala
-
-// Note 2:
-// Array of primitiveTypes don't contain pointers, runtime.allocAtomic() is called for memory allocation
-// Array of Object do contain pointers. runtime.alloc() is called for memory allocation
-
-// Note 3:
-// PrimitiveArray.helperClone can allocate memory with GC.malloc_atomic() because
-// it will overwrite all data (no need to call llvm.memset)
-
-import scalanative.native._
+import scalanative.native._, stdlib._, stdio._
 import scalanative.runtime.Intrinsics._
-import scala.annotation.unchecked.uncheckedStable
-
-@struct class ArrayHeader(val info: Ptr[Byte], val length: Int)
-
-%{
-   primitiveTypes = ['Boolean', 'Char', 'Byte', 'Short',
-            'Int', 'Long', 'Float', 'Double']
-}%
 
 sealed abstract class Array[T]
     extends java.io.Serializable with java.lang.Cloneable {
@@ -51,6 +28,15 @@ sealed abstract class Array[T]
 }
 
 object Array {
+  type Header = CStruct2[Ptr[Type], Int]
+
+  implicit class HeaderOps(val self: Ptr[Header]) extends AnyVal {
+    @inline def info: Ptr[Type]                = !(self._1)
+    @inline def info_=(value: Ptr[Type]): Unit = !(self._1) = value
+    @inline def length: Int                    = !(self._2)
+    @inline def length_=(value: Int): Unit     = !(self._2) = value
+  }
+
   def copy(from: AnyRef, fromPos: Int,
            to: AnyRef, toPos: Int, len: Int): Unit = {
     if (from == null || to == null) {
@@ -82,99 +68,65 @@ object Array {
     } else {
       val fromPtr = from.at(fromPos).cast[Ptr[Byte]]
       val toPtr   = to.at(toPos).cast[Ptr[Byte]]
+      val size    = to.stride * len
 
-      `llvm.memmove.p0i8.p0i8.i64`(toPtr, fromPtr, to.stride * len, 1, false)
+      `llvm.memmove.p0i8.p0i8.i64`(toPtr, fromPtr, size, 1, false)
     }
   }
-
-  @inline private[runtime] def helperClone(from: Array[_], length: Int, stride: CSize): Ptr[Byte] = {
-    val arrsize = sizeof[ArrayHeader] + stride * length
-    val arr     = GC.malloc(arrsize)
-    `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]], from.cast[Ptr[Byte]], arrsize, 1, false)
-    arr
-  }
-
-  @inline def alloc(length: Int, arrinfo:  Ptr[Type], stride: CSize): Ptr[Byte] = {
-    val arrsize = sizeof[ArrayHeader] + stride * length
-    val arr     = runtime.alloc(arrinfo, arrsize)
-    // set the length
-    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[Byte]]).cast[Ptr[Int]] = length
-    arr
-  }
 }
 
-object PrimitiveArray {
-  @inline private[runtime] def helperClone(src: Array[_], length: Int, stride: CSize): Ptr[Byte] = {
-    val arrsize = sizeof[ArrayHeader] + stride * length
-    val arr = GC.malloc_atomic(arrsize)
-    `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]], src.cast[Ptr[Byte]], arrsize, 1, false)
-    arr
-  }
+%{
+   types = ['Boolean', 'Char', 'Byte', 'Short',
+            'Int', 'Long', 'Float', 'Double', 'Object']
+}%
 
-  @inline def alloc(length: Int, arrinfo:  Ptr[Type], stride: CSize): Ptr[Byte] = {
-    val arrsize = sizeof[ArrayHeader] + stride * length
-    // Primitive arrays don't contain pointers
-    val arr = runtime.allocAtomic(arrinfo, arrsize)
-    // set the length
-    !(arr.cast[Ptr[Byte]] + sizeof[Ptr[Byte]]).cast[Ptr[Int]] = length
-    arr
-  }
-}
+% for T in types:
 
-final class ObjectArray private () extends Array[Object] {
-  @inline def stride: CSize =
-    sizeof[Object]
-
-  @inline def at(i: Int): Ptr[Object] =
-    if (i < 0 || i >= length)
-      throw new IndexOutOfBoundsException(i.toString)
-    else {
-      val first = this.cast[Ptr[Byte]] + sizeof[ArrayHeader]
-      val ith   = first + stride * i
-
-      ith.cast[Ptr[Object]]
-    }
-
-  @inline def apply(i: Int): Object = !at(i)
-
-  @inline def update(i: Int, value: Object): Unit = !at(i) = value
-
-  @inline protected override def clone(): ObjectArray =
-    Array.helperClone (this, length, sizeof[Object]).cast[ObjectArray]
-}
-
-object ObjectArray {
-  @inline def alloc(length: Int): ObjectArray =
-    Array.alloc(length, typeof[ObjectArray], sizeof[Object]).cast[ObjectArray]
-}
-
-% for T in primitiveTypes:
+%{
+   alloc = 'runtime.allocAtomic' if T != 'Object' else 'runtime.alloc'
+}%
 
 final class ${T}Array private () extends Array[${T}] {
+  import Array._
+
   @inline def stride: CSize =
     sizeof[${T}]
 
   @inline def at(i: Int): Ptr[${T}] =
-    if (i < 0 || i >= length)
+    if (i < 0 || i >= length) {
       throw new IndexOutOfBoundsException(i.toString)
-    else {
-      val first = this.cast[Ptr[Byte]] + sizeof[ArrayHeader]
+    } else {
+      val first = this.cast[Ptr[Byte]] + sizeof[Header]
       val ith   = first + stride * i
 
       ith.cast[Ptr[${T}]]
     }
 
-  @inline def apply(i: Int): ${T} = !at(i)
+  @inline def apply(i: Int): ${T} =
+    !at(i)
 
-  @inline def update(i: Int, value: ${T}): Unit = !at(i) = value
+  @inline def update(i: Int, value: ${T}): Unit =
+    !at(i) = value
 
-  @inline protected override def clone(): ${T}Array =
-    PrimitiveArray.helperClone (this, length, sizeof[${T}]).cast[${T}Array]
+  @inline protected override def clone(): ${T}Array = {
+    val arrinfo = typeof[${T}Array]
+    val arrsize = sizeof[Header] + sizeof[${T}] * length
+    val arr     = ${alloc}(arrinfo, arrsize)
+    `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]], this.cast[Ptr[Byte]], arrsize, 1, false)
+    arr.cast[${T}Array]
+  }
 }
 
 object ${T}Array {
-  @inline def alloc(length: Int): ${T}Array =
-    PrimitiveArray.alloc(length, typeof[${T}Array], sizeof[${T}]).cast[${T}Array]
+  import Array._
+
+  @inline def alloc(length: Int): ${T}Array = {
+    val arrinfo = typeof[${T}Array]
+    val arrsize = sizeof[Header] + sizeof[${T}] * length
+    val arr     = ${alloc}(arrinfo, arrsize).cast[Ptr[Header]]
+    arr.length  = length
+    arr.cast[${T}Array]
+  }
 }
 
 % end
