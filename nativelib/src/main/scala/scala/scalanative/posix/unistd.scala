@@ -45,6 +45,16 @@ object unistd {
   @name("scalanative_symlinkat")
   def symlinkat(path1: CString, fd: CInt, path2: CString): CInt = extern
 
+  @name("scalanative_link")
+  def link(path1: CString, path2: CString): CInt = extern
+
+  @name("scalanative_linkat")
+  def linkat(fd1: CInt,
+             path1: CString,
+             fd2: CInt,
+             path2: CString,
+             flag: CInt): CInt = extern
+
   // Macros
 
   @name("scalanative_environ")

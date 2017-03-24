@@ -283,6 +283,37 @@ object FilesSuite extends tests.Suite {
     }
   }
 
+  test("Files.createLink can create links") {
+    withTemporaryDirectory { dirFile =>
+      val dir  = dirFile.toPath()
+      val file = dir.resolve("file")
+      val link = dir.resolve("link")
+
+      Files.createFile(file)
+      assert(Files.exists(file))
+
+      Files.createLink(link, file)
+      assert(Files.exists(link))
+    }
+  }
+
+  test("Files.createLink throws if the file already exists") {
+    withTemporaryDirectory { dirFile =>
+      val dir  = dirFile.toPath()
+      val file = dir.resolve("file")
+      val link = dir.resolve("link")
+
+      Files.createFile(file)
+      Files.createFile(link)
+      assert(Files.exists(file))
+      assert(Files.exists(link))
+
+      assertThrows[FileAlreadyExistsException] {
+        Files.createLink(link, file)
+      }
+    }
+  }
+
   private def withTemporaryDirectory(fn: File => Unit) {
     val file = File.createTempFile("test", ".tmp")
     assert(file.delete())

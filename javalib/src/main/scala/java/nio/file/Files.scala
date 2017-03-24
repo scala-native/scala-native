@@ -105,7 +105,14 @@ object Files {
     }
 
   def createLink(link: Path, existing: Path): Path =
-    ???
+    if (exists(link, Array.empty)) {
+      throw new FileAlreadyExistsException(link.toString)
+    } else if (unistd.link(toCString(existing.toString),
+                           toCString(link.toString)) == 0) {
+      link
+    } else {
+      throw new IOException()
+    }
 
   def createSymbolicLink(link: Path,
                          target: Path,
