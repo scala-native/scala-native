@@ -1,6 +1,6 @@
 package java.nio.file
 
-import java.io.{ByteArrayInputStream, File, FileInputStream}
+import java.io.{ByteArrayInputStream, File, FileInputStream, IOException}
 
 object FilesSuite extends tests.Suite {
 
@@ -384,6 +384,80 @@ object FilesSuite extends tests.Suite {
       assert(tmp.getParent() == parent.toPath())
       assert(Files.exists(tmp))
       assert(Files.isRegularFile(tmp))
+    }
+  }
+
+  test("Files.delete can delete files") {
+    withTemporaryDirectory { dirFile =>
+      val dir  = dirFile.toPath()
+      val file = dir.resolve("file")
+      Files.createFile(file)
+
+      assert(Files.exists(file))
+      assert(Files.isRegularFile(file))
+      Files.delete(file)
+      assert(!Files.exists(file))
+    }
+  }
+
+  test("Files.delete can delete empty directories") {
+    withTemporaryDirectory { dirFile =>
+      val dir    = dirFile.toPath()
+      val subdir = dir.resolve("subdir")
+      Files.createDirectory(subdir)
+      assert(Files.exists(subdir))
+      assert(Files.isDirectory(subdir))
+      Files.delete(subdir)
+      assert(!Files.exists(subdir))
+    }
+  }
+
+  test("Files.delete throws when deleting a non-existing file") {
+    withTemporaryDirectory { dirFile =>
+      val dir         = dirFile.toPath()
+      val nonexisting = dir.resolve("nonexisting")
+      assert(!Files.exists(nonexisting))
+
+      assertThrows[NoSuchFileException] {
+        Files.delete(nonexisting)
+      }
+    }
+  }
+
+  test("Files.delete throws when deleting a non-empty directory") {
+    withTemporaryDirectory { dirFile =>
+      val dir    = dirFile.toPath()
+      val subdir = dir.resolve("subdir")
+      val file   = subdir.resolve("file")
+      Files.createDirectory(subdir)
+      Files.createFile(file)
+      assert(Files.exists(subdir))
+      assert(Files.isDirectory(subdir))
+      assertThrows[IOException] {
+        Files.delete(subdir)
+      }
+    }
+  }
+
+  test("Files.deleteIfExists works if the file exists") {
+    withTemporaryDirectory { dirFile =>
+      val dir  = dirFile.toPath()
+      val file = dir.resolve("file")
+      Files.createFile(file)
+      assert(Files.exists(file))
+      assert(Files.isRegularFile(file))
+      assert(Files.deleteIfExists(file))
+      assert(!Files.exists(file))
+    }
+  }
+
+  test("Files.deleteIfExists works if the file doesn't exist") {
+    withTemporaryDirectory { dirFile =>
+      val dir  = dirFile.toPath()
+      val file = dir.resolve("file")
+      assert(!Files.exists(file))
+      assert(!Files.deleteIfExists(file))
+      assert(!Files.exists(file))
     }
   }
 

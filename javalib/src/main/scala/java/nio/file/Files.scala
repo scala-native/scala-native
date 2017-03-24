@@ -172,10 +172,15 @@ object Files {
     createTempFile(null: File, prefix, suffix, attrs)
 
   def delete(path: Path): Unit =
-    ???
+    if (!exists(path, Array.empty)) {
+      throw new NoSuchFileException(path.toString)
+    } else {
+      if (path.toFile().delete()) ()
+      else throw new IOException()
+    }
 
   def deleteIfExists(path: Path): Boolean =
-    ???
+    try { delete(path); true } catch { case _: NoSuchFileException => false }
 
   def exists(path: Path, options: Array[LinkOption]): Boolean =
     if (options.contains(LinkOption.NOFOLLOW_LINKS)) {
