@@ -77,7 +77,14 @@ object Files {
     ???
 
   def createDirectory(dir: Path, attrs: Array[FileAttribute[_]]): Path =
-    ???
+    if (exists(dir, Array.empty))
+      throw new FileAlreadyExistsException(dir.toString)
+    else if (dir.toFile().mkdir()) {
+      setAttributes(dir, attrs)
+      dir
+    } else {
+      throw new IOException()
+    }
 
   def createFile(path: Path, attrs: Array[FileAttribute[_]]): Path =
     ???

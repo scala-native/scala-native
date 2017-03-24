@@ -192,6 +192,25 @@ object FilesSuite extends tests.Suite {
     }
   }
 
+  test("Files.createDirectory can create a directory") {
+    val targetFile = File.createTempFile("test", ".tmp")
+    val target     = targetFile.toPath()
+    assert(targetFile.delete())
+
+    Files.createDirectory(target)
+    assert(targetFile.exists())
+    assert(targetFile.isDirectory())
+  }
+
+  test("Files.createDirectory throws if the file already exists") {
+    val targetFile = File.createTempFile("test", ".tmp")
+    val target     = targetFile.toPath()
+
+    assertThrows[FileAlreadyExistsException] {
+      Files.createDirectory(target)
+    }
+  }
+
   private def withTemporaryDirectory(fn: File => Unit) {
     val file = File.createTempFile("test", ".tmp")
     assert(file.delete())
