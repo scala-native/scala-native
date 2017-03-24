@@ -95,7 +95,14 @@ object Files {
     }
 
   def createFile(path: Path, attrs: Array[FileAttribute[_]]): Path =
-    ???
+    if (exists(path, Array.empty))
+      throw new FileAlreadyExistsException(path.toString)
+    else if (path.toFile().createNewFile()) {
+      setAttributes(path, attrs)
+      path
+    } else {
+      throw new IOException()
+    }
 
   def createLink(link: Path, existing: Path): Path =
     ???
