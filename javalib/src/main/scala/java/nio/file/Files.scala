@@ -46,7 +46,7 @@ object Files {
     val out =
       if (!targetFile.exists || (targetFile.isFile && replaceExisting)) {
         new FileOutputStream(targetFile, append = false)
-      } else if (targetFile.isDirectory && targetFile.list.isEmpty) {
+      } else if (targetFile.isDirectory && targetFile.list.isEmpty && replaceExisting) {
         if (!targetFile.delete()) throw new IOException()
         new FileOutputStream(targetFile, append = false)
       } else {

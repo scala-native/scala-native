@@ -21,4 +21,102 @@ object FilesSuite extends tests.Suite {
     assert(fromFile.read() == -1)
   }
 
+  test("Files.copy throws if the target exists and is a file") {
+    val targetFile = File.createTempFile("test", ".tmp")
+    val target     = targetFile.toPath()
+    assert(targetFile.exists() && targetFile.isFile())
+
+    val in = new ByteArrayInputStream(Array(1, 2, 3))
+    assertThrows[FileAlreadyExistsException] {
+      Files.copy(in, target)
+    }
+  }
+
+  test("Files.copy throws if the target exists and is an empty directory") {
+    val targetFile = File.createTempFile("test", ".tmp")
+    val target     = targetFile.toPath()
+    assert(targetFile.delete())
+    assert(targetFile.mkdir())
+    assert(
+      targetFile.exists() && targetFile
+        .isDirectory() && targetFile.list().isEmpty)
+
+    val in = new ByteArrayInputStream(Array(1, 2, 3))
+    assertThrows[FileAlreadyExistsException] {
+      Files.copy(in, target)
+    }
+  }
+
+  test(
+    "Files.copy works if the target exists and is an empty directory and REPLACE_EXISTING is set") {
+    val targetFile = File.createTempFile("test", ".tmp")
+    val target     = targetFile.toPath()
+    assert(targetFile.delete())
+    assert(targetFile.mkdir())
+    assert(
+      targetFile.exists() && targetFile
+        .isDirectory() && targetFile.list().isEmpty)
+
+    val in = new ByteArrayInputStream(Array(1, 2, 3))
+    assert(Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING) == 3)
+    assert(targetFile.exists() && targetFile.isFile())
+    assert(in.read() == -1)
+
+    val fromFile = new FileInputStream(targetFile)
+    assert(fromFile.read() == 1)
+    assert(fromFile.read() == 2)
+    assert(fromFile.read() == 3)
+    assert(fromFile.read() == -1)
+  }
+
+  test("Files.copy throws if the target exists and is a non-empty directory") {
+    val targetFile = File.createTempFile("test", ".tmp")
+    val target     = targetFile.toPath()
+    assert(targetFile.delete())
+    assert(targetFile.mkdir())
+    assert(targetFile.exists() && targetFile.isDirectory())
+    File.createTempFile("test", ".tmp", targetFile)
+    assert(targetFile.list().nonEmpty)
+
+    val in = new ByteArrayInputStream(Array(1, 2, 3))
+
+    assertThrows[FileAlreadyExistsException] {
+      Files.copy(in, target)
+    }
+  }
+
+  test(
+    "Files.copy throws if the target exists and is a non-empty directory and REPLACE_EXISTING is set") {
+    val targetFile = File.createTempFile("test", ".tmp")
+    val target     = targetFile.toPath()
+    assert(targetFile.delete())
+    assert(targetFile.mkdir())
+    assert(targetFile.exists() && targetFile.isDirectory())
+    File.createTempFile("test", ".tmp", targetFile)
+    assert(targetFile.list().nonEmpty)
+
+    val in = new ByteArrayInputStream(Array(1, 2, 3))
+
+    assertThrows[FileAlreadyExistsException] {
+      Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING)
+    }
+  }
+
+  test(
+    "Files.copy replaces the target if its an existing file and REPLACE_EXISTING is set") {
+    val targetFile = File.createTempFile("test", ".tmp")
+    val target     = targetFile.toPath()
+    assert(targetFile.exists() && targetFile.isFile())
+
+    val in = new ByteArrayInputStream(Array(1, 2, 3))
+    assert(Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING) == 3)
+    assert(in.read() == -1)
+
+    val fromFile = new FileInputStream(targetFile)
+    assert(fromFile.read() == 1)
+    assert(fromFile.read() == 2)
+    assert(fromFile.read() == 3)
+    assert(fromFile.read() == -1)
+  }
+
 }
