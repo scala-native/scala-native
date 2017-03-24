@@ -126,12 +126,10 @@ object Files {
 
   def exists(path: Path, options: Array[LinkOption]): Boolean =
     if (options.contains(LinkOption.NOFOLLOW_LINKS)) {
-      val parent = path.getParent
-      if (parent == null) path.toFile.exists()
-      else
-        exists(parent, options) && !isSymbolicLink(parent) && path.toFile
-          .exists()
-    } else path.toFile.exists()
+      path.toFile.exists() || isSymbolicLink(path)
+    } else {
+      path.toFile.exists()
+    }
 
   def find(start: Path,
            maxDepth: Int,

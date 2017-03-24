@@ -143,6 +143,55 @@ object FilesSuite extends tests.Suite {
     }
   }
 
+  test("Files.exists reports existing files as existing") {
+    val targetFile = File.createTempFile("test", ".tmp")
+    val target     = targetFile.toPath()
+    assert(targetFile.exists() && targetFile.isFile())
+
+    assert(Files.exists(target))
+    assert(Files.exists(target, LinkOption.NOFOLLOW_LINKS))
+  }
+
+  test("Files.exists reports existing directories as existing") {
+    val targetFile = File.createTempFile("test", ".tmp")
+    val target     = targetFile.toPath()
+    assert(targetFile.delete())
+    assert(targetFile.mkdir())
+    assert(targetFile.exists() && targetFile.isDirectory())
+
+    assert(Files.exists(target))
+    assert(Files.exists(target, LinkOption.NOFOLLOW_LINKS))
+  }
+
+  test("Files.exists reports non-existing files as such") {
+    val targetFile = File.createTempFile("test", ".tmp")
+    val target     = targetFile.toPath()
+    assert(targetFile.delete())
+    assert(!targetFile.exists())
+    assert(!Files.exists(target))
+    assert(!Files.exists(target, LinkOption.NOFOLLOW_LINKS))
+  }
+
+  test("Files.exists handles symlinks") {
+    withTemporaryDirectory { dirFile =>
+      val dir         = dirFile.toPath()
+      val existing    = new File(dirFile, "existing")
+      val nonexisting = dir.resolve("nonexisting")
+      val brokenLink  = dir.resolve("brokenlink")
+      val correctLink = dir.resolve("correctlink")
+
+      existing.createNewFile()
+      assert(existing.exists())
+
+      Files.createSymbolicLink(brokenLink, nonexisting)
+      Files.createSymbolicLink(correctLink, existing.toPath)
+      assert(!Files.exists(brokenLink))
+      assert(Files.exists(brokenLink, LinkOption.NOFOLLOW_LINKS))
+      assert(Files.exists(correctLink))
+      assert(Files.exists(correctLink, LinkOption.NOFOLLOW_LINKS))
+    }
+  }
+
   private def withTemporaryDirectory(fn: File => Unit) {
     val file = File.createTempFile("test", ".tmp")
     assert(file.delete())
