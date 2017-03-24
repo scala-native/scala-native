@@ -119,4 +119,35 @@ object FilesSuite extends tests.Suite {
     assert(fromFile.read() == -1)
   }
 
+  test("Files.createSymbolicLink can create symbolic links") {
+    withTemporaryDirectory { dirFile =>
+      val dir    = dirFile.toPath()
+      val link   = dir.resolve("link")
+      val target = dir.resolve("target")
+      Files.createSymbolicLink(link, target)
+      assert(Files.isSymbolicLink(link))
+    }
+  }
+
+  test("Files.createSymbolicLink throws if the link already exists") {
+    withTemporaryDirectory { dirFile =>
+      val dir    = dirFile.toPath
+      val link   = dir.resolve("link")
+      val target = dir.resolve("target")
+      link.toFile().createNewFile()
+      assert(link.toFile().exists())
+
+      assertThrows[FileAlreadyExistsException] {
+        Files.createSymbolicLink(link, target)
+      }
+    }
+  }
+
+  private def withTemporaryDirectory(fn: File => Unit) {
+    val file = File.createTempFile("test", ".tmp")
+    assert(file.delete())
+    assert(file.mkdir())
+    fn(file)
+  }
+
 }

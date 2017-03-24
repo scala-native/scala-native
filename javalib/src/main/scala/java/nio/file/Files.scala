@@ -20,6 +20,10 @@ import java.util.function.BiPredicate
 import java.util.{List, Map, Set}
 import java.util.stream.Stream
 
+import scala.scalanative.native.{Ptr, sizeof, toCString}
+import scala.scalanative.posix.{stat, unistd}
+import scala.scalanative.runtime.GC
+
 object Files {
 
   private def copy(in: InputStream, out: OutputStream): Long = {
@@ -84,7 +88,15 @@ object Files {
   def createSymbolicLink(link: Path,
                          target: Path,
                          attrs: Array[FileAttribute[_]]): Path =
-    ???
+    if (exists(link, Array.empty)) {
+      throw new FileAlreadyExistsException(target.toString)
+    } else if (unistd.symlink(toCString(target.toString),
+                              toCString(link.toString)) == 0) {
+      setAttributes(link, attrs)
+      link
+    } else {
+      throw new IOException()
+    }
 
   def createTempDirectory(dir: Path,
                           prefix: String,
@@ -113,7 +125,13 @@ object Files {
     ???
 
   def exists(path: Path, options: Array[LinkOption]): Boolean =
-    ???
+    if (options.contains(LinkOption.NOFOLLOW_LINKS)) {
+      val parent = path.getParent
+      if (parent == null) path.toFile.exists()
+      else
+        exists(parent, options) && !isSymbolicLink(parent) && path.toFile
+          .exists()
+    } else path.toFile.exists()
 
   def find(start: Path,
            maxDepth: Int,
@@ -164,8 +182,14 @@ object Files {
   def isSameFile(path: Path, path2: Path): Boolean =
     ???
 
-  def isSymbolicLink(path: Path): Boolean =
-    ???
+  def isSymbolicLink(path: Path): Boolean = {
+    val buf = GC.malloc_atomic(sizeof[stat.stat]).cast[Ptr[stat.stat]]
+    if (stat.lstat(toCString(path.toFile.getPath()), buf) == 0) {
+      stat.S_ISLNK(!(buf._13)) == 1
+    } else {
+      false
+    }
+  }
 
   def isWritable(path: Path): Boolean =
     ???
@@ -258,7 +282,7 @@ object Files {
 
   def setAttribute(path: Path,
                    attribute: String,
-                   value: Object,
+                   value: Any,
                    options: Array[LinkOption]): Path =
     ???
 
@@ -305,5 +329,10 @@ object Files {
             lines: Iterable[_ <: CharSequence],
             options: Array[OpenOption]): Path =
     ???
+
+  private def setAttributes(path: Path, attrs: Array[FileAttribute[_]]): Unit =
+    attrs.map(a => (a.name, a.value)).toMap.foreach {
+      case (name, value) => setAttribute(path, name, value, Array.empty)
+    }
 
 }

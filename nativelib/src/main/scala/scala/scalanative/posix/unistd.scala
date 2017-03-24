@@ -39,8 +39,15 @@ object unistd {
   @name("scalanative_stderr_fileno")
   def STDERR_FILENO: CInt = extern
 
+  @name("scalanative_symlink")
+  def symlink(path1: CString, path2: CString): CInt = extern
+
+  @name("scalanative_symlinkat")
+  def symlinkat(path1: CString, fd: CInt, path2: CString): CInt = extern
+
   // Macros
 
   @name("scalanative_environ")
   def environ: Ptr[CString] = extern
+
 }
