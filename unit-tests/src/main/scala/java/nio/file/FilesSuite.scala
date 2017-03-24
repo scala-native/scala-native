@@ -339,6 +339,39 @@ object FilesSuite extends tests.Suite {
     }
   }
 
+  test("Files.isRegularFile reports files as such") {
+    withTemporaryDirectory { dirFile =>
+      val dir  = dirFile.toPath
+      val file = dir.resolve("file")
+      Files.createFile(file)
+      assert(Files.exists(file))
+      assert(Files.isRegularFile(file))
+    }
+  }
+
+  test("Files.isRegularFile handles directories") {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath
+      assert(Files.exists(dir))
+      assert(!Files.isRegularFile(dir))
+    }
+  }
+
+  test("Files.isRegularFile handles symlinks") {
+    withTemporaryDirectory { dirFile =>
+      val dir  = dirFile.toPath
+      val file = dir.resolve("file")
+      val link = dir.resolve("link")
+      Files.createFile(file)
+      Files.createSymbolicLink(link, file)
+      assert(Files.exists(file))
+      assert(Files.isRegularFile(file))
+      assert(Files.isSymbolicLink(link))
+      assert(Files.isRegularFile(link))
+      assert(!Files.isRegularFile(link, LinkOption.NOFOLLOW_LINKS))
+    }
+  }
+
   private def withTemporaryDirectory(fn: File => Unit) {
     val file = File.createTempFile("test", ".tmp")
     assert(file.delete())
