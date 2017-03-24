@@ -150,16 +150,26 @@ object Files {
                           attrs: Array[FileAttribute[_]]): Path =
     createTempDirectory(null: File, prefix, attrs)
 
+  private def createTempFile(dir: File,
+                             prefix: String,
+                             suffix: String,
+                             attrs: Array[FileAttribute[_]]): Path = {
+    val temp     = File.createTempFile(prefix, suffix, dir)
+    val tempPath = temp.toPath()
+    setAttributes(tempPath, attrs)
+    tempPath
+  }
+
   def createTempFile(dir: Path,
                      prefix: String,
                      suffix: String,
                      attrs: Array[FileAttribute[_]]): Path =
-    ???
+    createTempFile(dir.toFile(), prefix, suffix, attrs)
 
   def createTempFile(prefix: String,
                      suffix: String,
                      attrs: Array[FileAttribute[_]]): Path =
-    ???
+    createTempFile(null: File, prefix, suffix, attrs)
 
   def delete(path: Path): Unit =
     ???
