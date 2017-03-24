@@ -314,6 +314,31 @@ object FilesSuite extends tests.Suite {
     }
   }
 
+  test("Files.createTempDirectory works without parent directory") {
+    val dir = Files.createTempDirectory("tmp")
+    assert(Files.exists(dir))
+    assert(Files.isDirectory(dir))
+
+    val file = dir.resolve("file")
+    assert(!Files.exists(file))
+    Files.createFile(file)
+    assert(Files.exists(file))
+  }
+
+  test("Files.createTempDirectory works with parent directory") {
+    withTemporaryDirectory { parent =>
+      val dir = Files.createTempDirectory(parent.toPath(), "tmp")
+      assert(dir.getParent() == parent.toPath())
+      assert(Files.exists(dir))
+      assert(Files.isDirectory(dir))
+
+      val file = dir.resolve("file")
+      assert(!Files.exists(file))
+      Files.createFile(file)
+      assert(Files.exists(file))
+    }
+  }
+
   private def withTemporaryDirectory(fn: File => Unit) {
     val file = File.createTempFile("test", ".tmp")
     assert(file.delete())

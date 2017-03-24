@@ -5,6 +5,7 @@ import java.lang.Iterable
 import java.io.{
   BufferedReader,
   BufferedWriter,
+  File,
   FileInputStream,
   FileOutputStream,
   InputStream,
@@ -127,14 +128,27 @@ object Files {
       throw new IOException()
     }
 
+  private def createTempDirectory(dir: File,
+                                  prefix: String,
+                                  attrs: Array[FileAttribute[_]]): Path = {
+    val temp = File.createTempFile(prefix, "", dir)
+    if (temp.delete() && temp.mkdir()) {
+      val tempPath = temp.toPath()
+      setAttributes(tempPath, attrs)
+      tempPath
+    } else {
+      throw new IOException()
+    }
+  }
+
   def createTempDirectory(dir: Path,
                           prefix: String,
                           attrs: Array[FileAttribute[_]]): Path =
-    ???
+    createTempDirectory(dir.toFile, prefix, attrs)
 
   def createTempDirectory(prefix: String,
                           attrs: Array[FileAttribute[_]]): Path =
-    ???
+    createTempDirectory(null: File, prefix, attrs)
 
   def createTempFile(dir: Path,
                      prefix: String,
