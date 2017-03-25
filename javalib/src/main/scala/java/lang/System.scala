@@ -25,32 +25,32 @@ object System {
   def identityHashCode(x: Object): scala.Int =
     x.cast[Word].hashCode
 
-
   private def loadProperties() = {
     val sysProps = new Properties()
     sysProps.setProperty("java.version", "1.8")
     sysProps.setProperty("java.vm.specification.version", "1.8")
     sysProps.setProperty("java.vm.specification.vendor", "Oracle Corporation")
-    sysProps.setProperty("java.vm.specification.name", "Java Virtual Machine Specification")
+    sysProps.setProperty("java.vm.specification.name",
+                         "Java Virtual Machine Specification")
     sysProps.setProperty("java.vm.name", "Scala-Native")
     sysProps.setProperty("java.specification.version", "1.8")
     sysProps.setProperty("java.specification.version", "1.8")
     sysProps.setProperty("java.specification.vendor", "Oracle Corporation")
-    sysProps.setProperty("java.specification.name", "Java Platform API Specification")
+    sysProps.setProperty("java.specification.name",
+                         "Java Platform API Specification")
     sysProps.setProperty("line.separator", lineSeparator())
 
-    if(Platform.isWindows) {
+    if (Platform.isWindows) {
       sysProps.setProperty("file.separator", "\\")
       sysProps.setProperty("path.separator", ";")
       val userLang = fromCString(Platform.windowsGetUserLang())
       sysProps.setProperty("user.language", userLang)
-      
-    }
-    else {
+
+    } else {
       sysProps.setProperty("file.separator", "/")
       sysProps.setProperty("path.separator", ":")
       val userLocale = getenv("LANG")
-      if(userLocale != null) {
+      if (userLocale != null) {
         val userLang = userLocale.takeWhile(_ != '_')
         sysProps.setProperty("user.language", userLang)
       }
@@ -62,7 +62,7 @@ object System {
   private var systemProperties = loadProperties()
 
   def lineSeparator(): String = {
-    if(Platform.isWindows) "\r\n"
+    if (Platform.isWindows) "\r\n"
     else "\n"
   }
 
