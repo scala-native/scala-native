@@ -25,6 +25,7 @@ object System {
   def identityHashCode(x: Object): scala.Int =
     x.cast[Word].hashCode
 
+
   private def loadProperties() = {
     val sysProps = new Properties()
     sysProps.setProperty("java.version", "1.8")
@@ -41,10 +42,18 @@ object System {
     if(Platform.isWindows) {
       sysProps.setProperty("file.separator", "\\")
       sysProps.setProperty("path.separator", ";")
+      val userLang = fromCString(Platform.windowsGetUserLang())
+      sysProps.setProperty("user.language", userLang)
+      
     }
     else {
       sysProps.setProperty("file.separator", "/")
       sysProps.setProperty("path.separator", ":")
+      val userLocale = getenv("LANG")
+      if(userLocale != null) {
+        val userLang = userLocale.takeWhile(_ != '_')
+        sysProps.setProperty("user.language", userLang)
+      }
     }
 
     sysProps
@@ -57,7 +66,7 @@ object System {
     else "\n"
   }
 
-  def getProperties(): Properties                       = systemProperties
+  def getProperties(): Properties = systemProperties
 
   def clearProperty(key: String): String =
     systemProperties.remove(key).asInstanceOf[String]

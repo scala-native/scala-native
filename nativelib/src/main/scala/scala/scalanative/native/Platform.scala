@@ -5,4 +5,7 @@ package native
 object Platform {
   @name("scalanative_platform_is_windows")
   def isWindows(): Boolean = extern
+
+  @name("scalanative_windows_get_user_lang")
+  def windowsGetUserLang(): CString = extern
 }
