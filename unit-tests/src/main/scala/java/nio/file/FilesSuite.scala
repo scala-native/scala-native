@@ -461,7 +461,32 @@ object FilesSuite extends tests.Suite {
     }
   }
 
-  private def withTemporaryDirectory(fn: File => Unit) {
+  test("Files.list lists files") {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val f0  = dir.resolve("f0")
+      val f1  = dir.resolve("f1")
+      val d0  = dir.resolve("d0")
+      val f2  = d0.resolve("f2")
+
+      Files.createDirectory(d0)
+      Files.createFile(f0)
+      Files.createFile(f1)
+      Files.createFile(f2)
+      assert(Files.exists(d0) && Files.isDirectory(d0))
+      assert(Files.exists(f0) && Files.isRegularFile(f0))
+      assert(Files.exists(f1) && Files.isRegularFile(f1))
+      assert(Files.exists(f2) && Files.isRegularFile(f2))
+
+      val it = Files.list(dir).iterator()
+      assert(it.next() == d0)
+      assert(it.next() == f0)
+      assert(it.next() == f1)
+      assert(it.hasNext() == false)
+    }
+  }
+
+  def withTemporaryDirectory(fn: File => Unit) {
     val file = File.createTempFile("test", ".tmp")
     assert(file.delete())
     assert(file.mkdir())

@@ -269,8 +269,10 @@ object Files {
   def lines(path: Path, cs: Charset): Stream[String] =
     ???
 
-  def list(dir: Path): Stream[Path] =
-    ???
+  def list(dir: Path): Stream[Path] = {
+    val elements = dir.toFile().list().map(dir.resolve)
+    Stream.of(elements)
+  }
 
   def move(source: Path, target: Path, options: Array[CopyOption]): Path =
     ???
