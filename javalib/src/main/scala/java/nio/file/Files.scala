@@ -21,8 +21,8 @@ import java.util.function.BiPredicate
 import java.util.{List, Map, Set}
 import java.util.stream.Stream
 
-import scala.scalanative.native.{Ptr, sizeof, toCString}
-import scala.scalanative.posix.{stat, unistd}
+import scala.scalanative.native.{CString, fromCString, Ptr, sizeof, toCString}
+import scala.scalanative.posix.{limits, stat, unistd}
 import scala.scalanative.runtime.GC
 
 object Files {
@@ -349,7 +349,15 @@ object Files {
     ???
 
   def readSymbolicLink(link: Path): Path =
-    ???
+    if (!isSymbolicLink(link)) throw new NotLinkException(link.toString)
+    else {
+      val buf: CString = GC.malloc(limits.PATH_MAX).cast[CString]
+      if (unistd.readlink(toCString(link.toString), buf, limits.PATH_MAX) == -1) {
+        throw new IOException()
+      } else {
+        Paths.get(fromCString(buf), Array.empty)
+      }
+    }
 
   def setAttribute(path: Path,
                    attribute: String,

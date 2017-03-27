@@ -486,6 +486,33 @@ object FilesSuite extends tests.Suite {
     }
   }
 
+  test("Files.readSymbolicLink can read a valid symbolic link") {
+    withTemporaryDirectory { dirFile =>
+      val dir  = dirFile.toPath()
+      val link = dir.resolve("link")
+      val file = dir.resolve("file")
+      Files.createFile(file)
+      Files.createSymbolicLink(link, file)
+
+      assert(Files.exists(file))
+      assert(Files.exists(link))
+      assert(Files.readSymbolicLink(link) == file)
+    }
+  }
+
+  test("Files.readSymbolicLink can read a broken symbolic link") {
+    withTemporaryDirectory { dirFile =>
+      val dir        = dirFile.toPath()
+      val brokenLink = dir.resolve("link")
+      val file       = dir.resolve("file")
+      Files.createSymbolicLink(brokenLink, file)
+
+      assert(!Files.exists(file))
+      assert(Files.exists(brokenLink, LinkOption.NOFOLLOW_LINKS))
+      assert(Files.readSymbolicLink(brokenLink) == file)
+    }
+  }
+
   def withTemporaryDirectory(fn: File => Unit) {
     val file = File.createTempFile("test", ".tmp")
     assert(file.delete())
