@@ -1,6 +1,10 @@
 package java.util.stream
 
-trait Stream[T] extends BaseStream[T, Stream[T]]
+import scala.collection.immutable.{Stream => SStream}
+
+trait Stream[+T] extends BaseStream[T, Stream[T]] {
+  def flatMap[R](mapper: Function[T, Stream[R]]): Stream[R]
+}
 
 object Stream {
   trait Builder[T] {
@@ -12,7 +16,7 @@ object Stream {
     def build(): Stream[T]
   }
 
-  def builder[T](): Builder[T] = new ScalaNativeStubStream.Builder[T]
-  def empty[T](): Stream[T]    = new ScalaNativeStubStream(Seq.empty[T])
-  def of[T](values: Array[T])  = new ScalaNativeStubStream(values)
+  def builder[T](): Builder[T] = new WrappedScalaStream.Builder[T]
+  def empty[T](): Stream[T]    = new WrappedScalaStream(SStream.empty[T])
+  def of[T](values: Array[T])  = new WrappedScalaStream(values.toStream)
 }

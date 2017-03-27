@@ -18,12 +18,14 @@ import java.nio.charset.Charset
 import java.nio.channels.SeekableByteChannel
 
 import java.util.function.BiPredicate
-import java.util.{List, Map, Set}
-import java.util.stream.Stream
+import java.util.{HashSet, List, Map, Set}
+import java.util.stream.{Stream, WrappedScalaStream}
 
 import scala.scalanative.native.{CString, fromCString, Ptr, sizeof, toCString}
 import scala.scalanative.posix.{limits, stat, unistd}
 import scala.scalanative.runtime.GC
+
+import scala.collection.immutable.{Stream => SStream, Set => SSet}
 
 object Files {
 
@@ -220,12 +222,12 @@ object Files {
       options: Array[LinkOption]): Set[PosixFilePermission] =
     ???
 
-  def isDirectory(path: Path, options: Array[LinkOption]): Boolean =
-    if (options.contains(LinkOption.NOFOLLOW_LINKS)) {
-      exists(path, options) && !isSymbolicLink(path)
-    } else {
-      exists(path, options) && path.toFile().isDirectory()
-    }
+  def isDirectory(path: Path, options: Array[LinkOption]): Boolean = {
+    val notALink =
+      if (options.contains(LinkOption.NOFOLLOW_LINKS)) !isSymbolicLink(path)
+      else true
+    exists(path, options) && notALink && path.toFile().isDirectory()
+  }
 
   def isExecutable(path: Path): Boolean =
     ???
@@ -269,10 +271,11 @@ object Files {
   def lines(path: Path, cs: Charset): Stream[String] =
     ???
 
-  def list(dir: Path): Stream[Path] = {
-    val elements = dir.toFile().list().map(dir.resolve)
-    Stream.of(elements)
-  }
+  private def _list(dir: Path): SStream[Path] =
+    dir.toFile().list().toStream.map(dir.resolve)
+
+  def list(dir: Path): Stream[Path] =
+    new WrappedScalaStream(_list(dir))
 
   def move(source: Path, target: Path, options: Array[CopyOption]): Path =
     ???
@@ -379,12 +382,39 @@ object Files {
     ???
 
   def walk(start: Path, options: Array[FileVisitOption]): Stream[Path] =
-    ???
+    walk(start, Int.MaxValue, options)
 
   def walk(start: Path,
            maxDepth: Int,
            options: Array[FileVisitOption]): Stream[Path] =
-    ???
+    new WrappedScalaStream(walk(start, maxDepth, 0, options, Set(start)))
+
+  private def walk(start: Path,
+                   maxDepth: Int,
+                   currentDepth: Int,
+                   options: Array[FileVisitOption],
+                   visited: SSet[Path]): SStream[Path] =
+    if (!isDirectory(start, Array.empty))
+      throw new NotDirectoryException(start.toString)
+    else {
+      start #:: _list(start).flatMap {
+        case p
+            if isSymbolicLink(p) && options.contains(
+              FileVisitOption.FOLLOW_LINKS) =>
+          val newVisited = visited + p
+          val target     = readSymbolicLink(p)
+          if (newVisited.contains(target))
+            throw new FileSystemLoopException(p.toString)
+          else walk(p, maxDepth, currentDepth + 1, options, newVisited)
+        case p
+            if isDirectory(p, Array(LinkOption.NOFOLLOW_LINKS)) && currentDepth < maxDepth =>
+          val newVisited =
+            if (options.contains(FileVisitOption.FOLLOW_LINKS)) visited + p
+            else visited
+          walk(p, maxDepth, currentDepth + 1, options, newVisited)
+        case p => p #:: SStream.Empty
+      }
+    }
 
   def walkFileTree(start: Path, visitor: FileVisitor[_ >: Path]): Path =
     ???

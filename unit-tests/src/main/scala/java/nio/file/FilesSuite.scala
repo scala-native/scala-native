@@ -513,6 +513,87 @@ object FilesSuite extends tests.Suite {
     }
   }
 
+  test("Files.walk walks files") {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val f0  = dir.resolve("f0")
+      val f1  = dir.resolve("f1")
+      val d0  = dir.resolve("d0")
+      val f2  = d0.resolve("f2")
+
+      Files.createDirectory(d0)
+      Files.createFile(f0)
+      Files.createFile(f1)
+      Files.createFile(f2)
+      assert(Files.exists(d0) && Files.isDirectory(d0))
+      assert(Files.exists(f0) && Files.isRegularFile(f0))
+      assert(Files.exists(f1) && Files.isRegularFile(f1))
+      assert(Files.exists(f2) && Files.isRegularFile(f2))
+
+      val it = Files.walk(dir).iterator()
+      assert(it.next() == dir)
+      assert(it.next() == d0)
+      assert(it.next() == f2)
+      assert(it.next() == f0)
+      assert(it.next() == f1)
+      assert(it.hasNext() == false)
+    }
+  }
+
+  test("Files.walk follows symlinks") {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+
+      val d0   = dir.resolve("d0")
+      val f0   = d0.resolve("f0")
+      val f1   = d0.resolve("f1")
+      val link = d0.resolve("link")
+
+      val d1 = dir.resolve("d1")
+      val f2 = d1.resolve("f2")
+
+      Files.createDirectory(d0)
+      Files.createFile(f0)
+      Files.createFile(f1)
+      Files.createSymbolicLink(link, d1)
+
+      Files.createDirectory(d1)
+      Files.createFile(f2)
+
+      assert(Files.exists(d0) && Files.isDirectory(d0))
+      assert(Files.exists(f0) && Files.isRegularFile(f0))
+      assert(Files.exists(f1) && Files.isRegularFile(f1))
+      assert(Files.exists(f2) && Files.isRegularFile(f2))
+
+      val it = Files.walk(d0, FileVisitOption.FOLLOW_LINKS).iterator()
+      assert(it.next() == d0)
+      assert(it.next() == f0)
+      assert(it.next() == f1)
+      assert(it.next() == link)
+      assert(it.next() == link.resolve("f2"))
+      assert(it.hasNext() == false)
+    }
+  }
+
+  test("Files.walk detects cycles") {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+
+      val d0   = dir.resolve("d0")
+      val d1   = d0.resolve("d1")
+      val link = d1.resolve("link")
+
+      Files.createDirectory(d0)
+      Files.createDirectory(d1)
+      Files.createSymbolicLink(link, d0)
+
+      val it = Files.walk(d0, FileVisitOption.FOLLOW_LINKS).iterator()
+      assert(it.next() == d0)
+      assert(it.next() == d1)
+      assertThrows[FileSystemLoopException] { it.next() }
+    }
+  }
+
   def withTemporaryDirectory(fn: File => Unit) {
     val file = File.createTempFile("test", ".tmp")
     assert(file.delete())
