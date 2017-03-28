@@ -1,12 +1,12 @@
 package java.util
 
-import java.{util => ju}
+//import java.{util => ju}
 
 /** Ported from Harmony and using Java API docs.
  *
- * TODO: This class is only partially implemented.
+ * TODO: Commented out code needs implementing.
  *
- * Harmony defers much of the work to [[com.ibm.icu.util.ULocal]] from
+ * Harmony defers much of the work to icu4j from
  * [[http://site.icu-project.org/ ICU - International Components for Unicode]]
  */
 final class Locale(val language: String,
@@ -42,53 +42,54 @@ final class Locale(val language: String,
 
   def getCountry(): String = country
 
-  def getDisplayCountry(): String = ???
+  //def getDisplayCountry(): String = ???
 
-  def getDisplayCountry(locale: Locale): String = ???
+  //def getDisplayCountry(locale: Locale): String = ???
 
-  def getDisplayLanguage(): String = ???
+  //def getDisplayLanguage(): String = ???
 
-  def getDisplayLanguage(locale: Locale): String = ???
+  //def getDisplayLanguage(locale: Locale): String = ???
 
-  def getDisplayName(): String = ???
+  //def getDisplayName(): String = ???
 
-  def getDisplayName(locale: Locale): String = ???
+  //def getDisplayName(locale: Locale): String = ???
 
-  def getDisplayScript(): String = ???
+  //def getDisplayScript(): String = ???
 
-  def getDisplayScript(locale: Locale): String = ???
+  //def getDisplayScript(locale: Locale): String = ???
 
-  def getDisplayVariant(): String = ???
+  //def getDisplayVariant(): String = ???
 
-  def getDisplayVariant(locale: Locale): String = ???
+  //def getDisplayVariant(locale: Locale): String = ???
 
-  def getExtension(key: Char): String = ???
+  //def getExtension(key: Char): String = ???
 
-  def getExtensionKeys(): ju.Set[Character] = ???
+  //def getExtensionKeys(): ju.Set[Character] = ???
 
-  def getISO3Country(): String = ???
+  //def getISO3Country(): String = ???
 
-  def getISO3Language(): String = ???
+  //def getISO3Language(): String = ???
 
-  def getLanguage(): String = language
+  //def getLanguage(): String = language
 
-  def getScript(): String = ???
+  //def getScript(): String = ???
 
-  def getUnicodeLocaleAttributes(): ju.Set[String] = ???
+  //def getUnicodeLocaleAttributes(): ju.Set[String] = ???
 
-  def getUnicodeLocaleKeys(): ju.Set[String] = ???
+  //def getUnicodeLocaleKeys(): ju.Set[String] = ???
 
-  def getUnicodeLocaleType(key: String) = ???
+  //def getUnicodeLocaleType(key: String) = ???
 
-  def getVariant(): String = variant
+  //def getVariant(): String = variant
 
   // synchronized in Java
   @inline override def hashCode(): Int = this.synchronized {
     country.hashCode() + language.hashCode() + variant.hashCode()
   }
 
-  def toLanguageTag(): String = ???
+  //def toLanguageTag(): String = ???
 
+  // Examples: "en", "en_US", "_US", "en__POSIX", "en_US_POSIX"
   @inline override def toString(): String = {
     // straight port
     val buf = new StringBuilder
@@ -139,25 +140,26 @@ object Locale {
   lazy val UNICODE_LOCALE_EXTENSION = 'u'
   lazy val US                       = new Locale("en", "US")
 
-  def forLanguageTag(languageTag: String): String = ???
+  //def forLanguageTag(languageTag: String): String = ???
 
-  def getAvailableLocales(): Array[Locale] = Array(Locale.US)
+  // should have bundles for this list
+  //def getAvailableLocales(): Array[Locale] = ???
 
   def getDefault(): Locale = defaultLocale
 
-  def getDefault(category: Locale.Category): Locale = ???
+  //def getDefault(category: Locale.Category): Locale = ???
 
-  def getISOCountries(): Array[String] = ???
+  //def getISOCountries(): Array[String] = ???
 
-  def getISOLanguages(): Array[String] = ???
+  //def getISOLanguages(): Array[String] = ???
 
-  def setDefault(category: Locale.Category, locale: Locale): Unit = ???
+  //def setDefault(category: Locale.Category, locale: Locale): Unit = ???
 
   // synchronized in Java
   def setDefault(locale: Locale): Unit = this.synchronized {
     this.defaultLocale = locale
   }
 
-  class Category
+  //class Category
 
 }
