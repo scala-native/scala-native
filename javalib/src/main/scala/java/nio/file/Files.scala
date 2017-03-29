@@ -195,8 +195,13 @@ object Files {
   def find(start: Path,
            maxDepth: Int,
            matcher: BiPredicate[Path, BasicFileAttributes],
-           options: Array[FileVisitOption]): Stream[Path] =
-    ???
+           options: Array[FileVisitOption]): Stream[Path] = {
+    val stream = walk(start, maxDepth, 0, options, SSet.empty).filter { p =>
+      val attributes = getAttributes(p)
+      matcher.test(p, attributes)
+    }
+    new WrappedScalaStream(stream)
+  }
 
   def getAttribute(path: Path,
                    attribute: String,

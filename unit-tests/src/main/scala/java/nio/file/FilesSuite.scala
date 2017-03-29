@@ -4,6 +4,8 @@ import java.nio.file._
 import java.io.{ByteArrayInputStream, File, FileInputStream, IOException}
 import java.nio.file.attribute.BasicFileAttributes
 
+import java.util.function.BiPredicate
+
 object FilesSuite extends tests.Suite {
 
   test("Files.copy can copy to a non-existing file") {
@@ -725,6 +727,35 @@ object FilesSuite extends tests.Suite {
       assert(visitor.dequeue() == d0)
       assert(visitor.dequeue() == dir)
       assert(visitor.isEmpty)
+    }
+  }
+
+  test("Files.find finds files") {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val f0  = dir.resolve("f0")
+      val f1  = dir.resolve("f1")
+      val d0  = dir.resolve("d0")
+      val f2  = d0.resolve("f2")
+
+      Files.createDirectory(d0)
+      Files.createFile(f0)
+      Files.createFile(f1)
+      Files.createFile(f2)
+      assert(Files.exists(d0) && Files.isDirectory(d0))
+      assert(Files.exists(f0) && Files.isRegularFile(f0))
+      assert(Files.exists(f1) && Files.isRegularFile(f1))
+      assert(Files.exists(f2) && Files.isRegularFile(f2))
+
+      val predicate = new BiPredicate[Path, BasicFileAttributes] {
+        override def test(path: Path, attrs: BasicFileAttributes): Boolean =
+          path.getFileName.toString.startsWith("f")
+      }
+      val it = Files.find(dir, 10, predicate).iterator
+
+      assert(it.next() == f2)
+      assert(it.next() == f0)
+      assert(it.next() == f1)
     }
   }
 
