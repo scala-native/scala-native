@@ -216,9 +216,13 @@ object Files {
   //
   // def getFileStore(path: Path): FileStore =
   //   ???
-  //
-  // def getLastModifiedTime(path: Path, options: Array[LinkOption]): FileTime =
-  //   ???
+
+  def getLastModifiedTime(path: Path, options: Array[LinkOption]): FileTime = {
+    val realPath   = path.toRealPath(options)
+    val attributes = getAttributes(path)
+    attributes.lastModifiedTime
+  }
+
   //
   // def getOwner(path: Path, options: Array[LinkOption]): UserPrincipal =
   //   ???

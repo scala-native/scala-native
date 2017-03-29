@@ -759,6 +759,20 @@ object FilesSuite extends tests.Suite {
     }
   }
 
+  test("Files.getLastModifiedTime works") {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val f0  = dir.resolve("f0")
+
+      Files.createFile(f0)
+      assert(Files.exists(f0))
+
+      val referenceMs = f0.toFile().lastModified()
+      val filetimeMs  = Files.getLastModifiedTime(f0).toMillis()
+      assert(referenceMs == filetimeMs)
+    }
+  }
+
   def withTemporaryDirectory(fn: File => Unit) {
     val file = File.createTempFile("test", ".tmp")
     assert(file.delete())
