@@ -667,6 +667,9 @@ final class _String()
             buf.append(convert(high).toChar)
             buf.append(convert(low).toChar)
           }
+        } else {
+          // one high surrogate
+          buf.append(convert(high).toChar)
         }
       } else {
         // normal case

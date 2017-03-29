@@ -102,16 +102,28 @@ object StringSuite extends tests.Suite {
     assert("Hello".toUpperCase() equals "HELLO")
     // latin
     assert("Perché".toUpperCase() equals "PERCHÉ")
-    // high - 0x10400 or \ud801\udc00
+    // high (2 Char String) - 0x10400 or \ud801\udc00
+    val iStr = new String(Character.toChars(0x10400))
+    assert(iStr.length equals 2)
+    assert(iStr.toUpperCase equals iStr)
+    val bStr = "\ud801\udc00"
+    assert(bStr.length equals 2)
+    assert(bStr.toUpperCase equals "\ud801\udc00")
     assert("𐐨aaaa".toUpperCase equals "𐐀AAAA")
     assert("aaaa𐐨".toUpperCase equals "AAAA𐐀")
     assert("aa𐐨aa".toUpperCase equals "AA𐐀AA")
     // partial in surrogate range
-    // case of poor slicing of string
+    // case of poor slicing or construction of string
     assert("\ud801aaaa".toUpperCase equals "\ud801AAAA")
     assert("aaaa\ud801".toUpperCase equals "AAAA\ud801")
     assert("\udc00aaaa".toUpperCase equals "\udc00AAAA")
     assert("aaaa\udc00".toUpperCase equals "AAAA\udc00")
+    // case of one high surrogate
+    val hChar = '\ud801'
+    val hStr  = hChar.toString
+    assert(Character.isHighSurrogate(hChar) equals true)
+    assert(hStr.length equals 1)
+    assert(hStr.toUpperCase equals hStr)
   }
 
   test("toLowerCase") {
