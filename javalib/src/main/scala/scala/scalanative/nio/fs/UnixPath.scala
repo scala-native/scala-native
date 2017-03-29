@@ -176,6 +176,9 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
       case _ => false
     }
 
+  override def hashCode(): Int =
+    rawPath.##
+
   override def toString(): String =
     rawPath
 

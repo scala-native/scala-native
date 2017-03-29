@@ -17,8 +17,9 @@ import java.nio.file.attribute._
 import java.nio.charset.Charset
 import java.nio.channels.SeekableByteChannel
 
+import java.util.concurrent.TimeUnit
 import java.util.function.BiPredicate
-import java.util.{HashSet, List, Map, Set}
+import java.util.{EnumSet, HashSet, List, Map, Set}
 import java.util.stream.{Stream, WrappedScalaStream}
 
 import scala.scalanative.native.{CString, fromCString, Ptr, sizeof, toCString}
@@ -417,13 +418,69 @@ object Files {
     }
 
   def walkFileTree(start: Path, visitor: FileVisitor[_ >: Path]): Path =
-    ???
+    walkFileTree(start,
+                 EnumSet.noneOf(classOf[FileVisitOption]),
+                 Int.MaxValue,
+                 visitor)
 
+  private case object TerminateTraversalException extends Exception
   def walkFileTree(start: Path,
                    options: Set[FileVisitOption],
                    maxDepth: Int,
                    visitor: FileVisitor[_ >: Path]): Path =
-    ???
+    try _walkFileTree(start, options, maxDepth, visitor)
+    catch { case TerminateTraversalException => start }
+
+  private def _walkFileTree(start: Path,
+                            options: Set[FileVisitOption],
+                            maxDepth: Int,
+                            visitor: FileVisitor[_ >: Path]): Path = {
+    val stream = walk(start,
+                      maxDepth,
+                      0,
+                      options.toArray.asInstanceOf[Array[FileVisitOption]],
+                      SSet.empty)
+    val dirsToSkip = scala.collection.mutable.Set.empty[Path]
+    val openDirs   = scala.collection.mutable.Stack.empty[Path]
+    stream.foreach { p =>
+      val parent = p.getParent
+
+      if (dirsToSkip.contains(parent)) ()
+      else {
+        val attributes = getAttributes(p)
+
+        while (openDirs.nonEmpty && !parent.startsWith(openDirs.head)) {
+          visitor.postVisitDirectory(openDirs.pop(), null)
+        }
+
+        val result =
+          if (attributes.isRegularFile) {
+            visitor.visitFile(p, attributes)
+          } else if (attributes.isDirectory) {
+            openDirs.push(p)
+            visitor.preVisitDirectory(p, attributes) match {
+              case FileVisitResult.SKIP_SUBTREE =>
+                openDirs.pop; FileVisitResult.SKIP_SUBTREE
+              case other => other
+            }
+          } else {
+            FileVisitResult.CONTINUE
+          }
+
+        result match {
+          case FileVisitResult.TERMINATE     => throw TerminateTraversalException
+          case FileVisitResult.SKIP_SUBTREE  => dirsToSkip += p
+          case FileVisitResult.SKIP_SIBLINGS => dirsToSkip += parent
+          case FileVisitResult.CONTINUE      => ()
+        }
+      }
+
+    }
+    while (openDirs.nonEmpty) {
+      visitor.postVisitDirectory(openDirs.pop(), null)
+    }
+    start
+  }
 
   def write(path: Path, bytes: Array[Byte], options: Array[OpenOption]): Path =
     ???
@@ -438,6 +495,27 @@ object Files {
             lines: Iterable[_ <: CharSequence],
             options: Array[OpenOption]): Path =
     ???
+
+  private def getAttributes(path: Path): BasicFileAttributes =
+    new BasicFileAttributes {
+      val sb = GC.malloc_atomic(sizeof[stat.stat]).cast[Ptr[stat.stat]]
+      stat.stat(toCString(path.toString), sb)
+
+      override val fileKey: Object = (!(sb._3)).asInstanceOf[Object]
+      override val isDirectory     = stat.S_ISDIR(!(sb._13)) == 1
+      override val isRegularFile   = stat.S_ISREG(!(sb._13)) == 1
+      override val isSymbolicLink  = stat.S_ISLNK(!(sb._13)) == 1
+      override val isOther         = !isDirectory && !isRegularFile && !isSymbolicLink
+
+      override val lastAccessTime =
+        FileTime.from(!(sb._7), TimeUnit.SECONDS)
+      override val lastModifiedTime =
+        FileTime.from(!(sb._8), TimeUnit.SECONDS)
+      override val creationTime =
+        FileTime.from(!(sb._9), TimeUnit.SECONDS)
+
+      override val size = !(sb._6)
+    }
 
   private def setAttributes(path: Path, attrs: Array[FileAttribute[_]]): Unit =
     attrs.map(a => (a.name, a.value)).toMap.foreach {

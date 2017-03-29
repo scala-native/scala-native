@@ -1,6 +1,8 @@
 package java.nio.file
 
+import java.nio.file._
 import java.io.{ByteArrayInputStream, File, FileInputStream, IOException}
+import java.nio.file.attribute.BasicFileAttributes
 
 object FilesSuite extends tests.Suite {
 
@@ -594,6 +596,138 @@ object FilesSuite extends tests.Suite {
     }
   }
 
+  test("Files.walkFileTree walks the tree") {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val f0  = dir.resolve("f0")
+      val f1  = dir.resolve("f1")
+      val d0  = dir.resolve("d0")
+      val f2  = d0.resolve("f2")
+
+      Files.createDirectory(d0)
+      Files.createFile(f0)
+      Files.createFile(f1)
+      Files.createFile(f2)
+      assert(Files.exists(d0) && Files.isDirectory(d0))
+      assert(Files.exists(f0) && Files.isRegularFile(f0))
+      assert(Files.exists(f1) && Files.isRegularFile(f1))
+      assert(Files.exists(f2) && Files.isRegularFile(f2))
+
+      val visitor = new QueueingVisitor
+      Files.walkFileTree(dir, visitor)
+
+      assert(visitor.dequeue() == dir)
+      assert(visitor.dequeue() == d0)
+      assert(visitor.dequeue() == f2)
+      assert(visitor.dequeue() == d0)
+      assert(visitor.dequeue() == f0)
+      assert(visitor.dequeue() == f1)
+      assert(visitor.dequeue() == dir)
+      assert(visitor.isEmpty)
+    }
+  }
+
+  test("Files.walkFileTree can be terminated") {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val f0  = dir.resolve("f0")
+      val f1  = dir.resolve("f1")
+      val d0  = dir.resolve("d0")
+      val f2  = d0.resolve("f2")
+
+      Files.createDirectory(d0)
+      Files.createFile(f0)
+      Files.createFile(f1)
+      Files.createFile(f2)
+      assert(Files.exists(d0) && Files.isDirectory(d0))
+      assert(Files.exists(f0) && Files.isRegularFile(f0))
+      assert(Files.exists(f1) && Files.isRegularFile(f1))
+      assert(Files.exists(f2) && Files.isRegularFile(f2))
+
+      val visitor = new QueueingVisitor {
+        override def visitFile(
+            file: Path,
+            attributes: BasicFileAttributes): FileVisitResult =
+          if (file == f2) FileVisitResult.TERMINATE
+          else super.visitFile(file, attributes)
+      }
+      Files.walkFileTree(dir, visitor)
+
+      assert(visitor.dequeue() == dir)
+      assert(visitor.dequeue() == d0)
+      assert(visitor.isEmpty)
+    }
+  }
+
+  test("Files.walkFileTree can skip subtrees") {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val f0  = dir.resolve("f0")
+      val f1  = dir.resolve("f1")
+      val d0  = dir.resolve("d0")
+      val f2  = d0.resolve("f2")
+
+      Files.createDirectory(d0)
+      Files.createFile(f0)
+      Files.createFile(f1)
+      Files.createFile(f2)
+      assert(Files.exists(d0) && Files.isDirectory(d0))
+      assert(Files.exists(f0) && Files.isRegularFile(f0))
+      assert(Files.exists(f1) && Files.isRegularFile(f1))
+      assert(Files.exists(f2) && Files.isRegularFile(f2))
+
+      val visitor = new QueueingVisitor {
+        override def preVisitDirectory(
+            dir: Path,
+            attributes: BasicFileAttributes): FileVisitResult =
+          if (dir == d0) FileVisitResult.SKIP_SUBTREE
+          else super.preVisitDirectory(dir, attributes)
+      }
+      Files.walkFileTree(dir, visitor)
+
+      assert(visitor.dequeue() == dir)
+      assert(visitor.dequeue() == f0)
+      assert(visitor.dequeue() == f1)
+      assert(visitor.dequeue() == dir)
+      assert(visitor.isEmpty)
+    }
+  }
+
+  test("Files.walkFileTree can skip siblings") {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val f0  = dir.resolve("f0")
+      val f1  = dir.resolve("f1")
+      val d0  = dir.resolve("d0")
+      val f2  = d0.resolve("f2")
+
+      Files.createDirectory(d0)
+      Files.createFile(f0)
+      Files.createFile(f1)
+      Files.createFile(f2)
+      assert(Files.exists(d0) && Files.isDirectory(d0))
+      assert(Files.exists(f0) && Files.isRegularFile(f0))
+      assert(Files.exists(f1) && Files.isRegularFile(f1))
+      assert(Files.exists(f2) && Files.isRegularFile(f2))
+
+      val visitor = new QueueingVisitor {
+        override def visitFile(
+            file: Path,
+            attributes: BasicFileAttributes): FileVisitResult =
+          if (file == f0) FileVisitResult.SKIP_SIBLINGS
+          else super.visitFile(file, attributes)
+      }
+      Files.walkFileTree(dir, visitor)
+
+      assert(visitor.dequeue() == dir)
+      assert(visitor.dequeue() == d0)
+      assert(visitor.dequeue() == f2)
+      assert(visitor.dequeue() == d0)
+      assert(visitor.dequeue() == dir)
+      assert(visitor.isEmpty)
+    }
+  }
+
   def withTemporaryDirectory(fn: File => Unit) {
     val file = File.createTempFile("test", ".tmp")
     assert(file.delete())
@@ -601,4 +735,33 @@ object FilesSuite extends tests.Suite {
     fn(file)
   }
 
+}
+
+class QueueingVisitor extends SimpleFileVisitor[Path] {
+  private val visited    = scala.collection.mutable.Queue.empty[Path]
+  def isEmpty(): Boolean = visited.isEmpty
+  def dequeue(): Path    = visited.dequeue()
+
+  override def visitFileFailed(file: Path,
+                               error: IOException): FileVisitResult =
+    throw error
+
+  override def preVisitDirectory(
+      dir: Path,
+      attributes: BasicFileAttributes): FileVisitResult = {
+    visited.enqueue(dir)
+    FileVisitResult.CONTINUE
+  }
+
+  override def postVisitDirectory(dir: Path,
+                                  error: IOException): FileVisitResult = {
+    visited.enqueue(dir)
+    FileVisitResult.CONTINUE
+  }
+
+  override def visitFile(file: Path,
+                         attributes: BasicFileAttributes): FileVisitResult = {
+    visited.enqueue(file)
+    FileVisitResult.CONTINUE
+  }
 }
