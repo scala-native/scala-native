@@ -34,39 +34,39 @@ abstract class FileSystemProvider protected () {
   def newFileSystem(path: Path, env: Map[String, _]): FileSystem =
     throw new UnsupportedOperationException()
 
-  def newInputStream(path: Path, options: Array[OpenOption]): InputStream = {
-    val opts = {
-      val s = new HashSet[OpenOption]
-      options.foreach(s.add)
-      s
-    }
-    val channel = newByteChannel(path, opts, Array.empty)
-    new java.io.InputStream {
-      private val buffer = ByteBuffer.allocate(1)
-      override def read(): Int = {
-        val read = channel.read(buffer)
-        if (read == -1) -1
-        else buffer.get(0) & 0xFF
-      }
+  // def newInputStream(path: Path, options: Array[OpenOption]): InputStream = {
+  //   val opts = {
+  //     val s = new HashSet[OpenOption]
+  //     options.foreach(s.add)
+  //     s
+  //   }
+  //   val channel = newByteChannel(path, opts, Array.empty)
+  //   new java.io.InputStream {
+  //     private val buffer = ByteBuffer.allocate(1)
+  //     override def read(): Int = {
+  //       val read = channel.read(buffer)
+  //       if (read == -1) -1
+  //       else buffer.get(0) & 0xFF
+  //     }
+  //
+  //   }
+  // }
 
-    }
-  }
-
-  def newOutputStream(path: Path, options: Array[OpenOption]): OutputStream = {
-    val opts = {
-      val s = new HashSet[OpenOption]
-      options.foreach(s.add)
-      s
-    }
-    val channel = newByteChannel(path, opts, Array.empty)
-    new java.io.OutputStream {
-      val buffer = ByteBuffer.allocate(1)
-      override def write(b: Int): Unit = {
-        buffer.put(0, b.toByte)
-        channel.write(buffer)
-      }
-    }
-  }
+  // def newOutputStream(path: Path, options: Array[OpenOption]): OutputStream = {
+  //   val opts = {
+  //     val s = new HashSet[OpenOption]
+  //     options.foreach(s.add)
+  //     s
+  //   }
+  //   val channel = newByteChannel(path, opts, Array.empty)
+  //   new java.io.OutputStream {
+  //     val buffer = ByteBuffer.allocate(1)
+  //     override def write(b: Int): Unit = {
+  //       buffer.put(0, b.toByte)
+  //       channel.write(buffer)
+  //     }
+  //   }
+  // }
 
   def newFileChannel(path: Path,
                      options: Set[_ <: OpenOption],
@@ -80,13 +80,13 @@ abstract class FileSystemProvider protected () {
       attrs: Array[FileAttribute[_]]): AsynchronousFileChannel =
     throw new UnsupportedOperationException
 
-  def newByteChannel(path: Path,
-                     options: Set[_ <: OpenOption],
-                     attrs: Array[FileAttribute[_]]): SeekableByteChannel
+  // def newByteChannel(path: Path,
+  //                    options: Set[_ <: OpenOption],
+  //                    attrs: Array[FileAttribute[_]]): SeekableByteChannel
 
-  def newDirectoryStream(
-      dir: Path,
-      filter: DirectoryStream.Filter[_ >: Path]): DirectoryStream[Path]
+  // def newDirectoryStream(
+  //     dir: Path,
+  //     filter: DirectoryStream.Filter[_ >: Path]): DirectoryStream[Path]
 
   def createDirectory(dir: Path, attrs: Array[FileAttribute[_]]): Unit
 
@@ -111,28 +111,28 @@ abstract class FileSystemProvider protected () {
 
   def copy(source: Path, target: Path, options: Array[CopyOption]): Unit
 
-  def move(source: Path, target: Path, options: Array[CopyOption]): Unit
+  // def move(source: Path, target: Path, options: Array[CopyOption]): Unit
 
-  def isSameFile(path: Path, path2: Path): Boolean
+  // def isSameFile(path: Path, path2: Path): Boolean
 
-  def isHidden(path: Path): Boolean
+  // def isHidden(path: Path): Boolean
 
-  def getFileStore(path: Path): FileStore
+  // def getFileStore(path: Path): FileStore
 
   def checkAccess(path: Path, modes: Array[AccessMode]): Unit
 
-  def getFileAttributeView[V <: FileAttributeView](
-      path: Path,
-      tpe: Class[V],
-      options: Array[LinkOption]): V
+  // def getFileAttributeView[V <: FileAttributeView](
+  //     path: Path,
+  //     tpe: Class[V],
+  //     options: Array[LinkOption]): V
 
-  def readAttributes[A <: BasicFileAttributes](path: Path,
-                                               tpe: Class[A],
-                                               options: Array[LinkOption]): A
+  // def readAttributes[A <: BasicFileAttributes](path: Path,
+  //                                              tpe: Class[A],
+  //                                              options: Array[LinkOption]): A
 
-  def readAttributes(path: Path,
-                     attributes: String,
-                     options: Array[LinkOption]): Map[String, Object]
+  // def readAttributes(path: Path,
+  //                    attributes: String,
+  //                    options: Array[LinkOption]): Map[String, Object]
 
   def setAttribute(path: Path,
                    attribute: String,

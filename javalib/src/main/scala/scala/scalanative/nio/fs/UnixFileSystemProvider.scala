@@ -68,16 +68,16 @@ class UnixFileSystemProvider extends FileSystemProvider {
       attrs: Array[FileAttribute[_]]): AsynchronousFileChannel =
     AsynchronousFileChannel.open(path, options, executor, attrs)
 
-  override def newByteChannel(
-      path: Path,
-      options: Set[_ <: OpenOption],
-      attrs: Array[FileAttribute[_]]): SeekableByteChannel =
-    Files.newByteChannel(path, options, attrs)
+  // override def newByteChannel(
+  //     path: Path,
+  //     options: Set[_ <: OpenOption],
+  //     attrs: Array[FileAttribute[_]]): SeekableByteChannel =
+  //   Files.newByteChannel(path, options, attrs)
 
-  override def newDirectoryStream(
-      dir: Path,
-      filter: DirectoryStream.Filter[_ >: Path]): DirectoryStream[Path] =
-    Files.newDirectoryStream(dir, filter)
+  // override def newDirectoryStream(
+  //     dir: Path,
+  //     filter: DirectoryStream.Filter[_ >: Path]): DirectoryStream[Path] =
+  //   Files.newDirectoryStream(dir, filter)
 
   override def createDirectory(dir: Path,
                                attrs: Array[FileAttribute[_]]): Unit =
@@ -102,19 +102,19 @@ class UnixFileSystemProvider extends FileSystemProvider {
                     options: Array[CopyOption]): Unit =
     Files.copy(source, target, options)
 
-  override def move(source: Path,
-                    target: Path,
-                    options: Array[CopyOption]): Unit =
-    Files.move(source, target, options)
+  // override def move(source: Path,
+  //                   target: Path,
+  //                   options: Array[CopyOption]): Unit =
+  //   Files.move(source, target, options)
 
-  override def isSameFile(path: Path, path2: Path): Boolean =
-    Files.isSameFile(path, path2)
+  // override def isSameFile(path: Path, path2: Path): Boolean =
+  //   Files.isSameFile(path, path2)
 
-  override def isHidden(path: Path): Boolean =
-    Files.isHidden(path)
+  // override def isHidden(path: Path): Boolean =
+  //   Files.isHidden(path)
 
-  override def getFileStore(path: Path): FileStore =
-    Files.getFileStore(path)
+  // override def getFileStore(path: Path): FileStore =
+  //   Files.getFileStore(path)
 
   override def checkAccess(path: Path, modes: Array[AccessMode]): Unit = {
     val file = path.toFile
@@ -128,23 +128,23 @@ class UnixFileSystemProvider extends FileSystemProvider {
     ()
   }
 
-  override def getFileAttributeView[V <: FileAttributeView](
-      path: Path,
-      tpe: Class[V],
-      options: Array[LinkOption]): V =
-    Files.getFileAttributeView(path, tpe, options)
+  // override def getFileAttributeView[V <: FileAttributeView](
+  //     path: Path,
+  //     tpe: Class[V],
+  //     options: Array[LinkOption]): V =
+  //   Files.getFileAttributeView(path, tpe, options)
 
-  override def readAttributes[A <: BasicFileAttributes](
-      path: Path,
-      tpe: Class[A],
-      options: Array[LinkOption]): A =
-    Files.readAttributes(path, tpe, options)
+  // override def readAttributes[A <: BasicFileAttributes](
+  //     path: Path,
+  //     tpe: Class[A],
+  //     options: Array[LinkOption]): A =
+  //   Files.readAttributes(path, tpe, options)
 
-  override def readAttributes(
-      path: Path,
-      attributes: String,
-      options: Array[LinkOption]): Map[String, Object] =
-    Files.readAttributes(path, attributes, options)
+  // override def readAttributes(
+  //     path: Path,
+  //     attributes: String,
+  //     options: Array[LinkOption]): Map[String, Object] =
+  //   Files.readAttributes(path, attributes, options)
 
   override def setAttribute(path: Path,
                             attribute: String,
