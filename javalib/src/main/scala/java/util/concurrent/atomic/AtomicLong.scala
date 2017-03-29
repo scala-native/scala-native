@@ -1,9 +1,23 @@
 package java.util.concurrent.atomic
 
+import scala.scalanative.native
+import scala.scalanative.native.Atomic
+
 class AtomicLong(private[this] var value: Long)
     extends Number
     with Serializable {
   def this() = this(0L)
+
+  private val lock: native.Ptr[native.CInt] = native.stackalloc[native.CInt]
+  !lock = 0
+
+  private def getLock: Boolean = {
+    Atomic.compareAndSwapInt(lock, 0, 1)
+  }
+
+  private def releaseLock: Unit = {
+    !lock = 0
+  }
 
   final def get(): Long = value
 
@@ -14,17 +28,23 @@ class AtomicLong(private[this] var value: Long)
     set(newValue)
 
   final def getAndSet(newValue: Long): Long = {
-    val old = value
-    value = newValue
-    old
+    var oldValue = get
+    while (!compareAndSet(oldValue, newValue)) {
+      oldValue = get
+    }
+    oldValue
   }
 
   final def compareAndSet(expect: Long, update: Long): Boolean = {
-    if (expect != value) false
-    else {
-      value = update
-      true
-    }
+    while (!getLock) {}
+    val result =
+      if (expect != value) false
+      else {
+        value = update
+        true
+      }
+    releaseLock
+    result
   }
 
   final def weakCompareAndSet(expect: Long, update: Long): Boolean =
@@ -37,9 +57,11 @@ class AtomicLong(private[this] var value: Long)
     getAndAdd(-1L)
 
   @inline final def getAndAdd(delta: Long): Long = {
-    val old = value
-    value = old + delta
-    old
+    var oldValue = get
+    while (!compareAndSet(oldValue, oldValue + delta)) {
+      oldValue = get
+    }
+    oldValue
   }
 
   final def incrementAndGet(): Long =
@@ -49,9 +71,11 @@ class AtomicLong(private[this] var value: Long)
     addAndGet(-1L)
 
   @inline final def addAndGet(delta: Long): Long = {
-    val newValue = value + delta
-    value = newValue
-    newValue
+    var oldValue = get
+    while (!compareAndSet(oldValue, oldValue + delta)) {
+      oldValue = get
+    }
+    oldValue + delta
   }
 
   override def toString(): String =
