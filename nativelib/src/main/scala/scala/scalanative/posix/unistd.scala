@@ -11,6 +11,8 @@ import scala.scalanative.native.{
   CInt
 }
 
+import stat.{uid_t, gid_t}
+
 @extern
 object unistd {
 
@@ -54,6 +56,9 @@ object unistd {
              fd2: CInt,
              path2: CString,
              flag: CInt): CInt = extern
+
+  @name("scalanative_chown")
+  def chown(path: CString, owner: uid_t, group: gid_t): CInt = extern
 
   // Macros
 

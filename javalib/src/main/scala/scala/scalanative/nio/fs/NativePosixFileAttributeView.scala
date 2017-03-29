@@ -1,0 +1,114 @@
+package scala.scalanative.nio.fs
+
+import java.util.{HashSet, Set}
+import java.util.concurrent.TimeUnit
+import java.nio.file.Path
+import java.nio.file.attribute._
+import java.io.IOException
+
+import scala.scalanative.native._
+import scala.scalanative.posix.{grp, pwd, stat, unistd, utime}
+import scala.scalanative.runtime.GC
+
+final class NativePosixFileAttributeView(path: Path)
+    extends PosixFileAttributeView {
+
+  override val name: String = "posix"
+
+  override def setTimes(lastModifiedTime: FileTime,
+                        lastAccessTime: FileTime,
+                        createTime: FileTime): Unit = {
+    val sb = GC.malloc_atomic(sizeof[stat.stat]).cast[Ptr[stat.stat]]
+    stat.stat(toCString(path.toString), sb)
+    val buf     = GC.malloc(sizeof[utime.utimbuf]).cast[Ptr[utime.utimbuf]]
+    !(buf._1) =
+      if (lastAccessTime != null) lastAccessTime.to(TimeUnit.SECONDS)
+      else !(sb._7)
+    !(buf._2) =
+      if (lastModifiedTime != null) lastModifiedTime.to(TimeUnit.SECONDS)
+      else !(sb._8)
+    if (utime.utime(toCString(path.toString), buf) != 0)
+      throw new IOException()
+  }
+
+  override def setOwner(owner: UserPrincipal): Unit = {
+    val passwd = pwd.getpwnam(toCString(owner.getName))
+    if (unistd.chown(toCString(path.toString), !(passwd._2), -1.toUInt) != 0)
+      throw new IOException()
+  }
+
+  override def setPermissions(perms: Set[PosixFilePermission]): Unit = {
+    var mask = 0.toUInt
+    NativePosixFileAttributeView.permMap.foreach {
+      case (flag, value) => if (perms.contains(value)) mask = mask | flag
+    }
+    if (stat.chmod(toCString(path.toString), mask) != 0)
+      throw new IOException()
+  }
+
+  override def getOwner(): UserPrincipal =
+    attributes.owner
+
+  override def setGroup(group: GroupPrincipal): Unit = {
+    val _group = grp.getgrpnam(toCString(group.getName))
+    if (unistd.chown(toCString(path.toString), -1.toUInt, !(_group._2)) != 0)
+      throw new IOException()
+  }
+
+  override def readAttributes(): BasicFileAttributes =
+    attributes
+
+  private lazy val attributes =
+    new PosixFileAttributes {
+      private val sb = GC.malloc_atomic(sizeof[stat.stat]).cast[Ptr[stat.stat]]
+      stat.stat(toCString(path.toString), sb)
+
+      private val mode     = !(sb._13)
+      private val _passwd  = pwd.getpwuid(!(sb._4))
+      private val _group   = grp.getgrgid(!(sb._5))
+      override val fileKey = (!(sb._3)).asInstanceOf[Object]
+
+      override val isDirectory    = stat.S_ISDIR(mode) == 1
+      override val isRegularFile  = stat.S_ISREG(mode) == 1
+      override val isSymbolicLink = stat.S_ISLNK(mode) == 1
+      override val isOther        = !isDirectory && !isRegularFile && !isSymbolicLink
+
+      override val lastAccessTime =
+        FileTime.from(!(sb._7), TimeUnit.SECONDS)
+      override val lastModifiedTime =
+        FileTime.from(!(sb._8), TimeUnit.SECONDS)
+      override val creationTime =
+        FileTime.from(!(sb._9), TimeUnit.SECONDS)
+
+      override val group = new GroupPrincipal {
+        override val getName = fromCString(!(_group._1))
+      }
+      override val owner = new UserPrincipal {
+        override val getName = fromCString(!(_passwd._1))
+      }
+      override val permissions = {
+        val set = new HashSet[PosixFilePermission]
+        NativePosixFileAttributeView.permMap.foreach {
+          case (flag, value) => if ((mode & flag).toInt != 0) set.add(value)
+        }
+        set
+      }
+
+      override val size = !(sb._6)
+    }
+
+}
+private object NativePosixFileAttributeView {
+  val permMap =
+    List(
+      (stat.S_IRUSR, PosixFilePermission.OWNER_READ),
+      (stat.S_IWUSR, PosixFilePermission.OWNER_WRITE),
+      (stat.S_IXUSR, PosixFilePermission.OWNER_EXECUTE),
+      (stat.S_IRGRP, PosixFilePermission.GROUP_READ),
+      (stat.S_IWGRP, PosixFilePermission.GROUP_WRITE),
+      (stat.S_IXGRP, PosixFilePermission.GROUP_EXECUTE),
+      (stat.S_IROTH, PosixFilePermission.OTHERS_READ),
+      (stat.S_IWOTH, PosixFilePermission.OTHERS_WRITE),
+      (stat.S_IXOTH, PosixFilePermission.OTHERS_EXECUTE)
+    )
+}

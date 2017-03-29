@@ -121,10 +121,10 @@ abstract class FileSystemProvider protected () {
 
   def checkAccess(path: Path, modes: Array[AccessMode]): Unit
 
-  // def getFileAttributeView[V <: FileAttributeView](
-  //     path: Path,
-  //     tpe: Class[V],
-  //     options: Array[LinkOption]): V
+  def getFileAttributeView[V <: FileAttributeView](
+      path: Path,
+      tpe: Class[V],
+      options: Array[LinkOption]): V
 
   // def readAttributes[A <: BasicFileAttributes](path: Path,
   //                                              tpe: Class[A],

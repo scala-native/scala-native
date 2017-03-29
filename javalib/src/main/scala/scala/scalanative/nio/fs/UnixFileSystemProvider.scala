@@ -2,6 +2,7 @@ package scala.scalanative.nio.fs
 
 import scala.scalanative.native.{CChar, fromCString, stackalloc}
 import scala.scalanative.posix.unistd
+import scala.collection.immutable.{Map => SMap}
 
 import java.nio.channels.{
   AsynchronousFileChannel,
@@ -9,11 +10,7 @@ import java.nio.channels.{
   SeekableByteChannel
 }
 import java.nio.file._
-import java.nio.file.attribute.{
-  BasicFileAttributes,
-  FileAttribute,
-  FileAttributeView
-}
+import java.nio.file.attribute._
 import java.nio.file.spi.FileSystemProvider
 import java.net.URI
 import java.util.concurrent.ExecutorService
@@ -128,11 +125,14 @@ class UnixFileSystemProvider extends FileSystemProvider {
     ()
   }
 
-  // override def getFileAttributeView[V <: FileAttributeView](
-  //     path: Path,
-  //     tpe: Class[V],
-  //     options: Array[LinkOption]): V =
-  //   Files.getFileAttributeView(path, tpe, options)
+  override def getFileAttributeView[V <: FileAttributeView](
+      path: Path,
+      tpe: Class[V],
+      options: Array[LinkOption]): V =
+    (knownFileAttributeViews.get(tpe) match {
+      case None     => null
+      case Some(fn) => fn(path)
+    }).asInstanceOf[V]
 
   // override def readAttributes[A <: BasicFileAttributes](
   //     path: Path,
@@ -157,5 +157,15 @@ class UnixFileSystemProvider extends FileSystemProvider {
     val res  = unistd.getcwd(buff, 4095)
     fromCString(res)
   }
+
+  private val knownFileAttributeViews: SMap[Class[_ <: FileAttributeView],
+                                            Path => FileAttributeView] =
+    SMap(
+      classOf[BasicFileAttributeView] -> (p =>
+                                            new NativePosixFileAttributeView(
+                                              p)),
+      classOf[PosixFileAttributeView] -> (p =>
+                                            new NativePosixFileAttributeView(
+                                              p)))
 
 }

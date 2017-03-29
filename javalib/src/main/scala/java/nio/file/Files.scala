@@ -197,7 +197,9 @@ object Files {
            matcher: BiPredicate[Path, BasicFileAttributes],
            options: Array[FileVisitOption]): Stream[Path] = {
     val stream = walk(start, maxDepth, 0, options, SSet.empty).filter { p =>
-      val attributes = getAttributes(p)
+      val attributes = getFileAttributeView(p,
+                                            classOf[BasicFileAttributeView],
+                                            Array.empty).readAttributes()
       matcher.test(p, attributes)
     }
     new WrappedScalaStream(stream)
@@ -207,22 +209,23 @@ object Files {
   //                  attribute: String,
   //                  options: Array[LinkOption]): Object =
   //   ???
-  //
-  // def getFileAttributeView[V <: FileAttributeView](
-  //     path: Path,
-  //     tpe: Class[V],
-  //     options: Array[LinkOption]): V =
-  //   ???
-  //
+
+  def getFileAttributeView[V <: FileAttributeView](
+      path: Path,
+      tpe: Class[V],
+      options: Array[LinkOption]): V =
+    path.getFileSystem().provider().getFileAttributeView(path, tpe, options)
+
   // def getFileStore(path: Path): FileStore =
   //   ???
 
   def getLastModifiedTime(path: Path, options: Array[LinkOption]): FileTime = {
-    val realPath   = path.toRealPath(options)
-    val attributes = getAttributes(path)
+    val realPath = path.toRealPath(options)
+    val attributes =
+      getFileAttributeView(path, classOf[BasicFileAttributeView], options)
+        .readAttributes()
     attributes.lastModifiedTime
   }
-
   //
   // def getOwner(path: Path, options: Array[LinkOption]): UserPrincipal =
   //   ???
@@ -456,8 +459,9 @@ object Files {
 
       if (dirsToSkip.contains(parent)) ()
       else {
-        val attributes = getAttributes(p)
-
+        val attributes = getFileAttributeView(p,
+                                              classOf[BasicFileAttributeView],
+                                              Array.empty).readAttributes()
         while (openDirs.nonEmpty && !parent.startsWith(openDirs.head)) {
           visitor.postVisitDirectory(openDirs.pop(), null)
         }
@@ -504,27 +508,6 @@ object Files {
   //           lines: Iterable[_ <: CharSequence],
   //           options: Array[OpenOption]): Path =
   //   ???
-
-  private def getAttributes(path: Path): BasicFileAttributes =
-    new BasicFileAttributes {
-      val sb = GC.malloc_atomic(sizeof[stat.stat]).cast[Ptr[stat.stat]]
-      stat.stat(toCString(path.toString), sb)
-
-      override val fileKey: Object = (!(sb._3)).asInstanceOf[Object]
-      override val isDirectory     = stat.S_ISDIR(!(sb._13)) == 1
-      override val isRegularFile   = stat.S_ISREG(!(sb._13)) == 1
-      override val isSymbolicLink  = stat.S_ISLNK(!(sb._13)) == 1
-      override val isOther         = !isDirectory && !isRegularFile && !isSymbolicLink
-
-      override val lastAccessTime =
-        FileTime.from(!(sb._7), TimeUnit.SECONDS)
-      override val lastModifiedTime =
-        FileTime.from(!(sb._8), TimeUnit.SECONDS)
-      override val creationTime =
-        FileTime.from(!(sb._9), TimeUnit.SECONDS)
-
-      override val size = !(sb._6)
-    }
 
   private def setAttributes(path: Path, attrs: Array[FileAttribute[_]]): Unit =
     attrs.map(a => (a.name, a.value)).toMap.foreach {

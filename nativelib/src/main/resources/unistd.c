@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include "types.h"
 
 int scalanative_f_ok() { return F_OK; }
 
@@ -28,4 +29,9 @@ int scalanative_link(char *oldpath, char *newpath) {
 
 int scalanative_linkat(int fd1, char *path1, int fd2, char *path2, int flag) {
     return linkat(fd1, path1, fd2, path2, flag);
+}
+
+int scalanative_chown(char *path, scalanative_uid_t owner, scalanative_gid_t group) {
+    // TODO: scalanative_uid_t and scalanative_gid_t may be different from uid_t and gid_t!!!
+    return chown(path, owner, group);
 }

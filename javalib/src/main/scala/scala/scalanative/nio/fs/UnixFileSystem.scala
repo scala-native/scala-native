@@ -55,8 +55,11 @@ class UnixFileSystem(override val provider: FileSystemProvider,
   override def newWatchService: WatchService =
     ???
 
-  // TODO:
-  override def supportedFileAttributeViews(): Set[String] =
-    new java.util.HashSet[String]()
+  override def supportedFileAttributeViews(): Set[String] = {
+    val set = new java.util.HashSet[String]()
+    set.add("basic")
+    set.add("posix")
+    set
+  }
 
 }
