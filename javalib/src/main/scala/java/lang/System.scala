@@ -42,7 +42,7 @@ object System {
     if (Platform.isWindows) {
       sysProps.setProperty("file.separator", "\\")
       sysProps.setProperty("path.separator", ";")
-      val userLang = fromCString(Platform.windowsGetUserLang())
+      val userLang    = fromCString(Platform.windowsGetUserLang())
       val userCountry = fromCString(Platform.windowsGetUserCountry())
       sysProps.setProperty("user.language", userLang)
       sysProps.setProperty("user.country", userCountry)
@@ -54,8 +54,10 @@ object System {
       if (userLocale != null) {
         val userLang = userLocale.takeWhile(_ != '_')
         // this mess will be updated when Regexes get implemented
-        val userCountry = userLocale.dropWhile(_ != '_')
-          .takeWhile(c => (c != '.') && (c != '@')).drop(1)
+        val userCountry = userLocale
+          .dropWhile(_ != '_')
+          .takeWhile(c => (c != '.') && (c != '@'))
+          .drop(1)
         sysProps.setProperty("user.language", userLang)
         sysProps.setProperty("user.country", userCountry)
       }
