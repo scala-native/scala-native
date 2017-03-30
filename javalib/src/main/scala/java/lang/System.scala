@@ -32,8 +32,7 @@ object System {
     sysProps.setProperty("java.vm.specification.vendor", "Oracle Corporation")
     sysProps.setProperty("java.vm.specification.name",
                          "Java Virtual Machine Specification")
-    sysProps.setProperty("java.vm.name", "Scala-Native")
-    sysProps.setProperty("java.specification.version", "1.8")
+    sysProps.setProperty("java.vm.name", "Scala Native")
     sysProps.setProperty("java.specification.version", "1.8")
     sysProps.setProperty("java.specification.vendor", "Oracle Corporation")
     sysProps.setProperty("java.specification.name",
@@ -44,7 +43,9 @@ object System {
       sysProps.setProperty("file.separator", "\\")
       sysProps.setProperty("path.separator", ";")
       val userLang = fromCString(Platform.windowsGetUserLang())
+      val userCountry = fromCString(Platform.windowsGetUserCountry())
       sysProps.setProperty("user.language", userLang)
+      sysProps.setProperty("user.country", userCountry)
 
     } else {
       sysProps.setProperty("file.separator", "/")
@@ -52,7 +53,11 @@ object System {
       val userLocale = getenv("LANG")
       if (userLocale != null) {
         val userLang = userLocale.takeWhile(_ != '_')
+        // this mess will be updated when Regexes get implemented
+        val userCountry = userLocale.dropWhile(_ != '_')
+          .takeWhile(c => (c != '.') && (c != '@')).drop(1)
         sysProps.setProperty("user.language", userLang)
+        sysProps.setProperty("user.country", userCountry)
       }
     }
 

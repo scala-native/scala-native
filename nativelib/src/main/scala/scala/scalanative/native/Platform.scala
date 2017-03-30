@@ -8,4 +8,7 @@ object Platform {
 
   @name("scalanative_windows_get_user_lang")
   def windowsGetUserLang(): CString = extern
+
+  @name("scalanative_windows_get_user_country")
+  def windowsGetUserCountry(): CString = extern
 }
