@@ -940,22 +940,31 @@ object FilesSuite extends tests.Suite {
       val dir = dirFile.toPath()
       val f0  = dir.resolve("f0")
 
-      val lines = new java.lang.Iterable[String] {
-        override val iterator = new java.util.Iterator[String] {
-          private var i                   = 0
-          override def hasNext(): Boolean = i < 2
-          override def next(): String = i match {
-            case 0 => i += 1; "first line"
-            case 1 => i += 1; "second line"
-            case _ => throw new NoSuchElementException()
-          }
-          override def remove(): Unit =
-            throw new UnsupportedOperationException()
-        }
-      }
+      val lines = new Iterable(Array("first line", "second line"))
       Files.write(f0, lines)
 
       val it = Files.lines(f0).iterator()
+      assert(it.next() == "first line")
+      assert(it.next() == "second line")
+      assert(!it.hasNext())
+    }
+  }
+
+  test("Files.move moves files") {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val f0  = dir.resolve("f0")
+      val f1  = dir.resolve("f1")
+
+      val lines = new Iterable(Array("first line", "second line"))
+      Files.write(f0, lines)
+      assert(Files.exists(f0))
+      assert(!Files.exists(f1))
+      Files.move(f0, f1)
+      assert(!Files.exists(f0))
+      assert(Files.exists(f1))
+
+      val it = Files.lines(f1).iterator
       assert(it.next() == "first line")
       assert(it.next() == "second line")
       assert(!it.hasNext())
@@ -969,6 +978,21 @@ object FilesSuite extends tests.Suite {
     fn(file)
   }
 
+}
+
+class Iterable[T](elems: Array[T]) extends java.lang.Iterable[T] {
+  override val iterator = new java.util.Iterator[T] {
+    private var i                   = 0
+    override def hasNext(): Boolean = i < elems.length
+    override def next(): T =
+      if (hasNext) {
+        val elem = elems(i)
+        i += 1
+        elem
+      } else throw new NoSuchElementException()
+    override def remove(): Unit =
+      throw new UnsupportedOperationException()
+  }
 }
 
 class QueueingVisitor extends SimpleFileVisitor[Path] {

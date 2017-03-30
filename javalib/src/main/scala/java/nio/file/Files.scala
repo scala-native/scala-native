@@ -307,9 +307,12 @@ object Files {
   def list(dir: Path): Stream[Path] =
     new WrappedScalaStream(_list(dir))
 
-  // def move(source: Path, target: Path, options: Array[CopyOption]): Path =
-  //   ???
-  //
+  def move(source: Path, target: Path, options: Array[CopyOption]): Path = {
+    copy(source, target, options)
+    delete(source)
+    target
+  }
+
   def newBufferedReader(path: Path): BufferedReader =
     newBufferedReader(path, StandardCharsets.UTF_8)
 
