@@ -68,12 +68,12 @@ object Files {
   }
 
   def copy(source: Path, out: OutputStream): Long = {
-    val in = new FileInputStream(source.toFile)
+    val in = newInputStream(source, Array.empty)
     copy(in, out)
   }
 
   def copy(source: Path, target: Path, options: Array[CopyOption]): Path = {
-    val in = new FileInputStream(source.toFile)
+    val in = newInputStream(source, Array.empty)
     try copy(in, target, options)
     finally in.close()
     target
@@ -315,7 +315,7 @@ object Files {
 
   def newBufferedReader(path: Path, cs: Charset): BufferedReader =
     new BufferedReader(
-      new InputStreamReader(new FileInputStream(path.toFile), cs))
+      new InputStreamReader(newInputStream(path, Array.empty), cs))
 
   def newBufferedWriter(path: Path,
                         cs: Charset,
@@ -348,12 +348,16 @@ object Files {
   // def newDirectoryStream(dir: Path, glob: String): DirectoryStream[Path] =
   //   ???
   //
-  // def newInputStream(path: Path, options: Array[OpenOption]): InputStream =
-  //   ???
-  //
-  // def newOutputStream(path: Path, options: Array[OpenOption]): OutputStream =
-  //   ???
-  //
+  def newInputStream(path: Path, options: Array[OpenOption]): InputStream = {
+    // TODO: Use options
+    new FileInputStream(path.toFile)
+  }
+
+  def newOutputStream(path: Path, options: Array[OpenOption]): OutputStream = {
+    val append = options.contains(StandardOpenOption.APPEND)
+    new FileOutputStream(path.toFile, append)
+  }
+
   // def notExists(path: Path, options: Array[LinkOption]): Boolean =
   //   ???
   //
@@ -535,12 +539,6 @@ object Files {
             lines: Iterable[_ <: CharSequence],
             options: Array[OpenOption]): Path =
     write(path, lines, StandardCharsets.UTF_8, options)
-
-  private def newOutputStream(path: Path,
-                              options: Array[OpenOption]): FileOutputStream = {
-    val append = options.contains(StandardOpenOption.APPEND)
-    new FileOutputStream(path.toFile, append)
-  }
 
   private def setAttributes(path: Path, attrs: Array[FileAttribute[_]]): Unit =
     attrs.map(a => (a.name, a.value)).toMap.foreach {
