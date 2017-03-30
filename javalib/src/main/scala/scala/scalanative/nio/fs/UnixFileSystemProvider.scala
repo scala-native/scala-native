@@ -131,7 +131,7 @@ class UnixFileSystemProvider extends FileSystemProvider {
       options: Array[LinkOption]): V =
     (knownFileAttributeViews.get(tpe) match {
       case None     => null
-      case Some(fn) => fn(path)
+      case Some(fn) => fn(path, options)
     }).asInstanceOf[V]
 
   // override def readAttributes[A <: BasicFileAttributes](
@@ -158,14 +158,22 @@ class UnixFileSystemProvider extends FileSystemProvider {
     fromCString(res)
   }
 
-  private val knownFileAttributeViews: SMap[Class[_ <: FileAttributeView],
-                                            Path => FileAttributeView] =
+  private val knownFileAttributeViews: SMap[
+    Class[_ <: FileAttributeView],
+    (Path, Array[LinkOption]) => FileAttributeView] =
     SMap(
-      classOf[BasicFileAttributeView] -> (p =>
+      classOf[BasicFileAttributeView] -> ((p, l) =>
                                             new NativePosixFileAttributeView(
-                                              p)),
-      classOf[PosixFileAttributeView] -> (p =>
+                                              p,
+                                              l)),
+      classOf[PosixFileAttributeView] -> ((p, l) =>
                                             new NativePosixFileAttributeView(
-                                              p)))
+                                              p,
+                                              l)),
+      classOf[FileOwnerAttributeView] -> ((p, l) =>
+                                            new NativePosixFileAttributeView(
+                                              p,
+                                              l))
+    )
 
 }

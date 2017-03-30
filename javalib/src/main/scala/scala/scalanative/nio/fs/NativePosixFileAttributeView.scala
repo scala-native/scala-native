@@ -2,7 +2,7 @@ package scala.scalanative.nio.fs
 
 import java.util.{HashSet, Set}
 import java.util.concurrent.TimeUnit
-import java.nio.file.Path
+import java.nio.file.{LinkOption, Path}
 import java.nio.file.attribute._
 import java.io.IOException
 
@@ -10,17 +10,19 @@ import scala.scalanative.native._
 import scala.scalanative.posix.{grp, pwd, stat, unistd, utime}
 import scala.scalanative.runtime.GC
 
-final class NativePosixFileAttributeView(path: Path)
-    extends PosixFileAttributeView {
+final class NativePosixFileAttributeView(path: Path,
+                                         options: Array[LinkOption])
+    extends PosixFileAttributeView
+    with FileOwnerAttributeView {
 
   override val name: String = "posix"
 
   override def setTimes(lastModifiedTime: FileTime,
                         lastAccessTime: FileTime,
                         createTime: FileTime): Unit = {
-    val sb = GC.malloc_atomic(sizeof[stat.stat]).cast[Ptr[stat.stat]]
-    stat.stat(toCString(path.toString), sb)
-    val buf     = GC.malloc(sizeof[utime.utimbuf]).cast[Ptr[utime.utimbuf]]
+    lazy val sb = getStat()
+
+    val buf = GC.malloc(sizeof[utime.utimbuf]).cast[Ptr[utime.utimbuf]]
     !(buf._1) =
       if (lastAccessTime != null) lastAccessTime.to(TimeUnit.SECONDS)
       else !(sb._7)
@@ -60,9 +62,7 @@ final class NativePosixFileAttributeView(path: Path)
 
   private lazy val attributes =
     new PosixFileAttributes {
-      private val sb = GC.malloc_atomic(sizeof[stat.stat]).cast[Ptr[stat.stat]]
-      stat.stat(toCString(path.toString), sb)
-
+      private val sb       = getStat()
       private val mode     = !(sb._13)
       private val _passwd  = pwd.getpwuid(!(sb._4))
       private val _group   = grp.getgrgid(!(sb._5))
@@ -96,6 +96,33 @@ final class NativePosixFileAttributeView(path: Path)
 
       override val size = !(sb._6)
     }
+
+  override def getAttribute(name: String): Object =
+    name match {
+      case "lastModifiedTime" => attributes.lastModifiedTime
+      case "lastAccessTime"   => attributes.lastAccessTime
+      case "creationTime"     => attributes.creationTime
+      case "size"             => Long.box(attributes.size)
+      case "isRegularFile"    => Boolean.box(attributes.isRegularFile)
+      case "isDirectory"      => Boolean.box(attributes.isDirectory)
+      case "isSymbolicLink"   => Boolean.box(attributes.isSymbolicLink)
+      case "isOther"          => Boolean.box(attributes.isOther)
+      case "fileKey"          => attributes.fileKey
+      case "permissions"      => attributes.permissions
+      case "group"            => attributes.group
+      case _                  => super.getAttribute(name)
+    }
+
+  private def getStat(): Ptr[stat.stat] = {
+    val buf = GC.malloc_atomic(sizeof[stat.stat]).cast[Ptr[stat.stat]]
+    val err =
+      if (options.contains(LinkOption.NOFOLLOW_LINKS))
+        stat.lstat(toCString(path.toString), buf)
+      else stat.stat(toCString(path.toString), buf)
+
+    if (err == 0) buf
+    else throw new IOException()
+  }
 
 }
 private object NativePosixFileAttributeView {

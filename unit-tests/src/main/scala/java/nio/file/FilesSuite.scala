@@ -2,7 +2,7 @@ package java.nio.file
 
 import java.nio.file._
 import java.io.{ByteArrayInputStream, File, FileInputStream, IOException}
-import java.nio.file.attribute.BasicFileAttributes
+import java.nio.file.attribute.{BasicFileAttributes, FileTime}
 
 import java.util.function.BiPredicate
 
@@ -770,6 +770,87 @@ object FilesSuite extends tests.Suite {
       val referenceMs = f0.toFile().lastModified()
       val filetimeMs  = Files.getLastModifiedTime(f0).toMillis()
       assert(referenceMs == filetimeMs)
+    }
+  }
+
+  test("Files.getAttribute can fetch attributes from BasicFileAttributeView") {
+    withTemporaryDirectory { dirFile =>
+      val d0 = dirFile.toPath()
+      val f0 = d0.resolve("f0")
+
+      Files.createFile(f0)
+      assert(Files.exists(f0))
+
+      val d0mtime =
+        Files.getAttribute(d0, "lastModifiedTime").asInstanceOf[FileTime]
+      val d0atime =
+        Files.getAttribute(d0, "lastAccessTime").asInstanceOf[FileTime]
+      val d0ctime =
+        Files.getAttribute(d0, "creationTime").asInstanceOf[FileTime]
+      val d0size = Files.getAttribute(d0, "size").asInstanceOf[Long]
+      val d0isReg =
+        Files.getAttribute(d0, "isRegularFile").asInstanceOf[Boolean]
+      val d0isDir = Files.getAttribute(d0, "isDirectory").asInstanceOf[Boolean]
+      val d0isSym =
+        Files.getAttribute(d0, "isSymbolicLink").asInstanceOf[Boolean]
+      val d0isOth = Files.getAttribute(d0, "isOther").asInstanceOf[Boolean]
+      val d0fkey  = Files.getAttribute(d0, "fileKey")
+
+      assert(!d0isReg)
+      assert(d0isDir)
+      assert(!d0isSym)
+      assert(!d0isOth)
+
+      val f0mtime =
+        Files.getAttribute(f0, "lastModifiedTime").asInstanceOf[FileTime]
+      val f0atime =
+        Files.getAttribute(f0, "lastAccessTime").asInstanceOf[FileTime]
+      val f0ctime =
+        Files.getAttribute(f0, "creationTime").asInstanceOf[FileTime]
+      val f0size = Files.getAttribute(f0, "size").asInstanceOf[Long]
+      val f0isReg =
+        Files.getAttribute(f0, "isRegularFile").asInstanceOf[Boolean]
+      val f0isDir = Files.getAttribute(f0, "isDirectory").asInstanceOf[Boolean]
+      val f0isSym =
+        Files.getAttribute(f0, "isSymbolicLink").asInstanceOf[Boolean]
+      val f0isOth = Files.getAttribute(f0, "isOther").asInstanceOf[Boolean]
+      val f0fkey  = Files.getAttribute(f0, "fileKey")
+
+      assert(f0mtime.toMillis() == f0.toFile().lastModified())
+      assert(f0size == f0.toFile().length())
+      assert(f0isReg)
+      assert(!f0isDir)
+      assert(!f0isSym)
+      assert(!f0isOth)
+    }
+  }
+
+  test("Files.getAttribute obeys given LinkOption") {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val f0  = dir.resolve("f0")
+      val l0  = dir.resolve("l0")
+
+      Files.createFile(f0)
+      Files.createSymbolicLink(l0, f0)
+      assert(Files.exists(f0))
+      assert(Files.exists(l0))
+
+      val normalL0IsReg =
+        Files.getAttribute(l0, "isRegularFile").asInstanceOf[Boolean]
+      val noFollowL0IsReg = Files
+        .getAttribute(l0, "isRegularFile", LinkOption.NOFOLLOW_LINKS)
+        .asInstanceOf[Boolean]
+      val normalL0IsLink =
+        Files.getAttribute(l0, "isSymbolicLink").asInstanceOf[Boolean]
+      val noFollowL0IsLink = Files
+        .getAttribute(l0, "isSymbolicLink", LinkOption.NOFOLLOW_LINKS)
+        .asInstanceOf[Boolean]
+
+      assert(normalL0IsReg)
+      assert(!noFollowL0IsReg)
+      assert(!normalL0IsLink)
+      assert(noFollowL0IsLink)
     }
   }
 

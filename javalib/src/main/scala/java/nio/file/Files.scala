@@ -26,7 +26,7 @@ import scala.scalanative.native.{CString, fromCString, Ptr, sizeof, toCString}
 import scala.scalanative.posix.{limits, stat, unistd}
 import scala.scalanative.runtime.GC
 
-import scala.collection.immutable.{Stream => SStream, Set => SSet}
+import scala.collection.immutable.{Map => SMap, Stream => SStream, Set => SSet}
 
 object Files {
 
@@ -205,10 +205,21 @@ object Files {
     new WrappedScalaStream(stream)
   }
 
-  // def getAttribute(path: Path,
-  //                  attribute: String,
-  //                  options: Array[LinkOption]): Object =
-  //   ???
+  def getAttribute(path: Path,
+                   attribute: String,
+                   options: Array[LinkOption]): Object = {
+    val sepIndex = attribute.indexOf(":")
+    val (viewName, attrName) =
+      if (sepIndex == -1) ("basic", attribute)
+      else
+        (attribute.substring(0, sepIndex),
+         attribute.substring(sepIndex + 1, attribute.length))
+    val viewClass = viewNamesToClasses
+      .get(viewName)
+      .getOrElse(throw new UnsupportedOperationException())
+    val view = getFileAttributeView(path, viewClass, options)
+    view.getAttribute(attrName)
+  }
 
   def getFileAttributeView[V <: FileAttributeView](
       path: Path,
@@ -513,5 +524,15 @@ object Files {
     attrs.map(a => (a.name, a.value)).toMap.foreach {
       case (name, value) => setAttribute(path, name, value, Array.empty)
     }
+
+  private val viewNamesToClasses: SMap[String, Class[_ <: FileAttributeView]] =
+    SMap(
+      "acl"   -> classOf[AclFileAttributeView],
+      "basic" -> classOf[BasicFileAttributeView],
+      "dos"   -> classOf[DosFileAttributeView],
+      "owner" -> classOf[FileOwnerAttributeView],
+      "user"  -> classOf[UserDefinedFileAttributeView],
+      "posix" -> classOf[PosixFileAttributeView]
+    )
 
 }
