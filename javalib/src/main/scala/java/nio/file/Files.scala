@@ -257,14 +257,14 @@ object Files {
     exists(path, options) && notALink && path.toFile().isDirectory()
   }
 
-  // def isExecutable(path: Path): Boolean =
-  //   ???
-  //
-  // def isHidden(path: Path): Boolean =
-  //   ???
-  //
-  // def isReadable(path: Path): Boolean =
-  //   ???
+  def isExecutable(path: Path): Boolean =
+    path.toFile().canExecute()
+
+  def isHidden(path: Path): Boolean =
+    path.toFile().isHidden()
+
+  def isReadable(path: Path): Boolean =
+    path.toFile().canRead()
 
   def isRegularFile(path: Path, options: Array[LinkOption]): Boolean = {
     val buf = GC.malloc_atomic(sizeof[stat.stat]).cast[Ptr[stat.stat]]
@@ -278,8 +278,8 @@ object Files {
     else false
   }
 
-  // def isSameFile(path: Path, path2: Path): Boolean =
-  //   ???
+  def isSameFile(path: Path, path2: Path): Boolean =
+    path.toFile().getCanonicalPath() == path2.toFile().getCanonicalPath()
 
   def isSymbolicLink(path: Path): Boolean = {
     val buf = GC.malloc_atomic(sizeof[stat.stat]).cast[Ptr[stat.stat]]
@@ -290,9 +290,9 @@ object Files {
     }
   }
 
-  // def isWritable(path: Path): Boolean =
-  //   ???
-  //
+  def isWritable(path: Path): Boolean =
+    path.toFile().canWrite()
+
   // def lines(path: Path): Stream[String] =
   //   ???
   //
