@@ -854,6 +854,15 @@ object FilesSuite extends tests.Suite {
     }
   }
 
+  test("Files.getAttribute accepts a view name") {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val isDir =
+        Files.getAttribute(dir, "basic:isDirectory").asInstanceOf[Boolean]
+      assert(isDir)
+    }
+  }
+
   def withTemporaryDirectory(fn: File => Unit) {
     val file = File.createTempFile("test", ".tmp")
     assert(file.delete())
