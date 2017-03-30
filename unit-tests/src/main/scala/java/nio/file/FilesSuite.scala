@@ -935,6 +935,33 @@ object FilesSuite extends tests.Suite {
     }
   }
 
+  test("Files.write can write to a file") {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val f0  = dir.resolve("f0")
+
+      val lines = new java.lang.Iterable[String] {
+        override val iterator = new java.util.Iterator[String] {
+          private var i                   = 0
+          override def hasNext(): Boolean = i < 2
+          override def next(): String = i match {
+            case 0 => i += 1; "first line"
+            case 1 => i += 1; "second line"
+            case _ => throw new NoSuchElementException()
+          }
+          override def remove(): Unit =
+            throw new UnsupportedOperationException()
+        }
+      }
+      Files.write(f0, lines)
+
+      val it = Files.lines(f0).iterator()
+      assert(it.next() == "first line")
+      assert(it.next() == "second line")
+      assert(!it.hasNext())
+    }
+  }
+
   def withTemporaryDirectory(fn: File => Unit) {
     val file = File.createTempFile("test", ".tmp")
     assert(file.delete())

@@ -320,9 +320,8 @@ object Files {
   def newBufferedWriter(path: Path,
                         cs: Charset,
                         options: Array[OpenOption]): BufferedWriter = {
-    val append = options.contains(StandardOpenOption.APPEND)
     new BufferedWriter(
-      new OutputStreamWriter(new FileOutputStream(path.toFile, append), cs))
+      new OutputStreamWriter(newOutputStream(path, options), cs))
   }
 
   def newBufferedWriter(path: Path,
@@ -511,19 +510,37 @@ object Files {
     start
   }
 
-  // def write(path: Path, bytes: Array[Byte], options: Array[OpenOption]): Path =
-  //   ???
-  //
-  // def write(path: Path,
-  //           lines: Iterable[_ <: CharSequence],
-  //           cs: Charset,
-  //           options: Array[OpenOption]): Path =
-  //   ???
-  //
-  // def write(path: Path,
-  //           lines: Iterable[_ <: CharSequence],
-  //           options: Array[OpenOption]): Path =
-  //   ???
+  def write(path: Path, bytes: Array[Byte], options: Array[OpenOption]): Path = {
+    val out = newOutputStream(path, options)
+    out.write(bytes)
+    out.close()
+    path
+  }
+
+  def write(path: Path,
+            lines: Iterable[_ <: CharSequence],
+            cs: Charset,
+            options: Array[OpenOption]): Path = {
+    val writer = newBufferedWriter(path, cs, options)
+    val it     = lines.iterator
+    while (it.hasNext()) {
+      writer.append(it.next())
+      writer.newLine()
+    }
+    writer.close()
+    path
+  }
+
+  def write(path: Path,
+            lines: Iterable[_ <: CharSequence],
+            options: Array[OpenOption]): Path =
+    write(path, lines, StandardCharsets.UTF_8, options)
+
+  private def newOutputStream(path: Path,
+                              options: Array[OpenOption]): FileOutputStream = {
+    val append = options.contains(StandardOpenOption.APPEND)
+    new FileOutputStream(path.toFile, append)
+  }
 
   private def setAttributes(path: Path, attrs: Array[FileAttribute[_]]): Unit =
     attrs.map(a => (a.name, a.value)).toMap.foreach {
