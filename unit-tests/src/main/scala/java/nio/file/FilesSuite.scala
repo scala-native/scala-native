@@ -2,7 +2,11 @@ package java.nio.file
 
 import java.nio.file._
 import java.io.{ByteArrayInputStream, File, FileInputStream, IOException}
-import java.nio.file.attribute.{BasicFileAttributes, FileTime}
+import java.nio.file.attribute.{
+  BasicFileAttributes,
+  FileTime,
+  PosixFilePermission
+}
 
 import java.util.function.BiPredicate
 
@@ -860,6 +864,44 @@ object FilesSuite extends tests.Suite {
       val isDir =
         Files.getAttribute(dir, "basic:isDirectory").asInstanceOf[Boolean]
       assert(isDir)
+    }
+  }
+
+  test("Files.getOwner works") {
+    withTemporaryDirectory { dirFile =>
+      val dir   = dirFile.toPath()
+      val owner = Files.getOwner(dir)
+      assert(owner.getName().nonEmpty)
+    }
+  }
+
+  test("Files.getPosixFilePermissions works") {
+    withTemporaryDirectory { dirFile =>
+      val dir    = dirFile.toPath()
+      val f0     = dir.resolve("f0")
+      val f0File = f0.toFile()
+
+      Files.createFile(f0)
+      assert(Files.exists(f0))
+
+      f0File.setReadable(true)
+      f0File.setWritable(false)
+      f0File.setExecutable(true)
+
+      val permissions = Files.getPosixFilePermissions(f0)
+
+      import PosixFilePermission._
+      assert(permissions.contains(OWNER_READ))
+      assert(permissions.contains(GROUP_READ))
+      assert(permissions.contains(OTHERS_READ))
+      assert(!permissions.contains(OWNER_WRITE))
+      assert(!permissions.contains(GROUP_WRITE))
+      assert(!permissions.contains(OTHERS_WRITE))
+      assert(permissions.contains(OWNER_EXECUTE))
+      assert(permissions.contains(GROUP_EXECUTE))
+      assert(permissions.contains(OTHERS_EXECUTE))
+      assert(permissions.size() == 6)
+
     }
   }
 

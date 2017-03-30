@@ -237,14 +237,18 @@ object Files {
         .readAttributes()
     attributes.lastModifiedTime
   }
-  //
-  // def getOwner(path: Path, options: Array[LinkOption]): UserPrincipal =
-  //   ???
-  //
-  // def getPosixFilePermissions(
-  //     path: Path,
-  //     options: Array[LinkOption]): Set[PosixFilePermission] =
-  //   ???
+
+  def getOwner(path: Path, options: Array[LinkOption]): UserPrincipal = {
+    val view =
+      getFileAttributeView(path, classOf[FileOwnerAttributeView], options)
+    view.getOwner()
+  }
+
+  def getPosixFilePermissions(
+      path: Path,
+      options: Array[LinkOption]): Set[PosixFilePermission] =
+    getAttribute(path, "posix:permissions", options)
+      .asInstanceOf[Set[PosixFilePermission]]
 
   def isDirectory(path: Path, options: Array[LinkOption]): Boolean = {
     val notALink =
