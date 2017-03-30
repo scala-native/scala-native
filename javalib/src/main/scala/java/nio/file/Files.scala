@@ -9,12 +9,13 @@ import java.io.{
   FileInputStream,
   FileOutputStream,
   InputStream,
+  InputStreamReader,
   IOException,
   OutputStream
 }
 
 import java.nio.file.attribute._
-import java.nio.charset.Charset
+import java.nio.charset.{Charset, StandardCharsets}
 import java.nio.channels.SeekableByteChannel
 
 import java.util.concurrent.TimeUnit
@@ -293,11 +294,11 @@ object Files {
   def isWritable(path: Path): Boolean =
     path.toFile().canWrite()
 
-  // def lines(path: Path): Stream[String] =
-  //   ???
-  //
-  // def lines(path: Path, cs: Charset): Stream[String] =
-  //   ???
+  def lines(path: Path): Stream[String] =
+    lines(path, StandardCharsets.UTF_8)
+
+  def lines(path: Path, cs: Charset): Stream[String] =
+    newBufferedReader(path, cs).lines()
 
   private def _list(dir: Path): SStream[Path] =
     dir.toFile().list().toStream.map(dir.resolve)
@@ -308,16 +309,14 @@ object Files {
   // def move(source: Path, target: Path, options: Array[CopyOption]): Path =
   //   ???
   //
-  // def newBufferedReader(path: Path): BufferedReader =
-  //   ???
+  def newBufferedReader(path: Path): BufferedReader =
+    newBufferedReader(path, StandardCharsets.UTF_8)
+
+  def newBufferedReader(path: Path, cs: Charset): BufferedReader =
+    new BufferedReader(
+      new InputStreamReader(new FileInputStream(path.toFile), cs))
+
   //
-  // def newBufferedReader(path: Path, cs: Charset): BufferedReader =
-  //   ???
-  //
-  // def newBufferedReader(path: Path,
-  //                       cs: Charset,
-  //                       options: Array[OpenOption]): BufferedReader =
-  //   ???
   //
   // def newBufferedWriter(path: Path,
   //                       cs: Charset,

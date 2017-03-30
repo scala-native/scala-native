@@ -1,7 +1,15 @@
 package java.nio.file
 
 import java.nio.file._
-import java.io.{ByteArrayInputStream, File, FileInputStream, IOException}
+import java.io.{
+  BufferedWriter,
+  ByteArrayInputStream,
+  File,
+  FileInputStream,
+  FileOutputStream,
+  IOException,
+  OutputStreamWriter
+}
 import java.nio.file.attribute.{
   BasicFileAttributes,
   FileTime,
@@ -902,6 +910,28 @@ object FilesSuite extends tests.Suite {
       assert(permissions.contains(OTHERS_EXECUTE))
       assert(permissions.size() == 6)
 
+    }
+  }
+
+  test("Files.lines returns the lines") {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val f0  = dir.resolve("f0")
+
+      val writer = new BufferedWriter(
+        new OutputStreamWriter(new FileOutputStream(f0.toFile())))
+      writer.write("first line")
+      writer.newLine()
+      writer.write("second line")
+      writer.flush()
+      writer.close()
+
+      assert(Files.exists(f0))
+
+      val it = Files.lines(f0).iterator()
+      assert(it.next() == "first line")
+      assert(it.next() == "second line")
+      assert(!it.hasNext())
     }
   }
 
