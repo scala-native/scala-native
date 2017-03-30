@@ -11,7 +11,8 @@ import java.io.{
   InputStream,
   InputStreamReader,
   IOException,
-  OutputStream
+  OutputStream,
+  OutputStreamWriter
 }
 
 import java.nio.file.attribute._
@@ -316,17 +317,18 @@ object Files {
     new BufferedReader(
       new InputStreamReader(new FileInputStream(path.toFile), cs))
 
-  //
-  //
-  // def newBufferedWriter(path: Path,
-  //                       cs: Charset,
-  //                       options: Array[OpenOption]): BufferedWriter =
-  //   ???
-  //
-  // def newBufferedWriter(path: Path,
-  //                       options: Array[OpenOption]): BufferedWriter =
-  //   ???
-  //
+  def newBufferedWriter(path: Path,
+                        cs: Charset,
+                        options: Array[OpenOption]): BufferedWriter = {
+    val append = options.contains(StandardOpenOption.APPEND)
+    new BufferedWriter(
+      new OutputStreamWriter(new FileOutputStream(path.toFile, append), cs))
+  }
+
+  def newBufferedWriter(path: Path,
+                        options: Array[OpenOption]): BufferedWriter =
+    newBufferedWriter(path, StandardCharsets.UTF_8, options)
+
   // def newByteChannel(path: Path,
   //                    options: Array[OpenOption]): SeekableByteChannel =
   //   ???
