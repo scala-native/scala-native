@@ -5,7 +5,7 @@ import java.nio.file.{OpenOption, Path}
 import java.nio.file.attribute.FileAttribute
 import spi.AbstractInterruptibleChannel
 
-import java.util.Set
+import java.util.{HashSet, Set}
 
 abstract class FileChannel protected ()
     extends AbstractInterruptibleChannel
@@ -13,16 +13,20 @@ abstract class FileChannel protected ()
     with GatheringByteChannel
     with ScatteringByteChannel {
 
-  def force(metadata: Boolean): Unit
+  // TODO:
+  // def force(metadata: Boolean): Unit
 
-  final def lock(): FileLock =
-    lock(0L, Long.MaxValue, false)
+  // TODO:
+  // final def lock(): FileLock =
+  //   lock(0L, Long.MaxValue, false)
 
-  def lock(position: Long, size: Long, shared: Boolean): FileLock
+  // TODO:
+  // def lock(position: Long, size: Long, shared: Boolean): FileLock
 
-  def map(mode: FileChannel.MapMode,
-          position: Long,
-          size: Long): MappedByteBuffer
+  // TODO:
+  // def map(mode: FileChannel.MapMode,
+  //         position: Long,
+  //         size: Long): MappedByteBuffer
 
   def position(): Long
 
@@ -47,10 +51,12 @@ abstract class FileChannel protected ()
 
   def truncate(size: Long): FileChannel
 
-  final def tryLock(): FileLock =
-    tryLock(0L, Long.MaxValue, false)
+  // TODO:
+  // final def tryLock(): FileLock =
+  //   tryLock(0L, Long.MaxValue, false)
 
-  def tryLock(position: Long, size: Long, shared: Boolean): FileLock
+  // TODO:
+  // def tryLock(position: Long, size: Long, shared: Boolean): FileLock
 
   def write(src: ByteBuffer): Int
 
@@ -64,21 +70,27 @@ abstract class FileChannel protected ()
 }
 
 object FileChannel {
-  sealed trait MapMode
+  sealed abstract class MapMode
   object MapMode {
     case object PRIVATE    extends MapMode
     case object READ_ONLY  extends MapMode
     case object READ_WRITE extends MapMode
   }
 
-  // TODO:
+  // TODO: Support options, attrs
   def open(path: Path,
            options: Set[_ <: OpenOption],
            attrs: Array[FileAttribute[_]]): FileChannel =
-    ???
+    new FileChannelImpl(path)
 
-  // TODO:
-  def open(path: Path, options: Array[OpenOption]): FileChannel =
-    ???
+  def open(path: Path, options: Array[OpenOption]): FileChannel = {
+    var i   = 0
+    val set = new HashSet[OpenOption]()
+    while (i < options.length) {
+      set.add(options(i))
+      i += 1
+    }
+    open(path, set, Array.empty)
+  }
 
 }
