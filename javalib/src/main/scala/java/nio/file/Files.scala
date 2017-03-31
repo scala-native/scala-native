@@ -361,12 +361,13 @@ object Files {
     new FileOutputStream(path.toFile, append)
   }
 
-  // def notExists(path: Path, options: Array[LinkOption]): Boolean =
-  //   ???
-  //
+  def notExists(path: Path, options: Array[LinkOption]): Boolean =
+    !exists(path, options)
+
+  // TODO: Use libmagic?
   // def probeContentType(path: Path): String =
   //   ???
-  //
+
   // def readAllBytes(path: Path): Array[Byte] =
   //   ???
   //
@@ -399,23 +400,47 @@ object Files {
 
   def setAttribute(path: Path,
                    attribute: String,
-                   value: Any,
-                   options: Array[LinkOption]): Path =
-    ???
+                   value: AnyRef,
+                   options: Array[LinkOption]): Path = {
+    val sepIndex = attribute.indexOf(":")
+    val (viewName, attrName) =
+      if (sepIndex == -1) ("basic", attribute)
+      else
+        (attribute.substring(0, sepIndex),
+         attribute.substring(sepIndex + 1, attribute.length))
+    val viewClass = viewNamesToClasses
+      .get(viewName)
+      .getOrElse(throw new UnsupportedOperationException())
+    val view = getFileAttributeView(path, viewClass, options)
+    view.setAttribute(attrName, value)
+    path
+  }
 
-  // def setLastModifiedTime(path: Path, time: FileTime): Path =
-  //   ???
-  //
-  // def setOwner(path: Path, owner: UserPrincipal): Path =
-  //   ???
-  //
-  // def setPosixFilePermissions(path: Path,
-  //                             perms: Set[PosixFilePermission]): Path =
-  //   ???
-  //
-  // def size(path: Path): Long =
-  //   ???
-  //
+  def setLastModifiedTime(path: Path, time: FileTime): Path = {
+    val view =
+      getFileAttributeView(path, classOf[BasicFileAttributeView], Array.empty)
+    view.setTimes(time, null, null)
+    path
+  }
+
+  def setOwner(path: Path, owner: UserPrincipal): Path = {
+    val view =
+      getFileAttributeView(path, classOf[FileOwnerAttributeView], Array.empty)
+    view.setOwner(owner)
+    path
+  }
+
+  def setPosixFilePermissions(path: Path,
+                              perms: Set[PosixFilePermission]): Path = {
+    val view =
+      getFileAttributeView(path, classOf[PosixFileAttributeView], Array.empty)
+    view.setPermissions(perms)
+    path
+  }
+
+  def size(path: Path): Long =
+    getAttribute(path, "basic:size", Array.empty).asInstanceOf[Long]
+
   def walk(start: Path, options: Array[FileVisitOption]): Stream[Path] =
     walk(start, Int.MaxValue, options)
 
@@ -545,7 +570,8 @@ object Files {
 
   private def setAttributes(path: Path, attrs: Array[FileAttribute[_]]): Unit =
     attrs.map(a => (a.name, a.value)).toMap.foreach {
-      case (name, value) => setAttribute(path, name, value, Array.empty)
+      case (name, value: Object) =>
+        setAttribute(path, name, value, Array.empty)
     }
 
   private val viewNamesToClasses: SMap[String, Class[_ <: FileAttributeView]] =

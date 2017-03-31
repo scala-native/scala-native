@@ -4,4 +4,6 @@ trait FileAttributeView extends AttributeView {
   // Extended API:
   def getAttribute(name: String): Object =
     throw new IllegalArgumentException()
+  def setAttribute(name: String, value: Object): Unit =
+    throw new IllegalArgumentException()
 }

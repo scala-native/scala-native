@@ -13,7 +13,8 @@ import java.io.{
 import java.nio.file.attribute.{
   BasicFileAttributes,
   FileTime,
-  PosixFilePermission
+  PosixFilePermission,
+  PosixFilePermissions
 }
 
 import java.util.function.BiPredicate
@@ -971,6 +972,59 @@ object FilesSuite extends tests.Suite {
     }
   }
 
+  test("Files.setAttribute can set lastModifiedTime") {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val f0  = dir.resolve("f0")
+
+      Files.createFile(f0)
+      assert(Files.exists(f0))
+
+      val time0 = Files.getAttribute(f0, "lastModifiedTime")
+      val time1 = FileTime.fromMillis(1000)
+      Files.setAttribute(f0, "lastModifiedTime", FileTime.fromMillis(1000))
+      val time2 = Files.getAttribute(f0, "lastModifiedTime")
+
+      assert(time0 != time2)
+      assert(time1 == time2)
+    }
+  }
+
+  test("Files.setAttribute can set lastAccessTime") {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val f0  = dir.resolve("f0")
+
+      Files.createFile(f0)
+      assert(Files.exists(f0))
+
+      val time0 = Files.getAttribute(f0, "lastAccessTime")
+      val time1 = FileTime.fromMillis(1000)
+      Files.setAttribute(f0, "lastAccessTime", time1)
+      val time2 = Files.getAttribute(f0, "lastAccessTime")
+
+      assert(time0 != time2)
+      assert(time1 == time2)
+    }
+  }
+
+  test("Files.setAttribute can set permissions") {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val f0  = dir.resolve("f0")
+
+      Files.createFile(f0)
+      assert(Files.exists(f0))
+
+      val perm0 = Files.getAttribute(f0, "posix:permissions")
+      val perm1 = PosixFilePermissions.fromString("rwxrwxrwx")
+      Files.setAttribute(f0, "posix:permissions", perm1)
+      val perm2 = Files.getAttribute(f0, "posix:permissions")
+
+      assert(perm0 != perm2)
+      assert(perm1 == perm2)
+    }
+  }
   def withTemporaryDirectory(fn: File => Unit) {
     val file = File.createTempFile("test", ".tmp")
     assert(file.delete())

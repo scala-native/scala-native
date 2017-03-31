@@ -14,6 +14,6 @@ object grp {
   @name("scalanative_getgrgid")
   def getgrgid(gid: gid_t): Ptr[group] = extern
 
-  @name("scalanative_getgrpnam")
-  def getgrpnam(name: CString): Ptr[group] = extern
+  @name("scalanative_getgrnam")
+  def getgrnam(name: CString): Ptr[group] = extern
 }

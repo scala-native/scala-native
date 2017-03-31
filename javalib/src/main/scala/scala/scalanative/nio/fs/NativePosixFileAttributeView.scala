@@ -20,7 +20,7 @@ final class NativePosixFileAttributeView(path: Path,
   override def setTimes(lastModifiedTime: FileTime,
                         lastAccessTime: FileTime,
                         createTime: FileTime): Unit = {
-    lazy val sb = getStat()
+    val sb = getStat()
 
     val buf = GC.malloc(sizeof[utime.utimbuf]).cast[Ptr[utime.utimbuf]]
     !(buf._1) =
@@ -29,6 +29,7 @@ final class NativePosixFileAttributeView(path: Path,
     !(buf._2) =
       if (lastModifiedTime != null) lastModifiedTime.to(TimeUnit.SECONDS)
       else !(sb._8)
+    // createTime is ignored: No posix-y way to set it.
     if (utime.utime(toCString(path.toString), buf) != 0)
       throw new IOException()
   }
@@ -52,7 +53,7 @@ final class NativePosixFileAttributeView(path: Path,
     attributes.owner
 
   override def setGroup(group: GroupPrincipal): Unit = {
-    val _group = grp.getgrpnam(toCString(group.getName))
+    val _group = grp.getgrnam(toCString(group.getName))
     if (unistd.chown(toCString(path.toString), -1.toUInt, !(_group._2)) != 0)
       throw new IOException()
   }
@@ -111,6 +112,22 @@ final class NativePosixFileAttributeView(path: Path,
       case "permissions"      => attributes.permissions
       case "group"            => attributes.group
       case _                  => super.getAttribute(name)
+    }
+
+  override def setAttribute(name: String, value: Object): Unit =
+    (name, value) match {
+      case ("lastModifiedTime", time: FileTime) =>
+        setTimes(time, null, null)
+      case ("lastAccessTime", time: FileTime) =>
+        setTimes(null, time, null)
+      case ("creationTime", time: FileTime) =>
+        setTimes(null, null, time)
+      case ("permissions", permissions: Set[PosixFilePermission @unchecked]) =>
+        setPermissions(permissions)
+      case ("group", group: GroupPrincipal) =>
+        setGroup(group)
+      case _ =>
+        super.setAttribute(name, value)
     }
 
   private def getStat(): Ptr[stat.stat] = {
