@@ -4,7 +4,7 @@ package java.util
 
 /** Ported from Harmony and using Java API docs.
  *
- * TODO: Commented out code needs implementing.
+ * TODO: Commented out code needed to finish implementation.
  *
  * Harmony defers much of the work to icu4j from
  * [[http://site.icu-project.org/ ICU - International Components for Unicode]]
@@ -22,13 +22,12 @@ final class Locale(val language: String,
 
   def this(language: String, country: String) = this(language, country, "")
 
-  override def clone() = {
+  override def clone() =
     try {
       super.clone
     } catch {
       case e: CloneNotSupportedException => null
     }
-  }
 
   @inline override def equals(that: Any): scala.Boolean =
     that match {
@@ -82,16 +81,13 @@ final class Locale(val language: String,
 
   //def getVariant(): String = variant
 
-  // synchronized in Java
-  @inline override def hashCode(): Int = this.synchronized {
+  @inline override def hashCode(): Int =
     country.hashCode() + language.hashCode() + variant.hashCode()
-  }
 
   //def toLanguageTag(): String = ???
 
   // Examples: "en", "en_US", "_US", "en__POSIX", "en_US_POSIX"
   @inline override def toString(): String = {
-    // straight port
     val buf = new StringBuilder
     buf.append(language)
     if (country.length > 0) {
@@ -108,7 +104,6 @@ final class Locale(val language: String,
     }
     buf.toString
   }
-
 }
 
 object Locale {
@@ -155,11 +150,8 @@ object Locale {
 
   //def setDefault(category: Locale.Category, locale: Locale): Unit = ???
 
-  // synchronized in Java
-  def setDefault(locale: Locale): Unit = this.synchronized {
+  def setDefault(locale: Locale): Unit =
     this.defaultLocale = locale
-  }
 
   //class Category
-
 }

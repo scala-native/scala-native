@@ -633,23 +633,20 @@ final class _String()
     buffer
   }
 
-  def toLowerCase(locale: Locale): _String = {
+  def toLowerCase(locale: Locale): _String =
     toCase(locale, Character.toLowerCase)
-  }
 
-  def toLowerCase(): _String =
-    toLowerCase(Locale.getDefault)
+  def toLowerCase(): _String = toLowerCase(Locale.getDefault)
 
   override def toString(): String = this
 
-  def toUpperCase(locale: Locale): _String = {
+  def toUpperCase(locale: Locale): _String =
     toCase(locale, Character.toUpperCase)
-  }
-  def toUpperCase(): _String =
-    toUpperCase(Locale.getDefault)
+
+  def toUpperCase(): _String = toUpperCase(Locale.getDefault)
 
   private[this] def toCase(locale: Locale, convert: Int => Int): _String = {
-    if (count == 0) value
+    if (count == 0) return this
     val buf = new StringBuilder(count)
     var i   = 0
     while (i < count) {
