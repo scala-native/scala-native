@@ -299,7 +299,15 @@ lazy val javalib =
     .settings(libSettings)
     .settings(mavenPublishSettings)
     .settings(
-      sources in doc in Compile := Nil // doc generation currently broken
+      sources in doc in Compile := Nil, // doc generation currently broken
+      scalacOptions in Compile := {
+        val previous = (scalacOptions in Compile).value
+        val javaBootClasspath =
+          scala.tools.util.PathResolver.Environment.javaBootClassPath
+        val classDir  = (classDirectory in Compile).value.getAbsolutePath()
+        val separator = sys.props("path.separator")
+        "-javabootclasspath" +: s"$classDir$separator$javaBootClasspath" +: previous
+      }
     )
     .dependsOn(nativelib)
 
