@@ -427,12 +427,13 @@ object ScalaNativePluginInternal {
       }
     },
     run := {
+      val env    = (envVars in run).value.toSeq
       val logger = streams.value.log
       val binary = abs(nativeLink.value)
       val args   = spaceDelimited("<arg>").parsed
 
       logger.running(binary +: args)
-      val exitCode = Process(binary +: args).!
+      val exitCode = Process(binary +: args, None, env: _*).!
 
       val message =
         if (exitCode == 0) None
