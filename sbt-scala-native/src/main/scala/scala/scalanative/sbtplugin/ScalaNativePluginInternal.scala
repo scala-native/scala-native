@@ -284,6 +284,13 @@ object ScalaNativePluginInternal {
       "org.scala-native" %%% "javalib"   % nativeVersion,
       "org.scala-native" %%% "scalalib"  % nativeVersion
     ),
+    initialize := {
+      val res = initialize.value
+      Try(Class.forName("java.util.function.Function")).toOption match {
+        case None    => sys.error("Java 8 or newer is required for this project.")
+        case Some(_) => res
+      }
+    },
     addCompilerPlugin(
       "org.scala-native" % "nscplugin" % nativeVersion cross CrossVersion.full),
     nativeSharedLibrary := false,

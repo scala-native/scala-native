@@ -15,6 +15,9 @@ Installing SBT
 Please refer to `this link <http://www.scala-sbt.org/release/docs/Setup.html>`_
 for instructions for your OS.
 
+Please note that you'll need Java 8 or more recent to use the Scala Native
+toolchain.
+
 Installing LLVM, Clang and Boehm GC
 -----------------------------------
 
