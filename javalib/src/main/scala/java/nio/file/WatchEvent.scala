@@ -7,7 +7,7 @@ trait WatchEvent[T] {
 }
 
 object WatchEvent {
-  trait Kind[T]  {
+  trait Kind[T] {
     def name(): String
     def `type`(): Class[T]
   }
