@@ -17,4 +17,7 @@ final class Instant(private val epochMilli: Long) extends Comparable[Instant] {
 object Instant {
   def ofEpochMilli(epochMilli: Long): Instant =
     new Instant(epochMilli)
+
+  def now(): Instant =
+    new Instant(System.currentTimeMillis())
 }
