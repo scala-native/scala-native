@@ -2,7 +2,7 @@ package scala.scalanative.nio.fs
 
 import java.io.File
 import java.net.URI
-import java.nio.file.{FileSystem, LinkOption, Path}
+import java.nio.file.{FileSystem, LinkOption, Path, WatchEvent, WatchKey}
 import java.util.Iterator
 
 import scala.collection.mutable.UnrolledBuffer
@@ -181,6 +181,12 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
 
   override def toString(): String =
     rawPath
+
+  override def register(watcher: java.nio.file.WatchService, events: Array[WatchEvent.Kind[_]], modifiers:  Array[WatchEvent.Modifier]): WatchKey =
+    ???
+
+  override def register(watcher: java.nio.file.WatchService, events: Array[WatchEvent.Kind[_]]): WatchKey =
+    ???
 
 }
 

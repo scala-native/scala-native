@@ -53,7 +53,7 @@ class UnixFileSystem(override val provider: FileSystemProvider,
   }
 
   override def newWatchService: WatchService =
-    ???
+    throw new UnsupportedOperationException()
 
   override def supportedFileAttributeViews(): Set[String] = {
     val set = new java.util.HashSet[String]()
