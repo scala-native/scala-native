@@ -108,7 +108,7 @@ object ScalaNativePluginInternal {
     }
 
     def running(command: Seq[String]): Unit =
-      logger.info("running" + nl + command.mkString(nl + "\t"))
+      logger.debug("running" + nl + command.mkString(nl + "\t"))
   }
 
   /** Compiles application nir to llvm ir. */
@@ -119,18 +119,27 @@ object ScalaNativePluginInternal {
                          cwd: File): Seq[nir.Attr.Link] = {
 
     val driver = tools.OptimizerDriver(config)
-    val (unresolved, links, raw, dyns) = logger.time("Linking NIR") {
+    val (unresolved, links, raw, dyns) = logger.time("Linking") {
       tools.link(config, driver, linkerReporter)
     }
 
     if (unresolved.nonEmpty) { reportLinkingErrors(unresolved, logger) }
 
-    val optimized = logger.time("Optimizing NIR") {
+    val classCount = raw.count {
+      case _: nir.Defn.Class | _: nir.Defn.Module | _: nir.Defn.Trait => true
+      case _                                                          => false
+    }
+    val methodCount = raw.count(_.isInstanceOf[nir.Defn.Define])
+    logger.info(s"Discovered ${classCount} classes and ${methodCount} methods")
+
+    val optimized = logger.time("Optimizing") {
       tools.optimize(config, driver, raw, dyns, optimizerReporter)
     }
-    logger.time("Generating LLVM IR") {
+
+    logger.time("Generating intermediate code") {
       tools.codegen(config, optimized)
     }
+    logger.info(s"Produced ${(cwd ** "*.ll").get.length} files")
 
     links
   }
@@ -197,7 +206,7 @@ object ScalaNativePluginInternal {
                         linkingOpts: Seq[String],
                         gc: String,
                         logger: Logger): Unit =
-    logger.time("Compiling LLVM IR to native code") {
+    logger.time("Compiling to native code") {
       val outpath = abs(binary)
       val apppaths = appll.par
         .map { appll =>
