@@ -633,17 +633,48 @@ final class _String()
     buffer
   }
 
-  def toLowerCase(locale: Locale): _String = ???
+  def toLowerCase(locale: Locale): _String =
+    toCase(locale, Character.toLowerCase)
 
-  def toLowerCase(): _String =
-    toLowerCase(Locale.getDefault)
+  def toLowerCase(): _String = toLowerCase(Locale.getDefault)
 
   override def toString(): String = this
 
-  def toUpperCase(locale: Locale): _String = ???
+  def toUpperCase(locale: Locale): _String =
+    toCase(locale, Character.toUpperCase)
 
-  def toUpperCase(): _String =
-    toUpperCase(Locale.getDefault)
+  def toUpperCase(): _String = toUpperCase(Locale.getDefault)
+
+  private[this] def toCase(locale: Locale, convert: Int => Int): _String = {
+    if (count == 0) return this
+    val buf = new StringBuilder(count)
+    var i   = 0
+    while (i < count) {
+      val high = value(i)
+      i += 1
+      if (Character.isHighSurrogate(high)) {
+        if (i < count) {
+          val low = value(i)
+          i += 1
+          if (Character.isLowSurrogate(low)) {
+            val cp    = Character.toCodePoint(high, low)
+            val cased = convert(cp)
+            buf.append(Character.toChars(cased))
+          } else {
+            buf.append(convert(high).toChar)
+            buf.append(convert(low).toChar)
+          }
+        } else {
+          // one high surrogate
+          buf.append(convert(high).toChar)
+        }
+      } else {
+        // normal case
+        buf.append(convert(high).toChar)
+      }
+    }
+    buf.toString
+  }
 
   def trim(): _String = {
     var start = offset
