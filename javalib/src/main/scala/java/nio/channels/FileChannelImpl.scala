@@ -16,7 +16,18 @@ final class FileChannelImpl(path: Path) extends FileChannel {
   // override def force(metadata: Boolean): Unit = ???
   // override def tryLock(position: Long, size: Long, shared: Boolean): FileLock = ???
   // override def lock(position: Long, size: Long, shared: Boolean): FileLock = ???
-  // override def map(mode: FileChannel.MapMode, position: Long, size: Long): MappedByteBuffer = ???
+  override def map(mode: FileChannel.MapMode,
+                   position: Long,
+                   size: Long): MappedByteBuffer = {
+    var total  = 0
+    var copied = 0
+    val buffer =
+      new MappedByteBuffer(mode, size.toInt, new Array(size.toInt), 0) {}
+    while (copied < size && { copied = read(buffer); copied > 0 }) {
+      total += copied
+    }
+    buffer
+  }
 
   override def position(offset: Long): FileChannel = {
     raf.seek(offset)

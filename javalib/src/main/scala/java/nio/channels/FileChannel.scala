@@ -24,9 +24,9 @@ abstract class FileChannel protected ()
   // def lock(position: Long, size: Long, shared: Boolean): FileLock
 
   // TODO:
-  // def map(mode: FileChannel.MapMode,
-  //         position: Long,
-  //         size: Long): MappedByteBuffer
+  def map(mode: FileChannel.MapMode,
+          position: Long,
+          size: Long): MappedByteBuffer
 
   def position(): Long
 
