@@ -72,9 +72,9 @@ abstract class FileChannel protected ()
 object FileChannel {
   sealed abstract class MapMode
   object MapMode {
-    case object PRIVATE    extends MapMode
-    case object READ_ONLY  extends MapMode
-    case object READ_WRITE extends MapMode
+    final val PRIVATE    = new MapMode {}
+    final val READ_ONLY  = new MapMode {}
+    final val READ_WRITE = new MapMode {}
   }
 
   // TODO: Support options, attrs
