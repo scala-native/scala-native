@@ -58,8 +58,6 @@ Since Name                     Type         Description
 0.1   ``package``              ``File``     Similar to standard package with addition of NIR
 0.1   ``publish``              ``Unit``     Similar to standard publish with addition of NIR (1)
 0.1   ``nativeLink``           ``File``     Link NIR and generate native binary
-0.2   ``nativeFindClang``      ``File``     Path to ``clang`` command
-0.2   ``nativeFindClangPP``    ``File``     Path to ``clang++`` command
 ===== ======================== ============ ====================================================
 
 

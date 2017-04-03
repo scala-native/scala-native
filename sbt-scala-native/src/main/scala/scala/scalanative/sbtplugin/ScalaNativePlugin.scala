@@ -2,6 +2,7 @@ package scala.scalanative
 package sbtplugin
 
 import scalanative.tools
+import ScalaNativePluginInternal._
 
 import sbt._
 
@@ -12,6 +13,16 @@ object ScalaNativePlugin extends AutoPlugin {
 
   object AutoImport extends NativeCross {
 
+    def findClang(default: Option[File]): File =
+      default.getOrElse(
+        discover("clang", clangVersions)
+      )
+
+    def findClangPP(default: Option[File]): File =
+      default.getOrElse(
+        discover("clang++", clangVersions)
+      )
+
     val ScalaNativeCrossVersion = sbtplugin.ScalaNativeCrossVersion
 
     val nativeVersion = nir.Versions.current
@@ -21,12 +32,6 @@ object ScalaNativePlugin extends AutoPlugin {
 
     val nativeClangPP =
       settingKey[Option[File]]("Location of the clang++ compiler.")
-
-    val nativeFindClang =
-      taskKey[File]("Find the location of the clang compiler.")
-
-    val nativeFindClangPP =
-      taskKey[File]("Find the location of the clang++ compiler.")
 
     val nativeCompileOptions =
       settingKey[Seq[String]](
@@ -51,6 +56,6 @@ object ScalaNativePlugin extends AutoPlugin {
 
   override def projectSettings: Seq[Setting[_]] = (
     ScalaNativePluginInternal.projectSettings ++
-      ScalaNativePluginInternal.scalaNativeEcosystemSettings
+      scalaNativeEcosystemSettings
   )
 }

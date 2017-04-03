@@ -273,8 +273,8 @@ lazy val nativelib =
     .settings(libSettings)
     .settings(mavenPublishSettings)
     .settings(compile in Compile := {
-      val clang   = nativeFindClang.value
-      val clangpp = nativeFindClangPP.value
+      val clang   = findClang(nativeClang.value)
+      val clangpp = findClangPP(nativeClangPP.value)
 
       val source = baseDirectory.value
       val compileSuccess =
