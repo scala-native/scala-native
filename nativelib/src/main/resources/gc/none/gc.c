@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <sys/mman.h>
+
 // Dummy GC that maps chunks of 4GB and allocates but never frees.
 
 
@@ -23,7 +24,6 @@ void scalanative_init() {
     end = current + CHUNK;
 }
 
-// Allocates without bound checks, fails once it runs out of memory
 void* scalanative_alloc_raw(size_t size) {
     size = size + (8 - size % 8);
     if (current != 0 && current + size < end) {

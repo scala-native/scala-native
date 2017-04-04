@@ -85,8 +85,7 @@ Garbage collectors
 
    Garbage collector that allocates things without ever freeing them. Useful
    for short-running command-line applications or applications where garbage
-   collections pauses are not acceptable. The gc maps chunks of 4GB using
-   mmap.
+   collections pauses are not acceptable.
 
 Publishing
 ----------
