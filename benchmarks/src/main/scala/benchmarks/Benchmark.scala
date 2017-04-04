@@ -3,6 +3,7 @@ package benchmarks
 sealed abstract class BenchmarkResult(val name: String, val success: Boolean)
 
 case class BenchmarkCompleted(override val name: String,
+                              iterations: Int,
                               timesNs: Seq[Long],
                               override val success: Boolean)
     extends BenchmarkResult(name, success)
@@ -49,7 +50,7 @@ abstract class Benchmark[T] {
         i = i + 1
       }
 
-      BenchmarkCompleted(this.getClass.getName, times, success)
+      BenchmarkCompleted(this.getClass.getName, iterations, times, success)
     } catch {
       case _: BenchmarkDisabledException =>
         BenchmarkDisabled(this.getClass.getName)
