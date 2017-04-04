@@ -27,15 +27,17 @@ systems Scala Native has been used with:
 
 Ubuntu::
 
-    $ sudo apt-get install clang libgc-dev libunwind-dev
+    $ sudo apt-get install clang libgc-dev libunwind-dev libre2-dev
+
+Note: libre2-dev is available since Xenial (16.04 LTS). Refer to `travis.yml <https://github.com/scala-native/scala-native/blob/master/.travis.yml>`_ to install from source.
 
 macOS::
 
-    $ brew install llvm bdw-gc
+    $ brew install llvm bdw-gc re2
 
 FreeBSD::
 
-    $ pkg install llvm38 boehm-gc libunwind
+    $ pkg install llvm38 boehm-gc libunwind re2
 
 nix/nixOS::
 
