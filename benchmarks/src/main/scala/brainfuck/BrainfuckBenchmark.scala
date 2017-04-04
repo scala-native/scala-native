@@ -26,12 +26,13 @@
 
 package brainfuck
 
-class BrainfuckBenchmark extends benchmarks.Benchmark[Unit] {
-  override def run(): Unit = {
+class BrainfuckBenchmark extends benchmarks.Benchmark[String] {
+  override def run(): String = {
     new Program(Program.asText).run
   }
 
-  override def check(result: Unit) = true
+  override def check(result: String) =
+    Program.expectedOutput == result.size
 }
 
 abstract class Op
@@ -79,14 +80,20 @@ class Program(text: String) {
     res
   }
 
-  def run = _run(ops, new Tape())
+  def run = {
+    val stringBuilder = new StringBuilder
 
-  def _run(program: Array[Op], tape: Tape) {
+    _run(ops, new Tape(), stringBuilder)
+
+    stringBuilder.toString
+  }
+
+  def _run(program: Array[Op], tape: Tape, output: StringBuilder) {
     for (op <- program) op match {
       case Inc(x)     => tape.inc(x)
       case Move(x)    => tape.move(x)
-      case Loop(loop) => while (tape.get > 0) _run(loop, tape)
-      case Print()    => //print(tape.get.toChar)
+      case Loop(loop) => while (tape.get > 0) _run(loop, tape, output)
+      case Print()    => output.append(tape.get.toChar)
     }
   }
 
@@ -143,4 +150,6 @@ object Program {
       |>[.>>]<<<[-]>[-]>>>>>[>]>>>>[.>>]>>[.>>]>>[.>>]<[.<<]<[<]<<<<[<]<<<<
       |<<]++++++++++.[-]<<<[>>+>+>+<<<<-]>>[<<+>>-]<[>+>+>>+<<<<-]>[<+>-]>]
       |""".stripMargin
+
+  val expectedOutput = 11359
 }
