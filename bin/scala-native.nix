@@ -16,6 +16,7 @@ in rec {
       boehmgc
       libunwind
       clang
+      lldb
     ];
   };
 } 
