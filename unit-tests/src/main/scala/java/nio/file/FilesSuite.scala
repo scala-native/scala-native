@@ -1025,6 +1025,23 @@ object FilesSuite extends tests.Suite {
       assert(perm1 == perm2)
     }
   }
+
+  test("Files.readAllLines returns all the lines") {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val f0  = dir.resolve("f0")
+
+      val lines = new Iterable(Array("first line", "second line"))
+      Files.write(f0, lines)
+      assert(Files.exists(f0))
+
+      val list = Files.readAllLines(f0)
+      assert(list.size() == 2)
+      assert(list.get(0) == "first line")
+      assert(list.get(1) == "second line")
+    }
+  }
+
   def withTemporaryDirectory(fn: File => Unit) {
     val file = File.createTempFile("test", ".tmp")
     assert(file.delete())

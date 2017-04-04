@@ -21,7 +21,7 @@ import java.nio.channels.SeekableByteChannel
 
 import java.util.concurrent.TimeUnit
 import java.util.function.BiPredicate
-import java.util.{EnumSet, HashSet, List, Map, Set}
+import java.util.{ArrayList, EnumSet, HashSet, List, Map, Set}
 import java.util.stream.{Stream, WrappedScalaStream}
 
 import scala.scalanative.native.{CString, fromCString, Ptr, sizeof, toCString}
@@ -370,13 +370,20 @@ object Files {
 
   // def readAllBytes(path: Path): Array[Byte] =
   //   ???
-  //
-  // def readAllLines(path: Path): List[String] =
-  //   ???
-  //
-  // def readAllLines(path: Path, cs: Charset): List[String] =
-  //   ???
-  //
+
+  def readAllLines(path: Path): List[String] =
+    readAllLines(path, StandardCharsets.UTF_8)
+
+  def readAllLines(path: Path, cs: Charset): List[String] = {
+    val list   = new ArrayList[String]()
+    val reader = newBufferedReader(path, cs)
+    val lines  = reader.lines.iterator
+    while (lines.hasNext()) {
+      list.add(lines.next())
+    }
+    list
+  }
+
   // def readAttributes[A <: BasicFileAttributes](path: Path,
   //                                              tpe: Class[A],
   //                                              options: Array[LinkOption]): A =
