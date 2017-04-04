@@ -52,7 +52,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
 
   private def putStrings(vs: Seq[String]) = putSeq(vs)(putString)
   private def putString(v: String) = {
-    val bytes = v.getBytes
+    val bytes = v.getBytes("UTF-8")
     putInt(bytes.length); put(bytes)
   }
 

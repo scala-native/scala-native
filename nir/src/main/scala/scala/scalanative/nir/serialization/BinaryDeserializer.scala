@@ -72,7 +72,7 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
   private def getString(): String = {
     val arr = new Array[Byte](getInt)
     get(arr)
-    new String(arr)
+    new String(arr, "UTF-8")
   }
 
   private def getBool(): Boolean = get != 0
