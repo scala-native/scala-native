@@ -15,6 +15,7 @@ in rec {
       openjdk
       boehmgc
       libunwind
+      re2
       clang
     ];
   };
