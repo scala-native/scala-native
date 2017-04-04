@@ -149,7 +149,7 @@ object ScalaNativePluginInternal {
     paths.par
       .map { path =>
         val compiler = abs(if (path.endsWith(".cpp")) clangpp else clang)
-        val compilec = compiler +: (includes :+ "-c" :+ path :+ "-o" :+ path + ".o")
+        val compilec = compiler +: "-O2" +: (includes :+ "-c" :+ path :+ "-o" :+ path + ".o")
         logger.running(compilec)
         Process(compilec, cwd) ! logger
       }
