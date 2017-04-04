@@ -40,10 +40,11 @@
 
 package gcbench
 
-class GCBenchBenchmark extends benchmarks.Benchmark[Unit] {
+class GCBenchBenchmark extends benchmarks.Benchmark[(Node, Array[Double])] {
 
-  override def run(): Unit                  = GCBenchBenchmark.start()
-  override def check(result: Unit): Boolean = true
+  override def run(): (Node, Array[Double]) = GCBenchBenchmark.start()
+  override def check(result: (Node, Array[Double])): Boolean =
+    result._1 != null && result._2(1000) == 1.0 / 1000
 
 }
 
@@ -103,7 +104,7 @@ object GCBenchBenchmark {
     }
   }
 
-  def start(): Unit = {
+  def start(): (Node, Array[Double]) = {
     var root: Node          = null
     var longLivedTree: Node = null
     var tempTree: Node      = null
@@ -130,11 +131,6 @@ object GCBenchBenchmark {
       i += 2
     }
 
-    if (longLivedTree == null || array(1000) != 1.0 / 1000)
-      System.out.println("Failed");
-    // fake reference to LongLivedTree
-    // and array
-    // to keep them from being optimized away
-
+    (longLivedTree, array)
   }
 }
