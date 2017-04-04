@@ -299,7 +299,18 @@ lazy val javalib =
     .settings(libSettings)
     .settings(mavenPublishSettings)
     .settings(
-      sources in doc in Compile := Nil // doc generation currently broken
+      sources in doc in Compile := Nil, // doc generation currently broken
+      // This is required to have incremental compilation to work in javalib.
+      // We put our classes on scalac's `javabootclasspath` so that it uses them
+      // when compiling rather than the definitions from the JDK.
+      scalacOptions in Compile := {
+        val previous = (scalacOptions in Compile).value
+        val javaBootClasspath =
+          scala.tools.util.PathResolver.Environment.javaBootClassPath
+        val classDir  = (classDirectory in Compile).value.getAbsolutePath()
+        val separator = sys.props("path.separator")
+        "-javabootclasspath" +: s"$classDir$separator$javaBootClasspath" +: previous
+      }
     )
     .dependsOn(nativelib)
 
