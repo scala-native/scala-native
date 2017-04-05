@@ -24,7 +24,15 @@ object System {
   def identityHashCode(x: Object): scala.Int =
     x.cast[Word].hashCode
 
-  def getenv(name: String): String                      = ???
+  def getenv(name: String): String = {
+    val cResult = Option(stdlib.getenv(toCString(name)))
+    cResult match {
+      case None    => null
+      case Some(x) => fromCString(x)
+    }
+  }
+
+  def getenv(): Map[String, String]                     = ???
   def clearProperty(key: String): String                = ???
   def getProperties(): Properties                       = ???
   def getProperty(key: String): String                  = ???
