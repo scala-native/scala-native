@@ -39,6 +39,7 @@ class Main(entry: Global)(implicit fresh: Fresh) extends Inject {
                  Op.Call(RtInitSig, RtInit, Seq(rt, argc, argv), unwind)),
         Inst.Let(module.name, Op.Module(entry.top, unwind)),
         Inst.Let(Op.Call(entryMainTy, entryMain, Seq(module, arr), unwind)),
+        Inst.Let(Op.Call(RtLoopSig, RtLoop, Seq(module), unwind)),
         Inst.Ret(Val.Int(0)),
         Inst.Label(unwind.name, Seq(exc)),
         Inst.Let(
@@ -59,6 +60,10 @@ object Main extends InjectCompanion {
     Type.Function(Seq(Rt, Type.Int, Type.Ptr), ObjectArray)
   val RtInit =
     Val.Global(Rt.name member "init_i32_ptr_class.ssnr.ObjectArray", Type.Ptr)
+  val RtLoopSig =
+    Type.Function(Seq(Rt), Type.Unit)
+  val RtLoop =
+    Val.Global(Rt.name member "loop_unit", Type.Ptr)
 
   val MainName = Global.Top("main")
   val MainSig  = Type.Function(Seq(Type.Int, Type.Ptr), Type.Int)
@@ -78,7 +83,11 @@ object Main extends InjectCompanion {
   val InitDecl = Defn.Declare(Attrs.None, Init.name, InitSig)
 
   override val depends =
-    Seq(ObjectArray.name, Rt.name, RtInit.name, PrintStackTraceName)
+    Seq(ObjectArray.name,
+        Rt.name,
+        RtInit.name,
+        RtLoop.name,
+        PrintStackTraceName)
 
   override val injects =
     Seq(InitDecl)

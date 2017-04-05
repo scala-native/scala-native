@@ -77,7 +77,7 @@ package object runtime {
   def getMonitor(obj: Object): Monitor = Monitor.dummy
 
   /** Initialize runtime with given arguments and return the
-   * rest as Java-style array.
+   *  rest as Java-style array.
    */
   def init(argc: Int, argv: Ptr[Ptr[Byte]]): ObjectArray = {
     val args = new scala.Array[String](argc - 1)
@@ -92,4 +92,9 @@ package object runtime {
 
     args.asInstanceOf[ObjectArray]
   }
+
+  /** Run the runtime's event loop. The method is called from the
+   *  generated C-style after the application's main method terminates.
+   */
+  def loop(): Unit = ()
 }
