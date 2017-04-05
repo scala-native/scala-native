@@ -1042,6 +1042,22 @@ object FilesSuite extends tests.Suite {
     }
   }
 
+  test("Files.readAllBytes reads all bytes") {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val f0  = dir.resolve("f0")
+      val in  = new ByteArrayInputStream(Array(1, 2, 3))
+      Files.copy(in, f0)
+      assert(Files.exists(f0))
+      assert(Files.size(f0) == 3)
+
+      val bytes = Files.readAllBytes(f0)
+      assert(bytes(0) == 1)
+      assert(bytes(1) == 2)
+      assert(bytes(2) == 3)
+    }
+  }
+
   def withTemporaryDirectory(fn: File => Unit) {
     val file = File.createTempFile("test", ".tmp")
     assert(file.delete())

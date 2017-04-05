@@ -368,8 +368,18 @@ object Files {
   // def probeContentType(path: Path): String =
   //   ???
 
-  // def readAllBytes(path: Path): Array[Byte] =
-  //   ???
+  def readAllBytes(path: Path): Array[Byte] = {
+    val bytes  = new Array[Byte](size(path).toInt)
+    val buffer = new Array[Byte](4096)
+    val input  = newInputStream(path, Array.empty)
+    var offset = 0
+    var read   = 0
+    while ({ read = input.read(buffer); read != -1 }) {
+      System.arraycopy(buffer, 0, bytes, offset, read)
+      offset += read
+    }
+    bytes
+  }
 
   def readAllLines(path: Path): List[String] =
     readAllLines(path, StandardCharsets.UTF_8)
