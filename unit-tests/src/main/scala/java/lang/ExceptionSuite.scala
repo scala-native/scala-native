@@ -7,9 +7,10 @@ object ExceptionSuite extends tests.Suite {
     val sw = new java.io.StringWriter
     val pw = new java.io.PrintWriter(sw)
     (new Exception).printStackTrace(pw)
+
+    // Stacktrace when C/C++ files are compiled with -O2
     val expected = Seq(
       "java.lang.Exception",
-      "\tat java.lang.Throwable::fillInStackTrace_class.java.lang.Throwable",
       "\tat java.lang.Throwable::init_class.java.lang.String_class.java.lang.Throwable",
       "\tat java.lang.Exception::init_class.java.lang.String_class.java.lang.Throwable",
       "\tat java.lang.Exception::init",
