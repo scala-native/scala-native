@@ -7,14 +7,13 @@ package java.util
  * TODO: needs TimeZone, Calendar or java.util.time for compatible toString
  *       and other deprecated methods if needed
  */
-class Date(protected[this] val milliseconds: Long)
+class Date(milliseconds: Long)
     extends Object
     with Serializable
     with Cloneable
     with Comparable[Date] {
 
-  //def this() = this(System.currentTimeMillis())
-  def this() = this(System.nanoTime() / 1000000L)
+  def this() = this(System.currentTimeMillis())
 
   def after(when: Date): Boolean = milliseconds > when.getTime()
 
