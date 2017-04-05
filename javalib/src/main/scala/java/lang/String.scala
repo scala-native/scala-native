@@ -567,7 +567,7 @@ final class _String()
 
       val rs = replacement.toString
 
-      if ("".equals(rs)) {
+      if (ts.isEmpty) {
         val buffer =
           new java.lang.StringBuilder(count + (rs.length * (count + 1)))
         buffer.append(rs)

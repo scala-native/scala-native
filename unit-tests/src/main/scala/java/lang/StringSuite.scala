@@ -42,10 +42,42 @@ object StringSuite extends tests.Suite {
     assert("This is a test".regionMatches(0, "This", 0, 4))
   }
 
-  test("replace") {
+  test("replace Char") {
     assert("test".replace('t', 'p') equals "pesp")
     assert("Test".replace('t', 'p') equals "Tesp")
     assert("Test".replace('T', 'p') equals "pest")
+    assert("Test".replace('0', '1') equals "Test")
+  }
+
+  test("replace CharSequence") {
+    // Runs assertion with and without prefix and suffix
+    def check(input: String, replace: String => Boolean) = {
+      assert(replace(input))
+
+      val inputWithPrefix = ("[" + input).substring(1)
+      assert(inputWithPrefix equals input)
+      assert(replace(inputWithPrefix))
+
+      val inputWithSuffix = (input + "]").substring(0, input.length)
+      assert(inputWithSuffix equals input)
+      assert(replace(inputWithSuffix))
+
+      val inputWithBoth = ("[" + input + "]").substring(1, input.length + 1)
+      assert(inputWithBoth equals input)
+      assert(replace(inputWithBoth))
+    }
+
+    check("test", _.replace("t", "p") equals "pesp")
+    check("Test", _.replace("t", "p") equals "Tesp")
+    check("test", _.replace("e", "oa") equals "toast")
+    check("Test", _.replace("T", "p") equals "pest")
+    check("spantanplans", _.replace("an", ".") equals "sp.t.pl.s")
+    check("spantanplans", _.replace("an", "") equals "sptpls")
+    check("Test", _.replace("0", "1") equals "Test")
+    check("Test", _.replace("e", "") equals "Tst")
+    check("Test", _.replace("t", "") equals "Tes")
+    check("Test", _.replace("", "") equals "Test")
+    check("Test", _.replace("", "--") equals "--T--e--s--t--")
   }
 
   test("getBytes") {
