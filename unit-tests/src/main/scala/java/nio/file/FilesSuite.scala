@@ -13,6 +13,7 @@ import java.io.{
 import java.nio.file.attribute.{
   BasicFileAttributes,
   FileTime,
+  PosixFileAttributes,
   PosixFilePermission,
   PosixFilePermissions
 }
@@ -1055,6 +1056,17 @@ object FilesSuite extends tests.Suite {
       assert(bytes(0) == 1)
       assert(bytes(1) == 2)
       assert(bytes(2) == 3)
+    }
+  }
+
+  test("Files.readAttributes works") {
+    withTemporaryDirectory { dirFile =>
+      val dir   = dirFile.toPath
+      val attrs = Files.readAttributes(dir, classOf[PosixFileAttributes])
+      assert(attrs.isDirectory())
+      assert(!attrs.isOther())
+      assert(!attrs.isRegularFile())
+      assert(!attrs.isSymbolicLink())
     }
   }
 

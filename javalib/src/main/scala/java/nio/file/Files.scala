@@ -394,11 +394,17 @@ object Files {
     list
   }
 
-  // def readAttributes[A <: BasicFileAttributes](path: Path,
-  //                                              tpe: Class[A],
-  //                                              options: Array[LinkOption]): A =
-  //   ???
-  //
+  def readAttributes[A <: BasicFileAttributes](
+      path: Path,
+      tpe: Class[A],
+      options: Array[LinkOption]): A = {
+    val viewClass = attributesClassesToViews
+      .get(tpe)
+      .getOrElse(throw new UnsupportedOperationException())
+    val view = getFileAttributeView(path, viewClass, options)
+    view.readAttributes().asInstanceOf[A]
+  }
+
   // def readAttributes(path: Path,
   //                    attributes: String,
   //                    options: Array[LinkOption]): Map[String, Object] =
@@ -590,6 +596,15 @@ object Files {
       case (name, value: Object) =>
         setAttribute(path, name, value, Array.empty)
     }
+
+  private val attributesClassesToViews: SMap[
+    Class[_ <: BasicFileAttributes],
+    Class[_ <: BasicFileAttributeView]] =
+    SMap(
+      classOf[BasicFileAttributes] -> classOf[BasicFileAttributeView],
+      classOf[DosFileAttributes]   -> classOf[DosFileAttributeView],
+      classOf[PosixFileAttributes] -> classOf[PosixFileAttributeView]
+    )
 
   private val viewNamesToClasses: SMap[String, Class[_ <: FileAttributeView]] =
     SMap(
