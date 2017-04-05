@@ -1540,12 +1540,30 @@ abstract class NirCodeGen
           val offset = genExpr(offsetp, ptr)
           offset withOp Op.Elem(ty, ptr.value, Seq(offset.value))
 
-        case (PTR_SUB, Seq(offsetp, tagp)) =>
-          val st     = unwrapTag(tagp)
-          val ty     = genType(st, box = false)
-          val offset = genExpr(offsetp, ptr)
-          val neg    = negateInt(offset.value, offset)
-          neg withOp Op.Elem(ty, ptr.value, Seq(neg.value))
+        case (PTR_SUB, Seq(argp, tagp)) =>
+          argp match {
+            case lit: Literal =>
+              val st     = unwrapTag(tagp)
+              val ty     = genType(st, box = false)
+              val offset = genExpr(argp, ptr)
+              val neg    = negateInt(offset.value, offset)
+              neg withOp Op.Elem(ty, ptr.value, Seq(neg.value))
+
+            case id: Ident =>
+              /*
+               * Pointers in Scala Native are untyped and modeled as `i8*`.
+               * Pointer substraction therefore explicitly divide the byte
+               * offset by the size of pointer type.
+               */
+              val st         = unwrapTag(tagp)
+              val ty         = genType(st, box = false)
+              val ptrInt     = ptr withOp Op.Conv(nir.Conv.Ptrtoint, nir.Type.ULong, ptr.value)
+              val ptrArg     = genExpr(argp, ptrInt)
+              val ptrArgInt  = ptrInt withOp Op.Conv(nir.Conv.Ptrtoint, nir.Type.ULong, ptrArg.value)
+              val byteOffset = ptrArgInt withOp Op.Bin(Bin.Isub, nir.Type.Long, ptrInt.value, ptrArgInt.value)
+              val sizeOf     = byteOffset withOp Op.Sizeof(ty)
+              sizeOf withOp Op.Bin(Bin.Sdiv, nir.Type.Long, byteOffset.value, sizeOf.value)
+          }
 
         case (PTR_APPLY, Seq(offsetp, tagp)) =>
           val st     = unwrapTag(tagp)
