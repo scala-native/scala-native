@@ -356,6 +356,8 @@ lazy val scalalib =
         IO.copyDirectory(file(s"scalalib/overrides-$epoch.$major/scala"),
                          file("scalalib/src/main/scala/scala"),
                          overwrite = true)
+
+        (file("scalalib/src/main/scala") ** "*.java").get.foreach(IO.delete)
       },
       compile in Compile := (compile in Compile)
         .dependsOn(assembleScalaLibrary)
