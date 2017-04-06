@@ -94,8 +94,13 @@ object ClassHierarchy {
       Val.Struct(Global.None, vtable)
     def dynDispatchTableStruct =
       Type.Struct(Global.None, Seq(Type.Int, Type.Ptr, Type.Ptr, Type.Ptr))
-    def size: Long =
-      MemoryLayout(Type.Ptr +: allfields.map(_.ty)).size
+
+    def refMapStruct = Type.Struct(Global.None, Seq(Type.Ptr))
+    def memoryLayout = MemoryLayout(Type.Ptr +: allfields.map(_.ty))
+
+    def refMap = Val.Const(Val.Array(Type.Long, memoryLayout.offsetArray))
+    def size   = memoryLayout.size
+
     def classStruct: Type.Struct = {
       val data            = allfields.map(_.ty)
       val classStructName = name member "layout"
@@ -111,16 +116,21 @@ object ClassHierarchy {
             Type.Long, // size
             Type.Struct(Global.None, Seq(Type.Int, Type.Int)), // range
             dynDispatchTableStruct,
-            vtableStruct))
+            refMapStruct,
+            vtableStruct)
+      )
     override def typeValue: Val.Struct =
       Val.Struct(
         Global.None,
-        Seq(super.typeValue,
-            Val.Long(size),
-            Val.Struct(Global.None,
-                       Seq(Val.Int(range.head), Val.Int(range.last))),
-            dynDispatchTableValue,
-            vtableValue)
+        Seq(
+          super.typeValue,
+          Val.Long(size),
+          Val.Struct(Global.None,
+                     Seq(Val.Int(range.head), Val.Int(range.last))),
+          dynDispatchTableValue,
+          Val.Struct(Global.None, Seq(refMap)),
+          vtableValue
+        )
       )
   }
 

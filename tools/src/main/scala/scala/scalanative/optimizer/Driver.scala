@@ -19,7 +19,8 @@ object Driver {
     inject.TraitDispatchTables,
     inject.HasTrait,
     inject.RuntimeTypeInformation,
-    inject.ClassStruct
+    inject.ClassStruct,
+    inject.GCexternals
   )
 
   private val fastOptPasses = Seq(
