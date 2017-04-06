@@ -29,7 +29,6 @@ class QueensBenchmark extends benchmarks.Benchmark[Boolean] {
   var queenRows: Array[Int]    = _
 
   override def run(): Boolean = {
-    disableBenchmark()
     var result = true
     (0 until 10).foreach { i =>
       result = result && queens()

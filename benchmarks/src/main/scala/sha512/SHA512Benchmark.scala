@@ -43,8 +43,8 @@ package sha512
 class SHA512Benchmark extends benchmarks.Benchmark[Boolean] {
   override def run(): Boolean = {
     disableBenchmark()
-    // Doesn't link.
-    // Test.selfTest(verbose = false)
+    // Fails
+    Test.selfTest(verbose = false)
     true
   }
 
