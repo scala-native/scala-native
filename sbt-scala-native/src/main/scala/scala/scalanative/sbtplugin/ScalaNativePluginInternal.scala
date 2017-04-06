@@ -432,7 +432,24 @@ object ScalaNativePluginInternal {
       val args   = spaceDelimited("<arg>").parsed
 
       logger.running(binary +: args)
-      val exitCode = Process(binary +: args).!
+      val exitCode =
+        Process(binary +: args).run(logger, connectInput = true).exitValue
+
+      val fatal = 128
+      val message =
+        if (exitCode == 0) None
+        else if (exitCode > fatal) {
+          // http://man7.org/linux/man-pages/man7/signal.7.html
+          val SIGSEGV = 11
+
+          val signal = exitCode - fatal
+
+          if (signal == SIGSEGV) {
+            Some("Segmentation fault")
+          } else {
+            Some("Nonzero exit code: signal " + signal)
+          }
+        } else Some("Nonzero exit code: " + exitCode)
 
       val message =
         if (exitCode == 0) None
