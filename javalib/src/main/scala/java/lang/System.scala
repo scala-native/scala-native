@@ -1,8 +1,9 @@
 package java.lang
 
 import java.io.{InputStream, PrintStream}
-import java.util.Properties
+import java.util.{Collections, HashMap, Map, Properties}
 import scala.scalanative.native._
+import scala.scalanative.posix._
 import scala.scalanative.runtime.time
 import scala.scalanative.runtime.GC
 
@@ -24,12 +25,14 @@ object System {
   def identityHashCode(x: Object): scala.Int =
     x.cast[Word].hashCode
 
-  def getenv(name: String): String                      = ???
   def clearProperty(key: String): String                = ???
   def getProperties(): Properties                       = ???
   def getProperty(key: String): String                  = ???
   def getProperty(key: String, default: String): String = ???
   def setProperty(key: String, value: String): String   = ???
+
+  def getenv(): Map[String, String] = envVars
+  def getenv(key: String): String   = envVars.get(key)
 
   def nanoTime(): scala.Long = time.scalanative_nano_time
 
@@ -38,6 +41,38 @@ object System {
   var err: PrintStream = new PrintStream(new CFileOutputStream(stdio.stderr))
 
   def gc(): Unit = GC.collect()
+
+  private lazy val envVars: Map[String, String] = {
+    // workaround since `while(ptr(0) != null)` causes segfault
+    def isDefined(ptr: Ptr[CString]): Boolean = {
+      val s: CString = ptr(0)
+      s != null
+    }
+
+    // Count to preallocate the map
+    var size    = 0
+    var sizePtr = unistd.environ
+    while (isDefined(sizePtr)) {
+      size += 1
+      sizePtr += 1
+    }
+
+    val map               = new java.util.HashMap[String, String](size)
+    var ptr: Ptr[CString] = unistd.environ
+    while (isDefined(ptr)) {
+      val variable = fromCString(ptr(0))
+      val name     = variable.takeWhile(_ != '=')
+      val value =
+        if (name.length < variable.length)
+          variable.substring(name.length + 1, variable.length)
+        else
+          ""
+      map.put(name, value)
+      ptr = ptr + 1
+    }
+
+    Collections.unmodifiableMap(map)
+  }
 
   private class CFileOutputStream(stream: Ptr[stdio.FILE])
       extends java.io.OutputStream {

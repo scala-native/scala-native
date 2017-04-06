@@ -1,12 +1,14 @@
 package scala.scalanative.posix
 
-import scala.scalanative.native.{CUnsignedInt, extern}
+import scala.scalanative.native.{CUnsignedInt, CString, Ptr, extern, name}
 
-/**
- * Created by marius on 27.10.16.
- */
 @extern
 object unistd {
   def sleep(seconds: CUnsignedInt): Int = extern
   def usleep(usecs: CUnsignedInt): Int  = extern
+
+  // Macros
+
+  @name("scalanative_environ")
+  def environ: Ptr[CString] = extern
 }
