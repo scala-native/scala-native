@@ -17,7 +17,6 @@ class SudokuBenchmark
       scala.collection.mutable.Map[String, String]]] {
 
   override def run(): Option[Grid] = {
-    disableBenchmark()
     solve(grid1)
   }
 
