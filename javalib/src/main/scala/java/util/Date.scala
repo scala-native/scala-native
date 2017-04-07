@@ -1,11 +1,9 @@
 package java.util
 
 /** Ported from Scala JS and Apache Harmony
- * - omits deprecation
- * - immutable
- *
- * TODO: needs TimeZone, Calendar or java.util.time for compatible toString
- *       and other deprecated methods if needed
+ * - omits deprecated methods
+ * - immutable, setTime not implemented
+ * - toString not jdk compatible
  */
 class Date(milliseconds: Long)
     extends Object
