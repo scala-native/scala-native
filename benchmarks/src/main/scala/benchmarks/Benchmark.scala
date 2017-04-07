@@ -22,7 +22,7 @@ abstract class Benchmark[T] {
     // Run once to estimate how long this benchmark takes
     val nsPerBenchmark = 3e9.toLong
     val timeEstimate   = estimateTime()
-    Math.max(1, (nsPerBenchmark / timeEstimate).toInt)
+    Math.max(20, (nsPerBenchmark / timeEstimate).toInt)
   }
 
   private class BenchmarkDisabledException extends Exception
