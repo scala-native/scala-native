@@ -1,8 +1,12 @@
 #include <stdlib.h>
 #include <sys/mman.h>
 
-// Dummy GC that maps chunks of 4GB and allocates but never frees.
+// Darwin defines MAP_ANON instead of MAP_ANONYMOUS
+#if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
+#define MAP_ANONYMOUS MAP_ANON
+#endif
 
+// Dummy GC that maps chunks of 4GB and allocates but never frees.
 
 // Map 4GB
 #define CHUNK (4*1024*1024*1024L)
@@ -47,4 +51,3 @@ void* scalanative_alloc(void* info, size_t size) {
 }
 
 void scalanative_collect() {}
-
