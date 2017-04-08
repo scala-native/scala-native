@@ -8,29 +8,13 @@ If you have reached this section you probably have a system that is now able to 
 Minimal sbt project
 -------------------
 
-Start within a new folder, and create a file ``project/plugins.sbt`` as follows::
+You need sbt 0.13.0 or later.
 
-    addSbtPlugin("org.scala-native" % "sbt-scala-native"  % "0.1.0")
+```
+sbt new scala-native/scala-native.g8 && cd scala-native-example
 
-Create a file ``project/build.properties`` to define the sbt version as follows::
-
-    sbt.version = 0.13.13
-
-define a new ``build.sbt``::
-
-    enablePlugins(ScalaNativePlugin)
-
-    scalaVersion := "2.11.8"
-
-and now you can write your first application in ``./src/main/scala/HelloWorld.scala``::
-
-    package example
-
-    object Main {
-      def main(args: Array[String]): Unit =
-        println("Hello, world!")
-    }
-
+name [scala-native-example]: <Press ENTER>
+```
 now simply run ``sbt run`` to get everything compiled and have the expected output!
 
 Sbt settings and tasks
