@@ -5,11 +5,11 @@ Environment setup
 
 This is what you will be doing, in a nutshell:
 
-* installation of SBT
+* installation of sbt
 * installation of LLVM and Clang
 * installation of Boehm GC
 
-Installing SBT
+Installing sbt
 --------------
 
 Please refer to `this link <http://www.scala-sbt.org/release/docs/Setup.html>`_

@@ -1,6 +1,6 @@
 .. _sbt:
 
-Building projects with SBT
+Building projects with sbt
 ==========================
 
 If you have reached this section you probably have a system that is now able to compile and run Scala Native programs.
