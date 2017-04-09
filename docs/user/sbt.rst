@@ -22,7 +22,9 @@ define a new ``build.sbt``::
 
     scalaVersion := "2.11.8"
 
-and now you can write your first application in ``./src/main/scala/HelloWorld.scala``::
+and now you can write your first application in ``./src/main/scala/HelloWorld.scala``:
+
+.. code-block:: scala
 
     package example
 
