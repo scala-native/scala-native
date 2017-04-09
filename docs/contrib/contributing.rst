@@ -65,7 +65,7 @@ policy (i.e. one merged pull request corresponds to one squashed commit to the
 master branch.)
 
 You do not need to squash commits manually. It's typical to add new commits
-to the PR branch to accomodate changes that were suggested by the reviewers.
+to the PR branch to accommodate changes that were suggested by the reviewers.
 Squashing things manually and/or rewriting history on the PR branch is all-right
 as long as it's clear that concerns raised by reviewers have been addressed.
 

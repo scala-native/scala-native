@@ -70,7 +70,7 @@ Scala Native supports two distinct linking modes:
 2. **release.**
 
    Optimized for best runtime performance at expense of longer compilation time.
-   Similar to clang's ``-O2`` with addition of link-time optimisation over
+   Similar to clang's ``-O2`` with addition of link-time optimization over
    the whole application code.
 
 Garbage collectors
@@ -93,7 +93,7 @@ Publishing
 Scala Native supports sbt's standard workflow for the package distribution:
 
 1. Compile your code.
-2. Generate a jar with all of the classfiles and NIR files.
+2. Generate a jar with all of the class files and NIR files.
 3. Publish the jar to `sonatype`_, `bintray`_ or any other 3rd party hosting service.
 
 Once the jar has been published, it can be resolved through sbt's standard
@@ -109,7 +109,7 @@ Cross compilation
 sbt plugin that lets you cross-compile your projects against all three major
 platforms in Scala: JVM, JavaScript via Scala.js and native via Scala Native.
 It's based on the original cross-project idea from Scala.js and supports the
-same syntax for exising JVM/JavaScript cross-projects. Please refer to project's
+same syntax for existing JVM/JavaScript cross-projects. Please refer to project's
 `README <https://github.com/scala-native/sbt-crossproject/blob/master/README.md>`_
 for details.
 
