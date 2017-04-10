@@ -30,10 +30,10 @@ object System {
   def getProperty(key: String): String                  = ???
   def getProperty(key: String, default: String): String = ???
   def setProperty(key: String, value: String): String   = ???
-  
+
   def nanoTime(): scala.Long          = time.scalanative_nano_time
   def currentTimeMillis(): scala.Long = time.scalanative_current_time_millis
-  
+
   def getenv(): Map[String, String] = envVars
   def getenv(key: String): String   = envVars.get(key)
 
