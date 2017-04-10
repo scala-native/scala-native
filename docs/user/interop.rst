@@ -55,6 +55,7 @@ unsigned long         native.CUnsignedLong (1)
 long long             native.CLongLong
 unsigned long long    native.CUnsignedLongLong (1)
 size_t                native.CSize
+ptrdiff_t             native.CPtrDiff (2)
 wchar_t               native.CWideChar
 char16_t              native.CChar16
 char32_t              native.CChar32
@@ -122,6 +123,7 @@ Operation        C syntax                 Scala Syntax
 Load value       ``*ptr``                 ``!ptr``
 Store value      ``*ptr = value``         ``!ptr = value``
 Pointer to index ``ptr + i``, ``&ptr[i]`` ``ptr + i``
+Elements between ``ptr1 - ptr2``          ``ptr1 - ptr2``
 Load at index    ``ptr[i]``               ``ptr(i)``
 Store at index   ``ptr[i] = value``       ``ptr(i) = value``
 Pointer to field ``&ptr->name``           ``ptr._N``
