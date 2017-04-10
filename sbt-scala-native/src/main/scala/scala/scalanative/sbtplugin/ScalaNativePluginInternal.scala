@@ -58,8 +58,8 @@ object ScalaNativePluginInternal {
   private def abs(file: File): String =
     file.getAbsolutePath
 
-  private def discover(binaryName: String,
-                       binaryVersions: Seq[(String, String)]): File = {
+  def discover(binaryName: String,
+               binaryVersions: Seq[(String, String)]): File = {
 
     val docInstallUrl =
       "http://scala-native.readthedocs.io/en/latest/user/setup.html#installing-llvm-clang-and-boehm-gc"
@@ -287,6 +287,8 @@ object ScalaNativePluginInternal {
       inConfig(Compile)(nativeMissingDependenciesTask) ++
       inConfig(Test)(nativeMissingDependenciesTask)
 
+  val clangVersions = Seq(("3", "8"), ("3", "7"))
+
   lazy val unscopedSettings = Seq(
     libraryDependencies ++= Seq(
       "org.scala-native" %%% "nativelib" % nativeVersion,
@@ -303,12 +305,8 @@ object ScalaNativePluginInternal {
     addCompilerPlugin(
       "org.scala-native" % "nscplugin" % nativeVersion cross CrossVersion.full),
     nativeSharedLibrary := false,
-    nativeClang := {
-      discover("clang", Seq(("3", "8"), ("3", "7")))
-    },
-    nativeClangPP := {
-      discover("clang++", Seq(("3", "8"), ("3", "7")))
-    },
+    nativeClang := None,
+    nativeClangPP := None,
     nativeCompileOptions := {
       mode(nativeMode.value) match {
         case tools.Mode.Debug   => Seq("-O0")
@@ -330,8 +328,9 @@ object ScalaNativePluginInternal {
     nativeGC := "boehm",
     nativeNativelib := {
       val nativelib = (crossTarget in Compile).value / "nativelib"
-      val clang     = nativeClang.value
-      val clangpp   = nativeClangPP.value
+      val clang     = findClang(nativeClang.value)
+      val clangpp   = findClangPP(nativeClangPP.value)
+
       val jar = (fullClasspath in Compile).value
         .map(entry => abs(entry.data))
         .collectFirst {
@@ -368,9 +367,10 @@ object ScalaNativePluginInternal {
       val logger = streams.value.log
 
       logger.time("Total") {
-        val nativelib   = nativeNativelib.value
-        val clang       = nativeClang.value
-        val clangpp     = nativeClangPP.value
+        val nativelib = nativeNativelib.value
+        val clang     = findClang(nativeClang.value)
+        val clangpp   = findClangPP(nativeClangPP.value)
+
         val compileOpts = nativeCompileOptions.value
         val linkingOpts = nativeLinkingOptions.value
         checkThatClangIsRecentEnough(clang)

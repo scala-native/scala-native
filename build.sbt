@@ -273,9 +273,10 @@ lazy val nativelib =
     .settings(libSettings)
     .settings(mavenPublishSettings)
     .settings(compile in Compile := {
-      val clang   = nativeClang.value
-      val clangpp = nativeClangPP.value
-      val source  = baseDirectory.value
+      val clang   = findClang(nativeClang.value)
+      val clangpp = findClangPP(nativeClangPP.value)
+
+      val source = baseDirectory.value
       val compileSuccess =
         IO.withTemporaryDirectory { tmp =>
           IO.copyDirectory(baseDirectory.value, tmp)
