@@ -2,10 +2,9 @@ package java.util
 
 /** Ported from Scala JS and Apache Harmony
  * - omits deprecated methods
- * - immutable, setTime not implemented
  * - toString not jdk compatible
  */
-class Date(milliseconds: Long)
+class Date(var milliseconds: Long)
     extends Object
     with Serializable
     with Cloneable
@@ -31,9 +30,8 @@ class Date(milliseconds: Long)
 
   override def hashCode(): Int = milliseconds.hashCode()
 
-  // only implement if mutable is required
-//  def setTime(time: Long): Unit =
-//    milliseconds = time
+  def setTime(time: Long): Unit =
+    milliseconds = time
 
   override def toString(): String = s"Date($milliseconds)"
 

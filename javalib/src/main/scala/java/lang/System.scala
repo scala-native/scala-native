@@ -31,8 +31,8 @@ object System {
   def getProperty(key: String, default: String): String = ???
   def setProperty(key: String, value: String): String   = ???
 
-  def currentTimeMillis(): scala.Long = time.scalanative_current_time_millis
   def nanoTime(): scala.Long          = time.scalanative_nano_time
+  def currentTimeMillis(): scala.Long = time.scalanative_current_time_millis
 
   var in: InputStream  = _
   var out: PrintStream = new PrintStream(new CFileOutputStream(stdio.stdout))
