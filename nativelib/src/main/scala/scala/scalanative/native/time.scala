@@ -60,6 +60,8 @@ object time {
   type tm       = CStruct9[CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt]
 
   // Macros
+  @name("scalanative_libc_clocks_per_sec")
+  def CLOCKS_PER_SEC: clock_t = extern
   @name("scalanative_clock_realtime")
   def CLOCK_REALTIME = extern
   @name("scalanative_clock_realtime_coarse")

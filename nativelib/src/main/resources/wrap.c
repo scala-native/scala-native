@@ -3,6 +3,7 @@
 #include <signal.h>
 #include <math.h>
 #include <errno.h>
+#include <time.h>
 
 // This file contains functions that wrap libc
 // built-in macros. We need this because Scala Native
@@ -169,4 +170,8 @@ int scalanaitve_erange() {
 
 int scalanative_eexist() {
     return EEXIST;
+
+clock_t scalanative_libc_clocks_per_sec() {
+  return CLOCKS_PER_SEC;
+
 }
