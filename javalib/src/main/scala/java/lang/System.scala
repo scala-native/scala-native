@@ -5,6 +5,7 @@ import java.util.{Collections, HashMap, Map, Properties}
 import scala.scalanative.native._
 import scala.scalanative.posix._
 import scala.scalanative.runtime.time
+import scala.scalanative.runtime.Platform
 import scala.scalanative.runtime.GC
 
 final class System private ()

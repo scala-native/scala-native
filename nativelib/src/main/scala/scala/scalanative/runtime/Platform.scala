@@ -1,5 +1,7 @@
 package scala.scalanative
-package native
+package runtime
+
+import scala.scalanative.native._
 
 @extern
 object Platform {
@@ -11,4 +13,5 @@ object Platform {
 
   @name("scalanative_windows_get_user_country")
   def windowsGetUserCountry(): CString = extern
+
 }
