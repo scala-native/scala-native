@@ -1554,9 +1554,9 @@ abstract class NirCodeGen
               // Pointers in Scala Native are untyped and modeled as `i8*`.
               // Pointer substraction therefore explicitly divide the byte
               // offset by the size of pointer type.
-              val ptrInt     = ptr withOp Op.Conv(nir.Conv.Ptrtoint, nir.Type.ULong, ptr.value)
+              val ptrInt     = ptr withOp Op.Conv(nir.Conv.Ptrtoint, nir.Type.Long, ptr.value)
               val ptrArg     = genExpr(argp, ptrInt)
-              val ptrArgInt  = ptrArg withOp Op.Conv(nir.Conv.Ptrtoint, nir.Type.ULong, ptrArg.value)
+              val ptrArgInt  = ptrArg withOp Op.Conv(nir.Conv.Ptrtoint, nir.Type.Long, ptrArg.value)
               val byteOffset = ptrArgInt withOp Op.Bin(Bin.Isub, nir.Type.Long, ptrInt.value, ptrArgInt.value)
               val sizeOf     = byteOffset withOp Op.Sizeof(ty)
               sizeOf withOp Op.Bin(Bin.Sdiv, nir.Type.Long, byteOffset.value, sizeOf.value)
