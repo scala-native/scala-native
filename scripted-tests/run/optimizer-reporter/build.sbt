@@ -1,7 +1,7 @@
 import scalanative.tools.OptimizerReporter
 import scalanative.sbtplugin.ScalaNativePluginInternal.nativeOptimizerReporter
 
-ScalaNativePlugin.projectSettings
+enablePlugins(ScalaNativePlugin)
 
 scalaVersion := "2.11.8"
 

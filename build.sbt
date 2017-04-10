@@ -356,6 +356,11 @@ lazy val scalalib =
         IO.copyDirectory(file(s"scalalib/overrides-$epoch.$major/scala"),
                          file("scalalib/src/main/scala/scala"),
                          overwrite = true)
+
+        // Remove all java code, as it's not going to be available
+        // in the NIR anyway. This also resolves issues wrt overrides
+        // of code that was previously in Java but is in Scala now.
+        (file("scalalib/src/main/scala") ** "*.java").get.foreach(IO.delete)
       },
       compile in Compile := (compile in Compile)
         .dependsOn(assembleScalaLibrary)

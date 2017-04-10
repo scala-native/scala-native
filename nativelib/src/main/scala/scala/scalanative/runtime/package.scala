@@ -96,5 +96,5 @@ package object runtime {
   /** Run the runtime's event loop. The method is called from the
    *  generated C-style after the application's main method terminates.
    */
-  def loop(): Unit = ()
+  def loop(): Unit = ExecutionContext.loop()
 }
