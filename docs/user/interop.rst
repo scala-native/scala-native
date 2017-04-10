@@ -164,7 +164,7 @@ standard ways to allocate memory in native code are:
 
    Calling those will let you allocate memory using system's standard
    dynamic memory allocator. Apart from the system allocator one might
-   also bind to pletheora of 3-rd party allocators such as jemalloc_ to
+   also bind to plethora of 3-rd party allocators such as jemalloc_ to
    serve the same purpose.
 
 .. _jemalloc: http://jemalloc.net/
