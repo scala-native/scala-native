@@ -16,6 +16,8 @@ object ScalaNativePlugin extends AutoPlugin {
 
     val nativeVersion = nir.Versions.current
 
+    val nativeDebug = taskKey[Unit]("Start lldb")
+
     val nativeClang = settingKey[File]("Location of the clang compiler.")
 
     val nativeClangPP = settingKey[File]("Location of the clang++ compiler.")

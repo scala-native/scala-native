@@ -322,6 +322,16 @@ object ScalaNativePluginInternal {
       IO.read(nativeNativelib.value / "target")
     },
     nativeMode := "debug",
+    nativeDebug := {
+      val binary = abs(nativeLink.value)
+      val lldb   = abs(nativeLLDB.value)
+      val logger = streams.value.log
+      Process(lldb +: Seq("-f", binary, "-o", "run"))
+        .run(logger, connectInput = true)
+        .exitValue
+
+      ()
+    },
     artifactPath in nativeLink := {
       (crossTarget in Compile).value / (moduleName.value + "-out")
     },
