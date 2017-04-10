@@ -21,7 +21,7 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val PtrLoadMethod   = getDecl(PtrClass, TermName("unary_$bang"))
     lazy val PtrStoreMethod  = getDecl(PtrClass, TermName("unary_$bang_$eq"))
     lazy val PtrAddMethod    = getDecl(PtrClass, TermName("$plus"))
-    lazy val PtrSubMethod    = getDecl(PtrClass, TermName("$minus"))
+    lazy val PtrSubMethods   = getDecl(PtrClass, TermName("$minus")).alternatives
     lazy val PtrApplyMethod  = getDecl(PtrClass, TermName("apply"))
     lazy val PtrUpdateMethod = getDecl(PtrClass, TermName("update"))
     lazy val PtrFieldMethod = (1 to 22).map { i =>

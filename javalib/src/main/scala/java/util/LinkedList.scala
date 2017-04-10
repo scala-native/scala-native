@@ -20,12 +20,12 @@ class LinkedList[E]()
   private var head: Node[E] = null
   private var last: Node[E] = null
 
-  /* Inner size is represented with a Double to satisfy Collection
+  /* Inner size is represented with a Long to satisfy Collection
    * size method requirement:
    * If this collection contains more than Integer.MAX_VALUE elements,
    * returns Integer.MAX_VALUE.
    */
-  private var _size: Double = 0
+  private var _size: Long = 0
 
   def getFirst(): E = {
     if (isEmpty())
@@ -103,7 +103,7 @@ class LinkedList[E]()
     iterator().exists(_ === o)
 
   override def size(): Int =
-    _size.toInt
+    if (_size < Integer.MAX_VALUE) size.toInt else Integer.MAX_VALUE
 
   override def add(e: E): Boolean = {
     addLast(e)
@@ -260,8 +260,8 @@ class LinkedList[E]()
     checkIndexOnBounds(index)
     new ListIterator[E] {
 
-      private var last: Double = -1
-      private var i: Double    = index
+      private var last: Long = -1
+      private var i: Long    = index
 
       private var currentNode: Node[E] =
         if (index == size) null

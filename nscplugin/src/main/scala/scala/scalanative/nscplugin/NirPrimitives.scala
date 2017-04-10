@@ -83,7 +83,7 @@ abstract class NirPrimitives {
     addPrimitive(PtrLoadMethod, PTR_LOAD)
     addPrimitive(PtrStoreMethod, PTR_STORE)
     addPrimitive(PtrAddMethod, PTR_ADD)
-    addPrimitive(PtrSubMethod, PTR_SUB)
+    PtrSubMethods.foreach(addPrimitive(_, PTR_SUB))
     addPrimitive(PtrApplyMethod, PTR_APPLY)
     addPrimitive(PtrUpdateMethod, PTR_UPDATE)
     PtrFieldMethod.foreach(addPrimitive(_, PTR_FIELD))

@@ -2,6 +2,7 @@ package scala.scalanative
 package sbtplugin
 
 import scalanative.tools
+import ScalaNativePluginInternal._
 
 import sbt._
 
@@ -12,13 +13,25 @@ object ScalaNativePlugin extends AutoPlugin {
 
   object AutoImport extends NativeCross {
 
+    def findClang(default: Option[File]): File =
+      default.getOrElse(
+        discover("clang", clangVersions)
+      )
+
+    def findClangPP(default: Option[File]): File =
+      default.getOrElse(
+        discover("clang++", clangVersions)
+      )
+
     val ScalaNativeCrossVersion = sbtplugin.ScalaNativeCrossVersion
 
     val nativeVersion = nir.Versions.current
 
-    val nativeClang = settingKey[File]("Location of the clang compiler.")
+    val nativeClang =
+      settingKey[Option[File]]("Location of the clang compiler.")
 
-    val nativeClangPP = settingKey[File]("Location of the clang++ compiler.")
+    val nativeClangPP =
+      settingKey[Option[File]]("Location of the clang++ compiler.")
 
     val nativeCompileOptions =
       settingKey[Seq[String]](
@@ -38,11 +51,11 @@ object ScalaNativePlugin extends AutoPlugin {
       settingKey[String]("Compilation mode, either \"debug\" or \"release\".")
 
     val nativeGC =
-      taskKey[String]("GC choice, either \"none\" or \"boehm\".")
+      settingKey[String]("GC choice, either \"none\" or \"boehm\".")
   }
 
   override def projectSettings: Seq[Setting[_]] = (
     ScalaNativePluginInternal.projectSettings ++
-      ScalaNativePluginInternal.scalaNativeEcosystemSettings
+      scalaNativeEcosystemSettings
   )
 }

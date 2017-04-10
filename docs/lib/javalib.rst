@@ -299,4 +299,57 @@ Here is the list of currently available classes:
 **Note:** This is an ongoing effort, some of the classes listed here might
 be partially implemented. Please consult `javalib sources <https://github.com/scala-native/scala-native/tree/master/javalib/src/main/scala/java>`_ for details.
 
+java.util.regex
+=====================
+
+Scala Native implements java.util.regex with `Google's RE2 library <https://github.com/google/re2>`_. There is some differences with the original API:
+
+Some expressions are not supported:
+ * Character Classes
+   * unions: [a-d[m-p]]
+   * intersections: [a-z&&[^aeiou]]
+ * predefined character classes: \h, \H, \v, \V
+ * java character function classes
+   * \p{javaLowerCase}
+   * \p{javaUpperCase}
+   * \p{javaWhitespace}
+   * \p{javaMirrored}
+ * boundary matchers: \G, \Z, \R
+ * possessive quantifiers
+   * X?+
+   * X*+
+   * X++
+   * X{n}+
+   * X{n,}+
+   * X{n,m}+
+ * lookaheads
+   * (?=X)
+   * (?!X)
+   * (?<=X)
+   * (?<!X)
+   * (?>X)
+
+Some expressions have an alternative syntax:
+
+========== =============
+Java       RE2
+========== =============
+(?<foo>a)  (?P<foo>a)
+p{Alnum}   [[:alpha:]]
+p{Alpha}   [[:alnum:]]
+p{ASCII}   [[:ascii:]]
+p{Blank}   [[:blank:]]
+p{Cntrl}   [[:cntrl:]]
+p{Digit}   [[:digit:]]
+p{Graph}   [[:graph:]]
+p{Lower}   [[:lower:]]
+p{Print}   [[:print:]]
+p{Punct}   [[:punct:]]
+p{Space}   [[:space:]]
+p{Upper}   [[:upper:]]
+p{XDigit}  [[:xdigit:]]
+p{InGreek} p{Latin}
+p{IsLatin} p{Greek} 
+==========  ===========
+
 Continue to :ref:`libc`.

@@ -55,6 +55,7 @@ unsigned long         native.CUnsignedLong (1)
 long long             native.CLongLong
 unsigned long long    native.CUnsignedLongLong (1)
 size_t                native.CSize
+ptrdiff_t             native.CPtrDiff (2)
 wchar_t               native.CWideChar
 char16_t              native.CChar16
 char32_t              native.CChar32
@@ -122,6 +123,7 @@ Operation        C syntax                 Scala Syntax
 Load value       ``*ptr``                 ``!ptr``
 Store value      ``*ptr = value``         ``!ptr = value``
 Pointer to index ``ptr + i``, ``&ptr[i]`` ``ptr + i``
+Elements between ``ptr1 - ptr2``          ``ptr1 - ptr2``
 Load at index    ``ptr[i]``               ``ptr(i)``
 Store at index   ``ptr[i] = value``       ``ptr(i) = value``
 Pointer to field ``&ptr->name``           ``ptr._N``
@@ -164,7 +166,7 @@ standard ways to allocate memory in native code are:
 
    Calling those will let you allocate memory using system's standard
    dynamic memory allocator. Apart from the system allocator one might
-   also bind to pletheora of 3-rd party allocators such as jemalloc_ to
+   also bind to plethora of 3-rd party allocators such as jemalloc_ to
    serve the same purpose.
 
 .. _jemalloc: http://jemalloc.net/

@@ -58,8 +58,8 @@ object ScalaNativePluginInternal {
   private def abs(file: File): String =
     file.getAbsolutePath
 
-  private def discover(binaryName: String,
-                       binaryVersions: Seq[(String, String)]): File = {
+  def discover(binaryName: String,
+               binaryVersions: Seq[(String, String)]): File = {
 
     val docInstallUrl =
       "http://scala-native.readthedocs.io/en/latest/user/setup.html#installing-llvm-clang-and-boehm-gc"
@@ -157,8 +157,13 @@ object ScalaNativePluginInternal {
 
     paths.par
       .map { path =>
-        val compiler = abs(if (path.endsWith(".cpp")) clangpp else clang)
-        val compilec = compiler +: (includes :+ "-c" :+ path :+ "-o" :+ path + ".o")
+        val isCppSource = path.endsWith(".cpp")
+
+        val compiler = abs(if (isCppSource) clangpp else clang)
+        val flags    = if (isCppSource) Seq("-std=c++11") else Seq()
+
+        val compilec = (compiler +: "-O2" +: (includes :+ "-c" :+ path :+ "-o" :+ path + ".o")) ++ flags
+
         logger.running(compilec)
         Process(compilec, cwd) ! logger
       }
@@ -225,6 +230,10 @@ object ScalaNativePluginInternal {
       val links = {
         val os   = Option(sys props "os.name").getOrElse("")
         val arch = compileTarget.split("-").head
+
+        // we need re2 to link the re2 c wrapper (cre2.h)
+        val regex = Seq("re2")
+
         val librt = os match {
           case "Linux" => Seq("rt")
           case _       => Seq.empty
@@ -233,7 +242,7 @@ object ScalaNativePluginInternal {
           case "Mac OS X" => Seq.empty
           case _          => Seq("unwind", "unwind-" + arch)
         }
-        librt ++ libunwind ++ applinks ++ garbageCollector(gc).links
+        librt ++ libunwind ++ applinks ++ garbageCollector(gc).links ++ regex
       }
       val linkopts  = links.map("-l" + _) ++ linkingOpts
       val targetopt = Seq("-target", compileTarget)
@@ -287,6 +296,8 @@ object ScalaNativePluginInternal {
       inConfig(Compile)(nativeMissingDependenciesTask) ++
       inConfig(Test)(nativeMissingDependenciesTask)
 
+  val clangVersions = Seq(("3", "8"), ("3", "7"))
+
   lazy val unscopedSettings = Seq(
     libraryDependencies ++= Seq(
       "org.scala-native" %%% "nativelib" % nativeVersion,
@@ -303,17 +314,14 @@ object ScalaNativePluginInternal {
     addCompilerPlugin(
       "org.scala-native" % "nscplugin" % nativeVersion cross CrossVersion.full),
     nativeSharedLibrary := false,
-    nativeClang := {
-      discover("clang", Seq(("3", "8"), ("3", "7")))
-    },
-    nativeClangPP := {
-      discover("clang++", Seq(("3", "8"), ("3", "7")))
-    },
+    nativeClang := None,
+    nativeClangPP := None,
     nativeCompileOptions := {
-      mode(nativeMode.value) match {
-        case tools.Mode.Debug   => Seq("-O0")
-        case tools.Mode.Release => Seq("-O2")
-      }
+      Seq("-Qunused-arguments") ++
+        (mode(nativeMode.value) match {
+          case tools.Mode.Debug   => Seq("-O0")
+          case tools.Mode.Release => Seq("-O2")
+        })
     },
     nativeLinkingOptions := {
       includes ++ libs ++ maybeInjectShared(nativeSharedLibrary.value)
@@ -330,8 +338,10 @@ object ScalaNativePluginInternal {
     nativeGC := "boehm",
     nativeNativelib := {
       val nativelib = (crossTarget in Compile).value / "nativelib"
-      val clang     = nativeClang.value
-      val clangpp   = nativeClangPP.value
+
+      val clang   = findClang(nativeClang.value)
+      val clangpp = findClangPP(nativeClangPP.value)
+
       val jar = (fullClasspath in Compile).value
         .map(entry => abs(entry.data))
         .collectFirst {
@@ -355,6 +365,7 @@ object ScalaNativePluginInternal {
 
         val compiledC =
           compileCSources(clang, clangpp, nativelib, nativeGC.value, logger)
+
         val detectedTarget = compileTargetProbe(clang, nativelib, logger)
 
         if (!compiledC || !detectedTarget) {
@@ -368,9 +379,10 @@ object ScalaNativePluginInternal {
       val logger = streams.value.log
 
       logger.time("Total") {
-        val nativelib   = nativeNativelib.value
-        val clang       = nativeClang.value
-        val clangpp     = nativeClangPP.value
+        val nativelib = nativeNativelib.value
+        val clang     = findClang(nativeClang.value)
+        val clangpp   = findClangPP(nativeClangPP.value)
+
         val compileOpts = nativeCompileOptions.value
         val linkingOpts = nativeLinkingOptions.value
         checkThatClangIsRecentEnough(clang)
@@ -427,12 +439,13 @@ object ScalaNativePluginInternal {
       }
     },
     run := {
+      val env    = (envVars in run).value.toSeq
       val logger = streams.value.log
       val binary = abs(nativeLink.value)
       val args   = spaceDelimited("<arg>").parsed
 
       logger.running(binary +: args)
-      val exitCode = Process(binary +: args).!
+      val exitCode = Process(binary +: args, None, env: _*).!
 
       val message =
         if (exitCode == 0) None

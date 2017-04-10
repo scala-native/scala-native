@@ -28,6 +28,7 @@ object TextFormat extends Format {
       override def elements =
         Seq("Result",
             "Name",
+            "iter",
             "min [ms]",
             "max [ms]",
             "avg [ms]",
@@ -101,6 +102,7 @@ object Formattable {
 /** A row in the table for a benchmark that completed. */
 case class CompletedRow(name: String,
                         success: String,
+                        iterations: Int,
                         min: String,
                         max: String,
                         avg: String,
@@ -113,6 +115,7 @@ case class CompletedRow(name: String,
   override def elements: Seq[String] =
     Seq(success,
         name,
+        iterations.toString,
         min,
         max,
         avg,
@@ -143,16 +146,19 @@ object CompletedRow {
     val avgBetweenP05AndP95 =
       average(timesMs filter (t => t >= p05Ms && t <= p95Ms))
 
-    CompletedRow(name,
-                 successStr,
-                 format(minMs),
-                 format(maxMs),
-                 format(avgMs),
-                 format(stddevMs),
-                 format(medianMs),
-                 format(p95Ms),
-                 format(p05Ms),
-                 format(avgBetweenP05AndP95))
+    CompletedRow(
+      name,
+      successStr,
+      iterations,
+      format(minMs),
+      format(maxMs),
+      format(avgMs),
+      format(stddevMs),
+      format(medianMs),
+      format(p95Ms),
+      format(p05Ms),
+      format(avgBetweenP05AndP95)
+    )
   }
 }
 

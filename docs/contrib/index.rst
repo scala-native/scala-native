@@ -7,4 +7,5 @@ Contributor's Guide
   :maxdepth: 2
 
   contributing
+  compiler
   nir

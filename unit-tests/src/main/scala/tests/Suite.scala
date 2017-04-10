@@ -16,18 +16,22 @@ abstract class Suite {
   def assertNot(cond: Boolean): Unit =
     if (cond) throw AssertionFailed else ()
 
-  def assertThrows[T: ClassTag](f: => Unit): Unit = {
+  def assertThrowsAnd[T: ClassTag](f: => Unit)(fe: T => Boolean): Unit = {
     try {
       f
     } catch {
       case exc: Throwable =>
-        if (exc.getClass.equals(implicitly[ClassTag[T]].runtimeClass))
+        if (exc.getClass.equals(implicitly[ClassTag[T]].runtimeClass) &&
+            fe(exc.asInstanceOf[T]))
           return
         else
           throw AssertionFailed
     }
     throw AssertionFailed
   }
+
+  def assertThrows[T: ClassTag](f: => Unit): Unit =
+    assertThrowsAnd[T](f)(_ => true)
 
   def assertEquals[T](left: T, right: T): Unit =
     assert(left == right)

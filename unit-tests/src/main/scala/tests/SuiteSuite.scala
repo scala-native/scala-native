@@ -1,7 +1,8 @@
 package tests
 
-class A extends Exception
-class B extends Exception
+class A             extends Exception
+class B             extends Exception
+class C(val v: Int) extends Exception
 
 object SuiteSuite extends Suite {
   test("expects true") {
@@ -24,6 +25,10 @@ object SuiteSuite extends Suite {
     assertThrows[A] {
       throw new A
     }
+  }
+
+  test("expects C and throws C with function") {
+    assertThrowsAnd[C](throw new C(42))(_.v == 42)
   }
 
   testFails("expects A and throws B", issue = -1) {

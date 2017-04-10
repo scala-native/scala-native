@@ -1,27 +1,38 @@
-#include <gc.h>
-#include "gc.h"
-#include <stdio.h>
 #include <stdlib.h>
+#include <sys/mman.h>
 
-// Dummy GC that allocates memory in 4M chunks and never frees.
+// Darwin defines MAP_ANON instead of MAP_ANONYMOUS
+#if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
+#define MAP_ANONYMOUS MAP_ANON
+#endif
 
-void* start = 0;
-void* last = 0;
+// Dummy GC that maps chunks of 4GB and allocates but never frees.
 
-#define CHUNK 4*1024*1024
+// Map 4GB
+#define CHUNK (4*1024*1024*1024L)
+// Allow read and write
+#define DUMMY_GC_PROT (PROT_READ | PROT_WRITE)
+// Map private anonymous memory, and prevent from reserving swap
+#define DUMMY_GC_FLAGS (MAP_NORESERVE | MAP_PRIVATE | MAP_ANONYMOUS)
+// Map anonymous memory (not a file)
+#define DUMMY_GC_FD -1
+#define DUMMY_GC_FD_OFFSET 0
+
+
+void* current = 0;
+void* end = 0;
+
 
 void scalanative_init() {
-    start = malloc(CHUNK);
-    last = start;
+    current = mmap(NULL, CHUNK, DUMMY_GC_PROT, DUMMY_GC_FLAGS, DUMMY_GC_FD, DUMMY_GC_FD_OFFSET);
+    end = current + CHUNK;
 }
 
 void* scalanative_alloc_raw(size_t size) {
-    size = size + (16 - size % 16);
-    if(size >= CHUNK) {
-        return malloc(size);
-    } else if (start != 0 && last + size < start + CHUNK) {
-        void* alloc = last;
-        last += size;
+    size = size + (8 - size % 8);
+    if (current != 0 && current + size < end) {
+        void* alloc = current;
+        current += size;
         return alloc;
     } else {
         scalanative_init();

@@ -31,7 +31,7 @@ addCommandAlias(
     "demoNative/run",
     "tests/run",
     "tools/test",
-    "benchmarks/run",
+    "benchmarks/run --test",
     "scripted"
   ).mkString(";", ";", "")
 )
@@ -273,9 +273,10 @@ lazy val nativelib =
     .settings(libSettings)
     .settings(mavenPublishSettings)
     .settings(compile in Compile := {
-      val clang   = nativeClang.value
-      val clangpp = nativeClangPP.value
-      val source  = baseDirectory.value
+      val clang   = findClang(nativeClang.value)
+      val clangpp = findClangPP(nativeClangPP.value)
+
+      val source = baseDirectory.value
       val compileSuccess =
         IO.withTemporaryDirectory { tmp =>
           IO.copyDirectory(baseDirectory.value, tmp)
@@ -356,6 +357,11 @@ lazy val scalalib =
         IO.copyDirectory(file(s"scalalib/overrides-$epoch.$major/scala"),
                          file("scalalib/src/main/scala/scala"),
                          overwrite = true)
+
+        // Remove all java code, as it's not going to be available
+        // in the NIR anyway. This also resolves issues wrt overrides
+        // of code that was previously in Java but is in Scala now.
+        (file("scalalib/src/main/scala") ** "*.java").get.foreach(IO.delete)
       },
       compile in Compile := (compile in Compile)
         .dependsOn(assembleScalaLibrary)
@@ -410,7 +416,13 @@ lazy val tests =
           }
         """)
         Seq(file)
-      }.taskValue
+      }.taskValue,
+      envVars in run ++= Map(
+        "USER"                           -> "scala-native",
+        "HOME"                           -> baseDirectory.value.getAbsolutePath,
+        "SCALA_NATIVE_ENV_WITH_EQUALS"   -> "1+1=2",
+        "SCALA_NATIVE_ENV_WITHOUT_VALUE" -> ""
+      )
     )
     .enablePlugins(ScalaNativePlugin)
 

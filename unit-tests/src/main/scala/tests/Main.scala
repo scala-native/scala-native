@@ -5,7 +5,9 @@ import java.lang.System.exit
 object Main {
   def main(args: Array[String]): Unit = {
     // tests.Discover object is code-generated in the sbt build
-    val suites  = tests.Discover.suites
+    val suites = tests.Discover.suites
+      .filter(_.getClass.getName.contains(args.lift(0).getOrElse("")))
+
     var success = true
 
     suites.foreach { suite =>

@@ -21,34 +21,11 @@
  */
 package havlak
 
-class HavlakBenchmark extends benchmarks.Benchmark[(Int, Array[Int])] {
+class HavlakBenchmark extends benchmarks.Benchmark[Array[Int]] {
 
-  private val innerIterations = List(15000, 1500, 150, 15, 1)
-  private var i               = 0
+  override def run(): Array[Int] =
+    new LoopTesterApp().main(15, 50, 10, 10, 5)
 
-  override def run(): (Int, Array[Int]) = {
-    val iterations = innerIterations(i % innerIterations.length)
-    i = i + 1
-    (iterations, run(iterations))
-  }
-
-  def run(innerIterations: Int): Array[Int] =
-    new LoopTesterApp().main(innerIterations, 50, 10 /* was 100 */, 10, 5)
-
-  override def check(t: (Int, Array[Int])): Boolean =
-    check(t._2, t._1)
-
-  def check(r: Array[Int], innerIterations: Int): Boolean = {
-
-    if (innerIterations == 15000) { return r(0) == 46602 && r(1) == 5213 }
-    if (innerIterations == 1500) { return r(0) == 6102 && r(1) == 5213 }
-    if (innerIterations == 150) { return r(0) == 2052 && r(1) == 5213 }
-    if (innerIterations == 15) { return r(0) == 1647 && r(1) == 5213 }
-    if (innerIterations == 1) { return r(0) == 1605 && r(1) == 5213 }
-
-    System.out.println(
-      "No verification result for " + innerIterations + " found")
-    System.out.println("Result is: " + r(0) + ", " + r(1))
-    return false
-  }
+  override def check(res: Array[Int]): Boolean =
+    res(0) == 1647 && res(1) == 5213
 }

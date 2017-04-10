@@ -687,8 +687,8 @@ pin-if
 
 Require ``$name`` to be reachable if current and ``$cond`` definitions are
 both reachable. Used to introduce conditional indirect linking dependencies.
-For example, class constructors conditionally depend on methods overriden in
-given class if the method that are being overriden are reachable.
+For example, class constructors conditionally depend on methods overridden in
+given class if the method that are being overridden are reachable.
 
 pin-weak
 ********

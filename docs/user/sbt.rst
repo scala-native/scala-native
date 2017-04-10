@@ -1,6 +1,6 @@
 .. _sbt:
 
-Building projects with SBT
+Building projects with sbt
 ==========================
 
 If you have reached this section you probably have a system that is now able to compile and run Scala Native programs.
@@ -22,7 +22,9 @@ define a new ``build.sbt``::
 
     scalaVersion := "2.11.8"
 
-and now you can write your first application in ``./src/main/scala/HelloWorld.scala``::
+and now you can write your first application in ``./src/main/scala/HelloWorld.scala``:
+
+.. code-block:: scala
 
     package example
 
@@ -33,24 +35,33 @@ and now you can write your first application in ``./src/main/scala/HelloWorld.sc
 
 now simply run ``sbt run`` to get everything compiled and have the expected output!
 
-Sbt settings and tasks
+Sbt settings
 ----------------------
 
-===== ======================== =============== =========================================================
-Since Name                     Type            Description
-===== ======================== =============== =========================================================
-0.1   ``compile``              ``Analysis``    Compile Scala code to NIR
-0.1   ``run``                  ``Unit``        Compile, link and run the generated binary
-0.1   ``package``              ``File``        Similar to standard package with addition of NIR
-0.1   ``publish``              ``Unit``        Similar to standard publish with addition of NIR (1)
-0.1   ``nativeLink``           ``File``        Link NIR and generate native binary
-0.1   ``nativeClang``          ``File``        Path to ``clang`` command
-0.1   ``nativeClangPP``        ``File``        Path to ``clang++`` command
-0.1   ``nativeCompileOptions`` ``Seq[String]`` Extra options passed to clang verbatim during compilation
-0.1   ``nativeLinkingOptions`` ``Seq[String]`` Extra options passed to clang verbatim during linking
-0.1   ``nativeMode``           ``String``      Either ``"debug"`` or ``"release"`` (2)
-0.2   ``nativeGC``             ``String``      Either ``"none"`` or ``"boehm"`` (3)
-===== ======================== =============== =========================================================
+===== ======================== ================ =================================================== =========================================================
+Since Name                     Type             Default Value                                       Description
+===== ======================== ================ =================================================== =========================================================
+0.1   ``nativeClang``          ``Option[File]`` ``None``                                            Path to ``clang`` command
+0.1   ``nativeClangPP``        ``Option[File]`` ``None``                                            Path to ``clang++`` command
+0.1   ``nativeCompileOptions`` ``Seq[String]``  ``Seq("-O0")``                                      Extra options passed to clang verbatim during compilation
+0.1   ``nativeLinkingOptions`` ``Seq[String]``  ``Seq("-I/usr/local/include", "-L/usr/local/lib")`` Extra options passed to clang verbatim during linking
+0.1   ``nativeMode``           ``String``       ``"debug"``                                         Either ``"debug"`` or ``"release"`` (2)
+0.2   ``nativeGC``             ``String``       ``"boehm"``                                         Either ``"none"`` or ``"boehm"`` (3)
+===== ======================== ================ =================================================== =========================================================
+
+Sbt tasks
+----------------------
+
+===== ======================== ============ ====================================================
+Since Name                     Type         Description
+===== ======================== ============ ====================================================
+0.1   ``compile``              ``Analysis`` Compile Scala code to NIR
+0.1   ``run``                  ``Unit``     Compile, link and run the generated binary
+0.1   ``package``              ``File``     Similar to standard package with addition of NIR
+0.1   ``publish``              ``Unit``     Similar to standard publish with addition of NIR (1)
+0.1   ``nativeLink``           ``File``     Link NIR and generate native binary
+===== ======================== ============ ====================================================
+
 
 1. See `Publishing`_ and `Cross compilation`_ for details.
 2. See `Compilation modes`_ for details.
@@ -70,7 +81,7 @@ Scala Native supports two distinct linking modes:
 2. **release.**
 
    Optimized for best runtime performance at expense of longer compilation time.
-   Similar to clang's ``-O2`` with addition of link-time optimisation over
+   Similar to clang's ``-O2`` with addition of link-time optimization over
    the whole application code.
 
 Garbage collectors
@@ -93,7 +104,7 @@ Publishing
 Scala Native supports sbt's standard workflow for the package distribution:
 
 1. Compile your code.
-2. Generate a jar with all of the classfiles and NIR files.
+2. Generate a jar with all of the class files and NIR files.
 3. Publish the jar to `sonatype`_, `bintray`_ or any other 3rd party hosting service.
 
 Once the jar has been published, it can be resolved through sbt's standard
@@ -109,7 +120,7 @@ Cross compilation
 sbt plugin that lets you cross-compile your projects against all three major
 platforms in Scala: JVM, JavaScript via Scala.js and native via Scala Native.
 It's based on the original cross-project idea from Scala.js and supports the
-same syntax for exising JVM/JavaScript cross-projects. Please refer to project's
+same syntax for existing JVM/JavaScript cross-projects. Please refer to project's
 `README <https://github.com/scala-native/sbt-crossproject/blob/master/README.md>`_
 for details.
 

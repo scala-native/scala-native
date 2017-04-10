@@ -1,4 +1,4 @@
-ScalaNativePlugin.projectSettings
+enablePlugins(ScalaNativePlugin)
 
 scalaVersion := "2.11.8"
 
