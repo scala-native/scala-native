@@ -31,7 +31,7 @@ addCommandAlias(
     "demoNative/run",
     "tests/run",
     "tools/test",
-    "benchmarks/run",
+    "benchmarks/run --test",
     "scripted"
   ).mkString(";", ";", "")
 )
