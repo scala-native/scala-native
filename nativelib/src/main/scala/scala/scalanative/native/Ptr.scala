@@ -20,7 +20,7 @@ final abstract class Ptr[T] {
   def -(offset: Word)(implicit tag: Tag[T]): Ptr[T] = undefined
 
   /** Compute the offset between two pointers. */
-  def -(ptr: Ptr[T])(implicit tag: Tag[T]): CPtrdiff = undefined
+  def -(ptr: Ptr[T])(implicit tag: Tag[T]): CPtrDiff = undefined
 
   /** Read a value at given offset. Equivalent to !(offset + word). */
   def apply(offset: Word)(implicit tag: Tag[T]): T = undefined

@@ -66,7 +66,7 @@ package object native {
   type CSize = Word
 
   /** The C/C++ 'ptrdiff_t' type. */
-  type CPtrdiff = Long
+  type CPtrDiff = Long
 
   /** C-style string with trailing 0. */
   type CString = Ptr[CChar]
