@@ -1,7 +1,7 @@
 import scalanative.tools.LinkerReporter
 import scalanative.sbtplugin.ScalaNativePluginInternal.nativeLinkerReporter
 
-ScalaNativePlugin.projectSettings
+enablePlugins(ScalaNativePlugin)
 
 scalaVersion := "2.11.8"
 
