@@ -113,5 +113,5 @@ object time {
 
   @name("scalanative_clock_thread_cputime_id")
   def CLOCK_THREAD_CPUTIME_ID = extern
-  
+
 }
