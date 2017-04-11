@@ -34,6 +34,15 @@ object ScalaNativePlugin extends AutoPlugin {
     val nativeLink =
       taskKey[File]("Generates native binary without running it.")
 
+    val nativeExternalDependencies =
+      taskKey[Seq[String]]("List all external dependencies at link time.")
+
+    val nativeAvailableDependencies =
+      taskKey[Seq[String]]("List all symbols available at link time")
+
+    val nativeMissingDependencies =
+      taskKey[Seq[String]]("List all symbols not available at link time")
+
     val nativeMode =
       settingKey[String]("Compilation mode, either \"debug\" or \"release\".")
 
