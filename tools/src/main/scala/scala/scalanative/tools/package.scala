@@ -1,8 +1,5 @@
 package scala.scalanative
 
-import java.nio.file.Paths
-import scalanative.io.withScratchBuffer
-
 // API use-cases
 //
 // sbt plugin:
