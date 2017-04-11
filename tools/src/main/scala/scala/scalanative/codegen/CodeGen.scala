@@ -40,21 +40,17 @@ object CodeGen {
             val impl =
               new Impl(config.target, env, defns, workdir)
             val outpath = k + ".ll"
-            withScratchBuffer { buffer =>
-              impl.gen(buffer)
-              buffer.flip
-              workdir.write(Paths.get(outpath), buffer)
-            }
+            val buffer  = impl.gen()
+            buffer.flip
+            workdir.write(Paths.get(outpath), buffer)
         }
       }
 
       def release(): Unit = {
-        withScratchBuffer { buffer =>
-          val impl = new Impl(config.target, env, assembly, workdir)
-          impl.gen(buffer)
-          buffer.flip
-          workdir.write(Paths.get("out.ll"), buffer)
-        }
+        val impl   = new Impl(config.target, env, assembly, workdir)
+        val buffer = impl.gen()
+        buffer.flip
+        workdir.write(Paths.get("out.ll"), buffer)
       }
 
       config.mode match {
@@ -78,13 +74,15 @@ object CodeGen {
     val builder   = new ShowBuilder
     import builder._
 
-    def gen(buffer: ByteBuffer) = {
+    def gen(): ByteBuffer = {
       genDefns(defns)
-      val body = builder.toString.getBytes
+      val body = builder.toString.getBytes("UTF-8")
       builder.clear
       genPrelude()
       genDeps()
-      buffer.put(builder.toString.getBytes)
+      val prelude = builder.toString.getBytes("UTF-8")
+      val buffer  = ByteBuffer.allocate(prelude.length + body.length)
+      buffer.put(prelude)
       buffer.put(body)
     }
 
