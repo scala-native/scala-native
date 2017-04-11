@@ -12,8 +12,8 @@ class FrameworkTest extends CodeGenSpec with Matchers {
            |  def main(args: Array[String]): Unit =
            |    println("Hello, world!")
            |}""".stripMargin) {
-      case (_, _, defns, _) =>
-        val defNames = defns map (_.name)
+      case (_, res) =>
+        val defNames = res.defns map (_.name)
         defNames should contain(Global.Top("A$"))
     }
   }
@@ -27,8 +27,8 @@ class FrameworkTest extends CodeGenSpec with Matchers {
     )
 
     link("B$", sources) {
-      case (_, _, defns, _) =>
-        val defNames = defns map (_.name)
+      case (_, res) =>
+        val defNames = res.defns map (_.name)
         defNames should contain(Global.Top("A"))
         defNames should contain(Global.Top("B$"))
     }

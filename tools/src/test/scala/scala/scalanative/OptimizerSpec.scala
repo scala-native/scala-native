@@ -22,9 +22,9 @@ abstract class OptimizerSpec extends LinkerSpec {
                   driver: Option[Driver] = None)(
       fn: (Config, Seq[nir.Attr.Link], Seq[nir.Defn]) => T): T =
     link(entry, sources, driver) {
-      case (config, links, assembly, dyns) =>
+      case (config, res) =>
         val driver_ = driver.fold(Driver(config))(identity)
-        fn(config, links, tools.optimize(config, driver_, assembly, dyns))
+        fn(config, res.links, tools.optimize(config, driver_, res.defns, res.dyns))
     }
 
 }

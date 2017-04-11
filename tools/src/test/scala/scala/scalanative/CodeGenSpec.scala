@@ -1,9 +1,10 @@
 package scala.scalanative
 
-import io.VirtualFile
-import optimizer.Driver
 import java.nio.file.Paths
-import tools.Config
+import scalanative.io.{VirtualDirectory, VirtualFile}
+import scalanative.optimizer.Driver
+import scalanative.tools.Config
+import scalanative.util.Scope
 
 /** Base class to test code generation */
 abstract class CodeGenSpec extends OptimizerSpec {
@@ -21,15 +22,18 @@ abstract class CodeGenSpec extends OptimizerSpec {
   def codegen[T](entry: String,
                  sources: Map[String, String],
                  driver: Option[Driver] = None)(
-      fn: (Config, Seq[nir.Attr.Link], VirtualFile) => T): T =
+      f: (Config, Seq[nir.Attr.Link], VirtualFile) => T): T =
     optimize(entry, sources, driver) {
       case (config, links, assembly) =>
-        tools.codegen(config, assembly)
-        val llFile =
-          config.targetDirectory.get(Paths.get("out.ll")) getOrElse fail(
-            "out.ll not found.")
+        Scope { implicit in =>
+          tools.codegen(config, assembly)
+          val workdir = VirtualDirectory.real(config.workdir)
+          val outfile =
+            workdir.get(Paths.get("out.ll")) getOrElse fail(
+              "out.ll not found.")
 
-        fn(config, links, llFile)
+          f(config, links, outfile)
+        }
     }
 
 }
