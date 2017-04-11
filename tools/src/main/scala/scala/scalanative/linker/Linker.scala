@@ -2,17 +2,17 @@ package scala.scalanative
 package linker
 
 import scala.collection.mutable
-import nir._
-import nir.serialization._
-import util.Scope
+import scalanative.nir._
+import scalanative.nir.serialization._
+import scalanative.io.VirtualDirectory
+import scalanative.util.Scope
 
 import ReflectiveProxy._
 
 sealed trait Linker {
 
   /** Link the whole world under closed world assumption. */
-  def link(entries: Seq[Global])
-    : (Seq[Global], Seq[Attr.Link], Seq[Defn], Seq[String])
+  def link(entries: Seq[Global]): Result
 }
 
 object Linker {
@@ -26,15 +26,7 @@ object Linker {
       extends Linker {
     import reporter._
 
-    private def load(global: Global)
-      : Option[(Seq[Dep], Seq[Attr.Link], Seq[String], Defn)] =
-      config.paths.collectFirst {
-        case path if path.contains(global) =>
-          path.load(global)
-      }.flatten
-
-    def link(entries: Seq[Global])
-      : (Seq[Global], Seq[Attr.Link], Seq[Defn], Seq[String]) = {
+    def link(entries: Seq[Global]): Result = Scope { implicit in =>
       val resolved    = mutable.Set.empty[Global]
       val unresolved  = mutable.Set.empty[Global]
       val links       = mutable.Set.empty[Attr.Link]
@@ -44,6 +36,13 @@ object Linker {
       val weaks       = mutable.Set.empty[Global]
       val signatures  = mutable.Set.empty[String]
       val dyndefns    = mutable.Set.empty[Global]
+
+      val paths = config.paths.map(p => Path(VirtualDirectory.real(p)))
+      def load(global: Global) =
+        paths.collectFirst {
+          case path if path.contains(global) =>
+            path.load(global)
+        }.flatten
 
       def processDirect =
         while (direct.nonEmpty) {
@@ -135,10 +134,10 @@ object Linker {
 
       onComplete()
 
-      (unresolved.toSeq,
-       links.toSeq,
-       defnss.sortBy(_.name.toString),
-       signatures.toSeq)
+      Result(unresolved.toSeq,
+             links.toSeq,
+             defnss.sortBy(_.name.toString),
+             signatures.toSeq)
     }
   }
 }

@@ -26,10 +26,12 @@ object Scope {
    *  resources as soon as execution leaves the demercated block.
    */
   def apply[T](f: Scope => T): T = {
-    val scope = new Impl()
+    val scope = open
     try f(scope)
     finally scope.close()
   }
+
+  def open: Scope = new Impl
 
   /** Scope that never closes. Resources allocated in this scope are
    *  going to be acquired as long as application is running.

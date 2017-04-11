@@ -18,17 +18,17 @@ object ScalaNativePlugin extends AutoPlugin {
     val nativeVersion = nir.Versions.current
 
     val nativeClang =
-      settingKey[Option[File]]("Location of the clang compiler.")
+      taskKey[File]("Location of the clang compiler.")
 
     val nativeClangPP =
-      settingKey[Option[File]]("Location of the clang++ compiler.")
+      taskKey[File]("Location of the clang++ compiler.")
 
     val nativeCompileOptions =
-      settingKey[Seq[String]](
+      taskKey[Seq[String]](
         "Additional options are passed to clang during compilation.")
 
     val nativeLinkingOptions =
-      settingKey[Seq[String]](
+      taskKey[Seq[String]](
         "Additional options that are pased to clang during linking.")
 
     val nativeLink =

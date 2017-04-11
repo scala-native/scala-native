@@ -27,6 +27,9 @@ package object tools {
   type LinkerReporter = linker.Reporter
   val LinkerReporter = linker.Reporter
 
+  type LinkerResult = linker.Result
+  val LinkerResult = linker.Result
+
   type OptimizerDriver = optimizer.Driver
   val OptimizerDriver = optimizer.Driver
 
@@ -36,16 +39,15 @@ package object tools {
   /** Given the classpath and entry point, link under closed-world assumption. */
   def link(config: Config,
            driver: OptimizerDriver,
-           reporter: LinkerReporter = LinkerReporter.empty)
-    : (Seq[nir.Global], Seq[nir.Attr.Link], Seq[nir.Defn], Seq[String]) = {
+           reporter: LinkerReporter = LinkerReporter.empty): LinkerResult = {
     val deps    = driver.passes.flatMap(_.depends).distinct
     val injects = driver.passes.flatMap(_.injects).distinct
     val entry =
       nir.Global.Member(config.entry, "main_class.ssnr.ObjectArray_unit")
-    val (unresolved, links, defns, dyns) =
+    val result =
       (linker.Linker(config, reporter)).link(entry +: deps)
 
-    (unresolved, links, defns ++ injects, dyns)
+    result.withDefns(result.defns ++ injects)
   }
 
   /** Transform high-level closed world to its lower-level counterpart. */

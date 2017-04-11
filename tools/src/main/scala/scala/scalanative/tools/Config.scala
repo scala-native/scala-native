@@ -1,6 +1,7 @@
 package scala.scalanative
 package tools
 
+import java.io.File
 import scalanative.io.VirtualDirectory
 import nir.Global
 
@@ -10,10 +11,10 @@ sealed trait Config {
   def entry: Global
 
   /** Sequence of all NIR locations. */
-  def paths: Seq[LinkerPath]
+  def paths: Seq[File]
 
   /** Directory to emit intermediate compilation results. */
-  def targetDirectory: VirtualDirectory
+  def workdir: File
 
   /** Target triple. */
   def target: String
@@ -25,10 +26,10 @@ sealed trait Config {
   def withEntry(value: Global): Config
 
   /** Create a new config with given nir paths. */
-  def withPaths(value: Seq[LinkerPath]): Config
+  def withPaths(value: Seq[File]): Config
 
   /** Create a new config with given directory. */
-  def withTargetDirectory(value: VirtualDirectory): Config
+  def withWorkdir(value: File): Config
 
   /** Create a new config with given target triple. */
   def withTarget(value: String): Config
@@ -43,24 +44,24 @@ object Config {
   val empty: Config =
     Impl(entry = Global.None,
          paths = Seq.empty,
-         targetDirectory = VirtualDirectory.empty,
+         workdir = new File(""),
          target = "",
          mode = Mode.Debug)
 
   private final case class Impl(entry: Global,
-                                paths: Seq[LinkerPath],
-                                targetDirectory: VirtualDirectory,
+                                paths: Seq[File],
+                                workdir: File,
                                 target: String,
                                 mode: Mode)
       extends Config {
     def withEntry(value: Global): Config =
       copy(entry = value)
 
-    def withPaths(value: Seq[LinkerPath]): Config =
+    def withPaths(value: Seq[File]): Config =
       copy(paths = value)
 
-    def withTargetDirectory(value: VirtualDirectory): Config =
-      copy(targetDirectory = value)
+    def withWorkdir(value: File): Config =
+      copy(workdir = value)
 
     def withTarget(value: String): Config =
       copy(target = value)

@@ -272,27 +272,6 @@ lazy val nativelib =
     .in(file("nativelib"))
     .settings(libSettings)
     .settings(mavenPublishSettings)
-    .settings(compile in Compile := {
-      val clang   = discoverClang(nativeClang.value)
-      val clangpp = discoverClangPP(nativeClangPP.value)
-
-      val source = baseDirectory.value
-      val compileSuccess =
-        IO.withTemporaryDirectory { tmp =>
-          IO.copyDirectory(baseDirectory.value, tmp)
-          scala.scalanative.sbtplugin.ScalaNativePluginInternal
-            .compileCSources(clang,
-                             clangpp,
-                             tmp,
-                             nativeGC.value,
-                             streams.value.log)
-        }
-      if (compileSuccess) {
-        (compile in Compile).value
-      } else {
-        sys.error("Compilation failed")
-      }
-    })
 
 lazy val javalib =
   project
