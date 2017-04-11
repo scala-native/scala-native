@@ -35,10 +35,6 @@ sealed trait VirtualDirectory {
 
 object VirtualDirectory {
 
-  /** Map-backed virtual directory. */
-  def virtual()(implicit in: Scope): VirtualDirectory =
-    new MapDirectory()
-
   /** Real, non-virtual directory on local file system. */
   def local(file: File): VirtualDirectory = {
     def absolute = file.getAbsolutePath
@@ -73,35 +69,6 @@ object VirtualDirectory {
 
   /** Empty directory that contains no files. */
   val empty: VirtualDirectory = EmptyDirectory
-
-  private final class MapDirectory(implicit in: Scope)
-      extends VirtualDirectory {
-    private val entries  = mutable.Map.empty[Path, VirtualFile]
-    private val contents = mutable.Map.empty[Path, ByteBuffer]
-
-    override def files: Seq[VirtualFile] =
-      entries.values.toSeq
-
-    override def create(path: Path): VirtualFile = {
-      val f = VirtualFile(this, path)
-      entries(path) = f
-      contents(path) = ByteBuffer.allocate(0)
-      f
-    }
-
-    override def read(path: Path): ByteBuffer = {
-      contents(path)
-    }
-
-    override def write(path: Path, buffer: ByteBuffer): Unit = {
-      contents(path) = cloneBuffer(buffer)
-    }
-
-    defer {
-      entries.clear()
-      contents.clear()
-    }
-  }
 
   private trait NioDirectory extends VirtualDirectory {
     protected def resolve(path: Path): Path = path
