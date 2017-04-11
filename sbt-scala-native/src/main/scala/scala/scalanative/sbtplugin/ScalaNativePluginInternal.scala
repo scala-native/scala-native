@@ -306,11 +306,7 @@ object ScalaNativePluginInternal {
           .map { ll =>
             val apppath = abs(ll)
             val outpath = apppath + ".o"
-            val compile = Seq(abs(clangpp),
-                              "-c",
-                              apppath,
-                              "-o",
-                              apppath + ".o") ++ compileOpts
+            val compile = Seq(abs(clangpp), "-c", apppath, "-o", outpath) ++ compileOpts
             logger.running(compile)
             Process(compile, cwd) ! logger
             new File(outpath)
@@ -359,7 +355,17 @@ object ScalaNativePluginInternal {
       }
       outpath
     },
-    nativeLink := nativeLinkLL.value,
+    nativeLink := {
+      // We explicitly mention all of the steps in the pipeline
+      // although only the last one is strictly necessary.
+      (compile in Compile).value
+      nativeLinkNIR.value
+      nativeOptimizeNIR.value
+      nativeGenerateLL.value
+      nativeCompileLL.value
+      nativeCompileLib.value
+      nativeLinkLL.value
+    },
     run := {
       val env    = (envVars in run).value.toSeq
       val logger = streams.value.log

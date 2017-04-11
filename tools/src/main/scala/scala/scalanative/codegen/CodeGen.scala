@@ -50,14 +50,10 @@ object CodeGen {
 
       def release(): Unit = {
         withScratchBuffer { buffer =>
-          val defns   = assembly
-          val impl    = new Impl(config.target, env, defns, workdir)
-          val outpath = "out.ll"
-          withScratchBuffer { buffer =>
-            impl.gen(buffer)
-            buffer.flip
-            workdir.write(Paths.get(outpath), buffer)
-          }
+          val impl = new Impl(config.target, env, assembly, workdir)
+          impl.gen(buffer)
+          buffer.flip
+          workdir.write(Paths.get("out.ll"), buffer)
         }
       }
 
