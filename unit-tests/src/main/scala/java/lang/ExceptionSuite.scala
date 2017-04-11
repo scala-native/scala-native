@@ -9,7 +9,8 @@ object ExceptionSuite extends tests.Suite {
     (new Exception).printStackTrace(pw)
     val trace = sw.toString
     assert(trace.startsWith("java.lang.Exception"))
-    assert(trace.contains("\tat tests.Main$::main_class.ssnr.ObjectArray_unit"))
+    assert(
+      trace.contains("\tat tests.Main$::main_class.ssnr.ObjectArray_unit"))
     assert(trace.contains("\tat main"))
   }
 

@@ -28,9 +28,10 @@ abstract class LinkerSpec extends FlatSpec {
    * @param fn      A function to apply to the products of the compilation.
    * @return The result of applying `fn` to the resulting definitions.
    */
-  def link[T](entry: String,
-              sources: Map[String, String],
-              driver: Option[Driver] = None)(f: (Config, linker.Result) => T): T =
+  def link[T](
+      entry: String,
+      sources: Map[String, String],
+      driver: Option[Driver] = None)(f: (Config, linker.Result) => T): T =
     Scope { implicit in =>
       val outDir     = Files.createTempDirectory("native-test-out").toFile()
       val compiler   = NIRCompiler.getCompiler(outDir)

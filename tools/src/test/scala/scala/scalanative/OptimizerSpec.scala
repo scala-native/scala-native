@@ -24,7 +24,9 @@ abstract class OptimizerSpec extends LinkerSpec {
     link(entry, sources, driver) {
       case (config, res) =>
         val driver_ = driver.fold(Driver(config))(identity)
-        fn(config, res.links, tools.optimize(config, driver_, res.defns, res.dyns))
+        fn(config,
+           res.links,
+           tools.optimize(config, driver_, res.defns, res.dyns))
     }
 
 }
