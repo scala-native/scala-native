@@ -88,6 +88,12 @@ object ScalaNativePluginInternal {
     }
   }
 
+  def discoverClang(default: Option[File]): File =
+    default.getOrElse(discover("clang", clangVersions))
+
+  def discoverClangPP(default: Option[File]): File =
+    default.getOrElse(discover("clang++", clangVersions))
+
   private def reportLinkingErrors(unresolved: Seq[nir.Global],
                                   logger: Logger): Nothing = {
     unresolved.map(_.show).sorted.foreach { signature =>
@@ -339,8 +345,8 @@ object ScalaNativePluginInternal {
     nativeNativelib := {
       val nativelib = (crossTarget in Compile).value / "nativelib"
 
-      val clang   = findClang(nativeClang.value)
-      val clangpp = findClangPP(nativeClangPP.value)
+      val clang   = discoverClang(nativeClang.value)
+      val clangpp = discoverClangPP(nativeClangPP.value)
 
       val jar = (fullClasspath in Compile).value
         .map(entry => abs(entry.data))
@@ -380,8 +386,8 @@ object ScalaNativePluginInternal {
 
       logger.time("Total") {
         val nativelib = nativeNativelib.value
-        val clang     = findClang(nativeClang.value)
-        val clangpp   = findClangPP(nativeClangPP.value)
+        val clang     = discoverClang(nativeClang.value)
+        val clangpp   = discoverClangPP(nativeClangPP.value)
 
         val compileOpts = nativeCompileOptions.value
         val linkingOpts = nativeLinkingOptions.value

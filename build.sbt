@@ -1,7 +1,7 @@
+import java.io.File.pathSeparator
 import scala.util.Try
 import scalanative.tools.OptimizerReporter
-import scalanative.sbtplugin.ScalaNativePluginInternal.nativeOptimizerReporter
-import java.io.File.pathSeparator
+import scalanative.sbtplugin.ScalaNativePluginInternal._
 
 val toolScalaVersion = "2.10.6"
 
@@ -273,8 +273,8 @@ lazy val nativelib =
     .settings(libSettings)
     .settings(mavenPublishSettings)
     .settings(compile in Compile := {
-      val clang   = findClang(nativeClang.value)
-      val clangpp = findClangPP(nativeClangPP.value)
+      val clang   = discoverClang(nativeClang.value)
+      val clangpp = discoverClangPP(nativeClangPP.value)
 
       val source = baseDirectory.value
       val compileSuccess =
