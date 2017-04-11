@@ -88,10 +88,11 @@ object System {
   def setProperty(key: String, value: String): String =
     systemProperties.setProperty(key, value).asInstanceOf[String]
 
+  def nanoTime(): scala.Long          = time.scalanative_nano_time
+  def currentTimeMillis(): scala.Long = time.scalanative_current_time_millis
+
   def getenv(): Map[String, String] = envVars
   def getenv(key: String): String   = envVars.get(key)
-
-  def nanoTime(): scala.Long = time.scalanative_nano_time
 
   var in: InputStream  = _
   var out: PrintStream = new PrintStream(new CFileOutputStream(stdio.stdout))
