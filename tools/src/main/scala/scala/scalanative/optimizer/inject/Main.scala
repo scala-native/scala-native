@@ -93,6 +93,5 @@ object Main extends InjectCompanion {
     Seq(InitDecl)
 
   override def apply(config: tools.Config, top: Top) =
-    if (config.injectMain) new Main(config.entry)(top.fresh)
-    else NoPass
+    new Main(config.entry)(top.fresh)
 }

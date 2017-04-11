@@ -15,9 +15,6 @@ sealed trait Config {
   /** Directory to emit intermediate compilation results. */
   def targetDirectory: VirtualDirectory
 
-  /** Should a main method be injected? */
-  def injectMain: Boolean
-
   /** Target triple. */
   def target: String
 
@@ -33,9 +30,6 @@ sealed trait Config {
   /** Create a new config with given directory. */
   def withTargetDirectory(value: VirtualDirectory): Config
 
-  /** Create a new config with given inject main flag. */
-  def withInjectMain(value: Boolean): Config
-
   /** Create a new config with given target triple. */
   def withTarget(value: String): Config
 
@@ -50,14 +44,12 @@ object Config {
     Impl(entry = Global.None,
          paths = Seq.empty,
          targetDirectory = VirtualDirectory.empty,
-         injectMain = true,
          target = "",
          mode = Mode.Debug)
 
   private final case class Impl(entry: Global,
                                 paths: Seq[LinkerPath],
                                 targetDirectory: VirtualDirectory,
-                                injectMain: Boolean,
                                 target: String,
                                 mode: Mode)
       extends Config {
@@ -69,9 +61,6 @@ object Config {
 
     def withTargetDirectory(value: VirtualDirectory): Config =
       copy(targetDirectory = value)
-
-    def withInjectMain(value: Boolean): Config =
-      copy(injectMain = value)
 
     def withTarget(value: String): Config =
       copy(target = value)

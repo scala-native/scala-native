@@ -319,7 +319,6 @@ object ScalaNativePluginInternal {
     },
     addCompilerPlugin(
       "org.scala-native" % "nscplugin" % nativeVersion cross CrossVersion.full),
-    nativeSharedLibrary := false,
     nativeClang := None,
     nativeClangPP := None,
     nativeCompileOptions := {
@@ -330,7 +329,7 @@ object ScalaNativePluginInternal {
         })
     },
     nativeLinkingOptions := {
-      includes ++ libs ++ maybeInjectShared(nativeSharedLibrary.value)
+      includes ++ libs
     },
     nativeTarget := {
       IO.read(nativeNativelib.value / "target")
@@ -407,14 +406,12 @@ object ScalaNativePluginInternal {
 
         val linkerReporter    = nativeLinkerReporter.value
         val optimizerReporter = nativeOptimizerReporter.value
-        val sharedLibrary     = nativeSharedLibrary.value
 
         val config = tools.Config.empty
           .withEntry(entry)
           .withPaths(classpath.map(p =>
             tools.LinkerPath(VirtualDirectory.real(p))))
           .withTargetDirectory(VirtualDirectory.real(llTarget))
-          .withInjectMain(!nativeSharedLibrary.value)
           .withTarget(nativeTarget.value)
           .withMode(mode(nativeMode.value))
 
@@ -470,9 +467,6 @@ object ScalaNativePluginInternal {
     crossVersion := ScalaNativeCrossVersion.binary,
     crossPlatform := NativePlatform
   )
-
-  private def maybeInjectShared(lib: Boolean): Seq[String] =
-    if (lib) Seq("-shared") else Seq.empty
 
   /**
    * Tests whether the clang compiler is recent enough.
