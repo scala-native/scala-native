@@ -40,12 +40,11 @@ object DateSuite extends tests.Suite {
     assert(now.hashCode == nowUt.hashCode())
   }
 
-  // if mutable Date is needed
-//  test("setTime") {
-//    val nowBefore = new Date(nowUt)
-//    nowBefore.setTime(afterUt)
-//    assert(nowBefore equals after)
-//  }
+  test("setTime") {
+    val nowBefore = new Date(nowUt)
+    nowBefore.setTime(afterUt)
+    assert(nowBefore equals after)
+  }
 
   test("toString") {
     assert(now.toString equals "Date(1490986064740)")
