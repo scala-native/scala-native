@@ -22,15 +22,19 @@ import java.io.File
 
 object ScalaNativePluginInternal {
 
-  val nativeTarget = taskKey[String]("Target triple.")
+  val nativeTarget =
+    taskKey[String]("Target triple.")
 
-  val nativeLinkerReporter = settingKey[tools.LinkerReporter](
-    "A reporter that gets notified whenever a linking event happens.")
+  val nativeLinkerReporter =
+    settingKey[tools.LinkerReporter](
+      "A reporter that gets notified whenever a linking event happens.")
 
-  val nativeOptimizerReporter = settingKey[tools.OptimizerReporter](
-    "A reporter that gets notified whenever an optimizer event happens.")
+  val nativeOptimizerReporter =
+    settingKey[tools.OptimizerReporter](
+      "A reporter that gets notified whenever an optimizer event happens.")
 
-  val nativeOptimizerDriver = taskKey[tools.OptimizerDriver]("")
+  val nativeOptimizerDriver =
+    taskKey[tools.OptimizerDriver]("Pass manager for the optimizer.")
 
   val nativeWorkdir =
     taskKey[File]("Working directory for intermediate build files.")
