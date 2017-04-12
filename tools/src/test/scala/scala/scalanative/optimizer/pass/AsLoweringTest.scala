@@ -16,7 +16,8 @@ class AsLoweringTest extends OptimizerSpec {
   }
 
   it should "remove all occurrences of `Op.As`" in {
-    val driver = Some(Driver.empty.withPasses(Seq(AsLowering, AsLoweringCheck)))
+    val driver =
+      Some(Driver.empty.withPasses(Seq(AsLowering, AsLoweringCheck)))
     optimize("A$", code, driver) { case (_, _, _) => () }
   }
 
