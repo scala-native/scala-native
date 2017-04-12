@@ -35,33 +35,24 @@ and now you can write your first application in ``./src/main/scala/HelloWorld.sc
 
 now simply run ``sbt run`` to get everything compiled and have the expected output!
 
-Sbt settings
+Sbt settings and tasks
 ----------------------
 
-===== ======================== ================ =================================================== =========================================================
-Since Name                     Type             Default Value                                       Description
-===== ======================== ================ =================================================== =========================================================
-0.1   ``nativeClang``          ``Option[File]`` ``None``                                            Path to ``clang`` command
-0.1   ``nativeClangPP``        ``Option[File]`` ``None``                                            Path to ``clang++`` command
-0.1   ``nativeCompileOptions`` ``Seq[String]``  ``Seq("-O0")``                                      Extra options passed to clang verbatim during compilation
-0.1   ``nativeLinkingOptions`` ``Seq[String]``  ``Seq("-I/usr/local/include", "-L/usr/local/lib")`` Extra options passed to clang verbatim during linking
-0.1   ``nativeMode``           ``String``       ``"debug"``                                         Either ``"debug"`` or ``"release"`` (2)
-0.2   ``nativeGC``             ``String``       ``"boehm"``                                         Either ``"none"`` or ``"boehm"`` (3)
-===== ======================== ================ =================================================== =========================================================
-
-Sbt tasks
-----------------------
-
-===== ======================== ============ ====================================================
-Since Name                     Type         Description
-===== ======================== ============ ====================================================
-0.1   ``compile``              ``Analysis`` Compile Scala code to NIR
-0.1   ``run``                  ``Unit``     Compile, link and run the generated binary
-0.1   ``package``              ``File``     Similar to standard package with addition of NIR
-0.1   ``publish``              ``Unit``     Similar to standard publish with addition of NIR (1)
-0.1   ``nativeLink``           ``File``     Link NIR and generate native binary
-===== ======================== ============ ====================================================
-
+===== ======================== =============== =========================================================
+Since Name                     Type            Description
+===== ======================== =============== =========================================================
+0.1   ``compile``              ``Analysis``    Compile Scala code to NIR
+0.1   ``run``                  ``Unit``        Compile, link and run the generated binary
+0.1   ``package``              ``File``        Similar to standard package with addition of NIR
+0.1   ``publish``              ``Unit``        Similar to standard publish with addition of NIR (1)
+0.1   ``nativeLink``           ``File``        Link NIR and generate native binary
+0.1   ``nativeClang``          ``File``        Path to ``clang`` command
+0.1   ``nativeClangPP``        ``File``        Path to ``clang++`` command
+0.1   ``nativeCompileOptions`` ``Seq[String]`` Extra options passed to clang verbatim during compilation
+0.1   ``nativeLinkingOptions`` ``Seq[String]`` Extra options passed to clang verbatim during linking
+0.1   ``nativeMode``           ``String``      Either ``"debug"`` or ``"release"`` (2)
+0.2   ``nativeGC``             ``String``      Either ``"none"`` or ``"boehm"`` (3)
+===== ======================== =============== =========================================================
 
 1. See `Publishing`_ and `Cross compilation`_ for details.
 2. See `Compilation modes`_ for details.
@@ -72,7 +63,7 @@ Compilation modes
 
 Scala Native supports two distinct linking modes:
 
-1. **debug.**
+1. **debug.** (default)
 
    Default mode. Optimized for shortest compilation time. Runs fewer
    optimizations and is much more suited for iterative development workflow.
@@ -87,7 +78,7 @@ Scala Native supports two distinct linking modes:
 Garbage collectors
 ------------------
 
-1. **boehm.**
+1. **boehm.** (default)
 
    Conservative generational garbage collector. More information is available
    at the `project's page <https://www.hboehm.info/gc/>`_.
