@@ -373,10 +373,6 @@ object PatternSuite extends tests.Suite {
       if (pass) ret
       else !ret
 
-    if (!ret0) {
-      println(s"    [fail] $pattern $mid $input")
-    }
-
     assert(ret0)
   }
 

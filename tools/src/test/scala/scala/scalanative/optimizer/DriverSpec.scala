@@ -18,30 +18,11 @@ class DriverSpec extends FlatSpec with Matchers {
   private val P1 = makeCompanion
   private val P2 = makeCompanion
 
-  "The driver" should "support `append`" in {
-    val driver = Driver.empty.append(P0)
+  "The driver" should "support `passes` and `withPasses`" in {
+    val empty = Driver.empty
+    empty.passes should have length (0)
+    val driver = empty.withPasses(Seq(P0))
     driver.passes should have length (1)
     driver.passes(0) should be(P0)
   }
-
-  it should "support `takeUpTo`" in {
-    val driver = Driver.empty.append(P0).append(P1).append(P2)
-    driver.passes should have length (3)
-    driver.passes should contain theSameElementsInOrderAs Seq(P0, P1, P2)
-
-    val newDriver = driver.takeUpTo(P1)
-    newDriver.passes should have length (2)
-    newDriver.passes should contain theSameElementsInOrderAs Seq(P0, P1)
-  }
-
-  it should "support `takeBefore`" in {
-    val driver = Driver.empty.append(P0).append(P1).append(P2)
-    driver.passes should have length (3)
-    driver.passes should contain theSameElementsInOrderAs Seq(P0, P1, P2)
-
-    val newDriver = driver.takeBefore(P2)
-    newDriver.passes should have length (2)
-    newDriver.passes should contain theSameElementsInOrderAs Seq(P0, P1)
-  }
-
 }

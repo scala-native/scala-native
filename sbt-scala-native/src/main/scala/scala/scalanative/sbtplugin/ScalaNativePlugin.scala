@@ -13,39 +13,35 @@ object ScalaNativePlugin extends AutoPlugin {
 
   object AutoImport extends NativeCross {
 
-    def findClang(default: Option[File]): File =
-      default.getOrElse(
-        discover("clang", clangVersions)
-      )
-
-    def findClangPP(default: Option[File]): File =
-      default.getOrElse(
-        discover("clang++", clangVersions)
-      )
-
     val ScalaNativeCrossVersion = sbtplugin.ScalaNativeCrossVersion
 
     val nativeVersion = nir.Versions.current
 
     val nativeClang =
-      settingKey[Option[File]]("Location of the clang compiler.")
+      taskKey[File]("Location of the clang compiler.")
 
     val nativeClangPP =
-      settingKey[Option[File]]("Location of the clang++ compiler.")
+      taskKey[File]("Location of the clang++ compiler.")
 
     val nativeCompileOptions =
-      settingKey[Seq[String]](
+      taskKey[Seq[String]](
         "Additional options are passed to clang during compilation.")
 
     val nativeLinkingOptions =
-      settingKey[Seq[String]](
+      taskKey[Seq[String]](
         "Additional options that are pased to clang during linking.")
 
     val nativeLink =
       taskKey[File]("Generates native binary without running it.")
 
-    val nativeSharedLibrary = settingKey[Boolean](
-      "Will create a shared library instead of a program with a main method.")
+    val nativeExternalDependencies =
+      taskKey[Seq[String]]("List all external dependencies at link time.")
+
+    val nativeAvailableDependencies =
+      taskKey[Seq[String]]("List all symbols available at link time")
+
+    val nativeMissingDependencies =
+      taskKey[Seq[String]]("List all symbols not available at link time")
 
     val nativeMode =
       settingKey[String]("Compilation mode, either \"debug\" or \"release\".")

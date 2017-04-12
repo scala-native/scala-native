@@ -8,14 +8,8 @@ sealed trait Driver {
   /** Companion of all the passes in the driver's pipeline. */
   def passes: Seq[AnyPassCompanion]
 
-  /** Take all passes including the given one. */
-  def takeUpTo(pass: AnyPassCompanion): Driver
-
-  /** Take all passes including the given one. */
-  def takeBefore(pass: AnyPassCompanion): Driver
-
-  /** Append a pass to the pipeline. */
-  def append(pass: AnyPassCompanion): Driver
+  /** Create a copy with given passes. */
+  def withPasses(passes: Seq[AnyPassCompanion]): Driver
 }
 
 object Driver {
@@ -80,13 +74,7 @@ object Driver {
     new Impl(Seq.empty)
 
   private final class Impl(val passes: Seq[AnyPassCompanion]) extends Driver {
-    def takeUpTo(pass: AnyPassCompanion): Driver =
-      takeBefore(pass).append(pass)
-
-    def takeBefore(pass: AnyPassCompanion): Driver =
-      new Impl(passes takeWhile (_ != pass))
-
-    def append(pass: AnyPassCompanion): Driver =
-      new Impl(passes :+ pass)
+    def withPasses(passes: Seq[AnyPassCompanion]): Driver =
+      new Impl(passes)
   }
 }

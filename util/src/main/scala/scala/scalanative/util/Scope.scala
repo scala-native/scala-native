@@ -26,7 +26,7 @@ object Scope {
    *  resources as soon as execution leaves the demercated block.
    */
   def apply[T](f: Scope => T): T = {
-    val scope = new Impl()
+    val scope = new Impl
     try f(scope)
     finally scope.close()
   }

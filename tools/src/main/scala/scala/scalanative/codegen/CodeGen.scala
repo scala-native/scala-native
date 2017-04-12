@@ -5,7 +5,7 @@ import java.{lang => jl}
 import java.nio.ByteBuffer
 import java.nio.file.Paths
 import scala.collection.mutable
-import scalanative.util.{ShowBuilder, unsupported}
+import scalanative.util.{Scope, ShowBuilder, unsupported}
 import scalanative.io.{VirtualDirectory, withScratchBuffer}
 import scalanative.optimizer.analysis.ControlFlow.{Graph => CFG, Block, Edge}
 import scalanative.nir._
@@ -13,62 +13,60 @@ import scalanative.nir._
 object CodeGen {
 
   /** Generate code for given assembly. */
-  def apply(config: tools.Config, assembly: Seq[Defn]): Unit = {
-    val env = assembly.map(defn => defn.name -> defn).toMap
+  def apply(config: tools.Config, assembly: Seq[Defn]): Unit =
+    Scope { implicit in =>
+      val env     = assembly.map(defn => defn.name -> defn).toMap
+      val workdir = VirtualDirectory.real(config.workdir)
 
-    def debug(): Unit = {
-      val batches = mutable.Map.empty[String, mutable.Buffer[Defn]]
-      assembly.foreach { defn =>
-        val top = defn.name.top.id
-        val key =
-          if (top.startsWith("__")) top
-          else if (top == "main") "__main"
-          else {
-            val pkg = top.split("\\.").init.mkString(".")
-            if (pkg == "") "__empty"
-            else pkg
+      def debug(): Unit = {
+        val batches = mutable.Map.empty[String, mutable.Buffer[Defn]]
+        assembly.foreach { defn =>
+          val top = defn.name.top.id
+          val key =
+            if (top.startsWith("__")) top
+            else if (top == "main") "__main"
+            else {
+              val pkg = top.split("\\.").init.mkString(".")
+              if (pkg == "") "__empty"
+              else pkg
+            }
+          if (!batches.contains(key)) {
+            batches(key) = mutable.UnrolledBuffer.empty[Defn]
           }
-        if (!batches.contains(key)) {
-          batches(key) = mutable.UnrolledBuffer.empty[Defn]
+          batches(key) += defn
         }
-        batches(key) += defn
+        batches.par.foreach {
+          case (k, defns) =>
+            val impl =
+              new Impl(config.target, env, defns, workdir)
+            val outpath = k + ".ll"
+            withScratchBuffer { buffer =>
+              impl.gen(buffer)
+              buffer.flip
+              workdir.write(Paths.get(outpath), buffer)
+            }
+        }
       }
-      batches.par.foreach {
-        case (k, defns) =>
-          val impl =
-            new Impl(config.target, env, defns, config.targetDirectory)
-          val outpath = k + ".ll"
-          withScratchBuffer { buffer =>
-            impl.gen(buffer)
-            buffer.flip
-            config.targetDirectory.write(Paths.get(outpath), buffer)
-          }
-      }
-    }
 
-    def release(): Unit = {
-      withScratchBuffer { buffer =>
-        val defns   = assembly
-        val impl    = new Impl(config.target, env, defns, config.targetDirectory)
-        val outpath = "out.ll"
+      def release(): Unit = {
         withScratchBuffer { buffer =>
+          val impl = new Impl(config.target, env, assembly, workdir)
           impl.gen(buffer)
           buffer.flip
-          config.targetDirectory.write(Paths.get(outpath), buffer)
+          workdir.write(Paths.get("out.ll"), buffer)
         }
       }
-    }
 
-    config.mode match {
-      case tools.Mode.Debug   => debug()
-      case tools.Mode.Release => release()
+      config.mode match {
+        case tools.Mode.Debug   => debug()
+        case tools.Mode.Release => release()
+      }
     }
-  }
 
   private final class Impl(target: String,
                            env: Map[Global, Defn],
                            defns: Seq[Defn],
-                           targetDirectory: VirtualDirectory) {
+                           workdir: VirtualDirectory) {
     import Impl._
 
     var currentBlockName: Local = _
