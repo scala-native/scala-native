@@ -9,14 +9,14 @@ import tools._
 class AsLoweringTest extends OptimizerSpec {
 
   "The `AsLoweringPhase`" should "have an effect (this is a self-test)" in {
-    val driver = Some(Driver.empty.append(AsLoweringCheck))
+    val driver = Some(Driver.empty.withPasses(Seq(AsLoweringCheck)))
     assertThrows[Exception] {
       optimize("A$", code, driver) { case (_, _, _) => () }
     }
   }
 
   it should "remove all occurrences of `Op.As`" in {
-    val driver = Some(Driver.empty.append(AsLowering).append(AsLoweringCheck))
+    val driver = Some(Driver.empty.withPasses(Seq(AsLowering, AsLoweringCheck)))
     optimize("A$", code, driver) { case (_, _, _) => () }
   }
 
