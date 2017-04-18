@@ -85,7 +85,7 @@ object ReflectiveProxy {
       case Some(boxTy) =>
         Inst.Let(Op.Box(boxTy, Val.Local(callName, defnRetTy)))
       case None =>
-        Inst.Let(Op.As(proxyRetTy, Val.Local(callName, defnRetTy)))
+        Inst.Let(Op.Copy(Val.Local(callName, defnRetTy)))
     }
 
   private def genRet(retValBoxName: Local, proxyRetTy: Type) =

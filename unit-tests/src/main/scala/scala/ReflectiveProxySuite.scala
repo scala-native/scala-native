@@ -390,4 +390,9 @@ object ReflectiveProxySuite extends tests.Suite {
       callFoo((new A).asInstanceOf[{ def foo(): Int }])
     }
   }
+
+  test("issue #643 - return Nothing") {
+    val foo: { def get: Int } = Some(42)
+    assert(foo.get == 42)
+  }
 }
