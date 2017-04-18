@@ -391,9 +391,10 @@ object ScalaNativePluginInternal {
       val args   = spaceDelimited("<arg>").parsed
 
       logger.running(binary +: args)
-      val exitCode = Process(binary +: args, None, env: _*)
-        .run(connectInput = true)
-        .exitValue
+      val exitCode =
+        Process(binary +: args, Some(baseDirectory.value), env: _*)
+          .run(connectInput = true)
+          .exitValue
 
       val message =
         if (exitCode == 0) None
