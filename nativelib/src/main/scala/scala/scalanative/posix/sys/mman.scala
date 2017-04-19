@@ -4,9 +4,6 @@ package posix.sys
 import native._
 import types.{mode_t, off_t}
 
-/**
- * Created by remi on 14/03/17.
- */
 @extern
 object mman {
   def mmap(addr: Ptr[Byte],
@@ -82,54 +79,54 @@ object mman {
 
   // Macros
   @name("scalanative_prot_exec")
-  def PROT_EXEC = extern
+  def PROT_EXEC: CInt = extern
   @name("scalanative_prot_read")
-  def PROT_READ = extern
+  def PROT_READ: CInt = extern
   @name("scalanative_prot_write")
-  def PROT_WRITE = extern
+  def PROT_WRITE: CInt = extern
   @name("scalanative_prot_none")
-  def PROT_NONE = extern
+  def PROT_NONE: CInt = extern
   @name("scalanative_map_shared")
-  def MAP_SHARED = extern
+  def MAP_SHARED: CInt = extern
   @name("scalanative_map_private")
-  def MAP_PRIVATE = extern
+  def MAP_PRIVATE: CInt = extern
   @name("scalanative_map_32bit")
-  def MAP_32BIT = extern
+  def MAP_32BIT: CInt = extern
   @name("scalanative_map_anon")
-  def MAP_ANON = extern
+  def MAP_ANON: CInt = extern
   @name("scalanative_map_anonymous")
-  def MAP_ANONYMOUS = extern
+  def MAP_ANONYMOUS: CInt = extern
   @name("scalanative_map_denywrite")
-  def MAP_DENYWRITE = extern
+  def MAP_DENYWRITE: CInt = extern
   @name("scalanative_map_executable")
-  def MAP_EXECUTABLE = extern
+  def MAP_EXECUTABLE: CInt = extern
   @name("scalanative_map_file")
-  def MAP_FILE = extern
+  def MAP_FILE: CInt = extern
   @name("scalanative_map_fixed")
-  def MAP_FIXED = extern
+  def MAP_FIXED: CInt = extern
   @name("scalanative_map_growsdown")
-  def MAP_GROWSDOWN = extern
+  def MAP_GROWSDOWN: CInt = extern
   @name("scalanative_map_hugetlb")
-  def MAP_HUGETLB = extern
+  def MAP_HUGETLB: CInt = extern
   @name("scalanative_map_huge_2mb")
-  def MAP_HUGE_2M = extern
+  def MAP_HUGE_2M: CInt = extern
   @name("scalanative_map_huge_1gb")
-  def MAP_HUGE_1GB = extern
+  def MAP_HUGE_1GB: CInt = extern
   @name("scalanative_map_huge_shift")
-  def MAP_HUGE_SHIFT = extern
+  def MAP_HUGE_SHIFT: CInt = extern
   @name("scalanative_map_locked")
-  def MAP_LOCKED = extern
+  def MAP_LOCKED: CInt = extern
   @name("scalanative_map_nonblock")
-  def MAP_NONBLOCK = extern
+  def MAP_NONBLOCK: CInt = extern
   @name("scalanative_map_noreserve")
-  def MAP_NORESERVE = extern
+  def MAP_NORESERVE: CInt = extern
   @name("scalanative_map_populate")
-  def MAP_POPULATE = extern
+  def MAP_POPULATE: CInt = extern
   @name("scalanative_map_stack")
-  def MAP_STACK = extern
+  def MAP_STACK: CInt = extern
   @name("scalanative_map_uninitialized")
-  def MAP_UNINITIALIZED = extern
+  def MAP_UNINITIALIZED: CInt = extern
   @name("scalanative_config_mmap_allow_uninitialized")
-  def CONFIG_MMAP_ALLOW_UNINITIALIZED = extern
+  def CONFIG_MMAP_ALLOW_UNINITIALIZED: CInt = extern
 
 }

@@ -53,6 +53,8 @@ object time {
   def getdate(string: CString): Ptr[tm]                                = extern
   def getdate_r(string: CString, res: Ptr[tm]): CInt                   = extern
 
+  def scalanative_nano_time: CLong = extern
+
   // Types
   type clock_t  = CLong
   type time_t   = CInt
@@ -78,4 +80,5 @@ object time {
   def CLOCK_PROCESS_CPUTIME_ID = extern
   @name("scalanative_clock_thread_cputime_id")
   def CLOCK_THREAD_CPUTIME_ID = extern
+
 }

@@ -5,9 +5,6 @@ import native._
 import types.suseconds_t
 import native.time.time_t
 
-/**
- * Created by remi on 01/03/17.
- */
 @extern
 object timex {
 

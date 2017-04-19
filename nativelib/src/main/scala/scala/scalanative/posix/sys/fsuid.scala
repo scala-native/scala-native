@@ -6,9 +6,6 @@ import types.{gid_t, uid_t}
 
 // part of http://man7.org/linux/man-pages/man7/credentials.7.html
 
-/**
- * Created by remi on 01/03/17.
- */
 @extern
 object fsuid {
 

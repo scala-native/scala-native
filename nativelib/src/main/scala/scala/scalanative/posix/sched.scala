@@ -5,9 +5,6 @@ import native._
 import native.time.timespec
 import sys.types.pid_t
 
-/**
- * Created by remi on 14/03/17.
- */
 @extern
 object sched {
 

@@ -9,9 +9,6 @@ import uio.iovec
 
 // http://man7.org/linux/man-pages/man7/socket.7.html
 
-/**
- * Created by remi on 01/03/17.
- */
 @extern
 object socket {
 
@@ -91,73 +88,73 @@ object socket {
 
   //Macros
   @name("scalanative_af_unix")
-  def AF_UNIX = extern
+  def AF_UNIX: CInt = extern
   @name("scalanative_af_local")
-  def AF_LOCAL = extern
+  def AF_LOCAL: CInt = extern
   @name("scalanative_af_inet")
-  def AF_INET = extern
+  def AF_INET: CInt = extern
   @name("scalanative_af_inet6")
-  def AF_INET6 = extern
+  def AF_INET6: CInt = extern
   @name("scalanative_af_ipx")
-  def AF_IPX = extern
+  def AF_IPX: CInt = extern
   @name("scalanative_af_netlink")
-  def AF_NETLINK = extern
+  def AF_NETLINK: CInt = extern
   @name("scalanative_af_x25")
-  def AF_X25 = extern
+  def AF_X25: CInt = extern
   @name("scalanative_af_ax25")
-  def AF_AX25 = extern
+  def AF_AX25: CInt = extern
   @name("scalanative_af_atmpvc")
-  def AF_ATMPVC = extern
+  def AF_ATMPVC: CInt = extern
   @name("scalanative_af_appletalk")
-  def AF_APPLETALK = extern
+  def AF_APPLETALK: CInt = extern
   @name("scalanative_af_packet")
-  def AF_PACKET = extern
+  def AF_PACKET: CInt = extern
   @name("scalanative_af_alg")
-  def AF_ALG = extern
+  def AF_ALG: CInt = extern
   @name("scalanative_sock_stream")
-  def SOCK_STREAM = extern
+  def SOCK_STREAM: CInt = extern
   @name("scalanative_sock_dgram")
-  def SOCK_DGRAM = extern
+  def SOCK_DGRAM: CInt = extern
   @name("scalanative_sock_seqpacket")
-  def SOCK_SEQPACKET = extern
+  def SOCK_SEQPACKET: CInt = extern
   @name("scalanative_sock_raw")
-  def SOCK_RAW = extern
+  def SOCK_RAW: CInt = extern
   @name("scalanative_sock_rdm")
-  def SOCK_RDM = extern
+  def SOCK_RDM: CInt = extern
   @name("scalanative_sock_packet")
-  def SOCK_PACKET = extern
+  def SOCK_PACKET: CInt = extern
   @name("scalanative_sock_nonblock")
-  def SOCK_NONBLOCK = extern
+  def SOCK_NONBLOCK: CInt = extern
   @name("scalanative_sock_cloexec")
-  def SOCK_CLOEXEC = extern
+  def SOCK_CLOEXEC: CInt = extern
   @name("scalanative_sock_sock_ee_offender")
-  def SOCK_EE_OFFENDER = extern
+  def SOCK_EE_OFFENDER: CInt = extern
   @name("scalanative_msg_confirm")
-  def MSG_CONFIRM = extern
+  def MSG_CONFIRM: CInt = extern
   @name("scalanative_msg_dontroute")
-  def MSG_DONTROUTE = extern
+  def MSG_DONTROUTE: CInt = extern
   @name("scalanative_msg_dontwait")
-  def MSG_DONTWAIT = extern
+  def MSG_DONTWAIT: CInt = extern
   @name("scalanative_msg_eor")
-  def MSG_EOR = extern
+  def MSG_EOR: CInt = extern
   @name("scalanative_msg_more")
-  def MSG_MORE = extern
+  def MSG_MORE: CInt = extern
   @name("scalanative_msg_nosignal")
-  def MSG_NOSIGNAL = extern
+  def MSG_NOSIGNAL: CInt = extern
   @name("scalanative_msg_oob")
-  def MSG_OOB = extern
+  def MSG_OOB: CInt = extern
   @name("scalanative_msg_cmsg_cloexec")
-  def MSG_CMSG_CLOEXEC = extern
+  def MSG_CMSG_CLOEXEC: CInt = extern
   @name("scalanative_msg_errqueue")
-  def MSG_ERRQUEUE = extern
+  def MSG_ERRQUEUE: CInt = extern
   @name("scalanative_msg_peek")
-  def MSG_PEEK = extern
+  def MSG_PEEK: CInt = extern
   @name("scalanative_msg_trunc")
-  def MSG_TRUNC = extern
+  def MSG_TRUNC: CInt = extern
   @name("scalanative_msg_waitall")
-  def MSG_WAITALL = extern
+  def MSG_WAITALL: CInt = extern
   @name("scalanative_msg_ctrunc")
-  def MSG_CTRUNC = extern
+  def MSG_CTRUNC: CInt = extern
   @name("scalanative_msg_waitforone")
-  def MSG_WAITFORONE = extern
+  def MSG_WAITFORONE: CInt = extern
 }

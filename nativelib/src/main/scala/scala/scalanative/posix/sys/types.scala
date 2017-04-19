@@ -3,14 +3,10 @@ package posix.sys
 
 import native.{CUnsignedInt, extern, CInt}
 
-/**
- * Created by remi on 28/02/17.
- */
 @extern
 object types {
 
   // Types
-
   type off_t       = CInt
   type ssize_t     = CInt
   type uid_t       = CInt
