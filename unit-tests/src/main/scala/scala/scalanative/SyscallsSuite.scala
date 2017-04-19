@@ -1,13 +1,9 @@
 package scala.scalanative
 
 import native._
-import native.Nat.{_2}
-
 import posix.unistd
+import scala.scalanative.native.Nat._2
 
-/**
- * Created by remi on 02/03/17.
- */
 object SyscallsSuite extends tests.Suite {
 
   test("pipe + dup + getpid + getppid + fork + read + write") {

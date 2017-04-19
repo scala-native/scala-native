@@ -1,7 +1,8 @@
 package java.io
 
-import scala.scalanative.posix.{fcntl, stat, unistd}
+import scala.scalanative.posix.{fcntl, unistd}
 import scala.scalanative.native._
+import scala.scalanative.posix.sys.stat
 import scala.scalanative.runtime.GC
 
 class FileOutputStream(fd: FileDescriptor) extends OutputStream {

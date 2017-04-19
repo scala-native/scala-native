@@ -53,11 +53,11 @@ object time {
   def getdate(string: CString): Ptr[tm]                                = extern
   def getdate_r(string: CString, res: Ptr[tm]): CInt                   = extern
 
-  def scalanative_nano_time: CLong = extern
+  def scalanative_nano_time: CLongLong = extern
 
   // Types
   type clock_t  = CLong
-  type time_t   = CInt
+  type time_t   = CLongInt
   type timespec = CStruct2[time_t, CLong]
   type tm       = CStruct9[CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt]
 

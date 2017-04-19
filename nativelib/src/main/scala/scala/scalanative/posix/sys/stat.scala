@@ -2,21 +2,7 @@ package scala.scalanative.posix.sys
 
 import scala.scalanative.native.Nat._2
 import scala.scalanative.native.time.timespec
-import scala.scalanative.native.{
-  CArray,
-  CInt,
-  CLong,
-  CLongLong,
-  CString,
-  CStruct13,
-  CUnsignedInt,
-  CUnsignedLong,
-  CUnsignedLongLong,
-  Ptr,
-  extern,
-  name,
-  time
-}
+import scala.scalanative.native.{CArray, CInt, CLong, CLongLong, CString, CStruct13, CUnsignedInt, CUnsignedLong, CUnsignedLongLong, Ptr, extern, name, time}
 import scala.scalanative.posix.unistd.off_t
 
 @extern
@@ -75,40 +61,40 @@ object stat {
 
   // Macros
   @name("scalanative_s_isuid")
-  def S_ISUID: CInt = extern
+  def S_ISUID: mode_t = extern
 
   @name("scalanative_s_isgid")
-  def S_ISGID: CInt = extern
+  def S_ISGID: mode_t = extern
 
   @name("scalanative_s_isvtx")
-  def S_ISVTX: CInt = extern
+  def S_ISVTX: mode_t = extern
 
   @name("scalanative_s_irusr")
-  def S_IRUSR: CInt = extern
+  def S_IRUSR: mode_t = extern
 
   @name("scalanative_s_iwusr")
-  def S_IWUSR: CInt = extern
+  def S_IWUSR: mode_t = extern
 
   @name("scalanative_s_ixusr")
-  def S_IXUSR: CInt = extern
+  def S_IXUSR: mode_t = extern
 
   @name("scalanative_s_irgrp")
-  def S_IRGRP: CInt = extern
+  def S_IRGRP: mode_t = extern
 
   @name("scalanative_s_iwgrp")
-  def S_IWGRP: CInt = extern
+  def S_IWGRP: mode_t = extern
 
   @name("scalanative_s_ixgrp")
-  def S_IXGRP: CInt = extern
+  def S_IXGRP: mode_t = extern
 
   @name("scalanative_s_iroth")
-  def S_IROTH: CInt = extern
+  def S_IROTH: mode_t = extern
 
   @name("scalanative_s_iwoth")
-  def S_WOTH: CInt = extern
+  def S_IWOTH: mode_t = extern
 
   @name("scalanative_s_ixoth")
-  def S_IXOTH: CInt = extern
+  def S_IXOTH: mode_t = extern
 
   @name("scalanative_s_isdir")
   def S_ISDIR(mode: mode_t): CInt = extern

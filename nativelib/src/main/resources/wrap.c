@@ -170,8 +170,8 @@ int scalanaitve_erange() {
 
 int scalanative_eexist() {
     return EEXIST;
+}
 
 clock_t scalanative_libc_clocks_per_sec() {
-  return CLOCKS_PER_SEC;
-
+    return CLOCKS_PER_SEC;
 }
