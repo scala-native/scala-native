@@ -37,9 +37,9 @@ object unistd {
 
   def close(fd: CInt): CInt = extern
 
-  def read(fd: CInt, buf: Ptr[Byte], count: CSize): ssize_t = extern
+  def read(fd: CInt, buf: Ptr[_], count: CSize): ssize_t = extern
 
-  def write(fd: CInt, buf: Ptr[Byte], count: CSize): ssize_t = extern
+  def write(fd: CInt, buf: Ptr[_], count: CSize): ssize_t = extern
 
   //http://man7.org/linux/man-pages/man7/pipe.7.html
   def pipe(pipefd: Ptr[CArray[CInt, _2]]): CInt = extern
@@ -172,7 +172,7 @@ object unistd {
 
   def ftruncate(fd: CInt, length: off_t): CInt = extern
 
-  def brk(addr: Ptr[Byte]): CInt = extern
+  def brk(addr: Ptr[_]): CInt = extern
 
   //def sbrk(increment: intptr_t): Unit = extern
 
