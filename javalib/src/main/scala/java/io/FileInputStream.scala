@@ -1,6 +1,7 @@
 package java.io
 
-import scalanative.native._, stdlib._, stdio._, string._
+import scala.scalanative.native._, scala.scalanative.native.stdlib._,
+scala.scalanative.native.stdio._, scala.scalanative.native.string._
 import scala.scalanative.posix.{fcntl, unistd}
 import unistd._
 import scala.scalanative.runtime.GC

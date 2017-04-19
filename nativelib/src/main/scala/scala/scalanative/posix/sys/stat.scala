@@ -22,21 +22,32 @@ import scala.scalanative.posix.unistd.off_t
 @extern
 object stat {
 
-  def stat(pathname: CString, buf: Ptr[stat]): CInt  = extern
-  def fstat(fd: CInt, buf: Ptr[stat]): CInt          = extern
+  @name("scalanative_stat")
+  def stat(pathname: CString, buf: Ptr[stat]): CInt = extern
+
+  @name("scalanative_fstat")
+  def fstat(fd: CInt, buf: Ptr[stat]): CInt = extern
+
+  @name("scalanative_lstat")
   def lstat(pathname: CString, bug: Ptr[stat]): CInt = extern
   def fstatat(dirfd: CInt,
               pathname: CString,
               buf: Ptr[stat],
-              flags: CInt): CInt                   = extern
+              flags: CInt): CInt = extern
+
+  @name("scalanative_chmod")
   def chmod(pathname: CString, mode: mode_t): CInt = extern
-  def fchmod(fd: CInt, mode: mode_t): CInt         = extern
+
+  @name("scalanative_fchmod")
+  def fchmod(fd: CInt, mode: mode_t): CInt = extern
   def fchmodat(dirfd: CInt,
                pathname: CString,
                mode: mode_t,
-               flags: CInt): CInt                                 = extern
-  def umask(mask: mode_t): mode_t                                 = extern
-  def getumask(): mode_t                                          = extern
+               flags: CInt): CInt = extern
+  def umask(mask: mode_t): mode_t = extern
+  def getumask(): mode_t          = extern
+
+  @name("scalanative_mkdir")
   def mkdir(pathname: CString, mode: mode_t): CInt                = extern
   def mkdirat(dirfd: CInt, pathname: CString, mode: mode_t): CInt = extern
   def mknod(pathname: CString, mode: mode_t, dev: dev_t): CInt    = extern
