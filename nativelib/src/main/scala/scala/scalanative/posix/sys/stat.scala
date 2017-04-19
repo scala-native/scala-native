@@ -1,14 +1,24 @@
-package scala.scalanative
-package posix.sys
+package scala.scalanative.posix.sys
 
-import native.Nat._2
-import native._
-import types._
-import native.time.{timespec, time_t}
+import scala.scalanative.native.Nat._2
+import scala.scalanative.native.time.timespec
+import scala.scalanative.native.{
+  CArray,
+  CInt,
+  CLong,
+  CLongLong,
+  CString,
+  CStruct13,
+  CUnsignedInt,
+  CUnsignedLong,
+  CUnsignedLongLong,
+  Ptr,
+  extern,
+  name,
+  time
+}
+import scala.scalanative.posix.unistd.off_t
 
-/**
- * Created by remi on 01/03/17.
- */
 @extern
 object stat {
 
@@ -41,44 +51,84 @@ object stat {
   def futimens(fd: CInt, times: CArray[timespec, _2]): CInt = extern
 
   // Types
-  type stat = CStruct13[dev_t,
-                        ino_t,
-                        mode_t,
-                        nlink_t,
-                        uid_t,
-                        gid_t,
-                        dev_t,
-                        off_t,
-                        time_t,
-                        time_t,
-                        time_t,
-                        blksize_t,
-                        blkcnt_t]
+  type dev_t     = CUnsignedLong
+  type ino_t     = CUnsignedLongLong
+  type mode_t    = CUnsignedInt
+  type nlink_t   = CUnsignedLong
+  type uid_t     = CUnsignedInt
+  type gid_t     = CUnsignedInt
+  type blksize_t = CLong
+  type blkcnt_t  = CLongLong
+  type stat = CStruct13[dev_t, // st_dev
+                        dev_t, // st_rdev
+                        ino_t, // st_ino
+                        uid_t, // st_uid
+                        gid_t, // st_gid
+                        off_t, // st_size
+                        time.time_t, // st_atime
+                        time.time_t, // st_mtime
+                        time.time_t, // st_ctime
+                        blkcnt_t, // st_blocks
+                        blksize_t, // st_blksize
+                        nlink_t, // st_nlink
+                        mode_t] // st_mode
 
   // Macros
   @name("scalanative_s_isuid")
-  def S_ISUID = extern
+  def S_ISUID: CInt = extern
+
   @name("scalanative_s_isgid")
-  def S_ISGID = extern
+  def S_ISGID: CInt = extern
+
   @name("scalanative_s_isvtx")
-  def S_ISVTX = extern
+  def S_ISVTX: CInt = extern
+
   @name("scalanative_s_irusr")
-  def S_IRUSR = extern
+  def S_IRUSR: CInt = extern
+
   @name("scalanative_s_iwusr")
-  def S_IWUSR = extern
+  def S_IWUSR: CInt = extern
+
   @name("scalanative_s_ixusr")
-  def S_IXUSR = extern
+  def S_IXUSR: CInt = extern
+
   @name("scalanative_s_irgrp")
-  def S_IRGRP = extern
+  def S_IRGRP: CInt = extern
+
   @name("scalanative_s_iwgrp")
-  def S_IWGRP = extern
+  def S_IWGRP: CInt = extern
+
   @name("scalanative_s_ixgrp")
-  def S_IXGRP = extern
+  def S_IXGRP: CInt = extern
+
   @name("scalanative_s_iroth")
-  def S_IROTH = extern
+  def S_IROTH: CInt = extern
+
   @name("scalanative_s_iwoth")
-  def S_WOTH = extern
+  def S_WOTH: CInt = extern
+
   @name("scalanative_s_ixoth")
-  def S_IXOTH = extern
+  def S_IXOTH: CInt = extern
+
+  @name("scalanative_s_isdir")
+  def S_ISDIR(mode: mode_t): CInt = extern
+
+  @name("scalanative_s_isreg")
+  def S_ISREG(mode: mode_t): CInt = extern
+
+  @name("scalanative_s_ischr")
+  def S_ISCHR(mode: mode_t): CInt = extern
+
+  @name("scalanative_s_isblk")
+  def S_ISBLK(mode: mode_t): CInt = extern
+
+  @name("scalanative_s_isfifo")
+  def S_ISFIFO(mode: mode_t): CInt = extern
+
+  @name("scalanative_s_islnk")
+  def S_ISLNK(mode: mode_t): CInt = extern
+
+  @name("scalanative_s_issock")
+  def S_ISSOCK(mode: mode_t): CInt = extern
 
 }

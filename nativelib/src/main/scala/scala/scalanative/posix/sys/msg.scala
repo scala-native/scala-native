@@ -5,9 +5,6 @@ import native._
 import native.time.time_t
 import types._
 
-/**
- * Created by remi on 01/03/17.
- */
 @extern
 object msg {
 
@@ -39,14 +36,14 @@ object msg {
 
   // Macros
   @name("scalanative_msg_info")
-  def MSG_INFO = extern
+  def MSG_INFO: CInt = extern
   @name("scalanative_msg_stat")
-  def MSG_STAT = extern
+  def MSG_STAT: CInt = extern
   @name("scalanative_msg_noerror")
-  def MSG_NOERROR = extern
+  def MSG_NOERROR: CInt = extern
   @name("scalanative_msg_copy")
-  def MSG_COPY = extern
+  def MSG_COPY: CInt = extern
   @name("scalanative_msg_except")
-  def MSG_EXCEPT = extern
+  def MSG_EXCEPT: CInt = extern
 
 }

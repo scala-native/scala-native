@@ -2,7 +2,17 @@ package scala.scalanative
 package posix
 
 import scala.scalanative.native.Nat._2
-import scala.scalanative.native.{CArray, CInt, CLongLong, CSize, CString, CUnsignedInt, Ptr, extern, name}
+import scala.scalanative.native.{
+  CArray,
+  CInt,
+  CLongLong,
+  CSize,
+  CString,
+  CUnsignedInt,
+  Ptr,
+  extern,
+  name
+}
 import scala.scalanative.posix.sys.types.{gid_t, pid_t, ssize_t, uid_t}
 
 @extern
@@ -12,13 +22,16 @@ object unistd {
 
   def sleep(seconds: CUnsignedInt): Int = extern
 
-  def usleep(usecs: CUnsignedInt): Int  = extern
+  def usleep(usecs: CUnsignedInt): Int = extern
 
   def alarm(seconds: CUnsignedInt): CUnsignedInt = extern
 
   def access(pathname: CString, mode: CInt): CInt = extern
 
-  def faccessat(dirfd: CInt, pathname: CString, mode: CInt, flags: CInt): CInt = extern
+  def faccessat(dirfd: CInt,
+                pathname: CString,
+                mode: CInt,
+                flags: CInt): CInt = extern
 
   def lseek(fd: CInt, offset: off_t, whence: CInt): off_t = extern
 
@@ -29,7 +42,7 @@ object unistd {
   def write(fd: CInt, buf: Ptr[Byte], count: CSize): ssize_t = extern
 
   //http://man7.org/linux/man-pages/man7/pipe.7.html
-  def pipe(pipefd: Ptr[CArray[CInt, _2]]): CInt               = extern
+  def pipe(pipefd: Ptr[CArray[CInt, _2]]): CInt = extern
 
   def pipe2(pipefd: Ptr[CArray[CInt, _2]], flags: CInt): CInt = extern
 
@@ -41,7 +54,11 @@ object unistd {
 
   def lchown(pathmame: CString, owner: uid_t, group: gid_t): CInt = extern
 
-  def fchownat(dirfd: CInt, pathname: CString, owner: uid_t, group: gid_t, flags: CInt): CInt = extern
+  def fchownat(dirfd: CInt,
+               pathname: CString,
+               owner: uid_t,
+               group: gid_t,
+               flags: CInt): CInt = extern
 
   def chdir(path: CString): CInt = extern
 
@@ -59,7 +76,8 @@ object unistd {
 
   def dup3(oldfd: CInt, newfd: CInt, flags: CInt): CInt = extern
 
-  def execve(filename: CString, argv: Ptr[CString], envp: Ptr[CString]): CInt = extern
+  def execve(filename: CString, argv: Ptr[CString], envp: Ptr[CString]): CInt =
+    extern
 
   def nice(inc: CInt): CInt = extern
 
@@ -97,9 +115,11 @@ object unistd {
 
   def setgid(gid: gid_t): CInt = extern
 
-  def getresuid(ruid: Ptr[uid_t], euid: Ptr[uid_t], suid: Ptr[uid_t]): CInt = extern
+  def getresuid(ruid: Ptr[uid_t], euid: Ptr[uid_t], suid: Ptr[uid_t]): CInt =
+    extern
 
-  def getresgid(rgid: Ptr[gid_t], egid: Ptr[gid_t], sgid: Ptr[gid_t]): CInt = extern
+  def getresgid(rgid: Ptr[gid_t], egid: Ptr[gid_t], sgid: Ptr[gid_t]): CInt =
+    extern
 
   def fork(): pid_t = extern
 
@@ -107,15 +127,24 @@ object unistd {
 
   def link(oldpath: CString, newpath: CString): CInt = extern
 
-  def linkat(olddirfd: CInt, oldpath: CString, newdirfd: CInt, newpath: CString, flags: CInt): CInt = extern
+  def linkat(olddirfd: CInt,
+             oldpath: CString,
+             newdirfd: CInt,
+             newpath: CString,
+             flags: CInt): CInt = extern
 
   def symlink(target: CString, linkpath: CString): CInt = extern
 
-  def symlinkat(target: CString, newdirfd: CInt, linkpath: CString): CInt = extern
+  def symlinkat(target: CString, newdirfd: CInt, linkpath: CString): CInt =
+    extern
 
-  def readlink(pathname: CString, buf: CString, bufsize: CSize): ssize_t = extern
+  def readlink(pathname: CString, buf: CString, bufsize: CSize): ssize_t =
+    extern
 
-  def readlinkat(dirfd: CInt, pathname: CString, bug: CString, bufsize: CSize): ssize_t = extern
+  def readlinkat(dirfd: CInt,
+                 pathname: CString,
+                 bug: CString,
+                 bufsize: CSize): ssize_t = extern
 
   def unlink(pathname: CString): CInt = extern
 
