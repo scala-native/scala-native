@@ -37,7 +37,7 @@ object unistd {
 
   def close(fd: CInt): CInt = extern
 
-  def read(fd: CInt, buf: Ptr[Byte], count: CSize): CSize = extern
+  def read(fd: CInt, buf: Ptr[Byte], count: CSize): ssize_t = extern
 
   def write(fd: CInt, buf: Ptr[Byte], count: CSize): ssize_t = extern
 
