@@ -29,7 +29,7 @@ object ScalaNativePlugin extends AutoPlugin {
 
     val nativeLinkingOptions =
       taskKey[Seq[String]](
-        "Additional options that are pased to clang during linking.")
+        "Additional options that are passed to clang during linking.")
 
     val nativeLink =
       taskKey[File]("Generates native binary without running it.")
