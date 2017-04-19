@@ -2,7 +2,21 @@ package scala.scalanative.posix.sys
 
 import scala.scalanative.native.Nat._2
 import scala.scalanative.native.time.timespec
-import scala.scalanative.native.{CArray, CInt, CLong, CLongLong, CString, CStruct13, CUnsignedInt, CUnsignedLong, CUnsignedLongLong, Ptr, extern, name, time}
+import scala.scalanative.native.{
+  CArray,
+  CInt,
+  CLong,
+  CLongLong,
+  CString,
+  CStruct13,
+  CUnsignedInt,
+  CUnsignedLong,
+  CUnsignedLongLong,
+  Ptr,
+  extern,
+  name,
+  time
+}
 import scala.scalanative.posix.unistd.off_t
 
 @extern
