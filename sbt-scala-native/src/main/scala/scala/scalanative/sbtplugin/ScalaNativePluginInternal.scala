@@ -264,8 +264,8 @@ object ScalaNativePluginInternal {
       if (result.unresolved.nonEmpty) {
         result.unresolved.map(_.show).sorted.foreach { signature =>
           logger.error(s"cannot link: $signature")
-          throw new MessageOnlyException("unable to link")
         }
+        throw new MessageOnlyException("unable to link")
       }
       val classCount = result.defns.count {
         case _: nir.Defn.Class | _: nir.Defn.Module | _: nir.Defn.Trait => true
