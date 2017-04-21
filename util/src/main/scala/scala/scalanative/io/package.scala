@@ -14,13 +14,4 @@ package object io {
     try f(buffer)
     finally pool.reclaim(buffer)
   }
-
-  def cloneBuffer(original: ByteBuffer): ByteBuffer = {
-    val clone = ByteBuffer.allocate(original.capacity())
-    original.rewind()
-    clone.put(original)
-    original.rewind()
-    clone.flip()
-    clone
-  }
 }
