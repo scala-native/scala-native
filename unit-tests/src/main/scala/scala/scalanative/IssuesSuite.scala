@@ -259,4 +259,9 @@ object IssuesSuite extends tests.Suite {
   test("#482") {
     assert('\uD800'.toInt == 55296)
   }
+
+  test("#644") {
+    2.asInstanceOf[Nothing]
+    2.asInstanceOf[Null]
+  }
 }
