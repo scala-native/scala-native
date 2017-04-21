@@ -189,7 +189,7 @@ object ScalaNativePluginInternal {
       val clang     = nativeClang.value
       val clangpp   = nativeClangPP.value
       val classpath = (fullClasspath in Compile).value
-      val opts      = nativeCompileOptions.value
+      val opts      = nativeCompileOptions.value ++ Seq("-O2")
 
       val lib = cwd / "lib"
       val jar =
@@ -221,8 +221,7 @@ object ScalaNativePluginInternal {
             val isCppSource = path.endsWith(".cpp")
 
             val compiler = abs(if (isCppSource) clangpp else clang)
-            val flags = Seq("-O2") ++ (if (isCppSource) Seq("-std=c++11")
-                                       else Seq()) ++ opts
+            val flags    = (if (isCppSource) Seq("-std=c++11") else Seq()) ++ opts
             val compilec = Seq(compiler) ++ flags ++ Seq("-c",
                                                          path,
                                                          "-o",
