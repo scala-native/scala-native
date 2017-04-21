@@ -7,28 +7,48 @@ Scala Native supports a subset of the JDK core libraries reimplemented in Scala.
 
 Here is the list of currently available classes:
 
+* ``java.io.BufferedInputStream``
+* ``java.io.BufferedOutputStream``
 * ``java.io.BufferedReader``
+* ``java.io.BufferedWriter``
 * ``java.io.ByteArrayInputStream``
 * ``java.io.ByteArrayOutputStream``
 * ``java.io.Closeable``
 * ``java.io.DataInput``
+* ``java.io.DataInputStream``
+* ``java.io.DataOutput``
+* ``java.io.DataOutputStream``
 * ``java.io.EOFException``
+* ``java.io.File``
+* ``java.io.FileDescriptor``
+* ``java.io.FileFilter``
+* ``java.io.FileInputStream``
+* ``java.io.FileNotFoundException``
+* ``java.io.FileOutputStream``
+* ``java.io.FileReader``
+* ``java.io.FileWriter``
+* ``java.io.FilenameFilter``
 * ``java.io.FilterInputStream``
 * ``java.io.FilterOutputStream``
+* ``java.io.FilterReader``
 * ``java.io.Flushable``
 * ``java.io.IOException``
 * ``java.io.InputStream``
 * ``java.io.InputStreamReader``
+* ``java.io.LineNumberReader``
 * ``java.io.NotSerializableException``
 * ``java.io.ObjectStreamException``
 * ``java.io.OutputStream``
 * ``java.io.OutputStreamWriter``
 * ``java.io.PrintStream``
 * ``java.io.PrintWriter``
+* ``java.io.PushbackReader``
+* ``java.io.RandomAccessFile``
 * ``java.io.Reader``
 * ``java.io.Serializable``
 * ``java.io.StringReader``
 * ``java.io.StringWriter``
+* ``java.io.SyncFailedException``
 * ``java.io.UTFDataFormatException``
 * ``java.io.UnsupportedEncodingException``
 * ``java.io.Writer``
@@ -46,6 +66,8 @@ Here is the list of currently available classes:
 * ``java.lang.CharSequence``
 * ``java.lang.Character``
 * ``java.lang.Character$CaseFolding``
+* ``java.lang.Character$Subset``
+* ``java.lang.Character$UnicodeBlock``
 * ``java.lang.ClassCastException``
 * ``java.lang.ClassCircularityError``
 * ``java.lang.ClassFormatError``
@@ -103,6 +125,7 @@ Here is the list of currently available classes:
 * ``java.lang.StringBuilder``
 * ``java.lang.StringIndexOutOfBoundsException``
 * ``java.lang.System``
+* ``java.lang.System$CFileOutputStream``
 * ``java.lang.Thread``
 * ``java.lang.Thread$UncaughtExceptionHandler``
 * ``java.lang.ThreadDeath``
@@ -141,6 +164,7 @@ Here is the list of currently available classes:
 * ``java.nio.BufferOverflowException``
 * ``java.nio.BufferUnderflowException``
 * ``java.nio.ByteBuffer``
+* ``java.nio.ByteOrder``
 * ``java.nio.CharBuffer``
 * ``java.nio.GenBuffer``
 * ``java.nio.GenHeapBuffer``
@@ -219,6 +243,7 @@ Here is the list of currently available classes:
 * ``java.util.Comparator``
 * ``java.util.Comparator$class``
 * ``java.util.ConcurrentModificationException``
+* ``java.util.Date``
 * ``java.util.Deque``
 * ``java.util.Dictionary``
 * ``java.util.DuplicateFormatFlagsException``
@@ -285,7 +310,12 @@ Here is the list of currently available classes:
 * ``java.util.UnknownFormatConversionException``
 * ``java.util.UnknownFormatFlagsException``
 * ``java.util.concurrent.Callable``
+* ``java.util.concurrent.CancellationException``
+* ``java.util.concurrent.ExecutionException``
+* ``java.util.concurrent.Executor``
+* ``java.util.concurrent.RejectedExecutionException``
 * ``java.util.concurrent.TimeUnit``
+* ``java.util.concurrent.TimeoutException``
 * ``java.util.concurrent.atomic.AtomicBoolean``
 * ``java.util.concurrent.atomic.AtomicInteger``
 * ``java.util.concurrent.atomic.AtomicLong``
@@ -295,6 +325,10 @@ Here is the list of currently available classes:
 * ``java.util.package``
 * ``java.util.package$Box``
 * ``java.util.package$CompareNullablesOps``
+* ``java.util.regex.MatchResult``
+* ``java.util.regex.Matcher``
+* ``java.util.regex.Pattern``
+* ``java.util.regex.PatternSyntaxException``
 
 **Note:** This is an ongoing effort, some of the classes listed here might
 be partially implemented. Please consult `javalib sources <https://github.com/scala-native/scala-native/tree/master/javalib/src/main/scala/java>`_ for details.
