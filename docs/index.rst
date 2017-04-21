@@ -83,4 +83,5 @@ and the development process behind the project.
   user/index
   lib/index
   contrib/index
+  changelog
   faq
