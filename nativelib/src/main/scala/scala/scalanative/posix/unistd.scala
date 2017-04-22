@@ -1,14 +1,14 @@
 package scala.scalanative.posix
 
 import scala.scalanative.native.{
-  CInt,
-  CLongLong,
   CUnsignedInt,
-  CSize,
   CString,
+  CLongLong,
   Ptr,
   extern,
-  name
+  name,
+  CSize,
+  CInt
 }
 
 @extern
