@@ -35,6 +35,18 @@ and now you can write your first application in ``./src/main/scala/HelloWorld.sc
 
 now simply run ``sbt run`` to get everything compiled and have the expected output!
 
+Scala versions
+--------------
+
+Scala Native uses following Scala versions for its releases:
+
+==================== ================
+Scala Native Version Scala Version(s)
+==================== ================
+0.1                  2.11.8
+0.2                  2.11.11
+==================== ================
+
 Sbt settings and tasks
 ----------------------
 

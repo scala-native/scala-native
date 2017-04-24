@@ -1,6 +1,6 @@
 enablePlugins(ScalaNativePlugin)
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.11.11"
 
 lazy val check =
   TaskKey[Unit]("check", "make sure we list external dependencies correctly")
