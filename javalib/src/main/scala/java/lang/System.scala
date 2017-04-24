@@ -1,6 +1,6 @@
 package java.lang
 
-import java.io.{InputStream, PrintStream, IOException}
+import java.io._
 import java.util.{Collections, HashMap, Map, Properties}
 import scala.scalanative.native._
 import scala.scalanative.posix.unistd
@@ -95,9 +95,12 @@ object System {
   def getenv(): Map[String, String] = envVars
   def getenv(key: String): String   = envVars.get(key)
 
-  var in: InputStream  = new CStdinStream()
-  var out: PrintStream = new PrintStream(new CFileOutputStream(stdio.stdout))
-  var err: PrintStream = new PrintStream(new CFileOutputStream(stdio.stderr))
+  var in: InputStream =
+    new FileInputStream(FileDescriptor.in)
+  var out: PrintStream =
+    new PrintStream(new FileOutputStream(FileDescriptor.out))
+  var err: PrintStream =
+    new PrintStream(new FileOutputStream(FileDescriptor.err))
 
   def gc(): Unit = GC.collect()
 
@@ -131,51 +134,5 @@ object System {
     }
 
     Collections.unmodifiableMap(map)
-  }
-
-  private class CFileOutputStream(stream: Ptr[stdio.FILE])
-      extends java.io.OutputStream {
-    private val buf = stdlib.malloc(1)
-    def write(b: Int): Unit = {
-      !buf = b.toUByte.toByte
-      stdio.fwrite(buf, 1, 1, stream)
-    }
-  }
-
-  private class CStdinStream() extends java.io.InputStream {
-    private def readAndRetry(fd: CInt,
-                             buf: Ptr[scala.Byte],
-                             count: CSize): CSize = {
-      var nread: CSize = -1
-      do {
-        nread = unistd.read(unistd.STDIN_FILENO, buf, count)
-        if (nread == -1 && errno.errno != EINTR)
-          throw new IOException("Error on reading stdin")
-      } while (nread == -1)
-      nread
-    }
-
-    def read(): CInt = {
-      val buffer = stackalloc[scala.Byte](1)
-      var nread  = readAndRetry(unistd.STDIN_FILENO, buffer, 1)
-
-      if (nread != 0) buffer(0).toInt else -1
-    }
-
-    override def read(b: Array[scala.Byte], off: Int, len: Int): Int = {
-      // Stdin is line buffered, so there is no need to reserve a too big buffer
-      val bufsize = len min 128
-      val buffer  = stackalloc[scala.Byte](bufsize)
-      val nread   = readAndRetry(unistd.STDIN_FILENO, buffer, bufsize)
-
-      if (nread != 0) {
-        var i = 0
-        while (i < nread) {
-          b(off + i) = buffer(i)
-          i += 1
-        }
-        nread.toInt
-      } else -1
-    }
   }
 }
