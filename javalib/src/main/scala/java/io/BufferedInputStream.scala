@@ -5,7 +5,7 @@ class BufferedInputStream(in: InputStream, size: Int)
     with Closeable
     with AutoCloseable {
 
-  if (size < 0) throw new IllegalArgumentException()
+  if (size <= 0) throw new IllegalArgumentException("Buffer size <= 0")
 
   def this(in: InputStream) = this(in, 8192)
 

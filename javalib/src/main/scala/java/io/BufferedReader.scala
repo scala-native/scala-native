@@ -2,6 +2,8 @@ package java.io
 
 class BufferedReader(in: Reader, sz: Int) extends Reader {
 
+  if (sz <= 0) throw new IllegalArgumentException("Buffer size <= 0")
+
   def this(in: Reader) = this(in, 4096)
 
   private[this] var buf = new Array[Char](sz)
