@@ -2,7 +2,7 @@ package java.io
 
 import scala.scalanative.posix.{fcntl, stat, unistd}
 import scala.scalanative.native._
-import scala.scalanative.runtime.GC
+import scala.scalanative.runtime
 
 class FileOutputStream(fd: FileDescriptor) extends OutputStream {
   def this(file: File, append: Boolean) =
@@ -17,26 +17,43 @@ class FileOutputStream(fd: FileDescriptor) extends OutputStream {
   override protected def finalize(): Unit =
     close()
 
-  // def getChannel(): FileChannel
-
   final def getFD(): FileDescriptor =
     fd
 
-  override def write(b: Array[Byte]): Unit =
-    write(b, 0, b.length)
-
-  override def write(b: Array[Byte], off: Int, len: Int): Unit = {
-    val buffer = GC.malloc(len)
-    var i      = off
-    while (i < len) {
-      !(buffer + i) = b(off + i)
-      i += 1
+  override def write(buffer: Array[Byte]): Unit = {
+    if (buffer == null) {
+      throw new NullPointerException
     }
-    unistd.write(fd.fd, buffer, len)
+    write(buffer, 0, buffer.length)
+  }
+
+  override def write(buffer: Array[Byte], offset: Int, count: Int): Unit = {
+    if (buffer == null) {
+      throw new NullPointerException
+    }
+    if (offset < 0 || count < 0 || count > buffer.length - offset) {
+      throw new IndexOutOfBoundsException
+    }
+    if (count == 0) {
+      return
+    }
+
+    // we use the runtime knowledge of the array layout to avoid
+    // intermediate buffer, and read straight from the array memory
+    val buf        = buffer.asInstanceOf[runtime.ByteArray].at(offset)
+    val writeCount = unistd.write(fd.fd, buf, count)
+
+    if (writeCount < 0) {
+      // negative value (typically -1) indicates that write failed
+      throw new IOException("couldn't write to file")
+    }
   }
 
   override def write(b: Int): Unit =
     write(Array(b.toByte))
+
+  // TODO:
+  // def getChannel(): FileChannel
 }
 
 object FileOutputStream {
