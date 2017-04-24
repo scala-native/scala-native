@@ -3,7 +3,7 @@ import java.nio.file.{Files => NioFiles}
 
 enablePlugins(ScalaNativePlugin)
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.11.11"
 
 lazy val setupTests = taskKey[Unit]("")
 

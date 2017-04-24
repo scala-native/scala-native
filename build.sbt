@@ -5,7 +5,7 @@ import scalanative.sbtplugin.ScalaNativePluginInternal._
 
 val toolScalaVersion = "2.10.6"
 
-val libScalaVersion = "2.11.8"
+val libScalaVersion = "2.11.11"
 
 lazy val baseSettings = Seq(
   organization := "org.scala-native",
@@ -221,7 +221,7 @@ lazy val nscplugin =
     .settings(toolSettings)
     .settings(mavenPublishSettings)
     .settings(
-      scalaVersion := "2.11.8",
+      scalaVersion := "2.11.11",
       crossVersion := CrossVersion.full,
       unmanagedSourceDirectories in Compile ++= Seq(
         (scalaSource in (nir, Compile)).value,
