@@ -38,13 +38,13 @@ now simply run ``sbt run`` to get everything compiled and have the expected outp
 Scala versions
 --------------
 
-Scala Native uses following Scala versions for its releases:
+Scala Native supports following Scala versions for corresponding releases:
 
 ==================== ================
-Scala Native Version Scala Version(s)
+Scala Native Version Scala Versions
 ==================== ================
 0.1                  2.11.8
-0.2                  2.11.11
+0.2                  2.11.8, 2.11.11
 ==================== ================
 
 Sbt settings and tasks
