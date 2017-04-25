@@ -968,7 +968,7 @@ abstract class NirCodeGen
 
         // In the case of an array update we need to manually erase the return type.
         val methodName =
-          if (arrayUpdate) "update_i32_class.java.lang.Object" else nir.Global.genSignature(genMethodName(sym))
+          if (arrayUpdate) "update_i32_java.lang.Object" else nir.Global.genSignature(genMethodName(sym))
 
         val sig =
           Type.Function(

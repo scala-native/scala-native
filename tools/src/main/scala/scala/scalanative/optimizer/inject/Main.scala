@@ -16,7 +16,7 @@ class Main(entry: Global)(implicit fresh: Fresh) extends Inject {
     val entryMainTy =
       Type.Function(Seq(Type.Module(entry.top), ObjectArray), Type.Void)
     val entryMainName =
-      Global.Member(entry, "main_class.ssnr.ObjectArray_unit")
+      Global.Member(entry, "main_scala.scalanative.runtime.ObjectArray_unit")
     val entryMain = Val.Global(entryMainName, Type.Ptr)
 
     val argc   = Val.Local(fresh(), Type.Int)
@@ -59,7 +59,9 @@ object Main extends InjectCompanion {
   val RtInitSig =
     Type.Function(Seq(Rt, Type.Int, Type.Ptr), ObjectArray)
   val RtInit =
-    Val.Global(Rt.name member "init_i32_ptr_class.ssnr.ObjectArray", Type.Ptr)
+    Val.Global(
+      Rt.name member "init_i32_ptr_scala.scalanative.runtime.ObjectArray",
+      Type.Ptr)
   val RtLoopSig =
     Type.Function(Seq(Rt), Type.Unit)
   val RtLoop =
