@@ -105,38 +105,24 @@ trait NirNameEncoding { self: NirCodeGen =>
       case nir.Type.Function(args, ret) =>
         sb.str("fun.")
         sb.rep(args, sep = ".")(printType)
-      case nir.Type.Struct(name, _) =>
-        sb.str("struct.")
-        printGlobal(name)
-
-      case nir.Type.Nothing => sb.str("nothing")
-      case nir.Type.Unit    => sb.str("unit")
-      case nir.Type.Class(name) =>
-        sb.str("class.")
-        printGlobal(name)
-      case nir.Type.Trait(name) =>
-        sb.str("trait.")
-        printGlobal(name)
-      case nir.Type.Module(name) =>
-        sb.str("module.")
-        printGlobal(name)
+      case nir.Type.Struct(name, _) => printGlobal(name)
+      case nir.Type.Nothing         => sb.str("nothing")
+      case nir.Type.Unit            => sb.str("unit")
+      case nir.Type.Class(name)     => printGlobal(name)
+      case nir.Type.Trait(name)     => printGlobal(name)
+      case nir.Type.Module(name)    => printGlobal(name)
     }
 
     def printGlobal(global: nir.Global): Unit = global match {
       case nir.Global.None =>
         unreachable
       case nir.Global.Top(id) =>
-        printId(id)
+        sb.str(id)
       case nir.Global.Member(n, id) =>
-        printId(id)
+        sb.str(id)
         sb.str("..")
-        printId(id)
+        sb.str(id)
     }
-
-    def printId(id: String): Unit =
-      sb.str(
-        id.replace("scala.scalanative.runtime", "ssnr")
-          .replace("scala.scalanative.native", "ssnn"))
 
     printType(ty)
     sb.toString

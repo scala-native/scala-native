@@ -19,23 +19,23 @@ import nir._
  *
  *  Translates to:
  *
- *      class module.$name : $parent, .. $ifaces
+ *      class $name : $parent, .. $ifaces
  *
  *      .. $members
  *
- *      var value.$name: class module.$name = zero[class module.$name]
+ *      var value.$name: class $name = zero[class $name]
  *
- *      def load.$name: () => class module.$name {
+ *      def load.$name: () => class $name {
  *        %entry:
- *          %self = load[class module.$name] @"module.$name"
- *          %cond = ieq[class j.l.Object] %instance, zero[class module.$name]
+ *          %self = load[class $name] @"$name"
+ *          %cond = ieq[class j.l.Object] %instance, zero[class $name]
  *          if %cond then %existing else %initialize
  *        %existing:
  *          ret %self
  *        %initialize:
- *          %alloc = alloc[class module.$name]
+ *          %alloc = alloc[class $name]
  *          call $name::init(%alloc)
- *          store[class $name] @"module.$name", %alloc
+ *          store[class $name] @"$name", %alloc
  *          ret %alloc
  *      }
  */
