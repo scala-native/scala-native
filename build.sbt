@@ -3,9 +3,9 @@ import scala.util.Try
 import scalanative.tools.OptimizerReporter
 import scalanative.sbtplugin.ScalaNativePluginInternal._
 
-val toolScalaVersion = "2.10.6"
-
-val libScalaVersion = "2.11.11"
+val toolScalaVersion      = "2.10.6"
+val libScalaVersion       = "2.11.11"
+val libCrossScalaVersions = Seq("2.11.8", "2.11.11")
 
 lazy val baseSettings = Seq(
   organization := "org.scala-native",
@@ -218,10 +218,11 @@ lazy val tools =
 lazy val nscplugin =
   project
     .in(file("nscplugin"))
-    .settings(toolSettings)
+    .settings(baseSettings)
     .settings(mavenPublishSettings)
     .settings(
-      scalaVersion := "2.11.11",
+      scalaVersion := libScalaVersion,
+      crossScalaVersions := libCrossScalaVersions,
       crossVersion := CrossVersion.full,
       unmanagedSourceDirectories in Compile ++= Seq(
         (scalaSource in (nir, Compile)).value,
