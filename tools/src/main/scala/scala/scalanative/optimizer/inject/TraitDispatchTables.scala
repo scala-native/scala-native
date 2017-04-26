@@ -12,7 +12,8 @@ class TraitDispatchTables(top: Top) extends Inject {
 
   def apply(buf: Buffer[Defn]): Unit = {
     buf += top.dispatchDefn
-    buf += top.instanceDefn
+    buf += top.classHasTraitDefn
+    buf += top.traitHasTraitDefn
   }
 }
 

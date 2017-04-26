@@ -12,6 +12,9 @@ import nir._
 class DynmethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
   import DynmethodLowering._
 
+  private val rtiType =
+    top.nodes(Global.Top("java.lang.Object")).asInstanceOf[Class].typeStruct
+
   override def onInsts(insts: Seq[Inst]) = {
     val buf = new nir.Buffer
     import buf._
@@ -74,13 +77,6 @@ class DynmethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
 object DynmethodLowering extends PassCompanion {
   def apply(config: tools.Config, top: Top): Pass =
     new DynmethodLowering()(top.fresh, top)
-
-  val rtiType = Type.Struct(
-    Global.None,
-    Seq(Type.Int,
-        Type.Ptr,
-        Type.Long,
-        Type.Struct(Global.None, Seq(Type.Int, Type.Ptr, Type.Ptr))))
 
   val dyndispatchName = Global.Top("scalanative_dyndispatch")
   val dyndispatchSig =
