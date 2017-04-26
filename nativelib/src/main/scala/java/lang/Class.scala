@@ -61,6 +61,9 @@ final class _Class[A](val ty: Ptr[Type]) {
     is(obj.getClass.asInstanceOf[_Class[_]].ty, ty)
 
   private def is(left: Ptr[Type], right: Ptr[Type]): Boolean =
+    // This replicates the logic of the compiler-generated instance check
+    // that you would normally get if you do (obj: L).isInstanceOf[R],
+    // where rtti for L and R are `left` and `right`.
     left.kind match {
       case CLASS_KIND =>
         right.kind match {
