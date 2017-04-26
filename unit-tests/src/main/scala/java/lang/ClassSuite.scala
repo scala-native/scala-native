@@ -57,4 +57,19 @@ object ClassSuite extends tests.Suite {
     assert(!classOf[java.lang.Object].isArray)
     assert(!classOf[java.lang.String].isArray)
   }
+
+  test("isInstance") {
+    class A
+    class B extends A with Y
+    trait X
+    trait Y extends X
+    trait Z
+    assert(classOf[A].isInstance(new A))
+    assert(classOf[A].isInstance(new B))
+    assert(!classOf[B].isInstance(new A))
+    assert(classOf[X].isInstance(new B))
+    assert(classOf[Y].isInstance(new B))
+    assert(!classOf[X].isInstance(new A))
+    assert(!classOf[Z].isInstance(new B))
+  }
 }

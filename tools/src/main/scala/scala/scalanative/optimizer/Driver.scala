@@ -17,6 +17,7 @@ object Driver {
   private val injectionPasses: Seq[InjectCompanion] = Seq(
     inject.Main,
     inject.TraitDispatchTables,
+    inject.HasTrait,
     inject.RuntimeTypeInformation,
     inject.ClassStruct
   )

@@ -66,8 +66,8 @@ class IsLowering(implicit fresh: Fresh, top: Top) extends Pass {
         val idptr   = let(Op.Elem(Rt.Type, typeptr, Seq(Val.Int(0), Val.Int(0))))
         val id      = let(Op.Load(Type.Int, idptr))
         val boolptr = let(
-          Op.Elem(top.instanceTy,
-                  top.instanceVal,
+          Op.Elem(top.classHasTraitTy,
+                  top.classHasTraitVal,
                   Seq(Val.Int(0), id, Val.Int(trt.id))))
         let(Op.Load(Type.Bool, boolptr))
 

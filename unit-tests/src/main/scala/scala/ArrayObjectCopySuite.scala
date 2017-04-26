@@ -41,7 +41,7 @@ object ArrayObjectCopySuite extends tests.Suite {
 
   test("array[Object]: copy to another array") {
     initB(arr, 100)
-    scala.Array.copy(arr, 0, arr2, 1, 10)
+    java.lang.System.arraycopy(arr, 0, arr2, 1, 10)
     assert(
       arr2(0) == null && arr2(1).i == 100 && arr2(2).i == 101 &&
         arr2(3).i == 102 && arr2(4).i == 103 && arr2(5).i == 104 &&
@@ -52,7 +52,7 @@ object ArrayObjectCopySuite extends tests.Suite {
 
   test("array[Object]: copy zero elements from empty array") {
     initA(arr2)
-    scala.Array.copy(arrEmpty, 0, arr2, 5, 0)
+    java.lang.System.arraycopy(arrEmpty, 0, arr2, 5, 0)
     assert(
       arr2(0).i == 0 && arr2(1).i == 1 && arr2(2).i == 2 &&
         arr2(3).i == 3 && arr2(4).i == 4 && arr2(5).i == 5 &&
@@ -63,7 +63,7 @@ object ArrayObjectCopySuite extends tests.Suite {
 
   test("array[Object]: copy to self without overlap (1/2)") {
     initB(arr)
-    scala.Array.copy(arr, 0, arr, 5, 5)
+    java.lang.System.arraycopy(arr, 0, arr, 5, 5)
     assert(
       arr(0).i == 0 && arr(1).i == 1 && arr(2).i == 2 && arr(3).i == 3 &&
         arr(4).i == 4 && arr(5).i == 0 && arr(6).i == 1 && arr(7).i == 2 &&
@@ -73,7 +73,7 @@ object ArrayObjectCopySuite extends tests.Suite {
 
   test("array[Object]: copy to self without overlap (2/2)") {
     initB(arr)
-    scala.Array.copy(arr, 6, arr, 4, 2)
+    java.lang.System.arraycopy(arr, 6, arr, 4, 2)
     assert(
       arr(0).i == 0 && arr(1).i == 1 && arr(2).i == 2 && arr(3).i == 3 &&
         arr(4).i == 6 && arr(5).i == 7 && arr(6).i == 6 && arr(7).i == 7 &&
@@ -83,7 +83,7 @@ object ArrayObjectCopySuite extends tests.Suite {
 
   test("array[Object]: copy to self with overlap and backward copy") {
     initB(arr)
-    scala.Array.copy(arr, 0, arr, 2, 6)
+    java.lang.System.arraycopy(arr, 0, arr, 2, 6)
     assert(
       arr(0).i == 0 && arr(1).i == 1 && arr(2).i == 0 && arr(3).i == 1 &&
         arr(4).i == 2 && arr(5).i == 3 && arr(6).i == 4 && arr(7).i == 5 &&
@@ -93,7 +93,7 @@ object ArrayObjectCopySuite extends tests.Suite {
 
   test("array[Object]: copy to self with overlap and forward copy") {
     initB(arr)
-    scala.Array.copy(arr, 2, arr, 0, 6)
+    java.lang.System.arraycopy(arr, 2, arr, 0, 6)
     assert(
       arr(0).i == 2 && arr(1).i == 3 && arr(2).i == 4 && arr(3).i == 5 &&
         arr(4).i == 6 && arr(5).i == 7 && arr(6).i == 6 && arr(7).i == 7 &&
@@ -103,46 +103,46 @@ object ArrayObjectCopySuite extends tests.Suite {
 
   test("array[Object]: throws NullPointerException if from is null") {
     assertThrows[java.lang.NullPointerException] {
-      scala.Array.copy(null, 0, arr2, 5, 2)
+      java.lang.System.arraycopy(null, 0, arr2, 5, 2)
     }
   }
 
   test("array[Object]: throws NullPointerException if to is null") {
     assertThrows[java.lang.NullPointerException] {
-      scala.Array.copy(arr, 0, null, 5, 2)
+      java.lang.System.arraycopy(arr, 0, null, 5, 2)
     }
   }
 
   test("array[Object]: throws IndexOutOfBoundsException if length is negative") {
     assertThrows[java.lang.IndexOutOfBoundsException] {
-      scala.Array.copy(arr, 0, arr2, 5, -1)
+      java.lang.System.arraycopy(arr, 0, arr2, 5, -1)
     }
   }
 
   test(
     "array[Object]: throws IndexOutOfBoundsException if toPos + len > to.length") {
     assertThrows[java.lang.IndexOutOfBoundsException] {
-      scala.Array.copy(arr, 0, arr2, 5, 10)
+      java.lang.System.arraycopy(arr, 0, arr2, 5, 10)
     }
   }
 
   test(
     "array[Object]: throws IndexOutOfBoundsException if fromPos + len > from.length") {
     assertThrows[java.lang.IndexOutOfBoundsException] {
-      scala.Array.copy(arr, 5, arr2, 0, 10)
+      java.lang.System.arraycopy(arr, 5, arr2, 0, 10)
     }
   }
 
   test("array[Object]: throws IndexOutOfBoundsException if toPos is negative") {
     assertThrows[java.lang.IndexOutOfBoundsException] {
-      scala.Array.copy(arr, 0, arr2, -1, 10)
+      java.lang.System.arraycopy(arr, 0, arr2, -1, 10)
     }
   }
 
   test(
     "array[Object]: throws IndexOutOfBoundsException if fromPos is negative") {
     assertThrows[java.lang.IndexOutOfBoundsException] {
-      scala.Array.copy(arr, -1, arr2, 0, 10)
+      java.lang.System.arraycopy(arr, -1, arr2, 0, 10)
     }
   }
 
@@ -150,7 +150,7 @@ object ArrayObjectCopySuite extends tests.Suite {
     "array[Object]: throws ArrayStoreException if copy to a different type of array") {
     val arrChar = new Array[Char](len)
     assertThrows[java.lang.ArrayStoreException] {
-      scala.Array.copy(arr, 0, arrChar, 5, 2)
+      java.lang.System.arraycopy(arr, 0, arrChar, 5, 2)
     }
   }
 }

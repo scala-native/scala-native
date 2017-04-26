@@ -14,22 +14,29 @@ class ExternHoisting(implicit top: Top) extends Pass {
     Global.Member(Global.Top("__extern"), id.substring(7)) // strip extern. prefix
   }
 
-  override def onDefn(defn: Defn): Defn = super.onDefn {
-    defn match {
+  override def onDefns(defns: Seq[Defn]): Seq[Defn] = {
+    val buf = scala.collection.mutable.UnrolledBuffer.empty[Defn]
+
+    defns.foreach {
       case defn @ Defn.Declare(attrs, name, _) if attrs.isExtern =>
-        defn.copy(name = stripName(name))
+        buf += super.onDefn(defn.copy(name = stripName(name)))
       case defn @ Defn.Define(attrs, name, _, _) if attrs.isExtern =>
-        defn.copy(name = stripName(name))
+        buf += super.onDefn(defn.copy(name = stripName(name)))
       case defn @ Defn.Const(attrs, name, _, _) if attrs.isExtern =>
-        defn.copy(name = stripName(name))
+        buf += super.onDefn(defn.copy(name = stripName(name)))
       case defn @ Defn.Var(attrs, name, _, _) if attrs.isExtern =>
-        defn.copy(name = stripName(name))
-      case _ =>
-        defn
+        buf += super.onDefn(defn.copy(name = stripName(name)))
+      case defn =>
+        buf += super.onDefn(defn)
     }
+
+    buf.toSeq
   }
 
   override def onVal(value: Val) = value match {
+    case Val.Global(n @ Global.Member(_, id), ty)
+        if id.startsWith("extern.__") =>
+      Val.Global(stripName(n), ty)
     case Val.Global(n @ Ref(node), ty) if node.attrs.isExtern =>
       Val.Global(stripName(n), ty)
     case _ =>

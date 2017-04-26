@@ -6,13 +6,29 @@ import runtime.Intrinsics._
 package object runtime {
 
   /** Runtime Type Information. */
-  type Type = CStruct3[Int, String, Long]
+  type Type = CStruct3[Int, String, Byte]
 
   implicit class TypeOps(val self: Ptr[Type]) extends AnyVal {
     def id: Int      = !(self._1)
     def name: String = !(self._2)
-    def size: Long   = !(self._3)
+    def kind: Long   = !(self._3)
   }
+
+  /** Class runtime type information. */
+  type ClassType = CStruct3[Type, Long, CStruct2[Int, Int]]
+
+  implicit class ClassTypeOps(val self: Ptr[ClassType]) extends AnyVal {
+    def id: Int           = self._1.id
+    def name: String      = self._1.name
+    def kind: Long        = self._1.kind
+    def size: Long        = !(self._2)
+    def idRangeFrom: Long = !(self._3._1)
+    def idRangeTo: Long   = !(self._3._2)
+  }
+
+  final val CLASS_KIND  = 0
+  final val TRAIT_KIND  = 1
+  final val STRUCT_KIND = 2
 
   /** Used as a stub right hand of intrinsified methods. */
   def undefined: Nothing = throw new UndefinedBehaviorError
@@ -71,7 +87,7 @@ package object runtime {
   }
 
   /** Read type information of given object. */
-  def getType(obj: Object): Ptr[Type] = !obj.cast[Ptr[Ptr[Type]]]
+  def getType(obj: Object): Ptr[ClassType] = !obj.cast[Ptr[Ptr[ClassType]]]
 
   /** Get monitor for given object. */
   def getMonitor(obj: Object): Monitor = Monitor.dummy

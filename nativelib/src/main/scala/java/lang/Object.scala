@@ -1,8 +1,7 @@
 package java.lang
 
 import scala.scalanative.native._
-import scala.scalanative.runtime
-import scala.scalanative.runtime._
+import scala.scalanative.runtime, runtime.ClassTypeOps
 import scalanative.runtime.Intrinsics._
 
 class _Object {
@@ -16,7 +15,7 @@ class _Object {
     getClass.getName + "@" + Integer.toHexString(hashCode)
 
   @inline def __getClass(): _Class[_] =
-    new _Class(runtime.getType(this))
+    new _Class(runtime.getType(this).cast[Ptr[runtime.Type]])
 
   @inline def __notify(): Unit =
     runtime.getMonitor(this)._notify
@@ -40,8 +39,8 @@ class _Object {
     __hashCode
 
   protected def __clone(): _Object = {
-    val size  = getType(this).size
-    val clone = GC.malloc(size)
+    val size  = runtime.getType(this).size
+    val clone = runtime.GC.malloc(size)
     `llvm.memcpy.p0i8.p0i8.i64`(clone.cast[Ptr[scala.Byte]],
                                 this.cast[Ptr[scala.Byte]],
                                 size,

@@ -27,7 +27,26 @@ object ClassHierarchy {
     def fields: Seq[Field] =
       members.collect { case fld: Field => fld }
 
-    def typeName: Global = this.name member "type"
+    def typeName: Global =
+      this.name member "type"
+
+    def typeConst: Val =
+      Val.Global(typeName, Type.Ptr)
+
+    def typeStruct: Type.Struct =
+      Rt.Type
+
+    def typeValue: Val.Struct = {
+      val typeId  = Val.Int(id)
+      val typeStr = Val.String(name.id)
+      val typeKind = Val.Byte(this match {
+        case _: Class  => 0
+        case _: Trait  => 1
+        case _: Struct => 2
+        case _         => unreachable
+      })
+      Val.Struct(Rt.Type.name, Seq(typeId, typeStr, typeKind))
+    }
   }
 
   final class Struct(val attrs: Attrs,
@@ -75,23 +94,8 @@ object ClassHierarchy {
       Val.Struct(Global.None, vtable)
     def dynDispatchTableStruct =
       Type.Struct(Global.None, Seq(Type.Int, Type.Ptr, Type.Ptr, Type.Ptr))
-    def size: Long = MemoryLayout(Type.Ptr +: allfields.map(_.ty)).size
-    def typeStruct: Type.Struct =
-      Type.Struct(Global.None,
-                  Seq(Type.Int,
-                      Type.Ptr,
-                      Type.Long,
-                      dynDispatchTableStruct,
-                      vtableStruct))
-    def typeValue: Val.Struct =
-      Val.Struct(Global.None,
-                 Seq(Val.Int(id),
-                     Val.String(name.id),
-                     Val.Long(size),
-                     dynDispatchTableValue,
-                     vtableValue))
-    def typeConst: Val =
-      Val.Global(name member "type", Type.Ptr)
+    def size: Long =
+      MemoryLayout(Type.Ptr +: allfields.map(_.ty)).size
     def classStruct: Type.Struct = {
       val data            = allfields.map(_.ty)
       val classStructName = name member "layout"
@@ -100,6 +104,24 @@ object ClassHierarchy {
 
       Type.Struct(classStructName, classStructBody)
     }
+    override def typeStruct: Type.Struct =
+      Type.Struct(
+        Global.None,
+        Seq(super.typeStruct,
+            Type.Long, // size
+            Type.Struct(Global.None, Seq(Type.Int, Type.Int)), // range
+            dynDispatchTableStruct,
+            vtableStruct))
+    override def typeValue: Val.Struct =
+      Val.Struct(
+        Global.None,
+        Seq(super.typeValue,
+            Val.Long(size),
+            Val.Struct(Global.None,
+                       Seq(Val.Int(range.head), Val.Int(range.last))),
+            dynDispatchTableValue,
+            vtableValue)
+      )
   }
 
   final class Method(val attrs: Attrs,
@@ -149,10 +171,15 @@ object ClassHierarchy {
     var dispatchTy: Type   = _
     var dispatchDefn: Defn = _
 
-    val instanceName       = Global.Top("__instance")
-    val instanceVal        = Val.Global(instanceName, Type.Ptr)
-    var instanceTy: Type   = _
-    var instanceDefn: Defn = _
+    val classHasTraitName       = Global.Top("__class_has_trait")
+    val classHasTraitVal        = Val.Global(classHasTraitName, Type.Ptr)
+    var classHasTraitTy: Type   = _
+    var classHasTraitDefn: Defn = _
+
+    val traitHasTraitName       = Global.Top("__trait_has_trait")
+    val traitHasTraitVal        = Val.Global(traitHasTraitName, Type.Ptr)
+    var traitHasTraitTy: Type   = _
+    var traitHasTraitDefn: Defn = _
   }
 
   def apply(defns: Seq[Defn], dyns: Seq[String]): Top = {
@@ -434,7 +461,7 @@ object ClassHierarchy {
         Defn.Const(Attrs.None, top.dispatchName, table.ty, table)
     }
 
-    def completeTopInstanceTable(): Unit = {
+    def completeTopClassHasTraitTable(): Unit = {
       val columns = classes.sortBy(_.id).map { cls =>
         val row = new Array[Boolean](traits.length)
         cls.alltraits.foreach { trt =>
@@ -444,9 +471,24 @@ object ClassHierarchy {
       }
       val table = Val.Array(Type.Array(Type.Bool, traits.length), columns)
 
-      top.instanceTy = table.ty
-      top.instanceDefn =
-        Defn.Const(Attrs.None, top.instanceName, table.ty, table)
+      top.classHasTraitTy = table.ty
+      top.classHasTraitDefn =
+        Defn.Const(Attrs.None, top.classHasTraitName, table.ty, table)
+    }
+
+    def completeTopTraitHasTraitTable(): Unit = {
+      val columns = traits.sortBy(_.id).map { left =>
+        val row = new Array[Boolean](traits.length)
+        left.alltraits.foreach { right =>
+          row(right.id) = true
+        }
+        Val.Array(Type.Bool, row.map(Val.Bool))
+      }
+      val table = Val.Array(Type.Array(Type.Bool, traits.length), columns)
+
+      top.traitHasTraitTy = table.ty
+      top.traitHasTraitDefn =
+        Defn.Const(Attrs.None, top.traitHasTraitName, table.ty, table)
     }
 
     completeMethods()
@@ -456,7 +498,8 @@ object ClassHierarchy {
     completeClasses()
     assignClassIds()
     completeTopDispatchTable()
-    completeTopInstanceTable()
+    completeTopClassHasTraitTable()
+    completeTopTraitHasTraitTable()
 
     top
   }
