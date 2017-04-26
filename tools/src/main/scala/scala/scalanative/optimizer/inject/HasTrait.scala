@@ -18,7 +18,7 @@ class HasTrait(implicit top: Top, fresh: Fresh) extends Inject {
     val result           = Val.Local(fresh(), Type.Bool)
 
     Defn.Define(
-      Attrs(isExtern = true),
+      Attrs(isExtern = true, inline = Attr.AlwaysInline),
       ClassHasTraitName,
       ClassHasTraitSig,
       Seq(
@@ -39,7 +39,7 @@ class HasTrait(implicit top: Top, fresh: Fresh) extends Inject {
     val result          = Val.Local(fresh(), Type.Bool)
 
     Defn.Define(
-      Attrs(isExtern = true),
+      Attrs(isExtern = true, inline = Attr.AlwaysInline),
       TraitHasTraitName,
       TraitHasTraitSig,
       Seq(
