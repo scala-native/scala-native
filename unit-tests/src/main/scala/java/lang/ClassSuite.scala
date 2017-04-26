@@ -130,4 +130,9 @@ object ClassSuite extends tests.Suite {
     assert(
       classOf[java.lang.Runnable].toString == "interface java.lang.Runnable")
   }
+
+  test("isInterface") {
+    assert(!classOf[java.lang.Class[_]].isInterface)
+    assert(classOf[java.lang.Runnable].isInterface)
+  }
 }
