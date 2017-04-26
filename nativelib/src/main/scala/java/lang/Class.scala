@@ -120,8 +120,15 @@ final class _Class[A](val ty: Ptr[Type]) {
   override def hashCode: Int =
     ty.cast[scala.Long].##
 
-  override def toString =
-    super.toString + s"($getName)"
+  override def toString = {
+    val name = getName
+    val prefix = ty.kind match {
+      case CLASS_KIND  => "class "
+      case TRAIT_KIND  => "interface "
+      case STRUCT_KIND => "struct "
+    }
+    prefix + name
+  }
 }
 
 object _Class {

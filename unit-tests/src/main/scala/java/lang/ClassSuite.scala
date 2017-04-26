@@ -124,43 +124,10 @@ object ClassSuite extends tests.Suite {
     assert(!classOf[Z].isAssignableFrom(classOf[Y]))
     assert(classOf[Z].isAssignableFrom(classOf[Z]))
   }
+
+  test("toString") {
+    assert(classOf[java.lang.Class[_]].toString == "class java.lang.Class")
+    assert(
+      classOf[java.lang.Runnable].toString == "interface java.lang.Runnable")
+  }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
