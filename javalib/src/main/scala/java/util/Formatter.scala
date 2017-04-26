@@ -2,7 +2,13 @@ package java.util
 
 import java.io._
 
-class Formatter {
+import scala.util.matching.Regex
+import java.lang.StringBuilder
+
+class Formatter(private val dest: StringBuilder) extends Closeable with Flushable {
+  var closed = false
+
+  def this() = this(new StringBuilder())
   def this(appendable: Appendable, locale: Locale) = this()
   def this(appendable: Appendable) = this()
   def this(file: File, charsetName: String, locale: Locale) = this()
@@ -28,4 +34,18 @@ class Formatter {
   override def toString: String                              = ???
 }
 
-object Formatter
+object Formatter {
+
+  private class RegExpExtractor(val regexp: Regex) {
+    def unapply(str: String): Option[Regex.Match] = {
+      regexp.findFirstMatchIn(str)
+    }
+  }
+
+  private val RegularChunk = new RegExpExtractor("""^[^\x25]+""".r)
+  private val DoublePercent = new RegExpExtractor("""^\x25{2}""".r)
+  private val EOLChunk = new RegExpExtractor("""^\x25n""".r)
+  private val FormattedChunk = new RegExpExtractor(
+    """^\x25(?:([1-9]\d*)\$)?([-#+ 0,\(<]*)(\d*)(?:\.(\d+))?([A-Za-z])""".r)
+
+}
