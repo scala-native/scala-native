@@ -197,7 +197,7 @@ object ScalaNativePluginInternal {
       workdir
     },
     nativeLogger := streams.value.log,
-    nativeGC := "boehm",
+    nativeGC := "immix",
     nativeCompileLib := {
       val cwd       = nativeWorkdir.value
       val logger    = nativeLogger.value
@@ -496,9 +496,10 @@ object ScalaNativePluginInternal {
   private def garbageCollector(gc: String) = gc match {
     case "none"  => GarbageCollector.None
     case "boehm" => GarbageCollector.Boehm
+    case "immix" => GarbageCollector.Immix
     case value =>
       throw new MessageOnlyException(
-        "nativeGC can be either \"none\" or \"boehm\", not: " + value)
+        "nativeGC can be either \"none\", \"boehm\" or \"immix\", not: " + value)
   }
 
   /**

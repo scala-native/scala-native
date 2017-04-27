@@ -1,0 +1,1 @@
+CMakeLists.txt not found in /Users/lukaskellenberger/Developer/scala-native/nativelib/src/main/resources/gc/markandsweep
