@@ -43,9 +43,9 @@ object Files {
   val fileWith3Bytes = new File("fileWith3Bytes.bin")
 
   val nonEmptyDirectory   = new File("nonEmptyDirectory")
-  val firstChildFile      = new File(nonEmptyDirectory, "firstChildFile")
-  val secondChildFile     = new File(nonEmptyDirectory, "secondChildFile")
-  val thirdChildDirectory = new File(nonEmptyDirectory, "thirdChildDirectory")
+  val firstChildFile      = new File(nonEmptyDirectory, "0firstChildFile")
+  val secondChildFile     = new File(nonEmptyDirectory, "1secondChildFile")
+  val thirdChildDirectory = new File(nonEmptyDirectory, "2thirdChildDirectory")
 
   val willBeRenamedFrom = new File("willBeRenamedFrom.txt")
   val willBeRenamedTo   = new File("willBeReanmedTo.txt")

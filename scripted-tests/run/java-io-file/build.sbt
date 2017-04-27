@@ -119,10 +119,11 @@ setupTests := {
   IO.touch(firstChildFile)
   IO.touch(secondChildFile)
   IO.createDirectory(thirdChildDirectory)
-  assert(nonEmptyDirectory.list().length == 3)
-  assert(nonEmptyDirectory.list()(0) == firstChildFile.getName)
-  assert(nonEmptyDirectory.list()(1) == secondChildFile.getName)
-  assert(nonEmptyDirectory.list()(2) == thirdChildDirectory.getName)
+  val listedFiles = nonEmptyDirectory.list().sorted
+  assert(listedFiles.length == 3)
+  assert(listedFiles(0) == firstChildFile.getName)
+  assert(listedFiles(1) == secondChildFile.getName)
+  assert(listedFiles(2) == thirdChildDirectory.getName)
 
   IO.touch(willBeRenamedFrom)
   assert(willBeRenamedFrom.exists)
