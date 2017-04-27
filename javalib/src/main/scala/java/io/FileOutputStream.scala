@@ -4,7 +4,6 @@ import scala.scalanative.posix.{fcntl, unistd}
 import scala.scalanative.native._
 import scala.scalanative.runtime
 import scala.scalanative.posix.sys.stat
-import scala.scalanative.runtime.GC
 
 class FileOutputStream(fd: FileDescriptor) extends OutputStream {
   def this(file: File, append: Boolean) =
