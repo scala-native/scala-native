@@ -3,6 +3,11 @@
 Changelog
 =========
 
+0.2.1 (April 27, 2017)
+----------------------
+
+`Read release notes for 0.2.1 on GitHub <https://github.com/scala-native/scala-native/releases/tag/v0.2.1>`_.
+
 0.2.0 (April 26, 2017)
 ----------------------
 
