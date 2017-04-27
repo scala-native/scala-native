@@ -22,6 +22,9 @@ import java.io.{File, ByteArrayInputStream}
 
 object ScalaNativePluginInternal {
 
+  val nativeWarnOldJVM =
+    taskKey[Unit]("Warn if JVM 7 or older is used.")
+
   val nativeTarget =
     taskKey[String]("Target triple.")
 
@@ -107,15 +110,17 @@ object ScalaNativePluginInternal {
       "org.scala-native" %%% "javalib"   % nativeVersion,
       "org.scala-native" %%% "scalalib"  % nativeVersion
     ),
-    initialize := {
-      val res = initialize.value
-      Try(Class.forName("java.util.function.Function")).toOption match {
-        case None    => sys.error("Java 8 or newer is required for this project.")
-        case Some(_) => res
-      }
-    },
     addCompilerPlugin(
       "org.scala-native" % "nscplugin" % nativeVersion cross CrossVersion.full),
+    nativeWarnOldJVM := {
+      val logger = nativeLogger.value
+      Try(Class.forName("java.util.function.Function")).toOption match {
+        case None =>
+          logger.warn("Scala Native is only supported on Java 8 or newer.")
+        case Some(_) =>
+          ()
+      }
+    },
     nativeClang := {
       val clang = discover("clang", clangVersions)
       checkThatClangIsRecentEnough(clang)
@@ -357,6 +362,7 @@ object ScalaNativePluginInternal {
       outpath
     },
     nativeLink := {
+      nativeWarnOldJVM.value
       // We explicitly mention all of the steps in the pipeline
       // although only the last one is strictly necessary.
       (compile in Compile).value
