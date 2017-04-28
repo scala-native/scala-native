@@ -21,8 +21,8 @@ class GCexternals(top: Top) extends Inject {
       case _              => false
     }
 
-    val moduleArrayName     = Global.Top("__MODULES__")
-    val moduleArraySizeName = Global.Top("__MODULES_SIZE__")
+    val moduleArrayName     = Global.Top("__modules")
+    val moduleArraySizeName = Global.Top("__modules_size")
     val moduleArray = Val.Array(Type.Ptr, modules.map {
       case Defn.Module(_, clsName, _, _) =>
         Val.Global(clsName member "value", Type.Ptr)
@@ -45,7 +45,7 @@ class GCexternals(top: Top) extends Inject {
   def genObjectArrayId(): Defn.Var = {
     val objectArray =
       top.nodes(Global.Top("scala.scalanative.runtime.ObjectArray"))
-    val objectArrayIdName = Global.Top("__OBJECT_ARRAY_ID__")
+    val objectArrayIdName = Global.Top("__object_array_id")
 
     Defn.Var(Attrs.None, objectArrayIdName, Type.Int, Val.Int(objectArray.id))
   }
