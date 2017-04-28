@@ -368,6 +368,8 @@ object Show {
         str("true")
       case Val.False =>
         str("false")
+      case Val.Null =>
+        str("null")
       case Val.Zero(ty) =>
         str("zero[")
         type_(ty)

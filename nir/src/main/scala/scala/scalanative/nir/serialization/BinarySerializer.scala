@@ -424,6 +424,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Val.None          => putInt(T.NoneVal)
     case Val.True          => putInt(T.TrueVal)
     case Val.False         => putInt(T.FalseVal)
+    case Val.Null          => putInt(T.ZeroVal); putType(Type.Ptr)
     case Val.Zero(ty)      => putInt(T.ZeroVal); putType(ty)
     case Val.Undef(ty)     => putInt(T.UndefVal); putType(ty)
     case Val.Byte(v)       => putInt(T.ByteVal); put(v)

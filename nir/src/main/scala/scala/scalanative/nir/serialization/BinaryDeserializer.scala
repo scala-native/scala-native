@@ -293,7 +293,7 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
     case T.NoneVal   => Val.None
     case T.TrueVal   => Val.True
     case T.FalseVal  => Val.False
-    case T.ZeroVal   => Val.Zero(getType)
+    case T.ZeroVal   => getZero()
     case T.UndefVal  => Val.Undef(getType)
     case T.ByteVal   => Val.Byte(get)
     case T.ShortVal  => Val.Short(getShort)
@@ -310,5 +310,12 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
     case T.UnitVal   => Val.Unit
     case T.ConstVal  => Val.Const(getVal)
     case T.StringVal => Val.String(getString)
+  }
+  private def getZero(): Val = {
+    val ty = getType
+    ty match {
+      case Type.Ptr | _: Type.RefKind => Val.Null
+      case _                          => Val.Zero(ty)
+    }
   }
 }

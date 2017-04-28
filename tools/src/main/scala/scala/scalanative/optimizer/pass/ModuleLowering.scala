@@ -47,10 +47,9 @@ class ModuleLowering(implicit top: Top, fresh: Fresh) extends Pass {
       case Defn.Module(attrs, clsName @ ClassRef(cls), parent, ifaces) =>
         val clsDefn = Defn.Class(attrs, clsName, parent, ifaces)
         val clsTy   = Type.Class(clsName)
-        val clsNull = Val.Zero(clsTy)
 
         val valueName = clsName member "value"
-        val valueDefn = Defn.Var(Attrs.None, valueName, clsTy, clsNull)
+        val valueDefn = Defn.Var(Attrs.None, valueName, clsTy, Val.Null)
         val value     = Val.Global(valueName, Type.Ptr)
 
         val entry      = fresh()
@@ -79,7 +78,7 @@ class ModuleLowering(implicit top: Top, fresh: Fresh) extends Pass {
           Seq(
             Inst.Label(entry, Seq()),
             Inst.Let(self.name, Op.Load(clsTy, value)),
-            Inst.Let(cond.name, Op.Comp(Comp.Ine, Rt.Object, self, clsNull)),
+            Inst.Let(cond.name, Op.Comp(Comp.Ine, Rt.Object, self, Val.Null)),
             Inst.If(cond, Next(existing), Next(initialize)),
             Inst.Label(existing, Seq()),
             Inst.Ret(self),

@@ -15,7 +15,7 @@ class IsLowering(implicit fresh: Fresh, top: Top) extends Pass {
     import buf._
 
     insts.foreach {
-      case Let(n, Op.Is(_, Val.Zero(_))) =>
+      case Let(n, Op.Is(_, Val.Null | Val.Zero(_))) =>
         let(n, Op.Copy(Val.False))
 
       case Let(n, Op.Is(ty, obj)) =>
@@ -24,7 +24,7 @@ class IsLowering(implicit fresh: Fresh, top: Top) extends Pass {
         val thenL, elseL, contL = fresh()
 
         // check if obj is null
-        val isnull = let(Op.Comp(Comp.Ieq, Type.Ptr, obj, Val.Zero(Type.Ptr)))
+        val isnull = let(Op.Comp(Comp.Ieq, Type.Ptr, obj, Val.Null))
         branch(isnull, Next(thenL), Next(elseL))
         // in case it's null, result is always false
         label(thenL)
