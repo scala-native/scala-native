@@ -1,7 +1,5 @@
 package java.io
 
-import scala.annotation.tailrec
-
 class ByteArrayOutputStream(initBufSize: Int) extends OutputStream {
 
   protected var buf: Array[Byte] = new Array(initBufSize)

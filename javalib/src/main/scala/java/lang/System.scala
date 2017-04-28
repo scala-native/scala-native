@@ -4,7 +4,6 @@ import java.io._
 import java.util.{Collections, HashMap, Map, Properties}
 import scala.scalanative.native._
 import scala.scalanative.posix.unistd
-import scala.scalanative.posix.errno.EINTR
 import scala.scalanative.runtime.time
 import scala.scalanative.runtime.Platform
 import scala.scalanative.runtime.GC
@@ -119,7 +118,7 @@ object System {
       sizePtr += 1
     }
 
-    val map               = new java.util.HashMap[String, String](size)
+    val map               = new HashMap[String, String](size)
     var ptr: Ptr[CString] = unistd.environ
     while (isDefined(ptr)) {
       val variable = fromCString(ptr(0))

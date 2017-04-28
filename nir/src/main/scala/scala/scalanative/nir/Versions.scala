@@ -25,5 +25,5 @@ object Versions {
   final val revision: Int = 2
 
   /* Current public release version of Scala Native. */
-  final val current: String = "0.2.0"
+  final val current: String = "0.3.0-SNAPSHOT"
 }
