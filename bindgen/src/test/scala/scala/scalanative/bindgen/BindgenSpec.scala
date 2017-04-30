@@ -1,6 +1,5 @@
 package scala.scalanative
 
-//import scala.language.implicitConversions
 import org.scalatest._
 import scala.sys.process._
 
