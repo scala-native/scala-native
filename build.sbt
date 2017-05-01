@@ -18,6 +18,13 @@ addCommandAlias(
     "clean",
     "cleanCache",
     "cleanLocal",
+    "dirty-rebuild"
+  ).mkString(";", ";", "")
+)
+
+addCommandAlias(
+  "dirty-rebuild",
+  Seq(
     "nscplugin/publishLocal",
     "nativelib/publishLocal",
     "publishLocal"
@@ -412,8 +419,9 @@ lazy val sandbox =
     .settings(projectSettings)
     .settings(noPublishSettings)
     .settings(
-      // nativeOptimizerReporter := OptimizerReporter.toDirectory(
-      //   crossTarget.value)
+      nativeMode := "release",
+      nativeOptimizerReporter := OptimizerReporter.toDirectory(
+        crossTarget.value)
     )
     .enablePlugins(ScalaNativePlugin)
 

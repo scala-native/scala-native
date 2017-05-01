@@ -29,11 +29,11 @@ class ClassLowering(implicit top: Top, fresh: Fresh) extends Pass {
   override def onInst(inst: Inst) = super.onInst {
     inst match {
       case Inst.Let(n, Op.Field(obj, FieldRef(cls: Class, fld))) =>
-        val classty = cls.classStruct
+        val layout = cls.layout
+        val ty     = layout.struct
+        val index  = layout.index(fld)
 
-        Inst.Let(
-          n,
-          Op.Elem(classty, obj, Seq(Val.Int(0), Val.Int(fld.index + 1))))
+        Inst.Let(n, Op.Elem(ty, obj, Seq(Val.Int(0), Val.Int(index))))
 
       case _ =>
         inst

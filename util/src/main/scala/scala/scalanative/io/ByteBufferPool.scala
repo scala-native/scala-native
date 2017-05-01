@@ -7,7 +7,7 @@ final class ByteBufferPool {
   private var buffers: List[ByteBuffer] = Nil
 
   private def alloc(): ByteBuffer = {
-    ByteBuffer.allocateDirect(8 * 1024 * 1024)
+    ByteBuffer.allocateDirect(64 * 1024 * 1024)
   }
 
   def reclaim(buffer: ByteBuffer): Unit = synchronized {

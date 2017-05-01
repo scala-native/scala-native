@@ -11,9 +11,9 @@ import nir._
 class TraitDispatchTables(top: Top) extends Inject {
 
   def apply(buf: Buffer[Defn]): Unit = {
-    buf += top.dispatchDefn
-    buf += top.classHasTraitDefn
-    buf += top.traitHasTraitDefn
+    buf += top.tables.dispatchDefn
+    buf += top.tables.classHasTraitDefn
+    buf += top.tables.traitHasTraitDefn
   }
 }
 
