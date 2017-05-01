@@ -13,17 +13,14 @@ abstract class FileChannel protected ()
     with GatheringByteChannel
     with ScatteringByteChannel {
 
-  // TODO:
   // def force(metadata: Boolean): Unit
-
-  // TODO:
   // final def lock(): FileLock =
   //   lock(0L, Long.MaxValue, false)
-
-  // TODO:
   // def lock(position: Long, size: Long, shared: Boolean): FileLock
+  // final def tryLock(): FileLock =
+  //   tryLock(0L, Long.MaxValue, false)
+  // def tryLock(position: Long, size: Long, shared: Boolean): FileLock
 
-  // TODO:
   def map(mode: FileChannel.MapMode,
           position: Long,
           size: Long): MappedByteBuffer
@@ -51,13 +48,6 @@ abstract class FileChannel protected ()
 
   def truncate(size: Long): FileChannel
 
-  // TODO:
-  // final def tryLock(): FileLock =
-  //   tryLock(0L, Long.MaxValue, false)
-
-  // TODO:
-  // def tryLock(position: Long, size: Long, shared: Boolean): FileLock
-
   def write(src: ByteBuffer): Int
 
   def write(buffer: ByteBuffer, position: Long): Int
@@ -77,11 +67,10 @@ object FileChannel {
     final val READ_WRITE = new MapMode {}
   }
 
-  // TODO: Support options, attrs
   def open(path: Path,
            options: Set[_ <: OpenOption],
            attrs: Array[FileAttribute[_]]): FileChannel =
-    new FileChannelImpl(path)
+    new FileChannelImpl(path, options, attrs)
 
   def open(path: Path, options: Array[OpenOption]): FileChannel = {
     var i   = 0

@@ -58,12 +58,12 @@ class UnixFileSystemProvider extends FileSystemProvider {
                               attrs: Array[FileAttribute[_]]): FileChannel =
     FileChannel.open(path, options, attrs)
 
-  override def newAsynchronousFileChannel(
-      path: Path,
-      options: Set[_ <: OpenOption],
-      executor: ExecutorService,
-      attrs: Array[FileAttribute[_]]): AsynchronousFileChannel =
-    AsynchronousFileChannel.open(path, options, executor, attrs)
+  // override def newAsynchronousFileChannel(
+  //     path: Path,
+  //     options: Set[_ <: OpenOption],
+  //     executor: ExecutorService,
+  //     attrs: Array[FileAttribute[_]]): AsynchronousFileChannel =
+  //   AsynchronousFileChannel.open(path, options, executor, attrs)
 
   // override def newByteChannel(
   //     path: Path,

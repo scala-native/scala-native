@@ -1,21 +1,37 @@
 package java.nio.channels
 
-import java.nio.file.Path
+import java.nio.file.{
+  FileAlreadyExistsException,
+  Files,
+  OpenOption,
+  Path,
+  StandardOpenOption
+}
+import java.nio.file.attribute.FileAttribute
 import java.nio.{ByteBuffer, MappedByteBuffer}
 
 import java.io.RandomAccessFile
 
-final class FileChannelImpl(path: Path) extends FileChannel {
+import java.util.Set
 
-  val raf = new RandomAccessFile(path.toFile, "rw")
+final class FileChannelImpl(path: Path,
+                            options: Set[_ <: OpenOption],
+                            attrs: Array[FileAttribute[_]])
+    extends FileChannel {
 
-  override protected def implCloseChannel(): Unit =
+  private val deleteOnClose =
+    options.contains(StandardOpenOption.DELETE_ON_CLOSE)
+  private val raf = FileChannelImpl.getRAF(path, options, attrs)
+
+  // override def force(metadata: Boolean): Unit
+  // override def tryLock(position: Long, size: Long, shared: Boolean): FileLock
+  // override def lock(position: Long, size: Long, shared: Boolean): FileLock
+
+  override protected def implCloseChannel(): Unit = {
     raf.close()
+    Files.delete(path)
+  }
 
-  // TODO:
-  // override def force(metadata: Boolean): Unit = ???
-  // override def tryLock(position: Long, size: Long, shared: Boolean): FileLock = ???
-  // override def lock(position: Long, size: Long, shared: Boolean): FileLock = ???
   override def map(mode: FileChannel.MapMode,
                    position: Long,
                    size: Long): MappedByteBuffer = {
@@ -116,4 +132,43 @@ final class FileChannelImpl(path: Path) extends FileChannel {
 
   private def ensureOpen(): Unit =
     if (!isOpen()) throw new ClosedChannelException()
+}
+
+private object FileChannelImpl {
+  def getRAF(path: Path,
+             options: Set[_ <: OpenOption],
+             attrs: Array[FileAttribute[_]]): RandomAccessFile = {
+    import StandardOpenOption._
+
+    val mode = new StringBuilder("r")
+    if (options.contains(WRITE) || options.contains(APPEND)) mode.append("w")
+
+    if (options.contains(WRITE) && options.contains(CREATE_NEW) && Files
+          .exists(path, Array.empty)) {
+      throw new FileAlreadyExistsException(path.toString)
+    }
+
+    if (options.contains(WRITE) && (options.contains(CREATE_NEW) || options
+          .contains(CREATE))) {
+      Files.createFile(path, attrs)
+    }
+
+    if (options.contains(WRITE) && options.contains(DSYNC) && !options
+          .contains(SYNC)) {
+      mode.append("d")
+    }
+
+    if (options.contains(WRITE) && options.contains(SYNC)) {
+      mode.append("s")
+    }
+
+    val raf = new RandomAccessFile(path.toFile, mode.toString)
+
+    if (options.contains(WRITE) && options.contains(TRUNCATE_EXISTING)) {
+      raf.setLength(0L)
+    }
+
+    raf
+
+  }
 }
