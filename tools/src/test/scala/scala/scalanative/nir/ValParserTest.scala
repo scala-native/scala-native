@@ -27,6 +27,11 @@ class ValParserTest extends FlatSpec with Matchers {
     result should be(`false`)
   }
 
+  it should "parse `Val.Null`" in {
+    val Parsed.Success(result, _) = parser.Val.Null.parse(Val.Null.show)
+    result should be(Val.Null)
+  }
+
   it should "parse `Val.Zero`" in {
     val zero: Val                 = Val.Zero(noTpe)
     val Parsed.Success(result, _) = parser.Val.Zero.parse(zero.show)

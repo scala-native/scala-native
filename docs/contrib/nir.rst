@@ -532,13 +532,14 @@ Boolean
 
 Corresponds to LLVM's ``true`` and ``false``.
 
-Zero
-````
+Zero and null
+`````````````
 .. code-block:: text
 
+    null
     zero $type
 
-Corresponds to LLVM's ``zeroinitializer``.
+Corresponds to LLVM's ``null`` and ``zeroinitializer``.
 
 Integer
 ```````
