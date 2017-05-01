@@ -66,7 +66,7 @@ object ClassHierarchy {
       if (isConcrete) Val.Global(name, Type.Ptr)
       else Val.Null
     def isVirtual =
-      !isConcrete || overriden.nonEmpty || overrides.exists(_.inClass)
+      !isConcrete || overriden.nonEmpty
     def isStatic =
       !isVirtual
   }

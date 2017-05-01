@@ -20,18 +20,18 @@ class VirtualTable(cls: Class) {
       parent.vtable.values.clone
     }
   cls.methods.foreach { meth =>
-    if (meth.isVirtual) {
-      meth.overrides
-        .collect {
-          case ovmeth if ovmeth.inClass =>
-            values(index(ovmeth)) = meth.value
-        }
-        .headOption
-        .getOrElse {
+    meth.overrides
+      .collect {
+        case ovmeth if ovmeth.inClass =>
+          values(index(ovmeth)) = meth.value
+      }
+      .headOption
+      .getOrElse {
+        if (meth.isVirtual) {
           entries += meth
           values += meth.value
         }
-    }
+      }
   }
   val ty: Type =
     Type.Array(Type.Ptr, values.length)
