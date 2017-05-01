@@ -681,9 +681,14 @@ object FilesSuite extends tests.Suite {
       Files.walkFileTree(dir, visitor)
 
       val expected = Set(dir, d0)
+      val found    = Set(visitor.dequeue(), visitor.dequeue())
+      println("Found: " + found)
+      println("Expected: " + expected)
+      assert(found.size == 2)
+      assert(found == expected)
 
-      assert(expected contains visitor.dequeue())
-      assert(expected contains visitor.dequeue())
+      // assert(expected contains visitor.dequeue())
+      // assert(expected contains visitor.dequeue())
       assert(visitor.isEmpty)
     }
   }
@@ -756,6 +761,10 @@ object FilesSuite extends tests.Suite {
         val count = result.getOrElse(f, 0)
         result(f) = count + 1
       }
+      println("Result:")
+      println(result)
+      println("Expected:")
+      println(expected)
       assert(result == expected)
     }
   }
