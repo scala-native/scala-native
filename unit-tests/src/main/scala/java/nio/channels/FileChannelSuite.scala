@@ -1,7 +1,7 @@
 package java.nio.channels
 
 import java.nio.ByteBuffer
-import java.nio.file.{Files, Path}
+import java.nio.file.{Files, Path, StandardOpenOption}
 import java.io.File
 
 object FileChannelSuite extends tests.Suite {
@@ -27,10 +27,12 @@ object FileChannelSuite extends tests.Suite {
 
   test("A FileChannel can write to a file") {
     withTemporaryDirectory { dir =>
-      val f       = dir.resolve("f")
-      val bytes   = Array.apply[Byte](1, 2, 3, 4, 5)
-      val src     = ByteBuffer.wrap(bytes)
-      val channel = FileChannel.open(f)
+      val f     = dir.resolve("f")
+      val bytes = Array.apply[Byte](1, 2, 3, 4, 5)
+      val src   = ByteBuffer.wrap(bytes)
+      val channel = FileChannel.open(f,
+                                     StandardOpenOption.WRITE,
+                                     StandardOpenOption.CREATE)
       while (src.remaining() > 0) channel.write(src)
 
       val in = Files.newInputStream(f)

@@ -17,7 +17,7 @@ import java.io.{
 
 import java.nio.file.attribute._
 import java.nio.charset.{Charset, StandardCharsets}
-import java.nio.channels.SeekableByteChannel
+import java.nio.channels.{FileChannel, SeekableByteChannel}
 
 import java.util.concurrent.TimeUnit
 import java.util.function.BiPredicate
@@ -32,17 +32,7 @@ import scala.collection.immutable.{Map => SMap, Stream => SStream, Set => SSet}
 
 object Files {
 
-  private def copy(in: InputStream, out: OutputStream): Long = {
-    var written: Long = 0L
-    var value: Int    = 0
-
-    while ({ value = in.read; value != -1 }) {
-      out.write(value)
-      written += 1
-    }
-
-    written
-  }
+  // def getFileStore(path: Path): FileStore
 
   def copy(in: InputStream, target: Path, options: Array[CopyOption]): Long = {
     val replaceExisting =
@@ -229,9 +219,6 @@ object Files {
       options: Array[LinkOption]): V =
     path.getFileSystem().provider().getFileAttributeView(path, tpe, options)
 
-  // def getFileStore(path: Path): FileStore =
-  //   ???
-
   def getLastModifiedTime(path: Path, options: Array[LinkOption]): FileTime = {
     val realPath = path.toRealPath(options)
     val attributes =
@@ -331,15 +318,15 @@ object Files {
                         options: Array[OpenOption]): BufferedWriter =
     newBufferedWriter(path, StandardCharsets.UTF_8, options)
 
-  // def newByteChannel(path: Path,
-  //                    options: Array[OpenOption]): SeekableByteChannel =
-  //   ???
-  //
-  // def newByteChannel(path: Path,
-  //                    options: Set[_ <: OpenOption],
-  //                    attrs: Array[FileAttribute[_]]): SeekableByteChannel =
-  //   ???
-  //
+  def newByteChannel(path: Path,
+                     options: Array[OpenOption]): SeekableByteChannel =
+    FileChannel.open(path, options)
+
+  def newByteChannel(path: Path,
+                     options: Set[_ <: OpenOption],
+                     attrs: Array[FileAttribute[_]]): SeekableByteChannel =
+    FileChannel.open(path, options, attrs)
+
   // def newDirectoryStream(dir: Path): DirectoryStream[Path] =
   //   ???
   //
@@ -590,6 +577,18 @@ object Files {
             lines: Iterable[_ <: CharSequence],
             options: Array[OpenOption]): Path =
     write(path, lines, StandardCharsets.UTF_8, options)
+
+  private def copy(in: InputStream, out: OutputStream): Long = {
+    var written: Long = 0L
+    var value: Int    = 0
+
+    while ({ value = in.read; value != -1 }) {
+      out.write(value)
+      written += 1
+    }
+
+    written
+  }
 
   private def setAttributes(path: Path, attrs: Array[FileAttribute[_]]): Unit =
     attrs.map(a => (a.name, a.value)).toMap.foreach {

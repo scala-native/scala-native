@@ -1,3 +1,3 @@
 package java.nio.channels
 
-class OverlappingFileLockException extends Exception
+class OverlappingFileLockException extends IllegalStateException

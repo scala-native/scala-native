@@ -1,5 +1,6 @@
 package java.nio.file
 
+import java.nio.ByteBuffer
 import java.nio.file._
 import java.io.{
   BufferedWriter,
@@ -1101,6 +1102,23 @@ object FilesSuite extends tests.Suite {
       assert(!attrs.isOther())
       assert(!attrs.isRegularFile())
       assert(!attrs.isSymbolicLink())
+    }
+  }
+
+  test("Files.newByteChannel returns a channel") {
+    withTemporaryDirectory { dir =>
+      val f = dir.toPath.resolve("f0")
+      Files.write(f, Array[Byte](1, 2, 3))
+      val channel = Files.newByteChannel(f)
+      val buffer  = ByteBuffer.allocate(10)
+      var read    = 0
+      while (channel.read(buffer) != -1) {
+        read += 1
+      }
+      println(read) // == 3)
+      println(buffer.get(0) == 1)
+      println(buffer.get(1) == 2)
+      println(buffer.get(2) == 3)
     }
   }
 
