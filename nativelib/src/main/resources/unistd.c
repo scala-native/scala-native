@@ -1,4 +1,8 @@
-#include <unistd.h>
+#ifndef _WIN32
+    #include <unistd.h>
+#else
+    #include "os_win_unistd.h"
+#endif
 
 int scalanative_f_ok() { return F_OK; }
 

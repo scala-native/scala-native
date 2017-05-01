@@ -145,8 +145,7 @@ object CodeGen {
       line("declare i32 @__gxx_personality_v0(...)")
       line("declare i8* @__cxa_begin_catch(i8*)")
       line("declare void @__cxa_end_catch()")
-      line(
-        "@_ZTIN11scalanative16ExceptionWrapperE = external constant { i8*, i8*, i8* }")
+      //line("@_ZTIN11scalanative16ExceptionWrapperE = external constant { i8*, i8*, i8* }")
     }
 
     def genDefn(defn: Defn): Unit = {
@@ -301,7 +300,7 @@ object CodeGen {
         line(s"$rec = $landingpad")
         line(s"$r0 = extractvalue $excrecty $rec, 0")
         line(s"$r1 = extractvalue $excrecty $rec, 1")
-        line(s"$id = $typeid")
+        line(s"$id = extractvalue $excrecty $rec, 1")
         line(s"$cmp = icmp eq i32 $r1, $id")
         line(s"br i1 $cmp, label %$succ, label %$fail")
         unindent()
@@ -790,12 +789,12 @@ object CodeGen {
   }
 
   private object Impl {
-    val gxxpersonality =
+    val gxxpersonality = 
       "personality i8* bitcast (i32 (...)* @__gxx_personality_v0 to i8*)"
     val excrecty = "{ i8*, i32 }"
-    val landingpad =
-      "landingpad { i8*, i32 } catch i8* bitcast ({ i8*, i8*, i8* }* @_ZTIN11scalanative16ExceptionWrapperE to i8*)"
-    val typeid =
-      "call i32 @llvm.eh.typeid.for(i8* bitcast ({ i8*, i8*, i8* }* @_ZTIN11scalanative16ExceptionWrapperE to i8*))"
+    val landingpad = "landingpad { i8*, i32 } cleanup"
+      //"landingpad { i8*, i32 } catch i8* bitcast ({ i8*, i8*, i8* }* @_ZTIN11scalanative16ExceptionWrapperE to i8*)"
+    val typeid = "call i32 @llvm.eh.typeid.for(i8* bitcast ( i32* 123 to i8*))"
+               //"call i32 @llvm.eh.typeid.for(i8* bitcast ({ i8*, i8*, i8* }* @_ZTIN11scalanative16ExceptionWrapperE to i8*))"
   }
 }
