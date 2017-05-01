@@ -671,7 +671,8 @@ object FilesSuite extends tests.Suite {
       assert(Files.exists(f1) && Files.isRegularFile(f1))
       assert(Files.exists(f2) && Files.isRegularFile(f2))
 
-      val visitor = new QueueingVisitor {
+      val visitor = new QueueingVisitor()
+      val terminatingVisitor = new QueueingVisitor {
         override def visitFile(
             file: Path,
             attributes: BasicFileAttributes): FileVisitResult =
@@ -679,17 +680,22 @@ object FilesSuite extends tests.Suite {
           else super.visitFile(file, attributes)
       }
       Files.walkFileTree(dir, visitor)
+      Files.walkFileTree(dir, terminatingVisitor)
 
-      val expected = Set(dir, d0)
-      val found    = Set(visitor.dequeue(), visitor.dequeue())
+      val expected = scala.collection.mutable.Set.empty[Path]
+      var continue = true
+      while (continue) {
+        val p = visitor.dequeue()
+        if (p == f2) continue = false
+        else expected += p
+      }
+      val found = scala.collection.mutable.Set.empty[Path]
+      while (!terminatingVisitor.isEmpty) {
+        found += terminatingVisitor.dequeue()
+      }
       println("Found: " + found)
       println("Expected: " + expected)
-      assert(found.size == 2)
       assert(found == expected)
-
-      // assert(expected contains visitor.dequeue())
-      // assert(expected contains visitor.dequeue())
-      assert(visitor.isEmpty)
     }
   }
 
@@ -746,7 +752,10 @@ object FilesSuite extends tests.Suite {
       assert(Files.exists(f1) && Files.isRegularFile(f1))
       assert(Files.exists(f2) && Files.isRegularFile(f2))
 
-      val visitor = new QueueingVisitor {
+      val visitor  = new QueueingVisitor()
+      val expected = scala.collection.mutable.Set.empty[Path]
+      var skip     = false
+      val skippingVisitor = new QueueingVisitor {
         override def visitFile(
             file: Path,
             attributes: BasicFileAttributes): FileVisitResult =
@@ -754,12 +763,17 @@ object FilesSuite extends tests.Suite {
           else super.visitFile(file, attributes)
       }
       Files.walkFileTree(dir, visitor)
-      val expected = Map(dir -> 2, d0 -> 2, f2 -> 1)
-      val result   = scala.collection.mutable.Map.empty[Path, Int]
+      Files.walkFileTree(dir, skippingVisitor)
       while (!visitor.isEmpty) {
-        val f     = visitor.dequeue()
-        val count = result.getOrElse(f, 0)
-        result(f) = count + 1
+        val p = visitor.dequeue()
+        if (p == f0) skip = true
+        if (skip && p.getParent == f0.getParent()) ()
+        else expected += p
+      }
+
+      val result = scala.collection.mutable.Set.empty[Path]
+      while (!skippingVisitor.isEmpty) {
+        result += skippingVisitor.dequeue()
       }
       println("Result:")
       println(result)
