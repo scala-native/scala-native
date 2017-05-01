@@ -51,4 +51,15 @@ object FileInputStreamSuite extends tests.Suite {
     assert(fd.valid())
     assert(Try(fd.sync()).isSuccess)
   }
+
+  test("can read 0xFF correctly") {
+    val file = File.createTempFile("file", ".tmp")
+    val fos  = new FileOutputStream(file)
+    fos.write(0xFF)
+    fos.close()
+
+    val fis = new FileInputStream(file)
+    assert(fis.read() == 0xFF)
+    assert(fis.read() == -1)
+  }
 }
