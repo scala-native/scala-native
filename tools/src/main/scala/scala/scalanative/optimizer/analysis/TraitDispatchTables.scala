@@ -2,15 +2,16 @@ package scala.scalanative
 package optimizer
 package analysis
 
+import scala.collection.mutable
 import ClassHierarchy._
 import nir._
 
 class TraitDispatchTables(top: Top) {
-  val dispatchName                     = Global.Top("__dispatch")
-  val dispatchVal                      = Val.Global(dispatchName, Type.Ptr)
-  var dispatchTy: Type                 = _
-  var dispatchDefn: Defn               = _
-  var dispatchOffset: Map[Method, Int] = _
+  val dispatchName                          = Global.Top("__dispatch")
+  val dispatchVal                           = Val.Global(dispatchName, Type.Ptr)
+  var dispatchTy: Type                      = _
+  var dispatchDefn: Defn                    = _
+  var dispatchOffset: mutable.Map[Int, Int] = _
 
   val classHasTraitName       = Global.Top("__class_has_trait")
   val classHasTraitVal        = Val.Global(classHasTraitName, Type.Ptr)
@@ -22,18 +23,25 @@ class TraitDispatchTables(top: Top) {
   var traitHasTraitTy: Type   = _
   var traitHasTraitDefn: Defn = _
 
-  def initDispatch(): Unit = {
+  def initDispatch(): Unit = time("init dispatch") {
     val methods       = top.methods.filter(_.inTrait).sortBy(_.id)
     val methodsLength = methods.length
     val classes       = top.classes.sortBy(_.id)
     val classesLength = classes.length
     val table =
       Array.fill[Val](classes.length * methods.length)(Val.Null)
-    def put(cls: Int, meth: Int, value: Val) =
+    val mins = Array.fill[Int](methodsLength)(Int.MaxValue)
+    val maxs = Array.fill[Int](methodsLength)(Int.MinValue)
+
+    def put(cls: Int, meth: Int, value: Val) = {
       table(meth * classesLength + cls) = value
+      mins(meth) = mins(meth) min cls
+      maxs(meth) = maxs(meth) max cls
+    }
     def get(cls: Int, meth: Int) =
       table(meth * classesLength + cls)
 
+    // Visit every class and enter all the trait methods they support
     classes.foreach { cls =>
       def visit(cur: Class): Unit = {
         cur.methods.foreach { meth =>
@@ -48,11 +56,46 @@ class TraitDispatchTables(top: Top) {
       visit(cls)
     }
 
-    val value = Val.Array(Type.Ptr, table)
+    // Generate a compressed representation of the dispatch table
+    // that displaces method rows one of top of the other to miniminize
+    // number of nulls in the table.
+    val offsets = mutable.Map.empty[Int, Int]
+    val compressed = new Array[Val]({
+      var meth = 0
+      var size = 0
+      while (meth < methodsLength) {
+        val min = mins(meth)
+        if (min != Int.MaxValue) {
+          val max = maxs(meth)
+          size += max - min + 1
+        }
+        meth += 1
+      }
+      size
+    })
+    var current = 0
+    var meth    = 0
+    while (meth < methodsLength) {
+      val start = mins(meth)
+      val end   = maxs(meth)
+      if (start == Int.MaxValue) {
+        offsets(meth) = 0
+      } else {
+        val total = end - start + 1
+        java.lang.System.arraycopy(table,
+                                   meth * classesLength + start,
+                                   compressed,
+                                   current,
+                                   total)
+        offsets(meth) = current - start
+        current += total
+      }
+      meth += 1
+    }
 
-    dispatchOffset = methods.map { m =>
-      m -> m.id * classes.length
-    }.toMap
+    val value = Val.Array(Type.Ptr, compressed)
+
+    dispatchOffset = offsets
     dispatchTy = Type.Ptr
     dispatchDefn = Defn.Const(Attrs.None, dispatchName, value.ty, value)
   }

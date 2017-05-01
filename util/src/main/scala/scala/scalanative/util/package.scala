@@ -25,4 +25,14 @@ package object util {
       def close(): Unit = f
     })
   }
+
+  /** Print running time of closure to stdout. */
+  def time[T](msg: String)(f: => T): T = {
+    import java.lang.System.nanoTime
+    val start = nanoTime()
+    val res   = f
+    val end   = nanoTime()
+    println(s"$msg (${(end - start).toFloat / 1000000} ms)")
+    res
+  }
 }

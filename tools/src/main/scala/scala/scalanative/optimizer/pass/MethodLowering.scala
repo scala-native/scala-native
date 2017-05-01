@@ -38,16 +38,12 @@ class MethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
         val typeptr = let(Op.Load(Type.Ptr, obj))
         val idptr   = let(Op.Elem(Rt.Type, typeptr, Seq(Val.Int(0), Val.Int(0))))
         val id      = let(Op.Load(Type.Int, idptr))
-        val offset = let(
-          Op.Bin(Bin.Iadd,
-                 Type.Int,
-                 Val.Int(top.tables.dispatchOffset(meth)),
-                 id))
+        val rowptr = let(
+          Op.Elem(Type.Ptr,
+                  top.tables.dispatchVal,
+                  Seq(Val.Int(top.tables.dispatchOffset(meth.id)))))
         val methptrptr =
-          let(
-            Op.Elem(top.tables.dispatchTy,
-                    top.tables.dispatchVal,
-                    Seq(offset)))
+          let(Op.Elem(Type.Ptr, rowptr, Seq(id)))
         let(n, Op.Load(Type.Ptr, methptrptr))
 
       case inst =>
