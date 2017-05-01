@@ -693,8 +693,6 @@ object FilesSuite extends tests.Suite {
       while (!terminatingVisitor.isEmpty) {
         found += terminatingVisitor.dequeue()
       }
-      println("Found: " + found)
-      println("Expected: " + expected)
       assert(found == expected)
     }
   }
@@ -775,10 +773,6 @@ object FilesSuite extends tests.Suite {
       while (!skippingVisitor.isEmpty) {
         result += skippingVisitor.dequeue()
       }
-      println("Result:")
-      println(result)
-      println("Expected:")
-      println(expected)
       assert(result == expected)
     }
   }
