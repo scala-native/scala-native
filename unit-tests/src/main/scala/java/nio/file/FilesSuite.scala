@@ -496,11 +496,15 @@ object FilesSuite extends tests.Suite {
       assert(Files.exists(f1) && Files.isRegularFile(f1))
       assert(Files.exists(f2) && Files.isRegularFile(f2))
 
-      val it = Files.list(dir).iterator()
-      assert(it.next() == d0)
-      assert(it.next() == f0)
-      assert(it.next() == f1)
-      assert(it.hasNext() == false)
+      val it    = Files.list(dir).iterator()
+      val files = scala.collection.mutable.Set.empty[Path]
+      while (it.hasNext()) {
+        files += it.next()
+      }
+      assert(files.size == 3)
+      assert(files contains d0)
+      assert(files contains f0)
+      assert(files contains f1)
     }
   }
 
@@ -548,13 +552,17 @@ object FilesSuite extends tests.Suite {
       assert(Files.exists(f1) && Files.isRegularFile(f1))
       assert(Files.exists(f2) && Files.isRegularFile(f2))
 
-      val it = Files.walk(dir).iterator()
-      assert(it.next() == dir)
-      assert(it.next() == d0)
-      assert(it.next() == f2)
-      assert(it.next() == f0)
-      assert(it.next() == f1)
-      assert(it.hasNext() == false)
+      val it    = Files.walk(dir).iterator()
+      val files = scala.collection.mutable.Set.empty[Path]
+      while (it.hasNext()) {
+        files += it.next()
+      }
+      assert(files.size == 5)
+      assert(files contains dir)
+      assert(files contains d0)
+      assert(files contains f2)
+      assert(files contains f0)
+      assert(files contains f1)
     }
   }
 
@@ -583,13 +591,16 @@ object FilesSuite extends tests.Suite {
       assert(Files.exists(f1) && Files.isRegularFile(f1))
       assert(Files.exists(f2) && Files.isRegularFile(f2))
 
-      val it = Files.walk(d0, FileVisitOption.FOLLOW_LINKS).iterator()
-      assert(it.next() == d0)
-      assert(it.next() == f0)
-      assert(it.next() == f1)
-      assert(it.next() == link)
-      assert(it.next() == link.resolve("f2"))
-      assert(it.hasNext() == false)
+      val it    = Files.walk(d0, FileVisitOption.FOLLOW_LINKS).iterator()
+      val files = scala.collection.mutable.Set.empty[Path]
+      while (it.hasNext()) {
+        files += it.next()
+      }
+      assert(files.size == 5)
+      assert(files contains d0)
+      assert(files contains f0)
+      assert(files contains f1)
+      assert(files contains link)
     }
   }
 
@@ -605,9 +616,10 @@ object FilesSuite extends tests.Suite {
       Files.createDirectory(d1)
       Files.createSymbolicLink(link, d0)
 
-      val it = Files.walk(d0, FileVisitOption.FOLLOW_LINKS).iterator()
-      assert(it.next() == d0)
-      assert(it.next() == d1)
+      val it       = Files.walk(d0, FileVisitOption.FOLLOW_LINKS).iterator()
+      val expected = Set(d0, d1)
+      assert(expected contains it.next())
+      assert(expected contains it.next())
       assertThrows[FileSystemLoopException] { it.next() }
     }
   }
@@ -631,15 +643,14 @@ object FilesSuite extends tests.Suite {
 
       val visitor = new QueueingVisitor
       Files.walkFileTree(dir, visitor)
-
-      assert(visitor.dequeue() == dir)
-      assert(visitor.dequeue() == d0)
-      assert(visitor.dequeue() == f2)
-      assert(visitor.dequeue() == d0)
-      assert(visitor.dequeue() == f0)
-      assert(visitor.dequeue() == f1)
-      assert(visitor.dequeue() == dir)
-      assert(visitor.isEmpty)
+      val expected = Map(dir -> 2, d0 -> 2, f2 -> 1, f0 -> 1, f1 -> 1)
+      val result   = scala.collection.mutable.Map.empty[Path, Int]
+      while (!visitor.isEmpty) {
+        val f     = visitor.dequeue()
+        val count = result.getOrElse(f, 0)
+        result(f) = count + 1
+      }
+      assert(result == expected)
     }
   }
 
@@ -669,8 +680,10 @@ object FilesSuite extends tests.Suite {
       }
       Files.walkFileTree(dir, visitor)
 
-      assert(visitor.dequeue() == dir)
-      assert(visitor.dequeue() == d0)
+      val expected = Set(dir, d0)
+
+      assert(expected contains visitor.dequeue())
+      assert(expected contains visitor.dequeue())
       assert(visitor.isEmpty)
     }
   }
@@ -700,12 +713,14 @@ object FilesSuite extends tests.Suite {
           else super.preVisitDirectory(dir, attributes)
       }
       Files.walkFileTree(dir, visitor)
-
-      assert(visitor.dequeue() == dir)
-      assert(visitor.dequeue() == f0)
-      assert(visitor.dequeue() == f1)
-      assert(visitor.dequeue() == dir)
-      assert(visitor.isEmpty)
+      val expected = Map(dir -> 2, f0 -> 1, f1 -> 1)
+      val result   = scala.collection.mutable.Map.empty[Path, Int]
+      while (!visitor.isEmpty) {
+        val f     = visitor.dequeue()
+        val count = result.getOrElse(f, 0)
+        result(f) = count + 1
+      }
+      assert(result == expected)
     }
   }
 
@@ -734,13 +749,14 @@ object FilesSuite extends tests.Suite {
           else super.visitFile(file, attributes)
       }
       Files.walkFileTree(dir, visitor)
-
-      assert(visitor.dequeue() == dir)
-      assert(visitor.dequeue() == d0)
-      assert(visitor.dequeue() == f2)
-      assert(visitor.dequeue() == d0)
-      assert(visitor.dequeue() == dir)
-      assert(visitor.isEmpty)
+      val expected = Map(dir -> 2, d0 -> 2, f2 -> 1)
+      val result   = scala.collection.mutable.Map.empty[Path, Int]
+      while (!visitor.isEmpty) {
+        val f     = visitor.dequeue()
+        val count = result.getOrElse(f, 0)
+        result(f) = count + 1
+      }
+      assert(result == expected)
     }
   }
 
@@ -765,11 +781,12 @@ object FilesSuite extends tests.Suite {
         override def test(path: Path, attrs: BasicFileAttributes): Boolean =
           path.getFileName.toString.startsWith("f")
       }
-      val it = Files.find(dir, 10, predicate).iterator
+      val it       = Files.find(dir, 10, predicate).iterator
+      val expected = Set(f0, f1, f2)
 
-      assert(it.next() == f2)
-      assert(it.next() == f0)
-      assert(it.next() == f1)
+      assert(expected contains it.next())
+      assert(expected contains it.next())
+      assert(expected contains it.next())
     }
   }
 

@@ -271,11 +271,11 @@ object Files {
   def isRegularFile(path: Path, options: Array[LinkOption]): Boolean = {
     val buf = GC.malloc_atomic(sizeof[stat.stat]).cast[Ptr[stat.stat]]
     val err =
-    if (options.contains(LinkOption.NOFOLLOW_LINKS)) {
-      stat.lstat(toCString(path.toFile.getPath()), buf)
-    } else {
-      stat.stat(toCString(path.toFile.getPath()), buf)
-    }
+      if (options.contains(LinkOption.NOFOLLOW_LINKS)) {
+        stat.lstat(toCString(path.toFile.getPath()), buf)
+      } else {
+        stat.stat(toCString(path.toFile.getPath()), buf)
+      }
     if (err == 0) stat.S_ISREG(!(buf._13)) == 1
     else false
   }
