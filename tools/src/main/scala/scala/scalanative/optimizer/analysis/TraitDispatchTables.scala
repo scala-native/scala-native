@@ -23,7 +23,7 @@ class TraitDispatchTables(top: Top) {
   var traitHasTraitTy: Type   = _
   var traitHasTraitDefn: Defn = _
 
-  def initDispatch(): Unit = time("init dispatch") {
+  def initDispatch(): Unit = {
     val methods       = top.methods.filter(_.inTrait).sortBy(_.id)
     val methodsLength = methods.length
     val classes       = top.classes.sortBy(_.id)

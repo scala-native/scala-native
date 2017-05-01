@@ -18,8 +18,7 @@ class StringLowering(implicit top: Top) extends Pass {
   private val stringFieldNames = {
     val node  = ClassRef.unapply(StringName).get
     val names = node.layout.entries.map(_.name)
-    assert(names.length == 4,
-           s"java.lang.String is expected to have 4 fields, found: ${names}")
+    assert(names.length == 4, "java.lang.String is expected to have 4 fields")
     names
   }
 

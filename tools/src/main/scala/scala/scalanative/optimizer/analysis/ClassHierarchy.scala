@@ -88,7 +88,7 @@ object ClassHierarchy {
     var tables: TraitDispatchTables = _
   }
 
-  def apply(defns: Seq[Defn], dyns: Seq[String]): Top = time("CHA") {
+  def apply(defns: Seq[Defn], dyns: Seq[String]): Top = {
     val nodes   = mutable.Map.empty[Global, Node]
     val structs = mutable.UnrolledBuffer.empty[Struct]
     val classes = mutable.UnrolledBuffer.empty[Class]
@@ -298,14 +298,5 @@ object ClassHierarchy {
     completeTop()
 
     top
-  }
-
-  def time[T](msg: String)(f: => T): T = {
-    import java.lang.System.nanoTime
-    val start = nanoTime()
-    val res   = f
-    val end   = nanoTime()
-    println(s"$msg (${(end - start).toFloat / 1000000} ms)")
-    res
   }
 }

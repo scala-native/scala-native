@@ -419,9 +419,8 @@ lazy val sandbox =
     .settings(projectSettings)
     .settings(noPublishSettings)
     .settings(
-      nativeMode := "release",
-      nativeOptimizerReporter := OptimizerReporter.toDirectory(
-        crossTarget.value)
+      // nativeOptimizerReporter := OptimizerReporter.toDirectory(
+      //   crossTarget.value)
     )
     .enablePlugins(ScalaNativePlugin)
 
