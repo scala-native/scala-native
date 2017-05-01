@@ -250,6 +250,12 @@ object ClassHierarchy {
         node.rtti = new RuntimeTypeInformation(node)
       }
 
+    def completeStructs(): Unit =
+      top.structs.foreach { node =>
+        node.in = top
+        node.rtti = new RuntimeTypeInformation(node)
+      }
+
     def completeClasses(): Unit = top.classes.foreach { cls =>
       cls.in = top
       cls.parent = cls.parentName.map { name =>
@@ -291,6 +297,7 @@ object ClassHierarchy {
     completeFields()
     completeMethods()
     completeTraits()
+    completeStructs()
     completeClasses()
     assignClassIds()
     assignMethodIds()
