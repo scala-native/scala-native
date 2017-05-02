@@ -12,9 +12,9 @@ class RuntimeTypeInformation(implicit top: Top, fresh: Fresh) extends Inject {
   override def apply(buf: Buffer[Defn]) = {
     def inject(node: Scope) = {
       buf += Defn.Const(Attrs.None,
-                        node.typeName,
-                        node.typeStruct,
-                        node.typeValue)
+                        node.rtti.name,
+                        node.rtti.struct,
+                        node.rtti.value)
     }
     top.classes.foreach(inject)
     top.traits.foreach(inject)

@@ -12,7 +12,7 @@ class TypeValueLowering(implicit top: Top) extends Pass {
 
   override def onVal(value: Val) = value match {
     case Val.Global(ScopeRef(node), _) =>
-      Val.Global(node.typeName, Type.Ptr)
+      Val.Global(node.rtti.name, Type.Ptr)
     case _ =>
       super.onVal(value)
   }

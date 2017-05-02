@@ -51,7 +51,7 @@ class IsLowering(implicit fresh: Fresh, top: Top) extends Pass {
     ty match {
       case ClassRef(cls) if cls.range.length == 1 =>
         val typeptr = let(Op.Load(Type.Ptr, obj))
-        let(Op.Comp(Comp.Ieq, Type.Ptr, typeptr, cls.typeConst))
+        let(Op.Comp(Comp.Ieq, Type.Ptr, typeptr, cls.rtti.const))
 
       case ClassRef(cls) =>
         val typeptr = let(Op.Load(Type.Ptr, obj))
@@ -66,8 +66,8 @@ class IsLowering(implicit fresh: Fresh, top: Top) extends Pass {
         val idptr   = let(Op.Elem(Rt.Type, typeptr, Seq(Val.Int(0), Val.Int(0))))
         val id      = let(Op.Load(Type.Int, idptr))
         val boolptr = let(
-          Op.Elem(top.classHasTraitTy,
-                  top.classHasTraitVal,
+          Op.Elem(top.tables.classHasTraitTy,
+                  top.tables.classHasTraitVal,
                   Seq(Val.Int(0), id, Val.Int(trt.id))))
         let(Op.Load(Type.Bool, boolptr))
 
