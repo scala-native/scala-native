@@ -20,6 +20,12 @@ class UnixFileSystemProvider extends FileSystemProvider {
 
   private lazy val fs = new UnixFileSystem(this, "/", getUserDir())
 
+  // override def newAsynchronousFileChannel(
+  //     path: Path,
+  //     options: Set[_ <: OpenOption],
+  //     executor: ExecutorService,
+  //     attrs: Array[FileAttribute[_]]): AsynchronousFileChannel
+
   override def getScheme(): String =
     "file"
 
@@ -57,19 +63,6 @@ class UnixFileSystemProvider extends FileSystemProvider {
                               options: Set[_ <: OpenOption],
                               attrs: Array[FileAttribute[_]]): FileChannel =
     FileChannel.open(path, options, attrs)
-
-  // override def newAsynchronousFileChannel(
-  //     path: Path,
-  //     options: Set[_ <: OpenOption],
-  //     executor: ExecutorService,
-  //     attrs: Array[FileAttribute[_]]): AsynchronousFileChannel =
-  //   AsynchronousFileChannel.open(path, options, executor, attrs)
-
-  // override def newByteChannel(
-  //     path: Path,
-  //     options: Set[_ <: OpenOption],
-  //     attrs: Array[FileAttribute[_]]): SeekableByteChannel =
-  //   Files.newByteChannel(path, options, attrs)
 
   override def newDirectoryStream(
       dir: Path,
