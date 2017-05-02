@@ -234,7 +234,7 @@ object ScalaNativePluginInternal {
             val isCppSource = path.endsWith(".cpp")
 
             val compiler = abs(if (isCppSource) clangpp else clang)
-            val flags    = (if (isCppSource) Seq("-std=c++14") else Seq()) ++ opts
+            val flags    = (if (isCppSource) (if (isWindows) Seq("-std=c++14") else Seq("-std=c++11")) else Seq()) ++ opts
             val compilec = Seq(compiler) ++ flags ++ Seq("-c",
                                                          path,
                                                          "-o",
@@ -418,7 +418,7 @@ object ScalaNativePluginInternal {
       else if (binaryName == "clang++") "CLANGPP"
       else binaryName
 
-      sys.env.get(s"${envName}_PATH") match {
+    sys.env.get(s"${envName}_PATH") match {
       case Some(path) => file(if (isWindows) path.replaceAll("clang-cl", binaryName) else path)
       case None => {
         val binaryNames = binaryVersions.flatMap {
@@ -433,7 +433,7 @@ object ScalaNativePluginInternal {
             throw new MessageOnlyException(
               s"no ${binaryNames.mkString(", ")} found in $$PATH. Install clang ($docSetup)")
           }
-      }      
+      }
     }
   }
 
