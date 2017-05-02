@@ -134,17 +134,17 @@ class UnixFileSystemProvider extends FileSystemProvider {
       case Some(fn) => fn(path, options)
     }).asInstanceOf[V]
 
-  // override def readAttributes[A <: BasicFileAttributes](
-  //     path: Path,
-  //     tpe: Class[A],
-  //     options: Array[LinkOption]): A =
-  //   Files.readAttributes(path, tpe, options)
+  override def readAttributes[A <: BasicFileAttributes](
+      path: Path,
+      tpe: Class[A],
+      options: Array[LinkOption]): A =
+    Files.readAttributes(path, tpe, options)
 
-  // override def readAttributes(
-  //     path: Path,
-  //     attributes: String,
-  //     options: Array[LinkOption]): Map[String, Object] =
-  //   Files.readAttributes(path, attributes, options)
+  override def readAttributes(
+      path: Path,
+      attributes: String,
+      options: Array[LinkOption]): Map[String, Object] =
+    Files.readAttributes(path, attributes, options)
 
   override def setAttribute(path: Path,
                             attribute: String,

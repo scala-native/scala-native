@@ -99,13 +99,13 @@ abstract class FileSystemProvider protected () {
       tpe: Class[V],
       options: Array[LinkOption]): V
 
-  // def readAttributes[A <: BasicFileAttributes](path: Path,
-  //                                              tpe: Class[A],
-  //                                              options: Array[LinkOption]): A
+  def readAttributes[A <: BasicFileAttributes](path: Path,
+                                               tpe: Class[A],
+                                               options: Array[LinkOption]): A
 
-  // def readAttributes(path: Path,
-  //                    attributes: String,
-  //                    options: Array[LinkOption]): Map[String, Object]
+  def readAttributes(path: Path,
+                     attributes: String,
+                     options: Array[LinkOption]): Map[String, Object]
 
   def setAttribute(path: Path,
                    attribute: String,
