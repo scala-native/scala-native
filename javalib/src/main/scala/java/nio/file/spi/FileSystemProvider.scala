@@ -34,39 +34,11 @@ abstract class FileSystemProvider protected () {
   def newFileSystem(path: Path, env: Map[String, _]): FileSystem =
     throw new UnsupportedOperationException()
 
-  // def newInputStream(path: Path, options: Array[OpenOption]): InputStream = {
-  //   val opts = {
-  //     val s = new HashSet[OpenOption]
-  //     options.foreach(s.add)
-  //     s
-  //   }
-  //   val channel = newByteChannel(path, opts, Array.empty)
-  //   new java.io.InputStream {
-  //     private val buffer = ByteBuffer.allocate(1)
-  //     override def read(): Int = {
-  //       val read = channel.read(buffer)
-  //       if (read == -1) -1
-  //       else buffer.get(0) & 0xFF
-  //     }
-  //
-  //   }
-  // }
+  def newInputStream(path: Path, options: Array[OpenOption]): InputStream =
+    Files.newInputStream(path, options)
 
-  // def newOutputStream(path: Path, options: Array[OpenOption]): OutputStream = {
-  //   val opts = {
-  //     val s = new HashSet[OpenOption]
-  //     options.foreach(s.add)
-  //     s
-  //   }
-  //   val channel = newByteChannel(path, opts, Array.empty)
-  //   new java.io.OutputStream {
-  //     val buffer = ByteBuffer.allocate(1)
-  //     override def write(b: Int): Unit = {
-  //       buffer.put(0, b.toByte)
-  //       channel.write(buffer)
-  //     }
-  //   }
-  // }
+  def newOutputStream(path: Path, options: Array[OpenOption]): OutputStream =
+    Files.newOutputStream(path, options)
 
   def newFileChannel(path: Path,
                      options: Set[_ <: OpenOption],
