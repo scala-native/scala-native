@@ -33,6 +33,7 @@ import scala.collection.immutable.{Map => SMap, Stream => SStream, Set => SSet}
 object Files {
 
   // def getFileStore(path: Path): FileStore
+  // def probeContentType(path: Path): String
 
   def copy(in: InputStream, target: Path, options: Array[CopyOption]): Long = {
     val replaceExisting =
@@ -362,10 +363,6 @@ object Files {
 
   def notExists(path: Path, options: Array[LinkOption]): Boolean =
     !exists(path, options)
-
-  // TODO: Use libmagic?
-  // def probeContentType(path: Path): String =
-  //   ???
 
   def readAllBytes(path: Path): Array[Byte] = {
     val bytes  = new Array[Byte](size(path).toInt)
