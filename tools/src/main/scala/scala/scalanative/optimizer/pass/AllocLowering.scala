@@ -21,8 +21,8 @@ class AllocLowering(implicit fresh: Fresh, top: Top) extends Pass {
 
     insts.foreach {
       case Let(n, Op.Classalloc(ClassRef(cls))) =>
-        val size = let(Op.Sizeof(cls.classStruct))
-        let(n, Op.Call(allocSig, alloc, Seq(cls.typeConst, size), Next.None))
+        val size = let(Op.Sizeof(cls.layout.struct))
+        let(n, Op.Call(allocSig, alloc, Seq(cls.rtti.const, size), Next.None))
 
       case inst =>
         buf += inst

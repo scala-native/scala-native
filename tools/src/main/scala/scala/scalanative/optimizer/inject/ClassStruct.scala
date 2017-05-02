@@ -12,11 +12,9 @@ class ClassStruct(top: Top) extends Inject {
   def apply(buf: Buffer[Defn]): Unit = {
 
     top.classes.foreach { cls =>
-      val classStructTy = cls.classStruct
-      val classStructDefn =
-        Defn.Struct(Attrs.None, classStructTy.name, classStructTy.tys)
-
-      buf += classStructDefn
+      val struct = cls.layout.struct
+      val defn   = Defn.Struct(Attrs.None, struct.name, struct.tys)
+      buf += defn
     }
   }
 }

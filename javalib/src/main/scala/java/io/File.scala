@@ -336,7 +336,7 @@ object File {
       else 1 // Possible UNC path name
 
     var foundSlash = false
-    val newPath    = path.toCharArray();
+    val newPath    = path.toCharArray()
     var i          = 0
     while (i < length) {
       val currentChar = newPath(i)
@@ -505,8 +505,8 @@ object File {
   val pathSeparator: String          = pathSeparatorChar.toString
   val separatorChar: Char            = if (Platform.isWindows) '\\' else '/'
   val separator: String              = separatorChar.toString
-  private var counter: Int           = 0;
-  private var counterBase: Int       = 0;
+  private var counter: Int           = 0
+  private var counterBase: Int       = 0
   private val caseSensitive: Boolean = !Platform.isWindows
 
   def listRoots(): Array[File] =

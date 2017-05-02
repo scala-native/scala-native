@@ -443,7 +443,7 @@ private[math] object Division {
           do {
             Elementary.inplaceSubtract(op2, op1)
             BitLevel.inplaceShiftRight(op2, op2.getLowestSetBit)
-          } while (op2.compareTo(op1) >= BigInteger.EQUALS);
+          } while (op2.compareTo(op1) >= BigInteger.EQUALS)
         }
         // now op1 >= op2
         val swap: BigInteger = op2
