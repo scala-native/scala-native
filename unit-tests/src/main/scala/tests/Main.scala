@@ -2,6 +2,8 @@ package tests
 
 import java.lang.System.exit
 
+import scala.scalanative.SyscallsSuite
+
 object Main {
   def main(args: Array[String]): Unit = {
     // tests.Discover object is code-generated in the sbt build

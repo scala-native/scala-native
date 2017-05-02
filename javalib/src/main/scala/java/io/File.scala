@@ -4,8 +4,9 @@ import scala.collection.mutable.UnrolledBuffer
 
 import scala.annotation.tailrec
 import scalanative.runtime.{GC, Platform}
-import scala.scalanative.posix.{dirent, fcntl, limits, stat, unistd, utime}
-import scala.scalanative.native._, stdlib._, stdio._, string._
+import scala.scalanative.posix.{dirent, fcntl, limits, unistd, utime}
+import scala.scalanative.posix.sys.stat
+import scala.scalanative.native._, stdlib._, stdio._, string._, time._
 import dirent._
 import unistd._
 
