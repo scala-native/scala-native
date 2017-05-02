@@ -69,6 +69,18 @@ object Files {
     target
   }
 
+  private def copy(in: InputStream, out: OutputStream): Long = {
+    var written: Long = 0L
+    var value: Int    = 0
+
+    while ({ value = in.read; value != -1 }) {
+      out.write(value)
+      written += 1
+    }
+
+    written
+  }
+
   def createDirectories(dir: Path, attrs: Array[FileAttribute[_]]): Path =
     if (exists(dir, Array.empty) && !isDirectory(dir, Array.empty))
       throw new FileAlreadyExistsException(dir.toString)
@@ -577,18 +589,6 @@ object Files {
             lines: Iterable[_ <: CharSequence],
             options: Array[OpenOption]): Path =
     write(path, lines, StandardCharsets.UTF_8, options)
-
-  private def copy(in: InputStream, out: OutputStream): Long = {
-    var written: Long = 0L
-    var value: Int    = 0
-
-    while ({ value = in.read; value != -1 }) {
-      out.write(value)
-      written += 1
-    }
-
-    written
-  }
 
   private def setAttributes(path: Path, attrs: Array[FileAttribute[_]]): Unit =
     attrs.map(a => (a.name, a.value)).toMap.foreach {
