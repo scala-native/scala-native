@@ -23,6 +23,8 @@ import scala.scalanative.nio.fs.UnixFileSystemProvider
 
 abstract class FileSystemProvider protected () {
 
+  // def getFileStore(path: Path): FileStore
+
   def getScheme(): String
 
   def newFileSystem(uri: URI, env: Map[String, _]): FileSystem
@@ -52,9 +54,10 @@ abstract class FileSystemProvider protected () {
       attrs: Array[FileAttribute[_]]): AsynchronousFileChannel =
     throw new UnsupportedOperationException
 
-  // def newByteChannel(path: Path,
-  //                    options: Set[_ <: OpenOption],
-  //                    attrs: Array[FileAttribute[_]]): SeekableByteChannel
+  def newByteChannel(path: Path,
+                     options: Set[_ <: OpenOption],
+                     attrs: Array[FileAttribute[_]]): SeekableByteChannel =
+    Files.newByteChannel(path, options, attrs)
 
   def newDirectoryStream(
       dir: Path,
@@ -83,13 +86,11 @@ abstract class FileSystemProvider protected () {
 
   def copy(source: Path, target: Path, options: Array[CopyOption]): Unit
 
-  // def move(source: Path, target: Path, options: Array[CopyOption]): Unit
+  def move(source: Path, target: Path, options: Array[CopyOption]): Unit
 
-  // def isSameFile(path: Path, path2: Path): Boolean
+  def isSameFile(path: Path, path2: Path): Boolean
 
-  // def isHidden(path: Path): Boolean
-
-  // def getFileStore(path: Path): FileStore
+  def isHidden(path: Path): Boolean
 
   def checkAccess(path: Path, modes: Array[AccessMode]): Unit
 

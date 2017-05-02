@@ -1094,7 +1094,7 @@ object FilesSuite extends tests.Suite {
     }
   }
 
-  test("Files.readAttributes works") {
+  test("Files.readAttributes(Path, Class[_], Array[LinkOption]) works") {
     withTemporaryDirectory { dirFile =>
       val dir   = dirFile.toPath
       val attrs = Files.readAttributes(dir, classOf[PosixFileAttributes])
@@ -1102,6 +1102,24 @@ object FilesSuite extends tests.Suite {
       assert(!attrs.isOther())
       assert(!attrs.isRegularFile())
       assert(!attrs.isSymbolicLink())
+    }
+  }
+
+  test("Files.readAttributes(Path, String, Array[LinkOption]) works") {
+    withTemporaryDirectory { dirFile =>
+      val dir   = dirFile.toPath
+      val attrs = Files.readAttributes(dir, "posix:permissions,size")
+      assert(attrs.size == 2)
+      assert(attrs.containsKey("permissions"))
+      assert(attrs.containsKey("size"))
+    }
+  }
+
+  test("Files.readAttributes(Path, String, Array[LinkOption]) supports *") {
+    withTemporaryDirectory { dirFile =>
+      val dir   = dirFile.toPath
+      val attrs = Files.readAttributes(dir, "posix:*")
+      assert(!attrs.isEmpty())
     }
   }
 

@@ -1,6 +1,6 @@
 package scala.scalanative.nio.fs
 
-import java.util.{HashSet, Set}
+import java.util.{HashMap, HashSet, Set}
 import java.util.concurrent.TimeUnit
 import java.nio.file.{LinkOption, Path}
 import java.nio.file.attribute._
@@ -98,21 +98,26 @@ final class NativePosixFileAttributeView(path: Path,
       override val size = !(sb._6)
     }
 
-  override def getAttribute(name: String): Object =
-    name match {
-      case "lastModifiedTime" => attributes.lastModifiedTime
-      case "lastAccessTime"   => attributes.lastAccessTime
-      case "creationTime"     => attributes.creationTime
-      case "size"             => Long.box(attributes.size)
-      case "isRegularFile"    => Boolean.box(attributes.isRegularFile)
-      case "isDirectory"      => Boolean.box(attributes.isDirectory)
-      case "isSymbolicLink"   => Boolean.box(attributes.isSymbolicLink)
-      case "isOther"          => Boolean.box(attributes.isOther)
-      case "fileKey"          => attributes.fileKey
-      case "permissions"      => attributes.permissions
-      case "group"            => attributes.group
-      case _                  => super.getAttribute(name)
-    }
+  override def asMap(): HashMap[String, Object] = {
+    val values =
+      List(
+        "lastModifiedTime" -> attributes.lastModifiedTime,
+        "lastAccessTime"   -> attributes.lastAccessTime,
+        "creationTime"     -> attributes.creationTime,
+        "size"             -> Long.box(attributes.size),
+        "isRegularFile"    -> Boolean.box(attributes.isRegularFile),
+        "isDirectory"      -> Boolean.box(attributes.isDirectory),
+        "isSymbolicLink"   -> Boolean.box(attributes.isSymbolicLink),
+        "isOther"          -> Boolean.box(attributes.isOther),
+        "fileKey"          -> attributes.fileKey,
+        "permissions"      -> attributes.permissions,
+        "group"            -> attributes.group
+      )
+
+    val map = new HashMap[String, Object]()
+    values.foreach { case (k, v) => map.put(k, v) }
+    map
+  }
 
   override def setAttribute(name: String, value: Object): Unit =
     (name, value) match {

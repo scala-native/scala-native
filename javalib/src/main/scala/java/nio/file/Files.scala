@@ -21,7 +21,16 @@ import java.nio.channels.{FileChannel, SeekableByteChannel}
 
 import java.util.concurrent.TimeUnit
 import java.util.function.BiPredicate
-import java.util.{ArrayList, EnumSet, HashSet, Iterator, List, Map, Set}
+import java.util.{
+  ArrayList,
+  EnumSet,
+  HashMap,
+  HashSet,
+  Iterator,
+  List,
+  Map,
+  Set
+}
 import java.util.stream.{Stream, WrappedScalaStream}
 
 import scala.scalanative.native.{CString, fromCString, Ptr, sizeof, toCString}
@@ -445,10 +454,30 @@ object Files {
     view.readAttributes().asInstanceOf[A]
   }
 
-  // def readAttributes(path: Path,
-  //                    attributes: String,
-  //                    options: Array[LinkOption]): Map[String, Object] =
-  //   ???
+  def readAttributes(path: Path,
+                     attributes: String,
+                     options: Array[LinkOption]): Map[String, Object] = {
+    val parts = attributes.split(":")
+    val (viewName, atts) =
+      if (parts.length == 1) ("basic", parts(0))
+      else (parts(0), parts(1))
+
+    if (atts == "*") {
+      val viewClass = viewNamesToClasses
+        .get(viewName)
+        .getOrElse(throw new UnsupportedOperationException())
+      getFileAttributeView(path, viewClass, options).asMap
+    } else {
+      val attrs = atts.split(",")
+      val map   = new HashMap[String, Object]()
+      attrs.foreach { att =>
+        val value = getAttribute(path, viewName + ":" + att, options)
+        if (value != null)
+          map.put(att, value)
+      }
+      map
+    }
+  }
 
   def readSymbolicLink(link: Path): Path =
     if (!isSymbolicLink(link)) throw new NotLinkException(link.toString)

@@ -99,16 +99,16 @@ class UnixFileSystemProvider extends FileSystemProvider {
                     options: Array[CopyOption]): Unit =
     Files.copy(source, target, options)
 
-  // override def move(source: Path,
-  //                   target: Path,
-  //                   options: Array[CopyOption]): Unit =
-  //   Files.move(source, target, options)
+  override def move(source: Path,
+                    target: Path,
+                    options: Array[CopyOption]): Unit =
+    Files.move(source, target, options)
 
-  // override def isSameFile(path: Path, path2: Path): Boolean =
-  //   Files.isSameFile(path, path2)
+  override def isSameFile(path: Path, path2: Path): Boolean =
+    Files.isSameFile(path, path2)
 
-  // override def isHidden(path: Path): Boolean =
-  //   Files.isHidden(path)
+  override def isHidden(path: Path): Boolean =
+    Files.isHidden(path)
 
   // override def getFileStore(path: Path): FileStore =
   //   Files.getFileStore(path)
