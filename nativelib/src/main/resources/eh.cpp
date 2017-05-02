@@ -28,6 +28,11 @@ extern "C" {
 #endif
     }
 
+    void _Unwind_Resume(struct _Unwind_Exception *)
+    {
+        // empty
+    }
+
     // need some c plus plus
     // snprintf is unresolved external on win
 #ifdef _WIN32
