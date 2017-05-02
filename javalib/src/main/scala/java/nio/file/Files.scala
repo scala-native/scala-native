@@ -21,7 +21,7 @@ import java.nio.channels.{FileChannel, SeekableByteChannel}
 
 import java.util.concurrent.TimeUnit
 import java.util.function.BiPredicate
-import java.util.{ArrayList, EnumSet, HashSet, List, Map, Set}
+import java.util.{ArrayList, EnumSet, HashSet, Iterator, List, Map, Set}
 import java.util.stream.{Stream, WrappedScalaStream}
 
 import scala.scalanative.native.{CString, fromCString, Ptr, sizeof, toCString}
@@ -305,7 +305,11 @@ object Files {
     dir.toFile().list().toStream.map(dir.resolve)
 
   def list(dir: Path): Stream[Path] =
-    new WrappedScalaStream(_list(dir))
+    if (!isDirectory(dir, Array.empty)) {
+      throw new NotDirectoryException(dir.toString)
+    } else {
+      new WrappedScalaStream(_list(dir))
+    }
 
   def move(source: Path, target: Path, options: Array[CopyOption]): Path = {
     copy(source, target, options)
@@ -340,17 +344,26 @@ object Files {
                      attrs: Array[FileAttribute[_]]): SeekableByteChannel =
     FileChannel.open(path, options, attrs)
 
-  // def newDirectoryStream(dir: Path): DirectoryStream[Path] =
-  //   ???
-  //
-  // def newDirectoryStream(
-  //     dir: Path,
-  //     filter: DirectoryStream.Filter[_ >: Path]): DirectoryStream[Path] =
-  //   ???
-  //
-  // def newDirectoryStream(dir: Path, glob: String): DirectoryStream[Path] =
-  //   ???
-  //
+  def newDirectoryStream(dir: Path): DirectoryStream[Path] = {
+    val filter = new DirectoryStream.Filter[Path] {
+      override def accept(p: Path): Boolean = true
+    }
+    newDirectoryStream(dir, filter)
+  }
+
+  def newDirectoryStream(
+      dir: Path,
+      filter: DirectoryStream.Filter[_ >: Path]): DirectoryStream[Path] =
+    new DirectoryStreamImpl[Path](_list(dir), filter)
+
+  def newDirectoryStream(dir: Path, glob: String): DirectoryStream[Path] = {
+    val filter = new DirectoryStream.Filter[Path] {
+      private val matcher                   = FileSystems.getDefault().getPathMatcher(glob)
+      override def accept(p: Path): Boolean = matcher.matches(p)
+    }
+    newDirectoryStream(dir, filter)
+  }
+
   def newInputStream(path: Path, options: Array[OpenOption]): InputStream = {
     // TODO: Use options
     new FileInputStream(path.toFile)

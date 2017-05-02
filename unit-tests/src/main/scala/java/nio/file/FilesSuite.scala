@@ -1115,10 +1115,10 @@ object FilesSuite extends tests.Suite {
       while (channel.read(buffer) != -1) {
         read += 1
       }
-      println(read) // == 3)
-      println(buffer.get(0) == 1)
-      println(buffer.get(1) == 2)
-      println(buffer.get(2) == 3)
+      assert(read == 3)
+      assert(buffer.get(0) == 1)
+      assert(buffer.get(1) == 2)
+      assert(buffer.get(2) == 3)
     }
   }
 

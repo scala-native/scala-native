@@ -71,10 +71,10 @@ class UnixFileSystemProvider extends FileSystemProvider {
   //     attrs: Array[FileAttribute[_]]): SeekableByteChannel =
   //   Files.newByteChannel(path, options, attrs)
 
-  // override def newDirectoryStream(
-  //     dir: Path,
-  //     filter: DirectoryStream.Filter[_ >: Path]): DirectoryStream[Path] =
-  //   Files.newDirectoryStream(dir, filter)
+  override def newDirectoryStream(
+      dir: Path,
+      filter: DirectoryStream.Filter[_ >: Path]): DirectoryStream[Path] =
+    Files.newDirectoryStream(dir, filter)
 
   override def createDirectory(dir: Path,
                                attrs: Array[FileAttribute[_]]): Unit =

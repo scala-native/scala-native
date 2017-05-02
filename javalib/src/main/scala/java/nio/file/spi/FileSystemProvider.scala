@@ -84,9 +84,9 @@ abstract class FileSystemProvider protected () {
   //                    options: Set[_ <: OpenOption],
   //                    attrs: Array[FileAttribute[_]]): SeekableByteChannel
 
-  // def newDirectoryStream(
-  //     dir: Path,
-  //     filter: DirectoryStream.Filter[_ >: Path]): DirectoryStream[Path]
+  def newDirectoryStream(
+      dir: Path,
+      filter: DirectoryStream.Filter[_ >: Path]): DirectoryStream[Path]
 
   def createDirectory(dir: Path, attrs: Array[FileAttribute[_]]): Unit
 
