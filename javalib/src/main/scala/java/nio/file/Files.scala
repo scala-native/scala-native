@@ -365,11 +365,42 @@ object Files {
   }
 
   def newInputStream(path: Path, options: Array[OpenOption]): InputStream = {
-    // TODO: Use options
+    // options are ignored.
     new FileInputStream(path.toFile)
   }
 
-  def newOutputStream(path: Path, options: Array[OpenOption]): OutputStream = {
+  def newOutputStream(path: Path, _options: Array[OpenOption]): OutputStream = {
+    val options =
+      if (_options.isEmpty)
+        Array(StandardOpenOption.CREATE,
+              StandardOpenOption.TRUNCATE_EXISTING,
+              StandardOpenOption.WRITE)
+      else _options
+
+    if (options.contains(StandardOpenOption.READ)) {
+      throw new IllegalArgumentException("READ not allowed")
+    }
+
+    val exists = Files.exists(path, Array.empty)
+
+    if (!exists && !options.contains(StandardOpenOption.CREATE_NEW) && !options
+          .contains(StandardOpenOption.CREATE)) {
+      throw new NoSuchFileException(path.toString)
+    }
+
+    if ((options.contains(StandardOpenOption.CREATE_NEW) || options.contains(
+          StandardOpenOption.CREATE)) && !exists) {
+      Files.createFile(path, Array.empty)
+    }
+
+    if (options.contains(StandardOpenOption.CREATE_NEW) && exists) {
+      throw new FileAlreadyExistsException(path.toString)
+    }
+
+    if (exists && options.contains(StandardOpenOption.TRUNCATE_EXISTING)) {
+      unistd.truncate(toCString(path.toString), 0L)
+    }
+
     val append = options.contains(StandardOpenOption.APPEND)
     new FileOutputStream(path.toFile, append)
   }

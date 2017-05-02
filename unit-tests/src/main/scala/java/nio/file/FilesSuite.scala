@@ -1122,6 +1122,67 @@ object FilesSuite extends tests.Suite {
     }
   }
 
+  test("newInputStream returns an inputStream") {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath
+      val f0  = dir.resolve("f0")
+      Files.write(f0, Array[Byte](1, 2, 3))
+
+      val in = Files.newInputStream(f0)
+      assert(in.read() == 1)
+      assert(in.read() == 2)
+      assert(in.read() == 3)
+      assert(in.read() == -1)
+    }
+  }
+
+  test("newOutputStream returns an OutputStream") {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath
+      val f0  = dir.resolve("f0")
+      val out = Files.newOutputStream(f0)
+
+      assert(Files.exists(f0))
+
+      out.write(Array[Byte](1, 2, 3))
+
+      val in = Files.newInputStream(f0)
+      assert(in.read() == 1)
+      assert(in.read() == 2)
+      assert(in.read() == 3)
+      assert(in.read() == -1)
+    }
+  }
+
+  test("newOutputStream honors OpenOptions") {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath
+      val f0  = dir.resolve("f0")
+
+      val out0 = Files.newOutputStream(f0)
+      out0.write(Array[Byte](1, 2, 3))
+      out0.close()
+
+      val out1 =
+        Files.newOutputStream(f0, StandardOpenOption.TRUNCATE_EXISTING)
+      out1.close()
+
+      val in0 = Files.newInputStream(f0)
+      assert(in0.read() == -1)
+
+      val f1 = dir.resolve("f1")
+      Files.createFile(f1)
+      assertThrows[FileAlreadyExistsException] {
+        Files.newOutputStream(f1, StandardOpenOption.CREATE_NEW)
+      }
+
+      val f2 = dir.resolve("f2")
+      assertThrows[NoSuchFileException] {
+        Files.newOutputStream(f2, StandardOpenOption.WRITE)
+      }
+    }
+  }
+
   def withTemporaryDirectory(fn: File => Unit) {
     val file = File.createTempFile("test", ".tmp")
     assert(file.delete())
