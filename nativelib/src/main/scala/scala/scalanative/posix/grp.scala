@@ -1,7 +1,7 @@
 package scala.scalanative
 package posix
 
-import scala.scalanative.native.{CString, CStruct3, extern, name, Ptr}
+import scala.scalanative.native.{CInt, CString, CStruct3, extern, name, Ptr}
 
 import stat.gid_t
 
@@ -12,8 +12,8 @@ object grp {
                         Ptr[CString]] // gr_mem
 
   @name("scalanative_getgrgid")
-  def getgrgid(gid: gid_t): Ptr[group] = extern
+  def getgrgid(gid: gid_t, buf: Ptr[group]): CInt = extern
 
   @name("scalanative_getgrnam")
-  def getgrnam(name: CString): Ptr[group] = extern
+  def getgrnam(name: CString, buf: Ptr[group]): CInt = extern
 }
