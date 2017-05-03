@@ -2,7 +2,14 @@ package scala.scalanative.nio.fs
 
 import java.io.IOException
 import java.lang.Iterable
-import java.nio.file.{FileStore, FileSystem, Path, PathMatcher, WatchService}
+import java.nio.file.{
+  FileStore,
+  FileSystem,
+  Path,
+  PathMatcher,
+  PathMatcherImpl,
+  WatchService
+}
 import java.nio.file.spi.FileSystemProvider
 import java.nio.file.attribute.UserPrincipalLookupService
 import java.util.{ArrayList, Set}
@@ -32,7 +39,7 @@ class UnixFileSystem(override val provider: FileSystemProvider,
     new UnixPath(this, (first +: more).mkString("/"))
 
   override def getPathMatcher(syntaxAndPattern: String): PathMatcher =
-    ???
+    PathMatcherImpl(syntaxAndPattern)
 
   override def getRootDirectories(): Iterable[Path] = {
     val list = new ArrayList[Path]()

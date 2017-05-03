@@ -367,7 +367,8 @@ object Files {
 
   def newDirectoryStream(dir: Path, glob: String): DirectoryStream[Path] = {
     val filter = new DirectoryStream.Filter[Path] {
-      private val matcher                   = FileSystems.getDefault().getPathMatcher(glob)
+      private val matcher =
+        FileSystems.getDefault().getPathMatcher("glob:" + glob)
       override def accept(p: Path): Boolean = matcher.matches(p)
     }
     newDirectoryStream(dir, filter)
