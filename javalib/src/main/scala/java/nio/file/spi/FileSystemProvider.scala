@@ -1,7 +1,7 @@
 package java.nio.file
 package spi
 
-import java.util.{ArrayList, HashSet, List, Map, Set}
+import java.util.{HashSet, LinkedList, List, Map, Set}
 import java.util.concurrent.ExecutorService
 
 import java.net.URI
@@ -116,7 +116,7 @@ abstract class FileSystemProvider protected () {
 
 object FileSystemProvider {
   def installedProviders: List[FileSystemProvider] = {
-    val list = new ArrayList[FileSystemProvider]
+    val list = new LinkedList[FileSystemProvider]
     list.add(new UnixFileSystemProvider())
     list
   }

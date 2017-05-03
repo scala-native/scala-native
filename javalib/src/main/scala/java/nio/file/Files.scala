@@ -22,11 +22,11 @@ import java.nio.channels.{FileChannel, SeekableByteChannel}
 import java.util.concurrent.TimeUnit
 import java.util.function.BiPredicate
 import java.util.{
-  ArrayList,
   EnumSet,
   HashMap,
   HashSet,
   Iterator,
+  LinkedList,
   List,
   Map,
   Set
@@ -435,7 +435,7 @@ object Files {
     readAllLines(path, StandardCharsets.UTF_8)
 
   def readAllLines(path: Path, cs: Charset): List[String] = {
-    val list   = new ArrayList[String]()
+    val list   = new LinkedList[String]()
     val reader = newBufferedReader(path, cs)
     val lines  = reader.lines.iterator
     while (lines.hasNext()) {

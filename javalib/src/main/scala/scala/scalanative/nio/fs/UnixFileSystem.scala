@@ -12,7 +12,7 @@ import java.nio.file.{
 }
 import java.nio.file.spi.FileSystemProvider
 import java.nio.file.attribute.UserPrincipalLookupService
-import java.util.{ArrayList, Set}
+import java.util.{LinkedList, Set}
 
 import scala.scalanative.native.{
   CUnsignedLong,
@@ -42,7 +42,7 @@ class UnixFileSystem(override val provider: FileSystemProvider,
     PathMatcherImpl(syntaxAndPattern)
 
   override def getRootDirectories(): Iterable[Path] = {
-    val list = new ArrayList[Path]()
+    val list = new LinkedList[Path]()
     list.add(getPath(root, Array.empty))
     list
   }
