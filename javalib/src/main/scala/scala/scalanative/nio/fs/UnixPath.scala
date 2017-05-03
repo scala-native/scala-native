@@ -26,7 +26,7 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
   override def getFileName(): Path =
     if (path == "/") null
     else if (path.isEmpty) this
-    else new UnixPath(fs, split(path, '/').last)
+    else new UnixPath(fs, path.split("/").last)
 
   override def getParent(): Path = {
     val nameCount = getNameCount()
@@ -38,7 +38,7 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
 
   override def getNameCount(): Int =
     if (rawPath.isEmpty) 1
-    else split(path, '/').filter(_.nonEmpty).length
+    else path.split("/").filter(_.nonEmpty).length
 
   override def getName(index: Int): Path = {
     val nameCount = getNameCount
@@ -46,7 +46,7 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
       throw new IllegalArgumentException
     else {
       if (rawPath.isEmpty) this
-      else new UnixPath(fs, split(path, '/').filter(_.nonEmpty)(index))
+      else new UnixPath(fs, path.split("/").filter(_.nonEmpty)(index))
     }
   }
 
@@ -188,7 +188,8 @@ private object UnixPath {
   def normalized(path: String): String = {
     val absolute = path.startsWith("/")
     val components =
-      split(path, '/')
+      path
+        .split("/")
         .foldLeft(List.empty[String]) {
           case (acc, "..") =>
             if (acc.isEmpty && absolute) Nil
@@ -201,18 +202,6 @@ private object UnixPath {
         .reverse
     if (absolute) components.mkString("/", "/", "")
     else components.mkString("", "/", "")
-  }
-
-  // TODO: Remove once `String.split` is supported.
-  def split(str: String, atChar: Char): Seq[String] = {
-    val buffer = UnrolledBuffer.empty[String]
-    var i      = 0
-    while (i < str.length) {
-      val part = str.drop(i).takeWhile(_ != atChar)
-      buffer += part
-      i += part.length + 1
-    }
-    buffer
   }
 
   def removeRedundantSlashes(str: String): String =
