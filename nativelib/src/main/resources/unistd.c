@@ -32,6 +32,5 @@ int scalanative_linkat(int fd1, char *path1, int fd2, char *path2, int flag) {
 }
 
 int scalanative_chown(char *path, scalanative_uid_t owner, scalanative_gid_t group) {
-    // TODO: scalanative_uid_t and scalanative_gid_t may be different from uid_t and gid_t!!!
     return chown(path, owner, group);
 }
