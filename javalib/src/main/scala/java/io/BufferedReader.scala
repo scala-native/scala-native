@@ -122,7 +122,7 @@ class BufferedReader(in: Reader, sz: Int) extends Reader {
   }
 
   def lines(): Stream[String] =
-    new WrappedScalaStream(toScalaStream())
+    new WrappedScalaStream(toScalaStream(), None)
 
   /** Prepare the buffer for reading. Returns false if EOF */
   private def prepareRead(): Boolean =

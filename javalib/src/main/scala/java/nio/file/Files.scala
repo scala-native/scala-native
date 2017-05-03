@@ -216,7 +216,7 @@ object Files {
                                             Array.empty).readAttributes()
       matcher.test(p, attributes)
     }
-    new WrappedScalaStream(stream)
+    new WrappedScalaStream(stream, None)
   }
 
   def getAttribute(path: Path,
@@ -317,7 +317,7 @@ object Files {
     if (!isDirectory(dir, Array.empty)) {
       throw new NotDirectoryException(dir.toString)
     } else {
-      new WrappedScalaStream(_list(dir))
+      new WrappedScalaStream(_list(dir), None)
     }
 
   def move(source: Path, target: Path, options: Array[CopyOption]): Path = {
@@ -539,7 +539,7 @@ object Files {
   def walk(start: Path,
            maxDepth: Int,
            options: Array[FileVisitOption]): Stream[Path] =
-    new WrappedScalaStream(walk(start, maxDepth, 0, options, Set(start)))
+    new WrappedScalaStream(walk(start, maxDepth, 0, options, Set(start)), None)
 
   private def walk(start: Path,
                    maxDepth: Int,

@@ -1,9 +1,11 @@
 package java.util.stream
 
+import java.util.function.Function
+
 import scala.collection.immutable.{Stream => SStream}
 
 trait Stream[+T] extends BaseStream[T, Stream[T]] {
-  def flatMap[R](mapper: Function[T, Stream[R]]): Stream[R]
+  def flatMap[R](mapper: Function[_ >: T, _ <: Stream[_ <: R]]): Stream[R]
 }
 
 object Stream {
@@ -17,6 +19,7 @@ object Stream {
   }
 
   def builder[T](): Builder[T] = new WrappedScalaStream.Builder[T]
-  def empty[T](): Stream[T]    = new WrappedScalaStream(SStream.empty[T])
-  def of[T](values: Array[T])  = new WrappedScalaStream(values.toStream)
+  def empty[T](): Stream[T]    = new WrappedScalaStream(SStream.empty[T], None)
+  def of[T](values: Array[AnyRef]): Stream[T] =
+    new WrappedScalaStream(values.asInstanceOf[Array[T]].toStream, None)
 }
