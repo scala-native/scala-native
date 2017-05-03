@@ -43,9 +43,6 @@ class UnixFileSystem(override val provider: FileSystemProvider,
   override def getSeparator(): String =
     "/"
 
-  override def getUserPrincipalLookupService(): UserPrincipalLookupService =
-    ???
-
   override def isOpen(): Boolean =
     closed == false
 
