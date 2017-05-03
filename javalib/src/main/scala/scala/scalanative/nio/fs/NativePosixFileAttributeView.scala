@@ -35,7 +35,7 @@ final class NativePosixFileAttributeView(path: Path,
   }
 
   override def setOwner(owner: UserPrincipal): Unit = {
-    val passwd = pwd.getpwnam(toCString(owner.getName))
+    val passwd = getPasswd(toCString(owner.getName))
     if (unistd.chown(toCString(path.toString), !(passwd._2), -1.toUInt) != 0)
       throw new IOException()
   }
@@ -54,7 +54,7 @@ final class NativePosixFileAttributeView(path: Path,
 
   override def setGroup(group: GroupPrincipal): Unit = {
     val _group = getGroup(toCString(group.getName))
-    val err = unistd.chown(toCString(path.toString), -1.toUInt, !(_group._2))
+    val err    = unistd.chown(toCString(path.toString), -1.toUInt, !(_group._2))
 
     if (err != 0) {
       throw new IOException()
@@ -68,7 +68,7 @@ final class NativePosixFileAttributeView(path: Path,
     new PosixFileAttributes {
       private val sb       = getStat()
       private val mode     = !(sb._13)
-      private val _passwd  = pwd.getpwuid(!(sb._4))
+      private val _passwd  = getPasswd(!(sb._4))
       private val _group   = getGroup(!(sb._5))
       override val fileKey = (!(sb._3)).asInstanceOf[Object]
 
@@ -160,6 +160,22 @@ final class NativePosixFileAttributeView(path: Path,
   private def getGroup(gid: stat.gid_t): Ptr[grp.group] = {
     val buf = GC.malloc_atomic(sizeof[grp.group]).cast[Ptr[grp.group]]
     val err = grp.getgrgid(gid, buf)
+
+    if (err == 0) buf
+    else throw new IOException()
+  }
+
+  private def getPasswd(name: CString): Ptr[pwd.passwd] = {
+    val buf = GC.malloc_atomic(sizeof[pwd.passwd]).cast[Ptr[pwd.passwd]]
+    val err = pwd.getpwnam(name, buf)
+
+    if (err == 0) buf
+    else throw new IOException()
+  }
+
+  private def getPasswd(uid: stat.uid_t): Ptr[pwd.passwd] = {
+    val buf = GC.malloc_atomic(sizeof[pwd.passwd]).cast[Ptr[pwd.passwd]]
+    val err = pwd.getpwuid(uid, buf)
 
     if (err == 0) buf
     else throw new IOException()

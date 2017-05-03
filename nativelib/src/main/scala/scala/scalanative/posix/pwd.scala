@@ -1,7 +1,7 @@
 package scala.scalanative
 package posix
 
-import scala.scalanative.native.{CString, CStruct5, extern, name, Ptr}
+import scala.scalanative.native.{CInt, CString, CStruct5, extern, name, Ptr}
 
 import stat.{uid_t, gid_t}
 
@@ -15,8 +15,8 @@ object pwd {
                          CString] // pw_shell
 
   @name("scalanative_getpwuid")
-  def getpwuid(uid: uid_t): Ptr[passwd] = extern
+  def getpwuid(uid: uid_t, buf: Ptr[passwd]): CInt = extern
 
   @name("scalanative_getpwnam")
-  def getpwnam(name: CString): Ptr[passwd] = extern
+  def getpwnam(name: CString, buf: Ptr[passwd]): CInt = extern
 }
