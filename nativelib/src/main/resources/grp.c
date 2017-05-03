@@ -9,10 +9,11 @@ struct scalanative_group {
                                   pointers to member names. */
 };
 
-void scalanative_group_copy(struct group *group, struct scalanative_group *my_group) {
+void scalanative_group_copy(struct group *group,
+                            struct scalanative_group *my_group) {
     my_group->gr_name = group->gr_name;
-    my_group->gr_gid  = group->gr_gid;
-    my_group->gr_mem  = group->gr_mem;
+    my_group->gr_gid = group->gr_gid;
+    my_group->gr_mem = group->gr_mem;
 }
 
 int scalanative_getgrgid(scalanative_gid_t gid, struct scalanative_group *buf) {

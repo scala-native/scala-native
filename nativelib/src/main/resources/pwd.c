@@ -10,14 +10,16 @@ struct scalanative_passwd {
     char *pw_shell;           /** Program to use as shell. */
 };
 
-void scalanative_passwd_copy(struct passwd *passwd, struct scalanative_passwd *my_passwd) {
-    my_passwd->pw_name  = passwd->pw_name;
-    my_passwd->pw_uid   = passwd->pw_uid;
-    my_passwd->pw_gid   = passwd->pw_gid;
-    my_passwd->pw_dir   = passwd->pw_dir;
+void scalanative_passwd_copy(struct passwd *passwd,
+                             struct scalanative_passwd *my_passwd) {
+    my_passwd->pw_name = passwd->pw_name;
+    my_passwd->pw_uid = passwd->pw_uid;
+    my_passwd->pw_gid = passwd->pw_gid;
+    my_passwd->pw_dir = passwd->pw_dir;
     my_passwd->pw_shell = passwd->pw_shell;
 }
-int scalanative_getpwuid(scalanative_uid_t uid, struct scalanative_passwd *buf) {
+int scalanative_getpwuid(scalanative_uid_t uid,
+                         struct scalanative_passwd *buf) {
     struct passwd *passwd = getpwuid(uid);
 
     if (passwd == NULL) {
@@ -38,4 +40,3 @@ int scalanative_getpwnam(char *name, struct scalanative_passwd *buf) {
         return 0;
     }
 }
-
