@@ -20,12 +20,6 @@ class UnixFileSystemProvider extends FileSystemProvider {
 
   private lazy val fs = new UnixFileSystem(this, "/", getUserDir())
 
-  // override def newAsynchronousFileChannel(
-  //     path: Path,
-  //     options: Set[_ <: OpenOption],
-  //     executor: ExecutorService,
-  //     attrs: Array[FileAttribute[_]]): AsynchronousFileChannel
-
   override def getScheme(): String =
     "file"
 
@@ -102,9 +96,6 @@ class UnixFileSystemProvider extends FileSystemProvider {
 
   override def isHidden(path: Path): Boolean =
     Files.isHidden(path)
-
-  // override def getFileStore(path: Path): FileStore =
-  //   Files.getFileStore(path)
 
   override def checkAccess(path: Path, modes: Array[AccessMode]): Unit = {
     val file = path.toFile

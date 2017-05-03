@@ -182,15 +182,6 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
   override def toString(): String =
     rawPath
 
-  override def register(watcher: java.nio.file.WatchService,
-                        events: Array[WatchEvent.Kind[_]],
-                        modifiers: Array[WatchEvent.Modifier]): WatchKey =
-    ???
-
-  override def register(watcher: java.nio.file.WatchService,
-                        events: Array[WatchEvent.Kind[_]]): WatchKey =
-    ???
-
 }
 
 private object UnixPath {

@@ -5,7 +5,8 @@ import java.util.Iterator
 import java.io.File
 import java.net.URI
 
-trait Path extends Comparable[Path] with Iterable[Path] with Watchable {
+trait Path extends Comparable[Path] with Iterable[Path] /*with Watchable*/ {
+
   def compareTo(other: Path): Int
   def endsWith(other: Path): Boolean
   def endsWith(other: String): Boolean
@@ -20,11 +21,6 @@ trait Path extends Comparable[Path] with Iterable[Path] with Watchable {
   def isAbsolute(): Boolean
   def iterator(): Iterator[Path]
   def normalize(): Path
-  def register(watcher: WatchService,
-               events: Array[WatchEvent.Kind[_]]): WatchKey
-  def register(watcher: WatchService,
-               events: Array[WatchEvent.Kind[_]],
-               modifiers: Array[WatchEvent.Modifier]): WatchKey
   def relativize(other: Path): Path
   def resolve(other: Path): Path
   def resolve(other: String): Path
