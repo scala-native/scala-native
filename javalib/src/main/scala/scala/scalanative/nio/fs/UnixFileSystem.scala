@@ -7,7 +7,14 @@ import java.nio.file.spi.FileSystemProvider
 import java.nio.file.attribute.UserPrincipalLookupService
 import java.util.{ArrayList, Set}
 
-import scala.scalanative.native.{CUnsignedLong, statvfs, toCString}
+import scala.scalanative.native.{
+  CUnsignedLong,
+  Ptr,
+  sizeof,
+  statvfs,
+  toCString
+}
+import scala.scalanative.runtime.GC
 
 class UnixFileSystem(override val provider: FileSystemProvider,
                      val root: String,
@@ -43,8 +50,10 @@ class UnixFileSystem(override val provider: FileSystemProvider,
     closed == false
 
   override def isReadOnly(): Boolean = {
-    val stat = statvfs.statvfs(toCString(root))
-    if (stat == null) throw new IOException()
+    val stat =
+      GC.malloc_atomic(sizeof[statvfs.statvfs]).cast[Ptr[statvfs.statvfs]]
+    val err = statvfs.statvfs(toCString(root), stat)
+    if (err != 0) throw new IOException()
     else {
       val flags = !(stat._10)
       val mask  = statvfs.ST_RDONLY

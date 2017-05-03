@@ -1,6 +1,6 @@
+#include <stdlib.h>
 #include <sys/statvfs.h>
 #include "types.h"
-#include "gc.h"
 
 struct scalanative_statvfs {
     unsigned long f_bsize;           /** File system block size. */
@@ -18,7 +18,7 @@ struct scalanative_statvfs {
     unsigned long f_namemax;         /** Maximum filename length. */
 };
 
-void scalanative_statvfs_init(struct statvfs *statvfs, struct scalanative_statvfs *my_statvfs) {
+void scalanative_statvfs_copy(struct statvfs *statvfs, struct scalanative_statvfs *my_statvfs) {
     my_statvfs->f_bsize = statvfs->f_bsize;
     my_statvfs->f_frsize = statvfs->f_frsize;
     my_statvfs->f_bavail = statvfs->f_bavail;
@@ -30,28 +30,25 @@ void scalanative_statvfs_init(struct statvfs *statvfs, struct scalanative_statvf
     my_statvfs->f_namemax = statvfs->f_namemax;
 }
 
-struct scalanative_statvfs *scalanative_statvfs_copy(struct statvfs *statvfs) {
-    struct scalanative_statvfs *my_statvfs =
-        (struct scalanative_statvfs *) GC_malloc(sizeof(struct scalanative_statvfs));
-    scalanative_statvfs_init(statvfs, my_statvfs);
-    return my_statvfs;
-}
-
-struct scalanative_statvfs *scalanative_statvfs(char *path) {
-    struct statvfs buf;
-    if (statvfs(path, &buf) == 0) {
-        return scalanative_statvfs_copy(&buf);
+int scalanative_statvfs(char *path, struct scalanative_statvfs *buf) {
+    struct statvfs statvfs_buf;
+    int err = statvfs(path, &statvfs_buf);
+    if (err == 0) {
+        scalanative_statvfs_copy(&statvfs_buf, buf);
+        return 0;
     } else {
-        return NULL;
+        return err;
     }
 }
 
-struct scalanative_statvfs *scalanative_fstatvfs(int fd) {
-    struct statvfs buf;
-    if (fstatvfs(fd, &buf) == 0) {
-        return scalanative_statvfs_copy(&buf);
+int scalanative_fstatvfs(int fd, struct scalanative_statvfs *buf) {
+    struct statvfs statvfs_buf;
+    int err = fstatvfs(fd, &statvfs_buf);
+    if (err == 0) {
+        scalanative_statvfs_copy(&statvfs_buf, buf);
+        return 0;
     } else {
-        return NULL;
+        return err;
     }
 }
 
