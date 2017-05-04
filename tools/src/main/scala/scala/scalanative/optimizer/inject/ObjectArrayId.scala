@@ -7,18 +7,14 @@ import scala.scalanative.optimizer.{Inject, InjectCompanion}
 import scala.scalanative.tools.Config
 
 class ObjectArrayId(top: Top) extends Inject {
-  override def apply(buffer: mutable.Buffer[Defn]) = {
-    buffer += genObjectArrayId()
-  }
-
-  def genObjectArrayId(): Defn.Var = {
+  override def apply(buf: mutable.Buffer[Defn]) = {
     val objectArray =
       top.nodes(Global.Top("scala.scalanative.runtime.ObjectArray"))
 
-    Defn.Var(Attrs.None,
-             ObjectArrayId.objectArrayIdName,
-             Type.Int,
-             Val.Int(objectArray.id))
+    buf += Defn.Var(Attrs.None,
+                    ObjectArrayId.objectArrayIdName,
+                    Type.Int,
+                    Val.Int(objectArray.id))
   }
 }
 
