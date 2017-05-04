@@ -124,8 +124,7 @@ object ScalaNativePluginInternal {
     nativeClang := {
       val clang = discover("clang", clangVersions)
       // todo: echo doesn't work well on windows
-      if (!isWindows)
-      {
+      if (!isWindows) {
         checkThatClangIsRecentEnough(clang)
       }
       clang
@@ -133,8 +132,7 @@ object ScalaNativePluginInternal {
     nativeClangPP := {
       val clang = discover("clang++", clangVersions)
       // todo: echo doesn't work well on windows
-      if (!isWindows)
-      {
+      if (!isWindows) {
         checkThatClangIsRecentEnough(clang)
       }
       clang
@@ -146,7 +144,7 @@ object ScalaNativePluginInternal {
             .getOrElse(Seq.empty)
         ("/usr/local/include" +: includedir).map(s => s"-I$s")
       }
-      
+
       includes :+ "-Qunused-arguments" :+
         (mode(nativeMode.value) match {
           case tools.Mode.Debug   => "-O0"
@@ -166,7 +164,8 @@ object ScalaNativePluginInternal {
       val logger = nativeLogger.value
       val cwd    = nativeWorkdir.value
       val clang  = nativeClang.value
-      val compilec = Seq(abs(clang), "-S", "-emit-llvm", "-x", "c", "-o", "-", "-")
+      val compilec =
+        Seq(abs(clang), "-S", "-emit-llvm", "-x", "c", "-o", "-", "-")
       val probe = new ByteArrayInputStream("int probe;".getBytes("UTF-8"))
       def fail =
         throw new MessageOnlyException("Failed to detect native target.")
@@ -182,7 +181,9 @@ object ScalaNativePluginInternal {
     },
     nativeMode := "debug",
     artifactPath in nativeLink := {
-      (crossTarget in Compile).value / (moduleName.value + (if (isWindows) ".exe" else "-out"))
+      (crossTarget in Compile).value / (moduleName.value + (if (isWindows)
+                                                              ".exe"
+                                                            else "-out"))
     },
     nativeLinkerReporter := tools.LinkerReporter.empty,
     nativeOptimizerReporter := tools.OptimizerReporter.empty,
@@ -234,7 +235,10 @@ object ScalaNativePluginInternal {
             val isCppSource = path.endsWith(".cpp")
 
             val compiler = abs(if (isCppSource) clangpp else clang)
-            val flags    = (if (isCppSource) (if (isWindows) Seq("-std=c++14") else Seq("-std=c++11")) else Seq()) ++ opts
+            val flags = (if (isCppSource)
+                           (if (isWindows) Seq("-std=c++14")
+                            else Seq("-std=c++11"))
+                         else Seq()) ++ opts
             val compilec = Seq(compiler) ++ flags ++ Seq("-c",
                                                          path,
                                                          "-o",
@@ -353,7 +357,8 @@ object ScalaNativePluginInternal {
         }
         val libunwind = os match {
           case "Mac OS X" => Seq.empty
-          case _          => if (isWindows) Seq.empty else Seq("unwind", "unwind-" + arch)
+          case _ =>
+            if (isWindows) Seq.empty else Seq("unwind", "unwind-" + arch)
         }
         librt ++ libunwind ++ linked.links
           .map(_.name) ++ garbageCollector(gc).links ++ regex
@@ -419,7 +424,8 @@ object ScalaNativePluginInternal {
       else binaryName
 
     sys.env.get(s"${envName}_PATH") match {
-      case Some(path) => file(if (isWindows) path.replaceAll("clang-cl", binaryName) else path)
+      case Some(path) =>
+        file(if (isWindows) path.replaceAll("clang-cl", binaryName) else path)
       case None => {
         val binaryNames = binaryVersions.flatMap {
           case (major, minor) =>
@@ -507,17 +513,19 @@ object ScalaNativePluginInternal {
     val gc = garbageCollector(gcName)
     // Directory in nativelib containing the garbage collectors
     val garbageCollectorsDir = if (isWindows) "lib\\gc" else "lib/gc"
-    val specificDir          = if (isWindows) s"$garbageCollectorsDir\\${gc.dir}" else s"$garbageCollectorsDir/${gc.dir}"
+    val specificDir =
+      if (isWindows) s"$garbageCollectorsDir\\${gc.dir}"
+      else s"$garbageCollectorsDir/${gc.dir}"
 
     def isOtherGC(path: String, nativelib: File) = {
       val nativeGCPath = nativelib.toPath.resolve(garbageCollectorsDir)
       path.contains(nativeGCPath.toString) && !path.contains(specificDir)
     }
 
-    files.filterNot(f => isOtherGC(f.getPath().toString, nativelib))    
+    files.filterNot(f => isOtherGC(f.getPath().toString, nativelib))
   }
 
-  private val isWindows:Boolean = {
+  private val isWindows: Boolean = {
     val os = Option(sys props "os.name").getOrElse("")
     os.contains("indows")
   }
