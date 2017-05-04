@@ -12,6 +12,10 @@ import scalanative.nir._
 
 object CodeGen {
 
+  private final class Platform(target:String) {
+    val isWindows = target.contains("indows")
+  }
+
   /** Generate code for given assembly. */
   def apply(config: tools.Config, assembly: Seq[Defn]): Unit =
     Scope { implicit in =>
@@ -38,7 +42,7 @@ object CodeGen {
         batches.par.foreach {
           case (k, defns) =>
             val impl =
-              new Impl(config.target, env, defns, workdir)
+              new Impl(config.target, env, defns, workdir, new Platform(config.target))
             val outpath = k + ".ll"
             val buffer  = impl.gen()
             buffer.flip
@@ -47,7 +51,7 @@ object CodeGen {
       }
 
       def release(): Unit = {
-        val impl   = new Impl(config.target, env, assembly, workdir)
+        val impl   = new Impl(config.target, env, assembly, workdir, new Platform(config.target))
         val buffer = impl.gen()
         buffer.flip
         workdir.write(Paths.get("out.ll"), buffer)
@@ -62,7 +66,8 @@ object CodeGen {
   private final class Impl(target: String,
                            env: Map[Global, Defn],
                            defns: Seq[Defn],
-                           workdir: VirtualDirectory) {
+                           workdir: VirtualDirectory,
+                           platform: Platform) {
     import Impl._
 
     var currentBlockName: Local = _
@@ -297,10 +302,13 @@ object CodeGen {
 
         def line(s: String) = { newline(); str(s) }
 
-        line(s"$rec = $landingpad")
+        line(s"$rec = ${landingpad(platform)}")
         line(s"$r0 = extractvalue $excrecty $rec, 0")
         line(s"$r1 = extractvalue $excrecty $rec, 1")
-        line(s"$id = extractvalue $excrecty $rec, 1")
+        if (platform.isWindows)
+          line(s"$id = extractvalue $excrecty $rec, 1")
+        else
+          line(s"$id = ${typeid(platform)}")
         line(s"$cmp = icmp eq i32 $r1, $id")
         line(s"br i1 $cmp, label %$succ, label %$fail")
         unindent()
@@ -792,9 +800,9 @@ object CodeGen {
     val gxxpersonality = 
       "personality i8* bitcast (i32 (...)* @__gxx_personality_v0 to i8*)"
     val excrecty = "{ i8*, i32 }"
-    val landingpad = "landingpad { i8*, i32 } cleanup"
-      //"landingpad { i8*, i32 } catch i8* bitcast ({ i8*, i8*, i8* }* @_ZTIN11scalanative16ExceptionWrapperE to i8*)"
-    val typeid = "call i32 @llvm.eh.typeid.for(i8* bitcast ( i32* 123 to i8*))"
-               //"call i32 @llvm.eh.typeid.for(i8* bitcast ({ i8*, i8*, i8* }* @_ZTIN11scalanative16ExceptionWrapperE to i8*))"
+    def landingpad(platform:Platform) = if (platform.isWindows) "landingpad { i8*, i32 } cleanup" else
+      "landingpad { i8*, i32 } catch i8* bitcast ({ i8*, i8*, i8* }* @_ZTIN11scalanative16ExceptionWrapperE to i8*)"
+    def typeid(platform:Platform) = if (platform.isWindows) "call i32 @llvm.eh.typeid.for(i8* bitcast ( i32* 123 to i8*))" else
+               "call i32 @llvm.eh.typeid.for(i8* bitcast ({ i8*, i8*, i8* }* @_ZTIN11scalanative16ExceptionWrapperE to i8*))"
   }
 }
