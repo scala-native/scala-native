@@ -12,7 +12,7 @@ object msg {
 
   def msgctl(msqid: CInt, cmd: CInt, buf: Ptr[msqid_ds]): CInt = extern
 
-  def msgget(key: key_t, msgflg: CInt): CInt                   = extern
+  def msgget(key: key_t, msgflg: CInt): CInt = extern
 
   def msgsnd(msqid: CInt, msgp: Ptr[Byte], msgz: CSize, msgflg: CInt): CInt =
     extern
