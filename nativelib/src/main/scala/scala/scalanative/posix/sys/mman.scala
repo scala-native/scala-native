@@ -32,11 +32,17 @@ object mman {
 
   def posix_madvise(addr: Ptr[Byte], len: CSize, advice: CInt): CInt = extern
 
-  def posix_mem_offset(addr: Ptr[Byte], len: CSize, off: Ptr[off_t], contig_len: Ptr[CSize], fildes: Ptr[CInt]): CInt = extern
+  def posix_mem_offset(addr: Ptr[Byte],
+                       len: CSize,
+                       off: Ptr[off_t],
+                       contig_len: Ptr[CSize],
+                       fildes: Ptr[CInt]): CInt = extern
 
-  def posix_typed_mem_get_info(fildes: CInt, info: Ptr[posix_typed_mem_info]): CInt = extern
+  def posix_typed_mem_get_info(fildes: CInt,
+                               info: Ptr[posix_typed_mem_info]): CInt = extern
 
-  def posix_typed_mem_open(name: CString, oflag: CInt, tflag: CInt): CInt = extern
+  def posix_typed_mem_open(name: CString, oflag: CInt, tflag: CInt): CInt =
+    extern
 
   def shm_open(name: CString, oflag: CInt, mode: mode_t): CInt = extern
 

@@ -21,7 +21,9 @@ object signal {
 
   def raise(sig: CInt): CInt = extern
 
-  def sigaction(signum: CInt, act: Ptr[sigaction], oldact: Ptr[sigaction]): CInt = extern
+  def sigaction(signum: CInt,
+                act: Ptr[sigaction],
+                oldact: Ptr[sigaction]): CInt = extern
 
   def sigaddset(set: Ptr[sigset_t], signum: CInt): CInt = extern
 
@@ -49,17 +51,22 @@ object signal {
 
   def sigpending(set: Ptr[sigset_t]): CInt = extern
 
-  def sigprocmask(how: CInt, set: Ptr[sigset_t], oldset: Ptr[sigset_t]): CInt = extern
+  def sigprocmask(how: CInt, set: Ptr[sigset_t], oldset: Ptr[sigset_t]): CInt =
+    extern
 
   def sigqueue(pid: pid_t, sig: CInt, value: sigval): CInt = extern
 
   def sigrelse(set: Ptr[sigset_t]): CInt = extern
 
-  def sigset(sig: CInt, handler: CFunctionPtr1[CInt, Unit]): CFunctionPtr1[CInt, Unit] = extern
+  def sigset(sig: CInt,
+             handler: CFunctionPtr1[CInt, Unit]): CFunctionPtr1[CInt, Unit] =
+    extern
 
   def sigsuspend(set: Ptr[sigset_t]): CInt = extern
 
-  def sigtimedwait(set: Ptr[sigset_t], info: Ptr[siginfo_t], timeout: Ptr[timespec]): CInt = extern
+  def sigtimedwait(set: Ptr[sigset_t],
+                   info: Ptr[siginfo_t],
+                   timeout: Ptr[timespec]): CInt = extern
 
   def sigwait(set: Ptr[sigset_t], sig: Ptr[CInt]): CInt = extern
 
@@ -67,16 +74,21 @@ object signal {
 
   // Types
 
-  type mcontext_t = CStruct0
+  type mcontext_t   = CStruct0
   type sig_atomic_t = CInt
-  type sigset_t = CInt
-  type sigval = Ptr[Byte]
+  type sigset_t     = CInt
+  type sigval       = Ptr[Byte]
   type sigevent =
-    CStruct5[CInt, CInt, sigval, CFunctionPtr1[sigval, Unit], Ptr[pthread_attr_t]]
-  type sigaction = CStruct4[Ptr[Byte], sigset_t, CInt, Ptr[Byte]]
-  type stack_t = CStruct3[Ptr[Byte], CSize, CInt]
+    CStruct5[CInt,
+             CInt,
+             sigval,
+             CFunctionPtr1[sigval, Unit],
+             Ptr[pthread_attr_t]]
+  type sigaction  = CStruct4[Ptr[Byte], sigset_t, CInt, Ptr[Byte]]
+  type stack_t    = CStruct3[Ptr[Byte], CSize, CInt]
   type ucontext_t = CStruct4[Ptr[ucontext_t], sigset_t, stack_t, mcontext_t]
-  type siginfo_t = CStruct9[CInt, CInt, CInt, pid_t, uid_t, Ptr[Byte], CInt, CLong, sigval]
+  type siginfo_t =
+    CStruct9[CInt, CInt, CInt, pid_t, uid_t, Ptr[Byte], CInt, CLong, sigval]
 
   // Macros
 

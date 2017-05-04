@@ -16,9 +16,13 @@ object fcntl {
 
   def open(pathname: CString, flags: CInt, mode: CVararg*): CInt = extern
 
-  def openat(dirfd: CInt, pathname: CString, flags: CInt, args: CVararg*): CInt = extern
+  def openat(dirfd: CInt,
+             pathname: CString,
+             flags: CInt,
+             args: CVararg*): CInt = extern
 
-  def posix_fadvise(fd: CInt, offset: off_t, len: off_t, advice: CInt): CInt = extern
+  def posix_fadvise(fd: CInt, offset: off_t, len: off_t, advice: CInt): CInt =
+    extern
 
   def posix_fallocate(fd: CInt, offset: off_t, len: off_t): CInt = extern
 
