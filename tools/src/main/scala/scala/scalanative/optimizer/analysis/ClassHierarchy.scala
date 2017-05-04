@@ -86,6 +86,7 @@ object ClassHierarchy {
     def name                        = Global.None
     def attrs                       = Attrs.None
     var tables: TraitDispatchTables = _
+    var moduleArray: ModuleArray    = _
   }
 
   def apply(defns: Seq[Defn], dyns: Seq[String]): Top = {
@@ -292,6 +293,7 @@ object ClassHierarchy {
 
     def completeTop(): Unit = {
       top.tables = new TraitDispatchTables(top)
+      top.moduleArray = new ModuleArray(top)
     }
 
     completeFields()
