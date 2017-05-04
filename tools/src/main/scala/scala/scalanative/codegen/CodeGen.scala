@@ -150,7 +150,8 @@ object CodeGen {
       line("declare i32 @__gxx_personality_v0(...)")
       line("declare i8* @__cxa_begin_catch(i8*)")
       line("declare void @__cxa_end_catch()")
-      //line("@_ZTIN11scalanative16ExceptionWrapperE = external constant { i8*, i8*, i8* }")
+      if (!platform.isWindows)
+        line("@_ZTIN11scalanative16ExceptionWrapperE = external constant { i8*, i8*, i8* }")
     }
 
     def genDefn(defn: Defn): Unit = {
