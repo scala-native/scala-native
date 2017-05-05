@@ -9,6 +9,8 @@ import scala.scalanative.posix.time.timespec
 @extern
 object signal {
 
+  import signalH._
+
   def kill(pid: pid_t, sig: CInt): CInt = extern
 
   def killpg(pid: pid_t, sig: CInt): CInt = extern
@@ -72,23 +74,6 @@ object signal {
 
   def sigwaitinfo(set: Ptr[sigset_t], info: Ptr[siginfo_t]): CInt = extern
 
-  // Types
-
-  type mcontext_t   = CStruct0
-  type sig_atomic_t = CInt
-  type sigset_t     = CInt
-  type sigval       = Ptr[Byte]
-  type sigevent =
-    CStruct5[CInt,
-             CInt,
-             sigval,
-             CFunctionPtr1[sigval, Unit],
-             Ptr[pthread_attr_t]]
-  type sigaction  = CStruct4[Ptr[Byte], sigset_t, CInt, Ptr[Byte]]
-  type stack_t    = CStruct3[Ptr[Byte], CSize, CInt]
-  type ucontext_t = CStruct4[Ptr[ucontext_t], sigset_t, stack_t, mcontext_t]
-  type siginfo_t =
-    CStruct9[CInt, CInt, CInt, pid_t, uid_t, Ptr[Byte], CInt, CLong, sigval]
 
   // Macros
 
@@ -358,4 +343,33 @@ object signal {
 
   @name("scalanative_libc_si_mesgq")
   def SI_MESGQ: CInt = extern
+}
+
+object signalH {
+
+  // Types
+  type mcontext_t   = CStruct0
+  type sig_atomic_t = CInt
+  type sigset_t     = CInt
+  type sigval       = Ptr[Byte]
+  type sigevent =
+    CStruct5[CInt,
+      CInt,
+      sigval,
+      CFunctionPtr1[sigval, Unit],
+      Ptr[pthread_attr_t]]
+  type sigaction  = CStruct4[Ptr[Byte], sigset_t, CInt, Ptr[Byte]]
+  type stack_t    = CStruct3[Ptr[Byte], CSize, CInt]
+  type siginfo_t =
+    CStruct9[CInt, CInt, CInt, pid_t, uid_t, Ptr[Byte], CInt, CLong, sigval]
+
+  type ucontext_t = CStruct4[Ptr[Byte], sigset_t, stack_t, mcontext_t]
+
+  // ucontext_t recursive defition handling see #634
+  implicit class ucontext_tOps(val ptr: Ptr[ucontext_t]) extends AnyVal {
+    def link: Ptr[ucontext_t] = (!(ptr._1)).cast[Ptr[ucontext_t]]
+    def sigmask: sigset_t = !(ptr._2)
+    def stack: Ptr[stack_t] = (ptr._3)
+    def mcontext: Ptr[mcontext_t] = (ptr._4)
+  }
 }
