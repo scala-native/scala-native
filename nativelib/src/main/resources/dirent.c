@@ -22,6 +22,13 @@ void scalanative_dirent_init(struct dirent *dirent,
 #else
   int nameLength = strlen(dirent->d_name);
   strncpy_s(my_dirent->d_name, nameLength, dirent->d_name, nameLength);
+  for (int i = 0; i < nameLength; ++i)
+  {
+    if (dirent->d_name[i]=='\\')
+    {
+      dirent->d_name[i]='/';
+    }
+  }
 #endif
   my_dirent->d_name[NAME_MAX] = '\0';
 }
