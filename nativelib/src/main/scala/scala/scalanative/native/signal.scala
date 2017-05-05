@@ -74,7 +74,6 @@ object signal {
 
   def sigwaitinfo(set: Ptr[sigset_t], info: Ptr[siginfo_t]): CInt = extern
 
-
   // Macros
 
   @name("scalanative_libc_sig_dfl")
@@ -354,12 +353,12 @@ object signalH {
   type sigval       = Ptr[Byte]
   type sigevent =
     CStruct5[CInt,
-      CInt,
-      sigval,
-      CFunctionPtr1[sigval, Unit],
-      Ptr[pthread_attr_t]]
-  type sigaction  = CStruct4[Ptr[Byte], sigset_t, CInt, Ptr[Byte]]
-  type stack_t    = CStruct3[Ptr[Byte], CSize, CInt]
+             CInt,
+             sigval,
+             CFunctionPtr1[sigval, Unit],
+             Ptr[pthread_attr_t]]
+  type sigaction = CStruct4[Ptr[Byte], sigset_t, CInt, Ptr[Byte]]
+  type stack_t   = CStruct3[Ptr[Byte], CSize, CInt]
   type siginfo_t =
     CStruct9[CInt, CInt, CInt, pid_t, uid_t, Ptr[Byte], CInt, CLong, sigval]
 
@@ -367,9 +366,9 @@ object signalH {
 
   // ucontext_t recursive defition handling see #634
   implicit class ucontext_tOps(val ptr: Ptr[ucontext_t]) extends AnyVal {
-    def link: Ptr[ucontext_t] = (!(ptr._1)).cast[Ptr[ucontext_t]]
-    def sigmask: sigset_t = !(ptr._2)
-    def stack: Ptr[stack_t] = (ptr._3)
+    def link: Ptr[ucontext_t]     = (!(ptr._1)).cast[Ptr[ucontext_t]]
+    def sigmask: sigset_t         = !(ptr._2)
+    def stack: Ptr[stack_t]       = (ptr._3)
     def mcontext: Ptr[mcontext_t] = (ptr._4)
   }
 }
