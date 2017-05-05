@@ -11,6 +11,9 @@ class FileOutputStream(fd: FileDescriptor) extends OutputStream {
   def this(name: String, append: Boolean) = this(new File(name), append)
   def this(name: String) = this(new File(name))
 
+  override def flush(): Unit =
+    fd.sync()
+
   override def close(): Unit =
     fcntl.close(fd.fd)
 
