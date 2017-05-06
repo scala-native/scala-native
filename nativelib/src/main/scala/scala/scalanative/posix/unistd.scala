@@ -16,8 +16,8 @@ object unistd {
 
   type off_t = CLongLong
 
-  def sleep(seconds: CUnsignedInt): Int                           = extern
-  def usleep(usecs: CUnsignedInt): Int                            = extern
+  def sleep(seconds: CUnsignedInt): CInt                          = extern
+  def usleep(usecs: CUnsignedInt): CInt                           = extern
   def unlink(path: CString): CInt                                 = extern
   def access(pathname: CString, mode: CInt): CInt                 = extern
   def readlink(path: CString, buf: CString, bufsize: CSize): CInt = extern

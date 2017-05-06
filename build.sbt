@@ -18,6 +18,13 @@ addCommandAlias(
     "clean",
     "cleanCache",
     "cleanLocal",
+    "dirty-rebuild"
+  ).mkString(";", ";", "")
+)
+
+addCommandAlias(
+  "dirty-rebuild",
+  Seq(
     "nscplugin/publishLocal",
     "nativelib/publishLocal",
     "publishLocal"

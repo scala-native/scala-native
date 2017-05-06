@@ -19,34 +19,11 @@ object ClassHierarchy {
   }
 
   sealed abstract class Scope extends Node {
+    var rtti: RuntimeTypeInformation = _
+
     val members = mutable.UnrolledBuffer.empty[Node]
-
-    def methods: Seq[Method] =
-      members.collect { case meth: Method => meth }
-
-    def fields: Seq[Field] =
-      members.collect { case fld: Field => fld }
-
-    def typeName: Global =
-      this.name member "type"
-
-    def typeConst: Val =
-      Val.Global(typeName, Type.Ptr)
-
-    def typeStruct: Type.Struct =
-      Rt.Type
-
-    def typeValue: Val.Struct = {
-      val typeId  = Val.Int(id)
-      val typeStr = Val.String(name.id)
-      val typeKind = Val.Byte(this match {
-        case _: Class  => 0
-        case _: Trait  => 1
-        case _: Struct => 2
-        case _         => unreachable
-      })
-      Val.Struct(Rt.Type.name, Seq(typeId, typeStr, typeKind))
-    }
+    val methods = mutable.UnrolledBuffer.empty[Method]
+    val fields  = mutable.UnrolledBuffer.empty[Field]
   }
 
   final class Struct(val attrs: Attrs,
@@ -58,9 +35,7 @@ object ClassHierarchy {
                     val name: Global,
                     val traitNames: Seq[Global])
       extends Scope {
-    var traits: Seq[Trait]      = _
-    var alltraits: Seq[Trait]   = _
-    var allmethods: Seq[Method] = _
+    val traits = mutable.UnrolledBuffer.empty[Trait]
   }
 
   final class Class(val attrs: Attrs,
@@ -69,69 +44,15 @@ object ClassHierarchy {
                     val traitNames: Seq[Global],
                     val isModule: Boolean)
       extends Scope {
+    val ty         = Type.Class(name)
     val subclasses = mutable.UnrolledBuffer.empty[Class]
+    val traits     = mutable.UnrolledBuffer.empty[Trait]
 
-    var range: Range                        = _
-    var parent: Option[Class]               = _
-    var traits: Seq[Trait]                  = _
-    var alltraits: Seq[Trait]               = _
-    var allfields: Seq[Field]               = _
-    var allmethods: Seq[Method]             = _
-    var allvslots: Seq[Method]              = _
-    var alloverrides: Seq[(Method, Method)] = _
-    var vslots: Seq[Method]                 = _
-    var vtable: Seq[Val]                    = _
-    var imap: mutable.Map[Method, Val]      = _
-    var dynmethods: Seq[Method]             = _
-    var alldynmethods: Seq[Method]          = _
-    var dynDispatchTableValue: Val          = _
-
-    def ty: Type.Class =
-      Type.Class(name)
-    def vtableStruct: Type.Struct =
-      Type.Struct(Global.None, vtable.map(_.ty))
-    def vtableValue: Val.Struct =
-      Val.Struct(Global.None, vtable)
-    def dynDispatchTableStruct =
-      Type.Struct(Global.None, Seq(Type.Int, Type.Ptr, Type.Ptr, Type.Ptr))
-
-    def refMapStruct = Type.Struct(Global.None, Seq(Type.Ptr))
-    def memoryLayout = MemoryLayout(Type.Ptr +: allfields.map(_.ty))
-
-    def refMap = Val.Const(Val.Array(Type.Long, memoryLayout.offsetArray))
-    def size   = memoryLayout.size
-
-    def classStruct: Type.Struct = {
-      val data            = allfields.map(_.ty)
-      val classStructName = name member "layout"
-      val classStructBody = Type.Ptr +: data
-      val classStructTy   = Type.Struct(classStructName, classStructBody)
-
-      Type.Struct(classStructName, classStructBody)
-    }
-    override def typeStruct: Type.Struct =
-      Type.Struct(
-        Global.None,
-        Seq(super.typeStruct,
-            Type.Long, // size
-            Type.Struct(Global.None, Seq(Type.Int, Type.Int)), // range
-            dynDispatchTableStruct,
-            refMapStruct,
-            vtableStruct)
-      )
-    override def typeValue: Val.Struct =
-      Val.Struct(
-        Global.None,
-        Seq(
-          super.typeValue,
-          Val.Long(size),
-          Val.Struct(Global.None,
-                     Seq(Val.Int(range.head), Val.Int(range.last))),
-          dynDispatchTableValue,
-          Val.Struct(Global.None, Seq(refMap)),
-          vtableValue
-        )
-      )
+    var parent: Option[Class]  = _
+    var range: Range           = _
+    var vtable: VirtualTable   = _
+    var layout: FieldLayout    = _
+    var dynmap: DynamicHashMap = _
   }
 
   final class Method(val attrs: Attrs,
@@ -139,57 +60,33 @@ object ClassHierarchy {
                      val ty: nir.Type,
                      val isConcrete: Boolean)
       extends Node {
-    val overrides                   = mutable.UnrolledBuffer.empty[Method]
-    val overriden                   = mutable.UnrolledBuffer.empty[Method]
-    var vslot: Method               = _
-    var vindex: Int                 = _
-    var classOverrides: Seq[Method] = _
-    var traitOverrides: Seq[Method] = _
-
-    def isVirtual = !isConcrete || overriden.nonEmpty
-
-    def isStatic = !isVirtual
-
+    val overrides = mutable.UnrolledBuffer.empty[Method]
+    val overriden = mutable.UnrolledBuffer.empty[Method]
     val value =
       if (isConcrete) Val.Global(name, Type.Ptr)
-      else Val.Zero(Type.Ptr)
-
+      else Val.Null
+    def isVirtual =
+      !isConcrete || overriden.nonEmpty
+    def isStatic =
+      !isVirtual
   }
 
   final class Field(val attrs: Attrs, val name: Global, val ty: nir.Type)
-      extends Node {
-    def index = {
-      assert(inClass)
-      in.asInstanceOf[Class].allfields.indexOf(this)
-    }
-  }
+      extends Node
 
   final class Top(val nodes: mutable.Map[Global, Node],
                   val structs: Seq[Struct],
                   val classes: Seq[Class],
                   val traits: Seq[Trait],
                   val dyns: Seq[String],
-                  override val methods: Seq[Method],
-                  override val fields: Seq[Field])
+                  override val methods: mutable.UnrolledBuffer[Method],
+                  override val fields: mutable.UnrolledBuffer[Field])
       extends Scope {
-    val fresh = nir.Fresh("tx")
-    def name  = Global.None
-    def attrs = Attrs.None
-
-    val dispatchName       = Global.Top("__dispatch")
-    val dispatchVal        = Val.Global(dispatchName, Type.Ptr)
-    var dispatchTy: Type   = _
-    var dispatchDefn: Defn = _
-
-    val classHasTraitName       = Global.Top("__class_has_trait")
-    val classHasTraitVal        = Val.Global(classHasTraitName, Type.Ptr)
-    var classHasTraitTy: Type   = _
-    var classHasTraitDefn: Defn = _
-
-    val traitHasTraitName       = Global.Top("__trait_has_trait")
-    val traitHasTraitVal        = Val.Global(traitHasTraitName, Type.Ptr)
-    var traitHasTraitTy: Type   = _
-    var traitHasTraitDefn: Defn = _
+    val fresh                       = nir.Fresh("tx")
+    def name                        = Global.None
+    def attrs                       = Attrs.None
+    var tables: TraitDispatchTables = _
+    var moduleArray: ModuleArray    = _
   }
 
   def apply(defns: Seq[Defn], dyns: Seq[String]): Top = {
@@ -306,6 +203,72 @@ object ClassHierarchy {
                       dyns = dyns)
     top.members ++= nodes.values
 
+    def assignMethodIds(): Unit = {
+      var id = 0
+      traits.foreach { trt =>
+        trt.methods.foreach { meth =>
+          meth.id = id
+          id += 1
+        }
+      }
+      classes.foreach { cls =>
+        cls.methods.foreach { meth =>
+          meth.id = id
+          id += 1
+        }
+      }
+    }
+
+    def completeMethods(): Unit = methods.foreach { meth =>
+      if (meth.name.isTop) {
+        meth.in = top
+      } else {
+        val owner = nodes(meth.name.top).asInstanceOf[Scope]
+        meth.in = owner
+        owner.members += meth
+        owner.methods += meth
+        meth.attrs.overrides.foreach { name =>
+          val ovmeth = nodes(name).asInstanceOf[Method]
+          meth.overrides += ovmeth
+          ovmeth.overriden += meth
+        }
+      }
+    }
+
+    def completeFields(): Unit = fields.foreach { node =>
+      val owner = nodes(node.name.top).asInstanceOf[Class]
+      node.in = owner
+      owner.members += node
+      owner.fields += node
+    }
+
+    def completeTraits(): Unit =
+      top.traits.foreach { node =>
+        node.in = top
+        node.traitNames.foreach { name =>
+          node.traits += nodes(name).asInstanceOf[Trait]
+        }
+        node.rtti = new RuntimeTypeInformation(node)
+      }
+
+    def completeStructs(): Unit =
+      top.structs.foreach { node =>
+        node.in = top
+        node.rtti = new RuntimeTypeInformation(node)
+      }
+
+    def completeClasses(): Unit = top.classes.foreach { cls =>
+      cls.in = top
+      cls.parent = cls.parentName.map { name =>
+        val parent = nodes(name).asInstanceOf[Class]
+        parent.subclasses += cls
+        parent
+      }
+      cls.traitNames.foreach { name =>
+        cls.traits += nodes(name).asInstanceOf[Trait]
+      }
+    }
+
     def assignClassIds(): Unit = {
       var id = 0
 
@@ -321,195 +284,27 @@ object ClassHierarchy {
       loop(nodes(Rt.Object.name).asInstanceOf[Class])
     }
 
-    def assignMethodIds(): Unit = {
-      val traitMethods = methods.filter(_.inTrait)
-      val restMethods  = methods.filterNot(_.inTrait)
-
-      var id = 0
-      traitMethods.foreach { meth =>
-        meth.id = id
-        id += 1
-      }
-      restMethods.foreach { meth =>
-        meth.id = id
-        id += 1
-      }
+    def completeClassMembers(): Unit = top.classes.foreach { cls =>
+      cls.vtable = new VirtualTable(cls)
+      cls.layout = new FieldLayout(cls)
+      cls.dynmap = new DynamicHashMap(cls, dyns)
+      cls.rtti = new RuntimeTypeInformation(cls)
     }
 
-    def completeMethods(): Unit = methods.foreach { node =>
-      if (node.name.isTop) {
-        node.in = top
-      } else {
-        val owner = nodes(node.name.top).asInstanceOf[Scope]
-        node.in = owner
-        owner.members += node
-        node.attrs.overrides.foreach { n =>
-          val ovnode = nodes(n).asInstanceOf[Method]
-          node.overrides += ovnode
-          ovnode.overriden += node
-        }
-      }
+    def completeTop(): Unit = {
+      top.tables = new TraitDispatchTables(top)
+      top.moduleArray = new ModuleArray(top)
     }
 
-    def completeFields(): Unit = fields.foreach { node =>
-      val parent = nodes(node.name.top).asInstanceOf[Class]
-      node.in = parent
-      parent.members += node
-    }
-
-    def completeTraits(): Unit =
-      top.traits.foreach { node =>
-        node.in = top
-        node.traits = node.traitNames.map(n => nodes(n).asInstanceOf[Trait])
-        node.alltraits = node.traits.flatMap(_.alltraits).distinct :+ node
-        node.allmethods = node.alltraits.init
-            .flatMap(_.allmethods) ++ node.methods
-      }
-
-    def completeClasses(): Unit = top.classes.foreach { self =>
-      import self._
-
-      in = top
-      parent = parentName.map(nodes(_).asInstanceOf[Class])
-      self.traits = traitNames.map(nodes(_).asInstanceOf[Trait])
-      parent.foreach { parent =>
-        parent.subclasses += self
-      }
-      vslots = members.collect {
-        case meth: Method if meth.isVirtual =>
-          meth
-      }
-      allvslots = {
-        val base = parent.fold(Seq.empty[Method])(_.allvslots)
-        base ++ vslots
-      }
-      self.methods.foreach { method =>
-        method.classOverrides = method.overrides.collect {
-          case meth if meth.inClass =>
-            meth
-        }
-        method.traitOverrides = method.overrides.collect {
-          case meth if meth.inTrait =>
-            meth
-        }
-        if (method.isVirtual) {
-          method.vslot = method.classOverrides.headOption.fold(method)(_.vslot)
-          method.vindex = allvslots.indexOf(method.vslot)
-        }
-      }
-      alltraits = {
-        val base = parent.fold(Seq.empty[Trait])(_.alltraits)
-        (base ++ self.traits.flatMap(_.alltraits)).distinct
-      }
-      allmethods = {
-        val base = parent.fold(Seq.empty[Method])(_.allmethods)
-        base ++ self.methods
-      }
-      alloverrides = {
-        val base = parent.fold(Seq.empty[(Method, Method)])(_.alloverrides)
-        base ++ self.methods.flatMap {
-          case meth if meth.overrides.nonEmpty =>
-            meth.overrides.map(ov => (meth, ov))
-          case _ =>
-            Seq()
-        }
-      }
-      allfields = {
-        val base = parent.fold(Seq.empty[Field])(_.allfields)
-        base ++ self.fields
-      }
-      vtable = {
-        val base = parent.fold(Seq.empty[Val])(_.vtable)
-
-        val overrides = self.methods.flatMap { meth =>
-          meth.classOverrides.map((meth, _))
-        }
-        val baseWithOverrides = overrides.foldLeft(base) {
-          case (base, (meth, ovmeth)) =>
-            base.updated(ovmeth.vindex, meth.value)
-        }
-
-        baseWithOverrides ++ vslots.map(_.value)
-      }
-      imap = {
-        val traitOverrides = allmethods.flatMap { meth =>
-          meth.traitOverrides.map((meth, _))
-        }
-        val methodMap = mutable.Map.empty[Method, Val]
-        traitOverrides.foreach {
-          case (meth, ovmeth) =>
-            methodMap(ovmeth) = meth.value
-        }
-        methodMap
-      }
-      dynmethods = self.methods.filter(_.attrs.isDyn)
-      alldynmethods = {
-        val signatureSet = dynmethods.map(m => m.name.id).toSet
-
-        parent
-          .fold(Seq.empty[Method])(_.alldynmethods)
-          .filterNot(m => signatureSet.contains(m.name.id)) ++ dynmethods
-      }
-      dynDispatchTableValue = DynmethodPerfectHashMap(alldynmethods, dyns)
-    }
-
-    def completeTopDispatchTable(): Unit = {
-      val traitMethods = methods.filter(_.inTrait).sortBy(_.id)
-
-      val columns = classes.sortBy(_.id).map { cls =>
-        val row = Array.fill[Val](traitMethods.length)(Val.Null)
-        cls.imap.foreach {
-          case (meth, value) =>
-            row(meth.id) = value
-        }
-        Val.Array(Type.Ptr, row)
-      }
-      val table = Val.Array(Type.Array(Type.Ptr, traitMethods.length), columns)
-
-      top.dispatchTy = table.ty
-      top.dispatchDefn =
-        Defn.Const(Attrs.None, top.dispatchName, table.ty, table)
-    }
-
-    def completeTopClassHasTraitTable(): Unit = {
-      val columns = classes.sortBy(_.id).map { cls =>
-        val row = new Array[Boolean](traits.length)
-        cls.alltraits.foreach { trt =>
-          row(trt.id) = true
-        }
-        Val.Array(Type.Bool, row.map(Val.Bool))
-      }
-      val table = Val.Array(Type.Array(Type.Bool, traits.length), columns)
-
-      top.classHasTraitTy = table.ty
-      top.classHasTraitDefn =
-        Defn.Const(Attrs.None, top.classHasTraitName, table.ty, table)
-    }
-
-    def completeTopTraitHasTraitTable(): Unit = {
-      val columns = traits.sortBy(_.id).map { left =>
-        val row = new Array[Boolean](traits.length)
-        left.alltraits.foreach { right =>
-          row(right.id) = true
-        }
-        Val.Array(Type.Bool, row.map(Val.Bool))
-      }
-      val table = Val.Array(Type.Array(Type.Bool, traits.length), columns)
-
-      top.traitHasTraitTy = table.ty
-      top.traitHasTraitDefn =
-        Defn.Const(Attrs.None, top.traitHasTraitName, table.ty, table)
-    }
-
-    completeMethods()
-    assignMethodIds()
     completeFields()
+    completeMethods()
     completeTraits()
+    completeStructs()
     completeClasses()
     assignClassIds()
-    completeTopDispatchTable()
-    completeTopClassHasTraitTable()
-    completeTopTraitHasTraitTable()
+    assignMethodIds()
+    completeClassMembers()
+    completeTop()
 
     top
   }
