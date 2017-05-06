@@ -31,7 +31,7 @@ object Path {
         .filter(_.path.toString.endsWith(".nir"))
         .map { file =>
           val relative = file.path.toString
-          val parts    = relative.replace(".nir", "").split("/").toSeq
+          val parts    = relative.replace(".nir", "").split("/|\\\\").toSeq
           val name     = Global.Top(parts.filter(_ != "").mkString("."))
 
           (name -> new BinaryDeserializer(file.contents))

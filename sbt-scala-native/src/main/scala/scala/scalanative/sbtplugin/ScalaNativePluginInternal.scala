@@ -145,7 +145,8 @@ object ScalaNativePluginInternal {
         ("/usr/local/include" +: includedir).map(s => s"-I$s")
       }
 
-      includes :+ "-Qunused-arguments" :+
+      //includes :+ "-mstack-probe-size=16384" :+ "-g" :+ "-fstandalone-debug" :+ "-fdebug-macro" :+ "-Qunused-arguments" :+
+      includes :+ "-gline-tables-only" :+ "-Qunused-arguments" :+
         (mode(nativeMode.value) match {
           case tools.Mode.Debug   => "-O0"
           case tools.Mode.Release => "-O2"
@@ -158,7 +159,7 @@ object ScalaNativePluginInternal {
             .getOrElse(Seq.empty)
         ("/usr/local/lib" +: libdir).map(s => s"-L$s")
       }
-      libs
+      libs ++ Seq("-gline-tables-only")//Seq("-mstack-probe-size=16384","-g", "-fstandalone-debug", "-fdebug-macro")
     },
     nativeTarget := {
       val logger = nativeLogger.value
@@ -238,7 +239,7 @@ object ScalaNativePluginInternal {
             val flags = (if (isCppSource)
                            (if (isWindows) Seq("-std=c++14")
                             else Seq("-std=c++11"))
-                         else Seq()) ++ opts
+                         else Seq("-std=c99")) ++ opts
             val compilec = Seq(compiler) ++ flags ++ Seq("-c",
                                                          path,
                                                          "-o",

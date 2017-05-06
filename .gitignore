@@ -8,3 +8,5 @@ _build/
 bin/.coursier
 bin/.scalafmt*
 sbt-crossproject/
+.vscode/launch.json
+*.iml

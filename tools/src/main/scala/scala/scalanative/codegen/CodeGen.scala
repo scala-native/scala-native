@@ -14,6 +14,7 @@ object CodeGen {
 
   private final class Platform(target: String) {
     val isWindows = target.contains("indows")
+    val ehWrapperString = if (isWindows) "@\"\01??_7ExceptionWrapper@scalanative@@6B@\"" else "@_ZTIN11scalanative16ExceptionWrapperE"
   }
 
   /** Generate code for given assembly. */
@@ -158,9 +159,7 @@ object CodeGen {
       line("declare i32 @__gxx_personality_v0(...)")
       line("declare i8* @__cxa_begin_catch(i8*)")
       line("declare void @__cxa_end_catch()")
-      if (!platform.isWindows)
-        line(
-          "@_ZTIN11scalanative16ExceptionWrapperE = external constant { i8*, i8*, i8* }")
+      line(s"${platform.ehWrapperString} = external constant { i8*, i8*, i8* }")
     }
 
     def genDefn(defn: Defn): Unit = {
@@ -811,13 +810,8 @@ object CodeGen {
       "personality i8* bitcast (i32 (...)* @__gxx_personality_v0 to i8*)"
     val excrecty = "{ i8*, i32 }"
     def landingpad(platform: Platform) =
-      if (platform.isWindows) "landingpad { i8*, i32 } cleanup"
-      else
-        "landingpad { i8*, i32 } catch i8* bitcast ({ i8*, i8*, i8* }* @_ZTIN11scalanative16ExceptionWrapperE to i8*)"
+        s"landingpad { i8*, i32 } catch i8* bitcast ({ i8*, i8*, i8* }* ${platform.ehWrapperString} to i8*)"
     def typeid(platform: Platform) =
-      if (platform.isWindows)
-        "call i32 @llvm.eh.typeid.for(i8* bitcast ( i32* 123 to i8*))"
-      else
-        "call i32 @llvm.eh.typeid.for(i8* bitcast ({ i8*, i8*, i8* }* @_ZTIN11scalanative16ExceptionWrapperE to i8*))"
+        s"call i32 @llvm.eh.typeid.for(i8* bitcast ({ i8*, i8*, i8* }* ${platform.ehWrapperString} to i8*))"
   }
 }

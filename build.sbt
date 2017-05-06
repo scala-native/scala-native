@@ -376,13 +376,14 @@ lazy val tests =
       //   crossTarget.value),
       sourceGenerators in Compile += Def.task {
         val dir    = sourceDirectory.value
-        val prefix = dir.getAbsolutePath + "/main/scala/"
+        val separator = java.io.File.separator;
+        val prefix = dir.getAbsolutePath + Seq("main","scala").mkString(separator, separator, separator)
         val suites = (dir ** "*Suite.scala").get
           .map { f =>
             f.getAbsolutePath
               .replace(prefix, "")
               .replace(".scala", "")
-              .split("/")
+              .split("/|\\\\")
               .mkString(".")
           }
           .filter(_ != "tests.Suite")
@@ -426,13 +427,14 @@ lazy val benchmarks =
       nativeMode := "release",
       sourceGenerators in Compile += Def.task {
         val dir    = sourceDirectory.value
-        val prefix = dir.getAbsolutePath + "/main/scala/"
+        val separator = java.io.File.separator;
+        val prefix = dir.getAbsolutePath + Seq("main","scala").mkString(separator, separator, separator)
         val benchmarks = (dir ** "*Benchmark.scala").get
           .map { f =>
             f.getAbsolutePath
               .replace(prefix, "")
               .replace(".scala", "")
-              .split("/")
+              .split("/|\\\\")
               .mkString(".")
           }
           .filter(_ != "benchmarks.Benchmark")
