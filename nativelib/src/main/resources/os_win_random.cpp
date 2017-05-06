@@ -1,6 +1,5 @@
-#ifdef _WIN32
-    #include <stdio.h>
-#endif
+#include <stdio.h>
+
 extern "C" {
     // we need to create fake uses of functions (snprintf etc) otherwise it will be stripped from the file
     int scalanative_snprintf( char * s, size_t n, const char * format, va_list args)
