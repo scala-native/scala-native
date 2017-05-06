@@ -15,26 +15,6 @@ extern "C" {
 
 #ifdef _WIN32
     /*
-    int sprintf( char * s, const char * format, ... )
-    {
-        int ret = 0;
-
-        // Declare a va_list type variable
-        //std::va_list myargs;
-
-        // Initialise the va_list variable with the ... after fmt
-        //std::va_start(myargs, format);
-
-        // Forward the '...'
-        //ret = std::snprintf(s, n, format, myargs);
-
-        // Clean up the va_list
-        //std::va_end(myargs);
-
-        return ret;
-    }*/
-    
-    /*
     #include <random>
     std::default_random_engine generator;
     std::uniform_real_distribution<double> distr(0.0,1.0);
