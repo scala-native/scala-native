@@ -3,6 +3,7 @@
 #include <signal.h>
 #include <math.h>
 #include <errno.h>
+#include <time.h>
 
 // This file contains functions that wrap libc
 // built-in macros. We need this because Scala Native
@@ -137,6 +138,10 @@ float scanative_libc_nan() {
 
 int scalanative_libc_math_errhandling() {
     return math_errhandling;
+}
+
+clock_t scalanative_libc_clocks_per_sec() {
+  return CLOCKS_PER_SEC;
 }
 
 int scalanative_math_errno() {
