@@ -264,12 +264,14 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putVals(args)
       putNext(unwind)
 
-    case Op.Load(ty, ptr) =>
+    case Op.Load(ty, ptr, isVolatile) =>
+      assert(!isVolatile, "nir binary format doesn't support volatile loads")
       putInt(T.LoadOp)
       putType(ty)
       putVal(ptr)
 
-    case Op.Store(ty, value, ptr) =>
+    case Op.Store(ty, value, ptr, isVolatile) =>
+      assert(!isVolatile, "nir binary format doesn't support volatile stores")
       putInt(T.StoreOp)
       putType(ty)
       putVal(value)
