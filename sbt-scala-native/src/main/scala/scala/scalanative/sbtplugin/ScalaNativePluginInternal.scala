@@ -159,7 +159,7 @@ object ScalaNativePluginInternal {
             .getOrElse(Seq.empty)
         ("/usr/local/lib" +: libdir).map(s => s"-L$s")
       }
-      libs ++ Seq("-gline-tables-only")//Seq("-mstack-probe-size=16384","-g", "-fstandalone-debug", "-fdebug-macro")
+      libs ++ Seq("-gline-tables-only") //Seq("-mstack-probe-size=16384","-g", "-fstandalone-debug", "-fdebug-macro")
     },
     nativeTarget := {
       val logger = nativeLogger.value
@@ -239,7 +239,7 @@ object ScalaNativePluginInternal {
             val flags = (if (isCppSource)
                            (if (isWindows) Seq("-std=c++14")
                             else Seq("-std=c++11"))
-                         else Seq("-std=c99")) ++ opts
+                         else Seq()) ++ opts
             val compilec = Seq(compiler) ++ flags ++ Seq("-c",
                                                          path,
                                                          "-o",

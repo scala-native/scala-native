@@ -71,26 +71,26 @@ lazy val setUpTestingCompiler = Def.task {
 // to be available without a resolver
 // follow: http://www.scala-sbt.org/0.13/docs/Bintray-For-Plugins.html#Linking+your+package+to+the+sbt+organization
 lazy val bintrayPublishSettings = Seq(
-    bintrayRepository := "sbt-plugins",
-    bintrayOrganization := Some("scala-native")
-  ) ++ publishSettings
+  bintrayRepository := "sbt-plugins",
+  bintrayOrganization := Some("scala-native")
+) ++ publishSettings
 
 lazy val mavenPublishSettings = Seq(
-    publishMavenStyle := true,
-    pomIncludeRepository := { x =>
+  publishMavenStyle := true,
+  pomIncludeRepository := { x =>
     false
   },
-    publishTo := {
+  publishTo := {
     val nexus = "https://oss.sonatype.org/"
     if (version.value.trim.endsWith("SNAPSHOT"))
       Some("snapshots" at nexus + "content/repositories/snapshots")
     else
       Some("releases" at nexus + "service/local/staging/deploy/maven2")
   },
-    publishSnapshot := Def.taskDyn {
+  publishSnapshot := Def.taskDyn {
     val travis = Try(sys.env("TRAVIS")).getOrElse("false") == "true"
     val pr = Try(sys.env("TRAVIS_PULL_REQUEST"))
-        .getOrElse("false") != "false"
+      .getOrElse("false") != "false"
     val branch   = Try(sys.env("TRAVIS_BRANCH")).getOrElse("")
     val snapshot = version.value.trim.endsWith("SNAPSHOT")
 
@@ -107,7 +107,7 @@ lazy val mavenPublishSettings = Seq(
         Def.task()
     }
   }.value,
-    credentials ++= {
+  credentials ++= {
     for {
       realm    <- sys.env.get("MAVEN_REALM")
       domain   <- sys.env.get("MAVEN_DOMAIN")
@@ -117,7 +117,7 @@ lazy val mavenPublishSettings = Seq(
       Credentials(realm, domain, user, password)
     }
   }.toSeq
-  ) ++ publishSettings
+) ++ publishSettings
 
 lazy val publishSettings = Seq(
   publishArtifact in Compile := true,
@@ -382,9 +382,10 @@ lazy val tests =
       // nativeOptimizerReporter := OptimizerReporter.toDirectory(
       //   crossTarget.value),
       sourceGenerators in Compile += Def.task {
-        val dir    = sourceDirectory.value
+        val dir       = sourceDirectory.value
         val separator = java.io.File.separator;
-        val prefix = dir.getAbsolutePath + Seq("main","scala").mkString(separator, separator, separator)
+        val prefix = dir.getAbsolutePath + Seq("main", "scala")
+          .mkString(separator, separator, separator)
         val suites = (dir ** "*Suite.scala").get
           .map { f =>
             f.getAbsolutePath
@@ -433,9 +434,10 @@ lazy val benchmarks =
     .settings(
       nativeMode := "release",
       sourceGenerators in Compile += Def.task {
-        val dir    = sourceDirectory.value
+        val dir       = sourceDirectory.value
         val separator = java.io.File.separator;
-        val prefix = dir.getAbsolutePath + Seq("main","scala").mkString(separator, separator, separator)
+        val prefix = dir.getAbsolutePath + Seq("main", "scala")
+          .mkString(separator, separator, separator)
         val benchmarks = (dir ** "*Benchmark.scala").get
           .map { f =>
             f.getAbsolutePath
