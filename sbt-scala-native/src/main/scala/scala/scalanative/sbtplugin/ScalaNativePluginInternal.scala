@@ -133,9 +133,7 @@ object ScalaNativePluginInternal {
     },
     nativeCompileOptions := {
       val includes = {
-        val includedir =
-          Try(Process("llvm-config --includedir").lines_!.toSeq)
-            .getOrElse(Seq.empty)
+        val includedir = llvmConfig(nativeClang.value, "--includedir")
         ("/usr/local/include" +: includedir).map(s => s"-I$s")
       }
       includes :+ "-Qunused-arguments" :+
@@ -146,9 +144,7 @@ object ScalaNativePluginInternal {
     },
     nativeLinkingOptions := {
       val libs = {
-        val libdir =
-          Try(Process("llvm-config --libdir").lines_!.toSeq)
-            .getOrElse(Seq.empty)
+        val libdir = llvmConfig(nativeClang.value, "--libdir")
         ("/usr/local/lib" +: libdir).map(s => s"-L$s")
       }
       libs
@@ -469,7 +465,7 @@ object ScalaNativePluginInternal {
     if (!clangIsRecentEnough) {
       throw new MessageOnlyException(
         s"No recent installation of clang found " +
-          s"at $pathToClangBinary.\nSee http://scala-native.readthedocs.io" +
+          s"at $pathToClangBinary.\nSee http://www.scala-native.org" +
           s"/en/latest/user/setup.html for details.")
     }
   }
@@ -488,6 +484,19 @@ object ScalaNativePluginInternal {
     case value =>
       throw new MessageOnlyException(
         "nativeGC can be either \"none\" or \"boehm\", not: " + value)
+  }
+
+  private def llvmConfig(clang: File, option: String): Seq[String] = {
+    val tools =
+      Seq(clang.getName.replace("clang-", "llvm-config-"), "llvm-config")
+        .map(name => new File(clang.getParentFile, name))
+    val result =
+      for {
+        llvmConfig <- tools.find(_.exists)
+        dirs       <- Try(Seq(llvmConfig.toString, option).lines_!).toOption
+      } yield dirs.toList
+
+    result.getOrElse(Seq.empty)
   }
 
   /**
