@@ -134,6 +134,24 @@ Store a field    ``ptr->name = value``    ``!ptr._N = value``
 Where ``N`` is the index of the field ``name`` in the struct.
 See `Memory layout types`_ for details.
 
+Function pointers
+`````````````````
+
+It is possible to use external functions that take function pointers:
+
+.. code-block:: scala
+
+    // void test(char (*f)(void));
+    def test(f: CFunctionPtr1[CString, Unit]): Unit = native.extern
+
+To pass a Scala function to ``CFunctionPtrN``, you need to use the conversion
+function ``CFunctionPtr.fromFunctionN()``:
+
+.. code-block:: scala
+
+    def f(s: CString): Unit = ???
+    def g(): Unit = test(CFunctionPtr.fromFunction1(f))
+
 Memory management
 `````````````````
 
