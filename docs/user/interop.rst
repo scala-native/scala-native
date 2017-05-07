@@ -18,7 +18,7 @@ Extern objects are simple wrapper objects that demarcate scopes where methods
 are treated as their native C ABI-friendly counterparts. They are
 roughly analogous to header files with top-level function declarations in C.
 
-For example to call C's ``malloc`` one might declare it as following:
+For example, to call C's ``malloc`` one might declare it as following:
 
 .. code-block:: scala
 
@@ -29,9 +29,9 @@ For example to call C's ``malloc`` one might declare it as following:
 
 ``native.extern`` on the right hand side of the method definition signifies
 that the body of the method is defined elsewhere in a native library that is
-available on the library path (see `Linking with native libraries`_.) Signature
-of the extern function must match the signature of the original C function
-(see `Finding the right signature`_.)
+available on the library path (see `Linking with native libraries`_). The
+signature of the external function must match the signature of the original C
+function (see `Finding the right signature`_).
 
 Finding the right signature
 ```````````````````````````
@@ -78,20 +78,37 @@ C Type                    Scala Type
 Linking with native libraries
 `````````````````````````````
 
-In C/C++ one has to typically pass an additional ``-l mylib`` flag to
-dynamically link with a library. In Scala Native one can annotate libraries
-to link with using ``@native.link`` annotation:
+C compilers typically require to pass an additional ``-l mylib`` flag to
+dynamically link with a library. In Scala Native, one can annotate libraries to
+link with using the ``@native.link`` annotation. As in C, it takes the library
+name without the ``lib`` prefix.
 
 .. code-block:: scala
 
    @native.link("mylib")
    @native.extern
    object mylib {
-     ...
+     def f(): Unit = native.extern
    }
 
 Whenever any of the members of ``mylib`` object are reachable, the Scala Native
 linker will automatically link with the corresponding native library.
+
+It is possible to rename functions using the ``@name`` annotation. Its use is
+recommended to enforce the Scala naming conventions in bindings:
+
+.. code-block:: scala
+
+    import scala.scalanative.native._
+    @link("uv")
+    @extern
+    object uv {
+      @name("uv_uptime")
+      def uptime(result: Ptr[CDouble]): Int = extern
+    }
+
+If a library has multiple components, you could split the bindings into separate
+objects as it is permitted to use the same ``@link`` annotation more than once.
 
 Variadic functions
 ``````````````````
