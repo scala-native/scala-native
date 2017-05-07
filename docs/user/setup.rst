@@ -3,27 +3,25 @@
 Environment setup
 =================
 
-This is what you will be doing, in a nutshell:
+Scala Native has the following system requirements:
 
-* installation of sbt
-* installation of LLVM and Clang
-* installation of Boehm GC
+* Java 8 or later
+* sbt 0.13.15
+* LLVM
+* Boehm GC
 
 Installing sbt
 --------------
 
 Please refer to `this link <http://www.scala-sbt.org/release/docs/Setup.html>`_
-for instructions for your OS.
+for instructions for your operating system.
 
-Please note that you'll need Java 8 or more recent to use the Scala Native
-toolchain.
+Installing LLVM and Boehm GC
+----------------------------
 
-Installing LLVM, Clang and Boehm GC
------------------------------------
-
-Boehm GC and LLVM (that includes Clang) are Scala Native's only external
-dependencies. Here are install instructions for a number of operating
-systems Scala Native has been used with:
+LLVM and Boehm GC are Scala Native's only external dependencies. Here are
+installation instructions for a number of operating systems Scala Native has
+been used with:
 
 **Ubuntu**
 ::
