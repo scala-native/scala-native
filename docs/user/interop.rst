@@ -45,35 +45,35 @@ C Type                    Scala Type
 ``void``                  ``Unit``
 ``bool``                  ``native.CBool``
 ``char``, ``signed char`` ``native.CChar``
-``unsigned char``         ``native.CUnsignedChar`` (1)
+``unsigned char``         ``native.CUnsignedChar`` [1_]
 ``short``                 ``native.CShort``
-``unsigned short``        ``native.CUnsignedShort`` (1)
+``unsigned short``        ``native.CUnsignedShort`` [1_]
 ``int``                   ``native.CInt``
-``unsigned int``          ``native.CUnsignedInt`` (1)
+``unsigned int``          ``native.CUnsignedInt`` [1_]
 ``long``                  ``native.CLong``
-``unsigned long``         ``native.CUnsignedLong`` (1)
+``unsigned long``         ``native.CUnsignedLong`` [1_]
 ``long long``             ``native.CLongLong``
-``unsigned long long``    ``native.CUnsignedLongLong`` (1)
+``unsigned long long``    ``native.CUnsignedLongLong`` [1_]
 ``size_t``                ``native.CSize``
-``ptrdiff_t``             ``native.CPtrDiff`` (2)
+``ptrdiff_t``             ``native.CPtrDiff`` [2_]
 ``wchar_t``               ``native.CWideChar``
 ``char16_t``              ``native.CChar16``
 ``char32_t``              ``native.CChar32``
 ``float``                 ``native.CFloat``
 ``double``                ``native.CDouble``
-``void*``                 ``native.Ptr[Byte]`` (2)
-``int*``                  ``native.Ptr[native.CInt]`` (2)
-``char*``                 ``native.CString`` (2) (3)
-``int (*)(int)``          ``native.CFunctionPtr1[native.CInt, native.CInt]`` (2) (4)
-``struct { int x, y; }*`` ``native.Ptr[native.CStruct2[native.CInt, native.CInt]]`` (2) (5)
+``void*``                 ``native.Ptr[Byte]`` [2_]
+``int*``                  ``native.Ptr[native.CInt]`` [2_]
+``char*``                 ``native.CString`` [2_] [3_]
+``int (*)(int)``          ``native.CFunctionPtr1[native.CInt, native.CInt]`` [2_] [4_]
+``struct { int x, y; }*`` ``native.Ptr[native.CStruct2[native.CInt, native.CInt]]`` [2_] [5_]
 ``struct { int x, y; }``  Not supported
 ========================= =========================
 
-(1) See `Unsigned integer types`_.
-(2) See `Pointer types`_.
-(3) See `Byte strings`_.
-(4) See `Function pointers`_.
-(5) See `Memory layout types`_.
+.. [1] See `Unsigned integer types`_.
+.. [2] See `Pointer types`_.
+.. [3] See `Byte strings`_.
+.. [4] See `Function pointers`_.
+.. [5] See `Memory layout types`_.
 
 Linking with native libraries
 `````````````````````````````
