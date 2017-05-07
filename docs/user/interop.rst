@@ -39,35 +39,35 @@ Finding the right signature
 To find a correct signature for a given C function one must provide an
 equivalent Scala type for each of the arguments:
 
-===================== =========================
-C Type                Scala Type
-===================== =========================
-void                  Unit
-bool                  native.CBool
-char, signed char     native.CChar
-unsigned char         native.CUnsignedChar (1)
-short                 native.CShort
-unsigned short        native.CUnsignedShort (1)
-int                   native.CInt
-unsigned int          native.CUnsignedInt (1)
-long                  native.CLong
-unsigned long         native.CUnsignedLong (1)
-long long             native.CLongLong
-unsigned long long    native.CUnsignedLongLong (1)
-size_t                native.CSize
-ptrdiff_t             native.CPtrDiff (2)
-wchar_t               native.CWideChar
-char16_t              native.CChar16
-char32_t              native.CChar32
-float                 native.CFloat
-double                native.CDouble
-void*                 native.Ptr[Byte] (2)
-int*                  native.Ptr[native.CInt] (2)
-char*                 native.CString (2) (3)
-int (\*)(int)         native.CFunctionPtr1[native.CInt, native.CInt] (2) (4)
-struct { int x, y; }* native.Ptr[native.CStruct2[native.CInt, native.CInt]] (2) (5)
-struct { int x, y; }  Not supported
-===================== =========================
+========================= =========================
+C Type                    Scala Type
+========================= =========================
+``void``                  ``Unit``
+``bool``                  ``native.CBool``
+``char``, ``signed char`` ``native.CChar``
+``unsigned char``         ``native.CUnsignedChar`` (1)
+``short``                 ``native.CShort``
+``unsigned short``        ``native.CUnsignedShort`` (1)
+``int``                   ``native.CInt``
+``unsigned int``          ``native.CUnsignedInt`` (1)
+``long``                  ``native.CLong``
+``unsigned long``         ``native.CUnsignedLong`` (1)
+``long long``             ``native.CLongLong``
+``unsigned long long``    ``native.CUnsignedLongLong`` (1)
+``size_t``                ``native.CSize``
+``ptrdiff_t``             ``native.CPtrDiff`` (2)
+``wchar_t``               ``native.CWideChar``
+``char16_t``              ``native.CChar16``
+``char32_t``              ``native.CChar32``
+``float``                 ``native.CFloat``
+``double``                ``native.CDouble``
+``void*``                 ``native.Ptr[Byte]`` (2)
+``int*``                  ``native.Ptr[native.CInt]`` (2)
+``char*``                 ``native.CString`` (2) (3)
+``int (*)(int)``          ``native.CFunctionPtr1[native.CInt, native.CInt]`` (2) (4)
+``struct { int x, y; }*`` ``native.Ptr[native.CStruct2[native.CInt, native.CInt]]`` (2) (5)
+``struct { int x, y; }``  Not supported
+========================= =========================
 
 (1) See `Unsigned integer types`_.
 (2) See `Pointer types`_.
