@@ -39,7 +39,7 @@ FreeBSD::
 
     $ pkg install llvm38 boehm-gc libunwind re2
 
-nix/nixOS::
+Nix/NixOS::
 
     $ wget https://raw.githubusercontent.com/scala-native/scala-native/master/bin/scala-native.nix
 
