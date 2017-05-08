@@ -61,7 +61,7 @@ class UnixFileSystemProvider extends FileSystemProvider {
   override def newDirectoryStream(
       dir: Path,
       filter: DirectoryStream.Filter[_ >: Path]): DirectoryStream[Path] =
-    Files.newDirectoryStream(dir, filter)
+    new DirectoryStreamImpl[Path](Files.list(dir), filter)
 
   override def createDirectory(dir: Path,
                                attrs: Array[FileAttribute[_]]): Unit =

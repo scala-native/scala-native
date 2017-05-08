@@ -363,7 +363,7 @@ object Files {
   def newDirectoryStream(
       dir: Path,
       filter: DirectoryStream.Filter[_ >: Path]): DirectoryStream[Path] =
-    new DirectoryStreamImpl[Path](_list(dir), filter)
+    dir.getFileSystem().provider().newDirectoryStream(dir, filter)
 
   def newDirectoryStream(dir: Path, glob: String): DirectoryStream[Path] = {
     val filter = new DirectoryStream.Filter[Path] {

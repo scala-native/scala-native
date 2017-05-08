@@ -2,14 +2,20 @@ package java.nio.file
 
 import scala.collection.{Iterator => SIterator}
 import java.util.Iterator
+import java.util.function.Predicate
+import java.util.stream.Stream
 
-private[file] class DirectoryStreamImpl[T](
-    stream: Stream[T],
-    filter: DirectoryStream.Filter[_ >: T])
+class DirectoryStreamImpl[T](stream: Stream[T],
+                             filter: DirectoryStream.Filter[_ >: T])
     extends DirectoryStream[T] {
   private var iteratorCalled: Boolean = false
   private var closed: Boolean         = false
-  private val underlying              = stream.filter(filter.accept).iterator
+  private val underlying = {
+    val predicate = new Predicate[T] {
+      override def test(t: T): Boolean = filter.accept(t)
+    }
+    stream.filter(predicate).iterator
+  }
 
   override def iterator(): Iterator[T] =
     if (closed || iteratorCalled)
