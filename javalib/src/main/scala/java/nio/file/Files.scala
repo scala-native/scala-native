@@ -6,7 +6,6 @@ import java.io.{
   BufferedReader,
   BufferedWriter,
   File,
-  FileInputStream,
   FileOutputStream,
   InputStream,
   InputStreamReader,
@@ -374,10 +373,8 @@ object Files {
     newDirectoryStream(dir, filter)
   }
 
-  def newInputStream(path: Path, options: Array[OpenOption]): InputStream = {
-    // options are ignored.
-    new FileInputStream(path.toFile)
-  }
+  def newInputStream(path: Path, options: Array[OpenOption]): InputStream =
+    path.getFileSystem().provider().newInputStream(path, options)
 
   def newOutputStream(path: Path, _options: Array[OpenOption]): OutputStream = {
     val options =

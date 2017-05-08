@@ -6,7 +6,7 @@ import java.util.concurrent.ExecutorService
 
 import java.net.URI
 
-import java.io.{InputStream, OutputStream}
+import java.io.{FileInputStream, InputStream, OutputStream}
 import java.nio.ByteBuffer
 import java.nio.file.attribute.{
   BasicFileAttributes,
@@ -37,7 +37,8 @@ abstract class FileSystemProvider protected () {
     throw new UnsupportedOperationException()
 
   def newInputStream(path: Path, options: Array[OpenOption]): InputStream =
-    Files.newInputStream(path, options)
+    // Options are ignored, it looks like that's what Oracle JDK 8 does.
+    new FileInputStream(path.toFile)
 
   def newOutputStream(path: Path, options: Array[OpenOption]): OutputStream =
     Files.newOutputStream(path, options)
