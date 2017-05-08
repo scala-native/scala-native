@@ -1,8 +1,6 @@
 package scala.scalanative
 package sbtplugin
 
-import util._
-
 import sbtcrossproject.CrossPlugin.autoImport._
 import ScalaNativePlugin.autoImport._
 
@@ -12,13 +10,11 @@ import scalanative.io.VirtualDirectory
 import scalanative.util.{Scope => ResourceScope}
 
 import sbt._, Keys._, complete.DefaultParsers._
-import xsbti.{Maybe, Reporter, Position, Severity, Problem}
-import KeyRanks.DTask
 
 import scala.util.Try
 
 import System.{lineSeparator => nl}
-import java.io.File
+import java.io.ByteArrayInputStream
 
 object ScalaNativePluginInternal {
 
