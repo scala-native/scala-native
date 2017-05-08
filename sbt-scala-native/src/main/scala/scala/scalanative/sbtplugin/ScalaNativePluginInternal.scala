@@ -250,7 +250,7 @@ object ScalaNativePluginInternal {
             logger.running(compilec)
             val result = Process(compilec, cwd) ! logger
             if (result != 0) {
-              println("Failed to compile native library runtime code.")
+              sys.error("Failed to compile native library runtime code.")
             }
         }
       }
