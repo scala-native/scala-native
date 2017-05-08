@@ -87,7 +87,7 @@ abstract class FileSystemProvider protected () {
   def newByteChannel(path: Path,
                      options: Set[_ <: OpenOption],
                      attrs: Array[FileAttribute[_]]): SeekableByteChannel =
-    Files.newByteChannel(path, options, attrs)
+    FileChannel.open(path, options, attrs)
 
   def newDirectoryStream(
       dir: Path,

@@ -344,13 +344,16 @@ object Files {
     newBufferedWriter(path, StandardCharsets.UTF_8, options)
 
   def newByteChannel(path: Path,
-                     options: Array[OpenOption]): SeekableByteChannel =
-    FileChannel.open(path, options)
+                     _options: Array[OpenOption]): SeekableByteChannel = {
+    val options = new HashSet[OpenOption]()
+    _options.foreach(options.add _)
+    newByteChannel(path, options, Array.empty)
+  }
 
   def newByteChannel(path: Path,
                      options: Set[_ <: OpenOption],
                      attrs: Array[FileAttribute[_]]): SeekableByteChannel =
-    FileChannel.open(path, options, attrs)
+    path.getFileSystem().provider().newByteChannel(path, options, attrs)
 
   def newDirectoryStream(dir: Path): DirectoryStream[Path] = {
     val filter = new DirectoryStream.Filter[Path] {
