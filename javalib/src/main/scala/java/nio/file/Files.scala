@@ -376,41 +376,8 @@ object Files {
   def newInputStream(path: Path, options: Array[OpenOption]): InputStream =
     path.getFileSystem().provider().newInputStream(path, options)
 
-  def newOutputStream(path: Path, _options: Array[OpenOption]): OutputStream = {
-    val options =
-      if (_options.isEmpty)
-        Array(StandardOpenOption.CREATE,
-              StandardOpenOption.TRUNCATE_EXISTING,
-              StandardOpenOption.WRITE)
-      else _options
-
-    if (options.contains(StandardOpenOption.READ)) {
-      throw new IllegalArgumentException("READ not allowed")
-    }
-
-    val exists = Files.exists(path, Array.empty)
-
-    if (!exists && !options.contains(StandardOpenOption.CREATE_NEW) && !options
-          .contains(StandardOpenOption.CREATE)) {
-      throw new NoSuchFileException(path.toString)
-    }
-
-    if ((options.contains(StandardOpenOption.CREATE_NEW) || options.contains(
-          StandardOpenOption.CREATE)) && !exists) {
-      Files.createFile(path, Array.empty)
-    }
-
-    if (options.contains(StandardOpenOption.CREATE_NEW) && exists) {
-      throw new FileAlreadyExistsException(path.toString)
-    }
-
-    if (exists && options.contains(StandardOpenOption.TRUNCATE_EXISTING)) {
-      unistd.truncate(toCString(path.toString), 0L)
-    }
-
-    val append = options.contains(StandardOpenOption.APPEND)
-    new FileOutputStream(path.toFile, append)
-  }
+  def newOutputStream(path: Path, options: Array[OpenOption]): OutputStream =
+    path.getFileSystem().provider().newOutputStream(path, options)
 
   def notExists(path: Path, options: Array[LinkOption]): Boolean =
     !exists(path, options)
@@ -632,7 +599,16 @@ object Files {
     start
   }
 
-  def write(path: Path, bytes: Array[Byte], options: Array[OpenOption]): Path = {
+  def write(path: Path,
+            bytes: Array[Byte],
+            _options: Array[OpenOption]): Path = {
+    val options =
+      if (_options.isEmpty)
+        Array[OpenOption](StandardOpenOption.CREATE,
+                          StandardOpenOption.TRUNCATE_EXISTING,
+                          StandardOpenOption.WRITE)
+      else _options
+
     val out = newOutputStream(path, options)
     out.write(bytes)
     out.close()
@@ -642,7 +618,13 @@ object Files {
   def write(path: Path,
             lines: Iterable[_ <: CharSequence],
             cs: Charset,
-            options: Array[OpenOption]): Path = {
+            _options: Array[OpenOption]): Path = {
+    val options =
+      if (_options.isEmpty)
+        Array[OpenOption](StandardOpenOption.CREATE,
+                          StandardOpenOption.TRUNCATE_EXISTING,
+                          StandardOpenOption.WRITE)
+      else _options
     val writer = newBufferedWriter(path, cs, options)
     val it     = lines.iterator
     while (it.hasNext()) {

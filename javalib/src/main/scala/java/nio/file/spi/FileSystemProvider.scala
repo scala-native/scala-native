@@ -36,7 +36,10 @@ abstract class FileSystemProvider protected () {
   def newFileSystem(path: Path, env: Map[String, _]): FileSystem =
     throw new UnsupportedOperationException()
 
-  def newInputStream(path: Path, options: Array[OpenOption]): InputStream = {
+  def newInputStream(path: Path, _options: Array[OpenOption]): InputStream = {
+    val options =
+      if (_options.isEmpty) Array[OpenOption](StandardOpenOption.READ)
+      else _options
     val channel = Files.newByteChannel(path, options)
     new InputStream {
       private val buffer = ByteBuffer.allocate(1)
@@ -49,8 +52,25 @@ abstract class FileSystemProvider protected () {
     }
   }
 
-  def newOutputStream(path: Path, options: Array[OpenOption]): OutputStream =
-    Files.newOutputStream(path, options)
+  def newOutputStream(path: Path, _options: Array[OpenOption]): OutputStream = {
+    val options =
+      if (_options.isEmpty)
+        Array[OpenOption](StandardOpenOption.CREATE,
+                          StandardOpenOption.TRUNCATE_EXISTING,
+                          StandardOpenOption.WRITE)
+      else _options
+    val channel = Files.newByteChannel(path, options)
+    new OutputStream {
+      private val buffer = ByteBuffer.allocate(1)
+      override def write(b: Int): Unit = {
+        buffer.position(0)
+        buffer.put(0, b.toByte)
+        channel.write(buffer)
+      }
+      override def close(): Unit =
+        channel.close()
+    }
+  }
 
   def newFileChannel(path: Path,
                      options: Set[_ <: OpenOption],

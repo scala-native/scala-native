@@ -3,6 +3,7 @@ package java.nio.channels
 import java.nio.file.{
   FileAlreadyExistsException,
   Files,
+  NoSuchFileException,
   OpenOption,
   Path,
   StandardOpenOption
@@ -29,7 +30,7 @@ final class FileChannelImpl(path: Path,
 
   override protected def implCloseChannel(): Unit = {
     raf.close()
-    Files.delete(path)
+    if (deleteOnClose) Files.delete(path)
   }
 
   override def map(mode: FileChannel.MapMode,
@@ -143,8 +144,12 @@ private object FileChannelImpl {
     val mode = new StringBuilder("r")
     if (options.contains(WRITE) || options.contains(APPEND)) mode.append("w")
 
-    if (options.contains(WRITE) && options.contains(CREATE_NEW) && Files
-          .exists(path, Array.empty)) {
+    if (!Files.exists(path, Array.empty) && !options.contains(CREATE) && !options
+          .contains(CREATE_NEW)) {
+      throw new NoSuchFileException(path.toString)
+    }
+
+    if (options.contains(CREATE_NEW) && Files.exists(path, Array.empty)) {
       throw new FileAlreadyExistsException(path.toString)
     }
 
@@ -162,9 +167,15 @@ private object FileChannelImpl {
       mode.append("s")
     }
 
+    if (Files.exists(path, Array.empty) && options.contains(TRUNCATE_EXISTING) && !options
+          .contains(WRITE)) {
+      Files.delete(path)
+      Files.createFile(path, attrs)
+    }
+
     val raf = new RandomAccessFile(path.toFile, mode.toString)
 
-    if (options.contains(WRITE) && options.contains(TRUNCATE_EXISTING)) {
+    if (options.contains(TRUNCATE_EXISTING) && options.contains(WRITE)) {
       raf.setLength(0L)
     }
 

@@ -3,14 +3,18 @@ package java.io
 import scala.scalanative.native.{stdio, toCString}
 import scala.scalanative.posix.{fcntl, stat, unistd}
 
-class RandomAccessFile private (file: File, fd: FileDescriptor, flush: Boolean)
+class RandomAccessFile private (file: File,
+                                fd: FileDescriptor,
+                                flush: Boolean,
+                                mode: String)
     extends DataOutput
     with DataInput
     with Closeable {
   def this(file: File, mode: String) =
     this(file,
          RandomAccessFile.fileDescriptor(file, mode),
-         RandomAccessFile.flush(mode))
+         RandomAccessFile.flush(mode),
+         mode)
   def this(name: String, mode: String) = this(new File(name), mode)
 
   private var closed: Boolean = false
@@ -105,11 +109,16 @@ class RandomAccessFile private (file: File, fd: FileDescriptor, flush: Boolean)
   def seek(pos: Long): Unit =
     unistd.lseek(fd.fd, pos, stdio.SEEK_SET)
 
-  def setLength(newLength: Long): Unit = {
-    val currentPosition = getFilePointer()
-    unistd.ftruncate(fd.fd, newLength)
-    if (currentPosition > newLength) seek(newLength)
-  }
+  def setLength(newLength: Long): Unit =
+    if (!mode.contains("w")) {
+      throw new IOException("Invalid argument")
+    } else {
+      val currentPosition = getFilePointer()
+      if (unistd.ftruncate(fd.fd, newLength) != 0) {
+        throw new IOException()
+      }
+      if (currentPosition > newLength) seek(newLength)
+    }
 
   override def skipBytes(n: Int): Int =
     if (n <= 0) 0
