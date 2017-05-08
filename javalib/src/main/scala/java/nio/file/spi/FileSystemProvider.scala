@@ -36,9 +36,18 @@ abstract class FileSystemProvider protected () {
   def newFileSystem(path: Path, env: Map[String, _]): FileSystem =
     throw new UnsupportedOperationException()
 
-  def newInputStream(path: Path, options: Array[OpenOption]): InputStream =
-    // Options are ignored, it looks like that's what Oracle JDK 8 does.
-    new FileInputStream(path.toFile)
+  def newInputStream(path: Path, options: Array[OpenOption]): InputStream = {
+    val channel = Files.newByteChannel(path, options)
+    new InputStream {
+      private val buffer = ByteBuffer.allocate(1)
+      override def read(): Int = {
+        buffer.position(0)
+        val read = channel.read(buffer)
+        if (read <= 0) read
+        else buffer.get(0) & 0xFF
+      }
+    }
+  }
 
   def newOutputStream(path: Path, options: Array[OpenOption]): OutputStream =
     Files.newOutputStream(path, options)
