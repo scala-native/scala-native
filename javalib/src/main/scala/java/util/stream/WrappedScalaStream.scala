@@ -1,7 +1,7 @@
 package java.util.stream
 
 import java.util.Iterator
-import java.util.function.Function
+import java.util.function.{Function, Predicate}
 import scala.collection.immutable.{Stream => SStream}
 
 class WrappedScalaStream[T](private val underlying: SStream[T],
@@ -22,6 +22,9 @@ class WrappedScalaStream[T](private val underlying: SStream[T],
     val streams: Seq[Stream[R]] = underlying.map(v => mapper(v))
     new CompositeStream(streams, closeHandler)
   }
+
+  override def filter(pred: Predicate[_ >: T]): Stream[T] =
+    new WrappedScalaStream(underlying.filter(pred.test), closeHandler)
 }
 
 object WrappedScalaStream {
@@ -82,6 +85,11 @@ private final class CompositeStream[T](substreams: Seq[Stream[T]],
       mapper: Function[_ >: T, _ <: Stream[_ <: R]]): Stream[R] = {
     val newStreams: Seq[Stream[R]] =
       substreams.map((js: Stream[T]) => js.flatMap[R](mapper))
+    new CompositeStream(newStreams, closeHandler)
+  }
+
+  override def filter(pred: Predicate[_ >: T]): Stream[T] = {
+    val newStreams: Seq[Stream[T]] = substreams.map(s => s.filter(pred))
     new CompositeStream(newStreams, closeHandler)
   }
 }

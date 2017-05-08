@@ -1,11 +1,12 @@
 package java.util.stream
 
-import java.util.function.Function
+import java.util.function.{Function, Predicate}
 
 import scala.collection.immutable.{Stream => SStream}
 
 trait Stream[+T] extends BaseStream[T, Stream[T]] {
   def flatMap[R](mapper: Function[_ >: T, _ <: Stream[_ <: R]]): Stream[R]
+  def filter(pred: Predicate[_ >: T]): Stream[T]
 }
 
 object Stream {
