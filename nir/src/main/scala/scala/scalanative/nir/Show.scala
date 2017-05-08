@@ -55,6 +55,10 @@ object Show {
         str("alwaysinline")
       case Attr.Dyn =>
         str("dyn")
+      case Attr.Align(value) =>
+        str("align(")
+        str(value)
+        str(")")
       case Attr.Pure =>
         str("pure")
       case Attr.Extern =>
