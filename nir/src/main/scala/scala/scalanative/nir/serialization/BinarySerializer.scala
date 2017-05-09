@@ -9,6 +9,11 @@ import nir.serialization.{Tags => T}
 final class BinarySerializer(buffer: ByteBuffer) {
   import buffer._
 
+  // Things to change in next binary-breaking release:
+  // 1. Val.Null should have its own tag, not encoded via Val.Zero(Type.Ptr).
+  // 2. Volatile Op.{Load, Store} should become serializable.
+  // 3. Attr.Align should become serializable;
+
   final def serialize(defns: Seq[Defn]): Unit = {
     val names     = defns.map(_.name)
     val positions = mutable.UnrolledBuffer.empty[Int]
@@ -66,6 +71,9 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Attr.AlwaysInline => putInt(T.AlwaysInlineAttr)
 
     case Attr.Dyn => putInt(T.DynAttr)
+
+    case Attr.Align(_) =>
+      assert(false, "alignment attribute is not serializable")
 
     case Attr.Pure        => putInt(T.PureAttr)
     case Attr.Extern      => putInt(T.ExternAttr)
@@ -264,12 +272,14 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putVals(args)
       putNext(unwind)
 
-    case Op.Load(ty, ptr) =>
+    case Op.Load(ty, ptr, isVolatile) =>
+      assert(!isVolatile, "volatile loads are not serializable")
       putInt(T.LoadOp)
       putType(ty)
       putVal(ptr)
 
-    case Op.Store(ty, value, ptr) =>
+    case Op.Store(ty, value, ptr, isVolatile) =>
+      assert(!isVolatile, "volatile stores are not serializable")
       putInt(T.StoreOp)
       putType(ty)
       putVal(value)
