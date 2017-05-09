@@ -22,6 +22,13 @@ struct timezone
 
 const int CLOCK_MONOTONIC = 0;
 
+/*
+* The part of the code below was taken from:
+* http://stackoverflow.com/questions/5404277/porting-clock-gettime-to-windows/5404467#5404467
+* By Carl Staelin
+* This code he wrote as part of a port of lmbench to Windows
+*/
+
 LARGE_INTEGER getFILETIMEoffset()
 {
     SYSTEMTIME s;
@@ -79,6 +86,12 @@ int clock_gettime(int X, struct timespec *tv)
     tv->tv_nsec = t.QuadPart % 1000000;
     return (0);
 }
+
+/*
+*  The code below with modifications was taken from:
+*  https://gist.github.com/ikhramts/717651/6104436a367667220432ec3a4993d9e9c7fcfd60
+*
+*/
 
 int gettimeofday(struct timeval *tv, struct timezone *tz)
 {

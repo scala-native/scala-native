@@ -383,7 +383,7 @@ lazy val tests =
       //   crossTarget.value),
       sourceGenerators in Compile += Def.task {
         val dir       = sourceDirectory.value
-        val separator = java.io.File.separator;
+        val separator = java.io.File.separator
         val prefix = dir.getAbsolutePath + Seq("main", "scala")
             .mkString(separator, separator, separator)
         val suites = (dir ** "*Suite.scala").get
@@ -391,7 +391,8 @@ lazy val tests =
             f.getAbsolutePath
               .replace(prefix, "")
               .replace(".scala", "")
-              .split("/|\\\\")
+              .split(java.util.regex.Matcher.quoteReplacement(
+                System.getProperty("file.separator")))
               .mkString(".")
           }
           .filter(_ != "tests.Suite")
@@ -435,7 +436,7 @@ lazy val benchmarks =
       nativeMode := "release",
       sourceGenerators in Compile += Def.task {
         val dir       = sourceDirectory.value
-        val separator = java.io.File.separator;
+        val separator = java.io.File.separator
         val prefix = dir.getAbsolutePath + Seq("main", "scala")
             .mkString(separator, separator, separator)
         val benchmarks = (dir ** "*Benchmark.scala").get
@@ -443,7 +444,8 @@ lazy val benchmarks =
             f.getAbsolutePath
               .replace(prefix, "")
               .replace(".scala", "")
-              .split("/|\\\\")
+              .split(java.util.regex.Matcher.quoteReplacement(
+                System.getProperty("file.separator")))
               .mkString(".")
           }
           .filter(_ != "benchmarks.Benchmark")

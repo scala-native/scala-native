@@ -31,8 +31,12 @@ object Path {
         .filter(_.path.toString.endsWith(".nir"))
         .map { file =>
           val relative = file.path.toString
-          val parts    = relative.replace(".nir", "").split("/|\\\\").toSeq
-          val name     = Global.Top(parts.filter(_ != "").mkString("."))
+          val parts = relative
+            .replace(".nir", "")
+            .split(java.util.regex.Matcher.quoteReplacement(
+              System.getProperty("file.separator")))
+            .toSeq
+          val name = Global.Top(parts.filter(_ != "").mkString("."))
 
           (name -> new BinaryDeserializer(file.contents))
         }

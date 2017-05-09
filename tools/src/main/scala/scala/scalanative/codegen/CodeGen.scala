@@ -277,7 +277,7 @@ object CodeGen {
       genBlockHeader()
       indent()
       if (platform.isWindows && block.isExceptionHandler && block.pred.isEmpty) {
-        newline();
+        newline()
         str(s"${platform.ehVar} = alloca ${platform.ehClassName}*")
       }
       genBlockPrologue(block)

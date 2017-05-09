@@ -516,14 +516,13 @@ object ScalaNativePluginInternal {
                               nativelib: File) = {
     val gc = garbageCollector(gcName)
     // Directory in nativelib containing the garbage collectors
-    val garbageCollectorsDir =
-      Seq("lib", "gc").mkString("", java.io.File.separator, "")
-    val specificDir = Seq(s"$garbageCollectorsDir", s"${gc.dir}")
-      .mkString("", java.io.File.separator, "")
-
+    val garbageCollectorsDir = (new File("lib", "gc")).toPath.toString
+    val specificDir =
+      (new File(s"$garbageCollectorsDir", s"${gc.dir}")).toPath.toString
     def isOtherGC(path: String, nativelib: File) = {
-      val nativeGCPath = nativelib.toPath.resolve(garbageCollectorsDir)
-      path.contains(nativeGCPath.toString) && !path.contains(specificDir)
+      val nativeGCPath =
+        nativelib.toPath.resolve(garbageCollectorsDir).toString
+      path.contains(nativeGCPath) && !path.contains(specificDir)
     }
 
     files.filterNot(f => isOtherGC(f.getPath().toString, nativelib))
