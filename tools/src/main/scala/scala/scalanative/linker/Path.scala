@@ -33,8 +33,7 @@ object Path {
           val relative = file.path.toString
           val parts = relative
             .replace(".nir", "")
-            .split(java.util.regex.Matcher.quoteReplacement(
-              System.getProperty("file.separator")))
+            .split("/|\\\\") // has both slashes on windows
             .toSeq
           val name = Global.Top(parts.filter(_ != "").mkString("."))
 

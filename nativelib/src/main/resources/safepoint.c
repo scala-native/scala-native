@@ -1,7 +1,12 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/mman.h>
+#ifndef _WIN32
+    #include <sys/mman.h>
+#else
+    #include "os_win_mman.h"
+    #include "os_win_signal.h"
+#endif
 
 extern unsigned char scalanative_safepoint_trigger[4096] __attribute__((aligned(4096)));
 
