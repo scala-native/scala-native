@@ -1,28 +1,19 @@
-#include <stdio.h>
+/*
+* Copyright (c) 1993 Martin Birgmeier
+* All rights reserved.
+*
+* You may redistribute unmodified or modified versions of this source
+* code provided that the above copyright notice and this and the
+* following conditions are retained.
+*
+* This software is provided ``as is'', and comes with no warranties
+* of any kind. I shall in no event be liable for anything that happens
+* to anyone/anything when using this software.
+*/
 
 extern "C" {
-    // we need to create fake uses of functions (snprintf etc) otherwise it will be stripped from the file
-    int scalanative_snprintf( char * s, size_t n, const char * format, va_list args)
-    {
-        return snprintf(s, n, format, args);
-    }
-
-    int scalanative_sprintf( char * s, const char * format, va_list args)
-    {
-        return sprintf(s, format, args);
-    }
-
 #ifdef _WIN32
-    /*
-    #include <random>
-    std::default_random_engine generator;
-    std::uniform_real_distribution<double> distr(0.0,1.0);
-    double erand48(int X)
-    {
-        return distr(generator);
-    }
-    */
-    
+
     #include <stdlib.h>
     #include <math.h>
 

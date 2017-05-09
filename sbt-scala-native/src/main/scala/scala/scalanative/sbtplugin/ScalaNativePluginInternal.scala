@@ -144,8 +144,9 @@ object ScalaNativePluginInternal {
             .getOrElse(Seq.empty)
         ("/usr/local/include" +: includedir).map(s => s"-I$s")
       }
-
-      //includes :+ "-mstack-probe-size=16384" :+ "-g" :+ "-fstandalone-debug" :+ "-fdebug-macro" :+ "-Qunused-arguments" :+
+      if (isWindows) {
+        includes :+ "-fcxx-exceptions" :+ "-fexceptions"
+      }
       includes :+ "-gline-tables-only" :+ "-Qunused-arguments" :+
         (mode(nativeMode.value) match {
           case tools.Mode.Debug   => "-O0"
@@ -159,7 +160,10 @@ object ScalaNativePluginInternal {
             .getOrElse(Seq.empty)
         ("/usr/local/lib" +: libdir).map(s => s"-L$s")
       }
-      libs ++ Seq("-gline-tables-only") //Seq("-mstack-probe-size=16384","-g", "-fstandalone-debug", "-fdebug-macro")
+      libs ++ Seq("-gline-tables-only") ++ (if (isWindows)
+                                              Seq("-fcxx-exceptions",
+                                                  "-fexceptions")
+                                            else Seq.empty)
     },
     nativeTarget := {
       val logger = nativeLogger.value
@@ -359,7 +363,7 @@ object ScalaNativePluginInternal {
         val libunwind = os match {
           case "Mac OS X" => Seq.empty
           case _ =>
-            if (isWindows) Seq.empty else Seq("unwind", "unwind-" + arch)
+            if (isWindows) Seq("Dbghelp") else Seq("unwind", "unwind-" + arch)
         }
         librt ++ libunwind ++ linked.links
           .map(_.name) ++ garbageCollector(gc).links ++ regex
@@ -425,8 +429,7 @@ object ScalaNativePluginInternal {
       else binaryName
 
     sys.env.get(s"${envName}_PATH") match {
-      case Some(path) =>
-        file(if (isWindows) path.replaceAll("clang-cl", binaryName) else path)
+      case Some(path) => file(path)
       case None => {
         val binaryNames = binaryVersions.flatMap {
           case (major, minor) =>
@@ -513,10 +516,10 @@ object ScalaNativePluginInternal {
                               nativelib: File) = {
     val gc = garbageCollector(gcName)
     // Directory in nativelib containing the garbage collectors
-    val garbageCollectorsDir = if (isWindows) "lib\\gc" else "lib/gc"
-    val specificDir =
-      if (isWindows) s"$garbageCollectorsDir\\${gc.dir}"
-      else s"$garbageCollectorsDir/${gc.dir}"
+    val garbageCollectorsDir =
+      Seq("lib", "gc").mkString("", java.io.File.separator, "")
+    val specificDir = Seq(s"$garbageCollectorsDir", s"${gc.dir}")
+      .mkString("", java.io.File.separator, "")
 
     def isOtherGC(path: String, nativelib: File) = {
       val nativeGCPath = nativelib.toPath.resolve(garbageCollectorsDir)
@@ -527,7 +530,7 @@ object ScalaNativePluginInternal {
   }
 
   private val isWindows: Boolean = {
-    val os = Option(sys props "os.name").getOrElse("")
+    val os = Option(System.getProperty("os.name")).getOrElse("")
     os.contains("indows")
   }
 

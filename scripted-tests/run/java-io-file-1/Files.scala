@@ -77,7 +77,7 @@ object Files {
   val relative2         = new File("../")
 
   val children0       = new File("/foo/bar")
-  val expectedParent0 = "/foo"
+  val expectedParent0 = File.separator + "foo"
   val children1       = new File("foo/bar")
   val expectedParent1 = "foo"
   val children2       = new File("/foobar")
