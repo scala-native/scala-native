@@ -10,16 +10,21 @@ class AttrParserTest extends FlatSpec with Matchers {
 
   "The NIR parser" should "parse attributes" in {
     import Attr._
-    val attrs: Seq[Attr] = Seq(MayInline,
-                               InlineHint,
-                               NoInline,
-                               AlwaysInline,
-                               Pure,
-                               Extern,
-                               Override(global),
-                               Link("test"),
-                               PinAlways(global),
-                               PinIf(global, global))
+    val attrs: Seq[Attr] = Seq(
+      MayInline,
+      InlineHint,
+      NoInline,
+      AlwaysInline,
+      Dyn,
+      Align(1024),
+      Pure,
+      Extern,
+      Override(global),
+      Link("test"),
+      PinAlways(global),
+      PinIf(global, global),
+      PinWeak(global)
+    )
 
     attrs foreach { attr =>
       val Parsed.Success(result, _) = parser.Attr.parser.parse(attr.show)

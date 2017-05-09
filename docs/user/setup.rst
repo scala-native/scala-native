@@ -7,7 +7,7 @@ This is what you will be doing, in a nutshell:
 
 * installation of sbt
 * installation of LLVM and Clang
-* installation of Boehm GC
+* installation of native libraries
 
 Installing sbt
 --------------
@@ -18,12 +18,26 @@ for instructions for your OS.
 Please note that you'll need Java 8 or more recent to use the Scala Native
 toolchain.
 
-Installing LLVM, Clang and Boehm GC
------------------------------------
+Installing LLVM, Clang and native libraries
+-------------------------------------------
 
-Boehm GC and LLVM (that includes Clang) are Scala Native's only external
-dependencies. Here are install instructions for a number of operating
-systems Scala Native has been used with:
+Scala Native requires Clang, which is part of the LLVM toolchain. The
+recommended LLVM version is 3.7 or newer, however, the Scala Native sbt
+plugin uses feature detection to discover the installed version of Clang
+so older versions may also work.
+
+In addition, the native Scala runtime and Java API implementation
+require the Boehm garbage collector and the RE2 regular expression
+engine. Both the native library and header files must be provided at
+build time.
+
+.. note::
+
+  Some package managers provide the library header files in separate
+  `-dev` packages.
+
+Here are install instructions for a number of operating systems Scala
+Native has been used with:
 
 Ubuntu::
 

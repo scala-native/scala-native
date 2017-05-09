@@ -190,9 +190,9 @@ object CodeGen {
         case Defn.Struct(attrs, name, tys) =>
           genStruct(attrs, name, tys)
         case Defn.Var(attrs, name, ty, rhs) =>
-          genGlobalDefn(name, attrs.isExtern, isConst = false, ty, rhs)
+          genGlobalDefn(attrs, name, isConst = false, ty, rhs)
         case Defn.Const(attrs, name, ty, rhs) =>
-          genGlobalDefn(name, attrs.isExtern, isConst = true, ty, rhs)
+          genGlobalDefn(attrs, name, isConst = true, ty, rhs)
         case Defn.Declare(attrs, name, sig) =>
           genFunctionDefn(attrs, name, sig, Seq())
         case Defn.Define(attrs, name, sig, blocks) =>
@@ -211,20 +211,24 @@ object CodeGen {
       str("}")
     }
 
-    def genGlobalDefn(name: nir.Global,
-                      isExtern: Boolean,
+    def genGlobalDefn(attrs: Attrs,
+                      name: nir.Global,
                       isConst: Boolean,
                       ty: nir.Type,
                       rhs: nir.Val): Unit = {
       str("@")
       genGlobal(name)
       str(" = ")
-      str(if (isExtern) "external " else "")
+      str(if (attrs.isExtern) "external " else "")
       str(if (isConst) "constant" else "global")
       str(" ")
       rhs match {
         case Val.None => genType(ty)
         case rhs      => genVal(rhs)
+      }
+      attrs.align.foreach { value =>
+        str(", align ")
+        str(value)
       }
     }
 
@@ -560,7 +564,7 @@ object CodeGen {
         case call: Op.Call =>
           genCall(genBind, call)
 
-        case Op.Load(ty, ptr) =>
+        case Op.Load(ty, ptr, isVolatile) =>
           val pointee = fresh()
 
           newline()
@@ -575,13 +579,16 @@ object CodeGen {
           newline()
           genBind()
           str("load ")
+          if (isVolatile) {
+            str("volatile ")
+          }
           genType(ty)
           str(", ")
           genType(ty)
           str("* %")
           genLocal(pointee)
 
-        case Op.Store(ty, ptr, value) =>
+        case Op.Store(ty, ptr, value, isVolatile) =>
           val pointee = fresh()
 
           newline()
@@ -596,6 +603,9 @@ object CodeGen {
           newline()
           genBind()
           str("store ")
+          if (isVolatile) {
+            str("volatile ")
+          }
           genVal(value)
           str(", ")
           genType(ty)
