@@ -1,18 +1,12 @@
 #ifndef	_TIME_H_
 #define	_TIME_H_
 
-#ifndef WIN32_LEAN_AND_MEAN
-#   define WIN32_LEAN_AND_MEAN
-#endif
-#include <windows.h>
 #include <time.h>
-#include <winsock2.h>
 
-#if defined(_MSC_VER) || defined(_MSC_EXTENSIONS)
-  #define DELTA_EPOCH_IN_MICROSECS  11644473600000000Ui64
-#else
-  #define DELTA_EPOCH_IN_MICROSECS  11644473600000000ULL
-#endif
+struct timeval {
+    time_t tv_sec;     /* seconds */
+    int    tv_usec;    /* microseconds */
+};
 
 struct timezone 
 {
@@ -22,111 +16,8 @@ struct timezone
 
 const int CLOCK_MONOTONIC = 0;
 
-/*
-* The part of the code below was taken from:
-* http://stackoverflow.com/questions/5404277/porting-clock-gettime-to-windows/5404467#5404467
-* By Carl Staelin
-* This code he wrote as part of a port of lmbench to Windows
-*/
+int clock_gettime(int X, struct timespec *tv);
 
-LARGE_INTEGER getFILETIMEoffset()
-{
-    SYSTEMTIME s;
-    FILETIME f;
-    LARGE_INTEGER t;
+int gettimeofday(struct timeval *tv, struct timezone *tz);
 
-    s.wYear = 1970;
-    s.wMonth = 1;
-    s.wDay = 1;
-    s.wHour = 0;
-    s.wMinute = 0;
-    s.wSecond = 0;
-    s.wMilliseconds = 0;
-    SystemTimeToFileTime(&s, &f);
-    t.QuadPart = f.dwHighDateTime;
-    t.QuadPart <<= 32;
-    t.QuadPart |= f.dwLowDateTime;
-    return (t);
-}
-
-int clock_gettime(int X, struct timespec *tv)
-{
-    LARGE_INTEGER           t;
-    FILETIME            f;
-    double                  microseconds;
-    static LARGE_INTEGER    offset;
-    static double           frequencyToMicroseconds;
-    static int              initialized = 0;
-    static BOOL             usePerformanceCounter = 0;
-
-    if (!initialized) {
-        LARGE_INTEGER performanceFrequency;
-        initialized = 1;
-        usePerformanceCounter = QueryPerformanceFrequency(&performanceFrequency);
-        if (usePerformanceCounter) {
-            QueryPerformanceCounter(&offset);
-            frequencyToMicroseconds = (double)performanceFrequency.QuadPart / 1000000.;
-        } else {
-            offset = getFILETIMEoffset();
-            frequencyToMicroseconds = 10.;
-        }
-    }
-    if (usePerformanceCounter) QueryPerformanceCounter(&t);
-    else {
-        GetSystemTimeAsFileTime(&f);
-        t.QuadPart = f.dwHighDateTime;
-        t.QuadPart <<= 32;
-        t.QuadPart |= f.dwLowDateTime;
-    }
-
-    t.QuadPart -= offset.QuadPart;
-    microseconds = (double)t.QuadPart / frequencyToMicroseconds;
-    t.QuadPart = microseconds;
-    tv->tv_sec = t.QuadPart / 1000000;
-    tv->tv_nsec = t.QuadPart % 1000000;
-    return (0);
-}
-
-/*
-*  The code below with modifications was taken from:
-*  https://gist.github.com/ikhramts/717651/6104436a367667220432ec3a4993d9e9c7fcfd60
-*
-*/
-
-int gettimeofday(struct timeval *tv, struct timezone *tz)
-{
-  FILETIME ft;
-  unsigned __int64 tmpres = 0;
-  static int tzflag = 0;
-
-  if (NULL != tv)
-  {
-    GetSystemTimeAsFileTime(&ft);
-
-    tmpres |= ft.dwHighDateTime;
-    tmpres <<= 32;
-    tmpres |= ft.dwLowDateTime;
-
-    tmpres /= 10;  /*convert into microseconds*/
-    /*converting file time to unix epoch*/
-    tmpres -= DELTA_EPOCH_IN_MICROSECS; 
-    tv->tv_sec = (long)(tmpres / 1000000UL);
-    tv->tv_usec = (long)(tmpres % 1000000UL);
-  }
-
-  if (NULL != tz)
-  {
-    if (!tzflag)
-    {
-      _tzset();
-      tzflag++;
-    }
-    long timezone;
-    _get_timezone(&timezone);
-    tz->tz_minuteswest = timezone / 60;
-    _get_daylight(&tz->tz_dsttime);
-  }
-
-  return 0;
-}
 #endif /* !_TIME_H_ */
