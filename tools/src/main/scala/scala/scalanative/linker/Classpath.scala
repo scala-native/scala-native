@@ -28,13 +28,13 @@ object Classpath {
   private final class Impl(directory: VirtualDirectory) extends Classpath {
     private val entries: Map[Global, BinaryDeserializer] = {
       directory.files
-        .filter(_.path.toString.endsWith(".nir"))
+        .filter(_.toString.endsWith(".nir"))
         .map { file =>
-          val relative = file.path.toString
+          val relative = file.toString
           val parts    = relative.replace(".nir", "").split("/").toSeq
           val name     = Global.Top(parts.filter(_ != "").mkString("."))
 
-          (name -> new BinaryDeserializer(file.contents))
+          (name -> new BinaryDeserializer(directory.read(file)))
         }
         .toMap
     }
