@@ -9,7 +9,6 @@ import util.Scope
 import io.VirtualDirectory
 import nir.Global
 import tools.Config
-import linker.Path
 import optimizer.Driver
 
 import org.scalatest.FlatSpec

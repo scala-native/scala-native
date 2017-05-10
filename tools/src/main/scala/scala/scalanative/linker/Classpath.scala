@@ -7,7 +7,7 @@ import java.nio.file.FileSystems
 import scalanative.io.VirtualDirectory
 import scalanative.util.Scope
 
-sealed trait Path {
+sealed trait Classpath {
 
   /** Check if given global is present in this classpath. */
   def contains(name: Global): Boolean
@@ -19,13 +19,13 @@ sealed trait Path {
   def globals: Set[Global]
 }
 
-object Path {
+object Classpath {
 
   /** Create classpath based on the virtual directory. */
-  def apply(directory: VirtualDirectory): Path =
+  def apply(directory: VirtualDirectory): Classpath =
     new Impl(directory)
 
-  private final class Impl(directory: VirtualDirectory) extends Path {
+  private final class Impl(directory: VirtualDirectory) extends Classpath {
     private val entries: Map[Global, BinaryDeserializer] = {
       directory.files
         .filter(_.path.toString.endsWith(".nir"))

@@ -18,8 +18,8 @@ package scala.scalanative
 //   1. run code gen and check the string
 
 package object tools {
-  type LinkerPath = linker.Path
-  val LinkerPath = linker.Path
+  type LinkerPath = linker.Classpath
+  val LinkerPath = linker.Classpath
 
   type LinkerReporter = linker.Reporter
   val LinkerReporter = linker.Reporter

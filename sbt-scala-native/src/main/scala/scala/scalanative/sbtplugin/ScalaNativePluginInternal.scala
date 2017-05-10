@@ -70,7 +70,7 @@ object ScalaNativePluginInternal {
     nativeExternalDependencies := ResourceScope { implicit scope =>
       val forceCompile = compileTask.value
       val classDir     = classDirectory.value
-      val globals      = linker.Path(VirtualDirectory.real(classDir)).globals
+      val globals      = linker.Classpath(VirtualDirectory.real(classDir)).globals
 
       val config = tools.Config.empty.withPaths(Seq(classDir))
       val result = (linker.Linker(config)).link(globals.toSeq)
