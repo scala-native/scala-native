@@ -22,14 +22,26 @@ class OpParserTest extends FlatSpec with Matchers {
     result should be(call)
   }
 
-  it should "parse `Op.Load`" in {
+  it should "parse non-volatile `Op.Load`" in {
     val load: Op                  = Op.Load(noTpe, Val.None)
     val Parsed.Success(result, _) = parser.Op.Load.parse(load.show)
     result should be(load)
   }
 
-  it should "parse `Op.Store`" in {
+  it should "parse volatile `Op.Load`" in {
+    val load: Op                  = Op.Load(noTpe, Val.None, isVolatile = true)
+    val Parsed.Success(result, _) = parser.Op.Load.parse(load.show)
+    result should be(load)
+  }
+
+  it should "parse non-volatile `Op.Store`" in {
     val store: Op                 = Op.Store(noTpe, Val.None, Val.None)
+    val Parsed.Success(result, _) = parser.Op.Store.parse(store.show)
+    result should be(store)
+  }
+
+  it should "parse volatile `Op.Store`" in {
+    val store: Op                 = Op.Store(noTpe, Val.None, Val.None, isVolatile = true)
     val Parsed.Success(result, _) = parser.Op.Store.parse(store.show)
     result should be(store)
   }

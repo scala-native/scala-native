@@ -2,7 +2,7 @@ package java.lang
 
 import scala.scalanative.native._
 import scala.scalanative.runtime, runtime.ClassTypeOps
-import scalanative.runtime.Intrinsics._
+import scala.scalanative.runtime.Intrinsics._
 
 class _Object {
   @inline def __equals(that: _Object): scala.Boolean =

@@ -3,12 +3,14 @@
 Environment setup
 =================
 
-Scala Native has the following system requirements:
+Scala Native has the following minimum system requirements:
 
-* Java 8 or later
+* Java 8
 * sbt
-* LLVM
-* Boehm GC
+* LLVM 3.7
+* Native libraries
+    * Boehm GC 7.6.0
+    * Re2 2017-01-01
 
 Installing sbt
 --------------
@@ -16,12 +18,26 @@ Installing sbt
 Please refer to `this link <http://www.scala-sbt.org/release/docs/Setup.html>`_
 for instructions for your operating system.
 
-Installing LLVM and Boehm GC
-----------------------------
+Installing LLVM, Clang and native libraries
+-------------------------------------------
 
-LLVM and Boehm GC are Scala Native's only external dependencies. Here are
-installation instructions for a number of operating systems Scala Native has
-been used with:
+Scala Native requires Clang, which is part of the LLVM toolchain. The
+recommended LLVM version is 3.7 or newer, however, the Scala Native sbt
+plugin uses feature detection to discover the installed version of Clang
+so older versions may also work.
+
+In addition, the native Scala runtime and Java API implementation
+require the Boehm garbage collector and the RE2 regular expression
+engine. Both the native library and header files must be provided at
+build time.
+
+.. note::
+
+  Some package managers provide the library header files in separate
+  `-dev` packages.
+
+Here are install instructions for a number of operating systems Scala
+Native has been used with:
 
 **Ubuntu**
 ::
@@ -33,7 +49,7 @@ been used with:
 **Arch Linux**
 ::
 
-    $ sudo pacman -S gc llvm
+    $ sudo pacman -S llvm gc re2
 
 **macOS**
 ::
