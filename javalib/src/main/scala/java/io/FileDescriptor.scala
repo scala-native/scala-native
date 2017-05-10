@@ -7,13 +7,16 @@ final class FileDescriptor private[io] (private[io] val fd: Int) {
 
   def this() = this(-1)
 
+  // inspired by Apache Harmony filedesc.c
   def sync(): Unit =
-    unistd.fsync(fd) match {
-      case 0 => ()
-      case _ => throw new java.io.SyncFailedException("sync failed")
-    }
+    if (fd > 2) {
+      unistd.fsync(fd) match {
+        case 0 => ()
+        case _ => throw new java.io.SyncFailedException(s"sync failed")
+      }
+    } else throw new java.io.SyncFailedException(s"sync failed")
 
-  def valid(): Boolean = fd == -1
+  def valid(): Boolean = fd != -1
 }
 
 object FileDescriptor {
