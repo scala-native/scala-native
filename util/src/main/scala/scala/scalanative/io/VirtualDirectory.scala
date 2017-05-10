@@ -16,10 +16,6 @@ sealed trait VirtualDirectory {
   def contains(path: Path): Boolean =
     files.contains(path)
 
-  /** Get file from the directory. */
-  def get(path: Path): Option[Path] =
-    files.find(_ == path)
-
   /** Reads a contents of file with given path. */
   def read(path: Path): ByteBuffer
 

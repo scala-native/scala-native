@@ -28,9 +28,9 @@ abstract class CodeGenSpec extends OptimizerSpec {
         Scope { implicit in =>
           tools.codegen(config, assembly)
           val workdir = VirtualDirectory.real(config.workdir)
-          val outfile =
-            workdir.get(Paths.get("out.ll")) getOrElse fail(
-              "out.ll not found.")
+          val outfile = Paths.get("out.ll")
+
+          assert(workdir.contains(outfile), "out.ll not found.")
 
           f(config, links, outfile)
         }
