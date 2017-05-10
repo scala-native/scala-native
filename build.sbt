@@ -382,16 +382,10 @@ lazy val tests =
       // nativeOptimizerReporter := OptimizerReporter.toDirectory(
       //   crossTarget.value),
       sourceGenerators in Compile += Def.task {
-        val dir    = sourceDirectory.value
-        val prefix = dir.getAbsolutePath + "/main/scala/"
+        val dir = (scalaSource in Compile).value
         val suites = (dir ** "*Suite.scala").get
-          .map { f =>
-            f.getAbsolutePath
-              .replace(prefix, "")
-              .replace(".scala", "")
-              .split("/")
-              .mkString(".")
-          }
+          .map(file => dir.toPath.relativize(file.toPath))
+          .map(scalanative.io.packageNameFromPath(_, ".scala"))
           .filter(_ != "tests.Suite")
           .mkString("Seq(", ", ", ")")
         val file = (sourceManaged in Compile).value / "tests" / "Discover.scala"
@@ -432,16 +426,10 @@ lazy val benchmarks =
     .settings(
       nativeMode := "release",
       sourceGenerators in Compile += Def.task {
-        val dir    = sourceDirectory.value
-        val prefix = dir.getAbsolutePath + "/main/scala/"
+        val dir = (scalaSource in Compile).value
         val benchmarks = (dir ** "*Benchmark.scala").get
-          .map { f =>
-            f.getAbsolutePath
-              .replace(prefix, "")
-              .replace(".scala", "")
-              .split("/")
-              .mkString(".")
-          }
+          .map(file => dir.toPath.relativize(file.toPath))
+          .map(scalanative.io.packageNameFromPath(_, ".scala"))
           .filter(_ != "benchmarks.Benchmark")
           .mkString("Seq(new ", ", new ", ")")
         val file = (sourceManaged in Compile).value / "benchmarks" / "Discover.scala"
