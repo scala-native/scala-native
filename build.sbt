@@ -384,8 +384,8 @@ lazy val tests =
       sourceGenerators in Compile += Def.task {
         val dir = (scalaSource in Compile).value
         val suites = (dir ** "*Suite.scala").get
-          .map(file => dir.toPath.relativize(file.toPath))
-          .map(scalanative.io.packageNameFromPath(_, ".scala"))
+          .flatMap(IO.relativizeFile(dir, _))
+          .map(file => scalanative.io.packageNameFromPath(file.toPath, ".scala"))
           .filter(_ != "tests.Suite")
           .mkString("Seq(", ", ", ")")
         val file = (sourceManaged in Compile).value / "tests" / "Discover.scala"
@@ -428,8 +428,8 @@ lazy val benchmarks =
       sourceGenerators in Compile += Def.task {
         val dir = (scalaSource in Compile).value
         val benchmarks = (dir ** "*Benchmark.scala").get
-          .map(file => dir.toPath.relativize(file.toPath))
-          .map(scalanative.io.packageNameFromPath(_, ".scala"))
+          .flatMap(IO.relativizeFile(dir, _))
+          .map(file => scalanative.io.packageNameFromPath(file.toPath, ".scala"))
           .filter(_ != "benchmarks.Benchmark")
           .mkString("Seq(new ", ", new ", ")")
         val file = (sourceManaged in Compile).value / "benchmarks" / "Discover.scala"
