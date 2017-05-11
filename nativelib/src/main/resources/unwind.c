@@ -12,7 +12,7 @@
         unsigned short frames;        
         HANDLE process;
         DWORD64 cursor;
-        SYMBOL_INFO symbol;
+        SYMBOL_INFOW symbol;
     } UnwindContext;
 #endif
 
@@ -28,13 +28,18 @@ int scalanative_unwind_init_local(void *cursor, void *context) {
 #ifndef _WIN32
     return unw_init_local((unw_cursor_t*) cursor, (unw_context_t*) context);
 #else
+    static int symInitialized = 0;
     UnwindContext* ucontext = (UnwindContext*)cursor;
     memset(ucontext, 0, sizeof(UnwindContext));
     ucontext->stack = (void**)context;
     ucontext->process = GetCurrentProcess();
-    if (SymInitialize(ucontext->process, NULL, TRUE) == FALSE)
-    {
-        return 1;
+    if (!symInitialized)
+    {        
+        if (SymInitialize(ucontext->process, NULL, TRUE) == FALSE)
+        {
+            return 1;
+        }
+        symInitialized = 1;
     }
     ucontext->frames = CaptureStackBackTrace(0, MAX_LENGTH_OF_CALLSTACK, ucontext->stack, NULL);
     ucontext->cursor = 0;
@@ -49,7 +54,7 @@ int scalanative_unwind_step(void *cursor) {
     return unw_step((unw_cursor_t*) cursor);
 #else
     UnwindContext* ucontext = (UnwindContext*)cursor;
-    return ucontext->frames - ucontext->cursor - 1;
+    return ucontext->frames - ucontext->cursor;
 #endif
 }
 
@@ -65,23 +70,18 @@ int scalanative_unwind_get_proc_name(void *cursor, char *buffer,
     UnwindContext* ucontext = (UnwindContext*)cursor;
     if (ucontext->cursor < ucontext->frames)
     {
-        DWORD64 address = (DWORD64)(ucontext->stack[ucontext->cursor]);
-        PSYMBOL_INFO symbol = &ucontext->symbol;
-        SymFromAddr(ucontext->process, address, 0, symbol);
+        void* address = ucontext->stack[ucontext->cursor];
+        PSYMBOL_INFOW symbol = &ucontext->symbol;
+        SymFromAddrW(ucontext->process, (DWORD64)address, 0, symbol);
         ucontext->cursor++;
-        memcpy(buffer, symbol->Name, symbol->NameLen);
-        buffer[symbol->NameLen] = 0;
+        snprintf(buffer, length, "%ws", symbol->Name);
         memcpy(offset, &(symbol->Address), sizeof(void*));
-        if (SymGetLineFromAddr(ucontext->process, address, &displacement, &line))
+        if (SymGetLineFromAddr(ucontext->process, (DWORD64)address, &displacement, &line))
         {
             fileNameLen = strlen(line.FileName);
             if (fileNameLen > 0)
             {
-                snprintf(buffer + symbol->NameLen, length - symbol->NameLen + 1, "(%s:%lu)", line.FileName, line.LineNumber);
-            }
-            else
-            {
-                snprintf(buffer + symbol->NameLen, length - symbol->NameLen + 1, "(%lu)", line.LineNumber);
+                snprintf(buffer + symbol->NameLen, length - symbol->NameLen, ":%lu:%s", line.LineNumber, line.FileName);
             }
         }
     }

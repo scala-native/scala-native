@@ -537,13 +537,11 @@ object File {
 
   private def tempDir(): File = {
     val dir = getenv(c"TMPDIR")
-    if (dir == null)
-    {
+    if (dir == null) {
       val name = stackalloc[CChar](1024)
       dirent.gettempdir(name, 1024)
       new File(fromCString(name))
-    }
-    else new File(fromCString(dir))
+    } else new File(fromCString(dir))
   }
 
   private def genTempFile(prefix: String,
