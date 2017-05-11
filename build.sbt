@@ -2,6 +2,7 @@ import java.io.File.pathSeparator
 import scala.util.Try
 import scalanative.tools.OptimizerReporter
 import scalanative.sbtplugin.ScalaNativePluginInternal._
+import scalanative.io.packageNameFromPath
 
 val toolScalaVersion      = "2.10.6"
 val libScalaVersion       = "2.11.11"
@@ -385,7 +386,7 @@ lazy val tests =
         val dir = (scalaSource in Compile).value
         val suites = (dir ** "*Suite.scala").get
           .flatMap(IO.relativizeFile(dir, _))
-          .map(file => scalanative.io.packageNameFromPath(file.toPath, ".scala"))
+          .map(file => packageNameFromPath(file.toPath, ".scala"))
           .filter(_ != "tests.Suite")
           .mkString("Seq(", ", ", ")")
         val file = (sourceManaged in Compile).value / "tests" / "Discover.scala"
@@ -429,7 +430,7 @@ lazy val benchmarks =
         val dir = (scalaSource in Compile).value
         val benchmarks = (dir ** "*Benchmark.scala").get
           .flatMap(IO.relativizeFile(dir, _))
-          .map(file => scalanative.io.packageNameFromPath(file.toPath, ".scala"))
+          .map(file => packageNameFromPath(file.toPath, ".scala"))
           .filter(_ != "benchmarks.Benchmark")
           .mkString("Seq(new ", ", new ", ")")
         val file = (sourceManaged in Compile).value / "benchmarks" / "Discover.scala"
