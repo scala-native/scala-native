@@ -17,12 +17,13 @@ package object io {
     finally pool.reclaim(buffer)
   }
 
-  def packageNameFromPath(path: Path, extension: String): String = {
-    val fileName = path.getFileName.toString.replace(extension, "")
+  def packageNameFromPath(path: Path): String = {
+    val fileName = path.getFileName.toString
+    val base     = fileName.split('.').init.mkString(".")
 
     Option(path.getParent) match {
-      case Some(parent) => parent.resolve(fileName).asScala.mkString(".")
-      case None         => fileName
+      case Some(parent) => parent.resolve(base).asScala.mkString(".")
+      case None         => base
     }
   }
 }
