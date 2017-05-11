@@ -45,11 +45,15 @@
 
 package richards
 
+import benchmarks.{BenchmarkRunningTime, ShortRunningTime}
+
 /**
  * Richards simulates the task dispatcher of an operating system.
  */
 class RichardsBenchmark extends benchmarks.Benchmark[(Int, Int)] {
   import Richards._
+
+  override val runningTime: BenchmarkRunningTime = ShortRunningTime
 
   override def run(): (Int, Int) = {
     val scheduler = new Scheduler()

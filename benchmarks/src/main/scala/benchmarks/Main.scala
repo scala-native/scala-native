@@ -4,11 +4,11 @@ import java.lang.System.exit
 
 object Main {
   def main(args: Array[String]): Unit = {
-    val benchmarks = Discover.discovered
+    val benchmarks = Discover.discovered.sortBy(_.getClass.getSimpleName)
 
     val opts = Opts(args)
     val results = benchmarks.map { bench =>
-      val iterations = if (!opts.test) bench.iterations else 1
+      val iterations = if (!opts.test) bench.iterations() else 1
       bench.loop(iterations)
       bench.loop(iterations)
     }
