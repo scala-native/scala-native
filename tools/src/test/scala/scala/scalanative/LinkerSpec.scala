@@ -6,7 +6,6 @@ import java.io.File
 import java.nio.file.Files
 
 import util.Scope
-import io.VirtualDirectory
 import nir.Global
 import tools.Config
 import optimizer.Driver

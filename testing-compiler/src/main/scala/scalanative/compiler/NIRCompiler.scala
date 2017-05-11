@@ -5,7 +5,7 @@ import scala.reflect.internal.util.Position
 
 import scala.tools.cmd.CommandLineParser
 import scala.tools.nsc.{CompilerCommand, Global, Settings}
-import scala.tools.nsc.io.{AbstractFile, VirtualDirectory}
+import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.AbstractReporter
 
 import java.nio.file.Files
