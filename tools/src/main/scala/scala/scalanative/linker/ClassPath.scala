@@ -30,7 +30,7 @@ object ClassPath {
       directory.files
         .filter(_.toString.endsWith(".nir"))
         .map { file =>
-          val name = Global.Top(io.packageNameFromPath(file, ".nir"))
+          val name = Global.Top(io.packageNameFromPath(file))
 
           (name -> new BinaryDeserializer(directory.read(file)))
         }
