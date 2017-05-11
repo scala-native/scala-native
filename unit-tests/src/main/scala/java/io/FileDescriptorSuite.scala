@@ -39,5 +39,4 @@ object FileDescriptorSuite extends tests.Suite {
       fd.sync()
     }
   }
-
 }

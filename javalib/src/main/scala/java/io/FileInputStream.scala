@@ -83,6 +83,6 @@ class FileInputStream(fd: FileDescriptor) extends InputStream {
 object FileInputStream {
   private def fileDescriptor(file: File): FileDescriptor = {
     val fd = fcntl.open(toCString(file.getPath), fcntl.O_RDONLY)
-    new FileDescriptor(fd)
+    new FileDescriptor(fd, true)
   }
 }

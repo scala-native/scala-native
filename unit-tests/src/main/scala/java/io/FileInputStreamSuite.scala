@@ -1,5 +1,7 @@
 package java.io
 
+import scala.util.Try
+
 object FileInputStreamSuite extends tests.Suite {
   test("read null") {
     val file = new File(".")
@@ -40,5 +42,13 @@ object FileInputStreamSuite extends tests.Suite {
     assertThrows[IndexOutOfBoundsException] {
       fis.read(arr, 4, 8)
     }
+  }
+
+  test("valid file descriptor and sync success") {
+    val file = File.createTempFile("fisfdtest", "")
+    val fis  = new FileInputStream(file)
+    val fd   = fis.getFD
+    assert(fd.valid())
+    assert(Try(fd.sync()).isSuccess)
   }
 }
