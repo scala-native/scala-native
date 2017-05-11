@@ -145,7 +145,7 @@ object ScalaNativePluginInternal {
         ("/usr/local/include" +: includedir).map(s => s"-I$s")
       }
       if (isWindows) {
-        includes :+ "-fcxx-exceptions" :+ "-fexceptions"
+        includes :+ "-fcxx-exceptions" :+ "-fexceptions" :+ "-flto=thin"
       }
       includes :+ "-gline-tables-only" :+ "-Qunused-arguments" :+
         (mode(nativeMode.value) match {
@@ -162,7 +162,8 @@ object ScalaNativePluginInternal {
       }
       libs ++ Seq("-gline-tables-only") ++ (if (isWindows)
                                               Seq("-fcxx-exceptions",
-                                                  "-fexceptions")
+                                                  "-fexceptions",
+                                                  "-flto=thin")
                                             else Seq.empty)
     },
     nativeTarget := {

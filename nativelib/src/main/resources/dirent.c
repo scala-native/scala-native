@@ -37,3 +37,15 @@ int scalanative_readdir(DIR *dirp, struct scalanative_dirent *buf) {
 }
 
 int scalanative_closedir(DIR *dirp) { return closedir(dirp); }
+
+int scalanative_gettempdir(char *buffer, size_t length)
+{
+#ifndef _WIN32
+  const char tmpdir = "/tmp";
+  int nameLength = strlen(tmpdir);
+  strncpy_s(buffer, nameLength, dirent->d_name, length);
+  return ;
+#else
+  return getWinTempDir(buffer, length);
+#endif
+}

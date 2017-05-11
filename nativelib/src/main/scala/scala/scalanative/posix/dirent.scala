@@ -19,4 +19,7 @@ object dirent {
 
   @name("scalanative_closedir")
   def closedir(dirp: Ptr[DIR]): CInt = extern
+
+  @name("scalanative_gettempdir")
+  def gettempdir(buffer: CString, length: CSize): CInt = extern
 }
