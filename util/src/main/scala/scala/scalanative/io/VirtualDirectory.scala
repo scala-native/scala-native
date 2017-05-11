@@ -57,9 +57,6 @@ object VirtualDirectory {
         "Neither a jar, nor a directory: " + file)
     }
 
-  /** Root file system directory. */
-  val root: VirtualDirectory = real(new File("/"))(Scope.forever)
-
   /** Empty directory that contains no files. */
   val empty: VirtualDirectory = EmptyDirectory
 
