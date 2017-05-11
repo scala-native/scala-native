@@ -18,7 +18,7 @@ import KeyRanks.DTask
 import scala.util.Try
 
 import System.{lineSeparator => nl}
-import java.io.{File, ByteArrayInputStream}
+import java.io.File
 
 object ScalaNativePluginInternal {
 
@@ -157,15 +157,25 @@ object ScalaNativePluginInternal {
       val logger = nativeLogger.value
       val cwd    = nativeWorkdir.value
       val clang  = nativeClang.value
+      // Use non-standard extension to not include the ll file when linking (#639)
+      val targetc  = cwd / "target" / "c.probe"
+      val targetll = cwd / "target" / "ll.probe"
       val compilec =
-        Seq(abs(clang), "-S", "-emit-llvm", "-x", "c", "-o", "-", "-")
-      val probe = new ByteArrayInputStream("int probe;".getBytes("UTF-8"))
+        Seq(abs(clang),
+            "-S",
+            "-xc",
+            "-emit-llvm",
+            "-o",
+            abs(targetll),
+            abs(targetc))
       def fail =
         throw new MessageOnlyException("Failed to detect native target.")
 
+      IO.write(targetc, "int probe;")
       logger.running(compilec)
-      val lines = Process(compilec, cwd) #< probe lines_! logger
-      lines
+      val exit = Process(compilec, cwd) ! logger
+      if (exit != 0) fail
+      IO.readLines(targetll)
         .collectFirst {
           case line if line.startsWith("target triple") =>
             line.split("\"").apply(1)
