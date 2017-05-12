@@ -384,6 +384,19 @@ object ScalaNativePluginInternal {
       nativeCompileLib.value
       nativeLinkLL.value
     },
+    commands += {
+      import sbinary.DefaultProtocol.StringFormat
+      import Cache.seqFormat
+      Command("runMain") {
+        loadForParser(discoveredMainClasses)((s, names) =>
+          Defaults.runMainParser(s, names getOrElse Nil)).value
+      } {
+        case (s, (mainClassName, args)) =>
+          s"""set selectMainClass in Compile := Some("$mainClassName")""" ::
+            s"run ${args.mkString(" ")}" ::
+              s
+      }
+    },
     run := {
       val env    = (envVars in run).value.toSeq
       val logger = streams.value.log
