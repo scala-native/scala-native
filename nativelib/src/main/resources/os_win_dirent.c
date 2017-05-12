@@ -1,3 +1,5 @@
+#ifdef _WIN32
+
 #include "os_win_dirent.h"
 
 #ifdef __cplusplus
@@ -624,3 +626,4 @@ int getWinTempDir(char *buffer, size_t length)
 }
 #endif
 
+#endif

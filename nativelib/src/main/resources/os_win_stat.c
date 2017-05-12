@@ -1,3 +1,4 @@
+#ifdef _WIN32
 #include "os_win_stat.h"
 
 #ifdef __cplusplus
@@ -108,4 +109,5 @@ int fchmod(int const _FileHandle, mode_t mode)
 
 #ifdef __cplusplus
 }
+#endif
 #endif

@@ -42,8 +42,7 @@ int scalanative_gettempdir(char *buffer, size_t length)
 {
 #ifndef _WIN32
   const char* tmpdir = "/tmp";
-  int nameLength = strlen(tmpdir);
-  strncpy_s(buffer, nameLength, tmpdir, length);
+  strncpy(buffer, tmpdir, length);
   return 0;
 #else
   return getWinTempDir(buffer, length);
