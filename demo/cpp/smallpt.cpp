@@ -52,7 +52,7 @@ Vec radiance(const Ray &r, int depth, unsigned short *Xi){
   const Sphere &obj = spheres[id];        // the hit object
   Vec x=r.o+r.d*t, n=(x-obj.p).norm(), nl=n.dot(r.d)<0?n:n*-1, f=obj.c;
   double p = f.x>f.y && f.x>f.z ? f.x : f.y>f.z ? f.y : f.z; // max refl
-  if (++depth>5) if (erand48(Xi)<p) f=f*(1/p); else return obj.e; //R.R.
+  if (++depth>5) if (depth<100 && erand48(Xi)<p) f=f*(1/p); else return obj.e; //R.R.
   if (obj.refl == DIFF){                  // Ideal DIFFUSE reflection
     double r1=2*M_PI*erand48(Xi), r2=erand48(Xi), r2s=sqrt(r2);
     Vec w=nl, u=((fabs(w.x)>.1?Vec(0,1):Vec(1))%w).norm(), v=w%u;

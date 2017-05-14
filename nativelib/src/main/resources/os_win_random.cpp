@@ -11,6 +11,25 @@
 * to anyone/anything when using this software.
 */
 
+// this code uses cross-platform c++11 standard <random> framework to generate random numbers,
+// it's more powerful in therms of features and correctness, but it's not really compatible with unsigned short seed[3],
+// the reason why we want to use it here because _erand48 below makes stack overflow in demo (due to non-uniform distribution),
+// std::mt19937 uses better full range of (0.0, 1.0).
+#include <random>
+extern "C" double erand48(unsigned short xseed[3])
+{
+    static std::uniform_real_distribution<double> dist(0.0, 1.0);  //(min, max)
+    static std::mt19937 rng;
+    return dist(rng);
+}
+
+extern "C" double zzerand48(unsigned short xseed[3])
+{
+    static std::uniform_real_distribution<double> dist(0.0, 1.0);  //(min, max)
+    static std::ranlux48 rng;
+    return dist(rng);
+}
+
 extern "C" {
 #ifdef _WIN32
 
@@ -56,17 +75,17 @@ extern "C" {
         xseed[2] = (unsigned short)accu;
     }
 
-    double erand48(unsigned short xseed[3])
+    double _erand48(unsigned short xseed[3])
     {
         _dorand48(xseed);
-        return ldexp((double)xseed[0], -48) +
-            ldexp((double)xseed[1], -32) +
-            ldexp((double)xseed[2], -16);
+        return ldexp((double)xseed[0], -48.0) +
+            ldexp((double)xseed[1], -32.0) +
+            ldexp((double)xseed[2], -16.0);
     }
 
     double drand48(void)
     {
-        return erand48(_rand48_seed);
+        return _erand48(_rand48_seed);
     }
 
     long lrand48(void) 
