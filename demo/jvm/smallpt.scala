@@ -137,7 +137,7 @@ object Main {
 
     depth += 1
     if (depth > 5) {
-      if (depth<100 && random() < p) f = f * (1 / p)
+      if (depth < 100 && random() < p) f = f * (1 / p)
       else return obj.e
     }
 

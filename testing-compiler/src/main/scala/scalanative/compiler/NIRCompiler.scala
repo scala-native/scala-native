@@ -83,7 +83,8 @@ class NIRCompiler(outputDir: File) extends api.NIRCompiler {
                                val classpath: List[String])
       extends CompilerOption(
         s"-Xplugin:$jarPath" + (if (classpath.nonEmpty)
-                                  classpath.mkString(" -cp ", File.pathSeparator, "")
+                                  classpath
+                                    .mkString(" -cp ", File.pathSeparator, "")
                                 else ""))
 
   /**
@@ -105,7 +106,6 @@ class NIRCompiler(outputDir: File) extends api.NIRCompiler {
     //
     // Also, using `command.settings.outputDirs.setSingleOutput` I get strange classpath problems.
     // What's even stranger, is that everything works fine using `-d`!
-    println(sys.props("scalanative.testingcompiler.cp"))//, sys props "scalanative.nscplugin.jar"))
     val outPath = outputDir.getAbsolutePath
     val arguments =
       CommandLineParser.tokenize(s"-d $outPath " + (options mkString " "))
