@@ -7,12 +7,10 @@
 #include "Marker.h"
 #include "Log.h"
 #include "Object.h"
-
+#include "State.h"
 
 #define INITIAL_HEAP_SIZE (128*1024*1024)
 
-Heap* heap = NULL;
-Stack* stack = NULL;
 
 
 void scalanative_collect();
@@ -22,7 +20,7 @@ void scalanative_init() {
     stack = stack_alloc(INITIAL_STACK_SIZE);
 }
 
-void* scalanative_alloc_raw(size_t size) {
+void* scalanative_alloc(void *info, size_t size) {
     assert(size <= MAX_BLOCK_SIZE);
     size = (size + sizeof(word_t) - 1 ) / sizeof(word_t) * sizeof(word_t);
     if(heap == NULL) {
@@ -30,12 +28,12 @@ void* scalanative_alloc_raw(size_t size) {
     }
 
 
-    ObjectHeader* block = heap_alloc(heap, (uint32_t)size);
-    if(block == NULL) {
+    word_t* object = heap_alloc(heap, (uint32_t)size);
+    if(object == NULL) {
         scalanative_collect();
 
-        block = heap_alloc(heap, (uint32_t)size);
-        if(block == NULL) {
+        object = heap_alloc(heap, (uint32_t)size);
+        if(object == NULL) {
             largeAllocator_print(heap->largeAllocator);
             printf("Failed to alloc: %zu\n", size + 8);
             printf("No more memory available\n");
@@ -43,45 +41,30 @@ void* scalanative_alloc_raw(size_t size) {
             exit(1);
         }
     }
-
-    assert((object_isLargeObject(block) && object_chunkSize(block) > size && object_chunkSize(block) <= 2 * size)
-           || (object_isStandardObject(block) && object_size(block) > size && object_size(block) <= 2 * size));
-    assert(object_isLargeObject(block) || (word_t*)block >= block_getFirstWord(block_getBlockHeader((word_t*)block)));
-    return (word_t*)block + 1;
+    *(void**)object = info;
+    return object;
 }
 
-void* scalanative_alloc_raw_atomic(size_t size) {
-    return scalanative_alloc_raw(size);
-}
+void* scalanative_alloc_small(void* info, size_t size) {
+    size = (size + sizeof(word_t) - 1 ) / sizeof(word_t) * sizeof(word_t);
 
-void* scalanative_alloc(void* info, size_t size) {
-    void** alloc = (void**) scalanative_alloc_raw(size);
+    void** alloc = (void**) heap_allocSmall(heap, size);
     *alloc = info;
     return (void*) alloc;
 }
 
-void* alloc(size_t size) {
-    return scalanative_alloc_raw(size);
+void* scalanative_alloc_large(void* info, size_t size) {
+    size = (size + sizeof(word_t) - 1 ) / sizeof(word_t) * sizeof(word_t);
+
+    void** alloc = (void**) heap_allocLarge(heap, size);
+    *alloc = info;
+    return (void*) alloc;
+}
+
+void* scalanative_alloc_atomic(void* info, size_t size) {
+    return scalanative_alloc(info, size);
 }
 
 void scalanative_collect() {
-#ifdef DEBUG_PRINT
-    printf("\nCollect\n");
-    fflush(stdout);
-#endif
-    mark_roots(heap, stack);
-    bool success = heap_recycle(heap);
-
-    if(!success) {
-        printf("Failed to recycle enough memory.\n");
-        printf("No more memory available\n");
-        fflush(stdout);
-        exit(1);
-    }
-#ifdef DEBUG_PRINT
-    printf("End collect\n");
-    fflush(stdout);
-#endif
+    heap_collect(heap, stack);
 }
-
-void scalanative_safepoint() {}

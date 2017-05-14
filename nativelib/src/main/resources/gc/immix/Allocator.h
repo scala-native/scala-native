@@ -2,6 +2,7 @@
 #define IMMIX_ALLOCATOR_H
 
 #include "GCTypes.h"
+#include <stddef.h>
 #include "datastructures/BlocList.h"
 #include "stats/AllocatorStats.h"
 

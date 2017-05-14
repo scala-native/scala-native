@@ -4,6 +4,7 @@
 #include "GCTypes.h"
 #include "Allocator.h"
 #include "LargeAllocator.h"
+#include "datastructures/Stack.h"
 
 typedef struct {
     word_t* heapStart;
@@ -31,9 +32,14 @@ static inline bool heap_isObjectInHeap(Heap* heap, ObjectHeader* object) {
     return heap_isWordInHeap(heap, (word_t*) object);
 }
 
-Heap* heap_create(size_t);
-ObjectHeader* heap_alloc(Heap*, uint32_t);
-bool heap_recycle(Heap*);
+Heap* heap_create(size_t initialHeapSize);
+word_t* heap_alloc(Heap* heap, uint32_t objectSize);
+word_t* heap_allocSmall(Heap* heap, uint32_t objectSize);
+word_t* heap_allocLarge(Heap* heap, uint32_t objectSize);
+
+void heap_collect(Heap* heap, Stack* stack);
+
+bool heap_recycle(Heap* heap);
 void heap_grow(Heap*, size_t);
 
 #endif //IMMIX_HEAP_H

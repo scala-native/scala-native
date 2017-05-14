@@ -43,6 +43,20 @@ void *scalanative_alloc(void *info, size_t size) {
     }
 }
 
+void *scalanative_alloc(void *info, size_t size) {
+    void **alloc = (void **)GC_malloc(size);
+    *alloc = info;
+    return (void *)alloc;
+}
+
+void *scalanative_alloc_small(void *info, size_t size) {
+    return scalanative_alloc(info, size);
+}
+
+void *scalanative_alloc_large(void *info, size_t size) {
+    return scalanative_alloc(info, size);
+}
+
 void *scalanative_alloc_atomic(void *info, size_t size) {
     return scalanative_alloc(info, size);
 }

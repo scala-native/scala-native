@@ -85,7 +85,7 @@ word_t* _overflow_allocation(Allocator* allocator, size_t size) {
     return start;
 }
 
-word_t* allocator_alloc(Allocator* allocator, size_t size) {
+INLINE word_t* allocator_alloc(Allocator* allocator, size_t size) {
     word_t* start = allocator->cursor;
     word_t* end = (word_t*)((uint8_t*)start + size);
 

@@ -6,6 +6,8 @@
 #include "Log.h"
 #include "Allocator.h"
 #include "stats/AllocatorStats.h"
+#include "Marker.h"
+#include "State.h"
 
 #define MAX_SIZE 64*1024*1024*1024L
 // Allow read and write
@@ -51,32 +53,110 @@ Heap* heap_create(size_t initialSize) {
     return heap;
 }
 
-ObjectHeader* heap_alloc(Heap* heap, uint32_t objectSize) {
-    uint32_t size = objectSize + sizeof(word_t); // Add header
 
-    if(size >= LARGE_BLOCK_SIZE) {
-        ObjectHeader* object = largeAllocator_getBlock(heap->largeAllocator, size);
-        if(object == NULL) {
-            return NULL;
-        }
+word_t* heap_allocLarge(Heap* heap, uint32_t objectSize) {
+    assert(objectSize % 8 == 0);
+
+    uint32_t size = objectSize + sizeof(word_t); // Add header
+    ObjectHeader* object = largeAllocator_getBlock(heap->largeAllocator, size);
+    if(object != NULL) {
         object_setObjectType(object, object_large);
         object_setSize(object, size);
-        return object;
+        return (word_t*) object + 1;
     } else {
-        ObjectHeader* block = (ObjectHeader*) allocator_alloc(heap->allocator, size);
-        if(block != NULL) {
-            object_setObjectType(block, object_standard);
-            object_setSize(block, size);
+        heap_collect(heap, stack);
+
+        object = largeAllocator_getBlock(heap->largeAllocator, size);
+        if(object != NULL) {
+            object_setObjectType(object, object_large);
+            object_setSize(object, size);
+            return (word_t*) object + 1;
+        } else {
+            largeAllocator_print(heap->largeAllocator);
+            printf("Failed to alloc: %u\n", size + 8);
+            printf("No more memory available\n");
+            fflush(stdout);
+            exit(1);
+        }
+    }
+
+}
+
+word_t* allocSmallSlow(Heap* heap, uint32_t size) {
+
+    heap_collect(heap, stack);
+
+    ObjectHeader *block = (ObjectHeader *) allocator_alloc(heap->allocator, size);
+    if (block != NULL) {
+        object_setObjectType(block, object_standard);
+        object_setSize(block, size);
 
 #ifdef ALLOCATOR_STATS
-            heap->allocator->stats->bytesAllocated += objectSize;
+        heap->allocator->stats->bytesAllocated += objectSize;
             heap->allocator->stats->totalBytesAllocated += objectSize;
             heap->allocator->stats->totalAllocatedObjectCount++;
 #endif
-
-        }
-        return block;
     }
+
+    if(block == NULL) {
+        largeAllocator_print(heap->largeAllocator);
+        printf("Failed to alloc: %u\n", size + 8);
+        printf("No more memory available\n");
+        fflush(stdout);
+        exit(1);
+    }
+
+    return (word_t*) block + 1;
+}
+
+
+INLINE word_t* heap_allocSmall(Heap* heap, uint32_t objectSize) {
+    assert(objectSize % 8 == 0);
+    uint32_t size = objectSize + sizeof(word_t); // Add header
+    ObjectHeader *block = (ObjectHeader *) allocator_alloc(heap->allocator, size);
+    if (block != NULL) {
+        object_setObjectType(block, object_standard);
+        object_setSize(block, size);
+
+#ifdef ALLOCATOR_STATS
+        heap->allocator->stats->bytesAllocated += objectSize;
+            heap->allocator->stats->totalBytesAllocated += objectSize;
+            heap->allocator->stats->totalAllocatedObjectCount++;
+#endif
+        return (word_t*)block + 1;
+    } else {
+        return allocSmallSlow(heap, size);
+    }
+}
+
+word_t* heap_alloc(Heap* heap, uint32_t objectSize) {
+    assert(objectSize % 8 == 0);
+
+    if(objectSize + sizeof(word_t) >= LARGE_BLOCK_SIZE) {
+        return heap_allocLarge(heap, objectSize);
+    } else {
+        return heap_allocSmall(heap, objectSize);
+    }
+}
+
+void heap_collect(Heap* heap, Stack* stack) {
+#ifdef DEBUG_PRINT
+    printf("\nCollect\n");
+    fflush(stdout);
+#endif
+    mark_roots(heap, stack);
+    bool success = heap_recycle(heap);
+
+    if(!success) {
+        printf("Failed to recycle enough memory.\n");
+        printf("No more memory available\n");
+        fflush(stdout);
+        exit(1);
+    }
+#ifdef DEBUG_PRINT
+    printf("End collect\n");
+    fflush(stdout);
+#endif
 }
 
 bool heap_recycle(Heap* heap) {
