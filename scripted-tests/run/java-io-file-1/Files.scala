@@ -55,17 +55,17 @@ object Files {
 
   // Those files are there to test the canonical name
   val canon0F = new File("/.")
-  val canon0N = "/"
+  val canon0N = File.separator
   val canon1F = new File("/../")
-  val canon1N = "/"
+  val canon1N = File.separator
   val canon2F = new File("/foo/./bar")
-  val canon2N = "/foo/bar"
+  val canon2N = s"${File.separator}foo${File.separator}bar"
   val canon3F = new File("/foo/../bar")
-  val canon3N = "/bar"
+  val canon3N = s"${File.separator}bar"
   val canon4F = new File("/foo/../../bar")
-  val canon4N = "/../bar"
+  val canon4N = s"${File.separator}..${File.separator}bar"
   val canon5F = new File("/foo/../../../bar")
-  val canon5N = "/bar"
+  val canon5N = s"${File.separator}bar"
 
   // To test absolute names
   val absoluteUnixStyle = new File("/foo/bar")
@@ -77,11 +77,11 @@ object Files {
   val relative2         = new File("../")
 
   val children0       = new File("/foo/bar")
-  val expectedParent0 = File.separator + "foo"
+  val expectedParent0 = s"${File.separator}foo"
   val children1       = new File("foo/bar")
   val expectedParent1 = "foo"
   val children2       = new File("/foobar")
-  val expectedParent2 = "/"
+  val expectedParent2 = File.separator
   val children3       = new File("foobar")
   val expectedParent3 = null
   val children4       = new File("")

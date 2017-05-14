@@ -129,8 +129,18 @@ final class Matcher private[regex] (var _pattern: Pattern,
     val startIndex = start(group)
     val endIndex   = end(group)
 
-    if (startIndex < 0 || endIndex < 0 || startIndex >= inputSequence.length || endIndex >= inputSequence.length) null
-    else inputSequence.subSequence(startIndex, endIndex).toString()
+    if (startIndex < 0 && endIndex < 0) null
+    else {
+      def limits(lowest: Int, value: Int, highest: Int): Int = {
+        if (value < lowest) lowest
+        else if (value > highest) highest
+        else value
+      }
+      inputSequence
+        .subSequence(limits(0, startIndex, inputSequence.length),
+                     limits(0, endIndex, inputSequence.length))
+        .toString()
+    }
   }
 
   def group(name: String): String = group(groupIndex(name))
