@@ -6,7 +6,7 @@ import scala.tools.nsc._
 import scala.tools.nsc.io.AbstractFile
 import scalanative.nir.serialization.{serializeText, serializeBinary}
 import scalanative.io.withScratchBuffer
-import scalanative.io.VirtualDirectory.root
+import scalanative.io.VirtualDirectory
 
 trait NirFiles { self: NirCodeGen =>
   import global._
@@ -31,7 +31,7 @@ trait NirFiles { self: NirCodeGen =>
         withScratchBuffer { buffer =>
           serializeBinary(defns, buffer)
           buffer.flip
-          root.write(path, buffer)
+          VirtualDirectory.local(path.getParent.toFile).write(path, buffer)
         }
     }
 }

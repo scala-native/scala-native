@@ -2,6 +2,7 @@ import java.io.File.pathSeparator
 import scala.util.Try
 import scalanative.tools.OptimizerReporter
 import scalanative.sbtplugin.ScalaNativePluginInternal._
+import scalanative.io.packageNameFromPath
 
 val toolScalaVersion      = "2.10.6"
 val libScalaVersion       = "2.11.11"
@@ -382,19 +383,10 @@ lazy val tests =
       // nativeOptimizerReporter := OptimizerReporter.toDirectory(
       //   crossTarget.value),
       sourceGenerators in Compile += Def.task {
-        val dir       = sourceDirectory.value
-        val separator = java.io.File.separator
-        val prefix = dir.getAbsolutePath + Seq("main", "scala")
-            .mkString(separator, separator, separator)
+        val dir = (scalaSource in Compile).value
         val suites = (dir ** "*Suite.scala").get
-          .map { f =>
-            f.getAbsolutePath
-              .replace(prefix, "")
-              .replace(".scala", "")
-              .split(java.util.regex.Matcher.quoteReplacement(
-                System.getProperty("file.separator")))
-              .mkString(".")
-          }
+          .flatMap(IO.relativizeFile(dir, _))
+          .map(file => packageNameFromPath(file.toPath))
           .filter(_ != "tests.Suite")
           .mkString("Seq(", ", ", ")")
         val file = (sourceManaged in Compile).value / "tests" / "Discover.scala"
@@ -435,19 +427,10 @@ lazy val benchmarks =
     .settings(
       nativeMode := "release",
       sourceGenerators in Compile += Def.task {
-        val dir       = sourceDirectory.value
-        val separator = java.io.File.separator
-        val prefix = dir.getAbsolutePath + Seq("main", "scala")
-            .mkString(separator, separator, separator)
+        val dir = (scalaSource in Compile).value
         val benchmarks = (dir ** "*Benchmark.scala").get
-          .map { f =>
-            f.getAbsolutePath
-              .replace(prefix, "")
-              .replace(".scala", "")
-              .split(java.util.regex.Matcher.quoteReplacement(
-                System.getProperty("file.separator")))
-              .mkString(".")
-          }
+          .flatMap(IO.relativizeFile(dir, _))
+          .map(file => packageNameFromPath(file.toPath))
           .filter(_ != "benchmarks.Benchmark")
           .mkString("Seq(new ", ", new ", ")")
         val file = (sourceManaged in Compile).value / "benchmarks" / "Discover.scala"
