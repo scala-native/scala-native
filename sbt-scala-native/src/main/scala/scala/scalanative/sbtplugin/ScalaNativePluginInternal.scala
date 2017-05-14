@@ -363,7 +363,7 @@ object ScalaNativePluginInternal {
       val opaths      = (nativelib ** "*.o").get.map(abs)
       val paths       = apppaths.map(abs) ++ opaths
       val links: Seq[String] = {
-        val os = Option(System.getProperty("os.name")).getOrElse("")
+        val os   = Option(System.getProperty("os.name")).getOrElse("")
         val arch = target.split("-").head
         // we need re2 to link the re2 c wrapper (cre2.h)
         val regex = Seq("re2")
