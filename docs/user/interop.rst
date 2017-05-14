@@ -305,6 +305,29 @@ Scala Native defines the type ``Word`` and its unsigned counterpart, ``UWord``.
 A word corresponds to ``Int`` on 32-bit architectures and to ``Long`` on 64-bit
 ones.
 
+Size of types
+-------------
+
+In order to statically determine the size of a type, you can use the ``sizeof``
+function which is Scala Native's counterpart of the eponymous C operator. It
+returns the size in bytes:
+
+.. code-block:: scala
+
+    println(sizeof[Byte])    // 1
+    println(sizeof[CBool])   // 1
+    println(sizeof[CShort])  // 2
+    println(sizeof[CInt])    // 4
+    println(sizeof[CLong])   // 8
+
+It can also be used to obtain the size of a structure:
+
+.. code-block:: scala
+
+    type TwoBytes = CStruct2[Byte, Byte]
+    println(sizeof[TwoBytes])  // 2
+
+
 Unsigned integer types
 ----------------------
 
