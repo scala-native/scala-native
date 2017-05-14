@@ -44,12 +44,15 @@ C Type                    Scala Type
 ========================= =========================
 ``void``                  ``Unit``
 ``bool``                  ``native.CBool``
-``char``, ``signed char`` ``native.CChar``
+``char``                  ``native.CChar``
+``signed char``           ``native.CSignedChar``
 ``unsigned char``         ``native.CUnsignedChar`` [1_]
 ``short``                 ``native.CShort``
 ``unsigned short``        ``native.CUnsignedShort`` [1_]
 ``int``                   ``native.CInt``
+``long int``              ``native.CLongInt``
 ``unsigned int``          ``native.CUnsignedInt`` [1_]
+``unsigned long int``     ``native.CUnsignedLongInt`` [1_]
 ``long``                  ``native.CLong``
 ``unsigned long``         ``native.CUnsignedLong`` [1_]
 ``long long``             ``native.CLongLong``
