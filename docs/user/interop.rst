@@ -279,7 +279,7 @@ strings (similarly to C):
 
     import scalanative.native._
 
-    // CString is an alias to Ptr[CChar]
+    // CString is an alias for Ptr[CChar]
     val msg: CString = c"Hello, world!"
     stdio.printf(msg)
 
