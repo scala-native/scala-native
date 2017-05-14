@@ -298,6 +298,13 @@ this particular use case, we provide ``obj.cast[T]`` that is defined in the
 implicit class ``native.CCast``. Unlike Scala's ``asInstanceOf``, ``cast`` does
 not provide any safety guarantees.
 
+Platform-specific types
+-----------------------
+
+Scala Native defines the type ``Word`` and its unsigned counterpart, ``UWord``.
+A word corresponds to ``Int`` on 32-bit architectures and to ``Long`` on 64-bit
+ones.
+
 Unsigned integer types
 ----------------------
 
