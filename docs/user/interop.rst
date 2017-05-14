@@ -292,11 +292,11 @@ Additionally, we also expose two helper functions ``native.toCString`` and
 Unchecked casts
 ```````````````
 
-Quite often,C APIs expect user to perform unchecked casts to convert
-between different pointer types and/or pointers and integers values. We provide
-``obj.cast[T]`` that's defined in ``native.CCast`` implicit class, for this
-use case. Unlike Scala's ``asInstanceOf``, ``cast`` doesn't provide any safety
-guarantees.
+Quite often, C interfaces expect the user to perform unchecked casts to convert
+between different pointer types, or between pointers and integer values. For
+this particular use case, we provide ``obj.cast[T]`` that is defined in the
+implicit class ``native.CCast``. Unlike Scala's ``asInstanceOf``, ``cast`` does
+not provide any safety guarantees.
 
 Unsigned integer types
 ----------------------
