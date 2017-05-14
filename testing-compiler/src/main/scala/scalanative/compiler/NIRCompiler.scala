@@ -83,7 +83,8 @@ class NIRCompiler(outputDir: File) extends api.NIRCompiler {
                                val classpath: List[String])
       extends CompilerOption(
         s"-Xplugin:$jarPath" + (if (classpath.nonEmpty)
-                                  classpath.mkString(" -cp ", ":", "")
+                                  classpath
+                                    .mkString(" -cp ", File.pathSeparator, "")
                                 else ""))
 
   /**
