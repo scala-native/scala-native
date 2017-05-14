@@ -5,6 +5,9 @@
 extern "C" {
 #endif
 
+mode_t getAccessModeF(const int fileHandle);
+mode_t getAccessMode(const char * path);
+
 #ifdef _USE_32BIT_TIME_T
 
     void copy_systemstat_to_stat(struct _stat32* const _src, struct stat* const _dst)
@@ -29,14 +32,16 @@ extern "C" {
         struct _stat32 temp;
         int result = _fstat32(_FileHandle, &temp);
         copy_systemstat_to_stat(&temp, _Stat);
+        _Stat->st_mode = getAccessModeF(_FileHandle);
         return result;
     }
 
     int stat(char const* const _FileName, struct stat* const _Stat)
     {
         struct _stat32 temp;
-        int result = _stat32(_FileName, (struct _stat32*)_Stat);
+        int result = _stat32(_FileName, &temp);
         copy_systemstat_to_stat(&temp, _Stat);
+        _Stat->st_mode = getAccessMode(_FileName);
         return result;
     }
 
@@ -62,16 +67,18 @@ extern "C" {
     int fstat(int const _FileHandle, struct stat* const _Stat)
     {
         struct _stat64i32 temp;
-        int result = _fstat64i32(_FileHandle, (struct _stat64i32*)_Stat);
+        int result = _fstat64i32(_FileHandle, &temp);
         copy_systemstat_to_stat(&temp, _Stat);
+        _Stat->st_mode = getAccessModeF(_FileHandle);
         return result;
     }
 
     int stat(char const* const _FileName, struct stat* const _Stat)
     {
         struct _stat64i32 temp;
-        int result = _stat64i32(_FileName, (struct _stat64i32*)_Stat);
+        int result = _stat64i32(_FileName, &temp);
         copy_systemstat_to_stat(&temp, _Stat);
+        _Stat->st_mode = getAccessMode(_FileName);
         return result;
     }
 
@@ -81,18 +88,6 @@ int lstat(char const* const _FileName, struct stat* const _Stat)
 {
     //todo: make check for symbolic link
     return stat(_FileName, _Stat);
-}
-
-int pchmod(const char * path, mode_t mode)
-{
-    int result = _chmod(path, (mode & MS_MODE_MASK));
-
-    if (result != 0)
-    {
-        result = errno;
-    }
-
-    return (result);
 }
 
 int fchmod(int const _FileHandle, mode_t mode)

@@ -353,7 +353,7 @@ object ScalaNativePluginInternal {
       val opaths      = (nativelib ** "*.o").get.map(abs)
       val paths       = apppaths.map(abs) ++ opaths
       val links: Seq[String] = {
-        val os   = Option(sys props "os.name").getOrElse("")
+        val os = Option(System.getProperty("os.name")).getOrElse("")
         val arch = target.split("-").head
         // we need re2 to link the re2 c wrapper (cre2.h)
         val regex = Seq("re2")
@@ -364,7 +364,7 @@ object ScalaNativePluginInternal {
         val libunwind = os match {
           case "Mac OS X" => Seq.empty
           case _ =>
-            if (isWindows) Seq("Dbghelp") else Seq("unwind", "unwind-" + arch)
+            if (isWindows) Seq("Dbghelp", "Advapi32") else Seq("unwind", "unwind-" + arch)
         }
         librt ++ libunwind ++ linked.links
           .map(_.name) ++ garbageCollector(gc).links ++ regex

@@ -102,47 +102,47 @@
 
 /* Read user permission */
 #if !defined(S_IRUSR)
-#   define S_IRUSR S_IREAD
+#   define S_IRUSR _S_IREAD
 #endif
 
 /* Write user permission */
 #if !defined(S_IWUSR)
-#   define S_IWUSR S_IWRITE
+#   define S_IWUSR _S_IWRITE
 #endif
 
 /* Execute user permission */
 #if !defined(S_IXUSR)
-#   define S_IXUSR 0
+#   define S_IXUSR _S_IEXEC
 #endif
 
 /* Read group permission */
 #if !defined(S_IRGRP)
-#   define S_IRGRP 0
+#   define S_IRGRP 0x00200000
 #endif
 
 /* Write group permission */
 #if !defined(S_IWGRP)
-#   define S_IWGRP 0
+#   define S_IWGRP 0x00100000
 #endif
 
 /* Execute group permission */
 #if !defined(S_IXGRP)
-#   define S_IXGRP 0
+#   define S_IXGRP 0x00080000
 #endif
 
 /* Read others permission */
 #if !defined(S_IROTH)
-#   define S_IROTH 0
+#   define S_IROTH 0x00040000
 #endif
 
 /* Write others permission */
 #if !defined(S_IWOTH)
-#   define S_IWOTH 0
+#   define S_IWOTH 0x00020000
 #endif
 
 /* Execute others permission */
 #if !defined(S_IXOTH)
-#   define S_IXOTH 0
+#   define S_IXOTH 0x00010000
 #endif
 
 #if !defined(S_ISUID)

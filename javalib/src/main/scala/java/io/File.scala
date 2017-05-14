@@ -538,9 +538,12 @@ object File {
   private def tempDir(): File = {
     val dir = getenv(c"TMPDIR")
     if (dir == null) {
-      val name = stackalloc[CChar](1024)
-      dirent.gettempdir(name, 1024)
-      new File(fromCString(name))
+      val dir2 = getenv(c"TEMP")
+      if (dir2 == null) {
+        val name = stackalloc[CChar](1024)
+        dirent.gettempdir(name, 1024)
+        new File(fromCString(name))
+      } else new File(fromCString(dir2))
     } else new File(fromCString(dir))
   }
 

@@ -13,7 +13,7 @@ target = cwd + "/javalib/target/scala-2.11/classes/"
 paths = subprocess.check_output(["find", target, "-name", "*.nir"])
 
 classes = sorted(list(set(
-    line.replace(target, "").replace(".nir", "").lstrip("/").rstrip("$").replace("/", ".")
+    line.replace(target, "").replace(".nir", "").lstrip(os.sep).rstrip("$").replace(os.sep, ".")
     for line in paths.split("\n")
     if "$$anon" not in line and "java/" in line
 )))

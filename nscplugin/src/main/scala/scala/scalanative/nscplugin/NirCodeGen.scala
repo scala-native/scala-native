@@ -615,7 +615,7 @@ abstract class NirCodeGen
           focus
 
         case _ =>
-          abort("Unexpected tree in genExpr: " + tree + "/" + tree.getClass +
+          abort("Unexpected tree in genExpr: " + tree + java.io.File.separator + tree.getClass +
               " at: " + tree.pos)
       }
     }

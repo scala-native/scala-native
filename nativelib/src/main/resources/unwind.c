@@ -81,7 +81,7 @@ int scalanative_unwind_get_proc_name(void *cursor, char *buffer,
             fileNameLen = strlen(line.FileName);
             if (fileNameLen > 0)
             {
-                snprintf(buffer + symbol->NameLen, length - symbol->NameLen, ":%lu:%s", line.LineNumber, line.FileName);
+                snprintf(buffer + symbol->NameLen, length - symbol->NameLen, ":(%s:%lu)", line.FileName, line.LineNumber);
             }
         }
     }

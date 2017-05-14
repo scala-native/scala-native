@@ -16,7 +16,7 @@ trait NirFiles { self: NirCodeGen =>
       settings.outputDirs.outputDirFor(cunit.source.file)
 
     val id        = genTypeName(sym).id
-    val pathParts = id.split("[./]")
+    val pathParts = id.split("[./\\\\]")
     val dir       = (baseDir /: pathParts.init)(_.subdirectoryNamed(_))
 
     var filename = pathParts.last
