@@ -80,8 +80,7 @@ Linking with native libraries
 
 C compilers typically require to pass an additional ``-l mylib`` flag to
 dynamically link with a library. In Scala Native, one can annotate libraries to
-link with using the ``@native.link`` annotation. As in C, it takes the library
-name without the ``lib`` prefix.
+link with using the ``@native.link`` annotation.
 
 .. code-block:: scala
 
@@ -93,6 +92,10 @@ name without the ``lib`` prefix.
 
 Whenever any of the members of ``mylib`` object are reachable, the Scala Native
 linker will automatically link with the corresponding native library.
+
+As in C, library names are specified without the ``lib`` prefix. For example,
+the library `libuv <https://github.com/libuv/libuv>`_  corresponds to
+``@native.link("uv")`` in Scala Native.
 
 It is possible to rename functions using the ``@name`` annotation. Its use is
 recommended to enforce the Scala naming conventions in bindings:
