@@ -10,8 +10,27 @@ install:
   - ps: $scalafmt_plugin='addSbtPlugin("com.geirsson" % "sbt-scalafmt" % "0.5.5")'
   - ps: $scalafmt_plugin|Set-Content 'C:\\Users\\appveyor\\.sbt\\0.13\\plugins\\plugins.sbt'
 build_script:
-  - sbt "scalafmt --test"
+  - ps: |
+        if ($env:APPVEYOR_PULL_REQUEST_NUMBER) {
+            Write-Output "Incoming pull request from https://github.com/$env:APPVEYOR_REPO_SLUG/pull/$env:APPVEYOR_PULL_REQUEST_NUMBER";
+            $authorReq= try { Invoke-RestMethod -UseDefaultCredentials -Uri "https://api.github.com/repos/$env:APPVEYOR_REPO_SLUG/pulls/$env:APPVEYOR_PULL_REQUEST_NUMBER" -ErrorVariable RestError -ErrorAction SilentlyContinue} catch { $RestError.message | ConvertFrom-Json};
+            $author = $authorReq.user.login;
+            if ($author) {
+                Write-Output "Pull request submitted by $author";
+                $signedReq=try { Invoke-RestMethod -Uri "http://www.lightbend.com/contribute/cla/scala/check/$author" -ErrorVariable RestError -ErrorAction SilentlyContinue} catch { $RestError.message | ConvertFrom-Json};
+                if ($signedReq.signed -eq "true") {
+                    Write-Output "CLA check for $author successful";
+                }
+                else {
+                    Write-Output "CLA check for $author failed";
+                    Write-Output "Please sign the Scala CLA to contribute to Scala Native";
+                    Write-Output "Go to https://www.lightbend.com/contribute/cla/scala and then resubmit this pull request";
+                    exit 1;
+                } else {exit 1};
+            } else {exit 1};
+        }
 test_script:
+  - sbt "scalafmt --test"
   - sbt -J-Xmx2G rebuild "set scriptedBufferLog in sbtScalaNative := false" test-all
 cache:
   - C:\Users\appveyor\scoop\apps\sbt\current\

@@ -1,1 +1,1 @@
-
+class ThisFileIsEmpty(msg: String) {}
