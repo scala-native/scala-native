@@ -7,7 +7,8 @@ install:
   - ps: $env:CLANG_PATH="C:\\Users\\appveyor\\scoop\\apps\\llvm\\current\\bin\\clang.exe"
   - ps: $env:CLANGPP_PATH="C:\\Users\\appveyor\\scoop\\apps\\llvm\\current\\bin\\clang++.exe"
   - ps: mkdir 'C:\\Users\\appveyor\\.sbt\\0.13\\plugins\\'
-  - ps: 'addSbtPlugin("com.geirsson" % "sbt-scalafmt" % "0.5.5")'|Set-Content 'C:\\Users\\appveyor\\.sbt\\0.13\\plugins\\plugins.sbt'
+  - ps: $scalafmt_plugin='addSbtPlugin("com.geirsson" % "sbt-scalafmt" % "0.5.5")'
+  - ps: $scalafmt_plugin|Set-Content 'C:\\Users\\appveyor\\.sbt\\0.13\\plugins\\plugins.sbt'
 build_script:
   - sbt scalafmt --test
 test_script:
