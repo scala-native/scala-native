@@ -621,6 +621,58 @@ int getWinTempDir(char *buffer, size_t length)
     return dwRetVal;
 }
 
+const char* realpath(const char* file_name, char* resolved_name)
+{
+    const int cSize = 1024;
+    WCHAR pathOut[cSize];
+    HANDLE hFile;
+    DWORD dwRet;    
+    wchar_t pathw[cSize];
+    size_t outLength = 0;
+    mbstowcs_s(&outLength, pathw, cSize, file_name, cSize);
+
+    if (file_name)
+    {
+        hFile = CreateFileW(pathw,               // file to open
+            GENERIC_READ,          // open for reading
+            FILE_SHARE_READ,       // share for reading
+            NULL,                  // default security
+            OPEN_EXISTING,         // existing file only
+            FILE_FLAG_BACKUP_SEMANTICS, // magic flag
+            NULL);                 // no attr. template
+
+        if (hFile == INVALID_HANDLE_VALUE)
+        {
+            //printf("Could not open file (error %d\n)", GetLastError());
+            resolved_name[0] = 0;
+        }
+        else
+        {
+            dwRet = GetFinalPathNameByHandleW(hFile, pathOut, cSize, VOLUME_NAME_DOS);
+            wcstombs_s(&outLength, resolved_name, cSize, pathOut, cSize);
+            CloseHandle(hFile);
+        }
+    }
+    else
+    {
+        resolved_name[0] = 0;
+    }
+    return resolved_name;
+}
+
+int readlink(const char *path, char* buf, int bufsize)
+{
+    const char* result = realpath(path, buf);
+    if (result[0] == 0)
+    {
+        return -1;
+    }
+    else
+    {
+        return strlen(result);
+    }
+}
+
 
 #ifdef __cplusplus
 }

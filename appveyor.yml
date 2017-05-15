@@ -1,0 +1,14 @@
+version: '{build}'
+os: Windows Server 2012
+install:
+  - ps: iex (new-object net.webclient).downloadstring('https://get.scoop.sh')
+  - ps: scoop install sbt llvm
+  - ps: SBT_OPTS=-XX:MaxPermSize=2g -Xmx4g
+build_script:
+  - sbt scalafmt --test
+test_script:
+  - sbt tests-all
+cache:
+  - C:\sbt\
+  - C:\Users\appveyor\.m2
+  - C:\Users\appveyor\.ivy2

@@ -1,6 +1,7 @@
 object GetParentTest {
   import Files._
-  def main(args: Array[String]): Unit = {
+  import scala.scalanative.runtime.Platform
+  def main(args: Array[String]): Unit = if (!Platform.isWindows) {
     assert(children0.getParent == expectedParent0)
     assert(children1.getParent == expectedParent1)
     assert(children2.getParent == expectedParent2)

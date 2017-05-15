@@ -142,7 +142,8 @@ object ScalaNativePluginInternal {
         val includedir =
           Try(Process("llvm-config --includedir").lines_!.toSeq)
             .getOrElse(Seq.empty)
-        ("/usr/local/include" +: includedir).map(s => s"-I$s")
+        ((if (isWindows) (nativeWorkdir.value + "\\lib\\os_win\\include")
+          else "/usr/local/include") +: includedir).map(s => s"-I$s")
       }
       if (isWindows) {
         includes :+ "-fcxx-exceptions" :+ "-fexceptions" :+ "-flto=thin"
@@ -158,7 +159,8 @@ object ScalaNativePluginInternal {
         val libdir =
           Try(Process("llvm-config --libdir").lines_!.toSeq)
             .getOrElse(Seq.empty)
-        ("/usr/local/lib" +: libdir).map(s => s"-L$s")
+        ((if (isWindows) (nativeWorkdir.value + "\\lib\\os_win\\lib")
+          else "/usr/local/lib") +: libdir).map(s => s"-L$s")
       }
       libs ++ Seq("-gline-tables-only") ++ (if (isWindows)
                                               Seq("-fcxx-exceptions",

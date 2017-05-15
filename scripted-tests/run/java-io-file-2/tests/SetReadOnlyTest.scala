@@ -1,6 +1,7 @@
 object SetReadOnlyTest {
   import Files._
-  def main(args: Array[String]): Unit = {
+  import scala.scalanative.runtime.Platform
+  def main(args: Array[String]): Unit = if (!Platform.isWindows) {
     assert(willBeSetReadOnlyFile.exists())
     assert(willBeSetReadOnlyFile.canRead())
     assert(willBeSetReadOnlyFile.canWrite())
