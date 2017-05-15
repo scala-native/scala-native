@@ -2,17 +2,17 @@ version: '{build}'
 os: Windows Server 2012
 install:
   - ps: iex (new-object net.webclient).downloadstring('https://get.scoop.sh')
-  - ps: scoop install sbt llvm
+  - ps: scoop install sbt
   - ps: $env:SBT_OPTS="-XX:MaxPermSize=2g -Xmx4g"
-  - ps: $env:CLANG_PATH="C:\\Users\\appveyor\\scoop\\apps\\llvm\\current\\bin\\clang.exe"
-  - ps: $env:CLANGPP_PATH="C:\\Users\\appveyor\\scoop\\apps\\llvm\\current\\bin\\clang++.exe"
+  - ps: $env:CLANG_PATH="C:\\Program Files\\LLVM\\bin\\clang.exe"
+  - ps: $env:CLANGPP_PATH="C:\\Program Files\\LLVM\\bin\\clang++.exe"
   - ps: mkdir 'C:\\Users\\appveyor\\.sbt\\0.13\\plugins\\'
   - ps: $scalafmt_plugin='addSbtPlugin("com.geirsson" % "sbt-scalafmt" % "0.5.5")'
   - ps: $scalafmt_plugin|Set-Content 'C:\\Users\\appveyor\\.sbt\\0.13\\plugins\\plugins.sbt'
 build_script:
-  - sbt scalafmt --test
+  - sbt "scalafmt --test"
 test_script:
-  - sbt tests-all
+  - sbt -J-Xmx2G rebuild "set scriptedBufferLog in sbtScalaNative := false" test-all
 cache:
   - C:\Users\appveyor\scoop\apps\sbt\current\
   - C:\Users\appveyor\.m2
