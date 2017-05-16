@@ -46,8 +46,6 @@ class ByteArrayOutputStream(initBufSize: Int) extends OutputStream {
   def toString(charsetName: String): String =
     new String(buf, 0, count, charsetName)
 
-  override def close(): Unit = ()
-
   private def growBuf(minIncrement: Int): Unit = {
     val newSize = Math.max(count + minIncrement, buf.length * 2)
     val newBuf  = new Array[Byte](newSize)
