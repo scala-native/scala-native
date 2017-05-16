@@ -39,7 +39,11 @@ object TextFormat extends Format {
             "avg [ms]")
     }
 
-    val rows = results.map {
+    val rows = results.sortBy {
+      case _: BenchmarkCompleted => 0
+      case _: BenchmarkDisabled  => 1
+      case _: BenchmarkFailed    => 2
+    } map {
       case completed: BenchmarkCompleted =>
         CompletedRow(completed)
       case failed: BenchmarkFailed =>

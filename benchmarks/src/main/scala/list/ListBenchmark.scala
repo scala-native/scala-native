@@ -22,6 +22,8 @@
  */
 package list
 
+import benchmarks.{BenchmarkRunningTime, ShortRunningTime}
+
 class ListBenchmark extends benchmarks.Benchmark[Int] {
   final class Element(var value: Any, var next: Element = null) {
     def length(): Int = {
@@ -32,6 +34,8 @@ class ListBenchmark extends benchmarks.Benchmark[Int] {
       }
     }
   }
+
+  override val runningTime: BenchmarkRunningTime = ShortRunningTime
 
   override def run(): Int = {
     val result = tail(makeList(15), makeList(10), makeList(6))
