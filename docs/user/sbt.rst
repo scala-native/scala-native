@@ -94,7 +94,7 @@ Garbage collectors
    Conservative generational garbage collector. More information is available
    at the `project's page <https://www.hboehm.info/gc/>`_.
 
-1. **none.**
+2. **none.**
 
    Garbage collector that allocates things without ever freeing them. Useful
    for short-running command-line applications or applications where garbage
