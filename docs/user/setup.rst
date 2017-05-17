@@ -5,9 +5,9 @@ Environment setup
 
 Scala Native has the following minimum system requirements:
 
-* Java 8
+* Java 8+
 * sbt 0.13.x
-* LLVM 3.7
+* LLVM 3.7 or newer
 * Native libraries
     * Boehm GC 7.6.0
     * Re2 2017-01-01
