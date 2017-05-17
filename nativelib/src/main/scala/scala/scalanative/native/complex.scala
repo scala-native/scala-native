@@ -1,0 +1,200 @@
+package scala.scalanative
+package native
+
+import native._
+
+/** All methods take complex but Scala Native does not
+ * support pass by value so we pass a pointer to a
+ * struct for now and have a small wrapper in C
+ * to do the conversion. Currently Scala Native
+ * and JVM have no direct support for long double
+ * so these methods are not implemented.
+ *
+ * Warning: Ptr[ComplexF] and Ptr[Complex] values
+ * passed in to the functions are mutated for
+ * memory safety. Make copies on the stack or heap
+ * for values you need after the functions are called.
+ * Implicit classes are provided for convenience.
+ *
+ *
+ * References:
+ * https://en.wikipedia.org/wiki/C_data_types
+ * C99 also added complex types: float _Complex, double _Complex, long double _Complex
+ * https://en.wikipedia.org/wiki/Long_double
+ * http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/complex.h.html
+ *
+ */
+@extern
+object complex {
+
+  import complexh._
+
+  @name("scalanative_cacosf")
+  def cacosf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  @name("scalanative_cacos")
+  def cacos(complex: Ptr[Complex]): Ptr[Complex] = extern
+  //  extern long double complex cacosl(long double complex);
+
+  @name("scalanative_casinf")
+  def casinf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  @name("scalanative_casin")
+  def casin(complex: Ptr[Complex]): Ptr[Complex] = extern
+  //  extern long double complex casinl(long double complex);
+
+  @name("scalanative_catanf")
+  def catanf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  @name("scalanative_catan")
+  def catan(complex: Ptr[Complex]): Ptr[Complex] = extern
+  //  extern long double complex catanl(long double complex);
+
+  @name("scalanative_ccosf")
+  def ccosf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  @name("scalanative_ccos")
+  def ccos(complex: Ptr[Complex]): Ptr[Complex] = extern
+  //  extern long double complex ccosl(long double complex);
+
+  @name("scalanative_csinf")
+  def csinf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  @name("scalanative_csin")
+  def csin(complex: Ptr[Complex]): Ptr[Complex] = extern
+  //  extern long double complex csinl(long double complex);
+
+  @name("scalanative_ctanf")
+  def ctanf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  @name("scalanative_ctan")
+  def ctan(complex: Ptr[Complex]): Ptr[Complex] = extern
+  //  extern long double complex ctanl(long double complex);
+
+  @name("scalanative_cacoshf")
+  def cacoshf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  @name("scalanative_cacosh")
+  def cacosh(complex: Ptr[Complex]): Ptr[Complex] = extern
+  //  extern long double complex cacoshl(long double complex);
+
+  @name("scalanative_casinhf")
+  def casinhf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  @name("scalanative_casinh")
+  def casinh(complex: Ptr[Complex]): Ptr[Complex] = extern
+  //  extern long double complex casinhl(long double complex);
+
+  @name("scalanative_catanhf")
+  def catanhf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  @name("scalanative_catanh")
+  def catanh(complex: Ptr[Complex]): Ptr[Complex] = extern
+  //  extern long double complex catanhl(long double complex);
+
+  @name("scalanative_ccoshf")
+  def ccoshf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  @name("scalanative_ccosh")
+  def ccosh(complex: Ptr[Complex]): Ptr[Complex] = extern
+  //  extern long double complex ccoshl(long double complex);
+
+  @name("scalanative_csinhf")
+  def csinhf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  @name("scalanative_csinh")
+  def csinh(complex: Ptr[Complex]): Ptr[Complex] = extern
+  //  extern long double complex csinhl(long double complex);
+
+  @name("scalanative_ctanhf")
+  def ctanhf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  @name("scalanative_ctanh")
+  def ctanh(complex: Ptr[Complex]): Ptr[Complex] = extern
+  //  extern long double complex ctanhl(long double complex);
+
+  @name("scalanative_cexpf")
+  def cexpf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  @name("scalanative_cexp")
+  def cexp(complex: Ptr[Complex]): Ptr[Complex] = extern
+  //  extern long double complex cexpl(long double complex);
+
+  @name("scalanative_clogf")
+  def clogf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  @name("scalanative_clog")
+  def clog(complex: Ptr[Complex]): Ptr[Complex] = extern
+  //  extern long double complex clogl(long double complex);
+
+  @name("scalanative_cabsf")
+  def cabsf(complex: Ptr[ComplexF]): CFloat = extern
+  @name("scalanative_cabs")
+  def cabs(complex: Ptr[Complex]): CDouble = extern
+  //  extern long double cabsl(long double complex);
+
+  @name("scalanative_cpowf")
+  def cpowf(x: Ptr[ComplexF], y: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  @name("scalanative_cpow")
+  def cpow(x: Ptr[Complex], y: Ptr[Complex]): Ptr[Complex] = extern
+  //  extern long double complex cpowl(long double complex, long double complex);
+
+  @name("scalanative_csqrtf")
+  def csqrtf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  @name("scalanative_csqrt")
+  def csqrt(complex: Ptr[Complex]): Ptr[Complex] = extern
+  //  extern long double complex csqrtl(long double complex);
+
+  @name("scalanative_cargf")
+  def cargf(complex: Ptr[ComplexF]): CFloat = extern
+  @name("scalanative_carg")
+  def carg(complex: Ptr[Complex]): CDouble = extern
+  //  extern long double cargl(long double complex);
+
+  @name("scalanative_cimagf")
+  def cimagf(complex: Ptr[ComplexF]): CFloat = extern
+  @name("scalanative_cimag")
+  def cimag(complex: Ptr[Complex]): CDouble = extern
+  //  extern long double cimagl(long double complex);
+
+  @name("scalanative_conjf")
+  def conjf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  @name("scalanative_conj")
+  def conj(complex: Ptr[Complex]): Ptr[Complex] = extern
+  //  extern long double complex conjl(long double complex);
+
+  @name("scalanative_cprojf")
+  def cprojf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  @name("scalanative_cproj")
+  def cproj(complex: Ptr[Complex]): Ptr[Complex] = extern
+  //  extern long double complex cprojl(long double complex);
+
+  @name("scalanative_crealf")
+  def crealf(complex: Ptr[ComplexF]): CFloat = extern
+  @name("scalanative_creal")
+  def creal(complex: Ptr[Complex]): CDouble = extern
+  //  extern long double creall(long double complex);
+}
+
+object complexh {
+  type ComplexF = CStruct2[CFloat, CFloat]
+  type Complex  = CStruct2[CDouble, CDouble]
+
+  implicit class complexfOps(val ptr: Ptr[ComplexF]) extends AnyVal {
+    def re: CFloat = !(ptr._1)
+    def re_=(value: CFloat): Unit = {
+      !ptr._1 = value
+    }
+    def im: CFloat = !(ptr._2)
+    def im_=(value: CFloat): Unit = {
+      !ptr._2 = value
+    }
+    def copy(to: Ptr[ComplexF]): Ptr[ComplexF] = {
+      to.re = re
+      to.im = im
+      to
+    }
+  }
+
+  implicit class complexOps(val ptr: Ptr[Complex]) extends AnyVal {
+    def re: CDouble = !(ptr._1)
+    def re_=(value: CDouble): Unit = {
+      !ptr._1 = value
+    }
+    def im: CDouble = !(ptr._2)
+    def im_=(value: CDouble): Unit = {
+      !ptr._2 = value
+    }
+    def copy(to: Ptr[Complex]): Ptr[Complex] = {
+      to.re = re
+      to.im = im
+      to
+    }
+  }
+}
