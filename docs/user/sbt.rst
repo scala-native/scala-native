@@ -31,7 +31,8 @@ and now you can write your first application in ``./src/main/scala/Main.scala``:
         println("Hello, world!")
     }
 
-Now, simply run ``sbt run`` to get everything compiled and have the expected output!
+Now, simply run ``sbt run`` to get everything compiled and have the expected
+output! Please refer to the :ref:`faq` if you encounter any problems.
 
 Scala versions
 --------------
