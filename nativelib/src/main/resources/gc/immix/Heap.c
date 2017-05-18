@@ -90,7 +90,7 @@ word_t* allocSmallSlow(Heap* heap, uint32_t size) {
     if (block != NULL) {
         object_setObjectType(block, object_standard);
         object_setSize(block, size);
-
+        object_setAllocated(block);
 #ifdef ALLOCATOR_STATS
         heap->allocator->stats->bytesAllocated += objectSize;
             heap->allocator->stats->totalBytesAllocated += objectSize;
@@ -117,6 +117,8 @@ INLINE word_t* heap_allocSmall(Heap* heap, uint32_t objectSize) {
     if (block != NULL) {
         object_setObjectType(block, object_standard);
         object_setSize(block, size);
+        object_setAllocated(block);
+
 
 #ifdef ALLOCATOR_STATS
         heap->allocator->stats->bytesAllocated += objectSize;

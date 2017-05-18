@@ -28,56 +28,38 @@ static inline bool isWordAligned(word_t* word) {
     return ((word_t)word & WORD_INVERSE_MASK) == (word_t)word;
 }
 
-ObjectHeader* object_getFromInnerPointerInLine(BlockHeader* blockHeader, int lineIndex, word_t* innerPointer) {
-    ObjectHeader* object = line_header_getFirstObject(&blockHeader->lineHeaders[lineIndex]);
-    while(object != NULL && (word_t*) object_nextObject(object) <= innerPointer) {
-        object = object_nextObject(object);
-    }
-    if(object == NULL) {
-        return NULL;
-    } else {
-        ObjectHeader* nextObjectStart = object_nextObject(object);
-        if(object < nextObjectStart) {
-            return object;
-        } else {
-            return NULL;
-        }
-    }
-}
 
-ObjectHeader* object_getFromInnerPointer(word_t* word) {
-    assert(isWordAligned(word));
-    BlockHeader* blockHeader = block_getBlockHeader(word);
-    uint32_t lineIndex = block_getLineIndexFromWord(blockHeader, word);
-    ObjectHeader* header = NULL;
-    if(line_header_containsObject(&blockHeader->lineHeaders[lineIndex])
-       && (word_t*)line_header_getFirstObject(&blockHeader->lineHeaders[lineIndex]) <= word) {
-        // Search in line
-        header = object_getFromInnerPointerInLine(blockHeader, lineIndex, word);
-    } else {
-        // Search in previous lines
-        bool contains = false;
-        lineIndex--;
-        while(lineIndex > 0 && !(contains = line_header_containsObject(&blockHeader->lineHeaders[lineIndex]))) {
-            lineIndex--;
-        }
-        assert(lineIndex < LINE_COUNT);
-        if(contains) {
-            header = object_getFromInnerPointerInLine(blockHeader, lineIndex, word);
-        }
+ObjectHeader* getInLine(BlockHeader* blockHeader, int lineIndex, word_t* word) {
+    assert(line_header_containsObject(&blockHeader->lineHeaders[lineIndex]));
+
+    ObjectHeader* current = line_header_getFirstObject(&blockHeader->lineHeaders[lineIndex]);
+    ObjectHeader* next = object_nextObject(current);
+
+    word_t* lineEnd = block_getLineAddress(blockHeader, lineIndex) + WORDS_IN_LINE;
+
+    while(next != NULL && (word_t*) next < lineEnd && (word_t*)next <= word) {
+        current = next;
+        next = object_nextObject(next);
     }
-    assert(header == NULL || (word >= (word_t*) header && word < (word_t*) object_nextObject(header)));
+
+    if(object_isAllocated(current) && word >= (word_t*)current && word < (word_t*)next) {
 #ifdef DEBUG_PRINT
-    if(header != NULL) {
-        printf("inner pointer: %p object: %p\n", word, header);
-        fflush(stdout);
-    }
+        if((word_t*)current != word) {
+            printf("inner pointer: %p object: %p\n", word, current);
+            fflush(stdout);
+        }
 #endif
-    return header;
+        return current;
+    } else {
+        return NULL;
+    }
+
 }
 
 ObjectHeader* object_getObject(word_t* word) {
     BlockHeader* blockHeader = block_getBlockHeader(word);
+
+    //Check if the word points on the block header
     if(word < block_getFirstWord(blockHeader)) {
 #ifdef DEBUG_PRINT
         printf("Points on block header\n");
@@ -85,28 +67,24 @@ ObjectHeader* object_getObject(word_t* word) {
 #endif
         return NULL;
     }
+
     if(!isWordAligned(word)) {
-        return object_getFromInnerPointer((word_t*)((word_t) word & WORD_INVERSE_MASK));
+        word = (word_t*)((word_t) word & WORD_INVERSE_MASK);
     }
-    uint32_t lineIndex = block_getLineIndexFromWord(blockHeader, word);
-    if(!line_header_containsObject(&blockHeader->lineHeaders[lineIndex])) {
-#ifdef DEBUG_PRINT
-        printf("Empty line\n");
-        fflush(stdout);
-#endif
+
+    int lineIndex = block_getLineIndexFromWord(blockHeader, word);
+    while(lineIndex > 0 && !line_header_containsObject(&blockHeader->lineHeaders[lineIndex])) {
+        lineIndex--;
+    }
+
+    if(line_header_containsObject(&blockHeader->lineHeaders[lineIndex])) {
+        return getInLine(blockHeader, lineIndex, word);
+    } else {
         return NULL;
     }
 
-    ObjectHeader* current = line_header_getFirstObject(&blockHeader->lineHeaders[lineIndex]);
-    while(current != NULL && word >= (word_t*) object_nextObject(current)) {
-        current = object_nextObject(current);
-    }
-    if((word_t*)current == word) {
-        return current;
-    } else {
-        return object_getFromInnerPointer(word);
-    }
 }
+
 
 ObjectHeader* object_getLargeInnerPointer(LargeAllocator* allocator, word_t* word) {
     word_t* current = (word_t*)((word_t)word & LARGE_BLOCK_MASK);
@@ -127,6 +105,7 @@ ObjectHeader* object_getLargeInnerPointer(LargeAllocator* allocator, word_t* wor
         return NULL;
     }
 }
+
 
 ObjectHeader* object_getLargeObject(LargeAllocator* allocator, word_t* word) {
     if(((word_t)word & LARGE_BLOCK_MASK) != (word_t)word) {

@@ -35,7 +35,11 @@ void block_recycle(Allocator* allocator, BlockHeader* blockHeader) {
                     ObjectHeader *object = line_header_getFirstObject(lineHeader);
                     word_t *lineEnd = block_getLineAddress(blockHeader, lineIndex) + WORDS_IN_LINE;
                     while (object != NULL && (word_t *) object < lineEnd) {
-                        object_unmarkObjectHeader(object);
+                        if(object_isMarked(object)) {
+                            object_unmarkObjectHeader(object);
+                        } else {
+                            object_setNotAllocated(object);
+                        }
                         object = object_nextObject(object);
                     }
                 }

@@ -19,7 +19,7 @@ object Optimizer {
   }
 
   private def partition(defns: Seq[Defn]) = {
-    val batches = 1 //java.lang.Runtime.getRuntime.availableProcessors * 4
+    val batches = java.lang.Runtime.getRuntime.availableProcessors * 4
     defns.groupBy { defn =>
       Math.abs(System.identityHashCode(defn)) % batches
     }
