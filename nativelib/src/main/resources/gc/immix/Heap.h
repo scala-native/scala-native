@@ -32,14 +32,14 @@ static inline bool heap_isObjectInHeap(Heap* heap, ObjectHeader* object) {
     return heap_isWordInHeap(heap, (word_t*) object);
 }
 
-Heap* heap_create(size_t initialHeapSize);
-word_t* heap_alloc(Heap* heap, uint32_t objectSize);
-word_t* heap_allocSmall(Heap* heap, uint32_t objectSize);
-word_t* heap_allocLarge(Heap* heap, uint32_t objectSize);
+Heap* Heap_create(size_t initialHeapSize);
+word_t* Heap_alloc(Heap *heap, uint32_t objectSize);
+word_t* Heap_allocSmall(Heap *heap, uint32_t objectSize);
+word_t* Heap_allocLarge(Heap *heap, uint32_t objectSize);
 
-void heap_collect(Heap* heap, Stack* stack);
+void Heap_collect(Heap *heap, Stack *stack);
 
-bool heap_recycle(Heap* heap);
-void heap_grow(Heap*, size_t);
+bool Heap_recycle(Heap *heap);
+void Heap_grow(Heap *, size_t);
 
 #endif //IMMIX_HEAP_H

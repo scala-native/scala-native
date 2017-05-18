@@ -8,7 +8,7 @@
 #define LAST_HOLE -1
 
 
-void block_recycle(Allocator*, BlockHeader*);
-void block_print(BlockHeader* block);
+void Block_recycle(Allocator *, BlockHeader *);
+void Block_print(BlockHeader* block);
 
 #endif //IMMIX_BLOCK_H

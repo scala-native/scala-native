@@ -30,29 +30,29 @@ typedef enum {
  */
 typedef uint8_t LineHeader;
 
-static inline bool line_header_isMarked(LineHeader* lineHeader) {
+static inline bool Line_isMarked(LineHeader *lineHeader) {
     return (line_marked & *lineHeader) != 0;
 }
-static inline void line_header_mark(LineHeader* lineHeader) {
+static inline void Line_mark(LineHeader *lineHeader) {
     *lineHeader |= line_marked;
 }
-static inline void line_header_unmark(LineHeader* lineHeader) {
+static inline void Line_unmark(LineHeader *lineHeader) {
     *lineHeader &= ~line_marked;
 }
 
-static inline void line_header_setEmpty(LineHeader* lineHeader) {
+static inline void Line_setEmpty(LineHeader *lineHeader) {
     *lineHeader = (uint8_t)line_empty;
 }
 
-static inline bool line_header_containsObject(LineHeader* lineHeader) {
+static inline bool Line_containsObject(LineHeader *lineHeader) {
     return (line_contains_object & *lineHeader) != 0;
 }
 
-static inline void line_header_setOffset(LineHeader* lineHeader, uint8_t offset) {
+static inline void Line_setOffset(LineHeader *lineHeader, uint8_t offset) {
     *lineHeader = (offset & FIRST_OBJECT_OFFSET_MASK) | line_contains_object;
 }
 
-static inline uint8_t line_header_getFirstObjectOffset(LineHeader* lineHeader) {
+static inline uint8_t Line_getFirstObjectOffset(LineHeader *lineHeader) {
     return *lineHeader & FIRST_OBJECT_OFFSET_MASK;
 }
 

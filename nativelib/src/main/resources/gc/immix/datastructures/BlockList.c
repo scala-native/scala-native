@@ -1,6 +1,6 @@
 #include <stddef.h>
 #include <stdio.h>
-#include "BlocList.h"
+#include "BlockList.h"
 #include "../Log.h"
 #include "../headers/BlockHeader.h"
 
@@ -24,17 +24,17 @@ BlockHeader* _getNextBlock(word_t* heapStart, BlockHeader* header) {
 }
 
 
-void blockList_init(BlockList* blockList, word_t* heapStart){
+void BlockList_init(BlockList *blockList, word_t *heapStart) {
     blockList->heapStart= heapStart;
     blockList->first = NULL;
     blockList->last = NULL;
 }
 
-inline bool blockList_isEmpty(BlockList* blockList) {
+inline bool BlockList_isEmpty(BlockList *blockList) {
     return blockList->first == NULL;
 }
 
-BlockHeader* blockList_removeFirstBlock(BlockList* blockList) {
+BlockHeader* BlockList_removeFirstBlock(BlockList *blockList) {
     assert(blockList->first != NULL);
     BlockHeader* block = blockList->first;
     if(block == blockList->last) {
@@ -44,7 +44,7 @@ BlockHeader* blockList_removeFirstBlock(BlockList* blockList) {
     return block;
 }
 
-void blockList_addLast(BlockList* blockList, BlockHeader* blockHeader) {
+void BlockList_addLast(BlockList *blockList, BlockHeader *blockHeader) {
     if(blockList->first == NULL) {
         blockList->first = blockHeader;
     } else {
@@ -54,12 +54,12 @@ void blockList_addLast(BlockList* blockList, BlockHeader* blockHeader) {
     blockHeader->header.nextBlock = LAST_BLOCK;
 }
 
-void blockList_clear(BlockList* blockList) {
+void BlockList_clear(BlockList *blockList) {
     blockList->first = NULL;
     blockList->last = NULL;
 }
 
-void blockList_print(BlockList* blockList) {
+void BlockList_print(BlockList *blockList) {
     printf("BlockList: ");
     BlockHeader* current = blockList->first;
     while(current != NULL) {

@@ -4,7 +4,6 @@
 #include "Heap.h"
 #include "datastructures/Stack.h"
 
-void marker_mark(Heap* heap, Stack*);
-void mark_roots(Heap* heap, Stack* stack);
+void Mark_roots(Heap *heap, Stack *stack);
 
 #endif //IMMIX_MARKER_H

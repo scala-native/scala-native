@@ -30,7 +30,7 @@ word_t* mapAndAlign(int alignmentMask) {
     return heapStart;
 }
 
-Heap* heap_create(size_t initialSize) {
+Heap* Heap_create(size_t initialSize) {
     assert(initialSize >= 2*BLOCK_TOTAL_SIZE);
 
     Heap* heap = malloc(sizeof(Heap));
@@ -40,12 +40,12 @@ Heap* heap_create(size_t initialSize) {
 
     heap->smallHeapSize = initialSize;
     heap->heapStart = smallHeapStart;
-    heap->heapEnd = smallHeapStart + initialSize / sizeof(word_t);
-    heap->allocator = allocator_create(smallHeapStart, initialSize / BLOCK_TOTAL_SIZE);
+    heap->heapEnd = smallHeapStart + initialSize / WORD_SIZE;
+    heap->allocator = Allocator_create(smallHeapStart, initialSize / BLOCK_TOTAL_SIZE);
 
 
     word_t* largeHeapStart = mapAndAlign(LARGE_BLOCK_MASK);
-    heap->largeAllocator = largeAllocator_create(largeHeapStart, initialSize);
+    heap->largeAllocator = LargeAllocator_create(largeHeapStart, initialSize);
     heap->largeHeapStart = largeHeapStart;
     heap->largeHeapEnd = (word_t*)((ubyte_t*)largeHeapStart + initialSize);
 
@@ -54,25 +54,25 @@ Heap* heap_create(size_t initialSize) {
 }
 
 
-word_t* heap_allocLarge(Heap* heap, uint32_t objectSize) {
+word_t* Heap_allocLarge(Heap *heap, uint32_t objectSize) {
     assert(objectSize % 8 == 0);
 
-    uint32_t size = objectSize + sizeof(word_t); // Add header
-    ObjectHeader* object = largeAllocator_getBlock(heap->largeAllocator, size);
+    uint32_t size = objectSize + OBJECT_HEADER_SIZE; // Add header
+    ObjectHeader* object = LargeAllocator_getBlock(heap->largeAllocator, size);
     if(object != NULL) {
-        object_setObjectType(object, object_large);
-        object_setSize(object, size);
+        Object_setObjectType(object, object_large);
+        Object_setSize(object, size);
         return (word_t*) object + 1;
     } else {
-        heap_collect(heap, stack);
+        Heap_collect(heap, stack);
 
-        object = largeAllocator_getBlock(heap->largeAllocator, size);
+        object = LargeAllocator_getBlock(heap->largeAllocator, size);
         if(object != NULL) {
-            object_setObjectType(object, object_large);
-            object_setSize(object, size);
+            Object_setObjectType(object, object_large);
+            Object_setSize(object, size);
             return (word_t*) object + 1;
         } else {
-            largeAllocator_print(heap->largeAllocator);
+            LargeAllocator_print(heap->largeAllocator);
             printf("Failed to alloc: %u\n", size + 8);
             printf("No more memory available\n");
             fflush(stdout);
@@ -84,13 +84,13 @@ word_t* heap_allocLarge(Heap* heap, uint32_t objectSize) {
 
 word_t* allocSmallSlow(Heap* heap, uint32_t size) {
 
-    heap_collect(heap, stack);
+    Heap_collect(heap, stack);
 
-    ObjectHeader *block = (ObjectHeader *) allocator_alloc(heap->allocator, size);
+    ObjectHeader *block = (ObjectHeader *) Allocator_alloc(heap->allocator, size);
     if (block != NULL) {
-        object_setObjectType(block, object_standard);
-        object_setSize(block, size);
-        object_setAllocated(block);
+        Object_setObjectType(block, object_standard);
+        Object_setSize(block, size);
+        Object_setAllocated(block);
 #ifdef ALLOCATOR_STATS
         heap->allocator->stats->bytesAllocated += objectSize;
             heap->allocator->stats->totalBytesAllocated += objectSize;
@@ -99,7 +99,7 @@ word_t* allocSmallSlow(Heap* heap, uint32_t size) {
     }
 
     if(block == NULL) {
-        largeAllocator_print(heap->largeAllocator);
+        LargeAllocator_print(heap->largeAllocator);
         printf("Failed to alloc: %u\n", size + 8);
         printf("No more memory available\n");
         fflush(stdout);
@@ -110,14 +110,14 @@ word_t* allocSmallSlow(Heap* heap, uint32_t size) {
 }
 
 
-INLINE word_t* heap_allocSmall(Heap* heap, uint32_t objectSize) {
+INLINE word_t* Heap_allocSmall(Heap *heap, uint32_t objectSize) {
     assert(objectSize % 8 == 0);
-    uint32_t size = objectSize + sizeof(word_t); // Add header
-    ObjectHeader *block = (ObjectHeader *) allocator_alloc(heap->allocator, size);
+    uint32_t size = objectSize + OBJECT_HEADER_SIZE; // Add header
+    ObjectHeader *block = (ObjectHeader *) Allocator_alloc(heap->allocator, size);
     if (block != NULL) {
-        object_setObjectType(block, object_standard);
-        object_setSize(block, size);
-        object_setAllocated(block);
+        Object_setObjectType(block, object_standard);
+        Object_setSize(block, size);
+        Object_setAllocated(block);
 
 
 #ifdef ALLOCATOR_STATS
@@ -131,23 +131,23 @@ INLINE word_t* heap_allocSmall(Heap* heap, uint32_t objectSize) {
     }
 }
 
-word_t* heap_alloc(Heap* heap, uint32_t objectSize) {
+word_t* Heap_alloc(Heap *heap, uint32_t objectSize) {
     assert(objectSize % 8 == 0);
 
-    if(objectSize + sizeof(word_t) >= LARGE_BLOCK_SIZE) {
-        return heap_allocLarge(heap, objectSize);
+    if(objectSize + OBJECT_HEADER_SIZE >= LARGE_BLOCK_SIZE) {
+        return Heap_allocLarge(heap, objectSize);
     } else {
-        return heap_allocSmall(heap, objectSize);
+        return Heap_allocSmall(heap, objectSize);
     }
 }
 
-void heap_collect(Heap* heap, Stack* stack) {
+void Heap_collect(Heap *heap, Stack *stack) {
 #ifdef DEBUG_PRINT
     printf("\nCollect\n");
     fflush(stdout);
 #endif
-    mark_roots(heap, stack);
-    bool success = heap_recycle(heap);
+    Mark_roots(heap, stack);
+    bool success = Heap_recycle(heap);
 
     if(!success) {
         printf("Failed to recycle enough memory.\n");
@@ -161,9 +161,9 @@ void heap_collect(Heap* heap, Stack* stack) {
 #endif
 }
 
-bool heap_recycle(Heap* heap) {
-    blockList_clear(&heap->allocator->recycledBlocks);
-    blockList_clear(&heap->allocator->freeBlocks);
+bool Heap_recycle(Heap *heap) {
+    BlockList_clear(&heap->allocator->recycledBlocks);
+    BlockList_clear(&heap->allocator->freeBlocks);
 
 #ifdef ALLOCATOR_STATS
     allocatorStats_resetBlockDistribution(heap->allocator->stats);
@@ -172,11 +172,11 @@ bool heap_recycle(Heap* heap) {
     word_t* current = heap->heapStart;
     while(current != heap->heapEnd) {
         BlockHeader* blockHeader = (BlockHeader*) current;
-        block_recycle(heap->allocator, blockHeader);
+        Block_recycle(heap->allocator, blockHeader);
         //block_print(blockHeader);
         current += WORDS_IN_BLOCK;
     }
-    largeAllocator_sweep(heap->largeAllocator);
+    LargeAllocator_sweep(heap->largeAllocator);
 
 #ifdef ALLOCATOR_STATS
     allocatorStats_print(heap->allocator->stats);
@@ -184,8 +184,8 @@ bool heap_recycle(Heap* heap) {
     heap->allocator->stats->bytesAllocated = 0;
 #endif
 
-    return allocator_initCursors(heap->allocator);
+    return Allocator_initCursors(heap->allocator);
 }
 
 
-void heap_grow(Heap* heap, size_t size) {}
+void Heap_grow(Heap *heap, size_t size) {}

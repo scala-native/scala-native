@@ -14,10 +14,10 @@ typedef struct {
     uint64_t totalAllocatedObjectCount;
 } AllocatorStats;
 
-AllocatorStats* allocatorStats_create();
-void allocatorStats_reset(AllocatorStats* stats);
-void allocatorStats_resetBlockDistribution(AllocatorStats* stats);
-void allocatorStats_print(AllocatorStats* stats);
+AllocatorStats* AllocatorStats_create();
+void AllocatorStats_reset(AllocatorStats *stats);
+void AllocatorStats_resetBlockDistribution(AllocatorStats *stats);
+void AllocatorStats_print(AllocatorStats *stats);
 
 
 

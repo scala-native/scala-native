@@ -29,9 +29,11 @@ typedef struct {
     Bitmap* bitmap;
 } LargeAllocator;
 
-LargeAllocator* largeAllocator_create(word_t*, size_t);
-ObjectHeader* largeAllocator_getBlock(LargeAllocator* allocator, size_t requestedBlockSize);
-void largeAllocator_sweep(LargeAllocator* allocator);
-void largeAllocator_print(LargeAllocator* alloc);
+
+LargeAllocator* LargeAllocator_create(word_t* offset, size_t largeHeapSize);
+void LargeAllocator_addChunk(LargeAllocator *allocator, Chunk *chunk, size_t total_block_size);
+ObjectHeader* LargeAllocator_getBlock(LargeAllocator *allocator, size_t requestedBlockSize);
+void LargeAllocator_sweep(LargeAllocator *allocator);
+void LargeAllocator_print(LargeAllocator *alloc);
 
 #endif //IMMIX_LARGEALLOCATOR_H

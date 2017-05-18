@@ -8,33 +8,34 @@
 #include "Log.h"
 #include "Object.h"
 #include "State.h"
+#include "utils/MathUtils.h"
 
-#define INITIAL_HEAP_SIZE (128*1024*1024)
+#define INITIAL_HEAP_SIZE (128 * 1024 *1024)
 
 
 
 void scalanative_collect();
 
 void scalanative_init() {
-    heap = heap_create(INITIAL_HEAP_SIZE);
-    stack = stack_alloc(INITIAL_STACK_SIZE);
+    heap = Heap_create(INITIAL_HEAP_SIZE);
+    stack = Stack_alloc(INITIAL_STACK_SIZE);
 }
 
 void* scalanative_alloc(void *info, size_t size) {
     assert(size <= MAX_BLOCK_SIZE);
-    size = (size + sizeof(word_t) - 1 ) / sizeof(word_t) * sizeof(word_t);
+    size = roundToNextMultiple(size, WORD_SIZE);
     if(heap == NULL) {
         scalanative_init();
     }
 
 
-    word_t* object = heap_alloc(heap, (uint32_t)size);
+    word_t* object = Heap_alloc(heap, (uint32_t) size);
     if(object == NULL) {
         scalanative_collect();
 
-        object = heap_alloc(heap, (uint32_t)size);
+        object = Heap_alloc(heap, (uint32_t) size);
         if(object == NULL) {
-            largeAllocator_print(heap->largeAllocator);
+            LargeAllocator_print(heap->largeAllocator);
             printf("Failed to alloc: %zu\n", size + 8);
             printf("No more memory available\n");
             fflush(stdout);
@@ -48,15 +49,15 @@ void* scalanative_alloc(void *info, size_t size) {
 void* scalanative_alloc_small(void* info, size_t size) {
     size = (size + sizeof(word_t) - 1 ) / sizeof(word_t) * sizeof(word_t);
 
-    void** alloc = (void**) heap_allocSmall(heap, size);
+    void** alloc = (void**) Heap_allocSmall(heap, size);
     *alloc = info;
     return (void*) alloc;
 }
 
 void* scalanative_alloc_large(void* info, size_t size) {
-    size = (size + sizeof(word_t) - 1 ) / sizeof(word_t) * sizeof(word_t);
+    size = roundToNextMultiple(size, WORD_SIZE);
 
-    void** alloc = (void**) heap_allocLarge(heap, size);
+    void** alloc = (void**) Heap_allocLarge(heap, size);
     *alloc = info;
     return (void*) alloc;
 }
@@ -66,5 +67,5 @@ void* scalanative_alloc_atomic(void* info, size_t size) {
 }
 
 void scalanative_collect() {
-    heap_collect(heap, stack);
+    Heap_collect(heap, stack);
 }

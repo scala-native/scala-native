@@ -4,11 +4,11 @@
 #include "headers/ObjectHeader.h"
 #include "LargeAllocator.h"
 
-ObjectHeader* objectNextLargeObject(ObjectHeader* objectHeader);
-ObjectHeader* object_nextObject(ObjectHeader *);
-ObjectHeader* object_getObject(word_t*);
-ObjectHeader* object_getLargeObject(LargeAllocator*, word_t*);
-void object_mark(ObjectHeader* objectHeader);
-size_t object_chunkSize(ObjectHeader*);
+ObjectHeader* Object_nextLargeObject(ObjectHeader *objectHeader);
+ObjectHeader* Object_nextObject(ObjectHeader *objectHeader);
+ObjectHeader* Object_getObject(word_t *address);
+ObjectHeader* Object_getLargeObject(LargeAllocator *largeAllocator, word_t *address);
+void Object_mark(ObjectHeader *objectHeader);
+size_t Object_chunkSize(ObjectHeader *objectHeader);
 
 #endif //IMMIX_OBJECT_H
