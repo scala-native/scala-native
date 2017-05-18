@@ -14,14 +14,7 @@ sealed trait VirtualDirectory {
 
   /** Check if file with given path is in the directory. */
   def contains(path: Path): Boolean =
-    files.exists(_.path == path)
-
-  /** Get file from the directory. */
-  def get(path: Path): Option[VirtualFile] =
-    files.collectFirst { case f if f.path == path => f }
-
-  /** Create a new file or return existing one. */
-  def create(path: Path): VirtualFile
+    files.contains(path)
 
   /** Reads a contents of file with given path. */
   def read(path: Path): ByteBuffer
@@ -30,7 +23,7 @@ sealed trait VirtualDirectory {
   def write(path: Path, buffer: ByteBuffer): Unit
 
   /** List all files in this directory. */
-  def files: Seq[VirtualFile]
+  def files: Seq[Path]
 }
 
 object VirtualDirectory {
@@ -64,9 +57,6 @@ object VirtualDirectory {
         "Neither a jar, nor a directory: " + file)
     }
 
-  /** Root file system directory. */
-  val root: VirtualDirectory = real(new File("/"))(Scope.forever)
-
   /** Empty directory that contains no files. */
   val empty: VirtualDirectory = EmptyDirectory
 
@@ -96,19 +86,13 @@ object VirtualDirectory {
     override protected def resolve(path: Path): Path =
       this.path.resolve(path)
 
-    override def files: Seq[VirtualFile] =
+    override def files: Seq[Path] =
       Files
         .walk(path, Integer.MAX_VALUE, FileVisitOption.FOLLOW_LINKS)
         .iterator()
         .asScala
-        .map(fp => VirtualFile(this, path.relativize(fp)))
+        .map(fp => path.relativize(fp))
         .toSeq
-
-    override def create(path: Path): VirtualFile = {
-      val channel = open(resolve(path))
-      channel.close()
-      VirtualFile(this, path)
-    }
   }
 
   private final class JarDirectory(path: Path)(implicit in: Scope)
@@ -118,7 +102,7 @@ object VirtualDirectory {
         FileSystems.newFileSystem(URI.create(s"jar:${path.toUri}"),
                                   Map("create" -> "false").asJava))
 
-    override def files: Seq[VirtualFile] = {
+    override def files: Seq[Path] = {
       val roots = fileSystem.getRootDirectories.asScala.toSeq
 
       roots
@@ -128,24 +112,18 @@ object VirtualDirectory {
             .iterator()
             .asScala
         }
-        .map(VirtualFile(this, _))
     }
-
-    override def create(path: Path): VirtualFile =
-      throw new UnsupportedOperationException(
-        "Can't create files in jar directory.")
   }
 
   private final object EmptyDirectory extends VirtualDirectory {
     override def files = Seq.empty
 
-    override def create(path: Path): VirtualFile =
-      throw new Exception("Can't create files in empty directory.")
-
     override def read(path: Path): ByteBuffer =
-      throw new UnsupportedOperationException("Can't read from jar directory.")
+      throw new UnsupportedOperationException(
+        "Can't read from empty directory.")
 
     override def write(path: Path, buffer: ByteBuffer): Unit =
-      throw new UnsupportedOperationException("Can't write to jar directory.")
+      throw new UnsupportedOperationException(
+        "Can't write to empty directory.")
   }
 }

@@ -12,7 +12,7 @@ object NIRCompiler {
   private val classLoader = {
     val parts = sys
       .props("scalanative.testingcompiler.cp")
-      .split(":")
+      .split(File.pathSeparator)
       .map(new java.io.File(_))
       .filter(f => f.exists && f.getName.endsWith(".jar"))
       .map(_.toURI.toURL)
