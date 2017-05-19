@@ -46,6 +46,9 @@ matrix:
         - brew link bdw-gc
         - brew install jq
         - brew install re2
+        - brew install llvm@4
+        - export PATH="/usr/local/opt/llvm@4/bin:$PATH"
+      env: CLANG_FORMAT_PATH="/usr/local/opt/llvm@4/bin/clang-format"
 
 env:
   global:
@@ -75,5 +78,6 @@ before_script:
 
 script:
   - java -version
+  - if [ -n "$CLANG_FORMAT_PATH" ]; then bin/clangfmt --test; fi
   - bin/scalafmt --test
   - sbt -J-Xmx2G rebuild "set scriptedBufferLog in sbtScalaNative := false" test-all
