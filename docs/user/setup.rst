@@ -3,20 +3,20 @@
 Environment setup
 =================
 
-This is what you will be doing, in a nutshell:
+Scala Native has the following minimum system requirements:
 
-* installation of sbt
-* installation of LLVM and Clang
-* installation of native libraries
+* Java 8+
+* sbt 0.13.x
+* LLVM 3.7 or newer
+* Native libraries
+    * Boehm GC 7.6.0
+    * Re2 2017-01-01
 
 Installing sbt
 --------------
 
 Please refer to `this link <http://www.scala-sbt.org/release/docs/Setup.html>`_
-for instructions for your OS.
-
-Please note that you'll need Java 8 or more recent to use the Scala Native
-toolchain.
+for instructions for your operating system.
 
 Installing LLVM, Clang and native libraries
 -------------------------------------------
@@ -39,24 +39,32 @@ build time.
 Here are install instructions for a number of operating systems Scala
 Native has been used with:
 
-Ubuntu::
+**Ubuntu**
+::
 
-    $ sudo apt-get install clang libgc-dev libunwind-dev libre2-dev
+    $ sudo apt install clang libgc-dev libunwind-dev libre2-dev
 
-Note: libre2-dev is available since Xenial (16.04 LTS). Refer to `travis.yml <https://github.com/scala-native/scala-native/blob/master/.travis.yml>`_ to install from source.
+*Note:* libre2-dev is available since Xenial (16.04 LTS). Refer to `travis.yml <https://github.com/scala-native/scala-native/blob/master/.travis.yml>`_ to install from source.
 
-macOS::
+**Arch Linux**
+::
+
+    $ sudo pacman -S llvm gc re2
+
+**macOS**
+::
 
     $ brew install llvm bdw-gc re2
 
-FreeBSD::
+**FreeBSD**
+::
 
     $ pkg install llvm38 boehm-gc libunwind re2
 
-nix/nixOS::
+**Nix/NixOS**
+::
 
     $ wget https://raw.githubusercontent.com/scala-native/scala-native/master/bin/scala-native.nix
-
     $ nix-shell scala-native.nix -A clangEnv
 
 Continue to :ref:`sbt`.

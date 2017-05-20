@@ -208,8 +208,9 @@ private object RandomAccessFile {
         throw new IllegalArgumentException(
           s"""Illegal mode "${_mode}" must be one of "r", "rw", "rws" or "rwd"""")
     }
-    val fd = fcntl.open(toCString(file.getPath), mode)
-    new FileDescriptor(fd)
+    val fd       = fcntl.open(toCString(file.getPath), mode)
+    val readOnly = (mode == fcntl.O_RDONLY)
+    new FileDescriptor(fd, readOnly)
   }
 
   private def flush(mode: String): Boolean =

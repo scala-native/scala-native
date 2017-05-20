@@ -18,7 +18,7 @@ Extern objects are simple wrapper objects that demarcate scopes where methods
 are treated as their native C ABI-friendly counterparts. They are
 roughly analogous to header files with top-level function declarations in C.
 
-For example to call C's ``malloc`` one might declare it as following:
+For example, to call C's ``malloc`` one might declare it as following:
 
 .. code-block:: scala
 
@@ -29,9 +29,9 @@ For example to call C's ``malloc`` one might declare it as following:
 
 ``native.extern`` on the right hand side of the method definition signifies
 that the body of the method is defined elsewhere in a native library that is
-available on the library path (see `Linking with native libraries`_.) Signature
-of the extern function must match the signature of the original C function
-(see `Finding the right signature`_.)
+available on the library path (see `Linking with native libraries`_). The
+signature of the external function must match the signature of the original C
+function (see `Finding the right signature`_).
 
 Finding the right signature
 ```````````````````````````
@@ -39,59 +39,82 @@ Finding the right signature
 To find a correct signature for a given C function one must provide an
 equivalent Scala type for each of the arguments:
 
-===================== =========================
-C Type                Scala Type
-===================== =========================
-void                  Unit
-bool                  native.CBool
-char, signed char     native.CChar
-unsigned char         native.CUnsignedChar (1)
-short                 native.CShort
-unsigned short        native.CUnsignedShort (1)
-int                   native.CInt
-unsigned int          native.CUnsignedInt (1)
-long                  native.CLong
-unsigned long         native.CUnsignedLong (1)
-long long             native.CLongLong
-unsigned long long    native.CUnsignedLongLong (1)
-size_t                native.CSize
-ptrdiff_t             native.CPtrDiff (2)
-wchar_t               native.CWideChar
-char16_t              native.CChar16
-char32_t              native.CChar32
-float                 native.CFloat
-double                native.CDouble
-void*                 native.Ptr[Byte] (2)
-int*                  native.Ptr[native.CInt] (2)
-char*                 native.CString (2) (3)
-int (\*)(int)         native.CFunctionPtr1[native.CInt, native.CInt] (2) (4)
-struct { int x, y; }* native.Ptr[native.CStruct2[native.CInt, native.CInt]] (2) (5)
-struct { int x, y; }  Not supported
-===================== =========================
+========================= =========================
+C Type                    Scala Type
+========================= =========================
+``void``                  ``Unit``
+``bool``                  ``native.CBool``
+``char``                  ``native.CChar``
+``signed char``           ``native.CSignedChar``
+``unsigned char``         ``native.CUnsignedChar`` [1_]
+``short``                 ``native.CShort``
+``unsigned short``        ``native.CUnsignedShort`` [1_]
+``int``                   ``native.CInt``
+``long int``              ``native.CLongInt``
+``unsigned int``          ``native.CUnsignedInt`` [1_]
+``unsigned long int``     ``native.CUnsignedLongInt`` [1_]
+``long``                  ``native.CLong``
+``unsigned long``         ``native.CUnsignedLong`` [1_]
+``long long``             ``native.CLongLong``
+``unsigned long long``    ``native.CUnsignedLongLong`` [1_]
+``size_t``                ``native.CSize``
+``ptrdiff_t``             ``native.CPtrDiff`` [2_]
+``wchar_t``               ``native.CWideChar``
+``char16_t``              ``native.CChar16``
+``char32_t``              ``native.CChar32``
+``float``                 ``native.CFloat``
+``double``                ``native.CDouble``
+``void*``                 ``native.Ptr[Byte]`` [2_]
+``int*``                  ``native.Ptr[native.CInt]`` [2_]
+``char*``                 ``native.CString`` [2_] [3_]
+``int (*)(int)``          ``native.CFunctionPtr1[native.CInt, native.CInt]`` [2_] [4_]
+``struct { int x, y; }*`` ``native.Ptr[native.CStruct2[native.CInt, native.CInt]]`` [2_] [5_]
+``struct { int x, y; }``  Not supported
+========================= =========================
 
-(1) See `Unsigned integer types`_.
-(2) See `Pointer types`_.
-(3) See `Byte strings`_.
-(4) See `Function pointers`_.
-(5) See `Memory layout types`_.
+.. [1] See `Unsigned integer types`_.
+.. [2] See `Pointer types`_.
+.. [3] See `Byte strings`_.
+.. [4] See `Function pointers`_.
+.. [5] See `Memory layout types`_.
 
 Linking with native libraries
 `````````````````````````````
 
-In C/C++ one has to typically pass an additional ``-l mylib`` flag to
-dynamically link with a library. In Scala Native one can annotate libraries
-to link with using ``@native.link`` annotation:
+C compilers typically require to pass an additional ``-l mylib`` flag to
+dynamically link with a library. In Scala Native, one can annotate libraries to
+link with using the ``@native.link`` annotation.
 
 .. code-block:: scala
 
    @native.link("mylib")
    @native.extern
    object mylib {
-     ...
+     def f(): Unit = native.extern
    }
 
 Whenever any of the members of ``mylib`` object are reachable, the Scala Native
 linker will automatically link with the corresponding native library.
+
+As in C, library names are specified without the ``lib`` prefix. For example,
+the library `libuv <https://github.com/libuv/libuv>`_  corresponds to
+``@native.link("uv")`` in Scala Native.
+
+It is possible to rename functions using the ``@name`` annotation. Its use is
+recommended to enforce the Scala naming conventions in bindings:
+
+.. code-block:: scala
+
+    import scala.scalanative.native._
+    @link("uv")
+    @extern
+    object uv {
+      @name("uv_uptime")
+      def uptime(result: Ptr[CDouble]): Int = extern
+    }
+
+If a library has multiple components, you could split the bindings into separate
+objects as it is permitted to use the same ``@link`` annotation more than once.
 
 Variadic functions
 ``````````````````
@@ -133,6 +156,24 @@ Store a field    ``ptr->name = value``    ``!ptr._N = value``
 
 Where ``N`` is the index of the field ``name`` in the struct.
 See `Memory layout types`_ for details.
+
+Function pointers
+`````````````````
+
+It is possible to use external functions that take function pointers:
+
+.. code-block:: scala
+
+    // void test(char (*f)(void));
+    def test(f: CFunctionPtr1[CString, Unit]): Unit = native.extern
+
+To pass a Scala function to ``CFunctionPtrN``, you need to use the conversion
+function ``CFunctionPtr.fromFunctionN()``:
+
+.. code-block:: scala
+
+    def f(s: CString): Unit = ???
+    def g(): Unit = test(CFunctionPtr.fromFunction1(f))
 
 Memory management
 `````````````````
@@ -202,7 +243,7 @@ pointers and do not have a corresponding first-class values backing them.
       val ptr = native.stackalloc[native.CStruct2[Int, Int]]
       !ptr._1 = 10
       !ptr._2 = 20
-      println(s"first ${!ptr_.1}, second ${!ptr._2}")
+      println(s"first ${!ptr._1}, second ${!ptr._2}")
 
   Here ``_N`` computes a derived pointer that corresponds to memory
   occupied by field number N.
@@ -241,7 +282,7 @@ strings (similarly to C):
 
     import scalanative.native._
 
-    // CString is an alias to Ptr[CChar]
+    // CString is an alias for Ptr[CChar]
     val msg: CString = c"Hello, world!"
     stdio.printf(msg)
 
@@ -251,11 +292,41 @@ Additionally, we also expose two helper functions ``native.toCString`` and
 Unchecked casts
 ```````````````
 
-Quite often,C APIs expect user to perform unchecked casts to convert
-between different pointer types and/or pointers and integers values. We provide
-``obj.cast[T]`` that's defined in ``native.CCast`` implicit class, for this
-use case. Unlike Scala's ``asInstanceOf``, ``cast`` doesn't provide any safety
-guarantees.
+Quite often, C interfaces expect the user to perform unchecked casts to convert
+between different pointer types, or between pointers and integer values. For
+this particular use case, we provide ``obj.cast[T]`` that is defined in the
+implicit class ``native.CCast``. Unlike Scala's ``asInstanceOf``, ``cast`` does
+not provide any safety guarantees.
+
+Platform-specific types
+-----------------------
+
+Scala Native defines the type ``Word`` and its unsigned counterpart, ``UWord``.
+A word corresponds to ``Int`` on 32-bit architectures and to ``Long`` on 64-bit
+ones.
+
+Size of types
+-------------
+
+In order to statically determine the size of a type, you can use the ``sizeof``
+function which is Scala Native's counterpart of the eponymous C operator. It
+returns the size in bytes:
+
+.. code-block:: scala
+
+    println(sizeof[Byte])    // 1
+    println(sizeof[CBool])   // 1
+    println(sizeof[CShort])  // 2
+    println(sizeof[CInt])    // 4
+    println(sizeof[CLong])   // 8
+
+It can also be used to obtain the size of a structure:
+
+.. code-block:: scala
+
+    type TwoBytes = CStruct2[Byte, Byte]
+    println(sizeof[TwoBytes])  // 2
+
 
 Unsigned integer types
 ----------------------

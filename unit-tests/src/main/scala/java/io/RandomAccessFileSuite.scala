@@ -1,7 +1,8 @@
 package java.io
 
-object RandomAccessFileSuite extends tests.Suite {
+import scala.util.Try
 
+object RandomAccessFileSuite extends tests.Suite {
   test(
     "Creating a `RandomAccessFile` with an invalid mode throws an exception") {
     assertThrows[IllegalArgumentException] {
@@ -16,6 +17,14 @@ object RandomAccessFileSuite extends tests.Suite {
     assertThrows[FileNotFoundException] {
       new RandomAccessFile(file, "r")
     }
+  }
+
+  test("valid file descriptor and sync success") {
+    val file = File.createTempFile("raffdtest", "")
+    val raf  = new RandomAccessFile(file, "r")
+    val fd   = raf.getFD
+    assert(fd.valid())
+    assert(Try(fd.sync()).isSuccess)
   }
 
   testWithRAF("Can write and read a boolean") { raf =>
@@ -112,5 +121,4 @@ object RandomAccessFileSuite extends tests.Suite {
       val raf  = new RandomAccessFile(file, "rw")
       tst(raf)
     }
-
 }

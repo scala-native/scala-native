@@ -5,7 +5,12 @@
  */
 package nbody
 
+import benchmarks.{BenchmarkRunningTime, VeryLongRunningTime}
+
 class NbodyBenchmark extends benchmarks.Benchmark[Double] {
+
+  override val runningTime: BenchmarkRunningTime = VeryLongRunningTime
+
   override def run(): Double = {
     val system = new NBodySystem()
 

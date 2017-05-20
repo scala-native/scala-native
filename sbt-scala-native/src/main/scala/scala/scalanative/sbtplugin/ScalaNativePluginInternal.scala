@@ -1,8 +1,6 @@
 package scala.scalanative
 package sbtplugin
 
-import util._
-
 import sbtcrossproject.CrossPlugin.autoImport._
 import ScalaNativePlugin.autoImport._
 
@@ -12,13 +10,11 @@ import scalanative.io.VirtualDirectory
 import scalanative.util.{Scope => ResourceScope}
 
 import sbt._, Keys._, complete.DefaultParsers._
-import xsbti.{Maybe, Reporter, Position, Severity, Problem}
-import KeyRanks.DTask
 
 import scala.util.Try
 
 import System.{lineSeparator => nl}
-import java.io.File
+import java.io.ByteArrayInputStream
 
 object ScalaNativePluginInternal {
 
@@ -96,22 +92,27 @@ object ScalaNativePluginInternal {
     }
 
   lazy val projectSettings =
-    unscopedSettings ++
-      inConfig(Compile)(externalDependenciesTask(compile)) ++
-      inConfig(Test)(externalDependenciesTask(compile in Test)) ++
-      inConfig(Compile)(availableDependenciesTask(compile)) ++
-      inConfig(Test)(availableDependenciesTask(compile in Test)) ++
-      inConfig(Compile)(nativeMissingDependenciesTask) ++
-      inConfig(Test)(nativeMissingDependenciesTask)
+    dependencies ++
+      inConfig(Compile)(scalaNativeSettings) ++
+      inConfig(Test)(scalaNativeSettings)
 
-  lazy val unscopedSettings = Seq(
+  lazy val scalaNativeSettings =
+    scopedSettings ++
+      externalDependenciesTask(compile) ++
+      availableDependenciesTask(compile) ++
+      nativeMissingDependenciesTask
+
+  lazy val dependencies = Seq(
     libraryDependencies ++= Seq(
       "org.scala-native" %%% "nativelib" % nativeVersion,
       "org.scala-native" %%% "javalib"   % nativeVersion,
       "org.scala-native" %%% "scalalib"  % nativeVersion
     ),
     addCompilerPlugin(
-      "org.scala-native" % "nscplugin" % nativeVersion cross CrossVersion.full),
+      "org.scala-native" % "nscplugin" % nativeVersion cross CrossVersion.full)
+  )
+
+  lazy val scopedSettings = Seq(
     nativeWarnOldJVM := {
       val logger = nativeLogger.value
       Try(Class.forName("java.util.function.Function")).toOption match {
@@ -199,15 +200,13 @@ object ScalaNativePluginInternal {
     },
     nativeMode := "debug",
     artifactPath in nativeLink := {
-      (crossTarget in Compile).value / (moduleName.value + (if (isWindows)
-                                                              ".exe"
-                                                            else "-out"))
+      crossTarget.value / (moduleName.value + (if (isWindows)
     },
     nativeLinkerReporter := tools.LinkerReporter.empty,
     nativeOptimizerReporter := tools.OptimizerReporter.empty,
     nativeOptimizerDriver := tools.OptimizerDriver(nativeConfig.value),
     nativeWorkdir := {
-      val workdir = (Keys.crossTarget in Compile).value / "native"
+      val workdir = crossTarget.value / "native"
       IO.delete(workdir)
       IO.createDirectory(workdir)
       workdir
@@ -265,7 +264,7 @@ object ScalaNativePluginInternal {
             logger.running(compilec)
             val result = Process(compilec, cwd) ! logger
             if (result != 0) {
-              println("Failed to compile native library runtime code.")
+              sys.error("Failed to compile native library runtime code.")
             }
         }
       }
@@ -273,10 +272,10 @@ object ScalaNativePluginInternal {
       lib
     },
     nativeConfig := {
-      val mainClass = (selectMainClass in Compile).value.getOrElse(
+      val mainClass = selectMainClass.value.getOrElse(
         throw new MessageOnlyException("No main class detected.")
       )
-      val classpath = (fullClasspath in Compile).value.map(_.data)
+      val classpath = fullClasspath.value.map(_.data)
       val entry     = nir.Global.Top(mainClass.toString + "$")
       val cwd       = nativeWorkdir.value
 
@@ -397,7 +396,7 @@ object ScalaNativePluginInternal {
       nativeWarnOldJVM.value
       // We explicitly mention all of the steps in the pipeline
       // although only the last one is strictly necessary.
-      (compile in Compile).value
+      compile.value
       nativeLinkNIR.value
       nativeOptimizeNIR.value
       nativeGenerateLL.value

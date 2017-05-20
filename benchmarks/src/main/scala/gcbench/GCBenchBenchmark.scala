@@ -40,9 +40,13 @@
 
 package gcbench
 
+import benchmarks.{BenchmarkRunningTime, VeryLongRunningTime}
+
 class GCBenchBenchmark extends benchmarks.Benchmark[(Node, Array[Double])] {
+  override val runningTime: BenchmarkRunningTime = VeryLongRunningTime
 
   override def run(): (Node, Array[Double]) = GCBenchBenchmark.start()
+
   override def check(result: (Node, Array[Double])): Boolean =
     result._1 != null && result._2(1000) == 1.0 / 1000
 
