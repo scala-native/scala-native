@@ -303,8 +303,7 @@ object CodeGen {
       str(currentBlockSplit)
     }
 
-    def genBlockPrologue(block: Block)(
-        implicit cfg: CFG): Unit = {
+    def genBlockPrologue(block: Block)(implicit cfg: CFG): Unit = {
       val params = block.params
 
       if (block.isEntry) {
@@ -361,12 +360,11 @@ object CodeGen {
           line(s"$succ:")
           indent()
           // insert alloca to block entry area
-          if (ehVarPosition != null)
-          {
-          insertLine(ehVarPosition,
-                     s"${platform.ehVar} = alloca ${platform.ehClassName}*")
-                     ehVarPosition = null
-                     }
+          if (ehVarPosition != null) {
+            insertLine(ehVarPosition,
+                       s"${platform.ehVar} = alloca ${platform.ehClassName}*")
+            ehVarPosition = null
+          }
         } else {
           line(s"$rec = ${landingpad(platform)}")
           line(s"$r0 = extractvalue $excrecty $rec, 0")
