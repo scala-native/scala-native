@@ -1,4 +1,9 @@
 ---
-IndentWidth:     4
-SortIncludes:    false
+# Documentation: https://clang.llvm.org/docs/ClangFormatStyleOptions.html
+BasedOnStyle: LLVM
+IndentWidth: 4
+---
+Language: Cpp
+# Sorting includes breaks the build.
+SortIncludes: false
 ...

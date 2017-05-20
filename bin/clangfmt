@@ -53,16 +53,21 @@ fi
 test_mode=
 
 while [ "$#" -gt 0 ]; do
-  arg="$1"; shift
+  arg="$1"
   case "$arg" in
-    --test) test_mode=true ;;
-    *) die "Unknown argument: $arg" "Usage: $0 [--test]" ;;
+    --test) test_mode=true; shift ;;
+    --*)    die "Unknown argument: $arg" "Usage: $0 [--test]" ;;
+    *)      break ;;
   esac
 done
 
-find . -name "*.[ch]" -or -name "*.cpp" | xargs "$clang_format" --fallback-style=LLVM --style=file -i
+if [ "$#" -gt 0 ]; then
+  "$clang_format" --style=file -i "$@"
+else
+  find . -name "*.[ch]" -or -name "*.cpp" | xargs "$clang_format" --style=file -i
+fi
 
-if [ -n "$test_mode" ]; then
+if [ "$test_mode" = true ]; then
   git diff --quiet --exit-code || \
     die "C/C++ code formatting changes detected" \
         "Run \`$0\` to reformat."
