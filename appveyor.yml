@@ -31,8 +31,8 @@ build_script:
             } else {exit 1};
         }
 test_script:
-  - ~\scoop\apps\sbt\current\sbt "scalafmt --test"
-  - ~\scoop\apps\sbt\current\sbt -J-Xmx2G rebuild "set scriptedBufferLog in sbtScalaNative := false" test-all
+  - sbt "scalafmt --test"
+  - sbt -J-Xmx2G rebuild "set scriptedBufferLog in sbtScalaNative := false" test-all
 cache:
   - C:\Users\appveyor\.m2
   - C:\Users\appveyor\.ivy2
