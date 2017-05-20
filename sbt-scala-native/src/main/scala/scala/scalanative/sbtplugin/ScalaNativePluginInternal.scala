@@ -126,7 +126,7 @@ object ScalaNativePluginInternal {
       val clang = discover("clang", clangVersions)
       // todo: echo doesn't work well on windows
       if (!isWindows) {
-      checkThatClangIsRecentEnough(clang)
+        checkThatClangIsRecentEnough(clang)
       }
       clang
     },
@@ -134,7 +134,7 @@ object ScalaNativePluginInternal {
       val clang = discover("clang++", clangVersions)
       // todo: echo doesn't work well on windows
       if (!isWindows) {
-      checkThatClangIsRecentEnough(clang)
+        checkThatClangIsRecentEnough(clang)
       }
       clang
     },
