@@ -5,7 +5,7 @@ import java.{lang => jl}
 import java.nio.ByteBuffer
 import java.nio.file.Paths
 import scala.collection.mutable
-import scalanative.util.{Scope, ShowBuilder, unsupported}
+import scalanative.util.{Scope, ShowBuilder, ShowBuilderPosition, unsupported}
 import scalanative.io.{VirtualDirectory, withScratchBuffer}
 import scalanative.optimizer.analysis.ControlFlow.{Graph => CFG, Block, Edge}
 import scalanative.nir._
@@ -20,7 +20,7 @@ object CodeGen {
     val xx_personality =
       if (isWindows) "@__CxxFrameHandler3" else "@__gxx_personality_v0"
     val ehClassName = "%\"class.scalanative::ExceptionWrapper\""
-    val ehVar       = "%eslot" //"""@\"\\01?eglob@@3PEAVExceptionWrapper@scalanative@@EA\""
+    val ehVar       = "%eslot"
   }
 
   /** Generate code for given assembly. */
@@ -85,8 +85,9 @@ object CodeGen {
                            platform: Platform) {
     import Impl._
 
-    var currentBlockName: Local = _
-    var currentBlockSplit: Int  = _
+    var currentBlockName: Local            = _
+    var currentBlockSplit: Int             = _
+    var ehVarPosition: ShowBuilderPosition = _ // position to insert for exception handler variable
 
     val fresh     = new Fresh("gen")
     val deps      = mutable.Set.empty[Global]
@@ -280,11 +281,10 @@ object CodeGen {
 
       genBlockHeader()
       indent()
-      if (platform.isWindows && block.isExceptionHandler && block.pred.isEmpty) {
-        newline()
-        str(s"${platform.ehVar} = alloca ${platform.ehClassName}*")
+      if (platform.isWindows && block.pred.isEmpty) {
+        ehVarPosition = currentPosition
       }
-      genBlockPrologue(block)
+      genBlockPrologue(block, ehVarPosition)
       rep(insts) { inst =>
         genInst(inst)
       }
@@ -303,7 +303,8 @@ object CodeGen {
       str(currentBlockSplit)
     }
 
-    def genBlockPrologue(block: Block)(implicit cfg: CFG): Unit = {
+    def genBlockPrologue(block: Block, ehVarPosition: ShowBuilderPosition)(
+        implicit cfg: CFG): Unit = {
       val params = block.params
 
       if (block.isEntry) {
@@ -351,7 +352,7 @@ object CodeGen {
           line(
             s"$cpad = catchpad within $rec [%rtti.TypeDescriptor34* ${platform.ehWrapperString}, i32 8, ${platform.ehClassName}** ${platform.ehVar}]")
           line(
-            s"$w1 = load ${platform.ehClassName}*, ${platform.ehClassName}** ${platform.ehVar}, align 8")
+            s"$w1 = load ${platform.ehClassName}*, ${platform.ehClassName}** ${platform.ehVar}")
           line(
             s"$w2 = getelementptr inbounds ${platform.ehClassName}, ${platform.ehClassName}* $w1, i32 0, i32 1")
           line(s"${exc.show} = load i8*, i8** $w2, align 8")
@@ -359,6 +360,9 @@ object CodeGen {
           unindent()
           line(s"$succ:")
           indent()
+          // insert alloca to block entry area
+          insertLine(ehVarPosition,
+                     s"${platform.ehVar} = alloca ${platform.ehClassName}*")
         } else {
           line(s"$rec = ${landingpad(platform)}")
           line(s"$r0 = extractvalue $excrecty $rec, 0")
