@@ -34,6 +34,5 @@ test_script:
   - ~\scoop\apps\sbt\current\sbt "scalafmt --test"
   - ~\scoop\apps\sbt\current\sbt -J-Xmx2G rebuild "set scriptedBufferLog in sbtScalaNative := false" test-all
 cache:
-  - C:\Users\appveyor\scoop\apps\sbt\current\
   - C:\Users\appveyor\.m2
   - C:\Users\appveyor\.ivy2
