@@ -87,7 +87,7 @@ object CodeGen {
 
     var currentBlockName: Local            = _
     var currentBlockSplit: Int             = _
-    var ehVarPosition: ShowBuilderPosition = _ // position to insert for exception handler variable
+    var ehVarPosition: ShowBuilderPosition = null // position to insert for exception handler variable
 
     val fresh     = new Fresh("gen")
     val deps      = mutable.Set.empty[Global]
@@ -284,7 +284,7 @@ object CodeGen {
       if (platform.isWindows && block.pred.isEmpty) {
         ehVarPosition = currentPosition
       }
-      genBlockPrologue(block, ehVarPosition)
+      genBlockPrologue(block)
       rep(insts) { inst =>
         genInst(inst)
       }
@@ -303,7 +303,7 @@ object CodeGen {
       str(currentBlockSplit)
     }
 
-    def genBlockPrologue(block: Block, ehVarPosition: ShowBuilderPosition)(
+    def genBlockPrologue(block: Block)(
         implicit cfg: CFG): Unit = {
       val params = block.params
 
@@ -361,8 +361,12 @@ object CodeGen {
           line(s"$succ:")
           indent()
           // insert alloca to block entry area
+          if (ehVarPosition != null)
+          {
           insertLine(ehVarPosition,
                      s"${platform.ehVar} = alloca ${platform.ehClassName}*")
+                     ehVarPosition = null
+                     }
         } else {
           line(s"$rec = ${landingpad(platform)}")
           line(s"$r0 = extractvalue $excrecty $rec, 0")

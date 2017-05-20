@@ -255,7 +255,7 @@ object ScalaNativePluginInternal {
 
             val compiler = abs(if (isCppSource) clangpp else clang)
             val flags = (if (isCppSource)
-                           (if (isWindows) Seq("-std=c++14")
+                           (if (isWindows) Seq("-std=c++14", "-fms-compatibility-version=19.00")
                             else Seq("-std=c++11"))
                          else Seq()) ++ opts
             val compilec = Seq(compiler) ++ flags ++ Seq("-c",

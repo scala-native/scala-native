@@ -35,9 +35,9 @@
 
 #define ssize_t int
 
-#define STDIN_FILENO 0
-#define STDOUT_FILENO 1
-#define STDERR_FILENO 2
+#define STDIN_FILENO (0)
+#define STDOUT_FILENO (1)
+#define STDERR_FILENO (2)
 /* should be in some equivalent to <sys/types.h> */
 /*typedef __int8            int8_t;
 typedef __int16           int16_t;

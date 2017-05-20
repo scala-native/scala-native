@@ -673,6 +673,27 @@ int readlink(const char *path, char* buf, int bufsize)
     }
 }
 
+int scalanative_getStdHandle(int s)
+{
+    switch (s)
+    {
+    case 0: return (int)(uintptr_t)GetStdHandle(STD_INPUT_HANDLE);
+    case 1: return (int)(uintptr_t)GetStdHandle(STD_OUTPUT_HANDLE);
+    case 2: return (int)(uintptr_t)GetStdHandle(STD_ERROR_HANDLE);
+    default:
+        break;
+    }
+    return -1;
+}
+int fsync(int _FileHandle)
+{
+    if (_FileHandle <= 2)
+    {
+        _FileHandle = scalanative_getStdHandle(_FileHandle);
+    }
+    HANDLE hFile = (HANDLE)(uintptr_t)(_FileHandle);
+    return FlushFileBuffers(hFile) ? 0 : -1;
+}
 
 #ifdef __cplusplus
 }
