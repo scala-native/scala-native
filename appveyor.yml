@@ -3,6 +3,7 @@ os: Windows Server 2012
 install:
   - ps: iex (new-object net.webclient).downloadstring('https://get.scoop.sh')
   - ps: scoop install sbt
+  - ps: scoop update sbt
   - ps: $env:SBT_OPTS="-XX:MaxPermSize=2g -Xmx4g"
   - ps: $env:CLANG_PATH="C:\\Program Files\\LLVM\\bin\\clang.exe"
   - ps: $env:CLANGPP_PATH="C:\\Program Files\\LLVM\\bin\\clang++.exe"
@@ -31,8 +32,8 @@ build_script:
             } else {exit 1};
         }
 test_script:
-  - sbt "scalafmt --test"
-  - sbt -J-Xmx2G rebuild "set scriptedBufferLog in sbtScalaNative := false" test-all
+  - ~\scoop\apps\sbt\current\sbt "scalafmt --test"
+  - ~\scoop\apps\sbt\current\sbt -J-Xmx2G rebuild "set scriptedBufferLog in sbtScalaNative := false" test-all
 cache:
   - C:\Users\appveyor\scoop\apps\sbt\current\
   - C:\Users\appveyor\.m2
