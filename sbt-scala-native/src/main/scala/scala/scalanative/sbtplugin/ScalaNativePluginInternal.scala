@@ -201,8 +201,8 @@ object ScalaNativePluginInternal {
     nativeMode := "debug",
     artifactPath in nativeLink := {
       crossTarget.value / (moduleName.value + (if (isWindows)
-                                                              ".exe"
-                                                            else "-out"))
+                                                 ".exe"
+                                               else "-out"))
     },
     nativeLinkerReporter := tools.LinkerReporter.empty,
     nativeOptimizerReporter := tools.OptimizerReporter.empty,
