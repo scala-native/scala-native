@@ -10,9 +10,9 @@ matrix:
       language: scala
       before_install:
         - sudo apt-get -qq update
-        - sudo sh -c "echo 'deb http://llvm.org/apt/precise/ llvm-toolchain-precise-3.7 main' >> /etc/apt/sources.list"
-        - sudo sh -c "echo 'deb http://llvm.org/apt/precise/ llvm-toolchain-precise main' >> /etc/apt/sources.list"
-        - wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
+        - sudo sh -c "echo 'deb http://apt.llvm.org/precise/ llvm-toolchain-precise-3.7 main' >> /etc/apt/sources.list"
+        - sudo sh -c "echo 'deb http://apt.llvm.org/precise/ llvm-toolchain-precise main' >> /etc/apt/sources.list"
+        - wget -O - http://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
         - sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
         - sudo apt-get -qq update
         - |
