@@ -22,6 +22,7 @@
  */
 package bounce
 
+import benchmarks.{BenchmarkRunningTime, ShortRunningTime}
 import som.Random
 
 class BounceBenchmark extends benchmarks.Benchmark[Int] {
@@ -50,6 +51,8 @@ class BounceBenchmark extends benchmarks.Benchmark[Int] {
       bounced
     }
   }
+
+  override val runningTime: BenchmarkRunningTime = ShortRunningTime
 
   override def run(): Int = {
     val random = new Random()

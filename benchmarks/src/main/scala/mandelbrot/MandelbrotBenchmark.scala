@@ -42,10 +42,14 @@
 // http://benchmarksgame.alioth.debian.org/u64q/program.php?test=mandelbrot&lang=yarv&id=3
 package mandelbrot
 
+import benchmarks.{BenchmarkRunningTime, VeryLongRunningTime}
+
 class MandelbrotBenchmark extends benchmarks.Benchmark[(Int, Int)] {
 
   private val sizes = List(750, 500, 1)
   private var i     = 0
+
+  override val runningTime: BenchmarkRunningTime = VeryLongRunningTime
 
   override def run(): (Int, Int) = {
     val size = sizes(i % sizes.length)

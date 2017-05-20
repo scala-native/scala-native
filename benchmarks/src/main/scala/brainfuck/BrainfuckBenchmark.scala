@@ -26,7 +26,11 @@
 
 package brainfuck
 
+import benchmarks.{BenchmarkRunningTime, LongRunningTime}
+
 class BrainfuckBenchmark extends benchmarks.Benchmark[String] {
+  override val runningTime: BenchmarkRunningTime = LongRunningTime
+
   override def run(): String = {
     new Program(Program.asText).run
   }

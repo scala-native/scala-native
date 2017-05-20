@@ -1,7 +1,12 @@
 package listperm
 
+import benchmarks.{BenchmarkRunningTime, VeryLongRunningTime}
+
 class ListPermutationsBenchmark extends benchmarks.Benchmark[Int] {
   val size = 8
+
+  override val runningTime: BenchmarkRunningTime = VeryLongRunningTime
+
   override def run(): Int = {
     val permIter = (0 until size).toList.permutations
 

@@ -10,11 +10,15 @@
 
 package sudoku
 
+import benchmarks.{BenchmarkRunningTime, LongRunningTime}
+
 import scala.language.implicitConversions
 
 class SudokuBenchmark
     extends benchmarks.Benchmark[Option[
       scala.collection.mutable.Map[String, String]]] {
+
+  override val runningTime: BenchmarkRunningTime = LongRunningTime
 
   override def run(): Option[Grid] = {
     solve(grid1)
