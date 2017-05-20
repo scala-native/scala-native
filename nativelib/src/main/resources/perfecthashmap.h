@@ -1,7 +1,7 @@
 typedef struct PerfectHashMap {
-	int size;
-	int* salts;
-	int* keys;
-	void** values;
+    int size;
+    int *salts;
+    int *keys;
+    void **values;
 
 } PerfectHashMap;

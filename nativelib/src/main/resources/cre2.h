@@ -55,7 +55,7 @@ extern "C" {
 #endif
 
 #ifndef scalanative_cre2_decl
-#  define scalanative_cre2_decl  extern
+#define scalanative_cre2_decl extern
 #endif
 
 /** --------------------------------------------------------------------
@@ -65,103 +65,127 @@ extern "C" {
 typedef void scalanative_cre2_options_t;
 
 typedef enum scalanative_cre2_encoding_t {
-  scalanative_cre2_UNKNOWN  = 0,  /* should never happen */
-  scalanative_cre2_UTF8  = 1,
-  scalanative_cre2_Latin1  = 2
+    scalanative_cre2_UNKNOWN = 0, /* should never happen */
+    scalanative_cre2_UTF8 = 1,
+    scalanative_cre2_Latin1 = 2
 } scalanative_cre2_encoding_t;
 
-scalanative_cre2_decl scalanative_cre2_options_t *scalanative_cre2_opt_new(void);
-scalanative_cre2_decl void scalanative_cre2_opt_delete(scalanative_cre2_options_t *opt);
+scalanative_cre2_decl scalanative_cre2_options_t *
+scalanative_cre2_opt_new(void);
+scalanative_cre2_decl void
+scalanative_cre2_opt_delete(scalanative_cre2_options_t *opt);
 
-scalanative_cre2_decl void scalanative_cre2_opt_set_posix_syntax(  scalanative_cre2_options_t *opt, int flag);
-scalanative_cre2_decl void scalanative_cre2_opt_set_longest_match( scalanative_cre2_options_t *opt, int flag);
-scalanative_cre2_decl void scalanative_cre2_opt_set_log_errors(    scalanative_cre2_options_t *opt, int flag);
-scalanative_cre2_decl void scalanative_cre2_opt_set_literal(       scalanative_cre2_options_t *opt, int flag);
-scalanative_cre2_decl void scalanative_cre2_opt_set_never_nl(      scalanative_cre2_options_t *opt, int flag);
-scalanative_cre2_decl void scalanative_cre2_opt_set_dot_nl(        scalanative_cre2_options_t *opt, int flag);
-scalanative_cre2_decl void scalanative_cre2_opt_set_never_capture( scalanative_cre2_options_t *opt, int flag);
-scalanative_cre2_decl void scalanative_cre2_opt_set_case_sensitive(scalanative_cre2_options_t *opt, int flag);
-scalanative_cre2_decl void scalanative_cre2_opt_set_perl_classes(  scalanative_cre2_options_t *opt, int flag);
-scalanative_cre2_decl void scalanative_cre2_opt_set_word_boundary( scalanative_cre2_options_t *opt, int flag);
-scalanative_cre2_decl void scalanative_cre2_opt_set_one_line(      scalanative_cre2_options_t *opt, int flag);
-scalanative_cre2_decl void scalanative_cre2_opt_set_max_mem(       scalanative_cre2_options_t *opt, int64_t m);
-scalanative_cre2_decl void scalanative_cre2_opt_set_encoding(      scalanative_cre2_options_t *opt, scalanative_cre2_encoding_t enc);
+scalanative_cre2_decl void
+scalanative_cre2_opt_set_posix_syntax(scalanative_cre2_options_t *opt,
+                                      int flag);
+scalanative_cre2_decl void
+scalanative_cre2_opt_set_longest_match(scalanative_cre2_options_t *opt,
+                                       int flag);
+scalanative_cre2_decl void
+scalanative_cre2_opt_set_log_errors(scalanative_cre2_options_t *opt, int flag);
+scalanative_cre2_decl void
+scalanative_cre2_opt_set_literal(scalanative_cre2_options_t *opt, int flag);
+scalanative_cre2_decl void
+scalanative_cre2_opt_set_never_nl(scalanative_cre2_options_t *opt, int flag);
+scalanative_cre2_decl void
+scalanative_cre2_opt_set_dot_nl(scalanative_cre2_options_t *opt, int flag);
+scalanative_cre2_decl void
+scalanative_cre2_opt_set_never_capture(scalanative_cre2_options_t *opt,
+                                       int flag);
+scalanative_cre2_decl void
+scalanative_cre2_opt_set_case_sensitive(scalanative_cre2_options_t *opt,
+                                        int flag);
+scalanative_cre2_decl void
+scalanative_cre2_opt_set_perl_classes(scalanative_cre2_options_t *opt,
+                                      int flag);
+scalanative_cre2_decl void
+scalanative_cre2_opt_set_word_boundary(scalanative_cre2_options_t *opt,
+                                       int flag);
+scalanative_cre2_decl void
+scalanative_cre2_opt_set_one_line(scalanative_cre2_options_t *opt, int flag);
+scalanative_cre2_decl void
+scalanative_cre2_opt_set_max_mem(scalanative_cre2_options_t *opt, int64_t m);
+scalanative_cre2_decl void
+scalanative_cre2_opt_set_encoding(scalanative_cre2_options_t *opt,
+                                  scalanative_cre2_encoding_t enc);
 
 /** --------------------------------------------------------------------
  ** Precompiled regular expressions.
  ** ----------------------------------------------------------------- */
 
 typedef struct scalanative_cre2_string_t {
-  const char *  data;
-  int    length;
+    const char *data;
+    int length;
 } scalanative_cre2_string_t;
 
-typedef void  scalanative_cre2_regexp_t;
+typedef void scalanative_cre2_regexp_t;
 
 /* This definition  must be  kept in sync  with the definition  of "enum
    ErrorCode" in the file "re2.h" of the original RE2 distribution. */
 typedef enum scalanative_cre2_error_code_t {
-  scalanative_cre2_NO_ERROR = 0,
-  scalanative_cre2_ERROR_INTERNAL,           /* unexpected error */
-                                 /* parse errors */
-  scalanative_cre2_ERROR_BAD_ESCAPE,         /* bad escape sequence */
-  scalanative_cre2_ERROR_BAD_CHAR_CLASS,     /* bad character class */
-  scalanative_cre2_ERROR_BAD_CHAR_RANGE,     /* bad character class range */
-  scalanative_cre2_ERROR_MISSING_BRACKET,    /* missing closing ] */
-  scalanative_cre2_ERROR_MISSING_PAREN,      /* missing closing ) */
-  scalanative_cre2_ERROR_TRAILING_BACKSLASH, /* trailing \ at end of regexp */
-  scalanative_cre2_ERROR_REPEAT_ARGUMENT,    /* repeat argument missing, e.g. "*" */
-  scalanative_cre2_ERROR_REPEAT_SIZE,        /* bad repetition argument */
-  scalanative_cre2_ERROR_REPEAT_OP,          /* bad repetition operator */
-  scalanative_cre2_ERROR_BAD_PERL_OP,        /* bad perl operator */
-  scalanative_cre2_ERROR_BAD_UTF8,           /* invalid UTF-8 in regexp */
-  scalanative_cre2_ERROR_BAD_NAMED_CAPTURE,  /* bad named capture group */
-  scalanative_cre2_ERROR_PATTERN_TOO_LARGE,  /* pattern too large (compile failed) */
+    scalanative_cre2_NO_ERROR = 0,
+    scalanative_cre2_ERROR_INTERNAL,           /* unexpected error */
+                                               /* parse errors */
+    scalanative_cre2_ERROR_BAD_ESCAPE,         /* bad escape sequence */
+    scalanative_cre2_ERROR_BAD_CHAR_CLASS,     /* bad character class */
+    scalanative_cre2_ERROR_BAD_CHAR_RANGE,     /* bad character class range */
+    scalanative_cre2_ERROR_MISSING_BRACKET,    /* missing closing ] */
+    scalanative_cre2_ERROR_MISSING_PAREN,      /* missing closing ) */
+    scalanative_cre2_ERROR_TRAILING_BACKSLASH, /* trailing \ at end of regexp */
+    scalanative_cre2_ERROR_REPEAT_ARGUMENT, /* repeat argument missing, e.g. "*"
+                                               */
+    scalanative_cre2_ERROR_REPEAT_SIZE,     /* bad repetition argument */
+    scalanative_cre2_ERROR_REPEAT_OP,       /* bad repetition operator */
+    scalanative_cre2_ERROR_BAD_PERL_OP,     /* bad perl operator */
+    scalanative_cre2_ERROR_BAD_UTF8,        /* invalid UTF-8 in regexp */
+    scalanative_cre2_ERROR_BAD_NAMED_CAPTURE, /* bad named capture group */
+    scalanative_cre2_ERROR_PATTERN_TOO_LARGE, /* pattern too large (compile
+                                                 failed) */
 } scalanative_cre2_error_code_t;
 
 /* construction and destruction */
-scalanative_cre2_decl scalanative_cre2_regexp_t* scalanative_cre2_new(
-  const char *pattern,
-  int pattern_len,
-  const scalanative_cre2_options_t *opt
-);
+scalanative_cre2_decl scalanative_cre2_regexp_t *
+scalanative_cre2_new(const char *pattern, int pattern_len,
+                     const scalanative_cre2_options_t *opt);
 
-scalanative_cre2_decl void scalanative_cre2_delete(scalanative_cre2_regexp_t *re);
+scalanative_cre2_decl void
+scalanative_cre2_delete(scalanative_cre2_regexp_t *re);
 
 /* regular expression inspection */
-scalanative_cre2_decl int scalanative_cre2_error_code(const scalanative_cre2_regexp_t *re);
-scalanative_cre2_decl int scalanative_cre2_num_capturing_groups  (const scalanative_cre2_regexp_t *re);
-scalanative_cre2_decl int scalanative_cre2_find_named_capturing_groups  (const scalanative_cre2_regexp_t *re, const char *name);
-scalanative_cre2_decl void scalanative_cre2_error_arg (const scalanative_cre2_regexp_t *re, scalanative_cre2_string_t *arg);
+scalanative_cre2_decl int
+scalanative_cre2_error_code(const scalanative_cre2_regexp_t *re);
+scalanative_cre2_decl int
+scalanative_cre2_num_capturing_groups(const scalanative_cre2_regexp_t *re);
+scalanative_cre2_decl int scalanative_cre2_find_named_capturing_groups(
+    const scalanative_cre2_regexp_t *re, const char *name);
+scalanative_cre2_decl void
+scalanative_cre2_error_arg(const scalanative_cre2_regexp_t *re,
+                           scalanative_cre2_string_t *arg);
 
 /* invalidated by further re use */
-scalanative_cre2_decl const char *scalanative_cre2_error_string(const scalanative_cre2_regexp_t *re);
+scalanative_cre2_decl const char *
+scalanative_cre2_error_string(const scalanative_cre2_regexp_t *re);
 
 /** --------------------------------------------------------------------
  ** Main matching functions.
  ** ----------------------------------------------------------------- */
 
 typedef enum scalanative_cre2_anchor_t {
-  scalanative_cre2_UNANCHORED   = 1,
-  scalanative_cre2_ANCHOR_START = 2,
-  scalanative_cre2_ANCHOR_BOTH  = 3
+    scalanative_cre2_UNANCHORED = 1,
+    scalanative_cre2_ANCHOR_START = 2,
+    scalanative_cre2_ANCHOR_BOTH = 3
 } scalanative_cre2_anchor_t;
 
 typedef struct scalanative_cre2_range_t {
-  long  start;  /* inclusive start index for bytevector */
-  long  past;  /* exclusive end index for bytevector */
+    long start; /* inclusive start index for bytevector */
+    long past;  /* exclusive end index for bytevector */
 } scalanative_cre2_range_t;
 
-scalanative_cre2_decl int scalanative_cre2_match(
-  const scalanative_cre2_regexp_t * re,
-  const char * text,
-  int textlen,
-  int startpos,
-  int endpos,
-  scalanative_cre2_anchor_t anchor,
-  scalanative_cre2_string_t * match,
-  int nmatch
-);
+scalanative_cre2_decl int
+scalanative_cre2_match(const scalanative_cre2_regexp_t *re, const char *text,
+                       int textlen, int startpos, int endpos,
+                       scalanative_cre2_anchor_t anchor,
+                       scalanative_cre2_string_t *match, int nmatch);
 
 /** --------------------------------------------------------------------
  ** Problematic functions.
@@ -178,11 +202,10 @@ scalanative_cre2_decl int scalanative_cre2_match(
    Return 0 if  no match, 1 if successful match,  -1 if error allocating
    memory. */
 
-scalanative_cre2_decl int scalanative_cre2_replace_re(
-  scalanative_cre2_regexp_t* rex,
-  scalanative_cre2_string_t* text_and_target,
-  scalanative_cre2_string_t* rewrite
-);
+scalanative_cre2_decl int
+scalanative_cre2_replace_re(scalanative_cre2_regexp_t *rex,
+                            scalanative_cre2_string_t *text_and_target,
+                            scalanative_cre2_string_t *rewrite);
 
 /* Match the  text in  the buffer "text_and_target"  against the  rex in
    "pattern" or "rex".  Mutate "text_and_target" so that it references a
@@ -196,17 +219,18 @@ scalanative_cre2_decl int scalanative_cre2_replace_re(
    substitutions performed  if successful match, -1  if error allocating
    memory. */
 
-scalanative_cre2_decl int scalanative_cre2_global_replace_re(
-  scalanative_cre2_regexp_t* rex,
-  scalanative_cre2_string_t* text_and_target,
-  scalanative_cre2_string_t* rewrite
-);
+scalanative_cre2_decl int
+scalanative_cre2_global_replace_re(scalanative_cre2_regexp_t *rex,
+                                   scalanative_cre2_string_t *text_and_target,
+                                   scalanative_cre2_string_t *rewrite);
 
 /* Allocate a zero-terminated malloc'ed buffer and fill it with the text
    from  "original" having all  the regexp  meta characters  quoted with
    single backslashes.   Return 0 if  successful, return -1 if  an error
    allocating memory occurs.  */
-scalanative_cre2_decl int scalanative_cre2_quote_meta (scalanative_cre2_string_t* quoted, scalanative_cre2_string_t* original);
+scalanative_cre2_decl int
+scalanative_cre2_quote_meta(scalanative_cre2_string_t *quoted,
+                            scalanative_cre2_string_t *original);
 
 #ifdef __cplusplus
 } // extern "C"

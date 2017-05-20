@@ -11,10 +11,6 @@ extern char **environ;
 // can not expand C macros, and that's the easiest way to
 // get the values out of those in a portable manner.
 
-int scalanative_eintr() {
-    return EINTR;
-}
+int scalanative_eintr() { return EINTR; }
 
-char ** scalanative_environ() {
-    return environ;
-}
+char **scalanative_environ() { return environ; }
