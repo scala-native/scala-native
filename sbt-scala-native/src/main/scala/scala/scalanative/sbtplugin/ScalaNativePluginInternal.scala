@@ -137,6 +137,11 @@ object ScalaNativePluginInternal {
       }
       clang
     },
+    nativeDebugInfoOptions := {
+      if (!isWindows)
+        Seq("-g", "-gcodeview")
+      else Seq("-g", "-gdwarf")
+    },
     nativeCompileOptions := {
       val includes = {
         val includedir =
@@ -145,14 +150,12 @@ object ScalaNativePluginInternal {
         ((if (isWindows) (nativeWorkdir.value + "\\lib\\os_win\\include")
           else "/usr/local/include") +: includedir).map(s => s"-I$s")
       }
-      if (isWindows) {
-        includes :+ "-fcxx-exceptions" :+ "-fexceptions" :+ "-flto=thin"
-      }
-      includes :+ "-gline-tables-only" :+ "-Qunused-arguments" :+
+      val dbgInfo = nativeDebugInfoOptions.value
+      (includes :+ "-Qunused-arguments" :+
         (mode(nativeMode.value) match {
           case tools.Mode.Debug   => "-O0"
           case tools.Mode.Release => "-O2"
-        })
+        })) ++ dbgInfo
     },
     nativeLinkingOptions := {
       val libs = {
@@ -162,11 +165,8 @@ object ScalaNativePluginInternal {
         ((if (isWindows) (nativeWorkdir.value + "\\lib\\os_win\\lib")
           else "/usr/local/lib") +: libdir).map(s => s"-L$s")
       }
-      libs ++ Seq("-gline-tables-only") ++ (if (isWindows)
-                                              Seq("-fcxx-exceptions",
-                                                  "-fexceptions",
-                                                  "-flto=thin")
-                                            else Seq.empty)
+      val dbgInfo = nativeDebugInfoOptions.value
+      libs ++ dbgInfo
     },
     nativeTarget := {
       val logger = nativeLogger.value
@@ -221,7 +221,7 @@ object ScalaNativePluginInternal {
       val clang     = nativeClang.value
       val clangpp   = nativeClangPP.value
       val classpath = (fullClasspath in Compile).value
-      val opts      = nativeCompileOptions.value ++ Seq("-O2")
+      val opts      = nativeCompileOptions.value
 
       val lib = cwd / "lib"
       val jar =
