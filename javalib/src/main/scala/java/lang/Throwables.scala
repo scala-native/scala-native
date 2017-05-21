@@ -37,7 +37,7 @@ class Throwable(s: String, private var e: Throwable)
     unwind.init_local(cursor, context)
     while (unwind.step(cursor) > 0) {
       unwind.get_proc_name(cursor, name, 256, offset)
-      buffer += new StackTraceElement(fromCString(name))
+      buffer += StackTraceElement.fromSymbol(fromCString(name))
     }
 
     this.stackTrace = buffer.toArray
