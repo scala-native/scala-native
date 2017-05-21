@@ -10,9 +10,9 @@ matrix:
       language: scala
       before_install:
         - sudo apt-get -qq update
-        - sudo sh -c "echo 'deb http://llvm.org/apt/precise/ llvm-toolchain-precise-3.7 main' >> /etc/apt/sources.list"
-        - sudo sh -c "echo 'deb http://llvm.org/apt/precise/ llvm-toolchain-precise main' >> /etc/apt/sources.list"
-        - wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
+        - sudo sh -c "echo 'deb http://apt.llvm.org/precise/ llvm-toolchain-precise-3.7 main' >> /etc/apt/sources.list"
+        - sudo sh -c "echo 'deb http://apt.llvm.org/precise/ llvm-toolchain-precise main' >> /etc/apt/sources.list"
+        - wget -O - http://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
         - sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
         - sudo apt-get -qq update
         - |
@@ -46,6 +46,9 @@ matrix:
         - brew link bdw-gc
         - brew install jq
         - brew install re2
+        - brew install llvm@4
+        - export PATH="/usr/local/opt/llvm@4/bin:$PATH"
+      env: CLANG_FORMAT_PATH="/usr/local/opt/llvm@4/bin/clang-format"
 
 env:
   global:
@@ -75,5 +78,6 @@ before_script:
 
 script:
   - java -version
+  - if [ -n "$CLANG_FORMAT_PATH" ]; then bin/clangfmt --test; fi
   - bin/scalafmt --test
   - sbt -J-Xmx2G rebuild "set scriptedBufferLog in sbtScalaNative := false" test-all
