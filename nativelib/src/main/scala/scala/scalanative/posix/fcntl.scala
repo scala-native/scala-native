@@ -5,6 +5,8 @@ import scala.scalanative.native._
 
 import stat.mode_t
 
+import stat.mode_t
+
 @extern
 object fcntl {
 

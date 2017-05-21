@@ -11,6 +11,8 @@ import scala.scalanative.native.{
   CInt
 }
 
+import stat.{uid_t, gid_t}
+
 @extern
 object unistd {
 
@@ -39,8 +41,28 @@ object unistd {
   @name("scalanative_stderr_fileno")
   def STDERR_FILENO: CInt = extern
 
+  @name("scalanative_symlink")
+  def symlink(path1: CString, path2: CString): CInt = extern
+
+  @name("scalanative_symlinkat")
+  def symlinkat(path1: CString, fd: CInt, path2: CString): CInt = extern
+
+  @name("scalanative_link")
+  def link(path1: CString, path2: CString): CInt = extern
+
+  @name("scalanative_linkat")
+  def linkat(fd1: CInt,
+             path1: CString,
+             fd2: CInt,
+             path2: CString,
+             flag: CInt): CInt = extern
+
+  @name("scalanative_chown")
+  def chown(path: CString, owner: uid_t, group: gid_t): CInt = extern
+
   // Macros
 
   @name("scalanative_environ")
   def environ: Ptr[CString] = extern
+
 }

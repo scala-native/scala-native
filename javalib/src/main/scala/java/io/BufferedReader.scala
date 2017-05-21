@@ -1,5 +1,8 @@
 package java.io
 
+import scala.collection.immutable.{Stream => SStream}
+import java.util.stream.{Stream, WrappedScalaStream}
+
 class BufferedReader(in: Reader, sz: Int) extends Reader {
 
   if (sz <= 0) throw new IllegalArgumentException("Buffer size <= 0")
@@ -118,6 +121,9 @@ class BufferedReader(in: Reader, sz: Int) extends Reader {
     }
   }
 
+  def lines(): Stream[String] =
+    new WrappedScalaStream(toScalaStream(), None)
+
   /** Prepare the buffer for reading. Returns false if EOF */
   private def prepareRead(): Boolean =
     pos < end || fillBuffer()
@@ -149,4 +155,12 @@ class BufferedReader(in: Reader, sz: Int) extends Reader {
       pos += 1
     }
   }
+
+  private def toScalaStream(): SStream[String] = {
+    Option(readLine()) match {
+      case None       => SStream.empty
+      case Some(line) => line #:: toScalaStream()
+    }
+  }
+
 }
