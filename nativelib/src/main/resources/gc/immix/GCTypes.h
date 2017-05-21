@@ -8,4 +8,4 @@
 typedef uintptr_t word_t;
 typedef uint8_t ubyte_t;
 
-#endif //IMMIX_GC_TYPES_H
+#endif // IMMIX_GC_TYPES_H

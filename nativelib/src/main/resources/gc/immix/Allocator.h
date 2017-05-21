@@ -7,24 +7,22 @@
 #include "stats/AllocatorStats.h"
 
 typedef struct {
-    word_t* heapStart;
+    word_t *heapStart;
     BlockList recycledBlocks;
     BlockList freeBlocks;
-    BlockHeader* block;
-    word_t* cursor;
-    word_t* limit;
-    BlockHeader* largeBlock;
-    word_t* largeCursor;
-    word_t* largeLimit;
+    BlockHeader *block;
+    word_t *cursor;
+    word_t *limit;
+    BlockHeader *largeBlock;
+    word_t *largeCursor;
+    word_t *largeLimit;
 #ifdef ALLOCATOR_STATS
-    AllocatorStats* stats;
+    AllocatorStats *stats;
 #endif
 } Allocator;
 
-
-Allocator* Allocator_create(word_t *, int);
+Allocator *Allocator_create(word_t *, int);
 bool Allocator_initCursors(Allocator *allocator);
-word_t* Allocator_alloc(Allocator *allocator, size_t size);
+word_t *Allocator_alloc(Allocator *allocator, size_t size);
 
-
-#endif //IMMIX_ALLOCATOR_H
+#endif // IMMIX_ALLOCATOR_H

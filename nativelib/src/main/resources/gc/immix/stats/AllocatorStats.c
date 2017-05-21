@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include "AllocatorStats.h"
 
-AllocatorStats* AllocatorStats_create() {
-    AllocatorStats* stats = malloc(sizeof(AllocatorStats));
+AllocatorStats *AllocatorStats_create() {
+    AllocatorStats *stats = malloc(sizeof(AllocatorStats));
     AllocatorStats_reset(stats);
     return stats;
 }
@@ -27,9 +27,12 @@ void AllocatorStats_resetBlockDistribution(AllocatorStats *stats) {
 
 void AllocatorStats_print(AllocatorStats *stats) {
     printf("############\n");
-    printf("Unavailable block count: %llu/%llu\n", stats->unavailableBlockCount, stats->blockCount);
-    printf("Free block count: %llu/%llu\n", stats->availableBlockCount, stats->blockCount);
-    printf("Recyclable block count: %llu/%llu\n", stats->recyclableBlockCount, stats->blockCount);
+    printf("Unavailable block count: %llu/%llu\n", stats->unavailableBlockCount,
+           stats->blockCount);
+    printf("Free block count: %llu/%llu\n", stats->availableBlockCount,
+           stats->blockCount);
+    printf("Recyclable block count: %llu/%llu\n", stats->recyclableBlockCount,
+           stats->blockCount);
     printf("Total bytes allocated: %llu\n", stats->totalBytesAllocated);
     printf("Bytes allocated since last collect: %llu\n", stats->bytesAllocated);
     printf("Live object count: %llu\n", stats->liveObjectCount);

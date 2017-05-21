@@ -6,4 +6,4 @@
 
 void Mark_roots(Heap *heap, Stack *stack);
 
-#endif //IMMIX_MARKER_H
+#endif // IMMIX_MARKER_H

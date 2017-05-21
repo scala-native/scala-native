@@ -3,7 +3,7 @@
 
 #include "Heap.h"
 
-extern Heap* heap;
-extern Stack* stack;
+extern Heap *heap;
+extern Stack *stack;
 
-#endif //IMMIX_STATE_H
+#endif // IMMIX_STATE_H

@@ -6,17 +6,17 @@
 
 #define PRINT_STACK_OVERFLOW
 
-#define INITIAL_STACK_SIZE (512*1024*1024)
+#define INITIAL_STACK_SIZE (512 * 1024 * 1024)
 
-typedef ObjectHeader* Stack_Type;
+typedef ObjectHeader *Stack_Type;
 
 typedef struct {
-    Stack_Type* bottom;
+    Stack_Type *bottom;
     size_t nb_words;
     int current;
 } Stack;
 
-Stack* Stack_alloc(size_t size);
+Stack *Stack_alloc(size_t size);
 
 bool Stack_push(Stack *stack, Stack_Type word);
 
@@ -26,4 +26,4 @@ bool Stack_isEmpty(Stack *stack);
 
 void Stack_doubleSize(Stack *stack);
 
-#endif //IMMIX_STACK_H
+#endif // IMMIX_STACK_H

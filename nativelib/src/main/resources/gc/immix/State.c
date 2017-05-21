@@ -1,4 +1,4 @@
 #include "State.h"
 
-Heap* heap = NULL;
-Stack* stack = NULL;
+Heap *heap = NULL;
+Stack *stack = NULL;

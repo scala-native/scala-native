@@ -4,9 +4,9 @@
 #include "Stack.h"
 #include "../Log.h"
 
-Stack* Stack_alloc(size_t size) {
+Stack *Stack_alloc(size_t size) {
     assert(size % sizeof(Stack_Type) == 0);
-    Stack* stack = malloc(sizeof(Stack));
+    Stack *stack = malloc(sizeof(Stack));
     stack->current = 0;
     stack->bottom = malloc(size);
     stack->nb_words = size / sizeof(Stack_Type);
@@ -14,7 +14,7 @@ Stack* Stack_alloc(size_t size) {
 }
 
 bool Stack_push(Stack *stack, Stack_Type word) {
-    if(stack->current < stack->nb_words) {
+    if (stack->current < stack->nb_words) {
         stack->bottom[stack->current++] = word;
         return false;
     } else {
@@ -31,10 +31,7 @@ Stack_Type Stack_pop(Stack *stack) {
     return stack->bottom[--stack->current];
 }
 
-bool Stack_isEmpty(Stack *stack) {
-    return stack->current == 0;
-}
-
+bool Stack_isEmpty(Stack *stack) { return stack->current == 0; }
 
 void Stack_doubleSize(Stack *stack) {
     assert(stack->current == 0);

@@ -1,7 +1,6 @@
 #ifndef IMMIX_OBJECTHEADER_H
 #define IMMIX_OBJECTHEADER_H
 
-
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -30,7 +29,7 @@ typedef struct {
 typedef struct {
     struct {
         int32_t id;
-        word_t* name;
+        word_t *name;
         int8_t kind;
     } rt;
     int64_t size;
@@ -40,18 +39,18 @@ typedef struct {
     } range;
     struct {
         int32_t dyn_method_count;
-        word_t* dyn_method_salt;
-        word_t* dyn_method_keys;
-        word_t* dyn_methods;
+        word_t *dyn_method_salt;
+        word_t *dyn_method_keys;
+        word_t *dyn_methods;
     } dynDispatchTable;
-    int64_t* refMapStruct;
+    int64_t *refMapStruct;
 } Rtti;
 
-typedef word_t* Field_t;
+typedef word_t *Field_t;
 
 typedef struct {
     ObjectHeaderLine header;
-    Rtti* rtti;
+    Rtti *rtti;
     Field_t fields[0];
 } ObjectHeader;
 
@@ -86,27 +85,29 @@ static inline bool Object_isForwardObject(ObjectHeader *objectHeader) {
     return objectHeader->header.type == object_forward;
 }
 
-static inline void Object_setObjectType(ObjectHeader *objectHeader, ObjectType objectType) {
+static inline void Object_setObjectType(ObjectHeader *objectHeader,
+                                        ObjectType objectType) {
     objectHeader->header.type = objectType;
 }
 
 static inline size_t Object_size(ObjectHeader *objectHeader) {
     uint32_t size = objectHeader->header.size;
-    assert((Object_isStandardObject(objectHeader) && size < LARGE_BLOCK_SIZE) || !Object_isStandardObject(objectHeader));
+    assert((Object_isStandardObject(objectHeader) && size < LARGE_BLOCK_SIZE) ||
+           !Object_isStandardObject(objectHeader));
 
     return size << WORD_SIZE_BITS;
 }
 
 static inline void Object_setSize(ObjectHeader *objectHeader, size_t size) {
     uint32_t _size = (uint32_t)(size >> WORD_SIZE_BITS);
-    assert(!Object_isStandardObject(objectHeader) || (Object_isStandardObject(objectHeader) && _size > 0 && _size < LARGE_BLOCK_SIZE));
+    assert(!Object_isStandardObject(objectHeader) ||
+           (Object_isStandardObject(objectHeader) && _size > 0 &&
+            _size < LARGE_BLOCK_SIZE));
     objectHeader->header.size = _size;
 }
 
-static inline ObjectHeader* Object_fromMutatorAddress(word_t *address) {
-    return (ObjectHeader*) (address - WORDS_IN_OBJECT_HEADER);
+static inline ObjectHeader *Object_fromMutatorAddress(word_t *address) {
+    return (ObjectHeader *)(address - WORDS_IN_OBJECT_HEADER);
 }
 
-
-
-#endif //IMMIX_OBJECTHEADER_H
+#endif // IMMIX_OBJECTHEADER_H

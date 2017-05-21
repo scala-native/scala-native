@@ -14,11 +14,9 @@ typedef struct {
     uint64_t totalAllocatedObjectCount;
 } AllocatorStats;
 
-AllocatorStats* AllocatorStats_create();
+AllocatorStats *AllocatorStats_create();
 void AllocatorStats_reset(AllocatorStats *stats);
 void AllocatorStats_resetBlockDistribution(AllocatorStats *stats);
 void AllocatorStats_print(AllocatorStats *stats);
 
-
-
-#endif //IMMIX_ALLOCATORSTATS_H
+#endif // IMMIX_ALLOCATORSTATS_H
