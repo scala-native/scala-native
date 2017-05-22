@@ -66,7 +66,6 @@ word_t *overflowAllocation(Allocator *allocator, size_t size) {
     word_t *end = (word_t *)((uint8_t *)start + size);
 
     if (end > allocator->largeLimit) {
-        // DIFFERENT FROM IMMIX
         if (BlockList_isEmpty(&allocator->freeBlocks)) {
             return NULL;
         }

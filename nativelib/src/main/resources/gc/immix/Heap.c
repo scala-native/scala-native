@@ -53,21 +53,24 @@ Heap *Heap_create(size_t initialSize) {
 }
 
 word_t *Heap_allocLarge(Heap *heap, uint32_t objectSize) {
-    assert(objectSize % 8 == 0);
-
     uint32_t size = objectSize + OBJECT_HEADER_SIZE; // Add header
-    ObjectHeader *object = LargeAllocator_getBlock(heap->largeAllocator, size);
+
+    assert(objectSize % 8 == 0);
+    assert(size >= MIN_BLOCK_SIZE);
+    Object *object = LargeAllocator_getBlock(heap->largeAllocator, size);
     if (object != NULL) {
-        Object_setObjectType(object, object_large);
-        Object_setSize(object, size);
+        ObjectHeader* objectHeader = &object->header;
+
+        Object_setObjectType(objectHeader, object_large);
+        Object_setSize(objectHeader, size);
         return Object_toMutatorAddress(object);
     } else {
         Heap_collect(heap, stack);
 
         object = LargeAllocator_getBlock(heap->largeAllocator, size);
         if (object != NULL) {
-            Object_setObjectType(object, object_large);
-            Object_setSize(object, size);
+            Object_setObjectType(&object->header, object_large);
+            Object_setSize(&object->header, size);
             return Object_toMutatorAddress(object);
         } else {
             LargeAllocator_print(heap->largeAllocator);
@@ -83,12 +86,14 @@ word_t *allocSmallSlow(Heap *heap, uint32_t size) {
 
     Heap_collect(heap, stack);
 
-    ObjectHeader *object =
-        (ObjectHeader *)Allocator_alloc(heap->allocator, size);
+    Object *object =
+        (Object *)Allocator_alloc(heap->allocator, size);
     if (object != NULL) {
-        Object_setObjectType(object, object_standard);
-        Object_setSize(object, size);
-        Object_setAllocated(object);
+        ObjectHeader* objectHeader = &object->header;
+
+        Object_setObjectType(objectHeader, object_standard);
+        Object_setSize(objectHeader, size);
+        Object_setAllocated(objectHeader);
 #ifdef ALLOCATOR_STATS
         heap->allocator->stats->bytesAllocated += objectSize;
         heap->allocator->stats->totalBytesAllocated += objectSize;
@@ -108,14 +113,18 @@ word_t *allocSmallSlow(Heap *heap, uint32_t size) {
 }
 
 INLINE word_t *Heap_allocSmall(Heap *heap, uint32_t objectSize) {
-    assert(objectSize % 8 == 0);
     uint32_t size = objectSize + OBJECT_HEADER_SIZE; // Add header
-    ObjectHeader *object =
-        (ObjectHeader *)Allocator_alloc(heap->allocator, size);
+
+    assert(objectSize % 8 == 0);
+    assert(size < MIN_BLOCK_SIZE);
+
+    Object *object =
+        (Object *)Allocator_alloc(heap->allocator, size);
     if (object != NULL) {
-        Object_setObjectType(object, object_standard);
-        Object_setSize(object, size);
-        Object_setAllocated(object);
+        ObjectHeader* objectHeader = &object->header;
+        Object_setObjectType(objectHeader, object_standard);
+        Object_setSize(objectHeader, size);
+        Object_setAllocated(objectHeader);
 
 #ifdef ALLOCATOR_STATS
         heap->allocator->stats->bytesAllocated += objectSize;

@@ -30,7 +30,7 @@ static inline bool heap_isWordInHeap(Heap *heap, word_t *word) {
     return heap_isWordInSmallHeap(heap, word) ||
            heap_isWordInLargeHeap(heap, word);
 }
-static inline bool heap_isObjectInHeap(Heap *heap, ObjectHeader *object) {
+static inline bool heap_isObjectInHeap(Heap *heap, Object *object) {
     return heap_isWordInHeap(heap, (word_t *)object);
 }
 

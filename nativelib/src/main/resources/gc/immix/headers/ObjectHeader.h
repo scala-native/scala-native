@@ -24,7 +24,7 @@ typedef struct {
     uint32_t size;
     uint8_t type;
     uint8_t flag;
-} ObjectHeaderLine;
+} ObjectHeader;
 
 typedef struct {
     struct {
@@ -49,49 +49,49 @@ typedef struct {
 typedef word_t *Field_t;
 
 typedef struct {
-    ObjectHeaderLine header;
+    ObjectHeader header;
     Rtti *rtti;
     Field_t fields[0];
-} ObjectHeader;
+} Object;
 
 static inline bool Object_isMarked(ObjectHeader *objectHeader) {
-    return objectHeader->header.flag == object_marked;
+    return objectHeader->flag == object_marked;
 }
 
 static inline void Object_markObjectHeader(ObjectHeader *objectHeader) {
-    objectHeader->header.flag = object_marked;
+    objectHeader->flag = object_marked;
 }
 
 static inline void Object_setAllocated(ObjectHeader *objectHeader) {
-    objectHeader->header.flag = object_allocated;
+    objectHeader->flag = object_allocated;
 }
 
 static inline void Object_setFree(ObjectHeader *objectHeader) {
-    objectHeader->header.flag = object_free;
+    objectHeader->flag = object_free;
 }
 
 static inline bool Object_isAllocated(ObjectHeader *objectHeader) {
-    return objectHeader->header.flag == object_allocated;
+    return objectHeader->flag == object_allocated;
 }
 
 static inline bool Object_isStandardObject(ObjectHeader *objectHeader) {
-    return objectHeader->header.type == object_standard;
+    return objectHeader->type == object_standard;
 }
 static inline bool Object_isLargeObject(ObjectHeader *objectHeader) {
-    return objectHeader->header.type == object_large;
+    return objectHeader->type == object_large;
 }
 
 static inline bool Object_isForwardObject(ObjectHeader *objectHeader) {
-    return objectHeader->header.type == object_forward;
+    return objectHeader->type == object_forward;
 }
 
 static inline void Object_setObjectType(ObjectHeader *objectHeader,
                                         ObjectType objectType) {
-    objectHeader->header.type = objectType;
+    objectHeader->type = objectType;
 }
 
 static inline size_t Object_size(ObjectHeader *objectHeader) {
-    uint32_t size = objectHeader->header.size;
+    uint32_t size = objectHeader->size;
     assert((Object_isStandardObject(objectHeader) && size < LARGE_BLOCK_SIZE) ||
            !Object_isStandardObject(objectHeader));
 
@@ -103,14 +103,14 @@ static inline void Object_setSize(ObjectHeader *objectHeader, size_t size) {
     assert(!Object_isStandardObject(objectHeader) ||
            (Object_isStandardObject(objectHeader) && _size > 0 &&
             _size < LARGE_BLOCK_SIZE));
-    objectHeader->header.size = _size;
+    objectHeader->size = _size;
 }
 
-static inline ObjectHeader *Object_fromMutatorAddress(word_t *address) {
-    return (ObjectHeader *)(address - WORDS_IN_OBJECT_HEADER);
+static inline Object *Object_fromMutatorAddress(word_t *address) {
+    return (Object *)(address - WORDS_IN_OBJECT_HEADER);
 }
 
-static inline word_t *Object_toMutatorAddress(ObjectHeader* object) {
+static inline word_t *Object_toMutatorAddress(Object* object) {
     return (word_t*) &object->rtti;
 }
 

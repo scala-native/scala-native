@@ -7,6 +7,7 @@
 #include "stats/AllocatorStats.h"
 #include "headers/BlockHeader.h"
 #include "headers/LineHeader.h"
+#include "headers/ObjectHeader.h"
 
 INLINE void recycleUnmarkedBlock(Allocator *allocator,
                                  BlockHeader *blockHeader) {
@@ -24,14 +25,15 @@ INLINE void recycleMarkedLine(BlockHeader *blockHeader, LineHeader *lineHeader,
     // If the line contains an object
     if (Line_containsObject(lineHeader)) {
         // Unmark all objects in line
-        ObjectHeader *object = Line_getFirstObject(lineHeader);
+        Object *object = Line_getFirstObject(lineHeader);
         word_t *lineEnd =
             Block_getLineAddress(blockHeader, lineIndex) + WORDS_IN_LINE;
         while (object != NULL && (word_t *)object < lineEnd) {
-            if (Object_isMarked(object)) {
-                Object_setAllocated(object);
+            ObjectHeader *objectHeader = &object->header;
+            if (Object_isMarked(objectHeader)) {
+                Object_setAllocated(objectHeader);
             } else {
-                Object_setFree(object);
+                Object_setFree(objectHeader);
             }
             object = Object_nextObject(object);
         }

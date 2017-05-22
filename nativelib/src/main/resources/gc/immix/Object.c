@@ -5,24 +5,25 @@
 #include "Line.h"
 #include "Log.h"
 #include "utils/MathUtils.h"
+#include "headers/ObjectHeader.h"
 
-ObjectHeader *Object_nextLargeObject(ObjectHeader *objectHeader) {
-    size_t size = Object_chunkSize(objectHeader);
+Object *Object_nextLargeObject(Object *object) {
+    size_t size = Object_chunkSize(object);
     assert(size != 0);
-    return (ObjectHeader *)((ubyte_t *)objectHeader + size);
+    return (Object *)((ubyte_t *)object + size);
 }
 
-ObjectHeader *Object_nextObject(ObjectHeader *objectHeader) {
-    size_t size = Object_size(objectHeader);
+Object *Object_nextObject(Object *object) {
+    size_t size = Object_size(&object->header);
     assert(size < LARGE_BLOCK_SIZE);
     if (size == 0) {
         return NULL;
     }
-    ObjectHeader *next = (ObjectHeader *)((ubyte_t *)objectHeader + size);
+    Object *next = (Object *)((ubyte_t *)object + size);
     assert(Block_getBlockHeader((word_t *)next) ==
-               Block_getBlockHeader((word_t *)objectHeader) ||
+               Block_getBlockHeader((word_t *)object) ||
            (ubyte_t *)Block_getBlockHeader((word_t *)next) ==
-               (ubyte_t *)Block_getBlockHeader((word_t *)objectHeader) +
+               (ubyte_t *)Block_getBlockHeader((word_t *)object) +
                    BLOCK_TOTAL_SIZE);
     return next;
 }
@@ -31,12 +32,12 @@ static inline bool isWordAligned(word_t *word) {
     return ((word_t)word & WORD_INVERSE_MASK) == (word_t)word;
 }
 
-ObjectHeader *getInLine(BlockHeader *blockHeader, int lineIndex, word_t *word) {
+Object *getInLine(BlockHeader *blockHeader, int lineIndex, word_t *word) {
     assert(Line_containsObject(Block_getLineHeader(blockHeader, lineIndex)));
 
-    ObjectHeader *current =
+    Object *current =
         Line_getFirstObject(Block_getLineHeader(blockHeader, lineIndex));
-    ObjectHeader *next = Object_nextObject(current);
+    Object *next = Object_nextObject(current);
 
     word_t *lineEnd =
         Block_getLineAddress(blockHeader, lineIndex) + WORDS_IN_LINE;
@@ -46,7 +47,7 @@ ObjectHeader *getInLine(BlockHeader *blockHeader, int lineIndex, word_t *word) {
         next = Object_nextObject(next);
     }
 
-    if (Object_isAllocated(current) && word >= (word_t *)current &&
+    if (Object_isAllocated(&current->header) && word >= (word_t *)current &&
         word < (word_t *)next) {
 #ifdef DEBUG_PRINT
         if ((word_t *)current != word) {
@@ -64,7 +65,7 @@ ObjectHeader *getInLine(BlockHeader *blockHeader, int lineIndex, word_t *word) {
     }
 }
 
-ObjectHeader *Object_getObject(word_t *word) {
+Object *Object_getObject(word_t *word) {
     BlockHeader *blockHeader = Block_getBlockHeader(word);
 
     // Check if the word points on the block header
@@ -102,7 +103,7 @@ ObjectHeader *Object_getObject(word_t *word) {
     }
 }
 
-ObjectHeader *object_getLargeInnerPointer(LargeAllocator *allocator,
+Object *object_getLargeInnerPointer(LargeAllocator *allocator,
                                           word_t *word) {
     word_t *current = (word_t *)((word_t)word & LARGE_BLOCK_MASK);
 
@@ -110,30 +111,30 @@ ObjectHeader *object_getLargeInnerPointer(LargeAllocator *allocator,
         current -= LARGE_BLOCK_SIZE / WORD_SIZE;
     }
 
-    ObjectHeader *objectHeader = (ObjectHeader *)current;
-    if (word < (word_t *)objectHeader +
-                   Object_chunkSize(objectHeader) / WORD_SIZE &&
-        objectHeader->rtti != NULL) {
+    Object *object = (Object *)current;
+    if (word < (word_t *)object +
+                   Object_chunkSize(object) / WORD_SIZE &&
+            object->rtti != NULL) {
 #ifdef DEBUG_PRINT
         printf("large inner pointer: %p, object: %p\n", word, objectHeader);
         fflush(stdout);
 #endif
-        return objectHeader;
+        return object;
     } else {
 
         return NULL;
     }
 }
 
-ObjectHeader *Object_getLargeObject(LargeAllocator *allocator, word_t *word) {
+Object *Object_getLargeObject(LargeAllocator *allocator, word_t *word) {
     if (((word_t)word & LARGE_BLOCK_MASK) != (word_t)word) {
         word = (word_t *)((word_t)word & LARGE_BLOCK_MASK);
     }
     if (Bitmap_getBit(allocator->bitmap, (ubyte_t *)word) &&
-        Object_isAllocated((ObjectHeader *)word)) {
-        return (ObjectHeader *)word;
+        Object_isAllocated(&((Object *)word)->header)) {
+        return (Object *)word;
     } else {
-        ObjectHeader *object = object_getLargeInnerPointer(allocator, word);
+        Object *object = object_getLargeInnerPointer(allocator, word);
         assert(object == NULL ||
                (word >= (word_t *)object &&
                 word < (word_t *)Object_nextLargeObject(object)));
@@ -141,19 +142,19 @@ ObjectHeader *Object_getLargeObject(LargeAllocator *allocator, word_t *word) {
     }
 }
 
-void Object_mark(ObjectHeader *objectHeader) {
+void Object_mark(Object *object) {
     // Mark the object itself
-    Object_markObjectHeader(objectHeader);
+    Object_markObjectHeader(&object->header);
 
-    if (!Object_isLargeObject(objectHeader)) {
+    if (!Object_isLargeObject(&object->header)) {
         // Mark the block
-        BlockHeader *blockHeader = Block_getBlockHeader((word_t *)objectHeader);
+        BlockHeader *blockHeader = Block_getBlockHeader((word_t *)object);
         Block_mark(blockHeader);
 
         // Mark all Lines
         int startIndex =
-            Block_getLineIndexFromWord(blockHeader, (word_t *)objectHeader);
-        word_t *lastWord = (word_t *)Object_nextObject(objectHeader) - 1;
+            Block_getLineIndexFromWord(blockHeader, (word_t *)object);
+        word_t *lastWord = (word_t *)Object_nextObject(object) - 1;
         int endIndex = Block_getLineIndexFromWord(blockHeader, lastWord);
         assert(startIndex >= 0 && startIndex < LINE_COUNT);
         assert(endIndex >= 0 && endIndex < LINE_COUNT);
@@ -165,7 +166,7 @@ void Object_mark(ObjectHeader *objectHeader) {
     }
 }
 
-size_t Object_chunkSize(ObjectHeader *objectHeader) {
-    return (Object_size(objectHeader) + MIN_BLOCK_SIZE - 1) / MIN_BLOCK_SIZE *
-           MIN_BLOCK_SIZE;
+size_t Object_chunkSize(Object *object) {
+    return roundToNextMultiple(Object_size(&object->header), MIN_BLOCK_SIZE);
+    //Object_size(&object->header) + MIN_BLOCK_SIZE - 1) / MIN_BLOCK_SIZE * MIN_BLOCK_SIZE;
 }

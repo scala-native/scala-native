@@ -5,7 +5,7 @@
 #include "headers/LineHeader.h"
 #include "headers/BlockHeader.h"
 
-static INLINE ObjectHeader *Line_getFirstObject(LineHeader *lineHeader) {
+static INLINE Object *Line_getFirstObject(LineHeader *lineHeader) {
     assert(Line_containsObject(lineHeader));
     BlockHeader *blockHeader = Block_blockHeaderFromLineHeader(lineHeader);
     uint8_t offset = Line_getFirstObjectOffset(lineHeader);
@@ -13,7 +13,7 @@ static INLINE ObjectHeader *Line_getFirstObject(LineHeader *lineHeader) {
     uint32_t lineIndex =
         Block_getLineIndexFromLineHeader(blockHeader, lineHeader);
 
-    return (ObjectHeader *)Block_getLineWord(blockHeader, lineIndex,
+    return (Object *)Block_getLineWord(blockHeader, lineIndex,
                                              offset / WORD_SIZE);
 }
 

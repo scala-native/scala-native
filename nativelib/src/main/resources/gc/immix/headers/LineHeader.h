@@ -14,10 +14,10 @@ typedef struct {
 typedef enum {
     line_empty = 0x0,
     line_marked = 0x1,
-    line_contains_object = 0x2,
+    line_contains_object_header = 0x2,
 } LineFlag;
 
-/*
+/**
  * Contains the offset of bytes to the first object.
  * The size of a line is 256 bytes, thus 8 bits are enough to store the offset.
  *
@@ -44,11 +44,11 @@ static inline void Line_setEmpty(LineHeader *lineHeader) {
 }
 
 static inline bool Line_containsObject(LineHeader *lineHeader) {
-    return (line_contains_object & *lineHeader) != 0;
+    return (line_contains_object_header & *lineHeader) != 0;
 }
 
 static inline void Line_setOffset(LineHeader *lineHeader, uint8_t offset) {
-    *lineHeader = (offset & FIRST_OBJECT_OFFSET_MASK) | line_contains_object;
+    *lineHeader = (offset & FIRST_OBJECT_OFFSET_MASK) | line_contains_object_header;
 }
 
 static inline uint8_t Line_getFirstObjectOffset(LineHeader *lineHeader) {

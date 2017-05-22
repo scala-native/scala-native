@@ -6,6 +6,7 @@
 #include "Heap.h"
 #include "Allocator.h"
 #include "stats/AllocatorStats.h"
+#include "headers/ObjectHeader.h"
 
 #define UNW_LOCAL_ONLY
 #include <libunwind.h>
@@ -14,9 +15,9 @@ extern int __object_array_id;
 extern word_t *__modules;
 extern int __modules_size;
 
-void markObject(Heap *heap, Stack *stack, ObjectHeader *object) {
-    assert(!Object_isMarked(object));
-    assert(Object_size(object) != 0);
+void markObject(Heap *heap, Stack *stack, Object *object) {
+    assert(!Object_isMarked(&object->header));
+    assert(Object_size(&object->header) != 0);
     Object_mark(object);
     Stack_push(stack, object);
 #ifdef ALLOCATOR_STATS
@@ -26,7 +27,7 @@ void markObject(Heap *heap, Stack *stack, ObjectHeader *object) {
 
 void markConservative(Heap *heap, Stack *stack, word_t *address) {
     assert(heap_isWordInHeap(heap, address));
-    ObjectHeader *object = NULL;
+    Object *object = NULL;
     if (heap_isWordInSmallHeap(heap, address)) {
         object = Object_getObject(address);
         assert(
@@ -44,25 +45,25 @@ void markConservative(Heap *heap, Stack *stack, word_t *address) {
         object = Object_getLargeObject(heap->largeAllocator, address);
     }
 
-    if (object != NULL && !Object_isMarked(object)) {
+    if (object != NULL && !Object_isMarked(&object->header)) {
         markObject(heap, stack, object);
     }
 }
 
 void mark(Heap *heap, Stack *stack) {
     while (!Stack_isEmpty(stack)) {
-        ObjectHeader *object = Stack_pop(stack);
+        Object *object = Stack_pop(stack);
 
         if (object->rtti->rt.id == __object_array_id) {
             // remove header and rtti from size
-            size_t size = Object_size(object) - OBJECT_HEADER_SIZE - WORD_SIZE;
+            size_t size = Object_size(&object->header) - OBJECT_HEADER_SIZE - WORD_SIZE;
             size_t nbWords = size / WORD_SIZE;
             for (int i = 0; i < nbWords; i++) {
 
                 word_t *field = object->fields[i];
-                ObjectHeader *fieldObject = Object_fromMutatorAddress(field);
+                Object *fieldObject = Object_fromMutatorAddress(field);
                 if (heap_isObjectInHeap(heap, fieldObject) &&
-                    !Object_isMarked(fieldObject)) {
+                    !Object_isMarked(&fieldObject->header)) {
                     markObject(heap, stack, fieldObject);
                 }
             }
@@ -71,9 +72,9 @@ void mark(Heap *heap, Stack *stack) {
             int i = 0;
             while (ptr_map[i] != -1) {
                 word_t *field = object->fields[ptr_map[i] / WORD_SIZE - 1];
-                ObjectHeader *fieldObject = Object_fromMutatorAddress(field);
+                Object *fieldObject = Object_fromMutatorAddress(field);
                 if (heap_isObjectInHeap(heap, fieldObject) &&
-                    !Object_isMarked(fieldObject)) {
+                    !Object_isMarked(&fieldObject->header)) {
                     markObject(heap, stack, fieldObject);
                 }
                 ++i;
@@ -117,8 +118,8 @@ void markModules(Heap *heap, Stack *stack) {
     int nb_modules = __modules_size;
 
     for (int i = 0; i < nb_modules; i++) {
-        ObjectHeader *object = Object_fromMutatorAddress(modules[i]);
-        if (heap_isObjectInHeap(heap, object) && !Object_isMarked(object)) {
+        Object *object = Object_fromMutatorAddress(modules[i]);
+        if (heap_isObjectInHeap(heap, object) && !Object_isMarked(&object->header)) {
             markObject(heap, stack, object);
         }
     }

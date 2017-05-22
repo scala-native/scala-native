@@ -7,7 +7,7 @@
 #include "Log.h"
 #include "headers/ObjectHeader.h"
 
-inline static int size_to_linked_list(size_t size) {
+inline static int sizeToLinkedListIndex(size_t size) {
     assert(size >= MIN_BLOCK_SIZE);
     return log2_floor(size) - LARGE_OBJECT_MIN_SIZE_BITS;
 }
@@ -77,14 +77,14 @@ void LargeAllocator_addChunk(LargeAllocator *allocator, Chunk *chunk,
         size_t chunkSize = 1UL << log2_f;
         chunkSize = chunkSize > MAX_BLOCK_SIZE ? MAX_BLOCK_SIZE : chunkSize;
         assert(chunkSize >= MIN_BLOCK_SIZE && chunkSize <= MAX_BLOCK_SIZE);
-        int listIndex = size_to_linked_list(chunkSize);
+        int listIndex = sizeToLinkedListIndex(chunkSize);
 
         Chunk *currentChunk = (Chunk *)current;
         freeList_addBlockLast(&allocator->freeLists[listIndex],
                               (Chunk *)current);
         Chunk_setSize(currentChunk, chunkSize);
         currentChunk->header.type = object_large;
-        Object_setFree((ObjectHeader *)currentChunk);
+        Object_setFree(&((Object *)currentChunk)->header);
         Bitmap_setBit(allocator->bitmap, current);
 
         current += chunkSize;
@@ -92,12 +92,12 @@ void LargeAllocator_addChunk(LargeAllocator *allocator, Chunk *chunk,
     }
 }
 
-ObjectHeader *LargeAllocator_getBlock(LargeAllocator *allocator,
+Object *LargeAllocator_getBlock(LargeAllocator *allocator,
                                       size_t requestedBlockSize) {
     size_t actualBlockSize = roundToNextMultiple(requestedBlockSize, MIN_BLOCK_SIZE);
     size_t requiredChunkSize = 1UL << log2_ceil(actualBlockSize);
 
-    int listIndex = size_to_linked_list(requiredChunkSize);
+    int listIndex = sizeToLinkedListIndex(requiredChunkSize);
     Chunk *chunk = NULL;
     while (listIndex <= FREE_LIST_COUNT - 1 &&
            (chunk = allocator->freeLists[listIndex].first) == NULL) {
@@ -121,8 +121,8 @@ ObjectHeader *LargeAllocator_getBlock(LargeAllocator *allocator,
     }
 
     Bitmap_setBit(allocator->bitmap, (ubyte_t *)chunk);
-    ObjectHeader *object = (ObjectHeader *)chunk;
-    Object_setAllocated(object);
+    Object *object = (Object *)chunk;
+    Object_setAllocated(&object->header);
     memset(Object_toMutatorAddress(object), 0, actualBlockSize - WORD_SIZE);
     return object;
 }
@@ -158,19 +158,20 @@ void clearFreeLists(LargeAllocator *allocator) {
 void LargeAllocator_sweep(LargeAllocator *allocator) {
     clearFreeLists(allocator);
 
-    ObjectHeader *current = (ObjectHeader *)allocator->offset;
+    Object *current = (Object *)allocator->offset;
     void *heapEnd = (ubyte_t *)allocator->offset + allocator->size;
 
     while (current != heapEnd) {
         assert(Bitmap_getBit(allocator->bitmap, (ubyte_t *)current));
-        if (Object_isMarked(current)) {
-            Object_setAllocated(current);
+        ObjectHeader* currentHeader = &current->header;
+        if (Object_isMarked(currentHeader)) {
+            Object_setAllocated(currentHeader);
 
             current = Object_nextLargeObject(current);
         } else {
             size_t currentSize = Object_chunkSize(current);
-            ObjectHeader *next = Object_nextLargeObject(current);
-            while (next != heapEnd && !Object_isMarked(next)) {
+            Object *next = Object_nextLargeObject(current);
+            while (next != heapEnd && !Object_isMarked(&next->header)) {
                 currentSize += Object_chunkSize(next);
                 Bitmap_clearBit(allocator->bitmap, (ubyte_t *)next);
                 next = Object_nextLargeObject(next);
