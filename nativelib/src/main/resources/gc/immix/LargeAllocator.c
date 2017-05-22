@@ -94,10 +94,7 @@ void LargeAllocator_addChunk(LargeAllocator *allocator, Chunk *chunk,
 
 ObjectHeader *LargeAllocator_getBlock(LargeAllocator *allocator,
                                       size_t requestedBlockSize) {
-    size_t actualBlockSize =
-        (requestedBlockSize + MIN_BLOCK_SIZE - 1) / MIN_BLOCK_SIZE *
-        MIN_BLOCK_SIZE; // roundToNextMultiple(requestedBlockSize,
-                        // MIN_BLOCK_SIZE);//
+    size_t actualBlockSize = roundToNextMultiple(requestedBlockSize, MIN_BLOCK_SIZE);
     size_t requiredChunkSize = 1UL << log2_ceil(actualBlockSize);
 
     int listIndex = size_to_linked_list(requiredChunkSize);
@@ -126,7 +123,7 @@ ObjectHeader *LargeAllocator_getBlock(LargeAllocator *allocator,
     Bitmap_setBit(allocator->bitmap, (ubyte_t *)chunk);
     ObjectHeader *object = (ObjectHeader *)chunk;
     Object_setAllocated(object);
-    memset((word_t *)object + 1, 0, actualBlockSize - WORD_SIZE);
+    memset(Object_toMutatorAddress(object), 0, actualBlockSize - WORD_SIZE);
     return object;
 }
 

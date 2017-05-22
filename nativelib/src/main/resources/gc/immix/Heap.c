@@ -60,7 +60,7 @@ word_t *Heap_allocLarge(Heap *heap, uint32_t objectSize) {
     if (object != NULL) {
         Object_setObjectType(object, object_large);
         Object_setSize(object, size);
-        return (word_t *)object + 1;
+        return Object_toMutatorAddress(object);
     } else {
         Heap_collect(heap, stack);
 
@@ -68,7 +68,7 @@ word_t *Heap_allocLarge(Heap *heap, uint32_t objectSize) {
         if (object != NULL) {
             Object_setObjectType(object, object_large);
             Object_setSize(object, size);
-            return (word_t *)object + 1;
+            return Object_toMutatorAddress(object);
         } else {
             LargeAllocator_print(heap->largeAllocator);
             printf("Failed to alloc: %u\n", size + 8);
@@ -83,12 +83,12 @@ word_t *allocSmallSlow(Heap *heap, uint32_t size) {
 
     Heap_collect(heap, stack);
 
-    ObjectHeader *block =
+    ObjectHeader *object =
         (ObjectHeader *)Allocator_alloc(heap->allocator, size);
-    if (block != NULL) {
-        Object_setObjectType(block, object_standard);
-        Object_setSize(block, size);
-        Object_setAllocated(block);
+    if (object != NULL) {
+        Object_setObjectType(object, object_standard);
+        Object_setSize(object, size);
+        Object_setAllocated(object);
 #ifdef ALLOCATOR_STATS
         heap->allocator->stats->bytesAllocated += objectSize;
         heap->allocator->stats->totalBytesAllocated += objectSize;
@@ -96,7 +96,7 @@ word_t *allocSmallSlow(Heap *heap, uint32_t size) {
 #endif
     }
 
-    if (block == NULL) {
+    if (object == NULL) {
         LargeAllocator_print(heap->largeAllocator);
         printf("Failed to alloc: %u\n", size + 8);
         printf("No more memory available\n");
@@ -104,25 +104,25 @@ word_t *allocSmallSlow(Heap *heap, uint32_t size) {
         exit(1);
     }
 
-    return (word_t *)block + 1;
+    return Object_toMutatorAddress(object);
 }
 
 INLINE word_t *Heap_allocSmall(Heap *heap, uint32_t objectSize) {
     assert(objectSize % 8 == 0);
     uint32_t size = objectSize + OBJECT_HEADER_SIZE; // Add header
-    ObjectHeader *block =
+    ObjectHeader *object =
         (ObjectHeader *)Allocator_alloc(heap->allocator, size);
-    if (block != NULL) {
-        Object_setObjectType(block, object_standard);
-        Object_setSize(block, size);
-        Object_setAllocated(block);
+    if (object != NULL) {
+        Object_setObjectType(object, object_standard);
+        Object_setSize(object, size);
+        Object_setAllocated(object);
 
 #ifdef ALLOCATOR_STATS
         heap->allocator->stats->bytesAllocated += objectSize;
         heap->allocator->stats->totalBytesAllocated += objectSize;
         heap->allocator->stats->totalAllocatedObjectCount++;
 #endif
-        return (word_t *)block + 1;
+        return Object_toMutatorAddress(object);
     } else {
         return allocSmallSlow(heap, size);
     }

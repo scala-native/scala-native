@@ -110,4 +110,8 @@ static inline ObjectHeader *Object_fromMutatorAddress(word_t *address) {
     return (ObjectHeader *)(address - WORDS_IN_OBJECT_HEADER);
 }
 
+static inline word_t *Object_toMutatorAddress(ObjectHeader* object) {
+    return (word_t*) &object->rtti;
+}
+
 #endif // IMMIX_OBJECTHEADER_H
