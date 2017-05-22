@@ -33,5 +33,3 @@ void scalanative_safepoint_init() {
     sigaction(SIGSEGV, &action, NULL);
     sigaction(SIGBUS, &action, NULL);
 }
-
-void scalanative_safepoint() {}
