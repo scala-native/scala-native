@@ -5,7 +5,6 @@
 #include "Block.h"
 #include "Log.h"
 #include "Allocator.h"
-#include "stats/AllocatorStats.h"
 #include "Marker.h"
 #include "State.h"
 
@@ -94,11 +93,6 @@ word_t *allocSmallSlow(Heap *heap, uint32_t size) {
         Object_setObjectType(objectHeader, object_standard);
         Object_setSize(objectHeader, size);
         Object_setAllocated(objectHeader);
-#ifdef ALLOCATOR_STATS
-        heap->allocator->stats->bytesAllocated += objectSize;
-        heap->allocator->stats->totalBytesAllocated += objectSize;
-        heap->allocator->stats->totalAllocatedObjectCount++;
-#endif
     }
 
     if (object == NULL) {
@@ -126,11 +120,6 @@ INLINE word_t *Heap_allocSmall(Heap *heap, uint32_t objectSize) {
         Object_setSize(objectHeader, size);
         Object_setAllocated(objectHeader);
 
-#ifdef ALLOCATOR_STATS
-        heap->allocator->stats->bytesAllocated += objectSize;
-        heap->allocator->stats->totalBytesAllocated += objectSize;
-        heap->allocator->stats->totalAllocatedObjectCount++;
-#endif
         return Object_toMutatorAddress(object);
     } else {
         return allocSmallSlow(heap, size);
@@ -152,7 +141,7 @@ void Heap_collect(Heap *heap, Stack *stack) {
     printf("\nCollect\n");
     fflush(stdout);
 #endif
-    Mark_roots(heap, stack);
+    Mark_markRoots(heap, stack);
     bool success = Heap_recycle(heap);
 
     if (!success) {
@@ -171,9 +160,6 @@ bool Heap_recycle(Heap *heap) {
     BlockList_clear(&heap->allocator->recycledBlocks);
     BlockList_clear(&heap->allocator->freeBlocks);
 
-#ifdef ALLOCATOR_STATS
-    allocatorStats_resetBlockDistribution(heap->allocator->stats);
-#endif
 
     word_t *current = heap->heapStart;
     while (current != heap->heapEnd) {
@@ -183,12 +169,6 @@ bool Heap_recycle(Heap *heap) {
         current += WORDS_IN_BLOCK;
     }
     LargeAllocator_sweep(heap->largeAllocator);
-
-#ifdef ALLOCATOR_STATS
-    allocatorStats_print(heap->allocator->stats);
-    heap->allocator->stats->liveObjectCount = 0;
-    heap->allocator->stats->bytesAllocated = 0;
-#endif
 
     return Allocator_initCursors(heap->allocator);
 }

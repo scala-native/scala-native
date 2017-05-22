@@ -9,7 +9,6 @@
 #include "../Log.h"
 
 typedef enum {
-    object_forward = 0x0,
     object_standard = 0x1,
     object_large = 0x2,
 } ObjectType;
@@ -79,10 +78,6 @@ static inline bool Object_isStandardObject(ObjectHeader *objectHeader) {
 }
 static inline bool Object_isLargeObject(ObjectHeader *objectHeader) {
     return objectHeader->type == object_large;
-}
-
-static inline bool Object_isForwardObject(ObjectHeader *objectHeader) {
-    return objectHeader->type == object_forward;
 }
 
 static inline void Object_setObjectType(ObjectHeader *objectHeader,

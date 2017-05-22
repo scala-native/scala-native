@@ -3,20 +3,12 @@
 #include "Block.h"
 #include "Object.h"
 #include "Log.h"
-#include "Allocator.h"
-#include "stats/AllocatorStats.h"
-#include "headers/BlockHeader.h"
-#include "headers/LineHeader.h"
-#include "headers/ObjectHeader.h"
 
 INLINE void recycleUnmarkedBlock(Allocator *allocator,
                                  BlockHeader *blockHeader) {
     memset(blockHeader, 0, LINE_SIZE);
     BlockList_addLast(&allocator->freeBlocks, blockHeader);
     Block_setFlag(blockHeader, block_free);
-#ifdef ALLOCATOR_STATS
-    allocator->stats->availableBlockCount++;
-#endif
 }
 
 INLINE void recycleMarkedLine(BlockHeader *blockHeader, LineHeader *lineHeader,
@@ -82,10 +74,6 @@ void Block_recycle(Allocator *allocator, BlockHeader *blockHeader) {
         if (lastRecyclable == -1) {
             Block_setFlag(blockHeader, block_unavailable);
 
-#ifdef ALLOCATOR_STATS
-            allocator->stats->unavailableBlockCount++;
-#endif
-
         } else {
             Block_getFreeLineHeader(blockHeader, lastRecyclable)->next =
                 LAST_HOLE;
@@ -94,9 +82,6 @@ void Block_recycle(Allocator *allocator, BlockHeader *blockHeader) {
 
             assert(blockHeader->header.first != -1);
 
-#ifdef ALLOCATOR_STATS
-            allocator->stats->recyclableBlockCount++;
-#endif
         }
     }
 }

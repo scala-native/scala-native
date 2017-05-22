@@ -4,7 +4,6 @@
 #include "GCTypes.h"
 #include <stddef.h>
 #include "datastructures/BlockList.h"
-#include "stats/AllocatorStats.h"
 
 typedef struct {
     word_t *heapStart;
@@ -16,9 +15,6 @@ typedef struct {
     BlockHeader *largeBlock;
     word_t *largeCursor;
     word_t *largeLimit;
-#ifdef ALLOCATOR_STATS
-    AllocatorStats *stats;
-#endif
 } Allocator;
 
 Allocator *Allocator_create(word_t *, int);

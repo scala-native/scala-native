@@ -5,6 +5,5 @@
 #include <assert.h>
 
 //#define DEBUG_PRINT
-//#define ALLOCATOR_STATS
 
 #endif // IMMIX_LOG_H

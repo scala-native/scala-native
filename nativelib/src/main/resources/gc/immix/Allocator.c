@@ -2,7 +2,6 @@
 #include "Allocator.h"
 #include "Line.h"
 #include "Block.h"
-#include "stats/AllocatorStats.h"
 #include <stdio.h>
 #include <memory.h>
 
@@ -23,11 +22,6 @@ Allocator *Allocator_create(word_t *heapStart, int blockCount) {
     allocator->freeBlocks.last = lastBlockHeader;
     lastBlockHeader->header.nextBlock = LAST_BLOCK;
 
-// Block stats
-#ifdef ALLOCATOR_STATS
-    allocator->stats = AllocatorStats_create();
-    allocator->stats->blockCount = (uint64_t)blockCount;
-#endif
 
     Allocator_initCursors(allocator);
 

@@ -3,10 +3,6 @@
 #include "Marker.h"
 #include "Object.h"
 #include "Log.h"
-#include "Heap.h"
-#include "Allocator.h"
-#include "stats/AllocatorStats.h"
-#include "headers/ObjectHeader.h"
 
 #define UNW_LOCAL_ONLY
 #include <libunwind.h>
@@ -20,9 +16,6 @@ void markObject(Heap *heap, Stack *stack, Object *object) {
     assert(Object_size(&object->header) != 0);
     Object_mark(object);
     Stack_push(stack, object);
-#ifdef ALLOCATOR_STATS
-    heap->allocator->stats->liveObjectCount++;
-#endif
 }
 
 void markConservative(Heap *heap, Stack *stack, word_t *address) {
@@ -125,10 +118,7 @@ void markModules(Heap *heap, Stack *stack) {
     }
 }
 
-void Mark_roots(Heap *heap, Stack *stack) {
-#ifdef ALLOCATOR_STATS
-    heap->allocator->stats->liveObjectCount = 0;
-#endif
+void Mark_markRoots(Heap *heap, Stack *stack) {
 
     // Dumps registers into 'regs' which is on stack
     jmp_buf regs;
