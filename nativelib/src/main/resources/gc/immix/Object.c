@@ -5,7 +5,6 @@
 #include "Line.h"
 #include "Log.h"
 #include "utils/MathUtils.h"
-#include "headers/ObjectHeader.h"
 
 Object *Object_nextLargeObject(Object *object) {
     size_t size = Object_chunkSize(object);
@@ -166,6 +165,4 @@ void Object_mark(Object *object) {
 
 size_t Object_chunkSize(Object *object) {
     return roundToNextMultiple(Object_size(&object->header), MIN_BLOCK_SIZE);
-    // Object_size(&object->header) + MIN_BLOCK_SIZE - 1) / MIN_BLOCK_SIZE *
-    // MIN_BLOCK_SIZE;
 }

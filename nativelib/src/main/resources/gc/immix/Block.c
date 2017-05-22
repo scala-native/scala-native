@@ -4,6 +4,8 @@
 #include "Object.h"
 #include "Log.h"
 
+extern int __object_array_id;
+
 INLINE void recycleUnmarkedBlock(Allocator *allocator,
                                  BlockHeader *blockHeader) {
     memset(blockHeader, 0, LINE_SIZE);
@@ -83,6 +85,82 @@ void Block_recycle(Allocator *allocator, BlockHeader *blockHeader) {
             assert(blockHeader->header.first != -1);
         }
     }
+}
+
+// This method is used in case of overflow during the marking phase.
+// It sweeps through the block starting at `currentOverflowAddress` until if
+// finds a marked block with unmarked children.
+// It updates the value of `currentOverflowAddress` while sweeping through the
+// block
+// Once a block is found it adds it to the stack and returns `true`. If no block
+// is found it returns `false`.
+bool block_overflowHeapScan(BlockHeader *block, Heap *heap, Stack *stack,
+                            word_t **currentOverflowAddress) {
+    word_t *blockEnd = Block_getBlockEnd(block);
+    if (!Block_isMarked(block)) {
+        *currentOverflowAddress = blockEnd;
+        return false;
+    }
+
+    int lineIndex;
+
+    if (*currentOverflowAddress == (word_t *)block) {
+        lineIndex = 0;
+    } else {
+        lineIndex = Block_getLineIndexFromWord(block, *currentOverflowAddress);
+    }
+    while (lineIndex < LINE_COUNT) {
+        LineHeader *lineHeader = Block_getLineHeader(block, lineIndex);
+
+        if (Line_isMarked(lineHeader) && Line_containsObject(lineHeader)) {
+            Object *object = Line_getFirstObject(lineHeader);
+            word_t *lineEnd =
+                Block_getLineAddress(block, lineIndex) + WORDS_IN_LINE;
+            while (object != NULL && (word_t *)object < lineEnd) {
+                ObjectHeader *objectHeader = &object->header;
+                if (Object_isMarked(objectHeader)) {
+                    if (object->rtti->rt.id == __object_array_id) {
+                        // remove header and rtti from size
+                        size_t size = Object_size(&object->header) -
+                                      OBJECT_HEADER_SIZE - WORD_SIZE;
+                        size_t nbWords = size / WORD_SIZE;
+                        for (int i = 0; i < nbWords; i++) {
+
+                            word_t *field = object->fields[i];
+                            Object *fieldObject =
+                                Object_fromMutatorAddress(field);
+                            if (heap_isObjectInHeap(heap, fieldObject) &&
+                                !Object_isMarked(&fieldObject->header)) {
+                                Stack_push(stack, object);
+                                *currentOverflowAddress = (word_t *)object;
+                                return true;
+                            }
+                        }
+                    } else {
+                        int64_t *ptr_map = object->rtti->refMapStruct;
+                        int i = 0;
+                        while (ptr_map[i] != -1) {
+                            word_t *field =
+                                object->fields[ptr_map[i] / WORD_SIZE - 1];
+                            Object *fieldObject =
+                                Object_fromMutatorAddress(field);
+                            if (heap_isObjectInHeap(heap, fieldObject) &&
+                                !Object_isMarked(&fieldObject->header)) {
+                                Stack_push(stack, object);
+                                *currentOverflowAddress = (word_t *)object;
+                                return true;
+                            }
+                            ++i;
+                        }
+                    }
+                }
+                object = Object_nextObject(object);
+            }
+        }
+        lineIndex++;
+    }
+    *currentOverflowAddress = blockEnd;
+    return false;
 }
 
 void Block_print(BlockHeader *block) {

@@ -6,4 +6,7 @@
 extern Heap *heap;
 extern Stack *stack;
 
+extern bool overflow;
+extern word_t *currentOverflowAddress;
+
 #endif // IMMIX_STATE_H
