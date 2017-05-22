@@ -45,6 +45,27 @@ object FileChannelSuite extends tests.Suite {
     }
   }
 
+  test("A FileChannel can overwrite a file") {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("file")
+      Files.write(f, "hello, world".getBytes("UTF-8"))
+
+      val bytes = "goodbye".getBytes("UTF-8")
+      val src   = ByteBuffer.wrap(bytes)
+      val channel = FileChannel.open(f,
+                                     StandardOpenOption.WRITE,
+                                     StandardOpenOption.CREATE)
+      while (src.remaining() > 0) channel.write(src)
+
+      val in = Files.newInputStream(f)
+      var i  = 0
+      while (i < bytes.length) {
+        assert(in.read() == bytes(i))
+        i += 1
+      }
+    }
+  }
+
   def withTemporaryDirectory(fn: Path => Unit) {
     val file = File.createTempFile("test", ".tmp")
     assert(file.delete())

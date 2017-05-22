@@ -153,8 +153,8 @@ private object FileChannelImpl {
       throw new FileAlreadyExistsException(path.toString)
     }
 
-    if (options.contains(WRITE) && (options.contains(CREATE_NEW) || options
-          .contains(CREATE))) {
+    if (!Files.exists(path, Array.empty) && options.contains(WRITE) && (options
+          .contains(CREATE_NEW) || options.contains(CREATE))) {
       Files.createFile(path, attrs)
     }
 
