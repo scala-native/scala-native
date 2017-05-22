@@ -66,6 +66,64 @@ object FileChannelSuite extends tests.Suite {
     }
   }
 
+  test("A file channel writes at the beginning, unless otherwise specified") {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      Files.write(f, "abcdefgh".getBytes("UTF-8"))
+      val lines = Files.readAllLines(f)
+      assert(lines.size() == 1)
+      assert(lines.get(0) == "abcdefgh")
+
+      val c   = FileChannel.open(f, StandardOpenOption.WRITE)
+      val src = ByteBuffer.wrap("xyz".getBytes("UTF-8"))
+      while (src.remaining() > 0) c.write(src)
+
+      val newLines = Files.readAllLines(f)
+      assert(newLines.size() == 1)
+      assert(newLines.get(0) == "xyzdefgh")
+    }
+  }
+
+  test("Cannot combine APPEND and TRUNCATE_EXISTING") {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      assertThrows[IllegalArgumentException] {
+        FileChannel.open(f,
+                         StandardOpenOption.APPEND,
+                         StandardOpenOption.TRUNCATE_EXISTING)
+      }
+    }
+  }
+
+  test("Cannot combine APPEND and READ") {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      assertThrows[IllegalArgumentException] {
+        FileChannel.open(f, StandardOpenOption.APPEND, StandardOpenOption.READ)
+      }
+    }
+  }
+
+  test("Can write to a channel with APPEND") {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      Files.write(f, "hello, ".getBytes("UTF-8"))
+
+      val lines = Files.readAllLines(f)
+      assert(lines.size() == 1)
+      assert(lines.get(0) == "hello, ")
+
+      val bytes   = "world".getBytes("UTF-8")
+      val src     = ByteBuffer.wrap(bytes)
+      val channel = FileChannel.open(f, StandardOpenOption.APPEND)
+      while (src.remaining() > 0) channel.write(src)
+
+      val newLines = Files.readAllLines(f)
+      assert(newLines.size() == 1)
+      assert(newLines.get(0) == "hello, world")
+    }
+  }
+
   def withTemporaryDirectory(fn: Path => Unit) {
     val file = File.createTempFile("test", ".tmp")
     assert(file.delete())

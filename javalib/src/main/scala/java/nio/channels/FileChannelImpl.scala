@@ -141,39 +141,47 @@ private object FileChannelImpl {
              attrs: Array[FileAttribute[_]]): RandomAccessFile = {
     import StandardOpenOption._
 
+    if (options.contains(APPEND) && options.contains(TRUNCATE_EXISTING)) {
+      throw new IllegalArgumentException(
+        "APPEND + TRUNCATE_EXISTING not allowed")
+    }
+
+    if (options.contains(APPEND) && options.contains(READ)) {
+      throw new IllegalArgumentException("APPEND + READ not allowed")
+    }
+
+    val writing = options.contains(WRITE) || options.contains(APPEND)
+
     val mode = new StringBuilder("r")
-    if (options.contains(WRITE) || options.contains(APPEND)) mode.append("w")
+    if (writing) mode.append("w")
 
     if (!Files.exists(path, Array.empty)) {
       if (!options.contains(CREATE) && !options.contains(CREATE_NEW)) {
         throw new NoSuchFileException(path.toString)
-      } else if (options.contains(WRITE)) {
+      } else if (writing) {
         Files.createFile(path, attrs)
       }
-    } else {
-      if (options.contains(CREATE_NEW)) {
-        throw new FileAlreadyExistsException(path.toString)
-      }
-
-      if (options.contains(TRUNCATE_EXISTING) && options.contains(WRITE)) {
-        Files.delete(path)
-        Files.createFile(path, attrs)
-      }
+    } else if (options.contains(CREATE_NEW)) {
+      throw new FileAlreadyExistsException(path.toString)
     }
 
-    if (options.contains(WRITE) && options.contains(DSYNC) && !options
+    if (writing && options.contains(DSYNC) && !options
           .contains(SYNC)) {
       mode.append("d")
     }
 
-    if (options.contains(WRITE) && options.contains(SYNC)) {
+    if (writing && options.contains(SYNC)) {
       mode.append("s")
     }
 
     val raf = new RandomAccessFile(path.toFile, mode.toString)
 
-    if (options.contains(TRUNCATE_EXISTING) && options.contains(WRITE)) {
+    if (writing && options.contains(TRUNCATE_EXISTING)) {
       raf.setLength(0L)
+    }
+
+    if (writing && options.contains(APPEND)) {
+      raf.seek(raf.length())
     }
 
     raf
