@@ -58,7 +58,7 @@ word_t *Heap_allocLarge(Heap *heap, uint32_t objectSize) {
     assert(size >= MIN_BLOCK_SIZE);
     Object *object = LargeAllocator_getBlock(heap->largeAllocator, size);
     if (object != NULL) {
-        ObjectHeader* objectHeader = &object->header;
+        ObjectHeader *objectHeader = &object->header;
 
         Object_setObjectType(objectHeader, object_large);
         Object_setSize(objectHeader, size);
@@ -85,10 +85,9 @@ word_t *allocSmallSlow(Heap *heap, uint32_t size) {
 
     Heap_collect(heap, stack);
 
-    Object *object =
-        (Object *)Allocator_alloc(heap->allocator, size);
+    Object *object = (Object *)Allocator_alloc(heap->allocator, size);
     if (object != NULL) {
-        ObjectHeader* objectHeader = &object->header;
+        ObjectHeader *objectHeader = &object->header;
 
         Object_setObjectType(objectHeader, object_standard);
         Object_setSize(objectHeader, size);
@@ -112,10 +111,9 @@ INLINE word_t *Heap_allocSmall(Heap *heap, uint32_t objectSize) {
     assert(objectSize % 8 == 0);
     assert(size < MIN_BLOCK_SIZE);
 
-    Object *object =
-        (Object *)Allocator_alloc(heap->allocator, size);
+    Object *object = (Object *)Allocator_alloc(heap->allocator, size);
     if (object != NULL) {
-        ObjectHeader* objectHeader = &object->header;
+        ObjectHeader *objectHeader = &object->header;
         Object_setObjectType(objectHeader, object_standard);
         Object_setSize(objectHeader, size);
         Object_setAllocated(objectHeader);
@@ -159,7 +157,6 @@ void Heap_collect(Heap *heap, Stack *stack) {
 bool Heap_recycle(Heap *heap) {
     BlockList_clear(&heap->allocator->recycledBlocks);
     BlockList_clear(&heap->allocator->freeBlocks);
-
 
     word_t *current = heap->heapStart;
     while (current != heap->heapEnd) {

@@ -81,7 +81,6 @@ void Block_recycle(Allocator *allocator, BlockHeader *blockHeader) {
             BlockList_addLast(&allocator->recycledBlocks, blockHeader);
 
             assert(blockHeader->header.first != -1);
-
         }
     }
 }

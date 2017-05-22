@@ -93,8 +93,9 @@ void LargeAllocator_addChunk(LargeAllocator *allocator, Chunk *chunk,
 }
 
 Object *LargeAllocator_getBlock(LargeAllocator *allocator,
-                                      size_t requestedBlockSize) {
-    size_t actualBlockSize = roundToNextMultiple(requestedBlockSize, MIN_BLOCK_SIZE);
+                                size_t requestedBlockSize) {
+    size_t actualBlockSize =
+        roundToNextMultiple(requestedBlockSize, MIN_BLOCK_SIZE);
     size_t requiredChunkSize = 1UL << log2_ceil(actualBlockSize);
 
     int listIndex = sizeToLinkedListIndex(requiredChunkSize);
@@ -163,7 +164,7 @@ void LargeAllocator_sweep(LargeAllocator *allocator) {
 
     while (current != heapEnd) {
         assert(Bitmap_getBit(allocator->bitmap, (ubyte_t *)current));
-        ObjectHeader* currentHeader = &current->header;
+        ObjectHeader *currentHeader = &current->header;
         if (Object_isMarked(currentHeader)) {
             Object_setAllocated(currentHeader);
 

@@ -14,7 +14,7 @@ static INLINE Object *Line_getFirstObject(LineHeader *lineHeader) {
         Block_getLineIndexFromLineHeader(blockHeader, lineHeader);
 
     return (Object *)Block_getLineWord(blockHeader, lineIndex,
-                                             offset / WORD_SIZE);
+                                       offset / WORD_SIZE);
 }
 
 static INLINE void Line_update(BlockHeader *blockHeader, word_t *objectStart) {

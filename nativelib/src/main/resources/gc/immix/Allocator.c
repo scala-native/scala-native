@@ -22,7 +22,6 @@ Allocator *Allocator_create(word_t *heapStart, int blockCount) {
     allocator->freeBlocks.last = lastBlockHeader;
     lastBlockHeader->header.nextBlock = LAST_BLOCK;
 
-
     Allocator_initCursors(allocator);
 
     return allocator;

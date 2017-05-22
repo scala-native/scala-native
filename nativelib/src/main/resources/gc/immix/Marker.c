@@ -49,7 +49,8 @@ void mark(Heap *heap, Stack *stack) {
 
         if (object->rtti->rt.id == __object_array_id) {
             // remove header and rtti from size
-            size_t size = Object_size(&object->header) - OBJECT_HEADER_SIZE - WORD_SIZE;
+            size_t size =
+                Object_size(&object->header) - OBJECT_HEADER_SIZE - WORD_SIZE;
             size_t nbWords = size / WORD_SIZE;
             for (int i = 0; i < nbWords; i++) {
 
@@ -112,7 +113,8 @@ void markModules(Heap *heap, Stack *stack) {
 
     for (int i = 0; i < nb_modules; i++) {
         Object *object = Object_fromMutatorAddress(modules[i]);
-        if (heap_isObjectInHeap(heap, object) && !Object_isMarked(&object->header)) {
+        if (heap_isObjectInHeap(heap, object) &&
+            !Object_isMarked(&object->header)) {
             markObject(heap, stack, object);
         }
     }

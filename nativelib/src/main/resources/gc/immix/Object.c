@@ -103,8 +103,7 @@ Object *Object_getObject(word_t *word) {
     }
 }
 
-Object *object_getLargeInnerPointer(LargeAllocator *allocator,
-                                          word_t *word) {
+Object *object_getLargeInnerPointer(LargeAllocator *allocator, word_t *word) {
     word_t *current = (word_t *)((word_t)word & LARGE_BLOCK_MASK);
 
     while (!Bitmap_getBit(allocator->bitmap, (ubyte_t *)current)) {
@@ -112,9 +111,8 @@ Object *object_getLargeInnerPointer(LargeAllocator *allocator,
     }
 
     Object *object = (Object *)current;
-    if (word < (word_t *)object +
-                   Object_chunkSize(object) / WORD_SIZE &&
-            object->rtti != NULL) {
+    if (word < (word_t *)object + Object_chunkSize(object) / WORD_SIZE &&
+        object->rtti != NULL) {
 #ifdef DEBUG_PRINT
         printf("large inner pointer: %p, object: %p\n", word, objectHeader);
         fflush(stdout);
@@ -168,5 +166,6 @@ void Object_mark(Object *object) {
 
 size_t Object_chunkSize(Object *object) {
     return roundToNextMultiple(Object_size(&object->header), MIN_BLOCK_SIZE);
-    //Object_size(&object->header) + MIN_BLOCK_SIZE - 1) / MIN_BLOCK_SIZE * MIN_BLOCK_SIZE;
+    // Object_size(&object->header) + MIN_BLOCK_SIZE - 1) / MIN_BLOCK_SIZE *
+    // MIN_BLOCK_SIZE;
 }

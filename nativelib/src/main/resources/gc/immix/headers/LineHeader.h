@@ -48,7 +48,8 @@ static inline bool Line_containsObject(LineHeader *lineHeader) {
 }
 
 static inline void Line_setOffset(LineHeader *lineHeader, uint8_t offset) {
-    *lineHeader = (offset & FIRST_OBJECT_OFFSET_MASK) | line_contains_object_header;
+    *lineHeader =
+        (offset & FIRST_OBJECT_OFFSET_MASK) | line_contains_object_header;
 }
 
 static inline uint8_t Line_getFirstObjectOffset(LineHeader *lineHeader) {
