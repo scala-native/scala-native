@@ -58,7 +58,7 @@ abstract class FileSystemProvider protected () {
         Array[OpenOption](StandardOpenOption.CREATE,
                           StandardOpenOption.TRUNCATE_EXISTING,
                           StandardOpenOption.WRITE)
-      else _options
+      else _options :+ StandardOpenOption.WRITE
     val channel = Files.newByteChannel(path, options)
     new OutputStream {
       private val buffer = ByteBuffer.allocate(1)

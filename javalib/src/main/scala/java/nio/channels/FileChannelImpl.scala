@@ -144,18 +144,21 @@ private object FileChannelImpl {
     val mode = new StringBuilder("r")
     if (options.contains(WRITE) || options.contains(APPEND)) mode.append("w")
 
-    if (!Files.exists(path, Array.empty) && !options.contains(CREATE) && !options
-          .contains(CREATE_NEW)) {
-      throw new NoSuchFileException(path.toString)
-    }
+    if (!Files.exists(path, Array.empty)) {
+      if (!options.contains(CREATE) && !options.contains(CREATE_NEW)) {
+        throw new NoSuchFileException(path.toString)
+      } else if (options.contains(WRITE)) {
+        Files.createFile(path, attrs)
+      }
+    } else {
+      if (options.contains(CREATE_NEW)) {
+        throw new FileAlreadyExistsException(path.toString)
+      }
 
-    if (options.contains(CREATE_NEW) && Files.exists(path, Array.empty)) {
-      throw new FileAlreadyExistsException(path.toString)
-    }
-
-    if (!Files.exists(path, Array.empty) && options.contains(WRITE) && (options
-          .contains(CREATE_NEW) || options.contains(CREATE))) {
-      Files.createFile(path, attrs)
+      if (options.contains(TRUNCATE_EXISTING) && options.contains(WRITE)) {
+        Files.delete(path)
+        Files.createFile(path, attrs)
+      }
     }
 
     if (options.contains(WRITE) && options.contains(DSYNC) && !options
@@ -165,12 +168,6 @@ private object FileChannelImpl {
 
     if (options.contains(WRITE) && options.contains(SYNC)) {
       mode.append("s")
-    }
-
-    if (Files.exists(path, Array.empty) && options.contains(TRUNCATE_EXISTING) && !options
-          .contains(WRITE)) {
-      Files.delete(path)
-      Files.createFile(path, attrs)
     }
 
     val raf = new RandomAccessFile(path.toFile, mode.toString)
