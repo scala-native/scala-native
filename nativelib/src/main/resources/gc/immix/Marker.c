@@ -110,7 +110,7 @@ void mark(Heap *heap, Stack *stack) {
             int64_t *ptr_map = object->rtti->refMapStruct;
             int i = 0;
             while (ptr_map[i] != -1) {
-                word_t *field = object->fields[ptr_map[i] / WORD_SIZE - 1];
+                word_t *field = object->fields[ptr_map[i]];
                 Object *fieldObject = Object_fromMutatorAddress(field);
                 if (heap_isObjectInHeap(heap, fieldObject) &&
                     !Object_isMarked(&fieldObject->header)) {
@@ -222,8 +222,7 @@ void largeHeapOverflowHeapScan(Heap *heap, Stack *stack) {
                 int64_t *ptr_map = object->rtti->refMapStruct;
                 int i = 0;
                 while (ptr_map[i] != -1) {
-                    word_t *field =
-                        object->fields[ptr_map[i] / sizeof(word_t) - 1];
+                    word_t *field = object->fields[ptr_map[i]];
                     Object *fieldObject = (Object *)(field - 1);
                     if (heap_isObjectInHeap(heap, fieldObject) &&
                         !Object_isMarked(&fieldObject->header)) {
