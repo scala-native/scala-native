@@ -173,6 +173,8 @@ void Heap_recycle(Heap *heap) {
     heap->allocator->freeBlockCount = 0;
     heap->allocator->recycledBlockCount = 0;
 
+    heap->allocator->freeMemoryAfterCollection = 0;
+
     word_t *current = heap->heapStart;
     while (current != heap->heapEnd) {
         BlockHeader *blockHeader = (BlockHeader *)current;
@@ -182,49 +184,54 @@ void Heap_recycle(Heap *heap) {
     }
     LargeAllocator_sweep(heap->largeAllocator);
 
-    if(!Allocator_canInitCursors(heap->allocator) || Allocator_shouldGrow(heap->allocator)) {
+    if (!Allocator_canInitCursors(heap->allocator) ||
+        Allocator_shouldGrow(heap->allocator)) {
         size_t increment = heap->smallHeapSize / WORD_SIZE * GROWTH_RATE / 100;
-        increment = (increment - 1 + WORDS_IN_BLOCK) / WORDS_IN_BLOCK * WORDS_IN_BLOCK;
+        increment =
+            (increment - 1 + WORDS_IN_BLOCK) / WORDS_IN_BLOCK * WORDS_IN_BLOCK;
         Heap_grow(heap, increment);
     }
     Allocator_initCursors(heap->allocator);
 }
 
 // increment in words
-void Heap_grow(Heap* heap, size_t increment) {
+void Heap_grow(Heap *heap, size_t increment) {
     assert(increment % WORDS_IN_BLOCK == 0);
 
 #ifdef DEBUG_PRINT
-    printf("Growing small heap by %zu bytes, to %zu bytes\n", increment * WORD_SIZE, heap->smallHeapSize + increment * WORD_SIZE);
+    printf("Growing small heap by %zu bytes, to %zu bytes\n",
+           increment * WORD_SIZE, heap->smallHeapSize + increment * WORD_SIZE);
     fflush(stdout);
 #endif
 
-    word_t* heapEnd = heap->heapEnd;
+    word_t *heapEnd = heap->heapEnd;
     heap->heapEnd = heapEnd + increment;
     heap->smallHeapSize += increment * WORD_SIZE;
 
-
-    BlockHeader* lastBlock = (BlockHeader*)(heap->heapEnd - WORDS_IN_BLOCK);
-    BlockList_addBlocksLast(&heap->allocator->freeBlocks, (BlockHeader*)heapEnd, lastBlock);
+    BlockHeader *lastBlock = (BlockHeader *)(heap->heapEnd - WORDS_IN_BLOCK);
+    BlockList_addBlocksLast(&heap->allocator->freeBlocks,
+                            (BlockHeader *)heapEnd, lastBlock);
 
     heap->allocator->blockCount += increment / WORDS_IN_BLOCK;
     heap->allocator->freeBlockCount += increment / WORDS_IN_BLOCK;
 }
 
-void Heap_growLarge(Heap* heap, size_t increment) {
+void Heap_growLarge(Heap *heap, size_t increment) {
     increment = 1UL << log2_ceil(increment);
 
 #ifdef DEBUG_PRINT
-    printf("Growing large heap by %zu bytes, to %zu bytes\n", increment * WORD_SIZE, heap->largeHeapSize + increment * WORD_SIZE);
+    printf("Growing large heap by %zu bytes, to %zu bytes\n",
+           increment * WORD_SIZE, heap->largeHeapSize + increment * WORD_SIZE);
     fflush(stdout);
 #endif
 
-    word_t* heapEnd = heap->largeHeapEnd;
+    word_t *heapEnd = heap->largeHeapEnd;
     heap->largeHeapEnd += increment;
     heap->largeHeapSize += increment * WORD_SIZE;
     heap->largeAllocator->size += increment * WORD_SIZE;
 
     Bitmap_grow(heap->largeAllocator->bitmap, increment * WORD_SIZE);
 
-    LargeAllocator_addChunk(heap->largeAllocator, (Chunk*)heapEnd, increment * WORD_SIZE);
+    LargeAllocator_addChunk(heap->largeAllocator, (Chunk *)heapEnd,
+                            increment * WORD_SIZE);
 }

@@ -40,6 +40,7 @@ void Block_recycle(Allocator *allocator, BlockHeader *blockHeader) {
     if (!Block_isMarked(blockHeader)) {
         recycleUnmarkedBlock(allocator, blockHeader);
         allocator->freeBlockCount++;
+        allocator->freeMemoryAfterCollection += BLOCK_TOTAL_SIZE;
     } else {
         assert(Block_isMarked(blockHeader));
         Block_unmark(blockHeader);
@@ -60,8 +61,9 @@ void Block_recycle(Allocator *allocator, BlockHeader *blockHeader) {
                         lineIndex;
                 }
                 lastRecyclable = lineIndex;
-                Line_setEmpty(lineHeader);
                 lineIndex++;
+                Line_setEmpty(lineHeader);
+                allocator->freeMemoryAfterCollection += LINE_SIZE;
                 uint8_t size = 1;
                 while (lineIndex < LINE_COUNT &&
                        !Line_isMarked(lineHeader = Block_getLineHeader(
@@ -69,6 +71,7 @@ void Block_recycle(Allocator *allocator, BlockHeader *blockHeader) {
                     size++;
                     lineIndex++;
                     Line_setEmpty(lineHeader);
+                    allocator->freeMemoryAfterCollection += LINE_SIZE;
                 }
                 Block_getFreeLineHeader(blockHeader, lastRecyclable)->size =
                     size;

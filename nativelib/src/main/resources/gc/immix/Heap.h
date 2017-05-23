@@ -42,7 +42,7 @@ word_t *Heap_allocLarge(Heap *heap, uint32_t objectSize);
 void Heap_collect(Heap *heap, Stack *stack);
 
 void Heap_recycle(Heap *heap);
-void Heap_grow(Heap* heap, size_t increment);
-void Heap_growLarge(Heap* heap, size_t increment);
+void Heap_grow(Heap *heap, size_t increment);
+void Heap_growLarge(Heap *heap, size_t increment);
 
 #endif // IMMIX_HEAP_H

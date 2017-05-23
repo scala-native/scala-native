@@ -22,7 +22,7 @@ Allocator *Allocator_create(word_t *heapStart, int blockCount) {
     allocator->freeBlocks.last = lastBlockHeader;
     lastBlockHeader->header.nextBlock = LAST_BLOCK;
 
-    //Block stats
+    // Block stats
     allocator->blockCount = (uint64_t)blockCount;
     allocator->freeBlockCount = (uint64_t)blockCount;
     allocator->recycledBlockCount = 0;
@@ -32,8 +32,10 @@ Allocator *Allocator_create(word_t *heapStart, int blockCount) {
     return allocator;
 }
 
-bool Allocator_canInitCursors(Allocator* allocator) {
-    return allocator->freeBlockCount >= 2 || (allocator->freeBlockCount == 1 && allocator->recycledBlockCount > 0);
+bool Allocator_canInitCursors(Allocator *allocator) {
+    return allocator->freeBlockCount >= 2 ||
+           (allocator->freeBlockCount == 1 &&
+            allocator->recycledBlockCount > 0);
 }
 
 void Allocator_initCursors(Allocator *allocator) {
@@ -55,8 +57,10 @@ void Allocator_initCursors(Allocator *allocator) {
     allocator->largeLimit = Block_getBlockEnd(largeHeader);
 }
 
-bool Allocator_shouldGrow(Allocator* allocator) {
-    uint64_t unavailableBlockCount = allocator->blockCount - (allocator->freeBlockCount + allocator->recycledBlockCount);
+bool Allocator_shouldGrow(Allocator *allocator) {
+    uint64_t unavailableBlockCount =
+        allocator->blockCount -
+        (allocator->freeBlockCount + allocator->recycledBlockCount);
 
 #ifdef DEBUG_PRINT
     printf("\n\nBlock count: %llu\n", allocator->blockCount);
@@ -66,9 +70,10 @@ bool Allocator_shouldGrow(Allocator* allocator) {
     fflush(stdout);
 #endif
 
-
     return allocator->freeBlockCount < allocator->blockCount / 3 ||
-            4 * unavailableBlockCount > allocator->blockCount;
+           4 * unavailableBlockCount > allocator->blockCount ||
+           allocator->freeMemoryAfterCollection * 2 <
+               allocator->blockCount * BLOCK_TOTAL_SIZE;
 }
 
 /*

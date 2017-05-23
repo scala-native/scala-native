@@ -48,20 +48,21 @@ int Bitmap_getBit(Bitmap *bitmap, ubyte_t *addr) {
     return bit != 0;
 }
 
-//increment in bytes
+// increment in bytes
 void Bitmap_grow(Bitmap *bitmap, size_t increment) {
     assert(increment % BITMAP_GRANULARITY == 0);
 
     size_t nbBlocks = bitmap->size / BITMAP_GRANULARITY;
     size_t nbBlockIncrement = increment / BITMAP_GRANULARITY;
 
-    size_t previousNbWords =
-        divAndRoundUp(nbBlocks, BITS_PER_WORD);
+    size_t previousNbWords = divAndRoundUp(nbBlocks, BITS_PER_WORD);
 
-    size_t totalNbWords = divAndRoundUp(nbBlocks + nbBlockIncrement, BITS_PER_WORD);
+    size_t totalNbWords =
+        divAndRoundUp(nbBlocks + nbBlockIncrement, BITS_PER_WORD);
 
     bitmap->words = realloc(bitmap->words, totalNbWords * WORD_SIZE);
     bitmap->size += increment;
 
-    memset(bitmap->words + previousNbWords, 0, (totalNbWords - previousNbWords) * WORD_SIZE);
+    memset(bitmap->words + previousNbWords, 0,
+           (totalNbWords - previousNbWords) * WORD_SIZE);
 }

@@ -18,6 +18,7 @@ typedef struct {
     BlockHeader *largeBlock;
     word_t *largeCursor;
     word_t *largeLimit;
+    size_t freeMemoryAfterCollection;
 } Allocator;
 
 Allocator *Allocator_create(word_t *, int);

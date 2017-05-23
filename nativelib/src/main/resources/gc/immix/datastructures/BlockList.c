@@ -53,15 +53,16 @@ void BlockList_addLast(BlockList *blockList, BlockHeader *blockHeader) {
     blockHeader->header.nextBlock = LAST_BLOCK;
 }
 
-void BlockList_addBlocksLast(BlockList* blockList, BlockHeader* first, BlockHeader* last) {
-    if(blockList->first == NULL) {
+void BlockList_addBlocksLast(BlockList *blockList, BlockHeader *first,
+                             BlockHeader *last) {
+    if (blockList->first == NULL) {
         blockList->first = first;
     } else {
-        blockList->last->header.nextBlock = _getBlockIndex(blockList->heapStart, first);
+        blockList->last->header.nextBlock =
+            _getBlockIndex(blockList->heapStart, first);
     }
     blockList->last = last;
     last->header.nextBlock = LAST_BLOCK;
-
 }
 
 void BlockList_clear(BlockList *blockList) {
