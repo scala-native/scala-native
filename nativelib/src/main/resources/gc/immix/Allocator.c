@@ -22,12 +22,21 @@ Allocator *Allocator_create(word_t *heapStart, int blockCount) {
     allocator->freeBlocks.last = lastBlockHeader;
     lastBlockHeader->header.nextBlock = LAST_BLOCK;
 
+    //Block stats
+    allocator->blockCount = (uint64_t)blockCount;
+    allocator->freeBlockCount = (uint64_t)blockCount;
+    allocator->recycledBlockCount = 0;
+
     Allocator_initCursors(allocator);
 
     return allocator;
 }
 
-bool Allocator_initCursors(Allocator *allocator) {
+bool Allocator_canInitCursors(Allocator* allocator) {
+    return allocator->freeBlockCount >= 2 || (allocator->freeBlockCount == 1 && allocator->recycledBlockCount > 0);
+}
+
+void Allocator_initCursors(Allocator *allocator) {
 
     // Init cursor
     allocator->block = NULL;
@@ -37,16 +46,29 @@ bool Allocator_initCursors(Allocator *allocator) {
     getNextLine(allocator);
 
     // Init large cursor
-    if (BlockList_isEmpty(&allocator->freeBlocks)) {
-        return false;
-    }
+    assert(!BlockList_isEmpty(&allocator->freeBlocks));
+
     BlockHeader *largeHeader =
         BlockList_removeFirstBlock(&allocator->freeBlocks);
     allocator->largeBlock = largeHeader;
     allocator->largeCursor = Block_getFirstWord(largeHeader);
     allocator->largeLimit = Block_getBlockEnd(largeHeader);
+}
 
-    return true;
+bool Allocator_shouldGrow(Allocator* allocator) {
+    uint64_t unavailableBlockCount = allocator->blockCount - (allocator->freeBlockCount + allocator->recycledBlockCount);
+
+#ifdef DEBUG_PRINT
+    printf("\n\nBlock count: %llu\n", allocator->blockCount);
+    printf("Unavailable: %llu\n", unavailableBlockCount);
+    printf("Free: %llu\n", allocator->freeBlockCount);
+    printf("Recycled: %llu\n", allocator->recycledBlockCount);
+    fflush(stdout);
+#endif
+
+
+    return allocator->freeBlockCount < allocator->blockCount / 3 ||
+            4 * unavailableBlockCount > allocator->blockCount;
 }
 
 /*

@@ -7,8 +7,11 @@
 
 typedef struct {
     word_t *heapStart;
+    uint64_t blockCount;
     BlockList recycledBlocks;
+    uint64_t recycledBlockCount;
     BlockList freeBlocks;
+    uint64_t freeBlockCount;
     BlockHeader *block;
     word_t *cursor;
     word_t *limit;
@@ -18,7 +21,10 @@ typedef struct {
 } Allocator;
 
 Allocator *Allocator_create(word_t *, int);
-bool Allocator_initCursors(Allocator *allocator);
+bool Allocator_canInitCursors(Allocator *allocator);
+void Allocator_initCursors(Allocator *allocator);
 word_t *Allocator_alloc(Allocator *allocator, size_t size);
+
+bool Allocator_shouldGrow(Allocator *allocator);
 
 #endif // IMMIX_ALLOCATOR_H

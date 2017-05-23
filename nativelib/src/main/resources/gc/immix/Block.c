@@ -3,6 +3,7 @@
 #include "Block.h"
 #include "Object.h"
 #include "Log.h"
+#include "Allocator.h"
 
 extern int __object_array_id;
 
@@ -38,7 +39,7 @@ void Block_recycle(Allocator *allocator, BlockHeader *blockHeader) {
 
     if (!Block_isMarked(blockHeader)) {
         recycleUnmarkedBlock(allocator, blockHeader);
-
+        allocator->freeBlockCount++;
     } else {
         assert(Block_isMarked(blockHeader));
         Block_unmark(blockHeader);
@@ -75,7 +76,6 @@ void Block_recycle(Allocator *allocator, BlockHeader *blockHeader) {
         }
         if (lastRecyclable == -1) {
             Block_setFlag(blockHeader, block_unavailable);
-
         } else {
             Block_getFreeLineHeader(blockHeader, lastRecyclable)->next =
                 LAST_HOLE;
@@ -83,6 +83,7 @@ void Block_recycle(Allocator *allocator, BlockHeader *blockHeader) {
             BlockList_addLast(&allocator->recycledBlocks, blockHeader);
 
             assert(blockHeader->header.first != -1);
+            allocator->recycledBlockCount++;
         }
     }
 }

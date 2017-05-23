@@ -12,7 +12,7 @@ typedef struct {
     size_t smallHeapSize;
     word_t *largeHeapStart;
     word_t *largeHeapEnd;
-    word_t *largeHeapSize;
+    size_t largeHeapSize;
     Allocator *allocator;
     LargeAllocator *largeAllocator;
 } Heap;
@@ -41,7 +41,8 @@ word_t *Heap_allocLarge(Heap *heap, uint32_t objectSize);
 
 void Heap_collect(Heap *heap, Stack *stack);
 
-bool Heap_recycle(Heap *heap);
-void Heap_grow(Heap *, size_t);
+void Heap_recycle(Heap *heap);
+void Heap_grow(Heap* heap, size_t increment);
+void Heap_growLarge(Heap* heap, size_t increment);
 
 #endif // IMMIX_HEAP_H

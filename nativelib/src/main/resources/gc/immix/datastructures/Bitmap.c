@@ -1,12 +1,14 @@
+#include <string.h>
 #include "Bitmap.h"
 #include "../Constants.h"
 #include "../Log.h"
 #include "../utils/MathUtils.h"
 
 Bitmap *Bitmap_alloc(size_t size, word_t *offset) {
-    assert(size % WORD_SIZE == 0);
-    assert(size % MIN_BLOCK_SIZE == 0);
-    size_t nbBlocks = size / MIN_BLOCK_SIZE;
+    assert(size % BITMAP_GRANULARITY == 0);
+
+    size_t nbBlocks = size / BITMAP_GRANULARITY;
+
     unsigned long nbWords = divAndRoundUp(nbBlocks, BITS_PER_WORD);
     void *words = calloc(nbWords, WORD_SIZE);
     Bitmap *bitmap = malloc(sizeof(Bitmap));
@@ -46,10 +48,20 @@ int Bitmap_getBit(Bitmap *bitmap, ubyte_t *addr) {
     return bit != 0;
 }
 
-void Bitmap_grow(Bitmap *bitmap, size_t nb_words) {
-    size_t current_nb_words =
-        divAndRoundUp(bitmap->size / WORD_SIZE, BITS_PER_WORD);
-    size_t new_nb_words = current_nb_words + BITS_PER_WORD * nb_words;
-    bitmap->words = realloc(bitmap->words, new_nb_words * WORD_SIZE);
-    bitmap->size = new_nb_words * WORD_SIZE;
+//increment in bytes
+void Bitmap_grow(Bitmap *bitmap, size_t increment) {
+    assert(increment % BITMAP_GRANULARITY == 0);
+
+    size_t nbBlocks = bitmap->size / BITMAP_GRANULARITY;
+    size_t nbBlockIncrement = increment / BITMAP_GRANULARITY;
+
+    size_t previousNbWords =
+        divAndRoundUp(nbBlocks, BITS_PER_WORD);
+
+    size_t totalNbWords = divAndRoundUp(nbBlocks + nbBlockIncrement, BITS_PER_WORD);
+
+    bitmap->words = realloc(bitmap->words, totalNbWords * WORD_SIZE);
+    bitmap->size += increment;
+
+    memset(bitmap->words + previousNbWords, 0, (totalNbWords - previousNbWords) * WORD_SIZE);
 }
