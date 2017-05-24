@@ -39,15 +39,15 @@ final class Matcher private[regex] (var _pattern: Pattern,
   private var groups =
     Array.ofDim[(Int, Int)](cre2.numCapturingGroups(regex) + 1)
 
-  private var lastAnchor: Option[Anchor] = None
+  private var lastAnchor: Option[cre2.anchor_t] = None
 
   private[regex] var inputLength = inputSequence.length
 
-  def matches(): Boolean = genMatch(0, Anchor.Both)
+  def matches(): Boolean = genMatch(0, ANCHOR_BOTH)
 
-  def lookingAt(): Boolean = genMatch(0, Anchor.Start)
+  def lookingAt(): Boolean = genMatch(0, ANCHOR_START)
 
-  def find(start: Int): Boolean = genMatch(0, Anchor.None)
+  def find(start: Int): Boolean = genMatch(0, UNANCHORED)
 
   def find(): Boolean = {
     var startIndex = 0
@@ -58,14 +58,14 @@ final class Matcher private[regex] (var _pattern: Pattern,
       }
     }
 
-    genMatch(startIndex, Anchor.None)
+    genMatch(startIndex, UNANCHORED)
   }
 
   private def doMatch(start: Int,
                       end: Int,
                       nMatches: Int,
-                      anchor: Anchor): Boolean = {
-    val matches = StringPart.array(nMatches)
+                      anchor: cre2.anchor_t): Boolean = {
+    val matches = RE2StringArray(nMatches)
     val in      = toCString(inputSequence.toString)
 
     val ok = cre2.matches(
@@ -82,9 +82,9 @@ final class Matcher private[regex] (var _pattern: Pattern,
     if (ok) {
       var i = 0
       while (i < nMatches) {
-        val m     = matches(i)
+        val m     = matches + i
         val start = (m.data - in).toInt
-        val end   = start + m.lenght
+        val end   = start + m.length
         groups(i) = ((start, end))
 
         i += 1
@@ -94,7 +94,7 @@ final class Matcher private[regex] (var _pattern: Pattern,
     ok
   }
 
-  private def genMatch(start: Int, anchor: Anchor): Boolean = {
+  private def genMatch(start: Int, anchor: cre2.anchor_t): Boolean = {
     val ok = doMatch(start, inputLength, 1, anchor)
 
     if (ok) {
@@ -113,13 +113,13 @@ final class Matcher private[regex] (var _pattern: Pattern,
     replace(replacement, global = true)
 
   private def replace(replacement: String, global: Boolean): String = {
-    val textAndTarget = StringPart(inputSequence.toString)
-    val rewrite       = StringPart(replacement)
+    val textAndTarget = toRE2String(inputSequence.toString)
+    val rewrite       = toRE2String(replacement)
 
     if (global) cre2.globalReplace(regex, textAndTarget, rewrite)
     else cre2.replace(regex, textAndTarget, rewrite)
 
-    textAndTarget.toString
+    fromRE2String(textAndTarget)
   }
 
   def group(): String = group(0)
@@ -128,8 +128,11 @@ final class Matcher private[regex] (var _pattern: Pattern,
     val startIndex = start(group)
     val endIndex   = end(group)
 
-    if (startIndex < 0 && endIndex < 0) null
-    else inputSequence.subSequence(startIndex, endIndex).toString()
+    if (startIndex < 0 && endIndex < 0) {
+      null
+    } else {
+      inputSequence.subSequence(startIndex, endIndex).toString
+    }
   }
 
   def group(name: String): String = group(groupIndex(name))
@@ -232,8 +235,10 @@ final class Matcher private[regex] (var _pattern: Pattern,
         }
       }
       m.appendTail(sb2)
-      sb.append(sb2.toString())
-    } else sb.append(replacement)
+      sb.append(sb2)
+    } else {
+      sb.append(replacement)
+    }
 
     this
   }

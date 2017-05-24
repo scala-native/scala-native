@@ -8,79 +8,58 @@ import runtime.GC
 import java.nio.charset.Charset
 
 object cre2h {
-  type Regex       = CStruct0
-  type Options     = CStruct0
-  type _StringPart = CStruct2[CString, CInt]
-  object StringPart {
-    @inline def stackalloc: StringPart =
-      new StringPart(native.stackalloc[_StringPart])
-
-    def array(n: CInt): StringPart =
-      new StringPart(GC.malloc(sizeof[_StringPart] * n).cast[Ptr[_StringPart]])
-
-    def apply(str: String): StringPart = {
-      val ptr =
-        new StringPart(GC.malloc(sizeof[_StringPart]).cast[Ptr[_StringPart]])
-
-      ptr.data = toCString(str)
-      ptr.lenght = str.length
-      ptr
-    }
-  }
-  class StringPart(val ptr: Ptr[_StringPart]) extends AnyVal {
-
-    def data: CString = !ptr._1
-    def lenght: CInt  = !ptr._2
-
+  implicit class RE2StringOps(val ptr: Ptr[cre2.string_t]) extends AnyVal {
+    def data: CString            = !ptr._1
+    def length: CInt             = !ptr._2
     def data_=(v: CString): Unit = !ptr._1 = v
-    def lenght_=(v: CInt): Unit  = !ptr._2 = v
+    def length_=(v: CInt): Unit  = !ptr._2 = v
+  }
 
-    def apply(i: Int): StringPart = new StringPart(ptr + i)
-
-    override def toString: String = {
-      val charset = Charset.defaultCharset()
-      val bytes   = new Array[Byte](lenght)
-      val d       = data
-      var c       = 0
-      while (c < lenght) {
-        bytes(c) = !(d + c)
-        c += 1
-      }
-
-      new String(bytes, charset)
+  def fromRE2String(restr: Ptr[cre2.string_t]): String = {
+    val charset = Charset.defaultCharset()
+    val bytes   = new Array[Byte](restr.length)
+    val length  = restr.length
+    val data    = restr.data
+    var i       = 0
+    while (i < length) {
+      bytes(i) = !(data + i)
+      i += 1
     }
+
+    new String(bytes, charset)
   }
 
-  class Encoding(val value: CInt) extends AnyVal
-  object Encoding {
-    final val Unknown = new Encoding(0)
-    final val Utf8    = new Encoding(1)
-    final val Latin1  = new Encoding(2)
+  def toRE2String(str: String): Ptr[cre2.string_t] = {
+    val ptr = GC.malloc(sizeof[cre2.string_t]).cast[Ptr[cre2.string_t]]
+    ptr.data = toCString(str)
+    ptr.length = str.length
+    ptr
   }
 
-  class Anchor(val value: CInt) extends AnyVal
-  object Anchor {
-    final val None  = new Anchor(1)
-    final val Start = new Anchor(2)
-    final val Both  = new Anchor(3)
-  }
+  def RE2StringArray(n: CInt): Ptr[cre2.string_t] =
+    GC.malloc(sizeof[cre2.string_t] * n).cast[Ptr[cre2.string_t]]
 
-  class ErrorCode(val value: CInt) extends AnyVal
-  object ErrorCode {
-    final val NoError           = new ErrorCode(0)
-    final val Internal          = new ErrorCode(1)
-    final val BadEscape         = new ErrorCode(2)
-    final val BadCharClass      = new ErrorCode(3)
-    final val BadCharRange      = new ErrorCode(4)
-    final val MissingBracket    = new ErrorCode(5)
-    final val MissingParent     = new ErrorCode(6)
-    final val TrailingBackslash = new ErrorCode(7)
-    final val RepeatArgument    = new ErrorCode(8)
-    final val RepeatSize        = new ErrorCode(9)
-    final val RepeatOp          = new ErrorCode(10)
-    final val BadPerlOp         = new ErrorCode(11)
-    final val BadUtf8           = new ErrorCode(12)
-    final val BadNamedCapture   = new ErrorCode(13)
-    final val PatternTooLarge   = new ErrorCode(14)
-  }
+  final val ENCODING_UNKNOWN = 0
+  final val ENCODING_UTF_8   = 1
+  final val ENCODING_LATIN1  = 2
+
+  final val UNANCHORED   = 1
+  final val ANCHOR_START = 2
+  final val ANCHOR_BOTH  = 3
+
+  final val ERROR_NO_ERROR           = 0
+  final val ERROR_INTERNAL           = 1
+  final val ERROR_BAD_ESCAPE         = 2
+  final val ERROR_BAD_CHAR_CLASS     = 3
+  final val ERROR_BAD_CHAR_RANGE     = 4
+  final val ERROR_MISSING_BRACKET    = 5
+  final val ERROR_MISSING_PAREN      = 6
+  final val ERROR_TRAILING_BACKSLASH = 7
+  final val ERROR_REPEAT_ARGUMENT    = 8
+  final val ERROR_REPEAT_SIZE        = 9
+  final val ERROR_REPEAT_OP          = 10
+  final val ERROR_BAD_PERL_OP        = 11
+  final val ERROR_BAD_UTF8           = 12
+  final val ERROR_BAD_NAMED_CAPTURE  = 13
+  final val ERROR_PATTERN_TOO_LARGE  = 14
 }

@@ -48,42 +48,42 @@ object Pattern {
 
     val re2 = cre2.compile(toCString(regex), regex.size, options)
 
-    val code = new ErrorCode(cre2.errorCode(re2))
-    import ErrorCode._
+    val code = cre2.errorCode(re2)
 
-    if (code != NoError) {
+    if (code != ERROR_NO_ERROR) {
       val errorPattern = {
-        val arg = StringPart.stackalloc
+        val arg = stackalloc[cre2.string_t]
         cre2.errorArg(re2, arg)
-        arg.toString
+        fromRE2String(arg)
       }
 
       // we try to find the index of the parsing error
       // this could return the wrong index it only finds the first match
       // see https://groups.google.com/forum/#!topic/re2-dev/rnvFZ9Ki8nk
       val index =
-        if (code == ErrorCode.TrailingBackslash) regex.size - 1
+        if (code == ERROR_TRAILING_BACKSLASH) regex.size - 1
         else regex.indexOfSlice(errorPattern)
 
       val reText = fromCString(cre2.errorString(re2))
 
       val description =
         code match {
-          case BadEscape         => "Illegal/unsupported escape sequence"
-          case MissingParent     => "Missing parenthesis"
-          case TrailingBackslash => "Trailing Backslash"
-          case MissingBracket    => "Unclosed character class"
-          case BadCharRange      => "Illegal character range"
-          case BadCharClass      => "Illegal/unsupported character class"
-          case RepeatSize        => "Bad repetition argument"
-          case RepeatArgument    => "Dangling meta character '*'"
-          case RepeatOp          => "Bad repetition operator"
-          case BadPerlOp         => "Bad perl operator"
-          case BadUtf8           => "Invalid UTF-8 in regexp"
-          case BadNamedCapture   => "Bad named capture group"
-          case PatternTooLarge   => "Pattern too large (compilation failed)"
-          case Internal          => "Internal Error"
-          case _                 => reText
+          case ERROR_INTERNAL           => "Internal Error"
+          case ERROR_BAD_ESCAPE         => "Illegal/unsupported escape sequence"
+          case ERROR_BAD_CHAR_CLASS     => "Illegal/unsupported character class"
+          case ERROR_BAD_CHAR_RANGE     => "Illegal character range"
+          case ERROR_MISSING_BRACKET    => "Unclosed character class"
+          case ERROR_MISSING_PAREN      => "Missing parenthesis"
+          case ERROR_TRAILING_BACKSLASH => "Trailing Backslash"
+          case ERROR_REPEAT_ARGUMENT    => "Dangling meta character '*'"
+          case ERROR_REPEAT_SIZE        => "Bad repetition argument"
+          case ERROR_REPEAT_OP          => "Bad repetition operator"
+          case ERROR_BAD_PERL_OP        => "Bad perl operator"
+          case ERROR_BAD_UTF8           => "Invalid UTF-8 in regexp"
+          case ERROR_BAD_NAMED_CAPTURE  => "Bad named capture group"
+          case ERROR_PATTERN_TOO_LARGE =>
+            "Pattern too large (compilation failed)"
+          case _ => reText
         }
 
       throw new PatternSyntaxException(
@@ -106,10 +106,10 @@ object Pattern {
     compile(regex).matcher(input).matches
 
   def quote(s: String): String = {
-    val original = StringPart(s)
-    val quoted   = StringPart.stackalloc
+    val original = toRE2String(s)
+    val quoted   = stackalloc[cre2.string_t]
     cre2.quoteMeta(quoted, original)
-    quoted.toString
+    fromRE2String(quoted)
   }
 
   def adaptPatternToRe2(regex: String): String = {
@@ -120,10 +120,10 @@ object Pattern {
 final class Pattern private[regex] (
     _pattern: String,
     _flags: Int,
-    _regex: Ptr[Regex]
+    _regex: Ptr[cre2.regexp_t]
 ) {
 
-  private[regex] def regex: Ptr[Regex] = _regex
+  private[regex] def regex: Ptr[cre2.regexp_t] = _regex
 
   def split(input: CharSequence): Array[String] =
     split(input, 0)
