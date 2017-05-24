@@ -7,7 +7,7 @@ import runtime.GC
 
 import java.nio.charset.Charset
 
-private[regex] object cre2h {
+object cre2h {
   type Regex       = CStruct0
   type Options     = CStruct0
   type _StringPart = CStruct2[CString, CInt]

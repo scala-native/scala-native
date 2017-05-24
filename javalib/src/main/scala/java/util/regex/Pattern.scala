@@ -2,10 +2,9 @@ package java.util
 package regex
 
 import scalanative.native._, stdlib._, stdio._, string._
+import cre2h._
 
 // Inspired by: https://github.com/google/re2j/blob/master/java/com/google/re2j/Pattern.java
-
-import cre2h._
 
 object Pattern {
   def CANON_EQ: Int                = 128

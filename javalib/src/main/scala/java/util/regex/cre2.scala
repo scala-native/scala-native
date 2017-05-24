@@ -11,7 +11,7 @@ import java.nio.charset.Charset
 // re2 c wrapper: https://github.com/marcomaggi/cre2
 @link("re2")
 @extern
-private[regex] object cre2 {
+object cre2 {
   import cre2h._
 
   @name("scalanative_cre2_new")
