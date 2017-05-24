@@ -3,7 +3,6 @@ package java.util.regex
 import scala.scalanative._
 import native._
 import native.stdlib._
-import runtime.GC
 
 import java.nio.charset.Charset
 

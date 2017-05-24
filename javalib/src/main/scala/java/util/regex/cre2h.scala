@@ -3,7 +3,6 @@ package java.util.regex
 import scala.scalanative._
 import native._
 import native.stdlib._
-import runtime.GC
 
 import java.nio.charset.Charset
 
@@ -29,15 +28,10 @@ object cre2h {
     new String(bytes, charset)
   }
 
-  def toRE2String(str: String): Ptr[cre2.string_t] = {
-    val ptr = GC.malloc(sizeof[cre2.string_t]).cast[Ptr[cre2.string_t]]
-    ptr.data = toCString(str)
-    ptr.length = str.length
-    ptr
+  def toRE2String(str: String, restr: Ptr[cre2.string_t]): Unit = {
+    restr.data = toCString(str)
+    restr.length = str.length
   }
-
-  def RE2StringArray(n: CInt): Ptr[cre2.string_t] =
-    GC.malloc(sizeof[cre2.string_t] * n).cast[Ptr[cre2.string_t]]
 
   final val ENCODING_UNKNOWN = 0
   final val ENCODING_UTF_8   = 1

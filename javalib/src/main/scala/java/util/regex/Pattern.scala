@@ -106,10 +106,12 @@ object Pattern {
     compile(regex).matcher(input).matches
 
   def quote(s: String): String = {
-    val original = toRE2String(s)
-    val quoted   = stackalloc[cre2.string_t]
+    val original, quoted = stackalloc[cre2.string_t]
+    toRE2String(s, original)
     cre2.quoteMeta(quoted, original)
-    fromRE2String(quoted)
+    val res = fromRE2String(quoted)
+    free(original.data.cast[Ptr[Byte]])
+    res
   }
 
   def adaptPatternToRe2(regex: String): String = {

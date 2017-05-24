@@ -65,7 +65,8 @@ final class Matcher private[regex] (var _pattern: Pattern,
                       end: Int,
                       nMatches: Int,
                       anchor: cre2.anchor_t): Boolean = {
-    val matches = RE2StringArray(nMatches)
+    val n       = nMatches
+    val matches = malloc(sizeof[cre2.string_t] * n).cast[Ptr[cre2.string_t]]
     val in      = toCString(inputSequence.toString)
 
     val ok = cre2.matches(
@@ -91,6 +92,8 @@ final class Matcher private[regex] (var _pattern: Pattern,
       }
     }
 
+    free(matches.cast[Ptr[Byte]])
+
     ok
   }
 
@@ -113,13 +116,20 @@ final class Matcher private[regex] (var _pattern: Pattern,
     replace(replacement, global = true)
 
   private def replace(replacement: String, global: Boolean): String = {
-    val textAndTarget = toRE2String(inputSequence.toString)
-    val rewrite       = toRE2String(replacement)
+    val textAndTarget, rewrite = stackalloc[cre2.string_t]
+
+    toRE2String(inputSequence.toString, textAndTarget)
+    toRE2String(replacement, rewrite)
 
     if (global) cre2.globalReplace(regex, textAndTarget, rewrite)
     else cre2.replace(regex, textAndTarget, rewrite)
 
-    fromRE2String(textAndTarget)
+    val res = fromRE2String(textAndTarget)
+
+    free(textAndTarget.data.cast[Ptr[Byte]])
+    free(rewrite.data.cast[Ptr[Byte]])
+
+    res
   }
 
   def group(): String = group(0)

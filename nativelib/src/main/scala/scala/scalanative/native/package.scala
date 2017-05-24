@@ -2,7 +2,8 @@ package scala.scalanative
 
 import scala.language.experimental.macros
 import java.nio.charset.Charset
-import runtime.{undefined, GC}
+import scalanative.runtime.undefined
+import scalanative.native.stdlib.malloc
 
 package object native {
 
@@ -156,11 +157,14 @@ package object native {
     new String(bytes, charset)
   }
 
-  /** Convert a java.lang.String to a CString using given charset. */
+  /** Convert a java.lang.String to a CString using given charset.
+   *  The resulting c-style string is allocated using malloc, and
+   *  must be freed manually.
+   */
   def toCString(str: String,
                 charset: Charset = Charset.defaultCharset()): CString = {
     val bytes = str.getBytes(charset)
-    val cstr  = GC.malloc_atomic(bytes.length + 1).cast[Ptr[Byte]]
+    val cstr  = malloc(bytes.length + 1).cast[Ptr[Byte]]
 
     var c = 0
     while (c < bytes.length) {
