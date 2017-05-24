@@ -62,7 +62,7 @@ Since Name                     Type            Description
 0.1   ``nativeCompileOptions`` ``Seq[String]`` Extra options passed to clang verbatim during compilation
 0.1   ``nativeLinkingOptions`` ``Seq[String]`` Extra options passed to clang verbatim during linking
 0.1   ``nativeMode``           ``String``      Either ``"debug"`` or ``"release"`` (2)
-0.2   ``nativeGC``             ``String``      Either ``"none"`` or ``"boehm"`` (3)
+0.2   ``nativeGC``             ``String``      Either ``"none"``, ``"boehm"`` or ``"immix"` (3)
 ===== ======================== =============== =========================================================
 
 1. See `Publishing`_ and `Cross compilation`_ for details.
@@ -98,7 +98,14 @@ Garbage collectors
 
    Garbage collector that allocates things without ever freeing them. Useful
    for short-running command-line applications or applications where garbage
-   collections pauses are not acceptable.
+   collections pauses are not acceptable.`
+
+2. **immix.**
+
+    Immix is a mostly precise mark-region collector based on the paper:
+    `Immix: A Mark-Region Garbage Collector with Space Efficiency,
+     Fast Collection, and Mutator Performance
+    <http://www.cs.utexas.edu/users/speedway/DaCapo/papers/immix-pldi-2008.pdf>`_.
 
 Publishing
 ----------
