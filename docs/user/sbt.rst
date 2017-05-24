@@ -10,30 +10,41 @@ Minimal sbt project
 
 Start within a new folder, and create a file ``project/plugins.sbt`` as follows::
 
-    addSbtPlugin("org.scala-native" % "sbt-scala-native"  % "0.1.0")
+    addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.2.1")
 
 Create a file ``project/build.properties`` to define the sbt version as follows::
 
-    sbt.version = 0.13.13
+    sbt.version = 0.13.15
 
 define a new ``build.sbt``::
 
     enablePlugins(ScalaNativePlugin)
 
-    scalaVersion := "2.11.8"
+    scalaVersion := "2.11.11"
 
-and now you can write your first application in ``./src/main/scala/HelloWorld.scala``:
+and now you can write your first application in ``./src/main/scala/Main.scala``:
 
 .. code-block:: scala
-
-    package example
 
     object Main {
       def main(args: Array[String]): Unit =
         println("Hello, world!")
     }
 
-now simply run ``sbt run`` to get everything compiled and have the expected output!
+Now, simply run ``sbt run`` to get everything compiled and have the expected
+output! Please refer to the :ref:`faq` if you encounter any problems.
+
+Scala versions
+--------------
+
+Scala Native supports following Scala versions for corresponding releases:
+
+==================== ================
+Scala Native Version Scala Versions
+==================== ================
+0.1.x                2.11.8
+0.2.x                2.11.8, 2.11.11
+==================== ================
 
 Sbt settings and tasks
 ----------------------
@@ -83,7 +94,7 @@ Garbage collectors
    Conservative generational garbage collector. More information is available
    at the `project's page <https://www.hboehm.info/gc/>`_.
 
-1. **none.**
+2. **none.**
 
    Garbage collector that allocates things without ever freeing them. Useful
    for short-running command-line applications or applications where garbage
@@ -109,9 +120,10 @@ Cross compilation
 
 `sbt-crossproject <https://github.com/scala-native/sbt-crossproject>`_ is an
 sbt plugin that lets you cross-compile your projects against all three major
-platforms in Scala: JVM, JavaScript via Scala.js and native via Scala Native.
-It's based on the original cross-project idea from Scala.js and supports the
-same syntax for existing JVM/JavaScript cross-projects. Please refer to project's
+platforms in Scala: JVM, JavaScript via Scala.js, and native via Scala Native.
+It is based on the original cross-project idea from Scala.js and supports the
+same syntax for existing JVM/JavaScript cross-projects. Please refer to the
+project's
 `README <https://github.com/scala-native/sbt-crossproject/blob/master/README.md>`_
 for details.
 

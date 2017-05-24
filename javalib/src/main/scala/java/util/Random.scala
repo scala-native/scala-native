@@ -37,7 +37,7 @@ class Random(seed_in: Long) extends AnyRef with java.io.Serializable {
 
   def nextInt(n: Int): Int = {
     if (n <= 0)
-      throw new IllegalArgumentException("n must be positive");
+      throw new IllegalArgumentException("n must be positive")
 
     if ((n & -n) == n) // i.e., n is a power of 2
       ((n * next(31).toLong) >> 31).toInt

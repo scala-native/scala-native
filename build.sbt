@@ -2,10 +2,11 @@ import java.io.File.pathSeparator
 import scala.util.Try
 import scalanative.tools.OptimizerReporter
 import scalanative.sbtplugin.ScalaNativePluginInternal._
+import scalanative.io.packageNameFromPath
 
-val toolScalaVersion = "2.10.6"
-
-val libScalaVersion = "2.11.8"
+val toolScalaVersion      = "2.10.6"
+val libScalaVersion       = "2.11.11"
+val libCrossScalaVersions = Seq("2.11.8", "2.11.11")
 
 lazy val baseSettings = Seq(
   organization := "org.scala-native",
@@ -18,6 +19,13 @@ addCommandAlias(
     "clean",
     "cleanCache",
     "cleanLocal",
+    "dirty-rebuild"
+  ).mkString(";", ";", "")
+)
+
+addCommandAlias(
+  "dirty-rebuild",
+  Seq(
     "nscplugin/publishLocal",
     "nativelib/publishLocal",
     "publishLocal"
@@ -218,10 +226,11 @@ lazy val tools =
 lazy val nscplugin =
   project
     .in(file("nscplugin"))
-    .settings(toolSettings)
+    .settings(baseSettings)
     .settings(mavenPublishSettings)
     .settings(
-      scalaVersion := "2.11.8",
+      scalaVersion := libScalaVersion,
+      crossScalaVersions := libCrossScalaVersions,
       crossVersion := CrossVersion.full,
       unmanagedSourceDirectories in Compile ++= Seq(
         (scalaSource in (nir, Compile)).value,
@@ -374,16 +383,10 @@ lazy val tests =
       // nativeOptimizerReporter := OptimizerReporter.toDirectory(
       //   crossTarget.value),
       sourceGenerators in Compile += Def.task {
-        val dir    = sourceDirectory.value
-        val prefix = dir.getAbsolutePath + "/main/scala/"
+        val dir = (scalaSource in Compile).value
         val suites = (dir ** "*Suite.scala").get
-          .map { f =>
-            f.getAbsolutePath
-              .replace(prefix, "")
-              .replace(".scala", "")
-              .split("/")
-              .mkString(".")
-          }
+          .flatMap(IO.relativizeFile(dir, _))
+          .map(file => packageNameFromPath(file.toPath))
           .filter(_ != "tests.Suite")
           .mkString("Seq(", ", ", ")")
         val file = (sourceManaged in Compile).value / "tests" / "Discover.scala"
@@ -424,16 +427,10 @@ lazy val benchmarks =
     .settings(
       nativeMode := "release",
       sourceGenerators in Compile += Def.task {
-        val dir    = sourceDirectory.value
-        val prefix = dir.getAbsolutePath + "/main/scala/"
+        val dir = (scalaSource in Compile).value
         val benchmarks = (dir ** "*Benchmark.scala").get
-          .map { f =>
-            f.getAbsolutePath
-              .replace(prefix, "")
-              .replace(".scala", "")
-              .split("/")
-              .mkString(".")
-          }
+          .flatMap(IO.relativizeFile(dir, _))
+          .map(file => packageNameFromPath(file.toPath))
           .filter(_ != "benchmarks.Benchmark")
           .mkString("Seq(new ", ", new ", ")")
         val file = (sourceManaged in Compile).value / "benchmarks" / "Discover.scala"

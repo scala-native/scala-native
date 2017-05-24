@@ -103,7 +103,7 @@ class LinkedList[E]()
     iterator().exists(_ === o)
 
   override def size(): Int =
-    if (_size < Integer.MAX_VALUE) size.toInt else Integer.MAX_VALUE
+    if (_size < Integer.MAX_VALUE) _size.toInt else Integer.MAX_VALUE
 
   override def add(e: E): Boolean = {
     addLast(e)

@@ -17,8 +17,8 @@ class StringLowering(implicit top: Top) extends Pass {
   /** Names of the fields of the java.lang.String in the memory layout order. */
   private val stringFieldNames = {
     val node  = ClassRef.unapply(StringName).get
-    val names = node.allfields.sortBy(_.index).map(_.name)
-    assert(names.length == 4, "java.lang.String is expected to have 4 fields.")
+    val names = node.layout.entries.map(_.name)
+    assert(names.length == 4, "java.lang.String is expected to have 4 fields")
     names
   }
 
@@ -32,7 +32,7 @@ class StringLowering(implicit top: Top) extends Pass {
       val charsConst = Val.Const(
         Val.Struct(
           Global.None,
-          Seq(CharArrayCls.typeConst,
+          Seq(CharArrayCls.rtti.const,
               charsLength,
               Val.Int(0), // padding to get next field aligned properly
               Val.Array(Type.Short, chars.map(c => Val.Short(c.toShort))))
@@ -46,7 +46,7 @@ class StringLowering(implicit top: Top) extends Pass {
         case _                        => util.unreachable
       }
 
-      Val.Const(Val.Struct(Global.None, StringCls.typeConst +: fieldValues))
+      Val.Const(Val.Struct(Global.None, StringCls.rtti.const +: fieldValues))
 
     case _ =>
       super.onVal(value)

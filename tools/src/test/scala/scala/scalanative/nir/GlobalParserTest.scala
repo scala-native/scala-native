@@ -20,7 +20,7 @@ class GlobalParserTest extends FlatSpec with Matchers {
 
   it should "parse a global with a decoded name" in {
     val global =
-      """@scala.collection.TraversableOnce::/:_class.java.lang.Object_trait.scala.Function2_class.java.lang.Object"""
+      """@scala.collection.TraversableOnce::/:_java.lang.Object_scala.Function2_java.lang.Object"""
     val Parsed.Success(result, _) = parser.Global(global)
     result.show should be(global)
   }

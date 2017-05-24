@@ -8,15 +8,13 @@
 // C++ exceptions.
 
 namespace scalanative {
-    class ExceptionWrapper: public std::exception {
-    public:
-        ExceptionWrapper(void* _obj): obj(_obj) { }
-        void* obj;
-    };
+class ExceptionWrapper : public std::exception {
+  public:
+    ExceptionWrapper(void *_obj) : obj(_obj) {}
+    void *obj;
+};
 }
 
 extern "C" {
-    void scalanative_throw(void* obj) {
-        throw scalanative::ExceptionWrapper(obj);
-    }
+void scalanative_throw(void *obj) { throw scalanative::ExceptionWrapper(obj); }
 }

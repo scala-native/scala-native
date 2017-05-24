@@ -3,7 +3,7 @@ package java.io
 import scalanative.native._, stdlib._, stdio._, string._
 import scala.scalanative.posix.{fcntl, unistd}
 import unistd._
-import scala.scalanative.runtime.GC
+import scala.scalanative.runtime
 
 class FileInputStream(fd: FileDescriptor) extends InputStream {
 
@@ -23,8 +23,6 @@ class FileInputStream(fd: FileDescriptor) extends InputStream {
   override protected def finalize(): Unit =
     close()
 
-  // def getChannel: FileChannel
-
   final def getFD: FileDescriptor =
     fd
 
@@ -34,36 +32,57 @@ class FileInputStream(fd: FileDescriptor) extends InputStream {
     else buffer(0)
   }
 
-  override def read(buffer: Array[Byte]): Int =
+  override def read(buffer: Array[Byte]): Int = {
+    if (buffer == null) {
+      throw new NullPointerException
+    }
     read(buffer, 0, buffer.length)
+  }
 
   override def read(buffer: Array[Byte], offset: Int, count: Int): Int = {
-    val buf       = GC.malloc(count)
+    if (buffer == null) {
+      throw new NullPointerException
+    }
+    if (offset < 0 || count < 0 || count > buffer.length - offset) {
+      throw new IndexOutOfBoundsException
+    }
+    if (count == 0) {
+      return 0
+    }
+
+    // we use the runtime knowledge of the array layout to avoid
+    // intermediate buffer, and write straight into the array memory
+    val buf       = buffer.asInstanceOf[runtime.ByteArray].at(offset)
     val readCount = unistd.read(fd.fd, buf, count)
 
-    if (readCount <= 0) -1
-    else {
-      var i = 0
-      while (i < readCount) {
-        buffer(offset + i) = buf(i)
-        i += 1
-      }
+    if (readCount == 0) {
+      // end of file
+      -1
+    } else if (readCount < 0) {
+      // negative value (typically -1) indicates that read failed
+      throw new IOException("couldn't read from the file")
+    } else {
+      // successfully read readCount bytes
       readCount
     }
   }
 
   override def skip(n: Long): Long =
-    if (n < 0) throw new IOException()
-    else {
+    if (n < 0) {
+      throw new IOException()
+    } else {
       val bytesToSkip = Math.min(n, available())
       lseek(fd.fd, bytesToSkip, SEEK_CUR)
       bytesToSkip
     }
+
+  // TODO:
+  // def getChannel: FileChannel
 }
 
 object FileInputStream {
   private def fileDescriptor(file: File): FileDescriptor = {
     val fd = fcntl.open(toCString(file.getPath), fcntl.O_RDONLY)
-    new FileDescriptor(fd)
+    new FileDescriptor(fd, true)
   }
 }

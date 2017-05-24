@@ -9,7 +9,7 @@
 // Dummy GC that maps chunks of 4GB and allocates but never frees.
 
 // Map 4GB
-#define CHUNK (4*1024*1024*1024L)
+#define CHUNK (4 * 1024 * 1024 * 1024L)
 // Allow read and write
 #define DUMMY_GC_PROT (PROT_READ | PROT_WRITE)
 // Map private anonymous memory, and prevent from reserving swap
@@ -18,20 +18,22 @@
 #define DUMMY_GC_FD -1
 #define DUMMY_GC_FD_OFFSET 0
 
+void *current = 0;
+void *end = 0;
 
-void* current = 0;
-void* end = 0;
-
+void scalanative_safepoint_init();
 
 void scalanative_init() {
-    current = mmap(NULL, CHUNK, DUMMY_GC_PROT, DUMMY_GC_FLAGS, DUMMY_GC_FD, DUMMY_GC_FD_OFFSET);
+    current = mmap(NULL, CHUNK, DUMMY_GC_PROT, DUMMY_GC_FLAGS, DUMMY_GC_FD,
+                   DUMMY_GC_FD_OFFSET);
     end = current + CHUNK;
+    scalanative_safepoint_init();
 }
 
-void* scalanative_alloc_raw(size_t size) {
+void *scalanative_alloc_raw(size_t size) {
     size = size + (8 - size % 8);
     if (current != 0 && current + size < end) {
-        void* alloc = current;
+        void *alloc = current;
         current += size;
         return alloc;
     } else {
@@ -40,14 +42,16 @@ void* scalanative_alloc_raw(size_t size) {
     }
 }
 
-void* scalanative_alloc_raw_atomic(size_t size) {
+void *scalanative_alloc_raw_atomic(size_t size) {
     return scalanative_alloc_raw(size);
 }
 
-void* scalanative_alloc(void* info, size_t size) {
-    void** alloc = (void**) scalanative_alloc_raw(size);
+void *scalanative_alloc(void *info, size_t size) {
+    void **alloc = (void **)scalanative_alloc_raw(size);
     *alloc = info;
-    return (void*) alloc;
+    return (void *)alloc;
 }
 
 void scalanative_collect() {}
+
+void scalanative_safepoint() {}

@@ -22,6 +22,8 @@
  */
 package towers
 
+import benchmarks.{BenchmarkRunningTime, ShortRunningTime}
+
 class TowersBenchmark extends benchmarks.Benchmark[Int] {
   final class TowersDisk(val size: Int, var next: TowersDisk = null)
 
@@ -73,6 +75,8 @@ class TowersBenchmark extends benchmarks.Benchmark[Int] {
       moveDisks(disks - 1, otherPile, toPile)
     }
   }
+
+  override val runningTime: BenchmarkRunningTime = ShortRunningTime
 
   override def run(): Int = {
     piles = new Array[TowersDisk](3)

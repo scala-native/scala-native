@@ -2,7 +2,6 @@ package scala.scalanative
 package tools
 
 import java.io.File
-import scalanative.io.VirtualDirectory
 import nir.Global
 
 sealed trait Config {

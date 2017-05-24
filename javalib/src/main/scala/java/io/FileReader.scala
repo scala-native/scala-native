@@ -14,6 +14,6 @@ class FileReader(fd: FileDescriptor)
 object FileReader {
   private def fileDescriptor(file: File): FileDescriptor = {
     val fd = fcntl.open(toCString(file.getPath), fcntl.O_RDONLY)
-    new FileDescriptor(fd)
+    new FileDescriptor(fd, true)
   }
 }

@@ -21,6 +21,8 @@ object Attr {
   final case object Extern                extends Attr
   final case class Override(name: Global) extends Attr
 
+  final case class Align(value: Int) extends Attr
+
   // Linker attributes
   final case class Link(name: String)               extends Attr
   sealed abstract class Pin                         extends Attr
@@ -35,7 +37,8 @@ final case class Attrs(inline: Inline = MayInline,
                        isDyn: Boolean = false,
                        overrides: Seq[Global] = Seq(),
                        pins: Seq[Pin] = Seq(),
-                       links: Seq[Attr.Link] = Seq()) {
+                       links: Seq[Attr.Link] = Seq(),
+                       align: Option[Int] = scala.None) {
   def toSeq: Seq[Attr] = {
     val out = mutable.UnrolledBuffer.empty[Attr]
 
@@ -46,6 +49,7 @@ final case class Attrs(inline: Inline = MayInline,
     overrides.foreach { out += Override(_) }
     out ++= pins
     out ++= links
+    align.foreach { out += Align(_) }
 
     out
   }
@@ -58,6 +62,7 @@ object Attrs {
     var isPure    = false
     var isExtern  = false
     var isDyn     = false
+    var align     = Option.empty[Int]
     val overrides = mutable.UnrolledBuffer.empty[Global]
     val pins      = mutable.UnrolledBuffer.empty[Pin]
     val links     = mutable.UnrolledBuffer.empty[Attr.Link]
@@ -67,11 +72,12 @@ object Attrs {
       case Pure            => isPure = true
       case Extern          => isExtern = true
       case Dyn             => isDyn = true
+      case Align(value)    => align = Some(value)
       case Override(name)  => overrides += name
       case attr: Pin       => pins += attr
       case link: Attr.Link => links += link
     }
 
-    new Attrs(inline, isPure, isExtern, isDyn, overrides, pins, links)
+    new Attrs(inline, isPure, isExtern, isDyn, overrides, pins, links, align)
   }
 }

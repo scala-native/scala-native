@@ -10,11 +10,16 @@ class BufferedWriter(out: Writer, sz: Int) extends Writer {
 
   private val buffer: Array[Char] = new Array[Char](sz)
   private var pos: Int            = 0
+  private var closed: Boolean     = false
 
-  def close(): Unit =
+  def close(): Unit = {
+    flush()
+    closed = true
     out.close()
+  }
 
   def flush(): Unit = {
+    ensureOpen()
     out.write(buffer, 0, pos)
     out.flush()
     pos = 0
@@ -30,6 +35,7 @@ class BufferedWriter(out: Writer, sz: Int) extends Writer {
     write(s.toCharArray, off, len)
 
   def write(cbuf: Array[Char], off: Int, len: Int): Unit = {
+    ensureOpen()
     val available = sz - pos
     if (available >= len) {
       System.arraycopy(cbuf, off, buffer, pos, len)
@@ -40,4 +46,7 @@ class BufferedWriter(out: Writer, sz: Int) extends Writer {
       write(cbuf, off + available, len - available)
     }
   }
+
+  private def ensureOpen(): Unit =
+    if (closed) throw new IOException("Stream closed")
 }

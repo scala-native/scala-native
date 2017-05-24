@@ -3,9 +3,10 @@ import scalanative.sbtplugin.ScalaNativePluginInternal.nativeOptimizerReporter
 
 enablePlugins(ScalaNativePlugin)
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.11.11"
 
-nativeOptimizerReporter := OptimizerReporter.toDirectory(crossTarget.value)
+nativeOptimizerReporter in Compile := OptimizerReporter.toDirectory(
+  crossTarget.value)
 
 lazy val check = taskKey[Unit]("Check that dot file was created.")
 

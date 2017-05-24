@@ -15,7 +15,7 @@ class IsLowering(implicit fresh: Fresh, top: Top) extends Pass {
     import buf._
 
     insts.foreach {
-      case Let(n, Op.Is(_, Val.Zero(_))) =>
+      case Let(n, Op.Is(_, Val.Null | Val.Zero(_))) =>
         let(n, Op.Copy(Val.False))
 
       case Let(n, Op.Is(ty, obj)) =>
@@ -24,7 +24,7 @@ class IsLowering(implicit fresh: Fresh, top: Top) extends Pass {
         val thenL, elseL, contL = fresh()
 
         // check if obj is null
-        val isnull = let(Op.Comp(Comp.Ieq, Type.Ptr, obj, Val.Zero(Type.Ptr)))
+        val isnull = let(Op.Comp(Comp.Ieq, Type.Ptr, obj, Val.Null))
         branch(isnull, Next(thenL), Next(elseL))
         // in case it's null, result is always false
         label(thenL)
@@ -51,7 +51,7 @@ class IsLowering(implicit fresh: Fresh, top: Top) extends Pass {
     ty match {
       case ClassRef(cls) if cls.range.length == 1 =>
         val typeptr = let(Op.Load(Type.Ptr, obj))
-        let(Op.Comp(Comp.Ieq, Type.Ptr, typeptr, cls.typeConst))
+        let(Op.Comp(Comp.Ieq, Type.Ptr, typeptr, cls.rtti.const))
 
       case ClassRef(cls) =>
         val typeptr = let(Op.Load(Type.Ptr, obj))
@@ -66,8 +66,8 @@ class IsLowering(implicit fresh: Fresh, top: Top) extends Pass {
         val idptr   = let(Op.Elem(Rt.Type, typeptr, Seq(Val.Int(0), Val.Int(0))))
         val id      = let(Op.Load(Type.Int, idptr))
         val boolptr = let(
-          Op.Elem(top.instanceTy,
-                  top.instanceVal,
+          Op.Elem(top.tables.classHasTraitTy,
+                  top.tables.classHasTraitVal,
                   Seq(Val.Int(0), id, Val.Int(trt.id))))
         let(Op.Load(Type.Bool, boolptr))
 

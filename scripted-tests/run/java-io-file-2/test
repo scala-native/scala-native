@@ -1,0 +1,45 @@
+# Make `Files.scala` usable in build.sbt
+$ copy-file Files.scala project/Files.scala
+> setupTests
+
+$ copy-file tests/IsDirectoryTest.scala Main.scala
+> run
+
+$ copy-file tests/IsFileTest.scala Main.scala
+> run
+
+$ copy-file tests/IsHiddenTest.scala Main.scala
+> run
+
+$ copy-file tests/LastModifiedTest.scala Main.scala
+> run
+
+$ copy-file tests/LengthTest.scala Main.scala
+> run
+
+$ copy-file tests/ListTest.scala Main.scala
+> run
+
+$ copy-file tests/MkdirTest.scala Main.scala
+> run
+
+$ copy-file tests/RenameToTest.scala Main.scala
+> run
+
+$ copy-file tests/LinksTest.scala Main.scala
+> run
+
+$ copy-file tests/SetLastModifiedTest.scala Main.scala
+> run
+
+$ copy-file tests/SetReadOnlyTest.scala Main.scala
+> run
+
+$ copy-file tests/SetExecutableTest.scala Main.scala
+> run
+
+$ copy-file tests/SetReadableTest.scala Main.scala
+> run
+
+$ copy-file tests/SetWritableTest.scala Main.scala
+> run

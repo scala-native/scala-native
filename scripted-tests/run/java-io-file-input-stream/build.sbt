@@ -4,7 +4,7 @@ import java.io.FileInputStream
 
 enablePlugins(ScalaNativePlugin)
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.11.11"
 
 lazy val createFileWithAlreadyWrittenText =
   taskKey[Unit]("Creating a file with some text on it")

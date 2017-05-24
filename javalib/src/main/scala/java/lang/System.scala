@@ -1,9 +1,9 @@
 package java.lang
 
-import java.io.{InputStream, PrintStream}
+import java.io._
 import java.util.{Collections, HashMap, Map, Properties}
 import scala.scalanative.native._
-import scala.scalanative.posix._
+import scala.scalanative.posix.unistd
 import scala.scalanative.runtime.time
 import scala.scalanative.runtime.Platform
 import scala.scalanative.runtime.GC
@@ -94,9 +94,12 @@ object System {
   def getenv(): Map[String, String] = envVars
   def getenv(key: String): String   = envVars.get(key)
 
-  var in: InputStream  = _
-  var out: PrintStream = new PrintStream(new CFileOutputStream(stdio.stdout))
-  var err: PrintStream = new PrintStream(new CFileOutputStream(stdio.stderr))
+  var in: InputStream =
+    new FileInputStream(FileDescriptor.in)
+  var out: PrintStream =
+    new PrintStream(new FileOutputStream(FileDescriptor.out))
+  var err: PrintStream =
+    new PrintStream(new FileOutputStream(FileDescriptor.err))
 
   def gc(): Unit = GC.collect()
 
@@ -115,7 +118,7 @@ object System {
       sizePtr += 1
     }
 
-    val map               = new java.util.HashMap[String, String](size)
+    val map               = new HashMap[String, String](size)
     var ptr: Ptr[CString] = unistd.environ
     while (isDefined(ptr)) {
       val variable = fromCString(ptr(0))
@@ -130,14 +133,5 @@ object System {
     }
 
     Collections.unmodifiableMap(map)
-  }
-
-  private class CFileOutputStream(stream: Ptr[stdio.FILE])
-      extends java.io.OutputStream {
-    private val buf = stdlib.malloc(1)
-    def write(b: Int): Unit = {
-      !buf = b.toUByte.toByte
-      stdio.fwrite(buf, 1, 1, stream)
-    }
   }
 }

@@ -1,23 +1,25 @@
 package scala.scalanative.posix
 
 import scala.scalanative.native.{
-  CInt,
-  CLongLong,
   CUnsignedInt,
-  CSize,
   CString,
+  CLongLong,
   Ptr,
   extern,
-  name
+  name,
+  CSize,
+  CInt
 }
+
+import stat.{uid_t, gid_t}
 
 @extern
 object unistd {
 
   type off_t = CLongLong
 
-  def sleep(seconds: CUnsignedInt): Int                           = extern
-  def usleep(usecs: CUnsignedInt): Int                            = extern
+  def sleep(seconds: CUnsignedInt): CInt                          = extern
+  def usleep(usecs: CUnsignedInt): CInt                           = extern
   def unlink(path: CString): CInt                                 = extern
   def access(pathname: CString, mode: CInt): CInt                 = extern
   def readlink(path: CString, buf: CString, bufsize: CSize): CInt = extern
@@ -39,8 +41,28 @@ object unistd {
   @name("scalanative_stderr_fileno")
   def STDERR_FILENO: CInt = extern
 
+  @name("scalanative_symlink")
+  def symlink(path1: CString, path2: CString): CInt = extern
+
+  @name("scalanative_symlinkat")
+  def symlinkat(path1: CString, fd: CInt, path2: CString): CInt = extern
+
+  @name("scalanative_link")
+  def link(path1: CString, path2: CString): CInt = extern
+
+  @name("scalanative_linkat")
+  def linkat(fd1: CInt,
+             path1: CString,
+             fd2: CInt,
+             path2: CString,
+             flag: CInt): CInt = extern
+
+  @name("scalanative_chown")
+  def chown(path: CString, owner: uid_t, group: gid_t): CInt = extern
+
   // Macros
 
   @name("scalanative_environ")
   def environ: Ptr[CString] = extern
+
 }

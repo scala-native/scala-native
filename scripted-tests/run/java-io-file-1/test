@@ -1,0 +1,36 @@
+# Make `Files.scala` usable in build.sbt
+$ copy-file Files.scala project/Files.scala
+> setupTests
+
+$ copy-file tests/CanExecuteTest.scala Main.scala
+> run
+
+$ copy-file tests/CanonicalPathTest.scala Main.scala
+> run
+
+$ copy-file tests/CanReadTest.scala Main.scala
+> run
+
+$ copy-file tests/CanWriteTest.scala Main.scala
+> run
+
+$ copy-file tests/CompareToTest.scala Main.scala
+> run
+
+$ copy-file tests/CreateNewFileTest.scala Main.scala
+> run
+
+$ copy-file tests/CreateTempFileTest.scala Main.scala
+> run
+
+$ copy-file tests/DeleteTest.scala Main.scala
+> run
+
+$ copy-file tests/ExistsTest.scala Main.scala
+> run
+
+$ copy-file tests/GetParentTest.scala Main.scala
+> run
+
+$ copy-file tests/IsAbsoluteTest.scala Main.scala
+> run

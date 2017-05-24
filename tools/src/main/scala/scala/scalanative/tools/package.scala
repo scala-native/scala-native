@@ -1,8 +1,5 @@
 package scala.scalanative
 
-import java.nio.file.Paths
-import scalanative.io.withScratchBuffer
-
 // API use-cases
 //
 // sbt plugin:
@@ -21,8 +18,8 @@ import scalanative.io.withScratchBuffer
 //   1. run code gen and check the string
 
 package object tools {
-  type LinkerPath = linker.Path
-  val LinkerPath = linker.Path
+  type LinkerPath = linker.ClassPath
+  val LinkerPath = linker.ClassPath
 
   type LinkerReporter = linker.Reporter
   val LinkerReporter = linker.Reporter
@@ -43,7 +40,8 @@ package object tools {
     val deps    = driver.passes.flatMap(_.depends).distinct
     val injects = driver.passes.flatMap(_.injects).distinct
     val entry =
-      nir.Global.Member(config.entry, "main_class.ssnr.ObjectArray_unit")
+      nir.Global.Member(config.entry,
+                        "main_scala.scalanative.runtime.ObjectArray_unit")
     val result =
       (linker.Linker(config, reporter)).link(entry +: deps)
 

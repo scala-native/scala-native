@@ -19,23 +19,22 @@ import nir._
  *
  *  Translates to:
  *
- *      class module.$name : $parent, .. $ifaces
+ *      class $name : $parent, .. $ifaces
  *
  *      .. $members
  *
- *      var value.$name: class module.$name = zero[class module.$name]
- *
- *      def load.$name: () => class module.$name {
+ *      def load.$name: () => class $name {
  *        %entry:
- *          %self = load[class module.$name] @"module.$name"
- *          %cond = ieq[class j.l.Object] %instance, zero[class module.$name]
+ *          %slot = elem[ptr] @__modules, $moduleOffset
+ *          %self = load[class $name] %slot
+ *          %cond = ieq[class j.l.Object] %instance, null
  *          if %cond then %existing else %initialize
  *        %existing:
  *          ret %self
  *        %initialize:
- *          %alloc = alloc[class module.$name]
+ *          %alloc = alloc[class $name]
  *          call $name::init(%alloc)
- *          store[class $name] @"module.$name", %alloc
+ *          store[class $name] %slot, %alloc
  *          ret %alloc
  *      }
  */
@@ -47,16 +46,12 @@ class ModuleLowering(implicit top: Top, fresh: Fresh) extends Pass {
       case Defn.Module(attrs, clsName @ ClassRef(cls), parent, ifaces) =>
         val clsDefn = Defn.Class(attrs, clsName, parent, ifaces)
         val clsTy   = Type.Class(clsName)
-        val clsNull = Val.Zero(clsTy)
-
-        val valueName = clsName member "value"
-        val valueDefn = Defn.Var(Attrs.None, valueName, clsTy, clsNull)
-        val value     = Val.Global(valueName, Type.Ptr)
 
         val entry      = fresh()
         val existing   = fresh()
         val initialize = fresh()
 
+        val slot  = Val.Local(fresh(), Type.Ptr)
         val self  = Val.Local(fresh(), clsTy)
         val cond  = Val.Local(fresh(), Type.Bool)
         val alloc = Val.Local(fresh(), clsTy)
@@ -78,21 +73,24 @@ class ModuleLowering(implicit top: Top, fresh: Fresh) extends Pass {
           loadSig,
           Seq(
             Inst.Label(entry, Seq()),
-            Inst.Let(self.name, Op.Load(clsTy, value)),
-            Inst.Let(cond.name, Op.Comp(Comp.Ine, Rt.Object, self, clsNull)),
+            Inst.Let(slot.name,
+                     Op.Elem(Type.Ptr,
+                             Val.Global(Global.Top("__modules"), Type.Ptr),
+                             Seq(Val.Int(top.moduleArray.index(cls))))),
+            Inst.Let(self.name, Op.Load(clsTy, slot)),
+            Inst.Let(cond.name, Op.Comp(Comp.Ine, Rt.Object, self, Val.Null)),
             Inst.If(cond, Next(existing), Next(initialize)),
             Inst.Label(existing, Seq()),
             Inst.Ret(self),
             Inst.Label(initialize, Seq()),
             Inst.Let(alloc.name, Op.Classalloc(clsName)),
-            Inst.Let(Op.Store(clsTy, value, alloc)),
+            Inst.Let(Op.Store(clsTy, slot, alloc)),
             initCall,
             Inst.Ret(alloc)
           )
         )
 
         buf += clsDefn
-        buf += valueDefn
         buf += loadDefn
 
       case defn =>

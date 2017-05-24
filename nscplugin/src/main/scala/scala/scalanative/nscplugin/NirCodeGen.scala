@@ -250,9 +250,8 @@ abstract class NirCodeGen
       for (f <- sym.info.decls if f.isField) {
         val ty   = genType(f.tpe, box = false)
         val name = genFieldName(f)
-        val rhs  = if (sym.isExternModule) Val.None else Val.Zero(ty)
 
-        curClassDefns += Defn.Var(attrs, name, ty, rhs)
+        curClassDefns += Defn.Var(attrs, name, ty, Val.None)
       }
     }
 
@@ -643,7 +642,7 @@ abstract class NirCodeGen
         case UnitTag =>
           Val.Unit
         case NullTag =>
-          Val.Zero(Rt.Object)
+          Val.Null
         case BooleanTag =>
           if (value.booleanValue) Val.True else Val.False
         case ByteTag =>
@@ -968,7 +967,7 @@ abstract class NirCodeGen
 
         // In the case of an array update we need to manually erase the return type.
         val methodName =
-          if (arrayUpdate) "update_i32_class.java.lang.Object" else nir.Global.genSignature(genMethodName(sym))
+          if (arrayUpdate) "update_i32_java.lang.Object" else nir.Global.genSignature(genMethodName(sym))
 
         val sig =
           Type.Function(
@@ -1323,11 +1322,11 @@ abstract class NirCodeGen
         val comp  = if (negated) Comp.Ine else Comp.Ieq
         right withOp Op.Comp(comp, Rt.Object, left.value, right.value)
       } else {
-        val isnull = left withOp Op.Comp(Comp.Ieq, Rt.Object, left.value, Val.Zero(Rt.Object))
+        val isnull = left withOp Op.Comp(Comp.Ieq, Rt.Object, left.value, Val.Null)
         val cond = ValTree(isnull.value)
         val thenp = ContTree { focus =>
           val right = genExpr(rightp, focus)
-          right withOp Op.Comp(Comp.Ieq, Rt.Object, right.value, Val.Zero(Rt.Object))
+          right withOp Op.Comp(Comp.Ieq, Rt.Object, right.value, Val.Null)
         }
         val elsep = ContTree { focus =>
           genMethodCall(NObjectEqualsMethod, statically = false,

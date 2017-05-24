@@ -17,8 +17,12 @@ object Driver {
   private val injectionPasses: Seq[InjectCompanion] = Seq(
     inject.Main,
     inject.TraitDispatchTables,
+    inject.HasTrait,
     inject.RuntimeTypeInformation,
-    inject.ClassStruct
+    inject.ClassStruct,
+    inject.ObjectArrayId,
+    inject.ModuleArray,
+    inject.SafepointTrigger
   )
 
   private val fastOptPasses = Seq(
@@ -58,6 +62,7 @@ object Driver {
     pass.SizeofLowering,
     pass.CopyPropagation,
     pass.DeadCodeElimination
+    // pass.SafepointInsertion
   )
 
   /** Create driver with default pipeline for this configuration. */

@@ -1,0 +1,3 @@
+package java.nio.channels
+
+class NonWritableChannelException extends IllegalStateException

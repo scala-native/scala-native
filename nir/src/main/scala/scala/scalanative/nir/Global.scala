@@ -15,8 +15,9 @@ sealed abstract class Global {
   }
 
   final def isIntrinsic: Boolean = this match {
-    case Global.Top(id) if id.startsWith("scalanative_") => true
-    case _                                               => false
+    case Global.Top(id) if id.startsWith("scalanative_")    => true
+    case Global.Member(_, id) if id.startsWith("extern.__") => true
+    case _                                                  => false
   }
 
   final def isTop: Boolean = this.isInstanceOf[Global.Top]

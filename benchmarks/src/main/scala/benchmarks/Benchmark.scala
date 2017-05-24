@@ -14,25 +14,24 @@ case class BenchmarkFailed(override val name: String, cause: Throwable)
 case class BenchmarkDisabled(override val name: String)
     extends BenchmarkResult(name, true)
 
-abstract class Benchmark[T] {
+sealed class BenchmarkRunningTime(val iterations: Int)
+
+case object VeryLongRunningTime extends BenchmarkRunningTime(20)
+case object LongRunningTime     extends BenchmarkRunningTime(1000)
+case object MediumRunningTime   extends BenchmarkRunningTime(10000)
+case object ShortRunningTime    extends BenchmarkRunningTime(30000)
+case object UnknownRunningTime  extends BenchmarkRunningTime(1)
+
+abstract class Benchmark[T]() {
   def run(): T
   def check(t: T): Boolean
 
-  def iterations(): Int = {
-    // Run once to estimate how long this benchmark takes
-    val nsPerBenchmark = 3e9.toLong
-    val timeEstimate   = estimateTime()
-    Math.max(20, (nsPerBenchmark / timeEstimate).toInt)
-  }
+  val runningTime: BenchmarkRunningTime
+
+  def iterations(): Int = runningTime.iterations
 
   private class BenchmarkDisabledException extends Exception
   final def disableBenchmark(): Nothing = throw new BenchmarkDisabledException
-
-  final def estimateTime(): Long = {
-    val start = System.nanoTime()
-    val _     = try { run() } catch { case _: Throwable => () }
-    System.nanoTime() - start
-  }
 
   final def loop(iterations: Int): BenchmarkResult =
     try {

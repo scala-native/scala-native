@@ -40,21 +40,17 @@ object CodeGen {
             val impl =
               new Impl(config.target, env, defns, workdir)
             val outpath = k + ".ll"
-            withScratchBuffer { buffer =>
-              impl.gen(buffer)
-              buffer.flip
-              workdir.write(Paths.get(outpath), buffer)
-            }
+            val buffer  = impl.gen()
+            buffer.flip
+            workdir.write(Paths.get(outpath), buffer)
         }
       }
 
       def release(): Unit = {
-        withScratchBuffer { buffer =>
-          val impl = new Impl(config.target, env, assembly, workdir)
-          impl.gen(buffer)
-          buffer.flip
-          workdir.write(Paths.get("out.ll"), buffer)
-        }
+        val impl   = new Impl(config.target, env, assembly, workdir)
+        val buffer = impl.gen()
+        buffer.flip
+        workdir.write(Paths.get("out.ll"), buffer)
       }
 
       config.mode match {
@@ -78,13 +74,15 @@ object CodeGen {
     val builder   = new ShowBuilder
     import builder._
 
-    def gen(buffer: ByteBuffer) = {
+    def gen(): ByteBuffer = {
       genDefns(defns)
-      val body = builder.toString.getBytes
+      val body = builder.toString.getBytes("UTF-8")
       builder.clear
       genPrelude()
       genDeps()
-      buffer.put(builder.toString.getBytes)
+      val prelude = builder.toString.getBytes("UTF-8")
+      val buffer  = ByteBuffer.allocate(prelude.length + body.length)
+      buffer.put(prelude)
       buffer.put(body)
     }
 
@@ -156,9 +154,9 @@ object CodeGen {
         case Defn.Struct(attrs, name, tys) =>
           genStruct(attrs, name, tys)
         case Defn.Var(attrs, name, ty, rhs) =>
-          genGlobalDefn(name, attrs.isExtern, isConst = false, ty, rhs)
+          genGlobalDefn(attrs, name, isConst = false, ty, rhs)
         case Defn.Const(attrs, name, ty, rhs) =>
-          genGlobalDefn(name, attrs.isExtern, isConst = true, ty, rhs)
+          genGlobalDefn(attrs, name, isConst = true, ty, rhs)
         case Defn.Declare(attrs, name, sig) =>
           genFunctionDefn(attrs, name, sig, Seq())
         case Defn.Define(attrs, name, sig, blocks) =>
@@ -177,20 +175,24 @@ object CodeGen {
       str("}")
     }
 
-    def genGlobalDefn(name: nir.Global,
-                      isExtern: Boolean,
+    def genGlobalDefn(attrs: Attrs,
+                      name: nir.Global,
                       isConst: Boolean,
                       ty: nir.Type,
                       rhs: nir.Val): Unit = {
       str("@")
       genGlobal(name)
       str(" = ")
-      str(if (isExtern) "external " else "")
+      str(if (attrs.isExtern) "external " else "")
       str(if (isConst) "constant" else "global")
       str(" ")
       rhs match {
         case Val.None => genType(ty)
         case rhs      => genVal(rhs)
+      }
+      attrs.align.foreach { value =>
+        str(", align ")
+        str(value)
       }
     }
 
@@ -355,6 +357,7 @@ object CodeGen {
     def genJustVal(v: Val): Unit = v match {
       case Val.True      => str("true")
       case Val.False     => str("false")
+      case Val.Null      => str("null")
       case Val.Zero(ty)  => str("zeroinitializer")
       case Val.Undef(ty) => str("undef")
       case Val.Byte(v)   => str(v)
@@ -502,7 +505,7 @@ object CodeGen {
         case call: Op.Call =>
           genCall(genBind, call)
 
-        case Op.Load(ty, ptr) =>
+        case Op.Load(ty, ptr, isVolatile) =>
           val pointee = fresh()
 
           newline()
@@ -517,13 +520,16 @@ object CodeGen {
           newline()
           genBind()
           str("load ")
+          if (isVolatile) {
+            str("volatile ")
+          }
           genType(ty)
           str(", ")
           genType(ty)
           str("* %")
           genLocal(pointee)
 
-        case Op.Store(ty, ptr, value) =>
+        case Op.Store(ty, ptr, value, isVolatile) =>
           val pointee = fresh()
 
           newline()
@@ -538,6 +544,9 @@ object CodeGen {
           newline()
           genBind()
           str("store ")
+          if (isVolatile) {
+            str("volatile ")
+          }
           genVal(value)
           str(", ")
           genType(ty)

@@ -1,16 +1,20 @@
 package java.io
 
 import scala.scalanative.native.{stdio, toCString}
-import scala.scalanative.posix.{fcntl, unistd}
+import scala.scalanative.posix.{fcntl, stat, unistd}
 
-class RandomAccessFile private (file: File, fd: FileDescriptor, flush: Boolean)
+class RandomAccessFile private (file: File,
+                                fd: FileDescriptor,
+                                flush: Boolean,
+                                mode: String)
     extends DataOutput
     with DataInput
     with Closeable {
   def this(file: File, mode: String) =
     this(file,
          RandomAccessFile.fileDescriptor(file, mode),
-         RandomAccessFile.flush(mode))
+         RandomAccessFile.flush(mode),
+         mode)
   def this(name: String, mode: String) = this(new File(name), mode)
 
   private var closed: Boolean = false
@@ -105,11 +109,16 @@ class RandomAccessFile private (file: File, fd: FileDescriptor, flush: Boolean)
   def seek(pos: Long): Unit =
     unistd.lseek(fd.fd, pos, stdio.SEEK_SET)
 
-  def setLength(newLength: Long): Unit = {
-    val currentPosition = getFilePointer()
-    unistd.ftruncate(fd.fd, newLength)
-    if (currentPosition > newLength) seek(newLength)
-  }
+  def setLength(newLength: Long): Unit =
+    if (!mode.contains("w")) {
+      throw new IOException("Invalid argument")
+    } else {
+      val currentPosition = getFilePointer()
+      if (unistd.ftruncate(fd.fd, newLength) != 0) {
+        throw new IOException()
+      }
+      if (currentPosition > newLength) seek(newLength)
+    }
 
   override def skipBytes(n: Int): Int =
     if (n <= 0) 0
@@ -198,17 +207,20 @@ class RandomAccessFile private (file: File, fd: FileDescriptor, flush: Boolean)
 }
 
 private object RandomAccessFile {
-  private def fileDescriptor(file: File, _mode: String) = {
-    if (_mode == "r" && !file.exists)
+  private def fileDescriptor(file: File, _flags: String) = {
+    import fcntl._
+    import stat._
+    if (_flags == "r" && !file.exists)
       throw new FileNotFoundException(file.getName)
-    val mode = _mode match {
-      case "r"                  => fcntl.O_RDONLY
-      case "rw" | "rws" | "rwd" => fcntl.O_RDWR | fcntl.O_CREAT
+    val flags = _flags match {
+      case "r"                  => O_RDONLY
+      case "rw" | "rws" | "rwd" => O_RDWR | O_CREAT
       case _ =>
         throw new IllegalArgumentException(
-          s"""Illegal mode "${_mode}" must be one of "r", "rw", "rws" or "rwd"""")
+          s"""Illegal mode "${_flags}" must be one of "r", "rw", "rws" or "rwd"""")
     }
-    val fd = fcntl.open(toCString(file.getPath), mode)
+    val mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
+    val fd   = open(toCString(file.getPath), flags, mode)
     new FileDescriptor(fd)
   }
 
