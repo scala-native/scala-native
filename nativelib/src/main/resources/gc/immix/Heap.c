@@ -18,6 +18,9 @@
 #define HEAP_MEM_FD -1
 #define HEAP_MEM_FD_OFFSET 0
 
+/**
+ * Maps `MAX_SIZE` of memory and returns the first address aligned on `alignement` mask
+ */
 word_t *mapAndAlign(int alignmentMask) {
     word_t *heapStart = mmap(NULL, MAX_SIZE, HEAP_MEM_PROT, HEAP_MEM_FLAGS,
                              HEAP_MEM_FD, HEAP_MEM_FD_OFFSET);
@@ -31,6 +34,9 @@ word_t *mapAndAlign(int alignmentMask) {
     return heapStart;
 }
 
+/**
+ * Allocates the heap struct and initializes it
+ */
 Heap *Heap_create(size_t initialSize) {
     assert(initialSize >= 2 * BLOCK_TOTAL_SIZE);
     assert(initialSize % BLOCK_TOTAL_SIZE == 0);
@@ -39,12 +45,14 @@ Heap *Heap_create(size_t initialSize) {
 
     word_t *smallHeapStart = mapAndAlign(BLOCK_SIZE_IN_BYTES_INVERSE_MASK);
 
+    // Init heap for small objects
     heap->smallHeapSize = initialSize;
     heap->heapStart = smallHeapStart;
     heap->heapEnd = smallHeapStart + initialSize / WORD_SIZE;
     heap->allocator =
         Allocator_create(smallHeapStart, initialSize / BLOCK_TOTAL_SIZE);
 
+    // Init heap for large objects
     word_t *largeHeapStart = mapAndAlign(LARGE_BLOCK_MASK);
     heap->largeHeapSize = initialSize;
     heap->largeAllocator = LargeAllocator_create(largeHeapStart, initialSize);
@@ -53,13 +61,21 @@ Heap *Heap_create(size_t initialSize) {
 
     return heap;
 }
-
+/**
+ * Allocates large objects using the `LargeAllocator`.
+ * If allocation fails, because there is not enough memory available, it will trigger a collection of both the small and the large heap.
+ */
 word_t *Heap_allocLarge(Heap *heap, uint32_t objectSize) {
-    uint32_t size = objectSize + OBJECT_HEADER_SIZE; // Add header
 
-    assert(objectSize % 8 == 0);
+    // Add header
+    uint32_t size = objectSize + OBJECT_HEADER_SIZE;
+
+    assert(objectSize % WORD_SIZE == 0);
     assert(size >= MIN_BLOCK_SIZE);
+
+    // Request an object from the `LargeAllocator`
     Object *object = LargeAllocator_getBlock(heap->largeAllocator, size);
+    // If the object is not NULL, update it's metadata and return it
     if (object != NULL) {
         ObjectHeader *objectHeader = &object->header;
 
@@ -67,8 +83,10 @@ word_t *Heap_allocLarge(Heap *heap, uint32_t objectSize) {
         Object_setSize(objectHeader, size);
         return Object_toMutatorAddress(object);
     } else {
+        // Otherwise collect
         Heap_collect(heap, stack);
 
+        // After collection, try to alloc again, if it fails, grow the heap by at least the size of the object we want to alloc
         object = LargeAllocator_getBlock(heap->largeAllocator, size);
         if (object != NULL) {
             Object_setObjectType(&object->header, object_large);
@@ -83,13 +101,6 @@ word_t *Heap_allocLarge(Heap *heap, uint32_t objectSize) {
             Object_setObjectType(objectHeader, object_large);
             Object_setSize(objectHeader, size);
             return Object_toMutatorAddress(object);
-
-            /*
-            LargeAllocator_print(heap->largeAllocator);
-            printf("Failed to alloc: %u\n", size + 8);
-            printf("No more memory available\n");
-            fflush(stdout);
-            exit(1);*/
         }
     }
 }
@@ -124,9 +135,10 @@ word_t *allocSmallSlow(Heap *heap, uint32_t size) {
 }
 
 INLINE word_t *Heap_allocSmall(Heap *heap, uint32_t objectSize) {
-    uint32_t size = objectSize + OBJECT_HEADER_SIZE; // Add header
+    // Add header
+    uint32_t size = objectSize + OBJECT_HEADER_SIZE;
 
-    assert(objectSize % 8 == 0);
+    assert(objectSize % WORD_SIZE == 0);
     assert(size < MIN_BLOCK_SIZE);
 
     Object *object = (Object *)Allocator_alloc(heap->allocator, size);
@@ -143,7 +155,7 @@ INLINE word_t *Heap_allocSmall(Heap *heap, uint32_t objectSize) {
 }
 
 word_t *Heap_alloc(Heap *heap, uint32_t objectSize) {
-    assert(objectSize % 8 == 0);
+    assert(objectSize % WORD_SIZE == 0);
 
     if (objectSize + OBJECT_HEADER_SIZE >= LARGE_BLOCK_SIZE) {
         return Heap_allocLarge(heap, objectSize);
@@ -194,7 +206,7 @@ void Heap_recycle(Heap *heap) {
     Allocator_initCursors(heap->allocator);
 }
 
-// increment in words
+/** Grows the small heap by at least `increment` words */
 void Heap_grow(Heap *heap, size_t increment) {
     assert(increment % WORDS_IN_BLOCK == 0);
 
@@ -216,6 +228,7 @@ void Heap_grow(Heap *heap, size_t increment) {
     heap->allocator->freeBlockCount += increment / WORDS_IN_BLOCK;
 }
 
+/** Grows the large heap by at least `increment` words */
 void Heap_growLarge(Heap *heap, size_t increment) {
     increment = 1UL << log2_ceil(increment);
 

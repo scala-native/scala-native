@@ -6,7 +6,7 @@
 
 #define PRINT_STACK_OVERFLOW
 
-#define INITIAL_STACK_SIZE (128 * 1024)
+#define INITIAL_STACK_SIZE (8)
 
 typedef Object *Stack_Type;
 

@@ -195,6 +195,40 @@ bool smallHeapOverflowHeapScan(Heap *heap, Stack *stack) {
     return false;
 }
 
+bool Marker_overflowMark(Heap* heap, Stack* stack, Object* object) {
+    ObjectHeader *objectHeader = &object->header;
+    if (Object_isMarked(objectHeader)) {
+        if (object->rtti->rt.id == __object_array_id) {
+            size_t size = Object_size(&object->header) -
+                          OBJECT_HEADER_SIZE - WORD_SIZE;
+            size_t nbWords = size / WORD_SIZE;
+            for (int i = 0; i < nbWords; i++) {
+                word_t *field = object->fields[i];
+                Object *fieldObject = (Object *)(field - 1);
+                if (heap_isObjectInHeap(heap, fieldObject) &&
+                    !Object_isMarked(&fieldObject->header)) {
+                    Stack_push(stack, object);
+                    return true;
+                }
+            }
+        } else {
+            int64_t *ptr_map = object->rtti->refMapStruct;
+            int i = 0;
+            while (ptr_map[i] != -1) {
+                word_t *field = object->fields[ptr_map[i]];
+                Object *fieldObject = (Object *)(field - 1);
+                if (heap_isObjectInHeap(heap, fieldObject) &&
+                    !Object_isMarked(&fieldObject->header)) {
+                    Stack_push(stack, object);
+                    return true;
+                }
+                ++i;
+            }
+        }
+    }
+    return false;
+}
+
 // Scans through the large heap to find marked blocks with unmarked children.
 // Updates `currentOverflowAddress` while doing so.
 void largeHeapOverflowHeapScan(Heap *heap, Stack *stack) {
@@ -203,35 +237,8 @@ void largeHeapOverflowHeapScan(Heap *heap, Stack *stack) {
 
     while (currentOverflowAddress != heapEnd) {
         Object *object = (Object *)currentOverflowAddress;
-        ObjectHeader *objectHeader = &object->header;
-        if (Object_isMarked(objectHeader)) {
-            if (object->rtti->rt.id == __object_array_id) {
-                size_t size = Object_size(&object->header) -
-                              OBJECT_HEADER_SIZE - WORD_SIZE;
-                size_t nbWords = size / WORD_SIZE;
-                for (int i = 0; i < nbWords; i++) {
-                    word_t *field = object->fields[i];
-                    Object *fieldObject = (Object *)(field - 1);
-                    if (heap_isObjectInHeap(heap, fieldObject) &&
-                        !Object_isMarked(&fieldObject->header)) {
-                        Stack_push(stack, object);
-                        return;
-                    }
-                }
-            } else {
-                int64_t *ptr_map = object->rtti->refMapStruct;
-                int i = 0;
-                while (ptr_map[i] != -1) {
-                    word_t *field = object->fields[ptr_map[i]];
-                    Object *fieldObject = (Object *)(field - 1);
-                    if (heap_isObjectInHeap(heap, fieldObject) &&
-                        !Object_isMarked(&fieldObject->header)) {
-                        Stack_push(stack, object);
-                        return;
-                    }
-                    ++i;
-                }
-            }
+        if(Marker_overflowMark(heap, stack, object)) {
+            return;
         }
         currentOverflowAddress = (word_t *)Object_nextLargeObject(object);
     }
