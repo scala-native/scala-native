@@ -9,10 +9,8 @@ object ExceptionSuite extends tests.Suite {
     (new Exception).printStackTrace(pw)
     val trace = sw.toString
     assert(trace.startsWith("java.lang.Exception"))
-    assert(
-      trace.contains(
-        "\tat tests.Main$::main_scala.scalanative.runtime.ObjectArray_unit"))
-    assert(trace.contains("\tat main"))
+    assert(trace.contains("\tat tests.Main$.main(Unknown Source)"))
+    assert(trace.contains("\tat <none>.main(Unknown Source)"))
   }
 
   test("printStackTrace <no stack trace available>") {

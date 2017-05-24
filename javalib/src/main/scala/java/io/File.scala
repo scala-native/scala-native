@@ -1,5 +1,7 @@
 package java.io
 
+import java.nio.file.{FileSystems, Path}
+
 import scala.collection.mutable.UnrolledBuffer
 
 import scala.annotation.tailrec
@@ -75,6 +77,9 @@ class File(_path: String) extends Serializable with Comparable[File] {
   def exists(): Boolean =
     access(toCString(path), fcntl.F_OK) == 0
 
+  def toPath(): Path =
+    FileSystems.getDefault().getPath(this.getPath(), Array.empty)
+
   def getPath(): String = path
 
   def delete(): Boolean =
@@ -119,7 +124,8 @@ class File(_path: String) extends Serializable with Comparable[File] {
    * Finds the canonical path for `path`.
    */
   private def simplifyNonExistingPath(path: String): String =
-    split(path, separatorChar)
+    path
+      .split(separatorChar)
       .foldLeft(List.empty[String]) {
         case (acc, "..") => if (acc.isEmpty) List("..") else acc.tail
         case (acc, ".")  => acc
@@ -140,11 +146,11 @@ class File(_path: String) extends Serializable with Comparable[File] {
   }
 
   def getParent(): String =
-    split(path, separatorChar).filterNot(_.isEmpty) match {
-      case Seq() if !isAbsolute  => null
-      case Seq(_) if !isAbsolute => null
-      case parts if !isAbsolute  => parts.init.mkString(separator)
-      case parts if isAbsolute   => parts.init.mkString(separator, separator, "")
+    path.split(separatorChar).filterNot(_.isEmpty) match {
+      case Array() if !isAbsolute  => null
+      case Array(_) if !isAbsolute => null
+      case parts if !isAbsolute    => parts.init.mkString(separator)
+      case parts if isAbsolute     => parts.init.mkString(separator, separator, "")
     }
 
   def getParentFile(): File = {
@@ -487,17 +493,6 @@ object File {
         buffer(read) = 0
         buffer
     }
-  }
-
-  private def split(str: String, atChar: Char): Seq[String] = {
-    val buffer = UnrolledBuffer.empty[String]
-    var i      = 0
-    while (i < str.length) {
-      val part = str.drop(i).takeWhile(_ != atChar)
-      buffer += part
-      i += part.length + 1
-    }
-    buffer
   }
 
   val pathSeparatorChar: Char        = if (Platform.isWindows) ';' else ':'

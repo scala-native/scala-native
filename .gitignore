@@ -10,3 +10,4 @@ bin/.scalafmt*
 sbt-crossproject/
 .vscode/launch.json
 *.iml
+pc.stdout.log

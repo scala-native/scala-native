@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "xmemory0": "cpp",
+        "chrono": "cpp",
+        "ratio": "cpp",
+        "vector": "cpp",
+        "xstring": "cpp",
+        "xlocale": "cpp",
+        "system_error": "cpp"
+    }
+}
