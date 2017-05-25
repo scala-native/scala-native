@@ -281,6 +281,9 @@ lazy val nativelib =
     .in(file("nativelib"))
     .settings(libSettings)
     .settings(mavenPublishSettings)
+    .settings(
+      libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
+    )
 
 lazy val javalib =
   project

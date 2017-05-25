@@ -1,5 +1,6 @@
 package scala.scalanative
 
+import scala.language.experimental.macros
 import java.nio.charset.Charset
 import runtime.{undefined, GC}
 
@@ -79,6 +80,14 @@ package object native {
 
   /** The C 'sizeof' operator. */
   def sizeof[T](implicit tag: Tag[T]): CSize = undefined
+
+  /** Heap allocate a value using current implicit allocator. */
+  def alloc[T](implicit tag: Tag[T], alloc: Alloc): Ptr[T] =
+    macro MacroImpl.alloc1[T]
+
+  /** Heap allocate n values using current implicit allocator. */
+  def alloc[T](n: Int)(implicit tag: Tag[T], alloc: Alloc): Ptr[T] =
+    macro MacroImpl.allocN[T]
 
   /** Stack allocate a value of given type. */
   def stackalloc[T](implicit tag: Tag[T]): Ptr[T] = undefined
@@ -162,5 +171,23 @@ package object native {
     !(cstr + c) = 0.toByte
 
     cstr
+  }
+
+  private object MacroImpl {
+    import scala.reflect.macros.blackbox.Context
+
+    def alloc1[T: c.WeakTypeTag](c: Context)(tag: c.Tree,
+                                             alloc: c.Tree): c.Tree = {
+      import c.universe._
+      val T = weakTypeOf[T]
+      q"$alloc.alloc(_root_.scala.scalanative.native.sizeof[$T]($tag)).cast[Ptr[$T]]"
+    }
+
+    def allocN[T: c.WeakTypeTag](c: Context)(
+        n: c.Tree)(tag: c.Tree, alloc: c.Tree): c.Tree = {
+      import c.universe._
+      val T = weakTypeOf[T]
+      q"$alloc.alloc(_root_.scala.scalanative.native.sizeof[$T]($tag) * $n).cast[Ptr[$T]]"
+    }
   }
 }
