@@ -83,7 +83,7 @@ object Array {
 % for T in types:
 
 %{
-   alloc = 'runtime.allocAtomic' if T != 'Object' else 'runtime.alloc'
+   alloc = 'GC.alloc_atomic' if T != 'Object' else 'GC.alloc'
 }%
 
 final class ${T}Array private () extends Array[${T}] {
@@ -109,7 +109,7 @@ final class ${T}Array private () extends Array[${T}] {
     !at(i) = value
 
   @inline protected override def clone(): ${T}Array = {
-    val arrinfo = typeof[${T}Array]
+    val arrinfo = typeof[${T}Array].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[${T}] * length
     val arr     = ${alloc}(arrinfo, arrsize)
     `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]], this.cast[Ptr[Byte]], arrsize, 1, false)
@@ -121,7 +121,7 @@ object ${T}Array {
   import Array._
 
   @inline def alloc(length: Int): ${T}Array = {
-    val arrinfo = typeof[${T}Array]
+    val arrinfo = typeof[${T}Array].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[${T}] * length
     val arr     = ${alloc}(arrinfo, arrsize).cast[Ptr[Header]]
     arr.length  = length

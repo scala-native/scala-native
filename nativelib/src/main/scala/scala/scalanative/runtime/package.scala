@@ -67,25 +67,6 @@ package object runtime {
   def select[T](cond: Boolean, thenp: T, elsep: T)(implicit tag: Tag[T]): T =
     undefined
 
-  /** Allocate memory in gc heap using given info pointer. */
-  def alloc(ty: Ptr[Type], size: CSize): Ptr[Byte] = {
-    val ptr = GC.malloc(size).cast[Ptr[Ptr[Type]]]
-    !ptr = ty
-    ptr.cast[Ptr[Byte]]
-  }
-
-  /** Allocate memory in gc heap using given info pointer.
-   *
-   * The allocated memory cannot be used to store pointers.
-   */
-  def allocAtomic(ty: Ptr[Type], size: CSize): Ptr[Byte] = {
-    val ptr = GC.malloc_atomic(size).cast[Ptr[Ptr[Type]]]
-    // initialize to 0
-    `llvm.memset.p0i8.i64`(ptr.cast[Ptr[Byte]], 0, size, 1, false)
-    !ptr = ty
-    ptr.cast[Ptr[Byte]]
-  }
-
   /** Read type information of given object. */
   def getType(obj: Object): Ptr[ClassType] = !obj.cast[Ptr[Ptr[ClassType]]]
 
