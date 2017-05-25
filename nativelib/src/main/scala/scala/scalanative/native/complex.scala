@@ -178,6 +178,11 @@ object complexOps {
       to.im = im
       to
     }
+    def init(re: CFloat, im: CFloat): Ptr[ComplexF] = {
+      ptr.re = re
+      ptr.im = im
+      ptr
+    }
   }
 
   implicit class complexOps(val ptr: Ptr[Complex]) extends AnyVal {
@@ -193,6 +198,11 @@ object complexOps {
       to.re = re
       to.im = im
       to
+    }
+    def init(re: CDouble, im: CDouble): Ptr[Complex] = {
+      ptr.re = re
+      ptr.im = im
+      ptr
     }
   }
 }
