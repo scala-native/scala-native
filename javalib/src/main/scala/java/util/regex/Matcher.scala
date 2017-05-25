@@ -86,7 +86,7 @@ final class Matcher private[regex] (var _pattern: Pattern,
         while (i < nMatches) {
           val m     = matches + i
           val start = if (m.data == null) -1 else (m.data - in).toInt
-          val end   = if (m.data == null) -1 else start + m.lenght
+          val end   = if (m.data == null) -1 else start + m.length
           groups(i) = ((start, end))
 
           i += 1
