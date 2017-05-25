@@ -3,6 +3,7 @@ package scala.scalanative.native
 import stdio._
 
 object CInteropSuite extends tests.Suite {
+  implicit val alloc = Alloc.system
 
   test("varargs") {
     val buff = stackalloc[CChar](64)
@@ -29,5 +30,4 @@ object CInteropSuite extends tests.Suite {
     assert(sptr - sarr == 7)
     assert(sarr - sptr == -7)
   }
-
 }

@@ -1,6 +1,6 @@
 package java.io
 
-import scala.scalanative.native.toCString
+import scala.scalanative.native.{toCString, Zone}
 import scala.scalanative.posix.fcntl
 
 class FileReader(fd: FileDescriptor)
@@ -12,8 +12,9 @@ class FileReader(fd: FileDescriptor)
 }
 
 object FileReader {
-  private def fileDescriptor(file: File): FileDescriptor = {
-    val fd = fcntl.open(toCString(file.getPath), fcntl.O_RDONLY)
-    new FileDescriptor(fd, true)
-  }
+  private def fileDescriptor(file: File): FileDescriptor =
+    Zone { implicit z =>
+      val fd = fcntl.open(toCString(file.getPath), fcntl.O_RDONLY)
+      new FileDescriptor(fd, true)
+    }
 }

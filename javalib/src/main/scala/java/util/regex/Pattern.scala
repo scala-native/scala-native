@@ -22,97 +22,97 @@ object Pattern {
   def compile(regex: String, flags: Int): Pattern =
     compile(regex, 0, adapt = true)
 
-  def compile(regex: String, flags: Int, adapt: Boolean): Pattern = {
-
-    def notSupported(flag: Int, flagName: String): Unit = {
-      if ((flags & flag) == flag) {
-        assert(false, s"regex flag $flagName is not supported")
-      }
-    }
-
-    notSupported(CANON_EQ, "CANON_EQ(canonical equivalences)")
-    notSupported(COMMENTS, "COMMENTS")
-    notSupported(UNICODE_CASE, "UNICODE_CASE")
-    notSupported(UNICODE_CHARACTER_CLASS, "UNICODE_CHARACTER_CLASS")
-    notSupported(UNIX_LINES, "UNIX_LINES")
-
-    val options = cre2.optNew()
-    cre2.setCaseSensitive(options, flags & CASE_INSENSITIVE)
-    cre2.setDotNl(options, flags & DOTALL)
-    cre2.setLiteral(options, flags & LITERAL)
-    cre2.setLogErrors(options, 0)
-
-    // setOneLine(false) is only available when limiting ourself to posix_syntax
-    // https://github.com/google/re2/blob/2017-03-01/re2/re2.h#L548
-    // regex flag MULTILINE cannot be disabled
-
-    val re2 = cre2.compile(toCString(regex), regex.size, options)
-
-    val code = cre2.errorCode(re2)
-
-    if (code != ERROR_NO_ERROR) {
-      val errorPattern = {
-        val arg = stackalloc[cre2.string_t]
-        cre2.errorArg(re2, arg)
-        fromRE2String(arg)
+  def compile(regex: String, flags: Int, adapt: Boolean): Pattern = Zone {
+    implicit z =>
+      def notSupported(flag: Int, flagName: String): Unit = {
+        if ((flags & flag) == flag) {
+          assert(false, s"regex flag $flagName is not supported")
+        }
       }
 
-      // we try to find the index of the parsing error
-      // this could return the wrong index it only finds the first match
-      // see https://groups.google.com/forum/#!topic/re2-dev/rnvFZ9Ki8nk
-      val index =
-        if (code == ERROR_TRAILING_BACKSLASH) regex.size - 1
-        else regex.indexOfSlice(errorPattern)
+      notSupported(CANON_EQ, "CANON_EQ(canonical equivalences)")
+      notSupported(COMMENTS, "COMMENTS")
+      notSupported(UNICODE_CASE, "UNICODE_CASE")
+      notSupported(UNICODE_CHARACTER_CLASS, "UNICODE_CHARACTER_CLASS")
+      notSupported(UNIX_LINES, "UNIX_LINES")
 
-      val reText = fromCString(cre2.errorString(re2))
+      val options = cre2.optNew()
+      cre2.setCaseSensitive(options, flags & CASE_INSENSITIVE)
+      cre2.setDotNl(options, flags & DOTALL)
+      cre2.setLiteral(options, flags & LITERAL)
+      cre2.setLogErrors(options, 0)
 
-      val description =
-        code match {
-          case ERROR_INTERNAL           => "Internal Error"
-          case ERROR_BAD_ESCAPE         => "Illegal/unsupported escape sequence"
-          case ERROR_BAD_CHAR_CLASS     => "Illegal/unsupported character class"
-          case ERROR_BAD_CHAR_RANGE     => "Illegal character range"
-          case ERROR_MISSING_BRACKET    => "Unclosed character class"
-          case ERROR_MISSING_PAREN      => "Missing parenthesis"
-          case ERROR_TRAILING_BACKSLASH => "Trailing Backslash"
-          case ERROR_REPEAT_ARGUMENT    => "Dangling meta character '*'"
-          case ERROR_REPEAT_SIZE        => "Bad repetition argument"
-          case ERROR_REPEAT_OP          => "Bad repetition operator"
-          case ERROR_BAD_PERL_OP        => "Bad perl operator"
-          case ERROR_BAD_UTF8           => "Invalid UTF-8 in regexp"
-          case ERROR_BAD_NAMED_CAPTURE  => "Bad named capture group"
-          case ERROR_PATTERN_TOO_LARGE =>
-            "Pattern too large (compilation failed)"
-          case _ => reText
+      // setOneLine(false) is only available when limiting ourself to posix_syntax
+      // https://github.com/google/re2/blob/2017-03-01/re2/re2.h#L548
+      // regex flag MULTILINE cannot be disabled
+
+      val re2 = cre2.compile(toCString(regex), regex.size, options)
+
+      val code = cre2.errorCode(re2)
+
+      if (code != ERROR_NO_ERROR) {
+        val errorPattern = {
+          val arg = stackalloc[cre2.string_t]
+          cre2.errorArg(re2, arg)
+          fromRE2String(arg)
         }
 
-      throw new PatternSyntaxException(
-        description,
-        regex,
-        index
+        // we try to find the index of the parsing error
+        // this could return the wrong index it only finds the first match
+        // see https://groups.google.com/forum/#!topic/re2-dev/rnvFZ9Ki8nk
+        val index =
+          if (code == ERROR_TRAILING_BACKSLASH) regex.size - 1
+          else regex.indexOfSlice(errorPattern)
+
+        val reText = fromCString(cre2.errorString(re2))
+
+        val description =
+          code match {
+            case ERROR_INTERNAL           => "Internal Error"
+            case ERROR_BAD_ESCAPE         => "Illegal/unsupported escape sequence"
+            case ERROR_BAD_CHAR_CLASS     => "Illegal/unsupported character class"
+            case ERROR_BAD_CHAR_RANGE     => "Illegal character range"
+            case ERROR_MISSING_BRACKET    => "Unclosed character class"
+            case ERROR_MISSING_PAREN      => "Missing parenthesis"
+            case ERROR_TRAILING_BACKSLASH => "Trailing Backslash"
+            case ERROR_REPEAT_ARGUMENT    => "Dangling meta character '*'"
+            case ERROR_REPEAT_SIZE        => "Bad repetition argument"
+            case ERROR_REPEAT_OP          => "Bad repetition operator"
+            case ERROR_BAD_PERL_OP        => "Bad perl operator"
+            case ERROR_BAD_UTF8           => "Invalid UTF-8 in regexp"
+            case ERROR_BAD_NAMED_CAPTURE  => "Bad named capture group"
+            case ERROR_PATTERN_TOO_LARGE =>
+              "Pattern too large (compilation failed)"
+            case _ => reText
+          }
+
+        throw new PatternSyntaxException(
+          description,
+          regex,
+          index
+        )
+      }
+
+      cre2.optDelete(options)
+
+      new Pattern(
+        _pattern = regex,
+        _flags = flags,
+        _regex = re2
       )
-    }
-
-    cre2.optDelete(options)
-
-    new Pattern(
-      _pattern = regex,
-      _flags = flags,
-      _regex = re2
-    )
   }
 
   def matches(regex: String, input: CharSequence): Boolean =
     compile(regex).matcher(input).matches
 
-  def quote(s: String): String = {
-    val original, quoted = stackalloc[cre2.string_t]
-    toRE2String(s, original)
-    cre2.quoteMeta(quoted, original)
-    val res = fromRE2String(quoted)
-    free(original.data.cast[Ptr[Byte]])
-    res
-  }
+  def quote(s: String): String =
+    Zone { implicit z =>
+      val original, quoted = stackalloc[cre2.string_t]
+      toRE2String(s, original)
+      cre2.quoteMeta(quoted, original)
+      val res = fromRE2String(quoted)
+      res
+    }
 
   def adaptPatternToRe2(regex: String): String = {
     regex

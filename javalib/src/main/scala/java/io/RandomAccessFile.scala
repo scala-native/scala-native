@@ -1,6 +1,6 @@
 package java.io
 
-import scala.scalanative.native.{stdio, toCString}
+import scala.scalanative.native.{stdio, toCString, Zone}
 import scala.scalanative.posix.{fcntl, stat, unistd}
 
 class RandomAccessFile private (file: File,
@@ -207,22 +207,23 @@ class RandomAccessFile private (file: File,
 }
 
 private object RandomAccessFile {
-  private def fileDescriptor(file: File, _flags: String) = {
-    import fcntl._
-    import stat._
-    if (_flags == "r" && !file.exists)
-      throw new FileNotFoundException(file.getName)
-    val flags = _flags match {
-      case "r"                  => O_RDONLY
-      case "rw" | "rws" | "rwd" => O_RDWR | O_CREAT
-      case _ =>
-        throw new IllegalArgumentException(
-          s"""Illegal mode "${_flags}" must be one of "r", "rw", "rws" or "rwd"""")
+  private def fileDescriptor(file: File, _flags: String) =
+    Zone { implicit z =>
+      import fcntl._
+      import stat._
+      if (_flags == "r" && !file.exists)
+        throw new FileNotFoundException(file.getName)
+      val flags = _flags match {
+        case "r"                  => O_RDONLY
+        case "rw" | "rws" | "rwd" => O_RDWR | O_CREAT
+        case _ =>
+          throw new IllegalArgumentException(
+            s"""Illegal mode "${_flags}" must be one of "r", "rw", "rws" or "rwd"""")
+      }
+      val mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
+      val fd   = open(toCString(file.getPath), flags, mode)
+      new FileDescriptor(fd)
     }
-    val mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
-    val fd   = open(toCString(file.getPath), flags, mode)
-    new FileDescriptor(fd)
-  }
 
   private def flush(mode: String): Boolean =
     mode match {

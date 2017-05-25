@@ -167,14 +167,17 @@ package object native {
     new String(bytes, charset)
   }
 
-  /** Convert a java.lang.String to a CString using given charset.
-   *  The resulting c-style string is allocated using malloc, and
-   *  must be freed manually.
+  /** Convert a java.lang.String to a CString using default charset and
+   *  given allocator.
    */
-  def toCString(str: String,
-                charset: Charset = Charset.defaultCharset()): CString = {
+  def toCString(str: String)(implicit a: Alloc): CString =
+    toCString(str, Charset.defaultCharset())(a)
+
+  /** Convert a java.lang.String to a CString using given charset and allocator.
+   */
+  def toCString(str: String, charset: Charset)(implicit a: Alloc): CString = {
     val bytes = str.getBytes(charset)
-    val cstr  = malloc(bytes.length + 1).cast[Ptr[Byte]]
+    val cstr  = a.alloc(bytes.length + 1)
 
     var c = 0
     while (c < bytes.length) {

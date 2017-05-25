@@ -64,38 +64,37 @@ final class Matcher private[regex] (var _pattern: Pattern,
   private def doMatch(start: Int,
                       end: Int,
                       nMatches: Int,
-                      anchor: cre2.anchor_t): Boolean = {
-    val n       = nMatches
-    val matches = malloc(sizeof[cre2.string_t] * n).cast[Ptr[cre2.string_t]]
-    val in      = toCString(inputSequence.toString)
+                      anchor: cre2.anchor_t): Boolean =
+    Zone { implicit z =>
+      val n       = nMatches
+      val matches = alloc[cre2.string_t](n)
+      val in      = toCString(inputSequence.toString)
 
-    val ok = cre2.matches(
-        regex = regex,
-        text = in,
-        textlen = inputLength,
-        startpos = start,
-        endpos = end,
-        anchor = anchor,
-        matches = matches,
-        nMatches = nMatches
-      ) == 1
+      val ok = cre2.matches(
+          regex = regex,
+          text = in,
+          textlen = inputLength,
+          startpos = start,
+          endpos = end,
+          anchor = anchor,
+          matches = matches,
+          nMatches = nMatches
+        ) == 1
 
-    if (ok) {
-      var i = 0
-      while (i < nMatches) {
-        val m     = matches + i
-        val start = (m.data - in).toInt
-        val end   = start + m.length
-        groups(i) = ((start, end))
+      if (ok) {
+        var i = 0
+        while (i < nMatches) {
+          val m     = matches + i
+          val start = (m.data - in).toInt
+          val end   = start + m.length
+          groups(i) = ((start, end))
 
-        i += 1
+          i += 1
+        }
       }
+
+      ok
     }
-
-    free(matches.cast[Ptr[Byte]])
-
-    ok
-  }
 
   private def genMatch(start: Int, anchor: cre2.anchor_t): Boolean = {
     val ok = doMatch(start, inputLength, 1, anchor)
@@ -115,22 +114,20 @@ final class Matcher private[regex] (var _pattern: Pattern,
   def replaceAll(replacement: String): String =
     replace(replacement, global = true)
 
-  private def replace(replacement: String, global: Boolean): String = {
-    val textAndTarget, rewrite = stackalloc[cre2.string_t]
+  private def replace(replacement: String, global: Boolean): String =
+    Zone { implicit z =>
+      val textAndTarget, rewrite = stackalloc[cre2.string_t]
 
-    toRE2String(inputSequence.toString, textAndTarget)
-    toRE2String(replacement, rewrite)
+      toRE2String(inputSequence.toString, textAndTarget)
+      toRE2String(replacement, rewrite)
 
-    if (global) cre2.globalReplace(regex, textAndTarget, rewrite)
-    else cre2.replace(regex, textAndTarget, rewrite)
+      if (global) cre2.globalReplace(regex, textAndTarget, rewrite)
+      else cre2.replace(regex, textAndTarget, rewrite)
 
-    val res = fromRE2String(textAndTarget)
+      val res = fromRE2String(textAndTarget)
 
-    free(textAndTarget.data.cast[Ptr[Byte]])
-    free(rewrite.data.cast[Ptr[Byte]])
-
-    res
-  }
+      res
+    }
 
   def group(): String = group(0)
 
@@ -147,13 +144,14 @@ final class Matcher private[regex] (var _pattern: Pattern,
 
   def group(name: String): String = group(groupIndex(name))
 
-  private def groupIndex(name: String): Int = {
-    val pos = cre2.findNamedCapturingGroups(regex, toCString(name))
-    if (pos == -1) {
-      throw new IllegalArgumentException(s"No group with name <$name>")
+  private def groupIndex(name: String): Int =
+    Zone { implicit z =>
+      val pos = cre2.findNamedCapturingGroups(regex, toCString(name))
+      if (pos == -1) {
+        throw new IllegalArgumentException(s"No group with name <$name>")
+      }
+      pos
     }
-    pos
-  }
 
   def groupCount: Int = groups.length - 1
 

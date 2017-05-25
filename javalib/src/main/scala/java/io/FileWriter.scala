@@ -1,6 +1,6 @@
 package java.io
 
-import scala.scalanative.native.toCString
+import scala.scalanative.native.{toCString, Zone}
 import scala.scalanative.posix.fcntl
 
 class FileWriter(fd: FileDescriptor)
@@ -14,9 +14,11 @@ class FileWriter(fd: FileDescriptor)
 }
 
 object FileWriter {
-  private def fileDescriptor(file: File, append: Boolean) = {
-    val mode = if (append) fcntl.O_WRONLY | fcntl.O_APPEND else fcntl.O_WRONLY
-    val fd   = fcntl.open(toCString(file.getPath), mode)
-    new FileDescriptor(fd)
-  }
+  private def fileDescriptor(file: File, append: Boolean) =
+    Zone { implicit z =>
+      val mode =
+        if (append) fcntl.O_WRONLY | fcntl.O_APPEND else fcntl.O_WRONLY
+      val fd = fcntl.open(toCString(file.getPath), mode)
+      new FileDescriptor(fd)
+    }
 }

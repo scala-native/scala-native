@@ -28,7 +28,8 @@ object cre2h {
     new String(bytes, charset)
   }
 
-  def toRE2String(str: String, restr: Ptr[cre2.string_t]): Unit = {
+  def toRE2String(str: String, restr: Ptr[cre2.string_t])(
+      implicit a: Alloc): Unit = {
     restr.data = toCString(str)
     restr.length = str.length
   }
