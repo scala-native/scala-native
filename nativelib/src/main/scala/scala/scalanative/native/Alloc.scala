@@ -7,7 +7,7 @@ trait Alloc {
   /** Allocates memory of given size. */
   def alloc(size: CSize): Ptr[Byte]
 
-  /** Reallocates previously allocated memory to have different size.
+  /** Reallocates previously allocated memory with a different size.
    *  Might not be supported by all allocators.
    */
   def realloc(ptr: Ptr[Byte], newSize: CSize): Ptr[Byte]

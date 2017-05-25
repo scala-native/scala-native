@@ -82,19 +82,29 @@ package object native {
   /** The C 'sizeof' operator. */
   def sizeof[T](implicit tag: Tag[T]): CSize = undefined
 
-  /** Heap allocate a value using current implicit allocator. */
+  /** Heap allocate and zero-initialize a value
+   *  using current implicit allocator.
+   */
   def alloc[T](implicit tag: Tag[T], alloc: Alloc): Ptr[T] =
     macro MacroImpl.alloc1[T]
 
-  /** Heap allocate n values using current implicit allocator. */
-  def alloc[T](n: Int)(implicit tag: Tag[T], alloc: Alloc): Ptr[T] =
+  /** Heap allocate and zero-initialize n values
+   *  using current implicit allocator.
+   */
+  def alloc[T](n: CSize)(implicit tag: Tag[T], alloc: Alloc): Ptr[T] =
     macro MacroImpl.allocN[T]
 
-  /** Stack allocate a value of given type. */
+  /** Stack allocate a value of given type.
+   *
+   *  Note: unlike alloc, the memory is not zero-initialized.
+   */
   def stackalloc[T](implicit tag: Tag[T]): Ptr[T] = undefined
 
-  /** Stack allocate n values of given type. */
-  def stackalloc[T](n: Int)(implicit tag: Tag[T]): Ptr[T] = undefined
+  /** Stack allocate n values of given type.
+   *
+   *  Note: unlike alloc, the memory is not zero-initialized.
+   */
+  def stackalloc[T](n: CSize)(implicit tag: Tag[T]): Ptr[T] = undefined
 
   /** Used as right hand side of external method and field declarations. */
   def extern: Nothing = undefined
@@ -183,15 +193,27 @@ package object native {
     def alloc1[T: c.WeakTypeTag](c: Context)(tag: c.Tree,
                                              alloc: c.Tree): c.Tree = {
       import c.universe._
-      val T = weakTypeOf[T]
-      q"$alloc.alloc(_root_.scala.scalanative.native.sizeof[$T]($tag)).cast[Ptr[$T]]"
+      val T         = weakTypeOf[T]
+      val size, ptr = TermName(c.freshName())
+      q"""{
+        val $size = _root_.scala.scalanative.native.sizeof[$T]($tag)
+        val $ptr = $alloc.alloc($size)
+        _root_.scala.scalanative.native.string.memset($ptr, 0, $size)
+        $ptr.cast[Ptr[$T]]
+      }"""
     }
 
     def allocN[T: c.WeakTypeTag](c: Context)(
         n: c.Tree)(tag: c.Tree, alloc: c.Tree): c.Tree = {
       import c.universe._
-      val T = weakTypeOf[T]
-      q"$alloc.alloc(_root_.scala.scalanative.native.sizeof[$T]($tag) * $n).cast[Ptr[$T]]"
+      val T         = weakTypeOf[T]
+      val size, ptr = TermName(c.freshName())
+      q"""{
+        val $size = _root_.scala.scalanative.native.sizeof[$T]($tag) * $n
+        val $ptr = $alloc.alloc($size)
+        _root_.scala.scalanative.native.string.memset($ptr, 0, $size)
+        $ptr.cast[Ptr[$T]]
+      }"""
     }
   }
 }
