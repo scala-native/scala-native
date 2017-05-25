@@ -36,6 +36,7 @@ matrix:
         - sudo make install prefix=/usr
         - make testinstall prefix=/usr
         - popd
+      env: PATH="/usr/lib/llvm-3.7/bin:$PATH"
 
     - os: osx
       osx_image: xcode7.3
