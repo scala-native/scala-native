@@ -141,7 +141,7 @@ object ScalaNativePluginInternal {
     nativeDebugInfoOptions := {
       if (isWindows)
         Seq("-g", "-gcodeview")
-      else Seq("-g", "-gdwarf")
+      else Seq("-g")
     },
     nativeCompileOptions := {
       val includes = {

@@ -3,13 +3,12 @@
 #else
 #include "os_win_unistd.h"
 #include "os_win_dirent.h"
-#include "types.h"
 
 typedef int mode_t;
 
 mode_t getAccessMode(const char *path);
-
 #endif
+#include "types.h"
 
 int scalanative_f_ok() { return F_OK; }
 
