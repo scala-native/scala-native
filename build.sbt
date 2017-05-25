@@ -180,11 +180,18 @@ lazy val libSettings =
     )
   )
 
+lazy val gcSettings =
+  if (!System.getenv.containsKey("SCALANATIVE_GC")) {
+    Seq.empty
+  } else {
+    Seq(nativeGC := System.getenv.get("SCALANATIVE_GC"))
+  }
+
 lazy val projectSettings =
   ScalaNativePlugin.projectSettings ++ Seq(
     scalaVersion := libScalaVersion,
     resolvers := Nil
-  )
+  ) ++ gcSettings
 
 lazy val util =
   project
