@@ -230,16 +230,17 @@ object Float {
   @inline def min(a: scala.Float, b: scala.Float): scala.Float =
     Math.min(a, b)
 
-  def parseFloat(s: String): scala.Float = {
-    val cstr = toCString(s)
-    val end  = stackalloc[CString]
+  def parseFloat(s: String): scala.Float =
+    Zone { implicit z =>
+      val cstr = toCString(s)
+      val end  = stackalloc[CString]
 
-    errno.errno = 0
-    val res = stdlib.strtof(cstr, end)
+      errno.errno = 0
+      val res = stdlib.strtof(cstr, end)
 
-    if (errno.errno == 0) res
-    else throw new NumberFormatException(s)
-  }
+      if (errno.errno == 0) res
+      else throw new NumberFormatException(s)
+    }
 
   @inline def sum(a: scala.Float, b: scala.Float): scala.Float =
     a + b

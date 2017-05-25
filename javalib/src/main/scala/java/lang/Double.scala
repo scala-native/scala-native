@@ -236,16 +236,17 @@ object Double {
   @inline def min(a: scala.Double, b: scala.Double): scala.Double =
     Math.min(a, b)
 
-  def parseDouble(s: String): scala.Double = {
-    val cstr = toCString(s)
-    val end  = stackalloc[CString]
+  def parseDouble(s: String): scala.Double =
+    Zone { implicit z =>
+      val cstr = toCString(s)
+      val end  = stackalloc[CString]
 
-    errno.errno = 0
-    val res = stdlib.strtod(cstr, end)
+      errno.errno = 0
+      val res = stdlib.strtod(cstr, end)
 
-    if (errno.errno == 0) res
-    else throw new NumberFormatException(s)
-  }
+      if (errno.errno == 0) res
+      else throw new NumberFormatException(s)
+    }
 
   @inline def sum(a: scala.Double, b: scala.Double): scala.Double =
     a + b

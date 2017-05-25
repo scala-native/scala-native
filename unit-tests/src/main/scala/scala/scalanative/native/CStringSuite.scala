@@ -4,6 +4,8 @@ import stdio._
 import string._
 
 object CStringSuite extends tests.Suite {
+  implicit val alloc = Alloc.system
+
   test("fromCString") {
     val cstrFrom = c"1234"
     val szTo     = fromCString(cstrFrom)

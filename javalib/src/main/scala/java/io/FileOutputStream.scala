@@ -57,12 +57,13 @@ class FileOutputStream(fd: FileDescriptor) extends OutputStream {
 }
 
 object FileOutputStream {
-  private def fileDescriptor(file: File, append: Boolean) = {
-    import fcntl._
-    import stat._
-    val flags = O_CREAT | O_WRONLY | (if (append) O_APPEND else 0)
-    val mode  = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
-    val fd    = open(toCString(file.getPath), flags, mode)
-    new FileDescriptor(fd)
-  }
+  private def fileDescriptor(file: File, append: Boolean) =
+    Zone { implicit z =>
+      import fcntl._
+      import stat._
+      val flags = O_CREAT | O_WRONLY | (if (append) O_APPEND else 0)
+      val mode  = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
+      val fd    = open(toCString(file.getPath), flags, mode)
+      new FileDescriptor(fd)
+    }
 }

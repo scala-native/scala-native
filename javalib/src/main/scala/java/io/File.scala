@@ -5,7 +5,7 @@ import java.nio.file.{FileSystems, Path}
 import scala.collection.mutable.UnrolledBuffer
 
 import scala.annotation.tailrec
-import scalanative.runtime.{GC, Platform}
+import scalanative.runtime.Platform
 import scala.scalanative.posix.{dirent, fcntl, limits, stat, unistd, utime}
 import scala.scalanative.native._, stdlib._, stdio._, string._
 import dirent._
@@ -35,13 +35,19 @@ class File(_path: String) extends Serializable with Comparable[File] {
   }
 
   def canExecute(): Boolean =
-    access(toCString(path), fcntl.X_OK) == 0
+    Zone { implicit z =>
+      access(toCString(path), fcntl.X_OK) == 0
+    }
 
   def canRead(): Boolean =
-    access(toCString(path), fcntl.R_OK) == 0
+    Zone { implicit z =>
+      access(toCString(path), fcntl.R_OK) == 0
+    }
 
   def canWrite(): Boolean =
-    access(toCString(path), fcntl.W_OK) == 0
+    Zone { implicit z =>
+      access(toCString(path), fcntl.W_OK) == 0
+    }
 
   def setExecutable(executable: Boolean): Boolean =
     setExecutable(executable, ownerOnly = true)
@@ -71,11 +77,18 @@ class File(_path: String) extends Serializable with Comparable[File] {
   }
 
   private def updatePermissions(mask: stat.mode_t, grant: Boolean): Boolean =
-    if (grant) stat.chmod(toCString(path), accessMode() | mask) == 0
-    else stat.chmod(toCString(path), accessMode() & (~mask)) == 0
+    Zone { implicit z =>
+      if (grant) {
+        stat.chmod(toCString(path), accessMode() | mask) == 0
+      } else {
+        stat.chmod(toCString(path), accessMode() & (~mask)) == 0
+      }
+    }
 
   def exists(): Boolean =
-    access(toCString(path), fcntl.F_OK) == 0
+    Zone { implicit z =>
+      access(toCString(path), fcntl.F_OK) == 0
+    }
 
   def toPath(): Path =
     FileSystems.getDefault().getPath(this.getPath(), Array.empty)
@@ -83,39 +96,52 @@ class File(_path: String) extends Serializable with Comparable[File] {
   def getPath(): String = path
 
   def delete(): Boolean =
-    if (path.nonEmpty && isDirectory()) deleteDirImpl()
-    else deleteFileImpl()
+    if (path.nonEmpty && isDirectory()) {
+      deleteDirImpl()
+    } else {
+      deleteFileImpl()
+    }
 
   private def deleteDirImpl(): Boolean =
-    remove(toCString(path)) == 0
+    Zone { implicit z =>
+      remove(toCString(path)) == 0
+    }
 
   private def deleteFileImpl(): Boolean =
-    unlink(toCString(path)) == 0
+    Zone { implicit z =>
+      unlink(toCString(path)) == 0
+    }
 
   override def equals(that: Any): Boolean =
     that match {
-      case that: File if caseSensitive => this.path == that.path
+      case that: File if caseSensitive =>
+        this.path == that.path
       case that: File =>
         this.path.toLowerCase == that.path.toLowerCase
-      case _ => false
+      case _ =>
+        false
     }
 
   def getAbsolutePath(): String = properPath
 
   def getAbsoluteFile(): File = new File(this.getAbsolutePath())
 
-  def getCanonicalPath(): String = {
-    if (exists) fromCString(simplifyExistingPath(toCString(properPath)))
-    else simplifyNonExistingPath(fromCString(resolve(toCString(properPath))))
-  }
+  def getCanonicalPath(): String =
+    Zone { implicit z =>
+      if (exists) {
+        fromCString(simplifyExistingPath(toCString(properPath)))
+      } else {
+        simplifyNonExistingPath(fromCString(resolve(toCString(properPath))))
+      }
+    }
 
   /**
    * Finds the canonical path for `path`, using `realpath`.
    * The file must exist, because the result of `realpath` doesn't
    * match that of Java on non-existing file.
    */
-  private def simplifyExistingPath(path: CString): CString = {
-    val resolvedName = GC.malloc_atomic(limits.PATH_MAX).cast[CString]
+  private def simplifyExistingPath(path: CString)(implicit z: Zone): CString = {
+    val resolvedName = alloc[Byte](limits.PATH_MAX)
     realpath(path, resolvedName)
     resolvedName
   }
@@ -167,25 +193,30 @@ class File(_path: String) extends Serializable with Comparable[File] {
     File.isAbsolute(path)
 
   def isDirectory(): Boolean =
-    stat.S_ISDIR(accessMode()) != 0
+    Zone { implicit z =>
+      stat.S_ISDIR(accessMode()) != 0
+    }
 
   def isFile(): Boolean =
-    stat.S_ISREG(accessMode()) != 0
+    Zone { implicit z =>
+      stat.S_ISREG(accessMode()) != 0
+    }
 
   def isHidden(): Boolean =
     getName().startsWith(".")
 
-  def lastModified(): Long = {
-    val buf = GC.malloc_atomic(sizeof[stat.stat]).cast[Ptr[stat.stat]]
-    if (stat.stat(toCString(path), buf) == 0) {
-      !(buf._8) * 1000L
-    } else {
-      0L
+  def lastModified(): Long =
+    Zone { implicit z =>
+      val buf = alloc[stat.stat]
+      if (stat.stat(toCString(path), buf) == 0) {
+        !(buf._8) * 1000L
+      } else {
+        0L
+      }
     }
-  }
 
-  private def accessMode(): stat.mode_t = {
-    val buf = GC.malloc_atomic(sizeof[stat.stat]).cast[Ptr[stat.stat]]
+  private def accessMode()(implicit z: Zone): stat.mode_t = {
+    val buf = alloc[stat.stat]
     if (stat.stat(toCString(path), buf) == 0) {
       !(buf._13)
     } else {
@@ -194,49 +225,53 @@ class File(_path: String) extends Serializable with Comparable[File] {
   }
 
   def setLastModified(time: Long): Boolean =
-    if (time < 0) throw new IllegalArgumentException("Negative time")
-    else {
-      val statbuf = GC.malloc_atomic(sizeof[stat.stat]).cast[Ptr[stat.stat]]
-      if (stat.stat(toCString(path), statbuf) == 0) {
-        val timebuf =
-          GC.malloc_atomic(sizeof[utime.utimbuf]).cast[Ptr[utime.utimbuf]]
-        !(timebuf._1) = !(statbuf._8)
-        !(timebuf._2) = time / 1000L
-        utime.utime(toCString(path), timebuf) == 0
+    if (time < 0) {
+      throw new IllegalArgumentException("Negative time")
+    } else
+      Zone { implicit z =>
+        val statbuf = alloc[stat.stat]
+        if (stat.stat(toCString(path), statbuf) == 0) {
+          val timebuf = alloc[utime.utimbuf]
+          !(timebuf._1) = !(statbuf._8)
+          !(timebuf._2) = time / 1000L
+          utime.utime(toCString(path), timebuf) == 0
+        } else {
+          false
+        }
+      }
+
+  def setReadOnly(): Boolean =
+    Zone { implicit z =>
+      import stat._
+      val mask    = S_ISUID | S_ISGID | S_ISVTX | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH
+      val newMode = accessMode() & mask
+      chmod(toCString(path), newMode) == 0
+    }
+
+  def length(): Long =
+    Zone { implicit z =>
+      val buf = alloc[stat.stat]
+      if (stat.stat(toCString(path), buf) == 0) {
+        !(buf._6)
       } else {
-        false
+        0L
       }
     }
-
-  def setReadOnly(): Boolean = {
-    import stat._
-    val mask    = S_ISUID | S_ISGID | S_ISVTX | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH
-    val newMode = accessMode() & mask
-    chmod(toCString(path), newMode) == 0
-  }
-
-  def length(): Long = {
-    val buf = GC.malloc_atomic(sizeof[stat.stat]).cast[Ptr[stat.stat]]
-    if (stat.stat(toCString(path), buf) == 0) {
-      !(buf._6)
-    } else {
-      0L
-    }
-  }
 
   def list(): Array[String] =
     list(FilenameFilter.allPassFilter)
 
   def list(filter: FilenameFilter): Array[String] =
-    if (!isDirectory() || !canRead())
+    if (!isDirectory() || !canRead()) {
       null
-    else {
-      val elements = listImpl(toCString(properPath))
-      if (elements == null)
-        Array.empty[String]
-      else
-        elements.filter(filter.accept(this, _))
-    }
+    } else
+      Zone { implicit z =>
+        val elements = listImpl(toCString(properPath))
+        if (elements == null)
+          Array.empty[String]
+        else
+          elements.filter(filter.accept(this, _))
+      }
 
   def listFiles(): Array[File] =
     listFiles(FilenameFilter.allPassFilter)
@@ -258,51 +293,62 @@ class File(_path: String) extends Serializable with Comparable[File] {
 
     if (dir == null) {
       null
-    } else {
-      val buffer = UnrolledBuffer.empty[String]
-      var elem: Ptr[dirent] =
-        GC.malloc_atomic(sizeof[dirent]).cast[Ptr[dirent]]
-      while (readdir(dir, elem) == 0) {
-        val name = fromCString(elem._2.asInstanceOf[CString])
+    } else
+      Zone { implicit z =>
+        val buffer = UnrolledBuffer.empty[String]
+        var elem   = alloc[dirent]
+        while (readdir(dir, elem) == 0) {
+          val name = fromCString(elem._2.asInstanceOf[CString])
 
-        // java doesn't list '.' and '..', we filter them out.
-        if (name != "." && name != "..") {
-          buffer += name
+          // java doesn't list '.' and '..', we filter them out.
+          if (name != "." && name != "..") {
+            buffer += name
+          }
         }
+        closedir(dir)
+        buffer.toArray
       }
-      closedir(dir)
-      buffer.toArray
-    }
   }
 
-  def mkdir(): Boolean = {
-    val mode = octal("0777")
-    stat.mkdir(toCString(path), mode) == 0
-  }
+  def mkdir(): Boolean =
+    Zone { implicit z =>
+      val mode = octal("0777")
+      stat.mkdir(toCString(path), mode) == 0
+    }
 
   def mkdirs(): Boolean =
-    if (exists()) false
-    else if (mkdir()) true
-    else {
+    if (exists()) {
+      false
+    } else if (mkdir()) {
+      true
+    } else {
       val parent = getParentFile()
-      if (parent == null) false
-      else parent.mkdirs() && mkdir()
+      if (parent == null) {
+        false
+      } else {
+        parent.mkdirs() && mkdir()
+      }
     }
 
   def createNewFile(): Boolean =
-    if (path.isEmpty) throw new IOException("No such file or directory")
-    else if (!Option(getParentFile).forall(_.exists))
+    if (path.isEmpty) {
       throw new IOException("No such file or directory")
-    else if (exists) false
-    else {
-      fopen(toCString(path), c"w") match {
-        case null => false
-        case fd   => fclose(fd); exists()
+    } else if (!Option(getParentFile).forall(_.exists)) {
+      throw new IOException("No such file or directory")
+    } else if (exists) {
+      false
+    } else
+      Zone { implicit z =>
+        fopen(toCString(path), c"w") match {
+          case null => false
+          case fd   => fclose(fd); exists()
+        }
       }
-    }
 
   def renameTo(dest: File): Boolean =
-    rename(toCString(properPath), toCString(dest.properPath)) == 0
+    Zone { implicit z =>
+      rename(toCString(properPath), toCString(dest.properPath)) == 0
+    }
 
   override def toString(): String = path
 
@@ -319,11 +365,12 @@ object File {
   private def octal(v: String): UInt =
     Integer.parseInt(v, 8).toUInt
 
-  private def getUserDir(): String = {
-    var buff: CString = stackalloc[CChar](4096)
-    var res: CString  = getcwd(buff, 4095)
-    fromCString(res)
-  }
+  private def getUserDir(): String =
+    Zone { implicit z =>
+      var buff: CString = alloc[CChar](4096)
+      var res: CString  = getcwd(buff, 4095)
+      fromCString(res)
+    }
 
   /** The purpose of this method is to take a path and fix the slashes up. This
    *  includes changing them all to the current platforms fileSeparator and
@@ -416,9 +463,10 @@ object File {
    * directories if resolveAbsolute is true.
    */
   // Ported from Apache Harmony
-  private def resolveLink(path: CString,
-                          resolveAbsolute: Boolean,
-                          restart: Boolean = false): CString = {
+  private def resolveLink(
+      path: CString,
+      resolveAbsolute: Boolean,
+      restart: Boolean = false)(implicit z: Zone): CString = {
     val resolved =
       readLink(path) match {
         // path is not a symlink
@@ -439,7 +487,7 @@ object File {
 
           // previous path up to last /, plus result of resolving the link.
           val newPathLength = last + linkLength + 1
-          val newPath       = GC.malloc_atomic(newPathLength).cast[CString]
+          val newPath       = alloc[Byte](newPathLength)
           strncpy(newPath, path, last)
           strncat(newPath, link, linkLength)
 
@@ -450,8 +498,9 @@ object File {
     else resolved
   }
 
-  @tailrec private def resolve(path: CString, start: Int = 0): CString = {
-    val part: CString = GC.malloc(limits.PATH_MAX).cast[CString]
+  @tailrec private def resolve(path: CString, start: Int = 0)(
+      implicit z: Zone): CString = {
+    val part: CString = alloc[Byte](limits.PATH_MAX)
 
     // Find the next separator
     var i = start
@@ -483,8 +532,8 @@ object File {
    * If `link` is a symlink, follows it and returns the path pointed to.
    * Otherwise, returns `None`.
    */
-  private def readLink(link: CString): CString = {
-    val buffer: CString = GC.malloc_atomic(limits.PATH_MAX).cast[CString]
+  private def readLink(link: CString)(implicit z: Zone): CString = {
+    val buffer: CString = alloc[Byte](limits.PATH_MAX)
     readlink(link, buffer, limits.PATH_MAX - 1) match {
       case -1 =>
         null
