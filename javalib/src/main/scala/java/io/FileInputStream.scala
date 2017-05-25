@@ -29,7 +29,7 @@ class FileInputStream(fd: FileDescriptor) extends InputStream {
   override def read(): Int = {
     val buffer = new Array[Byte](1)
     if (read(buffer) <= 0) -1
-    else buffer(0)
+    else buffer(0).toUInt.toInt
   }
 
   override def read(buffer: Array[Byte]): Int = {
@@ -81,8 +81,9 @@ class FileInputStream(fd: FileDescriptor) extends InputStream {
 }
 
 object FileInputStream {
-  private def fileDescriptor(file: File): FileDescriptor = {
-    val fd = fcntl.open(toCString(file.getPath), fcntl.O_RDONLY)
-    new FileDescriptor(fd, true)
-  }
+  private def fileDescriptor(file: File): FileDescriptor =
+    Zone { implicit z =>
+      val fd = fcntl.open(toCString(file.getPath), fcntl.O_RDONLY)
+      new FileDescriptor(fd, true)
+    }
 }

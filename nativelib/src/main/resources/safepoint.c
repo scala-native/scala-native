@@ -11,7 +11,7 @@
 extern unsigned char scalanative_safepoint_trigger[4096]
     __attribute__((aligned(4096)));
 
-void scalanative_safepoint();
+void scalanative_safepoint() {}
 
 void scalanative_safepoint_on() {
     mprotect((void *)&scalanative_safepoint_trigger, 4096, PROT_NONE);

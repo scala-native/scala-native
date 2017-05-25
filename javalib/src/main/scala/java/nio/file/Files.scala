@@ -32,9 +32,16 @@ import java.util.{
 }
 import java.util.stream.{Stream, WrappedScalaStream}
 
-import scala.scalanative.native.{CString, fromCString, Ptr, sizeof, toCString}
+import scala.scalanative.native.{
+  CString,
+  fromCString,
+  Ptr,
+  sizeof,
+  toCString,
+  Zone,
+  alloc
+}
 import scala.scalanative.posix.{limits, stat, unistd}
-import scala.scalanative.runtime.GC
 
 import scala.collection.immutable.{Map => SMap, Stream => SStream, Set => SSet}
 
@@ -122,26 +129,30 @@ object Files {
     }
 
   def createLink(link: Path, existing: Path): Path =
-    if (exists(link, Array.empty)) {
-      throw new FileAlreadyExistsException(link.toString)
-    } else if (unistd.link(toCString(existing.toString),
-                           toCString(link.toString)) == 0) {
-      link
-    } else {
-      throw new IOException()
+    Zone { implicit z =>
+      if (exists(link, Array.empty)) {
+        throw new FileAlreadyExistsException(link.toString)
+      } else if (unistd.link(toCString(existing.toString),
+                             toCString(link.toString)) == 0) {
+        link
+      } else {
+        throw new IOException()
+      }
     }
 
   def createSymbolicLink(link: Path,
                          target: Path,
                          attrs: Array[FileAttribute[_]]): Path =
-    if (exists(link, Array.empty)) {
-      throw new FileAlreadyExistsException(target.toString)
-    } else if (unistd.symlink(toCString(target.toString),
-                              toCString(link.toString)) == 0) {
-      setAttributes(link, attrs)
-      link
-    } else {
-      throw new IOException()
+    Zone { implicit z =>
+      if (exists(link, Array.empty)) {
+        throw new FileAlreadyExistsException(target.toString)
+      } else if (unistd.symlink(toCString(target.toString),
+                                toCString(link.toString)) == 0) {
+        setAttributes(link, attrs)
+        link
+      } else {
+        throw new IOException()
+      }
     }
 
   private def createTempDirectory(dir: File,
@@ -276,29 +287,31 @@ object Files {
   def isReadable(path: Path): Boolean =
     path.toFile().canRead()
 
-  def isRegularFile(path: Path, options: Array[LinkOption]): Boolean = {
-    val buf = GC.malloc_atomic(sizeof[stat.stat]).cast[Ptr[stat.stat]]
-    val err =
-      if (options.contains(LinkOption.NOFOLLOW_LINKS)) {
-        stat.lstat(toCString(path.toFile.getPath()), buf)
-      } else {
-        stat.stat(toCString(path.toFile.getPath()), buf)
-      }
-    if (err == 0) stat.S_ISREG(!(buf._13)) == 1
-    else false
-  }
+  def isRegularFile(path: Path, options: Array[LinkOption]): Boolean =
+    Zone { implicit z =>
+      val buf = alloc[stat.stat]
+      val err =
+        if (options.contains(LinkOption.NOFOLLOW_LINKS)) {
+          stat.lstat(toCString(path.toFile.getPath()), buf)
+        } else {
+          stat.stat(toCString(path.toFile.getPath()), buf)
+        }
+      if (err == 0) stat.S_ISREG(!(buf._13)) == 1
+      else false
+    }
 
   def isSameFile(path: Path, path2: Path): Boolean =
     path.toFile().getCanonicalPath() == path2.toFile().getCanonicalPath()
 
-  def isSymbolicLink(path: Path): Boolean = {
-    val buf = GC.malloc_atomic(sizeof[stat.stat]).cast[Ptr[stat.stat]]
-    if (stat.lstat(toCString(path.toFile.getPath()), buf) == 0) {
-      stat.S_ISLNK(!(buf._13)) == 1
-    } else {
-      false
+  def isSymbolicLink(path: Path): Boolean =
+    Zone { implicit z =>
+      val buf = alloc[stat.stat]
+      if (stat.lstat(toCString(path.toFile.getPath()), buf) == 0) {
+        stat.S_ISLNK(!(buf._13)) == 1
+      } else {
+        false
+      }
     }
-  }
 
   def isWritable(path: Path): Boolean =
     path.toFile().canWrite()
@@ -448,15 +461,17 @@ object Files {
   }
 
   def readSymbolicLink(link: Path): Path =
-    if (!isSymbolicLink(link)) throw new NotLinkException(link.toString)
-    else {
-      val buf: CString = GC.malloc(limits.PATH_MAX).cast[CString]
-      if (unistd.readlink(toCString(link.toString), buf, limits.PATH_MAX) == -1) {
-        throw new IOException()
-      } else {
-        Paths.get(fromCString(buf), Array.empty)
+    if (!isSymbolicLink(link)) {
+      throw new NotLinkException(link.toString)
+    } else
+      Zone { implicit z =>
+        val buf: CString = alloc[Byte](limits.PATH_MAX)
+        if (unistd.readlink(toCString(link.toString), buf, limits.PATH_MAX) == -1) {
+          throw new IOException()
+        } else {
+          Paths.get(fromCString(buf), Array.empty)
+        }
       }
-    }
 
   def setAttribute(path: Path,
                    attribute: String,

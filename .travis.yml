@@ -8,47 +8,20 @@ matrix:
     - os: linux
       jdk: oraclejdk8
       language: scala
-      before_install:
-        - sudo apt-get -qq update
-        - sudo sh -c "echo 'deb http://apt.llvm.org/precise/ llvm-toolchain-precise-3.7 main' >> /etc/apt/sources.list"
-        - sudo sh -c "echo 'deb http://apt.llvm.org/precise/ llvm-toolchain-precise main' >> /etc/apt/sources.list"
-        - wget -O - http://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-        - sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
-        - sudo apt-get -qq update
-        - |
-          sudo apt-get install -y \
-            clang++-3.7 \
-            llvm-3.7 \
-            llvm-3.7-dev \
-            llvm-3.7-runtime \
-            llvm-3.7-tool \
-            libgc-dev \
-            libunwind7-dev
+      env: SCALANATIVE_GC=boehm
 
-        # Install re2
-        # (libre2-dev) since Xenial (16.04 LTS) http://packages.ubuntu.com/xenial/libre2-dev
-        - sudo apt-get install -y make
-        - export CXX=clang++-3.7
-        - git clone https://code.googlesource.com/re2
-        - pushd re2
-        - git checkout 2017-03-01
-        - make -j4 test
-        - sudo make install prefix=/usr
-        - make testinstall prefix=/usr
-        - popd
+    - os: linux
+      jdk: oraclejdk8
+      language: scala
+      env: SCALANATIVE_GC=none
 
     - os: osx
       osx_image: xcode7.3
-      before_install:
-        - brew update
-        - brew install sbt
-        - brew install bdw-gc
-        - brew link bdw-gc
-        - brew install jq
-        - brew install re2
-        - brew install llvm@4
-        - export PATH="/usr/local/opt/llvm@4/bin:$PATH"
-      env: CLANG_FORMAT_PATH="/usr/local/opt/llvm@4/bin/clang-format"
+      env: SCALANATIVE_GC=boehm
+
+    - os: osx
+      osx_image: xcode7.3
+      env: SCALANATIVE_GC=none
 
 env:
   global:
@@ -56,6 +29,9 @@ env:
     - MAVEN_DOMAIN="oss.sonatype.org"
     - secure: "SrnxYRHUcevhm/oWU0mLC2l/EWSEa52oaaSqGrlMCvSX01udMMd5q4qSCzOpNlHviLBmdVxTBTnzlpyc8wnftezgs0pm8JFFj6CuiT37QNcCTtd5PN0QhVzqQauE2oWVkG97iwZFsz9pX87tzLRIlGIRa9A8CuoFY14lhIfmBK5wdiceZ3uBTu/Dcf/kzzC8yAykPhxjPSzeSsDUO2DBqsWjboOGEG2rNyJjKKBvChPyWAm3/4WPmKTV1I5aXUBiIffIWIzZONBobyn71hYfNFjkVF9+uEhsZA8T+5YZyPkyHrsONMBR5QxxDxGgz2YDEJU4aRvOOBW9yZcWa8jpEuBIj1bKFR6g3ZFOp0VgN7bAY4xq1E984T6yypvLiRz8/f7xOW+TLojcrCiz0CDrAjD0Ne9p8da9E1IUuiazqKZ9+TbbY6MHex9wnECEehfpAisI/r2X+vaARdF0zn60M+8h7ek7qIJfK1/7nXXTmy+ABmjrET+5q0oFzTz+0KI4f52KnTxPY8w7Yl7UVxe9LVkXmo9rFlGaeed1JiELBKJRc/sngqCCf1loq9rANK0ik4A4HWDW2pcYj21g8jer++s5IV7eimaX0TAiUgxing5TaGl/lWWg32cpjSqwUH69aOgfOBRJABh6zCK6qN3KCfOPfua+D0W0aDbAXMwpzyw="
     - secure: "lAh0fiYHWaNd9Z/slDzGj2gSUF1oDwaNBlZX6eeIASFZO2W+HF79UqD/ZGsTn58Ek1XJ9FLWk0+3BIHpoLBv7S7kj2QG8AVGi4EkhvvPc/7RjcO8EM3uN8KXY/XjlDJEI4BmxX1XuzPvwhhbTuk7NY+9DFqhWV3V5xYmtMt5yJ6rbu3NROGHoiiJvBvhzKHbjkoIX0dX/dHAS2bUcRmv6BZiBA9nI1WiDMTrRjnTm1x/v4kqLG5k4UwbBRU33foFzZJrFs04jJ47GXdczCyAH7Xu+NtvxRni9fjUgEKa75PtN4XLn8GRXC6u7HCPfHz2cHTeLyLxxKK1DZ+P08+bkG4MdoaknlN7HUg1gf9zWQYuanUMiqIMry5+URT9A5Jno+Kkr9UKJKqRHxBYVLenTqVCAj8KQONdEm5vCSkqv3dfpQRrljf4CX20vO28cDqXpOTzYdFOApH3Ah8I9uXmysnto9DgVJG3ZX7ibZ6gIHE5cpZuJsBFlVYAdEEygPhRKJrtnmZO7cL7pUIWT8nj3buOuU9uK1+JpWQ32GV+vyJolDRYamxrKLNbp/SVwWHaQk8+igj4zfS42XNDbOtD6KbHdwMzRH4AdpIR8ZWfB2BXSaY9XE0fWGDgG2h+7yropmMa3DWTdT8OWdXiPkn0TDhT2GhVNwxh5G4OB1nGpgw="
+
+before_install:
+  - bin/travis_setup.sh
 
 before_script:
   - sudo chmod +x /usr/local/bin/sbt

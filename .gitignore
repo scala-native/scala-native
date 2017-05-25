@@ -12,3 +12,4 @@ sbt-crossproject/
 *.iml
 pc.stdout.log
 *.TMP
+*.orig
