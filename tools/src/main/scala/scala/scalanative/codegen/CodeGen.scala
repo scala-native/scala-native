@@ -87,7 +87,8 @@ object CodeGen {
     }
 
     def genDeps() = deps.foreach { n =>
-      if (!generated.contains(n)) {
+      val nn = n.normalize
+      if (!generated.contains(nn)) {
         newline()
         genDefn {
           env(n) match {
@@ -103,6 +104,7 @@ object CodeGen {
               defn.copy(attrs.copy(isExtern = true), insts = Seq())
           }
         }
+        generated += nn
       }
     }
 
@@ -130,8 +132,12 @@ object CodeGen {
           case _               => -1
         }
         .foreach { defn =>
-          newline()
-          genDefn(defn)
+          val nn = defn.name.normalize
+          if (!generated.contains(nn)) {
+            newline()
+            genDefn(defn)
+            generated += nn
+          }
         }
 
     def genPrelude(): Unit = {
@@ -149,22 +155,19 @@ object CodeGen {
         "@_ZTIN11scalanative16ExceptionWrapperE = external constant { i8*, i8*, i8* }")
     }
 
-    def genDefn(defn: Defn): Unit = {
-      defn match {
-        case Defn.Struct(attrs, name, tys) =>
-          genStruct(attrs, name, tys)
-        case Defn.Var(attrs, name, ty, rhs) =>
-          genGlobalDefn(attrs, name, isConst = false, ty, rhs)
-        case Defn.Const(attrs, name, ty, rhs) =>
-          genGlobalDefn(attrs, name, isConst = true, ty, rhs)
-        case Defn.Declare(attrs, name, sig) =>
-          genFunctionDefn(attrs, name, sig, Seq())
-        case Defn.Define(attrs, name, sig, blocks) =>
-          genFunctionDefn(attrs, name, sig, blocks)
-        case defn =>
-          unsupported(defn)
-      }
-      generated += defn.name
+    def genDefn(defn: Defn): Unit = defn match {
+      case Defn.Struct(attrs, name, tys) =>
+        genStruct(attrs, name, tys)
+      case Defn.Var(attrs, name, ty, rhs) =>
+        genGlobalDefn(attrs, name, isConst = false, ty, rhs)
+      case Defn.Const(attrs, name, ty, rhs) =>
+        genGlobalDefn(attrs, name, isConst = true, ty, rhs)
+      case Defn.Declare(attrs, name, sig) =>
+        genFunctionDefn(attrs, name, sig, Seq())
+      case Defn.Define(attrs, name, sig, blocks) =>
+        genFunctionDefn(attrs, name, sig, blocks)
+      case defn =>
+        unsupported(defn)
     }
 
     def genStruct(attrs: Attrs, name: Global, tys: Seq[Type]): Unit = {
@@ -407,12 +410,10 @@ object CodeGen {
       genJustVal(value)
     }
 
-    def genJustGlobal(g: Global): Unit = g match {
+    def genJustGlobal(g: Global): Unit = g.normalize match {
       case Global.None =>
         unsupported(g)
       case Global.Top(id) =>
-        str(id)
-      case Global.Member(Global.Top("__extern"), id) =>
         str(id)
       case Global.Member(n, id) =>
         genJustGlobal(n)
