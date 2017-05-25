@@ -1,11 +1,9 @@
 package scala.scalanative
 package native
 
-import native._
-
 /** All methods take complex but Scala Native does not
  * support pass by value so we pass a pointer to a
- * struct for now and have a small wrapper in C
+ * Array of length 2 and have a small wrapper in C
  * to do the conversion. Currently Scala Native
  * and JVM have no direct support for long double
  * so these methods are not implemented.
@@ -26,8 +24,9 @@ import native._
  */
 @extern
 object complex {
-
-  import complexh._
+  import Nat._2
+  type ComplexF = CArray[CFloat, _2]
+  type Complex  = CArray[CDouble, _2]
 
   @name("scalanative_cacosf")
   def cacosf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
@@ -162,9 +161,8 @@ object complex {
   //  extern long double creall(long double complex);
 }
 
-object complexh {
-  type ComplexF = CStruct2[CFloat, CFloat]
-  type Complex  = CStruct2[CDouble, CDouble]
+object complexOps {
+  import complex._
 
   implicit class complexfOps(val ptr: Ptr[ComplexF]) extends AnyVal {
     def re: CFloat = !(ptr._1)
