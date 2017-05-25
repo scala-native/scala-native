@@ -26,21 +26,21 @@
 #ifndef GC_GCJ_H
 #define GC_GCJ_H
 
-        /* Gcj keeps GC descriptor as second word of vtable.    This    */
-        /* probably needs to be adjusted for other clients.             */
-        /* We currently assume that this offset is such that:           */
-        /*      - all objects of this kind are large enough to have     */
-        /*        a value at that offset, and                           */
-        /*      - it is not zero.                                       */
-        /* These assumptions allow objects on the free list to be       */
-        /* marked normally.                                             */
+/* Gcj keeps GC descriptor as second word of vtable.    This    */
+/* probably needs to be adjusted for other clients.             */
+/* We currently assume that this offset is such that:           */
+/*      - all objects of this kind are large enough to have     */
+/*        a value at that offset, and                           */
+/*      - it is not zero.                                       */
+/* These assumptions allow objects on the free list to be       */
+/* marked normally.                                             */
 
 #ifndef GC_H
-# include "gc.h"
+#include "gc.h"
 #endif
 
 #ifdef __cplusplus
-  extern "C" {
+extern "C" {
 #endif
 
 /* The following allocators signal an out of memory condition with      */
@@ -67,27 +67,26 @@
 /* needs no other reserved indices, zero                                */
 /* (GC_GCJ_RESERVED_MARK_PROC_INDEX in gc_mark.h) is an obvious choice. */
 GC_API void GC_CALL GC_init_gcj_malloc(int /* mp_index */,
-                                void * /* really mark_proc */ /* mp */);
+                                       void * /* really mark_proc */ /* mp */);
 
 /* Allocate an object, clear it, and store the pointer to the   */
 /* type structure (vtable in gcj).                              */
 /* This adds a byte at the end of the object if GC_malloc would.*/
-GC_API GC_ATTR_MALLOC GC_ATTR_ALLOC_SIZE(1) void * GC_CALL
-        GC_gcj_malloc(size_t /* lb */,
-                      void * /* ptr_to_struct_containing_descr */);
+GC_API GC_ATTR_MALLOC GC_ATTR_ALLOC_SIZE(1) void *GC_CALL
+    GC_gcj_malloc(size_t /* lb */, void * /* ptr_to_struct_containing_descr */);
 
 /* The debug versions allocate such that the specified mark_proc        */
 /* is always invoked.                                                   */
-GC_API GC_ATTR_MALLOC GC_ATTR_ALLOC_SIZE(1) void * GC_CALL
-        GC_debug_gcj_malloc(size_t /* lb */,
-                            void * /* ptr_to_struct_containing_descr */,
-                            GC_EXTRA_PARAMS);
+GC_API GC_ATTR_MALLOC GC_ATTR_ALLOC_SIZE(1) void *GC_CALL
+    GC_debug_gcj_malloc(size_t /* lb */,
+                        void * /* ptr_to_struct_containing_descr */,
+                        GC_EXTRA_PARAMS);
 
 /* Similar to GC_gcj_malloc, but assumes that a pointer to near the     */
 /* beginning of the resulting object is always maintained.              */
-GC_API GC_ATTR_MALLOC GC_ATTR_ALLOC_SIZE(1) void * GC_CALL
-        GC_gcj_malloc_ignore_off_page(size_t /* lb */,
-                                void * /* ptr_to_struct_containing_descr */);
+GC_API GC_ATTR_MALLOC GC_ATTR_ALLOC_SIZE(1) void *GC_CALL
+    GC_gcj_malloc_ignore_off_page(size_t /* lb */,
+                                  void * /* ptr_to_struct_containing_descr */);
 
 /* The kind numbers of normal and debug gcj objects.            */
 /* Useful only for debug support, we hope.                      */
@@ -96,15 +95,15 @@ GC_API int GC_gcj_kind;
 GC_API int GC_gcj_debug_kind;
 
 #ifdef GC_DEBUG
-# define GC_GCJ_MALLOC(s,d) GC_debug_gcj_malloc(s,d,GC_EXTRAS)
-# define GC_GCJ_MALLOC_IGNORE_OFF_PAGE(s,d) GC_debug_gcj_malloc(s,d,GC_EXTRAS)
+#define GC_GCJ_MALLOC(s, d) GC_debug_gcj_malloc(s, d, GC_EXTRAS)
+#define GC_GCJ_MALLOC_IGNORE_OFF_PAGE(s, d) GC_debug_gcj_malloc(s, d, GC_EXTRAS)
 #else
-# define GC_GCJ_MALLOC(s,d) GC_gcj_malloc(s,d)
-# define GC_GCJ_MALLOC_IGNORE_OFF_PAGE(s,d) GC_gcj_malloc_ignore_off_page(s,d)
+#define GC_GCJ_MALLOC(s, d) GC_gcj_malloc(s, d)
+#define GC_GCJ_MALLOC_IGNORE_OFF_PAGE(s, d) GC_gcj_malloc_ignore_off_page(s, d)
 #endif
 
 #ifdef __cplusplus
-  } /* end of extern "C" */
+} /* end of extern "C" */
 #endif
 
 #endif /* GC_GCJ_H */

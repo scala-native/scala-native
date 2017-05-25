@@ -27,8 +27,8 @@
 #define CACHE_HASH(n) ((((n) >> 8) ^ (n)) & (TS_CACHE_SIZE - 1))
 
 #define TS_HASH_SIZE 1024
-#define HASH(p) \
-          ((unsigned)((((word)(p)) >> 8) ^ (word)(p)) & (TS_HASH_SIZE - 1))
+#define HASH(p)                                                                \
+    ((unsigned)((((word)(p)) >> 8) ^ (word)(p)) & (TS_HASH_SIZE - 1))
 
 /* An entry describing a thread-specific value for a given thread.      */
 /* All such accessible structures preserve the invariant that if either */
@@ -37,10 +37,10 @@
 /* value.  This invariant must be preserved at ALL times, since         */
 /* asynchronous reads are allowed.                                      */
 typedef struct thread_specific_entry {
-        volatile AO_t qtid;     /* quick thread id, only for cache */
-        void * value;
-        struct thread_specific_entry *next;
-        pthread_t thread;
+    volatile AO_t qtid; /* quick thread id, only for cache */
+    void *value;
+    struct thread_specific_entry *next;
+    pthread_t thread;
 } tse;
 
 /* We represent each thread-specific datum as two tables.  The first is */
@@ -61,39 +61,38 @@ typedef struct thread_specific_entry {
 #define INVALID_THREADID ((pthread_t)0)
 
 union ptse_ao_u {
-  tse *p;
-  volatile AO_t ao;
+    tse *p;
+    volatile AO_t ao;
 };
 
 typedef struct thread_specific_data {
-    tse * volatile cache[TS_CACHE_SIZE];
-                        /* A faster index to the hash table */
+    tse *volatile cache[TS_CACHE_SIZE];
+    /* A faster index to the hash table */
     union ptse_ao_u hash[TS_HASH_SIZE];
     pthread_mutex_t lock;
 } tsd;
 
-typedef tsd * GC_key_t;
+typedef tsd *GC_key_t;
 
 #define GC_key_create(key, d) GC_key_create_inner(key)
-GC_INNER int GC_key_create_inner(tsd ** key_ptr);
-GC_INNER int GC_setspecific(tsd * key, void * value);
-GC_INNER void GC_remove_specific(tsd * key);
+GC_INNER int GC_key_create_inner(tsd **key_ptr);
+GC_INNER int GC_setspecific(tsd *key, void *value);
+GC_INNER void GC_remove_specific(tsd *key);
 
 /* An internal version of getspecific that assumes a cache miss.        */
-GC_INNER void * GC_slow_getspecific(tsd * key, word qtid,
-                                    tse * volatile * cache_entry);
+GC_INNER void *GC_slow_getspecific(tsd *key, word qtid,
+                                   tse *volatile *cache_entry);
 
 /* GC_INLINE is defined in gc_priv.h. */
-GC_INLINE void * GC_getspecific(tsd * key)
-{
+GC_INLINE void *GC_getspecific(tsd *key) {
     word qtid = quick_thread_id();
-    tse * volatile * entry_ptr = &key->cache[CACHE_HASH(qtid)];
-    tse * entry = *entry_ptr;   /* Must be loaded only once.    */
+    tse *volatile *entry_ptr = &key->cache[CACHE_HASH(qtid)];
+    tse *entry = *entry_ptr; /* Must be loaded only once.    */
 
     GC_ASSERT(qtid != INVALID_QTID);
-    if (EXPECT(entry -> qtid == qtid, TRUE)) {
-      GC_ASSERT(entry -> thread == pthread_self());
-      return entry -> value;
+    if (EXPECT(entry->qtid == qtid, TRUE)) {
+        GC_ASSERT(entry->thread == pthread_self());
+        return entry->value;
     }
     return GC_slow_getspecific(key, qtid, entry_ptr);
 }

@@ -1,5 +1,9 @@
 #include <stdlib.h>
+#ifndef _WIN32
 #include <pwd.h>
+#else
+#include "os_win_pwd.h"
+#endif
 #include "types.h"
 
 struct scalanative_passwd {

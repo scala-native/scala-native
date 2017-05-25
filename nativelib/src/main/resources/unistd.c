@@ -3,6 +3,7 @@
 #else
 #include "os_win_unistd.h"
 #include "os_win_dirent.h"
+#include "types.h"
 
 typedef int mode_t;
 
@@ -51,4 +52,25 @@ int scalanative_access(const char *path, int amode) {
     }
     return 0;
 #endif
+}
+
+int scalanative_symlink(char *path1, char *path2) {
+    return symlink(path1, path2);
+}
+
+int scalanative_symlinkat(char *path1, int fd, char *path2) {
+    return symlinkat(path1, fd, path2);
+}
+
+int scalanative_link(char *oldpath, char *newpath) {
+    return link(oldpath, newpath);
+}
+
+int scalanative_linkat(int fd1, char *path1, int fd2, char *path2, int flag) {
+    return linkat(fd1, path1, fd2, path2, flag);
+}
+
+int scalanative_chown(char *path, scalanative_uid_t owner,
+                      scalanative_gid_t group) {
+    return chown(path, owner, group);
 }

@@ -16,11 +16,11 @@
  */
 
 #ifndef GC_H
-# include "gc.h"
+#include "gc.h"
 #endif
 
 #ifdef __cplusplus
-  extern "C" {
+extern "C" {
 #endif
 
 /*
@@ -41,20 +41,20 @@
 GC_API void GC_CALL GC_finalize_all(void);
 
 #ifdef GC_THREADS
-  /* External thread suspension support.  No thread suspension count    */
-  /* (so a thread which has been suspended numerous times will be       */
-  /* resumed with the very first call to GC_resume_thread).             */
-  /* Acquire the allocation lock.  Thread should be registered in GC    */
-  /* (otherwise no-op, GC_is_thread_suspended returns false).           */
-  /* Unimplemented on some platforms.  Not recommended for general use. */
-# ifndef GC_SUSPEND_THREAD_ID
-#   define GC_SUSPEND_THREAD_ID void*
-# endif
-  GC_API void GC_CALL GC_suspend_thread(GC_SUSPEND_THREAD_ID);
-  GC_API void GC_CALL GC_resume_thread(GC_SUSPEND_THREAD_ID);
-  GC_API int GC_CALL GC_is_thread_suspended(GC_SUSPEND_THREAD_ID);
+/* External thread suspension support.  No thread suspension count    */
+/* (so a thread which has been suspended numerous times will be       */
+/* resumed with the very first call to GC_resume_thread).             */
+/* Acquire the allocation lock.  Thread should be registered in GC    */
+/* (otherwise no-op, GC_is_thread_suspended returns false).           */
+/* Unimplemented on some platforms.  Not recommended for general use. */
+#ifndef GC_SUSPEND_THREAD_ID
+#define GC_SUSPEND_THREAD_ID void *
+#endif
+GC_API void GC_CALL GC_suspend_thread(GC_SUSPEND_THREAD_ID);
+GC_API void GC_CALL GC_resume_thread(GC_SUSPEND_THREAD_ID);
+GC_API int GC_CALL GC_is_thread_suspended(GC_SUSPEND_THREAD_ID);
 #endif /* GC_THREADS */
 
 #ifdef __cplusplus
-  } /* end of extern "C" */
+} /* end of extern "C" */
 #endif

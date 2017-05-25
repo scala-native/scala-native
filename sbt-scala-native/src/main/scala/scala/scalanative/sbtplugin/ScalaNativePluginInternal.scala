@@ -139,7 +139,7 @@ object ScalaNativePluginInternal {
       clang
     },
     nativeDebugInfoOptions := {
-      if (!isWindows)
+      if (isWindows)
         Seq("-g", "-gcodeview")
       else Seq("-g", "-gdwarf")
     },
@@ -167,7 +167,7 @@ object ScalaNativePluginInternal {
           else "/usr/local/lib") +: libdir).map(s => s"-L$s")
       }
       val dbgInfo = nativeDebugInfoOptions.value
-      libs ++ dbgInfo
+      libs ++ dbgInfo ++ Seq("-Qunused-arguments")
     },
     nativeTarget := {
       val logger = nativeLogger.value

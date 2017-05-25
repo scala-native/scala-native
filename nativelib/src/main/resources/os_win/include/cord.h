@@ -59,30 +59,30 @@
 #include <stdio.h>
 
 #if defined(GC_DLL) && !defined(CORD_NOT_DLL)
-  /* Same as for GC_API in gc_config_macros.h.  */
-# ifdef CORD_BUILD
-#   if defined(__MINGW32__) || defined(__CEGCC__)
-#     define CORD_API __declspec(dllexport)
-#   elif defined(_MSC_VER) || defined(__DMC__) || defined(__BORLANDC__) \
-         || defined(__CYGWIN__) || defined(__WATCOMC__)
-#     define CORD_API extern __declspec(dllexport)
-#   elif defined(__GNUC__) && !defined(GC_NO_VISIBILITY) \
-         && (__GNUC__ >= 4 || defined(GC_VISIBILITY_HIDDEN_SET))
-    /* Only matters if used in conjunction with -fvisibility=hidden option. */
-#     define CORD_API extern __attribute__((__visibility__("default")))
-#   endif
-# else
-#   if defined(__MINGW32__) || defined(__CEGCC__) || defined(_MSC_VER) \
-       || defined(__DMC__) || defined(__BORLANDC__) || defined(__CYGWIN__)
-#     define CORD_API __declspec(dllimport)
-#   elif defined(__WATCOMC__)
-#     define CORD_API extern __declspec(dllimport)
-#   endif
-# endif /* !CORD_BUILD */
+/* Same as for GC_API in gc_config_macros.h.  */
+#ifdef CORD_BUILD
+#if defined(__MINGW32__) || defined(__CEGCC__)
+#define CORD_API __declspec(dllexport)
+#elif defined(_MSC_VER) || defined(__DMC__) || defined(__BORLANDC__) ||        \
+    defined(__CYGWIN__) || defined(__WATCOMC__)
+#define CORD_API extern __declspec(dllexport)
+#elif defined(__GNUC__) && !defined(GC_NO_VISIBILITY) &&                       \
+    (__GNUC__ >= 4 || defined(GC_VISIBILITY_HIDDEN_SET))
+/* Only matters if used in conjunction with -fvisibility=hidden option. */
+#define CORD_API extern __attribute__((__visibility__("default")))
+#endif
+#else
+#if defined(__MINGW32__) || defined(__CEGCC__) || defined(_MSC_VER) ||         \
+    defined(__DMC__) || defined(__BORLANDC__) || defined(__CYGWIN__)
+#define CORD_API __declspec(dllimport)
+#elif defined(__WATCOMC__)
+#define CORD_API extern __declspec(dllimport)
+#endif
+#endif /* !CORD_BUILD */
 #endif /* GC_DLL */
 
 #ifndef CORD_API
-# define CORD_API extern
+#define CORD_API extern
 #endif
 
 /* Cords have type const char *.  This is cheating quite a bit, and not */
@@ -91,7 +91,7 @@
 /* never modified in place.  The empty cord is represented by, and      */
 /* can be written as, 0.                                                */
 
-typedef const char * CORD;
+typedef const char *CORD;
 
 /* An empty cord is always represented as nil   */
 #define CORD_EMPTY 0
@@ -108,16 +108,16 @@ CORD_API CORD CORD_cat(CORD x, CORD y);
 /* length is known, it can be faster.                                   */
 /* The string y is shared with the resulting CORD.  Hence it should     */
 /* not be altered by the caller.                                        */
-CORD_API CORD CORD_cat_char_star(CORD x, const char * y, size_t leny);
+CORD_API CORD CORD_cat_char_star(CORD x, const char *y, size_t leny);
 
 /* Compute the length of a cord */
 CORD_API size_t CORD_len(CORD x);
 
 /* Cords may be represented by functions defining the ith character */
-typedef char (* CORD_fn)(size_t i, void * client_data);
+typedef char (*CORD_fn)(size_t i, void *client_data);
 
 /* Turn a functional description into a cord.   */
-CORD_API CORD CORD_from_fn(CORD_fn fn, void * client_data, size_t len);
+CORD_API CORD CORD_from_fn(CORD_fn fn, void *client_data, size_t len);
 
 /* Return the substring (subcord really) of x with length at most n,    */
 /* starting at position i.  (The initial character has position 0.)     */
@@ -140,11 +140,11 @@ CORD_API CORD CORD_balance(CORD x);
 /* the functions that operate on cord positions instead.                */
 
 /* Function to iteratively apply to individual characters in cord.      */
-typedef int (* CORD_iter_fn)(char c, void * client_data);
+typedef int (*CORD_iter_fn)(char c, void *client_data);
 
 /* Function to apply to substrings of a cord.  Each substring is a      */
 /* a C character string, not a general cord.                            */
-typedef int (* CORD_batched_iter_fn)(const char * s, void * client_data);
+typedef int (*CORD_batched_iter_fn)(const char *s, void *client_data);
 #define CORD_NO_FN ((CORD_batched_iter_fn)0)
 
 /* Apply f1 to each character in the cord, in ascending order,          */
@@ -156,18 +156,18 @@ typedef int (* CORD_batched_iter_fn)(const char * s, void * client_data);
 /* latter case CORD_iter returns != 0.  Otherwise it returns 0.         */
 /* The specified value of i must be < CORD_len(x).                      */
 CORD_API int CORD_iter5(CORD x, size_t i, CORD_iter_fn f1,
-                        CORD_batched_iter_fn f2, void * client_data);
+                        CORD_batched_iter_fn f2, void *client_data);
 
 /* A simpler version that starts at 0, and without f2:  */
-CORD_API int CORD_iter(CORD x, CORD_iter_fn f1, void * client_data);
+CORD_API int CORD_iter(CORD x, CORD_iter_fn f1, void *client_data);
 #define CORD_iter(x, f1, cd) CORD_iter5(x, 0, f1, CORD_NO_FN, cd)
 
 /* Similar to CORD_iter5, but end-to-beginning. No provisions for       */
 /* CORD_batched_iter_fn.                                                */
-CORD_API int CORD_riter4(CORD x, size_t i, CORD_iter_fn f1, void * client_data);
+CORD_API int CORD_riter4(CORD x, size_t i, CORD_iter_fn f1, void *client_data);
 
 /* A simpler version that starts at the end:    */
-CORD_API int CORD_riter(CORD x, CORD_iter_fn f1, void * client_data);
+CORD_API int CORD_riter(CORD x, CORD_iter_fn f1, void *client_data);
 
 /* Functions that operate on cord positions.  The easy way to traverse  */
 /* cords.  A cord position is logically a pair consisting of a cord     */
@@ -212,13 +212,12 @@ CORD_API int CORD_riter(CORD x, CORD_iter_fn f1, void * client_data);
         * Is the position valid, i.e. inside the cord?
         int CORD_pos_valid(CORD_pos p);
 */
-#define CORD_FOR(pos, cord) \
+#define CORD_FOR(pos, cord)                                                    \
     for (CORD_set_pos(pos, cord, 0); CORD_pos_valid(pos); CORD_next(pos))
-
 
 /* An out of memory handler to call.  May be supplied by client.        */
 /* Must not return.                                                     */
-extern void (* CORD_oom_fn)(void);
+extern void (*CORD_oom_fn)(void);
 
 /* Dump the representation of x to stdout in an implementation defined  */
 /* manner.  Intended for debugging only.                                */
@@ -231,7 +230,7 @@ CORD_API void CORD_dump(CORD x);
 CORD_API CORD CORD_cat_char(CORD x, char c);
 
 /* Concatenate n cords. */
-CORD_API CORD CORD_catn(int n, /* CORD */ ...);
+CORD_API CORD CORD_catn(int n, /* CORD */...);
 
 /* Return the character in CORD_substr(x, i, 1)         */
 CORD_API char CORD_fetch(CORD x, size_t i);
@@ -271,20 +270,20 @@ CORD_API CORD CORD_chars(char c, size_t i);
 /* position in the file, i.e. the number of characters that can be      */
 /* or were read with fread.  On UNIX systems this is always true.  On   */
 /* MS Windows systems, f must be opened in binary mode.                 */
-CORD_API CORD CORD_from_file(FILE * f);
+CORD_API CORD CORD_from_file(FILE *f);
 
 /* Equivalent to the above, except that the entire file will be read    */
 /* and the file pointer will be closed immediately.                     */
 /* The binary mode restriction from above does not apply.               */
-CORD_API CORD CORD_from_file_eager(FILE * f);
+CORD_API CORD CORD_from_file_eager(FILE *f);
 
 /* Equivalent to the above, except that the file will be read on demand.*/
 /* The binary mode restriction applies.                                 */
-CORD_API CORD CORD_from_file_lazy(FILE * f);
+CORD_API CORD CORD_from_file_lazy(FILE *f);
 
 /* Turn a cord into a C string. The result shares no structure with     */
 /* x, and is thus modifiable.                                           */
-CORD_API char * CORD_to_char_star(CORD x);
+CORD_API char *CORD_to_char_star(CORD x);
 
 /* Turn a C string into a CORD.  The C string is copied, and so may     */
 /* subsequently be modified.                                            */
@@ -292,12 +291,12 @@ CORD_API CORD CORD_from_char_star(const char *s);
 
 /* Identical to the above, but the result may share structure with      */
 /* the argument and is thus not modifiable.                             */
-CORD_API const char * CORD_to_const_char_star(CORD x);
+CORD_API const char *CORD_to_const_char_star(CORD x);
 
 /* Write a cord to a file, starting at the current position.  No        */
 /* trailing NULs are newlines are added.                                */
 /* Returns EOF if a write error occurs, 1 otherwise.                    */
-CORD_API int CORD_put(CORD x, FILE * f);
+CORD_API int CORD_put(CORD x, FILE *f);
 
 /* "Not found" result for the following two functions.                  */
 #define CORD_NOT_FOUND ((size_t)(-1))
@@ -311,7 +310,6 @@ CORD_API size_t CORD_chr(CORD x, size_t i, int c);
 /* of (char) c inside x at position i or earlier. The value i           */
 /* must be < CORD_len(x).                                               */
 CORD_API size_t CORD_rchr(CORD x, size_t i, int c);
-
 
 /* The following are also not primitive, but are implemented in         */
 /* cordprnt.c.  They provide functionality similar to the ANSI C        */
@@ -342,10 +340,10 @@ CORD_API size_t CORD_rchr(CORD x, size_t i, int c);
 
 #include <stdarg.h>
 
-CORD_API int CORD_sprintf(CORD * out, CORD format, ...);
-CORD_API int CORD_vsprintf(CORD * out, CORD format, va_list args);
-CORD_API int CORD_fprintf(FILE * f, CORD format, ...);
-CORD_API int CORD_vfprintf(FILE * f, CORD format, va_list args);
+CORD_API int CORD_sprintf(CORD *out, CORD format, ...);
+CORD_API int CORD_vsprintf(CORD *out, CORD format, va_list args);
+CORD_API int CORD_fprintf(FILE *f, CORD format, ...);
+CORD_API int CORD_vfprintf(FILE *f, CORD format, va_list args);
 CORD_API int CORD_printf(CORD format, ...);
 CORD_API int CORD_vprintf(CORD format, va_list args);
 

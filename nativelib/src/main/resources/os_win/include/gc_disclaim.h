@@ -26,7 +26,7 @@
 GC_API void GC_CALL GC_init_finalized_malloc(void);
 
 /* Type of a disclaim call-back.                                        */
-typedef int (GC_CALLBACK * GC_disclaim_proc)(void * /*obj*/);
+typedef int(GC_CALLBACK *GC_disclaim_proc)(void * /*obj*/);
 
 /* Register "proc" to be called on each object of "kind" ready to be    */
 /* reclaimed.  If "proc" returns non-zero, the collector will not       */
@@ -48,8 +48,8 @@ struct GC_finalizer_closure {
 /* dedicated object kind with a disclaim procedure, and is more         */
 /* efficient than GC_register_finalizer and friends.                    */
 /* GC_init_finalized_malloc must be called before using this.           */
-GC_API GC_ATTR_MALLOC GC_ATTR_ALLOC_SIZE(1) void * GC_CALL
-        GC_finalized_malloc(size_t /*size*/,
-                            const struct GC_finalizer_closure * /*fc*/);
+GC_API GC_ATTR_MALLOC GC_ATTR_ALLOC_SIZE(1) void *GC_CALL
+    GC_finalized_malloc(size_t /*size*/,
+                        const struct GC_finalizer_closure * /*fc*/);
 
 #endif

@@ -29,38 +29,44 @@ pointer remains deactivated forever.
 
 ****************************************************************************/
 
-
-template< class T > class WeakPointer {
-public:
-
-WeakPointer( T* t = 0 )
+template <class T> class WeakPointer {
+  public:
+    WeakPointer(T *t = 0)
     /* Constructs a weak pointer for *t. t may be null. It is an error
        if t is non-null and *t is not a collected object. */
-    {impl = _WeakPointer_New( t );}
+    {
+        impl = _WeakPointer_New(t);
+    }
 
-T* Pointer()
+    T *Pointer()
     /* wp.Pointer() returns a pointer to the referent object of wp or
        null if wp has been deactivated (because its referent object
        has been discovered unreachable by the collector). */
-    {return (T*) _WeakPointer_Pointer( this->impl );}
+    {
+        return (T *)_WeakPointer_Pointer(this->impl);
+    }
 
-int operator==( WeakPointer< T > wp2 )
+    int operator==(WeakPointer<T> wp2)
     /* Given weak pointers wp1 and wp2, if wp1 == wp2, then wp1 and
        wp2 refer to the same object. If wp1 != wp2, then either wp1
        and wp2 don't refer to the same object, or if they do, one or
        both of them has been deactivated. (Note: If objects t1 and t2
        are never made reachable by their clean-up functions, then
        WeakPointer<T>(t1) == WeakPointer<T>(t2) if and only t1 == t2.) */
-    {return _WeakPointer_Equal( this->impl, wp2.impl );}
+    {
+        return _WeakPointer_Equal(this->impl, wp2.impl);
+    }
 
-int Hash()
+    int Hash()
     /* Returns a hash code suitable for use by multiplicative- and
        division-based hash tables. If wp1 == wp2, then wp1.Hash() ==
        wp2.Hash(). */
-    {return _WeakPointer_Hash( this->impl );}
+    {
+        return _WeakPointer_Hash(this->impl);
+    }
 
-private:
-void* impl;
+  private:
+    void *impl;
 };
 
 /*****************************************************************************
@@ -107,42 +113,52 @@ BO(t).
 
 ***************************************************************************/
 
-template< class T, class Data > class CleanUp {
-public:
-
-static void Set( T* t, void c( Data* d, T* t ), Data* d = 0 )
+template <class T, class Data> class CleanUp {
+  public:
+    static void Set(T *t, void c(Data *d, T *t), Data *d = 0)
     /* Sets the clean-up function of object BO(t) to be <c, d>,
        replacing any previously defined clean-up function for BO(t); c
        and d can be null, but t cannot. Sets the clean-up queue for
        BO(t) to be the collector's queue. When t is removed from its
        clean-up queue, its clean-up will be applied by calling c(d,
        t). It is an error if *t is not a collected object. */
-       {_CleanUp_Set( t, c, d );}
+    {
+        _CleanUp_Set(t, c, d);
+    }
 
-static void Call( T* t )
+    static void Call(T *t)
     /* Sets the new clean-up function for BO(t) to be null and, if the
        old one is non-null, calls it immediately, even if BO(t) is
        still reachable. Deactivates any weak pointers to BO(t). */
-       {_CleanUp_Call( t );}
+    {
+        _CleanUp_Call(t);
+    }
 
-class Queue {public:
-    Queue()
+    class Queue {
+      public:
+        Queue()
         /* Constructs a new queue. */
-            {this->head = _CleanUp_Queue_NewHead();}
+        {
+            this->head = _CleanUp_Queue_NewHead();
+        }
 
-    void Set( T* t )
+        void Set(T *t)
         /* q.Set(t) sets the clean-up queue of BO(t) to be q. */
-            {_CleanUp_Queue_Set( this->head, t );}
+        {
+            _CleanUp_Queue_Set(this->head, t);
+        }
 
-    int Call()
+        int Call()
         /* If q is non-empty, q.Call() removes the first object and
            calls its clean-up function; does nothing if q is
            empty. Returns true if there are more objects in the
            queue. */
-           {return _CleanUp_Queue_Call( this->head );}
+        {
+            return _CleanUp_Queue_Call(this->head);
+        }
 
-    private:
-    void* head;
+      private:
+        void *head;
     };
 };
 
@@ -203,15 +219,15 @@ function (destructor).
 **********************************************************************/
 
 extern "C" {
-    void* _WeakPointer_New( void* t );
-    void* _WeakPointer_Pointer( void* wp );
-    int _WeakPointer_Equal( void* wp1, void* wp2 );
-    int _WeakPointer_Hash( void* wp );
-    void _CleanUp_Set( void* t, void (*c)( void* d, void* t ), void* d );
-    void _CleanUp_Call( void* t );
-    void* _CleanUp_Queue_NewHead ();
-    void _CleanUp_Queue_Set( void* h, void* t );
-    int _CleanUp_Queue_Call( void* h );
+void *_WeakPointer_New(void *t);
+void *_WeakPointer_Pointer(void *wp);
+int _WeakPointer_Equal(void *wp1, void *wp2);
+int _WeakPointer_Hash(void *wp);
+void _CleanUp_Set(void *t, void (*c)(void *d, void *t), void *d);
+void _CleanUp_Call(void *t);
+void *_CleanUp_Queue_NewHead();
+void _CleanUp_Queue_Set(void *h, void *t);
+int _CleanUp_Queue_Call(void *h);
 }
 
 #endif /* _weakpointer_h_ */

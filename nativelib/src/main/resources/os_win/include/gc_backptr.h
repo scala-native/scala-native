@@ -39,11 +39,11 @@
 #define GC_BACKPTR_H
 
 #ifndef GC_H
-# include "gc.h"
+#include "gc.h"
 #endif
 
 #ifdef __cplusplus
-  extern "C" {
+extern "C" {
 #endif
 
 /* Store information about the object referencing dest in *base_p     */
@@ -56,26 +56,27 @@
 /*   Returns 1 on success, 0 if source couldn't be determined.        */
 /* Dest can be any address within a heap object.                      */
 typedef enum {
-    GC_UNREFERENCED,    /* No reference info available.         */
-    GC_NO_SPACE,        /* Dest not allocated with debug alloc. */
-    GC_REFD_FROM_ROOT,  /* Referenced directly by root *base_p. */
-    GC_REFD_FROM_REG,   /* Referenced from a register, i.e.     */
-                        /* a root without an address.           */
-    GC_REFD_FROM_HEAP,  /* Referenced from another heap obj.    */
-    GC_FINALIZER_REFD   /* Finalizable and hence accessible.    */
+    GC_UNREFERENCED,   /* No reference info available.         */
+    GC_NO_SPACE,       /* Dest not allocated with debug alloc. */
+    GC_REFD_FROM_ROOT, /* Referenced directly by root *base_p. */
+    GC_REFD_FROM_REG,  /* Referenced from a register, i.e.     */
+                       /* a root without an address.           */
+    GC_REFD_FROM_HEAP, /* Referenced from another heap obj.    */
+    GC_FINALIZER_REFD  /* Finalizable and hence accessible.    */
 } GC_ref_kind;
 
 GC_API GC_ref_kind GC_CALL GC_get_back_ptr_info(void * /* dest */,
-                                void ** /* base_p */, size_t * /* offset_p */)
-                                GC_ATTR_NONNULL(1);
+                                                void ** /* base_p */,
+                                                size_t * /* offset_p */)
+    GC_ATTR_NONNULL(1);
 
 /* Generate a random heap address.            */
 /* The resulting address is in the heap, but  */
 /* not necessarily inside a valid object.     */
-GC_API void * GC_CALL GC_generate_random_heap_address(void);
+GC_API void *GC_CALL GC_generate_random_heap_address(void);
 
 /* Generate a random address inside a valid marked heap object. */
-GC_API void * GC_CALL GC_generate_random_valid_address(void);
+GC_API void *GC_CALL GC_generate_random_valid_address(void);
 
 /* Force a garbage collection and generate a backtrace from a   */
 /* random heap address.                                         */
@@ -90,7 +91,7 @@ GC_API void GC_CALL GC_generate_random_backtrace(void);
 GC_API void GC_CALL GC_print_backtrace(void *) GC_ATTR_NONNULL(1);
 
 #ifdef __cplusplus
-  } /* end of extern "C" */
+} /* end of extern "C" */
 #endif
 
 #endif /* GC_BACKPTR_H */

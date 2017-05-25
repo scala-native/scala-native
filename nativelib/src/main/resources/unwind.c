@@ -1,7 +1,9 @@
 #ifndef _WIN32
 #include <libunwind.h>
 #else
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 #include <Windows.h>
 #include <DbgHelp.h>
 #include <stdio.h>
