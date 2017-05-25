@@ -61,13 +61,16 @@ void Block_recycle(Allocator *allocator, BlockHeader *blockHeader) {
                 recycleMarkedLine(blockHeader, lineHeader, lineIndex);
                 lineIndex++;
             } else {
-                // If the line is not marked, we need to merge all continuous unmarked lines.
+                // If the line is not marked, we need to merge all continuous
+                // unmarked lines.
 
-                // If it's the first free line, update the block header to point to it.
+                // If it's the first free line, update the block header to point
+                // to it.
                 if (lastRecyclable == -1) {
                     blockHeader->header.first = lineIndex;
                 } else {
-                    // Update the last recyclable line to point to the current one
+                    // Update the last recyclable line to point to the current
+                    // one
                     Block_getFreeLineHeader(blockHeader, lastRecyclable)->next =
                         lineIndex;
                 }
@@ -103,16 +106,16 @@ void Block_recycle(Allocator *allocator, BlockHeader *blockHeader) {
     }
 }
 
-
-bool overflowScanLine(Heap* heap, Stack* stack, BlockHeader* block, int lineIndex) {
+bool overflowScanLine(Heap *heap, Stack *stack, BlockHeader *block,
+                      int lineIndex) {
     LineHeader *lineHeader = Block_getLineHeader(block, lineIndex);
 
     if (Line_isMarked(lineHeader) && Line_containsObject(lineHeader)) {
         Object *object = Line_getFirstObject(lineHeader);
         word_t *lineEnd =
-                Block_getLineAddress(block, lineIndex) + WORDS_IN_LINE;
+            Block_getLineAddress(block, lineIndex) + WORDS_IN_LINE;
         while (object != NULL && (word_t *)object < lineEnd) {
-            if(Marker_overflowMark(heap, stack, object)) {
+            if (Marker_overflowMark(heap, stack, object)) {
                 return true;
             }
             object = Object_nextObject(object);
@@ -124,9 +127,12 @@ bool overflowScanLine(Heap* heap, Stack* stack, BlockHeader* block, int lineInde
 /**
  *
  * This method is used in case of overflow during the marking phase.
- * It sweeps through the block starting at `currentOverflowAddress` until it finds a marked block with unmarked children.
- * It updates the value of `currentOverflowAddress` while sweeping through the block
- * Once an object is found it adds it to the stack and returns `true`. If no object is found it returns `false`.
+ * It sweeps through the block starting at `currentOverflowAddress` until it
+ * finds a marked block with unmarked children.
+ * It updates the value of `currentOverflowAddress` while sweeping through the
+ * block
+ * Once an object is found it adds it to the stack and returns `true`. If no
+ * object is found it returns `false`.
  *
  */
 bool block_overflowHeapScan(BlockHeader *block, Heap *heap, Stack *stack,
@@ -145,7 +151,7 @@ bool block_overflowHeapScan(BlockHeader *block, Heap *heap, Stack *stack,
         lineIndex = Block_getLineIndexFromWord(block, *currentOverflowAddress);
     }
     while (lineIndex < LINE_COUNT) {
-        if(overflowScanLine(heap, stack, block, lineIndex)) {
+        if (overflowScanLine(heap, stack, block, lineIndex)) {
             return true;
         }
 

@@ -19,7 +19,8 @@
 #define HEAP_MEM_FD_OFFSET 0
 
 /**
- * Maps `MAX_SIZE` of memory and returns the first address aligned on `alignement` mask
+ * Maps `MAX_SIZE` of memory and returns the first address aligned on
+ * `alignement` mask
  */
 word_t *mapAndAlign(int alignmentMask) {
     word_t *heapStart = mmap(NULL, MAX_SIZE, HEAP_MEM_PROT, HEAP_MEM_FLAGS,
@@ -63,7 +64,8 @@ Heap *Heap_create(size_t initialSize) {
 }
 /**
  * Allocates large objects using the `LargeAllocator`.
- * If allocation fails, because there is not enough memory available, it will trigger a collection of both the small and the large heap.
+ * If allocation fails, because there is not enough memory available, it will
+ * trigger a collection of both the small and the large heap.
  */
 word_t *Heap_allocLarge(Heap *heap, uint32_t objectSize) {
 
@@ -86,7 +88,8 @@ word_t *Heap_allocLarge(Heap *heap, uint32_t objectSize) {
         // Otherwise collect
         Heap_collect(heap, stack);
 
-        // After collection, try to alloc again, if it fails, grow the heap by at least the size of the object we want to alloc
+        // After collection, try to alloc again, if it fails, grow the heap by
+        // at least the size of the object we want to alloc
         object = LargeAllocator_getBlock(heap->largeAllocator, size);
         if (object != NULL) {
             Object_setObjectType(&object->header, object_large);

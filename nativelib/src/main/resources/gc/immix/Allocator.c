@@ -41,10 +41,12 @@ Allocator *Allocator_create(word_t *heapStart, int blockCount) {
 }
 
 /**
- * The Allocator needs one free block for overflow allocation and a free or recyclable block for normal allocation.
+ * The Allocator needs one free block for overflow allocation and a free or
+ * recyclable block for normal allocation.
  *
  * @param allocator
- * @return `true` if there are enough block to initialise the cursors, `false` otherwise.
+ * @return `true` if there are enough block to initialise the cursors, `false`
+ * otherwise.
  */
 bool Allocator_canInitCursors(Allocator *allocator) {
     return allocator->freeBlockCount >= 2 ||
@@ -76,7 +78,6 @@ void Allocator_initCursors(Allocator *allocator) {
     allocator->largeCursor = Block_getFirstWord(largeHeader);
     allocator->largeLimit = Block_getBlockEnd(largeHeader);
 }
-
 
 /**
  * Heuristic that tells if the heap should be grown or not.
@@ -142,7 +143,8 @@ INLINE word_t *Allocator_alloc(Allocator *allocator, size_t size) {
 
     // Checks if the end of the block overlaps with the limit
     if (end > allocator->limit) {
-        // If it overlaps but the block to allocate is a `medium` sized block, use overflow allocation
+        // If it overlaps but the block to allocate is a `medium` sized block,
+        // use overflow allocation
         if (size > LINE_SIZE) {
             return overflowAllocation(allocator, size);
         } else {
@@ -169,12 +171,12 @@ INLINE word_t *Allocator_alloc(Allocator *allocator, size_t size) {
 }
 
 /**
- * Updates the cursor and the limit of the Allocator to point the next line of the recycled block
+ * Updates the cursor and the limit of the Allocator to point the next line of
+ * the recycled block
  */
 bool nextLineRecycled(Allocator *allocator) {
     // The cursor can point on first word of next block, thus `- WORD_SIZE`
-    BlockHeader *block =
-            Block_getBlockHeader(allocator->cursor - WORD_SIZE);
+    BlockHeader *block = Block_getBlockHeader(allocator->cursor - WORD_SIZE);
     assert(Block_isRecyclable(block));
 
     int16_t lineIndex = block->header.first;
@@ -195,9 +197,10 @@ bool nextLineRecycled(Allocator *allocator) {
 }
 
 /**
- * Updates the the cursor and the limit of the Allocator to point to the first free line of the new block.
+ * Updates the the cursor and the limit of the Allocator to point to the first
+ * free line of the new block.
  */
-void firstLineNewBlock(Allocator* allocator, BlockHeader* block) {
+void firstLineNewBlock(Allocator *allocator, BlockHeader *block) {
     allocator->block = block;
 
     // The block can be free or recycled.
@@ -235,7 +238,6 @@ bool getNextLine(Allocator *allocator) {
 
         return true;
 
-
     } else {
         // If we have a recycled block
         return nextLineRecycled(allocator);
@@ -243,7 +245,8 @@ bool getNextLine(Allocator *allocator) {
 }
 
 /**
- * Returns a block, first from recycled if available, otherwise from chunk_allocator
+ * Returns a block, first from recycled if available, otherwise from
+ * chunk_allocator
  */
 BlockHeader *getNextBlock(Allocator *allocator) {
     BlockHeader *block = NULL;

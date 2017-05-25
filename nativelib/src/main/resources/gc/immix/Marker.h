@@ -5,6 +5,6 @@
 #include "datastructures/Stack.h"
 
 void Mark_markRoots(Heap *heap, Stack *stack);
-bool Marker_overflowMark(Heap* heap, Stack* stack, Object* object);
+bool Marker_overflowMark(Heap *heap, Stack *stack, Object *object);
 
 #endif // IMMIX_MARKER_H

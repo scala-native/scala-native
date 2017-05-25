@@ -195,12 +195,12 @@ bool smallHeapOverflowHeapScan(Heap *heap, Stack *stack) {
     return false;
 }
 
-bool Marker_overflowMark(Heap* heap, Stack* stack, Object* object) {
+bool Marker_overflowMark(Heap *heap, Stack *stack, Object *object) {
     ObjectHeader *objectHeader = &object->header;
     if (Object_isMarked(objectHeader)) {
         if (object->rtti->rt.id == __object_array_id) {
-            size_t size = Object_size(&object->header) -
-                          OBJECT_HEADER_SIZE - WORD_SIZE;
+            size_t size =
+                Object_size(&object->header) - OBJECT_HEADER_SIZE - WORD_SIZE;
             size_t nbWords = size / WORD_SIZE;
             for (int i = 0; i < nbWords; i++) {
                 word_t *field = object->fields[i];
@@ -237,7 +237,7 @@ void largeHeapOverflowHeapScan(Heap *heap, Stack *stack) {
 
     while (currentOverflowAddress != heapEnd) {
         Object *object = (Object *)currentOverflowAddress;
-        if(Marker_overflowMark(heap, stack, object)) {
+        if (Marker_overflowMark(heap, stack, object)) {
             return;
         }
         currentOverflowAddress = (word_t *)Object_nextLargeObject(object);
