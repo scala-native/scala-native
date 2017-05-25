@@ -29,7 +29,7 @@ class FileInputStream(fd: FileDescriptor) extends InputStream {
   override def read(): Int = {
     val buffer = new Array[Byte](1)
     if (read(buffer) <= 0) -1
-    else buffer(0) & 0xFF
+    else buffer(0).toUInt.toInt
   }
 
   override def read(buffer: Array[Byte]): Int = {
