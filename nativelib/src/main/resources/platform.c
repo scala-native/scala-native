@@ -3,6 +3,7 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <Windows.h>
+#include <malloc.h>
 #endif
 
 int scalanative_platform_is_windows() {
