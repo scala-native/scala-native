@@ -30,10 +30,11 @@ void scalanative_init() {
     scalanative_safepoint_init();
 }
 
-void *scalanative_alloc_raw(size_t size) {
+void *scalanative_alloc(void *info, size_t size) {
     size = size + (8 - size % 8);
-    if (current != 0 && current + size < end) {
+    if (current + size < end) {
         void *alloc = current;
+        *alloc = info;
         current += size;
         return alloc;
     } else {
@@ -42,16 +43,8 @@ void *scalanative_alloc_raw(size_t size) {
     }
 }
 
-void *scalanative_alloc_raw_atomic(size_t size) {
-    return scalanative_alloc_raw(size);
-}
-
-void *scalanative_alloc(void *info, size_t size) {
-    void **alloc = (void **)scalanative_alloc_raw(size);
-    *alloc = info;
-    return (void *)alloc;
+void *scalanative_alloc_atomic(void *info, size_t size) {
+    return scalanative_alloc(info, size);
 }
 
 void scalanative_collect() {}
-
-void scalanative_safepoint() {}
