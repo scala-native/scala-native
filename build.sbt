@@ -182,9 +182,12 @@ lazy val libSettings =
 
 lazy val gcSettings =
   if (!System.getenv.containsKey("SCALANATIVE_GC")) {
+    println("Using default gc")
     Seq.empty
   } else {
-    Seq(nativeGC := System.getenv.get("SCALANATIVE_GC"))
+    val gc = System.getenv.get("SCALANATIVE_GC")
+    println(s"Using gc based on SCALANATIVE_GC=$gc")
+    Seq(nativeGC in Compile := gc)
   }
 
 lazy val projectSettings =
