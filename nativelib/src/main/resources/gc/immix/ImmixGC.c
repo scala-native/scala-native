@@ -20,31 +20,15 @@ void scalanative_init() {
 }
 
 void *scalanative_alloc(void *info, size_t size) {
-    assert(size <= MAX_BLOCK_SIZE);
     size = MathUtils_RoundToNextMultiple(size, WORD_SIZE);
-    if (heap == NULL) {
-        scalanative_init();
-    }
 
-    word_t *object = Heap_Alloc(heap, (uint32_t) size);
-    if (object == NULL) {
-        scalanative_collect();
-
-        object = Heap_Alloc(heap, (uint32_t) size);
-        if (object == NULL) {
-            LargeAllocator_Print(heap->largeAllocator);
-            printf("Failed to alloc: %zu\n", size + 8);
-            printf("No more memory available\n");
-            fflush(stdout);
-            exit(1);
-        }
-    }
-    *(void **)object = info;
-    return object;
+    void **alloc = (void **) Heap_Alloc(heap, size);
+    *alloc = info;
+    return (void *)alloc;
 }
 
 void *scalanative_alloc_small(void *info, size_t size) {
-    size = (size + sizeof(word_t) - 1) / sizeof(word_t) * sizeof(word_t);
+    size = MathUtils_RoundToNextMultiple(size, WORD_SIZE);
 
     void **alloc = (void **) Heap_AllocSmall(heap, size);
     *alloc = info;
