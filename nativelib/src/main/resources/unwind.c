@@ -42,7 +42,7 @@ int scalanative_unwind_init_local(void *cursor, void *context) {
     }
     ucontext->frames = CaptureStackBackTrace(0, MAX_LENGTH_OF_CALLSTACK,
                                              ucontext->stack, NULL);
-    ucontext->cursor = 0;
+    ucontext->cursor = 1;
     ucontext->symbol.MaxNameLen = 255; // todo: review
     ucontext->symbol.SizeOfStruct = sizeof(SYMBOL_INFO);
     return 0;
