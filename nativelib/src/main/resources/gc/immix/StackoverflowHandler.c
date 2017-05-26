@@ -7,6 +7,8 @@
 
 extern int __object_array_id;
 
+#define LAST_FIELD_OFFSET -1
+
 bool StackOverflowHandler_smallHeapOverflowHeapScan(Heap *heap, Stack *stack);
 void StackOverflowHandler_largeHeapOverflowHeapScan(Heap *heap, Stack *stack);
 bool StackOverflowHandler_overflowBlockScan(BlockHeader *block, Heap *heap, Stack *stack,
@@ -72,7 +74,7 @@ bool StackOverflowHandler_overflowMark(Heap *heap, Stack *stack, Object *object)
             size_t nbWords = size / WORD_SIZE;
             for (int i = 0; i < nbWords; i++) {
                 word_t *field = object->fields[i];
-                Object *fieldObject = (Object *)(field - 1);
+                Object *fieldObject = Object_FromMutatorAddress(field);
                 if (heap_isObjectInHeap(heap, fieldObject) &&
                     !Object_IsMarked(&fieldObject->header)) {
                     Stack_Push(stack, object);
@@ -82,9 +84,9 @@ bool StackOverflowHandler_overflowMark(Heap *heap, Stack *stack, Object *object)
         } else {
             int64_t *ptr_map = object->rtti->refMapStruct;
             int i = 0;
-            while (ptr_map[i] != -1) {
+            while (ptr_map[i] != LAST_FIELD_OFFSET) {
                 word_t *field = object->fields[ptr_map[i]];
-                Object *fieldObject = (Object *)(field - 1);
+                Object *fieldObject = Object_FromMutatorAddress(field);
                 if (heap_isObjectInHeap(heap, fieldObject) &&
                     !Object_IsMarked(&fieldObject->header)) {
                     Stack_Push(stack, object);

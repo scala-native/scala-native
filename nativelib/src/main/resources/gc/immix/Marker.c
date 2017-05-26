@@ -14,6 +14,8 @@ extern word_t *__modules;
 extern int __modules_size;
 extern word_t **__stack_bottom;
 
+#define LAST_FIELD_OFFSET -1
+
 void Marker_Mark(Heap *heap, Stack *stack);
 void StackOverflowHandler_largeHeapOverflowHeapScan(Heap *heap, Stack *stack);
 bool StackOverflowHandler_smallHeapOverflowHeapScan(Heap *heap, Stack *stack);
@@ -73,7 +75,7 @@ void Marker_Mark(Heap *heap, Stack *stack) {
         } else {
             int64_t *ptr_map = object->rtti->refMapStruct;
             int i = 0;
-            while (ptr_map[i] != -1) {
+            while (ptr_map[i] != LAST_FIELD_OFFSET) {
                 word_t *field = object->fields[ptr_map[i]];
                 Object *fieldObject = Object_FromMutatorAddress(field);
                 if (heap_isObjectInHeap(heap, fieldObject) &&

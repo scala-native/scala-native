@@ -8,6 +8,8 @@
 
 extern int __object_array_id;
 
+#define NO_RECYCLABLE_LINE -1
+
 INLINE void Block_recycleUnmarkedBlock(Allocator *allocator,
                                        BlockHeader *blockHeader) {
     memset(blockHeader, 0, LINE_SIZE);
@@ -51,7 +53,7 @@ void Block_Recycle(Allocator *allocator, BlockHeader *blockHeader) {
         assert(Block_IsMarked(blockHeader));
         Block_Unmark(blockHeader);
         int16_t lineIndex = 0;
-        int lastRecyclable = -1;
+        int lastRecyclable = NO_RECYCLABLE_LINE;
         while (lineIndex < LINE_COUNT) {
             LineHeader *lineHeader =
                     Block_GetLineHeader(blockHeader, lineIndex);
@@ -66,7 +68,7 @@ void Block_Recycle(Allocator *allocator, BlockHeader *blockHeader) {
 
                 // If it's the first free line, update the block header to point
                 // to it.
-                if (lastRecyclable == -1) {
+                if (lastRecyclable == NO_RECYCLABLE_LINE) {
                     blockHeader->header.first = lineIndex;
                 } else {
                     // Update the last recyclable line to point to the current
@@ -92,7 +94,7 @@ void Block_Recycle(Allocator *allocator, BlockHeader *blockHeader) {
             }
         }
         // If there is no recyclable line, the block is unavailable
-        if (lastRecyclable == -1) {
+        if (lastRecyclable == NO_RECYCLABLE_LINE) {
             Block_SetFlag(blockHeader, block_unavailable);
         } else {
             Block_GetFreeLineHeader(blockHeader, lastRecyclable)->next =
@@ -100,7 +102,7 @@ void Block_Recycle(Allocator *allocator, BlockHeader *blockHeader) {
             Block_SetFlag(blockHeader, block_recyclable);
             BlockList_AddLast(&allocator->recycledBlocks, blockHeader);
 
-            assert(blockHeader->header.first != -1);
+            assert(blockHeader->header.first != NO_RECYCLABLE_LINE);
             allocator->recycledBlockCount++;
         }
     }
