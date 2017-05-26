@@ -4,9 +4,7 @@
 #include "../GCTypes.h"
 #include "../headers/ObjectHeader.h"
 
-#define PRINT_STACK_OVERFLOW
-
-#define INITIAL_STACK_SIZE (8)
+#define INITIAL_STACK_SIZE (128 * 1024)
 
 typedef Object *Stack_Type;
 

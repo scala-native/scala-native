@@ -172,7 +172,7 @@ void Heap_collect(Heap *heap, Stack *stack) {
     printf("\nCollect\n");
     fflush(stdout);
 #endif
-    Mark_markRoots(heap, stack);
+    Marker_markRoots(heap, stack);
     Heap_recycle(heap);
 
 #ifdef DEBUG_PRINT

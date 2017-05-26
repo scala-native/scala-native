@@ -8,7 +8,5 @@
 #define LAST_HOLE -1
 
 void Block_recycle(Allocator *, BlockHeader *);
-bool block_overflowHeapScan(BlockHeader *block, Heap *heap, Stack *stack,
-                            word_t **currentOverflowAddress);
 void Block_print(BlockHeader *block);
 #endif // IMMIX_BLOCK_H

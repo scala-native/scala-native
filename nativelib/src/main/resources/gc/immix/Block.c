@@ -106,61 +106,6 @@ void Block_recycle(Allocator *allocator, BlockHeader *blockHeader) {
     }
 }
 
-bool overflowScanLine(Heap *heap, Stack *stack, BlockHeader *block,
-                      int lineIndex) {
-    LineHeader *lineHeader = Block_getLineHeader(block, lineIndex);
-
-    if (Line_isMarked(lineHeader) && Line_containsObject(lineHeader)) {
-        Object *object = Line_getFirstObject(lineHeader);
-        word_t *lineEnd =
-            Block_getLineAddress(block, lineIndex) + WORDS_IN_LINE;
-        while (object != NULL && (word_t *)object < lineEnd) {
-            if (Marker_overflowMark(heap, stack, object)) {
-                return true;
-            }
-            object = Object_nextObject(object);
-        }
-    }
-    return false;
-}
-
-/**
- *
- * This method is used in case of overflow during the marking phase.
- * It sweeps through the block starting at `currentOverflowAddress` until it
- * finds a marked block with unmarked children.
- * It updates the value of `currentOverflowAddress` while sweeping through the
- * block
- * Once an object is found it adds it to the stack and returns `true`. If no
- * object is found it returns `false`.
- *
- */
-bool block_overflowHeapScan(BlockHeader *block, Heap *heap, Stack *stack,
-                            word_t **currentOverflowAddress) {
-    word_t *blockEnd = Block_getBlockEnd(block);
-    if (!Block_isMarked(block)) {
-        *currentOverflowAddress = blockEnd;
-        return false;
-    }
-
-    int lineIndex;
-
-    if (*currentOverflowAddress == (word_t *)block) {
-        lineIndex = 0;
-    } else {
-        lineIndex = Block_getLineIndexFromWord(block, *currentOverflowAddress);
-    }
-    while (lineIndex < LINE_COUNT) {
-        if (overflowScanLine(heap, stack, block, lineIndex)) {
-            return true;
-        }
-
-        lineIndex++;
-    }
-    *currentOverflowAddress = blockEnd;
-    return false;
-}
-
 void Block_print(BlockHeader *block) {
     printf("%p ", block);
     if (Block_isFree(block)) {
