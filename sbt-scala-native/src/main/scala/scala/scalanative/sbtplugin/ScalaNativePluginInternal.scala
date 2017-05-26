@@ -197,7 +197,7 @@ object ScalaNativePluginInternal {
       workdir
     },
     nativeLogger := streams.value.log,
-    nativeGC := "immix",
+    nativeGC := "boehm",
     nativeCompileLib := {
       val cwd       = nativeWorkdir.value
       val logger    = nativeLogger.value
