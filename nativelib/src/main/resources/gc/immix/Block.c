@@ -17,15 +17,15 @@ INLINE void Block_recycleUnmarkedBlock(Allocator *allocator,
     Block_SetFlag(blockHeader, block_free);
 }
 
-INLINE void Block_recycleMarkedLine(BlockHeader *blockHeader, LineHeader *lineHeader,
-                                    int lineIndex) {
+INLINE void Block_recycleMarkedLine(BlockHeader *blockHeader,
+                                    LineHeader *lineHeader, int lineIndex) {
     Line_Unmark(lineHeader);
     // If the line contains an object
     if (Line_ContainsObject(lineHeader)) {
         // Unmark all objects in line
         Object *object = Line_GetFirstObject(lineHeader);
         word_t *lineEnd =
-                Block_GetLineAddress(blockHeader, lineIndex) + WORDS_IN_LINE;
+            Block_GetLineAddress(blockHeader, lineIndex) + WORDS_IN_LINE;
         while (object != NULL && (word_t *)object < lineEnd) {
             ObjectHeader *objectHeader = &object->header;
             if (Object_IsMarked(objectHeader)) {
@@ -56,7 +56,7 @@ void Block_Recycle(Allocator *allocator, BlockHeader *blockHeader) {
         int lastRecyclable = NO_RECYCLABLE_LINE;
         while (lineIndex < LINE_COUNT) {
             LineHeader *lineHeader =
-                    Block_GetLineHeader(blockHeader, lineIndex);
+                Block_GetLineHeader(blockHeader, lineIndex);
             // If the line is marked, we need to unmark all objects in the line
             if (Line_IsMarked(lineHeader)) {
                 // Unmark line
@@ -83,7 +83,7 @@ void Block_Recycle(Allocator *allocator, BlockHeader *blockHeader) {
                 uint8_t size = 1;
                 while (lineIndex < LINE_COUNT &&
                        !Line_IsMarked(lineHeader = Block_GetLineHeader(
-                               blockHeader, lineIndex))) {
+                                          blockHeader, lineIndex))) {
                     size++;
                     lineIndex++;
                     Line_SetEmpty(lineHeader);
@@ -118,7 +118,7 @@ void Block_Print(BlockHeader *block) {
         int lineIndex = block->header.first;
         while (lineIndex != LAST_HOLE) {
             FreeLineHeader *freeLineHeader =
-                    Block_GetFreeLineHeader(block, lineIndex);
+                Block_GetFreeLineHeader(block, lineIndex);
             printf("[index: %d, size: %d] -> ", lineIndex,
                    freeLineHeader->size);
             lineIndex = freeLineHeader->next;

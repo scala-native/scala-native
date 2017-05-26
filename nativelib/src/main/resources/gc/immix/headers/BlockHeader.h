@@ -68,12 +68,12 @@ static inline word_t *Block_GetLineWord(BlockHeader *blockHeader, int lineIndex,
 
 static inline FreeLineHeader *Block_GetFreeLineHeader(BlockHeader *blockHeader,
                                                       int lineIndex) {
-    return (FreeLineHeader *) Block_GetLineAddress(blockHeader, lineIndex);
+    return (FreeLineHeader *)Block_GetLineAddress(blockHeader, lineIndex);
 }
 
 static inline BlockHeader *
 Block_BlockHeaderFromLineHeader(LineHeader *lineHeader) {
-    return Block_GetBlockHeader((word_t *) lineHeader);
+    return Block_GetBlockHeader((word_t *)lineHeader);
 }
 
 static inline word_t *Block_GetFirstWord(BlockHeader *blockHeader) {

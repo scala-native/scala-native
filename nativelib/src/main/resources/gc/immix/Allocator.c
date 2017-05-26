@@ -73,7 +73,7 @@ void Allocator_InitCursors(Allocator *allocator) {
     assert(!BlockList_IsEmpty(&allocator->freeBlocks));
 
     BlockHeader *largeHeader =
-            BlockList_RemoveFirstBlock(&allocator->freeBlocks);
+        BlockList_RemoveFirstBlock(&allocator->freeBlocks);
     allocator->largeBlock = largeHeader;
     allocator->largeCursor = Block_GetFirstWord(largeHeader);
     allocator->largeLimit = Block_GetBlockEnd(largeHeader);

@@ -58,7 +58,7 @@ void Bitmap_Grow(Bitmap *bitmap, size_t increment) {
     size_t previousNbWords = MathUtils_DivAndRoundUp(nbBlocks, BITS_PER_WORD);
 
     size_t totalNbWords =
-            MathUtils_DivAndRoundUp(nbBlocks + nbBlockIncrement, BITS_PER_WORD);
+        MathUtils_DivAndRoundUp(nbBlocks + nbBlockIncrement, BITS_PER_WORD);
 
     bitmap->words = realloc(bitmap->words, totalNbWords * WORD_SIZE);
     bitmap->size += increment;

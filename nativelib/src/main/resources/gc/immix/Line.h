@@ -11,10 +11,10 @@ static INLINE Object *Line_GetFirstObject(LineHeader *lineHeader) {
     uint8_t offset = Line_GetFirstObjectOffset(lineHeader);
 
     uint32_t lineIndex =
-            Block_GetLineIndexFromLineHeader(blockHeader, lineHeader);
+        Block_GetLineIndexFromLineHeader(blockHeader, lineHeader);
 
-    return (Object *) Block_GetLineWord(blockHeader, lineIndex,
-                                        offset / WORD_SIZE);
+    return (Object *)Block_GetLineWord(blockHeader, lineIndex,
+                                       offset / WORD_SIZE);
 }
 
 static INLINE void Line_Update(BlockHeader *blockHeader, word_t *objectStart) {

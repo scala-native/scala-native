@@ -36,10 +36,10 @@ void Marker_markConservative(Heap *heap, Stack *stack, word_t *address) {
         object = Object_GetObject(address);
         assert(
             object == NULL ||
-                    Line_ContainsObject(&Block_GetBlockHeader((word_t *) object)
-                            ->lineHeaders[Block_GetLineIndexFromWord(
-                            Block_GetBlockHeader((word_t *) object),
-                            (word_t *) object)]));
+            Line_ContainsObject(&Block_GetBlockHeader((word_t *)object)
+                                     ->lineHeaders[Block_GetLineIndexFromWord(
+                                         Block_GetBlockHeader((word_t *)object),
+                                         (word_t *)object)]));
 #ifdef DEBUG_PRINT
         if (object == NULL) {
             printf("Not found: %p\n", address);
@@ -61,7 +61,7 @@ void Marker_Mark(Heap *heap, Stack *stack) {
         if (object->rtti->rt.id == __object_array_id) {
             // remove header and rtti from size
             size_t size =
-                    Object_Size(&object->header) - OBJECT_HEADER_SIZE - WORD_SIZE;
+                Object_Size(&object->header) - OBJECT_HEADER_SIZE - WORD_SIZE;
             size_t nbWords = size / WORD_SIZE;
             for (int i = 0; i < nbWords; i++) {
 

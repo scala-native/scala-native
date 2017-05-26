@@ -19,10 +19,10 @@ Object *Object_NextObject(Object *object) {
         return NULL;
     }
     Object *next = (Object *)((ubyte_t *)object + size);
-    assert(Block_GetBlockHeader((word_t *) next) ==
-                   Block_GetBlockHeader((word_t *) object) ||
-           (ubyte_t *) Block_GetBlockHeader((word_t *) next) ==
-               (ubyte_t *) Block_GetBlockHeader((word_t *) object) +
+    assert(Block_GetBlockHeader((word_t *)next) ==
+               Block_GetBlockHeader((word_t *)object) ||
+           (ubyte_t *)Block_GetBlockHeader((word_t *)next) ==
+               (ubyte_t *)Block_GetBlockHeader((word_t *)object) +
                    BLOCK_TOTAL_SIZE);
     return next;
 }
@@ -31,15 +31,16 @@ static inline bool isWordAligned(word_t *word) {
     return ((word_t)word & WORD_INVERSE_MASK) == (word_t)word;
 }
 
-Object *Object_getInLine(BlockHeader *blockHeader, int lineIndex, word_t *word) {
+Object *Object_getInLine(BlockHeader *blockHeader, int lineIndex,
+                         word_t *word) {
     assert(Line_ContainsObject(Block_GetLineHeader(blockHeader, lineIndex)));
 
     Object *current =
-            Line_GetFirstObject(Block_GetLineHeader(blockHeader, lineIndex));
+        Line_GetFirstObject(Block_GetLineHeader(blockHeader, lineIndex));
     Object *next = Object_NextObject(current);
 
     word_t *lineEnd =
-            Block_GetLineAddress(blockHeader, lineIndex) + WORDS_IN_LINE;
+        Block_GetLineAddress(blockHeader, lineIndex) + WORDS_IN_LINE;
 
     while (next != NULL && (word_t *)next < lineEnd && (word_t *)next <= word) {
         current = next;
@@ -105,7 +106,7 @@ Object *Object_GetObject(word_t *word) {
 Object *Object_getLargeInnerPointer(LargeAllocator *allocator, word_t *word) {
     word_t *current = (word_t *)((word_t)word & LARGE_BLOCK_MASK);
 
-    while (!Bitmap_GetBit(allocator->bitmap, (ubyte_t *) current)) {
+    while (!Bitmap_GetBit(allocator->bitmap, (ubyte_t *)current)) {
         current -= LARGE_BLOCK_SIZE / WORD_SIZE;
     }
 
@@ -127,14 +128,14 @@ Object *Object_GetLargeObject(LargeAllocator *allocator, word_t *word) {
     if (((word_t)word & LARGE_BLOCK_MASK) != (word_t)word) {
         word = (word_t *)((word_t)word & LARGE_BLOCK_MASK);
     }
-    if (Bitmap_GetBit(allocator->bitmap, (ubyte_t *) word) &&
-            Object_IsAllocated(&((Object *) word)->header)) {
+    if (Bitmap_GetBit(allocator->bitmap, (ubyte_t *)word) &&
+        Object_IsAllocated(&((Object *)word)->header)) {
         return (Object *)word;
     } else {
         Object *object = Object_getLargeInnerPointer(allocator, word);
         assert(object == NULL ||
                (word >= (word_t *)object &&
-                word < (word_t *) Object_NextLargeObject(object)));
+                word < (word_t *)Object_NextLargeObject(object)));
         return object;
     }
 }
@@ -145,13 +146,13 @@ void Object_Mark(Object *object) {
 
     if (!Object_IsLargeObject(&object->header)) {
         // Mark the block
-        BlockHeader *blockHeader = Block_GetBlockHeader((word_t *) object);
+        BlockHeader *blockHeader = Block_GetBlockHeader((word_t *)object);
         Block_Mark(blockHeader);
 
         // Mark all Lines
         int startIndex =
-                Block_GetLineIndexFromWord(blockHeader, (word_t *) object);
-        word_t *lastWord = (word_t *) Object_NextObject(object) - 1;
+            Block_GetLineIndexFromWord(blockHeader, (word_t *)object);
+        word_t *lastWord = (word_t *)Object_NextObject(object) - 1;
         int endIndex = Block_GetLineIndexFromWord(blockHeader, lastWord);
         assert(startIndex >= 0 && startIndex < LINE_COUNT);
         assert(endIndex >= 0 && endIndex < LINE_COUNT);
@@ -164,5 +165,6 @@ void Object_Mark(Object *object) {
 }
 
 size_t Object_ChunkSize(Object *object) {
-    return MathUtils_RoundToNextMultiple(Object_Size(&object->header), MIN_BLOCK_SIZE);
+    return MathUtils_RoundToNextMultiple(Object_Size(&object->header),
+                                         MIN_BLOCK_SIZE);
 }
