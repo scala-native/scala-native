@@ -10,7 +10,7 @@
 #include "State.h"
 #include "utils/MathUtils.h"
 
-#define INITIAL_HEAP_SIZE (128 * 1024)
+#define INITIAL_HEAP_SIZE (1024 * 1024)
 
 void scalanative_collect();
 
