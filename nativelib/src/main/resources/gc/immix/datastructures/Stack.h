@@ -4,7 +4,7 @@
 #include "../GCTypes.h"
 #include "../headers/ObjectHeader.h"
 
-#define INITIAL_STACK_SIZE (128 * 1024)
+#define INITIAL_STACK_SIZE (256 * 1024)
 
 typedef Object *Stack_Type;
 
