@@ -21,8 +21,6 @@
 void *current = 0;
 void *end = 0;
 
-void scalanative_safepoint_init();
-
 void scalanative_init() {
     current = mmap(NULL, CHUNK, DUMMY_GC_PROT, DUMMY_GC_FLAGS, DUMMY_GC_FD,
                    DUMMY_GC_FD_OFFSET);
@@ -41,6 +39,14 @@ void *scalanative_alloc(void *info, size_t size) {
         scalanative_init();
         return scalanative_alloc(info, size);
     }
+}
+
+void *scalanative_alloc_small(void *info, size_t size) {
+    return scalanative_alloc(info, size);
+}
+
+void *scalanative_alloc_large(void *info, size_t size) {
+    return scalanative_alloc(info, size);
 }
 
 void *scalanative_alloc_atomic(void *info, size_t size) {

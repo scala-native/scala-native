@@ -8,3 +8,6 @@ _build/
 bin/.coursier
 bin/.scalafmt*
 sbt-crossproject/
+
+CMakeLists.txt
+cmake-build-debug/

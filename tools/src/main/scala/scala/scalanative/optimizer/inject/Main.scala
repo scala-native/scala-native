@@ -19,6 +19,8 @@ class Main(entry: Global)(implicit fresh: Fresh) extends Inject {
       Global.Member(entry, "main_scala.scalanative.runtime.ObjectArray_unit")
     val entryMain = Val.Global(entryMainName, Type.Ptr)
 
+    val stackBottom = Val.Local(fresh(), Type.Ptr)
+
     val argc   = Val.Local(fresh(), Type.Int)
     val argv   = Val.Local(fresh(), Type.Ptr)
     val module = Val.Local(fresh(), Type.Module(entry.top))
@@ -33,6 +35,11 @@ class Main(entry: Global)(implicit fresh: Fresh) extends Inject {
       MainSig,
       Seq(
         Inst.Label(fresh(), Seq(argc, argv)),
+        Inst.Let(stackBottom.name, Op.Stackalloc(Type.Ptr, Val.Long(0))),
+        Inst.Let(
+          Op.Store(Type.Ptr,
+                   Val.Global(stackBottomName, Type.Ptr),
+                   stackBottom)),
         Inst.Let(Op.Call(InitSig, Init, Seq(), unwind)),
         Inst.Let(rt.name, Op.Module(Rt.name, unwind)),
         Inst.Let(arr.name,
@@ -47,10 +54,13 @@ class Main(entry: Global)(implicit fresh: Fresh) extends Inject {
         Inst.Ret(Val.Int(1))
       )
     )
+
+    buf += Defn.Var(Attrs.None, stackBottomName, Type.Ptr, Val.Null)
   }
 }
 
 object Main extends InjectCompanion {
+
   val ObjectArray =
     Type.Class(Global.Top("scala.scalanative.runtime.ObjectArray"))
 
@@ -83,6 +93,8 @@ object Main extends InjectCompanion {
   val InitSig  = Type.Function(Seq(), Type.Unit)
   val Init     = Val.Global(Global.Top("scalanative_init"), Type.Ptr)
   val InitDecl = Defn.Declare(Attrs.None, Init.name, InitSig)
+
+  val stackBottomName = Global.Top("__stack_bottom")
 
   override val depends =
     Seq(ObjectArray.name,

@@ -9,7 +9,9 @@ final case class MemoryLayout(size: Long, tys: List[PositionedType]) {
   lazy val offsetArray: Seq[Val] = {
     val ptrOffsets =
       tys.collect {
-        case MemoryLayout.Tpe(_, offset, _: RefKind) => Val.Long(offset)
+        // offset in words without rtti
+        case MemoryLayout.Tpe(_, offset, _: RefKind) =>
+          Val.Long(offset / MemoryLayout.WORD_SIZE - 1)
       }
 
     ptrOffsets :+ Val.Long(-1)
@@ -17,6 +19,8 @@ final case class MemoryLayout(size: Long, tys: List[PositionedType]) {
 }
 
 object MemoryLayout {
+
+  val WORD_SIZE = 8
 
   sealed abstract class PositionedType {
     def size: Long
@@ -28,7 +32,7 @@ object MemoryLayout {
   final case class Padding(size: Long, offset: Long) extends PositionedType
 
   def sizeOf(ty: Type): Long = ty match {
-    case primitive: Type.Primitive => math.max(primitive.width / 8, 1)
+    case primitive: Type.Primitive => math.max(primitive.width / WORD_SIZE, 1)
     case Type.Array(arrTy, n)      => sizeOf(arrTy) * n
     case Type.Struct(_, tys)       => MemoryLayout(tys).size
     case Type.Nothing | Type.Ptr | _: Type.Trait | _: Type.Module |
