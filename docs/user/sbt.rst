@@ -94,18 +94,15 @@ Garbage collectors
    Conservative generational garbage collector. More information is available
    at the `project's page <https://www.hboehm.info/gc/>`_.
 
-2. **none.**
+2. **none.** (experimental, since 0.2)
 
    Garbage collector that allocates things without ever freeing them. Useful
    for short-running command-line applications or applications where garbage
    collections pauses are not acceptable.`
 
-2. **immix.**
+2. **immix.** (experimental, since 0.3)
 
-    Immix is a mostly precise mark-region collector based on the paper:
-    `Immix: A Mark-Region Garbage Collector with Space Efficiency,
-     Fast Collection, and Mutator Performance
-    <http://www.cs.utexas.edu/users/speedway/DaCapo/papers/immix-pldi-2008.pdf>`_.
+   Immix is a mostly-precise mark-region tracing garbage collector.
 
 Publishing
 ----------
