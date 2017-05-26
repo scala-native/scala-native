@@ -14,14 +14,14 @@ typedef struct {
     int current;
 } Stack;
 
-Stack *Stack_alloc(size_t size);
+Stack *Stack_Alloc(size_t size);
 
-bool Stack_push(Stack *stack, Stack_Type word);
+bool Stack_Push(Stack *stack, Stack_Type word);
 
-Stack_Type Stack_pop(Stack *stack);
+Stack_Type Stack_Pop(Stack *stack);
 
-bool Stack_isEmpty(Stack *stack);
+bool Stack_IsEmpty(Stack *stack);
 
-void Stack_doubleSize(Stack *stack);
+void Stack_DoubleSize(Stack *stack);
 
 #endif // IMMIX_STACK_H

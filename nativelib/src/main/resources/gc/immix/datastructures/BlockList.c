@@ -22,17 +22,17 @@ BlockHeader *_getNextBlock(word_t *heapStart, BlockHeader *header) {
     return _getBlockFromIndex(heapStart, nextBlockId);
 }
 
-void BlockList_init(BlockList *blockList, word_t *heapStart) {
+void BlockList_Init(BlockList *blockList, word_t *heapStart) {
     blockList->heapStart = heapStart;
     blockList->first = NULL;
     blockList->last = NULL;
 }
 
-inline bool BlockList_isEmpty(BlockList *blockList) {
+inline bool BlockList_IsEmpty(BlockList *blockList) {
     return blockList->first == NULL;
 }
 
-BlockHeader *BlockList_removeFirstBlock(BlockList *blockList) {
+BlockHeader *BlockList_RemoveFirstBlock(BlockList *blockList) {
     assert(blockList->first != NULL);
     BlockHeader *block = blockList->first;
     if (block == blockList->last) {
@@ -42,7 +42,7 @@ BlockHeader *BlockList_removeFirstBlock(BlockList *blockList) {
     return block;
 }
 
-void BlockList_addLast(BlockList *blockList, BlockHeader *blockHeader) {
+void BlockList_AddLast(BlockList *blockList, BlockHeader *blockHeader) {
     if (blockList->first == NULL) {
         blockList->first = blockHeader;
     } else {
@@ -53,7 +53,7 @@ void BlockList_addLast(BlockList *blockList, BlockHeader *blockHeader) {
     blockHeader->header.nextBlock = LAST_BLOCK;
 }
 
-void BlockList_addBlocksLast(BlockList *blockList, BlockHeader *first,
+void BlockList_AddBlocksLast(BlockList *blockList, BlockHeader *first,
                              BlockHeader *last) {
     if (blockList->first == NULL) {
         blockList->first = first;
@@ -65,12 +65,12 @@ void BlockList_addBlocksLast(BlockList *blockList, BlockHeader *first,
     last->header.nextBlock = LAST_BLOCK;
 }
 
-void BlockList_clear(BlockList *blockList) {
+void BlockList_Clear(BlockList *blockList) {
     blockList->first = NULL;
     blockList->last = NULL;
 }
 
-void BlockList_print(BlockList *blockList) {
+void BlockList_Print(BlockList *blockList) {
     printf("BlockList: ");
     BlockHeader *current = blockList->first;
     while (current != NULL) {

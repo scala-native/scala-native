@@ -17,32 +17,32 @@ typedef struct {
     LargeAllocator *largeAllocator;
 } Heap;
 
-static inline bool heap_isWordInLargeHeap(Heap *heap, word_t *word) {
+static inline bool Heap_IsWordInLargeHeap(Heap *heap, word_t *word) {
     return word != NULL && word >= heap->largeHeapStart &&
            word < heap->largeHeapEnd;
 }
 
-static inline bool heap_isWordInSmallHeap(Heap *heap, word_t *word) {
+static inline bool Heap_IsWordInSmallHeap(Heap *heap, word_t *word) {
     return word != NULL && word >= heap->heapStart && word < heap->heapEnd;
 }
 
-static inline bool heap_isWordInHeap(Heap *heap, word_t *word) {
-    return heap_isWordInSmallHeap(heap, word) ||
-           heap_isWordInLargeHeap(heap, word);
+static inline bool Heap_IsWordInHeap(Heap *heap, word_t *word) {
+    return Heap_IsWordInSmallHeap(heap, word) ||
+            Heap_IsWordInLargeHeap(heap, word);
 }
 static inline bool heap_isObjectInHeap(Heap *heap, Object *object) {
-    return heap_isWordInHeap(heap, (word_t *)object);
+    return Heap_IsWordInHeap(heap, (word_t *) object);
 }
 
-Heap *Heap_create(size_t initialHeapSize);
-word_t *Heap_alloc(Heap *heap, uint32_t objectSize);
-word_t *Heap_allocSmall(Heap *heap, uint32_t objectSize);
-word_t *Heap_allocLarge(Heap *heap, uint32_t objectSize);
+Heap *Heap_Create(size_t initialHeapSize);
+word_t *Heap_Alloc(Heap *heap, uint32_t objectSize);
+word_t *Heap_AllocSmall(Heap *heap, uint32_t objectSize);
+word_t *Heap_AllocLarge(Heap *heap, uint32_t objectSize);
 
-void Heap_collect(Heap *heap, Stack *stack);
+void Heap_Collect(Heap *heap, Stack *stack);
 
-void Heap_recycle(Heap *heap);
-void Heap_grow(Heap *heap, size_t increment);
-void Heap_growLarge(Heap *heap, size_t increment);
+void Heap_Recycle(Heap *heap);
+void Heap_Grow(Heap *heap, size_t increment);
+void Heap_GrowLarge(Heap *heap, size_t increment);
 
 #endif // IMMIX_HEAP_H

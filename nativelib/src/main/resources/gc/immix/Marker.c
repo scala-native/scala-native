@@ -14,60 +14,60 @@ extern word_t *__modules;
 extern int __modules_size;
 extern word_t **__stack_bottom;
 
-void Marker_mark(Heap *heap, Stack *stack);
-void largeHeapOverflowHeapScan(Heap *heap, Stack *stack);
-bool smallHeapOverflowHeapScan(Heap *heap, Stack *stack);
+void Marker_Mark(Heap *heap, Stack *stack);
+void StackOverflowHandler_largeHeapOverflowHeapScan(Heap *heap, Stack *stack);
+bool StackOverflowHandler_smallHeapOverflowHeapScan(Heap *heap, Stack *stack);
 
-void markObject(Heap *heap, Stack *stack, Object *object) {
-    assert(!Object_isMarked(&object->header));
-    assert(Object_size(&object->header) != 0);
-    Object_mark(object);
+void Marker_markObject(Heap *heap, Stack *stack, Object *object) {
+    assert(!Object_IsMarked(&object->header));
+    assert(Object_Size(&object->header) != 0);
+    Object_Mark(object);
     if (!overflow) {
-        overflow = Stack_push(stack, object);
+        overflow = Stack_Push(stack, object);
     }
 }
 
-void markConservative(Heap *heap, Stack *stack, word_t *address) {
-    assert(heap_isWordInHeap(heap, address));
+void Marker_markConservative(Heap *heap, Stack *stack, word_t *address) {
+    assert(Heap_IsWordInHeap(heap, address));
     Object *object = NULL;
-    if (heap_isWordInSmallHeap(heap, address)) {
-        object = Object_getObject(address);
+    if (Heap_IsWordInSmallHeap(heap, address)) {
+        object = Object_GetObject(address);
         assert(
             object == NULL ||
-            Line_containsObject(&Block_getBlockHeader((word_t *)object)
-                                     ->lineHeaders[Block_getLineIndexFromWord(
-                                         Block_getBlockHeader((word_t *)object),
-                                         (word_t *)object)]));
+                    Line_ContainsObject(&Block_GetBlockHeader((word_t *) object)
+                            ->lineHeaders[Block_GetLineIndexFromWord(
+                            Block_GetBlockHeader((word_t *) object),
+                            (word_t *) object)]));
 #ifdef DEBUG_PRINT
         if (object == NULL) {
             printf("Not found: %p\n", address);
         }
 #endif
     } else {
-        object = Object_getLargeObject(heap->largeAllocator, address);
+        object = Object_GetLargeObject(heap->largeAllocator, address);
     }
 
-    if (object != NULL && !Object_isMarked(&object->header)) {
-        markObject(heap, stack, object);
+    if (object != NULL && !Object_IsMarked(&object->header)) {
+        Marker_markObject(heap, stack, object);
     }
 }
 
-void Marker_mark(Heap *heap, Stack *stack) {
-    while (!Stack_isEmpty(stack)) {
-        Object *object = Stack_pop(stack);
+void Marker_Mark(Heap *heap, Stack *stack) {
+    while (!Stack_IsEmpty(stack)) {
+        Object *object = Stack_Pop(stack);
 
         if (object->rtti->rt.id == __object_array_id) {
             // remove header and rtti from size
             size_t size =
-                Object_size(&object->header) - OBJECT_HEADER_SIZE - WORD_SIZE;
+                    Object_Size(&object->header) - OBJECT_HEADER_SIZE - WORD_SIZE;
             size_t nbWords = size / WORD_SIZE;
             for (int i = 0; i < nbWords; i++) {
 
                 word_t *field = object->fields[i];
-                Object *fieldObject = Object_fromMutatorAddress(field);
+                Object *fieldObject = Object_FromMutatorAddress(field);
                 if (heap_isObjectInHeap(heap, fieldObject) &&
-                    !Object_isMarked(&fieldObject->header)) {
-                    markObject(heap, stack, fieldObject);
+                    !Object_IsMarked(&fieldObject->header)) {
+                    Marker_markObject(heap, stack, fieldObject);
                 }
             }
         } else {
@@ -75,19 +75,19 @@ void Marker_mark(Heap *heap, Stack *stack) {
             int i = 0;
             while (ptr_map[i] != -1) {
                 word_t *field = object->fields[ptr_map[i]];
-                Object *fieldObject = Object_fromMutatorAddress(field);
+                Object *fieldObject = Object_FromMutatorAddress(field);
                 if (heap_isObjectInHeap(heap, fieldObject) &&
-                    !Object_isMarked(&fieldObject->header)) {
-                    markObject(heap, stack, fieldObject);
+                    !Object_IsMarked(&fieldObject->header)) {
+                    Marker_markObject(heap, stack, fieldObject);
                 }
                 ++i;
             }
         }
     }
-    StackOverflowHandler_checkForOverflow();
+    StackOverflowHandler_CheckForOverflow();
 }
 
-void markProgramStack(Heap *heap, Stack *stack) {
+void Marker_markProgramStack(Heap *heap, Stack *stack) {
     // Dumps registers into 'regs' which is on stack
     jmp_buf regs;
     setjmp(regs);
@@ -99,31 +99,31 @@ void markProgramStack(Heap *heap, Stack *stack) {
     while (current <= stackBottom) {
 
         word_t *stackObject = (*current) - WORDS_IN_OBJECT_HEADER;
-        if (heap_isWordInHeap(heap, stackObject)) {
-            markConservative(heap, stack, stackObject);
+        if (Heap_IsWordInHeap(heap, stackObject)) {
+            Marker_markConservative(heap, stack, stackObject);
         }
         current += 1;
     }
 }
 
-void markModules(Heap *heap, Stack *stack) {
+void Marker_markModules(Heap *heap, Stack *stack) {
     word_t **modules = &__modules;
     int nb_modules = __modules_size;
 
     for (int i = 0; i < nb_modules; i++) {
-        Object *object = Object_fromMutatorAddress(modules[i]);
+        Object *object = Object_FromMutatorAddress(modules[i]);
         if (heap_isObjectInHeap(heap, object) &&
-            !Object_isMarked(&object->header)) {
-            markObject(heap, stack, object);
+            !Object_IsMarked(&object->header)) {
+            Marker_markObject(heap, stack, object);
         }
     }
 }
 
-void Marker_markRoots(Heap *heap, Stack *stack) {
+void Marker_MarkRoots(Heap *heap, Stack *stack) {
 
-    markProgramStack(heap, stack);
+    Marker_markProgramStack(heap, stack);
 
-    markModules(heap, stack);
+    Marker_markModules(heap, stack);
 
-    Marker_mark(heap, stack);
+    Marker_Mark(heap, stack);
 }

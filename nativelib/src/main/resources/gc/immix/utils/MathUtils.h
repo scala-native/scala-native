@@ -18,13 +18,13 @@ static int log2_floor(size_t v) {
     return MultiplyDeBruijnBitPosition[(uint32_t)(v * 0x07C4ACDDU) >> 27];
 }
 
-static inline int log2_ceil(size_t value) { return log2_floor(2 * value - 1); }
+static inline int MathUtils_Log2Ceil(size_t value) { return log2_floor(2 * value - 1); }
 
-static inline size_t roundToNextMultiple(size_t value, size_t multiple) {
+static inline size_t MathUtils_RoundToNextMultiple(size_t value, size_t multiple) {
     return (value + multiple - 1) / multiple * multiple;
 }
 
-static inline size_t divAndRoundUp(size_t value, size_t divider) {
+static inline size_t MathUtils_DivAndRoundUp(size_t value, size_t divider) {
     return (value + divider - 1) / divider;
 }
 

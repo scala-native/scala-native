@@ -18,14 +18,14 @@ typedef struct {
 
 #define BITMAP_GRANULARITY MIN_BLOCK_SIZE
 
-Bitmap *Bitmap_alloc(size_t size, word_t *offset);
+Bitmap *Bitmap_Alloc(size_t size, word_t *offset);
 
-void Bitmap_setBit(Bitmap *bitmap, ubyte_t *addr);
+void Bitmap_SetBit(Bitmap *bitmap, ubyte_t *addr);
 
-void Bitmap_clearBit(Bitmap *bitmap, ubyte_t *addr);
+void Bitmap_ClearBit(Bitmap *bitmap, ubyte_t *addr);
 
-int Bitmap_getBit(Bitmap *bitmap, ubyte_t *addr);
+int Bitmap_GetBit(Bitmap *bitmap, ubyte_t *addr);
 
-void Bitmap_grow(Bitmap *bitmap, size_t nb_words);
+void Bitmap_Grow(Bitmap *bitmap, size_t nb_words);
 
 #endif // IMMIX_BITMAP_H

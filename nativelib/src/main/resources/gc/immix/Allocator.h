@@ -21,11 +21,11 @@ typedef struct {
     size_t freeMemoryAfterCollection;
 } Allocator;
 
-Allocator *Allocator_create(word_t *, int);
-bool Allocator_canInitCursors(Allocator *allocator);
-void Allocator_initCursors(Allocator *allocator);
-word_t *Allocator_alloc(Allocator *allocator, size_t size);
+Allocator *Allocator_Create(word_t *, int);
+bool Allocator_CanInitCursors(Allocator *allocator);
+void Allocator_InitCursors(Allocator *allocator);
+word_t *Allocator_Alloc(Allocator *allocator, size_t size);
 
-bool Allocator_shouldGrow(Allocator *allocator);
+bool Allocator_ShouldGrow(Allocator *allocator);
 
 #endif // IMMIX_ALLOCATOR_H

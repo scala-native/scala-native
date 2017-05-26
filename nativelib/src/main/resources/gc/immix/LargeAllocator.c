@@ -7,40 +7,37 @@
 #include "Log.h"
 #include "headers/ObjectHeader.h"
 
-inline static int sizeToLinkedListIndex(size_t size) {
+inline static int LargeAllocator_sizeToLinkedListIndex(size_t size) {
     assert(size >= MIN_BLOCK_SIZE);
     return log2_floor(size) - LARGE_OBJECT_MIN_SIZE_BITS;
 }
 
-static inline size_t Chunk_getSize(Chunk *chunk) {
+static inline size_t LargeAllocator_getChunkSize(Chunk *chunk) {
     return (chunk->header.size << WORD_SIZE_BITS);
 }
 
-static inline void Chunk_setSize(Chunk *chunk, size_t size) {
+static inline void LargeAllocator_setChunkSize(Chunk *chunk, size_t size) {
     chunk->header.size = (uint32_t)(size >> WORD_SIZE_BITS);
 }
 
-void freeList_init(FreeList *freeList) {
-    freeList->first = NULL;
-    freeList->last = NULL;
+
+Chunk *LargeAllocator_chunkAddOffset(Chunk *chunk, size_t words) {
+    return (Chunk *)((ubyte_t *)chunk + words);
 }
 
-LargeAllocator *LargeAllocator_create(word_t *offset, size_t size) {
-    LargeAllocator *allocator = malloc(sizeof(LargeAllocator));
-    allocator->offset = offset;
-    allocator->size = size;
-    allocator->bitmap = Bitmap_alloc(size, offset);
-
-    for (int i = 0; i < FREE_LIST_COUNT; i++) {
-        freeList_init(&allocator->freeLists[i]);
+void LargeAllocator_printFreeList(FreeList *list, int i) {
+    Chunk *current = list->first;
+    printf("list %d: ", i);
+    while (current != NULL) {
+        assert((1 << (i + LARGE_OBJECT_MIN_SIZE_BITS)) ==
+                       LargeAllocator_getChunkSize(current));
+        printf("[%p %zu] -> ", current, LargeAllocator_getChunkSize(current));
+        current = current->next;
     }
-
-    LargeAllocator_addChunk(allocator, (Chunk *)offset, size);
-
-    return allocator;
+    printf("\n");
 }
 
-void freeList_addBlockLast(FreeList *freeList, Chunk *chunk) {
+void LargeAllocator_freeListAddBlockLast(FreeList *freeList, Chunk *chunk) {
     if (freeList->first == NULL) {
         freeList->first = chunk;
     }
@@ -48,7 +45,7 @@ void freeList_addBlockLast(FreeList *freeList, Chunk *chunk) {
     chunk->next = NULL;
 }
 
-Chunk *freeList_removeFirstBlock(FreeList *freeList) {
+Chunk *LargeAllocator_freeListRemoveFirstBlock(FreeList *freeList) {
     if (freeList->first == NULL) {
         return NULL;
     }
@@ -61,11 +58,27 @@ Chunk *freeList_removeFirstBlock(FreeList *freeList) {
     return chunk;
 }
 
-Chunk *chunkAddOffset(Chunk *chunk, size_t words) {
-    return (Chunk *)((ubyte_t *)chunk + words);
+void LargeAllocator_freeListInit(FreeList *freeList) {
+    freeList->first = NULL;
+    freeList->last = NULL;
 }
 
-void LargeAllocator_addChunk(LargeAllocator *allocator, Chunk *chunk,
+LargeAllocator *LargeAllocator_Create(word_t *offset, size_t size) {
+    LargeAllocator *allocator = malloc(sizeof(LargeAllocator));
+    allocator->offset = offset;
+    allocator->size = size;
+    allocator->bitmap = Bitmap_Alloc(size, offset);
+
+    for (int i = 0; i < FREE_LIST_COUNT; i++) {
+        LargeAllocator_freeListInit(&allocator->freeLists[i]);
+    }
+
+    LargeAllocator_AddChunk(allocator, (Chunk *) offset, size);
+
+    return allocator;
+}
+
+void LargeAllocator_AddChunk(LargeAllocator *allocator, Chunk *chunk,
                              size_t total_block_size) {
     assert(total_block_size >= MIN_BLOCK_SIZE);
     assert(total_block_size % MIN_BLOCK_SIZE == 0);
@@ -77,28 +90,28 @@ void LargeAllocator_addChunk(LargeAllocator *allocator, Chunk *chunk,
         size_t chunkSize = 1UL << log2_f;
         chunkSize = chunkSize > MAX_BLOCK_SIZE ? MAX_BLOCK_SIZE : chunkSize;
         assert(chunkSize >= MIN_BLOCK_SIZE && chunkSize <= MAX_BLOCK_SIZE);
-        int listIndex = sizeToLinkedListIndex(chunkSize);
+        int listIndex = LargeAllocator_sizeToLinkedListIndex(chunkSize);
 
         Chunk *currentChunk = (Chunk *)current;
-        freeList_addBlockLast(&allocator->freeLists[listIndex],
-                              (Chunk *)current);
-        Chunk_setSize(currentChunk, chunkSize);
+        LargeAllocator_freeListAddBlockLast(&allocator->freeLists[listIndex],
+                                            (Chunk *) current);
+        LargeAllocator_setChunkSize(currentChunk, chunkSize);
         currentChunk->header.type = object_large;
-        Object_setFree(&((Object *)currentChunk)->header);
-        Bitmap_setBit(allocator->bitmap, current);
+        Object_SetFree(&((Object *) currentChunk)->header);
+        Bitmap_SetBit(allocator->bitmap, current);
 
         current += chunkSize;
         remaining_size -= chunkSize;
     }
 }
 
-Object *LargeAllocator_getBlock(LargeAllocator *allocator,
+Object *LargeAllocator_GetBlock(LargeAllocator *allocator,
                                 size_t requestedBlockSize) {
     size_t actualBlockSize =
-        roundToNextMultiple(requestedBlockSize, MIN_BLOCK_SIZE);
-    size_t requiredChunkSize = 1UL << log2_ceil(actualBlockSize);
+            MathUtils_RoundToNextMultiple(requestedBlockSize, MIN_BLOCK_SIZE);
+    size_t requiredChunkSize = 1UL << MathUtils_Log2Ceil(actualBlockSize);
 
-    int listIndex = sizeToLinkedListIndex(requiredChunkSize);
+    int listIndex = LargeAllocator_sizeToLinkedListIndex(requiredChunkSize);
     Chunk *chunk = NULL;
     while (listIndex <= FREE_LIST_COUNT - 1 &&
            (chunk = allocator->freeLists[listIndex].first) == NULL) {
@@ -109,75 +122,63 @@ Object *LargeAllocator_getBlock(LargeAllocator *allocator,
         return NULL;
     }
 
-    size_t chunkSize = Chunk_getSize(chunk);
+    size_t chunkSize = LargeAllocator_getChunkSize(chunk);
     assert(chunkSize >= MIN_BLOCK_SIZE);
 
     if (chunkSize - MIN_BLOCK_SIZE >= actualBlockSize) {
-        Chunk *remainingChunk = chunkAddOffset(chunk, actualBlockSize);
-        freeList_removeFirstBlock(&allocator->freeLists[listIndex]);
+        Chunk *remainingChunk = LargeAllocator_chunkAddOffset(chunk, actualBlockSize);
+        LargeAllocator_freeListRemoveFirstBlock(&allocator->freeLists[listIndex]);
         size_t remainingChunkSize = chunkSize - actualBlockSize;
-        LargeAllocator_addChunk(allocator, remainingChunk, remainingChunkSize);
+        LargeAllocator_AddChunk(allocator, remainingChunk, remainingChunkSize);
     } else {
-        freeList_removeFirstBlock(&allocator->freeLists[listIndex]);
+        LargeAllocator_freeListRemoveFirstBlock(&allocator->freeLists[listIndex]);
     }
 
-    Bitmap_setBit(allocator->bitmap, (ubyte_t *)chunk);
-    Object *object = (Object *)chunk;
-    Object_setAllocated(&object->header);
-    memset(Object_toMutatorAddress(object), 0, actualBlockSize - WORD_SIZE);
+    Bitmap_SetBit(allocator->bitmap, (ubyte_t *) chunk);
+    Object *object = (Object *) chunk;
+    Object_SetAllocated(&object->header);
+    memset(Object_ToMutatorAddress(object), 0, actualBlockSize - WORD_SIZE);
     return object;
 }
 
-void freeList_print(FreeList *list, int i) {
-    Chunk *current = list->first;
-    printf("list %d: ", i);
-    while (current != NULL) {
-        assert((1 << (i + LARGE_OBJECT_MIN_SIZE_BITS)) ==
-               Chunk_getSize(current));
-        printf("[%p %zu] -> ", current, Chunk_getSize(current));
-        current = current->next;
-    }
-    printf("\n");
-}
-
-void LargeAllocator_print(LargeAllocator *alloc) {
+void LargeAllocator_Print(LargeAllocator *alloc) {
     for (int i = 0; i < FREE_LIST_COUNT; i++) {
         if (alloc->freeLists[i].first != NULL) {
 
-            freeList_print(&alloc->freeLists[i], i);
+            LargeAllocator_printFreeList(&alloc->freeLists[i], i);
         }
     }
 }
 
-void clearFreeLists(LargeAllocator *allocator) {
+void LargeAllocator_clearFreeLists(LargeAllocator *allocator) {
     for (int i = 0; i < FREE_LIST_COUNT; i++) {
         allocator->freeLists[i].first = NULL;
         allocator->freeLists[i].last = NULL;
     }
 }
 
-void LargeAllocator_sweep(LargeAllocator *allocator) {
-    clearFreeLists(allocator);
+void LargeAllocator_Sweep(LargeAllocator *allocator) {
+    LargeAllocator_clearFreeLists(allocator);
 
     Object *current = (Object *)allocator->offset;
     void *heapEnd = (ubyte_t *)allocator->offset + allocator->size;
 
     while (current != heapEnd) {
-        assert(Bitmap_getBit(allocator->bitmap, (ubyte_t *)current));
+        assert(Bitmap_GetBit(allocator->bitmap, (ubyte_t *) current));
         ObjectHeader *currentHeader = &current->header;
-        if (Object_isMarked(currentHeader)) {
-            Object_setAllocated(currentHeader);
+        if (Object_IsMarked(currentHeader)) {
+            Object_SetAllocated(currentHeader);
 
-            current = Object_nextLargeObject(current);
+            current = Object_NextLargeObject(current);
         } else {
-            size_t currentSize = Object_chunkSize(current);
-            Object *next = Object_nextLargeObject(current);
-            while (next != heapEnd && !Object_isMarked(&next->header)) {
-                currentSize += Object_chunkSize(next);
-                Bitmap_clearBit(allocator->bitmap, (ubyte_t *)next);
-                next = Object_nextLargeObject(next);
+            size_t currentSize = Object_ChunkSize(current);
+            Object *next = Object_NextLargeObject(current);
+            while (next != heapEnd && !Object_IsMarked(&next->header)) {
+                currentSize += Object_ChunkSize(next);
+                Bitmap_ClearBit(allocator->bitmap, (ubyte_t *) next);
+                next = Object_NextLargeObject(next);
             }
-            LargeAllocator_addChunk(allocator, (Chunk *)current, currentSize);
+            LargeAllocator_AddChunk(allocator, (Chunk *) current, currentSize);
             current = next;
         }
     }

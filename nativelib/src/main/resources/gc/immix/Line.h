@@ -5,27 +5,27 @@
 #include "headers/LineHeader.h"
 #include "headers/BlockHeader.h"
 
-static INLINE Object *Line_getFirstObject(LineHeader *lineHeader) {
-    assert(Line_containsObject(lineHeader));
-    BlockHeader *blockHeader = Block_blockHeaderFromLineHeader(lineHeader);
-    uint8_t offset = Line_getFirstObjectOffset(lineHeader);
+static INLINE Object *Line_GetFirstObject(LineHeader *lineHeader) {
+    assert(Line_ContainsObject(lineHeader));
+    BlockHeader *blockHeader = Block_BlockHeaderFromLineHeader(lineHeader);
+    uint8_t offset = Line_GetFirstObjectOffset(lineHeader);
 
     uint32_t lineIndex =
-        Block_getLineIndexFromLineHeader(blockHeader, lineHeader);
+            Block_GetLineIndexFromLineHeader(blockHeader, lineHeader);
 
-    return (Object *)Block_getLineWord(blockHeader, lineIndex,
-                                       offset / WORD_SIZE);
+    return (Object *) Block_GetLineWord(blockHeader, lineIndex,
+                                        offset / WORD_SIZE);
 }
 
-static INLINE void Line_update(BlockHeader *blockHeader, word_t *objectStart) {
+static INLINE void Line_Update(BlockHeader *blockHeader, word_t *objectStart) {
 
-    int lineIndex = Block_getLineIndexFromWord(blockHeader, objectStart);
-    LineHeader *lineHeader = Block_getLineHeader(blockHeader, lineIndex);
+    int lineIndex = Block_GetLineIndexFromWord(blockHeader, objectStart);
+    LineHeader *lineHeader = Block_GetLineHeader(blockHeader, lineIndex);
 
-    if (!Line_containsObject(lineHeader)) {
+    if (!Line_ContainsObject(lineHeader)) {
         uint8_t offset = (uint8_t)((word_t)objectStart & LINE_SIZE_MASK);
 
-        Line_setOffset(lineHeader, offset);
+        Line_SetOffset(lineHeader, offset);
     }
 }
 

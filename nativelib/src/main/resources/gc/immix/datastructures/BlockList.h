@@ -11,13 +11,13 @@ typedef struct {
     BlockHeader *last;
 } BlockList;
 
-void BlockList_init(BlockList *blockList, word_t *offset);
-void BlockList_clear(BlockList *blockList);
-bool BlockList_isEmpty(BlockList *blockList);
-BlockHeader *BlockList_removeFirstBlock(BlockList *blockList);
-void BlockList_addLast(BlockList *blockList, BlockHeader *block);
-void BlockList_addBlocksLast(BlockList *blockList, BlockHeader *first,
+void BlockList_Init(BlockList *blockList, word_t *offset);
+void BlockList_Clear(BlockList *blockList);
+bool BlockList_IsEmpty(BlockList *blockList);
+BlockHeader *BlockList_RemoveFirstBlock(BlockList *blockList);
+void BlockList_AddLast(BlockList *blockList, BlockHeader *block);
+void BlockList_AddBlocksLast(BlockList *blockList, BlockHeader *first,
                              BlockHeader *last);
-void BlockList_print(BlockList *blockList);
+void BlockList_Print(BlockList *blockList);
 
 #endif // IMMIX_BLOCLIST_H

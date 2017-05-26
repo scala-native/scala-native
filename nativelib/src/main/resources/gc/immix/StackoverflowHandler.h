@@ -1,6 +1,6 @@
 #ifndef IMMIX_STACKOVERFLOWHANDLER_H
 #define IMMIX_STACKOVERFLOWHANDLER_H
 
-void StackOverflowHandler_checkForOverflow();
+void StackOverflowHandler_CheckForOverflow();
 
 #endif // IMMIX_STACKOVERFLOWHANDLER_H
