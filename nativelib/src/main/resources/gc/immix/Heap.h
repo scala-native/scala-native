@@ -7,6 +7,7 @@
 #include "datastructures/Stack.h"
 
 typedef struct {
+    size_t memoryLimit;
     word_t *heapStart;
     word_t *heapEnd;
     size_t smallHeapSize;
@@ -28,10 +29,10 @@ static inline bool Heap_IsWordInSmallHeap(Heap *heap, word_t *word) {
 
 static inline bool Heap_IsWordInHeap(Heap *heap, word_t *word) {
     return Heap_IsWordInSmallHeap(heap, word) ||
-            Heap_IsWordInLargeHeap(heap, word);
+           Heap_IsWordInLargeHeap(heap, word);
 }
 static inline bool heap_isObjectInHeap(Heap *heap, Object *object) {
-    return Heap_IsWordInHeap(heap, (word_t *) object);
+    return Heap_IsWordInHeap(heap, (word_t *)object);
 }
 
 Heap *Heap_Create(size_t initialHeapSize);

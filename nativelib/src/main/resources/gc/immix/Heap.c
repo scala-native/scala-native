@@ -8,8 +8,9 @@
 #include "Marker.h"
 #include "State.h"
 #include "utils/MathUtils.h"
+#include "StackTrace.h"
+#include "Memory.h"
 
-#define MAX_SIZE 64 * 1024 * 1024 * 1024L
 // Allow read and write
 #define HEAP_MEM_PROT (PROT_READ | PROT_WRITE)
 // Map private anonymous memory, and prevent from reserving swap
@@ -18,14 +19,17 @@
 #define HEAP_MEM_FD -1
 #define HEAP_MEM_FD_OFFSET 0
 
+size_t Heap_getMemoryLimit() { return getMemorySize(); }
+
 /**
  * Maps `MAX_SIZE` of memory and returns the first address aligned on
  * `alignement` mask
  */
-word_t *Heap_mapAndAlign(int alignmentMask) {
-    word_t *heapStart = mmap(NULL, MAX_SIZE, HEAP_MEM_PROT, HEAP_MEM_FLAGS,
+word_t *Heap_mapAndAlign(size_t memoryLimit, size_t alignmentSize) {
+    word_t *heapStart = mmap(NULL, memoryLimit, HEAP_MEM_PROT, HEAP_MEM_FLAGS,
                              HEAP_MEM_FD, HEAP_MEM_FD_OFFSET);
 
+    size_t alignmentMask = ~(alignmentSize - 1);
     // Heap start not aligned on
     if (((word_t)heapStart & alignmentMask) != (word_t)heapStart) {
         word_t *previousBlock =
@@ -44,17 +48,20 @@ Heap *Heap_Create(size_t initialSize) {
 
     Heap *heap = malloc(sizeof(Heap));
 
-    word_t *smallHeapStart = Heap_mapAndAlign(BLOCK_SIZE_IN_BYTES_INVERSE_MASK);
+    size_t memoryLimit = Heap_getMemoryLimit();
+    heap->memoryLimit = memoryLimit;
+
+    word_t *smallHeapStart = Heap_mapAndAlign(memoryLimit, BLOCK_TOTAL_SIZE);
 
     // Init heap for small objects
     heap->smallHeapSize = initialSize;
     heap->heapStart = smallHeapStart;
     heap->heapEnd = smallHeapStart + initialSize / WORD_SIZE;
     heap->allocator =
-            Allocator_Create(smallHeapStart, initialSize / BLOCK_TOTAL_SIZE);
+        Allocator_Create(smallHeapStart, initialSize / BLOCK_TOTAL_SIZE);
 
     // Init heap for large objects
-    word_t *largeHeapStart = Heap_mapAndAlign(LARGE_BLOCK_MASK);
+    word_t *largeHeapStart = Heap_mapAndAlign(memoryLimit, MIN_BLOCK_SIZE);
     heap->largeHeapSize = initialSize;
     heap->largeAllocator = LargeAllocator_Create(largeHeapStart, initialSize);
     heap->largeHeapStart = largeHeapStart;
@@ -112,7 +119,7 @@ word_t *Heap_allocSmallSlow(Heap *heap, uint32_t size) {
 
     Heap_Collect(heap, stack);
 
-    Object *object = (Object *) Allocator_Alloc(heap->allocator, size);
+    Object *object = (Object *)Allocator_Alloc(heap->allocator, size);
     if (object != NULL) {
         ObjectHeader *objectHeader = &object->header;
 
@@ -124,7 +131,7 @@ word_t *Heap_allocSmallSlow(Heap *heap, uint32_t size) {
     if (object == NULL) {
         Heap_Grow(heap, size);
 
-        object = (Object *) Allocator_Alloc(heap->allocator, size);
+        object = (Object *)Allocator_Alloc(heap->allocator, size);
         assert(object != NULL);
 
         ObjectHeader *objectHeader = &object->header;
@@ -144,7 +151,7 @@ INLINE word_t *Heap_AllocSmall(Heap *heap, uint32_t objectSize) {
     assert(objectSize % WORD_SIZE == 0);
     assert(size < MIN_BLOCK_SIZE);
 
-    Object *object = (Object *) Allocator_Alloc(heap->allocator, size);
+    Object *object = (Object *)Allocator_Alloc(heap->allocator, size);
     if (object != NULL) {
         ObjectHeader *objectHeader = &object->header;
         Object_SetObjectType(objectHeader, object_standard);
@@ -200,7 +207,7 @@ void Heap_Recycle(Heap *heap) {
     LargeAllocator_Sweep(heap->largeAllocator);
 
     if (!Allocator_CanInitCursors(heap->allocator) ||
-            Allocator_ShouldGrow(heap->allocator)) {
+        Allocator_ShouldGrow(heap->allocator)) {
         size_t increment = heap->smallHeapSize / WORD_SIZE * GROWTH_RATE / 100;
         increment =
             (increment - 1 + WORDS_IN_BLOCK) / WORDS_IN_BLOCK * WORDS_IN_BLOCK;
@@ -209,9 +216,36 @@ void Heap_Recycle(Heap *heap) {
     Allocator_InitCursors(heap->allocator);
 }
 
+void Heap_exitWithOutOfMemory() {
+    printf("Out of heap space\n");
+    StackTrace_PrintStackTrace();
+    exit(1);
+}
+
+bool Heap_isGrowingPossible(Heap *heap, size_t increment) {
+    return heap->smallHeapSize + heap->largeHeapSize + increment * WORD_SIZE <=
+           heap->memoryLimit;
+}
+
 /** Grows the small heap by at least `increment` words */
 void Heap_Grow(Heap *heap, size_t increment) {
     assert(increment % WORDS_IN_BLOCK == 0);
+
+    // If we cannot grow because we reached the memory limit
+    if (!Heap_isGrowingPossible(heap, increment)) {
+        // If we can still init the cursors, grow by max possible increment
+        if (Allocator_CanInitCursors(heap->allocator)) {
+            // increment = heap->memoryLimit - (heap->smallHeapSize +
+            // heap->largeHeapSize);
+            // round down to block size
+            // increment = increment / BLOCK_TOTAL_SIZE * BLOCK_TOTAL_SIZE;
+            return;
+        } else {
+            // If the cursors cannot be initialised and we cannot grow, throw
+            // out of memory exception.
+            Heap_exitWithOutOfMemory();
+        }
+    }
 
 #ifdef DEBUG_PRINT
     printf("Growing small heap by %zu bytes, to %zu bytes\n",
@@ -225,7 +259,7 @@ void Heap_Grow(Heap *heap, size_t increment) {
 
     BlockHeader *lastBlock = (BlockHeader *)(heap->heapEnd - WORDS_IN_BLOCK);
     BlockList_AddBlocksLast(&heap->allocator->freeBlocks,
-                            (BlockHeader *) heapEnd, lastBlock);
+                            (BlockHeader *)heapEnd, lastBlock);
 
     heap->allocator->blockCount += increment / WORDS_IN_BLOCK;
     heap->allocator->freeBlockCount += increment / WORDS_IN_BLOCK;
@@ -235,6 +269,10 @@ void Heap_Grow(Heap *heap, size_t increment) {
 void Heap_GrowLarge(Heap *heap, size_t increment) {
     increment = 1UL << MathUtils_Log2Ceil(increment);
 
+    if (heap->smallHeapSize + heap->largeHeapSize + increment * WORD_SIZE >
+        heap->memoryLimit) {
+        Heap_exitWithOutOfMemory();
+    }
 #ifdef DEBUG_PRINT
     printf("Growing large heap by %zu bytes, to %zu bytes\n",
            increment * WORD_SIZE, heap->largeHeapSize + increment * WORD_SIZE);
@@ -248,6 +286,6 @@ void Heap_GrowLarge(Heap *heap, size_t increment) {
 
     Bitmap_Grow(heap->largeAllocator->bitmap, increment * WORD_SIZE);
 
-    LargeAllocator_AddChunk(heap->largeAllocator, (Chunk *) heapEnd,
+    LargeAllocator_AddChunk(heap->largeAllocator, (Chunk *)heapEnd,
                             increment * WORD_SIZE);
 }
