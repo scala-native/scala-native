@@ -33,13 +33,13 @@ void scalanative_init() {
 void *scalanative_alloc(void *info, size_t size) {
     size = size + (8 - size % 8);
     if (current + size < end) {
-        void *alloc = current;
+        void **alloc = current;
         *alloc = info;
         current += size;
         return alloc;
     } else {
         scalanative_init();
-        return scalanative_alloc_raw(size);
+        return scalanative_alloc(info, size);
     }
 }
 
