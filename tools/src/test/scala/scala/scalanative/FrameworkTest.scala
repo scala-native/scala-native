@@ -35,12 +35,14 @@ class FrameworkTest extends CodeGenSpec with Matchers {
   }
 
   "The test framework" should "be able to compile double quotes in names" in {
-    link("A$",
-         """object A {
-           |  val `"` = 42
-           |  def main(args: Array[String]): Unit =
-           |    println("Hello, world! " + `"`)
-           |}""".stripMargin) {
+    link(
+      "A$",
+      """object A {
+        |  val `"` = 42
+        |  def main(args: Array[String]): Unit =
+        |    println("Hello, world! " + `"`)
+        |}""".stripMargin
+    ) {
       case (_, res) =>
         val defNames = res.defns map (_.name)
         defNames should contain(Global.Top("A$"))

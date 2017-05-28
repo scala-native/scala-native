@@ -75,7 +75,9 @@ trait NirNameEncoding { self: NirCodeGen =>
       owner member ("init" +: mangledParams).mkString("_")
     } else {
       val mangledRetty = mangledType(tpe.resultType)
-      owner member (id.replace("_", "$underscore$").replace("\"", "$doublequote$") +: (mangledParams :+ mangledRetty))
+      owner member (id
+        .replace("_", "$underscore$")
+        .replace("\"", "$doublequote$") +: (mangledParams :+ mangledRetty))
         .mkString("_")
     }
   }
