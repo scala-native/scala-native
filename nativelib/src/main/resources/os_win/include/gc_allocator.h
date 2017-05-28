@@ -64,9 +64,8 @@ struct GC_false_type {};
 template <class GC_tp> struct GC_type_traits { GC_false_type GC_is_ptr_free; };
 
 #define GC_DECLARE_PTRFREE(T)                                                  \
-template<> struct GC_type_traits<T> {                                          \
-        GC_true_type GC_is_ptr_free;                                           \
-    }
+                                                                               \
+    template <> struct GC_type_traits<T> { GC_true_type GC_is_ptr_free; }
 
 GC_DECLARE_PTRFREE(char);
 GC_DECLARE_PTRFREE(signed char);
