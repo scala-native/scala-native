@@ -126,8 +126,6 @@ function Format-File {
     &$clangfmt -style=file -i $cpath
 }
 
-$env:CLANG_FORMAT_PATH="C:\Projects\LLVM-BIN_4.0\bin\clang-format.exe"
-
 if ($env:CLANG_FORMAT_PATH) {Write-Host "CLANG_FORMAT_PATH=$($env:CLANG_FORMAT_PATH)"}
 
 $clangfmt = Resolve-ClangPath "clang-format.exe"
