@@ -6,6 +6,7 @@ install:
   - ps: $env:SBT_OPTS="-XX:MaxPermSize=2g -Xmx4g"
   - ps: $env:CLANG_PATH="C:\\Program Files\\LLVM\\bin\\clang.exe"
   - ps: $env:CLANGPP_PATH="C:\\Program Files\\LLVM\\bin\\clang++.exe"
+  - ps: $env:CLANG_FORMAT_PATH="C:\\Program Files\\LLVM\\bin\\clang-format.exe"
   - ps: $env:JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF8"
   - ps: mkdir 'C:\\Users\\appveyor\\.sbt\\0.13\\plugins\\'
   - ps: $scalafmt_plugin='addSbtPlugin("com.geirsson" % "sbt-scalafmt" % "0.5.5")'
@@ -31,8 +32,9 @@ build_script:
             } else {exit 1};
         }
 test_script:
-  - sbt "scalafmt --test"
-  - sbt -J-Xmx2G rebuild "set scriptedBufferLog in sbtScalaNative := false" test-all
+  - ps: .\bin\clangfmt --test
+  - ps: sbt "scalafmt --test"
+  - ps: sbt -J-Xmx2G rebuild "set scriptedBufferLog in sbtScalaNative := false" test-all
 cache:
   - C:\Users\appveyor\.m2
   - C:\Users\appveyor\.ivy2
