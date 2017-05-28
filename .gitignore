@@ -13,3 +13,5 @@ sbt-crossproject/
 pc.stdout.log
 *.TMP
 *.orig
+*.etl
+*.etl.NGENPDB
