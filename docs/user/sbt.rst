@@ -62,7 +62,7 @@ Since Name                     Type            Description
 0.1   ``nativeCompileOptions`` ``Seq[String]`` Extra options passed to clang verbatim during compilation
 0.1   ``nativeLinkingOptions`` ``Seq[String]`` Extra options passed to clang verbatim during linking
 0.1   ``nativeMode``           ``String``      Either ``"debug"`` or ``"release"`` (2)
-0.2   ``nativeGC``             ``String``      Either ``"none"`` or ``"boehm"`` (3)
+0.2   ``nativeGC``             ``String``      Either ``"none"``, ``"boehm"`` or ``"immix"`` (3)
 ===== ======================== =============== =========================================================
 
 1. See `Publishing`_ and `Cross compilation`_ for details.
@@ -94,11 +94,15 @@ Garbage collectors
    Conservative generational garbage collector. More information is available
    at the `project's page <https://www.hboehm.info/gc/>`_.
 
-2. **none.**
+2. **none.** (experimental, since 0.2)
 
    Garbage collector that allocates things without ever freeing them. Useful
    for short-running command-line applications or applications where garbage
    collections pauses are not acceptable.
+
+2. **immix.** (experimental, since 0.3)
+
+   Immix is a mostly-precise mark-region tracing garbage collector.
 
 Publishing
 ----------

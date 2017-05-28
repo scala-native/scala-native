@@ -12,4 +12,5 @@ sealed abstract class GarbageCollector(val dir: String,
 object GarbageCollector {
   object None  extends GarbageCollector("none")
   object Boehm extends GarbageCollector("boehm", Seq("gc"))
+  object Immix extends GarbageCollector("immix")
 }

@@ -8,6 +8,8 @@ _build/
 bin/.coursier
 bin/.scalafmt*
 sbt-crossproject/
+CMakeLists.txt
+cmake-build-debug/
 .vscode/launch.json
 *.iml
 pc.stdout.log
