@@ -1,4 +1,4 @@
-#include <stdint.h>
+/*#include <stdint.h>
 #include <stddef.h>
 
 // integer
@@ -169,5 +169,5 @@ size_t add_and_fetch_csize(size_t* ptr, size_t value) {
 }
 
 size_t sub_and_fetch_csize(size_t* ptr, size_t value) {
-    return __sync_sub_and_fetch(ptr, value);
+    return __sync_sub_and_fetch(ptr, value);*/
 }
