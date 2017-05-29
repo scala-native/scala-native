@@ -1,5 +1,7 @@
 package java.lang
 
+import java.lang.reflect.Field
+
 import scalanative.native._
 import scalanative.runtime.{Array => _, _}
 
@@ -42,6 +44,9 @@ final class _Class[A](val ty: Ptr[Type]) {
 
   def getSuperclass(): Class[_ >: A] =
     ???
+
+  def getField(name: String): Field =
+    null
 
   def isArray(): scala.Boolean =
     (ty == typeof[BooleanArray] ||

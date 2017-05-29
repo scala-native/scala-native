@@ -27,6 +27,9 @@ class CopyPropagation extends Pass {
     val copies = mutable.Map.empty[Local, Val]
 
     insts.foreach {
+      case l @ Let(n, Op.Conv(nir.Conv.Trunc, ty, v)) if ty == v.ty =>
+        println("Fixing some crazy stuff: " + l.show)
+        copies(n) = v
       case Let(n, Op.Copy(v)) =>
         copies(n) = v
       case inst =>

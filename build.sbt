@@ -28,6 +28,8 @@ addCommandAlias(
   Seq(
     "nscplugin/publishLocal",
     "nativelib/publishLocal",
+    "javalib/publishLocal",
+    "scalalib/publishLocal",
     "publishLocal"
   ).mkString(";", ";", "")
 )
@@ -272,15 +274,24 @@ lazy val sbtScalaNative =
       addSbtPlugin("org.scala-native" % "sbt-crossproject" % "0.1.0"),
       moduleName := "sbt-scala-native",
       sbtTestDirectory := (baseDirectory in ThisBuild).value / "scripted-tests",
+      // `testInterfaceSerialization` needs to be available from the sbt plugin,
+      // but it's a Scala Native project (and thus 2.11), and the plugin is 2.10.
+      // We simply add the sources to mimic cross-compilation.
+      sources in Compile ++= (sources in Compile in testInterfaceSerialization).value,
       // publish the other projects before running scripted tests.
       scripted := scripted
-        .dependsOn(publishLocal in util,
-                   publishLocal in nir,
-                   publishLocal in tools,
-                   publishLocal in nscplugin,
-                   publishLocal in nativelib,
-                   publishLocal in javalib,
-                   publishLocal in scalalib)
+        .dependsOn(
+          publishLocal in util,
+          publishLocal in nir,
+          publishLocal in tools,
+          publishLocal in nscplugin,
+          publishLocal in nativelib,
+          publishLocal in javalib,
+          publishLocal in scalalib,
+          publishLocal in stubs,
+          publishLocal in testInterfaceSerialization,
+          publishLocal in testInterface
+        )
         .evaluated,
       publishLocal := publishLocal.dependsOn(publishLocal in tools).value
     )
@@ -421,14 +432,28 @@ lazy val tests =
     )
     .enablePlugins(ScalaNativePlugin)
 
+lazy val stubs =
+  project
+    .in(file("scalanative-stubs"))
+    .settings(libSettings)
+    .settings(
+      name := "scalanative-stubs",
+      libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test)
+    .enablePlugins(ScalaNativePlugin)
+
 lazy val sandbox =
   project
     .in(file("sandbox"))
-    .settings(projectSettings)
     .settings(noPublishSettings)
     .settings(
       // nativeOptimizerReporter := OptimizerReporter.toDirectory(
       //   crossTarget.value)
+    )
+    .settings(
+      scalaVersion := libScalaVersion,
+      libraryDependencies += "org.scalacheck" %%% "scalacheck" % "1.14.0-SNAPSHOT" % Test,
+      libraryDependencies += "com.lihaoyi" %%% "utest" % "0.4.8-SNAPSHOT" % Test,
+      testFrameworks += new TestFramework("utest.runner.Framework")
     )
     .enablePlugins(ScalaNativePlugin)
 
@@ -483,3 +508,40 @@ lazy val testingCompiler =
       )
     )
     .dependsOn(testingCompilerInterface, nativelib)
+
+lazy val testInterface =
+  project
+    .settings(toolSettings)
+    .settings(scalaVersion := libScalaVersion)
+    .in(file("test-interface"))
+    .settings(
+      name := "test-interface",
+      libraryDependencies += "org.scala-sbt"    % "test-interface"   % "1.0",
+      libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test
+    )
+    .enablePlugins(ScalaNativePlugin)
+    .dependsOn(testInterfaceSerialization, stubs)
+
+lazy val testInterfaceSerialization =
+  project
+    .settings(toolSettings)
+    .settings(scalaVersion := libScalaVersion)
+    .in(file("test-interface-serialization"))
+    .settings(
+      name := "test-interface-serialization",
+      libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test
+    )
+    .dependsOn(testInterfaceSbtDefs)
+    .enablePlugins(ScalaNativePlugin)
+
+lazy val testInterfaceSbtDefs =
+  project
+    .settings(toolSettings)
+    .settings(scalaVersion := libScalaVersion)
+    .in(file("test-interface-sbt-defs"))
+    .settings(
+      name := "test-interface-sbt-defs",
+      libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test
+    )
+    .enablePlugins(ScalaNativePlugin)
+

@@ -61,7 +61,16 @@ script:
   - java -version
   - if [ -n "$CLANG_FORMAT_PATH" ]; then bin/clangfmt --test; fi
   - bin/scalafmt --test
-  - bash sbt -J-Xmx2G rebuild "set scriptedBufferLog in sbtScalaNative := false" test-all
+  - sbt -J-Xmx2G rebuild
+  - mkdir utest
+  - pushd utest
+  - git init .
+  - git remote add -t cross-native Duhemm https://github.com/Duhemm/utest.git
+  - git fetch Duhemm cross-native
+  - git checkout Duhemm/cross-native
+  - sbt publishLocal
+  - popd
+  - bash sbt -J-Xmx2G rebuild "set scriptedBufferLog in sbtScalaNative := false" sandbox/test test-all
 
 before_cache:
   - find $HOME/.sbt -name "*.lock" | xargs rm
