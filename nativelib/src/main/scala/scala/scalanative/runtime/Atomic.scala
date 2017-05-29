@@ -7,9 +7,9 @@ import scala.scalanative.native.{CBool, CChar, CDouble, CFloat, CInt, CLong, CSh
 object Atomic {
 
   // Compare and Swap
-  def compare_and_swap_int(value: Ptr[CInt], expected: CInt, desired: CInt): CBool = extern
+  def compare_and_swap_strong_int(value: Ptr[CInt], expected: CInt, desired: CInt): CBool = extern
 
-  def compare_and_swap_bool(value: Ptr[CBool], expected: CBool, desired: CBool): CBool = extern
+  /*def compare_and_swap_bool(value: Ptr[CBool], expected: CBool, desired: CBool): CBool = extern
 
   def compare_and_swap_short(value: Ptr[CShort], expected: CShort, desired: CShort): CBool = extern
 
@@ -81,6 +81,6 @@ object Atomic {
 
   def xor_and_fetch_bool(ptr: Ptr[CBool], value: CBool): CBool = extern
 
-  def nand_and_fetch_bool(ptr: Ptr[CBool], value: CBool): CBool = extern
+  def nand_and_fetch_bool(ptr: Ptr[CBool], value: CBool): CBool = extern*/
 
 }
