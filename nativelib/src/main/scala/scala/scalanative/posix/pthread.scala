@@ -9,7 +9,7 @@ import scala.scalanative.posix.time.timespec
 @extern
 object pthread {
 
-  def pthread_atfork(prepare: CFunctionPtr0[Unit], parent: CFunctionPtr0[Unit], child: CFunctionPtr0[Unit]: CInt = extern
+  def pthread_atfork(prepare: CFunctionPtr0[Unit], parent: CFunctionPtr0[Unit], child: CFunctionPtr0[Unit]): CInt = extern
 
   def pthread_attr_destroy(attr: Ptr[pthread_attr_t]): CInt = extern
 
@@ -84,7 +84,7 @@ object pthread {
 
   def pthread_condattr_init(attr: Ptr[pthread_condattr_t]): CInt = extern
 
-  def pthread_condattr_setclock(attr: Ptr[pthread_condattr_t], clock: clockid_t): CInt
+  def pthread_condattr_setclock(attr: Ptr[pthread_condattr_t], clock: clockid_t): CInt = extern
 
   def pthread_condattr_setpshared(attr: Ptr[pthread_condattr_t], pshared: CInt): CInt = extern
 
@@ -143,7 +143,7 @@ object pthread {
 
   def pthread_mutexattr_init(attr: Ptr[pthread_mutexattr_t]): CInt = extern
 
-  def pthread_mutexattr_setprioceiling(attr: Ptr[pthread_mutexattr_t], prioceiling: CInt): CInt
+  def pthread_mutexattr_setprioceiling(attr: Ptr[pthread_mutexattr_t], prioceiling: CInt): CInt = extern
 
   def pthread_mutexattr_setprotocol(attr: Ptr[pthread_mutexattr_t], protocol: CInt): CInt = extern
 
