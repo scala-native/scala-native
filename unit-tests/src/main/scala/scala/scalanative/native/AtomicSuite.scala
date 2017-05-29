@@ -1,8 +1,9 @@
-package scala.scalanative.native
+package scala.scalanative
+package native
 
-import Atomic._
+import runtime.Atomic._
 
-object AtomicSuite extends tests.Suite{
+object AtomicSuite extends tests.Suite {
 
   test("compare and swap int") {
     val a = stackalloc[CInt]
@@ -31,12 +32,46 @@ object AtomicSuite extends tests.Suite{
     assert(sub_and_fetch_long(b, 1) == 1)
   }
 
-  test("or and fetch on booleans") {
+  test("add/sub and fetch short") {
+    val a = stackalloc[CShort]
+    val b = stackalloc[CShort]
+
+    !a = 1.toShort
+    !b = 2.toShort
+
+    assert(add_and_fetch_short(a, 1) == 2)
+    assert(sub_and_fetch_short(b, 1) == 1)
+  }
+
+  test("add/sub and fetch csize") {
+    val a = stackalloc[CSize]
+    val b = stackalloc[CSize]
+
+    !a = 1
+    !b = 2
+
+    assert(add_and_fetch_csize(a, 1) == 2.toShort)
+    assert(sub_and_fetch_csize(b, 1) == 1.toShort)
+  }
+
+  test("add/sub and fetch char") {
+    val a = stackalloc[CChar]
+    val b = stackalloc[CChar]
+
+    !a = 'a'
+    !b = 'b'
+
+    assert(add_and_fetch_char(a, 1) == 'b')
+    assert(sub_and_fetch_char(b, 1) == 'a')
+  }
+
+  test("or/nand and fetch on booleans") {
     val b = stackalloc[CBool]
 
     !b = false
 
     assert(or_and_fetch_bool(b, true) == true)
+    assert(nand_and_fetch_bool(b, true) == false)
   }
 
 }
