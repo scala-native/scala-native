@@ -7,7 +7,7 @@ import scala.scalanative.runtime
 
 class FileInputStream(fd: FileDescriptor) extends InputStream {
 
-  def this(file: File) = this(FileInputStream.fileDescriptor(file))
+  def this(file: File) = this(FileDescriptor.open(file))
   def this(str: String) = this(new File(str))
 
   override def available(): Int = {
@@ -78,12 +78,4 @@ class FileInputStream(fd: FileDescriptor) extends InputStream {
 
   // TODO:
   // def getChannel: FileChannel
-}
-
-object FileInputStream {
-  private def fileDescriptor(file: File): FileDescriptor =
-    Zone { implicit z =>
-      val fd = fcntl.open(toCString(file.getPath), fcntl.O_RDONLY)
-      new FileDescriptor(fd, true)
-    }
 }
