@@ -84,6 +84,9 @@ object FileInputStream {
   private def fileDescriptor(file: File): FileDescriptor =
     Zone { implicit z =>
       val fd = fcntl.open(toCString(file.getPath), fcntl.O_RDONLY)
+      if (fd == -1) {
+        throw new FileNotFoundException("No such file " + file.getPath)
+      }
       new FileDescriptor(fd, true)
     }
 }
