@@ -1,6 +1,6 @@
 package java.net
 
-// Tests ported from Scala.js project
+// Ported from Scala.js and Apache Harmony
 
 object URISuite extends tests.Suite {
 

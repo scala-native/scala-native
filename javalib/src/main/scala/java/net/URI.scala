@@ -1,31 +1,25 @@
 package java.net
 
+// Ported from Apache Harmony
+
 import java.io.IOException
 import java.io.Serializable
 import java.io.UnsupportedEncodingException
 import java.util.StringTokenizer
 
 object URI {
-  val unreserved: String = "_-!.~\'()*" //$NON-NLS-1$
+  val unreserved: String = "_-!.~\'()*" 
 
-  val punct: String = ",;:$&+=" //$NON-NLS-1$
+  val punct: String = ",;:$&+=" 
 
-  val reserved: String = punct + "?/[]@" //$NON-NLS-1$
+  val reserved: String = punct + "?/[]@" 
 
   val someLegal: String = unreserved + punct
 
-  val queryLegal: String = unreserved + reserved + "\\\"" //$NON-NLS-1$
+  val queryLegal: String = unreserved + reserved + "\\\"" 
 
   val allLegal: String = unreserved + reserved
 
-  /**
-   * Parses the given argument {@code uri} and creates an appropriate URI
-   * instance.
-   *
-   * @param uri
-   *            the string which has to be parsed to create the URI instance.
-   * @return the created instance representing the given URI.
-   */
   def create(uri: String): URI = {
     var result: URI = null
     result = new URI(uri)
@@ -34,7 +28,7 @@ object URI {
 
 }
 
-final class URI extends Comparable[URI] with Serializable {
+final class URI private() extends Comparable[URI] with Serializable {
 
   import URI._
 
@@ -56,46 +50,11 @@ final class URI extends Comparable[URI] with Serializable {
   @transient private var serverAuthority: Boolean   = false
   @transient private var hash: Int                  = -1
 
-  /**
-   * Creates a new URI instance according to the given string {@code uri}.
-   *
-   * @param uri
-   * the textual URI representation to be parsed into a URI object.
-   * @throws URISyntaxException
-   * if the given string { @code uri} doesn't fit to the
-   *                             specification RFC2396 or could not be parsed correctly.
-   */
-  /**
-   * Creates a new URI instance according to the given string {@code uri}.
-   *
-   * @param uri
-   * the textual URI representation to be parsed into a URI object.
-   * @throws URISyntaxException
-   * if the given string { @code uri} doesn't fit to the
-   *                             specification RFC2396 or could not be parsed correctly.
-   */
   def this(uri: String) = {
     this()
     new Helper().parseURI(uri, false)
   }
 
-  /**
-   * Creates a new URI instance using the given arguments. This constructor
-   * first creates a temporary URI string from the given components. This
-   * string will be parsed later on to create the URI instance.
-   * <p>
-   * {@code [scheme:]scheme-specific-part[#fragment]}
-   *
-   * @param scheme
-   * the scheme part of the URI.
-   * @param ssp
-   * the scheme-specific-part of the URI.
-   * @param frag
-   * the fragment part of the URI.
-   * @throws URISyntaxException
-   * if the temporary created string doesn't fit to the
-   * specification RFC2396 or could not be parsed correctly.
-   */
   def this(scheme: String, ssp: String, frag: String) = {
     this()
     val uri: StringBuilder = new StringBuilder()
@@ -113,33 +72,6 @@ final class URI extends Comparable[URI] with Serializable {
     new Helper().parseURI(uri.toString, false)
   }
 
-  /**
-   * Creates a new URI instance using the given arguments. This constructor
-   * first creates a temporary URI string from the given components. This
-   * string will be parsed later on to create the URI instance.
-   * <p>
-   * {@code [scheme:][user-info@]host[:port][path][?query][#fragment]}
-   *
-   * @param scheme
-   *            the scheme part of the URI.
-   * @param userinfo
-   *            the user information of the URI for authentication and
-   *            authorization.
-   * @param host
-   *            the host name of the URI.
-   * @param port
-   *            the port number of the URI.
-   * @param path
-   *            the path to the resource on the host.
-   * @param query
-   *            the query part of the URI to specify parameters for the
-   *            resource.
-   * @param fragment
-   *            the fragment part of the URI.
-   * @throws URISyntaxException
-   *             if the temporary created string doesn't fit to the
-   *             specification RFC2396 or could not be parsed correctly.
-   */
   def this(scheme: String,
            userinfo: String,
            host: String,
@@ -198,50 +130,9 @@ final class URI extends Comparable[URI] with Serializable {
     }
   }
 
-  /**
-   * Creates a new URI instance using the given arguments. This constructor
-   * first creates a temporary URI string from the given components. This
-   * string will be parsed later on to create the URI instance.
-   * <p>
-   * {@code [scheme:]host[path][#fragment]}
-   *
-   * @param scheme
-   *            the scheme part of the URI.
-   * @param host
-   *            the host name of the URI.
-   * @param path
-   *            the path to the resource on the host.
-   * @param fragment
-   *            the fragment part of the URI.
-   * @throws URISyntaxException
-   *             if the temporary created string doesn't fit to the
-   *             specification RFC2396 or could not be parsed correctly.
-   */
   def this(scheme: String, host: String, path: String, fragment: String) =
     this(scheme, null, host, -1, path, null, fragment)
 
-  /**
-   * Creates a new URI instance using the given arguments. This constructor
-   * first creates a temporary URI string from the given components. This
-   * string will be parsed later on to create the URI instance.
-   * <p>
-   * {@code [scheme:][//authority][path][?query][#fragment]}
-   *
-   * @param scheme
-   *            the scheme part of the URI.
-   * @param authority
-   *            the authority part of the URI.
-   * @param path
-   *            the path to the resource on the host.
-   * @param query
-   *            the query part of the URI to specify parameters for the
-   *            resource.
-   * @param fragment
-   *            the fragment part of the URI.
-   * @throws URISyntaxException
-   *             if the temporary created string doesn't fit to the
-   *             specification RFC2396 or could not be parsed correctly.
-   */
   def this(scheme: String,
            authority: String,
            path: String,
@@ -367,7 +258,6 @@ final class URI extends Comparable[URI] with Serializable {
       parseAuthority(forceServer)
     }
 
-    @throws(classOf[URISyntaxException])
     def validateScheme(uri: String, scheme: String, index: Int): Unit = {
       val ch: Char = scheme.charAt(0)
       if (!((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z'))) {
@@ -385,7 +275,6 @@ final class URI extends Comparable[URI] with Serializable {
       }
     }
 
-    @throws(classOf[URISyntaxException])
     def validateSsp(uri: String, ssp: String, index: Int): Unit = {
       try {
         URIEncoderDecoder.validate(ssp, allLegal)
@@ -398,7 +287,6 @@ final class URI extends Comparable[URI] with Serializable {
       }
     }
 
-    @throws(classOf[URISyntaxException])
     def validateAuthority(uri: String, authority: String, index: Int): Unit = {
       try {
         URIEncoderDecoder.validate(authority, "@[]" + someLegal)
@@ -410,7 +298,6 @@ final class URI extends Comparable[URI] with Serializable {
       }
     }
 
-    @throws(classOf[URISyntaxException])
     def validatePath(uri: String, path: String, index: Int): Unit = {
       try {
         URIEncoderDecoder.validate(path, "/@" + someLegal)
@@ -422,7 +309,6 @@ final class URI extends Comparable[URI] with Serializable {
       }
     }
 
-    @throws(classOf[URISyntaxException])
     def validateQuery(uri: String, query: String, index: Int): Unit = {
       try {
         URIEncoderDecoder.validate(query, queryLegal)
@@ -434,7 +320,6 @@ final class URI extends Comparable[URI] with Serializable {
       }
     }
 
-    @throws(classOf[URISyntaxException])
     def validateFragment(uri: String, fragment: String, index: Int): Unit = {
       try {
         URIEncoderDecoder.validate(fragment, allLegal)
@@ -446,7 +331,6 @@ final class URI extends Comparable[URI] with Serializable {
       }
     }
 
-    @throws(classOf[URISyntaxException])
     def parseAuthority(forceServer: Boolean): Unit = {
       if (authority == null) {
         return
@@ -511,7 +395,6 @@ final class URI extends Comparable[URI] with Serializable {
       serverAuthority = true
     }
 
-    @throws(classOf[URISyntaxException])
     def validateUserinfo(uri: String, userinfo: String, index: Int): Unit = {
       for (i <- 0 until userinfo.length) {
         val ch: Char = userinfo.charAt(i)
@@ -732,7 +615,7 @@ final class URI extends Comparable[URI] with Serializable {
 
   private def quoteComponent(component: String, legalset: String): String = {
     try {
-      URIEncoderDecoder.quoteIllegal(component, legalset);
+      return URIEncoderDecoder.quoteIllegal(component, legalset);
     } catch {
       case e: UnsupportedOperationException =>
         throw new RuntimeException(e.toString)
@@ -742,9 +625,9 @@ final class URI extends Comparable[URI] with Serializable {
   def compareTo(uri: URI): Int = {
     var ret: Int = 0
     if (scheme == null && uri.scheme != null) {
-      -1
+      return -1
     } else if (scheme != null && uri.scheme == null) {
-      1
+      return 1
     } else if (scheme != null && uri.scheme != null) {
       ret = scheme.compareToIgnoreCase(uri.scheme)
       if (ret != 0) {
@@ -752,9 +635,9 @@ final class URI extends Comparable[URI] with Serializable {
       }
     }
     if (!opaque && uri.opaque) {
-      -1
+      return -1
     } else if (opaque && !uri.opaque) {
-      1
+      return 1
     } else if (opaque && uri.opaque) {
       ret = schemespecificpart.compareTo(uri.schemespecificpart)
       if (ret != 0) {
@@ -762,15 +645,15 @@ final class URI extends Comparable[URI] with Serializable {
       }
     } else {
       if (authority != null && uri.authority == null) {
-        1
+        return 1
       } else if (authority == null && uri.authority != null) {
-        -1
+        return -1
       } else if (authority != null && uri.authority != null) {
         if (host != null && uri.host != null) {
           if (userinfo != null && uri.userinfo == null) {
-            1
+            return 1
           } else if (userinfo == null && uri.userinfo != null) {
-            -1
+            return -1
           } else if (userinfo != null && uri.userinfo != null) {
             ret = userinfo.compareTo(uri.userinfo)
             if (ret != 0) {
@@ -796,9 +679,9 @@ final class URI extends Comparable[URI] with Serializable {
         return ret
       }
       if (query != null && uri.query == null) {
-        1
+        return 1
       } else if (query == null && uri.query != null) {
-        -1
+        return -1
       } else if (query != null && uri.query != null) {
         ret = query.compareTo(uri.query)
         if (ret != 0) {
@@ -807,9 +690,9 @@ final class URI extends Comparable[URI] with Serializable {
       }
     }
     if (fragment != null && uri.fragment == null) {
-      1
+      return 1
     } else if (fragment == null && uri.fragment != null) {
-      -1
+      return -1
     } else if (fragment != null && uri.fragment != null) {
       ret = fragment.compareTo(uri.fragment)
       if (ret != 0) {
@@ -844,7 +727,7 @@ final class URI extends Comparable[URI] with Serializable {
   private def convertHexToLowerCase(s: String): String = {
     val result: StringBuilder = new StringBuilder("")
     if (s.indexOf('%') == -1) {
-      s
+      return s
     }
     var previndex: Int = 0
     var index: Int     = s.indexOf('%', previndex)
@@ -867,7 +750,7 @@ final class URI extends Comparable[URI] with Serializable {
   private def equalsHexCaseInsensitive(first: String,
                                        second: String): Boolean = {
     if (first.indexOf('%') != second.indexOf('%')) {
-      first == second
+      return first == second
     }
     var previndex: Int = 0
     var index: Int     = first.indexOf('%', previndex)
@@ -890,16 +773,6 @@ final class URI extends Comparable[URI] with Serializable {
     first.substring(previndex) == second.substring(previndex)
   }
 
-  /**
-   * Compares this URI instance with the given argument {@code o} and
-   * determines if both are equal. Two URI instances are equal if all single
-   * parts are identical in their meaning.
-   *
-   * @param o
-   *            the URI this instance has to be compared with.
-   * @return {@code true} if both URI instances point to the same resource,
-   *         {@code false} otherwise.
-   */
   override def equals(o: Any): Boolean = {
     if (!(o.isInstanceOf[URI])) {
       return false
@@ -920,7 +793,7 @@ final class URI extends Comparable[URI] with Serializable {
       }
     }
     if (uri.opaque && opaque) {
-      equalsHexCaseInsensitive(uri.schemespecificpart, schemespecificpart)
+      return equalsHexCaseInsensitive(uri.schemespecificpart, schemespecificpart)
     } else if (!uri.opaque && !opaque) {
       if (!equalsHexCaseInsensitive(path, uri.path)) {
         return false
@@ -939,7 +812,7 @@ final class URI extends Comparable[URI] with Serializable {
           return false
         } else if (uri.host == null && host == null) {
           // both are registry based, so compare the whole authority
-          equalsHexCaseInsensitive(uri.authority, authority)
+          return equalsHexCaseInsensitive(uri.authority, authority)
         } else {
           // uri.host != null && host != null, so server-based
           if (!host.equalsIgnoreCase(uri.host)) {
@@ -966,116 +839,36 @@ final class URI extends Comparable[URI] with Serializable {
     }
   }
 
-  /**
-   * Gets the decoded authority part of this URI.
-   *
-   * @return the decoded authority part or {@code null} if undefined.
-   */
   def getAuthority(): String = decode(authority)
 
-  /**
-   * Gets the decoded fragment part of this URI.
-   *
-   * @return the decoded fragment part or {@code null} if undefined.
-   */
   def getFragment(): String = decode(fragment)
 
-  /**
-   * Gets the host part of this URI.
-   *
-   * @return the host part or {@code null} if undefined.
-   */
   def getHost(): String = host
 
-  /**
-   * Gets the decoded path part of this URI.
-   *
-   * @return the decoded path part or {@code null} if undefined.
-   */
   def getPath(): String = decode(path)
 
-  /**
-   * Gets the port number of this URI.
-   *
-   * @return the port number or {@code -1} if undefined.
-   */
   def getPort(): Int = port
 
-  /**
-   * Gets the decoded query part of this URI.
-   *
-   * @return the decoded query part or {@code null} if undefined.
-   */
   def getQuery(): String = decode(query)
 
-  /**
-   * Gets the authority part of this URI in raw form.
-   *
-   * @return the encoded authority part or {@code null} if undefined.
-   */
   def getRawAuthority(): String = authority
 
-  /**
-   * Gets the fragment part of this URI in raw form.
-   *
-   * @return the encoded fragment part or {@code null} if undefined.
-   */
   def getRawFragment(): String = fragment
 
-  /**
-   * Gets the path part of this URI in raw form.
-   *
-   * @return the encoded path part or {@code null} if undefined.
-   */
   def getRawPath(): String = path
 
-  /**
-   * Gets the query part of this URI in raw form.
-   *
-   * @return the encoded query part or {@code null} if undefined.
-   */
   def getRawQuery(): String = query
 
-  /**
-   * Gets the scheme-specific part of this URI in raw form.
-   *
-   * @return the encoded scheme-specific part or {@code null} if undefined.
-   */
   def getRawSchemeSpecificPart(): String = schemespecificpart
 
-  /**
-   * Gets the user-info part of this URI in raw form.
-   *
-   * @return the encoded user-info part or {@code null} if undefined.
-   */
   def getRawUserInfo(): String = userinfo
 
-  /**
-   * Gets the scheme part of this URI.
-   *
-   * @return the scheme part or {@code null} if undefined.
-   */
   def getScheme(): String = scheme
 
-  /**
-   * Gets the decoded scheme-specific part of this URI.
-   *
-   * @return the decoded scheme-specific part or {@code null} if undefined.
-   */
   def getSchemeSpecificPart(): String = decode(schemespecificpart)
 
-  /**
-   * Gets the decoded user-info part of this URI.
-   *
-   * @return the decoded user-info part or {@code null} if undefined.
-   */
   def getUserInfo(): String = decode(userinfo)
 
-  /**
-   * Gets the hashcode value of this URI instance.
-   *
-   * @return the appropriate hashcode value.
-   */
   override def hashCode(): Int = {
     if (hash == -1) {
       hash = getHashString.hashCode
@@ -1083,22 +876,8 @@ final class URI extends Comparable[URI] with Serializable {
     hash
   }
 
-  /**
-   * Indicates whether this URI is absolute, which means that a scheme part is
-   * defined in this URI.
-   *
-   * @return {@code true} if this URI is absolute, {@code false} otherwise.
-   */
   def isAbsolute(): Boolean = absolute
 
-  /**
-   * Indicates whether this URI is opaque or not. An opaque URI is absolute
-   * and has a scheme-specific part which does not start with a slash
-   * character. All parts except scheme, scheme-specific and fragment are
-   * undefined.
-   *
-   * @return {@code true} if the URI is opaque, {@code false} otherwise.
-   */
   def isOpaque(): Boolean = opaque
 
   private def normalize(path: String): String = {
@@ -1172,12 +951,6 @@ final class URI extends Comparable[URI] with Serializable {
     result
   }
 
-  /**
-   * Normalizes the path part of this URI.
-   *
-   * @return an URI object which represents this instance with a normalized
-   *         path.
-   */
   def normalize(): URI = {
     if (opaque) {
       return this
@@ -1194,17 +967,6 @@ final class URI extends Comparable[URI] with Serializable {
     result
   }
 
-  /**
-   * Tries to parse the authority component of this URI to divide it into the
-   * host, port, and user-info. If this URI is already determined as a
-   * ServerAuthority this instance will be returned without changes.
-   *
-   * @return this instance with the components of the parsed server authority.
-   * @throws URISyntaxException
-   *             if the authority part could not be parsed as a server-based
-   *             authority.
-   */
-  @throws(classOf[URISyntaxException])
   def parseServerAuthority(): URI = {
     if (!serverAuthority) {
       new Helper().parseAuthority(true)
@@ -1212,14 +974,6 @@ final class URI extends Comparable[URI] with Serializable {
     this
   }
 
-  /**
-   * Makes the given URI {@code relative} to a relative URI against the URI
-   * represented by this instance.
-   *
-   * @param relative
-   *            the URI which has to be relativized against this URI.
-   * @return the relative URI.
-   */
   def relativize(relative: URI): URI = {
     if (relative.opaque || opaque) {
       return relative
@@ -1319,7 +1073,7 @@ final class URI extends Comparable[URI] with Serializable {
 
   private def encodeOthers(s: String): String = {
     try {
-      URIEncoderDecoder.encodeOthers(s)
+      return URIEncoderDecoder.encodeOthers(s)
     } catch {
       case e: UnsupportedEncodingException =>
         throw new RuntimeException(e.toString)
