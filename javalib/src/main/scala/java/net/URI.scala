@@ -52,7 +52,7 @@ final class URI private() extends Comparable[URI] with Serializable {
 
   def this(str: String) = {
     this()
-    new Helper().parseURI(str, false)
+    Helper.parseURI(str, false)
   }
 
   def this(scheme: String, ssp: String, fragment: String) = {
@@ -69,7 +69,7 @@ final class URI private() extends Comparable[URI] with Serializable {
       uri.append('#')
       uri.append(quoteComponent(fragment, allLegal))
     }
-    new Helper().parseURI(uri.toString, false)
+    Helper.parseURI(uri.toString, false)
   }
 
   def this(scheme: String,
@@ -126,7 +126,7 @@ final class URI private() extends Comparable[URI] with Serializable {
         uri.append('#')
         uri.append(quoteComponent(fragment, allLegal))
       }
-      new Helper().parseURI(uri.toString, true)
+      Helper.parseURI(uri.toString, true)
     }
   }
 
@@ -162,10 +162,10 @@ final class URI private() extends Comparable[URI] with Serializable {
       uri.append('#')
       uri.append(quoteComponent(fragment, allLegal))
     }
-    new Helper().parseURI(uri.toString, false)
+    Helper.parseURI(uri.toString, false)
   }
 
-  private class Helper {
+  private object Helper {
 
     def parseURI(uri: String, forceServer: Boolean): Unit = {
       var temp: String = uri
@@ -968,7 +968,7 @@ final class URI private() extends Comparable[URI] with Serializable {
 
   def parseServerAuthority(): URI = {
     if (!serverAuthority) {
-      new Helper().parseAuthority(true)
+      Helper.parseAuthority(true)
     }
     this
   }
