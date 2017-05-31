@@ -78,36 +78,36 @@ object StringTokenizerSuite extends tests.Suite {
   }
 
   test("hasMoreElements_NPE") {
-    val st = new StringTokenizer(new String(), null: String, true)
+    val st = new StringTokenizer(new String(), null, true)
     assertThrows[NullPointerException] {
       st.hasMoreElements()
     }
 
-    val st2 = new StringTokenizer(new String(), null: String)
+    val st2 = new StringTokenizer(new String(), null)
     assertThrows[NullPointerException] {
       st2.hasMoreElements()
     }
   }
 
   test("hasMoreTokens_NPE") {
-    val st = new StringTokenizer(new String, null: String, true)
+    val st = new StringTokenizer(new String, null, true)
     assertThrows[NullPointerException] {
       st.hasMoreTokens()
     }
 
-    val st2 = new StringTokenizer(new String, null: String)
+    val st2 = new StringTokenizer(new String, null)
     assertThrows[NullPointerException] {
       st2.hasMoreTokens()
     }
   }
 
   test("nextToken_NPE") {
-    val st = new StringTokenizer(new String, null: String, true)
+    val st = new StringTokenizer(new String, null, true)
     assertThrows[NullPointerException] {
       st.nextToken()
     }
 
-    val st2 = new StringTokenizer(new String, null: String)
+    val st2 = new StringTokenizer(new String, null)
     assertThrows[NullPointerException] {
       st2.nextToken()
     }

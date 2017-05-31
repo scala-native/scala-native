@@ -1,9 +1,13 @@
 package java.util
 
-class StringTokenizer(private var string: String,
-                      private var delimiters: String = " \t\n\r\f",
-                      private val returnDelimiters: Boolean = false)
+class StringTokenizer(string: String,
+                      private var delimiters: String,
+                      returnDelimiters: Boolean)
     extends java.util.Enumeration[Object] {
+
+  def this(string: String) = this(string, " \t\n\r\f", false)
+  def this(string: String, delimeters: String) =
+    this(string, delimeters, false)
 
   if (string == null) {
     throw new NullPointerException()
@@ -63,8 +67,7 @@ class StringTokenizer(private var string: String,
     if (i < length) {
       if (returnDelimiters) {
         if (delimiters.indexOf(string.charAt(i), 0) >= 0) {
-          position += 1
-          return String.valueOf(string.charAt(position))
+          return String.valueOf(string.charAt({position +=1; position-1}))
         }
         position += 1
         while (position < length) {

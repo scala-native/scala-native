@@ -50,12 +50,12 @@ final class URI private() extends Comparable[URI] with Serializable {
   @transient private var serverAuthority: Boolean   = false
   @transient private var hash: Int                  = -1
 
-  def this(uri: String) = {
+  def this(str: String) = {
     this()
-    new Helper().parseURI(uri, false)
+    new Helper().parseURI(str, false)
   }
 
-  def this(scheme: String, ssp: String, frag: String) = {
+  def this(scheme: String, ssp: String, fragment: String) = {
     this()
     val uri: StringBuilder = new StringBuilder()
     if (scheme != null) {
@@ -65,15 +65,15 @@ final class URI private() extends Comparable[URI] with Serializable {
     if (ssp != null) {
       uri.append(quoteComponent(ssp, allLegal))
     }
-    if (frag != null) {
+    if (fragment != null) {
       uri.append('#')
-      uri.append(quoteComponent(frag, allLegal))
+      uri.append(quoteComponent(fragment, allLegal))
     }
     new Helper().parseURI(uri.toString, false)
   }
 
   def this(scheme: String,
-           userinfo: String,
+           userInfo: String,
            host: String,
            port: Int,
            path: String,
@@ -82,7 +82,7 @@ final class URI private() extends Comparable[URI] with Serializable {
     this()
     var hostVar   = host
     var earlyStop = false
-    if (scheme == null && userinfo == null && host == null && path == null &&
+    if (scheme == null && userInfo == null && host == null && path == null &&
         query == null &&
         fragment == null) {
       this.path = ""
@@ -100,8 +100,8 @@ final class URI private() extends Comparable[URI] with Serializable {
       if (userinfo != null || host != null || port != -1) {
         uri.append("//")
       }
-      if (userinfo != null) {
-        uri.append(quoteComponent(userinfo, someLegal))
+      if (userInfo != null && host != null) {
+        uri.append(quoteComponent(userInfo, someLegal))
         uri.append('@')
       }
       if (host != null) {
@@ -111,7 +111,7 @@ final class URI private() extends Comparable[URI] with Serializable {
         }
         uri.append(hostVar)
       }
-      if (port != -1) {
+      if (host != null && port != -1) {
         uri.append(':')
         uri.append(port)
       }
@@ -167,7 +167,6 @@ final class URI private() extends Comparable[URI] with Serializable {
 
   private class Helper {
 
-    @throws(classOf[URISyntaxException])
     def parseURI(uri: String, forceServer: Boolean): Unit = {
       var temp: String = uri
       string = uri
@@ -350,7 +349,7 @@ final class URI private() extends Comparable[URI] with Serializable {
         hostindex = index + 1
       }
       index = temp.lastIndexOf(':')
-      val endindex: Int = temp.indexOf(']')
+      val endindex = temp.indexOf(']')
       if (index != -1 && endindex < index) {
         tempHost = temp.substring(0, index)
         if (index < (temp.length - 1)) {
@@ -395,9 +394,9 @@ final class URI private() extends Comparable[URI] with Serializable {
       serverAuthority = true
     }
 
-    def validateUserinfo(uri: String, userinfo: String, index: Int): Unit = {
-      for (i <- 0 until userinfo.length) {
-        val ch: Char = userinfo.charAt(i)
+    def validateUserinfo(uri: String, userInfo: String, index: Int): Unit = {
+      for (i <- 0 until userInfo.length) {
+        val ch: Char = userInfo.charAt(i)
         if (ch == ']' || ch == '[') {
           throw new URISyntaxException(uri,
                                        "Illegal character in userinfo",
