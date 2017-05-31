@@ -63,11 +63,9 @@ object FileInputStreamSuite extends tests.Suite {
     assert(fis.read() == -1)
   }
 
-  testFails("throws proper FileNotFoundException on invalid file names", 765) {
-    assertThrows[FileNotFoundException] { 
+  testFails("throws FileNotFoundException already on creating new FileInputStream", 765) {
+    assertThrows[FileNotFoundException] {
       val fis = new FileInputStream("/the/path/does/not/exist/for/sure")
-      fis.read
     }
   }
- 
 }
