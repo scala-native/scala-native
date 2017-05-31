@@ -1150,31 +1150,27 @@ abstract class NirCodeGen
       }
     }
 
-    def negateInt(arg: nir.Val, opty: nir.Type, focus: Focus): Focus = {
-      val coerced = genCoercion(arg, arg.ty, opty, focus)
-      coerced withOp Op.Bin(Bin.Isub, opty, numOfType(0, opty), coerced.value)
-    }
-
+    def negateInt(value: nir.Val, focus: Focus): Focus =
+      focus withOp Op.Bin(Bin.Isub, value.ty, numOfType(0, value.ty), value)
     def negateFloat(value: nir.Val, focus: Focus): Focus =
       focus withOp Op.Bin(Bin.Fsub, value.ty, numOfType(0, value.ty), value)
-
     def negateBits(value: nir.Val, focus: Focus): Focus =
       focus withOp Op.Bin(Bin.Xor, value.ty, numOfType(-1, value.ty), value)
-
     def negateBool(value: nir.Val, focus: Focus): Focus =
       focus withOp Op.Bin(Bin.Xor, Type.Bool, Val.True, value)
 
     def genUnaryOp(code: Int, rightp: Tree, opty: nir.Type, focus: Focus) = {
       import scalaPrimitives._
 
-      val right = genExpr(rightp, focus)
+      val right   = genExpr(rightp, focus)
+      val coerced = genCoercion(right.value, right.value.ty, opty, right)
 
       (opty, code) match {
-        case (_: Type.I | _: Type.F, POS) => right
-        case (_: Type.F, NEG)             => negateFloat(right.value, right)
-        case (_: Type.I, NEG)             => negateInt(right.value, opty, right)
-        case (_: Type.I, NOT)             => negateBits(right.value, right)
-        case (_: Type.I, ZNOT)            => negateBool(right.value, right)
+        case (_: Type.I | _: Type.F, POS) => coerced
+        case (_: Type.I, NOT)             => negateBits(coerced.value, coerced)
+        case (_: Type.F, NEG)             => negateFloat(coerced.value, coerced)
+        case (_: Type.I, NEG)             => negateInt(coerced.value, coerced)
+        case (_: Type.I, ZNOT)            => negateBool(coerced.value, coerced)
         case _                            => abort("Unknown unary operation code: " + code)
       }
     }
@@ -1551,7 +1547,7 @@ abstract class NirCodeGen
           sym match {
             case IntClass =>
               val offset = genExpr(argp, ptr)
-              val neg    = negateInt(offset.value, offset.value.ty, offset)
+              val neg    = negateInt(offset.value, offset)
               neg withOp Op.Elem(ty, ptr.value, Seq(neg.value))
 
             case PtrClass =>
