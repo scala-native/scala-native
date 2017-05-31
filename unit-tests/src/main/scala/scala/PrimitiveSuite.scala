@@ -1,6 +1,7 @@
 package scala
 
 object PrimitiveSuite extends tests.Suite {
+  val char   = 1.toChar
   val byte   = 1.toByte
   val short  = 1.toShort
   val int    = 1
@@ -17,6 +18,7 @@ object PrimitiveSuite extends tests.Suite {
   val notlong = -2
 
   test("-x") {
+    assert(-char == negint)
     assert(-byte == negint)
     assert(-short == negint)
     assert(-int == negint)
@@ -26,6 +28,7 @@ object PrimitiveSuite extends tests.Suite {
   }
 
   test("~x") {
+    assert(~char == notint)
     assert(~byte == notint)
     assert(~short == notint)
     assert(~int == notint)
@@ -33,6 +36,7 @@ object PrimitiveSuite extends tests.Suite {
   }
 
   test("+x") {
+    assert(+char == int)
     assert(+byte == int)
     assert(+short == int)
     assert(+int == int)
