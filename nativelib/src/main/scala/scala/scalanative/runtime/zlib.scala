@@ -2,6 +2,7 @@ package scala.scalanative.runtime
 
 import scala.scalanative.native._
 
+@link("z")
 @extern
 object zlib {
   type voidpf     = Ptr[Byte]

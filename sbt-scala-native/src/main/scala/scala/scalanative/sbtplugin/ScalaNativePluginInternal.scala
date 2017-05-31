@@ -350,7 +350,6 @@ object ScalaNativePluginInternal {
         val arch = target.split("-").head
         // we need re2 to link the re2 c wrapper (cre2.h)
         val regex = Seq("re2")
-        val zlib  = Seq("z")
         val librt = os match {
           case "Linux" => Seq("rt")
           case _       => Seq.empty
@@ -360,7 +359,7 @@ object ScalaNativePluginInternal {
           case _          => Seq("unwind", "unwind-" + arch)
         }
         librt ++ libunwind ++ linked.links
-          .map(_.name) ++ garbageCollector(gc).links ++ regex ++ zlib
+          .map(_.name) ++ garbageCollector(gc).links ++ regex
       }
       val linkopts  = links.map("-l" + _) ++ linkingOpts
       val targetopt = Seq("-target", target)
