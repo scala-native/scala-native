@@ -12,8 +12,10 @@ object URIEncoderDecoder {
   def validate(s: String, legal: String): Unit = {
     var i: Int = 0
     while (i < s.length) {
+      var continue = false
       val ch: Char = s.charAt(i)
       if (ch == '%') {
+        continue = true
         do {
           if (i + 2 >= s.length) {
             throw new URISyntaxException(s, "Incomplete % sequence", i)
@@ -28,14 +30,14 @@ object URIEncoderDecoder {
           i += 3
         } while (i < s.length && s.charAt(i) == '%')
       }
-      if (!((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
+      else if (!((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
             (ch >= '0' && ch <= '9') ||
             legal.indexOf(ch) > -1 ||
             (ch > 127 && !java.lang.Character.isSpaceChar(ch) && !java.lang.Character
               .isISOControl(ch)))) {
         throw new URISyntaxException(s, "Illegal character", i)
       }
-      { i += 1; i - 1 }
+      if(!continue) i += 1 
     }
   }
 
@@ -48,7 +50,7 @@ object URIEncoderDecoder {
             legal.indexOf(ch) > -1)) {
         throw new URISyntaxException(s, "Illegal character", i)
       }
-      { i += 1; i - 1 }
+      i += 1
     }
   }
 
@@ -102,8 +104,7 @@ object URIEncoderDecoder {
         out.reset()
         do {
           if (i + 2 >= s.length) {
-            throw new IllegalArgumentException(
-              "Incomplete % sequence at: " + i)
+            throw new IllegalArgumentException("Incomplete % sequence at: " + i)
           }
           val d1: Int = java.lang.Character.digit(s.charAt(i + 1), 16)
           val d2: Int = java.lang.Character.digit(s.charAt(i + 2), 16)
@@ -116,7 +117,8 @@ object URIEncoderDecoder {
         } while (i < s.length && s.charAt(i) == '%')
         result.append(out.toString(encoding))
       }
-      result.append(c) { i += 1; i - 1 }
+      result.append(c) 
+      i += 1
     }
     result.toString
   }
