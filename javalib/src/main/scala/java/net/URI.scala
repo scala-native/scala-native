@@ -755,7 +755,7 @@ final class URI private () extends Comparable[URI] with Serializable {
     var index: Int     = first.indexOf('%', previndex)
     while (index != -1 && second.indexOf('%', previndex) == index) {
       var `match`: Boolean = first.substring(previndex, index) == second
-        .substring(previndex, index)
+          .substring(previndex, index)
       if (!`match`) {
         return false
       }
