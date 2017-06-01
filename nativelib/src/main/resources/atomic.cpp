@@ -141,126 +141,102 @@ extern "C" {
 	 * */
 
     // byte
-    int compare_and_swap_weak_byte(int8_t* value, int8_t* expected, int8_t desired) {
-        const auto atm = reinterpret_cast<atomic<int8_t>*>(value);
+    int compare_and_swap_weak_byte(atomic<int8_t>* atm, int8_t* expected, int8_t desired) {
         return atomic_compare_exchange_weak(atm, expected, desired);
     }
 
-    int compare_and_swap_strong_byte(int8_t* value, int8_t* expected, int8_t desired) {
-        const auto atm = reinterpret_cast<atomic<int8_t>*>(value);
+    int compare_and_swap_strong_byte(atomic<int8_t>* atm, int8_t* expected, int8_t desired) {
         return atomic_compare_exchange_strong(atm, expected, desired);
     }
 
     // short
-    int compare_and_swap_weak_short(int16_t* value, int16_t* expected, int16_t desired) {
-        const auto atm = reinterpret_cast<atomic<int16_t>*>(value);
+    int compare_and_swap_weak_short(atomic<int16_t>* atm, int16_t* expected, int16_t desired) {
         return atomic_compare_exchange_weak(atm, expected, desired);
     }
 
-    int compare_and_swap_strong_short(int16_t* value, int16_t* expected, int16_t desired) {
-        const auto atm = reinterpret_cast<atomic<int16_t>*>(value);
+    int compare_and_swap_strong_short(atomic<int16_t>* atm, int16_t* expected, int16_t desired) {
         return atomic_compare_exchange_strong(atm, expected, desired);
     }
 
     // integer
-    int compare_and_swap_weak_int(int32_t* value, int32_t* expected, int32_t desired) {
-        const auto atm = reinterpret_cast<atomic<int32_t>*>(value);
+    int compare_and_swap_weak_int(atomic<int32_t>* atm, int32_t* expected, int32_t desired) {
         return atomic_compare_exchange_weak(atm, expected, desired);
     }
 
-    int compare_and_swap_strong_int(int32_t* value, int32_t* expected, int32_t desired) {
-        const auto atm = reinterpret_cast<atomic<int32_t>*>(value);
+    int compare_and_swap_strong_int(atomic<int32_t>* atm, int32_t* expected, int32_t desired) {
         return atomic_compare_exchange_strong(atm, expected, desired);
     }
 
     // long
-    int compare_and_swap_weak_long(int64_t* value, int64_t* expected, int64_t desired) {
-        const auto atm = reinterpret_cast<atomic<int64_t>*>(value);
+    int compare_and_swap_weak_long(atomic<int64_t>* atm, int64_t* expected, int64_t desired) {
         return atomic_compare_exchange_weak(atm, expected, desired);
     }
 
-    int compare_and_swap_strong_long(int64_t* value, int64_t* expected, int64_t desired) {
-        const auto atm = reinterpret_cast<atomic<int64_t>*>(value);
+    int compare_and_swap_strong_long(atomic<int64_t>* atm, int64_t* expected, int64_t desired) {
         return atomic_compare_exchange_strong(atm, expected, desired);
     }
 
 
     // unsigned byte
-    int compare_and_swap_weak_ubyte(uint8_t* value, uint8_t* expected, uint8_t desired) {
-        const auto atm = reinterpret_cast<atomic<uint8_t>*>(value);
+    int compare_and_swap_weak_ubyte(atomic<uint8_t>* atm, uint8_t* expected, uint8_t desired) {
         return atomic_compare_exchange_weak(atm, expected, desired);
     }
 
-    int compare_and_swap_strong_ubyte(uint8_t* value, uint8_t* expected, uint8_t desired) {
-        const auto atm = reinterpret_cast<atomic<uint8_t>*>(value);
+    int compare_and_swap_strong_ubyte(atomic<uint8_t>* atm, uint8_t* expected, uint8_t desired) {
         return atomic_compare_exchange_strong(atm, expected, desired);
     }
 
     // unsigned short
-    int compare_and_swap_weak_ushort(uint16_t* value, uint16_t* expected, uint16_t desired) {
-        const auto atm = reinterpret_cast<atomic<uint16_t>*>(value);
+    int compare_and_swap_weak_ushort(atomic<uint16_t>* atm, uint16_t* expected, uint16_t desired) {
         return atomic_compare_exchange_weak(atm, expected, desired);
     }
 
-    int compare_and_swap_strong_ushort(uint16_t* value, uint16_t* expected, uint16_t desired) {
-        const auto atm = reinterpret_cast<atomic<uint16_t>*>(value);
+    int compare_and_swap_strong_ushort(atomic<uint16_t>* atm, uint16_t* expected, uint16_t desired) {
         return atomic_compare_exchange_strong(atm, expected, desired);
     }
-
 
     // unsigned integer
-    int compare_and_swap_weak_uint(uint32_t* value, uint32_t* expected, uint32_t desired) {
-        const auto atm = reinterpret_cast<atomic<uint32_t>*>(value);
+    int compare_and_swap_weak_uint(atomic<uint32_t>* atm, uint32_t* expected, uint32_t desired) {
         return atomic_compare_exchange_weak(atm, expected, desired);
     }
 
-    int compare_and_swap_strong_uint(uint32_t* value, uint32_t* expected, uint32_t desired) {
-        const auto atm = reinterpret_cast<atomic<uint32_t>*>(value);
+    int compare_and_swap_strong_uint(atomic<uint32_t>* atm, uint32_t* expected, uint32_t desired) {
         return atomic_compare_exchange_strong(atm, expected, desired);
     }
 
-
     // unsigned long
-    int compare_and_swap_weak_ulong(uint64_t* value, uint64_t* expected, uint64_t desired) {
-        const auto atm = reinterpret_cast<atomic<uint64_t>*>(value);
+    int compare_and_swap_weak_ulong(atomic<uint64_t>* atm, uint64_t* expected, uint64_t desired) {
         return atomic_compare_exchange_weak(atm, expected, desired);
     }
 
-    int compare_and_swap_strong_ulong(uint64_t* value, uint64_t* expected, uint64_t desired) {
-        const auto atm = reinterpret_cast<atomic<uint64_t>*>(value);
+    int compare_and_swap_strong_ulong(atomic<uint64_t>* atm, uint64_t* expected, uint64_t desired) {
         return atomic_compare_exchange_strong(atm, expected, desired);
     }
 
 	// char
-	int compare_and_swap_weak_char(char* value, char* expected, char desired) {
-		const auto atm = reinterpret_cast<atomic<char>*>(value);
+	int compare_and_swap_weak_char(atomic<char>* atm, char* expected, char desired) {
 		return atomic_compare_exchange_weak(atm, expected, desired);
 	}
 
-	int compare_and_swap_strong_char(char* value, char* expected, char desired) {
-		const auto atm = reinterpret_cast<atomic<char>*>(value);
+	int compare_and_swap_strong_char(atomic<char>* atm, char* expected, char desired) {
 		return atomic_compare_exchange_strong(atm, expected, desired);
 	}
 	
 	// unsigned char
-	int compare_and_swap_weak_uchar(unsigned char* value, unsigned char* expected, unsigned char desired) {
-		const auto atm = reinterpret_cast<atomic<unsigned char>*>(value);
+	int compare_and_swap_weak_uchar(atomic<unsigned char>* atm, unsigned char* expected, unsigned char desired) {
 		return atomic_compare_exchange_weak(atm, expected, desired);
 	}
 
-	int compare_and_swap_strong_uchar(unsigned char* value, unsigned char* expected, unsigned char desired) {
-		const auto atm = reinterpret_cast<atomic<unsigned char>*>(value);
+	int compare_and_swap_strong_uchar(atomic<unsigned char>* atm, unsigned char* expected, unsigned char desired) {
 		return atomic_compare_exchange_strong(atm, expected, desired);
 	}
 	
 	// size_t
-	int compare_and_swap_weak_csize(size_t* value, size_t* expected, size_t desired) {
-		const auto atm = reinterpret_cast<atomic<size_t>*>(value);
+	int compare_and_swap_weak_csize(atomic<size_t>* atm, size_t* expected, size_t desired) {
 		return atomic_compare_exchange_weak(atm, expected, desired);
 	}
 
-	int compare_and_swap_strong_csize(size_t* value, size_t* expected, size_t desired) {
-		const auto atm = reinterpret_cast<atomic<size_t>*>(value);
+	int compare_and_swap_strong_csize(atomic<size_t>* atm, size_t* expected, size_t desired) {
 		return atomic_compare_exchange_strong(atm, expected, desired);
 	}
 
