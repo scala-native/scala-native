@@ -38,12 +38,8 @@ object Tag {
 
   implicit def CArray[T: Tag, N <: Nat: Tag]: Tag[CArray[T, N]] = undefined
 
-  % for N in range(0, 23):
-  %   Ts      = ["T" + str(i) for i in range(1, N + 1)]
-  %   BoundTs = "" if N == 0 else "[" + ", ".join(map(lambda T: T + ": Tag", Ts)) + "]"
-  %   JustTs  = "" if N == 0 else "[" + ", ".join(Ts) + "]"
+  implicit def CStruct0: Tag[CStruct0] = undefined
 
-  implicit def CStruct${N}${BoundTs}: Tag[CStruct${N}${JustTs}] = undefined
-
-  % end
+  [#implicit def CStruct1[[#T1: Tag#]]: Tag[CStruct1[[#T1#]]] = undefined#
+  ]
 }

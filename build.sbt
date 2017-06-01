@@ -294,6 +294,7 @@ lazy val nativelib =
     .settings(
       libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
     )
+    .enablePlugins(spray.boilerplate.BoilerplatePlugin)
 
 lazy val javalib =
   project
