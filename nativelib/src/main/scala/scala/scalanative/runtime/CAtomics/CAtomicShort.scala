@@ -17,22 +17,24 @@ class CAtomicShort extends CAtomic {
 
   def free(): Unit = Atomic.free(atm.cast[Ptr[Byte]])
 
-  def compareAndSwapStrong(expected: CShort, desired: CShort): (Boolean, CShort) = {
+  def compareAndSwapStrong(expected: CShort,
+                           desired: CShort): (Boolean, CShort) = {
     val expectedPtr = stackalloc[CShort]
     !expectedPtr = expected
 
-    if(compare_and_swap_strong_short(atm, expectedPtr, expected)) {
+    if (compare_and_swap_strong_short(atm, expectedPtr, expected)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
     }
   }
 
-  def compareAndSwapWeak(expected: CShort, desired: CShort): (Boolean, CShort) = {
+  def compareAndSwapWeak(expected: CShort,
+                         desired: CShort): (Boolean, CShort) = {
     val expectedPtr = stackalloc[CShort]
     !expectedPtr = expected
 
-    if(compare_and_swap_weak_short(atm, expectedPtr, expected)) {
+    if (compare_and_swap_weak_short(atm, expectedPtr, expected)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
@@ -44,35 +46,40 @@ class CAtomicShort extends CAtomic {
     load()
   }
 
-  def fetchAdd(value: CShort): CShort = atomic_add_short(atm.cast[Ptr[CShort]], value)
+  def fetchAdd(value: CShort): CShort =
+    atomic_add_short(atm.cast[Ptr[CShort]], value)
 
   def subFetch(value: CShort): CShort = {
     fetchSub(value)
     load()
   }
 
-  def fetchSub(value: CShort): CShort = atomic_sub_short(atm.cast[Ptr[CShort]], value)
+  def fetchSub(value: CShort): CShort =
+    atomic_sub_short(atm.cast[Ptr[CShort]], value)
 
   def andFetch(value: CShort): CShort = {
     fetchAnd(value)
     load()
   }
 
-  def fetchAnd(value: CShort): CShort = atomic_and_short(atm.cast[Ptr[CShort]], value)
+  def fetchAnd(value: CShort): CShort =
+    atomic_and_short(atm.cast[Ptr[CShort]], value)
 
   def orFetch(value: CShort): CShort = {
     fetchOr(value)
     load()
   }
 
-  def fetchOr(value: CShort): CShort = atomic_or_short(atm.cast[Ptr[CShort]], value)
+  def fetchOr(value: CShort): CShort =
+    atomic_or_short(atm.cast[Ptr[CShort]], value)
 
   def xorFetch(value: CShort): CShort = {
     fetchXor(value)
     load()
   }
 
-  def fetchXor(value: CShort): CShort = atomic_xor_short(atm.cast[Ptr[CShort]], value)
+  def fetchXor(value: CShort): CShort =
+    atomic_xor_short(atm.cast[Ptr[CShort]], value)
 
   def load(): CShort = load_short(atm)
 

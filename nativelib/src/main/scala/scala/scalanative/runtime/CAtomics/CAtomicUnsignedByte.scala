@@ -21,7 +21,7 @@ class CAtomicUnsignedByte extends CAtomic {
     val expectedPtr = stackalloc[Byte]
     !expectedPtr = expected
 
-    if(compare_and_swap_strong_ubyte(atm, expectedPtr, expected)) {
+    if (compare_and_swap_strong_ubyte(atm, expectedPtr, expected)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
@@ -32,7 +32,7 @@ class CAtomicUnsignedByte extends CAtomic {
     val expectedPtr = stackalloc[Byte]
     !expectedPtr = expected
 
-    if(compare_and_swap_weak_ubyte(atm, expectedPtr, expected)) {
+    if (compare_and_swap_weak_ubyte(atm, expectedPtr, expected)) {
       (true, desired)
     } else {
       (false, !expectedPtr)

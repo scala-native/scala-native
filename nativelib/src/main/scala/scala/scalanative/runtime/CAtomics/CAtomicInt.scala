@@ -21,7 +21,7 @@ class CAtomicInt extends CAtomic {
     val expectedPtr = stackalloc[CInt]
     !expectedPtr = expected
 
-    if(compare_and_swap_strong_int(atm, expectedPtr, expected)) {
+    if (compare_and_swap_strong_int(atm, expectedPtr, expected)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
@@ -32,7 +32,7 @@ class CAtomicInt extends CAtomic {
     val expectedPtr = stackalloc[CInt]
     !expectedPtr = expected
 
-    if(compare_and_swap_weak_int(atm, expectedPtr, expected)) {
+    if (compare_and_swap_weak_int(atm, expectedPtr, expected)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
