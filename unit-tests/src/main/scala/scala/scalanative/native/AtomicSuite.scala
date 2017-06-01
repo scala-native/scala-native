@@ -2,78 +2,71 @@ package scala.scalanative
 package native
 
 import runtime.Atomic._
+import runtime.CAtomics._
+import stdlib._
 
 object AtomicSuite extends tests.Suite {
 
   test("compare and swap int") {
-    val a = stackalloc[CInt]
-    val b = stackalloc[CInt]
-    val c = stackalloc[CInt]
+    val a = CAtomicInt(1)
 
-    !a = 1
-    !b = 2
-    !c = 1
+    assertNot(a.compareAndSwapStrong(2, 3)._1)
 
-    assertNot(compare_and_swap_strong_int(a, b, 3))
+    assert(a.compareAndSwapStrong(1, 3)._2 == 3)
 
-    assert(compare_and_swap_strong_int(c, a, 3))
-
-    assert(!c == 3)
+    a.free()
   }
 
-  test("atomic add/sub on long") {
-    val a = stackalloc[CLong]
-    val b = stackalloc[CLong]
+  test("atomic char") {
+    val a = CAtomicChar()
 
-    !a = 1
-    !b = 2
+    assert(a.load() == 'a')
+    assert(a.addFetch(1) == 'b')
 
-    assert(atomic_add_long(a, 1) == 2)
-    assert(atomic_sub_long(b, 1) == 1)
+    a.free()
   }
 
-  test("atomic add/sub on short") {
-    val a = stackalloc[CShort]
-    val b = stackalloc[CShort]
+  test("compare and swap unsigned int uninitialized") {
+    val a = CAtomicUnsignedInt()
 
-    !a = 1.toShort
-    !b = 2.toShort
+    assertNot(
+      a.compareAndSwapStrong(2.asInstanceOf[CUnsignedInt],
+                              3.asInstanceOf[CUnsignedInt])
+        ._1)
 
-    assert(atomic_add_short(a, 1) == 2)
-    assert(atomic_sub_short(b, 1) == 1)
+    assert(
+      a.compareAndSwapStrong(0.asInstanceOf[CUnsignedInt],
+                              3.asInstanceOf[CUnsignedInt])
+        ._2 == 3.asInstanceOf[CUnsignedInt])
+
+    a.free()
   }
 
-  test("atomic add/sub on csize") {
-    val a = stackalloc[CSize]
-    val b = stackalloc[CSize]
+  test("atomic {add, sub}_fetch on long") {
+    val a = CAtomicLong(1.toLong)
 
-    !a = 1
-    !b = 2
+    assert(a.addFetch(1) == 2.toLong)
+    assert(a.subFetch(1) == 1.toLong)
 
-    assert(atomic_add_csize(a, 1) == 2.toShort)
-    assert(atomic_sub_csize(b, 1) == 1.toShort)
+    a.free()
   }
 
-  test("atomic add/sub on char") {
-    val a = stackalloc[CChar]
-    val b = stackalloc[CChar]
+  test("atomic fetch_{add, sub} on short + load") {
+    val a = CAtomicShort(1.toShort)
 
-    !a = 'a'
-    !b = 'b'
+    assert(a.fetchAdd(1) == 1.toShort)
+    assert(a.load() == 2.toShort)
 
-    assert(atomic_add_char(a, 1) == 'b')
-    assert(atomic_sub_char(b, 1) == 'a')
+    a.free()
   }
 
-  test("atomic or/and on boolean") {
-    val a = stackalloc[CInt]
-    val b = stackalloc[CInt]
+  test("atomic {or/and}_fetch on boolean") {
+    val a = CAtomicInt(1)
 
-    !a = 1
-    !b = 0
+    assert(a.andFetch(0) == 0)
+    assert(a.orFetch(1) == 1)
 
-    assert(atomic_and(a, 0) == 0)
-    assert(atomic_or(b, 1) == 1)
+    a.free()
   }
 
 }
