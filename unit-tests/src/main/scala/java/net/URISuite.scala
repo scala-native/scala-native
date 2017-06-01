@@ -168,48 +168,48 @@ object URISuite extends tests.Suite {
 
   test("constructor should not throw on good URIs") {
     val uris = Array(
-                "http://user@www.google.com:45/search?q=helpinfo#somefragment",
-                // http with authority, query and fragment
-                "ftp://ftp.is.co.za/rfc/rfc1808.txt", // ftp
-                "gopher://spinaltap.micro.umn.edu/00/Weather/California/Los%20Angeles", // gopher
-                "mailto:mduerst@ifi.unizh.ch", // mailto
-                "news:comp.infosystems.www.servers.unix", // news
-                "telnet://melvyl.ucop.edu/", // telnet
-                "http://123.24.17.98/test", // IPv4 authority
-                "http://www.google.com:80/test",// domain name authority
-                "http://joe@[3ffe:2a00:100:7031::1]:80/test",
-                // IPv6 authority, with userinfo and port
-                "/relative", // relative starting with /
-                "//relative", // relative starting with //
-                "relative", // relative with no /
-                "#fragment",// relative just with fragment
-                "http://user@host:80", // UI, host,port
-                "http://user@host", // ui, host
-                "http://host", // host
-                "http://host:80", // host,port
-                "http://joe@:80", // ui, port (becomes registry-based)
-                "file:///foo/bar", // empty authority, non empty path
-                "ht?tp://hoe@host:80", // miscellaneous tests
-                "mai/lto:hey?joe#man", "http://host/a%20path#frag",
-                // path with an escaped octet for space char
-                "http://host/a%E2%82%ACpath#frag",
-                // path with escaped octet for unicode char, not USASCII
-                "http://host/a\u20ACpath#frag",
-                // path with unicode char, not USASCII equivalent to
-                // = "http://host/a\u0080path#frag",
-                "http://host%20name/", // escaped octets in host (becomes
-                // registry based)
-                "http://host\u00DFname/", // unicodechar in host (becomes
-                // registry based)
-                // equivalent to = "http://host\u00dfname/",
-                "ht123-+tp://www.google.com:80/test" // legal chars in scheme
-              )
+      "http://user@www.google.com:45/search?q=helpinfo#somefragment",
+      // http with authority, query and fragment
+      "ftp://ftp.is.co.za/rfc/rfc1808.txt", // ftp
+      "gopher://spinaltap.micro.umn.edu/00/Weather/California/Los%20Angeles", // gopher
+      "mailto:mduerst@ifi.unizh.ch", // mailto
+      "news:comp.infosystems.www.servers.unix", // news
+      "telnet://melvyl.ucop.edu/", // telnet
+      "http://123.24.17.98/test", // IPv4 authority
+      "http://www.google.com:80/test", // domain name authority
+      "http://joe@[3ffe:2a00:100:7031::1]:80/test",
+      // IPv6 authority, with userinfo and port
+      "/relative", // relative starting with /
+      "//relative", // relative starting with //
+      "relative", // relative with no /
+      "#fragment", // relative just with fragment
+      "http://user@host:80", // UI, host,port
+      "http://user@host", // ui, host
+      "http://host", // host
+      "http://host:80", // host,port
+      "http://joe@:80", // ui, port (becomes registry-based)
+      "file:///foo/bar", // empty authority, non empty path
+      "ht?tp://hoe@host:80", // miscellaneous tests
+      "mai/lto:hey?joe#man",
+      "http://host/a%20path#frag",
+      // path with an escaped octet for space char
+      "http://host/a%E2%82%ACpath#frag",
+      // path with escaped octet for unicode char, not USASCII
+      "http://host/a\u20ACpath#frag",
+      // path with unicode char, not USASCII equivalent to
+      // = "http://host/a\u0080path#frag",
+      "http://host%20name/", // escaped octets in host (becomes
+      // registry based)
+      "http://host\u00DFname/", // unicodechar in host (becomes
+      // registry based)
+      // equivalent to = "http://host\u00dfname/",
+      "ht123-+tp://www.google.com:80/test" // legal chars in scheme
+    )
 
-    for(uri <- uris) {
+    for (uri <- uris) {
       try {
         new URI(uri)
-      }
-      catch {
+      } catch {
         case e: URISyntaxException => assert(false)
       }
     }

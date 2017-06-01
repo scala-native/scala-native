@@ -23,21 +23,21 @@ object URIEncoderDecoder {
           val d1: Int = java.lang.Character.digit(s.charAt(i + 1), 16)
           val d2: Int = java.lang.Character.digit(s.charAt(i + 2), 16)
           if (d1 == -1 || d2 == -1) {
-            throw new URISyntaxException(s,
+            throw new URISyntaxException(
+              s,
               "Invalid % sequence (" + s.substring(i, i + 3) + ")",
               i)
           }
           i += 3
         } while (i < s.length && s.charAt(i) == '%')
-      }
-      else if (!((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
-            (ch >= '0' && ch <= '9') ||
-            legal.indexOf(ch) > -1 ||
-            (ch > 127 && !java.lang.Character.isSpaceChar(ch) && !java.lang.Character
-              .isISOControl(ch)))) {
+      } else if (!((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
+                   (ch >= '0' && ch <= '9') ||
+                   legal.indexOf(ch) > -1 ||
+                   (ch > 127 && !java.lang.Character.isSpaceChar(ch) && !java.lang.Character
+                     .isISOControl(ch)))) {
         throw new URISyntaxException(s, "Illegal character", i)
       }
-      if(!continue) i += 1 
+      if (!continue) i += 1
     }
   }
 
@@ -104,7 +104,8 @@ object URIEncoderDecoder {
         out.reset()
         do {
           if (i + 2 >= s.length) {
-            throw new IllegalArgumentException("Incomplete % sequence at: " + i)
+            throw new IllegalArgumentException(
+              "Incomplete % sequence at: " + i)
           }
           val d1: Int = java.lang.Character.digit(s.charAt(i + 1), 16)
           val d2: Int = java.lang.Character.digit(s.charAt(i + 2), 16)
@@ -117,7 +118,7 @@ object URIEncoderDecoder {
         } while (i < s.length && s.charAt(i) == '%')
         result.append(out.toString(encoding))
       }
-      result.append(c) 
+      result.append(c)
       i += 1
     }
     result.toString

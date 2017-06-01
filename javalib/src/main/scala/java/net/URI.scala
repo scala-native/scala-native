@@ -8,15 +8,15 @@ import java.io.UnsupportedEncodingException
 import java.util.StringTokenizer
 
 object URI {
-  val unreserved: String = "_-!.~\'()*" 
+  val unreserved: String = "_-!.~\'()*"
 
-  val punct: String = ",;:$&+=" 
+  val punct: String = ",;:$&+="
 
-  val reserved: String = punct + "?/[]@" 
+  val reserved: String = punct + "?/[]@"
 
   val someLegal: String = unreserved + punct
 
-  val queryLegal: String = unreserved + reserved + "\\\"" 
+  val queryLegal: String = unreserved + reserved + "\\\""
 
   val allLegal: String = unreserved + reserved
 
@@ -28,7 +28,7 @@ object URI {
 
 }
 
-final class URI private() extends Comparable[URI] with Serializable {
+final class URI private () extends Comparable[URI] with Serializable {
 
   import URI._
 
@@ -792,7 +792,8 @@ final class URI private() extends Comparable[URI] with Serializable {
       }
     }
     if (uri.opaque && opaque) {
-      return equalsHexCaseInsensitive(uri.schemespecificpart, schemespecificpart)
+      return equalsHexCaseInsensitive(uri.schemespecificpart,
+                                      schemespecificpart)
     } else if (!uri.opaque && !opaque) {
       if (!equalsHexCaseInsensitive(path, uri.path)) {
         return false

@@ -67,7 +67,7 @@ class StringTokenizer(string: String,
     if (i < length) {
       if (returnDelimiters) {
         if (delimiters.indexOf(string.charAt(i), 0) >= 0) {
-          return String.valueOf(string.charAt({position +=1; position-1}))
+          return String.valueOf(string.charAt({ position += 1; position - 1 }))
         }
         position += 1
         while (position < length) {
