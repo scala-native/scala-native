@@ -21,7 +21,7 @@ class CAtomicByte extends CAtomic {
     val expectedPtr = stackalloc[Byte]
     !expectedPtr = expected
 
-    if(compare_and_swap_strong_byte(atm, expectedPtr, expected)) {
+    if (compare_and_swap_strong_byte(atm, expectedPtr, expected)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
@@ -32,7 +32,7 @@ class CAtomicByte extends CAtomic {
     val expectedPtr = stackalloc[Byte]
     !expectedPtr = expected
 
-    if(compare_and_swap_weak_byte(atm, expectedPtr, expected)) {
+    if (compare_and_swap_weak_byte(atm, expectedPtr, expected)) {
       (true, desired)
     } else {
       (false, !expectedPtr)

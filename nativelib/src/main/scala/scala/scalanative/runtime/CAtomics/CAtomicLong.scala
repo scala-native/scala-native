@@ -21,7 +21,7 @@ class CAtomicLong extends CAtomic {
     val expectedPtr = stackalloc[CLong]
     !expectedPtr = expected
 
-    if(compare_and_swap_strong_long(atm, expectedPtr, expected)) {
+    if (compare_and_swap_strong_long(atm, expectedPtr, expected)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
@@ -32,7 +32,7 @@ class CAtomicLong extends CAtomic {
     val expectedPtr = stackalloc[CLong]
     !expectedPtr = expected
 
-    if(compare_and_swap_weak_long(atm, expectedPtr, expected)) {
+    if (compare_and_swap_weak_long(atm, expectedPtr, expected)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
@@ -44,35 +44,40 @@ class CAtomicLong extends CAtomic {
     load()
   }
 
-  def fetchAdd(value: CLong): CLong = atomic_add_long(atm.cast[Ptr[CLong]], value)
+  def fetchAdd(value: CLong): CLong =
+    atomic_add_long(atm.cast[Ptr[CLong]], value)
 
   def subFetch(value: CLong): CLong = {
     fetchSub(value)
     load()
   }
 
-  def fetchSub(value: CLong): CLong = atomic_sub_long(atm.cast[Ptr[CLong]], value)
+  def fetchSub(value: CLong): CLong =
+    atomic_sub_long(atm.cast[Ptr[CLong]], value)
 
   def andFetch(value: CLong): CLong = {
     fetchAnd(value)
     load()
   }
 
-  def fetchAnd(value: CLong): CLong = atomic_and_long(atm.cast[Ptr[CLong]], value)
+  def fetchAnd(value: CLong): CLong =
+    atomic_and_long(atm.cast[Ptr[CLong]], value)
 
   def orFetch(value: CLong): CLong = {
     fetchOr(value)
     load()
   }
 
-  def fetchOr(value: CLong): CLong = atomic_or_long(atm.cast[Ptr[CLong]], value)
+  def fetchOr(value: CLong): CLong =
+    atomic_or_long(atm.cast[Ptr[CLong]], value)
 
   def xorFetch(value: CLong): CLong = {
     fetchXor(value)
     load()
   }
 
-  def fetchXor(value: CLong): CLong = atomic_xor_long(atm.cast[Ptr[CLong]], value)
+  def fetchXor(value: CLong): CLong =
+    atomic_xor_long(atm.cast[Ptr[CLong]], value)
 
   def load(): CLong = load_long(atm)
 

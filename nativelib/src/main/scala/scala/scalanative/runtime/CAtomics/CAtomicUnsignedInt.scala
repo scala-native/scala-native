@@ -17,22 +17,24 @@ class CAtomicUnsignedInt extends CAtomic {
 
   def free(): Unit = Atomic.free(atm.cast[Ptr[Byte]])
 
-  def compareAndSwapStrong(expected: CUnsignedInt, desired: CUnsignedInt): (Boolean, CUnsignedInt) = {
+  def compareAndSwapStrong(expected: CUnsignedInt,
+                           desired: CUnsignedInt): (Boolean, CUnsignedInt) = {
     val expectedPtr = stackalloc[CUnsignedInt]
     !expectedPtr = expected
 
-    if(compare_and_swap_strong_uint(atm, expectedPtr, expected)) {
+    if (compare_and_swap_strong_uint(atm, expectedPtr, expected)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
     }
   }
 
-  def compareAndSwapWeak(expected: CUnsignedInt, desired: CUnsignedInt): (Boolean, CUnsignedInt) = {
+  def compareAndSwapWeak(expected: CUnsignedInt,
+                         desired: CUnsignedInt): (Boolean, CUnsignedInt) = {
     val expectedPtr = stackalloc[CUnsignedInt]
     !expectedPtr = expected
 
-    if(compare_and_swap_weak_uint(atm, expectedPtr, expected)) {
+    if (compare_and_swap_weak_uint(atm, expectedPtr, expected)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
@@ -44,35 +46,40 @@ class CAtomicUnsignedInt extends CAtomic {
     load()
   }
 
-  def fetchAdd(value: CUnsignedInt): CUnsignedInt = atomic_add_uint(atm.cast[Ptr[CUnsignedInt]], value)
+  def fetchAdd(value: CUnsignedInt): CUnsignedInt =
+    atomic_add_uint(atm.cast[Ptr[CUnsignedInt]], value)
 
   def subFetch(value: CUnsignedInt): CUnsignedInt = {
     fetchSub(value)
     load()
   }
 
-  def fetchSub(value: CUnsignedInt): CUnsignedInt = atomic_sub_uint(atm.cast[Ptr[CUnsignedInt]], value)
+  def fetchSub(value: CUnsignedInt): CUnsignedInt =
+    atomic_sub_uint(atm.cast[Ptr[CUnsignedInt]], value)
 
   def andFetch(value: CUnsignedInt): CUnsignedInt = {
     fetchAnd(value)
     load()
   }
 
-  def fetchAnd(value: CUnsignedInt): CUnsignedInt = atomic_and_uint(atm.cast[Ptr[CUnsignedInt]], value)
+  def fetchAnd(value: CUnsignedInt): CUnsignedInt =
+    atomic_and_uint(atm.cast[Ptr[CUnsignedInt]], value)
 
   def orFetch(value: CUnsignedInt): CUnsignedInt = {
     fetchOr(value)
     load()
   }
 
-  def fetchOr(value: CUnsignedInt): CUnsignedInt = atomic_or_uint(atm.cast[Ptr[CUnsignedInt]], value)
+  def fetchOr(value: CUnsignedInt): CUnsignedInt =
+    atomic_or_uint(atm.cast[Ptr[CUnsignedInt]], value)
 
   def xorFetch(value: CUnsignedInt): CUnsignedInt = {
     fetchXor(value)
     load()
   }
 
-  def fetchXor(value: CUnsignedInt): CUnsignedInt = atomic_xor_uint(atm.cast[Ptr[CUnsignedInt]], value)
+  def fetchXor(value: CUnsignedInt): CUnsignedInt =
+    atomic_xor_uint(atm.cast[Ptr[CUnsignedInt]], value)
 
   def load(): CUnsignedInt = load_uint(atm)
 

@@ -21,7 +21,7 @@ class CAtomicCSize extends CAtomic {
     val expectedPtr = stackalloc[CSize]
     !expectedPtr = expected
 
-    if(compare_and_swap_strong_csize(atm, expectedPtr, expected)) {
+    if (compare_and_swap_strong_csize(atm, expectedPtr, expected)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
@@ -32,7 +32,7 @@ class CAtomicCSize extends CAtomic {
     val expectedPtr = stackalloc[CSize]
     !expectedPtr = expected
 
-    if(compare_and_swap_weak_csize(atm, expectedPtr, expected)) {
+    if (compare_and_swap_weak_csize(atm, expectedPtr, expected)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
@@ -44,35 +44,40 @@ class CAtomicCSize extends CAtomic {
     load()
   }
 
-  def fetchAdd(value: CSize): CSize = atomic_add_csize(atm.cast[Ptr[CSize]], value)
+  def fetchAdd(value: CSize): CSize =
+    atomic_add_csize(atm.cast[Ptr[CSize]], value)
 
   def subFetch(value: CSize): CSize = {
     fetchSub(value)
     load()
   }
 
-  def fetchSub(value: CSize): CSize = atomic_sub_csize(atm.cast[Ptr[CSize]], value)
+  def fetchSub(value: CSize): CSize =
+    atomic_sub_csize(atm.cast[Ptr[CSize]], value)
 
   def andFetch(value: CSize): CSize = {
     fetchAnd(value)
     load()
   }
 
-  def fetchAnd(value: CSize): CSize = atomic_and_csize(atm.cast[Ptr[CSize]], value)
+  def fetchAnd(value: CSize): CSize =
+    atomic_and_csize(atm.cast[Ptr[CSize]], value)
 
   def orFetch(value: CSize): CSize = {
     fetchOr(value)
     load()
   }
 
-  def fetchOr(value: CSize): CSize = atomic_or_csize(atm.cast[Ptr[CSize]], value)
+  def fetchOr(value: CSize): CSize =
+    atomic_or_csize(atm.cast[Ptr[CSize]], value)
 
   def xorFetch(value: CSize): CSize = {
     fetchXor(value)
     load()
   }
 
-  def fetchXor(value: CSize): CSize = atomic_xor_csize(atm.cast[Ptr[CSize]], value)
+  def fetchXor(value: CSize): CSize =
+    atomic_xor_csize(atm.cast[Ptr[CSize]], value)
 
   def load(): CSize = load_csize(atm)
 

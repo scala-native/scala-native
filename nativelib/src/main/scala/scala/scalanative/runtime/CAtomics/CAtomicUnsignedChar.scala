@@ -17,22 +17,25 @@ class CAtomicUnsignedChar extends CAtomic {
 
   def free(): Unit = Atomic.free(atm.cast[Ptr[Byte]])
 
-  def compareAndSwapStrong(expected: CUnsignedChar, desired: CUnsignedChar): (Boolean, CUnsignedChar) = {
+  def compareAndSwapStrong(
+      expected: CUnsignedChar,
+      desired: CUnsignedChar): (Boolean, CUnsignedChar) = {
     val expectedPtr = stackalloc[CUnsignedChar]
     !expectedPtr = expected
 
-    if(compare_and_swap_strong_uchar(atm, expectedPtr, expected)) {
+    if (compare_and_swap_strong_uchar(atm, expectedPtr, expected)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
     }
   }
 
-  def compareAndSwapWeak(expected: CUnsignedChar, desired: CUnsignedChar): (Boolean, CUnsignedChar) = {
+  def compareAndSwapWeak(expected: CUnsignedChar,
+                         desired: CUnsignedChar): (Boolean, CUnsignedChar) = {
     val expectedPtr = stackalloc[CUnsignedChar]
     !expectedPtr = expected
 
-    if(compare_and_swap_weak_uchar(atm, expectedPtr, expected)) {
+    if (compare_and_swap_weak_uchar(atm, expectedPtr, expected)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
@@ -44,35 +47,40 @@ class CAtomicUnsignedChar extends CAtomic {
     load()
   }
 
-  def fetchAdd(value: CUnsignedChar): CUnsignedChar = atomic_add_uchar(atm.cast[Ptr[CUnsignedChar]], value)
+  def fetchAdd(value: CUnsignedChar): CUnsignedChar =
+    atomic_add_uchar(atm.cast[Ptr[CUnsignedChar]], value)
 
   def subFetch(value: CUnsignedChar): CUnsignedChar = {
     fetchSub(value)
     load()
   }
 
-  def fetchSub(value: CUnsignedChar): CUnsignedChar = atomic_sub_uchar(atm.cast[Ptr[CUnsignedChar]], value)
+  def fetchSub(value: CUnsignedChar): CUnsignedChar =
+    atomic_sub_uchar(atm.cast[Ptr[CUnsignedChar]], value)
 
   def andFetch(value: CUnsignedChar): CUnsignedChar = {
     fetchAnd(value)
     load()
   }
 
-  def fetchAnd(value: CUnsignedChar): CUnsignedChar = atomic_and_uchar(atm.cast[Ptr[CUnsignedChar]], value)
+  def fetchAnd(value: CUnsignedChar): CUnsignedChar =
+    atomic_and_uchar(atm.cast[Ptr[CUnsignedChar]], value)
 
   def orFetch(value: CUnsignedChar): CUnsignedChar = {
     fetchOr(value)
     load()
   }
 
-  def fetchOr(value: CUnsignedChar): CUnsignedChar = atomic_or_uchar(atm.cast[Ptr[CUnsignedChar]], value)
+  def fetchOr(value: CUnsignedChar): CUnsignedChar =
+    atomic_or_uchar(atm.cast[Ptr[CUnsignedChar]], value)
 
   def xorFetch(value: CUnsignedChar): CUnsignedChar = {
     fetchXor(value)
     load()
   }
 
-  def fetchXor(value: CUnsignedChar): CUnsignedChar = atomic_xor_uchar(atm.cast[Ptr[CUnsignedChar]], value)
+  def fetchXor(value: CUnsignedChar): CUnsignedChar =
+    atomic_xor_uchar(atm.cast[Ptr[CUnsignedChar]], value)
 
   def load(): CUnsignedChar = load_uchar(atm)
 
