@@ -8,7 +8,7 @@ object ClangImporter {
   import ClangAPI._
   import Trees._
 
-  def importHeaderFile(path: String): List[Tree] = {
+  def importHeaderFile(path: String): List[Tree] = Zone { implicit z =>
     val index = createIndex(0, 0)
     val unit = parseTranslationUnit(index,
                                     toCString(path),
