@@ -19,11 +19,11 @@ Try
 {
     $ScalaFmtRun = ""
     if ($testMode) {
-        &$COURSIER bootstrap com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION --main org.scalafmt.cli.Cli -o $SCALAFMTTEST
+        &$COURSIER bootstrap com.geirsson:scalafmt-cli_2.12:$SCALAFMT_VERSION --main org.scalafmt.cli.Cli -o $SCALAFMTTEST -f
         $ScalaFmtRun = $SCALAFMTTEST
     }
     else {
-        &$COURSIER bootstrap --standalone com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION -o $SCALAFMT -f --main org.scalafmt.cli.Cli
+        &$COURSIER bootstrap --standalone com.geirsson:scalafmt-cli_2.12:$SCALAFMT_VERSION -o $SCALAFMT -f --main org.scalafmt.cli.Cli
         $ScalaFmtRun = $SCALAFMT
     }
 

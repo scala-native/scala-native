@@ -14,7 +14,7 @@ Try
         throw [System.IO.FileNotFoundException] "$COURSIER not found."
     }
 
-    $log = &java -jar $COURSIER $args
+    $log = (&java -jar $COURSIER $args) -join "`n"
     Write-Host $log
 }
 Catch
