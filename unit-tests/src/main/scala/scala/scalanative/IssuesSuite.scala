@@ -264,4 +264,26 @@ object IssuesSuite extends tests.Suite {
     2.asInstanceOf[Nothing]
     2.asInstanceOf[Null]
   }
+
+  test("#762") {
+    val byte         = 1.toByte
+    val negbyte: Any = -byte
+    assert(negbyte.isInstanceOf[Int])
+    assert(negbyte.toString == "-1")
+
+    val short         = 1.toByte
+    val negshort: Any = -short
+    assert(negshort.isInstanceOf[Int])
+    assert(negshort.toString == "-1")
+
+    val int         = 1
+    val negint: Any = -int
+    assert(negint.isInstanceOf[Int])
+    assert(negint.toString == "-1")
+
+    val long         = 1L
+    val neglong: Any = -long
+    assert(neglong.isInstanceOf[Long])
+    assert(neglong.toString == "-1")
+  }
 }
