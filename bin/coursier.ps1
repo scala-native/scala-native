@@ -18,7 +18,10 @@ Try
         }
     }
 
+    $old_ErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = 'SilentlyContinue'
     $log = (&java -jar $COURSIER $args) -join "`n"
+    $ErrorActionPreference = $old_ErrorActionPreference
     Write-Host $log
 }
 Catch
