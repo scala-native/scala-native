@@ -47,7 +47,7 @@ object ReflectiveProxy {
 
   private def genProxyLabel(args: Seq[Type]) = {
     val argLabels = Val.Local(fresh(), args.head) ::
-        args.tail.map(argty => Val.Local(fresh(), argty)).toList
+      args.tail.map(argty => Val.Local(fresh(), argty)).toList
 
     Inst.Label(fresh(), argLabels)
   }
@@ -67,12 +67,12 @@ object ReflectiveProxy {
     val callParams =
       params.head ::
         unboxes
-          .zip(params.tail)
-          .map {
-            case (let, local) =>
-              Val.Local(let.name, Type.unbox.getOrElse(local.ty, local.ty))
-          }
-          .toList
+        .zip(params.tail)
+        .map {
+          case (let, local) =>
+            Val.Local(let.name, Type.unbox.getOrElse(local.ty, local.ty))
+        }
+        .toList
 
     Inst.Let(
       Op.Call(defnTy, Val.Local(method.name, Type.Ptr), callParams, Next.None))

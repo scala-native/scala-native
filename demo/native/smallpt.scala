@@ -231,7 +231,7 @@ object Main {
               val dx = if (r1 < 1d) sqrt(r1) - 1d else 1d - sqrt(2d - r1)
               val dy = if (r2 < 1d) sqrt(r2) - 1d else 1d - sqrt(2d - r2)
               val d = cx * (((sx + .5d + dx) / 2d + x) / W - .5d) +
-                  cy * (((sy + .5d + dy) / 2d + y) / H - .5d) + cam.d
+                cy * (((sy + .5d + dy) / 2d + y) / H - .5d) + cam.d
               r = r + radiance(new Ray(cam.o + d * 140, d.norm()), 0, Xi) * (1.0d / SAMPLES)
               s += 1
             }

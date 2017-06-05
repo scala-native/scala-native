@@ -70,9 +70,9 @@ final class Byte(val _value: scala.Byte) extends Number with Comparable[Byte] {
   protected def toFloat: scala.Float   = _value.toFloat
   protected def toDouble: scala.Double = _value.toDouble
 
-  protected def unary_~ : scala.Int = ~ _value.toInt
+  protected def unary_~ : scala.Int = ~_value.toInt
   protected def unary_+ : scala.Int = _value.toInt
-  protected def unary_- : scala.Int = - _value.toInt
+  protected def unary_- : scala.Int = -_value.toInt
 
   protected def +(x: String): String = _value + x
 

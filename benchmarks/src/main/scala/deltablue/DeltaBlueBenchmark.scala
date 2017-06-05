@@ -267,7 +267,7 @@ abstract class UnaryConstraint(myOutput: Variable, strength: Strength)(
   /// Decides if this constraint can be satisfied and records that decision.
   def chooseMethod(mark: Int) {
     satisfied = (myOutput.mark != mark) &&
-        Strength.stronger(strength, myOutput.walkStrength)
+      Strength.stronger(strength, myOutput.walkStrength)
   }
 
   /// Returns true if this constraint is satisfied in the current solution.
