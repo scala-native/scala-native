@@ -10,6 +10,7 @@ install:
   - ps: $env:JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF8"
   - ps: $env:JAVA_OPTS="-Xmx2G"
   - ps: .\bin\scalafmt --install
+  - ps: .\bin\coursier.ps1 bootstrap com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION --main org.scalafmt.cli.Cli -o $SCALAFMTTEST -f
 build_script:
   - ps: |
         if ($env:APPVEYOR_PULL_REQUEST_NUMBER) {
