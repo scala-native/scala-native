@@ -17,6 +17,12 @@ Try
 {
     &"$PSScriptRoot/coursier.ps1" bootstrap --standalone com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION -o $SCALAFMT -f --main org.scalafmt.cli.Cli
 
+    $scalafmtExists = Test-Path $SCALAFMT
+    if ($scalafmtExists -ne $True)
+    {
+        throw [System.IO.FileNotFoundException] "$SCALAFMT not found."
+    }
+
     if ($testMode) {
         &java -jar $SCALAFMT $testMode
     }
