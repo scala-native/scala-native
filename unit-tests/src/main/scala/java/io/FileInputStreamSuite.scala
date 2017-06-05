@@ -62,4 +62,10 @@ object FileInputStreamSuite extends tests.Suite {
     assert(fis.read() == 0xFF)
     assert(fis.read() == -1)
   }
+
+  test("throws FileNotFoundException when creating new FileInputStream with non-existing file path") {
+    assertThrows[FileNotFoundException] {
+      new FileInputStream("/the/path/does/not/exist/for/sure")
+    }
+  }
 }
