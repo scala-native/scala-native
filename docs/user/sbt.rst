@@ -100,7 +100,7 @@ Garbage collectors
    for short-running command-line applications or applications where garbage
    collections pauses are not acceptable.
 
-2. **immix.** (experimental, since 0.3)
+3. **immix.** (experimental, since 0.3)
 
    Immix is a mostly-precise mark-region tracing garbage collector.
 
