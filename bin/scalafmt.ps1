@@ -20,11 +20,11 @@ Try
     if ($testMode -eq "--install")
     {
         &$COURSIER bootstrap com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION --main org.scalafmt.cli.Cli -o $SCALAFMTTEST -f
-        #$scalafmtExists = Test-Path $SCALAFMTTEST
-        #if ($scalafmtExists -ne $True)
-        #{
-        #    throw [System.IO.FileNotFoundException] "$SCALAFMTTEST not found."
-        #}
+        $scalafmtExists = Test-Path $SCALAFMTTEST
+        if ($scalafmtExists -ne $True)
+        {
+            throw [System.IO.FileNotFoundException] "$SCALAFMTTEST not found."
+        }
     }
     else
     {
