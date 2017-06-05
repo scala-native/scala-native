@@ -13,11 +13,20 @@ param (
 $SCALAFMT_VERSION="0.6.8"
 $SCALAFMT="$PSScriptRoot\.scalafmt-$SCALAFMT_VERSION.jar"
 
-&"$PSScriptRoot/coursier.ps1" bootstrap --standalone com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION -o $SCALAFMT -f --main org.scalafmt.cli.Cli
+Try
+{
+    &"$PSScriptRoot/coursier.ps1" bootstrap --standalone com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION -o $SCALAFMT -f --main org.scalafmt.cli.Cli
 
-if ($testMode) {
-    &java -jar $SCALAFMT $testMode
+    if ($testMode) {
+        &java -jar $SCALAFMT $testMode
+    }
+    else {
+        &java -jar $SCALAFMT
+    }
 }
-else {
-    &java -jar $SCALAFMT
+Catch
+{
+    $ErrorMessage = $_.Exception.Message
+    Write-Host $ErrorMessage
+    exit 1
 }
