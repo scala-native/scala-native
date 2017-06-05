@@ -9,7 +9,7 @@ install:
   - ps: $env:CLANG_FORMAT_PATH="C:\\Program Files\\LLVM\\bin\\clang-format.exe"
   - ps: $env:JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF8"
   - ps: $env:JAVA_OPTS="-Xmx2G"
-  - ps: .\bin\scalafmt --install
+  #- ps: .\bin\scalafmt --install
   - ps: $old_ErrorActionPreference = $ErrorActionPreference
   - ps: $ErrorActionPreference = 'SilentlyContinue'
   - ps: .\bin\coursier.ps1 bootstrap com.geirsson:scalafmt-cli_2.11:0.6.8 --main org.scalafmt.cli.Cli -o .\bin\scalafmt-CI-0.6.8.jar -f
