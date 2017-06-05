@@ -85,9 +85,10 @@ object CodeGen {
                            platform: Platform) {
     import Impl._
 
-    var currentBlockName: Local            = _
-    var currentBlockSplit: Int             = _
-    var ehVarPosition: ShowBuilderPosition = null // position to insert for exception handler variable
+    var currentBlockName: Local = _
+    var currentBlockSplit: Int  = _
+    var ehVarPosition
+      : ShowBuilderPosition = null // position to insert for exception handler variable
 
     val fresh     = new Fresh("gen")
     val deps      = mutable.Set.empty[Global]

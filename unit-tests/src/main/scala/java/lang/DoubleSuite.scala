@@ -178,11 +178,13 @@ object DoubleSuite extends tests.Suite {
     assertNot(bpmin1 eq bpmin3)
 
     val bpinf1: java.lang.Double = scala.Double.PositiveInfinity
-    val bpinf2: java.lang.Double = scala.Double.MaxValue + scala.Double.MaxValue
+    val bpinf2
+      : java.lang.Double = scala.Double.MaxValue + scala.Double.MaxValue
     assertNot(bpinf1 eq bpinf2)
 
     val bninf1: java.lang.Double = scala.Double.NegativeInfinity
-    val bninf2: java.lang.Double = scala.Double.MinValue + scala.Double.MinValue
+    val bninf2
+      : java.lang.Double = scala.Double.MinValue + scala.Double.MinValue
     assertNot(bninf1 eq bninf2)
   }
 

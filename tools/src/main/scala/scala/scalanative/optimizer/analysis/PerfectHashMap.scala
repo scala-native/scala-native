@@ -182,15 +182,15 @@ object DynmethodPerfectHashMap {
       Global.None,
       Val.Int(perfectHashMap.size) ::
         (perfectHashMap.size match {
-          case 0 =>
-            List(Val.Null, Val.Null, Val.Null)
-          case _ =>
-            List(
-              Val.Const(Val.Array(Type.Int, perfectHashMap.keys.map(Val.Int))),
-              Val.Const(Val.Array(Type.Int, keys)),
-              Val.Const(Val.Array(Type.Ptr, values))
-            )
-        })
+        case 0 =>
+          List(Val.Null, Val.Null, Val.Null)
+        case _ =>
+          List(
+            Val.Const(Val.Array(Type.Int, perfectHashMap.keys.map(Val.Int))),
+            Val.Const(Val.Array(Type.Int, keys)),
+            Val.Const(Val.Array(Type.Ptr, values))
+          )
+      })
     )
   }
 
