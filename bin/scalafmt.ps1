@@ -33,12 +33,14 @@ Try
         throw [System.IO.FileNotFoundException] "$ScalaFmtRun not found."
     }
 
+    $log = ""
     if ($testMode) {
-        &java -jar $ScalaFmtRun $testMode
+        $log = &java -jar $ScalaFmtRun $testMode
     }
     else {
-        &java -jar $ScalaFmtRun
+        $log = &java -jar $ScalaFmtRun
     }
+    Write-Host $log
 }
 Catch
 {
