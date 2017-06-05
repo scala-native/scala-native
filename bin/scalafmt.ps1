@@ -6,7 +6,7 @@
 #      "--test": test correctness
 
 param (
-    [ValidateSet("--test")] 
+    [ValidateSet("--test", "--install")] 
     [string]$testMode
 )
 
@@ -17,30 +17,47 @@ $COURSIER="$PSScriptRoot/coursier.ps1"
 
 Try
 {
-    $ScalaFmtRun = ""
-    if ($testMode) {
-        &$COURSIER bootstrap com.geirsson:scalafmt-cli_2.12:$SCALAFMT_VERSION --main org.scalafmt.cli.Cli -o $SCALAFMTTEST -f
-        $ScalaFmtRun = $SCALAFMTTEST
-    }
-    else {
-        &$COURSIER bootstrap --standalone com.geirsson:scalafmt-cli_2.12:$SCALAFMT_VERSION -o $SCALAFMT -f --main org.scalafmt.cli.Cli
-        $ScalaFmtRun = $SCALAFMT
-    }
-
-    $scalafmtExists = Test-Path $ScalaFmtRun
-    if ($scalafmtExists -ne $True)
+    if ($testMode -eq "--install")
     {
-        throw [System.IO.FileNotFoundException] "$ScalaFmtRun not found."
+        &$COURSIER bootstrap com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION --main org.scalafmt.cli.Cli -o $SCALAFMTTEST -f
     }
+    else
+    {
+        $ScalaFmtRun = ""
+        if ($testMode -eq "--test") {
+            &$COURSIER bootstrap com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION --main org.scalafmt.cli.Cli -o $SCALAFMTTEST -f
+            $ScalaFmtRun = $SCALAFMTTEST
+        }
+        else {
+            &$COURSIER bootstrap --standalone com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION -o $SCALAFMT -f --main org.scalafmt.cli.Cli
+            $ScalaFmtRun = $SCALAFMT
+        }
 
-    $log = ""
-    if ($testMode) {
-        $log = &java -jar $ScalaFmtRun $testMode
+        $scalafmtExists = Test-Path $ScalaFmtRun
+        if ($scalafmtExists -ne $True)
+        {
+            if ($testMode -eq "--test") {
+                &$COURSIER bootstrap com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION --main org.scalafmt.cli.Cli -o $SCALAFMTTEST -f
+            }
+            else {
+                &$COURSIER bootstrap --standalone com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION -o $SCALAFMT -f --main org.scalafmt.cli.Cli
+            }
+            $scalafmtExists = Test-Path $ScalaFmtRun
+            if ($scalafmtExists -ne $True)
+            {
+                throw [System.IO.FileNotFoundException] "$ScalaFmtRun not found."
+            }
+        }
+
+        $log = ""
+        if ($testMode) {
+            $log = &java -jar $ScalaFmtRun $testMode
+        }
+        else {
+            $log = &java -jar $ScalaFmtRun
+        }
+        Write-Host $log
     }
-    else {
-        $log = &java -jar $ScalaFmtRun
-    }
-    Write-Host $log
 }
 Catch
 {

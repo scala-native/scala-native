@@ -6,12 +6,15 @@ $url = "https://github.com/coursier/coursier/raw/master/coursier"
 
 Try
 {
-    Invoke-WebRequest -Uri $url -OutFile $COURSIER
-
     $coursierExists = Test-Path $COURSIER
     if ($coursierExists -ne $True)
     {
-        throw [System.IO.FileNotFoundException] "$COURSIER not found."
+        Invoke-WebRequest -Uri $url -OutFile $COURSIER
+        $coursierExists = Test-Path $COURSIER
+        if ($coursierExists -ne $True)
+        {
+            throw [System.IO.FileNotFoundException] "$COURSIER not found."
+        }
     }
 
     $log = (&java -jar $COURSIER $args) -join "`n"
