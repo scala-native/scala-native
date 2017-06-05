@@ -1,6 +1,7 @@
 #ifdef _WIN32
 #include <Windows.h>
 #include <stdio.h>
+#include <Strsafe.h>
 
 #include "os_win_mman.h"
 
@@ -27,16 +28,22 @@ extern "C" int mprotect(void *addr, size_t len, int prot) {
 
 extern "C" void *mmap(void *addr, size_t length, int prot, int flags, int fd,
                       off_t offset) {
+    static unsigned short counter = 0;
+    const int bufferSize = 64;
+    wchar_t mapName[bufferSize];
     HANDLE hMapFile;
     LPCTSTR pBuf;
 
+    StringCbPrintfW(mapName, bufferSize, L"0x%04x: scalanative_memory_map",
+                    counter);
+
     hMapFile = CreateFileMappingW(
-        INVALID_HANDLE_VALUE,       // use paging file
-        NULL,                       // default security
-        PAGE_READWRITE,             // read/write access
-        (length >> 32),             // maximum object size (high-order DWORD)
-        (length & 0xFFFFFFFF),      // maximum object size (low-order DWORD)
-        L"scalanative_memory_map"); // name of mapping object
+        INVALID_HANDLE_VALUE,  // use paging file
+        NULL,                  // default security
+        PAGE_READWRITE,        // read/write access
+        (length >> 32),        // maximum object size (high-order DWORD)
+        (length & 0xFFFFFFFF), // maximum object size (low-order DWORD)
+        mapName);              // name of mapping object
 
     if (hMapFile == NULL) {
         printf("Could not create file mapping object (%lu).\n", GetLastError());
@@ -52,6 +59,7 @@ extern "C" void *mmap(void *addr, size_t length, int prot, int flags, int fd,
 
         return 0;
     }
+    ++counter;
     return (void *)pBuf;
 }
 extern "C" int munmap(void *addr, size_t length) { return 0; }

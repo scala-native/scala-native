@@ -271,7 +271,7 @@ void Heap_Grow(Heap *heap, size_t increment) {
 
 /** Grows the large heap by at least `increment` words */
 void Heap_GrowLarge(Heap *heap, size_t increment) {
-    increment = 1UL << MathUtils_Log2Ceil(increment);
+    increment = (unsigned long long)1UL << MathUtils_Log2Ceil(increment);
 
     if (heap->smallHeapSize + heap->largeHeapSize + increment * WORD_SIZE >
         heap->memoryLimit) {

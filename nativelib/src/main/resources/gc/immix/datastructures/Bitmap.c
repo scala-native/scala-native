@@ -26,7 +26,8 @@ void Bitmap_SetBit(Bitmap *bitmap, ubyte_t *addr) {
     assert(addr >= bitmap->offset &&
            addr < bitmap->offset + bitmap->size * MIN_BLOCK_SIZE);
     size_t index = addressToIndex(bitmap->offset, addr);
-    bitmap->words[WORD_OFFSET(index)] |= (1LLU << BIT_OFFSET(index));
+    bitmap->words[WORD_OFFSET(index)] |=
+        ((unsigned long long)1LLU << BIT_OFFSET(index));
 }
 
 void Bitmap_ClearBit(Bitmap *bitmap, ubyte_t *addr) {
@@ -35,7 +36,8 @@ void Bitmap_ClearBit(Bitmap *bitmap, ubyte_t *addr) {
 
     size_t index = addressToIndex(bitmap->offset, addr);
 
-    bitmap->words[WORD_OFFSET(index)] &= ~(1LLU << BIT_OFFSET(index));
+    bitmap->words[WORD_OFFSET(index)] &=
+        ~((unsigned long long)1LLU << BIT_OFFSET(index));
 }
 
 int Bitmap_GetBit(Bitmap *bitmap, ubyte_t *addr) {
@@ -43,8 +45,8 @@ int Bitmap_GetBit(Bitmap *bitmap, ubyte_t *addr) {
            addr < bitmap->offset + bitmap->size * MIN_BLOCK_SIZE);
 
     size_t index = addressToIndex(bitmap->offset, addr);
-    word_t bit =
-        bitmap->words[WORD_OFFSET(index)] & (1LLU << BIT_OFFSET(index));
+    word_t bit = bitmap->words[WORD_OFFSET(index)] &
+                 ((unsigned long long)1LLU << BIT_OFFSET(index));
     return bit != 0;
 }
 

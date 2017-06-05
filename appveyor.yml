@@ -8,9 +8,9 @@ install:
   - ps: $env:CLANGPP_PATH="C:\\Program Files\\LLVM\\bin\\clang++.exe"
   - ps: $env:CLANG_FORMAT_PATH="C:\\Program Files\\LLVM\\bin\\clang-format.exe"
   - ps: $env:JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF8"
-  - ps: mkdir 'C:\\Users\\appveyor\\.sbt\\0.13\\plugins\\'
-  - ps: $scalafmt_plugin='addSbtPlugin("com.geirsson" % "sbt-scalafmt" % "0.5.5")'
-  - ps: $scalafmt_plugin|Set-Content 'C:\\Users\\appveyor\\.sbt\\0.13\\plugins\\plugins.sbt'
+  #- ps: mkdir 'C:\\Users\\appveyor\\.sbt\\0.13\\plugins\\'
+  #- ps: $scalafmt_plugin='addSbtPlugin("com.geirsson" % "sbt-scalafmt" % "0.5.5")'
+  #- ps: $scalafmt_plugin|Set-Content 'C:\\Users\\appveyor\\.sbt\\0.13\\plugins\\plugins.sbt'
 build_script:
   - ps: |
         if ($env:APPVEYOR_PULL_REQUEST_NUMBER) {
@@ -33,7 +33,7 @@ build_script:
         }
 test_script:
   - ps: .\bin\clangfmt --test
-  - ps: sbt "scalafmt --test"
+  #- ps: sbt "scalafmt --test"
   - ps: sbt -J-Xmx2G rebuild "set scriptedBufferLog in sbtScalaNative := false" test-all
 cache:
   - C:\Users\appveyor\.m2
