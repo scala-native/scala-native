@@ -4,7 +4,11 @@ package native
 /** Zone allocator that automatically frees allocations whenever
  *  syntactic boundary of the zone is over.
  */
-trait Zone extends Alloc
+trait Zone {
+
+  /** Allocates memory of given size. */
+  def alloc(size: CSize): Ptr[Byte]
+}
 
 object Zone {
 
@@ -29,12 +33,6 @@ object Zone {
       node = new Node(ptr, node)
       ptr
     }
-
-    final def realloc(ptr: Ptr[Byte], newSize: CSize): Ptr[Byte] =
-      throw new UnsupportedOperationException("Zones do not support realloc")
-
-    final def free(ptr: Ptr[Byte]): Unit =
-      throw new UnsupportedOperationException("Zones do not support free")
 
     final def close(): Unit = {
       while (node != null) {
