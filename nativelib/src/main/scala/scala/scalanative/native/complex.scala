@@ -8,7 +8,7 @@ package native
  * and JVM have no direct support for long double
  * so these methods are not implemented.
  *
- * Warning: Ptr[ComplexF] and Ptr[Complex] values
+ * Warning: Ptr[CComplexFloat] and Ptr[CComplex] values
  * passed in to the functions are mutated for
  * memory safety. Make copies on the stack or heap
  * for values you need after the functions are called.
@@ -25,146 +25,146 @@ package native
 @extern
 object complex {
   import Nat._2
-  type ComplexF = CArray[CFloat, _2]
-  type Complex  = CArray[CDouble, _2]
+  type CComplexFloat = CArray[CFloat, _2]
+  type CComplex  = CArray[CDouble, _2]
 
   @name("scalanative_cacosf")
-  def cacosf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  def cacosf(complex: Ptr[CComplexFloat]): Ptr[CComplexFloat] = extern
   @name("scalanative_cacos")
-  def cacos(complex: Ptr[Complex]): Ptr[Complex] = extern
+  def cacos(complex: Ptr[CComplex]): Ptr[CComplex] = extern
   //  extern long double complex cacosl(long double complex);
 
   @name("scalanative_casinf")
-  def casinf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  def casinf(complex: Ptr[CComplexFloat]): Ptr[CComplexFloat] = extern
   @name("scalanative_casin")
-  def casin(complex: Ptr[Complex]): Ptr[Complex] = extern
+  def casin(complex: Ptr[CComplex]): Ptr[CComplex] = extern
   //  extern long double complex casinl(long double complex);
 
   @name("scalanative_catanf")
-  def catanf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  def catanf(complex: Ptr[CComplexFloat]): Ptr[CComplexFloat] = extern
   @name("scalanative_catan")
-  def catan(complex: Ptr[Complex]): Ptr[Complex] = extern
+  def catan(complex: Ptr[CComplex]): Ptr[CComplex] = extern
   //  extern long double complex catanl(long double complex);
 
   @name("scalanative_ccosf")
-  def ccosf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  def ccosf(complex: Ptr[CComplexFloat]): Ptr[CComplexFloat] = extern
   @name("scalanative_ccos")
-  def ccos(complex: Ptr[Complex]): Ptr[Complex] = extern
+  def ccos(complex: Ptr[CComplex]): Ptr[CComplex] = extern
   //  extern long double complex ccosl(long double complex);
 
   @name("scalanative_csinf")
-  def csinf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  def csinf(complex: Ptr[CComplexFloat]): Ptr[CComplexFloat] = extern
   @name("scalanative_csin")
-  def csin(complex: Ptr[Complex]): Ptr[Complex] = extern
+  def csin(complex: Ptr[CComplex]): Ptr[CComplex] = extern
   //  extern long double complex csinl(long double complex);
 
   @name("scalanative_ctanf")
-  def ctanf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  def ctanf(complex: Ptr[CComplexFloat]): Ptr[CComplexFloat] = extern
   @name("scalanative_ctan")
-  def ctan(complex: Ptr[Complex]): Ptr[Complex] = extern
+  def ctan(complex: Ptr[CComplex]): Ptr[CComplex] = extern
   //  extern long double complex ctanl(long double complex);
 
   @name("scalanative_cacoshf")
-  def cacoshf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  def cacoshf(complex: Ptr[CComplexFloat]): Ptr[CComplexFloat] = extern
   @name("scalanative_cacosh")
-  def cacosh(complex: Ptr[Complex]): Ptr[Complex] = extern
+  def cacosh(complex: Ptr[CComplex]): Ptr[CComplex] = extern
   //  extern long double complex cacoshl(long double complex);
 
   @name("scalanative_casinhf")
-  def casinhf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  def casinhf(complex: Ptr[CComplexFloat]): Ptr[CComplexFloat] = extern
   @name("scalanative_casinh")
-  def casinh(complex: Ptr[Complex]): Ptr[Complex] = extern
+  def casinh(complex: Ptr[CComplex]): Ptr[CComplex] = extern
   //  extern long double complex casinhl(long double complex);
 
   @name("scalanative_catanhf")
-  def catanhf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  def catanhf(complex: Ptr[CComplexFloat]): Ptr[CComplexFloat] = extern
   @name("scalanative_catanh")
-  def catanh(complex: Ptr[Complex]): Ptr[Complex] = extern
+  def catanh(complex: Ptr[CComplex]): Ptr[CComplex] = extern
   //  extern long double complex catanhl(long double complex);
 
   @name("scalanative_ccoshf")
-  def ccoshf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  def ccoshf(complex: Ptr[CComplexFloat]): Ptr[CComplexFloat] = extern
   @name("scalanative_ccosh")
-  def ccosh(complex: Ptr[Complex]): Ptr[Complex] = extern
+  def ccosh(complex: Ptr[CComplex]): Ptr[CComplex] = extern
   //  extern long double complex ccoshl(long double complex);
 
   @name("scalanative_csinhf")
-  def csinhf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  def csinhf(complex: Ptr[CComplexFloat]): Ptr[CComplexFloat] = extern
   @name("scalanative_csinh")
-  def csinh(complex: Ptr[Complex]): Ptr[Complex] = extern
+  def csinh(complex: Ptr[CComplex]): Ptr[CComplex] = extern
   //  extern long double complex csinhl(long double complex);
 
   @name("scalanative_ctanhf")
-  def ctanhf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  def ctanhf(complex: Ptr[CComplexFloat]): Ptr[CComplexFloat] = extern
   @name("scalanative_ctanh")
-  def ctanh(complex: Ptr[Complex]): Ptr[Complex] = extern
+  def ctanh(complex: Ptr[CComplex]): Ptr[CComplex] = extern
   //  extern long double complex ctanhl(long double complex);
 
   @name("scalanative_cexpf")
-  def cexpf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  def cexpf(complex: Ptr[CComplexFloat]): Ptr[CComplexFloat] = extern
   @name("scalanative_cexp")
-  def cexp(complex: Ptr[Complex]): Ptr[Complex] = extern
+  def cexp(complex: Ptr[CComplex]): Ptr[CComplex] = extern
   //  extern long double complex cexpl(long double complex);
 
   @name("scalanative_clogf")
-  def clogf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  def clogf(complex: Ptr[CComplexFloat]): Ptr[CComplexFloat] = extern
   @name("scalanative_clog")
-  def clog(complex: Ptr[Complex]): Ptr[Complex] = extern
+  def clog(complex: Ptr[CComplex]): Ptr[CComplex] = extern
   //  extern long double complex clogl(long double complex);
 
   @name("scalanative_cabsf")
-  def cabsf(complex: Ptr[ComplexF]): CFloat = extern
+  def cabsf(complex: Ptr[CComplexFloat]): CFloat = extern
   @name("scalanative_cabs")
-  def cabs(complex: Ptr[Complex]): CDouble = extern
+  def cabs(complex: Ptr[CComplex]): CDouble = extern
   //  extern long double cabsl(long double complex);
 
   @name("scalanative_cpowf")
-  def cpowf(x: Ptr[ComplexF], y: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  def cpowf(x: Ptr[CComplexFloat], y: Ptr[CComplexFloat]): Ptr[CComplexFloat] = extern
   @name("scalanative_cpow")
-  def cpow(x: Ptr[Complex], y: Ptr[Complex]): Ptr[Complex] = extern
+  def cpow(x: Ptr[CComplex], y: Ptr[CComplex]): Ptr[CComplex] = extern
   //  extern long double complex cpowl(long double complex, long double complex);
 
   @name("scalanative_csqrtf")
-  def csqrtf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  def csqrtf(complex: Ptr[CComplexFloat]): Ptr[CComplexFloat] = extern
   @name("scalanative_csqrt")
-  def csqrt(complex: Ptr[Complex]): Ptr[Complex] = extern
+  def csqrt(complex: Ptr[CComplex]): Ptr[CComplex] = extern
   //  extern long double complex csqrtl(long double complex);
 
   @name("scalanative_cargf")
-  def cargf(complex: Ptr[ComplexF]): CFloat = extern
+  def cargf(complex: Ptr[CComplexFloat]): CFloat = extern
   @name("scalanative_carg")
-  def carg(complex: Ptr[Complex]): CDouble = extern
+  def carg(complex: Ptr[CComplex]): CDouble = extern
   //  extern long double cargl(long double complex);
 
   @name("scalanative_cimagf")
-  def cimagf(complex: Ptr[ComplexF]): CFloat = extern
+  def cimagf(complex: Ptr[CComplexFloat]): CFloat = extern
   @name("scalanative_cimag")
-  def cimag(complex: Ptr[Complex]): CDouble = extern
+  def cimag(complex: Ptr[CComplex]): CDouble = extern
   //  extern long double cimagl(long double complex);
 
   @name("scalanative_conjf")
-  def conjf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  def conjf(complex: Ptr[CComplexFloat]): Ptr[CComplexFloat] = extern
   @name("scalanative_conj")
-  def conj(complex: Ptr[Complex]): Ptr[Complex] = extern
+  def conj(complex: Ptr[CComplex]): Ptr[CComplex] = extern
   //  extern long double complex conjl(long double complex);
 
   @name("scalanative_cprojf")
-  def cprojf(complex: Ptr[ComplexF]): Ptr[ComplexF] = extern
+  def cprojf(complex: Ptr[CComplexFloat]): Ptr[CComplexFloat] = extern
   @name("scalanative_cproj")
-  def cproj(complex: Ptr[Complex]): Ptr[Complex] = extern
+  def cproj(complex: Ptr[CComplex]): Ptr[CComplex] = extern
   //  extern long double complex cprojl(long double complex);
 
   @name("scalanative_crealf")
-  def crealf(complex: Ptr[ComplexF]): CFloat = extern
+  def crealf(complex: Ptr[CComplexFloat]): CFloat = extern
   @name("scalanative_creal")
-  def creal(complex: Ptr[Complex]): CDouble = extern
+  def creal(complex: Ptr[CComplex]): CDouble = extern
   //  extern long double creall(long double complex);
 }
 
 object complexOps {
   import complex._
 
-  implicit class complexfOps(val ptr: Ptr[ComplexF]) extends AnyVal {
+  implicit class complexOpsFloat(val ptr: Ptr[CComplexFloat]) extends AnyVal {
     def re: CFloat = !(ptr._1)
     def re_=(value: CFloat): Unit = {
       !ptr._1 = value
@@ -173,19 +173,19 @@ object complexOps {
     def im_=(value: CFloat): Unit = {
       !ptr._2 = value
     }
-    def copy(to: Ptr[ComplexF]): Ptr[ComplexF] = {
+    def copy(to: Ptr[CComplexFloat]): Ptr[CComplexFloat] = {
       to.re = re
       to.im = im
       to
     }
-    def init(re: CFloat, im: CFloat): Ptr[ComplexF] = {
+    def init(re: CFloat, im: CFloat): Ptr[CComplexFloat] = {
       ptr.re = re
       ptr.im = im
       ptr
     }
   }
 
-  implicit class complexOps(val ptr: Ptr[Complex]) extends AnyVal {
+  implicit class complexOpsDouble(val ptr: Ptr[CComplex]) extends AnyVal {
     def re: CDouble = !(ptr._1)
     def re_=(value: CDouble): Unit = {
       !ptr._1 = value
@@ -194,12 +194,12 @@ object complexOps {
     def im_=(value: CDouble): Unit = {
       !ptr._2 = value
     }
-    def copy(to: Ptr[Complex]): Ptr[Complex] = {
+    def copy(to: Ptr[CComplex]): Ptr[CComplex] = {
       to.re = re
       to.im = im
       to
     }
-    def init(re: CDouble, im: CDouble): Ptr[Complex] = {
+    def init(re: CDouble, im: CDouble): Ptr[CComplex] = {
       ptr.re = re
       ptr.im = im
       ptr
