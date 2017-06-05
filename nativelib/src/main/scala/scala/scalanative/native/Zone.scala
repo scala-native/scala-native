@@ -1,9 +1,12 @@
 package scala.scalanative
 package native
 
+import scala.annotation.implicitNotFound
+
 /** Zone allocator that automatically frees allocations whenever
  *  syntactic boundary of the zone is over.
  */
+@implicitNotFound("Given method requires an implicit zone.")
 trait Zone {
 
   /** Allocates memory of given size. */
