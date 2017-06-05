@@ -7,7 +7,8 @@
 int scalanative_unwind_get_context(void *context);
 int scalanative_unwind_init_local(void *cursor, void *context);
 int scalanative_unwind_step(void *cursor);
-int scalanative_unwind_get_proc_name(void *cursor, char *buffer, size_t length, void *offset);
+int scalanative_unwind_get_proc_name(void *cursor, char *buffer, size_t length,
+                                     void *offset);
 #endif
 #include <stdio.h>
 
@@ -45,10 +46,11 @@ void StackTrace_PrintStackTrace() {
             break;
         }*/
 
-        if (scalanative_unwind_get_proc_name(cursor, name, sizeof(name), offset) == 0) {
+        if (scalanative_unwind_get_proc_name(cursor, name, sizeof(name),
+                                             offset) == 0) {
             printf("\tat %s\n", name);
         }
-    }    
+    }
 #endif
 }
 
