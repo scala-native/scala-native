@@ -19,7 +19,7 @@ Try
 {
     if ($testMode -eq "--install")
     {
-        &$COURSIER bootstrap com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION --main org.scalafmt.cli.Cli -o $SCALAFMTTEST -f
+        &$COURSIER bootstrap com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION --quiet --main org.scalafmt.cli.Cli -o $SCALAFMTTEST -f
         $scalafmtExists = Test-Path $SCALAFMTTEST
         if ($scalafmtExists -ne $True)
         {
@@ -32,11 +32,9 @@ Try
     {
         $ScalaFmtRun = ""
         if ($testMode -eq "--test") {
-            &$COURSIER bootstrap com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION --main org.scalafmt.cli.Cli -o $SCALAFMTTEST -f
             $ScalaFmtRun = $SCALAFMTTEST
         }
         else {
-            &$COURSIER bootstrap --standalone com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION -o $SCALAFMT -f --main org.scalafmt.cli.Cli
             $ScalaFmtRun = $SCALAFMT
         }
 
