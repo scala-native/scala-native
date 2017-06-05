@@ -25,7 +25,7 @@ Try
     Try {
         $old_ErrorActionPreference = $ErrorActionPreference
         $ErrorActionPreference = 'SilentlyContinue'
-        $log = (&java -disableassertions -dsa -jar $COURSIER $args) -join "`n"
+        $log = (&java -disableassertions -dsa -jar $COURSIER $args 2>&1) -join "`n"
         $ErrorActionPreference = $old_ErrorActionPreference
         Write-Output $log
     } Catch {
