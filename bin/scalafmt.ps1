@@ -25,6 +25,8 @@ Try
         {
             throw [System.IO.FileNotFoundException] "$SCALAFMTTEST not found."
         }
+        $log = (&java -jar $SCALAFMTTEST --version) -join "`n"
+        Write-Output $log
     }
     else
     {
@@ -61,12 +63,12 @@ Try
         else {
             $log = &java -jar $ScalaFmtRun
         }
-        Write-Host $log
+        Write-Output $log
     }
 }
 Catch
 {
     $ErrorMessage = $_.Exception.Message
-    Write-Host $ErrorMessage
+    Write-Output $ErrorMessage
     exit 1
 }

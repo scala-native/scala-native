@@ -22,11 +22,11 @@ Try
     $ErrorActionPreference = 'SilentlyContinue'
     $log = (&java -jar $COURSIER $args) -join "`n"
     $ErrorActionPreference = $old_ErrorActionPreference
-    Write-Host $log
+    Write-Output $log
 }
 Catch
 {
     $ErrorMessage = $_.Exception.Message
-    Write-Host $ErrorMessage
+    Write-Output $ErrorMessage
     exit 1
 }
