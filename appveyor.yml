@@ -32,9 +32,12 @@ build_script:
             } else {exit 1};
         }
 test_script:
+  - ps: $old_ErrorActionPreference = $ErrorActionPreference
+  - ps: $ErrorActionPreference = 'SilentlyContinue'
   - ps: .\bin\clangfmt --test
   - ps: sbt "scalafmt --test"
   - ps: sbt -J-Xmx2G rebuild "set scriptedBufferLog in sbtScalaNative := false" test-all
+  - ps: $ErrorActionPreference = $old_ErrorActionPreference
 cache:
   - C:\Users\appveyor\.m2
   - C:\Users\appveyor\.ivy2
