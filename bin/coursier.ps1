@@ -1,6 +1,6 @@
 # Windows version of coursier
 
-$COURSIER="$PSScriptRoot\.coursier.jar"
+$COURSIER="$PSScriptRoot\coursier.jar"
 
 #$url = "https://github.com/coursier/coursier/raw/master/coursier"
 $url = "https://git.io/vgvpD"

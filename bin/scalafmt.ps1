@@ -11,8 +11,8 @@ param (
 )
 
 $SCALAFMT_VERSION="0.6.8"
-$SCALAFMT="$PSScriptRoot\.scalafmt-$SCALAFMT_VERSION.jar"
-$SCALAFMTTEST="$PSScriptRoot\.scalafmt-CI-$SCALAFMT_VERSION.jar"
+$SCALAFMT="$PSScriptRoot\scalafmt-$SCALAFMT_VERSION.jar"
+$SCALAFMTTEST="$PSScriptRoot\scalafmt-CI-$SCALAFMT_VERSION.jar"
 $COURSIER="$PSScriptRoot/coursier.ps1"
 
 Try
