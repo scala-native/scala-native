@@ -12,22 +12,32 @@ param (
 
 $SCALAFMT_VERSION="0.6.8"
 $SCALAFMT="$PSScriptRoot\.scalafmt-$SCALAFMT_VERSION.jar"
+$SCALAFMTTEST="$PSScriptRoot\.scalafmt-CI-$SCALAFMT_VERSION.jar"
+$COURSIER="$PSScriptRoot/coursier.ps1"
 
 Try
 {
-    &"$PSScriptRoot/coursier.ps1" bootstrap --standalone com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION -o $SCALAFMT -f --main org.scalafmt.cli.Cli
+    $ScalaFmtRun = ""
+    if ($testMode) {
+        &$COURSIER bootstrap com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION --main org.scalafmt.cli.Cli -o $SCALAFMTTEST
+        $ScalaFmtRun = $SCALAFMTTEST
+    }
+    else {
+        &$COURSIER bootstrap --standalone com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION -o $SCALAFMT -f --main org.scalafmt.cli.Cli
+        $ScalaFmtRun = $SCALAFMT
+    }
 
-    $scalafmtExists = Test-Path $SCALAFMT
+    $scalafmtExists = Test-Path $ScalaFmtRun
     if ($scalafmtExists -ne $True)
     {
-        throw [System.IO.FileNotFoundException] "$SCALAFMT not found."
+        throw [System.IO.FileNotFoundException] "$ScalaFmtRun not found."
     }
 
     if ($testMode) {
-        &java -jar $SCALAFMT $testMode
+        &java -jar $ScalaFmtRun $testMode
     }
     else {
-        &java -jar $SCALAFMT
+        &java -jar $ScalaFmtRun
     }
 }
 Catch
