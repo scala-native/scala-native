@@ -3,6 +3,10 @@
 
 #include <time.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct timeval {
     time_t tv_sec; /* seconds */
     int tv_usec;   /* microseconds */
@@ -18,5 +22,9 @@ const int CLOCK_MONOTONIC = 0;
 int clock_gettime(int X, struct timespec *tv);
 
 int gettimeofday(struct timeval *tv, struct timezone *tz);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* !_TIME_H_ */

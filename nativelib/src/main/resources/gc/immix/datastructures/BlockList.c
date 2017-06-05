@@ -28,7 +28,10 @@ void BlockList_Init(BlockList *blockList, word_t *heapStart) {
     blockList->last = NULL;
 }
 
-inline bool BlockList_IsEmpty(BlockList *blockList) {
+#ifndef _WIN32
+inline
+#endif
+bool BlockList_IsEmpty(BlockList *blockList) {
     return blockList->first == NULL;
 }
 

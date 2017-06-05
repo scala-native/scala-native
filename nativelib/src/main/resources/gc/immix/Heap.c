@@ -1,5 +1,9 @@
 #include <stdlib.h>
+#ifndef _WIN32
 #include <sys/mman.h>
+#else
+#include "../../os_win_mman.h"
+#endif
 #include <stdio.h>
 #include "Heap.h"
 #include "Block.h"

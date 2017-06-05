@@ -86,7 +86,7 @@ void LargeAllocator_AddChunk(LargeAllocator *allocator, Chunk *chunk,
     ubyte_t *current = (ubyte_t *)chunk;
     while (remaining_size > 0) {
         int log2_f = log2_floor(remaining_size);
-        size_t chunkSize = 1UL << log2_f;
+        size_t chunkSize = ((size_t)1UL) << log2_f;
         chunkSize = chunkSize > MAX_BLOCK_SIZE ? MAX_BLOCK_SIZE : chunkSize;
         assert(chunkSize >= MIN_BLOCK_SIZE && chunkSize <= MAX_BLOCK_SIZE);
         int listIndex = LargeAllocator_sizeToLinkedListIndex(chunkSize);

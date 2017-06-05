@@ -1,5 +1,10 @@
 #include <stdlib.h>
+#ifndef _WIN32
 #include <sys/mman.h>
+#else
+#include "../../os_win_mman.h"
+void scalanative_safepoint_init();
+#endif
 
 // Darwin defines MAP_ANON instead of MAP_ANONYMOUS
 #if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
@@ -9,7 +14,7 @@
 // Dummy GC that maps chunks of 4GB and allocates but never frees.
 
 // Map 4GB
-#define CHUNK (4 * 1024 * 1024 * 1024L)
+#define CHUNK ((unsigned long long)4 * 1024 * 1024 * 1024L)
 // Allow read and write
 #define DUMMY_GC_PROT (PROT_READ | PROT_WRITE)
 // Map private anonymous memory, and prevent from reserving swap
