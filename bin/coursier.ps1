@@ -10,7 +10,11 @@ Try
     $coursierExists = Test-Path $COURSIER
     if ($coursierExists -ne $True)
     {
-        Invoke-WebRequest -Uri $url -OutFile $COURSIER
+        #Invoke-WebRequest -Uri $url -OutFile $COURSIER
+        (new-object System.Net.WebClient).DownloadFile(
+            $url,
+            $COURSIER
+        )
         $coursierExists = Test-Path $COURSIER
         if ($coursierExists -ne $True)
         {
@@ -21,7 +25,7 @@ Try
     Try {
         $old_ErrorActionPreference = $ErrorActionPreference
         $ErrorActionPreference = 'SilentlyContinue'
-        $log = (&java -jar $COURSIER -disableassertions -dsa $args) -join "`n"
+        $log = (&java -disableassertions -dsa -jar $COURSIER $args) -join "`n"
         $ErrorActionPreference = $old_ErrorActionPreference
         Write-Output $log
     } Catch {
