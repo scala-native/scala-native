@@ -5,9 +5,9 @@
 #include <errno.h>
 
 #ifdef _WIN32
-#define EDQUOT      122 /* Quota exceeded */
-#define EMULTIHOP   72  /* Multihop attempted */
-#define ESTALE      116 /* Stale NFS file handle */
+#define EDQUOT 122   /* Quota exceeded */
+#define EMULTIHOP 72 /* Multihop attempted */
+#define ESTALE 116   /* Stale NFS file handle */
 #endif
 
 extern char **environ;
