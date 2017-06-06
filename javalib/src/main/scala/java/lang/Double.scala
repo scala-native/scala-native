@@ -99,7 +99,7 @@ final class Double(val _value: scala.Double)
   protected def toDouble: scala.Double = _value
 
   protected def unary_+ : scala.Double = _value
-  protected def unary_- : scala.Double = - _value
+  protected def unary_- : scala.Double = -_value
 
   protected def +(x: String): String = _value + x
 
