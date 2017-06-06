@@ -10,7 +10,6 @@ Try
     $coursierExists = Test-Path $COURSIER
     if ($coursierExists -ne $True)
     {
-        #Invoke-WebRequest -Uri $url -OutFile $COURSIER
         (new-object System.Net.WebClient).DownloadFile(
             $url,
             $COURSIER
