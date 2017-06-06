@@ -1,6 +1,6 @@
 # Windows version of coursier
 
-$COURSIER="$PSScriptRoot\coursier.jar"
+$COURSIER="$PSScriptRoot\.coursier.jar"
 
 #$url = "https://github.com/coursier/coursier/raw/master/coursier"
 $url = "https://git.io/vgvpD"
@@ -21,18 +21,6 @@ Try
             throw [System.IO.FileNotFoundException] "$COURSIER not found."
         }
     }
-
-    Try {
-        $old_ErrorActionPreference = $ErrorActionPreference
-        $ErrorActionPreference = 'SilentlyContinue'
-        $log = (&java -disableassertions -dsa -jar $COURSIER $args 2>&1) -join "`n"
-        $ErrorActionPreference = $old_ErrorActionPreference
-        Write-Output $log
-    } Catch {
-        $ErrorMessage = $_.Exception.Message
-        Write-Output $ErrorMessage
-    }
-
 }
 Catch
 {
@@ -40,3 +28,5 @@ Catch
     Write-Output $ErrorMessage
     exit 1
 }
+
+&java -jar $COURSIER $args
