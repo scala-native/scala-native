@@ -1,0 +1,6 @@
+package scala.scalanative
+package native
+
+final abstract class CStruct0
+[#final abstract class CStruct1[[#T1#]]#
+]

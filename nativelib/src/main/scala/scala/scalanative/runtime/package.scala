@@ -36,10 +36,10 @@ package object runtime {
   /** Returns info pointer for given type. */
   def typeof[T](implicit tag: Tag[T]): Ptr[Type] = undefined
 
-  /** Intrinsified unsigned devision on ints. */
+  /** Intrinsified unsigned division on ints. */
   def divUInt(l: Int, r: Int): Int = undefined
 
-  /** Intrinsified unsigned devision on longs. */
+  /** Intrinsified unsigned division on longs. */
   def divULong(l: Long, r: Long): Long = undefined
 
   /** Intrinsified unsigned remainder on ints. */

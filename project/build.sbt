@@ -22,6 +22,7 @@ addSbtPlugin("org.scala-native" % "sbt-crossproject" % "0.1.0")
 addSbtPlugin("com.eed3si9n"     % "sbt-dirty-money"  % "0.1.0")
 addSbtPlugin("me.lessis"        % "bintray-sbt"      % "0.3.0")
 addSbtPlugin("com.jsuereth"     % "sbt-pgp"          % "1.0.0")
+addSbtPlugin("io.spray"         % "sbt-boilerplate"  % "0.6.0")
 
 scalacOptions ++= Seq(
   "-deprecation",

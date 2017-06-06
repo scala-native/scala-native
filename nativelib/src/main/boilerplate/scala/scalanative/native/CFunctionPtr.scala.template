@@ -1,0 +1,21 @@
+package scala.scalanative
+package native
+
+import scalanative.runtime.undefined
+
+/** C-style function pointer. */
+sealed abstract class CFunctionPtr
+
+object CFunctionPtr {
+  implicit def fromFunction0[R](f: Function0[R]): CFunctionPtr0[R] = undefined
+  [#implicit def fromFunction1[[#T1#], R](f: Function1[[#T1#], R]): CFunctionPtr1[[#T1#], R] = undefined#
+  ]
+}
+
+final abstract class CFunctionPtr0[R] extends CFunctionPtr {
+  def apply()(implicit tag1: Tag[R]): R = undefined
+}
+[#final abstract class CFunctionPtr1[[#T1#], R] extends CFunctionPtr {
+  def apply([#arg1: T1#])(implicit [#tag1: Tag[T1]#], returnTag: Tag[R]): R = undefined
+}#
+]
