@@ -16,36 +16,21 @@ $COURSIER="$PSScriptRoot\coursier.ps1"
 
 Try
 {
-    if ($testMode -eq "--install")
+    $scalafmtExists = Test-Path $SCALAFMT
+    if ($scalafmtExists -ne $True)
     {
+        Write-Host "Trying to download $SCALAFMT"
+        Write-Host "$COURSIER bootstrap --standalone com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION -o $SCALAFMT -f --quiet --main org.scalafmt.cli.Cli"
+        &$COURSIER bootstrap --standalone com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION -o $SCALAFMT -f --quiet --main org.scalafmt.cli.Cli
+
         $scalafmtExists = Test-Path $SCALAFMT
         if ($scalafmtExists -ne $True)
         {
-            #&$COURSIER bootstrap com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION --quiet --main org.scalafmt.cli.Cli -o $SCALAFMTTEST -f
-            &$COURSIER bootstrap --standalone com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION -o $SCALAFMT -f --quiet --main org.scalafmt.cli.Cli
-            $scalafmtExists = Test-Path $SCALAFMT
-            if ($scalafmtExists -ne $True)
-            {
-                throw [System.IO.FileNotFoundException] "$SCALAFMT not found."
-            }
+            throw [System.IO.FileNotFoundException] "$SCALAFMT not found."
         }
     }
-    else
-    {
-        $scalafmtExists = Test-Path $SCALAFMT
-        if ($scalafmtExists -ne $True)
-        {
-            Write-Host "Trying to download $SCALAFMT"
-            Write-Host "$COURSIER bootstrap --standalone com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION -o $SCALAFMT -f --quiet --main org.scalafmt.cli.Cli"
-            &$COURSIER bootstrap --standalone com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION -o $SCALAFMT -f --quiet --main org.scalafmt.cli.Cli
 
-            $scalafmtExists = Test-Path $SCALAFMT
-            if ($scalafmtExists -ne $True)
-            {
-                throw [System.IO.FileNotFoundException] "$SCALAFMT not found."
-            }
-        }
-
+    if ($testMode -ne "--install") {
         if ($testMode) {
             &java -jar $SCALAFMT $testMode 2>&1
         }
