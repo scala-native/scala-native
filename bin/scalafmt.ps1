@@ -16,7 +16,7 @@ $SCALAFMT="$env:USERPROFILE\.scalafmt-$SCALAFMT_VERSION.jar"
 $COURSIER="$PSScriptRoot\coursier.ps1"
 
 $old_ErrorActionPreference = $ErrorActionPreference
-$ErrorActionPreference = 'SilentlyContinue'
+#$ErrorActionPreference = 'SilentlyContinue'
 
 Try
 {
