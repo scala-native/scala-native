@@ -11,8 +11,8 @@ param (
 )
 
 $SCALAFMT_VERSION="0.6.8"
-$SCALAFMT="$PSScriptRoot\.scalafmt-$SCALAFMT_VERSION.jar"
-$SCALAFMTTEST="$PSScriptRoot\scalafmt-CI-$SCALAFMT_VERSION.jar"
+$SCALAFMT="$PSScriptRoot/.scalafmt-$SCALAFMT_VERSION.jar"
+$SCALAFMTTEST="$PSScriptRoot/scalafmt-CI-$SCALAFMT_VERSION.jar"
 $COURSIER="$PSScriptRoot/coursier.ps1"
 
 Try
@@ -32,17 +32,17 @@ Try
     }
     else
     {
-        $ScalaFmtRun = ""
-        if ($testMode -eq "--test") {
-            $ScalaFmtRun = $SCALAFMTTEST
+        $ScalaFmtRun = if ($testMode -eq "--test") {
+            $SCALAFMTTEST
         }
         else {
-            $ScalaFmtRun = $SCALAFMT
+            $SCALAFMT
         }
 
         $scalafmtExists = Test-Path $ScalaFmtRun
         if ($scalafmtExists -ne $True)
         {
+            Write-Host "Trying to download $ScalaFmtRun"
             if ($testMode -eq "--test") {
                 &$COURSIER bootstrap com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION --main org.scalafmt.cli.Cli -o $SCALAFMTTEST -f
             }
