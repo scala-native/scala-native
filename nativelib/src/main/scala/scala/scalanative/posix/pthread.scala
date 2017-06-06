@@ -18,9 +18,8 @@ import scala.scalanative.posix.time.timespec
 @extern
 object pthread {
 
-  def pthread_atfork(prepare: CFunctionPtr0[Unit],
-                     parent: CFunctionPtr0[Unit],
-                     child: CFunctionPtr0[Unit]): CInt = extern
+  def pthread_atfork(prepare: routine, parent: routine, child: routine): CInt =
+    extern
 
   def pthread_attr_destroy(attr: Ptr[pthread_attr_t]): CInt = extern
 
@@ -217,7 +216,7 @@ object pthread {
                                 tp: CInt): CInt = extern
 
   def pthread_once(once_control: Ptr[pthread_once_t],
-                   init_routine: CFunctionPtr0[Unit]): CInt = extern
+                   init_routine: routine): CInt = extern
 
   def pthread_rwlock_destroy(rwlock: Ptr[pthread_rwlock_t]): CInt = extern
 
@@ -279,6 +278,9 @@ object pthread {
   def pthread_spin_unlock(spinlock: Ptr[pthread_spinlock_t]): CInt = extern
 
   def pthread_testcancel(): Unit = extern
+
+  // Types
+  type routine = CFunctionPtr0[Unit]
 
   // Macros
   @name("scalanative_pthread_barrier_serial_thread")
