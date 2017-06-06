@@ -20,6 +20,8 @@ Try
             throw [System.IO.FileNotFoundException] "$COURSIER not found."
         }
     }
+
+    &java -jar $COURSIER $args 2>&1
 }
 Catch
 {
@@ -27,5 +29,3 @@ Catch
     Write-Output $ErrorMessage
     exit 1
 }
-
-&java -jar $COURSIER $args

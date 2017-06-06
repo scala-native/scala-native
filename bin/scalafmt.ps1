@@ -46,10 +46,10 @@ Try
         }
 
         if ($testMode) {
-            &java -jar $SCALAFMT $testMode
+            &java -jar $SCALAFMT $testMode 2>&1
         }
         else {
-            &java -jar $SCALAFMT
+            &java -jar $SCALAFMT 2>&1
         }
     }
 }
