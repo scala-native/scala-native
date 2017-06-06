@@ -32,10 +32,10 @@ Try
 
     if ($testMode -ne "--install") {
         if ($testMode) {
-            &java -jar $SCALAFMT $testMode 2>&1
+            &java -jar $SCALAFMT $testMode
         }
         else {
-            &java -jar $SCALAFMT 2>&1
+            &java -jar $SCALAFMT
         }
     }
 }

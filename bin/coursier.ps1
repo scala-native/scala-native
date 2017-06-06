@@ -21,7 +21,7 @@ Try
         }
     }
 
-    &java -jar $COURSIER $args 2>&1
+    &java -jar $COURSIER $args
 }
 Catch
 {
