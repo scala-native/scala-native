@@ -36,6 +36,7 @@ Try
         if ($scalafmtExists -ne $True)
         {
             Write-Host "Trying to download $SCALAFMT"
+            Write-Host "$COURSIER bootstrap --standalone com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION -o $SCALAFMT -f --quiet --main org.scalafmt.cli.Cli"
             &$COURSIER bootstrap --standalone com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION -o $SCALAFMT -f --quiet --main org.scalafmt.cli.Cli
 
             $scalafmtExists = Test-Path $SCALAFMT
