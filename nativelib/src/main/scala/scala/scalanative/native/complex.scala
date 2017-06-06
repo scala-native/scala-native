@@ -26,7 +26,7 @@ package native
 object complex {
   import Nat._2
   type CComplexFloat = CArray[CFloat, _2]
-  type CComplex  = CArray[CDouble, _2]
+  type CComplex      = CArray[CDouble, _2]
 
   @name("scalanative_cacosf")
   def cacosf(complex: Ptr[CComplexFloat]): Ptr[CComplexFloat] = extern
@@ -119,7 +119,8 @@ object complex {
   //  extern long double cabsl(long double complex);
 
   @name("scalanative_cpowf")
-  def cpowf(x: Ptr[CComplexFloat], y: Ptr[CComplexFloat]): Ptr[CComplexFloat] = extern
+  def cpowf(x: Ptr[CComplexFloat], y: Ptr[CComplexFloat]): Ptr[CComplexFloat] =
+    extern
   @name("scalanative_cpow")
   def cpow(x: Ptr[CComplex], y: Ptr[CComplex]): Ptr[CComplex] = extern
   //  extern long double complex cpowl(long double complex, long double complex);
