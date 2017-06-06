@@ -299,7 +299,7 @@ object pthread {
   def PTHREAD_CANCEL_DISABLE: CInt = extern
 
   @name("scalanative_pthread_canceled")
-  def PTHREAD_CANCELED: CInt = extern
+  def PTHREAD_CANCELED: Ptr[Byte] = extern
 
   @name("scalanative_pthread_create_deteached")
   def PTHREAD_CREATE_DETACHED: CInt = extern
