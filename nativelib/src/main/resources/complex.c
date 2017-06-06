@@ -9,182 +9,190 @@
  *
  * Helper functions follow.
  */
-float complex toComplexF(float sncf[2]) { return *(float complex *)sncf; }
+float complex toFloatComplex(float snfc[2]) { return *(float complex *)snfc; }
 
-double complex toComplex(double snc[2]) { return *(double complex *)snc; }
+double complex toDoubleComplex(double sndc[2]) {
+    return *(double complex *)sndc;
+}
 
-float *toNativeComplexF(float complex fc, float sncf[2]) {
+float *toNativeFloatComplex(float complex fc, float res[2]) {
     float *fa = (float *)&fc;
-    sncf[0] = *fa;
-    sncf[1] = *(fa + 1);
-    return sncf;
+    res[0] = *fa;
+    res[1] = *(fa + 1);
+    return res;
 }
 
-double *toNativeComplex(double complex c, double snc[2]) {
-    double *da = (double *)&c;
-    snc[0] = *da;
-    snc[1] = *(da + 1);
-    return snc;
+double *toNativeDoubleComplex(double complex dc, double res[2]) {
+    double *da = (double *)&dc;
+    res[0] = *da;
+    res[1] = *(da + 1);
+    return res;
 }
 
-// functions - modifies passed in array
-float *scalanative_cacosf(float sncf[2]) {
-    return toNativeComplexF(cacosf(toComplexF(sncf)), sncf);
+// functions - modifies and returns passed in result array
+float *scalanative_cacosf(float snfc[2], float res[2]) {
+    return toNativeFloatComplex(cacosf(toFloatComplex(snfc)), res);
 }
 
-double *scalanative_cacos(double snc[2]) {
-    return toNativeComplex(cacos(toComplex(snc)), snc);
+double *scalanative_cacos(double sndc[2], double res[2]) {
+    return toNativeDoubleComplex(cacos(toDoubleComplex(sndc)), res);
 }
 
-float *scalanative_casinf(float sncf[2]) {
-    return toNativeComplexF(casinf(toComplexF(sncf)), sncf);
+float *scalanative_casinf(float snfc[2], float res[2]) {
+    return toNativeFloatComplex(casinf(toFloatComplex(snfc)), res);
 }
 
-double *scalanative_casin(double snc[2]) {
-    return toNativeComplex(casin(toComplex(snc)), snc);
+double *scalanative_casin(double sndc[2], double res[2]) {
+    return toNativeDoubleComplex(casin(toDoubleComplex(sndc)), res);
 }
 
-float *scalanative_catanf(float sncf[2]) {
-    return toNativeComplexF(catanf(toComplexF(sncf)), sncf);
+float *scalanative_catanf(float snfc[2], float res[2]) {
+    return toNativeFloatComplex(catanf(toFloatComplex(snfc)), res);
 }
 
-double *scalanative_catan(double snc[2]) {
-    return toNativeComplex(catan(toComplex(snc)), snc);
+double *scalanative_catan(double sndc[2], double res[2]) {
+    return toNativeDoubleComplex(catan(toDoubleComplex(sndc)), res);
 }
 
-float *scalanative_ccosf(float sncf[2]) {
-    return toNativeComplexF(ccosf(toComplexF(sncf)), sncf);
+float *scalanative_ccosf(float snfc[2], float res[2]) {
+    return toNativeFloatComplex(ccosf(toFloatComplex(snfc)), res);
 }
 
-double *scalanative_ccos(double snc[2]) {
-    return toNativeComplex(ccos(toComplex(snc)), snc);
+double *scalanative_ccos(double sndc[2], double res[2]) {
+    return toNativeDoubleComplex(ccos(toDoubleComplex(sndc)), res);
 }
 
-float *scalanative_csinf(float sncf[2]) {
-    return toNativeComplexF(csinf(toComplexF(sncf)), sncf);
+float *scalanative_csinf(float snfc[2], float res[2]) {
+    return toNativeFloatComplex(csinf(toFloatComplex(snfc)), res);
 }
 
-double *scalanative_csin(double snc[2]) {
-    return toNativeComplex(csin(toComplex(snc)), snc);
+double *scalanative_csin(double sndc[2], double res[2]) {
+    return toNativeDoubleComplex(csin(toDoubleComplex(sndc)), res);
 }
 
-float *scalanative_ctanf(float sncf[2]) {
-    return toNativeComplexF(ctanf(toComplexF(sncf)), sncf);
+float *scalanative_ctanf(float snfc[2], float res[2]) {
+    return toNativeFloatComplex(ctanf(toFloatComplex(snfc)), res);
 }
 
-double *scalanative_ctan(double snc[2]) {
-    return toNativeComplex(ctan(toComplex(snc)), snc);
+double *scalanative_ctan(double sndc[2], double res[2]) {
+    return toNativeDoubleComplex(ctan(toDoubleComplex(sndc)), res);
 }
 
-float *scalanative_cacoshf(float sncf[2]) {
-    return toNativeComplexF(cacoshf(toComplexF(sncf)), sncf);
+float *scalanative_cacoshf(float snfc[2], float res[2]) {
+    return toNativeFloatComplex(cacoshf(toFloatComplex(snfc)), res);
 }
 
-double *scalanative_cacosh(double snc[2]) {
-    return toNativeComplex(cacosh(toComplex(snc)), snc);
+double *scalanative_cacosh(double sndc[2], double res[2]) {
+    return toNativeDoubleComplex(cacosh(toDoubleComplex(sndc)), res);
 }
 
-float *scalanative_casinhf(float sncf[2]) {
-    return toNativeComplexF(casinhf(toComplexF(sncf)), sncf);
+float *scalanative_casinhf(float snfc[2], float res[2]) {
+    return toNativeFloatComplex(casinhf(toFloatComplex(snfc)), res);
 }
 
-double *scalanative_casinh(double snc[2]) {
-    return toNativeComplex(casinh(toComplex(snc)), snc);
+double *scalanative_casinh(double sndc[2], double res[2]) {
+    return toNativeDoubleComplex(casinh(toDoubleComplex(sndc)), res);
 }
 
-float *scalanative_catanhf(float sncf[2]) {
-    return toNativeComplexF(catanhf(toComplexF(sncf)), sncf);
+float *scalanative_catanhf(float snfc[2], float res[2]) {
+    return toNativeFloatComplex(catanhf(toFloatComplex(snfc)), res);
 }
 
-double *scalanative_catanh(double snc[2]) {
-    return toNativeComplex(catanh(toComplex(snc)), snc);
+double *scalanative_catanh(double sndc[2], double res[2]) {
+    return toNativeDoubleComplex(catanh(toDoubleComplex(sndc)), res);
 }
 
-float *scalanative_ccoshf(float sncf[2]) {
-    return toNativeComplexF(ccoshf(toComplexF(sncf)), sncf);
+float *scalanative_ccoshf(float snfc[2], float res[2]) {
+    return toNativeFloatComplex(ccoshf(toFloatComplex(snfc)), res);
 }
 
-double *scalanative_ccosh(double snc[2]) {
-    return toNativeComplex(ccosh(toComplex(snc)), snc);
+double *scalanative_ccosh(double sndc[2], double res[2]) {
+    return toNativeDoubleComplex(ccosh(toDoubleComplex(sndc)), res);
 }
 
-float *scalanative_csinhf(float sncf[2]) {
-    return toNativeComplexF(csinhf(toComplexF(sncf)), sncf);
+float *scalanative_csinhf(float snfc[2], float res[2]) {
+    return toNativeFloatComplex(csinhf(toFloatComplex(snfc)), res);
 }
 
-double *scalanative_csinh(double snc[2]) {
-    return toNativeComplex(csinh(toComplex(snc)), snc);
+double *scalanative_csinh(double sndc[2], double res[2]) {
+    return toNativeDoubleComplex(csinh(toDoubleComplex(sndc)), res);
 }
 
-float *scalanative_ctanhf(float sncf[2]) {
-    return toNativeComplexF(ctanhf(toComplexF(sncf)), sncf);
+float *scalanative_ctanhf(float snfc[2], float res[2]) {
+    return toNativeFloatComplex(ctanhf(toFloatComplex(snfc)), res);
 }
 
-double *scalanative_ctanh(double snc[2]) {
-    return toNativeComplex(ctanh(toComplex(snc)), snc);
+double *scalanative_ctanh(double sndc[2], double res[2]) {
+    return toNativeDoubleComplex(ctanh(toDoubleComplex(sndc)), res);
 }
 
-float *scalanative_cexpf(float sncf[2]) {
-    return toNativeComplexF(cexpf(toComplexF(sncf)), sncf);
+float *scalanative_cexpf(float snfc[2], float res[2]) {
+    return toNativeFloatComplex(cexpf(toFloatComplex(snfc)), res);
 }
 
-double *scalanative_cexp(double snc[2]) {
-    return toNativeComplex(cexp(toComplex(snc)), snc);
+double *scalanative_cexp(double sndc[2], double res[2]) {
+    return toNativeDoubleComplex(cexp(toDoubleComplex(sndc)), res);
 }
 
-float *scalanative_clogf(float sncf[2]) {
-    return toNativeComplexF(clogf(toComplexF(sncf)), sncf);
+float *scalanative_clogf(float snfc[2], float res[2]) {
+    return toNativeFloatComplex(clogf(toFloatComplex(snfc)), res);
 }
 
-double *scalanative_clog(double snc[2]) {
-    return toNativeComplex(clog(toComplex(snc)), snc);
+double *scalanative_clog(double sndc[2], double res[2]) {
+    return toNativeDoubleComplex(clog(toDoubleComplex(sndc)), res);
 }
 
-float scalanative_cabsf(float sncf[2]) { return cabsf(toComplexF(sncf)); }
+float scalanative_cabsf(float snfc[2]) { return cabsf(toFloatComplex(snfc)); }
 
-double scalanative_cabs(double snc[2]) { return cabs(toComplex(snc)); }
+double scalanative_cabs(double sndc[2]) { return cabs(toDoubleComplex(sndc)); }
 
 // first array gets modified for cpow(f) functions
-float *scalanative_cpowf(float sncf[2], float sncf2[2]) {
-    return toNativeComplexF(cpowf(toComplexF(sncf), toComplexF(sncf2)), sncf);
+float *scalanative_cpowf(float x[2], float y[2], float res[2]) {
+    return toNativeFloatComplex(cpowf(toFloatComplex(x), toFloatComplex(y)),
+                                res);
 }
 
-double *scalanative_cpow(double snc[2], double snc2[2]) {
-    return toNativeComplex(cpow(toComplex(snc), toComplex(snc2)), snc);
+double *scalanative_cpow(double x[2], double y[2], double res[2]) {
+    return toNativeDoubleComplex(cpow(toDoubleComplex(x), toDoubleComplex(y)),
+                                 res);
 }
 
-float *scalanative_csqrtf(float sncf[2]) {
-    return toNativeComplexF(csqrtf(toComplexF(sncf)), sncf);
+float *scalanative_csqrtf(float snfc[2], float res[2]) {
+    return toNativeFloatComplex(csqrtf(toFloatComplex(snfc)), res);
 }
 
-double *scalanative_csqrt(double snc[2]) {
-    return toNativeComplex(csqrt(toComplex(snc)), snc);
+double *scalanative_csqrt(double sndc[2], double res[2]) {
+    return toNativeDoubleComplex(csqrt(toDoubleComplex(sndc)), res);
 }
 
-float scalanative_cargf(float sncf[2]) { return cargf(toComplexF(sncf)); }
+float scalanative_cargf(float snfc[2]) { return cargf(toFloatComplex(snfc)); }
 
-double scalanative_carg(double snc[2]) { return carg(toComplex(snc)); }
+double scalanative_carg(double sndc[2]) { return carg(toDoubleComplex(sndc)); }
 
-float scalanative_cimagf(float sncf[2]) { return cimagf(toComplexF(sncf)); }
+float scalanative_cimagf(float snfc[2]) { return cimagf(toFloatComplex(snfc)); }
 
-double scalanative_cimag(double snc[2]) { return cimag(toComplex(snc)); }
-
-float *scalanative_conjf(float sncf[2]) {
-    return toNativeComplexF(conjf(toComplexF(sncf)), sncf);
+double scalanative_cimag(double sndc[2]) {
+    return cimag(toDoubleComplex(sndc));
 }
 
-double *scalanative_conj(double snc[2]) {
-    return toNativeComplex(conj(toComplex(snc)), snc);
+float *scalanative_conjf(float snfc[2], float res[2]) {
+    return toNativeFloatComplex(conjf(toFloatComplex(snfc)), res);
 }
 
-float *scalanative_cprojf(float sncf[2]) {
-    return toNativeComplexF(cprojf(toComplexF(sncf)), sncf);
+double *scalanative_conj(double sndc[2], double res[2]) {
+    return toNativeDoubleComplex(conj(toDoubleComplex(sndc)), res);
 }
 
-double *scalanative_cproj(double snc[2]) {
-    return toNativeComplex(cproj(toComplex(snc)), snc);
+float *scalanative_cprojf(float snfc[2], float res[2]) {
+    return toNativeFloatComplex(cprojf(toFloatComplex(snfc)), res);
 }
 
-float scalanative_crealf(float sncf[2]) { return crealf(toComplexF(sncf)); }
+double *scalanative_cproj(double sndc[2], double res[2]) {
+    return toNativeDoubleComplex(cproj(toDoubleComplex(sndc)), res);
+}
 
-double scalanative_creal(double snc[2]) { return creal(toComplex(snc)); }
+float scalanative_crealf(float snfc[2]) { return crealf(toFloatComplex(snfc)); }
+
+double scalanative_creal(double sndc[2]) {
+    return creal(toDoubleComplex(sndc));
+}
