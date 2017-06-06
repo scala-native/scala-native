@@ -23,11 +23,11 @@ Try
         Write-Host "$COURSIER bootstrap --standalone com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION -o $SCALAFMT -f --quiet --main org.scalafmt.cli.Cli"
         &$COURSIER bootstrap --standalone com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION -o $SCALAFMT -f --quiet --main org.scalafmt.cli.Cli
 
-        /*$scalafmtExists = Test-Path $SCALAFMT
-        if ($scalafmtExists -ne $True)
-        {
-            throw [System.IO.FileNotFoundException] "$SCALAFMT not found."
-        }*/
+        #$scalafmtExists = Test-Path $SCALAFMT
+        #if ($scalafmtExists -ne $True)
+        #{
+        #    throw [System.IO.FileNotFoundException] "$SCALAFMT not found."
+        #}
     }
 
     if ($testMode -ne "--install") {
