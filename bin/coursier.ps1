@@ -1,15 +1,18 @@
 # Windows version of coursier
 
-$COURSIER="$env:USERPROFILE/.coursier.jar"
+$SN = "$env:USERPROFILE\.scala-native"
+$COURSIER="$SN\.coursier.jar"
 
 #$url = "https://github.com/coursier/coursier/raw/master/coursier"
 $url = "https://git.io/vgvpD"
 
-$old_ErrorActionPreference = $ErrorActionPreference
-$ErrorActionPreference = 'SilentlyContinue'
-
 Try
 {
+    $snExists = Test-Path $SN
+    if ($snExists -eq $False)
+    {
+        New-Item -ItemType Directory -Force -Path $SN
+    }
     $coursierExists = Test-Path $COURSIER
     if ($coursierExists -ne $True)
     {
@@ -32,5 +35,3 @@ Catch
     Write-Output $ErrorMessage
     exit 1
 }
-
-$ErrorActionPreference = $old_ErrorActionPreference

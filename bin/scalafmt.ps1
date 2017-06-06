@@ -11,17 +11,18 @@ param (
 )
 
 $SCALAFMT_VERSION="0.6.8"
-#$SCALAFMT="$PSScriptRoot\.scalafmt-$SCALAFMT_VERSION.jar"
-$SCALAFMT="$env:USERPROFILE\.scalafmt-$SCALAFMT_VERSION.jar"
+$SN = "$env:USERPROFILE\.scala-native"
+$SCALAFMT="$SN\.scalafmt-$SCALAFMT_VERSION.jar"
 $COURSIER="$PSScriptRoot\coursier.ps1"
-
-$old_ErrorActionPreference = $ErrorActionPreference
-#$ErrorActionPreference = 'SilentlyContinue'
 
 Try
 {
+    $snExists = Test-Path $SN
+    if ($snExists -eq $False)
+    {
+        New-Item -ItemType Directory -Force -Path $SN
+    }
     
-
     $scalafmtExists = Test-Path $SCALAFMT
     if ($scalafmtExists -ne $True)
     {
@@ -52,6 +53,3 @@ Catch
     Write-Output $ErrorMessage
     exit 1
 }
-$ErrorActionPreference = $old_ErrorActionPreference
-
-        

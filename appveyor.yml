@@ -9,7 +9,6 @@ install:
   - ps: $env:CLANG_FORMAT_PATH="C:\\Program Files\\LLVM\\bin\\clang-format.exe"
   - ps: $env:JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF8"
   - ps: $env:JAVA_OPTS="-Xmx2G"
-  #- ps: .\bin\scalafmt --install
 build_script:
   - ps: |
         if ($env:APPVEYOR_PULL_REQUEST_NUMBER) {
@@ -40,4 +39,5 @@ cache:
   - C:\Users\appveyor\.m2
   - C:\Users\appveyor\.ivy2
   - C:\Users\appveyor\.coursier
+  - C:\Users\appveyor\.scala-native
   - C:\Users\appveyor\scoop\cache
