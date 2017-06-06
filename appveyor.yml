@@ -9,11 +9,7 @@ install:
   - ps: $env:CLANG_FORMAT_PATH="C:\\Program Files\\LLVM\\bin\\clang-format.exe"
   - ps: $env:JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF8"
   - ps: $env:JAVA_OPTS="-Xmx2G"
-  - ps: $old_ErrorActionPreference = $ErrorActionPreference  
-  - ps: $ErrorActionPreference = 'Continue'
   - ps: .\bin\scalafmt --install
-  #- ps: .\bin\coursier.ps1 bootstrap com.geirsson:scalafmt-cli_2.11:0.6.8 --main org.scalafmt.cli.Cli -o .\bin\scalafmt-CI-0.6.8.jar -f
-  - ps: $ErrorActionPreference = $old_ErrorActionPreference
 build_script:
   - ps: |
         if ($env:APPVEYOR_PULL_REQUEST_NUMBER) {
@@ -35,10 +31,7 @@ build_script:
             } else {exit 1};
         }
 test_script:
-  - ps: $old_ErrorActionPreference = $ErrorActionPreference  
-  - ps: $ErrorActionPreference = 'Continue'
   - ps: .\bin\scalafmt --test
-  - ps: $ErrorActionPreference = $old_ErrorActionPreference
   - ps: .\bin\clangfmt --test  
   - ps: sbt rebuild
   - ps: sbt "set scriptedBufferLog in sbtScalaNative := false" test-all
