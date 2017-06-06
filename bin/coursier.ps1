@@ -1,9 +1,12 @@
 # Windows version of coursier
 
-$COURSIER="$PSScriptRoot/.coursier.jar"
+$COURSIER="$env:USERPROFILE/.coursier.jar"
 
 #$url = "https://github.com/coursier/coursier/raw/master/coursier"
 $url = "https://git.io/vgvpD"
+
+$old_ErrorActionPreference = $ErrorActionPreference
+$ErrorActionPreference = 'SilentlyContinue'
 
 Try
 {
@@ -29,3 +32,5 @@ Catch
     Write-Output $ErrorMessage
     exit 1
 }
+
+$ErrorActionPreference = $old_ErrorActionPreference

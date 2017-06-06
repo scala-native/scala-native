@@ -11,24 +11,31 @@ param (
 )
 
 $SCALAFMT_VERSION="0.6.8"
-$SCALAFMT="$PSScriptRoot\.scalafmt-$SCALAFMT_VERSION.jar"
+#$SCALAFMT="$PSScriptRoot\.scalafmt-$SCALAFMT_VERSION.jar"
+$SCALAFMT="$env:USERPROFILE\.scalafmt-$SCALAFMT_VERSION.jar"
 $COURSIER="$PSScriptRoot\coursier.ps1"
+
+$old_ErrorActionPreference = $ErrorActionPreference
+$ErrorActionPreference = 'SilentlyContinue'
 
 Try
 {
+    
+
     $scalafmtExists = Test-Path $SCALAFMT
     if ($scalafmtExists -ne $True)
     {
         Write-Host "Trying to download $SCALAFMT"
         Write-Host "$COURSIER bootstrap --standalone com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION -o $SCALAFMT -f --quiet --main org.scalafmt.cli.Cli"
-        &$COURSIER bootstrap --standalone com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION -o $SCALAFMT -f --quiet --main org.scalafmt.cli.Cli
+        &$COURSIER bootstrap --standalone com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION -o "$SCALAFMT" -f --quiet --main org.scalafmt.cli.Cli
 
-        #$scalafmtExists = Test-Path $SCALAFMT
-        #if ($scalafmtExists -ne $True)
-        #{
-        #    throw [System.IO.FileNotFoundException] "$SCALAFMT not found."
-        #}
+        $scalafmtExists = Test-Path $SCALAFMT
+        if ($scalafmtExists -ne $True)
+        {
+            throw [System.IO.FileNotFoundException] "$SCALAFMT not found."
+        }
     }
+
 
     if ($testMode -ne "--install") {
         if ($testMode) {
@@ -37,7 +44,7 @@ Try
         else {
             &java -jar $SCALAFMT
         }
-    }
+    }    
 }
 Catch
 {
@@ -45,5 +52,6 @@ Catch
     Write-Output $ErrorMessage
     exit 1
 }
+$ErrorActionPreference = $old_ErrorActionPreference
 
         

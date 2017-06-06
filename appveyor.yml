@@ -9,7 +9,7 @@ install:
   - ps: $env:CLANG_FORMAT_PATH="C:\\Program Files\\LLVM\\bin\\clang-format.exe"
   - ps: $env:JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF8"
   - ps: $env:JAVA_OPTS="-Xmx2G"
-  - ps: .\bin\scalafmt --install 2>&1
+  - ps: .\bin\scalafmt --install
 build_script:
   - ps: |
         if ($env:APPVEYOR_PULL_REQUEST_NUMBER) {
@@ -31,7 +31,7 @@ build_script:
             } else {exit 1};
         }
 test_script:
-  - ps: .\bin\scalafmt --test 2>&1
+  - ps: .\bin\scalafmt --test
   - ps: .\bin\clangfmt --test
   - ps: sbt rebuild
   - ps: sbt "set scriptedBufferLog in sbtScalaNative := false" test-all
