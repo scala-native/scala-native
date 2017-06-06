@@ -21,7 +21,7 @@ int scalanative_pthread_cancel_disable() {
     return PTHREAD_CANCEL_DISABLE;
 }
 
-int scalanative_pthread_canceled() {
+void* scalanative_pthread_canceled() {
     return PTHREAD_CANCELED;
 }
 
