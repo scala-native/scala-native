@@ -44,9 +44,11 @@ Try
         {
             Write-Host "Trying to download $ScalaFmtRun"
             if ($testMode -eq "--test") {
+                throw [System.IO.FileNotFoundException] "$ScalaFmtRun not found."
                 &$COURSIER bootstrap com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION --quiet --main org.scalafmt.cli.Cli -o $SCALAFMTTEST -f
             }
             else {
+                throw [System.IO.FileNotFoundException] "$ScalaFmtRun not found."
                 &$COURSIER bootstrap --standalone com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION -o $SCALAFMT -f --quiet --main org.scalafmt.cli.Cli
             }
             $scalafmtExists = Test-Path $ScalaFmtRun
