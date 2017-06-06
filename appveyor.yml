@@ -31,8 +31,8 @@ build_script:
             } else {exit 1};
         }
 test_script:
-  - ps: .\bin\scalafmt --test
-  - ps: .\bin\clangfmt --test  
+  - ps: .\bin\scalafmt.ps1 --test
+  - ps: .\bin\clangfmt.ps1 --test  
   - ps: sbt rebuild
   - ps: sbt "set scriptedBufferLog in sbtScalaNative := false" test-all
 cache:
