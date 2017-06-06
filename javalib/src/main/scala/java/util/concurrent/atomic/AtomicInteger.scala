@@ -1,10 +1,24 @@
 package java.util.concurrent.atomic
 
+import scala.scalanative.native
+import scala.scalanative.native.Atomic
+
 class AtomicInteger(private[this] var value: Int)
     extends Number
     with Serializable {
 
   def this() = this(0)
+
+  private val lock: native.Ptr[native.CInt] = native.stackalloc[native.CInt]
+  !lock = 0
+
+  private def getLock: Boolean = {
+    Atomic.compareAndSwapInt(lock, 0, 1)
+  }
+
+  private def releaseLock: Unit = {
+    !lock = 0
+  }
 
   final def get(): Int = value
 
@@ -15,17 +29,23 @@ class AtomicInteger(private[this] var value: Int)
     set(newValue)
 
   final def getAndSet(newValue: Int): Int = {
-    val old = value
-    value = newValue
-    old
+    var oldValue = get
+    while (!compareAndSet(oldValue, newValue)) {
+      oldValue = get
+    }
+    oldValue
   }
 
   final def compareAndSet(expect: Int, update: Int): Boolean = {
-    if (expect != value) false
-    else {
-      value = update
-      true
-    }
+    while (!getLock) {}
+    val result =
+      if (expect != value) false
+      else {
+        value = update
+        true
+      }
+    releaseLock
+    result
   }
 
   final def weakCompareAndSet(expect: Int, update: Int): Boolean =
@@ -38,9 +58,11 @@ class AtomicInteger(private[this] var value: Int)
     getAndAdd(-1)
 
   @inline final def getAndAdd(delta: Int): Int = {
-    val old = value
-    value = old + delta
-    old
+    var oldValue = get
+    while (!compareAndSet(oldValue, oldValue + delta)) {
+      oldValue = get
+    }
+    oldValue
   }
 
   final def incrementAndGet(): Int =
@@ -50,9 +72,11 @@ class AtomicInteger(private[this] var value: Int)
     addAndGet(-1)
 
   @inline final def addAndGet(delta: Int): Int = {
-    val newValue = value + delta
-    value = newValue
-    newValue
+    var oldValue = get
+    while (!compareAndSet(oldValue, oldValue + delta)) {
+      oldValue = get
+    }
+    oldValue + delta
   }
 
   override def toString(): String =

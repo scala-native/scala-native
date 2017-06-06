@@ -1,5 +1,8 @@
 package java.util.concurrent.atomic
 
+import scala.scalanative.native
+import scala.scalanative.native.Atomic
+
 class AtomicReferenceArray[E <: AnyRef](length: Int) extends Serializable {
 
   def this(array: Array[E]) = {
@@ -8,6 +11,17 @@ class AtomicReferenceArray[E <: AnyRef](length: Int) extends Serializable {
   }
 
   private val inner: Array[AnyRef] = new Array[AnyRef](length)
+
+  private val lock: native.Ptr[native.CInt] = native.stackalloc[native.CInt]
+  !lock = 0
+
+  private def getLock: Boolean = {
+    Atomic.compareAndSwapInt(lock, 0, 1)
+  }
+
+  private def releaseLock: Unit = {
+    !lock = 0
+  }
 
   final def length(): Int =
     inner.length
@@ -22,17 +36,23 @@ class AtomicReferenceArray[E <: AnyRef](length: Int) extends Serializable {
     set(i, newValue)
 
   final def getAndSet(i: Int, newValue: E): E = {
-    val ret = get(i)
-    set(i, newValue)
-    ret
+    var oldValue = get(i)
+    while (!compareAndSet(i, oldValue, newValue)) {
+      oldValue = get(i)
+    }
+    oldValue
   }
 
   final def compareAndSet(i: Int, expect: E, update: E): Boolean = {
-    if (get(i) ne expect) false
-    else {
-      set(i, update)
-      true
-    }
+    while (!getLock) {}
+    val result =
+      if (get(i) ne expect) false
+      else {
+        set(i, update)
+        true
+      }
+    releaseLock
+    result
   }
 
   final def weakCompareAndSet(i: Int, expect: E, update: E): Boolean =
