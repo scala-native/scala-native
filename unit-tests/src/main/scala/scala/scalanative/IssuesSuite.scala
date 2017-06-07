@@ -265,6 +265,12 @@ object IssuesSuite extends tests.Suite {
     2.asInstanceOf[Null]
   }
 
+  test("#679") {
+    val `"` = 42
+    assert(("double-quotes " + `"`) == "double-quotes 42")
+    assert(s"double-quotes ${`"`}" == "double-quotes 42")
+  }
+
   test("#762") {
     val byte         = 1.toByte
     val negbyte: Any = -byte
