@@ -22,7 +22,7 @@ This includes:
 
     sbt.version = 0.13.15
 
-* ``build.sbt`` to enable the plugin and specify scala version::
+* ``build.sbt`` to enable the plugin and specify Scala version::
 
     enablePlugins(ScalaNativePlugin)
 
