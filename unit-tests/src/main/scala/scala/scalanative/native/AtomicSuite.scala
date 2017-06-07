@@ -2,7 +2,13 @@ package scala.scalanative
 package native
 
 import runtime.Atomic._
-import runtime.CAtomics._
+import runtime.{
+  CAtomicInt,
+  CAtomicUnsignedInt,
+  CAtomicChar,
+  CAtomicLong,
+  CAtomicShort
+}
 import stdlib._
 
 object AtomicSuite extends tests.Suite {
