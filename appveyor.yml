@@ -30,12 +30,14 @@ build_script:
             } else {exit 1};
         }
 test_script:
-  - ps: .\bin\scalafmt-CI.ps1
-  - ps: .\bin\clangfmt.ps1 --test  
+  - ps: $ErrorActionPreference = 'Continue'
+  - ps: .\bin\scalafmt --test
+  - ps: .\bin\clangfmt --test
   - ps: sbt rebuild
   - ps: sbt "set scriptedBufferLog in sbtScalaNative := false" test-all
 cache:
   - C:\Users\appveyor\.m2
   - C:\Users\appveyor\.ivy2
   - C:\Users\appveyor\.coursier
+  - C:\Users\appveyor\.scala-native
   - C:\Users\appveyor\scoop\cache

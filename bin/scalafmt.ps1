@@ -11,61 +11,41 @@ param (
 )
 
 $SCALAFMT_VERSION="0.6.8"
-$SCALAFMT="$PSScriptRoot\.scalafmt-$SCALAFMT_VERSION.jar"
-$SCALAFMTTEST="$PSScriptRoot\scalafmt-CI-$SCALAFMT_VERSION.jar"
+$SN = "$env:USERPROFILE\.scala-native"
+$SCALAFMT="$SN\.scalafmt-$SCALAFMT_VERSION.jar"
 $COURSIER="$PSScriptRoot\coursier.ps1"
 
 Try
 {
-    if ($testMode -eq "--install")
+    $snExists = Test-Path $SN
+    if ($snExists -eq $False)
     {
-        $scalafmtExists = Test-Path $SCALAFMTTEST
+        New-Item -ItemType Directory -Force -Path $SN
+    }
+    
+    $scalafmtExists = Test-Path $SCALAFMT
+    if ($scalafmtExists -ne $True)
+    {
+        Write-Host "Trying to download $SCALAFMT"
+        Write-Host "$COURSIER bootstrap --standalone com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION -o $SCALAFMT -f --quiet --main org.scalafmt.cli.Cli"
+        &$COURSIER bootstrap --standalone com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION -o "$SCALAFMT" -f --quiet --main org.scalafmt.cli.Cli
+
+        $scalafmtExists = Test-Path $SCALAFMT
         if ($scalafmtExists -ne $True)
         {
-            throw [System.IO.FileNotFoundException] "$SCALAFMTTEST not found."
-            &$COURSIER bootstrap com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION --quiet --main org.scalafmt.cli.Cli -o $SCALAFMTTEST -f
-            $scalafmtExists = Test-Path $SCALAFMTTEST
-            if ($scalafmtExists -ne $True)
-            {
-                throw [System.IO.FileNotFoundException] "$SCALAFMTTEST not found."
-            }
+            throw [System.IO.FileNotFoundException] "$SCALAFMT not found."
         }
     }
-    else
-    {
-        $ScalaFmtRun = if ($testMode -eq "--test") {
-            $SCALAFMTTEST
-        }
-        else {
-            $SCALAFMT
-        }
 
-        $scalafmtExists = Test-Path $ScalaFmtRun
-        if ($scalafmtExists -ne $True)
-        {
-            Write-Host "Trying to download $ScalaFmtRun"
-            if ($testMode -eq "--test") {
-                throw [System.IO.FileNotFoundException] "$ScalaFmtRun not found."
-                &$COURSIER bootstrap com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION --quiet --main org.scalafmt.cli.Cli -o $SCALAFMTTEST -f
-            }
-            else {
-                throw [System.IO.FileNotFoundException] "$ScalaFmtRun not found."
-                &$COURSIER bootstrap --standalone com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION -o $SCALAFMT -f --quiet --main org.scalafmt.cli.Cli
-            }
-            $scalafmtExists = Test-Path $ScalaFmtRun
-            if ($scalafmtExists -ne $True)
-            {
-                throw [System.IO.FileNotFoundException] "$ScalaFmtRun not found."
-            }
-        }
 
+    if ($testMode -ne "--install") {
         if ($testMode) {
-            &java -jar $ScalaFmtRun $testMode
+            &java -jar $SCALAFMT $testMode
         }
         else {
-            &java -jar $ScalaFmtRun
+            &java -jar $SCALAFMT
         }
-    }
+    }    
 }
 Catch
 {
@@ -73,5 +53,3 @@ Catch
     Write-Output $ErrorMessage
     exit 1
 }
-
-        

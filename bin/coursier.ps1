@@ -1,16 +1,21 @@
 # Windows version of coursier
 
-$COURSIER="$PSScriptRoot/.coursier.jar"
+$SN = "$env:USERPROFILE\.scala-native"
+$COURSIER="$SN\.coursier.jar"
 
 #$url = "https://github.com/coursier/coursier/raw/master/coursier"
 $url = "https://git.io/vgvpD"
 
 Try
 {
+    $snExists = Test-Path $SN
+    if ($snExists -eq $False)
+    {
+        New-Item -ItemType Directory -Force -Path $SN
+    }
     $coursierExists = Test-Path $COURSIER
     if ($coursierExists -ne $True)
     {
-        #Invoke-WebRequest -Uri $url -OutFile $COURSIER
         (new-object System.Net.WebClient).DownloadFile(
             $url,
             $COURSIER
@@ -21,6 +26,8 @@ Try
             throw [System.IO.FileNotFoundException] "$COURSIER not found."
         }
     }
+
+    &java -jar $COURSIER $args
 }
 Catch
 {
@@ -28,5 +35,3 @@ Catch
     Write-Output $ErrorMessage
     exit 1
 }
-
-&java -jar $COURSIER $args
