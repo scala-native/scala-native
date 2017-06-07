@@ -1,8 +1,11 @@
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 1)
 #include <atomic>
 #include <stdint.h>
 #include <stdlib.h>
 
 using namespace std;
+
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 16)
 
 extern "C" {
 
@@ -10,64 +13,67 @@ extern "C" {
      * Init
      * */
 
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 24)
      // byte
      void init_byte(int8_t* atm, int8_t init_value) {
         *atm = ATOMIC_VAR_INIT(init_value);
      }
-
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 24)
      // short
      void init_short(int16_t* atm, int16_t init_value) {
         *atm = ATOMIC_VAR_INIT(init_value);
      }
-
-     // integer
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 24)
+     // int
      void init_int(int32_t* atm, int32_t init_value) {
         *atm = ATOMIC_VAR_INIT(init_value);
      }
-
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 24)
      // long
      void init_long(int64_t* atm, int64_t init_value) {
         *atm = ATOMIC_VAR_INIT(init_value);
      }
-
-     // unsigned byte
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 24)
+     // ubyte
      void init_ubyte(uint8_t* atm, uint8_t init_value) {
         *atm = ATOMIC_VAR_INIT(init_value);
      }
-
-     // unsigned short
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 24)
+     // ushort
      void init_ushort(uint16_t* atm, uint16_t init_value) {
         *atm = ATOMIC_VAR_INIT(init_value);
      }
-
-     // unsigned integer
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 24)
+     // uint
      void init_uint(uint32_t* atm, uint32_t init_value) {
         *atm = ATOMIC_VAR_INIT(init_value);
      }
-
-     // unsigned long
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 24)
+     // ulong
      void init_ulong(uint64_t* atm, uint64_t init_value) {
         *atm = ATOMIC_VAR_INIT(init_value);
      }
-
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 24)
      // char
      void init_char(char* atm, char init_value) {
         *atm = ATOMIC_VAR_INIT(init_value);
      }
-
-     // unsigned char
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 24)
+     // uchar
      void init_uchar(unsigned char* atm, unsigned char init_value) {
         *atm = ATOMIC_VAR_INIT(init_value);
      }
-
-     // size_t
-     void init_csize(int32_t* atm, int32_t init_value) {
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 24)
+     // csize
+     void init_csize(size_t* atm, size_t init_value) {
         *atm = ATOMIC_VAR_INIT(init_value);
      }
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 29)
 
 	/**
      * Memory
      * */
+
      void* alloc(size_t sz) {
         return malloc(sz);
      }
@@ -80,458 +86,478 @@ extern "C" {
      * Load
      * */
 
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 47)
     // byte
     int8_t load_byte(atomic<int8_t>* atm) {
         return atm -> load();
     }
-
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 47)
     // short
     int16_t load_short(atomic<int16_t>* atm) {
         return atm -> load();
     }
-
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 47)
     // int
     int32_t load_int(atomic<int32_t>* atm) {
         return atm -> load();
     }
-
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 47)
     // long
     int64_t load_long(atomic<int64_t>* atm) {
         return atm -> load();
     }
-
-    // unsigned byte
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 47)
+    // ubyte
     uint8_t load_ubyte(atomic<uint8_t>* atm) {
         return atm -> load();
     }
-
-    // unsigned short
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 47)
+    // ushort
     uint16_t load_ushort(atomic<uint16_t>* atm) {
         return atm -> load();
     }
-
-    // unsigned int
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 47)
+    // uint
     uint32_t load_uint(atomic<uint32_t>* atm) {
         return atm -> load();
     }
-
-    // unsigned long
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 47)
+    // ulong
     uint64_t load_ulong(atomic<uint64_t>* atm) {
         return atm -> load();
     }
-
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 47)
     // char
     char load_char(atomic<char>* atm) {
         return atm -> load();
     }
-
-    // unsigned char
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 47)
+    // uchar
     unsigned char load_uchar(atomic<unsigned char>* atm) {
         return atm -> load();
     }
-
-    // size_t
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 47)
+    // csize
     size_t load_csize(atomic<size_t>* atm) {
         return atm -> load();
     }
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 52)
 
-	
 	/**
 	 * Compare and Swap
 	 * */
 
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 58)
     // byte
-    int compare_and_swap_weak_byte(atomic<int8_t>* atm, int8_t* expected, int8_t desired) {
-        return atomic_compare_exchange_weak(atm, expected, desired);
-    }
-
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 60)
     int compare_and_swap_strong_byte(atomic<int8_t>* atm, int8_t* expected, int8_t desired) {
         return atomic_compare_exchange_strong(atm, expected, desired);
     }
-
-    // short
-    int compare_and_swap_weak_short(atomic<int16_t>* atm, int16_t* expected, int16_t desired) {
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 60)
+    int compare_and_swap_weak_byte(atomic<int8_t>* atm, int8_t* expected, int8_t desired) {
         return atomic_compare_exchange_weak(atm, expected, desired);
     }
-
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 58)
+    // short
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 60)
     int compare_and_swap_strong_short(atomic<int16_t>* atm, int16_t* expected, int16_t desired) {
         return atomic_compare_exchange_strong(atm, expected, desired);
     }
-
-    // integer
-    int compare_and_swap_weak_int(atomic<int32_t>* atm, int32_t* expected, int32_t desired) {
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 60)
+    int compare_and_swap_weak_short(atomic<int16_t>* atm, int16_t* expected, int16_t desired) {
         return atomic_compare_exchange_weak(atm, expected, desired);
     }
-
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 58)
+    // int
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 60)
     int compare_and_swap_strong_int(atomic<int32_t>* atm, int32_t* expected, int32_t desired) {
         return atomic_compare_exchange_strong(atm, expected, desired);
     }
-
-    // long
-    int compare_and_swap_weak_long(atomic<int64_t>* atm, int64_t* expected, int64_t desired) {
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 60)
+    int compare_and_swap_weak_int(atomic<int32_t>* atm, int32_t* expected, int32_t desired) {
         return atomic_compare_exchange_weak(atm, expected, desired);
     }
-
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 58)
+    // long
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 60)
     int compare_and_swap_strong_long(atomic<int64_t>* atm, int64_t* expected, int64_t desired) {
         return atomic_compare_exchange_strong(atm, expected, desired);
     }
-
-
-    // unsigned byte
-    int compare_and_swap_weak_ubyte(atomic<uint8_t>* atm, uint8_t* expected, uint8_t desired) {
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 60)
+    int compare_and_swap_weak_long(atomic<int64_t>* atm, int64_t* expected, int64_t desired) {
         return atomic_compare_exchange_weak(atm, expected, desired);
     }
-
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 58)
+    // ubyte
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 60)
     int compare_and_swap_strong_ubyte(atomic<uint8_t>* atm, uint8_t* expected, uint8_t desired) {
         return atomic_compare_exchange_strong(atm, expected, desired);
     }
-
-    // unsigned short
-    int compare_and_swap_weak_ushort(atomic<uint16_t>* atm, uint16_t* expected, uint16_t desired) {
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 60)
+    int compare_and_swap_weak_ubyte(atomic<uint8_t>* atm, uint8_t* expected, uint8_t desired) {
         return atomic_compare_exchange_weak(atm, expected, desired);
     }
-
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 58)
+    // ushort
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 60)
     int compare_and_swap_strong_ushort(atomic<uint16_t>* atm, uint16_t* expected, uint16_t desired) {
         return atomic_compare_exchange_strong(atm, expected, desired);
     }
-
-    // unsigned integer
-    int compare_and_swap_weak_uint(atomic<uint32_t>* atm, uint32_t* expected, uint32_t desired) {
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 60)
+    int compare_and_swap_weak_ushort(atomic<uint16_t>* atm, uint16_t* expected, uint16_t desired) {
         return atomic_compare_exchange_weak(atm, expected, desired);
     }
-
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 58)
+    // uint
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 60)
     int compare_and_swap_strong_uint(atomic<uint32_t>* atm, uint32_t* expected, uint32_t desired) {
         return atomic_compare_exchange_strong(atm, expected, desired);
     }
-
-    // unsigned long
-    int compare_and_swap_weak_ulong(atomic<uint64_t>* atm, uint64_t* expected, uint64_t desired) {
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 60)
+    int compare_and_swap_weak_uint(atomic<uint32_t>* atm, uint32_t* expected, uint32_t desired) {
         return atomic_compare_exchange_weak(atm, expected, desired);
     }
-
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 58)
+    // ulong
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 60)
     int compare_and_swap_strong_ulong(atomic<uint64_t>* atm, uint64_t* expected, uint64_t desired) {
         return atomic_compare_exchange_strong(atm, expected, desired);
     }
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 60)
+    int compare_and_swap_weak_ulong(atomic<uint64_t>* atm, uint64_t* expected, uint64_t desired) {
+        return atomic_compare_exchange_weak(atm, expected, desired);
+    }
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 58)
+    // char
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 60)
+    int compare_and_swap_strong_char(atomic<char>* atm, char* expected, char desired) {
+        return atomic_compare_exchange_strong(atm, expected, desired);
+    }
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 60)
+    int compare_and_swap_weak_char(atomic<char>* atm, char* expected, char desired) {
+        return atomic_compare_exchange_weak(atm, expected, desired);
+    }
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 58)
+    // uchar
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 60)
+    int compare_and_swap_strong_uchar(atomic<unsigned char>* atm, unsigned char* expected, unsigned char desired) {
+        return atomic_compare_exchange_strong(atm, expected, desired);
+    }
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 60)
+    int compare_and_swap_weak_uchar(atomic<unsigned char>* atm, unsigned char* expected, unsigned char desired) {
+        return atomic_compare_exchange_weak(atm, expected, desired);
+    }
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 58)
+    // csize
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 60)
+    int compare_and_swap_strong_csize(atomic<size_t>* atm, size_t* expected, size_t desired) {
+        return atomic_compare_exchange_strong(atm, expected, desired);
+    }
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 60)
+    int compare_and_swap_weak_csize(atomic<size_t>* atm, size_t* expected, size_t desired) {
+        return atomic_compare_exchange_weak(atm, expected, desired);
+    }
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 65)
 
-	// char
-	int compare_and_swap_weak_char(atomic<char>* atm, char* expected, char desired) {
-		return atomic_compare_exchange_weak(atm, expected, desired);
-	}
-
-	int compare_and_swap_strong_char(atomic<char>* atm, char* expected, char desired) {
-		return atomic_compare_exchange_strong(atm, expected, desired);
-	}
-	
-	// unsigned char
-	int compare_and_swap_weak_uchar(atomic<unsigned char>* atm, unsigned char* expected, unsigned char desired) {
-		return atomic_compare_exchange_weak(atm, expected, desired);
-	}
-
-	int compare_and_swap_strong_uchar(atomic<unsigned char>* atm, unsigned char* expected, unsigned char desired) {
-		return atomic_compare_exchange_strong(atm, expected, desired);
-	}
-	
-	// size_t
-	int compare_and_swap_weak_csize(atomic<size_t>* atm, size_t* expected, size_t desired) {
-		return atomic_compare_exchange_weak(atm, expected, desired);
-	}
-
-	int compare_and_swap_strong_csize(atomic<size_t>* atm, size_t* expected, size_t desired) {
-		return atomic_compare_exchange_strong(atm, expected, desired);
-	}
-
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 67)
 	/**
-     * Add
+     * add
      * */
 
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
      // byte
-     int8_t atomic_add_byte(atomic<int8_t>* atm, int8_t increment) {
-        return atm -> fetch_add(increment);
+     int8_t atomic_add_byte(atomic<int8_t>* atm, int8_t val) {
+        return atm -> fetch_add(val);
      }
-
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
      // short
-     int16_t atomic_add_short(atomic<int16_t>* atm, int16_t increment) {
-        return atm -> fetch_add(increment);
+     int16_t atomic_add_short(atomic<int16_t>* atm, int16_t val) {
+        return atm -> fetch_add(val);
      }
-     
-     // integer
-     int32_t atomic_add_int(atomic<int32_t>* value, int32_t increment) {
-        return value -> fetch_add(increment);
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // int
+     int32_t atomic_add_int(atomic<int32_t>* atm, int32_t val) {
+        return atm -> fetch_add(val);
      }
-     
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
      // long
-     int64_t atomic_add_long(atomic<int64_t>* atm, int64_t increment) {
-        return atm -> fetch_add(increment);
+     int64_t atomic_add_long(atomic<int64_t>* atm, int64_t val) {
+        return atm -> fetch_add(val);
      }
-     
-     // unsigned byte
-     uint8_t atomic_add_ubyte(atomic<uint8_t>* atm, uint8_t increment) {
-        return atm -> fetch_add(increment);
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // ubyte
+     uint8_t atomic_add_ubyte(atomic<uint8_t>* atm, uint8_t val) {
+        return atm -> fetch_add(val);
      }
-     
-     // unsigned short
-     uint16_t atomic_add_ushort(atomic<uint16_t>* atm, uint16_t increment) {
-        return atm -> fetch_add(increment);
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // ushort
+     uint16_t atomic_add_ushort(atomic<uint16_t>* atm, uint16_t val) {
+        return atm -> fetch_add(val);
      }
-     
-     // unsigned integer
-     uint32_t atomic_add_uint(atomic<uint32_t>* atm, uint32_t increment) {
-        return atm -> fetch_add(increment);
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // uint
+     uint32_t atomic_add_uint(atomic<uint32_t>* atm, uint32_t val) {
+        return atm -> fetch_add(val);
      }
-     
-     // unsigned long
-     uint64_t atomic_add_ulong(atomic<uint64_t>* atm, uint64_t increment) {
-        return atm -> fetch_add(increment);
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // ulong
+     uint64_t atomic_add_ulong(atomic<uint64_t>* atm, uint64_t val) {
+        return atm -> fetch_add(val);
      }
-     
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
      // char
-     char atomic_add_char(atomic<char>* atm, char increment) {
-        return atm -> fetch_add(increment);
+     char atomic_add_char(atomic<char>* atm, char val) {
+        return atm -> fetch_add(val);
      }
-     
-     // unsigned char
-     unsigned char atomic_add_uchar(atomic<unsigned char>* atm, unsigned char increment) {
-        return atm -> fetch_add(increment);
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // uchar
+     unsigned char atomic_add_uchar(atomic<unsigned char>* atm, unsigned char val) {
+        return atm -> fetch_add(val);
      }
-     
-     // size_t
-     size_t atomic_add_csize(atomic<size_t>* atm, size_t increment) {
-        return atm -> fetch_add(increment);
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // csize
+     size_t atomic_add_csize(atomic<size_t>* atm, size_t val) {
+        return atm -> fetch_add(val);
      }
-
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 67)
 	/**
-     * Sub
+     * sub
      * */
 
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
      // byte
-     int8_t atomic_sub_byte(atomic<int8_t>* atm, int8_t increment) {
-        return atm -> fetch_sub(increment);
+     int8_t atomic_sub_byte(atomic<int8_t>* atm, int8_t val) {
+        return atm -> fetch_sub(val);
      }
-
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
      // short
-     int16_t atomic_sub_short(atomic<int16_t>* atm, int16_t increment) {
-        return atm -> fetch_sub(increment);
+     int16_t atomic_sub_short(atomic<int16_t>* atm, int16_t val) {
+        return atm -> fetch_sub(val);
      }
-     
-     // integer
-     int32_t atomic_sub_int(atomic<int32_t>* value, int32_t increment) {
-        return value -> fetch_sub(increment);
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // int
+     int32_t atomic_sub_int(atomic<int32_t>* atm, int32_t val) {
+        return atm -> fetch_sub(val);
      }
-     
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
      // long
-     int64_t atomic_sub_long(atomic<int64_t>* atm, int64_t increment) {
-        return atm -> fetch_sub(increment);
+     int64_t atomic_sub_long(atomic<int64_t>* atm, int64_t val) {
+        return atm -> fetch_sub(val);
      }
-     
-     // unsigned byte
-     uint8_t atomic_sub_ubyte(atomic<uint8_t>* atm, uint8_t increment) {
-        return atm -> fetch_sub(increment);
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // ubyte
+     uint8_t atomic_sub_ubyte(atomic<uint8_t>* atm, uint8_t val) {
+        return atm -> fetch_sub(val);
      }
-     
-     // unsigned short
-     uint16_t atomic_sub_ushort(atomic<uint16_t>* atm, uint16_t increment) {
-        return atm -> fetch_sub(increment);
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // ushort
+     uint16_t atomic_sub_ushort(atomic<uint16_t>* atm, uint16_t val) {
+        return atm -> fetch_sub(val);
      }
-     
-     // unsigned integer
-     uint32_t atomic_sub_uint(atomic<uint32_t>* atm, uint32_t increment) {
-        return atm -> fetch_sub(increment);
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // uint
+     uint32_t atomic_sub_uint(atomic<uint32_t>* atm, uint32_t val) {
+        return atm -> fetch_sub(val);
      }
-     
-     // unsigned long
-     uint64_t atomic_sub_ulong(atomic<uint64_t>* atm, uint64_t increment) {
-        return atm -> fetch_sub(increment);
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // ulong
+     uint64_t atomic_sub_ulong(atomic<uint64_t>* atm, uint64_t val) {
+        return atm -> fetch_sub(val);
      }
-     
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
      // char
-     char atomic_sub_char(atomic<char>* atm, char increment) {
-        return atm -> fetch_sub(increment);
+     char atomic_sub_char(atomic<char>* atm, char val) {
+        return atm -> fetch_sub(val);
      }
-     
-     // unsigned char
-     unsigned char atomic_sub_uchar(atomic<unsigned char>* atm, unsigned char increment) {
-        return atm -> fetch_sub(increment);
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // uchar
+     unsigned char atomic_sub_uchar(atomic<unsigned char>* atm, unsigned char val) {
+        return atm -> fetch_sub(val);
      }
-     
-     // size_t
-     size_t atomic_sub_csize(atomic<size_t>* atm, size_t increment) {
-        return atm -> fetch_sub(increment);
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // csize
+     size_t atomic_sub_csize(atomic<size_t>* atm, size_t val) {
+        return atm -> fetch_sub(val);
      }
-
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 67)
 	/**
-     * And
-     * */
-     
-     // byte
-     int8_t atomic_and_byte(atomic<int8_t>* atm, int8_t increment) {
-        return atm -> fetch_and(increment);
-     }
-
-     // short
-     int16_t atomic_and_short(atomic<int16_t>* atm, int16_t increment) {
-        return atm -> fetch_and(increment);
-     }
-     
-     // integer
-     int32_t atomic_and_int(atomic<int32_t>* value, int32_t increment) {
-        return value -> fetch_and(increment);
-     }
-     
-     // long
-     int64_t atomic_and_long(atomic<int64_t>* atm, int64_t increment) {
-        return atm -> fetch_and(increment);
-     }
-     
-     // unsigned byte
-     uint8_t atomic_and_ubyte(atomic<uint8_t>* atm, uint8_t increment) {
-        return atm -> fetch_and(increment);
-     }
-     
-     // unsigned short
-     uint16_t atomic_and_ushort(atomic<uint16_t>* atm, uint16_t increment) {
-        return atm -> fetch_and(increment);
-     }
-     
-     // unsigned integer
-     uint32_t atomic_and_uint(atomic<uint32_t>* atm, uint32_t increment) {
-        return atm -> fetch_and(increment);
-     }
-     
-     // unsigned long
-     uint64_t atomic_and_ulong(atomic<uint64_t>* atm, uint64_t increment) {
-        return atm -> fetch_and(increment);
-     }
-     
-     // char
-     char atomic_and_char(atomic<char>* atm, char increment) {
-        return atm -> fetch_and(increment);
-     }
-     
-     // unsigned char
-     unsigned char atomic_and_uchar(atomic<unsigned char>* atm, unsigned char increment) {
-        return atm -> fetch_and(increment);
-     }
-     
-     // size_t
-     size_t atomic_and_csize(atomic<size_t>* atm, size_t increment) {
-        return atm -> fetch_and(increment);
-     }
-
-	/**
-     * Or
+     * and
      * */
 
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
      // byte
-     int8_t atomic_or_byte(atomic<int8_t>* atm, int8_t increment) {
-        return atm -> fetch_or(increment);
+     int8_t atomic_and_byte(atomic<int8_t>* atm, int8_t val) {
+        return atm -> fetch_and(val);
      }
-
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
      // short
-     int16_t atomic_or_short(atomic<int16_t>* atm, int16_t increment) {
-        return atm -> fetch_or(increment);
+     int16_t atomic_and_short(atomic<int16_t>* atm, int16_t val) {
+        return atm -> fetch_and(val);
      }
-     
-     // integer
-     int32_t atomic_or_int(atomic<int32_t>* value, int32_t increment) {
-        return value -> fetch_or(increment);
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // int
+     int32_t atomic_and_int(atomic<int32_t>* atm, int32_t val) {
+        return atm -> fetch_and(val);
      }
-     
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
      // long
-     int64_t atomic_or_long(atomic<int64_t>* atm, int64_t increment) {
-        return atm -> fetch_or(increment);
+     int64_t atomic_and_long(atomic<int64_t>* atm, int64_t val) {
+        return atm -> fetch_and(val);
      }
-     
-     // unsigned byte
-     uint8_t atomic_or_ubyte(atomic<uint8_t>* atm, uint8_t increment) {
-        return atm -> fetch_or(increment);
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // ubyte
+     uint8_t atomic_and_ubyte(atomic<uint8_t>* atm, uint8_t val) {
+        return atm -> fetch_and(val);
      }
-     
-     // unsigned short
-     uint16_t atomic_or_ushort(atomic<uint16_t>* atm, uint16_t increment) {
-        return atm -> fetch_or(increment);
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // ushort
+     uint16_t atomic_and_ushort(atomic<uint16_t>* atm, uint16_t val) {
+        return atm -> fetch_and(val);
      }
-     
-     // unsigned integer
-     uint32_t atomic_or_uint(atomic<uint32_t>* atm, uint32_t increment) {
-        return atm -> fetch_or(increment);
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // uint
+     uint32_t atomic_and_uint(atomic<uint32_t>* atm, uint32_t val) {
+        return atm -> fetch_and(val);
      }
-     
-     // unsigned long
-     uint64_t atomic_or_ulong(atomic<uint64_t>* atm, uint64_t increment) {
-        return atm -> fetch_or(increment);
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // ulong
+     uint64_t atomic_and_ulong(atomic<uint64_t>* atm, uint64_t val) {
+        return atm -> fetch_and(val);
      }
-     
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
      // char
-     char atomic_or_char(atomic<char>* atm, char increment) {
-        return atm -> fetch_or(increment);
+     char atomic_and_char(atomic<char>* atm, char val) {
+        return atm -> fetch_and(val);
      }
-     
-     // unsigned char
-     unsigned char atomic_or_uchar(atomic<unsigned char>* atm, unsigned char increment) {
-        return atm -> fetch_or(increment);
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // uchar
+     unsigned char atomic_and_uchar(atomic<unsigned char>* atm, unsigned char val) {
+        return atm -> fetch_and(val);
      }
-     
-     // size_t
-     size_t atomic_or_csize(atomic<size_t>* atm, size_t increment) {
-        return atm -> fetch_or(increment);
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // csize
+     size_t atomic_and_csize(atomic<size_t>* atm, size_t val) {
+        return atm -> fetch_and(val);
      }
-
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 67)
 	/**
-     * Xor
+     * or
      * */
 
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
      // byte
-     int8_t atomic_xor_byte(atomic<int8_t>* atm, int8_t increment) {
-        return atm -> fetch_xor(increment);
+     int8_t atomic_or_byte(atomic<int8_t>* atm, int8_t val) {
+        return atm -> fetch_or(val);
      }
-
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
      // short
-     int16_t atomic_xor_short(atomic<int16_t>* atm, int16_t increment) {
-        return atm -> fetch_xor(increment);
+     int16_t atomic_or_short(atomic<int16_t>* atm, int16_t val) {
+        return atm -> fetch_or(val);
      }
-     
-     // integer
-     int32_t atomic_xor_int(atomic<int32_t>* value, int32_t increment) {
-        return value -> fetch_xor(increment);
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // int
+     int32_t atomic_or_int(atomic<int32_t>* atm, int32_t val) {
+        return atm -> fetch_or(val);
      }
-     
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
      // long
-     int64_t atomic_xor_long(atomic<int64_t>* atm, int64_t increment) {
-        return atm -> fetch_xor(increment);
+     int64_t atomic_or_long(atomic<int64_t>* atm, int64_t val) {
+        return atm -> fetch_or(val);
      }
-     
-     // unsigned byte
-     uint8_t atomic_xor_ubyte(atomic<uint8_t>* atm, uint8_t increment) {
-        return atm -> fetch_xor(increment);
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // ubyte
+     uint8_t atomic_or_ubyte(atomic<uint8_t>* atm, uint8_t val) {
+        return atm -> fetch_or(val);
      }
-     
-     // unsigned short
-     uint16_t atomic_xor_ushort(atomic<uint16_t>* atm, uint16_t increment) {
-        return atm -> fetch_xor(increment);
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // ushort
+     uint16_t atomic_or_ushort(atomic<uint16_t>* atm, uint16_t val) {
+        return atm -> fetch_or(val);
      }
-     
-     // unsigned integer
-     uint32_t atomic_xor_uint(atomic<uint32_t>* atm, uint32_t increment) {
-        return atm -> fetch_xor(increment);
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // uint
+     uint32_t atomic_or_uint(atomic<uint32_t>* atm, uint32_t val) {
+        return atm -> fetch_or(val);
      }
-     
-     // unsigned long
-     uint64_t atomic_xor_ulong(atomic<uint64_t>* atm, uint64_t increment) {
-        return atm -> fetch_xor(increment);
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // ulong
+     uint64_t atomic_or_ulong(atomic<uint64_t>* atm, uint64_t val) {
+        return atm -> fetch_or(val);
      }
-     
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
      // char
-     char atomic_xor_char(atomic<char>* atm, char increment) {
-        return atm -> fetch_xor(increment);
+     char atomic_or_char(atomic<char>* atm, char val) {
+        return atm -> fetch_or(val);
      }
-     
-     // unsigned char
-     unsigned char atomic_xor_uchar(atomic<unsigned char>* atm, unsigned char increment) {
-        return atm -> fetch_xor(increment);
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // uchar
+     unsigned char atomic_or_uchar(atomic<unsigned char>* atm, unsigned char val) {
+        return atm -> fetch_or(val);
      }
-     
-     // size_t
-     size_t atomic_xor_csize(atomic<size_t>* atm, size_t increment) {
-        return atm -> fetch_xor(increment);
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // csize
+     size_t atomic_or_csize(atomic<size_t>* atm, size_t val) {
+        return atm -> fetch_or(val);
      }
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 67)
+	/**
+     * xor
+     * */
+
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // byte
+     int8_t atomic_xor_byte(atomic<int8_t>* atm, int8_t val) {
+        return atm -> fetch_xor(val);
+     }
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // short
+     int16_t atomic_xor_short(atomic<int16_t>* atm, int16_t val) {
+        return atm -> fetch_xor(val);
+     }
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // int
+     int32_t atomic_xor_int(atomic<int32_t>* atm, int32_t val) {
+        return atm -> fetch_xor(val);
+     }
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // long
+     int64_t atomic_xor_long(atomic<int64_t>* atm, int64_t val) {
+        return atm -> fetch_xor(val);
+     }
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // ubyte
+     uint8_t atomic_xor_ubyte(atomic<uint8_t>* atm, uint8_t val) {
+        return atm -> fetch_xor(val);
+     }
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // ushort
+     uint16_t atomic_xor_ushort(atomic<uint16_t>* atm, uint16_t val) {
+        return atm -> fetch_xor(val);
+     }
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // uint
+     uint32_t atomic_xor_uint(atomic<uint32_t>* atm, uint32_t val) {
+        return atm -> fetch_xor(val);
+     }
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // ulong
+     uint64_t atomic_xor_ulong(atomic<uint64_t>* atm, uint64_t val) {
+        return atm -> fetch_xor(val);
+     }
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // char
+     char atomic_xor_char(atomic<char>* atm, char val) {
+        return atm -> fetch_xor(val);
+     }
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // uchar
+     unsigned char atomic_xor_uchar(atomic<unsigned char>* atm, unsigned char val) {
+        return atm -> fetch_xor(val);
+     }
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 72)
+     // csize
+     size_t atomic_xor_csize(atomic<size_t>* atm, size_t val) {
+        return atm -> fetch_xor(val);
+     }
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 78)
 }
