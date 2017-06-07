@@ -106,7 +106,8 @@ class CAtomicShort(default: CShort = 0.asInstanceOf[CShort]) extends CAtomic {
 
   def free(): Unit = Atomic.free(atm.cast[Ptr[Byte]])
 
-  def compareAndSwapStrong(expected: CShort, desired: CShort): (Boolean, CShort) = {
+  def compareAndSwapStrong(expected: CShort,
+                           desired: CShort): (Boolean, CShort) = {
     val expectedPtr = stackalloc[CShort]
     !expectedPtr = expected
 
@@ -117,7 +118,8 @@ class CAtomicShort(default: CShort = 0.asInstanceOf[CShort]) extends CAtomic {
     }
   }
 
-  def compareAndSwapWeak(expected: CShort, desired: CShort): (Boolean, CShort) = {
+  def compareAndSwapWeak(expected: CShort,
+                         desired: CShort): (Boolean, CShort) = {
     val expectedPtr = stackalloc[CShort]
     !expectedPtr = expected
 
@@ -341,7 +343,8 @@ object CAtomicLong extends CAtomic {
 
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 30)
 
-class CAtomicUnsignedByte(default: Byte = 0.asInstanceOf[Byte]) extends CAtomic {
+class CAtomicUnsignedByte(default: Byte = 0.asInstanceOf[Byte])
+    extends CAtomic {
 
   private[this] val atm = Atomic.alloc(sizeof[Byte])
   init_ubyte(atm, default)
@@ -423,9 +426,12 @@ object CAtomicUnsignedByte extends CAtomic {
 
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 30)
 
-class CAtomicUnsignedShort(default: CUnsignedShort = 0.asInstanceOf[CUnsignedShort]) extends CAtomic {
+class CAtomicUnsignedShort(
+    default: CUnsignedShort = 0.asInstanceOf[CUnsignedShort])
+    extends CAtomic {
 
-  private[this] val atm = Atomic.alloc(sizeof[CUnsignedShort]).cast[Ptr[CUnsignedShort]]
+  private[this] val atm =
+    Atomic.alloc(sizeof[CUnsignedShort]).cast[Ptr[CUnsignedShort]]
   init_ushort(atm, default)
 
   def load(): CUnsignedShort = load_ushort(atm)
@@ -434,7 +440,9 @@ class CAtomicUnsignedShort(default: CUnsignedShort = 0.asInstanceOf[CUnsignedSho
 
   def free(): Unit = Atomic.free(atm.cast[Ptr[Byte]])
 
-  def compareAndSwapStrong(expected: CUnsignedShort, desired: CUnsignedShort): (Boolean, CUnsignedShort) = {
+  def compareAndSwapStrong(
+      expected: CUnsignedShort,
+      desired: CUnsignedShort): (Boolean, CUnsignedShort) = {
     val expectedPtr = stackalloc[CUnsignedShort]
     !expectedPtr = expected
 
@@ -445,7 +453,9 @@ class CAtomicUnsignedShort(default: CUnsignedShort = 0.asInstanceOf[CUnsignedSho
     }
   }
 
-  def compareAndSwapWeak(expected: CUnsignedShort, desired: CUnsignedShort): (Boolean, CUnsignedShort) = {
+  def compareAndSwapWeak(
+      expected: CUnsignedShort,
+      desired: CUnsignedShort): (Boolean, CUnsignedShort) = {
     val expectedPtr = stackalloc[CUnsignedShort]
     !expectedPtr = expected
 
@@ -461,35 +471,40 @@ class CAtomicUnsignedShort(default: CUnsignedShort = 0.asInstanceOf[CUnsignedSho
     load()
   }
 
-  def fetchAdd(value: CUnsignedShort): CUnsignedShort = atomic_add_ushort(atm, value)
+  def fetchAdd(value: CUnsignedShort): CUnsignedShort =
+    atomic_add_ushort(atm, value)
 
   def subFetch(value: CUnsignedShort): CUnsignedShort = {
     fetchSub(value)
     load()
   }
 
-  def fetchSub(value: CUnsignedShort): CUnsignedShort = atomic_sub_ushort(atm, value)
+  def fetchSub(value: CUnsignedShort): CUnsignedShort =
+    atomic_sub_ushort(atm, value)
 
   def andFetch(value: CUnsignedShort): CUnsignedShort = {
     fetchAnd(value)
     load()
   }
 
-  def fetchAnd(value: CUnsignedShort): CUnsignedShort = atomic_and_ushort(atm, value)
+  def fetchAnd(value: CUnsignedShort): CUnsignedShort =
+    atomic_and_ushort(atm, value)
 
   def orFetch(value: CUnsignedShort): CUnsignedShort = {
     fetchOr(value)
     load()
   }
 
-  def fetchOr(value: CUnsignedShort): CUnsignedShort = atomic_or_ushort(atm, value)
+  def fetchOr(value: CUnsignedShort): CUnsignedShort =
+    atomic_or_ushort(atm, value)
 
   def xorFetch(value: CUnsignedShort): CUnsignedShort = {
     fetchXor(value)
     load()
   }
 
-  def fetchXor(value: CUnsignedShort): CUnsignedShort = atomic_xor_ushort(atm, value)
+  def fetchXor(value: CUnsignedShort): CUnsignedShort =
+    atomic_xor_ushort(atm, value)
 
 }
 
@@ -505,9 +520,11 @@ object CAtomicUnsignedShort extends CAtomic {
 
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 30)
 
-class CAtomicUnsignedInt(default: CUnsignedInt = 0.asInstanceOf[CUnsignedInt]) extends CAtomic {
+class CAtomicUnsignedInt(default: CUnsignedInt = 0.asInstanceOf[CUnsignedInt])
+    extends CAtomic {
 
-  private[this] val atm = Atomic.alloc(sizeof[CUnsignedInt]).cast[Ptr[CUnsignedInt]]
+  private[this] val atm =
+    Atomic.alloc(sizeof[CUnsignedInt]).cast[Ptr[CUnsignedInt]]
   init_uint(atm, default)
 
   def load(): CUnsignedInt = load_uint(atm)
@@ -516,7 +533,8 @@ class CAtomicUnsignedInt(default: CUnsignedInt = 0.asInstanceOf[CUnsignedInt]) e
 
   def free(): Unit = Atomic.free(atm.cast[Ptr[Byte]])
 
-  def compareAndSwapStrong(expected: CUnsignedInt, desired: CUnsignedInt): (Boolean, CUnsignedInt) = {
+  def compareAndSwapStrong(expected: CUnsignedInt,
+                           desired: CUnsignedInt): (Boolean, CUnsignedInt) = {
     val expectedPtr = stackalloc[CUnsignedInt]
     !expectedPtr = expected
 
@@ -527,7 +545,8 @@ class CAtomicUnsignedInt(default: CUnsignedInt = 0.asInstanceOf[CUnsignedInt]) e
     }
   }
 
-  def compareAndSwapWeak(expected: CUnsignedInt, desired: CUnsignedInt): (Boolean, CUnsignedInt) = {
+  def compareAndSwapWeak(expected: CUnsignedInt,
+                         desired: CUnsignedInt): (Boolean, CUnsignedInt) = {
     val expectedPtr = stackalloc[CUnsignedInt]
     !expectedPtr = expected
 
@@ -587,9 +606,12 @@ object CAtomicUnsignedInt extends CAtomic {
 
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 30)
 
-class CAtomicUnsignedLong(default: CUnsignedLong = 0.asInstanceOf[CUnsignedLong]) extends CAtomic {
+class CAtomicUnsignedLong(
+    default: CUnsignedLong = 0.asInstanceOf[CUnsignedLong])
+    extends CAtomic {
 
-  private[this] val atm = Atomic.alloc(sizeof[CUnsignedLong]).cast[Ptr[CUnsignedLong]]
+  private[this] val atm =
+    Atomic.alloc(sizeof[CUnsignedLong]).cast[Ptr[CUnsignedLong]]
   init_ulong(atm, default)
 
   def load(): CUnsignedLong = load_ulong(atm)
@@ -598,7 +620,9 @@ class CAtomicUnsignedLong(default: CUnsignedLong = 0.asInstanceOf[CUnsignedLong]
 
   def free(): Unit = Atomic.free(atm.cast[Ptr[Byte]])
 
-  def compareAndSwapStrong(expected: CUnsignedLong, desired: CUnsignedLong): (Boolean, CUnsignedLong) = {
+  def compareAndSwapStrong(
+      expected: CUnsignedLong,
+      desired: CUnsignedLong): (Boolean, CUnsignedLong) = {
     val expectedPtr = stackalloc[CUnsignedLong]
     !expectedPtr = expected
 
@@ -609,7 +633,8 @@ class CAtomicUnsignedLong(default: CUnsignedLong = 0.asInstanceOf[CUnsignedLong]
     }
   }
 
-  def compareAndSwapWeak(expected: CUnsignedLong, desired: CUnsignedLong): (Boolean, CUnsignedLong) = {
+  def compareAndSwapWeak(expected: CUnsignedLong,
+                         desired: CUnsignedLong): (Boolean, CUnsignedLong) = {
     val expectedPtr = stackalloc[CUnsignedLong]
     !expectedPtr = expected
 
@@ -625,35 +650,40 @@ class CAtomicUnsignedLong(default: CUnsignedLong = 0.asInstanceOf[CUnsignedLong]
     load()
   }
 
-  def fetchAdd(value: CUnsignedLong): CUnsignedLong = atomic_add_ulong(atm, value)
+  def fetchAdd(value: CUnsignedLong): CUnsignedLong =
+    atomic_add_ulong(atm, value)
 
   def subFetch(value: CUnsignedLong): CUnsignedLong = {
     fetchSub(value)
     load()
   }
 
-  def fetchSub(value: CUnsignedLong): CUnsignedLong = atomic_sub_ulong(atm, value)
+  def fetchSub(value: CUnsignedLong): CUnsignedLong =
+    atomic_sub_ulong(atm, value)
 
   def andFetch(value: CUnsignedLong): CUnsignedLong = {
     fetchAnd(value)
     load()
   }
 
-  def fetchAnd(value: CUnsignedLong): CUnsignedLong = atomic_and_ulong(atm, value)
+  def fetchAnd(value: CUnsignedLong): CUnsignedLong =
+    atomic_and_ulong(atm, value)
 
   def orFetch(value: CUnsignedLong): CUnsignedLong = {
     fetchOr(value)
     load()
   }
 
-  def fetchOr(value: CUnsignedLong): CUnsignedLong = atomic_or_ulong(atm, value)
+  def fetchOr(value: CUnsignedLong): CUnsignedLong =
+    atomic_or_ulong(atm, value)
 
   def xorFetch(value: CUnsignedLong): CUnsignedLong = {
     fetchXor(value)
     load()
   }
 
-  def fetchXor(value: CUnsignedLong): CUnsignedLong = atomic_xor_ulong(atm, value)
+  def fetchXor(value: CUnsignedLong): CUnsignedLong =
+    atomic_xor_ulong(atm, value)
 
 }
 
@@ -751,9 +781,12 @@ object CAtomicChar extends CAtomic {
 
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 30)
 
-class CAtomicUnsignedChar(default: CUnsignedChar = 'a'.asInstanceOf[CUnsignedChar]) extends CAtomic {
+class CAtomicUnsignedChar(
+    default: CUnsignedChar = 'a'.asInstanceOf[CUnsignedChar])
+    extends CAtomic {
 
-  private[this] val atm = Atomic.alloc(sizeof[CUnsignedChar]).cast[Ptr[CUnsignedChar]]
+  private[this] val atm =
+    Atomic.alloc(sizeof[CUnsignedChar]).cast[Ptr[CUnsignedChar]]
   init_uchar(atm, default)
 
   def load(): CUnsignedChar = load_uchar(atm)
@@ -762,7 +795,9 @@ class CAtomicUnsignedChar(default: CUnsignedChar = 'a'.asInstanceOf[CUnsignedCha
 
   def free(): Unit = Atomic.free(atm.cast[Ptr[Byte]])
 
-  def compareAndSwapStrong(expected: CUnsignedChar, desired: CUnsignedChar): (Boolean, CUnsignedChar) = {
+  def compareAndSwapStrong(
+      expected: CUnsignedChar,
+      desired: CUnsignedChar): (Boolean, CUnsignedChar) = {
     val expectedPtr = stackalloc[CUnsignedChar]
     !expectedPtr = expected
 
@@ -773,7 +808,8 @@ class CAtomicUnsignedChar(default: CUnsignedChar = 'a'.asInstanceOf[CUnsignedCha
     }
   }
 
-  def compareAndSwapWeak(expected: CUnsignedChar, desired: CUnsignedChar): (Boolean, CUnsignedChar) = {
+  def compareAndSwapWeak(expected: CUnsignedChar,
+                         desired: CUnsignedChar): (Boolean, CUnsignedChar) = {
     val expectedPtr = stackalloc[CUnsignedChar]
     !expectedPtr = expected
 
@@ -789,35 +825,40 @@ class CAtomicUnsignedChar(default: CUnsignedChar = 'a'.asInstanceOf[CUnsignedCha
     load()
   }
 
-  def fetchAdd(value: CUnsignedChar): CUnsignedChar = atomic_add_uchar(atm, value)
+  def fetchAdd(value: CUnsignedChar): CUnsignedChar =
+    atomic_add_uchar(atm, value)
 
   def subFetch(value: CUnsignedChar): CUnsignedChar = {
     fetchSub(value)
     load()
   }
 
-  def fetchSub(value: CUnsignedChar): CUnsignedChar = atomic_sub_uchar(atm, value)
+  def fetchSub(value: CUnsignedChar): CUnsignedChar =
+    atomic_sub_uchar(atm, value)
 
   def andFetch(value: CUnsignedChar): CUnsignedChar = {
     fetchAnd(value)
     load()
   }
 
-  def fetchAnd(value: CUnsignedChar): CUnsignedChar = atomic_and_uchar(atm, value)
+  def fetchAnd(value: CUnsignedChar): CUnsignedChar =
+    atomic_and_uchar(atm, value)
 
   def orFetch(value: CUnsignedChar): CUnsignedChar = {
     fetchOr(value)
     load()
   }
 
-  def fetchOr(value: CUnsignedChar): CUnsignedChar = atomic_or_uchar(atm, value)
+  def fetchOr(value: CUnsignedChar): CUnsignedChar =
+    atomic_or_uchar(atm, value)
 
   def xorFetch(value: CUnsignedChar): CUnsignedChar = {
     fetchXor(value)
     load()
   }
 
-  def fetchXor(value: CUnsignedChar): CUnsignedChar = atomic_xor_uchar(atm, value)
+  def fetchXor(value: CUnsignedChar): CUnsignedChar =
+    atomic_xor_uchar(atm, value)
 
 }
 
@@ -912,4 +953,3 @@ object CAtomicCSize extends CAtomic {
 }
 
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 110)
-
