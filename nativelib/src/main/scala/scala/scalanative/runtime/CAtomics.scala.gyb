@@ -43,7 +43,7 @@ class CAtomic${C}(default: ${T} = ${default}) extends CAtomic {
     val expectedPtr = stackalloc[${T}]
     !expectedPtr = expected
 
-    if (compare_and_swap_strong_${N}(atm, expectedPtr, expected)) {
+    if (compare_and_swap_strong_${N}(atm, expectedPtr, desired)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
@@ -54,7 +54,7 @@ class CAtomic${C}(default: ${T} = ${default}) extends CAtomic {
     val expectedPtr = stackalloc[${T}]
     !expectedPtr = expected
 
-    if (compare_and_swap_weak_${N}(atm, expectedPtr, expected)) {
+    if (compare_and_swap_weak_${N}(atm, expectedPtr, desired)) {
       (true, desired)
     } else {
       (false, !expectedPtr)

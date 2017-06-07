@@ -8,15 +8,12 @@ import scala.scalanative.native.{
   CLong,
   CShort,
   CSize,
-  CStruct0,
-  CStruct1,
   CUnsignedChar,
   CUnsignedInt,
   CUnsignedLong,
   CUnsignedShort,
   Ptr,
-  extern,
-  stdlib
+  extern
 }
 
 %{
