@@ -411,7 +411,7 @@ lazy val tests =
           }
         """)
         Seq(file)
-      }.taskValue,
+      },
       envVars in run ++= Map(
         "USER"                           -> "scala-native",
         "HOME"                           -> baseDirectory.value.getAbsolutePath,
@@ -457,7 +457,7 @@ lazy val benchmarks =
         """
         )
         Seq(file)
-      }.taskValue
+      }
     )
     .enablePlugins(ScalaNativePlugin)
 
