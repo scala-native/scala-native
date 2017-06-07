@@ -28,7 +28,7 @@ class CAtomicByte(default: Byte = 0.asInstanceOf[Byte]) extends CAtomic {
     val expectedPtr = stackalloc[Byte]
     !expectedPtr = expected
 
-    if (compare_and_swap_strong_byte(atm, expectedPtr, expected)) {
+    if (compare_and_swap_strong_byte(atm, expectedPtr, desired)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
@@ -39,7 +39,7 @@ class CAtomicByte(default: Byte = 0.asInstanceOf[Byte]) extends CAtomic {
     val expectedPtr = stackalloc[Byte]
     !expectedPtr = expected
 
-    if (compare_and_swap_weak_byte(atm, expectedPtr, expected)) {
+    if (compare_and_swap_weak_byte(atm, expectedPtr, desired)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
@@ -111,7 +111,7 @@ class CAtomicShort(default: CShort = 0.asInstanceOf[CShort]) extends CAtomic {
     val expectedPtr = stackalloc[CShort]
     !expectedPtr = expected
 
-    if (compare_and_swap_strong_short(atm, expectedPtr, expected)) {
+    if (compare_and_swap_strong_short(atm, expectedPtr, desired)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
@@ -123,7 +123,7 @@ class CAtomicShort(default: CShort = 0.asInstanceOf[CShort]) extends CAtomic {
     val expectedPtr = stackalloc[CShort]
     !expectedPtr = expected
 
-    if (compare_and_swap_weak_short(atm, expectedPtr, expected)) {
+    if (compare_and_swap_weak_short(atm, expectedPtr, desired)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
@@ -194,7 +194,7 @@ class CAtomicInt(default: CInt = 0) extends CAtomic {
     val expectedPtr = stackalloc[CInt]
     !expectedPtr = expected
 
-    if (compare_and_swap_strong_int(atm, expectedPtr, expected)) {
+    if (compare_and_swap_strong_int(atm, expectedPtr, desired)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
@@ -205,7 +205,7 @@ class CAtomicInt(default: CInt = 0) extends CAtomic {
     val expectedPtr = stackalloc[CInt]
     !expectedPtr = expected
 
-    if (compare_and_swap_weak_int(atm, expectedPtr, expected)) {
+    if (compare_and_swap_weak_int(atm, expectedPtr, desired)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
@@ -276,7 +276,7 @@ class CAtomicLong(default: CLong = 0.asInstanceOf[CLong]) extends CAtomic {
     val expectedPtr = stackalloc[CLong]
     !expectedPtr = expected
 
-    if (compare_and_swap_strong_long(atm, expectedPtr, expected)) {
+    if (compare_and_swap_strong_long(atm, expectedPtr, desired)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
@@ -287,7 +287,7 @@ class CAtomicLong(default: CLong = 0.asInstanceOf[CLong]) extends CAtomic {
     val expectedPtr = stackalloc[CLong]
     !expectedPtr = expected
 
-    if (compare_and_swap_weak_long(atm, expectedPtr, expected)) {
+    if (compare_and_swap_weak_long(atm, expectedPtr, desired)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
@@ -359,7 +359,7 @@ class CAtomicUnsignedByte(default: Byte = 0.asInstanceOf[Byte])
     val expectedPtr = stackalloc[Byte]
     !expectedPtr = expected
 
-    if (compare_and_swap_strong_ubyte(atm, expectedPtr, expected)) {
+    if (compare_and_swap_strong_ubyte(atm, expectedPtr, desired)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
@@ -370,7 +370,7 @@ class CAtomicUnsignedByte(default: Byte = 0.asInstanceOf[Byte])
     val expectedPtr = stackalloc[Byte]
     !expectedPtr = expected
 
-    if (compare_and_swap_weak_ubyte(atm, expectedPtr, expected)) {
+    if (compare_and_swap_weak_ubyte(atm, expectedPtr, desired)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
@@ -446,7 +446,7 @@ class CAtomicUnsignedShort(
     val expectedPtr = stackalloc[CUnsignedShort]
     !expectedPtr = expected
 
-    if (compare_and_swap_strong_ushort(atm, expectedPtr, expected)) {
+    if (compare_and_swap_strong_ushort(atm, expectedPtr, desired)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
@@ -459,7 +459,7 @@ class CAtomicUnsignedShort(
     val expectedPtr = stackalloc[CUnsignedShort]
     !expectedPtr = expected
 
-    if (compare_and_swap_weak_ushort(atm, expectedPtr, expected)) {
+    if (compare_and_swap_weak_ushort(atm, expectedPtr, desired)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
@@ -538,7 +538,7 @@ class CAtomicUnsignedInt(default: CUnsignedInt = 0.asInstanceOf[CUnsignedInt])
     val expectedPtr = stackalloc[CUnsignedInt]
     !expectedPtr = expected
 
-    if (compare_and_swap_strong_uint(atm, expectedPtr, expected)) {
+    if (compare_and_swap_strong_uint(atm, expectedPtr, desired)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
@@ -550,7 +550,7 @@ class CAtomicUnsignedInt(default: CUnsignedInt = 0.asInstanceOf[CUnsignedInt])
     val expectedPtr = stackalloc[CUnsignedInt]
     !expectedPtr = expected
 
-    if (compare_and_swap_weak_uint(atm, expectedPtr, expected)) {
+    if (compare_and_swap_weak_uint(atm, expectedPtr, desired)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
@@ -626,7 +626,7 @@ class CAtomicUnsignedLong(
     val expectedPtr = stackalloc[CUnsignedLong]
     !expectedPtr = expected
 
-    if (compare_and_swap_strong_ulong(atm, expectedPtr, expected)) {
+    if (compare_and_swap_strong_ulong(atm, expectedPtr, desired)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
@@ -638,7 +638,7 @@ class CAtomicUnsignedLong(
     val expectedPtr = stackalloc[CUnsignedLong]
     !expectedPtr = expected
 
-    if (compare_and_swap_weak_ulong(atm, expectedPtr, expected)) {
+    if (compare_and_swap_weak_ulong(atm, expectedPtr, desired)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
@@ -714,7 +714,7 @@ class CAtomicChar(default: CChar = 'a'.asInstanceOf[CChar]) extends CAtomic {
     val expectedPtr = stackalloc[CChar]
     !expectedPtr = expected
 
-    if (compare_and_swap_strong_char(atm, expectedPtr, expected)) {
+    if (compare_and_swap_strong_char(atm, expectedPtr, desired)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
@@ -725,7 +725,7 @@ class CAtomicChar(default: CChar = 'a'.asInstanceOf[CChar]) extends CAtomic {
     val expectedPtr = stackalloc[CChar]
     !expectedPtr = expected
 
-    if (compare_and_swap_weak_char(atm, expectedPtr, expected)) {
+    if (compare_and_swap_weak_char(atm, expectedPtr, desired)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
@@ -801,7 +801,7 @@ class CAtomicUnsignedChar(
     val expectedPtr = stackalloc[CUnsignedChar]
     !expectedPtr = expected
 
-    if (compare_and_swap_strong_uchar(atm, expectedPtr, expected)) {
+    if (compare_and_swap_strong_uchar(atm, expectedPtr, desired)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
@@ -813,7 +813,7 @@ class CAtomicUnsignedChar(
     val expectedPtr = stackalloc[CUnsignedChar]
     !expectedPtr = expected
 
-    if (compare_and_swap_weak_uchar(atm, expectedPtr, expected)) {
+    if (compare_and_swap_weak_uchar(atm, expectedPtr, desired)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
@@ -889,7 +889,7 @@ class CAtomicCSize(default: CSize = 0.asInstanceOf[CSize]) extends CAtomic {
     val expectedPtr = stackalloc[CSize]
     !expectedPtr = expected
 
-    if (compare_and_swap_strong_csize(atm, expectedPtr, expected)) {
+    if (compare_and_swap_strong_csize(atm, expectedPtr, desired)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
@@ -900,7 +900,7 @@ class CAtomicCSize(default: CSize = 0.asInstanceOf[CSize]) extends CAtomic {
     val expectedPtr = stackalloc[CSize]
     !expectedPtr = expected
 
-    if (compare_and_swap_weak_csize(atm, expectedPtr, expected)) {
+    if (compare_and_swap_weak_csize(atm, expectedPtr, desired)) {
       (true, desired)
     } else {
       (false, !expectedPtr)
