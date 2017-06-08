@@ -349,6 +349,9 @@ object ScalaNativePluginInternal {
       val linksActions: Seq[Seq[String] => Seq[String] => Seq[String]] = Seq(
         links =>
           if (!links.contains("z")) _.filterNot(_ endsWith "zlib.c.o")
+          else identity,
+        links =>
+          if (!links.contains("re2")) _.filterNot(_ endsWith "cre2.cpp.o")
           else identity
       )
 
@@ -356,7 +359,6 @@ object ScalaNativePluginInternal {
         val os   = Option(sys props "os.name").getOrElse("")
         val arch = target.split("-").head
         // we need re2 to link the re2 c wrapper (cre2.h)
-        val regex = Seq("re2")
         val librt = os match {
           case "Linux" => Seq("rt")
           case _       => Seq.empty
@@ -366,7 +368,7 @@ object ScalaNativePluginInternal {
           case _          => Seq("unwind", "unwind-" + arch)
         }
         librt ++ libunwind ++ linked.links
-          .map(_.name) ++ garbageCollector(gc).links ++ regex
+          .map(_.name) ++ garbageCollector(gc).links
       }
       val linkopts  = links.map("-l" + _) ++ linkingOpts
       val targetopt = Seq("-target", target)
