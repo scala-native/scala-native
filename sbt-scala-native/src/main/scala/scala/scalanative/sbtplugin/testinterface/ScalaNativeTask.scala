@@ -41,9 +41,6 @@ object ScalaNativeTask {
       runner: ScalaNativeRunner,
       infoAndId: (TaskInfo, Int)): ScalaNativeTask = {
     val (info, id) = infoAndId
-    new ScalaNativeTask(runner,
-                        info.taskDef,
-                        info.tags.toArray,
-                        id)
+    new ScalaNativeTask(runner, info.taskDef, info.tags.toArray, id)
   }
 }

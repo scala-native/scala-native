@@ -9,10 +9,11 @@ trait Serializable[T] {
 }
 
 object Serializable {
-  def apply[T](_name: String, s: T => Iterator[String],
+  def apply[T](_name: String,
+               s: T => Iterator[String],
                d: Iterator[String] => T): Serializable[T] =
     new Serializable[T] {
-      override def name: String = _name
+      override def name: String                         = _name
       override def serialize(v: T): Iterator[String]    = s(v)
       override def deserialize(in: Iterator[String]): T = d(in)
     }

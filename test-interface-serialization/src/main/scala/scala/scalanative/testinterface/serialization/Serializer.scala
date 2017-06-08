@@ -37,52 +37,68 @@ object Serializer {
   }
 
   implicit val BooleanSerializer: Serializable[Boolean] =
-    Serializable("Boolean", v => Iterator(v.toString),
+    Serializable("Boolean",
+                 v => Iterator(v.toString),
                  in => java.lang.Boolean.parseBoolean(in.next()))
 
   implicit val IntSerializer: Serializable[Int] =
-    Serializable("Int", v => Iterator(v.toString),
+    Serializable("Int",
+                 v => Iterator(v.toString),
                  in => java.lang.Integer.parseInt(in.next()))
 
   implicit val LongSerializer: Serializable[Long] =
-    Serializable("Long", v => Iterator(v.toString),
+    Serializable("Long",
+                 v => Iterator(v.toString),
                  in => java.lang.Long.parseLong(in.next()))
 
   implicit val StringSerializer: Serializable[String] =
     Serializable("String", Iterator(_), _.next())
 
   implicit def SeqSerializer[T: Serializable]: Serializable[Seq[T]] =
-    Serializable("Seq of " + implicitly[Serializable[T]].name, v => s(v.length) ++ v.toIterator.flatMap(s[T]),
+    Serializable("Seq of " + implicitly[Serializable[T]].name,
+                 v => s(v.length) ++ v.toIterator.flatMap(s[T]),
                  in => Seq.fill(d[Int](in))(d[T](in)))
 
   implicit def IteratorSerializer[T: Serializable]: Serializable[Iterator[T]] =
-    Serializable("Iterator of " + implicitly[Serializable[T]].name, v => s[Seq[T]](v.toSeq), in => d[Seq[T]](in).toIterator)
+    Serializable("Iterator of " + implicitly[Serializable[T]].name,
+                 v => s[Seq[T]](v.toSeq),
+                 in => d[Seq[T]](in).toIterator)
 
   implicit def OptionSerializer[T: Serializable]: Serializable[Option[T]] =
-    Serializable("Option of " + implicitly[Serializable[T]].name, v => s(v.toSeq), in => d[Seq[T]](in).lift(0))
+    Serializable("Option of " + implicitly[Serializable[T]].name,
+                 v => s(v.toSeq),
+                 in => d[Seq[T]](in).lift(0))
 
   implicit def Tuple2Serializer[A: Serializable, B: Serializable]
     : Serializable[(A, B)] =
-    Serializable("Tuple2 of " + implicitly[Serializable[A]].name + " and " + implicitly[Serializable[B]].name, { case (a, b) => s(a) ++ s(b) }, in => (d[A](in), d[B](in)))
+    Serializable(
+      "Tuple2 of " + implicitly[Serializable[A]].name + " and " + implicitly[
+        Serializable[B]].name, { case (a, b) => s(a) ++ s(b) },
+      in => (d[A](in), d[B](in)))
 
-  implicit def EitherSerializer[A: Serializable, B: Serializable]: Serializable[Either[A, B]] =
-    Serializable("Either of " + implicitly[Serializable[A]].name + " and " + implicitly[Serializable[B]].name, {
-      case Left(a) => s(a)
-      case Right(b) =>  s(b)
-    }, in => {
-      val recordingIterator = new RecordingIterator(in)
-      try {
-        Left(d[A](recordingIterator))
-      } catch {
-        // TODO: DeserializationException
-        case _: Exception =>
-          Right(d[B](recordingIterator.rewind()))
+  implicit def EitherSerializer[A: Serializable, B: Serializable]
+    : Serializable[Either[A, B]] =
+    Serializable(
+      "Either of " + implicitly[Serializable[A]].name + " and " + implicitly[
+        Serializable[B]].name, {
+        case Left(a)  => s(a)
+        case Right(b) => s(b)
+      },
+      in => {
+        val recordingIterator = new RecordingIterator(in)
+        try {
+          Left(d[A](recordingIterator))
+        } catch {
+          // TODO: DeserializationException
+          case _: Exception =>
+            Right(d[B](recordingIterator.rewind()))
+        }
       }
-    })
+    )
 
   implicit val SelectorSerializer: Serializable[Selector] =
-    Serializable("Selector",
-      {
+    Serializable(
+      "Selector", {
         case ss: SuiteSelector =>
           s("SuiteSelector")
         case ts: TestSelector =>
@@ -110,8 +126,8 @@ object Serializer {
     )
 
   implicit val FingerprintSerializer: Serializable[Fingerprint] =
-    Serializable("Fingerprint",
-      {
+    Serializable(
+      "Fingerprint", {
         case af: AnnotatedFingerprint =>
           s("AnnotatedFingerprint") ++
             s(af.isModule) ++ s(af.annotationName)
@@ -143,7 +159,8 @@ object Serializer {
     )
 
   implicit val StackTraceElementSerializable: Serializable[StackTraceElement] =
-    Serializable("StackTraceElement",
+    Serializable(
+      "StackTraceElement",
       v =>
         s(v.getClassName) ++ s(v.getMethodName) ++ s(v.getFileName) ++ s(
           v.getLineNumber),
@@ -157,7 +174,8 @@ object Serializer {
     )
 
   implicit val ThrowableSerializer: Serializable[Throwable] =
-    Serializable("Throwable",
+    Serializable(
+      "Throwable",
       v =>
         s(v.getClass().toString()) ++ s(v.getMessage().lines) ++ s(
           v.toString().lines) ++ s(v.getStackTrace().toSeq) ++ s(
@@ -176,8 +194,8 @@ object Serializer {
 
   private class RecordingIterator[T](it: Iterator[T]) extends Iterator[T] {
     private val elements: ListBuffer[T] = ListBuffer.empty
-    def rewind(): Iterator[T] = elements.toIterator ++ it
-    override def hasNext: Boolean = it.hasNext
+    def rewind(): Iterator[T]           = elements.toIterator ++ it
+    override def hasNext: Boolean       = it.hasNext
     override def next(): T = {
       val element = it.next()
       elements += element

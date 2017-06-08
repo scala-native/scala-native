@@ -12,13 +12,14 @@ object TestUtils {
       args: Seq[AnyRef]): AnyRef =
     newInstance(name, loader, Seq.fill(args.length)(null))(args)
 
-  def newInstance(name: String, loader: ClassLoader, paramTypes: Seq[Class[_]])(
-      args: Seq[Any]): AnyRef = {
+  def newInstance(name: String,
+                  loader: ClassLoader,
+                  paramTypes: Seq[Class[_]])(args: Seq[Any]): AnyRef = {
     require(args.size == paramTypes.size, "argument count mismatch")
 
     loader match {
       case l: PreLoadedClassLoader => l.loadPreLoaded(name)
-      case other => throw new UnsupportedOperationException()
+      case other                   => throw new UnsupportedOperationException()
     }
   }
 

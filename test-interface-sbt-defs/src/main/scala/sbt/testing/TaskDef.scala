@@ -115,7 +115,7 @@ final class TaskDef(_fullyQualifiedName: String,
     retVal = 31 * retVal + _fingerprint.hashCode()
     retVal = 31 * retVal + (if (_explicitlySpecified) 1 else 0)
     retVal = 31 * retVal + Arrays.hashCode(
-        _selectors.asInstanceOf[Array[AnyRef]])
+      _selectors.asInstanceOf[Array[AnyRef]])
     retVal
   }
 

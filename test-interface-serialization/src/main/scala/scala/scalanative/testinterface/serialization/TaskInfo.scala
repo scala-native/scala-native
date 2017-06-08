@@ -6,8 +6,7 @@ import sbt.testing.{Task, TaskDef}
 
 import Serializer.{serialize => s, deserialize => d, _}
 
-final case class TaskInfo(taskDef: TaskDef,
-                          tags: Seq[String])
+final case class TaskInfo(taskDef: TaskDef, tags: Seq[String])
 object TaskInfo {
   implicit val TaskInfoSerializable: Serializable[TaskInfo] =
     new Serializable[TaskInfo] {

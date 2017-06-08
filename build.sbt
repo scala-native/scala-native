@@ -452,7 +452,7 @@ lazy val sandbox =
     .settings(
       scalaVersion := libScalaVersion,
       libraryDependencies += "org.scalacheck" %%% "scalacheck" % "1.14.0-SNAPSHOT" % Test,
-      libraryDependencies += "com.lihaoyi" %%% "utest" % "0.4.8-SNAPSHOT" % Test,
+      libraryDependencies += "com.lihaoyi"    %%% "utest"      % "0.4.8-SNAPSHOT"  % Test,
       testFrameworks += new TestFramework("utest.runner.Framework")
     )
     .enablePlugins(ScalaNativePlugin)
@@ -544,4 +544,3 @@ lazy val testInterfaceSbtDefs =
       libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test
     )
     .enablePlugins(ScalaNativePlugin)
-

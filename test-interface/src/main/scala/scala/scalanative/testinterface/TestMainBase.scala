@@ -1,7 +1,12 @@
 package scala.scalanative
 package testinterface
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream, DataInputStream, DataOutputStream}
+import java.io.{
+  ByteArrayInputStream,
+  ByteArrayOutputStream,
+  DataInputStream,
+  DataOutputStream
+}
 
 import scala.compat.Platform.EOL
 import scala.scalanative.posix._
@@ -28,7 +33,6 @@ abstract class TestMainBase {
 
   /** Actual main method of the test runner. */
   def testMain(args: Array[String]): Unit = Zone { implicit z =>
-
     val server_port = args.headOption.map(_.toInt).getOrElse(9000).toUShort
     val listen_sock = setupServer(server_port)
 
@@ -40,7 +44,8 @@ abstract class TestMainBase {
   }
 
   /** Executes body, calls `perror` with `str` if the result is non-zero. */
-  private def exitOnFailure(str: String)(body: => CInt)(implicit alloc: Alloc): Unit = {
+  private def exitOnFailure(str: String)(body: => CInt)(
+      implicit alloc: Alloc): Unit = {
     val err = body
     if (err != 0) {
       stdio.perror(toCString(str))
@@ -65,16 +70,16 @@ abstract class TestMainBase {
 
     exitOnFailure("setsockopt") {
       socket.setsockopt(listen_sock,
-        socket.SOL_SOCKET,
-        socket.SO_REUSEADDR,
-        on.cast[Ptr[Byte]],
-        sizeof[CInt].toUInt)
+                        socket.SOL_SOCKET,
+                        socket.SO_REUSEADDR,
+                        on.cast[Ptr[Byte]],
+                        sizeof[CInt].toUInt)
     }
 
     exitOnFailure("bind") {
       socket.bind(listen_sock,
-        server_address.cast[Ptr[socket.sockaddr]],
-        sizeof[sockaddr_in].toUInt)
+                  server_address.cast[Ptr[socket.sockaddr]],
+                  sizeof[sockaddr_in].toUInt)
     }
 
     exitOnFailure("listen") {
@@ -85,15 +90,15 @@ abstract class TestMainBase {
   }
 
   /** Waits for a connection on `socket`, executes `body` when a client connects.
-    * The argument of `body` is the client socket descriptor. */
-  private def onClient[T](socket: CInt)(body: CInt => T)(implicit alloc: Alloc): T = {
-    val client_address = native.alloc[sockaddr_in]
+   * The argument of `body` is the client socket descriptor. */
+  private def onClient[T](socket: CInt)(body: CInt => T)(
+      implicit alloc: Alloc): T = {
+    val client_address     = native.alloc[sockaddr_in]
     val client_address_len = native.alloc[socklen_t]
     !client_address_len = 0.toUInt
 
-    val client_socket = accept(socket,
-      client_address.cast[Ptr[sockaddr]],
-      client_address_len)
+    val client_socket =
+      accept(socket, client_address.cast[Ptr[sockaddr]], client_address_len)
 
     if (client_socket < 0) {
       stdio.perror(toCString("accept"))
@@ -105,57 +110,62 @@ abstract class TestMainBase {
   }
 
   /** Test runner loop.
-    *
-    * @param tasks         The tasks known to the runner (executed and waiting)
-    * @param runner        The actual underlying `Runner`
-    * @param client_socket The client socket from which we receive and reply to commands
-    */
+   *
+   * @param tasks         The tasks known to the runner (executed and waiting)
+   * @param runner        The actual underlying `Runner`
+   * @param client_socket The client socket from which we receive and reply to commands
+   */
   @tailrec
-  private def testRunner(tasks: Array[Task], runner: Runner, client_socket: CInt): Unit =
-  receive[Command](client_socket) match {
-    case Command.NewRunner(id, args, remoteArgs) =>
-      val runner = frameworks(id).runner(args.toArray,
-        remoteArgs.toArray,
-        new PreLoadedClassLoader(tests))
-      testRunner(tasks, runner, client_socket)
+  private def testRunner(tasks: Array[Task],
+                         runner: Runner,
+                         client_socket: CInt): Unit =
+    receive[Command](client_socket) match {
+      case Command.NewRunner(id, args, remoteArgs) =>
+        val runner = frameworks(id).runner(args.toArray,
+                                           remoteArgs.toArray,
+                                           new PreLoadedClassLoader(tests))
+        testRunner(tasks, runner, client_socket)
 
-    case Command.SendInfo(id, None) =>
-      val fps  = frameworks(id).fingerprints()
-      val name = frameworks(id).name()
-      val info = FrameworkInfo(name, fps.toSeq)
-      send(client_socket, info)
-      testRunner(tasks, runner, client_socket)
+      case Command.SendInfo(id, None) =>
+        val fps  = frameworks(id).fingerprints()
+        val name = frameworks(id).name()
+        val info = FrameworkInfo(name, fps.toSeq)
+        send(client_socket, info)
+        testRunner(tasks, runner, client_socket)
 
-    case Command.Tasks(newTasks) =>
-      val ts = runner.tasks(newTasks.toArray)
-      send(client_socket,
-        ts.map(t => task2TaskInfo(t, runner)).toSeq.zipWithIndex)
-      testRunner(tasks ++ ts, runner, client_socket)
+      case Command.Tasks(newTasks) =>
+        val ts = runner.tasks(newTasks.toArray)
+        send(client_socket,
+             ts.map(t => task2TaskInfo(t, runner)).toSeq.zipWithIndex)
+        testRunner(tasks ++ ts, runner, client_socket)
 
-    case Command.Execute(taskID, colors) =>
-      val handler   = new RemoteEventHandler(client_socket)
-      val loggers   = colors.map(new RemoteLogger(client_socket, 0, _): Logger).toArray
+      case Command.Execute(taskID, colors) =>
+        val handler = new RemoteEventHandler(client_socket)
+        val loggers =
+          colors.map(new RemoteLogger(client_socket, 0, _): Logger).toArray
 
-      // Execute the task, possibly generating new tasks to execute...
-      val newTasks  = tasks.lift(taskID).map(_.execute(handler, loggers)).getOrElse(Array.empty)
-      val origSize  = tasks.length
+        // Execute the task, possibly generating new tasks to execute...
+        val newTasks = tasks
+          .lift(taskID)
+          .map(_.execute(handler, loggers))
+          .getOrElse(Array.empty)
+        val origSize = tasks.length
 
-      // Convert the tasks to `TaskInfo` before sending to sbt. Keep task numbers correct.
-      val numberedTasks = newTasks.zipWithIndex.map {
-        case (t, id) => (task2TaskInfo(t, runner), id + origSize)
-      }.toSeq
+        // Convert the tasks to `TaskInfo` before sending to sbt. Keep task numbers correct.
+        val numberedTasks = newTasks.zipWithIndex.map {
+          case (t, id) => (task2TaskInfo(t, runner), id + origSize)
+        }.toSeq
 
-      send(client_socket, numberedTasks)
-      testRunner(tasks ++ newTasks, runner, client_socket)
+        send(client_socket, numberedTasks)
+        testRunner(tasks ++ newTasks, runner, client_socket)
 
-    case Command.RunnerDone =>
-      val r = runner.done()
-      send(client_socket, r.lines.toSeq)
+      case Command.RunnerDone =>
+        val r = runner.done()
+        send(client_socket, r.lines.toSeq)
 
-    case other =>
-      println(s"Unexpected message: $other")
-  }
-
+      case other =>
+        println(s"Unexpected message: $other")
+    }
 
   private def task2TaskInfo(task: Task, runner: Runner) =
     TaskInfo(task.taskDef, task.tags)
@@ -172,7 +182,7 @@ abstract class TestMainBase {
     val msglen = read(client)(4).readInt()
     val in     = read(client)(msglen)
     val msgbuf = new Array[Byte](msglen)
-    var total = 0
+    var total  = 0
     while (total < msglen) {
       total += in.read(msgbuf, total, msglen - total)
     }
@@ -213,7 +223,9 @@ abstract class TestMainBase {
                              index: Int,
                              val ansiCodesSupported: Boolean)
       extends Logger {
-    private def log(level: Log.Level, msg: String, twb: Option[Throwable]): Unit =
+    private def log(level: Log.Level,
+                    msg: String,
+                    twb: Option[Throwable]): Unit =
       send(client, Log(index, msg, twb, level))
     override def error(msg: String): Unit  = log(Log.Level.Error, msg, None)
     override def warn(msg: String): Unit   = log(Log.Level.Warn, msg, None)

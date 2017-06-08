@@ -69,7 +69,10 @@ object Event {
     }
 }
 
-final case class Log(index: Int, message: String, throwable: Option[Throwable], level: Log.Level)
+final case class Log(index: Int,
+                     message: String,
+                     throwable: Option[Throwable],
+                     level: Log.Level)
     extends Message
 object Log {
   sealed trait Level
@@ -145,7 +148,7 @@ object Command {
       extends Command
   case class NewRunner(fid: Int, args: Seq[String], remoteArgs: Seq[String])
       extends Command
-  case object RunnerDone                             extends Command
+  case object RunnerDone                   extends Command
   case class Tasks(taskDefs: Seq[TaskDef]) extends Command
   case class Execute(taskID: Int, loggerColorSupport: Seq[Boolean])
       extends Command
