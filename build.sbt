@@ -259,9 +259,12 @@ lazy val sbtPluginSettings =
     Seq(
       sbtPlugin := true,
       scriptedLaunchOpts ++=
-        Seq("-Xmx1024M",
-            "-XX:MaxPermSize=256M",
-            "-Dplugin.version=" + version.value)
+        Seq(
+          "-Djline.terminal=jline.UnsupportedTerminal",
+          "-Dsbt.log.noformat=true",
+          "-Xmx2G",
+          "-Dplugin.version=" + version.value
+        )
     )
 
 lazy val sbtScalaNative =
@@ -328,6 +331,8 @@ lazy val scalalib =
       assembleScalaLibrary := {
         import org.eclipse.jgit.api._
 
+        val base = (baseDirectory in ThisBuild).value
+
         val s      = streams.value
         val trgDir = target.value / "scalaSources" / scalaVersion.value
 
@@ -350,19 +355,29 @@ lazy val scalalib =
         s.log.info(s"Checking out Scala source version ${scalaVersion.value}")
         git.checkout().setName(s"v${scalaVersion.value}").call()
 
-        IO.delete(file("scalalib/src/main/scala"))
-        IO.copyDirectory(trgDir / "src" / "library" / "scala",
-                         file("scalalib/src/main/scala/scala"))
+        val scalalibDir = base / "scalalib" / "src" / "main" / "scala"
+
+        IO.delete(scalalibDir)
+        IO.copyDirectory(trgDir / "src" / "library" / "scala", scalalibDir)
 
         val epoch :: major :: _ = scalaVersion.value.split("\\.").toList
-        IO.copyDirectory(file(s"scalalib/overrides-$epoch.$major/scala"),
-                         file("scalalib/src/main/scala/scala"),
-                         overwrite = true)
+
+        val scalalibOverideDir =
+          base / "scalalib" / s"overrides-$epoch.$major" / "scala"
+
+        val destDir =
+          base /  "scalalib" / "src" / "main" / "scala"
+
+        IO.copyDirectory(
+          scalalibOverideDir,
+          destDir / "scala",
+          overwrite = true
+        )
 
         // Remove all java code, as it's not going to be available
         // in the NIR anyway. This also resolves issues wrt overrides
         // of code that was previously in Java but is in Scala now.
-        (file("scalalib/src/main/scala") ** "*.java").get.foreach(IO.delete)
+        (destDir ** "*.java").get.foreach(IO.delete)
       },
       compile in Compile := (compile in Compile)
         .dependsOn(assembleScalaLibrary)
