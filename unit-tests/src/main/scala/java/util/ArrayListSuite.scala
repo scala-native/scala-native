@@ -148,12 +148,9 @@ object ArrayListSuite extends tests.Suite {
 
   test("toArray()") {
     val al1 = new ArrayList[Int](Seq(1, 2, 3, 2).asJava)
-    // Array.== doesn't work for some reason
-    // assert(Array(1, 2, 3, 2).map(_.asInstanceOf[AnyRef]) = al1.toArray())
     assert(
-      Array(1, 2, 3, 2).map(_.asInstanceOf[AnyRef]).iterator sameElements al1
-        .toArray()
-        .iterator)
+      (Array(1, 2, 3, 2).map(_.asInstanceOf[AnyRef])) sameElements
+        (al1.toArray()))
   }
 
   test("toArray[T](arr: Array[T]) when arr is shorter") {
@@ -161,10 +158,7 @@ object ArrayListSuite extends tests.Suite {
     val ain  = Array.empty[String]
     val aout = al1.toArray(ain)
     assert(ain ne aout)
-    // Array.== doesn't work for some reason
-    // assert(Array("apple", "banana", "cherry") == aout)
-    assert(
-      Array("apple", "banana", "cherry").iterator sameElements aout.iterator)
+    assert(Array("apple", "banana", "cherry") sameElements aout)
   }
 
   test("toArray[T](arr: Array[T]) when arr is with the same length or longer") {
@@ -172,10 +166,7 @@ object ArrayListSuite extends tests.Suite {
     val ain  = Array.fill(4)("foo")
     val aout = al1.toArray(ain)
     assert(ain eq aout)
-    // Array.== doesn't work for some reason
-    // assert(Array("apple", "banana", "cherry", null) == aout)
-    assert(
-      Array("apple", "banana", "cherry", null).iterator sameElements aout.iterator)
+    assert(Array("apple", "banana", "cherry", null) sameElements aout)
   }
 
   test("get(Int)") {
