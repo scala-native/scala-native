@@ -5,10 +5,8 @@ import java.io.Serializable
 // Added extra private constructors to handle all of the overloads.
 // To preserve method signatures, we cannot take ClassTag via implicit parameters.
 // We use an Array[AnyRef] for underlying storage and box/unbox AnyVals where needed as the JDK class would do.
-/**
- * @param inner The underlying array
- * @param _size The effective size of the underlying array. a.k.a. end index exclusive
- */
+// inner: The underlying array
+// _size: Keeps the track of the effective size of the underlying array. a.k.a. end index exclusive
 class ArrayList[E] private (private[this] var inner: Array[AnyRef],
                             private[this] var _size: Int)
     extends AbstractList[E]
@@ -56,7 +54,7 @@ class ArrayList[E] private (private[this] var inner: Array[AnyRef],
 
   def size(): Int = _size
 
-  // tests/compile:nativeLinkNIR fails without this override for some reason
+  // tests/compile:nativeLinkNIR fails without this override (issue: #375)
   // cannot link: @java.util.ArrayList::isEmpty_bool
   override def isEmpty(): Boolean = _size == 0
 
@@ -143,7 +141,7 @@ class ArrayList[E] private (private[this] var inner: Array[AnyRef],
     _size = 0
   }
 
-  // define for better performance
+  // TODO: define for better performance
   //override def contains(o: Any): Boolean =
   //override def addAll(c: Collection[_ <: E]): Boolean =
   //override def addAll(index: Index, c: Collection[_ <: E]): Boolean =
@@ -155,7 +153,7 @@ class ArrayList[E] private (private[this] var inner: Array[AnyRef],
   //override def iterator(): Iterator[E] =
   //override def subList(fromIndex: Int, toIndex: Int): List[E] =
 
-  // JDK 1.8
+  // TODO: JDK 1.8
   // def forEach(action: Consumer[_ >: E]): Unit =
   // def spliterator(): Spliterator[E] =
   // def removeIf(filter: Predicate[_ >: E]): Boolean =

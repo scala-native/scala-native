@@ -11,7 +11,7 @@ abstract class AbstractList[E] protected ()
     true
   }
 
-  // tests/compile:nativeLinkNIR fails without this re-declaration for some reason
+  // tests/compile:nativeLinkNIR fails without this re-declaration (issue: #375)
   // cannot link: @java.util.AbstractList::get_i32_java.lang.Object
   def get(index: Int): E
 
