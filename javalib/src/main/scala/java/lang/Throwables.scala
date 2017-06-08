@@ -4,25 +4,26 @@ import scala.collection.mutable
 import scalanative.native._
 import scalanative.runtime.unwind
 
-class Throwable(s: String, private var e: Throwable)
+class Throwable(message: String, private var cause: Throwable)
     extends Object
     with java.io.Serializable {
   def this() = this(null, null)
-  def this(s: String) = this(s, null)
-  def this(e: Throwable) = this(if (e == null) null else e.toString, e)
+  def this(message: String) = this(message, null)
+  def this(cause: Throwable) =
+    this(if (cause == null) null else cause.toString, cause)
 
   private var stackTrace: Array[StackTraceElement] = _
 
   fillInStackTrace()
 
   def initCause(cause: Throwable): Throwable = {
-    e = cause
+    this.cause = cause
     this
   }
 
-  def getMessage(): String = s
+  def getMessage(): String = message
 
-  def getCause(): Throwable = e
+  def getCause(): Throwable = cause
 
   def getLocalizedMessage(): String = getMessage()
 
@@ -143,11 +144,13 @@ class ThreadDeath() extends Error()
 
 /* java.lang.*Error.java */
 
-class AbstractMethodError(s: String) extends IncompatibleClassChangeError(s) {
+class AbstractMethodError(message: String)
+    extends IncompatibleClassChangeError(message) {
   def this() = this(null)
 }
 
-class AssertionError private (s: String, e: Throwable) extends Error(s, e) {
+class AssertionError private (message: String, cause: Throwable)
+    extends Error(message, cause) {
   def this() = this(null, null)
   def this(o: Object) = this(o.toString, null)
   def this(b: scala.Boolean) = this(b.toString, null)
@@ -158,230 +161,257 @@ class AssertionError private (s: String, e: Throwable) extends Error(s, e) {
   def this(d: scala.Double) = this(d.toString, null)
 }
 
-class BootstrapMethodError(s: String, e: Throwable) extends LinkageError(s) {
-  def this(e: Throwable) = this(if (e == null) null else e.toString, e)
-  def this(s: String) = this(s, null)
+class BootstrapMethodError(message: String, cause: Throwable)
+    extends LinkageError(message) {
+  def this(cause: Throwable) =
+    this(if (cause == null) null else cause.toString, cause)
+  def this(message: String) = this(message, null)
   def this() = this(null, null)
 }
 
-class ClassCircularityError(s: String) extends LinkageError(s) {
+class ClassCircularityError(message: String) extends LinkageError(message) {
   def this() = this(null)
 }
 
-class ClassFormatError(s: String) extends LinkageError(s) {
+class ClassFormatError(message: String) extends LinkageError(message) {
   def this() = this(null)
 }
 
-class Error(s: String, e: Throwable) extends Throwable(s, e) {
+class Error(message: String, cause: Throwable)
+    extends Throwable(message, cause) {
   def this() = this(null, null)
-  def this(s: String) = this(s, null)
-  def this(e: Throwable) = this(if (e == null) null else e.toString, e)
+  def this(message: String) = this(message, null)
+  def this(cause: Throwable) =
+    this(if (cause == null) null else cause.toString, cause)
 }
 
-class ExceptionInInitializerError private (s: String, private val e: Throwable)
-    extends LinkageError(s) {
+class ExceptionInInitializerError private (message: String,
+                                           private val cause: Throwable)
+    extends LinkageError(message) {
   def this(thrown: Throwable) = this(null, thrown)
-  def this(s: String) = this(s, null)
+  def this(message: String) = this(message, null)
   def this() = this(null, null)
-  def getException(): Throwable      = e
-  override def getCause(): Throwable = e
+  def getException(): Throwable      = cause
+  override def getCause(): Throwable = cause
 }
 
-class IllegalAccessError(s: String) extends IncompatibleClassChangeError(s) {
+class IllegalAccessError(message: String)
+    extends IncompatibleClassChangeError(message) {
   def this() = this(null)
 }
 
-class IncompatibleClassChangeError(s: String) extends LinkageError(s) {
+class IncompatibleClassChangeError(message: String)
+    extends LinkageError(message) {
   def this() = this(null)
 }
 
-class InstantiationError(s: String) extends IncompatibleClassChangeError(s) {
+class InstantiationError(message: String)
+    extends IncompatibleClassChangeError(message) {
   def this() = this(null)
 }
 
-class InternalError(s: String) extends VirtualMachineError(s) {
+class InternalError(message: String) extends VirtualMachineError(message) {
   def this() = this(null)
 }
 
-class LinkageError(s: String) extends Error(s) {
+class LinkageError(message: String) extends Error(message) {
   def this() = this(null)
 }
 
-class NoClassDefFoundError(s: String) extends LinkageError(s) {
+class NoClassDefFoundError(message: String) extends LinkageError(message) {
   def this() = this(null)
 }
 
-class NoSuchFieldError(s: String) extends IncompatibleClassChangeError(s) {
+class NoSuchFieldError(message: String)
+    extends IncompatibleClassChangeError(message) {
   def this() = this(null)
 }
 
-class NoSuchMethodError(s: String) extends IncompatibleClassChangeError(s) {
+class NoSuchMethodError(message: String)
+    extends IncompatibleClassChangeError(message) {
   def this() = this(null)
 }
 
-class OutOfMemoryError(s: String) extends VirtualMachineError(s) {
+class OutOfMemoryError(message: String) extends VirtualMachineError(message) {
   def this() = this(null)
 }
 
-class StackOverflowError(s: String) extends VirtualMachineError(s) {
+class StackOverflowError(message: String)
+    extends VirtualMachineError(message) {
   def this() = this(null)
 }
 
-class UnknownError(s: String) extends VirtualMachineError(s) {
+class UnknownError(message: String) extends VirtualMachineError(message) {
   def this() = this(null)
 }
 
-class UnsatisfiedLinkError(s: String) extends LinkageError(s) {
+class UnsatisfiedLinkError(message: String) extends LinkageError(message) {
   def this() = this(null)
 }
 
-class UnsupportedClassVersionError(s: String) extends ClassFormatError(s) {
+class UnsupportedClassVersionError(message: String)
+    extends ClassFormatError(message) {
   def this() = this(null)
 }
 
-class VerifyError(s: String) extends LinkageError(s) {
+class VerifyError(message: String) extends LinkageError(message) {
   def this() = this(null)
 }
 
-abstract class VirtualMachineError(s: String) extends Error(s) {
+abstract class VirtualMachineError(message: String) extends Error(message) {
   def this() = this(null)
 }
 
 /* java.lang.*Exception.java */
 
-class ArithmeticException(s: String) extends RuntimeException(s) {
+class ArithmeticException(message: String) extends RuntimeException(message) {
   def this() = this(null)
 }
 
-class ArrayIndexOutOfBoundsException(s: String)
-    extends IndexOutOfBoundsException(s) {
+class ArrayIndexOutOfBoundsException(message: String)
+    extends IndexOutOfBoundsException(message) {
   def this(index: Int) = this("Array index out of range: " + index)
   def this() = this(null)
 }
 
-class ArrayStoreException(s: String) extends RuntimeException(s) {
+class ArrayStoreException(message: String) extends RuntimeException(message) {
   def this() = this(null)
 }
 
-class ClassCastException(s: String) extends RuntimeException(s) {
+class ClassCastException(message: String) extends RuntimeException(message) {
   def this() = this(null)
 }
 
-class ClassNotFoundException(s: String, e: Throwable)
-    extends ReflectiveOperationException(s) {
-  def this(s: String) = this(s, null)
+class ClassNotFoundException(message: String, cause: Throwable)
+    extends ReflectiveOperationException(message) {
+  def this(message: String) = this(message, null)
   def this() = this(null, null)
-  def getException(): Throwable      = e
-  override def getCause(): Throwable = e
+  def getException(): Throwable      = cause
+  override def getCause(): Throwable = cause
 }
 
-class CloneNotSupportedException(s: String) extends Exception(s) {
+class CloneNotSupportedException(message: String) extends Exception(message) {
   def this() = this(null)
 }
 
-class EnumConstantNotPresentException(e: Class[_ <: Enum[_]], c: String)
-    extends RuntimeException(e.getName() + "." + c) {
-  def enumType(): Class[_ <: Enum[_]] = e
-  def constantName(): String          = c
+class EnumConstantNotPresentException(enumType: Class[_ <: Enum[_]],
+                                      constantName: String)
+    extends RuntimeException(enumType.getName() + "." + constantName) {
+  def enumType(): Class[_ <: Enum[_]] = enumType
+  def constantName(): String          = constantName
 }
 
-class Exception(s: String, e: Throwable) extends Throwable(s, e) {
-  def this(e: Throwable) = this(if (e == null) null else e.toString, e)
-  def this(s: String) = this(s, null)
-  def this() = this(null, null)
-}
-
-class IllegalAccessException(s: String)
-    extends ReflectiveOperationException(s) {
-  def this() = this(null)
-}
-
-class IllegalArgumentException(s: String, e: Throwable)
-    extends RuntimeException(s, e) {
-  def this(e: Throwable) = this(if (e == null) null else e.toString, e)
-  def this(s: String) = this(s, null)
+class Exception(message: String, cause: Throwable)
+    extends Throwable(message, cause) {
+  def this(cause: Throwable) =
+    this(if (cause == null) null else cause.toString, cause)
+  def this(message: String) = this(message, null)
   def this() = this(null, null)
 }
 
-class IllegalMonitorStateException(s: String) extends RuntimeException(s) {
+class IllegalAccessException(message: String)
+    extends ReflectiveOperationException(message) {
   def this() = this(null)
 }
 
-class IllegalStateException(s: String, e: Throwable)
-    extends RuntimeException(s, e) {
-  def this(e: Throwable) = this(if (e == null) null else e.toString, e)
-  def this(s: String) = this(s, null)
+class IllegalArgumentException(message: String, cause: Throwable)
+    extends RuntimeException(message, cause) {
+  def this(cause: Throwable) =
+    this(if (cause == null) null else cause.toString, cause)
+  def this(message: String) = this(message, null)
   def this() = this(null, null)
 }
 
-class IllegalThreadStateException(s: String)
-    extends IllegalArgumentException(s) {
+class IllegalMonitorStateException(message: String)
+    extends RuntimeException(message) {
   def this() = this(null)
 }
 
-class IndexOutOfBoundsException(s: String) extends RuntimeException(s) {
-  def this() = this(null)
-}
-
-class InstantiationException(s: String)
-    extends ReflectiveOperationException(s) {
-  def this() = this(null)
-}
-
-class InterruptedException(s: String) extends Exception(s) {
-  def this() = this(null)
-}
-
-class NegativeArraySizeException(s: String) extends RuntimeException(s) {
-  def this() = this(null)
-}
-
-class NoSuchFieldException(s: String) extends ReflectiveOperationException(s) {
-  def this() = this(null)
-}
-
-class NoSuchMethodException(s: String)
-    extends ReflectiveOperationException(s) {
-  def this() = this(null)
-}
-
-class NullPointerException(s: String) extends RuntimeException(s) {
-  def this() = this(null)
-}
-
-class NumberFormatException(s: String) extends IllegalArgumentException(s) {
-  def this() = this(null)
-}
-
-class ReflectiveOperationException(s: String, e: Throwable)
-    extends Exception(s, e) {
-  def this(e: Throwable) = this(if (e == null) null else e.toString, e)
-  def this(s: String) = this(s, null)
+class IllegalStateException(message: String, cause: Throwable)
+    extends RuntimeException(message, cause) {
+  def this(cause: Throwable) =
+    this(if (cause == null) null else cause.toString, cause)
+  def this(message: String) = this(message, null)
   def this() = this(null, null)
 }
 
-class RejectedExecutionException(s: String, e: Throwable)
-    extends RuntimeException(s, e) {
-  def this(e: Throwable) = this(if (e == null) null else e.toString, e)
-  def this(s: String) = this(s, null)
+class IllegalThreadStateException(message: String)
+    extends IllegalArgumentException(message) {
+  def this() = this(null)
+}
+
+class IndexOutOfBoundsException(message: String)
+    extends RuntimeException(message) {
+  def this() = this(null)
+}
+
+class InstantiationException(message: String)
+    extends ReflectiveOperationException(message) {
+  def this() = this(null)
+}
+
+class InterruptedException(message: String) extends Exception(message) {
+  def this() = this(null)
+}
+
+class NegativeArraySizeException(message: String)
+    extends RuntimeException(message) {
+  def this() = this(null)
+}
+
+class NoSuchFieldException(message: String)
+    extends ReflectiveOperationException(message) {
+  def this() = this(null)
+}
+
+class NoSuchMethodException(message: String)
+    extends ReflectiveOperationException(message) {
+  def this() = this(null)
+}
+
+class NullPointerException(message: String) extends RuntimeException(message) {
+  def this() = this(null)
+}
+
+class NumberFormatException(message: String)
+    extends IllegalArgumentException(message) {
+  def this() = this(null)
+}
+
+class ReflectiveOperationException(message: String, cause: Throwable)
+    extends Exception(message, cause) {
+  def this(cause: Throwable) =
+    this(if (cause == null) null else cause.toString, cause)
+  def this(message: String) = this(message, null)
   def this() = this(null, null)
 }
 
-class RuntimeException(s: String, e: Throwable) extends Exception(s, e) {
-  def this(e: Throwable) = this(if (e == null) null else e.toString, e)
-  def this(s: String) = this(s, null)
+class RejectedExecutionException(message: String, cause: Throwable)
+    extends RuntimeException(message, cause) {
+  def this(cause: Throwable) =
+    this(if (cause == null) null else cause.toString, cause)
+  def this(message: String) = this(message, null)
   def this() = this(null, null)
 }
 
-class SecurityException(s: String, e: Throwable)
-    extends RuntimeException(s, e) {
-  def this(e: Throwable) = this(if (e == null) null else e.toString, e)
-  def this(s: String) = this(s, null)
+class RuntimeException(message: String, cause: Throwable)
+    extends Exception(message, cause) {
+  def this(cause: Throwable) =
+    this(if (cause == null) null else cause.toString, cause)
+  def this(message: String) = this(message, null)
   def this() = this(null, null)
 }
 
-class StringIndexOutOfBoundsException(s: String)
-    extends IndexOutOfBoundsException(s) {
+class SecurityException(message: String, cause: Throwable)
+    extends RuntimeException(message, cause) {
+  def this(cause: Throwable) =
+    this(if (cause == null) null else cause.toString, cause)
+  def this(message: String) = this(message, null)
+  def this() = this(null, null)
+}
+
+class StringIndexOutOfBoundsException(message: String)
+    extends IndexOutOfBoundsException(message) {
   def this(index: Int) = this("String index out of range: " + index)
   def this() = this(null)
 }
@@ -391,9 +421,10 @@ class TypeNotPresentException(t: String, e: Throwable)
   def typeName(): String = t
 }
 
-class UnsupportedOperationException(s: String, e: Throwable)
-    extends RuntimeException(s, e) {
+class UnsupportedOperationException(message: String, cause: Throwable)
+    extends RuntimeException(message, cause) {
   def this() = this(null, null)
-  def this(s: String) = this(s, null)
-  def this(e: Throwable) = this(if (e == null) null else e.toString, e)
+  def this(message: String) = this(message, null)
+  def this(cause: Throwable) =
+    this(if (cause == null) null else cause.toString, cause)
 }
