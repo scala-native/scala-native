@@ -146,7 +146,6 @@ float scalanative_cabsf(float snfc[2]) { return cabsf(toFloatComplex(snfc)); }
 
 double scalanative_cabs(double sndc[2]) { return cabs(toDoubleComplex(sndc)); }
 
-// first array gets modified for cpow(f) functions
 float *scalanative_cpowf(float x[2], float y[2], float res[2]) {
     return toNativeFloatComplex(cpowf(toFloatComplex(x), toFloatComplex(y)),
                                 res);
