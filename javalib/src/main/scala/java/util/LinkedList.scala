@@ -1,6 +1,5 @@
 package java.util
 
-import scala.annotation.tailrec
 import scala.collection.JavaConversions._
 
 class LinkedList[E]()
