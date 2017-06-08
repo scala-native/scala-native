@@ -3,7 +3,6 @@ package testinterface
 package serialization
 
 import scala.compat.Platform.EOL
-import scala.language.implicitConversions
 import sbt.testing._
 
 import scala.collection.mutable.ListBuffer
@@ -17,7 +16,6 @@ object Serializer {
   import Serializer.{serialize => s, deserialize => d}
 
   implicit val TaskDefSerializer = new Serializable[TaskDef] {
-    override def name: String = "TaskDef"
     override def serialize(v: TaskDef): Iterator[String] =
       s(v.fullyQualifiedName) ++
         s(v.fingerprint) ++
@@ -37,50 +35,38 @@ object Serializer {
   }
 
   implicit val BooleanSerializer: Serializable[Boolean] =
-    Serializable("Boolean",
-                 v => Iterator(v.toString),
+    Serializable(v => Iterator(v.toString),
                  in => java.lang.Boolean.parseBoolean(in.next()))
 
   implicit val IntSerializer: Serializable[Int] =
-    Serializable("Int",
-                 v => Iterator(v.toString),
+    Serializable(v => Iterator(v.toString),
                  in => java.lang.Integer.parseInt(in.next()))
 
   implicit val LongSerializer: Serializable[Long] =
-    Serializable("Long",
-                 v => Iterator(v.toString),
+    Serializable(v => Iterator(v.toString),
                  in => java.lang.Long.parseLong(in.next()))
 
   implicit val StringSerializer: Serializable[String] =
-    Serializable("String", Iterator(_), _.next())
+    Serializable(Iterator(_), _.next())
 
   implicit def SeqSerializer[T: Serializable]: Serializable[Seq[T]] =
-    Serializable("Seq of " + implicitly[Serializable[T]].name,
-                 v => s(v.length) ++ v.toIterator.flatMap(s[T]),
+    Serializable(v => s(v.length) ++ v.toIterator.flatMap(s[T]),
                  in => Seq.fill(d[Int](in))(d[T](in)))
 
   implicit def IteratorSerializer[T: Serializable]: Serializable[Iterator[T]] =
-    Serializable("Iterator of " + implicitly[Serializable[T]].name,
-                 v => s[Seq[T]](v.toSeq),
-                 in => d[Seq[T]](in).toIterator)
+    Serializable(v => s[Seq[T]](v.toSeq), in => d[Seq[T]](in).toIterator)
 
   implicit def OptionSerializer[T: Serializable]: Serializable[Option[T]] =
-    Serializable("Option of " + implicitly[Serializable[T]].name,
-                 v => s(v.toSeq),
-                 in => d[Seq[T]](in).lift(0))
+    Serializable(v => s(v.toSeq), in => d[Seq[T]](in).headOption)
 
   implicit def Tuple2Serializer[A: Serializable, B: Serializable]
     : Serializable[(A, B)] =
-    Serializable(
-      "Tuple2 of " + implicitly[Serializable[A]].name + " and " + implicitly[
-        Serializable[B]].name, { case (a, b) => s(a) ++ s(b) },
-      in => (d[A](in), d[B](in)))
+    Serializable({ case (a, b) => s(a) ++ s(b) }, in => (d[A](in), d[B](in)))
 
   implicit def EitherSerializer[A: Serializable, B: Serializable]
     : Serializable[Either[A, B]] =
     Serializable(
-      "Either of " + implicitly[Serializable[A]].name + " and " + implicitly[
-        Serializable[B]].name, {
+      {
         case Left(a)  => s(a)
         case Right(b) => s(b)
       },
@@ -98,8 +84,8 @@ object Serializer {
 
   implicit val SelectorSerializer: Serializable[Selector] =
     Serializable(
-      "Selector", {
-        case ss: SuiteSelector =>
+      {
+        case _: SuiteSelector =>
           s("SuiteSelector")
         case ts: TestSelector =>
           s("TestSelector") ++ s(ts.testName)
@@ -127,7 +113,7 @@ object Serializer {
 
   implicit val FingerprintSerializer: Serializable[Fingerprint] =
     Serializable(
-      "Fingerprint", {
+      {
         case af: AnnotatedFingerprint =>
           s("AnnotatedFingerprint") ++
             s(af.isModule) ++ s(af.annotationName)
@@ -144,14 +130,14 @@ object Serializer {
           case "AnnotatedFingerprint" =>
             val isModule       = d[Boolean](in)
             val annotationName = d[String](in)
-            new DeserializedAnnotatedFingerprint(isModule, annotationName)
+            DeserializedAnnotatedFingerprint(isModule, annotationName)
           case "SubclassFingerprint" =>
             val isModule                = d[Boolean](in)
             val superclassName          = d[String](in)
             val requireNoArgConstructor = d[Boolean](in)
-            new DeserializedSubclassFingerprint(isModule,
-                                                superclassName,
-                                                requireNoArgConstructor)
+            DeserializedSubclassFingerprint(isModule,
+                                            superclassName,
+                                            requireNoArgConstructor)
           case unknown =>
             throw new IllegalArgumentException(
               s"Unknown fingerprint type: $unknown")
@@ -160,7 +146,6 @@ object Serializer {
 
   implicit val StackTraceElementSerializable: Serializable[StackTraceElement] =
     Serializable(
-      "StackTraceElement",
       v =>
         s(v.getClassName) ++ s(v.getMethodName) ++ s(v.getFileName) ++ s(
           v.getLineNumber),
@@ -175,7 +160,6 @@ object Serializer {
 
   implicit val ThrowableSerializer: Serializable[Throwable] =
     Serializable(
-      "Throwable",
       v =>
         s(v.getClass().toString()) ++ s(v.getMessage().lines) ++ s(
           v.toString().lines) ++ s(v.getStackTrace().toSeq) ++ s(
@@ -185,7 +169,7 @@ object Serializer {
         val message       = d[Iterator[String]](in).mkString(EOL)
         val toString      = d[Iterator[String]](in).mkString(EOL)
         val trace         = d[Seq[StackTraceElement]](in).toArray
-        val cause         = d[Option[Throwable]](in).getOrElse(null)
+        val cause         = d[Option[Throwable]](in).orNull
         val ex            = new RemoteException(message, toString, cause, originalClass)
         ex.setStackTrace(trace)
         ex

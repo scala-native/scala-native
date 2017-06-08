@@ -12,8 +12,7 @@ sealed trait Message
 object Message {
   implicit val MessageSerializable: Serializable[Message] =
     new Serializable[Message] {
-      override def name: String = "Message"
-      override def serialize(v: Message) = v match {
+      override def serialize(v: Message): Iterator[String] = v match {
         case cmd: Command =>
           s("Command") ++ s(cmd)
         case fail: Failure =>
@@ -44,7 +43,6 @@ final case class Event(fullyQualifiedName: String,
 object Event {
   implicit val EventSerializable: Serializable[Event] =
     new Serializable[Event] {
-      override def name: String = "Event"
       override def serialize(v: Event): Iterator[String] =
         s(v.fullyQualifiedName) ++ s(v.fingerprint) ++ s(v.selector) ++ s(
           v.status.toString) ++ s(
@@ -84,7 +82,6 @@ object Log {
     case object Trace extends Level
     implicit val LevelSerializable: Serializable[Level] =
       new Serializable[Level] {
-        override def name: String = "Level"
         override def serialize(v: Level): Iterator[String] =
           Iterator(v.toString)
         override def deserialize(in: Iterator[String]): Level =
@@ -98,7 +95,6 @@ object Log {
       }
   }
   implicit val LogSerializable: Serializable[Log] = new Serializable[Log] {
-    override def name: String = "Log"
     override def serialize(v: Log): Iterator[String] =
       s(v.index) ++ s(v.message.lines) ++ s(v.throwable) ++ s(v.level)
     override def deserialize(in: Iterator[String]): Log = {
@@ -116,7 +112,6 @@ sealed trait Command                           extends Message
 object Command {
   implicit val CommandSerializable: Serializable[Command] =
     new Serializable[Command] {
-      override def name: String = "Command"
       override def serialize(v: Command): Iterator[String] = v match {
         case SendInfo(fid, frameworkInfo) =>
           s("SendInfo") ++ s(fid) ++ s(frameworkInfo)
