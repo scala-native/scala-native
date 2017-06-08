@@ -79,3 +79,4 @@ cache:
     - $HOME/.coursier
     - $HOME/.ivy2/cache
     - $HOME/.sbt/boot/
+    - /var/cache/apt
