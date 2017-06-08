@@ -135,6 +135,17 @@ object ArrayListSuite extends tests.Suite {
     assert(al1 == al2)
   }
 
+  test("clone() with size() != capacity()") {
+    val al1 = new ArrayList[Int](Seq(1, 2, 3, 2).asJava)
+    al1.ensureCapacity(20)
+    val al2 = al1.clone().asInstanceOf[ArrayList[Int]]
+    assert(al1 == al2)
+    al1.add(1)
+    assert(al1 != al2)
+    al2.add(1)
+    assert(al1 == al2)
+  }
+
   test("toArray()") {
     val al1 = new ArrayList[Int](Seq(1, 2, 3, 2).asJava)
     // Array.== doesn't work for some reason

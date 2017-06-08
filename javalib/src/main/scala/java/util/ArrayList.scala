@@ -5,33 +5,35 @@ import java.io.Serializable
 // Added extra private constructors to handle all of the overloads.
 // To preserve method signatures, we cannot take ClassTag via implicit parameters.
 // We use an Array[AnyRef] for underlying storage and box/unbox AnyVals where needed as the JDK class would do.
-class ArrayList[E] private (private[this] var inner: Array[AnyRef])
+/**
+ * @param inner The underlying array
+ * @param _size The effective size of the underlying array. a.k.a. end index exclusive
+ */
+class ArrayList[E] private (private[this] var inner: Array[AnyRef],
+                            private[this] var _size: Int)
     extends AbstractList[E]
     with List[E]
     with RandomAccess
     with Cloneable
     with Serializable {
-  // keeps a track of the effective size of the underlying array.
-  // a.k.a. end index exclusive
-  private[this] var _size: Int = inner.length
-
-  private def this(initialCollection: Collection[E], initialCapacity: Int) = {
-    this {
-      val initialArr =
-        Array.ofDim[AnyRef](initialCollection.size() max initialCapacity)
-      import scala.collection.JavaConverters._
-      initialCollection.asScala
-        .map(_.asInstanceOf[AnyRef])
-        .copyToArray(initialArr)
-      initialArr
-    }
-    _size = initialCollection.size()
-  }
+  private def this(initialCollection: Collection[E], initialCapacity: Int) =
+    this(
+      {
+        val initialArr =
+          Array.ofDim[AnyRef](initialCollection.size() max initialCapacity)
+        import scala.collection.JavaConverters._
+        initialCollection.asScala
+          .map(_.asInstanceOf[AnyRef])
+          .copyToArray(initialArr)
+        initialArr
+      },
+      initialCollection.size()
+    )
 
   def this(c: Collection[E]) = this(c, c.size())
 
   def this(initialCapacity: Int) =
-    this(Collections.emptyList(), initialCapacity)
+    this(Collections.emptyList(): Collection[E], initialCapacity)
 
   def this() = this(10)
 
@@ -63,7 +65,7 @@ class ArrayList[E] private (private[this] var inner: Array[AnyRef])
   override def lastIndexOf(o: Any): Int = inner.lastIndexOf(o)
 
   // shallow-copy
-  override def clone(): AnyRef = new ArrayList(inner)
+  override def clone(): AnyRef = new ArrayList(inner, _size)
 
   override def toArray(): Array[AnyRef] = {
     val result = Array.ofDim[AnyRef](size())
