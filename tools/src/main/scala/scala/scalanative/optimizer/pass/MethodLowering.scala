@@ -35,13 +35,14 @@ class MethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
         let(n, Op.Copy(Val.Global(meth.name, Type.Ptr)))
 
       case Let(n, Op.Method(obj, MethodRef(trt: Trait, meth))) =>
+        val sigid   = top.tables.traitMethodSigs(meth.name.id)
         val typeptr = let(Op.Load(Type.Ptr, obj))
         val idptr   = let(Op.Elem(Rt.Type, typeptr, Seq(Val.Int(0), Val.Int(0))))
         val id      = let(Op.Load(Type.Int, idptr))
         val rowptr = let(
           Op.Elem(Type.Ptr,
                   top.tables.dispatchVal,
-                  Seq(Val.Int(top.tables.dispatchOffset(meth.id)))))
+                  Seq(Val.Int(top.tables.dispatchOffset(sigid)))))
         val methptrptr =
           let(Op.Elem(Type.Ptr, rowptr, Seq(id)))
         let(n, Op.Load(Type.Ptr, methptrptr))
