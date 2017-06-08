@@ -70,6 +70,14 @@ script:
   - git checkout Duhemm/cross-native
   - sbt publishLocal
   - popd
+  - mkdir scalacheck
+  - pushd scalacheck
+  - git init .
+  - git remote add -t cross-native Duhemm https://github.com/Duhemm/scalacheck.git
+  - git fetch Duhemm cross-native
+  - git checkout Duhemm/cross-native
+  - sbt publishLocal
+  - popd
   - bash sbt -J-Xmx2G rebuild "set scriptedBufferLog in sbtScalaNative := false" sandbox/test test-all
 
 before_cache:
