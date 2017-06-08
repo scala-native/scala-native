@@ -289,6 +289,7 @@ lazy val sbtScalaNative =
           publishLocal in javalib,
           publishLocal in scalalib,
           publishLocal in stubs,
+          publishLocal in testInterfaceSbtDefs,
           publishLocal in testInterfaceSerialization,
           publishLocal in testInterface
         )
