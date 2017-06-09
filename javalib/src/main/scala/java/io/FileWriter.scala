@@ -19,6 +19,9 @@ object FileWriter {
       val mode =
         if (append) fcntl.O_WRONLY | fcntl.O_APPEND else fcntl.O_WRONLY
       val fd = fcntl.open(toCString(file.getPath), mode)
+      if (fd == -1) {
+        throw new FileNotFoundException("Cannot write to file " + file.getPath)
+      }
       new FileDescriptor(fd)
     }
 }
