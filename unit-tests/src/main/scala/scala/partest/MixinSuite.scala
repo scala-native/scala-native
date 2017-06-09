@@ -1,4 +1,5 @@
 package scala
+package partest
 
 object MixinSuite extends tests.Suite {
   var messages: List[String] = Nil
