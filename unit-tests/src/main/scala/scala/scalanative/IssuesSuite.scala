@@ -292,4 +292,16 @@ object IssuesSuite extends tests.Suite {
     assert(neglong.isInstanceOf[Long])
     assert(neglong.toString == "-1")
   }
+
+  test("#780") {
+    import java.util.{HashMap, Collections}
+    val hashmap = new HashMap[String, String]()
+    hashmap.put("a", "b")
+    val frozen = Collections.unmodifiableMap[String, String](hashmap)
+    val iter   = frozen.entrySet().iterator()
+    val ab     = iter.next()
+    assert(ab.getKey() == "a")
+    assert(ab.getValue() == "b")
+    assert(!iter.hasNext())
+  }
 }
