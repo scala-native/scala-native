@@ -21,7 +21,14 @@ object TestUtilities {
        |}""".stripMargin
   }
 
-  // TODO: Use fingerprint to determine how to instantiate the frameworks.
   private def makeTestsMap(tests: Seq[TestDefinition]): String =
-    tests.map(t => s""""${t.name}" -> ${t.name}""").mkString(", ")
+    tests.map { t =>
+      val isModule = t.fingerprint match {
+        case af: AnnotatedFingerprint => af.isModule
+        case sf: SubclassFingerprint  => sf.isModule
+      }
+
+      val inst = if (isModule) t.name else s"new ${t.name}"
+      s""""${t.name}" -> $inst"""
+    }.mkString(", ")
 }
