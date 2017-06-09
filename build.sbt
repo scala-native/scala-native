@@ -187,7 +187,7 @@ lazy val gcSettings =
   } else {
     val gc = System.getenv.get("SCALANATIVE_GC")
     println(s"Using gc based on SCALANATIVE_GC=$gc")
-    Seq(nativeGC in Compile := gc)
+    Seq(nativeGC := gc)
   }
 
 lazy val projectSettings =
