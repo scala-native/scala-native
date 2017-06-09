@@ -140,6 +140,9 @@ object ScalaNativePluginInternal {
             .getOrElse(Seq.empty)
         ("/usr/local/include" +: includedir).map(s => s"-I$s")
       }
+
+      includes :+ "-D_POSIX_C_SOURCE=200809L"
+
       includes :+ "-Qunused-arguments" :+
         (mode(nativeMode.value) match {
           case tools.Mode.Debug   => "-O0"
