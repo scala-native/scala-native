@@ -78,7 +78,7 @@ script:
   - git checkout Duhemm/cross-native
   - sbt publishLocal
   - popd
-  - bash sbt -J-Xmx2G rebuild "set scriptedBufferLog in sbtScalaNative := false" sandbox/test test-all
+  - bash sbt -J-Xmx2G "set scriptedBufferLog in sbtScalaNative := false" sandbox/test test-all
 
 before_cache:
   - find $HOME/.sbt -name "*.lock" | xargs rm
