@@ -15,57 +15,57 @@ extern "C" {
 
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 24)
      // byte
-     void init_byte(atomic<int8_t>* atm, int8_t init_value) {
+     void init_byte(int8_t* atm, int8_t init_value) {
         *atm = ATOMIC_VAR_INIT(init_value);
      }
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 24)
      // short
-     void init_short(atomic<int16_t>* atm, int16_t init_value) {
+     void init_short(int16_t* atm, int16_t init_value) {
         *atm = ATOMIC_VAR_INIT(init_value);
      }
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 24)
      // int
-     void init_int(atomic<int32_t>* atm, int32_t init_value) {
+     void init_int(int32_t* atm, int32_t init_value) {
         *atm = ATOMIC_VAR_INIT(init_value);
      }
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 24)
      // long
-     void init_long(atomic<int64_t>* atm, int64_t init_value) {
+     void init_long(int64_t* atm, int64_t init_value) {
         *atm = ATOMIC_VAR_INIT(init_value);
      }
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 24)
      // ubyte
-     void init_ubyte(atomic<uint8_t>* atm, uint8_t init_value) {
+     void init_ubyte(uint8_t* atm, uint8_t init_value) {
         *atm = ATOMIC_VAR_INIT(init_value);
      }
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 24)
      // ushort
-     void init_ushort(atomic<uint16_t>* atm, uint16_t init_value) {
+     void init_ushort(uint16_t* atm, uint16_t init_value) {
         *atm = ATOMIC_VAR_INIT(init_value);
      }
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 24)
      // uint
-     void init_uint(atomic<uint32_t>* atm, uint32_t init_value) {
+     void init_uint(uint32_t* atm, uint32_t init_value) {
         *atm = ATOMIC_VAR_INIT(init_value);
      }
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 24)
      // ulong
-     void init_ulong(atomic<uint64_t>* atm, uint64_t init_value) {
+     void init_ulong(uint64_t* atm, uint64_t init_value) {
         *atm = ATOMIC_VAR_INIT(init_value);
      }
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 24)
      // char
-     void init_char(atomic<char>* atm, char init_value) {
+     void init_char(char* atm, char init_value) {
         *atm = ATOMIC_VAR_INIT(init_value);
      }
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 24)
      // uchar
-     void init_uchar(atomic<unsigned char>* atm, unsigned char init_value) {
+     void init_uchar(unsigned char* atm, unsigned char init_value) {
         *atm = ATOMIC_VAR_INIT(init_value);
      }
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 24)
      // csize
-     void init_csize(atomic<size_t>* atm, size_t init_value) {
+     void init_csize(size_t* atm, size_t init_value) {
         *atm = ATOMIC_VAR_INIT(init_value);
      }
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 29)

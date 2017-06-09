@@ -22,7 +22,7 @@ extern "C" {
 
 % for (T, N) in zip(types, names):
      // ${N}
-     void init_${N}(atomic<${T}>* atm, ${T} init_value) {
+     void init_${N}(${T}* atm, ${T} init_value) {
         *atm = ATOMIC_VAR_INIT(init_value);
      }
 % end
