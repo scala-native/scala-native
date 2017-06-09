@@ -393,7 +393,7 @@ lazy val tests =
     .settings(projectSettings)
     .settings(noPublishSettings)
     .settings(
-      // nativeOptimizerReporter in Compile := OptimizerReporter.toDirectory(
+      // nativeOptimizerReporter := OptimizerReporter.toDirectory(
       //   crossTarget.value),
       sourceGenerators in Compile += Def.task {
         val dir = (scalaSource in Compile).value
@@ -427,7 +427,7 @@ lazy val sandbox =
     .settings(projectSettings)
     .settings(noPublishSettings)
     .settings(
-      // nativeOptimizerReporter in Compile := OptimizerReporter.toDirectory(
+      // nativeOptimizerReporter := OptimizerReporter.toDirectory(
       //   crossTarget.value)
     )
     .enablePlugins(ScalaNativePlugin)
@@ -438,7 +438,7 @@ lazy val benchmarks =
     .settings(projectSettings)
     .settings(noPublishSettings)
     .settings(
-      nativeMode in Compile := "release",
+      nativeMode := "release",
       sourceGenerators in Compile += Def.task {
         val dir = (scalaSource in Compile).value
         val benchmarks = (dir ** "*Benchmark.scala").get
