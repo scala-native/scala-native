@@ -93,6 +93,7 @@ object ScalaNativePluginInternal {
 
   lazy val projectSettings =
     dependencies ++
+      inScope(Global)(globalSettings) ++
       inConfig(Compile)(scalaNativeSettings) ++
       inConfig(Test)(scalaNativeSettings)
 
@@ -112,7 +113,7 @@ object ScalaNativePluginInternal {
       "org.scala-native" % "nscplugin" % nativeVersion cross CrossVersion.full)
   )
 
-  lazy val scopedSettings = Seq(
+  lazy val globalSettings = Seq(
     nativeWarnOldJVM := {
       val logger = nativeLogger.value
       Try(Class.forName("java.util.function.Function")).toOption match {
@@ -154,6 +155,14 @@ object ScalaNativePluginInternal {
       }
       libs
     },
+    nativeMode := "debug",
+    nativeLinkerReporter := tools.LinkerReporter.empty,
+    nativeOptimizerReporter := tools.OptimizerReporter.empty,
+    nativeLogger := streams.value.log,
+    nativeGC := "boehm"
+  )
+
+  lazy val scopedSettings = Seq(
     nativeTarget := {
       val logger = nativeLogger.value
       val cwd    = nativeWorkdir.value
@@ -183,12 +192,9 @@ object ScalaNativePluginInternal {
         }
         .getOrElse(fail)
     },
-    nativeMode := "debug",
     artifactPath in nativeLink := {
       crossTarget.value / (moduleName.value + "-out")
     },
-    nativeLinkerReporter := tools.LinkerReporter.empty,
-    nativeOptimizerReporter := tools.OptimizerReporter.empty,
     nativeOptimizerDriver := tools.OptimizerDriver(nativeConfig.value),
     nativeWorkdir := {
       val workdir = crossTarget.value / "native"
@@ -196,8 +202,21 @@ object ScalaNativePluginInternal {
       IO.createDirectory(workdir)
       workdir
     },
-    nativeLogger := streams.value.log,
-    nativeGC := "boehm",
+    nativeConfig := {
+      val mainClass = selectMainClass.value.getOrElse(
+        throw new MessageOnlyException("No main class detected.")
+      )
+      val classpath = fullClasspath.value.map(_.data)
+      val entry     = nir.Global.Top(mainClass.toString + "$")
+      val cwd       = nativeWorkdir.value
+
+      tools.Config.empty
+        .withEntry(entry)
+        .withPaths(classpath)
+        .withWorkdir(cwd)
+        .withTarget(nativeTarget.value)
+        .withMode(mode(nativeMode.value))
+    },
     nativeCompileLib := {
       val cwd       = nativeWorkdir.value
       val logger    = nativeLogger.value
@@ -252,21 +271,6 @@ object ScalaNativePluginInternal {
       }
 
       lib
-    },
-    nativeConfig := {
-      val mainClass = selectMainClass.value.getOrElse(
-        throw new MessageOnlyException("No main class detected.")
-      )
-      val classpath = fullClasspath.value.map(_.data)
-      val entry     = nir.Global.Top(mainClass.toString + "$")
-      val cwd       = nativeWorkdir.value
-
-      tools.Config.empty
-        .withEntry(entry)
-        .withPaths(classpath)
-        .withWorkdir(cwd)
-        .withTarget(nativeTarget.value)
-        .withMode(mode(nativeMode.value))
     },
     nativeLinkNIR := {
       val logger   = nativeLogger.value
