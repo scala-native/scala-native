@@ -1335,7 +1335,7 @@ abstract class NirCodeGen
           }
 
         case ty =>
-          abort("Uknown binary operation type: " + ty)
+          abort("Unknown binary operation type: " + ty)
       }
 
       genCoercion(binres.value, binres.value.ty, retty, binres)
