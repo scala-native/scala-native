@@ -3,8 +3,6 @@ package java.util.zip
 import scala.scalanative.native._
 import scala.scalanative.runtime.{ByteArray, zlib}
 
-import java.io.IOException
-
 // Ported from Apache Harmony
 
 class Inflater(noHeader: Boolean) {
@@ -23,7 +21,7 @@ class Inflater(noHeader: Boolean) {
       zlib.inflateEnd(stream)
       inRead = 0
       inLength = 0
-      Alloc.system.free(stream.asInstanceOf[Ptr[Byte]])
+      stdlib.free(stream.cast[Ptr[Byte]])
       stream = null
     }
   }
@@ -194,15 +192,15 @@ private object Inflater {
   // Used when we try to read to a zero-sized array.
   val empty = new Array[Byte](1)
 
-  private implicit val systemAlloc: Alloc = Alloc.system
-
   def createStream(noHeader: Boolean): zlib.z_streamp = {
-    val stream = alloc[zlib.z_stream]
+    val stream = stdlib.malloc(sizeof[zlib.z_stream]).cast[zlib.z_streamp]
+    string.memset(stream.cast[Ptr[Byte]], 0, sizeof[zlib.z_stream])
     val wbits: Int =
       if (noHeader) 15 / -1
       else 15
     val err = zlib.inflateInit2(stream, wbits)
     if (err != zlib.Z_OK) {
+      stdlib.free(stream.cast[Ptr[Byte]])
       throw new ZipException(err.toString)
     }
     stream

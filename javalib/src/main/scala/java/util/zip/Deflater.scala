@@ -3,8 +3,6 @@ package java.util.zip
 import scala.scalanative.native._
 import scala.scalanative.runtime.{ByteArray, zlib}
 
-import java.io.IOException
-
 // Ported from Apache Harmony
 
 class Deflater(private var compressLevel: Int, noHeader: Boolean) {
@@ -80,7 +78,7 @@ class Deflater(private var compressLevel: Int, noHeader: Boolean) {
     if (stream != null) {
       zlib.deflateEnd(stream)
       inputBuffer = null
-      Alloc.system.free(stream.asInstanceOf[Ptr[Byte]])
+      stdlib.free(stream.cast[Ptr[Byte]])
       stream = null
     }
   }
@@ -218,12 +216,11 @@ object Deflater {
 
   private final val STUB_INPUT_BUFFER: Array[Byte] = new Array[Byte](0)
 
-  private implicit val systemAlloc: Alloc = Alloc.system
-
   private def createStream(level: Int,
                            strategy: Int,
                            noHeader: Boolean): zlib.z_streamp = {
-    val stream = alloc[zlib.z_stream]
+    val stream = stdlib.malloc(sizeof[zlib.z_stream]).cast[zlib.z_streamp]
+    string.memset(stream.cast[Ptr[Byte]], 0, sizeof[zlib.z_stream])
     val wbits =
       if (noHeader) 15 / -1
       else 15
@@ -236,6 +233,7 @@ object Deflater {
       strategy
     )
     if (err != zlib.Z_OK) {
+      stdlib.free(stream.cast[Ptr[Byte]])
       throw new ZipException(err.toString)
     }
     stream
