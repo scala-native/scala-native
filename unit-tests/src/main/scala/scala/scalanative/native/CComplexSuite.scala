@@ -10,30 +10,25 @@ import java.{lang => jl}
 // Ran the complex functions in C to get the results
 // in hex which are used here for the tests.
 object CComplexSuite extends tests.Suite {
-  // helpers to see results
-  def printD(str: String, cp: Ptr[CDoubleComplex]): Unit =
-    println(s"$str -> ${cp.re} ${cp.im}")
-  def printF(str: String, cp: Ptr[CFloatComplex]): Unit =
-    println(s"$str -> ${cp.re} ${cp.im}")
-
-  def toFloat(i: Int): Float = jl.Float.intBitsToFloat(i)
-  def toDouble(hex: String): Double = {
-    import java.math.BigInteger
-    val l = new BigInteger(hex, 16).longValue
-    jl.Double.longBitsToDouble(l)
-  }
-
-  def assertEqualsComplexF(left: Ptr[CFloatComplex],
-                           right: Ptr[CFloatComplex]): Unit =
-    assert(left.re == right.re && left.im == right.im)
-  def assertEqualsComplexD(left: Ptr[CDoubleComplex],
-                           right: Ptr[CDoubleComplex]): Unit =
-    assert(left.re == right.re && left.im == right.im)
-
+  // shared values for special calculations
   val qtrPI = Math.PI / 4
   val sqrt2 = Math.sqrt(2)
 
   test("float complex") {
+    // helper fcns
+    def printF(str: String, cp: Ptr[CFloatComplex]): Unit =
+      println(s"$str -> ${cp.re} ${cp.im}")
+    def toFloat(i: Int): Float = jl.Float.intBitsToFloat(i)
+    def isAlmostEqual(act: Float, exp: Float): Boolean = {
+      val diff    = Math.abs(act - exp)
+      val epsilon = Math.max(Math.ulp(act), Math.ulp(exp))
+      diff <= epsilon
+    }
+    def assertEqualsComplexF(act: Ptr[CFloatComplex],
+                             exp: Ptr[CFloatComplex]): Unit =
+      assert(isAlmostEqual(act.re, exp.re) && isAlmostEqual(act.im, exp.im))
+
+    // data used also for values generated in C
     val real = 1.0f
     val imag = 1.0f
 
@@ -99,6 +94,24 @@ object CComplexSuite extends tests.Suite {
   }
 
   test("double complex") {
+    // helpers fcns
+    def printD(str: String, cp: Ptr[CDoubleComplex]): Unit =
+      println(s"$str -> ${cp.re} ${cp.im}")
+    def toDouble(hex: String): Double = {
+      import java.math.BigInteger
+      val l = new BigInteger(hex, 16).longValue
+      jl.Double.longBitsToDouble(l)
+    }
+    def isAlmostEqual(act: Double, exp: Double): Boolean = {
+      val diff    = Math.abs(act - exp)
+      val epsilon = Math.max(Math.ulp(act), Math.ulp(exp))
+      diff <= epsilon
+    }
+    def assertEqualsComplexD(act: Ptr[CDoubleComplex],
+                             exp: Ptr[CDoubleComplex]): Unit =
+      assert(isAlmostEqual(act.re, exp.re) && isAlmostEqual(act.im, exp.im))
+
+    // data used also for values generated in C
     val real = 1.0
     val imag = 1.0
 
