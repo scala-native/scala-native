@@ -221,7 +221,8 @@ abstract class NirCodeGen
         annotated.toSeq ++ ctor
       }
       val attrs = sym.annotations.collect {
-        case ann if ann.symbol == ExternClass => Attr.Extern
+        case ann if ann.symbol == ExternClass =>
+          Attr.Extern
         case ann if ann.symbol == LinkClass =>
           val Apply(_, Seq(Literal(Constant(name: String)))) = ann.tree
           Attr.Link(name)
@@ -342,30 +343,74 @@ abstract class NirCodeGen
       }
     }
 
-    def genMethodAttrs(sym: Symbol): Attrs =
-      Attrs.fromSeq({
-        if (sym.hasFlag(ACCESSOR)) Seq(Attr.AlwaysInline)
-        else Seq()
-      } ++ sym.overrides.map {
-        case sym => Attr.Override(genMethodName(sym))
-      } ++ sym.annotations.collect {
-        case ann if ann.symbol == NoInlineClass   => Attr.NoInline
-        case ann if ann.symbol == InlineHintClass => Attr.InlineHint
-        case ann if ann.symbol == InlineClass     => Attr.AlwaysInline
-      } ++ {
-        if (PureMethods.contains(sym)) Seq(Attr.Pure) else Seq()
-      } ++ {
+    def genMethodAttrs(sym: Symbol): Attrs = {
+      val inlineAttrs = {
+        if (sym.hasFlag(ACCESSOR)) {
+          Seq(Attr.AlwaysInline)
+        } else {
+          sym.annotations.collect {
+            case ann if ann.symbol == NoInlineClass   => Attr.NoInline
+            case ann if ann.symbol == InlineHintClass => Attr.InlineHint
+            case ann if ann.symbol == InlineClass     => Attr.AlwaysInline
+          }
+        }
+      }
+      val overrideAttrs: Seq[Attr] = {
         val owner = sym.owner
-        if (owner.primaryConstructor eq sym)
-          owner.info.declarations.collect {
-            case decl if decl.overrides.nonEmpty =>
-              decl.overrides.map {
-                case ov =>
-                  Attr.PinIf(genMethodName(decl), genMethodName(ov))
-              }
-          }.toSeq.flatten
-        else Seq()
-      })
+        if (owner.primaryConstructor eq sym) {
+          genConstructorOverridePins(owner)
+        } else {
+          sym.overrides.collect {
+            case ovsym if !sym.owner.asClass.isTrait =>
+              Attr.Override(genMethodName(ovsym))
+          }
+        }
+      }
+      val pureAttrs ={
+        if (PureMethods.contains(sym)) Seq(Attr.Pure) else Seq()
+      }
+
+      Attrs.fromSeq(inlineAttrs ++ overrideAttrs ++ pureAttrs)
+    }
+
+    def genConstructorOverridePins(owner: Symbol): Seq[nir.Attr] = {
+      val traits = owner.info.baseClasses.map(_.asClass).filter(_.isTrait)
+      val traitMethods = mutable.Map.empty[String, mutable.UnrolledBuffer[nir.Global]]
+
+      traits.foreach { trt =>
+        trt.info.declarations.foreach { meth =>
+          val name = genName(meth)
+          val sig  = name.id
+          if (!traitMethods.contains(sig)) {
+            traitMethods(sig) = mutable.UnrolledBuffer.empty[nir.Global]
+          }
+          traitMethods(sig) += name
+        }
+      }
+
+      val pins = mutable.UnrolledBuffer.empty[nir.Attr]
+
+      owner.info.declarations.foreach { decl =>
+        decl.overrides.foreach { ovsym =>
+          if (!ovsym.owner.asClass.isTrait) {
+            pins += Attr.PinIf(genMethodName(decl), genMethodName(ovsym))
+          }
+        }
+      }
+
+      owner.info.members.foreach { decl =>
+        if (decl.isMethod && decl.owner != ObjectClass) {
+          val declname = genName(decl)
+          val sig      = declname.id
+          val methods  = traitMethods.get(sig).getOrElse(Seq.empty)
+          methods.foreach { methname =>
+            pins += Attr.PinIf(declname, methname)
+          }
+        }
+      }
+
+      pins
+    }
 
     def genMethodSigParams(sym: Symbol): Seq[nir.Type] = {
       val wereRepeated = exitingPhase(currentRun.typerPhase) {

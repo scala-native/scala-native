@@ -265,6 +265,13 @@ object IssuesSuite extends tests.Suite {
     2.asInstanceOf[Null]
   }
 
+  test("#667") {
+    val map = new java.util.HashMap[Int, Int]
+    map.put(1, 2)
+    val ks = map.keySet()
+    assert(ks.contains(1))
+  }
+
   test("#679") {
     val `"` = 42
     assert(("double-quotes " + `"`) == "double-quotes 42")
@@ -291,5 +298,17 @@ object IssuesSuite extends tests.Suite {
     val neglong: Any = -long
     assert(neglong.isInstanceOf[Long])
     assert(neglong.toString == "-1")
+  }
+
+  test("#780") {
+    import java.util.{HashMap, Collections}
+    val hashmap = new HashMap[String, String]()
+    hashmap.put("a", "b")
+    val frozen = Collections.unmodifiableMap[String, String](hashmap)
+    val iter   = frozen.entrySet().iterator()
+    val ab     = iter.next()
+    assert(ab.getKey() == "a")
+    assert(ab.getValue() == "b")
+    assert(!iter.hasNext())
   }
 }
