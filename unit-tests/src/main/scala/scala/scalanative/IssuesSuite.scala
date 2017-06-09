@@ -265,6 +265,13 @@ object IssuesSuite extends tests.Suite {
     2.asInstanceOf[Null]
   }
 
+  test("#667") {
+    val map = new java.util.HashMap[Int, Int]
+    map.put(1, 2)
+    val ks = map.keySet()
+    assert(ks.contains(1))
+  }
+
   test("#679") {
     val `"` = 42
     assert(("double-quotes " + `"`) == "double-quotes 42")
