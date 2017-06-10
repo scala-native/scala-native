@@ -41,15 +41,19 @@ object Atomic {
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 45)
   def init_ubyte(atm: CAtomicUnsignedByte, initValue: Byte): Unit = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 45)
-  def init_ushort(atm: CAtomicUnsignedShort, initValue: CUnsignedShort): Unit = extern
+  def init_ushort(atm: CAtomicUnsignedShort, initValue: CUnsignedShort): Unit =
+    extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 45)
-  def init_uint(atm: CAtomicUnsignedInt, initValue: CUnsignedInt): Unit = extern
+  def init_uint(atm: CAtomicUnsignedInt, initValue: CUnsignedInt): Unit =
+    extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 45)
-  def init_ulong(atm: CAtomicUnsignedLong, initValue: CUnsignedLong): Unit = extern
+  def init_ulong(atm: CAtomicUnsignedLong, initValue: CUnsignedLong): Unit =
+    extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 45)
   def init_char(atm: CAtomicChar, initValue: CChar): Unit = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 45)
-  def init_uchar(atm: CAtomicUnsignedChar, initValue: CUnsignedChar): Unit = extern
+  def init_uchar(atm: CAtomicUnsignedChar, initValue: CUnsignedChar): Unit =
+    extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 45)
   def init_csize(atm: CAtomicCSize, initValue: CSize): Unit = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 47)
@@ -82,16 +86,16 @@ object Atomic {
   // Compare and Swap
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 55)
   def compare_and_swap_strong_byte(value: CAtomicByte,
-                                  expected: CAtomicByte,
-                                  desired: Byte): CBool = extern
+                                   expected: CAtomicByte,
+                                   desired: Byte): CBool = extern
 
   def compare_and_swap_weak_byte(value: CAtomicByte,
-                                  expected: CAtomicByte,
-                                  desired: Byte): CBool = extern
+                                 expected: CAtomicByte,
+                                 desired: Byte): CBool = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 55)
   def compare_and_swap_strong_short(value: CAtomicShort,
-                                  expected: CAtomicShort,
-                                  desired: CShort): CBool = extern
+                                    expected: CAtomicShort,
+                                    desired: CShort): CBool = extern
 
   def compare_and_swap_weak_short(value: CAtomicShort,
                                   expected: CAtomicShort,
@@ -102,68 +106,68 @@ object Atomic {
                                   desired: CInt): CBool = extern
 
   def compare_and_swap_weak_int(value: CAtomicInt,
-                                  expected: CAtomicInt,
-                                  desired: CInt): CBool = extern
+                                expected: CAtomicInt,
+                                desired: CInt): CBool = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 55)
   def compare_and_swap_strong_long(value: CAtomicLong,
-                                  expected: CAtomicLong,
-                                  desired: CLong): CBool = extern
+                                   expected: CAtomicLong,
+                                   desired: CLong): CBool = extern
 
   def compare_and_swap_weak_long(value: CAtomicLong,
-                                  expected: CAtomicLong,
-                                  desired: CLong): CBool = extern
+                                 expected: CAtomicLong,
+                                 desired: CLong): CBool = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 55)
   def compare_and_swap_strong_ubyte(value: CAtomicUnsignedByte,
-                                  expected: CAtomicUnsignedByte,
-                                  desired: Byte): CBool = extern
+                                    expected: CAtomicUnsignedByte,
+                                    desired: Byte): CBool = extern
 
   def compare_and_swap_weak_ubyte(value: CAtomicUnsignedByte,
                                   expected: CAtomicUnsignedByte,
                                   desired: Byte): CBool = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 55)
   def compare_and_swap_strong_ushort(value: CAtomicUnsignedShort,
-                                  expected: CAtomicUnsignedShort,
-                                  desired: CUnsignedShort): CBool = extern
+                                     expected: CAtomicUnsignedShort,
+                                     desired: CUnsignedShort): CBool = extern
 
   def compare_and_swap_weak_ushort(value: CAtomicUnsignedShort,
-                                  expected: CAtomicUnsignedShort,
-                                  desired: CUnsignedShort): CBool = extern
+                                   expected: CAtomicUnsignedShort,
+                                   desired: CUnsignedShort): CBool = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 55)
   def compare_and_swap_strong_uint(value: CAtomicUnsignedInt,
-                                  expected: CAtomicUnsignedInt,
-                                  desired: CUnsignedInt): CBool = extern
+                                   expected: CAtomicUnsignedInt,
+                                   desired: CUnsignedInt): CBool = extern
 
   def compare_and_swap_weak_uint(value: CAtomicUnsignedInt,
-                                  expected: CAtomicUnsignedInt,
-                                  desired: CUnsignedInt): CBool = extern
+                                 expected: CAtomicUnsignedInt,
+                                 desired: CUnsignedInt): CBool = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 55)
   def compare_and_swap_strong_ulong(value: CAtomicUnsignedLong,
-                                  expected: CAtomicUnsignedLong,
-                                  desired: CUnsignedLong): CBool = extern
+                                    expected: CAtomicUnsignedLong,
+                                    desired: CUnsignedLong): CBool = extern
 
   def compare_and_swap_weak_ulong(value: CAtomicUnsignedLong,
                                   expected: CAtomicUnsignedLong,
                                   desired: CUnsignedLong): CBool = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 55)
   def compare_and_swap_strong_char(value: CAtomicChar,
-                                  expected: CAtomicChar,
-                                  desired: CChar): CBool = extern
+                                   expected: CAtomicChar,
+                                   desired: CChar): CBool = extern
 
   def compare_and_swap_weak_char(value: CAtomicChar,
-                                  expected: CAtomicChar,
-                                  desired: CChar): CBool = extern
+                                 expected: CAtomicChar,
+                                 desired: CChar): CBool = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 55)
   def compare_and_swap_strong_uchar(value: CAtomicUnsignedChar,
-                                  expected: CAtomicUnsignedChar,
-                                  desired: CUnsignedChar): CBool = extern
+                                    expected: CAtomicUnsignedChar,
+                                    desired: CUnsignedChar): CBool = extern
 
   def compare_and_swap_weak_uchar(value: CAtomicUnsignedChar,
                                   expected: CAtomicUnsignedChar,
                                   desired: CUnsignedChar): CBool = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 55)
   def compare_and_swap_strong_csize(value: CAtomicCSize,
-                                  expected: CAtomicCSize,
-                                  desired: CSize): CBool = extern
+                                    expected: CAtomicCSize,
+                                    desired: CSize): CBool = extern
 
   def compare_and_swap_weak_csize(value: CAtomicCSize,
                                   expected: CAtomicCSize,
@@ -248,49 +252,64 @@ object Atomic {
   def atomic_xor_ubyte(ptr: CAtomicUnsignedByte, value: Byte): Byte = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 67)
   // add
-  def atomic_add_ushort(ptr: CAtomicUnsignedShort, value: CUnsignedShort): CUnsignedShort = extern
+  def atomic_add_ushort(ptr: CAtomicUnsignedShort,
+                        value: CUnsignedShort): CUnsignedShort = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 67)
   // sub
-  def atomic_sub_ushort(ptr: CAtomicUnsignedShort, value: CUnsignedShort): CUnsignedShort = extern
+  def atomic_sub_ushort(ptr: CAtomicUnsignedShort,
+                        value: CUnsignedShort): CUnsignedShort = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 67)
   // or
-  def atomic_or_ushort(ptr: CAtomicUnsignedShort, value: CUnsignedShort): CUnsignedShort = extern
+  def atomic_or_ushort(ptr: CAtomicUnsignedShort,
+                       value: CUnsignedShort): CUnsignedShort = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 67)
   // and
-  def atomic_and_ushort(ptr: CAtomicUnsignedShort, value: CUnsignedShort): CUnsignedShort = extern
+  def atomic_and_ushort(ptr: CAtomicUnsignedShort,
+                        value: CUnsignedShort): CUnsignedShort = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 67)
   // xor
-  def atomic_xor_ushort(ptr: CAtomicUnsignedShort, value: CUnsignedShort): CUnsignedShort = extern
+  def atomic_xor_ushort(ptr: CAtomicUnsignedShort,
+                        value: CUnsignedShort): CUnsignedShort = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 67)
   // add
-  def atomic_add_uint(ptr: CAtomicUnsignedInt, value: CUnsignedInt): CUnsignedInt = extern
+  def atomic_add_uint(ptr: CAtomicUnsignedInt,
+                      value: CUnsignedInt): CUnsignedInt = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 67)
   // sub
-  def atomic_sub_uint(ptr: CAtomicUnsignedInt, value: CUnsignedInt): CUnsignedInt = extern
+  def atomic_sub_uint(ptr: CAtomicUnsignedInt,
+                      value: CUnsignedInt): CUnsignedInt = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 67)
   // or
-  def atomic_or_uint(ptr: CAtomicUnsignedInt, value: CUnsignedInt): CUnsignedInt = extern
+  def atomic_or_uint(ptr: CAtomicUnsignedInt,
+                     value: CUnsignedInt): CUnsignedInt = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 67)
   // and
-  def atomic_and_uint(ptr: CAtomicUnsignedInt, value: CUnsignedInt): CUnsignedInt = extern
+  def atomic_and_uint(ptr: CAtomicUnsignedInt,
+                      value: CUnsignedInt): CUnsignedInt = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 67)
   // xor
-  def atomic_xor_uint(ptr: CAtomicUnsignedInt, value: CUnsignedInt): CUnsignedInt = extern
+  def atomic_xor_uint(ptr: CAtomicUnsignedInt,
+                      value: CUnsignedInt): CUnsignedInt = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 67)
   // add
-  def atomic_add_ulong(ptr: CAtomicUnsignedLong, value: CUnsignedLong): CUnsignedLong = extern
+  def atomic_add_ulong(ptr: CAtomicUnsignedLong,
+                       value: CUnsignedLong): CUnsignedLong = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 67)
   // sub
-  def atomic_sub_ulong(ptr: CAtomicUnsignedLong, value: CUnsignedLong): CUnsignedLong = extern
+  def atomic_sub_ulong(ptr: CAtomicUnsignedLong,
+                       value: CUnsignedLong): CUnsignedLong = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 67)
   // or
-  def atomic_or_ulong(ptr: CAtomicUnsignedLong, value: CUnsignedLong): CUnsignedLong = extern
+  def atomic_or_ulong(ptr: CAtomicUnsignedLong,
+                      value: CUnsignedLong): CUnsignedLong = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 67)
   // and
-  def atomic_and_ulong(ptr: CAtomicUnsignedLong, value: CUnsignedLong): CUnsignedLong = extern
+  def atomic_and_ulong(ptr: CAtomicUnsignedLong,
+                       value: CUnsignedLong): CUnsignedLong = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 67)
   // xor
-  def atomic_xor_ulong(ptr: CAtomicUnsignedLong, value: CUnsignedLong): CUnsignedLong = extern
+  def atomic_xor_ulong(ptr: CAtomicUnsignedLong,
+                       value: CUnsignedLong): CUnsignedLong = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 67)
   // add
   def atomic_add_char(ptr: CAtomicChar, value: CChar): CChar = extern
@@ -308,19 +327,24 @@ object Atomic {
   def atomic_xor_char(ptr: CAtomicChar, value: CChar): CChar = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 67)
   // add
-  def atomic_add_uchar(ptr: CAtomicUnsignedChar, value: CUnsignedChar): CUnsignedChar = extern
+  def atomic_add_uchar(ptr: CAtomicUnsignedChar,
+                       value: CUnsignedChar): CUnsignedChar = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 67)
   // sub
-  def atomic_sub_uchar(ptr: CAtomicUnsignedChar, value: CUnsignedChar): CUnsignedChar = extern
+  def atomic_sub_uchar(ptr: CAtomicUnsignedChar,
+                       value: CUnsignedChar): CUnsignedChar = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 67)
   // or
-  def atomic_or_uchar(ptr: CAtomicUnsignedChar, value: CUnsignedChar): CUnsignedChar = extern
+  def atomic_or_uchar(ptr: CAtomicUnsignedChar,
+                      value: CUnsignedChar): CUnsignedChar = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 67)
   // and
-  def atomic_and_uchar(ptr: CAtomicUnsignedChar, value: CUnsignedChar): CUnsignedChar = extern
+  def atomic_and_uchar(ptr: CAtomicUnsignedChar,
+                       value: CUnsignedChar): CUnsignedChar = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 67)
   // xor
-  def atomic_xor_uchar(ptr: CAtomicUnsignedChar, value: CUnsignedChar): CUnsignedChar = extern
+  def atomic_xor_uchar(ptr: CAtomicUnsignedChar,
+                       value: CUnsignedChar): CUnsignedChar = extern
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Atomic.scala.gyb", line: 67)
   // add
   def atomic_add_csize(ptr: CAtomicCSize, value: CSize): CSize = extern
