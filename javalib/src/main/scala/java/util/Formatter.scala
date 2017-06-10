@@ -167,8 +167,9 @@ class Formatter(
         if (token.requireArgument()) {
           val index =
             if (token.getArgIndex() == FormatToken.UNSET) {
+              val idx = currentObjectIndex
               currentObjectIndex += 1
-              currentObjectIndex
+              idx
             } else
               token.getArgIndex()
           argument =
@@ -446,7 +447,7 @@ object Formatter {
 
       if (formatToken.isFlagSet(FormatToken.FLAG_MINUS) && !formatToken
             .isWidthSet())
-        throw new MissingFormatArgumentException(
+        throw new MissingFormatWidthException(
           "-" + formatToken.getConversionType())
 
       if (arg.isInstanceOf[Formattable]) {
