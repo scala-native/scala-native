@@ -291,7 +291,8 @@ object Formatter {
 
     def getFormatStringStartIndex(): Int = formatStringStartIndex
 
-    def setFormatStringStartIndex(index: Int): Unit = formatStringStartIndex = index
+    def setFormatStringStartIndex(index: Int): Unit =
+      formatStringStartIndex = index
 
     def getConversionType(): Char = conversionType
 
@@ -301,7 +302,8 @@ object Formatter {
 
     def setDateSuffix(c: Char): Unit = dateSuffix = c
 
-    def requireArgument(): Boolean = conversionType != '%' && conversionType != 'n'
+    def requireArgument(): Boolean =
+      conversionType != '%' && conversionType != 'n'
   }
 
   private object FormatToken {
@@ -391,15 +393,19 @@ object Formatter {
     }
 
     private def transformFromBoolean(): String = {
-      val result = new StringBuilder()
+      val result     = new StringBuilder()
       val startIndex = 0
-      val flags = formatToken.getFlags()
+      val flags      = formatToken.getFlags()
 
-      if (formatToken.isFlagSet(FormatToken.FLAG_MINUS) && !formatToken.isWidthSet())
-        throw new MissingFormatWidthException("-" + formatToken.getConversionType())
+      if (formatToken.isFlagSet(FormatToken.FLAG_MINUS) && !formatToken
+            .isWidthSet())
+        throw new MissingFormatWidthException(
+          "-" + formatToken.getConversionType())
 
       if (FormatToken.FLAGS_UNSET != flags && FormatToken.FLAG_MINUS != flags)
-        throw new FormatFlagsConversionMismatchException(formatToken.getStrFlags(), formatToken.getConversionType())
+        throw new FormatFlagsConversionMismatchException(
+          formatToken.getStrFlags(),
+          formatToken.getConversionType())
 
       if (null == arg)
         result.append("false")
@@ -414,13 +420,17 @@ object Formatter {
       val result = new StringBuilder()
 
       val startIndex = 0
-      val flags = formatToken.getFlags()
+      val flags      = formatToken.getFlags()
 
-      if (formatToken.isFlagSet(FormatToken.FLAG_MINUS) && !formatToken.isWidthSet())
-        throw new MissingFormatWidthException("-" + formatToken.getConversionType())
+      if (formatToken.isFlagSet(FormatToken.FLAG_MINUS) && !formatToken
+            .isWidthSet())
+        throw new MissingFormatWidthException(
+          "-" + formatToken.getConversionType())
 
       if (FormatToken.FLAGS_UNSET != flags && FormatToken.FLAG_MINUS != flags)
-        throw new FormatFlagsConversionMismatchException(formatToken.getStrFlags(), formatToken.getConversionType())
+        throw new FormatFlagsConversionMismatchException(
+          formatToken.getStrFlags(),
+          formatToken.getConversionType())
 
       if (null == arg)
         result.append("null")
@@ -430,12 +440,14 @@ object Formatter {
     }
 
     private def transformFromString(): String = {
-      val result = new StringBuilder()
+      val result     = new StringBuilder()
       val startIndex = 0
-      val flags = formatToken.getFlags()
+      val flags      = formatToken.getFlags()
 
-      if (formatToken.isFlagSet(FormatToken.FLAG_MINUS) && !formatToken.isWidthSet())
-        throw new MissingFormatArgumentException("-" + formatToken.getConversionType())
+      if (formatToken.isFlagSet(FormatToken.FLAG_MINUS) && !formatToken
+            .isWidthSet())
+        throw new MissingFormatArgumentException(
+          "-" + formatToken.getConversionType())
 
       if (arg.isInstanceOf[Formattable]) {
         var flag: Int = 0
@@ -448,7 +460,12 @@ object Formatter {
           flag |= FormattableFlags.ALTERNATE
         if (Character.isUpperCase(formatToken.getConversionType()))
           flag |= FormattableFlags.UPPERCASE
-        arg.asInstanceOf[Formattable].formatTo(formatter, flag, formatToken.getWidth(), formatToken.getPrecision())
+        arg
+          .asInstanceOf[Formattable]
+          .formatTo(formatter,
+                    flag,
+                    formatToken.getWidth(),
+                    formatToken.getPrecision())
         // all actions have been taken out in the
         // Formattable.formatTo, thus there is nothing to do, just
         // returns null, which tells the Parser to add nothing to the
@@ -456,7 +473,9 @@ object Formatter {
         return null
       }
       if (FormatToken.FLAGS_UNSET != flags && FormatToken.FLAG_MINUS != flags)
-        throw new FormatFlagsConversionMismatchException(formatToken.getStrFlags(), formatToken.getConversionType())
+        throw new FormatFlagsConversionMismatchException(
+          formatToken.getStrFlags(),
+          formatToken.getConversionType())
 
       result.append(arg)
       padding(result, startIndex)
@@ -466,19 +485,23 @@ object Formatter {
       val result = new StringBuilder()
 
       val startIndex = 0
-      val flags = formatToken.getFlags()
+      val flags      = formatToken.getFlags()
 
-      if (formatToken.isFlagSet(FormatToken.FLAG_MINUS) && !formatToken.isWidthSet())
-        throw new MissingFormatWidthException("-" + formatToken.getConversionType())
+      if (formatToken.isFlagSet(FormatToken.FLAG_MINUS) && !formatToken
+            .isWidthSet())
+        throw new MissingFormatWidthException(
+          "-" + formatToken.getConversionType())
 
       if (FormatToken.FLAGS_UNSET != flags && FormatToken.FLAG_MINUS != flags)
-        throw new FormatFlagsConversionMismatchException(formatToken.getStrFlags(), formatToken.getConversionType())
+        throw new FormatFlagsConversionMismatchException(
+          formatToken.getStrFlags(),
+          formatToken.getConversionType())
 
       if (formatToken.isPrecisionSet())
         throw new IllegalFormatPrecisionException(formatToken.getPrecision())
 
       arg.asInstanceOf[Any] match {
-        case null => result.append("null")
+        case null         => result.append("null")
         case c: Character => result.append(c)
         case b: Byte =>
           if (!Character.isValidCodePoint(b))
@@ -493,7 +516,9 @@ object Formatter {
             throw new IllegalFormatCodePointException(codePoint)
           result.append(String.valueOf(Character.toChars(codePoint)))
         case _ =>
-          throw new IllegalFormatConversionException(formatToken.getConversionType(), arg.getClass())
+          throw new IllegalFormatConversionException(
+            formatToken.getConversionType(),
+            arg.getClass())
       }
       padding(result, startIndex)
     }
@@ -502,13 +527,17 @@ object Formatter {
       val result = new StringBuilder()
 
       val startIndex = 0
-      val flags = formatToken.getFlags()
+      val flags      = formatToken.getFlags()
 
-      if (formatToken.isFlagSet(FormatToken.FLAG_MINUS) && !formatToken.isWidthSet())
-        throw new MissingFormatWidthException("-" + formatToken.getConversionType())
+      if (formatToken.isFlagSet(FormatToken.FLAG_MINUS) && !formatToken
+            .isWidthSet())
+        throw new MissingFormatWidthException(
+          "-" + formatToken.getConversionType())
 
       if (FormatToken.FLAGS_UNSET != flags && FormatToken.FLAG_MINUS != flags)
-        throw new FormatFlagsConversionMismatchException(formatToken.getStrFlags(), formatToken.getConversionType())
+        throw new FormatFlagsConversionMismatchException(
+          formatToken.getStrFlags(),
+          formatToken.getConversionType())
       if (formatToken.isPrecisionSet())
         throw new IllegalFormatPrecisionException(formatToken.getPrecision())
       padding(result, startIndex)
@@ -526,16 +555,17 @@ object Formatter {
         throw new IllegalFormatFlagsException(formatToken.getStrFlags())
 
       if (null == lineSeparator) {
-        lineSeparator = AccessController.doPrivileged(new PrivilegedAction[String]() {
-          def run(): String = System.getProperty("line.separator")
-        })
+        lineSeparator =
+          AccessController.doPrivileged(new PrivilegedAction[String]() {
+            def run(): String = System.getProperty("line.separator")
+          })
       }
       lineSeparator
     }
 
     private def padding(source: StringBuilder, startIndex: Int): String = {
-      var start: Int = startIndex
-      val paddingRight = formatToken.isFlagSet(FormatToken.FLAG_MINUS)
+      var start: Int        = startIndex
+      val paddingRight      = formatToken.isFlagSet(FormatToken.FLAG_MINUS)
       var paddingChar: Char = '\u0020' // space as padding char.
       if (formatToken.isFlagSet(FormatToken.FLAG_ZERO)) {
         if ('d' == formatToken.getConversionType())
@@ -545,7 +575,7 @@ object Formatter {
       } else {
         start = 0
       }
-      var width = formatToken.getWidth()
+      var width     = formatToken.getWidth()
       val precision = formatToken.getPrecision()
 
       var length = source.length()
@@ -560,7 +590,7 @@ object Formatter {
         return source.toString()
       }
 
-      val paddings = Array.fill[Char](width - length)(paddingChar)
+      val paddings     = Array.fill[Char](width - length)(paddingChar)
       val insertString = new String(paddings)
 
       if (paddingRight)
@@ -571,40 +601,48 @@ object Formatter {
     }
 
     private def transformFromInteger(): String = {
-      var startIndex = 0
-      var isNegative = false
-      var result = new StringBuilder()
+      var startIndex            = 0
+      var isNegative            = false
+      var result                = new StringBuilder()
       val currentConversionType = formatToken.getConversionType()
-      var value: Long = 0
+      var value: Long           = 0
 
-      if (formatToken.isFlagSet(FormatToken.FLAG_MINUS) || formatToken.isFlagSet(FormatToken.FLAG_ZERO)) {
+      if (formatToken.isFlagSet(FormatToken.FLAG_MINUS) || formatToken
+            .isFlagSet(FormatToken.FLAG_ZERO)) {
         if (!formatToken.isWidthSet())
           throw new MissingFormatWidthException(formatToken.getStrFlags())
       }
-      if (formatToken.isFlagSet(FormatToken.FLAG_ADD) && formatToken.isFlagSet(FormatToken.FLAG_SPACE))
+      if (formatToken.isFlagSet(FormatToken.FLAG_ADD) && formatToken.isFlagSet(
+            FormatToken.FLAG_SPACE))
         throw new IllegalFormatFlagsException(formatToken.getStrFlags())
       if (formatToken.isPrecisionSet())
         throw new IllegalFormatPrecisionException(formatToken.getPrecision())
       arg.asInstanceOf[Any] match {
-        case l: Long => value = l
-        case i: Int => value = i.toLong
+        case l: Long  => value = l
+        case i: Int   => value = i.toLong
         case s: Short => value = s.toLong
-        case b: Byte => value = b.toLong
-        case _ => throw new IllegalFormatConversionException(formatToken.getConversionType(), arg.getClass())
+        case b: Byte  => value = b.toLong
+        case _ =>
+          throw new IllegalFormatConversionException(
+            formatToken.getConversionType(),
+            arg.getClass())
       }
       if ('d' != currentConversionType) {
         if (formatToken.isFlagSet(FormatToken.FLAG_ADD) ||
-          formatToken.isFlagSet(FormatToken.FLAG_SPACE) ||
-          formatToken.isFlagSet(FormatToken.FLAG_COMMA) ||
-          formatToken.isFlagSet(FormatToken.FLAG_PARENTHESIS)
-        ) {
-          throw new FormatFlagsConversionMismatchException(formatToken.getStrFlags(), formatToken.getConversionType())
+            formatToken.isFlagSet(FormatToken.FLAG_SPACE) ||
+            formatToken.isFlagSet(FormatToken.FLAG_COMMA) ||
+            formatToken.isFlagSet(FormatToken.FLAG_PARENTHESIS)) {
+          throw new FormatFlagsConversionMismatchException(
+            formatToken.getStrFlags(),
+            formatToken.getConversionType())
         }
       }
 
       if (formatToken.isFlagSet(FormatToken.FLAG_SHARP)) {
         if ('d' == currentConversionType)
-          throw new FormatFlagsConversionMismatchException(formatToken.getStrFlags(), formatToken.getConversionType())
+          throw new FormatFlagsConversionMismatchException(
+            formatToken.getStrFlags(),
+            formatToken.getConversionType())
         else if ('o' == currentConversionType) {
           result.append("0")
           startIndex += 1
@@ -614,7 +652,8 @@ object Formatter {
         }
       }
 
-      if (formatToken.isFlagSet(FormatToken.FLAG_MINUS) && formatToken.isFlagSet(FormatToken.FLAG_ZERO))
+      if (formatToken.isFlagSet(FormatToken.FLAG_MINUS) && formatToken
+            .isFlagSet(FormatToken.FLAG_ZERO))
         throw new IllegalFormatFlagsException(formatToken.getStrFlags())
 
       if (value < 0)
@@ -628,9 +667,9 @@ object Formatter {
           numberFormat.setGroupingUsed(false)
         result.append(numberFormat.format(arg))
       } else {
-        val BYTE_MASK: Long = 0x00000000000000FFL;
+        val BYTE_MASK: Long  = 0x00000000000000FFL;
         val SHORT_MASK: Long = 0x000000000000FFFFL;
-        val INT_MASK: Long = 0x00000000FFFFFFFFL;
+        val INT_MASK: Long   = 0x00000000FFFFFFFFL;
         if (isNegative) {
           if (arg.isInstanceOf[Byte])
             value &= BYTE_MASK
@@ -688,7 +727,7 @@ object Formatter {
         return null
 
       val number = arg.asInstanceOf[Number]
-      val d = number.doubleValue()
+      val d      = number.doubleValue()
       if (java.lang.Double.isNaN(d))
         source = "NaN"
       else if (java.lang.Double.isInfinite(d)) {
@@ -721,31 +760,39 @@ object Formatter {
     }
 
     private def transformFromBigInteger(): String = {
-      var startIndex = 0
-      var isNegative = false
-      var result = new StringBuilder()
-      val bigInt = arg.asInstanceOf[BigInteger]
+      var startIndex            = 0
+      var isNegative            = false
+      var result                = new StringBuilder()
+      val bigInt                = arg.asInstanceOf[BigInteger]
       val currentConversionType = formatToken.getConversionType()
 
-      if (formatToken.isFlagSet(FormatToken.FLAG_MINUS) || formatToken.isFlagSet(FormatToken.FLAG_ZERO)) {
+      if (formatToken.isFlagSet(FormatToken.FLAG_MINUS) || formatToken
+            .isFlagSet(FormatToken.FLAG_ZERO)) {
         if (!formatToken.isWidthSet())
           throw new MissingFormatWidthException(formatToken.getStrFlags())
       }
 
-      if (formatToken.isFlagSet(FormatToken.FLAG_ADD) && formatToken.isFlagSet(FormatToken.FLAG_SPACE))
+      if (formatToken.isFlagSet(FormatToken.FLAG_ADD) && formatToken.isFlagSet(
+            FormatToken.FLAG_SPACE))
         throw new IllegalFormatFlagsException(formatToken.getStrFlags())
 
-      if (formatToken.isFlagSet(FormatToken.FLAG_ZERO) && formatToken.isFlagSet(FormatToken.FLAG_MINUS))
+      if (formatToken.isFlagSet(FormatToken.FLAG_ZERO) && formatToken
+            .isFlagSet(FormatToken.FLAG_MINUS))
         throw new IllegalFormatFlagsException(formatToken.getStrFlags())
 
       if (formatToken.isPrecisionSet())
         throw new IllegalFormatPrecisionException(formatToken.getPrecision())
 
-      if ('d' != currentConversionType && formatToken.isFlagSet(FormatToken.FLAG_COMMA))
-        throw new FormatFlagsConversionMismatchException(formatToken.getStrFlags(), currentConversionType)
+      if ('d' != currentConversionType && formatToken.isFlagSet(
+            FormatToken.FLAG_COMMA))
+        throw new FormatFlagsConversionMismatchException(
+          formatToken.getStrFlags(),
+          currentConversionType)
 
       if (formatToken.isFlagSet(FormatToken.FLAG_SHARP) && 'd' == currentConversionType)
-        throw new FormatFlagsConversionMismatchException(formatToken.getStrFlags(), currentConversionType)
+        throw new FormatFlagsConversionMismatchException(
+          formatToken.getStrFlags(),
+          currentConversionType)
 
       if (null == bigInt)
         return transformFromNull()
@@ -795,41 +842,53 @@ object Formatter {
     }
 
     private def transformFromFloat(): String = {
-      var result = new StringBuilder()
-      var startIndex = 0
+      var result                = new StringBuilder()
+      var startIndex            = 0
       val currentConversionType = formatToken.getConversionType()
 
-      if (formatToken.isFlagSet(FormatToken.FLAG_MINUS | FormatToken.FLAG_ZERO)) {
+      if (formatToken.isFlagSet(
+            FormatToken.FLAG_MINUS | FormatToken.FLAG_ZERO)) {
         if (!formatToken.isWidthSet())
           throw new MissingFormatWidthException(formatToken.getStrFlags())
       }
 
-      if (formatToken.isFlagSet(FormatToken.FLAG_ADD) && formatToken.isFlagSet(FormatToken.FLAG_SPACE))
+      if (formatToken.isFlagSet(FormatToken.FLAG_ADD) && formatToken.isFlagSet(
+            FormatToken.FLAG_SPACE))
         throw new IllegalFormatFlagsException(formatToken.getStrFlags())
 
-      if (formatToken.isFlagSet(FormatToken.FLAG_MINUS) && formatToken.isFlagSet(FormatToken.FLAG_ZERO))
+      if (formatToken.isFlagSet(FormatToken.FLAG_MINUS) && formatToken
+            .isFlagSet(FormatToken.FLAG_ZERO))
         throw new IllegalFormatFlagsException(formatToken.getStrFlags())
 
       if ('e' == Character.toLowerCase(currentConversionType)) {
         if (formatToken.isFlagSet(FormatToken.FLAG_COMMA))
-          throw new FormatFlagsConversionMismatchException(formatToken.getStrFlags(), currentConversionType)
+          throw new FormatFlagsConversionMismatchException(
+            formatToken.getStrFlags(),
+            currentConversionType)
       }
 
       if ('g' == Character.toLowerCase(currentConversionType)) {
         if (formatToken.isFlagSet(FormatToken.FLAG_SHARP))
-          throw new FormatFlagsConversionMismatchException(formatToken.getStrFlags(), currentConversionType)
+          throw new FormatFlagsConversionMismatchException(
+            formatToken.getStrFlags(),
+            currentConversionType)
       }
 
       if ('a' == Character.toLowerCase(currentConversionType)) {
-        if (formatToken.isFlagSet(FormatToken.FLAG_COMMA) || formatToken.isFlagSet(FormatToken.FLAG_PARENTHESIS))
-          throw new FormatFlagsConversionMismatchException(formatToken.getStrFlags(), currentConversionType)
+        if (formatToken.isFlagSet(FormatToken.FLAG_COMMA) || formatToken
+              .isFlagSet(FormatToken.FLAG_PARENTHESIS))
+          throw new FormatFlagsConversionMismatchException(
+            formatToken.getStrFlags(),
+            currentConversionType)
       }
 
       if (null == arg)
         return transformFromNull()
 
-      if (!(arg.isInstanceOf[Float] || arg.isInstanceOf[Double] || arg.isInstanceOf[BigDecimal]))
-        throw new IllegalFormatConversionException(currentConversionType, arg.getClass())
+      if (!(arg.isInstanceOf[Float] || arg.isInstanceOf[Double] || arg
+            .isInstanceOf[BigDecimal]))
+        throw new IllegalFormatConversionException(currentConversionType,
+                                                   arg.getClass())
 
       val specialNumberResult = transformFromSpecialNumber()
 
@@ -837,7 +896,7 @@ object Formatter {
         return specialNumberResult
 
       if ('a' != Character.toLowerCase(currentConversionType)) {
-        formatToken.setPrecision{
+        formatToken.setPrecision {
           if (formatToken.isPrecisionSet())
             formatToken.getPrecision()
           else
@@ -845,7 +904,11 @@ object Formatter {
         }
       }
 
-      val floatUtil = new FloatUtil(result, formatToken, NumberFormat.getInstance(locale).asInstanceOf[DecimalFormat], arg)
+      val floatUtil = new FloatUtil(
+        result,
+        formatToken,
+        NumberFormat.getInstance(locale).asInstanceOf[DecimalFormat],
+        arg)
       floatUtil.transform(formatToken, result)
 
       formatToken.setPrecision(FormatToken.UNSET)
@@ -867,7 +930,8 @@ object Formatter {
       }
 
       val firstChar = result.charAt(0)
-      if (formatToken.isFlagSet(FormatToken.FLAG_ZERO) && (firstChar == floatUtil.getAddSign() || firstChar == floatUtil.getMinusSign()))
+      if (formatToken.isFlagSet(FormatToken.FLAG_ZERO) && (firstChar == floatUtil
+            .getAddSign() || firstChar == floatUtil.getMinusSign()))
         startIndex = 1
 
       if ('a' == Character.toLowerCase(currentConversionType))
@@ -876,16 +940,19 @@ object Formatter {
     }
 
     private def transformFromDateTime(): String = {
-      val startIndex = 0
+      val startIndex            = 0
       val currentConversionType = formatToken.getConversionType()
 
       if (formatToken.isPrecisionSet())
         throw new IllegalFormatPrecisionException(formatToken.getPrecision())
 
       if (formatToken.isFlagSet(FormatToken.FLAG_SHARP))
-        throw new FormatFlagsConversionMismatchException(formatToken.getStrFlags(), currentConversionType)
+        throw new FormatFlagsConversionMismatchException(
+          formatToken.getStrFlags(),
+          currentConversionType)
 
-      if (formatToken.isFlagSet(FormatToken.FLAG_MINUS) && FormatToken.UNSET == formatToken.getWidth())
+      if (formatToken.isFlagSet(FormatToken.FLAG_MINUS) && FormatToken.UNSET == formatToken
+            .getWidth())
         throw new MissingFormatWidthException("-" + currentConversionType)
 
       if (null == arg)
@@ -900,7 +967,9 @@ object Formatter {
                 case l: Long => new Date(l)
                 case d: Date => d
                 case _ =>
-                  throw new IllegalFormatConversionException(currentConversionType, arg.getClass())
+                  throw new IllegalFormatConversionException(
+                    currentConversionType,
+                    arg.getClass())
               }
             val calendar = Calendar.getInstance(locale)
             calendar.setTime(date)
@@ -920,21 +989,23 @@ object Formatter {
   }
 
   private class FloatUtil(private var result: StringBuilder,
-    private var formatToken: FormatToken,
-    private val decimalFormat: DecimalFormat,
-    private val argument: Object) {
-    private var minusSign = decimalFormat.getDecimalFormatSymbols().getMinusSign()
+                          private var formatToken: FormatToken,
+                          private val decimalFormat: DecimalFormat,
+                          private val argument: Object) {
+    private var minusSign =
+      decimalFormat.getDecimalFormatSymbols().getMinusSign()
 
     def transform(aFormatToken: FormatToken, aResult: StringBuilder): Unit = {
       this.result = aResult
       this.formatToken = aFormatToken
       formatToken.getConversionType() match {
         case 'e' | 'E' => transform_e()
-        case 'f' => transform_f()
+        case 'f'       => transform_f()
         case 'g' | 'G' => transform_g()
         case 'a' | 'A' => transform_a()
         case _ =>
-          throw new UnknownFormatConversionException(String.valueOf(formatToken.getConversionType()))
+          throw new UnknownFormatConversionException(
+            String.valueOf(formatToken.getConversionType()))
       }
     }
 
@@ -956,9 +1027,10 @@ object Formatter {
       val formattedString = decimalFormat.format(argument)
       result.append(formattedString.replace('E', 'e'))
 
-      if (formatToken.isFlagSet(FormatToken.FLAG_SHARP) && 0 == formatToken.getPrecision()) {
+      if (formatToken.isFlagSet(FormatToken.FLAG_SHARP) && 0 == formatToken
+            .getPrecision()) {
         val indexOfE = result.indexOf("e")
-        val dot = decimalFormat.getDecimalFormatSymbols().getDecimalSeparator()
+        val dot      = decimalFormat.getDecimalFormatSymbols().getDecimalSeparator()
         result.insert(indexOfE, dot)
       }
     }
@@ -976,7 +1048,7 @@ object Formatter {
       }
 
       var requireScientificRepresentation = true
-      var d = argument.asInstanceOf[Number].doubleValue()
+      var d                               = argument.asInstanceOf[Number].doubleValue()
       d = Math.abs(d)
       if (java.lang.Double.isInfinite(d)) {
         precision = formatToken.getPrecision()
@@ -1042,7 +1114,8 @@ object Formatter {
       }
       decimalFormat.applyPattern(pattern.toString())
       result.append(decimalFormat.format(argument))
-      if (formatToken.isFlagSet(FormatToken.FLAG_SHARP) && 0 == formatToken.getPrecision()) {
+      if (formatToken.isFlagSet(FormatToken.FLAG_SHARP) && 0 == formatToken
+            .getPrecision()) {
         val dot = decimalFormat.getDecimalFormatSymbols().getDecimalSeparator()
         result.append(dot)
       }
@@ -1052,11 +1125,14 @@ object Formatter {
       val currentConversionType = formatToken.getConversionType()
 
       argument.asInstanceOf[Any] match {
-        case f: Float => result.append(java.lang.Float.toHexString(f.floatValue()))
-        case d: Double => result.append(java.lang.Double.toHexString(d.doubleValue()))
+        case f: Float =>
+          result.append(java.lang.Float.toHexString(f.floatValue()))
+        case d: Double =>
+          result.append(java.lang.Double.toHexString(d.doubleValue()))
         case _ =>
           // BigInteger is not supported.
-          throw new IllegalFormatConversionException(currentConversionType, argument.getClass())
+          throw new IllegalFormatConversionException(currentConversionType,
+                                                     argument.getClass())
       }
 
       if (!formatToken.isPrecisionSet())
@@ -1065,8 +1141,8 @@ object Formatter {
       var precision = formatToken.getPrecision()
       precision = if (0 == precision) 1 else precision
       val indexOfFirstFracitoanlDigit = result.indexOf(".") + 1
-      val indexOfP = result.indexOf("p")
-      val fractionalLength = indexOfP - indexOfFirstFracitoanlDigit
+      val indexOfP                    = result.indexOf("p")
+      val fractionalLength            = indexOfP - indexOfFirstFracitoanlDigit
 
       if (fractionalLength == precision)
         return
@@ -1089,44 +1165,48 @@ object Formatter {
 
     private var dateFormatSymbols: DateFormatSymbols = _
 
-    def transform(formatToken: FormatToken, aCalendar: Calendar, aResult: StringBuilder): Unit = {
+    def transform(formatToken: FormatToken,
+                  aCalendar: Calendar,
+                  aResult: StringBuilder): Unit = {
       this.result = aResult
       this.calendar = aCalendar
       val suffix = formatToken.getDateSuffix()
 
       suffix match {
-        case 'H' => transform_H()
-        case 'I' => transform_I()
-        case 'M' => transform_M()
-        case 'S' => transform_S()
-        case 'L' => transform_L()
-        case 'N' => transform_N()
-        case 'k' => transform_k()
-        case 'l' => transform_l()
-        case 'p' => transform_p(true)
-        case 's' => transform_s()
-        case 'z' => transform_z()
-        case 'Z' => transform_Z()
-        case 'Q' => transform_Q()
-        case 'B' => transform_B()
+        case 'H'       => transform_H()
+        case 'I'       => transform_I()
+        case 'M'       => transform_M()
+        case 'S'       => transform_S()
+        case 'L'       => transform_L()
+        case 'N'       => transform_N()
+        case 'k'       => transform_k()
+        case 'l'       => transform_l()
+        case 'p'       => transform_p(true)
+        case 's'       => transform_s()
+        case 'z'       => transform_z()
+        case 'Z'       => transform_Z()
+        case 'Q'       => transform_Q()
+        case 'B'       => transform_B()
         case 'b' | 'h' => transform_b()
-        case 'A' => transform_A()
-        case 'a' => transform_a()
-        case 'C' => transform_C()
-        case 'Y' => transform_Y()
-        case 'y' => transform_y()
-        case 'j' => transform_j()
-        case 'm' => transform_m()
-        case 'd' => transform_d()
-        case 'e' => transform_e()
-        case 'R' => transform_R()
-        case 'T' => transform_T()
-        case 'r' => transform_r()
-        case 'D' => transform_D()
-        case 'F' => transform_F()
-        case 'c' => transform_c()
+        case 'A'       => transform_A()
+        case 'a'       => transform_a()
+        case 'C'       => transform_C()
+        case 'Y'       => transform_Y()
+        case 'y'       => transform_y()
+        case 'j'       => transform_j()
+        case 'm'       => transform_m()
+        case 'd'       => transform_d()
+        case 'e'       => transform_e()
+        case 'R'       => transform_R()
+        case 'T'       => transform_T()
+        case 'r'       => transform_r()
+        case 'D'       => transform_D()
+        case 'F'       => transform_F()
+        case 'c'       => transform_c()
         case _ =>
-          throw new UnknownFormatConversionException(String.valueOf(formatToken.getConversionType()) + formatToken.getDateSuffix())
+          throw new UnknownFormatConversionException(
+            String.valueOf(formatToken.getConversionType()) + formatToken
+              .getDateSuffix())
       }
     }
 
@@ -1197,7 +1277,10 @@ object Formatter {
 
     private def transform_Z(): Unit = {
       val timeZone = calendar.getTimeZone()
-      result.append(timeZone.getDisplayName(timeZone.inDaylightTime(calendar.getTime()), TimeZone.SHORT, locale))
+      result.append(
+        timeZone.getDisplayName(timeZone.inDaylightTime(calendar.getTime()),
+                                TimeZone.SHORT,
+                                locale))
     }
 
     private def transform_z(): Unit = {
@@ -1324,7 +1407,7 @@ object Formatter {
 
   private object DateTimeUtil {
     private def paddingZeros(number: Long, length: Int): String = {
-      var len = length
+      var len    = length
       val result = new StringBuilder()
       result.append(number)
       var startIndex = 0
@@ -1378,10 +1461,10 @@ object Formatter {
             case ParserStateMachine.EXIT_STATE =>
               process_EXIT_STATE()
               break()
-              // plain text state, not yet applied converter
+            // plain text state, not yet applied converter
             case ParserStateMachine.ENTRY_STATE =>
               process_ENTRY_STATE()
-              // begins converted string
+            // begins converted string
             case ParserStateMachine.START_CONVERSION_STATE =>
               process_START_CONVERSION_STATE()
             case ParserStateMachine.FLAGS_STATE =>
@@ -1411,7 +1494,8 @@ object Formatter {
     private def getFormatString(): String = {
       val end = format.position()
       format.rewind()
-      val formatString = format.subSequence(token.getFormatStringStartIndex(), end).toString()
+      val formatString =
+        format.subSequence(token.getFormatStringStartIndex(), end).toString()
       format.position(end)
       formatString
     }
@@ -1428,8 +1512,8 @@ object Formatter {
 
     private def process_START_CONVERSION_STATE(): Unit = {
       if (Character.isDigit(currentChar)) {
-        val position = format.position() - 1
-        val number = parseInt(format)
+        val position       = format.position() - 1
+        val number         = parseInt(format)
         var nextChar: Char = 0
         if (format.hasRemaining()) {
           nextChar = format.get()
@@ -1523,13 +1607,13 @@ object Formatter {
 
     private def parseInt(buffer: CharBuffer): Int = {
       val start = buffer.position() - 1
-      var end = buffer.limit()
-      val b = new Breaks
+      var end   = buffer.limit()
+      val b     = new Breaks
       import b.{breakable, break}
       breakable {
         while (buffer.hasRemaining()) {
           if (!Character.isDigit(buffer.get())) {
-            end = buffer.position() -1
+            end = buffer.position() - 1
             break()
           }
         }
