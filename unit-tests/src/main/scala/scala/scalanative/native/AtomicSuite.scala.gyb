@@ -191,4 +191,38 @@ object AtomicSuite extends tests.Suite {
   }
 % end
 % end
+
+  test("multiple compare and swap should yield correct results") {
+    val a = CAtomicInt()
+
+    var i = 0
+
+    while(i < 10) {
+        assert(a.compareAndSwapStrong(i, i + 1)._2 == i + 1)
+        i += 1
+    }
+
+    assert(a.load() == 10)
+
+    a.free()
+  }
+
+  test("store behaves as expected") {
+    val a = CAtomicInt()
+
+    a.store(1)
+
+    assert(a.load() == 1)
+
+    a.free()
+  }
+
+  test("constructor with initial value") {
+    val a = CAtomicLong(2.toLong)
+
+    assert(a.load() == 2.toLong)
+
+    a.free()
+  }
+
 }
