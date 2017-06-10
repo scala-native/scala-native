@@ -29,6 +29,9 @@ object fcntl {
   @name("scalanative_o_creat")
   def O_CREAT: CInt = extern
 
+  @name("scalanative_o_trunc")
+  def O_TRUNC: CInt = extern
+
   @name("scalanative_w_ok")
   def W_OK: CInt = extern
 

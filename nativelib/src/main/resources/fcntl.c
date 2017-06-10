@@ -9,3 +9,5 @@ int scalanative_o_rdwr() { return O_RDWR; }
 int scalanative_o_append() { return O_APPEND; }
 
 int scalanative_o_creat() { return O_CREAT; }
+
+int scalanative_o_trunc() { return O_TRUNC; }
