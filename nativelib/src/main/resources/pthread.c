@@ -57,14 +57,6 @@ int scalanative_pthread_mutex_recursive() {
     return PTHREAD_MUTEX_RECURSIVE;
 }
 
-int scalanative_pthread_mutex_robust() {
-    return PTHREAD_MUTEX_ROBUST;
-}
-
-int scalanative_pthread_mutex_stalled() {
-    return PTHREAD_MUTEX_STALLED;
-}
-
 pthread_once_t scalanative_pthread_once_init() {
     pthread_once_t once_block = PTHREAD_ONCE_INIT;
     return once_block;
