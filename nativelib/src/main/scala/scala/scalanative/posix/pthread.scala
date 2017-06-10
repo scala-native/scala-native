@@ -332,7 +332,7 @@ object pthread {
   def PTHREAD_MUTEX_STALLED: CInt = extern
 
   @name("scalanative_pthread_once_init")
-  def PTHREAD_ONCE_INIT: CInt = extern
+  def PTHREAD_ONCE_INIT: pthread_once_t = extern
 
   @name("scalanative_pthread_prio_inherit")
   def PTHREAD_PRIO_INHERIT: CInt = extern

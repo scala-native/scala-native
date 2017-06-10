@@ -65,8 +65,9 @@ int scalanative_pthread_mutex_stalled() {
     return PTHREAD_MUTEX_STALLED;
 }
 
-int scalanative_pthread_once_init() {
-    return PTHREAD_ONCE_INIT;
+pthread_once_t scalanative_pthread_once_init() {
+    pthread_once_t once_block = PTHREAD_ONCE_INIT;
+    return once_block;
 }
 
 int scalanative_pthread_prio_inherit() {
