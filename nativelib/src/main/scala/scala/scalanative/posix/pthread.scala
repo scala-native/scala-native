@@ -15,6 +15,9 @@ import scala.scalanative.posix.sched.sched_param
 import scala.scalanative.posix.sys.types._
 import scala.scalanative.posix.time.timespec
 
+// SUSv3 version is used for OSX compatibility
+// see http://pubs.opengroup.org/onlinepubs/009695399/basedefs/pthread.h.html
+
 @extern
 object pthread {
 
@@ -72,6 +75,9 @@ object pthread {
                             stackaddr: Ptr[Byte],
                             stacksize: CSize): CInt = extern
 
+  def pthread_attr_setstackaddr(attr: Ptr[pthread_attr_t],
+                                stackaddr: Ptr[Byte]): CInt = extern
+
   def pthread_attr_setstacksize(attr: Ptr[pthread_attr_t],
                                 stacksize: CSize): CInt = extern
 
@@ -95,6 +101,11 @@ object pthread {
                                      pshared: CInt): CInt = extern
 
   def pthread_cancel(thread: pthread_t): CInt = extern
+
+  def pthread_cleanup_push(routine: CFunctionPtr1[Ptr[Byte], Unit],
+                           arg: Ptr[Byte]): Unit = extern
+
+  def pthread_cleanup_pop(execute: CInt): Unit = extern
 
   def pthread_cond_broadcast(cond: Ptr[pthread_cond_t]): CInt = extern
 
@@ -158,8 +169,6 @@ object pthread {
 
   def pthread_key_delete(key: pthread_key_t): CInt = extern
 
-  def pthread_mutex_consistent(mutex: Ptr[pthread_mutex_t]): CInt = extern
-
   def pthread_mutex_destroy(mutex: Ptr[pthread_mutex_t]): CInt = extern
 
   def pthread_mutex_getprioceiling(mutex: Ptr[pthread_mutex_t],
@@ -192,9 +201,6 @@ object pthread {
   def pthread_mutexattr_getpshared(attr: Ptr[pthread_mutexattr_t],
                                    pshared: Ptr[CInt]): CInt = extern
 
-  def pthread_mutexattr_getrobust(attr: Ptr[pthread_mutexattr_t],
-                                  robust: Ptr[CInt]): CInt = extern
-
   def pthread_mutexattr_gettype(attr: Ptr[pthread_mutexattr_t],
                                 tp: Ptr[CInt]): CInt = extern
 
@@ -208,9 +214,6 @@ object pthread {
 
   def pthread_mutexattr_setpshared(attr: Ptr[pthread_mutexattr_t],
                                    pshared: CInt): CInt = extern
-
-  def pthread_mutexattr_setrobust(attr: Ptr[pthread_mutexattr_t],
-                                  robust: CInt): CInt = extern
 
   def pthread_mutexattr_settype(attr: Ptr[pthread_mutexattr_t],
                                 tp: CInt): CInt = extern
@@ -324,12 +327,6 @@ object pthread {
 
   @name("scalanative_pthread_mutex_recursive")
   def PTHREAD_MUTEX_RECURSIVE: CInt = extern
-
-  @name("scalanative_pthread_mutex_robust")
-  def PTHREAD_MUTEX_ROBUST: CInt = extern
-
-  @name("scalanative_pthread_mutex_stalled")
-  def PTHREAD_MUTEX_STALLED: CInt = extern
 
   @name("scalanative_pthread_once_init")
   def PTHREAD_ONCE_INIT: pthread_once_t = extern
