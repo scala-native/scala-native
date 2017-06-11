@@ -1,7 +1,8 @@
 package java.net
 
+// Ported from Apache Harmony
 object InetAddressSuite extends tests.Suite {
-  
+
   test("equals should work on localhosts from getByName") {
     val ia1 = InetAddress.getByName("ip6-localhost")
     val ia2 = InetAddress.getByName("::1")
@@ -10,18 +11,17 @@ object InetAddressSuite extends tests.Suite {
 
   test("getAddress") {
     try {
-      val ia = InetAddress.getByName("127.0.0.1")
+      val ia    = InetAddress.getByName("127.0.0.1")
       val caddr = Array[Byte](127.toByte, 0.toByte, 0.toByte, 1.toByte)
-      val addr = ia.getAddress()
-      for(i <- addr.indices)
+      val addr  = ia.getAddress()
+      for (i <- addr.indices)
         assertEquals(caddr(i), addr(i))
-    }
-    catch {
+    } catch {
       case e: UnknownHostException => {}
     }
 
     val origBytes = Array[Byte](0.toByte, 1.toByte, 2.toByte, 3.toByte)
-    val address = InetAddress.getByAddress(origBytes)
+    val address   = InetAddress.getByAddress(origBytes)
     origBytes(0) = -1
     val newBytes = address.getAddress()
     assertEquals(newBytes(0), 0.toByte)
@@ -32,22 +32,22 @@ object InetAddressSuite extends tests.Suite {
     assertNot(all == null)
     assert(all.length >= 1)
 
-    for(alias <- all) 
+    for (alias <- all)
       assert(alias.getHostName().startsWith("localhost"))
 
     val ias = InetAddress.getAllByName(null)
-    for(ia <- ias)
+    for (ia <- ias)
       assert(ia.isLoopbackAddress())
 
     val ias2 = InetAddress.getAllByName("")
-    for(ia <- ias2)
+    for (ia <- ias2)
       assert(ia.isLoopbackAddress())
 
     // Check that getting addresses by dotted string distingush IPv4 and IPv6 subtypes
     val list = InetAddress.getAllByName("192.168.0.1")
-    for(addr <- list)
+    for (addr <- list)
       assertNot(addr.getClass == classOf[InetAddress])
-    
+
   }
 
   test("getByName") {
@@ -65,7 +65,8 @@ object InetAddressSuite extends tests.Suite {
 
   test("getHostAddress") {
     assertEquals("1.3.0.4", InetAddress.getByName("1.3.4").getHostAddress())
-    assertEquals("0:0:0:0:0:0:0:1", InetAddress.getByName("::1").getHostAddress())
+    assertEquals("0:0:0:0:0:0:0:1",
+                 InetAddress.getByName("::1").getHostAddress())
   }
 
   // TODO
@@ -147,8 +148,5 @@ object InetAddressSuite extends tests.Suite {
   test("toString") {
     assertEquals("/127.0.0.1", InetAddress.getByName("127.0.0.1").toString)
   }
-
-
-
 
 }
