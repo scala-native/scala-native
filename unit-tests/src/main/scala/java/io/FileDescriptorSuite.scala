@@ -39,4 +39,13 @@ object FileDescriptorSuite extends tests.Suite {
       fd.sync()
     }
   }
+
+  test("valid should verify that file descriptor is still valid") {
+    val tmpFile = File.createTempFile("tmp", ".tmp")
+    assert(tmpFile.exists())
+    val fis = new FileInputStream(tmpFile)
+    assert(fis.getFD().valid())
+    fis.close()
+    assertNot(fis.getFD().valid())
+  }
 }

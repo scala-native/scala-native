@@ -1,6 +1,6 @@
 package java.io
 
-import scala.scalanative.posix.unistd
+import scala.scalanative.posix.{fcntl, unistd}
 
 /** Wraps a UNIX file descriptor */
 final class FileDescriptor private[io] (private[io] val fd: Int,
@@ -18,7 +18,7 @@ final class FileDescriptor private[io] (private[io] val fd: Int,
       }
     }
 
-  def valid(): Boolean = fd != -1
+  def valid(): Boolean = fcntl.fcntl(fd, fcntl.F_GETFD) != -1
 
   private def throwSyncFailed(): Unit =
     throw new SyncFailedException("sync failed")
