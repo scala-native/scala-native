@@ -41,4 +41,60 @@ object FileOutputStreamSuite extends tests.Suite {
       fos.write(arr, 4, 8)
     }
   }
+
+  test("truncate a file on initialization if append=false") {
+    val nonEmpty = File.createTempFile("scala-native-unit-test", null)
+    try {
+      // prepares a non-empty file
+      locally {
+        val fos = new FileOutputStream(nonEmpty)
+        try { fos.write(0x20) } finally { fos.close() }
+      }
+      // re-opens the file with append=false so that it is truncated
+      locally {
+        val fos = new FileOutputStream(nonEmpty)
+        fos.close()
+      }
+      // checks the content
+      locally {
+        val fin = new FileInputStream(nonEmpty)
+        try {
+          assertEquals(-1, fin.read())
+        } finally {
+          fin.close()
+        }
+      }
+    } finally {
+      nonEmpty.delete()
+    }
+  }
+
+  test("do not truncate a file on initialization if append=true") {
+    val nonEmpty = File.createTempFile("scala-native-unit-test", null)
+    try {
+      val written = 0x20
+      // prepares a non-empty file
+      locally {
+        val fos = new FileOutputStream(nonEmpty)
+        try { fos.write(written) } finally { fos.close() }
+      }
+      // re-opens the file with append=true
+      locally {
+        val fos = new FileOutputStream(nonEmpty, true)
+        fos.close()
+      }
+      // checks the content
+      locally {
+        val fin = new FileInputStream(nonEmpty)
+        try {
+          assertEquals(written, fin.read())
+          assertEquals(-1, fin.read())
+        } finally {
+          fin.close()
+        }
+      }
+    } finally {
+      nonEmpty.delete()
+    }
+  }
 }
