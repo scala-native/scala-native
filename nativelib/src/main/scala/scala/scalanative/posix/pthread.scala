@@ -228,9 +228,6 @@ object pthread {
   type routine = CFunctionPtr0[Unit]
 
   // Macros
-  @name("scalanative_pthread_barrier_serial_thread")
-  def PTHREAD_BARRIER_SERIAL_THREAD: CInt = extern
-
   @name("scalanative_pthread_cancel_asynchronous")
   def PTHREAD_CANCEL_ASYNCHRONOUS: CInt = extern
 

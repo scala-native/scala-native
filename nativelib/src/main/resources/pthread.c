@@ -1,10 +1,6 @@
 #include <pthread.h>
 #include <sys/types.h>
 
-int scalanative_pthread_barrier_serial_thread() {
-    return PTHREAD_BARRIER_SERIAL_THREAD;
-}
-
 int scalanative_pthread_cancel_asynchronous() {
     return PTHREAD_CANCEL_ASYNCHRONOUS;
 }
