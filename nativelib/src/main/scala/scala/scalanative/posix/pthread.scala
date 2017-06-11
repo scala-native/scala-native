@@ -15,8 +15,8 @@ import scala.scalanative.posix.sched.sched_param
 import scala.scalanative.posix.sys.types._
 import scala.scalanative.posix.time.timespec
 
-// SUSv3 version is used for OSX compatibility
-// see http://pubs.opengroup.org/onlinepubs/009695399/basedefs/pthread.h.html
+// SUSv2 version is used for compatibility
+// see http://pubs.opengroup.org/onlinepubs/007908799/xsh/threads.html
 
 @extern
 object pthread {
@@ -44,10 +44,6 @@ object pthread {
   def pthread_attr_getscope(attr: Ptr[pthread_attr_t],
                             scope: Ptr[CInt]): CInt = extern
 
-  def pthread_attr_getstack(attr: Ptr[pthread_attr_t],
-                            stackaddr: Ptr[Ptr[Byte]],
-                            stacksize: CSize): CInt = extern
-
   def pthread_attr_getstacksize(attr: Ptr[pthread_attr_t],
                                 stacksize: Ptr[CSize]): CInt = extern
 
@@ -71,34 +67,11 @@ object pthread {
   def pthread_attr_setscope(attr: Ptr[pthread_attr_t], scope: CInt): CInt =
     extern
 
-  def pthread_attr_setstack(attr: Ptr[pthread_attr_t],
-                            stackaddr: Ptr[Byte],
-                            stacksize: CSize): CInt = extern
-
   def pthread_attr_setstackaddr(attr: Ptr[pthread_attr_t],
                                 stackaddr: Ptr[Byte]): CInt = extern
 
   def pthread_attr_setstacksize(attr: Ptr[pthread_attr_t],
                                 stacksize: CSize): CInt = extern
-
-  def pthread_barrier_destroy(barrier: Ptr[pthread_barrier_t]): CInt = extern
-
-  def pthread_barrier_init(barrier: Ptr[pthread_barrier_t],
-                           attr: Ptr[pthread_barrierattr_t],
-                           count: CUnsignedInt): CInt = extern
-
-  def pthread_barrier_wait(barrier: Ptr[pthread_barrier_t]): CInt = extern
-
-  def pthread_barrierattr_destroy(attr: Ptr[pthread_barrierattr_t]): CInt =
-    extern
-
-  def pthread_barrierattr_getpshared(attr: Ptr[pthread_barrierattr_t],
-                                     pshared: Ptr[CInt]): CInt = extern
-
-  def pthread_barrierattr_init(attr: Ptr[pthread_barrierattr_t]): CInt = extern
-
-  def pthread_barrierattr_setpshared(attr: Ptr[pthread_barrierattr_t],
-                                     pshared: CInt): CInt = extern
 
   def pthread_cancel(thread: pthread_t): CInt = extern
 
@@ -125,16 +98,10 @@ object pthread {
 
   def pthread_condattr_destroy(attr: Ptr[pthread_condattr_t]): CInt = extern
 
-  def pthread_condattr_getclock(attr: Ptr[pthread_condattr_t],
-                                clock: Ptr[clockid_t]): CInt = extern
-
   def pthread_condattr_getpshared(attr: Ptr[pthread_condattr_t],
                                   pshared: Ptr[CInt]): CInt = extern
 
   def pthread_condattr_init(attr: Ptr[pthread_condattr_t]): CInt = extern
-
-  def pthread_condattr_setclock(attr: Ptr[pthread_condattr_t],
-                                clock: clockid_t): CInt = extern
 
   def pthread_condattr_setpshared(attr: Ptr[pthread_condattr_t],
                                   pshared: CInt): CInt = extern
@@ -151,9 +118,6 @@ object pthread {
   def pthread_exit(retval: Ptr[Byte]): Unit = extern
 
   def pthread_getconcurrency(): CInt = extern
-
-  def pthread_getcpuclockid(thread: pthread_t, clock: Ptr[clockid_t]): CInt =
-    extern
 
   def pthread_getschedparam(thread: pthread_t,
                             policy: Ptr[CInt],
@@ -182,9 +146,6 @@ object pthread {
   def pthread_mutex_setprioceiling(mutex: Ptr[pthread_mutex_t],
                                    prioceiling: CInt,
                                    old_prioceiling: Ptr[CInt]): CInt = extern
-
-  def pthread_mutex_timedlock(mutex: Ptr[pthread_mutex_t],
-                              timespec: Ptr[timespec]): CInt = extern
 
   def pthread_mutex_trylock(mutex: Ptr[pthread_mutex_t]): CInt = extern
 
@@ -228,12 +189,6 @@ object pthread {
 
   def pthread_rwlock_rdlock(rwlock: Ptr[pthread_rwlock_t]): CInt = extern
 
-  def pthread_rwlock_timedrdlock(rwlock: Ptr[pthread_rwlock_t],
-                                 timespec: Ptr[timespec]): CInt = extern
-
-  def pthread_rwlock_timedwrlock(rwlock: Ptr[pthread_rwlock_t],
-                                 timespec: Ptr[timespec]): CInt = extern
-
   def pthread_rwlock_tryrdlock(rwlock: Ptr[pthread_rwlock_t]): CInt = extern
 
   def pthread_rwlock_trywrlock(rwlock: Ptr[pthread_rwlock_t]): CInt = extern
@@ -265,20 +220,7 @@ object pthread {
                             policy: CInt,
                             param: Ptr[sched_param]): CInt = extern
 
-  def pthread_setschedprio(thread: pthread_t, schedprio: CInt): CInt = extern
-
   def pthread_setspecific(key: pthread_key_t, value: Ptr[Byte]): CInt = extern
-
-  def pthread_spin_destroy(spinlock: Ptr[pthread_spinlock_t]): CInt = extern
-
-  def pthread_spin_init(spinlock: Ptr[pthread_spinlock_t],
-                        pshared: CInt): CInt = extern
-
-  def pthread_spin_lock(spinlock: Ptr[pthread_spinlock_t]): CInt = extern
-
-  def pthread_spin_trylock(spinlock: Ptr[pthread_spinlock_t]): CInt = extern
-
-  def pthread_spin_unlock(spinlock: Ptr[pthread_spinlock_t]): CInt = extern
 
   def pthread_testcancel(): Unit = extern
 
