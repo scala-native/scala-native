@@ -72,7 +72,7 @@ class BufferedReader(in: Reader, sz: Int) extends Reader {
   def readLine(): String = {
     ensureOpen()
 
-    var sb = new java.lang.StringBuilder
+    val sb = new java.lang.StringBuilder(80)
 
     while (prepareRead() && buf(pos) != '\n' && buf(pos) != '\r') {
       sb.append(buf(pos))
