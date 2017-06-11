@@ -36,9 +36,11 @@ class Formatter(
 
   private var lastIOException: IOException = _
 
-  // Note: According to JDK Javadoc, Locale.getDefault() should be
+  // Porting note: According to JDK Javadoc, Locale.getDefault() should be
   // Locale.getDefault(Locale.Category.FORMAT). However, the former is used because
   // Harmony does. The category doesn't exist yet in Scala Native, anyway.
+  // Porting note #2: The test suite, which is also ported from Harmony,
+  // assumes Locale.getDefault() as the default locale.
   def this() =
     this(new StringBuilder(), Locale.getDefault())
   def this(a: Appendable) =
@@ -386,7 +388,7 @@ object Formatter {
 
       if (Character.isUpperCase(token.getConversionType())) {
         if (null != result) {
-          // Note: Harmony does this but this.locale should be respected
+          // Porting note: Harmony does this but this.locale should be respected
           result = result.toUpperCase(Locale.US)
         }
       }
@@ -525,7 +527,7 @@ object Formatter {
     }
 
     private def transformFromPercent(): String = {
-      val result = new StringBuilder()
+      val result = new StringBuilder("%")
 
       val startIndex = 0
       val flags      = formatToken.getFlags()
