@@ -26,10 +26,23 @@ class Formatter(
   if (_out == null)
     _out = new StringBuilder()
 
-  sealed trait BigDecimalLayoutForm
+  final class BigDecimalLayoutForm private (name: String, ordinal: Int)
+      extends Enum[BigDecimalLayoutForm](name, ordinal)
+
   object BigDecimalLayoutForm {
-    case object SCIENTIFIC    extends BigDecimalLayoutForm
-    case object DECIMAL_FLOAT extends BigDecimalLayoutForm
+    final val SCIENTIFIC    = new BigDecimalLayoutForm("SCIENTIFIC", 0)
+    final val DECIMAL_FLOAT = new BigDecimalLayoutForm("DECIMAL_FLOAT", 1)
+
+    def valueOf(name: String): BigDecimalLayoutForm =
+      _values.find(_.name == name).getOrElse {
+        throw new IllegalArgumentException(
+          "No enum constant java.util.Formatter.BigDecimalLayoutForm." + name)
+      }
+
+    private val _values: Array[BigDecimalLayoutForm] =
+      Array(SCIENTIFIC, DECIMAL_FLOAT)
+
+    def values(): Array[BigDecimalLayoutForm] = _values.clone()
   }
 
   private var closed: Boolean = false

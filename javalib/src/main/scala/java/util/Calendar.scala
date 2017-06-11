@@ -2,11 +2,22 @@ package java.util
 
 import java.io.Serializable
 
-class Calendar(zone: TimeZone, aLocale: Locale)
+// TODO
+
+abstract class Calendar
     extends Serializable
     with Cloneable
     with Comparable[Calendar] {
   def get(field: Int): Int = ???
+
+  def set(field: Int, value: Int): Unit = ???
+
+  def set(year: Int,
+          month: Int,
+          date: Int,
+          hourOfDay: Int,
+          minute: Int,
+          second: Int): Unit = ???
 
   def compareTo(anotherCalendar: Calendar): Int = ???
 
@@ -21,10 +32,14 @@ class Calendar(zone: TimeZone, aLocale: Locale)
   def getTimeZone(): TimeZone = ???
 
   def setTime(date: Date): Unit = ???
+
+  def setTimeZone(timezone: TimeZone): Unit = ???
 }
 
 object Calendar {
   def getInstance(locale: Locale): Calendar = ???
+
+  def getInstance(zone: TimeZone, locale: Locale): Calendar = ???
 
   val YEAR: Int         = 0
   val MONTH: Int        = 0
