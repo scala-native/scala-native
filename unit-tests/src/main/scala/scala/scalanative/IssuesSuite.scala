@@ -341,4 +341,8 @@ object IssuesSuite extends tests.Suite {
     val x14: AnyRef = null
     assert(x13 + x14 == "nullnull")
   }
+
+  test("#809") {
+    assert(null.asInstanceOf[AnyRef].## == 0)
+  }
 }
