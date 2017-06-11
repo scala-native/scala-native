@@ -1411,12 +1411,22 @@ abstract class NirCodeGen
     }
 
     def genStringConcat(leftp: Tree, rightp: Tree, focus: Focus): Focus = {
-      def stringify(sym: Symbol, focus: Focus) =
-        if (sym == StringClass) {
-          focus
-        } else {
-          genMethodCall(Object_toString, statically = false, focus.value, Seq(), focus)
+      def stringify(sym: Symbol, focus: Focus) = {
+        val isnull = focus withOp Op.Comp(Comp.Ieq, Rt.Object, focus.value, Val.Null)
+        val cond   = ValTree(isnull.value)
+        val thenp  = ContTree { focus =>
+          focus withValue Val.String("null")
         }
+        val elsep  = ContTree { inner =>
+          if (sym == StringClass) {
+            inner withValue focus.value
+          } else {
+            val meth = Object_toString
+            genMethodCall(meth, statically = false, focus.value, Seq(), inner)
+          }
+        }
+        genIf(Rt.String, cond, thenp, elsep, isnull)
+      }
 
       val left = {
         val typesym = leftp.tpe.typeSymbol
