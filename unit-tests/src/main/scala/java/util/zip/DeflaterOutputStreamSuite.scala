@@ -44,6 +44,25 @@ object DeflaterOutputStreamSuite extends tests.Suite {
     }
   }
 
+  test("DeflaterOutputStream can be flushed with `SYNC_FLUSH`") {
+    val bos = new ByteArrayOutputStream
+    val out =
+      new DeflaterOutputStream(bos, new Deflater, 16, /* syncFlush = */ true)
+    val expected = Array(120, -100, 99, 100, 28, 5, -93, 96, 20, -116, 84, 0,
+      0, 6, 120, 4, 1)
+    val bytes = Array.fill[Byte](1024)(1)
+    out.write(bytes)
+    out.flush()
+    out.close()
+
+    val result = bos.toByteArray()
+
+    assert(result.length == expected.length)
+    result.zip(expected).foreach {
+      case (a, b) => assert(a == b)
+    }
+  }
+
   // The following tests are
   // Ported from Apache Harmony
   private class MyDeflaterOutputStream(out: OutputStream,

@@ -82,6 +82,19 @@ class DeflaterOutputStream(os: OutputStream,
       }
     }
   }
+
+  override def flush(): Unit = {
+    if (syncFlush && !`def`.finished()) {
+      var written = 0
+      while ({
+        written = `def`.deflate(buf, 0, size, Deflater.SYNC_FLUSH);
+        written != 0
+      }) {
+        out.write(buf, 0, written)
+      }
+    }
+    os.flush()
+  }
 }
 
 object DeflaterOutputStream {
