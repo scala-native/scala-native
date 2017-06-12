@@ -72,6 +72,9 @@ package object native {
   /** The C/C++ 'size_t' type. */
   type CSize = Word
 
+  /** The C/C++ 'ssize_t' type. */
+  type CSSize = Word
+
   /** The C/C++ 'ptrdiff_t' type. */
   type CPtrDiff = Long
 
