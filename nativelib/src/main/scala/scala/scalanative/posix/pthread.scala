@@ -75,11 +75,6 @@ object pthread {
 
   def pthread_cancel(thread: pthread_t): CInt = extern
 
-  def pthread_cleanup_push(routine: CFunctionPtr1[Ptr[Byte], Unit],
-                           arg: Ptr[Byte]): Unit = extern
-
-  def pthread_cleanup_pop(execute: CInt): Unit = extern
-
   def pthread_cond_broadcast(cond: Ptr[pthread_cond_t]): CInt = extern
 
   def pthread_cond_destroy(cond: Ptr[pthread_cond_t]): CInt = extern
