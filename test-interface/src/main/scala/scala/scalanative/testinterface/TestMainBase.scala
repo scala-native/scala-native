@@ -56,9 +56,9 @@ abstract class TestMainBase {
   /** Sets up the server socket, returns the file descriptor. */
   private def setupServer(port: uint16_t)(implicit zone: Zone): CInt = {
     val server_address = native.alloc[sockaddr_in]
-    !server_address._1 = htons(port)
-    !server_address._2._1 = htonl(INADDR_ANY)
-    !server_address._3 = socket.AF_INET.toUShort
+    !server_address._1 = socket.AF_INET.toUShort
+    !server_address._2 = htons(port)
+    !server_address._3._1 = htonl(INADDR_ANY)
 
     val listen_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
     if (listen_sock < 0) {
@@ -95,7 +95,7 @@ abstract class TestMainBase {
       implicit zone: Zone): T = {
     val client_address     = native.alloc[sockaddr_in]
     val client_address_len = native.alloc[socklen_t]
-    !client_address_len = 0.toUInt
+    !client_address_len = sizeof[sockaddr_in].toUInt
 
     val client_socket =
       accept(socket, client_address.cast[Ptr[sockaddr]], client_address_len)
