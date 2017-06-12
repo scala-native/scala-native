@@ -288,7 +288,6 @@ lazy val sbtScalaNative =
           publishLocal in nativelib,
           publishLocal in javalib,
           publishLocal in scalalib,
-          publishLocal in stubs,
           publishLocal in testInterfaceSbtDefs,
           publishLocal in testInterfaceSerialization,
           publishLocal in testInterface
@@ -433,15 +432,6 @@ lazy val tests =
     )
     .enablePlugins(ScalaNativePlugin)
 
-lazy val stubs =
-  project
-    .in(file("scalanative-stubs"))
-    .settings(libSettings)
-    .settings(
-      name := "scalanative-stubs",
-      libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test)
-    .enablePlugins(ScalaNativePlugin)
-
 lazy val sandbox =
   project
     .in(file("sandbox"))
@@ -521,7 +511,7 @@ lazy val testInterface =
       libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test
     )
     .enablePlugins(ScalaNativePlugin)
-    .dependsOn(testInterfaceSerialization, stubs)
+    .dependsOn(testInterfaceSerialization)
 
 lazy val testInterfaceSerialization =
   project
