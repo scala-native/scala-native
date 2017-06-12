@@ -6,11 +6,12 @@ import native._
 
 @extern
 object socket {
-  type socklen_t        = CUnsignedInt
-  type sa_family_t      = CUnsignedShort
-  type _14              = Nat.Digit[Nat._1, Nat._4]
-  type sockaddr         = CStruct2[sa_family_t, // sa_family
-                                   CArray[CChar, _14]] // sa_data, size = 14 in OS X and Linux
+  type socklen_t   = CUnsignedInt
+  type sa_family_t = CUnsignedShort
+  type _14         = Nat.Digit[Nat._1, Nat._4]
+  type sockaddr =
+    CStruct2[sa_family_t, // sa_family
+             CArray[CChar, _14]] // sa_data, size = 14 in OS X and Linux
   type sockaddr_storage = CStruct1[sa_family_t] // ss_family
   type msghdr = CStruct7[Ptr[Byte], // msg_name
                          socklen_t, // msg_namelen
