@@ -46,7 +46,7 @@ final class _Class[A](val ty: Ptr[Type]) {
     ???
 
   def getField(name: String): Field =
-    null
+    ???
 
   def isArray(): scala.Boolean =
     (ty == typeof[BooleanArray] ||
