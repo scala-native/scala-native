@@ -36,118 +36,88 @@ object complex {
   @name("scalanative_cacos")
   def cacos(complex: Ptr[CDoubleComplex],
             result: Ptr[CDoubleComplex]): Ptr[CDoubleComplex] = extern
-  //  extern long double complex cacosl(long double complex);
-
   @name("scalanative_casinf")
   def casinf(complex: Ptr[CFloatComplex],
              result: Ptr[CFloatComplex]): Ptr[CFloatComplex] = extern
   @name("scalanative_casin")
   def casin(complex: Ptr[CDoubleComplex],
             result: Ptr[CDoubleComplex]): Ptr[CDoubleComplex] = extern
-  //  extern long double complex casinl(long double complex);
-
   @name("scalanative_catanf")
   def catanf(complex: Ptr[CFloatComplex],
              result: Ptr[CFloatComplex]): Ptr[CFloatComplex] = extern
   @name("scalanative_catan")
   def catan(complex: Ptr[CDoubleComplex],
             result: Ptr[CDoubleComplex]): Ptr[CDoubleComplex] = extern
-  //  extern long double complex catanl(long double complex);
-
   @name("scalanative_ccosf")
   def ccosf(complex: Ptr[CFloatComplex],
             result: Ptr[CFloatComplex]): Ptr[CFloatComplex] = extern
   @name("scalanative_ccos")
   def ccos(complex: Ptr[CDoubleComplex],
            result: Ptr[CDoubleComplex]): Ptr[CDoubleComplex] = extern
-  //  extern long double complex ccosl(long double complex);
-
   @name("scalanative_csinf")
   def csinf(complex: Ptr[CFloatComplex],
             result: Ptr[CFloatComplex]): Ptr[CFloatComplex] = extern
   @name("scalanative_csin")
   def csin(complex: Ptr[CDoubleComplex],
            result: Ptr[CDoubleComplex]): Ptr[CDoubleComplex] = extern
-  //  extern long double complex csinl(long double complex);
-
   @name("scalanative_ctanf")
   def ctanf(complex: Ptr[CFloatComplex],
             result: Ptr[CFloatComplex]): Ptr[CFloatComplex] = extern
   @name("scalanative_ctan")
   def ctan(complex: Ptr[CDoubleComplex],
            result: Ptr[CDoubleComplex]): Ptr[CDoubleComplex] = extern
-  //  extern long double complex ctanl(long double complex);
-
   @name("scalanative_cacoshf")
   def cacoshf(complex: Ptr[CFloatComplex],
               result: Ptr[CFloatComplex]): Ptr[CFloatComplex] = extern
   @name("scalanative_cacosh")
   def cacosh(complex: Ptr[CDoubleComplex],
              result: Ptr[CDoubleComplex]): Ptr[CDoubleComplex] = extern
-  //  extern long double complex cacoshl(long double complex);
-
   @name("scalanative_casinhf")
   def casinhf(complex: Ptr[CFloatComplex],
               result: Ptr[CFloatComplex]): Ptr[CFloatComplex] = extern
   @name("scalanative_casinh")
   def casinh(complex: Ptr[CDoubleComplex],
              result: Ptr[CDoubleComplex]): Ptr[CDoubleComplex] = extern
-  //  extern long double complex casinhl(long double complex);
-
   @name("scalanative_catanhf")
   def catanhf(complex: Ptr[CFloatComplex],
               result: Ptr[CFloatComplex]): Ptr[CFloatComplex] = extern
   @name("scalanative_catanh")
   def catanh(complex: Ptr[CDoubleComplex],
              result: Ptr[CDoubleComplex]): Ptr[CDoubleComplex] = extern
-  //  extern long double complex catanhl(long double complex);
-
   @name("scalanative_ccoshf")
   def ccoshf(complex: Ptr[CFloatComplex],
              result: Ptr[CFloatComplex]): Ptr[CFloatComplex] = extern
   @name("scalanative_ccosh")
   def ccosh(complex: Ptr[CDoubleComplex],
             result: Ptr[CDoubleComplex]): Ptr[CDoubleComplex] = extern
-  //  extern long double complex ccoshl(long double complex);
-
   @name("scalanative_csinhf")
   def csinhf(complex: Ptr[CFloatComplex],
              result: Ptr[CFloatComplex]): Ptr[CFloatComplex] = extern
   @name("scalanative_csinh")
   def csinh(complex: Ptr[CDoubleComplex],
             result: Ptr[CDoubleComplex]): Ptr[CDoubleComplex] = extern
-  //  extern long double complex csinhl(long double complex);
-
   @name("scalanative_ctanhf")
   def ctanhf(complex: Ptr[CFloatComplex],
              result: Ptr[CFloatComplex]): Ptr[CFloatComplex] = extern
   @name("scalanative_ctanh")
   def ctanh(complex: Ptr[CDoubleComplex],
             result: Ptr[CDoubleComplex]): Ptr[CDoubleComplex] = extern
-  //  extern long double complex ctanhl(long double complex);
-
   @name("scalanative_cexpf")
   def cexpf(complex: Ptr[CFloatComplex],
             result: Ptr[CFloatComplex]): Ptr[CFloatComplex] = extern
   @name("scalanative_cexp")
   def cexp(complex: Ptr[CDoubleComplex],
            result: Ptr[CDoubleComplex]): Ptr[CDoubleComplex] = extern
-  //  extern long double complex cexpl(long double complex);
-
   @name("scalanative_clogf")
   def clogf(complex: Ptr[CFloatComplex],
             result: Ptr[CFloatComplex]): Ptr[CFloatComplex] = extern
   @name("scalanative_clog")
   def clog(complex: Ptr[CDoubleComplex],
            result: Ptr[CDoubleComplex]): Ptr[CDoubleComplex] = extern
-  //  extern long double complex clogl(long double complex);
-
   @name("scalanative_cabsf")
   def cabsf(complex: Ptr[CFloatComplex]): CFloat = extern
   @name("scalanative_cabs")
   def cabs(complex: Ptr[CDoubleComplex]): CDouble = extern
-  //  extern long double cabsl(long double complex);
-
   @name("scalanative_cpowf")
   def cpowf(x: Ptr[CFloatComplex],
             y: Ptr[CFloatComplex],
@@ -156,48 +126,59 @@ object complex {
   def cpow(x: Ptr[CDoubleComplex],
            y: Ptr[CDoubleComplex],
            result: Ptr[CDoubleComplex]): Ptr[CDoubleComplex] = extern
-  //  extern long double complex cpowl(long double complex, long double complex);
-
   @name("scalanative_csqrtf")
   def csqrtf(complex: Ptr[CFloatComplex],
              result: Ptr[CFloatComplex]): Ptr[CFloatComplex] = extern
   @name("scalanative_csqrt")
   def csqrt(complex: Ptr[CDoubleComplex],
             result: Ptr[CDoubleComplex]): Ptr[CDoubleComplex] = extern
-  //  extern long double complex csqrtl(long double complex);
-
   @name("scalanative_cargf")
   def cargf(complex: Ptr[CFloatComplex]): CFloat = extern
   @name("scalanative_carg")
   def carg(complex: Ptr[CDoubleComplex]): CDouble = extern
-  //  extern long double cargl(long double complex);
-
   @name("scalanative_cimagf")
   def cimagf(complex: Ptr[CFloatComplex]): CFloat = extern
   @name("scalanative_cimag")
   def cimag(complex: Ptr[CDoubleComplex]): CDouble = extern
-  //  extern long double cimagl(long double complex);
-
   @name("scalanative_conjf")
   def conjf(complex: Ptr[CFloatComplex],
             result: Ptr[CFloatComplex]): Ptr[CFloatComplex] = extern
   @name("scalanative_conj")
   def conj(complex: Ptr[CDoubleComplex],
            result: Ptr[CDoubleComplex]): Ptr[CDoubleComplex] = extern
-  //  extern long double complex conjl(long double complex);
-
   @name("scalanative_cprojf")
   def cprojf(complex: Ptr[CFloatComplex],
              result: Ptr[CFloatComplex]): Ptr[CFloatComplex] = extern
   @name("scalanative_cproj")
   def cproj(complex: Ptr[CDoubleComplex],
             result: Ptr[CDoubleComplex]): Ptr[CDoubleComplex] = extern
-  //  extern long double complex cprojl(long double complex);
-
   @name("scalanative_crealf")
   def crealf(complex: Ptr[CFloatComplex]): CFloat = extern
   @name("scalanative_creal")
   def creal(complex: Ptr[CDoubleComplex]): CDouble = extern
+
+  // TODO: Add support for long double versions. Depends on #27
+  //  extern long double complex cacosl(long double complex);
+  //  extern long double complex casinl(long double complex);
+  //  extern long double complex catanl(long double complex);
+  //  extern long double complex ccosl(long double complex);
+  //  extern long double complex csinl(long double complex);
+  //  extern long double complex ctanl(long double complex);
+  //  extern long double complex cacoshl(long double complex);
+  //  extern long double complex casinhl(long double complex);
+  //  extern long double complex catanhl(long double complex);
+  //  extern long double complex ccoshl(long double complex);
+  //  extern long double complex csinhl(long double complex);
+  //  extern long double complex ctanhl(long double complex);
+  //  extern long double complex cexpl(long double complex);
+  //  extern long double complex clogl(long double complex);
+  //  extern long double cabsl(long double complex);
+  //  extern long double complex cpowl(long double complex, long double complex);
+  //  extern long double complex csqrtl(long double complex);
+  //  extern long double cargl(long double complex);
+  //  extern long double cimagl(long double complex);
+  //  extern long double complex conjl(long double complex);
+  //  extern long double complex cprojl(long double complex);
   //  extern long double creall(long double complex);
 }
 
