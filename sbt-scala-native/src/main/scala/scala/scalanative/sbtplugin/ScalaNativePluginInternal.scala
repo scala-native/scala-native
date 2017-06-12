@@ -347,13 +347,22 @@ object ScalaNativePluginInternal {
       val linkingOpts = nativeLinkingOptions.value
       val clangpp     = nativeClangPP.value
       val outpath     = (artifactPath in nativeLink).value
-      val opaths      = (nativelib ** "*.o").get.map(abs)
-      val paths       = apppaths.map(abs) ++ opaths
+
+      // Functions that define actions to perform on the list of `*.o` files based on links
+      // For instance: Exclude certain `.o` files if a given link is not present.
+      val linksActions: Seq[Seq[String] => Seq[String] => Seq[String]] = Seq(
+        links =>
+          if (!links.contains("z")) _.filterNot(_ endsWith "zlib.c.o")
+          else identity,
+        links =>
+          if (!links.contains("re2")) _.filterNot(_ endsWith "cre2.cpp.o")
+          else identity
+      )
+
       val links: Seq[String] = {
         val os   = Option(sys props "os.name").getOrElse("")
         val arch = target.split("-").head
         // we need re2 to link the re2 c wrapper (cre2.h)
-        val regex = Seq("re2")
         val librt = os match {
           case "Linux" => Seq("rt")
           case _       => Seq.empty
@@ -363,12 +372,17 @@ object ScalaNativePluginInternal {
           case _          => Seq("unwind", "unwind-" + arch)
         }
         librt ++ libunwind ++ linked.links
-          .map(_.name) ++ garbageCollector(gc).links ++ regex
+          .map(_.name) ++ garbageCollector(gc).links
       }
       val linkopts  = links.map("-l" + _) ++ linkingOpts
       val targetopt = Seq("-target", target)
       val flags     = Seq("-o", abs(outpath)) ++ linkopts ++ targetopt
-      val compile   = abs(clangpp) +: (flags ++ paths)
+      val allOPaths = (nativelib ** "*.o").get.map(abs)
+      val opaths = linksActions.foldLeft(allOPaths) {
+        case (ps, fn) => fn(links)(ps)
+      }
+      val paths   = apppaths.map(abs) ++ opaths
+      val compile = abs(clangpp) +: (flags ++ paths)
 
       logger.time("Linking native code") {
         logger.running(compile)
