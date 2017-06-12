@@ -1,11 +1,6 @@
 package java.io
 
 object InputStreamReaderSuite extends tests.Suite {
-  def withTempFile(proc: File => Unit): Unit = {
-    val file = File.createTempFile("scala-native-tests", null)
-    try { proc(file) } finally { file.delete() }
-  }
-
   class MockInputStream extends InputStream {
     private[this] var _closed: Boolean = false
 
