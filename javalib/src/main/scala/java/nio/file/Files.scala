@@ -32,16 +32,9 @@ import java.util.{
 }
 import java.util.stream.{Stream, WrappedScalaStream}
 
-import scala.scalanative.native.{
-  CString,
-  fromCString,
-  Ptr,
-  sizeof,
-  toCString,
-  Zone,
-  alloc
-}
-import scala.scalanative.posix.{limits, stat, unistd}
+import scalanative.native._
+import scalanative.posix.{limits, unistd}
+import scalanative.posix.sys.stat
 
 import scala.collection.immutable.{Map => SMap, Stream => SStream, Set => SSet}
 

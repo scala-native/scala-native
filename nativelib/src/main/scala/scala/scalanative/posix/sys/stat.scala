@@ -1,9 +1,9 @@
 package scala.scalanative
 package posix
+package sys
 
-import scala.scalanative.native._
-
-import unistd.off_t
+import scalanative.native._
+import scalanative.posix.unistd.off_t
 
 @extern
 object stat {

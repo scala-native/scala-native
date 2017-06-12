@@ -2,9 +2,9 @@ package scala.scalanative
 package posix
 package arpa
 
-import inttypes._
-import native._
-import netinet.in.in_addr
+import scalanative.native._
+import scalanative.posix.inttypes._
+import scalanative.posix.netinet.in.in_addr
 
 @extern
 object inet {

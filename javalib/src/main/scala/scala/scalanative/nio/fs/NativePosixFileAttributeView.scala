@@ -6,8 +6,9 @@ import java.nio.file.{LinkOption, Path}
 import java.nio.file.attribute._
 import java.io.IOException
 
-import scala.scalanative.native._
-import scala.scalanative.posix.{grp, pwd, stat, unistd, utime}
+import scalanative.native._
+import scalanative.posix.{grp, pwd, unistd, utime}
+import scalanative.posix.sys.stat
 
 final class NativePosixFileAttributeView(path: Path,
                                          options: Array[LinkOption])

@@ -1,7 +1,8 @@
 package scala.scalanative
 package posix
 
-import scala.scalanative.native._
+import scalanative.native._
+import scalanative.posix.sys.time
 
 @extern
 object utime {
