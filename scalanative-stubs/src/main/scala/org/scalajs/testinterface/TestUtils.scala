@@ -1,6 +1,6 @@
 package org.scalajs.testinterface
 
-import scala.scalanative.testinterface.PreLoadedClassLoader
+import scala.scalanative.testinterface.PreloadedClassLoader
 
 // ScalaJS defines this to mimic reflection.
 // We substitute it with our implementation, expecting that
@@ -18,14 +18,14 @@ object TestUtils {
     require(args.size == paramTypes.size, "argument count mismatch")
 
     loader match {
-      case l: PreLoadedClassLoader => l.loadPreLoaded(name)
+      case l: PreloadedClassLoader => l.loadPreloaded(name)
       case other                   => throw new UnsupportedOperationException()
     }
   }
 
   def loadModule(name: String, loader: ClassLoader): AnyRef =
     loader match {
-      case l: PreLoadedClassLoader => l.loadPreLoaded(name)
+      case l: PreloadedClassLoader => l.loadPreloaded(name)
       case other =>
         val clazz = other.loadClass(name + "$")
         clazz.getField("MODULE$").get(null)

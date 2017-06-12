@@ -123,7 +123,7 @@ abstract class TestMainBase {
       case Command.NewRunner(id, args, remoteArgs) =>
         val runner = frameworks(id).runner(args.toArray,
                                            remoteArgs.toArray,
-                                           new PreLoadedClassLoader(tests))
+                                           new PreloadedClassLoader(tests))
         testRunner(tasks, runner, client_socket)
 
       case Command.SendInfo(id, None) =>
