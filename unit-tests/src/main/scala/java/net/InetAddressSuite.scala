@@ -4,8 +4,8 @@ package java.net
 object InetAddressSuite extends tests.Suite {
 
   test("equals should work on localhosts from getByName") {
-    val ia1 = InetAddress.getByName("ip6-localhost")
-    val ia2 = InetAddress.getByName("::1")
+    val ia1 = InetAddress.getByName("127.1")
+    val ia2 = InetAddress.getByName("127.0.0.1")
     assertEquals(ia1, ia2)
   }
 
@@ -69,8 +69,13 @@ object InetAddressSuite extends tests.Suite {
                  InetAddress.getByName("::1").getHostAddress())
   }
 
-  // TODO
-  test("getLocalHost") {}
+  test("isReachable") {
+    val addr = InetAddress.getByName("127.0.0.1")
+    assert(addr.isReachable(10000))
+
+    val addr2 = InetAddress.getByName("127.0.0.1")
+    assertThrows[IllegalArgumentException] { addr2.isReachable(-1) }
+  }
 
   test("isMulticastAddress") {
     val ia1 = InetAddress.getByName("239.255.255.255")
