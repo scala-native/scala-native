@@ -127,7 +127,7 @@ object ScalaNativePluginInternal {
       val clang = discover("clang", clangVersions)
       // todo: echo doesn't work well on windows
       if (!isWindows) {
-      checkThatClangIsRecentEnough(clang)
+        checkThatClangIsRecentEnough(clang)
       }
       clang
     },
@@ -135,7 +135,7 @@ object ScalaNativePluginInternal {
       val clang = discover("clang++", clangVersions)
       // todo: echo doesn't work well on windows
       if (!isWindows) {
-      checkThatClangIsRecentEnough(clang)
+        checkThatClangIsRecentEnough(clang)
       }
       clang
     },
@@ -406,7 +406,7 @@ object ScalaNativePluginInternal {
         case (ps, fn) => fn(links)(ps)
       }
       val paths   = apppaths.map(abs) ++ opaths
-      val compile   = abs(clangpp) +: (flags ++ paths)
+      val compile = abs(clangpp) +: (flags ++ paths)
 
       logger.time("Linking native code") {
         logger.running(compile)
