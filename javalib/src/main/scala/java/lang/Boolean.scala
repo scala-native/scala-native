@@ -29,7 +29,7 @@ final class Boolean(val _value: scala.Boolean) extends Comparable[Boolean] {
    * implementations.
    */
 
-  protected def unary_! : scala.Boolean             = ! _value
+  protected def unary_! : scala.Boolean             = !_value
   protected def ||(x: scala.Boolean): scala.Boolean = _value || x
   protected def &&(x: scala.Boolean): scala.Boolean = _value && x
   protected def |(x: scala.Boolean): scala.Boolean  = _value | x

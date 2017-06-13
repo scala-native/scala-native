@@ -1,7 +1,7 @@
 package scala.scalanative
 package posix
 
-import native._
+import scalanative.native._
 
 @extern
 object regex {

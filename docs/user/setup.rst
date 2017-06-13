@@ -10,7 +10,8 @@ Scala Native has the following minimum system requirements:
 * LLVM 3.7 or newer
 * Native libraries
     * Boehm GC 7.6.0
-    * Re2 2017-01-01
+    * Re2 2017-01-01 (optional)
+    * zlib 1.2.8 or newer (optional)
 
 Installing sbt
 --------------
@@ -27,9 +28,13 @@ plugin uses feature detection to discover the installed version of Clang
 so older versions may also work.
 
 In addition, the native Scala runtime and Java API implementation
-require the Boehm garbage collector and the RE2 regular expression
-engine. Both the native library and header files must be provided at
-build time.
+require the Boehm garbage collector. Both the native library and header
+files must be provided at build time.
+
+To be able to use regular expressions, the RE2 library must be installed. You
+will also need to install zlib if you use classes from the `java.util.zip`
+package. If you don't use regular expressions or compression, you can skip
+these dependencies.
 
 .. note::
 
@@ -49,17 +54,29 @@ Native has been used with:
 **Arch Linux**
 ::
 
-    $ sudo pacman -S llvm gc re2
+    $ sudo pacman -S llvm gc
+    $ sudo pacman -S re2 # if you use regular expressions
+
+*Note:* A version of zlib that is sufficiently recent comes with the
+installation of Arch Linux.
 
 **macOS**
 ::
 
-    $ brew install llvm bdw-gc re2
+    $ brew install llvm bdw-gc
+    $ brew install re2 # if you use regular expressions
+
+*Note:* A version of zlib that is sufficiently recent comes with the
+installation of macOS.
 
 **FreeBSD**
 ::
 
-    $ pkg install llvm38 boehm-gc libunwind re2
+    $ pkg install llvm38 boehm-gc libunwind
+    $ pkg install re2 # if you use regular expressions
+
+*Note:* A version of zlib that is sufficiently recent comes with the
+installation of FreeBSD.
 
 **Nix/NixOS**
 ::

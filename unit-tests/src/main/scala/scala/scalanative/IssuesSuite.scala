@@ -265,6 +265,31 @@ object IssuesSuite extends tests.Suite {
     2.asInstanceOf[Null]
   }
 
+  test("#667") {
+    val map = new java.util.HashMap[Int, Int]
+    map.put(1, 2)
+    val ks = map.keySet()
+    assert(ks.contains(1))
+  }
+
+  test("#679") {
+    val `"` = 42
+    assert(("double-quotes " + `"`) == "double-quotes 42")
+    assert(s"double-quotes ${`"`}" == "double-quotes 42")
+  }
+
+  test("#695") {
+    val a   = List(1, 2, 3)
+    var eff = List.empty[(Int, Int)]
+
+    val result = a.corresponds(a) { (x, y) =>
+      eff ::= ((x, y))
+      true
+    }
+
+    assert(eff == List((3, 3), (2, 2), (1, 1)))
+  }
+
   test("#762") {
     val byte         = 1.toByte
     val negbyte: Any = -byte
@@ -285,5 +310,51 @@ object IssuesSuite extends tests.Suite {
     val neglong: Any = -long
     assert(neglong.isInstanceOf[Long])
     assert(neglong.toString == "-1")
+  }
+
+  test("#780") {
+    import java.util.{HashMap, Collections}
+    val hashmap = new HashMap[String, String]()
+    hashmap.put("a", "b")
+    val frozen = Collections.unmodifiableMap[String, String](hashmap)
+    val iter   = frozen.entrySet().iterator()
+    val ab     = iter.next()
+    assert(ab.getKey() == "a")
+    assert(ab.getValue() == "b")
+    assert(!iter.hasNext())
+  }
+
+  test("#803") {
+    val x1: String = null
+    var x2: String = "right"
+    assert(x1 + x2 == "nullright")
+
+    val x3: String = "left"
+    val x4: String = null
+    assert(x3 + x4 == "leftnull")
+
+    val x5: AnyRef = new { override def toString = "custom" }
+    val x6: String = null
+    assert(x5 + x6 == "customnull")
+
+    val x7: String = null
+    val x8: AnyRef = new { override def toString = "custom" }
+    assert(x7 + x8 == "nullcustom")
+
+    val x9: String  = null
+    val x10: String = null
+    assert(x9 + x10 == "nullnull")
+
+    val x11: AnyRef = null
+    val x12: String = null
+    assert(x11 + x12 == "nullnull")
+
+    val x13: String = null
+    val x14: AnyRef = null
+    assert(x13 + x14 == "nullnull")
+  }
+
+  test("#809") {
+    assert(null.asInstanceOf[AnyRef].## == 0)
   }
 }

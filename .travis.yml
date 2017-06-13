@@ -6,16 +6,13 @@ scala:
 matrix:
   include:
     - os: linux
+      dist: trusty
       jdk: oraclejdk8
       language: scala
       env: SCALANATIVE_GC=boehm
 
     - os: linux
-      jdk: oraclejdk8
-      language: scala
-      env: SCALANATIVE_GC=none
-
-    - os: linux
+      dist: trusty
       jdk: oraclejdk8
       language: scala
       env: SCALANATIVE_GC=immix
@@ -65,3 +62,14 @@ script:
   - if [ -n "$CLANG_FORMAT_PATH" ]; then bin/clangfmt --test; fi
   - bin/scalafmt --test
   - bash sbt -J-Xmx2G rebuild "set scriptedBufferLog in sbtScalaNative := false" test-all
+
+before_cache:
+  - find $HOME/.sbt -name "*.lock" | xargs rm
+  - find $HOME/.ivy2 -name "ivydata-*.properties" | xargs rm
+  - rm -rf $HOME/.ivy2/{cache,local}/org.scala-native/
+
+cache:
+  directories:
+    - $HOME/.coursier
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt/boot/
