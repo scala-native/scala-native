@@ -81,6 +81,8 @@ class CAtomicByte(default: Byte = 0.asInstanceOf[Byte]) extends CAtomic {
 
   def fetchXor(value: Byte): Byte = atomic_xor_byte(atm, value)
 
+  override def toString: String = load().toString
+
 }
 
 object CAtomicByte extends CAtomic {
@@ -165,6 +167,8 @@ class CAtomicShort(default: CShort = 0.asInstanceOf[CShort]) extends CAtomic {
 
   def fetchXor(value: CShort): CShort = atomic_xor_short(atm, value)
 
+  override def toString: String = load().toString
+
 }
 
 object CAtomicShort extends CAtomic {
@@ -246,6 +250,8 @@ class CAtomicInt(default: CInt = 0) extends CAtomic {
   }
 
   def fetchXor(value: CInt): CInt = atomic_xor_int(atm, value)
+
+  override def toString: String = load().toString
 
 }
 
@@ -329,6 +335,8 @@ class CAtomicLong(default: CLong = 0.asInstanceOf[CLong]) extends CAtomic {
 
   def fetchXor(value: CLong): CLong = atomic_xor_long(atm, value)
 
+  override def toString: String = load().toString
+
 }
 
 object CAtomicLong extends CAtomic {
@@ -411,6 +419,8 @@ class CAtomicUnsignedByte(default: Byte = 0.asInstanceOf[Byte])
   }
 
   def fetchXor(value: Byte): Byte = atomic_xor_ubyte(atm, value)
+
+  override def toString: String = load().toString
 
 }
 
@@ -506,6 +516,8 @@ class CAtomicUnsignedShort(
   def fetchXor(value: CUnsignedShort): CUnsignedShort =
     atomic_xor_ushort(atm, value)
 
+  override def toString: String = load().toString
+
 }
 
 object CAtomicUnsignedShort extends CAtomic {
@@ -591,6 +603,8 @@ class CAtomicUnsignedInt(default: CUnsignedInt = 0.asInstanceOf[CUnsignedInt])
   }
 
   def fetchXor(value: CUnsignedInt): CUnsignedInt = atomic_xor_uint(atm, value)
+
+  override def toString: String = load().toString
 
 }
 
@@ -685,6 +699,8 @@ class CAtomicUnsignedLong(
   def fetchXor(value: CUnsignedLong): CUnsignedLong =
     atomic_xor_ulong(atm, value)
 
+  override def toString: String = load().toString
+
 }
 
 object CAtomicUnsignedLong extends CAtomic {
@@ -766,6 +782,8 @@ class CAtomicChar(default: CChar = 'a'.asInstanceOf[CChar]) extends CAtomic {
   }
 
   def fetchXor(value: CChar): CChar = atomic_xor_char(atm, value)
+
+  override def toString: String = load().toString
 
 }
 
@@ -860,6 +878,8 @@ class CAtomicUnsignedChar(
   def fetchXor(value: CUnsignedChar): CUnsignedChar =
     atomic_xor_uchar(atm, value)
 
+  override def toString: String = load().toString
+
 }
 
 object CAtomicUnsignedChar extends CAtomic {
@@ -942,6 +962,8 @@ class CAtomicCSize(default: CSize = 0.asInstanceOf[CSize]) extends CAtomic {
 
   def fetchXor(value: CSize): CSize = atomic_xor_csize(atm, value)
 
+  override def toString: String = load().toString
+
 }
 
 object CAtomicCSize extends CAtomic {
@@ -952,4 +974,4 @@ object CAtomicCSize extends CAtomic {
 
 }
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 110)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 112)

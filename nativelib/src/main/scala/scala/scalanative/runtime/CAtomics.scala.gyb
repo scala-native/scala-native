@@ -96,6 +96,8 @@ class CAtomic${C}(default: ${T} = ${default}) extends CAtomic {
 
   def fetchXor(value: ${T}): ${T} = atomic_xor_${N}(atm, value)
 
+  override def toString: String = load().toString
+
 }
 
 object CAtomic${C} extends CAtomic {
