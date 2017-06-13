@@ -149,14 +149,14 @@ object ScalaNativePluginInternal {
         val includedir =
           Try(Process("llvm-config --includedir").lines_!.toSeq)
             .getOrElse(Seq.empty)
-        ((if (isWindows) (nativeWorkdir.value + "\\lib\\os_win\\include")
+        ((if (isWindows) (discoverUserIncludes() / "include")
           else "/usr/local/include") +: includedir).map(s => s"-I$s")
       }
       val dbgInfo = nativeDebugInfoOptions.value
       (includes :+ "-Qunused-arguments" :+
         (mode(nativeMode.value) match {
           case tools.Mode.Debug   => "-O0"
-          case tools.Mode.Release => "-O2"
+          case tools.Mode.Release => "-O3"
         })) ++ dbgInfo
     },
     nativeLinkingOptions := {
@@ -164,7 +164,7 @@ object ScalaNativePluginInternal {
         val libdir =
           Try(Process("llvm-config --libdir").lines_!.toSeq)
             .getOrElse(Seq.empty)
-        ((if (isWindows) (nativeWorkdir.value + "\\lib\\os_win\\lib")
+        ((if (isWindows) (discoverUserIncludes() / "lib")
           else "/usr/local/lib") +: libdir).map(s => s"-L$s")
       }
       val dbgInfo = nativeDebugInfoOptions.value
@@ -174,7 +174,7 @@ object ScalaNativePluginInternal {
     nativeLinkerReporter := tools.LinkerReporter.empty,
     nativeOptimizerReporter := tools.OptimizerReporter.empty,
     nativeLogger := streams.value.log,
-    nativeGC := "boehm"
+    nativeGC := "immix"
   )
 
   lazy val scopedSettings = Seq(
@@ -567,6 +567,19 @@ object ScalaNativePluginInternal {
   private val isWindows: Boolean = {
     val os = Option(System.getProperty("os.name")).getOrElse("")
     os.contains("indows")
+  }
+
+  private def discoverUserIncludes(): File = {
+    val docSetup =
+      "http://www.scala-native.org/en/latest/user/setup.html"
+
+    sys.env.get(s"SCALA_NATIVE_USER_INCLUDES_PATH") match {
+      case Some(path) => file(path)
+      case None => {
+        throw new MessageOnlyException(
+              s"No environment variable found `SCALA_NATIVE_USER_INCLUDES_PATH`. It should point to required includes (gc, re2).")
+      }
+    }
   }
 
   private implicit class RichLogger(logger: Logger) {
