@@ -3,7 +3,6 @@ package scala.scalanative
 import scala.language.experimental.macros
 import java.nio.charset.Charset
 import scalanative.runtime.undefined
-import scalanative.native.stdlib.malloc
 
 package object native {
 
@@ -73,6 +72,9 @@ package object native {
   /** The C/C++ 'size_t' type. */
   type CSize = Word
 
+  /** The C/C++ 'ssize_t' type. */
+  type CSSize = Word
+
   /** The C/C++ 'ptrdiff_t' type. */
   type CPtrDiff = Long
 
@@ -85,13 +87,13 @@ package object native {
   /** Heap allocate and zero-initialize a value
    *  using current implicit allocator.
    */
-  def alloc[T](implicit tag: Tag[T], alloc: Alloc): Ptr[T] =
+  def alloc[T](implicit tag: Tag[T], z: Zone): Ptr[T] =
     macro MacroImpl.alloc1[T]
 
   /** Heap allocate and zero-initialize n values
    *  using current implicit allocator.
    */
-  def alloc[T](n: CSize)(implicit tag: Tag[T], alloc: Alloc): Ptr[T] =
+  def alloc[T](n: CSize)(implicit tag: Tag[T], z: Zone): Ptr[T] =
     macro MacroImpl.allocN[T]
 
   /** Stack allocate a value of given type.
@@ -170,14 +172,14 @@ package object native {
   /** Convert a java.lang.String to a CString using default charset and
    *  given allocator.
    */
-  def toCString(str: String)(implicit a: Alloc): CString =
-    toCString(str, Charset.defaultCharset())(a)
+  def toCString(str: String)(implicit z: Zone): CString =
+    toCString(str, Charset.defaultCharset())(z)
 
   /** Convert a java.lang.String to a CString using given charset and allocator.
    */
-  def toCString(str: String, charset: Charset)(implicit a: Alloc): CString = {
+  def toCString(str: String, charset: Charset)(implicit z: Zone): CString = {
     val bytes = str.getBytes(charset)
-    val cstr  = a.alloc(bytes.length + 1)
+    val cstr  = z.alloc(bytes.length + 1)
 
     var c = 0
     while (c < bytes.length) {
@@ -193,27 +195,26 @@ package object native {
   private object MacroImpl {
     import scala.reflect.macros.blackbox.Context
 
-    def alloc1[T: c.WeakTypeTag](c: Context)(tag: c.Tree,
-                                             alloc: c.Tree): c.Tree = {
+    def alloc1[T: c.WeakTypeTag](c: Context)(tag: c.Tree, z: c.Tree): c.Tree = {
       import c.universe._
       val T         = weakTypeOf[T]
       val size, ptr = TermName(c.freshName())
       q"""{
         val $size = _root_.scala.scalanative.native.sizeof[$T]($tag)
-        val $ptr = $alloc.alloc($size)
+        val $ptr = $z.alloc($size)
         _root_.scala.scalanative.native.string.memset($ptr, 0, $size)
         $ptr.cast[Ptr[$T]]
       }"""
     }
 
-    def allocN[T: c.WeakTypeTag](c: Context)(
-        n: c.Tree)(tag: c.Tree, alloc: c.Tree): c.Tree = {
+    def allocN[T: c.WeakTypeTag](c: Context)(n: c.Tree)(tag: c.Tree,
+                                                        z: c.Tree): c.Tree = {
       import c.universe._
       val T         = weakTypeOf[T]
       val size, ptr = TermName(c.freshName())
       q"""{
         val $size = _root_.scala.scalanative.native.sizeof[$T]($tag) * $n
-        val $ptr = $alloc.alloc($size)
+        val $ptr = $z.alloc($size)
         _root_.scala.scalanative.native.string.memset($ptr, 0, $size)
         $ptr.cast[Ptr[$T]]
       }"""

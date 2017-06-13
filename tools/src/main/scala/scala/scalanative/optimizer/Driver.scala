@@ -32,16 +32,16 @@ object Driver {
   )
 
   private val fullOptPasses = fastOptPasses ++ Seq(
-      pass.BlockParamReduction,
-      pass.CfChainsSimplification,
-      pass.DeadBlockElimination,
-      pass.BasicBlocksFusion,
-      pass.Canonicalization,
-      pass.PartialEvaluation,
-      pass.InstCombine,
-      pass.ConstantFolding,
-      pass.GlobalValueNumbering
-    )
+    pass.BlockParamReduction,
+    pass.CfChainsSimplification,
+    pass.DeadBlockElimination,
+    pass.BasicBlocksFusion,
+    pass.Canonicalization,
+    pass.PartialEvaluation,
+    pass.InstCombine,
+    pass.ConstantFolding,
+    pass.GlobalValueNumbering
+  )
 
   private val loweringPasses = Seq(
     pass.DynmethodLowering,

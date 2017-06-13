@@ -77,9 +77,9 @@ final class Long(val _value: scala.Long) extends Number with Comparable[Long] {
   protected def toFloat: scala.Float   = _value.toFloat
   protected def toDouble: scala.Double = _value.toDouble
 
-  protected def unary_~ : scala.Long = ~ _value
+  protected def unary_~ : scala.Long = ~_value
   protected def unary_+ : scala.Long = _value
-  protected def unary_- : scala.Long = - _value
+  protected def unary_- : scala.Long = -_value
 
   protected def +(x: String): String = _value + x
 
@@ -438,7 +438,7 @@ object Long {
       var j        = _l
       if (!negative) {
         count = 1
-        j = - _l
+        j = -_l
       }
 
       var l = _l

@@ -221,7 +221,8 @@ abstract class NirCodeGen
         annotated.toSeq ++ ctor
       }
       val attrs = sym.annotations.collect {
-        case ann if ann.symbol == ExternClass => Attr.Extern
+        case ann if ann.symbol == ExternClass =>
+          Attr.Extern
         case ann if ann.symbol == LinkClass =>
           val Apply(_, Seq(Literal(Constant(name: String)))) = ann.tree
           Attr.Link(name)
@@ -342,30 +343,74 @@ abstract class NirCodeGen
       }
     }
 
-    def genMethodAttrs(sym: Symbol): Attrs =
-      Attrs.fromSeq({
-        if (sym.hasFlag(ACCESSOR)) Seq(Attr.AlwaysInline)
-        else Seq()
-      } ++ sym.overrides.map {
-        case sym => Attr.Override(genMethodName(sym))
-      } ++ sym.annotations.collect {
-        case ann if ann.symbol == NoInlineClass   => Attr.NoInline
-        case ann if ann.symbol == InlineHintClass => Attr.InlineHint
-        case ann if ann.symbol == InlineClass     => Attr.AlwaysInline
-      } ++ {
-        if (PureMethods.contains(sym)) Seq(Attr.Pure) else Seq()
-      } ++ {
+    def genMethodAttrs(sym: Symbol): Attrs = {
+      val inlineAttrs = {
+        if (sym.hasFlag(ACCESSOR)) {
+          Seq(Attr.AlwaysInline)
+        } else {
+          sym.annotations.collect {
+            case ann if ann.symbol == NoInlineClass   => Attr.NoInline
+            case ann if ann.symbol == InlineHintClass => Attr.InlineHint
+            case ann if ann.symbol == InlineClass     => Attr.AlwaysInline
+          }
+        }
+      }
+      val overrideAttrs: Seq[Attr] = {
         val owner = sym.owner
-        if (owner.primaryConstructor eq sym)
-          owner.info.declarations.collect {
-            case decl if decl.overrides.nonEmpty =>
-              decl.overrides.map {
-                case ov =>
-                  Attr.PinIf(genMethodName(decl), genMethodName(ov))
-              }
-          }.toSeq.flatten
-        else Seq()
-      })
+        if (owner.primaryConstructor eq sym) {
+          genConstructorOverridePins(owner)
+        } else {
+          sym.overrides.collect {
+            case ovsym if !sym.owner.asClass.isTrait =>
+              Attr.Override(genMethodName(ovsym))
+          }
+        }
+      }
+      val pureAttrs ={
+        if (PureMethods.contains(sym)) Seq(Attr.Pure) else Seq()
+      }
+
+      Attrs.fromSeq(inlineAttrs ++ overrideAttrs ++ pureAttrs)
+    }
+
+    def genConstructorOverridePins(owner: Symbol): Seq[nir.Attr] = {
+      val traits = owner.info.baseClasses.map(_.asClass).filter(_.isTrait)
+      val traitMethods = mutable.Map.empty[String, mutable.UnrolledBuffer[nir.Global]]
+
+      traits.foreach { trt =>
+        trt.info.declarations.foreach { meth =>
+          val name = genName(meth)
+          val sig  = name.id
+          if (!traitMethods.contains(sig)) {
+            traitMethods(sig) = mutable.UnrolledBuffer.empty[nir.Global]
+          }
+          traitMethods(sig) += name
+        }
+      }
+
+      val pins = mutable.UnrolledBuffer.empty[nir.Attr]
+
+      owner.info.declarations.foreach { decl =>
+        decl.overrides.foreach { ovsym =>
+          if (!ovsym.owner.asClass.isTrait) {
+            pins += Attr.PinIf(genMethodName(decl), genMethodName(ovsym))
+          }
+        }
+      }
+
+      owner.info.members.foreach { decl =>
+        if (decl.isMethod && decl.owner != ObjectClass) {
+          val declname = genName(decl)
+          val sig      = declname.id
+          val methods  = traitMethods.get(sig).getOrElse(Seq.empty)
+          methods.foreach { methname =>
+            pins += Attr.PinIf(declname, methname)
+          }
+        }
+      }
+
+      pins
+    }
 
     def genMethodSigParams(sym: Symbol): Seq[nir.Type] = {
       val wereRepeated = exitingPhase(currentRun.typerPhase) {
@@ -1162,14 +1207,15 @@ abstract class NirCodeGen
     def genUnaryOp(code: Int, rightp: Tree, opty: nir.Type, focus: Focus) = {
       import scalaPrimitives._
 
-      val right = genExpr(rightp, focus)
+      val right   = genExpr(rightp, focus)
+      val coerced = genCoercion(right.value, right.value.ty, opty, right)
 
       (opty, code) match {
-        case (_: Type.I | _: Type.F, POS) => right
-        case (_: Type.F, NEG)             => negateFloat(right.value, right)
-        case (_: Type.I, NEG)             => negateInt(right.value, right)
-        case (_: Type.I, NOT)             => negateBits(right.value, right)
-        case (_: Type.I, ZNOT)            => negateBool(right.value, right)
+        case (_: Type.I | _: Type.F, POS) => coerced
+        case (_: Type.I, NOT)             => negateBits(coerced.value, coerced)
+        case (_: Type.F, NEG)             => negateFloat(coerced.value, coerced)
+        case (_: Type.I, NEG)             => negateInt(coerced.value, coerced)
+        case (_: Type.I, ZNOT)            => negateBool(coerced.value, coerced)
         case _                            => abort("Unknown unary operation code: " + code)
       }
     }
@@ -1289,7 +1335,7 @@ abstract class NirCodeGen
           }
 
         case ty =>
-          abort("Uknown binary operation type: " + ty)
+          abort("Unknown binary operation type: " + ty)
       }
 
       genCoercion(binres.value, binres.value.ty, retty, binres)
@@ -1365,12 +1411,22 @@ abstract class NirCodeGen
     }
 
     def genStringConcat(leftp: Tree, rightp: Tree, focus: Focus): Focus = {
-      def stringify(sym: Symbol, focus: Focus) =
-        if (sym == StringClass) {
-          focus
-        } else {
-          genMethodCall(Object_toString, statically = false, focus.value, Seq(), focus)
+      def stringify(sym: Symbol, focus: Focus) = {
+        val isnull = focus withOp Op.Comp(Comp.Ieq, Rt.Object, focus.value, Val.Null)
+        val cond   = ValTree(isnull.value)
+        val thenp  = ContTree { focus =>
+          focus withValue Val.String("null")
         }
+        val elsep  = ContTree { inner =>
+          if (sym == StringClass) {
+            inner withValue focus.value
+          } else {
+            val meth = Object_toString
+            genMethodCall(meth, statically = false, focus.value, Seq(), inner)
+          }
+        }
+        genIf(Rt.String, cond, thenp, elsep, isnull)
+      }
 
       val left = {
         val typesym = leftp.tpe.typeSymbol
@@ -1393,9 +1449,17 @@ abstract class NirCodeGen
     }
 
     def genHashCode(argp: Tree, focus: Focus) = {
-      val meth = NObjectHashCodeMethod
-      val arg  = boxValue(argp.tpe, genExpr(argp, focus))
-      genMethodCall(meth, statically = false, arg.value, Seq(), arg)
+      val arg    = boxValue(argp.tpe, genExpr(argp, focus))
+      val isnull = arg withOp Op.Comp(Comp.Ieq, Rt.Object, arg.value, Val.Null)
+      val cond   = ValTree(isnull.value)
+      val thenp  = ContTree { focus =>
+        focus withValue Val.Int(0)
+      }
+      val elsep  = ContTree { focus =>
+        val meth = NObjectHashCodeMethod
+        genMethodCall(meth, statically = false, arg.value, Seq(), focus)
+      }
+      genIf(Type.Int, cond, thenp, elsep, isnull)
     }
 
     def genArrayOp(app: Apply, code: Int, focus: Focus): Focus = {
@@ -1406,12 +1470,15 @@ abstract class NirCodeGen
       val array = genExpr(arrayp, focus)
       def elemcode = genArrayCode(arrayp.tpe)
       val method =
-        if (code == ARRAY_CLONE) RuntimeArrayCloneMethod(elemcode)
-        else if (scalaPrimitives.isArrayGet(code))
+        if (code == ARRAY_CLONE) {
+          RuntimeArrayCloneMethod(elemcode)
+        } else if (scalaPrimitives.isArrayGet(code)) {
           RuntimeArrayApplyMethod(elemcode)
-        else if (scalaPrimitives.isArraySet(code))
+        } else if (scalaPrimitives.isArraySet(code)) {
           RuntimeArrayUpdateMethod(elemcode)
-        else RuntimeArrayLengthMethod(elemcode)
+        } else {
+          RuntimeArrayLengthMethod(elemcode)
+        }
 
       genMethodCall(method, statically = true, array.value, argsp, array)
     }

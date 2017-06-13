@@ -1,5 +1,6 @@
 package scala.scalanative
 package posix
+package sys
 
 import scala.scalanative.native.{CLong, CLongInt, CStruct2}
 

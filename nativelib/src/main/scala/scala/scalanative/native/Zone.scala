@@ -1,10 +1,17 @@
 package scala.scalanative
 package native
 
+import scala.annotation.implicitNotFound
+
 /** Zone allocator that automatically frees allocations whenever
  *  syntactic boundary of the zone is over.
  */
-trait Zone extends Alloc
+@implicitNotFound("Given method requires an implicit zone.")
+trait Zone {
+
+  /** Allocates memory of given size. */
+  def alloc(size: CSize): Ptr[Byte]
+}
 
 object Zone {
 
@@ -29,12 +36,6 @@ object Zone {
       node = new Node(ptr, node)
       ptr
     }
-
-    final def realloc(ptr: Ptr[Byte], newSize: CSize): Ptr[Byte] =
-      throw new UnsupportedOperationException("Zones do not support realloc")
-
-    final def free(ptr: Ptr[Byte]): Unit =
-      throw new UnsupportedOperationException("Zones do not support free")
 
     final def close(): Unit = {
       while (node != null) {

@@ -5,11 +5,18 @@ object SystemSuite extends tests.Suite {
     var t0 = 0L
     var t1 = 0L
 
+    // a monotonic function (or monotone function) is a function between ordered sets
+    // that preserves or reverses the given order.
+    // It shoud never be less, but could be equal,
+    // so we want to test if time is correctly increasing during the test as well
+    val startTime = System.nanoTime()
     for (_ <- 1 to 100000) {
       t1 = System.nanoTime()
-      assert(t0 - t1 < 0L)
+      assert(t0 - t1 <= 0L)
       t0 = t1
     }
+    val endTime = System.nanoTime()
+    assert(startTime - endTime < 0L)
   }
 
   test("System.getenv should contain known env variables") {

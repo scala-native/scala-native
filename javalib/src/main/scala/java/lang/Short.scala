@@ -70,9 +70,9 @@ final class Short(val _value: scala.Short)
   protected def toFloat: scala.Float   = _value.toFloat
   protected def toDouble: scala.Double = _value.toDouble
 
-  protected def unary_~ : scala.Int = ~ _value.toInt
+  protected def unary_~ : scala.Int = ~_value.toInt
   protected def unary_+ : scala.Int = _value.toInt
-  protected def unary_- : scala.Int = - _value.toInt
+  protected def unary_- : scala.Int = -_value.toInt
 
   protected def +(x: String): String = _value + x
 
