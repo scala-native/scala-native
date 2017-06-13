@@ -12,10 +12,10 @@ class BufferedWriter(out: Writer, sz: Int) extends Writer {
   private var pos: Int            = 0
   private var closed: Boolean     = false
 
-  def close(): Unit = {
+  def close(): Unit = if (!closed) {
     flush()
-    closed = true
     out.close()
+    closed = true
   }
 
   def flush(): Unit = {
