@@ -1,5 +1,7 @@
 package java.util.concurrent.atomic
 
+import scala.scalanative.native.sizeof
+
 class AtomicReference[T <: AnyRef](private[this] var value: T)
     extends Serializable {
 

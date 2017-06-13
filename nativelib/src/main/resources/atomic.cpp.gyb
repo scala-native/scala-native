@@ -27,6 +27,10 @@ extern "C" {
      }
 % end
 
+     void init_gen(void* atm, void* init_value) {
+        *atm = ATOMIC_VAR_INIT(init_value);
+     }
+
 	/**
      * Memory
      * */
@@ -50,6 +54,10 @@ extern "C" {
     }
 % end
 
+    void* load_gen(atomic<void*>* atm) {
+        return atm -> load();
+    }
+
 	/**
 	 * Compare and Swap
 	 * */
@@ -61,6 +69,10 @@ extern "C" {
         return atomic_compare_exchange_${cmp}(atm, expected, desired);
     }
 % end
+
+    int compare_and_swap_${cmp}_gen(atomic<void*>* atm, void* expected, void* desired) {
+        return atomic_compare_exchange_${cmp}(atm, expected, desired);
+    }
 % end
 
 % for op in ['add', 'sub', 'and', 'or', 'xor']:

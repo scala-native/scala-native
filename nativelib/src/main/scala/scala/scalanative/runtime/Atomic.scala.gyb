@@ -45,10 +45,14 @@ object Atomic {
   def init_${N}(atm: ${C}, initValue: ${T}): Unit = extern
   % end
 
+  def init_gen(atm: Ptr[Byte], initValue: Ptr[Byte]): Unit = extern
+
   // Load
   % for (C, T, N) in zip(classes, types, names):
   def load_${N}(ptr: ${C}): ${T} = extern
   % end
+
+  def load_gen(ptr: Ptr[Byte]): Ptr[Byte] = extern
 
   // Compare and Swap
   % for (C, T, N) in zip(classes, types, names):
@@ -60,6 +64,14 @@ object Atomic {
                                   expected: ${C},
                                   desired: ${T}): CBool = extern
   % end
+
+  def compare_and_swap_strong_gen(value: Ptr[Byte],
+                                  expected: Ptr[Byte],
+                                  desired: Ptr[Byte]): CBool = extern
+
+  def compare_and_swap_weak_gen(value: Ptr[Byte],
+                                  expected: Ptr[Byte],
+                                  desired: Ptr[Byte]): CBool = extern
 
   // Add and Sub
   % for (C, T, N) in zip(classes, types, names):
