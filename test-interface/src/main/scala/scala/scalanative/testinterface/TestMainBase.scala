@@ -8,7 +8,6 @@ import java.io.{
   DataOutputStream
 }
 
-import scala.compat.Platform.EOL
 import scala.scalanative.posix._
 import scala.scalanative.native._
 import scala.scalanative.runtime.ByteArray
@@ -18,7 +17,6 @@ import netinet.in._
 import sbt.testing.{Event => SbtEvent, _}
 
 import scala.scalanative.testinterface.serialization._
-import Serializer._
 import scala.annotation.tailrec
 import scala.scalanative.posix.inttypes.uint16_t
 import scala.scalanative.posix.sys.socket.{accept, sockaddr, socklen_t}
@@ -119,7 +117,7 @@ abstract class TestMainBase {
   private def testRunner(tasks: Array[Task],
                          runner: Runner,
                          client_socket: CInt): Unit =
-    receive[Command](client_socket) match {
+    receive(client_socket) match {
       case Command.NewRunner(id, args, remoteArgs) =>
         val runner = frameworks(id).runner(args.toArray,
                                            remoteArgs.toArray,
@@ -129,14 +127,16 @@ abstract class TestMainBase {
       case Command.SendInfo(id, None) =>
         val fps  = frameworks(id).fingerprints()
         val name = frameworks(id).name()
-        val info = FrameworkInfo(name, fps.toSeq)
-        send(client_socket, info)
+        val info = Command.SendInfo(id, Some(FrameworkInfo(name, fps.toSeq)))
+        send(client_socket)(info)
         testRunner(tasks, runner, client_socket)
 
       case Command.Tasks(newTasks) =>
         val ts = runner.tasks(newTasks.toArray)
-        send(client_socket,
-             ts.map(t => task2TaskInfo(t, runner)).toSeq.zipWithIndex)
+        val taskInfos = TaskInfos(ts.zipWithIndex.toSeq.map {
+          case (t, id) => task2TaskInfo(id, t, runner)
+        })
+        send(client_socket)(taskInfos)
         testRunner(tasks ++ ts, runner, client_socket)
 
       case Command.Execute(taskID, colors) =>
@@ -152,23 +152,23 @@ abstract class TestMainBase {
         val origSize = tasks.length
 
         // Convert the tasks to `TaskInfo` before sending to sbt. Keep task numbers correct.
-        val numberedTasks = newTasks.zipWithIndex.map {
-          case (t, id) => (task2TaskInfo(t, runner), id + origSize)
-        }.toSeq
-
-        send(client_socket, numberedTasks)
+        val taskInfos = newTasks.zipWithIndex.map {
+          case (t, id) => task2TaskInfo(id + origSize, t, runner)
+        }
+        send(client_socket)(TaskInfos(taskInfos))
         testRunner(tasks ++ newTasks, runner, client_socket)
 
-      case Command.RunnerDone =>
-        val r = runner.done()
-        send(client_socket, r.lines.toSeq)
+      case Command.RunnerDone(_) =>
+        val r       = runner.done()
+        val message = Command.RunnerDone(r)
+        send(client_socket)(message)
 
       case other =>
         println(s"Unexpected message: $other")
     }
 
-  private def task2TaskInfo(task: Task, runner: Runner) =
-    TaskInfo(task.taskDef, task.tags)
+  private def task2TaskInfo(id: Int, task: Task, runner: Runner) =
+    TaskInfo(id, task.taskDef, task.tags)
 
   /** Reads `len` bytes from `client` socket. */
   private def read(client: CInt)(len: Int): DataInputStream = {
@@ -178,7 +178,7 @@ abstract class TestMainBase {
   }
 
   /** Receives a message from `client`. */
-  private def receive[T: Serializable](client: CInt): T = {
+  private def receive[T](client: CInt): Message = {
     val msglen = read(client)(4).readInt()
     val in     = read(client)(msglen)
     val msgbuf = new Array[Byte](msglen)
@@ -186,21 +186,17 @@ abstract class TestMainBase {
     while (total < msglen) {
       total += in.read(msgbuf, total, msglen - total)
     }
-    deserialize[T](new String(msgbuf, "UTF-8").lines)
+    val deserializer = new SerializedInputStream(
+      new ByteArrayInputStream(msgbuf))
+    deserializer.readMessage()
   }
 
   /** Sends message `v` to `client`. */
-  private def send[T: Serializable](client: CInt, v: T): Unit = {
-    val msgData = serialize(v).mkString(EOL).getBytes("UTF-8")
-    val lenData = {
-      val bos = new ByteArrayOutputStream()
-      val dos = new DataOutputStream(bos)
-      dos.writeInt(msgData.length)
-      bos.toByteArray
-    }
+  private def send[T](client: CInt)(msg: Message): Unit = {
+    val bos = new ByteArrayOutputStream()
+    SerializedOutputStream(new DataOutputStream(bos))(_.writeMessage(msg))
+    val data = bos.toByteArray().asInstanceOf[ByteArray]
 
-    // 4 bytes for the message length, followed by the message bytes
-    val data = (lenData ++ msgData).asInstanceOf[ByteArray]
     var sent = 0
     while (sent < data.length) {
       sent += socket.send(client, data.at(sent), data.length - sent, 0).toInt
@@ -215,7 +211,7 @@ abstract class TestMainBase {
                      event.status(),
                      event.throwable(),
                      event.duration())
-      send(client, ev)
+      send(client)(ev)
     }
   }
 
@@ -225,8 +221,10 @@ abstract class TestMainBase {
       extends Logger {
     private def log(level: Log.Level,
                     msg: String,
-                    twb: Option[Throwable]): Unit =
-      send(client, Log(index, msg, twb, level))
+                    twb: Option[Throwable]): Unit = {
+      send(client)(Log(index, msg, twb, level))
+    }
+
     override def error(msg: String): Unit  = log(Log.Level.Error, msg, None)
     override def warn(msg: String): Unit   = log(Log.Level.Warn, msg, None)
     override def info(msg: String): Unit   = log(Log.Level.Info, msg, None)

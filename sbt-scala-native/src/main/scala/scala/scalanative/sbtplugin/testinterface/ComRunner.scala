@@ -2,15 +2,13 @@ package scala.scalanative
 package sbtplugin
 package testinterface
 
-import java.io.{Serializable => _, _}
+import java.io._
 
 import sbt.{Logger, MessageOnlyException}
 
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration.Duration
-import scala.compat.Platform.EOL
 import scala.scalanative.testinterface.serialization._
-import Serializer.EitherSerializer
 import java.net.{ConnectException, Socket, SocketTimeoutException}
 
 import scala.scalanative.testinterface.serialization.Log.Level
@@ -46,16 +44,13 @@ class ComRunner(bin: File, args: Seq[String], logger: Logger) {
   private[this] val out = new DataOutputStream(
     new BufferedOutputStream(socket.getOutputStream))
 
-  /** Send message `v` to the distant program. */
-  def send[T: Serializable](v: T): Unit = synchronized {
-    val msg = Serializer.serialize(v).mkString(EOL).getBytes("UTF-8")
-    out.writeInt(msg.length)
-    out.write(msg)
-    out.flush()
+  /** Send message `msg` to the distant program. */
+  def send(msg: Message): Unit = synchronized {
+    SerializedOutputStream(out)(_.writeMessage(msg))
   }
 
   /** Wait for a message to arrive from the distant program. */
-  def receive[T: Serializable](timeout: Duration = Duration.Inf): T =
+  def receive[T](timeout: Duration = Duration.Inf): Message =
     synchronized {
       in.mark(Int.MaxValue)
       val savedSoTimeout = socket.getSoTimeout()
@@ -63,24 +58,17 @@ class ComRunner(bin: File, args: Seq[String], logger: Logger) {
         val deadLineMs = if (timeout.isFinite()) timeout.toMillis else 0L
         socket.setSoTimeout((deadLineMs min Int.MaxValue).toInt)
 
-        val msgLen  = in.readInt()
-        val buf     = new Array[Byte](msgLen)
-        var readLen = 0
-        while (readLen < msgLen) {
-          socket.setSoTimeout((deadLineMs min Int.MaxValue).toInt)
-          readLen += in.read(buf, readLen, msgLen - readLen)
-        }
+        val result =
+          SerializedInputStream.next(in)(_.readMessage()) match {
+            case logMsg: Log =>
+              log(logMsg)
+              receive(timeout)
+            case other =>
+              other
+          }
 
         in.mark(0)
-
-        Serializer.deserialize[Either[Log, T]](new String(buf, "UTF-8").lines) match {
-          case Left(logMsg) =>
-            log(logMsg)
-            receive[T](timeout)
-
-          case Right(msg) =>
-            msg
-        }
+        result
 
       } catch {
         case _: EOFException =>

@@ -7,7 +7,11 @@ import java.io.File
 import sbt.Logger
 import sbt.testing.{Runner, Task, TaskDef}
 
-import scala.scalanative.testinterface.serialization._, Serializer._
+import scala.scalanative.testinterface.serialization.{
+  Command,
+  Message,
+  TaskInfos
+}
 
 class ScalaNativeRunner(val framework: ScalaNativeFramework,
                         bin: File,
@@ -16,27 +20,24 @@ class ScalaNativeRunner(val framework: ScalaNativeFramework,
                         val remoteArgs: Array[String])
     extends Runner {
 
-  var master: ComRunner = null
+  private var master: ComRunner = null
 
   createRemoteRunner()
 
   override def tasks(taskDefs: Array[TaskDef]): Array[Task] = {
     ensureNotDone()
-    master.send(Command.Tasks(taskDefs.toSeq): Command)
+    val command = Command.Tasks(taskDefs.toSeq)
+    send(command)
 
-    val taskInfos = master.receive[Seq[(TaskInfo, Int)]]()
-    taskInfos.map(ScalaNativeTask.fromInfo(this, _)).toArray
+    val TaskInfos(infos) = receive()
+    infos.map(ScalaNativeTask.fromInfo(this, _)).toArray
   }
 
-  private[testinterface] def send[T: Serializable](msg: T): Unit = {
-    ensureNotDone()
+  private[testinterface] def send(msg: Message): Unit =
     master.send(msg)
-  }
 
-  private[testinterface] def receive[T: Serializable](): T = {
-    ensureNotDone()
-    master.receive[T]()
-  }
+  private[testinterface] def receive(): Message =
+    master.receive()
 
   private def ensureNotDone(): Unit = {
     if (master == null)
@@ -45,13 +46,14 @@ class ScalaNativeRunner(val framework: ScalaNativeFramework,
 
   private[this] def createRemoteRunner(): ComRunner = {
     master = new ComRunner(bin, Seq.empty, logger)
-    master.send(Command.NewRunner(framework.id, args, remoteArgs): Command)
+    val command = Command.NewRunner(framework.id, args, remoteArgs)
+    send(command)
     master
   }
 
   override def done(): String = {
-    master.send(Command.RunnerDone: Command)
-    val summary = master.receive[Seq[String]]().mkString("\n")
+    send(Command.RunnerDone(""))
+    val Command.RunnerDone(summary) = receive()
     master.close()
     summary
   }

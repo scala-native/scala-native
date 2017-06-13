@@ -36,8 +36,9 @@ class ScalaNativeFramework(val framework: Framework,
   private[testinterface] def runDone(): Unit = _runner = null
 
   private def fetchFrameworkInfo(): FrameworkInfo = {
-    _runner.send[Command](Command.SendInfo(id, None))
-    _runner.receive[FrameworkInfo]()
+    _runner.send(Command.SendInfo(id, None))
+    val Command.SendInfo(_, Some(infos)) = _runner.receive()
+    infos
   }
 
 }
