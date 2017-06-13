@@ -1,7 +1,8 @@
 package scala.scalanative
 package posix
+package sys
 
-import scala.scalanative.native.CLongInt
+import scalanative.native.CLongInt
 
 object time {
   type time_t = CLongInt

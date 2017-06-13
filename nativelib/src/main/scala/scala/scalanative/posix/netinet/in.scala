@@ -2,9 +2,9 @@ package scala.scalanative
 package posix
 package netinet
 
-import inttypes._
-import native._
-import sys.socket
+import scalanative.native._
+import scalanative.posix.inttypes._
+import scalanative.posix.sys.socket
 
 @extern
 object in {

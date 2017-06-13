@@ -1,6 +1,7 @@
-package scala.scalanative.posix
+package scala.scalanative
+package posix
 
-import scala.scalanative.native.{CInt, extern, name}
+import scalanative.native.{CInt, extern, name}
 
 @extern
 object errno {
