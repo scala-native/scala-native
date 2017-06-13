@@ -2,7 +2,7 @@ package scala.scalanative
 package posix
 package sys
 
-import native._
+import scalanative.native._
 
 @extern
 object uio {

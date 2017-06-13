@@ -1,11 +1,9 @@
 package scala.scalanative
 package posix
 
-import scala.scalanative.native._
-
-import stat.mode_t
-
-import stat.mode_t
+import scalanative.native._
+import scalanative.posix.sys.stat.mode_t
+import scalanative.posix.sys.stat.mode_t
 
 @extern
 object fcntl {

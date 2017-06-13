@@ -1,8 +1,9 @@
 package java.io
 
-import scala.scalanative.posix.{fcntl, stat, unistd}
-import scala.scalanative.native._
-import scala.scalanative.runtime
+import scalanative.native._
+import scalanative.posix.{fcntl, unistd}
+import scalanative.posix.sys.stat
+import scalanative.runtime
 
 class FileOutputStream(fd: FileDescriptor) extends OutputStream {
   def this(file: File, append: Boolean) =
