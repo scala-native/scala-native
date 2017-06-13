@@ -278,6 +278,18 @@ object IssuesSuite extends tests.Suite {
     assert(s"double-quotes ${`"`}" == "double-quotes 42")
   }
 
+  test("#695") {
+    val a   = List(1, 2, 3)
+    var eff = List.empty[(Int, Int)]
+
+    val result = a.corresponds(a) { (x, y) =>
+      eff ::= ((x, y))
+      true
+    }
+
+    assert(eff == List((3, 3), (2, 2), (1, 1)))
+  }
+
   test("#762") {
     val byte         = 1.toByte
     val negbyte: Any = -byte
