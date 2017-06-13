@@ -4,6 +4,7 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <netinet/ip_icmp.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -105,4 +106,131 @@ char** scalanative_host_to_ip_array(char *host) {
 	strcpy(retarr[count], "END");
 	freeaddrinfo(res);
 	return retarr;
+}
+
+// based on: https://stackoverflow.com/a/20105379/3645391
+bool scalanative_is_reachable_by_icmp(char* ip, int time, bool v6) {
+	struct sockaddr addr;
+	int family = AF_INET;
+	if(v6) {
+		struct sockaddr_in6 addr6;
+		inet_pton(AF_INET6, ip, &(addr6.sin6_addr));
+		addr6.sin6_family = AF_INET6;
+		addr = *((struct sockaddr *)&addr6);
+		family = AF_INET6;
+	}
+	else {
+		struct sockaddr_in addr4;
+		inet_pton(AF_INET, ip, &(addr4.sin_addr)); 
+		addr4.sin_family = AF_INET;
+		addr = *((struct sockaddr *)&addr4);
+	}
+
+	struct icmphdr icmp_hdr;
+	int sequence = 0;
+	int sock = socket(family, SOCK_DGRAM, IPPROTO_ICMP);
+	if(sock < 0) {
+		return false;
+	}
+
+	memset(&icmp_hdr, 0, sizeof icmp_hdr);
+	icmp_hdr.type = ICMP_ECHO;
+	icmp_hdr.un.echo.id = 1337; // arbitrary id
+
+	unsigned char data[2048];
+	int rc;
+	struct timeval timeout;
+	timeout.tv_sec = time / 1000;
+	timeout.tv_usec = (time % 1000) * 1000;
+	fd_set read_set;
+	socklen_t slen;
+	struct icmphdr rcv_hdr;
+
+	icmp_hdr.un.echo.sequence = sequence++;
+	memcpy(data, &icmp_hdr, sizeof icmp_hdr);
+        memcpy(data + sizeof icmp_hdr, "echo", 4); //icmp payload
+        rc = sendto(sock, data, sizeof icmp_hdr + 5,
+                0, &addr, sizeof addr);
+        if (rc <= 0) {
+		return false;
+        }
+
+        memset(&read_set, 0, sizeof read_set);
+        FD_SET(sock, &read_set);
+
+        //wait for a reply with a timeout
+        rc = select(sock + 1, &read_set, NULL, NULL, &timeout);
+        if (rc <= 0) {
+		return false;
+        }
+
+        //we don't care about the sender address in this example..
+        slen = 0;
+        rc = recvfrom(sock, data, sizeof data, 0, NULL, &slen);
+        if (rc <= 0) {
+		return false;
+        } else if (rc < sizeof rcv_hdr) {
+		return false;
+        }
+        memcpy(&rcv_hdr, data, sizeof rcv_hdr);
+        if (rcv_hdr.type == ICMP_ECHOREPLY) {
+		return true;
+        } 
+	return false;
+}
+
+bool scalanative_is_reachable_by_echo(char* ip, int time, bool v6) {
+	struct sockaddr addr;
+	int family;
+	if(v6) {
+		struct sockaddr_in6 addr6;
+		inet_pton(AF_INET6, ip, &(addr6.sin6_addr));
+		addr6.sin6_family = AF_INET6;
+		addr6.sin6_port = htons(7);
+		addr = *((struct sockaddr *)&addr6);
+		family = AF_INET6;
+	}
+	else {
+		struct sockaddr_in addr4;
+		inet_pton(AF_INET, ip, &(addr4.sin_addr)); 
+		addr4.sin_family = AF_INET;
+		addr4.sin_port = htons(7);
+		addr = *((struct sockaddr *)&addr4);
+		family = AF_INET;
+	}
+
+	int sock = socket(family, SOCK_STREAM, 0);
+	if(sock < 0) {
+		return false;
+	}
+	if(connect(sock, &addr, sizeof(addr)) < 0){
+		return false;
+	}
+
+	int rc;
+	struct timeval timeout;
+	timeout.tv_sec = time / 1000;
+	timeout.tv_usec = (time % 1000) * 1000;
+	fd_set read_set;
+
+	rc = send(sock, "echo", strlen("echo"), 0); 
+        if (rc < strlen("echo")) {
+		return false;
+        }
+
+        memset(&read_set, 0, sizeof read_set);
+        FD_SET(sock, &read_set);
+
+        //wait for a reply with a timeout
+        rc = select(sock + 1, &read_set, NULL, NULL, &timeout);
+        if (rc <= 0) {
+		return false;
+        }
+
+	char buf[5];
+	rc = recv(sock, buf, 5, 0);
+	if(rc < strlen("echo")){
+		return false;
+	}
+	return true;
 }
