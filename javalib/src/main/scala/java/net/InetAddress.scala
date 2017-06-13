@@ -57,8 +57,19 @@ abstract class InetAddress private[net] (ipAddress: Array[Byte], host: String)
       throw new IllegalArgumentException(
         "Timeout argumnet in method isReachable is negative")
     }
-    // TODO
-    true
+    Zone { implicit z =>
+      val ipString = createIPStringFromByteArray(ipAddress)
+      if (SocketHelpers.isReachableByICMP(toCString(ipString),
+                                          timeout,
+                                          isValidIPv6Address(ipString))) {
+        return true
+      } else {
+        return SocketHelpers.isReachableByEcho(toCString(ipString),
+                                               timeout,
+                                               isValidIPv6Address(ipString))
+      }
+    }
+    return false
   }
 
   def isLinkLocalAddress(): Boolean

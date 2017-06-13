@@ -70,8 +70,9 @@ object InetAddressSuite extends tests.Suite {
   }
 
   test("isReachable") {
-    val addr = InetAddress.getByName("127.0.0.1")
-    assert(addr.isReachable(10000))
+    // Linux disables ICMP requests by default and most of the addresses
+    // don't have echo servers running on port 7, so it's quite difficult
+    // to test this method here
 
     val addr2 = InetAddress.getByName("127.0.0.1")
     assertThrows[IllegalArgumentException] { addr2.isReachable(-1) }
