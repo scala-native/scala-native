@@ -187,7 +187,7 @@ lazy val gcSettings =
   } else {
     val gc = System.getenv.get("SCALANATIVE_GC")
     println(s"Using gc based on SCALANATIVE_GC=$gc")
-    Seq(nativeGC in Compile := gc)
+    Seq(nativeGC := gc)
   }
 
 lazy val projectSettings =
@@ -415,7 +415,7 @@ lazy val tests =
           }
         """)
         Seq(file)
-      }.taskValue,
+      },
       envVars in run ++= Map(
         "USER"                           -> "scala-native",
         "HOME"                           -> baseDirectory.value.getAbsolutePath,
@@ -461,7 +461,7 @@ lazy val benchmarks =
         """
         )
         Seq(file)
-      }.taskValue
+      }
     )
     .enablePlugins(ScalaNativePlugin)
 

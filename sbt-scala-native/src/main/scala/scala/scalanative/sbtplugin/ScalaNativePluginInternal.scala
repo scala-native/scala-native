@@ -93,6 +93,7 @@ object ScalaNativePluginInternal {
 
   lazy val projectSettings =
     dependencies ++
+      inScope(Global)(globalSettings) ++
       inConfig(Compile)(scalaNativeSettings) ++
       inConfig(Test)(scalaNativeSettings)
 
@@ -112,7 +113,7 @@ object ScalaNativePluginInternal {
       "org.scala-native" % "nscplugin" % nativeVersion cross CrossVersion.full)
   )
 
-  lazy val scopedSettings = Seq(
+  lazy val globalSettings = Seq(
     nativeWarnOldJVM := {
       val logger = nativeLogger.value
       Try(Class.forName("java.util.function.Function")).toOption match {
@@ -126,7 +127,7 @@ object ScalaNativePluginInternal {
       val clang = discover("clang", clangVersions)
       // todo: echo doesn't work well on windows
       if (!isWindows) {
-        checkThatClangIsRecentEnough(clang)
+      checkThatClangIsRecentEnough(clang)
       }
       clang
     },
@@ -134,7 +135,7 @@ object ScalaNativePluginInternal {
       val clang = discover("clang++", clangVersions)
       // todo: echo doesn't work well on windows
       if (!isWindows) {
-        checkThatClangIsRecentEnough(clang)
+      checkThatClangIsRecentEnough(clang)
       }
       clang
     },
@@ -169,6 +170,14 @@ object ScalaNativePluginInternal {
       val dbgInfo = nativeDebugInfoOptions.value
       libs ++ dbgInfo ++ Seq("-Qunused-arguments")
     },
+    nativeMode := "debug",
+    nativeLinkerReporter := tools.LinkerReporter.empty,
+    nativeOptimizerReporter := tools.OptimizerReporter.empty,
+    nativeLogger := streams.value.log,
+    nativeGC := "boehm"
+  )
+
+  lazy val scopedSettings = Seq(
     nativeTarget := {
       val logger = nativeLogger.value
       val cwd    = nativeWorkdir.value
@@ -198,14 +207,11 @@ object ScalaNativePluginInternal {
         }
         .getOrElse(fail)
     },
-    nativeMode := "debug",
     artifactPath in nativeLink := {
       crossTarget.value / (moduleName.value + (if (isWindows)
                                                  ".exe"
                                                else "-out"))
     },
-    nativeLinkerReporter := tools.LinkerReporter.empty,
-    nativeOptimizerReporter := tools.OptimizerReporter.empty,
     nativeOptimizerDriver := tools.OptimizerDriver(nativeConfig.value),
     nativeWorkdir := {
       val workdir = crossTarget.value / "native"
@@ -213,8 +219,21 @@ object ScalaNativePluginInternal {
       IO.createDirectory(workdir)
       workdir
     },
-    nativeLogger := streams.value.log,
-    nativeGC := "immix",
+    nativeConfig := {
+      val mainClass = selectMainClass.value.getOrElse(
+        throw new MessageOnlyException("No main class detected.")
+      )
+      val classpath = fullClasspath.value.map(_.data)
+      val entry     = nir.Global.Top(mainClass.toString + "$")
+      val cwd       = nativeWorkdir.value
+
+      tools.Config.empty
+        .withEntry(entry)
+        .withPaths(classpath)
+        .withWorkdir(cwd)
+        .withTarget(nativeTarget.value)
+        .withMode(mode(nativeMode.value))
+    },
     nativeCompileLib := {
       val cwd       = nativeWorkdir.value
       val logger    = nativeLogger.value
@@ -274,21 +293,6 @@ object ScalaNativePluginInternal {
       }
 
       lib
-    },
-    nativeConfig := {
-      val mainClass = selectMainClass.value.getOrElse(
-        throw new MessageOnlyException("No main class detected.")
-      )
-      val classpath = fullClasspath.value.map(_.data)
-      val entry     = nir.Global.Top(mainClass.toString + "$")
-      val cwd       = nativeWorkdir.value
-
-      tools.Config.empty
-        .withEntry(entry)
-        .withPaths(classpath)
-        .withWorkdir(cwd)
-        .withTarget(nativeTarget.value)
-        .withMode(mode(nativeMode.value))
     },
     nativeLinkNIR := {
       val logger   = nativeLogger.value
@@ -365,13 +369,22 @@ object ScalaNativePluginInternal {
       val linkingOpts = nativeLinkingOptions.value
       val clangpp     = nativeClangPP.value
       val outpath     = (artifactPath in nativeLink).value
-      val opaths      = (nativelib ** "*.o").get.map(abs)
-      val paths       = apppaths.map(abs) ++ opaths
+
+      // Functions that define actions to perform on the list of `*.o` files based on links
+      // For instance: Exclude certain `.o` files if a given link is not present.
+      val linksActions: Seq[Seq[String] => Seq[String] => Seq[String]] = Seq(
+        links =>
+          if (!links.contains("z")) _.filterNot(_ endsWith "zlib.c.o")
+          else identity,
+        links =>
+          if (!links.contains("re2")) _.filterNot(_ endsWith "cre2.cpp.o")
+          else identity
+      )
+
       val links: Seq[String] = {
         val os   = Option(System.getProperty("os.name")).getOrElse("")
         val arch = target.split("-").head
         // we need re2 to link the re2 c wrapper (cre2.h)
-        val regex = Seq("re2")
         val librt = os match {
           case "Linux" => Seq("rt")
           case _       => Seq.empty
@@ -383,11 +396,16 @@ object ScalaNativePluginInternal {
             else Seq("unwind", "unwind-" + arch)
         }
         librt ++ libunwind ++ linked.links
-          .map(_.name) ++ garbageCollector(gc).links ++ regex
+          .map(_.name) ++ garbageCollector(gc).links
       }
       val linkopts  = links.map("-l" + _) ++ linkingOpts
       val targetopt = Seq("-target", target)
       val flags     = Seq("-o", abs(outpath)) ++ linkopts ++ targetopt
+      val allOPaths = (nativelib ** "*.o").get.map(abs)
+      val opaths = linksActions.foldLeft(allOPaths) {
+        case (ps, fn) => fn(links)(ps)
+      }
+      val paths   = apppaths.map(abs) ++ opaths
       val compile   = abs(clangpp) +: (flags ++ paths)
 
       logger.time("Linking native code") {

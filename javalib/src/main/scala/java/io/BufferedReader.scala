@@ -72,12 +72,14 @@ class BufferedReader(in: Reader, sz: Int) extends Reader {
   def readLine(): String = {
     ensureOpen()
 
-    var res = ""
+    val sb = new java.lang.StringBuilder(80)
 
     while (prepareRead() && buf(pos) != '\n' && buf(pos) != '\r') {
-      res += buf(pos)
+      sb.append(buf(pos))
       pos += 1
     }
+
+    val res = sb.toString
 
     if (pos >= end) {
       // We have reached the end of the stream (prepareRead() returned false)

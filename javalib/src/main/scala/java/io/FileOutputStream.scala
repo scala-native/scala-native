@@ -1,8 +1,9 @@
 package java.io
 
-import scala.scalanative.posix.{fcntl, stat, unistd}
-import scala.scalanative.native._
-import scala.scalanative.runtime
+import scalanative.native._
+import scalanative.posix.{fcntl, unistd}
+import scalanative.posix.sys.stat
+import scalanative.runtime
 
 class FileOutputStream(fd: FileDescriptor) extends OutputStream {
   def this(file: File, append: Boolean) =
@@ -61,9 +62,13 @@ object FileOutputStream {
     Zone { implicit z =>
       import fcntl._
       import stat._
-      val flags = O_CREAT | O_WRONLY | (if (append) O_APPEND else 0)
+      val flags = O_CREAT | O_WRONLY | (if (append) O_APPEND else O_TRUNC)
       val mode  = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
       val fd    = open(toCString(file.getPath), flags, mode)
-      new FileDescriptor(fd)
+      if (fd == -1)
+        throw new FileNotFoundException(
+          s"$file (${fromCString(string.strerror(errno.errno))})")
+      else
+        new FileDescriptor(fd)
     }
 }

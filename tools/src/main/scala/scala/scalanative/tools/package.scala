@@ -1,5 +1,7 @@
 package scala.scalanative
 
+import scalanative.nir.Global
+
 // API use-cases
 //
 // sbt plugin:
@@ -33,7 +35,7 @@ package object tools {
   type OptimizerReporter = optimizer.Reporter
   val OptimizerReporter = optimizer.Reporter
 
-  /** Given the classpath and entry point, link under closed-world assumption. */
+  /** Given the classpath and main entry point, link under closed-world assumption. */
   def link(config: Config,
            driver: OptimizerDriver,
            reporter: LinkerReporter = LinkerReporter.empty): LinkerResult = {
@@ -47,6 +49,11 @@ package object tools {
 
     result.withDefns(result.defns ++ injects)
   }
+
+  def linkRaw(config: Config,
+              entries: Seq[Global],
+              reporter: LinkerReporter = LinkerReporter.empty): LinkerResult =
+    linker.Linker(config, reporter).link(entries)
 
   /** Transform high-level closed world to its lower-level counterpart. */
   def optimize(

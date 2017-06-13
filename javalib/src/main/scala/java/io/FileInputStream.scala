@@ -1,9 +1,8 @@
 package java.io
 
 import scalanative.native._, stdlib._, stdio._, string._
-import scala.scalanative.posix.{fcntl, unistd}
-import unistd._
-import scala.scalanative.runtime
+import scalanative.posix.{fcntl, unistd}, unistd._
+import scalanative.runtime
 
 class FileInputStream(fd: FileDescriptor) extends InputStream {
 

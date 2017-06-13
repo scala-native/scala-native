@@ -1,17 +1,8 @@
-package scala.scalanative.posix
+package scala.scalanative
+package posix
 
-import scala.scalanative.native.{
-  CUnsignedInt,
-  CString,
-  CLongLong,
-  Ptr,
-  extern,
-  name,
-  CSize,
-  CInt
-}
-
-import stat.{uid_t, gid_t}
+import scalanative.native._
+import scalanative.posix.sys.stat.{uid_t, gid_t}
 
 @extern
 object unistd {

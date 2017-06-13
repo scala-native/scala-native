@@ -1,9 +1,8 @@
 package scala.scalanative
 package posix
 
-import scala.scalanative.native.{CInt, CString, CStruct3, extern, name, Ptr}
-
-import stat.gid_t
+import scalanative.native.{CInt, CString, CStruct3, extern, name, Ptr}
+import scalanative.posix.sys.stat.gid_t
 
 @extern
 object grp {

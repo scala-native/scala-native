@@ -1,7 +1,8 @@
 package java.io
 
-import scala.scalanative.native.{stdio, toCString, Zone}
-import scala.scalanative.posix.{fcntl, stat, unistd}
+import scalanative.native.{stdio, toCString, Zone}
+import scalanative.posix.{fcntl, unistd}
+import scalanative.posix.sys.stat
 
 class RandomAccessFile private (file: File,
                                 fd: FileDescriptor,

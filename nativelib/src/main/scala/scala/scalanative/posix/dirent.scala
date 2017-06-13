@@ -1,8 +1,7 @@
 package scala.scalanative
 package posix
 
-import scala.scalanative.native._
-import Nat._
+import scala.scalanative.native._, Nat._
 
 @extern
 object dirent {
