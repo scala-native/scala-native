@@ -13,7 +13,7 @@ import scala.scalanative.native._
 import scala.scalanative.runtime.ByteArray
 import arpa.inet._
 import sys.socket
-import netinet.in._
+import netinet.{in, inh}, in._, inh._
 import sbt.testing.{Event => SbtEvent, _}
 
 import scala.scalanative.testinterface.serialization._
@@ -54,9 +54,9 @@ abstract class TestMainBase {
   /** Sets up the server socket, returns the file descriptor. */
   private def setupServer(port: uint16_t)(implicit zone: Zone): CInt = {
     val server_address = native.alloc[sockaddr_in]
-    !server_address._1 = socket.AF_INET.toUShort
-    !server_address._2 = htons(port)
-    !server_address._3._1 = htonl(INADDR_ANY)
+    server_address.sin_family = socket.AF_INET.toUShort
+    server_address.sin_port = htons(port)
+    server_address.sin_addr.in_addr = htonl(INADDR_ANY)
 
     val listen_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
     if (listen_sock < 0) {

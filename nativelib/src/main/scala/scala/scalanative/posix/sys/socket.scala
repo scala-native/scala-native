@@ -168,3 +168,16 @@ object socket {
            length: CSize,
            flags: CInt): CSSize = extern
 }
+
+object socketh {
+  import socket._
+
+  implicit class sockaddrOps(val ptr: Ptr[sockaddr]) extends AnyVal {
+    def sa_family: sa_family_t      = !ptr._1
+    def sa_data: CArray[CChar, _14] = !ptr._2
+
+    def sa_family_=(v: sa_family_t): Unit      = !ptr._1 = v
+    def sa_data_=(v: CArray[CChar, _14]): Unit = !ptr._2 = v
+  }
+
+}
