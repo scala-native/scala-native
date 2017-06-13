@@ -55,7 +55,7 @@ abstract class InetAddress private[net] (ipAddress: Array[Byte], host: String)
   def isReachable(timeout: Int): Boolean = {
     if (timeout < 0) {
       throw new IllegalArgumentException(
-        "Timeout argumnet in method isReachable is negative")
+        "Argument 'timeout' in method 'isReachable' is negative")
     }
     Zone { implicit z =>
       val ipString = createIPStringFromByteArray(ipAddress)
