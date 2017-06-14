@@ -270,7 +270,7 @@ object ScalaNativePluginInternal {
 
         if (path.contains(sep + "optional" + sep)) {
           val name = file(path).getName.split("\\.").head
-          linked.links.contains(name)
+          linked.links.map(_.name).contains(name)
         } else if (path.contains(sep + "gc" + sep)) {
           path.contains("gc" + sep + gc)
         } else {
