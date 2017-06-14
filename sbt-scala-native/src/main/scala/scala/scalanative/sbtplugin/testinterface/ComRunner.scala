@@ -50,7 +50,7 @@ class ComRunner(bin: File, args: Seq[String], logger: Logger) {
   }
 
   /** Wait for a message to arrive from the distant program. */
-  def receive[T](timeout: Duration = Duration.Inf): Message =
+  def receive(timeout: Duration = Duration.Inf): Message =
     synchronized {
       in.mark(Int.MaxValue)
       val savedSoTimeout = socket.getSoTimeout()

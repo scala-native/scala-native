@@ -116,7 +116,7 @@ object in {
 
 }
 
-object inh {
+object inOps {
   import in._
 
   implicit class sockaddr_inOps(val ptr: Ptr[sockaddr_in]) extends AnyVal {

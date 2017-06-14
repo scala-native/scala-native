@@ -13,7 +13,7 @@ import scala.scalanative.native._
 import scala.scalanative.runtime.ByteArray
 import arpa.inet._
 import sys.socket
-import netinet.{in, inh}, in._, inh._
+import netinet.{in, inOps}, in._, inOps._
 import sbt.testing.{Event => SbtEvent, _}
 
 import scala.scalanative.testinterface.serialization._

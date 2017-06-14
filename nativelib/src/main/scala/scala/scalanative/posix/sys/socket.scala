@@ -169,7 +169,7 @@ object socket {
            flags: CInt): CSSize = extern
 }
 
-object socketh {
+object socketOps {
   import socket._
 
   implicit class sockaddrOps(val ptr: Ptr[sockaddr]) extends AnyVal {
