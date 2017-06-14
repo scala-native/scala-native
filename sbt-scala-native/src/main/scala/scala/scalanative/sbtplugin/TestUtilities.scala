@@ -9,7 +9,7 @@ object TestUtilities {
   def makeTestMain(frameworks: Seq[Framework],
                    tests: Seq[TestDefinition]): String = {
     val frameworksList =
-      frameworks.map(_.getClass.getName).mkString("new ", ", new ", "")
+      frameworks.map(_.getClass.getName).mkString("new _root_.", ", new _root_.", "")
     val testsMap = makeTestsMap(tests)
 
     s"""package scala.scalanative.testinterface
@@ -30,7 +30,7 @@ object TestUtilities {
         }
 
         val inst = if (isModule) t.name else s"new ${t.name}"
-        s""""${t.name}" -> $inst"""
+        s""""${t.name}" -> _root_.$inst"""
       }
       .mkString(", ")
 }

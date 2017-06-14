@@ -406,6 +406,8 @@ lazy val tests =
     .settings(
       // nativeOptimizerReporter := OptimizerReporter.toDirectory(
       //   crossTarget.value),
+      libraryDependencies += "org.scala-native" %%% "test-interface" % nativeVersion,
+      testFrameworks += new TestFramework("tests.NativeFramework"),
       sourceGenerators in Compile += Def.task {
         val dir = (scalaSource in Compile).value
         val suites = (dir ** "*Suite.scala").get
