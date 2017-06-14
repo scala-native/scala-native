@@ -56,8 +56,11 @@ object ScalaNativePluginInternal {
   val nativeCompileLL =
     taskKey[Seq[File]]("Compile LLVM IR to native object files.")
 
+  val nativeUnpackLib =
+    taskKey[File]("Unpack native lib.")
+
   val nativeCompileLib =
-    taskKey[File]("Unpack and precompile native lib.")
+    taskKey[File]("Precompile C/C++ code in native lib.")
 
   val nativeLinkLL =
     taskKey[File]("Link native object files into the final binary")
@@ -217,14 +220,10 @@ object ScalaNativePluginInternal {
         .withTarget(nativeTarget.value)
         .withMode(mode(nativeMode.value))
     },
-    nativeCompileLib := {
+    nativeUnpackLib := {
       val cwd       = nativeWorkdir.value
       val logger    = nativeLogger.value
-      val gc        = nativeGC.value
-      val clang     = nativeClang.value
-      val clangpp   = nativeClangPP.value
       val classpath = (fullClasspath in Compile).value
-      val opts      = nativeCompileOptions.value ++ Seq("-O2")
 
       val lib = cwd / "lib"
       val jar =
@@ -237,40 +236,53 @@ object ScalaNativePluginInternal {
           .get
       val jarhash     = Hash(jar).toSeq
       val jarhashfile = lib / "jarhash"
-      def bootstrapped =
+      def unpacked =
         lib.exists &&
           jarhashfile.exists &&
           jarhash == IO.readBytes(jarhashfile).toSeq
 
-      if (!bootstrapped) {
+      if (!unpacked) {
         IO.delete(lib)
         IO.unzip(jar, lib)
         IO.write(jarhashfile, Hash(jar))
+      }
 
-        val cpaths   = filterGCSources(gc, (cwd ** "*.c").get, cwd).map(abs)
-        val cpppaths = filterGCSources(gc, (cwd ** "*.cpp").get, cwd).map(abs)
-        val paths    = cpaths ++ cpppaths
+      lib
+    },
+    nativeCompileLib := {
+      val cwd       = nativeWorkdir.value
+      val clang     = nativeClang.value
+      val clangpp   = nativeClangPP.value
+      val gc        = nativeGC.value
+      val opts      = nativeCompileOptions.value ++ Seq("-O2")
+      val logger    = nativeLogger.value
+      val nativelib = nativeUnpackLib.value
+      val cpaths    = filterGCSources(gc, (cwd ** "*.c").get, cwd).map(abs)
+      val cpppaths  = filterGCSources(gc, (cwd ** "*.cpp").get, cwd).map(abs)
+      val paths     = cpaths ++ cpppaths
 
-        paths.par.foreach {
-          path =>
-            val isCppSource = path.endsWith(".cpp")
+      paths.par.foreach {
+        path =>
+          val opath = path + ".o"
 
-            val compiler = abs(if (isCppSource) clangpp else clang)
-            val flags    = (if (isCppSource) Seq("-std=c++11") else Seq()) ++ opts
+          if (!file(opath).exists) {
+            val isCpp    = path.endsWith(".cpp")
+            val compiler = abs(if (isCpp) clangpp else clang)
+            val flags    = (if (isCpp) Seq("-std=c++11") else Seq()) ++ opts
             val compilec = Seq(compiler) ++ flags ++ Seq("-c",
                                                          path,
                                                          "-o",
-                                                         path + ".o")
+                                                         opath)
 
             logger.running(compilec)
             val result = Process(compilec, cwd) ! logger
             if (result != 0) {
               sys.error("Failed to compile native library runtime code.")
             }
-        }
+          }
       }
 
-      lib
+      nativelib
     },
     nativeLinkNIR := {
       val logger   = nativeLogger.value
