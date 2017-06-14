@@ -21,7 +21,8 @@ class BufferedReader(in: Reader, sz: Int) extends Reader {
 
   private[this] var validMark = false
 
-  override def close(): Unit = {
+  override def close(): Unit = if (!closed) {
+    in.close()
     closed = true
   }
 
