@@ -12,7 +12,8 @@ import scala.scalanative.testinterface.serialization.{Command, FrameworkInfo}
 class ScalaNativeFramework(val framework: Framework,
                            val id: Int,
                            logger: Logger,
-                           testBinary: File)
+                           testBinary: File,
+                           envVars: Map[String, String])
     extends Framework {
 
   private[this] lazy val frameworkInfo         = fetchFrameworkInfo()
@@ -29,7 +30,12 @@ class ScalaNativeFramework(val framework: Framework,
         "Scala Native test frameworks do not support concurrent runs")
     }
 
-    _runner = new ScalaNativeRunner(this, testBinary, logger, args, remoteArgs)
+    _runner = new ScalaNativeRunner(this,
+                                    testBinary,
+                                    logger,
+                                    envVars,
+                                    args,
+                                    remoteArgs)
     _runner
   }
 

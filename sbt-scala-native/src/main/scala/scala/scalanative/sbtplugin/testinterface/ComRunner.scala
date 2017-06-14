@@ -4,7 +4,7 @@ package testinterface
 
 import java.io._
 
-import sbt.{Logger, MessageOnlyException}
+import sbt.{Logger, MessageOnlyException, Process}
 
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration.Duration
@@ -19,7 +19,10 @@ import scala.scalanative.testinterface.serialization.Log.Level
  * @param args   Arguments to pass to the program
  * @param logger Logger to log to.
  */
-class ComRunner(bin: File, args: Seq[String], logger: Logger) {
+class ComRunner(bin: File,
+                envVars: Map[String, String],
+                args: Seq[String],
+                logger: Logger) {
 
   /** Port over which we communicate with the distant program */
   val port: Int = scala.util.Random.nextInt(1000) + 9000
@@ -29,7 +32,7 @@ class ComRunner(bin: File, args: Seq[String], logger: Logger) {
       import sbt.Process._
       running = true
       logger.info(s"Starting process '$bin' on port '$port'.")
-      Seq(bin.getAbsolutePath, port.toString) ++ args ! logger
+      Process(bin.toString +: port.toString +: args, None, envVars.toSeq: _*) ! logger
       running = false
     }
   }

@@ -16,6 +16,7 @@ import scala.scalanative.testinterface.serialization.{
 class ScalaNativeRunner(val framework: ScalaNativeFramework,
                         bin: File,
                         logger: Logger,
+                        envVars: Map[String, String],
                         val args: Array[String],
                         val remoteArgs: Array[String])
     extends Runner {
@@ -45,7 +46,7 @@ class ScalaNativeRunner(val framework: ScalaNativeFramework,
   }
 
   private[this] def createRemoteRunner(): ComRunner = {
-    master = new ComRunner(bin, Seq.empty, logger)
+    master = new ComRunner(bin, envVars, Seq.empty, logger)
     val command = Command.NewRunner(framework.id, args, remoteArgs)
     send(command)
     master

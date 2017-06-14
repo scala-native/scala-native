@@ -9,7 +9,9 @@ object TestUtilities {
   def makeTestMain(frameworks: Seq[Framework],
                    tests: Seq[TestDefinition]): String = {
     val frameworksList =
-      frameworks.map(_.getClass.getName).mkString("new _root_.", ", new _root_.", "")
+      frameworks
+        .map(_.getClass.getName)
+        .mkString("new _root_.", ", new _root_.", "")
     val testsMap = makeTestsMap(tests)
 
     s"""package scala.scalanative.testinterface

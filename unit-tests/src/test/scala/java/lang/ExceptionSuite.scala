@@ -9,7 +9,6 @@ object ExceptionSuite extends tests.Suite {
     (new Exception).printStackTrace(pw)
     val trace = sw.toString
     assert(trace.startsWith("java.lang.Exception"))
-    assert(trace.contains("\tat tests.Main$.main(Unknown Source)"))
     assert(trace.contains("\tat <none>.main(Unknown Source)"))
   }
 

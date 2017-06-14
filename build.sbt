@@ -408,24 +408,7 @@ lazy val tests =
       //   crossTarget.value),
       libraryDependencies += "org.scala-native" %%% "test-interface" % nativeVersion,
       testFrameworks += new TestFramework("tests.NativeFramework"),
-      sourceGenerators in Compile += Def.task {
-        val dir = (scalaSource in Compile).value
-        val suites = (dir ** "*Suite.scala").get
-          .flatMap(IO.relativizeFile(dir, _))
-          .map(file => packageNameFromPath(file.toPath))
-          .filter(_ != "tests.Suite")
-          .mkString("Seq(", ", ", ")")
-        val file = (sourceManaged in Compile).value / "tests" / "Discover.scala"
-        IO.write(file,
-                 s"""
-          package tests
-          object Discover {
-            val suites: Seq[tests.Suite] = $suites
-          }
-        """)
-        Seq(file)
-      },
-      envVars in run ++= Map(
+      envVars in (Test, test) ++= Map(
         "USER"                           -> "scala-native",
         "HOME"                           -> baseDirectory.value.getAbsolutePath,
         "SCALA_NATIVE_ENV_WITH_EQUALS"   -> "1+1=2",

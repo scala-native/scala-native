@@ -184,6 +184,7 @@ object ScalaNativePluginInternal {
       Seq(
         classDirectory := (classDirectory in Test).value,
         dependencyClasspath := (dependencyClasspath in Test).value,
+        parallelExecution in test := false,
         sourceGenerators += Def.task {
           val frameworks = (loadedTestFrameworks in Test).value.map(_._2).toSeq
           val tests      = (definedTests in Test).value
@@ -195,9 +196,11 @@ object ScalaNativePluginInternal {
           val frameworks = (loadedTestFrameworks in Test).value
           val logger     = streams.value.log
           val testBinary = nativeLink.value
+          val envVars    = (Keys.envVars in (Test, test)).value
           (frameworks.zipWithIndex).map {
             case ((tf, f), id) =>
-              (tf, new ScalaNativeFramework(f, id, logger, testBinary))
+              (tf,
+               new ScalaNativeFramework(f, id, logger, testBinary, envVars))
           }
         },
         definedTests := (definedTests in Test).value
