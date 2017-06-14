@@ -723,19 +723,17 @@ std::string convertUCS2toUtf8(const wchar_t *text) {
     return convUCS2.to_bytes(text);
 }
 
-void putResult(scalanative_misc_regex_match_result* match, const char* begin, uint32_t length, const char** out, int32_t* max_out)
-{
-    auto& result = match->result_container;
+void putResult(scalanative_misc_regex_match_result *match, const char *begin,
+               uint32_t length, const char **out, int32_t *max_out) {
+    auto &result = match->result_container;
     result.assign(begin, length);
     *out = result.data();
     *max_out = result.length();
 }
-std::locale& getLocale(const std::string& str)
-{
+std::locale &getLocale(const std::string &str) {
     static std::unordered_map<std::string, std::locale> cache;
     auto it = cache.find(str);
-    if (it == cache.end())
-    {
+    if (it == cache.end()) {
         it = cache.emplace(str, str).first;
     }
     return it->second;
@@ -748,7 +746,7 @@ extern "C" scalanative_misc_regex *scalanative_misc_regex_create(
     char *out_error_message, int32_t max_out) {
     scalanative_misc_regex *res = nullptr;
     out_error_message[0] = 0;
-    const char* strLocale = loc ? loc : "en-US";
+    const char *strLocale = loc ? loc : "en-US";
     try {
         res = new scalanative_misc_regex();
         if (flags & Flags::no_unicode) {
@@ -781,7 +779,8 @@ extern "C" scalanative_misc_regex *scalanative_misc_regex_create(
             begin.end();*/
             new (&res->ucs2Regex) scalanative_misc_ucs2Regex;
             res->ucs2Regex.imbue(Utils::getLocale(strLocale));
-            res->ucs2Regex.assign(testString, testString.end(), Flags::convertRegexFlags(flags));
+            res->ucs2Regex.assign(testString, testString.end(),
+                                  Flags::convertRegexFlags(flags));
 
 #endif
         }
@@ -1079,7 +1078,7 @@ extern "C" int32_t scalanative_misc_regex_match_submatch_count(
 
 extern "C" bool scalanative_misc_regex_match_submatch_string(
     scalanative_misc_regex_match_result *match, int32_t index, const char **out,
-    int32_t* max_out) {
+    int32_t *max_out) {
     if (!match) {
         return 0;
     }
@@ -1087,7 +1086,9 @@ extern "C" bool scalanative_misc_regex_match_submatch_string(
     if (match->kind.isAnsi()) {
         auto &sm = match->m;
         if (sm.data.ready()) {
-            auto &smi = index < sm.data.size() ? sm.data[index] : (index < 0 ? sm.data.prefix() : sm.data.suffix());
+            auto &smi = index < sm.data.size()
+                            ? sm.data[index]
+                            : (index < 0 ? sm.data.prefix() : sm.data.suffix());
             uint32_t stringLength = smi.length();
             Utils::putResult(match, smi.first, stringLength, out, max_out);
             return true;
@@ -1095,10 +1096,13 @@ extern "C" bool scalanative_misc_regex_match_submatch_string(
     } else if (match->kind.isUCS2()) {
         auto &sm = match->wm;
         if (sm.data.ready()) {
-            auto &smi = index < sm.data.size() ? sm.data[index] : (index < 0 ? sm.data.prefix() : sm.data.suffix());
+            auto &smi = index < sm.data.size()
+                            ? sm.data[index]
+                            : (index < 0 ? sm.data.prefix() : sm.data.suffix());
             uint32_t stringLength =
                 smi.second.current_position() - smi.first.current_position();
-            Utils::putResult(match, smi.first.current_position(), stringLength, out, max_out);
+            Utils::putResult(match, smi.first.current_position(), stringLength,
+                             out, max_out);
             return true;
         }
     }
@@ -1141,21 +1145,22 @@ extern "C" bool scalanative_misc_regex_match_submatch_range(
     return false;
 }
 
-extern "C" bool scalanative_misc_regex_match_format(
-    scalanative_misc_regex_match_result *match, const char *fmt,
-    scalanative_misc_regex_match_flags flags, const char **out, int32_t* max_out) {
+extern "C" bool
+scalanative_misc_regex_match_format(scalanative_misc_regex_match_result *match,
+                                    const char *fmt,
+                                    scalanative_misc_regex_match_flags flags,
+                                    const char **out, int32_t *max_out) {
     if (!match) {
         return 0;
     }
 
-    auto& result = match->result_container;
+    auto &result = match->result_container;
     result.clear();
 
     if (match->kind.isAnsi()) {
         auto &sm = match->m;
         if (sm.data.ready()) {
-            result.assign(
-                sm.data.format(fmt, Flags::convertMatchFlags(flags)));
+            result.assign(sm.data.format(fmt, Flags::convertMatchFlags(flags)));
             *max_out = result.length();
             *out = result.data();
             return true;
@@ -1163,7 +1168,7 @@ extern "C" bool scalanative_misc_regex_match_format(
     } else if (match->kind.isUCS2()) {
         auto &sm = match->wm;
         if (sm.data.ready()) {
-            result.assign( Utils::convertUCS2toUtf8(
+            result.assign(Utils::convertUCS2toUtf8(
                 sm.data
                     .format(Utils::convertUtf8toUCS2(fmt),
                             Flags::convertMatchFlags(flags))
@@ -1177,7 +1182,8 @@ extern "C" bool scalanative_misc_regex_match_format(
 }
 
 extern "C" bool scalanative_misc_regex_match_token_string(
-    scalanative_misc_regex_match_result *match, const char **out, int32_t* max_out) {
+    scalanative_misc_regex_match_result *match, const char **out,
+    int32_t *max_out) {
     if (!match) {
         return 0;
     }
@@ -1196,7 +1202,8 @@ extern "C" bool scalanative_misc_regex_match_token_string(
             auto &smi = sm.sub_data;
             uint32_t stringLength =
                 smi.second.current_position() - smi.first.current_position();
-            Utils::putResult(match, smi.first.current_position(), stringLength, out, max_out);
+            Utils::putResult(match, smi.first.current_position(), stringLength,
+                             out, max_out);
             return true;
         }
     }
@@ -1239,17 +1246,19 @@ extern "C" bool scalanative_misc_regex_match_token_range(
     return false;
 }
 
-extern "C" bool scalanative_misc_regex_match_replace(
-    scalanative_misc_regex *res, const char *text_original, const char *fmt,
-    scalanative_misc_regex_match_flags flags, const char **out, int32_t* max_out) {
+extern "C" bool
+scalanative_misc_regex_match_replace(scalanative_misc_regex *res,
+                                     const char *text_original, const char *fmt,
+                                     scalanative_misc_regex_match_flags flags,
+                                     const char **out, int32_t *max_out) {
     if (!res) {
         return 0;
     }
 
     if (res->kind.isAnsi()) {
-        res->result.assign(
-            std::regex_replace(text_original, res->ansiRegex, fmt,
-                               Flags::convertMatchFlags(flags)));
+        res->result.assign(std::regex_replace(text_original, res->ansiRegex,
+                                              fmt,
+                                              Flags::convertMatchFlags(flags)));
         uint32_t stringLength = res->result.length();
         *out = res->result.data();
         *max_out = res->result.length();

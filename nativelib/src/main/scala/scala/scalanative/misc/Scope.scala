@@ -9,9 +9,8 @@ package scala.scalanative.misc
  *
  *  See https://www.youtube.com/watch?v=MV2eJkwarT4 for details.
  */
-
 trait Resource {
-  def close():Unit
+  def close(): Unit
 }
 
 @annotation.implicitNotFound(msg = "Resource acquisition requires a scope.")
@@ -36,7 +35,7 @@ object Scope {
     finally scope.close()
   }
 
-   /** Scope that never closes. Resources allocated in this scope are
+  /** Scope that never closes. Resources allocated in this scope are
    *  going to be acquired as long as application is running.
    */
   val forever: Scope = new Impl {
@@ -53,8 +52,7 @@ object Scope {
     }
 
     def close(): Unit = {
-      if (!resources.isEmpty)
-      {
+      if (!resources.isEmpty) {
         val first = resources.head
         resources = resources.pop
         try first.close()
