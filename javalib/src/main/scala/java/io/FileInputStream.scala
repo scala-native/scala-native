@@ -6,7 +6,7 @@ import scalanative.runtime
 
 class FileInputStream(fd: FileDescriptor) extends InputStream {
 
-  def this(file: File) = this(FileDescriptor.open(file))
+  def this(file: File) = this(FileDescriptor.openReadOnly(file))
   def this(str: String) = this(new File(str))
 
   override def available(): Int = {
