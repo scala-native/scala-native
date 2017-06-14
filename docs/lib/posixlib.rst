@@ -192,3 +192,5 @@ C Header          Scala Native Module
 .. _scala.scalanative.posix.sys.uio: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/sys/uio.scala
 .. _scala.scalanative.posix.unistd: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/unistd.scala
 .. _scala.scalanative.posix.utime: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/utime.scala
+
+Continue to :ref:`faq`.
