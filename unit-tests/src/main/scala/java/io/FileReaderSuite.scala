@@ -1,7 +1,5 @@
 package java.io
 
-import scala.util.Try
-
 object FileReaderSuite extends tests.Suite {
 
   test(
