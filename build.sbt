@@ -39,7 +39,7 @@ addCommandAlias(
   Seq(
     "sandbox/run",
     "demoNative/run",
-    "tests/run",
+    "tests/test",
     "tools/test",
     "benchmarks/run --test",
     "scripted"
@@ -424,12 +424,7 @@ lazy val sandbox =
     .settings(
       // nativeOptimizerReporter := OptimizerReporter.toDirectory(
       //   crossTarget.value)
-    )
-    .settings(
-      scalaVersion := libScalaVersion,
-      libraryDependencies += "org.scalacheck" %%% "scalacheck" % "1.14.0-SNAPSHOT" % Test,
-      libraryDependencies += "com.lihaoyi"    %%% "utest"      % "0.4.8-SNAPSHOT"  % Test,
-      testFrameworks += new TestFramework("utest.runner.Framework")
+      scalaVersion := libScalaVersion
     )
     .enablePlugins(ScalaNativePlugin)
 
