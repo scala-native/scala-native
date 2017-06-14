@@ -39,6 +39,7 @@ addCommandAlias(
     "demoNative/run",
     "tests/run",
     "tools/test",
+    "bindgen/test",
     "benchmarks/run --test",
     "scripted"
   ).mkString(";", ";", "")
@@ -370,6 +371,48 @@ lazy val scalalib =
       publishLocal := publishLocal.dependsOn(assembleScalaLibrary).value
     )
     .dependsOn(nativelib, javalib)
+
+lazy val bindgen =
+  project
+    .in(file("bindgen"))
+    .settings(projectSettings)
+    .settings(noPublishSettings)
+    .enablePlugins(ScalaNativePlugin)
+    .settings(
+      fork in Test := true,
+      javaOptions in Test += "-Dnative.bin=" + (nativeLinkLL in Compile).value,
+      libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.0" % Test,
+      sourceGenerators in Compile += Def.task {
+        val logger   = (nativeLogger in Compile).value
+        val compiler = (nativeClang in Compile).value.getAbsolutePath
+        val cpath    = (resourceDirectory in Compile).value / "clang.c"
+        val spath    = (sourceManaged in Compile).value / "Clang.scala"
+        val pprocess = Seq(compiler, "-DSCALA", "-E", cpath.toString)
+        val lines    = Process(pprocess, target.value) lines_! logger
+
+        logger.info(s"Generating $cpath from $spath")
+        IO.write(spath, lines.filterNot(_.startsWith("#")).mkString("\n"))
+        Seq(spath)
+      }.taskValue,
+      nativeCompileLL in Compile += {
+        val logger   = (nativeLogger in Compile).value
+        val compiler = (nativeClang in Compile).value.getAbsolutePath
+        val opts     = (nativeCompileOptions in Compile).value
+        val cpath    = (resourceDirectory in Compile).value / "clang.c"
+        val opath    = (crossTarget in Compile).value / "clang.o"
+        val compilec = Seq(compiler) ++ opts ++ Seq("-c",
+                                                    cpath.toString,
+                                                    "-o",
+                                                    opath.toString)
+
+        logger.info(s"Compiling $cpath to $opath")
+        val exitCode = Process(compilec, target.value) ! logger
+        if (exitCode != 0) {
+          logger.error("Failed to compile " + cpath)
+        }
+        opath
+      }
+    )
 
 lazy val demoJVM =
   project

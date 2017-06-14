@@ -9,3 +9,4 @@ Contributor's Guide
   contributing
   compiler
   nir
+  bindgen

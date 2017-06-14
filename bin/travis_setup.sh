@@ -26,6 +26,8 @@ else
       libgc-dev \
       libunwind8-dev
 
+    export PATH="/usr/lib/llvm-3.7/bin:$PATH"
+
     # Install re2
     # Starting from Ubuntu 16.04 LTS, it'll be available as http://packages.ubuntu.com/xenial/libre2-dev
     sudo apt-get install -y make
