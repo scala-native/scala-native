@@ -9,6 +9,9 @@ import scalanative.tools
 import scalanative.io.VirtualDirectory
 import scalanative.util.{Scope => ResourceScope}
 
+import sbt.testing.Framework
+import testinterface.ScalaNativeFramework
+
 import sbt._, Keys._, complete.DefaultParsers._
 
 import scala.util.Try
@@ -88,6 +91,8 @@ object ScalaNativePluginInternal {
       globals.map(_.show).sorted
     }
 
+  lazy val NativeTest = config("nativetest").extend(Test).hide
+
   def nativeMissingDependenciesTask =
     nativeMissingDependencies := {
       (nativeExternalDependencies.value.toSet --
@@ -98,7 +103,10 @@ object ScalaNativePluginInternal {
     dependencies ++
       inScope(Global)(globalSettings) ++
       inConfig(Compile)(scalaNativeSettings) ++
-      inConfig(Test)(scalaNativeSettings)
+      inConfig(Test)(scalaNativeSettings) ++
+      inConfig(NativeTest)(scalaNativeSettings) ++
+      inConfig(NativeTest)(nativeTestSettings) ++
+      inConfig(Test)(testSettings)
 
   lazy val scalaNativeSettings =
     scopedSettings ++
@@ -108,9 +116,10 @@ object ScalaNativePluginInternal {
 
   lazy val dependencies = Seq(
     libraryDependencies ++= Seq(
-      "org.scala-native" %%% "nativelib" % nativeVersion,
-      "org.scala-native" %%% "javalib"   % nativeVersion,
-      "org.scala-native" %%% "scalalib"  % nativeVersion
+      "org.scala-native" %%% "nativelib"      % nativeVersion,
+      "org.scala-native" %%% "javalib"        % nativeVersion,
+      "org.scala-native" %%% "scalalib"       % nativeVersion,
+      "org.scala-native" %%% "test-interface" % nativeVersion % Test
     ),
     addCompilerPlugin(
       "org.scala-native" % "nscplugin" % nativeVersion cross CrossVersion.full)
@@ -164,6 +173,38 @@ object ScalaNativePluginInternal {
     nativeLogger := streams.value.log,
     nativeGC := "boehm"
   )
+
+  lazy val testSettings = Seq(
+    test := (test in NativeTest).value
+  )
+
+  lazy val nativeTestSettings =
+    Defaults.compileSettings ++
+      Defaults.testSettings ++
+      Seq(
+        classDirectory := (classDirectory in Test).value,
+        dependencyClasspath := (dependencyClasspath in Test).value,
+        parallelExecution in test := false,
+        sourceGenerators += Def.task {
+          val frameworks = (loadedTestFrameworks in Test).value.map(_._2).toSeq
+          val tests      = (definedTests in Test).value
+          val output     = sourceManaged.value / "FrameworksMap.scala"
+          IO.write(output, TestUtilities.makeTestMain(frameworks, tests))
+          Seq(output)
+        }.taskValue,
+        loadedTestFrameworks := {
+          val frameworks = (loadedTestFrameworks in Test).value
+          val logger     = streams.value.log
+          val testBinary = nativeLink.value
+          val envVars    = (Keys.envVars in (Test, test)).value
+          (frameworks.zipWithIndex).map {
+            case ((tf, f), id) =>
+              (tf,
+               new ScalaNativeFramework(f, id, logger, testBinary, envVars))
+          }
+        },
+        definedTests := (definedTests in Test).value
+      )
 
   lazy val scopedSettings = Seq(
     nativeTarget := {
