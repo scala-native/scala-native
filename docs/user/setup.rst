@@ -11,7 +11,7 @@ Scala Native has the following build dependencies:
 
 And following runtime library dependencies:
 
-* libunwind 0.99 or newer (linux only)
+* libunwind 0.99 or newer (built-in on macOS)
 * Boehm GC 7.6.0 (optional)
 * Re2 2017-01-01 (optional)
 * zlib 1.2.8 or newer (optional)
