@@ -60,7 +60,7 @@ library (if someone creates another wrapper for example)
 
 #include <re2/re2.h>
 #include <re2/set.h>
-#include "cre2.h"
+#include "re2.h"
 
 #include <cstdlib>
 #include <cstdio>
