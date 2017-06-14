@@ -108,6 +108,8 @@ Garbage collectors
 3. **immix.** (experimental, since 0.3)
 
    Immix is a mostly-precise mark-region tracing garbage collector.
+   More information about the collector is available as part of the original
+   `0.3.0 announcement <https://github.com/scala-native/scala-native/releases/tag/v0.3.0>`_.
 
 Publishing
 ----------
