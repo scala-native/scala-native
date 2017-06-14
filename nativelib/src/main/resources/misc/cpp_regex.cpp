@@ -1,173 +1,24 @@
 #include <regex>
-#include <type_traits>
-#include <codecvt>
-#include <unordered_map>
 
-#ifdef SCALANATIVE_MISC_U32REGEX
-namespace std {
-template <class _Elem>
-class _My_Regex_traits
-    : public _Regex_traits_base { // base class for regular expression traits
-  public:
-    typedef typename make_unsigned<_Elem>::type _Uelem;
-    typedef _My_Regex_traits<_Elem> _Myt;
-    typedef _Elem char_type;
-    typedef size_t size_type;
-    typedef basic_string<_Elem> string_type;
-    typedef locale locale_type;
-
-    static size_type length(const _Elem *_Str) { // return length of _Str
-        return (char_traits<_Elem>::length(_Str));
+template <typename CharType> struct scalanative_misc_stringbuf {
+    scalanative_misc_stringbuf(uint32_t reserveSize) {
+        buffer.reserve(reserveSize);
     }
 
-    _My_Regex_traits() { // default construct
-        _Cache_locale();
+    void clear() { buffer.clear(); }
+
+    void write(CharType c) { buffer.push_back(c); }
+
+    CharType read() {
+        CharType c = buffer.back();
+        buffer.pop_back();
+        return c;
     }
 
-    _My_Regex_traits(const _Myt &_Right) : _Loc(_Right._Loc) { // copy construct
-        _Cache_locale();
-    }
+    const std::basic_string<CharType> &str() { return buffer; }
 
-    _Myt &operator=(const _Myt &_Right) { // assign
-        _Loc = _Right._Loc;
-        _Cache_locale();
-        return (*this);
-    }
-
-    _Elem translate(_Elem _Ch) const { // provide locale-sensitive mapping
-        string_type _Res = _Getcoll()->transform(&_Ch, &_Ch + 1);
-        return (_Res.length() == 1 ? _Res[0] : _Ch);
-    }
-
-    _Elem
-    translate_nocase(_Elem _Ch) const { // provide case-insensitive mapping
-        return (_Getctype()->tolower(_Ch));
-    }
-
-    template <class _FwdIt>
-    string_type
-    transform(_FwdIt _First,
-              _FwdIt _Last) const { // apply locale-specific transformation
-        return (_Getcoll()->transform(_First, _Last));
-    }
-
-    template <class _FwdIt>
-    string_type transform_primary(_FwdIt _First, _FwdIt _Last)
-        const { // apply locale-specific case-insensitive transformation
-        string_type _Res;
-
-        if (_First != _Last) { // non-empty string, transform it
-            vector<_Elem> _Temp(_First, _Last);
-
-            _Getctype()->tolower(&*_Temp.begin(),
-                                 &*_Temp.begin() + _Temp.size());
-            _Res = _Getcoll()->transform(&*_Temp.begin(),
-                                         &*_Temp.begin() + _Temp.size());
-        }
-        return (_Res);
-    }
-
-    bool isctype(_Elem _Ch, char_class_type _Fx)
-        const { // return true if _Ch is in character class _Fx
-        if (_Fx != (char_class_type)(-1))
-            return (_Getctype()->is(_Fx, _Ch));
-        else
-            return (_Ch == '_' // assumes L'_' == '_'
-                    || _Getctype()->is(_Ch_alnum, _Ch));
-    }
-
-    template <class _Iter>
-    char_class_type lookup_classname(_Iter _First, _Iter _Last,
-                                     bool _Icase = false)
-        const { // map [_First, _Last) to character class mask value
-#define _REGEX_CHAR_CLASS_NAME(n, c)                                           \
-    { n, L##n, sizeof(n) / sizeof(n[0]) - 1, c }
-        static constexpr _Cl_names _Names[] = {
-            // map class names to numeric constants
-            _REGEX_CHAR_CLASS_NAME("alnum", _Ch_alnum),
-            _REGEX_CHAR_CLASS_NAME("alpha", _Ch_alpha),
-            _REGEX_CHAR_CLASS_NAME("blank", _Ch_blank),
-            _REGEX_CHAR_CLASS_NAME("cntrl", _Ch_cntrl),
-            _REGEX_CHAR_CLASS_NAME("d", _Ch_digit),
-            _REGEX_CHAR_CLASS_NAME("digit", _Ch_digit),
-            _REGEX_CHAR_CLASS_NAME("graph", _Ch_graph),
-            _REGEX_CHAR_CLASS_NAME("lower", _Ch_lower),
-            _REGEX_CHAR_CLASS_NAME("print", _Ch_print),
-            _REGEX_CHAR_CLASS_NAME("punct", _Ch_punct),
-            _REGEX_CHAR_CLASS_NAME("space", _Ch_space),
-            _REGEX_CHAR_CLASS_NAME("s", _Ch_space),
-            _REGEX_CHAR_CLASS_NAME("upper", _Ch_upper),
-            _REGEX_CHAR_CLASS_NAME("w", (ctype_base::mask)(-1)),
-            _REGEX_CHAR_CLASS_NAME("xdigit", _Ch_xdigit),
-            {0, 0, 0},
-        };
-#undef _REGEX_CHAR_CLASS_NAME
-
-        _DEBUG_RANGE(_First, _Last);
-        unsigned int _Ix = 0;
-        for (; _Names[_Ix]._Get<_Elem>(); ++_Ix)
-            if (_STD equal(_First, _Last, _Names[_Ix]._Get<_Elem>(),
-                           _Names[_Ix]._Get<_Elem>() + _Names[_Ix]._Len,
-                           _Cmp_icase<_My_Regex_traits<_Elem>>(*this)))
-                break;
-
-        char_class_type _Mask = (char_class_type)0;
-        if (_Names[_Ix]._Get<_Elem>() != 0)
-            _Mask = _Names[_Ix]._Ctype;
-        if (_Icase && _Mask & (_Ch_lower | _Ch_upper))
-            _Mask |= _Ch_lower | _Ch_upper;
-        return (_Mask);
-    }
-
-    template <class _FwdIt>
-    string_type lookup_collatename(_FwdIt _First, _FwdIt _Last)
-        const { // map [_First, _Last) to collation element
-        return (string_type(_First, _Last));
-    }
-
-    locale_type imbue(locale_type _Lx) { // store locale object
-        locale_type _Tmp = _Loc;
-        _Loc = _Lx;
-        _Cache_locale();
-        return (_Tmp);
-    }
-
-    locale_type getloc() const { // return locale object
-        return (_Loc);
-    }
-
-    const collate<_Elem> *_Getcoll() const { // get collate facet pointer
-        return (_Pcoll);
-    }
-
-    const ctype<_Elem> *_Getctype() const { // get ctype facet pointer
-        return (_Pctype);
-    }
-
-  private:
-    void _Cache_locale() { // populate _Pcoll and _Pctype with _Loc locale
-                           // _Pcoll = &_USE(_Loc, collate<_Elem>);
-                           // _Pctype = &_USE(_Loc, ctype<_Elem>);
-    }
-
-    const collate<_Elem> *_Pcoll;
-    const ctype<_Elem> *_Pctype;
-    locale_type _Loc;
+    std::basic_string<CharType> buffer;
 };
-
-template <class _Elem> class my_regex_traits;
-
-template <>
-class my_regex_traits<char32_t>
-    : public _My_Regex_traits<char32_t> { // specialization for char
-  public:
-    int value(char32_t _Ch,
-              int _Base) const { // map character value to numeric value
-        return _Ch;
-    }
-};
-}
-#endif
 
 template <typename BidiIteratorRaw, typename RType>
 struct scalanative_misc_regex_utf8_conv_iterator
@@ -349,10 +200,7 @@ struct scalanative_misc_regex_utf8_output_iterator
 
     scalanative_misc_regex_utf8_output_iterator(
         const scalanative_misc_regex_utf8_output_iterator &other)
-        : m_buffer(other.m_buffer), m_size(other.m_size) {}
-
-    scalanative_misc_regex_utf8_output_iterator(OutIt *buf, size_t size)
-        : m_buffer(buf), m_size(size) {}
+        : m_buffer(other.m_buffer) {}
 
     scalanative_misc_regex_utf8_output_iterator &
     operator=(const scalanative_misc_regex_utf8_output_iterator &other) {
@@ -362,7 +210,7 @@ struct scalanative_misc_regex_utf8_output_iterator
     }
 
     scalanative_misc_regex_utf8_output_iterator &operator=(const RType &value) {
-        strResult = convUCS2.to_bytes(value);
+        // strResult = convUCS2.to_bytes(value);
         for (const auto c : strResult) {
             **m_buffer = c;
             ++(*m_buffer);
@@ -380,15 +228,7 @@ struct scalanative_misc_regex_utf8_output_iterator
         return (*this);
     }
 
-    OutIt *m_buffer;
-    size_t m_size;
-
-#ifdef _WIN32
-    std::wstring_convert<std::codecvt_utf8<wchar_t>> convUCS2;
-#else
-    std::wstring_convert<std::codecvt_utf8<char16_t>> convUCS2;
-#endif
-    std::string strResult;
+    scalanative_misc_stringbuf<RType> m_buffer;
 };
 
 typedef scalanative_misc_regex_utf8_conv_iterator<char *, wchar_t>
@@ -404,19 +244,6 @@ typedef scalanative_misc_regex_utf8_conv_iterator<std::string::const_iterator,
 
 typedef scalanative_misc_regex_utf8_output_iterator<char *, wchar_t>
     scalanative_misc_regex_ucs2_utf8_output_iterator;
-
-#ifdef SCALANATIVE_MISC_U32REGEX
-typedef scalanative_misc_regex_utf8_conv_iterator<char *, char32_t>
-    scalanative_misc_regex_utf8_wchar_utf32_iterator;
-typedef scalanative_misc_regex_utf8_conv_iterator<const char *, char32_t>
-    scalanative_misc_regex_utf8_const_wchar_utf32_const_iterator;
-typedef scalanative_misc_regex_utf8_conv_iterator<std::string::iterator,
-                                                  char32_t>
-    scalanative_misc_regex_utf8_wstring_utf32_iterator;
-typedef scalanative_misc_regex_utf8_conv_iterator<std::string::const_iterator,
-                                                  char32_t>
-    scalanative_misc_regex_utf8_const_wstring_utf32_const_iterator;
-#endif
 
 typedef uint32_t scalanative_misc_regex_flags;
 typedef uint32_t scalanative_misc_regex_match_flags;
@@ -539,15 +366,6 @@ typedef std::sub_match<
     scalanative_misc_regex_utf8_const_wchar_ucs2_const_iterator>
     scalanative_misc_ucs2Regex_sub_match;
 
-#ifdef SCALANATIVE_MISC_U32REGEX
-typedef std::basic_regex<char16_t, std::my_regex_traits<char16_t>>
-    scalanative_misc_utf16beRegex;
-typedef std::basic_regex<char16_t, std::my_regex_traits<char16_t>>
-    scalanative_misc_utf16leRegex;
-typedef std::basic_regex<char32_t, std::my_regex_traits<char32_t>>
-    scalanative_misc_utf32Regex;
-#endif
-
 struct scalanative_misc_regex_kind {
     enum Endianness { none_endian = 0, little_endian = 1, big_endian = 2 };
     Endianness endian = none_endian;
@@ -580,39 +398,6 @@ struct scalanative_misc_regex {
     };
 
     std::string result;
-
-#ifdef SCALANATIVE_MISC_U32REGEX
-    template <typename T> T *get() { return static_cast<T *>(re.get()); }
-
-    scalanative_misc_ansiRegex *get_ansiRegex() {
-        return sizeOfChar == 1 ? get<scalanative_misc_ansiRegex>() : nullptr;
-    }
-
-    scalanative_misc_ucs2Regex *get_ucs2Regex() {
-        return sizeOfChar == 2
-                   ? (endian == none_endian ? get<scalanative_misc_ucs2Regex>()
-                                            : nullptr)
-                   : nullptr;
-    }
-
-    scalanative_misc_utf16leRegex *get_utf16leRegex() {
-        return sizeOfChar == 2 ? (endian == little_endian
-                                      ? get<scalanative_misc_utf16leRegex>()
-                                      : nullptr)
-                               : nullptr;
-    }
-
-    scalanative_misc_utf16beRegex *get_utf16beRegex() {
-        return sizeOfChar == 2 ? (endian == big_endian
-                                      ? get<scalanative_misc_utf16beRegex>()
-                                      : nullptr)
-                               : nullptr;
-    }
-
-    scalanative_misc_utf32Regex *get_utf32Regex() {
-        return sizeOfChar == 4 ? get<scalanative_misc_utf32Regex>() : nullptr;
-    }
-#endif
 };
 
 struct scalanative_misc_regex_match_result {
@@ -705,22 +490,40 @@ prepareMatch(scalanative_misc_regex_kind kind,
     return match;
 }
 std::wstring convertUtf8toUCS2(const char *text) {
-// scalanative_misc_regex_utf8_conv_iterator<const char*, wchar_t> it(text);
-// return std::wstring(it, it.end());
-#ifdef _WIN32
-    static std::wstring_convert<std::codecvt_utf8<wchar_t>> convUCS2;
-#else
-    static std::wstring_convert<std::codecvt_utf8<char16_t>> convUCS2;
-#endif
-    return convUCS2.from_bytes(text);
+    scalanative_misc_regex_utf8_conv_iterator<const char *, wchar_t> it(text);
+    return std::wstring(it, it.end());
 }
 std::string convertUCS2toUtf8(const wchar_t *text) {
-#ifdef _WIN32
-    static std::wstring_convert<std::codecvt_utf8<wchar_t>> convUCS2;
-#else
-    static std::wstring_convert<std::codecvt_utf8<char16_t>> convUCS2;
-#endif
-    return convUCS2.to_bytes(text);
+    static scalanative_misc_stringbuf<char> buffer(1024);
+    buffer.clear();
+    uint32_t pos = 0;
+    while (text[pos] != 0) {
+        wchar_t c = text[pos++];
+        if (c < 0x80) // 1 byte
+        {
+            buffer.write(c & 0x7F);
+        } else if (c < 0x800) // 2 bytes
+        {
+            unsigned char u0 = 0xC0 + (c >> 6);
+            unsigned char u1 = 0x80 + (c & 0x3F);
+            buffer.write(u0);
+            buffer.write(u1);
+        } else // if (c < 0x10000) // 3 bytes
+        {
+            unsigned char u0 = 0xE0 | (c >> 12);
+            unsigned char u1 = 0x80 | ((c >> 6) & 0x3F);
+            unsigned char u2 = 0x80 | (c & 0x3F);
+            buffer.write(u0);
+            buffer.write(u1);
+            buffer.write(u2);
+        }
+        // else // 4 bytes
+        //{
+        //    throw std::exception("unreachable code");
+        //}
+    }
+
+    return buffer.str();
 }
 
 void putResult(scalanative_misc_regex_match_result *match, const char *begin,
@@ -730,14 +533,15 @@ void putResult(scalanative_misc_regex_match_result *match, const char *begin,
     *out = result.data();
     *max_out = result.length();
 }
-std::locale &getLocale(const std::string &str) {
+/*const std::locale &getLocale(const std::string &str) {
     static std::unordered_map<std::string, std::locale> cache;
     auto it = cache.find(str);
     if (it == cache.end()) {
-        it = cache.emplace(str, str).first;
+        std::locale loc(str);
+        it = cache.insert(str, loc).first;
     }
     return it->second;
-}
+}*/
 }
 
 // todo: add pool allocator
@@ -752,37 +556,16 @@ extern "C" scalanative_misc_regex *scalanative_misc_regex_create(
         if (flags & Flags::no_unicode) {
             res->kind.sizeOfChar = 1;
             new (&res->ansiRegex) scalanative_misc_ansiRegex;
-            res->ansiRegex.imbue(Utils::getLocale(strLocale));
+            // res->ansiRegex.imbue(Utils::getLocale(strLocale));
             res->ansiRegex.assign(pattern, Flags::convertRegexFlags(flags));
         } else {
-#ifdef SCALANATIVE_MISC_U32REGEX
-            res->sizeOfChar = 4;
-            std::regex_u8cu32conv_iterator u8tou32_begin(
-                const_cast<char *>(pattern));
-            std::regex_u8cu32conv_iterator u8tou32_end = u8tou32_begin.end();
-            res->re = std::make_unique<scalanative_misc_utf32Regex>(
-                u8tou32_begin, u8tou32_end, convertFlags(flags));
-            res->get_utf32Regex()->imbue(defaultLocale);
-#else
             res->kind.sizeOfChar = 2;
             scalanative_misc_regex_utf8_const_wchar_ucs2_const_iterator
                 testString(pattern);
-            /*res->data.assign(testString.begin_position(),
-            testString.end_position());
-            if (res->data.empty())
-            {
-                return nullptr;
-            }
-            scalanative_misc_regex_utf8_const_wchar_ucs2_const_iterator
-            begin(&res->data[0]);
-            scalanative_misc_regex_utf8_const_wchar_ucs2_const_iterator end =
-            begin.end();*/
             new (&res->ucs2Regex) scalanative_misc_ucs2Regex;
-            res->ucs2Regex.imbue(Utils::getLocale(strLocale));
+            // res->ucs2Regex.imbue(Utils::getLocale(strLocale));
             res->ucs2Regex.assign(testString, testString.end(),
                                   Flags::convertRegexFlags(flags));
-
-#endif
         }
     } catch (const std::exception &err) {
         std::string errStr(err.what());
