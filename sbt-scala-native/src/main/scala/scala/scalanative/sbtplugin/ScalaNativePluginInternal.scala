@@ -250,6 +250,7 @@ object ScalaNativePluginInternal {
       lib
     },
     nativeCompileLib := {
+      val linked    = nativeLinkNIR.value
       val cwd       = nativeWorkdir.value
       val clang     = nativeClang.value
       val clangpp   = nativeClangPP.value
@@ -257,15 +258,41 @@ object ScalaNativePluginInternal {
       val opts      = nativeCompileOptions.value ++ Seq("-O2")
       val logger    = nativeLogger.value
       val nativelib = nativeUnpackLib.value
-      val cpaths    = filterGCSources(gc, (cwd ** "*.c").get, cwd).map(abs)
-      val cpppaths  = filterGCSources(gc, (cwd ** "*.cpp").get, cwd).map(abs)
+      val cpaths    = (cwd ** "*.c").get.map(abs)
+      val cpppaths  = (cwd ** "*.cpp").get.map(abs)
       val paths     = cpaths ++ cpppaths
 
+      // predicate to check if given file path shall be compiled
+      // we only include sources of the current gc and exclude
+      // all optional dependencies if they are not necessary
+      def include(path: String) = {
+        val sep = java.io.File.separator
+
+        if (path.contains(sep + "optional" + sep)) {
+          val name = file(path).getName.split("\\.").head
+          linked.links.contains(name)
+        } else if (path.contains(sep + "gc" + sep)) {
+          path.contains("gc" + sep + gc)
+        } else {
+          true
+        }
+      }
+
+      // delete .o files for all excluded source files
+      paths.foreach { path =>
+        if (!include(path)) {
+          val ofile = file(path + ".o")
+          if (ofile.exists) {
+            IO.delete(ofile)
+          }
+        }
+      }
+
+      // generate .o files for all included source files in parallel
       paths.par.foreach {
         path =>
           val opath = path + ".o"
-
-          if (!file(opath).exists) {
+          if (include(path) && !file(opath).exists) {
             val isCpp    = path.endsWith(".cpp")
             val compiler = abs(if (isCpp) clangpp else clang)
             val flags    = (if (isCpp) Seq("-std=c++11") else Seq()) ++ opts
@@ -360,18 +387,7 @@ object ScalaNativePluginInternal {
       val clangpp     = nativeClangPP.value
       val outpath     = (artifactPath in nativeLink).value
 
-      // Functions that define actions to perform on the list of `*.o` files based on links
-      // For instance: Exclude certain `.o` files if a given link is not present.
-      val linksActions: Seq[Seq[String] => Seq[String] => Seq[String]] = Seq(
-        links =>
-          if (!links.contains("z")) _.filterNot(_ endsWith "zlib.c.o")
-          else identity,
-        links =>
-          if (!links.contains("re2")) _.filterNot(_ endsWith "cre2.cpp.o")
-          else identity
-      )
-
-      val links: Seq[String] = {
+      val links = {
         val os   = Option(sys props "os.name").getOrElse("")
         val arch = target.split("-").head
         // we need re2 to link the re2 c wrapper (cre2.h)
@@ -389,17 +405,15 @@ object ScalaNativePluginInternal {
       val linkopts  = links.map("-l" + _) ++ linkingOpts
       val targetopt = Seq("-target", target)
       val flags     = Seq("-o", abs(outpath)) ++ linkopts ++ targetopt
-      val allOPaths = (nativelib ** "*.o").get.map(abs)
-      val opaths = linksActions.foldLeft(allOPaths) {
-        case (ps, fn) => fn(links)(ps)
-      }
-      val paths   = apppaths.map(abs) ++ opaths
-      val compile = abs(clangpp) +: (flags ++ paths)
+      val opaths    = (nativelib ** "*.o").get.map(abs)
+      val paths     = apppaths.map(abs) ++ opaths
+      val compile   = abs(clangpp) +: (flags ++ paths)
 
       logger.time("Linking native code") {
         logger.running(compile)
         Process(compile, cwd) ! logger
       }
+
       outpath
     },
     nativeLink := {
@@ -530,25 +544,6 @@ object ScalaNativePluginInternal {
     case value =>
       throw new MessageOnlyException(
         "nativeGC can be either \"none\", \"boehm\" or \"immix\", not: " + value)
-  }
-
-  /**
-   * Removes all files specific to other gcs.
-   */
-  private def filterGCSources(gcName: String,
-                              files: Seq[File],
-                              nativelib: File) = {
-    val gc = garbageCollector(gcName)
-    // Directory in nativelib containing the garbage collectors
-    val garbageCollectorsDir = "lib/gc"
-    val specificDir          = s"$garbageCollectorsDir/${gc.dir}"
-
-    def isOtherGC(path: String, nativelib: File) = {
-      val nativeGCPath = nativelib.toPath.resolve(garbageCollectorsDir)
-      path.contains(nativeGCPath.toString) && !path.contains(specificDir)
-    }
-
-    files.filterNot(f => isOtherGC(f.getPath().toString, nativelib))
   }
 
   private implicit class RichLogger(logger: Logger) {
