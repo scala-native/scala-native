@@ -17,6 +17,7 @@ in rec {
       libunwind
       re2
       clang
+      zlib
     ];
   };
 } 
