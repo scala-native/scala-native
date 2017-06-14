@@ -6,14 +6,13 @@ import scala.scalanative.native.{
   CFunctionPtr1,
   CInt,
   CSize,
-  CUnsignedInt,
   Ptr,
   extern,
   name
 }
 import scala.scalanative.posix.sched.sched_param
+import scala.scalanative.posix.sys.time.timespec
 import scala.scalanative.posix.sys.types._
-import scala.scalanative.posix.time.timespec
 
 // SUSv2 version is used for compatibility
 // see http://pubs.opengroup.org/onlinepubs/007908799/xsh/threads.html

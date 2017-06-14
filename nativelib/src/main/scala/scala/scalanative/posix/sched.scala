@@ -1,7 +1,7 @@
 package scala.scalanative.posix
 
 import scala.scalanative.native.{CInt, CStruct5, extern}
-import scala.scalanative.posix.time.timespec
+import scala.scalanative.posix.sys.time.timespec
 
 @extern
 object sched {
