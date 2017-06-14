@@ -28,4 +28,11 @@ object BufferedWriterSuite extends tests.Suite {
     assert(stream.toString == string)
   }
 
+  test("Closing twice is harmless") {
+    val stream = new ByteArrayOutputStream
+    val writer = new BufferedWriter(new OutputStreamWriter(stream))
+    writer.close()
+    writer.close()
+  }
+
 }
