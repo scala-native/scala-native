@@ -1,10 +1,14 @@
+#ifndef _WIN32
 #include <netinet/in.h>
-#include "../netinet/in.h"
 #include <sys/socket.h>
+#else
+#include "../../os_win_winsock2.h"
+#endif
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#include "../netinet/in.h"
 #include "socket_conversions.h"
 #include "socket.h"
 

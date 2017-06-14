@@ -1,6 +1,10 @@
+#ifndef _WIN32
+#include <sys/socket.h>
+#else
+#include "../../os_win_winsock2.h"
+#endif
 #include "../netinet/in.h"
 #include "socket_conversions.h"
-#include <sys/socket.h>
 #include <stdlib.h>
 #include <errno.h>
 

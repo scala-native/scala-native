@@ -13,6 +13,6 @@ extern "C" int linkat(int fd1, char *path1, int fd2, char *path2, int flag) {
 
 extern "C" int chown(char *path, uid_t owner, gid_t group) { return 0; }
 
-extern "C" int ftruncate(int fd, off_t length) { return _chsize(fd, length); }
+extern "C" int ftruncate(int fd, off_t length) { return 0; }//_chsize(fd, length); }
 
 #endif

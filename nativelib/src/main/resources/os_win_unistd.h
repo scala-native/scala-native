@@ -10,8 +10,9 @@
 extern "C" {
 #endif
 
+//#include <io.h>
 #include <stdlib.h>
-#include <io.h>
+#include <stdio.h>
 #include <process.h> /* for getpid() and the exec..() family */
 #include <direct.h>  /* for _getcwd() and _chdir() */
 
