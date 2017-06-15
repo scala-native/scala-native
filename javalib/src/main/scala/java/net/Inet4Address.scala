@@ -1,5 +1,6 @@
 package java.net
 
+// Ported from Apache Harmony
 final class Inet4Address private[net] (ipAddress: Array[Byte], host: String)
     extends InetAddress(ipAddress, host) {
 
