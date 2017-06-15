@@ -3,11 +3,17 @@ package scala.scalanative
 import java.nio.ByteBuffer
 
 package object util {
-  final case object UnreachableException extends Exception
-  def unreachable = throw UnreachableException
 
-  final case class UnsupportedException(msg: String) extends Exception(msg)
-  def unsupported(v: Any = "") =
+  /** Marker methods, called whenever a specific control-flow branch
+   *  should never happen.
+   */
+  def unreachable: Nothing =
+    throw UnreachableException
+
+  /** Marker method, called whenever a specific control-flow branch
+   *  is not supported.
+   */
+  def unsupported(v: Any = ""): Nothing =
     throw UnsupportedException(s"$v (${v.getClass})")
 
   /** Scope-managed resource. */
