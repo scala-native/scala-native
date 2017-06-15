@@ -175,7 +175,8 @@ object ScalaNativePluginInternal {
   )
 
   lazy val testSettings = Seq(
-    test := (test in NativeTest).value
+    test := (test in NativeTest).value,
+    testOnly := (testOnly in NativeTest).evaluated
   )
 
   lazy val nativeTestSettings =
