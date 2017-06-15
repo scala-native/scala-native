@@ -1,5 +1,6 @@
 package java.net
 
+// Ported from Apache Harmony
 final class Inet6Address private[net] (ipAddress: Array[Byte],
                                        host: String,
                                        scopeId: Int)
@@ -62,4 +63,7 @@ object Inet6Address {
     else
       return new Inet6Address(addr, host, scope_id)
   }
+
+  // TODO:
+  // def getByAddress(host: String, addr: Array[Byte], nif: NetworkInterface): Inet6Addres
 }

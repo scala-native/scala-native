@@ -144,19 +144,19 @@ object InetAddress {
         prevPrevToken = prevToken
         prevToken = token
         token = tokenizer.nextToken()
-        if (token.==(":")) {
-          if (prevToken.==(":")) {
+        if (token == ":") {
+          if (prevToken == ":") {
             doubleColonIndex = hexStrings.size
-          } else if (prevToken.!=("")) {
+          } else if (prevToken != "") {
             hexStrings.append(prevToken)
           }
-        } else if (token.==(".")) {
+        } else if (token == ".") {
           decStrings.append(prevToken)
-        } else if (token.==("%")) {
-          if (prevToken.!=(":") && prevToken.!=(".")) {
-            if (prevPrevToken.==(":")) {
+        } else if (token == "%") {
+          if (prevToken != ":" && prevToken != ".") {
+            if (prevPrevToken == ":") {
               hexStrings.append(prevToken)
-            } else if (prevPrevToken.==(".")) {
+            } else if (prevPrevToken == ".") {
               decStrings.append(prevToken)
             }
           }
@@ -165,13 +165,13 @@ object InetAddress {
           scopeString = buf.toString
         }
       }
-      if (prevToken.==(":")) {
-        if (token.==(":")) {
+      if (prevToken == ":") {
+        if (token == ":") {
           doubleColonIndex = hexStrings.size
         } else {
           hexStrings.append(token)
         }
-      } else if (prevToken.==(".")) {
+      } else if (prevToken == ".") {
         decStrings.append(token)
       }
       var hexStringsLength: Int = 8
