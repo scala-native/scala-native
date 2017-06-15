@@ -461,6 +461,7 @@ lazy val testingCompilerInterface =
   project
     .in(file("testing-compiler-interface"))
     .settings(libSettings)
+    .settings(noPublishSettings)
     .settings(
       crossPaths := false,
       crossVersion := CrossVersion.Disabled,
@@ -484,6 +485,7 @@ lazy val testInterface =
   project
     .settings(toolSettings)
     .settings(scalaVersion := libScalaVersion)
+    .settings(mavenPublishSettings)
     .in(file("test-interface"))
     .settings(
       name := "test-interface",
@@ -497,6 +499,7 @@ lazy val testInterfaceSerialization =
   project
     .settings(toolSettings)
     .settings(scalaVersion := libScalaVersion)
+    .settings(mavenPublishSettings)
     .in(file("test-interface-serialization"))
     .settings(
       name := "test-interface-serialization",
@@ -509,6 +512,7 @@ lazy val testInterfaceSbtDefs =
   project
     .settings(toolSettings)
     .settings(scalaVersion := libScalaVersion)
+    .settings(mavenPublishSettings)
     .in(file("test-interface-sbt-defs"))
     .settings(
       name := "test-interface-sbt-defs",
