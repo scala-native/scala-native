@@ -39,8 +39,9 @@ abstract class NirCodeGen
   class MethodEnv(val fresh: Fresh) {
     private val env = mutable.Map.empty[Symbol, Val]
 
-    def enter(sym: Symbol, value: Val): Unit =
+    def enter(sym: Symbol, value: Val): Unit = {
       env += ((sym, value))
+    }
 
     def enterLabel(ld: LabelDef): Local = {
       val local = fresh()
@@ -48,7 +49,9 @@ abstract class NirCodeGen
       local
     }
 
-    def resolve(sym: Symbol): Val = env(sym)
+    def resolve(sym: Symbol): Val = {
+      env(sym)
+    }
 
     def resolveLabel(ld: LabelDef): Local = {
       val Val.Local(n, Type.Ptr) = resolve(ld.symbol)
@@ -280,7 +283,7 @@ abstract class NirCodeGen
         val name     = genMethodName(sym)
         val isStatic = owner.isExternModule || owner.isImplClass
         val sig      = genMethodSig(sym, isStatic)
-        val params   = genParams(owner, dd, isStatic)
+        val params   = genParams(dd, isStatic)
 
         dd.rhs match {
           case EmptyTree =>
@@ -298,7 +301,7 @@ abstract class NirCodeGen
             genExternMethod(attrs, name, sig, params, rhs)
 
           case rhs =>
-            val body = genNormalMethodBody(params, rhs, isStatic)
+            val body = genNormalMethodBody(dd, params, rhs, isStatic)
             curClassDefns += Defn.Define(attrs, name, sig, body)
         }
       }
@@ -450,27 +453,26 @@ abstract class NirCodeGen
       Type.Function(selfty ++: paramtys, retty)
     }
 
-    def genParams(
-        owner: Symbol, dd: DefDef, isStatic: Boolean): Seq[Val.Local] = {
-      val paramSyms = {
-        val vp = dd.vparamss
-        if (vp.isEmpty) Nil else vp.head.map(_.symbol)
-      }
-      val self =
-        if (isStatic) None
-        else Some(Val.Local(fresh(), genType(curClassSym.tpe, box = true)))
-      val params = paramSyms.map { sym =>
-        val name  = fresh()
-        val ty    = genType(sym.tpe, box = false)
-        val param = Val.Local(name, ty)
-        curMethodEnv.enter(sym, param)
-        param
-      }
-
-      self ++: params
+    def genParamSyms(dd: DefDef, isStatic: Boolean): Seq[Option[Symbol]] = {
+      val vp = dd.vparamss
+      val params = if (vp.isEmpty) Nil else vp.head.map(p => Some(p.symbol))
+      if (isStatic) params else None +: params
     }
 
-    def genNormalMethodBody(params: Seq[Val.Local],
+    def genParams(dd: DefDef, isStatic: Boolean): Seq[Val.Local] =
+      genParamSyms(dd, isStatic).map {
+        case None =>
+          Val.Local(fresh(), genType(curClassSym.tpe, box = true))
+        case Some(sym) =>
+          val name  = fresh()
+          val ty    = genType(sym.tpe, box = false)
+          val param = Val.Local(name, ty)
+          curMethodEnv.enter(sym, param)
+          param
+      }
+
+    def genNormalMethodBody(dd: DefDef,
+                            params: Seq[Val.Local],
                             bodyp: Tree,
                             isStatic: Boolean): Seq[nir.Inst] = {
       val entry = {
@@ -485,6 +487,7 @@ abstract class NirCodeGen
             alloc
         }
       }
+
       val body = bodyp match {
         // Tailrec emits magical labeldefs that can hijack this reference is
         // current method. This requires special treatment on our side.
@@ -494,7 +497,7 @@ abstract class NirCodeGen
           val values = params.take(label.params.length)
           val jump   = entry.withJump(local, values: _*)
 
-          genLabel(label, jump, hijackThis = true)
+          genTailRecLabel(dd, isStatic, label, jump)
 
         case _ if curMethodSym.get == NObjectInitMethod =>
           return Seq(
@@ -930,9 +933,7 @@ abstract class NirCodeGen
       resfocus
     }
 
-    def genLabel(label: LabelDef,
-                 focus: Focus,
-                 hijackThis: Boolean = false) = {
+    def genLabel(label: LabelDef, focus: Focus) = {
       val local = curMethodEnv.resolveLabel(label)
       val params = label.params.map { id =>
         val local = Val.Local(fresh(), genType(id.tpe, box = false))
@@ -940,10 +941,28 @@ abstract class NirCodeGen
         local
       }
       val entry = focus.withLabel(local, params: _*)
-      val newThis = if (hijackThis) Some(params.head) else curMethodThis.get
 
-      scoped(curMethodThis := newThis) {
-        genExpr(label.rhs, entry)
+      genExpr(label.rhs, entry)
+    }
+
+    def genTailRecLabel(dd: DefDef, isStatic: Boolean, label: LabelDef, focus: Focus) = {
+      val local = curMethodEnv.resolveLabel(label)
+      val params = label.params.zip(genParamSyms(dd, isStatic)).map {
+        case (lparam, mparamopt) =>
+          val local = Val.Local(fresh(), genType(lparam.tpe, box = false))
+          curMethodEnv.enter(lparam.symbol, local)
+          mparamopt.foreach(curMethodEnv.enter(_, local))
+          local
+      }
+      val entry = focus.withLabel(local, params: _*)
+      def genRhs = genExpr(label.rhs, entry)
+
+      if (isStatic) {
+        genRhs
+      } else {
+        scoped(curMethodThis := Some(params.head)) {
+          genRhs
+        }
       }
     }
 
@@ -1411,12 +1430,22 @@ abstract class NirCodeGen
     }
 
     def genStringConcat(leftp: Tree, rightp: Tree, focus: Focus): Focus = {
-      def stringify(sym: Symbol, focus: Focus) =
-        if (sym == StringClass) {
-          focus
-        } else {
-          genMethodCall(Object_toString, statically = false, focus.value, Seq(), focus)
+      def stringify(sym: Symbol, focus: Focus) = {
+        val isnull = focus withOp Op.Comp(Comp.Ieq, Rt.Object, focus.value, Val.Null)
+        val cond   = ValTree(isnull.value)
+        val thenp  = ContTree { focus =>
+          focus withValue Val.String("null")
         }
+        val elsep  = ContTree { inner =>
+          if (sym == StringClass) {
+            inner withValue focus.value
+          } else {
+            val meth = Object_toString
+            genMethodCall(meth, statically = false, focus.value, Seq(), inner)
+          }
+        }
+        genIf(Rt.String, cond, thenp, elsep, isnull)
+      }
 
       val left = {
         val typesym = leftp.tpe.typeSymbol
@@ -1439,9 +1468,17 @@ abstract class NirCodeGen
     }
 
     def genHashCode(argp: Tree, focus: Focus) = {
-      val meth = NObjectHashCodeMethod
-      val arg  = boxValue(argp.tpe, genExpr(argp, focus))
-      genMethodCall(meth, statically = false, arg.value, Seq(), arg)
+      val arg    = boxValue(argp.tpe, genExpr(argp, focus))
+      val isnull = arg withOp Op.Comp(Comp.Ieq, Rt.Object, arg.value, Val.Null)
+      val cond   = ValTree(isnull.value)
+      val thenp  = ContTree { focus =>
+        focus withValue Val.Int(0)
+      }
+      val elsep  = ContTree { focus =>
+        val meth = NObjectHashCodeMethod
+        genMethodCall(meth, statically = false, arg.value, Seq(), focus)
+      }
+      genIf(Type.Int, cond, thenp, elsep, isnull)
     }
 
     def genArrayOp(app: Apply, code: Int, focus: Focus): Focus = {
@@ -1452,12 +1489,15 @@ abstract class NirCodeGen
       val array = genExpr(arrayp, focus)
       def elemcode = genArrayCode(arrayp.tpe)
       val method =
-        if (code == ARRAY_CLONE) RuntimeArrayCloneMethod(elemcode)
-        else if (scalaPrimitives.isArrayGet(code))
+        if (code == ARRAY_CLONE) {
+          RuntimeArrayCloneMethod(elemcode)
+        } else if (scalaPrimitives.isArrayGet(code)) {
           RuntimeArrayApplyMethod(elemcode)
-        else if (scalaPrimitives.isArraySet(code))
+        } else if (scalaPrimitives.isArraySet(code)) {
           RuntimeArrayUpdateMethod(elemcode)
-        else RuntimeArrayLengthMethod(elemcode)
+        } else {
+          RuntimeArrayLengthMethod(elemcode)
+        }
 
       genMethodCall(method, statically = true, array.value, argsp, array)
     }
@@ -1683,9 +1723,8 @@ abstract class NirCodeGen
               val attrs  = Attrs(isExtern = true)
               val name   = genAnonName(curClassSym, anondef.symbol)
               val sig    = genMethodSig(apply.symbol, forceStatic = true)
-              val params = genParams(curClassSym, apply, isStatic = true)
-              val body = genNormalMethodBody(
-                  params, apply.rhs, isStatic = true)
+              val params = genParams(apply, isStatic = true)
+              val body   = genNormalMethodBody(apply, params, apply.rhs, isStatic = true)
 
               curClassDefns += Defn.Define(attrs, name, sig, body)
 

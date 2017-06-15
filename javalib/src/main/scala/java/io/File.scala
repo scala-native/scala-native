@@ -5,9 +5,10 @@ import java.nio.file.{FileSystems, Path}
 import scala.collection.mutable.UnrolledBuffer
 
 import scala.annotation.tailrec
+import scalanative.posix.{dirent, fcntl, limits, unistd, utime}
+import scalanative.posix.sys.stat
+import scalanative.native._, stdlib._, stdio._, string._
 import scalanative.runtime.Platform
-import scala.scalanative.posix.{dirent, fcntl, limits, stat, unistd, utime}
-import scala.scalanative.native._, stdlib._, stdio._, string._
 import dirent._
 import unistd._
 

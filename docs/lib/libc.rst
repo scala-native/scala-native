@@ -21,7 +21,7 @@ limits.h_      N/A
 locale.h_      N/A
 math.h_        scala.scalanative.native.math_
 setjmp.h_      N/A
-signal.h_      N/A
+signal.h_      scala.scalanative.native.signal_
 stdalign.h_    N/A
 stdarg.h_      N/A
 stdatomic.h_   N/A
@@ -76,6 +76,7 @@ wctype.h_      N/A
 .. _scala.scalanative.native.stdio: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/native/stdio.scala
 .. _scala.scalanative.native.stdlib: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/native/stdlib.scala
 .. _scala.scalanative.native.string: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/native/string.scala
+.. _scala.scalanative.native.signal: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/native/signal.scala
 
-Continue to :ref:`faq`.
+Continue to :ref:`posixlib`.
 
