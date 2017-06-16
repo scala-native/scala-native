@@ -20,11 +20,16 @@ object RegexSuite extends tests.Suite {
       assert(reusableRegex.search("Quick brown fox"))
       assertNot(reusableRegex.search("  \t \n \r"))
       assert(reusableRegex.search("singleword"))
+    }
+  }
+
+  test("search uft-8") {
+    Scope { implicit in =>
       // UTF-8 support
-      assert(reusableRegex.search("регулярные выражения"))
-      assert(reusableRegex.search("다르게 개발되었기"))
-      assert(reusableRegex.search("文字列 の集合を一つの文字列で表現する方法の一つである。"))
-      assert(reusableRegex.search("正则表达式使用单个字符串来描述、匹配一系列符合某个句法规则的 字符串 。"))
+      assert(Regex.search("рег.+ия", "регулярные выражения"))
+      assert(Regex.search("게 개", "다르게 개발되었기"))
+      assert(Regex.search("[一]", "文字列 の集合を一つの文字列で表現する方法の一つである。"))
+      assert(Regex.search("个.*?个", "正则表达式使用单个字符串来描述、匹配一系列符合某个句法规则的 字符串 。"))
     }
   }
 
@@ -197,28 +202,6 @@ object RegexSuite extends tests.Suite {
     }
   }
 
-  test("setting up locale") {
-    Scope { implicit in =>
-      val text =
-        "symbol 'é' the regex [[:lower:]] imbued with a French locale should match the character"
-      val re_str = "'[[:lower:]]'"
-
-      // we will fail without locale settings (C means no locale, clean locale),
-      // by default we use 'en-US' locale, for Grep syntax some one would prefer `POSIX` locale
-      val re_c = Regex(re_str, Regex.no_unicode, Regex.ECMAScript, "C")
-      assertNot(re_c.search(text))
-
-      // we will even fail with locale settings which are by the way the last parameter of `apply` method,
-      // because Scala-native represents all strings in utf8 by default,
-      // but locale will be useful when you process raw data/stream etc
-      val re = Regex(re_str, Regex.no_unicode, Regex.ECMAScript, "fr-FR")
-      assertNot(re.search(text))
-
-      // unicode never fails
-      assert(Regex.search(re_str, text))
-    }
-  }
-
   test("format and back tracing") {
     Scope { implicit in =>
       // we are trying to parse html syntax, but we want only parse closed tags by using back tracing ability of regex,
@@ -285,13 +268,41 @@ object RegexSuite extends tests.Suite {
   }
 
   test("an issue until we will start to use C++17") {
+  import scala.scalanative.runtime.Platform
     Scope { implicit in =>
       val reusableRegex1 = Regex("""\w+""")
       val reusableRegex2 = Regex("""\S+""")
       val text           = "正则表达式"
-      // """\S+""" doesn't work with complex unicodes, but """\w+""" works fine
-      assert(reusableRegex1.search(text))
-      assertNot(reusableRegex2.search(text))
+      // on windows """\S+""" doesn't work with complex unicodes, but """\w+""" works fine
+      if (Platform.isWindows)
+      {
+        assert(reusableRegex1.search(text))
+        assertNot(reusableRegex2.search(text))
+      }
+      else // on posix that other way around
+      {
+        assertNot(reusableRegex1.search(text))
+        assert(reusableRegex2.search(text))
+      }
+    }
+  }
+
+  test("setting up locale doesn't really work until c++17'") {
+    Scope { implicit in =>
+      val text =
+        "symbol 'é' the regex [[:lower:]] imbued with a French locale should match the character"
+      val re_str = "'[[:lower:]]'"
+
+      // we will fail without locale settings (C means no locale, clean locale),
+      // by default we use 'en-US' locale, for Grep syntax some one would prefer `POSIX` locale
+      val re_c = Regex(re_str, Regex.no_unicode, Regex.ECMAScript, "C")
+      assertNot(re_c.search(text))
+
+      // we will even fail with locale settings which are by the way the last parameter of `apply` method,
+      // because Scala-native represents all strings in utf8 by default,
+      // but locale will be useful when you process raw data/stream etc
+      val re = Regex(re_str, Regex.no_unicode, Regex.ECMAScript, "fr-FR")
+      assertNot(re.search(text))
     }
   }
 }

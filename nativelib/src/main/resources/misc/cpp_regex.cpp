@@ -1,4 +1,6 @@
 #include <regex>
+// commented out until c++17
+//#include <unordered_map>
 
 template <typename CharType> struct scalanative_misc_stringbuf {
     scalanative_misc_stringbuf(uint32_t reserveSize) {
@@ -21,22 +23,22 @@ template <typename CharType> struct scalanative_misc_stringbuf {
 };
 
 template <typename BidiIteratorRaw, typename RType>
-struct scalanative_misc_regex_utf8_conv_iterator
+struct conv_it
     : public std::iterator<std::bidirectional_iterator_tag, RType> {
   public:
     typedef typename std::remove_cv<BidiIteratorRaw>::type BidiIterator;
     // typedef RType value_type;
 
-    explicit scalanative_misc_regex_utf8_conv_iterator(BidiIterator begin,
+    explicit conv_it(BidiIterator begin,
                                                        BidiIterator end,
                                                        BidiIterator current)
         : boi(begin), eoi(end), coi(current), poi(eoi) {}
 
-    explicit scalanative_misc_regex_utf8_conv_iterator(BidiIterator begin,
+    explicit conv_it(BidiIterator begin,
                                                        BidiIterator end)
         : boi(begin), eoi(end), coi(begin), poi(eoi) {}
 
-    explicit scalanative_misc_regex_utf8_conv_iterator(BidiIterator begin = 0)
+    explicit conv_it(BidiIterator begin = 0)
         : boi(begin), eoi(0), coi(begin), poi(eoi) {
         if (begin) {
             BidiIterator it = coi;
@@ -46,8 +48,8 @@ struct scalanative_misc_regex_utf8_conv_iterator
         }
     }
 
-    static scalanative_misc_regex_utf8_conv_iterator invalid() {
-        return scalanative_misc_regex_utf8_conv_iterator<BidiIteratorRaw,
+    static conv_it invalid() {
+        return conv_it<BidiIteratorRaw,
                                                          RType>();
     }
 
@@ -60,7 +62,7 @@ struct scalanative_misc_regex_utf8_conv_iterator
         return readChar(it, eoi);
     }
 
-    scalanative_misc_regex_utf8_conv_iterator &operator++() {
+    conv_it &operator++() {
         auto temp = coi;
         if (moveForward(temp, eoi)) {
             poi = coi;
@@ -69,13 +71,13 @@ struct scalanative_misc_regex_utf8_conv_iterator
         return *this;
     }
 
-    scalanative_misc_regex_utf8_conv_iterator operator++(int) {
-        scalanative_misc_regex_utf8_conv_iterator tmp(*this);
+    conv_it operator++(int) {
+        conv_it tmp(*this);
         ++(*this);
         return tmp;
     }
 
-    scalanative_misc_regex_utf8_conv_iterator &operator--() {
+    conv_it &operator--() {
         if (poi != eoi) {
             coi = poi;
             poi = eoi;
@@ -85,19 +87,19 @@ struct scalanative_misc_regex_utf8_conv_iterator
         return *this;
     }
 
-    scalanative_misc_regex_utf8_conv_iterator operator--(int) {
-        scalanative_misc_regex_utf8_conv_iterator tmp(*this);
+    conv_it operator--(int) {
+        conv_it tmp(*this);
         --(*this);
         return tmp;
     }
 
     bool
-    operator==(const scalanative_misc_regex_utf8_conv_iterator &right) const {
+    operator==(const conv_it &right) const {
         return coi == right.coi; // && boi == right.boi && eoi == right.eoi;
     }
 
     bool
-    operator!=(const scalanative_misc_regex_utf8_conv_iterator &right) const {
+    operator!=(const conv_it &right) const {
         return !(*this == right);
     }
 
@@ -107,8 +109,8 @@ struct scalanative_misc_regex_utf8_conv_iterator
 
     BidiIterator end_position() const { return eoi; }
 
-    scalanative_misc_regex_utf8_conv_iterator end() const {
-        return scalanative_misc_regex_utf8_conv_iterator(boi, eoi, eoi);
+    conv_it end() const {
+        return conv_it(boi, eoi, eoi);
     }
 
   private:
@@ -205,16 +207,15 @@ struct scalanative_misc_regex_utf8_output_iterator
     scalanative_misc_regex_utf8_output_iterator &
     operator=(const scalanative_misc_regex_utf8_output_iterator &other) {
         m_buffer = other.m_buffer;
-        m_size = other.m_size;
         return (*this);
     }
 
     scalanative_misc_regex_utf8_output_iterator &operator=(const RType &value) {
-        // strResult = convUCS2.to_bytes(value);
+        /*// strResult = convUCS2.to_bytes(value);
         for (const auto c : strResult) {
             **m_buffer = c;
             ++(*m_buffer);
-        }
+        }*/
         return (*this);
     }
 
@@ -231,14 +232,14 @@ struct scalanative_misc_regex_utf8_output_iterator
     scalanative_misc_stringbuf<RType> m_buffer;
 };
 
-typedef scalanative_misc_regex_utf8_conv_iterator<char *, wchar_t>
-    scalanative_misc_regex_utf8_wchar_ucs2_iterator;
-typedef scalanative_misc_regex_utf8_conv_iterator<const char *, wchar_t>
-    scalanative_misc_regex_utf8_const_wchar_ucs2_const_iterator;
-typedef scalanative_misc_regex_utf8_conv_iterator<std::string::iterator,
+typedef conv_it<char *, wchar_t>
+    ucs2_iterator;
+typedef conv_it<const char *, wchar_t>
+    usc2_cit;
+typedef conv_it<std::string::iterator,
                                                   wchar_t>
     scalanative_misc_regex_utf8_wstring_ucs2_iterator;
-typedef scalanative_misc_regex_utf8_conv_iterator<std::string::const_iterator,
+typedef conv_it<std::string::const_iterator,
                                                   wchar_t>
     scalanative_misc_regex_utf8_const_wstring_ucs2_const_iterator;
 
@@ -352,18 +353,18 @@ convertMatchFlags(scalanative_misc_regex_match_flags flags) {
 typedef std::regex scalanative_misc_ansiRegex;
 typedef std::wregex scalanative_misc_ucs2Regex;
 typedef std::regex_iterator<
-    scalanative_misc_regex_utf8_const_wchar_ucs2_const_iterator, wchar_t,
+    usc2_cit, wchar_t,
     std::regex_traits<wchar_t>>
     scalanative_misc_ucs2Regex_iterator;
 typedef std::regex_token_iterator<
-    scalanative_misc_regex_utf8_const_wchar_ucs2_const_iterator, wchar_t,
+    usc2_cit, wchar_t,
     std::regex_traits<wchar_t>>
     scalanative_misc_ucs2Regex_token_iterator;
 typedef std::match_results<
-    scalanative_misc_regex_utf8_const_wchar_ucs2_const_iterator>
+    usc2_cit>
     scalanative_misc_ucs2Regex_match;
 typedef std::sub_match<
-    scalanative_misc_regex_utf8_const_wchar_ucs2_const_iterator>
+    usc2_cit>
     scalanative_misc_ucs2Regex_sub_match;
 
 struct scalanative_misc_regex_kind {
@@ -490,7 +491,7 @@ prepareMatch(scalanative_misc_regex_kind kind,
     return match;
 }
 std::wstring convertUtf8toUCS2(const char *text) {
-    scalanative_misc_regex_utf8_conv_iterator<const char *, wchar_t> it(text);
+    conv_it<const char *, wchar_t> it(text);
     return std::wstring(it, it.end());
 }
 std::string convertUCS2toUtf8(const wchar_t *text) {
@@ -533,12 +534,13 @@ void putResult(scalanative_misc_regex_match_result *match, const char *begin,
     *out = result.data();
     *max_out = result.length();
 }
-/*const std::locale &getLocale(const std::string &str) {
+/*
+const std::locale &getLocale(const std::string &str) {
     static std::unordered_map<std::string, std::locale> cache;
     auto it = cache.find(str);
     if (it == cache.end()) {
-        std::locale loc(str);
-        it = cache.insert(str, loc).first;
+        // .emplace doesn't work on linux
+        it = cache.insert(std::make_pair(str, std::locale(str))).first;
     }
     return it->second;
 }*/
@@ -550,20 +552,26 @@ extern "C" scalanative_misc_regex *scalanative_misc_regex_create(
     char *out_error_message, int32_t max_out) {
     scalanative_misc_regex *res = nullptr;
     out_error_message[0] = 0;
-    const char *strLocale = loc ? loc : "en-US";
+#ifdef _WIN32
+    static std::locale defaultLocale("en-US");
+#else
+    static std::locale defaultLocale("en_US.UTF-8");
+#endif
     try {
         res = new scalanative_misc_regex();
         if (flags & Flags::no_unicode) {
             res->kind.sizeOfChar = 1;
             new (&res->ansiRegex) scalanative_misc_ansiRegex;
             // res->ansiRegex.imbue(Utils::getLocale(strLocale));
+            res->ansiRegex.imbue(defaultLocale);
             res->ansiRegex.assign(pattern, Flags::convertRegexFlags(flags));
         } else {
             res->kind.sizeOfChar = 2;
-            scalanative_misc_regex_utf8_const_wchar_ucs2_const_iterator
+            usc2_cit
                 testString(pattern);
             new (&res->ucs2Regex) scalanative_misc_ucs2Regex;
             // res->ucs2Regex.imbue(Utils::getLocale(strLocale));
+            res->ucs2Regex.imbue(defaultLocale);
             res->ucs2Regex.assign(testString, testString.end(),
                                   Flags::convertRegexFlags(flags));
         }
@@ -600,7 +608,7 @@ scalanative_misc_regex_search(scalanative_misc_regex *res, const char *text,
         return std::regex_search(text, res->ansiRegex,
                                  Flags::convertMatchFlags(flags));
     } else if (res->kind.isUCS2()) {
-        scalanative_misc_regex_utf8_const_wchar_ucs2_const_iterator
+        usc2_cit
             textIterator(text);
         return std::regex_search(textIterator, textIterator.end(),
                                  res->ucs2Regex,
@@ -634,7 +642,7 @@ scalanative_misc_regex_search_with_result(
             (flags & Flags::match_dont_keep_text_copy) != 0
                 ? text_original
                 : match->text_container.assign(text_original).data();
-        scalanative_misc_regex_utf8_const_wchar_ucs2_const_iterator
+        usc2_cit
             textIterator(match->text_begin);
         match->result =
             std::regex_search(textIterator, textIterator.end(), match->wm.data,
@@ -656,7 +664,7 @@ scalanative_misc_regex_match(scalanative_misc_regex *res, const char *text,
         return std::regex_match(text, res->ansiRegex,
                                 Flags::convertMatchFlags(flags));
     } else if (res->kind.isUCS2()) {
-        scalanative_misc_regex_utf8_const_wchar_ucs2_const_iterator
+        usc2_cit
             textIterator(text);
         return std::regex_match(textIterator, textIterator.end(),
                                 res->ucs2Regex,
@@ -691,7 +699,7 @@ scalanative_misc_regex_match_with_result(
             (flags & Flags::match_dont_keep_text_copy) != 0
                 ? text_original
                 : match->text_container.assign(text_original).data();
-        scalanative_misc_regex_utf8_const_wchar_ucs2_const_iterator
+        usc2_cit
             textIterator(match->text_begin);
         match->result =
             std::regex_match(textIterator, textIterator.end(), match->wm.data,
@@ -723,6 +731,7 @@ scalanative_misc_regex_match_iterator_first(
         sm.it = std::cregex_iterator(match->text_begin,
                                      match->text_begin + length, res->ansiRegex,
                                      Flags::convertMatchFlags(flags));
+        sm.end = std::cregex_iterator();
         sm.data = std::cmatch();
         return match;
     } else if (res->kind.isUCS2()) {
@@ -731,15 +740,18 @@ scalanative_misc_regex_match_iterator_first(
                 ? text_original
                 : match->text_container.assign(text_original).data();
         auto &sm = match->wm;
-        scalanative_misc_regex_utf8_const_wchar_ucs2_const_iterator
+        usc2_cit
             textIterator(match->text_begin);
         sm.it = std::regex_iterator<
-            scalanative_misc_regex_utf8_const_wchar_ucs2_const_iterator,
+            usc2_cit,
             wchar_t, std::regex_traits<wchar_t>>(
             textIterator, textIterator.end(), res->ucs2Regex,
             Flags::convertMatchFlags(flags));
+        sm.end = std::regex_iterator<
+            usc2_cit,
+            wchar_t, std::regex_traits<wchar_t>>();
         sm.data = std::match_results<
-            scalanative_misc_regex_utf8_const_wchar_ucs2_const_iterator>();
+            usc2_cit>();
         return match;
     }
 
@@ -802,14 +814,14 @@ scalanative_misc_regex_match_token_iterator_first(
                 ? text_original
                 : match->text_container.assign(text_original).data();
         auto &sm = match->wm;
-        scalanative_misc_regex_utf8_const_wchar_ucs2_const_iterator
+        usc2_cit
             textIterator(match->text_begin);
         std::vector<int> submatches(tokens, tokens + tokenCount);
         sm.token_it = scalanative_misc_ucs2Regex_token_iterator(
             textIterator, textIterator.end(), res->ucs2Regex, submatches,
             Flags::convertMatchFlags(flags));
         sm.data = std::match_results<
-            scalanative_misc_regex_utf8_const_wchar_ucs2_const_iterator>();
+            usc2_cit>();
         return match;
     }
 
@@ -914,7 +926,7 @@ extern "C" bool scalanative_misc_regex_match_submatch_range(
         auto &sm = match->wm;
         if (sm.data.ready() && index < sm.data.size()) {
             auto &smi = sm.data[index];
-            scalanative_misc_regex_utf8_const_wchar_ucs2_const_iterator tbegin(
+            usc2_cit tbegin(
                 match->text_begin, smi.first.current_position());
             range[0] = std::distance(tbegin, smi.first);
             range[1] = smi.length();
@@ -1015,7 +1027,7 @@ extern "C" bool scalanative_misc_regex_match_token_range(
         auto &sm = match->wm;
         if (sm.sub_data.length() > 0) {
             auto &smi = sm.sub_data;
-            scalanative_misc_regex_utf8_const_wchar_ucs2_const_iterator tbegin(
+            usc2_cit tbegin(
                 match->text_begin, smi.first.current_position());
             range[0] = std::distance(tbegin, smi.first);
             range[1] = smi.length();
@@ -1047,7 +1059,7 @@ scalanative_misc_regex_match_replace(scalanative_misc_regex *res,
         *max_out = res->result.length();
         return true;
     } else if (res->kind.isUCS2()) {
-        scalanative_misc_regex_utf8_const_wchar_ucs2_const_iterator
+        usc2_cit
             textIterator(text_original);
         // scalanative_misc_regex_ucs2_utf8_output_iterator outIter(&out,
         // max_out);
