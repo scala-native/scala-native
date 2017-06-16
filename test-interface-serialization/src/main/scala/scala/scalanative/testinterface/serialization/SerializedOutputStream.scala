@@ -79,7 +79,7 @@ class SerializedOutputStream private (out: OutputStream)
   def writeStackTraceElement(v: StackTraceElement): Unit = {
     writeString(v.getClassName)
     writeString(v.getMethodName)
-    writeString(v.getFileName)
+    writeOption(Option(v.getFileName))(writeString)
     writeInt(v.getLineNumber)
   }
 
