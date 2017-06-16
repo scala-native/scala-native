@@ -1,5 +1,7 @@
 package java.lang
 
+import java.lang.reflect.Field
+
 import scalanative.native._
 import scalanative.runtime.{Array => _, _}
 
@@ -41,6 +43,9 @@ final class _Class[A](val ty: Ptr[Type]) {
     getName.split('.').last.split('$').last
 
   def getSuperclass(): Class[_ >: A] =
+    ???
+
+  def getField(name: String): Field =
     ???
 
   def isArray(): scala.Boolean =

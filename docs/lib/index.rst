@@ -8,4 +8,5 @@ Libraries
 
   javalib
   libc
+  posixlib
 
