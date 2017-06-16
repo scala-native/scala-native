@@ -31,8 +31,9 @@ object TestUtilities {
           case sf: SubclassFingerprint  => sf.isModule
         }
 
-        val inst = if (isModule) t.name else s"new ${t.name}"
-        s""""${t.name}" -> _root_.$inst"""
+        val inst =
+          if (isModule) s"_root_.${t.name}" else s"new _root_.${t.name}"
+        s""""${t.name}" -> $inst"""
       }
       .mkString(", ")
 }
