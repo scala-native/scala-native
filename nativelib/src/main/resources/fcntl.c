@@ -1,16 +1,7 @@
+#ifndef _WIN32
 #include <fcntl.h>
-
-#ifdef _WIN32
-#define	F_DUPFD		0		/* duplicate file descriptor */
-#define	F_GETFD		1		/* get file descriptor flags */
-#define	F_SETFD		2		/* set file descriptor flags */
-#define	F_GETFL		3		/* get file status flags */
-#define	F_SETFL		4		/* set file status flags */
-#define	F_GETOWN	5		/* get SIGIO/SIGURG proc/pgrp */
-#define F_SETOWN	6		/* set SIGIO/SIGURG proc/pgrp */
-#define	F_GETLK		7		/* get record locking information */
-#define	F_SETLK		8		/* set record locking information */
-#define	F_SETLKW	9		/* F_SETLK; wait if blocked */
+#else
+#include "os_win_fcntl.h"
 #endif
 
 int scalanative_o_rdonly() { return O_RDONLY; }

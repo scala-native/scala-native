@@ -46,14 +46,14 @@ extern "C" {
 #define STDOUT_FILENO (1)
 #define STDERR_FILENO (2)
 /* should be in some equivalent to <sys/types.h> */
-typedef __int8 int8_t;
+/*typedef __int8 int8_t;
 typedef __int16 int16_t;
 typedef __int32 int32_t;
 typedef __int64 int64_t;
 typedef unsigned __int8 uint8_t;
 typedef unsigned __int16 uint16_t;
 typedef unsigned __int32 uint32_t;
-typedef unsigned __int64 uint64_t;
+typedef unsigned __int64 uint64_t;*/
 
 typedef unsigned int uid_t;
 typedef unsigned int gid_t;
@@ -68,6 +68,8 @@ int link(char *oldpath, char *newpath);
 int linkat(int fd1, char *path1, int fd2, char *path2, int flag);
 
 int chown(char *path, uid_t owner, gid_t group);
+
+int write(int fildes, char *buf, size_t nbyte);
 
 #ifdef __cplusplus
 }

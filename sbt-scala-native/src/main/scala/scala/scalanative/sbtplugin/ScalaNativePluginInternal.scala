@@ -577,7 +577,7 @@ object ScalaNativePluginInternal {
       case Some(path) => file(path)
       case None => {
         throw new MessageOnlyException(
-              s"No environment variable found `SCALA_NATIVE_USER_INCLUDES_PATH`. It should point to required includes (gc, re2).")
+          s"No environment variable found `SCALA_NATIVE_USER_INCLUDES_PATH`. It should point to required includes (gc, re2).")
       }
     }
   }

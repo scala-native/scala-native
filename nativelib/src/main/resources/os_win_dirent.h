@@ -10,15 +10,6 @@
 #ifndef DIRENT_H
 #define DIRENT_H
 
-/*
- * Include windows.h without Windows Sockets 1.1 to prevent conflicts with
- * Windows Sockets 2.0.
- */
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <windows.h>
-
 #include <stdio.h>
 #include <stdarg.h>
 #include <wchar.h>
@@ -159,10 +150,10 @@
 
 /* Maximum length of file name */
 #if !defined(PATH_MAX)
-#define PATH_MAX MAX_PATH
+#define PATH_MAX 260
 #endif
 #if !defined(FILENAME_MAX)
-#define FILENAME_MAX MAX_PATH
+#define FILENAME_MAX 260
 #endif
 //#if !defined(NAME_MAX)
 //#   define NAME_MAX FILENAME_MAX
@@ -220,56 +211,6 @@
 extern "C" {
 #endif
 
-/* Wide-character version */
-struct _wdirent {
-    /* Always zero */
-    long d_ino;
-
-    /* Structure size */
-    unsigned short d_reclen;
-
-    /* Length of name without \0 */
-    size_t d_namlen;
-
-    /* File type */
-    int d_type;
-
-    /* File name */
-    wchar_t d_name[PATH_MAX];
-};
-typedef struct _wdirent _wdirent;
-
-struct _WDIR {
-    /* Current directory entry */
-    struct _wdirent ent;
-
-    /* Private file data */
-    WIN32_FIND_DATAW data;
-
-    /* True if data is valid */
-    int cached;
-
-    /* Win32 search handle */
-    HANDLE handle;
-
-    /* Initial directory name */
-    wchar_t *patt;
-};
-typedef struct _WDIR _WDIR;
-
-_WDIR *_wopendir(const wchar_t *dirname);
-struct _wdirent *_wreaddir(_WDIR *dirp);
-int _wclosedir(_WDIR *dirp);
-void _wrewinddir(_WDIR *dirp);
-
-/* For compatibility with Symbian */
-#define wdirent _wdirent
-#define WDIR _WDIR
-#define wopendir _wopendir
-#define wreaddir _wreaddir
-#define wclosedir _wclosedir
-#define wrewinddir _wrewinddir
-
 /* Multi-byte character versions */
 struct dirent {
     /* Always zero */
@@ -289,62 +230,13 @@ struct dirent {
 };
 typedef struct dirent dirent;
 
+struct _WDIR;
+
 struct DIR {
     struct dirent ent;
     struct _WDIR *wdirp;
 };
 typedef struct DIR DIR;
-
-DIR *opendir(const char *dirname);
-struct dirent *readdir(DIR *dirp);
-int closedir(DIR *dirp);
-void rewinddir(DIR *dirp);
-
-/* Internal utility functions */
-WIN32_FIND_DATAW *dirent_first(_WDIR *dirp);
-WIN32_FIND_DATAW *dirent_next(_WDIR *dirp);
-
-int dirent_mbstowcs_s(size_t *pReturnValue, wchar_t *wcstr, size_t sizeInWords,
-                      const char *mbstr, size_t count);
-
-int dirent_wcstombs_s(size_t *pReturnValue, char *mbstr, size_t sizeInBytes,
-                      const wchar_t *wcstr, size_t count);
-
-void dirent_set_errno(int error);
-
-/*
- * Open directory stream DIRNAME for read and return a pointer to the
- * internal working area that is used to retrieve individual directory
- * entries.
- */
-_WDIR *_wopendir(const wchar_t *dirname);
-
-/*
- * Read next directory entry.  The directory entry is returned in dirent
- * structure in the d_name field.  Individual directory entries returned by
- * this function include regular files, sub-directories, pseudo-directories
- * "." and ".." as well as volume labels, hidden files and system files.
- */
-struct _wdirent *_wreaddir(_WDIR *dirp);
-
-/*
- * Close directory stream opened by opendir() function.  This invalidates the
- * DIR structure as well as any directory entry read previously by
- * _wreaddir().
- */
-int _wclosedir(_WDIR *dirp);
-
-/*
- * Rewind directory stream such that _wreaddir() returns the very first
- * file name again.
- */
-void _wrewinddir(_WDIR *dirp);
-
-/* Get first directory entry (internal) */
-WIN32_FIND_DATAW *dirent_first(_WDIR *dirp);
-
-/* Get next directory entry (internal) */
-WIN32_FIND_DATAW *dirent_next(_WDIR *dirp);
 
 /*
  * Open directory stream using plain old C-string.
@@ -375,18 +267,6 @@ int closedir(DIR *dirp);
  * Rewind directory stream to beginning.
  */
 void rewinddir(DIR *dirp);
-
-/* Convert multi-byte string to wide character string */
-int dirent_mbstowcs_s(size_t *pReturnValue, wchar_t *wcstr, size_t sizeInWords,
-                      const char *mbstr, size_t count);
-
-/* Convert wide-character string to multi-byte string */
-int dirent_wcstombs_s(size_t *pReturnValue, char *mbstr,
-                      size_t sizeInBytes, /* max size of mbstr */
-                      const wchar_t *wcstr, size_t count);
-
-/* Set errno variable */
-void dirent_set_errno(int error);
 
 int getWinTempDir(char *buffer, size_t length);
 

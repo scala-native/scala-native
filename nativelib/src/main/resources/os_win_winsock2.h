@@ -32,40 +32,40 @@ typedef unsigned int in_addr_t;
 #endif
 
 #if !defined(IPPROTO_IPV6)
-# define IPPROTO_IPV6 41
+#define IPPROTO_IPV6 41
 #endif
 
 #if !defined(IPV6_UNICAST_HOPS)
-# define IPV6_UNICAST_HOPS 4
+#define IPV6_UNICAST_HOPS 4
 #endif
 
 #if !defined(IPV6_MULTICAST_IF)
-# define IPV6_MULTICAST_IF 9
+#define IPV6_MULTICAST_IF 9
 #endif
 
 #if !defined(IPV6_MULTICAST_HOPS)
-# define IPV6_MULTICAST_HOPS 10
+#define IPV6_MULTICAST_HOPS 10
 #endif
 
 #if !defined(IPV6_MULTICAST_LOOP)
-# define IPV6_MULTICAST_LOOP 11
+#define IPV6_MULTICAST_LOOP 11
 #endif
 
 #if !defined(IPV6_JOIN_GROUP)
-# define IPV6_JOIN_GROUP 12
+#define IPV6_JOIN_GROUP 12
 #endif
 
 #if !defined(IPV6_LEAVE_GROUP)
-# define IPV6_LEAVE_GROUP 13
+#define IPV6_LEAVE_GROUP 13
 #endif
 
 #if !defined(IPV6_V6ONLY)
-# define IPV6_V6ONLY 27
+#define IPV6_V6ONLY 27
 #endif
 
-#define	MSG_EOR		0x8		/* data completes record */
+#define MSG_EOR 0x8 /* data completes record */
 
-#define	SCM_RIGHTS	0x01
+#define SCM_RIGHTS 0x01
 
 typedef int ssize_t;
 
@@ -74,7 +74,7 @@ struct iovec {
     size_t iov_len; /** The size of the memory pointed to by iov_base. */
 };
 
-char *win_inet_ntoa(int family, struct in_addr* in);
+char *win_inet_ntoa(int family, struct in_addr *in);
 ssize_t readv(int fd, const struct iovec *iov, int iovcnt);
 ssize_t writev(int fd, const struct iovec *iov, int iovcnt);
 
