@@ -8,16 +8,19 @@ object TestUtilities {
 
   def makeTestMain(frameworks: Seq[Framework],
                    tests: Seq[TestDefinition]): String = {
-    val frameworksList =
+    val frameworksList = if (frameworks.isEmpty) {
+      "Nil"
+    } else {
       frameworks
         .map(_.getClass.getName)
-        .mkString("new _root_.", ", new _root_.", "")
+        .mkString("List(new _root_.", ", new _root_.", ")")
+    }
     val testsMap = makeTestsMap(tests)
 
     s"""package scala.scalanative.testinterface
        |object TestMain extends TestMainBase {
-       |  override val frameworks = List($frameworksList)
-       |  override val tests = Map($testsMap)
+       |  override val frameworks = $frameworksList
+       |  override val tests = Map[String, AnyRef]($testsMap)
        |  def main(args: Array[String]): Unit =
        |    testMain(args)
        |}""".stripMargin
