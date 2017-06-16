@@ -24,8 +24,7 @@ extern "C" int ftruncate(int fd, off_t length) {
 }
 
 extern "C" int write(int fildes, char *buf, size_t nbyte) {
-    switch (fildes)
-    {
+    switch (fildes) {
     case 1: {
         fwrite(buf, nbyte, 1, stdout);
         return nbyte;
@@ -35,7 +34,7 @@ extern "C" int write(int fildes, char *buf, size_t nbyte) {
         return nbyte;
     }
     default:
-        //throw std::exception("`write` not implemented.");
+        // throw std::exception("`write` not implemented.");
         break;
     }
     return 0;
