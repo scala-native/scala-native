@@ -161,14 +161,14 @@ object ScalaNativePluginInternal {
         val includedir =
           Try(Process("llvm-config --includedir").lines_!.toSeq)
             .getOrElse(Seq.empty)
-        ((if (isWindows) (discoverUserIncludes() / "include")
-          else "/usr/local/include") +: includedir).map(s => s"-I$s")
+        ((if (isWindows) (Seq(discoverUserIncludes() / "include"))
+          else Seq("/usr/local/include")) ++ includedir).map(s => s"-I$s")
       }
       val dbgInfo = nativeDebugInfoOptions.value
       (includes :+ "-Qunused-arguments" :+
         (mode(nativeMode.value) match {
           case tools.Mode.Debug   => "-O0"
-          case tools.Mode.Release => "-O3"
+          case tools.Mode.Release => "-O2"
         })) ++ dbgInfo
     },
     nativeLinkingOptions := {
@@ -176,8 +176,8 @@ object ScalaNativePluginInternal {
         val libdir =
           Try(Process("llvm-config --libdir").lines_!.toSeq)
             .getOrElse(Seq.empty)
-        ((if (isWindows) (discoverUserIncludes() / "lib")
-          else "/usr/local/lib") +: libdir).map(s => s"-L$s")
+        ((if (isWindows) (Seq(discoverUserIncludes() / "lib"))
+          else Seq("/usr/local/lib")) ++ libdir).map(s => s"-L$s")
       }
       val dbgInfo = nativeDebugInfoOptions.value
       libs ++ dbgInfo ++ Seq("-Qunused-arguments")
@@ -461,7 +461,7 @@ object ScalaNativePluginInternal {
         val libunwind = os match {
           case "Mac OS X" => Seq.empty
           case _ =>
-            if (isWindows) Seq("Dbghelp", "Advapi32", "Ws2_32")
+            if (isWindows) Seq("msvcrt.lib", "Dbghelp", "Advapi32", "Ws2_32")
             else Seq("unwind", "unwind-" + arch)
         }
         librt ++ libunwind ++ linked.links

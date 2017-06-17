@@ -5,6 +5,8 @@
 extern "C" {
 #endif
 
+#include "os_win_types.h"
+
 /*
  * Include windows.h without Windows Sockets 1.1 to prevent conflicts with
  * Windows Sockets 2.0.
@@ -16,12 +18,6 @@ extern "C" {
 #include <winsock2.h>
 #include <In6addr.h>
 #include <Ws2tcpip.h>
-
-typedef unsigned short uint16_t;
-typedef unsigned int uint32_t;
-
-typedef unsigned short in_port_t;
-typedef unsigned int in_addr_t;
 
 #if !defined(INET_ADDRSTRLEN)
 #define INET_ADDRSTRLEN 16
@@ -67,16 +63,18 @@ typedef unsigned int in_addr_t;
 
 #define SCM_RIGHTS 0x01
 
-typedef int ssize_t;
-
 struct iovec {
     void *iov_base; /** Base address of a memory region for input or output. */
     size_t iov_len; /** The size of the memory pointed to by iov_base. */
 };
 
-char *win_inet_ntoa(int family, struct in_addr *in);
+char *os_win_inet_ntoa(int family, struct in_addr *in);
+int os_win_socket(int domain, int type, int protocol);
+int os_win_closesocket(int fildes);
+
 ssize_t readv(int fd, const struct iovec *iov, int iovcnt);
 ssize_t writev(int fd, const struct iovec *iov, int iovcnt);
+
 
 #ifdef __cplusplus
 }

@@ -81,11 +81,11 @@ abstract class Suite {
     loggers.foreach(_.info("* " + className))
     var success = true
 
+    val issueMap = Seq("RandomAccessFileSuite", "PathsSuite", "FileChannelSuite", "DirectoryStreamSuite",
+    "InflaterSuite", "FileOutputStreamSuite", "FilesSuite", "FileInputStreamSuite", "DeflaterSuite",
+    "InflaterInputStreamSuite", "DeflaterOutputStreamSuite")
     // temprorary until fixed
-    if (Platform.isWindows && (className.contains("RandomAccessFileSuite") || className
-          .contains("PathsSuite") || className.contains("FileChannelSuite") || className
-          .contains("DirectoryStreamSuite") || className.contains(
-          "FilesSuite"))) {
+    if (Platform.isWindows && (!issueMap.find(x => className.contains(x)).isEmpty)) {
       return success
     }
 

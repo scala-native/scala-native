@@ -19,6 +19,6 @@ char *scalanative_inet_ntoa(struct scalanative_in_addr *in) {
 #ifndef _WIN32
     return inet_ntoa(converted);
 #else
-    return win_inet_ntoa(AF_INET, &converted);
+    return os_win_inet_ntoa(AF_INET, &converted);
 #endif
 }

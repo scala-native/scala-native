@@ -17,3 +17,4 @@ pc.stdout.log
 *.orig
 *.etl
 *.etl.NGENPDB
+.vscode/settings.json
