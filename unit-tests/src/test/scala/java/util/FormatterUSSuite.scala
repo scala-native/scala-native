@@ -1235,10 +1235,8 @@ object FormatterUSSuite extends tests.Suite {
     }
   }
 
-  testFails(
-    "format(String, Array[Object]) for legal Byte/Short/Integer/Long conversion type 'd'",
-    0) { // issue not filed yet
-    // java.text.NumberFormat$.getNumberInstance throws NotImplementedError
+  test(
+    "format(String, Array[Object]) for legal Byte/Short/Integer/Long conversion type 'd'") {
     val triple = Array(
       Array(0, "%d", "0"),
       Array(0, "%10d", "         0"),
@@ -1759,10 +1757,8 @@ object FormatterUSSuite extends tests.Suite {
     }
   }
 
-  testFails(
-    "format(String, Array[Object]) for legal BigInteger conversion type 'd'",
-    0) { // issue not filed yet
-    // java.text.NumberFormat$.getNumberInstance throws NotImplementedError
+  test(
+    "format(String, Array[Object]) for legal BigInteger conversion type 'd'") {
     val tripleD = Array(
       Array(new BigInteger("123456789012345678901234567890"),
             "%d",
@@ -1932,10 +1928,7 @@ object FormatterUSSuite extends tests.Suite {
     }
   }
 
-  testFails(
-    "format(String, Array[Object]) for padding of BigInteger conversion",
-    0) { // issue not filed yet
-    // java.text.NumberFormat$.getNumberInstance throws NotImplementedError
+  test("format(String, Array[Object]) for padding of BigInteger conversion") {
     val bigInt = new BigInteger("123456789012345678901234567890")
     locally {
       val f = new Formatter(Locale.US)
@@ -2073,10 +2066,8 @@ object FormatterUSSuite extends tests.Suite {
     assertThrows[UnknownFormatConversionException](f.format("%-O", big))
   }
 
-  testFails(
-    "format(String, Array[Object]) for Float/Double conversion type 'e' and 'E'",
-    0) { // issue not filed yet
-    // java.text.NumberFormat$.getNumberInstance throws NotImplementedError
+  test(
+    "format(String, Array[Object]) for Float/Double conversion type 'e' and 'E'") {
     val tripleE = Array(
       Array(0f, "%e", "0.000000e+00"),
       Array(0f, "%#.0e", "0.e+00"),
@@ -2275,10 +2266,8 @@ object FormatterUSSuite extends tests.Suite {
     assertEquals("1.001000e+03", f.toString())
   }
 
-  testFails(
-    "format(String, Array[Object]) for Float/Double conversion type 'g' and 'G'",
-    0) { // issue not filed yet
-    // java.text.NumberFormat$.getNumberInstance throws NotImplementedError
+  test(
+    "format(String, Array[Object]) for Float/Double conversion type 'g' and 'G'") {
     val tripleG = Array(
       Array(1001f, "%g", "1001.00"),
       Array(1001f, "%- (,9.8g", " 1,001.0000"),
@@ -2458,10 +2447,8 @@ object FormatterUSSuite extends tests.Suite {
     }
   }
 
-  testFails(
-    "format(String, Array[Object]) for Float/Double conversion type 'g' and 'G' overflow",
-    0) { // issue not filed yet
-    // java.text.NumberFormat$.getNumberInstance throws NotImplementedError
+  test(
+    "format(String, Array[Object]) for Float/Double conversion type 'g' and 'G' overflow") {
     locally {
       val f = new Formatter()
       f.format("%g", 999999.5.asInstanceOf[Object])
@@ -2915,10 +2902,8 @@ object FormatterUSSuite extends tests.Suite {
     }
   }
 
-  testFails(
-    "format(String, Array[Object]) for BigDecimal conversion type 'e' and 'E'",
-    0) { // issue not filed yet
-    // java.text.NumberFormat$.getNumberInstance throws NotImplementedError
+  test(
+    "format(String, Array[Object]) for BigDecimal conversion type 'e' and 'E'") {
     val tripleE: Array[Array[Any]] = Array(
       Array(BigDecimal.ZERO, "%e", "0.000000e+00"),
       Array(BigDecimal.ZERO, "%#.0e", "0.e+00"),
@@ -2979,10 +2964,8 @@ object FormatterUSSuite extends tests.Suite {
     }
   }
 
-  testFails(
-    "format(String, Array[Object]) for BigDecimal conversion type 'g' and 'G'",
-    0) { // issue not filed yet
-    // java.text.NumberFormat$.getNumberInstance throws NotImplementedError
+  test(
+    "format(String, Array[Object]) for BigDecimal conversion type 'g' and 'G'") {
     val tripleG: Array[Array[Any]] = Array(
       Array(BigDecimal.ZERO, "%g", "0.00000"),
       Array(BigDecimal.ZERO, "%.5g", "0.0000"),
@@ -3064,9 +3047,7 @@ object FormatterUSSuite extends tests.Suite {
     assertEquals(" 4.00000e+06", f.toString)
   }
 
-  testFails("format(String, Array[Object]) for BigDecimal conversion type 'f'",
-            0) { // issue not filed yet
-    // java.text.NumberFormat$.getNumberInstance throws NotImplementedError
+  test("format(String, Array[Object]) for BigDecimal conversion type 'f'") {
     val input: Int   = 0
     val pattern: Int = 1
     val output: Int  = 2
@@ -3157,9 +3138,8 @@ object FormatterUSSuite extends tests.Suite {
     assertEquals("5000000000.000000", f.toString)
   }
 
-  testFails(
-    "format(String, Array[Object]) for exceptions in Float/Double/BigDecimal conversion type 'e', 'E', 'g', 'G', 'f', 'a', 'A'",
-    0) { // issue not filed yet
+  test(
+    "format(String, Array[Object]) for exceptions in Float/Double/BigDecimal conversion type 'e', 'E', 'g', 'G', 'f', 'a', 'A'") {
     // java.text.NumberFormat$.getNumberInstance throws NotImplementedError
     val conversions: Array[Char] = Array('e', 'E', 'g', 'G', 'f', 'a', 'A')
     val illArgs: Array[Any] = Array(false,
@@ -3517,8 +3497,7 @@ object FormatterUSSuite extends tests.Suite {
    * Regression test for Harmony-5845
    * test scientific notation to follow RI's behavior
    */
-  testFails("ScientificNotation", 0) { // issue not filed yet
-    // java.text.NumberFormat$.getNumberInstance throws NotImplementedError
+  test("ScientificNotation") {
     val f: Formatter      = new Formatter()
     val mc: MathContext   = new MathContext(30)
     val value: BigDecimal = new BigDecimal(0.1, mc)
