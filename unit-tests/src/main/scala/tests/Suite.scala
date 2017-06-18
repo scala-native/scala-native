@@ -89,7 +89,7 @@ abstract class Suite {
       // total mess with posix file descriptors
       "FilesSuite",
       "FileChannelSuite",
-      "FileDescriptorSuite"
+      "FileDescriptorSuite",
       "FileOutputStreamSuite",
       "FileInputStreamSuite",
       "RandomAccessFileSuite",
