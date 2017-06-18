@@ -82,14 +82,20 @@ abstract class Suite {
     var success = true
 
     val issueMap = Seq(
-      "RandomAccessFileSuite",
+      // read only directory
       "PathsSuite",
-      "FileChannelSuite",
       "DirectoryStreamSuite",
-      "InflaterSuite",
-      "FileOutputStreamSuite",
+      
+      // total mess with posix file descriptors
       "FilesSuite",
+      "FileChannelSuite",
+      "FileDescriptorSuite"
+      "FileOutputStreamSuite",
       "FileInputStreamSuite",
+      "RandomAccessFileSuite",
+      
+      // scala code implementation uses uLong type which is not the same on different platforms
+      "InflaterSuite",
       "DeflaterSuite",
       "InflaterInputStreamSuite",
       "DeflaterOutputStreamSuite"
