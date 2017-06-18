@@ -6,7 +6,9 @@ abstract class NumberFormat extends Format {
   // basic implementation for java.util.Formatter with Locale.US only
   // TODO: add missing methods
 
-  def format(obj: Object, toAppendTo: StringBuffer, pos: FieldPosition): StringBuffer =
+  def format(obj: Object,
+             toAppendTo: StringBuffer,
+             pos: FieldPosition): StringBuffer =
     obj match {
       case num: Number =>
         val l = num.longValue
@@ -24,13 +26,17 @@ abstract class NumberFormat extends Format {
   def format(number: Long): String =
     format(number, new StringBuffer, new FieldPosition(0)).toString
 
-  def format(number: Double, toAppendTo: StringBuffer, pos: FieldPosition): StringBuffer
+  def format(number: Double,
+             toAppendTo: StringBuffer,
+             pos: FieldPosition): StringBuffer
 
-  def format(number: Long, toAppendTo: StringBuffer, pos: FieldPosition): StringBuffer
+  def format(number: Long,
+             toAppendTo: StringBuffer,
+             pos: FieldPosition): StringBuffer
 
   protected[this] var groupingUsed: Boolean = true
 
-  def isGroupingUsed(): Boolean = groupingUsed
+  def isGroupingUsed(): Boolean             = groupingUsed
   def setGroupingUsed(value: Boolean): Unit = groupingUsed = value
 }
 

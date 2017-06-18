@@ -6,9 +6,11 @@ abstract class Format {
   final def format(obj: Object): String =
     format(obj, new StringBuffer(), new FieldPosition(0)).toString()
 
-  def format(obj: Object, toAppendTo: StringBuffer, pos: FieldPosition): StringBuffer
+  def format(obj: Object,
+             toAppendTo: StringBuffer,
+             pos: FieldPosition): StringBuffer
 }
 
 object Format {
-  class Field protected(name: String)
+  class Field protected (name: String)
 }

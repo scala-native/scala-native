@@ -7,8 +7,8 @@ class DecimalFormatSymbols(locale: Locale) {
   // TODO: add missing methods
 
   // TODO: should consult the locale
-  def getDecimalSeparator(): Char = '.'
+  def getDecimalSeparator(): Char  = '.'
   def getGroupingSeparator(): Char = ','
-  def getMinusSign(): Char        = '-'
-  def getZeroDigit(): Char        = '0'
+  def getMinusSign(): Char         = '-'
+  def getZeroDigit(): Char         = '0'
 }
