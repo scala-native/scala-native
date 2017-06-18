@@ -158,8 +158,9 @@ int scalanative_recv(int socket, void *buffer, size_t length, int flags) {
 #else
     int pos = 0;
     int receivedBytes = 0;
-    while ((length - pos)>0 && (receivedBytes = recv(socket, (char*)buffer + pos, length - pos, flags)))
-    {
+    while ((length - pos) > 0 &&
+           (receivedBytes =
+                recv(socket, (char *)buffer + pos, length - pos, flags))) {
         pos += receivedBytes;
     }
     return pos;
@@ -172,8 +173,9 @@ int scalanative_send(int socket, void *buffer, size_t length, int flags) {
 #else
     int pos = 0;
     int receivedBytes = 0;
-    while ((length - pos)>0 && (receivedBytes = send(socket, (char*)buffer + pos, length - pos, flags)))
-    {
+    while ((length - pos) > 0 &&
+           (receivedBytes =
+                send(socket, (char *)buffer + pos, length - pos, flags))) {
         pos += receivedBytes;
     }
     return pos;

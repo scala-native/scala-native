@@ -10,11 +10,10 @@ bin/.scalafmt*
 sbt-crossproject/
 CMakeLists.txt
 cmake-build-debug/
-.vscode/launch.json
 *.iml
 pc.stdout.log
 *.TMP
 *.orig
 *.etl
 *.etl.NGENPDB
-.vscode/settings.json
+.vscode/

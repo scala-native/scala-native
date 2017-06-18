@@ -3,17 +3,10 @@
 
 #include <vector>
 
-struct DescriptorGuard
-{
+struct DescriptorGuard {
     DescriptorGuard();
-    enum Desc
-    {
-        EMPTY,
-        FILE,
-        SOCKET
-    };
-    struct Entry
-    {
+    enum Desc { EMPTY, FILE, SOCKET };
+    struct Entry {
         Desc type = EMPTY;
         int fildes = -1;
     };
@@ -25,6 +18,6 @@ struct DescriptorGuard
     std::vector<Entry> db;
 };
 
-DescriptorGuard& descriptorGuard();
+DescriptorGuard &descriptorGuard();
 
 #endif

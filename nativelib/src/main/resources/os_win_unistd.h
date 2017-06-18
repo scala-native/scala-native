@@ -13,7 +13,6 @@ extern "C" {
 #include <process.h> /* for getpid() and the exec..() family */
 #include <direct.h>  /* for _getcwd() and _chdir() */
 
-
 #define srandom srand
 #define random rand
 
@@ -58,15 +57,15 @@ int os_win_unistd_sleep(uint32_t seconds);
 
 int os_win_unistd_usleep(uint32_t usecs);
 
-int os_win_unistd_unlink(const char* path);
+int os_win_unistd_unlink(const char *path);
 
-int os_win_unistd_readlink(const char* path, const char* buf, size_t bufsize);
+int os_win_unistd_readlink(const char *path, const char *buf, size_t bufsize);
 
-const char* os_win_unistd_getcwd(char* buf, size_t size);
+const char *os_win_unistd_getcwd(char *buf, size_t size);
 
-int os_win_unistd_write(int fildes, void* buf, size_t nbyte);
+int os_win_unistd_write(int fildes, void *buf, size_t nbyte);
 
-int os_win_unistd_read(int fildes, void* buf, size_t nbyte);
+int os_win_unistd_read(int fildes, void *buf, size_t nbyte);
 
 int os_win_unistd_close(int fildes);
 
@@ -76,7 +75,7 @@ off_t os_win_unistd_lseek(int fildes, off_t offset, int whence);
 
 int os_win_unistd_ftruncate(int fildes, off_t length);
 
-int os_win_unistd_truncate(const char* path, off_t length);
+int os_win_unistd_truncate(const char *path, off_t length);
 
 #ifdef __cplusplus
 }

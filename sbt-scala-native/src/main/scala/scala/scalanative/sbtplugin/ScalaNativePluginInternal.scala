@@ -355,10 +355,12 @@ object ScalaNativePluginInternal {
           if (include(path) && !file(opath).exists) {
             val isCpp    = path.endsWith(".cpp")
             val compiler = abs(if (isCpp) clangpp else clang)
-            val flags    = (if (isCpp) (if (isWindows)
+            val flags = (if (isCpp)
+                           (if (isWindows)
                               Seq("-std=c++14",
                                   "-fms-compatibility-version=19.00")
-                            else Seq("-std=c++11")) else Seq()) ++ opts
+                            else Seq("-std=c++11"))
+                         else Seq()) ++ opts
             val compilec = Seq(compiler) ++ flags ++ Seq("-c",
                                                          path,
                                                          "-o",
@@ -610,7 +612,6 @@ object ScalaNativePluginInternal {
       throw new MessageOnlyException(
         "nativeGC can be either \"none\", \"boehm\" or \"immix\", not: " + value)
   }
-
 
   private val isWindows: Boolean = {
     val os = Option(System.getProperty("os.name")).getOrElse("")

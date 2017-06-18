@@ -75,7 +75,6 @@ int os_win_closesocket(int fildes);
 ssize_t readv(int fd, const struct iovec *iov, int iovcnt);
 ssize_t writev(int fd, const struct iovec *iov, int iovcnt);
 
-
 #ifdef __cplusplus
 }
 #endif

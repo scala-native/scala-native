@@ -25,8 +25,7 @@ extern "C" int chown(char *path, uid_t owner, gid_t group) {
     return 0;
 }
 
-extern "C" int os_win_unistd_access(const char *path, int amode)
-{
+extern "C" int os_win_unistd_access(const char *path, int amode) {
     if (path == 0 || strlen(path) == 0) {
         return -1;
     }
@@ -51,31 +50,25 @@ extern "C" int os_win_unistd_access(const char *path, int amode)
     return 0;
 }
 
-extern "C" int os_win_unistd_sleep(uint32_t seconds)
-{
+extern "C" int os_win_unistd_sleep(uint32_t seconds) {
     throw std::exception("not implemented.");
     return 0;
 }
 
-extern "C" int os_win_unistd_usleep(uint32_t usecs)
-{
+extern "C" int os_win_unistd_usleep(uint32_t usecs) {
     throw std::exception("not implemented.");
     return 0;
 }
 
-extern "C" int os_win_unistd_unlink(const char* path)
-{
-    return _unlink(path);
-}
+extern "C" int os_win_unistd_unlink(const char *path) { return _unlink(path); }
 
-extern "C" int os_win_unistd_readlink(const char* path, const char* buf, size_t bufsize)
-{
+extern "C" int os_win_unistd_readlink(const char *path, const char *buf,
+                                      size_t bufsize) {
     throw std::exception("not implemented.");
     return 0;
 }
 
-extern "C" const char* os_win_unistd_getcwd(char* buf, size_t size)
-{
+extern "C" const char *os_win_unistd_getcwd(char *buf, size_t size) {
     return _getcwd(buf, size);
 }
 
@@ -96,44 +89,35 @@ extern "C" int os_win_unistd_write(int fildes, void *buf, size_t nbyte) {
     return 0;
 }
 
-extern "C" int os_win_unistd_read(int fildes, void* buf, size_t nbyte)
-{
+extern "C" int os_win_unistd_read(int fildes, void *buf, size_t nbyte) {
     throw std::exception("not implemented.");
     return 0;
 }
 
-extern "C" int os_win_unistd_close(int fildes)
-{
-    if (descriptorGuard().closeIfSocket(fildes))
-    {
+extern "C" int os_win_unistd_close(int fildes) {
+    if (descriptorGuard().closeIfSocket(fildes)) {
         return os_win_closesocket(fildes);
-    }
-    else
-    {
+    } else {
         return _close(fildes);
     }
 }
 
-extern "C" int os_win_unistd_fsync(int fildes)
-{
+extern "C" int os_win_unistd_fsync(int fildes) {
     throw std::exception("not implemented.");
     return 0;
 }
 
-extern "C" off_t os_win_unistd_lseek(int fildes, off_t offset, int whence)
-{
+extern "C" off_t os_win_unistd_lseek(int fildes, off_t offset, int whence) {
     throw std::exception("not implemented.");
     return 0;
 }
 
-extern "C" int os_win_unistd_ftruncate(int fildes, off_t length)
-{
+extern "C" int os_win_unistd_ftruncate(int fildes, off_t length) {
     throw std::exception("not implemented.");
     return 0;
 }
 
-extern "C" int os_win_unistd_truncate(const char* path, off_t length)
-{
+extern "C" int os_win_unistd_truncate(const char *path, off_t length) {
     throw std::exception("not implemented.");
     return 0;
 }

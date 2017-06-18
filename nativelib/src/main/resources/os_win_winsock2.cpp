@@ -5,44 +5,32 @@
 #include <string>
 #include "os_win_descriptor_guard.h"
 
-std::string formatSystemError(DWORD error)
-{
+std::string formatSystemError(DWORD error) {
     LPVOID lpMsgBuf;
 
-    FormatMessageA(
-        FORMAT_MESSAGE_ALLOCATE_BUFFER | 
-        FORMAT_MESSAGE_FROM_SYSTEM |
-        FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL,
-        error,
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPSTR) &lpMsgBuf,
-        0, NULL );
+    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
+                       FORMAT_MESSAGE_IGNORE_INSERTS,
+                   NULL, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                   (LPSTR)&lpMsgBuf, 0, NULL);
 
     std::string msg((LPSTR)lpMsgBuf);
     LocalFree(lpMsgBuf);
     return msg;
 }
 
-void os_win_socket_error(const char *msg = nullptr)
-{
-    if (msg)
-    {
+void os_win_socket_error(const char *msg = nullptr) {
+    if (msg) {
         throw std::exception(msg);
-    }
-    else
-    {
+    } else {
         throw std::exception(formatSystemError(WSAGetLastError()).c_str());
     }
 }
 
-struct SocketManager
-{
-    WSADATA wsaData = { 0 };
+struct SocketManager {
+    WSADATA wsaData = {0};
     int iResult = 0;
 
-    SocketManager()
-    {
+    SocketManager() {
         // Initialize Winsock
         iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
         if (iResult != 0) {
@@ -50,35 +38,28 @@ struct SocketManager
         }
     }
 
-    ~SocketManager()
-    {
-        WSACleanup();
-    }
+    ~SocketManager() { WSACleanup(); }
 };
 
-int os_win_socket(int domain, int type, int protocol)
-{
+int os_win_socket(int domain, int type, int protocol) {
     static SocketManager guard;
 
-    if (protocol == 0)
-    {
+    if (protocol == 0) {
         switch (type) {
-            case SOCK_STREAM: {
-                protocol = IPPROTO_TCP; // tcp/ip protocol
-                break;
-            }
-            default:
-            {
-                os_win_socket_error("not supported protocol for that type of socket");
-            }
+        case SOCK_STREAM: {
+            protocol = IPPROTO_TCP; // tcp/ip protocol
+            break;
+        }
+        default: {
+            os_win_socket_error(
+                "not supported protocol for that type of socket");
+        }
         }
     }
     const auto result = socket(domain, type, protocol);
-    if (result == INVALID_SOCKET)
-    {
+    if (result == INVALID_SOCKET) {
         os_win_socket_error();
-    }
-    else
+    } else
         descriptorGuard().openSocket(result);
     return result;
 }
@@ -97,9 +78,6 @@ extern "C" ssize_t writev(int fd, const struct iovec *iov, int iovcnt) {
     return 0;
 }
 
-extern "C" int os_win_closesocket(int fildes)
-{
-    return closesocket(fildes);
-}
+extern "C" int os_win_closesocket(int fildes) { return closesocket(fildes); }
 
 #endif
