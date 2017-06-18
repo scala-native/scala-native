@@ -1038,10 +1038,11 @@ object Formatter {
         pattern.append(zeros)
       }
       pattern.append('E')
-      pattern.append("+00")
+      // Porting note: Harmony appends "+00" here, but it is nonstandard; applyPattern throws IllegalArgumentException on OpenJDK 8
+      pattern.append("00")
       decimalFormat.applyPattern(pattern.toString())
       val formattedString = decimalFormat.format(argument)
-      result.append(formattedString.replace('E', 'e'))
+      result.append(formattedString.replace("E", "e+").replace("e+-", "e-"))
 
       if (formatToken.isFlagSet(FormatToken.FLAG_SHARP) && 0 == formatToken
             .getPrecision()) {
