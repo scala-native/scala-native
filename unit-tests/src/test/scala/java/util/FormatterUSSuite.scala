@@ -960,11 +960,42 @@ object FormatterUSSuite extends tests.Suite {
   }
 
   testFails(
-    "format(String, Array[Object]) for general conversion type 's' and 'S'",
+    "format(String, Array[Object]) for Float/Double conversion type 's' and 'S' with excess precision",
     481) {
     // 1.1.toString = "1.1" on Scala JVM, "1.100000" on Scala Native
     // Formatter$.Transformer.padding trims to `precision` number of chars, and then pads up to `width`.
     // The excess '0's lead to test failure.
+    val triple = Array(
+      Array(1.1f, "%-6.4s", "1.1   "),
+      Array(1.1f, "%.5s", "1.1"),
+      Array(1.1d, "%-6.4s", "1.1   "),
+      Array(1.1d, "%.5s", "1.1")
+    )
+
+    val input   = 0
+    val pattern = 1
+    val output  = 2
+    for (i <- (0 until triple.length)) {
+      locally {
+        val f = new Formatter(Locale.US)
+        f.format(triple(i)(pattern).asInstanceOf[String],
+                 triple(i)(input).asInstanceOf[Object])
+        assertEquals(triple(i)(output), f.toString())
+      }
+
+      locally {
+        val f = new Formatter(Locale.US)
+        f.format(
+          triple(i)(pattern).asInstanceOf[String].toUpperCase(Locale.US),
+          triple(i)(input).asInstanceOf[Object])
+        assertEquals(
+          triple(i)(output).asInstanceOf[String].toUpperCase(Locale.US),
+          f.toString())
+      }
+    }
+  }
+
+  test("format(String, Array[Object]) for general conversion type 's' and 'S'") {
     val triple = Array(
       Array(Boolean.box(false), "%2.3s", "fal"),
       Array(Boolean.box(false), "%-6.4s", "fals  "),
@@ -985,11 +1016,7 @@ object FormatterUSSuite extends tests.Suite {
       Array(Int.box(1), "%-6.4s", "1     "),
       Array(Int.box(1), "%.5s", "1"),
       Array(Float.box(1.1f), "%2.3s", "1.1"),
-      Array(Float.box(1.1f), "%-6.4s", "1.1   "), // fails #481
-      Array(Float.box(1.1f), "%.5s", "1.1"), // fails #481
       Array(Double.box(1.1d), "%2.3s", "1.1"),
-      Array(Double.box(1.1d), "%-6.4s", "1.1   "), // fails #481
-      Array(Double.box(1.1d), "%.5s", "1.1"), // fails #481
       Array("", "%2.3s", "  "),
       Array("", "%-6.4s", "      "),
       Array("", "%.5s", ""),
@@ -2499,9 +2526,80 @@ object FormatterUSSuite extends tests.Suite {
   }
 
   testFails(
-    "format(String, Array[Object]) for Float/Double conversion type 'f'",
+    "format(String, Array[Object]) for java.lang.Float/Double.MAX_VALUE conversion type 'f'",
     0) { // issue not filed yet
-    // java.text.NumberFormat$.getNumberInstance throws NotImplementedError
+    // These need a way to reproduce the same decimal representation of extreme values as JVM.
+    val tripleF = Array(
+      Array(-1234567890.012345678d, "% 0#(9.8f", "(1234567890.01234580)"),
+      Array(
+        java.lang.Double.MAX_VALUE,
+        "%f",
+        "179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.000000"
+      ),
+      Array(
+        java.lang.Double.MAX_VALUE,
+        "%#.3f",
+        "179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.000"
+      ),
+      Array(
+        java.lang.Double.MAX_VALUE,
+        "%,5f",
+        "179,769,313,486,231,570,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000.000000"
+      ),
+      Array(
+        java.lang.Double.MAX_VALUE,
+        "%- (12.0f",
+        " 179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      ),
+      Array(
+        java.lang.Double.MAX_VALUE,
+        "%#+0(1.6f",
+        "+179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.000000"
+      ),
+      Array(
+        java.lang.Double.MAX_VALUE,
+        "%-+(8.4f",
+        "+179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.0000"
+      ),
+      Array(
+        java.lang.Double.MAX_VALUE,
+        "% 0#(9.8f",
+        " 179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.00000000"
+      ),
+      Array(java.lang.Float.MAX_VALUE,
+            "%f",
+            "340282346638528860000000000000000000000.000000"),
+      Array(java.lang.Float.MAX_VALUE,
+            "%#.3f",
+            "340282346638528860000000000000000000000.000"),
+      Array(java.lang.Float.MAX_VALUE,
+            "%,5f",
+            "340,282,346,638,528,860,000,000,000,000,000,000,000.000000"),
+      Array(java.lang.Float.MAX_VALUE,
+            "%- (12.0f",
+            " 340282346638528860000000000000000000000"),
+      Array(java.lang.Float.MAX_VALUE,
+            "%#+0(1.6f",
+            "+340282346638528860000000000000000000000.000000"),
+      Array(java.lang.Float.MAX_VALUE,
+            "%-+(8.4f",
+            "+340282346638528860000000000000000000000.0000"),
+      Array(java.lang.Float.MAX_VALUE,
+            "% 0#(9.8f",
+            " 340282346638528860000000000000000000000.00000000")
+    )
+    val input: Int   = 0
+    val pattern: Int = 1
+    val output: Int  = 2
+    for (i <- 0 until tripleF.length) {
+      val f = new Formatter(Locale.US)
+      f.format(tripleF(i)(pattern).asInstanceOf[String],
+               tripleF(i)(input).asInstanceOf[Object])
+      assertEquals(tripleF(i)(output), f.toString)
+    }
+  }
+
+  test("format(String, Array[Object]) for Float/Double conversion type 'f'") {
     val tripleF: Array[Array[Any]] = Array(
       Array(0f, "%f", "0.000000"),
       Array(0f, "%#.3f", "0.000"),
@@ -2559,27 +2657,6 @@ object FormatterUSSuite extends tests.Suite {
       Array(-987654321.1234567f, "%#+0(1.6f", "(987654336.000000)"),
       Array(-987654321.1234567f, "%-+(8.4f", "(987654336.0000)"),
       Array(-987654321.1234567f, "% 0#(9.8f", "(987654336.00000000)"),
-      Array(java.lang.Float.MAX_VALUE,
-            "%f",
-            "340282346638528860000000000000000000000.000000"),
-      Array(java.lang.Float.MAX_VALUE,
-            "%#.3f",
-            "340282346638528860000000000000000000000.000"),
-      Array(java.lang.Float.MAX_VALUE,
-            "%,5f",
-            "340,282,346,638,528,860,000,000,000,000,000,000,000.000000"),
-      Array(java.lang.Float.MAX_VALUE,
-            "%- (12.0f",
-            " 340282346638528860000000000000000000000"),
-      Array(java.lang.Float.MAX_VALUE,
-            "%#+0(1.6f",
-            "+340282346638528860000000000000000000000.000000"),
-      Array(java.lang.Float.MAX_VALUE,
-            "%-+(8.4f",
-            "+340282346638528860000000000000000000000.0000"),
-      Array(java.lang.Float.MAX_VALUE,
-            "% 0#(9.8f",
-            " 340282346638528860000000000000000000000.00000000"),
       Array(java.lang.Float.MIN_VALUE, "%f", "0.000000"),
       Array(java.lang.Float.MIN_VALUE, "%#.3f", "0.000"),
       Array(java.lang.Float.MIN_VALUE, "%,5f", "0.000000"),
@@ -2670,42 +2747,6 @@ object FormatterUSSuite extends tests.Suite {
       Array(-1234567890.012345678d, "%- (12.0f", "(1234567890)"),
       Array(-1234567890.012345678d, "%#+0(1.6f", "(1234567890.012346)"),
       Array(-1234567890.012345678d, "%-+(8.4f", "(1234567890.0123)"),
-      Array(-1234567890.012345678d, "% 0#(9.8f", "(1234567890.01234580)"),
-      Array(
-        java.lang.Double.MAX_VALUE,
-        "%f",
-        "179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.000000"
-      ),
-      Array(
-        java.lang.Double.MAX_VALUE,
-        "%#.3f",
-        "179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.000"
-      ),
-      Array(
-        java.lang.Double.MAX_VALUE,
-        "%,5f",
-        "179,769,313,486,231,570,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000,000.000000"
-      ),
-      Array(
-        java.lang.Double.MAX_VALUE,
-        "%- (12.0f",
-        " 179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
-      ),
-      Array(
-        java.lang.Double.MAX_VALUE,
-        "%#+0(1.6f",
-        "+179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.000000"
-      ),
-      Array(
-        java.lang.Double.MAX_VALUE,
-        "%-+(8.4f",
-        "+179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.0000"
-      ),
-      Array(
-        java.lang.Double.MAX_VALUE,
-        "% 0#(9.8f",
-        " 179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.00000000"
-      ),
       Array(java.lang.Double.MIN_VALUE, "%f", "0.000000"),
       Array(java.lang.Double.MIN_VALUE, "%#.3f", "0.000"),
       Array(java.lang.Double.MIN_VALUE, "%,5f", "0.000000"),
@@ -2747,9 +2788,37 @@ object FormatterUSSuite extends tests.Suite {
   }
 
   testFails(
-    "format(String, Array[Object]) for Float/Double conversion type 'a' and 'A'",
+    "format(String, Array[Object]) for java.lang.Double.MIN_VALUE conversion type 'a' and 'A'",
     0) { // issue not filed yet
-    // java.text.NumberFormat$.getNumberInstance throws NotImplementedError
+    // it is java.lang.Double.toHexString in Formatter.FloatUtil.transform_a that throws NumberFormatException.
+    val tripleA: Array[Array[Any]] = Array(
+      Array(java.lang.Double.MIN_VALUE, "%a", "0x0.0000000000001p-1022"),
+      Array(java.lang.Double.MIN_VALUE, "%5a", "0x0.0000000000001p-1022")
+    )
+    val input: Int   = 0
+    val pattern: Int = 1
+    val output: Int  = 2
+    for (i <- 0 until tripleA.length) {
+      locally {
+        val f = new Formatter(Locale.US)
+        f.format(tripleA(i)(pattern).asInstanceOf[String],
+                 tripleA(i)(input).asInstanceOf[Object])
+        assertEquals(tripleA(i)(output), f.toString)
+      }
+      // test for conversion type 'A'
+      locally {
+        val f = new Formatter(Locale.US)
+        f.format(tripleA(i)(pattern).asInstanceOf[String].toUpperCase(),
+                 tripleA(i)(input).asInstanceOf[Object])
+        assertEquals(
+          tripleA(i)(output).asInstanceOf[String].toUpperCase(Locale.US),
+          f.toString)
+      }
+    }
+  }
+
+  test(
+    "format(String, Array[Object]) for Float/Double conversion type 'a' and 'A'") {
     val tripleA: Array[Array[Any]] = Array(
       Array(-0f, "%a", "-0x0.0p0"),
       Array(-0f, "%#.3a", "-0x0.000p0"),
@@ -2859,8 +2928,6 @@ object FormatterUSSuite extends tests.Suite {
       Array(-1234567890.012345678d, "%-+8.4a", "-0x1.2658p30"),
       Array(java.lang.Double.MAX_VALUE, "%a", "0x1.fffffffffffffp1023"),
       Array(java.lang.Double.MAX_VALUE, "%5a", "0x1.fffffffffffffp1023"),
-      Array(java.lang.Double.MIN_VALUE, "%a", "0x0.0000000000001p-1022"),
-      Array(java.lang.Double.MIN_VALUE, "%5a", "0x0.0000000000001p-1022"),
       Array(java.lang.Double.NaN, "%a", "NaN"),
       Array(java.lang.Double.NaN, "%#.3a", "NaN"),
       Array(java.lang.Double.NaN, "%5a", "  NaN"),
