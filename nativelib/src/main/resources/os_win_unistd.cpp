@@ -25,6 +25,13 @@ extern "C" int chown(char *path, uid_t owner, gid_t group) {
     return 0;
 }
 
+extern "C" int __imp_write(int fildes, void *buf, uint32_t nbyte) {
+    return _write(fildes, buf, nbyte);
+}
+extern "C" int __imp_read(int fildes, void *buf, uint32_t nbyte) {
+    return _read(fildes, buf, nbyte);
+}
+
 extern "C" int os_win_unistd_access(const char *path, int amode) {
     if (path == 0 || strlen(path) == 0) {
         return -1;
