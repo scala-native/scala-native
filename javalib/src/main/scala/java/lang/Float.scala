@@ -95,7 +95,7 @@ final class Float(val _value: scala.Float)
   protected def toDouble: scala.Double = _value.toDouble
 
   protected def unary_+ : scala.Float = _value
-  protected def unary_- : scala.Float = - _value
+  protected def unary_- : scala.Float = -_value
 
   protected def +(x: String): String = _value + x
 

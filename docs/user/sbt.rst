@@ -8,23 +8,27 @@ If you have reached this section you probably have a system that is now able to 
 Minimal sbt project
 -------------------
 
-Start within a new folder, and create a file ``project/plugins.sbt`` as follows::
+The easiest way to make a fresh project is to use our official gitter8 template::
 
-    addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.2.1")
+    sbt new sbt new scala-native/scala-native.g8
 
-Create a file ``project/build.properties`` to define the sbt version as follows::
+This includes:
+
+* ``project/plugins.sbt`` to add a plugin dependency::
+
+    addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.3.0")
+
+* ``project/build.properties`` to specify the sbt version::
 
     sbt.version = 0.13.15
 
-define a new ``build.sbt``::
+* ``build.sbt`` to enable the plugin and specify Scala version::
 
     enablePlugins(ScalaNativePlugin)
 
     scalaVersion := "2.11.11"
 
-and now you can write your first application in ``./src/main/scala/Main.scala``:
-
-.. code-block:: scala
+* ``src/main/scala/Main.scala`` with minimal application::
 
     object Main {
       def main(args: Array[String]): Unit =
@@ -44,6 +48,7 @@ Scala Native Version Scala Versions
 ==================== ================
 0.1.x                2.11.8
 0.2.x                2.11.8, 2.11.11
+0.3.x                2.11.8, 2.11.11
 ==================== ================
 
 Sbt settings and tasks
@@ -62,7 +67,7 @@ Since Name                     Type            Description
 0.1   ``nativeCompileOptions`` ``Seq[String]`` Extra options passed to clang verbatim during compilation
 0.1   ``nativeLinkingOptions`` ``Seq[String]`` Extra options passed to clang verbatim during linking
 0.1   ``nativeMode``           ``String``      Either ``"debug"`` or ``"release"`` (2)
-0.2   ``nativeGC``             ``String``      Either ``"none"`` or ``"boehm"`` (3)
+0.2   ``nativeGC``             ``String``      Either ``"none"``, ``"boehm"`` or ``"immix"`` (3)
 ===== ======================== =============== =========================================================
 
 1. See `Publishing`_ and `Cross compilation`_ for details.
@@ -94,11 +99,17 @@ Garbage collectors
    Conservative generational garbage collector. More information is available
    at the `project's page <https://www.hboehm.info/gc/>`_.
 
-2. **none.**
+2. **none.** (experimental, since 0.2)
 
    Garbage collector that allocates things without ever freeing them. Useful
    for short-running command-line applications or applications where garbage
    collections pauses are not acceptable.
+
+3. **immix.** (experimental, since 0.3)
+
+   Immix is a mostly-precise mark-region tracing garbage collector.
+   More information about the collector is available as part of the original
+   `0.3.0 announcement <https://github.com/scala-native/scala-native/releases/tag/v0.3.0>`_.
 
 Publishing
 ----------

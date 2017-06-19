@@ -9,6 +9,9 @@ import scalanative.tools
 import scalanative.io.VirtualDirectory
 import scalanative.util.{Scope => ResourceScope}
 
+import sbt.testing.Framework
+import testinterface.ScalaNativeFramework
+
 import sbt._, Keys._, complete.DefaultParsers._
 
 import scala.util.Try
@@ -56,8 +59,11 @@ object ScalaNativePluginInternal {
   val nativeCompileLL =
     taskKey[Seq[File]]("Compile LLVM IR to native object files.")
 
+  val nativeUnpackLib =
+    taskKey[File]("Unpack native lib.")
+
   val nativeCompileLib =
-    taskKey[File]("Unpack and precompile native lib.")
+    taskKey[File]("Precompile C/C++ code in native lib.")
 
   val nativeLinkLL =
     taskKey[File]("Link native object files into the final binary")
@@ -85,6 +91,8 @@ object ScalaNativePluginInternal {
       globals.map(_.show).sorted
     }
 
+  lazy val NativeTest = config("nativetest").extend(Test).hide
+
   def nativeMissingDependenciesTask =
     nativeMissingDependencies := {
       (nativeExternalDependencies.value.toSet --
@@ -93,8 +101,12 @@ object ScalaNativePluginInternal {
 
   lazy val projectSettings =
     dependencies ++
+      inScope(Global)(globalSettings) ++
       inConfig(Compile)(scalaNativeSettings) ++
-      inConfig(Test)(scalaNativeSettings)
+      inConfig(Test)(scalaNativeSettings) ++
+      inConfig(NativeTest)(scalaNativeSettings) ++
+      inConfig(NativeTest)(nativeTestSettings) ++
+      inConfig(Test)(testSettings)
 
   lazy val scalaNativeSettings =
     scopedSettings ++
@@ -104,15 +116,16 @@ object ScalaNativePluginInternal {
 
   lazy val dependencies = Seq(
     libraryDependencies ++= Seq(
-      "org.scala-native" %%% "nativelib" % nativeVersion,
-      "org.scala-native" %%% "javalib"   % nativeVersion,
-      "org.scala-native" %%% "scalalib"  % nativeVersion
+      "org.scala-native" %%% "nativelib"      % nativeVersion,
+      "org.scala-native" %%% "javalib"        % nativeVersion,
+      "org.scala-native" %%% "scalalib"       % nativeVersion,
+      "org.scala-native" %%% "test-interface" % nativeVersion % Test
     ),
     addCompilerPlugin(
       "org.scala-native" % "nscplugin" % nativeVersion cross CrossVersion.full)
   )
 
-  lazy val scopedSettings = Seq(
+  lazy val globalSettings = Seq(
     nativeWarnOldJVM := {
       val logger = nativeLogger.value
       Try(Class.forName("java.util.function.Function")).toOption match {
@@ -154,6 +167,48 @@ object ScalaNativePluginInternal {
       }
       libs
     },
+    nativeMode := "debug",
+    nativeLinkerReporter := tools.LinkerReporter.empty,
+    nativeOptimizerReporter := tools.OptimizerReporter.empty,
+    nativeLogger := streams.value.log,
+    nativeGC := "boehm"
+  )
+
+  lazy val testSettings = Seq(
+    test := (test in NativeTest).value,
+    testOnly := (testOnly in NativeTest).evaluated,
+    testQuick := (testQuick in NativeTest).evaluated
+  )
+
+  lazy val nativeTestSettings =
+    Defaults.compileSettings ++
+      Defaults.testSettings ++
+      Seq(
+        classDirectory := (classDirectory in Test).value,
+        dependencyClasspath := (dependencyClasspath in Test).value,
+        parallelExecution in test := false,
+        sourceGenerators += Def.task {
+          val frameworks = (loadedTestFrameworks in Test).value.map(_._2).toSeq
+          val tests      = (definedTests in Test).value
+          val output     = sourceManaged.value / "FrameworksMap.scala"
+          IO.write(output, TestUtilities.makeTestMain(frameworks, tests))
+          Seq(output)
+        }.taskValue,
+        loadedTestFrameworks := {
+          val frameworks = (loadedTestFrameworks in Test).value
+          val logger     = streams.value.log
+          val testBinary = nativeLink.value
+          val envVars    = (Keys.envVars in (Test, test)).value
+          (frameworks.zipWithIndex).map {
+            case ((tf, f), id) =>
+              (tf,
+               new ScalaNativeFramework(f, id, logger, testBinary, envVars))
+          }
+        },
+        definedTests := (definedTests in Test).value
+      )
+
+  lazy val scopedSettings = Seq(
     nativeTarget := {
       val logger = nativeLogger.value
       val cwd    = nativeWorkdir.value
@@ -183,75 +238,15 @@ object ScalaNativePluginInternal {
         }
         .getOrElse(fail)
     },
-    nativeMode := "debug",
     artifactPath in nativeLink := {
       crossTarget.value / (moduleName.value + "-out")
     },
-    nativeLinkerReporter := tools.LinkerReporter.empty,
-    nativeOptimizerReporter := tools.OptimizerReporter.empty,
     nativeOptimizerDriver := tools.OptimizerDriver(nativeConfig.value),
     nativeWorkdir := {
       val workdir = crossTarget.value / "native"
       IO.delete(workdir)
       IO.createDirectory(workdir)
       workdir
-    },
-    nativeLogger := streams.value.log,
-    nativeGC := "boehm",
-    nativeCompileLib := {
-      val cwd       = nativeWorkdir.value
-      val logger    = nativeLogger.value
-      val gc        = nativeGC.value
-      val clang     = nativeClang.value
-      val clangpp   = nativeClangPP.value
-      val classpath = (fullClasspath in Compile).value
-      val opts      = nativeCompileOptions.value ++ Seq("-O2")
-
-      val lib = cwd / "lib"
-      val jar =
-        classpath
-          .map(entry => abs(entry.data))
-          .collectFirst {
-            case p if p.contains("scala-native") && p.contains("nativelib") =>
-              file(p)
-          }
-          .get
-      val jarhash     = Hash(jar).toSeq
-      val jarhashfile = lib / "jarhash"
-      def bootstrapped =
-        lib.exists &&
-          jarhashfile.exists &&
-          jarhash == IO.readBytes(jarhashfile).toSeq
-
-      if (!bootstrapped) {
-        IO.delete(lib)
-        IO.unzip(jar, lib)
-        IO.write(jarhashfile, Hash(jar))
-
-        val cpaths   = filterGCSources(gc, (cwd ** "*.c").get, cwd).map(abs)
-        val cpppaths = filterGCSources(gc, (cwd ** "*.cpp").get, cwd).map(abs)
-        val paths    = cpaths ++ cpppaths
-
-        paths.par.foreach {
-          path =>
-            val isCppSource = path.endsWith(".cpp")
-
-            val compiler = abs(if (isCppSource) clangpp else clang)
-            val flags    = (if (isCppSource) Seq("-std=c++11") else Seq()) ++ opts
-            val compilec = Seq(compiler) ++ flags ++ Seq("-c",
-                                                         path,
-                                                         "-o",
-                                                         path + ".o")
-
-            logger.running(compilec)
-            val result = Process(compilec, cwd) ! logger
-            if (result != 0) {
-              sys.error("Failed to compile native library runtime code.")
-            }
-        }
-      }
-
-      lib
     },
     nativeConfig := {
       val mainClass = selectMainClass.value.getOrElse(
@@ -267,6 +262,97 @@ object ScalaNativePluginInternal {
         .withWorkdir(cwd)
         .withTarget(nativeTarget.value)
         .withMode(mode(nativeMode.value))
+    },
+    nativeUnpackLib := {
+      val cwd       = nativeWorkdir.value
+      val logger    = nativeLogger.value
+      val classpath = (fullClasspath in Compile).value
+
+      val lib = cwd / "lib"
+      val jar =
+        classpath
+          .map(entry => abs(entry.data))
+          .collectFirst {
+            case p if p.contains("scala-native") && p.contains("nativelib") =>
+              file(p)
+          }
+          .get
+      val jarhash     = Hash(jar).toSeq
+      val jarhashfile = lib / "jarhash"
+      def unpacked =
+        lib.exists &&
+          jarhashfile.exists &&
+          jarhash == IO.readBytes(jarhashfile).toSeq
+
+      if (!unpacked) {
+        IO.delete(lib)
+        IO.unzip(jar, lib)
+        IO.write(jarhashfile, Hash(jar))
+      }
+
+      lib
+    },
+    nativeCompileLib := {
+      val linked    = nativeLinkNIR.value
+      val cwd       = nativeWorkdir.value
+      val clang     = nativeClang.value
+      val clangpp   = nativeClangPP.value
+      val gc        = nativeGC.value
+      val opts      = nativeCompileOptions.value ++ Seq("-O2")
+      val logger    = nativeLogger.value
+      val nativelib = nativeUnpackLib.value
+      val cpaths    = (cwd ** "*.c").get.map(abs)
+      val cpppaths  = (cwd ** "*.cpp").get.map(abs)
+      val paths     = cpaths ++ cpppaths
+
+      // predicate to check if given file path shall be compiled
+      // we only include sources of the current gc and exclude
+      // all optional dependencies if they are not necessary
+      def include(path: String) = {
+        val sep = java.io.File.separator
+
+        if (path.contains(sep + "optional" + sep)) {
+          val name = file(path).getName.split("\\.").head
+          linked.links.map(_.name).contains(name)
+        } else if (path.contains(sep + "gc" + sep)) {
+          path.contains("gc" + sep + gc)
+        } else {
+          true
+        }
+      }
+
+      // delete .o files for all excluded source files
+      paths.foreach { path =>
+        if (!include(path)) {
+          val ofile = file(path + ".o")
+          if (ofile.exists) {
+            IO.delete(ofile)
+          }
+        }
+      }
+
+      // generate .o files for all included source files in parallel
+      paths.par.foreach {
+        path =>
+          val opath = path + ".o"
+          if (include(path) && !file(opath).exists) {
+            val isCpp    = path.endsWith(".cpp")
+            val compiler = abs(if (isCpp) clangpp else clang)
+            val flags    = (if (isCpp) Seq("-std=c++11") else Seq()) ++ opts
+            val compilec = Seq(compiler) ++ flags ++ Seq("-c",
+                                                         path,
+                                                         "-o",
+                                                         opath)
+
+            logger.running(compilec)
+            val result = Process(compilec, cwd) ! logger
+            if (result != 0) {
+              sys.error("Failed to compile native library runtime code.")
+            }
+          }
+      }
+
+      nativelib
     },
     nativeLinkNIR := {
       val logger   = nativeLogger.value
@@ -343,13 +429,11 @@ object ScalaNativePluginInternal {
       val linkingOpts = nativeLinkingOptions.value
       val clangpp     = nativeClangPP.value
       val outpath     = (artifactPath in nativeLink).value
-      val opaths      = (nativelib ** "*.o").get.map(abs)
-      val paths       = apppaths.map(abs) ++ opaths
-      val links: Seq[String] = {
+
+      val links = {
         val os   = Option(sys props "os.name").getOrElse("")
         val arch = target.split("-").head
         // we need re2 to link the re2 c wrapper (cre2.h)
-        val regex = Seq("re2")
         val librt = os match {
           case "Linux" => Seq("rt")
           case _       => Seq.empty
@@ -359,17 +443,20 @@ object ScalaNativePluginInternal {
           case _          => Seq("unwind", "unwind-" + arch)
         }
         librt ++ libunwind ++ linked.links
-          .map(_.name) ++ garbageCollector(gc).links ++ regex
+          .map(_.name) ++ garbageCollector(gc).links
       }
       val linkopts  = links.map("-l" + _) ++ linkingOpts
       val targetopt = Seq("-target", target)
       val flags     = Seq("-o", abs(outpath)) ++ linkopts ++ targetopt
+      val opaths    = (nativelib ** "*.o").get.map(abs)
+      val paths     = apppaths.map(abs) ++ opaths
       val compile   = abs(clangpp) +: (flags ++ paths)
 
       logger.time("Linking native code") {
         logger.running(compile)
         Process(compile, cwd) ! logger
       }
+
       outpath
     },
     nativeLink := {
@@ -496,28 +583,10 @@ object ScalaNativePluginInternal {
   private def garbageCollector(gc: String) = gc match {
     case "none"  => GarbageCollector.None
     case "boehm" => GarbageCollector.Boehm
+    case "immix" => GarbageCollector.Immix
     case value =>
       throw new MessageOnlyException(
-        "nativeGC can be either \"none\" or \"boehm\", not: " + value)
-  }
-
-  /**
-   * Removes all files specific to other gcs.
-   */
-  private def filterGCSources(gcName: String,
-                              files: Seq[File],
-                              nativelib: File) = {
-    val gc = garbageCollector(gcName)
-    // Directory in nativelib containing the garbage collectors
-    val garbageCollectorsDir = "lib/gc"
-    val specificDir          = s"$garbageCollectorsDir/${gc.dir}"
-
-    def isOtherGC(path: String, nativelib: File) = {
-      val nativeGCPath = nativelib.toPath.resolve(garbageCollectorsDir)
-      path.contains(nativeGCPath.toString) && !path.contains(specificDir)
-    }
-
-    files.filterNot(f => isOtherGC(f.getPath().toString, nativelib))
+        "nativeGC can be either \"none\", \"boehm\" or \"immix\", not: " + value)
   }
 
   private implicit class RichLogger(logger: Logger) {

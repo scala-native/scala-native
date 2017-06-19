@@ -6,14 +6,16 @@ scala:
 matrix:
   include:
     - os: linux
+      dist: trusty
       jdk: oraclejdk8
       language: scala
       env: SCALANATIVE_GC=boehm
 
     - os: linux
+      dist: trusty
       jdk: oraclejdk8
       language: scala
-      env: SCALANATIVE_GC=none
+      env: SCALANATIVE_GC=immix
 
     - os: osx
       osx_image: xcode7.3
@@ -22,6 +24,10 @@ matrix:
     - os: osx
       osx_image: xcode7.3
       env: SCALANATIVE_GC=none
+
+    - os: osx
+      osx_image: xcode7.3
+      env: SCALANATIVE_GC=immix
 
 env:
   global:
@@ -31,16 +37,15 @@ env:
     - secure: "lAh0fiYHWaNd9Z/slDzGj2gSUF1oDwaNBlZX6eeIASFZO2W+HF79UqD/ZGsTn58Ek1XJ9FLWk0+3BIHpoLBv7S7kj2QG8AVGi4EkhvvPc/7RjcO8EM3uN8KXY/XjlDJEI4BmxX1XuzPvwhhbTuk7NY+9DFqhWV3V5xYmtMt5yJ6rbu3NROGHoiiJvBvhzKHbjkoIX0dX/dHAS2bUcRmv6BZiBA9nI1WiDMTrRjnTm1x/v4kqLG5k4UwbBRU33foFzZJrFs04jJ47GXdczCyAH7Xu+NtvxRni9fjUgEKa75PtN4XLn8GRXC6u7HCPfHz2cHTeLyLxxKK1DZ+P08+bkG4MdoaknlN7HUg1gf9zWQYuanUMiqIMry5+URT9A5Jno+Kkr9UKJKqRHxBYVLenTqVCAj8KQONdEm5vCSkqv3dfpQRrljf4CX20vO28cDqXpOTzYdFOApH3Ah8I9uXmysnto9DgVJG3ZX7ibZ6gIHE5cpZuJsBFlVYAdEEygPhRKJrtnmZO7cL7pUIWT8nj3buOuU9uK1+JpWQ32GV+vyJolDRYamxrKLNbp/SVwWHaQk8+igj4zfS42XNDbOtD6KbHdwMzRH4AdpIR8ZWfB2BXSaY9XE0fWGDgG2h+7yropmMa3DWTdT8OWdXiPkn0TDhT2GhVNwxh5G4OB1nGpgw="
 
 before_install:
-  - bin/travis_setup.sh
+  - bash bin/travis_setup.sh
 
 before_script:
-  - sudo chmod +x /usr/local/bin/sbt
   - if [ "$TRAVIS_PULL_REQUEST" != "false" ] ; then
       echo "Incoming pull request from https://github.com/$TRAVIS_REPO_SLUG/pull/$TRAVIS_PULL_REQUEST";
       author=$(curl -u dummy4dummy:dummy2dummy -s "https://api.github.com/repos/$TRAVIS_REPO_SLUG/pulls/$TRAVIS_PULL_REQUEST" | jq -r ".user.login");
       if [ $? -ne 0 ] ; then exit 1; fi;
       echo "Pull request submitted by $author";
-      signed=$(curl -s http://www.lightbend.com/contribute/cla/scala/check/$author | jq -r ".signed");
+      signed=$(curl -s https://www.lightbend.com/contribute/cla/scala/check/$author | jq -r ".signed");
       if [ $? -ne 0 ] ; then exit 1; fi;
       if [ "$signed" = "true" ] ; then
         echo "CLA check for $author successful";
@@ -56,4 +61,15 @@ script:
   - java -version
   - if [ -n "$CLANG_FORMAT_PATH" ]; then bin/clangfmt --test; fi
   - bin/scalafmt --test
-  - sbt -J-Xmx2G rebuild "set scriptedBufferLog in sbtScalaNative := false" test-all
+  - bash sbt -J-Xmx2G rebuild "set scriptedBufferLog in sbtScalaNative := false" test-all
+
+before_cache:
+  - find $HOME/.sbt -name "*.lock" | xargs rm
+  - find $HOME/.ivy2 -name "ivydata-*.properties" | xargs rm
+  - rm -rf $HOME/.ivy2/{cache,local}/org.scala-native/
+
+cache:
+  directories:
+    - $HOME/.coursier
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt/boot/

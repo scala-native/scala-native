@@ -72,9 +72,9 @@ final class Integer(val _value: scala.Int)
   protected def toFloat: scala.Float   = _value.toFloat
   protected def toDouble: scala.Double = _value.toDouble
 
-  protected def unary_~ : scala.Int = ~ _value
+  protected def unary_~ : scala.Int = ~_value
   protected def unary_+ : scala.Int = _value
-  protected def unary_- : scala.Int = - _value
+  protected def unary_- : scala.Int = -_value
 
   protected def +(x: String): String = _value + x
 

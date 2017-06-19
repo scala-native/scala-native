@@ -1,7 +1,7 @@
 package scala.scalanative
 package posix
 
-import scala.scalanative.native.{extern, name, CInt}
+import scalanative.native.{extern, name, CInt}
 
 @extern
 object limits {

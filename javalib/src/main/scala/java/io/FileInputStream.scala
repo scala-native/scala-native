@@ -1,13 +1,12 @@
 package java.io
 
 import scalanative.native._, stdlib._, stdio._, string._
-import scala.scalanative.posix.{fcntl, unistd}
-import unistd._
-import scala.scalanative.runtime
+import scalanative.posix.{fcntl, unistd}, unistd._
+import scalanative.runtime
 
 class FileInputStream(fd: FileDescriptor) extends InputStream {
 
-  def this(file: File) = this(FileInputStream.fileDescriptor(file))
+  def this(file: File) = this(FileDescriptor.openReadOnly(file))
   def this(str: String) = this(new File(str))
 
   override def available(): Int = {
@@ -78,12 +77,4 @@ class FileInputStream(fd: FileDescriptor) extends InputStream {
 
   // TODO:
   // def getChannel: FileChannel
-}
-
-object FileInputStream {
-  private def fileDescriptor(file: File): FileDescriptor =
-    Zone { implicit z =>
-      val fd = fcntl.open(toCString(file.getPath), fcntl.O_RDONLY)
-      new FileDescriptor(fd, true)
-    }
 }

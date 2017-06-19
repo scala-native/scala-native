@@ -72,8 +72,8 @@ object Shows {
 
       // \l means "left-justified"
       val nodeLabel = codeString(block)
-          .replace("\n", "\\l")
-          .replace("\"", "\\\"") + "\\l"
+        .replace("\n", "\\l")
+        .replace("\"", "\\\"") + "\\l"
 
       if (successors.nonEmpty) {
         val arrowPart = successors

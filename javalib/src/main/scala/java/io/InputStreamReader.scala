@@ -47,7 +47,8 @@ class InputStreamReader(private[this] var in: InputStream,
   def this(in: InputStream, charsetName: String) =
     this(in, Charset.forName(charsetName))
 
-  def close(): Unit = {
+  def close(): Unit = if (!closed) {
+    in.close()
     closed = true
     in = null
     decoder = null
