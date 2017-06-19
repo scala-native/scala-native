@@ -85,8 +85,6 @@ final class Matcher private[regex] (var _pattern: Pattern,
         var i = 0
         while (i < nMatches) {
           val m     = matches + i
-          val start = if (m.data == null) -1 else (m.data - in).toInt
-          val end   = if (m.data == null) -1 else start + m.length
           groups(i) = ((start, end))
 
           i += 1
@@ -138,15 +136,7 @@ final class Matcher private[regex] (var _pattern: Pattern,
     if (startIndex < 0 && endIndex < 0) {
       null
     } else {
-      def limitValue(lowest: Int, value: Int, highest: Int): Int = {
-        if (value < lowest) lowest
-        else if (value > highest) highest
-        else value
-      }
-      inputSequence
-        .subSequence(limitValue(0, startIndex, inputSequence.length),
-                     limitValue(0, endIndex, inputSequence.length))
-        .toString()
+      inputSequence.subSequence(startIndex, endIndex).toString
     }
   }
 
