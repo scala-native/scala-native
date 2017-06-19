@@ -80,20 +80,7 @@ extern "C" const char *os_win_unistd_getcwd(char *buf, size_t size) {
 }
 
 extern "C" int os_win_unistd_write(int fildes, void *buf, size_t nbyte) {
-    switch (fildes) {
-    case 1: {
-        fwrite(buf, nbyte, 1, stdout);
-        return nbyte;
-    }
-    case 2: {
-        fwrite(buf, nbyte, 1, stderr);
-        return nbyte;
-    }
-    default:
-        return _write(fildes, buf, nbyte);
-        break;
-    }
-    return 0;
+    return _write(fildes, buf, nbyte);
 }
 
 extern "C" int os_win_unistd_read(int fildes, void *buf, size_t nbyte) {

@@ -16,7 +16,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
   import File._
 
   if (_path == null) throw new NullPointerException()
-  private val path: String           = fixSlashes(_path)
+  private val path: String           = fixSlashes(_path.replace('/', separatorChar))
   private[io] val properPath: String = File.properPath(path)
   private[io] val properPathBytes: Array[Byte] =
     File.properPath(path).getBytes("UTF-8")
@@ -451,7 +451,7 @@ object File {
 
   def isAbsolute(path: String): Boolean =
     if (separatorChar == '\\') { // Windows. Must start with `\\` or `X:(\|/)`
-      (path.length > 1 && path.startsWith(separator + separator)) ||
+      (path.length > 1 && path.startsWith(separator)) ||
       (path.length > 2 && path(0).isLetter && path(1) == ':' && (path(2) == '/' || path(
         2) == '\\'))
     } else {
