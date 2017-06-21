@@ -50,6 +50,7 @@ object FileInputStreamSuite extends tests.Suite {
     val fd   = fis.getFD
     assert(fd.valid())
     assert(Try(fd.sync()).isSuccess)
+    fis.close()
   }
 
   test("can read 0xFF correctly") {
@@ -61,6 +62,7 @@ object FileInputStreamSuite extends tests.Suite {
     val fis = new FileInputStream(file)
     assert(fis.read() == 0xFF)
     assert(fis.read() == -1)
+    fis.close()
   }
 
   test(
