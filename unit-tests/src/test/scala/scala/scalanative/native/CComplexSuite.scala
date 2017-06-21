@@ -17,8 +17,8 @@ import java.{lang => jl}
  * implement an "almost equals" function. We calculate epsilon,
  * our error value, based on ULP. Currently the complex
  * double functions use 1 times ulp and the float functions use
- * 2 times ulp for the tests to pass. Practically this has the
- * effect of making the epsilon slightly larger for Float.
+ * 2 times ulp for ccosf and ccoshf tests to pass. Practically this
+ * has the effect of making the epsilon slightly larger for Float.
  * Either way epsilon is a very small number.
  *
  * Example printed in hex: 0x1.0p-23 (2*ulp) 0x1.0p-24 (ulp)
