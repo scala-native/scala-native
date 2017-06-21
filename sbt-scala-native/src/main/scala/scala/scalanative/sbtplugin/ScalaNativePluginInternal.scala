@@ -463,7 +463,8 @@ object ScalaNativePluginInternal {
         val libunwind = os match {
           case "Mac OS X" => Seq.empty
           case _ =>
-            if (isWindows) Seq("libucrt", "libcmt", "Dbghelp", "Advapi32", "Ws2_32")
+            if (isWindows)
+              Seq("libucrt", "libcmt", "Dbghelp", "Advapi32", "Ws2_32")
             else Seq("unwind", "unwind-" + arch)
         }
         librt ++ libunwind ++ linked.links

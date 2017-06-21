@@ -37,8 +37,7 @@ int scalanative_f_setlk() { return F_SETLK; }
 
 int scalanative_f_setlkw() { return F_SETLKW; }
 
-int scalanative_fcntl_open(const char *pathname, int flags, mode_t mode)
-{
+int scalanative_fcntl_open(const char *pathname, int flags, mode_t mode) {
 #ifndef _WIN32
     return open(pathname, flags, mode);
 #else
@@ -46,8 +45,7 @@ int scalanative_fcntl_open(const char *pathname, int flags, mode_t mode)
 #endif
 }
 
-int scalanative_fcntl_close(int fd)
-{
+int scalanative_fcntl_close(int fd) {
 #ifndef _WIN32
     return close(fd, cmd, args);
 #else
@@ -55,8 +53,7 @@ int scalanative_fcntl_close(int fd)
 #endif
 }
 
-int scalanative_fcntl_fcntl(int fd, int cmd, va_list args)
-{
+int scalanative_fcntl_fcntl(int fd, int cmd, va_list args) {
 #ifndef _WIN32
     return fcntl(fd, cmd, args);
 #else

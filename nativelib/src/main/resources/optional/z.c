@@ -5,28 +5,28 @@ typedef unsigned __int64 scalanative_uLong;
 struct internal_state;
 typedef struct scalanative_z_stream_s {
     z_const Bytef *next_in;     /* next input byte */
-    uInt     avail_in;  /* number of bytes available at next_in */
-    scalanative_uLong    total_in;  /* total number of input bytes read so far */
+    uInt avail_in;              /* number of bytes available at next_in */
+    scalanative_uLong total_in; /* total number of input bytes read so far */
 
-    Bytef    *next_out; /* next output byte will go here */
-    uInt     avail_out; /* remaining free space at next_out */
-    scalanative_uLong    total_out; /* total number of bytes output so far */
+    Bytef *next_out;             /* next output byte will go here */
+    uInt avail_out;              /* remaining free space at next_out */
+    scalanative_uLong total_out; /* total number of bytes output so far */
 
-    z_const char *msg;  /* last error message, NULL if no error */
+    z_const char *msg;                /* last error message, NULL if no error */
     struct internal_state FAR *state; /* not visible by applications */
 
-    alloc_func zalloc;  /* used to allocate the internal state */
-    free_func  zfree;   /* used to free the internal state */
-    voidpf     opaque;  /* private data object passed to zalloc and zfree */
+    alloc_func zalloc; /* used to allocate the internal state */
+    free_func zfree;   /* used to free the internal state */
+    voidpf opaque;     /* private data object passed to zalloc and zfree */
 
-    int     data_type;  /* best guess about the data type: binary or text
-                           for deflate, or the decoding state for inflate */
-    scalanative_uLong   adler;      /* Adler-32 or CRC-32 value of the uncompressed data */
-    scalanative_uLong   reserved;   /* reserved for future use */
+    int data_type; /* best guess about the data type: binary or text
+                      for deflate, or the decoding state for inflate */
+    scalanative_uLong
+        adler; /* Adler-32 or CRC-32 value of the uncompressed data */
+    scalanative_uLong reserved; /* reserved for future use */
 } scalanative_z_stream;
 typedef scalanative_z_stream FAR *scalanative_z_streamp;
-z_streamp convertToZStream(scalanative_z_streamp strm, z_streamp temp)
-{
+z_streamp convertToZStream(scalanative_z_streamp strm, z_streamp temp) {
     temp->next_in = strm->next_in;
     temp->avail_in = strm->avail_in;
     temp->total_in = strm->total_in;
@@ -42,11 +42,11 @@ z_streamp convertToZStream(scalanative_z_streamp strm, z_streamp temp)
     temp->adler = strm->adler;
     temp->reserved = strm->reserved;
     if (temp->state)
-        *(z_streamp*)(temp->state) = temp;
+        *(z_streamp *)(temp->state) = temp;
     return temp;
 }
-scalanative_z_streamp convertFromZStream(scalanative_z_streamp strm, z_streamp temp)
-{
+scalanative_z_streamp convertFromZStream(scalanative_z_streamp strm,
+                                         z_streamp temp) {
     strm->next_in = temp->next_in;
     strm->avail_in = temp->avail_in;
     strm->total_in = temp->total_in;
@@ -62,7 +62,7 @@ scalanative_z_streamp convertFromZStream(scalanative_z_streamp strm, z_streamp t
     strm->adler = temp->adler;
     strm->reserved = temp->reserved;
     if (strm->state)
-        *(scalanative_z_streamp*)(strm->state) = strm;
+        *(scalanative_z_streamp *)(strm->state) = strm;
     return strm;
 }
 #else
@@ -159,7 +159,7 @@ int scalanative_deflate(scalanative_z_streamp strm, int flush) {
 }
 
 int scalanative_deflateEnd(scalanative_z_streamp strm) {
-#ifndef _WIN32    
+#ifndef _WIN32
     return deflateEnd(strm);
 #else
     z_stream t;
@@ -213,14 +213,15 @@ int scalanative_deflateInit2(scalanative_z_streamp strm, int level, int method,
 #else
     z_stream t;
     z_streamp tp = convertToZStream(strm, &t);
-    int result = deflateInit2(tp, level, method, windowBits, memLevel, strategy);
+    int result =
+        deflateInit2(tp, level, method, windowBits, memLevel, strategy);
     convertFromZStream(strm, &t);
     return result;
 #endif
 }
 
-int scalanative_deflateSetDictionary(scalanative_z_streamp strm, Bytef *dictionary,
-                                     uInt dictLength) {
+int scalanative_deflateSetDictionary(scalanative_z_streamp strm,
+                                     Bytef *dictionary, uInt dictLength) {
 #ifndef _WIN32
     return deflateSetDictionary(strm, dictionary, dictLength);
 #else
@@ -232,7 +233,8 @@ int scalanative_deflateSetDictionary(scalanative_z_streamp strm, Bytef *dictiona
 #endif
 }
 
-int scalanative_deflateCopy(scalanative_z_streamp dest, scalanative_z_streamp source) {
+int scalanative_deflateCopy(scalanative_z_streamp dest,
+                            scalanative_z_streamp source) {
 #ifndef _WIN32
     return deflateCopy(dest, source);
 #else
@@ -258,7 +260,8 @@ int scalanative_deflateReset(scalanative_z_streamp strm) {
 #endif
 }
 
-int scalanative_deflateParams(scalanative_z_streamp strm, int level, int strategy) {
+int scalanative_deflateParams(scalanative_z_streamp strm, int level,
+                              int strategy) {
 #ifndef _WIN32
     return deflateParams(strm, level, strategy);
 #else
@@ -270,8 +273,8 @@ int scalanative_deflateParams(scalanative_z_streamp strm, int level, int strateg
 #endif
 }
 
-int scalanative_deflateTune(scalanative_z_streamp strm, int good_length, int max_lazy,
-                            int nice_length, int max_chain) {
+int scalanative_deflateTune(scalanative_z_streamp strm, int good_length,
+                            int max_lazy, int nice_length, int max_chain) {
 #ifndef _WIN32
     return deflateTune(strm, good_length, max_lazy, nice_length, max_chain);
 #else
@@ -283,7 +286,8 @@ int scalanative_deflateTune(scalanative_z_streamp strm, int good_length, int max
 #endif
 }
 
-scalanative_uLong scalanative_deflateBound(scalanative_z_streamp strm, scalanative_uLong sourceLen) {
+scalanative_uLong scalanative_deflateBound(scalanative_z_streamp strm,
+                                           scalanative_uLong sourceLen) {
 #ifndef _WIN32
     return deflateBound(strm, sourceLen);
 #else
@@ -331,8 +335,8 @@ int scalanative_inflateInit2(scalanative_z_streamp strm, int windowBits) {
 #endif
 }
 
-int scalanative_inflateSetDictionary(scalanative_z_streamp strm, Bytef *dictionary,
-                                     uInt dictLength) {
+int scalanative_inflateSetDictionary(scalanative_z_streamp strm,
+                                     Bytef *dictionary, uInt dictLength) {
 #ifndef _WIN32
     return inflateSetDictionary(strm, dictionary, dictLength);
 #else
@@ -356,7 +360,8 @@ int scalanative_inflateSync(scalanative_z_streamp strm) {
 #endif
 }
 
-int scalanative_inflateCopy(scalanative_z_streamp dest, scalanative_z_streamp source) {
+int scalanative_inflateCopy(scalanative_z_streamp dest,
+                            scalanative_z_streamp source) {
 #ifndef _WIN32
     return inflateCopy(dest, source);
 #else
@@ -443,8 +448,8 @@ int scalanative_inflateBackInit(scalanative_z_streamp strm, int windowBits,
 #endif
 }
 
-int scalanative_inflateBack(scalanative_z_streamp strm, in_func in, void *in_desc,
-                            out_func out, void *out_desc) {
+int scalanative_inflateBack(scalanative_z_streamp strm, in_func in,
+                            void *in_desc, out_func out, void *out_desc) {
 #ifndef _WIN32
     return inflateBack(strm, in, in_desc, out, out_desc);
 #else
@@ -543,18 +548,24 @@ const char *scalanative_gzerror(gzFile file, int *errnum) {
 
 void scalanative_gzclearerr(gzFile file) { return gzclearerr(file); }
 
-scalanative_uLong scalanative_adler32(scalanative_uLong adler, Bytef *buf, uInt len) {
+scalanative_uLong scalanative_adler32(scalanative_uLong adler, Bytef *buf,
+                                      uInt len) {
     return adler32((uLong)adler, buf, len);
 }
 
-scalanative_uLong scalanative_adler32_combine(scalanative_uLong adler1, scalanative_uLong adler2, z_off_t len2) {
+scalanative_uLong scalanative_adler32_combine(scalanative_uLong adler1,
+                                              scalanative_uLong adler2,
+                                              z_off_t len2) {
     return adler32_combine((uLong)adler1, (uLong)adler2, len2);
 }
 
-scalanative_uLong scalanative_crc32(scalanative_uLong crc, Bytef *buf, uInt len) {
+scalanative_uLong scalanative_crc32(scalanative_uLong crc, Bytef *buf,
+                                    uInt len) {
     return crc32((uLong)crc, buf, len);
 }
 
-scalanative_uLong scalanative_crc32_combine(scalanative_uLong crc1, scalanative_uLong crc2, z_off_t len2) {
+scalanative_uLong scalanative_crc32_combine(scalanative_uLong crc1,
+                                            scalanative_uLong crc2,
+                                            z_off_t len2) {
     return crc32_combine((uLong)crc1, (uLong)crc2, len2);
 }

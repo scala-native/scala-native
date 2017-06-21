@@ -4,16 +4,16 @@ import java.io.File
 import java.net.URI
 
 object PathsSuite extends tests.Suite {
-  
+
   test("Paths.isAbsolute") {
     val path = Paths.get("/foo/bar")
-    
+
     assert(path.isAbsolute)
   }
 
   test("Paths.get(relative path) returns a path relative to cwd") {
-    val path = Paths.get("foo/bar")
-    val file = new File("foo/bar")
+    val path         = Paths.get("foo/bar")
+    val file         = new File("foo/bar")
     val platformPath = path.toString.replace('/', File.separatorChar);
 
     assert(path.toString == "foo/bar")
@@ -25,8 +25,8 @@ object PathsSuite extends tests.Suite {
   }
 
   test("Paths.get(absolute path) returns an absolute path") {
-    val path = Paths.get("/foo/bar")
-    val file = new File("/foo/bar")
+    val path         = Paths.get("/foo/bar")
+    val file         = new File("/foo/bar")
     val platformPath = path.toString.replace('/', File.separatorChar);
 
     assert(path.toString == "/foo/bar")

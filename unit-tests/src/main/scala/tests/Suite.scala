@@ -84,7 +84,6 @@ abstract class Suite {
     val issueMap = Seq(
       // read only directory
       "DirectoryStreamSuite",
-      
       // total mess with posix file descriptors
       "FilesSuite",
       "FileChannelSuite",
