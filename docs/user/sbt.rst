@@ -10,7 +10,7 @@ Minimal sbt project
 
 The easiest way to make a fresh project is to use our official gitter8 template::
 
-    sbt new sbt new scala-native/scala-native.g8
+    sbt new scala-native/scala-native.g8
 
 This includes:
 
