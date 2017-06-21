@@ -60,7 +60,7 @@ int os_win_socket(int domain, int type, int protocol) {
     if (result == INVALID_SOCKET) {
         os_win_socket_error();
     } else
-        descriptorGuard().openSocket(result);
+        descriptorGuard().openSocket(result, result);
     return result;
 }
 

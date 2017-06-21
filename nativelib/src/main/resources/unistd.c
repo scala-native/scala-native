@@ -48,7 +48,7 @@ int scalanative_chown(char *path, scalanative_uid_t owner,
     return chown(path, owner, group);
 }
 
-int scalanative_unistd_sleep(uint32_t seconds) {
+int scalanative_unistd_sleep(unsigned int seconds) {
 #ifndef _WIN32
     return sleep(seconds);
 #else
@@ -56,7 +56,7 @@ int scalanative_unistd_sleep(uint32_t seconds) {
 #endif
 }
 
-int scalanative_unistd_usleep(uint32_t usecs) {
+int scalanative_unistd_usleep(unsigned int usecs) {
 #ifndef _WIN32
     return usleep(usecs);
 #else
@@ -73,7 +73,7 @@ int scalanative_unistd_unlink(const char *path) {
 }
 
 int scalanative_unistd_readlink(const char *path, const char *buf,
-                                uint32_t bufsize) {
+                                unsigned int bufsize) {
 #ifndef _WIN32
     return readlink(path, buf, bufsize);
 #else
@@ -81,7 +81,7 @@ int scalanative_unistd_readlink(const char *path, const char *buf,
 #endif
 }
 
-const char *scalanative_unistd_getcwd(char *buf, uint32_t size) {
+const char *scalanative_unistd_getcwd(char *buf, unsigned int size) {
 #ifndef _WIN32
     return getcwd(buf, size);
 #else
@@ -89,7 +89,7 @@ const char *scalanative_unistd_getcwd(char *buf, uint32_t size) {
 #endif
 }
 
-int scalanative_unistd_write(int fildes, void *buf, uint32_t nbyte) {
+int scalanative_unistd_write(int fildes, void *buf, unsigned int nbyte) {
 #ifndef _WIN32
     return write(fildes, buf, nbyte);
 #else
@@ -97,7 +97,7 @@ int scalanative_unistd_write(int fildes, void *buf, uint32_t nbyte) {
 #endif
 }
 
-int scalanative_unistd_read(int fildes, void *buf, uint32_t nbyte) {
+int scalanative_unistd_read(int fildes, void *buf, unsigned int nbyte) {
 #ifndef _WIN32
     return read(fildes, buf, nbyte);
 #else
