@@ -5,8 +5,11 @@
 #include <cstdio>
 #include <../ucrt/corecrt_io.h>
 #include <../ucrt/direct.h>
+#include <../ucrt/fcntl.h>
 #include "os_win_descriptor_guard.h"
 #include "os_win_winsock2.h"
+
+//#define FILESYSTEM_VERBOSE
 
 extern "C" mode_t getAccessMode(const char *path);
 
@@ -31,7 +34,10 @@ extern "C" int scalanative_send(int socket, void *buffer, size_t length,
                                 int flags);
 
 extern "C" int __imp_write(int fildes, void *buf, uint32_t nbyte) {
-    // if (fildes>2) printf("Write: %i, bytes = %i\n", fildes, nbyte);
+#ifdef FILESYSTEM_VERBOSE
+    if (fildes > 2)
+        printf("Write: %i, bytes = %i\n", fildes, nbyte);
+#endif
     const auto result = descriptorGuard().get(fildes);
     if (result.type == DescriptorGuard::SOCKET) {
         scalanative_send(fildes, buf, nbyte, 0);
@@ -41,7 +47,10 @@ extern "C" int __imp_write(int fildes, void *buf, uint32_t nbyte) {
     return -1;
 }
 extern "C" int __imp_read(int fildes, void *buf, uint32_t nbyte) {
-    // if (fildes>2) printf("Read: %i, bytes = %i\n", fildes, nbyte);
+#ifdef FILESYSTEM_VERBOSE
+    if (fildes > 2)
+        printf("Read: %i, bytes = %i\n", fildes, nbyte);
+#endif
     const auto result = descriptorGuard().get(fildes);
     if (result.type == DescriptorGuard::SOCKET) {
         scalanative_recv(fildes, buf, nbyte, 0);
@@ -57,15 +66,21 @@ extern "C" int __imp_open(const char *pathname, int flags, mode_t mode) {
     int fildes = -1;
     errno_t err =
         _sopen_s(&fildes, pathname, flags, _SH_DENYNO, _S_IREAD | _S_IWRITE);
-    pchmod(pathname, mode);
+    if (flags & _O_CREAT || flags & _O_TEMPORARY) {
+        pchmod(pathname, mode);
+    }
     if (fildes >= 0)
         descriptorGuard().openFile(fildes, pathname);
-    // printf("Open: %s, %x, %x, %i, err = %i\n", pathname, flags, mode, fildes,
-    // err);
+#ifdef FILESYSTEM_VERBOSE
+    printf("Open: %s, %x, %x, %i, err = %i\n", pathname, flags, mode, fildes,
+           err);
+#endif
     return fildes;
 }
 extern "C" int __imp_close(int fildes) {
-    // printf("Close: %i\n", fildes);
+#ifdef FILESYSTEM_VERBOSE
+    printf("Close: %i\n", fildes);
+#endif
     const auto result = descriptorGuard().close(fildes);
     if (result == DescriptorGuard::SOCKET) {
         return os_win_closesocket(fildes);

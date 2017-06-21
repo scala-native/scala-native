@@ -46,6 +46,7 @@ object FileOutputStreamSuite extends tests.Suite {
       assertThrows[NullPointerException] {
         fos.write(null, 0, 0)
       }
+      fos.close()
     }
   }
 
@@ -56,6 +57,7 @@ object FileOutputStreamSuite extends tests.Suite {
       assertThrows[IndexOutOfBoundsException] {
         fos.write(arr, 0, -1)
       }
+      fos.close()
     }
   }
 
@@ -66,6 +68,7 @@ object FileOutputStreamSuite extends tests.Suite {
       assertThrows[IndexOutOfBoundsException] {
         fos.write(arr, -1, 0)
       }
+      fos.close()
     }
   }
 
@@ -79,6 +82,7 @@ object FileOutputStreamSuite extends tests.Suite {
       assertThrows[IndexOutOfBoundsException] {
         fos.write(arr, 4, 8)
       }
+      fos.close()
     }
   }
 
