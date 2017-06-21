@@ -85,8 +85,8 @@ final class Matcher private[regex] (var _pattern: Pattern,
         var i = 0
         while (i < nMatches) {
           val m     = matches + i
-          val start = (m.data - in).toInt
-          val end   = start + m.length
+          val start = if (m.length == 0) 0 else (m.data - in).toInt
+          val end   = if (m.length == 0) 0 else start + m.length
           groups(i) = ((start, end))
 
           i += 1
@@ -236,9 +236,9 @@ final class Matcher private[regex] (var _pattern: Pattern,
         val digitGroup = m.group(2)
         val nameGroup  = m.group(3)
 
-        if (digitGroup != null) {
+        if (digitGroup != null && !digitGroup.isEmpty) {
           m.appendReplacement2(sb2, group(digitGroup.toInt), doGroups = false)
-        } else if (nameGroup != null) {
+        } else if (nameGroup != null && !nameGroup.isEmpty) {
           m.appendReplacement2(sb2, group(nameGroup), doGroups = false)
         }
       }
