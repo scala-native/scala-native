@@ -5,8 +5,8 @@ Environment setup
 
 Scala Native has the following build dependencies:
 
-* Java 8+
-* sbt 0.13.x
+* Java 8 or newer
+* sbt 0.13.13 or newer
 * LLVM/Clang 3.7 or newer
 
 And following runtime library dependencies:
