@@ -8,10 +8,13 @@ import scalanative.posix.sys.stat.mode_t
 @extern
 object fcntl {
 
+  @name("scalanative_fcntl_open")
   def open(pathname: CString, flags: CInt, mode: CVararg*): CInt = extern
 
+  @name("scalanative_fcntl_close")
   def close(fd: CInt): CInt = extern
 
+  @name("scalanative_fcntl_fcntl")
   def fcntl(fd: CInt, cmd: CInt, args: CVararg*): CInt = extern
 
   @name("scalanative_o_rdonly")

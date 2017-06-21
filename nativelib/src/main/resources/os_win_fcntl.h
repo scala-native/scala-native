@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 #include <stdarg.h>
+#include "os_win_types.h"
 
 #define O_RDONLY 0x0000 // open for reading only
 #define O_WRONLY 0x0001 // open for writing only
@@ -47,7 +48,9 @@ extern "C" {
 #define F_SETLK 8  /* set record locking information */
 #define F_SETLKW 9 /* F_SETLK; wait if blocked */
 
-int fcntl(int fd, int cmd, va_list args);
+int os_win_fcntl_open(const char *pathname, int flags, mode_t mode);
+int os_win_fcntl_close(int fd);
+int os_win_fcntl_fcntl(int fd, int cmd, va_list args);
 
 #ifdef __cplusplus
 }

@@ -91,13 +91,7 @@ abstract class Suite {
       "FileDescriptorSuite",
       "FileOutputStreamSuite",
       "FileInputStreamSuite",
-      "RandomAccessFileSuite",
-      
-      // scala code implementation uses uLong type which is not the same on different platforms
-      "InflaterSuite",
-      "DeflaterSuite",
-      "InflaterInputStreamSuite",
-      "DeflaterOutputStreamSuite"
+      "RandomAccessFileSuite"
     )
     // temprorary until fixed
     if (Platform.isWindows && (!issueMap

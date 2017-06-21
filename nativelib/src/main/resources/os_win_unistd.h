@@ -77,6 +77,9 @@ int os_win_unistd_ftruncate(int fildes, off_t length);
 
 int os_win_unistd_truncate(const char *path, off_t length);
 
+int __imp_close(int fildes);
+int __imp_open(const char *pathname, int flags, mode_t mode);
+
 #ifdef __cplusplus
 }
 #endif

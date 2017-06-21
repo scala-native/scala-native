@@ -25,11 +25,56 @@ extern "C" int chown(char *path, uid_t owner, gid_t group) {
     return 0;
 }
 
+extern "C" int scalanative_recv(int socket, void *buffer, size_t length, int flags);
+extern "C" int scalanative_send(int socket, void *buffer, size_t length, int flags);
+
 extern "C" int __imp_write(int fildes, void *buf, uint32_t nbyte) {
-    return _write(fildes, buf, nbyte);
+    const auto result = descriptorGuard().get(fildes);
+    if (result == DescriptorGuard::SOCKET) {
+        scalanative_send(fildes, buf, nbyte, 0);
+    } else if (result == DescriptorGuard::FILE) {
+        return _write(fildes, buf, nbyte);
+    }
+    return -1;
 }
 extern "C" int __imp_read(int fildes, void *buf, uint32_t nbyte) {
-    return _read(fildes, buf, nbyte);
+    const auto result = descriptorGuard().get(fildes);
+    if (result == DescriptorGuard::SOCKET) {
+        scalanative_recv(fildes, buf, nbyte, 0);
+    } else if (result == DescriptorGuard::FILE) {
+        return _read(fildes, buf, nbyte);
+    }
+    return -1;    
+}
+
+/*extern "C" int __imp_open(const char *pathname, int flags)
+{
+    return _sopen_s(pathname, flags);
+}*/
+extern "C" int __imp_open(const char *pathname, int flags, mode_t mode)
+{
+    int fildes = -1;
+    errno_t err = _sopen_s(&fildes, pathname, flags, _SH_DENYNO, 0);
+    if (fildes>=0)
+        descriptorGuard().openFile(fildes);
+    printf("Open: %s, %x, %i, err = %i\n", pathname, flags, fildes, err);
+    return fildes;
+}
+extern "C" int __imp_close(int fildes) {
+    printf("Close: %i\n", fildes);
+    const auto result = descriptorGuard().close(fildes);
+    if (result == DescriptorGuard::SOCKET) {
+        return os_win_closesocket(fildes);
+    } else if (result == DescriptorGuard::FILE) {
+        return _close(fildes);
+    }
+    else return -1;
+}
+
+char *__imp_strerror(const char *strErrMsg) {
+    static char buf[1024];
+    _strerror_s(buf, 1024, strErrMsg);
+    return buf;
 }
 
 extern "C" int os_win_unistd_access(const char *path, int amode) {
@@ -58,12 +103,12 @@ extern "C" int os_win_unistd_access(const char *path, int amode) {
 }
 
 extern "C" int os_win_unistd_sleep(uint32_t seconds) {
-    throw std::exception("not implemented.");
+    Sleep(seconds * 1000);
     return 0;
 }
 
 extern "C" int os_win_unistd_usleep(uint32_t usecs) {
-    throw std::exception("not implemented.");
+    Sleep(usecs);
     return 0;
 }
 
@@ -80,20 +125,15 @@ extern "C" const char *os_win_unistd_getcwd(char *buf, size_t size) {
 }
 
 extern "C" int os_win_unistd_write(int fildes, void *buf, size_t nbyte) {
-    return _write(fildes, buf, nbyte);
+    return __imp_write(fildes, buf, nbyte);
 }
 
 extern "C" int os_win_unistd_read(int fildes, void *buf, size_t nbyte) {
-    throw std::exception("not implemented.");
-    return 0;
+    return __imp_read(fildes, buf, nbyte);
 }
 
 extern "C" int os_win_unistd_close(int fildes) {
-    if (descriptorGuard().closeIfSocket(fildes)) {
-        return os_win_closesocket(fildes);
-    } else {
-        return _close(fildes);
-    }
+    return __imp_close(fildes);
 }
 
 extern "C" int os_win_unistd_fsync(int fildes) {

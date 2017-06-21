@@ -8,12 +8,16 @@ struct DescriptorGuard {
     enum Desc { EMPTY, FILE, SOCKET };
     struct Entry {
         Desc type = EMPTY;
-        int fildes = -1;
+        uint32_t data = -1;
     };
+
+    bool openFile(int fildes);
 
     bool openSocket(int fildes);
 
-    bool closeIfSocket(int fildes);
+    Desc close(int fildes);
+
+    Desc get(int fildes);
 
     std::vector<Entry> db;
 };

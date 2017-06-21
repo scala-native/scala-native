@@ -3,6 +3,7 @@
 #else
 #include "os_win_fcntl.h"
 #endif
+#include <stdarg.h>
 
 int scalanative_o_rdonly() { return O_RDONLY; }
 
@@ -35,3 +36,30 @@ int scalanative_f_getlk() { return F_GETLK; }
 int scalanative_f_setlk() { return F_SETLK; }
 
 int scalanative_f_setlkw() { return F_SETLKW; }
+
+int scalanative_fcntl_open(const char *pathname, int flags, mode_t mode)
+{
+#ifndef _WIN32
+    return open(pathname, flags, mode);
+#else
+    return os_win_fcntl_open(pathname, flags, mode);
+#endif
+}
+
+int scalanative_fcntl_close(int fd)
+{
+#ifndef _WIN32
+    return close(fd, cmd, args);
+#else
+    return os_win_fcntl_close(fd);
+#endif
+}
+
+int scalanative_fcntl_fcntl(int fd, int cmd, va_list args)
+{
+#ifndef _WIN32
+    return fcntl(fd, cmd, args);
+#else
+    return os_win_fcntl_fcntl(fd, cmd, args);
+#endif
+}
