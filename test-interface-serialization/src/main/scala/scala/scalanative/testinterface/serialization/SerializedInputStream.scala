@@ -78,7 +78,10 @@ class SerializedInputStream(in: InputStream) extends DataInputStream(in) {
                 readSeq(_.readSelector).toArray)
 
   def readStackTraceElement(): StackTraceElement =
-    new StackTraceElement(readString(), readString(), readString(), readInt())
+    new StackTraceElement(readString(),
+                          readString(),
+                          readOption(_.readString()).orNull,
+                          readInt())
 
   def readThrowable(): Throwable = {
     val ex = new RemoteException(readString(),
