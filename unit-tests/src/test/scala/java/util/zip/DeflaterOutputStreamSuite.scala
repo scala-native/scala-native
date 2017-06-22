@@ -97,7 +97,7 @@ object DeflaterOutputStreamSuite extends tests.Suite {
 
   test("constructor(OutputStream, Deflater)") {
     val byteArray = Array[Byte](1, 3, 4, 7, 8)
-    val f1        = new File("hyts_constru(OD).tst")
+    val f1        = File.createTempFile("hyts_constru(OD)", ".tst")
     val fos       = new FileOutputStream(f1)
     val defl      = new Deflater()
     val dos       = new MyDeflaterOutputStream(fos, defl)
@@ -113,7 +113,7 @@ object DeflaterOutputStreamSuite extends tests.Suite {
     val negBuf    = -5
     val zeroBuf   = 0
     val byteArray = Array[Byte](1, 3, 4, 7, 8, 3, 6)
-    val f1        = new File("gyts_Constru(ODI).tst")
+    val f1        = File.createTempFile("gyts_Constru(ODI)", ".tst")
     val fos       = new FileOutputStream(f1)
     val defl      = new Deflater()
 
@@ -138,6 +138,7 @@ object DeflaterOutputStreamSuite extends tests.Suite {
     assertThrows[EOFException] {
       iis.read()
     }
+    iis.close()
 
     val fos       = new FileOutputStream(f1)
     val dos       = new DeflaterOutputStream(fos)
