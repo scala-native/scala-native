@@ -2,10 +2,11 @@ package java.util
 
 import scala.annotation.tailrec
 
-import java.lang.Math
-
-import scala.scalanative.native.stdlib
-
+/**
+ * Ported from Apache Harmony and described by Donald E. Knuth
+ * in The Art of Computer Programming, Volume 2:
+ * Seminumerical Algorithms, section 3.2.1.
+ */
 class Random(seed_in: Long) extends AnyRef with java.io.Serializable {
 
   private var seed: Long = _
@@ -16,7 +17,11 @@ class Random(seed_in: Long) extends AnyRef with java.io.Serializable {
 
   setSeed(seed_in)
 
-  def this() = this(Random.randomSeed())
+  def this() = {
+    this(0) // required but don't use
+    // from Apache Harmony
+    seed = System.currentTimeMillis() + hashCode
+  }
 
   def setSeed(seed_in: Long): Unit = {
     seed = (seed_in ^ 0x5DEECE66DL) & ((1L << 48) - 1)
@@ -73,13 +78,12 @@ class Random(seed_in: Long) extends AnyRef with java.io.Serializable {
   }
 
   def nextGaussian(): Double = {
-    // See http://www.protonfish.com/jslib/boxmuller.shtml
-
     /* The Box-Muller algorithm produces two random numbers at once. We save
      * the second one in `nextNextGaussian` to be used by the next call to
      * nextGaussian().
+     *
+     * See http://www.protonfish.com/jslib/boxmuller.shtml
      */
-
     if (haveNextNextGaussian) {
       haveNextNextGaussian = false
       return nextNextGaussian
@@ -107,15 +111,4 @@ class Random(seed_in: Long) extends AnyRef with java.io.Serializable {
     // And return x*c
     x * c
   }
-}
-
-object Random {
-
-  /** Generate a random long from JS RNG to seed a new Random */
-  private def randomSeed(): Long =
-    (randomInt().toLong << 32) | (randomInt().toLong & 0xffffffffL)
-
-  private def randomInt(): Int =
-    (Math.floor(stdlib.rand() * 4294967296.0) - 2147483648.0).toInt
-
 }
