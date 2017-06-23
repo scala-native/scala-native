@@ -265,7 +265,8 @@ object MatcherSuite extends tests.Suite {
   }
 
   test("issue #852, StringIndexOutOfBoundsException") {
-    val JsonNumberRegex = """(-)?((?:[1-9][0-9]*|0))(?:\.([0-9]+))?(?:[eE]([-+]?[0-9]+))?""".r
+    val JsonNumberRegex =
+      """(-)?((?:[1-9][0-9]*|0))(?:\.([0-9]+))?(?:[eE]([-+]?[0-9]+))?""".r
     val JsonNumberRegex(negative, intStr, decStr, expStr) = "0.000000"
     assert(negative.isEmpty)
     assert(intStr == "0")
