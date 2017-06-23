@@ -82,11 +82,11 @@ abstract class Suite {
 
     tests.foreach { test =>
       val testSuccess = test.run()
-      val (status, statusStr) =
-        if (testSuccess) (Status.Success, "  [ok] ")
-        else (Status.Failure, "  [fail] ")
+      val (status, statusStr, color) =
+        if (testSuccess) (Status.Success, "  [ok] ", Console.GREEN)
+        else (Status.Failure, "  [fail] ", Console.RED)
       val event = NativeEvent(className, test.name, NativeFingerprint, status)
-      loggers.foreach(_.info(statusStr + test.name))
+      loggers.foreach(_.info(color + statusStr + test.name + Console.RESET))
       eventHandler.handle(event)
       success = success && testSuccess
 
