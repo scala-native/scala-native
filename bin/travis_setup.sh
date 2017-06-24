@@ -21,6 +21,7 @@ else
     # Install LLVM/Clang, Boehm GC, libunwind
     sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
     sudo apt-get -qq update
+    sudo apt-get install gcc-5
     sudo apt-get install -y -qq \
       clang++-3.8 \
       libgc-dev \
