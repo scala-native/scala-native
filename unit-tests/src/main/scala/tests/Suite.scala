@@ -1,5 +1,7 @@
 package tests
 
+import sbt.testing.{EventHandler, Logger, Status}
+
 import scala.collection.mutable
 import scala.reflect.ClassTag
 
@@ -73,15 +75,21 @@ abstract class Suite {
       }
     })
 
-  def run(): Boolean = {
-    println("* " + this.getClass.getName)
+  def run(eventHandler: EventHandler, loggers: Array[Logger]): Boolean = {
+    val className = this.getClass.getName
+    loggers.foreach(_.info("* " + className))
     var success = true
 
     tests.foreach { test =>
       val testSuccess = test.run()
-      val status      = if (testSuccess) "  [ok] " else "  [fail] "
-      println(status + test.name)
+      val (status, statusStr, color) =
+        if (testSuccess) (Status.Success, "  [ok] ", Console.GREEN)
+        else (Status.Failure, "  [fail] ", Console.RED)
+      val event = NativeEvent(className, test.name, NativeFingerprint, status)
+      loggers.foreach(_.info(color + statusStr + test.name + Console.RESET))
+      eventHandler.handle(event)
       success = success && testSuccess
+
     }
 
     success
