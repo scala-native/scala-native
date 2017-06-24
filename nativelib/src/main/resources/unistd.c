@@ -72,7 +72,7 @@ int scalanative_unistd_unlink(const char *path) {
 #endif
 }
 
-int scalanative_unistd_readlink(const char *path, const char *buf,
+int scalanative_unistd_readlink(const char *path, char *buf,
                                 unsigned int bufsize) {
 #ifndef _WIN32
     return readlink(path, buf, bufsize);

@@ -1,5 +1,6 @@
 #ifndef _WIN32
 #include <fcntl.h>
+#include <unistd.h>
 #else
 #include "os_win_fcntl.h"
 #endif
