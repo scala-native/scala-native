@@ -18,9 +18,8 @@ class Random(seed_in: Long) extends AnyRef with java.io.Serializable {
   setSeed(seed_in)
 
   def this() = {
-    this(0) // required but don't use
-    // from Apache Harmony
-    seed = System.currentTimeMillis() + hashCode
+    this(0) // ensure hashCode is set for this object
+    setSeed(System.currentTimeMillis() + hashCode)
   }
 
   def setSeed(seed_in: Long): Unit = {
