@@ -338,7 +338,7 @@ object ScalaNativePluginInternal {
           if (include(path) && !file(opath).exists) {
             val isCpp    = path.endsWith(".cpp")
             val compiler = abs(if (isCpp) clangpp else clang)
-            val flags    = (if (isCpp) Seq("-std=c++11", "-stdlib=libc++") else Seq()) ++ opts
+            val flags    = (if (isCpp) Seq("-std=c++11") else Seq()) ++ opts
             val compilec = Seq(compiler) ++ flags ++ Seq("-c",
                                                          path,
                                                          "-o",

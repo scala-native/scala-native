@@ -1,4 +1,5 @@
 #include <regex>
+#include <algorithm>
 // commented out until c++17
 //#include <unordered_map>
 
@@ -579,7 +580,7 @@ extern "C" scalanative_misc_regex *scalanative_misc_regex_create(
         std::string errStr(err.what());
         uint32_t messageLength = errStr.size();
         uint32_t length = max_out < messageLength ? max_out : messageLength;
-        memcpy(out_error_message, errStr.c_str(), length);
+        std::memcpy(out_error_message, errStr.c_str(), length);
         out_error_message[length] = 0;
         delete res;
         res = nullptr;
