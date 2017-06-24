@@ -25,11 +25,14 @@ sealed trait Regex {
                    format: String,
                    formatFlags: Match.FormatFlags = Match.format_default,
                    matchFlags: Match.Flags = Match.default): String
-  def split(text: String, matchFlags: Match.Flags = Match.default)(implicit in: Scope): Array[String]
-  def iterator(text: String, matchFlags: Match.Flags = Match.default)(implicit in: Scope): Array[Match.MatchResult]
+  def split(text: String, matchFlags: Match.Flags = Match.default)(
+      implicit in: Scope): Array[String]
+  def iterator(text: String, matchFlags: Match.Flags = Match.default)(
+      implicit in: Scope): Array[Match.MatchResult]
   def tokenIterator(text: String,
                     tokens: Array[Int],
-                    matchFlags: Match.Flags = Match.default)(implicit in: Scope): Array[Match.Group]
+                    matchFlags: Match.Flags = Match.default)(
+      implicit in: Scope): Array[Match.Group]
 }
 
 object Regex {
@@ -154,7 +157,7 @@ object Regex {
       val result =
         CRegex.matchIteratorFirst(cre, toCString(text), matchFlags, null)
       val matchResult = Match(result)
-      val r = new RegexImpl(pattern, cre)
+      val r           = new RegexImpl(pattern, cre)
       in.acquire(r)
       matchResult
     }
@@ -179,7 +182,7 @@ object Regex {
                                                   matchFlags,
                                                   null)
       val matchResult = Match(result)
-      val r = new RegexImpl(pattern, cre)
+      val r           = new RegexImpl(pattern, cre)
       in.acquire(r)
       matchResult
     }
@@ -223,7 +226,8 @@ object Regex {
   def split(pattern: String,
             text: String,
             flags: Flags = default,
-            matchFlags: Match.Flags = Match.default)(implicit in: Scope): Array[String] = {
+            matchFlags: Match.Flags = Match.default)(
+      implicit in: Scope): Array[String] = {
     import scala.annotation.tailrec
 
     @tailrec def innerLoop(matchResult: Match, result: Array[String] = Array.empty[String])
@@ -242,7 +246,8 @@ object Regex {
   def iterator(pattern: String,
                text: String,
                flags: Flags = default,
-               matchFlags: Match.Flags = Match.default)(implicit in: Scope): Array[Match.MatchResult] = {
+               matchFlags: Match.Flags = Match.default)(
+      implicit in: Scope): Array[Match.MatchResult] = {
     import scala.annotation.tailrec
 
     def fill(matchResult: Match): Match.MatchResult = {
@@ -280,7 +285,8 @@ object Regex {
                     text: String,
                     tokens: Array[Int],
                     flags: Flags = default,
-                    matchFlags: Match.Flags = Match.default)(implicit in: Scope): Array[Match.Group] = {
+                    matchFlags: Match.Flags = Match.default)(
+      implicit in: Scope): Array[Match.Group] = {
     import scala.annotation.tailrec
 
     @tailrec def innerLoop(matchResult: Match, result: Array[Match.Group] = Array.empty[Match.Group])
@@ -300,9 +306,8 @@ object Regex {
 
   // private section
 
-  private[regex] class RegexImpl(
-      val pattern: String,
-      var cre: CRegex.CRegexStruct)
+  private[regex] class RegexImpl(val pattern: String,
+                                 var cre: CRegex.CRegexStruct)
       extends Regex
       with Resource {
 
@@ -395,7 +400,8 @@ object Regex {
                  matchFlags)
     }
 
-    def split(text: String, matchFlags: Match.Flags = Match.default)(implicit in: Scope): Array[String] = {
+    def split(text: String, matchFlags: Match.Flags = Match.default)(
+        implicit in: Scope): Array[String] = {
       import scala.annotation.tailrec
 
       @tailrec def innerLoop(matchResult: Match, result: Array[String] = Array.empty[String])
@@ -410,7 +416,8 @@ object Regex {
       innerLoop(matchResult)
     }
 
-    def iterator(text: String, matchFlags: Match.Flags = Match.default)(implicit in: Scope): Array[Match.MatchResult] = {
+    def iterator(text: String, matchFlags: Match.Flags = Match.default)(
+        implicit in: Scope): Array[Match.MatchResult] = {
       import scala.annotation.tailrec
 
       def fill(matchResult: Match): Match.MatchResult = {
@@ -446,7 +453,8 @@ object Regex {
 
     def tokenIterator(text: String,
                       tokens: Array[Int],
-                      matchFlags: Match.Flags = Match.default)(implicit in: Scope): Array[Match.Group] = {
+                      matchFlags: Match.Flags = Match.default)(
+        implicit in: Scope): Array[Match.Group] = {
       import scala.annotation.tailrec
 
       @tailrec def innerLoop(matchResult: Match, result: Array[Match.Group] = Array.empty[Match.Group])

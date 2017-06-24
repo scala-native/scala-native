@@ -268,22 +268,20 @@ object RegexSuite extends tests.Suite {
   }
 
   test("an issue until we will start to use C++17") {
-  import scala.scalanative.runtime.Platform
+    import scala.scalanative.runtime.Platform
     Scope { implicit in =>
       val reusableRegex1 = Regex("""\w+""")
       val reusableRegex2 = Regex("""\S+""")
       val text           = "正则表达式"
       // on windows """\S+""" doesn't work with complex unicodes, but """\w+""" works fine
-      if (Platform.isWindows)
-      {
+      if (Platform.isWindows) {
         assert(reusableRegex1.search(text))
         assertNot(reusableRegex2.search(text))
-      }
-      else // on posix that other way around
-      {
-        assertNot(reusableRegex1.search(text))
-        assert(reusableRegex2.search(text))
-      }
+      } else // on posix that other way around
+        {
+          assertNot(reusableRegex1.search(text))
+          assert(reusableRegex2.search(text))
+        }
     }
   }
 
