@@ -145,19 +145,6 @@ object ScalaNativePluginInternal {
       checkThatClangIsRecentEnough(clang)
       clang
     },
-    nativeCompileOptions := {
-      val includes = {
-        val includedir =
-          Try(Process("llvm-config --includedir").lines_!.toSeq)
-            .getOrElse(Seq.empty)
-        ("/usr/local/include" +: includedir).map(s => s"-I$s")
-      }
-      includes :+ "-Qunused-arguments" :+
-        (mode(nativeMode.value) match {
-          case tools.Mode.Debug   => "-O0"
-          case tools.Mode.Release => "-O2"
-        })
-    },
     nativeLinkingOptions := {
       val libs = {
         val libdir =
@@ -209,6 +196,19 @@ object ScalaNativePluginInternal {
       )
 
   lazy val scopedSettings = Seq(
+    nativeCompileOptions := {
+      val includes = {
+        val includedir =
+          Try(Process("llvm-config --includedir").lines_!.toSeq)
+            .getOrElse(Seq.empty)
+        ("/usr/local/include" +: includedir).map(s => s"-I$s")
+      }
+      includes :+ "-Qunused-arguments" :+
+        (mode(nativeMode.value) match {
+          case tools.Mode.Debug   => "-O0"
+          case tools.Mode.Release => "-O2"
+        })
+    },
     nativeTarget := {
       val logger = nativeLogger.value
       val cwd    = nativeWorkdir.value
