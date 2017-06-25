@@ -20,7 +20,7 @@ class Random(seed_in: Long) extends AnyRef with java.io.Serializable {
 
   def this() = {
     this(0) // ensure hashCode is set for this object
-    setSeed(System.currentTimeMillis() + hashCode)
+    seed = calcSeed(System.currentTimeMillis() + hashCode)
   }
 
   def setSeed(seed_in: Long): Unit = {
