@@ -9,13 +9,14 @@ import scala.annotation.tailrec
  */
 class Random(seed_in: Long) extends AnyRef with java.io.Serializable {
 
-  private var seed: Long = _
+  private var seed: Long = calcSeed(seed_in)
 
   // see nextGaussian()
   private var nextNextGaussian: Double      = _
   private var haveNextNextGaussian: Boolean = false
 
-  setSeed(seed_in)
+  private def calcSeed(seed_in: Long): Long =
+    (seed_in ^ 0x5DEECE66DL) & ((1L << 48) - 1)
 
   def this() = {
     this(0) // ensure hashCode is set for this object
@@ -23,7 +24,7 @@ class Random(seed_in: Long) extends AnyRef with java.io.Serializable {
   }
 
   def setSeed(seed_in: Long): Unit = {
-    seed = (seed_in ^ 0x5DEECE66DL) & ((1L << 48) - 1)
+    seed = calcSeed(seed_in)
     haveNextNextGaussian = false
   }
 
