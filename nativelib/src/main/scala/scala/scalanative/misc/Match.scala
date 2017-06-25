@@ -4,6 +4,7 @@ package regex
 import scala.scalanative.native._
 import scalanative.runtime.struct
 
+// class which holds result from regex
 sealed trait Match {
   
   // number of groups
