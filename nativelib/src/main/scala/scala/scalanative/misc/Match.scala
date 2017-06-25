@@ -5,16 +5,37 @@ import scala.scalanative.native._
 import scalanative.runtime.struct
 
 sealed trait Match {
+  
+  // number of groups
   def groupCount: Int
+
+  // format the whole match to string
+  // $` is a prefix
+  // $& is a whole match
+  // $' is a suffix
+  // $1..9 or \1..\99 are group strings
   def format(fmt: String, flags: Match.FormatFlags = Match.default): String
+
+  // range of given group (position, length)
   def groupRange(index: Int): Match.Range
+  // string of given group
   def groupString(index: Int): String
+
+  // range of a token of token iterator
   def tokenRange: Match.Range
+  // string of token
   def tokenString: String
+
+  // prefix
   def prefix: String
+  // suffix
   def suffix: String
+
+  // moves iterator to the next position (if possible),
+  // returns false if there is no next position
   def iteratorNext: Boolean
   def tokenIteratorNext: Boolean
+  
   // compound methods
   def group(index: Int): Match.Group
   def token: Match.Group
