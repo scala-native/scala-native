@@ -6,7 +6,7 @@ import scalanative.runtime.struct
 
 // class which holds result from regex
 sealed trait Match {
-  
+
   // number of groups
   def groupCount: Int
 
@@ -36,7 +36,7 @@ sealed trait Match {
   // returns false if there is no next position
   def iteratorNext: Boolean
   def tokenIteratorNext: Boolean
-  
+
   // compound methods
   def group(index: Int): Match.Group
   def token: Match.Group
