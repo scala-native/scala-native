@@ -18,12 +18,13 @@ abstract class InetAddress private[net] (ipAddress: Array[Byte], host: String)
 
   def getHostName(): String = {
     if (host == null) {
-      Zone { implicit z =>
-        val host_c = SocketHelpers.ipToHost(
-          toCString(createIPStringFromByteArray(ipAddress)),
-          true)
-        return fromCString(host_c)
-      }
+      val ipString = createIPStringFromByteArray(ipAddress)
+      val host = SocketHelpers
+        .ipToHost(ipString, isValidIPv6Address(ipString))
+        .getOrElse {
+          return ipString
+        }
+      return host
     }
     return host
   }
@@ -57,19 +58,16 @@ abstract class InetAddress private[net] (ipAddress: Array[Byte], host: String)
       throw new IllegalArgumentException(
         "Argument 'timeout' in method 'isReachable' is negative")
     }
-    Zone { implicit z =>
-      val ipString = createIPStringFromByteArray(ipAddress)
-      if (SocketHelpers.isReachableByICMP(toCString(ipString),
-                                          timeout,
-                                          isValidIPv6Address(ipString))) {
-        return true
-      } else {
-        return SocketHelpers.isReachableByEcho(toCString(ipString),
-                                               timeout,
-                                               isValidIPv6Address(ipString))
-      }
+    val ipString = createIPStringFromByteArray(ipAddress)
+    if (SocketHelpers.isReachableByICMP(ipString,
+                                        timeout,
+                                        isValidIPv6Address(ipString))) {
+      return true
+    } else {
+      return SocketHelpers.isReachableByEcho(ipString,
+                                             timeout,
+                                             isValidIPv6Address(ipString))
     }
-    return false
   }
 
   def isLinkLocalAddress(): Boolean
@@ -192,7 +190,7 @@ object InetAddress {
         ipByteArray(i + 12) =
           (java.lang.Integer.parseInt(decStrings(i)) & 255).toByte
       }
-      var ipV4: Boolean = true
+      var ipV4 = true
       if (ipByteArray.take(10).exists(_ != 0)) {
         ipV4 = false
       }
@@ -200,7 +198,7 @@ object InetAddress {
         ipV4 = false
       }
       if (ipV4) {
-        val ipv4ByteArray: Array[Byte] = new Array[Byte](4)
+        val ipv4ByteArray = new Array[Byte](4)
         for (i <- 0.until(4)) {
           ipv4ByteArray(i) = ipByteArray(i + 12)
         }
@@ -217,20 +215,16 @@ object InetAddress {
         address = Inet6Address.getByAddress(null, ipByteArray, scopeId)
       }
     } else {
-      Zone { implicit z =>
-        val ip_c = SocketHelpers.hostToIp(toCString(host))
-        if (ip_c == null)
-          throw new UnknownHostException(
-            "No IP address could be found for the specified host: " + host)
-
-        val ip = fromCString(ip_c)
-        if (isValidIPv4Address(ip))
-          address = new Inet4Address(byteArrayFromIPString(ip), host)
-        else if (isValidIPv6Address(ip))
-          address = new Inet6Address(byteArrayFromIPString(ip), host)
-        else
-          throw new UnknownHostException("Malformed IP: " + ip)
+      val ip = SocketHelpers.hostToIp(host).getOrElse {
+        throw new UnknownHostException(
+          "No IP address could be found for the specified host: " + host)
       }
+      if (isValidIPv4Address(ip))
+        address = new Inet4Address(byteArrayFromIPString(ip), host)
+      else if (isValidIPv6Address(ip))
+        address = new Inet6Address(byteArrayFromIPString(ip), host)
+      else
+        throw new UnknownHostException("Malformed IP: " + ip)
     }
     address
   }
@@ -245,29 +239,19 @@ object InetAddress {
     if (isValidIPv6Address(host))
       return Array[InetAddress](new Inet6Address(byteArrayFromIPString(host)))
 
-    var retArray = Array[InetAddress]()
-    Zone { implicit z =>
-      val chost             = toCString(host)
-      var ips: Ptr[CString] = SocketHelpers.hostToIpArray(chost)
-      if (ips == null) {
-        throw new UnknownHostException(
-          "No IP address could be found for the specified host: " + host)
-      }
-      var i = 0;
-      while (fromCString(ips(i)) != "END") {
-        val addr = fromCString(ips(i))
-        if (isValidIPv4Address(addr)) {
-          retArray = retArray :+ (new Inet4Address(byteArrayFromIPString(addr),
-                                                   host))
-        } else {
-          retArray = retArray :+ (new Inet6Address(byteArrayFromIPString(addr),
-                                                   host))
-        }
-        i += 1
-      }
-
+    var ips: Array[String] = SocketHelpers.hostToIpArray(host)
+    if (ips.isEmpty) {
+      throw new UnknownHostException(
+        "No IP address could be found for the specified host: " + host)
     }
-    retArray
+
+    ips.map(ip => {
+      if (isValidIPv4Address(ip)) {
+        new Inet4Address(byteArrayFromIPString(ip), host)
+      } else {
+        new Inet6Address(byteArrayFromIPString(ip), host)
+      }
+    })
   }
 
   def getByAddress(addr: Array[Byte]): InetAddress =

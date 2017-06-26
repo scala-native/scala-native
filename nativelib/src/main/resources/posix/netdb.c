@@ -1,4 +1,5 @@
 #include "netdb.h"
+#include "sys/socket_conversions.h"
 #include <stddef.h>
 #include <stdlib.h>
 
@@ -36,29 +37,33 @@ void scalanative_convert_addrinfo(struct addrinfo *in, struct scalanative_addrin
 		struct scalanative_addrinfo *converted = malloc(
 				sizeof(struct scalanative_addrinfo));
 		scalanative_convert_addrinfo(in->ai_next, converted);
-		out->ai_next = (void *)converted;
+		out->ai_next = converted;
 	}
 	else {
 		out->ai_next = NULL;
 	}
 }
 
-void scalanative_convert_addrinfo_list(struct addrinfo **in,
-				       struct scalanative_addrinfo **out) {
-	scalanative_convert_addrinfo(*in, *out);
-}
-
 
 int scalanative_getaddrinfo(char *name, char *service,
 			    struct scalanative_addrinfo *hints,
-			    struct scalanative_addrinfo **res) {
+			    struct scalanative_addrinfo *res) {
 	struct addrinfo hints_converted;
 	struct addrinfo *res_c;
 	scalanative_convert_scalanative_addrinfo(hints, &hints_converted);
 	int status = getaddrinfo(name, service, &hints_converted, &res_c);
-	scalanative_convert_addrinfo_list(&res_c, res); 
+	scalanative_convert_addrinfo(res_c, res); 
 	free(res_c);
 	return status;
+}
+
+int scalanative_getnameinfo(struct scalanative_sockaddr *addr, socklen_t addrlen,
+			    char *host, socklen_t hostlen, char *serv,
+			    socklen_t servlen, int flags) {
+	struct sockaddr *converted_addr;
+	scalanative_convert_sockaddr(addr, &converted_addr, &addrlen);
+	return getnameinfo(converted_addr, addrlen, host,
+			   hostlen, serv, servlen, flags);
 }
 
 

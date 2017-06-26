@@ -2,6 +2,7 @@ package scala.scalanative.posix
 
 import scalanative.native._
 import scalanative.posix.sys.socket
+import scalanative.posix.netinet.in
 
 @extern
 object netdb {
@@ -15,15 +16,25 @@ object netdb {
                            Ptr[Byte]] // ai_next
 
   @name("scalanative_getaddrinfo")
-  def getaddrinfo(name: CString, service: CString, 
-                  hints: Ptr[addrinfo], res: Ptr[Ptr[addrinfo]]): CInt = extern
+  def getaddrinfo(name: CString,
+                  service: CString,
+                  hints: Ptr[addrinfo],
+                  res: Ptr[addrinfo]): CInt = extern
 
+  @name("scalanative_getnameinfo")
+  def getnameinfo(addr: Ptr[socket.sockaddr],
+                  addrlen: socket.socklen_t,
+                  host: CString,
+                  hostlen: socket.socklen_t,
+                  service: CString,
+                  servlen: socket.socklen_t,
+                  flags: CInt): CInt = extern
 }
 
 object netdbOps {
   import netdb._
 
-  implicit class addrinfo_netdbOps(val ptr: Ptr[addrinfo]) extends AnyVal {
+  implicit class addrinfoOps(val ptr: Ptr[addrinfo]) extends AnyVal {
     def ai_flags: CInt                = !ptr._1
     def ai_family: CInt               = !ptr._2
     def ai_socktype: CInt             = !ptr._3
@@ -31,16 +42,15 @@ object netdbOps {
     def ai_addrlen: socket.socklen_t  = !ptr._5
     def ai_addr: Ptr[socket.sockaddr] = !ptr._6
     def ai_canonname: Ptr[CChar]      = !ptr._7
-    def ai_next: Ptr[addrinfo]        = ptr._8.cast[Ptr[addrinfo]]
+    def ai_next: Ptr[Byte]            = !ptr._8
 
-
-    def ai_flags_=(v: CInt): Unit                 = !ptr._1 = v 
-    def ai_family_=(v: CInt): Unit                = !ptr._2 = v 
-    def ai_socktype_=(v: CInt): Unit              = !ptr._3 = v 
-    def ai_protocol_=(v: CInt): Unit              = !ptr._4 = v 
-    def ai_addrlen_=(v: socket.socklen_t): Unit   = !ptr._5 = v
-    def ai_addr_=(v: Ptr[socket.sockaddr]): Unit  = !ptr._6 = v
-    def ai_canonname_=(v: Ptr[CChar]): Unit       = !ptr._7 = v
-    def ai_next_=(v: Ptr[addrinfo]): Unit         = !ptr._8 = v.cast[Ptr[Byte]]
+    def ai_flags_=(v: CInt): Unit                = !ptr._1 = v
+    def ai_family_=(v: CInt): Unit               = !ptr._2 = v
+    def ai_socktype_=(v: CInt): Unit             = !ptr._3 = v
+    def ai_protocol_=(v: CInt): Unit             = !ptr._4 = v
+    def ai_addrlen_=(v: socket.socklen_t): Unit  = !ptr._5 = v
+    def ai_addr_=(v: Ptr[socket.sockaddr]): Unit = !ptr._6 = v
+    def ai_canonname_=(v: Ptr[CChar]): Unit      = !ptr._7 = v
+    def ai_next_=(v: Ptr[addrinfo]): Unit        = !ptr._8 = v.cast[Ptr[Byte]]
   }
 }
