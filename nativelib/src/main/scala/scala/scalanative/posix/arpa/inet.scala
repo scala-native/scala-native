@@ -5,6 +5,7 @@ package arpa
 import scalanative.native._
 import scalanative.posix.inttypes._
 import scalanative.posix.netinet.in.in_addr
+import scalanative.posix.sys.socket.socklen_t
 
 @extern
 object inet {
@@ -23,5 +24,14 @@ object inet {
 
   @name("scalanative_inet_ntoa")
   def inet_ntoa(in: Ptr[in_addr]): CString = extern
+
+  @name("scalanative_inet_ntop")
+  def inet_ntop(af: CInt,
+                src: Ptr[Byte],
+                dst: CString,
+                size: socklen_t): CString = extern
+
+  @name("scalanative_inet_pton")
+  def inet_pton(af: CInt, src: CString, dst: Ptr[Byte]): CInt = extern
 
 }
