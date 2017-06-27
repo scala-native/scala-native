@@ -11,41 +11,6 @@ import scalanative.posix.netinet.{in, inOps}, in._, inOps._
 
 object SocketHelpers {
 
-  def isReachableByICMP(ip: String, time: Int, v6: Boolean): Boolean = {
-    // TODO
-
-    /*Zone { implicit z =>
-      val cIP = toCString(ip)
-      var addr = stackalloc[sockaddr]
-      var family = AF_INET
-      if(v6) {
-        val addr6 = stackalloc[sockaddr_in6]
-        inet_pton(AF_INET6, cIP, addr6.sin6_addr.cast[Ptr[Byte]])
-        addr6.sin6_family = AF_INET6.toUShort
-        family = AF_INET6
-        addr = addr6.cast[Ptr[sockaddr]]
-      }
-      else {
-        val addr4 = stackalloc[sockaddr_in]
-        inet_pton(AF_INET, cIP, addr4.sin_addr.cast[Ptr[Byte]])
-        addr4.sin_family = AF_INET.toUShort
-        family = AF_INET
-        addr = addr4.cast[Ptr[sockaddr]]
-      }
-
-      var icmpHdr = stackalloc[icmphdr]
-      var sequence = 0
-      val sock = socket(family, SOCK_DGRAM, IPPROTO_ICMP)
-      if(sock < 0) {
-        return false
-      }
-      string.memset(icmpHdr, 0, sizeof[icmphdr])
-      icmp_hdr.`type` = ICMP_ECHO
-      icmp_hdr.un.echo.id = 1337 // arbitrary id
-    }*/
-    false
-  }
-
   def isReachableByEcho(ip: String, timeout: Int): Boolean = {
     Zone { implicit z =>
       val cIP   = toCString(ip)

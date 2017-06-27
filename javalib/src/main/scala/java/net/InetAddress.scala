@@ -59,13 +59,7 @@ abstract class InetAddress private[net] (ipAddress: Array[Byte], host: String)
         "Argument 'timeout' in method 'isReachable' is negative")
     }
     val ipString = createIPStringFromByteArray(ipAddress)
-    if (SocketHelpers.isReachableByICMP(ipString,
-                                        timeout,
-                                        isValidIPv6Address(ipString))) {
-      return true
-    } else {
-      return SocketHelpers.isReachableByEcho(ipString, timeout)
-    }
+    return SocketHelpers.isReachableByEcho(ipString, timeout)
   }
 
   def isLinkLocalAddress(): Boolean
