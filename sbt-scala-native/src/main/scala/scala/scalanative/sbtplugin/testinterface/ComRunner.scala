@@ -24,27 +24,29 @@ class ComRunner(bin: File,
                 args: Seq[String],
                 logger: Logger) {
 
-  private[this] val serverSocket = new ServerSocket(0)
-  private[this] val port         = serverSocket.getLocalPort
-
   private[this] val runner = new Thread {
     override def run(): Unit = {
       import sbt.Process._
-      running = true
+      val port = serverSocket.getLocalPort
       logger.info(s"Starting process '$bin' on port '$port'.")
       Process(bin.toString +: port.toString +: args, None, envVars.toSeq: _*) ! logger
-      running = false
-      socket.close()
-      serverSocket.close()
     }
   }
 
-  private[this] var running: Boolean = false
+  private[this] var serverSocket: ServerSocket = _
+  private[this] val socket =
+    try {
+      serverSocket = new ServerSocket(0)
 
-  runner.start()
+      runner.start()
 
-  serverSocket.setSoTimeout(30 * 1000)
-  private[this] val socket = serverSocket.accept()
+      serverSocket.setSoTimeout(30 * 1000)
+      serverSocket.accept()
+    } catch {
+      case _: SocketTimeoutException =>
+        throw new MessageOnlyException(
+          "The test program never connected to sbt.")
+    } finally serverSocket.close()
 
   private[this] val in = new DataInputStream(
     new BufferedInputStream(socket.getInputStream))
@@ -53,7 +55,12 @@ class ComRunner(bin: File,
 
   /** Send message `msg` to the distant program. */
   def send(msg: Message): Unit = synchronized {
-    SerializedOutputStream(out)(_.writeMessage(msg))
+    try SerializedOutputStream(out)(_.writeMessage(msg))
+    catch {
+      case ex: Throwable =>
+        close()
+        throw ex
+    }
   }
 
   /** Wait for a message to arrive from the distant program. */
@@ -79,11 +86,15 @@ class ComRunner(bin: File,
 
       } catch {
         case _: EOFException =>
+          close()
           throw new MessageOnlyException(
-            s"EOF on connection with remote runner on port $port")
+            s"EOF on connection with remote runner on port ${serverSocket.getLocalPort}")
         case _: SocketTimeoutException =>
-          in.reset()
+          close()
           throw new TimeoutException("Timeout expired")
+        case ex: Throwable =>
+          close()
+          throw ex
       } finally {
         socket.setSoTimeout(savedSoTimeout)
       }
