@@ -1,27 +1,15 @@
 package java.io
 
-import scala.scalanative.native.{toCString, Zone}
-import scala.scalanative.posix.fcntl
-
-class FileWriter(fd: FileDescriptor)
-    extends OutputStreamWriter(new FileOutputStream(fd)) {
+class FileWriter private (fos: FileOutputStream)
+    extends OutputStreamWriter(fos) {
   def this(file: File, append: Boolean) =
-    this(FileWriter.fileDescriptor(file, append))
-  def this(file: File) = this(file, false)
+    this(new FileOutputStream(file, append))
+  def this(file: File) =
+    this(new FileOutputStream(file))
   def this(fileName: String, append: Boolean) =
-    this(new File(fileName), append)
-  def this(fileName: String) = this(new File(fileName))
-}
-
-object FileWriter {
-  private def fileDescriptor(file: File, append: Boolean) =
-    Zone { implicit z =>
-      val mode =
-        if (append) fcntl.O_WRONLY | fcntl.O_APPEND else fcntl.O_WRONLY
-      val fd = fcntl.open(toCString(file.getPath), mode)
-      if (fd == -1) {
-        throw new FileNotFoundException("Cannot write to file " + file.getPath)
-      }
-      new FileDescriptor(fd)
-    }
+    this(new FileOutputStream(fileName, append))
+  def this(fileName: String) =
+    this(new FileOutputStream(fileName))
+  def this(fd: FileDescriptor) =
+    this(new FileOutputStream(fd))
 }
