@@ -46,31 +46,30 @@ object SocketHelpers {
     false
   }
 
-  def isReachableByEcho(ip: String, timeout: Int, isV6: Boolean): Boolean = {
+  def isReachableByEcho(ip: String, timeout: Int): Boolean = {
     Zone { implicit z =>
-      val cIP         = toCString(ip)
-      var addr        = stackalloc[sockaddr]
-      var family: Int = 0
-      if (isV6) {
-        val addr6 = stackalloc[sockaddr_in6]
-        inet_pton(AF_INET6, cIP, addr6.sin6_addr.cast[Ptr[Byte]])
-        addr6.sin6_family = AF_INET6.toUShort
-        addr6.sin6_port = htons(7.toUShort)
-        family = AF_INET6
-        addr = addr6.cast[Ptr[sockaddr]]
-      } else {
-        val addr4 = stackalloc[sockaddr_in]
-        inet_pton(AF_INET, cIP, addr4.sin_addr.cast[Ptr[Byte]])
-        addr4.sin_family = AF_INET.toUShort
-        addr4.sin_port = htons(7.toUShort)
-        family = AF_INET
-        addr = addr4.cast[Ptr[sockaddr]]
+      val cIP   = toCString(ip)
+      var hints = stackalloc[addrinfo]
+      var ret   = stackalloc[addrinfo]
+
+      string.memset(hints.cast[Ptr[Byte]], 0, sizeof[addrinfo])
+      hints.ai_family = AF_UNSPEC
+      hints.ai_protocol = 0
+      hints.ai_addr = null
+      hints.ai_flags = 4 // AI_NUMERICHOST
+      hints.ai_socktype = SOCK_STREAM
+      hints.ai_next = null
+
+      if (getaddrinfo(cIP, toCString("7"), hints, ret) != 0) {
+        return false
       }
-      val sock = socket(family, SOCK_STREAM, 0);
+
+      val sock = socket(ret.ai_family, SOCK_STREAM, ret.ai_protocol);
       if (sock < 0) {
         return false
       }
-      if (connect(sock, addr, sizeof[sockaddr].toUInt) < 0) {
+      val connectRes = connect(sock, ret.ai_addr, ret.ai_addrlen)
+      if (connectRes < 0) {
         return false
       }
 
@@ -90,9 +89,6 @@ object SocketHelpers {
       // name conflict
       var res =
         scalanative.posix.sys.select.select(sock + 1, rfds, null, null, time)
-      if (res <= 0) {
-        return false
-      }
 
       val buf      = stackalloc[CChar](5)
       val recBytes = recv(sock, buf, 5, 0)
