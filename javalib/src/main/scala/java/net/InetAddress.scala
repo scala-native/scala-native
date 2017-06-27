@@ -64,9 +64,7 @@ abstract class InetAddress private[net] (ipAddress: Array[Byte], host: String)
                                         isValidIPv6Address(ipString))) {
       return true
     } else {
-      return SocketHelpers.isReachableByEcho(ipString,
-                                             timeout,
-                                             isValidIPv6Address(ipString))
+      return SocketHelpers.isReachableByEcho(ipString, timeout)
     }
   }
 

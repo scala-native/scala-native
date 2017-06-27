@@ -9,19 +9,26 @@ void scalanative_convert_scalanative_addrinfo(struct scalanative_addrinfo *in,
 	out->ai_family = in->ai_family;
 	out->ai_socktype = in->ai_socktype;
 	out->ai_protocol = in->ai_protocol;
-	out->ai_addrlen = in->ai_addrlen;
-	out->ai_addr = in->ai_addr;
 	out->ai_canonname = in->ai_canonname;
+	if(in->ai_addr == NULL) {
+		out->ai_addr = NULL;
+		out->ai_addrlen = in->ai_addrlen;
+	} else {
+		struct sockaddr *converted_addr = malloc(in->ai_addrlen);
+		socklen_t *len = malloc(sizeof(socklen_t));
+		*len = in->ai_addrlen;
+		scalanative_convert_sockaddr(in->ai_addr, &converted_addr, len);
+		out->ai_addr = converted_addr;
+		out->ai_addrlen = *len;
+	}
 	if(in->ai_next != NULL) {
 		struct addrinfo *converted = malloc(sizeof(struct addrinfo)); 
 		scalanative_convert_scalanative_addrinfo(
 				(struct scalanative_addrinfo *)in->ai_next, converted);
 		out->ai_next = converted;
-		return;
 	}
 	else {
 		out->ai_next = NULL;
-		return;
 	}
 }
 
@@ -31,8 +38,18 @@ void scalanative_convert_addrinfo(struct addrinfo *in, struct scalanative_addrin
 	out->ai_socktype = in->ai_socktype;
 	out->ai_protocol = in->ai_protocol;
 	out->ai_addrlen = in->ai_addrlen;
-	out->ai_addr = in->ai_addr;
 	out->ai_canonname = in->ai_canonname;
+	if(in->ai_addr == NULL) {
+		out->ai_addr = NULL;
+		out->ai_addrlen = in->ai_addrlen;
+	} else {
+		struct scalanative_sockaddr *converted_addr = malloc(in->ai_addrlen);
+		socklen_t *len = malloc(sizeof(socklen_t));
+		*len = in->ai_addrlen;
+		scalanative_convert_scalanative_sockaddr(in->ai_addr, converted_addr, len);
+		out->ai_addr = converted_addr;
+		out->ai_addrlen = *len;
+	}
 	if(in->ai_next != NULL) {
 		struct scalanative_addrinfo *converted = malloc(
 				sizeof(struct scalanative_addrinfo));
