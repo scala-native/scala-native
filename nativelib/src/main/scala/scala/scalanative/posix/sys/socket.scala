@@ -136,6 +136,11 @@ object socket {
   @name("scalanative_socket")
   def socket(domain: CInt, tpe: CInt, protocol: CInt): CInt = extern
 
+  @name("scalanative_connect")
+  def connect(socket: CInt,
+              address: Ptr[sockaddr],
+              address_len: socklen_t): CInt = extern
+
   @name("scalanative_bind")
   def bind(socket: CInt,
            address: Ptr[sockaddr],

@@ -9,7 +9,7 @@ import sbt.{Logger, MessageOnlyException, Process}
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration.Duration
 import scala.scalanative.testinterface.serialization._
-import java.net.{ConnectException, Socket, SocketTimeoutException}
+import java.net.{ServerSocket, SocketTimeoutException}
 
 import scala.scalanative.testinterface.serialization.Log.Level
 
@@ -24,8 +24,8 @@ class ComRunner(bin: File,
                 args: Seq[String],
                 logger: Logger) {
 
-  /** Port over which we communicate with the distant program */
-  val port: Int = scala.util.Random.nextInt(1000) + 9000
+  private[this] val serverSocket = new ServerSocket(0)
+  private[this] val port         = serverSocket.getLocalPort
 
   private[this] val runner = new Thread {
     override def run(): Unit = {
@@ -34,6 +34,8 @@ class ComRunner(bin: File,
       logger.info(s"Starting process '$bin' on port '$port'.")
       Process(bin.toString +: port.toString +: args, None, envVars.toSeq: _*) ! logger
       running = false
+      socket.close()
+      serverSocket.close()
     }
   }
 
@@ -41,7 +43,9 @@ class ComRunner(bin: File,
 
   runner.start()
 
-  private[this] val socket = getSocket(retries = 5)
+  serverSocket.setSoTimeout(30 * 1000)
+  private[this] val socket = serverSocket.accept()
+
   private[this] val in = new DataInputStream(
     new BufferedInputStream(socket.getInputStream))
   private[this] val out = new DataOutputStream(
@@ -90,18 +94,6 @@ class ComRunner(bin: File,
     out.close()
     socket.close()
   }
-
-  private[this] def getSocket(retries: Int): Socket =
-    if (retries < 0)
-      throw new Exception("Couldn't communicate with remote runner.")
-    else {
-      try new Socket("localhost", port)
-      catch {
-        case _: ConnectException =>
-          Thread.sleep(100)
-          getSocket(retries - 1)
-      }
-    }
 
   private def log(message: Log): Unit =
     message.level match {

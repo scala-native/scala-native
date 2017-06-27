@@ -31,80 +31,42 @@ abstract class TestMainBase {
 
   /** Actual main method of the test runner. */
   def testMain(args: Array[String]): Unit = Zone { implicit z =>
-    val server_port = args.headOption.map(_.toInt).getOrElse(9000).toUShort
-    val listen_sock = setupServer(server_port)
-
-    onClient(listen_sock) { client_socket =>
-      // We don't need to listen for incoming connections anymore
-      unistd.close(listen_sock)
-      testRunner(Array.empty, null, client_socket)
-    }
+    val server_port   = args.head.toInt.toUShort
+    val client_socket = connectToServer(server_port)
+    testRunner(Array.empty, null, client_socket)
   }
 
-  /** Executes body, calls `perror` with `str` if the result is non-zero. */
-  private def exitOnFailure(str: String)(body: => CInt)(
-      implicit zone: Zone): Unit = {
-    val err = body
-    if (err != 0) {
-      stdio.perror(toCString(str))
-      scala.sys.exit(err)
-    }
-  }
-
-  /** Sets up the server socket, returns the file descriptor. */
-  private def setupServer(port: uint16_t)(implicit zone: Zone): CInt = {
+  /** Establishes the connection on port `port`, returns the file descriptor. */
+  private def connectToServer(port: uint16_t)(implicit zone: Zone): CInt = {
     val server_address = native.alloc[sockaddr_in]
     server_address.sin_family = socket.AF_INET.toUShort
     server_address.sin_port = htons(port)
-    server_address.sin_addr.in_addr = htonl(INADDR_ANY)
+    server_address.sin_addr.in_addr = inet_addr(toCString("127.0.0.1"))
 
-    val listen_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-    if (listen_sock < 0) {
-      scala.sys.error("Couldn't create listen socket.")
+    val sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+    if (sock < 0) {
+      scala.sys.error("Couldn't create communication socket.")
     }
 
-    val on = stackalloc[CInt]
-    !on = 1
-
-    exitOnFailure("setsockopt") {
-      socket.setsockopt(listen_sock,
-                        socket.SOL_SOCKET,
-                        socket.SO_REUSEADDR,
-                        on.cast[Ptr[Byte]],
-                        sizeof[CInt].toUInt)
+    var tries     = 5
+    var connected = false
+    while (!connected && tries > 0) {
+      connected =
+        0 == socket.connect(sock,
+                            server_address.cast[Ptr[socket.sockaddr]],
+                            sizeof[sockaddr_in].toUInt)
+      if (!connected) {
+        Thread.sleep(500)
+        tries -= 1
+      }
     }
 
-    exitOnFailure("bind") {
-      socket.bind(listen_sock,
-                  server_address.cast[Ptr[socket.sockaddr]],
-                  sizeof[sockaddr_in].toUInt)
+    if (!connected) {
+      stdio.perror(toCString("connect"))
+      scala.sys.error("Remote runner couldn't connect to sbt.")
     }
 
-    exitOnFailure("listen") {
-      socket.listen(listen_sock, 16)
-    }
-
-    listen_sock
-  }
-
-  /** Waits for a connection on `socket`, executes `body` when a client connects.
-   * The argument of `body` is the client socket descriptor. */
-  private def onClient[T](socket: CInt)(body: CInt => T)(
-      implicit zone: Zone): T = {
-    val client_address     = native.alloc[sockaddr_in]
-    val client_address_len = native.alloc[socklen_t]
-    !client_address_len = sizeof[sockaddr_in].toUInt
-
-    val client_socket =
-      accept(socket, client_address.cast[Ptr[sockaddr]], client_address_len)
-
-    if (client_socket < 0) {
-      stdio.perror(toCString("accept"))
-      scala.sys.exit(1)
-    }
-
-    body(client_socket)
-
+    sock
   }
 
   /** Test runner loop.

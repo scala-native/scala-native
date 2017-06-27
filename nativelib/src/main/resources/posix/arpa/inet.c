@@ -14,3 +14,5 @@ char *scalanative_inet_ntoa(struct scalanative_in_addr *in) {
     scalanative_convert_in_addr(in, &converted);
     return inet_ntoa(converted);
 }
+
+in_addr_t scalanative_inet_addr(char *in) { return inet_addr(in); }
