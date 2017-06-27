@@ -141,17 +141,14 @@ class ArrayList[E] private (private[this] var inner: Array[AnyRef],
     _size = 0
   }
 
-  // TODO: define for better performance
-  //override def contains(o: Any): Boolean =
-  //override def addAll(c: Collection[_ <: E]): Boolean =
-  //override def addAll(index: Index, c: Collection[_ <: E]): Boolean =
-  //override def removeRange(fromIndex: Int, toIndex: Int): Boolean =
-  //override def removeAll(c: Collection[_ <: AnyRef]): Boolean =
-  //override def retainAll(c: Collection[_ <: AnyRef]): Boolean =
-  //override def listIterator(index: Int): ListIterator[E] =
-  //override def listIterator(): ListIterator[E] =
-  //override def iterator(): Iterator[E] =
-  //override def subList(fromIndex: Int, toIndex: Int): List[E] =
+  override def addAll(c: Collection[_ <: E]): Boolean =
+    super.addAll(c)
+
+  override def addAll(index: Int, c: Collection[_ <: E]): Boolean =
+    super.addAll(index, c)
+
+  override def iterator(): java.util.Iterator[E] =
+    super.iterator()
 
   // TODO: JDK 1.8
   // def forEach(action: Consumer[_ >: E]): Unit =
