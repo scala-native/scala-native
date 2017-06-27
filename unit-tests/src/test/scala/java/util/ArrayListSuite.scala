@@ -39,6 +39,12 @@ object ArrayListSuite extends tests.Suite {
     assert(al.asScala == Seq("1", "2", "3"))
   }
 
+  test("Constructor(null) throws NullPointerException") {
+    assertThrows[NullPointerException] {
+      new ArrayList(null)
+    }
+  }
+
   test("equals() for empty lists") {
     val e1  = new ArrayList()
     val e2  = new ArrayList()
@@ -167,6 +173,31 @@ object ArrayListSuite extends tests.Suite {
     val aout = al1.toArray(ain)
     assert(ain eq aout)
     assert(Array("apple", "banana", "cherry", null) sameElements aout)
+  }
+
+  test("Array[E].toArray[T](Array[T]) when T >: E") {
+    class SuperClass
+    class SubClass extends SuperClass
+    val in   = Seq.fill(2)(new SubClass)
+    val al1  = new ArrayList[SubClass](in.asJava)
+    val aout = al1.toArray(Array.empty[SuperClass])
+    assert(in.toArray sameElements aout)
+  }
+
+  testFails(
+    "Array[E].toArray[T](Array[T]) should throw ArrayStoreException when not T >: E",
+    858) {
+    class NotSuperClass
+    class SubClass
+    val al1 = new ArrayList[SubClass]()
+    assertThrows[ArrayStoreException] {
+      al1.toArray(Array.empty[NotSuperClass])
+    }
+  }
+
+  test("toArray[T](null) throws null") {
+    val al1 = new ArrayList[String](Seq("apple", "banana", "cherry").asJava)
+    assertThrows[NullPointerException] { al1.toArray(null) }
   }
 
   test("get(Int)") {

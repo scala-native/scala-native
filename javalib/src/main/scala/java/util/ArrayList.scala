@@ -28,7 +28,14 @@ class ArrayList[E] private (private[this] var inner: Array[AnyRef],
       initialCollection.size()
     )
 
-  def this(c: Collection[E]) = this(c, c.size())
+  def this(c: Collection[E]) =
+    this(
+      if (c != null)
+        c
+      else
+        throw new NullPointerException,
+      c.size()
+    )
 
   def this(initialCapacity: Int) =
     this(Collections.emptyList(): Collection[E], initialCapacity)
@@ -72,9 +79,13 @@ class ArrayList[E] private (private[this] var inner: Array[AnyRef],
   }
 
   override def toArray[T <: AnyRef](a: Array[T]): Array[T] =
-    if (a.length < size())
+    if (a == null)
+      throw new NullPointerException
+    else if (a.length < size())
       toArray().asInstanceOf[Array[T]]
     else {
+      // TODO: this copy should result in ArrayStoreException when not T >: E
+      // need to detect type mismatch at runtime. related: #858
       inner.asInstanceOf[Array[T]].copyToArray(a, 0, size())
       // fill the rest of the elements in a by null as explained in JDK Javadoc
       for (i <- size() until a.length) {
