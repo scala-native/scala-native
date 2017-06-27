@@ -17,6 +17,10 @@ class ArrayList[E] private (private[this] var inner: Array[Any],
   private def this(initialCollection: Collection[E], initialCapacity: Int) =
     this(
       {
+        if (initialCapacity < 0) {
+          throw new IllegalArgumentException(
+            "Illegal Capacity: " + initialCapacity)
+        }
         val initialArr =
           Array.ofDim[Any](initialCollection.size() max initialCapacity)
         import scala.collection.JavaConverters._
