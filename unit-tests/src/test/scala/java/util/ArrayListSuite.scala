@@ -229,6 +229,18 @@ object ArrayListSuite extends tests.Suite {
     assert(Seq(1, 3, 2) == al1.asScala)
   }
 
+  test("addAll") {
+    val l = new java.util.ArrayList[String]()
+    l.add("First")
+    l.add("Second")
+    val l2 = new java.util.ArrayList[String]()
+    l2.addAll(0, l)
+    val iter = l2.iterator()
+    assert(iter.next() == "First")
+    assert(iter.next() == "Second")
+    assert(!iter.hasNext())
+  }
+
   test("clear()") {
     val al1 = new ArrayList[Int](Seq(1, 2, 3, 2).asJava)
     al1.clear()
