@@ -4,10 +4,10 @@ import java.io.Serializable
 
 // Added extra private constructors to handle all of the overloads.
 // To preserve method signatures, we cannot take ClassTag via implicit parameters.
-// We use an Array[AnyRef] for underlying storage and box/unbox AnyVals where needed as the JDK class would do.
+// We use an Array[Any] as an underlying storage and box/unbox AnyVals when needed.
 // inner: The underlying array
 // _size: Keeps the track of the effective size of the underlying array. a.k.a. end index exclusive
-class ArrayList[E] private (private[this] var inner: Array[AnyRef],
+class ArrayList[E] private (private[this] var inner: Array[Any],
                             private[this] var _size: Int)
     extends AbstractList[E]
     with List[E]
@@ -18,10 +18,9 @@ class ArrayList[E] private (private[this] var inner: Array[AnyRef],
     this(
       {
         val initialArr =
-          Array.ofDim[AnyRef](initialCollection.size() max initialCapacity)
+          Array.ofDim[Any](initialCollection.size() max initialCapacity)
         import scala.collection.JavaConverters._
         initialCollection.asScala
-          .map(_.asInstanceOf[AnyRef])
           .copyToArray(initialArr)
         initialArr
       },
@@ -46,7 +45,7 @@ class ArrayList[E] private (private[this] var inner: Array[AnyRef],
   private[this] def expand(): Unit = expand(inner.length * 2 max 1)
 
   private[this] def expand(newCapacity: Int): Unit = {
-    val newArr = Array.ofDim[AnyRef](newCapacity)
+    val newArr = Array.ofDim[Any](newCapacity)
     inner.copyToArray(newArr, 0, size())
     inner = newArr
   }
@@ -72,13 +71,10 @@ class ArrayList[E] private (private[this] var inner: Array[AnyRef],
   // shallow-copy
   override def clone(): AnyRef = new ArrayList(inner, _size)
 
-  override def toArray(): Array[AnyRef] = {
-    val result = Array.ofDim[AnyRef](size())
-    inner.copyToArray(result, 0, size())
-    result
-  }
+  override def toArray(): Array[AnyRef] =
+    inner.map(_.asInstanceOf[AnyRef])
 
-  override def toArray[T <: AnyRef](a: Array[T]): Array[T] =
+  override def toArray[T](a: Array[T]): Array[T] =
     if (a == null)
       throw new NullPointerException
     else if (a.length < size())
@@ -101,7 +97,7 @@ class ArrayList[E] private (private[this] var inner: Array[AnyRef],
 
   override def set(index: Int, element: E): E = {
     val original = get(index)
-    inner(index) = element.asInstanceOf[AnyRef]
+    inner(index) = element
     original
   }
 
@@ -119,7 +115,7 @@ class ArrayList[E] private (private[this] var inner: Array[AnyRef],
     for (i <- _size to (index + 1) by -1) {
       inner(i) = inner(i - 1)
     }
-    inner(index) = element.asInstanceOf[AnyRef]
+    inner(index) = element
     _size += 1
   }
 
