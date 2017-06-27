@@ -22,9 +22,11 @@ else
     sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
     sudo apt-get -qq update
     sudo apt-get install -y -qq \
+      gcc-5 g++-5 \
       clang++-3.8 \
       libgc-dev \
       libunwind8-dev
+    sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 1
 
     # Install re2
     # Starting from Ubuntu 16.04 LTS, it'll be available as http://packages.ubuntu.com/xenial/libre2-dev
