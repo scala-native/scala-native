@@ -279,4 +279,10 @@ object ArrayListSuite extends tests.Suite {
     // makes sure that clear()ing an already empty list is safe
     al1.clear()
   }
+
+  test("should throw an error with negative initial capacity") {
+    assertThrows[IllegalArgumentException] {
+      new ArrayList(-1)
+    }
+  }
 }
