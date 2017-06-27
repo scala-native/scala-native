@@ -118,6 +118,7 @@ int scalanative_connect(int socket, struct scalanative_sockaddr *address,
 	    errno = convert_result;
 	    result = -1;
     }
+    free(converted_address);
     return result;
 }
 
