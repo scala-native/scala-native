@@ -20,6 +20,7 @@ void scalanative_convert_scalanative_addrinfo(struct scalanative_addrinfo *in,
         scalanative_convert_sockaddr(in->ai_addr, &converted_addr, len);
         out->ai_addr = converted_addr;
         out->ai_addrlen = *len;
+        free(len);
     }
     if (in->ai_next != NULL) {
         struct addrinfo *converted = malloc(sizeof(struct addrinfo));
@@ -50,6 +51,7 @@ void scalanative_convert_addrinfo(struct addrinfo *in,
                                                  len);
         out->ai_addr = converted_addr;
         out->ai_addrlen = *len;
+        free(len);
     }
     if (in->ai_next != NULL) {
         struct scalanative_addrinfo *converted =
@@ -69,7 +71,7 @@ int scalanative_getaddrinfo(char *name, char *service,
     scalanative_convert_scalanative_addrinfo(hints, &hints_converted);
     int status = getaddrinfo(name, service, &hints_converted, &res_c);
     scalanative_convert_addrinfo(res_c, res);
-    free(res_c);
+    freeaddrinfo(res_c);
     return status;
 }
 
@@ -78,6 +80,8 @@ int scalanative_getnameinfo(struct scalanative_sockaddr *addr,
                             char *serv, socklen_t servlen, int flags) {
     struct sockaddr *converted_addr;
     scalanative_convert_sockaddr(addr, &converted_addr, &addrlen);
-    return getnameinfo(converted_addr, addrlen, host, hostlen, serv, servlen,
-                       flags);
+    int status = getnameinfo(converted_addr, addrlen, host, hostlen, serv,
+                             servlen, flags);
+    free(converted_addr);
+    return status;
 }

@@ -1,6 +1,9 @@
 #include <netdb.h>
-#include "sys/socket.h"
 #include "sys/socket_conversions.h"
+
+#ifndef __SYS_SOCKET_H
+#include "sys/socket.h"
+#endif
 
 struct scalanative_addrinfo {
     int ai_flags;                         /* Input flags.  */

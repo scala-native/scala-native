@@ -25,4 +25,3 @@ const char *scalanative_inet_ntop(int af, const void *src, char *dst,
 }
 
 in_addr_t scalanative_inet_addr(char *in) { return inet_addr(in); }
-
