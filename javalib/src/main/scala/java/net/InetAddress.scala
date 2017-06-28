@@ -17,16 +17,16 @@ abstract class InetAddress private[net] (ipAddress: Array[Byte], host: String)
   def getHostAddress(): String = createIPStringFromByteArray(ipAddress)
 
   def getHostName(): String = {
-    if (host == null) {
+    if (host != null) {
+      host
+    } else {
       val ipString = createIPStringFromByteArray(ipAddress)
-      val host = SocketHelpers
+      SocketHelpers
         .ipToHost(ipString, isValidIPv6Address(ipString))
         .getOrElse {
-          return ipString
+          ipString
         }
-      return host
     }
-    return host
   }
 
   def getAddress() = ipAddress.clone
