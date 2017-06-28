@@ -50,8 +50,6 @@ object ScalaNativePlugin extends AutoPlugin {
       settingKey[String]("GC choice, either \"none\" or \"boehm\".")
   }
 
-  override def projectSettings: Seq[Setting[_]] = (
-    ScalaNativePluginInternal.projectSettings ++
-      scalaNativeEcosystemSettings
-  )
+  override def projectSettings: Seq[Setting[_]] =
+    ScalaNativePluginInternal.scalaNativeProjectSettings
 }
