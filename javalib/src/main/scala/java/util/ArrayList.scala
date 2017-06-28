@@ -4,10 +4,10 @@ import java.io.Serializable
 
 // Added extra private constructors to handle all of the overloads.
 // To preserve method signatures, we cannot take ClassTag via implicit parameters.
-// We use an Array[AnyRef] for underlying storage and box/unbox AnyVals where needed as the JDK class would do.
+// We use an Array[Any] as an underlying storage and box/unbox AnyVals when needed.
 // inner: The underlying array
 // _size: Keeps the track of the effective size of the underlying array. a.k.a. end index exclusive
-class ArrayList[E] private (private[this] var inner: Array[AnyRef],
+class ArrayList[E] private (private[this] var inner: Array[Any],
                             private[this] var _size: Int)
     extends AbstractList[E]
     with List[E]
@@ -17,18 +17,28 @@ class ArrayList[E] private (private[this] var inner: Array[AnyRef],
   private def this(initialCollection: Collection[E], initialCapacity: Int) =
     this(
       {
+        if (initialCapacity < 0) {
+          throw new IllegalArgumentException(
+            "Illegal Capacity: " + initialCapacity)
+        }
         val initialArr =
-          Array.ofDim[AnyRef](initialCollection.size() max initialCapacity)
+          Array.ofDim[Any](initialCollection.size() max initialCapacity)
         import scala.collection.JavaConverters._
         initialCollection.asScala
-          .map(_.asInstanceOf[AnyRef])
           .copyToArray(initialArr)
         initialArr
       },
       initialCollection.size()
     )
 
-  def this(c: Collection[E]) = this(c, c.size())
+  def this(c: Collection[E]) =
+    this(
+      if (c != null)
+        c
+      else
+        throw new NullPointerException,
+      c.size()
+    )
 
   def this(initialCapacity: Int) =
     this(Collections.emptyList(): Collection[E], initialCapacity)
@@ -39,7 +49,7 @@ class ArrayList[E] private (private[this] var inner: Array[AnyRef],
   private[this] def expand(): Unit = expand(inner.length * 2 max 1)
 
   private[this] def expand(newCapacity: Int): Unit = {
-    val newArr = Array.ofDim[AnyRef](newCapacity)
+    val newArr = Array.ofDim[Any](newCapacity)
     inner.copyToArray(newArr, 0, size())
     inner = newArr
   }
@@ -65,16 +75,17 @@ class ArrayList[E] private (private[this] var inner: Array[AnyRef],
   // shallow-copy
   override def clone(): AnyRef = new ArrayList(inner, _size)
 
-  override def toArray(): Array[AnyRef] = {
-    val result = Array.ofDim[AnyRef](size())
-    inner.copyToArray(result, 0, size())
-    result
-  }
+  override def toArray(): Array[AnyRef] =
+    inner.map(_.asInstanceOf[AnyRef])
 
-  override def toArray[T <: AnyRef](a: Array[T]): Array[T] =
-    if (a.length < size())
+  override def toArray[T](a: Array[T]): Array[T] =
+    if (a == null)
+      throw new NullPointerException
+    else if (a.length < size())
       toArray().asInstanceOf[Array[T]]
     else {
+      // TODO: this copy should result in ArrayStoreException when not T >: E
+      // need to detect type mismatch at runtime. related: #858
       inner.asInstanceOf[Array[T]].copyToArray(a, 0, size())
       // fill the rest of the elements in a by null as explained in JDK Javadoc
       for (i <- size() until a.length) {
@@ -90,7 +101,7 @@ class ArrayList[E] private (private[this] var inner: Array[AnyRef],
 
   override def set(index: Int, element: E): E = {
     val original = get(index)
-    inner(index) = element.asInstanceOf[AnyRef]
+    inner(index) = element
     original
   }
 
@@ -108,7 +119,7 @@ class ArrayList[E] private (private[this] var inner: Array[AnyRef],
     for (i <- _size to (index + 1) by -1) {
       inner(i) = inner(i - 1)
     }
-    inner(index) = element.asInstanceOf[AnyRef]
+    inner(index) = element
     _size += 1
   }
 
@@ -141,17 +152,14 @@ class ArrayList[E] private (private[this] var inner: Array[AnyRef],
     _size = 0
   }
 
-  // TODO: define for better performance
-  //override def contains(o: Any): Boolean =
-  //override def addAll(c: Collection[_ <: E]): Boolean =
-  //override def addAll(index: Index, c: Collection[_ <: E]): Boolean =
-  //override def removeRange(fromIndex: Int, toIndex: Int): Boolean =
-  //override def removeAll(c: Collection[_ <: AnyRef]): Boolean =
-  //override def retainAll(c: Collection[_ <: AnyRef]): Boolean =
-  //override def listIterator(index: Int): ListIterator[E] =
-  //override def listIterator(): ListIterator[E] =
-  //override def iterator(): Iterator[E] =
-  //override def subList(fromIndex: Int, toIndex: Int): List[E] =
+  override def addAll(c: Collection[_ <: E]): Boolean =
+    super.addAll(c)
+
+  override def addAll(index: Int, c: Collection[_ <: E]): Boolean =
+    super.addAll(index, c)
+
+  override def iterator(): java.util.Iterator[E] =
+    super.iterator()
 
   // TODO: JDK 1.8
   // def forEach(action: Consumer[_ >: E]): Unit =

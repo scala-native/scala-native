@@ -85,6 +85,25 @@ int scalanative_socket(int domain, int type, int protocol) {
     return socket(domain, type, protocol);
 }
 
+int scalanative_connect(int socket, struct scalanative_sockaddr *address,
+                        socklen_t address_len) {
+    struct sockaddr *converted_address;
+    int convert_result =
+        scalanative_convert_sockaddr(address, &converted_address, &address_len);
+
+    int result;
+
+    if (convert_result == 0) {
+        result = connect(socket, converted_address, address_len);
+    } else {
+        errno = convert_result;
+        result = -1;
+    }
+
+    free(converted_address);
+    return result;
+}
+
 int scalanative_bind(int socket, struct scalanative_sockaddr *address,
                      socklen_t address_len) {
     struct sockaddr *converted_address;
