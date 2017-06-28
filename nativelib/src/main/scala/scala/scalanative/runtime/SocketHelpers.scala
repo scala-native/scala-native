@@ -6,6 +6,7 @@ import scalanative.posix.arpa.inet._
 import scalanative.posix.sys.socketOps._
 import scalanative.posix.sys.socket._
 import scalanative.posix.sys.select._
+import scalanative.posix.unistd.close
 import scalanative.posix.sys.selectOps._
 import scalanative.posix.netinet.{in, inOps}, in._, inOps._
 
@@ -24,6 +25,7 @@ object SocketHelpers {
       hints.ai_flags = 4 // AI_NUMERICHOST
       hints.ai_socktype = SOCK_STREAM
       hints.ai_next = null
+      ret.ai_next = null
 
       if (getaddrinfo(cIP, toCString("7"), hints, ret) != 0) {
         return false
@@ -35,11 +37,13 @@ object SocketHelpers {
       }
       val connectRes = connect(sock, ret.ai_addr, ret.ai_addrlen)
       if (connectRes < 0) {
+        close(sock)
         return false
       }
 
       val sentBytes = send(sock, toCString("echo"), 4, 0)
       if (sentBytes < 4) {
+        close(sock)
         return false
       }
 
@@ -58,8 +62,11 @@ object SocketHelpers {
       val buf      = stackalloc[CChar](5)
       val recBytes = recv(sock, buf, 5, 0)
       if (recBytes < 4) {
+        close(sock)
         return false
       }
+
+      close(sock)
     }
     true
   }
