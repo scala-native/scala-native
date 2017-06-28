@@ -89,15 +89,13 @@ object ScalaNativePluginInternal {
       checkThatClangIsRecentEnough(clang)
       clang
     },
-    nativeClang in Compile := nativeClang.value,
-    nativeClang in Test := nativeClang.value,
+    nativeClang in NativeTest := (nativeClang in Test).value,
     nativeClangPP := {
       val clang = discover("clang++", clangVersions)
       checkThatClangIsRecentEnough(clang)
       clang
     },
-    nativeClangPP in Compile := nativeClangPP.value,
-    nativeClangPP in Test := nativeClangPP.value,
+    nativeClangPP in NativeTest := (nativeClangPP in Test).value,
     nativeCompileOptions := {
       val includes = {
         val includedir =
@@ -107,8 +105,7 @@ object ScalaNativePluginInternal {
       }
       includes :+ "-Qunused-arguments"
     },
-    nativeCompileOptions in Compile := nativeCompileOptions.value,
-    nativeCompileOptions in Test := nativeCompileOptions.value,
+    nativeCompileOptions in NativeTest := (nativeCompileOptions in Test).value,
     nativeLinkingOptions := {
       val libs = {
         val libdir =
@@ -118,20 +115,15 @@ object ScalaNativePluginInternal {
       }
       libs
     },
-    nativeLinkingOptions in Compile := nativeLinkingOptions.value,
-    nativeLinkingOptions in Test := nativeLinkingOptions.value,
+    nativeLinkingOptions in NativeTest := (nativeLinkingOptions in Test).value,
     nativeMode := "debug",
-    nativeMode in Compile := nativeMode.value,
-    nativeMode in Test := nativeMode.value,
+    nativeMode in NativeTest := (nativeMode in Test).value,
     nativeLinkerReporter := tools.LinkerReporter.empty,
-    nativeLinkerReporter in Compile := nativeLinkerReporter.value,
-    nativeLinkerReporter in Test := nativeLinkerReporter.value,
+    nativeLinkerReporter in NativeTest := (nativeLinkerReporter in Test).value,
     nativeOptimizerReporter := tools.OptimizerReporter.empty,
-    nativeOptimizerReporter in Compile := nativeOptimizerReporter.value,
-    nativeOptimizerReporter in Test := nativeOptimizerReporter.value,
+    nativeOptimizerReporter in NativeTest := (nativeOptimizerReporter in Test).value,
     nativeGC := "boehm",
-    nativeGC in Compile := nativeGC.value,
-    nativeGC in Test := nativeGC.value
+    nativeGC in NativeTest := (nativeGC in Test).value
   )
 
   lazy val scalaNativeConfigSettings: Seq[Setting[_]] = Seq(
