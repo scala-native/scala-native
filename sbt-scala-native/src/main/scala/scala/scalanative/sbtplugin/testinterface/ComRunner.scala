@@ -9,7 +9,7 @@ import sbt.{Logger, MessageOnlyException, Process}
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration.Duration
 import scala.scalanative.testinterface.serialization._
-import java.net.{ConnectException, Socket, SocketTimeoutException}
+import java.net.{ServerSocket, SocketTimeoutException}
 
 import scala.scalanative.testinterface.serialization.Log.Level
 
@@ -24,24 +24,33 @@ class ComRunner(bin: File,
                 args: Seq[String],
                 logger: Logger) {
 
-  /** Port over which we communicate with the distant program */
-  val port: Int = scala.util.Random.nextInt(1000) + 9000
-
   private[this] val runner = new Thread {
     override def run(): Unit = {
       import sbt.Process._
-      running = true
+      val port = serverSocket.getLocalPort
       logger.info(s"Starting process '$bin' on port '$port'.")
       Process(bin.toString +: port.toString +: args, None, envVars.toSeq: _*) ! logger
-      running = false
     }
   }
 
-  private[this] var running: Boolean = false
+  private[this] var serverSocket: ServerSocket = _
+  private[this] val socket =
+    try {
+      serverSocket = new ServerSocket(0)
 
-  runner.start()
+      runner.start()
 
-  private[this] val socket = getSocket(retries = 5)
+      serverSocket.setSoTimeout(30 * 1000)
+      serverSocket.accept()
+    } catch {
+      case _: SocketTimeoutException =>
+        throw new MessageOnlyException(
+          "The test program never connected to sbt.")
+    } finally {
+      // We can close it immediately, since we won't receive another connection.
+      serverSocket.close()
+    }
+
   private[this] val in = new DataInputStream(
     new BufferedInputStream(socket.getInputStream))
   private[this] val out = new DataOutputStream(
@@ -49,7 +58,12 @@ class ComRunner(bin: File,
 
   /** Send message `msg` to the distant program. */
   def send(msg: Message): Unit = synchronized {
-    SerializedOutputStream(out)(_.writeMessage(msg))
+    try SerializedOutputStream(out)(_.writeMessage(msg))
+    catch {
+      case ex: Throwable =>
+        close()
+        throw ex
+    }
   }
 
   /** Wait for a message to arrive from the distant program. */
@@ -75,11 +89,15 @@ class ComRunner(bin: File,
 
       } catch {
         case _: EOFException =>
+          close()
           throw new MessageOnlyException(
-            s"EOF on connection with remote runner on port $port")
+            s"EOF on connection with remote runner on port ${serverSocket.getLocalPort}")
         case _: SocketTimeoutException =>
-          in.reset()
+          close()
           throw new TimeoutException("Timeout expired")
+        case ex: Throwable =>
+          close()
+          throw ex
       } finally {
         socket.setSoTimeout(savedSoTimeout)
       }
@@ -90,18 +108,6 @@ class ComRunner(bin: File,
     out.close()
     socket.close()
   }
-
-  private[this] def getSocket(retries: Int): Socket =
-    if (retries < 0)
-      throw new Exception("Couldn't communicate with remote runner.")
-    else {
-      try new Socket("localhost", port)
-      catch {
-        case _: ConnectException =>
-          Thread.sleep(100)
-          getSocket(retries - 1)
-      }
-    }
 
   private def log(message: Log): Unit =
     message.level match {
