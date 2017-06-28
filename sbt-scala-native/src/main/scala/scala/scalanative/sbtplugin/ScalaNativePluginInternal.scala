@@ -46,9 +46,6 @@ object ScalaNativePluginInternal {
   val nativeConfig =
     taskKey[tools.Config]("Aggregate config object that's used for tools.")
 
-  val nativeLogger =
-    taskKey[Logger]("Logger, that's used by sbt-scala-native.")
-
   val nativeLinkNIR =
     taskKey[tools.LinkerResult]("Link NIR using Scala Native linker.")
 
@@ -126,19 +123,21 @@ object ScalaNativePluginInternal {
     nativeGC in NativeTest := (nativeGC in Test).value
   )
 
-  lazy val scalaNativeConfigSettings: Seq[Setting[_]] = Seq(
+  lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
     nativeWarnOldJVM := {
-      val logger = nativeLogger.value
+      val logger = streams.value.log
       Try(Class.forName("java.util.function.Function")).toOption match {
         case None =>
           logger.warn("Scala Native is only supported on Java 8 or newer.")
         case Some(_) =>
           ()
       }
-    },
-    nativeLogger := streams.value.log,
+    }
+  )
+
+  lazy val scalaNativeConfigSettings: Seq[Setting[_]] = Seq(
     nativeTarget := {
-      val logger = nativeLogger.value
+      val logger = streams.value.log
       val cwd    = nativeWorkdir.value
       val clang  = nativeClang.value
       // Use non-standard extension to not include the ll file when linking (#639)
@@ -193,7 +192,7 @@ object ScalaNativePluginInternal {
     },
     nativeUnpackLib := {
       val cwd       = nativeWorkdir.value
-      val logger    = nativeLogger.value
+      val logger    = streams.value.log
       val classpath = (fullClasspath in Compile).value
 
       val lib = cwd / "lib"
@@ -227,7 +226,7 @@ object ScalaNativePluginInternal {
       val clangpp   = nativeClangPP.value
       val gc        = nativeGC.value
       val opts      = "-O2" +: nativeCompileOptions.value
-      val logger    = nativeLogger.value
+      val logger    = streams.value.log
       val nativelib = nativeUnpackLib.value
       val cpaths    = (cwd ** "*.c").get.map(_.abs)
       val cpppaths  = (cwd ** "*.cpp").get.map(_.abs)
@@ -283,7 +282,7 @@ object ScalaNativePluginInternal {
       nativelib
     },
     nativeLinkNIR := {
-      val logger   = nativeLogger.value
+      val logger   = streams.value.log
       val driver   = nativeOptimizerDriver.value
       val config   = nativeConfig.value
       val reporter = nativeLinkerReporter.value
@@ -306,7 +305,7 @@ object ScalaNativePluginInternal {
       result
     },
     nativeOptimizeNIR := {
-      val logger   = nativeLogger.value
+      val logger   = streams.value.log
       val result   = nativeLinkNIR.value
       val config   = nativeConfig.value
       val reporter = nativeOptimizerReporter.value
@@ -316,7 +315,7 @@ object ScalaNativePluginInternal {
       }
     },
     nativeGenerateLL := {
-      val logger    = nativeLogger.value
+      val logger    = streams.value.log
       val config    = nativeConfig.value
       val optimized = nativeOptimizeNIR.value
       val cwd       = nativeWorkdir.value
@@ -327,7 +326,7 @@ object ScalaNativePluginInternal {
       (cwd ** "*.ll").get.toSeq
     },
     nativeCompileLL := {
-      val logger      = nativeLogger.value
+      val logger      = streams.value.log
       val generated   = nativeGenerateLL.value
       val clangpp     = nativeClangPP.value
       val cwd         = nativeWorkdir.value
@@ -355,7 +354,7 @@ object ScalaNativePluginInternal {
     },
     nativeLinkLL := {
       val linked      = nativeLinkNIR.value
-      val logger      = nativeLogger.value
+      val logger      = streams.value.log
       val apppaths    = nativeCompileLL.value
       val nativelib   = nativeCompileLib.value
       val cwd         = nativeWorkdir.value
