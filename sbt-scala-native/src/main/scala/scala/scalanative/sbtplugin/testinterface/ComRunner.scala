@@ -46,7 +46,10 @@ class ComRunner(bin: File,
       case _: SocketTimeoutException =>
         throw new MessageOnlyException(
           "The test program never connected to sbt.")
-    } finally serverSocket.close()
+    } finally {
+      // We can close it immediately, since we won't receive another connection.
+      serverSocket.close()
+    }
 
   private[this] val in = new DataInputStream(
     new BufferedInputStream(socket.getInputStream))
