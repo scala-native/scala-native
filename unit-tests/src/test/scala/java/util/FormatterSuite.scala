@@ -2,7 +2,7 @@ package java.util
 
 // Ported from Harmony
 
-// Tests related to SecurityManager are removed because they doesn't exit on Scala Native
+// Tests related to SecurityManager are removed because they doesn't exist on Scala Native
 
 import java.io.BufferedOutputStream
 import java.io.ByteArrayOutputStream
@@ -391,10 +391,9 @@ object FormatterSuite extends tests.Suite {
     f.close()
   }
 
-  testFails("Constructor(OutputStream)", 818) {
-    // OutputStreamWriter should throw NPE if its argument is null
+  test("Constructor(OutputStream)") {
     assertThrows[NullPointerException](
-      new Formatter(null.asInstanceOf[OutputStream])) // fails #818
+      new Formatter(null.asInstanceOf[OutputStream]))
 
     val os = new FileOutputStream(notExist)
     val f  = new Formatter(os)

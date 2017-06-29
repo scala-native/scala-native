@@ -384,10 +384,9 @@ object FormatterUSSuite extends tests.Suite {
     f.close()
   }
 
-  testFails("Constructor(OutputStream)", 818) {
-    // OutputStreamWriter should throw NPE if its argument is null
+  test("Constructor(OutputStream)") {
     assertThrows[NullPointerException](
-      new Formatter(null.asInstanceOf[OutputStream])) // fails #818
+      new Formatter(null.asInstanceOf[OutputStream]))
 
     val os = new FileOutputStream(notExist)
     val f  = new Formatter(os)
