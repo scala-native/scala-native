@@ -84,7 +84,7 @@ abstract class InetAddress private[net] (ipAddress: Array[Byte], host: String)
 
 }
 
-object InetAddress {
+private[net] trait InetAddressBase {
 
   def getByName(host: String): InetAddress = {
 
@@ -622,3 +622,5 @@ object InetAddress {
       + ((value >> 8) & 0xff) + "." + (value & 0xff))
   }
 }
+
+object InetAddress extends InetAddressBase

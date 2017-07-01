@@ -51,6 +51,4 @@ final class Inet4Address private[net] (ipAddress: Array[Byte], host: String)
 
 }
 
-object Inet4Address {
-  import InetAddress._
-}
+object Inet4Address extends InetAddressBase {}
