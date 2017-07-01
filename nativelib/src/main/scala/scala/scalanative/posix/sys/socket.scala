@@ -172,6 +172,9 @@ object socket {
            buffer: Ptr[Byte],
            length: CSize,
            flags: CInt): CSSize = extern
+
+  @name("scalanative_shutdown")
+  def shutdown(socket: CInt, how: CInt): CInt = extern
 }
 
 object socketOps {

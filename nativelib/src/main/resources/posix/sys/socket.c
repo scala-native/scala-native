@@ -164,3 +164,7 @@ int scalanative_recv(int socket, void *buffer, size_t length, int flags) {
 int scalanative_send(int socket, void *buffer, size_t length, int flags) {
     return send(socket, buffer, length, flags);
 }
+
+int scalanative_shutdown(int socket, int how) {
+    return shutdown(socket, how);
+}
