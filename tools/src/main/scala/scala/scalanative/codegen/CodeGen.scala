@@ -378,9 +378,7 @@ object CodeGen {
         rep(vs, sep = ", ")(genVal)
         str(" ]")
       case Val.Chars(v) =>
-        str("c\"")
-        str(v)
-        str("\\00\"")
+        genChars(v)
       case Val.Local(n, ty) =>
         str("%")
         genLocal(n)
@@ -392,6 +390,56 @@ object CodeGen {
         str(" to i8*)")
       case _ =>
         unsupported(v)
+    }
+
+    def genChars(value: String): Unit = {
+      // `value` should contain a content of a CString literal as is in its source file
+      // malformed literals are assumed absent
+      str("c\"")
+      def loop(from: Int): Unit =
+        value.indexOf('\\', from) match {
+          case -1 => str(value.substring(from))
+          case idx =>
+            str(value.substring(from, idx))
+            import Character.isDigit
+            def isOct(c: Char): Boolean = isDigit(c) && c != '8' && c != '9'
+            def isHex(c: Char): Boolean =
+              isDigit(c) ||
+                c == 'a' || c == 'b' || c == 'c' || c == 'd' || c == 'e' || c == 'f' ||
+                c == 'A' || c == 'B' || c == 'C' || c == 'D' || c == 'E' || c == 'F'
+            value(idx + 1) match {
+              case c @ (''' | '"' | '?') => str(c); loop(idx + 2)
+              case '\\'                  => str("\\\\"); loop(idx + 2)
+              case 'a'                   => str("\\07"); loop(idx + 2)
+              case 'b'                   => str("\\08"); loop(idx + 2)
+              case 'f'                   => str("\\0C"); loop(idx + 2)
+              case 'n'                   => str("\\0A"); loop(idx + 2)
+              case 'r'                   => str("\\0D"); loop(idx + 2)
+              case 't'                   => str("\\09"); loop(idx + 2)
+              case 'v'                   => str("\\0B"); loop(idx + 2)
+              case d if isOct(d) =>
+                val oct = value.drop(from + 1).take(3).takeWhile(isOct)
+                val hex =
+                  Integer.toHexString(Integer.parseInt(oct, 8)).toUpperCase
+                str {
+                  if (hex.length < 2) "\\0" + hex
+                  else "\\" + hex
+                }
+                loop(idx + 1 + oct.length)
+              case 'x' =>
+                val hex = value.drop(from + 2).takeWhile(isHex).toUpperCase
+                str {
+                  if (hex.length < 2) "\\0" + hex
+                  else "\\" + hex
+                }
+                loop(idx + 2 + hex.length)
+              case unknown =>
+                // clang warns but allows unknown escape sequences, while java emits errors
+                str(unknown); loop(idx + 2)
+            }
+        }
+      loop(0)
+      str("\\00\"")
     }
 
     def genFloatHex(value: Float): Unit = {
