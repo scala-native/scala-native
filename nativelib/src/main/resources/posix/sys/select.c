@@ -74,7 +74,6 @@ int scalanative_select(int nfds, int *readfds, int *writefds, int *exceptfds,
     }
 
     if (status == -1) {
-        errno = -1;
         return -1;
     }
 
