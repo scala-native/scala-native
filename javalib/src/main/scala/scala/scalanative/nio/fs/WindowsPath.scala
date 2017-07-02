@@ -7,24 +7,28 @@ import java.util.Iterator
 
 import scala.collection.mutable.UnrolledBuffer
 
-class WindowsPath(private val fs: WindowsFileSystem, private val rawPath: String)
+class WindowsPath(private val fs: WindowsFileSystem,
+                  private val rawPath: String)
     extends Path {
   import WindowsPath._
 
-  lazy val path: String = removeRedundantSlashes(rawPath.replace("/", fs.getSeparator()))
+  lazy val path: String = removeRedundantSlashes(
+    rawPath.replace("/", fs.getSeparator()))
 
   override def getFileSystem(): FileSystem =
     fs
 
   override def isAbsolute(): Boolean =
-    path.startsWith("\\\\") || path.startsWith("\\")|| path.startsWith("/") || (path.length>1 && path(1) == ':')
+    path.startsWith("\\\\") || path.startsWith("\\") || path.startsWith("/") || (path.length > 1 && path(
+      1) == ':')
 
   override def getRoot(): Path =
     if (isAbsolute) new WindowsPath(fs, fs.getSeparator())
     else null
 
   override def getFileName(): Path =
-    if (path == "/" || path == "\\" || (1 < path.length() && path.length() < 4 && path(1)==':')) null
+    if (path == "/" || path == "\\" || (1 < path.length() && path
+          .length() < 4 && path(1) == ':')) null
     else if (path.isEmpty) this
     else new WindowsPath(fs, path.split("\\\\|/").last)
 
@@ -33,7 +37,8 @@ class WindowsPath(private val fs: WindowsFileSystem, private val rawPath: String
     if (nameCount == 0 || (nameCount == 1 && !isAbsolute)) null
     else if (isAbsolute)
       if (path.startsWith("\\") || path.startsWith("/"))
-        new WindowsPath(fs, fs.getSeparator() + subpath(0, nameCount - 1).toString)
+        new WindowsPath(fs,
+                        fs.getSeparator() + subpath(0, nameCount - 1).toString)
       else
         new WindowsPath(fs, subpath(0, nameCount - 1).toString)
     else subpath(0, nameCount - 1)
@@ -54,8 +59,9 @@ class WindowsPath(private val fs: WindowsFileSystem, private val rawPath: String
   }
 
   override def subpath(beginIndex: Int, endIndex: Int): Path = {
-    val subPath = (beginIndex until endIndex).map(getName).mkString(fs.getSeparator())
-    new WindowsPath(fs, subPath)    
+    val subPath =
+      (beginIndex until endIndex).map(getName).mkString(fs.getSeparator())
+    new WindowsPath(fs, subPath)
   }
 
   override def startsWith(other: Path): Boolean =
@@ -141,8 +147,9 @@ class WindowsPath(private val fs: WindowsFileSystem, private val rawPath: String
 
   override def toFile(): File = {
     val notDotPath = path.stripPrefix(".")
-    val result = if (isAbsolute) new File(path)
-    else new File(s"${fs.defaultDirectory}${fs.getSeparator()}$notDotPath")
+    val result =
+      if (isAbsolute) new File(path)
+      else new File(s"${fs.defaultDirectory}${fs.getSeparator()}$notDotPath")
     result
   }
 
@@ -230,7 +237,8 @@ private object WindowsPath {
         }
       }
       val result = buffer.toString
-      if (result.length > 1 && (result.endsWith("/") || result.endsWith("\\"))) result.init
+      if (result.length > 1 && (result.endsWith("/") || result.endsWith("\\")))
+        result.init
       else result
     }
 

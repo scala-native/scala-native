@@ -138,10 +138,12 @@ extern "C" int __imp_write(int fildes, void *buf, uint32_t nbyte) {
         scalanative_send(fildes, buf, nbyte, 0);
     } else if (result.type == DescriptorGuard::FILE) {
         switch (fildes) {
-            case STDOUT_FILENO: return fwrite(buf, nbyte, 1, stdout);
-            case STDERR_FILENO: return fwrite(buf, nbyte, 1, stderr);
-            default:
-                return _write(fildes, buf, nbyte);
+        case STDOUT_FILENO:
+            return fwrite(buf, nbyte, 1, stdout);
+        case STDERR_FILENO:
+            return fwrite(buf, nbyte, 1, stderr);
+        default:
+            return _write(fildes, buf, nbyte);
         }
     }
     return -1;

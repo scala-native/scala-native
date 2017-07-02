@@ -11,7 +11,7 @@ import scalanative.posix.{grp, pwd, unistd, utime}
 import scalanative.posix.sys.stat
 
 final class NativeWindowsFileAttributeView(path: Path,
-                                         options: Array[LinkOption])
+                                           options: Array[LinkOption])
     extends PosixFileAttributeView
     with FileOwnerAttributeView {
 
@@ -136,10 +136,10 @@ final class NativeWindowsFileAttributeView(path: Path,
 
       override def permissions =
         Zone { implicit z =>
-          val set = new HashSet[PosixFilePermission]
+          val set   = new HashSet[PosixFilePermission]
           val fMode = fileMode()
           NativeWindowsFileAttributeView.permMap.foreach {
-            case (flag, value) => {              
+            case (flag, value) => {
               if ((fMode & flag).toInt != 0) set.add(value)
             }
           }
