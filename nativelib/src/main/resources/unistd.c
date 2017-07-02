@@ -28,24 +28,44 @@ int scalanative_unistd_access(const char *path, int amode) {
 }
 
 int scalanative_symlink(char *path1, char *path2) {
+#ifndef _WIN32
     return symlink(path1, path2);
+#else
+    return os_win_unistd_symlink(path1, path2);
+#endif
 }
 
 int scalanative_symlinkat(char *path1, int fd, char *path2) {
+#ifndef _WIN32
     return symlinkat(path1, fd, path2);
+#else
+    return os_win_unistd_symlinkat(path1, fd, path2);
+#endif
 }
 
 int scalanative_link(char *oldpath, char *newpath) {
+#ifndef _WIN32
     return link(oldpath, newpath);
+#else
+    return os_win_unistd_link(oldpath, newpath);
+#endif
 }
 
 int scalanative_linkat(int fd1, char *path1, int fd2, char *path2, int flag) {
+#ifndef _WIN32
     return linkat(fd1, path1, fd2, path2, flag);
+#else
+    return os_win_unistd_linkat(fd1, path1, fd2, path2, flag);
+#endif
 }
 
 int scalanative_chown(char *path, scalanative_uid_t owner,
                       scalanative_gid_t group) {
+#ifndef _WIN32
     return chown(path, owner, group);
+#else
+    return os_win_unistd_chown(path, owner, group);
+#endif
 }
 
 int scalanative_unistd_sleep(unsigned int seconds) {
@@ -121,7 +141,8 @@ int scalanative_unistd_fsync(int fildes) {
 #endif
 }
 
-off_t scalanative_unistd_lseek(int fildes, off_t offset, int whence) {
+scalanative_off_t scalanative_unistd_lseek(int fildes, scalanative_off_t offset,
+                                           int whence) {
 #ifndef _WIN32
     return lseek(fildes, offset, whence);
 #else
@@ -129,7 +150,7 @@ off_t scalanative_unistd_lseek(int fildes, off_t offset, int whence) {
 #endif
 }
 
-int scalanative_unistd_ftruncate(int fildes, off_t length) {
+int scalanative_unistd_ftruncate(int fildes, scalanative_off_t length) {
 #ifndef _WIN32
     return ftruncate(fildes, length);
 #else
@@ -137,7 +158,7 @@ int scalanative_unistd_ftruncate(int fildes, off_t length) {
 #endif
 }
 
-int scalanative_unistd_truncate(const char *path, off_t length) {
+int scalanative_unistd_truncate(const char *path, scalanative_off_t length) {
 #ifndef _WIN32
     return truncate(path, length);
 #else

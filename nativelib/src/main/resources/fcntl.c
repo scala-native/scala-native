@@ -42,7 +42,7 @@ int scalanative_fcntl_open(const char *pathname, int flags) {
 #ifndef _WIN32
     return open(pathname, flags);
 #else
-    return os_win_fcntl_open(pathname, flags, 0x666);
+    return os_win_fcntl_open(pathname, flags, 0x640);
 #endif
 }
 

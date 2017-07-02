@@ -9,6 +9,18 @@
 // can not expand C macros, and that's the easiest way to
 // get the values out of those in a portable manner.
 
+#ifdef _WIN32
+int os_win_libc_remove(const char *fname);
+#endif
+
+int scalanative_libc_remove(const char *fname) {
+#ifndef _WIN32
+    return remove(fname);
+#else
+    return os_win_libc_remove(fname);
+#endif
+}
+
 void *scalanative_libc_stdin() { return stdin; }
 
 void *scalanative_libc_stdout() { return stdout; }

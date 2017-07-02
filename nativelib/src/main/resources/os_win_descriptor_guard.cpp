@@ -27,6 +27,9 @@ DescriptorGuard::~DescriptorGuard() {
             case SOCKET:
                 stype = "SOCKET";
                 break;
+            case FOLDER:
+                stype = "FOLDER";
+                break;
             default:
                 stype = "UNKNOWN";
             }
@@ -43,10 +46,50 @@ bool DescriptorGuard::openSocket(int fildes, uint32_t socket) {
     return true;
 }
 
-bool DescriptorGuard::openFile(int fildes, const char *name) {
+bool DescriptorGuard::openFile(int fildes, std::string &&name, bool isFolder) {
     db.resize(fildes + 1);
-    db[fildes] = {DescriptorGuard::FILE, fildes, name};
+    db[fildes] = {isFolder ? DescriptorGuard::FOLDER : DescriptorGuard::FILE,
+                  fildes, std::move(name)};
     return true;
+}
+
+int DescriptorGuard::getFile(const std::string &name) {
+    int result = -1;
+    int idx = -1;
+    for (auto &entry : db) {
+        ++idx;
+        if (idx < 3) {
+            continue;
+        }
+
+        if (entry.type == FILE && entry.name.compare(name) == 0) {
+            result = idx;
+            break;
+        }
+    }
+    return result;
+}
+
+int DescriptorGuard::getEmpty() {
+    int result = -1;
+    int idx = -1;
+    for (auto &entry : db) {
+        ++idx;
+        if (idx < 3) {
+            continue;
+        }
+
+        if (entry.type == EMPTY) {
+            result = idx;
+            break;
+        }
+    }
+
+    if (result < 0) {
+        result = ++idx;
+        db.push_back({DescriptorGuard::EMPTY, -1, ""});
+    }
+    return result;
 }
 
 DescriptorGuard::Desc DescriptorGuard::close(int fildes) {

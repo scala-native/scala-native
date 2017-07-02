@@ -10,20 +10,18 @@
 #include <sys\stat.h>
 #include <direct.h>
 
+#include "os_win_types.h"
 #include "os_win_dirent.h"
-
-typedef long long blkcnt_t;
-typedef long blksize_t;
 
 struct stat {
     _dev_t st_dev;
     _ino_t st_ino;
-    unsigned short st_mode;
+    unsigned int st_mode;
     short st_nlink;
     short st_uid;
     short st_gid;
     _dev_t st_rdev;
-    _off_t st_size;
+    scalanative_off_t st_size;
     time_t st_atime;
     time_t st_mtime;
     time_t st_ctime;
@@ -32,8 +30,6 @@ struct stat {
 };
 
 #include <io.h>
-
-typedef int mode_t;
 
 #define MS_MODE_MASK (0x0000ffff)
 

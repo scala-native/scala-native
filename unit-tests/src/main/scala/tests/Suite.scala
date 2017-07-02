@@ -81,24 +81,6 @@ abstract class Suite {
     loggers.foreach(_.info("* " + className))
     var success = true
 
-    val issueMap = Seq(
-      // read only directory
-      "DirectoryStreamSuite",
-      // total mess with posix file descriptors
-      "FilesSuite",
-      "FileChannelSuite",
-      "FileDescriptorSuite",
-      "FileOutputStreamSuite",
-      "FileInputStreamSuite",
-      "RandomAccessFileSuite"
-    )
-    // temprorary until fixed
-    if (Platform.isWindows && (!issueMap
-          .find(x => className.contains(x))
-          .isEmpty)) {
-      return success
-    }
-
     tests.foreach { test =>
       val testSuccess = test.run()
       val (status, statusStr, color) =

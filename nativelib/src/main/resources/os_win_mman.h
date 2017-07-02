@@ -1,6 +1,8 @@
 #ifdef _WIN32
 #pragma once
 
+#include "os_win_types.h"
+
 #define PROT_READ 0x1  /* Page can be read.  */
 #define PROT_WRITE 0x2 /* Page can be written.  */
 #define PROT_EXEC 0x4  /* Page can be executed.  */
@@ -26,15 +28,13 @@
  */
 #define MAP_ANONYMOUS 0x1000 /* allocated from memory, swap space */
 
-typedef size_t off_t;
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 int mprotect(void *addr, size_t len, int prot);
 void *mmap(void *addr, size_t length, int prot, int flags, int fd,
-           off_t offset);
+           scalanative_off_t offset);
 int munmap(void *addr, size_t length);
 
 #ifdef __cplusplus

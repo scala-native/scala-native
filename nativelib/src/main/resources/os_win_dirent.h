@@ -33,7 +33,7 @@
 
 /* File type and permission flags for stat(), general mask */
 #if !defined(S_IFMT)
-#define S_IFMT _S_IFMT
+#define S_IFMT 0x1000F000
 #endif
 
 /* Directory bit */
@@ -78,17 +78,17 @@
 
 /* Block device */
 #if !defined(S_IFBLK)
-#define S_IFBLK 0
+#define S_IFBLK 0x10001000
 #endif
 
 /* Link */
 #if !defined(S_IFLNK)
-#define S_IFLNK 0
+#define S_IFLNK 0x10002000
 #endif
 
 /* Socket */
 #if !defined(S_IFSOCK)
-#define S_IFSOCK 0
+#define S_IFSOCK 0x10004000
 #endif
 
 /* Read user permission */

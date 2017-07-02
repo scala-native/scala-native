@@ -21,6 +21,8 @@ import java.nio.file.attribute.{
 
 import java.util.function.BiPredicate
 
+import scala.scalanative.runtime.Platform
+
 object FilesSuite extends tests.Suite {
 
   test("Files.copy can copy to a non-existing file") {
@@ -38,6 +40,7 @@ object FilesSuite extends tests.Suite {
     assert(fromFile.read() == 2)
     assert(fromFile.read() == 3)
     assert(fromFile.read() == -1)
+    fromFile.close()
   }
 
   test("Files.copy throws if the target exists and is a file") {
@@ -86,6 +89,7 @@ object FilesSuite extends tests.Suite {
     assert(fromFile.read() == 2)
     assert(fromFile.read() == 3)
     assert(fromFile.read() == -1)
+    fromFile.close()
   }
 
   test("Files.copy throws if the target exists and is a non-empty directory") {
@@ -143,8 +147,12 @@ object FilesSuite extends tests.Suite {
       val dir    = dirFile.toPath()
       val link   = dir.resolve("link")
       val target = dir.resolve("target")
-      Files.createSymbolicLink(link, target)
-      assert(Files.isSymbolicLink(link))
+
+      if (!Platform.isWindows) // only works if process is elevated ("Run as Administrator")
+        {
+          Files.createSymbolicLink(link, target)
+          assert(Files.isSymbolicLink(link))
+        }
     }
   }
 
@@ -202,12 +210,15 @@ object FilesSuite extends tests.Suite {
       existing.createNewFile()
       assert(existing.exists())
 
-      Files.createSymbolicLink(brokenLink, nonexisting)
-      Files.createSymbolicLink(correctLink, existing.toPath)
-      assert(!Files.exists(brokenLink))
-      assert(Files.exists(brokenLink, LinkOption.NOFOLLOW_LINKS))
-      assert(Files.exists(correctLink))
-      assert(Files.exists(correctLink, LinkOption.NOFOLLOW_LINKS))
+      if (!Platform.isWindows) // only works if process is elevated ("Run as Administrator")
+        {
+          Files.createSymbolicLink(brokenLink, nonexisting)
+          Files.createSymbolicLink(correctLink, existing.toPath)
+          assert(!Files.exists(brokenLink))
+          assert(Files.exists(brokenLink, LinkOption.NOFOLLOW_LINKS))
+          assert(Files.exists(correctLink))
+          assert(Files.exists(correctLink, LinkOption.NOFOLLOW_LINKS))
+        }
     }
   }
 
@@ -378,16 +389,19 @@ object FilesSuite extends tests.Suite {
 
   test("Files.isRegularFile handles symlinks") {
     withTemporaryDirectory { dirFile =>
-      val dir  = dirFile.toPath
-      val file = dir.resolve("file")
-      val link = dir.resolve("link")
-      Files.createFile(file)
-      Files.createSymbolicLink(link, file)
-      assert(Files.exists(file))
-      assert(Files.isRegularFile(file))
-      assert(Files.isSymbolicLink(link))
-      assert(Files.isRegularFile(link))
-      assert(!Files.isRegularFile(link, LinkOption.NOFOLLOW_LINKS))
+      if (!Platform.isWindows) // only works if process is elevated ("Run as Administrator")
+        {
+          val dir  = dirFile.toPath
+          val file = dir.resolve("file")
+          val link = dir.resolve("link")
+          Files.createFile(file)
+          Files.createSymbolicLink(link, file)
+          assert(Files.exists(file))
+          assert(Files.isRegularFile(file))
+          assert(Files.isSymbolicLink(link))
+          assert(Files.isRegularFile(link))
+          assert(!Files.isRegularFile(link, LinkOption.NOFOLLOW_LINKS))
+        }
     }
   }
 
@@ -511,28 +525,34 @@ object FilesSuite extends tests.Suite {
 
   test("Files.readSymbolicLink can read a valid symbolic link") {
     withTemporaryDirectory { dirFile =>
-      val dir  = dirFile.toPath()
-      val link = dir.resolve("link")
-      val file = dir.resolve("file")
-      Files.createFile(file)
-      Files.createSymbolicLink(link, file)
+      if (!Platform.isWindows) // only works if process is elevated ("Run as Administrator")
+        {
+          val dir  = dirFile.toPath()
+          val link = dir.resolve("link")
+          val file = dir.resolve("file")
+          Files.createFile(file)
+          Files.createSymbolicLink(link, file)
 
-      assert(Files.exists(file))
-      assert(Files.exists(link))
-      assert(Files.readSymbolicLink(link) == file)
+          assert(Files.exists(file))
+          assert(Files.exists(link))
+          assert(Files.readSymbolicLink(link) == file)
+        }
     }
   }
 
   test("Files.readSymbolicLink can read a broken symbolic link") {
     withTemporaryDirectory { dirFile =>
-      val dir        = dirFile.toPath()
-      val brokenLink = dir.resolve("link")
-      val file       = dir.resolve("file")
-      Files.createSymbolicLink(brokenLink, file)
+      if (!Platform.isWindows) // only works if process is elevated ("Run as Administrator")
+        {
+          val dir        = dirFile.toPath()
+          val brokenLink = dir.resolve("link")
+          val file       = dir.resolve("file")
+          Files.createSymbolicLink(brokenLink, file)
 
-      assert(!Files.exists(file))
-      assert(Files.exists(brokenLink, LinkOption.NOFOLLOW_LINKS))
-      assert(Files.readSymbolicLink(brokenLink) == file)
+          assert(!Files.exists(file))
+          assert(Files.exists(brokenLink, LinkOption.NOFOLLOW_LINKS))
+          assert(Files.readSymbolicLink(brokenLink) == file)
+        }
     }
   }
 
@@ -569,59 +589,65 @@ object FilesSuite extends tests.Suite {
 
   test("Files.walk follows symlinks") {
     withTemporaryDirectory { dirFile =>
-      val dir = dirFile.toPath()
+      if (!Platform.isWindows) // only works if process is elevated ("Run as Administrator")
+        {
+          val dir = dirFile.toPath()
 
-      val d0   = dir.resolve("d0")
-      val f0   = d0.resolve("f0")
-      val f1   = d0.resolve("f1")
-      val link = d0.resolve("link")
+          val d0   = dir.resolve("d0")
+          val f0   = d0.resolve("f0")
+          val f1   = d0.resolve("f1")
+          val link = d0.resolve("link")
 
-      val d1 = dir.resolve("d1")
-      val f2 = d1.resolve("f2")
+          val d1 = dir.resolve("d1")
+          val f2 = d1.resolve("f2")
 
-      Files.createDirectory(d0)
-      Files.createFile(f0)
-      Files.createFile(f1)
-      Files.createSymbolicLink(link, d1)
+          Files.createDirectory(d0)
+          Files.createFile(f0)
+          Files.createFile(f1)
+          Files.createSymbolicLink(link, d1)
 
-      Files.createDirectory(d1)
-      Files.createFile(f2)
+          Files.createDirectory(d1)
+          Files.createFile(f2)
 
-      assert(Files.exists(d0) && Files.isDirectory(d0))
-      assert(Files.exists(f0) && Files.isRegularFile(f0))
-      assert(Files.exists(f1) && Files.isRegularFile(f1))
-      assert(Files.exists(f2) && Files.isRegularFile(f2))
+          assert(Files.exists(d0) && Files.isDirectory(d0))
+          assert(Files.exists(f0) && Files.isRegularFile(f0))
+          assert(Files.exists(f1) && Files.isRegularFile(f1))
+          assert(Files.exists(f2) && Files.isRegularFile(f2))
 
-      val it    = Files.walk(d0, FileVisitOption.FOLLOW_LINKS).iterator()
-      val files = scala.collection.mutable.Set.empty[Path]
-      while (it.hasNext()) {
-        files += it.next()
-      }
-      assert(files.size == 5)
-      assert(files contains d0)
-      assert(files contains f0)
-      assert(files contains f1)
-      assert(files contains link)
+          val it    = Files.walk(d0, FileVisitOption.FOLLOW_LINKS).iterator()
+          val files = scala.collection.mutable.Set.empty[Path]
+          while (it.hasNext()) {
+            files += it.next()
+          }
+          assert(files.size == 5)
+          assert(files contains d0)
+          assert(files contains f0)
+          assert(files contains f1)
+          assert(files contains link)
+        }
     }
   }
 
   test("Files.walk detects cycles") {
     withTemporaryDirectory { dirFile =>
-      val dir = dirFile.toPath()
+      if (!Platform.isWindows) // only works if process is elevated ("Run as Administrator")
+        {
+          val dir = dirFile.toPath()
 
-      val d0   = dir.resolve("d0")
-      val d1   = d0.resolve("d1")
-      val link = d1.resolve("link")
+          val d0   = dir.resolve("d0")
+          val d1   = d0.resolve("d1")
+          val link = d1.resolve("link")
 
-      Files.createDirectory(d0)
-      Files.createDirectory(d1)
-      Files.createSymbolicLink(link, d0)
+          Files.createDirectory(d0)
+          Files.createDirectory(d1)
+          Files.createSymbolicLink(link, d0)
 
-      val it       = Files.walk(d0, FileVisitOption.FOLLOW_LINKS).iterator()
-      val expected = Set(d0, d1)
-      assert(expected contains it.next())
-      assert(expected contains it.next())
-      assertThrows[FileSystemLoopException] { it.next() }
+          val it       = Files.walk(d0, FileVisitOption.FOLLOW_LINKS).iterator()
+          val expected = Set(d0, d1)
+          assert(expected contains it.next())
+          assert(expected contains it.next())
+          assertThrows[FileSystemLoopException] { it.next() }
+        }
     }
   }
 
@@ -876,30 +902,33 @@ object FilesSuite extends tests.Suite {
 
   test("Files.getAttribute obeys given LinkOption") {
     withTemporaryDirectory { dirFile =>
-      val dir = dirFile.toPath()
-      val f0  = dir.resolve("f0")
-      val l0  = dir.resolve("l0")
+      if (!Platform.isWindows) // only works if process is elevated ("Run as Administrator")
+        {
+          val dir = dirFile.toPath()
+          val f0  = dir.resolve("f0")
+          val l0  = dir.resolve("l0")
 
-      Files.createFile(f0)
-      Files.createSymbolicLink(l0, f0)
-      assert(Files.exists(f0))
-      assert(Files.exists(l0))
+          Files.createFile(f0)
+          Files.createSymbolicLink(l0, f0)
+          assert(Files.exists(f0))
+          assert(Files.exists(l0))
 
-      val normalL0IsReg =
-        Files.getAttribute(l0, "isRegularFile").asInstanceOf[Boolean]
-      val noFollowL0IsReg = Files
-        .getAttribute(l0, "isRegularFile", LinkOption.NOFOLLOW_LINKS)
-        .asInstanceOf[Boolean]
-      val normalL0IsLink =
-        Files.getAttribute(l0, "isSymbolicLink").asInstanceOf[Boolean]
-      val noFollowL0IsLink = Files
-        .getAttribute(l0, "isSymbolicLink", LinkOption.NOFOLLOW_LINKS)
-        .asInstanceOf[Boolean]
+          val normalL0IsReg =
+            Files.getAttribute(l0, "isRegularFile").asInstanceOf[Boolean]
+          val noFollowL0IsReg = Files
+            .getAttribute(l0, "isRegularFile", LinkOption.NOFOLLOW_LINKS)
+            .asInstanceOf[Boolean]
+          val normalL0IsLink =
+            Files.getAttribute(l0, "isSymbolicLink").asInstanceOf[Boolean]
+          val noFollowL0IsLink = Files
+            .getAttribute(l0, "isSymbolicLink", LinkOption.NOFOLLOW_LINKS)
+            .asInstanceOf[Boolean]
 
-      assert(normalL0IsReg)
-      assert(!noFollowL0IsReg)
-      assert(!normalL0IsLink)
-      assert(noFollowL0IsLink)
+          assert(normalL0IsReg)
+          assert(!noFollowL0IsReg)
+          assert(!normalL0IsLink)
+          assert(noFollowL0IsLink)
+        }
     }
   }
 
@@ -1057,7 +1086,12 @@ object FilesSuite extends tests.Suite {
       Files.setAttribute(f0, "posix:permissions", perm1)
       val perm2 = Files.getAttribute(f0, "posix:permissions")
 
-      assert(perm0 != perm2)
+      if (Platform.isWindows) {
+        // on Windows file has full permissions on creation
+        assert(perm0 == perm2)
+      } else {
+        assert(perm0 != perm2)
+      }
       assert(perm1 == perm2)
     }
   }

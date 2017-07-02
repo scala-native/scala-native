@@ -64,17 +64,47 @@ object PathSuite extends tests.Suite {
       Paths.get("").subpath(0, 2)
     }
 
-    assert(Paths.get("foo/bar/baz").subpath(0, 1).toString == "foo")
-    assert(Paths.get("foo/bar/baz").subpath(0, 2).toString == "foo/bar")
-    assert(Paths.get("foo/bar/baz").subpath(0, 3).toString == "foo/bar/baz")
-    assert(Paths.get("foo/bar/baz").subpath(1, 3).toString == "bar/baz")
-    assert(Paths.get("foo/bar/baz").subpath(2, 3).toString == "baz")
+    assert(
+      Paths.get("foo/bar/baz").subpath(0, 1).toString == Paths
+        .get("foo")
+        .toString)
+    assert(
+      Paths.get("foo/bar/baz").subpath(0, 2).toString == Paths
+        .get("foo/bar")
+        .toString)
+    assert(
+      Paths.get("foo/bar/baz").subpath(0, 3).toString == Paths
+        .get("foo/bar/baz")
+        .toString)
+    assert(
+      Paths.get("foo/bar/baz").subpath(1, 3).toString == Paths
+        .get("bar/baz")
+        .toString)
+    assert(
+      Paths.get("foo/bar/baz").subpath(2, 3).toString == Paths
+        .get("baz")
+        .toString)
 
-    assert(Paths.get("/foo/bar/baz").subpath(0, 1).toString == "foo")
-    assert(Paths.get("/foo/bar/baz").subpath(0, 2).toString == "foo/bar")
-    assert(Paths.get("/foo/bar/baz").subpath(0, 3).toString == "foo/bar/baz")
-    assert(Paths.get("/foo/bar/baz").subpath(1, 3).toString == "bar/baz")
-    assert(Paths.get("/foo/bar/baz").subpath(2, 3).toString == "baz")
+    assert(
+      Paths.get("/foo/bar/baz").subpath(0, 1).toString == Paths
+        .get("foo")
+        .toString)
+    assert(
+      Paths.get("/foo/bar/baz").subpath(0, 2).toString == Paths
+        .get("foo/bar")
+        .toString)
+    assert(
+      Paths.get("/foo/bar/baz").subpath(0, 3).toString == Paths
+        .get("foo/bar/baz")
+        .toString)
+    assert(
+      Paths.get("/foo/bar/baz").subpath(1, 3).toString == Paths
+        .get("bar/baz")
+        .toString)
+    assert(
+      Paths.get("/foo/bar/baz").subpath(2, 3).toString == Paths
+        .get("baz")
+        .toString)
   }
 
   test("Path.getParent") {
@@ -82,21 +112,23 @@ object PathSuite extends tests.Suite {
     assert(Paths.get("foo").getParent == null)
     assert(Paths.get("/").getParent == null)
     assert(Paths.get("//").getParent == null)
-    assert(Paths.get("foo/bar").getParent.toString == "foo")
-    assert(Paths.get("/foo/bar").getParent.toString == "/foo")
-    assert(Paths.get("/foo").getParent.toString == "/")
-    assert(Paths.get("foo/.").getParent.toString == "foo")
-    assert(Paths.get("./.").getParent.toString == ".")
+    assert(
+      Paths.get("foo/bar").getParent.toString == Paths.get("foo").toString)
+    assert(
+      Paths.get("/foo/bar").getParent.toString == Paths.get("/foo").toString)
+    assert(Paths.get("/foo").getParent.toString == Paths.get("/").toString)
+    assert(Paths.get("foo/.").getParent.toString == Paths.get("foo").toString)
+    assert(Paths.get("./.").getParent.toString == Paths.get(".").toString)
   }
 
   test("Path.getRoot") {
     assert(Paths.get("").getRoot == null)
     assert(Paths.get("foo").getRoot == null)
     assert(Paths.get("foo/bar").getRoot == null)
-    assert(Paths.get("/foo").getRoot.toString == "/")
-    assert(Paths.get("/foo/bar").getRoot.toString == "/")
-    assert(Paths.get("/foo///bar").getRoot.toString == "/")
-    assert(Paths.get("/").getRoot.toString == "/")
+    assert(Paths.get("/foo").getRoot.toString == Paths.get("/").toString)
+    assert(Paths.get("/foo/bar").getRoot.toString == Paths.get("/").toString)
+    assert(Paths.get("/foo///bar").getRoot.toString == Paths.get("/").toString)
+    assert(Paths.get("/").getRoot.toString == Paths.get("/").toString)
   }
 
   test("Path.isAbsolute") {
@@ -132,15 +164,31 @@ object PathSuite extends tests.Suite {
   test("Path.normalize") {
     assert(Paths.get("").normalize.toString == "")
     assert(Paths.get("foo").normalize.toString == "foo")
-    assert(Paths.get("foo/bar").normalize.toString == "foo/bar")
-    assert(Paths.get("foo//bar").normalize.toString == "foo/bar")
+    assert(
+      Paths.get("foo/bar").normalize.toString == Paths.get("foo/bar").toString)
+    assert(
+      Paths.get("foo//bar").normalize.toString == Paths
+        .get("foo/bar")
+        .toString)
     assert(Paths.get("foo/../bar").normalize.toString == "bar")
-    assert(Paths.get("foo/../../bar").normalize.toString == "../bar")
-    assert(Paths.get("/foo/../../bar").normalize.toString == "/bar")
-    assert(Paths.get("/").normalize.toString == "/")
-    assert(Paths.get("/foo").normalize.toString == "/foo")
-    assert(Paths.get("/foo/bar").normalize.toString == "/foo/bar")
-    assert(Paths.get("/foo//bar").normalize.toString == "/foo/bar")
+    assert(
+      Paths.get("foo/../../bar").normalize.toString == Paths
+        .get("../bar")
+        .toString)
+    assert(
+      Paths.get("/foo/../../bar").normalize.toString == Paths
+        .get("/bar")
+        .toString)
+    assert(Paths.get("/").normalize.toString == Paths.get("/").toString)
+    assert(Paths.get("/foo").normalize.toString == Paths.get("/foo").toString)
+    assert(
+      Paths.get("/foo/bar").normalize.toString == Paths
+        .get("/foo/bar")
+        .toString)
+    assert(
+      Paths.get("/foo//bar").normalize.toString == Paths
+        .get("/foo/bar")
+        .toString)
   }
 
   test("Path.startsWith") {
@@ -162,18 +210,21 @@ object PathSuite extends tests.Suite {
     assert(Paths.get("").relativize(Paths.get("")).toString == "")
     assert(Paths.get("foo").relativize(Paths.get("foo/bar")).toString == "bar")
     assert(Paths.get("foo/bar").relativize(Paths.get("foo")).toString == "..")
-    assert(Paths.get("foo").relativize(Paths.get("bar")).toString == "../bar")
+    assert(
+      Paths.get("foo").relativize(Paths.get("bar")).toString == Paths
+        .get("../bar")
+        .toString)
     assert(
       Paths
         .get("foo/bar")
         .relativize(Paths.get("foo/baz"))
-        .toString == "../baz")
+        .toString == Paths.get("../baz").toString)
     assert(Paths.get("").relativize(Paths.get("foo")).toString == "foo")
     assert(
       Paths
         .get("foo/../bar")
         .relativize(Paths.get("bar"))
-        .toString == "../../../bar")
+        .toString == Paths.get("../../../bar").toString)
 
     assertThrows[IllegalArgumentException] {
       assert(Paths.get("/").relativize(Paths.get("")).toString == "")
@@ -185,53 +236,81 @@ object PathSuite extends tests.Suite {
     assert(
       Paths.get("/foo/bar").relativize(Paths.get("/foo")).toString == "..")
     assert(
-      Paths.get("/foo").relativize(Paths.get("/bar")).toString == "../bar")
+      Paths.get("/foo").relativize(Paths.get("/bar")).toString == Paths
+        .get("../bar")
+        .toString)
     assert(
       Paths
         .get("/foo/bar")
         .relativize(Paths.get("/foo/baz"))
-        .toString == "../baz")
+        .toString == Paths.get("../baz").toString)
     assert(Paths.get("/").relativize(Paths.get("/foo")).toString == "foo")
     assert(
       Paths
         .get("/foo/../bar")
         .relativize(Paths.get("/bar"))
-        .toString == "../../../bar")
+        .toString == Paths.get("../../../bar").toString)
   }
 
   test("Path.resolve()") {
     assert(Paths.get("").resolve(Paths.get("")).toString == "")
-    assert(Paths.get("/").resolve(Paths.get("")).toString == "/")
     assert(
-      Paths.get("foo").resolve(Paths.get("foo/bar")).toString == "foo/foo/bar")
+      Paths.get("/").resolve(Paths.get("")).toString == Paths
+        .get("/")
+        .toString)
     assert(
-      Paths.get("foo/bar").resolve(Paths.get("foo")).toString == "foo/bar/foo")
-    assert(Paths.get("foo").resolve(Paths.get("bar")).toString == "foo/bar")
+      Paths.get("foo").resolve(Paths.get("foo/bar")).toString == Paths
+        .get("foo/foo/bar")
+        .toString)
+    assert(
+      Paths.get("foo/bar").resolve(Paths.get("foo")).toString == Paths
+        .get("foo/bar/foo")
+        .toString)
+    assert(
+      Paths.get("foo").resolve(Paths.get("bar")).toString == Paths
+        .get("foo/bar")
+        .toString)
     assert(
       Paths
         .get("foo/bar")
         .resolve(Paths.get("foo/baz"))
-        .toString == "foo/bar/foo/baz")
+        .toString == Paths.get("foo/bar/foo/baz").toString)
     assert(Paths.get("").resolve(Paths.get("foo")).toString == "foo")
     assert(
       Paths
         .get("foo/../bar")
         .resolve(Paths.get("bar"))
-        .toString == "foo/../bar/bar")
+        .toString == Paths.get("foo/../bar/bar").toString)
 
-    assert(Paths.get("/").resolve(Paths.get("/")).toString == "/")
     assert(
-      Paths.get("/foo").resolve(Paths.get("/foo/bar")).toString == "/foo/bar")
-    assert(Paths.get("/foo/bar").resolve(Paths.get("/foo")).toString == "/foo")
-    assert(Paths.get("/foo").resolve(Paths.get("/bar")).toString == "/bar")
+      Paths.get("/").resolve(Paths.get("/")).toString == Paths
+        .get("/")
+        .toString)
+    assert(
+      Paths.get("/foo").resolve(Paths.get("/foo/bar")).toString == Paths
+        .get("/foo/bar")
+        .toString)
+    assert(
+      Paths.get("/foo/bar").resolve(Paths.get("/foo")).toString == Paths
+        .get("/foo")
+        .toString)
+    assert(
+      Paths.get("/foo").resolve(Paths.get("/bar")).toString == Paths
+        .get("/bar")
+        .toString)
     assert(
       Paths
         .get("/foo/bar")
         .resolve(Paths.get("/foo/baz"))
-        .toString == "/foo/baz")
-    assert(Paths.get("/").resolve(Paths.get("/foo")).toString == "/foo")
+        .toString == Paths.get("/foo/baz").toString)
     assert(
-      Paths.get("/foo/../bar").resolve(Paths.get("/bar")).toString == "/bar")
+      Paths.get("/").resolve(Paths.get("/foo")).toString == Paths
+        .get("/foo")
+        .toString)
+    assert(
+      Paths.get("/foo/../bar").resolve(Paths.get("/bar")).toString == Paths
+        .get("/bar")
+        .toString)
   }
 
   test("Path.resolveSibling()") {
@@ -241,48 +320,56 @@ object PathSuite extends tests.Suite {
       Paths
         .get("foo")
         .resolveSibling(Paths.get("foo/bar"))
-        .toString == "foo/bar")
+        .toString == Paths.get("foo/bar").toString)
     assert(
       Paths
         .get("foo/bar")
         .resolveSibling(Paths.get("foo"))
-        .toString == "foo/foo")
+        .toString == Paths.get("foo/foo").toString)
     assert(Paths.get("foo").resolveSibling(Paths.get("bar")).toString == "bar")
     assert(
       Paths
         .get("foo/bar")
         .resolveSibling(Paths.get("foo/baz"))
-        .toString == "foo/foo/baz")
+        .toString == Paths.get("foo/foo/baz").toString)
     assert(Paths.get("").resolveSibling(Paths.get("foo")).toString == "foo")
     assert(
       Paths
         .get("foo/../bar")
         .resolveSibling(Paths.get("bar"))
-        .toString == "foo/../bar")
+        .toString == Paths.get("foo/../bar").toString)
 
-    assert(Paths.get("/").resolveSibling(Paths.get("/")).toString == "/")
+    assert(
+      Paths.get("/").resolveSibling(Paths.get("/")).toString == Paths
+        .get("/")
+        .toString)
     assert(
       Paths
         .get("/foo")
         .resolveSibling(Paths.get("/foo/bar"))
-        .toString == "/foo/bar")
+        .toString == Paths.get("/foo/bar").toString)
     assert(
       Paths
         .get("/foo/bar")
         .resolveSibling(Paths.get("/foo"))
-        .toString == "/foo")
+        .toString == Paths.get("/foo").toString)
     assert(
-      Paths.get("/foo").resolveSibling(Paths.get("/bar")).toString == "/bar")
+      Paths.get("/foo").resolveSibling(Paths.get("/bar")).toString == Paths
+        .get("/bar")
+        .toString)
     assert(
       Paths
         .get("/foo/bar")
         .resolveSibling(Paths.get("/foo/baz"))
-        .toString == "/foo/baz")
-    assert(Paths.get("/").resolveSibling(Paths.get("/foo")).toString == "/foo")
+        .toString == Paths.get("/foo/baz").toString)
+    assert(
+      Paths.get("/").resolveSibling(Paths.get("/foo")).toString == Paths
+        .get("/foo")
+        .toString)
     assert(
       Paths
         .get("/foo/../bar")
         .resolveSibling(Paths.get("/bar"))
-        .toString == "/bar")
+        .toString == Paths.get("/bar").toString)
   }
 }

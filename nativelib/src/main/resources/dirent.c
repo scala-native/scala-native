@@ -4,12 +4,13 @@
 #include "os_win_dirent.h"
 #endif
 #include <string.h>
+#include "types.h"
 
 #define NAME_MAX 255
 
 struct scalanative_dirent {
-    unsigned long long d_ino;  /** file serial number */
-    char d_name[NAME_MAX + 1]; /** name of entry */
+    scalanative_uint64_t d_ino; /** file serial number */
+    char d_name[NAME_MAX + 1];  /** name of entry */
 };
 
 DIR *scalanative_opendir(const char *name) { return opendir(name); }
@@ -21,7 +22,7 @@ void scalanative_dirent_init(struct dirent *dirent,
     strncpy(my_dirent->d_name, dirent->d_name, NAME_MAX);
 #else
     int nameLength = strlen(dirent->d_name);
-    strncpy_s(my_dirent->d_name, nameLength, dirent->d_name, nameLength);
+    strncpy_s(my_dirent->d_name, NAME_MAX, dirent->d_name, nameLength);
 #endif
     my_dirent->d_name[NAME_MAX] = '\0';
 }

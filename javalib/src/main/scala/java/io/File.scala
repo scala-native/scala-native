@@ -264,7 +264,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
 
   def list(filter: FilenameFilter): Array[String] =
     if (!isDirectory() || !canRead()) {
-      null
+      Array.empty[String]
     } else
       Zone { implicit z =>
         val elements = listImpl(toCString(properPath))
@@ -443,7 +443,8 @@ object File {
             throw new IOException(
               "getcwd() error in trying to get user directory."))
 
-      if (path.isEmpty) userdir
+      if (path.isEmpty || path == ".") userdir
+      else if (path.startsWith(".")) userdir + path.stripPrefix(".")
       else if (userdir.endsWith(separator)) userdir + path
       else userdir + separator + path
     }

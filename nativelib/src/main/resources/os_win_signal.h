@@ -1,6 +1,8 @@
 #ifdef _WIN32
 #pragma once
 
+#include "os_win_types.h"
+
 #define SA_SIGINFO 0x00000004
 #define SA_RESTART 0x10000000
 
@@ -54,9 +56,6 @@ union sigval {
     int sival_int;
     void *sival_ptr;
 };
-
-typedef int pid_t;
-typedef int uid_t;
 
 typedef struct {
     int si_signo;

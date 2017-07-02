@@ -67,8 +67,10 @@ object Files {
   }
 
   def copy(source: Path, out: OutputStream): Long = {
-    val in = newInputStream(source, Array.empty)
-    copy(in, out)
+    val in     = newInputStream(source, Array.empty)
+    val result = copy(in, out)
+    in.close()
+    result
   }
 
   def copy(source: Path, target: Path, options: Array[CopyOption]): Path = {

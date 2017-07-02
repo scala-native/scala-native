@@ -41,15 +41,15 @@ extern "C" {
 #define STDOUT_FILENO (1)
 #define STDERR_FILENO (2)
 
-int symlink(char *path1, char *path2);
+int os_win_unistd_symlink(char *path1, char *path2);
 
-int symlinkat(char *path1, int fd, char *path2);
+int os_win_unistd_symlinkat(char *path1, int fd, char *path2);
 
-int link(char *oldpath, char *newpath);
+int os_win_unistd_link(char *oldpath, char *newpath);
 
-int linkat(int fd1, char *path1, int fd2, char *path2, int flag);
+int os_win_unistd_linkat(int fd1, char *path1, int fd2, char *path2, int flag);
 
-int chown(char *path, uid_t owner, gid_t group);
+int os_win_unistd_chown(char *path, uid_t owner, gid_t group);
 
 int os_win_unistd_access(const char *path, int amode);
 
@@ -71,11 +71,12 @@ int os_win_unistd_close(int fildes);
 
 int os_win_unistd_fsync(int fildes);
 
-off_t os_win_unistd_lseek(int fildes, off_t offset, int whence);
+scalanative_off_t os_win_unistd_lseek(int fildes, scalanative_off_t offset,
+                                      int whence);
 
-int os_win_unistd_ftruncate(int fildes, off_t length);
+int os_win_unistd_ftruncate(int fildes, scalanative_off_t length);
 
-int os_win_unistd_truncate(const char *path, off_t length);
+int os_win_unistd_truncate(const char *path, scalanative_off_t length);
 
 int __imp_close(int fildes);
 int __imp_open(const char *pathname, int flags, mode_t mode);

@@ -27,7 +27,7 @@ extern "C" int mprotect(void *addr, size_t len, int prot) {
 }
 
 extern "C" void *mmap(void *addr, size_t length, int prot, int flags, int fd,
-                      off_t offset) {
+                      scalanative_off_t offset) {
     static unsigned short counter = 0;
     const int bufferSize = 64;
     wchar_t mapName[bufferSize];

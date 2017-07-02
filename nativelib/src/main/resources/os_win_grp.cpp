@@ -4,6 +4,62 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
+#include <string>
+#include <vector>
+
+namespace {
+struct groupInternal {
+    groupInternal() : gr_gid(-1) {}
+    std::string gr_name; /** The name of the group. */
+    unsigned int gr_gid; /** Numerical group ID. */
+    std::vector<std::string>
+        gr_mem; /** Pointer to a null-terminated array of character
+pointers to member names. */
+    std::vector<const char *> gr_memChars;
+    group *getGrp() {
+        grp.gr_gid = gr_gid;
+        grp.gr_name = gr_name.data();
+        gr_memChars.clear();
+        gr_memChars.reserve(gr_mem.size());
+        for (auto &n : gr_mem) {
+            gr_memChars.push_back(n.data());
+        }
+        grp.gr_mem = gr_memChars.data();
+        return &grp;
+    }
+
+  private:
+    group grp;
+};
+
+std::vector<groupInternal> &groups() {
+    static std::vector<groupInternal> db;
+    return db;
+}
+
+groupInternal &getInternalGroup(gid_t idx) {
+    auto &db = groups();
+    if (idx >= db.size()) {
+        const bool first = db.size() == 0;
+        db.resize(idx + 1);
+        if (first) {
+            db[0].gr_name = "none";
+            db[0].gr_gid = 0;
+            db[0].gr_mem.push_back("anon");
+        }
+    }
+    return db[idx];
+}
+
+groupInternal &findInternalGroup(const char *groupname) {
+    auto &db = groups();
+    for (auto &g : db) {
+        if (g.gr_name == groupname) {
+            return g;
+        }
+    }
+    return db[0];
+}
 
 extern "C" long long getFileSID(const char *path) {
     /*PSID pSidOwner = NULL;
@@ -53,8 +109,13 @@ extern "C" long long getFileSID(const char *path) {
     return (long long)pSidOwner;*/
     return 0;
 }
+}
 
-extern "C" struct group *getgrgid(gid_t gid) { return 0; }
-extern "C" struct group *getgrnam(const char *groupname) { return 0; }
+extern "C" struct group *getgrgid(gid_t gid) {
+    return getInternalGroup(gid).getGrp();
+}
+extern "C" struct group *getgrnam(const char *groupname) {
+    return findInternalGroup(groupname).getGrp();
+}
 
 #endif
