@@ -39,6 +39,12 @@ object ArrayListSuite extends tests.Suite {
     assert(al.asScala == Seq("1", "2", "3"))
   }
 
+  test("Constructor(null) throws NullPointerException") {
+    assertThrows[NullPointerException] {
+      new ArrayList(null)
+    }
+  }
+
   test("equals() for empty lists") {
     val e1  = new ArrayList()
     val e2  = new ArrayList()
@@ -169,6 +175,31 @@ object ArrayListSuite extends tests.Suite {
     assert(Array("apple", "banana", "cherry", null) sameElements aout)
   }
 
+  test("Array[E].toArray[T](Array[T]) when T >: E") {
+    class SuperClass
+    class SubClass extends SuperClass
+    val in   = Seq.fill(2)(new SubClass)
+    val al1  = new ArrayList[SubClass](in.asJava)
+    val aout = al1.toArray(Array.empty[SuperClass])
+    assert(in.toArray sameElements aout)
+  }
+
+  testFails(
+    "Array[E].toArray[T](Array[T]) should throw ArrayStoreException when not T >: E",
+    858) {
+    class NotSuperClass
+    class SubClass
+    val al1 = new ArrayList[SubClass]()
+    assertThrows[ArrayStoreException] {
+      al1.toArray(Array.empty[NotSuperClass])
+    }
+  }
+
+  test("toArray[T](null) throws null") {
+    val al1 = new ArrayList[String](Seq("apple", "banana", "cherry").asJava)
+    assertThrows[NullPointerException] { al1.toArray(null) }
+  }
+
   test("get(Int)") {
     val al1 = new ArrayList[Int](Seq(1, 2, 3, 2).asJava)
     assert(al1.get(0) == 1)
@@ -229,11 +260,29 @@ object ArrayListSuite extends tests.Suite {
     assert(Seq(1, 3, 2) == al1.asScala)
   }
 
+  test("addAll") {
+    val l = new java.util.ArrayList[String]()
+    l.add("First")
+    l.add("Second")
+    val l2 = new java.util.ArrayList[String]()
+    l2.addAll(0, l)
+    val iter = l2.iterator()
+    assert(iter.next() == "First")
+    assert(iter.next() == "Second")
+    assert(!iter.hasNext())
+  }
+
   test("clear()") {
     val al1 = new ArrayList[Int](Seq(1, 2, 3, 2).asJava)
     al1.clear()
     assert(al1.isEmpty())
     // makes sure that clear()ing an already empty list is safe
     al1.clear()
+  }
+
+  test("should throw an error with negative initial capacity") {
+    assertThrows[IllegalArgumentException] {
+      new ArrayList(-1)
+    }
   }
 }

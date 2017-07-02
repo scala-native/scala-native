@@ -18,6 +18,7 @@ typedef long long ssize_t;
 
 typedef unsigned short in_port_t;
 typedef unsigned int in_addr_t;
+typedef unsigned long long in_addr6_t;
 
 typedef long long blkcnt_t;
 typedef long long blksize_t;

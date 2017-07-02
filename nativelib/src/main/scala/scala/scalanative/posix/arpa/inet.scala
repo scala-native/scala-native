@@ -4,7 +4,7 @@ package arpa
 
 import scalanative.native._
 import scalanative.posix.inttypes._
-import scalanative.posix.netinet.in.in_addr
+import scalanative.posix.netinet.in.{in_addr, in_addr_t}
 
 @extern
 object inet {
@@ -23,5 +23,8 @@ object inet {
 
   @name("scalanative_inet_ntoa")
   def inet_ntoa(in: Ptr[in_addr]): CString = extern
+
+  @name("scalanative_inet_addr")
+  def inet_addr(in: CString): in_addr_t = extern
 
 }

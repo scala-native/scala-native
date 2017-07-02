@@ -71,6 +71,18 @@ extern "C" char *os_win_inet_ntoa(int family, struct in_addr *in) {
     return buf;
 }
 
+extern "C" in_addr_t os_win_inet_addr4(char *in) {
+    in_addr_t out;
+    int result = InetPtonA(AF_INET, in, &out);
+    return out;
+}
+
+extern "C" in_addr6_t os_win_inet_addr6(char *in) {
+    in_addr6_t out;
+    int result = InetPtonA(AF_INET6, in, &out);
+    return out;
+}
+
 extern "C" ssize_t readv(int fd, const struct iovec *iov, int iovcnt) {
     return 0;
 }

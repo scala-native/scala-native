@@ -71,6 +71,8 @@ struct iovec {
 char *os_win_inet_ntoa(int family, struct in_addr *in);
 int os_win_socket(int domain, int type, int protocol);
 int os_win_closesocket(int fildes);
+in_addr_t os_win_inet_addr4(char *in);
+in_addr6_t os_win_inet_addr6(char *in);
 
 ssize_t readv(int fd, const struct iovec *iov, int iovcnt);
 ssize_t writev(int fd, const struct iovec *iov, int iovcnt);
