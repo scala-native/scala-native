@@ -22,3 +22,5 @@ char *scalanative_inet_ntoa(struct scalanative_in_addr *in) {
     return os_win_inet_ntoa(AF_INET, &converted);
 #endif
 }
+
+in_addr_t scalanative_inet_addr(char *in) { return inet_addr(in); }

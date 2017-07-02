@@ -50,10 +50,10 @@ abstract class AbstractList[E] protected ()
 
   def addAll(index: Int, c: Collection[_ <: E]): Boolean = {
     checkIndexOnBounds(index)
-    var i    = 0
-    val iter = listIterator()
+    var i    = index
+    val iter = c.iterator()
     while (iter.hasNext()) {
-      add(index + i, iter.next())
+      add(i, iter.next())
       i += 1
     }
     !c.isEmpty

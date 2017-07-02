@@ -223,4 +223,12 @@ object RandomSuite extends tests.Suite {
     assert(random.nextGaussian() == 0.3990565555091522)
     assert(random.nextGaussian() == 2.0051627385915154)
   }
+
+  test("default seed") {
+    // added for #849
+    val random1 = new Random()
+    val random2 = new Random()
+    assert(random1.hashCode != random2.hashCode)
+    assert(random1.nextInt != random2.nextInt)
+  }
 }
