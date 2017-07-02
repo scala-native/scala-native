@@ -37,6 +37,7 @@ test_script:
   - ps: .\bin\clangfmt --test
   - ps: sbt rebuild
   - ps: sbt "set scriptedBufferLog in sbtScalaNative := false" test-all
+  - ps: sbt "last sandbox/compile:run"
 cache:
   - C:\Users\appveyor\.m2
   - C:\Users\appveyor\.ivy2
