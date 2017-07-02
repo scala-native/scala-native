@@ -23,4 +23,10 @@ char *scalanative_inet_ntoa(struct scalanative_in_addr *in) {
 #endif
 }
 
-in_addr_t scalanative_inet_addr(char *in) { return inet_addr(in); }
+in_addr_t scalanative_inet_addr(char *in) {
+#ifndef _WIN32
+    return inet_addr(in);
+#else
+    return os_win_inet_addr4(in);
+#endif
+}
