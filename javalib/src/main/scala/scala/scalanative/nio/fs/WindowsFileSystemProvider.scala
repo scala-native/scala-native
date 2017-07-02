@@ -25,7 +25,8 @@ class WindowsFileSystemProvider extends FileSystemProvider {
 
   override def newFileSystem(uri: URI, env: Map[String, _]): FileSystem =
     if (uri.getPath != "/" || uri.getPath != "\\") {
-      throw new IllegalArgumentException("Path component should be '\\' or '/'")
+      throw new IllegalArgumentException(
+        "Path component should be '\\' or '/'")
     } else if (uri.getScheme != "file") {
       throw new IllegalArgumentException("URI does not match this provider.")
     } else {
@@ -34,7 +35,8 @@ class WindowsFileSystemProvider extends FileSystemProvider {
 
   override def getFileSystem(uri: URI): FileSystem =
     if (uri.getPath != "/" && uri.getPath != "\\") {
-      throw new IllegalArgumentException("Path component should be '\\' or '/'")
+      throw new IllegalArgumentException(
+        "Path component should be '\\' or '/'")
     } else if (uri.getScheme != "file") {
       throw new IllegalArgumentException("URI does not match this provider.")
     } else {

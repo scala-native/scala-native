@@ -137,7 +137,14 @@ extern "C" int __imp_write(int fildes, void *buf, uint32_t nbyte) {
     if (result.type == DescriptorGuard::SOCKET) {
         scalanative_send(fildes, buf, nbyte, 0);
     } else if (result.type == DescriptorGuard::FILE) {
-        return _write(fildes, buf, nbyte);
+        switch (fildes) {
+        case STDOUT_FILENO:
+            return fwrite(buf, nbyte, 1, stdout);
+        case STDERR_FILENO:
+            return fwrite(buf, nbyte, 1, stderr);
+        default:
+            return _write(fildes, buf, nbyte);
+        }
     }
     return -1;
 }

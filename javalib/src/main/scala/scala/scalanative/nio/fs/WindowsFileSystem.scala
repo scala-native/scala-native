@@ -25,8 +25,8 @@ import scala.scalanative.native.{
 }
 
 class WindowsFileSystem(override val provider: FileSystemProvider,
-                     val root: String,
-                     val defaultDirectory: String)
+                        val root: String,
+                        val defaultDirectory: String)
     extends FileSystem {
   private var closed: Boolean = false
 
