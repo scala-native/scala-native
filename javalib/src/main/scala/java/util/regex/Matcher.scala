@@ -1,272 +1,444 @@
-package java.util
-package regex
+// Copyright 2010 Google Inc. All Rights Reserved.
 
-import cre2h._
-import scalanative.native._, stdlib._, stdio._, string._
+package java.util.regex
 
-// Inspired by: https://github.com/google/re2j/blob/master/java/com/google/re2j/Matcher.java
+/**
+ * A stateful iterator that interprets a regex {@code Pattern} on a
+ * specific input.  Its interface mimics the JDK 1.4.2
+ * {@code java.util.regex.Matcher}.
+ *
+ * <p>Conceptually, a Matcher consists of four parts:
+ * <ol>
+ *   <li>A compiled regular expression {@code Pattern}, set at
+ *   construction and fixed for the lifetime of the matcher.</li>
+ *
+ *   <li>The remainder of the input string, set at construction or
+ *   {@link #reset()} and advanced by each match operation such as
+ *   {@link #find}, {@link #matches} or {@link #lookingAt}.</li>
+ *
+ *   <li>The current match information, accessible via {@link #start},
+ *   {@link #end}, and {@link #group}, and updated by each match
+ *   operation.</li>
+ *
+ *   <li>The append position, used and advanced by
+ *   {@link #appendReplacement} and {@link #appendTail} if performing a
+ *   search and replace from the input to an external {@code StringBuffer}.
+ *
+ * </ol>
+ *
+ * <p>See the <a href="package.html">package-level
+ * documentation</a> for an overview of how to use this API.</p>
+ *
+ * @author rsc@google.com (Russ Cox)
+ */
+final class Matcher private (private val _pattern: Pattern) {
+  if (_pattern == null) {
+    throw new NullPointerException("pattern is null")
+  }
 
-object Matcher {
-  def quoteReplacement(s: String): String = {
-    if (s.indexOf('\\') < 0 && s.indexOf('$') < 0) {
-      s
-    } else {
-      val sb = new StringBuilder()
-      var i  = 0
-      while (i < s.length) {
-        val c = s.charAt(i)
-        if (c == '\\' || c == '$') {
-          sb.append('\\')
-        }
-        sb.append(c)
-        i += 1
-      }
-      sb.toString
+  // The number of submatches (groups) in the pattern.
+  private val _groupCount: Int = _pattern.re2.numberOfCapturingGroups()
+
+  // The group indexes, in [start, end) pairs.  Zeroth pair is overall match.
+  private val _groups: Array[Int] = new Array[Int](2 + 2 * _groupCount)
+
+  private var _inputSequence: CharSequence = _
+
+  // The input length in UTF16 codes.
+  private var _inputLength: Int = _
+
+  // The append position: where the next append should start.
+  private var _appendPos: Int = _
+
+  // Is there a current match?
+  private var _hasMatch: Boolean = _
+
+  // Have we found the submatches (groups) of the current match?
+  // group[0], group[1] are set regardless.
+  private var _hasGroups: Boolean = _
+
+  // The anchor flag to use when repeating the match to find subgroups.
+  private var _anchorFlag: Int = _
+
+  /** Creates a new {@code Matcher} with the given pattern and input. */
+  def this(pattern: Pattern, input: CharSequence) = {
+    this(pattern)
+    reset(input)
+  }
+
+  /** Returns the {@code Pattern} associated with this {@code Matcher}. */
+  def pattern(): Pattern = _pattern
+
+  /**
+   * Resets the {@code Matcher}, rewinding input and
+   * discarding any match information.
+   *
+   * @return the {@code Matcher} itself, for chained method calls
+   */
+  def reset(): Matcher = {
+    _appendPos = 0
+    _hasMatch = false
+    _hasGroups = false
+    this
+  }
+
+  /**
+   * Resets the {@code Matcher} and changes the input.
+   *
+   * @param input the new input string
+   * @return the {@code Matcher} itself, for chained method calls
+   */
+  def reset(input: CharSequence): Matcher = {
+    if (input == null) {
+      throw new NullPointerException("input is null")
     }
+    reset()
+    _inputSequence = input
+    _inputLength = input.length()
+    this
+  }
+
+  /**
+   * Returns the start position of the most recent match.
+   *
+   * @throws IllegalStateException if there is no match
+   */
+  def start(): Int = start(0)
+
+  /**
+   * Returns the end position of the most recent match.
+   *
+   * @throws IllegalStateException if there is no match
+   */
+  def end(): Int = end(0)
+
+  /**
+   * Returns the start position of a subgroup of the most recent match.
+   *
+   * @param group the group index 0 is the overall match
+   * @throws IllegalStateException if there is no match
+   * @throws IndexOutOfBoundsException
+   *   if {@code group < 0} or {@code group > groupCount()}
+   */
+  def start(group: Int): Int = {
+    loadGroup(group)
+    _groups(2 * group)
+  }
+
+  /**
+   * Returns the end position of a subgroup of the most recent match.
+   *
+   * @param group the group index 0 is the overall match
+   * @throws IllegalStateException if there is no match
+   * @throws IndexOutOfBoundsException
+   *   if {@code group < 0} or {@code group > groupCount()}
+   */
+  def end(group: Int): Int = {
+    loadGroup(group)
+    _groups(2 * group + 1)
+  }
+
+  /**
+   * Returns the most recent match.
+   *
+   * @throws IllegalStateException if there is no match
+   */
+  def group(): String = group(0)
+
+  /**
+   * Returns the subgroup of the most recent match.
+   *
+   * @throws IllegalStateException if there is no match
+   * @throws IndexOutOfBoundsException if {@code group < 0}
+   *   or {@code group > groupCount()}
+   */
+  def group(group: Int): String = {
+    val start = this.start(group)
+    val end   = this.end(group)
+    if (start < 0 && end < 0) {
+      // Means the subpattern didn't get matched at all.
+      return null
+    }
+    substring(start, end)
+  }
+
+  /**
+   * Returns the number of subgroups in this pattern.
+   *
+   * @return the number of subgroups the overall match (group 0) does not count
+   */
+  def groupCount(): Int = _groupCount
+
+  /** Helper: finds subgroup information if needed for group. */
+  private def loadGroup(group: Int): Unit = {
+    if (group < 0 || group > _groupCount) {
+      throw new IndexOutOfBoundsException(
+        "Group index out of bounds: " + group)
+    }
+    if (!_hasMatch) {
+      throw new IllegalStateException("perhaps no match attempted")
+    }
+    if (group == 0 || _hasGroups) {
+      return
+    }
+
+    // Include the character after the matched text (if there is one).
+    // This is necessary in the case of inputSequence abc and pattern
+    // (a)(b$)?(b)? . If we do pass in the trailing c,
+    // the groups evaluate to new String[] {"ab", "a", null, "b" }
+    // If we don't, they evaluate to new String[] {"ab", "a", "b", null}
+    // We know it won't affect the total matched because the previous call
+    // to match included the extra character, and it was not matched then.
+    var end = _groups(1) + 1
+    if (end > _inputLength) {
+      end = _inputLength
+    }
+
+    val ok = _pattern.re2.match_(_inputSequence,
+                                 _groups(0),
+                                 end,
+                                 _anchorFlag,
+                                 _groups,
+                                 1 + _groupCount)
+    // Must match - hasMatch says that the last call with these
+    // parameters worked just fine.
+    if (!ok) {
+      throw new IllegalStateException("inconsistency in matching group data")
+    } else {
+      _hasGroups = true
+    }
+  }
+
+  /**
+   * Matches the entire input against the pattern (anchored start and end).
+   * If there is a match, {@code matches} sets the match state to describe it.
+   *
+   * @return true if the entire input matches the pattern
+   */
+  def matches(): Boolean = genMatch(0, RE2.ANCHOR_BOTH)
+
+  /**
+   * Matches the beginning of input against the pattern (anchored start).
+   * If there is a match, {@code lookingAt} sets the match state to describe it.
+   *
+   * @return true if the beginning of the input matches the pattern
+   */
+  def lookingAt(): Boolean = genMatch(0, RE2.ANCHOR_START)
+
+  /**
+   * Matches the input against the pattern (unanchored).
+   * The search begins at the end of the last match, or else the beginning
+   * of the input.
+   * If there is a match, {@code find} sets the match state to describe it.
+   *
+   * @return true if it finds a match
+   */
+  def find(): Boolean = {
+    var start = 0
+    if (_hasMatch) {
+      start = _groups(1)
+      if (_groups(0) == _groups(1)) { // empty match - nudge forward
+        start += 1
+      }
+    }
+    genMatch(start, RE2.UNANCHORED)
+  }
+
+  /**
+   * Matches the input against the pattern (unanchored),
+   * starting at a specified position.
+   * If there is a match, {@code find} sets the match state to describe it.
+   *
+   * @param start the input position where the search begins
+   * @return true if it finds a match
+   * @throws IndexOutOfBoundsException if start is not a valid input position
+   */
+  def find(start: Int): Boolean = {
+    if (start < 0 || start > _inputLength) {
+      throw new IndexOutOfBoundsException(
+        "start index out of bounds: " + start)
+    }
+    reset()
+    genMatch(start, 0)
+  }
+
+  /** Helper: does match starting at start, with RE2 anchor flag. */
+  private def genMatch(startByte: Int, anchor: Int): Boolean = {
+    val ok = _pattern.re2.match_(_inputSequence,
+                                 startByte,
+                                 _inputLength,
+                                 anchor,
+                                 _groups,
+                                 1)
+    if (!ok) {
+      false
+    } else {
+      _hasMatch = true
+      _hasGroups = false
+      _anchorFlag = anchor
+      true
+    }
+  }
+
+  /** Helper: return substring for [start, end). */
+  def substring(start: Int, end: Int): String =
+    // This is fast for both StringBuilder and String.
+    _inputSequence.subSequence(start, end).toString()
+
+  /** Helper for Pattern: return input length. */
+  def inputLength(): Int =
+    _inputLength
+
+  /**
+   * Appends to {@code sb} two strings: the text from the append position up
+   * to the beginning of the most recent match, and then the replacement with
+   * submatch groups substituted for references of the form {@code $n}, where
+   * {@code n} is the group number in decimal.  It advances the append position
+   * to the position where the most recent match ended.
+   *
+   * <p>To embed a literal {@code $}, use \$ (actually {@code "\\$"} with string
+   * escapes).  The escape is only necessary when {@code $} is followed by a
+   * digit, but it is always allowed.  Only {@code $} and {@code \} need
+   * escaping, but any character can be escaped.
+   *
+   * <p>The group number {@code n} in {@code $n} is always at least one digit
+   * and expands to use more digits as long as the resulting number is a
+   * valid group number for this pattern.  To cut it off earlier, escape the
+   * first digit that should not be used.
+   *
+   * @param sb the {@link StringBuffer} to append to
+   * @param replacement the replacement string
+   * @return the {@code Matcher} itself, for chained method calls
+   * @throws IllegalStateException if there was no most recent match
+   * @throws IndexOutOfBoundsException if replacement refers to an invalid group
+   */
+  def appendReplacement(sb: StringBuffer, replacement: String): Matcher = {
+    val s = start()
+    val e = end()
+    if (_appendPos < s) {
+      sb.append(substring(_appendPos, s))
+    }
+    _appendPos = e
+    var last = 0
+    var i    = 0
+    val m    = replacement.length()
+    while (i < m - 1) {
+      if (replacement.charAt(i) == '\\') {
+        if (last < i) {
+          sb.append(replacement.substring(last, i))
+        }
+        i += 1
+        last = i
+      } else if (replacement.charAt(i) == '$') {
+        var c = replacement.charAt(i + 1)
+        if ('0' <= c && c <= '9') {
+          var n = c - '0'
+          if (last < i) {
+            sb.append(replacement.substring(last, i))
+          }
+          i += 2
+          var break = false
+          while (!break && i < m) {
+            c = replacement.charAt(i)
+            if (c < '0' || c > '9' || n * 10 + c - '0' > _groupCount) {
+              break = true
+            } else {
+              n = n * 10 + c - '0'
+              i += 1
+            }
+          }
+          if (n > _groupCount) {
+            throw new IndexOutOfBoundsException("n > number of groups: " + n)
+          }
+          val group = this.group(n)
+          if (group != null) {
+            sb.append(group)
+          }
+          last = i
+          i -= 1
+        }
+      }
+      i += 1
+    }
+    if (last < m) {
+      sb.append(replacement.substring(last, m))
+    }
+    this
+  }
+
+  /**
+   * Appends to {@code sb} the substring of the input from the
+   * append position to the end of the input.
+   *
+   * @param sb the {@link StringBuffer} to append to
+   * @return the argument {@code sb}, for method chaining
+   */
+  def appendTail(sb: StringBuffer): StringBuffer = {
+    sb.append(substring(_appendPos, _inputLength))
+    sb
+  }
+
+  /**
+   * Returns the input with all matches replaced by {@code replacement},
+   * interpreted as for {@code appendReplacement}.
+   *
+   * @param replacement the replacement string
+   * @return the input string with the matches replaced
+   * @throws IndexOutOfBoundsException if replacement refers to an invalid group
+   */
+  def replaceAll(replacement: String): String =
+    replace(replacement, true)
+
+  /**
+   * Returns the input with the first match replaced by {@code replacement},
+   * interpreted as for {@code appendReplacement}.
+   *
+   * @param replacement the replacement string
+   * @return the input string with the first match replaced
+   * @throws IndexOutOfBoundsException if replacement refers to an invalid group
+   */
+  def replaceFirst(replacement: String): String =
+    replace(replacement, false)
+
+  /** Helper: replaceAll/replaceFirst hybrid. */
+  private def replace(replacement: String, all: Boolean): String = {
+    reset()
+    val sb    = new StringBuffer()
+    var break = false
+    while (!break && find()) {
+      appendReplacement(sb, replacement)
+      if (!all) {
+        break = true
+      }
+    }
+    appendTail(sb)
+    sb.toString()
   }
 }
 
-final class Matcher private[regex] (var _pattern: Pattern,
-                                    var inputSequence: CharSequence)
-    extends MatchResult {
+object Matcher {
 
-  private val regex = _pattern.regex
-
-  private var hasMatch  = false
-  private var hasGroups = false
-  private var appendPos = 0
-
-  private var groups =
-    Array.ofDim[(Int, Int)](cre2.numCapturingGroups(regex) + 1)
-
-  private var lastAnchor: Option[cre2.anchor_t] = None
-
-  private[regex] var inputLength = inputSequence.length
-
-  def matches(): Boolean = genMatch(0, ANCHOR_BOTH)
-
-  def lookingAt(): Boolean = genMatch(0, ANCHOR_START)
-
-  def find(start: Int): Boolean = genMatch(0, UNANCHORED)
-
-  def find(): Boolean = {
-    var startIndex = 0
-    if (hasMatch) {
-      startIndex = end
-      if (start == end) {
-        startIndex += 1
+  /**
+   * Quotes '\' and '$' in {@code s}, so that the returned string could be
+   * used in {@link #appendReplacement} as a literal replacement of {@code s}.
+   *
+   * @param s the string to be quoted
+   * @return the quoted string
+   */
+  def quoteReplacement(s: String): String = {
+    if (s.indexOf('\\') < 0 && s.indexOf('$') < 0) {
+      return s
+    }
+    val sb = new StringBuilder()
+    var i  = 0
+    while (i < s.length()) {
+      val c = s.charAt(i)
+      if (c == '\\' || c == '$') {
+        sb.append('\\')
       }
+      sb.append(c)
+      i += 1
     }
-
-    genMatch(startIndex, UNANCHORED)
+    sb.toString
   }
-
-  private def doMatch(start: Int,
-                      end: Int,
-                      nMatches: Int,
-                      anchor: cre2.anchor_t): Boolean =
-    Zone { implicit z =>
-      val n       = nMatches
-      val matches = alloc[cre2.string_t](n)
-      val in      = toCString(inputSequence.toString)
-
-      val ok = cre2.matches(
-        regex = regex,
-        text = in,
-        textlen = inputLength,
-        startpos = start,
-        endpos = end,
-        anchor = anchor,
-        matches = matches,
-        nMatches = nMatches
-      ) == 1
-
-      if (ok) {
-        var i = 0
-        while (i < nMatches) {
-          val m     = matches + i
-          val start = if (m.length == 0) 0 else (m.data - in).toInt
-          val end   = if (m.length == 0) 0 else start + m.length
-          groups(i) = ((start, end))
-
-          i += 1
-        }
-      }
-
-      ok
-    }
-
-  private def genMatch(start: Int, anchor: cre2.anchor_t): Boolean = {
-    val ok = doMatch(start, inputLength, 1, anchor)
-
-    if (ok) {
-      hasMatch = true
-      hasGroups = false
-      lastAnchor = Some(anchor)
-    }
-
-    ok
-  }
-
-  def replaceFirst(replacement: String): String =
-    replace(replacement, global = false)
-
-  def replaceAll(replacement: String): String =
-    replace(replacement, global = true)
-
-  private def replace(replacement: String, global: Boolean): String =
-    Zone { implicit z =>
-      val textAndTarget, rewrite = stackalloc[cre2.string_t]
-
-      toRE2String(inputSequence.toString, textAndTarget)
-      toRE2String(replacement, rewrite)
-
-      if (global) cre2.globalReplace(regex, textAndTarget, rewrite)
-      else cre2.replace(regex, textAndTarget, rewrite)
-
-      val res = fromRE2String(textAndTarget)
-
-      res
-    }
-
-  def group(): String = group(0)
-
-  def group(group: Int): String = {
-    val startIndex = start(group)
-    val endIndex   = end(group)
-
-    if (startIndex < 0 && endIndex < 0) {
-      null
-    } else {
-      inputSequence.subSequence(startIndex, endIndex).toString
-    }
-  }
-
-  def group(name: String): String = group(groupIndex(name))
-
-  private def groupIndex(name: String): Int =
-    Zone { implicit z =>
-      val pos = cre2.findNamedCapturingGroups(regex, toCString(name))
-      if (pos == -1) {
-        throw new IllegalArgumentException(s"No group with name <$name>")
-      }
-      pos
-    }
-
-  def groupCount: Int = groups.length - 1
-
-  def start: Int = start(0)
-
-  def start(group: Int): Int = {
-    loadGroup(group)
-    groups(group)._1
-  }
-
-  def start(name: String): Int = start(groupIndex(name))
-
-  def end: Int = end(0)
-
-  def end(group: Int): Int = {
-    loadGroup(group)
-    groups(group)._2
-  }
-
-  def end(name: String): Int = end(groupIndex(name))
-
-  private def loadGroup(group: Int): Unit = {
-    if (group < 0 || group > groupCount) {
-      throw new IndexOutOfBoundsException(s"No group $group")
-    }
-
-    if (!hasMatch) {
-      throw new IllegalStateException("No match found")
-    }
-
-    if (!(group == 0 || hasGroups)) {
-      val ok = doMatch(
-        start = groups(0)._1,
-        end = groups(0)._2,
-        nMatches = groups.length,
-        anchor = lastAnchor.get
-      )
-
-      if (!ok) {
-        throw new IllegalStateException("Cannot load groups")
-      }
-
-      hasGroups = true
-    }
-  }
-
-  def pattern(): Pattern = this.pattern
-
-  def reset(input: CharSequence): Matcher = {
-    reset()
-    inputSequence = input
-    inputLength = input.length
-    this
-  }
-
-  def reset(): Matcher = {
-    appendPos = 0
-    hasMatch = false
-    hasGroups = false
-    this
-  }
-
-  def region(start: Int, end: Int): Matcher = ???
-
-  private[regex] def appendReplacement2(sb: StringBuffer,
-                                        replacement: String,
-                                        doGroups: Boolean): Matcher = {
-
-    val s = start
-    val e = end
-    if (appendPos < s) {
-      sb.append(inputSequence, appendPos, s)
-    }
-    appendPos = e
-
-    if (doGroups) {
-      val m =
-        Pattern.compile("(\\$(\\d)|\\$\\{(\\w*)\\})").matcher(replacement)
-      val sb2 = new StringBuffer()
-
-      while (m.find()) {
-        val digitGroup = m.group(2)
-        val nameGroup  = m.group(3)
-
-        if (digitGroup != null && !digitGroup.isEmpty) {
-          m.appendReplacement2(sb2, group(digitGroup.toInt), doGroups = false)
-        } else if (nameGroup != null && !nameGroup.isEmpty) {
-          m.appendReplacement2(sb2, group(nameGroup), doGroups = false)
-        }
-      }
-      m.appendTail(sb2)
-      sb.append(sb2)
-    } else {
-      sb.append(replacement)
-    }
-
-    this
-  }
-
-  def appendReplacement(sb: StringBuffer, replacement: String): Matcher = {
-    appendReplacement2(sb, replacement, doGroups = true)
-  }
-
-  def appendTail(sb: StringBuffer): StringBuffer = {
-    sb.append(inputSequence, appendPos, inputLength)
-  }
-
-  private[regex] def substring(start: Int, end: Int): String =
-    inputSequence.subSequence(start, end).toString
-
-  private def noLookAhead(methodName: String): Nothing =
-    throw new Exception(
-      s"$methodName is not defined since we don't support lookaheads")
-
-  def useTransparentBounds(b: Boolean): Matcher =
-    noLookAhead("useTransparentBounds")
-  def hasTransparentBounds(): Boolean = noLookAhead("hasTransparentBounds")
 }

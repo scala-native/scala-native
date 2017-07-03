@@ -988,6 +988,8 @@ object Character {
   @inline def charCount(codePoint: Int): Int =
     if (codePoint >= MIN_SUPPLEMENTARY_CODE_POINT) 2 else 1
 
+  def codePointAt(seq: CharSequence, index: Int): scala.Int = ???
+
   def codePointAt(seq: Array[scala.Char],
                   _index: scala.Int,
                   limit: scala.Int): scala.Int = {
@@ -1008,6 +1010,8 @@ object Character {
         high
     }
   }
+
+  def codePointBefore(seq: CharSequence, index: Int): scala.Int = ???
 
   def codePointBefore(seq: Array[scala.Char], _index: scala.Int): scala.Int = {
     var index = _index
