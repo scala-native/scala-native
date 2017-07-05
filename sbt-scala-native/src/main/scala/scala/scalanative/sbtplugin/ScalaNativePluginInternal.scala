@@ -400,7 +400,7 @@ object ScalaNativePluginInternal {
           case "Mac OS X" => Seq.empty
           case _ =>
             if (Utilities.isWindows)
-              Seq("libucrt", "libcmt", "Dbghelp", "Advapi32", "Ws2_32")
+              Seq("Dbghelp", "Advapi32", "Ws2_32")
             else Seq("unwind", "unwind-" + arch)
         }
         librt ++ libunwind ++ linked.links

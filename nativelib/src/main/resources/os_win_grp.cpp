@@ -18,13 +18,13 @@ pointers to member names. */
     std::vector<const char *> gr_memChars;
     group *getGrp() {
         grp.gr_gid = gr_gid;
-        grp.gr_name = gr_name.data();
+        grp.gr_name = const_cast<char*>(gr_name.data());
         gr_memChars.clear();
         gr_memChars.reserve(gr_mem.size());
         for (auto &n : gr_mem) {
             gr_memChars.push_back(n.data());
         }
-        grp.gr_mem = gr_memChars.data();
+        grp.gr_mem = const_cast<char**>(gr_memChars.data());
         return &grp;
     }
 

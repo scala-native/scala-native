@@ -23,7 +23,20 @@
 #define HEAP_MEM_FD -1
 #define HEAP_MEM_FD_OFFSET 0
 
-size_t Heap_getMemoryLimit() { return getMemorySize(); }
+size_t Heap_getMemoryLimit() {
+#ifndef _WIN32
+    return getMemorySize();
+#else
+    size_t maximum = getMemorySize();
+    // temporary fix for Windows 7 and less
+    const unsigned long long TEMP_LIMIT = ((unsigned long long)1 * 1024 * 1024 * 1024);
+    if (maximum > TEMP_LIMIT)
+    {
+        maximum = TEMP_LIMIT;
+    }
+    return maximum;
+#endif
+}
 
 /**
  * Maps `MAX_SIZE` of memory and returns the first address aligned on
