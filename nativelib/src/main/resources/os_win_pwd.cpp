@@ -13,11 +13,11 @@ struct passwdInternal {
     std::string pw_shell; /** Program to use as shell. */
 
     passwd *getPasswd() {
-        p.pw_name = const_cast<char*>(pw_name.data());
+        p.pw_name = const_cast<char *>(pw_name.data());
         p.pw_uid = pw_uid;
         p.pw_gid = pw_gid;
-        p.pw_dir = const_cast<char*>(pw_dir.data());
-        p.pw_shell = const_cast<char*>(pw_shell.data());
+        p.pw_dir = const_cast<char *>(pw_dir.data());
+        p.pw_shell = const_cast<char *>(pw_shell.data());
         return &p;
     }
 

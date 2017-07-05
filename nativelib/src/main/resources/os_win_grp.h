@@ -6,10 +6,10 @@ extern "C" {
 #endif
 
 struct group {
-    char *gr_name; /** The name of the group. */
+    char *gr_name;       /** The name of the group. */
     unsigned int gr_gid; /** Numerical group ID. */
-    char **gr_mem; /** Pointer to a null-terminated array of character
-                       pointers to member names. */
+    char **gr_mem;       /** Pointer to a null-terminated array of character
+                             pointers to member names. */
 };
 
 typedef unsigned int gid_t;

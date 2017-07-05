@@ -7,7 +7,7 @@
 #include "types.h"
 
 struct scalanative_group {
-    char *gr_name;      /** The name of the group. */
+    char *gr_name;            /** The name of the group. */
     scalanative_gid_t gr_gid; /** Numerical group ID. */
     char **gr_mem; /** Pointer to a null-terminated array of character
                        pointers to member names. */

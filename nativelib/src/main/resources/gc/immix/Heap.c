@@ -29,9 +29,9 @@ size_t Heap_getMemoryLimit() {
 #else
     size_t maximum = getMemorySize();
     // temporary fix for Windows 7 and less
-    const unsigned long long TEMP_LIMIT = ((unsigned long long)1 * 1024 * 1024 * 1024);
-    if (maximum > TEMP_LIMIT)
-    {
+    const unsigned long long TEMP_LIMIT =
+        ((unsigned long long)1 * 1024 * 1024 * 1024);
+    if (maximum > TEMP_LIMIT) {
         maximum = TEMP_LIMIT;
     }
     return maximum;

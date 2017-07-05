@@ -7,11 +7,11 @@
 #include "types.h"
 
 struct scalanative_passwd {
-    char *pw_name;      /** User's login name. */
+    char *pw_name;            /** User's login name. */
     scalanative_uid_t pw_uid; /** Numerical user ID. */
     scalanative_gid_t pw_gid; /** Numerical group ID. */
-    char *pw_dir;       /** Initial working directory. */
-    char *pw_shell;     /** Program to use as shell. */
+    char *pw_dir;             /** Initial working directory. */
+    char *pw_shell;           /** Program to use as shell. */
 };
 
 void scalanative_passwd_copy(struct passwd *passwd,

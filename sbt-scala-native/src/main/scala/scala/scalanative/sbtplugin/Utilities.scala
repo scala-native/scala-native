@@ -26,7 +26,7 @@ object Utilities {
           case (major, minor) =>
             Seq(s"$binaryName$major$minor", s"$binaryName-$major.$minor")
         } :+ binaryName
-          
+
         val which = if (isWindows) "where" else "which"
         Process(which +: binaryNames).lines_!
           .map(file(_))
