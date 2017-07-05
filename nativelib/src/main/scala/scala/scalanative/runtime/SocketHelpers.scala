@@ -77,7 +77,7 @@ object SocketHelpers {
       var hints  = stackalloc[addrinfo]
       var ret    = stackalloc[addrinfo]
 
-      var ipstr = stackalloc[CString]
+      var ipstr = stackalloc[CChar](INET6_ADDRSTRLEN + 1)
       string.memset(hints.cast[Ptr[Byte]], 0, sizeof[addrinfo])
       hints.ai_family = AF_UNSPEC
       hints.ai_socktype = 0
@@ -93,8 +93,8 @@ object SocketHelpers {
       } else {
         addr = ret.ai_addr.cast[Ptr[sockaddr_in6]].sin6_addr.cast[Ptr[Byte]]
       }
-      inet_ntop(ret.ai_family, addr, !ipstr, INET6_ADDRSTRLEN.toUInt)
-      return Some(fromCString(!ipstr))
+      inet_ntop(ret.ai_family, addr, ipstr, INET6_ADDRSTRLEN.toUInt)
+      return Some(fromCString(ipstr))
     }
   }
 

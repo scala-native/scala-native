@@ -8,82 +8,6 @@ import scala.collection.mutable.ArrayBuffer
 import java.util.StringTokenizer
 
 // Ported from Apache Harmony
-abstract class InetAddress private[net] (ipAddress: Array[Byte], host: String)
-    extends Serializable {
-  import InetAddress._
-
-  private[net] def this(ipAddress: Array[Byte]) = this(ipAddress, null)
-
-  def getHostAddress(): String = createIPStringFromByteArray(ipAddress)
-
-  def getHostName(): String = {
-    if (host != null) {
-      host
-    } else {
-      val ipString = createIPStringFromByteArray(ipAddress)
-      SocketHelpers
-        .ipToHost(ipString, isValidIPv6Address(ipString))
-        .getOrElse {
-          ipString
-        }
-    }
-  }
-
-  def getAddress() = ipAddress.clone
-
-  override def equals(obj: Any): Boolean = {
-    if (obj == null || obj.getClass != this.getClass)
-      return false
-
-    val objIPAddress = obj.asInstanceOf[InetAddress].getAddress;
-    for (i <- objIPAddress.indices) {
-      if (objIPAddress(i) != this.ipAddress(i))
-        return false
-    }
-
-    return true
-  }
-
-  override def hashCode(): Int = InetAddress.bytesToInt(ipAddress, 0)
-
-  override def toString(): String = {
-    if (host == null)
-      return "/" + getHostAddress()
-    else
-      return host + "/" + getHostAddress()
-  }
-
-  def isReachable(timeout: Int): Boolean = {
-    if (timeout < 0) {
-      throw new IllegalArgumentException(
-        "Argument 'timeout' in method 'isReachable' is negative")
-    }
-    val ipString = createIPStringFromByteArray(ipAddress)
-    return SocketHelpers.isReachableByEcho(ipString, timeout)
-  }
-
-  def isLinkLocalAddress(): Boolean
-
-  def isAnyLocalAddress(): Boolean
-
-  def isLoopbackAddress(): Boolean
-
-  def isMCGlobal(): Boolean
-
-  def isMCLinkLocal(): Boolean
-
-  def isMCNodeLocal(): Boolean
-
-  def isMCOrgLocal(): Boolean
-
-  def isMCSiteLocal(): Boolean
-
-  def isMulticastAddress(): Boolean
-
-  def isSiteLocalAddress(): Boolean
-
-}
-
 private[net] trait InetAddressBase {
 
   def getByName(host: String): InetAddress = {
@@ -275,7 +199,7 @@ private[net] trait InetAddressBase {
     parts.forall(part => { part.length <= 3 || Integer.parseInt(part) <= 255 })
   }
 
-  private def isValidIPv6Address(ipAddress: String): Boolean = {
+  private[net] def isValidIPv6Address(ipAddress: String): Boolean = {
     val length: Int          = ipAddress.length
     var doubleColon: Boolean = false
     var numberOfColons: Int  = 0
@@ -552,7 +476,8 @@ private[net] trait InetAddressBase {
 
   private val hexCharacters = "0123456789ABCDEF"
 
-  private def createIPStringFromByteArray(ipByteArray: Array[Byte]): String = {
+  private[net] def createIPStringFromByteArray(
+      ipByteArray: Array[Byte]): String = {
     if (ipByteArray.length == 4)
       return addressToString(bytesToInt(ipByteArray, 0))
 
@@ -624,3 +549,80 @@ private[net] trait InetAddressBase {
 }
 
 object InetAddress extends InetAddressBase
+
+abstract class InetAddress private[net] (ipAddress: Array[Byte], host: String)
+    extends Serializable {
+  import InetAddress._
+
+  private[net] def this(ipAddress: Array[Byte]) = this(ipAddress, null)
+
+  def getHostAddress(): String = createIPStringFromByteArray(ipAddress)
+
+  def getHostName(): String = {
+    if (host != null) {
+      host
+    } else {
+      val ipString = createIPStringFromByteArray(ipAddress)
+      SocketHelpers
+        .ipToHost(ipString, isValidIPv6Address(ipString))
+        .getOrElse {
+          ipString
+        }
+    }
+  }
+
+  def getAddress() = ipAddress.clone
+
+  override def equals(obj: Any): Boolean = {
+    if (obj == null || obj.getClass != this.getClass)
+      return false
+
+    val objIPAddress = obj.asInstanceOf[InetAddress].getAddress;
+    for (i <- objIPAddress.indices) {
+      if (objIPAddress(i) != this.ipAddress(i))
+        return false
+    }
+
+    return true
+  }
+
+  override def hashCode(): Int = InetAddress.bytesToInt(ipAddress, 0)
+
+  override def toString(): String = {
+    if (host == null)
+      return "/" + getHostAddress()
+    else
+      return host + "/" + getHostAddress()
+  }
+
+  def isReachable(timeout: Int): Boolean = {
+    if (timeout < 0) {
+      throw new IllegalArgumentException(
+        "Argument 'timeout' in method 'isReachable' is negative")
+    } else {
+      val ipString = createIPStringFromByteArray(ipAddress)
+      SocketHelpers.isReachableByEcho(ipString, timeout)
+    }
+  }
+
+  def isLinkLocalAddress(): Boolean
+
+  def isAnyLocalAddress(): Boolean
+
+  def isLoopbackAddress(): Boolean
+
+  def isMCGlobal(): Boolean
+
+  def isMCLinkLocal(): Boolean
+
+  def isMCNodeLocal(): Boolean
+
+  def isMCOrgLocal(): Boolean
+
+  def isMCSiteLocal(): Boolean
+
+  def isMulticastAddress(): Boolean
+
+  def isSiteLocalAddress(): Boolean
+
+}
