@@ -1,0 +1,3 @@
+> launchEchoServer
+$ copy-file tests/EchoClientTest.scala Main.scala
+> run

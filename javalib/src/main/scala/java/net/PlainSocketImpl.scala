@@ -91,8 +91,10 @@ private[net] class PlainSocketImpl extends SocketImpl  {
       0
     else {
       Zone { implicit z =>
-        val cString = toCString(new String(buffer))
-        socket.send(fd, cString, buffer.length, 0)
+        val cArr = stackalloc[Byte](count)
+        for(i <- 0 until count)
+          !(cArr + i) = buffer(i + offset)
+        socket.send(fd, cArr, count, 0)
       }
     }
   }
@@ -102,10 +104,13 @@ private[net] class PlainSocketImpl extends SocketImpl  {
 
     val cBuff = stackalloc[Byte](count)
     val bytesNum = socket.recv(fd, cBuff, count, 0).toInt
-    for(i <- 0 until bytesNum) {
-      buffer(offset + i) = cBuff(i)
+    if(bytesNum <= 0) -1
+    else {
+      for(i <- 0 until bytesNum) {
+        buffer(offset + i) = cBuff(i)
+      }
+      bytesNum
     }
-    bytesNum
   }
 
   override def available: Int = {

@@ -1,8 +1,8 @@
 package java.net
 
-import java.io.{InputStream, OutputStream, IOException}
+import java.io.{InputStream, OutputStream, IOException, Closeable}
 
-class Socket protected(private val impl: SocketImpl) {
+class Socket protected(private val impl: SocketImpl) extends Closeable {
 
   private var isCreated = false
   private var isBound = false
@@ -58,8 +58,59 @@ class Socket protected(private val impl: SocketImpl) {
   // def this(host: InetAddress, port: Int, stream: Boolean)
   // def this(proxy: Proxy)
   // def this(host: String, port: Int, stream: Boolean)
+
+  // def bind(bindpoint: SocketAddress): Unit
+  // def connect(endpoint: SocketAddress): Unit
+  // def connect(endpoint: SocketAddress, timeout: Int): Unit
+
+  // def getChannel: SocketChannel
+
+  // def getInetAddress: InetAddress
+  // def getKeepAlive: Boolean
+  // def getLocalAddress: Boolean
+  // def getLocalPort: Int
+  // def localSocketAddress: SocketAddress
+  // def getOOBInline: Boolean
+  // def getPort: Int
+  // def getReceiveBufferSize: Int
+  // def getRemoteSocketAddress: SocketAddress
+  // def getReuseAddress: Boolean
+  // def getSendBufferSize: Int
+  // def getSoLinger: Int
+  // def getSoTimeout: Int
+  // def getTcpNoDelay: Boolean
+  // def getTrafficClass: Int
+
+  def isBound: Boolean = this.isBound
+  def isClosed: Boolean = this.isClosed
+  def isConnected: Boolean = this.isConnected
+  def isInputShutdown: Boolean = this.isInputShutdown
+  def isOutputShutdown: Boolean = this.isOutputShutdown
+
+  // def sendUrgentData(data: Int): Unit
+  // def setKeepAlive(on: Boolean): Unit
+  // def setOOBInline(on: Boolean): Unit
+  // def setPerformancePreferences(connectionTime: Int, latency: Int, bandwith: Int): Unit
+  // def setReceiveBufferSize(size: Int): Unit
+  // def setReuseAddress(on: Boolean): Unit
+  // def setSendBufferSize(size: Int): Unit
+  // def setSoLinger(on: Boolean, linger: Int): Unit
+  // def setSoTimeout(timeout: Int): Unit
+  // def setTcpNoDelay(on: Boolean): Unit
+  // def setTrafficClass(tc: Int): Unit
+
+  def shutdownInput: Unit = {
+    impl.shutdownInput
+    isInputShutdown = true
+  }
+
+  def shutdownOutput: Unit = {
+    impl.shutdownOutput
+    isOutputShutdown = true
+  }
+
   
-  def close: Unit = impl.close
+  override def close: Unit = impl.close
 
   override def toString: String = {
     if(isConnected)
@@ -72,4 +123,8 @@ class Socket protected(private val impl: SocketImpl) {
 
   def getInputStream: InputStream = impl.getInputStream
 
+}
+
+object Socket {
+  // def setSocketImplFactory(fac: SocketImplFactory): Unit
 }
