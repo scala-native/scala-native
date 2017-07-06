@@ -79,6 +79,15 @@ object in {
   @name("scalanative_IPV6_V6ONLY")
   def IPV6_V6ONLY: CInt = extern
 
+  @name("scalanative_IP_MULTICAST_IF")
+  def IP_MULTICAST_IF: CInt = extern
+
+  @name("scalanative_IP_MULTICAST_LOOP")
+  def IP_MULTICAST_LOOP: CInt = extern
+
+  @name("scalanative_IP_TOS")
+  def IP_TOS: CInt = extern
+
   @name("scalanative_IN6_IS_ADDR_UNSPECIFIED")
   def IN6_IS_ADDR_UNSPECIFIED(arg: Ptr[in6_addr]): CInt = extern
 

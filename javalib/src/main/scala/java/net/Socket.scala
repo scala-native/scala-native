@@ -4,12 +4,12 @@ import java.io.{InputStream, OutputStream, IOException, Closeable}
 
 class Socket protected(private val impl: SocketImpl) extends Closeable {
 
-  private var isCreated = false
-  private var isBound = false
-  private var isConnected = false
-  private var isClosed = false
-  private var isInputShutdown = false
-  private var isOutputShutdown = false
+  private var created = false
+  private var bound = false
+  private var connected = false
+  private var closed = false
+  private var inputShutdown = false
+  private var outputShutdown = false
   private var streaming = true // TODO
 
   private def startup(dstAddr: InetAddress, dstPort: Int,
@@ -20,11 +20,11 @@ class Socket protected(private val impl: SocketImpl) extends Closeable {
     val addr = if(localAddr == null) InetAddress.getLoopbackAddress else localAddr
 
     impl.create(streaming)
-    val isCreated = true
+    val created = true
     try {
-      isBound = true
+      bound = true
       impl.connect(dstAddr, dstPort)
-      isConnected = true
+      connected = true
     } catch {
       case e: IOException => {
         impl.close
@@ -81,11 +81,11 @@ class Socket protected(private val impl: SocketImpl) extends Closeable {
   // def getTcpNoDelay: Boolean
   // def getTrafficClass: Int
 
-  def isBound: Boolean = this.isBound
-  def isClosed: Boolean = this.isClosed
-  def isConnected: Boolean = this.isConnected
-  def isInputShutdown: Boolean = this.isInputShutdown
-  def isOutputShutdown: Boolean = this.isOutputShutdown
+  def isBound: Boolean = bound
+  def isClosed: Boolean = closed
+  def isConnected: Boolean = connected
+  def isInputShutdown: Boolean = inputShutdown
+  def isOutputShutdown: Boolean = outputShutdown
 
   // def sendUrgentData(data: Int): Unit
   // def setKeepAlive(on: Boolean): Unit
@@ -101,19 +101,19 @@ class Socket protected(private val impl: SocketImpl) extends Closeable {
 
   def shutdownInput: Unit = {
     impl.shutdownInput
-    isInputShutdown = true
+    inputShutdown = true
   }
 
   def shutdownOutput: Unit = {
     impl.shutdownOutput
-    isOutputShutdown = true
+    outputShutdown = true
   }
 
   
   override def close: Unit = impl.close
 
   override def toString: String = {
-    if(isConnected)
+    if(connected)
       impl.toString
     else
       "Socket[unconnected]"
