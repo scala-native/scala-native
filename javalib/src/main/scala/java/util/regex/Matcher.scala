@@ -198,7 +198,7 @@ final class Matcher private[regex] (var _pattern: Pattern,
     }
   }
 
-  def pattern(): Pattern = this.pattern
+  def pattern(): Pattern = this._pattern
 
   def reset(input: CharSequence): Matcher = {
     reset()
