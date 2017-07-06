@@ -25,13 +25,13 @@ object Test {
     println(s"Counter starts at $counter")
 
     myThreadArray.foreach({
-      _.fork();
+      _.fork
     })
 
     println(s"Counter in between fork/join is $counter")
 
     myThreadArray.foreach({
-      _.join();
+      _.join
     })
 
     println(s"Counter after join is $counter")
