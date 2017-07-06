@@ -93,9 +93,14 @@ private[net] class PlainSocketImpl extends SocketImpl  {
     else {
       Zone { implicit z =>
         val cArr = stackalloc[Byte](count)
-        for(i <- 0 until count)
+        for(i <- 0 until count) {
           !(cArr + i) = buffer(i + offset)
-        socket.send(fd, cArr, count, 0)
+        }
+        var sent: Long = 0
+        while(sent < count) {
+          sent += socket.send(fd, cArr + sent, count - sent, 0)
+        }
+        sent
       }
     }
   }

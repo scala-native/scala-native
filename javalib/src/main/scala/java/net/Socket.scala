@@ -2,7 +2,10 @@ package java.net
 
 import java.io.{InputStream, OutputStream, IOException, Closeable}
 
-class Socket protected(private val impl: SocketImpl) extends Closeable {
+class Socket protected(private val impl: SocketImpl, private val addr: InetAddress,
+                       private val port: Int , private var localAddr: InetAddress,
+                       private var localPort: Int, private val streaming: Boolean) 
+extends Closeable {
 
   private var created = false
   private var bound = false
@@ -10,7 +13,8 @@ class Socket protected(private val impl: SocketImpl) extends Closeable {
   private var closed = false
   private var inputShutdown = false
   private var outputShutdown = false
-  private var streaming = true // TODO
+
+  startup(addr, port, localAddr, localPort)
 
   private def startup(dstAddr: InetAddress, dstPort: Int,
                       localAddr: InetAddress, localPort: Int) = {
@@ -33,31 +37,26 @@ class Socket protected(private val impl: SocketImpl) extends Closeable {
     }
   }
 
-  def this(address: InetAddress, port: Int) = {
-    this(new PlainSocketImpl())
-    startup(address, port, null, 0)  
-  }
+  def this(address: InetAddress, port: Int) = 
+    this(new PlainSocketImpl(), address, port, null, 0, true)
 
-  def this(address: InetAddress, port: Int, localAddr: InetAddress, localPort: Int) = {
-    this(new PlainSocketImpl())
-    startup(address, port, localAddr, localPort)
-  }
+  def this(address: InetAddress, port: Int, localAddr: InetAddress, localPort: Int) = 
+    this(new PlainSocketImpl(), address, port, localAddr, localPort, true)
 
-  def this(host: String, port: Int) = {
-    this(new PlainSocketImpl())
-    val addr = InetAddress.getByName(host)
-    startup(addr, port, null, 0)
-  }
+  def this(host: String, port: Int) = 
+    this(new PlainSocketImpl(), InetAddress.getByName(host), port, null, 0, true)
 
-  def this(host: String, port: Int, localAddr: InetAddress, localPort: Int) = {
-    this(new PlainSocketImpl())
-    val addr = InetAddress.getByName(host)
-    startup(addr, port, localAddr, localPort)
-  }
+  def this(host: String, port: Int, localAddr: InetAddress, localPort: Int) = 
+    this(new PlainSocketImpl(), InetAddress.getByName(host), port,
+         localAddr, localPort, true)
 
-  // def this(host: InetAddress, port: Int, stream: Boolean)
+  def this(host: InetAddress, port: Int, stream: Boolean) = 
+    this(new PlainSocketImpl(), host, port, null, 0, stream)
+
+  def this(host: String, port: Int, stream: Boolean) = 
+    this(new PlainSocketImpl(), InetAddress.getByName(host), port, null, 0, true)
+
   // def this(proxy: Proxy)
-  // def this(host: String, port: Int, stream: Boolean)
 
   // def bind(bindpoint: SocketAddress): Unit
   // def connect(endpoint: SocketAddress): Unit
@@ -65,13 +64,14 @@ class Socket protected(private val impl: SocketImpl) extends Closeable {
 
   // def getChannel: SocketChannel
 
-  // def getInetAddress: InetAddress
+  def getInetAddress: InetAddress = addr
+  def getLocalAddress: InetAddress = localAddr
+  def getLocalPort: Int = localPort
+  def getPort: Int = port
+
   // def getKeepAlive: Boolean
-  // def getLocalAddress: Boolean
-  // def getLocalPort: Int
   // def localSocketAddress: SocketAddress
   // def getOOBInline: Boolean
-  // def getPort: Int
   // def getReceiveBufferSize: Int
   // def getRemoteSocketAddress: SocketAddress
   // def getReuseAddress: Boolean
