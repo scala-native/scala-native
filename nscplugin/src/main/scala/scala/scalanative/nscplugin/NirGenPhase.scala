@@ -1,0 +1,105 @@
+package scala.scalanative
+package nscplugin
+
+import java.nio.file.Path
+import scala.collection.mutable, mutable.UnrolledBuffer
+import scala.tools.nsc.{util => _, _}
+import scala.tools.nsc.plugins._
+import scala.util.{Either, Left, Right}
+import scala.reflect.internal.Flags._
+import util._, util.ScopedVar.scoped
+import nir.{InstBuffer => Buf, _}
+import NirPrimitives._
+
+abstract class NirGenPhase
+    extends PluginComponent
+    with NirGenStat
+    with NirGenExpr
+    with NirGenUtil
+    with NirGenFile
+    with NirGenType
+    with NirGenName {
+  val nirAddons: NirGlobalAddons {
+    val global: NirGenPhase.this.global.type
+  }
+
+  import global._
+  import definitions._
+  import nirAddons._
+  import nirDefinitions._
+  import SimpleType.{fromType, fromSymbol}
+
+  val phaseName = "nir"
+
+  protected val curLazyAnonDefs =
+    new util.ScopedVar[mutable.Map[Symbol, ClassDef]]
+  protected val curClassSym   = new util.ScopedVar[Symbol]
+  protected val curMethodSym  = new util.ScopedVar[Symbol]
+  protected val curMethodInfo = new util.ScopedVar[CollectMethodInfo]
+  protected val curMethodEnv  = new util.ScopedVar[MethodEnv]
+  protected val curMethodThis = new util.ScopedVar[Option[Val]]
+  protected val curFresh      = new util.ScopedVar[nir.Fresh]
+  protected val curUnwind     = new util.ScopedVar[nir.Next]
+
+  protected def lazyAnonDefs =
+    curLazyAnonDefs.get
+  protected def consumeLazyAnonDef(sym: Symbol): ClassDef = {
+    lazyAnonDefs
+      .get(sym)
+      .fold {
+        sys.error(s"Couldn't find anon def for $sym")
+      } { cd =>
+        lazyAnonDefs.remove(cd.symbol)
+        cd
+      }
+  }
+
+  override def newPhase(prev: Phase): StdPhase =
+    new NirCodePhase(prev)
+
+  class NirCodePhase(prev: Phase) extends StdPhase(prev) {
+    override def run(): Unit = {
+      scalaPrimitives.init()
+      nirPrimitives.init()
+      super.run()
+    }
+
+    override def apply(cunit: CompilationUnit): Unit = {
+      val classDefs    = mutable.UnrolledBuffer.empty[ClassDef]
+      val lazyAnonDefs = mutable.Map.empty[Symbol, ClassDef]
+
+      def collectClassDefs(tree: Tree): Unit = tree match {
+        case EmptyTree =>
+          ()
+        case PackageDef(_, stats) =>
+          stats.foreach(collectClassDefs)
+        case cd: ClassDef =>
+          val sym = cd.symbol
+          if (sym.isAnonymousFunction) {
+            lazyAnonDefs(sym) = cd
+          } else if (isPrimitiveValueClass(sym) || (sym == ArrayClass)) {
+            ()
+          } else {
+            classDefs += cd
+          }
+      }
+
+      def genClass(cd: ClassDef): Unit = {
+        val path   = genPathFor(cunit, cd.symbol)
+        val buffer = new StatBuffer
+        buffer.genClass(cd)
+        //println(s"--- " + path)
+        //buffer.toSeq.foreach(defn => println(defn.show))
+        genIRFile(path, buffer.toSeq)
+      }
+
+      scoped(
+        curLazyAnonDefs := lazyAnonDefs
+      ) {
+        collectClassDefs(cunit.body)
+        classDefs.foreach(genClass)
+        lazyAnonDefs.values.foreach(genClass)
+      }
+    }
+  }
+}

@@ -3,7 +3,7 @@ package nscplugin
 
 import util._
 
-trait NirTypeEncoding { self: NirCodeGen =>
+trait NirGenType { self: NirGenPhase =>
   import global._
   import definitions._
   import nirAddons._
@@ -47,8 +47,6 @@ trait NirTypeEncoding { self: NirCodeGen =>
     implicit def fromSymbol(sym: Symbol): SimpleType =
       SimpleType(sym, Seq.empty)
   }
-
-  def genTypeName(sym: Symbol): nir.Global
 
   def genArrayCode(st: SimpleType): Char =
     genPrimCode(st.targs.head)

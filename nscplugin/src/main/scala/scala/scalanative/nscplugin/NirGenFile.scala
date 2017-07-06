@@ -8,7 +8,7 @@ import scalanative.nir.serialization.{serializeText, serializeBinary}
 import scalanative.io.withScratchBuffer
 import scalanative.io.VirtualDirectory
 
-trait NirFiles { self: NirCodeGen =>
+trait NirGenFile { self: NirGenPhase =>
   import global._
 
   def genPathFor(cunit: CompilationUnit, sym: Symbol): Path = {
