@@ -1,5 +1,5 @@
-package scala.scalanative
-package cpplib
+package scala.scalanative.misc
+package greenthread
 
 import scala.collection.mutable
 import scala.scalanative.native._
@@ -66,7 +66,7 @@ object GreenThread {
         result
     }
 
-    val threads = new scala.Array[GreenThread](2048) //todo: remove hardcoded number
+    val threads = new scala.Array[GreenThread](1000001) //todo: remove hardcoded number
     CGreenThread.threadInit()
     mainThread.threadId = GreenThread.genId(mainThread)
 }
@@ -75,21 +75,21 @@ object GreenThread {
 object CGreenThread {
     // Bindings
     
-    @name("scalanative_cpplib_greenthreads_fork")
+    @name("scalanative_misc_greenthreads_fork")
     def threadFork(param: GreenThread.CThreadId): CInt = extern
     
-    @name("scalanative_cpplib_greenthreads_gtinit")
+    @name("scalanative_misc_greenthreads_gtinit")
     def threadInit():Unit = extern
 
-    @name("scalanative_cpplib_greenthreads_currentthreadid")
+    @name("scalanative_misc_greenthreads_currentthreadid")
     def currentThreadId():GreenThread.CThreadId = extern
 
-    @name("scalanative_cpplib_greenthreads_join")
+    @name("scalanative_misc_greenthreads_join")
     def threadJoin(param: GreenThread.CThreadId):Unit = extern
 
-    @name("scalanative_cpplib_greenthreads_gtstop")
+    @name("scalanative_misc_greenthreads_gtstop")
     def threadStop():Unit = extern
 
-    @name("scalanative_cpplib_greenthreads_gtyield")
+    @name("scalanative_misc_greenthreads_gtyield")
     def threadYield():CBool = extern
 }
