@@ -1,10 +1,7 @@
-import scala.scalanative.cpplib.GreenThread
+import scala.scalanative.misc.greenthread._
 
 class MyThread extends GreenThread {
   override def run(): Unit = {
-    // crash the GC because it doesn't support forks
-    //println("My thread");
-    
     Test.counter += 1
     // switch to other thread if exists
     GreenThread.threadYield
@@ -23,7 +20,7 @@ class MyThread extends GreenThread {
 object Test {
   var counter = 0;
   def main(args: Array[String]): Unit = {
-    val myThreadArray = Array.fill(1024)(new MyThread)
+    val myThreadArray = Array.fill(1000000)(new MyThread)
 
     println(s"Counter starts at $counter")
 
