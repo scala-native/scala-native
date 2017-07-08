@@ -16,7 +16,7 @@ object SocketHelpers {
     Zone { implicit z =>
       val cIP   = toCString(ip)
       var hints = stackalloc[addrinfo]
-      var ret = stackalloc[Ptr[addrinfo]]
+      var ret   = stackalloc[Ptr[addrinfo]]
 
       string.memset(hints.cast[Ptr[Byte]], 0, sizeof[addrinfo])
       hints.ai_family = AF_UNSPEC
@@ -76,8 +76,8 @@ object SocketHelpers {
 
   def hostToIp(host: String): Option[String] = {
     Zone { implicit z =>
-      var hints  = stackalloc[addrinfo]
-      var ret    = stackalloc[Ptr[addrinfo]]
+      var hints = stackalloc[addrinfo]
+      var ret   = stackalloc[Ptr[addrinfo]]
 
       var ipstr = stackalloc[CChar](INET6_ADDRSTRLEN + 1)
       string.memset(hints.cast[Ptr[Byte]], 0, sizeof[addrinfo])
@@ -103,8 +103,8 @@ object SocketHelpers {
 
   def hostToIpArray(host: String): scala.Array[String] = {
     Zone { implicit z =>
-      var hints  = stackalloc[addrinfo]
-      var ret    = stackalloc[Ptr[addrinfo]]
+      var hints = stackalloc[addrinfo]
+      var ret   = stackalloc[Ptr[addrinfo]]
 
       string.memset(hints.cast[Ptr[Byte]], 0, sizeof[addrinfo])
       hints.ai_family = AF_UNSPEC
@@ -115,7 +115,7 @@ object SocketHelpers {
       hints.ai_next = null
 
       val retArray = scala.collection.mutable.ArrayBuffer[String]()
-      val status = getaddrinfo(toCString(host), null, hints, ret)
+      val status   = getaddrinfo(toCString(host), null, hints, ret)
       if (status != 0)
         return scala.Array.empty[String]
 
