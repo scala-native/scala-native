@@ -16,7 +16,7 @@ object SocketHelpers {
     Zone { implicit z =>
       val cIP   = toCString(ip)
       var hints = stackalloc[addrinfo]
-      var ret   = stackalloc[addrinfo]
+      var ret = stackalloc[Ptr[addrinfo]]
 
       string.memset(hints.cast[Ptr[Byte]], 0, sizeof[addrinfo])
       hints.ai_family = AF_UNSPEC
@@ -25,21 +25,24 @@ object SocketHelpers {
       hints.ai_flags = 4 // AI_NUMERICHOST
       hints.ai_socktype = SOCK_STREAM
       hints.ai_next = null
-      ret.ai_next = null
 
       if (getaddrinfo(cIP, toCString("7"), hints, ret) != 0) {
         return false
       }
 
-      val sock = socket(ret.ai_family, SOCK_STREAM, ret.ai_protocol);
+      val sock = socket((!ret).ai_family, SOCK_STREAM, (!ret).ai_protocol);
       if (sock < 0) {
+        freeaddrinfo(!ret)
         return false
       }
-      val connectRes = connect(sock, ret.ai_addr, ret.ai_addrlen)
+      val connectRes = connect(sock, (!ret).ai_addr, (!ret).ai_addrlen)
       if (connectRes < 0) {
+        freeaddrinfo(!ret)
         close(sock)
         return false
       }
+
+      freeaddrinfo(!ret)
 
       val sentBytes = send(sock, toCString("echo"), 4, 0)
       if (sentBytes < 4) {
@@ -73,9 +76,8 @@ object SocketHelpers {
 
   def hostToIp(host: String): Option[String] = {
     Zone { implicit z =>
-      var status = 0
       var hints  = stackalloc[addrinfo]
-      var ret    = stackalloc[addrinfo]
+      var ret    = stackalloc[Ptr[addrinfo]]
 
       var ipstr = stackalloc[CChar](INET6_ADDRSTRLEN + 1)
       string.memset(hints.cast[Ptr[Byte]], 0, sizeof[addrinfo])
@@ -83,26 +85,26 @@ object SocketHelpers {
       hints.ai_socktype = 0
       hints.ai_next = null
 
-      status = getaddrinfo(toCString(host), null, hints, ret)
+      val status = getaddrinfo(toCString(host), null, hints, ret)
       if (status != 0)
         return None
 
       var addr = stackalloc[Byte]
-      if (ret.ai_family == AF_INET) {
-        addr = ret.ai_addr.cast[Ptr[sockaddr_in]].sin_addr.cast[Ptr[Byte]]
+      if ((!ret).ai_family == AF_INET) {
+        addr = (!ret).ai_addr.cast[Ptr[sockaddr_in]].sin_addr.cast[Ptr[Byte]]
       } else {
-        addr = ret.ai_addr.cast[Ptr[sockaddr_in6]].sin6_addr.cast[Ptr[Byte]]
+        addr = (!ret).ai_addr.cast[Ptr[sockaddr_in6]].sin6_addr.cast[Ptr[Byte]]
       }
-      inet_ntop(ret.ai_family, addr, ipstr, INET6_ADDRSTRLEN.toUInt)
+      inet_ntop((!ret).ai_family, addr, ipstr, INET6_ADDRSTRLEN.toUInt)
+      freeaddrinfo(!ret)
       return Some(fromCString(ipstr))
     }
   }
 
   def hostToIpArray(host: String): scala.Array[String] = {
     Zone { implicit z =>
-      var status = 0
       var hints  = stackalloc[addrinfo]
-      var ret    = stackalloc[addrinfo]
+      var ret    = stackalloc[Ptr[addrinfo]]
 
       string.memset(hints.cast[Ptr[Byte]], 0, sizeof[addrinfo])
       hints.ai_family = AF_UNSPEC
@@ -113,23 +115,24 @@ object SocketHelpers {
       hints.ai_next = null
 
       val retArray = scala.collection.mutable.ArrayBuffer[String]()
-      status = getaddrinfo(toCString(host), null, hints, ret)
-
+      val status = getaddrinfo(toCString(host), null, hints, ret)
       if (status != 0)
         return scala.Array.empty[String]
 
-      while (ret != null) {
+      var p = !ret
+      while (p != null) {
         var ipstr = stackalloc[CChar](INET6_ADDRSTRLEN + 1)
         var addr  = stackalloc[Byte]
-        if (ret.ai_family == AF_INET) {
-          addr = ret.ai_addr.cast[Ptr[sockaddr_in]].sin_addr.cast[Ptr[Byte]]
+        if (p.ai_family == AF_INET) {
+          addr = p.ai_addr.cast[Ptr[sockaddr_in]].sin_addr.cast[Ptr[Byte]]
         } else {
-          addr = ret.ai_addr.cast[Ptr[sockaddr_in6]].sin6_addr.cast[Ptr[Byte]]
+          addr = p.ai_addr.cast[Ptr[sockaddr_in6]].sin6_addr.cast[Ptr[Byte]]
         }
-        inet_ntop(ret.ai_family, addr, ipstr, INET6_ADDRSTRLEN.toUInt)
+        inet_ntop(p.ai_family, addr, ipstr, INET6_ADDRSTRLEN.toUInt)
         retArray += fromCString(ipstr)
-        ret = ret.ai_next.cast[Ptr[addrinfo]]
+        p = p.ai_next.cast[Ptr[addrinfo]]
       }
+      freeaddrinfo(!ret)
       return retArray.toArray
     }
   }
