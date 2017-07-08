@@ -15,4 +15,3 @@ struct scalanative_addrinfo {
     char *ai_canonname; /* Canonical name for service location.  */
     void *ai_next;      /* Pointer to next in list.  */
 };
-
