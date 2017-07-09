@@ -1,0 +1,112 @@
+package scala.scalanative
+package runtime
+
+import scala.scalanative.native._
+import scala.scalanative.runtime.Atomic._
+
+abstract class CAtomic
+
+%{
+   classes = ['Byte', 'Short', 'Int', 'Long',
+            'UnsignedByte', 'UnsignedShort', 'UnsignedInt',
+             'UnsignedLong', 'Char', 'UnsignedChar', 'CSize']
+
+   types = ['Byte', 'CShort', 'CInt', 'CLong',
+            'Byte', 'CUnsignedShort', 'CUnsignedInt', 'CUnsignedLong',
+            'CChar', 'CUnsignedChar', 'CSize']
+
+   names = ['byte', 'short', 'int', 'long',
+            'ubyte', 'ushort', 'uint', 'ulong',
+            'char', 'uchar', 'csize']
+}%
+
+% for (C, T, N) in zip(classes, types, names):
+
+%{
+   default = '0' if N in ['int'] else ('\'a\'.asInstanceOf['+T+']' if N in ['char', 'uchar'] else '0.asInstanceOf['+T+']')
+   cast = '' if N in ['byte', 'ubyte'] else '.cast[Ptr['+T+']]'
+   castB = '' if N in ['byte', 'ubyte'] else '.cast[Ptr[Byte]]'
+}%
+
+class CAtomic${C}(default: ${T} = ${default}) extends CAtomic {
+
+  private[this] val atm = Atomic.alloc(sizeof[${T}])${cast}
+  init_${N}(atm, default)
+
+  def load(): ${T} = load_${N}(atm)
+
+  def store(value: ${T}): Unit = init_${N}(atm, value)
+
+  def free(): Unit = Atomic.free(atm${castB})
+
+  def compareAndSwapStrong(expected: ${T}, desired: ${T}): (Boolean, ${T}) = {
+    val expectedPtr = stackalloc[${T}]
+    !expectedPtr = expected
+
+    if (compare_and_swap_strong_${N}(atm, expectedPtr, desired)) {
+      (true, desired)
+    } else {
+      (false, !expectedPtr)
+    }
+  }
+
+  def compareAndSwapWeak(expected: ${T}, desired: ${T}): (Boolean, ${T}) = {
+    val expectedPtr = stackalloc[${T}]
+    !expectedPtr = expected
+
+    if (compare_and_swap_weak_${N}(atm, expectedPtr, desired)) {
+      (true, desired)
+    } else {
+      (false, !expectedPtr)
+    }
+  }
+
+  def addFetch(value: ${T}): ${T} = {
+    fetchAdd(value)
+    load()
+  }
+
+  def fetchAdd(value: ${T}): ${T} = atomic_add_${N}(atm, value)
+
+  def subFetch(value: ${T}): ${T} = {
+    fetchSub(value)
+    load()
+  }
+
+  def fetchSub(value: ${T}): ${T} = atomic_sub_${N}(atm, value)
+
+  def andFetch(value: ${T}): ${T} = {
+    fetchAnd(value)
+    load()
+  }
+
+  def fetchAnd(value: ${T}): ${T} = atomic_and_${N}(atm, value)
+
+  def orFetch(value: ${T}): ${T} = {
+    fetchOr(value)
+    load()
+  }
+
+  def fetchOr(value: ${T}): ${T} = atomic_or_${N}(atm, value)
+
+  def xorFetch(value: ${T}): ${T} = {
+    fetchXor(value)
+    load()
+  }
+
+  def fetchXor(value: ${T}): ${T} = atomic_xor_${N}(atm, value)
+
+  override def toString: String = load().toString
+
+}
+
+object CAtomic${C} extends CAtomic {
+
+  def apply(initValue: ${T}) = new CAtomic${C}(initValue)
+
+  def apply() = new CAtomic${C}()
+
+}
+
+% end
+
