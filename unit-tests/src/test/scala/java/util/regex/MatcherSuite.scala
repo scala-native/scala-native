@@ -264,6 +264,14 @@ object MatcherSuite extends tests.Suite {
     assert(m1.lookingAt())
   }
 
+  test("pattern") {
+    val p = Pattern.compile("foo")
+    assertEquals(
+      p.matcher("foobar").pattern(),
+      p
+    )
+  }
+
   test("issue #852, StringIndexOutOfBoundsException") {
     val JsonNumberRegex =
       """(-)?((?:[1-9][0-9]*|0))(?:\.([0-9]+))?(?:[eE]([-+]?[0-9]+))?""".r
