@@ -155,7 +155,7 @@ private[net] trait InetAddressBase {
     if (isValidIPv6Address(host))
       return Array[InetAddress](new Inet6Address(byteArrayFromIPString(host)))
 
-    var ips: Array[String] = SocketHelpers.hostToIpArray(host)
+    val ips: Array[String] = SocketHelpers.hostToIpArray(host)
     if (ips.isEmpty) {
       throw new UnknownHostException(
         "No IP address could be found for the specified host: " + host)
@@ -193,10 +193,12 @@ private[net] trait InetAddressBase {
 
     if (parts.length == 1) {
       val longValue = parts(0).toLong
-      return (longValue >= 0 && longValue <= 0xFFFFFFFFL)
+      longValue >= 0 && longValue <= 0xFFFFFFFFL
+    } else {
+      parts.forall(part => {
+        part.length <= 3 || Integer.parseInt(part) <= 255
+      })
     }
-
-    parts.forall(part => { part.length <= 3 || Integer.parseInt(part) <= 255 })
   }
 
   private[net] def isValidIPv6Address(ipAddress: String): Boolean = {
@@ -435,7 +437,7 @@ private[net] trait InetAddressBase {
   private def convertToBytes(hexWord: String,
                              ipByteArray: Array[Byte],
                              byteIndex: Int): Unit = {
-    var hexWordLength = hexWord.length
+    val hexWordLength = hexWord.length
     var hexWordIndex  = 0
     ipByteArray(byteIndex) = 0
     ipByteArray(byteIndex + 1) = 0
@@ -467,7 +469,7 @@ private[net] trait InetAddressBase {
   private def getIntValue(c: Char): Int = {
     if (c <= '9' && c >= '0')
       return c - '0'
-    var cLower = Character.toLowerCase(c)
+    val cLower = Character.toLowerCase(c)
     if (cLower <= 'f' && cLower >= 'a') {
       return cLower - 'a' + 10
     }
@@ -513,7 +515,7 @@ private[net] trait InetAddressBase {
       }
       return buffer.toString
     }
-    return null
+    null
   }
 
   private def isIPv4MappedAddress(ipAddress: Array[Byte]): Boolean = {
@@ -574,16 +576,12 @@ abstract class InetAddress private[net] (ipAddress: Array[Byte], host: String)
   def getAddress() = ipAddress.clone
 
   override def equals(obj: Any): Boolean = {
-    if (obj == null || obj.getClass != this.getClass)
-      return false
-
-    val objIPAddress = obj.asInstanceOf[InetAddress].getAddress;
-    for (i <- objIPAddress.indices) {
-      if (objIPAddress(i) != this.ipAddress(i))
-        return false
+    if (obj == null || obj.getClass != this.getClass) {
+      false
+    } else {
+      val objIPAddress = obj.asInstanceOf[InetAddress].getAddress;
+      objIPAddress.indices.forall(i => objIPAddress(i) == ipAddress(i))
     }
-
-    return true
   }
 
   override def hashCode(): Int = InetAddress.bytesToInt(ipAddress, 0)
