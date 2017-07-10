@@ -97,7 +97,7 @@ object SocketHelpers {
       }
       inet_ntop((!ret).ai_family, addr, ipstr, INET6_ADDRSTRLEN.toUInt)
       freeaddrinfo(!ret)
-      return Some(fromCString(ipstr))
+      Some(fromCString(ipstr))
     }
   }
 
@@ -133,7 +133,7 @@ object SocketHelpers {
         p = p.ai_next.cast[Ptr[addrinfo]]
       }
       freeaddrinfo(!ret)
-      return retArray.toArray
+      retArray.toArray
     }
   }
 
@@ -165,10 +165,8 @@ object SocketHelpers {
                              20.toUInt,
                              0)
       }
-      if (status == 0) {
-        return Some(fromCString(host))
-      }
-      return None
+
+      if (status == 0) Some(fromCString(host)) else None
     }
   }
 
