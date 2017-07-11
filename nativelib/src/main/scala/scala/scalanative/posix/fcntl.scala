@@ -20,6 +20,9 @@ object fcntl {
   @name("scalanative_o_wronly")
   def O_WRONLY: CInt = extern
 
+  @name("scalanative_o_nonblock")
+  def O_NONBLOCK: CInt = extern
+
   @name("scalanative_o_rdwr")
   def O_RDWR: CInt = extern
 

@@ -17,17 +17,20 @@ int scalanative_getnameinfo(struct scalanative_sockaddr *addr,
 
 void scalanative_convert_scalanative_addrinfo(struct scalanative_addrinfo *in,
                                               struct addrinfo *out) {
+    // ai_addr and ai_next fields are set to NULL because this function is only 
+    // used for converting hints parameter for the getaddrinfo function, which doesn't
+    // care about them
     out->ai_flags = in->ai_flags;
     out->ai_family = in->ai_family;
     out->ai_socktype = in->ai_socktype;
     out->ai_protocol = in->ai_protocol;
     out->ai_addrlen = in->ai_addrlen;
-    out->ai_addr = NULL; // TODO
     if (in->ai_canonname == NULL) {
         out->ai_canonname = NULL;
     } else {
         out->ai_canonname = strdup(in->ai_canonname);
     }
+    out->ai_addr = NULL;
     out->ai_next = NULL;
 }
 
@@ -41,22 +44,21 @@ void scalanative_convert_addrinfo(struct addrinfo *in,
         out->ai_addr = NULL;
         out->ai_addrlen = in->ai_addrlen;
     } else {
-        socklen_t *size = malloc(sizeof(socklen_t));
+        socklen_t size;
         if (in->ai_addr->sa_family == AF_INET) {
             struct scalanative_sockaddr_in *addr =
                 malloc(sizeof(struct scalanative_sockaddr_in));
             scalanative_convert_scalanative_sockaddr_in(
-                (struct sockaddr_in *)in->ai_addr, addr, size);
+                (struct sockaddr_in *)in->ai_addr, addr, &size);
             out->ai_addr = (struct scalanative_sockaddr *)addr;
         } else {
             struct scalanative_sockaddr_in6 *addr =
                 malloc(sizeof(struct scalanative_sockaddr_in6));
             scalanative_convert_scalanative_sockaddr_in6(
-                (struct sockaddr_in6 *)in->ai_addr, addr, size);
+                (struct sockaddr_in6 *)in->ai_addr, addr, &size);
             out->ai_addr = (struct scalanative_sockaddr *)addr;
         }
-        out->ai_addrlen = *size;
-        free(size);
+        out->ai_addrlen = size;
     }
     if (in->ai_canonname == NULL) {
         out->ai_canonname = NULL;
@@ -89,8 +91,10 @@ int scalanative_getaddrinfo(char *name, char *service,
     struct addrinfo *res_c;
     scalanative_convert_scalanative_addrinfo(hints, &hints_c);
     int status = getaddrinfo(name, service, &hints_c, &res_c);
-    if (status != 0)
+    free(hints_c.ai_canonname);
+    if (status != 0) {
         return status;
+    }
     struct scalanative_addrinfo *res_native =
         malloc(sizeof(struct scalanative_addrinfo));
     scalanative_convert_addrinfo(res_c, res_native);

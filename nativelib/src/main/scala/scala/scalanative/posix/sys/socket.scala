@@ -161,6 +161,13 @@ object socket {
                  options_value: Ptr[Byte],
                  option_len: socklen_t): CInt = extern
 
+  @name("scalanative_getsockopt")
+  def getsockopt(socket: CInt,
+                 level: CInt,
+                 option_name: CInt,
+                 options_value: Ptr[Byte],
+                 option_len: Ptr[socklen_t]): CInt = extern
+
   @name("scalanative_recv")
   def recv(socket: CInt,
            buffer: Ptr[Byte],

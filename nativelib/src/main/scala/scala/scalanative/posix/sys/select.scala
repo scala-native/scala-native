@@ -8,7 +8,7 @@ object select {
   type time_t  = CLongInt
   type timeval = CStruct2[time_t, CInt]
 
-  type fd_set = CInt
+  type fd_set = CStruct1[Ptr[CLongInt]]
 
   @name("scalanative_select")
   def select(nfds: CInt,
