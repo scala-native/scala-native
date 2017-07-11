@@ -1,4 +1,4 @@
-package scala.scalanative.runtime
+package java.net
 
 import scalanative.native._
 import scalanative.posix.{netdb, netdbOps}, netdb._, netdbOps._
@@ -7,10 +7,11 @@ import scalanative.posix.sys.socketOps._
 import scalanative.posix.sys.socket._
 import scalanative.posix.sys.select._
 import scalanative.posix.unistd.close
+import scalanative.posix.fcntl._
 import scalanative.posix.sys.selectOps._
 import scalanative.posix.netinet.{in, inOps}, in._, inOps._
 
-object SocketHelpers {
+private[net] object SocketHelpers {
 
   def isReachableByEcho(ip: String, timeout: Int): Boolean = {
     Zone { implicit z =>
@@ -35,11 +36,29 @@ object SocketHelpers {
         freeaddrinfo(!ret)
         return false
       }
-      val connectRes = connect(sock, (!ret).ai_addr, (!ret).ai_addrlen)
-      if (connectRes < 0) {
-        freeaddrinfo(!ret)
-        close(sock)
-        return false
+      fcntl(sock, F_SETFL, O_NONBLOCK)
+
+      val fdset = stackalloc[fd_set]
+      !fdset._1 = stackalloc[CLongInt](FD_SETSIZE/sizeof[CLongInt])
+      FD_ZERO(fdset)
+      FD_SET(sock, fdset)
+
+      val time = stackalloc[timeval]
+      time.tv_sec = timeout / 1000
+      time.tv_usec = (timeout % 1000) * 1000
+
+      connect(sock, (!ret).ai_addr, (!ret).ai_addrlen)
+
+      if(select(sock + 1, null, fdset, null, time) == 1) {
+        val so_error = stackalloc[CInt].cast[Ptr[Byte]]
+        val len = stackalloc[socklen_t]
+        !len = sizeof[CInt].toUInt
+        getsockopt(sock, SOL_SOCKET, SO_ERROR, so_error, len)
+        if(!(so_error.cast[Ptr[CInt]]) != 0) {
+          freeaddrinfo(!ret)
+          close(sock)
+          return false
+        }
       }
 
       freeaddrinfo(!ret)
@@ -50,23 +69,17 @@ object SocketHelpers {
         return false
       }
 
-      val rfds = stackalloc[fd_set](FD_SETSIZE / sizeof[CInt])
-      FD_ZERO(rfds)
-      FD_SET(sock, rfds)
-
-      val time = stackalloc[timeval]
-      time.tv_sec = timeout / 1000
-      time.tv_usec = (timeout % 1000) * 1000
-
-      // name conflict
-      var res =
-        scalanative.posix.sys.select.select(sock + 1, rfds, null, null, time)
-
-      val buf      = stackalloc[CChar](5)
-      val recBytes = recv(sock, buf, 5, 0)
-      if (recBytes < 4) {
+      if(select(sock + 1, fdset, null, null, time) != 1) {
         close(sock)
-        return false
+        return false;
+      }
+      else { 
+        val buf      = stackalloc[CChar](5)
+        val recBytes = recv(sock, buf, 5, 0)
+        if (recBytes < 4) {
+          close(sock)
+          return false
+        }
       }
 
       close(sock)
