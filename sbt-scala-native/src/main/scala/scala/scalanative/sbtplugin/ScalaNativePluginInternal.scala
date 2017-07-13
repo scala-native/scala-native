@@ -100,7 +100,14 @@ object ScalaNativePluginInternal {
             .getOrElse(Seq.empty)
         ("/usr/local/include" +: includedir).map(s => s"-I$s")
       }
-      includes :+ "-Qunused-arguments"
+
+      includes :+ "-D_POSIX_C_SOURCE=200809L"
+
+      includes :+ "-Qunused-arguments" :+
+        (mode(nativeMode.value) match {
+          case tools.Mode.Debug   => "-O0"
+          case tools.Mode.Release => "-O2"
+        })
     },
     nativeCompileOptions in NativeTest := (nativeCompileOptions in Test).value,
     nativeLinkingOptions := {
