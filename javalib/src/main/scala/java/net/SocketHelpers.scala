@@ -13,7 +13,7 @@ import scala.scalanative.posix.netinet.{in, inOps}, in._, inOps._
 
 private[net] object SocketHelpers {
 
-  def isReachableByEcho(ip: String, timeout: Int): Boolean = {
+  def isReachableByEcho(ip: String, timeout: Int, port: Int): Boolean = {
     Zone { implicit z =>
       val cIP   = toCString(ip)
       var hints = stackalloc[addrinfo]
@@ -27,7 +27,7 @@ private[net] object SocketHelpers {
       hints.ai_socktype = SOCK_STREAM
       hints.ai_next = null
 
-      if (getaddrinfo(cIP, toCString("7"), hints, ret) != 0) {
+      if (getaddrinfo(cIP, toCString(port.toString), hints, ret) != 0) {
         return false
       }
 
