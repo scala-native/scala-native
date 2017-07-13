@@ -1,15 +1,15 @@
 package java.net
 
-import scalanative.native._
-import scalanative.posix.{netdb, netdbOps}, netdb._, netdbOps._
-import scalanative.posix.arpa.inet._
-import scalanative.posix.sys.socketOps._
-import scalanative.posix.sys.socket._
-import scalanative.posix.sys.select._
-import scalanative.posix.unistd.close
-import scalanative.posix.fcntl._
-import scalanative.posix.sys.selectOps._
-import scalanative.posix.netinet.{in, inOps}, in._, inOps._
+import scala.scalanative.native._
+import scala.scalanative.posix.{netdb, netdbOps}, netdb._, netdbOps._
+import scala.scalanative.posix.arpa.inet._
+import scala.scalanative.posix.sys.socketOps._
+import scala.scalanative.posix.sys.socket._
+import scala.scalanative.posix.sys.select._
+import scala.scalanative.posix.unistd.close
+import scala.scalanative.posix.fcntl._
+import scala.scalanative.posix.sys.selectOps._
+import scala.scalanative.posix.netinet.{in, inOps}, in._, inOps._
 
 private[net] object SocketHelpers {
 
