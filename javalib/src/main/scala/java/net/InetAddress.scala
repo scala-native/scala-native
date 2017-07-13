@@ -597,7 +597,7 @@ abstract class InetAddress private[net] (ipAddress: Array[Byte], host: String)
         "Argument 'timeout' in method 'isReachable' is negative")
     } else {
       val ipString = createIPStringFromByteArray(ipAddress)
-      SocketHelpers.isReachableByEcho(ipString, timeout)
+      SocketHelpers.isReachableByEcho(ipString, timeout, 7)
     }
   }
 
