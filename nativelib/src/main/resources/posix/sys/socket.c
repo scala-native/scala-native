@@ -158,7 +158,7 @@ int scalanative_setsockopt(int socket, int level, int option_name,
 }
 
 int scalanative_getsockopt(int socket, int level, int option_name,
-		 	   void *option_value, socklen_t *option_len) {
+                           void *option_value, socklen_t *option_len) {
     return getsockopt(socket, level, option_name, option_value, option_len);
 }
 

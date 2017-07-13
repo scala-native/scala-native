@@ -17,8 +17,9 @@ int scalanative_getnameinfo(struct scalanative_sockaddr *addr,
 
 void scalanative_convert_scalanative_addrinfo(struct scalanative_addrinfo *in,
                                               struct addrinfo *out) {
-    // ai_addr and ai_next fields are set to NULL because this function is only 
-    // used for converting hints parameter for the getaddrinfo function, which doesn't
+    // ai_addr and ai_next fields are set to NULL because this function is only
+    // used for converting hints parameter for the getaddrinfo function, which
+    // doesn't
     // care about them
     out->ai_flags = in->ai_flags;
     out->ai_family = in->ai_family;

@@ -39,7 +39,7 @@ private[net] object SocketHelpers {
       fcntl(sock, F_SETFL, O_NONBLOCK)
 
       val fdset = stackalloc[fd_set]
-      !fdset._1 = stackalloc[CLongInt](FD_SETSIZE/sizeof[CLongInt])
+      !fdset._1 = stackalloc[CLongInt](FD_SETSIZE / sizeof[CLongInt])
       FD_ZERO(fdset)
       FD_SET(sock, fdset)
 
@@ -49,12 +49,12 @@ private[net] object SocketHelpers {
 
       connect(sock, (!ret).ai_addr, (!ret).ai_addrlen)
 
-      if(select(sock + 1, null, fdset, null, time) == 1) {
+      if (select(sock + 1, null, fdset, null, time) == 1) {
         val so_error = stackalloc[CInt].cast[Ptr[Byte]]
-        val len = stackalloc[socklen_t]
+        val len      = stackalloc[socklen_t]
         !len = sizeof[CInt].toUInt
         getsockopt(sock, SOL_SOCKET, SO_ERROR, so_error, len)
-        if(!(so_error.cast[Ptr[CInt]]) != 0) {
+        if (!(so_error.cast[Ptr[CInt]]) != 0) {
           freeaddrinfo(!ret)
           close(sock)
           return false
@@ -69,11 +69,10 @@ private[net] object SocketHelpers {
         return false
       }
 
-      if(select(sock + 1, fdset, null, null, time) != 1) {
+      if (select(sock + 1, fdset, null, null, time) != 1) {
         close(sock)
         return false;
-      }
-      else { 
+      } else {
         val buf      = stackalloc[CChar](5)
         val recBytes = recv(sock, buf, 5, 0)
         if (recBytes < 4) {
