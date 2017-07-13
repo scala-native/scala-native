@@ -1,0 +1,76 @@
+package scala.scalanative
+package runtime
+
+import scala.scalanative.native.{
+  CBool,
+  CChar,
+  CInt,
+  CLong,
+  CShort,
+  CSize,
+  CUnsignedChar,
+  CUnsignedInt,
+  CUnsignedLong,
+  CUnsignedShort,
+  Ptr,
+  extern
+}
+
+%{
+   classes = ['CAtomicByte', 'CAtomicShort', 'CAtomicInt', 'CAtomicLong',
+            'CAtomicUnsignedByte', 'CAtomicUnsignedShort', 'CAtomicUnsignedInt',
+             'CAtomicUnsignedLong', 'CAtomicChar', 'CAtomicUnsignedChar', 'CAtomicCSize']
+
+   types = ['Byte', 'CShort', 'CInt', 'CLong',
+            'Byte', 'CUnsignedShort', 'CUnsignedInt', 'CUnsignedLong',
+            'CChar', 'CUnsignedChar', 'CSize']
+
+   names = ['byte', 'short', 'int', 'long',
+            'ubyte', 'ushort', 'uint', 'ulong',
+            'char', 'uchar', 'csize']
+}%
+
+// see http://en.cppreference.com/w/cpp/atomic
+
+@extern
+object Atomic {
+
+  // Memory
+  def alloc(sz: CSize): Ptr[Byte] = extern
+
+  def free(ptr: Ptr[Byte]): Unit = extern
+
+  // Init
+  % for (C, T, N) in zip(classes, types, names):
+  def init_${N}(atm: ${C}, initValue: ${T}): Unit = extern
+  % end
+
+  // Load
+  % for (C, T, N) in zip(classes, types, names):
+  def load_${N}(ptr: ${C}): ${T} = extern
+  % end
+
+  // Compare and Swap
+  % for (C, T, N) in zip(classes, types, names):
+  def compare_and_swap_strong_${N}(value: ${C},
+                                  expected: ${C},
+                                  desired: ${T}): CBool = extern
+
+  def compare_and_swap_weak_${N}(value: ${C},
+                                  expected: ${C},
+                                  desired: ${T}): CBool = extern
+  % end
+
+  // Add and Sub
+  % for (C, T, N) in zip(classes, types, names):
+  % for op in ['add', 'sub', 'or', 'and', 'xor']:
+  // ${op}
+  def atomic_${op}_${N}(ptr: ${C}, value: ${T}): ${T} = extern
+  % end
+  % end
+
+  // Types
+  % for (C, T) in zip(classes, types):
+  type ${C} = Ptr[${T}]
+  % end
+}
