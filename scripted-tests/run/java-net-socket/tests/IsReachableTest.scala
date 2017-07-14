@@ -1,5 +1,7 @@
 package java.net
 
+import java.net.SocketHelpers
+
 object IsReachableTest {
 
   def main(args: Array[String]): Unit = {
