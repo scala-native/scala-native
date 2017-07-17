@@ -49,8 +49,7 @@ final class Inet6Address private[net] (ipAddress: Array[Byte],
 
 }
 
-object Inet6Address {
-  import InetAddress._
+object Inet6Address extends InetAddressBase {
 
   def getByAddress(host: String,
                    addr: Array[Byte],

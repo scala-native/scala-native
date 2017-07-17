@@ -6,20 +6,23 @@ import scalanative.posix.netinet.in
 
 @extern
 object netdb {
-  type addrinfo = CStruct8[CInt, // ai_flags
-                           CInt, // ai_family
-                           CInt, // ai_socktype
-                           CInt, // ai_protocol
-                           socket.socklen_t, // ai_addrlen
-                           Ptr[socket.sockaddr], // ai_addr
-                           Ptr[CChar], // ai_canonname
-                           Ptr[Byte]] // ai_next
+  type addrinfo = CStruct8[CInt,
+                           CInt,
+                           CInt,
+                           CInt,
+                           socket.socklen_t,
+                           Ptr[socket.sockaddr],
+                           Ptr[CChar],
+                           Ptr[Byte]]
+
+  @name("scalanative_freeaddrinfo")
+  def freeaddrinfo(addr: Ptr[addrinfo]): Unit = extern
 
   @name("scalanative_getaddrinfo")
   def getaddrinfo(name: CString,
                   service: CString,
                   hints: Ptr[addrinfo],
-                  res: Ptr[addrinfo]): CInt = extern
+                  res: Ptr[Ptr[addrinfo]]): CInt = extern
 
   @name("scalanative_getnameinfo")
   def getnameinfo(addr: Ptr[socket.sockaddr],
@@ -51,6 +54,6 @@ object netdbOps {
     def ai_addrlen_=(v: socket.socklen_t): Unit  = !ptr._5 = v
     def ai_addr_=(v: Ptr[socket.sockaddr]): Unit = !ptr._6 = v
     def ai_canonname_=(v: Ptr[CChar]): Unit      = !ptr._7 = v
-    def ai_next_=(v: Ptr[addrinfo]): Unit        = !ptr._8 = v.cast[Ptr[Byte]]
+    def ai_next_=(v: Ptr[Byte]): Unit            = !ptr._8 = v
   }
 }

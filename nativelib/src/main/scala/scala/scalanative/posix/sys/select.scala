@@ -5,10 +5,10 @@ import scalanative.posix.inttypes._
 
 @extern
 object select {
-  type time_t      = CLongInt
-  type timeval     = CStruct2[time_t, CInt]
+  type time_t  = CLongInt
+  type timeval = CStruct2[time_t, CInt]
 
-  type fd_set = CInt
+  type fd_set = CStruct1[Ptr[CLongInt]]
 
   @name("scalanative_select")
   def select(nfds: CInt,
@@ -38,11 +38,11 @@ object selectOps {
   import select._
 
   implicit class timevalOps(val ptr: Ptr[timeval]) extends AnyVal {
-    def tv_sec: time_t       = !(ptr._1)
-    def tv_usec: CInt = !(ptr._2)
+    def tv_sec: time_t = !(ptr._1)
+    def tv_usec: CInt  = !(ptr._2)
 
-    def tv_sec_=(v: time_t): Unit       = !ptr._1 = v
-    def tv_usec_=(v: CInt): Unit = !ptr._2 = v
+    def tv_sec_=(v: time_t): Unit = !ptr._1 = v
+    def tv_usec_=(v: CInt): Unit  = !ptr._2 = v
   }
 
 }

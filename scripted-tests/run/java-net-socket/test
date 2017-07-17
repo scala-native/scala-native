@@ -1,3 +1,7 @@
-> launchEchoServer
+> launchServer
 $ copy-file tests/EchoClientTest.scala Main.scala
+> run
+
+> launchTcpEchoServer
+$ copy-file tests/IsReachableTest.scala Main.scala
 > run

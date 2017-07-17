@@ -157,6 +157,11 @@ int scalanative_setsockopt(int socket, int level, int option_name,
     return setsockopt(socket, level, option_name, option_value, option_len);
 }
 
+int scalanative_getsockopt(int socket, int level, int option_name,
+                           void *option_value, socklen_t *option_len) {
+    return getsockopt(socket, level, option_name, option_value, option_len);
+}
+
 int scalanative_recv(int socket, void *buffer, size_t length, int flags) {
     return recv(socket, buffer, length, flags);
 }
