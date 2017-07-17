@@ -1,5 +1,6 @@
 import java.net.{ServerSocket}
-import java.io.{PrintWriter, BufferedReader, InputStreamReader}
+import java.io.{PrintWriter, BufferedReader, InputStreamReader, File}
+import java.nio.file.{Files, Paths}
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -9,10 +10,12 @@ enablePlugins(ScalaNativePlugin)
 scalaVersion := "2.11.11"
 
 lazy val launchEchoServer =
-  taskKey[Unit]("Setting up echo server on port 5832")
+  taskKey[Unit]("Setting up tcp echo server")
 
 launchEchoServer := {
-  val echoServer = new ServerSocket(5832)
+  val echoServer = new ServerSocket(0)
+  val portFile = Paths.get("server-port.txt")
+  Files.write(portFile, echoServer.getLocalPort.toString.getBytes)
   val f = Future {
     val clientSocket = echoServer.accept
     val out          = clientSocket.getOutputStream
@@ -25,6 +28,9 @@ launchEchoServer := {
     out.close
     clientSocket.close
   }
-  f.onComplete { case _ => echoServer.close }
+  f.onComplete { case _ => {
+    echoServer.close
+    Files.delete(portFile)
+  } }
 
 }
