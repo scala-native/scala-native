@@ -37,12 +37,11 @@ private[net] class PlainSocketImpl extends SocketImpl  {
 
   private def connect(address: InetAddress, port: Int, timeout: Int) = {
     val hints = stackalloc[addrinfo]
-    val ret = stackalloc[addrinfo]
+    val ret = stackalloc[Ptr[addrinfo]]
     string.memset(hints.cast[Ptr[Byte]], 0, sizeof[addrinfo])
     hints.ai_family = socket.AF_UNSPEC
     hints.ai_flags = 4 // AI_NUMERICHOST
     hints.ai_socktype = socket.SOCK_STREAM
-    ret.ai_next = null
     
     Zone { implicit z =>
       val cIP = toCString(address.getHostAddress)
@@ -51,14 +50,15 @@ private[net] class PlainSocketImpl extends SocketImpl  {
       }
     }
     // TODO: timeout
-    val connectRes = socket.connect(fd, ret.ai_addr, ret.ai_addrlen)
+    val connectRes = socket.connect(fd, (!ret).ai_addr, (!ret).ai_addrlen)
     if(connectRes < 0) { 
+      freeaddrinfo(!ret)
       throw new IOException("Couldn't connect to address: " + address.getHostAddress
                             + " on port: " + port)
     }
     this.addr = address
     this.port = port
-    // TODO: freeaddrinfo(ret)
+    freeaddrinfo(!ret)
   }
 
   override def close: Unit = {
