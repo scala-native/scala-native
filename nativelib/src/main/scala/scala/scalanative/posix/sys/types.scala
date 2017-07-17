@@ -1,10 +1,12 @@
 package scala.scalanative
 package posix.sys
 
-import scala.scalanative.native.{CInt, ULong, extern}
+import scala.scalanative.native.{CInt, CUnsignedInt, ULong, extern}
 
 @extern
 object types {
+
+  type pid_t = CInt
 
   type pthread_attr_t = ULong
 

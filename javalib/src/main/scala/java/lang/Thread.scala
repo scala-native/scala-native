@@ -4,11 +4,11 @@ import java.util
 import java.lang.Thread._
 
 import scala.scalanative.native.{
-CFunctionPtr,
-CFunctionPtr1,
-CInt,
-Ptr,
-stackalloc
+  CFunctionPtr,
+  CFunctionPtr1,
+  CInt,
+  Ptr,
+  stackalloc
 }
 import scala.scalanative.posix.sys.types.{pthread_attr_t, pthread_t}
 import scala.scalanative.posix.pthread._
@@ -168,7 +168,7 @@ class Thread extends Runnable {
 
   @deprecated
   def destroy(): Unit =
-  // this method is not implemented
+    // this method is not implemented
     throw new NoSuchMethodError()
 
   def getContextClassLoader: ClassLoader =
@@ -268,7 +268,7 @@ class Thread extends Runnable {
   }
 
   private def toCRoutine(
-                          f: => (() => Unit)): (Ptr[scala.Byte]) => Ptr[scala.Byte] = {
+      f: => (() => Unit)): (Ptr[scala.Byte]) => Ptr[scala.Byte] = {
     def g(ptr: Ptr[scala.Byte]) = {
       f()
       null.asInstanceOf[Ptr[scala.Byte]]

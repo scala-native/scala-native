@@ -338,7 +338,7 @@ object ThreadLocal {
         }
 
         if (firstTombstone == -1 && reference == TOMBSTONE)
-        // Keep track of this tombstone so we can overwrite it.
+          // Keep track of this tombstone so we can overwrite it.
           firstTombstone = index
 
         index = next(index)
