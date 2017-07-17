@@ -1,0 +1,228 @@
+package scala.scalanative
+package native
+
+import runtime._
+import stdlib._
+
+object AtomicSuite extends tests.Suite {
+
+%{
+   classes = ['Byte', 'Short', 'Int', 'Long',
+            'UnsignedByte', 'UnsignedShort', 'UnsignedInt',
+             'UnsignedLong', 'CSize']
+
+   types = ['Byte', 'CShort', 'CInt', 'CLong',
+            'Byte', 'CUnsignedShort', 'CUnsignedInt', 'CUnsignedLong',
+            'CSize']
+
+   names = ['byte', 'short', 'int', 'long',
+            'ubyte', 'ushort', 'uint', 'ulong', 'csize']
+}%
+
+% for (C, T, N) in zip(classes, types, names):
+%{
+   default = '0' if N in ['int'] else '0.asInstanceOf['+T+']'
+   cast = '' if N == 'int' else '.asInstanceOf['+T+']'
+}%
+% for cmp in ['Strong', 'Weak']:
+
+  test("compare and swap ${cmp} ${N}") {
+    val a = CAtomic${C}()
+
+    val b = 3${cast}
+
+    assertNot(a.compareAndSwap${cmp}(1${cast}, 3${cast})._1)
+
+    assert(a.compareAndSwap${cmp}(${default}, 3${cast})._2 == 3${cast})
+
+    a.free()
+  }
+% end
+
+  test("load and store ${N}") {
+    val a = CAtomic${C}()
+
+    val b = 1${cast}
+
+    assert(a.load() == ${default})
+
+    a.store(b)
+
+    assert(a.load() == b)
+
+    a.free()
+  }
+
+  test("fetch_add ${N}") {
+    val a = CAtomic${C}()
+
+    val b = 1${cast}
+
+    assert(a.fetchAdd(b) == ${default})
+
+    assert(a.load() == b)
+
+    a.free()
+  }
+
+  test("add_fetch ${N}") {
+    val a = CAtomic${C}()
+
+    val b = 1${cast}
+
+    assert(a.addFetch(b) == b)
+
+    assert(a.load() == b)
+
+    a.free()
+  }
+
+  test("fetch_sub ${N}") {
+    val a = CAtomic${C}(1${cast})
+
+    val b = 1${cast}
+
+    assert(a.fetchSub(b) == b)
+
+    assert(a.load() == ${default})
+
+    a.free()
+  }
+
+  test("sub_fetch ${N}") {
+    val a = CAtomic${C}(1${cast})
+
+    val b = 1${cast}
+
+    assert(a.subFetch(b) == ${default})
+
+    assert(a.load() == ${default})
+
+    a.free()
+  }
+
+  test("fetch_and ${N}") {
+    val a = CAtomic${C}()
+
+    val b = 1${cast}
+
+    assert(a.fetchAnd(b) == ${default})
+
+    assert(a.load() == ${default})
+
+    a.free()
+  }
+
+  test("and_fetch ${N}") {
+    val a = CAtomic${C}()
+
+    val b = 1${cast}
+
+    assert(a.andFetch(b) == ${default})
+
+    assert(a.load() == ${default})
+
+    a.free()
+  }
+
+  test("fetch_or ${N}") {
+    val a = CAtomic${C}()
+
+    val b = 1${cast}
+
+    assert(a.fetchOr(b) == ${default})
+
+    assert(a.load() == b)
+
+    a.free()
+  }
+
+  test("or_fetch ${N}") {
+    val a = CAtomic${C}()
+
+    val b = 1${cast}
+
+    assert(a.orFetch(b) == b)
+
+    assert(a.load() == b)
+
+    a.free()
+  }
+
+  test("fetch_xor ${N}") {
+    val a = CAtomic${C}(1${cast})
+
+    val b = 1${cast}
+
+    assert(a.fetchXor(b) == 1${cast})
+
+    assert(a.load() == ${default})
+
+    a.free()
+  }
+
+  test("xor_fetch ${N}") {
+    val a = CAtomic${C}(1${cast})
+
+    val b = 1${cast}
+
+    assert(a.xorFetch(b) == ${default})
+
+    assert(a.load() == ${default})
+
+    a.free()
+  }
+% end
+
+% for N in ['Char', 'UnsignedChar']:
+% for cmp in ['Strong', 'Weak']:
+% cast = '.asInstanceOf[C'+N+']'
+
+  test("compare and swap ${cmp} ${N}") {
+    val a = CAtomic${N}()
+
+    val b = 'b'${cast}
+
+    assertNot(a.compareAndSwap${cmp}('b'${cast}, 'b'${cast})._1)
+
+    assert(a.compareAndSwap${cmp}('a'${cast}, 'b'${cast})._2 == 'b'${cast})
+
+    a.free()
+  }
+% end
+% end
+
+  test("multiple compare and swap should yield correct results") {
+    val a = CAtomicInt()
+
+    var i = 0
+
+    while(i < 10) {
+        assert(a.compareAndSwapStrong(i, i + 1)._2 == i + 1)
+        i += 1
+    }
+
+    assert(a.load() == 10)
+
+    a.free()
+  }
+
+  test("store behaves as expected") {
+    val a = CAtomicInt()
+
+    a.store(1)
+
+    assert(a.load() == 1)
+
+    a.free()
+  }
+
+  test("constructor with initial value") {
+    val a = CAtomicLong(2.toLong)
+
+    assert(a.load() == 2.toLong)
+
+    a.free()
+  }
+
+}
