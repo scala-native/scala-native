@@ -1,5 +1,7 @@
 package java.net
 
+import java.nio.file.{Paths, Files}
+
 object IsReachableTest {
 
   def main(args: Array[String]): Unit = {

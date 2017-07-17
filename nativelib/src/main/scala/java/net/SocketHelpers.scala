@@ -31,7 +31,7 @@ private[net] object SocketHelpers {
         return false
       }
       
-      val sock = socket((!ret).ai_family, SOCK_STREAM, (!ret).ai_protocol);
+      val sock = socket((!ret).ai_family, SOCK_STREAM, (!ret).ai_protocol)
       try { 
         if (sock < 0) {
           return false
@@ -65,7 +65,7 @@ private[net] object SocketHelpers {
         } 
 
         if (select(sock + 1, fdset, null, null, time) != 1) {
-          return false;
+          return false
         } else {
           val buf      = stackalloc[CChar](5)
           val recBytes = recv(sock, buf, 5, 0)
@@ -73,7 +73,11 @@ private[net] object SocketHelpers {
             return false
           }
         }
-      } finally {
+      } 
+      catch {
+        case e: Throwable => e
+      }
+      finally {
         close(sock)
         freeaddrinfo(!ret)
       }
