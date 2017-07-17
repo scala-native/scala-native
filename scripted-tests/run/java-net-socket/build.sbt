@@ -14,7 +14,7 @@ lazy val launchEchoServer =
 
 launchEchoServer := {
   val echoServer = new ServerSocket(0)
-  val portFile = Paths.get("server-port.txt")
+  val portFile   = Paths.get("server-port.txt")
   Files.write(portFile, echoServer.getLocalPort.toString.getBytes)
   val f = Future {
     val clientSocket = echoServer.accept
@@ -28,9 +28,11 @@ launchEchoServer := {
     out.close
     clientSocket.close
   }
-  f.onComplete { case _ => {
-    echoServer.close
-    Files.delete(portFile)
-  } }
+  f.onComplete {
+    case _ => {
+      echoServer.close
+      Files.delete(portFile)
+    }
+  }
 
 }

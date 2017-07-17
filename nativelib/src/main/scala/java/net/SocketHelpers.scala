@@ -30,9 +30,9 @@ private[net] object SocketHelpers {
       if (getaddrinfo(cIP, toCString(port.toString), hints, ret) != 0) {
         return false
       }
-      
+
       val sock = socket((!ret).ai_family, SOCK_STREAM, (!ret).ai_protocol)
-      try { 
+      try {
         if (sock < 0) {
           return false
         }
@@ -62,7 +62,7 @@ private[net] object SocketHelpers {
         val sentBytes = send(sock, toCString("echo"), 4, 0)
         if (sentBytes < 4) {
           return false
-        } 
+        }
 
         if (select(sock + 1, fdset, null, null, time) != 1) {
           return false
@@ -73,11 +73,9 @@ private[net] object SocketHelpers {
             return false
           }
         }
-      } 
-      catch {
+      } catch {
         case e: Throwable => e
-      }
-      finally {
+      } finally {
         close(sock)
         freeaddrinfo(!ret)
       }
