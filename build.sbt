@@ -323,6 +323,14 @@ lazy val javalib =
         val classDir  = (classDirectory in Compile).value.getAbsolutePath()
         val separator = sys.props("path.separator")
         "-javabootclasspath" +: s"$classDir$separator$javaBootClasspath" +: previous
+      },
+      // Don't include classfiles for javalib in the packaged jar.
+      mappings in packageBin in Compile := {
+        val previous = (mappings in packageBin in Compile).value
+        previous.filter {
+          case (file, path) =>
+            !path.endsWith(".class")
+        }
       }
     )
     .dependsOn(nativelib)
