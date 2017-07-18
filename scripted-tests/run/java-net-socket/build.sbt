@@ -1,5 +1,6 @@
 import java.net.{ServerSocket}
-import java.io.{PrintWriter, BufferedReader, InputStreamReader}
+import java.io.{PrintWriter, BufferedReader, InputStreamReader, File}
+import java.nio.file.{Files, Paths}
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -32,7 +33,9 @@ launchServer := {
 }
 
 launchTcpEchoServer := {
-  val echoServer = new ServerSocket(5832)
+  val echoServer = new ServerSocket(0)
+  val portFile   = Paths.get("server-port.txt")
+  Files.write(portFile, echoServer.getLocalPort.toString.getBytes)
   val f = Future {
     val clientSocket = echoServer.accept
     val out          = clientSocket.getOutputStream
@@ -45,5 +48,10 @@ launchTcpEchoServer := {
     out.close
     clientSocket.close
   }
-  f.onComplete { case _ => echoServer.close }
+  f.onComplete {
+    case _ => {
+      echoServer.close
+      Files.delete(portFile)
+    }
+  }
 }
