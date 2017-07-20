@@ -2,7 +2,7 @@ package java.net
 
 import java.io.{FileDescriptor, InputStream, OutputStream}
 
-abstract class SocketImpl {
+abstract class SocketImpl extends SocketOptions {
   protected[net] var localport: Int
   protected[net] var port: Int
   protected[net] var shutInput = false
@@ -13,10 +13,10 @@ abstract class SocketImpl {
   //protected[net] def bind(host: InetAddress, port: Int): Unit
   protected[net] def close: Unit
   protected[net] def connect(address: InetAddress, port: Int): Unit
-  //protected[net] def connect(address: SocketAddress, timeout: Int): Unit
+  protected[net] def connect(address: SocketAddress, timeout: Int): Unit
   protected[net] def connect(host: String, port: Int): Unit
   protected[net] def create(stream: Boolean): Unit
-  //protected[net] def getFileDesciptor: FileDescriptor
+  protected[net] def getFileDescriptor: FileDescriptor
   protected[net] def getInetAddress: InetAddress
   protected[net] def getInputStream: InputStream
   protected[net] def getLocalPort: Int = localport

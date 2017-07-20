@@ -27,8 +27,8 @@ object in {
   type ipv6_mreq = CStruct2[in6_addr, // ipv6mr_multiaddr
                             CUnsignedInt] // ipv6mr_interface
 
-  @name("scalanative_IPROTO_IP")
-  def IPROTO_IP: CInt = extern
+  @name("scalanative_IPPROTO_IP")
+  def IPPROTO_IP: CInt = extern
 
   @name("scalanative_IPPROTO_IPV6")
   def IPPROTO_IPV6: CInt = extern
