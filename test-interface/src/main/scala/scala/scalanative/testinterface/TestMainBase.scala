@@ -100,7 +100,7 @@ abstract class TestMainBase {
   private def receive[T](dis: DataInputStream): Message = {
     val msglen = dis.readInt()
     val msgbuf = new Array[Byte](msglen)
-    if(msglen > 0) {
+    if (msglen > 0) {
       dis.readFully(msgbuf)
     }
     val deserializer = new SerializedInputStream(

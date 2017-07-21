@@ -3,7 +3,8 @@ package java.net
 import java.io.OutputStream
 
 // Ported from Apache Harmony
-private[net] class SocketOutputStream(socket: PlainSocketImpl) extends OutputStream {
+private[net] class SocketOutputStream(socket: PlainSocketImpl)
+    extends OutputStream {
 
   override def close: Unit = {
     socket.close
@@ -14,10 +15,10 @@ private[net] class SocketOutputStream(socket: PlainSocketImpl) extends OutputStr
   }
 
   override def write(b: Array[Byte], off: Int, len: Int) = {
-    if(b == null)
+    if (b == null)
       throw new NullPointerException("Buffer parameter is null")
 
-    if(off < 0 || off > b.length || len < 0 || len > b.length - off)
+    if (off < 0 || off > b.length || len < 0 || len > b.length - off)
       throw new ArrayIndexOutOfBoundsException("Invalid length or offset")
 
     socket.write(b, off, len)

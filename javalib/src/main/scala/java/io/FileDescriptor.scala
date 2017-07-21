@@ -5,7 +5,7 @@ import scala.scalanative.native.{toCString, Zone}
 
 /** Wraps a UNIX file descriptor */
 final class FileDescriptor private[java] (private[java] val fd: Int,
-                                        val readOnly: Boolean = false) {
+                                          val readOnly: Boolean = false) {
 
   def this() = this(-1)
 

@@ -15,13 +15,14 @@ lazy val launchTcpEchoServer =
 
 launchServer := {
   val echoServer = new ServerSocket(5832)
-  val f = Future { 
-    val clientSocket = echoServer.accept 
-    val out = new PrintWriter(clientSocket.getOutputStream, true)
-    val in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream))
- 
+  val f = Future {
+    val clientSocket = echoServer.accept
+    val out          = new PrintWriter(clientSocket.getOutputStream, true)
+    val in =
+      new BufferedReader(new InputStreamReader(clientSocket.getInputStream))
+
     var line = in.readLine
-    while(line != null) {
+    while (line != null) {
       out.println(line)
       line = in.readLine
     }

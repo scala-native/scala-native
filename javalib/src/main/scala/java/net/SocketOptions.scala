@@ -8,11 +8,11 @@ trait SocketOptions {
 }
 
 object SocketOptions {
-  
+
   val IP_MULTICAST_IF: Int = 0
 
   val IP_MULTICAST_IF2: Int = 1
-  
+
   val IP_MULTICAST_LOOP: Int = 2
 
   val IP_TOS: Int = 3
@@ -38,5 +38,3 @@ object SocketOptions {
   val TCP_NODELAY: Int = 13
 
 }
-
-

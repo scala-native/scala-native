@@ -552,7 +552,8 @@ private[net] trait InetAddressBase {
 
 object InetAddress extends InetAddressBase
 
-abstract class InetAddress private[net] (ipAddress: Array[Byte], private var host: String)
+abstract class InetAddress private[net] (ipAddress: Array[Byte],
+                                         private var host: String)
     extends Serializable {
   import InetAddress._
 

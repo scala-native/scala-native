@@ -1,6 +1,4 @@
 package java.net
 
 @SerialVersionUID(1L)
-abstract class SocketAddress extends Serializable { 
-
-}
+abstract class SocketAddress extends Serializable {}

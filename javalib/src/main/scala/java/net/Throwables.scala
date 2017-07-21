@@ -2,9 +2,7 @@ package java.net
 
 import java.io.{IOException, InterruptedIOException}
 
-class URISyntaxException(input: String,
-                         reason: String,
-                         index: Int)
+class URISyntaxException(input: String, reason: String, index: Int)
     extends Exception(s"$reason in $input at $index") {
 
   def this(input: String, reason: String) = this(input, reason, -1)

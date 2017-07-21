@@ -5,7 +5,7 @@ import java.io.{FileDescriptor, InputStream, OutputStream}
 abstract class SocketImpl extends SocketOptions {
   protected[net] var localport: Int
   protected[net] var port: Int
-  protected[net] var shutInput = false
+  protected[net] var shutInput  = false
   protected[net] var shutOutput = false
 
   //protected[net] def accept(s: SocketImpl): Unit

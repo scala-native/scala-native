@@ -28,11 +28,12 @@ object SocketSuite extends tests.Suite {
     assertEquals(s.getTcpNoDelay, !prevValue)
   }
 
-  /*test("soLinger") {
-    val prevValue = s.getSoLinger
-    s.setSoLinger(prevValue + 100)
-    assertEquals(s.getSoLinger, prevValue + 100)
-  }*/
+  test("soLinger") {
+    s.setSoLinger(true, 100)
+    assertEquals(s.getSoLinger, 100)
+    s.setSoLinger(false, 50000000)
+    assertEquals(s.getSoLinger, -1)
+  }
 
   test("soTimeout") {
     val prevValue = s.getSoTimeout
@@ -62,6 +63,9 @@ object SocketSuite extends tests.Suite {
     assertThrows[SocketTimeoutException] {
       sock.connect(new InetSocketAddress("123.123.123.123", 12341), 200)
     }
+    sock.close
   }
+
+  s.close
 
 }
