@@ -33,7 +33,7 @@ class AtomicBoolean(private[this] var value: Boolean) extends Serializable {
   override def toString(): String =
     inner.toString()
 
-  private implicit def toInt(b: Boolean): Int = if(b) 1 else 0
+  private implicit def toInt(b: Boolean): Int = if (b) 1 else 0
 
   private implicit def toBool(i: Int): Boolean = i != 0
 }
