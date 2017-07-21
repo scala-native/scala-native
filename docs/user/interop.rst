@@ -160,11 +160,17 @@ See `Memory layout types`_ for details.
 Function pointers
 `````````````````
 
-It is possible to use external functions that take function pointers:
+It is possible to use external functions that take function pointers. For
+example given the following signature in C:
+
+.. code-block:: C
+
+    void test(char (* f)(void));
+
+One can declare it as following in Scala Native:
 
 .. code-block:: scala
 
-    // void test(char (*f)(void));
     def test(f: CFunctionPtr1[CString, Unit]): Unit = native.extern
 
 To pass a Scala function to ``CFunctionPtrN``, you need to use the conversion
@@ -179,13 +185,37 @@ Memory management
 `````````````````
 
 Unlike standard Scala objects that are managed automatically by the underlying
-runtime system, one has to manage native pointers manually. The two
-standard ways to allocate memory in native code are:
+runtime system, one has to be extra careful when working with unmanaged memory.
 
-1. **Stack allocation.**
+1. **Zone allocation.** (since 0.3)
+
+   Zones (also known as memory regions/contexts) are a technique for
+   semi-automatic memory management. Using them one can bind allocations
+   to a temporary scope in the program and the zone allocator will
+   automatically clean them up for you as soon as execution goes out of it:
+
+   .. code-block:: scala
+
+      native.Zone { implicit z =>
+        val buffer = native.alloc[Byte](n)
+      }
+
+   Zone allocation is the preferred way to allocate temporary unmanaged memory.
+   It's idiomatic to use implicit zone parameters to abstract over code that
+   has to zone allocate.
+
+   One typical example of this are C strings that are created from
+   Scala strings using ``native.fromCString``. The conversion takes implicit
+   zone parameter and allocates the result in that zone.
+
+   When using zone allocated memory one has to be careful not to
+   capture this memory beyond the lifetime of the zone. Dereferencing
+   zone-allocated memory after the end of the zone is undefined behavior.
+
+2. **Stack allocation.**
 
    Scala Native provides a built-in way to perform stack allocations of
-   unmanaged memory using ``native.stackalloc`` function:
+   using ``native.stackalloc`` function:
 
    .. code-block:: scala
 
@@ -197,16 +227,19 @@ standard ways to allocate memory in native code are:
 
    When using stack allocated memory one has to be careful not to capture
    this memory beyond the lifetime of the method. Dereferencing stack allocated
-   memory after the method's execution has completed is undefined behaviour.
+   memory after the method's execution has completed is undefined behavior.
 
-2. **Heap allocation.**
+3. **Manual heap allocation.**
 
    Scala Native's library contains a bindings for a subset of the standard
    libc functionality. This includes the trio of ``malloc``, ``realloc`` and
    ``free`` functions that are defined in ``native.stdlib`` extern object.
 
    Calling those will let you allocate memory using system's standard
-   dynamic memory allocator. Apart from the system allocator one might
+   dynamic memory allocator. Every single manual allocation must also
+   be freed manually as soon as it's not needed any longer.
+
+   Apart from the standard system allocator one might
    also bind to plethora of 3-rd party allocators such as jemalloc_ to
    serve the same purpose.
 

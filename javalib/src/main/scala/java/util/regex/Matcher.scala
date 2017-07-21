@@ -71,22 +71,22 @@ final class Matcher private[regex] (var _pattern: Pattern,
       val in      = toCString(inputSequence.toString)
 
       val ok = cre2.matches(
-          regex = regex,
-          text = in,
-          textlen = inputLength,
-          startpos = start,
-          endpos = end,
-          anchor = anchor,
-          matches = matches,
-          nMatches = nMatches
-        ) == 1
+        regex = regex,
+        text = in,
+        textlen = inputLength,
+        startpos = start,
+        endpos = end,
+        anchor = anchor,
+        matches = matches,
+        nMatches = nMatches
+      ) == 1
 
       if (ok) {
         var i = 0
         while (i < nMatches) {
           val m     = matches + i
-          val start = (m.data - in).toInt
-          val end   = start + m.length
+          val start = if (m.length == 0) -1 else (m.data - in).toInt
+          val end   = if (m.length == 0) -1 else start + m.length
           groups(i) = ((start, end))
 
           i += 1
@@ -198,7 +198,7 @@ final class Matcher private[regex] (var _pattern: Pattern,
     }
   }
 
-  def pattern(): Pattern = this.pattern
+  def pattern(): Pattern = this._pattern
 
   def reset(input: CharSequence): Matcher = {
     reset()
@@ -236,9 +236,9 @@ final class Matcher private[regex] (var _pattern: Pattern,
         val digitGroup = m.group(2)
         val nameGroup  = m.group(3)
 
-        if (digitGroup != null) {
+        if (digitGroup != null && !digitGroup.isEmpty) {
           m.appendReplacement2(sb2, group(digitGroup.toInt), doGroups = false)
-        } else if (nameGroup != null) {
+        } else if (nameGroup != null && !nameGroup.isEmpty) {
           m.appendReplacement2(sb2, group(nameGroup), doGroups = false)
         }
       }

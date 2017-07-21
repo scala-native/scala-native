@@ -1,13 +1,16 @@
 package java.io
 
 import scala.annotation.tailrec
-
 import java.nio._
 import java.nio.charset._
+import java.util.Objects
 
 class InputStreamReader(private[this] var in: InputStream,
                         private[this] var decoder: CharsetDecoder)
     extends Reader {
+
+  Objects.requireNonNull(in)
+  Objects.requireNonNull(decoder)
 
   private[this] var closed: Boolean = false
 
@@ -37,7 +40,9 @@ class InputStreamReader(private[this] var in: InputStream,
 
   def this(in: InputStream, charset: Charset) =
     this(in,
-         charset.newDecoder
+         Objects
+           .requireNonNull(charset)
+           .newDecoder
            .onMalformedInput(CodingErrorAction.REPLACE)
            .onUnmappableCharacter(CodingErrorAction.REPLACE))
 
@@ -45,9 +50,10 @@ class InputStreamReader(private[this] var in: InputStream,
     this(in, Charset.defaultCharset)
 
   def this(in: InputStream, charsetName: String) =
-    this(in, Charset.forName(charsetName))
+    this(in, Charset.forName(Objects.requireNonNull(charsetName)))
 
-  def close(): Unit = {
+  def close(): Unit = if (!closed) {
+    in.close()
     closed = true
     in = null
     decoder = null

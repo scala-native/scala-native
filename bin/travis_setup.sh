@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+# Enable strict mode and fail the script on non-zero exit code,
+# unresolved variable or pipe failure.
+set -euo pipefail
+IFS=$'\n\t'
+
 if [ "$(uname)" == "Darwin" ]; then
 
     brew update
@@ -13,26 +18,18 @@ if [ "$(uname)" == "Darwin" ]; then
 
 else
 
-    # Install LLVM/Clang 3.7, Boehm GC, libunwind
-    sudo apt-get -qq update
-    sudo sh -c "echo 'deb http://apt.llvm.org/precise/ llvm-toolchain-precise-3.7 main' >> /etc/apt/sources.list"
-    sudo sh -c "echo 'deb http://apt.llvm.org/precise/ llvm-toolchain-precise main' >> /etc/apt/sources.list"
-    wget -O - http://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+    # Install LLVM/Clang, Boehm GC, libunwind
     sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
     sudo apt-get -qq update
-    sudo apt-get install -y \
-      clang++-3.7 \
-      llvm-3.7 \
-      llvm-3.7-dev \
-      llvm-3.7-runtime \
-      llvm-3.7-tool \
+    sudo apt-get install -y -qq \
+      clang++-3.8 \
       libgc-dev \
-      libunwind7-dev
+      libunwind8-dev
 
     # Install re2
     # Starting from Ubuntu 16.04 LTS, it'll be available as http://packages.ubuntu.com/xenial/libre2-dev
     sudo apt-get install -y make
-    export CXX=clang++-3.7
+    export CXX=clang++-3.8
     git clone https://code.googlesource.com/re2
     pushd re2
     git checkout 2017-03-01

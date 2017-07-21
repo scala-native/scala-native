@@ -87,6 +87,4 @@ int scalanative_edom() { return EDOM; }
 
 int scalanative_eilseq() { return EILSEQ; }
 
-int scalanaitve_erange() { return ERANGE; }
-
-int scalanative_eexist() { return EEXIST; }
+int scalanative_erange() { return ERANGE; }

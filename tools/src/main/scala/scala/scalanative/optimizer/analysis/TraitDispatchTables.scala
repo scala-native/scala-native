@@ -23,15 +23,29 @@ class TraitDispatchTables(top: Top) {
   var traitHasTraitTy: Type   = _
   var traitHasTraitDefn: Defn = _
 
+  val traitMethods = top.methods.filter(_.inTrait).sortBy(_.id)
+  val traitMethodSigs = {
+    val sigs = mutable.Map.empty[String, Int]
+    var i    = 0
+    traitMethods.foreach { meth =>
+      val sig = meth.name.id
+      if (!sigs.contains(sig)) {
+        sigs(sig) = i
+        i += 1
+      }
+    }
+    sigs
+  }
+
   def initDispatch(): Unit = {
-    val methods       = top.methods.filter(_.inTrait).sortBy(_.id)
-    val methodsLength = methods.length
+    val sigs          = traitMethodSigs
+    val sigsLength    = traitMethodSigs.size
     val classes       = top.classes.sortBy(_.id)
     val classesLength = classes.length
     val table =
-      Array.fill[Val](classes.length * methods.length)(Val.Null)
-    val mins = Array.fill[Int](methodsLength)(Int.MaxValue)
-    val maxs = Array.fill[Int](methodsLength)(Int.MinValue)
+      Array.fill[Val](classesLength * sigsLength)(Val.Null)
+    val mins = Array.fill[Int](sigsLength)(Int.MaxValue)
+    val maxs = Array.fill[Int](sigsLength)(Int.MinValue)
 
     def put(cls: Int, meth: Int, value: Val) = {
       table(meth * classesLength + cls) = value
@@ -41,13 +55,15 @@ class TraitDispatchTables(top: Top) {
     def get(cls: Int, meth: Int) =
       table(meth * classesLength + cls)
 
-    // Visit every class and enter all the trait methods they support
+    // Visit every class and enter all the trait sigs they support
     classes.foreach { cls =>
       def visit(cur: Class): Unit = {
         cur.methods.foreach { meth =>
-          meth.overrides.foreach { ovmeth =>
-            if (ovmeth.inTrait && (get(cls.id, ovmeth.id) eq Val.Null)) {
-              put(cls.id, ovmeth.id, meth.value)
+          val sig = meth.name.id
+          if (sigs.contains(sig)) {
+            val id = sigs(sig)
+            if (get(cls.id, id) eq Val.Null) {
+              put(cls.id, id, meth.value)
             }
           }
         }
@@ -63,7 +79,7 @@ class TraitDispatchTables(top: Top) {
     val compressed = new Array[Val]({
       var meth = 0
       var size = 0
-      while (meth < methodsLength) {
+      while (meth < sigsLength) {
         val min = mins(meth)
         if (min != Int.MaxValue) {
           val max = maxs(meth)
@@ -75,7 +91,7 @@ class TraitDispatchTables(top: Top) {
     })
     var current = 0
     var meth    = 0
-    while (meth < methodsLength) {
+    while (meth < sigsLength) {
       val start = mins(meth)
       val end   = maxs(meth)
       if (start == Int.MaxValue) {

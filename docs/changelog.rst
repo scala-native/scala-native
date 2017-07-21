@@ -3,6 +3,16 @@
 Changelog
 =========
 
+0.3.1 (June 29, 2017)
+----------------------
+
+`Read release notes for 0.3.1 on GitHub <https://github.com/scala-native/scala-native/releases/tag/v0.3.1>`_.
+
+0.3.0 (June 15, 2017)
+----------------------
+
+`Read release notes for 0.3.0 on GitHub <https://github.com/scala-native/scala-native/releases/tag/v0.3.0>`_.
+
 0.2.1 (April 27, 2017)
 ----------------------
 
