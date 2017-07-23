@@ -5,6 +5,7 @@ import java.io.{FileDescriptor, InputStream, OutputStream}
 abstract class SocketImpl extends SocketOptions {
   protected[net] var localport: Int
   protected[net] var port: Int
+  protected[net] var address: InetAddress
   protected[net] var shutInput  = false
   protected[net] var shutOutput = false
 
@@ -28,5 +29,7 @@ abstract class SocketImpl extends SocketOptions {
   protected[net] def shutdownInput: Unit = shutInput = true
   protected[net] def shutdownOutput: Unit
   //protected[net] def supportsUrgentData: Boolean
-  //def toString: String = TODO
+
+  override def toString: String =
+    s"Socket[addr=$address,port=$port,localport=$localport]"
 }

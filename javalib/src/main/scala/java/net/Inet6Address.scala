@@ -57,12 +57,12 @@ object Inet6Address extends InetAddressBase {
     if (addr == null || addr.length != 16) {
       throw new UnknownHostException("Illegal IPv6 address")
     }
-    if (scope_id < 0)
-      return new Inet6Address(addr, host, 0)
-    else
-      return new Inet6Address(addr, host, scope_id)
+    if (scope_id < 0) {
+      new Inet6Address(addr, host, 0)
+    } else {
+      new Inet6Address(addr, host, scope_id)
+    }
   }
 
-  // TODO:
   // def getByAddress(host: String, addr: Array[Byte], nif: NetworkInterface): Inet6Addres
 }

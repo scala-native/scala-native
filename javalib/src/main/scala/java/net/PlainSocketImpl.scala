@@ -20,12 +20,12 @@ import java.io.{FileDescriptor, IOException, OutputStream, InputStream}
 
 private[net] class PlainSocketImpl extends SocketImpl {
 
-  protected[net] var fd                = -1
-  protected[net] var localport         = 0
-  protected[net] var addr: InetAddress = null
-  protected[net] var port              = 0
+  protected[net] var fd                   = -1
+  protected[net] var localport            = 0
+  protected[net] var address: InetAddress = null
+  protected[net] var port                 = 0
 
-  override def getInetAddress: InetAddress       = addr
+  override def getInetAddress: InetAddress       = address
   override def getFileDescriptor: FileDescriptor = new FileDescriptor(fd)
 
   override def create(streaming: Boolean): Unit = {
@@ -72,14 +72,6 @@ private[net] class PlainSocketImpl extends SocketImpl {
           "Couldn't connect to address: "
             + inetAddr.getAddress.getHostAddress +
             " on port: " + inetAddr.getPort)
-      } else {
-        addr = inetAddr.getAddress
-        port = inetAddr.getPort
-        localport = if ((!ret).ai_family == socket.AF_INET) {
-          (!ret).cast[Ptr[in.sockaddr_in]].sin_port.toInt
-        } else {
-          (!ret).cast[Ptr[in.sockaddr_in6]].sin6_port.toInt
-        }
       }
     } else {
       val opts = fcntl(fd, F_GETFL, 0) | O_NONBLOCK
@@ -118,12 +110,29 @@ private[net] class PlainSocketImpl extends SocketImpl {
       }
     }
 
-    addr = inetAddr.getAddress
-    port = inetAddr.getPort
-    localport = if ((!ret).ai_family == socket.AF_INET) {
-      (!ret).cast[Ptr[in.sockaddr_in]].sin_port.toInt
+    this.address = inetAddr.getAddress
+    this.port = inetAddr.getPort
+
+    val len = stackalloc[socket.socklen_t]
+    this.localport = if ((!ret).ai_family == socket.AF_INET) {
+      val sin = stackalloc[in.sockaddr_in]
+      !len = sizeof[in.sockaddr_in].toUInt
+
+      if (socket.getsockname(fd, sin.cast[Ptr[socket.sockaddr]], len) == -1) {
+        throw new ConnectException(
+          "Couldn't resolve a local port when connecting")
+      }
+      inet.ntohs(sin.sin_port).toInt
     } else {
-      (!ret).cast[Ptr[in.sockaddr_in6]].sin6_port.toInt
+      val sin = stackalloc[in.sockaddr_in6]
+      !len = sizeof[in.sockaddr_in6].toUInt
+
+      if (socket.getsockname(fd, sin.cast[Ptr[socket.sockaddr]], len) == -1) {
+        throw new ConnectException(
+          "Couldn't resolve a local port when connecting")
+      } else {
+        inet.ntohs(sin.sin6_port).toInt
+      }
     }
   }
 
@@ -135,12 +144,16 @@ private[net] class PlainSocketImpl extends SocketImpl {
   }
 
   override def getOutputStream: OutputStream = {
-    // TODO: is fd valid?
+    if (fd == -1) {
+      throw new SocketException("Socket is closed")
+    }
     new SocketOutputStream(this)
   }
 
   override def getInputStream: InputStream = {
-    // TODO: is fd valid?
+    if (fd == -1) {
+      throw new SocketException("Socket is closed")
+    }
     new SocketInputStream(this)
   }
 
@@ -217,7 +230,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
     case SocketOptions.SO_SNDBUF         => socket.SO_SNDBUF
     case SocketOptions.SO_REUSEADDR      => socket.SO_REUSEADDR
     case SocketOptions.TCP_NODELAY       => tcp.TCP_NODELAY
-    case _                               => throw new SocketException("This shouldn't happen")
+    case _                               => throw new Error("This shouldn't happen")
   }
 
   override def getOption(optID: Int): Object = {

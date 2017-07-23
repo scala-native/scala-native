@@ -12,8 +12,8 @@ object EchoManualClientTest {
 
     val socket = new Socket()
     socket.connect(new InetSocketAddress("127.0.0.1", port), 500)
-    val out    = new PrintWriter(socket.getOutputStream, true)
-    val in     = new BufferedReader(new InputStreamReader(socket.getInputStream))
+    val out = new PrintWriter(socket.getOutputStream, true)
+    val in  = new BufferedReader(new InputStreamReader(socket.getInputStream))
 
     out.println("echo")
     assert(in.readLine == "echo")

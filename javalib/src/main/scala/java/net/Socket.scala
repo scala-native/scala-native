@@ -18,6 +18,12 @@ class Socket protected (impl: SocketImpl,
   private var inputShutdown  = false
   private var outputShutdown = false
 
+  if (!streaming) {
+    throw new UnsupportedOperationException(
+      "Only streaming sockets are supported " +
+        "in this class for the moment.")
+  }
+
   if (shouldStartup) {
     startup(addr, port)
   }
@@ -32,6 +38,7 @@ class Socket protected (impl: SocketImpl,
     try {
       bound = true
       impl.connect(new InetSocketAddress(dstAddr, dstPort), timeout)
+      localPort = impl.localport
       connected = true
     } catch {
       case e: IOException => {
