@@ -1,5 +1,7 @@
 package java.net
 
+import java.io.IOException
+
 object SocketSuite extends tests.Suite {
 
   val s = new Socket()
@@ -37,8 +39,8 @@ object SocketSuite extends tests.Suite {
 
   test("soTimeout") {
     val prevValue = s.getSoTimeout
-    s.setSoTimeout(prevValue + 100)
-    assertEquals(s.getSoTimeout, prevValue + 100)
+    s.setSoTimeout(prevValue + 1000)
+    assertEquals(s.getSoTimeout, prevValue + 1000)
   }
 
   test("receiveBufferSize") {

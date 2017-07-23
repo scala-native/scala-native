@@ -12,9 +12,13 @@ scalaVersion := "2.11.11"
 lazy val launchServer = taskKey[Unit]("Setting up a server for tests")
 lazy val launchTcpEchoServer =
   taskKey[Unit]("Setting up echo server on port 5832")
+lazy val launchSilentServer =
+  taskKey[Unit]("Setting up a non responding server")
 
 launchServer := {
-  val echoServer = new ServerSocket(5832)
+  val echoServer = new ServerSocket(0)
+  val portFile   = Paths.get("server-port.txt")
+  Files.write(portFile, echoServer.getLocalPort.toString.getBytes)
   val f = Future {
     val clientSocket = echoServer.accept
     val out          = new PrintWriter(clientSocket.getOutputStream, true)
@@ -30,7 +34,12 @@ launchServer := {
     out.close
     clientSocket.close
   }
-  f.onComplete { case _ => echoServer.close }
+  f.onComplete {
+    case _ => {
+      echoServer.close
+      Files.delete(portFile)
+    }
+  }
 }
 
 launchTcpEchoServer := {
@@ -47,6 +56,31 @@ launchTcpEchoServer := {
     out.write(buffer)
     in.close
     out.close
+    clientSocket.close
+  }
+  f.onComplete {
+    case _ => {
+      echoServer.close
+      Files.delete(portFile)
+    }
+  }
+}
+
+launchSilentServer := {
+  val echoServer = new ServerSocket(0)
+  val portFile   = Paths.get("server-port.txt")
+  Files.write(portFile, echoServer.getLocalPort.toString.getBytes)
+  val f = Future {
+    val clientSocket = echoServer.accept
+    val in =
+      new BufferedReader(new InputStreamReader(clientSocket.getInputStream))
+
+    var line = in.readLine
+    while (line != null) {
+      line = in.readLine
+    }
+
+    in.close
     clientSocket.close
   }
   f.onComplete {

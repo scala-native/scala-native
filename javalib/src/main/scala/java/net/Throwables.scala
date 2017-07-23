@@ -35,19 +35,19 @@ class SocketException(msg: String) extends IOException(msg) {
   def this() = this(null)
 }
 
-class BindException(msg: String) extends IOException(msg) {
+class BindException(msg: String) extends SocketException(msg) {
   def this() = this(null)
 }
 
-class ConnectExcepion(msg: String) extends IOException(msg) {
+class ConnectException(msg: String) extends SocketException(msg) {
   def this() = this(null)
 }
 
-class NoRouteToHostException(msg: String) extends IOException(msg) {
+class NoRouteToHostException(msg: String) extends SocketException(msg) {
   def this() = this(null)
 }
 
-class PortUnreachableException(msg: String) extends IOException(msg) {
+class PortUnreachableException(msg: String) extends SocketException(msg) {
   def this() = this(null)
 }
 

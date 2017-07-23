@@ -92,6 +92,8 @@ class Socket protected (impl: SocketImpl,
          true,
          true)
 
+  // def this(proxy: Proxy)
+
   private def checkClosedAndCreate: Unit = {
     if (closed) {
       throw new SocketException("Socket is closed")
@@ -102,10 +104,6 @@ class Socket protected (impl: SocketImpl,
       created = true
     }
   }
-
-  // def this(proxy: Proxy)
-
-  // def bind(bindpoint: SocketAddress): Unit
 
   def connect(endpoint: SocketAddress): Unit = connect(endpoint, 0)
 
