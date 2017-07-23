@@ -218,19 +218,16 @@ private[net] class PlainSocketImpl extends SocketImpl {
   // because some of them have the same value, but require different levels
   // for example IP_TOS and TCP_NODELAY have the same value on my machine
   private def nativeValueFromOption(option: Int) = option match {
-    case SocketOptions.IP_MULTICAST_IF   => in.IP_MULTICAST_IF
-    case SocketOptions.IP_MULTICAST_LOOP => in.IP_MULTICAST_LOOP
-    case SocketOptions.IP_TOS            => in.IP_TOS
-    case SocketOptions.SO_BROADCAST      => socket.SO_BROADCAST
-    case SocketOptions.SO_KEEPALIVE      => socket.SO_KEEPALIVE
-    case SocketOptions.SO_LINGER         => socket.SO_LINGER
-    case SocketOptions.SO_TIMEOUT        => socket.SO_RCVTIMEO
-    case SocketOptions.SO_OOBINLINE      => socket.SO_OOBINLINE
-    case SocketOptions.SO_RCVBUF         => socket.SO_RCVBUF
-    case SocketOptions.SO_SNDBUF         => socket.SO_SNDBUF
-    case SocketOptions.SO_REUSEADDR      => socket.SO_REUSEADDR
-    case SocketOptions.TCP_NODELAY       => tcp.TCP_NODELAY
-    case _                               => throw new Error("This shouldn't happen")
+    case SocketOptions.IP_TOS       => in.IP_TOS
+    case SocketOptions.SO_KEEPALIVE => socket.SO_KEEPALIVE
+    case SocketOptions.SO_LINGER    => socket.SO_LINGER
+    case SocketOptions.SO_TIMEOUT   => socket.SO_RCVTIMEO
+    case SocketOptions.SO_OOBINLINE => socket.SO_OOBINLINE
+    case SocketOptions.SO_RCVBUF    => socket.SO_RCVBUF
+    case SocketOptions.SO_SNDBUF    => socket.SO_SNDBUF
+    case SocketOptions.SO_REUSEADDR => socket.SO_REUSEADDR
+    case SocketOptions.TCP_NODELAY  => tcp.TCP_NODELAY
+    case _                          => throw new Error("This shouldn't happen")
   }
 
   override def getOption(optID: Int): Object = {
