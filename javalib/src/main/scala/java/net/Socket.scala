@@ -42,7 +42,7 @@ class Socket protected (impl: SocketImpl,
       connected = true
     } catch {
       case e: IOException => {
-        impl.close
+        close
         throw e
       }
     }
@@ -262,7 +262,10 @@ class Socket protected (impl: SocketImpl,
     outputShutdown = true
   }
 
-  override def close: Unit = impl.close
+  override def close: Unit = {
+    impl.close
+    closed = true
+  }
 
   // def setPerformancePreferences(connectionTime: Int, latency: Int, bandwith: Int): Unit
 
