@@ -70,10 +70,7 @@ object InetAddressSuite extends tests.Suite {
   }
 
   test("isReachable") {
-    // Linux disables ICMP requests by default and most of the addresses
-    // don't have echo servers running on port 7, so it's quite difficult
-    // to test this method
-
+    // actual testing done using sbt scripted test framework
     val addr = InetAddress.getByName("127.0.0.1")
     assertThrows[IllegalArgumentException] { addr.isReachable(-1) }
   }
