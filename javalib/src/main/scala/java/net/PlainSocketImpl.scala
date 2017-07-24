@@ -266,7 +266,8 @@ private[net] class PlainSocketImpl extends SocketImpl {
           + optValue + ", errno: " + errno.errno)
     }
     if (optID == SocketOptions.TCP_NODELAY || optID == SocketOptions.SO_KEEPALIVE
-        || optID == SocketOptions.SO_REUSEADDR) {
+        || optID == SocketOptions.SO_REUSEADDR
+        || optID == SocketOptions.SO_OOBINLINE) {
       Boolean.box(!(opt.cast[Ptr[CInt]]) != 0)
     } else if (optID == SocketOptions.SO_LINGER) {
       val linger = opt.cast[Ptr[socket.linger]]
@@ -303,7 +304,8 @@ private[net] class PlainSocketImpl extends SocketImpl {
       else sizeof[CInt].toUInt
 
     if (optID == SocketOptions.TCP_NODELAY || optID == SocketOptions.SO_KEEPALIVE
-        || optID == SocketOptions.SO_REUSEADDR) {
+        || optID == SocketOptions.SO_REUSEADDR
+        || optID == SocketOptions.SO_OOBINLINE) {
       val ptr = stackalloc[CInt]
       !ptr = if (value.asInstanceOf[Boolean]) 1 else 0
       opt = ptr.cast[Ptr[Byte]]

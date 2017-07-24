@@ -46,13 +46,17 @@ object SocketSuite extends tests.Suite {
   test("receiveBufferSize") {
     val prevValue = s.getReceiveBufferSize
     s.setReceiveBufferSize(prevValue + 100)
-    assertEquals(s.getReceiveBufferSize, (prevValue + 100) * 2)
+    // On linux the size is actually set to the double of given parameter
+    // so we don't test if it's equal
+    assert(s.getReceiveBufferSize >= prevValue + 100)
   }
 
   test("sendBufferSize") {
     val prevValue = s.getSendBufferSize
     s.setSendBufferSize(prevValue + 100)
-    assertEquals(s.getSendBufferSize, (prevValue + 100) * 2)
+    // On linux the size is actually set to the double of given parameter
+    // so we don't test if it's equal
+    assert(s.getSendBufferSize >= prevValue + 100)
   }
 
   test("trafficClass") {
