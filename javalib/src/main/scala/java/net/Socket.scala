@@ -263,8 +263,8 @@ class Socket protected (impl: SocketImpl,
   }
 
   override def close: Unit = {
-    impl.close
     closed = true
+    impl.close
   }
 
   // def setPerformancePreferences(connectionTime: Int, latency: Int, bandwith: Int): Unit
