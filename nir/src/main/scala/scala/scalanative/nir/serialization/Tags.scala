@@ -9,10 +9,7 @@ package serialization
 object Tags {
 
   // Attibutes
-
-  final val Attr = 0
-
-  final val MayInlineAttr = 1 + Attr
+  final val MayInlineAttr = 1
   final val InlineHintAttr = 1 + MayInlineAttr
   final val NoInlineAttr = 1 + InlineHintAttr
   final val AlwaysInlineAttr = 1 + NoInlineAttr
@@ -32,10 +29,7 @@ object Tags {
   final val LinktimeResolvedAttr = 1 + FinalAttr
 
   // Binary ops
-
-  final val Bin = Attr + 32
-
-  final val IaddBin = 1 + Bin
+  final val IaddBin = 1
   final val FaddBin = 1 + IaddBin
   final val IsubBin = 1 + FaddBin
   final val FsubBin = 1 + IsubBin
@@ -55,10 +49,7 @@ object Tags {
   final val XorBin = 1 + OrBin
 
   // Comparison ops
-
-  final val Comp = Bin + 32
-
-  final val IeqComp = 1 + Comp
+  final val IeqComp = 1
   final val IneComp = 1 + IeqComp
   final val UgtComp = 1 + IneComp
   final val UgeComp = 1 + UgtComp
@@ -76,10 +67,7 @@ object Tags {
   final val FleComp = 1 + FltComp
 
   // Conversion ops
-
-  final val Conv = Comp + 32
-
-  final val TruncConv = 1 + Conv
+  final val TruncConv = 1
   final val ZextConv = 1 + TruncConv
   final val SextConv = 1 + ZextConv
   final val FptruncConv = 1 + SextConv
@@ -95,10 +83,7 @@ object Tags {
   final val ZSizeCastConv = 1 + SSizeCastConv
 
   // Definitions
-
-  final val Defn = Conv + 32
-
-  final val VarDefn = 1 + Defn
+  final val VarDefn = 1
   final val ConstDefn = 1 + VarDefn
   final val DeclareDefn = 1 + ConstDefn
   final val DefineDefn = 1 + DeclareDefn
@@ -107,10 +92,7 @@ object Tags {
   final val ModuleDefn = 1 + ClassDefn
 
   // Control-flow ops
-
-  final val Inst = Defn + 32
-
-  final val LabelInst = 1 + Inst
+  final val LabelInst = 1
   final val LetInst = 1 + LabelInst
   final val LetUnwindInst = 1 + LetInst
   final val RetInst = 1 + LetUnwindInst
@@ -122,18 +104,12 @@ object Tags {
   final val LinktimeIfInst = 1 + UnreachableInst
 
   // Globals
-
-  final val Global = Inst + 32
-
-  final val NoneGlobal = 1 + Global
+  final val NoneGlobal = 1
   final val TopGlobal = 1 + NoneGlobal
   final val MemberGlobal = 1 + TopGlobal
 
   // Sigs
-
-  final def Sig = Global + 32
-
-  final val FieldSig = 1 + Sig
+  final val FieldSig = 1
   final val CtorSig = 1 + FieldSig
   final val MethodSig = 1 + CtorSig
   final val ProxySig = 1 + MethodSig
@@ -142,19 +118,13 @@ object Tags {
   final val DuplicateSig = 1 + GeneratedSig
 
   // Nexts
-
-  final val Next = Sig + 32
-
-  final val NoneNext = 1 + Next
+  final val NoneNext = 1
   final val UnwindNext = 1 + NoneNext
   final val CaseNext = 1 + UnwindNext
   final val LabelNext = 1 + CaseNext
 
   // Ops
-
-  final val Op = Next + 32
-
-  final val CallOp = 1 + Op
+  final val CallOp = 1
   final val LoadOp = 1 + CallOp
   final val StoreOp = 1 + LoadOp
   final val ElemOp = 1 + StoreOp
@@ -188,10 +158,7 @@ object Tags {
   final val FenceOp = 1 + FieldOp
 
   // Types
-
-  final val Type = Op + 32
-
-  final val VarargType = 1 + Type
+  final val VarargType = 1
   final val BoolType = 1 + VarargType
   final val PtrType = 1 + BoolType
   final val CharType = 1 + PtrType
@@ -214,10 +181,7 @@ object Tags {
   final val SizeType = 1 + RefType
 
   // Values
-
-  final val Val = Type + 32
-
-  final val TrueVal = 1 + Val
+  final val TrueVal = 1
   final val FalseVal = 1 + TrueVal
   final val NullVal = 1 + FalseVal
   final val ZeroVal = 1 + NullVal
@@ -238,16 +202,11 @@ object Tags {
   final val StringVal = 1 + ConstVal
   final val VirtualVal = 1 + StringVal
   final val ClassOfVal = 1 + VirtualVal
-
   final val LinktimeConditionVal = 1 + ClassOfVal
   final val SizeVal = 1 + LinktimeConditionVal
 
   // Synchronization info
-
-  final val SyncAttrs = Val + 32
-
-  final val MemoryOrder = 1 + SyncAttrs
-  final val Unordered = 1 + MemoryOrder
+  final val Unordered = 1
   final val MonotonicOrder = 1 + Unordered
   final val AcquireOrder = 1 + MonotonicOrder
   final val ReleaseOrder = 1 + AcquireOrder

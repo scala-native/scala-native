@@ -39,20 +39,22 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     allDefns.toSeq
   }
 
+  private def getTag(): Byte = get()
+
   private def getSeq[T](getT: => T): Seq[T] =
-    (1 to getInt).map(_ => getT).toSeq
+    (1 to getInt()).map(_ => getT).toSeq
 
   private def getOpt[T](getT: => T): Option[T] =
     if (get == 0) None else Some(getT)
 
-  private def getInts(): Seq[Int] = getSeq(getInt)
+  private def getInts(): Seq[Int] = getSeq(getInt())
 
   private def getUTF8String(): String = {
     new String(getBytes(), StandardCharsets.UTF_8)
   }
 
   private def getBytes(): Array[Byte] = {
-    val arr = new Array[Byte](getInt)
+    val arr = new Array[Byte](getInt())
     get(arr)
     arr
   }
@@ -60,7 +62,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
   private def getBool(): Boolean = get != 0
 
   private def getAttrs(): Attrs = Attrs.fromSeq(getSeq(getAttr()))
-  private def getAttr(): Attr = getInt match {
+  private def getAttr(): Attr = getTag() match {
     case T.MayInlineAttr    => Attr.MayInline
     case T.InlineHintAttr   => Attr.InlineHint
     case T.NoInlineAttr     => Attr.NoInline
@@ -85,7 +87,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     case T.LinktimeResolvedAttr => Attr.LinktimeResolved
   }
 
-  private def getBin(): Bin = getInt match {
+  private def getBin(): Bin = getTag() match {
     case T.IaddBin => Bin.Iadd
     case T.FaddBin => Bin.Fadd
     case T.IsubBin => Bin.Isub
@@ -109,7 +111,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
   private def getInsts(): Seq[Inst] = getSeq(getInst())
   private def getInst(): Inst = {
     implicit val pos: nir.Position = getPosition()
-    getInt() match {
+    getTag() match {
       case T.LabelInst       => Inst.Label(getLocal(), getParams())
       case T.LetInst         => Inst.Let(getLocal(), getOp(), Next.None)
       case T.LetUnwindInst   => Inst.Let(getLocal(), getOp(), getNext())
@@ -124,7 +126,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     }
   }
 
-  private def getComp(): Comp = getInt match {
+  private def getComp(): Comp = getTag() match {
     case T.IeqComp => Comp.Ieq
     case T.IneComp => Comp.Ine
     case T.UgtComp => Comp.Ugt
@@ -144,7 +146,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     case T.FleComp => Comp.Fle
   }
 
-  private def getConv(): Conv = getInt match {
+  private def getConv(): Conv = getTag() match {
     case T.TruncConv     => Conv.Trunc
     case T.ZextConv      => Conv.Zext
     case T.SextConv      => Conv.Sext
@@ -163,7 +165,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
 
   private def getDefn(): Defn = {
     implicit val pos: nir.Position = getPosition()
-    getInt() match {
+    getTag() match {
       case T.VarDefn =>
         Defn.Var(getAttrs(), getGlobal(), getType(), getVal())
 
@@ -189,7 +191,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
 
   private def getGlobals(): Seq[Global] = getSeq(getGlobal())
   private def getGlobalOpt(): Option[Global] = getOpt(getGlobal())
-  private def getGlobal(): Global = getInt match {
+  private def getGlobal(): Global = getTag() match {
     case T.NoneGlobal =>
       Global.None
     case T.TopGlobal =>
@@ -213,7 +215,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     Local(getLong)
 
   private def getNexts(): Seq[Next] = getSeq(getNext())
-  private def getNext(): Next = getInt match {
+  private def getNext(): Next = getTag() match {
     case T.NoneNext   => Next.None
     case T.UnwindNext => Next.Unwind(getParam(), getNext())
     case T.CaseNext   => Next.Case(getVal(), getNext())
@@ -221,7 +223,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
   }
 
   private def getOp(): Op = {
-    getInt match {
+    getTag() match {
       case T.CallOp => Op.Call(getType(), getVal(), getVals())
       case T.LoadOp =>
         Op.Load(
@@ -275,7 +277,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
   private def getParam(): Val.Local = Val.Local(getLocal(), getType())
 
   private def getTypes(): Seq[Type] = getSeq(getType())
-  private def getType(): Type = getInt match {
+  private def getType(): Type = getTag() match {
     case T.VarargType      => Type.Vararg
     case T.PtrType         => Type.Ptr
     case T.BoolType        => Type.Bool
@@ -286,7 +288,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     case T.LongType        => Type.Long
     case T.FloatType       => Type.Float
     case T.DoubleType      => Type.Double
-    case T.ArrayValueType  => Type.ArrayValue(getType(), getInt)
+    case T.ArrayValueType  => Type.ArrayValue(getType(), getInt())
     case T.StructValueType => Type.StructValue(getTypes())
     case T.FunctionType    => Type.Function(getTypes(), getType())
 
@@ -301,7 +303,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
   }
 
   private def getVals(): Seq[Val] = getSeq(getVal())
-  private def getVal(): Val = getInt match {
+  private def getVal(): Val = getTag() match {
     case T.TrueVal        => Val.True
     case T.FalseVal       => Val.False
     case T.NullVal        => Val.Null
@@ -309,7 +311,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     case T.CharVal        => Val.Char(getShort.toChar)
     case T.ByteVal        => Val.Byte(get)
     case T.ShortVal       => Val.Short(getShort)
-    case T.IntVal         => Val.Int(getInt)
+    case T.IntVal         => Val.Int(getInt())
     case T.LongVal        => Val.Long(getLong)
     case T.FloatVal       => Val.Float(getFloat)
     case T.DoubleVal      => Val.Double(getDouble)
@@ -323,7 +325,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     case T.ConstVal => Val.Const(getVal())
     case T.StringVal =>
       Val.String {
-        val chars = Array.fill(getInt)(getChar)
+        val chars = Array.fill(getInt())(getChar)
         new String(chars)
       }
     case T.VirtualVal => Val.Virtual(getLong)
@@ -337,7 +339,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
       isVolatile = getBool()
     )
 
-  private def getMemoryOrder(): MemoryOrder = getInt() match {
+  private def getMemoryOrder(): MemoryOrder = getTag() match {
     case T.Unordered      => MemoryOrder.Unordered
     case T.MonotonicOrder => MemoryOrder.Monotonic
     case T.AcquireOrder   => MemoryOrder.Acquire
@@ -346,7 +348,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     case T.SeqCstOrder    => MemoryOrder.SeqCst
   }
 
-  private def getLinktimeCondition(): LinktimeCondition = getInt() match {
+  private def getLinktimeCondition(): LinktimeCondition = getTag() match {
     case LinktimeCondition.Tag.SimpleCondition =>
       LinktimeCondition.SimpleCondition(
         propertyName = getUTF8String(),
