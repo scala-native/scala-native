@@ -21,9 +21,9 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
 
     val prelude = Prelude.readFrom(buffer, bufferName)
 
-    val files = Array.fill(getInt())(new URI(getUTF8String()))
+    val files = Array.fill(getLeb())(new URI(getUTF8String()))
 
-    val pairs = getSeq((getGlobal(), getInt()))
+    val pairs = getSeq((getGlobal(), getLeb()))
     (prelude, pairs, files)
   }
 
@@ -41,20 +41,34 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
 
   private def getTag(): Byte = get()
 
+  private def getLeb(): Int = {
+    var result = 0
+    var cur    = 0
+    var count  = 0
+    while({
+      cur = get & 0xff
+      result |= (cur & 0x7f) << (count * 7)
+      count += 1
+      ((cur & 0x80) == 0x80) && count < 5
+    }) ()
+    if ((cur & 0x80) == 0x80) throw new Exception("invalid LEB128 sequence")
+    result
+  }
+  private def getLebs(): Seq[Int] = getSeq(getLeb())
+
+
   private def getSeq[T](getT: => T): Seq[T] =
-    (1 to getInt()).map(_ => getT).toSeq
+    (1 to getLeb()).map(_ => getT).toSeq
 
   private def getOpt[T](getT: => T): Option[T] =
     if (get == 0) None else Some(getT)
-
-  private def getInts(): Seq[Int] = getSeq(getInt())
 
   private def getUTF8String(): String = {
     new String(getBytes(), StandardCharsets.UTF_8)
   }
 
   private def getBytes(): Array[Byte] = {
-    val arr = new Array[Byte](getInt())
+    val arr = new Array[Byte](getLeb())
     get(arr)
     arr
   }
@@ -211,8 +225,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
       }
   }
 
-  private def getLocal(): Local =
-    Local(getLong)
+  private def getLocal(): Local = Local(getLeb())
 
   private def getNexts(): Seq[Next] = getSeq(getNext())
   private def getNext(): Next = getTag() match {
@@ -239,8 +252,8 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
           syncAttrs = getOpt(getSyncAttrs())
         )
       case T.ElemOp       => Op.Elem(getType(), getVal(), getVals())
-      case T.ExtractOp    => Op.Extract(getVal(), getInts())
-      case T.InsertOp     => Op.Insert(getVal(), getVal(), getInts())
+      case T.ExtractOp    => Op.Extract(getVal(), getLebs())
+      case T.InsertOp     => Op.Insert(getVal(), getVal(), getLebs())
       case T.StackallocOp => Op.Stackalloc(getType(), getVal())
       case T.BinOp        => Op.Bin(getBin(), getType(), getVal(), getVal())
       case T.CompOp       => Op.Comp(getComp(), getType(), getVal(), getVal())
@@ -288,7 +301,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     case T.LongType        => Type.Long
     case T.FloatType       => Type.Float
     case T.DoubleType      => Type.Double
-    case T.ArrayValueType  => Type.ArrayValue(getType(), getInt())
+    case T.ArrayValueType  => Type.ArrayValue(getType(), getLeb())
     case T.StructValueType => Type.StructValue(getTypes())
     case T.FunctionType    => Type.Function(getTypes(), getType())
 
@@ -311,7 +324,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     case T.CharVal        => Val.Char(getShort.toChar)
     case T.ByteVal        => Val.Byte(get)
     case T.ShortVal       => Val.Short(getShort)
-    case T.IntVal         => Val.Int(getInt())
+    case T.IntVal         => Val.Int(getLeb())
     case T.LongVal        => Val.Long(getLong)
     case T.FloatVal       => Val.Float(getFloat)
     case T.DoubleVal      => Val.Double(getDouble)
@@ -325,7 +338,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     case T.ConstVal => Val.Const(getVal())
     case T.StringVal =>
       Val.String {
-        val chars = Array.fill(getInt())(getChar)
+        val chars = Array.fill(getLeb())(getChar)
         new String(chars)
       }
     case T.VirtualVal => Val.Virtual(getLong)
@@ -376,9 +389,9 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
         Position.NoPosition
       } else {
         val result = if ((first & FormatFullMask) == FormatFullMaskValue) {
-          val file = files(getInt())
-          val line = getInt()
-          val column = getInt()
+          val file = files(getLeb())
+          val line = getLeb()
+          val column = getLeb()
           Position(file, line, column)
         } else {
           assert(
