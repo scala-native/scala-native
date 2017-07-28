@@ -46,12 +46,12 @@ object Defn {
   )(implicit val pos: Position)
       extends Defn
 
-  def existsEntryPoint(defns: Seq[Defn]): Boolean = {
-    defns.exists {
-      case defn: Defn.Define =>
-        val Global.Member(_, sig) = defn.name: @unchecked
-        sig.isClinit || defn.attrs.isExtern
-      case _ => false
-    }
+  def isEntryPoint(defn: Defn) = defn match {
+    case defn: Defn.Define =>
+      val Global.Member(_, sig) = defn.name: @unchecked
+      sig.isClinit || defn.attrs.isExtern
+    case _ => false
   }
+  
+  def existsEntryPoint(defns: Seq[Defn]): Boolean = defns.exists(isEntryPoint)
 }

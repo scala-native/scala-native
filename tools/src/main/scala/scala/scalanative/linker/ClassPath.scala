@@ -6,7 +6,8 @@ import java.nio.file.Path
 import scala.collection.mutable
 import scala.scalanative.io.VirtualDirectory
 import scala.scalanative.nir.serialization.deserializeBinary
-import scala.scalanative.nir.{Defn, Global, Prelude => NirPrelude}
+import scala.scalanative.nir.{Defn, Global}
+import scala.scalanative.nir.serialization.{Prelude => NirPrelude}
 
 sealed trait ClassPath {
 
