@@ -28,4 +28,6 @@ public interface NIRCompiler {
      *         etc.)
      */
     public Path[] compile(Path base);
+
+    public CompilerError[] compileAndReport(String source);
 }
