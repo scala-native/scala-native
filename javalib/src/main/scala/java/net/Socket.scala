@@ -2,21 +2,21 @@ package java.net
 
 import java.io.{InputStream, OutputStream, IOException, Closeable}
 
-class Socket protected (impl: SocketImpl,
-                        private var addr: InetAddress,
-                        private var port: Int,
-                        private var localAddr: InetAddress,
-                        private var localPort: Int,
+class Socket protected (private[net] val impl: SocketImpl,
+                        private[net] var addr: InetAddress,
+                        private[net] var port: Int,
+                        private[net] var localAddr: InetAddress,
+                        private[net] var localPort: Int,
                         streaming: Boolean,
                         shouldStartup: Boolean)
     extends Closeable {
 
-  private var created        = false
-  private var bound          = false
-  private var connected      = false
-  private var closed         = false
-  private var inputShutdown  = false
-  private var outputShutdown = false
+  private[net] var created        = false
+  private[net] var bound          = false
+  private[net] var connected      = false
+  private[net] var closed         = false
+  private[net] var inputShutdown  = false
+  private[net] var outputShutdown = false
 
   if (!streaming) {
     throw new UnsupportedOperationException(

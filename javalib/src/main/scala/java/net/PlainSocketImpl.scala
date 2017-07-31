@@ -34,7 +34,111 @@ private[net] class PlainSocketImpl extends SocketImpl {
     fd = sock
   }
 
-  //override def bind(addr: InetAddress, port: Int): Unit
+  private def fetchLocalPort(family: Int): Option[Int] = {
+    val len = stackalloc[socket.socklen_t]
+    val portOpt = if (family == socket.AF_INET) {
+      val sin = stackalloc[in.sockaddr_in]
+      !len = sizeof[in.sockaddr_in].toUInt
+
+      if (socket.getsockname(fd, sin.cast[Ptr[socket.sockaddr]], len) == -1) {
+        None
+      } else {
+        Some(sin.sin_port)
+      }
+    } else {
+      val sin = stackalloc[in.sockaddr_in6]
+      !len = sizeof[in.sockaddr_in6].toUInt
+
+      if (socket.getsockname(fd, sin.cast[Ptr[socket.sockaddr]], len) == -1) {
+        None
+      } else {
+        Some(sin.sin6_port)
+      }
+    }
+
+    portOpt.map(inet.ntohs(_).toInt)
+  }
+
+  override def bind(addr: InetAddress, port: Int): Unit = {
+    val hints = stackalloc[addrinfo]
+    val ret   = stackalloc[Ptr[addrinfo]]
+    string.memset(hints.cast[Ptr[Byte]], 0, sizeof[addrinfo])
+    hints.ai_family = socket.AF_UNSPEC
+    hints.ai_flags = AI_NUMERICHOST
+    hints.ai_socktype = socket.SOCK_STREAM
+
+    Zone { implicit z =>
+      val cIP = toCString(addr.getHostAddress)
+      if (getaddrinfo(cIP, toCString(port.toString), hints, ret) != 0) {
+        throw new BindException(
+          "Couldn't resolve address: " + addr.getHostAddress)
+      }
+    }
+
+    val bindRes = socket.bind(fd, (!ret).ai_addr, (!ret).ai_addrlen)
+
+    val family = (!ret).ai_family
+    freeaddrinfo(!ret)
+
+    if (bindRes < 0) {
+      throw new BindException(
+        "Couldn't bind to an address: " + addr.getHostAddress +
+          " on port: " + port.toString)
+    }
+
+    this.localport = fetchLocalPort(family).getOrElse {
+      throw new BindException(
+        "Couldn't bind to address: " + addr.getHostAddress + " on port: " + port)
+    }
+  }
+
+  override def listen(backlog: Int): Unit = {
+    if (socket.listen(fd, backlog) == -1) {
+      throw new SocketException("Listen failed")
+    }
+  }
+
+  override def accept(s: SocketImpl): Unit = {
+    if (!s.isInstanceOf[PlainSocketImpl]) {
+      throw new UnsupportedOperationException("No custom SocketImpl for now")
+    }
+    val plainImpl = s.asInstanceOf[PlainSocketImpl]
+
+    val storage = stackalloc[Byte](sizeof[in.sockaddr_in6])
+    val len     = stackalloc[socket.socklen_t]
+    !len = sizeof[in.sockaddr_in6].toUInt
+
+    val newFd = socket.accept(fd, storage.cast[Ptr[socket.sockaddr]], len)
+    if (newFd == -1) {
+      throw new SocketException("Accept failed")
+    }
+    val family = storage.cast[Ptr[socket.sockaddr_storage]].ss_family.toInt
+    val ipstr  = stackalloc[CChar](in.INET6_ADDRSTRLEN)
+
+    if (family == socket.AF_INET) {
+      val sa = storage.cast[Ptr[in.sockaddr_in]]
+      inet.inet_ntop(socket.AF_INET,
+                     sa.sin_addr.cast[Ptr[Byte]],
+                     ipstr,
+                     in.INET6_ADDRSTRLEN.toUInt)
+      plainImpl.port = inet.ntohs(sa.sin_port).toInt
+    } else {
+      val sa = storage.cast[Ptr[in.sockaddr_in6]]
+      inet.inet_ntop(socket.AF_INET6,
+                     sa.sin6_addr.cast[Ptr[Byte]],
+                     ipstr,
+                     in.INET6_ADDRSTRLEN.toUInt)
+      plainImpl.port = inet.ntohs(sa.sin6_port).toInt
+    }
+
+    Zone { implicit z =>
+      plainImpl.address = InetAddress.getByName(fromCString(ipstr))
+    }
+
+    plainImpl.fd = newFd
+    plainImpl.localport = this.localport
+
+  }
 
   override def connect(host: String, port: Int): Unit = {
     val addr = InetAddress.getByName(host)
@@ -62,6 +166,8 @@ private[net] class PlainSocketImpl extends SocketImpl {
             + inetAddr.getAddress.getHostAddress)
       }
     }
+
+    val family = (!ret).ai_family
 
     if (timeout == 0) {
       val connectRes = socket.connect(fd, (!ret).ai_addr, (!ret).ai_addrlen)
@@ -113,26 +219,9 @@ private[net] class PlainSocketImpl extends SocketImpl {
     this.address = inetAddr.getAddress
     this.port = inetAddr.getPort
 
-    val len = stackalloc[socket.socklen_t]
-    this.localport = if ((!ret).ai_family == socket.AF_INET) {
-      val sin = stackalloc[in.sockaddr_in]
-      !len = sizeof[in.sockaddr_in].toUInt
-
-      if (socket.getsockname(fd, sin.cast[Ptr[socket.sockaddr]], len) == -1) {
-        throw new ConnectException(
-          "Couldn't resolve a local port when connecting")
-      }
-      inet.ntohs(sin.sin_port).toInt
-    } else {
-      val sin = stackalloc[in.sockaddr_in6]
-      !len = sizeof[in.sockaddr_in6].toUInt
-
-      if (socket.getsockname(fd, sin.cast[Ptr[socket.sockaddr]], len) == -1) {
-        throw new ConnectException(
-          "Couldn't resolve a local port when connecting")
-      } else {
-        inet.ntohs(sin.sin6_port).toInt
-      }
+    this.localport = fetchLocalPort(family).getOrElse {
+      throw new ConnectException(
+        "Couldn't resolve a local port when connecting")
     }
   }
 
@@ -171,17 +260,15 @@ private[net] class PlainSocketImpl extends SocketImpl {
     } else if (fd == -1) {
       0
     } else {
-      Zone { implicit z =>
-        val cArr = stackalloc[Byte](count)
-        for (i <- 0 until count) {
-          !(cArr + i) = buffer(i + offset)
-        }
-        var sent: Long = 0
-        while (sent < count) {
-          sent += socket.send(fd, cArr + sent, count - sent, 0)
-        }
-        sent
+      val cArr = stackalloc[Byte](count)
+      for (i <- 0 until count) {
+        !(cArr + i) = buffer(i + offset)
       }
+      var sent: Long = 0
+      while (sent < count) {
+        sent += socket.send(fd, cArr + sent, count - sent, 0)
+      }
+      sent
     }
   }
 
