@@ -38,4 +38,20 @@ object ServerSocketSuite extends tests.Suite {
     s5.close
   }
 
+  test("accept") {
+    val s = new ServerSocket(0)
+    s.setSoTimeout(100)
+    var timedOut = false
+    try {
+      s.accept
+    } catch {
+      case e: SocketTimeoutException => timedOut = true
+      case _                         => throw new AssertionError("This should not happen")
+    } finally {
+      s.close
+    }
+
+    assert(timedOut)
+  }
+
 }

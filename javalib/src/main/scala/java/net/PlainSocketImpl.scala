@@ -25,6 +25,8 @@ private[net] class PlainSocketImpl extends SocketImpl {
   protected[net] var address: InetAddress = null
   protected[net] var port                 = 0
 
+  private[net] var acceptTimeout = 0
+
   override def getInetAddress: InetAddress       = address
   override def getFileDescriptor: FileDescriptor = new FileDescriptor(fd)
 
@@ -103,6 +105,24 @@ private[net] class PlainSocketImpl extends SocketImpl {
       throw new UnsupportedOperationException("No custom SocketImpl for now")
     }
     val plainImpl = s.asInstanceOf[PlainSocketImpl]
+
+    if (acceptTimeout > 0) {
+      val fdset = stackalloc[fd_set]
+      !fdset._1 = stackalloc[CLongInt](FD_SETSIZE / (8 * sizeof[CLongInt]))
+      FD_ZERO(fdset)
+      FD_SET(fd, fdset)
+
+      val time = stackalloc[timeval]
+      time.tv_sec = acceptTimeout / 1000
+      time.tv_usec = (acceptTimeout % 1000) * 1000
+
+      val selectRes = select(fd + 1, fdset, null, null, time)
+      selectRes match {
+        case 0  => throw new SocketTimeoutException("Accept timed out")
+        case -1 => throw new SocketException("Accept failed")
+        case _  => {}
+      }
+    }
 
     val storage = stackalloc[Byte](sizeof[in.sockaddr_in6])
     val len     = stackalloc[socket.socklen_t]
@@ -184,7 +204,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
       fcntl(fd, F_SETFL, opts)
 
       val fdset = stackalloc[fd_set]
-      !fdset._1 = stackalloc[CLongInt](FD_SETSIZE / sizeof[CLongInt])
+      !fdset._1 = stackalloc[CLongInt](FD_SETSIZE / (8 * sizeof[CLongInt]))
       FD_ZERO(fdset)
       FD_SET(fd, fdset)
 
@@ -196,7 +216,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
 
       if (select(fd + 1, null, fdset, null, time) != 1) {
         fcntl(fd, F_SETFL, opts & ~O_NONBLOCK)
-        throw new SocketTimeoutException("Timeout while connecting to socket")
+        throw new SocketTimeoutException("Connect timed out")
       } else {
         fcntl(fd, F_SETFL, opts & ~O_NONBLOCK)
         val so_error = stackalloc[CInt].cast[Ptr[Byte]]
