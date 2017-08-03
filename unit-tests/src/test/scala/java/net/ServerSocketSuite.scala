@@ -40,18 +40,38 @@ object ServerSocketSuite extends tests.Suite {
 
   test("accept") {
     val s = new ServerSocket(0)
-    s.setSoTimeout(10)
-    var timedOut = false
-    try {
-      s.accept
-    } catch {
-      case e: SocketTimeoutException => timedOut = true
-      case _                         => throw new AssertionError("This should not happen")
-    } finally {
-      s.close
-    }
+    s.setSoTimeout(1)
+    assertThrows[SocketTimeoutException] { s.accept }
+  }
 
-    assert(timedOut)
+  test("close") {
+    val s = new ServerSocket(0)
+    s.close
+    assertThrows[SocketException] { s.accept }
+  }
+
+  test("soTimeout") {
+    val s = new ServerSocket(0)
+
+    assertEquals(0, s.getSoTimeout)
+
+    s.setSoTimeout(100)
+    assertEquals(100, s.getSoTimeout)
+  }
+
+  test("toString") {
+    val s1    = new ServerSocket(0)
+    val port1 = s1.getLocalPort
+    assertEquals("ServerSocket[addr=0.0.0.0/0.0.0.0,localport=" + port1 + "]",
+                 s1.toString)
+
+    val s2 = new ServerSocket
+    assertEquals("ServerSocket[unbound]", s2.toString)
+
+    s2.bind(new InetSocketAddress("127.0.0.1", 0))
+    val port2 = s2.getLocalPort
+    assertEquals("ServerSocket[addr=/127.0.0.1,localport=" + port2 + "]",
+                 s2.toString)
   }
 
 }

@@ -14,7 +14,7 @@ class ServerSocket(private var port: Int,
   private var closed  = false
 
   if (bindAddr == null) {
-    bindAddr = InetAddress.getLoopbackAddress
+    bindAddr = InetAddress.wildcard
   }
 
   if (port >= 0) {
@@ -139,6 +139,12 @@ class ServerSocket(private var port: Int,
     closed = true
   }
 
-  override def toString: String = impl.toString
+  override def toString: String = {
+    if (bound) {
+      "ServerSocket[addr=" + bindAddr.toString + ",localport=" + port + "]"
+    } else {
+      "ServerSocket[unbound]"
+    }
+  }
 
 }
