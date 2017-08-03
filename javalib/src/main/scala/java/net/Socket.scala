@@ -112,6 +112,29 @@ class Socket protected (private[net] val impl: SocketImpl,
     }
   }
 
+  def bind(bindpoint: SocketAddress): Unit = {
+    if (bindpoint != null && !bindpoint.isInstanceOf[InetSocketAddress]) {
+      throw new IllegalArgumentException(
+        "Endpoint is of unsupported " +
+          "SocketAddress subclass")
+    }
+
+    val addr =
+      if (bindpoint == null ||
+          bindpoint.asInstanceOf[InetSocketAddress].getAddress == null)
+        new InetSocketAddress(InetAddress.getLoopbackAddress, 0)
+      else {
+        bindpoint.asInstanceOf[InetSocketAddress]
+      }
+
+    checkClosedAndCreate
+
+    this.localAddr = addr.getAddress
+    impl.bind(this.localAddr, addr.getPort)
+    this.localPort = impl.localport
+    bound = true
+  }
+
   def connect(endpoint: SocketAddress): Unit = connect(endpoint, 0)
 
   def connect(endpoint: SocketAddress, timeout: Int): Unit = {
