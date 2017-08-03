@@ -111,7 +111,7 @@ class ServerSocket(private var port: Int,
 
   def getSoTimeout: Int = {
     checkClosedAndCreate
-    impl.acceptTimeout
+    impl.getOption(SocketOptions.SO_TIMEOUT).asInstanceOf[Int]
   }
 
   def isBound: Boolean  = bound
@@ -131,7 +131,7 @@ class ServerSocket(private var port: Int,
 
   def setSoTimeout(timeout: Int): Unit = {
     checkClosedAndCreate
-    impl.acceptTimeout = timeout
+    impl.setOption(SocketOptions.SO_TIMEOUT, Integer.valueOf(timeout))
   }
 
   override def close: Unit = {

@@ -6,6 +6,7 @@ abstract class SocketImpl extends SocketOptions {
   protected[net] var localport: Int
   protected[net] var port: Int
   protected[net] var address: InetAddress
+  protected[net] var fd: FileDescriptor
   protected[net] var shutInput  = false
   protected[net] var shutOutput = false
 
@@ -26,10 +27,10 @@ abstract class SocketImpl extends SocketOptions {
   protected[net] def listen(backlog: Int): Unit
   //protected[net] def sendUrgentData(data: Int): Unit
   //protected[net] def setPerformancePreferences(connectionTime: Int, latency: Int, bandwith: Int): Unit
-  protected[net] def shutdownInput: Unit = shutInput = true
+  protected[net] def shutdownInput: Unit
   protected[net] def shutdownOutput: Unit
   //protected[net] def supportsUrgentData: Boolean
 
   override def toString: String =
-    s"Socket[addr=$address,port=$port,localport=$localport]"
+    s"PlainSocketImpl[addr=$address,port=$port,localport=$localport]"
 }

@@ -40,7 +40,7 @@ object ServerSocketSuite extends tests.Suite {
 
   test("accept") {
     val s = new ServerSocket(0)
-    s.setSoTimeout(100)
+    s.setSoTimeout(10)
     var timedOut = false
     try {
       s.accept

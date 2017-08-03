@@ -20,20 +20,20 @@ import java.io.{FileDescriptor, IOException, OutputStream, InputStream}
 
 private[net] class PlainSocketImpl extends SocketImpl {
 
-  protected[net] var fd                   = -1
+  protected[net] var fd                   = new FileDescriptor
   protected[net] var localport            = 0
   protected[net] var address: InetAddress = null
   protected[net] var port                 = 0
 
-  private[net] var acceptTimeout = 0
+  private var timeout = 0
 
   override def getInetAddress: InetAddress       = address
-  override def getFileDescriptor: FileDescriptor = new FileDescriptor(fd)
+  override def getFileDescriptor: FileDescriptor = fd
 
   override def create(streaming: Boolean): Unit = {
     val sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
     if (sock < 0) throw new IOException("Couldn't create a socket")
-    fd = sock
+    fd = new FileDescriptor(sock)
   }
 
   private def fetchLocalPort(family: Int): Option[Int] = {
@@ -42,7 +42,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
       val sin = stackalloc[in.sockaddr_in]
       !len = sizeof[in.sockaddr_in].toUInt
 
-      if (socket.getsockname(fd, sin.cast[Ptr[socket.sockaddr]], len) == -1) {
+      if (socket.getsockname(fd.fd, sin.cast[Ptr[socket.sockaddr]], len) == -1) {
         None
       } else {
         Some(sin.sin_port)
@@ -51,7 +51,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
       val sin = stackalloc[in.sockaddr_in6]
       !len = sizeof[in.sockaddr_in6].toUInt
 
-      if (socket.getsockname(fd, sin.cast[Ptr[socket.sockaddr]], len) == -1) {
+      if (socket.getsockname(fd.fd, sin.cast[Ptr[socket.sockaddr]], len) == -1) {
         None
       } else {
         Some(sin.sin6_port)
@@ -77,7 +77,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
       }
     }
 
-    val bindRes = socket.bind(fd, (!ret).ai_addr, (!ret).ai_addrlen)
+    val bindRes = socket.bind(fd.fd, (!ret).ai_addr, (!ret).ai_addrlen)
 
     val family = (!ret).ai_family
     freeaddrinfo(!ret)
@@ -95,30 +95,28 @@ private[net] class PlainSocketImpl extends SocketImpl {
   }
 
   override def listen(backlog: Int): Unit = {
-    if (socket.listen(fd, backlog) == -1) {
+    if (socket.listen(fd.fd, backlog) == -1) {
       throw new SocketException("Listen failed")
     }
   }
 
   override def accept(s: SocketImpl): Unit = {
-    if (!s.isInstanceOf[PlainSocketImpl]) {
-      throw new UnsupportedOperationException("No custom SocketImpl for now")
-    }
-    val plainImpl = s.asInstanceOf[PlainSocketImpl]
-
-    if (acceptTimeout > 0) {
+    if (timeout > 0) {
       val fdset = stackalloc[fd_set]
       !fdset._1 = stackalloc[CLongInt](FD_SETSIZE / (8 * sizeof[CLongInt]))
       FD_ZERO(fdset)
-      FD_SET(fd, fdset)
+      FD_SET(fd.fd, fdset)
 
       val time = stackalloc[timeval]
-      time.tv_sec = acceptTimeout / 1000
-      time.tv_usec = (acceptTimeout % 1000) * 1000
+      time.tv_sec = timeout / 1000
+      time.tv_usec = (timeout % 1000) * 1000
 
-      val selectRes = select(fd + 1, fdset, null, null, time)
+      val selectRes = select(fd.fd + 1, fdset, null, null, time)
       selectRes match {
-        case 0  => throw new SocketTimeoutException("Accept timed out")
+        case 0 =>
+          throw new SocketTimeoutException(
+            "Accept timed out, "
+              + "SO_TIMEOUT was set to: " + timeout)
         case -1 => throw new SocketException("Accept failed")
         case _  => {}
       }
@@ -128,7 +126,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
     val len     = stackalloc[socket.socklen_t]
     !len = sizeof[in.sockaddr_in6].toUInt
 
-    val newFd = socket.accept(fd, storage.cast[Ptr[socket.sockaddr]], len)
+    val newFd = socket.accept(fd.fd, storage.cast[Ptr[socket.sockaddr]], len)
     if (newFd == -1) {
       throw new SocketException("Accept failed")
     }
@@ -141,23 +139,22 @@ private[net] class PlainSocketImpl extends SocketImpl {
                      sa.sin_addr.cast[Ptr[Byte]],
                      ipstr,
                      in.INET6_ADDRSTRLEN.toUInt)
-      plainImpl.port = inet.ntohs(sa.sin_port).toInt
+      s.port = inet.ntohs(sa.sin_port).toInt
     } else {
       val sa = storage.cast[Ptr[in.sockaddr_in6]]
       inet.inet_ntop(socket.AF_INET6,
                      sa.sin6_addr.cast[Ptr[Byte]],
                      ipstr,
                      in.INET6_ADDRSTRLEN.toUInt)
-      plainImpl.port = inet.ntohs(sa.sin6_port).toInt
+      s.port = inet.ntohs(sa.sin6_port).toInt
     }
 
     Zone { implicit z =>
-      plainImpl.address = InetAddress.getByName(fromCString(ipstr))
+      s.address = InetAddress.getByName(fromCString(ipstr))
     }
 
-    plainImpl.fd = newFd
-    plainImpl.localport = this.localport
-
+    s.fd = new FileDescriptor(newFd)
+    s.localport = this.localport
   }
 
   override def connect(host: String, port: Int): Unit = {
@@ -190,7 +187,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
     val family = (!ret).ai_family
 
     if (timeout == 0) {
-      val connectRes = socket.connect(fd, (!ret).ai_addr, (!ret).ai_addrlen)
+      val connectRes = socket.connect(fd.fd, (!ret).ai_addr, (!ret).ai_addrlen)
       freeaddrinfo(!ret)
 
       if (connectRes < 0) {
@@ -200,29 +197,29 @@ private[net] class PlainSocketImpl extends SocketImpl {
             " on port: " + inetAddr.getPort)
       }
     } else {
-      val opts = fcntl(fd, F_GETFL, 0) | O_NONBLOCK
-      fcntl(fd, F_SETFL, opts)
+      val opts = fcntl(fd.fd, F_GETFL, 0) | O_NONBLOCK
+      fcntl(fd.fd, F_SETFL, opts)
 
       val fdset = stackalloc[fd_set]
       !fdset._1 = stackalloc[CLongInt](FD_SETSIZE / (8 * sizeof[CLongInt]))
       FD_ZERO(fdset)
-      FD_SET(fd, fdset)
+      FD_SET(fd.fd, fdset)
 
       val time = stackalloc[timeval]
       time.tv_sec = timeout / 1000
       time.tv_usec = (timeout % 1000) * 1000
-      socket.connect(fd, (!ret).ai_addr, (!ret).ai_addrlen)
+      socket.connect(fd.fd, (!ret).ai_addr, (!ret).ai_addrlen)
       freeaddrinfo(!ret)
 
-      if (select(fd + 1, null, fdset, null, time) != 1) {
-        fcntl(fd, F_SETFL, opts & ~O_NONBLOCK)
+      if (select(fd.fd + 1, null, fdset, null, time) != 1) {
+        fcntl(fd.fd, F_SETFL, opts & ~O_NONBLOCK)
         throw new SocketTimeoutException("Connect timed out")
       } else {
-        fcntl(fd, F_SETFL, opts & ~O_NONBLOCK)
+        fcntl(fd.fd, F_SETFL, opts & ~O_NONBLOCK)
         val so_error = stackalloc[CInt].cast[Ptr[Byte]]
         val len      = stackalloc[socket.socklen_t]
         !len = sizeof[CInt].toUInt
-        socket.getsockopt(fd,
+        socket.getsockopt(fd.fd,
                           socket.SOL_SOCKET,
                           socket.SO_ERROR,
                           so_error,
@@ -246,38 +243,52 @@ private[net] class PlainSocketImpl extends SocketImpl {
   }
 
   override def close: Unit = {
-    if (fd != -1) {
-      cClose(fd)
-      fd = -1
+    if (fd.fd != -1) {
+      cClose(fd.fd)
+      fd = new FileDescriptor
     }
   }
 
   override def getOutputStream: OutputStream = {
-    if (fd == -1) {
+    if (fd.fd == -1) {
       throw new SocketException("Socket is closed")
+    }
+    if (shutOutput) {
+      throw new SocketException("Socket output is shutdown")
     }
     new SocketOutputStream(this)
   }
 
   override def getInputStream: InputStream = {
-    if (fd == -1) {
+    if (fd.fd == -1) {
       throw new SocketException("Socket is closed")
+    }
+    if (shutInput) {
+      throw new SocketException("Socket input is shutdown")
     }
     new SocketInputStream(this)
   }
 
   override def shutdownOutput: Unit = {
-    socket.shutdown(fd, 1) match {
+    socket.shutdown(fd.fd, 1) match {
       case 0 => shutOutput = true
       case _ =>
-        throw new IOException("Error while shutting down socket's output")
+        throw new SocketException("Error while shutting down socket's output")
+    }
+  }
+
+  override def shutdownInput: Unit = {
+    socket.shutdown(fd.fd, 0) match {
+      case 0 => shutInput = true
+      case _ =>
+        throw new SocketException("Error while shutting down socket's input")
     }
   }
 
   def write(buffer: Array[Byte], offset: Int, count: Int): Long = {
     if (shutOutput) {
       throw new IOException("Trying to write to a shut down socket")
-    } else if (fd == -1) {
+    } else if (fd.fd == -1) {
       0
     } else {
       val cArr = stackalloc[Byte](count)
@@ -286,7 +297,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
       }
       var sent: Long = 0
       while (sent < count) {
-        sent += socket.send(fd, cArr + sent, count - sent, 0)
+        sent += socket.send(fd.fd, cArr + sent, count - sent, 0)
       }
       sent
     }
@@ -296,7 +307,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
     if (shutInput) -1
 
     val cBuff    = stackalloc[Byte](count)
-    val bytesNum = socket.recv(fd, cBuff, count, 0).toInt
+    val bytesNum = socket.recv(fd.fd, cBuff, count, 0).toInt
     if (bytesNum <= 0) {
       if (errno.errno == EAGAIN || errno.errno == EWOULDBLOCK) {
         throw new SocketTimeoutException("Socket timeout while reading data")
@@ -311,13 +322,17 @@ private[net] class PlainSocketImpl extends SocketImpl {
   }
 
   override def available: Int = {
-    val bytesAvailable = stackalloc[CInt]
-    ioctl(fd, FIONREAD, bytesAvailable.cast[Ptr[Byte]])
-    !bytesAvailable match {
-      case -1 =>
-        throw new IOException(
-          "Error while trying to estimate available bytes to read")
-      case x => x
+    if (shutInput) {
+      0
+    } else {
+      val bytesAvailable = stackalloc[CInt]
+      ioctl(fd.fd, FIONREAD, bytesAvailable.cast[Ptr[Byte]])
+      !bytesAvailable match {
+        case -1 =>
+          throw new IOException(
+            "Error while trying to estimate available bytes to read")
+        case x => x
+      }
     }
   }
 
@@ -338,7 +353,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
   }
 
   override def getOption(optID: Int): Object = {
-    if (fd == -1) {
+    if (fd.fd == -1) {
       throw new SocketException("Socket is closed")
     }
 
@@ -352,8 +367,6 @@ private[net] class PlainSocketImpl extends SocketImpl {
 
     val opt = if (optID == SocketOptions.SO_LINGER) {
       stackalloc[socket.linger].cast[Ptr[Byte]]
-    } else if (optID == SocketOptions.SO_TIMEOUT) {
-      stackalloc[timeval].cast[Ptr[Byte]]
     } else {
       stackalloc[CInt].cast[Ptr[Byte]]
     }
@@ -361,13 +374,11 @@ private[net] class PlainSocketImpl extends SocketImpl {
     val len = stackalloc[socket.socklen_t]
     !len = if (optID == SocketOptions.SO_LINGER) {
       sizeof[socket.linger].toUInt
-    } else if (optID == SocketOptions.SO_TIMEOUT) {
-      sizeof[timeval].toUInt
     } else {
       sizeof[CInt].toUInt
     }
 
-    if (socket.getsockopt(fd, level, optValue, opt, len) == -1) {
+    if (socket.getsockopt(fd.fd, level, optValue, opt, len) == -1) {
       throw new SocketException(
         "Exception while getting socket option with id: "
           + optValue + ", errno: " + errno.errno)
@@ -384,16 +395,14 @@ private[net] class PlainSocketImpl extends SocketImpl {
         Integer.valueOf(-1)
       }
     } else if (optID == SocketOptions.SO_TIMEOUT) {
-      val tv  = opt.cast[Ptr[timeval]]
-      val sec = tv.tv_sec * 1000 + tv.tv_usec / 1000
-      Integer.valueOf(sec.toInt)
+      Integer.valueOf(this.timeout)
     } else {
       Integer.valueOf(!(opt.cast[Ptr[CInt]]))
     }
   }
 
   override def setOption(optID: Int, value: Object): Unit = {
-    if (fd == -1) {
+    if (fd.fd == -1) {
       throw new SocketException("Socket is closed")
     }
 
@@ -429,6 +438,8 @@ private[net] class PlainSocketImpl extends SocketImpl {
       val ptr      = stackalloc[timeval]
       val mseconds = value.asInstanceOf[Int]
 
+      this.timeout = mseconds
+
       ptr.tv_sec = mseconds / 1000
       ptr.tv_usec = (mseconds % 1000) * 1000
 
@@ -439,7 +450,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
       opt = ptr.cast[Ptr[Byte]]
     }
 
-    if (socket.setsockopt(fd, level, optValue, opt, len) == -1) {
+    if (socket.setsockopt(fd.fd, level, optValue, opt, len) == -1) {
       throw new SocketException(
         "Exception while setting socket option with id: "
           + optID + ", errno: " + errno.errno)
