@@ -91,6 +91,13 @@ int scalanative_getsockname(int socket, struct scalanative_sockaddr *address,
 
     if (convert_result == 0) {
         result = getsockname(socket, converted_address, address_len);
+        convert_result = scalanative_convert_scalanative_sockaddr(
+            converted_address, address, address_len);
+
+        if (convert_result != 0) {
+            errno = convert_result;
+            result = -1;
+        }
     } else {
         errno = convert_result;
         result = -1;

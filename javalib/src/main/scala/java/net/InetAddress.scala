@@ -8,7 +8,8 @@ import java.util.StringTokenizer
 // Ported from Apache Harmony
 private[net] trait InetAddressBase {
 
-  private[net] val wildcard = new Inet4Address(Array[Byte](0, 0, 0, 0))
+  private[net] val wildcard =
+    new Inet4Address(Array[Byte](0, 0, 0, 0), "0.0.0.0")
 
   def getByName(host: String): InetAddress = {
 
