@@ -6,4 +6,3 @@
          |Specify this property using the scriptedLaunchOpts -D.""".stripMargin)
   else addSbtPlugin("org.scala-native" % "sbt-scala-native" % pluginVersion)
 }
-

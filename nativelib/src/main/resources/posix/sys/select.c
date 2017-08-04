@@ -36,8 +36,7 @@ void scalanative_FD_SET(int fd, struct scalanative_fd_set *set) {
 }
 
 int scalanative_FD_ISSET(int fd, struct scalanative_fd_set *set) {
-    return ((set->fd_bits[fd / FDBITS] &
-             ((long)(1 << (fd % FDBITS)))) != 0);
+    return ((set->fd_bits[fd / FDBITS] & ((long)(1 << (fd % FDBITS)))) != 0);
 }
 
 int scalanative_select(int nfds, struct scalanative_fd_set *readfds,

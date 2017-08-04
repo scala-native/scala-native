@@ -10,25 +10,25 @@ object ServerTest {
   val echoServer = new ServerSocket(0)
 
   def func: Unit = {
-      val clientSocket = echoServer.accept
-      val out          = new PrintWriter(clientSocket.getOutputStream, true)
-      val in =
-        new BufferedReader(new InputStreamReader(clientSocket.getInputStream))
+    val clientSocket = echoServer.accept
+    val out          = new PrintWriter(clientSocket.getOutputStream, true)
+    val in =
+      new BufferedReader(new InputStreamReader(clientSocket.getInputStream))
 
-      out.println("echo")
-      val unicodeLine = "♞ € ✓ a 1 %$ ∞ ☎  ௸   ኌ ᳄   🛋  "
-      out.println(unicodeLine)
+    out.println("echo")
+    val unicodeLine = "♞ € ✓ a 1 %$ ∞ ☎  ௸   ኌ ᳄   🛋  "
+    out.println(unicodeLine)
 
-      assert(in.readLine == "echo")
-      assert(in.readLine == unicodeLine)
+    assert(in.readLine == "echo")
+    assert(in.readLine == unicodeLine)
 
-      in.close
-      out.close
-      clientSocket.close
+    in.close
+    out.close
+    clientSocket.close
   }
-  
+
   def main(args: Array[String]): Unit = {
-    val portFile   = Paths.get("server-port.txt")
+    val portFile = Paths.get("server-port.txt")
     Files.write(portFile, echoServer.getLocalPort.toString.getBytes)
     echoServer.setSoTimeout(20000)
     val f = Future(func)
