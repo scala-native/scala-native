@@ -419,7 +419,7 @@ object CodeGen {
               case 't'                   => str("\\09"); loop(idx + 2)
               case 'v'                   => str("\\0B"); loop(idx + 2)
               case d if isOct(d) =>
-                val oct = value.drop(from + 1).take(3).takeWhile(isOct)
+                val oct = value.drop(idx + 1).take(3).takeWhile(isOct)
                 val hex =
                   Integer.toHexString(Integer.parseInt(oct, 8)).toUpperCase
                 str {
@@ -428,7 +428,7 @@ object CodeGen {
                 }
                 loop(idx + 1 + oct.length)
               case 'x' =>
-                val hex = value.drop(from + 2).takeWhile(isHex).toUpperCase
+                val hex = value.drop(idx + 2).takeWhile(isHex).toUpperCase
                 str {
                   if (hex.length < 2) "\\0" + hex
                   else "\\" + hex
