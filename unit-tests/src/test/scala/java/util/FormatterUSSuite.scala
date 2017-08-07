@@ -633,10 +633,6 @@ object FormatterUSSuite extends tests.Suite {
       f.format("%2147483648s", "string")
       assertEquals("string", f.toString())
     }
-
-    // the value of Integer.MAX_VALUE will allocate about 4G bytes of
-    // memory.
-    // It may cause OutOfMemoryError, so this value is not tested
   }
 
   test("format(String, Array[Object]) for precision") {
@@ -652,10 +648,6 @@ object FormatterUSSuite extends tests.Suite {
       f.format("%.2147483648s", "...")
       assertEquals("...", f.toString())
     }
-
-    // the value of Integer.MAX_VALUE will allocate about 4G bytes of
-    // memory.
-    // It may cause OutOfMemoryError, so this value is not tested
 
     locally {
       val f = new Formatter(Locale.US)
