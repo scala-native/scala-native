@@ -19,15 +19,15 @@ import scala.scalanative.native.{
 %{
    classes = ['CAtomicByte', 'CAtomicShort', 'CAtomicInt', 'CAtomicLong',
             'CAtomicUnsignedByte', 'CAtomicUnsignedShort', 'CAtomicUnsignedInt',
-             'CAtomicUnsignedLong', 'CAtomicChar', 'CAtomicUnsignedChar', 'CAtomicCSize', 'CAtomicRef']
+             'CAtomicUnsignedLong', 'CAtomicChar', 'CAtomicUnsignedChar', 'CAtomicCSize']
 
    types = ['Byte', 'CShort', 'CInt', 'CLong',
             'Byte', 'CUnsignedShort', 'CUnsignedInt', 'CUnsignedLong',
-            'CChar', 'CUnsignedChar', 'CSize', 'Ptr[Byte]']
+            'CChar', 'CUnsignedChar', 'CSize']
 
    names = ['byte', 'short', 'int', 'long',
             'ubyte', 'ushort', 'uint', 'ulong',
-            'char', 'uchar', 'csize', 'ref']
+            'char', 'uchar', 'csize']
 }%
 
 // see http://en.cppreference.com/w/cpp/atomic

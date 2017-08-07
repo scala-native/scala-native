@@ -30,6 +30,13 @@ abstract class CAtomic
 
 class CAtomic${C}(default: ${T} = ${default}) extends CAtomic {
 
+  % if T == 'long':
+  private implicit def toLong(r: AnyRef): scala.Long = r.asInstanceOf[scala.Long]
+  private implicit def toRef(l: scala.Long): AnyRef = l.asInstanceOf[AnyRef]
+  private implicit def toLongPtr(r: Ptr[AnyRef]): Ptr[scala.Long] = r.asInstanceOf[Ptr[scala.Long]]
+  private implicit def toRefPtr(l: Ptr[scala.Long]): Ptr[AnyRef] = l.asInstanceOf[Ptr[AnyRef]]
+  % end
+
   private[this] val atm = Atomic.alloc(sizeof[${T}])${cast}
   init_${N}(atm, default)
 
@@ -109,58 +116,14 @@ object CAtomic${C} extends CAtomic {
 }
 
 % end
-class CAtomicRef extends CAtomic {
 
-  private[this] var atm = 0.cast[Ptr[Ptr[Byte]]]
-
-  def this(sz: CSize) = {
-    this()
-    atm = Atomic.alloc(sz).cast[Ptr[Ptr[Byte]]]
-    init_ref(atm, 0.cast[Ptr[Byte]])
-  }
-
-  def this(sz: CSize, default: Ptr[Byte]) = {
-    this(sz)
-    init_ref(atm, default)
-  }
-
-  def load(): Ptr[Byte] = load_ref(atm)
-
-  def store(value: Ptr[Byte]): Unit = init_ref(atm, value)
-
-  def free(): Unit = Atomic.free(atm.cast[Ptr[Byte]])
-
-  def compareAndSwapStrong(expected: Ptr[Byte], desired: Ptr[Byte]): (Boolean, Ptr[Byte]) = {
-    val expectedPtr = stackalloc[Ptr[Byte]]
-    !expectedPtr = expected
-
-    if (compare_and_swap_strong_ref(atm, expectedPtr, desired)) {
-      (true, desired)
-    } else {
-      (false, !expectedPtr)
-    }
-  }
-
-  def compareAndSwapWeak(expected: Ptr[Byte], desired: Ptr[Byte]): (Boolean, Ptr[Byte]) = {
-    val expectedPtr = stackalloc[Ptr[Byte]]
-    !expectedPtr = expected
-
-    if (compare_and_swap_weak_ref(atm, expectedPtr, desired)) {
-      (true, desired)
-    } else {
-      (false, !expectedPtr)
-    }
-  }
-
-  override def toString: String = load().toString
-
-}
+class CAtomicRef[T <: AnyRef](default: T = 0L.asInstanceOf[T]) extends CAtomicLong(0L) {}
 
 object CAtomicRef extends CAtomic {
 
-  def apply(sz: CSize, initValue: Ptr[Byte]) = new CAtomicRef(sz, initValue)
+  def apply[T <: AnyRef](initValue: T) = new CAtomicRef[T](initValue)
 
-  def apply(sz: CSize) = new CAtomicRef(sz)
+  def apply[T <: AnyRef]() = new CAtomicRef[T]()
 
 }
 

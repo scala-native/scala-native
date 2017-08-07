@@ -68,11 +68,6 @@ extern "C" {
      void init_csize(size_t* atm, size_t init_value) {
         *atm = ATOMIC_VAR_INIT(init_value);
      }
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 24)
-     // ref
-     void init_ref(void** atm, void* init_value) {
-        *atm = ATOMIC_VAR_INIT(init_value);
-     }
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 29)
 
 	/**
@@ -144,11 +139,6 @@ extern "C" {
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 47)
     // csize
     size_t load_csize(atomic<size_t>* atm) {
-        return atm -> load();
-    }
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 47)
-    // ref
-    void* load_ref(atomic<void*>* atm) {
         return atm -> load();
     }
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 52)
@@ -267,16 +257,6 @@ extern "C" {
     int compare_and_swap_weak_csize(atomic<size_t>* atm, size_t* expected, size_t desired) {
         return atomic_compare_exchange_weak(atm, expected, desired);
     }
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 58)
-    // ref
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 60)
-    int compare_and_swap_strong_ref(atomic<void*>* atm, void** expected, void* desired) {
-        return atomic_compare_exchange_strong(atm, expected, desired);
-    }
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 60)
-    int compare_and_swap_weak_ref(atomic<void*>* atm, void** expected, void* desired) {
-        return atomic_compare_exchange_weak(atm, expected, desired);
-    }
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 65)
 
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 67)
@@ -339,11 +319,6 @@ extern "C" {
      size_t atomic_add_csize(atomic<size_t>* atm, size_t val) {
         return atm -> fetch_add(val);
      }
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 73)
-     // ref
-     void* atomic_add_ref(atomic<void*>* atm, void* val) {
-        return atm -> fetch_add(val);
-     }
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 67)
 	/**
      * sub
@@ -402,11 +377,6 @@ extern "C" {
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 73)
      // csize
      size_t atomic_sub_csize(atomic<size_t>* atm, size_t val) {
-        return atm -> fetch_sub(val);
-     }
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 73)
-     // ref
-     void* atomic_sub_ref(atomic<void*>* atm, void* val) {
         return atm -> fetch_sub(val);
      }
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 67)
@@ -469,11 +439,6 @@ extern "C" {
      size_t atomic_and_csize(atomic<size_t>* atm, size_t val) {
         return atm -> fetch_and(val);
      }
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 73)
-     // ref
-     void* atomic_and_ref(atomic<void*>* atm, void* val) {
-        return atm -> fetch_and(val);
-     }
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 67)
 	/**
      * or
@@ -534,11 +499,6 @@ extern "C" {
      size_t atomic_or_csize(atomic<size_t>* atm, size_t val) {
         return atm -> fetch_or(val);
      }
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 73)
-     // ref
-     void* atomic_or_ref(atomic<void*>* atm, void* val) {
-        return atm -> fetch_or(val);
-     }
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 67)
 	/**
      * xor
@@ -597,11 +557,6 @@ extern "C" {
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 73)
      // csize
      size_t atomic_xor_csize(atomic<size_t>* atm, size_t val) {
-        return atm -> fetch_xor(val);
-     }
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 73)
-     // ref
-     void* atomic_xor_ref(atomic<void*>* atm, void* val) {
         return atm -> fetch_xor(val);
      }
 // ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/resources/atomic.cpp.gyb", line: 80)
