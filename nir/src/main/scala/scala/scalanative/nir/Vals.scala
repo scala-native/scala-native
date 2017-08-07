@@ -3,6 +3,7 @@ package nir
 
 import java.lang.Float.floatToRawIntBits
 import java.lang.Double.doubleToRawLongBits
+import scala.annotation.tailrec
 
 sealed abstract class Val {
   final def ty: Type = this match {
@@ -36,7 +37,7 @@ sealed abstract class Val {
 
     // Subtracts from the length of the bytes for each escape sequence
     // uses String, not Seq[Byte], but should be okay since we handle ASCII only
-    def uncountEscapes(from: Int, accum: Int): Int =
+    @tailrec def uncountEscapes(from: Int, accum: Int): Int =
       s.indexOf('\\', from) match {
         case -1 => accum
         case idx if idx == s.length - 1 =>

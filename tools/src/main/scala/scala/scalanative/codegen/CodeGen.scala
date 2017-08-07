@@ -4,6 +4,7 @@ package codegen
 import java.{lang => jl}
 import java.nio.ByteBuffer
 import java.nio.file.Paths
+import scala.annotation.tailrec
 import scala.collection.mutable
 import scalanative.util.{Scope, ShowBuilder, unsupported}
 import scalanative.io.{VirtualDirectory, withScratchBuffer}
@@ -396,7 +397,7 @@ object CodeGen {
       // `value` should contain a content of a CString literal as is in its source file
       // malformed literals are assumed absent
       str("c\"")
-      def loop(from: Int): Unit =
+      @tailrec def loop(from: Int): Unit =
         value.indexOf('\\', from) match {
           case -1 => str(value.substring(from))
           case idx =>
