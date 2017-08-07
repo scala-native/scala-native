@@ -273,9 +273,6 @@ object FormatterUSSuite extends tests.Suite {
   }
 
   test("Constructor(File)") {
-    // segfault
-    // assertThrows[NullPointerException](new Formatter(null.asInstanceOf[File]))
-
     locally {
       val f = new Formatter(notExist)
       assertEquals(f.locale(), Locale.getDefault())
@@ -296,9 +293,6 @@ object FormatterUSSuite extends tests.Suite {
   testFails("Constructor(File, String)", 816) {
     // OutputStreamWriter should throw UnsupportedEncodingException (NOT UnsupportedCharsetException)
 
-    // segfault
-    // assertThrows[NullPointerException](new Formatter(null.asInstanceOf[File], Charset.defaultCharset().name()))
-
     locally {
       val f = new Formatter(notExist, Charset.defaultCharset().name())
       assertEquals(f.locale(), Locale.getDefault)
@@ -316,15 +310,6 @@ object FormatterUSSuite extends tests.Suite {
         new Formatter(readOnly, Charset.defaultCharset().name()))
     }
 
-    // segfault
-    // try {
-    //   assertThrows[NullPointerException](new Formatter(notExist, null))
-    // } finally if (notExist.exists()) {
-    //   // Fail on RI on Windows, because output stream is created and
-    //   // not closed when exception thrown
-    //   assertTrue(notExist.delete())
-    // }
-
     try {
       assertThrows[UnsupportedEncodingException](
         new Formatter(notExist, "ISO 1111-1")) /// fails #816
@@ -337,12 +322,6 @@ object FormatterUSSuite extends tests.Suite {
 
   testFails("Constructor(File, String, Locale)", 816) {
     // OutputStreamWriter should throw UnsupportedEncodingException (NOT UnsupportedCharsetException)
-
-    // segfault
-    // assertThrows[NullPointerException](new Formatter(null.asInstanceOf[File], Charset.defaultCharset().name(), Locale.US))
-
-    // segfault
-    // assertThrows[NullPointerException](new Formatter(notExist, null, Locale.US))
 
     locally {
       val f = new Formatter(notExist, Charset.defaultCharset().name(), null)
@@ -402,13 +381,6 @@ object FormatterUSSuite extends tests.Suite {
       new Formatter(null.asInstanceOf[OutputStream],
                     Charset.defaultCharset().name())) // fails #818
 
-    // segfault
-    // locally {
-    //   val os = new FileOutputStream(notExist)
-    //   assertThrows[NullPointerException](new Formatter(os, null))
-    //   os.close()
-    // }
-
     locally {
       // Porting note: PipedOutputStream is not essential to this test.
       // Since it doesn't exist on Scala Native yet, it is replaced with a harmless one.
@@ -433,13 +405,6 @@ object FormatterUSSuite extends tests.Suite {
       new Formatter(null.asInstanceOf[OutputStream],
                     Charset.defaultCharset().name(),
                     Locale.getDefault)) // fails #818
-
-    // segfault
-    // locally {
-    //   val os = new FileOutputStream(notExist)
-    //   assertThrows[NullPointerException](new Formatter(os, null, Locale.getDefault))
-    //   os.close()
-    // }
 
     locally {
       val os = new FileOutputStream(notExist)
@@ -533,12 +498,6 @@ object FormatterUSSuite extends tests.Suite {
   }
 
   test("format(String, Array[Object]) for null parameter") {
-    locally {
-      val f = new Formatter()
-      // segfault
-      // assertThrows[NullPointerException](f.format(null.asInstanceOf[String], "parameter"))
-    }
-
     locally {
       val f = new Formatter()
       f.format("hello", null.asInstanceOf[Array[Object]])
