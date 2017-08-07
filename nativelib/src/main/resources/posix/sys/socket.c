@@ -85,25 +85,6 @@ int scalanative_socket(int domain, int type, int protocol) {
     return socket(domain, type, protocol);
 }
 
-int scalanative_connect(int socket, struct scalanative_sockaddr *address,
-                        socklen_t address_len) {
-    struct sockaddr *converted_address;
-    int convert_result =
-        scalanative_convert_sockaddr(address, &converted_address, &address_len);
-
-    int result;
-
-    if (convert_result == 0) {
-        result = connect(socket, converted_address, address_len);
-    } else {
-        errno = convert_result;
-        result = -1;
-    }
-
-    free(converted_address);
-    return result;
-}
-
 int scalanative_bind(int socket, struct scalanative_sockaddr *address,
                      socklen_t address_len) {
     struct sockaddr *converted_address;
@@ -119,6 +100,24 @@ int scalanative_bind(int socket, struct scalanative_sockaddr *address,
         result = -1;
     }
 
+    free(converted_address);
+    return result;
+}
+
+int scalanative_connect(int socket, struct scalanative_sockaddr *address,
+                        socklen_t address_len) {
+    struct sockaddr *converted_address;
+    int convert_result =
+        scalanative_convert_sockaddr(address, &converted_address, &address_len);
+
+    int result;
+
+    if (convert_result == 0) {
+        result = connect(socket, converted_address, address_len);
+    } else {
+        errno = convert_result;
+        result = -1;
+    }
     free(converted_address);
     return result;
 }
@@ -156,6 +155,11 @@ int scalanative_accept(int socket, struct scalanative_sockaddr *address,
 int scalanative_setsockopt(int socket, int level, int option_name,
                            void *option_value, socklen_t option_len) {
     return setsockopt(socket, level, option_name, option_value, option_len);
+}
+
+int scalanative_getsockopt(int socket, int level, int option_name,
+                           void *option_value, socklen_t *option_len) {
+    return getsockopt(socket, level, option_name, option_value, option_len);
 }
 
 int scalanative_recv(int socket, void *buffer, size_t length, int flags) {
