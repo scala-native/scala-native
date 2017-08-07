@@ -31,8 +31,8 @@ sealed abstract class Val {
   private def countBytes(s: String): Int = {
     import Character.isDigit
 
-    // TODO: should be a compilation error, how to report?
-    def malformed() = ???
+    def malformed() =
+      throw new IllegalArgumentException("malformed C string: " + s)
 
     // Subtracts from the length of the bytes for each escape sequence
     // uses String, not Seq[Byte], but should be okay since we handle ASCII only
