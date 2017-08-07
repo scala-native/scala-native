@@ -8,7 +8,6 @@ import java.util.Locale
 
 class DecimalFormat extends NumberFormat {
   // basic implementation for java.util.Formatter with Locale.US only
-  // TODO: add missing methods
 
   private[this] var dfsym = new DecimalFormatSymbols(Locale.US)
 
@@ -210,7 +209,7 @@ class DecimalFormat extends NumberFormat {
           } catch {
             case e: NumberFormatException =>
               // typically frac contains too many zeros
-              // TODO: consider other cases
+              // consider other cases?
               0.0
           }
         val toBeRounded = (whole.mkString.toDouble + fracd) * signum
@@ -427,7 +426,7 @@ class DecimalFormat extends NumberFormat {
   def getMinimumFractionDigits(): Int = minFracDigits
 
   def getRoundingMode(): RoundingMode =
-    RoundingMode.HALF_EVEN // TODO: support others
+    RoundingMode.HALF_EVEN
 }
 
 object DecimalFormat {

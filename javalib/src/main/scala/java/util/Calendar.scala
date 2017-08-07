@@ -2,8 +2,6 @@ package java.util
 
 import java.io.Serializable
 
-// TODO
-
 abstract class Calendar
     extends Serializable
     with Cloneable

@@ -1,8 +1,6 @@
 package java.text
 
 abstract class Format {
-  // TODO: add missing methods
-
   final def format(obj: Object): String =
     format(obj, new StringBuffer(), new FieldPosition(0)).toString()
 

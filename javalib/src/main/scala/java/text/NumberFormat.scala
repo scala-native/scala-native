@@ -4,7 +4,6 @@ import java.util.Locale
 
 abstract class NumberFormat extends Format {
   // basic implementation for java.util.Formatter with Locale.US only
-  // TODO: add missing methods
 
   def format(obj: Object,
              toAppendTo: StringBuffer,

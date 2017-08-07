@@ -1311,7 +1311,6 @@ object Formatter {
     }
 
     private def transform_N(): Unit = {
-      // TODO: System.nanoTime()
       val nanosecond = calendar.get(Calendar.MILLISECOND) * 1000000L
       result.append(paddingZeros(nanosecond, 9))
     }
