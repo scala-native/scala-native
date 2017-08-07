@@ -2,8 +2,6 @@ package java.util
 
 // Ported from Harmony
 
-// Tests related to SecurityManager are removed because they doesn't exist on Scala Native
-
 import java.io.BufferedOutputStream
 import java.io.ByteArrayOutputStream
 import java.io.Closeable

@@ -9,8 +9,6 @@ import java.math.BigInteger
 import java.math.MathContext
 import java.nio.CharBuffer
 import java.nio.charset.Charset
-import java.security.AccessController
-import java.security.PrivilegedAction
 import java.text.DateFormatSymbols
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
@@ -571,10 +569,7 @@ object Formatter {
         throw new IllegalFormatFlagsException(formatToken.getStrFlags())
 
       if (null == lineSeparator) {
-        lineSeparator =
-          AccessController.doPrivileged(new PrivilegedAction[String]() {
-            def run(): String = System.getProperty("line.separator")
-          })
+        lineSeparator = System.getProperty("line.separator")
       }
       lineSeparator
     }
