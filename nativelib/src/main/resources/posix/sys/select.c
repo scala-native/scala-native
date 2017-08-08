@@ -24,19 +24,19 @@ void convert_scalanative_timeval(struct scalanative_timeval *in,
 }
 
 void scalanative_FD_ZERO(struct scalanative_fd_set *set) {
-    memset(set->fd_bits, '\0', FD_SETSIZE / FDBITS);
+    FD_ZERO((fd_set *)set);
 }
 
 void scalanative_FD_CLR(int fd, struct scalanative_fd_set *set) {
-    set->fd_bits[fd / FDBITS] &= ~((long)(1 << (fd % FDBITS)));
+    FD_CLR(fd, (fd_set *)set);
 }
 
 void scalanative_FD_SET(int fd, struct scalanative_fd_set *set) {
-    set->fd_bits[fd / FDBITS] |= ((long)(1 << (fd % FDBITS)));
+    FD_SET(fd, (fd_set *)set);
 }
 
 int scalanative_FD_ISSET(int fd, struct scalanative_fd_set *set) {
-    return ((set->fd_bits[fd / FDBITS] & ((long)(1 << (fd % FDBITS)))) != 0);
+    return FD_ISSET(fd, (fd_set *)set);
 }
 
 int scalanative_select(int nfds, struct scalanative_fd_set *readfds,
