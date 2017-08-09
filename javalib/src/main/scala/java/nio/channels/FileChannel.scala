@@ -42,9 +42,7 @@ abstract class FileChannel protected ()
 
   def transferFrom(src: ReadableByteChannel, position: Long, count: Long): Long
 
-  def transferTo(position: Long,
-                 count: Long,
-                 target: WritableByteChannel): Long
+  def transferTo(position: Long, count: Long, target: WritableByteChannel): Long
 
   def truncate(size: Long): FileChannel
 

@@ -41,11 +41,7 @@ object Array {
     @inline def length_=(value: Int): Unit     = !(self._2) = value
   }
 
-  def copy(from: AnyRef,
-           fromPos: Int,
-           to: AnyRef,
-           toPos: Int,
-           len: Int): Unit = {
+  def copy(from: AnyRef, fromPos: Int, to: AnyRef, toPos: Int, len: Int): Unit = {
     if (from == null || to == null) {
       throw new NullPointerException()
     } else if (!from.isInstanceOf[Array[_]]) {

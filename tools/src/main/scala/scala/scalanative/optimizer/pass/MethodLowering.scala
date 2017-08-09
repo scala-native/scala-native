@@ -30,8 +30,7 @@ class MethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
 
         let(n, Op.Load(Type.Ptr, methptrptr))
 
-      case Let(n, Op.Method(obj, MethodRef(_: Class, meth)))
-          if meth.isStatic =>
+      case Let(n, Op.Method(obj, MethodRef(_: Class, meth))) if meth.isStatic =>
         let(n, Op.Copy(Val.Global(meth.name, Type.Ptr)))
 
       case Let(n, Op.Method(obj, MethodRef(trt: Trait, meth))) =>

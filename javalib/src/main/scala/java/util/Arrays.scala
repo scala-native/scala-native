@@ -64,8 +64,7 @@ object Arrays {
     sortRangeAnyRefImpl(a, fromIndex, toIndex)
 
   @noinline
-  def sort[T <: AnyRef](array: Array[T],
-                        comparator: Comparator[_ >: T]): Unit = {
+  def sort[T <: AnyRef](array: Array[T], comparator: Comparator[_ >: T]): Unit = {
     implicit val ord = toOrdering(comparator).asInstanceOf[Ordering[AnyRef]]
     sortAnyRefImpl(array.asInstanceOf[Array[AnyRef]])
   }

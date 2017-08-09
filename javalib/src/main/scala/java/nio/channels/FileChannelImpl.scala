@@ -53,9 +53,7 @@ final class FileChannelImpl(path: Path,
 
   override def position(): Long = raf.getFilePointer()
 
-  override def read(buffers: Array[ByteBuffer],
-                    start: Int,
-                    number: Int): Long = {
+  override def read(buffers: Array[ByteBuffer], start: Int, number: Int): Long = {
     ensureOpen()
     val dst = new Array[Byte](1)
     val nb  = raf.read(dst)

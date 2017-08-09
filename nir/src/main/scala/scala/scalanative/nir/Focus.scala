@@ -95,8 +95,7 @@ object Focus {
     focs.toSeq
   }
 
-  def merged(ty: nir.Type, branches: Seq[Focus])(
-      implicit fresh: Fresh): Focus = {
+  def merged(ty: nir.Type, branches: Seq[Focus])(implicit fresh: Fresh): Focus = {
     val mergebr = fresh()
     val mergev  = Val.Local(fresh(), ty)
     val insts = branches.flatMap { branch =>

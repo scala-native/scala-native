@@ -46,15 +46,14 @@ object Op {
   final case class Load(ty: Type, ptr: Val, isVolatile: Boolean) extends Op
   final case class Store(ty: Type, ptr: Val, value: Val, isVolatile: Boolean)
       extends Op
-  final case class Elem(ty: Type, ptr: Val, indexes: Seq[Val]) extends Pure
-  final case class Extract(aggr: Val, indexes: Seq[Int])       extends Pure
-  final case class Insert(aggr: Val, value: Val, indexes: Seq[Int])
-      extends Pure
-  final case class Stackalloc(ty: Type, n: Val)                   extends Op
-  final case class Bin(bin: nir.Bin, ty: Type, l: Val, r: Val)    extends Pure
-  final case class Comp(comp: nir.Comp, ty: Type, l: Val, r: Val) extends Pure
-  final case class Conv(conv: nir.Conv, ty: Type, value: Val)     extends Pure
-  final case class Select(cond: Val, thenv: Val, elsev: Val)      extends Pure
+  final case class Elem(ty: Type, ptr: Val, indexes: Seq[Val])      extends Pure
+  final case class Extract(aggr: Val, indexes: Seq[Int])            extends Pure
+  final case class Insert(aggr: Val, value: Val, indexes: Seq[Int]) extends Pure
+  final case class Stackalloc(ty: Type, n: Val)                     extends Op
+  final case class Bin(bin: nir.Bin, ty: Type, l: Val, r: Val)      extends Pure
+  final case class Comp(comp: nir.Comp, ty: Type, l: Val, r: Val)   extends Pure
+  final case class Conv(conv: nir.Conv, ty: Type, value: Val)       extends Pure
+  final case class Select(cond: Val, thenv: Val, elsev: Val)        extends Pure
 
   def Load(ty: Type, ptr: Val): Load =
     Load(ty, ptr, isVolatile = false)

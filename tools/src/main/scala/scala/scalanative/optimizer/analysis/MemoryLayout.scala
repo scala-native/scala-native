@@ -46,8 +46,7 @@ object MemoryLayout {
 
     MemoryLayout(size, potys.reverse)
   }
-  private def impl(tys: Seq[Type],
-                   offset: Long): (Long, List[PositionedType]) = {
+  private def impl(tys: Seq[Type], offset: Long): (Long, List[PositionedType]) = {
     if (tys.isEmpty) {
       return (0, List())
     }

@@ -387,9 +387,7 @@ object PatternSuite extends tests.Suite {
     assertRegex(pass, ret, mid, pattern, input)
   }
 
-  private def find(pattern: String,
-                   input: String,
-                   pass: Boolean = true): Unit = {
+  private def find(pattern: String, input: String, pass: Boolean = true): Unit = {
     val ret = Pattern.compile(pattern).matcher(input).find()
 
     val mid =
