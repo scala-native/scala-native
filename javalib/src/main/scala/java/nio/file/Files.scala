@@ -610,9 +610,7 @@ object Files {
     start
   }
 
-  def write(path: Path,
-            bytes: Array[Byte],
-            _options: Array[OpenOption]): Path = {
+  def write(path: Path, bytes: Array[Byte], _options: Array[OpenOption]): Path = {
     val options =
       if (_options.isEmpty)
         Array[OpenOption](StandardOpenOption.CREATE,
@@ -657,9 +655,9 @@ object Files {
         setAttribute(path, name, value, Array.empty)
     }
 
-  private val attributesClassesToViews: SMap[
-    Class[_ <: BasicFileAttributes],
-    Class[_ <: BasicFileAttributeView]] =
+  private val attributesClassesToViews
+    : SMap[Class[_ <: BasicFileAttributes],
+           Class[_ <: BasicFileAttributeView]] =
     SMap(
       classOf[BasicFileAttributes] -> classOf[BasicFileAttributeView],
       classOf[DosFileAttributes]   -> classOf[DosFileAttributeView],

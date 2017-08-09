@@ -26,8 +26,8 @@ class Canonicalization extends Pass {
     import Bin._
     bin match {
       case Iadd | Imul | And | Or | Xor => true
-      case Fadd | Isub | Fsub | Fmul | Sdiv | Udiv | Fdiv | Srem | Urem |
-          Frem | Shl | Lshr | Ashr =>
+      case Fadd | Isub | Fsub | Fmul | Sdiv | Udiv | Fdiv | Srem | Urem | Frem |
+          Shl | Lshr | Ashr =>
         false
     }
   }

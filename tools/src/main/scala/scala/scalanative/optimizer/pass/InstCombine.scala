@@ -282,21 +282,18 @@ class InstCombine()(implicit fresh: Fresh) extends Pass {
         Seq(Let(n, Op.Bin(Lshr, Type.Long, x, Val.Long(totShift))))
 
       // ((x + a) == b) = (x == (b - a))
-      case Let(
-          n,
-          Op.Comp(Ieq, ty, defop(Op.Bin(Iadd, _, x, IVal(a))), IVal(b))) =>
+      case Let(n,
+               Op.Comp(Ieq, ty, defop(Op.Bin(Iadd, _, x, IVal(a))), IVal(b))) =>
         Seq(Let(n, Op.Comp(Ieq, ty, x, IVal(b - a, ty))))
 
       // ((x - a) == b) = (x == (a + b))
-      case Let(
-          n,
-          Op.Comp(Ieq, ty, defop(Op.Bin(Isub, _, x, IVal(a))), IVal(b))) =>
+      case Let(n,
+               Op.Comp(Ieq, ty, defop(Op.Bin(Isub, _, x, IVal(a))), IVal(b))) =>
         Seq(Let(n, Op.Comp(Ieq, ty, x, IVal(a + b, ty))))
 
       // ((a - x) == b) = (x == (a - b))
-      case Let(
-          n,
-          Op.Comp(Ieq, ty, defop(Op.Bin(Isub, _, IVal(a), x)), IVal(b))) =>
+      case Let(n,
+               Op.Comp(Ieq, ty, defop(Op.Bin(Isub, _, IVal(a), x)), IVal(b))) =>
         Seq(Let(n, Op.Comp(Ieq, ty, x, IVal(a - b, ty))))
 
       // ((x xor a) == b) = (x == (a xor b))

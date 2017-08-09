@@ -42,8 +42,8 @@ package object tools {
     val deps    = driver.passes.flatMap(_.depends).distinct
     val injects = driver.passes.flatMap(_.injects).distinct
     val entry =
-      nir.Global.Member(config.entry,
-                        "main_scala.scalanative.runtime.ObjectArray_unit")
+      nir.Global
+        .Member(config.entry, "main_scala.scalanative.runtime.ObjectArray_unit")
     val result =
       (linker.Linker(config, reporter)).link(entry +: deps)
 

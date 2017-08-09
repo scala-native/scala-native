@@ -52,8 +52,7 @@ class Engine(val config: EngineConfiguration) {
   }
 
   // 'canvasContext' can be null if raytracer runs as benchmark
-  def renderScene(scene: Scene,
-                  canvasContext: CanvasRenderingContext2D): Unit = {
+  def renderScene(scene: Scene, canvasContext: CanvasRenderingContext2D): Unit = {
     for {
       y <- 0 until config.canvasHeight
       x <- 0 until config.canvasWidth
@@ -156,8 +155,7 @@ class Engine(val config: EngineConfiguration) {
         shadowInfo = testIntersection(shadowRay, scene, info.shape)
         if (shadowInfo.isHit && shadowInfo.shape != info.shape) {
           val vA = color.multiplyScalar(0.5)
-          val dB = (0.5 * math.pow(shadowInfo.shape.material.transparency,
-                                   0.5))
+          val dB = (0.5 * math.pow(shadowInfo.shape.material.transparency, 0.5))
           color = vA.addScalar(dB)
         }
       }

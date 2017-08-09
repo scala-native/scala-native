@@ -124,10 +124,9 @@ class UnixFileSystemProvider extends FileSystemProvider {
       options: Array[LinkOption]): A =
     Files.readAttributes(path, tpe, options)
 
-  override def readAttributes(
-      path: Path,
-      attributes: String,
-      options: Array[LinkOption]): Map[String, Object] =
+  override def readAttributes(path: Path,
+                              attributes: String,
+                              options: Array[LinkOption]): Map[String, Object] =
     Files.readAttributes(path, attributes, options)
 
   override def setAttribute(path: Path,

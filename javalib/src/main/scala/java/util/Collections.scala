@@ -1040,8 +1040,7 @@ object Collections {
     override def listIterator(): ListIterator[E] = listIterator(0)
 
     override def listIterator(index: Int): ListIterator[E] =
-      new CheckedListIterator[E](this.inner.listIterator(index),
-                                 this.elemClazz)
+      new CheckedListIterator[E](this.inner.listIterator(index), this.elemClazz)
 
     override def subList(fromIndex: Int, toIndex: Int): List[E] =
       checkedList(super.subList(fromIndex, toIndex), this.elemClazz)
@@ -1150,9 +1149,7 @@ object Collections {
       throw new IllegalStateException
   }
 
-  private class EmptyListIterator
-      extends EmptyIterator
-      with ListIterator[Any] {
+  private class EmptyListIterator extends EmptyIterator with ListIterator[Any] {
     def hasPrevious(): Boolean = false
 
     def previous(): Any =

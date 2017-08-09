@@ -108,8 +108,7 @@ class InvalidPropertiesFormatException(s: String)
   //   throw new java.io.NotSerializableException("Not serializable.")
 }
 
-class MissingFormatArgumentException private ()
-    extends IllegalFormatException {
+class MissingFormatArgumentException private () extends IllegalFormatException {
   private var s: String = null
   def this(s: String) = {
     this()

@@ -57,8 +57,7 @@ object Utilities {
       case none                => None
     }
 
-    def definesBuiltIn(
-        pathToClangBinary: Option[String]): Option[Seq[String]] = {
+    def definesBuiltIn(pathToClangBinary: Option[String]): Option[Seq[String]] = {
       def commandLineToListBuiltInDefines(clang: String) =
         Seq("echo", "") #| Seq(clang, "-dM", "-E", "-")
       def splitIntoLines(s: String)      = s.split(f"%n")

@@ -643,8 +643,7 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
 
       if (diffScale < LongTenPows.length && maxLen < 64) {
         val powTen = LongTenPows(diffScale)
-        valueOf(this._smallValue - subtrahend._smallValue * powTen,
-                this._scale)
+        valueOf(this._smallValue - subtrahend._smallValue * powTen, this._scale)
       } else {
         val mult = multiplyByTenPow(subtrahend.getUnscaledValue, diffScale)
         new BigDecimal(getUnscaledValue.subtract(mult), this._scale)
@@ -906,8 +905,8 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
         (getUnscaledValue.divide(divisor.getUnscaledValue), 0L)
       } else if (newScale > 0) {
         val powerOfTen = powerOf10(newScale)
-        val iv = getUnscaledValue.divide(
-          divisor.getUnscaledValue.multiply(powerOfTen))
+        val iv =
+          getUnscaledValue.divide(divisor.getUnscaledValue.multiply(powerOfTen))
         (iv.multiply(powerOfTen), newScale)
       } else {
         // (newScale < 0)
@@ -1692,8 +1691,7 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
           val tempBD: BigDecimal = new BigDecimal(integerAndFraction(0))
           // If after to add the increment the precision changed, we normalize the size
           if (tempBD.precision() > mcPrecision) {
-            integerAndFraction(0) =
-              integerAndFraction(0).divide(BigInteger.TEN)
+            integerAndFraction(0) = integerAndFraction(0).divide(BigInteger.TEN)
             newScale0 - 1
           } else {
             newScale0
@@ -1754,9 +1752,7 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
         // To look if there is a carry
         val frac = java.lang.Long.signum(fraction) * (5 + compRem)
         val intPart1 =
-          intPart0 + roundingBehavior(intPart0.toInt & 1,
-                                      frac,
-                                      mc.roundingMode)
+          intPart0 + roundingBehavior(intPart0.toInt & 1, frac, mc.roundingMode)
         // If after to add the increment the precision changed, we normalize the size
         if (Math.log10(Math.abs(intPart1)) >= mc.precision)
           (newScale0 - 1, intPart1 / 10)

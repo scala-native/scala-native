@@ -184,8 +184,7 @@ object FormatterUSSuite extends tests.Suite {
   }
 
   test("Constructor(String)") {
-    assertThrows[NullPointerException](
-      new Formatter(null.asInstanceOf[String]))
+    assertThrows[NullPointerException](new Formatter(null.asInstanceOf[String]))
 
     locally {
       val f = new Formatter(notExist.getPath())
@@ -207,8 +206,7 @@ object FormatterUSSuite extends tests.Suite {
   testFails("Constructor(String, String)", 816) {
     // OutputStreamWriter should throw UnsupportedEncodingException (NOT UnsupportedCharsetException)
     assertThrows[NullPointerException](
-      new Formatter(null.asInstanceOf[String],
-                    Charset.defaultCharset().name()))
+      new Formatter(null.asInstanceOf[String], Charset.defaultCharset().name()))
 
     locally {
       val f =
@@ -240,9 +238,8 @@ object FormatterUSSuite extends tests.Suite {
                     Locale.US))
 
     locally {
-      val f = new Formatter(notExist.getPath(),
-                            Charset.defaultCharset().name(),
-                            null)
+      val f =
+        new Formatter(notExist.getPath(), Charset.defaultCharset().name(), null)
       assertNotNull(f)
       f.close()
     }
@@ -899,9 +896,8 @@ object FormatterUSSuite extends tests.Suite {
 
       locally {
         val f = new Formatter(Locale.US)
-        f.format(
-          triple(i)(pattern).asInstanceOf[String].toUpperCase(Locale.US),
-          triple(i)(input))
+        f.format(triple(i)(pattern).asInstanceOf[String].toUpperCase(Locale.US),
+                 triple(i)(input))
         assertEquals(
           triple(i)(output).asInstanceOf[String].toUpperCase(Locale.US),
           f.toString())
@@ -935,9 +931,8 @@ object FormatterUSSuite extends tests.Suite {
 
       locally {
         val f = new Formatter(Locale.US)
-        f.format(
-          triple(i)(pattern).asInstanceOf[String].toUpperCase(Locale.US),
-          triple(i)(input).asInstanceOf[Object])
+        f.format(triple(i)(pattern).asInstanceOf[String].toUpperCase(Locale.US),
+                 triple(i)(input).asInstanceOf[Object])
         assertEquals(
           triple(i)(output).asInstanceOf[String].toUpperCase(Locale.US),
           f.toString())
@@ -999,9 +994,8 @@ object FormatterUSSuite extends tests.Suite {
 
       locally {
         val f = new Formatter(Locale.US)
-        f.format(
-          triple(i)(pattern).asInstanceOf[String].toUpperCase(Locale.US),
-          triple(i)(input))
+        f.format(triple(i)(pattern).asInstanceOf[String].toUpperCase(Locale.US),
+                 triple(i)(input))
         assertEquals(
           triple(i)(output).asInstanceOf[String].toUpperCase(Locale.US),
           f.toString())
@@ -1453,9 +1447,7 @@ object FormatterUSSuite extends tests.Suite {
       Array(paris, 'b', "May"),
       Array(china, 'b', "May"),
       Array(0L, 'c', "Thu Jan 01 08:00:00 CST 1970"),
-      Array(java.lang.Long.MAX_VALUE,
-            'c',
-            "Sun Aug 17 15:12:55 CST 292278994"),
+      Array(java.lang.Long.MAX_VALUE, 'c', "Sun Aug 17 15:12:55 CST 292278994"),
       Array(-1000L, 'c', "Thu Jan 01 07:59:59 CST 1970"),
       Array(new Date(1147327147578L), 'c', "Thu May 11 13:59:07 CST 2006"),
       Array(paris, 'c', "Mon May 08 12:00:00 CEST 2006"),
@@ -1734,8 +1726,7 @@ object FormatterUSSuite extends tests.Suite {
     }
   }
 
-  test(
-    "format(String, Array[Object]) for legal BigInteger conversion type 'd'") {
+  test("format(String, Array[Object]) for legal BigInteger conversion type 'd'") {
     val tripleD = Array(
       Array(new BigInteger("123456789012345678901234567890"),
             "%d",
@@ -2004,8 +1995,7 @@ object FormatterUSSuite extends tests.Suite {
     locally {
       val f = new Formatter()
       assertThrows[MissingFormatWidthException](
-        f.format("%010000000000000000000000000000000001d",
-                 new BigInteger("1")))
+        f.format("%010000000000000000000000000000000001d", new BigInteger("1")))
     }
   }
 
@@ -3103,10 +3093,9 @@ object FormatterUSSuite extends tests.Suite {
       Array(new BigDecimal("9999999999999999999999999999999999999999999"),
             "%#.3f",
             "9999999999999999999999999999999999999999999.000"),
-      Array(
-        new BigDecimal("9999999999999999999999999999999999999999999"),
-        "%#,5f",
-        "9,999,999,999,999,999,999,999,999,999,999,999,999,999,999.000000"),
+      Array(new BigDecimal("9999999999999999999999999999999999999999999"),
+            "%#,5f",
+            "9,999,999,999,999,999,999,999,999,999,999,999,999,999,999.000000"),
       Array(new BigDecimal("9999999999999999999999999999999999999999999"),
             "%- #(12.0f",
             " 9999999999999999999999999999999999999999999."),
@@ -3199,8 +3188,7 @@ object FormatterUSSuite extends tests.Suite {
       locally {
         val f = new Formatter(Locale.US)
         assertThrows[FormatFlagsConversionMismatchException](
-          f.format(flagsConversionMismatches(i),
-                   null.asInstanceOf[BigDecimal]))
+          f.format(flagsConversionMismatches(i), null.asInstanceOf[BigDecimal]))
       }
     }
 
