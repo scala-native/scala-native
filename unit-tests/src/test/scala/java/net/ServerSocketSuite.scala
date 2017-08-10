@@ -53,10 +53,9 @@ object ServerSocketSuite extends tests.Suite {
   test("soTimeout") {
     val s = new ServerSocket(0)
 
-    assertEquals(0, s.getSoTimeout)
-
-    s.setSoTimeout(100)
-    assertEquals(100, s.getSoTimeout)
+    val prevValue = s.getSoTimeout
+    s.setSoTimeout(prevValue + 100)
+    assertEquals(prevValue + 100, s.getSoTimeout)
   }
 
   test("toString") {

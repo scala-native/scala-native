@@ -26,6 +26,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
   protected[net] var port                 = 0
 
   private var timeout = 0
+  private var listening = false
 
   override def getInetAddress: InetAddress       = address
   override def getFileDescriptor: FileDescriptor = fd
@@ -98,6 +99,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
     if (socket.listen(fd.fd, backlog) == -1) {
       throw new SocketException("Listen failed")
     }
+    listening = true
   }
 
   override def accept(s: SocketImpl): Unit = {
@@ -357,6 +359,10 @@ private[net] class PlainSocketImpl extends SocketImpl {
       throw new SocketException("Socket is closed")
     }
 
+    if(listening && optID == SocketOptions.SO_TIMEOUT) {
+      return Integer.valueOf(this.timeout)
+    }
+
     val level = optID match {
       case SocketOptions.TCP_NODELAY => in.IPPROTO_TCP
       case SocketOptions.IP_TOS      => in.IPPROTO_IP
@@ -404,6 +410,11 @@ private[net] class PlainSocketImpl extends SocketImpl {
   override def setOption(optID: Int, value: Object): Unit = {
     if (fd.fd == -1) {
       throw new SocketException("Socket is closed")
+    }
+
+    if(listening && optID == SocketOptions.SO_TIMEOUT) {
+      this.timeout = value.asInstanceOf[Int]
+      return
     }
 
     val level = optID match {
