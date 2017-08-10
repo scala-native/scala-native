@@ -25,7 +25,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
   protected[net] var address: InetAddress = null
   protected[net] var port                 = 0
 
-  private var timeout = 0
+  private var timeout   = 0
   private var listening = false
 
   override def getInetAddress: InetAddress       = address
@@ -359,7 +359,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
       throw new SocketException("Socket is closed")
     }
 
-    if(listening && optID == SocketOptions.SO_TIMEOUT) {
+    if (listening && optID == SocketOptions.SO_TIMEOUT) {
       return Integer.valueOf(this.timeout)
     }
 
@@ -412,7 +412,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
       throw new SocketException("Socket is closed")
     }
 
-    if(listening && optID == SocketOptions.SO_TIMEOUT) {
+    if (listening && optID == SocketOptions.SO_TIMEOUT) {
       this.timeout = value.asInstanceOf[Int]
       return
     }
