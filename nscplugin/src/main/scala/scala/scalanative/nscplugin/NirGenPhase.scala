@@ -40,6 +40,7 @@ abstract class NirGenPhase
   protected val curMethodThis = new util.ScopedVar[Option[Val]]
   protected val curFresh      = new util.ScopedVar[nir.Fresh]
   protected val curUnwind     = new util.ScopedVar[nir.Next]
+  protected val curStatBuffer = new util.ScopedVar[StatBuffer]
 
   protected def lazyAnonDefs =
     curLazyAnonDefs.get
@@ -87,10 +88,15 @@ abstract class NirGenPhase
       def genClass(cd: ClassDef): Unit = {
         val path   = genPathFor(cunit, cd.symbol)
         val buffer = new StatBuffer
-        buffer.genClass(cd)
-        //println(s"--- " + path)
-        //buffer.toSeq.foreach(defn => println(defn.show))
-        genIRFile(path, buffer.toSeq)
+
+        scoped(
+          curStatBuffer := buffer
+        ) {
+          buffer.genClass(cd)
+          //println(s"--- " + path)
+          //buffer.toSeq.foreach(defn => println(defn.show))
+          genIRFile(path, buffer.toSeq)
+        }
       }
 
       scoped(

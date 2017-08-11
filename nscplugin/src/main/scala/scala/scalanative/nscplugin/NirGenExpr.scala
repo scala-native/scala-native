@@ -1170,69 +1170,40 @@ trait NirGenExpr { self: NirGenPhase =>
       }
     }
 
-    def genFunPtrOp(app: Apply, code: Int): Val = ??? /*{
-      code match {
-        case FUN_PTR_CALL =>
-          val Apply(sel @ Select(funp, _), allargsp) = app
+    def genFunPtrOp(app: Apply, code: Int): Val = code match {
+      case FUN_PTR_CALL =>
+        val Apply(sel @ Select(funp, _), allargsp) = app
 
-          val arity = CFunctionPtrApply.indexOf(sel.symbol)
+        val arity = CFunctionPtrApply.indexOf(sel.symbol)
 
-          val (argsp, tagsp) = allargsp.splitAt(arity)
+        val (argsp, tagsp) = allargsp.splitAt(arity)
 
-          val fun    = genExpr(funp)
-          val tagsts = tagsp.map(unwrapTag)
-          val tagtys = tagsts.map(genType(_, box = false))
-          val sig    = Type.Function(tagtys.init, tagtys.last)
+        val fun    = genExpr(funp)
+        val tagsts = tagsp.map(unwrapTag)
+        val tagtys = tagsts.map(genType(_, box = false))
+        val sig    = Type.Function(tagtys.init, tagtys.last)
 
-          val args = mutable.UnrolledBuffer.empty[nir.Val]
+        val args = mutable.UnrolledBuffer.empty[nir.Val]
 
-          tagsts.init.zip(argsp).foreach {
-            case (st, argp) =>
-              args += unboxValue(st, partial = false, genExpr(argp))
-          }
+        tagsts.init.zip(argsp).foreach {
+          case (st, argp) =>
+            args += unboxValue(st, partial = false, genExpr(argp))
+        }
 
-          buf.call(sig, fun, args, curUnwind)
+        buf.call(sig, fun, args, curUnwind)
 
-        case FUN_PTR_FROM =>
-          val Apply(_, Seq(MaybeBlock(Typed(ctor, funtpt))))           = app
-          val Apply(Select(New(tpt), termNames.CONSTRUCTOR), ctorargs) = ctor
+      case FUN_PTR_FROM =>
+        val Apply(_, Seq(MaybeBlock(Typed(ctor, funtpt))))           = app
+        val Apply(Select(New(tpt), termNames.CONSTRUCTOR), ctorargs) = ctor
 
-          assert(ctorargs.isEmpty,
-                 s"Can't get function pointer to a closure with captures: ${ctorargs} in application ${app}")
+        assert(ctorargs.isEmpty,
+               s"Can't get function pointer to a closure with captures: ${ctorargs} in application ${app}")
 
-          val anondef = consumeLazyAnonDef(tpt.tpe.typeSymbol)
-          val body    = anondef.impl.body
-          val apply = body.collectFirst {
-            case dd: DefDef if dd.symbol.hasFlag(SPECIALIZED) =>
-              dd
-          }.getOrElse {
-            body.collectFirst {
-              case dd: DefDef
-                  if dd.name == nme.apply && !dd.symbol.hasFlag(BRIDGE) =>
-                dd
-            }.get
-          }
+        curStatBuffer.genFunctionPtrForwarder(tpt.tpe.typeSymbol)
 
-          apply match {
-            case ExternForwarder(tosym) =>
-              Val.Global(genMethodName(tosym), Type.Ptr)
-
-            case _ =>
-              val attrs  = Attrs(isExtern = true)
-              val name   = genAnonName(curClassSym, anondef.symbol)
-              val sig    = genMethodSig(apply.symbol, forceStatic = true)
-              val params = genParams(apply, isStatic = true)
-              val body   = genNormalMethodBody(apply, params, apply.rhs, isStatic = true)
-
-              curClassDefns += Defn.Define(attrs, name, sig, body)
-
-              Val.Global(name, Type.Ptr)
-          }
-
-        case _ =>
-          unreachable
-      }
-    }*/
+      case _ =>
+        util.unreachable
+    }
 
     def castConv(fromty: nir.Type, toty: nir.Type): Option[nir.Conv] =
       (fromty, toty) match {
@@ -1527,16 +1498,18 @@ trait NirGenExpr { self: NirGenPhase =>
       }
     }
 
-    def genApplyNewStruct(st: SimpleType, argsp: Seq[Tree]): Val = ??? /*{
-      val ty           = genType(st, box = false)
-      val (args, last) = genSimpleArgs(argsp, focus)
-      val undef        = last withValue Val.Undef(ty)
+    def genApplyNewStruct(st: SimpleType, argsp: Seq[Tree]): Val = {
+      val ty       = genType(st, box = false)
+      val args     = genSimpleArgs(argsp)
+      var res: Val = Val.Undef(ty)
 
-      args.zipWithIndex.foldLeft(undef) {
-        case (focus, (value, index)) =>
-          focus withOp Op.Insert(focus.value, value, Seq(index))
+      args.zipWithIndex.foreach {
+        case (value, index) =>
+          res = buf.insert(res, value, Seq(index))
       }
-    }*/
+
+      res
+    }
 
     def genApplyNewArray(elemcode: Char, argsp: Seq[Tree]): Val = {
       val module = RuntimeArrayModule(elemcode)

@@ -379,5 +379,39 @@ trait NirGenStat { self: NirGenPhase =>
       buf.ret(genBody())
       buf.toSeq
     }
+
+    def genFunctionPtrForwarder(sym: Symbol): Val = {
+      val anondef = consumeLazyAnonDef(sym)
+      val body    = anondef.impl.body
+      val apply = body
+        .collectFirst {
+          case dd: DefDef if dd.symbol.hasFlag(SPECIALIZED) =>
+            dd
+        }
+        .getOrElse {
+          body.collectFirst {
+            case dd: DefDef
+                if dd.name == nme.apply && !dd.symbol.hasFlag(BRIDGE) =>
+              dd
+          }.get
+        }
+
+      apply match {
+        case ExternForwarder(tosym) =>
+          Val.Global(genMethodName(tosym), Type.Ptr)
+
+        case _ =>
+          val attrs  = Attrs(isExtern = true)
+          val name   = genAnonName(curClassSym, anondef.symbol)
+          val sig    = genMethodSig(apply.symbol, forceStatic = true)
+          val params = genParams(apply, isStatic = true)
+          val body =
+            genNormalMethodBody(apply, params, apply.rhs, isStatic = true)
+
+          buf += Defn.Define(attrs, name, sig, body)
+
+          Val.Global(name, Type.Ptr)
+      }
+    }
   }
 }
