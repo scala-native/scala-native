@@ -747,6 +747,8 @@ trait NirGenExpr { self: NirGenPhase =>
         Val.Unit
       } else if (code >= DIV_UINT && code <= INT_TO_ULONG) {
         genUnsignedOp(app, code)
+      } else if (code == SELECT) {
+        genSelectOp(app)
       } else {
         abort(
           "Unknown primitive operation: " + sym.fullName + "(" +
@@ -1340,6 +1342,18 @@ trait NirGenExpr { self: NirGenPhase =>
         val right = genExpr(rightp)
 
         buf.bin(bin, ty, left, right)
+    }
+
+    def genSelectOp(app: Tree): Val = {
+      val Apply(_, Seq(condp, thenp, elsep, tagp)) = app
+
+      val st    = unwrapTag(tagp)
+      val cond  = genExpr(condp)
+      val then_ = unboxValue(st, partial = false, genExpr(thenp))
+      val else_ = unboxValue(st, partial = false, genExpr(elsep))
+      val sel   = buf.let(Op.Select(cond, then_, else_))
+
+      boxValue(st, sel)
     }
 
     def genSynchronized(app: Apply): Val = {
