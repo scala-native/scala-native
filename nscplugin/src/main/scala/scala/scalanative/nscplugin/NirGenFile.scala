@@ -25,12 +25,10 @@ trait NirGenFile { self: NirGenPhase =>
     Paths.get(file.file.getAbsolutePath)
   }
 
-  def genIRFile(path: Path, defns: Seq[nir.Defn]): Unit = {
-    //println(s"--- serializing ${defns.size} defns to ${path}")
+  def genIRFile(path: Path, defns: Seq[nir.Defn]): Unit =
     withScratchBuffer { buffer =>
       serializeBinary(defns, buffer)
       buffer.flip
       VirtualDirectory.local(path.getParent.toFile).write(path, buffer)
     }
-  }
 }
