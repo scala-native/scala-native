@@ -8,7 +8,7 @@ import scala.tools.nsc.plugins._
 import scala.util.{Either, Left, Right}
 import scala.reflect.internal.Flags._
 import util._, util.ScopedVar.scoped
-import nir.{InstBuffer => Buf, _}
+import nir._
 import NirPrimitives._
 
 abstract class NirGenPhase

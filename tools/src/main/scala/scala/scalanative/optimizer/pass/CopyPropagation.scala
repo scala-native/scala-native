@@ -37,7 +37,7 @@ class CopyPropagation(implicit fresh: Fresh) extends Pass {
   }
 
   override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
-    val buf = new InstBuffer
+    val buf = new Buffer
     locals = collect(insts)
     insts.foreach {
       case Let(_, _: Op.Copy) =>

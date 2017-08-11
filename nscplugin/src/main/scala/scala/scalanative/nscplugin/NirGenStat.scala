@@ -59,7 +59,10 @@ trait NirGenStat { self: NirGenPhase =>
     }
   }
 
-  class StatBuffer extends nir.DefnBuffer { buf =>
+  class StatBuffer {
+    private val buf          = mutable.UnrolledBuffer.empty[nir.Defn]
+    def toSeq: Seq[nir.Defn] = buf
+
     def genClass(cd: ClassDef): Unit = {
       scoped(
         curClassSym := cd.symbol

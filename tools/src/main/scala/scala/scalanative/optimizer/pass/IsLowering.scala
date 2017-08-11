@@ -11,7 +11,7 @@ import nir._, Inst.Let
 class IsLowering(implicit fresh: Fresh, top: Top) extends Pass {
 
   override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
-    val buf = new InstBuffer
+    val buf = new Buffer
     import buf._
 
     insts.foreach {
@@ -45,7 +45,7 @@ class IsLowering(implicit fresh: Fresh, top: Top) extends Pass {
     buf.toSeq
   }
 
-  private def genIs(buf: InstBuffer, ty: Type, obj: Val): Val = {
+  private def genIs(buf: Buffer, ty: Type, obj: Val): Val = {
     import buf._
 
     ty match {

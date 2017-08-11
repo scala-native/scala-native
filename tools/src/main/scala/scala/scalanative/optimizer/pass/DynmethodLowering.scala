@@ -16,7 +16,7 @@ class DynmethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
     top.nodes(Global.Top("java.lang.Object")).asInstanceOf[Class].rtti.struct
 
   override def onInsts(insts: Seq[Inst]) = {
-    val buf = new InstBuffer
+    val buf = new Buffer
     import buf._
 
     insts.foreach {

@@ -16,7 +16,7 @@ class DeadCodeElimination(implicit top: Top, fresh: Fresh) extends Pass {
     val cfg        = ControlFlow.Graph(insts)
     val usedef     = UseDef(cfg)
     val removeArgs = new ArgRemover(usedef, cfg.entry.name)
-    val buf        = new InstBuffer
+    val buf        = new Buffer
 
     cfg.all.foreach { block =>
       if (usedef(block.name).alive) {

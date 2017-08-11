@@ -11,7 +11,7 @@ class SafepointInsertion(implicit fresh: Fresh) extends Pass {
   import SafepointInsertion._
 
   override def onDefns(defns: Seq[Defn]): Seq[Defn] = {
-    val buf = new DefnBuffer
+    val buf = mutable.UnrolledBuffer.empty[Defn]
 
     defns.foreach {
       case defn: Defn.Define if defn.attrs.inline ne Attr.AlwaysInline =>
@@ -21,11 +21,11 @@ class SafepointInsertion(implicit fresh: Fresh) extends Pass {
         buf += defn
     }
 
-    buf.toSeq
+    buf
   }
 
   override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
-    val buf = new InstBuffer
+    val buf = new Buffer
     import buf._
 
     insts.foreach {

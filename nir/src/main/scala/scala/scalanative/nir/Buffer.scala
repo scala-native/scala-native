@@ -3,20 +3,20 @@ package nir
 
 import scala.collection.mutable
 
-class InstBuffer(implicit fresh: Fresh) {
+class Buffer(implicit fresh: Fresh) {
   private val buffer = mutable.UnrolledBuffer.empty[Inst]
   def +=(inst: Inst): Unit =
     buffer += inst
   def ++=(insts: Seq[Inst]): Unit =
     buffer ++= insts
-  def ++=(other: InstBuffer): Unit =
+  def ++=(other: Buffer): Unit =
     buffer ++= other.buffer
   def toSeq: Seq[Inst] =
     buffer
 
   // Control-flow ops
   def label(name: Local): Unit =
-    this += Inst.Label(name, InstBuffer.emptyParamSeq)
+    this += Inst.Label(name, Seq.empty)
   def label(name: Local, params: Seq[Val.Local]): Unit =
     this += Inst.Label(name, params)
   def unreachable: Unit =
@@ -87,7 +87,4 @@ class InstBuffer(implicit fresh: Fresh) {
     let(Op.Box(ty, obj))
   def unbox(ty: Type, obj: Val): Val =
     let(Op.Unbox(ty, obj))
-}
-object InstBuffer {
-  private val emptyParamSeq = Seq.empty[Val.Local]
 }

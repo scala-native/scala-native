@@ -19,7 +19,7 @@ trait NirGenExpr { self: NirGenPhase =>
   final case class ValTree(value: nir.Val)    extends Tree
   final case class ContTree(f: () => nir.Val) extends Tree
 
-  class FixupInstBuffer(implicit fresh: Fresh) extends nir.InstBuffer {
+  class FixupBuffer(implicit fresh: Fresh) extends nir.Buffer {
     private var labeled = false
 
     override def +=(inst: Inst): Unit = {
@@ -43,11 +43,11 @@ trait NirGenExpr { self: NirGenPhase =>
         this += inst
       }
 
-    override def ++=(other: nir.InstBuffer): Unit =
+    override def ++=(other: nir.Buffer): Unit =
       this ++= other.toSeq
   }
 
-  class ExprBuffer(implicit fresh: Fresh) extends FixupInstBuffer { buf =>
+  class ExprBuffer(implicit fresh: Fresh) extends FixupBuffer { buf =>
     def genExpr(tree: Tree): Val = tree match {
       case EmptyTree =>
         Val.Unit
