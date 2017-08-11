@@ -190,4 +190,41 @@ trait NirTypeEncoding { self: NirCodeGen =>
       unsupported("Box type must be primitive type.")
   }
 
+  def genMethodSig(sym: Symbol,
+                   forceStatic: Boolean = false): nir.Type.Function = {
+    require(sym.isMethod || sym.isStaticMember)
+
+    val tpe      = sym.tpe
+    val owner    = sym.owner
+    val paramtys = genMethodSigParams(sym)
+    val selfty =
+      if (forceStatic || owner.isExternModule || owner.isImplClass) None
+      else Some(genType(owner.tpe, box = true))
+    val retty =
+      if (sym.isClassConstructor) nir.Type.Unit
+      else genType(sym.tpe.resultType, box = false)
+
+    nir.Type.Function(selfty ++: paramtys, retty)
+  }
+
+  def genMethodSigParams(sym: Symbol): Seq[nir.Type] = {
+    val wereRepeated = exitingPhase(currentRun.typerPhase) {
+      for {
+        params <- sym.tpe.paramss
+        param  <- params
+      } yield {
+        param.name -> isScalaRepeatedParamType(param.tpe)
+      }
+    }.toMap
+
+    sym.tpe.params.map {
+      case p
+          if wereRepeated.getOrElse(p.name, false) &&
+            sym.owner.isExternModule =>
+        nir.Type.Vararg
+
+      case p =>
+        genType(p.tpe, box = false)
+    }
+  }
 }

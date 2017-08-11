@@ -20,7 +20,7 @@ import nir._, Inst.Let
  *
  *      %baz = iadd[i32] 1i32, 2i32
  */
-class CopyPropagation extends Pass {
+class CopyPropagation(implicit fresh: Fresh) extends Pass {
   private var locals: mutable.Map[Local, Val] = _
 
   private def collect(insts: Seq[Inst]): mutable.Map[Local, Val] = {
@@ -37,7 +37,7 @@ class CopyPropagation extends Pass {
   }
 
   override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
-    val buf = new nir.Buffer
+    val buf = new InstBuffer
     locals = collect(insts)
     insts.foreach {
       case Let(_, _: Op.Copy) =>
@@ -68,5 +68,5 @@ class CopyPropagation extends Pass {
 
 object CopyPropagation extends PassCompanion {
   override def apply(config: tools.Config, top: Top) =
-    new CopyPropagation
+    new CopyPropagation()(top.fresh)
 }

@@ -9,14 +9,14 @@ import analysis.ControlFlow
 import nir._
 
 /** Eliminates pure computations that are not being used, as well as unused block parameters. */
-class DeadCodeElimination(implicit top: Top) extends Pass {
+class DeadCodeElimination(implicit top: Top, fresh: Fresh) extends Pass {
   import DeadCodeElimination._
 
   override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
     val cfg        = ControlFlow.Graph(insts)
     val usedef     = UseDef(cfg)
     val removeArgs = new ArgRemover(usedef, cfg.entry.name)
-    val buf        = new nir.Buffer
+    val buf        = new InstBuffer
 
     cfg.all.foreach { block =>
       if (usedef(block.name).alive) {
@@ -41,7 +41,7 @@ class DeadCodeElimination(implicit top: Top) extends Pass {
 
 object DeadCodeElimination extends PassCompanion {
   override def apply(config: tools.Config, top: Top) =
-    new DeadCodeElimination()(top)
+    new DeadCodeElimination()(top, top.fresh)
 
   class ArgRemover(usedef: Map[Local, UseDef.Def], entryName: Local)
       extends Pass {

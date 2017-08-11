@@ -11,7 +11,7 @@ import nir._, Inst.Let
 class IsLowering(implicit fresh: Fresh, top: Top) extends Pass {
 
   override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
-    val buf = new nir.Buffer
+    val buf = new InstBuffer
     import buf._
 
     insts.foreach {
@@ -32,7 +32,7 @@ class IsLowering(implicit fresh: Fresh, top: Top) extends Pass {
         jump(Next.Label(contL, Seq(res1)))
         // otherwise, do an actual instance check
         label(elseL)
-        val res2 = is(buf, ty, obj)
+        val res2 = genIs(buf, ty, obj)
         jump(Next.Label(contL, Seq(res2)))
         // merge the result of two branches
         label(contL, Seq(result))
@@ -45,7 +45,7 @@ class IsLowering(implicit fresh: Fresh, top: Top) extends Pass {
     buf.toSeq
   }
 
-  private def is(buf: nir.Buffer, ty: Type, obj: Val): Val.Local = {
+  private def genIs(buf: InstBuffer, ty: Type, obj: Val): Val = {
     import buf._
 
     ty match {

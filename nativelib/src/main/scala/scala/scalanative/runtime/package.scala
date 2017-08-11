@@ -63,10 +63,6 @@ package object runtime {
   /** Intrinsified int to unsigned long conversion. */
   def intToULong(v: Int): Long = undefined
 
-  /** Select value without branching. */
-  def select[T](cond: Boolean, thenp: T, elsep: T)(implicit tag: Tag[T]): T =
-    undefined
-
   /** Read type information of given object. */
   def getType(obj: Object): Ptr[ClassType] = !obj.cast[Ptr[Ptr[ClassType]]]
 

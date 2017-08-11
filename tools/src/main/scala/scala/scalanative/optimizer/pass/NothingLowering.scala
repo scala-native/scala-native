@@ -13,7 +13,7 @@ class NothingLowering(implicit fresh: Fresh) extends Pass {
   import NothingLowering._
 
   override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
-    val buf = new nir.Buffer
+    val buf = new InstBuffer
 
     insts.foreach {
       case Inst.Throw(v, unwind) =>

@@ -18,7 +18,7 @@ class AllocLowering(implicit fresh: Fresh, top: Top) extends Pass {
   import AllocLowering._
 
   override def onInsts(insts: Seq[Inst]) = {
-    val buf = new nir.Buffer
+    val buf = new InstBuffer
     import buf._
 
     insts.foreach {

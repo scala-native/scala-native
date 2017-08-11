@@ -24,7 +24,7 @@ class UnitLowering(implicit fresh: Fresh) extends Pass {
   }
 
   override def onInsts(insts: Seq[Inst]) = {
-    val buf = new nir.Buffer
+    val buf = new nir.InstBuffer
     import buf._
 
     insts.foreach {

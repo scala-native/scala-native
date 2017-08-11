@@ -19,7 +19,7 @@ class InstCombine()(implicit fresh: Fresh) extends Pass {
 
   override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
     // This stores the encountered definitions for non-params locals
-    val buf      = new nir.Buffer
+    val buf      = new InstBuffer
     val defop    = mutable.HashMap.empty[Local, Op]
     val resolver = new DefOp(defop)
     val cfg      = ControlFlow.Graph(insts)
