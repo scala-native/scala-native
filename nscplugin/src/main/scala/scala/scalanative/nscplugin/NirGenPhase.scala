@@ -68,6 +68,7 @@ abstract class NirGenPhase
     override def apply(cunit: CompilationUnit): Unit = {
       val classDefs    = mutable.UnrolledBuffer.empty[ClassDef]
       val lazyAnonDefs = mutable.Map.empty[Symbol, ClassDef]
+      val files        = mutable.UnrolledBuffer.empty[(Path, Seq[nir.Defn])]
 
       def collectClassDefs(tree: Tree): Unit = tree match {
         case EmptyTree =>
@@ -93,9 +94,7 @@ abstract class NirGenPhase
           curStatBuffer := buffer
         ) {
           buffer.genClass(cd)
-          //println(s"--- " + path)
-          //buffer.toSeq.foreach(defn => println(defn.show))
-          genIRFile(path, buffer.toSeq)
+          files += ((path, buffer.toSeq))
         }
       }
 
@@ -105,6 +104,10 @@ abstract class NirGenPhase
         collectClassDefs(cunit.body)
         classDefs.foreach(genClass)
         lazyAnonDefs.values.foreach(genClass)
+        files.par.foreach {
+          case (path, stats) =>
+            genIRFile(path, stats)
+        }
       }
     }
   }
