@@ -11,7 +11,7 @@ import nir._, Inst.Let
 class IsLowering(implicit fresh: Fresh, top: Top) extends Pass {
 
   override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
-    val buf = new Buffer
+    val buf = new nir.Buffer
     import buf._
 
     insts.foreach {

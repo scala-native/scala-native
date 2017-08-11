@@ -11,7 +11,7 @@ class SizeofLowering(top: Top) extends Pass {
   implicit val fresh: Fresh = top.fresh
 
   override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
-    val buf = new Buffer
+    val buf = new nir.Buffer
     import buf._
 
     insts.foreach {

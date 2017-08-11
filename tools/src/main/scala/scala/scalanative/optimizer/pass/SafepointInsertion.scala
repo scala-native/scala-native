@@ -25,7 +25,7 @@ class SafepointInsertion(implicit fresh: Fresh) extends Pass {
   }
 
   override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
-    val buf = new Buffer
+    val buf = new nir.Buffer
     import buf._
 
     insts.foreach {
