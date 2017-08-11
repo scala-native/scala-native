@@ -1,0 +1,80 @@
+#include <atomic>
+#include <stdint.h>
+#include <stdlib.h>
+
+using namespace std;
+
+%{
+   types = ['int8_t', 'int16_t', 'int32_t', 'int64_t',
+            'uint8_t', 'uint16_t', 'uint32_t', 'uint64_t',
+            'char', 'unsigned char', 'size_t']
+
+   names = ['byte', 'short', 'int', 'long',
+            'ubyte', 'ushort', 'uint', 'ulong',
+            'char', 'uchar', 'csize']
+}%
+
+extern "C" {
+
+	/**
+     * Init
+     * */
+
+% for (T, N) in zip(types, names):
+     // ${N}
+     void init_${N}(${T}* atm, ${T} init_value) {
+        *atm = ATOMIC_VAR_INIT(init_value);
+     }
+% end
+
+	/**
+     * Memory
+     * */
+
+     void* alloc(size_t sz) {
+        return malloc(sz);
+     }
+
+     void free(void* ptr) {
+        free(ptr);
+     }
+
+	/**
+     * Load
+     * */
+
+% for (T, N) in zip(types, names):
+    // ${N}
+    ${T} load_${N}(atomic<${T}>* atm) {
+        return atm -> load();
+    }
+% end
+
+	/**
+	 * Compare and Swap
+	 * */
+
+% for (T, N) in zip(types, names):
+    // ${N}
+% for cmp in ['strong', 'weak']:
+    int compare_and_swap_${cmp}_${N}(atomic<${T}>* atm, ${T}* expected, ${T} desired) {
+        return atomic_compare_exchange_${cmp}(atm, expected, desired);
+    }
+% end
+% end
+
+% for op in ['add', 'sub', 'and', 'or', 'xor']:
+	/**
+     * ${op}
+     * */
+
+% for (T, N) in zip(types, names):
+% if N != 'gen':
+     // ${N}
+     ${T} atomic_${op}_${N}(atomic<${T}>* atm, ${T} val) {
+        return atm -> fetch_${op}(val);
+     }
+% end
+% end
+% end
+}
