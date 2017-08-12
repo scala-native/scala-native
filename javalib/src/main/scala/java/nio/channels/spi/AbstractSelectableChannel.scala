@@ -95,4 +95,10 @@ abstract class AbstractSelectableChannel protected[spi] (
     keyList.exists(key => key != null && key.isValid)
   }
 
+  private[spi] def deregister(k: SelectionKey): Unit = synchronized {
+    if (keyList != null) {
+      keyList -= k
+    }
+  }
+
 }

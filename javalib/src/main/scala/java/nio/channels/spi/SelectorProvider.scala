@@ -20,6 +20,6 @@ object SelectorProvider {
 
   // Scala Native does not support class loading, so we
   // just return the default provider
-  def provider: SelectorProvider = new SelectorProviderImpl
+  lazy val provider: SelectorProvider = new SelectorProviderImpl
 
 }

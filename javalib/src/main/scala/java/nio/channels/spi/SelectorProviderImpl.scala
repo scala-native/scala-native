@@ -8,8 +8,8 @@ private[spi] class SelectorProviderImpl extends SelectorProvider {
   def openDatagramChannel: DatagramChannel                         = ???
   def openDatagramChannel(family: ProtocolFamily): DatagramChannel = ???
   def openPipe: Pipe                                               = ???
-  def openSelector: AbstractSelector                               = ???
+  def openSelector: AbstractSelector = new SelectorImpl(this)
   def openServerSocketChannel: ServerSocketChannel                 = ???
-  def openSocketChannel: SocketChannel                             = ???
+  def openSocketChannel: SocketChannel = new SocketChannelImpl(this)
 
 }
