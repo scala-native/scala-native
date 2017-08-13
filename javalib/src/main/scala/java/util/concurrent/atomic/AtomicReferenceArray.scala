@@ -1,5 +1,7 @@
 package java.util.concurrent.atomic
 
+import scala.scalanative.runtime.CAtomicLong
+
 class AtomicReferenceArray[E <: AnyRef](length: Int) extends Serializable {
 
   def this(array: Array[E]) = {
@@ -7,16 +9,17 @@ class AtomicReferenceArray[E <: AnyRef](length: Int) extends Serializable {
     System.arraycopy(array, 0, inner, 0, length)
   }
 
-  private val inner: Array[AnyRef] = new Array[AnyRef](length)
+  private[this] val inner: Array[CAtomicLong] =
+    new Array[Long](length).map(e => CAtomicLong(e))
 
   final def length(): Int =
     inner.length
 
   final def get(i: Int): E =
-    inner(i).asInstanceOf[E]
+    inner(i).load()
 
   final def set(i: Int, newValue: E): Unit =
-    inner(i) = newValue
+    inner(i).store(newValue)
 
   final def lazySet(i: Int, newValue: E): Unit =
     set(i, newValue)
@@ -28,16 +31,22 @@ class AtomicReferenceArray[E <: AnyRef](length: Int) extends Serializable {
   }
 
   final def compareAndSet(i: Int, expect: E, update: E): Boolean = {
-    if (get(i) ne expect) false
-    else {
-      set(i, update)
-      true
-    }
+    inner(i).compareAndSwapStrong(expect, update)._1
   }
 
   final def weakCompareAndSet(i: Int, expect: E, update: E): Boolean =
-    compareAndSet(i, expect, update)
+    inner(i).compareAndSwapWeak(expect, update)._1
 
   override def toString(): String =
     inner.mkString("[", ", ", "]")
+
+  private implicit def toLong(e: E): Long = e.asInstanceOf[Long]
+
+  private implicit def toRef(l: Long): E = l.asInstanceOf[E]
+}
+
+object AtomicReferenceArray {
+
+  private final val serialVersionUID: Long = -6209656149925076980L
+
 }
