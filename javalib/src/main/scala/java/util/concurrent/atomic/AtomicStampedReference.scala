@@ -6,7 +6,9 @@ class AtomicStampedReference[V <: AnyRef](initialRef: V, initialStamp: Int) {
 
   import AtomicStampedReference._
 
-  private final val atomicRef: AtomicReference[ReferenceIntegerPair[V]] = new AtomicReference[ReferenceIntegerPair[V]](new ReferenceIntegerPair[V](initialRef, initialStamp))
+  private final val atomicRef: AtomicReference[ReferenceIntegerPair[V]] =
+    new AtomicReference[ReferenceIntegerPair[V]](
+      new ReferenceIntegerPair[V](initialRef, initialStamp))
 
   def getReference: V = atomicRef.get().reference
 
@@ -18,25 +20,35 @@ class AtomicStampedReference[V <: AnyRef](initialRef: V, initialStamp: Int) {
     p.reference
   }
 
-  def weakCompareAndSet(expectedReference: V, newReference: V, expectedStamp: Int, newStamp: Int): Boolean = {
+  def weakCompareAndSet(expectedReference: V,
+                        newReference: V,
+                        expectedStamp: Int,
+                        newStamp: Int): Boolean = {
     val current: ReferenceIntegerPair[V] = atomicRef.get()
 
     expectedReference == current.reference && expectedStamp == current.integer &&
-      ((newReference == current.reference && newStamp == current.integer) ||
-      atomicRef.weakCompareAndSet(current, new ReferenceIntegerPair[V](newReference, newStamp)))
+    ((newReference == current.reference && newStamp == current.integer) ||
+    atomicRef.weakCompareAndSet(
+      current,
+      new ReferenceIntegerPair[V](newReference, newStamp)))
   }
 
-  def compareAndSet(expectedReference: V, newReference: V, expectedStamp: Int, newStamp: Int): Boolean = {
+  def compareAndSet(expectedReference: V,
+                    newReference: V,
+                    expectedStamp: Int,
+                    newStamp: Int): Boolean = {
     val current: ReferenceIntegerPair[V] = atomicRef.get()
 
     expectedReference == current.reference && expectedStamp == current.integer &&
-      ((newReference == current.reference && newStamp == current.integer) ||
-        atomicRef.compareAndSet(current, new ReferenceIntegerPair[V](newReference, newStamp)))
+    ((newReference == current.reference && newStamp == current.integer) ||
+    atomicRef.compareAndSet(
+      current,
+      new ReferenceIntegerPair[V](newReference, newStamp)))
   }
 
   def set(newReference: V, newStamp: Int): Unit = {
     val current: ReferenceIntegerPair[V] = atomicRef.get()
-    if(newReference != current.reference || newStamp != current.integer)
+    if (newReference != current.reference || newStamp != current.integer)
       atomicRef.set(new ReferenceIntegerPair[V](newReference, newStamp))
   }
 
@@ -44,14 +56,17 @@ class AtomicStampedReference[V <: AnyRef](initialRef: V, initialStamp: Int) {
     val current: ReferenceIntegerPair[V] = atomicRef.get()
 
     expectedReference == current.reference &&
-      (newStamp == current.integer ||
-        atomicRef.compareAndSet(current,
-          new ReferenceIntegerPair[V](expectedReference, newStamp)))
+    (newStamp == current.integer ||
+    atomicRef.compareAndSet(
+      current,
+      new ReferenceIntegerPair[V](expectedReference, newStamp)))
   }
 }
 
 object AtomicStampedReference {
 
-  private class ReferenceIntegerPair[T](private[AtomicStampedReference] final val reference: T, private[AtomicStampedReference] final val integer: Int) {}
+  private class ReferenceIntegerPair[T](
+      private[AtomicStampedReference] final val reference: T,
+      private[AtomicStampedReference] final val integer: Int) {}
 
 }
