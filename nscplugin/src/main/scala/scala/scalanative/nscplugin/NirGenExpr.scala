@@ -237,15 +237,15 @@ trait NirGenExpr { self: NirGenPhase =>
       // Generate code for the switch and its cases.
       val scrut = genExpr(scrutp)
       buf.switch(scrut, defaultnext, casenexts)
+      buf.label(defaultnext.name)
+      val defaultres = genExpr(defaultp)
+      buf.jump(merge, Seq(defaultres))
       caseps.foreach {
         case (n, _, expr) =>
           buf.label(n)
           val caseres = genExpr(expr)
           buf.jump(merge, Seq(caseres))
       }
-      buf.label(defaultnext.name)
-      val defaultres = genExpr(defaultp)
-      buf.jump(merge, Seq(defaultres))
       buf.label(merge, Seq(mergev))
       mergev
     }
