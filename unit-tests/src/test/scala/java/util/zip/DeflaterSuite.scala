@@ -24,8 +24,8 @@ object DeflaterSuite extends tests.Suite {
 
   test("Deflater can deflate byte arrays with default compression level") {
     val bytes = Array.fill[Byte](1024)(1)
-    val expected = Array[Byte](120, -100, 99, 100, 28, 5, -93, 96, 20, -116,
-      84, 0, 0, 6, 120, 4, 1)
+    val expected = Array[Byte](120, -100, 99, 100, 28, 5, -93, 96, 20, -116, 84,
+      0, 0, 6, 120, 4, 1)
     val deflater = new Deflater()
     val bos      = new ByteArrayOutputStream()
     deflater.setInput(bytes)
@@ -70,8 +70,8 @@ object DeflaterSuite extends tests.Suite {
 
   test("Deflater can deflate given a buffer smaller than total amount of data") {
     val bytes = Array.fill[Byte](1024)(1)
-    val expected = Array[Byte](120, -100, 99, 100, 28, 5, -93, 96, 20, -116,
-      84, 0, 0, 6, 120, 4, 1)
+    val expected = Array[Byte](120, -100, 99, 100, 28, 5, -93, 96, 20, -116, 84,
+      0, 0, 6, 120, 4, 1)
     val deflater = new Deflater()
     val bos      = new ByteArrayOutputStream()
     deflater.setInput(bytes)

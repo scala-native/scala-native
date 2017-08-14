@@ -111,8 +111,7 @@ class PartialEvaluation extends Pass {
     case Let(n, Op.Bin(Lshr, Type.Int, lhs, Val.Int(a))) if ((a & 31) == 0) =>
       copy(n, lhs)
 
-    case Let(n, Op.Bin(Lshr, Type.Long, lhs, Val.Long(a)))
-        if ((a & 63) == 0) =>
+    case Let(n, Op.Bin(Lshr, Type.Long, lhs, Val.Long(a))) if ((a & 63) == 0) =>
       copy(n, lhs)
 
     case Let(n, Op.Bin(Lshr, ty, IVal(0), rhs)) =>
@@ -122,8 +121,7 @@ class PartialEvaluation extends Pass {
     case Let(n, Op.Bin(Ashr, Type.Int, lhs, Val.Int(a))) if ((a & 31) == 0) =>
       copy(n, lhs)
 
-    case Let(n, Op.Bin(Ashr, Type.Long, lhs, Val.Long(a)))
-        if ((a & 63) == 0) =>
+    case Let(n, Op.Bin(Ashr, Type.Long, lhs, Val.Long(a))) if ((a & 63) == 0) =>
       copy(n, lhs)
 
     case Let(n, Op.Bin(Ashr, ty, IVal(0), rhs)) =>

@@ -47,11 +47,9 @@ class PushbackInputStream(_in: InputStream, size: Int)
     if (buf == null) {
       throw new IOException("Stream is closed")
     } else if (offset > buffer.length || offset < 0) {
-      throw new ArrayIndexOutOfBoundsException(
-        s"Offset out of bounds: $offset")
+      throw new ArrayIndexOutOfBoundsException(s"Offset out of bounds: $offset")
     } else if (length < 0 || length > buffer.length - offset) {
-      throw new ArrayIndexOutOfBoundsException(
-        s"Length out of bounds: $length")
+      throw new ArrayIndexOutOfBoundsException(s"Length out of bounds: $length")
     } else {
       var copiedBytes = 0
       var copyLength  = 0
@@ -106,11 +104,9 @@ class PushbackInputStream(_in: InputStream, size: Int)
     if (length > pos) {
       throw new IOException("Pushback buffer full")
     } else if (offset > buffer.length || offset < 0) {
-      throw new ArrayIndexOutOfBoundsException(
-        s"Offset out of bounds: $offset")
+      throw new ArrayIndexOutOfBoundsException(s"Offset out of bounds: $offset")
     } else if (length < 0 || length > buffer.length - offset) {
-      throw new ArrayIndexOutOfBoundsException(
-        s"Length ouf of bounds: $length")
+      throw new ArrayIndexOutOfBoundsException(s"Length ouf of bounds: $length")
     } else if (buf == null) {
       throw new IOException("Stream is closed")
     } else {

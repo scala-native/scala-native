@@ -152,8 +152,7 @@ object GlobalValueNumbering extends PassCompanion {
           case (Conv(convA, tyA, valueA), Conv(convB, tyB, valueB)) =>
             eqConv(convA, convB) && eqType(tyA, tyB) && eqVal(valueA, valueB)
 
-          case (Select(condA, thenvA, elsevA),
-                Select(condB, thenvB, elsevB)) =>
+          case (Select(condA, thenvA, elsevA), Select(condB, thenvB, elsevB)) =>
             eqVals(Seq(condA, thenvA, elsevA), Seq(condB, thenvB, elsevB))
 
           case (Field(objA, nameA), Field(objB, nameB)) =>

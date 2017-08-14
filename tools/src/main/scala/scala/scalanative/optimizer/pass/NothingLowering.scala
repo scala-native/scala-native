@@ -17,8 +17,7 @@ class NothingLowering(implicit fresh: Fresh) extends Pass {
 
     insts.foreach {
       case Inst.Throw(v, unwind) =>
-        buf += super.onInst(
-          Inst.Let(Op.Call(throwSig, throw_, Seq(v), unwind)))
+        buf += super.onInst(Inst.Let(Op.Call(throwSig, throw_, Seq(v), unwind)))
         buf.unreachable
 
       case inst @ Inst.Let(n, op) if op.resty == Type.Nothing =>

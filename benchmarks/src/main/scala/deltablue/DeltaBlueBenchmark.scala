@@ -342,9 +342,8 @@ object Direction {
  * Abstract superclass for constraints having two possible output
  * variables.
  */
-abstract class BinaryConstraint(v1: Variable,
-                                v2: Variable,
-                                strength: Strength)(implicit planner: Planner)
+abstract class BinaryConstraint(v1: Variable, v2: Variable, strength: Strength)(
+    implicit planner: Planner)
     extends Constraint(strength) {
 
   protected var direction = Direction.NONE

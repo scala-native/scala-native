@@ -13,8 +13,7 @@ trait FileVisitor[T] {
 }
 
 class SimpleFileVisitor[T] protected () extends FileVisitor[T] {
-  override def postVisitDirectory(dir: T,
-                                  error: IOException): FileVisitResult =
+  override def postVisitDirectory(dir: T, error: IOException): FileVisitResult =
     FileVisitResult.CONTINUE
 
   override def preVisitDirectory(

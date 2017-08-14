@@ -93,9 +93,9 @@ object URISuite extends tests.Suite {
                                                           schemeSpecificPart =
                                                             "comp.lang.java")()
 
-    expectURI(new URI("urn:isbn:096139210x"), true, true)(
-      scheme = "urn",
-      schemeSpecificPart = "isbn:096139210x")()
+    expectURI(new URI("urn:isbn:096139210x"), true, true)(scheme = "urn",
+                                                          schemeSpecificPart =
+                                                            "isbn:096139210x")()
   }
 
   test("should parse relative URIs") {

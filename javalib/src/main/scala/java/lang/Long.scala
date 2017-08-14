@@ -348,8 +348,7 @@ object Long {
   }
 
   @inline
-  def remainderUnsigned(dividend: scala.Long,
-                        divisor: scala.Long): scala.Long =
+  def remainderUnsigned(dividend: scala.Long, divisor: scala.Long): scala.Long =
     remULong(dividend, divisor)
 
   @inline def reverse(l: scala.Long): scala.Long =

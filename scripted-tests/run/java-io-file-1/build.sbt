@@ -133,8 +133,7 @@ setupTests := {
   NioFiles.createSymbolicLink(linkToDirectory.toPath, directoryLinkedTo.toPath)
   assert(directoryLinkedTo.exists)
   assert(linkToDirectory.exists)
-  assert(
-    linkToDirectory.getCanonicalPath == directoryLinkedTo.getCanonicalPath)
+  assert(linkToDirectory.getCanonicalPath == directoryLinkedTo.getCanonicalPath)
   assert(linkToDirectory.getName != directoryLinkedTo.getName)
 
   assert(canon0F.getCanonicalPath == canon0N)

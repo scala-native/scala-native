@@ -857,8 +857,7 @@ object Formatter {
       var startIndex            = 0
       val currentConversionType = formatToken.getConversionType()
 
-      if (formatToken.isFlagSet(
-            FormatToken.FLAG_MINUS | FormatToken.FLAG_ZERO)) {
+      if (formatToken.isFlagSet(FormatToken.FLAG_MINUS | FormatToken.FLAG_ZERO)) {
         if (!formatToken.isWidthSet())
           throw new MissingFormatWidthException(formatToken.getStrFlags())
       }

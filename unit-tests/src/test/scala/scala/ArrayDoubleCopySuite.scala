@@ -125,8 +125,7 @@ object ArrayDoubleCopySuite extends tests.Suite {
     }
   }
 
-  test(
-    "array[Double]: throws IndexOutOfBoundsException if fromPos is negative") {
+  test("array[Double]: throws IndexOutOfBoundsException if fromPos is negative") {
     assertThrows[java.lang.IndexOutOfBoundsException] {
       java.lang.System.arraycopy(arr, -1, arr2, 0, 10)
     }

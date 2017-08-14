@@ -183,8 +183,7 @@ object FormatterSuite extends tests.Suite {
   }
 
   test("Constructor(String)") {
-    assertThrows[NullPointerException](
-      new Formatter(null.asInstanceOf[String]))
+    assertThrows[NullPointerException](new Formatter(null.asInstanceOf[String]))
 
     locally {
       val f = new Formatter(notExist.getPath())
@@ -206,8 +205,7 @@ object FormatterSuite extends tests.Suite {
   testFails("Constructor(String, String)", 816) {
     // OutputStreamWriter should throw UnsupportedEncodingException (NOT UnsupportedCharsetException)
     assertThrows[NullPointerException](
-      new Formatter(null.asInstanceOf[String],
-                    Charset.defaultCharset().name()))
+      new Formatter(null.asInstanceOf[String], Charset.defaultCharset().name()))
 
     locally {
       val f =
@@ -239,9 +237,8 @@ object FormatterSuite extends tests.Suite {
                     Locale.KOREA))
 
     locally {
-      val f = new Formatter(notExist.getPath(),
-                            Charset.defaultCharset().name(),
-                            null)
+      val f =
+        new Formatter(notExist.getPath(), Charset.defaultCharset().name(), null)
       assertNotNull(f)
       f.close()
     }
@@ -343,9 +340,8 @@ object FormatterSuite extends tests.Suite {
       new Formatter(notExist, "ISO 1111-1", Locale.CHINA)) // fails #816
 
     locally {
-      val f = new Formatter(fileWithContent.getPath,
-                            "UTF-16BE",
-                            Locale.CANADA_FRENCH)
+      val f =
+        new Formatter(fileWithContent.getPath, "UTF-16BE", Locale.CANADA_FRENCH)
       assertEquals(0, fileWithContent.length)
       f.close()
     }
@@ -904,9 +900,8 @@ object FormatterSuite extends tests.Suite {
 
       locally {
         val f = new Formatter(Locale.GERMAN)
-        f.format(
-          triple(i)(pattern).asInstanceOf[String].toUpperCase(Locale.US),
-          triple(i)(input))
+        f.format(triple(i)(pattern).asInstanceOf[String].toUpperCase(Locale.US),
+                 triple(i)(input))
         assertEquals(
           triple(i)(output).asInstanceOf[String].toUpperCase(Locale.US),
           f.toString())
@@ -977,9 +972,8 @@ object FormatterSuite extends tests.Suite {
 
       locally {
         val f = new Formatter(Locale.GERMAN)
-        f.format(
-          triple(i)(pattern).asInstanceOf[String].toUpperCase(Locale.US),
-          triple(i)(input))
+        f.format(triple(i)(pattern).asInstanceOf[String].toUpperCase(Locale.US),
+                 triple(i)(input))
         assertEquals(
           triple(i)(output).asInstanceOf[String].toUpperCase(Locale.US),
           f.toString())
@@ -2467,8 +2461,7 @@ object FormatterSuite extends tests.Suite {
     locally {
       val f = new Formatter()
       assertThrows[MissingFormatWidthException](
-        f.format("%010000000000000000000000000000000001d",
-                 new BigInteger("1")))
+        f.format("%010000000000000000000000000000000001d", new BigInteger("1")))
     }
   }
 
@@ -3527,10 +3520,9 @@ object FormatterSuite extends tests.Suite {
       Array(new BigDecimal("9999999999999999999999999999999999999999999"),
             "%#.3f",
             "9999999999999999999999999999999999999999999.000"),
-      Array(
-        new BigDecimal("9999999999999999999999999999999999999999999"),
-        "%#,5f",
-        "9,999,999,999,999,999,999,999,999,999,999,999,999,999,999.000000"),
+      Array(new BigDecimal("9999999999999999999999999999999999999999999"),
+            "%#,5f",
+            "9,999,999,999,999,999,999,999,999,999,999,999,999,999,999.000000"),
       Array(new BigDecimal("9999999999999999999999999999999999999999999"),
             "%- #(12.0f",
             " 9999999999999999999999999999999999999999999."),
@@ -3622,8 +3614,7 @@ object FormatterSuite extends tests.Suite {
       locally {
         val f = new Formatter(Locale.JAPAN)
         assertThrows[FormatFlagsConversionMismatchException](
-          f.format(flagsConversionMismatches(i),
-                   null.asInstanceOf[BigDecimal]))
+          f.format(flagsConversionMismatches(i), null.asInstanceOf[BigDecimal]))
       }
     }
 

@@ -78,9 +78,7 @@ object ReflectiveProxy {
       Op.Call(defnTy, Val.Local(method.name, Type.Ptr), callParams, Next.None))
   }
 
-  private def genRetValBox(callName: Local,
-                           defnRetTy: Type,
-                           proxyRetTy: Type) =
+  private def genRetValBox(callName: Local, defnRetTy: Type, proxyRetTy: Type) =
     Type.box.get(defnRetTy) match {
       case Some(boxTy) =>
         Inst.Let(Op.Box(boxTy, Val.Local(callName, defnRetTy)))
