@@ -11,7 +11,7 @@ scalaVersion := "2.11.11"
 
 lazy val launchServer = taskKey[Unit]("Setting up a server for tests")
 lazy val launchTcpEchoServer =
-  taskKey[Unit]("Setting up echo server on port 5832")
+  taskKey[Unit]("Setting up a TCP echo server")
 lazy val launchSilentServer =
   taskKey[Unit]("Setting up a non responding server")
 

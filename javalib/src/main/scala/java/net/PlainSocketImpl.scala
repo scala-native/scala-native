@@ -414,10 +414,13 @@ private[net] class PlainSocketImpl extends SocketImpl {
     val optValue = nativeValueFromOption(optID)
 
     var opt: Ptr[Byte] = stackalloc[Byte]
-    var len =
-      if (optID == SocketOptions.SO_LINGER) sizeof[socket.linger].toUInt
-      else if (optID == SocketOptions.SO_TIMEOUT) sizeof[timeval].toUInt
-      else sizeof[CInt].toUInt
+    var len = if (optID == SocketOptions.SO_LINGER) {
+      sizeof[socket.linger].toUInt
+    } else if (optID == SocketOptions.SO_TIMEOUT) {
+      sizeof[timeval].toUInt
+    } else {
+      sizeof[CInt].toUInt
+    }
 
     if (optID == SocketOptions.TCP_NODELAY || optID == SocketOptions.SO_KEEPALIVE
         || optID == SocketOptions.SO_REUSEADDR

@@ -42,7 +42,7 @@ class Socket protected (private[net] val impl: SocketImpl,
       connected = true
     } catch {
       case e: IOException => {
-        close
+        close()
         throw e
       }
     }
@@ -51,7 +51,7 @@ class Socket protected (private[net] val impl: SocketImpl,
   def this() =
     this(new PlainSocketImpl(), null, -1, null, 0, true, false)
 
-  def this(impl: SocketImpl) =
+  protected[net] def this(impl: SocketImpl) =
     this(impl, null, -1, null, 0, true, false)
 
   def this(address: InetAddress, port: Int) =
@@ -101,7 +101,7 @@ class Socket protected (private[net] val impl: SocketImpl,
 
   // def this(proxy: Proxy)
 
-  private def checkClosedAndCreate: Unit = {
+  private def checkClosedAndCreate(): Unit = {
     if (closed) {
       throw new SocketException("Socket is closed")
     }
@@ -127,7 +127,7 @@ class Socket protected (private[net] val impl: SocketImpl,
         bindpoint.asInstanceOf[InetSocketAddress]
       }
 
-    checkClosedAndCreate
+    checkClosedAndCreate()
 
     this.localAddr = addr.getAddress
     impl.bind(this.localAddr, addr.getPort)
@@ -167,48 +167,48 @@ class Socket protected (private[net] val impl: SocketImpl,
   }
 
   def getKeepAlive: Boolean = {
-    checkClosedAndCreate
+    checkClosedAndCreate()
     impl.getOption(SocketOptions.SO_KEEPALIVE).asInstanceOf[Boolean]
   }
 
   def getOOBInline: Boolean = {
-    checkClosedAndCreate
+    checkClosedAndCreate()
     impl.getOption(SocketOptions.SO_OOBINLINE).asInstanceOf[Boolean]
   }
 
   def getReceiveBufferSize: Int = {
-    checkClosedAndCreate
+    checkClosedAndCreate()
     impl.getOption(SocketOptions.SO_RCVBUF).asInstanceOf[Int]
   }
 
   def getReuseAddress: Boolean = {
-    checkClosedAndCreate
+    checkClosedAndCreate()
     impl.getOption(SocketOptions.SO_REUSEADDR).asInstanceOf[Boolean]
   }
 
   def getSendBufferSize: Int = {
-    checkClosedAndCreate
+    checkClosedAndCreate()
     impl.getOption(SocketOptions.SO_SNDBUF).asInstanceOf[Int]
   }
 
   def getSoLinger: Int = {
-    checkClosedAndCreate
+    checkClosedAndCreate()
     val value = impl.getOption(SocketOptions.SO_LINGER).asInstanceOf[Int]
     if (value == 0) -1 else value
   }
 
   def getSoTimeout: Int = {
-    checkClosedAndCreate
+    checkClosedAndCreate()
     impl.getOption(SocketOptions.SO_TIMEOUT).asInstanceOf[Int]
   }
 
   def getTcpNoDelay: Boolean = {
-    checkClosedAndCreate
+    checkClosedAndCreate()
     impl.getOption(SocketOptions.TCP_NODELAY).asInstanceOf[Boolean]
   }
 
   def getTrafficClass: Int = {
-    checkClosedAndCreate
+    checkClosedAndCreate()
     impl.getOption(SocketOptions.IP_TOS).asInstanceOf[Int]
   }
 
@@ -221,32 +221,32 @@ class Socket protected (private[net] val impl: SocketImpl,
   // def sendUrgentData(data: Int): Unit
 
   def setKeepAlive(on: Boolean): Unit = {
-    checkClosedAndCreate
+    checkClosedAndCreate()
     impl.setOption(SocketOptions.SO_KEEPALIVE, Boolean.box(on))
   }
 
   def setOOBInline(on: Boolean): Unit = {
-    checkClosedAndCreate
+    checkClosedAndCreate()
     impl.setOption(SocketOptions.SO_OOBINLINE, Boolean.box(on))
   }
 
   def setReceiveBufferSize(size: Int): Unit = {
-    checkClosedAndCreate
+    checkClosedAndCreate()
     impl.setOption(SocketOptions.SO_RCVBUF, Integer.valueOf(size))
   }
 
   def setReuseAddress(on: Boolean): Unit = {
-    checkClosedAndCreate
+    checkClosedAndCreate()
     impl.setOption(SocketOptions.SO_REUSEADDR, Boolean.box(on))
   }
 
   def setSendBufferSize(size: Int): Unit = {
-    checkClosedAndCreate
+    checkClosedAndCreate()
     impl.setOption(SocketOptions.SO_SNDBUF, Integer.valueOf(size))
   }
 
   def setSoLinger(on: Boolean, linger: Int): Unit = {
-    checkClosedAndCreate
+    checkClosedAndCreate()
     if (on && linger < 0) {
       throw new IllegalArgumentException("Linger is negative")
     }
@@ -261,17 +261,17 @@ class Socket protected (private[net] val impl: SocketImpl,
   }
 
   def setSoTimeout(timeout: Int): Unit = {
-    checkClosedAndCreate
+    checkClosedAndCreate()
     impl.setOption(SocketOptions.SO_TIMEOUT, Integer.valueOf(timeout))
   }
 
   def setTcpNoDelay(on: Boolean): Unit = {
-    checkClosedAndCreate
+    checkClosedAndCreate()
     impl.setOption(SocketOptions.TCP_NODELAY, Boolean.box(on))
   }
 
   def setTrafficClass(tc: Int): Unit = {
-    checkClosedAndCreate
+    checkClosedAndCreate()
     impl.setOption(SocketOptions.IP_TOS, Integer.valueOf(tc))
   }
 
@@ -285,7 +285,7 @@ class Socket protected (private[net] val impl: SocketImpl,
     outputShutdown = true
   }
 
-  override def close: Unit = {
+  override def close(): Unit = {
     closed = true
     impl.close
   }
