@@ -776,7 +776,7 @@ trait NirGenExpr { self: NirGenPhase =>
       case Type.Long | Type.ULong               => Val.Long(num.toLong)
       case Type.Float                           => Val.Float(num.toFloat)
       case Type.Double                          => Val.Double(num.toDouble)
-      case _                                    => util.unsupported(s"num = $num, ty = ${ty.show}")
+      case _                                    => unsupported(s"num = $num, ty = ${ty.show}")
     }
 
     def genSimpleOp(app: Apply, args: List[Tree], code: Int): Val = {
@@ -1543,19 +1543,18 @@ trait NirGenExpr { self: NirGenPhase =>
       }
     }
 
-    def genApplyExternAccessor(sym: Symbol, argsp: Seq[Tree]): Val =
-      ??? /*{
+    def genApplyExternAccessor(sym: Symbol, argsp: Seq[Tree]): Val = {
       argsp match {
         case Seq() =>
           val ty   = genMethodSig(sym).ret
           val name = genMethodName(sym)
-          val elem = focus withValue Val.Global(name, Type.Ptr)
-          elem withOp Op.Load(ty, elem.value)
+          val elem = Val.Global(name, Type.Ptr)
+          buf.load(ty, elem)
 
         case Seq(value) =>
           unsupported(argsp)
       }
-    }*/
+    }
 
     def genApplyMethod(sym: Symbol,
                       statically: Boolean,
