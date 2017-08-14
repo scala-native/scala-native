@@ -137,7 +137,6 @@ trait NirGenExpr { self: NirGenPhase =>
         local
       }
 
-      // Actual code gen.
       buf.label(local, params)
       genExpr(label.rhs)
     }
@@ -152,7 +151,6 @@ trait NirGenExpr { self: NirGenPhase =>
           local
       }
 
-      // Actual code gen.
       buf.label(local, params)
       if (isStatic) {
         genExpr(label.rhs)
@@ -186,7 +184,6 @@ trait NirGenExpr { self: NirGenPhase =>
       val thenn, elsen, mergen = fresh()
       val mergev               = Val.Local(fresh(), retty)
 
-      // Actual code generation.
       val cond = genExpr(condp)
       buf.branch(cond, Next(thenn), Next(elsen))
       locally {
@@ -237,7 +234,7 @@ trait NirGenExpr { self: NirGenPhase =>
       val merge       = fresh()
       val mergev      = Val.Local(fresh(), retty)
 
-      // Actual code generation for the switch.
+      // Generate code for the switch and its cases.
       val scrut = genExpr(scrutp)
       buf.switch(scrut, defaultnext, casenexts)
       caseps.foreach {
@@ -958,7 +955,6 @@ trait NirGenExpr { self: NirGenPhase =>
         val thenn, elsen, mergen = fresh()
         val mergev               = Val.Local(fresh(), nir.Type.Bool)
 
-        // Actual code generation.
         val isnull = buf.comp(Comp.Ieq, Rt.Object, left, Val.Null)
         buf.branch(isnull, Next(thenn), Next(elsen))
         locally {
