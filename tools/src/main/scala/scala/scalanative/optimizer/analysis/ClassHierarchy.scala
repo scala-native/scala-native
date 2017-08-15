@@ -26,9 +26,7 @@ object ClassHierarchy {
     val fields  = mutable.UnrolledBuffer.empty[Field]
   }
 
-  final class Struct(val attrs: Attrs,
-                     val name: Global,
-                     val tys: Seq[nir.Type])
+  final class Struct(val attrs: Attrs, val name: Global, val tys: Seq[nir.Type])
       extends Scope
 
   final class Trait(val attrs: Attrs,

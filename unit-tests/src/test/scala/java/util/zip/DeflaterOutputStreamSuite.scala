@@ -30,8 +30,8 @@ object DeflaterOutputStreamSuite extends tests.Suite {
   test("DeflaterOutputStream can deflate more bytes than its buffer size") {
     val bos = new ByteArrayOutputStream
     val out = new DeflaterOutputStream(bos, new Deflater, 16)
-    val expected = Array(120, -100, 99, 100, 28, 5, -93, 96, 20, -116, 84, 0,
-      0, 6, 120, 4, 1)
+    val expected = Array(120, -100, 99, 100, 28, 5, -93, 96, 20, -116, 84, 0, 0,
+      6, 120, 4, 1)
     val bytes = Array.fill[Byte](1024)(1)
     out.write(bytes)
     out.close()
@@ -48,8 +48,8 @@ object DeflaterOutputStreamSuite extends tests.Suite {
     val bos = new ByteArrayOutputStream
     val out =
       new DeflaterOutputStream(bos, new Deflater, 16, /* syncFlush = */ true)
-    val expected = Array(120, -100, 99, 100, 28, 5, -93, 96, 20, -116, 84, 0,
-      0, 6, 120, 4, 1)
+    val expected = Array(120, -100, 99, 100, 28, 5, -93, 96, 20, -116, 84, 0, 0,
+      6, 120, 4, 1)
     val bytes = Array.fill[Byte](1024)(1)
     out.write(bytes)
     out.flush()

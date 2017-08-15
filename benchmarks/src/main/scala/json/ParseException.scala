@@ -24,10 +24,7 @@ package json;
 /**
  * An unchecked exception to indicate that an input does not qualify as valid JSON.
  */
-final class ParseException(message: String,
-                           offset: Int,
-                           line: Int,
-                           column: Int)
+final class ParseException(message: String, offset: Int, line: Int, column: Int)
     extends RuntimeException(message + " at " + line + ":" + column) {
 
   /**

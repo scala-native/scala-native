@@ -86,9 +86,7 @@ object BoxingLowering extends PassCompanion {
   }.toMap
 
   val UnboxTo: Map[Type, (Global, String)] = Seq(
-    ("java.lang.Boolean",
-     BoxesRunTime,
-     "unboxToBoolean_java.lang.Object_bool"),
+    ("java.lang.Boolean", BoxesRunTime, "unboxToBoolean_java.lang.Object_bool"),
     ("java.lang.Character", BoxesRunTime, "unboxToChar_java.lang.Object_char"),
     ("scala.scalanative.native.UByte",
      RuntimeBoxes,

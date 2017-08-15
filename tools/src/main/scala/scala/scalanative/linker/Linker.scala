@@ -18,8 +18,7 @@ sealed trait Linker {
 object Linker {
 
   /** Create a new linker given tools configuration. */
-  def apply(config: tools.Config,
-            reporter: Reporter = Reporter.empty): Linker =
+  def apply(config: tools.Config, reporter: Reporter = Reporter.empty): Linker =
     new Impl(config, reporter)
 
   private final class Impl(config: tools.Config, reporter: Reporter)
