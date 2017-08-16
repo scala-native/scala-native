@@ -9,7 +9,7 @@ import nir._
 /** Translates high-level structural-type method calls into
  *  low-level dispatch based on a dynmethodtable
  */
-class DynmethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
+class DynmethodLowering(implicit top: Top) extends Pass {
   import DynmethodLowering._
 
   private val rtiType =
@@ -76,7 +76,7 @@ class DynmethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
 
 object DynmethodLowering extends PassCompanion {
   def apply(config: tools.Config, top: Top): Pass =
-    new DynmethodLowering()(top.fresh, top)
+    new DynmethodLowering()(top)
 
   val dyndispatchName = Global.Top("scalanative_dyndispatch")
   val dyndispatchSig =

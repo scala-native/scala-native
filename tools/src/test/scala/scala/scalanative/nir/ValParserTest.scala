@@ -99,7 +99,7 @@ class ValParserTest extends FlatSpec with Matchers {
   }
 
   it should "parse `Val.Local`" in {
-    val local: Val                = Val.Local(Local("test", 1), noTpe)
+    val local: Val                = Val.Local(Local(1), noTpe)
     val Parsed.Success(result, _) = parser.Val.Local.parse(local.show)
     result should be(local)
   }

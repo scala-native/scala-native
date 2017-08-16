@@ -253,7 +253,8 @@ final class BinarySerializer(buffer: ByteBuffer) {
   }
 
   private def putLocal(local: Local): Unit = {
-    putString(local.scope); putInt(local.id)
+    putString("") // scope
+    putInt(local.id)
   }
 
   private def putNexts(nexts: Seq[Next]) = putSeq(nexts)(putNext)

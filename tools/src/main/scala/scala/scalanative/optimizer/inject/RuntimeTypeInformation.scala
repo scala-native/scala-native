@@ -8,7 +8,7 @@ import analysis.ClassHierarchyExtractors._
 import nir._
 
 /** Generates type instances for all classes, modules, traits and structs. */
-class RuntimeTypeInformation(implicit top: Top, fresh: Fresh) extends Inject {
+class RuntimeTypeInformation(implicit top: Top) extends Inject {
   override def apply(buf: Buffer[Defn]) = {
     def inject(node: Scope) = {
       buf += Defn.Const(Attrs.None,
@@ -24,5 +24,5 @@ class RuntimeTypeInformation(implicit top: Top, fresh: Fresh) extends Inject {
 
 object RuntimeTypeInformation extends InjectCompanion {
   override def apply(config: tools.Config, top: Top) =
-    new RuntimeTypeInformation()(top, top.fresh)
+    new RuntimeTypeInformation()(top)
 }

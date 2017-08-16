@@ -20,7 +20,7 @@ import nir._, Inst.Let
  *
  *      %baz = iadd[i32] 1i32, 2i32
  */
-class CopyPropagation(implicit fresh: Fresh) extends Pass {
+class CopyPropagation extends Pass {
   private var locals: mutable.Map[Local, Val] = _
 
   private def collect(insts: Seq[Inst]): mutable.Map[Local, Val] = {
@@ -68,5 +68,5 @@ class CopyPropagation(implicit fresh: Fresh) extends Pass {
 
 object CopyPropagation extends PassCompanion {
   override def apply(config: tools.Config, top: Top) =
-    new CopyPropagation()(top.fresh)
+    new CopyPropagation()
 }

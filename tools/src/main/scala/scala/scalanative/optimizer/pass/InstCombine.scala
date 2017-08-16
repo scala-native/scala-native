@@ -13,7 +13,7 @@ import Comp._
 import scala.None
 import scala.collection.mutable
 
-class InstCombine()(implicit fresh: Fresh) extends Pass {
+class InstCombine extends Pass {
   import InstCombine._
   import ConstantFolding._
 
@@ -326,7 +326,7 @@ class InstCombine()(implicit fresh: Fresh) extends Pass {
 
 object InstCombine extends PassCompanion {
   override def apply(config: tools.Config, top: Top) =
-    new InstCombine()(top.fresh)
+    new InstCombine
 
   class DefOp(val defops: mutable.HashMap[Local, Op]) {
 
