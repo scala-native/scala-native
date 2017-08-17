@@ -41,8 +41,8 @@ class DynmethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
           label(labelEndNull.name)
         }
 
-        def throwIfNull(local: Val.Local) =
-          throwIfCond(Op.Comp(Comp.Ieq, Type.Ptr, local, Val.Null))
+        def throwIfNull(value: Val) =
+          throwIfCond(Op.Comp(Comp.Ieq, Type.Ptr, value, Val.Null))
 
         val methodIndex =
           top.dyns.zipWithIndex.find(_._1 == signature).get._2

@@ -10,7 +10,7 @@ import nir._
 import Inst._
 import scala.collection.mutable
 
-class DeadBlockElimination extends Pass {
+class DeadBlockElimination(implicit fresh: Fresh) extends Pass {
   override def onInsts(insts: Seq[Inst]) = {
     val cfg = ControlFlow.Graph(insts)
     val buf = new nir.Buffer
@@ -26,5 +26,5 @@ class DeadBlockElimination extends Pass {
 
 object DeadBlockElimination extends PassCompanion {
   override def apply(config: tools.Config, top: Top) =
-    new DeadBlockElimination()
+    new DeadBlockElimination()(top.fresh)
 }

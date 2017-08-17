@@ -32,7 +32,7 @@ class IsLowering(implicit fresh: Fresh, top: Top) extends Pass {
         jump(Next.Label(contL, Seq(res1)))
         // otherwise, do an actual instance check
         label(elseL)
-        val res2 = is(buf, ty, obj)
+        val res2 = genIs(buf, ty, obj)
         jump(Next.Label(contL, Seq(res2)))
         // merge the result of two branches
         label(contL, Seq(result))
@@ -45,7 +45,7 @@ class IsLowering(implicit fresh: Fresh, top: Top) extends Pass {
     buf.toSeq
   }
 
-  private def is(buf: nir.Buffer, ty: Type, obj: Val): Val.Local = {
+  private def genIs(buf: Buffer, ty: Type, obj: Val): Val = {
     import buf._
 
     ty match {
