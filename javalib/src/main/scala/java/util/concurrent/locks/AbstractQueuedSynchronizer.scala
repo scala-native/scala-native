@@ -6,7 +6,7 @@ package concurrent.locks
 import java.util
 import java.util.concurrent.TimeUnit
 
-import scala.scalanative.runtime.{CAtomicInt, Unsafe}
+import scala.scalanative.runtime.{CAtomicInt, CAtomicRef}
 
 abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchronizer
   with java.io.Serializable { self =>
@@ -14,10 +14,10 @@ abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchronizer
   import AbstractQueuedSynchronizer._
 
   //volatile
-  private var head: Node = _
+  private var head: CAtomicRef[Node] = CAtomicRef[Node]()
 
   //volatile
-  private var tail: Node = _
+  private var tail: CAtomicRef[Node] = CAtomicRef[Node]()
 
   private val state: CAtomicInt = CAtomicInt()
 
