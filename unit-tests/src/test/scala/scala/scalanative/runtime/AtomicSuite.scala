@@ -17,12 +17,9 @@ object AtomicSuite extends tests.Suite {
 
     val b = 3.asInstanceOf[Byte]
 
-    assertNot(
-      a.compareAndSwapStrong(1.asInstanceOf[Byte], 3.asInstanceOf[Byte])._1)
+    assertNot(a.compareAndSwapStrong(1.asInstanceOf[Byte], 3.asInstanceOf[Byte])._1)
 
-    assert(
-      a.compareAndSwapStrong(0.asInstanceOf[Byte], 3.asInstanceOf[Byte])
-        ._2 == 3.asInstanceOf[Byte])
+    assert(a.compareAndSwapStrong(0.asInstanceOf[Byte], 3.asInstanceOf[Byte])._2 == 3.asInstanceOf[Byte])
 
     a.free()
   }
@@ -33,12 +30,9 @@ object AtomicSuite extends tests.Suite {
 
     val b = 3.asInstanceOf[Byte]
 
-    assertNot(
-      a.compareAndSwapWeak(1.asInstanceOf[Byte], 3.asInstanceOf[Byte])._1)
+    assertNot(a.compareAndSwapWeak(1.asInstanceOf[Byte], 3.asInstanceOf[Byte])._1)
 
-    assert(
-      a.compareAndSwapWeak(0.asInstanceOf[Byte], 3.asInstanceOf[Byte])._2 == 3
-        .asInstanceOf[Byte])
+    assert(a.compareAndSwapWeak(0.asInstanceOf[Byte], 3.asInstanceOf[Byte])._2 == 3.asInstanceOf[Byte])
 
     a.free()
   }
@@ -184,13 +178,9 @@ object AtomicSuite extends tests.Suite {
 
     val b = 3.asInstanceOf[CShort]
 
-    assertNot(
-      a.compareAndSwapStrong(1.asInstanceOf[CShort], 3.asInstanceOf[CShort])
-        ._1)
+    assertNot(a.compareAndSwapStrong(1.asInstanceOf[CShort], 3.asInstanceOf[CShort])._1)
 
-    assert(
-      a.compareAndSwapStrong(0.asInstanceOf[CShort], 3.asInstanceOf[CShort])
-        ._2 == 3.asInstanceOf[CShort])
+    assert(a.compareAndSwapStrong(0.asInstanceOf[CShort], 3.asInstanceOf[CShort])._2 == 3.asInstanceOf[CShort])
 
     a.free()
   }
@@ -201,12 +191,9 @@ object AtomicSuite extends tests.Suite {
 
     val b = 3.asInstanceOf[CShort]
 
-    assertNot(
-      a.compareAndSwapWeak(1.asInstanceOf[CShort], 3.asInstanceOf[CShort])._1)
+    assertNot(a.compareAndSwapWeak(1.asInstanceOf[CShort], 3.asInstanceOf[CShort])._1)
 
-    assert(
-      a.compareAndSwapWeak(0.asInstanceOf[CShort], 3.asInstanceOf[CShort])
-        ._2 == 3.asInstanceOf[CShort])
+    assert(a.compareAndSwapWeak(0.asInstanceOf[CShort], 3.asInstanceOf[CShort])._2 == 3.asInstanceOf[CShort])
 
     a.free()
   }
@@ -513,12 +500,9 @@ object AtomicSuite extends tests.Suite {
 
     val b = 3.asInstanceOf[CLong]
 
-    assertNot(
-      a.compareAndSwapStrong(1.asInstanceOf[CLong], 3.asInstanceOf[CLong])._1)
+    assertNot(a.compareAndSwapStrong(1.asInstanceOf[CLong], 3.asInstanceOf[CLong])._1)
 
-    assert(
-      a.compareAndSwapStrong(0.asInstanceOf[CLong], 3.asInstanceOf[CLong])
-        ._2 == 3.asInstanceOf[CLong])
+    assert(a.compareAndSwapStrong(0.asInstanceOf[CLong], 3.asInstanceOf[CLong])._2 == 3.asInstanceOf[CLong])
 
     a.free()
   }
@@ -529,12 +513,9 @@ object AtomicSuite extends tests.Suite {
 
     val b = 3.asInstanceOf[CLong]
 
-    assertNot(
-      a.compareAndSwapWeak(1.asInstanceOf[CLong], 3.asInstanceOf[CLong])._1)
+    assertNot(a.compareAndSwapWeak(1.asInstanceOf[CLong], 3.asInstanceOf[CLong])._1)
 
-    assert(
-      a.compareAndSwapWeak(0.asInstanceOf[CLong], 3.asInstanceOf[CLong])
-        ._2 == 3.asInstanceOf[CLong])
+    assert(a.compareAndSwapWeak(0.asInstanceOf[CLong], 3.asInstanceOf[CLong])._2 == 3.asInstanceOf[CLong])
 
     a.free()
   }
@@ -680,12 +661,9 @@ object AtomicSuite extends tests.Suite {
 
     val b = 3.asInstanceOf[Byte]
 
-    assertNot(
-      a.compareAndSwapStrong(1.asInstanceOf[Byte], 3.asInstanceOf[Byte])._1)
+    assertNot(a.compareAndSwapStrong(1.asInstanceOf[Byte], 3.asInstanceOf[Byte])._1)
 
-    assert(
-      a.compareAndSwapStrong(0.asInstanceOf[Byte], 3.asInstanceOf[Byte])
-        ._2 == 3.asInstanceOf[Byte])
+    assert(a.compareAndSwapStrong(0.asInstanceOf[Byte], 3.asInstanceOf[Byte])._2 == 3.asInstanceOf[Byte])
 
     a.free()
   }
@@ -696,12 +674,9 @@ object AtomicSuite extends tests.Suite {
 
     val b = 3.asInstanceOf[Byte]
 
-    assertNot(
-      a.compareAndSwapWeak(1.asInstanceOf[Byte], 3.asInstanceOf[Byte])._1)
+    assertNot(a.compareAndSwapWeak(1.asInstanceOf[Byte], 3.asInstanceOf[Byte])._1)
 
-    assert(
-      a.compareAndSwapWeak(0.asInstanceOf[Byte], 3.asInstanceOf[Byte])._2 == 3
-        .asInstanceOf[Byte])
+    assert(a.compareAndSwapWeak(0.asInstanceOf[Byte], 3.asInstanceOf[Byte])._2 == 3.asInstanceOf[Byte])
 
     a.free()
   }
@@ -847,15 +822,9 @@ object AtomicSuite extends tests.Suite {
 
     val b = 3.asInstanceOf[CUnsignedShort]
 
-    assertNot(
-      a.compareAndSwapStrong(1.asInstanceOf[CUnsignedShort],
-                              3.asInstanceOf[CUnsignedShort])
-        ._1)
+    assertNot(a.compareAndSwapStrong(1.asInstanceOf[CUnsignedShort], 3.asInstanceOf[CUnsignedShort])._1)
 
-    assert(
-      a.compareAndSwapStrong(0.asInstanceOf[CUnsignedShort],
-                              3.asInstanceOf[CUnsignedShort])
-        ._2 == 3.asInstanceOf[CUnsignedShort])
+    assert(a.compareAndSwapStrong(0.asInstanceOf[CUnsignedShort], 3.asInstanceOf[CUnsignedShort])._2 == 3.asInstanceOf[CUnsignedShort])
 
     a.free()
   }
@@ -866,15 +835,9 @@ object AtomicSuite extends tests.Suite {
 
     val b = 3.asInstanceOf[CUnsignedShort]
 
-    assertNot(
-      a.compareAndSwapWeak(1.asInstanceOf[CUnsignedShort],
-                            3.asInstanceOf[CUnsignedShort])
-        ._1)
+    assertNot(a.compareAndSwapWeak(1.asInstanceOf[CUnsignedShort], 3.asInstanceOf[CUnsignedShort])._1)
 
-    assert(
-      a.compareAndSwapWeak(0.asInstanceOf[CUnsignedShort],
-                            3.asInstanceOf[CUnsignedShort])
-        ._2 == 3.asInstanceOf[CUnsignedShort])
+    assert(a.compareAndSwapWeak(0.asInstanceOf[CUnsignedShort], 3.asInstanceOf[CUnsignedShort])._2 == 3.asInstanceOf[CUnsignedShort])
 
     a.free()
   }
@@ -1020,15 +983,9 @@ object AtomicSuite extends tests.Suite {
 
     val b = 3.asInstanceOf[CUnsignedInt]
 
-    assertNot(
-      a.compareAndSwapStrong(1.asInstanceOf[CUnsignedInt],
-                              3.asInstanceOf[CUnsignedInt])
-        ._1)
+    assertNot(a.compareAndSwapStrong(1.asInstanceOf[CUnsignedInt], 3.asInstanceOf[CUnsignedInt])._1)
 
-    assert(
-      a.compareAndSwapStrong(0.asInstanceOf[CUnsignedInt],
-                              3.asInstanceOf[CUnsignedInt])
-        ._2 == 3.asInstanceOf[CUnsignedInt])
+    assert(a.compareAndSwapStrong(0.asInstanceOf[CUnsignedInt], 3.asInstanceOf[CUnsignedInt])._2 == 3.asInstanceOf[CUnsignedInt])
 
     a.free()
   }
@@ -1039,15 +996,9 @@ object AtomicSuite extends tests.Suite {
 
     val b = 3.asInstanceOf[CUnsignedInt]
 
-    assertNot(
-      a.compareAndSwapWeak(1.asInstanceOf[CUnsignedInt],
-                            3.asInstanceOf[CUnsignedInt])
-        ._1)
+    assertNot(a.compareAndSwapWeak(1.asInstanceOf[CUnsignedInt], 3.asInstanceOf[CUnsignedInt])._1)
 
-    assert(
-      a.compareAndSwapWeak(0.asInstanceOf[CUnsignedInt],
-                            3.asInstanceOf[CUnsignedInt])
-        ._2 == 3.asInstanceOf[CUnsignedInt])
+    assert(a.compareAndSwapWeak(0.asInstanceOf[CUnsignedInt], 3.asInstanceOf[CUnsignedInt])._2 == 3.asInstanceOf[CUnsignedInt])
 
     a.free()
   }
@@ -1193,15 +1144,9 @@ object AtomicSuite extends tests.Suite {
 
     val b = 3.asInstanceOf[CUnsignedLong]
 
-    assertNot(
-      a.compareAndSwapStrong(1.asInstanceOf[CUnsignedLong],
-                              3.asInstanceOf[CUnsignedLong])
-        ._1)
+    assertNot(a.compareAndSwapStrong(1.asInstanceOf[CUnsignedLong], 3.asInstanceOf[CUnsignedLong])._1)
 
-    assert(
-      a.compareAndSwapStrong(0.asInstanceOf[CUnsignedLong],
-                              3.asInstanceOf[CUnsignedLong])
-        ._2 == 3.asInstanceOf[CUnsignedLong])
+    assert(a.compareAndSwapStrong(0.asInstanceOf[CUnsignedLong], 3.asInstanceOf[CUnsignedLong])._2 == 3.asInstanceOf[CUnsignedLong])
 
     a.free()
   }
@@ -1212,15 +1157,9 @@ object AtomicSuite extends tests.Suite {
 
     val b = 3.asInstanceOf[CUnsignedLong]
 
-    assertNot(
-      a.compareAndSwapWeak(1.asInstanceOf[CUnsignedLong],
-                            3.asInstanceOf[CUnsignedLong])
-        ._1)
+    assertNot(a.compareAndSwapWeak(1.asInstanceOf[CUnsignedLong], 3.asInstanceOf[CUnsignedLong])._1)
 
-    assert(
-      a.compareAndSwapWeak(0.asInstanceOf[CUnsignedLong],
-                            3.asInstanceOf[CUnsignedLong])
-        ._2 == 3.asInstanceOf[CUnsignedLong])
+    assert(a.compareAndSwapWeak(0.asInstanceOf[CUnsignedLong], 3.asInstanceOf[CUnsignedLong])._2 == 3.asInstanceOf[CUnsignedLong])
 
     a.free()
   }
@@ -1366,12 +1305,9 @@ object AtomicSuite extends tests.Suite {
 
     val b = 3.asInstanceOf[CSize]
 
-    assertNot(
-      a.compareAndSwapStrong(1.asInstanceOf[CSize], 3.asInstanceOf[CSize])._1)
+    assertNot(a.compareAndSwapStrong(1.asInstanceOf[CSize], 3.asInstanceOf[CSize])._1)
 
-    assert(
-      a.compareAndSwapStrong(0.asInstanceOf[CSize], 3.asInstanceOf[CSize])
-        ._2 == 3.asInstanceOf[CSize])
+    assert(a.compareAndSwapStrong(0.asInstanceOf[CSize], 3.asInstanceOf[CSize])._2 == 3.asInstanceOf[CSize])
 
     a.free()
   }
@@ -1382,12 +1318,9 @@ object AtomicSuite extends tests.Suite {
 
     val b = 3.asInstanceOf[CSize]
 
-    assertNot(
-      a.compareAndSwapWeak(1.asInstanceOf[CSize], 3.asInstanceOf[CSize])._1)
+    assertNot(a.compareAndSwapWeak(1.asInstanceOf[CSize], 3.asInstanceOf[CSize])._1)
 
-    assert(
-      a.compareAndSwapWeak(0.asInstanceOf[CSize], 3.asInstanceOf[CSize])
-        ._2 == 3.asInstanceOf[CSize])
+    assert(a.compareAndSwapWeak(0.asInstanceOf[CSize], 3.asInstanceOf[CSize])._2 == 3.asInstanceOf[CSize])
 
     a.free()
   }
@@ -1535,13 +1468,9 @@ object AtomicSuite extends tests.Suite {
 
     val b = 'b'.asInstanceOf[CChar]
 
-    assertNot(
-      a.compareAndSwapStrong('b'.asInstanceOf[CChar], 'b'.asInstanceOf[CChar])
-        ._1)
+    assertNot(a.compareAndSwapStrong('b'.asInstanceOf[CChar], 'b'.asInstanceOf[CChar])._1)
 
-    assert(
-      a.compareAndSwapStrong('a'.asInstanceOf[CChar], 'b'.asInstanceOf[CChar])
-        ._2 == 'b'.asInstanceOf[CChar])
+    assert(a.compareAndSwapStrong('a'.asInstanceOf[CChar], 'b'.asInstanceOf[CChar])._2 == 'b'.asInstanceOf[CChar])
 
     a.free()
   }
@@ -1552,13 +1481,9 @@ object AtomicSuite extends tests.Suite {
 
     val b = 'b'.asInstanceOf[CChar]
 
-    assertNot(
-      a.compareAndSwapWeak('b'.asInstanceOf[CChar], 'b'.asInstanceOf[CChar])
-        ._1)
+    assertNot(a.compareAndSwapWeak('b'.asInstanceOf[CChar], 'b'.asInstanceOf[CChar])._1)
 
-    assert(
-      a.compareAndSwapWeak('a'.asInstanceOf[CChar], 'b'.asInstanceOf[CChar])
-        ._2 == 'b'.asInstanceOf[CChar])
+    assert(a.compareAndSwapWeak('a'.asInstanceOf[CChar], 'b'.asInstanceOf[CChar])._2 == 'b'.asInstanceOf[CChar])
 
     a.free()
   }
@@ -1569,15 +1494,9 @@ object AtomicSuite extends tests.Suite {
 
     val b = 'b'.asInstanceOf[CUnsignedChar]
 
-    assertNot(
-      a.compareAndSwapStrong('b'.asInstanceOf[CUnsignedChar],
-                              'b'.asInstanceOf[CUnsignedChar])
-        ._1)
+    assertNot(a.compareAndSwapStrong('b'.asInstanceOf[CUnsignedChar], 'b'.asInstanceOf[CUnsignedChar])._1)
 
-    assert(
-      a.compareAndSwapStrong('a'.asInstanceOf[CUnsignedChar],
-                              'b'.asInstanceOf[CUnsignedChar])
-        ._2 == 'b'.asInstanceOf[CUnsignedChar])
+    assert(a.compareAndSwapStrong('a'.asInstanceOf[CUnsignedChar], 'b'.asInstanceOf[CUnsignedChar])._2 == 'b'.asInstanceOf[CUnsignedChar])
 
     a.free()
   }
@@ -1588,15 +1507,9 @@ object AtomicSuite extends tests.Suite {
 
     val b = 'b'.asInstanceOf[CUnsignedChar]
 
-    assertNot(
-      a.compareAndSwapWeak('b'.asInstanceOf[CUnsignedChar],
-                            'b'.asInstanceOf[CUnsignedChar])
-        ._1)
+    assertNot(a.compareAndSwapWeak('b'.asInstanceOf[CUnsignedChar], 'b'.asInstanceOf[CUnsignedChar])._1)
 
-    assert(
-      a.compareAndSwapWeak('a'.asInstanceOf[CUnsignedChar],
-                            'b'.asInstanceOf[CUnsignedChar])
-        ._2 == 'b'.asInstanceOf[CUnsignedChar])
+    assert(a.compareAndSwapWeak('a'.asInstanceOf[CUnsignedChar], 'b'.asInstanceOf[CUnsignedChar])._2 == 'b'.asInstanceOf[CUnsignedChar])
 
     a.free()
   }
@@ -1607,9 +1520,9 @@ object AtomicSuite extends tests.Suite {
 
     var i = 0
 
-    while (i < 10) {
-      assert(a.compareAndSwapStrong(i, i + 1)._2 == i + 1)
-      i += 1
+    while(i < 10) {
+        assert(a.compareAndSwapStrong(i, i + 1)._2 == i + 1)
+        i += 1
     }
 
     assert(a.load() == 10)

@@ -7,6 +7,7 @@ import java.util
 import java.util.concurrent.TimeUnit
 
 import scala.scalanative.runtime.{CAtomicInt, CAtomicRef}
+import scala.scalanative.native.CInt
 
 abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchronizer
   with java.io.Serializable { self =>
@@ -32,7 +33,7 @@ abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchronizer
       val t: Node = tail
       if(t == null) {
         if(compareAndSetHead(new Node()))
-          tail = head
+          tail.store(head)
       } else {
         node.prev = t
         if(compareAndSetTail(t, node)) {
@@ -61,7 +62,7 @@ abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchronizer
   }
 
   private def setHead(node: Node): Unit = {
-    head = node
+    head.store(node)
     node.thread = null
     node.prev = null
   }
@@ -826,7 +827,7 @@ abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchronizer
       var w: Node = firstWaiter
       while(w != null) {
         if(w.waitStatus == Node.CONDITION)
-          true
+          return true
         w = w.nextWaiter
       }
       false
@@ -873,9 +874,9 @@ abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchronizer
 
   }
 
-  private final def compareAndSetHead(update: Node): Boolean = Unsafe.compareAndSwapObject(head, head, update)
+  private final def compareAndSetHead(update: Node): Boolean = head.compareAndSwapStrong(head, update)
 
-  private final def compareAndSetTail(expect: Node, update: Node) = Unsafe.compareAndSwapObject(tail, expect, update)
+  private final def compareAndSetTail(expect: Node, update: Node) = tail.compareAndSwapStrong(expect, update)
 }
 
 object AbstractQueuedSynchronizer {
@@ -886,7 +887,9 @@ object AbstractQueuedSynchronizer {
 
   // Atomic implicits
   implicit def toInt(i: CAtomicInt): Int = i.load()
-  implicit def CAS[T](v: (Boolean, T)): Boolean = v._1
+  implicit def cas(v: (Boolean, CInt)): Boolean = v._1
+  implicit def cas[T <: AnyRef](v: (Boolean, T)): Boolean = v._1
+  implicit def load[T <: AnyRef](a: CAtomicRef[T]): T = a.load().asInstanceOf[T]
 
   private def shouldParkAfterFailedAcquire(p: Node, node: Node): Boolean = {
     var pred: Node = p
@@ -908,7 +911,7 @@ object AbstractQueuedSynchronizer {
 
   private final def compareAndSetWaitStatus(node: Node, expect: Int, update: Int): Boolean = node.waitStatus.compareAndSwapStrong(expect, update)
 
-  private final def compareAndSetNext(node: Node, expect: Node, update: Node) = Unsafe.compareAndSwapObject(node.next, expect, update)
+  private final def compareAndSetNext(node: Node, expect: Node, update: Node) = node.next.compareAndSwapStrong(expect, update)
 
   final class Node {
 

@@ -113,6 +113,10 @@ object CAtomic${C} extends CAtomic {
 
   def apply() = new CAtomic${C}()
 
+  implicit def cas(v: (Boolean, ${T})): Boolean = v._1
+
+  implicit def load(a: CAtomic${C}): ${T} = a.load()
+
 }
 
 % end
@@ -124,6 +128,10 @@ object CAtomicRef extends CAtomic {
   def apply[T <: AnyRef](initValue: T) = new CAtomicRef[T](initValue)
 
   def apply[T <: AnyRef]() = new CAtomicRef[T]()
+
+  implicit def cas[T <: AnyRef](v: (Boolean, T)): Boolean = v._1
+
+  implicit def load[T <: AnyRef](a: CAtomicRef[T]): T = a.load().asInstanceOf[T]
 
 }
 
