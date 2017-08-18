@@ -6,7 +6,7 @@ import org.scalatest._
 
 class NextParserTest extends FlatSpec with Matchers {
 
-  val local = Local("test", 1)
+  val local = Local(1)
 
   it should "parse `Next.Unwind`" in {
     val fail: Next                = Next.Unwind(local)

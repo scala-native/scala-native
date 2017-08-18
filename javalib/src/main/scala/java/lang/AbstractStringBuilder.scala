@@ -290,7 +290,9 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     shared = false
   }
 
-  final def replace0(start: scala.Int, _end: scala.Int, string: String): Unit = {
+  final def replace0(start: scala.Int,
+                     _end: scala.Int,
+                     string: String): Unit = {
     var end = _end
     if (start >= 0) {
       if (end > count) {

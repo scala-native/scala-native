@@ -10,8 +10,7 @@ import scalanative.native._
 import scalanative.posix.{grp, pwd, unistd, utime}
 import scalanative.posix.sys.stat
 
-final class NativePosixFileAttributeView(path: Path,
-                                         options: Array[LinkOption])
+final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
     extends PosixFileAttributeView
     with FileOwnerAttributeView {
 

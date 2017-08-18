@@ -4,6 +4,8 @@ int scalanative_o_rdonly() { return O_RDONLY; }
 
 int scalanative_o_wronly() { return O_WRONLY; }
 
+int scalanative_o_nonblock() { return O_NONBLOCK; }
+
 int scalanative_o_rdwr() { return O_RDWR; }
 
 int scalanative_o_append() { return O_APPEND; }

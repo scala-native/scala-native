@@ -52,4 +52,6 @@ class ByteArrayOutputStream(initBufSize: Int) extends OutputStream {
     System.arraycopy(buf, 0, newBuf, 0, count)
     buf = newBuf
   }
+
+  override def close(): Unit = super.close()
 }

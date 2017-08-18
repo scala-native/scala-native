@@ -1,6 +1,6 @@
 package java.io
 
-class FilterInputStream protected (protected val in: InputStream)
+class FilterInputStream protected (protected var in: InputStream)
     extends InputStream {
 
   override def read(): Int =

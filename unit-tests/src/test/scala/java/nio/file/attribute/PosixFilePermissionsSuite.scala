@@ -13,8 +13,7 @@ object PosixFilePermissionsSuite extends tests.Suite {
   }
 
   test("Just OWNER_READ permission produces the right string: r--------") {
-    assert(
-      PosixFilePermissions.toString(Set(OWNER_READ).asJava) == "r--------")
+    assert(PosixFilePermissions.toString(Set(OWNER_READ).asJava) == "r--------")
   }
 
   test("Just OWNER_WRITE permission produces the right string: -w-------") {
@@ -28,8 +27,7 @@ object PosixFilePermissionsSuite extends tests.Suite {
   }
 
   test("Just GROUP_READ permission produces the right string: ---r-----") {
-    assert(
-      PosixFilePermissions.toString(Set(GROUP_READ).asJava) == "---r-----")
+    assert(PosixFilePermissions.toString(Set(GROUP_READ).asJava) == "---r-----")
   }
 
   test("Just GROUP_WRITE permission produces the right string: ----w----") {

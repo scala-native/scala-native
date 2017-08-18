@@ -216,7 +216,10 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
     case T.MemberGlobal => Global.Member(getGlobal, getString)
   }
 
-  private def getLocal(): Local = Local(getString, getInt)
+  private def getLocal(): Local = {
+    val scope = getString // ignored
+    Local(getInt)
+  }
 
   private def getNexts(): Seq[Next] = getSeq(getNext)
   private def getNext(): Next = getInt match {
