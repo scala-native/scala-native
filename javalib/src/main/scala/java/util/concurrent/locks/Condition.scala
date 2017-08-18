@@ -11,9 +11,9 @@ trait Condition {
 
   def awaitNanos(nanosTimeout: Long): Long
 
-  def awaitUninterruptibility(): Unit
+  def awaitUninterruptibly(): Unit
 
-  def awaitUntil(deadLine: Date)
+  def awaitUntil(deadLine: Date): Boolean
 
   def signal(): Unit
 

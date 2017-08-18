@@ -28,7 +28,8 @@ abstract class AbstractQeueuedLongSynchronizer
 
   protected final def setState(newState: Long): Unit = state.store(newState)
 
-  protected final def compareAndSetState(expect: Long, update: Long): Boolean = state.compareAndSwapStrong(expect, update)
+  protected final def compareAndSetState(expect: Long, update: Long): Boolean =
+    state.compareAndSwapStrong(expect, update)
 
   private def enq(node: Node): Node = {
     while (true) {
@@ -88,13 +89,13 @@ abstract class AbstractQeueuedLongSynchronizer
       LockSupport.unpark(s.thread)
   }
 
-  private def doRealeaseShared(): Unit = {
+  private def doReleaseShared(): Unit = {
     var continue: Boolean = false
     var break: Boolean    = false
     while (!break) {
       continue = false
       val h: Node = head
-      if (h != null && h != tail) {
+      if (h != null && h != tail.load().asInstanceOf[Node]) {
         val ws: Int = h.waitStatus
         if (ws == Node.SIGNAL) {
           if (!compareAndSetWaitStatus(h, Node.SIGNAL, 0))
@@ -103,7 +104,7 @@ abstract class AbstractQeueuedLongSynchronizer
         } else if (ws == 0 && !compareAndSetWaitStatus(h, 0, Node.PROPAGATE) && !continue)
           continue = true
       }
-      if (h == head && !continue)
+      if (h == head.load().asInstanceOf[Node] && !continue)
         break = true
     }
   }
@@ -115,7 +116,7 @@ abstract class AbstractQeueuedLongSynchronizer
     if (propagate > 0 || h == null || h.waitStatus < 0) {
       val s: Node = node.next
       if (s == null || s.isShared)
-        doRealeaseShared()
+        doReleaseShared()
     }
   }
 
@@ -134,11 +135,12 @@ abstract class AbstractQeueuedLongSynchronizer
 
     node.waitStatus.store(Node.CANCELLED)
 
-    if (node == tail && compareAndSetTail(node, pred)) {
+    if (node == tail.load().asInstanceOf[Node] && compareAndSetTail(node,
+                                                                    pred)) {
       compareAndSetNext(pred, predNext, null)
     } else {
       val ws: Int = pred.waitStatus
-      if (pred != head &&
+      if (pred != head.load().asInstanceOf[Node] &&
           (ws == Node.SIGNAL ||
           (ws <= 0 && compareAndSetWaitStatus(pred, ws, Node.SIGNAL))) &&
           pred.thread != null) {
@@ -164,7 +166,7 @@ abstract class AbstractQeueuedLongSynchronizer
       var interrupted = false
       while (true) {
         val p: Node = node.predecessor()
-        if (p == head && tryAcquire(arg)) {
+        if (p == head.load().asInstanceOf[Node] && tryAcquire(arg)) {
           setHead(node)
           p.next.store(null.asInstanceOf[Node])
           failed = false
@@ -183,22 +185,22 @@ abstract class AbstractQeueuedLongSynchronizer
   }
 
   private def doAcquireInterruptibly(arg: Long): Unit = {
-    val node: Node = addWaiter(Node.EXCLUSIVE)
+    val node: Node      = addWaiter(Node.EXCLUSIVE)
     var failed: Boolean = true
     try {
-      while(true) {
+      while (true) {
         val p: Node = node.predecessor()
-        if(p == head && tryAcquire(arg)) {
+        if (p == head.load().asInstanceOf[Node] && tryAcquire(arg)) {
           setHead(node)
           p.next.store(null.asInstanceOf[Node])
           failed = false
           return
         }
-        if(shouldParkAfterFailedAcquire(p, node) && parkAndCheckInterrupt())
+        if (shouldParkAfterFailedAcquire(p, node) && parkAndCheckInterrupt())
           throw new InterruptedException
       }
     } finally {
-      if(failed)
+      if (failed)
         cancelAcquire(node)
     }
   }
@@ -211,7 +213,7 @@ abstract class AbstractQeueuedLongSynchronizer
     try {
       while (true) {
         val p: Node = node.predecessor()
-        if (p == head && tryAcquire(arg)) {
+        if (p == head.load().asInstanceOf[Node] && tryAcquire(arg)) {
           setHead(node)
           p.next.store(null.asInstanceOf[Node])
           failed = false
@@ -243,7 +245,7 @@ abstract class AbstractQeueuedLongSynchronizer
       var interrupted = true
       while (true) {
         val p: Node = node.predecessor()
-        if (p == head) {
+        if (p == head.load().asInstanceOf[Node]) {
           val r: Long = tryAcquireShared(arg)
           if (r >= 0) {
             setHeadAndPropagate(node, r)
@@ -270,7 +272,7 @@ abstract class AbstractQeueuedLongSynchronizer
     try {
       while (true) {
         val p: Node = node.predecessor()
-        if (p == head) {
+        if (p == head.load().asInstanceOf[Node]) {
           val r: Long = tryAcquireShared(arg)
           if (r >= 0) {
             setHeadAndPropagate(node, r)
@@ -297,7 +299,7 @@ abstract class AbstractQeueuedLongSynchronizer
     try {
       while (true) {
         val p: Node = node.predecessor()
-        if (p == head) {
+        if (p == head.load().asInstanceOf[Node]) {
           val r: Long = tryAcquireShared(arg)
           if (r >= 0) {
             setHeadAndPropagate(node, r)
@@ -389,7 +391,7 @@ abstract class AbstractQeueuedLongSynchronizer
 
   final def releaseShared(arg: Long): Boolean = {
     if (tryReleaseShared(arg)) {
-      doRealeaseShared()
+      doReleaseShared()
       return true
     }
     false
@@ -415,7 +417,7 @@ abstract class AbstractQeueuedLongSynchronizer
 
     var t: Node             = tail
     var firstThread: Thread = null
-    while (t != null && t != head) {
+    while (t != null && t != head.load().asInstanceOf[Node]) {
       val tt: Thread = t.thread
       if (tt != null)
         firstThread = tt
@@ -880,9 +882,11 @@ abstract class AbstractQeueuedLongSynchronizer
 
   }
 
-  private final def compareAndSetHead(update: Node): Boolean = head.compareAndSwapStrong(head, update)
+  private final def compareAndSetHead(update: Node): Boolean =
+    head.compareAndSwapStrong(head, update)
 
-  private final def compareAndSetTail(expect: Node, update: Node): Boolean = tail.compareAndSwapStrong(expect, update)
+  private final def compareAndSetTail(expect: Node, update: Node): Boolean =
+    tail.compareAndSwapStrong(expect, update)
 }
 
 object AbstractQeueuedLongSynchronizer {
@@ -911,9 +915,11 @@ object AbstractQeueuedLongSynchronizer {
 
   private final def compareAndSetWaitStatus(node: Node,
                                             expect: Int,
-                                            update: Int): Boolean = node.waitStatus.compareAndSwapStrong(expect, update)
+                                            update: Int): Boolean =
+    node.waitStatus.compareAndSwapStrong(expect, update)
 
-  private final def compareAndSetNext(node: Node, expect: Node, update: Node) = node.next.compareAndSwapStrong(expect, update)
+  private final def compareAndSetNext(node: Node, expect: Node, update: Node) =
+    node.next.compareAndSwapStrong(expect, update)
 
   final class Node {
 

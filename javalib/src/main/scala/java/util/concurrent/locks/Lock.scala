@@ -5,13 +5,13 @@ trait Lock {
 
   def lock(): Unit
 
-  def lockInterruptibility(): Unit
+  def lockInterruptibly(): Unit
 
   def newCondition(): Condition
 
   def tryLock(): Boolean
 
-  def tryLock(time: Long, unit: TimeUnit)
+  def tryLock(time: Long, unit: TimeUnit): Boolean
 
   def unlock(): Unit
 

@@ -5,7 +5,7 @@ import java.util.concurrent.TimeUnit
 
 // Ported from Harmony
 
-class ReentrantLock extends Lock with java.io.Serializable {
+abstract class ReentrantLock extends Lock with java.io.Serializable {
 
   import ReentrantLock._
 
@@ -13,12 +13,12 @@ class ReentrantLock extends Lock with java.io.Serializable {
 
   def this(fair: Boolean) = {
     this()
-    if(fair) sync = new ReentrantLock.FairSync()
+    if (fair) sync = new ReentrantLock.FairSync()
   }
 
   def lock(): Unit = sync.lock()
 
-  override def lockInterruptibly(): Unit = sync.acquireInterruptibly(1)
+  def lockInterruptibly(): Unit = sync.acquireInterruptibly(1)
 
   override def tryLock(): Boolean = sync.nonfairTryAcquire(1)
 
@@ -45,28 +45,30 @@ class ReentrantLock extends Lock with java.io.Serializable {
 
   final def getQueueLength: Int = sync.getQueueLength
 
-  protected def getQeueuedThreads: java.util.Collection[Thread] = sync.getQueuedThreads
+  protected def getQeueuedThreads: java.util.Collection[Thread] =
+    sync.getQueuedThreads
 
   def hasWaiters(condition: Condition): Boolean = {
-    if(condition == null)
+    if (condition == null)
       throw new NullPointerException()
-    if(!condition.isInstanceOf[Sync#ConditionObject])
+    if (!condition.isInstanceOf[Sync#ConditionObject])
       throw new IllegalArgumentException("not owner")
     sync.hasWaiters(condition.asInstanceOf[Sync#ConditionObject])
   }
 
   def getWaitQueueLength(condition: Condition) = {
-    if(condition == null)
+    if (condition == null)
       throw new NullPointerException()
-    if(!condition.isInstanceOf[Sync#ConditionObject])
+    if (!condition.isInstanceOf[Sync#ConditionObject])
       throw new IllegalArgumentException("not owner")
     sync.getWaitQueueLength(condition.asInstanceOf[Sync#ConditionObject])
   }
 
-  protected def getWaitingThreads(condition: Condition): java.util.Collection[Thread] = {
-    if(condition == null)
+  protected def getWaitingThreads(
+      condition: Condition): java.util.Collection[Thread] = {
+    if (condition == null)
       throw new NullPointerException()
-    if(!condition.isInstanceOf[Sync#ConditionObject])
+    if (!condition.isInstanceOf[Sync#ConditionObject])
       throw new IllegalArgumentException("not owner")
     sync.getWaitingThreads(condition.asInstanceOf[Sync#ConditionObject])
   }
@@ -74,7 +76,7 @@ class ReentrantLock extends Lock with java.io.Serializable {
   override def toString: String = {
     val o: Thread = sync.getOwner
     val s: String = {
-      if(o == null) "[Unlocked]"
+      if (o == null) "[Unlocked]"
       else "[Locked by thread " + o.getName + "]"
     }
 
@@ -93,16 +95,15 @@ object ReentrantLock {
 
     final def nonfairTryAcquire(acquires: Int): Boolean = {
       val current: Thread = Thread.currentThread()
-      val c: Int = getState
-      if(c == 0) {
-        if(compareAndSetState(0, acquires)) {
+      val c: Int          = getState
+      if (c == 0) {
+        if (compareAndSetState(0, acquires)) {
           setExclusiveOwnerThread(current)
           return true
         }
-      }
-      else if(current == getExclusiveOwnerThread) {
+      } else if (current == getExclusiveOwnerThread) {
         val nextc = c + acquires
-        if(nextc < 0) throw new Error("Maximum lock count exceeded")
+        if (nextc < 0) throw new Error("Maximum lock count exceeded")
         setState(nextc)
         return true
       }
@@ -111,10 +112,10 @@ object ReentrantLock {
 
     override protected final def tryRelease(releases: Int): Boolean = {
       val c: Int = getState - releases
-      if(Thread.currentThread() != getExclusiveOwnerThread)
+      if (Thread.currentThread() != getExclusiveOwnerThread)
         throw new IllegalMonitorStateException()
       var free: Boolean = false
-      if(c == 0) {
+      if (c == 0) {
         free = true
         setExclusiveOwnerThread(null)
       }
@@ -122,14 +123,15 @@ object ReentrantLock {
       free
     }
 
-    override protected[locks] final def isHeldExclusively: Boolean = getExclusiveOwnerThread == Thread.currentThread()
+    override protected[locks] final def isHeldExclusively: Boolean =
+      getExclusiveOwnerThread == Thread.currentThread()
 
     final def newCondition(): ConditionObject = new ConditionObject()
 
     final def getOwner: Thread =
-      if(getState == 0) null else getExclusiveOwnerThread
+      if (getState == 0) null else getExclusiveOwnerThread
 
-    final def getHoldCount: Int = if(isHeldExclusively()) getState else 0
+    final def getHoldCount: Int = if (isHeldExclusively()) getState else 0
 
     final def isLocked: Boolean = getState != 0
 
@@ -149,13 +151,14 @@ object ReentrantLock {
   final class NonfairSync extends Sync {
 
     def lock(): Unit = {
-      if(compareAndSetState(0, 1))
+      if (compareAndSetState(0, 1))
         setExclusiveOwnerThread(Thread.currentThread())
       else
         acquire(1)
     }
 
-    override protected def tryAcquire(acquires: Int): Boolean = nonfairTryAcquire(acquires)
+    override protected def tryAcquire(acquires: Int): Boolean =
+      nonfairTryAcquire(acquires)
 
   }
 
@@ -171,22 +174,21 @@ object ReentrantLock {
 
     override protected def tryAcquire(acquires: Int): Boolean = {
       val current: Thread = Thread.currentThread()
-      val c: Int = getState
-      if(c == 0) {
-        if(!hasQueuedPredecessors &&
-          compareAndSetState(0, acquires)) {
+      val c: Int          = getState
+      if (c == 0) {
+        if (!hasQueuedPredecessors &&
+            compareAndSetState(0, acquires)) {
           setExclusiveOwnerThread(current)
           return true
         }
-      }
-      else if(current == getExclusiveOwnerThread) {
+      } else if (current == getExclusiveOwnerThread) {
         val nextc: Int = c + acquires
-        if(nextc < 0)
+        if (nextc < 0)
           throw new Error("Maximum lock count exceeded")
         setState(nextc)
         return true
       }
-        false
+      false
     }
 
   }

@@ -3,7 +3,6 @@ package runtime
 
 import scala.scalanative.native._
 import scala.scalanative.runtime.Atomic._
-import scala.reflect.{ClassTag, classTag}
 
 abstract class CAtomic {
 
@@ -103,7 +102,7 @@ class CAtomic${C}(default: ${T} = ${default}) extends CAtomic {
 
   override def toString: String = load().toString
 
-  override def equals(that: Any) = that match {
+  override def equals(that: Any): Boolean = that match {
     case o: CAtomic${C} => o.load() == load()
     case o: ${T} => load() == o
     case _ => false
@@ -121,20 +120,17 @@ object CAtomic${C} extends CAtomic {
 
 % end
 
-class CAtomicRef[T <: AnyRef: ClassTag](default: T = 0L.asInstanceOf[T]) extends CAtomicLong(default.asInstanceOf[CLong]) {
+class CAtomicRef[T <: AnyRef](default: T = 0L.asInstanceOf[T]) extends CAtomicLong(default.asInstanceOf[Long]) {}
 
-  override def toString: String = load().toString
+object CAtomicRef extends CAtomic {
 
-}
+  def apply[T <: AnyRef](initValue: T) = new CAtomicRef[T](initValue)
 
-object CAtomicRef extends CAtomicLong {
-
-  def apply[T <: AnyRef: ClassTag](initValue: T) = new CAtomicRef[T](initValue)
-
-  def apply[T <: AnyRef: ClassTag]() = new CAtomicRef[T]()
+  def apply[T <: AnyRef]() = new CAtomicRef[T]()
 
 }
 
+// Helper object, can be imported for ease of use
 object CAtomicsImplicits {
 
   implicit def toLong[T <: AnyRef](r: T): CLong = r.asInstanceOf[CLong]
