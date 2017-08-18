@@ -6,8 +6,9 @@ package concurrent.locks
 import java.util
 import java.util.concurrent.TimeUnit
 
+import scala.scalanative.runtime.CAtomicsImplicits._
 import scala.scalanative.runtime.{CAtomicInt, CAtomicRef}
-import scala.scalanative.native.CInt
+import scala.scalanative.native.{CInt, CLong}
 
 abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchronizer
   with java.io.Serializable { self =>
@@ -15,10 +16,10 @@ abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchronizer
   import AbstractQueuedSynchronizer._
 
   //volatile
-  private var head: CAtomicRef[Node] = CAtomicRef[Node]()
+  private val head: CAtomicRef[Node] = CAtomicRef[Node]()
 
   //volatile
-  private var tail: CAtomicRef[Node] = CAtomicRef[Node]()
+  private val tail: CAtomicRef[Node] = CAtomicRef[Node]()
 
   private val state: CAtomicInt = CAtomicInt()
 
@@ -35,9 +36,9 @@ abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchronizer
         if(compareAndSetHead(new Node()))
           tail.store(head)
       } else {
-        node.prev = t
+        node.prev.store(t)
         if(compareAndSetTail(t, node)) {
-          t.next = node
+          t.next.store(node)
           t
         }
       }
@@ -51,9 +52,9 @@ abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchronizer
 
     val pred: Node = tail
     if(pred != null) {
-      node.prev = pred
+      node.prev.store(pred)
       if(compareAndSetTail(pred, node)) {
-        pred.next = node
+        pred.next.store(node)
         return node
       }
     }
@@ -63,8 +64,8 @@ abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchronizer
 
   private def setHead(node: Node): Unit = {
     head.store(node)
-    node.thread = null
-    node.prev = null
+    node.thread.store(null.asInstanceOf[Thread])
+    node.prev.store(null.asInstanceOf[Node])
   }
 
   private def unparkSuccessor(node: Node): Unit = {
@@ -121,12 +122,12 @@ abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchronizer
   private def cancelAcquire(node: Node): Unit = {
     if(node == null)
       return
-    node.thread = null
+    node.thread.store(null.asInstanceOf[Thread])
 
     var pred: Node = node.prev
     while(pred.waitStatus > 0)
       pred = pred.prev
-      node.prev = pred
+      node.prev.store(pred)
 
     val predNext: Node = pred.next
 
@@ -147,7 +148,7 @@ abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchronizer
         unparkSuccessor(node)
       }
 
-      node.next = node
+      node.next.store(node)
     }
   }
 
@@ -164,7 +165,7 @@ abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchronizer
         val p: Node = node.predecessor()
         if(p == head && tryAcquire(arg)) {
           setHead(node)
-          p.next = null
+          p.next.store(null.asInstanceOf[Node])
           failed = false
           return interrupted
         }
@@ -188,7 +189,7 @@ abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchronizer
         val p: Node = node.predecessor()
         if(p == head && tryAcquire(arg)) {
           setHead(node)
-          p.next = null // help GC
+          p.next.store(null.asInstanceOf[Node]) // help GC)
           failed = false
           return
         }
@@ -211,7 +212,7 @@ abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchronizer
         val p: Node = node.predecessor()
         if(p == head && tryAcquire(arg)) {
           setHead(node)
-          p.next = null
+          p.next.store(null.asInstanceOf[Node])
           failed = false
           return true
         }
@@ -245,7 +246,7 @@ abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchronizer
           val r: Int = tryAcquireShared(arg)
           if(r >= 0) {
             setHeadAndPropagate(node, r)
-            p.next = null
+            p.next.store(null.asInstanceOf[Node])
             if(interrupted)
               selfInterrupt()
             failed = false
@@ -272,7 +273,7 @@ abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchronizer
           val r: Int = tryAcquireShared(arg)
           if (r >= 0) {
             setHeadAndPropagate(node, r)
-            p.next = null // help GC
+            p.next.store(null.asInstanceOf[Node]) // help GC)
             failed = false
             return
           }
@@ -299,7 +300,7 @@ abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchronizer
           val r: Int = tryAcquireShared(arg)
           if(r >= 0) {
             setHeadAndPropagate(node, r)
-            p.next = null
+            p.next.store(null.asInstanceOf[Node])
             failed = false
             return true
           }
@@ -876,7 +877,7 @@ abstract class AbstractQueuedSynchronizer extends AbstractOwnableSynchronizer
 
   private final def compareAndSetHead(update: Node): Boolean = head.compareAndSwapStrong(head, update)
 
-  private final def compareAndSetTail(expect: Node, update: Node) = tail.compareAndSwapStrong(expect, update)
+  private final def compareAndSetTail(expect: Node, update: Node): Boolean = tail.compareAndSwapStrong(expect, update)
 }
 
 object AbstractQueuedSynchronizer {
@@ -885,12 +886,6 @@ object AbstractQueuedSynchronizer {
 
   final val spinForTimeoutThreshold: Long = 1000L
 
-  // Atomic implicits
-  implicit def toInt(i: CAtomicInt): Int = i.load()
-  implicit def cas(v: (Boolean, CInt)): Boolean = v._1
-  implicit def cas[T <: AnyRef](v: (Boolean, T)): Boolean = v._1
-  implicit def load[T <: AnyRef](a: CAtomicRef[T]): T = a.load().asInstanceOf[T]
-
   private def shouldParkAfterFailedAcquire(p: Node, node: Node): Boolean = {
     var pred: Node = p
     val ws: Int = pred.waitStatus
@@ -898,9 +893,9 @@ object AbstractQueuedSynchronizer {
     if(ws > 0) {
       do {
         pred = pred.prev
-        node.prev = pred
+        node.prev.store(pred)
       } while(pred.waitStatus > 0)
-      pred.next = node
+      pred.next.store(node)
     } else {
       compareAndSetWaitStatus(pred, ws, Node.SIGNAL)
     }
@@ -920,26 +915,26 @@ object AbstractQueuedSynchronizer {
     var waitStatus: CAtomicInt = CAtomicInt()
 
     //volatile
-    var prev: Node = _
+    var prev: CAtomicRef[Node] = CAtomicRef[Node]
 
     //volatile
-    var next: Node = _
+    var next: CAtomicRef[Node] = CAtomicRef[Node]
 
     //volatile
-    var thread: Thread = _
+    var thread: CAtomicRef[Thread] = CAtomicRef[Thread]
 
     var nextWaiter: Node = _
 
     def this(thread: Thread, mode: Node) = {
       this()
       this.nextWaiter = mode
-      this.thread = thread
+      this.thread.store(thread)
     }
 
     def this(thread: Thread, waitStatus: Int) = {
       this()
       this.waitStatus.store(waitStatus)
-      this.thread = thread
+      this.thread.store(thread)
     }
 
     def isShared: Boolean = nextWaiter == SHARED

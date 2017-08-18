@@ -6,7 +6,9 @@ package concurrent.locks
 import java.util
 import java.util.concurrent.TimeUnit
 
-import scala.scalanative.runtime.{CAtomicInt, CAtomicLong, Unsafe}
+import scala.scalanative.runtime.CAtomicsImplicits._
+import scala.scalanative.runtime.{CAtomicInt, CAtomicLong, CAtomicRef}
+import scala.scalanative.native.{CInt, CLong}
 
 abstract class AbstractQeueuedLongSynchronizer
     extends AbstractOwnableSynchronizer
@@ -14,11 +16,11 @@ abstract class AbstractQeueuedLongSynchronizer
 
   import AbstractQeueuedLongSynchronizer._
 
-  //volatile transient
-  private var head: Node = _
+  //volatile
+  private val head: CAtomicRef[Node] = CAtomicRef[Node]()
 
-  //volatile transient
-  private var tail: Node = _
+  //volatile
+  private val tail: CAtomicRef[Node] = CAtomicRef[Node]()
 
   private val state: CAtomicLong = CAtomicLong()
 
@@ -33,11 +35,11 @@ abstract class AbstractQeueuedLongSynchronizer
       val t: Node = tail
       if (t == null) {
         if (compareAndSetHead(new Node()))
-          tail = head
+          tail.store(head)
       } else {
-        node.prev = t
+        node.next.store(t)
         if (compareAndSetTail(t, node)) {
-          t.next = node
+          t.next.store(node)
           t
         }
       }
@@ -51,9 +53,9 @@ abstract class AbstractQeueuedLongSynchronizer
 
     val pred: Node = tail
     if (pred != null) {
-      node.prev = pred
+      node.next.store(pred)
       if (compareAndSetTail(pred, node)) {
-        pred.next = node
+        pred.next.store(node)
         node
       }
     }
@@ -62,9 +64,9 @@ abstract class AbstractQeueuedLongSynchronizer
   }
 
   private def setHead(node: Node): Unit = {
-    head = node
-    node.thread = null
-    node.prev = null
+    head.store(node)
+    node.thread.store(null.asInstanceOf[Thread])
+    node.next.store(null.asInstanceOf[Node])
   }
 
   private def unparkSuccessor(node: Node): Unit = {
@@ -120,12 +122,12 @@ abstract class AbstractQeueuedLongSynchronizer
   private def cancelAcquire(node: Node): Unit = {
     if (node == null)
       return
-    node.thread = null
+    node.thread.store(null.asInstanceOf[Thread])
 
     var pred: Node = node.prev
     while (pred.waitStatus > 0) {
       pred = pred.prev
-      node.prev = pred
+      node.next.store(pred)
     }
 
     val predNext: Node = pred.next
@@ -147,7 +149,7 @@ abstract class AbstractQeueuedLongSynchronizer
         unparkSuccessor(node)
       }
 
-      node.next = node
+      node.next.store(node)
     }
   }
 
@@ -164,7 +166,7 @@ abstract class AbstractQeueuedLongSynchronizer
         val p: Node = node.predecessor()
         if (p == head && tryAcquire(arg)) {
           setHead(node)
-          p.next = null
+          p.next.store(null.asInstanceOf[Node])
           failed = false
           return interrupted
         }
@@ -188,7 +190,7 @@ abstract class AbstractQeueuedLongSynchronizer
         val p: Node = node.predecessor()
         if(p == head && tryAcquire(arg)) {
           setHead(node)
-          p.next = null
+          p.next.store(null.asInstanceOf[Node])
           failed = false
           return
         }
@@ -211,7 +213,7 @@ abstract class AbstractQeueuedLongSynchronizer
         val p: Node = node.predecessor()
         if (p == head && tryAcquire(arg)) {
           setHead(node)
-          p.next = null
+          p.next.store(null.asInstanceOf[Node])
           failed = false
           return true
         }
@@ -245,7 +247,7 @@ abstract class AbstractQeueuedLongSynchronizer
           val r: Long = tryAcquireShared(arg)
           if (r >= 0) {
             setHeadAndPropagate(node, r)
-            p.next = null
+            p.next.store(null.asInstanceOf[Node])
             if (interrupted)
               selfInterrupt()
             failed = false
@@ -272,7 +274,7 @@ abstract class AbstractQeueuedLongSynchronizer
           val r: Long = tryAcquireShared(arg)
           if (r >= 0) {
             setHeadAndPropagate(node, r)
-            p.next = null
+            p.next.store(null.asInstanceOf[Node])
             failed = false
             return
           }
@@ -299,7 +301,7 @@ abstract class AbstractQeueuedLongSynchronizer
           val r: Long = tryAcquireShared(arg)
           if (r >= 0) {
             setHeadAndPropagate(node, r)
-            p.next = null
+            p.next.store(null.asInstanceOf[Node])
             failed = false
             return true
           }
@@ -878,9 +880,9 @@ abstract class AbstractQeueuedLongSynchronizer
 
   }
 
-  private final def compareAndSetHead(update: Node) = Unsafe.compareAndSwapObject(head, head, update)
+  private final def compareAndSetHead(update: Node): Boolean = head.compareAndSwapStrong(head, update)
 
-  private final def compareAndSetTail(expect: Node, update: Node) = Unsafe.compareAndSwapObject(tail, expect, update)
+  private final def compareAndSetTail(expect: Node, update: Node): Boolean = tail.compareAndSwapStrong(expect, update)
 }
 
 object AbstractQeueuedLongSynchronizer {
@@ -889,21 +891,16 @@ object AbstractQeueuedLongSynchronizer {
 
   final val spinForTimeoutThreshold: Long = 1000L
 
-  // Atomic implicits
-  implicit def toInt(i: CAtomicInt): Int = i.load()
-  implicit def toLong(l: CAtomicLong): Long = l.load()
-  implicit def CAS[T](v: (Boolean, T)): Boolean = v._1
-
   private def shouldParkAfterFailedAcquire(pr: Node, node: Node): Boolean = {
     var pred: Node = pr
     val ws: Int    = pred.waitStatus
-    if (ws == Node.SIGNAL) true
+    if (ws == Node.SIGNAL) return true
     if (ws > 0) {
       do {
         pred = pred.prev
-        node.prev = pred
+        node.next.store(pred)
       } while (pred.waitStatus > 0)
-      pred.next = node
+      pred.next.store(node)
     } else {
       compareAndSetWaitStatus(pred, ws, Node.SIGNAL)
     }
@@ -916,7 +913,7 @@ object AbstractQeueuedLongSynchronizer {
                                             expect: Int,
                                             update: Int): Boolean = node.waitStatus.compareAndSwapStrong(expect, update)
 
-  private final def compareAndSetNext(node: Node, expect: Node, update: Node) = Unsafe.compareAndSwapObject(node.next, expect, update)
+  private final def compareAndSetNext(node: Node, expect: Node, update: Node) = node.next.compareAndSwapStrong(expect, update)
 
   final class Node {
 
@@ -925,26 +922,26 @@ object AbstractQeueuedLongSynchronizer {
     var waitStatus: CAtomicInt = CAtomicInt()
 
     //volatile
-    var prev: Node = _
+    var prev: CAtomicRef[Node] = CAtomicRef[Node]
 
     //volatile
-    var next: Node = _
+    var next: CAtomicRef[Node] = CAtomicRef[Node]
 
     //volatile
-    var thread: Thread = _
+    var thread: CAtomicRef[Thread] = CAtomicRef[Thread]
 
     var nextWaiter: Node = _
 
     def this(thread: Thread, mode: Node) = {
       this()
       this.nextWaiter = mode
-      this.thread = thread
+      this.thread.store(thread)
     }
 
     def this(thread: Thread, waitStatus: Int) = {
       this()
       this.waitStatus.store(waitStatus)
-      this.thread = thread
+      this.thread.store(thread)
     }
 
     def isShared: Boolean = nextWaiter == SHARED
