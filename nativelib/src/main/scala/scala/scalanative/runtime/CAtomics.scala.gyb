@@ -3,6 +3,7 @@ package runtime
 
 import scala.scalanative.native._
 import scala.scalanative.runtime.Atomic._
+import scala.reflect.{ClassTag, classTag}
 
 abstract class CAtomic {
 
@@ -116,24 +117,21 @@ object CAtomic${C} extends CAtomic {
 
   def apply() = new CAtomic${C}()
 
-  implicit def cas(v: (Boolean, ${T})): Boolean = v._1
-
-  implicit def load(a: CAtomic${C}): ${T} = a.load()
-
 }
 
 % end
 
-class CAtomicRef[T <: AnyRef](default: T = 0L.asInstanceOf[T]) extends CAtomicLong(default.asInstanceOf[CLong]) {}
+class CAtomicRef[T <: AnyRef: ClassTag](default: T = 0L.asInstanceOf[T]) extends CAtomicLong(default.asInstanceOf[CLong]) {
 
-object CAtomicRef extends CAtomic {
+  override def toString: String = load().toString
 
-  def apply[T <: AnyRef](initValue: T) = new CAtomicRef[T](initValue)
+}
 
-  def apply[T <: AnyRef]() = new CAtomicRef[T]()
+object CAtomicRef extends CAtomicLong {
 
-  //implicit def underlying[T <: AnyRef](a: CAtomicRef[T]): T = a.load().asInstanceOf[T]
-  //implicit def cas[T <: AnyRef](v: (Boolean, T)): Boolean = v._1
+  def apply[T <: AnyRef: ClassTag](initValue: T) = new CAtomicRef[T](initValue)
+
+  def apply[T <: AnyRef: ClassTag]() = new CAtomicRef[T]()
 
 }
 

@@ -4,6 +4,7 @@ package runtime
 
 import scala.scalanative.native._
 import scala.scalanative.runtime.Atomic._
+import scala.reflect.{ClassTag, classTag}
 
 abstract class CAtomic {
 
@@ -11,11 +12,11 @@ abstract class CAtomic {
 
 }
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 26)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 27)
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 29)
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 35)
 
 class CAtomicByte(default: Byte = 0.asInstanceOf[Byte]) extends CAtomic {
 
@@ -101,15 +102,11 @@ object CAtomicByte extends CAtomic {
 
   def apply() = new CAtomicByte()
 
-  implicit def cas(v: (Boolean, Byte)): Boolean = v._1
-
-  implicit def load(a: CAtomicByte): Byte = a.load()
-
 }
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 29)
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 35)
 
 class CAtomicShort(default: CShort = 0.asInstanceOf[CShort]) extends CAtomic {
 
@@ -195,15 +192,11 @@ object CAtomicShort extends CAtomic {
 
   def apply() = new CAtomicShort()
 
-  implicit def cas(v: (Boolean, CShort)): Boolean = v._1
-
-  implicit def load(a: CAtomicShort): CShort = a.load()
-
 }
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 29)
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 35)
 
 class CAtomicInt(default: CInt = 0) extends CAtomic {
 
@@ -289,15 +282,11 @@ object CAtomicInt extends CAtomic {
 
   def apply() = new CAtomicInt()
 
-  implicit def cas(v: (Boolean, CInt)): Boolean = v._1
-
-  implicit def load(a: CAtomicInt): CInt = a.load()
-
 }
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 29)
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 35)
 
 class CAtomicLong(default: CLong = 0.asInstanceOf[CLong]) extends CAtomic {
 
@@ -383,15 +372,11 @@ object CAtomicLong extends CAtomic {
 
   def apply() = new CAtomicLong()
 
-  implicit def cas(v: (Boolean, CLong)): Boolean = v._1
-
-  implicit def load(a: CAtomicLong): CLong = a.load()
-
 }
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 29)
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 35)
 
 class CAtomicUnsignedByte(default: Byte = 0.asInstanceOf[Byte]) extends CAtomic {
 
@@ -477,15 +462,11 @@ object CAtomicUnsignedByte extends CAtomic {
 
   def apply() = new CAtomicUnsignedByte()
 
-  implicit def cas(v: (Boolean, Byte)): Boolean = v._1
-
-  implicit def load(a: CAtomicUnsignedByte): Byte = a.load()
-
 }
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 29)
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 35)
 
 class CAtomicUnsignedShort(default: CUnsignedShort = 0.asInstanceOf[CUnsignedShort]) extends CAtomic {
 
@@ -571,15 +552,11 @@ object CAtomicUnsignedShort extends CAtomic {
 
   def apply() = new CAtomicUnsignedShort()
 
-  implicit def cas(v: (Boolean, CUnsignedShort)): Boolean = v._1
-
-  implicit def load(a: CAtomicUnsignedShort): CUnsignedShort = a.load()
-
 }
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 29)
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 35)
 
 class CAtomicUnsignedInt(default: CUnsignedInt = 0.asInstanceOf[CUnsignedInt]) extends CAtomic {
 
@@ -665,15 +642,11 @@ object CAtomicUnsignedInt extends CAtomic {
 
   def apply() = new CAtomicUnsignedInt()
 
-  implicit def cas(v: (Boolean, CUnsignedInt)): Boolean = v._1
-
-  implicit def load(a: CAtomicUnsignedInt): CUnsignedInt = a.load()
-
 }
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 29)
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 35)
 
 class CAtomicUnsignedLong(default: CUnsignedLong = 0.asInstanceOf[CUnsignedLong]) extends CAtomic {
 
@@ -759,15 +732,11 @@ object CAtomicUnsignedLong extends CAtomic {
 
   def apply() = new CAtomicUnsignedLong()
 
-  implicit def cas(v: (Boolean, CUnsignedLong)): Boolean = v._1
-
-  implicit def load(a: CAtomicUnsignedLong): CUnsignedLong = a.load()
-
 }
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 29)
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 35)
 
 class CAtomicChar(default: CChar = 'a'.asInstanceOf[CChar]) extends CAtomic {
 
@@ -853,15 +822,11 @@ object CAtomicChar extends CAtomic {
 
   def apply() = new CAtomicChar()
 
-  implicit def cas(v: (Boolean, CChar)): Boolean = v._1
-
-  implicit def load(a: CAtomicChar): CChar = a.load()
-
 }
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 29)
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 35)
 
 class CAtomicUnsignedChar(default: CUnsignedChar = 'a'.asInstanceOf[CUnsignedChar]) extends CAtomic {
 
@@ -947,15 +912,11 @@ object CAtomicUnsignedChar extends CAtomic {
 
   def apply() = new CAtomicUnsignedChar()
 
-  implicit def cas(v: (Boolean, CUnsignedChar)): Boolean = v._1
-
-  implicit def load(a: CAtomicUnsignedChar): CUnsignedChar = a.load()
-
 }
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 28)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 29)
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 34)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 35)
 
 class CAtomicCSize(default: CSize = 0.asInstanceOf[CSize]) extends CAtomic {
 
@@ -1041,24 +1002,21 @@ object CAtomicCSize extends CAtomic {
 
   def apply() = new CAtomicCSize()
 
-  implicit def cas(v: (Boolean, CSize)): Boolean = v._1
+}
 
-  implicit def load(a: CAtomicCSize): CSize = a.load()
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 123)
+
+class CAtomicRef[T <: AnyRef: ClassTag](default: T = 0L.asInstanceOf[T]) extends CAtomicLong(default.asInstanceOf[CLong]) {
+
+  override def toString: String = load().toString
 
 }
 
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 126)
+object CAtomicRef extends CAtomicLong {
 
-class CAtomicRef[T <: AnyRef](default: T = 0L.asInstanceOf[T]) extends CAtomicLong(default.asInstanceOf[CLong]) {}
+  def apply[T <: AnyRef: ClassTag](initValue: T) = new CAtomicRef[T](initValue)
 
-object CAtomicRef extends CAtomic {
-
-  def apply[T <: AnyRef](initValue: T) = new CAtomicRef[T](initValue)
-
-  def apply[T <: AnyRef]() = new CAtomicRef[T]()
-
-  //implicit def underlying[T <: AnyRef](a: CAtomicRef[T]): T = a.load().asInstanceOf[T]
-  //implicit def cas[T <: AnyRef](v: (Boolean, T)): Boolean = v._1
+  def apply[T <: AnyRef: ClassTag]() = new CAtomicRef[T]()
 
 }
 
@@ -1068,29 +1026,29 @@ object CAtomicsImplicits {
   implicit def toRef[T <: AnyRef](l: CLong): T = l.asInstanceOf[T]
   implicit def underlying[T <: AnyRef](a: CAtomicRef[T]): T = a.load().asInstanceOf[T]
   implicit def cas[T](v: (Boolean, T)): Boolean = v._1
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 147)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 145)
   implicit def underlying(a: CAtomicByte): Byte = a.load()
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 147)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 145)
   implicit def underlying(a: CAtomicShort): CShort = a.load()
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 147)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 145)
   implicit def underlying(a: CAtomicInt): CInt = a.load()
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 147)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 145)
   implicit def underlying(a: CAtomicLong): CLong = a.load()
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 147)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 145)
   implicit def underlying(a: CAtomicUnsignedByte): Byte = a.load()
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 147)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 145)
   implicit def underlying(a: CAtomicUnsignedShort): CUnsignedShort = a.load()
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 147)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 145)
   implicit def underlying(a: CAtomicUnsignedInt): CUnsignedInt = a.load()
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 147)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 145)
   implicit def underlying(a: CAtomicUnsignedLong): CUnsignedLong = a.load()
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 147)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 145)
   implicit def underlying(a: CAtomicChar): CChar = a.load()
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 147)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 145)
   implicit def underlying(a: CAtomicUnsignedChar): CUnsignedChar = a.load()
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 147)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 145)
   implicit def underlying(a: CAtomicCSize): CSize = a.load()
-// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 149)
+// ###sourceLocation(file: "/home/remi/perso/Projects/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/CAtomics.scala.gyb", line: 147)
 
 }
 
