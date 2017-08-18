@@ -133,8 +133,9 @@ abstract class AbstractQueuedSynchronizer
 
     node.waitStatus.store(Node.CANCELLED)
 
-    if (node == tail.load().asInstanceOf[Node] && compareAndSetTail(node,
-                                                                    pred)) {
+    if (node == tail
+          .load()
+          .asInstanceOf[Node] && compareAndSetTail(node, pred)) {
       compareAndSetNext(pred, predNext, null)
     } else {
       val ws: Int = pred.waitStatus
