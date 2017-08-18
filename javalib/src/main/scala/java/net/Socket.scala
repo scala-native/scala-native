@@ -61,13 +61,7 @@ class Socket protected (private[net] val impl: SocketImpl,
            port: Int,
            localAddr: InetAddress,
            localPort: Int) =
-    this(new PlainSocketImpl(),
-         address,
-         port,
-         localAddr,
-         localPort,
-         true,
-         true)
+    this(new PlainSocketImpl(), address, port, localAddr, localPort, true, true)
 
   def this(host: String, port: Int) =
     this(new PlainSocketImpl(),
