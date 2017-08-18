@@ -8,7 +8,7 @@ import analysis.ClassHierarchyExtractors._
 import nir._, Inst.Let
 
 /** Translates instance checks to range checks on type ids. */
-class IsLowering(implicit fresh: Fresh, top: Top) extends Pass {
+class IsLowering(implicit top: Top) extends Pass {
 
   override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
     val buf = new nir.Buffer
@@ -79,5 +79,5 @@ class IsLowering(implicit fresh: Fresh, top: Top) extends Pass {
 
 object IsLowering extends PassCompanion {
   override def apply(config: tools.Config, top: Top) =
-    new IsLowering()(top.fresh, top)
+    new IsLowering()(top)
 }

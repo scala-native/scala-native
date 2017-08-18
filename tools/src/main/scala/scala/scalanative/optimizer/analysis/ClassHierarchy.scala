@@ -80,7 +80,6 @@ object ClassHierarchy {
                   override val methods: mutable.UnrolledBuffer[Method],
                   override val fields: mutable.UnrolledBuffer[Field])
       extends Scope {
-    val fresh                       = nir.Fresh("tx")
     def name                        = Global.None
     def attrs                       = Attrs.None
     var tables: TraitDispatchTables = _

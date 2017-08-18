@@ -9,7 +9,7 @@ import util.unsupported
 import nir._
 
 /** Short-circuits method calls that return nothing. */
-class NothingLowering(implicit fresh: Fresh) extends Pass {
+class NothingLowering extends Pass {
   import NothingLowering._
 
   override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
@@ -52,5 +52,5 @@ object NothingLowering extends PassCompanion {
     Seq(Defn.Declare(Attrs.None, throwName, throwSig))
 
   override def apply(config: tools.Config, top: Top) =
-    new NothingLowering()(top.fresh)
+    new NothingLowering
 }

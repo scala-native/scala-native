@@ -38,12 +38,14 @@ import nir._
  *          ret %alloc
  *      }
  */
-class ModuleLowering(implicit top: Top, fresh: Fresh) extends Pass {
+class ModuleLowering(implicit top: Top) extends Pass {
   override def onDefns(defns: Seq[Defn]) = {
     val buf = mutable.UnrolledBuffer.empty[Defn]
 
     defns.foreach {
       case Defn.Module(attrs, clsName @ ClassRef(cls), parent, ifaces) =>
+        implicit val fresh = Fresh()
+
         val clsDefn = Defn.Class(attrs, clsName, parent, ifaces)
         val clsTy   = Type.Class(clsName)
 
@@ -123,5 +125,5 @@ class ModuleLowering(implicit top: Top, fresh: Fresh) extends Pass {
 
 object ModuleLowering extends PassCompanion {
   override def apply(config: tools.Config, top: Top) =
-    new ModuleLowering()(top, top.fresh)
+    new ModuleLowering()(top)
 }

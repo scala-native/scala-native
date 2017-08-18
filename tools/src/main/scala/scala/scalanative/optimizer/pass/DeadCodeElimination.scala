@@ -9,7 +9,7 @@ import analysis.ControlFlow
 import nir._
 
 /** Eliminates pure computations that are not being used, as well as unused block parameters. */
-class DeadCodeElimination(implicit top: Top, fresh: Fresh) extends Pass {
+class DeadCodeElimination(implicit top: Top) extends Pass {
   import DeadCodeElimination._
 
   override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
@@ -41,7 +41,7 @@ class DeadCodeElimination(implicit top: Top, fresh: Fresh) extends Pass {
 
 object DeadCodeElimination extends PassCompanion {
   override def apply(config: tools.Config, top: Top) =
-    new DeadCodeElimination()(top, top.fresh)
+    new DeadCodeElimination()(top)
 
   class ArgRemover(usedef: Map[Local, UseDef.Def], entryName: Local)
       extends Pass {

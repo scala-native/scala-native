@@ -11,7 +11,7 @@ import nir._, Inst.Let
  *  low-level dispatch based on vtables for classes
  *  and dispatch tables for interfaces.
  */
-class MethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
+class MethodLowering(implicit top: Top) extends Pass {
   override def onInsts(insts: Seq[Inst]) = {
     val buf = new nir.Buffer
     import buf._
@@ -56,5 +56,5 @@ class MethodLowering(implicit fresh: Fresh, top: Top) extends Pass {
 
 object MethodLowering extends PassCompanion {
   override def apply(config: tools.Config, top: Top) =
-    new MethodLowering()(top.fresh, top)
+    new MethodLowering()(top)
 }

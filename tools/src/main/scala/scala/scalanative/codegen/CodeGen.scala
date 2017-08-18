@@ -38,8 +38,9 @@ object CodeGen {
         }
         batches.par.foreach {
           case (k, defns) =>
+            val sorted = defns.sortBy(_.name.show)
             val impl =
-              new Impl(config.target, env, defns, workdir)
+              new Impl(config.target, env, sorted, workdir)
             val outpath = k + ".ll"
             val buffer  = impl.gen()
             buffer.flip
@@ -48,7 +49,8 @@ object CodeGen {
       }
 
       def release(): Unit = {
-        val impl   = new Impl(config.target, env, assembly, workdir)
+        val sorted = assembly.sortBy(_.name.show)
+        val impl   = new Impl(config.target, env, sorted, workdir)
         val buffer = impl.gen()
         buffer.flip
         workdir.write(Paths.get("out.ll"), buffer)
@@ -69,7 +71,6 @@ object CodeGen {
     var currentBlockName: Local = _
     var currentBlockSplit: Int  = _
 
-    val fresh     = new Fresh("gen")
     val deps      = mutable.Set.empty[Global]
     val generated = mutable.Set.empty[Global]
     val builder   = new ShowBuilder
@@ -80,6 +81,7 @@ object CodeGen {
       val body = builder.toString.getBytes("UTF-8")
       builder.clear
       genPrelude()
+      genConsts()
       genDeps()
       val prelude = builder.toString.getBytes("UTF-8")
       val buffer  = ByteBuffer.allocate(prelude.length + body.length)
@@ -112,34 +114,45 @@ object CodeGen {
     def touch(n: Global): Unit =
       deps += n
 
-    def lookup(n: Global): Type = {
-      touch(n)
-      env(n) match {
-        case Defn.Var(_, _, ty, _)     => ty
-        case Defn.Const(_, _, ty, _)   => ty
-        case Defn.Declare(_, _, sig)   => sig
-        case Defn.Define(_, _, sig, _) => sig
-      }
+    def lookup(n: Global): Type = n match {
+      case Global.Member(Global.Top("__const"), _) =>
+        constTy(n)
+      case _ =>
+        touch(n)
+        env(n) match {
+          case Defn.Var(_, _, ty, _)     => ty
+          case Defn.Const(_, _, ty, _)   => ty
+          case Defn.Declare(_, _, sig)   => sig
+          case Defn.Define(_, _, sig, _) => sig
+        }
     }
 
-    def genDefns(defns: Seq[Defn]): Unit =
-      defns
-        .sortBy {
-          case _: Defn.Struct  => 1
-          case _: Defn.Const   => 2
-          case _: Defn.Var     => 3
-          case _: Defn.Declare => 4
-          case _: Defn.Define  => 5
-          case _               => -1
+    def genDefns(defns: Seq[Defn]): Unit = {
+      def onDefn(defn: Defn): Unit = {
+        val nn = defn.name.normalize
+        if (!generated.contains(nn)) {
+          newline()
+          genDefn(defn)
+          generated += nn
         }
-        .foreach { defn =>
-          val nn = defn.name.normalize
-          if (!generated.contains(nn)) {
-            newline()
-            genDefn(defn)
-            generated += nn
-          }
-        }
+      }
+
+      defns.foreach { defn =>
+        if (defn.isInstanceOf[Defn.Struct]) onDefn(defn)
+      }
+      defns.foreach { defn =>
+        if (defn.isInstanceOf[Defn.Const]) onDefn(defn)
+      }
+      defns.foreach { defn =>
+        if (defn.isInstanceOf[Defn.Var]) onDefn(defn)
+      }
+      defns.foreach { defn =>
+        if (defn.isInstanceOf[Defn.Declare]) onDefn(defn)
+      }
+      defns.foreach { defn =>
+        if (defn.isInstanceOf[Defn.Define]) onDefn(defn)
+      }
+    }
 
     def genPrelude(): Unit = {
       if (target.nonEmpty) {
@@ -156,6 +169,16 @@ object CodeGen {
         "@_ZTIN11scalanative16ExceptionWrapperE = external constant { i8*, i8*, i8* }")
     }
 
+    def genConsts() =
+      constMap.toSeq.sortBy(_._2.show).foreach {
+        case (v, name) =>
+          newline()
+          str("@")
+          genGlobal(name)
+          str(" = private unnamed_addr constant ")
+          genVal(v)
+      }
+
     def genDefn(defn: Defn): Unit = defn match {
       case Defn.Struct(attrs, name, tys) =>
         genStruct(attrs, name, tys)
@@ -164,9 +187,9 @@ object CodeGen {
       case Defn.Const(attrs, name, ty, rhs) =>
         genGlobalDefn(attrs, name, isConst = true, ty, rhs)
       case Defn.Declare(attrs, name, sig) =>
-        genFunctionDefn(attrs, name, sig, Seq())
-      case Defn.Define(attrs, name, sig, blocks) =>
-        genFunctionDefn(attrs, name, sig, blocks)
+        genFunctionDefn(attrs, name, sig, Seq(), Fresh())
+      case Defn.Define(attrs, name, sig, insts) =>
+        genFunctionDefn(attrs, name, sig, insts, Fresh(insts))
       case defn =>
         unsupported(defn)
     }
@@ -203,7 +226,8 @@ object CodeGen {
     def genFunctionDefn(attrs: Attrs,
                         name: Global,
                         sig: Type,
-                        insts: Seq[Inst]): Unit = {
+                        insts: Seq[Inst],
+                        fresh: Fresh): Unit = {
       val Type.Function(argtys, retty) = sig
 
       val isDecl = insts.isEmpty
@@ -234,14 +258,14 @@ object CodeGen {
         str(" {")
         val cfg = CFG(insts)
         cfg.foreach { block =>
-          genBlock(block)(cfg)
+          genBlock(block)(cfg, fresh)
         }
         newline()
         str("}")
       }
     }
 
-    def genBlock(block: Block)(implicit cfg: CFG): Unit = {
+    def genBlock(block: Block)(implicit cfg: CFG, fresh: Fresh): Unit = {
       val Block(name, params, insts, isEntry) = block
       currentBlockName = name
       currentBlockSplit = 0
@@ -267,7 +291,8 @@ object CodeGen {
       str(currentBlockSplit)
     }
 
-    def genBlockPrologue(block: Block)(implicit cfg: CFG): Unit = {
+    def genBlockPrologue(block: Block)(implicit cfg: CFG,
+                                       fresh: Fresh): Unit = {
       val params = block.params
 
       if (block.isEntry) {
@@ -295,14 +320,14 @@ object CodeGen {
             }
         }
       } else if (block.isExceptionHandler) {
-        val exc = params match {
+        val exc = "%_" + (params match {
           case Seq()                  => fresh()
           case Seq(Val.Local(exc, _)) => exc
-        }
+        }).id
 
-        val rec, r0, r1, id, cmp = fresh().show
-        val fail, succ           = fresh().show.substring(1)
-        val w0, w1, w2           = fresh().show
+        val rec, r0, r1, id, cmp = "%_" + fresh().id
+        val fail, succ           = "_" + fresh().id
+        val w0, w1, w2           = "%_" + fresh().id
 
         def line(s: String) = { newline(); str(s) }
 
@@ -322,7 +347,7 @@ object CodeGen {
         line(s"$w0 = call i8* @__cxa_begin_catch(i8* $r0)")
         line(s"$w1 = bitcast i8* $w0 to i8**")
         line(s"$w2 = getelementptr i8*, i8** $w1, i32 1")
-        line(s"${exc.show} = load i8*, i8** $w2")
+        line(s"$exc = load i8*, i8** $w2")
         line(s"call void @__cxa_end_catch()")
       }
     }
@@ -358,7 +383,31 @@ object CodeGen {
         unsupported(ty)
     }
 
-    def genJustVal(v: Val): Unit = v match {
+    val constMap = mutable.Map.empty[Val, Global]
+    val constTy  = mutable.Map.empty[Global, Type]
+    def constFor(v: Val): Global =
+      if (constMap.contains(v)) {
+        constMap(v)
+      } else {
+        val idx = constMap.size
+        val name =
+          Global.Member(Global.Top("__const"), idx.toString)
+        constMap(v) = name
+        constTy(name) = v.ty
+        name
+      }
+    def deconstify(v: Val): Val = v match {
+      case Val.Struct(name, vals) =>
+        Val.Struct(name, vals.map(deconstify))
+      case Val.Array(elemty, vals) =>
+        Val.Array(elemty, vals.map(deconstify))
+      case Val.Const(value) =>
+        Val.Global(constFor(deconstify(value)), Type.Ptr)
+      case _ =>
+        v
+    }
+
+    def genJustVal(v: Val): Unit = deconstify(v) match {
       case Val.True      => str("true")
       case Val.False     => str("false")
       case Val.Null      => str("null")
@@ -477,13 +526,12 @@ object CodeGen {
     }
 
     def genLocal(local: Local): Unit = local match {
-      case Local(scope, id) =>
-        str(scope)
-        str(".")
+      case Local(id) =>
+        str("_")
         str(id)
     }
 
-    def genInst(inst: Inst): Unit = inst match {
+    def genInst(inst: Inst)(implicit fresh: Fresh): Unit = inst match {
       case inst: Inst.Let =>
         genLet(inst)
 
@@ -537,7 +585,7 @@ object CodeGen {
         unsupported(cf)
     }
 
-    def genLet(inst: Inst.Let): Unit = {
+    def genLet(inst: Inst.Let)(implicit fresh: Fresh): Unit = {
       def isVoid(ty: Type): Boolean =
         ty == Type.Void || ty == Type.Unit || ty == Type.Nothing
 
@@ -664,7 +712,8 @@ object CodeGen {
       }
     }
 
-    def genCall(genBind: () => Unit, call: Op.Call): Unit = call match {
+    def genCall(genBind: () => Unit, call: Op.Call)(
+        implicit fresh: Fresh): Unit = call match {
       case Op.Call(ty, Val.Global(pointee, _), args, Next.None) =>
         val Type.Function(argtys, _) = ty
 

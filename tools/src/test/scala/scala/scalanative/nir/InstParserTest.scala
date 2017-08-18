@@ -6,7 +6,7 @@ import org.scalatest._
 
 class InstParserTest extends FlatSpec with Matchers {
 
-  val local = Local("test", 1)
+  val local = Local(1)
   val next  = Next(local)
   val noTpe = Type.None
 
@@ -61,7 +61,7 @@ class InstParserTest extends FlatSpec with Matchers {
 
   it should "parse `Inst.Throw` with unwind" in {
     val throw_ : Inst =
-      Inst.Throw(Val.Zero(Type.Ptr), Next.Unwind(Local("foobar", 0)))
+      Inst.Throw(Val.Zero(Type.Ptr), Next.Unwind(Local(0)))
     val Parsed.Success(result, _) = parser.Inst.Throw.parse(throw_.show)
     result should be(throw_)
   }

@@ -171,7 +171,7 @@ trait NirGenStat { self: NirGenPhase =>
       }
 
     def genMethod(dd: DefDef): Unit = {
-      val fresh = new Fresh("src")
+      val fresh = Fresh()
       val env   = new MethodEnv(fresh)
 
       scoped(

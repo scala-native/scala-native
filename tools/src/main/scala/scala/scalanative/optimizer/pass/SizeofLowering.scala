@@ -8,8 +8,6 @@ import scala.scalanative.optimizer.analysis.MemoryLayout
 
 /** Maps sizeof computation to pointer arithmetics over null pointer. */
 class SizeofLowering(top: Top) extends Pass {
-  implicit val fresh: Fresh = top.fresh
-
   override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
     val buf = new nir.Buffer
     import buf._
