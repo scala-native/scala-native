@@ -286,7 +286,8 @@ class CAtomicLong(default: CLong = 0.asInstanceOf[CLong]) extends CAtomic {
 
   def free(): Unit = Atomic.free(atm.cast[Ptr[Byte]])
 
-  def compareAndSwapStrong(expected: CLong, desired: CLong): (Boolean, CLong) = {
+  def compareAndSwapStrong(expected: CLong,
+                           desired: CLong): (Boolean, CLong) = {
     val expectedPtr = stackalloc[CLong]
     !expectedPtr = expected
 
@@ -475,9 +476,8 @@ class CAtomicUnsignedShort(
     }
   }
 
-  def compareAndSwapWeak(
-      expected: CUnsignedShort,
-      desired: CUnsignedShort): (Boolean, CUnsignedShort) = {
+  def compareAndSwapWeak(expected: CUnsignedShort,
+                         desired: CUnsignedShort): (Boolean, CUnsignedShort) = {
     val expectedPtr = stackalloc[CUnsignedShort]
     !expectedPtr = expected
 
@@ -650,9 +650,8 @@ class CAtomicUnsignedLong(
 
   def free(): Unit = Atomic.free(atm.cast[Ptr[Byte]])
 
-  def compareAndSwapStrong(
-      expected: CUnsignedLong,
-      desired: CUnsignedLong): (Boolean, CUnsignedLong) = {
+  def compareAndSwapStrong(expected: CUnsignedLong,
+                           desired: CUnsignedLong): (Boolean, CUnsignedLong) = {
     val expectedPtr = stackalloc[CUnsignedLong]
     !expectedPtr = expected
 
@@ -744,7 +743,8 @@ class CAtomicChar(default: CChar = 'a'.asInstanceOf[CChar]) extends CAtomic {
 
   def free(): Unit = Atomic.free(atm.cast[Ptr[Byte]])
 
-  def compareAndSwapStrong(expected: CChar, desired: CChar): (Boolean, CChar) = {
+  def compareAndSwapStrong(expected: CChar,
+                           desired: CChar): (Boolean, CChar) = {
     val expectedPtr = stackalloc[CChar]
     !expectedPtr = expected
 
@@ -833,9 +833,8 @@ class CAtomicUnsignedChar(
 
   def free(): Unit = Atomic.free(atm.cast[Ptr[Byte]])
 
-  def compareAndSwapStrong(
-      expected: CUnsignedChar,
-      desired: CUnsignedChar): (Boolean, CUnsignedChar) = {
+  def compareAndSwapStrong(expected: CUnsignedChar,
+                           desired: CUnsignedChar): (Boolean, CUnsignedChar) = {
     val expectedPtr = stackalloc[CUnsignedChar]
     !expectedPtr = expected
 
@@ -927,7 +926,8 @@ class CAtomicCSize(default: CSize = 0.asInstanceOf[CSize]) extends CAtomic {
 
   def free(): Unit = Atomic.free(atm.cast[Ptr[Byte]])
 
-  def compareAndSwapStrong(expected: CSize, desired: CSize): (Boolean, CSize) = {
+  def compareAndSwapStrong(expected: CSize,
+                           desired: CSize): (Boolean, CSize) = {
     val expectedPtr = stackalloc[CSize]
     !expectedPtr = expected
 

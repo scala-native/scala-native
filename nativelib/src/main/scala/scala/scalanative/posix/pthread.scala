@@ -40,8 +40,8 @@ object pthread {
   def pthread_attr_getschedpolicy(attr: Ptr[pthread_attr_t],
                                   policy: Ptr[CInt]): CInt = extern
 
-  def pthread_attr_getscope(attr: Ptr[pthread_attr_t],
-                            scope: Ptr[CInt]): CInt = extern
+  def pthread_attr_getscope(attr: Ptr[pthread_attr_t], scope: Ptr[CInt]): CInt =
+    extern
 
   def pthread_attr_getstacksize(attr: Ptr[pthread_attr_t],
                                 stacksize: Ptr[CSize]): CInt = extern
