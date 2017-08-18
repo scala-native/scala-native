@@ -55,7 +55,6 @@ object Driver {
     pass.TraitLowering,
     pass.ClassLowering,
     pass.StringLowering,
-    pass.ConstLowering,
     pass.UnitLowering,
     pass.NothingLowering,
     pass.AllocLowering,

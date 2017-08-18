@@ -26,9 +26,8 @@ object FileOutputStreamSuite extends tests.Suite {
             Files.delete(file)
             FileVisitResult.CONTINUE
           }
-          override def postVisitDirectory(
-              dir: Path,
-              exc: IOException): FileVisitResult = {
+          override def postVisitDirectory(dir: Path,
+                                          exc: IOException): FileVisitResult = {
             Files.delete(dir)
             FileVisitResult.CONTINUE
           }

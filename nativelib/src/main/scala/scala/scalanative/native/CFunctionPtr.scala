@@ -15,8 +15,8 @@ object CFunctionPtr {
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 13)
 
-  implicit def fromFunction1[T1, R](
-      f: Function1[T1, R]): CFunctionPtr1[T1, R] = undefined
+  implicit def fromFunction1[T1, R](f: Function1[T1, R]): CFunctionPtr1[T1, R] =
+    undefined
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 13)
 
@@ -111,33 +111,22 @@ object CFunctionPtr {
                               T11,
                               T12,
                               T13,
-                              R](f: Function13[T1,
-                                               T2,
-                                               T3,
-                                               T4,
-                                               T5,
-                                               T6,
-                                               T7,
-                                               T8,
-                                               T9,
-                                               T10,
-                                               T11,
-                                               T12,
-                                               T13,
-                                               R]): CFunctionPtr13[T1,
-                                                                   T2,
-                                                                   T3,
-                                                                   T4,
-                                                                   T5,
-                                                                   T6,
-                                                                   T7,
-                                                                   T8,
-                                                                   T9,
-                                                                   T10,
-                                                                   T11,
-                                                                   T12,
-                                                                   T13,
-                                                                   R] =
+                              R](
+      f: Function13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, R])
+    : CFunctionPtr13[T1,
+                     T2,
+                     T3,
+                     T4,
+                     T5,
+                     T6,
+                     T7,
+                     T8,
+                     T9,
+                     T10,
+                     T11,
+                     T12,
+                     T13,
+                     R] =
     undefined
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 13)
@@ -717,8 +706,7 @@ final abstract class CFunctionPtr4[T1, T2, T3, T4, R] extends CFunctionPtr {
 
 // ###sourceLocation(file: "/Users/Denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CFunctionPtr.scala.gyb", line: 24)
 
-final abstract class CFunctionPtr5[T1, T2, T3, T4, T5, R]
-    extends CFunctionPtr {
+final abstract class CFunctionPtr5[T1, T2, T3, T4, T5, R] extends CFunctionPtr {
   def apply(arg1: T1, arg2: T2, arg3: T3, arg4: T4, arg5: T5)(
       implicit tag1: Tag[T1],
       tag2: Tag[T2],

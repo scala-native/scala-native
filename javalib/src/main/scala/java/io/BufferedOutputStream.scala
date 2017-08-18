@@ -1,69 +1,82 @@
 package java.io
 
+// Ported from Apache Harmony
 class BufferedOutputStream(out: OutputStream, size: Int)
-    extends FilterOutputStream(out)
-    with Flushable
-    with Closeable
-    with AutoCloseable {
+    extends FilterOutputStream(out) {
 
   if (size <= 0) throw new IllegalArgumentException("Buffer size <= 0")
 
-  def this(in: OutputStream) = this(in, 8192)
+  protected var buf: Array[Byte] = new Array[Byte](size)
+  protected var count: Int       = 0
 
-  /** The internal buffer array where the data is stored. */
-  protected[this] var buf = new Array[Byte](size)
+  def this(out: OutputStream) = this(out, 8192)
 
-  /** The number of valid bytes in the buffer. */
-  protected[this] var count = 0
+  override def flush(): Unit = {
+    flushInternal()
+    out.flush()
+  }
 
-  private[this] var closed = false
+  override def write(buffer: Array[Byte], offset: Int, length: Int): Unit = {
+    val internalBuffer = buf
 
-  override def close(): Unit = {
-    if (!closed) {
-      flush()
-      closed = true
+    if (internalBuffer != null && length >= internalBuffer.length) {
+      flushInternal()
+      out.write(buffer, offset, length)
+    } else {
+      if (buffer == null) {
+        throw new NullPointerException("Buffer is null")
+      }
+
+      if (offset < 0 || offset > buffer.length - length) {
+        throw new ArrayIndexOutOfBoundsException(
+          s"Offset out of bounds: $offset")
+      }
+
+      if (length < 0) {
+        throw new ArrayIndexOutOfBoundsException(
+          s"Length out of bounds: $length")
+      }
+
+      if (internalBuffer == null) {
+        throw new IOException("Stream is closed")
+      }
+
+      // flush the internal buffer first if we have not enough space left
+      if (length >= (internalBuffer.length - count)) {
+        flushInternal()
+      }
+
+      // the length is always less than (internalBuffer.length - count) here so arraycopy is safe
+      System.arraycopy(buffer, offset, internalBuffer, count, length)
+      count += length
     }
   }
 
-  override def write(b: Int): Unit = {
-    ensureOpen()
+  override def close(): Unit = {
+    if (buf != null) {
+      try super.close()
+      finally buf = null
+    }
+  }
 
-    if (count >= buf.length)
-      growBuf(1)
+  override def write(oneByte: Int): Unit = {
+    val internalBuffer = buf
+    if (internalBuffer == null) {
+      throw new IOException("Stream is closed")
+    }
 
-    buf(count) = b.toByte
+    if (count == internalBuffer.length) {
+      out.write(internalBuffer, 0, count)
+      count = 0
+    }
+    internalBuffer(count) = oneByte.toByte
     count += 1
   }
 
-  override def write(b: Array[Byte], off: Int, len: Int): Unit = {
-    ensureOpen()
-
-    if (off < 0 || len < 0 || len > b.length - off)
-      throw new IndexOutOfBoundsException()
-
-    if (count + len > buf.length)
-      growBuf(len)
-
-    System.arraycopy(b, off, buf, count, len)
-    count += len
-  }
-
-  override def flush(): Unit = {
-    ensureOpen()
-
-    out.write(buf)
-    buf = new Array[Byte](size)
-  }
-
-  private def growBuf(minIncrement: Int): Unit = {
-    val newSize = Math.max(count + minIncrement, buf.length * 2)
-    val newBuf  = new Array[Byte](newSize)
-    System.arraycopy(buf, 0, newBuf, 0, count)
-    buf = newBuf
-  }
-
-  private def ensureOpen(): Unit = {
-    if (closed)
-      throw new IOException("Operation on closed stream")
+  private def flushInternal() {
+    if (count > 0) {
+      out.write(buf, 0, count)
+      count = 0
+    }
   }
 }

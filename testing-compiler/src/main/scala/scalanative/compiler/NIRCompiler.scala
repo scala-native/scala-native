@@ -58,12 +58,11 @@ class NIRCompiler(outputDir: File) extends api.NIRCompiler {
    */
   private class TestReporter(override val settings: Settings)
       extends AbstractReporter {
-    override def display(pos: Position,
-                         msg: String,
-                         severity: Severity): Unit = severity match {
-      case INFO | WARNING => ()
-      case ERROR          => reportError(msg)
-    }
+    override def display(pos: Position, msg: String, severity: Severity): Unit =
+      severity match {
+        case INFO | WARNING => ()
+        case ERROR          => reportError(msg)
+      }
 
     override def displayPrompt(): Unit = ()
   }
@@ -79,8 +78,7 @@ class NIRCompiler(outputDir: File) extends api.NIRCompiler {
   /**
    * An option to add a compiler plugin
    */
-  private class CompilerPlugin(val jarPath: String,
-                               val classpath: List[String])
+  private class CompilerPlugin(val jarPath: String, val classpath: List[String])
       extends CompilerOption(
         s"-Xplugin:$jarPath" + (if (classpath.nonEmpty)
                                   classpath

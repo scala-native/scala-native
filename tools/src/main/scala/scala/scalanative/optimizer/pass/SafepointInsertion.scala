@@ -7,7 +7,7 @@ import analysis.ClassHierarchy.Top
 import nir._
 
 /** Inserts safepoint probes before every return. */
-class SafepointInsertion(implicit fresh: Fresh) extends Pass {
+class SafepointInsertion extends Pass {
   import SafepointInsertion._
 
   override def onDefns(defns: Seq[Defn]): Seq[Defn] = {
@@ -46,5 +46,5 @@ object SafepointInsertion extends PassCompanion {
   val safepointTriggerVal  = Val.Global(safepointTriggerName, Type.Ptr)
 
   override def apply(config: tools.Config, top: Top) =
-    new SafepointInsertion()(top.fresh)
+    new SafepointInsertion
 }

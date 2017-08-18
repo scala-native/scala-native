@@ -123,7 +123,6 @@ object VirtualDirectory {
         "Can't read from empty directory.")
 
     override def write(path: Path, buffer: ByteBuffer): Unit =
-      throw new UnsupportedOperationException(
-        "Can't write to empty directory.")
+      throw new UnsupportedOperationException("Can't write to empty directory.")
   }
 }

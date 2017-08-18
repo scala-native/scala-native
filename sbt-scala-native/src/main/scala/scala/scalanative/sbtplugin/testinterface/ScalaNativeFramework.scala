@@ -30,12 +30,8 @@ class ScalaNativeFramework(val framework: Framework,
         "Scala Native test frameworks do not support concurrent runs")
     }
 
-    _runner = new ScalaNativeRunner(this,
-                                    testBinary,
-                                    logger,
-                                    envVars,
-                                    args,
-                                    remoteArgs)
+    _runner =
+      new ScalaNativeRunner(this, testBinary, logger, envVars, args, remoteArgs)
     _runner
   }
 

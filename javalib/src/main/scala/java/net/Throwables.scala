@@ -23,7 +23,7 @@ class MalformedURLException(msg: String) extends IOException(msg) {
   def this() = this(null)
 }
 
-class UnknownHostException(host: String) extends IOException(host) {
+class UnknownHostException(private val host: String) extends IOException(host) {
   def this() = this(null)
 }
 
