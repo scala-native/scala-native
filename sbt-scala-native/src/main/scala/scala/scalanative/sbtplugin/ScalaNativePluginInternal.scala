@@ -379,7 +379,7 @@ object ScalaNativePluginInternal {
         librt ++ libunwind ++ linked.links
           .map(_.name) ++ garbageCollector(gc).links
       }
-      val linkopts  = links.map("-l" + _) ++ linkingOpts
+      val linkopts  = links.map("-l" + _) ++ linkingOpts ++ Seq("-lpthread")
       val targetopt = Seq("-target", target)
       val flags     = Seq("-o", outpath.abs) ++ linkopts ++ targetopt
       val opaths    = (nativelib ** "*.o").get.map(_.abs)
