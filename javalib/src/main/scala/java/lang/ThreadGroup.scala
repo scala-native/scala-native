@@ -75,8 +75,8 @@ class ThreadGroup extends UncaughtExceptionHandler {
       groupsCopy = groups.clone().asInstanceOf[util.List[ThreadGroup]]
     }
 
-    groupsCopy.toList.foldLeft(count)((c, group) =>
-      c + group.activeGroupCount())
+    groupsCopy.toList.foldLeft(count)(
+      (c, group) => c + group.activeGroupCount())
 
     count
   }

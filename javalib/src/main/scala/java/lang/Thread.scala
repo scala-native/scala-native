@@ -4,11 +4,17 @@ import java.util
 import java.lang.Thread._
 
 import scala.scalanative.runtime.NativeThread
-import scala.scalanative.native.{CFunctionPtr, CFunctionPtr1, CInt, Ptr, ULong, stackalloc}
+import scala.scalanative.native.{
+  CFunctionPtr,
+  CFunctionPtr1,
+  CInt,
+  Ptr,
+  ULong,
+  stackalloc
+}
 import scala.scalanative.posix.sys.types.{pthread_attr_t, pthread_t}
 import scala.scalanative.posix.pthread._
 import scala.scalanative.posix.sched._
-
 
 // Ported from Harmony
 
@@ -244,11 +250,13 @@ class Thread extends Runnable {
   @deprecated
   final def resume(): Unit = {
     checkAccess()
-    if(started && NativeThread.resume(underlying) != 0)
-      throw new RuntimeException("Error while trying to unpark thread " + toString)
+    if (started && NativeThread.resume(underlying) != 0)
+      throw new RuntimeException(
+        "Error while trying to unpark thread " + toString)
   }
 
-  private def toCRoutine(f: => (() => Unit)): (Ptr[scala.Byte]) => Ptr[scala.Byte] = {
+  private def toCRoutine(
+      f: => (() => Unit)): (Ptr[scala.Byte]) => Ptr[scala.Byte] = {
     def g(ptr: Ptr[scala.Byte]) = {
       f
       null.asInstanceOf[Ptr[scala.Byte]]
@@ -378,8 +386,9 @@ class Thread extends Runnable {
   @deprecated
   final def suspend(): Unit = {
     checkAccess()
-    if(started && NativeThread.suspend(underlying) != 0)
-      throw new RuntimeException("Error while trying to park thread " + toString)
+    if (started && NativeThread.suspend(underlying) != 0)
+      throw new RuntimeException(
+        "Error while trying to park thread " + toString)
   }
 
   override def toString: String = {
@@ -447,7 +456,8 @@ object Thread {
 
   def activeCount: Int = currentThread().group.activeCount()
 
-  def currentThread(): Thread = lock.synchronized(THREAD_LIST.getOrElse(pthread_self(), MainThread))
+  def currentThread(): Thread =
+    lock.synchronized(THREAD_LIST.getOrElse(pthread_self(), MainThread))
 
   def dumpStack(): Unit = {
     val stack: Array[StackTraceElement] = new Throwable().getStackTrace
