@@ -320,6 +320,17 @@ object PatternSuite extends tests.Suite {
     fail("^X{3,5}+$", "XXXXXX")
   }
 
+  test("multibyte characters") {
+    find("こんにちは", "こんにちはみなさま")
+  }
+
+  test("character class consisting of multibyte characters") {
+    pass(
+      "^[\u0000-\u00a0\u1680\u2000-\u200a\u202f\u205f\u3000\u2028\u2029]$",
+      "\u200a"
+    )
+  }
+
   test("syntax exceptions") {
     assertThrowsAnd[PatternSyntaxException](Pattern.compile("foo\\L"))(
       e => {
