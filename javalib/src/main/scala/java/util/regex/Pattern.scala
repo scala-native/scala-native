@@ -46,7 +46,7 @@ object Pattern {
       // https://github.com/google/re2/blob/2017-03-01/re2/re2.h#L548
       // regex flag MULTILINE cannot be disabled
 
-      val re2 = cre2.compile(toCString(regex), regex.size, options)
+      val re2 = cre2.compile(toCString(regex), regex.getBytes().length, options)
 
       val code = cre2.errorCode(re2)
 
