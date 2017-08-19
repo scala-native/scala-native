@@ -41,7 +41,11 @@ final class Matcher private[regex] (var _pattern: Pattern,
 
   private var lastAnchor: Option[cre2.anchor_t] = None
 
-  private[regex] var inputLength = inputSequence.length
+  private[regex] def inputLength =
+    inputSequence.length
+
+  private[regex] def inputByteLength =
+    inputSequence.toString.getBytes().length
 
   def matches(): Boolean = genMatch(0, ANCHOR_BOTH)
 
@@ -73,7 +77,7 @@ final class Matcher private[regex] (var _pattern: Pattern,
       val ok = cre2.matches(
         regex = regex,
         text = in,
-        textlen = inputLength,
+        textlen = inputByteLength,
         startpos = start,
         endpos = end,
         anchor = anchor,
@@ -97,7 +101,7 @@ final class Matcher private[regex] (var _pattern: Pattern,
     }
 
   private def genMatch(start: Int, anchor: cre2.anchor_t): Boolean = {
-    val ok = doMatch(start, inputLength, 1, anchor)
+    val ok = doMatch(start, inputByteLength, 1, anchor)
 
     if (ok) {
       hasMatch = true
@@ -203,7 +207,6 @@ final class Matcher private[regex] (var _pattern: Pattern,
   def reset(input: CharSequence): Matcher = {
     reset()
     inputSequence = input
-    inputLength = input.length
     this
   }
 
