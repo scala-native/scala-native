@@ -22,7 +22,6 @@ void init() {
 }
 
 int get_max_priority() {
-
 	if(!initialized) init();
 	return sched_get_priority_max(PTHREAD_DEFAULT_POLICY);
 }

@@ -120,8 +120,7 @@ object ThreadLocal {
             // We should just let exceptions bubble out and tank
             // the thread creation
 
-            //TODO
-            //table(i + 1) = key.childValue(fromParent.table(i + 1))
+            table(i + 1) = key.childValue(fromParent.table(i + 1))
           } else {
             table(i) = TOMBSTONE
             table(i + 1) = null

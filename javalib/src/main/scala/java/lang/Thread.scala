@@ -35,10 +35,9 @@ class Thread extends Runnable {
   private var daemon: scala.Boolean = false
 
   // Thread's priority
-  private var priority: Int = _
+  private var priority: Int = 5
 
   // Stack size to be passes to VM for thread execution
-  // Note: not implemented since not on VM
   private var stackSize: scala.Long = NativeThread.THREAD_DEFAULT_STACK_SIZE
 
   // Indicates if the thread was already started
@@ -292,12 +291,10 @@ class Thread extends Runnable {
 
   final def setPriority(priority: Int): Unit = {
     checkAccess()
-    if (priority > Thread.MAX_PRIORITY || priority < Thread.MIN_PRIORITY)
+    if (priority > 10 || priority < 1)
       throw new IllegalArgumentException("Wrong Thread priority value")
     val threadGroup: ThreadGroup = group
-    this.priority =
-      if (priority > threadGroup.maxPriority) threadGroup.maxPriority
-      else priority
+    this.priority = priority
     if (started)
       NativeThread.setPriority(underlying, priority)
   }
