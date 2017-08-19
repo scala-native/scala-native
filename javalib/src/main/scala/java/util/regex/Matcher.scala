@@ -72,14 +72,18 @@ final class Matcher private[regex] (var _pattern: Pattern,
     Zone { implicit z =>
       val n       = nMatches
       val matches = alloc[cre2.string_t](n)
-      val in      = toCString(inputSequence.toString)
+      val instr   = inputSequence.toString
+      val incstr  = toCString(instr)
+      // calculate byte-array indices from string indices
+      val startpos = instr.take(start).getBytes().length
+      val endpos   = instr.take(end).getBytes().length
 
       val ok = cre2.matches(
         regex = regex,
-        text = in,
+        text = incstr,
         textlen = inputByteLength,
-        startpos = start,
-        endpos = end,
+        startpos = startpos,
+        endpos = endpos,
         anchor = anchor,
         matches = matches,
         nMatches = nMatches
@@ -88,10 +92,16 @@ final class Matcher private[regex] (var _pattern: Pattern,
       if (ok) {
         var i = 0
         while (i < nMatches) {
-          val m     = matches + i
-          val start = if (m.length == 0) -1 else (m.data - in).toInt
-          val end   = if (m.length == 0) -1 else start + m.length
-          groups(i) = ((start, end))
+          val m = matches + i
+          groups(i) = if (m.length == 0) {
+            (-1, -1)
+          } else {
+            val before = fromCStringN(incstr, m.data - incstr)
+            val grp    = fromCStringN(m.data, m.length)
+            val start  = before.length
+            val end    = start + grp.length
+            (start, end)
+          }
 
           i += 1
         }
@@ -101,7 +111,7 @@ final class Matcher private[regex] (var _pattern: Pattern,
     }
 
   private def genMatch(start: Int, anchor: cre2.anchor_t): Boolean = {
-    val ok = doMatch(start, inputByteLength, 1, anchor)
+    val ok = doMatch(start, inputLength, 1, anchor)
 
     if (ok) {
       hasMatch = true
