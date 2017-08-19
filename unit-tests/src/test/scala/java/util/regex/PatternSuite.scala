@@ -331,6 +331,26 @@ object PatternSuite extends tests.Suite {
     )
   }
 
+  test("group not containing multibyte characters") {
+    val pat = "abcdef(ghi)jkl"
+    val input = "abcdefghijkl"
+    val m = Pattern.compile(pat).matcher(input)
+    assert(m.matches())
+    assertEquals(m.group(0), input)
+    assertEquals(m.group(1), "ghi")
+    assertEquals(m.group(), input)
+  }
+
+  test("group containing multibyte characters") {
+    val pat = "abcあいう(えお)def"
+    val input = "abcあいうえおdef"
+    val m = Pattern.compile(pat).matcher(input)
+    assert(m.matches())
+    assertEquals(m.group(0), input)
+    assertEquals(m.group(1), "えお")
+    assertEquals(m.group(), input)
+  }
+
   test("syntax exceptions") {
     assertThrowsAnd[PatternSyntaxException](Pattern.compile("foo\\L"))(
       e => {
