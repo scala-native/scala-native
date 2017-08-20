@@ -21,12 +21,17 @@ trait ExecutorService extends Executor {
 
   def submit(task: Runnable): Future[_]
 
-  def invokeAll[T](tasks: java.util.Collection[_ <: Callable[T]]): java.util.List[Future[T]]
+  def invokeAll[T](
+      tasks: java.util.Collection[_ <: Callable[T]]): java.util.List[Future[T]]
 
-  def invokeAll[T](tasks: java.util.Collection[_ <: Callable[T]], timeout: Long, unit: TimeUnit): java.util.List[Future[T]]
+  def invokeAll[T](tasks: java.util.Collection[_ <: Callable[T]],
+                   timeout: Long,
+                   unit: TimeUnit): java.util.List[Future[T]]
 
   def invokeAny[T](tasks: java.util.Collection[_ <: Callable[T]]): T
 
-  def invokeAny[T](tasks: java.util.Collection[_ <: Callable[T]], timeout: Long, unit: TimeUnit): T
+  def invokeAny[T](tasks: java.util.Collection[_ <: Callable[T]],
+                   timeout: Long,
+                   unit: TimeUnit): T
 
 }

@@ -5,41 +5,45 @@ import java.util
 
 abstract class AbstractExecutorService extends ExecutorService {
 
-  protected[concurrent] def newTaskFor[T](runnable: Runnable, value: T): RunnableFuture[T] =
+  protected[concurrent] def newTaskFor[T](runnable: Runnable,
+                                          value: T): RunnableFuture[T] =
     new FutureTask[T](runnable, value)
 
   protected[concurrent] def newTaskFor[T](callable: Callable[T]) =
     new FutureTask[T](callable)
 
   override def submit(task: Runnable): Future[_] = {
-    if(task == null) throw new NullPointerException()
+    if (task == null) throw new NullPointerException()
     val ftask: RunnableFuture[Object] = newTaskFor(task, null)
     execute(ftask)
     ftask
   }
 
   override def submit[T](task: Runnable, result: T): Future[T] = {
-    if(task == null) throw new NullPointerException()
+    if (task == null) throw new NullPointerException()
     val ftask: RunnableFuture[T] = newTaskFor(task, result)
     execute(ftask)
     ftask
   }
 
   override def submit[T](task: Callable[T]): Future[T] = {
-    if(task == null) throw new NullPointerException()
+    if (task == null) throw new NullPointerException()
     val ftask: RunnableFuture[T] = newTaskFor(task)
     execute(ftask)
     ftask
   }
 
-  private def doInvokeAny[T](tasks: util.Collection[_ <: Callable[T]], timed: Boolean, n: Long): T = {
+  private def doInvokeAny[T](tasks: util.Collection[_ <: Callable[T]],
+                             timed: Boolean,
+                             n: Long): T = {
     var nanos: Long = n
-    if(tasks == null) throw new NullPointerException()
+    if (tasks == null) throw new NullPointerException()
 
     var ntasks: Int = tasks.size()
-    if(ntasks == 0) throw new IllegalArgumentException()
+    if (ntasks == 0) throw new IllegalArgumentException()
     val futures: util.List[Future[T]] = new util.ArrayList[Future[T]](ntasks)
-    val ecs: ExecutorCompletionService[T] = new ExecutorCompletionService[T](this)
+    val ecs: ExecutorCompletionService[T] =
+      new ExecutorCompletionService[T](this)
 
     // For efficiency, especially in executors with limited
     // parallelism, check to see if previously submitted tasks are
@@ -50,8 +54,8 @@ abstract class AbstractExecutorService extends ExecutorService {
     try {
       // Record exceptions so that if we fail to obtain any
       // result, we can throw the last exception we got.
-      var ee: ExecutionException = null
-      var lastTime: Long = if(timed) System.nanoTime() else 0
+      var ee: ExecutionException              = null
+      var lastTime: Long                      = if (timed) System.nanoTime() else 0
       val it: util.Iterator[_ <: Callable[T]] = tasks.iterator()
 
       // Start one task for sure; the rest incrementally
@@ -60,42 +64,39 @@ abstract class AbstractExecutorService extends ExecutorService {
       var active: Int = 1
 
       var break: Boolean = false
-      while(!break) {
+      while (!break) {
         var f: Future[T] = ecs.poll()
-        if(f == null) {
-          if(ntasks > 0) {
+        if (f == null) {
+          if (ntasks > 0) {
             ntasks -= 1
             futures.add(ecs.submit(it.next()))
             active += 1
-          }
-          else if(active == 0)
+          } else if (active == 0)
             break = true
-          else if(!break && timed) {
+          else if (!break && timed) {
             f = ecs.poll(nanos, TimeUnit.NANOSECONDS)
-            if(f == null) throw new TimeoutException()
+            if (f == null) throw new TimeoutException()
             val now: Long = System.nanoTime()
             nanos -= now - lastTime
             lastTime = now
-          }
-          else if(!break) f = ecs.take()
+          } else if (!break) f = ecs.take()
         }
-        if(!break && f != null) {
+        if (!break && f != null) {
           active -= 1
           try {
             return f.get
           } catch {
             case ie: InterruptedException => throw ie
-            case eex: ExecutionException => ee = eex
-            case rex: RuntimeException => ee = new ExecutionException(rex)
+            case eex: ExecutionException  => ee = eex
+            case rex: RuntimeException    => ee = new ExecutionException(rex)
           }
         }
       }
-      if(ee == null) ee = new ExecutionException()
+      if (ee == null) ee = new ExecutionException()
       throw ee
     } finally {
       val it = futures.iterator()
-      while(it.hasNext())
-        it.next().cancel(true)
+      while (it.hasNext()) it.next().cancel(true)
     }
 
   }
@@ -110,81 +111,86 @@ abstract class AbstractExecutorService extends ExecutorService {
     }
   }
 
-  override def invokeAny[T](tasks: java.util.Collection[_ <: Callable[T]], timeout: Long, unit: TimeUnit): T = {
+  override def invokeAny[T](tasks: java.util.Collection[_ <: Callable[T]],
+                            timeout: Long,
+                            unit: TimeUnit): T = {
     doInvokeAny(tasks, true, unit.toNanos(timeout))
   }
 
-  override def invokeAll[T](tasks: java.util.Collection[_ <: Callable[T]]): java.util.List[Future[T]] = {
-    if(tasks == null) throw new NullPointerException()
-    val futures: util.List[Future[T]] = new util.ArrayList[Future[T]](tasks.size())
+  override def invokeAll[T](tasks: java.util.Collection[_ <: Callable[T]])
+    : java.util.List[Future[T]] = {
+    if (tasks == null) throw new NullPointerException()
+    val futures: util.List[Future[T]] =
+      new util.ArrayList[Future[T]](tasks.size())
     var done: Boolean = false
     try {
       val it = tasks.iterator()
-      while(it.hasNext) {
+      while (it.hasNext) {
         val f: RunnableFuture[T] = newTaskFor(it.next())
         futures.add(f)
         execute(f)
       }
 
       val it1 = futures.iterator()
-      while(it1.hasNext) {
+      while (it1.hasNext) {
         val f = it1.next()
-        if(!f.isDone) {
+        if (!f.isDone) {
           try {
             f.get
           } catch {
             case ignore: CancellationException =>
-            case ignore: ExecutionException =>
+            case ignore: ExecutionException    =>
           }
         }
       }
       done = true
       futures
     } finally {
-      if(!done) {
+      if (!done) {
         val it = futures.iterator()
-        while(it.hasNext)
-          it.next().cancel(true)
+        while (it.hasNext) it.next().cancel(true)
       }
     }
   }
 
-  override def invokeAll[T](tasks: util.Collection[_ <: Callable[T]], timeout: Long, unit: TimeUnit): util.List[Future[T]] = {
-    if(tasks == null || unit == null) throw new NullPointerException()
+  override def invokeAll[T](tasks: util.Collection[_ <: Callable[T]],
+                            timeout: Long,
+                            unit: TimeUnit): util.List[Future[T]] = {
+    if (tasks == null || unit == null) throw new NullPointerException()
     var nanos: Long = unit.toNanos(timeout)
-    val futures: util.List[Future[T]] = new util.ArrayList[Future[T]](tasks.size())
+    val futures: util.List[Future[T]] =
+      new util.ArrayList[Future[T]](tasks.size())
     var done: Boolean = false
     try {
       val it = tasks.iterator()
-      while(it.hasNext)
-        futures.add(newTaskFor(it.next()))
+      while (it.hasNext) futures.add(newTaskFor(it.next()))
 
       var lastTime: Long = System.nanoTime()
 
       // Interleave time checks and calls to execute in case
       // executor doesn't have any/much parallelism.
       var it1 = futures.iterator()
-      while(it1.hasNext) {
+      while (it1.hasNext) {
         execute(it.next().asInstanceOf[Runnable])
         val now: Long = System.nanoTime()
         nanos -= now - lastTime
         lastTime = now
-        if(nanos <= 0)
+        if (nanos <= 0)
           return futures
       }
 
       it1 = futures.iterator()
-      while(it1.hasNext) {
+      while (it1.hasNext) {
         val f: Future[T] = it1.next()
-        if(!f.isDone) {
-          if(nanos <= 0)
+        if (!f.isDone) {
+          if (nanos <= 0)
             return futures
           try {
             f.get(nanos, TimeUnit.NANOSECONDS)
           } catch {
             case ignore: CancellationException =>
-            case ignore: ExecutionException =>
-            case toe: TimeoutException => return futures
+            case ignore: ExecutionException    =>
+            case toe: TimeoutException         => return futures
           }
           val now: Long = System.nanoTime()
           nanos -= now - lastTime
@@ -195,13 +201,11 @@ abstract class AbstractExecutorService extends ExecutorService {
       futures
 
     } finally {
-      if(!done) {
+      if (!done) {
         val it = futures.iterator()
-        while(it.hasNext)
-          it.next().cancel(true)
+        while (it.hasNext) it.next().cancel(true)
       }
     }
   }
-
 
 }
