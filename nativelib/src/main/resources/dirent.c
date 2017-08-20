@@ -9,8 +9,8 @@
 #define NAME_MAX 255
 
 struct scalanative_dirent {
-    scalanative_uint64_t d_ino; /** file serial number */
-    char d_name[NAME_MAX + 1];  /** name of entry */
+    uint64_t d_ino;            /** file serial number */
+    char d_name[NAME_MAX + 1]; /** name of entry */
 };
 
 DIR *scalanative_opendir(const char *name) { return opendir(name); }

@@ -404,10 +404,6 @@ lazy val demoNative =
     .in(file("demo/native"))
     .settings(projectSettings)
     .settings(noPublishSettings)
-    .settings(
-      nativeMode := "release",
-      nativeGC := "none"
-    )
     .enablePlugins(ScalaNativePlugin)
 
 lazy val tests =

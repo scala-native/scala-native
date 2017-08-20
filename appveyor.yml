@@ -8,36 +8,13 @@ install:
   - ps: $env:CLANGPP_PATH="C:\\Program Files\\LLVM\\bin\\clang++.exe"
   - ps: $env:CLANG_FORMAT_PATH="C:\\Program Files\\LLVM\\bin\\clang-format.exe"
   - ps: $env:SCALA_NATIVE_USER_INCLUDES_PATH="$pwd\os_win"
-  - ps: $env:JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF8"
   - ps: $env:JAVA_OPTS="-Xmx2G"
 build_script:
-  - ps: |
-        Write-Host $env:APPVEYOR_REPO_NAME;
-        if ($env:APPVEYOR_PULL_REQUEST_NUMBER) {
-            Write-Output "Incoming pull request from https://github.com/$env:APPVEYOR_REPO_NAME/pull/$env:APPVEYOR_PULL_REQUEST_NUMBER";
-            $authorReq= try { Invoke-RestMethod -UseDefaultCredentials -Uri "https://api.github.com/repos/$env:APPVEYOR_REPO_NAME/pulls/$env:APPVEYOR_PULL_REQUEST_NUMBER" -ErrorVariable RestError -ErrorAction SilentlyContinue} catch { $RestError.message | ConvertFrom-Json};
-            $author = $authorReq.user.login;
-            if ($author) {
-                Write-Output "Pull request submitted by $author";
-                $signedReq=try { Invoke-RestMethod -Uri "http://www.lightbend.com/contribute/cla/scala/check/$author" -ErrorVariable RestError -ErrorAction SilentlyContinue} catch { $RestError.message | ConvertFrom-Json};
-                if ($signedReq.signed -eq "true") {
-                    Write-Output "CLA check for $author successful";
-                }
-                else {
-                    Write-Output "CLA check for $author failed";
-                    Write-Output "Please sign the Scala CLA to contribute to Scala Native";
-                    Write-Output "Go to https://www.lightbend.com/contribute/cla/scala and then resubmit this pull request";
-                    exit 1;
-                } else {exit 1};
-            } else {exit 1};
-        }
 test_script:
-  - ps: $ErrorActionPreference = 'Continue'
   - ps: .\bin\scalafmt --test
   - ps: .\bin\clangfmt --test
   - ps: sbt rebuild
-  - ps: sbt "set scriptedBufferLog in sbtScalaNative := false" ";debug;test-all"
-  - ps: sbt "last sandbox/compile:run"
+  - ps: sbt "set scriptedBufferLog in sbtScalaNative := false" ";test-all"
 cache:
   - C:\Users\appveyor\.m2
   - C:\Users\appveyor\.ivy2

@@ -20,7 +20,9 @@ typedef _C_double_complex scalanative_double_complex;
 typedef _C_ldouble_complex scalanative_long_double_complex;
 #endif
 
-scalanative_float_complex toFloatComplex(float snfc[2]) { return *(scalanative_float_complex *)snfc; }
+scalanative_float_complex toFloatComplex(float snfc[2]) {
+    return *(scalanative_float_complex *)snfc;
+}
 
 scalanative_double_complex toDoubleComplex(double sndc[2]) {
     return *(scalanative_double_complex *)sndc;

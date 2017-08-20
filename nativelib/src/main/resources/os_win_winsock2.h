@@ -69,7 +69,8 @@ struct iovec {
 };
 
 char *os_win_inet_ntoa(int family, struct in_addr *in);
-const char *os_win_inet_ntop(int af, const void *src, char *dst, socklen_t size);
+const char *os_win_inet_ntop(int af, const void *src, char *dst,
+                             socklen_t size);
 int os_win_socket(int domain, int type, int protocol);
 int os_win_closesocket(int fildes);
 in_addr_t os_win_inet_addr4(char *in);

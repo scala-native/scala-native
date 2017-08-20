@@ -40,10 +40,10 @@ Try
 
     if ($testMode -ne "--install") {
         if ($testMode) {
-            &java -jar $SCALAFMT $testMode
+            &java -jar $SCALAFMT --no-stderr $testMode
         }
         else {
-            &java -jar $SCALAFMT
+            &java -jar $SCALAFMT --no-stderr
         }
     }    
 }

@@ -264,7 +264,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
 
   def list(filter: FilenameFilter): Array[String] =
     if (!isDirectory() || !canRead()) {
-      Array.empty[String]
+      null
     } else
       Zone { implicit z =>
         val elements = listImpl(toCString(properPath))
