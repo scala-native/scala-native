@@ -142,9 +142,8 @@ object socket {
               address_len: socklen_t): CInt = extern
 
   @name("scalanative_bind")
-  def bind(socket: CInt,
-           address: Ptr[sockaddr],
-           address_len: socklen_t): CInt = extern
+  def bind(socket: CInt, address: Ptr[sockaddr], address_len: socklen_t): CInt =
+    extern
 
   @name("scalanative_listen")
   def listen(socket: CInt, backlog: CInt): CInt = extern

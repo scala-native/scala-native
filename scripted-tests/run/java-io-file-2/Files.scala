@@ -26,9 +26,8 @@ object Files {
   val willBeCreatedFile                = new File("willBeCreatedFile.txt")
   val willBeCreatedDirectory           = new File("willBeCreatedDirectory")
   val nestedWillBeCreatedDirectoryBase = new File("d0")
-  val nestedWillBeCreatedDirectory = new File(
-    nestedWillBeCreatedDirectoryBase,
-    "d1/nestedwillBeCreatedDirectory")
+  val nestedWillBeCreatedDirectory = new File(nestedWillBeCreatedDirectoryBase,
+                                              "d1/nestedwillBeCreatedDirectory")
   val willBeDeletedFile      = new File("willBeDeletedFile.txt")
   val willBeDeletedDirectory = new File("willBeDeletedDirectory")
 

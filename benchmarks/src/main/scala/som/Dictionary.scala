@@ -71,7 +71,10 @@ class Dictionary[K <: CustomHash, V <: AnyRef](size: Int = INITIAL_CAPACITY) {
   def newEntry(key: K, value: V, hash: Int): Entry[K, V] =
     new Entry(hash, key, value, null)
 
-  def insertBucketEntry(key: K, value: V, hash: Int, head: Entry[K, V]): Unit = {
+  def insertBucketEntry(key: K,
+                        value: V,
+                        hash: Int,
+                        head: Entry[K, V]): Unit = {
     var current = head
 
     while (true) {

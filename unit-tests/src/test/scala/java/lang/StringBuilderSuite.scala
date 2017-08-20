@@ -39,9 +39,8 @@ object StringBuilderSuite extends tests.Suite {
     assertEquals("a", newBuilder.insert(0, 'a').toString)
     assertEquals("abcd",
                  newBuilder.insert(0, Array('a', 'b', 'c', 'd')).toString)
-    assertEquals(
-      "bc",
-      newBuilder.insert(0, Array('a', 'b', 'c', 'd'), 1, 2).toString)
+    assertEquals("bc",
+                 newBuilder.insert(0, Array('a', 'b', 'c', 'd'), 1, 2).toString)
     assertEquals("4", newBuilder.insert(0, 4.toByte).toString)
     assertEquals("304", newBuilder.insert(0, 304.toShort).toString)
     assertEquals("100000", newBuilder.insert(0, 100000).toString)
@@ -91,11 +90,9 @@ object StringBuilderSuite extends tests.Suite {
     assertEquals("0bc3", initBuilder("0123").replace(1, 3, "bc").toString)
     assertEquals("abcd", initBuilder("0123").replace(0, 4, "abcd").toString)
     assertEquals("abcd", initBuilder("0123").replace(0, 10, "abcd").toString)
-    assertEquals("012defg",
-                 initBuilder("0123").replace(3, 10, "defg").toString)
+    assertEquals("012defg", initBuilder("0123").replace(3, 10, "defg").toString)
     assertEquals("xxxx123", initBuilder("0123").replace(0, 1, "xxxx").toString)
-    assertEquals("0xxxx123",
-                 initBuilder("0123").replace(1, 1, "xxxx").toString)
+    assertEquals("0xxxx123", initBuilder("0123").replace(1, 1, "xxxx").toString)
     assertEquals("0123x", initBuilder("0123").replace(4, 5, "x").toString)
 
     expectThrows(classOf[StringIndexOutOfBoundsException],
@@ -112,8 +109,7 @@ object StringBuilderSuite extends tests.Suite {
     b.setCharAt(5, 'h')
     assertEquals("foxbah", b.toString)
 
-    expectThrows(classOf[StringIndexOutOfBoundsException],
-                 b.setCharAt(-1, 'h'))
+    expectThrows(classOf[StringIndexOutOfBoundsException], b.setCharAt(-1, 'h'))
     expectThrows(classOf[StringIndexOutOfBoundsException], b.setCharAt(6, 'h'))
   }
 

@@ -428,8 +428,8 @@ private[math] object Division {
       // Optimization for small operands
       // (op2.bitLength() < 32) implies by INV (op1.bitLength() < 32)
       if ((op2.numberLength == 1) && (op2.digits(0) > 0)) {
-        op2 = BigInteger.valueOf(
-          Division.gcdBinary(op1.intValue(), op2.intValue()))
+        op2 =
+          BigInteger.valueOf(Division.gcdBinary(op1.intValue(), op2.intValue()))
       } else {
         // Implements one step of the Euclidean algorithm
         // To reduce one operand if it's much smaller than the other one
@@ -511,9 +511,9 @@ private[math] object Division {
     }
   }
 
-  /** Calculates a modInverse based on the Lórencz algorithm.
+  /** Calculates a modInverse based on the L?rencz algorithm.
    *
-   *  Based on "New Algorithm for Classical Modular Inverse" Róbert Lórencz. LNCS
+   *  Based on "New Algorithm for Classical Modular Inverse" R?bert L?rencz. LNCS
    *  2523 (2002)
    *
    *  @return a^(-1) mod m
@@ -834,7 +834,9 @@ private[math] object Division {
    *  @param divisor the divisor
    *  @return remainder
    */
-  def remainderArrayByInt(src: Array[Int], srcLength: Int, divisor: Int): Int = {
+  def remainderArrayByInt(src: Array[Int],
+                          srcLength: Int,
+                          divisor: Int): Int = {
     var result: Long = 0
     var i            = srcLength - 1
     while (i >= 0) {
@@ -986,10 +988,8 @@ private[math] object Division {
       var innnerCarry: Long = 0
       val m                 = Multiplication.unsignedMultAddAdd(res(i), n2, 0, 0).toInt
       for (j <- 0 until modulusLen) {
-        innnerCarry = unsignedMultAddAdd(m,
-                                         modulusDigits(j),
-                                         res(i + j),
-                                         innnerCarry.toInt)
+        innnerCarry =
+          unsignedMultAddAdd(m, modulusDigits(j), res(i + j), innnerCarry.toInt)
         res(i + j) = innnerCarry.toInt
         innnerCarry >>>= 32
       }

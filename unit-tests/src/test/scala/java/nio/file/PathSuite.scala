@@ -112,8 +112,7 @@ object PathSuite extends tests.Suite {
     assert(Paths.get("foo").getParent == null)
     assert(Paths.get("/").getParent == null)
     assert(Paths.get("//").getParent == null)
-    assert(
-      Paths.get("foo/bar").getParent.toString == Paths.get("foo").toString)
+    assert(Paths.get("foo/bar").getParent.toString == Paths.get("foo").toString)
     assert(
       Paths.get("/foo/bar").getParent.toString == Paths.get("/foo").toString)
     assert(Paths.get("/foo").getParent.toString == Paths.get("/").toString)
@@ -157,8 +156,7 @@ object PathSuite extends tests.Suite {
     assert(Paths.get("foo//bar").iterator.map(_.toString) == Seq("foo", "bar"))
     assert(Paths.get("/foo").iterator.map(_.toString) == Seq("foo"))
     assert(Paths.get("/foo/bar").iterator.map(_.toString) == Seq("foo", "bar"))
-    assert(
-      Paths.get("/foo//bar").iterator.map(_.toString) == Seq("foo", "bar"))
+    assert(Paths.get("/foo//bar").iterator.map(_.toString) == Seq("foo", "bar"))
   }
 
   test("Path.normalize") {
@@ -233,8 +231,7 @@ object PathSuite extends tests.Suite {
     assert(Paths.get("/").relativize(Paths.get("/")).toString == "")
     assert(
       Paths.get("/foo").relativize(Paths.get("/foo/bar")).toString == "bar")
-    assert(
-      Paths.get("/foo/bar").relativize(Paths.get("/foo")).toString == "..")
+    assert(Paths.get("/foo/bar").relativize(Paths.get("/foo")).toString == "..")
     assert(
       Paths.get("/foo").relativize(Paths.get("/bar")).toString == Paths
         .get("../bar")

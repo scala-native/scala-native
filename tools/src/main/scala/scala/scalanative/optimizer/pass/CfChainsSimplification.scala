@@ -45,7 +45,8 @@ class CfChainsSimplification(implicit fresh: Fresh, top: Top) extends Pass {
     nonCf :+ currentCf
   }
 
-  private def simplifyCfOnce(cfInst: Inst, cfg: ControlFlow.Graph): Seq[Inst] = {
+  private def simplifyCfOnce(cfInst: Inst,
+                             cfg: ControlFlow.Graph): Seq[Inst] = {
     val simpleRes = cfInst match {
 
       // If the target block of this jump is only a comprised of

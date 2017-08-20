@@ -340,8 +340,7 @@ class NoSuchFieldException(s: String) extends ReflectiveOperationException(s) {
   def this() = this(null)
 }
 
-class NoSuchMethodException(s: String)
-    extends ReflectiveOperationException(s) {
+class NoSuchMethodException(s: String) extends ReflectiveOperationException(s) {
   def this() = this(null)
 }
 
