@@ -1,8 +1,5 @@
 package java.lang
 
-/**
- * Created by remi on 19/08/17.
- */
 object ThreadSuite extends tests.Suite {
 
   test("Runtime static variables access and currentThread do not crash") {
