@@ -26,6 +26,8 @@ extern "C" {
 #define O_U16TEXT 0x20000 // file mode is UTF16 no BOM (translated)
 #define O_U8TEXT 0x40000  // file mode is UTF8  no BOM (translated)
 
+#define O_NONBLOCK	0x2000
+
 // macro to translate the C 2.0 name used to force binary mode for files
 #define O_RAW _O_BINARY
 

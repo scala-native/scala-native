@@ -29,7 +29,11 @@ void scalanative_convert_scalanative_addrinfo(struct scalanative_addrinfo *in,
     if (in->ai_canonname == NULL) {
         out->ai_canonname = NULL;
     } else {
+    #ifndef _WIN32
         out->ai_canonname = strdup(in->ai_canonname);
+    #else
+        out->ai_canonname = _strdup(in->ai_canonname);
+    #endif
     }
     out->ai_addr = NULL;
     out->ai_next = NULL;
@@ -64,7 +68,11 @@ void scalanative_convert_addrinfo(struct addrinfo *in,
     if (in->ai_canonname == NULL) {
         out->ai_canonname = NULL;
     } else {
+#ifndef _WIN32
         out->ai_canonname = strdup(in->ai_canonname);
+#else
+        out->ai_canonname = _strdup(in->ai_canonname);
+#endif
     }
     if (in->ai_next == NULL) {
         out->ai_next = NULL;

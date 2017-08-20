@@ -71,6 +71,11 @@ extern "C" char *os_win_inet_ntoa(int family, struct in_addr *in) {
     return buf;
 }
 
+extern "C" const char *os_win_inet_ntop(int af, const void *src, char *dst,
+                                        socklen_t size) {
+    return InetNtopA(af, src, dst, size);
+}
+
 extern "C" in_addr_t os_win_inet_addr4(char *in) {
     in_addr_t out;
     int result = InetPtonA(AF_INET, in, &out);

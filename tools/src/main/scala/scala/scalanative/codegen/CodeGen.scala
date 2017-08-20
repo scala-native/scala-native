@@ -384,7 +384,7 @@ object CodeGen {
             s"$w1 = load ${platform.ehClassName}*, ${platform.ehClassName}** ${platform.ehVar}")
           line(
             s"$w2 = getelementptr inbounds ${platform.ehClassName}, ${platform.ehClassName}* $w1, i32 0, i32 1")
-          line(s"${exc.show} = load i8*, i8** $w2, align 8")
+          line(s"$exc = load i8*, i8** $w2, align 8")
           line(s"catchret from $cpad to label %$succ")
           unindent()
           line(s"$succ:")

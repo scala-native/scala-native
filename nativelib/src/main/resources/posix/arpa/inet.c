@@ -29,7 +29,11 @@ char *scalanative_inet_ntoa(struct scalanative_in_addr *in) {
 
 const char *scalanative_inet_ntop(int af, const void *src, char *dst,
                                   socklen_t size) {
+#ifndef _WIN32
     return inet_ntop(af, src, dst, size);
+#else
+    return os_win_inet_ntop(af, src, dst, size);
+#endif
 }
 
 in_addr_t scalanative_inet_addr(char *in) {
