@@ -264,14 +264,22 @@ object MatcherSuite extends tests.Suite {
     assert(m1.lookingAt())
   }
 
+  test("pattern") {
+    val p = Pattern.compile("foo")
+    assertEquals(
+      p.matcher("foobar").pattern(),
+      p
+    )
+  }
+
   test("issue #852, StringIndexOutOfBoundsException") {
     val JsonNumberRegex =
       """(-)?((?:[1-9][0-9]*|0))(?:\.([0-9]+))?(?:[eE]([-+]?[0-9]+))?""".r
     val JsonNumberRegex(negative, intStr, decStr, expStr) = "0.000000"
-    assert(negative.isEmpty)
+    assert(negative == null)
     assert(intStr == "0")
     assert(decStr == "000000")
-    assert(expStr.isEmpty)
+    assert(expStr == null)
   }
 
   private def matcher(regex: String, text: String): Matcher =

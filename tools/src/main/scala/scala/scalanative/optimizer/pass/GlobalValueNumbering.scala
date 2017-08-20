@@ -350,14 +350,10 @@ object GlobalValueNumbering extends PassCompanion {
 
   object HashFunction {
 
-    def combineHashes(hashes: Seq[Hash]): Hash = {
+    def combineHashes(hashes: Seq[Hash]): Hash =
       MurmurHash3.orderedHash(hashes)
-    }
 
-    def rawLocal(local: Local): Hash = {
-      combineHashes(Seq(local.scope.hashCode, local.id.hashCode))
-    }
-
+    def rawLocal(local: Local): Hash = local.id
   }
 
   override def apply(config: tools.Config, top: Top) =

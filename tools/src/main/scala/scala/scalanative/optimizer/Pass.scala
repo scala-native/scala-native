@@ -15,6 +15,9 @@ trait Inject extends AnyPass {
 }
 
 trait Pass extends AnyPass {
+  private var _fresh: Fresh = _
+  implicit def fresh: Fresh = _fresh
+
   def onDefns(assembly: Seq[Defn]): Seq[Defn] =
     assembly.map(onDefn)
 
@@ -26,6 +29,7 @@ trait Pass extends AnyPass {
     case defn @ Defn.Declare(_, _, ty) =>
       defn.copy(ty = onType(ty))
     case defn @ Defn.Define(_, _, ty, insts) =>
+      _fresh = Fresh(insts)
       defn.copy(ty = onType(ty), insts = onInsts(insts))
     case defn @ Defn.Struct(_, _, tys) =>
       defn.copy(tys = tys.map(onType))

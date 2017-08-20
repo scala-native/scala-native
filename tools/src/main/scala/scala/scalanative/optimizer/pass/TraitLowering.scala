@@ -10,7 +10,7 @@ import nir._
 /** Eliminates traits and injects trait method
  *  and instance dispatch tables into the assembly.
  */
-class TraitLowering(implicit top: Top, fresh: Fresh) extends Pass {
+class TraitLowering(implicit top: Top) extends Pass {
   import TraitLowering._
 
   override def onDefns(defns: Seq[Defn]): Seq[Defn] =
@@ -23,5 +23,5 @@ class TraitLowering(implicit top: Top, fresh: Fresh) extends Pass {
 
 object TraitLowering extends PassCompanion {
   override def apply(config: tools.Config, top: Top) =
-    new TraitLowering()(top, top.fresh)
+    new TraitLowering()(top)
 }

@@ -232,10 +232,7 @@ object PathSuite extends tests.Suite {
     assert(
       Paths.get("/foo").relativize(Paths.get("/foo/bar")).toString == "bar")
     assert(Paths.get("/foo/bar").relativize(Paths.get("/foo")).toString == "..")
-    assert(
-      Paths.get("/foo").relativize(Paths.get("/bar")).toString == Paths
-        .get("../bar")
-        .toString)
+      Paths.get("/foo").relativize(Paths.get("/bar")).toString == Paths.get("../bar").toString)
     assert(
       Paths
         .get("/foo/bar")

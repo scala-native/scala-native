@@ -1,0 +1,4 @@
+> launchEchoServer
+$ copy-file tests/IsReachableTest.scala Main.scala
+> run
+
