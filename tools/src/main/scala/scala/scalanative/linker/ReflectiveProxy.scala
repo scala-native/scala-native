@@ -8,7 +8,7 @@ import scala.collection.mutable
  * Created by lukaskellenberger on 17.12.16.
  */
 object ReflectiveProxy {
-  implicit val fresh = new Fresh("proxy")
+  implicit val fresh = Fresh()
 
   private def genReflProxy(defn: Defn.Define): Defn.Define = {
     val Global.Member(owner, id) = defn.name
@@ -78,9 +78,7 @@ object ReflectiveProxy {
       Op.Call(defnTy, Val.Local(method.name, Type.Ptr), callParams, Next.None))
   }
 
-  private def genRetValBox(callName: Local,
-                           defnRetTy: Type,
-                           proxyRetTy: Type) =
+  private def genRetValBox(callName: Local, defnRetTy: Type, proxyRetTy: Type) =
     Type.box.get(defnRetTy) match {
       case Some(boxTy) =>
         Inst.Let(Op.Box(boxTy, Val.Local(callName, defnRetTy)))

@@ -587,12 +587,9 @@ object Show {
         str(id)
     }
 
-    def local_(local: Local): Unit = local match {
-      case Local(scope, id) =>
-        str("%")
-        str(scope)
-        str(".")
-        str(id)
+    def local_(local: Local): Unit = {
+      str("%")
+      str(local.id)
     }
 
     private def escapeNewLine(s: String): String =

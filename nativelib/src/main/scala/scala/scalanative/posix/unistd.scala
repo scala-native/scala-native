@@ -22,6 +22,8 @@ object unistd {
   def lseek(fildes: CInt, offset: off_t, whence: CInt): off_t     = extern
   def ftruncate(fildes: CInt, length: off_t): CInt                = extern
   def truncate(path: CString, length: off_t): CInt                = extern
+  def gethostname(name: CString, len: CSize): CInt                = extern
+  def sethostname(name: CString, len: CSize): CInt                = extern
 
   @name("scalanative_stdin_fileno")
   def STDIN_FILENO: CInt = extern

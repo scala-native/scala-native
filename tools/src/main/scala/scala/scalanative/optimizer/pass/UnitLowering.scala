@@ -8,19 +8,19 @@ import analysis.ClassHierarchy.Top
 import nir._
 
 /** Eliminates returns of Unit values and replaces them with void. */
-class UnitLowering(implicit fresh: Fresh) extends Pass {
+class UnitLowering extends Pass {
   import UnitLowering._
 
   private var defnRetty: Type = _
 
-  override def onDefn(defn: Defn) = super.onDefn {
+  override def onDefn(defn: Defn) = {
     defn match {
-      case defn @ Defn.Define(_, _, Type.Function(_, retty), blocks) =>
+      case defn @ Defn.Define(_, _, Type.Function(_, retty), _) =>
         defnRetty = retty
       case _ =>
         ()
     }
-    defn
+    super.onDefn(defn)
   }
 
   override def onInsts(insts: Seq[Inst]) = {
@@ -77,5 +77,5 @@ object UnitLowering extends PassCompanion {
     Seq(unitDefn)
 
   override def apply(config: tools.Config, top: Top) =
-    new UnitLowering()(top.fresh)
+    new UnitLowering()
 }

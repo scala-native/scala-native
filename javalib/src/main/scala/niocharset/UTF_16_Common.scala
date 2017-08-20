@@ -29,8 +29,7 @@ private[niocharset] abstract class UTF_16_Common protected (
   def newDecoder(): CharsetDecoder = new Decoder
   def newEncoder(): CharsetEncoder = new Encoder
 
-  private class Decoder
-      extends CharsetDecoder(UTF_16_Common.this, 0.5f, 1.0f) {
+  private class Decoder extends CharsetDecoder(UTF_16_Common.this, 0.5f, 1.0f) {
     private var endianness = UTF_16_Common.this.endianness
 
     override protected def implReset(): Unit = {

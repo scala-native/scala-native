@@ -85,8 +85,8 @@ final class Matcher private[regex] (var _pattern: Pattern,
         var i = 0
         while (i < nMatches) {
           val m     = matches + i
-          val start = if (m.length == 0) 0 else (m.data - in).toInt
-          val end   = if (m.length == 0) 0 else start + m.length
+          val start = if (m.length == 0) -1 else (m.data - in).toInt
+          val end   = if (m.length == 0) -1 else start + m.length
           groups(i) = ((start, end))
 
           i += 1
@@ -198,7 +198,7 @@ final class Matcher private[regex] (var _pattern: Pattern,
     }
   }
 
-  def pattern(): Pattern = this.pattern
+  def pattern(): Pattern = this._pattern
 
   def reset(input: CharSequence): Matcher = {
     reset()

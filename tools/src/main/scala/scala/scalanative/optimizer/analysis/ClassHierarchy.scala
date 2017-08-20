@@ -26,9 +26,7 @@ object ClassHierarchy {
     val fields  = mutable.UnrolledBuffer.empty[Field]
   }
 
-  final class Struct(val attrs: Attrs,
-                     val name: Global,
-                     val tys: Seq[nir.Type])
+  final class Struct(val attrs: Attrs, val name: Global, val tys: Seq[nir.Type])
       extends Scope
 
   final class Trait(val attrs: Attrs,
@@ -82,7 +80,6 @@ object ClassHierarchy {
                   override val methods: mutable.UnrolledBuffer[Method],
                   override val fields: mutable.UnrolledBuffer[Field])
       extends Scope {
-    val fresh                       = nir.Fresh("tx")
     def name                        = Global.None
     def attrs                       = Attrs.None
     var tables: TraitDispatchTables = _

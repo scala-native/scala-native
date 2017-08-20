@@ -142,9 +142,8 @@ object socket {
               address_len: socklen_t): CInt = extern
 
   @name("scalanative_bind")
-  def bind(socket: CInt,
-           address: Ptr[sockaddr],
-           address_len: socklen_t): CInt = extern
+  def bind(socket: CInt, address: Ptr[sockaddr], address_len: socklen_t): CInt =
+    extern
 
   @name("scalanative_listen")
   def listen(socket: CInt, backlog: CInt): CInt = extern
@@ -160,6 +159,13 @@ object socket {
                  option_name: CInt,
                  options_value: Ptr[Byte],
                  option_len: socklen_t): CInt = extern
+
+  @name("scalanative_getsockopt")
+  def getsockopt(socket: CInt,
+                 level: CInt,
+                 option_name: CInt,
+                 options_value: Ptr[Byte],
+                 option_len: Ptr[socklen_t]): CInt = extern
 
   @name("scalanative_recv")
   def recv(socket: CInt,

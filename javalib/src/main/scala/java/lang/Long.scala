@@ -1,6 +1,6 @@
 package java.lang
 
-import scalanative.runtime.{select, divULong, remULong, undefined, Intrinsics}
+import scalanative.runtime.{divULong, remULong, undefined, Intrinsics}
 
 final class Long(val _value: scala.Long) extends Number with Comparable[Long] {
   @inline def this(s: String) =
@@ -348,8 +348,7 @@ object Long {
   }
 
   @inline
-  def remainderUnsigned(dividend: scala.Long,
-                        divisor: scala.Long): scala.Long =
+  def remainderUnsigned(dividend: scala.Long, divisor: scala.Long): scala.Long =
     remULong(dividend, divisor)
 
   @inline def reverse(l: scala.Long): scala.Long =

@@ -10,21 +10,15 @@ import analysis.ClassHierarchy.Top
 import nir._
 import Inst._
 
-class CfChainsSimplification(implicit fresh: Fresh, top: Top) extends Pass {
+class CfChainsSimplification(implicit top: Top) extends Pass {
   import CfChainsSimplification._
 
-  override def onDefn(defn: Defn): Defn = defn match {
-    case defn: Defn.Define =>
-      val cfg = ControlFlow.Graph(defn.insts)
+  override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
+    val cfg = ControlFlow.Graph(insts)
 
-      val newInsts = cfg.all.flatMap { b =>
-        (b.label +: b.insts.dropRight(1)) ++ simplifyCf(b.insts.last, cfg)
-      }
-
-      defn.copy(insts = newInsts)
-
-    case _ =>
-      defn
+    cfg.all.flatMap { b =>
+      (b.label +: b.insts.dropRight(1)) ++ simplifyCf(b.insts.last, cfg)
+    }
   }
 
   private def simplifyCf(cfInst: Inst, cfg: ControlFlow.Graph): Seq[Inst] = {
@@ -45,7 +39,8 @@ class CfChainsSimplification(implicit fresh: Fresh, top: Top) extends Pass {
     nonCf :+ currentCf
   }
 
-  private def simplifyCfOnce(cfInst: Inst, cfg: ControlFlow.Graph): Seq[Inst] = {
+  private def simplifyCfOnce(cfInst: Inst,
+                             cfg: ControlFlow.Graph): Seq[Inst] = {
     val simpleRes = cfInst match {
 
       // If the target block of this jump is only a comprised of
@@ -216,7 +211,7 @@ class CfChainsSimplification(implicit fresh: Fresh, top: Top) extends Pass {
 
 object CfChainsSimplification extends PassCompanion {
   override def apply(config: tools.Config, top: Top) =
-    new CfChainsSimplification()(top.fresh, top)
+    new CfChainsSimplification()(top)
 
   /** The ArgumentReplacer is used to replace the arguments of a Cf instruction
    * by its concrete evaluation

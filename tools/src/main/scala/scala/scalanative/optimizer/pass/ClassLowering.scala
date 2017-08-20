@@ -11,7 +11,7 @@ import nir._
 /** Lowers class definitions, and field accesses to structs
  *  and corresponding derived pointer computation.
  */
-class ClassLowering(implicit top: Top, fresh: Fresh) extends Pass {
+class ClassLowering(implicit top: Top) extends Pass {
   import ClassLowering._
 
   override def onDefns(defns: Seq[Defn]): Seq[Defn] =
@@ -50,5 +50,5 @@ class ClassLowering(implicit top: Top, fresh: Fresh) extends Pass {
 
 object ClassLowering extends PassCompanion {
   override def apply(config: tools.Config, top: Top) =
-    new ClassLowering()(top, top.fresh)
+    new ClassLowering()(top)
 }
