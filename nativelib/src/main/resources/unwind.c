@@ -17,3 +17,15 @@ int scalanative_unwind_get_proc_name(void *cursor, char *buffer, size_t length,
     return unw_get_proc_name((unw_cursor_t *)cursor, buffer, length,
                              (unw_word_t *)offset);
 }
+
+int scalanative_unwind_get_proc_start_ip(void *cursor, unsigned long *buffer) {
+    unw_proc_info_t pip;
+    int result = unw_get_proc_info((unw_cursor_t *)cursor, &pip);
+
+    if (result == 0) {
+        *buffer = pip.start_ip;
+        return 0;
+    } else {
+        return result;
+    }
+}
