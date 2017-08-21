@@ -95,54 +95,53 @@ object JarFileSuite extends tests.Suite {
     }
   }
 
-  // TODO: Enable this test once we support `JarOutputStream`:
-  // test("getManifest()") {
-  //   var jarFile = getJAR1()
-  //   val is      = jarFile.getInputStream(jarFile.getEntry(JAR1_ENTRY1))
-  //   assert(is.available() > 0)
-  //   assert(jarFile.getManifest() != null)
-  //   jarFile.close()
-  //
-  //   jarFile = getJAR2()
-  //   assert(jarFile.getManifest() == null)
-  //   jarFile.close()
-  //
-  //   jarFile = getJAR3()
-  //   assert(jarFile.getManifest() != null)
-  //   jarFile.close()
-  //
-  //   val manifest   = new Manifest()
-  //   val attributes = manifest.getMainAttributes()
-  //   attributes.put(new Attributes.Name("Manifest-Version"), "1.0")
-  //   val manOut = new ByteArrayOutputStream()
-  //   manifest.write(manOut)
-  //   val manBytes = manOut.toByteArray()
-  //   val file     = Files.createTempFile("hyts_manifest1", ".jar")
-  //   val jarOut =
-  //     new JarOutputStream(new FileOutputStream(file.toFile.getAbsolutePath()))
-  //   var entry = new ZipEntry("META-INF/")
-  //   entry.setSize(0)
-  //   jarOut.putNextEntry(entry)
-  //   entry = new ZipEntry(JarFile.MANIFEST_NAME)
-  //   entry.setSize(manBytes.length)
-  //   jarOut.putNextEntry(entry)
-  //   jarOut.write(manBytes)
-  //   entry = new ZipEntry("myfile")
-  //   entry.setSize(1)
-  //   jarOut.putNextEntry(entry)
-  //   jarOut.write(65)
-  //   jarOut.close()
-  //   val jar = new JarFile(file.toFile.getAbsolutePath(), false)
-  //   assert(jar.getManifest() != null)
-  //   jar.close()
-  //   Files.delete(file)
-  //
-  //   val jF = getJAR2()
-  //   jF.close()
-  //   assertThrows[IllegalStateException] {
-  //     jF.getManifest()
-  //   }
-  // }
+  test("getManifest()") {
+    var jarFile = getJAR1()
+    val is      = jarFile.getInputStream(jarFile.getEntry(JAR1_ENTRY1))
+    assert(is.available() > 0)
+    assert(jarFile.getManifest() != null)
+    jarFile.close()
+
+    jarFile = getJAR2()
+    assert(jarFile.getManifest() == null)
+    jarFile.close()
+
+    jarFile = getJAR3()
+    assert(jarFile.getManifest() != null)
+    jarFile.close()
+
+    val manifest   = new Manifest()
+    val attributes = manifest.getMainAttributes()
+    attributes.put(new Attributes.Name("Manifest-Version"), "1.0")
+    val manOut = new ByteArrayOutputStream()
+    manifest.write(manOut)
+    val manBytes = manOut.toByteArray()
+    val file     = Files.createTempFile("hyts_manifest1", ".jar")
+    val jarOut =
+      new JarOutputStream(new FileOutputStream(file.toFile.getAbsolutePath()))
+    var entry = new ZipEntry("META-INF/")
+    entry.setSize(0)
+    jarOut.putNextEntry(entry)
+    entry = new ZipEntry(JarFile.MANIFEST_NAME)
+    entry.setSize(manBytes.length)
+    jarOut.putNextEntry(entry)
+    jarOut.write(manBytes)
+    entry = new ZipEntry("myfile")
+    entry.setSize(1)
+    jarOut.putNextEntry(entry)
+    jarOut.write(65)
+    jarOut.close()
+    val jar = new JarFile(file.toFile.getAbsolutePath(), false)
+    assert(jar.getManifest() != null)
+    jar.close()
+    Files.delete(file)
+
+    val jF = getJAR2()
+    jF.close()
+    assertThrows[IllegalStateException] {
+      jF.getManifest()
+    }
+  }
 
   test("getInputStream(ZipEntry)") {
     val jf = getJAR1()
