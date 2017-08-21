@@ -36,56 +36,54 @@ object JarEntrySuite extends tests.Suite {
     attrJar.close()
   }
 
-  // TODO: Uncomment once we support signed jars
-  // test("getCertificates()") {
-  //   val jarFile  = getJarFile()
-  //   val zipEntry = jarFile.getEntry(entryName2)
-  //   val jarEntry = new JarEntry(zipEntry)
-  //   assert(jarEntry.getCertificates() == null)
-  //   jarFile.close()
-  //
-  //   val signedJar = getSignedJarFile()
-  //   val jarEntry1 = signedJar.getJarEntry("Test.class")
-  //   val jarEntry2 = signedJar.getJarEntry("Test.class")
-  //   val in = jarFile.getInputStream(jarEntry1)
-  //   val buffer = new Array[Byte](1024)
-  //   while (in.available() > 0) {
-  //     assert(jarEntry1.getCertificates() == null)
-  //     assert(jarEntry2.getCertificates() == null)
-  //     in.read(buffer)
-  //   }
-  //   assert(in.read() == -1)
-  //   assert(jarEntry1.getCertificates() != null)
-  //   assert(jarEntry2.getCertificates() != null)
-  //   in.close()
-  //   signedJar.close()
-  // }
+  testFails("getCertificates()", issue = 956) {
+    val jarFile  = getJarFile()
+    val zipEntry = jarFile.getEntry(entryName2)
+    val jarEntry = new JarEntry(zipEntry)
+    assert(jarEntry.getCertificates() == null)
+    jarFile.close()
 
-  // TODO: Uncomment once we support signed jars
-  // test("getCodeSigners()") {
-  //   val signedJar = getSignedJarFile()
-  //   val jarEntry = signedJar.getJarEntry("Test.class")
-  //   val in = signedJar.getInputStream(jarEntry)
-  //   val buffer = new Array[Byte](1024)
-  //   while (in.available > 0) {
-  //     assert(jarEntry.getCodeSigners() == null)
-  //     in.read(buffer)
-  //   }
-  //   assert(in.read() == -1)
-  //   val codeSigners = jarEntry.getCodeSigners()
-  //   assert(codeSigners.length == 2)
-  //   var certs_bob = codeSigners(0).getSignerCertPath().getCertificates()
-  //   var certs_alice = codeSigners(1).getSignerCertPath().getCertificates()
-  //   if (1 == certs_bob.size()) {
-  //     val temp = certs_bob
-  //     certs_bob = certs_alice
-  //     certs_alice = temp
-  //   }
-  //   assert(certs_bob.size() == 2)
-  //   assert(certs_alice.size() == 1)
-  //   assert(new JarEntry("aaa").getCodeSigners() == null)
-  //   signedJar.close()
-  // }
+    val signedJar = getSignedJarFile()
+    val jarEntry1 = signedJar.getJarEntry("Test.class")
+    val jarEntry2 = signedJar.getJarEntry("Test.class")
+    val in        = jarFile.getInputStream(jarEntry1)
+    val buffer    = new Array[Byte](1024)
+    while (in.available() > 0) {
+      assert(jarEntry1.getCertificates() == null)
+      assert(jarEntry2.getCertificates() == null)
+      in.read(buffer)
+    }
+    assert(in.read() == -1)
+    assert(jarEntry1.getCertificates() != null)
+    assert(jarEntry2.getCertificates() != null)
+    in.close()
+    signedJar.close()
+  }
+
+  testFails("getCodeSigners()", issue = 956) {
+    val signedJar = getSignedJarFile()
+    val jarEntry  = signedJar.getJarEntry("Test.class")
+    val in        = signedJar.getInputStream(jarEntry)
+    val buffer    = new Array[Byte](1024)
+    while (in.available > 0) {
+      assert(jarEntry.getCodeSigners() == null)
+      in.read(buffer)
+    }
+    assert(in.read() == -1)
+    val codeSigners = jarEntry.getCodeSigners()
+    assert(codeSigners != null && codeSigners.length == 2)
+    var certs_bob   = codeSigners(0).getSignerCertPath().getCertificates()
+    var certs_alice = codeSigners(1).getSignerCertPath().getCertificates()
+    if (1 == certs_bob.size()) {
+      val temp = certs_bob
+      certs_bob = certs_alice
+      certs_alice = temp
+    }
+    assert(certs_bob.size() == 2)
+    assert(certs_alice.size() == 1)
+    assert(new JarEntry("aaa").getCodeSigners() == null)
+    signedJar.close()
+  }
 
   private def getJarFile(): JarFile =
     JarBytes.getJarFile(jarBytes)

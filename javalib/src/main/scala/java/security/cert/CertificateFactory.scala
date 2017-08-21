@@ -1,7 +1,5 @@
 package java.security.cert
 
-// TODO: Port me from Apache Harmony
-
 import java.util.List
 
 class CertificateFactory {

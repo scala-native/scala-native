@@ -1,8 +1,5 @@
 package java.security
 
-// This is only a partial, minimal implementation.
-// TODO: Port me from Apache Harmony
-
 abstract class MessageDigest(private var algorithm: String)
     extends MessageDigestSpi {
   def digest(): Array[Byte] = engineDigest()

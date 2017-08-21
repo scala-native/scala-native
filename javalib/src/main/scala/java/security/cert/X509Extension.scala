@@ -1,3 +1,3 @@
 package java.security.cert
 
-class Certificate
+trait X509Extension

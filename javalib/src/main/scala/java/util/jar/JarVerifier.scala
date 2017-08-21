@@ -133,7 +133,7 @@ private[jar] class JarVerifier(jarName: String) {
       case (sfBytes, manifest) =>
         val sBlockBytes = metaEntries.get(certFile)
         try {
-          // TODO: Port JarUtils from Apache Harmony.
+          // TODO: Port JarUtils from Apache Harmony, see #956.
           // val signerCertChain = JarUtils.verifySignature(
           //   new ByteArrayInputStream(sfBytes),
           //   new ByteArrayInputStream(sBlockBytes))
