@@ -34,7 +34,7 @@ class Socket protected (private[net] val impl: SocketImpl,
         "Socket port must be between 0 and 65535")
 
     impl.create(streaming)
-    val created = true
+    created = true
     try {
       bound = true
       impl.connect(new InetSocketAddress(dstAddr, dstPort), timeout)
@@ -269,12 +269,12 @@ class Socket protected (private[net] val impl: SocketImpl,
     impl.setOption(SocketOptions.IP_TOS, Integer.valueOf(tc))
   }
 
-  def shutdownInput: Unit = {
+  def shutdownInput(): Unit = {
     impl.shutdownInput
     inputShutdown = true
   }
 
-  def shutdownOutput: Unit = {
+  def shutdownOutput(): Unit = {
     impl.shutdownOutput
     outputShutdown = true
   }

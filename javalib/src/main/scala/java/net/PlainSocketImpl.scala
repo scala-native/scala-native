@@ -242,7 +242,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
     }
   }
 
-  override def close: Unit = {
+  override def close(): Unit = {
     if (fd.fd != -1) {
       cClose(fd.fd)
       fd = new FileDescriptor
@@ -269,7 +269,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
     new SocketInputStream(this)
   }
 
-  override def shutdownOutput: Unit = {
+  override def shutdownOutput(): Unit = {
     socket.shutdown(fd.fd, 1) match {
       case 0 => shutOutput = true
       case _ =>
@@ -277,7 +277,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
     }
   }
 
-  override def shutdownInput: Unit = {
+  override def shutdownInput(): Unit = {
     socket.shutdown(fd.fd, 0) match {
       case 0 => shutInput = true
       case _ =>
@@ -285,19 +285,16 @@ private[net] class PlainSocketImpl extends SocketImpl {
     }
   }
 
-  def write(buffer: Array[Byte], offset: Int, count: Int): Long = {
+  def write(buffer: Array[Byte], offset: Int, count: Int): Int = {
     if (shutOutput) {
       throw new IOException("Trying to write to a shut down socket")
     } else if (fd.fd == -1) {
       0
     } else {
-      val cArr = stackalloc[Byte](count)
-      for (i <- 0 until count) {
-        !(cArr + i) = buffer(i + offset)
-      }
-      var sent: Long = 0
+      val cArr = buffer.asInstanceOf[ByteArray].at(offset)
+      var sent = 0
       while (sent < count) {
-        sent += socket.send(fd.fd, cArr + sent, count - sent, 0)
+        sent += socket.send(fd.fd, cArr + sent, count - sent, 0).toInt
       }
       sent
     }
@@ -306,17 +303,15 @@ private[net] class PlainSocketImpl extends SocketImpl {
   def read(buffer: Array[Byte], offset: Int, count: Int): Int = {
     if (shutInput) -1
 
-    val cBuff    = stackalloc[Byte](count)
-    val bytesNum = socket.recv(fd.fd, cBuff, count, 0).toInt
+    val bytesNum = socket
+      .recv(fd.fd, buffer.asInstanceOf[ByteArray].at(offset), count, 0)
+      .toInt
     if (bytesNum <= 0) {
       if (errno.errno == EAGAIN || errno.errno == EWOULDBLOCK) {
         throw new SocketTimeoutException("Socket timeout while reading data")
       }
       -1
     } else {
-      for (i <- 0 until bytesNum) {
-        buffer(offset + i) = cBuff(i)
-      }
       bytesNum
     }
   }
@@ -349,7 +344,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
     case SocketOptions.SO_SNDBUF    => socket.SO_SNDBUF
     case SocketOptions.SO_REUSEADDR => socket.SO_REUSEADDR
     case SocketOptions.TCP_NODELAY  => tcp.TCP_NODELAY
-    case _                          => throw new Error("This shouldn't happen")
+    case _                          => sys.error(s"Unknown option: $option")
   }
 
   override def getOption(optID: Int): Object = {
@@ -383,21 +378,22 @@ private[net] class PlainSocketImpl extends SocketImpl {
         "Exception while getting socket option with id: "
           + optValue + ", errno: " + errno.errno)
     }
-    if (optID == SocketOptions.TCP_NODELAY || optID == SocketOptions.SO_KEEPALIVE
-        || optID == SocketOptions.SO_REUSEADDR
-        || optID == SocketOptions.SO_OOBINLINE) {
-      Boolean.box(!(opt.cast[Ptr[CInt]]) != 0)
-    } else if (optID == SocketOptions.SO_LINGER) {
-      val linger = opt.cast[Ptr[socket.linger]]
-      if (linger.l_onoff != 0) {
-        Integer.valueOf(linger.l_linger)
-      } else {
-        Integer.valueOf(-1)
-      }
-    } else if (optID == SocketOptions.SO_TIMEOUT) {
-      Integer.valueOf(this.timeout)
-    } else {
-      Integer.valueOf(!(opt.cast[Ptr[CInt]]))
+
+    optID match {
+      case SocketOptions.TCP_NODELAY | SocketOptions.SO_KEEPALIVE |
+          SocketOptions.SO_REUSEADDR | SocketOptions.SO_OOBINLINE =>
+        Boolean.box(!(opt.cast[Ptr[CInt]]) != 0)
+      case SocketOptions.SO_LINGER =>
+        val linger = opt.cast[Ptr[socket.linger]]
+        if (linger.l_onoff != 0) {
+          Integer.valueOf(linger.l_linger)
+        } else {
+          Integer.valueOf(-1)
+        }
+      case SocketOptions.SO_TIMEOUT =>
+        Integer.valueOf(this.timeout)
+      case _ =>
+        Integer.valueOf(!(opt.cast[Ptr[CInt]]))
     }
   }
 
@@ -422,35 +418,35 @@ private[net] class PlainSocketImpl extends SocketImpl {
       sizeof[CInt].toUInt
     }
 
-    if (optID == SocketOptions.TCP_NODELAY || optID == SocketOptions.SO_KEEPALIVE
-        || optID == SocketOptions.SO_REUSEADDR
-        || optID == SocketOptions.SO_OOBINLINE) {
-      val ptr = stackalloc[CInt]
-      !ptr = if (value.asInstanceOf[Boolean]) 1 else 0
-      opt = ptr.cast[Ptr[Byte]]
-    } else if (optID == SocketOptions.SO_LINGER) {
-      val ptr    = stackalloc[socket.linger]
-      val linger = value.asInstanceOf[Int]
+    opt = optID match {
+      case SocketOptions.TCP_NODELAY | SocketOptions.SO_KEEPALIVE |
+          SocketOptions.SO_REUSEADDR | SocketOptions.SO_OOBINLINE =>
+        val ptr = stackalloc[CInt]
+        !ptr = if (value.asInstanceOf[Boolean]) 1 else 0
+        ptr.cast[Ptr[Byte]]
+      case SocketOptions.SO_LINGER =>
+        val ptr    = stackalloc[socket.linger]
+        val linger = value.asInstanceOf[Int]
 
-      if (linger == -1) ptr.l_onoff = 0
-      else ptr.l_onoff = 1
+        if (linger == -1) ptr.l_onoff = 0
+        else ptr.l_onoff = 1
 
-      ptr.l_linger = linger
-      opt = ptr.cast[Ptr[Byte]]
-    } else if (optID == SocketOptions.SO_TIMEOUT) {
-      val ptr      = stackalloc[timeval]
-      val mseconds = value.asInstanceOf[Int]
+        ptr.l_linger = linger
+        ptr.cast[Ptr[Byte]]
+      case SocketOptions.SO_TIMEOUT =>
+        val ptr      = stackalloc[timeval]
+        val mseconds = value.asInstanceOf[Int]
 
-      this.timeout = mseconds
+        this.timeout = mseconds
 
-      ptr.tv_sec = mseconds / 1000
-      ptr.tv_usec = (mseconds % 1000) * 1000
+        ptr.tv_sec = mseconds / 1000
+        ptr.tv_usec = (mseconds % 1000) * 1000
 
-      opt = ptr.cast[Ptr[Byte]]
-    } else {
-      val ptr = stackalloc[CInt]
-      !ptr = value.asInstanceOf[Int]
-      opt = ptr.cast[Ptr[Byte]]
+        ptr.cast[Ptr[Byte]]
+      case _ =>
+        val ptr = stackalloc[CInt]
+        !ptr = value.asInstanceOf[Int]
+        ptr.cast[Ptr[Byte]]
     }
 
     if (socket.setsockopt(fd.fd, level, optValue, opt, len) == -1) {
