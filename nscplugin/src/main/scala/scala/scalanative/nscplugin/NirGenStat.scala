@@ -359,7 +359,14 @@ trait NirGenStat { self: NirGenPhase =>
           val values = params.take(label.params.length)
 
           buf.jump(local, values)
-          buf.genTailRecLabel(dd, isStatic, label)
+          scoped(
+            curMethodThis := {
+              if (isStatic) None
+              else Some(Val.Local(params.head.name, params.head.ty))
+            }
+          ) {
+            buf.genTailRecLabel(dd, isStatic, label)
+          }
 
         case _ if curMethodSym.get == NObjectInitMethod =>
           nir.Val.Unit
