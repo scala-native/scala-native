@@ -138,7 +138,6 @@ final class _Class[A](val ty: Ptr[Type]) {
     prefix + name
   }
 
-  // TODO:
   def getClassLoader(): java.lang.ClassLoader = ???
   def getConstructor(args: Array[Object]): java.lang.reflect.Constructor[_] =
     ???
@@ -156,7 +155,6 @@ object _Class {
   private[java] implicit def class2_class[A](cls: Class[A]): _Class[A] =
     cls.asInstanceOf[_Class[A]]
 
-  // TODO:
   def forName(name: String): Class[_] = ???
   def forName(name: String,
               init: scala.Boolean,
