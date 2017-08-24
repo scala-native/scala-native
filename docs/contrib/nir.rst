@@ -699,6 +699,16 @@ pin-weak
 
 Require ``$name`` to be reachable if there is a reachable dynmethod with matching signature.
 
+stub
+****
+.. code-block:: text
+
+    stub
+
+Indicates that the annotated method is only a stub without implementation. If the linker is
+configured with ``linkStubs = false``, then these methods will be ignored and a linking error
+will be reported. If ``linkStubs = true``, these methods will be linked.
+
 Misc
 ````
 
