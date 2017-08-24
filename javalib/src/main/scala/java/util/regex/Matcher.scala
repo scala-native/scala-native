@@ -41,11 +41,7 @@ final class Matcher private[regex] (var _pattern: Pattern,
 
   private var lastAnchor: Option[cre2.anchor_t] = None
 
-  private[regex] def inputLength =
-    inputSequence.length
-
-  private[regex] def inputByteLength =
-    inputSequence.toString.getBytes().length
+  private[regex] def inputLength = inputSequence.length
 
   def matches(): Boolean = genMatch(0, ANCHOR_BOTH)
 
@@ -73,15 +69,16 @@ final class Matcher private[regex] (var _pattern: Pattern,
       val n       = nMatches
       val matches = alloc[cre2.string_t](n)
       val instr   = inputSequence.toString
-      val incstr  = toCString(instr)
+      val inre2   = alloc[cre2.string_t]
+      toRE2String(instr, inre2)
       // calculate byte-array indices from string indices
       val startpos = instr.take(start).getBytes().length
       val endpos   = instr.take(end).getBytes().length
 
       val ok = cre2.matches(
         regex = regex,
-        text = incstr,
-        textlen = inputByteLength,
+        text = inre2.data,
+        textlen = inre2.length,
         startpos = startpos,
         endpos = endpos,
         anchor = anchor,
@@ -96,10 +93,13 @@ final class Matcher private[regex] (var _pattern: Pattern,
           groups(i) = if (m.length == 0) {
             (-1, -1)
           } else {
-            val before = fromCStringN(incstr, m.data - incstr)
-            val grp    = fromCStringN(m.data, m.length)
-            val start  = before.length
-            val end    = start + grp.length
+            // Takes from inre2 until m...
+            val before = alloc[cre2.string_t]
+            before.data = inre2.data
+            before.length = (m.data - inre2.data).toInt
+            // ...to calculate `start` in String's index.
+            val start = fromRE2String(before).length
+            val end   = start + fromRE2String(m).length
             (start, end)
           }
 
