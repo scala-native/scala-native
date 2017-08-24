@@ -1,7 +1,12 @@
 package java.lang.reflect
 
+import scala.scalanative.native.stub
+
 class Field {
+  @stub
   def get(obj: Object): Object = ???
-  def getName(): String        = ???
-  def getType(): Class[_]      = ???
+  @stub
+  def getName(): String = ???
+  @stub
+  def getType(): Class[_] = ???
 }

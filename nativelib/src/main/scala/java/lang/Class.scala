@@ -45,6 +45,7 @@ final class _Class[A](val ty: Ptr[Type]) {
   def getSuperclass(): Class[_ >: A] =
     ???
 
+  @stub
   def getField(name: String): Field =
     ???
 
@@ -138,14 +139,21 @@ final class _Class[A](val ty: Ptr[Type]) {
     prefix + name
   }
 
+  @stub
   def getClassLoader(): java.lang.ClassLoader = ???
+  @stub
   def getConstructor(args: Array[Object]): java.lang.reflect.Constructor[_] =
     ???
-  def getConstructors(): Array[Object]   = ???
+  @stub
+  def getConstructors(): Array[Object] = ???
+  @stub
   def getDeclaredFields(): Array[Object] = ???
+  @stub
   def getMethod(name: java.lang.String,
-                args: Array[Object]): java.lang.reflect.Method         = ???
-  def getMethods(): Array[Object]                                      = ???
+                args: Array[Object]): java.lang.reflect.Method = ???
+  @stub
+  def getMethods(): Array[Object] = ???
+  @stub
   def getResourceAsStream(name: java.lang.String): java.io.InputStream = ???
 }
 
@@ -155,7 +163,9 @@ object _Class {
   private[java] implicit def class2_class[A](cls: Class[A]): _Class[A] =
     cls.asInstanceOf[_Class[A]]
 
+  @stub
   def forName(name: String): Class[_] = ???
+  @stub
   def forName(name: String,
               init: scala.Boolean,
               loader: ClassLoader): Class[_] = ???

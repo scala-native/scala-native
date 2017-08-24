@@ -1163,5 +1163,6 @@ final class URI private () extends Comparable[URI] with Serializable {
     convertHexToLowerCase(result.toString)
   }
 
+  @scala.scalanative.native.stub
   def toURL(): java.net.URL = ???
 }

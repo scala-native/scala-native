@@ -1,7 +1,11 @@
 package java.net
 
+import scala.scalanative.native.stub
+
 class URLClassLoader(args: Array[Object], parent: ClassLoader)
     extends ClassLoader(parent) {
+  @stub
   def getURLs(): Array[Object] = ???
-  def close(): Unit            = ???
+  @stub
+  def close(): Unit = ???
 }
