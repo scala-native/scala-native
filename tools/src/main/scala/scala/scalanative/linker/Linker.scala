@@ -49,50 +49,52 @@ object Linker {
           if (!workitem.isIntrinsic && !resolved.contains(workitem) &&
               !unresolved.contains(workitem)) {
 
-            load(workitem).fold[Unit] {
-              unresolved += workitem
-              onUnresolved(workitem)
-            } {
-              case (deps, newlinks, newsignatures, defn) =>
-                resolved += workitem
-                defns += defn
-                links ++= newlinks
-                signatures ++= newsignatures
+            load(workitem)
+              .filter(config.linkStubs || !_._4.attrs.isStub)
+              .fold[Unit] {
+                unresolved += workitem
+                onUnresolved(workitem)
+              } {
+                case (deps, newlinks, newsignatures, defn) =>
+                  resolved += workitem
+                  defns += defn
+                  links ++= newlinks
+                  signatures ++= newsignatures
 
-                // Comparing new signatures with already collected weak dependencies
-                newsignatures
-                  .flatMap(signature =>
-                    weaks.collect {
-                      case weak if Global.genSignature(weak) == signature =>
-                        weak
-                  })
-                  .foreach { global =>
-                    direct.push(global)
-                    dyndefns += global
-                  }
-
-                onResolved(workitem)
-
-                deps.foreach {
-                  case Dep.Direct(dep) =>
-                    direct.push(dep)
-                    onDirectDependency(workitem, dep)
-
-                  case cond @ Dep.Conditional(dep, condition) =>
-                    conditional += cond
-                    onConditionalDependency(workitem, dep, condition)
-
-                  case Dep.Weak(global) =>
-                    // comparing new dependencies with all signatures
-                    if (signatures(Global.genSignature(global))) {
+                  // Comparing new signatures with already collected weak dependencies
+                  newsignatures
+                    .flatMap(signature =>
+                      weaks.collect {
+                        case weak if Global.genSignature(weak) == signature =>
+                          weak
+                    })
+                    .foreach { global =>
                       direct.push(global)
-                      onDirectDependency(workitem, global)
                       dyndefns += global
                     }
-                    weaks += global
-                }
 
-            }
+                  onResolved(workitem)
+
+                  deps.foreach {
+                    case Dep.Direct(dep) =>
+                      direct.push(dep)
+                      onDirectDependency(workitem, dep)
+
+                    case cond @ Dep.Conditional(dep, condition) =>
+                      conditional += cond
+                      onConditionalDependency(workitem, dep, condition)
+
+                    case Dep.Weak(global) =>
+                      // comparing new dependencies with all signatures
+                      if (signatures(Global.genSignature(global))) {
+                        direct.push(global)
+                        onDirectDependency(workitem, global)
+                        dyndefns += global
+                      }
+                      weaks += global
+                  }
+
+              }
           }
         }
 

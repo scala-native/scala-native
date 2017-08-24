@@ -72,6 +72,8 @@ final class BinarySerializer(buffer: ByteBuffer) {
 
     case Attr.Dyn => putInt(T.DynAttr)
 
+    case Attr.Stub => putInt(T.StubAttr)
+
     case Attr.Align(_) =>
       assert(false, "alignment attribute is not serializable")
 

@@ -14,6 +14,7 @@ object Attr extends Base[nir.Attr] {
   val NoInline     = P("noinline".! map (_ => nir.Attr.NoInline))
   val AlwaysInline = P("alwaysinline".! map (_ => nir.Attr.AlwaysInline))
   val Dyn          = P("dyn".! map (_ => nir.Attr.Dyn))
+  val Stub         = P("stub".! map (_ => nir.Attr.Stub))
   val Align        = P(("align(" ~ int ~ ")") map (nir.Attr.Align(_)))
   val Pure         = P("pure".! map (_ => nir.Attr.Pure))
   val Extern       = P("extern".! map (_ => nir.Attr.Extern))
@@ -28,6 +29,6 @@ object Attr extends Base[nir.Attr] {
   val PinWeak = P("pin-weak(" ~ Global.parser ~ ")" map (nir.Attr.PinWeak(_)))
 
   override val parser: P[nir.Attr] =
-    MayInline | InlineHint | NoInline | AlwaysInline | Dyn | Align | Pure | Extern | Override | Link | PinAlways | PinIf | PinWeak
+    MayInline | InlineHint | NoInline | AlwaysInline | Dyn | Stub | Align | Pure | Extern | Override | Link | PinAlways | PinIf | PinWeak
 
 }

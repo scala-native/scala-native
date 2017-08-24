@@ -258,6 +258,7 @@ trait NirGenStat { self: NirGenPhase =>
             case ann if ann.symbol == NoInlineClass   => Attr.NoInline
             case ann if ann.symbol == InlineHintClass => Attr.InlineHint
             case ann if ann.symbol == InlineClass     => Attr.AlwaysInline
+            case ann if ann.symbol == StubClass       => Attr.Stub
           }
         }
       }
