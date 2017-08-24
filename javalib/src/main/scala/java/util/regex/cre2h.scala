@@ -31,7 +31,7 @@ object cre2h {
   def toRE2String(str: String, restr: Ptr[cre2.string_t])(
       implicit z: Zone): Unit = {
     restr.data = toCString(str)
-    restr.length = str.length
+    restr.length = str.getBytes().length
   }
 
   final val ENCODING_UNKNOWN = 0
