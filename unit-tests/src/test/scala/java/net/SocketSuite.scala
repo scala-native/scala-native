@@ -122,4 +122,9 @@ object SocketSuite extends tests.Suite {
     s6.close
   }
 
+  test("getChannel") {
+    val s = new Socket
+    assertEquals(s.getChannel, null)
+  }
+
 }

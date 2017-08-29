@@ -10,7 +10,7 @@ trait Set[E] extends Collection[E] {
   def remove(obj: Any): scala.Boolean
 
   //TODO:
-  //def addAll(coll: Collection[_ <: E]): scala.Boolean
+  def addAll(coll: Collection[_ <: E]): scala.Boolean
   //def hashCode(): scala.Int
   //def removeAll(coll: Collection[_]): scala.Boolean
   //def retainAll(coll: Collection[_]): scala.Boolean

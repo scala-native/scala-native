@@ -49,3 +49,5 @@ class ShutdownChannelGroupException extends IllegalStateException
 class UnresolvedAddressException extends IllegalArgumentException
 
 class WritePendingException extends IllegalStateException
+
+class UnsupportedAddressTypeException extends IllegalArgumentException

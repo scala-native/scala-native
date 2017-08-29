@@ -4,8 +4,6 @@ import scala.collection.mutable.ArrayBuffer
 
 import java.nio.channels._
 
-private class BlockingLock
-
 // Ported from Apache Harmony
 abstract class AbstractSelectableChannel protected[spi] (
     provider: SelectorProvider)
@@ -13,15 +11,15 @@ abstract class AbstractSelectableChannel protected[spi] (
 
   private val keyList = new ArrayBuffer[SelectionKey]
 
-  private val lock: Object = new BlockingLock
-  private var blocking     = true
+  private val lock     = new Object
+  private var blocking = true
 
   protected[spi] def implCloseSelectableChannel: Unit
   protected[spi] def implConfigureBlocking(block: Boolean): Unit
 
   final def provider(): SelectorProvider = this.provider
 
-  final def registered: Boolean = synchronized {
+  final def isRegistered: Boolean = synchronized {
     !keyList.isEmpty
   }
 

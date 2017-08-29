@@ -5,10 +5,10 @@ import scalanative.native._
 @extern
 object poll {
 
-  type pollfd = CStruct3[CInt,   // fd
+  type pollfd = CStruct3[CInt, // fd
                          CShort, // events
                          CShort] // revents
-  
+
   type nfds_t = UInt
 
   @name("scalanative_POLLIN")
@@ -49,12 +49,12 @@ object pollOps {
   import poll._
 
   implicit class pollfdOps(val ptr: Ptr[pollfd]) extends AnyVal {
-    def fd: CInt = !ptr._1
-    def events: CShort = !ptr._2
+    def fd: CInt        = !ptr._1
+    def events: CShort  = !ptr._2
     def revents: CShort = !ptr._3
 
-    def fd_=(v: CInt): Unit = !ptr._1 = v
-    def events_=(v: CShort): Unit = !ptr._2 = v
+    def fd_=(v: CInt): Unit        = !ptr._1 = v
+    def events_=(v: CShort): Unit  = !ptr._2 = v
     def revents_=(v: CShort): Unit = !ptr._3 = v
   }
 }

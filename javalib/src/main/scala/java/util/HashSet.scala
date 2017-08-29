@@ -21,6 +21,8 @@ class HashSet[E]
 
   protected val inner: mutable.Set[Box[E]] = new mutable.HashSet[Box[E]]()
 
+  override def isEmpty: Boolean = inner.isEmpty
+
   override def contains(o: Any): Boolean =
     inner.contains(Box(o.asInstanceOf[E]))
 

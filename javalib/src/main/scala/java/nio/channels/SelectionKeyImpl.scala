@@ -2,11 +2,11 @@ package java.nio.channels
 
 import java.nio.channels.spi._
 
-private[channels] final class SelectionKeyImpl
-  (ch: AbstractSelectableChannel,
-   private var operations: Int,
-   private var att: Object,
-   sel: SelectorImpl) extends AbstractSelectionKey {
+private[channels] final class SelectionKeyImpl(ch: AbstractSelectableChannel,
+                                               private var operations: Int,
+                                               private var att: Object,
+                                               sel: SelectorImpl)
+    extends AbstractSelectionKey {
 
   private[channels] var readyOperations = 0
 
@@ -23,7 +23,7 @@ private[channels] final class SelectionKeyImpl
 
   override def interestOps(ops: Int): SelectionKey = {
     checkValid
-    if((ops & ~(ch.validOps)) != 0) {
+    if ((ops & ~(ch.validOps)) != 0) {
       throw new IllegalArgumentException
     }
     sel.keysLock.synchronized {
@@ -41,7 +41,7 @@ private[channels] final class SelectionKeyImpl
   override def selector: Selector = sel
 
   private def checkValid: Unit = {
-    if(!isValid) {
+    if (!isValid) {
       throw new CancelledKeyException
     }
   }
