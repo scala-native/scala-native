@@ -41,7 +41,7 @@ final class Matcher private[regex] (var _pattern: Pattern,
 
   private var lastAnchor: Option[cre2.anchor_t] = None
 
-  private[regex] var inputLength = inputSequence.length
+  private[regex] def inputLength = inputSequence.length
 
   def matches(): Boolean = genMatch(0, ANCHOR_BOTH)
 
@@ -68,14 +68,19 @@ final class Matcher private[regex] (var _pattern: Pattern,
     Zone { implicit z =>
       val n       = nMatches
       val matches = alloc[cre2.string_t](n)
-      val in      = toCString(inputSequence.toString)
+      val instr   = inputSequence.toString
+      val inre2   = alloc[cre2.string_t]
+      toRE2String(instr, inre2)
+      // calculate byte-array indices from string indices
+      val startpos = instr.take(start).getBytes().length
+      val endpos   = instr.take(end).getBytes().length
 
       val ok = cre2.matches(
         regex = regex,
-        text = in,
-        textlen = inputLength,
-        startpos = start,
-        endpos = end,
+        text = inre2.data,
+        textlen = inre2.length,
+        startpos = startpos,
+        endpos = endpos,
         anchor = anchor,
         matches = matches,
         nMatches = nMatches
@@ -84,10 +89,19 @@ final class Matcher private[regex] (var _pattern: Pattern,
       if (ok) {
         var i = 0
         while (i < nMatches) {
-          val m     = matches + i
-          val start = if (m.length == 0) -1 else (m.data - in).toInt
-          val end   = if (m.length == 0) -1 else start + m.length
-          groups(i) = ((start, end))
+          val m = matches + i
+          groups(i) = if (m.length == 0) {
+            (-1, -1)
+          } else {
+            // Takes from inre2 until m...
+            val before = alloc[cre2.string_t]
+            before.data = inre2.data
+            before.length = (m.data - inre2.data).toInt
+            // ...to calculate `start` in String's index.
+            val start = fromRE2String(before).length
+            val end   = start + fromRE2String(m).length
+            (start, end)
+          }
 
           i += 1
         }
@@ -203,7 +217,6 @@ final class Matcher private[regex] (var _pattern: Pattern,
   def reset(input: CharSequence): Matcher = {
     reset()
     inputSequence = input
-    inputLength = input.length
     this
   }
 
