@@ -32,11 +32,19 @@ class _Object {
   @inline def __wait(timeout: scala.Long, nanos: Int): Unit =
     runtime.getMonitor(this)._wait(timeout, nanos)
 
-  @inline def __scala_==(other: _Object): scala.Boolean =
+  @inline def __scala_==(other: _Object): scala.Boolean = {
+    // This implementation is never called as we short-circuit
+    // the virtual dispatch to go directly to the equals implementation
+    // for the reference types in the optimizer. We provide it here for clarity.
     __equals(other)
+  }
 
-  @inline def __scala_## : scala.Int =
+  @inline def __scala_## : scala.Int = {
+    // This implementation is never called as we short-circuit
+    // the virtual dispatch to go directly to the hashCode implementation
+    // for the reference types in the optimizer. We provide it here for clarity.
     __hashCode
+  }
 
   protected def __clone(): _Object = {
     val ty    = runtime.getType(this)
