@@ -209,6 +209,8 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val InlineClass      = getRequiredClass("scala.inline")
     lazy val NoInlineClass    = getRequiredClass("scala.noinline")
     lazy val EnumerationClass = getRequiredClass("scala.Enumeration")
+    lazy val PropertiesTrait  = getRequiredClass("scala.util.PropertiesTrait")
+    lazy val JavaProperties   = getRequiredClass("java.util.Properties")
 
     lazy val StringConcatMethod = getMember(StringClass, TermName("concat"))
 
