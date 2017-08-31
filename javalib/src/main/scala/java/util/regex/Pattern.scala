@@ -49,7 +49,7 @@ object Pattern {
 
     private var next = 0
 
-    private[Pattern] def get(regex: String, flags: Int): RE2RegExpOps = {
+    def get(regex: String, flags: Int): RE2RegExpOps = synchronized {
       cache.view
         .find(entry => entry != null && entry.regex == regex && entry.flags == flags)
         .map(_.re2)
@@ -60,7 +60,14 @@ object Pattern {
         }
     }
 
-    private def put(regex: String, flags: Int, re2: RE2RegExpOps): Unit = {
+    def release(regex: String, flags: Int): Unit = synchronized {
+      val idx = cache.view
+        .indexWhere(entry => entry != null && entry.regex == regex && entry.flags == flags)
+      if (idx >= 0)
+        cache(idx) = null
+    }
+
+    def put(regex: String, flags: Int, re2: RE2RegExpOps): Unit = synchronized {
       if (cache(next) != null) {
         val removed = cache(next)
         cre2.delete(removed.re2.ptr)
@@ -69,7 +76,7 @@ object Pattern {
       next = if (next + 1 >= cache.size) 0 else next + 1
     }
 
-    private def doCompile(regex: String, flags: Int): RE2RegExpOps = Zone { implicit z =>
+    def doCompile(regex: String, flags: Int): RE2RegExpOps = Zone { implicit z =>
       def notSupported(flag: Int, flagName: String): Unit = {
         if ((flags & flag) == flag) {
           assert(false, s"regex flag $flagName is not supported")
@@ -158,9 +165,20 @@ final class Pattern private[regex] (
     _flags: Int
 ) {
 
-  // TODO make this function a loan pattern so that a Ptr is kept alive while in use
-  private[regex] def regex: Ptr[cre2.regexp_t] =
-    Pattern.CompiledPatternStore.get(_pattern, _flags).ptr
+  // this loan pattern makes sure that the instance of cre2.regexp_t is kept alive while in use.
+  private[regex] def withRE2Regex[A](f: RE2RegExpOps => A): A = {
+    import Pattern.{CompiledPatternStore => Store}
+    // get the compiled regex (called "re2" here) from the store's cache (or re-compiled if necessary).
+    val re2 = Store.get(_pattern, _flags)
+    // temporarily unmanage the re2 until the callback returns
+    Store.release(_pattern, _flags)
+    try {
+      f(re2)
+    } finally {
+      // put back the re2 to the store so that it gets deleted when it becomes old
+      Store.put(_pattern, _flags, re2)
+    }
+  }
 
   def split(input: CharSequence): Array[String] =
     split(input, 0)
