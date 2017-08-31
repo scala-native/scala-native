@@ -50,11 +50,17 @@ object Linker {
               !unresolved.contains(workitem)) {
 
             load(workitem)
-              .filter(config.linkStubs || !_._4.attrs.isStub)
               .fold[Unit] {
                 unresolved += workitem
                 onUnresolved(workitem)
               } {
+                // If this definition is a stub, and linking stubs is disabled,
+                // then add this element to the `unresolved` items.
+                case (_, _, _, defn)
+                    if defn.attrs.isStub && !config.linkStubs =>
+                  unresolved += workitem
+                  onUnresolved(workitem)
+
                 case (deps, newlinks, newsignatures, defn) =>
                   resolved += workitem
                   defns += defn

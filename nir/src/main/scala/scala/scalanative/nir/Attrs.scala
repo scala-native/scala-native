@@ -15,7 +15,8 @@ object Attr {
   final case object NoInline     extends Inline // should never inline
   final case object AlwaysInline extends Inline // should always inline
 
-  final case object Dyn extends Attr
+  final case object Dyn  extends Attr
+  final case object Stub extends Attr
 
   final case object Pure                  extends Attr
   final case object Extern                extends Attr
@@ -29,7 +30,6 @@ object Attr {
   final case class PinAlways(dep: Global)           extends Pin
   final case class PinIf(dep: Global, cond: Global) extends Pin
   final case class PinWeak(dep: Global)             extends Pin
-  final case object Stub                            extends Attr
 }
 
 final case class Attrs(inline: Inline = MayInline,
