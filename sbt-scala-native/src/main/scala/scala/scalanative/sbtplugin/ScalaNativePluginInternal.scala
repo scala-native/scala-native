@@ -235,14 +235,18 @@ object ScalaNativePluginInternal {
       // predicate to check if given file path shall be compiled
       // we only include sources of the current gc and exclude
       // all optional dependencies if they are not necessary
-      def include(path: String) = {
-        val sep = java.io.File.separator
+      val sep       = java.io.File.separator
+      val libPath   = crossTarget.value + sep + "native" + sep + "lib"
+      val optPath   = libPath + sep + "optional"
+      val gcPath    = libPath + sep + "gc"
+      val gcSelPath = gcPath + sep + gc
 
-        if (path.contains(sep + "optional" + sep)) {
+      def include(path: String) = {
+        if (path.contains(optPath)) {
           val name = file(path).getName.split("\\.").head
           linked.links.map(_.name).contains(name)
-        } else if (path.contains(sep + "gc" + sep)) {
-          path.contains("gc" + sep + gc)
+        } else if (path.contains(gcPath)) {
+          path.contains(gcSelPath)
         } else {
           true
         }
