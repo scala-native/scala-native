@@ -8,8 +8,10 @@ class _Object {
   @inline def __equals(that: _Object): scala.Boolean =
     this eq that
 
-  @inline def __hashCode(): scala.Int =
-    this.cast[Word].hashCode
+  @inline def __hashCode(): scala.Int = {
+    val addr = this.cast[Word]
+    addr.toInt ^ (addr >> 32).toInt
+  }
 
   @inline def __toString(): String =
     getClass.getName + "@" + Integer.toHexString(hashCode)
@@ -32,18 +34,19 @@ class _Object {
   @inline def __wait(timeout: scala.Long, nanos: Int): Unit =
     runtime.getMonitor(this)._wait(timeout, nanos)
 
-  @inline def __scala_==(other: _Object): scala.Boolean = {
-    // This implementation is never called as we short-circuit
-    // the virtual dispatch to go directly to the equals implementation
-    // for the reference types in the optimizer. We provide it here for clarity.
-    __equals(other)
+  @inline def __scala_==(that: _Object): scala.Boolean = {
+    // This implementation is only called for classes that don't override
+    // equals. Otherwise, whenever equals is overriden, we also update the
+    // vtable entry for scala_== to point to the override directly.
+    this eq that
   }
 
   @inline def __scala_## : scala.Int = {
-    // This implementation is never called as we short-circuit
-    // the virtual dispatch to go directly to the hashCode implementation
-    // for the reference types in the optimizer. We provide it here for clarity.
-    __hashCode
+    // This implementation is only called for classes that don't override
+    // hashCode. Otherwise, whenever hashCode is overriden, we also update the
+    // vtable entry for scala_## to point to the override directly.
+    val addr = this.cast[Word]
+    addr.toInt ^ (addr >> 32).toInt
   }
 
   protected def __clone(): _Object = {
