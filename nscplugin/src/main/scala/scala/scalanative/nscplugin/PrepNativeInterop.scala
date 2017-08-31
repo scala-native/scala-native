@@ -11,8 +11,7 @@ import scala.collection.mutable.Buffer
  * This phase does:
  * - Rewrite calls to scala.Enumeration.Value (include name string) (Ported from ScalaJS)
  * - Rewrite the body `scala.util.PropertiesTrait.scalaProps` to
- *   avoid calls to `getResourceByStream` if the resource to read
- *   is `/library.properties`.
+ *   be statically determined at compile-time.
  */
 abstract class PrepNativeInterop
     extends plugins.PluginComponent
@@ -109,11 +108,10 @@ abstract class PrepNativeInterop
           super.transform(tree)
 
         // `DefDef` that initializes `lazy val scalaProps` in trait `PropertiesTrait`
-        // We rewrite the body to return a pre-propulated `Properties` if the resource
-        // to read is `/library.properties`.
+        // We rewrite the body to return a pre-propulated `Properties`.
         case dd @ DefDef(mods, name, Nil, Nil, tpt, rhs)
             if dd.symbol == PropertiesTrait.info.member(nativenme.scalaProps) =>
-          val nrhs = shortCircuitLibraryProperties(dd, unit.freshTermName _)
+          val nrhs = prepopulatedScalaProperties(dd, unit.freshTermName _)
           treeCopy.DefDef(tree, mods, name, Nil, Nil, transform(tpt), nrhs)
 
         // Catch ValDefs in enumerations with simple calls to Value
@@ -265,54 +263,44 @@ abstract class PrepNativeInterop
   }
 
   /**
-   * Rewrite the rhs of `lazy val scalaProps` in trait `PropertiesTrait` to return a pre-populated
-   * `java.util.Properties` if the resource to read is `/library.properties`.
+   * Construct a tree that returns an instance of `java.util.Properties`
+   * that is pre-populated with the values of the `scala.util.Properties`
+   * at compile-time.
    * @param original  The original `DefDef`
    * @param freshName A function that generates a fresh name
    * @return The new (typed) rhs of the given `DefDef`.
    */
-  private def shortCircuitLibraryProperties(
+  private def prepopulatedScalaProperties(
       original: DefDef,
       freshName: String => TermName): Tree = {
     val libraryFileName = "/library.properties"
 
     // Construct the following tree
     //
-    //   if (PropertiesTrait.this.propFilename.equals("/library.properties") {
-    //     val fresh = new java.util.Properties()
-    //     // populate fresh
-    //     fresh
-    //   } else {
-    //     <original rhs>
-    //   }
+    //   val fresh = new java.util.Properties()
+    //   fresh.put("firstKey", "firstValue")
+    //   // etc.
+    //   fresh
     //
-    val thisSym          = original.symbol.owner
-    val propFileNametree = Select(This(thisSym), nativenme.propFilename)
-    val equalsTree       = Select(propFileNametree, "equals")
-    val libStringTree    = Literal(Constant(libraryFileName))
-    val condTree         = Apply(equalsTree, libStringTree :: Nil)
-    val thnTree = {
-      val stream = classOf[Option[_]].getResourceAsStream(libraryFileName)
-      val props  = new java.util.Properties()
-      try props.load(stream)
-      finally stream.close()
+    val stream = classOf[Option[_]].getResourceAsStream(libraryFileName)
+    val props  = new java.util.Properties()
+    try props.load(stream)
+    finally stream.close()
 
-      val instanceName = freshName("properties")
-      val keys         = props.stringPropertyNames().iterator()
-      val puts         = Buffer.empty[Tree]
-      while (keys.hasNext()) {
-        val key   = keys.next()
-        val value = props.getProperty(key)
-        puts += Apply(Select(Ident(instanceName), newTermName("put")),
-                      List(Literal(Constant(key)), Literal(Constant(value))))
-      }
-      val bindTree =
-        ValDef(Modifiers(), instanceName, TypeTree(), New(JavaProperties))
-      Block(bindTree :: puts.toList, Ident(instanceName))
+    val instanceName = freshName("properties")
+    val keys         = props.stringPropertyNames().iterator()
+    val puts         = Buffer.empty[Tree]
+    while (keys.hasNext()) {
+      val key   = keys.next()
+      val value = props.getProperty(key)
+      puts += Apply(Select(Ident(instanceName), newTermName("put")),
+                    List(Literal(Constant(key)), Literal(Constant(value))))
     }
-    val ifTree = If(condTree, thnTree, original.rhs)
+    val bindTree =
+      ValDef(Modifiers(), instanceName, TypeTree(), New(JavaProperties))
+    val nrhs = Block(bindTree :: puts.toList, Ident(instanceName))
 
-    typer.atOwner(original.symbol).typed(ifTree)
+    typer.atOwner(original.symbol).typed(nrhs)
   }
 
 }
