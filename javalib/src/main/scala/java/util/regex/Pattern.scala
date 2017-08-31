@@ -114,6 +114,40 @@ object Pattern {
       val res = fromRE2String(quoted)
       res
     }
+
+  private object CompiledPatternStore {
+    private case class Entry(regex: String, flags: Int, re2: Ptr[cre2.regexp_t])
+
+    private val cache =
+      scala.collection.mutable.IndexedSeq.fill[Entry](100)(null)
+
+    private var next = 0
+
+    private[Pattern] def get(regex: String, flags: Int): Ptr[cre2.regexp_t] = {
+      cache.view
+        .find(entry => entry != null && entry.regex == regex && entry.flags == flags)
+        .map(_.re2)
+        .getOrElse{
+          val re2 = doCompile(regex, flags)
+          put(regex, flags, re2)
+          re2
+        }
+    }
+
+    private def put(regex: String, flags: Int, re2: Ptr[cre2.regexp_t]): Unit = {
+      if (cache(next) != null) {
+        val removed = cache(next)
+        cre2.delete(removed.re2)
+      }
+      cache(next) = Entry(regex, flags, re2)
+      next = if (next + 1 >= cache.size) 0 else next + 1
+    }
+
+    private def doCompile(regex: String, flags: Int): Ptr[cre2.regexp_t] = {
+      // TODO move Pattern$.compile here
+      ???
+    }
+  }
 }
 
 final class Pattern private[regex] (
@@ -174,6 +208,7 @@ final class Pattern private[regex] (
   override def toString: String = _pattern
 
   override protected def finalize(): Unit = {
+    // TODO remove
     super.finalize()
     cre2.delete(_regex)
   }
