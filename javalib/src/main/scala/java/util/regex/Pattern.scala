@@ -61,12 +61,13 @@ object Pattern {
         }
     }
 
-    def release(regex: String, flags: Int): Unit = synchronized {
+    def release(regex: String, flags: Int): Int = synchronized {
       val idx = cache.view
         .indexWhere(entry =>
           entry != null && entry.regex == regex && entry.flags == flags)
       if (idx >= 0)
         cache(idx) = null
+      idx
     }
 
     def put(regex: String, flags: Int, re2: RE2RegExpOps): Unit = synchronized {
@@ -77,6 +78,14 @@ object Pattern {
       cache(next) = Entry(regex, flags, re2)
       next = if (next + 1 >= cache.size) 0 else next + 1
     }
+
+    def put(regex: String, flags: Int, re2: RE2RegExpOps, at: Int): Unit =
+      synchronized {
+        if (cache(at) == null)
+          cache(at) = Entry(regex, flags, re2)
+        else
+          put(regex, flags, re2)
+      }
 
     def doCompile(regex: String, flags: Int): RE2RegExpOps = Zone {
       implicit z =>
@@ -175,12 +184,12 @@ final class Pattern private[regex] (
     // get the compiled regex (called "re2" here) from the store's cache (or re-compiled if necessary).
     val re2 = Store.get(_pattern, _flags)
     // temporarily unmanage the re2 until the callback returns
-    Store.release(_pattern, _flags)
+    val idx = Store.release(_pattern, _flags)
     try {
       f(re2)
     } finally {
       // put back the re2 to the store so that it gets deleted when it becomes old
-      Store.put(_pattern, _flags, re2)
+      Store.put(_pattern, _flags, re2, idx)
     }
   }
 
