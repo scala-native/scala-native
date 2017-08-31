@@ -7,11 +7,9 @@ import nsc._
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.Buffer
 
-// Partially
-// Ported from ScalaJS
 /**
  * This phase does:
- * - Rewrite calls to scala.Enumeration.Value (include name string)
+ * - Rewrite calls to scala.Enumeration.Value (include name string) (Ported from ScalaJS)
  * - Rewrite the body `scala.util.PropertiesTrait.scalaProps` to
  *   avoid calls to `getResourceByStream` if the resource to read
  *   is `/library.properties`.
@@ -115,13 +113,13 @@ abstract class PrepNativeInterop
         // to read is `/library.properties`.
         case dd @ DefDef(mods, name, Nil, Nil, tpt, rhs)
             if dd.symbol == PropertiesTrait.info.member(nativenme.scalaProps) =>
-          val nrhs = ShortCircuitLibraryProperties(dd, unit.freshTermName _)
+          val nrhs = shortCircuitLibraryProperties(dd, unit.freshTermName _)
           treeCopy.DefDef(tree, mods, name, Nil, Nil, transform(tpt), nrhs)
 
         // Catch ValDefs in enumerations with simple calls to Value
         case ValDef(mods, name, tpt, ScalaEnumValue.NoName(optPar))
             if anyEnclosingOwner is OwnerKind.Enum =>
-          val nrhs = ScalaEnumValName(tree.symbol.owner, tree.symbol, optPar)
+          val nrhs = scalaEnumValName(tree.symbol.owner, tree.symbol, optPar)
           treeCopy.ValDef(tree, mods, name, transform(tpt), nrhs)
 
         // Catch Select on Enumeration.Value we couldn't transform but need to
@@ -238,7 +236,7 @@ abstract class PrepNativeInterop
    * @param intParam Optional tree with Int passed to Value
    * @return Typed tree with appropriate call to Value
    */
-  private def ScalaEnumValName(thisSym: Symbol,
+  private def scalaEnumValName(thisSym: Symbol,
                                nameOrig: Symbol,
                                intParam: Option[Tree]) = {
 
@@ -273,7 +271,7 @@ abstract class PrepNativeInterop
    * @param freshName A function that generates a fresh name
    * @return The new (typed) rhs of the given `DefDef`.
    */
-  private def ShortCircuitLibraryProperties(
+  private def shortCircuitLibraryProperties(
       original: DefDef,
       freshName: String => TermName): Tree = {
     val libraryFileName = "/library.properties"
