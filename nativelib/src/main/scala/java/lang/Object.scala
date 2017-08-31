@@ -42,7 +42,7 @@ class _Object {
   }
 
   @inline def __scala_## : scala.Int = {
-    // This implementation is only called for lasses that don't override
+    // This implementation is only called for classes that don't override
     // hashCode. Otherwise, whenever hashCode is overriden, we also update the
     // vtable entry for scala_## to point to the override directly.
     val addr = this.cast[Word]
