@@ -5,12 +5,14 @@ import scala.tools.nsc
 import nsc._
 
 import scala.collection.immutable.ListMap
-import scala.collection.mutable
+import scala.collection.mutable.Buffer
 
-// Ported from ScalaJS
 /**
  * This phase does:
- * - Rewrite calls to scala.Enumeration.Value (include name string)
+ * - Rewrite calls to scala.Enumeration.Value (include name string) (Ported from ScalaJS)
+ * - Rewrite the body `scala.util.PropertiesTrait.scalaProps` to
+ *   avoid calls to `getResourceByStream` if the resource to read
+ *   is `/library.properties`.
  */
 abstract class PrepNativeInterop
     extends plugins.PluginComponent
@@ -40,12 +42,14 @@ abstract class PrepNativeInterop
     new NativeInteropTransformer(unit)
 
   private object nativenme {
-    val hasNext  = newTermName("hasNext")
-    val next     = newTermName("next")
-    val nextName = newTermName("nextName")
-    val x        = newTermName("x")
-    val Value    = newTermName("Value")
-    val Val      = newTermName("Val")
+    val hasNext      = newTermName("hasNext")
+    val next         = newTermName("next")
+    val nextName     = newTermName("nextName")
+    val x            = newTermName("x")
+    val Value        = newTermName("Value")
+    val Val          = newTermName("Val")
+    val scalaProps   = newTermName("scalaProps")
+    val propFilename = newTermName("propFilename")
   }
 
   class NativeInteropTransformer(unit: CompilationUnit) extends Transformer {
@@ -104,10 +108,18 @@ abstract class PrepNativeInterop
         case vddef: ValOrDefDef if vddef.symbol.isLocalToBlock =>
           super.transform(tree)
 
+        // `DefDef` that initializes `lazy val scalaProps` in trait `PropertiesTrait`
+        // We rewrite the body to return a pre-propulated `Properties` if the resource
+        // to read is `/library.properties`.
+        case dd @ DefDef(mods, name, Nil, Nil, tpt, rhs)
+            if dd.symbol == PropertiesTrait.info.member(nativenme.scalaProps) =>
+          val nrhs = shortCircuitLibraryProperties(dd, unit.freshTermName _)
+          treeCopy.DefDef(tree, mods, name, Nil, Nil, transform(tpt), nrhs)
+
         // Catch ValDefs in enumerations with simple calls to Value
         case ValDef(mods, name, tpt, ScalaEnumValue.NoName(optPar))
             if anyEnclosingOwner is OwnerKind.Enum =>
-          val nrhs = ScalaEnumValName(tree.symbol.owner, tree.symbol, optPar)
+          val nrhs = scalaEnumValName(tree.symbol.owner, tree.symbol, optPar)
           treeCopy.ValDef(tree, mods, name, transform(tpt), nrhs)
 
         // Catch Select on Enumeration.Value we couldn't transform but need to
@@ -224,7 +236,7 @@ abstract class PrepNativeInterop
    * @param intParam Optional tree with Int passed to Value
    * @return Typed tree with appropriate call to Value
    */
-  private def ScalaEnumValName(thisSym: Symbol,
+  private def scalaEnumValName(thisSym: Symbol,
                                nameOrig: Symbol,
                                intParam: Option[Tree]) = {
 
@@ -250,6 +262,57 @@ abstract class PrepNativeInterop
     typer.typed {
       Apply(Select(This(thisSym), nativenme.Value), params)
     }
+  }
+
+  /**
+   * Rewrite the rhs of `lazy val scalaProps` in trait `PropertiesTrait` to return a pre-populated
+   * `java.util.Properties` if the resource to read is `/library.properties`.
+   * @param original  The original `DefDef`
+   * @param freshName A function that generates a fresh name
+   * @return The new (typed) rhs of the given `DefDef`.
+   */
+  private def shortCircuitLibraryProperties(
+      original: DefDef,
+      freshName: String => TermName): Tree = {
+    val libraryFileName = "/library.properties"
+
+    // Construct the following tree
+    //
+    //   if (PropertiesTrait.this.propFilename.equals("/library.properties") {
+    //     val fresh = new java.util.Properties()
+    //     // populate fresh
+    //     fresh
+    //   } else {
+    //     <original rhs>
+    //   }
+    //
+    val thisSym          = original.symbol.owner
+    val propFileNametree = Select(This(thisSym), nativenme.propFilename)
+    val equalsTree       = Select(propFileNametree, "equals")
+    val libStringTree    = Literal(Constant(libraryFileName))
+    val condTree         = Apply(equalsTree, libStringTree :: Nil)
+    val thnTree = {
+      val stream = classOf[Option[_]].getResourceAsStream(libraryFileName)
+      val props  = new java.util.Properties()
+      try props.load(stream)
+      finally stream.close()
+
+      val instanceName = freshName("properties")
+      val keys         = props.stringPropertyNames().iterator()
+      val puts         = Buffer.empty[Tree]
+      while (keys.hasNext()) {
+        val key   = keys.next()
+        val value = props.getProperty(key)
+        puts += Apply(Select(Ident(instanceName), newTermName("put")),
+                      List(Literal(Constant(key)), Literal(Constant(value))))
+      }
+      val bindTree =
+        ValDef(Modifiers(), instanceName, TypeTree(), New(JavaProperties))
+      Block(bindTree :: puts.toList, Ident(instanceName))
+    }
+    val ifTree = If(condTree, thnTree, original.rhs)
+
+    typer.atOwner(original.symbol).typed(ifTree)
   }
 
 }
