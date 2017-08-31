@@ -179,7 +179,7 @@ object ScalaNativePluginInternal {
       val mainClass = selectMainClass.value.getOrElse(
         throw new MessageOnlyException("No main class detected.")
       )
-      val classpath = fullClasspath.value.map(_.data)
+      val classpath = fullClasspath.value.map(_.data).filter(_.exists)
       val entry     = nir.Global.Top(mainClass.toString + "$")
       val cwd       = nativeWorkdir.value
 
@@ -424,7 +424,7 @@ object ScalaNativePluginInternal {
         if (exitCode == 0) None
         else Some("Nonzero exit code: " + exitCode)
 
-      Defaults.toError(message)
+      message.foreach(sys.error)
     },
     nativeMissingDependencies := {
       (nativeExternalDependencies.value.toSet --
