@@ -141,7 +141,7 @@ final class Matcher private[regex] (var _pattern: Pattern,
       toRE2String(inputSequence.toString, textAndTarget)
       toRE2String(replacement, rewrite)
 
-      withRE2Regex{ re2 =>
+      withRE2Regex { re2 =>
         val regex = re2.ptr
         if (global) cre2.globalReplace(regex, textAndTarget, rewrite)
         else cre2.replace(regex, textAndTarget, rewrite)
