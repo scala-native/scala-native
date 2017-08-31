@@ -145,15 +145,11 @@ final class _Class[A](val ty: Ptr[Type]) {
   def getConstructor(args: Array[Object]): java.lang.reflect.Constructor[_] =
     ???
   @stub
-  def getConstructors(): Array[Object] = ???
-  @stub
+  def getConstructors(): Array[Object]   = ???
   def getDeclaredFields(): Array[Object] = ???
-  @stub
   def getMethod(name: java.lang.String,
-                args: Array[Object]): java.lang.reflect.Method = ???
-  @stub
-  def getMethods(): Array[Object] = ???
-  @stub
+                args: Array[Object]): java.lang.reflect.Method         = ???
+  def getMethods(): Array[Object]                                      = ???
   def getResourceAsStream(name: java.lang.String): java.io.InputStream = ???
 }
 
