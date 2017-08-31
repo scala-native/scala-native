@@ -372,6 +372,18 @@ object PatternSuite extends tests.Suite {
     syntax("foo(foo)bar)baz", "Missing parenthesis", 0)
   }
 
+  private val runStressTests = false
+  if (runStressTests) {
+    test("compile should not leak memory") {
+      println("===== AN ENDLESS STRESS TEST INVOKED =====")
+      while (true) {
+        for {
+          pattern <- (1 to 500).map(_.toString)
+        } Pattern.compile(pattern)
+      }
+    }
+  }
+
   private def syntax(pattern: String, description: String, index: Int): Unit = {
     assertThrowsAnd[PatternSyntaxException](Pattern.compile(pattern))(
       e => {
