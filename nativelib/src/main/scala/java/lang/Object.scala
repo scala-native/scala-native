@@ -8,8 +8,10 @@ class _Object {
   @inline def __equals(that: _Object): scala.Boolean =
     this eq that
 
-  @inline def __hashCode(): scala.Int =
-    this.cast[Word].hashCode
+  @inline def __hashCode(): scala.Int = {
+    val addr = this.cast[Word]
+    addr.toInt ^ (addr >> 32).toInt
+  }
 
   @inline def __toString(): String =
     getClass.getName + "@" + Integer.toHexString(hashCode)
@@ -40,10 +42,11 @@ class _Object {
   }
 
   @inline def __scala_## : scala.Int = {
-    // This implementation is only called for classes that don't override
+    // This implementation is only called for lasses that don't override
     // hashCode. Otherwise, whenever hashCode is overriden, we also update the
     // vtable entry for scala_## to point to the override directly.
-    this.cast[Word].hashCode
+    val addr = this.cast[Word]
+    addr.toInt ^ (addr >> 32).toInt
   }
 
   protected def __clone(): _Object = {
