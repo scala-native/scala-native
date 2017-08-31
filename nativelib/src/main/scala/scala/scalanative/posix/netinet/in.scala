@@ -27,8 +27,8 @@ object in {
   type ipv6_mreq = CStruct2[in6_addr, // ipv6mr_multiaddr
                             CUnsignedInt] // ipv6mr_interface
 
-  @name("scalanative_IPROTO_IP")
-  def IPROTO_IP: CInt = extern
+  @name("scalanative_IPPROTO_IP")
+  def IPPROTO_IP: CInt = extern
 
   @name("scalanative_IPPROTO_IPV6")
   def IPPROTO_IPV6: CInt = extern
@@ -77,6 +77,15 @@ object in {
 
   @name("scalanative_IPV6_V6ONLY")
   def IPV6_V6ONLY: CInt = extern
+
+  @name("scalanative_IP_MULTICAST_IF")
+  def IP_MULTICAST_IF: CInt = extern
+
+  @name("scalanative_IP_MULTICAST_LOOP")
+  def IP_MULTICAST_LOOP: CInt = extern
+
+  @name("scalanative_IP_TOS")
+  def IP_TOS: CInt = extern
 
   @name("scalanative_IN6_IS_ADDR_UNSPECIFIED")
   def IN6_IS_ADDR_UNSPECIFIED(arg: Ptr[in6_addr]): CInt = extern

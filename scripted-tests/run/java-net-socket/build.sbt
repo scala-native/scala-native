@@ -9,10 +9,40 @@ enablePlugins(ScalaNativePlugin)
 
 scalaVersion := "2.11.11"
 
-lazy val launchEchoServer =
-  taskKey[Unit]("Setting up tcp echo server")
+lazy val launchServer = taskKey[Unit]("Setting up a server for tests")
+lazy val launchTcpEchoServer =
+  taskKey[Unit]("Setting up a TCP echo server")
+lazy val launchSilentServer =
+  taskKey[Unit]("Setting up a non responding server")
 
-launchEchoServer := {
+launchServer := {
+  val echoServer = new ServerSocket(0)
+  val portFile   = Paths.get("server-port.txt")
+  Files.write(portFile, echoServer.getLocalPort.toString.getBytes)
+  val f = Future {
+    val clientSocket = echoServer.accept
+    val out          = new PrintWriter(clientSocket.getOutputStream, true)
+    val in =
+      new BufferedReader(new InputStreamReader(clientSocket.getInputStream))
+
+    var line = in.readLine
+    while (line != null) {
+      out.println(line)
+      line = in.readLine
+    }
+    in.close
+    out.close
+    clientSocket.close
+  }
+  f.onComplete {
+    case _ => {
+      echoServer.close
+      Files.delete(portFile)
+    }
+  }
+}
+
+launchTcpEchoServer := {
   val echoServer = new ServerSocket(0)
   val portFile   = Paths.get("server-port.txt")
   Files.write(portFile, echoServer.getLocalPort.toString.getBytes)
@@ -34,5 +64,29 @@ launchEchoServer := {
       Files.delete(portFile)
     }
   }
+}
 
+launchSilentServer := {
+  val echoServer = new ServerSocket(0)
+  val portFile   = Paths.get("server-port.txt")
+  Files.write(portFile, echoServer.getLocalPort.toString.getBytes)
+  val f = Future {
+    val clientSocket = echoServer.accept
+    val in =
+      new BufferedReader(new InputStreamReader(clientSocket.getInputStream))
+
+    var line = in.readLine
+    while (line != null) {
+      line = in.readLine
+    }
+
+    in.close
+    clientSocket.close
+  }
+  f.onComplete {
+    case _ => {
+      echoServer.close
+      Files.delete(portFile)
+    }
+  }
 }

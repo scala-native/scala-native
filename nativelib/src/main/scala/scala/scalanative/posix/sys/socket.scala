@@ -133,6 +133,11 @@ object socket {
   @name("scalanative_AF_UNSPEC")
   def AF_UNSPEC: CInt = extern
 
+  @name("scalanative_getsockname")
+  def getsockname(socket: CInt,
+                  address: Ptr[sockaddr],
+                  address_len: Ptr[socklen_t]): CInt = extern
+
   @name("scalanative_socket")
   def socket(domain: CInt, tpe: CInt, protocol: CInt): CInt = extern
 
@@ -178,6 +183,9 @@ object socket {
            buffer: Ptr[Byte],
            length: CSize,
            flags: CInt): CSSize = extern
+
+  @name("scalanative_shutdown")
+  def shutdown(socket: CInt, how: CInt): CInt = extern
 }
 
 object socketOps {

@@ -32,3 +32,9 @@ class NotSerializableException(s: String) extends ObjectStreamException(s) {
 }
 
 class SyncFailedException(s: String) extends IOException(s)
+
+class InterruptedIOException(s: String) extends IOException(s) {
+  var bytesTransferred: Int = 0
+
+  def this() = this(null)
+}

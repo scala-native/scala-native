@@ -81,6 +81,32 @@ int scalanative_AF_UNIX() { return AF_UNIX; }
 
 int scalanative_AF_UNSPEC() { return AF_UNSPEC; }
 
+int scalanative_getsockname(int socket, struct scalanative_sockaddr *address,
+                            socklen_t *address_len) {
+    struct sockaddr *converted_address;
+    int convert_result =
+        scalanative_convert_sockaddr(address, &converted_address, address_len);
+
+    int result;
+
+    if (convert_result == 0) {
+        result = getsockname(socket, converted_address, address_len);
+        convert_result = scalanative_convert_scalanative_sockaddr(
+            converted_address, address, address_len);
+
+        if (convert_result != 0) {
+            errno = convert_result;
+            result = -1;
+        }
+    } else {
+        errno = convert_result;
+        result = -1;
+    }
+
+    free(converted_address);
+    return result;
+}
+
 int scalanative_socket(int domain, int type, int protocol) {
     return socket(domain, type, protocol);
 }
@@ -169,3 +195,5 @@ int scalanative_recv(int socket, void *buffer, size_t length, int flags) {
 int scalanative_send(int socket, void *buffer, size_t length, int flags) {
     return send(socket, buffer, length, flags);
 }
+
+int scalanative_shutdown(int socket, int how) { return shutdown(socket, how); }

@@ -4,13 +4,15 @@
 #include <stddef.h>
 #include <string.h>
 
+#define FDBITS (8 * sizeof(long))
+
 struct scalanative_timeval {
     time_t tv_sec;
-    int tv_usec;
+    suseconds_t tv_usec;
 };
 
 struct scalanative_fd_set {
-    long fd_bits[FD_SETSIZE / sizeof(long)];
+    long fd_bits[FD_SETSIZE / FDBITS];
 };
 
 int scalanative_FD_SETSIZE() { return FD_SETSIZE; }
@@ -22,20 +24,19 @@ void convert_scalanative_timeval(struct scalanative_timeval *in,
 }
 
 void scalanative_FD_ZERO(struct scalanative_fd_set *set) {
-    memset(set->fd_bits, '\0', FD_SETSIZE / sizeof(long));
+    FD_ZERO((fd_set *)set);
 }
 
 void scalanative_FD_CLR(int fd, struct scalanative_fd_set *set) {
-    set->fd_bits[fd / sizeof(long)] &= ~((long)(1 << (fd % sizeof(long))));
+    FD_CLR(fd, (fd_set *)set);
 }
 
 void scalanative_FD_SET(int fd, struct scalanative_fd_set *set) {
-    set->fd_bits[fd / sizeof(long)] |= ((long)(1 << (fd % sizeof(long))));
+    FD_SET(fd, (fd_set *)set);
 }
 
 int scalanative_FD_ISSET(int fd, struct scalanative_fd_set *set) {
-    return ((set->fd_bits[fd / sizeof(long)] &
-             ((long)(1 << (fd % sizeof(long))))) != 0);
+    return FD_ISSET(fd, (fd_set *)set);
 }
 
 int scalanative_select(int nfds, struct scalanative_fd_set *readfds,

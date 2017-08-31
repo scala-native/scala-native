@@ -103,3 +103,15 @@ int scalanative_getaddrinfo(char *name, char *service,
     *res = res_native;
     return status;
 }
+
+int scalanative_AI_NUMERICHOST() { return AI_NUMERICHOST; }
+
+int scalanative_AI_PASSIVE() { return AI_PASSIVE; }
+
+int scalanative_AI_NUMERICSERV() { return AI_NUMERICSERV; }
+
+int scalanative_AI_ADDRCONFIG() { return AI_ADDRCONFIG; }
+
+int scalanative_AI_V4MAPPED() { return AI_V4MAPPED; }
+
+int scalanative_AI_CANONNAME() { return AI_CANONNAME; }
