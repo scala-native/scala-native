@@ -42,14 +42,14 @@ object Pattern {
     }
 
   private object CompiledPatternStore {
-    private case class Entry(regex: String, flags: Int, re2: Ptr[cre2.regexp_t])
+    private case class Entry(regex: String, flags: Int, re2: RE2RegExpOps)
 
     private val cache =
       scala.collection.mutable.IndexedSeq.fill[Entry](100)(null)
 
     private var next = 0
 
-    private[Pattern] def get(regex: String, flags: Int): Ptr[cre2.regexp_t] = {
+    private[Pattern] def get(regex: String, flags: Int): RE2RegExpOps = {
       cache.view
         .find(entry => entry != null && entry.regex == regex && entry.flags == flags)
         .map(_.re2)
@@ -60,16 +60,16 @@ object Pattern {
         }
     }
 
-    private def put(regex: String, flags: Int, re2: Ptr[cre2.regexp_t]): Unit = {
+    private def put(regex: String, flags: Int, re2: RE2RegExpOps): Unit = {
       if (cache(next) != null) {
         val removed = cache(next)
-        cre2.delete(removed.re2)
+        cre2.delete(removed.re2.ptr)
       }
       cache(next) = Entry(regex, flags, re2)
       next = if (next + 1 >= cache.size) 0 else next + 1
     }
 
-    private def doCompile(regex: String, flags: Int): Ptr[cre2.regexp_t] = Zone { implicit z =>
+    private def doCompile(regex: String, flags: Int): RE2RegExpOps = Zone { implicit z =>
       def notSupported(flag: Int, flagName: String): Unit = {
         if ((flags & flag) == flag) {
           assert(false, s"regex flag $flagName is not supported")
@@ -145,7 +145,7 @@ object Pattern {
           )
         }
 
-        re2
+        new RE2RegExpOps(re2)
       } finally {
         cre2.optDelete(options)
       }
@@ -160,7 +160,7 @@ final class Pattern private[regex] (
 
   // TODO make this function a loan pattern so that a Ptr is kept alive while in use
   private[regex] def regex: Ptr[cre2.regexp_t] =
-    Pattern.CompiledPatternStore.get(_pattern, _flags)
+    Pattern.CompiledPatternStore.get(_pattern, _flags).ptr
 
   def split(input: CharSequence): Array[String] =
     split(input, 0)
