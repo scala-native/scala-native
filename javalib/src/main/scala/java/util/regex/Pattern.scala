@@ -19,10 +19,7 @@ object Pattern {
 
   def compile(regex: String): Pattern = compile(regex, 0)
 
-  def compile(regex: String, flags: Int): Pattern =
-    compile(regex, 0, adapt = true)
-
-  def compile(regex: String, flags: Int, adapt: Boolean): Pattern = Zone {
+  def compile(regex: String, flags: Int): Pattern = Zone {
     implicit z =>
       def notSupported(flag: Int, flagName: String): Unit = {
         if ((flags & flag) == flag) {
@@ -117,10 +114,6 @@ object Pattern {
       val res = fromRE2String(quoted)
       res
     }
-
-  def adaptPatternToRe2(regex: String): String = {
-    regex
-  }
 }
 
 final class Pattern private[regex] (
