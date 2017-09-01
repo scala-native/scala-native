@@ -899,17 +899,29 @@ trait NirGenExpr { self: NirGenPhase =>
           }
 
         case _: Type.RefKind =>
+          def genEquals(ref: Boolean, negated: Boolean) = (left, right) match {
+            // If null is present on either side, we must always
+            // generate reference equality, regardless of where it
+            // was called with == or eq. This shortcut is not optional.
+            case (Literal(Constant(null)), _)
+               | (_, Literal(Constant(null))) =>
+              genClassEquality(left, right, ref = true, negated = negated)
+            case _ =>
+              genClassEquality(left, right, ref = ref, negated = negated)
+          }
+
           code match {
             case EQ =>
-              genClassEquality(left, right, ref = false, negated = false)
+              genEquals(ref = false, negated = false)
             case NE =>
-              genClassEquality(left, right, ref = false, negated = true)
+              genEquals(ref = false, negated = true)
             case ID =>
-              genClassEquality(left, right, ref = true, negated = false)
+              genEquals(ref = true, negated = false)
             case NI =>
-              genClassEquality(left, right, ref = true, negated = true)
+              genEquals(ref = true, negated = true)
 
-            case _ => abort("Unknown reference type operation code: " + code)
+            case _ =>
+              abort("Unknown reference type operation code: " + code)
           }
 
         case Type.Ptr =>
