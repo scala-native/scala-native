@@ -18,14 +18,9 @@ int scalanative_unwind_get_proc_name(void *cursor, char *buffer, size_t length,
                              (unw_word_t *)offset);
 }
 
-int scalanative_unwind_get_proc_start_ip(void *cursor, unsigned long *buffer) {
-    unw_proc_info_t pip;
-    int result = unw_get_proc_info((unw_cursor_t *)cursor, &pip);
-
-    if (result == 0) {
-        *buffer = pip.start_ip;
-        return 0;
-    } else {
-        return result;
-    }
+int scalanative_unwind_get_reg(void *cursor, int regnum,
+                               unsigned long long *valp) {
+    return unw_get_reg((unw_cursor_t *)cursor, regnum, (unw_word_t *)valp);
 }
+
+int scalanative_UNW_REG_IP() { return UNW_REG_IP; }
