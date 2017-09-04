@@ -59,6 +59,6 @@ object cre2h {
   final val ERROR_PATTERN_TOO_LARGE  = 14
 
   // this trivial wrapper class is needed to avoid compiler crash at nativeOptimizeNIR
-  // a possible instance of #367 or #939
+  // a possible instance of #367
   implicit class RE2RegExpOps(val ptr: Ptr[cre2.regexp_t]) extends AnyVal
 }
