@@ -468,8 +468,23 @@ object Long {
     }
   }
 
-  @inline def valueOf(longValue: scala.Long): Long =
-    new Long(longValue)
+  import LongCache.cache
+
+  @inline def valueOf(longValue: scala.Long): Long = {
+    if (longValue.toByte.toLong != longValue) {
+      new Long(longValue)
+    } else {
+      val idx    = (longValue + 128).toInt
+      val cached = cache(idx)
+      if (cached != null) {
+        cached
+      } else {
+        val newlong = new Long(longValue)
+        cache(idx) = newlong
+        newlong
+      }
+    }
+  }
 
   @inline def valueOf(s: String): Long =
     valueOf(parseLong(s))
@@ -557,5 +572,8 @@ object Long {
       new String(buffer)
     }
   }
+}
 
+private[lang] object LongCache {
+  private[lang] val cache = new Array[java.lang.Long](256)
 }
