@@ -1,7 +1,7 @@
 package java.lang
 package reflect
 
-import scala.scalanative.native.stub
+import scalanative.native.stub
 
 class Constructor[T] extends Executable {
   @stub

@@ -87,8 +87,7 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
         case T.NoInlineAttr     => buf += Attr.NoInline
         case T.AlwaysInlineAttr => buf += Attr.AlwaysInline
 
-        case T.DynAttr => buf += Attr.Dyn
-
+        case T.DynAttr  => buf += Attr.Dyn
         case T.StubAttr => buf += Attr.Stub
 
         case T.PureAttr     => buf += Attr.Pure

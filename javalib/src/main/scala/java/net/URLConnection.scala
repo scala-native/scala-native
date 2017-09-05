@@ -1,6 +1,6 @@
 package java.net
 
 class URLConnection {
-  @scala.scalanative.native.stub
+  @scalanative.native.stub
   def getLastModified(): scala.Long = ???
 }

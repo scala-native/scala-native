@@ -1,6 +1,6 @@
 package java.lang
 
-import scala.scalanative.native.stub
+import scalanative.native.stub
 
 class Thread private (runnable: Runnable) extends Runnable {
   if (runnable ne Thread.MainRunnable) ???
