@@ -1,9 +1,15 @@
 package java.lang
 
+import scalanative.native.stub
+
 class ClassLoader protected (parent: ClassLoader) {
   def this() = this(null)
-  def loadClass(name: String): Class[_]                      = ???
-  def getParent(): ClassLoader                               = ???
+  @stub
+  def loadClass(name: String): Class[_] = ???
+  @stub
+  def getParent(): ClassLoader = ???
+  @stub
   def getResourceAsStream(name: String): java.io.InputStream = ???
-  def getResources(name: String): java.util.Enumeration[_]   = ???
+  @stub
+  def getResources(name: String): java.util.Enumeration[_] = ???
 }

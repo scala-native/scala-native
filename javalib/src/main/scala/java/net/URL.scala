@@ -1,9 +1,16 @@
 package java.net
 
+import scalanative.native.stub
+
 class URL(from: String) {
-  def getPath(): java.lang.String              = ???
-  def getProtocol(): java.lang.String          = ???
+  @stub
+  def getPath(): java.lang.String = ???
+  @stub
+  def getProtocol(): java.lang.String = ???
+  @stub
   def openConnection(): java.net.URLConnection = ???
-  def openStream(): java.io.InputStream        = ???
-  override def hashCode: Int                   = ???
+  @stub
+  def openStream(): java.io.InputStream = ???
+  @stub
+  override def hashCode: Int = ???
 }

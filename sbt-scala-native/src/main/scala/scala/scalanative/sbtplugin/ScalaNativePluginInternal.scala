@@ -114,6 +114,8 @@ object ScalaNativePluginInternal {
     },
     nativeLinkingOptions in NativeTest := (nativeLinkingOptions in Test).value,
     nativeMode := "debug",
+    nativeLinkStubs := false,
+    nativeLinkStubs in NativeTest := (nativeLinkStubs in Test).value,
     nativeMode in NativeTest := (nativeMode in Test).value,
     nativeLinkerReporter := tools.LinkerReporter.empty,
     nativeLinkerReporter in NativeTest := (nativeLinkerReporter in Test).value,
@@ -189,6 +191,7 @@ object ScalaNativePluginInternal {
         .withWorkdir(cwd)
         .withTarget(nativeTarget.value)
         .withMode(mode(nativeMode.value))
+        .withLinkStubs(nativeLinkStubs.value)
     },
     nativeUnpackLib := {
       val cwd       = nativeWorkdir.value

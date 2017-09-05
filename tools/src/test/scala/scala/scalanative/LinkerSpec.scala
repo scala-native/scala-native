@@ -29,13 +29,14 @@ abstract class LinkerSpec extends FlatSpec {
   def link[T](
       entry: String,
       sources: Map[String, String],
+      linkStubs: Boolean = false,
       driver: Option[Driver] = None)(f: (Config, linker.Result) => T): T =
     Scope { implicit in =>
       val outDir     = Files.createTempDirectory("native-test-out").toFile()
       val compiler   = NIRCompiler.getCompiler(outDir)
       val sourcesDir = NIRCompiler.writeSources(sources)
       val files      = compiler.compile(sourcesDir)
-      val config     = makeConfig(outDir, entry)
+      val config     = makeConfig(outDir, entry, linkStubs)
       val driver_    = driver.fold(Driver(config))(identity)
       val result     = tools.link(config, driver_)
 
@@ -52,7 +53,7 @@ abstract class LinkerSpec extends FlatSpec {
     parts :+ outDir
   }
 
-  private def makeConfig(outDir: File, entryName: String)(
+  private def makeConfig(outDir: File, entryName: String, linkStubs: Boolean)(
       implicit in: Scope): Config = {
     val entry = Global.Top(entryName)
     val paths = makePaths(outDir)
@@ -60,6 +61,7 @@ abstract class LinkerSpec extends FlatSpec {
       .withWorkdir(outDir)
       .withPaths(paths)
       .withEntry(entry)
+      .withLinkStubs(linkStubs)
   }
 
   protected implicit def String2MapStringString(

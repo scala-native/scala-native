@@ -353,8 +353,11 @@ class File(_path: String) extends Serializable with Comparable[File] {
 
   override def toString(): String = path
 
-  def deleteOnExit(): Unit  = ???
+  @stub
+  def deleteOnExit(): Unit = ???
+  @stub
   def toURL(): java.net.URL = ???
+  @stub
   def toURI(): java.net.URI = ???
 }
 

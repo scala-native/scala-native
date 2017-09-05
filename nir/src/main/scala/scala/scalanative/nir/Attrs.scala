@@ -15,7 +15,8 @@ object Attr {
   final case object NoInline     extends Inline // should never inline
   final case object AlwaysInline extends Inline // should always inline
 
-  final case object Dyn extends Attr
+  final case object Dyn  extends Attr
+  final case object Stub extends Attr
 
   final case object Pure                  extends Attr
   final case object Extern                extends Attr
@@ -35,6 +36,7 @@ final case class Attrs(inline: Inline = MayInline,
                        isPure: Boolean = false,
                        isExtern: Boolean = false,
                        isDyn: Boolean = false,
+                       isStub: Boolean = false,
                        overrides: Seq[Global] = Seq(),
                        pins: Seq[Pin] = Seq(),
                        links: Seq[Attr.Link] = Seq(),
@@ -46,6 +48,7 @@ final case class Attrs(inline: Inline = MayInline,
     if (isPure) out += Pure
     if (isExtern) out += Extern
     if (isDyn) out += Dyn
+    if (isStub) out += Stub
     overrides.foreach { out += Override(_) }
     out ++= pins
     out ++= links
@@ -62,6 +65,7 @@ object Attrs {
     var isPure    = false
     var isExtern  = false
     var isDyn     = false
+    var isStub    = false
     var align     = Option.empty[Int]
     val overrides = mutable.UnrolledBuffer.empty[Global]
     val pins      = mutable.UnrolledBuffer.empty[Pin]
@@ -72,12 +76,21 @@ object Attrs {
       case Pure            => isPure = true
       case Extern          => isExtern = true
       case Dyn             => isDyn = true
+      case Stub            => isStub = true
       case Align(value)    => align = Some(value)
       case Override(name)  => overrides += name
       case attr: Pin       => pins += attr
       case link: Attr.Link => links += link
     }
 
-    new Attrs(inline, isPure, isExtern, isDyn, overrides, pins, links, align)
+    new Attrs(inline,
+              isPure,
+              isExtern,
+              isDyn,
+              isStub,
+              overrides,
+              pins,
+              links,
+              align)
   }
 }

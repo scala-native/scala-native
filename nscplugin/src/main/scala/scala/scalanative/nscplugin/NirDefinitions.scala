@@ -32,6 +32,7 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val LinkClass   = getRequiredClass("scala.scalanative.native.link")
     lazy val ExternClass = getRequiredClass("scala.scalanative.native.extern")
     lazy val PinClass    = getRequiredClass("scala.scalanative.native.pin")
+    lazy val StubClass   = getRequiredClass("scala.scalanative.native.stub")
 
     lazy val InlineHintClass = getRequiredClass(
       "scala.scalanative.native.inlinehint")
