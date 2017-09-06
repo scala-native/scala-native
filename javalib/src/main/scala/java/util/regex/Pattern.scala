@@ -21,7 +21,7 @@ object Pattern {
 
   def compile(regex: String, flags: Int): Pattern = {
     // make sure the provided regex is compiled
-    CompiledPatternStore.get(regex, flags)
+    CompiledPatternStore.withRE2Regex(regex, flags)(_ => ())
 
     new Pattern(
       _pattern = regex,
@@ -42,50 +42,81 @@ object Pattern {
     }
 
   private object CompiledPatternStore {
-    private case class Entry(regex: String, flags: Int, re2: RE2RegExpOps)
+    final case class Key(regex: String, flags: Int)
+    final class Node(var key: Key,
+                     var value: RE2RegExpOps,
+                     var rc: Int,
+                     var next: Node)
 
-    private val cache =
-      scala.collection.mutable.IndexedSeq.fill[Entry](100)(null)
+    private def freshNode(next: Node) =
+      new Node(null, new RE2RegExpOps(null), 0, next)
 
-    private var next = 0
+    import scala.annotation.tailrec
 
-    def get(regex: String, flags: Int): RE2RegExpOps = synchronized {
-      cache.view
-        .find(entry =>
-          entry != null && entry.regex == regex && entry.flags == flags)
-        .map(_.re2)
-        .getOrElse {
-          val re2 = doCompile(regex, flags)
-          put(regex, flags, re2)
-          re2
-        }
-    }
-
-    def release(regex: String, flags: Int): Int = synchronized {
-      val idx = cache.view
-        .indexWhere(entry =>
-          entry != null && entry.regex == regex && entry.flags == flags)
-      if (idx >= 0)
-        cache(idx) = null
-      idx
-    }
-
-    def put(regex: String, flags: Int, re2: RE2RegExpOps): Unit = synchronized {
-      if (cache(next) != null) {
-        val removed = cache(next)
-        cre2.delete(removed.re2.ptr)
-      }
-      cache(next) = Entry(regex, flags, re2)
-      next = if (next + 1 >= cache.size) 0 else next + 1
-    }
-
-    def put(regex: String, flags: Int, re2: RE2RegExpOps, at: Int): Unit =
-      synchronized {
-        if (cache(at) == null)
-          cache(at) = Entry(regex, flags, re2)
+    // The tip of Nodes. The Nodes form a ring buffer of some length.
+    var last: Node = {
+      // Populate the ringbuffer
+      @tailrec def f(n: Node, num: Int): Node =
+        if (num < 0)
+          n
         else
-          put(regex, flags, re2)
+          f(freshNode(n), num - 1)
+      val last = freshNode(null)
+      last.next = f(last, 128)
+      last
+    }
+
+    // Used to quickly look up a Node from a Key.
+    val map = scala.collection.mutable.HashMap.empty[Key, Node]
+
+    private def selectNode(regex: String, flags: Int): Node = synchronized {
+      // Look up a RE2RegExpOps from the map.
+      // If the map doesn't contain the key, look for an unused Node (whose refcount(rc) is 0),
+      // delete its old compiled pattern if any, and then compile a new RE2 pattern and cache it
+      // before returning it.
+      // If all of the nodes are in use, expand the ringbuffer by 1 as a last resort.
+      map.get(Key(regex, flags)).getOrElse {
+        @tailrec def findUnused(n: Node): Node =
+          if (n eq last) {
+            // No unused nodes in the ringbuffer; expand its size by 1
+            val newnode = freshNode(last.next)
+            last.next = newnode
+            newnode
+          } else if (n.rc <= 0)
+            n
+          else
+            findUnused(n.next)
+        val reused =
+          if (last.rc <= 0)
+            last
+          else
+            findUnused(last.next)
+        // delete the old pattern (if any)
+        map -= reused.key
+        if (reused.value.ptr != null) {
+          cre2.delete(reused.value.ptr)
+          reused.value = new RE2RegExpOps(null)
+        }
+        // reuse the node by replacing its members with new contents
+        reused.key = Key(regex, flags)
+        reused.value = doCompile(regex, flags)
+        map += reused.key -> reused
+        // advance `last` so that it points to the next node (which is likely the least recently used one)
+        last = reused.next
+        reused
       }
+    }
+
+    def withRE2Regex[A](regex: String, flags: Int)(f: RE2RegExpOps => A): A = {
+      // increase the refcount of the selected node while in use to prevent it from deleted
+      val node = synchronized {
+        val n = selectNode(regex, flags)
+        n.rc += 1
+        n
+      }
+      try f(node.value)
+      finally node.rc -= 1
+    }
 
     def doCompile(regex: String, flags: Int): RE2RegExpOps = Zone {
       implicit z =>
@@ -179,19 +210,8 @@ final class Pattern private[regex] (
 ) {
 
   // this loan pattern makes sure that the instance of cre2.regexp_t is kept alive while in use.
-  private[regex] def withRE2Regex[A](f: RE2RegExpOps => A): A = {
-    import Pattern.{CompiledPatternStore => Store}
-    // get the compiled regex (called "re2" here) from the store's cache (or re-compiled if necessary).
-    val re2 = Store.get(_pattern, _flags)
-    // temporarily unmanage the re2 until the callback returns
-    val idx = Store.release(_pattern, _flags)
-    try {
-      f(re2)
-    } finally {
-      // put back the re2 to the store so that it gets deleted when it becomes old
-      Store.put(_pattern, _flags, re2, idx)
-    }
-  }
+  private[regex] def withRE2Regex[A](f: RE2RegExpOps => A): A =
+    Pattern.CompiledPatternStore.withRE2Regex(_pattern, _flags)(f)
 
   def split(input: CharSequence): Array[String] =
     split(input, 0)
