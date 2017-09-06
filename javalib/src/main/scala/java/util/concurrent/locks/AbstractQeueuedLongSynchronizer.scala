@@ -7,14 +7,14 @@ import java.util
 import java.util.concurrent.TimeUnit
 
 import scala.scalanative.runtime.CAtomicsImplicits._
-import scala.scalanative.runtime.{CAtomicInt, CAtomicRef}
+import scala.scalanative.runtime.{CAtomicInt, CAtomicLong, CAtomicRef}
 import scala.scalanative.native.{CInt, CLong}
 
-abstract class AbstractQueuedSynchronizer
+abstract class AbstractQeueuedLongSynchronizer
     extends AbstractOwnableSynchronizer
-    with java.io.Serializable { self =>
+    with java.io.Serializable {
 
-  import AbstractQueuedSynchronizer._
+  import AbstractQeueuedLongSynchronizer._
 
   //volatile
   private val head: CAtomicRef[Node] = CAtomicRef[Node]()
@@ -22,13 +22,13 @@ abstract class AbstractQueuedSynchronizer
   //volatile
   private val tail: CAtomicRef[Node] = CAtomicRef[Node]()
 
-  private val state: CAtomicInt = CAtomicInt()
+  private val state: CAtomicLong = CAtomicLong()
 
-  protected final def getState: Int = state.load()
+  protected final def getState: Long = state.load()
 
-  protected final def setState(newState: Int): Unit = state.store(newState)
+  protected final def setState(newState: Long): Unit = state.store(newState)
 
-  protected final def compareAndSetState(expect: Int, update: Int): Boolean =
+  protected final def compareAndSetState(expect: Long, update: Long): Boolean =
     state.compareAndSwapStrong(expect, update)
 
   private def enq(node: Node): Node = {
@@ -38,7 +38,7 @@ abstract class AbstractQueuedSynchronizer
         if (compareAndSetHead(new Node()))
           tail.store(head)
       } else {
-        node.prev.store(t)
+        node.next.store(t)
         if (compareAndSetTail(t, node)) {
           t.next.store(node)
           t
@@ -54,10 +54,10 @@ abstract class AbstractQueuedSynchronizer
 
     val pred: Node = tail
     if (pred != null) {
-      node.prev.store(pred)
+      node.next.store(pred)
       if (compareAndSetTail(pred, node)) {
         pred.next.store(node)
-        return node
+        node
       }
     }
     enq(node)
@@ -67,7 +67,7 @@ abstract class AbstractQueuedSynchronizer
   private def setHead(node: Node): Unit = {
     head.store(node)
     node.thread.store(null.asInstanceOf[Thread])
-    node.prev.store(null.asInstanceOf[Node])
+    node.next.store(null.asInstanceOf[Node])
   }
 
   private def unparkSuccessor(node: Node): Unit = {
@@ -90,8 +90,8 @@ abstract class AbstractQueuedSynchronizer
   }
 
   private def doReleaseShared(): Unit = {
-    var break: Boolean    = false
     var continue: Boolean = false
+    var break: Boolean    = false
     while (!break) {
       continue = false
       val h: Node = head
@@ -109,7 +109,7 @@ abstract class AbstractQueuedSynchronizer
     }
   }
 
-  private def setHeadAndPropagate(node: Node, propagate: Int): Unit = {
+  private def setHeadAndPropagate(node: Node, propagate: Long): Unit = {
     val h: Node = head
     setHead(node)
 
@@ -126,8 +126,10 @@ abstract class AbstractQueuedSynchronizer
     node.thread.store(null.asInstanceOf[Thread])
 
     var pred: Node = node.prev
-    while (pred.waitStatus > 0) pred = pred.prev
-    node.prev.store(pred)
+    while (pred.waitStatus > 0) {
+      pred = pred.prev
+      node.next.store(pred)
+    }
 
     val predNext: Node = pred.next
 
@@ -159,7 +161,7 @@ abstract class AbstractQueuedSynchronizer
     Thread.interrupted()
   }
 
-  def acquireQueued(node: Node, arg: Int): Boolean = {
+  def acquireQueued(node: Node, arg: Long): Boolean = {
     var failed = true
     try {
       var interrupted = false
@@ -183,7 +185,7 @@ abstract class AbstractQueuedSynchronizer
     }
   }
 
-  private def doAcquireInterruptibly(arg: Int): Unit = {
+  private def doAcquireInterruptibly(arg: Long): Unit = {
     val node: Node      = addWaiter(Node.EXCLUSIVE)
     var failed: Boolean = true
     try {
@@ -191,7 +193,7 @@ abstract class AbstractQueuedSynchronizer
         val p: Node = node.predecessor()
         if (p == head.load().asInstanceOf[Node] && tryAcquire(arg)) {
           setHead(node)
-          p.next.store(null.asInstanceOf[Node]) // help GC)
+          p.next.store(null.asInstanceOf[Node])
           failed = false
           return
         }
@@ -204,11 +206,11 @@ abstract class AbstractQueuedSynchronizer
     }
   }
 
-  private def doAcquireNanos(arg: Int, timeout: Long): Boolean = {
-    var nanosTimeout   = timeout
-    var lastTime: Long = System.nanoTime()
-    val node: Node     = addWaiter(Node.EXCLUSIVE)
-    var failed         = true
+  private def doAcquireNanos(arg: Long, nt: Long): Boolean = {
+    var nanosTimeout: Long = nt
+    var lastTime: Long     = System.nanoTime()
+    val node: Node         = addWaiter(Node.EXCLUSIVE)
+    var failed             = true
     try {
       while (true) {
         val p: Node = node.predecessor()
@@ -237,7 +239,7 @@ abstract class AbstractQueuedSynchronizer
     }
   }
 
-  private def doAcquireShared(arg: Int): Unit = {
+  private def doAcquireShared(arg: Long): Unit = {
     val node: Node = addWaiter(Node.SHARED)
     var failed     = true
     try {
@@ -245,7 +247,7 @@ abstract class AbstractQueuedSynchronizer
       while (true) {
         val p: Node = node.predecessor()
         if (p == head.load().asInstanceOf[Node]) {
-          val r: Int = tryAcquireShared(arg)
+          val r: Long = tryAcquireShared(arg)
           if (r >= 0) {
             setHeadAndPropagate(node, r)
             p.next.store(null.asInstanceOf[Node])
@@ -265,17 +267,17 @@ abstract class AbstractQueuedSynchronizer
     }
   }
 
-  private def doAcquireSharedInterruptibly(arg: Int): Unit = {
+  private def doAcquireSharedInterruptibly(arg: Long): Unit = {
     val node: Node = addWaiter(Node.SHARED)
     var failed     = true
     try {
       while (true) {
         val p: Node = node.predecessor()
         if (p == head.load().asInstanceOf[Node]) {
-          val r: Int = tryAcquireShared(arg)
+          val r: Long = tryAcquireShared(arg)
           if (r >= 0) {
             setHeadAndPropagate(node, r)
-            p.next.store(null.asInstanceOf[Node]) // help GC)
+            p.next.store(null.asInstanceOf[Node])
             failed = false
             return
           }
@@ -290,7 +292,7 @@ abstract class AbstractQueuedSynchronizer
     }
   }
 
-  private def doAcquireSharedNanos(arg: Int, nt: Long): Boolean = {
+  private def doAcquireSharedNanos(arg: Long, nt: Long): Boolean = {
     var nanosTimeout: Long = nt
     var lastTime: Long     = System.nanoTime()
     val node: Node         = addWaiter(Node.SHARED)
@@ -299,7 +301,7 @@ abstract class AbstractQueuedSynchronizer
       while (true) {
         val p: Node = node.predecessor()
         if (p == head.load().asInstanceOf[Node]) {
-          val r: Int = tryAcquireShared(arg)
+          val r: Long = tryAcquireShared(arg)
           if (r >= 0) {
             setHeadAndPropagate(node, r)
             p.next.store(null.asInstanceOf[Node])
@@ -326,41 +328,41 @@ abstract class AbstractQueuedSynchronizer
     }
   }
 
-  protected def tryAcquire(arg: Int): Boolean =
+  protected def tryAcquire(arg: Long): Boolean =
     throw new UnsupportedOperationException()
 
-  protected def tryRelease(arg: Int): Boolean =
+  protected def tryRelease(arg: Long): Boolean =
     throw new UnsupportedOperationException()
 
-  protected def tryAcquireShared(arg: Int): Int =
+  protected def tryAcquireShared(arg: Long): Long =
     throw new UnsupportedOperationException()
 
-  protected def tryReleaseShared(arg: Int): Boolean =
+  protected def tryReleaseShared(arg: Long): Boolean =
     throw new UnsupportedOperationException()
 
   protected def isHeldExclusively(): Boolean =
     throw new UnsupportedOperationException()
 
-  final def acquire(arg: Int): Unit = {
+  final def acquire(arg: Long): Unit = {
     if (!tryAcquire(arg) &&
         acquireQueued(addWaiter(Node.EXCLUSIVE), arg))
       selfInterrupt()
   }
 
-  final def acquireInterruptibly(arg: Int): Unit = {
+  final def acquireInterruptibly(arg: Long): Unit = {
     if (Thread.interrupted())
       throw new InterruptedException()
     if (!tryAcquire(arg))
       doAcquireInterruptibly(arg)
   }
 
-  final def tryAcquireNanos(arg: Int, nanosTimeout: Long): Boolean = {
+  final def tryAcquireNanos(arg: Long, nanosTimeout: Long): Boolean = {
     if (Thread.interrupted())
       throw new InterruptedException()
     tryAcquire(arg) || doAcquireNanos(arg, nanosTimeout)
   }
 
-  final def release(arg: Int): Boolean = {
+  final def release(arg: Long): Boolean = {
     if (tryRelease(arg)) {
       val h: Node = head
       if (h != null && h.waitStatus != 0)
@@ -370,25 +372,25 @@ abstract class AbstractQueuedSynchronizer
     false
   }
 
-  final def acquireShared(arg: Int): Unit = {
+  final def acquireShared(arg: Long): Unit = {
     if (tryAcquireShared(arg) < 0)
       doAcquireShared(arg)
   }
 
-  final def acquireSharedInterruptibly(arg: Int): Unit = {
+  final def acquireSharedInterruptibly(arg: Long): Unit = {
     if (Thread.interrupted())
       throw new InterruptedException()
     if (tryAcquireShared(arg) < 0)
       doAcquireSharedInterruptibly(arg)
   }
 
-  final def tryAcquireSharedNanos(arg: Int, nanosTimeout: Long): Boolean = {
+  final def tryAcquireSharedNanos(arg: Long, nanosTimeout: Long): Boolean = {
     if (Thread.interrupted())
       throw new InterruptedException()
     tryAcquireShared(arg) >= 0 || doAcquireSharedNanos(arg, nanosTimeout)
   }
 
-  final def releaseShared(arg: Int): Boolean = {
+  final def releaseShared(arg: Long): Boolean = {
     if (tryReleaseShared(arg)) {
       doReleaseShared()
       return true
@@ -444,14 +446,14 @@ abstract class AbstractQueuedSynchronizer
     !s.isShared && s.thread != null
   }
 
-  final def hasQueuedPredecessors(): Boolean = {
+  final def hasQueuedPredecessors: Boolean = {
     val t: Node = tail
     val h: Node = head
     val s: Node = h.next
     h != t && (s == null || s.thread != Thread.currentThread())
   }
 
-  final def getQueueLength: Int = {
+  final def getQeueueLength: Long = {
     var n       = 0
     var p: Node = tail
     while (p != null) {
@@ -462,7 +464,7 @@ abstract class AbstractQueuedSynchronizer
     n
   }
 
-  final def getQueuedThreads(): util.Collection[Thread] = {
+  final def getQueuedThreads: util.Collection[Thread] = {
     val list: util.ArrayList[Thread] = new util.ArrayList[Thread]()
     var p: Node                      = tail
     while (p != null) {
@@ -474,7 +476,7 @@ abstract class AbstractQueuedSynchronizer
     list
   }
 
-  final def getExclusiveQueuedThreads(): util.Collection[Thread] = {
+  final def getExclusiveQueuedThreads: util.Collection[Thread] = {
     val list: util.ArrayList[Thread] = new util.ArrayList[Thread]()
     var p: Node                      = tail
     while (p != null) {
@@ -488,7 +490,7 @@ abstract class AbstractQueuedSynchronizer
     list
   }
 
-  final def getSharedQueuedThreads(): util.Collection[Thread] = {
+  final def getSharedQueuedThreads: util.Collection[Thread] = {
     val list: util.ArrayList[Thread] = new util.ArrayList[Thread]()
     var p: Node                      = tail
     while (p != null) {
@@ -503,7 +505,7 @@ abstract class AbstractQueuedSynchronizer
   }
 
   override def toString: String = {
-    val s: Int    = getState
+    val s: Long   = getState
     val q: String = if (hasQueuedThreads()) "non" else ""
     super.toString + "[State = " + s + ", " + q + "empty queue]"
   }
@@ -551,10 +553,10 @@ abstract class AbstractQueuedSynchronizer
     false
   }
 
-  final def fullyRelease(node: Node): Int = {
+  final def fullyRelease(node: Node): Long = {
     var failed = true
     try {
-      val savedState: Int = getState
+      val savedState: Long = getState
       if (release(savedState)) {
         failed = false
         savedState
@@ -567,36 +569,32 @@ abstract class AbstractQueuedSynchronizer
     }
   }
 
-  final def owns(
-      condition: AbstractQueuedSynchronizer#ConditionObject): Boolean = {
+  final def owns(condition: ConditionObject): Boolean = {
     if (condition == null)
       throw new NullPointerException()
     condition.isOwnedBy(this)
   }
 
-  final def hasWaiters(
-      condition: AbstractQueuedSynchronizer#ConditionObject): Boolean = {
+  final def hasWaiters(condition: ConditionObject): Boolean = {
     if (!owns(condition))
       throw new IllegalArgumentException("Not owner")
-    condition.hasWaiters
+    condition.hasWaiters()
   }
 
-  final def getWaitQueueLength(
-      condition: AbstractQueuedSynchronizer#ConditionObject): Int = {
+  final def getWaitQueueLength(condition: ConditionObject): Int = {
     if (!owns(condition))
       throw new IllegalArgumentException()
-    condition.getWaitQueueLength
+    condition.getWaitQueueLength()
   }
 
   final def getWaitingThreads(
-      condition: AbstractQueuedSynchronizer#ConditionObject)
-    : util.Collection[Thread] = {
+      condition: ConditionObject): util.Collection[Thread] = {
     if (!owns(condition))
       throw new IllegalArgumentException("Not owner")
-    condition.getWaitingThreads
+    condition.getWaitingThreads()
   }
 
-  class ConditionObject extends Condition with java.io.Serializable {
+  class ConditionObject extends Condition with Serializable {
 
     import ConditionObject._
 
@@ -677,10 +675,10 @@ abstract class AbstractQueuedSynchronizer
         doSignalAll(first)
     }
 
-    final def awaitUninterruptibly(): Unit = {
-      val node: Node      = addConditionWaiter()
-      val savedState: Int = fullyRelease(node)
-      var interrupted     = false
+    final def awaitUninterruptibly() = {
+      val node: Node       = addConditionWaiter()
+      val savedState: Long = fullyRelease(node)
+      var interrupted      = false
       while (!isOnSyncQueue(node)) {
         LockSupport.park()
         if (Thread.interrupted())
@@ -706,10 +704,10 @@ abstract class AbstractQueuedSynchronizer
     final def await(): Unit = {
       if (Thread.interrupted())
         throw new InterruptedException()
-      val node: Node      = addConditionWaiter()
-      val savedState: Int = fullyRelease(node)
-      var interruptMode   = 0
-      var break: Boolean  = false
+      val node: Node       = addConditionWaiter()
+      val savedState: Long = fullyRelease(node)
+      var interruptMode    = 0
+      var break: Boolean   = false
       while (!isOnSyncQueue(node) && !break) {
         LockSupport.park()
         interruptMode = checkInterruptWhileWaiting(node)
@@ -729,7 +727,7 @@ abstract class AbstractQueuedSynchronizer
       if (Thread.interrupted())
         throw new InterruptedException()
       val node: Node         = addConditionWaiter()
-      val savedState: Int    = fullyRelease(node)
+      val savedState: Long   = fullyRelease(node)
       var lastTime: Long     = System.nanoTime()
       var interruptMode: Int = 0
       var break: Boolean     = false
@@ -744,11 +742,9 @@ abstract class AbstractQueuedSynchronizer
           if (interruptMode != 0)
             break = true
 
-          if (!break) {
-            val now: Long = System.nanoTime()
-            nanosTimeout -= now - lastTime
-            lastTime = now
-          }
+          val now: Long = System.nanoTime()
+          nanosTimeout -= now - lastTime
+          lastTime = now
         }
       }
       if (acquireQueued(node, savedState) && interruptMode != THROW_IE)
@@ -766,11 +762,11 @@ abstract class AbstractQueuedSynchronizer
       val abstime: Long = deadline.getTime()
       if (Thread.interrupted())
         throw new InterruptedException()
-      val node: Node      = addConditionWaiter()
-      val savedState: Int = fullyRelease(node)
-      var timedout        = false
-      var interruptMode   = 0
-      var break: Boolean  = false
+      val node: Node       = addConditionWaiter()
+      val savedState: Long = fullyRelease(node)
+      var timedout         = false
+      var interruptMode    = 0
+      var break: Boolean   = false
       while (!isOnSyncQueue(node) && !break) {
         if (System.currentTimeMillis() > abstime) {
           timedout = transferAfterCancelledWait(node)
@@ -799,7 +795,7 @@ abstract class AbstractQueuedSynchronizer
       if (Thread.interrupted())
         throw new InterruptedException()
       val node: Node         = addConditionWaiter()
-      val savedState: Int    = fullyRelease(node)
+      val savedState: Long   = fullyRelease(node)
       var lastTime: Long     = System.nanoTime()
       var timedout           = false
       var interruptMode: Int = 0
@@ -831,8 +827,8 @@ abstract class AbstractQueuedSynchronizer
       !timedout
     }
 
-    final def isOwnedBy(sync: AbstractQueuedSynchronizer): Boolean =
-      sync == AbstractQueuedSynchronizer.this
+    final def isOwnedBy(sync: AbstractQeueuedLongSynchronizer): Boolean =
+      sync == AbstractQeueuedLongSynchronizer.this
 
     protected[locks] final def hasWaiters(): Boolean = {
       if (!isHeldExclusively())
@@ -894,20 +890,20 @@ abstract class AbstractQueuedSynchronizer
     tail.compareAndSwapStrong(expect, update)
 }
 
-object AbstractQueuedSynchronizer {
+object AbstractQeueuedLongSynchronizer {
 
-  private final val serialVersionUID: Long = 7373984972572414691L
+  private final val serialVersionUID: Long = 7373984972572414692L
 
   final val spinForTimeoutThreshold: Long = 1000L
 
-  private def shouldParkAfterFailedAcquire(p: Node, node: Node): Boolean = {
-    var pred: Node = p
+  private def shouldParkAfterFailedAcquire(pr: Node, node: Node): Boolean = {
+    var pred: Node = pr
     val ws: Int    = pred.waitStatus
-    if (ws == Node.SIGNAL) true
+    if (ws == Node.SIGNAL) return true
     if (ws > 0) {
       do {
         pred = pred.prev
-        node.prev.store(pred)
+        node.next.store(pred)
       } while (pred.waitStatus > 0)
       pred.next.store(node)
     } else {

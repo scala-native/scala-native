@@ -48,6 +48,10 @@ extern "C" {
     ${T} load_${N}(atomic<${T}>* atm) {
         return atm -> load();
     }
+
+    void store_${N}(atomic<${T}>* atm, ${T} val) {
+      atm -> store(val);
+    }
 % end
 
 	/**

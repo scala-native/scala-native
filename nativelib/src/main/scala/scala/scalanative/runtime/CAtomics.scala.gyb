@@ -4,7 +4,11 @@ package runtime
 import scala.scalanative.native._
 import scala.scalanative.runtime.Atomic._
 
-abstract class CAtomic
+abstract class CAtomic {
+
+  import CAtomicsImplicits._
+
+}
 
 %{
    classes = ['Byte', 'Short', 'Int', 'Long',
@@ -30,19 +34,12 @@ abstract class CAtomic
 
 class CAtomic${C}(default: ${T} = ${default}) extends CAtomic {
 
-  % if T == 'long':
-  private implicit def toLong(r: AnyRef): scala.Long = r.asInstanceOf[scala.Long]
-  private implicit def toRef(l: scala.Long): AnyRef = l.asInstanceOf[AnyRef]
-  private implicit def toLongPtr(r: Ptr[AnyRef]): Ptr[scala.Long] = r.asInstanceOf[Ptr[scala.Long]]
-  private implicit def toRefPtr(l: Ptr[scala.Long]): Ptr[AnyRef] = l.asInstanceOf[Ptr[AnyRef]]
-  % end
-
   private[this] val atm = Atomic.alloc(sizeof[${T}])${cast}
   init_${N}(atm, default)
 
   def load(): ${T} = load_${N}(atm)
 
-  def store(value: ${T}): Unit = init_${N}(atm, value)
+  def store(value: ${T}): Unit = store_${N}(atm, value)
 
   def free(): Unit = Atomic.free(atm${castB})
 
@@ -105,6 +102,12 @@ class CAtomic${C}(default: ${T} = ${default}) extends CAtomic {
 
   override def toString: String = load().toString
 
+  override def equals(that: Any): Boolean = that match {
+    case o: CAtomic${C} => o.load() == load()
+    case o: ${T} => load() == o
+    case _ => false
+  }
+
 }
 
 object CAtomic${C} extends CAtomic {
@@ -117,13 +120,26 @@ object CAtomic${C} extends CAtomic {
 
 % end
 
-class CAtomicRef[T <: AnyRef](default: T = 0L.asInstanceOf[T]) extends CAtomicLong(0L) {}
+class CAtomicRef[T <: AnyRef](default: T = 0L.asInstanceOf[T]) extends CAtomicLong(default.asInstanceOf[Long]) {}
 
 object CAtomicRef extends CAtomic {
 
   def apply[T <: AnyRef](initValue: T) = new CAtomicRef[T](initValue)
 
   def apply[T <: AnyRef]() = new CAtomicRef[T]()
+
+}
+
+// Helper object, can be imported for ease of use
+object CAtomicsImplicits {
+
+  implicit def toLong[T <: AnyRef](r: T): CLong = r.asInstanceOf[CLong]
+  implicit def toRef[T <: AnyRef](l: CLong): T = l.asInstanceOf[T]
+  implicit def underlying[T <: AnyRef](a: CAtomicRef[T]): T = a.load().asInstanceOf[T]
+  implicit def cas[T](v: (Boolean, T)): Boolean = v._1
+  %for (C, T) in zip(classes, types):
+  implicit def underlying(a: CAtomic${C}): ${T} = a.load()
+  %end
 
 }
 
