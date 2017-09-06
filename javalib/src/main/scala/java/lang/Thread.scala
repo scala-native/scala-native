@@ -550,6 +550,8 @@ object Thread {
 
   def `yield`(): Unit = ???
 
+  def `yield`(): Unit = ???
+
   def interrupted(): scala.Boolean = {
     val ret = currentThread().isInterrupted
     currentThread().interruptedState = false
