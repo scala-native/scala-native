@@ -1,64 +1,57 @@
 package java.util.concurrent.atomic
 
+import scala.scalanative.runtime.CAtomicLong
+
 class AtomicLong(private[this] var value: Long)
     extends Number
     with Serializable {
   def this() = this(0L)
 
-  final def get(): Long = value
+  private[this] val inner = CAtomicLong(value)
+
+  final def get(): Long = inner.load()
 
   final def set(newValue: Long): Unit =
-    value = newValue
+    inner.store(newValue)
 
   final def lazySet(newValue: Long): Unit =
-    set(newValue)
+    inner.store(newValue)
 
   final def getAndSet(newValue: Long): Long = {
-    val old = value
-    value = newValue
+    val old = inner.load()
+    inner.store(newValue)
     old
   }
 
-  final def compareAndSet(expect: Long, update: Long): Boolean = {
-    if (expect != value) false
-    else {
-      value = update
-      true
-    }
-  }
+  final def compareAndSet(expect: Long, update: Long): Boolean =
+    inner.compareAndSwapStrong(expect, update)._1
 
   final def weakCompareAndSet(expect: Long, update: Long): Boolean =
-    compareAndSet(expect, update)
+    inner.compareAndSwapWeak(expect, update)._1
 
   final def getAndIncrement(): Long =
-    getAndAdd(1L)
+    inner.fetchAdd(1)
 
   final def getAndDecrement(): Long =
-    getAndAdd(-1L)
+    inner.fetchSub(1)
 
-  @inline final def getAndAdd(delta: Long): Long = {
-    val old = value
-    value = old + delta
-    old
-  }
+  @inline final def getAndAdd(delta: Long): Long =
+    inner.fetchAdd(delta)
 
   final def incrementAndGet(): Long =
-    addAndGet(1L)
+    inner.addFetch(1)
 
   final def decrementAndGet(): Long =
-    addAndGet(-1L)
+    inner.subFetch(1)
 
-  @inline final def addAndGet(delta: Long): Long = {
-    val newValue = value + delta
-    value = newValue
-    newValue
-  }
+  @inline final def addAndGet(delta: Long): Long =
+    inner.addFetch(delta)
 
   override def toString(): String =
     value.toString()
 
-  def intValue(): Int       = value.toInt
-  def longValue(): Long     = value
-  def floatValue(): Float   = value.toFloat
-  def doubleValue(): Double = value.toDouble
+  def intValue(): Int       = inner.load().toInt
+  def longValue(): Long     = inner.load()
+  def floatValue(): Float   = inner.load().toFloat
+  def doubleValue(): Double = inner.load().toDouble
 }

@@ -1,65 +1,64 @@
 package java.util.concurrent.atomic
 
+import scala.scalanative.runtime.CAtomicInt
+
 class AtomicInteger(private[this] var value: Int)
     extends Number
     with Serializable {
 
   def this() = this(0)
 
-  final def get(): Int = value
+  private[this] val inner = CAtomicInt(value)
+
+  final def get(): Int = inner.load()
 
   final def set(newValue: Int): Unit =
-    value = newValue
+    inner.store(newValue)
 
   final def lazySet(newValue: Int): Unit =
-    set(newValue)
+    inner.store(newValue)
 
   final def getAndSet(newValue: Int): Int = {
-    val old = value
-    value = newValue
+    val old = inner.load()
+    inner.store(newValue)
     old
   }
 
-  final def compareAndSet(expect: Int, update: Int): Boolean = {
-    if (expect != value) false
-    else {
-      value = update
-      true
-    }
-  }
+  final def compareAndSet(expect: Int, update: Int): Boolean =
+    inner.compareAndSwapStrong(expect, update)._1
 
   final def weakCompareAndSet(expect: Int, update: Int): Boolean =
-    compareAndSet(expect, update)
+    inner.compareAndSwapWeak(expect, update)._1
 
   final def getAndIncrement(): Int =
-    getAndAdd(1)
+    inner.fetchAdd(1)
 
   final def getAndDecrement(): Int =
-    getAndAdd(-1)
+    inner.fetchSub(1)
 
-  @inline final def getAndAdd(delta: Int): Int = {
-    val old = value
-    value = old + delta
-    old
-  }
+  @inline final def getAndAdd(delta: Int): Int =
+    inner.fetchAdd(delta)
 
   final def incrementAndGet(): Int =
-    addAndGet(1)
+    inner.addFetch(1)
 
   final def decrementAndGet(): Int =
-    addAndGet(-1)
+    inner.subFetch(1)
 
-  @inline final def addAndGet(delta: Int): Int = {
-    val newValue = value + delta
-    value = newValue
-    newValue
-  }
+  @inline final def addAndGet(delta: Int): Int =
+    inner.addFetch(delta)
 
   override def toString(): String =
-    value.toString()
+    inner.toString()
 
-  def intValue(): Int       = value
-  def longValue(): Long     = value.toLong
-  def floatValue(): Float   = value.toFloat
-  def doubleValue(): Double = value.toDouble
+  def intValue(): Int       = inner.load()
+  def longValue(): Long     = inner.load().toLong
+  def floatValue(): Float   = inner.load().toFloat
+  def doubleValue(): Double = inner.load().toDouble
+}
+
+object AtomicInteger {
+
+  private final val serialVersionUID: Long = 6214790243416807050L
+
 }

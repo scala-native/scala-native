@@ -21,8 +21,8 @@ object AtomicSuite extends tests.Suite {
       a.compareAndSwapStrong(1.asInstanceOf[Byte], 3.asInstanceOf[Byte])._1)
 
     assert(
-      a.compareAndSwapStrong(0.asInstanceOf[Byte], 3.asInstanceOf[Byte])
-        ._2 == 3.asInstanceOf[Byte])
+      a.compareAndSwapStrong(0.asInstanceOf[Byte], 3.asInstanceOf[Byte])._2 == 3
+        .asInstanceOf[Byte])
 
     a.free()
   }
@@ -185,8 +185,7 @@ object AtomicSuite extends tests.Suite {
     val b = 3.asInstanceOf[CShort]
 
     assertNot(
-      a.compareAndSwapStrong(1.asInstanceOf[CShort], 3.asInstanceOf[CShort])
-        ._1)
+      a.compareAndSwapStrong(1.asInstanceOf[CShort], 3.asInstanceOf[CShort])._1)
 
     assert(
       a.compareAndSwapStrong(0.asInstanceOf[CShort], 3.asInstanceOf[CShort])
@@ -533,8 +532,8 @@ object AtomicSuite extends tests.Suite {
       a.compareAndSwapWeak(1.asInstanceOf[CLong], 3.asInstanceOf[CLong])._1)
 
     assert(
-      a.compareAndSwapWeak(0.asInstanceOf[CLong], 3.asInstanceOf[CLong])
-        ._2 == 3.asInstanceOf[CLong])
+      a.compareAndSwapWeak(0.asInstanceOf[CLong], 3.asInstanceOf[CLong])._2 == 3
+        .asInstanceOf[CLong])
 
     a.free()
   }
@@ -684,8 +683,8 @@ object AtomicSuite extends tests.Suite {
       a.compareAndSwapStrong(1.asInstanceOf[Byte], 3.asInstanceOf[Byte])._1)
 
     assert(
-      a.compareAndSwapStrong(0.asInstanceOf[Byte], 3.asInstanceOf[Byte])
-        ._2 == 3.asInstanceOf[Byte])
+      a.compareAndSwapStrong(0.asInstanceOf[Byte], 3.asInstanceOf[Byte])._2 == 3
+        .asInstanceOf[Byte])
 
     a.free()
   }
@@ -1386,8 +1385,8 @@ object AtomicSuite extends tests.Suite {
       a.compareAndSwapWeak(1.asInstanceOf[CSize], 3.asInstanceOf[CSize])._1)
 
     assert(
-      a.compareAndSwapWeak(0.asInstanceOf[CSize], 3.asInstanceOf[CSize])
-        ._2 == 3.asInstanceOf[CSize])
+      a.compareAndSwapWeak(0.asInstanceOf[CSize], 3.asInstanceOf[CSize])._2 == 3
+        .asInstanceOf[CSize])
 
     a.free()
   }
@@ -1553,8 +1552,7 @@ object AtomicSuite extends tests.Suite {
     val b = 'b'.asInstanceOf[CChar]
 
     assertNot(
-      a.compareAndSwapWeak('b'.asInstanceOf[CChar], 'b'.asInstanceOf[CChar])
-        ._1)
+      a.compareAndSwapWeak('b'.asInstanceOf[CChar], 'b'.asInstanceOf[CChar])._1)
 
     assert(
       a.compareAndSwapWeak('a'.asInstanceOf[CChar], 'b'.asInstanceOf[CChar])
