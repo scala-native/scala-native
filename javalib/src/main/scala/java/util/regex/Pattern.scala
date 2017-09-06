@@ -3,6 +3,7 @@ package regex
 
 import scalanative.native._, stdlib._, stdio._, string._
 import cre2h._
+import annotation.tailrec
 
 // Inspired by: https://github.com/google/re2j/blob/master/java/com/google/re2j/Pattern.java
 
@@ -51,46 +52,46 @@ object Pattern {
     private def freshNode(next: Node) =
       new Node(null, new RE2RegExpOps(null), 0, next)
 
-    import scala.annotation.tailrec
-
     // The tip of Nodes. The Nodes form a ring buffer of some length.
-    var last: Node = {
+    private var last: Node = {
       // Populate the ringbuffer
       @tailrec def f(n: Node, num: Int): Node =
-        if (num < 0)
+        if (num < 0) {
           n
-        else
+        } else {
           f(freshNode(n), num - 1)
+        }
       val last = freshNode(null)
       last.next = f(last, 128)
       last
     }
 
     // Used to quickly look up a Node from a Key.
-    val map = scala.collection.mutable.HashMap.empty[Key, Node]
+    private val map = scala.collection.mutable.HashMap.empty[Key, Node]
 
-    private def selectNode(regex: String, flags: Int): Node = synchronized {
+    private def selectNode(regex: String, flags: Int): Node = {
       // Look up a RE2RegExpOps from the map.
       // If the map doesn't contain the key, look for an unused Node (whose refcount(rc) is 0),
       // delete its old compiled pattern if any, and then compile a new RE2 pattern and cache it
       // before returning it.
       // If all of the nodes are in use, expand the ringbuffer by 1 as a last resort.
       map.get(Key(regex, flags)).getOrElse {
-        @tailrec def findUnused(n: Node): Node =
+        @tailrec def findUnused(n: Node): Node = {
           if (n eq last) {
             // No unused nodes in the ringbuffer; expand its size by 1
             val newnode = freshNode(last.next)
             last.next = newnode
             newnode
-          } else if (n.rc <= 0)
+          } else if (n.rc <= 0) {
             n
-          else
+          } else {
             findUnused(n.next)
-        val reused =
-          if (last.rc <= 0)
-            last
-          else
-            findUnused(last.next)
+          }
+        }
+        val reused = {
+          if (last.rc <= 0) last
+          else findUnused(last.next)
+        }
         // delete the old pattern (if any)
         map -= reused.key
         if (reused.value.ptr != null) {
@@ -109,7 +110,7 @@ object Pattern {
 
     def withRE2Regex[A](regex: String, flags: Int)(f: RE2RegExpOps => A): A = {
       // increase the refcount of the selected node while in use to prevent it from deleted
-      val node = synchronized {
+      val node = {
         val n = selectNode(regex, flags)
         n.rc += 1
         n
@@ -118,7 +119,7 @@ object Pattern {
       finally node.rc -= 1
     }
 
-    def doCompile(regex: String, flags: Int): RE2RegExpOps = Zone {
+    private def doCompile(regex: String, flags: Int): RE2RegExpOps = Zone {
       implicit z =>
         def notSupported(flag: Int, flagName: String): Unit = {
           if ((flags & flag) == flag) {
