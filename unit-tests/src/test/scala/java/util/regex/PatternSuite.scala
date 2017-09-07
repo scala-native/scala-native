@@ -351,6 +351,22 @@ object PatternSuite extends tests.Suite {
     assertEquals(m.group(), input)
   }
 
+  test("compiling a lot of patterns") {
+    val pats = (0 until 200).map(i => Pattern.compile(i.toString))
+    // pick a newer pattern (likely in cache).
+    locally {
+      val pat = pats(198)
+      val m   = pat.matcher("198")
+      assert(m.matches())
+    }
+    // pick an older pattern (likely out of cache).
+    locally {
+      val pat = pats(1)
+      val m   = pat.matcher("1")
+      assert(m.matches())
+    }
+  }
+
   test("syntax exceptions") {
     assertThrowsAnd[PatternSyntaxException](Pattern.compile("foo\\L"))(
       e => {

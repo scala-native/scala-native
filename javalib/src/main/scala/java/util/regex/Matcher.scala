@@ -30,14 +30,17 @@ final class Matcher private[regex] (var _pattern: Pattern,
                                     var inputSequence: CharSequence)
     extends MatchResult {
 
-  private val regex = _pattern.regex
+  private def withRE2Regex[A](f: RE2RegExpOps => A): A =
+    _pattern.withRE2Regex(f)
 
   private var hasMatch  = false
   private var hasGroups = false
   private var appendPos = 0
 
-  private var groups =
+  private var groups = withRE2Regex { re2op =>
+    val regex = re2op.ptr
     Array.ofDim[(Int, Int)](cre2.numCapturingGroups(regex) + 1)
+  }
 
   private var lastAnchor: Option[cre2.anchor_t] = None
 
@@ -75,16 +78,19 @@ final class Matcher private[regex] (var _pattern: Pattern,
       val startpos = instr.take(start).getBytes().length
       val endpos   = instr.take(end).getBytes().length
 
-      val ok = cre2.matches(
-        regex = regex,
-        text = inre2.data,
-        textlen = inre2.length,
-        startpos = startpos,
-        endpos = endpos,
-        anchor = anchor,
-        matches = matches,
-        nMatches = nMatches
-      ) == 1
+      val ok = withRE2Regex { re2 =>
+        val regex = re2.ptr
+        cre2.matches(
+          regex = regex,
+          text = inre2.data,
+          textlen = inre2.length,
+          startpos = startpos,
+          endpos = endpos,
+          anchor = anchor,
+          matches = matches,
+          nMatches = nMatches
+        ) == 1
+      }
 
       if (ok) {
         var i = 0
@@ -135,8 +141,11 @@ final class Matcher private[regex] (var _pattern: Pattern,
       toRE2String(inputSequence.toString, textAndTarget)
       toRE2String(replacement, rewrite)
 
-      if (global) cre2.globalReplace(regex, textAndTarget, rewrite)
-      else cre2.replace(regex, textAndTarget, rewrite)
+      withRE2Regex { re2 =>
+        val regex = re2.ptr
+        if (global) cre2.globalReplace(regex, textAndTarget, rewrite)
+        else cre2.replace(regex, textAndTarget, rewrite)
+      }
 
       val res = fromRE2String(textAndTarget)
 
@@ -160,7 +169,10 @@ final class Matcher private[regex] (var _pattern: Pattern,
 
   private def groupIndex(name: String): Int =
     Zone { implicit z =>
-      val pos = cre2.findNamedCapturingGroups(regex, toCString(name))
+      val pos = withRE2Regex { re2 =>
+        val regex = re2.ptr
+        cre2.findNamedCapturingGroups(regex, toCString(name))
+      }
       if (pos == -1) {
         throw new IllegalArgumentException(s"No group with name <$name>")
       }
