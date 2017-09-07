@@ -15,6 +15,9 @@ class FileOutputStream(fd: FileDescriptor) extends OutputStream {
   override def close(): Unit =
     fcntl.close(fd.fd)
 
+  override protected def finalize(): Unit =
+    close()
+
   final def getFD(): FileDescriptor =
     fd
 
