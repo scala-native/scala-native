@@ -14,7 +14,7 @@ import scala.scalanative.optimizer.analysis.MemoryLayout
 /** Hoists all stack allocations to the entry basic block and
  *  maps class allocations to calls to the gc allocator.
  */
-class AllocLowering(implicit fresh: Fresh, top: Top) extends Pass {
+class AllocLowering(implicit top: Top) extends Pass {
   import AllocLowering._
 
   override def onInsts(insts: Seq[Inst]) = {
@@ -58,5 +58,5 @@ object AllocLowering extends PassCompanion {
         Defn.Declare(Attrs.None, largeAllocName, allocSig))
 
   override def apply(config: tools.Config, top: Top) =
-    new AllocLowering()(top.fresh, top)
+    new AllocLowering()(top)
 }

@@ -156,8 +156,7 @@ class Engine(val config: EngineConfiguration) {
         shadowInfo = testIntersection(shadowRay, scene, info.shape)
         if (shadowInfo.isHit && shadowInfo.shape != info.shape) {
           val vA = color.multiplyScalar(0.5)
-          val dB = (0.5 * math.pow(shadowInfo.shape.material.transparency,
-                                   0.5))
+          val dB = (0.5 * math.pow(shadowInfo.shape.material.transparency, 0.5))
           color = vA.addScalar(dB)
         }
       }

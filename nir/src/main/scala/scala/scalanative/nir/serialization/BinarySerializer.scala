@@ -70,7 +70,8 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Attr.NoInline     => putInt(T.NoInlineAttr)
     case Attr.AlwaysInline => putInt(T.AlwaysInlineAttr)
 
-    case Attr.Dyn => putInt(T.DynAttr)
+    case Attr.Dyn  => putInt(T.DynAttr)
+    case Attr.Stub => putInt(T.StubAttr)
 
     case Attr.Align(_) =>
       assert(false, "alignment attribute is not serializable")
@@ -253,7 +254,8 @@ final class BinarySerializer(buffer: ByteBuffer) {
   }
 
   private def putLocal(local: Local): Unit = {
-    putString(local.scope); putInt(local.id)
+    putString("") // scope
+    putInt(local.id)
   }
 
   private def putNexts(nexts: Seq[Next]) = putSeq(nexts)(putNext)

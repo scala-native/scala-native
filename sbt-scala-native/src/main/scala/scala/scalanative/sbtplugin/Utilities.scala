@@ -6,6 +6,13 @@ import sbt._
 
 object Utilities {
 
+  /** Drops any data fed into this logger. */
+  val devnull: ProcessLogger = new ProcessLogger {
+    def info(s: => String)    = ()
+    def error(s: => String)   = ()
+    def buffer[T](f: => T): T = f
+  }
+
   /** Discover concrete binary path using command name and
    *  a sequence of potential supported versions.
    */
@@ -27,7 +34,8 @@ object Utilities {
             Seq(s"$binaryName$major$minor", s"$binaryName-$major.$minor")
         } :+ binaryName
 
-        Process("which" +: binaryNames).lines_!
+        Process("which" +: binaryNames)
+          .lines_!(devnull)
           .map(file(_))
           .headOption
           .getOrElse {

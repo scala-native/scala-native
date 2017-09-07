@@ -18,7 +18,8 @@ class BasicBlocksFusion extends Pass {
     fuseBlocks(insts, cfg)
   }
 
-  private def fuseBlocks(insts: Seq[Inst], cfg: ControlFlow.Graph): Seq[Inst] = {
+  private def fuseBlocks(insts: Seq[Inst],
+                         cfg: ControlFlow.Graph): Seq[Inst] = {
     val workList = mutable.Stack.empty[Block]
     val visited  = mutable.Set.empty[Block]
     var result   = Seq.empty[Inst]

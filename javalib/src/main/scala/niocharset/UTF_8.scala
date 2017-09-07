@@ -76,7 +76,8 @@ private[niocharset] object UTF_8
         decodeLoopNoArray(in, out)
     }
 
-    private def decodeLoopArray(in: ByteBuffer, out: CharBuffer): CoderResult = {
+    private def decodeLoopArray(in: ByteBuffer,
+                                out: CharBuffer): CoderResult = {
       val inArray  = in.array
       val inOffset = in.arrayOffset
       val inStart  = in.position + inOffset
@@ -299,7 +300,8 @@ private[niocharset] object UTF_8
         encodeLoopNoArray(in, out)
     }
 
-    private def encodeLoopArray(in: CharBuffer, out: ByteBuffer): CoderResult = {
+    private def encodeLoopArray(in: CharBuffer,
+                                out: ByteBuffer): CoderResult = {
       val inArray  = in.array
       val inOffset = in.arrayOffset
       val inStart  = in.position + inOffset

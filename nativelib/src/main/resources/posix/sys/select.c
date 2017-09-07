@@ -8,7 +8,7 @@
 
 struct scalanative_timeval {
     time_t tv_sec;
-    int tv_usec;
+    suseconds_t tv_usec;
 };
 
 struct scalanative_fd_set {

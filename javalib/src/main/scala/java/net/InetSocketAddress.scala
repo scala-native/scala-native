@@ -26,8 +26,7 @@ class InetSocketAddress private[net] (private var addr: InetAddress,
   private var gotHostName = false
 
   if (hostName == null) {
-    throw new IllegalArgumentException(
-      "Host name in InetSocketAddress is null")
+    throw new IllegalArgumentException("Host name in InetSocketAddress is null")
   }
 
   private val isResolved = (addr != null)

@@ -55,6 +55,8 @@ object Show {
         str("alwaysinline")
       case Attr.Dyn =>
         str("dyn")
+      case Attr.Stub =>
+        str("stub")
       case Attr.Align(value) =>
         str("align(")
         str(value)
@@ -587,12 +589,9 @@ object Show {
         str(id)
     }
 
-    def local_(local: Local): Unit = local match {
-      case Local(scope, id) =>
-        str("%")
-        str(scope)
-        str(".")
-        str(id)
+    def local_(local: Local): Unit = {
+      str("%")
+      str(local.id)
     }
 
     private def escapeNewLine(s: String): String =

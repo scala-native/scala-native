@@ -30,18 +30,21 @@ final class Matcher private[regex] (var _pattern: Pattern,
                                     var inputSequence: CharSequence)
     extends MatchResult {
 
-  private val regex = _pattern.regex
+  private def withRE2Regex[A](f: RE2RegExpOps => A): A =
+    _pattern.withRE2Regex(f)
 
   private var hasMatch  = false
   private var hasGroups = false
   private var appendPos = 0
 
-  private var groups =
+  private var groups = withRE2Regex { re2op =>
+    val regex = re2op.ptr
     Array.ofDim[(Int, Int)](cre2.numCapturingGroups(regex) + 1)
+  }
 
   private var lastAnchor: Option[cre2.anchor_t] = None
 
-  private[regex] var inputLength = inputSequence.length
+  private[regex] def inputLength = inputSequence.length
 
   def matches(): Boolean = genMatch(0, ANCHOR_BOTH)
 
@@ -68,26 +71,43 @@ final class Matcher private[regex] (var _pattern: Pattern,
     Zone { implicit z =>
       val n       = nMatches
       val matches = alloc[cre2.string_t](n)
-      val in      = toCString(inputSequence.toString)
+      val instr   = inputSequence.toString
+      val inre2   = alloc[cre2.string_t]
+      toRE2String(instr, inre2)
+      // calculate byte-array indices from string indices
+      val startpos = instr.take(start).getBytes().length
+      val endpos   = instr.take(end).getBytes().length
 
-      val ok = cre2.matches(
-        regex = regex,
-        text = in,
-        textlen = inputLength,
-        startpos = start,
-        endpos = end,
-        anchor = anchor,
-        matches = matches,
-        nMatches = nMatches
-      ) == 1
+      val ok = withRE2Regex { re2 =>
+        val regex = re2.ptr
+        cre2.matches(
+          regex = regex,
+          text = inre2.data,
+          textlen = inre2.length,
+          startpos = startpos,
+          endpos = endpos,
+          anchor = anchor,
+          matches = matches,
+          nMatches = nMatches
+        ) == 1
+      }
 
       if (ok) {
         var i = 0
         while (i < nMatches) {
-          val m     = matches + i
-          val start = if (m.length == 0) -1 else (m.data - in).toInt
-          val end   = if (m.length == 0) -1 else start + m.length
-          groups(i) = ((start, end))
+          val m = matches + i
+          groups(i) = if (m.length == 0) {
+            (-1, -1)
+          } else {
+            // Takes from inre2 until m...
+            val before = alloc[cre2.string_t]
+            before.data = inre2.data
+            before.length = (m.data - inre2.data).toInt
+            // ...to calculate `start` in String's index.
+            val start = fromRE2String(before).length
+            val end   = start + fromRE2String(m).length
+            (start, end)
+          }
 
           i += 1
         }
@@ -121,8 +141,11 @@ final class Matcher private[regex] (var _pattern: Pattern,
       toRE2String(inputSequence.toString, textAndTarget)
       toRE2String(replacement, rewrite)
 
-      if (global) cre2.globalReplace(regex, textAndTarget, rewrite)
-      else cre2.replace(regex, textAndTarget, rewrite)
+      withRE2Regex { re2 =>
+        val regex = re2.ptr
+        if (global) cre2.globalReplace(regex, textAndTarget, rewrite)
+        else cre2.replace(regex, textAndTarget, rewrite)
+      }
 
       val res = fromRE2String(textAndTarget)
 
@@ -146,7 +169,10 @@ final class Matcher private[regex] (var _pattern: Pattern,
 
   private def groupIndex(name: String): Int =
     Zone { implicit z =>
-      val pos = cre2.findNamedCapturingGroups(regex, toCString(name))
+      val pos = withRE2Regex { re2 =>
+        val regex = re2.ptr
+        cre2.findNamedCapturingGroups(regex, toCString(name))
+      }
       if (pos == -1) {
         throw new IllegalArgumentException(s"No group with name <$name>")
       }
@@ -203,7 +229,6 @@ final class Matcher private[regex] (var _pattern: Pattern,
   def reset(input: CharSequence): Matcher = {
     reset()
     inputSequence = input
-    inputLength = input.length
     this
   }
 

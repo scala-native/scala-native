@@ -9,11 +9,12 @@ import nir._
 /** Injects scalanative_class_has_trait and
  *  scalanative_trait_has_trait intrinsics.
  */
-class HasTrait(implicit top: Top, fresh: Fresh) extends Inject {
+class HasTrait(implicit top: Top) extends Inject {
   import HasTrait._
   import top.tables
 
   def classHasTrait: Defn.Define = {
+    implicit val fresh   = Fresh()
     val classid, traitid = Val.Local(fresh(), Type.Int)
     val boolptr          = Val.Local(fresh(), Type.Ptr)
     val result           = Val.Local(fresh(), Type.Bool)
@@ -35,6 +36,7 @@ class HasTrait(implicit top: Top, fresh: Fresh) extends Inject {
   }
 
   def traitHasTrait: Defn.Define = {
+    implicit val fresh  = Fresh()
     val leftid, rightid = Val.Local(fresh(), Type.Int)
     val boolptr         = Val.Local(fresh(), Type.Ptr)
     val result          = Val.Local(fresh(), Type.Bool)
@@ -71,5 +73,5 @@ object HasTrait extends InjectCompanion {
   val TraitHasTraitSig = Type.Function(Seq(Type.Int, Type.Int), Type.Bool)
 
   override def apply(config: tools.Config, top: Top) =
-    new HasTrait()(top, top.fresh)
+    new HasTrait()(top)
 }

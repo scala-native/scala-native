@@ -349,9 +349,13 @@ lazy val scalalib =
 
         val s      = streams.value
         val trgDir = target.value / "scalaSources" / scalaVersion.value
+        val scalaRepo = sys.env
+          .get("SCALANATIVE_SCALAREPO")
+          .getOrElse("https://github.com/scala/scala.git")
 
         if (!trgDir.exists) {
-          s.log.info(s"Fetching Scala source version ${scalaVersion.value}")
+          s.log.info(
+            s"Fetching Scala source version ${scalaVersion.value} from $scalaRepo")
 
           // Make parent dirs and stuff
           IO.createDirectory(trgDir)
@@ -359,7 +363,7 @@ lazy val scalalib =
           // Clone scala source code
           new CloneCommand()
             .setDirectory(trgDir)
-            .setURI("https://github.com/scala/scala.git")
+            .setURI(scalaRepo)
             .call()
         }
 
@@ -431,7 +435,7 @@ lazy val sandbox =
     .settings(noPublishSettings)
     .settings(
       // nativeOptimizerReporter := OptimizerReporter.toDirectory(
-      //   crossTarget.value)
+      //   crossTarget.value),
       scalaVersion := libScalaVersion
     )
     .enablePlugins(ScalaNativePlugin)

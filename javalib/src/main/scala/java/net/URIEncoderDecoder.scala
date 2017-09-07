@@ -104,8 +104,7 @@ object URIEncoderDecoder {
         out.reset()
         do {
           if (i + 2 >= s.length) {
-            throw new IllegalArgumentException(
-              "Incomplete % sequence at: " + i)
+            throw new IllegalArgumentException("Incomplete % sequence at: " + i)
           }
           val d1: Int = java.lang.Character.digit(s.charAt(i + 1), 16)
           val d2: Int = java.lang.Character.digit(s.charAt(i + 2), 16)

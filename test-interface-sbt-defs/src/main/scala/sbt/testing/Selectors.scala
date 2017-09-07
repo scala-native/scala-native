@@ -38,9 +38,7 @@ final class SuiteSelector extends Selector with Serializable {
  *  specified as the <code>fullyQualifiedName</code> attribute passed to the
  *  event.
  */
-final class TestSelector(_testName: String)
-    extends Selector
-    with Serializable {
+final class TestSelector(_testName: String) extends Selector with Serializable {
 
   if (_testName == null)
     throw new NullPointerException("testName was null");

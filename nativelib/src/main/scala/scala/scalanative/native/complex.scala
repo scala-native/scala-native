@@ -206,8 +206,7 @@ object complexOps {
     }
   }
 
-  implicit class complexOpsDouble(val ptr: Ptr[CDoubleComplex])
-      extends AnyVal {
+  implicit class complexOpsDouble(val ptr: Ptr[CDoubleComplex]) extends AnyVal {
     def re: CDouble = !(ptr._1)
     def re_=(value: CDouble): Unit = {
       !ptr._1 = value

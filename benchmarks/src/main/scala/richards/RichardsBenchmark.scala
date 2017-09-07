@@ -137,10 +137,7 @@ class Scheduler {
 
   /// Add a work task to this scheduler.
   def addWorkerTask(id: Int, priority: Int, queue: Packet) {
-    addTask(id,
-            priority,
-            queue,
-            new WorkerTask(this, Richards.ID_HANDLER_A, 0))
+    addTask(id, priority, queue, new WorkerTask(this, Richards.ID_HANDLER_A, 0))
   }
 
   /// Add a handler task to this scheduler.

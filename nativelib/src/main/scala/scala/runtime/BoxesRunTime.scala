@@ -3,6 +3,8 @@ package scala.runtime
 import scala.math.ScalaNumber
 import scala.scalanative.native._
 
+class BoxesRunTime
+
 object BoxesRunTime {
   def boxToBoolean(v: scala.Boolean): java.lang.Boolean =
     java.lang.Boolean.valueOf(v)

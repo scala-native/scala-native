@@ -70,15 +70,15 @@ object CField1 {
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
   implicit def struct12[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12]
-    : CField1[CStruct12[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12], F1] =
+    : CField1[CStruct12[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12],
+              F1] =
     undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
   implicit def struct13[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13]
-    : CField1[
-      CStruct13[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13],
-      F1] = undefined
+    : CField1[CStruct13[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13],
+              F1] = undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
@@ -115,22 +115,9 @@ object CField1 {
                         F12,
                         F13,
                         F14,
-                        F15]: CField1[CStruct15[F1,
-                                                F2,
-                                                F3,
-                                                F4,
-                                                F5,
-                                                F6,
-                                                F7,
-                                                F8,
-                                                F9,
-                                                F10,
-                                                F11,
-                                                F12,
-                                                F13,
-                                                F14,
-                                                F15],
-                                      F1] = undefined
+                        F15]: CField1[
+    CStruct15[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15],
+    F1] = undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
@@ -485,15 +472,15 @@ object CField2 {
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
   implicit def struct12[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12]
-    : CField2[CStruct12[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12], F2] =
+    : CField2[CStruct12[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12],
+              F2] =
     undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
   implicit def struct13[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13]
-    : CField2[
-      CStruct13[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13],
-      F2] = undefined
+    : CField2[CStruct13[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13],
+              F2] = undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
@@ -530,22 +517,9 @@ object CField2 {
                         F12,
                         F13,
                         F14,
-                        F15]: CField2[CStruct15[F1,
-                                                F2,
-                                                F3,
-                                                F4,
-                                                F5,
-                                                F6,
-                                                F7,
-                                                F8,
-                                                F9,
-                                                F10,
-                                                F11,
-                                                F12,
-                                                F13,
-                                                F14,
-                                                F15],
-                                      F2] = undefined
+                        F15]: CField2[
+    CStruct15[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15],
+    F2] = undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
@@ -896,15 +870,15 @@ object CField3 {
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
   implicit def struct12[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12]
-    : CField3[CStruct12[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12], F3] =
+    : CField3[CStruct12[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12],
+              F3] =
     undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
   implicit def struct13[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13]
-    : CField3[
-      CStruct13[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13],
-      F3] = undefined
+    : CField3[CStruct13[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13],
+              F3] = undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
@@ -941,22 +915,9 @@ object CField3 {
                         F12,
                         F13,
                         F14,
-                        F15]: CField3[CStruct15[F1,
-                                                F2,
-                                                F3,
-                                                F4,
-                                                F5,
-                                                F6,
-                                                F7,
-                                                F8,
-                                                F9,
-                                                F10,
-                                                F11,
-                                                F12,
-                                                F13,
-                                                F14,
-                                                F15],
-                                      F3] = undefined
+                        F15]: CField3[
+    CStruct15[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15],
+    F3] = undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
@@ -1302,15 +1263,15 @@ object CField4 {
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
   implicit def struct12[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12]
-    : CField4[CStruct12[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12], F4] =
+    : CField4[CStruct12[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12],
+              F4] =
     undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
   implicit def struct13[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13]
-    : CField4[
-      CStruct13[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13],
-      F4] = undefined
+    : CField4[CStruct13[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13],
+              F4] = undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
@@ -1347,22 +1308,9 @@ object CField4 {
                         F12,
                         F13,
                         F14,
-                        F15]: CField4[CStruct15[F1,
-                                                F2,
-                                                F3,
-                                                F4,
-                                                F5,
-                                                F6,
-                                                F7,
-                                                F8,
-                                                F9,
-                                                F10,
-                                                F11,
-                                                F12,
-                                                F13,
-                                                F14,
-                                                F15],
-                                      F4] = undefined
+                        F15]: CField4[
+    CStruct15[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15],
+    F4] = undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
@@ -1703,15 +1651,15 @@ object CField5 {
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
   implicit def struct12[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12]
-    : CField5[CStruct12[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12], F5] =
+    : CField5[CStruct12[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12],
+              F5] =
     undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
   implicit def struct13[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13]
-    : CField5[
-      CStruct13[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13],
-      F5] = undefined
+    : CField5[CStruct13[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13],
+              F5] = undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
@@ -1748,22 +1696,9 @@ object CField5 {
                         F12,
                         F13,
                         F14,
-                        F15]: CField5[CStruct15[F1,
-                                                F2,
-                                                F3,
-                                                F4,
-                                                F5,
-                                                F6,
-                                                F7,
-                                                F8,
-                                                F9,
-                                                F10,
-                                                F11,
-                                                F12,
-                                                F13,
-                                                F14,
-                                                F15],
-                                      F5] = undefined
+                        F15]: CField5[
+    CStruct15[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15],
+    F5] = undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
@@ -2099,15 +2034,15 @@ object CField6 {
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
   implicit def struct12[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12]
-    : CField6[CStruct12[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12], F6] =
+    : CField6[CStruct12[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12],
+              F6] =
     undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
   implicit def struct13[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13]
-    : CField6[
-      CStruct13[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13],
-      F6] = undefined
+    : CField6[CStruct13[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13],
+              F6] = undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
@@ -2144,22 +2079,9 @@ object CField6 {
                         F12,
                         F13,
                         F14,
-                        F15]: CField6[CStruct15[F1,
-                                                F2,
-                                                F3,
-                                                F4,
-                                                F5,
-                                                F6,
-                                                F7,
-                                                F8,
-                                                F9,
-                                                F10,
-                                                F11,
-                                                F12,
-                                                F13,
-                                                F14,
-                                                F15],
-                                      F6] = undefined
+                        F15]: CField6[
+    CStruct15[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15],
+    F6] = undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
@@ -2490,15 +2412,15 @@ object CField7 {
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
   implicit def struct12[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12]
-    : CField7[CStruct12[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12], F7] =
+    : CField7[CStruct12[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12],
+              F7] =
     undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
   implicit def struct13[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13]
-    : CField7[
-      CStruct13[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13],
-      F7] = undefined
+    : CField7[CStruct13[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13],
+              F7] = undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
@@ -2535,22 +2457,9 @@ object CField7 {
                         F12,
                         F13,
                         F14,
-                        F15]: CField7[CStruct15[F1,
-                                                F2,
-                                                F3,
-                                                F4,
-                                                F5,
-                                                F6,
-                                                F7,
-                                                F8,
-                                                F9,
-                                                F10,
-                                                F11,
-                                                F12,
-                                                F13,
-                                                F14,
-                                                F15],
-                                      F7] = undefined
+                        F15]: CField7[
+    CStruct15[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15],
+    F7] = undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
@@ -2876,15 +2785,15 @@ object CField8 {
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
   implicit def struct12[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12]
-    : CField8[CStruct12[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12], F8] =
+    : CField8[CStruct12[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12],
+              F8] =
     undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
   implicit def struct13[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13]
-    : CField8[
-      CStruct13[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13],
-      F8] = undefined
+    : CField8[CStruct13[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13],
+              F8] = undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
@@ -2921,22 +2830,9 @@ object CField8 {
                         F12,
                         F13,
                         F14,
-                        F15]: CField8[CStruct15[F1,
-                                                F2,
-                                                F3,
-                                                F4,
-                                                F5,
-                                                F6,
-                                                F7,
-                                                F8,
-                                                F9,
-                                                F10,
-                                                F11,
-                                                F12,
-                                                F13,
-                                                F14,
-                                                F15],
-                                      F8] = undefined
+                        F15]: CField8[
+    CStruct15[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15],
+    F8] = undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
@@ -3257,15 +3153,15 @@ object CField9 {
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
   implicit def struct12[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12]
-    : CField9[CStruct12[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12], F9] =
+    : CField9[CStruct12[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12],
+              F9] =
     undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
   implicit def struct13[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13]
-    : CField9[
-      CStruct13[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13],
-      F9] = undefined
+    : CField9[CStruct13[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13],
+              F9] = undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
@@ -3302,22 +3198,9 @@ object CField9 {
                         F12,
                         F13,
                         F14,
-                        F15]: CField9[CStruct15[F1,
-                                                F2,
-                                                F3,
-                                                F4,
-                                                F5,
-                                                F6,
-                                                F7,
-                                                F8,
-                                                F9,
-                                                F10,
-                                                F11,
-                                                F12,
-                                                F13,
-                                                F14,
-                                                F15],
-                                      F9] = undefined
+                        F15]: CField9[
+    CStruct15[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15],
+    F9] = undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
@@ -3678,22 +3561,9 @@ object CField10 {
                         F12,
                         F13,
                         F14,
-                        F15]: CField10[CStruct15[F1,
-                                                 F2,
-                                                 F3,
-                                                 F4,
-                                                 F5,
-                                                 F6,
-                                                 F7,
-                                                 F8,
-                                                 F9,
-                                                 F10,
-                                                 F11,
-                                                 F12,
-                                                 F13,
-                                                 F14,
-                                                 F15],
-                                       F10] = undefined
+                        F15]: CField10[
+    CStruct15[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15],
+    F10] = undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
@@ -4048,22 +3918,9 @@ object CField11 {
                         F12,
                         F13,
                         F14,
-                        F15]: CField11[CStruct15[F1,
-                                                 F2,
-                                                 F3,
-                                                 F4,
-                                                 F5,
-                                                 F6,
-                                                 F7,
-                                                 F8,
-                                                 F9,
-                                                 F10,
-                                                 F11,
-                                                 F12,
-                                                 F13,
-                                                 F14,
-                                                 F15],
-                                       F11] = undefined
+                        F15]: CField11[
+    CStruct15[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15],
+    F11] = undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
@@ -4412,22 +4269,9 @@ object CField12 {
                         F12,
                         F13,
                         F14,
-                        F15]: CField12[CStruct15[F1,
-                                                 F2,
-                                                 F3,
-                                                 F4,
-                                                 F5,
-                                                 F6,
-                                                 F7,
-                                                 F8,
-                                                 F9,
-                                                 F10,
-                                                 F11,
-                                                 F12,
-                                                 F13,
-                                                 F14,
-                                                 F15],
-                                       F12] = undefined
+                        F15]: CField12[
+    CStruct15[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15],
+    F12] = undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
@@ -4770,22 +4614,9 @@ object CField13 {
                         F12,
                         F13,
                         F14,
-                        F15]: CField13[CStruct15[F1,
-                                                 F2,
-                                                 F3,
-                                                 F4,
-                                                 F5,
-                                                 F6,
-                                                 F7,
-                                                 F8,
-                                                 F9,
-                                                 F10,
-                                                 F11,
-                                                 F12,
-                                                 F13,
-                                                 F14,
-                                                 F15],
-                                       F13] = undefined
+                        F15]: CField13[
+    CStruct15[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15],
+    F13] = undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
@@ -5121,22 +4952,9 @@ object CField14 {
                         F12,
                         F13,
                         F14,
-                        F15]: CField14[CStruct15[F1,
-                                                 F2,
-                                                 F3,
-                                                 F4,
-                                                 F5,
-                                                 F6,
-                                                 F7,
-                                                 F8,
-                                                 F9,
-                                                 F10,
-                                                 F11,
-                                                 F12,
-                                                 F13,
-                                                 F14,
-                                                 F15],
-                                       F14] = undefined
+                        F15]: CField14[
+    CStruct15[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15],
+    F14] = undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 
@@ -5453,22 +5271,9 @@ object CField15 {
                         F12,
                         F13,
                         F14,
-                        F15]: CField15[CStruct15[F1,
-                                                 F2,
-                                                 F3,
-                                                 F4,
-                                                 F5,
-                                                 F6,
-                                                 F7,
-                                                 F8,
-                                                 F9,
-                                                 F10,
-                                                 F11,
-                                                 F12,
-                                                 F13,
-                                                 F14,
-                                                 F15],
-                                       F15] = undefined
+                        F15]: CField15[
+    CStruct15[F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15],
+    F15] = undefined
 
 // ###sourceLocation(file: "/Users/denys/.src/native/nativelib/src/main/scala/scala/scalanative/native/CField.scala.gyb", line: 17)
 

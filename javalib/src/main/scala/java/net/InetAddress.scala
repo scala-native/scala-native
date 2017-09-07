@@ -1,7 +1,6 @@
 package java.net
 
 import scala.scalanative.native._
-import scala.scalanative.posix.unistd.{gethostname}
 import scala.collection.mutable.ArrayBuffer
 
 import java.util.StringTokenizer
@@ -185,14 +184,6 @@ private[net] trait InetAddressBase {
         "IP address is of illegal length: " + addr.length)
   }
 
-  def getLocalHost: InetAddress = {
-    val str = stackalloc[CChar](255)
-    gethostname(str, 255)
-    Zone { implicit z =>
-      getByName(fromCString(str))
-    }
-  }
-
   private def isValidIPv4Address(addr: String): Boolean = {
     if (!addr.matches("[0-9\\.]*")) {
       return false
@@ -354,8 +345,7 @@ private[net] trait InetAddressBase {
     true
   }
 
-  private val loopback =
-    new Inet4Address(Array[Byte](127, 0, 0, 1), "localhost")
+  private val loopback = new Inet4Address(Array[Byte](127, 0, 0, 1))
 
   def getLoopbackAddress(): InetAddress = loopback
 

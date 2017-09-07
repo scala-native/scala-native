@@ -32,6 +32,7 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val LinkClass   = getRequiredClass("scala.scalanative.native.link")
     lazy val ExternClass = getRequiredClass("scala.scalanative.native.extern")
     lazy val PinClass    = getRequiredClass("scala.scalanative.native.pin")
+    lazy val StubClass   = getRequiredClass("scala.scalanative.native.stub")
 
     lazy val InlineHintClass = getRequiredClass(
       "scala.scalanative.native.inlinehint")
@@ -206,8 +207,11 @@ trait NirDefinitions { self: NirGlobalAddons =>
 
     // Scala library & runtime
 
-    lazy val InlineClass   = getRequiredClass("scala.inline")
-    lazy val NoInlineClass = getRequiredClass("scala.noinline")
+    lazy val InlineClass      = getRequiredClass("scala.inline")
+    lazy val NoInlineClass    = getRequiredClass("scala.noinline")
+    lazy val EnumerationClass = getRequiredClass("scala.Enumeration")
+    lazy val PropertiesTrait  = getRequiredClass("scala.util.PropertiesTrait")
+    lazy val JavaProperties   = getRequiredClass("java.util.Properties")
 
     lazy val StringConcatMethod = getMember(StringClass, TermName("concat"))
 

@@ -3,8 +3,7 @@ package java.io
 import scala.util.Try
 
 object RandomAccessFileSuite extends tests.Suite {
-  test(
-    "Creating a `RandomAccessFile` with an invalid mode throws an exception") {
+  test("Creating a `RandomAccessFile` with an invalid mode throws an exception") {
     assertThrows[IllegalArgumentException] {
       new RandomAccessFile("file", "foo")
     }

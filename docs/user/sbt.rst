@@ -16,7 +16,7 @@ This includes:
 
 * ``project/plugins.sbt`` to add a plugin dependency::
 
-    addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.3.1")
+    addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.3.2")
 
 * ``project/build.properties`` to specify the sbt version::
 
@@ -68,6 +68,7 @@ Since Name                     Type            Description
 0.1   ``nativeLinkingOptions`` ``Seq[String]`` Extra options passed to clang verbatim during linking
 0.1   ``nativeMode``           ``String``      Either ``"debug"`` or ``"release"`` (2)
 0.2   ``nativeGC``             ``String``      Either ``"none"``, ``"boehm"`` or ``"immix"`` (3)
+0.3.3 ``nativeLinkStubs``      ``Boolean``     Whether to link ``@stub`` definitions, or to ignore them
 ===== ======================== =============== =========================================================
 
 1. See `Publishing`_ and `Cross compilation`_ for details.

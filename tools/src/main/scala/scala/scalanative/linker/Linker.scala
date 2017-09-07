@@ -18,8 +18,7 @@ sealed trait Linker {
 object Linker {
 
   /** Create a new linker given tools configuration. */
-  def apply(config: tools.Config,
-            reporter: Reporter = Reporter.empty): Linker =
+  def apply(config: tools.Config, reporter: Reporter = Reporter.empty): Linker =
     new Impl(config, reporter)
 
   private final class Impl(config: tools.Config, reporter: Reporter)
@@ -50,50 +49,58 @@ object Linker {
           if (!workitem.isIntrinsic && !resolved.contains(workitem) &&
               !unresolved.contains(workitem)) {
 
-            load(workitem).fold[Unit] {
-              unresolved += workitem
-              onUnresolved(workitem)
-            } {
-              case (deps, newlinks, newsignatures, defn) =>
-                resolved += workitem
-                defns += defn
-                links ++= newlinks
-                signatures ++= newsignatures
+            load(workitem)
+              .fold[Unit] {
+                unresolved += workitem
+                onUnresolved(workitem)
+              } {
+                // If this definition is a stub, and linking stubs is disabled,
+                // then add this element to the `unresolved` items.
+                case (_, _, _, defn)
+                    if defn.attrs.isStub && !config.linkStubs =>
+                  unresolved += workitem
+                  onUnresolved(workitem)
 
-                // Comparing new signatures with already collected weak dependencies
-                newsignatures
-                  .flatMap(signature =>
-                    weaks.collect {
-                      case weak if Global.genSignature(weak) == signature =>
-                        weak
-                  })
-                  .foreach { global =>
-                    direct.push(global)
-                    dyndefns += global
-                  }
+                case (deps, newlinks, newsignatures, defn) =>
+                  resolved += workitem
+                  defns += defn
+                  links ++= newlinks
+                  signatures ++= newsignatures
 
-                onResolved(workitem)
-
-                deps.foreach {
-                  case Dep.Direct(dep) =>
-                    direct.push(dep)
-                    onDirectDependency(workitem, dep)
-
-                  case cond @ Dep.Conditional(dep, condition) =>
-                    conditional += cond
-                    onConditionalDependency(workitem, dep, condition)
-
-                  case Dep.Weak(global) =>
-                    // comparing new dependencies with all signatures
-                    if (signatures(Global.genSignature(global))) {
+                  // Comparing new signatures with already collected weak dependencies
+                  newsignatures
+                    .flatMap(signature =>
+                      weaks.collect {
+                        case weak if Global.genSignature(weak) == signature =>
+                          weak
+                    })
+                    .foreach { global =>
                       direct.push(global)
-                      onDirectDependency(workitem, global)
                       dyndefns += global
                     }
-                    weaks += global
-                }
 
-            }
+                  onResolved(workitem)
+
+                  deps.foreach {
+                    case Dep.Direct(dep) =>
+                      direct.push(dep)
+                      onDirectDependency(workitem, dep)
+
+                    case cond @ Dep.Conditional(dep, condition) =>
+                      conditional += cond
+                      onConditionalDependency(workitem, dep, condition)
+
+                    case Dep.Weak(global) =>
+                      // comparing new dependencies with all signatures
+                      if (signatures(Global.genSignature(global))) {
+                        direct.push(global)
+                        onDirectDependency(workitem, global)
+                        dyndefns += global
+                      }
+                      weaks += global
+                  }
+
+              }
           }
         }
 

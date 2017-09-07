@@ -11,6 +11,7 @@ trait List[E] extends Collection[E] {
   def listIterator(): ListIterator[E]
   def listIterator(index: Int): ListIterator[E]
   def subList(fromIndex: Int, toIndex: Int): List[E]
+  def addAll(c: Collection[_ <: E]): Boolean
   def addAll(index: Int, c: Collection[_ <: E]): Boolean
   def clear(): Unit
   def isEmpty(): Boolean

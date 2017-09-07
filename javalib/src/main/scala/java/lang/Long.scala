@@ -1,6 +1,6 @@
 package java.lang
 
-import scalanative.runtime.{select, divULong, remULong, undefined, Intrinsics}
+import scalanative.runtime.{divULong, remULong, undefined, Intrinsics}
 
 final class Long(val _value: scala.Long) extends Number with Comparable[Long] {
   @inline def this(s: String) =
@@ -348,8 +348,7 @@ object Long {
   }
 
   @inline
-  def remainderUnsigned(dividend: scala.Long,
-                        divisor: scala.Long): scala.Long =
+  def remainderUnsigned(dividend: scala.Long, divisor: scala.Long): scala.Long =
     remULong(dividend, divisor)
 
   @inline def reverse(l: scala.Long): scala.Long =
@@ -469,8 +468,23 @@ object Long {
     }
   }
 
-  @inline def valueOf(longValue: scala.Long): Long =
-    new Long(longValue)
+  import LongCache.cache
+
+  @inline def valueOf(longValue: scala.Long): Long = {
+    if (longValue.toByte.toLong != longValue) {
+      new Long(longValue)
+    } else {
+      val idx    = (longValue + 128).toInt
+      val cached = cache(idx)
+      if (cached != null) {
+        cached
+      } else {
+        val newlong = new Long(longValue)
+        cache(idx) = newlong
+        newlong
+      }
+    }
+  }
 
   @inline def valueOf(s: String): Long =
     valueOf(parseLong(s))
@@ -558,5 +572,8 @@ object Long {
       new String(buffer)
     }
   }
+}
 
+private[lang] object LongCache {
+  private[lang] val cache = new Array[java.lang.Long](256)
 }

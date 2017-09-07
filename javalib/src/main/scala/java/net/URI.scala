@@ -279,10 +279,9 @@ final class URI private () extends Comparable[URI] with Serializable {
         URIEncoderDecoder.validate(ssp, allLegal)
       } catch {
         case e: URISyntaxException =>
-          throw new URISyntaxException(
-            uri,
-            e.getReason + " in scheme specific part",
-            index + e.getIndex)
+          throw new URISyntaxException(uri,
+                                       e.getReason + " in scheme specific part",
+                                       index + e.getIndex)
       }
     }
 
@@ -1164,6 +1163,6 @@ final class URI private () extends Comparable[URI] with Serializable {
     convertHexToLowerCase(result.toString)
   }
 
-  def toURL() = throw new NotImplementedError()
-
+  @scalanative.native.stub
+  def toURL(): java.net.URL = ???
 }

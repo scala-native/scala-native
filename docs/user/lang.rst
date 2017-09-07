@@ -22,6 +22,11 @@ programming and assumes single-threaded execution by default.
 It's possible to use C libraries to get access to multi-threading and
 synchronization primitives but this is not officially supported at the moment.
 
+Finalization
+------------
+
+Finalize method from ``java.lang.Object`` is never called in Scala Native.
+
 Undefined behavior
 ------------------
 
