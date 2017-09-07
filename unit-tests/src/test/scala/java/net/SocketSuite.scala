@@ -9,7 +9,7 @@ object SocketSuite extends tests.Suite {
     val prevValue = s.getKeepAlive
     s.setKeepAlive(!prevValue)
     assertEquals(s.getKeepAlive, !prevValue)
-    s.close
+    s.close()
   }
 
   test("reuseAddr") {
@@ -17,7 +17,7 @@ object SocketSuite extends tests.Suite {
     val prevValue = s.getReuseAddress
     s.setReuseAddress(!prevValue)
     assertEquals(s.getReuseAddress, !prevValue)
-    s.close
+    s.close()
   }
 
   test("OOBInline") {
@@ -25,7 +25,7 @@ object SocketSuite extends tests.Suite {
     val prevValue = s.getOOBInline
     s.setOOBInline(!prevValue)
     assertEquals(s.getOOBInline, !prevValue)
-    s.close
+    s.close()
   }
 
   test("tcpNoDelay") {
@@ -33,7 +33,7 @@ object SocketSuite extends tests.Suite {
     val prevValue = s.getTcpNoDelay
     s.setTcpNoDelay(!prevValue)
     assertEquals(s.getTcpNoDelay, !prevValue)
-    s.close
+    s.close()
   }
 
   test("soLinger") {
@@ -42,7 +42,7 @@ object SocketSuite extends tests.Suite {
     assertEquals(s.getSoLinger, 100)
     s.setSoLinger(false, 50000000)
     assertEquals(s.getSoLinger, -1)
-    s.close
+    s.close()
   }
 
   test("soTimeout") {
@@ -50,7 +50,7 @@ object SocketSuite extends tests.Suite {
     val prevValue = s.getSoTimeout
     s.setSoTimeout(prevValue + 1000)
     assertEquals(s.getSoTimeout, prevValue + 1000)
-    s.close
+    s.close()
   }
 
   test("receiveBufferSize") {
@@ -60,7 +60,7 @@ object SocketSuite extends tests.Suite {
     // On linux the size is actually set to the double of given parameter
     // so we don't test if it's equal
     assert(s.getReceiveBufferSize >= prevValue + 100)
-    s.close
+    s.close()
   }
 
   test("sendBufferSize") {
@@ -70,14 +70,14 @@ object SocketSuite extends tests.Suite {
     // On linux the size is actually set to the double of given parameter
     // so we don't test if it's equal
     assert(s.getSendBufferSize >= prevValue + 100)
-    s.close
+    s.close()
   }
 
   test("trafficClass") {
     val s = new Socket()
     s.setTrafficClass(0x28)
     assertEquals(s.getTrafficClass, 0x28)
-    s.close
+    s.close()
   }
 
   test("connect with timeout") {
@@ -85,7 +85,7 @@ object SocketSuite extends tests.Suite {
     assertThrows[SocketTimeoutException] {
       s.connect(new InetSocketAddress("123.123.123.123", 12341), 100)
     }
-    s.close
+    s.close()
   }
 
   test("bind") {
@@ -93,33 +93,33 @@ object SocketSuite extends tests.Suite {
     val nonLocalAddr =
       new InetSocketAddress(InetAddress.getByName("123.123.123.123"), 0)
     assertThrows[BindException] { s1.bind(nonLocalAddr) }
-    s1.close
+    s1.close()
 
     val s2 = new Socket
     s2.bind(new InetSocketAddress(InetAddress.getLoopbackAddress, 0))
     val port = s2.getLocalPort
     assertEquals(new InetSocketAddress(InetAddress.getLoopbackAddress, port),
                  s2.getLocalSocketAddress)
-    s2.close
+    s2.close()
 
     val s3 = new Socket
     s3.bind(null)
     assert(s3.getLocalSocketAddress != null)
-    s3.close
+    s3.close()
 
     val s4 = new Socket
     s4.bind(new InetSocketAddress(InetAddress.getLoopbackAddress, 0))
     val s5 = new Socket
     assertThrows[BindException] { s5.bind(s4.getLocalSocketAddress) }
-    s4.close
-    s5.close
+    s4.close()
+    s5.close()
 
     class UnsupportedSocketAddress extends SocketAddress
     val s6 = new Socket
     assertThrows[IllegalArgumentException] {
       s6.bind(new UnsupportedSocketAddress)
     }
-    s6.close
+    s6.close()
   }
 
 }
