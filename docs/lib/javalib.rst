@@ -617,8 +617,8 @@ Some expressions have an alternative syntax:
  Java           RE2
 ============== ================
 ``(?<foo>a)``  ``(?P<foo>a)``
-``p{Alnum}``   ``[[:alpha:]]``
-``p{Alpha}``   ``[[:alnum:]]``
+``p{Alnum}``   ``[[:alnum:]]``
+``p{Alpha}``   ``[[:alpha:]]``
 ``p{ASCII}``   ``[[:ascii:]]``
 ``p{Blank}``   ``[[:blank:]]``
 ``p{Cntrl}``   ``[[:cntrl:]]``
@@ -630,8 +630,8 @@ Some expressions have an alternative syntax:
 ``p{Space}``   ``[[:space:]]``
 ``p{Upper}``   ``[[:upper:]]``
 ``p{XDigit}``  ``[[:xdigit:]]``
-``p{InGreek}`` ``p{Latin}``
-``p{IsLatin}`` ``p{Greek}``
+``p{InGreek}`` ``p{Greek}``
+``p{IsLatin}`` ``p{Latin}``
 ============== ================
 
 Continue to :ref:`libc`.
