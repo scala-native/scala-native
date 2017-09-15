@@ -26,7 +26,7 @@ class NirErrorTest extends FlatSpec with Matchers with Assertions {
 
     assertResult(
       Array(
-        (49, "extern objects may only contain extern fields and methods").toError)) {
+        (49, "extern objects may only contain extern fields").toError)) {
      NIRCompiler {_ compileAndReport
        s"""|@scala.scalanative.native.extern
            |object test {
@@ -61,7 +61,6 @@ class NirErrorTest extends FlatSpec with Matchers with Assertions {
         s"""|@scala.scalanative.native.extern
             |object bar extends foo{
             |  var z: Int = scala.scalanative.native.extern
-            |  //z = scala.scalanative.native.extern
             |}
             |trait foo {
             |  val y: Int = 1

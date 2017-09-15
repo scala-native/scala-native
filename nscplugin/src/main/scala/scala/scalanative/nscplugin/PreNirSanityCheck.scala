@@ -7,17 +7,14 @@ import scala.reflect.internal.Flags._
 import util.ScopedVar.scoped
 import util.ScopedVar
 
-abstract class PreNirSanitycheck
-  extends PluginComponent
-  with NirTypeEncoding
-  with NirNameEncoding
-  with NirPluginComponent {
+abstract class PreNirSanityCheck
+  extends NirPhase with NirPluginComponent {
 
   import global._
   import definitions._
 
   val nirAddons: NirGlobalAddons {
-    val global: PreNirSanitycheck.this.global.type
+    val global: PreNirSanityCheck.this.global.type
   }
 
   import nirAddons._
@@ -52,10 +49,12 @@ abstract class PreNirSanitycheck
     def verify(tree: Tree): Unit = tree match {
       case cd: ClassDef =>
         verifyClass(cd)
+      case md: ModuleDef =>
+        verifyClass(md)
       case _ =>
     }
 
-    def verifyClass(cd: ClassDef): Unit = scoped(
+    def verifyClass(cd: ImplDef): Unit = scoped(
       curClassSym := cd.symbol
     ) {
       cd.impl.body.foreach {
@@ -101,7 +100,8 @@ abstract class PreNirSanitycheck
           reporter.error(t.pos,
             s"extern objects may only contain extern fields and methods")
           Nil
-        case _ => Nil
+        case other =>
+          Nil
       }.toSet
       for {
         f <- curClassSym.info.decls if f.isField
