@@ -1,7 +1,12 @@
 package scala.scalanative
 
-import scala.reflect.internal.util.{BatchSourceFile, NoFile, SourceFile}
-import scala.reflect.internal.util.Position
+import scala.reflect.internal.util.{
+  BatchSourceFile,
+  NoFile,
+  SourceFile,
+  Position,
+  NoPosition
+}
 import scala.tools.cmd.CommandLineParser
 import scala.tools.nsc.{CompilerCommand, Global, Settings}
 import scala.tools.nsc.io.AbstractFile
@@ -94,9 +99,13 @@ class NIRCompiler(outputDir: Path) extends api.NIRCompiler {
       private var errors0: List[(Position, String)] = Nil
       def handleError(pos: Position, msg: String): Unit =
         errors0 = (pos, msg) :: errors0
-      def errors: List[api.CompilerError] = errors0.map {
-        case (p, msg) => CompilerError(p.startOrPoint, msg)
-      }
+      def errors: List[api.CompilerError] =
+        errors0.map {
+          case (p, msg) if p == NoPosition =>
+            CompilerError(0, msg)
+          case (p, msg) =>
+            CompilerError(p.startOrPoint, msg)
+        }
 
     }
 
@@ -146,8 +155,8 @@ class NIRCompiler(outputDir: Path) extends api.NIRCompiler {
    */
   private case object ScalaNative
       extends CompilerPlugin(jarPath = sys props "scalanative.nscplugin.jar",
-                             classpath =
-                               List(sys props "scalanative.nativeruntime.cp"))
+                             classpath = List(
+                               sys props "scalanative.nativeruntime.cp"))
 
   /**
    * Returns an instance of `Global` configured according to the given options.

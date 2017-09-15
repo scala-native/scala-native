@@ -26,7 +26,7 @@ class NirErrorTest extends FlatSpec with Matchers with Assertions {
 
     assertResult(
       Array(
-        (49, "extern objects may only contain extern fields").toError)) {
+        (57, "fields in extern objects must have extern body").toError)) {
      NIRCompiler {_ compileAndReport
        s"""|@scala.scalanative.native.extern
            |object test {
@@ -45,7 +45,7 @@ class NirErrorTest extends FlatSpec with Matchers with Assertions {
 
 
     assertResult(
-      Array()) {
+      Array((52, "extern objects may only have extern parents").toError)) {
       NIRCompiler {_ compileAndReport
         s"""|@scala.scalanative.native.extern
             |object bar extends foo {
@@ -56,25 +56,81 @@ class NirErrorTest extends FlatSpec with Matchers with Assertions {
     }
 
     assertResult(
-      Array((164, "extern objects may only contain extern fields").toError)) {
+      Array((51, "extern classes may only have extern parents").toError)) {
+      NIRCompiler {_ compileAndReport
+        s"""|@scala.scalanative.native.extern
+            |class bar extends foo {
+            |  var z: Int = scala.scalanative.native.extern
+            |}
+            |trait foo {
+            |}  """.stripMargin }
+    }
+
+
+    assertResult(
+      Array()) {
+      NIRCompiler {_ compileAndReport
+        s"""|@scala.scalanative.native.extern
+            |object one extends two {
+            |  var z: Int = scala.scalanative.native.extern
+            |}
+            |@scala.scalanative.native.extern
+            |trait two {
+            |}  """.stripMargin }
+    }
+
+    assertResult(
+      Array((166, "fields in extern traits must have extern body").toError)) {
       NIRCompiler {_ compileAndReport
         s"""|@scala.scalanative.native.extern
             |object bar extends foo{
             |  var z: Int = scala.scalanative.native.extern
             |}
+            |@scala.scalanative.native.extern
             |trait foo {
             |  val y: Int = 1
             |}  """.stripMargin }
     }
 
     assertResult(
-      Array((40, "extern objects may only contain extern fields").toError,
-            (58, "methods in extern objects must have extern body").toError)) {
+      Array()) {
+      NIRCompiler {_ compileAndReport
+        s"""|@scala.scalanative.native.extern
+            |object bar extends foo {
+            |  var z: Int = scala.scalanative.native.extern
+            |}
+            |@scala.scalanative.native.extern
+            |trait foo {
+            |  val y: Int = scala.scalanative.native.extern
+            |}  """.stripMargin }
+    }
+
+    assertResult(
+      Array((58, "(limitation) fields in extern objects must not be lazy").toError)) {
       NIRCompiler {_ compileAndReport
         s"""|@scala.scalanative.native.extern
             |object test {
-            |  lazy val t = 1
+            |  lazy val t: Int = scala.scalanative.native.extern
             |}""".stripMargin }
+    }
+
+    assertResult(
+      Array((74, "extern objects may only have extern parents").toError)) {
+      NIRCompiler {_ compileAndReport
+        s"""|class Foo(val x: Int)
+            |@scala.scalanative.native.extern
+            |object Bar extends Foo(10)""".stripMargin }
+    }
+
+    // Previously, this would compile and execute but wouldn
+    // return the incorrect result (0) for `Bar.x`
+    assertResult(
+      Array((47, "parameters in extern classes are not allowed - only extern fields and methods are allowed").toError)) {
+      NIRCompiler {_ compileAndReport
+        s"""|@scala.scalanative.native.extern
+            |class Foo(val x: Int)
+            |@scala.scalanative.native.extern
+            |object Bar extends Foo(10)""".stripMargin }
     }
 
 

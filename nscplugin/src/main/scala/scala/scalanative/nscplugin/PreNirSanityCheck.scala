@@ -32,6 +32,7 @@ abstract class PreNirSanityCheck
   class SanityCheckPhase(prev: Phase) extends StdPhase(prev) {
     private val curClassSym   = new util.ScopedVar[Symbol]
     private val curMethSym = new util.ScopedVar[Symbol]
+    private val curValSym = new util.ScopedVar[Symbol]
 
     override def apply(cunit: CompilationUnit): Unit = {
       def verifyDefs(tree: Tree): List[Tree] = {
@@ -43,13 +44,35 @@ abstract class PreNirSanityCheck
         }
       }
 
+      //println("CUNIT: " + cunit.body)
+
       cunit.body foreach verify
     }
 
     def verify(tree: Tree): Unit = tree match {
       case cd: ClassDef =>
+        if (cd.symbol.isExternNonModule) {
+          val nonExternParents =
+            (cd.symbol.tpe.parents.zip(cd.impl.parents)).
+              filterNot(p => (p._1 == AnyRefTpe) || p._2.symbol.isExternNonModule)
+          nonExternParents foreach { parent =>
+            reporter.error(
+              parent._2.pos,
+              s"extern ${symToName(cd.symbol)} may only have extern parents")
+          }
+        }
         verifyClass(cd)
-      case md: ModuleDef =>
+      case md@ModuleDef(_, _, impl) =>
+        if (md.symbol.isExternModule) {
+          val nonExternParents =
+            (md.symbol.tpe.parents.zip(impl.parents)).
+              filterNot(p => (p._1 == AnyRefTpe) || p._2.symbol.isExternNonModule)
+          nonExternParents foreach { parent =>
+            reporter.error(
+              parent._2.pos,
+              "extern objects may only have extern parents")
+          }
+        }
         verifyClass(md)
       case _ =>
     }
@@ -60,6 +83,8 @@ abstract class PreNirSanityCheck
       cd.impl.body.foreach {
         case dd: DefDef =>
           verifyMethod(dd)
+        case vd: ValDef =>
+          verifyVal(vd)
         case _ =>
       }
     }
@@ -68,49 +93,52 @@ abstract class PreNirSanityCheck
       curMethSym := dd.symbol
     ) {
       dd.rhs match {
-        case rhs if dd.name == nme.CONSTRUCTOR && curClassSym.get.isExternModule =>
-          verifyExternCtor(rhs)
-        case rhs if curClassSym.get.isExternModule =>
+        case rhs: Block if dd.symbol.isConstructor =>
+          // We don't care about the constructor
+          // at this phase
+        case rhs if curClassSym.get.isExtern =>
           verifyExternMethod(rhs)
         case _ =>
+      }
+    }
+
+    def verifyVal(dd: ValDef): Unit = scoped(
+      curValSym := dd.symbol
+    ) {
+      if (curClassSym.get.isExtern) {
+        dd.rhs match {
+          case sel: Select if sel.symbol == ExternMethod =>
+            ()
+          case _ if curValSym.isLazy =>
+            reporter.error(dd.pos, s"(limitation) fields in extern ${symToName(curClassSym)} must not be lazy")
+          case _ if curValSym.hasFlag(PARAMACCESSOR) =>
+            // params are not allowed
+            reporter.error(dd.pos, s"parameters in extern ${symToName(curClassSym)} are not allowed - only extern fields and methods are allowed")
+          case rhs =>
+            reporter.error(rhs.pos, s"fields in extern ${symToName(curClassSym)} must have extern body")
+        }
       }
     }
 
     def verifyExternMethod(rhs: Tree): Unit = {
       rhs match {
         case Apply(ref: RefTree, Seq()) if ref.symbol == ExternMethod =>
+          // TOOD: Remove
           ()
         case _ if curMethSym.hasFlag(ACCESSOR) =>
           ()
+        case sel: Select if sel.symbol == ExternMethod =>
+          ()
         case rhs =>
-          reporter.error(rhs.pos.focus, "methods in extern objects must have extern body")
+          reporter.error(rhs.pos.focus, s"methods in extern ${symToName(curClassSym)} must have extern body")
       }
     }
 
 
-    def verifyExternCtor(rhs: Tree): Unit = {
-      val Block(_ +: init, _) = rhs
-      val externs = init.flatMap {
-        case t@Assign(ref: RefTree, Apply(extern, Seq()))
-          if extern.symbol == ExternMethod =>
-          List(ref.symbol)
-        case Apply(extern, Seq()) if extern.symbol == ExternMethod =>
-          Nil
-        case t if t.symbol == null || !t.symbol.isConstructor =>
-          reporter.error(t.pos,
-            s"extern objects may only contain extern fields and methods")
-          Nil
-        case other =>
-          Nil
-      }.toSet
-      for {
-        f <- curClassSym.info.decls if f.isField
-        if !externs.contains(f)
-      } {
-        reporter.error(f.pos, "extern objects may only contain extern fields")
-      }
-    }
-
+    private def symToName(sym: Symbol): String =
+      if (sym.isClass)
+        if (sym.asClass.isTrait) "traits" else "classes"
+      else "objects"
 
   }
 }
