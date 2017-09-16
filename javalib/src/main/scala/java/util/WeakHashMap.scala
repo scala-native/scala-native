@@ -2,8 +2,6 @@ package java.util
 
 import scala.collection.mutable
 
-import scala.collection.JavaConversions._
-
 class WeakHashMap[K, V] protected (inner: mutable.Map[Box[K], V])
     extends AbstractMap[K, V]
     with Serializable
