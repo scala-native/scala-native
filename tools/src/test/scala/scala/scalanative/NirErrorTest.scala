@@ -22,7 +22,7 @@ class NirErrorTest extends FlatSpec with Matchers with Assertions {
 
   import CompilerError._
 
-  it should "verify extern objects and methods" in {
+  it should "verify that extern objects and classes only have extern members" in {
 
     assertResult(
       Array(
@@ -122,7 +122,7 @@ class NirErrorTest extends FlatSpec with Matchers with Assertions {
             |object Bar extends Foo(10)""".stripMargin }
     }
 
-    // Previously, this would compile and execute but wouldn
+    // Previously, this would compile and execute but wouldn't
     // return the incorrect result (0) for `Bar.x`
     assertResult(
       Array((47, "parameters in extern classes are not allowed - only extern fields and methods are allowed").toError)) {
@@ -134,6 +134,29 @@ class NirErrorTest extends FlatSpec with Matchers with Assertions {
     }
 
 
+  }
+
+  it should "verify that extern members are defined correctly" in {
+
+    assertResult(
+      Array(
+        (49, "extern members must have an explicit type annotation").toError)) {
+      NIRCompiler {_ compileAndReport
+        s"""|@scala.scalanative.native.extern
+            |object test {
+            |  val t = scala.scalanative.native.extern
+            |}""".stripMargin }
+    }
+
+    assertResult(
+      Array(
+        (53, "extern members must have an explicit type annotation").toError)) {
+      NIRCompiler {_ compileAndReport
+        s"""|@scala.scalanative.native.extern
+            |object test {
+            |  def t = scala.scalanative.native.extern
+            |}""".stripMargin }
+    }
   }
 
 }

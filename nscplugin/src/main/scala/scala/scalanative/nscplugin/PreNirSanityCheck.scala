@@ -97,7 +97,7 @@ abstract class PreNirSanityCheck
           // We don't care about the constructor
           // at this phase
         case rhs if curClassSym.get.isExtern =>
-          verifyExternMethod(rhs)
+          verifyExternMethod(dd)
         case _ =>
       }
     }
@@ -108,7 +108,7 @@ abstract class PreNirSanityCheck
       if (curClassSym.get.isExtern) {
         dd.rhs match {
           case sel: Select if sel.symbol == ExternMethod =>
-            ()
+            externMemberHasTpeAnnotation(dd)
           case _ if curValSym.isLazy =>
             reporter.error(dd.pos, s"(limitation) fields in extern ${symToName(curClassSym)} must not be lazy")
           case _ if curValSym.hasFlag(PARAMACCESSOR) =>
@@ -120,17 +120,27 @@ abstract class PreNirSanityCheck
       }
     }
 
-    def verifyExternMethod(rhs: Tree): Unit = {
-      rhs match {
+    def verifyExternMethod(ddef: DefDef): Unit = {
+      ddef.rhs match {
         case Apply(ref: RefTree, Seq()) if ref.symbol == ExternMethod =>
           // TOOD: Remove
           ()
         case _ if curMethSym.hasFlag(ACCESSOR) =>
           ()
         case sel: Select if sel.symbol == ExternMethod =>
+          externMemberHasTpeAnnotation(ddef)
           ()
         case rhs =>
           reporter.error(rhs.pos.focus, s"methods in extern ${symToName(curClassSym)} must have extern body")
+      }
+    }
+
+    def externMemberHasTpeAnnotation(df: ValOrDefDef): Unit = {
+      df.tpt match {
+        case t@TypeTree() if t.original == null =>
+          reporter.error(df.pos, s"extern members must have an explicit type annotation")
+        case t@TypeTree() =>
+          ()
       }
     }
 
