@@ -816,7 +816,16 @@ trait NirGenExpr { self: NirGenPhase =>
 
       val lty  = genType(left.tpe, box = false)
       val rty  = genType(right.tpe, box = false)
-      val opty = binaryOperationType(lty, rty)
+      val opty =
+        if (isShiftOp(code)) {
+          if (lty == nir.Type.Long) {
+            nir.Type.Long
+          } else {
+            nir.Type.Int
+          }
+        } else {
+          binaryOperationType(lty, rty)
+        }
 
       val binres = opty match {
         case _: Type.F =>
