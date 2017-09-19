@@ -29,6 +29,7 @@ addCommandAlias(
     "nscplugin/publishLocal",
     "nativelib/publishLocal",
     "javalib/publishLocal",
+    "auxlib/publishLocal",
     "scalalib/publishLocal",
     "publishLocal"
   ).mkString(";", ";", "")
@@ -52,6 +53,7 @@ lazy val publishSnapshot =
 lazy val setUpTestingCompiler = Def.task {
   val nscpluginjar = (Keys.`package` in nscplugin in Compile).value
   val nativelibjar = (Keys.`package` in nativelib in Compile).value
+  val auxlibjar    = (Keys.`package` in auxlib in Compile).value
   val scalalibjar  = (Keys.`package` in scalalib in Compile).value
   val javalibjar   = (Keys.`package` in javalib in Compile).value
   val testingcompilercp =
@@ -62,7 +64,7 @@ lazy val setUpTestingCompiler = Def.task {
   sys.props("scalanative.testingcompiler.cp") =
     (testingcompilercp :+ testingcompilerjar) map (_.getAbsolutePath) mkString pathSeparator
   sys.props("scalanative.nativeruntime.cp") =
-    Seq(nativelibjar, scalalibjar, javalibjar) mkString pathSeparator
+    Seq(nativelibjar, auxlibjar, scalalibjar, javalibjar) mkString pathSeparator
   sys.props("scalanative.nativelib.dir") =
     ((crossTarget in Compile).value / "nativelib").getAbsolutePath
 }
@@ -287,6 +289,7 @@ lazy val sbtScalaNative =
           publishLocal in nscplugin,
           publishLocal in nativelib,
           publishLocal in javalib,
+          publishLocal in auxlib,
           publishLocal in scalalib,
           publishLocal in testInterfaceSbtDefs,
           publishLocal in testInterfaceSerialization,
@@ -337,6 +340,13 @@ lazy val javalib =
 
 lazy val assembleScalaLibrary = taskKey[Unit](
   "Checks out scala standard library from submodules/scala and then applies overrides.")
+
+lazy val auxlib =
+  project
+    .in(file("auxlib"))
+    .settings(libSettings)
+    .settings(mavenPublishSettings)
+    .dependsOn(nativelib)
 
 lazy val scalalib =
   project
@@ -392,7 +402,7 @@ lazy val scalalib =
         .value,
       publishLocal := publishLocal.dependsOn(assembleScalaLibrary).value
     )
-    .dependsOn(nativelib, javalib)
+    .dependsOn(auxlib, nativelib, javalib)
 
 lazy val demoJVM =
   project
