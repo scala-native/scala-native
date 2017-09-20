@@ -159,4 +159,19 @@ class NirErrorTest extends FlatSpec with Matchers with Assertions {
     }
   }
 
+  it should "reject function pointers with captures" in {
+    assertResult(
+      Array()) {
+      NIRCompiler {_ compileAndReport
+        s"""|import scala.scalanative.native._
+            |object test {
+            |  def f(ptr: CFunctionPtr1[CInt, Unit]): Unit = ???
+            |  def test(): Unit = {
+            |    val x = 10
+            |    f(CFunctionPtr.fromFunction1((y: CInt) => x + y))
+            |  }
+            |}""".stripMargin }
+    }
+  }
+
 }
