@@ -2,7 +2,7 @@ package java.lang
 
 import java.util
 import java.lang.Thread._
-import scala.scalanative.native.stub
+
 import scala.scalanative.runtime.NativeThread
 import scala.scalanative.native.{
   CFunctionPtr,
@@ -40,39 +40,14 @@ class Thread extends Runnable {
   // Stack size to be passes to VM for thread execution
   private var stackSize: scala.Long = NativeThread.THREAD_DEFAULT_STACK_SIZE
 
-<<<<<<< HEAD
-  @stub
-  def getStackTrace(): Array[StackTraceElement] = ???
-=======
   // Indicates if the thread was already started
   var started: scala.Boolean = false
->>>>>>> Add implementation for java.lang.{Thread, ThreadLocal, ThreadGroup} (#947)
 
   // Indicates if the thread is alive
   // Note: this was originally named 'isAlive' in Harmony but
   // conflicted with the 'isAlive' method
   var alive: scala.Boolean = false
 
-<<<<<<< HEAD
-  @stub
-  def getUncaughtExceptionHandler(): UncaughtExceptionHandler = ???
-
-  @stub
-  def setUncaughtExceptionHandler(handler: UncaughtExceptionHandler): Unit =
-    ???
-
-  @stub
-  def setDaemon(on: scala.Boolean): Unit = ???
-
-  @stub
-  def this(name: String) = this(??? : Runnable)
-
-  @stub
-  def getContextClassLoader(): java.lang.ClassLoader = ???
-
-  trait UncaughtExceptionHandler {
-    def uncaughtException(thread: Thread, e: Throwable): Unit
-=======
   // Thread's target - a Runnable object whose run method should be invoked
   private var target: Runnable = _
 
@@ -186,7 +161,6 @@ class Thread extends Runnable {
     if (parent != null && parent.inheritableValues != null) {
       inheritableValues = new ThreadLocal.Values(parent.inheritableValues)
     }
->>>>>>> Add implementation for java.lang.{Thread, ThreadLocal, ThreadGroup} (#947)
   }
 
   def this(group: ThreadGroup, name: String) = this(group, null, name, 0)
@@ -579,10 +553,8 @@ object Thread {
 
   def sleep(millis: scala.Long): Unit = sleep(millis, 0)
 
-  @stub
-  def dumpStack(): Unit = ???
-
   trait UncaughtExceptionHandler {
     def uncaughtException(t: Thread, e: Throwable)
   }
+
 }
