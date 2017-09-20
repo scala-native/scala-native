@@ -3,6 +3,7 @@ package io
 
 import scala.collection.mutable
 import scala.collection.JavaConverters._
+import scala.util.{Try, Success, Failure}
 import java.io.File
 import java.net.URI
 import java.nio.ByteBuffer
@@ -98,9 +99,17 @@ object VirtualDirectory {
   private final class JarDirectory(path: Path)(implicit in: Scope)
       extends NioDirectory {
     private val fileSystem: FileSystem =
-      acquire(
-        FileSystems.newFileSystem(URI.create(s"jar:${path.toUri}"),
-                                  Map("create" -> "false").asJava))
+      acquire {
+        val uri = URI.create(s"jar:file:${path}")
+        Try(FileSystems.newFileSystem(uri,
+          Map("create" -> "false").asJava)) match {
+          case Success(s) => s
+          case Failure(e) => e match {
+            case e: FileSystemAlreadyExistsException => FileSystems.getFileSystem(uri)
+            case _ => throw e
+          }
+        }
+      }
 
     override def files: Seq[Path] = {
       val roots = fileSystem.getRootDirectories.asScala.toSeq
