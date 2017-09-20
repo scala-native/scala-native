@@ -39,7 +39,7 @@ private[niocharset] object UTF_8
    * 11110uuu  10zzzzzz  10yyyyyy  10xxxxxx   000uuuzz zzzzyyyy yyxxxxxx
    */
 
-  private val lengthByLeading: Array[Int] = Array(
+  private lazy val lengthByLeading: Array[Int] = Array(
     // 10wwwwww
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
