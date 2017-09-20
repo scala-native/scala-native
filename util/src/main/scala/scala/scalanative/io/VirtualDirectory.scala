@@ -101,13 +101,14 @@ object VirtualDirectory {
     private val fileSystem: FileSystem =
       acquire {
         val uri = URI.create(s"jar:file:${path}")
-        Try(FileSystems.newFileSystem(uri,
-          Map("create" -> "false").asJava)) match {
+        Try(FileSystems.newFileSystem(uri, Map("create" -> "false").asJava)) match {
           case Success(s) => s
-          case Failure(e) => e match {
-            case e: FileSystemAlreadyExistsException => FileSystems.getFileSystem(uri)
-            case _ => throw e
-          }
+          case Failure(e) =>
+            e match {
+              case e: FileSystemAlreadyExistsException =>
+                FileSystems.getFileSystem(uri)
+              case _ => throw e
+            }
         }
       }
 
