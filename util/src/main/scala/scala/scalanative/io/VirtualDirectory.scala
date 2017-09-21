@@ -3,7 +3,6 @@ package io
 
 import scala.collection.mutable
 import scala.collection.JavaConverters._
-import scala.util.{Try, Success, Failure}
 import java.io.File
 import java.net.URI
 import java.nio.ByteBuffer
@@ -101,14 +100,11 @@ object VirtualDirectory {
     private val fileSystem: FileSystem =
       acquire {
         val uri = URI.create(s"jar:file:${path}")
-        Try(FileSystems.newFileSystem(uri, Map("create" -> "false").asJava)) match {
-          case Success(s) => s
-          case Failure(e) =>
-            e match {
-              case e: FileSystemAlreadyExistsException =>
-                FileSystems.getFileSystem(uri)
-              case _ => throw e
-            }
+        try {
+          FileSystems.newFileSystem(uri, Map("create" -> "false").asJava)
+        } catch {
+          case e: FileSystemAlreadyExistsException =>
+            FileSystems.getFileSystem(uri)
         }
       }
 
