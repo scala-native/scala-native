@@ -19,6 +19,7 @@ abstract class PreNirSanityCheck
 
   import nirAddons._
   import nirDefinitions._
+  import NirPrimitives._
   import SimpleType.{fromType, fromSymbol}
 
   val phaseName: String = "sanitycheck"
@@ -88,6 +89,87 @@ abstract class PreNirSanityCheck
         case _ =>
       }
     }
+
+    def verifyApply(app: Apply): Unit = {
+      val Apply(fun, args) = app
+      fun match {
+        case _ =>
+          val sym = fun.symbol
+          if (scalaPrimitives.isPrimitive(sym))
+            verifyApplyPrimitive(app)
+          else
+            ()
+      }
+    }
+
+    def verifyApplyPrimitive(app: Apply): Unit = {
+      import scalaPrimitives._
+
+      val Apply(fun @ Select(receiver, _), args) = app
+
+      val sym  = app.symbol
+      val code = scalaPrimitives.getPrimitive(sym, receiver.tpe)
+
+      if (isArithmeticOp(code) || isLogicalOp(code) || isComparisonOp(code)) {
+        verifySimpleOp(app, args)
+      } else if (code == CONCAT) {
+        verifyStringConcat(receiver, args.head)
+      } else if (code == HASH) {
+        verifyHashCode(args.head)
+      } else if (isArrayOp(code) || code == ARRAY_CLONE) {
+        verifyArrayOp(app, code)
+      } else if (nirPrimitives.isPtrOp(code)) {
+        verifyPtrOp(app, code)
+      } else if (nirPrimitives.isFunPtrOp(code)) {
+        verifyFunPtrOp(app, code)
+      } else if (isCoercion(code)) {
+        verifyCoercion(app, receiver, code)
+      } else if (code == SYNCHRONIZED) {
+        verifySynchronized(app)
+      } else if (code == CCAST) {
+        verifyCastOp(app)
+      } else if (code == SIZEOF || code == TYPEOF) {
+        verifyOfOp(app, code)
+      } else if (code == STACKALLOC) {
+        verifyStackalloc(app)
+      } else if (code == CQUOTE) {
+        verifyCQuoteOp(app)
+      } else if (code == BOXED_UNIT) {
+        ()
+      } else if (code >= DIV_UINT && code <= INT_TO_ULONG) {
+        verifyUnsignedOp(app, code)
+      } else if (code == SELECT) {
+        verifySelectOp(app)
+      } else {
+        reporter.error(app.pos,
+          s"Unknown primitive operation: ${sym.fullName} (${fun.symbol.simpleName}")
+      }
+    }
+
+    def verifySimpleOp(app: Apply, args: List[Tree]): Unit = {
+      args match {
+        case Nil =>
+          reporter.error(app.pos, s"a non-empty primitive function requuires arguments")
+        case _ :: _ :: _ :: _ =>
+          reporter.error(app.pos, s"too many arguments for primitve function")
+        case _ =>
+          ???
+      }
+    }
+
+    def verifyStringConcat(leftp: Tree, rightp: Tree): Unit = ()
+    def verifyHashCode(argp: Tree): Unit = ()
+    def verifyArrayOp(app: Apply, code: Int): Unit = ()
+    def verifyPtrOp(app: Apply, code: Int): Unit = ()
+    def verifyFunPtrOp(app: Apply, code: Int): Unit = ()
+    def verifyCoercion(app: Apply, receiver: Tree, code: Int): Unit = ()
+    def verifySynchronized(app: Apply): Unit = ()
+    def verifyCastOp(app: Apply): Unit = ()
+    def verifyOfOp(app: Apply, code: Int): Unit = ()
+    def verifyStackalloc(app: Apply): Unit = ()
+    def verifyCQuoteOp(app: Apply): Unit = ()
+    def verifyUnsignedOp(app: Tree, code: Int): Unit = ()
+    def verifySelectOp(app: Apply): Unit = ()
 
     def verifyMethod(dd: DefDef): Unit = scoped(
       curMethSym := dd.symbol

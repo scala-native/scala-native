@@ -629,7 +629,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
         case rhs =>
           // TODO: crash
-          unsupported("methods in extern objects must have extern body")
+          //unsupported("methods in extern objects must have extern body")
       }
     }
 
