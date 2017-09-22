@@ -313,7 +313,7 @@ object Files {
     lines(path, StandardCharsets.UTF_8)
 
   def lines(path: Path, cs: Charset): Stream[String] =
-    newBufferedReader(path, cs).lines()
+    newBufferedReader(path, cs).lines(true)
 
   private def _list(dir: Path): SStream[Path] =
     dir.toFile().list().toStream.map(dir.resolve)
