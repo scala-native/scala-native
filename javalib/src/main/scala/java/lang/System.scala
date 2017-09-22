@@ -94,7 +94,7 @@ object System {
 
   /**
    * POSIX environment variables
-   * http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap08.html
+   * http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap08.html
    */
   def getenv(): Map[String, String] = envVars
   def getenv(key: String): String   = envVars.get(key)
