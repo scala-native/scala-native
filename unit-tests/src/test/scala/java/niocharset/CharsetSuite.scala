@@ -39,7 +39,7 @@ object CharsetSuite extends tests.Suite {
     expectThrows(classOf[UnsupportedCharsetException], Charset.forName("UTF_8"))
 
     expectThrows(classOf[UnsupportedCharsetException],
-      Charset.forName("this-charset-does-not-exist"))
+                 Charset.forName("this-charset-does-not-exist"))
   }
 
   test("isSupported") {

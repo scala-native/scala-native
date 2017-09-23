@@ -16,12 +16,16 @@ object UTF_8Suite extends BaseCharset(Charset.forName("UTF-8")) {
 
     // 2-byte characters
     testDecode(bb"47 72 c3 bc c3 9f 20 47 6f 74 74")(cb"Grüß Gott")
-    testDecode(bb"ce 9a ce b1 ce bb ce b7 ce bc ce ad cf 81 ce b1")(cb"Καλημέρα")
-    testDecode(bb"d8 b5 d8 a8 d8 a7 d8 ad 20 d8 a7 d9 84 d8 ae d9 8a d8 b1")(cb"صباح الخير")
+    testDecode(bb"ce 9a ce b1 ce bb ce b7 ce bc ce ad cf 81 ce b1")(
+      cb"Καλημέρα")
+    testDecode(bb"d8 b5 d8 a8 d8 a7 d8 ad 20 d8 a7 d9 84 d8 ae d9 8a d8 b1")(
+      cb"صباح الخير")
 
     // 3-byte characters
     testDecode(bb"e3 81 93 e3 82 93 e3 81 ab e3 81 a1 e3 81 af")(cb"こんにちは")
-    testDecode(bb"d0 94 d0 be d0 b1 d1 80 d1 8b d0 b9 20 d0 b4 d0 b5 d0 bd d1 8c")(cb"Добрый день")
+    testDecode(
+      bb"d0 94 d0 be d0 b1 d1 80 d1 8b d0 b9 20 d0 b4 d0 b5 d0 bd d1 8c")(
+      cb"Добрый день")
     testDecode(bb"e4 bd a0 e5 a5 bd")(cb"你好")
 
     // 4-byte characters
@@ -58,9 +62,21 @@ object UTF_8Suite extends BaseCharset(Charset.forName("UTF-8")) {
     testDecode(bb"bf")(Malformed(1))
     testDecode(bb"80 80")(Malformed(1), Malformed(1))
     testDecode(bb"80 80 80")(Malformed(1), Malformed(1), Malformed(1))
-    testDecode(bb"80 80 80 80")(Malformed(1), Malformed(1), Malformed(1), Malformed(1))
-    testDecode(bb"80 80 80 80 80")(Malformed(1), Malformed(1), Malformed(1), Malformed(1), Malformed(1))
-    testDecode(bb"41 80 80 42 80 43")(cb"A", Malformed(1), Malformed(1), cb"B", Malformed(1), cb"C")
+    testDecode(bb"80 80 80 80")(Malformed(1),
+                                Malformed(1),
+                                Malformed(1),
+                                Malformed(1))
+    testDecode(bb"80 80 80 80 80")(Malformed(1),
+                                   Malformed(1),
+                                   Malformed(1),
+                                   Malformed(1),
+                                   Malformed(1))
+    testDecode(bb"41 80 80 42 80 43")(cb"A",
+                                      Malformed(1),
+                                      Malformed(1),
+                                      cb"B",
+                                      Malformed(1),
+                                      cb"C")
 
     // Lonely start characters, separated by spaces
     testDecode(bb"${(0xc0 to 0xf4).flatMap(c => Seq(c, 32))}")(
@@ -82,17 +98,28 @@ object UTF_8Suite extends BaseCharset(Charset.forName("UTF-8")) {
       Seq(1, 1, 2, 1, 2, 3).map(Malformed(_)): _*)
     // and with normal sequences interspersed
     testDecode(bb"c2 41 e0 41 e0 a0 41 f0 41 f0 90 41 f0 90 80 41")(
-      Seq(1, 1, 2, 1, 2, 3).flatMap(l => Seq[OutPart[CharBuffer]](Malformed(l), cb"A")): _*)
+      Seq(1, 1, 2, 1, 2, 3).flatMap(l =>
+        Seq[OutPart[CharBuffer]](Malformed(l), cb"A")): _*)
 
     // Impossible bytes
     testDecode(bb"fe")(Malformed(1))
     testDecode(bb"ff")(Malformed(1))
-    testDecode(bb"fe fe ff ff")(Malformed(1), Malformed(1), Malformed(1), Malformed(1))
+    testDecode(bb"fe fe ff ff")(Malformed(1),
+                                Malformed(1),
+                                Malformed(1),
+                                Malformed(1))
     // Old 5-byte and 6-byte starts
-    testDecode(bb"f8 80 80 80 af")(
-      Malformed(1), Malformed(1), Malformed(1), Malformed(1), Malformed(1))
-    testDecode(bb"fc 80 80 80 80 af")(
-      Malformed(1), Malformed(1), Malformed(1), Malformed(1), Malformed(1), Malformed(1))
+    testDecode(bb"f8 80 80 80 af")(Malformed(1),
+                                   Malformed(1),
+                                   Malformed(1),
+                                   Malformed(1),
+                                   Malformed(1))
+    testDecode(bb"fc 80 80 80 80 af")(Malformed(1),
+                                      Malformed(1),
+                                      Malformed(1),
+                                      Malformed(1),
+                                      Malformed(1),
+                                      Malformed(1))
 
     // Overlong sequences (encoded with more bytes than necessary)
     // Overlong '/'
@@ -137,16 +164,20 @@ object UTF_8Suite extends BaseCharset(Charset.forName("UTF-8")) {
 
     // 2-byte characters
     testEncode(cb"Grüß Gott")(bb"47 72 c3 bc c3 9f 20 47 6f 74 74")
-    testEncode(cb"Καλημέρα")(bb"ce 9a ce b1 ce bb ce b7 ce bc ce ad cf 81 ce b1")
-    testEncode(cb"صباح الخير")(bb"d8 b5 d8 a8 d8 a7 d8 ad 20 d8 a7 d9 84 d8 ae d9 8a d8 b1")
+    testEncode(cb"Καλημέρα")(
+      bb"ce 9a ce b1 ce bb ce b7 ce bc ce ad cf 81 ce b1")
+    testEncode(cb"صباح الخير")(
+      bb"d8 b5 d8 a8 d8 a7 d8 ad 20 d8 a7 d9 84 d8 ae d9 8a d8 b1")
 
     // 3-byte characters
     testEncode(cb"こんにちは")(bb"e3 81 93 e3 82 93 e3 81 ab e3 81 a1 e3 81 af")
-    testEncode(cb"Добрый день")(bb"d0 94 d0 be d0 b1 d1 80 d1 8b d0 b9 20 d0 b4 d0 b5 d0 bd d1 8c")
+    testEncode(cb"Добрый день")(
+      bb"d0 94 d0 be d0 b1 d1 80 d1 8b d0 b9 20 d0 b4 d0 b5 d0 bd d1 8c")
     testEncode(cb"你好")(bb"e4 bd a0 e5 a5 bd")
 
     // 4-byte characters
-    testEncode(cb"\ud835\udcd7\ud835\udcee\ud835\udcf5\ud835\udcf5\ud835\udcf8")(
+    testEncode(
+      cb"\ud835\udcd7\ud835\udcee\ud835\udcf5\ud835\udcf5\ud835\udcf8")(
       bb"f0 9d 93 97 f0 9d 93 ae f0 9d 93 b5 f0 9d 93 b5 f0 9d 93 b8")
 
     testEncode(cb"")(bb"")
@@ -201,15 +232,17 @@ object UTF_8Suite extends BaseCharset(Charset.forName("UTF-8")) {
     assert(encoder.isLegalReplacement(Array(0xc2.toByte, 0x80.toByte)))
     assert(encoder.isLegalReplacement(Array(0xdf.toByte, 0xbf.toByte)))
 
-    assert(encoder.isLegalReplacement(
-      Array(0xe0.toByte, 0xa0.toByte, 0x80.toByte)))
-    assert(encoder.isLegalReplacement(
-      Array(0xef.toByte, 0xbf.toByte, 0xbf.toByte)))
+    assert(
+      encoder.isLegalReplacement(Array(0xe0.toByte, 0xa0.toByte, 0x80.toByte)))
+    assert(
+      encoder.isLegalReplacement(Array(0xef.toByte, 0xbf.toByte, 0xbf.toByte)))
 
-    assert(encoder.isLegalReplacement(
-      Array(0xf0.toByte, 0x90.toByte, 0x80.toByte, 0x80.toByte)))
-    assert(encoder.isLegalReplacement(
-      Array(0xf4.toByte, 0x8f.toByte, 0xbf.toByte, 0xbf.toByte)))
+    assert(
+      encoder.isLegalReplacement(
+        Array(0xf0.toByte, 0x90.toByte, 0x80.toByte, 0x80.toByte)))
+    assert(
+      encoder.isLegalReplacement(
+        Array(0xf4.toByte, 0x8f.toByte, 0xbf.toByte, 0xbf.toByte)))
 
     // The bad ones
 
@@ -224,4 +257,3 @@ object UTF_8Suite extends BaseCharset(Charset.forName("UTF-8")) {
     assertNot(encoder.isLegalReplacement(Array(0xe0.toByte, 0x80.toByte)))
   }
 }
-
