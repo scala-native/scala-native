@@ -285,4 +285,11 @@ object ArrayListSuite extends tests.Suite {
       new ArrayList(-1)
     }
   }
+
+  test("contains(Any)") {
+    val al = new ArrayList[Int](Seq(1, 2, 3, 2).asJava)
+    assert(al.contains(1))
+    assert(!al.contains(5))
+  }
+
 }

@@ -45,6 +45,8 @@ abstract class AbstractList[E] protected ()
     findIndex(listIterator(size))
   }
 
+  override def contains(o: Any): Boolean = indexOf(o) >= 0
+
   override def clear(): Unit =
     removeRange(0, size)
 
