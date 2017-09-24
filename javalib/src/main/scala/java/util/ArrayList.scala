@@ -72,6 +72,8 @@ class ArrayList[E] private (private[this] var inner: Array[Any],
 
   override def lastIndexOf(o: Any): Int = inner.lastIndexOf(o)
 
+  override def contains(o: Any): Boolean = super.contains(o)
+
   // shallow-copy
   override def clone(): AnyRef = new ArrayList(inner, _size)
 
