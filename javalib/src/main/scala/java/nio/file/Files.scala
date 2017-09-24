@@ -317,8 +317,13 @@ object Files {
   def lines(path: Path, cs: Charset): Stream[String] =
     newBufferedReader(path, cs).lines()
 
-  private def _list(dir: Path): SStream[Path] =
-    dir.toFile().list().toStream.map(dir.resolve)
+  private def _list(dir: Path): SStream[Path] = {
+    val flist = Option(dir.toFile().list())
+    flist match {
+      case None => throw new NotDirectoryException(dir.toString)
+      case Some(x) => x.toStream.map(dir.resolve)
+    }
+  }
 
   def list(dir: Path): Stream[Path] =
     if (!isDirectory(dir, Array.empty)) {

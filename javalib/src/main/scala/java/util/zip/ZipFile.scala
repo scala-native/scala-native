@@ -148,7 +148,7 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
     var done: Boolean = false
     while (!done) {
       mRaf.seek(scanOffset)
-      if (ZipEntry.readIntLE(mRaf) == 101010256L) {
+      if (ZipEntry.readIntLE(mRaf) == ZipFile.ENDSIG) {
         done = true
       } else {
         scanOffset -= 1
@@ -187,11 +187,11 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
      * Seek to the first CDE and read all entries.
      * However, when Z_SYNC_FLUSH is used the offset may not point directly
      * to the CDE so skip over until we find it.
-     * At most it will be 6 bytes away (one or two bytes for empty block, 4 bytes for
+     * At most it will be 8 bytes away (one or two bytes (four on windows) for empty block, 4 bytes for
      * empty block signature).
      */
     scanOffset = centralDirOffset
-    stopOffset = scanOffset + 6
+    stopOffset = scanOffset + 8
 
     done = false
     while (!done) {
