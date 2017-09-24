@@ -21,6 +21,9 @@ sealed trait Config {
   /** Compilation mode. */
   def mode: Mode
 
+  /** Should stubs be linked? */
+  def linkStubs: Boolean
+
   /** Create new config with given entry point. */
   def withEntry(value: Global): Config
 
@@ -35,6 +38,9 @@ sealed trait Config {
 
   /** Create a new config with given compilation mode. */
   def withMode(value: Mode): Config
+
+  /** Create a new config with given behavior for stubs. */
+  def withLinkStubs(value: Boolean): Config
 }
 
 object Config {
@@ -45,13 +51,15 @@ object Config {
          paths = Seq.empty,
          workdir = new File(""),
          target = "",
-         mode = Mode.Debug)
+         mode = Mode.Debug,
+         linkStubs = false)
 
   private final case class Impl(entry: Global,
                                 paths: Seq[File],
                                 workdir: File,
                                 target: String,
-                                mode: Mode)
+                                mode: Mode,
+                                linkStubs: Boolean)
       extends Config {
     def withEntry(value: Global): Config =
       copy(entry = value)
@@ -67,5 +75,8 @@ object Config {
 
     def withMode(value: Mode): Config =
       copy(mode = value)
+
+    def withLinkStubs(value: Boolean): Config =
+      copy(linkStubs = value)
   }
 }

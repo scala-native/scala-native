@@ -32,6 +32,24 @@ object netdb {
                   service: CString,
                   servlen: socket.socklen_t,
                   flags: CInt): CInt = extern
+
+  @name("scalanative_AI_NUMERICHOST")
+  def AI_NUMERICHOST: CInt = extern
+
+  @name("scalanative_AI_PASSIVE")
+  def AI_PASSIVE: CInt = extern
+
+  @name("scalanative_AI_NUMERICSERV")
+  def AI_NUMERICSERV: CInt = extern
+
+  @name("scalanative_AI_ADDRCONFIG")
+  def AI_ADDRCONFIG: CInt = extern
+
+  @name("scalanative_AI_V4MAPPED")
+  def AI_V4MAPPED: CInt = extern
+
+  @name("scalanative_AI_CANONNAME")
+  def AI_CANONNAME: CInt = extern
 }
 
 object netdbOps {

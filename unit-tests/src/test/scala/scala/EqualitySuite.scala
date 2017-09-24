@@ -20,4 +20,19 @@ object EqualitySuite extends tests.Suite {
     val obj = new Object
     assert(obj != (null: Object))
   }
+
+  test("== null doesn't call equals") {
+    var equalsCalled = false
+    val obj = new Object {
+      override def equals(other: Any) = {
+        equalsCalled = true
+        other.asInstanceOf[AnyRef] eq this
+      }
+    }
+    assert(obj != null)
+    assert(!equalsCalled)
+    val iamnull: Any = null
+    assert(obj != iamnull)
+    assert(equalsCalled)
+  }
 }

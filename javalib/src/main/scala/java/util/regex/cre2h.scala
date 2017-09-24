@@ -31,7 +31,7 @@ object cre2h {
   def toRE2String(str: String, restr: Ptr[cre2.string_t])(
       implicit z: Zone): Unit = {
     restr.data = toCString(str)
-    restr.length = str.length
+    restr.length = str.getBytes().length
   }
 
   final val ENCODING_UNKNOWN = 0
@@ -57,4 +57,8 @@ object cre2h {
   final val ERROR_BAD_UTF8           = 12
   final val ERROR_BAD_NAMED_CAPTURE  = 13
   final val ERROR_PATTERN_TOO_LARGE  = 14
+
+  // this trivial wrapper class is needed to avoid compiler crash at nativeOptimizeNIR
+  // a possible instance of #367
+  implicit class RE2RegExpOps(val ptr: Ptr[cre2.regexp_t]) extends AnyVal
 }

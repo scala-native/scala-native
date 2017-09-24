@@ -4,8 +4,8 @@ import scala.scalanative.posix.{fcntl, unistd}
 import scala.scalanative.native.{toCString, Zone}
 
 /** Wraps a UNIX file descriptor */
-final class FileDescriptor private[io] (private[io] val fd: Int,
-                                        val readOnly: Boolean = false) {
+final class FileDescriptor private[java] (private[java] val fd: Int,
+                                          val readOnly: Boolean = false) {
 
   def this() = this(-1)
 

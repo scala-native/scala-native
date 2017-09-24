@@ -60,6 +60,12 @@ int scalanative_IPV6_UNICAST_HOPS() { return IPV6_UNICAST_HOPS; }
 
 int scalanative_IPV6_V6ONLY() { return IPV6_V6ONLY; }
 
+int scalanative_IP_MULTICAST_IF() { return IP_MULTICAST_IF; }
+
+int scalanative_IP_MULTICAST_LOOP() { return IP_MULTICAST_LOOP; }
+
+int scalanative_IP_TOS() { return IP_TOS; }
+
 int scalanative_IN6_IS_ADDR_UNSPECIFIED(struct scalanative_in6_addr *arg) {
     struct in6_addr converted;
     scalanative_convert_in6_addr(arg, &converted);

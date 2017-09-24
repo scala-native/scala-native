@@ -132,6 +132,8 @@ trait NirGenStat { self: NirGenPhase =>
         case ann if ann.symbol == LinkClass =>
           val Apply(_, Seq(Literal(Constant(name: String)))) = ann.tree
           Attr.Link(name)
+        case ann if ann.symbol == StubClass =>
+          Attr.Stub
       }
       val pure = if (PureModules.contains(sym)) Seq(Attr.Pure) else Seq()
 
@@ -258,6 +260,7 @@ trait NirGenStat { self: NirGenPhase =>
             case ann if ann.symbol == NoInlineClass   => Attr.NoInline
             case ann if ann.symbol == InlineHintClass => Attr.InlineHint
             case ann if ann.symbol == InlineClass     => Attr.AlwaysInline
+            case ann if ann.symbol == StubClass       => Attr.Stub
           }
         }
       }
@@ -359,7 +362,14 @@ trait NirGenStat { self: NirGenPhase =>
           val values = params.take(label.params.length)
 
           buf.jump(local, values)
-          buf.genTailRecLabel(dd, isStatic, label)
+          scoped(
+            curMethodThis := {
+              if (isStatic) None
+              else Some(Val.Local(params.head.name, params.head.ty))
+            }
+          ) {
+            buf.genTailRecLabel(dd, isStatic, label)
+          }
 
         case _ if curMethodSym.get == NObjectInitMethod =>
           nir.Val.Unit

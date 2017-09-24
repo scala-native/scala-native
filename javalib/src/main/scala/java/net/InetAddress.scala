@@ -1,13 +1,15 @@
 package java.net
 
 import scala.scalanative.native._
-import scala.scalanative.posix.unistd.{gethostname}
 import scala.collection.mutable.ArrayBuffer
 
 import java.util.StringTokenizer
 
 // Ported from Apache Harmony
 private[net] trait InetAddressBase {
+
+  private[net] val wildcard =
+    new Inet4Address(Array[Byte](0, 0, 0, 0), "0.0.0.0")
 
   def getByName(host: String): InetAddress = {
 
@@ -182,14 +184,6 @@ private[net] trait InetAddressBase {
         "IP address is of illegal length: " + addr.length)
   }
 
-  def getLocalHost: InetAddress = {
-    val str = stackalloc[CChar](255)
-    gethostname(str, 255)
-    Zone { implicit z =>
-      getByName(fromCString(str))
-    }
-  }
-
   private def isValidIPv4Address(addr: String): Boolean = {
     if (!addr.matches("[0-9\\.]*")) {
       return false
@@ -351,8 +345,7 @@ private[net] trait InetAddressBase {
     true
   }
 
-  private val loopback =
-    new Inet4Address(Array[Byte](127, 0, 0, 1), "localhost")
+  private val loopback = new Inet4Address(Array[Byte](127, 0, 0, 1))
 
   def getLoopbackAddress(): InetAddress = loopback
 
@@ -560,7 +553,8 @@ private[net] trait InetAddressBase {
 
 object InetAddress extends InetAddressBase
 
-abstract class InetAddress private[net] (ipAddress: Array[Byte], host: String)
+abstract class InetAddress private[net] (ipAddress: Array[Byte],
+                                         private var host: String)
     extends Serializable {
   import InetAddress._
 
@@ -569,16 +563,15 @@ abstract class InetAddress private[net] (ipAddress: Array[Byte], host: String)
   def getHostAddress(): String = createIPStringFromByteArray(ipAddress)
 
   def getHostName(): String = {
-    if (host != null) {
-      host
-    } else {
+    if (host == null) {
       val ipString = createIPStringFromByteArray(ipAddress)
-      SocketHelpers
+      host = SocketHelpers
         .ipToHost(ipString, isValidIPv6Address(ipString))
         .getOrElse {
           ipString
         }
     }
+    host
   }
 
   def getAddress() = ipAddress.clone

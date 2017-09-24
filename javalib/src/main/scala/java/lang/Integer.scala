@@ -564,8 +564,23 @@ object Integer {
   @inline def toUnsignedLong(x: scala.Int): scala.Long =
     intToULong(x)
 
-  @inline def valueOf(i: scala.Int): Integer =
-    new Integer(i)
+  import IntegerCache.cache
+
+  @inline def valueOf(intValue: scala.Int): Integer = {
+    if (intValue.toByte.toInt != intValue) {
+      new Integer(intValue)
+    } else {
+      val idx    = intValue + 128
+      val cached = cache(idx)
+      if (cached != null) {
+        cached
+      } else {
+        val newint = new Integer(intValue)
+        cache(idx) = newint
+        newint
+      }
+    }
+  }
 
   @inline def valueOf(s: String): Integer =
     valueOf(parseInt(s))
@@ -652,4 +667,8 @@ object Integer {
       new String(buffer)
     }
   }
+}
+
+private[lang] object IntegerCache {
+  private[lang] val cache = new Array[java.lang.Integer](256)
 }

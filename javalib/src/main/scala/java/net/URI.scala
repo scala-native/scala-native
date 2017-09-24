@@ -1163,6 +1163,6 @@ final class URI private () extends Comparable[URI] with Serializable {
     convertHexToLowerCase(result.toString)
   }
 
-  def toURL() = throw new NotImplementedError()
-
+  @scalanative.native.stub
+  def toURL(): java.net.URL = ???
 }

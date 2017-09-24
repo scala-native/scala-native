@@ -29,6 +29,8 @@ class CoderResult private (kind: Int, _length: Int) {
     case Malformed  => throw new MalformedInputException(_length)
     case Unmappable => throw new UnmappableCharacterException(_length)
   }
+
+  override def toString = super.toString
 }
 
 object CoderResult {

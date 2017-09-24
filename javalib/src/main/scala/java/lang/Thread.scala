@@ -1,5 +1,7 @@
 package java.lang
 
+import scalanative.native.stub
+
 class Thread private (runnable: Runnable) extends Runnable {
   if (runnable ne Thread.MainRunnable) ???
 
@@ -20,16 +22,26 @@ class Thread private (runnable: Runnable) extends Runnable {
   final def getName(): String =
     this.name
 
+  @stub
   def getStackTrace(): Array[StackTraceElement] = ???
 
   def getId(): scala.Long = 1
 
+  @stub
   def getUncaughtExceptionHandler(): UncaughtExceptionHandler = ???
 
+  @stub
   def setUncaughtExceptionHandler(handler: UncaughtExceptionHandler): Unit =
     ???
 
+  @stub
   def setDaemon(on: scala.Boolean): Unit = ???
+
+  @stub
+  def this(name: String) = this(??? : Runnable)
+
+  @stub
+  def getContextClassLoader(): java.lang.ClassLoader = ???
 
   trait UncaughtExceptionHandler {
     def uncaughtException(thread: Thread, e: Throwable): Unit
@@ -72,4 +84,7 @@ object Thread {
   }
 
   def sleep(millis: scala.Long): Unit = sleep(millis, 0)
+
+  @stub
+  def dumpStack(): Unit = ???
 }

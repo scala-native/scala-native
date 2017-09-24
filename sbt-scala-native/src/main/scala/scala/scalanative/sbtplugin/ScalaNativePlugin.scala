@@ -35,6 +35,9 @@ object ScalaNativePlugin extends AutoPlugin {
       taskKey[Seq[String]](
         "Additional options that are passed to clang during linking.")
 
+    val nativeLinkStubs =
+      settingKey[Boolean]("Whether to link `@stub` methods, or ignore them.")
+
     val nativeLink =
       taskKey[File]("Generates native binary without running it.")
 
@@ -51,7 +54,7 @@ object ScalaNativePlugin extends AutoPlugin {
       settingKey[String]("Compilation mode, either \"debug\" or \"release\".")
 
     val nativeGC =
-      settingKey[String]("GC choice, either \"none\" or \"boehm\".")
+      settingKey[String]("GC choice, either \"none\", \"boehm\" or \"immix\".")
   }
 
   override def globalSettings: Seq[Setting[_]] =

@@ -39,7 +39,7 @@ private[net] object SocketHelpers {
         fcntl(sock, F_SETFL, O_NONBLOCK)
 
         val fdset = stackalloc[fd_set]
-        !fdset._1 = stackalloc[CLongInt](FD_SETSIZE / sizeof[CLongInt])
+        !fdset._1 = stackalloc[CLongInt](FD_SETSIZE / (8 * sizeof[CLongInt]))
         FD_ZERO(fdset)
         FD_SET(sock, fdset)
 
@@ -57,6 +57,8 @@ private[net] object SocketHelpers {
           if (!(so_error.cast[Ptr[CInt]]) != 0) {
             return false
           }
+        } else {
+          return false
         }
 
         val sentBytes = send(sock, toCString("echo"), 4, 0)
@@ -119,8 +121,6 @@ private[net] object SocketHelpers {
       hints.ai_family = AF_UNSPEC
       hints.ai_socktype = SOCK_STREAM
       hints.ai_protocol = 0
-      hints.ai_canonname = null
-      hints.ai_addr = null
       hints.ai_next = null
 
       val retArray = scala.collection.mutable.ArrayBuffer[String]()
