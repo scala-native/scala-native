@@ -10,7 +10,7 @@ Scala Native provides bindings for the core subset of the
 C Header       Scala Native Module
 ============== ==================================
 assert.h_      N/A
-complex.h_     N/A
+complex.h_     scala.scalanative.native.complex_
 ctype.h_       scala.scalanative.native.ctype_
 errno.h_       scala.scalanative.native.errno_
 fenv.h_        N/A
