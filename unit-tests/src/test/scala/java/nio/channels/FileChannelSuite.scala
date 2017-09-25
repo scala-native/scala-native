@@ -30,9 +30,8 @@ object FileChannelSuite extends tests.Suite {
       val f     = dir.resolve("f")
       val bytes = Array.apply[Byte](1, 2, 3, 4, 5)
       val src   = ByteBuffer.wrap(bytes)
-      val channel = FileChannel.open(f,
-                                     StandardOpenOption.WRITE,
-                                     StandardOpenOption.CREATE)
+      val channel =
+        FileChannel.open(f, StandardOpenOption.WRITE, StandardOpenOption.CREATE)
       while (src.remaining() > 0) channel.write(src)
 
       val in = Files.newInputStream(f)
@@ -52,9 +51,8 @@ object FileChannelSuite extends tests.Suite {
 
       val bytes = "goodbye".getBytes("UTF-8")
       val src   = ByteBuffer.wrap(bytes)
-      val channel = FileChannel.open(f,
-                                     StandardOpenOption.WRITE,
-                                     StandardOpenOption.CREATE)
+      val channel =
+        FileChannel.open(f, StandardOpenOption.WRITE, StandardOpenOption.CREATE)
       while (src.remaining() > 0) channel.write(src)
 
       val in = Files.newInputStream(f)

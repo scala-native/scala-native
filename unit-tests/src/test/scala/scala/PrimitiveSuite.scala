@@ -44,4 +44,10 @@ object PrimitiveSuite extends tests.Suite {
     assert(+float == float)
     assert(+double == double)
   }
+
+  test("x << y") {
+    val x: Int  = 3
+    val y: Long = 33
+    assert((x << y) == 6)
+  }
 }

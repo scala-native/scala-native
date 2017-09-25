@@ -1,11 +1,14 @@
 package java.lang
 
-import scala.scalanative.native.stdlib
+import scala.scalanative.native.{stdlib, stub}
 
 class Runtime private () {
   def availableProcessors(): Int = 1
   def exit(status: Int): Unit    = stdlib.exit(status)
   def gc(): Unit                 = ()
+
+  @stub
+  def addShutdownHook(thread: java.lang.Thread): Unit = ???
 }
 
 object Runtime {

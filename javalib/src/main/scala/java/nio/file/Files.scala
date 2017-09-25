@@ -313,7 +313,7 @@ object Files {
     lines(path, StandardCharsets.UTF_8)
 
   def lines(path: Path, cs: Charset): Stream[String] =
-    newBufferedReader(path, cs).lines()
+    newBufferedReader(path, cs).lines(true)
 
   private def _list(dir: Path): SStream[Path] =
     dir.toFile().list().toStream.map(dir.resolve)
@@ -657,9 +657,9 @@ object Files {
         setAttribute(path, name, value, Array.empty)
     }
 
-  private val attributesClassesToViews: SMap[
-    Class[_ <: BasicFileAttributes],
-    Class[_ <: BasicFileAttributeView]] =
+  private val attributesClassesToViews
+    : SMap[Class[_ <: BasicFileAttributes],
+           Class[_ <: BasicFileAttributeView]] =
     SMap(
       classOf[BasicFileAttributes] -> classOf[BasicFileAttributeView],
       classOf[DosFileAttributes]   -> classOf[DosFileAttributeView],

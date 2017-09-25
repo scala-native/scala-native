@@ -26,9 +26,7 @@ object ClassHierarchy {
     val fields  = mutable.UnrolledBuffer.empty[Field]
   }
 
-  final class Struct(val attrs: Attrs,
-                     val name: Global,
-                     val tys: Seq[nir.Type])
+  final class Struct(val attrs: Attrs, val name: Global, val tys: Seq[nir.Type])
       extends Scope
 
   final class Trait(val attrs: Attrs,
@@ -82,7 +80,6 @@ object ClassHierarchy {
                   override val methods: mutable.UnrolledBuffer[Method],
                   override val fields: mutable.UnrolledBuffer[Field])
       extends Scope {
-    val fresh                       = nir.Fresh("tx")
     def name                        = Global.None
     def attrs                       = Attrs.None
     var tables: TraitDispatchTables = _
@@ -203,6 +200,11 @@ object ClassHierarchy {
                       dyns = dyns)
     top.members ++= nodes.values
 
+    val javaEquals    = nodes(javaEqualsName).asInstanceOf[Method]
+    val javaHashCode  = nodes(javaHashCodeName).asInstanceOf[Method]
+    val scalaEquals   = nodes(scalaEqualsName).asInstanceOf[Method]
+    val scalaHashCode = nodes(scalaHashCodeName).asInstanceOf[Method]
+
     def assignMethodIds(): Unit = {
       var id = 0
       traits.foreach { trt =>
@@ -285,7 +287,11 @@ object ClassHierarchy {
     }
 
     def completeClassMembers(): Unit = top.classes.foreach { cls =>
-      cls.vtable = new VirtualTable(cls)
+      cls.vtable = new VirtualTable(cls,
+                                    javaEquals,
+                                    javaHashCode,
+                                    scalaEquals,
+                                    scalaHashCode)
       cls.layout = new FieldLayout(cls)
       cls.dynmap = new DynamicHashMap(cls, dyns)
       cls.rtti = new RuntimeTypeInformation(cls)
@@ -308,4 +314,17 @@ object ClassHierarchy {
 
     top
   }
+
+  val javaEqualsName =
+    Global.Member(Global.Top("java.lang.Object"),
+                  "equals_java.lang.Object_bool")
+  val javaHashCodeName =
+    Global.Member(Global.Top("java.lang.Object"), "hashCode_i32")
+  val scalaEqualsName =
+    Global.Member(Global.Top("java.lang.Object"),
+                  "scala$underscore$==_java.lang.Object_bool")
+  val scalaHashCodeName =
+    Global.Member(Global.Top("java.lang.Object"), "scala$underscore$##_i32")
+  def depends =
+    Seq(javaEqualsName, javaHashCodeName, scalaEqualsName, scalaHashCodeName)
 }

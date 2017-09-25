@@ -49,6 +49,8 @@ abstract class FileSystemProvider protected () {
         if (read <= 0) read
         else buffer.get(0) & 0xFF
       }
+      override def close(): Unit =
+        channel.close()
     }
   }
 

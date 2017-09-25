@@ -12,7 +12,7 @@ class Socket protected (private[net] val impl: SocketImpl,
                         shouldStartup: Boolean)
     extends Closeable {
 
-  private[java] var created       = false
+  private[net] var created        = false
   private[net] var bound          = false
   private[net] var connected      = false
   private[net] var closed         = false
@@ -35,7 +35,7 @@ class Socket protected (private[net] val impl: SocketImpl,
         "Socket port must be between 0 and 65535")
 
     impl.create(streaming)
-    val created = true
+    created = true
     try {
       bound = true
       impl.connect(new InetSocketAddress(dstAddr, dstPort), timeout)
@@ -62,13 +62,7 @@ class Socket protected (private[net] val impl: SocketImpl,
            port: Int,
            localAddr: InetAddress,
            localPort: Int) =
-    this(new PlainSocketImpl(),
-         address,
-         port,
-         localAddr,
-         localPort,
-         true,
-         true)
+    this(new PlainSocketImpl(), address, port, localAddr, localPort, true, true)
 
   def this(host: String, port: Int) =
     this(new PlainSocketImpl(),
@@ -276,12 +270,12 @@ class Socket protected (private[net] val impl: SocketImpl,
     impl.setOption(SocketOptions.IP_TOS, Integer.valueOf(tc))
   }
 
-  def shutdownInput: Unit = {
+  def shutdownInput(): Unit = {
     impl.shutdownInput
     inputShutdown = true
   }
 
-  def shutdownOutput: Unit = {
+  def shutdownOutput(): Unit = {
     impl.shutdownOutput
     outputShutdown = true
   }

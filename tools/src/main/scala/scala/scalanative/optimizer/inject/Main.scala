@@ -9,10 +9,11 @@ import nir._
 /** Introduces `main` function that sets up
  *  the runtime and calls the given entry point.
  */
-class Main(entry: Global)(implicit fresh: Fresh) extends Inject {
+class Main(entry: Global) extends Inject {
   import Main._
 
   override def apply(buf: Buffer[Defn]): Unit = {
+    implicit val fresh = Fresh()
     val entryMainTy =
       Type.Function(Seq(Type.Module(entry.top), ObjectArray), Type.Void)
     val entryMainName =
@@ -107,5 +108,5 @@ object Main extends InjectCompanion {
     Seq(InitDecl)
 
   override def apply(config: tools.Config, top: Top) =
-    new Main(config.entry)(top.fresh)
+    new Main(config.entry)
 }

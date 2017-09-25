@@ -39,8 +39,8 @@ object InflaterSuite extends tests.Suite {
     "Inflater can inflate byte arrays compressed with default compression level") {
     // Created using `Deflater` on the JVM -- this is the result of compressing
     // Array.fill[Byte](1024)(1)
-    val bytes = Array[Byte](120, -100, 99, 100, 28, 5, -93, 96, 20, -116, 84,
-      0, 0, 6, 120, 4, 1)
+    val bytes = Array[Byte](120, -100, 99, 100, 28, 5, -93, 96, 20, -116, 84, 0,
+      0, 6, 120, 4, 1)
     val inflater = new Inflater()
     val bos      = new ByteArrayOutputStream()
     inflater.setInput(bytes)
@@ -286,9 +286,9 @@ object InflaterSuite extends tests.Suite {
   }
 
   test("inflate$B1") {
-    val codedData = Array[Byte](120, -38, 75, -54, 73, -52, 80, 40, 46, 41,
-      -54, -52, 75, 87, 72, -50, -49, 43, 73, -52, -52, 43, 86, 72, 2, 10, 34,
-      99, -123, -60, -68, 20, -80, 32, 0, -101, -69, 17, 84)
+    val codedData = Array[Byte](120, -38, 75, -54, 73, -52, 80, 40, 46, 41, -54,
+      -52, 75, 87, 72, -50, -49, 43, 73, -52, -52, 43, 86, 72, 2, 10, 34, 99,
+      -123, -60, -68, 20, -80, 32, 0, -101, -69, 17, 84)
     val codedString = "blah string contains blahblahblahblah and blah"
     val infl1       = new Inflater()
     val infl2       = new Inflater()
@@ -350,9 +350,9 @@ object InflaterSuite extends tests.Suite {
   }
 
   test("inflate$BII1") {
-    val codedData = Array[Byte](120, -38, 75, -54, 73, -52, 80, 40, 46, 41,
-      -54, -52, 75, 87, 72, -50, -49, 43, 73, -52, -52, 43, 86, 72, 2, 10, 34,
-      99, -123, -60, -68, 20, -80, 32, 0, -101, -69, 17, 84)
+    val codedData = Array[Byte](120, -38, 75, -54, 73, -52, 80, 40, 46, 41, -54,
+      -52, 75, 87, 72, -50, -49, 43, 73, -52, -52, 43, 86, 72, 2, 10, 34, 99,
+      -123, -60, -68, 20, -80, 32, 0, -101, -69, 17, 84)
     val codedString = "blah string"
 
     val infl1  = new Inflater()

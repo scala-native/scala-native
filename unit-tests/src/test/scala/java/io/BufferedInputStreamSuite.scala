@@ -32,8 +32,9 @@ object BufferedInputStreamSuite extends tests.Suite {
 
     assert(in.read(a, 0, 7) == 7)
 
-    assert(a(0) == 3 && a(1) == 4 && a(2) == 5 && a(3) == 6 && a(4) == 7 && a(
-      5) == 8 && a(6) == 9)
+    assert(
+      a(0) == 3 && a(1) == 4 && a(2) == 5 && a(3) == 6 && a(4) == 7 && a(5) == 8 && a(
+        6) == 9)
 
   }
 

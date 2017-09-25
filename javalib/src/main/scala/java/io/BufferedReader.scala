@@ -125,7 +125,10 @@ class BufferedReader(in: Reader, sz: Int) extends Reader {
   }
 
   def lines(): Stream[String] =
-    new WrappedScalaStream(toScalaStream(), None)
+    lines(false)
+
+  private[java] def lines(closeAtEnd: Boolean): Stream[String] =
+    new WrappedScalaStream(toScalaStream(closeAtEnd), None)
 
   /** Prepare the buffer for reading. Returns false if EOF */
   private def prepareRead(): Boolean =
@@ -159,10 +162,17 @@ class BufferedReader(in: Reader, sz: Int) extends Reader {
     }
   }
 
-  private def toScalaStream(): SStream[String] = {
+  private def toScalaStream(): SStream[String] =
+    toScalaStream(false)
+
+  private[this] def toScalaStream(closeAtEnd: Boolean): SStream[String] = {
     Option(readLine()) match {
-      case None       => SStream.empty
-      case Some(line) => line #:: toScalaStream()
+      case None =>
+        if (closeAtEnd) {
+          close()
+        }
+        SStream.empty
+      case Some(line) => line #:: toScalaStream(closeAtEnd)
     }
   }
 

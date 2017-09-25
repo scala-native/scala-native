@@ -152,8 +152,7 @@ object GlobalValueNumbering extends PassCompanion {
           case (Conv(convA, tyA, valueA), Conv(convB, tyB, valueB)) =>
             eqConv(convA, convB) && eqType(tyA, tyB) && eqVal(valueA, valueB)
 
-          case (Select(condA, thenvA, elsevA),
-                Select(condB, thenvB, elsevB)) =>
+          case (Select(condA, thenvA, elsevA), Select(condB, thenvB, elsevB)) =>
             eqVals(Seq(condA, thenvA, elsevA), Seq(condB, thenvB, elsevB))
 
           case (Field(objA, nameA), Field(objB, nameB)) =>
@@ -351,14 +350,10 @@ object GlobalValueNumbering extends PassCompanion {
 
   object HashFunction {
 
-    def combineHashes(hashes: Seq[Hash]): Hash = {
+    def combineHashes(hashes: Seq[Hash]): Hash =
       MurmurHash3.orderedHash(hashes)
-    }
 
-    def rawLocal(local: Local): Hash = {
-      combineHashes(Seq(local.scope.hashCode, local.id.hashCode))
-    }
-
+    def rawLocal(local: Local): Hash = local.id
   }
 
   override def apply(config: tools.Config, top: Top) =

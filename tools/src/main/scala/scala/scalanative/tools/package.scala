@@ -35,21 +35,28 @@ package object tools {
   type OptimizerReporter = optimizer.Reporter
   val OptimizerReporter = optimizer.Reporter
 
-  /** Given the classpath and main entry point, link under closed-world assumption. */
+  /** Given the classpath and main entry point, link under closed-world
+   *  assumption.
+   */
   def link(config: Config,
            driver: OptimizerDriver,
            reporter: LinkerReporter = LinkerReporter.empty): LinkerResult = {
-    val deps    = driver.passes.flatMap(_.depends).distinct
-    val injects = driver.passes.flatMap(_.injects).distinct
+    val chaDeps  = optimizer.analysis.ClassHierarchy.depends
+    val passDeps = driver.passes.flatMap(_.depends).distinct
+    val deps     = (chaDeps ++ passDeps).distinct
+    val injects  = driver.passes.flatMap(_.injects)
     val entry =
-      nir.Global.Member(config.entry,
-                        "main_scala.scalanative.runtime.ObjectArray_unit")
+      nir.Global
+        .Member(config.entry, "main_scala.scalanative.runtime.ObjectArray_unit")
     val result =
       (linker.Linker(config, reporter)).link(entry +: deps)
 
     result.withDefns(result.defns ++ injects)
   }
 
+  /** Link just the given entries, disregarding the extra ones that are
+   *  needed for the optimizer and/or codegen.
+   */
   def linkRaw(config: Config,
               entries: Seq[Global],
               reporter: LinkerReporter = LinkerReporter.empty): LinkerResult =

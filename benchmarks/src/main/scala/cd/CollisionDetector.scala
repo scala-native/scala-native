@@ -147,10 +147,7 @@ object CollisionDetector {
     recurse(voxelMap, seen, nextVoxel.plus(horizontal), motion)
     recurse(voxelMap, seen, nextVoxel.minus(vertical), motion)
     recurse(voxelMap, seen, nextVoxel.plus(vertical), motion)
-    recurse(voxelMap,
-            seen,
-            nextVoxel.minus(horizontal).minus(vertical),
-            motion)
+    recurse(voxelMap, seen, nextVoxel.minus(horizontal).minus(vertical), motion)
     recurse(voxelMap, seen, nextVoxel.minus(horizontal).plus(vertical), motion)
     recurse(voxelMap, seen, nextVoxel.plus(horizontal).minus(vertical), motion)
     recurse(voxelMap, seen, nextVoxel.plus(horizontal).plus(vertical), motion)

@@ -80,6 +80,18 @@ object StringSuite extends tests.Suite {
     check("Test", _.replace("", "--") equals "--T--e--s--t--")
   }
 
+  test("replaceAll non-ascii") {
+    val greetings = "Gruesze"
+
+    val greetingsWithUmlaut = greetings.replaceAll("ue", "ü")
+    assert(greetingsWithUmlaut == "Grüsze")
+
+    val greetingsWithUmlautAndSharpS = greetingsWithUmlaut.replaceAll("sz", "ß")
+    assert(greetingsWithUmlautAndSharpS == "Grüße")
+
+    assert("Grueszszszeszszszszsze".replaceAll("sz", "ß") == "Grueßßßeßßßßße")
+  }
+
   test("getBytes") {
     val b = new Array[scala.Byte](4)
     "This is a test".getBytes(10, 14, b, 0)

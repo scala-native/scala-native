@@ -98,9 +98,15 @@ object VirtualDirectory {
   private final class JarDirectory(path: Path)(implicit in: Scope)
       extends NioDirectory {
     private val fileSystem: FileSystem =
-      acquire(
-        FileSystems.newFileSystem(URI.create(s"jar:${path.toUri}"),
-                                  Map("create" -> "false").asJava))
+      acquire {
+        val uri = URI.create(s"jar:file:${path}")
+        try {
+          FileSystems.newFileSystem(uri, Map("create" -> "false").asJava)
+        } catch {
+          case e: FileSystemAlreadyExistsException =>
+            FileSystems.getFileSystem(uri)
+        }
+      }
 
     override def files: Seq[Path] = {
       val roots = fileSystem.getRootDirectories.asScala.toSeq
@@ -123,7 +129,6 @@ object VirtualDirectory {
         "Can't read from empty directory.")
 
     override def write(path: Path, buffer: ByteBuffer): Unit =
-      throw new UnsupportedOperationException(
-        "Can't write to empty directory.")
+      throw new UnsupportedOperationException("Can't write to empty directory.")
   }
 }

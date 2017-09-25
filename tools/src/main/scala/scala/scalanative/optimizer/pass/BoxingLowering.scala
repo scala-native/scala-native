@@ -7,7 +7,7 @@ import analysis.ClassHierarchy.Top
 import tools.Config
 
 /** Translates Box/Unbox ops into static method calls. */
-class BoxingLowering(implicit val fresh: Fresh) extends Pass {
+class BoxingLowering extends Pass {
 
   override def onInst(inst: Inst): Inst = inst match {
     case Inst.Let(name, box @ Op.Box(ty, from)) =>
@@ -47,7 +47,7 @@ class BoxingLowering(implicit val fresh: Fresh) extends Pass {
 
 object BoxingLowering extends PassCompanion {
   override def apply(config: Config, top: Top) =
-    new BoxingLowering()(top.fresh)
+    new BoxingLowering
 
   override def depends: Seq[Global] =
     Seq(BoxesRunTime, RuntimeBoxes) ++
@@ -86,9 +86,7 @@ object BoxingLowering extends PassCompanion {
   }.toMap
 
   val UnboxTo: Map[Type, (Global, String)] = Seq(
-    ("java.lang.Boolean",
-     BoxesRunTime,
-     "unboxToBoolean_java.lang.Object_bool"),
+    ("java.lang.Boolean", BoxesRunTime, "unboxToBoolean_java.lang.Object_bool"),
     ("java.lang.Character", BoxesRunTime, "unboxToChar_java.lang.Object_char"),
     ("scala.scalanative.native.UByte",
      RuntimeBoxes,
