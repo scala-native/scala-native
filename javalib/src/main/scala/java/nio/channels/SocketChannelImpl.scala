@@ -253,57 +253,9 @@ private[channels] class SocketChannelImpl(provider: SelectorProvider)
     }
   }
 
-  def getOption[T](name: SocketOption[T]): T = {
-    // TODO
-    checkClosed()
-    name match {
-      case SoSndBuf =>
-        sock.getSendBufferSize.asInstanceOf[T]
-      /*case StandardSocketOptions.SO_RCVBUF =>
-        sock.getReceiveBufferSize.asInstanceOf[T]
-      case StandardSocketOptions.SO_KEEPALIVE =>
-        sock.getKeepAlive.asInstanceOf[T]
-      case StandardSocketOptions.SO_REUSEADDR =>
-        sock.getReuseAddress.asInstanceOf[T]
-      case StandardSocketOptions.SO_LINGER =>
-        sock.getSoLinger.asInstanceOf[T]*/
-      case TcpNoDelay =>
-        sock.getTcpNoDelay.asInstanceOf[T]
-      case _ => throw new UnsupportedOperationException
-    }
-  }
+  def setOption[T](name: SocketOption[T], value: T): NetworkChannel = ???
 
-  def setOption[T](name: SocketOption[T], value: T): SocketChannel = {
-    checkClosed()
-    name match {
-      case SoSndBuf =>
-        sock.setSendBufferSize(value.asInstanceOf[Int])
-      /*case "SO_RCVBUF" =>
-        if (!value.isInstanceOf[Int])
-          throw new IllegalArgumentException
-        sock.setReceiveBufferSize(value.asInstanceOf[Int])
-      case "SO_KEEPALIVE" =>
-        if (!value.isInstanceOf[Boolean])
-          throw new IllegalArgumentException
-        sock.setKeepAlive(value.asInstanceOf[Boolean])
-      case "SO_REUSEADDR" =>
-        if (!value.isInstanceOf[Boolean])
-          throw new IllegalArgumentException
-        sock.setReuseAddress(value.asInstanceOf[Boolean])
-      case "SO_LINGER" =>
-        if (!value.isInstanceOf[Int])
-          throw new IllegalArgumentException
-        val linger = value.asInstanceOf[Int]
-        if (linger >= 0)
-          sock.setSoLinger(true, linger)
-        else
-          sock.setSoLinger(false, linger)*/
-      case TcpNoDelay =>
-        sock.setTcpNoDelay(value.asInstanceOf[Boolean])
-      case _ => throw new UnsupportedOperationException
-    }
-    this
-  }
+  def getOption[T](name: SocketOption[T]): T = ???
 
   def shutdownInput: SocketChannel = readLock.synchronized {
     impl.shutdownInput

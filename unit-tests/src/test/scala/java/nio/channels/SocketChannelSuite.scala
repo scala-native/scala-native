@@ -161,15 +161,15 @@ object SocketChannelSuite extends tests.Suite {
     assertEquals(ch.getOption(StandardSocketOptions.SO_LINGER), prevValue + 100)
     ch.close
   }
-   
+  
   test("TCP_NODELAY") {
     val ch        = SocketChannel.open
-    val prevValue = true //ch.getOption(StandardSocketOptions.TCP_NODELAY)
-    ch.setOption(StandardSocketOptions.TCP_NODELAY, !prevValue)
+    val prevValue = ch.getOption(StandardSocketOptions.TCP_NODELAY)
+    ch.setOption[java.lang.Boolean](StandardSocketOptions.TCP_NODELAY, java.lang.Boolean.TRUE)
     assertEquals(ch.getOption(StandardSocketOptions.TCP_NODELAY), !prevValue)
     ch.close
-  }
-  */
+  } */
+  
   test("blocking gather & scatter - integration test") {
     val ch = SocketChannel.open(new InetSocketAddress("google.com", 80))
 

@@ -32,12 +32,12 @@ abstract class SocketChannel protected[channels] (provider: SelectorProvider)
 
   lazy val supportedOptions: java.util.Set[SocketOption[_]] = {
     val set = new java.util.HashSet[SocketOption[_]](6)
-    set.add(StandardSocketOptions.SO_SNDBUF)
-    /*set.add(StandardSocketOptions.SO_RCVBUF)
+    /*set.add(StandardSocketOptions.SO_SNDBUF)
+    set.add(StandardSocketOptions.SO_RCVBUF)
     set.add(StandardSocketOptions.SO_KEEPALIVE)
     set.add(StandardSocketOptions.SO_REUSEADDR)
-    set.add(StandardSocketOptions.SO_LINGER)*/
-    set.add(StandardSocketOptions.TCP_NODELAY)
+    set.add(StandardSocketOptions.SO_LINGER)
+    set.add(StandardSocketOptions.TCP_NODELAY)*/
     set
   }
 
