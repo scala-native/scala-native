@@ -12,7 +12,7 @@ class Socket protected (private[net] val impl: SocketImpl,
                         shouldStartup: Boolean)
     extends Closeable {
 
-  private[net] var created        = false
+  private[java] var created       = false
   private[net] var bound          = false
   private[net] var connected      = false
   private[net] var closed         = false

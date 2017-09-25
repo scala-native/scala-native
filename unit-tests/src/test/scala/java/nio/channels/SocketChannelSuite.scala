@@ -137,7 +137,7 @@ object SocketChannelSuite extends tests.Suite {
     assert(ch.getOption(StandardSocketOptions.SO_SNDBUF) >= prevValue + 100)
     ch.close
   }
-  
+
   test("SO_RCVBUF") {
     val ch = SocketChannel.open
     val prevValue = ch.getOption(StandardSocketOptions.SO_KEEPALIVE)
@@ -161,7 +161,7 @@ object SocketChannelSuite extends tests.Suite {
     assertEquals(ch.getOption(StandardSocketOptions.SO_LINGER), prevValue + 100)
     ch.close
   }
-  
+
   test("TCP_NODELAY") {
     val ch        = SocketChannel.open
     val prevValue = ch.getOption(StandardSocketOptions.TCP_NODELAY)
@@ -169,7 +169,7 @@ object SocketChannelSuite extends tests.Suite {
     assertEquals(ch.getOption(StandardSocketOptions.TCP_NODELAY), !prevValue)
     ch.close
   } */
-  
+
   test("blocking gather & scatter - integration test") {
     val ch = SocketChannel.open(new InetSocketAddress("google.com", 80))
 

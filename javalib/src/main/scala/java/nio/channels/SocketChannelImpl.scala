@@ -411,8 +411,7 @@ private[channels] class SocketChannelImpl(provider: SelectorProvider)
     inetSocketAddr
   }
 
-  private class SocketAdapter(channel: SocketChannelImpl,
-                              impl: PlainSocketImpl)
+  private class SocketAdapter(channel: SocketChannelImpl, impl: PlainSocketImpl)
       extends Socket {
 
     created = true

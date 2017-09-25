@@ -23,10 +23,11 @@ private[java] class WouldBlockException(msg: String)
 
 private[java] class PlainSocketImpl extends SocketImpl {
 
-  protected[net] var fd                   = new FileDescriptor
-  protected[net] var localport            = 0
-  protected[net] var address: InetAddress = null
-  protected[net] var port                 = 0
+  protected[java] var fd                   = new FileDescriptor
+  protected[java] var localport            = 0
+  private[java] var localAddr: InetAddress = null
+  protected[net] var address: InetAddress  = null
+  protected[net] var port                  = 0
 
   private var timeout   = 0
   private var listening = false

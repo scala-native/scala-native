@@ -16,9 +16,9 @@ object SelectorSuite extends tests.Suite {
       assertNot(ch.connect(new InetSocketAddress("google.com", 80)))
       key
     }
-    
+
     var selectedNum = 0
-    while(selectedNum != 3) {
+    while (selectedNum != 3) {
       selectedNum += selector.select()
 
       selector.selectedKeys.foreach(key => {
