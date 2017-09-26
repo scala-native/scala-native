@@ -1939,8 +1939,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val Apply(fun @ Select(New(tpt), nme.CONSTRUCTOR), args) = app
       implicit val pos: nir.Position = app.pos
 
-      println("Generate new? " + app + " of " + SimpleType.fromType(tpt.tpe) + s" in ${tpt.tpe.getClass} " + tpt.tpe.normalize)
-      println("APP? " + app.tpe + " " + fun.tpe.resultType.getClass)
       SimpleType.fromType(tpt.tpe) match {
         case SimpleType(ArrayClass, Seq(targ)) =>
           genApplyNewArray(targ, args)

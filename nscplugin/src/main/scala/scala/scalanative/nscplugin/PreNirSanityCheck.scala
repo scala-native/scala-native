@@ -8,7 +8,8 @@ import util.ScopedVar.scoped
 import util.ScopedVar
 
 abstract class PreNirSanityCheck
-  extends NirPhase with NirPluginComponent {
+  extends NirPhase with NirPluginComponent
+with NirGenUtil {
 
   import global._
   import definitions._
@@ -23,7 +24,7 @@ abstract class PreNirSanityCheck
   import SimpleType.{fromType, fromSymbol}
 
   val phaseName: String = "sanitycheck"
-  override def description: String = "prepare ASTs for NIR"
+  override def description: String = "sanity check ASTs for NIR"
 
   override def newPhase(prev: Phase): StdPhase =
     new SanityCheckPhase(prev)
@@ -34,6 +35,12 @@ abstract class PreNirSanityCheck
     private val curClassSym   = new util.ScopedVar[Symbol]
     private val curMethSym = new util.ScopedVar[Symbol]
     private val curValSym = new util.ScopedVar[Symbol]
+
+    override def run(): Unit = {
+      //scalaPrimitives.init()
+      nirPrimitives.init()
+      super.run()
+    }
 
     override def apply(cunit: CompilationUnit): Unit = {
       def verifyDefs(tree: Tree): List[Tree] = {

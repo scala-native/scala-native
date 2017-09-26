@@ -783,6 +783,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       genBody()
       removeDeadBlocks(buf.toSeq)
         }
+        }
     }
   }
 
