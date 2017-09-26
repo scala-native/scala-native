@@ -37,4 +37,8 @@ object SystemSuite extends tests.Suite {
     assert(System.getenv("SCALA_NATIVE_ENV_WITHOUT_VALUE") == "")
     assert(System.getenv("SCALA_NATIVE_ENV_THAT_DOESNT_EXIST") == null)
   }
+
+  test("Property user.home should be set") {
+    assertEquals(System.getProperty("user.home"), System.getenv("HOME"))
+  }
 }
