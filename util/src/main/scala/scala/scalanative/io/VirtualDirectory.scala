@@ -99,7 +99,7 @@ object VirtualDirectory {
       extends NioDirectory {
     private val fileSystem: FileSystem =
       acquire {
-        val uri = URI.create(s"jar:file:${path}")
+        val uri = URI.create(s"jar:${path.toUri}")
         try {
           FileSystems.newFileSystem(uri, Map("create" -> "false").asJava)
         } catch {
