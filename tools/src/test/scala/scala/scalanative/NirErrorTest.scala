@@ -160,17 +160,160 @@ class NirErrorTest extends FlatSpec with Matchers with Assertions {
   }
 
   it should "reject function pointers with captures" in {
+
     assertResult(
-      Array()) {
-      NIRCompiler {
-        _ compileAndReport
-          s
-        """|import scala.scalanative.native._
+      Array(
+        (170, "can't infer a function pointer to a closure with captures: value x").toError
+      )) {
+      NIRCompiler {_ compileAndReport
+          s"""|import scala.scalanative.native._
             |object test {
             |  def f(ptr: CFunctionPtr1[CInt, Unit]): Unit = ???
             |  def test(): Unit = {
             |    val x = 10
             |    f(CFunctionPtr.fromFunction1((y: CInt) => x + y))
+            |  }
+            |}""".
+          stripMargin }
+    }
+
+    assertResult(
+      Array(
+        (175, "can't infer a function pointer to a closure with captures: method x").toError
+      )) {
+      NIRCompiler {_ compileAndReport
+        s"""|import scala.scalanative.native._
+            |object test {
+            |  def f(ptr: CFunctionPtr1[CInt, Unit]): Unit = ???
+            |  def x(): Int = 10
+            |  def test(): Unit = {
+            |    f(CFunctionPtr.fromFunction1((y: CInt) => x() + y))
+            |  }
+            |}""".
+          stripMargin }
+    }
+
+    assertResult(
+      Array()) {
+      NIRCompiler {_ compileAndReport
+        s"""|import scala.scalanative.native._
+            |object test {
+            |  def f(ptr: CFunctionPtr1[CInt, Unit]): Unit = ???
+            |  def test(): Unit = {
+            |    f(CFunctionPtr.fromFunction1((y: CInt) => y))
+            |  }
+            |}""".
+          stripMargin }
+    }
+
+    assertResult(
+      Array()) {
+      NIRCompiler {_ compileAndReport
+        s"""|import scala.scalanative.native._
+            |object test {
+            |  def f(ptr: CFunctionPtr1[CInt, Unit]): Unit = ???
+            |  def test(): Unit = {
+            |    val z = 10
+            |    f(CFunctionPtr.fromFunction1((y: CInt) => {
+            |      val z = y
+            |      z
+            |      ()
+            |    }))
+            |  }
+            |}""".
+          stripMargin }
+    }
+
+    assertResult(
+      Array(
+        (170,"can't infer a function pointer to a closure with captures: value z").toError
+      )) {
+      NIRCompiler {_ compileAndReport
+        s"""|import scala.scalanative.native._
+            |object test {
+            |  def f(ptr: CFunctionPtr1[CInt, Unit]): Unit = ???
+            |  def test(): Unit = {
+            |    val z = 10
+            |    f(CFunctionPtr.fromFunction1((y: CInt) => {
+            |      z
+            |      ()
+            |    }))
+            |  }
+            |}""".
+          stripMargin }
+    }
+
+    assertResult(
+      Array(
+      )) {
+      NIRCompiler {_ compileAndReport
+        s"""|import scala.scalanative.native._
+            |object test {
+            |  def f(ptr: CFunctionPtr1[CInt, Unit]): Unit = ???
+            |  def test(): Unit = {
+            |    val z = 10
+            |    f(CFunctionPtr.fromFunction1((y: CInt) => {
+            |      class foo { def z: Unit = () }
+            |      val b = new foo
+            |      b.z
+            |    }))
+            |  }
+            |}""".
+          stripMargin }
+    }
+
+    assertResult(
+      Array(
+        (205, "can't infer a function pointer to a closure with captures: class foo").toError
+      )) {
+      NIRCompiler {_ compileAndReport
+        s"""|import scala.scalanative.native._
+            |object test {
+            |  def f(ptr: CFunctionPtr1[CInt, Unit]): Unit = ???
+            |  def test(): Unit = {
+            |    val z = 10
+            |    class foo { def z: Unit = () }
+            |    f(CFunctionPtr.fromFunction1((y: CInt) => {
+            |      val b = new foo
+            |      b.z
+            |    }))
+            |  }
+            |}""".
+          stripMargin }
+    }
+
+    assertResult(
+      Array(
+        (197, "(scala-native limitation): cannot infer a function pointer").toError
+      )) {
+      NIRCompiler {_ compileAndReport
+        s"""|import scala.scalanative.native._
+            |object test {
+            |  def f(ptr: CFunctionPtr1[CInt, Unit]): Unit = ()
+            |  def test(): Unit = {
+            |    val x = 10
+            |    val z = (y: CInt) => ()
+            |    f(CFunctionPtr.fromFunction1(z))
+            |  }
+            |}""".
+          stripMargin }
+    }
+
+    // TODO: should be possible.
+    assertResult(
+      Array(
+        (170, "(scala-native limitation): cannot infer a function pointer").toError
+      )) {
+      NIRCompiler {_ compileAndReport
+        s"""|import scala.scalanative.native._
+            |object test {
+            |  def f(ptr: CFunctionPtr1[CInt, Unit]): Unit = ???
+            |  def test(): Unit = {
+            |    val x = 10
+            |    f(CFunctionPtr.fromFunction1({
+            |      val y = 1
+            |      (z: CInt) => y + z
+            |    }))
             |  }
             |}""".
           stripMargin }
