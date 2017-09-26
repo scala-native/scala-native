@@ -10,7 +10,7 @@ Scala Native provides bindings for the core subset of the
 C Header       Scala Native Module
 ============== ==================================
 assert.h_      N/A
-complex.h_     scala.scalanative.native.complex_
+complex.h_     N/A
 ctype.h_       scala.scalanative.native.ctype_
 errno.h_       scala.scalanative.native.errno_
 fenv.h_        N/A
@@ -70,7 +70,6 @@ wctype.h_      N/A
 .. _wchar.h: http://en.cppreference.com/w/c/string/wide
 .. _wctype.h: http://en.cppreference.com/w/c/string/wide
 
-.. _scala.scalanative.native.complex: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/native/complex.scala
 .. _scala.scalanative.native.ctype: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/native/ctype.scala
 .. _scala.scalanative.native.errno: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/native/errno.scala
 .. _scala.scalanative.native.math: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/native/math.scala
