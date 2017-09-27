@@ -21,4 +21,87 @@ object ThreadSuite extends tests.Suite {
 
   }
 
+  def takesAtLeast[R](expectedDelayMs: scala.Long)(f: => R): R = {
+    val start  = System.currentTimeMillis()
+    val result = f
+    val end    = System.currentTimeMillis()
+
+    assert(end - start >= expectedDelayMs)
+
+    result
+  }
+
+  def takesAtLeast[R](expectedDelayMs: scala.Long,
+                      expectedDelayNanos: scala.Int)(f: => R): R = {
+    val expectedDelay = expectedDelayMs * 1000000 + expectedDelayMs
+    val start         = System.nanoTime()
+    val result        = f
+    val end           = System.nanoTime()
+
+    assert(end - start >= expectedDelay)
+
+    result
+  }
+
+  test("sleep suspends execution by at least the requested amount") {
+    val millisecondTests = Seq(0, 1, 5, 100)
+    millisecondTests.foreach { ms =>
+      takesAtLeast(ms) {
+        Thread.sleep(ms)
+      }
+    }
+    millisecondTests.foreach { ms =>
+      takesAtLeast(ms) {
+        Thread.sleep(ms, 0)
+      }
+    }
+
+    val tests = Seq(0 -> 0,
+                    0   -> 1,
+                    0   -> 999999,
+                    1   -> 0,
+                    1   -> 1,
+                    5   -> 0,
+                    100 -> 0,
+                    100 -> 50)
+
+    tests.foreach {
+      case (ms, nanos) =>
+        takesAtLeast(ms, nanos) {
+          Thread.sleep(ms, nanos)
+        }
+    }
+  }
+
+  test("wait suspends execution by at least the requested amount") {
+    val mutex            = new Object()
+    val millisecondTests = Seq(0, 1, 5, 100)
+    millisecondTests.foreach { ms =>
+      mutex.synchronized {
+        mutex.wait(ms)
+      }
+    }
+    millisecondTests.foreach { ms =>
+      mutex.synchronized {
+        mutex.wait(ms, 0)
+      }
+    }
+
+    val tests = Seq(0 -> 0,
+                    0   -> 1,
+                    0   -> 999999,
+                    1   -> 0,
+                    1   -> 1,
+                    5   -> 0,
+                    100 -> 0,
+                    100 -> 50)
+
+    tests.foreach {
+      case (ms, nanos) =>
+        mutex.synchronized {
+          mutex.wait(ms, nanos)
+        }
+    }
+  }
+
 }
