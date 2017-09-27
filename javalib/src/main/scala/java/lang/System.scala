@@ -61,8 +61,8 @@ object System {
           .drop(1)
         sysProps.setProperty("user.language", userLang)
         sysProps.setProperty("user.country", userCountry)
+        sysProps.setProperty("user.home", getenv("HOME"))
       }
-      sysProps.setProperty("user.home", getenv("HOME"))
     }
 
     sysProps
@@ -92,10 +92,6 @@ object System {
   def nanoTime(): scala.Long          = time.scalanative_nano_time
   def currentTimeMillis(): scala.Long = time.scalanative_current_time_millis
 
-  /**
-   * POSIX environment variables
-   * http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap08.html
-   */
   def getenv(): Map[String, String] = envVars
   def getenv(key: String): String   = envVars.get(key)
 
