@@ -45,14 +45,16 @@ object ThreadSuite extends tests.Suite {
 
   test("sleep suspends execution by at least the requested amount") {
     val millisecondTests = Seq(0, 1, 5, 100)
-    millisecondTests.foreach(ms =>
+    millisecondTests.foreach { ms =>
       takesAtLeast(ms) {
         Thread.sleep(ms)
-    })
-    millisecondTests.foreach(ms =>
+      }
+    }
+    millisecondTests.foreach { ms =>
       takesAtLeast(ms) {
         Thread.sleep(ms, 0)
-    })
+      }
+    }
 
     val tests = Seq(0 -> 0,
                     0   -> 1,
