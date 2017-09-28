@@ -7,6 +7,8 @@ import scala.reflect.internal.Flags._
 import util.ScopedVar.scoped
 import util.ScopedVar
 
+import NirPrimitives._
+
 abstract class PreNirSanityCheck
   extends NirPhase with NirPluginComponent
 with NirGenUtil {
@@ -20,7 +22,7 @@ with NirGenUtil {
 
   import nirAddons._
   import nirDefinitions._
-  import NirPrimitives._
+
   import SimpleType.{fromType, fromSymbol}
 
   val phaseName: String = "sanitycheck"
