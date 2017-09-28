@@ -284,7 +284,7 @@ class NirErrorTest extends FlatSpec with Matchers with Assertions {
 
     assertResult(
       Array(
-        (197, "(scala-native limitation): cannot infer a function pointer").toError
+        (197, "(scala-native limitation): cannot infer a function pointer, lift the argument into a function").toError
       )) {
       NIRCompiler {_ compileAndReport
         s"""|import scala.scalanative.native._
@@ -302,7 +302,7 @@ class NirErrorTest extends FlatSpec with Matchers with Assertions {
     // TODO: should be possible.
     assertResult(
       Array(
-        (170, "(scala-native limitation): cannot infer a function pointer").toError
+        (170, "(scala-native limitation): cannot infer a function pointer, lift the argument into a function").toError
       )) {
       NIRCompiler {_ compileAndReport
         s"""|import scala.scalanative.native._

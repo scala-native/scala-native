@@ -320,7 +320,7 @@ with NirGenUtil {
                 app.pos, s"can't infer a function pointer to a closure with captures: ${free.mkString(",")}"
               )
           case _ =>
-            reporter.error(app.pos, s"(scala-native limitation): cannot infer a function pointer")
+            reporter.error(app.pos, s"(scala-native limitation): cannot infer a function pointer, lift the argument into a function")
         }
     }
     def verifyCoercion(app: Apply, receiver: Tree, code: Int): Unit = ()
