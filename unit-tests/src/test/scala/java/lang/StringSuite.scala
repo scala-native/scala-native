@@ -168,6 +168,12 @@ object StringSuite extends tests.Suite {
     assert(Character.isHighSurrogate(hChar) equals true)
     assert(hStr.length equals 1)
     assert(hStr.toUpperCase equals hStr)
+    // toUpperCase should consider String's offset
+    assert(
+      "Hi, Scala Native!"
+        .subSequence(4, 16)
+        .toString
+        .toUpperCase equals "SCALA NATIVE")
   }
 
   test("toLowerCase") {
@@ -177,5 +183,11 @@ object StringSuite extends tests.Suite {
     assert("𐐀AAAA".toLowerCase equals "𐐨aaaa")
     assert("AAAA𐐀".toLowerCase equals "aaaa𐐨")
     assert("AA𐐀AA".toLowerCase equals "aa𐐨aa")
+    // toLowerCase should consider String's offset
+    assert(
+      "Hi, Scala Native!"
+        .subSequence(4, 16)
+        .toString
+        .toLowerCase equals "scala native")
   }
 }
