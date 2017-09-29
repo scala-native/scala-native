@@ -125,9 +125,7 @@ object ScalaNativePluginInternal {
     nativeLinkerReporter := tools.LinkerReporter.empty,
     nativeLinkerReporter in NativeTest := (nativeLinkerReporter in Test).value,
     nativeOptimizerReporter := tools.OptimizerReporter.empty,
-    nativeOptimizerReporter in NativeTest := (nativeOptimizerReporter in Test).value,
-    nativeGC := "boehm",
-    nativeGC in NativeTest := (nativeGC in Test).value
+    nativeOptimizerReporter in NativeTest := (nativeOptimizerReporter in Test).value
   )
 
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
@@ -139,7 +137,9 @@ object ScalaNativePluginInternal {
         case Some(_) =>
           ()
       }
-    }
+    },
+    nativeGC := "boehm",
+    nativeGC in NativeTest := (nativeGC in Test).value
   )
 
   lazy val scalaNativeConfigSettings: Seq[Setting[_]] = Seq(
@@ -239,6 +239,8 @@ object ScalaNativePluginInternal {
       val cpaths    = (cwd ** "*.c").get.map(_.abs)
       val cpppaths  = (cwd ** "*.cpp").get.map(_.abs)
       val paths     = cpaths ++ cpppaths
+
+      logger.info(s"Using $gc gc")
 
       // predicate to check if given file path shall be compiled
       // we only include sources of the current gc and exclude

@@ -34,7 +34,8 @@ addCommandAlias(
     "javalib/publishLocal",
     "auxlib/publishLocal",
     "scalalib/publishLocal",
-    "publishLocal"
+    "sbtScalaNative/publishLocal",
+    "testInterface/publishLocal"
   ).mkString(";", ";", "")
 )
 
@@ -46,7 +47,7 @@ addCommandAlias(
     "tests/test",
     "tools/test",
     "benchmarks/run --test",
-    "scripted"
+    "sbtScalaNative/scripted"
   ).mkString(";", ";", "")
 )
 
@@ -190,14 +191,13 @@ lazy val libSettings =
     scalacOptions ++= Seq("-encoding", "utf8")
   )
 
-lazy val gcSettings =
-  if (!System.getenv.containsKey("SCALANATIVE_GC")) {
-    println("Using default gc")
-    Seq.empty
-  } else {
-    val gc = System.getenv.get("SCALANATIVE_GC")
-    println(s"Using gc based on SCALANATIVE_GC=$gc")
-    Seq(nativeGC := gc)
+lazy val gcSetting =
+  nativeGC := {
+    val log     = sLog.value
+    val default = (nativeGC in ThisBuild).value
+    val gc      = Option(System.getenv.get("SCALANATIVE_GC")).getOrElse(default)
+    log.info(s"Using $gc gc")
+    gc
   }
 
 lazy val projectSettings =
@@ -205,7 +205,38 @@ lazy val projectSettings =
     scalaVersion := libScalaVersion,
     resolvers := Nil,
     scalacOptions ++= Seq("-target:jvm-1.8")
-  ) ++ gcSettings
+  )
+
+lazy val scalaNative =
+  project
+    .in(file("."))
+    .aggregate(
+      util,
+      nir,
+      tools,
+      nscplugin,
+      sbtScalaNative,
+      nativelib,
+      javalib,
+      auxlib,
+      scalalib,
+      testingCompilerInterface,
+      testingCompiler,
+      testInterface,
+      testInterfaceSerialization,
+      testInterfaceSbtDefs,
+      sandbox,
+      demoNative,
+      tests,
+      demoJVM,
+      benchmarks
+    )
+    .settings(
+      name := "scala-native",
+      gcSetting,
+      aggregate in publishLocal := false
+    )
+    .settings(noPublishSettings)
 
 lazy val util =
   project
