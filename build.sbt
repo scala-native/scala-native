@@ -554,7 +554,10 @@ lazy val testInterface =
     .settings(
       name := "test-interface",
       libraryDependencies += "org.scala-sbt"    % "test-interface"   % "1.0",
-      libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test
+      libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test,
+      publishLocal := publishLocal
+        .dependsOn(publishLocal in testInterfaceSerialization)
+        .value
     )
     .enablePlugins(ScalaNativePlugin)
     .dependsOn(testInterfaceSerialization)
@@ -567,7 +570,10 @@ lazy val testInterfaceSerialization =
     .in(file("test-interface-serialization"))
     .settings(
       name := "test-interface-serialization",
-      libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test
+      libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test,
+      publishLocal := publishLocal
+        .dependsOn(publishLocal in testInterfaceSbtDefs)
+        .value
     )
     .dependsOn(testInterfaceSbtDefs)
     .enablePlugins(ScalaNativePlugin)
