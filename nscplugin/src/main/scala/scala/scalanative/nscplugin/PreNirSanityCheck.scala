@@ -303,25 +303,33 @@ with NirGenUtil {
     def verifyHashCode(argp: Tree): Unit = ()
     def verifyArrayOp(app: Apply, code: Int): Unit = ()
     def verifyPtrOp(app: Apply, code: Int): Unit = ()
-    def verifyFunPtrOp(app: Apply, code: Int): Unit = code match {
-      case FUN_PTR_CALL =>
-        ()
-      case FUN_PTR_FROM =>
-        app match {
+    def verifyFunPtrOp(app: Apply, code: Int): Unit = {
+      def verifyBody(params: List[Symbol], body: Tree): Unit = {
+        val free = freeLocalVars(body) diff params
+        if (free.nonEmpty)
+          reporter.error(
+            app.pos, s"can't infer a function pointer to a closure with captures: ${free.mkString(",")}"
+          )
+      }
+
+      code match {
+        case FUN_PTR_CALL =>
+          ()
+        case FUN_PTR_FROM =>
+          app match {
             // TODO: We could accept Block statements here,
             //       especially with the custom free vars check,
             //       except that those need to be translated manually into
             //       closures, if possible.
-          case Apply(_, Function(vparams, body) :: Nil) =>
-            val captured = vparams.map(_.symbol)
-            val free = freeLocalVars(body) diff vparams.map(_.symbol)
-            if (free.nonEmpty)
-              reporter.error(
-                app.pos, s"can't infer a function pointer to a closure with captures: ${free.mkString(",")}"
-              )
-          case _ =>
-            reporter.error(app.pos, s"(scala-native limitation): cannot infer a function pointer, lift the argument into a function")
-        }
+            case Apply(_, Function(vparams, body) :: Nil) =>
+              verifyBody(vparams.map(_.symbol), body)
+            case Apply(_, Block(Nil, Function(vparams, body: Apply)) :: Nil) => // eta-expansion
+              val Apply(_, Block(Nil, fun@Function(vparams1, body1)) :: Nil) = app
+              verifyBody(fun.symbol :: vparams1.map(_.symbol), body1)
+            case _ =>
+              reporter.error(app.pos, s"(scala-native limitation): cannot infer a function pointer, lift the argument into a function")
+          }
+      }
     }
     def verifyCoercion(app: Apply, receiver: Tree, code: Int): Unit = ()
     def verifySynchronized(app: Apply): Unit = ()
