@@ -4,7 +4,8 @@ package testinterface
 
 import java.io._
 
-import sbt.{Logger, MessageOnlyException, Process}
+import sbt.{Logger, MessageOnlyException}
+import scala.sys.process._
 
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration.Duration
@@ -12,6 +13,8 @@ import scala.scalanative.testinterface.serialization._
 import java.net.{ServerSocket, SocketTimeoutException}
 
 import scala.scalanative.testinterface.serialization.Log.Level
+
+import SBTCompat._
 
 /**
  * Represents a distant program with whom we communicate over the network.
@@ -26,7 +29,6 @@ class ComRunner(bin: File,
 
   private[this] val runner = new Thread {
     override def run(): Unit = {
-      import sbt.Process._
       val port = serverSocket.getLocalPort
       logger.info(s"Starting process '$bin' on port '$port'.")
       Process(bin.toString +: port.toString +: args, None, envVars.toSeq: _*) ! logger

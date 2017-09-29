@@ -2,16 +2,13 @@ package scala.scalanative
 package sbtplugin
 
 import java.lang.System.{lineSeparator => nl}
+import scala.sys.process.{Process, _}
 import sbt._
 
-object Utilities {
+import SBTCompat._
+import scala.language.postfixOps
 
-  /** Drops any data fed into this logger. */
-  val devnull: ProcessLogger = new ProcessLogger {
-    def info(s: => String)    = ()
-    def error(s: => String)   = ()
-    def buffer[T](f: => T): T = f
-  }
+object Utilities {
 
   /** Discover concrete binary path using command name and
    *  a sequence of potential supported versions.
@@ -35,7 +32,7 @@ object Utilities {
         } :+ binaryName
 
         Process("which" +: binaryNames)
-          .lines_!(devnull)
+          .lineStream_!(ProcessLogger((line: String) => ()))
           .map(file(_))
           .headOption
           .getOrElse {
@@ -60,6 +57,8 @@ object Utilities {
    * http://clang.llvm.org/docs/LanguageExtensions.html#feature-checking-macros
    */
   def checkThatClangIsRecentEnough(pathToClangBinary: File): Unit = {
+    import scala.sys.process._
+
     def maybeFile(f: File) = f match {
       case file if file.exists => Some(file.abs)
       case none                => None
@@ -67,10 +66,15 @@ object Utilities {
 
     def definesBuiltIn(
         pathToClangBinary: Option[String]): Option[Seq[String]] = {
-      def commandLineToListBuiltInDefines(clang: String) =
+      def commandLineToListBuiltInDefines(clang: String): ProcessBuilder = {
         Seq("echo", "") #| Seq(clang, "-dM", "-E", "-")
-      def splitIntoLines(s: String)      = s.split(f"%n")
-      def removeLeadingDefine(s: String) = s.substring(s.indexOf(' ') + 1)
+      }
+
+      def splitIntoLines(s: String): Array[String] =
+        s.split(f"%n")
+
+      def removeLeadingDefine(s: String): String =
+        s.substring(s.indexOf(' ') + 1)
 
       for {
         clang <- pathToClangBinary
