@@ -13,36 +13,36 @@ final class Inet6Address private[net] (ipAddress: Array[Byte],
 
   def getScopeId(): Int = scopeId
 
-  def isLinkLocalAddress(): Boolean =
+  override def isLinkLocalAddress(): Boolean =
     (ipAddress(0) == -2) && ((ipAddress(1) & 255) >>> 6) == 2
 
-  def isAnyLocalAddress(): Boolean = ipAddress.forall(_ == 0)
+  override def isAnyLocalAddress(): Boolean = ipAddress.forall(_ == 0)
 
-  def isLoopbackAddress(): Boolean = {
+  override def isLoopbackAddress(): Boolean = {
     if (ipAddress(15) != 1)
       return false
 
     ipAddress.dropRight(1).forall(_ == 0)
   }
 
-  def isMCGlobal(): Boolean =
+  override def isMCGlobal(): Boolean =
     (ipAddress(0) == -1) && (ipAddress(1) & 15) == 14
 
-  def isMCLinkLocal(): Boolean =
+  override def isMCLinkLocal(): Boolean =
     (ipAddress(0) == -1) && (ipAddress(1) & 15) == 2
 
-  def isMCNodeLocal(): Boolean =
+  override def isMCNodeLocal(): Boolean =
     (ipAddress(0) == -1) && (ipAddress(1) & 15) == 1
 
-  def isMCOrgLocal(): Boolean =
+  override def isMCOrgLocal(): Boolean =
     (ipAddress(0) == -1) && (ipAddress(1) & 15) == 8
 
-  def isMCSiteLocal(): Boolean =
+  override def isMCSiteLocal(): Boolean =
     (ipAddress(0) == -1) && (ipAddress(1) & 15) == 5
 
-  def isMulticastAddress(): Boolean = ipAddress(0) == -1
+  override def isMulticastAddress(): Boolean = ipAddress(0) == -1
 
-  def isSiteLocalAddress(): Boolean =
+  override def isSiteLocalAddress(): Boolean =
     (ipAddress(0) == -2) && ((ipAddress(1) & 255) >>> 6) == 3
 
   def isIPv4CompatibleAddress(): Boolean = ipAddress.take(12).forall(_ == 0)
