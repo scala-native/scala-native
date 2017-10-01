@@ -62,7 +62,7 @@ class Thread extends Runnable {
    * NOTE: This is used to keep track of the pthread linked to this Thread,
    * it might be easier/better to handle this at lower level
    */
-  private[this] val underlying: pthread_t = 0.asInstanceOf[ULong]
+  private[this] var underlying: pthread_t = 0.asInstanceOf[ULong]
 
   // Synchronization is done using internal lock
   val lock: Object = new Object()
@@ -254,15 +254,6 @@ class Thread extends Runnable {
         "Error while trying to unpark thread " + toString)
   }
 
-  private def toCRoutine(
-      f: => (() => Unit)): (Ptr[scala.Byte]) => Ptr[scala.Byte] = {
-    def g(ptr: Ptr[scala.Byte]) = {
-      f
-      null.asInstanceOf[Ptr[scala.Byte]]
-    }
-    g
-  }
-
   def run(): Unit = {
     if (target != null) {
       target.run()
@@ -300,29 +291,33 @@ class Thread extends Runnable {
   }
 
   //synchronized
-  def start(): Unit = { /*
+  def start(): Unit = {
     lock.synchronized {
-      if(started)
+      if (started)
         //this thread was started
-        throw new IllegalThreadStateException("This thread was already started!")
+        throw new IllegalThreadStateException(
+          "This thread was already started!")
       // adding the thread to the thread group
       group.add(this)
 
-      val a: (Ptr[scala.Byte]) => Ptr[scala.Byte] = toCRoutine(run)
-
-      val routine = CFunctionPtr.fromFunction1(a)
+      val threadPtr = stackalloc[Thread]
+      !threadPtr = this
 
       val id = stackalloc[pthread_t]
-      val status = pthread_create(id, null.asInstanceOf[Ptr[pthread_attr_t]],
-        routine, null.asInstanceOf[Ptr[scala.Byte]])
-      if(status != 0)
-        throw new Exception("Failed to create new thread, pthread error " + status)
+      val status =
+        pthread_create(id,
+                       null.asInstanceOf[Ptr[pthread_attr_t]],
+                       callRunRoutine,
+                       threadPtr.asInstanceOf[Ptr[scala.Byte]])
+      if (status != 0)
+        throw new Exception(
+          "Failed to create new thread, pthread error " + status)
 
       started = true
       underlying = !id
       THREAD_LIST(underlying) = this
-
-    }*/ }
+    }
+  }
 
   type State = CInt
 
@@ -415,6 +410,16 @@ object Thread {
   import scala.collection.mutable
 
   private final val THREAD_LIST = new mutable.HashMap[pthread_t, Thread]()
+
+  // defined as Ptr[Void] => Ptr[Void]
+  // called as Ptr[Thread] => Ptr[Void]
+  private def callRun(p: Ptr[scala.Byte]): Ptr[scala.Byte] = {
+    val thread = !p.asInstanceOf[Ptr[Thread]]
+    thread.run()
+    null.asInstanceOf[Ptr[scala.Byte]]
+  }
+
+  private val callRunRoutine = CFunctionPtr.fromFunction1(callRun)
 
   private val lock: Object = new Object()
 
