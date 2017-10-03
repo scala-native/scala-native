@@ -190,6 +190,10 @@ object FloatSuite extends tests.Suite {
     assert(Float.parseFloat("Infinity") == Float.POSITIVE_INFINITY)
     assert(Float.parseFloat("-Infinity") == Float.NEGATIVE_INFINITY)
     assert(Float.isNaN(Float.parseFloat("NaN")))
+    assertThrows[NumberFormatException](Float.parseFloat(""))
+    assertThrows[NumberFormatException](Float.parseFloat("potato"))
+    assertThrows[NumberFormatException](Float.parseFloat("0.0potato"))
+    assertThrows[NumberFormatException](Float.parseFloat("0.potato"))
   }
 
   test("toString") {

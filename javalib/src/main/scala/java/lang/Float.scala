@@ -238,7 +238,7 @@ object Float {
       errno.errno = 0
       val res = stdlib.strtof(cstr, end)
 
-      if (errno.errno == 0) res
+      if (errno.errno == 0 && cstr != !end && string.strlen(!end) == 0) res
       else throw new NumberFormatException(s)
     }
 
