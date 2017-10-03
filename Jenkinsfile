@@ -13,13 +13,6 @@ def setBuildStatus(String message, String state, String ctx, String repoUrl, Str
     ]);
 }
 
-for(int i = 0; i < OSs.size(); i++) {
-    def selectedOS = OSs[i]
-    tasks["${selectedOS}"] = {
-        job(selectedOS, GCs)
-    }
-}
-
 def job(String OS, List<String> GCs) {
     def repoUrl   = ""
     def commitSha = ""
@@ -34,6 +27,7 @@ def job(String OS, List<String> GCs) {
                 }
                 catch (exc) {
                     setBuildStatus(name, "FAILURE", ctx, repoUrl, commitSha)
+                    cleanWs()
                     throw exc
                 }
             }
@@ -75,10 +69,18 @@ def job(String OS, List<String> GCs) {
                         sh "SCALANATIVE_GC=$GC sbt -no-share -J-Xmx3G test-all"
                     }
                 }
+                cleanWs()
                 setBuildStatus("Tests succeeded", "SUCCESS", "$OS/$GC", repoUrl, commitSha)
             }
         }
 
+    }
+}
+
+for(int i = 0; i < OSs.size(); i++) {
+    def selectedOS = OSs[i]
+    tasks["${selectedOS}"] = {
+        job(selectedOS, GCs)
     }
 }
 
