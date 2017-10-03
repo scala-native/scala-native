@@ -13,6 +13,14 @@ def setBuildStatus(String message, String state, String ctx, String repoUrl, Str
     ]);
 }
 
+def withCleanup(Closure body) {
+    try {
+        body()
+    } finally {
+        cleanWs()
+    }
+}
+
 def job(String OS, List<String> GCs) {
     def repoUrl   = ""
     def commitSha = ""
@@ -27,7 +35,6 @@ def job(String OS, List<String> GCs) {
                 }
                 catch (exc) {
                     setBuildStatus(name, "FAILURE", ctx, repoUrl, commitSha)
-                    cleanWs()
                     throw exc
                 }
             }
@@ -35,47 +42,47 @@ def job(String OS, List<String> GCs) {
     }
 
     return node(OS) {
-        def ivyHome   = pwd tmp: true
+        def ivyHome = pwd tmp: true
 
-        stage("[$OS] Cloning") {
-            ansiColor('xterm') {
-                checkout scm
+        withCleanup {
+            stage("[$OS] Cloning") {
+                ansiColor('xterm') {
+                    checkout scm
 
-                sh "git config --get remote.origin.url > .git/remote-url"
-                repoUrl = readFile(".git/remote-url").trim()
+                    sh "git config --get remote.origin.url > .git/remote-url"
+                    repoUrl = readFile(".git/remote-url").trim()
 
-                sh "git rev-parse HEAD > .git/current-commit"
-                commitSha = readFile(".git/current-commit").trim()
-            }
-        }
-
-        advance("Formatting", OS) {
-            sh 'bin/scalafmt --test'
-        }
-
-        advance("Building", OS) {
-            retry(2) {
-                sh "sbt -Dsbt.ivy.home=$ivyHome -J-Xmx3G rebuild"
-            }
-        }
-
-        setBuildStatus("Build succeeded", "SUCCESS", OS, repoUrl, commitSha)
-
-        for (int i = 0; i < GCs.size(); i++) {
-            def GC = GCs[i]
-            if (OS == "mac" && GC == "immix") {
-                echo "Skipping OS = mac, GC = immix"
-            } else {
-                advance("Testing", "$OS/$GC") {
-                    retry(2) {
-                        sh "SCALANATIVE_GC=$GC sbt -Dsbt.ivy.home=$ivyHome -J-Xmx3G test-all"
-                    }
+                    sh "git rev-parse HEAD > .git/current-commit"
+                    commitSha = readFile(".git/current-commit").trim()
                 }
-                cleanWs()
-                setBuildStatus("Tests succeeded", "SUCCESS", "$OS/$GC", repoUrl, commitSha)
+            }
+
+            advance("Formatting", OS) {
+                sh 'bin/scalafmt --test'
+            }
+
+            advance("Building", OS) {
+                retry(2) {
+                    sh "sbt -Dsbt.ivy.home=$ivyHome -J-Xmx3G rebuild"
+                }
+            }
+
+            setBuildStatus("Build succeeded", "SUCCESS", OS, repoUrl, commitSha)
+
+            for (int i = 0; i < GCs.size(); i++) {
+                def GC = GCs[i]
+                if (OS == "mac" && GC == "immix") {
+                    echo "Skipping OS = mac, GC = immix"
+                } else {
+                    advance("Testing", "$OS/$GC") {
+                        retry(2) {
+                            sh "SCALANATIVE_GC=$GC sbt -Dsbt.ivy.home=$ivyHome -J-Xmx3G test-all"
+                        }
+                    }
+                    setBuildStatus("Tests succeeded", "SUCCESS", "$OS/$GC", repoUrl, commitSha)
+                }
             }
         }
-
     }
 }
 
