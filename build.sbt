@@ -265,7 +265,8 @@ lazy val sbtPluginSettings =
       scriptedLaunchOpts ++=
         Seq("-Xmx1024M",
             "-XX:MaxPermSize=256M",
-            "-Dplugin.version=" + version.value)
+            "-Dplugin.version=" + version.value) ++
+          ivyPaths.value.ivyHome.map(home => s"-Dsbt.ivy.home=${home}").toSeq
     )
 
 lazy val sbtScalaNative =
