@@ -35,6 +35,8 @@ def job(String OS, List<String> GCs) {
     }
 
     return node(OS) {
+        def ivyHome   = pwd tmp: true
+
         stage("[$OS] Cloning") {
             ansiColor('xterm') {
                 checkout scm
@@ -53,7 +55,7 @@ def job(String OS, List<String> GCs) {
 
         advance("Building", OS) {
             retry(2) {
-                sh "sbt -no-share -J-Xmx3G rebuild"
+                sh "sbt -Dsbt.ivy.home=$ivyHome -J-Xmx3G rebuild"
             }
         }
 
@@ -66,7 +68,7 @@ def job(String OS, List<String> GCs) {
             } else {
                 advance("Testing", "$OS/$GC") {
                     retry(2) {
-                        sh "SCALANATIVE_GC=$GC sbt -no-share -J-Xmx3G test-all"
+                        sh "SCALANATIVE_GC=$GC sbt -Dsbt.ivy.home=$ivyHome -J-Xmx3G test-all"
                     }
                 }
                 cleanWs()
