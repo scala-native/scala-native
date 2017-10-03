@@ -194,6 +194,10 @@ object DoubleSuite extends tests.Suite {
     assert(Double.parseDouble("Infinity") == Double.POSITIVE_INFINITY)
     assert(Double.parseDouble("-Infinity") == Double.NEGATIVE_INFINITY)
     assert(Double.isNaN(Double.parseDouble("NaN")))
+    assertThrows[NumberFormatException](Double.parseDouble(""))
+    assertThrows[NumberFormatException](Double.parseDouble("potato"))
+    assertThrows[NumberFormatException](Double.parseDouble("0.0potato"))
+    assertThrows[NumberFormatException](Double.parseDouble("0.potato"))
   }
 
   // Not fully JVM compliant yet
