@@ -261,8 +261,8 @@ object IssuesSuite extends tests.Suite {
   }
 
   test("#644") {
-    2.asInstanceOf[Nothing]
-    2.asInstanceOf[Null]
+    assert(!Option(2.asInstanceOf[Nothing]).isDefined)
+    assert(!Option(2.asInstanceOf[Null]).isDefined)
   }
 
   test("#667") {
