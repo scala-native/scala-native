@@ -15,6 +15,11 @@ typedef struct _UnwindContext {
     DWORD64 cursor;
     SYMBOL_INFOW symbol;
 } UnwindContext;
+// architecture independent register numbers
+enum {
+    UNW_REG_IP = -1, // instruction pointer
+    UNW_REG_SP = -2, // stack pointer
+  };
 #endif
 
 int scalanative_unwind_get_context(void *context) {
@@ -42,7 +47,8 @@ int scalanative_unwind_init_local(void *cursor, void *context) {
     }
     ucontext->frames = CaptureStackBackTrace(0, MAX_LENGTH_OF_CALLSTACK,
                                              ucontext->stack, NULL);
-    ucontext->cursor = 1;
+    // cursor should be -1, but we don't want to show this function
+    ucontext->cursor = 0;
     ucontext->symbol.MaxNameLen = 255; // todo: review
     ucontext->symbol.SizeOfStruct = sizeof(SYMBOL_INFO);
     return 0;
@@ -54,7 +60,7 @@ int scalanative_unwind_step(void *cursor) {
     return unw_step((unw_cursor_t *)cursor);
 #else
     UnwindContext *ucontext = (UnwindContext *)cursor;
-    return ucontext->frames - ucontext->cursor;
+    return ucontext->frames - (++ucontext->cursor);
 #endif
 }
 
@@ -71,8 +77,7 @@ int scalanative_unwind_get_proc_name(void *cursor, char *buffer, size_t length,
     if (ucontext->cursor < ucontext->frames) {
         void *address = ucontext->stack[ucontext->cursor];
         PSYMBOL_INFOW symbol = &ucontext->symbol;
-        SymFromAddrW(ucontext->process, (DWORD64)address, 0, symbol);
-        ucontext->cursor++;
+        SymFromAddrW(ucontext->process, (DWORD64)address, 0, symbol);        
         snprintf(buffer, length, "%ws", symbol->Name);
         memcpy(offset, &(symbol->Address), sizeof(void *));
         if (SymGetLineFromAddr(ucontext->process, (DWORD64)address,
@@ -90,7 +95,13 @@ int scalanative_unwind_get_proc_name(void *cursor, char *buffer, size_t length,
 
 int scalanative_unwind_get_reg(void *cursor, int regnum,
                                unsigned long long *valp) {
+#ifndef _WIN32
     return unw_get_reg((unw_cursor_t *)cursor, regnum, (unw_word_t *)valp);
+#else
+    UnwindContext *ucontext = (UnwindContext *)cursor;
+    *valp = (unsigned long long)(ucontext->stack[ucontext->cursor]);
+    return 0;
+#endif
 }
 
 int scalanative_UNW_REG_IP() { return UNW_REG_IP; }

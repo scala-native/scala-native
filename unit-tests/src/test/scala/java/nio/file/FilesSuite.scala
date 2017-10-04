@@ -148,11 +148,11 @@ object FilesSuite extends tests.Suite {
       val link   = dir.resolve("link")
       val target = dir.resolve("target")
 
-      if (!Platform.isWindows) // only works if process is elevated ("Run as Administrator")
-        {
-          Files.createSymbolicLink(link, target)
-          assert(Files.isSymbolicLink(link))
-        }
+      // only works if process is elevated ("Run as Administrator")
+      if (!Platform.isWindows) {
+        Files.createSymbolicLink(link, target)
+        assert(Files.isSymbolicLink(link))
+      }
     }
   }
 
