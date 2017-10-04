@@ -320,7 +320,7 @@ object Files {
   private def _list(dir: Path): SStream[Path] = {
     val flist = Option(dir.toFile().list())
     flist match {
-      case None => throw new NotDirectoryException(dir.toString)
+      case None    => throw new NotDirectoryException(dir.toString)
       case Some(x) => x.toStream.map(dir.resolve)
     }
   }

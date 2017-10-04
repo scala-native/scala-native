@@ -135,12 +135,12 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
   }
 
   private def readCentralDir(): Unit = {
-    var scanOffset = mRaf.length() - ZipFile.ENDHDR
+    var scanOffset = mRaf.length() - ZipFile.ENDHDR + 1
     if (scanOffset < 0) {
       throw new ZipException("too short to be Zip")
     }
 
-    var stopOffset = scanOffset - 65536
+    var stopOffset = scanOffset - 65552
     if (stopOffset < 0) {
       stopOffset = 0
     }
@@ -157,6 +157,8 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
         }
       }
     }
+
+    val endOfCDOffset = scanOffset
 
     /*
      * Found it, read the EOCD.
@@ -191,7 +193,7 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
      * empty block signature).
      */
     scanOffset = centralDirOffset
-    stopOffset = scanOffset + 8
+    stopOffset = endOfCDOffset
 
     done = false
     while (!done) {

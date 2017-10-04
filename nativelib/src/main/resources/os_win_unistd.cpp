@@ -183,7 +183,8 @@ extern "C" int __imp_open(const char *pathname, int flags, mode_t mode) {
             !(fileMode & S_IWUSR)) {
             err = EACCES;
         } else {
-            err = _sopen_s(&fildes, fullPath.data(), flags, _SH_DENYNO,
+            auto fullFlags = flags & _O_TEXT ? flags : (flags | _O_BINARY);
+            err = _sopen_s(&fildes, fullPath.data(), fullFlags, _SH_DENYNO,
                            winPermission);
         }
     }
