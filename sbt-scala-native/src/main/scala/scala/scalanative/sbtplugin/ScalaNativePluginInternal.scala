@@ -139,7 +139,7 @@ object ScalaNativePluginInternal {
     nativeLinkerReporter in NativeTest := (nativeLinkerReporter in Test).value,
     nativeOptimizerReporter := tools.OptimizerReporter.empty,
     nativeOptimizerReporter in NativeTest := (nativeOptimizerReporter in Test).value,
-    nativeGC := "immix", //"boehm",
+    nativeGC := "boehm", //"immix",
     nativeGC in NativeTest := (nativeGC in Test).value
   )
 

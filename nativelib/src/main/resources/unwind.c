@@ -19,7 +19,7 @@ typedef struct _UnwindContext {
 enum {
     UNW_REG_IP = -1, // instruction pointer
     UNW_REG_SP = -2, // stack pointer
-  };
+};
 #endif
 
 int scalanative_unwind_get_context(void *context) {
@@ -77,7 +77,7 @@ int scalanative_unwind_get_proc_name(void *cursor, char *buffer, size_t length,
     if (ucontext->cursor < ucontext->frames) {
         void *address = ucontext->stack[ucontext->cursor];
         PSYMBOL_INFOW symbol = &ucontext->symbol;
-        SymFromAddrW(ucontext->process, (DWORD64)address, 0, symbol);        
+        SymFromAddrW(ucontext->process, (DWORD64)address, 0, symbol);
         snprintf(buffer, length, "%ws", symbol->Name);
         memcpy(offset, &(symbol->Address), sizeof(void *));
         if (SymGetLineFromAddr(ucontext->process, (DWORD64)address,
