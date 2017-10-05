@@ -4,6 +4,16 @@ object InstanceOfSuite extends tests.Suite {
 
   // asInstanceOf
 
+  test("expects casts to Nothing and Null should succeed") {
+    // tests for issue #644
+    // casts are unchecked in Scala Native
+    // throws java.lang.ClassCastException on JVM
+    assertEquals(2.asInstanceOf[Nothing], 2)
+    assertEquals(2.asInstanceOf[Null], 2)
+    assertEquals("abc".asInstanceOf[Nothing], "abc")
+    assertEquals("abc".asInstanceOf[Null], "abc")
+  }
+
 //  test("expects anyRef.asInstanceOf[String] fail") {
 //    shouldNotGetHere((new AnyRef).asInstanceOf[String])
 //  }
