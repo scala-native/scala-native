@@ -260,11 +260,6 @@ object IssuesSuite extends tests.Suite {
     assert('\uD800'.toInt == 55296)
   }
 
-  test("#644") {
-    2.asInstanceOf[Nothing]
-    2.asInstanceOf[Null]
-  }
-
   test("#667") {
     val map = new java.util.HashMap[Int, Int]
     map.put(1, 2)
