@@ -6,25 +6,25 @@ final class Inet4Address private[net] (ipAddress: Array[Byte], host: String)
 
   private[net] def this(ipAddress: Array[Byte]) = this(ipAddress, null)
 
-  def isMulticastAddress(): Boolean =
+  override def isMulticastAddress(): Boolean =
     (ipAddress(0) & 0xF0) == 0xE0
 
-  def isAnyLocalAddress(): Boolean =
+  override def isAnyLocalAddress(): Boolean =
     ipAddress.forall(_ == 0)
 
-  def isLoopbackAddress(): Boolean =
+  override def isLoopbackAddress(): Boolean =
     (ipAddress(0) & 255) == 127
 
-  def isLinkLocalAddress(): Boolean =
+  override def isLinkLocalAddress(): Boolean =
     ((ipAddress(0) & 255) == 169) && ((ipAddress(1) & 255) == 254)
 
-  def isSiteLocalAddress(): Boolean = {
+  override def isSiteLocalAddress(): Boolean = {
     ((ipAddress(0) & 255) == 10) || ((ipAddress(0) & 255) == 172) &&
     (((ipAddress(1) & 255) > 15) && (ipAddress(1) & 255) < 32) ||
     ((ipAddress(0) & 255) == 192) && ((ipAddress(1) & 255) == 168)
   }
 
-  def isMCGlobal(): Boolean = {
+  override def isMCGlobal(): Boolean = {
     if (!isMulticastAddress) return false
 
     val address = InetAddress.bytesToInt(ipAddress, 0)
@@ -36,15 +36,15 @@ final class Inet4Address private[net] (ipAddress: Array[Byte], host: String)
     true
   }
 
-  def isMCNodeLocal(): Boolean = false
+  override def isMCNodeLocal(): Boolean = false
 
-  def isMCLinkLocal(): Boolean =
+  override def isMCLinkLocal(): Boolean =
     InetAddress.bytesToInt(ipAddress, 0) >>> 8 == 0xE00000
 
-  def isMCSiteLocal(): Boolean =
+  override def isMCSiteLocal(): Boolean =
     (InetAddress.bytesToInt(ipAddress, 0) >>> 16) == 0xEFFF
 
-  def isMCOrgLocal(): Boolean = {
+  override def isMCOrgLocal(): Boolean = {
     val prefix = InetAddress.bytesToInt(ipAddress, 0) >>> 16
     prefix >= 0xEFC0 && prefix <= 0xEFC3
   }

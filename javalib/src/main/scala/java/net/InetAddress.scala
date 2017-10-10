@@ -553,8 +553,8 @@ private[net] trait InetAddressBase {
 
 object InetAddress extends InetAddressBase
 
-abstract class InetAddress private[net] (ipAddress: Array[Byte],
-                                         private var host: String)
+class InetAddress private[net] (ipAddress: Array[Byte],
+                                private var host: String)
     extends Serializable {
   import InetAddress._
 
@@ -604,24 +604,24 @@ abstract class InetAddress private[net] (ipAddress: Array[Byte],
     }
   }
 
-  def isLinkLocalAddress(): Boolean
+  def isLinkLocalAddress(): Boolean = false
 
-  def isAnyLocalAddress(): Boolean
+  def isAnyLocalAddress(): Boolean = false
 
-  def isLoopbackAddress(): Boolean
+  def isLoopbackAddress(): Boolean = false
 
-  def isMCGlobal(): Boolean
+  def isMCGlobal(): Boolean = false
 
-  def isMCLinkLocal(): Boolean
+  def isMCLinkLocal(): Boolean = false
 
-  def isMCNodeLocal(): Boolean
+  def isMCNodeLocal(): Boolean = false
 
-  def isMCOrgLocal(): Boolean
+  def isMCOrgLocal(): Boolean = false
 
-  def isMCSiteLocal(): Boolean
+  def isMCSiteLocal(): Boolean = false
 
-  def isMulticastAddress(): Boolean
+  def isMulticastAddress(): Boolean = false
 
-  def isSiteLocalAddress(): Boolean
+  def isSiteLocalAddress(): Boolean = false
 
 }
