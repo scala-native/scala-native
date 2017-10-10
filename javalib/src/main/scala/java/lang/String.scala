@@ -648,12 +648,12 @@ final class _String()
   private[this] def toCase(locale: Locale, convert: Int => Int): _String = {
     if (count == 0) return this
     val buf = new StringBuilder(count)
-    var i   = 0
-    while (i < count) {
+    var i   = offset
+    while (i < offset + count) {
       val high = value(i)
       i += 1
       if (Character.isHighSurrogate(high)) {
-        if (i < count) {
+        if (i < offset + count) {
           val low = value(i)
           i += 1
           if (Character.isLowSurrogate(low)) {
