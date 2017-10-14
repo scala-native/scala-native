@@ -26,9 +26,47 @@ abstract class TestMainBase {
 
   /** Actual main method of the test runner. */
   def testMain(args: Array[String]): Unit = {
-    val serverPort   = args.head.toInt
-    val clientSocket = new Socket("127.0.0.1", serverPort)
-    testRunner(Array.empty, null, clientSocket)
+    args.toList match {
+      case "run-test" :: className :: Nil =>
+        runSingleTest(className)
+      case serverPort :: _ =>
+        val clientSocket = new Socket("127.0.0.1", serverPort.toInt)
+        testRunner(Array.empty, null, clientSocket)
+    }
+  }
+
+  private def runSingleTest(value: String): Unit = {
+    val runner = frameworks(0).runner(Array.empty,
+                                      Array.empty,
+                                      new PreloadedClassLoader(tests))
+    val taskDef = new TaskDef(
+      value,
+      DeserializedSubclassFingerprint(isModule = true,
+                                      "tests.Suite",
+                                      requireNoArgConstructor = false),
+      false,
+      Array(new SuiteSelector))
+    val Array(task: Task) = runner.tasks(Array(taskDef))
+    val logger = new Logger {
+      def debug(msg: String): Unit = Console.err.println("DEBUG: " + msg)
+
+      def error(msg: String): Unit = Console.err.println("ERROR: " + msg)
+
+      val ansiCodesSupported = true
+
+      def warn(msg: String): Unit = Console.err.println("WARN: " + msg)
+
+      def trace(t: Throwable): Unit = {
+        Console.err.println("TRACE:")
+        t.printStackTrace()
+      }
+
+      def info(msg: String): Unit = Console.err.println("INFO: " + msg)
+    }
+    val eventHandler = new EventHandler {
+      def handle(event: SbtEvent): Unit = {}
+    }
+    task.execute(eventHandler, Array(logger))
   }
 
   /** Test runner loop.
