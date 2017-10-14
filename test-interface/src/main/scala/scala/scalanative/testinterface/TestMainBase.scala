@@ -27,11 +27,12 @@ abstract class TestMainBase {
   /** Actual main method of the test runner. */
   def testMain(args: Array[String]): Unit = {
     val (options, values) = args.toList.partition(_.startsWith("--"))
-    // catching segmentation faults by default
+    // catching Segmentation Faults and Erroneous Arithmetic Operation by default
     // it can be disabled for debug tool compatibility
-    val catchSegfaults = !options.contains("--no-catch-segfault")
+    val catchSegfaults = !options.contains("--no-catch-fault")
     if (catchSegfaults) {
-      signal.signal(signal.SIGSEGV, TestMainBase.segFaultHandler)
+      signal.signal(signal.SIGSEGV, TestMainBase.faultHandler)
+      signal.signal(signal.SIGFPE, TestMainBase.faultHandler)
     }
     values match {
       case "run-test" :: className :: Nil =>
@@ -195,12 +196,27 @@ abstract class TestMainBase {
 }
 
 object TestMainBase {
-  private val segFaultHandler = CFunctionPtr.fromFunction1(handleSegFault _)
-  private def handleSegFault(signal: Int): Unit = {
-    Console.err.println("Segmentation fault")
+  private val faultHandler = CFunctionPtr.fromFunction1(handleSegFault _)
+  private def handleSegFault(id: Int): Unit = {
+    //making ids stable i.e. vals instead fo defs
+    //for use in the match
+    val SIGSEGV = signal.SIGSEGV
+    val SIGFPE  = signal.SIGFPE
+
+    val retCode = id match {
+      case `SIGSEGV` =>
+        Console.err.println("Segmentation fault")
+        139
+      case `SIGFPE` =>
+        Console.err.println("Erroneous Arithmetic Operation")
+        136
+      case _ =>
+        Console.err.println("Unknown fault")
+        -1
+    }
     // the handler will run on the same thread that caused the segmentation fault
     new Throwable().printStackTrace()
     // segfault return code
-    System.exit(139)
+    System.exit(retCode)
   }
 }
