@@ -26,7 +26,14 @@ abstract class TestMainBase {
 
   /** Actual main method of the test runner. */
   def testMain(args: Array[String]): Unit = {
-    args.toList match {
+    val (options, values) = args.toList.partition(_.startsWith("--"))
+    // catching segmentation faults by default
+    // it can be disabled for debug tool compatibility
+    val catchSegfaults = !options.contains("--no-catch-segfault")
+    if (catchSegfaults) {
+      signal.signal(signal.SIGSEGV, TestMainBase.segFaultHandler)
+    }
+    values match {
       case "run-test" :: className :: Nil =>
         runSingleTest(className)
       case serverPort :: _ =>
@@ -184,5 +191,16 @@ abstract class TestMainBase {
     override def info(msg: String): Unit   = log(Log.Level.Info, msg, None)
     override def debug(msg: String): Unit  = log(Log.Level.Debug, msg, None)
     override def trace(t: Throwable): Unit = log(Log.Level.Trace, "", Some(t))
+  }
+}
+
+object TestMainBase {
+  private val segFaultHandler = CFunctionPtr.fromFunction1(handleSegFault _)
+  private def handleSegFault(signal: Int): Unit = {
+    Console.err.println("Segmentation fault")
+    // the handler will run on the same thread that caused the segmentation fault
+    new Throwable().printStackTrace()
+    // segfault return code
+    System.exit(139)
   }
 }
