@@ -29,7 +29,10 @@ class ComRunner(bin: File,
       import sbt.Process._
       val port = serverSocket.getLocalPort
       logger.info(s"Starting process '$bin' on port '$port'.")
-      Process(bin.toString +: port.toString +: args, None, envVars.toSeq: _*) ! logger
+      val retCode = Process(bin.toString +: port.toString +: args,
+                            None,
+                            envVars.toSeq: _*) ! logger
+      logger.info(s"Process '$bin' on port '$port' exited with code $retCode.")
     }
   }
 
