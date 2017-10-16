@@ -26,6 +26,7 @@ object Driver {
   )
 
   private val fastOptPasses = Seq(
+    pass.DeadBlockElimination,
     pass.GlobalBoxingElimination,
     pass.UnitSimplification,
     pass.DeadCodeElimination
