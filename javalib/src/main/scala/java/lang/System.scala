@@ -104,7 +104,7 @@ object System {
 
   def gc(): Unit = GC.collect()
 
-  private lazy val envVars: Map[String, String] = {
+  private def envVars(): Map[String, String] = {
     // workaround since `while(ptr(0) != null)` causes segfault
     def isDefined(ptr: Ptr[CString]): Boolean = {
       val s: CString = ptr(0)

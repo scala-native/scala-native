@@ -439,14 +439,7 @@ lazy val tests =
       // nativeOptimizerReporter := OptimizerReporter.toDirectory(
       //   crossTarget.value),
       libraryDependencies += "org.scala-native" %%% "test-interface" % nativeVersion,
-      testFrameworks += new TestFramework("tests.NativeFramework"),
-      envVars in (Test, test) ++= Map(
-        "USER"                           -> "scala-native",
-        "HOME"                           -> baseDirectory.value.getAbsolutePath,
-        "SCALA_NATIVE_ENV_WITH_EQUALS"   -> "1+1=2",
-        "SCALA_NATIVE_ENV_WITHOUT_VALUE" -> "",
-        "SCALA_NATIVE_ENV_WITH_UNICODE"  -> 0x2192.toChar.toString
-      )
+      testFrameworks += new TestFramework("tests.NativeFramework")
     )
     .enablePlugins(ScalaNativePlugin)
 
