@@ -196,27 +196,27 @@ abstract class TestMainBase {
 }
 
 object TestMainBase {
-  private val faultHandler = CFunctionPtr.fromFunction1(handleSegFault _)
-  private def handleSegFault(id: Int): Unit = {
+  private val faultHandler = CFunctionPtr.fromFunction1(handleFault _)
+  private def handleFault(id: Int): Unit = {
     //making ids stable i.e. vals instead fo defs
     //for use in the match
     val SIGSEGV = signal.SIGSEGV
     val SIGFPE  = signal.SIGFPE
 
-    val retCode = id match {
+    val throwable = id match {
       case `SIGSEGV` =>
-        Console.err.println("Segmentation fault")
-        139
+        val msg = "Segmentation fault"
+        Console.err.println(msg)
+        new Error(msg)
       case `SIGFPE` =>
         Console.err.println("Erroneous Arithmetic Operation")
-        136
+        new ArithmeticException()
       case _ =>
-        Console.err.println("Unknown fault")
-        -1
+        val msg = "Unknown fault"
+        Console.err.println(msg)
+        new Error(msg)
     }
-    // the handler will run on the same thread that caused the segmentation fault
-    new Throwable().printStackTrace()
-    // segfault return code
-    System.exit(retCode)
+    throwable.printStackTrace()
+    throw throwable
   }
 }
