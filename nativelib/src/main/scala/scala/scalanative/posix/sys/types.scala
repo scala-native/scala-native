@@ -1,7 +1,7 @@
 package scala.scalanative
 package posix.sys
 
-import scala.scalanative.native.{CInt, CUnsignedInt, ULong, extern}
+import scala.scalanative.native.{CInt, ULong, extern}
 
 @extern
 object types {
