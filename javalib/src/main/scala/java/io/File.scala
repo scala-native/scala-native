@@ -26,7 +26,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
       Option(parent).map(p => p + File.separatorChar + child).getOrElse(child))
 
   def this(parent: File, child: String) =
-    this(Option(parent).map(_.path).getOrElse(null), child)
+    this(Option(parent).map(_.path).orNull, child)
 
   // def this(uri: URI)
 
