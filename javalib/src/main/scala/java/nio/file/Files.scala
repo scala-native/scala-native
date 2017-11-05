@@ -67,8 +67,10 @@ object Files {
   }
 
   def copy(source: Path, out: OutputStream): Long = {
-    val in = newInputStream(source, Array.empty)
-    copy(in, out)
+    val in     = newInputStream(source, Array.empty)
+    val result = copy(in, out)
+    in.close()
+    result
   }
 
   def copy(source: Path, target: Path, options: Array[CopyOption]): Path = {
@@ -315,8 +317,13 @@ object Files {
   def lines(path: Path, cs: Charset): Stream[String] =
     newBufferedReader(path, cs).lines(true)
 
-  private def _list(dir: Path): SStream[Path] =
-    dir.toFile().list().toStream.map(dir.resolve)
+  private def _list(dir: Path): SStream[Path] = {
+    val flist = Option(dir.toFile().list())
+    flist match {
+      case None    => throw new NotDirectoryException(dir.toString)
+      case Some(x) => x.toStream.map(dir.resolve)
+    }
+  }
 
   def list(dir: Path): Stream[Path] =
     if (!isDirectory(dir, Array.empty)) {

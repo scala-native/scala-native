@@ -511,9 +511,9 @@ private[math] object Division {
     }
   }
 
-  /** Calculates a modInverse based on the Lórencz algorithm.
+  /** Calculates a modInverse based on the L?rencz algorithm.
    *
-   *  Based on "New Algorithm for Classical Modular Inverse" Róbert Lórencz. LNCS
+   *  Based on "New Algorithm for Classical Modular Inverse" R?bert L?rencz. LNCS
    *  2523 (2002)
    *
    *  @return a^(-1) mod m

@@ -1,7 +1,8 @@
 object CanExecuteTest {
   import Files._
+  import scala.scalanative.runtime.Platform
 
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String]): Unit = if (!Platform.isWindows) {
     assert(!emptyNameFile.canExecute())
 
     assert(executableFile.canExecute())

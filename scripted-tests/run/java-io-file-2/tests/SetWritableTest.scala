@@ -1,6 +1,7 @@
 object SetWritableTest {
   import Files._
-  def main(args: Array[String]): Unit = {
+  import scala.scalanative.runtime.Platform
+  def main(args: Array[String]): Unit = if (!Platform.isWindows) {
     assert(willBeSetWritableFile.exists())
     assert(!willBeSetWritableFile.canExecute())
     assert(!willBeSetWritableFile.canRead())

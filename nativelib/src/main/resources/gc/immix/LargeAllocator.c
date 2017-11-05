@@ -28,7 +28,7 @@ void LargeAllocator_printFreeList(FreeList *list, int i) {
     Chunk *current = list->first;
     printf("list %d: ", i);
     while (current != NULL) {
-        assert((1 << (i + LARGE_OBJECT_MIN_SIZE_BITS)) ==
+        assert(((size_t)1 << (i + LARGE_OBJECT_MIN_SIZE_BITS)) ==
                LargeAllocator_getChunkSize(current));
         printf("[%p %zu] -> ", current, LargeAllocator_getChunkSize(current));
         current = current->next;
@@ -86,7 +86,7 @@ void LargeAllocator_AddChunk(LargeAllocator *allocator, Chunk *chunk,
     ubyte_t *current = (ubyte_t *)chunk;
     while (remaining_size > 0) {
         int log2_f = log2_floor(remaining_size);
-        size_t chunkSize = 1UL << log2_f;
+        size_t chunkSize = ((size_t)1UL) << log2_f;
         chunkSize = chunkSize > MAX_BLOCK_SIZE ? MAX_BLOCK_SIZE : chunkSize;
         assert(chunkSize >= MIN_BLOCK_SIZE && chunkSize <= MAX_BLOCK_SIZE);
         int listIndex = LargeAllocator_sizeToLinkedListIndex(chunkSize);
@@ -108,7 +108,8 @@ Object *LargeAllocator_GetBlock(LargeAllocator *allocator,
                                 size_t requestedBlockSize) {
     size_t actualBlockSize =
         MathUtils_RoundToNextMultiple(requestedBlockSize, MIN_BLOCK_SIZE);
-    size_t requiredChunkSize = 1UL << MathUtils_Log2Ceil(actualBlockSize);
+    size_t requiredChunkSize = (unsigned long long)1UL
+                               << MathUtils_Log2Ceil(actualBlockSize);
 
     int listIndex = LargeAllocator_sizeToLinkedListIndex(requiredChunkSize);
     Chunk *chunk = NULL;

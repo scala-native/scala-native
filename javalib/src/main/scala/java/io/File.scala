@@ -16,7 +16,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
   import File._
 
   if (_path == null) throw new NullPointerException()
-  private val path: String           = fixSlashes(_path)
+  private val path: String           = fixSlashes(_path.replace('/', separatorChar))
   private[io] val properPath: String = File.properPath(path)
   private[io] val properPathBytes: Array[Byte] =
     File.properPath(path).getBytes("UTF-8")
@@ -445,7 +445,8 @@ object File {
             throw new IOException(
               "getcwd() error in trying to get user directory."))
 
-      if (path.isEmpty) userdir
+      if (path.isEmpty || path == ".") userdir
+      else if (path.startsWith(".")) userdir + path.stripPrefix(".")
       else if (userdir.endsWith(separator)) userdir + path
       else userdir + separator + path
     }
@@ -453,7 +454,7 @@ object File {
 
   def isAbsolute(path: String): Boolean =
     if (separatorChar == '\\') { // Windows. Must start with `\\` or `X:(\|/)`
-      (path.length > 1 && path.startsWith(separator + separator)) ||
+      (path.length > 1 && path.startsWith(separator)) ||
       (path.length > 2 && path(0).isLetter && path(1) == ':' && (path(2) == '/' || path(
         2) == '\\'))
     } else {
@@ -584,8 +585,14 @@ object File {
 
   private def tempDir(): File = {
     val dir = getenv(c"TMPDIR")
-    if (dir == null) new File("/tmp")
-    else new File(fromCString(dir))
+    if (dir == null) {
+      val dir2 = getenv(c"TEMP")
+      if (dir2 == null) {
+        val name = stackalloc[CChar](1024)
+        dirent.gettempdir(name, 1024)
+        new File(fromCString(name))
+      } else new File(fromCString(dir2))
+    } else new File(fromCString(dir))
   }
 
   private def genTempFile(prefix: String,

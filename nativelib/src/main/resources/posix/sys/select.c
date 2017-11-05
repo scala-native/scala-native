@@ -1,4 +1,8 @@
+#ifndef _WIN32
 #include <sys/select.h>
+#else
+#include "../../os_win_winsock2.h"
+#endif
 #include <stdbool.h>
 #include <errno.h>
 #include <stddef.h>

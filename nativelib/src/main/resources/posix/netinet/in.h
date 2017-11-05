@@ -1,12 +1,16 @@
 #ifndef __NETINET_IN_H
 #define __NETINET_IN_H
 
+#ifndef _WIN32
 #include <netinet/in.h>
+#else
+#include "../../os_win_winsock2.h"
+#endif
 #include <inttypes.h>
 #include "../sys/socket.h"
 
 struct scalanative_in_addr {
-    in_addr_t s_addr;
+    in_addr_t _s_addr;
 };
 
 struct scalanative_in6_addr {

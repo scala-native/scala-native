@@ -4,6 +4,7 @@ import sbt.testing.{EventHandler, Logger, Status}
 
 import scala.collection.mutable
 import scala.reflect.ClassTag
+import scala.scalanative.runtime.Platform
 
 final case object AssertionFailed extends Exception
 

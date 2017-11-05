@@ -69,8 +69,6 @@ abstract class FileSystemProvider protected () {
         buffer.put(0, b.toByte)
         channel.write(buffer)
       }
-      override def close(): Unit =
-        channel.close()
     }
   }
 

@@ -5,11 +5,18 @@ import java.nio.file.spi.FileSystemProvider
 import java.net.URI
 import java.util.{HashMap, Map}
 
-import scala.scalanative.nio.fs.{UnixFileSystem, UnixFileSystemProvider}
+import scalanative.runtime.Platform
+import scala.scalanative.nio.fs.{
+  UnixFileSystem,
+  UnixFileSystemProvider,
+  WindowsFileSystem,
+  WindowsFileSystemProvider
+}
 
 object FileSystems {
   private lazy val fs =
-    (new UnixFileSystemProvider).getFileSystem(
+    (if (Platform.isWindows) new WindowsFileSystemProvider
+     else new UnixFileSystemProvider).getFileSystem(
       new URI(scheme = "file",
               userInfo = null,
               host = null,

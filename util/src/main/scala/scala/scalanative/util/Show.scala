@@ -3,6 +3,8 @@ package util
 
 import scala.language.implicitConversions
 
+case class ShowBuilderPosition(pos: Int, indent: Int)
+
 final class ShowBuilder {
   private var sb          = new java.lang.StringBuilder
   private var indentation = 0
@@ -13,6 +15,17 @@ final class ShowBuilder {
   def line(value: Any): Unit = {
     str(value)
     newline()
+  }
+
+  def currentPosition(): ShowBuilderPosition =
+    new ShowBuilderPosition(sb.length, indentation)
+
+  def insertLine(position: ShowBuilderPosition, value: Any): Unit = {
+    val localsb = new java.lang.StringBuilder
+    localsb.append("\n")
+    localsb.append("  " * position.indent)
+    localsb.append(value.toString)
+    sb.insert(position.pos, localsb.toString)
   }
 
   def rep[T](values: Seq[T], sep: String = "")(f: T => Unit): Unit =

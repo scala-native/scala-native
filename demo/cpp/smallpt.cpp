@@ -79,7 +79,7 @@ Vec radiance(const Ray &r, int depth, unsigned short *Xi) {
         nl = n.dot(r.d) < 0 ? n : n * -1, f = obj.c;
     double p = f.x > f.y && f.x > f.z ? f.x : f.y > f.z ? f.y : f.z; // max refl
     if (++depth > 5)
-        if (erand48(Xi) < p)
+        if (depth < 100 && erand48(Xi) < p)
             f = f * (1 / p);
         else
             return obj.e;   // R.R.

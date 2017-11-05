@@ -1,5 +1,9 @@
 #include <stdlib.h>
+#ifndef _WIN32
 #include <sys/mman.h>
+#else
+#include "../../os_win_mman.h"
+#endif
 #include <stdio.h>
 #include "Heap.h"
 #include "Block.h"
@@ -19,7 +23,20 @@
 #define HEAP_MEM_FD -1
 #define HEAP_MEM_FD_OFFSET 0
 
-size_t Heap_getMemoryLimit() { return getMemorySize(); }
+size_t Heap_getMemoryLimit() {
+#ifndef _WIN32
+    return getMemorySize();
+#else
+    size_t maximum = getMemorySize();
+    // temporary fix for Windows 7 and less
+    const unsigned long long TEMP_LIMIT =
+        ((unsigned long long)1 * 1024 * 1024 * 1024);
+    if (maximum > TEMP_LIMIT) {
+        maximum = TEMP_LIMIT;
+    }
+    return maximum;
+#endif
+}
 
 /**
  * Maps `MAX_SIZE` of memory and returns the first address aligned on
@@ -267,7 +284,7 @@ void Heap_Grow(Heap *heap, size_t increment) {
 
 /** Grows the large heap by at least `increment` words */
 void Heap_GrowLarge(Heap *heap, size_t increment) {
-    increment = 1UL << MathUtils_Log2Ceil(increment);
+    increment = (unsigned long long)1UL << MathUtils_Log2Ceil(increment);
 
     if (heap->smallHeapSize + heap->largeHeapSize + increment * WORD_SIZE >
         heap->memoryLimit) {

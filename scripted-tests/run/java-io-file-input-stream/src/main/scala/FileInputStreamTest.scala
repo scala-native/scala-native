@@ -12,5 +12,6 @@ object FileInputStreamTest {
     val bytes = new Array[Byte](nbytes)
     fip.read(bytes)
     assert(new String(bytes, "UTF-8") equals "test")
+    fip.close()
   }
 }

@@ -84,24 +84,38 @@ object ScalaNativePluginInternal {
     crossPlatform := NativePlatform,
     nativeClang := {
       val clang = discover("clang", clangVersions)
-      checkThatClangIsRecentEnough(clang)
+      // todo: echo doesn't work well on windows
+      if (!Utilities.isWindows) {
+        checkThatClangIsRecentEnough(clang)
+      }
       clang
     },
     nativeClang in NativeTest := (nativeClang in Test).value,
     nativeClangPP := {
       val clang = discover("clang++", clangVersions)
-      checkThatClangIsRecentEnough(clang)
+      // todo: echo doesn't work well on windows
+      if (!Utilities.isWindows) {
+        checkThatClangIsRecentEnough(clang)
+      }
       clang
     },
     nativeClangPP in NativeTest := (nativeClangPP in Test).value,
+    nativeDebugInfoOptions := {
+      if (Utilities.isWindows)
+        Seq("-g", "-gcodeview")
+      else Seq("-g")
+    },
     nativeCompileOptions := {
       val includes = {
         val includedir =
           Try(Process("llvm-config --includedir").lines_!.toSeq)
             .getOrElse(Seq.empty)
-        ("/usr/local/include" +: includedir).map(s => s"-I$s")
+        ((if (Utilities.isWindows)
+            (Seq(Utilities.discoverUserIncludes() / "include"))
+          else Seq("/usr/local/include")) ++ includedir).map(s => s"-I$s")
       }
-      includes :+ "-Qunused-arguments"
+      val dbgInfo = nativeDebugInfoOptions.value
+      (includes :+ "-Qunused-arguments") ++ dbgInfo
     },
     nativeCompileOptions in NativeTest := (nativeCompileOptions in Test).value,
     nativeLinkingOptions := {
@@ -109,9 +123,12 @@ object ScalaNativePluginInternal {
         val libdir =
           Try(Process("llvm-config --libdir").lines_!.toSeq)
             .getOrElse(Seq.empty)
-        ("/usr/local/lib" +: libdir).map(s => s"-L$s")
+        ((if (Utilities.isWindows)
+            (Seq(Utilities.discoverUserIncludes() / "lib"))
+          else Seq("/usr/local/lib")) ++ libdir).map(s => s"-L$s")
       }
-      libs
+      val dbgInfo = nativeDebugInfoOptions.value
+      libs ++ dbgInfo ++ Seq("-Qunused-arguments")
     },
     nativeLinkingOptions in NativeTest := (nativeLinkingOptions in Test).value,
     nativeMode := "debug",
@@ -122,7 +139,7 @@ object ScalaNativePluginInternal {
     nativeLinkerReporter in NativeTest := (nativeLinkerReporter in Test).value,
     nativeOptimizerReporter := tools.OptimizerReporter.empty,
     nativeOptimizerReporter in NativeTest := (nativeOptimizerReporter in Test).value,
-    nativeGC := "boehm",
+    nativeGC := "boehm", //"immix",
     nativeGC in NativeTest := (nativeGC in Test).value
   )
 
@@ -169,7 +186,9 @@ object ScalaNativePluginInternal {
         .getOrElse(fail)
     },
     artifactPath in nativeLink := {
-      crossTarget.value / (moduleName.value + "-out")
+      crossTarget.value / (moduleName.value + (if (Utilities.isWindows)
+                                                 ".exe"
+                                               else "-out"))
     },
     nativeOptimizerDriver := tools.OptimizerDriver(nativeConfig.value),
     nativeWorkdir := {
@@ -229,7 +248,7 @@ object ScalaNativePluginInternal {
       val clang     = nativeClang.value
       val clangpp   = nativeClangPP.value
       val gc        = nativeGC.value
-      val opts      = "-O2" +: nativeCompileOptions.value
+      val opts      = nativeCompileOptions.value
       val logger    = streams.value.log
       val nativelib = nativeUnpackLib.value
       val cpaths    = (cwd ** "*.c").get.map(_.abs)
@@ -273,7 +292,12 @@ object ScalaNativePluginInternal {
           if (include(path) && !file(opath).exists) {
             val isCpp    = path.endsWith(".cpp")
             val compiler = if (isCpp) clangpp.abs else clang.abs
-            val flags    = (if (isCpp) Seq("-std=c++11") else Seq()) ++ opts
+            val flags = (if (isCpp)
+                           (if (Utilities.isWindows)
+                              Seq("-std=c++14",
+                                  "-fms-compatibility-version=19.00")
+                            else Seq("-std=c++11"))
+                         else Seq()) ++ opts
             val compilec = Seq(compiler) ++ flags ++ Seq("-c",
                                                          path,
                                                          "-o",
@@ -382,7 +406,10 @@ object ScalaNativePluginInternal {
         }
         val libunwind = os match {
           case "Mac OS X" => Seq.empty
-          case _          => Seq("unwind", "unwind-" + arch)
+          case _ =>
+            if (Utilities.isWindows)
+              Seq("Dbghelp", "Advapi32", "Ws2_32")
+            else Seq("unwind", "unwind-" + arch)
         }
         librt ++ libunwind ++ linked.links
           .map(_.name) ++ garbageCollector(gc).links

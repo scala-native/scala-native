@@ -6,12 +6,23 @@ import java.nio.ByteBuffer
 import java.nio.file.Paths
 import scala.annotation.tailrec
 import scala.collection.mutable
-import scalanative.util.{Scope, ShowBuilder, unsupported}
+import scalanative.util.{Scope, ShowBuilder, ShowBuilderPosition, unsupported}
 import scalanative.io.{VirtualDirectory, withScratchBuffer}
 import scalanative.optimizer.analysis.ControlFlow.{Graph => CFG, Block, Edge}
 import scalanative.nir._
 
 object CodeGen {
+
+  private final class Platform(target: String) {
+    val isWindows = target.contains("indows")
+    val ehWrapperString =
+      if (isWindows) "@\"\\01??_R0?AVExceptionWrapper@scalanative@@@8\""
+      else "@_ZTIN11scalanative16ExceptionWrapperE"
+    val xx_personality =
+      if (isWindows) "@__CxxFrameHandler3" else "@__gxx_personality_v0"
+    val ehClassName = "%\"class.scalanative::ExceptionWrapper\""
+    val ehVar       = "%eslot"
+  }
 
   /** Generate code for given assembly. */
   def apply(config: tools.Config, assembly: Seq[Defn]): Unit =
@@ -40,7 +51,11 @@ object CodeGen {
           case (k, defns) =>
             val sorted = defns.sortBy(_.name.show)
             val impl =
-              new Impl(config.target, env, sorted, workdir)
+              new Impl(config.target,
+                       env,
+                       sorted,
+                       workdir,
+                       new Platform(config.target))
             val outpath = k + ".ll"
             val buffer  = impl.gen()
             buffer.flip
@@ -50,7 +65,11 @@ object CodeGen {
 
       def release(): Unit = {
         val sorted = assembly.sortBy(_.name.show)
-        val impl   = new Impl(config.target, env, sorted, workdir)
+        val impl = new Impl(config.target,
+                            env,
+                            sorted,
+                            workdir,
+                            new Platform(config.target))
         val buffer = impl.gen()
         buffer.flip
         workdir.write(Paths.get("out.ll"), buffer)
@@ -65,11 +84,14 @@ object CodeGen {
   private final class Impl(target: String,
                            env: Map[Global, Defn],
                            defns: Seq[Defn],
-                           workdir: VirtualDirectory) {
+                           workdir: VirtualDirectory,
+                           platform: Platform) {
     import Impl._
 
     var currentBlockName: Local = _
     var currentBlockSplit: Int  = _
+    var ehVarPosition
+      : ShowBuilderPosition = null // position to insert for exception handler variable
 
     val deps      = mutable.Set.empty[Global]
     val generated = mutable.Set.empty[Global]
@@ -162,11 +184,27 @@ object CodeGen {
         newline()
       }
       line("declare i32 @llvm.eh.typeid.for(i8*)")
-      line("declare i32 @__gxx_personality_v0(...)")
-      line("declare i8* @__cxa_begin_catch(i8*)")
-      line("declare void @__cxa_end_catch()")
-      line(
-        "@_ZTIN11scalanative16ExceptionWrapperE = external constant { i8*, i8*, i8* }")
+      line(s"declare i32 ${platform.xx_personality}(...)")
+      if (platform.isWindows) {
+        line("%struct.__std_exception_data = type { i8*, i8 }")
+        line(
+          "%\"class.std::exception\" = type { i32 (...)**, %struct.__std_exception_data }")
+        line(
+          "%\"class.scalanative::ExceptionWrapper\" = type { %\"class.std::exception\", i8* }")
+        line("%rtti.TypeDescriptor34 = type { i8**, i8*, [35 x i8] }")
+        line("@\"\\01??_7type_info@@6B@\" = external constant i8*")
+        line("$\"\\01??_R0?AVExceptionWrapper@scalanative@@@8\" = comdat any")
+        line(
+          "@\"\\01??_R0?AVExceptionWrapper@scalanative@@@8\" = linkonce_odr global %rtti.TypeDescriptor34 { i8** @\"\\01??_7type_info@@6B@\", i8* null, [35 x i8] c\".?AVExceptionWrapper@scalanative@@\\00\" }, comdat")
+        line(
+          "@\"\\01?eglob@@3PEAVExceptionWrapper@scalanative@@EA\" = external global %\"class.scalanative::ExceptionWrapper\"*")
+      } else {
+        //todo: clang crashes when I use general intrinsics
+        line("declare i8* @__cxa_begin_catch(i8*)") //should be: line("declare void @llvm.eh.begincatch(i8*, i8*)")
+        line("declare void @__cxa_end_catch()")     //should be: line("declare void @llvm.eh.endcatch()")
+        line(
+          s"${platform.ehWrapperString} = external constant { i8*, i8*, i8* }")
+      }
     }
 
     def genConsts() =
@@ -252,7 +290,7 @@ object CodeGen {
       }
       if (!attrs.isExtern && !isDecl) {
         str(" ")
-        str(gxxpersonality)
+        str(gxxpersonality(platform))
       }
       if (!isDecl) {
         str(" {")
@@ -272,6 +310,9 @@ object CodeGen {
 
       genBlockHeader()
       indent()
+      if (platform.isWindows && block.pred.isEmpty) {
+        ehVarPosition = currentPosition
+      }
       genBlockPrologue(block)
       rep(insts) { inst =>
         genInst(inst)
@@ -326,29 +367,54 @@ object CodeGen {
         }).id
 
         val rec, r0, r1, id, cmp = "%_" + fresh().id
-        val fail, succ           = "_" + fresh().id
-        val w0, w1, w2           = "%_" + fresh().id
+        val fail, succ, catch1   = "_" + fresh().id
+        val w0, w1, w2, cpad     = "%_" + fresh().id
 
         def line(s: String) = { newline(); str(s) }
 
-        line(s"$rec = $landingpad")
-        line(s"$r0 = extractvalue $excrecty $rec, 0")
-        line(s"$r1 = extractvalue $excrecty $rec, 1")
-        line(s"$id = $typeid")
-        line(s"$cmp = icmp eq i32 $r1, $id")
-        line(s"br i1 $cmp, label %$succ, label %$fail")
-        unindent()
-        line(s"$fail:")
-        indent()
-        line(s"resume $excrecty $rec")
-        unindent()
-        line(s"$succ:")
-        indent()
-        line(s"$w0 = call i8* @__cxa_begin_catch(i8* $r0)")
-        line(s"$w1 = bitcast i8* $w0 to i8**")
-        line(s"$w2 = getelementptr i8*, i8** $w1, i32 1")
-        line(s"$exc = load i8*, i8** $w2")
-        line(s"call void @__cxa_end_catch()")
+        if (platform.isWindows) {
+          line(
+            s"$rec = catchswitch within none [label %$catch1] unwind to caller")
+          unindent()
+          line(s"$catch1:")
+          indent()
+          line(
+            s"$cpad = catchpad within $rec [%rtti.TypeDescriptor34* ${platform.ehWrapperString}, i32 8, ${platform.ehClassName}** ${platform.ehVar}]")
+          line(
+            s"$w1 = load ${platform.ehClassName}*, ${platform.ehClassName}** ${platform.ehVar}")
+          line(
+            s"$w2 = getelementptr inbounds ${platform.ehClassName}, ${platform.ehClassName}* $w1, i32 0, i32 1")
+          line(s"$exc = load i8*, i8** $w2, align 8")
+          line(s"catchret from $cpad to label %$succ")
+          unindent()
+          line(s"$succ:")
+          indent()
+          // insert alloca to block entry area
+          if (ehVarPosition != null) {
+            insertLine(ehVarPosition,
+                       s"${platform.ehVar} = alloca ${platform.ehClassName}*")
+            ehVarPosition = null
+          }
+        } else {
+          line(s"$rec = ${landingpad(platform)}")
+          line(s"$r0 = extractvalue $excrecty $rec, 0")
+          line(s"$r1 = extractvalue $excrecty $rec, 1")
+          line(s"$id = ${typeid(platform)}")
+          line(s"$cmp = icmp eq i32 $r1, $id")
+          line(s"br i1 $cmp, label %$succ, label %$fail")
+          unindent()
+          line(s"$fail:")
+          indent()
+          line(s"resume $excrecty $rec")
+          unindent()
+          line(s"$succ:")
+          indent()
+          line(s"$w0 = call i8* @__cxa_begin_catch(i8* $r0)")
+          line(s"$w1 = bitcast i8* $w0 to i8**")
+          line(s"$w2 = getelementptr i8*, i8** $w1, i32 1")
+          line(s"$exc = load i8*, i8** $w2")
+          line(s"call void @__cxa_end_catch()")
+        }
       }
     }
 
@@ -899,12 +965,12 @@ object CodeGen {
   }
 
   private object Impl {
-    val gxxpersonality =
-      "personality i8* bitcast (i32 (...)* @__gxx_personality_v0 to i8*)"
+    def gxxpersonality(platform: Platform) =
+      s"personality i8* bitcast (i32 (...)* ${platform.xx_personality} to i8*)"
     val excrecty = "{ i8*, i32 }"
-    val landingpad =
-      "landingpad { i8*, i32 } catch i8* bitcast ({ i8*, i8*, i8* }* @_ZTIN11scalanative16ExceptionWrapperE to i8*)"
-    val typeid =
-      "call i32 @llvm.eh.typeid.for(i8* bitcast ({ i8*, i8*, i8* }* @_ZTIN11scalanative16ExceptionWrapperE to i8*))"
+    def landingpad(platform: Platform) =
+      s"landingpad { i8*, i32 } catch i8* bitcast ({ i8*, i8*, i8* }* ${platform.ehWrapperString} to i8*)"
+    def typeid(platform: Platform) =
+      s"call i32 @llvm.eh.typeid.for(i8* bitcast ({ i8*, i8*, i8* }* ${platform.ehWrapperString} to i8*))"
   }
 }

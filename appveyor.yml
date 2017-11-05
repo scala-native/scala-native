@@ -1,0 +1,23 @@
+version: '{build}'
+os: Windows Server 2012
+install:
+  - ps: iex (new-object net.webclient).downloadstring('https://get.scoop.sh')
+  - ps: scoop install sbt
+  - ps: $env:SBT_OPTS="-XX:MaxPermSize=2g -Xmx4g"
+  - ps: $env:CLANG_PATH="C:\\Program Files\\LLVM\\bin\\clang.exe"
+  - ps: $env:CLANGPP_PATH="C:\\Program Files\\LLVM\\bin\\clang++.exe"
+  - ps: $env:CLANG_FORMAT_PATH="C:\\Program Files\\LLVM\\bin\\clang-format.exe"
+  - ps: $env:SCALA_NATIVE_USER_INCLUDES_PATH="$pwd\os_win"
+  - ps: $env:JAVA_OPTS="-Xmx2G"
+build_script:
+test_script:
+  - ps: .\bin\scalafmt --test
+  - ps: .\bin\clangfmt --test
+  - ps: sbt rebuild
+  - ps: sbt "set scriptedBufferLog in sbtScalaNative := false" ";test-all"
+cache:
+  - C:\Users\appveyor\.m2
+  - C:\Users\appveyor\.ivy2
+  - C:\Users\appveyor\.coursier
+  - C:\Users\appveyor\.scala-native
+  - C:\Users\appveyor\scoop\cache

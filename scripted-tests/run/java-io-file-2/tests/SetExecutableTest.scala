@@ -1,6 +1,7 @@
 object SetExecutableTest {
   import Files._
-  def main(args: Array[String]): Unit = {
+  import scala.scalanative.runtime.Platform
+  def main(args: Array[String]): Unit = if (!Platform.isWindows) {
     assert(willBeSetExecutableFile.exists())
     assert(!willBeSetExecutableFile.canExecute())
     assert(!willBeSetExecutableFile.canRead())

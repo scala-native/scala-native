@@ -17,4 +17,8 @@ class ExceptionWrapper : public std::exception {
 
 extern "C" {
 void scalanative_throw(void *obj) { throw scalanative::ExceptionWrapper(obj); }
+
+void _Unwind_Resume(struct _Unwind_Exception *) {
+    // empty
+}
 }

@@ -1,7 +1,8 @@
 object IsHiddenTest {
   import Files._
+  import scala.scalanative.runtime.Platform
 
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String]): Unit = if (!Platform.isWindows) {
     assert(currentDirectory.isHidden())
     assert(existingHiddenFile.exists())
     assert(existingHiddenFile.isHidden())

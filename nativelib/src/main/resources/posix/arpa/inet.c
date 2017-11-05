@@ -1,4 +1,8 @@
+#ifndef _WIN32
 #include <arpa/inet.h>
+#else
+#include "../../os_win_winsock2.h"
+#endif
 #include "../netinet/in.h"
 
 uint32_t scalanative_htonl(uint32_t arg) { return htonl(arg); }
@@ -16,12 +20,26 @@ int scalanative_inet_pton(int af, const char *src, void *dst) {
 char *scalanative_inet_ntoa(struct scalanative_in_addr *in) {
     struct in_addr converted;
     scalanative_convert_in_addr(in, &converted);
+#ifndef _WIN32
     return inet_ntoa(converted);
+#else
+    return os_win_inet_ntoa(AF_INET, &converted);
+#endif
 }
 
 const char *scalanative_inet_ntop(int af, const void *src, char *dst,
                                   socklen_t size) {
+#ifndef _WIN32
     return inet_ntop(af, src, dst, size);
+#else
+    return os_win_inet_ntop(af, src, dst, size);
+#endif
 }
 
-in_addr_t scalanative_inet_addr(char *in) { return inet_addr(in); }
+in_addr_t scalanative_inet_addr(char *in) {
+#ifndef _WIN32
+    return inet_addr(in);
+#else
+    return os_win_inet_addr4(in);
+#endif
+}

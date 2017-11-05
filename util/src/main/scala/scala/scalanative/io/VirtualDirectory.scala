@@ -34,6 +34,7 @@ object VirtualDirectory {
     assert(file.exists, s"Local directory doesn't exist: $absolute")
     assert(file.isDirectory, s"Not a directory: $absolute")
 
+    // fix for: "(sandbox/compile:nativeLinkNIR) java.lang.IllegalArgumentException: Illegal character in opaque part at index 11"
     new LocalDirectory(file.toPath)
   }
 

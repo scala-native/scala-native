@@ -5,9 +5,15 @@ _build/
 *.ppm
 .idea
 _build/
-bin/.coursier
+bin/.coursier*
 bin/.scalafmt*
 sbt-crossproject/
-
 CMakeLists.txt
 cmake-build-debug/
+*.iml
+pc.stdout.log
+*.TMP
+*.orig
+*.etl
+*.etl.NGENPDB
+.vscode/

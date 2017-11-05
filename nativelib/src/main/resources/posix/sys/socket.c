@@ -1,10 +1,14 @@
+#ifndef _WIN32
 #include <netinet/in.h>
-#include "../netinet/in.h"
 #include <sys/socket.h>
+#else
+#include "../../os_win_winsock2.h"
+#endif
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#include "../netinet/in.h"
 #include "socket_conversions.h"
 #include "socket.h"
 
@@ -108,7 +112,11 @@ int scalanative_getsockname(int socket, struct scalanative_sockaddr *address,
 }
 
 int scalanative_socket(int domain, int type, int protocol) {
+#ifndef _WIN32
     return socket(domain, type, protocol);
+#else
+    return os_win_socket(domain, type, protocol);
+#endif
 }
 
 int scalanative_bind(int socket, struct scalanative_sockaddr *address,
@@ -169,6 +177,11 @@ int scalanative_accept(int socket, struct scalanative_sockaddr *address,
             errno = convert_result;
             result = -1;
         }
+        /*while (!IsDebuggerPresent())
+        {
+            Sleep(100);
+        }
+        DebugBreak();*/
     } else {
         errno = convert_result;
         result = -1;
@@ -189,11 +202,33 @@ int scalanative_getsockopt(int socket, int level, int option_name,
 }
 
 int scalanative_recv(int socket, void *buffer, size_t length, int flags) {
+#ifndef _WIN32
     return recv(socket, buffer, length, flags);
+#else
+    int pos = 0;
+    int receivedBytes = 0;
+    while ((length - pos) > 0 &&
+           (receivedBytes =
+                recv(socket, (char *)buffer + pos, length - pos, flags))) {
+        pos += receivedBytes;
+    }
+    return pos;
+#endif
 }
 
 int scalanative_send(int socket, void *buffer, size_t length, int flags) {
+#ifndef _WIN32
     return send(socket, buffer, length, flags);
+#else
+    int pos = 0;
+    int receivedBytes = 0;
+    while ((length - pos) > 0 &&
+           (receivedBytes =
+                send(socket, (char *)buffer + pos, length - pos, flags))) {
+        pos += receivedBytes;
+    }
+    return pos;
+#endif
 }
 
 int scalanative_shutdown(int socket, int how) { return shutdown(socket, how); }

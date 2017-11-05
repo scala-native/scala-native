@@ -1,5 +1,9 @@
 #include <sys/types.h>
+#ifndef _WIN32
 #include <sys/uio.h>
+#else
+#include "../../os_win_winsock2.h"
+#endif
 
 struct scalanative_iovec {
     void *iov_base; /** Base address of a memory region for input or output. */

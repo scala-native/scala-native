@@ -2,7 +2,8 @@ import java.io.{File, IOException}
 
 object CreateTempFileTest {
   import Files._
-  def main(args: Array[String]): Unit = {
+  import scala.scalanative.runtime.Platform
+  def main(args: Array[String]): Unit = if (!Platform.isWindows) {
     assert(existingTempTarget.exists)
     assert(existingTempTarget.isDirectory)
     assert(!nonexistingTempTarget.exists)

@@ -1,6 +1,7 @@
 object SetReadableTest {
   import Files._
-  def main(args: Array[String]): Unit = {
+  import scala.scalanative.runtime.Platform
+  def main(args: Array[String]): Unit = if (!Platform.isWindows) {
     assert(willBeSetReadableFile.exists())
     assert(!willBeSetReadableFile.canExecute())
     assert(!willBeSetReadableFile.canRead())

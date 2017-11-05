@@ -1,5 +1,9 @@
 #include <stdlib.h>
+#ifndef _WIN32
 #include <sys/statvfs.h>
+#else
+#include "os_win_statvfs.h"
+#endif
 #include "types.h"
 
 struct scalanative_statvfs {

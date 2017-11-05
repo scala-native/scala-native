@@ -1,5 +1,9 @@
 #include <stdlib.h>
+#ifndef _WIN32
 #include <grp.h>
+#else
+#include "os_win_grp.h"
+#endif
 #include "types.h"
 
 struct scalanative_group {

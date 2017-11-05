@@ -76,6 +76,7 @@ object stdio {
 
   // Operations on files
 
+  @name("scalanative_libc_remove")
   def remove(fname: CString): CInt                             = extern
   def rename(oldFileName: CString, newFileName: CString): CInt = extern
   def tmpfile(): Ptr[FILE]                                     = extern

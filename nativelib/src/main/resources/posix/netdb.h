@@ -1,9 +1,10 @@
+#ifndef _WIN32
 #include <netdb.h>
-#include "sys/socket_conversions.h"
-
 #ifndef __SYS_SOCKET_H
 #include "sys/socket.h"
 #endif
+#endif
+#include "sys/socket_conversions.h"
 
 struct scalanative_addrinfo {
     int ai_flags;                         /* Input flags.  */

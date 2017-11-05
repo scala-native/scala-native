@@ -1,8 +1,12 @@
 #ifndef __SYS_SOCKET_CONVERSIONS_H
 #define __SYS_SOCKET_CONVERSIONS_H
 
+#ifndef _WIN32
 #include <sys/socket.h>
 #include <netinet/in.h>
+#else
+#include "../../os_win_winsock2.h"
+#endif
 #include "../netinet/in.h"
 #include "socket.h"
 

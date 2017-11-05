@@ -34,7 +34,8 @@ object Utilities {
             Seq(s"$binaryName$major$minor", s"$binaryName-$major.$minor")
         } :+ binaryName
 
-        Process("which" +: binaryNames)
+        val which = if (isWindows) "where" else "which"
+        Process(which +: binaryNames)
           .lines_!(devnull)
           .map(file(_))
           .headOption
@@ -107,6 +108,24 @@ object Utilities {
     case value =>
       throw new MessageOnlyException(
         "nativeGC can be either \"none\", \"boehm\" or \"immix\", not: " + value)
+  }
+
+  val isWindows: Boolean = {
+    val os = Option(System.getProperty("os.name")).getOrElse("")
+    os.contains("indows")
+  }
+
+  def discoverUserIncludes(): File = {
+    val docSetup =
+      "http://www.scala-native.org/en/latest/user/setup.html"
+
+    sys.env.get(s"SCALA_NATIVE_USER_INCLUDES_PATH") match {
+      case Some(path) => file(path)
+      case None => {
+        throw new MessageOnlyException(
+          s"No environment variable found `SCALA_NATIVE_USER_INCLUDES_PATH`. It should point to required includes (gc, re2).")
+      }
+    }
   }
 
   implicit class RichFile(file: File) {

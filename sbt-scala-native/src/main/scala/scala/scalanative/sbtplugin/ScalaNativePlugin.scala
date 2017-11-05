@@ -23,6 +23,10 @@ object ScalaNativePlugin extends AutoPlugin {
     val nativeClangPP =
       taskKey[File]("Location of the clang++ compiler.")
 
+    val nativeDebugInfoOptions =
+      taskKey[Seq[String]](
+        "Additional options are passed to clang during compilation.")
+
     val nativeCompileOptions =
       taskKey[Seq[String]](
         "Additional options are passed to clang during compilation.")

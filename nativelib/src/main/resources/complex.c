@@ -9,20 +9,33 @@
  *
  * Helper functions follow.
  */
-float complex toFloatComplex(float snfc[2]) { return *(float complex *)snfc; }
 
-double complex toDoubleComplex(double sndc[2]) {
-    return *(double complex *)sndc;
+#ifndef _WIN32
+typedef float complex scalanative_float_complex;
+typedef double complex scalanative_double_complex;
+typedef long double complex scalanative_long_double_complex;
+#else
+typedef _C_float_complex scalanative_float_complex;
+typedef _C_double_complex scalanative_double_complex;
+typedef _C_ldouble_complex scalanative_long_double_complex;
+#endif
+
+scalanative_float_complex toFloatComplex(float snfc[2]) {
+    return *(scalanative_float_complex *)snfc;
 }
 
-float *toNativeFloatComplex(float complex fc, float res[2]) {
+scalanative_double_complex toDoubleComplex(double sndc[2]) {
+    return *(scalanative_double_complex *)sndc;
+}
+
+float *toNativeFloatComplex(scalanative_float_complex fc, float res[2]) {
     float *fa = (float *)&fc;
     res[0] = *fa;
     res[1] = *(fa + 1);
     return res;
 }
 
-double *toNativeDoubleComplex(double complex dc, double res[2]) {
+double *toNativeDoubleComplex(scalanative_double_complex dc, double res[2]) {
     double *da = (double *)&dc;
     res[0] = *da;
     res[1] = *(da + 1);
