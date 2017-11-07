@@ -51,6 +51,8 @@ object ScalaNativePlugin extends AutoPlugin {
 
     val nativeGC =
       settingKey[String]("GC choice, either \"none\", \"boehm\" or \"immix\".")
+
+    val directTestCommand = InputKey[String]("direct-test-command")
   }
 
   override def globalSettings: Seq[Setting[_]] =

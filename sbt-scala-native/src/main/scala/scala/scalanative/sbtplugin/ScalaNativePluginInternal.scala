@@ -462,7 +462,20 @@ object ScalaNativePluginInternal {
     scalaNativeConfigSettings ++ Seq(
       test := (test in NativeTest).value,
       testOnly := (testOnly in NativeTest).evaluated,
-      testQuick := (testQuick in NativeTest).evaluated
+      testQuick := (testQuick in NativeTest).evaluated,
+      directTestCommand := {
+        val args: Seq[String] = spaceDelimited("<arg>").parsed
+        val tests             = (definedTests in Test).value
+        val testsToRun        = if (args.isEmpty) tests.map(_.name) else args
+        val res = nativeLink.value.getPath + " run-test " + testsToRun.mkString(
+          " ")
+        println("Command to run tests directly:")
+        println()
+        println(res)
+        println()
+
+        res
+      }
     )
 
   lazy val NativeTest = config("nativetest").extend(Test).hide
