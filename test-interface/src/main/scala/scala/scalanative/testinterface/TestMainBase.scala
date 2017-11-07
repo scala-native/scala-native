@@ -35,12 +35,32 @@ abstract class TestMainBase {
       signal.signal(signal.SIGFPE, TestMainBase.faultHandler)
     }
     values match {
-      case "run-test" :: className :: Nil =>
-        runSingleTest(className)
+      case "run-test" :: classNames =>
+        classNames.foreach(runSingleTest)
       case serverPort :: _ =>
         val clientSocket = new Socket("127.0.0.1", serverPort.toInt)
         testRunner(Array.empty, null, clientSocket)
     }
+  }
+
+  val singleTestLogger = new Logger {
+    def debug(msg: String): Unit = Console.err.println("DEBUG: " + msg)
+
+    def error(msg: String): Unit = Console.err.println("ERROR: " + msg)
+
+    val ansiCodesSupported = true
+
+    def warn(msg: String): Unit = Console.err.println("WARN: " + msg)
+
+    def trace(t: Throwable): Unit = {
+      Console.err.println("TRACE:")
+      t.printStackTrace()
+    }
+
+    def info(msg: String): Unit = Console.err.println("INFO: " + msg)
+  }
+  val singleTestEventHandler = new EventHandler {
+    def handle(event: SbtEvent): Unit = {}
   }
 
   private def runSingleTest(value: String): Unit = {
@@ -55,26 +75,7 @@ abstract class TestMainBase {
       false,
       Array(new SuiteSelector))
     val Array(task: Task) = runner.tasks(Array(taskDef))
-    val logger = new Logger {
-      def debug(msg: String): Unit = Console.err.println("DEBUG: " + msg)
-
-      def error(msg: String): Unit = Console.err.println("ERROR: " + msg)
-
-      val ansiCodesSupported = true
-
-      def warn(msg: String): Unit = Console.err.println("WARN: " + msg)
-
-      def trace(t: Throwable): Unit = {
-        Console.err.println("TRACE:")
-        t.printStackTrace()
-      }
-
-      def info(msg: String): Unit = Console.err.println("INFO: " + msg)
-    }
-    val eventHandler = new EventHandler {
-      def handle(event: SbtEvent): Unit = {}
-    }
-    task.execute(eventHandler, Array(logger))
+    task.execute(singleTestEventHandler, Array(singleTestLogger))
   }
 
   /** Test runner loop.
