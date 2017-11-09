@@ -3,7 +3,7 @@ import scalanative.sbtplugin.ScalaNativePluginInternal.nativeOptimizerReporter
 
 enablePlugins(ScalaNativePlugin)
 
-scalaVersion := "2.11.11"
+scalaVersion := "2.11.12"
 
 nativeOptimizerReporter in Compile := OptimizerReporter.toDirectory(
   crossTarget.value)

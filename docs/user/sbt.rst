@@ -20,13 +20,13 @@ This includes:
 
 * ``project/build.properties`` to specify the sbt version::
 
-    sbt.version = 0.13.15
+    sbt.version = 0.13.16
 
 * ``build.sbt`` to enable the plugin and specify Scala version::
 
     enablePlugins(ScalaNativePlugin)
 
-    scalaVersion := "2.11.11"
+    scalaVersion := "2.11.12"
 
 * ``src/main/scala/Main.scala`` with minimal application::
 
@@ -43,13 +43,13 @@ Scala versions
 
 Scala Native supports following Scala versions for corresponding releases:
 
-==================== ================
+==================== ========================
 Scala Native Version Scala Versions
-==================== ================
+==================== ========================
 0.1.x                2.11.8
 0.2.x                2.11.8, 2.11.11
-0.3.x                2.11.8, 2.11.11
-==================== ================
+0.3.x                2.11.8, 2.11.11, 2.11.12
+==================== ========================
 
 Sbt settings and tasks
 ----------------------
