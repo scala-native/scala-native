@@ -14,13 +14,14 @@ object ShortBuffer {
     wrap(array, 0, array.length)
 }
 
-abstract class ShortBuffer private[nio] (
-    _capacity: Int, private[nio] val _array: Array[Short],
-    private[nio] val _arrayOffset: Int)
-    extends Buffer(_capacity) with Comparable[ShortBuffer] {
+abstract class ShortBuffer private[nio] (_capacity: Int,
+                                         private[nio] val _array: Array[Short],
+                                         private[nio] val _arrayOffset: Int)
+    extends Buffer(_capacity)
+    with Comparable[ShortBuffer] {
 
   private[nio] type ElementType = Short
-  private[nio] type BufferType = ShortBuffer
+  private[nio] type BufferType  = ShortBuffer
 
   def this(_capacity: Int) = this(_capacity, null, -1)
 
@@ -94,11 +95,15 @@ abstract class ShortBuffer private[nio] (
 
   @inline
   private[nio] def load(startIndex: Int,
-      dst: Array[Short], offset: Int, length: Int): Unit =
+                        dst: Array[Short],
+                        offset: Int,
+                        length: Int): Unit =
     GenBuffer(this).generic_load(startIndex, dst, offset, length)
 
   @inline
   private[nio] def store(startIndex: Int,
-      src: Array[Short], offset: Int, length: Int): Unit =
+                         src: Array[Short],
+                         offset: Int,
+                         length: Int): Unit =
     GenBuffer(this).generic_store(startIndex, src, offset, length)
 }

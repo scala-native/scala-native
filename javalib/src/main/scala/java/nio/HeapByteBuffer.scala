@@ -62,115 +62,104 @@ private[nio] final class HeapByteBuffer private (_capacity: Int,
 
   // Here begins the stuff specific to ByteArrays
 
-  def asCharBuffer(): java.nio.CharBuffer                       = ???
-  def asDoubleBuffer(): java.nio.DoubleBuffer                   = ???
-  def asFloatBuffer(): java.nio.FloatBuffer                     = ???
-  def asIntBuffer(): java.nio.IntBuffer                         = ???
-  def asLongBuffer(): java.nio.LongBuffer                       = ???
-  def asShortBuffer(): java.nio.ShortBuffer                     = ???
-  def getChar(index: Int): Char                                 = ???
-  def getChar(): Char                                           = ???
-  def getDouble(index: Int): Double                             = ???
-  def getDouble(): Double                                       = ???
-  def getFloat(index: Int): Float                               = ???
-  def getFloat(): Float                                         = ???
-  def getInt(index: Int): Int                                   = ???
-  def getInt(): Int                                             = ???
-  def getLong(index: Int): Long                                 = ???
-  def getLong(): Long                                           = ???
-  def getShort(index: Int): Short                               = ???
-  def getShort(): Short                                         = ???
-  def putChar(index: Int, value: Char): java.nio.ByteBuffer     = ???
-  def putChar(value: Char): java.nio.ByteBuffer                 = ???
-  def putDouble(index: Int, value: Double): java.nio.ByteBuffer = ???
-  def putDouble(value: Double): java.nio.ByteBuffer             = ???
-  def putFloat(index: Int, value: Float): java.nio.ByteBuffer   = ???
-  def putFloat(value: Float): java.nio.ByteBuffer               = ???
-  def putInt(index: Int, value: Int): java.nio.ByteBuffer       = ???
-  def putInt(value: Int): java.nio.ByteBuffer                   = ???
-  def putLong(index: Int, value: Long): java.nio.ByteBuffer     = ???
-  def putLong(value: Long): java.nio.ByteBuffer                 = ???
-  def putShort(index: Int, value: Short): java.nio.ByteBuffer   = ???
-  def putShort(value: Short): java.nio.ByteBuffer               = ???
-
-  /*
-
   @inline private def arrayBits: ByteArrayBits =
     ByteArrayBits(_array, _arrayOffset, isBigEndian)
 
   @noinline def getChar(): Char =
     arrayBits.loadChar(getPosAndAdvanceRead(2))
-  @noinline def putChar(value: Char): ByteBuffer =
-    { ensureNotReadOnly(); arrayBits.storeChar(getPosAndAdvanceWrite(2), value); this }
+  @noinline def putChar(value: Char): ByteBuffer = {
+    ensureNotReadOnly(); arrayBits.storeChar(getPosAndAdvanceWrite(2), value);
+    this
+  }
   @noinline def getChar(index: Int): Char =
     arrayBits.loadChar(validateIndex(index, 2))
-  @noinline def putChar(index: Int, value: Char): ByteBuffer =
-    { ensureNotReadOnly(); arrayBits.storeChar(validateIndex(index, 2), value); this }
+  @noinline def putChar(index: Int, value: Char): ByteBuffer = {
+    ensureNotReadOnly(); arrayBits.storeChar(validateIndex(index, 2), value);
+    this
+  }
 
   def asCharBuffer(): CharBuffer =
     HeapByteBufferCharView.fromHeapByteBuffer(this)
 
   @noinline def getShort(): Short =
     arrayBits.loadShort(getPosAndAdvanceRead(2))
-  @noinline def putShort(value: Short): ByteBuffer =
-    { ensureNotReadOnly(); arrayBits.storeShort(getPosAndAdvanceWrite(2), value); this }
+  @noinline def putShort(value: Short): ByteBuffer = {
+    ensureNotReadOnly(); arrayBits.storeShort(getPosAndAdvanceWrite(2), value);
+    this
+  }
   @noinline def getShort(index: Int): Short =
     arrayBits.loadShort(validateIndex(index, 2))
-  @noinline def putShort(index: Int, value: Short): ByteBuffer =
-    { ensureNotReadOnly(); arrayBits.storeShort(validateIndex(index, 2), value); this }
+  @noinline def putShort(index: Int, value: Short): ByteBuffer = {
+    ensureNotReadOnly(); arrayBits.storeShort(validateIndex(index, 2), value);
+    this
+  }
 
   def asShortBuffer(): ShortBuffer =
     HeapByteBufferShortView.fromHeapByteBuffer(this)
 
   @noinline def getInt(): Int =
     arrayBits.loadInt(getPosAndAdvanceRead(4))
-  @noinline def putInt(value: Int): ByteBuffer =
-    { ensureNotReadOnly(); arrayBits.storeInt(getPosAndAdvanceWrite(4), value); this }
+  @noinline def putInt(value: Int): ByteBuffer = {
+    ensureNotReadOnly(); arrayBits.storeInt(getPosAndAdvanceWrite(4), value);
+    this
+  }
   @noinline def getInt(index: Int): Int =
     arrayBits.loadInt(validateIndex(index, 4))
-  @noinline def putInt(index: Int, value: Int): ByteBuffer =
-    { ensureNotReadOnly(); arrayBits.storeInt(validateIndex(index, 4), value); this }
+  @noinline def putInt(index: Int, value: Int): ByteBuffer = {
+    ensureNotReadOnly(); arrayBits.storeInt(validateIndex(index, 4), value);
+    this
+  }
 
   def asIntBuffer(): IntBuffer =
     HeapByteBufferIntView.fromHeapByteBuffer(this)
 
   @noinline def getLong(): Long =
     arrayBits.loadLong(getPosAndAdvanceRead(8))
-  @noinline def putLong(value: Long): ByteBuffer =
-    { ensureNotReadOnly(); arrayBits.storeLong(getPosAndAdvanceWrite(8), value); this }
+  @noinline def putLong(value: Long): ByteBuffer = {
+    ensureNotReadOnly(); arrayBits.storeLong(getPosAndAdvanceWrite(8), value);
+    this
+  }
   @noinline def getLong(index: Int): Long =
     arrayBits.loadLong(validateIndex(index, 8))
-  @noinline def putLong(index: Int, value: Long): ByteBuffer =
-    { ensureNotReadOnly(); arrayBits.storeLong(validateIndex(index, 8), value); this }
+  @noinline def putLong(index: Int, value: Long): ByteBuffer = {
+    ensureNotReadOnly(); arrayBits.storeLong(validateIndex(index, 8), value);
+    this
+  }
 
   def asLongBuffer(): LongBuffer =
     HeapByteBufferLongView.fromHeapByteBuffer(this)
 
   @noinline def getFloat(): Float =
     arrayBits.loadFloat(getPosAndAdvanceRead(4))
-  @noinline def putFloat(value: Float): ByteBuffer =
-    { ensureNotReadOnly(); arrayBits.storeFloat(getPosAndAdvanceWrite(4), value); this }
+  @noinline def putFloat(value: Float): ByteBuffer = {
+    ensureNotReadOnly(); arrayBits.storeFloat(getPosAndAdvanceWrite(4), value);
+    this
+  }
   @noinline def getFloat(index: Int): Float =
     arrayBits.loadFloat(validateIndex(index, 4))
-  @noinline def putFloat(index: Int, value: Float): ByteBuffer =
-    { ensureNotReadOnly(); arrayBits.storeFloat(validateIndex(index, 4), value); this }
+  @noinline def putFloat(index: Int, value: Float): ByteBuffer = {
+    ensureNotReadOnly(); arrayBits.storeFloat(validateIndex(index, 4), value);
+    this
+  }
 
   def asFloatBuffer(): FloatBuffer =
     HeapByteBufferFloatView.fromHeapByteBuffer(this)
 
   @noinline def getDouble(): Double =
     arrayBits.loadDouble(getPosAndAdvanceRead(8))
-  @noinline def putDouble(value: Double): ByteBuffer =
-    { ensureNotReadOnly(); arrayBits.storeDouble(getPosAndAdvanceWrite(8), value); this }
+  @noinline def putDouble(value: Double): ByteBuffer = {
+    ensureNotReadOnly(); arrayBits.storeDouble(getPosAndAdvanceWrite(8), value);
+    this
+  }
   @noinline def getDouble(index: Int): Double =
     arrayBits.loadDouble(validateIndex(index, 8))
-  @noinline def putDouble(index: Int, value: Double): ByteBuffer =
-    { ensureNotReadOnly(); arrayBits.storeDouble(validateIndex(index, 8), value); this }
+  @noinline def putDouble(index: Int, value: Double): ByteBuffer = {
+    ensureNotReadOnly(); arrayBits.storeDouble(validateIndex(index, 8), value);
+    this
+  }
 
   def asDoubleBuffer(): DoubleBuffer =
     HeapByteBufferDoubleView.fromHeapByteBuffer(this)
-
-   */
 
   // Internal API
 

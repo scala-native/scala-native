@@ -5,8 +5,10 @@ private[nio] final class HeapByteBufferIntView private (
     _capacity: Int,
     override private[nio] val _byteArray: Array[Byte],
     override private[nio] val _byteArrayOffset: Int,
-    _initialPosition: Int, _initialLimit: Int,
-    _readOnly: Boolean, override private[nio] val isBigEndian: Boolean)
+    _initialPosition: Int,
+    _initialLimit: Int,
+    _readOnly: Boolean,
+    override private[nio] val isBigEndian: Boolean)
     extends IntBuffer(_capacity, null, -1) {
 
   position(_initialPosition)
@@ -15,7 +17,7 @@ private[nio] final class HeapByteBufferIntView private (
   private[this] implicit def newHeapIntBufferView =
     HeapByteBufferIntView.NewHeapByteBufferIntView
 
-  def isReadOnly(): Boolean = _readOnly
+  val isReadOnly: Boolean = _readOnly
 
   def isDirect(): Boolean = false
 
@@ -79,11 +81,20 @@ private[nio] object HeapByteBufferIntView {
       extends GenHeapBufferView.NewHeapBufferView[IntBuffer] {
     def bytesPerElem: Int = 4
 
-    def apply(capacity: Int, byteArray: Array[Byte], byteArrayOffset: Int,
-        initialPosition: Int, initialLimit: Int, readOnly: Boolean,
-        isBigEndian: Boolean): IntBuffer = {
-      new HeapByteBufferIntView(capacity, byteArray, byteArrayOffset,
-          initialPosition, initialLimit, readOnly, isBigEndian)
+    def apply(capacity: Int,
+              byteArray: Array[Byte],
+              byteArrayOffset: Int,
+              initialPosition: Int,
+              initialLimit: Int,
+              readOnly: Boolean,
+              isBigEndian: Boolean): IntBuffer = {
+      new HeapByteBufferIntView(capacity,
+                                byteArray,
+                                byteArrayOffset,
+                                initialPosition,
+                                initialLimit,
+                                readOnly,
+                                isBigEndian)
     }
   }
 
