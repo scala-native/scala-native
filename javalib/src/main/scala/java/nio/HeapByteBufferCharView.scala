@@ -19,7 +19,7 @@ private[nio] final class HeapByteBufferCharView private (
 
   def isReadOnly(): Boolean = _readOnly
 
-  def isDirect(): Boolean = false
+  def isDirect(): Boolean = true
 
   @noinline
   def slice(): CharBuffer =

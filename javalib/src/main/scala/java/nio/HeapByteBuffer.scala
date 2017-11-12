@@ -18,7 +18,7 @@ private[nio] final class HeapByteBuffer private (_capacity: Int,
 
   def isReadOnly(): Boolean = _readOnly
 
-  def isDirect(): Boolean = false
+  def isDirect(): Boolean = true
 
   @noinline
   def slice(): ByteBuffer =

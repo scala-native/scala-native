@@ -19,7 +19,7 @@ private[nio] final class HeapByteBufferIntView private (
 
   val isReadOnly: Boolean = _readOnly
 
-  def isDirect(): Boolean = false
+  def isDirect(): Boolean = true
 
   @noinline
   def slice(): IntBuffer =

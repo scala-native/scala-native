@@ -8,7 +8,7 @@ object ByteBuffer {
   def allocate(capacity: Int): ByteBuffer =
     wrap(new Array[Byte](capacity))
 
-  // TODO def allocateDirect(capacity: Int): ByteBuffer = ???
+  def allocateDirect(capacity: Int): ByteBuffer = allocate(capacity)
 
   def wrap(array: Array[Byte], offset: Int, length: Int): ByteBuffer =
     HeapByteBuffer.wrap(array, 0, array.length, offset, length, false)
