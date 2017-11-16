@@ -63,6 +63,11 @@ object System {
         sysProps.setProperty("user.country", userCountry)
       }
       sysProps.setProperty("user.home", getenv("HOME"))
+      val buf = stackalloc[scala.Byte](1024)
+      unistd.getcwd(buf, 1024) match {
+        case null =>
+        case b    => sysProps.setProperty("user.dir", fromCString(b))
+      }
     }
 
     sysProps

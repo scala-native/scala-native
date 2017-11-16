@@ -421,7 +421,8 @@ lazy val tests =
         "HOME"                           -> baseDirectory.value.getAbsolutePath,
         "SCALA_NATIVE_ENV_WITH_EQUALS"   -> "1+1=2",
         "SCALA_NATIVE_ENV_WITHOUT_VALUE" -> "",
-        "SCALA_NATIVE_ENV_WITH_UNICODE"  -> 0x2192.toChar.toString
+        "SCALA_NATIVE_ENV_WITH_UNICODE"  -> 0x2192.toChar.toString,
+        "SCALA_NATIVE_USER_DIR"          -> System.getProperty("user.dir")
       )
     )
     .enablePlugins(ScalaNativePlugin)

@@ -41,4 +41,9 @@ object SystemSuite extends tests.Suite {
   test("Property user.home should be set") {
     assertEquals(System.getProperty("user.home"), System.getenv("HOME"))
   }
+
+  test("Property user.dir should be set") {
+    assertEquals(System.getProperty("user.dir"),
+                 System.getenv("SCALA_NATIVE_USER_DIR"))
+  }
 }
