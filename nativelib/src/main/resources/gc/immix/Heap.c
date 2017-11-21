@@ -207,7 +207,13 @@ void Heap_Recycle(Heap *heap) {
     LargeAllocator_Sweep(heap->largeAllocator);
 
     if (Allocator_ShouldGrow(heap->allocator)) {
-        size_t blocks = heap->allocator->blockCount * (GROWTH_RATE - 1);
+        double growth;
+        if (heap->smallHeapSize < EARLY_GROWTH_THRESHOLD) {
+            growth = EARLY_GROWTH_RATE;
+        } else {
+            growth = GROWTH_RATE;
+        }
+        size_t blocks = heap->allocator->blockCount * (growth - 1);
         size_t increment = blocks * WORDS_IN_BLOCK;
         Heap_Grow(heap, increment);
     }
