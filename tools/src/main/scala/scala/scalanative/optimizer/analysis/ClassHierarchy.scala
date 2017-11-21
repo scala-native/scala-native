@@ -56,10 +56,11 @@ object ClassHierarchy {
   final class Method(val attrs: Attrs,
                      val name: Global,
                      val ty: nir.Type,
-                     val isConcrete: Boolean)
+                     val insts: Seq[nir.Inst])
       extends Node {
-    val overrides = mutable.UnrolledBuffer.empty[Method]
-    val overriden = mutable.UnrolledBuffer.empty[Method]
+    def isConcrete = insts.nonEmpty
+    val overrides  = mutable.UnrolledBuffer.empty[Method]
+    val overriden  = mutable.UnrolledBuffer.empty[Method]
     val value =
       if (isConcrete) Val.Global(name, Type.Ptr)
       else Val.Null
@@ -130,12 +131,10 @@ object ClassHierarchy {
         enter(defn.name, new Field(defn.attrs, defn.name, defn.ty))
 
       case defn: Defn.Declare =>
-        enter(defn.name,
-              new Method(defn.attrs, defn.name, defn.ty, isConcrete = false))
+        enter(defn.name, new Method(defn.attrs, defn.name, defn.ty, Seq.empty))
 
       case defn: Defn.Define =>
-        enter(defn.name,
-              new Method(defn.attrs, defn.name, defn.ty, isConcrete = true))
+        enter(defn.name, new Method(defn.attrs, defn.name, defn.ty, defn.insts))
 
       case defn: Defn.Struct =>
         enter(defn.name, new Struct(defn.attrs, defn.name, defn.tys))

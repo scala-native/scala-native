@@ -12,6 +12,7 @@ class TraitDispatchTables(top: Top) {
   var dispatchTy: Type                      = _
   var dispatchDefn: Defn                    = _
   var dispatchOffset: mutable.Map[Int, Int] = _
+  var dispatchTable: Array[Val]             = _
 
   val classHasTraitName       = Global.Top("__class_has_trait")
   val classHasTraitVal        = Val.Global(classHasTraitName, Type.Ptr)
@@ -23,23 +24,56 @@ class TraitDispatchTables(top: Top) {
   var traitHasTraitTy: Type   = _
   var traitHasTraitDefn: Defn = _
 
-  val traitMethods = top.methods.filter(_.inTrait).sortBy(_.id)
-  val traitMethodSigs = {
-    val sigs = mutable.Map.empty[String, Int]
-    var i    = 0
-    traitMethods.foreach { meth =>
-      val sig = meth.name.id
-      if (!sigs.contains(sig)) {
-        sigs(sig) = i
-        i += 1
-      }
+  val (traitInlineSigs, traitDispatchSigs) = {
+    // Collect signatures of trait methods
+    val methods = top.methods.filter(_.inTrait)
+    val sigs    = mutable.Set.empty[String]
+    methods.foreach { meth =>
+      sigs += meth.name.id
     }
-    sigs
+
+    // Collect implementations per signature
+    val impls = mutable.Map.empty[String, mutable.Set[Val]]
+    sigs.foreach { sig =>
+      impls(sig) = mutable.Set.empty[Val]
+    }
+    top.classes.foreach { cls =>
+      def visit(cur: Class): Unit = {
+        cur.methods.foreach { meth =>
+          val sig = meth.name.id
+          if (sigs.contains(sig)) {
+            impls(sig) += meth.value
+          }
+        }
+        cur.parent.foreach(visit)
+      }
+      visit(cls)
+    }
+
+    // Extract one-or-less implementation signatures
+    val inlineImpls = impls.collect {
+      case (sig, impls) if impls.size <= 1 =>
+        if (impls.isEmpty) {
+          (sig, Val.Undef(Type.Ptr))
+        } else {
+          (sig, impls.head)
+        }
+    }
+    val tableImpls = impls.toSeq
+      .collect {
+        case (sig, impls) if impls.size > 1 =>
+          sig
+      }
+      .sorted
+      .zipWithIndex
+      .toMap
+
+    (inlineImpls, tableImpls)
   }
 
   def initDispatch(): Unit = {
-    val sigs          = traitMethodSigs
-    val sigsLength    = traitMethodSigs.size
+    val sigs          = traitDispatchSigs
+    val sigsLength    = traitDispatchSigs.size
     val classes       = top.classes.sortBy(_.id)
     val classesLength = classes.length
     val table =
@@ -114,6 +148,7 @@ class TraitDispatchTables(top: Top) {
     dispatchOffset = offsets
     dispatchTy = Type.Ptr
     dispatchDefn = Defn.Const(Attrs.None, dispatchName, value.ty, value)
+    dispatchTable = table
   }
 
   def markTraits(row: Array[Boolean], cls: Class): Unit = {
