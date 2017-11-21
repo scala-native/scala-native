@@ -206,11 +206,9 @@ void Heap_Recycle(Heap *heap) {
     }
     LargeAllocator_Sweep(heap->largeAllocator);
 
-    if (!Allocator_CanInitCursors(heap->allocator) ||
-        Allocator_ShouldGrow(heap->allocator)) {
-        size_t increment = heap->smallHeapSize / WORD_SIZE * GROWTH_RATE / 100;
-        increment =
-            (increment - 1 + WORDS_IN_BLOCK) / WORDS_IN_BLOCK * WORDS_IN_BLOCK;
+    if (Allocator_ShouldGrow(heap->allocator)) {
+        size_t blocks = heap->allocator->blockCount * (GROWTH_RATE - 1);
+        size_t increment = blocks * WORDS_IN_BLOCK;
         Heap_Grow(heap, increment);
     }
     Allocator_InitCursors(heap->allocator);
