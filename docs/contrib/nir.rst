@@ -6,7 +6,7 @@ Native Intermediate Representation
 NIR is high-level object-oriented SSA-based representation. The core of the
 representation is a subset of LLVM instructions, types and values, augmented
 with a number of high-level primitives that are necessary to
-efficiently compiler modern languages like Scala.
+efficiently compile modern languages like Scala.
 
 .. contents::
 
@@ -640,7 +640,7 @@ inlinehint
 
     inlinehint
 
-Optimiser is incentivized to inline given methods but is it allowed not to.
+Optimiser is incentivized to inline given methods but it is allowed not to.
 
 noinline
 ********

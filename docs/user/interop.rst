@@ -165,7 +165,7 @@ example given the following signature in C:
 
 .. code-block:: C
 
-    void test(char (* f)(void));
+    void test(void (* f)(char *));
 
 One can declare it as following in Scala Native:
 
