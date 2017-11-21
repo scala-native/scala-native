@@ -12,7 +12,6 @@ class TraitDispatchTables(top: Top) {
   var dispatchTy: Type                      = _
   var dispatchDefn: Defn                    = _
   var dispatchOffset: mutable.Map[Int, Int] = _
-  var dispatchTable: Array[Val]             = _
 
   val classHasTraitName       = Global.Top("__class_has_trait")
   val classHasTraitVal        = Val.Global(classHasTraitName, Type.Ptr)
@@ -148,7 +147,6 @@ class TraitDispatchTables(top: Top) {
     dispatchOffset = offsets
     dispatchTy = Type.Ptr
     dispatchDefn = Defn.Const(Attrs.None, dispatchName, value.ty, value)
-    dispatchTable = table
   }
 
   def markTraits(row: Array[Boolean], cls: Class): Unit = {
