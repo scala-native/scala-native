@@ -42,9 +42,11 @@ word_t *Heap_mapAndAlign(size_t memoryLimit, size_t alignmentSize) {
 /**
  * Allocates the heap struct and initializes it
  */
-Heap *Heap_Create(size_t initialSize) {
-    assert(initialSize >= 2 * BLOCK_TOTAL_SIZE);
-    assert(initialSize % BLOCK_TOTAL_SIZE == 0);
+Heap *Heap_Create(size_t initialSmallHeapSize, size_t initialLargeHeapSize) {
+    assert(initialSmallHeapSize >= 2 * BLOCK_TOTAL_SIZE);
+    assert(initialSmallHeapSize % BLOCK_TOTAL_SIZE == 0);
+    assert(initialLargeHeapSize >= 2 * BLOCK_TOTAL_SIZE);
+    assert(initialLargeHeapSize % BLOCK_TOTAL_SIZE == 0);
 
     Heap *heap = malloc(sizeof(Heap));
 
@@ -54,18 +56,20 @@ Heap *Heap_Create(size_t initialSize) {
     word_t *smallHeapStart = Heap_mapAndAlign(memoryLimit, BLOCK_TOTAL_SIZE);
 
     // Init heap for small objects
-    heap->smallHeapSize = initialSize;
+    heap->smallHeapSize = initialSmallHeapSize;
     heap->heapStart = smallHeapStart;
-    heap->heapEnd = smallHeapStart + initialSize / WORD_SIZE;
+    heap->heapEnd = smallHeapStart + initialSmallHeapSize / WORD_SIZE;
     heap->allocator =
-        Allocator_Create(smallHeapStart, initialSize / BLOCK_TOTAL_SIZE);
+        Allocator_Create(smallHeapStart, initialSmallHeapSize / BLOCK_TOTAL_SIZE);
 
     // Init heap for large objects
     word_t *largeHeapStart = Heap_mapAndAlign(memoryLimit, MIN_BLOCK_SIZE);
-    heap->largeHeapSize = initialSize;
-    heap->largeAllocator = LargeAllocator_Create(largeHeapStart, initialSize);
+    heap->largeHeapSize = initialLargeHeapSize;
+    heap->largeAllocator =
+        LargeAllocator_Create(largeHeapStart, initialLargeHeapSize);
     heap->largeHeapStart = largeHeapStart;
-    heap->largeHeapEnd = (word_t *)((ubyte_t *)largeHeapStart + initialSize);
+    heap->largeHeapEnd =
+        (word_t *)((ubyte_t *)largeHeapStart + initialLargeHeapSize);
 
     return heap;
 }
