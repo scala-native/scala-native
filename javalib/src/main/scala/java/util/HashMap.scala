@@ -47,8 +47,13 @@ class HashMap[K, V] protected (inner: mutable.Map[AnyRef, V])
   override def entrySet(): Set[Map.Entry[K, V]] =
     new EntrySet
 
-  override def get(key: Any): V =
-    inner.get(boxKey(key.asInstanceOf[K])).getOrElse(null.asInstanceOf[V])
+  override def get(key: Any): V = inner match {
+    case _: mutable.AnyRefMap[_, _] =>
+      val inner = this.inner.asInstanceOf[mutable.AnyRefMap[AnyRef, V]]
+      inner.getOrNull(boxKey(key.asInstanceOf[K]))
+    case _ =>
+      inner.get(boxKey(key.asInstanceOf[K])).getOrElse(null.asInstanceOf[V])
+  }
 
   override def isEmpty(): Boolean =
     inner.isEmpty
