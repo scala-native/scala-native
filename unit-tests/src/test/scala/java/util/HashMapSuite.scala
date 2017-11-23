@@ -1,9 +1,8 @@
 package java.util
 
-import java.{util => ju}
-
 // Ported from Scala.js
 
+import java.{util => ju}
 import scala.reflect.ClassTag
 
 object HashMapSuite extends MapSuite {
@@ -22,6 +21,6 @@ class HashMapSuiteFactory extends AbstractMapSuiteFactory {
   override def empty[K: ClassTag, V: ClassTag]: ju.HashMap[K, V] =
     new ju.HashMap[K, V]
 
-  def allowsNullKeys: Boolean = true
+  def allowsNullKeys: Boolean   = true
   def allowsNullValues: Boolean = true
 }

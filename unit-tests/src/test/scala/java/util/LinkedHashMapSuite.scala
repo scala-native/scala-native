@@ -28,7 +28,7 @@ abstract class LinkedHashMapSuite extends MapSuite {
   override def factory: LinkedHashMapSuiteFactory =
     new LinkedHashMapSuiteFactory(accessOrder = false, withSizeLimit = None)
 
-  val accessOrder = factory.accessOrder
+  val accessOrder   = factory.accessOrder
   val withSizeLimit = factory.withSizeLimit
 
   test("should iterate in insertion order after building") {
@@ -101,10 +101,11 @@ abstract class LinkedHashMapSuite extends MapSuite {
     val expectedKey = {
       if (factory.accessOrder) {
         val keys = (2 until 42) ++ (43 until 52) ++ (53 until 98) ++
-            im.List(99, 0, 100, 42, 52, 1, 98)
+          im.List(99, 0, 100, 42, 52, 1, 98)
         keys.takeRight(withSizeLimit.getOrElse(keys.length))
       } else {
-        if (withSizeLimit.isDefined) (55 until 100) ++ im.List(0, 100, 42, 52, 1)
+        if (withSizeLimit.isDefined)
+          (55 until 100) ++ im.List(0, 100, 42, 52, 1)
         else 0 to 100
       }
     }.toArray
@@ -192,12 +193,17 @@ abstract class LinkedHashMapSuite extends MapSuite {
 
 object LinkedHashMapSuiteFactory {
   def allFactories: scala.Iterator[MapFactory] = {
-    scala.Iterator(new LinkedHashMapSuiteFactory(true, Some(50)), new LinkedHashMapSuiteFactory(true, None),
-        new LinkedHashMapSuiteFactory(false, Some(50)), new LinkedHashMapSuiteFactory(false, None))
+    scala.Iterator(
+      new LinkedHashMapSuiteFactory(true, Some(50)),
+      new LinkedHashMapSuiteFactory(true, None),
+      new LinkedHashMapSuiteFactory(false, Some(50)),
+      new LinkedHashMapSuiteFactory(false, None)
+    )
   }
 }
 
-class LinkedHashMapSuiteFactory(val accessOrder: Boolean, val withSizeLimit: Option[Int])
+class LinkedHashMapSuiteFactory(val accessOrder: Boolean,
+                                val withSizeLimit: Option[Int])
     extends HashMapSuiteFactory {
   def orderName: String =
     if (accessOrder) "access-order"
@@ -212,7 +218,8 @@ class LinkedHashMapSuiteFactory(val accessOrder: Boolean, val withSizeLimit: Opt
     withSizeLimit match {
       case Some(limit) =>
         new ju.LinkedHashMap[K, V](16, 0.75f, accessOrder) {
-          override protected def removeEldestEntry(eldest: ju.Map.Entry[K, V]): Boolean =
+          override protected def removeEldestEntry(
+              eldest: ju.Map.Entry[K, V]): Boolean =
             size() > limit
         }
 
