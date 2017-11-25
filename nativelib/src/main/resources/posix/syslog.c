@@ -1,20 +1,16 @@
 #include <syslog.h>
 #include <stdarg.h>
 
-void scalanative_closelog() {
-  closelog();
-}
+void scalanative_closelog() { closelog(); }
 
 void scalanative_openlog(const char *ident, int logopt, int facility) {
-  openlog(ident, logopt, facility);
+    openlog(ident, logopt, facility);
 }
 
-int scalanative_setlogmask(int maskpri) {
-  return setlogmask(maskpri);
-}
+int scalanative_setlogmask(int maskpri) { return setlogmask(maskpri); }
 
 void scalanative_syslog(int priority, const char *message, va_list args) {
-  syslog(priority, message, args);
+    syslog(priority, message, args);
 }
 
 int scalanative_log_emerg() { return LOG_EMERG; }
