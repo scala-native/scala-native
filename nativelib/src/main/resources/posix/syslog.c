@@ -38,10 +38,6 @@ int scalanative_log_uucp() { return LOG_UUCP; }
 int scalanative_log_cron() { return LOG_CRON; }
 int scalanative_log_authpriv() { return LOG_AUTHPRIV; }
 int scalanative_log_ftp() { return LOG_FTP; }
-int scalanative_log_netinfo() { return LOG_NETINFO; }
-int scalanative_log_remoteauth() { return LOG_REMOTEAUTH; }
-int scalanative_log_install() { return LOG_INSTALL; }
-int scalanative_log_ras() { return LOG_RAS; }
 
 int scalanative_log_local0() { return LOG_LOCAL0; }
 int scalanative_log_local1() { return LOG_LOCAL1; }
