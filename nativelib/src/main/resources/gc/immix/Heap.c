@@ -59,8 +59,8 @@ Heap *Heap_Create(size_t initialSmallHeapSize, size_t initialLargeHeapSize) {
     heap->smallHeapSize = initialSmallHeapSize;
     heap->heapStart = smallHeapStart;
     heap->heapEnd = smallHeapStart + initialSmallHeapSize / WORD_SIZE;
-    heap->allocator =
-        Allocator_Create(smallHeapStart, initialSmallHeapSize / BLOCK_TOTAL_SIZE);
+    heap->allocator = Allocator_Create(smallHeapStart,
+                                       initialSmallHeapSize / BLOCK_TOTAL_SIZE);
 
     // Init heap for large objects
     word_t *largeHeapStart = Heap_mapAndAlign(memoryLimit, MIN_BLOCK_SIZE);

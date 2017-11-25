@@ -133,7 +133,7 @@ typedef enum scalanative_cre2_error_code_t {
     scalanative_cre2_ERROR_MISSING_PAREN,      /* missing closing ) */
     scalanative_cre2_ERROR_TRAILING_BACKSLASH, /* trailing \ at end of regexp */
     scalanative_cre2_ERROR_REPEAT_ARGUMENT, /* repeat argument missing, e.g. "*"
-                                               */
+                                             */
     scalanative_cre2_ERROR_REPEAT_SIZE,     /* bad repetition argument */
     scalanative_cre2_ERROR_REPEAT_OP,       /* bad repetition operator */
     scalanative_cre2_ERROR_BAD_PERL_OP,     /* bad perl operator */

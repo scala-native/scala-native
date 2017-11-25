@@ -56,6 +56,7 @@ Native has been used with:
 
     $ brew install llvm
     $ brew install bdw-gc re2 # optional
+    $ brew install clang-format # required if using ./bin/clangfmt
 
 *Note:* A version of zlib that is sufficiently recent comes with the
 installation of macOS.
