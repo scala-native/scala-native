@@ -81,6 +81,13 @@ to install from source.
 *Note:* A version of zlib that is sufficiently recent comes with the
 installation of Arch Linux.
 
+**Fedora 26**
+
+.. code-block:: shell
+
+    $ sudo dnf install llvm clang
+    $ sudo dnf install libunwind-devel gc-devel zlib-devel re2-devel # optional
+
 **FreeBSD**
 
 .. code-block:: shell

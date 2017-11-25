@@ -2,13 +2,18 @@ package java.util
 
 import scala.collection.mutable
 
-class HashMap[K, V] protected (inner: mutable.Map[Box[K], V])
+class HashMap[K, V] protected (inner: mutable.Map[AnyRef, V])
     extends AbstractMap[K, V]
     with Serializable
     with Cloneable { self =>
 
+  protected def boxKey(key: K): AnyRef =
+    key.asInstanceOf[AnyRef]
+  protected def unboxKey(box: AnyRef): K =
+    box.asInstanceOf[K]
+
   def this() =
-    this(mutable.HashMap.empty[Box[K], V])
+    this(mutable.AnyRefMap.empty[AnyRef, V])
 
   def this(initialCapacity: Int, loadFactor: Float) = {
     this()
@@ -34,7 +39,7 @@ class HashMap[K, V] protected (inner: mutable.Map[Box[K], V])
   }
 
   override def containsKey(key: Any): Boolean =
-    inner.contains(Box(key.asInstanceOf[K]))
+    inner.contains(boxKey(key.asInstanceOf[K]))
 
   override def containsValue(value: Any): Boolean =
     inner.valuesIterator.contains(value.asInstanceOf[V])
@@ -42,8 +47,13 @@ class HashMap[K, V] protected (inner: mutable.Map[Box[K], V])
   override def entrySet(): Set[Map.Entry[K, V]] =
     new EntrySet
 
-  override def get(key: Any): V =
-    inner.get(Box(key.asInstanceOf[K])).getOrElse(null.asInstanceOf[V])
+  override def get(key: Any): V = inner match {
+    case _: mutable.AnyRefMap[_, _] =>
+      val inner = this.inner.asInstanceOf[mutable.AnyRefMap[AnyRef, V]]
+      inner.getOrNull(boxKey(key.asInstanceOf[K]))
+    case _ =>
+      inner.get(boxKey(key.asInstanceOf[K])).getOrElse(null.asInstanceOf[V])
+  }
 
   override def isEmpty(): Boolean =
     inner.isEmpty
@@ -52,10 +62,10 @@ class HashMap[K, V] protected (inner: mutable.Map[Box[K], V])
     new KeySet
 
   override def put(key: K, value: V): V =
-    inner.put(Box(key), value).getOrElse(null.asInstanceOf[V])
+    inner.put(boxKey(key), value).getOrElse(null.asInstanceOf[V])
 
   override def remove(key: Any): V = {
-    val boxedKey = Box(key.asInstanceOf[K])
+    val boxedKey = boxKey(key.asInstanceOf[K])
     inner.get(boxedKey).fold(null.asInstanceOf[V]) { value =>
       inner -= boxedKey
       value
@@ -73,8 +83,8 @@ class HashMap[K, V] protected (inner: mutable.Map[Box[K], V])
       with AbstractMapView[Map.Entry[K, V]] {
     override def iterator(): Iterator[Map.Entry[K, V]] = {
       new AbstractMapViewIterator[Map.Entry[K, V]] {
-        override protected def getNextForm(key: Box[K]): Map.Entry[K, V] = {
-          new AbstractMap.SimpleEntry(key.inner, inner(key)) {
+        override protected def getNextForm(key: AnyRef): Map.Entry[K, V] = {
+          new AbstractMap.SimpleEntry(unboxKey(key), inner(key)) {
             override def setValue(value: V): V = {
               inner.update(key, value)
               super.setValue(value)
@@ -87,7 +97,7 @@ class HashMap[K, V] protected (inner: mutable.Map[Box[K], V])
 
   private class KeySet extends AbstractSet[K] with AbstractMapView[K] {
     override def remove(o: Any): Boolean = {
-      val boxedKey = Box(o.asInstanceOf[K])
+      val boxedKey = boxKey(o.asInstanceOf[K])
       val contains = inner.contains(boxedKey)
       if (contains)
         inner -= boxedKey
@@ -96,8 +106,8 @@ class HashMap[K, V] protected (inner: mutable.Map[Box[K], V])
 
     override def iterator(): Iterator[K] = {
       new AbstractMapViewIterator[K] {
-        protected def getNextForm(key: Box[K]): K =
-          key.inner
+        protected def getNextForm(key: AnyRef): K =
+          unboxKey(key)
       }
     }
   }
@@ -108,7 +118,7 @@ class HashMap[K, V] protected (inner: mutable.Map[Box[K], V])
 
     override def iterator(): Iterator[V] = {
       new AbstractMapViewIterator[V] {
-        protected def getNextForm(key: Box[K]): V = inner(key)
+        protected def getNextForm(key: AnyRef): V = inner(key)
       }
     }
   }
@@ -124,9 +134,9 @@ class HashMap[K, V] protected (inner: mutable.Map[Box[K], V])
   private abstract class AbstractMapViewIterator[E] extends Iterator[E] {
     protected val innerIterator = inner.keySet.iterator
 
-    protected var lastKey: Option[Box[K]] = None
+    protected var lastKey: Option[AnyRef] = None
 
-    protected def getNextForm(key: Box[K]): E
+    protected def getNextForm(key: AnyRef): E
 
     final override def next: E = {
       lastKey = Some(innerIterator.next())
@@ -146,6 +156,9 @@ class HashMap[K, V] protected (inner: mutable.Map[Box[K], V])
       }
     }
   }
+
+  override def putAll(m: Map[_ <: K, _ <: V]): Unit =
+    super.putAll(m)
 }
 
 object HashMap {

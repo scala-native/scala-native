@@ -80,15 +80,6 @@ object FormatterUSSuite extends tests.Suite {
       }
     }
 
-  def assertNull[A](a: A): Unit =
-    assert(a == null)
-
-  def assertNotNull[A](a: A): Unit =
-    assertNot(a == null)
-
-  def assertTrue[A](a: A): Unit =
-    assert(a == true)
-
   private class MockAppendable extends Appendable {
     def append(arg0: CharSequence): Appendable = null
 

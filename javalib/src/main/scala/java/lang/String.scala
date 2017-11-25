@@ -1,6 +1,8 @@
 package java.lang
 
 import scalanative.native._
+import scalanative.native.string.memcmp
+import scalanative.runtime.CharArray
 import java.io.Serializable
 import java.util._
 import java.util.regex._
@@ -204,24 +206,29 @@ final class _String()
     regionMatches(count - suffix.count, suffix, 0, suffix.count)
 
   override def equals(obj: Any): scala.Boolean = obj match {
-    case s: _String if s eq this =>
-      true
     case s: _String =>
-      val thisHash = this.hashCode
-      val thatHash = s.hashCode
-      if (count != s.count ||
-          (thisHash != thatHash && thisHash != 0 && thatHash != 0)) {
-        false
+      if (s eq this) {
+        true
       } else {
-        var i = 0
-        while (i < count) {
-          if (value(offset + i) != s.value(s.offset + i)) {
-            return false
+        val thisCount = this.count
+        val thatCount = s.count
+        if (thisCount != thatCount) {
+          false
+        } else if (thisCount == 0 && thatCount == 0) {
+          true
+        } else {
+          val thisHash = this.cachedHashCode
+          val thatHash = s.cachedHashCode
+          if (thisHash != thatHash && thisHash != 0 && thatHash != 0) {
+            false
           } else {
-            i += 1
+            val data1 =
+              value.asInstanceOf[CharArray].at(offset).cast[Ptr[scala.Byte]]
+            val data2 =
+              s.value.asInstanceOf[CharArray].at(s.offset).cast[Ptr[scala.Byte]]
+            memcmp(data1, data2, count * 2) == 0
           }
         }
-        true
       }
     case _ =>
       false
@@ -313,10 +320,11 @@ final class _String()
       if (count == 0) {
         0
       } else {
+        val data = value.asInstanceOf[CharArray].at(offset)
         var hash = 0
-        var i    = offset
-        while (i < count + offset) {
-          hash = value(i) + ((hash << 5) - hash)
+        var i    = 0
+        while (i < count) {
+          hash = data(i) + ((hash << 5) - hash)
           i += 1
         }
         cachedHashCode = hash

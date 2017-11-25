@@ -2,15 +2,20 @@ package java.util
 
 import scala.collection.mutable
 
-class LinkedHashMap[K, V] private (inner: mutable.LinkedHashMap[Box[K], V],
+class LinkedHashMap[K, V] private (inner: mutable.LinkedHashMap[AnyRef, V],
                                    accessOrder: Boolean)
     extends HashMap[K, V](inner) { self =>
 
+  override protected def boxKey(key: K): AnyRef =
+    Box(key)
+  override protected def unboxKey(box: AnyRef): K =
+    box.asInstanceOf[Box[K]].inner
+
   def this() =
-    this(mutable.LinkedHashMap.empty[Box[K], V], false)
+    this(mutable.LinkedHashMap.empty[AnyRef, V], false)
 
   def this(initialCapacity: Int, loadFactor: Float, accessOrder: Boolean) = {
-    this(mutable.LinkedHashMap.empty[Box[K], V], accessOrder)
+    this(mutable.LinkedHashMap.empty[AnyRef, V], accessOrder)
     if (initialCapacity < 0)
       throw new IllegalArgumentException("initialCapacity < 0")
     else if (loadFactor < 0.0)
@@ -61,6 +66,21 @@ class LinkedHashMap[K, V] private (inner: mutable.LinkedHashMap[Box[K], V],
   override def clone(): AnyRef = {
     new LinkedHashMap(inner.clone(), accessOrder)
   }
+
+  override def clear(): Unit =
+    super.clear()
+
+  override def containsValue(value: Any): Boolean =
+    super.containsValue(value)
+
+  override def entrySet(): Set[Map.Entry[K, V]] =
+    super.entrySet()
+
+  override def keySet(): Set[K] =
+    super.keySet()
+
+  override def values(): Collection[V] =
+    super.values()
 }
 
 object LinkedHashMap {

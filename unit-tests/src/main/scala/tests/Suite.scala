@@ -15,8 +15,20 @@ abstract class Suite {
   def assert(cond: Boolean): Unit =
     if (!cond) throw AssertionFailed else ()
 
+  def assertTrue(cond: Boolean): Unit =
+    assert(cond)
+
   def assertNot(cond: Boolean): Unit =
     if (cond) throw AssertionFailed else ()
+
+  def assertFalse(cond: Boolean): Unit =
+    assertNot(cond)
+
+  def assertNull[A](a: A): Unit =
+    assert(a == null)
+
+  def assertNotNull[A](a: A): Unit =
+    assertNot(a == null)
 
   def assertThrowsAnd[T: ClassTag](f: => Unit)(fe: T => Boolean): Unit = {
     try {
@@ -37,6 +49,9 @@ abstract class Suite {
 
   def assertEquals[T](left: T, right: T): Unit =
     assert(left == right)
+
+  def assertEquals(expected: Double, actual: Double, delta: Double): Unit =
+    assert(Math.abs(expected - actual) <= delta)
 
   private def assertThrowsImpl(cls: Class[_], f: => Unit): Unit = {
     try {
