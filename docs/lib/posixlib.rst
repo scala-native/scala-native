@@ -13,7 +13,7 @@ C Header          Scala Native Module
 `arpa/inet.h`_    scala.scalanative.posix.arpa.inet_
 `assert.h`_       N/A
 `complex.h`_      N/A
-`cpio.h`_         N/A
+`cpio.h`_         scala.scalanative.posix.cpio_
 `ctype.h`_        N/A
 `dirent.h`_       scala.scalanative.posix.dirent_
 `dlfcn.h`_        N/A
@@ -177,6 +177,7 @@ C Header          Scala Native Module
 .. _wordexp.h: http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/wordexp.h.html
 
 .. _scala.scalanative.posix.arpa.inet: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/arpa/inet.scala
+.. _scala.scalanative.posix.cpio: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/cpio.scala
 .. _scala.scalanative.posix.dirent: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/dirent.scala
 .. _scala.scalanative.posix.errno: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/errno.scala
 .. _scala.scalanative.posix.fcntl: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/fcntl.scala
