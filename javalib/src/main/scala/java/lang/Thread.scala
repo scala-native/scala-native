@@ -79,7 +79,7 @@ object Thread {
 
     val secs  = millis / 1000
     val usecs = (millis % 1000) * 1000 + nanos / 1000
-    if (secs > 0 && unistd.sleep(secs.toUInt) != 0) checkErrno()
+    if (secs > 0 && unistd.sleep(secs.toUInt) != 0.toUInt) checkErrno()
     if (usecs > 0 && unistd.usleep(usecs.toUInt) != 0) checkErrno()
   }
 
