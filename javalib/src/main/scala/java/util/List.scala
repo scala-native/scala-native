@@ -16,5 +16,6 @@ trait List[E] extends Collection[E] {
   def clear(): Unit
   def isEmpty(): Boolean
   def iterator(): Iterator[E]
+  def contains(o: Any): Boolean
   def size(): Int
 }
