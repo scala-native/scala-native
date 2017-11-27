@@ -4,7 +4,6 @@ import scalanative.tools.OptimizerReporter
 import scalanative.sbtplugin.ScalaNativePluginInternal._
 import scalanative.io.packageNameFromPath
 
-val toolScalaVersion      = "2.10.6"
 val libScalaVersion       = "2.11.11"
 val libCrossScalaVersions = Seq("2.11.8", "2.11.11")
 
@@ -163,7 +162,13 @@ lazy val noPublishSettings = Seq(
 lazy val toolSettings =
   baseSettings ++
     Seq(
-      scalaVersion := toolScalaVersion,
+      crossSbtVersions := List("0.13.16", "1.0.2"),
+      scalaVersion := {
+        (sbtBinaryVersion in pluginCrossBuild).value match {
+          case "0.13" => "2.10.6"
+          case _      => "2.12.3"
+        }
+      },
       scalacOptions ++= Seq(
         "-deprecation",
         "-unchecked",
@@ -224,7 +229,7 @@ lazy val tools =
         "com.lihaoyi"    %% "scalaparse" % "0.4.2",
         "org.scalacheck" %% "scalacheck" % "1.13.4" % "test",
         compilerPlugin(
-          "org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full),
+          "org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
         "org.scalatest" %% "scalatest" % "3.0.0" % "test"
       ),
       fullClasspath in Test := ((fullClasspath in Test) dependsOn setUpTestingCompiler).value,
@@ -273,11 +278,14 @@ lazy val sbtScalaNative =
     .in(file("sbt-scala-native"))
     .settings(sbtPluginSettings)
     .settings(
-      addSbtPlugin("org.scala-native" % "sbt-crossproject" % "0.1.0"),
+      crossScalaVersions := libCrossScalaVersions,
+      // fixed in https://github.com/sbt/sbt/pull/3397 (for sbt 0.13.17)
+      sbtBinaryVersion in update := (sbtBinaryVersion in pluginCrossBuild).value,
+      addSbtPlugin("org.scala-native" % "sbt-crossproject" % "0.2.2"),
       moduleName := "sbt-scala-native",
       sbtTestDirectory := (baseDirectory in ThisBuild).value / "scripted-tests",
       // `testInterfaceSerialization` needs to be available from the sbt plugin,
-      // but it's a Scala Native project (and thus 2.11), and the plugin is 2.10.
+      // but it's a Scala Native project (and thus 2.11), and the plugin is 2.10 or 2.12.
       // We simply add the sources to mimic cross-compilation.
       sources in Compile ++= (sources in Compile in testInterfaceSerialization).value,
       // publish the other projects before running scripted tests.

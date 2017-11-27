@@ -21,6 +21,10 @@ import scala.util.Try
 import System.{lineSeparator => nl}
 import java.io.ByteArrayInputStream
 
+import scala.sys.process.Process
+
+import SBTCompat._
+
 object ScalaNativePluginInternal {
 
   val nativeWarnOldJVM =
@@ -97,7 +101,7 @@ object ScalaNativePluginInternal {
     nativeCompileOptions := {
       val includes = {
         val includedir =
-          Try(Process("llvm-config --includedir").lines_!.toSeq)
+          Try(Process("llvm-config --includedir").lineStream_!.toSeq)
             .getOrElse(Seq.empty)
         ("/usr/local/include" +: includedir).map(s => s"-I$s")
       }
@@ -107,7 +111,7 @@ object ScalaNativePluginInternal {
     nativeLinkingOptions := {
       val libs = {
         val libdir =
-          Try(Process("llvm-config --libdir").lines_!.toSeq)
+          Try(Process("llvm-config --libdir").lineStream_!.toSeq)
             .getOrElse(Seq.empty)
         ("/usr/local/lib" +: libdir).map(s => s"-L$s")
       }
@@ -434,24 +438,28 @@ object ScalaNativePluginInternal {
       (nativeExternalDependencies.value.toSet --
         nativeAvailableDependencies.value.toSet).toList.sorted
     },
-    nativeAvailableDependencies := ResourceScope { implicit scope =>
-      val forceCompile = compile.value
+    nativeAvailableDependencies := {
+      val fcp = fullClasspath.value
+      ResourceScope { implicit scope =>
+        val globals = fcp
+          .collect { case p if p.data.exists => p.data }
+          .flatMap(p =>
+            tools.LinkerPath(VirtualDirectory.real(p)).globals.toSeq)
 
-      val globals = fullClasspath.value
-        .collect { case p if p.data.exists => p.data }
-        .flatMap(p => tools.LinkerPath(VirtualDirectory.real(p)).globals.toSeq)
-
-      globals.map(_.show).sorted
+        globals.map(_.show).sorted
+      }
     },
-    nativeExternalDependencies := ResourceScope { implicit scope =>
+    nativeExternalDependencies := {
       val forceCompile = compile.value
       val classDir     = classDirectory.value
-      val globals      = linker.ClassPath(VirtualDirectory.real(classDir)).globals
 
-      val config = tools.Config.empty.withPaths(Seq(classDir))
-      val result = (linker.Linker(config)).link(globals.toSeq)
+      ResourceScope { implicit scope =>
+        val globals = linker.ClassPath(VirtualDirectory.real(classDir)).globals
+        val config  = tools.Config.empty.withPaths(Seq(classDir))
+        val result  = (linker.Linker(config)).link(globals.toSeq)
 
-      result.unresolved.map(_.show).sorted
+        result.unresolved.map(_.show).sorted
+      }
     }
   )
 

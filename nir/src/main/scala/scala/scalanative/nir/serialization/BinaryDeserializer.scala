@@ -100,6 +100,7 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
         case T.PinIfAttr =>
           deps += Dep.Conditional(getGlobalNoDep, getGlobalNoDep)
       }
+      ()
     }
 
     Attrs.fromSeq(buf)

@@ -1,7 +1,8 @@
 unmanagedSourceDirectories in Compile ++= {
   val root = baseDirectory.value.getParentFile
 
-  Seq(
+  (root / "sbt-scala-native/src/main/scala-sbt-0.13") +:
+    Seq(
     "util",
     "nir",
     "tools",
@@ -16,10 +17,10 @@ libraryDependencies ++= Seq(
   "com.lihaoyi"      %% "fastparse"           % "0.4.2",
   "com.lihaoyi"      %% "scalaparse"          % "0.4.2",
   compilerPlugin(
-    "org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full)
+    "org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
 )
 
-addSbtPlugin("org.scala-native" % "sbt-crossproject" % "0.1.0")
+addSbtPlugin("org.scala-native" % "sbt-crossproject" % "0.2.2")
 addSbtPlugin("com.eed3si9n"     % "sbt-dirty-money"  % "0.1.0")
 addSbtPlugin("me.lessis"        % "bintray-sbt"      % "0.3.0")
 addSbtPlugin("com.jsuereth"     % "sbt-pgp"          % "1.0.0")
