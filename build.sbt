@@ -4,8 +4,12 @@ import scalanative.tools.OptimizerReporter
 import scalanative.sbtplugin.ScalaNativePluginInternal._
 import scalanative.io.packageNameFromPath
 
-val libScalaVersion       = "2.11.11"
-val libCrossScalaVersions = Seq("2.11.8", "2.11.11")
+val sbt13Version          = "0.13.16"
+val sbt13ScalaVersion     = "2.10.7"
+val sbt10Version          = "1.0.4"
+val sbt10ScalaVersion     = "2.12.4"
+val libScalaVersion       = "2.11.12"
+val libCrossScalaVersions = Seq("2.11.8", "2.11.11", libScalaVersion)
 
 lazy val baseSettings = Seq(
   organization := "org.scala-native",
@@ -162,11 +166,11 @@ lazy val noPublishSettings = Seq(
 lazy val toolSettings =
   baseSettings ++
     Seq(
-      crossSbtVersions := List("0.13.16", "1.0.2"),
+      crossSbtVersions := List(sbt13Version, sbt10Version),
       scalaVersion := {
         (sbtBinaryVersion in pluginCrossBuild).value match {
-          case "0.13" => "2.10.6"
-          case _      => "2.12.3"
+          case "0.13" => sbt13ScalaVersion
+          case _      => sbt10ScalaVersion
         }
       },
       scalacOptions ++= Seq(
@@ -183,10 +187,7 @@ lazy val libSettings =
   (baseSettings ++ ScalaNativePlugin.projectSettings.tail) ++ Seq(
     scalaVersion := libScalaVersion,
     resolvers := Nil,
-    scalacOptions ++= Seq(
-      "-encoding",
-      "utf8"
-    )
+    scalacOptions ++= Seq("-encoding", "utf8")
   )
 
 lazy val gcSettings =
@@ -202,7 +203,8 @@ lazy val gcSettings =
 lazy val projectSettings =
   ScalaNativePlugin.projectSettings ++ Seq(
     scalaVersion := libScalaVersion,
-    resolvers := Nil
+    resolvers := Nil,
+    scalacOptions ++= Seq("-target:jvm-1.8")
   ) ++ gcSettings
 
 lazy val util =

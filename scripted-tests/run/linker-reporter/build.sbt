@@ -3,7 +3,7 @@ import scalanative.sbtplugin.ScalaNativePluginInternal.nativeLinkerReporter
 
 enablePlugins(ScalaNativePlugin)
 
-scalaVersion := "2.11.11"
+scalaVersion := "2.11.12"
 
 nativeLinkerReporter in Compile := LinkerReporter.toFile(
   target.value / "out.dot")
