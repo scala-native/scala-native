@@ -58,6 +58,12 @@ int scalanative_IPV6_V6ONLY() { return IPV6_V6ONLY; }
 
 int scalanative_IP_MULTICAST_IF() { return IP_MULTICAST_IF; }
 
+int scalanative_IP_MULTICAST_TTL() { return IP_MULTICAST_TTL; }
+
+int scalanative_IP_ADD_MEMBERSHIP() { return IP_ADD_MEMBERSHIP; }
+
+int scalanative_IP_DROP_MEMBERSHIP() { return IP_DROP_MEMBERSHIP; }
+
 int scalanative_IP_MULTICAST_LOOP() { return IP_MULTICAST_LOOP; }
 
 int scalanative_IP_TOS() { return IP_TOS; }

@@ -27,6 +27,9 @@ object in {
   type ipv6_mreq = CStruct2[in6_addr, // ipv6mr_multiaddr
                             CUnsignedInt] // ipv6mr_interface
 
+  type ip_mreq = CStruct2[in_addr, // imr_multiaddr
+                          in_addr] // imr_interface
+
   @name("scalanative_IPPROTO_IP")
   def IPPROTO_IP: CInt = extern
 
@@ -83,6 +86,15 @@ object in {
 
   @name("scalanative_IP_MULTICAST_LOOP")
   def IP_MULTICAST_LOOP: CInt = extern
+
+  @name("scalanative_IP_MULTICAST_TTL")
+  def IP_MULTICAST_TTL: CInt = extern
+
+  @name("scalanative_IP_ADD_MEMBERSHIP")
+  def IP_ADD_MEMBERSHIP: CInt = extern
+
+  @name("scalanative_IP_DROP_MEMBERSHIP")
+  def IP_DROP_MEMBERSHIP: CInt = extern
 
   @name("scalanative_IP_TOS")
   def IP_TOS: CInt = extern
@@ -168,5 +180,13 @@ object inOps {
 
     def ipv6mr_multiaddr_=(v: Ptr[in6_addr]): Unit = !ptr._1 = !v
     def ipv6mr_interface_=(v: CUnsignedInt): Unit  = !ptr._2 = v
+  }
+
+  implicit class ip_mreqOps(val ptr: Ptr[ip_mreq]) extends AnyVal {
+    def imr_multiaddr: Ptr[in_addr] = ptr._1
+    def imr_interface: Ptr[in_addr] = ptr._2
+
+    def imr_multiaddr_=(v: Ptr[in_addr]) = !ptr._1 = !v
+    def imr_interface_=(v: Ptr[in_addr]) = !ptr._2 = !v
   }
 }

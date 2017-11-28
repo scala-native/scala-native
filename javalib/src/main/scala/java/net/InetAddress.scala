@@ -1,6 +1,7 @@
 package java.net
 
 import scala.scalanative.native._
+import scala.scalanative.posix.unistd
 import scala.collection.mutable.ArrayBuffer
 
 import java.util.StringTokenizer
@@ -549,11 +550,24 @@ private[net] trait InetAddressBase {
     return (((value >> 24) & 0xff) + "." + ((value >> 16) & 0xff) + "."
       + ((value >> 8) & 0xff) + "." + (value & 0xff))
   }
+
+  def ANY = new Inet4Address(Array[Byte](0, 0, 0, 0))
+
+  def getLocalHost(): InetAddress = {
+    val host = Zone { implicit z =>
+      val buffer = alloc[Byte](64)
+      if (unistd.gethostname(buffer, 64) != 0) {
+        throw new UnknownHostException("Could not get the hostname.")
+      }
+      fromCString(buffer)
+    }
+    getByName(host)
+  }
 }
 
 object InetAddress extends InetAddressBase
 
-class InetAddress private[net] (ipAddress: Array[Byte],
+class InetAddress private[net] (private[net] val ipAddress: Array[Byte],
                                 private var host: String)
     extends Serializable {
   import InetAddress._
