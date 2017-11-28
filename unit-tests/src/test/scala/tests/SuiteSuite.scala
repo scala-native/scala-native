@@ -4,6 +4,10 @@ class A             extends Exception
 class B             extends Exception
 class C(val v: Int) extends Exception
 
+object Foo {
+  def bar(): Unit = throw new IllegalStateException()
+}
+
 object SuiteSuite extends Suite {
   test("expects true") {
     assert(true)
@@ -39,5 +43,13 @@ object SuiteSuite extends Suite {
 
   testFails("expects A and doesn't throw", issue = -1) {
     assertThrows[A] {}
+  }
+
+  test("catch IllegalStateException") {
+    assertThrows[IllegalStateException] { Foo.bar() }
+  }
+
+  test("catch RuntimeException") {
+    assertThrows[RuntimeException] { Foo.bar() }
   }
 }
