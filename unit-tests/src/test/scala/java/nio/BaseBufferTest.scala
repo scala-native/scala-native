@@ -18,11 +18,11 @@ abstract class BaseBufferTest extends tests.Suite {
 
       assertEquals(0, allocBuffer(0).capacity)
 
-      /*assertThrows[RuntimeException] { allocBuffer(-1) }
+      assertThrows[RuntimeException] { allocBuffer(-1) }
       assertThrows[RuntimeException] { allocBuffer(0, -1, 1) }
       assertThrows[RuntimeException] { allocBuffer(1, 0, 1) }
       assertThrows[RuntimeException] { allocBuffer(0, 1, 0) }
-      assertThrows[RuntimeException] { allocBuffer(1, 0, 0) } */
+      assertThrows[RuntimeException] { allocBuffer(1, 0, 0) }
 
       val buf2 = allocBuffer(1, 5, 9)
       assertEquals(1, buf2.position())

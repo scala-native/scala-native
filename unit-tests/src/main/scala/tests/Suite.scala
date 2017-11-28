@@ -30,35 +30,32 @@ abstract class Suite {
   def assertNotNull[A](a: A): Unit =
     assertNot(a == null)
 
-  def assertThrowsAnd[T: ClassTag](f: => Unit)(fe: T => Boolean): Unit = {
-    try {
-      f
-    } catch {
-      case exc: Throwable =>
-        if (exc.getClass.equals(implicitly[ClassTag[T]].runtimeClass) &&
-            fe(exc.asInstanceOf[T]))
-          return
-        else
-          throw AssertionFailed
-    }
-    throw AssertionFailed
-  }
-
-  def assertThrows[T: ClassTag](f: => Unit): Unit =
-    assertThrowsAnd[T](f)(_ => true)
-
   def assertEquals[T](left: T, right: T): Unit =
     assert(left == right)
 
   def assertEquals(expected: Double, actual: Double, delta: Double): Unit =
     assert(Math.abs(expected - actual) <= delta)
 
-  private def assertThrowsImpl(cls: Class[_], f: => Unit): Unit = {
+  def expectThrows[T <: Throwable, U](expectedThrowable: Class[T],
+                                      code: => U): Unit =
+    assertThrowsImpl(expectedThrowable, code, (exc: T) => true)
+
+  def assertThrows[T: ClassTag](f: => Unit): Unit =
+    assertThrowsAnd(f)((exc: T) => true)
+
+  def assertThrowsAnd[T: ClassTag](f: => Unit)(pred: T => Boolean): Unit = {
+    val cls = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
+    assertThrowsImpl[T](cls, f, pred)
+  }
+
+  private def assertThrowsImpl[T](expected: Class[T],
+                                  f: => Unit,
+                                  pred: T => Boolean): Unit = {
     try {
       f
     } catch {
       case exc: Throwable =>
-        if (exc.getClass.equals(cls))
+        if (expected.isInstance(exc) && pred(exc.asInstanceOf[T]))
           return
         else
           throw AssertionFailed
@@ -66,9 +63,18 @@ abstract class Suite {
     throw AssertionFailed
   }
 
-  def expectThrows[T <: Throwable, U](expectedThrowable: Class[T],
-                                      code: => U): Unit =
-    assertThrowsImpl(expectedThrowable, code)
+  private def assertThrowsImpl(cls: Class[_], f: => Unit): Unit = {
+    try {
+      f
+    } catch {
+      case exc: Throwable =>
+        if (cls.isAssignableFrom(exc.getClass))
+          return
+        else
+          throw AssertionFailed
+    }
+    throw AssertionFailed
+  }
 
   def test(name: String)(body: => Unit): Unit =
     tests += Test(name, { () =>
