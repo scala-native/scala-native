@@ -63,19 +63,6 @@ abstract class Suite {
     throw AssertionFailed
   }
 
-  private def assertThrowsImpl(cls: Class[_], f: => Unit): Unit = {
-    try {
-      f
-    } catch {
-      case exc: Throwable =>
-        if (cls.isAssignableFrom(exc.getClass))
-          return
-        else
-          throw AssertionFailed
-    }
-    throw AssertionFailed
-  }
-
   def test(name: String)(body: => Unit): Unit =
     tests += Test(name, { () =>
       try {
