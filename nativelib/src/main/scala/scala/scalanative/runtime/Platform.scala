@@ -14,6 +14,6 @@ object Platform {
   @name("scalanative_windows_get_user_country")
   def windowsGetUserCountry(): CString = extern
 
-  @name("scalanative_litle_endian")
+  @name("scalanative_little_endian")
   def littleEndian(): Boolean = extern
 }

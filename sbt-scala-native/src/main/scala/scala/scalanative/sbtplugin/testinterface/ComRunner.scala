@@ -42,7 +42,7 @@ class ComRunner(bin: File,
 
       runner.start()
 
-      serverSocket.setSoTimeout(30 * 1000)
+      serverSocket.setSoTimeout(40 * 1000)
       serverSocket.accept()
     } catch {
       case _: SocketTimeoutException =>
