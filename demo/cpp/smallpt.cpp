@@ -106,13 +106,13 @@ Vec radiance(const Ray &r, int depth, unsigned short *Xi) {
            c = 1 - (into ? -ddn : tdir.dot(n));
     double Re = R0 + (1 - R0) * c * c * c * c * c, Tr = 1 - Re,
            P = .25 + .5 * Re, RP = Re / P, TP = Tr / (1 - P);
-    return obj.e +
-           f.mult(depth > 2 ? (erand48(Xi) < P
-                                   ? // Russian roulette
-                                   radiance(reflRay, depth, Xi) * RP
-                                   : radiance(Ray(x, tdir), depth, Xi) * TP)
-                            : radiance(reflRay, depth, Xi) * Re +
-                                  radiance(Ray(x, tdir), depth, Xi) * Tr);
+    return obj.e + f.mult(depth > 2
+                              ? (erand48(Xi) < P
+                                     ? // Russian roulette
+                                     radiance(reflRay, depth, Xi) * RP
+                                     : radiance(Ray(x, tdir), depth, Xi) * TP)
+                              : radiance(reflRay, depth, Xi) * Re +
+                                    radiance(Ray(x, tdir), depth, Xi) * Tr);
 }
 int main(int argc, char *argv[]) {
     int w = 800, h = 600,
