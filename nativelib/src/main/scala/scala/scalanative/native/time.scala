@@ -9,14 +9,15 @@ object time {
   type timespec = CStruct2[time_t, CLong]
   type tm       = CStruct9[CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt]
 
-  def difftime(time_end: CLong, time_beg: CLong): time_t                 = extern
-  def time(arg: Ptr[time_t]): time_t                                     = extern
-  def clock(): clock_t                                                   = extern
-  def timespec_get(ts: Ptr[timespec], base: CInt): CInt                  = extern
-  def asctime(time_ptr: Ptr[tm]): CString                                = extern
-  def asctime_s(buf: Ptr[CChar], bufsz: CSize, time_ptr: Ptr[tm]): CInt  = extern
-  def ctime(time: Ptr[time_t]): CString                                  = extern
-  def ctime_s(buffer: Ptr[CChar], bufsz: CSize, time: Ptr[time_t]): CInt = extern
+  def difftime(time_end: CLong, time_beg: CLong): time_t                = extern
+  def time(arg: Ptr[time_t]): time_t                                    = extern
+  def clock(): clock_t                                                  = extern
+  def timespec_get(ts: Ptr[timespec], base: CInt): CInt                 = extern
+  def asctime(time_ptr: Ptr[tm]): CString                               = extern
+  def asctime_s(buf: Ptr[CChar], bufsz: CSize, time_ptr: Ptr[tm]): CInt = extern
+  def ctime(time: Ptr[time_t]): CString                                 = extern
+  def ctime_s(buffer: Ptr[CChar], bufsz: CSize, time: Ptr[time_t]): CInt =
+    extern
   def strftime(str: Ptr[CChar],
                count: CSize,
                format: CString,
