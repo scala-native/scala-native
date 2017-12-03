@@ -240,8 +240,6 @@ object ScalaNativePluginInternal {
       val cpppaths  = (cwd ** "*.cpp").get.map(_.abs)
       val paths     = cpaths ++ cpppaths
 
-      logger.info(s"Using $gc gc")
-
       // predicate to check if given file path shall be compiled
       // we only include sources of the current gc and exclude
       // all optional dependencies if they are not necessary
@@ -400,7 +398,7 @@ object ScalaNativePluginInternal {
       val paths     = apppaths.map(_.abs) ++ opaths
       val compile   = clangpp.abs +: (flags ++ paths)
 
-      logger.time("Linking native code") {
+      logger.time(s"Linking native code ($gc GC)") {
         logger.running(compile)
         Process(compile, cwd) ! logger
       }
