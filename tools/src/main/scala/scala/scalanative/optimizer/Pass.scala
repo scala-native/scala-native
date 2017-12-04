@@ -1,8 +1,6 @@
 package scala.scalanative
 package optimizer
 
-import analysis.ClassHierarchy.Top
-import tools.Config
 import scala.collection.mutable
 import nir._
 
@@ -16,6 +14,7 @@ trait Inject extends AnyPass {
 
 trait Pass extends AnyPass {
   private var _fresh: Fresh = _
+
   implicit def fresh: Fresh = _fresh
 
   def onDefns(assembly: Seq[Defn]): Seq[Defn] =

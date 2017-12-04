@@ -50,4 +50,43 @@ object PrimitiveSuite extends tests.Suite {
     val y: Long = 33
     assert((x << y) == 6)
   }
+
+  test(" x % y doesn't overflow (noinline)") {
+    assert(intRemByNegOne(4) == 0)
+    assert(intRemByNegOne(Int.MinValue) == 0)
+    assert(longRemByNegOne(4) == 0L)
+    assert(longRemByNegOne(Long.MinValue) == 0L)
+
+    // prevent partial evaluation
+    @noinline
+    def intRemByNegOne(i: Int): Int = {
+      i % -1
+    }
+
+    // prevent partial evaluation
+    @noinline
+    def longRemByNegOne(l: Long): Long = {
+      l % -1L
+    }
+  }
+
+  test(" x % y doesn't overflow (inline)") {
+    assert(intRemByNegOne(4) == 0)
+    assert(intRemByNegOne(Int.MinValue) == 0)
+    assert(longRemByNegOne(4) == 0L)
+    assert(longRemByNegOne(Long.MinValue) == 0L)
+
+    // facilitate partial evaluation
+    @inline
+    def intRemByNegOne(i: Int): Int = {
+      i % -1
+    }
+
+    // facilitate partial evaluation
+    @inline
+    def longRemByNegOne(l: Long): Long = {
+      l % -1L
+    }
+  }
+
 }

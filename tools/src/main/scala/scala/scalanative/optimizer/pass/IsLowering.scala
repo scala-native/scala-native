@@ -2,7 +2,6 @@ package scala.scalanative
 package optimizer
 package pass
 
-import scala.collection.mutable
 import analysis.ClassHierarchy._
 import analysis.ClassHierarchyExtractors._
 import nir._, Inst.Let
@@ -29,11 +28,11 @@ class IsLowering(implicit top: Top) extends Pass {
         // in case it's null, result is always false
         label(thenL)
         val res1 = let(Op.Copy(Val.False))
-        jump(Next.Label(contL, Seq(res1)))
+        jump(contL, Seq(res1))
         // otherwise, do an actual instance check
         label(elseL)
         val res2 = genIs(buf, ty, obj)
-        jump(Next.Label(contL, Seq(res2)))
+        jump(contL, Seq(res2))
         // merge the result of two branches
         label(contL, Seq(result))
         let(n, Op.Copy(result))
