@@ -24,6 +24,7 @@ object unistd {
   def truncate(path: CString, length: off_t): CInt                = extern
   def gethostname(name: CString, len: CSize): CInt                = extern
   def sethostname(name: CString, len: CSize): CInt                = extern
+  def chdir(path: CString): CInt                                  = extern
 
   @name("scalanative_stdin_fileno")
   def STDIN_FILENO: CInt = extern
