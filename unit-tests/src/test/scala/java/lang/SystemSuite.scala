@@ -34,15 +34,13 @@ object SystemSuite extends tests.Suite {
                         0x2192.toChar.toString,
                         null)
 
-  test("System.setenv") {
+  test("scalanative.native.system.setenv") {
     import scalanative.native._
-    Zone { implicit z =>
-      stdlib.setenv(toCString(k(0)), toCString(v(0)), 0)
-      stdlib.setenv(toCString(k(1)), toCString(v(1)), 0)
-      stdlib.setenv(toCString(k(2)), toCString(v(2)), 0)
-      stdlib.setenv(toCString(k(3)), toCString(v(3)), 0)
-      stdlib.setenv(toCString(k(4)), toCString(v(4)), 0)
-    }
+    assert(system.setenv(k(0), v(0)))
+    assert(system.setenv(k(1), v(1)))
+    assert(system.setenv(k(2), v(2)))
+    assert(system.setenv(k(3), v(3)))
+    assert(system.setenv(k(4), v(4)))
   }
 
   test("System.getenv should contain known env variables") {

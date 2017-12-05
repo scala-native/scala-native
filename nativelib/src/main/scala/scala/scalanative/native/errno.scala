@@ -13,4 +13,9 @@ object errno {
   def EILSEQ: CInt = extern
   @name("scalanative_erange")
   def ERANGE: CInt = extern
+  // added for setenv/unsetenv
+  @name("scalanative_einval")
+  def EINVAL: CInt = extern
+  @name("scalanative_enomen")
+  def ENOMEM: CInt = extern
 }
