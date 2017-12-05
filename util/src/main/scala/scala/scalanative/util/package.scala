@@ -13,8 +13,11 @@ package object util {
   /** Marker method, called whenever a specific control-flow branch
    *  is not supported.
    */
-  def unsupported(v: Any = ""): Nothing =
+  def unsupported(v: Any): Nothing =
     throw UnsupportedException(s"$v (${v.getClass})")
+
+  def unsupported(s: String = ""): Nothing =
+    throw UnsupportedException(s)
 
   /** Scope-managed resource. */
   type Resource = java.lang.AutoCloseable

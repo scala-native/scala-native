@@ -2,14 +2,12 @@ package scala.scalanative
 package nscplugin
 
 import java.nio.file.Path
-import scala.collection.mutable, mutable.UnrolledBuffer
-import scala.tools.nsc.{util => _, _}
+
+import scala.collection.mutable
+import scala.scalanative.nir._
+import scala.scalanative.util.ScopedVar.scoped
 import scala.tools.nsc.plugins._
-import scala.util.{Either, Left, Right}
-import scala.reflect.internal.Flags._
-import util._, util.ScopedVar.scoped
-import nir._
-import NirPrimitives._
+import scala.tools.nsc.{util => _, _}
 
 abstract class NirGenPhase
     extends PluginComponent
@@ -26,8 +24,6 @@ abstract class NirGenPhase
   import global._
   import definitions._
   import nirAddons._
-  import nirDefinitions._
-  import SimpleType.{fromType, fromSymbol}
 
   val phaseName = "nir"
 
