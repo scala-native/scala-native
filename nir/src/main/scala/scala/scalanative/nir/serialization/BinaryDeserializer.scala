@@ -90,9 +90,10 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
         case T.DynAttr  => buf += Attr.Dyn
         case T.StubAttr => buf += Attr.Stub
 
-        case T.PureAttr     => buf += Attr.Pure
-        case T.ExternAttr   => buf += Attr.Extern
-        case T.OverrideAttr => buf += Attr.Override(getGlobal)
+        case T.PureAttr         => buf += Attr.Pure
+        case T.ExternAttr       => buf += Attr.Extern
+        case T.OverrideAttr     => buf += Attr.Override(getGlobal)
+        case T.JavaVolatileAttr => buf += Attr.JavaVolatile
 
         case T.LinkAttr      => links += Attr.Link(getString)
         case T.PinAlwaysAttr => deps += Dep.Direct(getGlobalNoDep)
@@ -235,9 +236,11 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
   }
 
   private def getOp(): Op = getInt match {
-    case T.CallOp       => Op.Call(getType, getVal, getVals, getNext)
-    case T.LoadOp       => Op.Load(getType, getVal, isVolatile = false)
-    case T.StoreOp      => Op.Store(getType, getVal, getVal, isVolatile = false)
+    case T.CallOp => Op.Call(getType, getVal, getVals, getNext)
+    case T.LoadOp =>
+      Op.Load(getType, getVal, isVolatile = false, isAtomic = getBool)
+    case T.StoreOp =>
+      Op.Store(getType, getVal, getVal, isVolatile = false, isAtomic = getBool)
     case T.ElemOp       => Op.Elem(getType, getVal, getVals)
     case T.ExtractOp    => Op.Extract(getVal, getInts)
     case T.InsertOp     => Op.Insert(getVal, getVal, getInts)

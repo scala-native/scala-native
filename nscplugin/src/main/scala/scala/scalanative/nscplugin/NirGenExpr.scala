@@ -3,10 +3,10 @@ package nscplugin
 
 import scala.collection.mutable
 import scala.reflect.internal.Flags._
-import scalanative.nir._
-import scalanative.util.unsupported
-import scalanative.util.ScopedVar.scoped
-import scalanative.nscplugin.NirPrimitives._
+import scala.scalanative.nir._
+import scala.scalanative.util.unsupported
+import scala.scalanative.util.ScopedVar.scoped
+import scala.scalanative.nscplugin.NirPrimitives._
 
 trait NirGenExpr { self: NirGenPhase =>
   import global._
@@ -275,7 +275,7 @@ trait NirGenExpr { self: NirGenPhase =>
                expr: Tree,
                catches: List[Tree],
                finallyp: Tree): Val = {
-      val unwind = fresh()
+      val unwind  = fresh()
       val excn    = fresh()
       val normaln = fresh()
       val mergen  = fresh()
@@ -345,10 +345,7 @@ trait NirGenExpr { self: NirGenPhase =>
             Val.Unit
           case (excty, f) +: rest =>
             val cond = buf.is(excty, exc)
-            genIf(retty,
-                  ValTree(cond),
-                  ContTree(f),
-                  ContTree(() => wrap(rest)))
+            genIf(retty, ValTree(cond), ContTree(f), ContTree(() => wrap(rest)))
         }
 
       wrap(cases)
@@ -465,9 +462,9 @@ trait NirGenExpr { self: NirGenPhase =>
             val idx = Literal(Constant(i))
 
             genApplyMethod(RuntimeArrayUpdateMethod(elemcode),
-                          statically = true,
-                          alloc,
-                          Seq(idx, ValTree(v)))
+                           statically = true,
+                           alloc,
+                           Seq(idx, ValTree(v)))
         }
       }
 
@@ -521,7 +518,7 @@ trait NirGenExpr { self: NirGenPhase =>
           } else {
             buf.field(qual, name)
           }
-        buf.load(ty, elem)
+        buf.load(ty, elem, isAtomic = hasVolatileAnnotation(tree))
       }
     }
 
@@ -550,13 +547,13 @@ trait NirGenExpr { self: NirGenPhase =>
             } else {
               buf.field(qual, name)
             }
-          buf.store(ty, elem, rhs)
+          buf.store(ty, elem, rhs, isAtomic = hasVolatileAnnotation(sel))
 
         case id: Ident =>
           val ty  = genType(id.tpe, box = false)
           val rhs = genExpr(rhsp)
           val ptr = curMethodEnv.resolve(id.symbol)
-          buf.store(ty, ptr, rhs)
+          buf.store(ty, ptr, rhs, isAtomic = hasVolatileAnnotation(id))
       }
     }
 
@@ -658,9 +655,9 @@ trait NirGenExpr { self: NirGenPhase =>
           genApplyTypeApply(app)
         case Select(Super(_, _), _) =>
           genApplyMethod(fun.symbol,
-                        statically = true,
-                        curMethodThis.get.get,
-                        args)
+                         statically = true,
+                         curMethodThis.get.get,
+                         args)
         case Select(New(_), nme.CONSTRUCTOR) =>
           genApplyNew(app)
         case _ =>
@@ -788,10 +785,13 @@ trait NirGenExpr { self: NirGenPhase =>
 
     def negateInt(value: nir.Val): Val =
       buf.bin(Bin.Isub, value.ty, numOfType(0, value.ty), value)
+
     def negateFloat(value: nir.Val): Val =
       buf.bin(Bin.Fsub, value.ty, numOfType(0, value.ty), value)
+
     def negateBits(value: nir.Val): Val =
       buf.bin(Bin.Xor, value.ty, numOfType(-1, value.ty), value)
+
     def negateBool(value: nir.Val): Val =
       buf.bin(Bin.Xor, Type.Bool, Val.True, value)
 
@@ -811,11 +811,14 @@ trait NirGenExpr { self: NirGenPhase =>
       }
     }
 
-    def genBinaryOp(code: Int, left: Tree, right: Tree, retty: nir.Type): Val = {
+    def genBinaryOp(code: Int,
+                    left: Tree,
+                    right: Tree,
+                    retty: nir.Type): Val = {
       import scalaPrimitives._
 
-      val lty  = genType(left.tpe, box = false)
-      val rty  = genType(right.tpe, box = false)
+      val lty = genType(left.tpe, box = false)
+      val rty = genType(right.tpe, box = false)
       val opty =
         if (isShiftOp(code)) {
           if (lty == nir.Type.Long) {
@@ -912,8 +915,7 @@ trait NirGenExpr { self: NirGenPhase =>
             // If null is present on either side, we must always
             // generate reference equality, regardless of where it
             // was called with == or eq. This shortcut is not optional.
-            case (Literal(Constant(null)), _)
-               | (_, Literal(Constant(null))) =>
+            case (Literal(Constant(null)), _) | (_, Literal(Constant(null))) =>
               genClassEquality(left, right, ref = true, negated = negated)
             case _ =>
               genClassEquality(left, right, ref = ref, negated = negated)
@@ -987,9 +989,9 @@ trait NirGenExpr { self: NirGenPhase =>
         locally {
           buf.label(elsen)
           val elsev = genApplyMethod(NObjectEqualsMethod,
-                                    statically = false,
-                                    left,
-                                    Seq(rightp))
+                                     statically = false,
+                                     left,
+                                     Seq(rightp))
           buf.jump(mergen, Seq(elsev))
         }
         buf.label(mergen, Seq(mergev))
@@ -1063,7 +1065,7 @@ trait NirGenExpr { self: NirGenPhase =>
       val isnull = buf.comp(Comp.Ieq, Rt.Object, arg, Val.Null)
       val cond   = ValTree(isnull)
       val thenp  = ValTree(Val.Int(0))
-      val elsep  = ContTree { () =>
+      val elsep = ContTree { () =>
         val meth = NObjectHashCodeMethod
         genApplyMethod(meth, statically = false, arg, Seq())
       }
@@ -1075,8 +1077,10 @@ trait NirGenExpr { self: NirGenPhase =>
 
       val Apply(Select(arrayp, _), argsp) = app
 
-      val array    = genExpr(arrayp)
+      val array = genExpr(arrayp)
+
       def elemcode = genArrayCode(arrayp.tpe)
+
       val method =
         if (code == ARRAY_CLONE) {
           RuntimeArrayCloneMethod(elemcode)
@@ -1153,11 +1157,12 @@ trait NirGenExpr { self: NirGenPhase =>
               // Pointers in Scala Native are untyped and modeled as `i8*`.
               // Pointer substraction therefore explicitly divide the byte
               // offset by the size of pointer type.
-              val ptrInt     = buf.conv(nir.Conv.Ptrtoint, nir.Type.Long, ptr)
-              val ptrArg     = genExpr(argp)
-              val ptrArgInt  = buf.conv(nir.Conv.Ptrtoint, nir.Type.Long, ptrArg)
-              val byteOffset = buf.bin(Bin.Isub, nir.Type.Long, ptrInt, ptrArgInt)
-              val sizeOf     = buf.sizeof(ty)
+              val ptrInt    = buf.conv(nir.Conv.Ptrtoint, nir.Type.Long, ptr)
+              val ptrArg    = genExpr(argp)
+              val ptrArgInt = buf.conv(nir.Conv.Ptrtoint, nir.Type.Long, ptrArg)
+              val byteOffset =
+                buf.bin(Bin.Isub, nir.Type.Long, ptrInt, ptrArgInt)
+              val sizeOf = buf.sizeof(ty)
               buf.bin(Bin.Sdiv, nir.Type.Long, byteOffset, sizeOf)
           }
 
@@ -1213,8 +1218,9 @@ trait NirGenExpr { self: NirGenPhase =>
         val Apply(_, Seq(MaybeBlock(Typed(ctor, funtpt))))           = app
         val Apply(Select(New(tpt), termNames.CONSTRUCTOR), ctorargs) = ctor
 
-        assert(ctorargs.isEmpty,
-               s"Can't get function pointer to a closure with captures: ${ctorargs} in application ${app}")
+        assert(
+          ctorargs.isEmpty,
+          s"Can't get function pointer to a closure with captures: ${ctorargs} in application ${app}")
 
         curStatBuffer.genFunctionPtrForwarder(tpt.tpe.typeSymbol)
 
@@ -1287,6 +1293,7 @@ trait NirGenExpr { self: NirGenPhase =>
         //     ))
         //   ).c()
         // """ =>
+        // format: off
         case Apply(
             Select(
             Apply(
@@ -1304,7 +1311,8 @@ trait NirGenExpr { self: NirGenPhase =>
                               _))))))),
             _),
             _) =>
-          Val.Const(Val.Chars(str.replace("\\n", "\n").replace("\\r", "\r")))
+          // format: on
+        Val.Const(Val.Chars(str.replace("\\n", "\n").replace("\\r", "\r")))
 
         case _ =>
           unsupported(app)
@@ -1350,14 +1358,14 @@ trait NirGenExpr { self: NirGenPhase =>
       val monitor =
         genApplyModuleMethod(RuntimeModule, GetMonitorMethod, Seq(receiverp))
       val enter = genApplyMethod(RuntimeMonitorEnterMethod,
+                                 statically = true,
+                                 monitor,
+                                 Seq())
+      val arg = genExpr(argp)
+      val exit = genApplyMethod(RuntimeMonitorExitMethod,
                                 statically = true,
                                 monitor,
                                 Seq())
-      val arg = genExpr(argp)
-      val exit = genApplyMethod(RuntimeMonitorExitMethod,
-                               statically = true,
-                               monitor,
-                               Seq())
 
       arg
     }
@@ -1542,16 +1550,16 @@ trait NirGenExpr { self: NirGenPhase =>
     }
 
     def genApplyModuleMethod(module: Symbol,
-                            method: Symbol,
-                            args: Seq[Tree]): Val = {
+                             method: Symbol,
+                             args: Seq[Tree]): Val = {
       val self = genModule(module)
       genApplyMethod(method, statically = true, self, args)
     }
 
     def genApplyMethod(sym: Symbol,
-                      statically: Boolean,
-                      selfp: Tree,
-                      argsp: Seq[Tree]): Val = {
+                       statically: Boolean,
+                       selfp: Tree,
+                       argsp: Seq[Tree]): Val = {
       if (sym.owner.isExternModule && sym.hasFlag(ACCESSOR)) {
         genApplyExternAccessor(sym, argsp)
       } else {
@@ -1574,9 +1582,9 @@ trait NirGenExpr { self: NirGenPhase =>
     }
 
     def genApplyMethod(sym: Symbol,
-                      statically: Boolean,
-                      self: Val,
-                      argsp: Seq[Tree]): Val = {
+                       statically: Boolean,
+                       self: Val,
+                       argsp: Seq[Tree]): Val = {
       val owner = sym.owner
       val name  = genMethodName(sym)
       val sig   = genMethodSig(sym)
@@ -1690,5 +1698,9 @@ trait NirGenExpr { self: NirGenPhase =>
           None
       }
     }
+  }
+
+  private def hasVolatileAnnotation(sel: global.SymTree): Boolean = {
+    sel.symbol.annotations.exists(_.symbol == VolatileClass)
   }
 }

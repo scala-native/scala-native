@@ -2,22 +2,27 @@ package scala.scalanative
 package optimizer
 package pass
 
+import org.scalatest.Matchers
+
 import analysis.ClassHierarchy.Top
 import build.Config
 import nir._
 
-class AsLoweringTest extends OptimizerSpec {
+class AsLoweringTest extends OptimizerSpec with Matchers {
 
   "The `AsLoweringPhase`" should "have an effect (this is a self-test)" in {
-    val driver = Some(Driver.empty.withPasses(Seq(AsLoweringCheck)))
-    assertThrows[Exception] {
+    val driver =
+      Some(Driver.empty.withPasses(Seq(inject.Main, AsLoweringCheck)))
+    val e = intercept[Exception] {
       optimize("A$", code, driver) { case (_, _, _) => () }
     }
+    e.getMessage should include("Found an occurrence of `Op.As` in:")
   }
 
   it should "remove all occurrences of `Op.As`" in {
     val driver =
-      Some(Driver.empty.withPasses(Seq(AsLowering, AsLoweringCheck)))
+      Some(
+        Driver.empty.withPasses(Seq(inject.Main, AsLowering, AsLoweringCheck)))
     optimize("A$", code, driver) { case (_, _, _) => () }
   }
 

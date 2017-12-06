@@ -26,6 +26,7 @@ object Tags {
   final val PinWeakAttr      = 1 + PinIfAttr
   final val DynAttr          = 1 + PinWeakAttr
   final val StubAttr         = 1 + DynAttr
+  final val JavaVolatileAttr = 1 + StubAttr
 
   // Binary ops
 

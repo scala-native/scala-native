@@ -22,28 +22,18 @@ class OpParserTest extends FlatSpec with Matchers {
     result should be(call)
   }
 
-  it should "parse non-volatile `Op.Load`" in {
-    val load: Op                  = Op.Load(noTpe, Val.None)
-    val Parsed.Success(result, _) = parser.Op.Load.parse(load.show)
-    result should be(load)
+  it should "parse `Op.Load`" in {
+    shouldParseLoad(isVolatile = true, isAtomic = true)
+    shouldParseLoad(isVolatile = true, isAtomic = false)
+    shouldParseLoad(isVolatile = false, isAtomic = true)
+    shouldParseLoad(isVolatile = false, isAtomic = false)
   }
 
-  it should "parse volatile `Op.Load`" in {
-    val load: Op                  = Op.Load(noTpe, Val.None, isVolatile = true)
-    val Parsed.Success(result, _) = parser.Op.Load.parse(load.show)
-    result should be(load)
-  }
-
-  it should "parse non-volatile `Op.Store`" in {
-    val store: Op                 = Op.Store(noTpe, Val.None, Val.None)
-    val Parsed.Success(result, _) = parser.Op.Store.parse(store.show)
-    result should be(store)
-  }
-
-  it should "parse volatile `Op.Store`" in {
-    val store: Op                 = Op.Store(noTpe, Val.None, Val.None, isVolatile = true)
-    val Parsed.Success(result, _) = parser.Op.Store.parse(store.show)
-    result should be(store)
+  it should "parse `Op.Store`" in {
+    shouldParseStore(isVolatile = true, isAtomic = true)
+    shouldParseStore(isVolatile = true, isAtomic = false)
+    shouldParseStore(isVolatile = false, isAtomic = true)
+    shouldParseStore(isVolatile = false, isAtomic = false)
   }
 
   it should "parse `Op.Elem`" in {
@@ -173,4 +163,17 @@ class OpParserTest extends FlatSpec with Matchers {
     val Parsed.Success(result, _) = parser.Op.Unbox.parse(unbox.show)
     result should be(unbox)
   }
+
+  private def shouldParseLoad(isVolatile: Boolean, isAtomic: Boolean): Unit = {
+    val load: Op                  = Op.Load(noTpe, Val.None)
+    val Parsed.Success(result, _) = parser.Op.Load.parse(load.show)
+    result should be(load)
+  }
+
+  private def shouldParseStore(isVolatile: Boolean, isAtomic: Boolean): Unit = {
+    val store: Op                 = Op.Store(noTpe, Val.None, Val.None)
+    val Parsed.Success(result, _) = parser.Op.Store.parse(store.show)
+    result should be(store)
+  }
+
 }

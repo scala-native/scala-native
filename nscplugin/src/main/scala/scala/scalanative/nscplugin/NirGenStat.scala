@@ -155,12 +155,14 @@ trait NirGenStat { self: NirGenPhase =>
       }
 
     def genClassFields(sym: Symbol): Unit = {
-      val attrs = nir.Attrs(isExtern = sym.isExternModule)
+      val isExtern = sym.isExternModule
 
-      for (f <- sym.info.decls if f.isField) {
-        val ty   = genType(f.tpe, box = false)
-        val name = genFieldName(f)
-
+      for (f: Symbol <- sym.info.decls if f.isField) {
+        val ty          = genType(f.tpe, box = false)
+        val name        = genFieldName(f)
+        val annotations = f.annotations
+        val isVolatile  = annotations.exists(_.symbol == VolatileClass)
+        val attrs       = nir.Attrs(isExtern = isExtern, isJavaVolatile = isVolatile)
         buf += Defn.Var(attrs, name, ty, Val.None)
       }
     }

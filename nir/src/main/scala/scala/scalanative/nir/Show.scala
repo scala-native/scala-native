@@ -1,12 +1,11 @@
 package scala.scalanative
 package nir
 
-import scala.util.matching.Regex
-
-import util.{unreachable, ShowBuilder}
+import scala.scalanative.util.{ShowBuilder, unreachable}
 
 object Show {
   def newBuilder: NirShowBuilder = new NirShowBuilder(new ShowBuilder)
+
   def debug[T](msg: String)(f: => T): T = {
     val value = f
     println("$msg: " + value)
@@ -45,6 +44,8 @@ object Show {
     }
 
     def attr_(attr: Attr): Unit = attr match {
+      case Attr.JavaVolatile =>
+        str("javavolatile")
       case Attr.MayInline =>
         str("mayinline")
       case Attr.InlineHint =>
@@ -183,13 +184,17 @@ object Show {
           str(" ")
           next_(unwind)
         }
-      case Op.Load(ty, ptr, isVolatile) =>
-        str(if (isVolatile) "volatile load[" else "load[")
+      case Op.Load(ty, ptr, isVolatile, isAtomic) =>
+        if (isAtomic) str("atomic ")
+        if (isVolatile) str("volatile ")
+        str("load[")
         type_(ty)
         str("] ")
         val_(ptr)
-      case Op.Store(ty, ptr, value, isVolatile) =>
-        str(if (isVolatile) "volatile store[" else "store[")
+      case Op.Store(ty, ptr, value, isVolatile, isAtomic) =>
+        if (isAtomic) str("atomic ")
+        if (isVolatile) str("volatile ")
+        str("store[")
         type_(ty)
         str("] ")
         val_(ptr)
@@ -608,4 +613,5 @@ object Show {
 
     override def toString: String = builder.toString
   }
+
 }

@@ -2,12 +2,10 @@ package scala.scalanative
 package linker
 
 import scala.collection.mutable
-import scalanative.nir._
-import scalanative.nir.serialization._
-import scalanative.io.VirtualDirectory
-import scalanative.util.Scope
-
-import ReflectiveProxy._
+import scala.scalanative.io.VirtualDirectory
+import scala.scalanative.linker.ReflectiveProxy._
+import scala.scalanative.nir._
+import scala.scalanative.util.Scope
 
 sealed trait Linker {
 
@@ -45,7 +43,7 @@ object Linker {
             path.load(global)
         }.flatten
 
-      def processDirect =
+      def processDirect(): Unit =
         while (direct.nonEmpty) {
           val workitem = direct.pop()
           if (!workitem.isIntrinsic && !resolved.contains(workitem) &&
@@ -106,7 +104,7 @@ object Linker {
           }
         }
 
-      def processConditional = {
+      def processConditional(): Unit = {
         val rest = mutable.UnrolledBuffer.empty[Dep.Conditional]
 
         conditional.foreach {
@@ -132,8 +130,8 @@ object Linker {
       }
 
       while (direct.nonEmpty) {
-        processDirect
-        processConditional
+        processDirect()
+        processConditional()
       }
 
       val reflectiveProxies =

@@ -1,15 +1,21 @@
 package scala.scalanative
 package codegen
 
-import java.{lang => jl}
 import java.nio.ByteBuffer
 import java.nio.file.Paths
+import java.{lang => jl}
+
 import scala.annotation.tailrec
 import scala.collection.mutable
-import scalanative.util.{Scope, ShowBuilder, unsupported}
-import scalanative.io.{VirtualDirectory, withScratchBuffer}
-import scalanative.optimizer.analysis.ControlFlow.{Graph => CFG, Block, Edge}
-import scalanative.nir._
+import scala.scalanative.io.VirtualDirectory
+import scala.scalanative.nir.Type.Primitive
+import scala.scalanative.nir._
+import scala.scalanative.optimizer.analysis.ControlFlow.{
+  Block,
+  Edge,
+  Graph => CFG
+}
+import scala.scalanative.util.{Scope, ShowBuilder, unsupported}
 
 object CodeGen {
 
@@ -603,7 +609,7 @@ object CodeGen {
         case call: Op.Call =>
           genCall(genBind, call)
 
-        case Op.Load(ty, ptr, isVolatile) =>
+        case Op.Load(ty, ptr, isVolatile, isAtomic) =>
           val pointee = fresh()
 
           newline()
@@ -618,6 +624,9 @@ object CodeGen {
           newline()
           genBind()
           str("load ")
+          if (isAtomic) {
+            str("atomic ")
+          }
           if (isVolatile) {
             str("volatile ")
           }
@@ -626,8 +635,12 @@ object CodeGen {
           genType(ty)
           str("* %")
           genLocal(pointee)
+          if (isAtomic) {
+            val alignment = alignmentForAtomicLoadStore(ty)
+            str(s" seq_cst, align $alignment")
+          }
 
-        case Op.Store(ty, ptr, value, isVolatile) =>
+        case Op.Store(ty, ptr, value, isVolatile, isAtomic) =>
           val pointee = fresh()
 
           newline()
@@ -645,11 +658,18 @@ object CodeGen {
           if (isVolatile) {
             str("volatile ")
           }
+          if (isAtomic) {
+            str("atomic ")
+          }
           genVal(value)
           str(", ")
           genType(ty)
           str("* %")
           genLocal(pointee)
+          if (isAtomic) {
+            val alignment = alignmentForAtomicLoadStore(ty)
+            str(s" seq_cst, align $alignment")
+          }
 
         case Op.Elem(ty, ptr, indexes) =>
           val pointee = fresh()
@@ -864,6 +884,25 @@ object CodeGen {
       str(attr.show)
   }
 
+  /**
+   * LLVM requires explicit 'align' for atomic loads and stores
+   *
+   * @return 8 <= alignment <= target specific size-limit
+   */
+  private def alignmentForAtomicLoadStore(ty: Type): Int = {
+    ty match {
+      case p: Primitive =>
+        val width = p.width
+        if (width < 8) {
+          sys.error(
+            s"Cannot emit an atomic store or load whose pointee's bit width is $width. Should be at least 8")
+        } else width
+      case _ =>
+        sys.error(
+          s"Cannot emit an atomic store or load whose pointee's type is $ty. Should be one of an integer, pointer of floating-point")
+    }
+  }
+
   private object Impl {
     val gxxpersonality =
       "personality i8* bitcast (i32 (...)* @__gxx_personality_v0 to i8*)"
@@ -873,4 +912,5 @@ object CodeGen {
     val typeid =
       "call i32 @llvm.eh.typeid.for(i8* bitcast ({ i8*, i8*, i8* }* @_ZTIN11scalanative16ExceptionWrapperE to i8*))"
   }
+
 }
