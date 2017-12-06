@@ -68,6 +68,9 @@ object ScalaNativePluginInternal {
   val nativeLinkLL =
     taskKey[File]("Link native object files into the final binary")
 
+  val nativeEmitAssembly =
+    settingKey[Boolean]("Controls emitting assembly files during compilation")
+
   lazy val scalaNativeDependencySettings: Seq[Setting[_]] = Seq(
     libraryDependencies ++= Seq(
       "org.scala-native" %%% "nativelib"      % nativeVersion,
@@ -124,7 +127,8 @@ object ScalaNativePluginInternal {
     nativeOptimizerReporter := tools.OptimizerReporter.empty,
     nativeOptimizerReporter in NativeTest := (nativeOptimizerReporter in Test).value,
     nativeGC := "boehm",
-    nativeGC in NativeTest := (nativeGC in Test).value
+    nativeGC in NativeTest := (nativeGC in Test).value,
+    nativeEmitAssembly := false
   )
 
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
@@ -335,11 +339,12 @@ object ScalaNativePluginInternal {
       (cwd ** "*.ll").get.toSeq
     },
     nativeCompileLL := {
-      val logger      = streams.value.log
-      val generated   = nativeGenerateLL.value
-      val clangpp     = nativeClangPP.value
-      val cwd         = nativeWorkdir.value
-      val compileOpts = nativeCompileOptions.value
+      val logger       = streams.value.log
+      val generated    = nativeGenerateLL.value
+      val clangpp      = nativeClangPP.value
+      val cwd          = nativeWorkdir.value
+      val compileOpts  = nativeCompileOptions.value
+      val emitAssembly = nativeEmitAssembly.value
       val optimizationOpt =
         mode(nativeMode.value) match {
           case tools.Mode.Debug   => "-O0"
@@ -349,13 +354,29 @@ object ScalaNativePluginInternal {
 
       logger.time("Compiling to native code") {
         generated.par
-          .map { ll =>
-            val apppath = ll.abs
-            val outpath = apppath + ".o"
-            val compile = Seq(clangpp.abs, "-c", apppath, "-o", outpath) ++ opts
-            logger.running(compile)
-            Process(compile, cwd) ! logger
-            new File(outpath)
+          .map {
+            ll =>
+              val apppath = ll.abs
+              val outpath = apppath + ".o"
+              val compile = Seq(clangpp.abs, "-c", apppath, "-o", outpath) ++ opts
+              logger.running(compile)
+              Process(compile, cwd) ! logger
+
+              if (emitAssembly) {
+                val assemblyOutpath = apppath + ".s"
+                val compileToAssembly = Seq(clangpp.abs,
+                                            "-S",
+                                            "-mllvm",
+                                            "--x86-asm-syntax=intel",
+                                            "-c",
+                                            apppath,
+                                            "-o",
+                                            assemblyOutpath) ++ opts
+                logger.running(compileToAssembly)
+                Process(compileToAssembly, cwd) ! logger
+              }
+
+              new File(outpath)
           }
           .seq
           .toSeq
