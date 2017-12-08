@@ -71,16 +71,12 @@ def job(String OS, List<String> GCs) {
 
             for (int i = 0; i < GCs.size(); i++) {
                 def GC = GCs[i]
-                if (OS == "mac" && GC == "immix") {
-                    echo "Skipping OS = mac, GC = immix"
-                } else {
-                    advance("Testing", "$OS/$GC") {
-                        retry(2) {
-                            sh "SCALANATIVE_GC=$GC sbt -Dsbt.ivy.home=$ivyHome -J-Xmx3G test-all"
-                        }
+                advance("Testing", "$OS/$GC") {
+                    retry(2) {
+                        sh "SCALANATIVE_GC=$GC sbt -Dsbt.ivy.home=$ivyHome -J-Xmx3G test-all"
                     }
-                    setBuildStatus("Tests succeeded", "SUCCESS", "$OS/$GC", repoUrl, commitSha)
                 }
+                setBuildStatus("Tests succeeded", "SUCCESS", "$OS/$GC", repoUrl, commitSha)
             }
         }
     }
