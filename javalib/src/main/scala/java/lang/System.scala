@@ -61,8 +61,8 @@ object System {
           .drop(1)
         sysProps.setProperty("user.language", userLang)
         sysProps.setProperty("user.country", userCountry)
-        sysProps.setProperty("user.home", getenv("HOME"))
       }
+      sysProps.setProperty("user.home", getenv("HOME"))
     }
 
     sysProps
