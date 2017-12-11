@@ -75,9 +75,9 @@ float scanative_libc_nan() { return NAN; }
 
 int scalanative_libc_math_errhandling() { return math_errhandling; }
 
-int scalanative_math_errno() { return MATH_ERRNO; }
+int scalanative_libc_math_errno() { return MATH_ERRNO; }
 
-int scalanative_math_errexcept() { return MATH_ERREXCEPT; }
+int scalanative_libc_math_errexcept() { return MATH_ERREXCEPT; }
 
 int scalanative_errno() { return errno; }
 
