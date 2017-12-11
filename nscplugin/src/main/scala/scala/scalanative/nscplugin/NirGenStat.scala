@@ -3,11 +3,12 @@ package nscplugin
 
 import scala.collection.mutable
 import scala.reflect.internal.Flags._
-import scalanative.nir._
-import scalanative.util.unsupported
-import scalanative.util.ScopedVar.scoped
+import scala.scalanative.nir._
+import scala.scalanative.util.unsupported
+import scala.scalanative.util.ScopedVar.scoped
 
 trait NirGenStat { self: NirGenPhase =>
+
   import global._
   import definitions._
   import nirAddons._
@@ -203,6 +204,7 @@ trait NirGenStat { self: NirGenPhase =>
             ()
 
           case rhs if owner.isExternModule =>
+            checkExplicitReturnTypeAnnotation(dd)
             genExternMethod(attrs, name, sig, params, rhs)
 
           case rhs =>
@@ -241,7 +243,7 @@ trait NirGenStat { self: NirGenPhase =>
           ref.symbol
         case _ =>
           unsupported(
-            "extern objects may only contain " + "extern fields and methods")
+            "extern objects may only contain extern fields and methods")
       }.toSet
       for {
         f <- curClassSym.info.decls if f.isField
@@ -422,6 +424,17 @@ trait NirGenStat { self: NirGenPhase =>
 
           Val.Global(name, Type.Ptr)
       }
+    }
+  }
+
+  private def checkExplicitReturnTypeAnnotation(
+      externMethodDd: DefDef): Unit = {
+    externMethodDd.tpt match {
+      case resultTypeTree: global.TypeTree if resultTypeTree.wasEmpty =>
+        global.reporter.error(
+          externMethodDd.pos,
+          "extern method " + externMethodDd.name + " needs result type")
+      case other =>
     }
   }
 }

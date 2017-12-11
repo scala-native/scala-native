@@ -1,8 +1,8 @@
 package scala.scalanative
 
-import java.io.File
-
 import org.scalatest._
+
+import scala.scalanative.api.CompilationFailedException
 
 class NIRCompilerTest extends FlatSpec with Matchers with Inspectors {
 
@@ -55,6 +55,25 @@ class NIRCompilerTest extends FlatSpec with Matchers with Inspectors {
       NIRCompiler(outDir = temporaryDir) { _ compile "class A" }
         .filter(_.isFile)
     forAll(nirFiles) { _.getParentFile should be(temporaryDir) }
+  }
+
+  it should "report error for extern method without result type" in {
+    // given
+    val code =
+      """import scala.scalanative.native.extern
+        |
+        |@extern
+        |object Dummy {
+        |  def foo() = extern
+        |}""".stripMargin
+
+    // when
+    val caught = intercept[CompilationFailedException] {
+      NIRCompiler(_.compile(code))
+    }
+
+    // then
+    caught.getMessage should include("extern method foo needs result type")
   }
 
 }
