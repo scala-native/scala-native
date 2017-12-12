@@ -3,18 +3,16 @@ package sbtplugin
 package testinterface
 
 import java.io._
-
-import sbt.{Logger, MessageOnlyException}
-import scala.sys.process._
+import java.net.{ServerSocket, SocketTimeoutException}
 
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration.Duration
-import scala.scalanative.testinterface.serialization._
-import java.net.{ServerSocket, SocketTimeoutException}
 
-import scala.scalanative.testinterface.serialization.Log.Level
+import sbt.{Logger, MessageOnlyException}
 
-import SBTCompat._
+import scalanative.testinterface.serialization.Log.Level
+import scalanative.testinterface.serialization._
+import scalanative.sbtplugin.SBTCompat._
 
 /**
  * Represents a distant program with whom we communicate over the network.

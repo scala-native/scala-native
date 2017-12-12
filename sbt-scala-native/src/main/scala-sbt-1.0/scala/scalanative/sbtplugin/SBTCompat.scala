@@ -20,4 +20,17 @@ private[sbtplugin] object SBTCompat {
         cross.withPrefix(part + "_" + cross.prefix)
     }
   }
+
+  val Process = scalanative.sbtplugin.process.Process
+  type ProcessLogger = scalanative.sbtplugin.process.ProcessLogger
+
+  implicit def sbtLoggerToProcessLogger(
+      logger: sbt.util.Logger): ProcessLogger = {
+    val plogger: scala.sys.process.ProcessLogger = logger
+    new ProcessLogger {
+      def info(s: => String): Unit  = plogger.out(s)
+      def error(s: => String): Unit = plogger.err(s)
+      def buffer[T](f: => T): T     = plogger.buffer(f)
+    }
+  }
 }

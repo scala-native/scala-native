@@ -2,7 +2,6 @@ package scala.scalanative
 package sbtplugin
 
 import sbt._, Keys._
-import scala.sys.process.{ProcessBuilder, ProcessLogger}
 import scala.language.implicitConversions
 
 // Ported from Scala.js
@@ -21,11 +20,6 @@ private[sbtplugin] object SBTCompat {
     }
   }
 
-  implicit class RichProcessBuilder(pb: ProcessBuilder) {
-    def lineStream_!(logger: ProcessLogger) = pb.lines_!(logger)
-    def lineStream_! : Stream[String]       = pb.lines_!
-  }
-
-  implicit def promoteProcessLogger(logger: sbt.Logger): ProcessLogger =
-    ProcessLogger(msg => logger.info(msg), msg => logger.error(msg))
+  val Process = sbt.Process
+  type ProcessLogger = sbt.ProcessLogger
 }

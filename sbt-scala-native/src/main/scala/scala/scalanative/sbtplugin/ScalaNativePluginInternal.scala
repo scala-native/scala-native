@@ -1,8 +1,16 @@
 package scala.scalanative
 package sbtplugin
 
+import java.lang.System.{lineSeparator => nl}
+import java.io.ByteArrayInputStream
+
+import scala.util.Try
+
+import sbt._
+import sbt.Keys._
+import sbt.complete.DefaultParsers._
+import sbt.testing.Framework
 import sbtcrossproject.CrossPlugin.autoImport._
-import ScalaNativePlugin.autoImport._
 
 import scalanative.nir
 import scalanative.tools
@@ -10,20 +18,9 @@ import scalanative.io.VirtualDirectory
 import scalanative.util.{Scope => ResourceScope}
 import scalanative.sbtplugin.Utilities._
 import scalanative.sbtplugin.TestUtilities._
-
-import sbt.testing.Framework
-import testinterface.ScalaNativeFramework
-
-import sbt._, Keys._, complete.DefaultParsers._
-
-import scala.util.Try
-
-import System.{lineSeparator => nl}
-import java.io.ByteArrayInputStream
-
-import scala.sys.process.Process
-
-import SBTCompat._
+import scalanative.sbtplugin.ScalaNativePlugin.autoImport._
+import scalanative.sbtplugin.SBTCompat.{Process, _}
+import scalanative.sbtplugin.testinterface.ScalaNativeFramework
 
 object ScalaNativePluginInternal {
 
@@ -101,7 +98,7 @@ object ScalaNativePluginInternal {
     nativeCompileOptions := {
       val includes = {
         val includedir =
-          Try(Process("llvm-config --includedir").lineStream_!.toSeq)
+          Try(Process("llvm-config --includedir").lines_!.toSeq)
             .getOrElse(Seq.empty)
         ("/usr/local/include" +: includedir).map(s => s"-I$s")
       }
@@ -111,7 +108,7 @@ object ScalaNativePluginInternal {
     nativeLinkingOptions := {
       val libs = {
         val libdir =
-          Try(Process("llvm-config --libdir").lineStream_!.toSeq)
+          Try(Process("llvm-config --libdir").lines_!.toSeq)
             .getOrElse(Seq.empty)
         ("/usr/local/lib" +: libdir).map(s => s"-L$s")
       }
