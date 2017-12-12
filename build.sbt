@@ -34,9 +34,10 @@ addCommandAlias(
     "javalib/publishLocal",
     "auxlib/publishLocal",
     "scalalib/publishLocal",
-    "publishLocal"
-//    "sbtScalaNative/publishLocal",
-//    "testInterface/publishLocal"
+    "sbtScalaNative/publishLocal",
+    "testInterfaceSbtDefs/publishLocal",
+    "testInterfaceSerialization/publishLocal",
+    "testInterface/publishLocal"
   ).mkString(";", ";", "")
 )
 
