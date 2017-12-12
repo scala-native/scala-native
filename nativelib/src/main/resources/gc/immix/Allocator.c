@@ -83,10 +83,11 @@ void Allocator_InitCursors(Allocator *allocator) {
  * Heuristic that tells if the heap should be grown or not.
  */
 bool Allocator_ShouldGrow(Allocator *allocator) {
-#ifdef DEBUG_PRINT
     uint64_t unavailableBlockCount =
         allocator->blockCount -
         (allocator->freeBlockCount + allocator->recycledBlockCount);
+
+#ifdef DEBUG_PRINT
     printf("\n\nBlock count: %llu\n", allocator->blockCount);
     printf("Unavailable: %llu\n", unavailableBlockCount);
     printf("Free: %llu\n", allocator->freeBlockCount);
@@ -94,7 +95,8 @@ bool Allocator_ShouldGrow(Allocator *allocator) {
     fflush(stdout);
 #endif
 
-    return allocator->freeBlockCount * 2 < allocator->blockCount;
+    return allocator->freeBlockCount * 2 < allocator->blockCount ||
+           4 * unavailableBlockCount > allocator->blockCount;
 }
 
 /**
