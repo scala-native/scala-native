@@ -122,9 +122,7 @@ object ScalaNativePluginInternal {
     nativeLinkerReporter := tools.LinkerReporter.empty,
     nativeLinkerReporter in NativeTest := (nativeLinkerReporter in Test).value,
     nativeOptimizerReporter := tools.OptimizerReporter.empty,
-    nativeOptimizerReporter in NativeTest := (nativeOptimizerReporter in Test).value,
-    nativeGC := "boehm",
-    nativeGC in NativeTest := (nativeGC in Test).value
+    nativeOptimizerReporter in NativeTest := (nativeOptimizerReporter in Test).value
   )
 
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
@@ -136,7 +134,9 @@ object ScalaNativePluginInternal {
         case Some(_) =>
           ()
       }
-    }
+    },
+    nativeGC := "boehm",
+    nativeGC in NativeTest := (nativeGC in Test).value
   )
 
   lazy val scalaNativeConfigSettings: Seq[Setting[_]] = Seq(
@@ -395,7 +395,7 @@ object ScalaNativePluginInternal {
       val paths     = apppaths.map(_.abs) ++ opaths
       val compile   = clangpp.abs +: (flags ++ paths)
 
-      logger.time("Linking native code") {
+      logger.time(s"Linking native code ($gc GC)") {
         logger.running(compile)
         Process(compile, cwd) ! logger
       }
