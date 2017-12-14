@@ -193,7 +193,7 @@ lazy val libSettings =
   )
 
 lazy val gcSetting =
-  nativeGC := {
+  nativeGC in ThisBuild := {
     val log     = sLog.value
     val default = (nativeGC in ThisBuild).value
     val gc      = Option(System.getenv.get("SCALANATIVE_GC")).getOrElse(default)
