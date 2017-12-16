@@ -372,9 +372,20 @@ object ScalaNativePluginInternal {
       val linkingOpts = nativeLinkingOptions.value
       val clangpp     = nativeClangPP.value
       val outpath     = (artifactPath in nativeLink).value
+      val os          = Option(sys props "os.name").getOrElse("")
+      val stripOpts = {
+        if (nativeMode.value == "release") {
+          val stripOpt = os match {
+            case "Max Os X" => "-dead_strip"
+            case "Linux"    => "-strip-all"
+            case _          => ""
+          }
+          Seq("-Wl," + stripOpt)
+        } else Seq("")
+      }
 
       val links = {
-        val os   = Option(sys props "os.name").getOrElse("")
+
         val arch = target.split("-").head
         // we need re2 to link the re2 c wrapper (cre2.h)
         val librt = os match {
@@ -388,7 +399,7 @@ object ScalaNativePluginInternal {
         librt ++ libunwind ++ linked.links
           .map(_.name) ++ garbageCollector(gc).links
       }
-      val linkopts  = links.map("-l" + _) ++ linkingOpts
+      val linkopts  = links.map("-l" + _) ++ linkingOpts ++ stripOpts
       val targetopt = Seq("-target", target)
       val flags     = Seq("-o", outpath.abs) ++ linkopts ++ targetopt
       val opaths    = (nativelib ** "*.o").get.map(_.abs)
