@@ -97,7 +97,7 @@ final class Matcher private[regex] (var _pattern: Pattern,
         while (i < nMatches) {
           val m = matches + i
           groups(i) = if (m.length == 0) {
-            (-1, -1)
+            (0, 0)
           } else {
             // Takes from inre2 until m...
             val before = alloc[cre2.string_t]
@@ -158,7 +158,7 @@ final class Matcher private[regex] (var _pattern: Pattern,
     val startIndex = start(group)
     val endIndex   = end(group)
 
-    if (startIndex < 0 && endIndex < 0) {
+    if (startIndex <= 0 && endIndex <= 0) {
       null
     } else {
       inputSequence.subSequence(startIndex, endIndex).toString
