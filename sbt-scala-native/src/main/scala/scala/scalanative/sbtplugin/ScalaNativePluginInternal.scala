@@ -376,7 +376,7 @@ object ScalaNativePluginInternal {
       val stripOpts = {
         if (nativeMode.value == "release") {
           val stripOpt = os match {
-            case "Max Os X" => "-dead_strip"
+            case "Max OS X" => "-dead_strip"
             case "Linux"    => "-strip-all"
             case _          => ""
           }
