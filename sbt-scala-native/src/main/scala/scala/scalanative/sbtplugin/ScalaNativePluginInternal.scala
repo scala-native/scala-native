@@ -68,6 +68,9 @@ object ScalaNativePluginInternal {
   val nativeLinkLL =
     taskKey[File]("Link native object files into the final binary")
 
+  val nativeStripOpts =
+    settingKey[Seq[String]]("Remove debug symbols choice")
+
   lazy val scalaNativeDependencySettings: Seq[Setting[_]] = Seq(
     libraryDependencies ++= Seq(
       "org.scala-native" %%% "nativelib"      % nativeVersion,
@@ -116,6 +119,7 @@ object ScalaNativePluginInternal {
     },
     nativeLinkingOptions in NativeTest := (nativeLinkingOptions in Test).value,
     nativeMode := "debug",
+    nativeEnableStrip := false,
     nativeLinkStubs := false,
     nativeLinkStubs in NativeTest := (nativeLinkStubs in Test).value,
     nativeMode in NativeTest := (nativeMode in Test).value,
@@ -361,6 +365,20 @@ object ScalaNativePluginInternal {
           .toSeq
       }
     },
+    nativeStripOpts := {
+      val os = Option(sys props "os.name").getOrElse("")
+      val stripOpts = {
+        if (nativeMode.value == "release" && nativeEnableStrip.value) {
+          val stripOpt = os match {
+            case "Mac OS X" => "-dead_strip"
+            case "Linux"    => "-strip-all"
+            case _          => ""
+          }
+          Seq("-Wl," + stripOpt)
+        } else Seq("")
+      }
+      stripOpts
+    },
     nativeLinkLL := {
       val linked      = nativeLinkNIR.value
       val logger      = streams.value.log
@@ -372,20 +390,10 @@ object ScalaNativePluginInternal {
       val linkingOpts = nativeLinkingOptions.value
       val clangpp     = nativeClangPP.value
       val outpath     = (artifactPath in nativeLink).value
-      val os          = Option(sys props "os.name").getOrElse("")
-      val stripOpts = {
-        if (nativeMode.value == "release") {
-          val stripOpt = os match {
-            case "Max OS X" => "-dead_strip"
-            case "Linux"    => "-strip-all"
-            case _          => ""
-          }
-          Seq("-Wl," + stripOpt)
-        } else Seq("")
-      }
+      val stripOpts   = nativeStripOpts.value
 
       val links = {
-
+        val os   = Option(sys props "os.name").getOrElse("")
         val arch = target.split("-").head
         // we need re2 to link the re2 c wrapper (cre2.h)
         val librt = os match {
