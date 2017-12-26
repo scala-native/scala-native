@@ -192,21 +192,12 @@ lazy val libSettings =
     scalacOptions ++= Seq("-encoding", "utf8")
   )
 
-lazy val gcSetting =
-  nativeGC in ThisBuild := {
-    val log     = sLog.value
-    val default = (nativeGC in ThisBuild).value
-    val gc      = Option(System.getenv.get("SCALANATIVE_GC")).getOrElse(default)
-    log.info(s"Using $gc gc")
-    gc
-  }
-
 lazy val projectSettings =
   ScalaNativePlugin.projectSettings ++ Seq(
     scalaVersion := libScalaVersion,
     resolvers := Nil,
     scalacOptions ++= Seq("-target:jvm-1.8")
-  ) :+ gcSetting
+  )
 
 lazy val util =
   project
