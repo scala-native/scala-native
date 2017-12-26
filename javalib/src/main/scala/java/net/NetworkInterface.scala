@@ -458,8 +458,9 @@ object NetworkInterface {
     } else {
       interfaces.foreach(netif =>
         netif.addresses.foreach { addr =>
-          if (addr != null || addr.isLinkLocalAddress() || addr
-                .isSiteLocalAddress()) {
+          if (addr != null && addr.ipAddress.length == 16 && (addr
+                .isLinkLocalAddress() || addr
+                .isSiteLocalAddress())) {
             addr.asInstanceOf[Inet6Address].scopedIf = netif
             addr.asInstanceOf[Inet6Address].ifname = netif.getName()
             addr.asInstanceOf[Inet6Address].scope_ifname_set = true
