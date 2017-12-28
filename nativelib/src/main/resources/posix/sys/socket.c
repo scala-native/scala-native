@@ -180,7 +180,7 @@ int scalanative_accept(int socket, struct scalanative_sockaddr *address,
 
 int scalanative_setsockopt(int socket, int level, int option_name,
                            void *option_value, socklen_t option_len) {
-    if (IP_MULTICAST_IF) {
+    if (option_name == IP_MULTICAST_IF) {
         struct sockaddr_in *converted_address;
         socklen_t size;
         int convert_result = scalanative_convert_sockaddr_in((struct scalanative_sockaddr_in*) option_value, 
@@ -202,7 +202,7 @@ int scalanative_setsockopt(int socket, int level, int option_name,
 
 int scalanative_getsockopt(int socket, int level, int option_name,
                            void *option_value, socklen_t *option_len) {
-    if (IP_MULTICAST_IF) {
+    if (option_name == IP_MULTICAST_IF) {
         struct sockaddr_in *converted_address;
         socklen_t size;
         int convert_result = scalanative_convert_sockaddr_in((struct scalanative_sockaddr_in*) option_value, 
