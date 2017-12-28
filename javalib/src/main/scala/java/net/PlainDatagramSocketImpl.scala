@@ -786,7 +786,7 @@ object PlainDatagramSocketImpl {
   private[net] final val IP_MULTICAST_DROP = 20
   private[net] final val IP_MULTICAST_TTL  = 17
 
-  private final val BROKEN_MULTICAST_IF       = 1
-  private final val BROKEN_MULTICAST_TTL      = 2
-  private final val BROKEN_TCP_NODELAY        = 4
+  private final val BROKEN_MULTICAST_IF  = 1
+  private final val BROKEN_MULTICAST_TTL = 2
+  private final val BROKEN_TCP_NODELAY   = 4
 }
