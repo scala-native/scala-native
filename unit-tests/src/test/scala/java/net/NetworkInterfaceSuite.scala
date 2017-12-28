@@ -199,7 +199,15 @@ object NetworkInterfaceSuite extends tests.Suite {
             .getInterfaceAddresses()
             .asScala
             .foreach(addr => assert(addr != null)))
-    NetworkInterface.getNetworkInterfaces().asScala.foreach(netif => assert(netif.getInterfaceAddresses().asScala == netif.getInterfaceAddresses().asScala))
+    NetworkInterface
+      .getNetworkInterfaces()
+      .asScala
+      .foreach(
+        netif =>
+          assert(
+            netif.getInterfaceAddresses().asScala == netif
+              .getInterfaceAddresses()
+              .asScala))
   }
 
   test("isLoopback") {

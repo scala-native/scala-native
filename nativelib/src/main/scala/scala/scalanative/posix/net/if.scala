@@ -12,15 +12,15 @@ object _if {
   type ifreq = CStruct1[CArray[CChar, _16]] // ifr_name
 
   type ifreq_hwaddr = CStruct2[CArray[CChar, _16], // ifr_name
-                               socket.sockaddr]    // ifr_hwaddr
+                               socket.sockaddr] // ifr_hwaddr
 
   type ifreq_flags = CStruct2[CArray[CChar, _16], // ifr_name
-                              CShort]             // ifr_flags
+                              CShort] // ifr_flags
 
   type ifreq_mtu = CStruct2[CArray[CChar, _16], // ifr_name
-                            CInt]               // ifr_mtu
+                            CInt] // ifr_mtu
 
-  type ifconf = CStruct2[CInt,      // ifc_len
+  type ifconf = CStruct2[CInt, // ifc_len
                          Ptr[Byte]] // ifc_buf
 
   def if_nametoindex(ifname: CString): UInt = extern
