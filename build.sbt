@@ -280,16 +280,8 @@ lazy val sbtScalaNative =
       // publish the other projects before running scripted tests.
       scripted := scripted
         .dependsOn(
-          publishLocal in util,
-          publishLocal in nir,
-          publishLocal in tools,
-          publishLocal in nscplugin,
-          publishLocal in nativelib,
-          publishLocal in javalib,
-          publishLocal in auxlib,
           publishLocal in scalalib,
-          publishLocal in testInterfaceSbtDefs,
-          publishLocal in testInterfaceSerialization,
+          publishLocal in ThisProject,
           publishLocal in testInterface
         )
         .evaluated,
