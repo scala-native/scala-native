@@ -42,7 +42,6 @@ addCommandAlias(
   "test-all",
   Seq(
     "sandbox/run",
-    "demoNative/run",
     "tests/test",
     "tools/test",
     "benchmarks/run --test",
@@ -414,22 +413,6 @@ lazy val scalalib =
       publishLocal := publishLocal.dependsOn(assembleScalaLibrary).value
     )
     .dependsOn(auxlib, nativelib, javalib)
-
-lazy val demoJVM =
-  project
-    .in(file("demo/jvm"))
-    .settings(noPublishSettings)
-    .settings(
-      fork in run := true,
-      javaOptions in run ++= Seq("-Xms64m", "-Xmx64m")
-    )
-
-lazy val demoNative =
-  project
-    .in(file("demo/native"))
-    .settings(projectSettings)
-    .settings(noPublishSettings)
-    .enablePlugins(ScalaNativePlugin)
 
 lazy val tests =
   project
