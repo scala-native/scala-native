@@ -31,4 +31,11 @@ object CInteropSuite extends tests.Suite {
       assert(sarr - sptr == -7)
     }
   }
+
+  def randFunc = CFunctionPtr.fromFunction0(stdlib.rand _)
+
+  test("CFunctionPtr cast and call with given signature") {
+    val wrongRand = randFunc.cast[CFunctionPtr1[Int, Int]] // wrong signature
+    wrongRand(42) // no argument declared
+  }
 }

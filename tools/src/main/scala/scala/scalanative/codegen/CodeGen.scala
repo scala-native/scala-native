@@ -714,7 +714,8 @@ object CodeGen {
 
     def genCall(genBind: () => Unit, call: Op.Call)(
         implicit fresh: Fresh): Unit = call match {
-      case Op.Call(ty, Val.Global(pointee, _), args, Next.None) =>
+      case Op.Call(ty, Val.Global(pointee, _), args, Next.None)
+          if lookup(pointee) == ty =>
         val Type.Function(argtys, _) = ty
 
         touch(pointee)
@@ -729,7 +730,8 @@ object CodeGen {
         rep(args, sep = ", ")(genVal)
         str(")")
 
-      case Op.Call(ty, Val.Global(pointee, _), args, unwind) =>
+      case Op.Call(ty, Val.Global(pointee, _), args, unwind)
+          if lookup(pointee) == ty =>
         val Type.Function(argtys, _) = ty
 
         val succ = fresh()

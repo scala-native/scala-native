@@ -72,6 +72,8 @@ trait NirGenType { self: NirGenPhase =>
       nir.Type.Struct(nir.Global.None, st.targs.map(genType(_, box = false)))
     case CArrayClass =>
       genCArrayType(st)
+    case sym if CFunctionPtrClass.contains(sym) =>
+      nir.Type.Ptr
     case _ =>
       genRefType(st)
   }
