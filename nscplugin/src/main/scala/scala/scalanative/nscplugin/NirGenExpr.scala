@@ -662,7 +662,13 @@ trait NirGenExpr { self: NirGenPhase =>
                         curMethodThis.get.get,
                         args)
         case Select(New(_), nme.CONSTRUCTOR) =>
-          genApplyNew(app)
+          val Apply(Select(New(tpt), nme.CONSTRUCTOR), _) = app
+
+          SimpleType.fromType(tpt.tpe) match {
+            case st if st.isExternModule =>
+              Val.Null
+            case _ => genApplyNew(app)
+          }
         case _ =>
           val sym = fun.symbol
 
