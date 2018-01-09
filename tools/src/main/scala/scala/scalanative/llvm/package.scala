@@ -2,8 +2,11 @@ package scala.scalanative
 
 import java.nio.file.{Files, Path, Paths}
 
+import scala.collection.JavaConverters._
 import scala.util.Try
 import scala.sys.process._
+
+import tools.Logger
 
 package object llvm {
 
@@ -55,7 +58,7 @@ package object llvm {
    */
   def checkThatClangIsRecentEnough(pathToClangBinary: Path): Unit = {
     def maybePath(p: Path) = p match {
-      case path if Files.exists(path) => Some(path.toAbsolutePath.toString)
+      case path if Files.exists(path) => Some(path.abs)
       case none                       => None
     }
 
@@ -110,6 +113,44 @@ package object llvm {
     libs
   }
 
+  /**
+   * Detect the target architecture.
+   *
+   * @param clang   A path to the executable `clang`.
+   * @param workdir A working directory where the compilation will take place.
+   * @param logger  A logger that will receive messages about the execution.
+   * @return The detected target triple describing the target architecture.
+   */
+  def detectTarget(clang: Path, workdir: Path, logger: Logger): String = {
+    // Use non-standard extension to not include the ll file when linking (#639)
+    val targetc  = workdir.resolve("target").resolve("c.probe")
+    val targetll = workdir.resolve("target").resolve("ll.probe")
+    val compilec =
+      Seq(clang.abs, "-S", "-xc", "-emit-llvm", "-o", targetll.abs, targetc.abs)
+    def fail =
+      throw new Exception("Failed to detect native target.")
+
+    Files.write(targetc, "int probe;".getBytes("UTF-8"))
+    logger.running(compilec)
+    val exit = Process(compilec, workdir.toFile) ! toProcessLogger(logger)
+    if (exit != 0) fail
+    Files
+      .readAllLines(targetll)
+      .asScala
+      .collectFirst {
+        case line if line.startsWith("target triple") =>
+          line.split("\"").apply(1)
+      }
+      .getOrElse(fail)
+  }
+
   private val SilentLogger = ProcessLogger(_ => (), _ => ())
+
+  private def toProcessLogger(logger: Logger): ProcessLogger =
+    ProcessLogger(logger.info, logger.error)
+
+  private implicit class RichPath(val path: Path) extends AnyVal {
+    def abs: String = path.toAbsolutePath.toString
+  }
 
 }

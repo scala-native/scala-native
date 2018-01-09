@@ -48,6 +48,12 @@ object Utilities {
       res
     }
 
+    def toLogger: tools.Logger =
+      tools.Logger(logger.debug(_),
+                   logger.info(_),
+                   logger.warn(_),
+                   logger.error(_))
+
     def running(command: Seq[String]): Unit =
       logger.debug("running" + nl + command.mkString(nl + "\t"))
   }

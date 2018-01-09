@@ -127,32 +127,9 @@ object ScalaNativePluginInternal {
   lazy val scalaNativeConfigSettings: Seq[Setting[_]] = Seq(
     nativeTarget := {
       val logger = streams.value.log
-      val cwd    = nativeWorkdir.value
-      val clang  = nativeClang.value
-      // Use non-standard extension to not include the ll file when linking (#639)
-      val targetc  = cwd / "target" / "c.probe"
-      val targetll = cwd / "target" / "ll.probe"
-      val compilec =
-        Seq(clang.abs,
-            "-S",
-            "-xc",
-            "-emit-llvm",
-            "-o",
-            targetll.abs,
-            targetc.abs)
-      def fail =
-        throw new MessageOnlyException("Failed to detect native target.")
-
-      IO.write(targetc, "int probe;")
-      logger.running(compilec)
-      val exit = Process(compilec, cwd) ! logger
-      if (exit != 0) fail
-      IO.readLines(targetll)
-        .collectFirst {
-          case line if line.startsWith("target triple") =>
-            line.split("\"").apply(1)
-        }
-        .getOrElse(fail)
+      val cwd    = nativeWorkdir.value.toPath
+      val clang  = nativeClang.value.toPath
+      llvm.detectTarget(clang, cwd, logger.toLogger)
     },
     artifactPath in nativeLink := {
       crossTarget.value / (moduleName.value + "-out")
