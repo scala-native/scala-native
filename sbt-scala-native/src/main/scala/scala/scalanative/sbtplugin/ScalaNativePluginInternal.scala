@@ -309,7 +309,7 @@ object ScalaNativePluginInternal {
           case _          => Seq("unwind", "unwind-" + arch)
         }
         librt ++ libunwind ++ linked.links
-          .map(_.name) ++ garbageCollector(gc).links
+          .map(_.name) ++ tools.GarbageCollector(gc).links
       }
       val linkopts  = links.map("-l" + _) ++ linkingOpts ++ Seq("-lpthread")
       val targetopt = Seq("-target", target)

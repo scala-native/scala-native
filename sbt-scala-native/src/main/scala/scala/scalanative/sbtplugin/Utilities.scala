@@ -25,15 +25,6 @@ object Utilities {
         "nativeMode can be either \"debug\" or \"release\", not: " + value)
   }
 
-  def garbageCollector(gc: String) = gc match {
-    case "none"  => GarbageCollector.None
-    case "boehm" => GarbageCollector.Boehm
-    case "immix" => GarbageCollector.Immix
-    case value =>
-      throw new MessageOnlyException(
-        "nativeGC can be either \"none\", \"boehm\" or \"immix\", not: " + value)
-  }
-
   implicit class RichFile(file: File) {
     def abs: String = file.getAbsolutePath
   }
