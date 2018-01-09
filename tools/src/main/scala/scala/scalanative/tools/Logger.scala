@@ -19,6 +19,9 @@ trait Logger {
 
   /** Logs at the debug level that the command `cmd` will start running. */
   def running(cmd: Seq[String]): Unit
+
+  /** Executes `f` and logs at the info level how much long it took. */
+  def time[T](msg: String)(f: => T): T
 }
 
 object Logger {
@@ -40,6 +43,14 @@ object Logger {
     override def running(cmd: Seq[String]): Unit = {
       val msg = "running" + nl + cmd.mkString(nl + "\t")
       debugFn(msg)
+    }
+    override def time[T](msg: String)(f: => T): T = {
+      import java.lang.System.nanoTime
+      val start = nanoTime()
+      val res   = f
+      val end   = nanoTime()
+      info(s"$msg (${(end - start) / 1000000} ms)")
+      res
     }
   }
 }
