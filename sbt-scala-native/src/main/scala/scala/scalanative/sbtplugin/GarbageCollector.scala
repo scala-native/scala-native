@@ -1,8 +1,6 @@
 package scala.scalanative
 package sbtplugin
 
-import java.io.File
-
 /**
  * @param dir directory name of the gc
  * @param links dependencies of the gc

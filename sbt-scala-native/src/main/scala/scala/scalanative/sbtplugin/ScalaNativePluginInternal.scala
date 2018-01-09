@@ -84,15 +84,15 @@ object ScalaNativePluginInternal {
     crossVersion := ScalaNativeCrossVersion.binary,
     platformDepsCrossVersion := ScalaNativeCrossVersion.binary,
     nativeClang := {
-      val clang = discover("clang", clangVersions)
-      checkThatClangIsRecentEnough(clang)
-      clang
+      val clang = llvm.discover("clang", llvm.clangVersions)
+      llvm.checkThatClangIsRecentEnough(clang)
+      clang.toFile
     },
     nativeClang in NativeTest := (nativeClang in Test).value,
     nativeClangPP := {
-      val clang = discover("clang++", clangVersions)
-      checkThatClangIsRecentEnough(clang)
-      clang
+      val clang = llvm.discover("clang++", llvm.clangVersions)
+      llvm.checkThatClangIsRecentEnough(clang)
+      clang.toFile
     },
     nativeClangPP in NativeTest := (nativeClangPP in Test).value,
     nativeCompileOptions := {
