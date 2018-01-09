@@ -270,30 +270,19 @@ object ScalaNativePluginInternal {
     },
     nativeCompileLL := {
       val logger      = streams.value.log
-      val generated   = nativeGenerateLL.value
-      val clangpp     = nativeClangPP.value
-      val cwd         = nativeWorkdir.value
+      val generated   = nativeGenerateLL.value.map(_.toPath)
+      val clangpp     = nativeClangPP.value.toPath
+      val cwd         = nativeWorkdir.value.toPath
       val compileOpts = nativeCompileOptions.value
-      val optimizationOpt =
-        mode(nativeMode.value) match {
-          case tools.Mode.Debug   => "-O0"
-          case tools.Mode.Release => "-O2"
-        }
-      val opts = optimizationOpt +: compileOpts
+      val modeString  = nativeMode.value
 
-      logger.time("Compiling to native code") {
-        generated.par
-          .map { ll =>
-            val apppath = ll.abs
-            val outpath = apppath + ".o"
-            val compile = Seq(clangpp.abs, "-c", apppath, "-o", outpath) ++ opts
-            logger.running(compile)
-            Process(compile, cwd) ! logger
-            new File(outpath)
-          }
-          .seq
-          .toSeq
-      }
+      val outPaths = llvm.compileLL(clangpp,
+                                    generated,
+                                    mode(modeString),
+                                    compileOpts,
+                                    cwd,
+                                    logger.toLogger)
+      outPaths.map(_.toFile)
     },
     nativeLinkLL := {
       val linked      = nativeLinkNIR.value

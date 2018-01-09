@@ -6,7 +6,7 @@ import scala.collection.JavaConverters._
 import scala.util.Try
 import scala.sys.process._
 
-import tools.Logger
+import tools.{Logger, Mode}
 
 package object llvm {
 
@@ -142,6 +142,35 @@ package object llvm {
           line.split("\"").apply(1)
       }
       .getOrElse(fail)
+  }
+
+  /** Compile the given LL files to object files */
+  def compileLL(clangPP: Path,
+                llPaths: Seq[Path],
+                mode: Mode,
+                compileOpts: Seq[String],
+                workdir: Path,
+                logger: Logger): Seq[Path] = {
+    val optimizationOpt =
+      mode match {
+        case Mode.Debug   => "-O0"
+        case Mode.Release => "-O2"
+      }
+    val opts = optimizationOpt +: compileOpts
+
+    logger.time("Compiling to native code") {
+      llPaths.par
+        .map { ll =>
+          val apppath = ll.abs
+          val outpath = apppath + ".o"
+          val compile = Seq(clangPP.abs, "-c", apppath, "-o", outpath) ++ opts
+          logger.running(compile)
+          Process(compile, workdir.toFile) ! toProcessLogger(logger)
+          Paths.get(outpath)
+        }
+        .seq
+        .toSeq
+    }
   }
 
   private val SilentLogger = ProcessLogger(_ => (), _ => ())
