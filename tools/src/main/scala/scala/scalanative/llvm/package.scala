@@ -6,8 +6,8 @@ import scala.collection.JavaConverters._
 import scala.util.Try
 import scala.sys.process._
 
-import tools.{Logger, Mode}
-import tools.IO.RichPath
+import tools.{GarbageCollector, IO, LinkerResult, Logger, Mode}
+import IO.RichPath
 
 package object llvm {
 
@@ -173,6 +173,48 @@ package object llvm {
         .seq
         .toSeq
     }
+  }
+
+  def linkLL(linkerResult: LinkerResult,
+             llPaths: Seq[Path],
+             nativelib: Path,
+             clangpp: Path,
+             linkingOpts: Seq[String],
+             gc: GarbageCollector,
+             workdir: Path,
+             outpath: Path,
+             target: String,
+             logger: Logger): Path = {
+
+    val links = {
+      val os   = Option(sys props "os.name").getOrElse("")
+      val arch = target.split("-").head
+      // we need re2 to link the re2 c wrapper (cre2.h)
+      val librt = os match {
+        case "Linux" => Seq("rt")
+        case _       => Seq.empty
+      }
+      val libunwind = os match {
+        case "Mac OS X" => Seq.empty
+        case _          => Seq("unwind", "unwind-" + arch)
+      }
+      librt ++ libunwind ++ linkerResult.links
+        .map(_.name) ++ gc.links
+    }
+    val linkopts  = links.map("-l" + _) ++ linkingOpts ++ Seq("-lpthread")
+    val targetopt = Seq("-target", target)
+    val flags     = Seq("-o", outpath.abs) ++ linkopts ++ targetopt
+    val opaths    = IO.getAll(nativelib, "glob:*.o").map(_.abs)
+    val paths     = llPaths.map(_.abs) ++ opaths
+    val compile   = clangpp.abs +: (flags ++ paths)
+
+    logger.time("Linking native code") {
+      logger.running(compile)
+      Process(compile, workdir.toFile) ! Logger.toProcessLogger(logger)
+    }
+
+    outpath
+
   }
 
   private val SilentLogger = ProcessLogger(_ => (), _ => ())

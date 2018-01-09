@@ -242,44 +242,27 @@ object ScalaNativePluginInternal {
     },
     nativeLinkLL := {
       val linked      = nativeLinkNIR.value
-      val logger      = streams.value.log
-      val apppaths    = nativeCompileLL.value
-      val nativelib   = nativeCompileLib.value
-      val cwd         = nativeWorkdir.value
+      val logger      = streams.value.log.toLogger
+      val apppaths    = nativeCompileLL.value.map(_.toPath)
+      val nativelib   = nativeCompileLib.value.toPath
+      val cwd         = nativeWorkdir.value.toPath
       val target      = nativeTarget.value
-      val gc          = nativeGC.value
+      val gc          = tools.GarbageCollector(nativeGC.value)
       val linkingOpts = nativeLinkingOptions.value
-      val clangpp     = nativeClangPP.value
-      val outpath     = (artifactPath in nativeLink).value
+      val clangpp     = nativeClangPP.value.toPath
+      val outpath     = (artifactPath in nativeLink).value.toPath
 
-      val links = {
-        val os   = Option(sys props "os.name").getOrElse("")
-        val arch = target.split("-").head
-        // we need re2 to link the re2 c wrapper (cre2.h)
-        val librt = os match {
-          case "Linux" => Seq("rt")
-          case _       => Seq.empty
-        }
-        val libunwind = os match {
-          case "Mac OS X" => Seq.empty
-          case _          => Seq("unwind", "unwind-" + arch)
-        }
-        librt ++ libunwind ++ linked.links
-          .map(_.name) ++ tools.GarbageCollector(gc).links
-      }
-      val linkopts  = links.map("-l" + _) ++ linkingOpts ++ Seq("-lpthread")
-      val targetopt = Seq("-target", target)
-      val flags     = Seq("-o", outpath.abs) ++ linkopts ++ targetopt
-      val opaths    = (nativelib ** "*.o").get.map(_.abs)
-      val paths     = apppaths.map(_.abs) ++ opaths
-      val compile   = clangpp.abs +: (flags ++ paths)
-
-      logger.time(s"Linking native code ($gc gc)") {
-        logger.running(compile)
-        Process(compile, cwd) ! logger
-      }
-
-      outpath
+      val outPath = llvm.linkLL(linked,
+                                apppaths,
+                                nativelib,
+                                clangpp,
+                                linkingOpts,
+                                gc,
+                                cwd,
+                                outpath,
+                                target,
+                                logger)
+      outPath.toFile
     },
     nativeLink := {
       nativeWarnOldJVM.value
