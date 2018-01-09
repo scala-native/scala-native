@@ -159,10 +159,8 @@ object ScalaNativePluginInternal {
     },
     nativeUnpackLib := {
       val cwd       = nativeWorkdir.value
-      val logger    = streams.value.log
       val classpath = (fullClasspath in Compile).value
 
-      val lib = cwd / "lib"
       val jar =
         classpath
           .map(entry => entry.data.abs)
@@ -171,20 +169,8 @@ object ScalaNativePluginInternal {
               file(p)
           }
           .get
-      val jarhash     = Hash(jar).toSeq
-      val jarhashfile = lib / "jarhash"
-      def unpacked =
-        lib.exists &&
-          jarhashfile.exists &&
-          jarhash == IO.readBytes(jarhashfile).toSeq
 
-      if (!unpacked) {
-        IO.delete(lib)
-        IO.unzip(jar, lib)
-        IO.write(jarhashfile, Hash(jar))
-      }
-
-      lib
+      build.unpackNativeLibrary(jar.toPath, cwd.toPath).toFile
     },
     nativeCompileLib := {
       val linked    = nativeLinkNIR.value
