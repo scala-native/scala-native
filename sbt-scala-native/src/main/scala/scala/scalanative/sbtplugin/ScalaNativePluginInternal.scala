@@ -95,15 +95,7 @@ object ScalaNativePluginInternal {
       clang.toFile
     },
     nativeClangPP in NativeTest := (nativeClangPP in Test).value,
-    nativeCompileOptions := {
-      val includes = {
-        val includedir =
-          Try(Process("llvm-config --includedir").lines_!.toSeq)
-            .getOrElse(Seq.empty)
-        ("/usr/local/include" +: includedir).map(s => s"-I$s")
-      }
-      includes :+ "-Qunused-arguments"
-    },
+    nativeCompileOptions := llvm.defaultCompileOptions,
     nativeCompileOptions in NativeTest := (nativeCompileOptions in Test).value,
     nativeLinkingOptions := {
       val libs = {

@@ -2,6 +2,7 @@ package scala.scalanative
 
 import java.nio.file.{Files, Path, Paths}
 
+import scala.util.Try
 import scala.sys.process._
 
 package object llvm {
@@ -85,6 +86,17 @@ package object llvm {
           s"at $pathToClangBinary.\nSee http://scala-native.readthedocs.io" +
           s"/en/latest/user/setup.html for details.")
     }
+  }
+
+  /** Default compilation options passed to LLVM. */
+  lazy val defaultCompileOptions: Seq[String] = {
+    val includes = {
+      val includedir =
+        Try(Process("llvm-config --includedir").lines_!.toSeq)
+          .getOrElse(Seq.empty)
+      ("/usr/local/include" +: includedir).map(s => s"-I$s")
+    }
+    includes :+ "-Qunused-arguments"
   }
 
   private val SilentLogger = ProcessLogger(_ => (), _ => ())
