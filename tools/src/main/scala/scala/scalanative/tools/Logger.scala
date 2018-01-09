@@ -2,6 +2,8 @@ package scala.scalanative.tools
 
 import java.lang.System.{err, out, lineSeparator => nl}
 
+import scala.sys.process.ProcessLogger
+
 /** A `Logger` is in charge of collecting log messages. */
 trait Logger {
 
@@ -53,4 +55,7 @@ object Logger {
       res
     }
   }
+
+  def toProcessLogger(logger: Logger): ProcessLogger =
+    ProcessLogger(logger.info, logger.error)
 }

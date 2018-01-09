@@ -7,6 +7,7 @@ import scala.util.Try
 import scala.sys.process._
 
 import tools.{Logger, Mode}
+import tools.IO.RichPath
 
 package object llvm {
 
@@ -132,7 +133,8 @@ package object llvm {
 
     Files.write(targetc, "int probe;".getBytes("UTF-8"))
     logger.running(compilec)
-    val exit = Process(compilec, workdir.toFile) ! toProcessLogger(logger)
+    val exit = Process(compilec, workdir.toFile) ! Logger.toProcessLogger(
+      logger)
     if (exit != 0) fail
     Files
       .readAllLines(targetll)
@@ -165,7 +167,7 @@ package object llvm {
           val outpath = apppath + ".o"
           val compile = Seq(clangPP.abs, "-c", apppath, "-o", outpath) ++ opts
           logger.running(compile)
-          Process(compile, workdir.toFile) ! toProcessLogger(logger)
+          Process(compile, workdir.toFile) ! Logger.toProcessLogger(logger)
           Paths.get(outpath)
         }
         .seq
@@ -174,12 +176,5 @@ package object llvm {
   }
 
   private val SilentLogger = ProcessLogger(_ => (), _ => ())
-
-  private def toProcessLogger(logger: Logger): ProcessLogger =
-    ProcessLogger(logger.info, logger.error)
-
-  private implicit class RichPath(val path: Path) extends AnyVal {
-    def abs: String = path.toAbsolutePath.toString
-  }
 
 }

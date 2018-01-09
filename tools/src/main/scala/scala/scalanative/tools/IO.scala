@@ -4,6 +4,7 @@ import java.io.IOException
 import java.nio.file.{
   Files,
   FileSystems,
+  FileVisitOption,
   FileVisitResult,
   Path,
   Paths,
@@ -11,10 +12,47 @@ import java.nio.file.{
   StandardCopyOption
 }
 import java.nio.file.attribute.BasicFileAttributes
+import java.util.EnumSet
 import java.util.zip.{ZipEntry, ZipInputStream}
 import java.security.{DigestInputStream, MessageDigest}
 
 object IO {
+
+  implicit class RichPath(val path: Path) extends AnyVal {
+    def abs: String = path.toAbsolutePath.toString
+  }
+
+  /** Finds all files in `base` that match `pattern`. */
+  def getAll(base: Path, pattern: String): Seq[Path] = {
+    val out     = collection.mutable.ArrayBuffer.empty[Path]
+    val matcher = FileSystems.getDefault.getPathMatcher(pattern)
+    val visitor = new SimpleFileVisitor[Path] {
+      override def preVisitDirectory(
+          directory: Path,
+          attributes: BasicFileAttributes): FileVisitResult =
+        FileVisitResult.CONTINUE
+
+      override def postVisitDirectory(directory: Path,
+                                      exception: IOException): FileVisitResult =
+        FileVisitResult.CONTINUE
+
+      override def visitFile(
+          file: Path,
+          attributes: BasicFileAttributes): FileVisitResult = {
+        if (matcher.matches(file)) out += file
+        FileVisitResult.CONTINUE
+      }
+
+      override def visitFileFailed(file: Path,
+                                   exception: IOException): FileVisitResult =
+        FileVisitResult.CONTINUE
+    }
+    Files.walkFileTree(base,
+                       EnumSet.of(FileVisitOption.FOLLOW_LINKS),
+                       Int.MaxValue,
+                       visitor)
+    out
+  }
 
   /** Deletes recursively `directory` and all its content. */
   def deleteRecursive(directory: Path): Unit = {
