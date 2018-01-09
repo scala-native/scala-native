@@ -99,6 +99,17 @@ package object llvm {
     includes :+ "-Qunused-arguments"
   }
 
+  /** Default options passed to LLVM's linker. */
+  lazy val defaultLinkingOptions: Seq[String] = {
+    val libs = {
+      val libdir =
+        Try(Process("llvm-config --libdir").lines_!.toSeq)
+          .getOrElse(Seq.empty)
+      ("/usr/local/lib" +: libdir).map(s => s"-L$s")
+    }
+    libs
+  }
+
   private val SilentLogger = ProcessLogger(_ => (), _ => ())
 
 }

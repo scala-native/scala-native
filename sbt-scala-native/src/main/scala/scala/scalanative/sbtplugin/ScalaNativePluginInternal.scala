@@ -97,15 +97,7 @@ object ScalaNativePluginInternal {
     nativeClangPP in NativeTest := (nativeClangPP in Test).value,
     nativeCompileOptions := llvm.defaultCompileOptions,
     nativeCompileOptions in NativeTest := (nativeCompileOptions in Test).value,
-    nativeLinkingOptions := {
-      val libs = {
-        val libdir =
-          Try(Process("llvm-config --libdir").lines_!.toSeq)
-            .getOrElse(Seq.empty)
-        ("/usr/local/lib" +: libdir).map(s => s"-L$s")
-      }
-      libs
-    },
+    nativeLinkingOptions := llvm.defaultLinkingOptions,
     nativeLinkingOptions in NativeTest := (nativeLinkingOptions in Test).value,
     nativeMode := Option(System.getenv.get("SCALANATIVE_MODE"))
       .getOrElse("debug"),
