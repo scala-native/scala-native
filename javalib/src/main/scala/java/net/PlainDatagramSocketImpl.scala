@@ -281,7 +281,7 @@ class PlainDatagramSocketImpl extends DatagramSocketImpl {
       selectRes match {
         case 0 =>
           throw new SocketTimeoutException(
-            "Accept timed out, "
+            "Read timed out, "
               + "SO_TIMEOUT was set to: " + timeout)
         case -1 =>
           throw new SocketException(fromCString(string.strerror(errno.errno)))
