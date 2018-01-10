@@ -108,27 +108,4 @@ package object build {
     nativelib
   }
 
-  /** Links the NIR files on classpath, reports linking errors. */
-  def linkNIR(driver: OptimizerDriver,
-              config: Config,
-              reporter: LinkerReporter,
-              logger: Logger): LinkerResult = {
-    val result = logger.time("Linking") {
-      tools.link(config, driver, reporter)
-    }
-    if (result.unresolved.nonEmpty) {
-      result.unresolved.map(_.show).sorted.foreach { signature =>
-        logger.error(s"cannot link: $signature")
-      }
-      throw new Exception("unable to link")
-    }
-    val classCount = result.defns.count {
-      case _: nir.Defn.Class | _: nir.Defn.Module | _: nir.Defn.Trait => true
-      case _                                                          => false
-    }
-    val methodCount = result.defns.count(_.isInstanceOf[nir.Defn.Define])
-    logger.info(s"Discovered ${classCount} classes and ${methodCount} methods")
-    result
-  }
-
 }
