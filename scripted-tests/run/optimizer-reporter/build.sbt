@@ -6,7 +6,7 @@ enablePlugins(ScalaNativePlugin)
 scalaVersion := "2.11.12"
 
 nativeOptimizerReporter in Compile := OptimizerReporter.toDirectory(
-  crossTarget.value)
+  crossTarget.value.toPath)
 
 lazy val check = taskKey[Unit]("Check that dot file was created.")
 
