@@ -8,7 +8,7 @@ import java.net.URI
 import java.nio.ByteBuffer
 import java.nio.file._
 import java.nio.channels._
-import scalanative.util.{acquire, defer, Scope}
+import scala.scalanative.util.{acquire, defer, Scope}
 
 sealed trait VirtualDirectory {
 

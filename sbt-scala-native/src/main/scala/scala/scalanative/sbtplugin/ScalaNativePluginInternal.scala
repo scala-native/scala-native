@@ -12,15 +12,15 @@ import sbt.complete.DefaultParsers._
 import sbt.testing.Framework
 import sbtcrossproject.CrossPlugin.autoImport._
 
-import scalanative.nir
-import scalanative.tools
-import scalanative.io.VirtualDirectory
-import scalanative.util.{Scope => ResourceScope}
-import scalanative.sbtplugin.Utilities._
-import scalanative.sbtplugin.TestUtilities._
-import scalanative.sbtplugin.ScalaNativePlugin.autoImport._
-import scalanative.sbtplugin.SBTCompat.{Process, _}
-import scalanative.sbtplugin.testinterface.ScalaNativeFramework
+import scala.scalanative.nir
+import scala.scalanative.tools
+import scala.scalanative.io.VirtualDirectory
+import scala.scalanative.util.{Scope => ResourceScope}
+import scala.scalanative.sbtplugin.Utilities._
+import scala.scalanative.sbtplugin.TestUtilities._
+import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
+import scala.scalanative.sbtplugin.SBTCompat.{Process, _}
+import scala.scalanative.sbtplugin.testinterface.ScalaNativeFramework
 
 object ScalaNativePluginInternal {
 
@@ -59,6 +59,9 @@ object ScalaNativePluginInternal {
   val nativeCompileLL =
     taskKey[Seq[File]]("Compile LLVM IR to native object files.")
 
+  val nativeEmitAssembly =
+    taskKey[Seq[File]]("Compile LLVM IR to native assembly files.")
+
   val nativeUnpackLib =
     taskKey[File]("Unpack native lib.")
 
@@ -67,9 +70,6 @@ object ScalaNativePluginInternal {
 
   val nativeLinkLL =
     taskKey[File]("Link native object files into the final binary")
-
-  val nativeEmitAssembly =
-    settingKey[Boolean]("Controls emitting assembly files during compilation")
 
   lazy val scalaNativeDependencySettings: Seq[Setting[_]] = Seq(
     libraryDependencies ++= Seq(
@@ -128,7 +128,7 @@ object ScalaNativePluginInternal {
     nativeOptimizerReporter in NativeTest := (nativeOptimizerReporter in Test).value,
     nativeGC := "boehm",
     nativeGC in NativeTest := (nativeGC in Test).value,
-    nativeEmitAssembly := false
+    nativeIsEmitAssembly := false
   )
 
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
@@ -339,48 +339,43 @@ object ScalaNativePluginInternal {
       (cwd ** "*.ll").get.toSeq
     },
     nativeCompileLL := {
-      val logger       = streams.value.log
-      val generated    = nativeGenerateLL.value
-      val clangpp      = nativeClangPP.value
-      val cwd          = nativeWorkdir.value
-      val compileOpts  = nativeCompileOptions.value
-      val emitAssembly = nativeEmitAssembly.value
-      val optimizationOpt =
-        mode(nativeMode.value) match {
-          case tools.Mode.Debug   => "-O0"
-          case tools.Mode.Release => "-O2"
-        }
-      val opts = optimizationOpt +: compileOpts
+      val logger           = streams.value.log
+      val generated        = nativeGenerateLL.value
+      val clangpp          = nativeClangPP.value
+      val cwd              = nativeWorkdir.value
+      val compileOpts      = nativeCompileOptions.value
+      val nativeModeString = nativeMode.value
 
-      logger.time("Compiling to native code") {
-        generated.par
-          .map {
-            ll =>
-              val apppath = ll.abs
-              val outpath = apppath + ".o"
-              val compile = Seq(clangpp.abs, "-c", apppath, "-o", outpath) ++ opts
-              logger.running(compile)
-              Process(compile, cwd) ! logger
+      maybeEmitAssemblyCode.value
 
-              if (emitAssembly) {
-                val assemblyOutpath = apppath + ".s"
-                val compileToAssembly = Seq(clangpp.abs,
-                                            "-S",
-                                            "-mllvm",
-                                            "--x86-asm-syntax=intel",
-                                            "-c",
-                                            apppath,
-                                            "-o",
-                                            assemblyOutpath) ++ opts
-                logger.running(compileToAssembly)
-                Process(compileToAssembly, cwd) ! logger
-              }
+      compileWithClang(logger,
+                       generated,
+                       cwd,
+                       compileOpts,
+                       nativeModeString,
+                       clangpp)(
+        outFileFileExt = ".o",
+        timingLogMsg = "Compiling to native code"
+      )
+    },
+    nativeEmitAssembly := {
+      val logger           = streams.value.log
+      val generated        = nativeGenerateLL.value
+      val clangpp          = nativeClangPP.value
+      val cwd              = nativeWorkdir.value
+      val compileOpts      = nativeCompileOptions.value
+      val nativeModeString = nativeMode.value
 
-              new File(outpath)
-          }
-          .seq
-          .toSeq
-      }
+      compileWithClang(logger,
+                       generated,
+                       cwd,
+                       compileOpts,
+                       nativeModeString,
+                       clangpp)(
+        outFileFileExt = ".s",
+        otherClangFlags = Seq("-S", "-mllvm", "--x86-asm-syntax=intel"),
+        timingLogMsg = "Compiling to native assembly code"
+      )
     },
     nativeLinkLL := {
       val linked      = nativeLinkNIR.value
@@ -525,4 +520,41 @@ object ScalaNativePluginInternal {
       inConfig(Compile)(scalaNativeCompileSettings) ++
       inConfig(Test)(scalaNativeTestSettings) ++
       inConfig(NativeTest)(scalaNativeNativeTestSettings)
+
+  private lazy val maybeEmitAssemblyCode = Def.taskDyn[Unit] {
+    if (nativeIsEmitAssembly.value) Def.task {
+      nativeEmitAssembly.value
+    } else Def.task {}
+  }
+
+  private def compileWithClang(logger: Logger,
+                               generated: Seq[File],
+                               cwd: File,
+                               compileOpts: Seq[String],
+                               nativeMode: String,
+                               clangpp: File)(
+      outFileFileExt: String,
+      otherClangFlags: Seq[String] = Seq.empty,
+      timingLogMsg: String): Seq[File] = {
+
+    val optimizationOpt =
+      mode(nativeMode) match {
+        case tools.Mode.Debug   => "-O0"
+        case tools.Mode.Release => "-O2"
+      }
+    val opts = optimizationOpt +: compileOpts
+
+    logger.time(timingLogMsg) {
+      generated.par.map { ll =>
+        val apppath = ll.abs
+        val outpath = apppath + outFileFileExt
+        val compile = Seq(clangpp.abs, "-c", apppath, "-o", outpath) ++ opts ++ otherClangFlags
+
+        logger.running(compile)
+        Process(compile, cwd) ! logger
+
+        new File(outpath)
+      }.seq
+    }
+  }
 }
