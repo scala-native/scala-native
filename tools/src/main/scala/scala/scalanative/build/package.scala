@@ -12,11 +12,49 @@ import tools.{
   LinkerReporter,
   LinkerResult,
   Logger,
-  OptimizerDriver
+  OptimizerDriver,
+  OptimizerReporter
 }
 import IO.RichPath
 
 package object build {
+
+  def build(config: Config,
+            driver: OptimizerDriver,
+            linkerReporter: LinkerReporter,
+            optimizerReporter: OptimizerReporter,
+            nativeLib: Path,
+            target: Path,
+            logger: Logger) = {
+    val linkerResult = tools.link(config, driver, linkerReporter)
+    val optimized = tools.optimize(config,
+                                   driver,
+                                   linkerResult.defns,
+                                   linkerResult.dyns,
+                                   optimizerReporter)
+    val generated = {
+      tools.codegen(config, optimized)
+      IO.getAll(config.workdir, "glob:**.ll")
+    }
+    val objectFiles = llvm.compileLL(config, generated, logger)
+    val unpackedLib = unpackNativeLibrary(nativeLib, config.workdir)
+
+    val nativeLibConfig =
+      config.withCompileOptions("-O2" +: config.compileOptions)
+    val nativeLibPath = config.workdir.resolve("lib")
+    val _ = compileNativeLib(nativeLibConfig,
+                             linkerResult,
+                             nativeLib,
+                             nativeLibPath,
+                             logger)
+
+    llvm.linkLL(config,
+                linkerResult,
+                objectFiles,
+                nativeLibPath,
+                target,
+                logger)
+  }
 
   /**
    * Unpack the `nativelib` to `workdir/lib`.

@@ -149,14 +149,13 @@ package object llvm {
   /** Compile the given LL files to object files */
   def compileLL(config: Config,
                 llPaths: Seq[Path],
-                compileOpts: Seq[String],
                 logger: Logger): Seq[Path] = {
     val optimizationOpt =
       config.mode match {
         case Mode.Debug   => "-O0"
         case Mode.Release => "-O2"
       }
-    val opts = optimizationOpt +: compileOpts
+    val opts = optimizationOpt +: config.compileOptions
 
     logger.time("Compiling to native code") {
       llPaths.par

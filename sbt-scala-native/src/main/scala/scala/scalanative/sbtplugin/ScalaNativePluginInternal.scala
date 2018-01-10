@@ -247,13 +247,12 @@ object ScalaNativePluginInternal {
       (cwd ** "*.ll").get.toSeq
     },
     nativeCompileLL := {
-      val logger      = streams.value.log
-      val config      = nativeConfig.value
-      val generated   = nativeGenerateLL.value.map(_.toPath)
-      val compileOpts = nativeCompileOptions.value
+      val logger    = streams.value.log
+      val config    = nativeConfig.value
+      val generated = nativeGenerateLL.value.map(_.toPath)
 
       val outPaths =
-        llvm.compileLL(config, generated, compileOpts, logger.toLogger)
+        llvm.compileLL(config, generated, logger.toLogger)
       outPaths.map(_.toFile)
     },
     nativeLinkLL := {
