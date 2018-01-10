@@ -199,7 +199,7 @@ package object llvm {
     val linkopts  = links.map("-l" + _) ++ config.linkingOptions ++ Seq("-lpthread")
     val targetopt = Seq("-target", config.target)
     val flags     = Seq("-o", outpath.abs) ++ linkopts ++ targetopt
-    val opaths    = IO.getAll(nativelib, "glob:*.o").map(_.abs)
+    val opaths    = IO.getAll(nativelib, "glob:**.o").map(_.abs)
     val paths     = llPaths.map(_.abs) ++ opaths
     val compile   = config.clangpp.abs +: (flags ++ paths)
 

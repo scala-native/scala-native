@@ -52,8 +52,8 @@ package object build {
                        nativelib: Path,
                        libPath: Path,
                        logger: Logger): Path = {
-    val cpaths   = IO.getAll(config.workdir, "glob:*.c").map(_.abs)
-    val cpppaths = IO.getAll(config.workdir, "glob:*.cpp").map(_.abs)
+    val cpaths   = IO.getAll(config.workdir, "glob:**.c").map(_.abs)
+    val cpppaths = IO.getAll(config.workdir, "glob:**.cpp").map(_.abs)
     val paths    = cpaths ++ cpppaths
 
     // predicate to check if given file path shall be compiled
