@@ -22,6 +22,11 @@ object IO {
     def abs: String = path.toAbsolutePath.toString
   }
 
+  def write(file: Path, bytes: Array[Byte]): Unit = {
+    Files.createDirectories(file.getParent)
+    Files.write(file, bytes)
+  }
+
   /** Finds all files in `base` that match `pattern`. */
   def getAll(base: Path, pattern: String): Seq[Path] = {
     val out     = collection.mutable.ArrayBuffer.empty[Path]

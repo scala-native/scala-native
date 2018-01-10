@@ -131,7 +131,7 @@ package object llvm {
     def fail =
       throw new Exception("Failed to detect native target.")
 
-    Files.write(targetc, "int probe;".getBytes("UTF-8"))
+    IO.write(targetc, "int probe;".getBytes("UTF-8"))
     logger.running(compilec)
     val exit = Process(compilec, workdir.toFile) ! Logger.toProcessLogger(
       logger)

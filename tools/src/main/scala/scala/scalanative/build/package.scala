@@ -41,7 +41,7 @@ package object build {
     if (!unpacked) {
       IO.deleteRecursive(lib)
       IO.unzip(nativeLib, lib)
-      Files.write(jarhashPath, jarhash)
+      IO.write(jarhashPath, jarhash)
     }
 
     lib
