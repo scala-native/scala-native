@@ -361,12 +361,12 @@ class DatagramSocket private (private[net] var impl: DatagramSocketImpl,
   def isConnected(): Boolean = connected
 
   def getRemoteSocketAddress(): SocketAddress = {
-    return if (!isConnected()) null
+    if (!isConnected()) null
     else new InetSocketAddress(getInetAddress(), getPort())
   }
 
   def getLocalSocketAddress(): SocketAddress = {
-    return if (!isBound()) null
+    if (!isBound()) null
     else new InetSocketAddress(getLocalAddress(), getLocalPort())
   }
 
