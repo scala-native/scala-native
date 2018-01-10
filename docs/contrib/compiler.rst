@@ -1,3 +1,5 @@
+.. _compiler:
+
 The compiler plugin and code generator
 ======================================
 
