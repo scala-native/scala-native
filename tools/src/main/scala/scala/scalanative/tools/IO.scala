@@ -56,21 +56,24 @@ object IO {
 
   /** Deletes recursively `directory` and all its content. */
   def deleteRecursive(directory: Path): Unit = {
-    Files.walkFileTree(
-      directory,
-      new SimpleFileVisitor[Path]() {
-        override def visitFile(file: Path,
-                               attrs: BasicFileAttributes): FileVisitResult = {
-          Files.delete(file)
-          FileVisitResult.CONTINUE
+    if (Files.exists(directory)) {
+      Files.walkFileTree(
+        directory,
+        new SimpleFileVisitor[Path]() {
+          override def visitFile(
+              file: Path,
+              attrs: BasicFileAttributes): FileVisitResult = {
+            Files.delete(file)
+            FileVisitResult.CONTINUE
+          }
+          override def postVisitDirectory(dir: Path,
+                                          exc: IOException): FileVisitResult = {
+            Files.delete(dir)
+            FileVisitResult.CONTINUE
+          }
         }
-        override def postVisitDirectory(dir: Path,
-                                        exc: IOException): FileVisitResult = {
-          Files.delete(dir)
-          FileVisitResult.CONTINUE
-        }
-      }
-    )
+      )
+    }
   }
 
   /** Compute a SHA-1 hash of `path`. */
