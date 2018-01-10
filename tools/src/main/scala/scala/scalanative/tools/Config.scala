@@ -1,7 +1,8 @@
 package scala.scalanative
 package tools
 
-import java.io.File
+import java.nio.file.{Path, Paths}
+
 import nir.Global
 
 sealed trait Config {
@@ -10,10 +11,10 @@ sealed trait Config {
   def entry: Global
 
   /** Sequence of all NIR locations. */
-  def paths: Seq[File]
+  def paths: Seq[Path]
 
   /** Directory to emit intermediate compilation results. */
-  def workdir: File
+  def workdir: Path
 
   /** Target triple. */
   def target: String
@@ -28,10 +29,10 @@ sealed trait Config {
   def withEntry(value: Global): Config
 
   /** Create a new config with given nir paths. */
-  def withPaths(value: Seq[File]): Config
+  def withPaths(value: Seq[Path]): Config
 
   /** Create a new config with given directory. */
-  def withWorkdir(value: File): Config
+  def withWorkdir(value: Path): Config
 
   /** Create a new config with given target triple. */
   def withTarget(value: String): Config
@@ -47,16 +48,18 @@ object Config {
 
   /** Default empty config object. */
   val empty: Config =
-    Impl(entry = Global.None,
-         paths = Seq.empty,
-         workdir = new File(""),
-         target = "",
-         mode = Mode.Debug,
-         linkStubs = false)
+    Impl(
+      entry = Global.None,
+      paths = Seq.empty,
+      workdir = Paths.get(""),
+      target = "",
+      mode = Mode.Debug,
+      linkStubs = false
+    )
 
   private final case class Impl(entry: Global,
-                                paths: Seq[File],
-                                workdir: File,
+                                paths: Seq[Path],
+                                workdir: Path,
                                 target: String,
                                 mode: Mode,
                                 linkStubs: Boolean)
@@ -64,10 +67,10 @@ object Config {
     def withEntry(value: Global): Config =
       copy(entry = value)
 
-    def withPaths(value: Seq[File]): Config =
+    def withPaths(value: Seq[Path]): Config =
       copy(paths = value)
 
-    def withWorkdir(value: File): Config =
+    def withWorkdir(value: Path): Config =
       copy(workdir = value)
 
     def withTarget(value: String): Config =

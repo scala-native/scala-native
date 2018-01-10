@@ -3,7 +3,7 @@ package scala.scalanative
 import scala.language.implicitConversions
 
 import java.io.File
-import java.nio.file.Files
+import java.nio.file.{Files, Path, Paths}
 
 import util.Scope
 import nir.Global
@@ -32,7 +32,7 @@ abstract class LinkerSpec extends FlatSpec {
       linkStubs: Boolean = false,
       driver: Option[Driver] = None)(f: (Config, linker.Result) => T): T =
     Scope { implicit in =>
-      val outDir     = Files.createTempDirectory("native-test-out").toFile()
+      val outDir     = Files.createTempDirectory("native-test-out")
       val compiler   = NIRCompiler.getCompiler(outDir)
       val sourcesDir = NIRCompiler.writeSources(sources)
       val files      = compiler.compile(sourcesDir)
@@ -43,17 +43,17 @@ abstract class LinkerSpec extends FlatSpec {
       f(config, result)
     }
 
-  private def makePaths(outDir: File)(implicit in: Scope) = {
-    val parts: Array[File] =
+  private def makePaths(outDir: Path)(implicit in: Scope) = {
+    val parts: Array[Path] =
       sys
         .props("scalanative.nativeruntime.cp")
         .split(File.pathSeparator)
-        .map(new File(_))
+        .map(Paths.get(_))
 
     parts :+ outDir
   }
 
-  private def makeConfig(outDir: File, entryName: String, linkStubs: Boolean)(
+  private def makeConfig(outDir: Path, entryName: String, linkStubs: Boolean)(
       implicit in: Scope): Config = {
     val entry = Global.Top(entryName)
     val paths = makePaths(outDir)

@@ -3,6 +3,7 @@ package sbtplugin
 
 import java.lang.System.{lineSeparator => nl}
 import java.io.ByteArrayInputStream
+import java.nio.file.Files
 
 import scala.util.Try
 
@@ -145,9 +146,11 @@ object ScalaNativePluginInternal {
       val mainClass = selectMainClass.value.getOrElse(
         throw new MessageOnlyException("No main class detected.")
       )
-      val classpath = fullClasspath.value.map(_.data).filter(_.exists)
-      val entry     = nir.Global.Top(mainClass.toString + "$")
-      val cwd       = nativeWorkdir.value
+      val classpath =
+        fullClasspath.value.map(_.data.toPath).filter(f => Files.exists(f))
+      val entry = nir.Global.Top(mainClass.toString + "$")
+      val cwd   = nativeWorkdir.value.toPath
+      val gc    = tools.GarbageCollector(nativeGC.value)
 
       tools.Config.empty
         .withEntry(entry)
@@ -301,7 +304,7 @@ object ScalaNativePluginInternal {
       val fcp = fullClasspath.value
       ResourceScope { implicit scope =>
         val globals = fcp
-          .collect { case p if p.data.exists => p.data }
+          .collect { case p if p.data.exists => p.data.toPath }
           .flatMap(p =>
             tools.LinkerPath(VirtualDirectory.real(p)).globals.toSeq)
 
@@ -310,7 +313,7 @@ object ScalaNativePluginInternal {
     },
     nativeExternalDependencies := {
       val forceCompile = compile.value
-      val classDir     = classDirectory.value
+      val classDir     = classDirectory.value.toPath
 
       ResourceScope { implicit scope =>
         val globals = linker.ClassPath(VirtualDirectory.real(classDir)).globals

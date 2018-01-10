@@ -1,8 +1,7 @@
 package scala.scalanative
 package optimizer
 
-import java.io.File
-import java.nio.file.Paths
+import java.nio.file.{Path, Paths}
 import scalanative.nir.Defn
 import scalanative.nir.serialization.serializeText
 import scalanative.io.{withScratchBuffer, VirtualDirectory}
@@ -28,7 +27,7 @@ object Reporter {
   val empty: Reporter = new Reporter {}
 
   /** Dump textual NIR after every pass to given directory. */
-  def toDirectory(file: File): Reporter = new Reporter {
+  def toDirectory(file: Path): Reporter = new Reporter {
     lazy val dir = VirtualDirectory.local(file)
 
     private def debug(batchDefns: Seq[Defn], suffix: String) =

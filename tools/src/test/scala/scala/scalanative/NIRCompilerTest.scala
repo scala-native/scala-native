@@ -1,5 +1,7 @@
 package scala.scalanative
 
+import java.nio.file.Files
+
 import org.scalatest._
 
 import scala.scalanative.api.CompilationFailedException
@@ -8,7 +10,9 @@ class NIRCompilerTest extends FlatSpec with Matchers with Inspectors {
 
   "The compiler" should "return products of compilation" in {
     val files =
-      NIRCompiler { _ compile "class A" }.filter(_.isFile).map(_.getName)
+      NIRCompiler { _ compile "class A" }
+        .filter(Files.isRegularFile(_))
+        .map(_.getFileName.toString)
     val expectedNames = Seq("A.class", "A.nir")
     files should contain theSameElementsAs expectedNames
   }
@@ -25,7 +29,8 @@ class NIRCompilerTest extends FlatSpec with Matchers with Inspectors {
     NIRCompiler.withSources(sources) {
       case (sourcesDir, compiler) =>
         val nirFiles =
-          compiler.compile(sourcesDir) filter (_.isFile) map (_.getName)
+          compiler.compile(sourcesDir) filter (Files
+            .isRegularFile(_)) map (_.getFileName.toString)
         val expectedNames =
           Seq("A.class",
               "A.nir",
@@ -49,12 +54,11 @@ class NIRCompilerTest extends FlatSpec with Matchers with Inspectors {
   }
 
   it should "compile to a specified directory" in {
-    val temporaryDir =
-      java.nio.file.Files.createTempDirectory("my-target").toFile()
+    val temporaryDir = Files.createTempDirectory("my-target")
     val nirFiles =
       NIRCompiler(outDir = temporaryDir) { _ compile "class A" }
-        .filter(_.isFile)
-    forAll(nirFiles) { _.getParentFile should be(temporaryDir) }
+        .filter(Files.isRegularFile(_))
+    forAll(nirFiles) { _.getParent should be(temporaryDir) }
   }
 
   it should "report error for extern method without result type" in {
