@@ -6,7 +6,7 @@ import scala.collection.JavaConverters._
 import scala.util.Try
 import scala.sys.process._
 
-import tools.{GarbageCollector, IO, LinkerResult, Logger, Mode}
+import tools.{Config, GarbageCollector, IO, LinkerResult, Logger, Mode}
 import IO.RichPath
 
 package object llvm {
@@ -147,14 +147,12 @@ package object llvm {
   }
 
   /** Compile the given LL files to object files */
-  def compileLL(clangPP: Path,
+  def compileLL(config: Config,
                 llPaths: Seq[Path],
-                mode: Mode,
                 compileOpts: Seq[String],
-                workdir: Path,
                 logger: Logger): Seq[Path] = {
     val optimizationOpt =
-      mode match {
+      config.mode match {
         case Mode.Debug   => "-O0"
         case Mode.Release => "-O2"
       }
@@ -165,9 +163,10 @@ package object llvm {
         .map { ll =>
           val apppath = ll.abs
           val outpath = apppath + ".o"
-          val compile = Seq(clangPP.abs, "-c", apppath, "-o", outpath) ++ opts
+          val compile = Seq(config.clang.abs, "-c", apppath, "-o", outpath) ++ opts
           logger.running(compile)
-          Process(compile, workdir.toFile) ! Logger.toProcessLogger(logger)
+          Process(compile, config.workdir.toFile) ! Logger.toProcessLogger(
+            logger)
           Paths.get(outpath)
         }
         .seq
@@ -175,20 +174,16 @@ package object llvm {
     }
   }
 
-  def linkLL(linkerResult: LinkerResult,
+  def linkLL(config: Config,
+             linkerResult: LinkerResult,
              llPaths: Seq[Path],
              nativelib: Path,
-             clangpp: Path,
-             linkingOpts: Seq[String],
-             gc: GarbageCollector,
-             workdir: Path,
              outpath: Path,
-             target: String,
              logger: Logger): Path = {
 
     val links = {
       val os   = Option(sys props "os.name").getOrElse("")
-      val arch = target.split("-").head
+      val arch = config.target.split("-").head
       // we need re2 to link the re2 c wrapper (cre2.h)
       val librt = os match {
         case "Linux" => Seq("rt")
@@ -199,18 +194,18 @@ package object llvm {
         case _          => Seq("unwind", "unwind-" + arch)
       }
       librt ++ libunwind ++ linkerResult.links
-        .map(_.name) ++ gc.links
+        .map(_.name) ++ config.gc.links
     }
-    val linkopts  = links.map("-l" + _) ++ linkingOpts ++ Seq("-lpthread")
-    val targetopt = Seq("-target", target)
+    val linkopts  = links.map("-l" + _) ++ config.linkingOptions ++ Seq("-lpthread")
+    val targetopt = Seq("-target", config.target)
     val flags     = Seq("-o", outpath.abs) ++ linkopts ++ targetopt
     val opaths    = IO.getAll(nativelib, "glob:*.o").map(_.abs)
     val paths     = llPaths.map(_.abs) ++ opaths
-    val compile   = clangpp.abs +: (flags ++ paths)
+    val compile   = config.clangpp.abs +: (flags ++ paths)
 
     logger.time("Linking native code") {
       logger.running(compile)
-      Process(compile, workdir.toFile) ! Logger.toProcessLogger(logger)
+      Process(compile, config.workdir.toFile) ! Logger.toProcessLogger(logger)
     }
 
     outpath

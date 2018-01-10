@@ -19,4 +19,7 @@ object GarbageCollector {
       throw new Exception(
         "nativeGC can be either \"none\", \"boehm\" or \"immix\", not: " + value)
   }
+
+  /** The default garbage collector. */
+  def default: GarbageCollector = Boehm
 }

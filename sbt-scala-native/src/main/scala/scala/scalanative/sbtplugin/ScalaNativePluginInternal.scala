@@ -109,7 +109,8 @@ object ScalaNativePluginInternal {
     nativeLinkerReporter in NativeTest := (nativeLinkerReporter in Test).value,
     nativeOptimizerReporter := tools.OptimizerReporter.empty,
     nativeOptimizerReporter in NativeTest := (nativeOptimizerReporter in Test).value,
-    nativeGC := Option(System.getenv.get("SCALANATIVE_GC")).getOrElse("boehm"),
+    nativeGC := Option(System.getenv.get("SCALANATIVE_GC"))
+      .getOrElse(tools.GarbageCollector.default.name),
     nativeGC in NativeTest := (nativeGC in Test).value
   )
 
@@ -148,15 +149,21 @@ object ScalaNativePluginInternal {
       )
       val classpath =
         fullClasspath.value.map(_.data.toPath).filter(f => Files.exists(f))
-      val entry = nir.Global.Top(mainClass.toString + "$")
-      val cwd   = nativeWorkdir.value.toPath
-      val gc    = tools.GarbageCollector(nativeGC.value)
+      val entry   = nir.Global.Top(mainClass.toString + "$")
+      val cwd     = nativeWorkdir.value.toPath
+      val clang   = nativeClang.value.toPath
+      val clangpp = nativeClangPP.value.toPath
+      val gc      = tools.GarbageCollector(nativeGC.value)
 
       tools.Config.empty
         .withEntry(entry)
         .withPaths(classpath)
         .withWorkdir(cwd)
+        .withClang(clang)
+        .withClangPP(clangpp)
         .withTarget(nativeTarget.value)
+        .withLinkingOptions(nativeLinkingOptions.value)
+        .withGC(gc)
         .withMode(mode(nativeMode.value))
         .withLinkStubs(nativeLinkStubs.value)
     },
@@ -177,23 +184,19 @@ object ScalaNativePluginInternal {
     },
     nativeCompileLib := {
       val linked    = nativeLinkNIR.value
-      val cwd       = nativeWorkdir.value.toPath
-      val clang     = nativeClang.value.toPath
-      val clangpp   = nativeClangPP.value.toPath
-      val gc        = tools.GarbageCollector(nativeGC.value)
-      val opts      = "-O2" +: nativeCompileOptions.value
       val logger    = streams.value.log
       val nativelib = nativeUnpackLib.value.toPath
-      val target    = crossTarget.value.toPath
+      val libPath   = crossTarget.value.toPath.resolve("native").resolve("lib")
 
-      val outPath = build.compileNativeLib(linked,
-                                           cwd,
-                                           clang,
-                                           clangpp,
-                                           opts,
+      val config = {
+        val config0 = nativeConfig.value
+        config0.withCompileOptions("-O2" +: config0.compileOptions)
+      }
+
+      val outPath = build.compileNativeLib(config,
+                                           linked,
                                            nativelib,
-                                           gc,
-                                           target,
+                                           libPath,
                                            logger.toLogger)
       outPath.toFile
     },
@@ -229,42 +232,24 @@ object ScalaNativePluginInternal {
     },
     nativeCompileLL := {
       val logger      = streams.value.log
+      val config      = nativeConfig.value
       val generated   = nativeGenerateLL.value.map(_.toPath)
-      val clangpp     = nativeClangPP.value.toPath
-      val cwd         = nativeWorkdir.value.toPath
       val compileOpts = nativeCompileOptions.value
-      val modeString  = nativeMode.value
 
-      val outPaths = llvm.compileLL(clangpp,
-                                    generated,
-                                    mode(modeString),
-                                    compileOpts,
-                                    cwd,
-                                    logger.toLogger)
+      val outPaths =
+        llvm.compileLL(config, generated, compileOpts, logger.toLogger)
       outPaths.map(_.toFile)
     },
     nativeLinkLL := {
-      val linked      = nativeLinkNIR.value
-      val logger      = streams.value.log.toLogger
-      val apppaths    = nativeCompileLL.value.map(_.toPath)
-      val nativelib   = nativeCompileLib.value.toPath
-      val cwd         = nativeWorkdir.value.toPath
-      val target      = nativeTarget.value
-      val gc          = tools.GarbageCollector(nativeGC.value)
-      val linkingOpts = nativeLinkingOptions.value
-      val clangpp     = nativeClangPP.value.toPath
-      val outpath     = (artifactPath in nativeLink).value.toPath
+      val linked    = nativeLinkNIR.value
+      val logger    = streams.value.log.toLogger
+      val apppaths  = nativeCompileLL.value.map(_.toPath)
+      val nativelib = nativeCompileLib.value.toPath
+      val outpath   = (artifactPath in nativeLink).value.toPath
+      val config    = nativeConfig.value
 
-      val outPath = llvm.linkLL(linked,
-                                apppaths,
-                                nativelib,
-                                clangpp,
-                                linkingOpts,
-                                gc,
-                                cwd,
-                                outpath,
-                                target,
-                                logger)
+      val outPath =
+        llvm.linkLL(config, linked, apppaths, nativelib, outpath, logger)
       outPath.toFile
     },
     nativeLink := {

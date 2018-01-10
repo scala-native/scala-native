@@ -16,8 +16,23 @@ sealed trait Config {
   /** Directory to emit intermediate compilation results. */
   def workdir: Path
 
+  /** The path to the `clang` executable. */
+  def clang: Path
+
+  /** The path to the `clang++` executable. */
+  def clangpp: Path
+
   /** Target triple. */
   def target: String
+
+  /** The options passed to LLVM's linker. */
+  def linkingOptions: Seq[String]
+
+  /** The compilation options passed to LLVM. */
+  def compileOptions: Seq[String]
+
+  /** The garbage collector to use. */
+  def gc: GarbageCollector
 
   /** Compilation mode. */
   def mode: Mode
@@ -34,8 +49,23 @@ sealed trait Config {
   /** Create a new config with given directory. */
   def withWorkdir(value: Path): Config
 
+  /** Create a new config with given path to clang. */
+  def withClang(value: Path): Config
+
+  /** Create a new config with given path to clang++. */
+  def withClangPP(value: Path): Config
+
   /** Create a new config with given target triple. */
   def withTarget(value: String): Config
+
+  /** Create a new config with given linking options. */
+  def withLinkingOptions(value: Seq[String]): Config
+
+  /** Create a new config with given compilation options. */
+  def withCompileOptions(value: Seq[String]): Config
+
+  /** Create a new config with given garbage collector. */
+  def withGC(value: GarbageCollector): Config
 
   /** Create a new config with given compilation mode. */
   def withMode(value: Mode): Config
@@ -52,7 +82,12 @@ object Config {
       entry = Global.None,
       paths = Seq.empty,
       workdir = Paths.get(""),
+      clang = Paths.get(""),
+      clangpp = Paths.get(""),
       target = "",
+      linkingOptions = Seq.empty,
+      compileOptions = Seq.empty,
+      gc = GarbageCollector.default,
       mode = Mode.Debug,
       linkStubs = false
     )
@@ -60,7 +95,12 @@ object Config {
   private final case class Impl(entry: Global,
                                 paths: Seq[Path],
                                 workdir: Path,
+                                clang: Path,
+                                clangpp: Path,
                                 target: String,
+                                linkingOptions: Seq[String],
+                                compileOptions: Seq[String],
+                                gc: GarbageCollector,
                                 mode: Mode,
                                 linkStubs: Boolean)
       extends Config {
@@ -73,8 +113,23 @@ object Config {
     def withWorkdir(value: Path): Config =
       copy(workdir = value)
 
+    def withClang(value: Path): Config =
+      copy(clang = value)
+
+    def withClangPP(value: Path): Config =
+      copy(clangpp = value)
+
     def withTarget(value: String): Config =
       copy(target = value)
+
+    def withLinkingOptions(value: Seq[String]): Config =
+      copy(linkingOptions = value)
+
+    def withCompileOptions(value: Seq[String]): Config =
+      copy(compileOptions = value)
+
+    def withGC(value: GarbageCollector): Config =
+      copy(gc = value)
 
     def withMode(value: Mode): Config =
       copy(mode = value)

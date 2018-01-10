@@ -47,27 +47,22 @@ package object build {
     lib
   }
 
-  def compileNativeLib(linkerResult: LinkerResult,
-                       workdir: Path,
-                       clang: Path,
-                       clangpp: Path,
-                       compileOptions: Seq[String],
+  def compileNativeLib(config: Config,
+                       linkerResult: LinkerResult,
                        nativelib: Path,
-                       gc: GarbageCollector,
-                       crossTarget: Path,
+                       libPath: Path,
                        logger: Logger): Path = {
-    val cpaths   = IO.getAll(workdir, "glob:*.c").map(_.abs)
-    val cpppaths = IO.getAll(workdir, "glob:*.cpp").map(_.abs)
+    val cpaths   = IO.getAll(config.workdir, "glob:*.c").map(_.abs)
+    val cpppaths = IO.getAll(config.workdir, "glob:*.cpp").map(_.abs)
     val paths    = cpaths ++ cpppaths
 
     // predicate to check if given file path shall be compiled
     // we only include sources of the current gc and exclude
     // all optional dependencies if they are not necessary
-    val libPath = crossTarget.resolve("native").resolve("lib")
     val optPath = libPath.resolve("optional").abs
     val (gcPath, gcSelPath) = {
       val gcPath    = libPath.resolve("gc")
-      val gcSelPath = gcPath.resolve(gc.name)
+      val gcSelPath = gcPath.resolve(config.gc.name)
       (gcPath.abs, gcSelPath.abs)
     }
 
@@ -97,13 +92,13 @@ package object build {
       val opath = path + ".o"
       if (include(path) && !Files.exists(Paths.get(opath))) {
         val isCpp    = path.endsWith(".cpp")
-        val compiler = if (isCpp) clangpp.abs else clang.abs
-        val flags    = (if (isCpp) Seq("-std=c++11") else Seq()) ++ compileOptions
+        val compiler = if (isCpp) config.clangpp.abs else config.clang.abs
+        val flags    = (if (isCpp) Seq("-std=c++11") else Seq()) ++ config.compileOptions
         val compilec = Seq(compiler) ++ flags ++ Seq("-c", path, "-o", opath)
 
         logger.running(compilec)
-        val result = Process(compilec, workdir.toFile) ! Logger.toProcessLogger(
-          logger)
+        val result = Process(compilec, config.workdir.toFile) ! Logger
+          .toProcessLogger(logger)
         if (result != 0) {
           sys.error("Failed to compile native library runtime code.")
         }
