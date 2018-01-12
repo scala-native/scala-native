@@ -164,6 +164,9 @@ object ScalaNativePluginInternal {
 
       tools.Config.empty
         .withNativeLib(nativeLibJar)
+        .withDriver(nativeOptimizerDriver.value)
+        .withLinkerReporter(nativeLinkerReporter.value)
+        .withOptimizerReporter(nativeOptimizerReporter.value)
         .withEntry(entry)
         .withPaths(classpath)
         .withWorkdir(cwd)
@@ -205,13 +208,12 @@ object ScalaNativePluginInternal {
       outPath.toFile
     },
     nativeLinkNIR := {
-      val logger   = streams.value.log
-      val driver   = nativeOptimizerDriver.value
-      val config   = nativeConfig.value
-      val reporter = nativeLinkerReporter.value
+      val logger = streams.value.log
+      val driver = nativeOptimizerDriver.value
+      val config = nativeConfig.value
 
       val result = logger.time("Linking") {
-        tools.link(config, driver, reporter)
+        tools.link(config)
       }
       if (result.unresolved.nonEmpty) {
         result.unresolved.map(_.show).sorted.foreach { signature =>
@@ -229,14 +231,12 @@ object ScalaNativePluginInternal {
       result
     },
     nativeOptimizeNIR := {
-      val logger   = streams.value.log
-      val result   = nativeLinkNIR.value
-      val config   = nativeConfig.value
-      val reporter = nativeOptimizerReporter.value
-      val driver   = nativeOptimizerDriver.value
-      val mode     = nativeMode.value
+      val logger = streams.value.log
+      val result = nativeLinkNIR.value
+      val config = nativeConfig.value
+      val mode   = nativeMode.value
       logger.time(s"Optimizing ($mode mode)") {
-        tools.optimize(config, driver, result.defns, result.dyns, reporter)
+        tools.optimize(config, result.defns, result.dyns)
       }
     },
     nativeGenerateLL := {

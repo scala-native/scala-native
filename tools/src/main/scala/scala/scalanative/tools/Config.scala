@@ -10,6 +10,15 @@ sealed trait Config {
   /** Path to the nativelib jar. */
   def nativeLib: Path
 
+  /** The driver to use for the optimizer. */
+  def driver: OptimizerDriver
+
+  /** The reporter that receives messages from the linker. */
+  def linkerReporter: LinkerReporter
+
+  /** The reporter that receives messages from the optimizer. */
+  def optimizerReporter: OptimizerReporter
+
   /** Entry point for linking. */
   def entry: Global
 
@@ -45,6 +54,15 @@ sealed trait Config {
 
   /** Create a new config with given path to nativelib. */
   def withNativeLib(value: Path): Config
+
+  /** Create a new config with given driver. */
+  def withDriver(value: OptimizerDriver): Config
+
+  /** Create a new config with given linker reporter. */
+  def withLinkerReporter(value: LinkerReporter): Config
+
+  /** Create a new config with given optimizer reporter. */
+  def withOptimizerReporter(value: OptimizerReporter): Config
 
   /** Create new config with given entry point. */
   def withEntry(value: Global): Config
@@ -86,6 +104,9 @@ object Config {
   val empty: Config =
     Impl(
       nativeLib = Paths.get(""),
+      driver = OptimizerDriver.empty,
+      linkerReporter = LinkerReporter.empty,
+      optimizerReporter = OptimizerReporter.empty,
       entry = Global.None,
       paths = Seq.empty,
       workdir = Paths.get(""),
@@ -100,6 +121,9 @@ object Config {
     )
 
   private final case class Impl(nativeLib: Path,
+                                driver: OptimizerDriver,
+                                linkerReporter: LinkerReporter,
+                                optimizerReporter: OptimizerReporter,
                                 entry: Global,
                                 paths: Seq[Path],
                                 workdir: Path,
@@ -114,6 +138,15 @@ object Config {
       extends Config {
     def withNativeLib(value: Path): Config =
       copy(nativeLib = value)
+
+    def withDriver(value: OptimizerDriver): Config =
+      copy(driver = value)
+
+    def withLinkerReporter(value: LinkerReporter): Config =
+      copy(linkerReporter = value)
+
+    def withOptimizerReporter(value: OptimizerReporter): Config =
+      copy(optimizerReporter = value)
 
     def withEntry(value: Global): Config =
       copy(entry = value)

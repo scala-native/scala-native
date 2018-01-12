@@ -19,18 +19,10 @@ import IO.RichPath
 
 package object build {
 
-  def build(config: Config,
-            driver: OptimizerDriver,
-            linkerReporter: LinkerReporter,
-            optimizerReporter: OptimizerReporter,
-            target: Path,
-            logger: Logger) = {
-    val linkerResult = tools.link(config, driver, linkerReporter)
-    val optimized = tools.optimize(config,
-                                   driver,
-                                   linkerResult.defns,
-                                   linkerResult.dyns,
-                                   optimizerReporter)
+  def build(config: Config, target: Path, logger: Logger) = {
+    val linkerResult = tools.link(config)
+    val optimized =
+      tools.optimize(config, linkerResult.defns, linkerResult.dyns)
     val generated = {
       tools.codegen(config, optimized)
       IO.getAll(config.workdir, "glob:**.ll")

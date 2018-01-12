@@ -38,18 +38,17 @@ package object tools {
   /** Given the classpath and main entry point, link under closed-world
    *  assumption.
    */
-  def link(config: Config,
-           driver: OptimizerDriver,
-           reporter: LinkerReporter = LinkerReporter.empty): LinkerResult = {
+  def link(config: Config): LinkerResult = {
     val chaDeps  = optimizer.analysis.ClassHierarchy.depends
-    val passDeps = driver.passes.flatMap(_.depends).distinct
+    val passes   = config.driver.passes
+    val passDeps = passes.flatMap(_.depends).distinct
     val deps     = (chaDeps ++ passDeps).distinct
-    val injects  = driver.passes.flatMap(_.injects)
+    val injects  = passes.flatMap(_.injects)
     val entry =
       nir.Global
         .Member(config.entry, "main_scala.scalanative.runtime.ObjectArray_unit")
     val result =
-      (linker.Linker(config, reporter)).link(entry +: deps)
+      (linker.Linker(config)).link(entry +: deps)
 
     result.withDefns(result.defns ++ injects)
   }
@@ -57,19 +56,14 @@ package object tools {
   /** Link just the given entries, disregarding the extra ones that are
    *  needed for the optimizer and/or codegen.
    */
-  def linkRaw(config: Config,
-              entries: Seq[Global],
-              reporter: LinkerReporter = LinkerReporter.empty): LinkerResult =
-    linker.Linker(config, reporter).link(entries)
+  def linkRaw(config: Config, entries: Seq[Global]): LinkerResult =
+    linker.Linker(config).link(entries)
 
   /** Transform high-level closed world to its lower-level counterpart. */
-  def optimize(
-      config: Config,
-      driver: OptimizerDriver,
-      assembly: Seq[nir.Defn],
-      dyns: Seq[String],
-      reporter: OptimizerReporter = OptimizerReporter.empty): Seq[nir.Defn] =
-    optimizer.Optimizer(config, driver, assembly, dyns, reporter)
+  def optimize(config: Config,
+               assembly: Seq[nir.Defn],
+               dyns: Seq[String]): Seq[nir.Defn] =
+    optimizer.Optimizer(config, assembly, dyns)
 
   /** Given low-level assembly, emit LLVM IR for it to the buildDirectory. */
   def codegen(config: Config, assembly: Seq[nir.Defn]): Unit =

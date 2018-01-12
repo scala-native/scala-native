@@ -7,7 +7,7 @@ import java.nio.file.{Files, Path, Paths}
 
 import util.Scope
 import nir.Global
-import tools.Config
+import tools.{Config, Mode}
 import optimizer.Driver
 
 import org.scalatest.FlatSpec
@@ -36,9 +36,9 @@ abstract class LinkerSpec extends FlatSpec {
       val compiler   = NIRCompiler.getCompiler(outDir)
       val sourcesDir = NIRCompiler.writeSources(sources)
       val files      = compiler.compile(sourcesDir)
-      val config     = makeConfig(outDir, entry, linkStubs)
-      val driver_    = driver.fold(Driver(config.mode))(identity)
-      val result     = tools.link(config, driver_)
+      val driver_    = driver.fold(Driver(Mode.default))(identity)
+      val config     = makeConfig(driver_, outDir, entry, linkStubs)
+      val result     = tools.link(config)
 
       f(config, result)
     }
@@ -53,11 +53,14 @@ abstract class LinkerSpec extends FlatSpec {
     parts :+ outDir
   }
 
-  private def makeConfig(outDir: Path, entryName: String, linkStubs: Boolean)(
-      implicit in: Scope): Config = {
+  private def makeConfig(driver: Driver,
+                         outDir: Path,
+                         entryName: String,
+                         linkStubs: Boolean)(implicit in: Scope): Config = {
     val entry = Global.Top(entryName)
     val paths = makePaths(outDir)
     Config.empty
+      .withDriver(driver)
       .withWorkdir(outDir)
       .withPaths(paths)
       .withEntry(entry)

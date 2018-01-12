@@ -27,14 +27,14 @@ object Optimizer {
 
   /** Run all of the passes on given assembly. */
   def apply(config: tools.Config,
-            driver: Driver,
             assembly: Seq[Defn],
-            dyns: Seq[String],
-            reporter: Reporter): Seq[Defn] = {
+            dyns: Seq[String]): Seq[Defn] = {
+    val reporter = config.optimizerReporter
     import reporter._
 
-    val injects    = driver.passes.filter(_.isInjectionPass)
-    val transforms = driver.passes.filterNot(_.isInjectionPass)
+    val passes     = config.driver.passes
+    val injects    = passes.filter(_.isInjectionPass)
+    val transforms = passes.filterNot(_.isInjectionPass)
     val world      = analysis.ClassHierarchy(assembly, dyns)
 
     val injected = {
