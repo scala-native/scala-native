@@ -37,7 +37,7 @@ abstract class LinkerSpec extends FlatSpec {
       val sourcesDir = NIRCompiler.writeSources(sources)
       val files      = compiler.compile(sourcesDir)
       val config     = makeConfig(outDir, entry, linkStubs)
-      val driver_    = driver.fold(Driver(config))(identity)
+      val driver_    = driver.fold(Driver(config.mode))(identity)
       val result     = tools.link(config, driver_)
 
       f(config, result)

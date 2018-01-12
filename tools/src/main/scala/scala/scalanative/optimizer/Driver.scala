@@ -65,8 +65,8 @@ object Driver {
   )
 
   /** Create driver with default pipeline for this configuration. */
-  def apply(config: tools.Config): Driver = {
-    val optPasses = config.mode match {
+  def apply(mode: tools.Mode): Driver = {
+    val optPasses = mode match {
       case Mode.Debug   => fastOptPasses
       case Mode.Release => fullOptPasses
     }

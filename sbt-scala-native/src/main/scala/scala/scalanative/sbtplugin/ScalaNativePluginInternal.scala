@@ -136,7 +136,7 @@ object ScalaNativePluginInternal {
     artifactPath in nativeLink := {
       crossTarget.value / (moduleName.value + "-out")
     },
-    nativeOptimizerDriver := tools.OptimizerDriver(nativeConfig.value),
+    nativeOptimizerDriver := tools.OptimizerDriver(mode(nativeMode.value)),
     nativeWorkdir := {
       val workdir = crossTarget.value / "native"
       IO.delete(workdir)
