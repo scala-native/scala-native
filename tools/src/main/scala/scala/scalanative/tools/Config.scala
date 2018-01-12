@@ -95,7 +95,7 @@ object Config {
       linkingOptions = Seq.empty,
       compileOptions = Seq.empty,
       gc = GarbageCollector.default,
-      mode = Mode.Debug,
+      mode = Mode.default,
       linkStubs = false
     )
 

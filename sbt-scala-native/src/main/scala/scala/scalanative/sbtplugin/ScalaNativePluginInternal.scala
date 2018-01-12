@@ -101,7 +101,7 @@ object ScalaNativePluginInternal {
     nativeLinkingOptions := llvm.defaultLinkingOptions,
     nativeLinkingOptions in NativeTest := (nativeLinkingOptions in Test).value,
     nativeMode := Option(System.getenv.get("SCALANATIVE_MODE"))
-      .getOrElse("debug"),
+      .getOrElse(tools.Mode.default.name),
     nativeMode in NativeTest := (nativeMode in Test).value,
     nativeLinkStubs := false,
     nativeLinkStubs in NativeTest := (nativeLinkStubs in Test).value,
@@ -136,7 +136,8 @@ object ScalaNativePluginInternal {
     artifactPath in nativeLink := {
       crossTarget.value / (moduleName.value + "-out")
     },
-    nativeOptimizerDriver := tools.OptimizerDriver(mode(nativeMode.value)),
+    nativeOptimizerDriver := tools.OptimizerDriver(
+      tools.Mode(nativeMode.value)),
     nativeWorkdir := {
       val workdir = crossTarget.value / "native"
       IO.delete(workdir)
@@ -171,7 +172,7 @@ object ScalaNativePluginInternal {
         .withTarget(nativeTarget.value)
         .withLinkingOptions(nativeLinkingOptions.value)
         .withGC(gc)
-        .withMode(mode(nativeMode.value))
+        .withMode(tools.Mode(nativeMode.value))
         .withLinkStubs(nativeLinkStubs.value)
     },
     nativeUnpackLib := {
