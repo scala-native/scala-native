@@ -5,6 +5,8 @@ import java.util.Arrays
 
 import scala.sys.process.Process
 
+import nir.Global
+
 import tools.{
   Config,
   GarbageCollector,
@@ -18,6 +20,16 @@ import tools.{
 import IO.RichPath
 
 package object build {
+
+  def build(nativeLib: Path,
+            paths: Seq[Path],
+            entry: Global,
+            target: Path,
+            workdir: Path,
+            logger: Logger): Path = {
+    val config = Config.default(nativeLib, paths, entry, workdir, logger)
+    build(config, target, logger)
+  }
 
   def build(config: Config, target: Path, logger: Logger) = {
     val linkerResult = tools.link(config)

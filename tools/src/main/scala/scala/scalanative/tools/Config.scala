@@ -100,6 +100,31 @@ sealed trait Config {
 
 object Config {
 
+  def default(nativeLib: Path,
+              paths: Seq[Path],
+              entry: Global,
+              workdir: Path,
+              logger: Logger): Config = {
+    val clang   = llvm.discover("clang", llvm.clangVersions)
+    val clangpp = llvm.discover("clang++", llvm.clangVersions)
+    val target  = llvm.detectTarget(clang, workdir, logger)
+
+    llvm.checkThatClangIsRecentEnough(clang)
+    llvm.checkThatClangIsRecentEnough(clangpp)
+
+    empty
+      .withNativeLib(nativeLib)
+      .withDriver(OptimizerDriver(empty.mode))
+      .withEntry(entry)
+      .withPaths(paths)
+      .withWorkdir(workdir)
+      .withClang(clang)
+      .withClangPP(clangpp)
+      .withTarget(target)
+      .withLinkingOptions(llvm.defaultLinkingOptions)
+      .withCompileOptions(llvm.defaultCompileOptions)
+  }
+
   /** Default empty config object. */
   val empty: Config =
     Impl(
