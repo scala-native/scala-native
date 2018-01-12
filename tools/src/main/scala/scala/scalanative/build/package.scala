@@ -23,7 +23,6 @@ package object build {
             driver: OptimizerDriver,
             linkerReporter: LinkerReporter,
             optimizerReporter: OptimizerReporter,
-            nativeLib: Path,
             target: Path,
             logger: Logger) = {
     val linkerResult = tools.link(config, driver, linkerReporter)
@@ -37,16 +36,13 @@ package object build {
       IO.getAll(config.workdir, "glob:**.ll")
     }
     val objectFiles = llvm.compileLL(config, generated, logger)
-    val unpackedLib = unpackNativeLibrary(nativeLib, config.workdir)
+    val unpackedLib = unpackNativeLibrary(config.nativeLib, config.workdir)
 
     val nativeLibConfig =
       config.withCompileOptions("-O2" +: config.compileOptions)
     val nativeLibPath = config.workdir.resolve("lib")
-    val _ = compileNativeLib(nativeLibConfig,
-                             linkerResult,
-                             nativeLib,
-                             nativeLibPath,
-                             logger)
+    val _ =
+      compileNativeLib(nativeLibConfig, linkerResult, nativeLibPath, logger)
 
     llvm.linkLL(config,
                 linkerResult,
@@ -87,7 +83,6 @@ package object build {
 
   def compileNativeLib(config: Config,
                        linkerResult: LinkerResult,
-                       nativelib: Path,
                        libPath: Path,
                        logger: Logger): Path = {
     val cpaths   = IO.getAll(config.workdir, "glob:**.c").map(_.abs)
@@ -143,7 +138,7 @@ package object build {
       }
     }
 
-    nativelib
+    libPath
   }
 
 }

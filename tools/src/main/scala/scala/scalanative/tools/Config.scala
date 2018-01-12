@@ -7,6 +7,9 @@ import nir.Global
 
 sealed trait Config {
 
+  /** Path to the nativelib jar. */
+  def nativeLib: Path
+
   /** Entry point for linking. */
   def entry: Global
 
@@ -39,6 +42,9 @@ sealed trait Config {
 
   /** Should stubs be linked? */
   def linkStubs: Boolean
+
+  /** Create a new config with given path to nativelib. */
+  def withNativeLib(value: Path): Config
 
   /** Create new config with given entry point. */
   def withEntry(value: Global): Config
@@ -79,6 +85,7 @@ object Config {
   /** Default empty config object. */
   val empty: Config =
     Impl(
+      nativeLib = Paths.get(""),
       entry = Global.None,
       paths = Seq.empty,
       workdir = Paths.get(""),
@@ -92,7 +99,8 @@ object Config {
       linkStubs = false
     )
 
-  private final case class Impl(entry: Global,
+  private final case class Impl(nativeLib: Path,
+                                entry: Global,
                                 paths: Seq[Path],
                                 workdir: Path,
                                 clang: Path,
@@ -104,6 +112,9 @@ object Config {
                                 mode: Mode,
                                 linkStubs: Boolean)
       extends Config {
+    def withNativeLib(value: Path): Config =
+      copy(nativeLib = value)
+
     def withEntry(value: Global): Config =
       copy(entry = value)
 

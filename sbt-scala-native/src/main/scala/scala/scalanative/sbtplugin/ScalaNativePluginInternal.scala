@@ -149,6 +149,12 @@ object ScalaNativePluginInternal {
       )
       val classpath =
         fullClasspath.value.map(_.data.toPath).filter(f => Files.exists(f))
+
+      val nativeLibJar =
+        classpath.find { p =>
+          val path = p.toAbsolutePath.toString
+          path.contains("scala-native") && path.contains("nativelib")
+        }.get
       val entry   = nir.Global.Top(mainClass.toString + "$")
       val cwd     = nativeWorkdir.value.toPath
       val clang   = nativeClang.value.toPath
@@ -156,6 +162,7 @@ object ScalaNativePluginInternal {
       val gc      = tools.GarbageCollector(nativeGC.value)
 
       tools.Config.empty
+        .withNativeLib(nativeLibJar)
         .withEntry(entry)
         .withPaths(classpath)
         .withWorkdir(cwd)
@@ -183,21 +190,17 @@ object ScalaNativePluginInternal {
       build.unpackNativeLibrary(jar.toPath, cwd.toPath).toFile
     },
     nativeCompileLib := {
-      val linked    = nativeLinkNIR.value
-      val logger    = streams.value.log
-      val nativelib = nativeUnpackLib.value.toPath
-      val libPath   = crossTarget.value.toPath.resolve("native").resolve("lib")
-
       val config = {
         val config0 = nativeConfig.value
         config0.withCompileOptions("-O2" +: config0.compileOptions)
       }
 
-      val outPath = build.compileNativeLib(config,
-                                           linked,
-                                           nativelib,
-                                           libPath,
-                                           logger.toLogger)
+      val linked  = nativeLinkNIR.value
+      val logger  = streams.value.log
+      val libPath = nativeUnpackLib.value.toPath
+
+      val outPath =
+        build.compileNativeLib(config, linked, libPath, logger.toLogger)
       outPath.toFile
     },
     nativeLinkNIR := {
