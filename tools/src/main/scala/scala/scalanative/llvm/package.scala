@@ -151,7 +151,7 @@ package object llvm {
                 llPaths: Seq[Path],
                 logger: Logger): Seq[Path] = {
     val optimizationOpt =
-      config.mode match {
+      config.driver.mode match {
         case Mode.Debug   => "-O0"
         case Mode.Release => "-O2"
       }

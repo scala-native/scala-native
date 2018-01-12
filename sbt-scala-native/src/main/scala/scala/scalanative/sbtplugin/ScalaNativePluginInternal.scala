@@ -175,7 +175,6 @@ object ScalaNativePluginInternal {
         .withTarget(nativeTarget.value)
         .withLinkingOptions(nativeLinkingOptions.value)
         .withGC(gc)
-        .withMode(tools.Mode(nativeMode.value))
         .withLinkStubs(nativeLinkStubs.value)
     },
     nativeUnpackLib := {

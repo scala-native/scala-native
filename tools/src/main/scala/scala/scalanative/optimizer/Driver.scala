@@ -5,6 +5,9 @@ import tools.Mode
 
 sealed trait Driver {
 
+  /** The compilation mode */
+  def mode: Mode
+
   /** Companion of all the passes in the driver's pipeline. */
   def passes: Seq[AnyPassCompanion]
 
@@ -70,16 +73,17 @@ object Driver {
       case Mode.Debug   => fastOptPasses
       case Mode.Release => fullOptPasses
     }
-    new Impl(injectionPasses ++ optPasses ++ loweringPasses)
+    new Impl(mode, injectionPasses ++ optPasses ++ loweringPasses)
   }
 
   /** Create an empty pass-lesss driver. */
   def empty: Driver =
-    new Impl(Seq.empty)
+    new Impl(Mode.default, Seq.empty)
 
-  private final class Impl(val passes: Seq[AnyPassCompanion]) extends Driver {
+  private final class Impl(val mode: Mode, val passes: Seq[AnyPassCompanion])
+      extends Driver {
     def withPasses(passes: Seq[AnyPassCompanion]): Driver =
-      new Impl(passes)
+      new Impl(mode, passes)
   }
 
 }

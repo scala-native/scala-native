@@ -56,7 +56,7 @@ object CodeGen {
         workdir.write(Paths.get("out.ll"), buffer)
       }
 
-      config.mode match {
+      config.driver.mode match {
         case tools.Mode.Debug   => debug()
         case tools.Mode.Release => release()
       }

@@ -46,9 +46,6 @@ sealed trait Config {
   /** The garbage collector to use. */
   def gc: GarbageCollector
 
-  /** Compilation mode. */
-  def mode: Mode
-
   /** Should stubs be linked? */
   def linkStubs: Boolean
 
@@ -91,9 +88,6 @@ sealed trait Config {
   /** Create a new config with given garbage collector. */
   def withGC(value: GarbageCollector): Config
 
-  /** Create a new config with given compilation mode. */
-  def withMode(value: Mode): Config
-
   /** Create a new config with given behavior for stubs. */
   def withLinkStubs(value: Boolean): Config
 }
@@ -108,13 +102,14 @@ object Config {
     val clang   = llvm.discover("clang", llvm.clangVersions)
     val clangpp = llvm.discover("clang++", llvm.clangVersions)
     val target  = llvm.detectTarget(clang, workdir, logger)
+    val mode    = Mode.default
 
     llvm.checkThatClangIsRecentEnough(clang)
     llvm.checkThatClangIsRecentEnough(clangpp)
 
     empty
       .withNativeLib(nativeLib)
-      .withDriver(OptimizerDriver(empty.mode))
+      .withDriver(OptimizerDriver(mode))
       .withEntry(entry)
       .withPaths(paths)
       .withWorkdir(workdir)
@@ -141,7 +136,6 @@ object Config {
       linkingOptions = Seq.empty,
       compileOptions = Seq.empty,
       gc = GarbageCollector.default,
-      mode = Mode.default,
       linkStubs = false
     )
 
@@ -158,7 +152,6 @@ object Config {
                                 linkingOptions: Seq[String],
                                 compileOptions: Seq[String],
                                 gc: GarbageCollector,
-                                mode: Mode,
                                 linkStubs: Boolean)
       extends Config {
     def withNativeLib(value: Path): Config =
@@ -199,9 +192,6 @@ object Config {
 
     def withGC(value: GarbageCollector): Config =
       copy(gc = value)
-
-    def withMode(value: Mode): Config =
-      copy(mode = value)
 
     def withLinkStubs(value: Boolean): Config =
       copy(linkStubs = value)
