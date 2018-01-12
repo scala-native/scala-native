@@ -44,6 +44,7 @@ object Driver {
   )
 
   private val loweringPasses = Seq(
+    pass.SRemOverflow,
     pass.DynmethodLowering,
     pass.ExternHoisting,
     pass.ModuleLowering,
@@ -80,4 +81,5 @@ object Driver {
     def withPasses(passes: Seq[AnyPassCompanion]): Driver =
       new Impl(passes)
   }
+
 }
