@@ -230,7 +230,7 @@ object ScalaNativePluginInternal {
       val clang     = nativeClang.value
       val clangpp   = nativeClangPP.value
       val gc        = nativeGC.value
-      val opts      = "-O2" +: nativeCompileOptions.value
+      val opts      = nativeCompileOptions.value
       val logger    = streams.value.log
       val nativelib = nativeUnpackLib.value
       val cpaths    = (cwd ** "*.c").get.map(_.abs)
