@@ -12,14 +12,16 @@ Overview
 --------------------------------
 In order to effectively work with Scala Native, a knowledge of the build system
 is very helpful. In general the code is built and published to your local Ivy
-repository so that other components in the system can depend on each other.
-Although the ``build.sbt`` file and other code in the system is the way to learn the system
-thoroughly, the following sections will give information that should be helpful.
+repository using the `sbt` `publishLocal` command so that other components in the
+system can depend on each other via normal `sbt` dependencies. Although the
+``build.sbt`` file and other code in the system is the way to learn the system
+thoroughly, the following sections will give information that should be helpful
+to get started.
 
 The build has roughly four groups of sub-projects as follows:
 
-1.  The Native Scala Compiler plugin and libraries. Each of these depend on the next project
-    in the list.
+1.  The Native Scala Compiler plugin and libraries. Each of these projects depend
+    on the next project in the list.
 
     - `nscplugin`
 
@@ -30,7 +32,6 @@ The build has roughly four groups of sub-projects as follows:
     - `auxlib`
 
     - `scalalib`
-
 
 2.  The Scala Native plugin and dependencies (directory names are in parentheses).
 
@@ -62,15 +63,97 @@ The build has roughly four groups of sub-projects as follows:
 
 Each of the groups above also depend on the previous group being compiled and
 published locally. The sbt plugin ``sbtScalaNative`` is used inside Scala Native
-exactly as it is used in a project using Scala Native. The plugin is needed to
-by the ``testInterface`` and also the `tests` that use the ``testInterface``
+exactly as it is used in a project using Scala Native. The plugin is needed
+by the `testInterface` and also the `tests` that use the `testInterface`
 to compile native code.
 
-Helpful Hints and Tips
---------------------------------
+Building Scala Native
+---------------------
+Once you have cloned Scala Native from git, `cd` into the base directory. Inside
+this directory is the `build.sbt` file which is used to build Scala Native. This
+file has `sbt` command aliases which are used to help build the system. In order
+to build Scala Native for the first time you should run the following commands:
 
+.. code-block:: text
+
+    $ sbt
+    > rebuild
+
+If you want to run all the tests and benchmarks, which take awhile you can run
+the `test-all` command after the systems builds.
+
+Normal development workflow
+---------------------------
+Let us suppose that you wish to work on the `javalib` project to add some code
+or fix a bug. Once you make a change to the code, run the following command
+at the sbt prompt to compile the code and run the tests:
+
+.. code-block:: text
+
+    > javalib/publishLocal
+    > tests/test
+
+You can run only the test of interest by using one of the following commands:
+
+.. code-block:: text
+
+    > tests/testOnly java.lang.StringSuite
+    > tests/testOnly *StringSuite
+
+
+
+Setting the GC setting via an environment variable
+--------------------------------------------------
+One of the build settings that can be changed is the ``nativeGC``. There
+is a default setting value that will be used unless changed. The
+Scala Native has a high performance Garbage Collector (GC) ``immix`` that
+comes with the system or the `boehm` GC which can be used when the
+supporting library is installed. The setting `none` also exists for a
+short running script or where memory is not an issue.
+
+Scala Native uses Continuous integration (CI) to compile and test the code on
+different platforms [1]_ and using different garbage collectors [2]_.
+The Scala Native `sbt` plugin includes the ability to set an environment
+variable `SCALANATIVE_GC` to set the garbage collector value used by `sbt`.
+Setting this as follows will set the value in the plugin when `sbt` is run.
+
+.. code-block:: text
+
+    $ set SCALANATIVE_GC=immix
+    $ sbt
+    > show nativeGC
+
+This setting remains unless changed at the `sbt` prompt. If changed, the value
+will be restored the the environment variable value if `sbt` is restarted or
+`reload` is called at the `sbt` prompt. You can also revert to the default
+setting value via `unset SCALANATIVE_GC` and then restarting `sbt`.
+
+Setting the GC setting via `sbt`
+--------------------------------
+The GC setting is only used during the link phase of the Scala Native
+compiler so it can be applied to one or all the Scala Native projects
+that use the `sbtScalaNative` plugin. This is an example to only change the
+setting for the `sandbox`.
+
+.. code-block:: text
+
+    $ sbt
+    > show nativeGC
+    > set nativeGC in sandbox := "none"
+    > show nativeGC
+    > sandbox/run
+
+The following shows how to set ``nativeGC`` on all the projects.
+
+.. code-block:: text
+
+    > set every nativeGC := "immix"
+    > show nativeGC
 
 
 The next section has more build and development information for those wanting
 to work on :ref:`compiler`.
+
+.. [1] http://www.scala-native.org/en/latest/user/setup.html
+.. [2] http://www.scala-native.org/en/latest/user/sbt.html
 
