@@ -279,11 +279,9 @@ lazy val sbtScalaNative =
       sources in Compile ++= (sources in Compile in testInterfaceSerialization).value,
       // publish the other projects before running scripted tests.
       scripted := scripted
-        .dependsOn(
-          publishLocal in scalalib,
-          publishLocal in ThisProject,
-          publishLocal in testInterface
-        )
+        .dependsOn(publishLocal in testInterface)
+        .dependsOn(publishLocal in ThisProject)
+        .dependsOn(publishLocal in scalalib)
         .evaluated,
       publishLocal := publishLocal.dependsOn(publishLocal in tools).value
     )
