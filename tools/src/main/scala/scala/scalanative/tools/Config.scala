@@ -20,7 +20,7 @@ sealed trait Config {
   def optimizerReporter: OptimizerReporter
 
   /** Entry point for linking. */
-  def entry: Global
+  def entry: String
 
   /** Sequence of all NIR locations. */
   def paths: Seq[Path]
@@ -62,7 +62,7 @@ sealed trait Config {
   def withOptimizerReporter(value: OptimizerReporter): Config
 
   /** Create new config with given entry point. */
-  def withEntry(value: Global): Config
+  def withEntry(value: String): Config
 
   /** Create a new config with given nir paths. */
   def withPaths(value: Seq[Path]): Config
@@ -96,7 +96,7 @@ object Config {
 
   def default(nativeLib: Path,
               paths: Seq[Path],
-              entry: Global,
+              entry: String,
               workdir: Path,
               logger: Logger): Config = {
     val clang   = llvm.discover("clang", llvm.clangVersions)
@@ -127,7 +127,7 @@ object Config {
       driver = OptimizerDriver.empty,
       linkerReporter = LinkerReporter.empty,
       optimizerReporter = OptimizerReporter.empty,
-      entry = Global.None,
+      entry = "",
       paths = Seq.empty,
       workdir = Paths.get(""),
       clang = Paths.get(""),
@@ -143,7 +143,7 @@ object Config {
                                 driver: OptimizerDriver,
                                 linkerReporter: LinkerReporter,
                                 optimizerReporter: OptimizerReporter,
-                                entry: Global,
+                                entry: String,
                                 paths: Seq[Path],
                                 workdir: Path,
                                 clang: Path,
@@ -166,7 +166,7 @@ object Config {
     def withOptimizerReporter(value: OptimizerReporter): Config =
       copy(optimizerReporter = value)
 
-    def withEntry(value: Global): Config =
+    def withEntry(value: String): Config =
       copy(entry = value)
 
     def withPaths(value: Seq[Path]): Config =

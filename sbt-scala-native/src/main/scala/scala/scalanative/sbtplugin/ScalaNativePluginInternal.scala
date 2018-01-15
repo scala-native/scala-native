@@ -156,7 +156,7 @@ object ScalaNativePluginInternal {
           val path = p.toAbsolutePath.toString
           path.contains("scala-native") && path.contains("nativelib")
         }.get
-      val entry   = nir.Global.Top(mainClass.toString + "$")
+      val entry   = mainClass.toString + "$"
       val cwd     = nativeWorkdir.value.toPath
       val clang   = nativeClang.value.toPath
       val clangpp = nativeClangPP.value.toPath

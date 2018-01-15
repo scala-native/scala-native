@@ -39,14 +39,15 @@ package object tools {
    *  assumption.
    */
   def link(config: Config): LinkerResult = {
-    val chaDeps  = optimizer.analysis.ClassHierarchy.depends
-    val passes   = config.driver.passes
-    val passDeps = passes.flatMap(_.depends).distinct
-    val deps     = (chaDeps ++ passDeps).distinct
-    val injects  = passes.flatMap(_.injects)
+    val chaDeps   = optimizer.analysis.ClassHierarchy.depends
+    val passes    = config.driver.passes
+    val passDeps  = passes.flatMap(_.depends).distinct
+    val deps      = (chaDeps ++ passDeps).distinct
+    val injects   = passes.flatMap(_.injects)
+    val mainClass = nir.Global.Top(config.entry)
     val entry =
       nir.Global
-        .Member(config.entry, "main_scala.scalanative.runtime.ObjectArray_unit")
+        .Member(mainClass, "main_scala.scalanative.runtime.ObjectArray_unit")
     val result =
       (linker.Linker(config)).link(entry +: deps)
 

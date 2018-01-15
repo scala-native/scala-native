@@ -23,7 +23,7 @@ package object build {
 
   def build(nativeLib: Path,
             paths: Seq[Path],
-            entry: Global,
+            entry: String,
             target: Path,
             workdir: Path,
             logger: Logger): Path = {
