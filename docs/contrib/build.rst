@@ -124,7 +124,7 @@ Setting this as follows will set the value in the plugin when `sbt` is run.
     > show nativeGC
 
 This setting remains unless changed at the `sbt` prompt. If changed, the value
-will be restored the the environment variable value if `sbt` is restarted or
+will be restored to the environment variable value if `sbt` is restarted or
 `reload` is called at the `sbt` prompt. You can also revert to the default
 setting value via `unset SCALANATIVE_GC` and then restarting `sbt`.
 
