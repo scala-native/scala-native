@@ -9,9 +9,7 @@ import sbt._
 object ScalaNativePlugin extends AutoPlugin {
   override def requires: Plugins = plugins.JvmPlugin
 
-  val autoImport = AutoImport
-
-  object AutoImport extends NativeCross {
+  object autoImport {
 
     val ScalaNativeCrossVersion = sbtplugin.ScalaNativeCrossVersion
 
