@@ -10,7 +10,7 @@ import sbt._
 import sbt.Keys._
 import sbt.complete.DefaultParsers._
 import sbt.testing.Framework
-import sbtcrossproject.CrossPlugin.autoImport._
+import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 
 import scalanative.nir
 import scalanative.tools
@@ -82,7 +82,7 @@ object ScalaNativePluginInternal {
 
   lazy val scalaNativeBaseSettings: Seq[Setting[_]] = Seq(
     crossVersion := ScalaNativeCrossVersion.binary,
-    crossPlatform := NativePlatform,
+    platformDepsCrossVersion := ScalaNativeCrossVersion.binary,
     nativeClang := {
       val clang = discover("clang", clangVersions)
       checkThatClangIsRecentEnough(clang)

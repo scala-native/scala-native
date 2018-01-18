@@ -283,7 +283,7 @@ lazy val sbtScalaNative =
       crossScalaVersions := libCrossScalaVersions,
       // fixed in https://github.com/sbt/sbt/pull/3397 (for sbt 0.13.17)
       sbtBinaryVersion in update := (sbtBinaryVersion in pluginCrossBuild).value,
-      addSbtPlugin("org.scala-native" % "sbt-crossproject" % "0.2.2"),
+      addSbtPlugin("org.portable-scala" % "sbt-platform-deps" % "1.0.0-M2"),
       moduleName := "sbt-scala-native",
       sbtTestDirectory := (baseDirectory in ThisBuild).value / "scripted-tests",
       // `testInterfaceSerialization` needs to be available from the sbt plugin,
