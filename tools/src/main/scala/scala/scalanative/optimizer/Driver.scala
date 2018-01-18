@@ -9,10 +9,10 @@ sealed trait Driver {
   def mode: Mode
 
   /** Companion of all the passes in the driver's pipeline. */
-  def passes: Seq[AnyPassCompanion]
+  private[scalanative] def passes: Seq[AnyPassCompanion]
 
   /** Create a copy with given passes. */
-  def withPasses(passes: Seq[AnyPassCompanion]): Driver
+  private[scalanative] def withPasses(passes: Seq[AnyPassCompanion]): Driver
 }
 
 object Driver {
