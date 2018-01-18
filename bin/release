@@ -1,6 +1,9 @@
 #!/bin/bash
 
+set -ex
+
 sbt rebuild
+sbt "tools/mimaReportBinaryIssues"
 sbt publishSigned
 sbt "project nscplugin" ++2.11.12 publishSigned
 sbt "project nscplugin" ++2.11.11 publishSigned

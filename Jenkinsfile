@@ -78,6 +78,10 @@ def job(String OS, List<String> GCs) {
                 }
                 setBuildStatus("Tests succeeded", "SUCCESS", "$OS/$GC", repoUrl, commitSha)
             }
+
+            advance("Checking binary compatibility", OS) {
+                sh 'sbt tools/mimaReportBinaryIssues'
+            }
         }
     }
 }
