@@ -714,72 +714,33 @@ object CodeGen {
 
     def genCall(genBind: () => Unit, call: Op.Call)(
         implicit fresh: Fresh): Unit = call match {
-      case Op.Call(ty, Val.Global(pointee, _), args, Next.None)
-          if lookup(pointee) == ty =>
-        val Type.Function(argtys, _) = ty
-
-        touch(pointee)
-
-        newline()
-        genBind()
-        str("call ")
-        genType(ty)
-        str(" @")
-        genGlobal(pointee)
-        str("(")
-        rep(args, sep = ", ")(genVal)
-        str(")")
-
       case Op.Call(ty, Val.Global(pointee, _), args, unwind)
           if lookup(pointee) == ty =>
         val Type.Function(argtys, _) = ty
 
-        val succ = fresh()
-
         touch(pointee)
 
         newline()
         genBind()
-        str("invoke ")
+        str(if (unwind ne Next.None) "invoke " else "call ")
         genType(ty)
         str(" @")
         genGlobal(pointee)
         str("(")
         rep(args, sep = ", ")(genVal)
         str(")")
-        str(" to label %")
-        currentBlockSplit += 1
-        genBlockSplitName()
-        str(" unwind ")
-        genNext(unwind)
 
-        unindent()
-        genBlockHeader()
-        indent()
+        if (unwind ne Next.None) {
+          str(" to label %")
+          currentBlockSplit += 1
+          genBlockSplitName()
+          str(" unwind ")
+          genNext(unwind)
 
-      case Op.Call(ty, ptr, args, Next.None) =>
-        val Type.Function(argtys, _) = ty
-
-        val pointee = fresh()
-
-        newline()
-        str("%")
-        genLocal(pointee)
-        str(" = bitcast ")
-        genVal(ptr)
-        str(" to ")
-        genType(ty)
-        str("*")
-
-        newline()
-        genBind()
-        str("call ")
-        genType(ty)
-        str(" %")
-        genLocal(pointee)
-        str("(")
-        rep(args, sep = ", ")(genVal)
-        str(")")
+          unindent()
+          genBlockHeader()
+          indent()
+        }
 
       case Op.Call(ty, ptr, args, unwind) =>
         val Type.Function(_, resty) = ty
@@ -797,22 +758,25 @@ object CodeGen {
 
         newline()
         genBind()
-        str("invoke ")
+        str(if (unwind ne Next.None) "invoke " else "call ")
         genType(ty)
         str(" %")
         genLocal(pointee)
         str("(")
         rep(args, sep = ", ")(genVal)
         str(")")
-        str(" to label %")
-        currentBlockSplit += 1
-        genBlockSplitName()
-        str(" unwind ")
-        genNext(unwind)
 
-        unindent()
-        genBlockHeader()
-        indent()
+        if (unwind ne Next.None) {
+          str(" to label %")
+          currentBlockSplit += 1
+          genBlockSplitName()
+          str(" unwind ")
+          genNext(unwind)
+
+          unindent()
+          genBlockHeader()
+          indent()
+        }
     }
 
     def genOp(op: Op): Unit = op match {
