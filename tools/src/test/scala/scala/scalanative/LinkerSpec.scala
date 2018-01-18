@@ -55,9 +55,8 @@ abstract class LinkerSpec extends FlatSpec {
 
   private def makeConfig(driver: Driver,
                          outDir: Path,
-                         entryName: String,
+                         entry: String,
                          linkStubs: Boolean)(implicit in: Scope): Config = {
-    val entry = Global.Top(entryName)
     val paths = makePaths(outDir)
     Config.empty
       .withDriver(driver)
