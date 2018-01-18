@@ -9,16 +9,16 @@ import scalanative.io.{withScratchBuffer, VirtualDirectory}
 trait Reporter {
 
   /** Gets called whenever optimizations starts. */
-  def onStart(batchId: Int, batchDefns: Seq[Defn]): Unit = ()
+  private[scalanative] def onStart(batchId: Int, batchDefns: Seq[Defn]): Unit = ()
 
   /** Gets called right after pass transforms the batchDefns. */
-  def onPass(batchId: Int,
+  private[scalanative] def onPass(batchId: Int,
              passId: Int,
              pass: Pass,
              batchDefns: Seq[nir.Defn]): Unit = ()
 
   /** Gets called with final result of optimization. */
-  def onComplete(batchId: Int, batchDefns: Seq[Defn]): Unit = ()
+  private[scalanative] def onComplete(batchId: Int, batchDefns: Seq[Defn]): Unit = ()
 }
 
 object Reporter {
