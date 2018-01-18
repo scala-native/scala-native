@@ -11,6 +11,15 @@ val sbt10ScalaVersion     = "2.12.4"
 val libScalaVersion       = "2.11.12"
 val libCrossScalaVersions = Seq("2.11.8", "2.11.11", libScalaVersion)
 
+// The previous releases of Scala Native with which this version is binary compatible.
+val binCompatVersions     = Set()
+
+lazy val mimaSettings: Seq[Setting[_]] = Seq(
+  mimaPreviousArtifacts := binCompatVersions.map { version =>
+    organization.value %% moduleName.value % version
+  }
+)
+
 lazy val baseSettings = Seq(
   organization := "org.scala-native",
   version := nativeVersion
@@ -226,7 +235,8 @@ lazy val tools =
         .dependsOn(publishLocal in util)
         .value,
       // Running tests in parallel results in `FileSystemAlreadyExistsException`
-      parallelExecution in Test := false
+      parallelExecution in Test := false,
+      mimaSettings
     )
     .dependsOn(nir, util, testingCompilerInterface % Test)
 
