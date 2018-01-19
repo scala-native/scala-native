@@ -1,5 +1,7 @@
 package java.util
 
+// Ported from Scala.js
+
 import scala.annotation.tailrec
 
 import java.io._

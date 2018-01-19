@@ -1,5 +1,7 @@
 package java.util
 
+// Ported from Scala.js
+
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, IOException}
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets.ISO_8859_1
