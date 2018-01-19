@@ -12,7 +12,7 @@ val libScalaVersion       = "2.11.12"
 val libCrossScalaVersions = Seq("2.11.8", "2.11.11", libScalaVersion)
 
 // The previous releases of Scala Native with which this version is binary compatible.
-val binCompatVersions     = Set()
+val binCompatVersions = Set()
 
 lazy val mimaSettings: Seq[Setting[_]] = Seq(
   mimaPreviousArtifacts := binCompatVersions.map { version =>
