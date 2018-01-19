@@ -22,10 +22,13 @@ trait Reporter {
   private[scalanative] def onUnresolved(globa: Global): Unit = ()
 
   /** Gets called whenever a new direct dependency is discovered. */
-  private[scalanative] def onDirectDependency(from: Global, to: Global): Unit = ()
+  private[scalanative] def onDirectDependency(from: Global, to: Global): Unit =
+    ()
 
   /** Gets called whenever a new conditional dependency is discovered. */
-  private[scalanative] def onConditionalDependency(from: Global, to: Global, cond: Global): Unit =
+  private[scalanative] def onConditionalDependency(from: Global,
+                                                   to: Global,
+                                                   cond: Global): Unit =
     ()
 
   /** Gets called whenever linking is complete. */

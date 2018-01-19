@@ -107,7 +107,7 @@ object Main extends InjectCompanion {
   override val injects =
     Seq(InitDecl)
 
-  override def apply(config: tools.Config, top: Top) = {
+  override def apply(config: build.Config, top: Top) = {
     val entry = nir.Global.Top(config.entry)
     new Main(entry)
   }

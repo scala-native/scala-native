@@ -1,4 +1,5 @@
 package scala.scalanative
+package build
 
 import java.nio.file.{Files, Path, Paths}
 
@@ -6,7 +7,7 @@ import scala.collection.JavaConverters._
 import scala.util.Try
 import scala.sys.process._
 
-import tools.{Config, GarbageCollector, IO, LinkerResult, Logger, Mode}
+import tools.{GarbageCollector, IO, LinkerResult, Logger, Mode}
 import IO.RichPath
 
 package object llvm {

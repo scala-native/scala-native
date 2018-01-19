@@ -49,6 +49,6 @@ class ClassLowering(implicit top: Top) extends Pass {
 }
 
 object ClassLowering extends PassCompanion {
-  override def apply(config: tools.Config, top: Top) =
+  override def apply(config: build.Config, top: Top) =
     new ClassLowering()(top)
 }

@@ -4,7 +4,7 @@ import scala.collection.mutable
 import scala.scalanative.nir._
 import scala.scalanative.optimizer.analysis.ClassHierarchy.Top
 import scala.scalanative.optimizer.{Inject, InjectCompanion}
-import scala.scalanative.tools.Config
+import scala.scalanative.build.Config
 
 class ObjectArrayId(top: Top) extends Inject {
   override def apply(buf: mutable.Buffer[Defn]) = {

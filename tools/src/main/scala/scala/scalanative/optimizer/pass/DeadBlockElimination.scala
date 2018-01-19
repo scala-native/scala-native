@@ -25,6 +25,6 @@ class DeadBlockElimination extends Pass {
 }
 
 object DeadBlockElimination extends PassCompanion {
-  override def apply(config: tools.Config, top: Top) =
+  override def apply(config: build.Config, top: Top) =
     new DeadBlockElimination()
 }

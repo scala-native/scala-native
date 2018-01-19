@@ -1,5 +1,6 @@
 package scala.scalanative
 
+import build.Config
 import scalanative.nir.Global
 
 // API use-cases

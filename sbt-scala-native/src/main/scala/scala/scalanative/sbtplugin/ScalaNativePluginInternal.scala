@@ -15,6 +15,7 @@ import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 
 import scalanative.nir
 import scalanative.tools
+import scalanative.build.llvm
 import scalanative.io.VirtualDirectory
 import scalanative.util.{Scope => ResourceScope}
 import scalanative.sbtplugin.Utilities._
@@ -46,7 +47,7 @@ object ScalaNativePluginInternal {
     taskKey[File]("Working directory for intermediate build files.")
 
   val nativeConfig =
-    taskKey[tools.Config]("Aggregate config object that's used for tools.")
+    taskKey[build.Config]("Aggregate config object that's used for tools.")
 
   val nativeLinkNIR =
     taskKey[tools.LinkerResult]("Link NIR using Scala Native linker.")
@@ -162,7 +163,7 @@ object ScalaNativePluginInternal {
       val clangpp = nativeClangPP.value.toPath
       val gc      = tools.GarbageCollector(nativeGC.value)
 
-      tools.Config.empty
+      build.Config.empty
         .withNativeLib(nativeLibJar)
         .withDriver(nativeOptimizerDriver.value)
         .withLinkerReporter(nativeLinkerReporter.value)
@@ -320,7 +321,7 @@ object ScalaNativePluginInternal {
 
       ResourceScope { implicit scope =>
         val globals = linker.ClassPath(VirtualDirectory.real(classDir)).globals
-        val config  = tools.Config.empty.withPaths(Seq(classDir))
+        val config  = build.Config.empty.withPaths(Seq(classDir))
         val result  = (linker.Linker(config)).link(globals.toSeq)
 
         result.unresolved.map(_.show).sorted

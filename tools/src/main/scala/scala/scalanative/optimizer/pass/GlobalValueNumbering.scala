@@ -356,6 +356,6 @@ object GlobalValueNumbering extends PassCompanion {
     def rawLocal(local: Local): Hash = local.id
   }
 
-  override def apply(config: tools.Config, top: Top) =
+  override def apply(config: build.Config, top: Top) =
     new GlobalValueNumbering()
 }

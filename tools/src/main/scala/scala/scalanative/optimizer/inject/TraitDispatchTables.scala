@@ -18,6 +18,6 @@ class TraitDispatchTables(top: Top) extends Inject {
 }
 
 object TraitDispatchTables extends InjectCompanion {
-  override def apply(config: tools.Config, top: Top) =
+  override def apply(config: build.Config, top: Top) =
     new TraitDispatchTables(top)
 }

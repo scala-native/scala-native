@@ -14,7 +14,7 @@ import scalanative.nir._
 object CodeGen {
 
   /** Generate code for given assembly. */
-  def apply(config: tools.Config, assembly: Seq[Defn]): Unit =
+  def apply(config: build.Config, assembly: Seq[Defn]): Unit =
     Scope { implicit in =>
       val env     = assembly.map(defn => defn.name -> defn).toMap
       val workdir = VirtualDirectory.real(config.workdir)

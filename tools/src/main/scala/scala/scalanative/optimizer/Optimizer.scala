@@ -26,7 +26,7 @@ object Optimizer {
   }
 
   /** Run all of the passes on given assembly. */
-  def apply(config: tools.Config,
+  def apply(config: build.Config,
             assembly: Seq[Defn],
             dyns: Seq[String]): Seq[Defn] = {
     val reporter = config.optimizerReporter

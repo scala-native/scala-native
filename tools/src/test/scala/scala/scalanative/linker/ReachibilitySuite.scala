@@ -63,9 +63,9 @@ trait ReachabilitySuite extends FunSuite {
     parts :+ outDir
   }
 
-  private def makeConfig(outDir: Path)(implicit in: Scope): tools.Config = {
+  private def makeConfig(outDir: Path)(implicit in: Scope): build.Config = {
     val paths = makePaths(outDir)
-    tools.Config.empty
+    build.Config.empty
       .withWorkdir(outDir)
       .withPaths(paths)
   }

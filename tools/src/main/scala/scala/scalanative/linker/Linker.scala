@@ -18,10 +18,10 @@ sealed trait Linker {
 object Linker {
 
   /** Create a new linker given tools configuration. */
-  def apply(config: tools.Config): Linker =
+  def apply(config: build.Config): Linker =
     new Impl(config)
 
-  private final class Impl(config: tools.Config) extends Linker {
+  private final class Impl(config: build.Config) extends Linker {
     private val reporter = config.linkerReporter
     import reporter._
 

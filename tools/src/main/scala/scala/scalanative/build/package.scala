@@ -8,7 +8,6 @@ import scala.sys.process.Process
 import nir.Global
 
 import tools.{
-  Config,
   GarbageCollector,
   IO,
   LinkerReporter,
