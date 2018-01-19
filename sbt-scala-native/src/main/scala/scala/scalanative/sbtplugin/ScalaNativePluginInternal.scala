@@ -115,10 +115,11 @@ object ScalaNativePluginInternal {
       libs
     },
     nativeLinkingOptions in NativeTest := (nativeLinkingOptions in Test).value,
-    nativeMode := "debug",
+    nativeMode := Option(System.getenv.get("SCALANATIVE_MODE"))
+      .getOrElse("debug"),
+    nativeMode in NativeTest := (nativeMode in Test).value,
     nativeLinkStubs := false,
     nativeLinkStubs in NativeTest := (nativeLinkStubs in Test).value,
-    nativeMode in NativeTest := (nativeMode in Test).value,
     nativeLinkerReporter := tools.LinkerReporter.empty,
     nativeLinkerReporter in NativeTest := (nativeLinkerReporter in Test).value,
     nativeOptimizerReporter := tools.OptimizerReporter.empty,
@@ -319,7 +320,8 @@ object ScalaNativePluginInternal {
       val config   = nativeConfig.value
       val reporter = nativeOptimizerReporter.value
       val driver   = nativeOptimizerDriver.value
-      logger.time("Optimizing") {
+      val mode     = nativeMode.value
+      logger.time(s"Optimizing ($mode mode)") {
         tools.optimize(config, driver, result.defns, result.dyns, reporter)
       }
     },
@@ -395,7 +397,7 @@ object ScalaNativePluginInternal {
       val paths     = apppaths.map(_.abs) ++ opaths
       val compile   = clangpp.abs +: (flags ++ paths)
 
-      logger.time(s"Linking native code - $gc gc") {
+      logger.time(s"Linking native code ($gc gc)") {
         logger.running(compile)
         Process(compile, cwd) ! logger
       }
