@@ -57,8 +57,8 @@ object CodeGen {
       }
 
       config.driver.mode match {
-        case tools.Mode.Debug   => debug()
-        case tools.Mode.Release => release()
+        case build.Mode.Debug   => debug()
+        case build.Mode.Release => release()
       }
     }
 

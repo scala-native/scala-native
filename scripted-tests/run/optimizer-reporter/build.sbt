@@ -1,4 +1,4 @@
-import scalanative.tools.OptimizerReporter
+import scalanative.build.tools.OptimizerReporter
 import scalanative.sbtplugin.ScalaNativePluginInternal.nativeOptimizerReporter
 
 enablePlugins(ScalaNativePlugin)

@@ -1,4 +1,4 @@
-package scala.scalanative.tools
+package scala.scalanative.build
 
 import java.io.IOException
 import java.nio.file.{
@@ -16,7 +16,7 @@ import java.util.EnumSet
 import java.util.zip.{ZipEntry, ZipInputStream}
 import java.security.{DigestInputStream, MessageDigest}
 
-object IO {
+private[scalanative] object IO {
 
   implicit class RichPath(val path: Path) extends AnyVal {
     def abs: String = path.toAbsolutePath.toString

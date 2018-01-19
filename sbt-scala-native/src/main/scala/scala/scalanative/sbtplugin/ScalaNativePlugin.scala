@@ -1,7 +1,7 @@
 package scala.scalanative
 package sbtplugin
 
-import scalanative.tools
+import scalanative.build.tools
 import ScalaNativePluginInternal._
 
 import sbt._

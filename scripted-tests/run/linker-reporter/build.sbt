@@ -1,4 +1,4 @@
-import scalanative.tools.LinkerReporter
+import scalanative.build.tools.LinkerReporter
 import scalanative.sbtplugin.ScalaNativePluginInternal.nativeLinkerReporter
 
 enablePlugins(ScalaNativePlugin)

@@ -1,7 +1,7 @@
 package scala.scalanative
 
 import optimizer.Driver
-import build.Config
+import build.{Config, tools}
 
 /** Base class to test the optimizer */
 abstract class OptimizerSpec extends LinkerSpec {

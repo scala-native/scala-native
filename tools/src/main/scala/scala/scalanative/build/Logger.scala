@@ -1,4 +1,4 @@
-package scala.scalanative.tools
+package scala.scalanative.build
 
 import java.lang.System.{err, out, lineSeparator => nl}
 

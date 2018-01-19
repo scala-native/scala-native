@@ -5,10 +5,9 @@ import scala.language.implicitConversions
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
 
-import build.Config
+import build.{Config, Mode, tools}
 import util.Scope
 import nir.Global
-import tools.Mode
 import optimizer.Driver
 
 import org.scalatest.FlatSpec

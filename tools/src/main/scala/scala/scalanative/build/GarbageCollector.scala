@@ -1,4 +1,4 @@
-package scala.scalanative.tools
+package scala.scalanative.build
 
 /**
  * @param dir directory name of the gc

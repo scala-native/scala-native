@@ -7,8 +7,8 @@ import scala.collection.JavaConverters._
 import scala.util.Try
 import scala.sys.process._
 
-import tools.{GarbageCollector, IO, LinkerResult, Logger, Mode}
 import IO.RichPath
+import tools.LinkerResult
 
 package object llvm {
 

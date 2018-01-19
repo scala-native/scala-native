@@ -1,5 +1,4 @@
-package scala.scalanative
-package tools
+package scala.scalanative.build
 
 sealed abstract class Mode(val name: String)
 object Mode {

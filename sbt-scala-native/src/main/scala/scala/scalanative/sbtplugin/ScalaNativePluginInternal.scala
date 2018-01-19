@@ -14,7 +14,7 @@ import sbt.testing.Framework
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 
 import scalanative.nir
-import scalanative.tools
+import scalanative.build
 import scalanative.build.llvm
 import scalanative.io.VirtualDirectory
 import scalanative.util.{Scope => ResourceScope}
@@ -33,15 +33,15 @@ object ScalaNativePluginInternal {
     taskKey[String]("Target triple.")
 
   val nativeLinkerReporter =
-    settingKey[tools.LinkerReporter](
+    settingKey[build.tools.LinkerReporter](
       "A reporter that gets notified whenever a linking event happens.")
 
   val nativeOptimizerReporter =
-    settingKey[tools.OptimizerReporter](
+    settingKey[build.tools.OptimizerReporter](
       "A reporter that gets notified whenever an optimizer event happens.")
 
   val nativeOptimizerDriver =
-    taskKey[tools.OptimizerDriver]("Pass manager for the optimizer.")
+    taskKey[build.tools.OptimizerDriver]("Pass manager for the optimizer.")
 
   val nativeWorkdir =
     taskKey[File]("Working directory for intermediate build files.")
@@ -50,7 +50,7 @@ object ScalaNativePluginInternal {
     taskKey[build.Config]("Aggregate config object that's used for tools.")
 
   val nativeLinkNIR =
-    taskKey[tools.LinkerResult]("Link NIR using Scala Native linker.")
+    taskKey[build.tools.LinkerResult]("Link NIR using Scala Native linker.")
 
   val nativeOptimizeNIR =
     taskKey[Seq[nir.Defn]]("Optimize NIR produced after linking.")
@@ -102,16 +102,16 @@ object ScalaNativePluginInternal {
     nativeLinkingOptions := llvm.defaultLinkingOptions,
     nativeLinkingOptions in NativeTest := (nativeLinkingOptions in Test).value,
     nativeMode := Option(System.getenv.get("SCALANATIVE_MODE"))
-      .getOrElse(tools.Mode.default.name),
+      .getOrElse(build.Mode.default.name),
     nativeMode in NativeTest := (nativeMode in Test).value,
     nativeLinkStubs := false,
     nativeLinkStubs in NativeTest := (nativeLinkStubs in Test).value,
-    nativeLinkerReporter := tools.LinkerReporter.empty,
+    nativeLinkerReporter := build.tools.LinkerReporter.empty,
     nativeLinkerReporter in NativeTest := (nativeLinkerReporter in Test).value,
-    nativeOptimizerReporter := tools.OptimizerReporter.empty,
+    nativeOptimizerReporter := build.tools.OptimizerReporter.empty,
     nativeOptimizerReporter in NativeTest := (nativeOptimizerReporter in Test).value,
     nativeGC := Option(System.getenv.get("SCALANATIVE_GC"))
-      .getOrElse(tools.GarbageCollector.default.name),
+      .getOrElse(build.GarbageCollector.default.name),
     nativeGC in NativeTest := (nativeGC in Test).value
   )
 
@@ -137,8 +137,8 @@ object ScalaNativePluginInternal {
     artifactPath in nativeLink := {
       crossTarget.value / (moduleName.value + "-out")
     },
-    nativeOptimizerDriver := tools.OptimizerDriver(
-      tools.Mode(nativeMode.value)),
+    nativeOptimizerDriver := build.tools.OptimizerDriver(
+      build.Mode(nativeMode.value)),
     nativeWorkdir := {
       val workdir = crossTarget.value / "native"
       IO.delete(workdir)
@@ -161,7 +161,7 @@ object ScalaNativePluginInternal {
       val cwd     = nativeWorkdir.value.toPath
       val clang   = nativeClang.value.toPath
       val clangpp = nativeClangPP.value.toPath
-      val gc      = tools.GarbageCollector(nativeGC.value)
+      val gc      = build.GarbageCollector(nativeGC.value)
 
       build.Config.empty
         .withNativeLib(nativeLibJar)
@@ -213,7 +213,7 @@ object ScalaNativePluginInternal {
       val config = nativeConfig.value
 
       val result = logger.time("Linking") {
-        tools.link(config)
+        build.tools.link(config)
       }
       if (result.unresolved.nonEmpty) {
         result.unresolved.map(_.show).sorted.foreach { signature =>
@@ -236,7 +236,7 @@ object ScalaNativePluginInternal {
       val config = nativeConfig.value
       val mode   = nativeMode.value
       logger.time(s"Optimizing ($mode mode)") {
-        tools.optimize(config, result.defns, result.dyns)
+        build.tools.optimize(config, result.defns, result.dyns)
       }
     },
     nativeGenerateLL := {
@@ -245,7 +245,7 @@ object ScalaNativePluginInternal {
       val optimized = nativeOptimizeNIR.value
       val cwd       = nativeWorkdir.value
       logger.time("Generating intermediate code") {
-        tools.codegen(config, optimized)
+        build.tools.codegen(config, optimized)
       }
       logger.info(s"Produced ${(cwd ** "*.ll").get.length} files")
       (cwd ** "*.ll").get.toSeq
@@ -310,7 +310,7 @@ object ScalaNativePluginInternal {
         val globals = fcp
           .collect { case p if p.data.exists => p.data.toPath }
           .flatMap(p =>
-            tools.LinkerPath(VirtualDirectory.real(p)).globals.toSeq)
+            build.tools.LinkerPath(VirtualDirectory.real(p)).globals.toSeq)
 
         globals.map(_.show).sorted
       }

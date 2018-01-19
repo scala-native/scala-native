@@ -3,7 +3,7 @@ package scala.scalanative
 import java.nio.file.{Path, Paths}
 import scalanative.io.VirtualDirectory
 import scalanative.optimizer.Driver
-import scalanative.build.Config
+import scalanative.build.{Config, tools}
 import scalanative.util.Scope
 
 /** Base class to test code generation */

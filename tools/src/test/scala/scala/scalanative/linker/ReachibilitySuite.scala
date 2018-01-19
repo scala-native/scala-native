@@ -6,7 +6,7 @@ import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import scalanative.util.Scope
 import scalanative.nir.Global
-import scalanative.tools
+import scalanative.build
 import scalanative.optimizer.Driver
 
 trait ReachabilitySuite extends FunSuite {
@@ -48,7 +48,7 @@ trait ReachabilitySuite extends FunSuite {
       val sourcesDir = NIRCompiler.writeSources(sourceMap)
       val files      = compiler.compile(sourcesDir)
       val config     = makeConfig(outDir)
-      val result     = tools.linkRaw(config, entries)
+      val result     = build.tools.linkRaw(config, entries)
 
       f(result)
     }

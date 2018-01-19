@@ -1,7 +1,7 @@
-package scala.scalanative
+package scala.scalanative.build
 
-import build.Config
-import scalanative.nir.Global
+import scalanative.nir
+import scalanative.{linker, optimizer}
 
 // API use-cases
 //
@@ -58,7 +58,7 @@ package object tools {
   /** Link just the given entries, disregarding the extra ones that are
    *  needed for the optimizer and/or codegen.
    */
-  def linkRaw(config: Config, entries: Seq[Global]): LinkerResult =
+  def linkRaw(config: Config, entries: Seq[nir.Global]): LinkerResult =
     linker.Linker(config).link(entries)
 
   /** Transform high-level closed world to its lower-level counterpart. */

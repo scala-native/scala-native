@@ -31,8 +31,8 @@ object Utilities {
       res
     }
 
-    def toLogger: tools.Logger =
-      tools.Logger(logger.debug(_),
+    def toLogger: build.Logger =
+      build.Logger(logger.debug(_),
                    logger.info(_),
                    logger.warn(_),
                    logger.error(_))

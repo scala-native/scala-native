@@ -5,18 +5,9 @@ import java.util.Arrays
 
 import scala.sys.process.Process
 
+import build.IO.RichPath
+import build.tools.LinkerResult
 import nir.Global
-
-import tools.{
-  GarbageCollector,
-  IO,
-  LinkerReporter,
-  LinkerResult,
-  Logger,
-  OptimizerDriver,
-  OptimizerReporter
-}
-import IO.RichPath
 
 package object build {
 

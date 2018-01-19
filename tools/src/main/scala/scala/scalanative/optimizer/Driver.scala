@@ -1,7 +1,7 @@
 package scala.scalanative
 package optimizer
 
-import tools.Mode
+import build.Mode
 
 sealed trait Driver {
 
@@ -68,7 +68,7 @@ object Driver {
   )
 
   /** Create driver with default pipeline for this configuration. */
-  def apply(mode: tools.Mode): Driver = {
+  def apply(mode: Mode): Driver = {
     val optPasses = mode match {
       case Mode.Debug   => fastOptPasses
       case Mode.Release => fullOptPasses
