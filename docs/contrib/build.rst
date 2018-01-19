@@ -79,7 +79,7 @@ to build Scala Native for the first time you should run the following commands:
     $ sbt
     > rebuild
 
-If you want to run all the tests and benchmarks, which take awhile you can run
+If you want to run all the tests and benchmarks, which takes awhile, you can run
 the `test-all` command after the systems builds.
 
 Normal development workflow
@@ -100,15 +100,23 @@ You can run only the test of interest by using one of the following commands:
     > tests/testOnly java.lang.StringSuite
     > tests/testOnly *StringSuite
 
+Some additional tips are as follows.
 
+- If you change anything in `tools` (linker, optimizer, codegen), you need to
+  `reload`, not `rebuild`. It's possible because we textually include code of
+  the `sbt` plugin and the toolchain.
 
-Setting the GC setting via an environment variable
+- If you change `nscplugin`, `rebuild` is the only option. This is because
+  the Scala compiler uses this plugin to generate the code that Scala Native uses.
+
+Build settings via environment variables
 --------------------------------------------------
-One of the build settings that can be changed is the ``nativeGC``. There
-is a default setting value that will be used unless changed. The
-Scala Native has a high performance Garbage Collector (GC) ``immix`` that
-comes with the system or the `boehm` GC which can be used when the
-supporting library is installed. The setting `none` also exists for a
+Two build settings, ``nativeGC`` and ``nativeMode`` can be changed via
+environment variables. They have default settings that are used unless
+changed. The setting that controls the garbage collector is `nativeGC`.
+Scala Native has a high performance Garbage Collector (GC) ``immix``
+that comes with the system or the `boehm` GC which can be used when
+the supporting library is installed. The setting `none` also exists for a
 short running script or where memory is not an issue.
 
 Scala Native uses Continuous integration (CI) to compile and test the code on
@@ -119,14 +127,20 @@ Setting this as follows will set the value in the plugin when `sbt` is run.
 
 .. code-block:: text
 
-    $ set SCALANATIVE_GC=immix
+    $ export SCALANATIVE_GC=immix
     $ sbt
     > show nativeGC
 
 This setting remains unless changed at the `sbt` prompt. If changed, the value
 will be restored to the environment variable value if `sbt` is restarted or
 `reload` is called at the `sbt` prompt. You can also revert to the default
-setting value via `unset SCALANATIVE_GC` and then restarting `sbt`.
+setting value by running `unset SCALANATIVE_GC` at the command line
+and then restarting `sbt`.
+
+The `nativeMode` setting is controlled via the `SCALANATIVE_MODE` environment
+variable. The default mode, `debug` is designed to optimize but compile fast
+whereas the `release` mode performs additional optimizations and takes longer
+to compile.
 
 Setting the GC setting via `sbt`
 --------------------------------
@@ -149,6 +163,8 @@ The following shows how to set ``nativeGC`` on all the projects.
 
     > set every nativeGC := "immix"
     > show nativeGC
+
+The same process above will work for setting `nativeMode`.
 
 
 The next section has more build and development information for those wanting
