@@ -49,6 +49,10 @@ object ScalaNativePlugin extends AutoPlugin {
 
     val nativeGC =
       settingKey[String]("GC choice, either \"none\", \"boehm\" or \"immix\".")
+
+    val nativeEnableStrip =
+      settingKey[Boolean]("Enable stripping of debug symbols in release mode")
+
   }
 
   override def globalSettings: Seq[Setting[_]] =
