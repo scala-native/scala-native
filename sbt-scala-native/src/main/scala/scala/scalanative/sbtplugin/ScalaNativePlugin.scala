@@ -1,7 +1,7 @@
 package scala.scalanative
 package sbtplugin
 
-import scalanative.tools
+import scala.scalanative.tools
 import ScalaNativePluginInternal._
 
 import sbt._
@@ -49,6 +49,9 @@ object ScalaNativePlugin extends AutoPlugin {
 
     val nativeGC =
       settingKey[String]("GC choice, either \"none\", \"boehm\" or \"immix\".")
+
+    val nativeIsEmitAssembly =
+      settingKey[Boolean]("Controls emitting assembly files during compilation")
   }
 
   override def globalSettings: Seq[Setting[_]] =

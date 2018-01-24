@@ -4,8 +4,8 @@ package linker
 import nir.{Global, Dep, Attr, Defn}
 import nir.serialization.BinaryDeserializer
 import java.nio.file.FileSystems
-import scalanative.io.VirtualDirectory
-import scalanative.util.Scope
+import scala.scalanative.io.VirtualDirectory
+import scala.scalanative.util.Scope
 
 sealed trait ClassPath {
 
