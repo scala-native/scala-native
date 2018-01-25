@@ -60,7 +60,7 @@ wctype.h_      N/A
 .. _stddef.h: http://en.cppreference.com/w/c/types
 .. _stdint.h: http://en.cppreference.com/w/c/types/integer
 .. _stdio.h: http://en.cppreference.com/w/c/io
-.. _stdlib.h:
+.. _stdlib.h: http://en.cppreference.com/w/cpp/header/cstdlib
 .. _stdnoreturn.h: http://en.cppreference.com/w/c/types
 .. _string.h: http://en.cppreference.com/w/c/string/byte
 .. _tgmath.h: http://en.cppreference.com/w/c/numeric/tgmath

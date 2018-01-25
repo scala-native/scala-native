@@ -205,7 +205,7 @@ runtime system, one has to be extra careful when working with unmanaged memory.
    has to zone allocate.
 
    One typical example of this are C strings that are created from
-   Scala strings using ``native.fromCString``. The conversion takes implicit
+   Scala strings using ``native.toCString``. The conversion takes implicit
    zone parameter and allocates the result in that zone.
 
    When using zone allocated memory one has to be careful not to
