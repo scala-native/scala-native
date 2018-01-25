@@ -31,7 +31,7 @@ class BufferedInputStream(in: InputStream, size: Int)
 
   override def available(): Int = {
     if (closed) throw new IOException()
-    end - pos
+    end - pos + in.available()
   }
 
   override def close(): Unit = {
