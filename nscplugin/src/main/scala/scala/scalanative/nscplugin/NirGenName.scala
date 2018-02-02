@@ -33,10 +33,18 @@ trait NirGenName { self: NirGenPhase =>
       else fullName
     }
     val name = sym match {
-      case ObjectClass            => nir.Rt.Object.name
-      case _ if sym.isModule      => genTypeName(sym.moduleClass)
-      case _ if sym.isModuleClass => nir.Global.Top(id + "$")
-      case _                      => nir.Global.Top(id)
+      case ObjectClass =>
+        nir.Rt.Object.name
+      case _ if sym.isModule =>
+        genTypeName(sym.moduleClass)
+      case _ =>
+        val idWithSuffix =
+          if (sym.isModuleClass && !nme.isImplClassName(sym.name)) {
+            id + "$"
+          } else {
+            id
+          }
+        nir.Global.Top(idWithSuffix)
     }
     name
   }
