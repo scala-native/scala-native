@@ -67,4 +67,16 @@ object Global {
 
   def toProxySignature(signature: String) = signature + "_proxy"
 
+  def stripImplClassTrailingDollar(name: Global): Global = name match {
+    case Global.None =>
+      name
+    case Global.Top(id) =>
+      if (id.endsWith("$class$")) {
+        Global.Top(id.substring(0, id.length - 1))
+      } else {
+        name
+      }
+    case Global.Member(subname, id) =>
+      Global.Member(stripImplClassTrailingDollar(subname), id)
+  }
 }
