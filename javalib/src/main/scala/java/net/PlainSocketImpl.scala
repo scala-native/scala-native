@@ -296,7 +296,11 @@ private[net] class PlainSocketImpl extends SocketImpl {
       val cArr = buffer.asInstanceOf[ByteArray].at(offset)
       var sent = 0
       while (sent < count) {
-        sent += socket.send(fd.fd, cArr + sent, count - sent, 0).toInt
+        val ret = socket.send(fd.fd, cArr + sent, count - sent, socket.MSG_NOSIGNAL).toInt
+        if (ret < 0) {
+          throw new IOException("Could not send the packet to the client")
+        }
+        sent += ret
       }
       sent
     }
