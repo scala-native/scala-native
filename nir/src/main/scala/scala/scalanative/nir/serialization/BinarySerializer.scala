@@ -24,16 +24,16 @@ final class BinarySerializer(buffer: ByteBuffer) {
 
     putSeq(names) { n =>
       putGlobal(n)
-      positions += buffer.position
+      positions += buffer.position()
       putInt(0)
     }
 
     val offsets = defns.map { defn =>
-      val pos: Int = buffer.position
+      val pos: Int = buffer.position()
       putDefn(defn)
       pos
     }
-    val end = buffer.position
+    val end = buffer.position()
 
     positions.zip(offsets).map {
       case (pos, offset) =>

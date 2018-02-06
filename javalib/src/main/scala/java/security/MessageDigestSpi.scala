@@ -22,7 +22,7 @@ abstract class MessageDigestSpi {
         engineUpdate(tmp, offset + position, limit - position)
         input.position(limit)
       } else {
-        val tmp = new Array[Byte](input.limit() - input.position)
+        val tmp = new Array[Byte](input.limit() - input.position())
         input.get(tmp)
         engineUpdate(tmp, 0, tmp.length)
       }
