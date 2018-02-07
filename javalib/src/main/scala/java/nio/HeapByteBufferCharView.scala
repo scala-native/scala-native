@@ -39,8 +39,8 @@ private[nio] final class HeapByteBufferCharView private (
     new HeapByteBufferCharView(capacity,
                                _byteArray,
                                _byteArrayOffset,
-                               position + start,
-                               position + end,
+                               position() + start,
+                               position() + end,
                                isReadOnly,
                                isBigEndian)
   }
