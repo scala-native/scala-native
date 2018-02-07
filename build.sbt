@@ -29,12 +29,9 @@ addCommandAlias(
 addCommandAlias(
   "dirty-rebuild",
   Seq(
-    "nscplugin/publishLocal",
-    "nativelib/publishLocal",
-    "javalib/publishLocal",
-    "auxlib/publishLocal",
     "scalalib/publishLocal",
-    "publishLocal"
+    "sbtScalaNative/publishLocal",
+    "testInterface/publishLocal"
   ).mkString(";", ";", "")
 )
 
@@ -45,7 +42,7 @@ addCommandAlias(
     "tests/test",
     "tools/test",
     "benchmarks/run --test",
-    "scripted"
+    "sbtScalaNative/scripted"
   ).mkString(";", ";", "")
 )
 
@@ -189,22 +186,12 @@ lazy val libSettings =
     scalacOptions ++= Seq("-encoding", "utf8")
   )
 
-lazy val gcSettings =
-  if (!System.getenv.containsKey("SCALANATIVE_GC")) {
-    println("Using default gc")
-    Seq.empty
-  } else {
-    val gc = System.getenv.get("SCALANATIVE_GC")
-    println(s"Using gc based on SCALANATIVE_GC=$gc")
-    Seq(nativeGC := gc)
-  }
-
 lazy val projectSettings =
   ScalaNativePlugin.projectSettings ++ Seq(
     scalaVersion := libScalaVersion,
     resolvers := Nil,
     scalacOptions ++= Seq("-target:jvm-1.8")
-  ) ++ gcSettings
+  )
 
 lazy val util =
   project
@@ -292,19 +279,9 @@ lazy val sbtScalaNative =
       sources in Compile ++= (sources in Compile in testInterfaceSerialization).value,
       // publish the other projects before running scripted tests.
       scripted := scripted
-        .dependsOn(
-          publishLocal in util,
-          publishLocal in nir,
-          publishLocal in tools,
-          publishLocal in nscplugin,
-          publishLocal in nativelib,
-          publishLocal in javalib,
-          publishLocal in auxlib,
-          publishLocal in scalalib,
-          publishLocal in testInterfaceSbtDefs,
-          publishLocal in testInterfaceSerialization,
-          publishLocal in testInterface
-        )
+        .dependsOn(publishLocal in testInterface)
+        .dependsOn(publishLocal in ThisProject)
+        .dependsOn(publishLocal in scalalib)
         .evaluated,
       publishLocal := publishLocal.dependsOn(publishLocal in tools).value
     )
@@ -316,7 +293,10 @@ lazy val nativelib =
     .settings(libSettings)
     .settings(mavenPublishSettings)
     .settings(
-      libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
+      libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+      publishLocal := publishLocal
+        .dependsOn(publishLocal in nscplugin)
+        .value
     )
 
 lazy val javalib =
@@ -344,7 +324,10 @@ lazy val javalib =
           case (file, path) =>
             !path.endsWith(".class")
         }
-      }
+      },
+      publishLocal := publishLocal
+        .dependsOn(publishLocal in nativelib)
+        .value
     )
     .dependsOn(nativelib)
 
@@ -356,6 +339,11 @@ lazy val auxlib =
     .in(file("auxlib"))
     .settings(libSettings)
     .settings(mavenPublishSettings)
+    .settings(
+      publishLocal := publishLocal
+        .dependsOn(publishLocal in javalib)
+        .value
+    )
     .dependsOn(nativelib)
 
 lazy val scalalib =
@@ -410,7 +398,9 @@ lazy val scalalib =
       compile in Compile := (compile in Compile)
         .dependsOn(assembleScalaLibrary)
         .value,
-      publishLocal := publishLocal.dependsOn(assembleScalaLibrary).value
+      publishLocal := publishLocal
+        .dependsOn(assembleScalaLibrary, publishLocal in auxlib)
+        .value
     )
     .dependsOn(auxlib, nativelib, javalib)
 
@@ -507,7 +497,10 @@ lazy val testInterface =
     .settings(
       name := "test-interface",
       libraryDependencies += "org.scala-sbt"    % "test-interface"   % "1.0",
-      libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test
+      libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test,
+      publishLocal := publishLocal
+        .dependsOn(publishLocal in testInterfaceSerialization)
+        .value
     )
     .enablePlugins(ScalaNativePlugin)
     .dependsOn(testInterfaceSerialization)
@@ -520,7 +513,10 @@ lazy val testInterfaceSerialization =
     .in(file("test-interface-serialization"))
     .settings(
       name := "test-interface-serialization",
-      libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test
+      libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test,
+      publishLocal := publishLocal
+        .dependsOn(publishLocal in testInterfaceSbtDefs)
+        .value
     )
     .dependsOn(testInterfaceSbtDefs)
     .enablePlugins(ScalaNativePlugin)
