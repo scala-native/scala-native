@@ -121,4 +121,24 @@ object BufferedInputStreamSuite extends tests.Suite {
 
   }
 
+  test("available behave correctly") {
+
+    val inputArray = Array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9).map(_.toByte)
+    val in         = new BufferedInputStream(new ByteArrayInputStream(inputArray))
+
+    assert(in.available() > 0)
+
+    val tmp        = new Array[Byte](10)
+    var countBytes = 0
+    while (in.available() > 0) {
+      countBytes += in.read(tmp, 0, 5)
+    }
+
+    assert(countBytes == 10)
+    assert(in.available() == 0)
+
+    val emptyIn = new BufferedInputStream(new ByteArrayInputStream(Array()))
+    assert(emptyIn.available() == 0)
+  }
+
 }
