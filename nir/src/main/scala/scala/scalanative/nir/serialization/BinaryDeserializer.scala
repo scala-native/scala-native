@@ -213,9 +213,12 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
   }
 
   private def getGlobalNoDep(): Global = getInt match {
-    case T.NoneGlobal   => Global.None
-    case T.TopGlobal    => Global.Top(getString)
-    case T.MemberGlobal => Global.Member(getGlobal, getString)
+    case T.NoneGlobal =>
+      Global.None
+    case T.TopGlobal =>
+      Global.stripImplClassTrailingDollar(Global.Top(getString))
+    case T.MemberGlobal =>
+      Global.Member(getGlobal, getString)
   }
 
   private def getLocal(): Local = {

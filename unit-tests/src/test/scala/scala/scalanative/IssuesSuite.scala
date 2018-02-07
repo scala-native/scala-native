@@ -1,4 +1,5 @@
 package scala.scalanative
+
 import native.{CFunctionPtr1, CFunctionPtr0}
 import native.{CInt, CFloat, CDouble}
 
@@ -351,5 +352,19 @@ object IssuesSuite extends tests.Suite {
 
   test("#809") {
     assert(null.asInstanceOf[AnyRef].## == 0)
+  }
+
+  test("#1155") {
+    assert(issue1155.C.CLASS.toString.contains("C$CLASS$@"))
+  }
+}
+
+package issue1155 {
+  trait C {
+    def foo = "bar"
+  }
+
+  object C {
+    object CLASS extends C
   }
 }
