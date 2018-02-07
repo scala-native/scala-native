@@ -1,6 +1,6 @@
 import java.io.File.pathSeparator
 import scala.util.Try
-import scalanative.tools.OptimizerReporter
+import scalanative.tools.{LinkerReporter, OptimizerReporter}
 import scalanative.sbtplugin.ScalaNativePluginInternal._
 import scalanative.io.packageNameFromPath
 
@@ -422,6 +422,8 @@ lazy val tests =
     .settings(
       // nativeOptimizerReporter := OptimizerReporter.toDirectory(
       //   crossTarget.value),
+      // nativeLinkerReporter := LinkerReporter.toFile(
+      //   target.value / "out.dot"),
       libraryDependencies += "org.scala-native" %%% "test-interface" % nativeVersion,
       testFrameworks += new TestFramework("tests.NativeFramework"),
       envVars in (Test, test) ++= Map(
