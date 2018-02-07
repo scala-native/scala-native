@@ -108,9 +108,8 @@ object socket {
   @name("scalanative_MSG_OOB")
   def MSG_OOB: CInt = extern
 
-  // Surprisingly, this doesn't exist on MacOS
-  // @name("scalanative_MSG_NOSIGNAL")
-  // def MSG_NOSIGNAL: CInt = extern
+  @name("scalanative_MSG_NOSIGNAL")
+  def MSG_NOSIGNAL: CInt = extern // returns 0 on macOS
 
   @name("scalanative_MSG_PEEK")
   def MSG_PEEK: CInt = extern

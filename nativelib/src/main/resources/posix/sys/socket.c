@@ -62,10 +62,14 @@ int scalanative_MSG_EOR() { return MSG_EOR; }
 
 int scalanative_MSG_OOB() { return MSG_OOB; }
 
-// Surprisingly, this doesn't exist on MacOS
-// int scalanative_MSG_NOSIGNAL() {
-//     return MSG_NOSIGNAL;
-// }
+int scalanative_MSG_NOSIGNAL() {
+    #ifdef MSG_NOSIGNAL
+    return MSG_NOSIGNAL;
+    #endif
+    #ifndef MSG_NOSIGNAL
+    return 0;
+    #endif
+}
 
 int scalanative_MSG_PEEK() { return MSG_PEEK; }
 
