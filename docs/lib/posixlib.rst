@@ -57,7 +57,7 @@ C Header          Scala Native Module
 `stddef.h`_       N/A
 `stdint.h`_       N/A
 `stdio.h`_        N/A
-`stdlib.h`_       N/A
+`stdlib.h`_       scala.scalanative.posix.stdlib_
 `string.h`_       N/A
 `strings.h`_      N/A
 `stropts.h`_      N/A
@@ -188,6 +188,7 @@ C Header          Scala Native Module
 .. _scala.scalanative.posix.netinet.in: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/netinet/in.scala
 .. _scala.scalanative.posix.pwd: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/pwd.scala
 .. _scala.scalanative.posix.regex: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/regex.scala
+.. _scala.scalanative.posix.stdlib: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/stdlib.scala
 .. _scala.scalanative.posix.sys.socket: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/sys/socket.scala
 .. _scala.scalanative.posix.sys.stat: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/sys/stat.scala
 .. _scala.scalanative.posix.sys.time: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/sys/time.scala
