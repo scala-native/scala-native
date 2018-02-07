@@ -51,6 +51,9 @@ object ScalaNativePlugin extends AutoPlugin {
       settingKey[String]("GC choice, either \"none\", \"boehm\" or \"immix\".")
   }
 
+  @deprecated("use autoImport instead", "0.3.7")
+  val AutoImport = autoImport
+
   override def globalSettings: Seq[Setting[_]] =
     ScalaNativePluginInternal.scalaNativeGlobalSettings
 
