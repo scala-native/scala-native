@@ -1,6 +1,7 @@
 package java.lang
 
 object SystemSuite extends tests.Suite {
+
   test("System.nanoTime is monotonically increasing") {
     var t0 = 0L
     var t1 = 0L
@@ -19,23 +20,46 @@ object SystemSuite extends tests.Suite {
     assert(startTime - endTime < 0L)
   }
 
+  // don't override possible known env vars
+  val k = Array[String]("USERZ",
+                        "HOMEZ",
+                        "SCALA_NATIVE_ENV_WITH_EQUALS",
+                        "SCALA_NATIVE_ENV_WITHOUT_VALUE",
+                        "SCALA_NATIVE_ENV_WITH_UNICODE",
+                        "SCALA_NATIVE_ENV_THAT_DOESNT_EXIST")
+  val v = Array[String]("scala-native",
+                        "/home/scala-native",
+                        "1+1=2",
+                        "",
+                        0x2192.toChar.toString,
+                        null)
+
+  test("scalanative.native.system.setenv") {
+    import scalanative.native._
+    assert(system.setenv(k(0), v(0)))
+    assert(system.setenv(k(1), v(1)))
+    assert(system.setenv(k(2), v(2)))
+    assert(system.setenv(k(3), v(3)))
+    assert(system.setenv(k(4), v(4)))
+  }
+
   test("System.getenv should contain known env variables") {
-    assert(System.getenv().containsKey("HOME"))
-    assert(System.getenv().get("USER") == "scala-native")
-    assert(System.getenv().get("SCALA_NATIVE_ENV_WITH_EQUALS") == "1+1=2")
-    assert(System.getenv().get("SCALA_NATIVE_ENV_WITHOUT_VALUE") == "")
-    assert(System.getenv().get("SCALA_NATIVE_ENV_THAT_DOESNT_EXIST") == null)
-    assert(
-      System
-        .getenv()
-        .get("SCALA_NATIVE_ENV_WITH_UNICODE") == 0x2192.toChar.toString)
+    val env = System.getenv()
+    assert(env.get(k(0)) == v(0))
+    assert(env.containsKey(k(1)))
+    assert(env.get(k(2)) == v(2))
+    assert(env.get(k(3)) == v(3))
+    assert(env.get(k(4)) == v(4))
+    assert(env.get(k(5)) == v(5))
   }
 
   test("System.getenv(key) should read known env variables") {
-    assert(System.getenv("USER") == "scala-native")
-    assert(System.getenv("SCALA_NATIVE_ENV_WITH_EQUALS") == "1+1=2")
-    assert(System.getenv("SCALA_NATIVE_ENV_WITHOUT_VALUE") == "")
-    assert(System.getenv("SCALA_NATIVE_ENV_THAT_DOESNT_EXIST") == null)
+    assert(System.getenv(k(0)) == v(0))
+    assert(System.getenv(k(1)) == v(1))
+    assert(System.getenv(k(2)) == v(2))
+    assert(System.getenv(k(3)) == v(3))
+    assert(System.getenv(k(4)) == v(4))
+    assert(System.getenv(k(5)) == v(5))
   }
 
   test("Property user.home should be set") {
