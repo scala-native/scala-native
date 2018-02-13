@@ -282,6 +282,13 @@ object MatcherSuite extends tests.Suite {
     assert(expStr == null)
   }
 
+  test("start/end 0,0 on empty match") {
+    val m = Pattern.compile(".*").matcher("")
+    assert(m.find())
+    assertEquals(m.start, 0)
+    assertEquals(m.end, 0)
+  }
+
   private def matcher(regex: String, text: String): Matcher =
     Pattern.compile(regex).matcher(text)
 }
