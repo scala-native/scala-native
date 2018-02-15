@@ -52,7 +52,7 @@ object Utilities {
 
   /** Versions of clang which are known to work with Scala Native. */
   val clangVersions =
-    Seq(("5", "0"), ("4", "0"), ("3", "9"), ("3", "8"), ("3", "7"))
+    Seq(("6", "0"), ("5", "0"), ("4", "0"), ("3", "9"), ("3", "8"), ("3", "7"))
 
   /**
    * Tests whether the clang compiler is recent enough.
