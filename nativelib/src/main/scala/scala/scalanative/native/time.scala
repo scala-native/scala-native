@@ -15,7 +15,7 @@ object time {
   def ctime(time: Ptr[time_t]): CString                                 = extern
   def ctime_s(buffer: Ptr[CChar], bufsz: CSize, time: Ptr[time_t]): CInt =
     extern
-  def difftime(time_end: CLong, time_beg: CLong): time_t       = extern
+  def difftime(time_end: CLong, time_beg: CLong): CDouble      = extern
   def gmtime(time: Ptr[time_t]): Ptr[tm]                       = extern
   def gmtime_s(time: Ptr[time_t], result: Ptr[tm]): Ptr[tm]    = extern
   def localtime(time: Ptr[time_t]): Ptr[tm]                    = extern
@@ -27,10 +27,18 @@ object time {
                time: Ptr[tm]): CSize                    = extern
   def time(arg: Ptr[time_t]): time_t                    = extern
   def timespec_get(ts: Ptr[timespec], base: CInt): CInt = extern
+  def tzset(): Unit                                     = extern
   def wcsftime(str: CWideChar,
                count: CSize,
                format: Ptr[CWideChar],
                time: Ptr[tm]): CSize = extern
+
+  @name("scalanative_daylight")
+  def daylight(): CInt = extern
+  @name("scalanative_timezone")
+  def timezone(): CLong = extern
+  @name("scalanative_tzname")
+  def tzname(): Ptr[CStruct2[CString, CString]] = extern
 }
 
 object timeOps {

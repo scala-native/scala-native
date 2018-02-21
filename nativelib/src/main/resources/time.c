@@ -18,3 +18,15 @@ long long scalanative_current_time_millis() {
 
     return current_time_millis;
 }
+
+char ** scalanative_tzname() {
+  return tzname;
+}
+
+long scalanative_timezone() {
+  return timezone;
+}
+
+int scalanative_daylight() {
+  return daylight;
+}
