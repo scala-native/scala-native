@@ -9,7 +9,7 @@ object time {
   type timespec = CStruct2[time_t, CLong]
   type tm       = CStruct9[CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt]
 
-  def difftime(time_end: CLong, time_beg: CLong): time_t                = extern
+  def difftime(time_end: CLong, time_beg: CLong): CDouble               = extern
   def time(arg: Ptr[time_t]): time_t                                    = extern
   def clock(): clock_t                                                  = extern
   def timespec_get(ts: Ptr[timespec], base: CInt): CInt                 = extern
@@ -25,12 +25,27 @@ object time {
   def wcsftime(str: CWideChar,
                count: CSize,
                format: Ptr[CWideChar],
-               time: Ptr[tm]): CSize                           = extern
+               time: Ptr[tm]): CSize = extern
+
+  def strptime(str: CString, format: CString, tm: Ptr[tm]): CString = extern
+
   def gmtime(time: Ptr[time_t]): Ptr[tm]                       = extern
   def gmtime_s(time: Ptr[time_t], result: Ptr[tm]): Ptr[tm]    = extern
   def localtime(time: Ptr[time_t]): Ptr[tm]                    = extern
   def localtime_s(time: Ptr[time_t], result: Ptr[tm]): Ptr[tm] = extern
   def mktime(time: Ptr[tm]): time_t                            = extern
+
+  def tzset(): Unit = extern
+
+  @name("scalanative_time_tzname")
+  def tzname: Ptr[CString] = extern
+
+  @name("scalanative_time_timezone")
+  def timezone: CLong = extern
+
+  @name("scalanative_time_daylight")
+  def daylight: CInt = extern
+
 }
 
 object timeOps {
