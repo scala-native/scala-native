@@ -24,7 +24,11 @@ object stdlib {
   // Communicating with the environment
 
   def system(command: CString): CInt = extern
-  def getenv(name: CString): CString = extern
+
+  def getenv(name: CString): CString                              = extern
+  def putenv(name: CString): CInt                                 = extern
+  def setenv(name: CString, value: CString, overwrite: Int): CInt = extern
+  def unsetenv(name: CString): CInt                               = extern
 
   // Pseudo-random number generation
 
