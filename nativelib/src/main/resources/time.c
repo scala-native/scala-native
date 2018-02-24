@@ -18,3 +18,11 @@ long long scalanative_current_time_millis() {
 
     return current_time_millis;
 }
+
+// There is an argument that these three should be in resources/wrap.c or
+// resources resources/posix.c. tzname() is declared in time.h, so
+// place here, in time.c.
+
+char **scalanative_time_tzname() { return tzname; }
+long scalanative_time_timezone() { return timezone; }
+int scalanative_time_daylight() { return daylight; }

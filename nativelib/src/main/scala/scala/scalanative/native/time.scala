@@ -7,9 +7,19 @@ object time {
   type time_t   = CLong
   type clock_t  = CLong
   type timespec = CStruct2[time_t, CLong]
-  type tm       = CStruct9[CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt]
+  type tm = CStruct11[CInt,
+                      CInt,
+                      CInt,
+                      CInt,
+                      CInt,
+                      CInt,
+                      CInt,
+                      CInt,
+                      CInt,
+                      CLong,
+                      Ptr[CChar]]
 
-  def difftime(time_end: CLong, time_beg: CLong): time_t                = extern
+  def difftime(time_end: CLong, time_beg: CLong): CDouble               = extern
   def time(arg: Ptr[time_t]): time_t                                    = extern
   def clock(): clock_t                                                  = extern
   def timespec_get(ts: Ptr[timespec], base: CInt): CInt                 = extern
@@ -25,12 +35,27 @@ object time {
   def wcsftime(str: CWideChar,
                count: CSize,
                format: Ptr[CWideChar],
-               time: Ptr[tm]): CSize                           = extern
+               time: Ptr[tm]): CSize = extern
+
+  def strptime(str: CString, format: CString, tm: Ptr[tm]): CString = extern
+
   def gmtime(time: Ptr[time_t]): Ptr[tm]                       = extern
   def gmtime_s(time: Ptr[time_t], result: Ptr[tm]): Ptr[tm]    = extern
   def localtime(time: Ptr[time_t]): Ptr[tm]                    = extern
   def localtime_s(time: Ptr[time_t], result: Ptr[tm]): Ptr[tm] = extern
   def mktime(time: Ptr[tm]): time_t                            = extern
+
+  def tzset(): Unit = extern
+
+  @name("scalanative_time_tzname")
+  def tzname: Ptr[CString] = extern
+
+  @name("scalanative_time_timezone")
+  def timezone: CLong = extern
+
+  @name("scalanative_time_daylight")
+  def daylight: CInt = extern
+
 }
 
 object timeOps {
@@ -67,6 +92,10 @@ object timeOps {
 
     def tm_isdst: CInt = !ptr._9
 
+    def tm_gmtoff: CLong = !ptr._10
+
+    def tm_zone: Ptr[CChar] = !ptr._11
+
     def tm_sec_=(v: CInt): Unit = !ptr._1 = v
 
     def tm_min_=(v: CInt): Unit = !ptr._2 = v
@@ -84,6 +113,10 @@ object timeOps {
     def tm_yday_=(v: CInt): Unit = !ptr._8 = v
 
     def tm_isdst_=(v: CInt): Unit = !ptr._9 = v
+
+    def tm_gmtoff_=(v: CLong): Unit = !ptr._10 = v
+
+    def tm_zone_=(v: Ptr[CChar]): Unit = !ptr._11 = v
 
   }
 
