@@ -7,7 +7,17 @@ object time {
   type time_t   = CLong
   type clock_t  = CLong
   type timespec = CStruct2[time_t, CLong]
-  type tm       = CStruct9[CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt]
+  type tm = CStruct11[CInt,
+                      CInt,
+                      CInt,
+                      CInt,
+                      CInt,
+                      CInt,
+                      CInt,
+                      CInt,
+                      CInt,
+                      CLong,
+                      Ptr[CChar]]
 
   def difftime(time_end: CLong, time_beg: CLong): CDouble               = extern
   def time(arg: Ptr[time_t]): time_t                                    = extern
@@ -82,6 +92,10 @@ object timeOps {
 
     def tm_isdst: CInt = !ptr._9
 
+    def tm_gmtoff: CLong = !ptr._10
+
+    def tm_zone: Ptr[CChar] = !ptr._11
+
     def tm_sec_=(v: CInt): Unit = !ptr._1 = v
 
     def tm_min_=(v: CInt): Unit = !ptr._2 = v
@@ -99,6 +113,10 @@ object timeOps {
     def tm_yday_=(v: CInt): Unit = !ptr._8 = v
 
     def tm_isdst_=(v: CInt): Unit = !ptr._9 = v
+
+    def tm_gmtoff_=(v: CLong): Unit = !ptr._10 = v
+
+    def tm_zone_=(v: Ptr[CChar]): Unit = !ptr._11 = v
 
   }
 
