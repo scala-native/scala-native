@@ -18,6 +18,16 @@ object TimeSuite extends tests.Suite {
     }
   }
 
+  test("asctime_r() with a given known state should match its representation") {
+    Zone { implicit z =>
+      val anno_zero_ptr = alloc[tm]
+      anno_zero_ptr.tm_mday = 1
+      val cstr: CString = asctime_r(anno_zero_ptr, alloc[Byte](26))
+      val str: String   = fromCString(cstr)
+      assert("Sun Jan  1 00:00:00 1900\n".equals(str))
+    }
+  }
+
   test("localtime() should transform the epoch to localtime") {
     val time_ptr = stackalloc[time_t]
     !time_ptr = epoch + timezone
@@ -26,6 +36,18 @@ object TimeSuite extends tests.Suite {
     val str: String   = fromCString(cstr)
 
     assert("Thu Jan  1 00:00:00 1970\n".equals(str))
+  }
+
+  test("localtime_r() should transform the epoch to localtime") {
+    Zone { implicit z =>
+      val time_ptr = stackalloc[time_t]
+      !time_ptr = epoch + timezone
+      val time: Ptr[tm] = localtime_r(time_ptr, alloc[tm])
+      val cstr: CString = asctime_r(time, alloc[Byte](26))
+      val str: String   = fromCString(cstr)
+
+      assert("Thu Jan  1 00:00:00 1970\n".equals(str))
+    }
   }
 
   test(
@@ -51,7 +73,7 @@ object TimeSuite extends tests.Suite {
     }
   }
 
-  test("gmtime()") {
+  test("strftime for date") {
     Zone { implicit z =>
       val timePtr             = alloc[tm]
       val datePtr: Ptr[CChar] = alloc[CChar](70)
