@@ -34,14 +34,13 @@ package object build {
 
     val nativeLibConfig =
       config.withCompileOptions("-O2" +: config.compileOptions)
-    val nativeLibPath = config.workdir.resolve("lib")
     val _ =
-      compileNativeLib(nativeLibConfig, linkerResult, nativeLibPath, logger)
+      compileNativeLib(nativeLibConfig, linkerResult, unpackedLib, logger)
 
     llvm.linkLL(config,
                 linkerResult,
                 objectFiles,
-                nativeLibPath,
+                unpackedLib,
                 target,
                 logger)
   }
