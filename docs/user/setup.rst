@@ -75,7 +75,7 @@ to install from source.
 
 .. code-block:: shell
 
-    $ sudo pacman -S llvm
+    $ sudo pacman -S llvm clang
     $ sudo pacman -S gc re2 # optional
 
 *Note:* A version of zlib that is sufficiently recent comes with the
