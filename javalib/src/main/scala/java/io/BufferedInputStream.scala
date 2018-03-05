@@ -1,7 +1,7 @@
 package java.io
 
-class BufferedInputStream(in: InputStream, size: Int)
-    extends FilterInputStream(in)
+class BufferedInputStream(_in: InputStream, size: Int)
+    extends FilterInputStream(_in)
     with Closeable
     with AutoCloseable {
 

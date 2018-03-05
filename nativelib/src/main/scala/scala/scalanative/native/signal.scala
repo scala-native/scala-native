@@ -6,6 +6,7 @@ object signal {
 
   // Signals
 
+  def kill(pid: CInt, sig: CInt): CInt = extern
   def signal(sig: CInt,
              handler: CFunctionPtr1[CInt, Unit]): CFunctionPtr1[CInt, Unit] =
     extern
@@ -31,4 +32,6 @@ object signal {
   def SIGSEGV: CInt = extern
   @name("scalanative_libc_sigterm")
   def SIGTERM: CInt = extern
+  @name("scalanative_libc_sigusr1")
+  def SIGUSR1: CInt = extern
 }
