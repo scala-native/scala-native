@@ -200,6 +200,10 @@ runtime system, one has to be extra careful when working with unmanaged memory.
         val buffer = native.alloc[Byte](n)
       }
 
+   `native.alloc` requests memory sufficient to contain `n` values of a given type.
+   If number of elements is not specified, it defaults to a single element.
+   Memory is zeroed out by default.
+
    Zone allocation is the preferred way to allocate temporary unmanaged memory.
    It's idiomatic to use implicit zone parameters to abstract over code that
    has to zone allocate.
