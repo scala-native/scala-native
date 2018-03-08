@@ -5,6 +5,7 @@ import java.io.{File, IOException, InputStream, OutputStream}
 import java.util.concurrent.TimeUnit
 
 import scala.annotation.tailrec
+import scala.collection.JavaConverters._
 import scala.scalanative.native.{errno => err, signal => sig, _}
 import sig._
 import err.errno
@@ -150,14 +151,13 @@ object UnixProcess {
     throwOnError(unistd.pipe(outfds), s"Couldn't create pipe.")
     if (!builder.redirectErrorStream)
       throwOnError(unistd.pipe(errfds), s"Couldn't create pipe.")
-
-    val cmd  = builder.command.asScala
-    val dir  = builder.directory
-    val argv = nullTerminate(cmd)
+    val cmd      = builder.command.asScala
+    val binaries = binaryPaths(builder.environment, cmd.head)
+    val dir      = builder.directory
+    val argv     = nullTerminate(cmd)
     val envp = nullTerminate(builder.environment.asScala.map {
       case (k, v) => s"$k=$v"
     }.toSeq)
-    val binaries = binaryPaths(builder.environment, cmd.head)
 
     /*
      * Use vfork rather than fork to avoid copying the parent process memory to the child. It also
@@ -174,28 +174,36 @@ object UnixProcess {
       case -1 =>
         throw new IOException("Unable to fork process")
       case 0 =>
-        if (dir != null) unistd.chdir(toCString(dir.toString))
-        setupChildFDS(!infds, builder.redirectInput, unistd.STDIN_FILENO)
-        setupChildFDS(!(outfds + 1),
-                      builder.redirectOutput,
-                      unistd.STDOUT_FILENO)
-        setupChildFDS(!(errfds + 1),
-                      if (builder.redirectErrorStream) Redirect.PIPE
-                      else builder.redirectError,
-                      unistd.STDERR_FILENO)
-        unistd.close(!infds)
-        unistd.close(!(infds + 1))
-        unistd.close(!outfds)
-        unistd.close(!(outfds + 1))
-        unistd.close(!errfds)
-        unistd.close(!(errfds + 1))
+        /*
+         * It is unsafe to directly run any code in vfork2 on top of the parent's stack without
+         * creating a new stack frame on the child. To fix this, put all of the code that needs
+         * to run on the child before execve inside of a method.
+         */
+        def invokeChildProcess(): Process = {
+          if (dir != null) unistd.chdir(toCString(dir.toString))
+          setupChildFDS(!infds, builder.redirectInput, unistd.STDIN_FILENO)
+          setupChildFDS(!(outfds + 1),
+                        builder.redirectOutput,
+                        unistd.STDOUT_FILENO)
+          setupChildFDS(!(errfds + 1),
+                        if (builder.redirectErrorStream) Redirect.PIPE
+                        else builder.redirectError,
+                        unistd.STDERR_FILENO)
+          unistd.close(!infds)
+          unistd.close(!(infds + 1))
+          unistd.close(!outfds)
+          unistd.close(!(outfds + 1))
+          unistd.close(!errfds)
+          unistd.close(!(errfds + 1))
 
-        binaries.foreach { b =>
-          unistd.execve(toCString(b), argv, envp)
+          binaries.foreach { b =>
+            unistd.execve(toCString(b), argv, envp)
+          }
+          // The spec of vfork requires calling _exit if the child process fails to execve.
+          unistd._exit(1)
+          throw new IOException(s"Failed to create process for command: $cmd")
         }
-        // The spec of vfork requires calling _exit if the child process fails to execve.
-        unistd._exit(1)
-        throw new IOException(s"Failed to create process for command: $cmd")
+        invokeChildProcess()
       case pid =>
         Seq(!(outfds + 1), !(errfds + 1), !infds) foreach unistd.close
         val res = new UnixProcess(
