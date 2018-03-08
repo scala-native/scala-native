@@ -398,6 +398,14 @@ lazy val scalalib =
       compile in Compile := (compile in Compile)
         .dependsOn(assembleScalaLibrary)
         .value,
+      // Don't include classfiles for scalalib in the packaged jar.
+      mappings in packageBin in Compile := {
+        val previous = (mappings in packageBin in Compile).value
+        previous.filter {
+          case (file, path) =>
+            !path.endsWith(".class")
+        }
+      },
       publishLocal := publishLocal
         .dependsOn(assembleScalaLibrary, publishLocal in auxlib)
         .value
