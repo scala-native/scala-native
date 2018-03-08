@@ -11,3 +11,10 @@ sbt-crossproject/
 
 CMakeLists.txt
 cmake-build-debug/
+
+# Eclipse support
+bin/
+.project
+.classpath
+.settings/
+.externalToolBuilders/
