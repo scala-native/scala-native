@@ -67,10 +67,10 @@ package object build {
             workdir: Path,
             logger: Logger): Path = {
     val config = Config.default(nativeLib, paths, entry, workdir, logger)
-    build(config, target, logger)
+    build(config, target)
   }
 
-  def build(config: Config, target: Path, logger: Logger) = {
+  def build(config: Config, target: Path) = {
     val linkerResult = link(config)
     val optimized =
       optimize(config, linkerResult.defns, linkerResult.dyns)
@@ -78,15 +78,15 @@ package object build {
       codegen(config, optimized)
       IO.getAll(config.workdir, "glob:**.ll")
     }
-    val objectFiles = LLVM.compileLL(config, generated, logger)
+    val objectFiles = LLVM.compileLL(config, generated)
     val unpackedLib = unpackNativeLibrary(config.nativeLib, config.workdir)
 
     val nativeLibConfig =
       config.withCompileOptions("-O2" +: config.compileOptions)
     val _ =
-      compileNativeLib(nativeLibConfig, linkerResult, unpackedLib, logger)
+      compileNativeLib(nativeLibConfig, linkerResult, unpackedLib)
 
-    LLVM.linkLL(config, linkerResult, objectFiles, unpackedLib, target, logger)
+    LLVM.linkLL(config, linkerResult, objectFiles, unpackedLib, target)
   }
 
   /**
@@ -120,8 +120,7 @@ package object build {
 
   def compileNativeLib(config: Config,
                        linkerResult: LinkerResult,
-                       libPath: Path,
-                       logger: Logger): Path = {
+                       libPath: Path): Path = {
     val cpaths   = IO.getAll(config.workdir, "glob:**.c").map(_.abs)
     val cpppaths = IO.getAll(config.workdir, "glob:**.cpp").map(_.abs)
     val paths    = cpaths ++ cpppaths
@@ -166,9 +165,9 @@ package object build {
         val flags    = (if (isCpp) Seq("-std=c++11") else Seq()) ++ config.compileOptions
         val compilec = Seq(compiler) ++ flags ++ Seq("-c", path, "-o", opath)
 
-        logger.running(compilec)
+        config.logger.running(compilec)
         val result = Process(compilec, config.workdir.toFile) ! Logger
-          .toProcessLogger(logger)
+          .toProcessLogger(config.logger)
         if (result != 0) {
           sys.error("Failed to compile native library runtime code.")
         }

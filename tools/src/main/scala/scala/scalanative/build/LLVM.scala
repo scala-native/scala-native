@@ -147,9 +147,7 @@ object LLVM {
   }
 
   /** Compile the given LL files to object files */
-  def compileLL(config: Config,
-                llPaths: Seq[Path],
-                logger: Logger): Seq[Path] = {
+  def compileLL(config: Config, llPaths: Seq[Path]): Seq[Path] = {
     val optimizationOpt =
       config.driver.mode match {
         case Mode.Debug   => "-O0"
@@ -157,15 +155,15 @@ object LLVM {
       }
     val opts = optimizationOpt +: config.compileOptions
 
-    logger.time("Compiling to native code") {
+    config.logger.time("Compiling to native code") {
       llPaths.par
         .map { ll =>
           val apppath = ll.abs
           val outpath = apppath + ".o"
           val compile = Seq(config.clang.abs, "-c", apppath, "-o", outpath) ++ opts
-          logger.running(compile)
+          config.logger.running(compile)
           Process(compile, config.workdir.toFile) ! Logger.toProcessLogger(
-            logger)
+            config.logger)
           Paths.get(outpath)
         }
         .seq
@@ -177,8 +175,7 @@ object LLVM {
              linkerResult: LinkerResult,
              llPaths: Seq[Path],
              nativelib: Path,
-             outpath: Path,
-             logger: Logger): Path = {
+             outpath: Path): Path = {
 
     val links = {
       val os   = Option(sys props "os.name").getOrElse("")
@@ -203,9 +200,10 @@ object LLVM {
     val paths     = llPaths.map(_.abs) ++ opaths
     val compile   = config.clangpp.abs +: (flags ++ paths)
 
-    logger.time("Linking native code") {
-      logger.running(compile)
-      Process(compile, config.workdir.toFile) ! Logger.toProcessLogger(logger)
+    config.logger.time("Linking native code") {
+      config.logger.running(compile)
+      Process(compile, config.workdir.toFile) ! Logger.toProcessLogger(
+        config.logger)
     }
 
     outpath

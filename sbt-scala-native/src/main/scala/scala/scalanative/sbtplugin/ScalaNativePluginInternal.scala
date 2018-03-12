@@ -204,7 +204,7 @@ object ScalaNativePluginInternal {
       val libPath = nativeUnpackLib.value.toPath
 
       val outPath =
-        build.compileNativeLib(config, linked, libPath, logger.toLogger)
+        build.compileNativeLib(config, linked, libPath)
       outPath.toFile
     },
     nativeLinkNIR := {
@@ -256,19 +256,18 @@ object ScalaNativePluginInternal {
       val generated = nativeGenerateLL.value.map(_.toPath)
 
       val outPaths =
-        LLVM.compileLL(config, generated, logger.toLogger)
+        LLVM.compileLL(config, generated)
       outPaths.map(_.toFile)
     },
     nativeLinkLL := {
       val linked    = nativeLinkNIR.value
-      val logger    = streams.value.log.toLogger
       val apppaths  = nativeCompileLL.value.map(_.toPath)
       val nativelib = nativeCompileLib.value.toPath
       val outpath   = (artifactPath in nativeLink).value.toPath
       val config    = nativeConfig.value
 
       val outPath =
-        LLVM.linkLL(config, linked, apppaths, nativelib, outpath, logger)
+        LLVM.linkLL(config, linked, apppaths, nativelib, outpath)
       outPath.toFile
     },
     nativeLink := {

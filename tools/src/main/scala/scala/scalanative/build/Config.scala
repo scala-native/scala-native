@@ -49,6 +49,9 @@ sealed trait Config {
   /** Should stubs be linked? */
   def linkStubs: Boolean
 
+  /** The logger used by the toolchain. */
+  def logger: Logger
+
   /** Create a new config with given path to nativelib. */
   def withNativeLib(value: Path): Config
 
@@ -90,6 +93,9 @@ sealed trait Config {
 
   /** Create a new config with given behavior for stubs. */
   def withLinkStubs(value: Boolean): Config
+
+  /** Create a new config with the given logger. */
+  def withLogger(value: Logger): Config
 }
 
 object Config {
@@ -118,6 +124,7 @@ object Config {
       .withTarget(target)
       .withLinkingOptions(LLVM.defaultLinkingOptions)
       .withCompileOptions(LLVM.defaultCompileOptions)
+      .withLogger(logger)
   }
 
   /** Default empty config object. */
@@ -136,7 +143,8 @@ object Config {
       linkingOptions = Seq.empty,
       compileOptions = Seq.empty,
       gc = GarbageCollector.default,
-      linkStubs = false
+      linkStubs = false,
+      logger = Logger.default
     )
 
   private final case class Impl(nativeLib: Path,
@@ -152,7 +160,8 @@ object Config {
                                 linkingOptions: Seq[String],
                                 compileOptions: Seq[String],
                                 gc: GarbageCollector,
-                                linkStubs: Boolean)
+                                linkStubs: Boolean,
+                                logger: Logger)
       extends Config {
     def withNativeLib(value: Path): Config =
       copy(nativeLib = value)
@@ -195,5 +204,8 @@ object Config {
 
     def withLinkStubs(value: Boolean): Config =
       copy(linkStubs = value)
+
+    def withLogger(value: Logger): Config =
+      copy(logger = value)
   }
 }
