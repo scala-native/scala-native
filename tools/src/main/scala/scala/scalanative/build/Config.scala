@@ -100,13 +100,13 @@ object Config {
               entry: String,
               workdir: Path,
               logger: Logger): Config = {
-    val clang   = llvm.discover("clang", llvm.clangVersions)
-    val clangpp = llvm.discover("clang++", llvm.clangVersions)
-    val target  = llvm.detectTarget(clang, workdir, logger)
+    val clang   = LLVM.discover("clang", LLVM.clangVersions)
+    val clangpp = LLVM.discover("clang++", LLVM.clangVersions)
+    val target  = LLVM.detectTarget(clang, workdir, logger)
     val mode    = Mode.default
 
-    llvm.checkThatClangIsRecentEnough(clang)
-    llvm.checkThatClangIsRecentEnough(clangpp)
+    LLVM.checkThatClangIsRecentEnough(clang)
+    LLVM.checkThatClangIsRecentEnough(clangpp)
 
     empty
       .withNativeLib(nativeLib)
@@ -117,8 +117,8 @@ object Config {
       .withClang(clang)
       .withClangPP(clangpp)
       .withTarget(target)
-      .withLinkingOptions(llvm.defaultLinkingOptions)
-      .withCompileOptions(llvm.defaultCompileOptions)
+      .withLinkingOptions(LLVM.defaultLinkingOptions)
+      .withCompileOptions(LLVM.defaultCompileOptions)
   }
 
   /** Default empty config object. */

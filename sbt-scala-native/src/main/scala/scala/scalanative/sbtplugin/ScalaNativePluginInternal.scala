@@ -15,7 +15,7 @@ import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 
 import scalanative.nir
 import scalanative.build
-import scalanative.build.llvm
+import scalanative.build.LLVM
 import scalanative.io.VirtualDirectory
 import scalanative.util.{Scope => ResourceScope}
 import scalanative.sbtplugin.Utilities._
@@ -86,20 +86,20 @@ object ScalaNativePluginInternal {
     crossVersion := ScalaNativeCrossVersion.binary,
     platformDepsCrossVersion := ScalaNativeCrossVersion.binary,
     nativeClang := {
-      val clang = llvm.discover("clang", llvm.clangVersions)
-      llvm.checkThatClangIsRecentEnough(clang)
+      val clang = LLVM.discover("clang", LLVM.clangVersions)
+      LLVM.checkThatClangIsRecentEnough(clang)
       clang.toFile
     },
     nativeClang in NativeTest := (nativeClang in Test).value,
     nativeClangPP := {
-      val clang = llvm.discover("clang++", llvm.clangVersions)
-      llvm.checkThatClangIsRecentEnough(clang)
+      val clang = LLVM.discover("clang++", LLVM.clangVersions)
+      LLVM.checkThatClangIsRecentEnough(clang)
       clang.toFile
     },
     nativeClangPP in NativeTest := (nativeClangPP in Test).value,
-    nativeCompileOptions := llvm.defaultCompileOptions,
+    nativeCompileOptions := LLVM.defaultCompileOptions,
     nativeCompileOptions in NativeTest := (nativeCompileOptions in Test).value,
-    nativeLinkingOptions := llvm.defaultLinkingOptions,
+    nativeLinkingOptions := LLVM.defaultLinkingOptions,
     nativeLinkingOptions in NativeTest := (nativeLinkingOptions in Test).value,
     nativeMode := Option(System.getenv.get("SCALANATIVE_MODE"))
       .getOrElse(build.Mode.default.name),
@@ -132,7 +132,7 @@ object ScalaNativePluginInternal {
       val logger = streams.value.log
       val cwd    = nativeWorkdir.value.toPath
       val clang  = nativeClang.value.toPath
-      llvm.detectTarget(clang, cwd, logger.toLogger)
+      LLVM.detectTarget(clang, cwd, logger.toLogger)
     },
     artifactPath in nativeLink := {
       crossTarget.value / (moduleName.value + "-out")
@@ -256,7 +256,7 @@ object ScalaNativePluginInternal {
       val generated = nativeGenerateLL.value.map(_.toPath)
 
       val outPaths =
-        llvm.compileLL(config, generated, logger.toLogger)
+        LLVM.compileLL(config, generated, logger.toLogger)
       outPaths.map(_.toFile)
     },
     nativeLinkLL := {
@@ -268,7 +268,7 @@ object ScalaNativePluginInternal {
       val config    = nativeConfig.value
 
       val outPath =
-        llvm.linkLL(config, linked, apppaths, nativelib, outpath, logger)
+        LLVM.linkLL(config, linked, apppaths, nativelib, outpath, logger)
       outPath.toFile
     },
     nativeLink := {

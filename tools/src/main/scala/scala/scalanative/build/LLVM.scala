@@ -10,7 +10,7 @@ import scala.sys.process._
 import IO.RichPath
 import tools.LinkerResult
 
-package object llvm {
+object LLVM {
 
   /** Discover concrete binary path using command name and
    *  a sequence of potential supported versions.
@@ -196,7 +196,8 @@ package object llvm {
       librt ++ libunwind ++ linkerResult.links
         .map(_.name) ++ config.gc.links
     }
-    val linkopts  = links.map("-l" + _) ++ config.linkingOptions ++ Seq("-lpthread")
+    val linkopts = links.map("-l" + _) ++ config.linkingOptions ++ Seq(
+      "-lpthread")
     val targetopt = Seq("-target", config.target)
     val flags     = Seq("-o", outpath.abs) ++ linkopts ++ targetopt
     val opaths    = IO.getAll(nativelib, "glob:**.o").map(_.abs)

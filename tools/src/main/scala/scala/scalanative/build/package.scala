@@ -29,7 +29,7 @@ package object build {
       tools.codegen(config, optimized)
       IO.getAll(config.workdir, "glob:**.ll")
     }
-    val objectFiles = llvm.compileLL(config, generated, logger)
+    val objectFiles = LLVM.compileLL(config, generated, logger)
     val unpackedLib = unpackNativeLibrary(config.nativeLib, config.workdir)
 
     val nativeLibConfig =
@@ -37,12 +37,7 @@ package object build {
     val _ =
       compileNativeLib(nativeLibConfig, linkerResult, unpackedLib, logger)
 
-    llvm.linkLL(config,
-                linkerResult,
-                objectFiles,
-                unpackedLib,
-                target,
-                logger)
+    LLVM.linkLL(config, linkerResult, objectFiles, unpackedLib, target, logger)
   }
 
   /**
