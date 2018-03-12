@@ -37,6 +37,21 @@ package object build {
 
   def build(config: Config, target: Path) = {
     val linkerResult = link(config)
+
+    if (linkerResult.unresolved.nonEmpty) {
+      linkerResult.unresolved.map(_.show).sorted.foreach { signature =>
+        config.logger.error(s"cannot link: $signature")
+      }
+      throw new Exception("unable to link")
+    }
+    val classCount = linkerResult.defns.count {
+      case _: nir.Defn.Class | _: nir.Defn.Module | _: nir.Defn.Trait => true
+      case _                                                          => false
+    }
+    val methodCount = linkerResult.defns.count(_.isInstanceOf[nir.Defn.Define])
+    config.logger.info(
+      s"Discovered ${classCount} classes and ${methodCount} methods")
+
     val optimized =
       optimize(config, linkerResult.defns, linkerResult.dyns)
     val generated = {
@@ -58,7 +73,7 @@ package object build {
    *  assumption.
    */
   private[scalanative] def link(config: Config): LinkerResult = {
-    val result = config.logger.time("Linking") {
+    config.logger.time("Linking") {
       val chaDeps   = optimizer.analysis.ClassHierarchy.depends
       val passes    = config.driver.passes
       val passDeps  = passes.flatMap(_.depends).distinct
@@ -73,22 +88,6 @@ package object build {
 
       result.withDefns(result.defns ++ injects)
     }
-
-    if (result.unresolved.nonEmpty) {
-      result.unresolved.map(_.show).sorted.foreach { signature =>
-        config.logger.error(s"cannot link: $signature")
-      }
-      throw new Exception("unable to link")
-    }
-    val classCount = result.defns.count {
-      case _: nir.Defn.Class | _: nir.Defn.Module | _: nir.Defn.Trait => true
-      case _                                                          => false
-    }
-    val methodCount = result.defns.count(_.isInstanceOf[nir.Defn.Define])
-    config.logger.info(
-      s"Discovered ${classCount} classes and ${methodCount} methods")
-
-    result
   }
 
   /** Link just the given entries, disregarding the extra ones that are
