@@ -25,10 +25,39 @@ package object build {
   type OptimizerReporter = optimizer.Reporter
   val OptimizerReporter = optimizer.Reporter
 
+  def build(nativeLib: Path,
+            paths: Seq[Path],
+            entry: String,
+            target: Path,
+            workdir: Path,
+            logger: Logger): Path = {
+    val config = Config.default(nativeLib, paths, entry, workdir, logger)
+    build(config, target)
+  }
+
+  def build(config: Config, target: Path) = {
+    val linkerResult = link(config)
+    val optimized =
+      optimize(config, linkerResult.defns, linkerResult.dyns)
+    val generated = {
+      codegen(config, optimized)
+      IO.getAll(config.workdir, "glob:**.ll")
+    }
+    val objectFiles = LLVM.compileLL(config, generated)
+    val unpackedLib = unpackNativeLibrary(config.nativeLib, config.workdir)
+
+    val nativeLibConfig =
+      config.withCompileOptions("-O2" +: config.compileOptions)
+    val _ =
+      compileNativeLib(nativeLibConfig, linkerResult, unpackedLib)
+
+    LLVM.linkLL(config, linkerResult, objectFiles, unpackedLib, target)
+  }
+
   /** Given the classpath and main entry point, link under closed-world
    *  assumption.
    */
-  def link(config: Config): LinkerResult = {
+  private[scalanative] def link(config: Config): LinkerResult = {
     val result = config.logger.time("Linking") {
       val chaDeps   = optimizer.analysis.ClassHierarchy.depends
       val passes    = config.driver.passes
@@ -65,56 +94,29 @@ package object build {
   /** Link just the given entries, disregarding the extra ones that are
    *  needed for the optimizer and/or codegen.
    */
-  def linkRaw(config: Config, entries: Seq[nir.Global]): LinkerResult =
+  private[scalanative] def linkRaw(config: Config,
+                                   entries: Seq[nir.Global]): LinkerResult =
     config.logger.time("Linking") {
       linker.Linker(config).link(entries)
     }
 
   /** Transform high-level closed world to its lower-level counterpart. */
-  def optimize(config: Config,
-               assembly: Seq[nir.Defn],
-               dyns: Seq[String]): Seq[nir.Defn] =
+  private[scalanative] def optimize(config: Config,
+                                    assembly: Seq[nir.Defn],
+                                    dyns: Seq[String]): Seq[nir.Defn] =
     config.logger.time(s"Optimizing (${config.driver.mode} mode)") {
       optimizer.Optimizer(config, assembly, dyns)
     }
 
   /** Given low-level assembly, emit LLVM IR for it to the buildDirectory. */
-  def codegen(config: Config, assembly: Seq[nir.Defn]): Seq[Path] = {
+  private[scalanative] def codegen(config: Config,
+                                   assembly: Seq[nir.Defn]): Seq[Path] = {
     config.logger.time("Generating intermediate code") {
       scalanative.codegen.CodeGen(config, assembly)
     }
     val produced = IO.getAll(config.workdir, "glob:**.ll")
     config.logger.info(s"Produced ${produced.length} files")
     produced
-  }
-
-  def build(nativeLib: Path,
-            paths: Seq[Path],
-            entry: String,
-            target: Path,
-            workdir: Path,
-            logger: Logger): Path = {
-    val config = Config.default(nativeLib, paths, entry, workdir, logger)
-    build(config, target)
-  }
-
-  def build(config: Config, target: Path) = {
-    val linkerResult = link(config)
-    val optimized =
-      optimize(config, linkerResult.defns, linkerResult.dyns)
-    val generated = {
-      codegen(config, optimized)
-      IO.getAll(config.workdir, "glob:**.ll")
-    }
-    val objectFiles = LLVM.compileLL(config, generated)
-    val unpackedLib = unpackNativeLibrary(config.nativeLib, config.workdir)
-
-    val nativeLibConfig =
-      config.withCompileOptions("-O2" +: config.compileOptions)
-    val _ =
-      compileNativeLib(nativeLibConfig, linkerResult, unpackedLib)
-
-    LLVM.linkLL(config, linkerResult, objectFiles, unpackedLib, target)
   }
 
   /**
@@ -128,7 +130,8 @@ package object build {
    *                  to `workdir/lib`.
    * @return The location where the nativelib has been unpacked, `workdir/lib`.
    */
-  def unpackNativeLibrary(nativeLib: Path, workdir: Path): Path = {
+  private[scalanative] def unpackNativeLibrary(nativeLib: Path,
+                                               workdir: Path): Path = {
     val lib         = workdir.resolve("lib")
     val jarhash     = IO.sha1(nativeLib)
     val jarhashPath = lib.resolve("jarhash")
@@ -146,9 +149,9 @@ package object build {
     lib
   }
 
-  def compileNativeLib(config: Config,
-                       linkerResult: LinkerResult,
-                       libPath: Path): Path = {
+  private[scalanative] def compileNativeLib(config: Config,
+                                            linkerResult: LinkerResult,
+                                            libPath: Path): Path = {
     val cpaths   = IO.getAll(config.workdir, "glob:**.c").map(_.abs)
     val cpppaths = IO.getAll(config.workdir, "glob:**.cpp").map(_.abs)
     val paths    = cpaths ++ cpppaths

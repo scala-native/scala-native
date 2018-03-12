@@ -3,26 +3,31 @@ package linker
 
 import nir.{Global, Dep, Attr, Defn}
 import nir.serialization.BinaryDeserializer
-import java.nio.file.FileSystems
+import java.nio.file.{FileSystems, Path}
 import scalanative.io.VirtualDirectory
 import scalanative.util.Scope
 
 sealed trait ClassPath {
 
   /** Check if given global is present in this classpath. */
-  def contains(name: Global): Boolean
+  private[scalanative] def contains(name: Global): Boolean
 
   /** Load given global and info about its dependencies. */
-  def load(name: Global): Option[(Seq[Dep], Seq[Attr.Link], Seq[String], Defn)]
+  private[scalanative] def load(
+      name: Global): Option[(Seq[Dep], Seq[Attr.Link], Seq[String], Defn)]
 
   /** Load all globals */
-  def globals: Set[Global]
+  private[scalanative] def globals: Set[Global]
 }
 
 object ClassPath {
 
+  /** Create classpath based on the directory. */
+  def apply(directory: Path): ClassPath =
+    new Impl(VirtualDirectory.local(directory))
+
   /** Create classpath based on the virtual directory. */
-  def apply(directory: VirtualDirectory): ClassPath =
+  private[scalanative] def apply(directory: VirtualDirectory): ClassPath =
     new Impl(directory)
 
   private final class Impl(directory: VirtualDirectory) extends ClassPath {
