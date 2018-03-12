@@ -90,7 +90,7 @@ object ScalaNativePluginInternal {
     nativeOptimizerReporter := build.OptimizerReporter.empty,
     nativeOptimizerReporter in NativeTest := (nativeOptimizerReporter in Test).value,
     nativeGC := Option(System.getenv.get("SCALANATIVE_GC"))
-      .getOrElse(build.GarbageCollector.default.name),
+      .getOrElse(build.GC.default.name),
     nativeGC in NativeTest := (nativeGC in Test).value
   )
 
@@ -140,7 +140,7 @@ object ScalaNativePluginInternal {
       val cwd     = nativeWorkdir.value.toPath
       val clang   = nativeClang.value.toPath
       val clangpp = nativeClangPP.value.toPath
-      val gc      = build.GarbageCollector(nativeGC.value)
+      val gc      = build.GC(nativeGC.value)
 
       build.Config.empty
         .withNativelib(nativelibJar)

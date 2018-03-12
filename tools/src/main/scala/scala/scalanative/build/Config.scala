@@ -44,7 +44,7 @@ sealed trait Config {
   def compileOptions: Seq[String]
 
   /** The garbage collector to use. */
-  def gc: GarbageCollector
+  def gc: GC
 
   /** Should stubs be linked? */
   def linkStubs: Boolean
@@ -89,7 +89,7 @@ sealed trait Config {
   def withCompileOptions(value: Seq[String]): Config
 
   /** Create a new config with given garbage collector. */
-  def withGC(value: GarbageCollector): Config
+  def withGC(value: GC): Config
 
   /** Create a new config with given behavior for stubs. */
   def withLinkStubs(value: Boolean): Config
@@ -142,7 +142,7 @@ object Config {
       target = "",
       linkingOptions = Seq.empty,
       compileOptions = Seq.empty,
-      gc = GarbageCollector.default,
+      gc = GC.default,
       linkStubs = false,
       logger = Logger.default
     )
@@ -159,7 +159,7 @@ object Config {
                                 target: String,
                                 linkingOptions: Seq[String],
                                 compileOptions: Seq[String],
-                                gc: GarbageCollector,
+                                gc: GC,
                                 linkStubs: Boolean,
                                 logger: Logger)
       extends Config {
@@ -199,7 +199,7 @@ object Config {
     def withCompileOptions(value: Seq[String]): Config =
       copy(compileOptions = value)
 
-    def withGC(value: GarbageCollector): Config =
+    def withGC(value: GC): Config =
       copy(gc = value)
 
     def withLinkStubs(value: Boolean): Config =
