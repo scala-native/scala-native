@@ -29,36 +29,63 @@ package object build {
    *  assumption.
    */
   def link(config: Config): LinkerResult = {
-    val chaDeps   = optimizer.analysis.ClassHierarchy.depends
-    val passes    = config.driver.passes
-    val passDeps  = passes.flatMap(_.depends).distinct
-    val deps      = (chaDeps ++ passDeps).distinct
-    val injects   = passes.flatMap(_.injects)
-    val mainClass = nir.Global.Top(config.entry)
-    val entry =
-      nir.Global
-        .Member(mainClass, "main_scala.scalanative.runtime.ObjectArray_unit")
-    val result =
-      (linker.Linker(config)).link(entry +: deps)
+    val result = config.logger.time("Linking") {
+      val chaDeps   = optimizer.analysis.ClassHierarchy.depends
+      val passes    = config.driver.passes
+      val passDeps  = passes.flatMap(_.depends).distinct
+      val deps      = (chaDeps ++ passDeps).distinct
+      val injects   = passes.flatMap(_.injects)
+      val mainClass = nir.Global.Top(config.entry)
+      val entry =
+        nir.Global
+          .Member(mainClass, "main_scala.scalanative.runtime.ObjectArray_unit")
+      val result =
+        (linker.Linker(config)).link(entry +: deps)
 
-    result.withDefns(result.defns ++ injects)
+      result.withDefns(result.defns ++ injects)
+    }
+
+    if (result.unresolved.nonEmpty) {
+      result.unresolved.map(_.show).sorted.foreach { signature =>
+        config.logger.error(s"cannot link: $signature")
+      }
+      throw new Exception("unable to link")
+    }
+    val classCount = result.defns.count {
+      case _: nir.Defn.Class | _: nir.Defn.Module | _: nir.Defn.Trait => true
+      case _                                                          => false
+    }
+    val methodCount = result.defns.count(_.isInstanceOf[nir.Defn.Define])
+    config.logger.info(
+      s"Discovered ${classCount} classes and ${methodCount} methods")
+
+    result
   }
 
   /** Link just the given entries, disregarding the extra ones that are
    *  needed for the optimizer and/or codegen.
    */
   def linkRaw(config: Config, entries: Seq[nir.Global]): LinkerResult =
-    linker.Linker(config).link(entries)
+    config.logger.time("Linking") {
+      linker.Linker(config).link(entries)
+    }
 
   /** Transform high-level closed world to its lower-level counterpart. */
   def optimize(config: Config,
                assembly: Seq[nir.Defn],
                dyns: Seq[String]): Seq[nir.Defn] =
-    optimizer.Optimizer(config, assembly, dyns)
+    config.logger.time(s"Optimizing (${config.driver.mode} mode)") {
+      optimizer.Optimizer(config, assembly, dyns)
+    }
 
   /** Given low-level assembly, emit LLVM IR for it to the buildDirectory. */
-  def codegen(config: Config, assembly: Seq[nir.Defn]): Unit =
-    scalanative.codegen.CodeGen(config, assembly)
+  def codegen(config: Config, assembly: Seq[nir.Defn]): Unit = {
+    config.logger.time("Generating intermediate code") {
+      scalanative.codegen.CodeGen(config, assembly)
+    }
+    val produced = IO.getAll(config.workdir, "glob:**.ll")
+    config.logger.info(s"Produced ${produced.length} files")
+  }
 
   def build(nativeLib: Path,
             paths: Seq[Path],

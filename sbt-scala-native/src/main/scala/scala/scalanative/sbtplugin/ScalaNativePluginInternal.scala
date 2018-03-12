@@ -209,45 +209,22 @@ object ScalaNativePluginInternal {
     },
     nativeLinkNIR := {
       val logger = streams.value.log.toLogger
-      val driver = nativeOptimizerDriver.value
       val config = nativeConfig.value.withLogger(logger)
-
-      val result = logger.time("Linking") {
-        build.link(config)
-      }
-      if (result.unresolved.nonEmpty) {
-        result.unresolved.map(_.show).sorted.foreach { signature =>
-          logger.error(s"cannot link: $signature")
-        }
-        throw new Exception("unable to link")
-      }
-      val classCount = result.defns.count {
-        case _: nir.Defn.Class | _: nir.Defn.Module | _: nir.Defn.Trait => true
-        case _                                                          => false
-      }
-      val methodCount = result.defns.count(_.isInstanceOf[nir.Defn.Define])
-      logger.info(
-        s"Discovered ${classCount} classes and ${methodCount} methods")
-      result
+      build.link(config)
     },
     nativeOptimizeNIR := {
       val logger = streams.value.log.toLogger
       val result = nativeLinkNIR.value
       val config = nativeConfig.value.withLogger(logger)
       val mode   = nativeMode.value
-      logger.time(s"Optimizing ($mode mode)") {
-        build.optimize(config, result.defns, result.dyns)
-      }
+      build.optimize(config, result.defns, result.dyns)
     },
     nativeGenerateLL := {
       val logger    = streams.value.log.toLogger
       val config    = nativeConfig.value.withLogger(logger)
       val optimized = nativeOptimizeNIR.value
       val cwd       = nativeWorkdir.value
-      logger.time("Generating intermediate code") {
-        build.codegen(config, optimized)
-      }
-      logger.info(s"Produced ${(cwd ** "*.ll").get.length} files")
+      build.codegen(config, optimized)
       (cwd ** "*.ll").get.toSeq
     },
     nativeCompileLL := {
