@@ -129,10 +129,10 @@ object ScalaNativePluginInternal {
 
   lazy val scalaNativeConfigSettings: Seq[Setting[_]] = Seq(
     nativeTarget := {
-      val logger = streams.value.log
+      val logger = streams.value.log.toLogger
       val cwd    = nativeWorkdir.value.toPath
       val clang  = nativeClang.value.toPath
-      LLVM.detectTarget(clang, cwd, logger.toLogger)
+      LLVM.detectTarget(clang, cwd, logger)
     },
     artifactPath in nativeLink := {
       crossTarget.value / (moduleName.value + "-out")
@@ -194,13 +194,13 @@ object ScalaNativePluginInternal {
       build.unpackNativeLibrary(jar.toPath, cwd.toPath).toFile
     },
     nativeCompileLib := {
+      val logger = streams.value.log.toLogger
       val config = {
         val config0 = nativeConfig.value
         config0.withCompileOptions("-O2" +: config0.compileOptions)
-      }
+      }.withLogger(logger)
 
       val linked  = nativeLinkNIR.value
-      val logger  = streams.value.log
       val libPath = nativeUnpackLib.value.toPath
 
       val outPath =
@@ -208,9 +208,9 @@ object ScalaNativePluginInternal {
       outPath.toFile
     },
     nativeLinkNIR := {
-      val logger = streams.value.log
+      val logger = streams.value.log.toLogger
       val driver = nativeOptimizerDriver.value
-      val config = nativeConfig.value
+      val config = nativeConfig.value.withLogger(logger)
 
       val result = logger.time("Linking") {
         build.link(config)
@@ -231,17 +231,17 @@ object ScalaNativePluginInternal {
       result
     },
     nativeOptimizeNIR := {
-      val logger = streams.value.log
+      val logger = streams.value.log.toLogger
       val result = nativeLinkNIR.value
-      val config = nativeConfig.value
+      val config = nativeConfig.value.withLogger(logger)
       val mode   = nativeMode.value
       logger.time(s"Optimizing ($mode mode)") {
         build.optimize(config, result.defns, result.dyns)
       }
     },
     nativeGenerateLL := {
-      val logger    = streams.value.log
-      val config    = nativeConfig.value
+      val logger    = streams.value.log.toLogger
+      val config    = nativeConfig.value.withLogger(logger)
       val optimized = nativeOptimizeNIR.value
       val cwd       = nativeWorkdir.value
       logger.time("Generating intermediate code") {
@@ -251,8 +251,8 @@ object ScalaNativePluginInternal {
       (cwd ** "*.ll").get.toSeq
     },
     nativeCompileLL := {
-      val logger    = streams.value.log
-      val config    = nativeConfig.value
+      val logger    = streams.value.log.toLogger
+      val config    = nativeConfig.value.withLogger(logger)
       val generated = nativeGenerateLL.value.map(_.toPath)
 
       val outPaths =
@@ -260,11 +260,12 @@ object ScalaNativePluginInternal {
       outPaths.map(_.toFile)
     },
     nativeLinkLL := {
+      val logger    = streams.value.log.toLogger
       val linked    = nativeLinkNIR.value
       val apppaths  = nativeCompileLL.value.map(_.toPath)
       val nativelib = nativeCompileLib.value.toPath
       val outpath   = (artifactPath in nativeLink).value.toPath
-      val config    = nativeConfig.value
+      val config    = nativeConfig.value.withLogger(logger)
 
       val outPath =
         LLVM.linkLL(config, linked, apppaths, nativelib, outpath)
