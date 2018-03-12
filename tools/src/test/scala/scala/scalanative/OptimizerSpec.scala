@@ -1,7 +1,7 @@
 package scala.scalanative
 
 import optimizer.Driver
-import build.{Config, tools}
+import build.Config
 
 /** Base class to test the optimizer */
 abstract class OptimizerSpec extends LinkerSpec {
@@ -25,7 +25,7 @@ abstract class OptimizerSpec extends LinkerSpec {
       case (config_, res) =>
         val driver_ = driver.getOrElse(config_.driver)
         val config  = config_.withDriver(driver_)
-        fn(config, res.links, tools.optimize(config, res.defns, res.dyns))
+        fn(config, res.links, build.optimize(config, res.defns, res.dyns))
     }
 
 }

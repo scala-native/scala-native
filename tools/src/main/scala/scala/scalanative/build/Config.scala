@@ -3,7 +3,6 @@ package build
 
 import java.nio.file.{Path, Paths}
 
-import tools._
 import nir.Global
 
 sealed trait Config {

@@ -8,7 +8,6 @@ import scala.util.Try
 import scala.sys.process._
 
 import IO.RichPath
-import tools.LinkerResult
 
 object LLVM {
 

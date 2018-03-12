@@ -5,7 +5,7 @@ import scala.language.implicitConversions
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
 
-import build.{Config, Mode, tools}
+import build.{Config, Mode}
 import util.Scope
 import nir.Global
 import optimizer.Driver
@@ -38,7 +38,7 @@ abstract class LinkerSpec extends FlatSpec {
       val files      = compiler.compile(sourcesDir)
       val driver_    = driver.fold(Driver(Mode.default))(identity)
       val config     = makeConfig(driver_, outDir, entry, linkStubs)
-      val result     = tools.link(config)
+      val result     = build.link(config)
 
       f(config, result)
     }

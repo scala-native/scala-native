@@ -3,7 +3,7 @@ package scala.scalanative
 import java.nio.file.{Path, Paths}
 import scalanative.io.VirtualDirectory
 import scalanative.optimizer.Driver
-import scalanative.build.{Config, tools}
+import scalanative.build.Config
 import scalanative.util.Scope
 
 /** Base class to test code generation */
@@ -26,7 +26,7 @@ abstract class CodeGenSpec extends OptimizerSpec {
     optimize(entry, sources, driver) {
       case (config, links, assembly) =>
         Scope { implicit in =>
-          tools.codegen(config, assembly)
+          build.codegen(config, assembly)
           val workdir = VirtualDirectory.real(config.workdir)
           val outfile = Paths.get("out.ll")
 
