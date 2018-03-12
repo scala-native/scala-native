@@ -49,27 +49,6 @@ object ScalaNativePluginInternal {
   val nativeConfig =
     taskKey[build.Config]("Aggregate config object that's used for tools.")
 
-  val nativeLinkNIR =
-    taskKey[build.LinkerResult]("Link NIR using Scala Native linker.")
-
-  val nativeOptimizeNIR =
-    taskKey[Seq[nir.Defn]]("Optimize NIR produced after linking.")
-
-  val nativeGenerateLL =
-    taskKey[Seq[File]]("Generate LLVM IR based on the optimized NIR.")
-
-  val nativeCompileLL =
-    taskKey[Seq[File]]("Compile LLVM IR to native object files.")
-
-  val nativeUnpackLib =
-    taskKey[File]("Unpack native lib.")
-
-  val nativeCompileLib =
-    taskKey[File]("Precompile C/C++ code in native lib.")
-
-  val nativeLinkLL =
-    taskKey[File]("Link native object files into the final binary")
-
   lazy val scalaNativeDependencySettings: Seq[Setting[_]] = Seq(
     libraryDependencies ++= Seq(
       "org.scala-native" %%% "nativelib"      % nativeVersion,
@@ -178,86 +157,13 @@ object ScalaNativePluginInternal {
         .withGC(gc)
         .withLinkStubs(nativeLinkStubs.value)
     },
-    nativeUnpackLib := {
-      val cwd       = nativeWorkdir.value
-      val classpath = (fullClasspath in Compile).value
-
-      val jar =
-        classpath
-          .map(entry => entry.data.abs)
-          .collectFirst {
-            case p if p.contains("scala-native") && p.contains("nativelib") =>
-              file(p)
-          }
-          .get
-
-      build.unpackNativeLibrary(jar.toPath, cwd.toPath).toFile
-    },
-    nativeCompileLib := {
-      val logger = streams.value.log.toLogger
-      val config = {
-        val config0 = nativeConfig.value
-        config0.withCompileOptions("-O2" +: config0.compileOptions)
-      }.withLogger(logger)
-
-      val linked  = nativeLinkNIR.value
-      val libPath = nativeUnpackLib.value.toPath
-
-      val outPath =
-        build.compileNativeLib(config, linked, libPath)
-      outPath.toFile
-    },
-    nativeLinkNIR := {
-      val logger = streams.value.log.toLogger
-      val config = nativeConfig.value.withLogger(logger)
-      build.link(config)
-    },
-    nativeOptimizeNIR := {
-      val logger = streams.value.log.toLogger
-      val result = nativeLinkNIR.value
-      val config = nativeConfig.value.withLogger(logger)
-      val mode   = nativeMode.value
-      build.optimize(config, result.defns, result.dyns)
-    },
-    nativeGenerateLL := {
-      val logger    = streams.value.log.toLogger
-      val config    = nativeConfig.value.withLogger(logger)
-      val optimized = nativeOptimizeNIR.value
-      val outPaths  = build.codegen(config, optimized)
-      outPaths.map(_.toFile)
-    },
-    nativeCompileLL := {
-      val logger    = streams.value.log.toLogger
-      val config    = nativeConfig.value.withLogger(logger)
-      val generated = nativeGenerateLL.value.map(_.toPath)
-
-      val outPaths =
-        LLVM.compileLL(config, generated)
-      outPaths.map(_.toFile)
-    },
-    nativeLinkLL := {
-      val logger    = streams.value.log.toLogger
-      val linked    = nativeLinkNIR.value
-      val apppaths  = nativeCompileLL.value.map(_.toPath)
-      val nativelib = nativeCompileLib.value.toPath
-      val outpath   = (artifactPath in nativeLink).value.toPath
-      val config    = nativeConfig.value.withLogger(logger)
-
-      val outPath =
-        LLVM.linkLL(config, linked, apppaths, nativelib, outpath)
-      outPath.toFile
-    },
     nativeLink := {
-      nativeWarnOldJVM.value
-      // We explicitly mention all of the steps in the pipeline
-      // although only the last one is strictly necessary.
-      compile.value
-      nativeLinkNIR.value
-      nativeOptimizeNIR.value
-      nativeGenerateLL.value
-      nativeCompileLL.value
-      nativeCompileLib.value
-      nativeLinkLL.value
+      val logger  = streams.value.log.toLogger
+      val config  = nativeConfig.value.withLogger(logger)
+      val outpath = (artifactPath in nativeLink).value
+
+      build.build(config, outpath.toPath)
+      outpath
     },
     run := {
       val env    = (envVars in run).value.toSeq
