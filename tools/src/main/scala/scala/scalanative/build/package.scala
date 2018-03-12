@@ -79,12 +79,13 @@ package object build {
     }
 
   /** Given low-level assembly, emit LLVM IR for it to the buildDirectory. */
-  def codegen(config: Config, assembly: Seq[nir.Defn]): Unit = {
+  def codegen(config: Config, assembly: Seq[nir.Defn]): Seq[Path] = {
     config.logger.time("Generating intermediate code") {
       scalanative.codegen.CodeGen(config, assembly)
     }
     val produced = IO.getAll(config.workdir, "glob:**.ll")
     config.logger.info(s"Produced ${produced.length} files")
+    produced
   }
 
   def build(nativeLib: Path,

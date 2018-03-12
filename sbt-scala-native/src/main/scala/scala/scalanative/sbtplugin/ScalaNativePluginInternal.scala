@@ -223,9 +223,8 @@ object ScalaNativePluginInternal {
       val logger    = streams.value.log.toLogger
       val config    = nativeConfig.value.withLogger(logger)
       val optimized = nativeOptimizeNIR.value
-      val cwd       = nativeWorkdir.value
-      build.codegen(config, optimized)
-      (cwd ** "*.ll").get.toSeq
+      val outPaths  = build.codegen(config, optimized)
+      outPaths.map(_.toFile)
     },
     nativeCompileLL := {
       val logger    = streams.value.log.toLogger
