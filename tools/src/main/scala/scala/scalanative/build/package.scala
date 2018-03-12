@@ -25,13 +25,13 @@ package object build {
   type OptimizerReporter = optimizer.Reporter
   val OptimizerReporter = optimizer.Reporter
 
-  def build(nativeLib: Path,
+  def build(nativelib: Path,
             paths: Seq[Path],
             entry: String,
             target: Path,
             workdir: Path,
             logger: Logger): Path = {
-    val config = Config.default(nativeLib, paths, entry, workdir, logger)
+    val config = Config.default(nativelib, paths, entry, workdir, logger)
     build(config, target)
   }
 
@@ -59,12 +59,12 @@ package object build {
       IO.getAll(config.workdir, "glob:**.ll")
     }
     val objectFiles = LLVM.compileLL(config, generated)
-    val unpackedLib = unpackNativeLibrary(config.nativeLib, config.workdir)
+    val unpackedLib = unpackNativeLibrary(config.nativelib, config.workdir)
 
-    val nativeLibConfig =
+    val nativelibConfig =
       config.withCompileOptions("-O2" +: config.compileOptions)
     val _ =
-      compileNativeLib(nativeLibConfig, linkerResult, unpackedLib)
+      compileNativeLib(nativelibConfig, linkerResult, unpackedLib)
 
     LLVM.linkLL(config, linkerResult, objectFiles, unpackedLib, target)
   }
@@ -129,10 +129,10 @@ package object build {
    *                  to `workdir/lib`.
    * @return The location where the nativelib has been unpacked, `workdir/lib`.
    */
-  private[scalanative] def unpackNativeLibrary(nativeLib: Path,
+  private[scalanative] def unpackNativeLibrary(nativelib: Path,
                                                workdir: Path): Path = {
     val lib         = workdir.resolve("lib")
-    val jarhash     = IO.sha1(nativeLib)
+    val jarhash     = IO.sha1(nativelib)
     val jarhashPath = lib.resolve("jarhash")
     def unpacked =
       Files.exists(lib) &&
@@ -141,7 +141,7 @@ package object build {
 
     if (!unpacked) {
       IO.deleteRecursive(lib)
-      IO.unzip(nativeLib, lib)
+      IO.unzip(nativelib, lib)
       IO.write(jarhashPath, jarhash)
     }
 

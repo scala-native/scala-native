@@ -8,7 +8,7 @@ import nir.Global
 sealed trait Config {
 
   /** Path to the nativelib jar. */
-  def nativeLib: Path
+  def nativelib: Path
 
   /** The driver to use for the optimizer. */
   def driver: OptimizerDriver
@@ -53,7 +53,7 @@ sealed trait Config {
   def logger: Logger
 
   /** Create a new config with given path to nativelib. */
-  def withNativeLib(value: Path): Config
+  def withNativelib(value: Path): Config
 
   /** Create a new config with given driver. */
   def withDriver(value: OptimizerDriver): Config
@@ -100,7 +100,7 @@ sealed trait Config {
 
 object Config {
 
-  def default(nativeLib: Path,
+  def default(nativelib: Path,
               paths: Seq[Path],
               entry: String,
               workdir: Path,
@@ -114,7 +114,7 @@ object Config {
     LLVM.checkThatClangIsRecentEnough(clangpp)
 
     empty
-      .withNativeLib(nativeLib)
+      .withNativelib(nativelib)
       .withDriver(OptimizerDriver(mode))
       .withEntry(entry)
       .withPaths(paths)
@@ -130,7 +130,7 @@ object Config {
   /** Default empty config object. */
   val empty: Config =
     Impl(
-      nativeLib = Paths.get(""),
+      nativelib = Paths.get(""),
       driver = OptimizerDriver.empty,
       linkerReporter = LinkerReporter.empty,
       optimizerReporter = OptimizerReporter.empty,
@@ -147,7 +147,7 @@ object Config {
       logger = Logger.default
     )
 
-  private final case class Impl(nativeLib: Path,
+  private final case class Impl(nativelib: Path,
                                 driver: OptimizerDriver,
                                 linkerReporter: LinkerReporter,
                                 optimizerReporter: OptimizerReporter,
@@ -163,8 +163,8 @@ object Config {
                                 linkStubs: Boolean,
                                 logger: Logger)
       extends Config {
-    def withNativeLib(value: Path): Config =
-      copy(nativeLib = value)
+    def withNativelib(value: Path): Config =
+      copy(nativelib = value)
 
     def withDriver(value: OptimizerDriver): Config =
       copy(driver = value)

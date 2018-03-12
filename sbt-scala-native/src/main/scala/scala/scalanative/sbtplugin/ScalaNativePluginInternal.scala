@@ -131,7 +131,7 @@ object ScalaNativePluginInternal {
       val classpath =
         fullClasspath.value.map(_.data.toPath).filter(f => Files.exists(f))
 
-      val nativeLibJar =
+      val nativelibJar =
         classpath.find { p =>
           val path = p.toAbsolutePath.toString
           path.contains("scala-native") && path.contains("nativelib")
@@ -143,7 +143,7 @@ object ScalaNativePluginInternal {
       val gc      = build.GarbageCollector(nativeGC.value)
 
       build.Config.empty
-        .withNativeLib(nativeLibJar)
+        .withNativelib(nativelibJar)
         .withDriver(nativeOptimizerDriver.value)
         .withLinkerReporter(nativeLinkerReporter.value)
         .withOptimizerReporter(nativeOptimizerReporter.value)
