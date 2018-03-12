@@ -51,7 +51,8 @@ addCommandAlias(
     "tests/test",
     "tools/test",
     "benchmarks/run --test",
-    "sbtScalaNative/scripted"
+    "sbtScalaNative/scripted",
+    "tools/mimaReportBinaryIssues"
   ).mkString(";", ";", "")
 )
 

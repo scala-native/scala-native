@@ -53,8 +53,7 @@ script:
       "^^ $SBT_VERSION" \
       rebuild \
       "set scriptedBufferLog in sbtScalaNative := false" \
-      test-all \
-      "tools/mimaReportBinaryIssues"
+      test-all
 
 before_cache:
   - find $HOME/.sbt -name "*.lock" | xargs rm
