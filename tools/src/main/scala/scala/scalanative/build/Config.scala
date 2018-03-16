@@ -5,6 +5,7 @@ import java.nio.file.{Path, Paths}
 
 import nir.Global
 
+/** An object describing how to configure the Scala Native toolchain. */
 sealed trait Config {
 
   /** Path to the nativelib jar. */
@@ -100,6 +101,18 @@ sealed trait Config {
 
 object Config {
 
+  /**
+   * The default configuration for the Scala Native toolchain. The path
+   * to `clang`, `clangpp` and the target triple will be detected automatically.
+   *
+   * @param nativelib Path to the nativelib jar.
+   * @param paths     Sequence of all NIR locations.
+   * @param entry     Entry point for linking.
+   * @param workdir   Directory to emit intermediate compilation results.
+   * @param logger    The logger used by the toolchain.
+   * @return A `Config` that uses the default `Mode`, linking and compiling options and
+   *         automatically detects the path to `clang`, `clangpp` and the target triple.
+   */
   def default(nativelib: Path,
               paths: Seq[Path],
               entry: String,
@@ -127,7 +140,14 @@ object Config {
       .withLogger(logger)
   }
 
-  /** Default empty config object. */
+  /**
+   * Default empty config object.
+   *
+   * This is intended to create a new `Config` where none of the values are filled.
+   * To get a `Config` with default values, use `Config.default`.
+   *
+   * @see Config.default
+   */
   val empty: Config =
     Impl(
       nativelib = Paths.get(""),
