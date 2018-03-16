@@ -4,8 +4,7 @@ package scala.scalanative.build
  * @param dir directory name of the gc
  * @param links dependencies of the gc
  */
-sealed abstract class GC(val name: String,
-                         val links: Seq[String] = Nil)
+sealed abstract class GC(val name: String, val links: Seq[String] = Nil)
 object GC {
   object None  extends GC("none")
   object Boehm extends GC("boehm", Seq("gc"))
