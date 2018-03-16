@@ -38,12 +38,27 @@ trait Logger {
 
 object Logger {
 
+  /**
+   * A `Logger` that writes `info` and `warn` messages to `stdout`,
+   * and `error` and `debug` messages to `stderr`.
+   */
   def default: Logger =
     Logger(msg => err.println(s"[debug] $msg"),
            msg => out.println(s"[info] $msg"),
            msg => out.println(s"[warn] $msg"),
            msg => err.println(s"[error] $msg"))
 
+  /**
+   * A logger that uses the supplied functions as implementations
+   * for `debug`, `info`, `warn` and `error`.
+   *
+   * @param debugFn The function to call when `debug` is called.
+   * @param infoFn  The function to call when `info` is called.
+   * @param warnFn  The function to call when `warn` is called.
+   * @param errorFn The function to call when `error` is called.
+   * @return A logger that uses the supplied functions as implementations
+   *         for `debug`, `info`, `warn` and `error`.
+   */
   def apply(debugFn: String => Unit,
             infoFn: String => Unit,
             warnFn: String => Unit,
@@ -54,6 +69,7 @@ object Logger {
     override def error(msg: String): Unit = errorFn(msg)
   }
 
+  /** Turns the given logger into a `ProcessLogger`. */
   def toProcessLogger(logger: Logger): ProcessLogger =
     ProcessLogger(logger.info, logger.error)
 }
