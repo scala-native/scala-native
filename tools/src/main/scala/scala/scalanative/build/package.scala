@@ -30,6 +30,29 @@ package object build {
    *
    * The paths to `clang`, `clangpp` and the target triple will be detected automatically.
    *
+   * This is the entry point to use if you're writing a tool that uses the Scala Native
+   * toolchain.
+   *
+   * The `nativelib` is the path to the JAR file distributed with Scala Native. It contains the
+   * classfiles, NIR files, and C and C++ sources of the Scala Native `nativelib` module. It will
+   * be unarchived and compiled if needed.
+   *
+   * The `paths` is a sequence of directories that contain NIR files. This is typically the same
+   * as your compilation classpath.
+   *
+   * The `entry` is the name of your application's entry point. For instance, if you define an
+   * `object EntryPoint` in package `foo.bar`, then your entry point is `foo.bar.EntryPoint$`.
+   *
+   * The `outpath` is the path where the Scala Native toolchain should write the resulting native
+   * binary.
+   *
+   * The `workdir` is directory that will be used during compilation to host intermediate
+   * results. Reusing the same `workdir` several times is fine and is recommended, so that the
+   * nativelib doesn't need to be set up on every call to this method.
+   *
+   * The `logger` will be called during compilation to pass messages about the state of the Scala
+   * Native toolchain.
+   *
    * @param nativelib Path to the nativelib jar.
    * @param paths     Sequence of all NIR locations.
    * @param entry     Entry point for linking.
