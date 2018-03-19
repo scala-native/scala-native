@@ -1,7 +1,6 @@
 package scala.scalanative
 package posix
 
-
 import native.{CArray, CChar, CInt, CLong, CStruct7, Nat, Ptr, extern, name}
 import posix.sys.types.pid_t
 
@@ -18,28 +17,30 @@ object termios {
   type c_cc     = CArray[cc_t, NCCS]
 
   type termios = CStruct7[
-    tcflag_t, /* c_iflag         - input flags   */
-    tcflag_t, /* c_oflag         - output flags  */
-    tcflag_t, /* c_cflag         - control flags */
-    tcflag_t, /* c_lflag         - local flags   */
-    c_cc,     /* cc_t c_cc[NCCS] - control chars */
-    speed_t,  /* c_ispeed        - input speed   */
-    speed_t   /* c_ospeed        - output speed  */
+    tcflag_t, /* c_iflag - input flags   */
+    tcflag_t, /* c_oflag - output flags  */
+    tcflag_t, /* c_cflag - control flags */
+    tcflag_t, /* c_lflag - local flags   */
+    c_cc, /* cc_t c_cc[NCCS] - control chars */
+    speed_t, /* c_ispeed - input speed   */
+    speed_t /* c_ospeed - output speed  */
   ]
 
   // functions
 
-  def cfgetispeed(termios_p: Ptr[termios]): speed_t = extern
-  def cfgetospeed(termios_p: Ptr[termios]): speed_t = extern
+  def cfgetispeed(termios_p: Ptr[termios]): speed_t              = extern
+  def cfgetospeed(termios_p: Ptr[termios]): speed_t              = extern
   def cfsetispeed(termios_p: Ptr[termios], speed: speed_t): CInt = extern
   def cfsetospeed(termios_p: Ptr[termios], speed: speed_t): CInt = extern
-  def tcdrain(fd: CInt): CInt = extern
-  def tcflow(fd: CInt, action: CInt): CInt = extern
-  def tcflush(fd: CInt, queueSelector: CInt): CInt = extern
-  def tcgetattr(fd: CInt, termios_p: Ptr[termios]): CInt = extern
-  def tcgetsid(i: CInt): pid_t = extern
-  def tcsendbreak(fd: CInt, duration: CInt): CInt = extern
-  def tcsetattr(fd: CInt, optionalActions: CInt, termios_p: Ptr[termios]): CInt = extern
+  def tcdrain(fd: CInt): CInt                                    = extern
+  def tcflow(fd: CInt, action: CInt): CInt                       = extern
+  def tcflush(fd: CInt, queueSelector: CInt): CInt               = extern
+  def tcgetattr(fd: CInt, termios_p: Ptr[termios]): CInt         = extern
+  def tcgetsid(i: CInt): pid_t                                   = extern
+  def tcsendbreak(fd: CInt, duration: CInt): CInt                = extern
+  def tcsetattr(fd: CInt,
+                optionalActions: CInt,
+                termios_p: Ptr[termios]): CInt = extern
 
   // symbolic constants for use as subscripts for the array c_cc
 
@@ -192,17 +193,9 @@ object termios {
   def B38400: CInt = extern
 
   // Control Modes - symbolic constants for use as flags in the c_cflag field
-
-
   // Local Modes - symbolic constants for use as flags in the c_lflag field
-
-
   // Attribute Selection - symbolic constants for use with tcsetattr()
-
-
-  // Line Control
-  // symbolic constants for use with tcflush()
-
-  // symbolic constants for use with tcflow()
+  // Line Control - symbolic constants for use with tcflush()
+  // Line Control cont. - symbolic constants for use with tcflow()
 
 }
