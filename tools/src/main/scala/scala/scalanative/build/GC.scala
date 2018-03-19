@@ -15,7 +15,7 @@ object GC {
     case "boehm" => GC.Boehm
     case "immix" => GC.Immix
     case value =>
-      throw new Exception(
+      throw new IllegalArgumentException(
         "nativeGC can be either \"none\", \"boehm\" or \"immix\", not: " + value)
   }
 
