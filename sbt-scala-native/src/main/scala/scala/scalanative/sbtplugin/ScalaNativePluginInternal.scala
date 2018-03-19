@@ -15,7 +15,7 @@ import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 
 import scalanative.nir
 import scalanative.build
-import scalanative.build.LLVM
+import scalanative.build.{BuildException, LLVM}
 import scalanative.io.VirtualDirectory
 import scalanative.util.{Scope => ResourceScope}
 import scalanative.sbtplugin.Utilities._
@@ -64,13 +64,13 @@ object ScalaNativePluginInternal {
   lazy val scalaNativeBaseSettings: Seq[Setting[_]] = Seq(
     crossVersion := ScalaNativeCrossVersion.binary,
     platformDepsCrossVersion := ScalaNativeCrossVersion.binary,
-    nativeClang := {
+    nativeClang := interceptBuildException {
       val clang = LLVM.discover("clang", LLVM.clangVersions)
       LLVM.checkThatClangIsRecentEnough(clang)
       clang.toFile
     },
     nativeClang in NativeTest := (nativeClang in Test).value,
-    nativeClangPP := {
+    nativeClangPP := interceptBuildException {
       val clang = LLVM.discover("clang++", LLVM.clangVersions)
       LLVM.checkThatClangIsRecentEnough(clang)
       clang.toFile
@@ -107,7 +107,7 @@ object ScalaNativePluginInternal {
   )
 
   lazy val scalaNativeConfigSettings: Seq[Setting[_]] = Seq(
-    nativeTarget := {
+    nativeTarget := interceptBuildException {
       val logger = streams.value.log.toLogger
       val cwd    = nativeWorkdir.value.toPath
       val clang  = nativeClang.value.toPath
@@ -162,7 +162,8 @@ object ScalaNativePluginInternal {
       val config  = nativeConfig.value.withLogger(logger)
       val outpath = (artifactPath in nativeLink).value
 
-      build.build(config, outpath.toPath)
+      interceptBuildException(build.build(config, outpath.toPath))
+
       outpath
     },
     run := {
@@ -255,4 +256,12 @@ object ScalaNativePluginInternal {
       inConfig(Compile)(scalaNativeCompileSettings) ++
       inConfig(Test)(scalaNativeTestSettings) ++
       inConfig(NativeTest)(scalaNativeNativeTestSettings)
+
+  /** Run `op`, rethrows `BuildException`s as `MessageOnlyException`s. */
+  private def interceptBuildException[T](op: => T): T = {
+    try op
+    catch {
+      case ex: BuildException => throw new MessageOnlyException(ex.getMessage)
+    }
+  }
 }

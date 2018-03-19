@@ -85,7 +85,7 @@ package object build {
       linkerResult.unresolved.map(_.show).sorted.foreach { signature =>
         config.logger.error(s"cannot link: $signature")
       }
-      throw new Exception("unable to link")
+      throw new BuildException("unable to link")
     }
     val classCount = linkerResult.defns.count {
       case _: nir.Defn.Class | _: nir.Defn.Module | _: nir.Defn.Trait => true

@@ -37,7 +37,7 @@ object LLVM {
           .map(Paths.get(_))
           .headOption
           .getOrElse {
-            throw new Exception(
+            throw new BuildException(
               s"no ${binaryNames.mkString(", ")} found in $$PATH. Install clang ($docSetup)")
           }
       }
@@ -85,7 +85,7 @@ object LLVM {
       defines.contains("__DECIMAL_DIG__ __LDBL_DECIMAL_DIG__")
 
     if (!clangIsRecentEnough) {
-      throw new Exception(
+      throw new BuildException(
         s"No recent installation of clang found " +
           s"at $pathToClangBinary.\nSee http://scala-native.readthedocs.io" +
           s"/en/latest/user/setup.html for details.")
@@ -129,7 +129,7 @@ object LLVM {
     val compilec =
       Seq(clang.abs, "-S", "-xc", "-emit-llvm", "-o", targetll.abs, targetc.abs)
     def fail =
-      throw new Exception("Failed to detect native target.")
+      throw new BuildException("Failed to detect native target.")
 
     IO.write(targetc, "int probe;".getBytes("UTF-8"))
     logger.running(compilec)
