@@ -210,7 +210,7 @@ object LLVM {
     val paths     = llPaths.map(_.abs) ++ opaths
     val compile   = config.clangpp.abs +: (flags ++ paths)
 
-    config.logger.time("Linking native code") {
+    config.logger.time(s"Linking native code (${config.gc.name} gc)") {
       config.logger.running(compile)
       Process(compile, config.workdir.toFile) ! Logger.toProcessLogger(
         config.logger)
