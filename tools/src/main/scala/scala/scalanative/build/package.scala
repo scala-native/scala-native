@@ -25,17 +25,37 @@ package object build {
   type OptimizerReporter = optimizer.Reporter
   val OptimizerReporter = optimizer.Reporter
 
+  /**
+   * Run the complete Scala Native toolchain, from NIR files to native binary.
+   *
+   * The paths to `clang`, `clangpp` and the target triple will be detected automatically.
+   *
+   * @param nativelib Path to the nativelib jar.
+   * @param paths     Sequence of all NIR locations.
+   * @param entry     Entry point for linking.
+   * @param outpath   The path to the resulting native binary.
+   * @param workdir   Directory to emit intermediate compilation results.
+   * @param logger    The logger used by the toolchain.
+   * @return `outpath`, the path to the resulting native binary.
+   */
   def build(nativelib: Path,
             paths: Seq[Path],
             entry: String,
-            target: Path,
+            outpath: Path,
             workdir: Path,
             logger: Logger): Path = {
     val config = Config.default(nativelib, paths, entry, workdir, logger)
-    build(config, target)
+    build(config, outpath)
   }
 
-  def build(config: Config, target: Path) = {
+  /**
+   * Run the complete Scala Native toolchain, from NIR files to native binary.
+   *
+   * @param config  The configuration of the toolchain.
+   * @param outpath The path to the resulting native binary.
+   * @return `outpath`, the path to the resulting native binary.
+   */
+  def build(config: Config, outpath: Path) = {
     val linkerResult = link(config)
 
     if (linkerResult.unresolved.nonEmpty) {
@@ -66,7 +86,7 @@ package object build {
     val _ =
       compileNativeLib(nativelibConfig, linkerResult, unpackedLib)
 
-    LLVM.linkLL(config, linkerResult, objectFiles, unpackedLib, target)
+    LLVM.linkLL(config, linkerResult, objectFiles, unpackedLib, outpath)
   }
 
   /** Given the classpath and main entry point, link under closed-world
@@ -148,6 +168,14 @@ package object build {
     lib
   }
 
+  /**
+   * Compile the native lib to `.o` files
+   *
+   * @param config       The configuration of the toolchain.
+   * @param linkerResult The results from the linker.
+   * @param libPath      The location where the `.o` files should be written.
+   * @return `libPath`
+   */
   private[scalanative] def compileNativeLib(config: Config,
                                             linkerResult: LinkerResult,
                                             libPath: Path): Path = {

@@ -92,7 +92,7 @@ object LLVM {
     }
   }
 
-  /** Default compilation options passed to LLVM. */
+  /** Default compilation options passed to clang. */
   lazy val defaultCompileOptions: Seq[String] = {
     val includes = {
       val includedir =
@@ -103,7 +103,7 @@ object LLVM {
     includes :+ "-Qunused-arguments"
   }
 
-  /** Default options passed to LLVM's linker. */
+  /** Default options passed to the system linker. */
   lazy val defaultLinkingOptions: Seq[String] = {
     val libs = {
       val libdir =
@@ -171,6 +171,16 @@ object LLVM {
     }
   }
 
+  /**
+   * Links a collection of `.ll` files into native binary.
+   *
+   * @param config       The configuration of the toolchain.
+   * @param linkerResult The results from the linker.
+   * @param llPaths      The list of `.ll` files to link.
+   * @param nativelib    The path to the nativelib.
+   * @param outpath      The path where to write the resulting binary.
+   * @return `outpath`
+   */
   def linkLL(config: Config,
              linkerResult: LinkerResult,
              llPaths: Seq[Path],
