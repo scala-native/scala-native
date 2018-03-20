@@ -193,9 +193,78 @@ object termios {
   def B38400: CInt = extern
 
   // Control Modes - symbolic constants for use as flags in the c_cflag field
+
+  @name("scalanative_termios_csize")
+  def CSIZE: CInt = extern
+  @name("scalanative_termios_cs5")
+  def CS5: CInt = extern
+  @name("scalanative_termios_cs6")
+  def CS6: CInt = extern
+  @name("scalanative_termios_cs7")
+  def CS7: CInt = extern
+  @name("scalanative_termios_cs8")
+  def CS8: CInt = extern
+  @name("scalanative_termios_cstopb")
+  def CSTOPB: CInt = extern
+  @name("scalanative_termios_cread")
+  def CREAD: CInt = extern
+  @name("scalanative_termios_parenb")
+  def PARENB: CInt = extern
+  @name("scalanative_termios_parodd")
+  def PARODD: CInt = extern
+  @name("scalanative_termios_hupcl")
+  def HUPCL: CInt = extern
+  @name("scalanative_termios_clocal")
+  def CLOCAL: CInt = extern
+
   // Local Modes - symbolic constants for use as flags in the c_lflag field
+
+  @name("scalanative_termios_echo")
+  def ECHO: CInt = extern
+  @name("scalanative_termios_echoe")
+  def ECHOE: CInt = extern
+  @name("scalanative_termios_echok")
+  def ECHOK: CInt = extern
+  @name("scalanative_termios_echonl")
+  def ECHONL: CInt = extern
+  @name("scalanative_termios_icanon")
+  def ICANON: CInt = extern
+  @name("scalanative_termios_iexten")
+  def IEXTEN: CInt = extern
+  @name("scalanative_termios_isig")
+  def ISIG: CInt = extern
+  @name("scalanative_termios_noflsh")
+  def NOFLSH: CInt = extern
+  @name("scalanative_termios_tostop")
+  def TOSTOP: CInt = extern
+
   // Attribute Selection - symbolic constants for use with tcsetattr()
+
+  @name("scalanative_termios_tcsanow")
+  def TCSANOW: CInt = extern
+  @name("scalanative_termios_tcsadrain")
+  def TCSADRAIN: CInt = extern
+  @name("scalanative_termios_tcsaflush")
+  def TCSAFLUSH: CInt = extern
+
   // Line Control - symbolic constants for use with tcflush()
+
+  @name("scalanative_termios_tciflush")
+  def TCIFLUSH: CInt = extern
+  @name("scalanative_termios_tcioflush")
+  def TCIOFLUSH: CInt = extern
+  @name("scalanative_termios_tcoflush")
+  def TCOFLUSH: CInt = extern
+
   // Line Control cont. - symbolic constants for use with tcflow()
+
+  @name("scalanative_termios_tcioff")
+  def TCIOFF: CInt = extern
+  @name("scalanative_termios_tcion")
+  def TCION: CInt = extern
+  @name("scalanative_termios_tcooff")
+  def TCOOFF: CInt = extern
+  @name("scalanative_termios_tcoon")
+  def TCOON: CInt = extern
 
 }
