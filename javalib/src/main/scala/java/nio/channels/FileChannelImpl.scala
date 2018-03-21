@@ -61,10 +61,16 @@ final class FileChannelImpl(path: Path,
     var bread: Long = 0
 
     for (i <- start until number) {
-      val len = buffers(i).limit() - buffers(i).position()
-      val dst = new Array[Byte](len)
-      val nb  = raf.read(dst)
-      if (nb > 0) buffers(i).put(dst)
+      val startPos = buffers(i).position()
+      val len      = buffers(i).limit() - startPos
+      val dst      = new Array[Byte](len)
+      val nb       = raf.read(dst)
+
+      if (nb > 0) {
+        buffers(i).put(dst)
+        buffers(i).position(startPos + nb)
+      }
+
       bread += nb
     }
 
@@ -74,10 +80,17 @@ final class FileChannelImpl(path: Path,
   override def read(buffer: ByteBuffer, pos: Long): Int = {
     ensureOpen()
     position(pos)
-    val len = buffer.limit() - buffer.position()
-    val dst = new Array[Byte](len)
-    val nb  = raf.read(dst)
-    if (nb > 0) buffer.put(dst)
+
+    val startPos = buffer.position()
+    val len      = buffer.limit() - startPos
+    val dst      = new Array[Byte](len)
+    val nb       = raf.read(dst)
+
+    if (nb > 0) {
+      buffer.put(dst)
+      buffer.position(startPos + nb)
+    }
+
     nb
   }
 
