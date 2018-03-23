@@ -18,11 +18,11 @@ sealed trait Linker {
 object Linker {
 
   /** Create a new linker given tools configuration. */
-  def apply(config: build.Config): Linker =
-    new Impl(config)
+  def apply(config: build.Config, reporter: Reporter): Linker =
+    new Impl(config, reporter)
 
-  private final class Impl(config: build.Config) extends Linker {
-    private val reporter = config.linkerReporter
+  private final class Impl(config: build.Config, reporter: Reporter)
+      extends Linker {
     import reporter._
 
     def link(entries: Seq[Global]): Result = Scope { implicit in =>

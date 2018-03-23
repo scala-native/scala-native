@@ -5,14 +5,23 @@ import build.Mode
 
 sealed trait Driver {
 
-  /** The compilation mode */
-  def mode: Mode
-
   /** Companion of all the passes in the driver's pipeline. */
-  private[scalanative] def passes: Seq[AnyPassCompanion]
+  def passes: Seq[AnyPassCompanion]
+
+  /** Linker event reporter. */
+  def linkerReporter: linker.Reporter
+
+  /** Optimizer event reporter. */
+  def optimizerReporter: optimizer.Reporter
 
   /** Create a copy with given passes. */
-  private[scalanative] def withPasses(passes: Seq[AnyPassCompanion]): Driver
+  def withPasses(value: Seq[AnyPassCompanion]): Driver
+
+  /** Create a copy of driver with given linker reporter. */
+  def withLinkerReporter(value: linker.Reporter): Driver
+
+  /** Create a copy of driver with given linker reporter. */
+  def withOptimizerReporter(value: optimizer.Reporter): Driver
 }
 
 object Driver {
@@ -68,22 +77,29 @@ object Driver {
   )
 
   /** Create driver with default pipeline for this configuration. */
-  def apply(mode: Mode): Driver = {
+  def default(mode: Mode): Driver = {
     val optPasses = mode match {
       case Mode.Debug   => fastOptPasses
       case Mode.Release => fullOptPasses
     }
-    new Impl(mode, injectionPasses ++ optPasses ++ loweringPasses)
+    empty.withPasses(injectionPasses ++ optPasses ++ loweringPasses)
   }
 
   /** Create an empty pass-lesss driver. */
   def empty: Driver =
-    new Impl(Mode.default, Seq.empty)
+    new Impl(Seq.empty, linker.Reporter.empty, optimizer.Reporter.empty)
 
-  private final class Impl(val mode: Mode, val passes: Seq[AnyPassCompanion])
+  private final case class Impl(passes: Seq[AnyPassCompanion],
+                                linkerReporter: linker.Reporter,
+                                optimizerReporter: optimizer.Reporter)
       extends Driver {
-    def withPasses(passes: Seq[AnyPassCompanion]): Driver =
-      new Impl(mode, passes)
-  }
+    def withPasses(value: Seq[AnyPassCompanion]): Driver =
+      copy(passes = value)
 
+    def withLinkerReporter(value: linker.Reporter): Driver =
+      copy(linkerReporter = value)
+
+    def withOptimizerReporter(value: optimizer.Reporter): Driver =
+      copy(optimizerReporter = value)
+  }
 }

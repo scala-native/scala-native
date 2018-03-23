@@ -93,7 +93,7 @@ object LLVM {
   }
 
   /** Default compilation options passed to clang. */
-  lazy val defaultCompileOptions: Seq[String] = {
+  def discoverCompilationOptions(): Seq[String] = {
     val includes = {
       val includedir =
         Try(Process("llvm-config --includedir").lines_!.toSeq)
@@ -104,7 +104,7 @@ object LLVM {
   }
 
   /** Default options passed to the system linker. */
-  lazy val defaultLinkingOptions: Seq[String] = {
+  def discoverLinkingOptions(): Seq[String] = {
     val libs = {
       val libdir =
         Try(Process("llvm-config --libdir").lines_!.toSeq)
@@ -122,7 +122,7 @@ object LLVM {
    * @param logger  A logger that will receive messages about the execution.
    * @return The detected target triple describing the target architecture.
    */
-  def detectTarget(clang: Path, workdir: Path, logger: Logger): String = {
+  def discoverTarget(clang: Path, workdir: Path, logger: Logger): String = {
     // Use non-standard extension to not include the ll file when linking (#639)
     val targetc  = workdir.resolve("target").resolve("c.probe")
     val targetll = workdir.resolve("target").resolve("ll.probe")
@@ -149,7 +149,7 @@ object LLVM {
   /** Compile the given LL files to object files */
   def compileLL(config: Config, llPaths: Seq[Path]): Seq[Path] = {
     val optimizationOpt =
-      config.driver.mode match {
+      config.mode match {
         case Mode.Debug   => "-O0"
         case Mode.Release => "-O2"
       }

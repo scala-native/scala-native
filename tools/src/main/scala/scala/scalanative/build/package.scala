@@ -9,21 +9,16 @@ import build.IO.RichPath
 import nir.Global
 
 package object build {
-
-  type LinkerPath = linker.ClassPath
-  val LinkerPath = linker.ClassPath
-
-  type LinkerReporter = linker.Reporter
-  val LinkerReporter = linker.Reporter
-
-  type LinkerResult = linker.Result
-  val LinkerResult = linker.Result
-
-  type OptimizerDriver = optimizer.Driver
-  val OptimizerDriver = optimizer.Driver
-
-  type OptimizerReporter = optimizer.Reporter
-  val OptimizerReporter = optimizer.Reporter
+  private[scalanative] type LinkerPath = linker.ClassPath
+  private[scalanative] val LinkerPath = linker.ClassPath
+  private[scalanative] type LinkerReporter = linker.Reporter
+  private[scalanative] val LinkerReporter = linker.Reporter
+  private[scalanative] type LinkerResult = linker.Result
+  private[scalanative] val LinkerResult = linker.Result
+  private[scalanative] type OptimizerDriver = optimizer.Driver
+  private[scalanative] val OptimizerDriver = optimizer.Driver
+  private[scalanative] type OptimizerReporter = optimizer.Reporter
+  private[scalanative] val OptimizerReporter = optimizer.Reporter
 
   /**
    * Run the complete Scala Native toolchain, from NIR files to native binary.
@@ -79,7 +74,8 @@ package object build {
    * @return `outpath`, the path to the resulting native binary.
    */
   def build(config: Config, outpath: Path) = {
-    val linkerResult = link(config)
+    val driver       = OptimizerDriver.default(config.mode)
+    val linkerResult = link(config, driver)
 
     if (linkerResult.unresolved.nonEmpty) {
       linkerResult.unresolved.map(_.show).sorted.foreach { signature =>
@@ -96,7 +92,7 @@ package object build {
       s"Discovered ${classCount} classes and ${methodCount} methods")
 
     val optimized =
-      optimize(config, linkerResult.defns, linkerResult.dyns)
+      optimize(config, driver, linkerResult.defns, linkerResult.dyns)
     val generated = {
       codegen(config, optimized)
       IO.getAll(config.workdir, "glob:**.ll")
@@ -115,10 +111,11 @@ package object build {
   /** Given the classpath and main entry point, link under closed-world
    *  assumption.
    */
-  private[scalanative] def link(config: Config): LinkerResult = {
+  private[scalanative] def link(config: Config,
+                                driver: OptimizerDriver): LinkerResult = {
     config.logger.time("Linking") {
       val chaDeps   = optimizer.analysis.ClassHierarchy.depends
-      val passes    = config.driver.passes
+      val passes    = driver.passes
       val passDeps  = passes.flatMap(_.depends).distinct
       val deps      = (chaDeps ++ passDeps).distinct
       val injects   = passes.flatMap(_.injects)
@@ -127,7 +124,7 @@ package object build {
         nir.Global
           .Member(mainClass, "main_scala.scalanative.runtime.ObjectArray_unit")
       val result =
-        (linker.Linker(config)).link(entry +: deps)
+        (linker.Linker(config, driver.linkerReporter)).link(entry +: deps)
 
       result.withDefns(result.defns ++ injects)
     }
@@ -137,17 +134,19 @@ package object build {
    *  needed for the optimizer and/or codegen.
    */
   private[scalanative] def linkRaw(config: Config,
+                                   reporter: LinkerReporter,
                                    entries: Seq[nir.Global]): LinkerResult =
     config.logger.time("Linking") {
-      linker.Linker(config).link(entries)
+      linker.Linker(config, reporter).link(entries)
     }
 
   /** Transform high-level closed world to its lower-level counterpart. */
   private[scalanative] def optimize(config: Config,
+                                    driver: OptimizerDriver,
                                     assembly: Seq[nir.Defn],
                                     dyns: Seq[String]): Seq[nir.Defn] =
-    config.logger.time(s"Optimizing (${config.driver.mode} mode)") {
-      optimizer.Optimizer(config, assembly, dyns)
+    config.logger.time(s"Optimizing (${config.mode} mode)") {
+      optimizer.Optimizer(config, driver, assembly, dyns)
     }
 
   /** Given low-level assembly, emit LLVM IR for it to the buildDirectory. */
