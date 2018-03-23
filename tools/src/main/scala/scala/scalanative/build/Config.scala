@@ -26,8 +26,8 @@ sealed trait Config {
   /** The compilation options passed to LLVM. */
   def compileOptions: Seq[String]
 
-  /** Target triple. */
-  def target: String
+  /** Target triple that defines current OS, ABI and CPU architecture. */
+  def targetTriple: String
 
   /** Directory to emit intermediate compilation results. */
   def workdir: Path
@@ -66,7 +66,7 @@ sealed trait Config {
   def withCompileOptions(value: Seq[String]): Config
 
   /** Create a new config with given target triple. */
-  def withTarget(value: String): Config
+  def withTargetTriple(value: String): Config
 
   /** Create a new config with given directory. */
   def withWorkdir(value: Path): Config
@@ -89,58 +89,7 @@ sealed trait Config {
 
 object Config {
 
-  /**
-   * The default configuration for the Scala Native toolchain. The path
-   * to `clang`, `clangpp` and the target triple will be detected automatically.
-   *
-   * @param nativelib Path to the nativelib jar.
-   * @param paths     Sequence of all NIR locations.
-   * @param entry     Entry point for linking.
-   * @param workdir   Directory to emit intermediate compilation results.
-   * @param logger    The logger used by the toolchain.
-   * @return A `Config` that uses the default `Mode`, linking and compiling options and
-   *         automatically detects the path to `clang`, `clangpp` and the target triple.
-   */
-  def default(nativelib: Path,
-              classpath: Seq[Path],
-              entry: String,
-              workdir: Path,
-              logger: Logger): Config = {
-    val gc      = GC.default
-    val mode    = Mode.default
-    val clang   = Discover.clang()
-    val clangpp = Discover.clangpp()
-    val lopts   = Discover.linkingOptions()
-    val copts   = Discover.compilationOptions()
-    val target  = Discover.target(clang, workdir, logger)
-
-    Discover.checkThatClangIsRecentEnough(clang)
-    Discover.checkThatClangIsRecentEnough(clangpp)
-
-    empty
-      .withGC(gc)
-      .withMode(mode)
-      .withClang(clang)
-      .withClangPP(clangpp)
-      .withLinkingOptions(lopts)
-      .withCompileOptions(copts)
-      .withTarget(target)
-      .withWorkdir(workdir)
-      .withNativelib(nativelib)
-      .withEntry(entry)
-      .withClasspath(classpath)
-      .withLinkStubs(false)
-      .withLogger(logger)
-  }
-
-  /**
-   * Default empty config object.
-   *
-   * This is intended to create a new `Config` where none of the values are filled.
-   * To get a `Config` with default values, use `Config.default`.
-   *
-   * @see Config.default
-   */
+  /** Default empty config object where all of the fields are left blank. */
   val empty: Config =
     Impl(
       nativelib = Paths.get(""),
@@ -149,7 +98,7 @@ object Config {
       workdir = Paths.get(""),
       clang = Paths.get(""),
       clangpp = Paths.get(""),
-      target = "",
+      targetTriple = "",
       linkingOptions = Seq.empty,
       compileOptions = Seq.empty,
       gc = GC.default,
@@ -164,7 +113,7 @@ object Config {
                                 workdir: Path,
                                 clang: Path,
                                 clangpp: Path,
-                                target: String,
+                                targetTriple: String,
                                 linkingOptions: Seq[String],
                                 compileOptions: Seq[String],
                                 gc: GC,
@@ -190,8 +139,8 @@ object Config {
     def withClangPP(value: Path): Config =
       copy(clangpp = value)
 
-    def withTarget(value: String): Config =
-      copy(target = value)
+    def withTargetTriple(value: String): Config =
+      copy(targetTriple = value)
 
     def withLinkingOptions(value: Seq[String]): Config =
       copy(linkingOptions = value)

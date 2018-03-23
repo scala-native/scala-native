@@ -13,15 +13,21 @@ import scalanative.build.IO.RichPath
 object Discover {
 
   /** Find the newest compatible clang binary. */
-  def clang(): Path =
-    discover("clang", clangVersions)
+  def clang(): Path = {
+    val path = discover("clang", clangVersions)
+    checkThatClangIsRecentEnough(path)
+    path
+  }
 
   /** Find the newest compatible clang++ binary. */
-  def clangpp(): Path =
-    discover("clang++", clangVersions)
+  def clangpp(): Path = {
+    val path = discover("clang++", clangVersions)
+    checkThatClangIsRecentEnough(path)
+    path
+  }
 
   /** Find default clang compilation options. */
-  def compilationOptions(): Seq[String] = {
+  def compileOptions(): Seq[String] = {
     val includes = {
       val includedir =
         Try(Process("llvm-config --includedir").lines_!.toSeq)
@@ -42,16 +48,13 @@ object Discover {
     libs
   }
 
-  /** Default compilation options passed to clang. */
-  /**
-   * Detect the target architecture.
+  /** Detect the target architecture.
    *
-   * @param clang   A path to the executable `clang`.
-   * @param workdir A working directory where the compilation will take place.
-   * @param logger  A logger that will receive messages about the execution.
-   * @return The detected target triple describing the target architecture.
+   *  @param clang   A path to the executable `clang`.
+   *  @param workdir A working directory where the compilation will take place.
+   *  @return The detected target triple describing the target architecture.
    */
-  def target(clang: Path, workdir: Path, logger: Logger): String = {
+  def targetTriple(clang: Path, workdir: Path): String = {
     // Use non-standard extension to not include the ll file when linking (#639)
     val targetc  = workdir.resolve("target").resolve("c.probe")
     val targetll = workdir.resolve("target").resolve("ll.probe")
@@ -61,30 +64,27 @@ object Discover {
       throw new BuildException("Failed to detect native target.")
 
     IO.write(targetc, "int probe;".getBytes("UTF-8"))
-    logger.running(compilec)
-    val exit = Process(compilec, workdir.toFile) ! Logger.toProcessLogger(
-      logger)
-    if (exit != 0) fail
-    Files
-      .readAllLines(targetll)
-      .asScala
-      .collectFirst {
-        case line if line.startsWith("target triple") =>
-          line.split("\"").apply(1)
-      }
-      .getOrElse(fail)
+    val exit = Process(compilec, workdir.toFile).!
+    if (exit != 0) {
+      fail
+    } else {
+      Files
+        .readAllLines(targetll)
+        .asScala
+        .collectFirst {
+          case line if line.startsWith("target triple") =>
+            line.split("\"").apply(1)
+        }
+        .getOrElse(fail)
+    }
   }
 
-  /**
-   * Tests whether the clang compiler is recent enough.
-   * <p/>
-   * This is determined through looking up a built-in #define which is
-   * more reliable than testing for a specific version.
-   * <p/>
-   * It might be better to use feature checking macros:
-   * http://clang.llvm.org/docs/LanguageExtensions.html#feature-checking-macros
+  /** Tests whether the clang compiler is recent enough.
+   *  It is determined through looking up a built-in #define which
+   *  is more reliable than testing for a specific version.
    */
-  def checkThatClangIsRecentEnough(pathToClangBinary: Path): Unit = {
+  private[scalanative] def checkThatClangIsRecentEnough(
+      pathToClangBinary: Path): Unit = {
     def maybePath(p: Path) = p match {
       case path if Files.exists(path) => Some(path.abs)
       case none                       => None
@@ -119,8 +119,6 @@ object Discover {
     }
   }
 
-
-
   /** Versions of clang which are known to work with Scala Native. */
   private[scalanative] val clangVersions =
     Seq(("6", "0"), ("5", "0"), ("4", "0"), ("3", "9"), ("3", "8"), ("3", "7"))
@@ -128,8 +126,9 @@ object Discover {
   /** Discover concrete binary path using command name and
    *  a sequence of potential supported versions.
    */
-  private[scalanative] def discover(binaryName: String,
-               binaryVersions: Seq[(String, String)]): Path = {
+  private[scalanative] def discover(
+      binaryName: String,
+      binaryVersions: Seq[(String, String)]): Path = {
     val docSetup =
       "http://www.scala-native.org/en/latest/user/setup.html"
 
@@ -157,7 +156,6 @@ object Discover {
       }
     }
   }
-
 
   private def silentLogger(): ProcessLogger =
     ProcessLogger(_ => (), _ => ())

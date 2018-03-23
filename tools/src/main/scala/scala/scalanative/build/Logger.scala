@@ -42,11 +42,12 @@ object Logger {
    * A `Logger` that writes `info` and `warn` messages to `stdout`,
    * and `error` and `debug` messages to `stderr`.
    */
-  def default: Logger =
-    Logger(msg => err.println(s"[debug] $msg"),
-           msg => out.println(s"[info] $msg"),
-           msg => out.println(s"[warn] $msg"),
-           msg => err.println(s"[error] $msg"))
+  def default: Logger = new Logger {
+    def debug(msg: String): Unit = err.println(s"[debug] $msg")
+    def info(msg: String): Unit  = out.println(s"[info] $msg")
+    def warn(msg: String): Unit  = out.println(s"[warn] $msg")
+    def error(msg: String): Unit = err.println(s"[error] $msg")
+  }
 
   /**
    * A logger that uses the supplied functions as implementations

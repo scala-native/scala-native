@@ -149,7 +149,7 @@ private[scalanative] object LLVM {
            outpath: Path): Path = {
     val links = {
       val os   = Option(sys props "os.name").getOrElse("")
-      val arch = config.target.split("-").head
+      val arch = config.targetTriple.split("-").head
       // we need re2 to link the re2 c wrapper (cre2.h)
       val librt = os match {
         case "Linux" => Seq("rt")
@@ -164,7 +164,7 @@ private[scalanative] object LLVM {
     }
     val linkopts = links.map("-l" + _) ++ config.linkingOptions ++ Seq(
       "-lpthread")
-    val targetopt = Seq("-target", config.target)
+    val targetopt = Seq("-target", config.targetTriple)
     val flags     = Seq("-o", outpath.abs) ++ linkopts ++ targetopt
     val opaths    = IO.getAll(nativelib, "glob:**.o").map(_.abs)
     val paths     = llPaths.map(_.abs) ++ opaths

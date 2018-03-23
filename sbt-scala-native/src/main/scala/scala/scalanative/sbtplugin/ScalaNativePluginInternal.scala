@@ -52,19 +52,11 @@ object ScalaNativePluginInternal {
   lazy val scalaNativeBaseSettings: Seq[Setting[_]] = Seq(
     crossVersion := ScalaNativeCrossVersion.binary,
     platformDepsCrossVersion := ScalaNativeCrossVersion.binary,
-    nativeClang := interceptBuildException {
-      val clang = Discover.clang()
-      Discover.checkThatClangIsRecentEnough(clang)
-      clang.toFile
-    },
+    nativeClang := interceptBuildException(Discover.clang().toFile),
     nativeClang in NativeTest := (nativeClang in Test).value,
-    nativeClangPP := interceptBuildException {
-      val clang = Discover.clangpp()
-      Discover.checkThatClangIsRecentEnough(clang)
-      clang.toFile
-    },
+    nativeClangPP := interceptBuildException(Discover.clangpp().toFile),
     nativeClangPP in NativeTest := (nativeClangPP in Test).value,
-    nativeCompileOptions := Discover.compilationOptions(),
+    nativeCompileOptions := Discover.compileOptions(),
     nativeCompileOptions in NativeTest := (nativeCompileOptions in Test).value,
     nativeLinkingOptions := Discover.linkingOptions(),
     nativeLinkingOptions in NativeTest := (nativeLinkingOptions in Test).value,
@@ -92,10 +84,9 @@ object ScalaNativePluginInternal {
 
   lazy val scalaNativeConfigSettings: Seq[Setting[_]] = Seq(
     nativeTarget := interceptBuildException {
-      val logger = streams.value.log.toLogger
-      val cwd    = nativeWorkdir.value.toPath
-      val clang  = nativeClang.value.toPath
-      Discover.target(clang, cwd, logger)
+      val cwd   = nativeWorkdir.value.toPath
+      val clang = nativeClang.value.toPath
+      Discover.targetTriple(clang, cwd)
     },
     artifactPath in nativeLink := {
       crossTarget.value / (moduleName.value + "-out")
@@ -130,7 +121,7 @@ object ScalaNativePluginInternal {
         .withWorkdir(cwd)
         .withClang(clang)
         .withClangPP(clangpp)
-        .withTarget(nativeTarget.value)
+        .withTargetTriple(nativeTarget.value)
         .withLinkingOptions(nativeLinkingOptions.value)
         .withGC(gc)
         .withLinkStubs(nativeLinkStubs.value)
