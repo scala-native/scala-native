@@ -325,7 +325,7 @@ class InstCombine extends Pass {
 }
 
 object InstCombine extends PassCompanion {
-  override def apply(config: tools.Config, top: Top) =
+  override def apply(config: build.Config, top: Top) =
     new InstCombine
 
   class DefOp(val defops: mutable.HashMap[Local, Op]) {

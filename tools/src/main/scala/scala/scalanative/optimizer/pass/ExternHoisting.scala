@@ -45,6 +45,6 @@ class ExternHoisting(implicit top: Top) extends Pass {
 }
 
 object ExternHoisting extends PassCompanion {
-  override def apply(config: tools.Config, top: Top) =
+  override def apply(config: build.Config, top: Top) =
     new ExternHoisting()(top)
 }

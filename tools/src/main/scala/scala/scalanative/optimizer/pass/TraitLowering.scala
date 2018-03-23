@@ -22,6 +22,6 @@ class TraitLowering(implicit top: Top) extends Pass {
 }
 
 object TraitLowering extends PassCompanion {
-  override def apply(config: tools.Config, top: Top) =
+  override def apply(config: build.Config, top: Top) =
     new TraitLowering()(top)
 }

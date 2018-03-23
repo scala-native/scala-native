@@ -4,7 +4,7 @@ package pass
 
 import nir._
 import analysis.ClassHierarchy.Top
-import tools.Config
+import build.Config
 
 /** Translates Box/Unbox ops into static method calls. */
 class BoxingLowering extends Pass {

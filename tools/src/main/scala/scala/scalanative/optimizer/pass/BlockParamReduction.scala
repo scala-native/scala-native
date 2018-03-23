@@ -23,7 +23,7 @@ class BlockParamReduction extends Pass {
 }
 
 object BlockParamReduction extends PassCompanion {
-  def apply(config: tools.Config, top: Top) =
+  def apply(config: build.Config, top: Top) =
     new BlockParamReduction
 
   class ParamChanger(val suppliedArgs: SuppliedArguments) extends Pass {

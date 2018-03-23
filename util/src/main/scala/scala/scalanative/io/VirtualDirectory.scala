@@ -3,7 +3,6 @@ package io
 
 import scala.collection.mutable
 import scala.collection.JavaConverters._
-import java.io.File
 import java.net.URI
 import java.nio.ByteBuffer
 import java.nio.file._
@@ -29,28 +28,28 @@ sealed trait VirtualDirectory {
 object VirtualDirectory {
 
   /** Real, non-virtual directory on local file system. */
-  def local(file: File): VirtualDirectory = {
-    def absolute = file.getAbsolutePath
-    assert(file.exists, s"Local directory doesn't exist: $absolute")
-    assert(file.isDirectory, s"Not a directory: $absolute")
+  def local(file: Path): VirtualDirectory = {
+    def absolute = file.toAbsolutePath
+    assert(Files.exists(file), s"Local directory doesn't exist: $absolute")
+    assert(Files.isDirectory(file), s"Not a directory: $absolute")
 
-    new LocalDirectory(file.toPath)
+    new LocalDirectory(file)
   }
 
   /** Virtual directory that represents contents of the jar file. */
-  def jar(file: File)(implicit in: Scope): VirtualDirectory = {
-    val absolute = file.getAbsolutePath
-    assert(file.exists, s"Jar doesn't exist: $absolute")
-    assert(absolute.endsWith(".jar"), s"Not a jar: $absolute")
+  def jar(file: Path)(implicit in: Scope): VirtualDirectory = {
+    val absolute = file.toAbsolutePath
+    assert(Files.exists(file), s"Jar doesn't exist: $absolute")
+    assert(absolute.toString.endsWith(".jar"), s"Not a jar: $absolute")
 
-    new JarDirectory(file.toPath)
+    new JarDirectory(file)
   }
 
   /** Virtual directory based on either local directory or a jar. */
-  def real(file: File)(implicit in: Scope): VirtualDirectory =
-    if (file.isDirectory) {
+  def real(file: Path)(implicit in: Scope): VirtualDirectory =
+    if (Files.isDirectory(file)) {
       local(file)
-    } else if (file.getAbsolutePath.endsWith(".jar")) {
+    } else if (file.toString.endsWith(".jar")) {
       jar(file)
     } else {
       throw new UnsupportedOperationException(

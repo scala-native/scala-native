@@ -1,15 +1,18 @@
 package scala.scalanative
 package optimizer
 
-import tools.Mode
+import build.Mode
 
 sealed trait Driver {
 
+  /** The compilation mode */
+  def mode: Mode
+
   /** Companion of all the passes in the driver's pipeline. */
-  def passes: Seq[AnyPassCompanion]
+  private[scalanative] def passes: Seq[AnyPassCompanion]
 
   /** Create a copy with given passes. */
-  def withPasses(passes: Seq[AnyPassCompanion]): Driver
+  private[scalanative] def withPasses(passes: Seq[AnyPassCompanion]): Driver
 }
 
 object Driver {
@@ -65,21 +68,22 @@ object Driver {
   )
 
   /** Create driver with default pipeline for this configuration. */
-  def apply(config: tools.Config): Driver = {
-    val optPasses = config.mode match {
+  def apply(mode: Mode): Driver = {
+    val optPasses = mode match {
       case Mode.Debug   => fastOptPasses
       case Mode.Release => fullOptPasses
     }
-    new Impl(injectionPasses ++ optPasses ++ loweringPasses)
+    new Impl(mode, injectionPasses ++ optPasses ++ loweringPasses)
   }
 
   /** Create an empty pass-lesss driver. */
   def empty: Driver =
-    new Impl(Seq.empty)
+    new Impl(Mode.default, Seq.empty)
 
-  private final class Impl(val passes: Seq[AnyPassCompanion]) extends Driver {
+  private final class Impl(val mode: Mode, val passes: Seq[AnyPassCompanion])
+      extends Driver {
     def withPasses(passes: Seq[AnyPassCompanion]): Driver =
-      new Impl(passes)
+      new Impl(mode, passes)
   }
 
 }

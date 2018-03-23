@@ -6,28 +6,28 @@ import nir._
 trait Result {
 
   /** Sequence of globals that could not be resolved. */
-  def unresolved: Seq[Global]
+  private[scalanative] def unresolved: Seq[Global]
 
   /** Sequence of external c libraries to link with. */
-  def links: Seq[Attr.Link]
+  private[scalanative] def links: Seq[Attr.Link]
 
   /** Sequence of definitions that were discovered during linking. */
-  def defns: Seq[nir.Defn]
+  private[scalanative] def defns: Seq[nir.Defn]
 
   /** Sequence of signatures of dynamic methods that were discovered during linking. */
-  def dyns: Seq[String]
+  private[scalanative] def dyns: Seq[String]
 
   /** Create a copy of the result with given unresolved sequence. */
-  def withUnresolved(value: Seq[Global]): Result
+  private[scalanative] def withUnresolved(value: Seq[Global]): Result
 
   /** Create a copy of the result with given links sequence. */
-  def withLinks(value: Seq[Attr.Link]): Result
+  private[scalanative] def withLinks(value: Seq[Attr.Link]): Result
 
   /** Create a copy of the result with given defns sequence. */
-  def withDefns(value: Seq[nir.Defn]): Result
+  private[scalanative] def withDefns(value: Seq[nir.Defn]): Result
 
   /** Create a copy of the result with given dyns sequence. */
-  def withDyns(value: Seq[String]): Result
+  private[scalanative] def withDyns(value: Seq[String]): Result
 }
 
 object Result {

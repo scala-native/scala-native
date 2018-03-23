@@ -51,6 +51,6 @@ object NothingLowering extends PassCompanion {
   override val injects =
     Seq(Defn.Declare(Attrs.None, throwName, throwSig))
 
-  override def apply(config: tools.Config, top: Top) =
+  override def apply(config: build.Config, top: Top) =
     new NothingLowering
 }

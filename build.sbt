@@ -1,6 +1,6 @@
 import java.io.File.pathSeparator
 import scala.util.Try
-import scalanative.tools.{LinkerReporter, OptimizerReporter}
+import scalanative.build.{LinkerReporter, OptimizerReporter}
 import scalanative.sbtplugin.ScalaNativePluginInternal._
 import scalanative.io.packageNameFromPath
 
@@ -25,6 +25,15 @@ def projectName(project: sbt.ResolvedProject): String = {
 lazy val nameSettings = Seq(
   normalizedName := projectName(thisProject.value), // Maven <artifactId>
   name := s"Scala Native ${projectName(thisProject.value)}" // Maven <name>
+)
+
+// The previous releases of Scala Native with which this version is binary compatible.
+val binCompatVersions = Set()
+
+lazy val mimaSettings: Seq[Setting[_]] = Seq(
+  mimaPreviousArtifacts := binCompatVersions.map { version =>
+    organization.value %% moduleName.value % version
+  }
 )
 
 lazy val baseSettings = Seq(
@@ -58,7 +67,8 @@ addCommandAlias(
     "tests/test",
     "tools/test",
     "benchmarks/run --test",
-    "sbtScalaNative/scripted"
+    "sbtScalaNative/scripted",
+    "tools/mimaReportBinaryIssues"
   ).mkString(";", ";", "")
 )
 
@@ -242,7 +252,8 @@ lazy val tools =
         .dependsOn(publishLocal in util)
         .value,
       // Running tests in parallel results in `FileSystemAlreadyExistsException`
-      parallelExecution in Test := false
+      parallelExecution in Test := false,
+      mimaSettings
     )
     .dependsOn(nir, util, testingCompilerInterface % Test)
 
