@@ -5,10 +5,10 @@ import scala.language.implicitConversions
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
 
-import build.{Config, Mode}
-import util.Scope
-import nir.Global
-import optimizer.Driver
+import scalanative.build.{ScalaNative, Config, Mode}
+import scalanative.util.Scope
+import scalanative.nir.Global
+import scalanative.optimizer.Driver
 
 import org.scalatest.FlatSpec
 
@@ -36,14 +36,14 @@ abstract class LinkerSpec extends FlatSpec {
       val compiler   = NIRCompiler.getCompiler(outDir)
       val sourcesDir = NIRCompiler.writeSources(sources)
       val files      = compiler.compile(sourcesDir)
-      val driver_    = driver.fold(Driver(Mode.default))(identity)
-      val config     = makeConfig(driver_, outDir, entry, linkStubs)
-      val result     = build.link(config)
+      val driver_    = driver.fold(Driver.default(Mode.default))(identity)
+      val config     = makeConfig(outDir, entry, linkStubs)
+      val result     = ScalaNative.link(config, driver_)
 
       f(config, result)
     }
 
-  private def makePaths(outDir: Path)(implicit in: Scope) = {
+  private def makeClasspath(outDir: Path)(implicit in: Scope) = {
     val parts: Array[Path] =
       sys
         .props("scalanative.nativeruntime.cp")
@@ -53,16 +53,13 @@ abstract class LinkerSpec extends FlatSpec {
     parts :+ outDir
   }
 
-  private def makeConfig(driver: Driver,
-                         outDir: Path,
-                         entry: String,
-                         linkStubs: Boolean)(implicit in: Scope): Config = {
-    val paths = makePaths(outDir)
+  private def makeConfig(outDir: Path, entry: String, linkStubs: Boolean)(
+      implicit in: Scope): Config = {
+    val classpath = makeClasspath(outDir)
     Config.empty
-      .withDriver(driver)
       .withWorkdir(outDir)
-      .withPaths(paths)
-      .withEntry(entry)
+      .withClassPath(classpath)
+      .withMainClass(entry)
       .withLinkStubs(linkStubs)
   }
 

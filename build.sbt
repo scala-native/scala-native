@@ -1,6 +1,5 @@
 import java.io.File.pathSeparator
 import scala.util.Try
-import scalanative.build.{LinkerReporter, OptimizerReporter}
 import scalanative.sbtplugin.ScalaNativePluginInternal._
 import scalanative.io.packageNameFromPath
 

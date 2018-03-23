@@ -16,12 +16,14 @@ import java.util.EnumSet
 import java.util.zip.{ZipEntry, ZipInputStream}
 import java.security.{DigestInputStream, MessageDigest}
 
+/** Internal I/O utilities. */
 private[scalanative] object IO {
 
   implicit class RichPath(val path: Path) extends AnyVal {
     def abs: String = path.toAbsolutePath.toString
   }
 
+  /** Write byts to given file. */
   def write(file: Path, bytes: Array[Byte]): Unit = {
     Files.createDirectories(file.getParent)
     Files.write(file, bytes)

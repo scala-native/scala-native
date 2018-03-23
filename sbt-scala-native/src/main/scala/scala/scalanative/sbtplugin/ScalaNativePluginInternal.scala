@@ -14,8 +14,7 @@ import sbt.testing.Framework
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 
 import scalanative.nir
-import scalanative.build
-import scalanative.build.{BuildException, LLVM}
+import scalanative.build.{Build, Discover, BuildException}
 import scalanative.io.VirtualDirectory
 import scalanative.util.{Scope => ResourceScope}
 import scalanative.sbtplugin.Utilities._
@@ -31,17 +30,6 @@ object ScalaNativePluginInternal {
 
   val nativeTarget =
     taskKey[String]("Target triple.")
-
-  val nativeLinkerReporter =
-    settingKey[build.LinkerReporter](
-      "A reporter that gets notified whenever a linking event happens.")
-
-  val nativeOptimizerReporter =
-    settingKey[build.OptimizerReporter](
-      "A reporter that gets notified whenever an optimizer event happens.")
-
-  val nativeOptimizerDriver =
-    taskKey[build.OptimizerDriver]("Pass manager for the optimizer.")
 
   val nativeWorkdir =
     taskKey[File]("Working directory for intermediate build files.")
@@ -64,31 +52,19 @@ object ScalaNativePluginInternal {
   lazy val scalaNativeBaseSettings: Seq[Setting[_]] = Seq(
     crossVersion := ScalaNativeCrossVersion.binary,
     platformDepsCrossVersion := ScalaNativeCrossVersion.binary,
-    nativeClang := interceptBuildException {
-      val clang = LLVM.discover("clang", LLVM.clangVersions)
-      LLVM.checkThatClangIsRecentEnough(clang)
-      clang.toFile
-    },
+    nativeClang := interceptBuildException(Discover.clang().toFile),
     nativeClang in NativeTest := (nativeClang in Test).value,
-    nativeClangPP := interceptBuildException {
-      val clang = LLVM.discover("clang++", LLVM.clangVersions)
-      LLVM.checkThatClangIsRecentEnough(clang)
-      clang.toFile
-    },
+    nativeClangPP := interceptBuildException(Discover.clangpp().toFile),
     nativeClangPP in NativeTest := (nativeClangPP in Test).value,
-    nativeCompileOptions := LLVM.defaultCompileOptions,
+    nativeCompileOptions := Discover.compileOptions(),
     nativeCompileOptions in NativeTest := (nativeCompileOptions in Test).value,
-    nativeLinkingOptions := LLVM.defaultLinkingOptions,
+    nativeLinkingOptions := Discover.linkingOptions(),
     nativeLinkingOptions in NativeTest := (nativeLinkingOptions in Test).value,
     nativeMode := Option(System.getenv.get("SCALANATIVE_MODE"))
       .getOrElse(build.Mode.default.name),
     nativeMode in NativeTest := (nativeMode in Test).value,
     nativeLinkStubs := false,
     nativeLinkStubs in NativeTest := (nativeLinkStubs in Test).value,
-    nativeLinkerReporter := build.LinkerReporter.empty,
-    nativeLinkerReporter in NativeTest := (nativeLinkerReporter in Test).value,
-    nativeOptimizerReporter := build.OptimizerReporter.empty,
-    nativeOptimizerReporter in NativeTest := (nativeOptimizerReporter in Test).value,
     nativeGC := Option(System.getenv.get("SCALANATIVE_GC"))
       .getOrElse(build.GC.default.name),
     nativeGC in NativeTest := (nativeGC in Test).value
@@ -108,16 +84,13 @@ object ScalaNativePluginInternal {
 
   lazy val scalaNativeConfigSettings: Seq[Setting[_]] = Seq(
     nativeTarget := interceptBuildException {
-      val logger = streams.value.log.toLogger
-      val cwd    = nativeWorkdir.value.toPath
-      val clang  = nativeClang.value.toPath
-      LLVM.detectTarget(clang, cwd, logger)
+      val cwd   = nativeWorkdir.value.toPath
+      val clang = nativeClang.value.toPath
+      Discover.targetTriple(clang, cwd)
     },
     artifactPath in nativeLink := {
       crossTarget.value / (moduleName.value + "-out")
     },
-    nativeOptimizerDriver := build.OptimizerDriver(
-      build.Mode(nativeMode.value)),
     nativeWorkdir := {
       val workdir = crossTarget.value / "native"
       IO.delete(workdir)
@@ -125,34 +98,28 @@ object ScalaNativePluginInternal {
       workdir
     },
     nativeConfig := {
-      val mainClass = selectMainClass.value.getOrElse(
+      val mainClass = selectMainClass.value.getOrElse {
         throw new MessageOnlyException("No main class detected.")
-      )
+      }
       val classpath =
         fullClasspath.value.map(_.data.toPath).filter(f => Files.exists(f))
-
-      val nativelibJar =
-        classpath.find { p =>
-          val path = p.toAbsolutePath.toString
-          path.contains("scala-native") && path.contains("nativelib")
-        }.get
-      val entry   = mainClass.toString + "$"
+      val nativelib = Discover.nativelib(classpath).getOrElse {
+        throw new MessageOnlyException("Could not find nativelib on classpath.")
+      }
+      val maincls = mainClass.toString + "$"
       val cwd     = nativeWorkdir.value.toPath
       val clang   = nativeClang.value.toPath
       val clangpp = nativeClangPP.value.toPath
       val gc      = build.GC(nativeGC.value)
 
       build.Config.empty
-        .withNativelib(nativelibJar)
-        .withDriver(nativeOptimizerDriver.value)
-        .withLinkerReporter(nativeLinkerReporter.value)
-        .withOptimizerReporter(nativeOptimizerReporter.value)
-        .withEntry(entry)
-        .withPaths(classpath)
+        .withNativelib(nativelib)
+        .withMainClass(maincls)
+        .withClassPath(classpath)
         .withWorkdir(cwd)
         .withClang(clang)
         .withClangPP(clangpp)
-        .withTarget(nativeTarget.value)
+        .withTargetTriple(nativeTarget.value)
         .withLinkingOptions(nativeLinkingOptions.value)
         .withGC(gc)
         .withLinkStubs(nativeLinkStubs.value)
@@ -162,7 +129,7 @@ object ScalaNativePluginInternal {
       val config  = nativeConfig.value.withLogger(logger)
       val outpath = (artifactPath in nativeLink).value
 
-      interceptBuildException(build.build(config, outpath.toPath))
+      interceptBuildException(Build.build(config, outpath.toPath))
 
       outpath
     },
@@ -182,33 +149,6 @@ object ScalaNativePluginInternal {
         else Some("Nonzero exit code: " + exitCode)
 
       message.foreach(sys.error)
-    },
-    nativeMissingDependencies := {
-      (nativeExternalDependencies.value.toSet --
-        nativeAvailableDependencies.value.toSet).toList.sorted
-    },
-    nativeAvailableDependencies := {
-      val fcp = fullClasspath.value
-      ResourceScope { implicit scope =>
-        val globals = fcp
-          .collect { case p if p.data.exists => p.data.toPath }
-          .flatMap(p =>
-            build.LinkerPath(VirtualDirectory.real(p)).globals.toSeq)
-
-        globals.map(_.show).sorted
-      }
-    },
-    nativeExternalDependencies := {
-      val forceCompile = compile.value
-      val classDir     = classDirectory.value.toPath
-
-      ResourceScope { implicit scope =>
-        val globals = linker.ClassPath(VirtualDirectory.real(classDir)).globals
-        val config  = build.Config.empty.withPaths(Seq(classDir))
-        val result  = (linker.Linker(config)).link(globals.toSeq)
-
-        result.unresolved.map(_.show).sorted
-      }
     }
   )
 

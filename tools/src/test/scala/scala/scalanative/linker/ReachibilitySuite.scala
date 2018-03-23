@@ -6,8 +6,7 @@ import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import scalanative.util.Scope
 import scalanative.nir.Global
-import scalanative.build
-import scalanative.optimizer.Driver
+import scalanative.build.ScalaNative
 
 trait ReachabilitySuite extends FunSuite {
 
@@ -48,12 +47,12 @@ trait ReachabilitySuite extends FunSuite {
       val sourcesDir = NIRCompiler.writeSources(sourceMap)
       val files      = compiler.compile(sourcesDir)
       val config     = makeConfig(outDir)
-      val result     = build.linkRaw(config, entries)
+      val result     = ScalaNative.linkOnly(config, Reporter.empty, entries)
 
       f(result)
     }
 
-  private def makePaths(outDir: Path)(implicit in: Scope) = {
+  private def makeClasspath(outDir: Path)(implicit in: Scope) = {
     val parts: Array[Path] =
       sys
         .props("scalanative.nativeruntime.cp")
@@ -64,9 +63,9 @@ trait ReachabilitySuite extends FunSuite {
   }
 
   private def makeConfig(outDir: Path)(implicit in: Scope): build.Config = {
-    val paths = makePaths(outDir)
+    val paths = makeClasspath(outDir)
     build.Config.empty
       .withWorkdir(outDir)
-      .withPaths(paths)
+      .withClassPath(paths)
   }
 }
