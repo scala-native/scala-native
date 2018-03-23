@@ -68,7 +68,7 @@ installation of macOS.
     $ sudo apt install libgc-dev libre2-dev # optional
 
 *Note:* libre2-dev is available since Ubuntu 16.04. Please refer to
-`our travis environment setup script <https://github.com/scala-native/scala-native/blob/master/bin/travis_setup.sh#L29-L39>`_
+`our travis environment setup script <https://github.com/scala-native/scala-native/blob/master/scripts/travis_setup.sh#L29-L39>`_
 to install from source.
 
 **Arch Linux**
@@ -102,7 +102,7 @@ installation of FreeBSD.
 
 .. code-block:: shell
 
-    $ wget https://raw.githubusercontent.com/scala-native/scala-native/master/bin/scala-native.nix
+    $ wget https://raw.githubusercontent.com/scala-native/scala-native/master/scripts/scala-native.nix
     $ nix-shell scala-native.nix -A clangEnv
 
 Continue to :ref:`sbt`.

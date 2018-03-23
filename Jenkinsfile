@@ -58,7 +58,7 @@ def job(String OS, List<String> GCs) {
             }
 
             advance("Formatting", OS) {
-                sh 'bin/scalafmt --test'
+                sh 'scripts/scalafmt --test'
             }
 
             advance("Building", OS) {
