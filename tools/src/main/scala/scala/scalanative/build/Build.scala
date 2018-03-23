@@ -3,16 +3,53 @@ package build
 
 import java.nio.file.Path
 
+/** Utility methods for building code using Scala Native. */
 object Build {
 
-  /**
-   * Run the complete Scala Native toolchain, from NIR files to native binary.
+  /** Run the complete Scala Native pipeline,
+   *  LLVM optimizer and system linker, producing
+   *  a native binary in the end.
    *
-   * @param config  The configuration of the toolchain.
-   * @param outpath The path to the resulting native binary.
-   * @return `outpath`, the path to the resulting native binary.
+   *  For example, to produce a binary one needs
+   *  a classpath, a working directory and a main
+   *  class entry point:
+   *
+   *  {{{
+   *  val classpath: Seq[Path] = ...
+   *  val workdir: Path        = ...
+   *  val main: String         = ...
+   *
+   *  val clang     = Discover.clang()
+   *  val clangpp   = Discover.clangpp()
+   *  val linkopts  = Discover.linkingOptions()
+   *  val compopts  = Discover.compileOptions()
+   *  val triple    = Discover.targetTriple(clang, workdir)
+   *  val nativelib = Discover.nativelib(classpath).get
+   *  val outpath   = workdir.resolve("out")
+   *
+   *  val config =
+   *    Config.empty
+   *      .withGC(GC.default)
+   *      .withMode(Mode.default)
+   *      .withClang(clang)
+   *      .withClangpp(clangpp)
+   *      .withLinkingOptions(linkopts)
+   *      .withCompileOptions(compopts)
+   *      .withTargetTriple(triple)
+   *      .withNativelib(nativelib)
+   *      .withEntry(main)
+   *      .withClasspath(classpath)
+   *      .withLinkStubs(true)
+   *      .withWorkdir(workdir)
+   *
+   *  Build.build(config, outpath)
+   *  }}}
+   *
+   *  @param config  The configuration of the toolchain.
+   *  @param outpath The path to the resulting native binary.
+   *  @return `outpath`, the path to the resulting native binary.
    */
-  def build(config: Config, outpath: Path) = {
+  def build(config: Config, outpath: Path): Path = {
     val driver       = optimizer.Driver.default(config.mode)
     val linkerResult = ScalaNative.link(config, driver)
 

@@ -98,16 +98,14 @@ object ScalaNativePluginInternal {
       workdir
     },
     nativeConfig := {
-      val mainClass = selectMainClass.value.getOrElse(
+      val mainClass = selectMainClass.value.getOrElse {
         throw new MessageOnlyException("No main class detected.")
-      )
+      }
       val classpath =
         fullClasspath.value.map(_.data.toPath).filter(f => Files.exists(f))
-      val nativelibJar =
-        classpath.find { p =>
-          val path = p.toAbsolutePath.toString
-          path.contains("scala-native") && path.contains("nativelib")
-        }.get
+      val nativelib = Discover.nativelib(classpath).getOrElse {
+        throw new MessageOnlyException("Could not find nativelib on classpath.")
+      }
       val entry   = mainClass.toString + "$"
       val cwd     = nativeWorkdir.value.toPath
       val clang   = nativeClang.value.toPath
@@ -115,12 +113,12 @@ object ScalaNativePluginInternal {
       val gc      = build.GC(nativeGC.value)
 
       build.Config.empty
-        .withNativelib(nativelibJar)
+        .withNativelib(nativelib)
         .withEntry(entry)
         .withClasspath(classpath)
         .withWorkdir(cwd)
         .withClang(clang)
-        .withClangPP(clangpp)
+        .withClangpp(clangpp)
         .withTargetTriple(nativeTarget.value)
         .withLinkingOptions(nativeLinkingOptions.value)
         .withGC(gc)

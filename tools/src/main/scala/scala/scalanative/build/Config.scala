@@ -57,7 +57,7 @@ sealed trait Config {
   def withClang(value: Path): Config
 
   /** Create a new config with given path to clang++. */
-  def withClangPP(value: Path): Config
+  def withClangpp(value: Path): Config
 
   /** Create a new config with given linking options. */
   def withLinkingOptions(value: Seq[String]): Config
@@ -136,7 +136,7 @@ object Config {
     def withClang(value: Path): Config =
       copy(clang = value)
 
-    def withClangPP(value: Path): Config =
+    def withClangpp(value: Path): Config =
       copy(clangpp = value)
 
     def withTargetTriple(value: String): Config =
