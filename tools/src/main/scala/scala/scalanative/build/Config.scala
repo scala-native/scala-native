@@ -39,7 +39,7 @@ sealed trait Config {
   def entry: String
 
   /** Sequence of all NIR locations. */
-  def paths: Seq[Path]
+  def classpath: Seq[Path]
 
   /** Should stubs be linked? */
   def linkStubs: Boolean
@@ -78,7 +78,7 @@ sealed trait Config {
   def withEntry(value: String): Config
 
   /** Create a new config with given nir paths. */
-  def withPaths(value: Seq[Path]): Config
+  def withClasspath(value: Seq[Path]): Config
 
   /** Create a new config with given behavior for stubs. */
   def withLinkStubs(value: Boolean): Config
@@ -102,20 +102,20 @@ object Config {
    *         automatically detects the path to `clang`, `clangpp` and the target triple.
    */
   def default(nativelib: Path,
-              paths: Seq[Path],
+              classpath: Seq[Path],
               entry: String,
               workdir: Path,
               logger: Logger): Config = {
     val gc      = GC.default
     val mode    = Mode.default
-    val clang   = LLVM.discover("clang", LLVM.clangVersions)
-    val clangpp = LLVM.discover("clang++", LLVM.clangVersions)
-    val lopts   = LLVM.discoverLinkingOptions()
-    val copts   = LLVM.discoverCompilationOptions()
-    val target  = LLVM.discoverTarget(clang, workdir, logger)
+    val clang   = Discover.clang()
+    val clangpp = Discover.clangpp()
+    val lopts   = Discover.linkingOptions()
+    val copts   = Discover.compilationOptions()
+    val target  = Discover.target(clang, workdir, logger)
 
-    LLVM.checkThatClangIsRecentEnough(clang)
-    LLVM.checkThatClangIsRecentEnough(clangpp)
+    Discover.checkThatClangIsRecentEnough(clang)
+    Discover.checkThatClangIsRecentEnough(clangpp)
 
     empty
       .withGC(gc)
@@ -128,7 +128,7 @@ object Config {
       .withWorkdir(workdir)
       .withNativelib(nativelib)
       .withEntry(entry)
-      .withPaths(paths)
+      .withClasspath(classpath)
       .withLinkStubs(false)
       .withLogger(logger)
   }
@@ -145,7 +145,7 @@ object Config {
     Impl(
       nativelib = Paths.get(""),
       entry = "",
-      paths = Seq.empty,
+      classpath = Seq.empty,
       workdir = Paths.get(""),
       clang = Paths.get(""),
       clangpp = Paths.get(""),
@@ -160,7 +160,7 @@ object Config {
 
   private final case class Impl(nativelib: Path,
                                 entry: String,
-                                paths: Seq[Path],
+                                classpath: Seq[Path],
                                 workdir: Path,
                                 clang: Path,
                                 clangpp: Path,
@@ -178,8 +178,8 @@ object Config {
     def withEntry(value: String): Config =
       copy(entry = value)
 
-    def withPaths(value: Seq[Path]): Config =
-      copy(paths = value)
+    def withClasspath(value: Seq[Path]): Config =
+      copy(classpath = value)
 
     def withWorkdir(value: Path): Config =
       copy(workdir = value)

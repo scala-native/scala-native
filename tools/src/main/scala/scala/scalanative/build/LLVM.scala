@@ -2,152 +2,113 @@ package scala.scalanative
 package build
 
 import java.nio.file.{Files, Path, Paths}
-
+import java.util.Arrays
 import scala.collection.JavaConverters._
 import scala.util.Try
 import scala.sys.process._
+import scalanative.build.IO.RichPath
 
-import IO.RichPath
-
-object LLVM {
-
-  /** Discover concrete binary path using command name and
-   *  a sequence of potential supported versions.
-   */
-  def discover(binaryName: String,
-               binaryVersions: Seq[(String, String)]): Path = {
-    val docSetup =
-      "http://www.scala-native.org/en/latest/user/setup.html"
-
-    val envName =
-      if (binaryName == "clang") "CLANG"
-      else if (binaryName == "clang++") "CLANGPP"
-      else binaryName
-
-    sys.env.get(s"${envName}_PATH") match {
-      case Some(path) => Paths.get(path)
-      case None => {
-        val binaryNames = binaryVersions.flatMap {
-          case (major, minor) =>
-            Seq(s"$binaryName$major$minor", s"$binaryName-$major.$minor")
-        } :+ binaryName
-
-        Process("which" +: binaryNames)
-          .lines_!(SilentLogger)
-          .map(Paths.get(_))
-          .headOption
-          .getOrElse {
-            throw new BuildException(
-              s"no ${binaryNames.mkString(", ")} found in $$PATH. Install clang ($docSetup)")
-          }
-      }
-    }
-  }
-
-  /** Versions of clang which are known to work with Scala Native. */
-  val clangVersions =
-    Seq(("6", "0"), ("5", "0"), ("4", "0"), ("3", "9"), ("3", "8"), ("3", "7"))
+/** Internal utilities to interact with LLVM command-line tools. */
+private[scalanative] object LLVM {
 
   /**
-   * Tests whether the clang compiler is recent enough.
-   * <p/>
-   * This is determined through looking up a built-in #define which is
-   * more reliable than testing for a specific version.
-   * <p/>
-   * It might be better to use feature checking macros:
-   * http://clang.llvm.org/docs/LanguageExtensions.html#feature-checking-macros
-   */
-  def checkThatClangIsRecentEnough(pathToClangBinary: Path): Unit = {
-    def maybePath(p: Path) = p match {
-      case path if Files.exists(path) => Some(path.abs)
-      case none                       => None
-    }
-
-    def definesBuiltIn(
-        pathToClangBinary: Option[String]): Option[Seq[String]] = {
-      def commandLineToListBuiltInDefines(clang: String) =
-        Process(Seq("echo", "")) #| Process(Seq(clang, "-dM", "-E", "-"))
-      def splitIntoLines(s: String): Array[String] =
-        s.split(f"%n")
-      def removeLeadingDefine(s: String): String =
-        s.substring(s.indexOf(' ') + 1)
-
-      for {
-        clang <- pathToClangBinary
-        output = commandLineToListBuiltInDefines(clang).!!
-        lines  = splitIntoLines(output)
-      } yield lines map removeLeadingDefine
-    }
-
-    val clang                = maybePath(pathToClangBinary)
-    val defines: Seq[String] = definesBuiltIn(clang).to[Seq].flatten
-    val clangIsRecentEnough =
-      defines.contains("__DECIMAL_DIG__ __LDBL_DECIMAL_DIG__")
-
-    if (!clangIsRecentEnough) {
-      throw new BuildException(
-        s"No recent installation of clang found " +
-          s"at $pathToClangBinary.\nSee http://scala-native.readthedocs.io" +
-          s"/en/latest/user/setup.html for details.")
-    }
-  }
-
-  /** Default compilation options passed to clang. */
-  def discoverCompilationOptions(): Seq[String] = {
-    val includes = {
-      val includedir =
-        Try(Process("llvm-config --includedir").lines_!.toSeq)
-          .getOrElse(Seq.empty)
-      ("/usr/local/include" +: includedir).map(s => s"-I$s")
-    }
-    includes :+ "-Qunused-arguments"
-  }
-
-  /** Default options passed to the system linker. */
-  def discoverLinkingOptions(): Seq[String] = {
-    val libs = {
-      val libdir =
-        Try(Process("llvm-config --libdir").lines_!.toSeq)
-          .getOrElse(Seq.empty)
-      ("/usr/local/lib" +: libdir).map(s => s"-L$s")
-    }
-    libs
-  }
-
-  /**
-   * Detect the target architecture.
+   * Unpack the `nativelib` to `workdir/lib`.
    *
-   * @param clang   A path to the executable `clang`.
-   * @param workdir A working directory where the compilation will take place.
-   * @param logger  A logger that will receive messages about the execution.
-   * @return The detected target triple describing the target architecture.
+   * If the same archive has already been unpacked to this location, this
+   * call has no effects.
+   *
+   * @param nativelib The JAR to unpack.
+   * @param workdir   The working directory. The nativelib will be unpacked
+   *                  to `workdir/lib`.
+   * @return The location where the nativelib has been unpacked, `workdir/lib`.
    */
-  def discoverTarget(clang: Path, workdir: Path, logger: Logger): String = {
-    // Use non-standard extension to not include the ll file when linking (#639)
-    val targetc  = workdir.resolve("target").resolve("c.probe")
-    val targetll = workdir.resolve("target").resolve("ll.probe")
-    val compilec =
-      Seq(clang.abs, "-S", "-xc", "-emit-llvm", "-o", targetll.abs, targetc.abs)
-    def fail =
-      throw new BuildException("Failed to detect native target.")
+  def unpackNativelib(nativelib: Path, workdir: Path): Path = {
+    val lib         = workdir.resolve("lib")
+    val jarhash     = IO.sha1(nativelib)
+    val jarhashPath = lib.resolve("jarhash")
+    def unpacked =
+      Files.exists(lib) &&
+        Files.exists(jarhashPath) &&
+        Arrays.equals(jarhash, Files.readAllBytes(jarhashPath))
 
-    IO.write(targetc, "int probe;".getBytes("UTF-8"))
-    logger.running(compilec)
-    val exit = Process(compilec, workdir.toFile) ! Logger.toProcessLogger(
-      logger)
-    if (exit != 0) fail
-    Files
-      .readAllLines(targetll)
-      .asScala
-      .collectFirst {
-        case line if line.startsWith("target triple") =>
-          line.split("\"").apply(1)
+    if (!unpacked) {
+      IO.deleteRecursive(lib)
+      IO.unzip(nativelib, lib)
+      IO.write(jarhashPath, jarhash)
+    }
+
+    lib
+  }
+
+  /**
+   * Compile the native lib to `.o` files
+   *
+   * @param config       The configuration of the toolchain.
+   * @param linkerResult The results from the linker.
+   * @param libPath      The location where the `.o` files should be written.
+   * @return `libPath`
+   */
+  def compileNativelib(config: Config,
+                       linkerResult: linker.Result,
+                       libPath: Path): Path = {
+    val cpaths   = IO.getAll(config.workdir, "glob:**.c").map(_.abs)
+    val cpppaths = IO.getAll(config.workdir, "glob:**.cpp").map(_.abs)
+    val paths    = cpaths ++ cpppaths
+
+    // predicate to check if given file path shall be compiled
+    // we only include sources of the current gc and exclude
+    // all optional dependencies if they are not necessary
+    val optPath = libPath.resolve("optional").abs
+    val (gcPath, gcSelPath) = {
+      val gcPath    = libPath.resolve("gc")
+      val gcSelPath = gcPath.resolve(config.gc.name)
+      (gcPath.abs, gcSelPath.abs)
+    }
+
+    def include(path: String) = {
+      if (path.contains(optPath)) {
+        val name = Paths.get(path).toFile.getName.split("\\.").head
+        linkerResult.links.map(_.name).contains(name)
+      } else if (path.contains(gcPath)) {
+        path.contains(gcSelPath)
+      } else {
+        true
       }
-      .getOrElse(fail)
+    }
+
+    // delete .o files for all excluded source files
+    paths.foreach { path =>
+      if (!include(path)) {
+        val ofile = Paths.get(path + ".o")
+        if (Files.exists(ofile)) {
+          Files.delete(ofile)
+        }
+      }
+    }
+
+    // generate .o files for all included source files in parallel
+    paths.par.foreach { path =>
+      val opath = path + ".o"
+      if (include(path) && !Files.exists(Paths.get(opath))) {
+        val isCpp    = path.endsWith(".cpp")
+        val compiler = if (isCpp) config.clangpp.abs else config.clang.abs
+        val flags    = (if (isCpp) Seq("-std=c++11") else Seq()) ++ config.compileOptions
+        val compilec = Seq(compiler) ++ flags ++ Seq("-c", path, "-o", opath)
+
+        config.logger.running(compilec)
+        val result = Process(compilec, config.workdir.toFile) ! Logger
+          .toProcessLogger(config.logger)
+        if (result != 0) {
+          sys.error("Failed to compile native library runtime code.")
+        }
+      }
+    }
+
+    libPath
   }
 
   /** Compile the given LL files to object files */
-  def compileLL(config: Config, llPaths: Seq[Path]): Seq[Path] = {
+  def compile(config: Config, llPaths: Seq[Path]): Seq[Path] = {
     val optimizationOpt =
       config.mode match {
         case Mode.Debug   => "-O0"
@@ -181,12 +142,11 @@ object LLVM {
    * @param outpath      The path where to write the resulting binary.
    * @return `outpath`
    */
-  def linkLL(config: Config,
-             linkerResult: LinkerResult,
-             llPaths: Seq[Path],
-             nativelib: Path,
-             outpath: Path): Path = {
-
+  def link(config: Config,
+           linkerResult: linker.Result,
+           llPaths: Seq[Path],
+           nativelib: Path,
+           outpath: Path): Path = {
     val links = {
       val os   = Option(sys props "os.name").getOrElse("")
       val arch = config.target.split("-").head
@@ -217,9 +177,5 @@ object LLVM {
     }
 
     outpath
-
   }
-
-  private val SilentLogger = ProcessLogger(_ => (), _ => ())
-
 }

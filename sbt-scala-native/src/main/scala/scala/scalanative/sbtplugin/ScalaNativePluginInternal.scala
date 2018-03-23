@@ -14,8 +14,7 @@ import sbt.testing.Framework
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 
 import scalanative.nir
-import scalanative.build
-import scalanative.build.{BuildException, LLVM}
+import scalanative.build.{Build, Discover, BuildException}
 import scalanative.io.VirtualDirectory
 import scalanative.util.{Scope => ResourceScope}
 import scalanative.sbtplugin.Utilities._
@@ -54,20 +53,20 @@ object ScalaNativePluginInternal {
     crossVersion := ScalaNativeCrossVersion.binary,
     platformDepsCrossVersion := ScalaNativeCrossVersion.binary,
     nativeClang := interceptBuildException {
-      val clang = LLVM.discover("clang", LLVM.clangVersions)
-      LLVM.checkThatClangIsRecentEnough(clang)
+      val clang = Discover.clang()
+      Discover.checkThatClangIsRecentEnough(clang)
       clang.toFile
     },
     nativeClang in NativeTest := (nativeClang in Test).value,
     nativeClangPP := interceptBuildException {
-      val clang = LLVM.discover("clang++", LLVM.clangVersions)
-      LLVM.checkThatClangIsRecentEnough(clang)
+      val clang = Discover.clangpp()
+      Discover.checkThatClangIsRecentEnough(clang)
       clang.toFile
     },
     nativeClangPP in NativeTest := (nativeClangPP in Test).value,
-    nativeCompileOptions := LLVM.discoverCompilationOptions(),
+    nativeCompileOptions := Discover.compilationOptions(),
     nativeCompileOptions in NativeTest := (nativeCompileOptions in Test).value,
-    nativeLinkingOptions := LLVM.discoverLinkingOptions(),
+    nativeLinkingOptions := Discover.linkingOptions(),
     nativeLinkingOptions in NativeTest := (nativeLinkingOptions in Test).value,
     nativeMode := Option(System.getenv.get("SCALANATIVE_MODE"))
       .getOrElse(build.Mode.default.name),
@@ -96,7 +95,7 @@ object ScalaNativePluginInternal {
       val logger = streams.value.log.toLogger
       val cwd    = nativeWorkdir.value.toPath
       val clang  = nativeClang.value.toPath
-      LLVM.discoverTarget(clang, cwd, logger)
+      Discover.target(clang, cwd, logger)
     },
     artifactPath in nativeLink := {
       crossTarget.value / (moduleName.value + "-out")
@@ -113,7 +112,6 @@ object ScalaNativePluginInternal {
       )
       val classpath =
         fullClasspath.value.map(_.data.toPath).filter(f => Files.exists(f))
-
       val nativelibJar =
         classpath.find { p =>
           val path = p.toAbsolutePath.toString
@@ -128,7 +126,7 @@ object ScalaNativePluginInternal {
       build.Config.empty
         .withNativelib(nativelibJar)
         .withEntry(entry)
-        .withPaths(classpath)
+        .withClasspath(classpath)
         .withWorkdir(cwd)
         .withClang(clang)
         .withClangPP(clangpp)
@@ -142,7 +140,7 @@ object ScalaNativePluginInternal {
       val config  = nativeConfig.value.withLogger(logger)
       val outpath = (artifactPath in nativeLink).value
 
-      interceptBuildException(build.build(config, outpath.toPath))
+      interceptBuildException(Build.build(config, outpath.toPath))
 
       outpath
     },

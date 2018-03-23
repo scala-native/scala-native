@@ -36,7 +36,9 @@ object Linker {
       val signatures  = mutable.Set.empty[String]
       val dyndefns    = mutable.Set.empty[Global]
 
-      val paths = config.paths.map(p => ClassPath(VirtualDirectory.real(p)))
+      val paths = config.classpath.map { p =>
+        ClassPath(VirtualDirectory.real(p))
+      }
       def load(global: Global) =
         paths.collectFirst {
           case path if path.contains(global) =>

@@ -22,6 +22,7 @@ private[scalanative] object IO {
     def abs: String = path.toAbsolutePath.toString
   }
 
+  /** Write byts to given file. */
   def write(file: Path, bytes: Array[Byte]): Unit = {
     Files.createDirectories(file.getParent)
     Files.write(file, bytes)
