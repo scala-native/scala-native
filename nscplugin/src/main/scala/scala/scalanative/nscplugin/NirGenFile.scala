@@ -29,6 +29,6 @@ trait NirGenFile { self: NirGenPhase =>
     withScratchBuffer { buffer =>
       serializeBinary(defns, buffer)
       buffer.flip
-      VirtualDirectory.local(path.getParent.toFile).write(path, buffer)
+      VirtualDirectory.local(path.getParent).write(path, buffer)
     }
 }

@@ -10,26 +10,29 @@ import nir.Global
 trait Reporter {
 
   /** Gets called whenever linking starts. */
-  def onStart(): Unit = ()
+  private[scalanative] def onStart(): Unit = ()
 
   /** Gets called whenever a new entry point is discovered. */
-  def onEntry(global: Global): Unit = ()
+  private[scalanative] def onEntry(global: Global): Unit = ()
 
   /** Gets called whenever a new definition is loaded from nir path. */
-  def onResolved(global: Global): Unit = ()
+  private[scalanative] def onResolved(global: Global): Unit = ()
 
   /** Gets called whenever linker fails to resolve a global. */
-  def onUnresolved(globa: Global): Unit = ()
+  private[scalanative] def onUnresolved(globa: Global): Unit = ()
 
   /** Gets called whenever a new direct dependency is discovered. */
-  def onDirectDependency(from: Global, to: Global): Unit = ()
+  private[scalanative] def onDirectDependency(from: Global, to: Global): Unit =
+    ()
 
   /** Gets called whenever a new conditional dependency is discovered. */
-  def onConditionalDependency(from: Global, to: Global, cond: Global): Unit =
+  private[scalanative] def onConditionalDependency(from: Global,
+                                                   to: Global,
+                                                   cond: Global): Unit =
     ()
 
   /** Gets called whenever linking is complete. */
-  def onComplete(): Unit = ()
+  private[scalanative] def onComplete(): Unit = ()
 }
 
 object Reporter {

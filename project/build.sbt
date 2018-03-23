@@ -24,6 +24,7 @@ addSbtPlugin("org.portable-scala" % "sbt-platform-deps" % "1.0.0-M2")
 addSbtPlugin("com.eed3si9n"       % "sbt-dirty-money"   % "0.1.0")
 addSbtPlugin("org.foundweekends"  % "sbt-bintray"       % "0.5.2")
 addSbtPlugin("com.jsuereth"       % "sbt-pgp"           % "1.0.0")
+addSbtPlugin("com.typesafe"       % "sbt-mima-plugin"   % "0.1.14")
 
 scalacOptions ++= Seq(
   "-deprecation",

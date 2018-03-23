@@ -214,7 +214,7 @@ class CfChainsSimplification(implicit top: Top) extends Pass {
 }
 
 object CfChainsSimplification extends PassCompanion {
-  override def apply(config: tools.Config, top: Top) =
+  override def apply(config: build.Config, top: Top) =
     new CfChainsSimplification()(top)
 
   /** The ArgumentReplacer is used to replace the arguments of a Cf instruction

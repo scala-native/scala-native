@@ -1,7 +1,7 @@
 package scala.scalanative
 package optimizer
 
-import tools.Config
+import build.Config
 import analysis.ClassHierarchy.Top
 import nir.{Global, Defn}
 

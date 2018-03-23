@@ -75,7 +75,7 @@ class DynmethodLowering(implicit top: Top) extends Pass {
 }
 
 object DynmethodLowering extends PassCompanion {
-  def apply(config: tools.Config, top: Top): Pass =
+  def apply(config: build.Config, top: Top): Pass =
     new DynmethodLowering()(top)
 
   val dyndispatchName = Global.Top("scalanative_dyndispatch")

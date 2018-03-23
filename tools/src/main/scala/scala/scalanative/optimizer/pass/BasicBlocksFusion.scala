@@ -79,6 +79,6 @@ class BasicBlocksFusion extends Pass {
 }
 
 object BasicBlocksFusion extends PassCompanion {
-  def apply(config: tools.Config, top: analysis.ClassHierarchy.Top) =
+  def apply(config: build.Config, top: analysis.ClassHierarchy.Top) =
     new BasicBlocksFusion
 }

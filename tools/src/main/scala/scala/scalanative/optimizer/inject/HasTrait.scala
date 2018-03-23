@@ -72,6 +72,6 @@ object HasTrait extends InjectCompanion {
     Global.Member(Global.Top("__extern"), "extern.__check_trait_has_trait")
   val TraitHasTraitSig = Type.Function(Seq(Type.Int, Type.Int), Type.Bool)
 
-  override def apply(config: tools.Config, top: Top) =
+  override def apply(config: build.Config, top: Top) =
     new HasTrait()(top)
 }

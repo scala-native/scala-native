@@ -124,6 +124,6 @@ class ModuleLowering(implicit top: Top) extends Pass {
 }
 
 object ModuleLowering extends PassCompanion {
-  override def apply(config: tools.Config, top: Top) =
+  override def apply(config: build.Config, top: Top) =
     new ModuleLowering()(top)
 }

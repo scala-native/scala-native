@@ -4,7 +4,7 @@ import scala.scalanative.nir
 import scala.scalanative.nir._
 import scala.scalanative.optimizer.analysis.ClassHierarchy.Top
 import scala.scalanative.optimizer.{Pass, PassCompanion}
-import scala.scalanative.tools.Config
+import scala.scalanative.build.Config
 
 /**
  * Detects taking remainder for division by -1 and replaces it by division by 1 which can't overflow.

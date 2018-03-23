@@ -3,8 +3,8 @@ package optimizer
 package pass
 
 import analysis.ClassHierarchy.Top
+import build.Config
 import nir._
-import tools._
 
 class AsLoweringTest extends OptimizerSpec {
 
