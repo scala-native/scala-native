@@ -4,7 +4,7 @@ import java.lang.System.{err, out, lineSeparator => nl}
 
 import scala.sys.process.ProcessLogger
 
-/** A `Logger` is in charge of collecting log messages. */
+/** Interface to report and/or collect messages given by the toolchain. */
 trait Logger {
 
   /** Logs `msg` at the debug level. */

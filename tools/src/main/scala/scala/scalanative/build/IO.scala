@@ -16,6 +16,7 @@ import java.util.EnumSet
 import java.util.zip.{ZipEntry, ZipInputStream}
 import java.security.{DigestInputStream, MessageDigest}
 
+/** Internal I/O utilities. */
 private[scalanative] object IO {
 
   implicit class RichPath(val path: Path) extends AnyVal {
