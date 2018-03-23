@@ -18,7 +18,7 @@ sealed trait Config {
   def clang: Path
 
   /** The path to the `clang++` executable. */
-  def clangpp: Path
+  def clangPP: Path
 
   /** The options passed to LLVM's linker. */
   def linkingOptions: Seq[String]
@@ -36,10 +36,10 @@ sealed trait Config {
   def nativelib: Path
 
   /** Entry point for linking. */
-  def entry: String
+  def mainClass: String
 
   /** Sequence of all NIR locations. */
-  def classpath: Seq[Path]
+  def classPath: Seq[Path]
 
   /** Should stubs be linked? */
   def linkStubs: Boolean
@@ -57,7 +57,7 @@ sealed trait Config {
   def withClang(value: Path): Config
 
   /** Create a new config with given path to clang++. */
-  def withClangpp(value: Path): Config
+  def withClangPP(value: Path): Config
 
   /** Create a new config with given linking options. */
   def withLinkingOptions(value: Seq[String]): Config
@@ -74,11 +74,11 @@ sealed trait Config {
   /** Create a new config with given path to nativelib. */
   def withNativelib(value: Path): Config
 
-  /** Create new config with given entry point. */
-  def withEntry(value: String): Config
+  /** Create new config with given mainClass point. */
+  def withMainClass(value: String): Config
 
   /** Create a new config with given nir paths. */
-  def withClasspath(value: Seq[Path]): Config
+  def withClassPath(value: Seq[Path]): Config
 
   /** Create a new config with given behavior for stubs. */
   def withLinkStubs(value: Boolean): Config
@@ -93,11 +93,11 @@ object Config {
   val empty: Config =
     Impl(
       nativelib = Paths.get(""),
-      entry = "",
-      classpath = Seq.empty,
+      mainClass = "",
+      classPath = Seq.empty,
       workdir = Paths.get(""),
       clang = Paths.get(""),
-      clangpp = Paths.get(""),
+      clangPP = Paths.get(""),
       targetTriple = "",
       linkingOptions = Seq.empty,
       compileOptions = Seq.empty,
@@ -108,11 +108,11 @@ object Config {
     )
 
   private final case class Impl(nativelib: Path,
-                                entry: String,
-                                classpath: Seq[Path],
+                                mainClass: String,
+                                classPath: Seq[Path],
                                 workdir: Path,
                                 clang: Path,
-                                clangpp: Path,
+                                clangPP: Path,
                                 targetTriple: String,
                                 linkingOptions: Seq[String],
                                 compileOptions: Seq[String],
@@ -124,11 +124,11 @@ object Config {
     def withNativelib(value: Path): Config =
       copy(nativelib = value)
 
-    def withEntry(value: String): Config =
-      copy(entry = value)
+    def withMainClass(value: String): Config =
+      copy(mainClass = value)
 
-    def withClasspath(value: Seq[Path]): Config =
-      copy(classpath = value)
+    def withClassPath(value: Seq[Path]): Config =
+      copy(classPath = value)
 
     def withWorkdir(value: Path): Config =
       copy(workdir = value)
@@ -136,8 +136,8 @@ object Config {
     def withClang(value: Path): Config =
       copy(clang = value)
 
-    def withClangpp(value: Path): Config =
-      copy(clangpp = value)
+    def withClangPP(value: Path): Config =
+      copy(clangPP = value)
 
     def withTargetTriple(value: String): Config =
       copy(targetTriple = value)

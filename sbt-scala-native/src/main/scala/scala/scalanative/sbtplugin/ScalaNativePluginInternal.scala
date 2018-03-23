@@ -106,7 +106,7 @@ object ScalaNativePluginInternal {
       val nativelib = Discover.nativelib(classpath).getOrElse {
         throw new MessageOnlyException("Could not find nativelib on classpath.")
       }
-      val entry   = mainClass.toString + "$"
+      val maincls = mainClass.toString + "$"
       val cwd     = nativeWorkdir.value.toPath
       val clang   = nativeClang.value.toPath
       val clangpp = nativeClangPP.value.toPath
@@ -114,11 +114,11 @@ object ScalaNativePluginInternal {
 
       build.Config.empty
         .withNativelib(nativelib)
-        .withEntry(entry)
-        .withClasspath(classpath)
+        .withMainClass(maincls)
+        .withClassPath(classpath)
         .withWorkdir(cwd)
         .withClang(clang)
-        .withClangpp(clangpp)
+        .withClangPP(clangpp)
         .withTargetTriple(nativeTarget.value)
         .withLinkingOptions(nativeLinkingOptions.value)
         .withGC(gc)

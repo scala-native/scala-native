@@ -66,6 +66,6 @@ trait ReachabilitySuite extends FunSuite {
     val paths = makeClasspath(outDir)
     build.Config.empty
       .withWorkdir(outDir)
-      .withClasspath(paths)
+      .withClassPath(paths)
   }
 }

@@ -91,7 +91,7 @@ private[scalanative] object LLVM {
       val opath = path + ".o"
       if (include(path) && !Files.exists(Paths.get(opath))) {
         val isCpp    = path.endsWith(".cpp")
-        val compiler = if (isCpp) config.clangpp.abs else config.clang.abs
+        val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
         val flags    = (if (isCpp) Seq("-std=c++11") else Seq()) ++ config.compileOptions
         val compilec = Seq(compiler) ++ flags ++ Seq("-c", path, "-o", opath)
 
@@ -168,7 +168,7 @@ private[scalanative] object LLVM {
     val flags     = Seq("-o", outpath.abs) ++ linkopts ++ targetopt
     val opaths    = IO.getAll(nativelib, "glob:**.o").map(_.abs)
     val paths     = llPaths.map(_.abs) ++ opaths
-    val compile   = config.clangpp.abs +: (flags ++ paths)
+    val compile   = config.clangPP.abs +: (flags ++ paths)
 
     config.logger.time(s"Linking native code (${config.gc.name} gc)") {
       config.logger.running(compile)

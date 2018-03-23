@@ -19,7 +19,7 @@ private[scalanative] object ScalaNative {
       val passDeps  = passes.flatMap(_.depends).distinct
       val deps      = (chaDeps ++ passDeps).distinct
       val injects   = passes.flatMap(_.injects)
-      val mainClass = nir.Global.Top(config.entry)
+      val mainClass = nir.Global.Top(config.mainClass)
       val entry =
         nir.Global
           .Member(mainClass, "main_scala.scalanative.runtime.ObjectArray_unit")
