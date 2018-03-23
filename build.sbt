@@ -11,6 +11,22 @@ val sbt10ScalaVersion     = "2.12.4"
 val libScalaVersion       = "2.11.12"
 val libCrossScalaVersions = Seq("2.11.8", "2.11.11", libScalaVersion)
 
+// Convert "SomeName" to "some-name".
+def convertCamelKebab(name: String): String = {
+  name.replaceAll("([a-z])([A-Z]+)", "$1-$2").toLowerCase
+}
+
+// Generate project name from project id.
+def projectName(project: sbt.ResolvedProject): String = {
+  convertCamelKebab(project.id)
+}
+
+// Provide consistent project name pattern.
+lazy val nameSettings = Seq(
+  normalizedName := projectName(thisProject.value), // Maven <artifactId>
+  name := s"Scala Native ${projectName(thisProject.value)}" // Maven <name>
+)
+
 // The previous releases of Scala Native with which this version is binary compatible.
 val binCompatVersions = Set()
 
@@ -21,8 +37,8 @@ lazy val mimaSettings: Seq[Setting[_]] = Seq(
 )
 
 lazy val baseSettings = Seq(
-  organization := "org.scala-native",
-  version := nativeVersion
+  organization := "org.scala-native", // Maven <groupId>
+  version := nativeVersion // Maven <version>
 )
 
 addCommandAlias(
@@ -157,7 +173,7 @@ lazy val publishSettings = Seq(
       <url>https://github.com/scala-native/scala-native/issues</url>
     </issueManagement>
   )
-)
+) ++ nameSettings
 
 lazy val noPublishSettings = Seq(
   publishArtifact := false,
@@ -167,7 +183,7 @@ lazy val noPublishSettings = Seq(
   publishSnapshot := {
     println("no publish")
   }
-)
+) ++ nameSettings
 
 lazy val toolSettings =
   baseSettings ++
@@ -282,7 +298,6 @@ lazy val sbtScalaNative =
       // fixed in https://github.com/sbt/sbt/pull/3397 (for sbt 0.13.17)
       sbtBinaryVersion in update := (sbtBinaryVersion in pluginCrossBuild).value,
       addSbtPlugin("org.portable-scala" % "sbt-platform-deps" % "1.0.0-M2"),
-      moduleName := "sbt-scala-native",
       sbtTestDirectory := (baseDirectory in ThisBuild).value / "scripted-tests",
       // `testInterfaceSerialization` needs to be available from the sbt plugin,
       // but it's a Scala Native project (and thus 2.11), and the plugin is 2.10 or 2.12.
@@ -517,7 +532,6 @@ lazy val testInterface =
     .settings(mavenPublishSettings)
     .in(file("test-interface"))
     .settings(
-      name := "test-interface",
       libraryDependencies += "org.scala-sbt"    % "test-interface"   % "1.0",
       libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test,
       publishLocal := publishLocal
@@ -534,7 +548,6 @@ lazy val testInterfaceSerialization =
     .settings(mavenPublishSettings)
     .in(file("test-interface-serialization"))
     .settings(
-      name := "test-interface-serialization",
       libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test,
       publishLocal := publishLocal
         .dependsOn(publishLocal in testInterfaceSbtDefs)
@@ -550,7 +563,6 @@ lazy val testInterfaceSbtDefs =
     .settings(mavenPublishSettings)
     .in(file("test-interface-sbt-defs"))
     .settings(
-      name := "test-interface-sbt-defs",
       libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test
     )
     .enablePlugins(ScalaNativePlugin)
