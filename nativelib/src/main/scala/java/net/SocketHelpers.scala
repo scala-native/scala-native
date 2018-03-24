@@ -8,6 +8,7 @@ import scala.scalanative.posix.sys.socket._
 import scala.scalanative.posix.sys.select._
 import scala.scalanative.posix.unistd.close
 import scala.scalanative.posix.fcntl._
+import scala.scalanative.posix.sys.time.timeval
 import scala.scalanative.posix.sys.selectOps._
 import scala.scalanative.posix.netinet.{in, inOps}, in._, inOps._
 

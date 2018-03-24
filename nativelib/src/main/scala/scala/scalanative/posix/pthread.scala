@@ -11,7 +11,7 @@ import scala.scalanative.native.{
   name
 }
 import scala.scalanative.posix.sched.sched_param
-import scala.scalanative.posix.sys.time.timespec
+import scala.scalanative.posix.time.timespec
 import scala.scalanative.posix.sys.types._
 
 // SUSv2 version is used for compatibility

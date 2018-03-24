@@ -1,7 +1,9 @@
-package scala.scalanative.native
+package scala.scalanative.posix
 
-import scala.scalanative.native.time._
-import scala.scalanative.native.timeOps.tmOps
+import scala.scalanative.native._
+
+import time._
+import timeOps.tmOps
 
 object TimeSuite extends tests.Suite {
   tzset()

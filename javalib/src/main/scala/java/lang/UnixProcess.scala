@@ -8,7 +8,8 @@ import scala.annotation.tailrec
 import scala.scalanative.native.{errno => err, signal => sig, _}
 import sig._
 import err.errno
-import scala.scalanative.posix.{fcntl, pthread, sys, unistd, errno => e}
+import scala.scalanative.posix.{fcntl, pthread, sys, unistd, errno => e, time}
+import time._
 import sys.time._
 import e.ETIMEDOUT
 import UnixProcess._

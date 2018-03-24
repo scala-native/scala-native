@@ -2,12 +2,11 @@ package scala.scalanative.posix.sys
 
 import scalanative.native._, Nat._
 import scalanative.posix.inttypes._
+import scalanative.posix.time._
 
 @extern
 object select {
-  type time_t      = CLongInt
   type suseconds_t = CLongInt
-  type timeval     = CStruct2[time_t, suseconds_t]
 
   type fd_set = CStruct1[Ptr[CLongInt]]
 
@@ -16,7 +15,7 @@ object select {
              readfds: Ptr[fd_set],
              writefds: Ptr[fd_set],
              exceptfds: Ptr[fd_set],
-             timeout: Ptr[timeval]): CInt = extern
+             timeout: Ptr[time.timeval]): CInt = extern
 
   @name("scalanative_FD_SETSIZE")
   def FD_SETSIZE: CInt = extern
@@ -38,7 +37,7 @@ object select {
 object selectOps {
   import select._
 
-  implicit class timevalOps(val ptr: Ptr[timeval]) extends AnyVal {
+  implicit class timevalOps(val ptr: Ptr[time.timeval]) extends AnyVal {
     def tv_sec: time_t       = !(ptr._1)
     def tv_usec: suseconds_t = !(ptr._2)
 
