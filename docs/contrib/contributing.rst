@@ -28,7 +28,7 @@ relevant copyright / license information.
 Coding style
 ------------
 
-Scala Native is formatted via `./bin/scalafmt` and `./bin/clangfmt`.
+Scala Native is formatted via `./scripts/scalafmt` and `./scripts/clangfmt`.
 Make sure that all of your contributions are properly formatted before
 suggesting any changes.
 
@@ -83,7 +83,7 @@ In order for a Pull Request to be considered, it has to meet these requirements:
 
 1.  Live up to the current code standard:
 
-    - Be formatted with `./bin/scalafmt` and `./bin/clangfmt`.
+    - Be formatted with `./scripts/scalafmt` and `./scripts/clangfmt`.
     - Not violate `DRY`_.
     - `Boy Scout Rule`_ should be applied.
 

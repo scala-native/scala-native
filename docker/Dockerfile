@@ -10,10 +10,10 @@ RUN git clone https://github.com/scala-native/scala-native.git native
   
 WORKDIR /tmp/native
 
-RUN  nix-shell bin/scala-native.nix -A clangEnv --run "echo 'clangEnv installed'"
+RUN  nix-shell scripts/scala-native.nix -A clangEnv --run "echo 'clangEnv installed'"
 
-RUN  nix-shell bin/scala-native.nix -A clangEnv --run "cd .. && sbt scalaVersion"
+RUN  nix-shell scripts/scala-native.nix -A clangEnv --run "cd .. && sbt scalaVersion"
 
-RUN  nix-shell bin/scala-native.nix -A clangEnv --run "sbt rebuild"
+RUN  nix-shell scripts/scala-native.nix -A clangEnv --run "sbt rebuild"
 
 CMD ["/bin/bash"]

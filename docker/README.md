@@ -2,7 +2,7 @@
 
 ```
 docker run -i -t scalacenter/scala-native:0.1.0
-bin/nix-run
+scripts/nix-run
 sbt
 demoNative/run
 ```
