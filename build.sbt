@@ -503,7 +503,7 @@ lazy val benchmarks =
 lazy val testingCompilerInterface =
   project
     .in(file("testing-compiler-interface"))
-    .settings(libSettings)
+    .settings(toolSettings)
     .settings(noPublishSettings)
     .settings(
       crossPaths := false,
@@ -514,7 +514,7 @@ lazy val testingCompilerInterface =
 lazy val testingCompiler =
   project
     .in(file("testing-compiler"))
-    .settings(libSettings)
+    .settings(toolSettings)
     .settings(noPublishSettings)
     .settings(
       libraryDependencies ++= Seq(
