@@ -1,5 +1,7 @@
 package scala.scalanative
-package native
+package posix
+
+import scala.scalanative.native._
 
 @extern
 object time {
@@ -9,30 +11,31 @@ object time {
   type timespec = CStruct2[time_t, CLong]
   type tm       = CStruct9[CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt]
 
-  def asctime(time_ptr: Ptr[tm]): CString                               = extern
-  def asctime_s(buf: Ptr[CChar], bufsz: CSize, time_ptr: Ptr[tm]): CInt = extern
-  def clock(): clock_t                                                  = extern
-  def ctime(time: Ptr[time_t]): CString                                 = extern
-  def ctime_s(buffer: Ptr[CChar], bufsz: CSize, time: Ptr[time_t]): CInt =
-    extern
-  def difftime(time_end: CLong, time_beg: CLong): CDouble      = extern
-  def gmtime(time: Ptr[time_t]): Ptr[tm]                       = extern
-  def gmtime_s(time: Ptr[time_t], result: Ptr[tm]): Ptr[tm]    = extern
-  def localtime(time: Ptr[time_t]): Ptr[tm]                    = extern
-  def localtime_s(time: Ptr[time_t], result: Ptr[tm]): Ptr[tm] = extern
-  def mktime(time: Ptr[tm]): time_t                            = extern
+  @name("scalanative_asctime")
+  def asctime(time_ptr: Ptr[tm]): CString = extern
+  @name("scalanative_asctime_r")
+  def asctime_r(time_ptr: Ptr[tm], buf: Ptr[CChar]): CString = extern
+  def clock(): clock_t                                       = extern
+  def ctime(time: Ptr[time_t]): CString                      = extern
+  def ctime_r(time: Ptr[time_t], buf: Ptr[CChar]): CString   = extern
+  def difftime(time_end: CLong, time_beg: CLong): CDouble    = extern
+  @name("scalanative_gmtime")
+  def gmtime(time: Ptr[time_t]): Ptr[tm] = extern
+  @name("scalanative_gmtime_r")
+  def gmtime_r(time: Ptr[time_t], tm: Ptr[tm]): Ptr[tm] = extern
+  @name("scalanative_localtime")
+  def localtime(time: Ptr[time_t]): Ptr[tm] = extern
+  @name("scalanative_localtime_r")
+  def localtime_r(time: Ptr[time_t], tm: Ptr[tm]): Ptr[tm] = extern
+  @name("scalanative_mktime")
+  def mktime(time: Ptr[tm]): time_t = extern
+  @name("scalanative_strftime")
   def strftime(str: Ptr[CChar],
                count: CSize,
                format: CString,
-               time: Ptr[tm]): CSize                    = extern
-  def time(arg: Ptr[time_t]): time_t                    = extern
-  def timespec_get(ts: Ptr[timespec], base: CInt): CInt = extern
-  def tzset(): Unit                                     = extern
-  def wcsftime(str: CWideChar,
-               count: CSize,
-               format: Ptr[CWideChar],
                time: Ptr[tm]): CSize = extern
-
+  def time(arg: Ptr[time_t]): time_t = extern
+  def tzset(): Unit                  = extern
   @name("scalanative_daylight")
   def daylight(): CInt = extern
   @name("scalanative_timezone")

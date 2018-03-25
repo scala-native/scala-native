@@ -1,7 +1,7 @@
 package scala.scalanative.posix
 
 import scala.scalanative.native.{CInt, CSize, CStruct1, CStruct5, Ptr, extern}
-import scala.scalanative.posix.sys.time.timespec
+import scala.scalanative.posix.time.timespec
 import scala.scalanative.posix.sys.types.pid_t
 
 @extern
