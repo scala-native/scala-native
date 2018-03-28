@@ -111,6 +111,7 @@ object ScalaNativePluginInternal {
       val clang   = nativeClang.value.toPath
       val clangpp = nativeClangPP.value.toPath
       val gc      = build.GC(nativeGC.value)
+      val mode    = build.Mode(nativeMode.value)
 
       build.Config.empty
         .withNativelib(nativelib)
@@ -122,6 +123,7 @@ object ScalaNativePluginInternal {
         .withTargetTriple(nativeTarget.value)
         .withLinkingOptions(nativeLinkingOptions.value)
         .withGC(gc)
+        .withMode(mode)
         .withLinkStubs(nativeLinkStubs.value)
     },
     nativeLink := {
