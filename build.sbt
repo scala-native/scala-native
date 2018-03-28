@@ -65,6 +65,7 @@ addCommandAlias(
     "sandbox/run",
     "tests/test",
     "tools/test",
+    "nirparser/test",
     "benchmarks/run --test",
     "sbtScalaNative/scripted",
     "tools/mimaReportBinaryIssues"
