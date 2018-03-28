@@ -9,28 +9,31 @@ import scala.scalanative.posix.sys.ioctl._
  * Used to set up input/output streams for a child process spawned by
  * a ProcessBuilder using the Redirect info for the stream.
  */
-private[lang] final class PipeIO[T](val nullStream: T,
-                                    val fdStream: FileDescriptor => T)
+private[lang] final class PipeIO[T](
+    val nullStream: T,
+    val fdStream: (UnixProcess, FileDescriptor) => T)
 private[lang] object PipeIO {
   def apply[T](
+      process: UnixProcess,
       childFd: Int,
       redirect: ProcessBuilder.Redirect
   )(implicit ioStream: PipeIO[T]): T = {
     redirect.`type` match {
       case ProcessBuilder.Redirect.Type.PIPE =>
-        ioStream.fdStream(new FileDescriptor(childFd))
+        ioStream.fdStream(process, new FileDescriptor(childFd))
       case _ =>
         ioStream.nullStream
     }
   }
   trait Stream extends InputStream {
+    def process: UnixProcess
     def drain(): Unit = {}
   }
-  class StreamImpl(is: FileInputStream)
+  class StreamImpl(val process: UnixProcess, is: FileInputStream)
       extends BufferedInputStream(is)
       with Stream {
-    override def available() = UnixProcess.locked { _ =>
-      super.available() match {
+    override def available() = {
+      val res = super.available() match {
         // Check the FileInputStream in case the BufferedInputStream hasn't been filled yet.
         case 0 =>
           in.available() match {
@@ -39,17 +42,20 @@ private[lang] object PipeIO {
           }
         case a => a
       }
+      process.checkResult()
+      res
     }
-    override def read(): Int = UnixProcess.locked { _ =>
-      super.read()
+    override def read(): Int = {
+      val res = super.read()
+      process.checkResult()
+      res
     }
-    override def read(buf: Array[scala.Byte], offset: Int, len: Int) =
-      UnixProcess.locked { _ =>
-        super.read(buf, offset, len)
-      }
+    override def read(buf: Array[scala.Byte], offset: Int, len: Int) = {
+      val res = super.read(buf, offset, len)
+      process.checkResult()
+      res
+    }
     override def drain() = {
-      // No lock needed because it's called from the interrupt handler while
-      // the monitor thread is holding the lock.
       var toRead                     = 0
       var readBuf: Array[scala.Byte] = Array()
       while ({
@@ -80,12 +86,13 @@ private[lang] object PipeIO {
   }
 
   implicit val InputPipeIO: PipeIO[Stream] =
-    new PipeIO(NullInput, fd => new StreamImpl(new FileInputStream(fd)))
+    new PipeIO(NullInput, (p, fd) => new StreamImpl(p, new FileInputStream(fd)))
   implicit val outputPipeIO: PipeIO[OutputStream] =
     new PipeIO(NullOutput,
-               fd => new BufferedOutputStream(new FileOutputStream(fd)))
+               (p, fd) => new BufferedOutputStream(new FileOutputStream(fd)))
 
   private final object NullInput extends Stream {
+    override def process: UnixProcess                                = ???
     override def available(): Int                                    = 0
     override def close(): Unit                                       = {}
     override def read(): Int                                         = 0

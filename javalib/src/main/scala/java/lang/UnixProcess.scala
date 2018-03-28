@@ -5,6 +5,7 @@ import java.io.{File, IOException, InputStream, OutputStream}
 import java.util.concurrent.TimeUnit
 
 import scala.annotation.tailrec
+import scala.collection.JavaConverters._
 import scala.scalanative.native.{errno => err, signal => sig, _}
 import sig._
 import err.errno
@@ -21,9 +22,10 @@ import scala.scalanative.posix.sys.types.{pthread_cond_t, pthread_mutex_t}
 
 private[lang] class UnixProcess private (
     pid: CInt,
-    _inputStream: PipeIO.Stream,
-    _errorStream: PipeIO.Stream,
-    _outputStream: OutputStream
+    builder: ProcessBuilder,
+    infds: Ptr[CInt],
+    outfds: Ptr[CInt],
+    errfds: Ptr[CInt]
 ) extends Process {
   override def destroy(): Unit = kill(pid, 9)
 
@@ -32,8 +34,8 @@ private[lang] class UnixProcess private (
     this
   }
 
-  override def exitValue(): scala.Int = locked { _ =>
-    _exitValue match {
+  override def exitValue(): scala.Int = {
+    checkResult() match {
       case -1 =>
         throw new IllegalThreadStateException(
           s"Process $pid has not exited yet")
@@ -47,34 +49,31 @@ private[lang] class UnixProcess private (
 
   override def getOutputStream(): OutputStream = _outputStream
 
-  override def isAlive(): scala.Boolean = locked(_ => _exitValue == -1)
+  override def isAlive(): scala.Boolean = checkResult() == -1
 
   override def toString = s"UnixProcess($pid)"
 
-  override def waitFor(): scala.Int = locked { m =>
-    _exitValue match {
+  override def waitFor(): scala.Int = {
+    checkResult() match {
       case -1 =>
-        waitImpl(() => waitFor(m, null))
+        waitImpl(() => waitFor(null))
         _exitValue
       case v => v
     }
   }
   override def waitFor(timeout: scala.Long, unit: TimeUnit): scala.Boolean =
-    locked {
-      case m =>
-        _exitValue match {
-          case -1 =>
-            val ts = stackalloc[timespec]
-            val tv = stackalloc[timeval]
-            throwOnError(gettimeofday(tv, null), "Failed to set time of day.")
-            val nsec = unit.toNanos(timeout) + TimeUnit.MICROSECONDS.toNanos(
-              !tv._2.cast[Ptr[CInt]])
-            val sec = TimeUnit.NANOSECONDS.toSeconds(nsec)
-            !ts._1 = !tv._1 + sec
-            !ts._2 = if (sec > 0) nsec - TimeUnit.SECONDS.toNanos(sec) else nsec
-            waitImpl(() => waitFor(m, ts)) == 0
-          case _ => true
-        }
+    checkResult() match {
+      case -1 =>
+        val ts = stackalloc[timespec]
+        val tv = stackalloc[timeval]
+        throwOnError(gettimeofday(tv, null), "Failed to set time of day.")
+        val nsec = unit.toNanos(timeout) + TimeUnit.MICROSECONDS.toNanos(
+          !tv._2.cast[Ptr[CInt]])
+        val sec = TimeUnit.NANOSECONDS.toSeconds(nsec)
+        !ts._1 = !tv._1 + sec
+        !ts._2 = if (sec > 0) nsec - TimeUnit.SECONDS.toNanos(sec) else nsec
+        waitImpl(() => waitFor(ts)) == 0
+      case _ => true
     }
 
   @inline private def waitImpl(f: () => Int) = {
@@ -83,30 +82,32 @@ private[lang] class UnixProcess private (
     res
   }
 
-  private[this] var _condId    = 0
+  private[this] val _inputStream =
+    PipeIO[PipeIO.Stream](this, !outfds, builder.redirectOutput)
+  private[this] val _errorStream =
+    PipeIO[PipeIO.Stream](this, !errfds, builder.redirectError)
+  private[this] val _outputStream =
+    PipeIO[OutputStream](this, !(infds + 1), builder.redirectInput)
+
   private[this] var _exitValue = -1
-  private[this] val _conds     = mutable.Map.empty[Int, PtrWrapper[pthread_cond_t]]
-  private def alertWaitingThreads(): Unit = {
-    _conds.values.foreach(c => pthread_cond_broadcast(c.value))
+  private[lang] def checkResult(): CInt = {
+    if (_exitValue == -1) setExitValue(UnixProcess.checkResult(pid))
+    _exitValue
   }
-  private def setExitValue(value: CInt): Unit = {
-    _exitValue = value
-    _inputStream.drain()
-    _errorStream.drain()
-    _outputStream.close()
+  private[this] def setExitValue(value: CInt): Unit = {
+    if (_exitValue == -1 && value != -1) {
+      _exitValue = value
+      _inputStream.drain()
+      _errorStream.drain()
+      _outputStream.close()
+    }
   }
-  private[this] def waitFor(mutex: PtrWrapper[pthread_mutex_t],
-                            ts: Ptr[timespec]): Int = Zone { implicit z =>
-    val id   = { _condId += 1; _condId }
-    val cond = alloc[scala.Byte](pthread_cond_t_size).cast[Ptr[pthread_cond_t]]
-    pthread_cond_init(cond, null)
-    _conds += id -> PtrWrapper(cond)
-    val res =
-      if (ts != null) pthread_cond_timedwait(cond, mutex.value, ts)
-      else pthread_cond_wait(cond, mutex.value)
-    _conds -= id
-    pthread_cond_destroy(cond)
-    res
+  private[this] def waitFor(ts: Ptr[timespec]): Int = {
+    val res = stackalloc[CInt]
+    !res = -1
+    val result = UnixProcess.waitForPid(pid, ts, res)
+    setExitValue(!res)
+    result
   }
 }
 
@@ -114,33 +115,19 @@ object UnixProcess {
   @link("pthread")
   @extern
   private[this] object ProcessMonitor {
-    type proc_info = CStruct2[CInt, CInt]
+    @name("scalanative_process_monitor_check_result")
+    def checkResult(pid: Int): CInt = extern
     @name("scalanative_process_monitor_init")
     def init(): Unit = extern
-
-    @name("scalanative_process_monitor_last_proc_info")
-    def lastProcInfo(info: Ptr[proc_info]): Unit = extern
-
-    @name("scalanative_process_monitor_shared_mutex")
-    def sharedMutex(): Ptr[pthread_mutex_t] = extern
-
-    @name("scalanative_process_monitor_wakeup")
-    def wakeup(): CInt = extern
+    @name("scalanative_process_monitor_wait_for_pid")
+    def waitForPid(pid: Int, ts: Ptr[timespec], res: Ptr[CInt]): CInt = extern
   }
   ProcessMonitor.init()
 
-  case class PtrWrapper[T](value: Ptr[T])
-  def locked[R](f: PtrWrapper[pthread_mutex_t] => R): R = {
-    val mutex = ProcessMonitor.sharedMutex()
-    try {
-      throwOnError(pthread_mutex_lock(mutex), "Couldn't lock shared mutex.")
-      f(PtrWrapper(mutex))
-    } finally {
-      throwOnError(pthread_mutex_unlock(mutex), "Couldn't unlock shared mutex.")
-    }
-  }
+  private def checkResult(pid: Int): CInt = ProcessMonitor.checkResult(pid)
+  private def waitForPid(pid: Int, ts: Ptr[timespec], res: Ptr[CInt]): CInt =
+    ProcessMonitor.waitForPid(pid, ts, res)
   def apply(builder: ProcessBuilder): Process = Zone { implicit z =>
-    import scala.collection.JavaConverters._
     val infds  = stackalloc[CInt](2)
     val outfds = stackalloc[CInt](2)
     val errfds =
@@ -150,14 +137,13 @@ object UnixProcess {
     throwOnError(unistd.pipe(outfds), s"Couldn't create pipe.")
     if (!builder.redirectErrorStream)
       throwOnError(unistd.pipe(errfds), s"Couldn't create pipe.")
-
-    val cmd  = builder.command.asScala
-    val dir  = builder.directory
-    val argv = nullTerminate(cmd)
+    val cmd      = builder.command.asScala
+    val binaries = binaryPaths(builder.environment, cmd.head)
+    val dir      = builder.directory
+    val argv     = nullTerminate(cmd)
     val envp = nullTerminate(builder.environment.asScala.map {
       case (k, v) => s"$k=$v"
     }.toSeq)
-    val binaries = binaryPaths(builder.environment, cmd.head)
 
     /*
      * Use vfork rather than fork to avoid copying the parent process memory to the child. It also
@@ -174,57 +160,41 @@ object UnixProcess {
       case -1 =>
         throw new IOException("Unable to fork process")
       case 0 =>
-        if (dir != null) unistd.chdir(toCString(dir.toString))
-        setupChildFDS(!infds, builder.redirectInput, unistd.STDIN_FILENO)
-        setupChildFDS(!(outfds + 1),
-                      builder.redirectOutput,
-                      unistd.STDOUT_FILENO)
-        setupChildFDS(!(errfds + 1),
-                      if (builder.redirectErrorStream) Redirect.PIPE
-                      else builder.redirectError,
-                      unistd.STDERR_FILENO)
-        unistd.close(!infds)
-        unistd.close(!(infds + 1))
-        unistd.close(!outfds)
-        unistd.close(!(outfds + 1))
-        unistd.close(!errfds)
-        unistd.close(!(errfds + 1))
+        /*
+         * It is unsafe to directly run any code in vfork2 on top of the parent's stack without
+         * creating a new stack frame on the child. To fix this, put all of the code that needs
+         * to run on the child before execve inside of a method.
+         */
+        def invokeChildProcess(): Process = {
+          if (dir != null) unistd.chdir(toCString(dir.toString))
+          setupChildFDS(!infds, builder.redirectInput, unistd.STDIN_FILENO)
+          setupChildFDS(!(outfds + 1),
+                        builder.redirectOutput,
+                        unistd.STDOUT_FILENO)
+          setupChildFDS(!(errfds + 1),
+                        if (builder.redirectErrorStream) Redirect.PIPE
+                        else builder.redirectError,
+                        unistd.STDERR_FILENO)
+          unistd.close(!infds)
+          unistd.close(!(infds + 1))
+          unistd.close(!outfds)
+          unistd.close(!(outfds + 1))
+          unistd.close(!errfds)
+          unistd.close(!(errfds + 1))
 
-        binaries.foreach { b =>
-          unistd.execve(toCString(b), argv, envp)
+          binaries.foreach { b =>
+            unistd.execve(toCString(b), argv, envp)
+          }
+          // The spec of vfork requires calling _exit if the child process fails to execve.
+          unistd._exit(1)
+          throw new IOException(s"Failed to create process for command: $cmd")
         }
-        // The spec of vfork requires calling _exit if the child process fails to execve.
-        unistd._exit(1)
-        throw new IOException(s"Failed to create process for command: $cmd")
+        invokeChildProcess()
       case pid =>
         Seq(!(outfds + 1), !(errfds + 1), !infds) foreach unistd.close
-        val res = new UnixProcess(
-          pid,
-          PipeIO[PipeIO.Stream](!outfds, builder.redirectOutput),
-          PipeIO[PipeIO.Stream](!errfds, builder.redirectError),
-          PipeIO[OutputStream](!(infds + 1), builder.redirectInput)
-        )
-        processes += pid -> res
-        res
+        new UnixProcess(pid, builder, infds, outfds, errfds)
     }
   }
-
-  private val processes =
-    scala.collection.mutable.HashMap.empty[CInt, UnixProcess]
-  private def signalHandler(sig: CInt): Unit = {
-    val procInfo = stackalloc[ProcessMonitor.proc_info]
-    ProcessMonitor.lastProcInfo(procInfo)
-    val pid = !procInfo._1
-    processes get pid match {
-      case Some(process) =>
-        process.setExitValue(!procInfo._2)
-        processes -= pid
-        process.alertWaitingThreads()
-      case _ =>
-    }
-    throwOnError(ProcessMonitor.wakeup(), "Couldn't wake up process monitor.")
-  }
-  signal(SIGUSR1, CFunctionPtr.fromFunction1(signalHandler))
 
   @inline
   private[lang] def throwOnError(rc: CInt, msg: => String): CInt = {
