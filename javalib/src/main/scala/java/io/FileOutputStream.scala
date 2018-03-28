@@ -1,13 +1,15 @@
 package java.io
 
+import scalanative.nio.fs.UnixException
 import scalanative.native._
 import scalanative.posix.{fcntl, unistd}
 import scalanative.posix.sys.stat
 import scalanative.runtime
 
-class FileOutputStream(fd: FileDescriptor) extends OutputStream {
+class FileOutputStream(fd: FileDescriptor, file: Option[File] = None)
+    extends OutputStream {
   def this(file: File, append: Boolean) =
-    this(FileOutputStream.fileDescriptor(file, append))
+    this(FileOutputStream.fileDescriptor(file, append), Some(file))
   def this(file: File) = this(file, false)
   def this(name: String, append: Boolean) = this(new File(name), append)
   def this(name: String) = this(new File(name))
@@ -46,7 +48,7 @@ class FileOutputStream(fd: FileDescriptor) extends OutputStream {
 
     if (writeCount < 0) {
       // negative value (typically -1) indicates that write failed
-      throw new IOException("couldn't write to file")
+      throw UnixException(file.fold("")(_.toString), errno.errno)
     }
   }
 
