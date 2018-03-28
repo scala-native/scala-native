@@ -65,6 +65,7 @@ addCommandAlias(
     "sandbox/run",
     "tests/test",
     "tools/test",
+    "nirparser/test",
     "benchmarks/run --test",
     "sbtScalaNative/scripted",
     "tools/mimaReportBinaryIssues"
@@ -231,6 +232,23 @@ lazy val nir =
     .settings(mavenPublishSettings)
     .dependsOn(util)
 
+lazy val nirparser =
+  project
+    .in(file("nirparser"))
+    .settings(toolSettings)
+    .settings(noPublishSettings)
+    .settings(
+      libraryDependencies ++= Seq(
+        "com.lihaoyi" %% "fastparse"  % "1.0.0",
+        "com.lihaoyi" %% "scalaparse" % "1.0.0",
+        compilerPlugin(
+          "org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
+        "org.scalacheck" %% "scalacheck" % "1.13.4" % "test",
+        "org.scalatest"  %% "scalatest"  % "3.0.0"  % "test"
+      )
+    )
+    .dependsOn(nir)
+
 lazy val tools =
   project
     .in(file("tools"))
@@ -238,12 +256,8 @@ lazy val tools =
     .settings(mavenPublishSettings)
     .settings(
       libraryDependencies ++= Seq(
-        "com.lihaoyi"    %% "fastparse"  % "0.4.2",
-        "com.lihaoyi"    %% "scalaparse" % "0.4.2",
         "org.scalacheck" %% "scalacheck" % "1.13.4" % "test",
-        compilerPlugin(
-          "org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
-        "org.scalatest" %% "scalatest" % "3.0.0" % "test"
+        "org.scalatest"  %% "scalatest"  % "3.0.0"  % "test"
       ),
       fullClasspath in Test := ((fullClasspath in Test) dependsOn setUpTestingCompiler).value,
       publishLocal := publishLocal
