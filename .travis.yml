@@ -41,11 +41,11 @@ before_script:
         exit 1;
       fi;
     fi;
+  - if [ -n "$CLANG_FORMAT_PATH" ]; then scripts/clangfmt --test; fi
+  - scripts/scalafmt --test
 
 script:
   - java -version
-  - if [ -n "$CLANG_FORMAT_PATH" ]; then scripts/clangfmt --test; fi
-  - scripts/scalafmt --test
   - > 
     sbt \
       "-no-colors" \
