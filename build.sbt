@@ -238,8 +238,8 @@ lazy val tools =
     .settings(mavenPublishSettings)
     .settings(
       libraryDependencies ++= Seq(
-        "com.lihaoyi"    %% "fastparse"  % "0.4.2",
-        "com.lihaoyi"    %% "scalaparse" % "0.4.2",
+        "com.lihaoyi"    %% "fastparse"  % "1.0.0",
+        "com.lihaoyi"    %% "scalaparse" % "1.0.0",
         "org.scalacheck" %% "scalacheck" % "1.13.4" % "test",
         compilerPlugin(
           "org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
