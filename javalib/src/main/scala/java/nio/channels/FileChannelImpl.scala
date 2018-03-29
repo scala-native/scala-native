@@ -58,9 +58,10 @@ final class FileChannelImpl(path: Path,
                     number: Int): Long = {
     ensureOpen()
 
-    var bread: Long = 0
+    var bytesRead = 0l
+    var i         = 0
 
-    for (i <- start until number) {
+    while (i < number) {
       val startPos = buffers(i).position()
       val len      = buffers(i).limit() - startPos
       val dst      = new Array[Byte](len)
@@ -71,10 +72,11 @@ final class FileChannelImpl(path: Path,
         buffers(i).position(startPos + nb)
       }
 
-      bread += nb
+      bytesRead += nb
+      i += 1
     }
 
-    bread
+    bytesRead
   }
 
   override def read(buffer: ByteBuffer, pos: Long): Int = {
