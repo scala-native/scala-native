@@ -3,7 +3,7 @@
 Changelog
 =========
 
-0.3.7 (Mar 26, 2018)
+0.3.7 (Mar 29, 2018)
 ----------------------
 
 `Read release notes for 0.3.7 on GitHub <https://github.com/scala-native/scala-native/releases/tag/v0.3.7>`_.
