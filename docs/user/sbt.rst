@@ -140,4 +140,4 @@ project's
 `README <https://github.com/scala-native/sbt-crossproject/blob/master/README.md>`_
 for details.
 
-Continue to :ref:`lang`.
+Continue to :ref:`maven`.

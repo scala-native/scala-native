@@ -8,5 +8,6 @@ User's Guide
 
   setup
   sbt
+  maven
   lang
   interop
