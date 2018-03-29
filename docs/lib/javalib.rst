@@ -120,6 +120,17 @@ Here is the list of currently available classes:
 * ``java.lang.Number``
 * ``java.lang.NumberFormatException``
 * ``java.lang.OutOfMemoryError``
+* ``java.lang.PipeIO``
+* ``java.lang.PipeIO$NullInput``
+* ``java.lang.PipeIO$NullOutput``
+* ``java.lang.PipeIO$Stream``
+* ``java.lang.PipeIO$Stream$class``
+* ``java.lang.PipeIO$StreamImpl``
+* ``java.lang.Process``
+* ``java.lang.ProcessBuilder``
+* ``java.lang.ProcessBuilder$Redirect``
+* ``java.lang.ProcessBuilder$Redirect$RedirectImpl``
+* ``java.lang.ProcessBuilder$Redirect$Type``
 * ``java.lang.Readable``
 * ``java.lang.ReflectiveOperationException``
 * ``java.lang.RejectedExecutionException``
@@ -143,6 +154,8 @@ Here is the list of currently available classes:
 * ``java.lang.ThreadLocal``
 * ``java.lang.Throwable``
 * ``java.lang.TypeNotPresentException``
+* ``java.lang.UnixProcess``
+* ``java.lang.UnixProcess$ProcessMonitor``
 * ``java.lang.UnknownError``
 * ``java.lang.UnsatisfiedLinkError``
 * ``java.lang.UnsupportedClassVersionError``
@@ -394,6 +407,7 @@ Here is the list of currently available classes:
 * ``java.text.Format``
 * ``java.text.Format$Field``
 * ``java.text.NumberFormat``
+* ``java.text.ParseException``
 * ``java.time.Instant``
 * ``java.util.AbstractCollection``
 * ``java.util.AbstractList``
@@ -409,6 +423,12 @@ Here is the list of currently available classes:
 * ``java.util.Arrays``
 * ``java.util.Arrays$AsRef``
 * ``java.util.BackedUpListIterator``
+* ``java.util.Base64``
+* ``java.util.Base64$Decoder``
+* ``java.util.Base64$DecodingInputStream``
+* ``java.util.Base64$Encoder``
+* ``java.util.Base64$EncodingOutputStream``
+* ``java.util.Base64$Wrapper``
 * ``java.util.Calendar``
 * ``java.util.Collection``
 * ``java.util.Collections``

@@ -19,4 +19,4 @@ classes = sorted(list(set(
 )))
 
 for cls in classes:
-    print "* ``{}``".format(cls)
+    print("* ``{}``".format(cls))

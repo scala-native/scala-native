@@ -22,8 +22,8 @@ object Versions {
    * new version of the toolchain.
    */
   final val compat: Int   = 3
-  final val revision: Int = 4
+  final val revision: Int = 5
 
   /* Current public release version of Scala Native. */
-  final val current: String = "0.3.7-SNAPSHOT"
+  final val current: String = "0.3.7"
 }
