@@ -140,6 +140,13 @@ object PathSuite extends tests.Suite {
     assert(Paths.get("/foo").normalize.toString == "/foo")
     assert(Paths.get("/foo/bar").normalize.toString == "/foo/bar")
     assert(Paths.get("/foo//bar").normalize.toString == "/foo/bar")
+    assert(Paths.get("/foo/bar/").normalize.toString == "/foo/bar")
+    assert(Paths.get("./foo/bar/").normalize.toString == "foo/bar")
+    assert(Paths.get("../foo/bar/").normalize.toString == "../foo/bar")
+    assert(Paths.get("/foo/bar/.").normalize.toString == "/foo/bar")
+    assert(Paths.get("foo/bar/.").normalize.toString == "foo/bar")
+    assert(Paths.get("../foo/bar/.").normalize.toString == "../foo/bar")
+    assert(Paths.get("../foo//bar/.").normalize.toString == "../foo/bar")
   }
 
   test("Path.startsWith") {

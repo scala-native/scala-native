@@ -2,7 +2,15 @@ package scala.scalanative.nio.fs
 
 import java.io.File
 import java.net.URI
-import java.nio.file.{FileSystem, LinkOption, Path, WatchEvent, WatchKey}
+import java.nio.file.{
+  FileSystem,
+  Files,
+  LinkOption,
+  NoSuchFileException,
+  Path,
+  WatchEvent,
+  WatchKey
+}
 import java.util.Iterator
 
 import scala.collection.mutable.UnrolledBuffer
@@ -40,7 +48,9 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
 
   private lazy val normalizedPath = new UnixPath(fs, normalized(path))
 
-  private lazy val absPath = new UnixPath(fs, toFile().getAbsolutePath())
+  private lazy val absPath =
+    if (path.startsWith("/")) this
+    else new UnixPath(fs, toFile().getAbsolutePath())
 
   private lazy val file =
     if (isAbsolute) new File(rawPath)
@@ -156,7 +166,12 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
 
   override def toRealPath(options: Array[LinkOption]): Path = {
     if (options.contains(LinkOption.NOFOLLOW_LINKS)) toAbsolutePath()
-    else new UnixPath(fs, toFile().getCanonicalPath())
+    else {
+      new UnixPath(fs, toFile().getCanonicalPath()) match {
+        case p if Files.exists(p, Array.empty) => p
+        case p                                 => throw new NoSuchFileException(p.path)
+      }
+    }
   }
 
   override def toFile(): File = file
@@ -202,6 +217,7 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
 
 private object UnixPath {
   def normalized(path: String): String = {
+    if (path.length < 2) return path
     val absolute = path.startsWith("/")
     val components =
       path
@@ -223,21 +239,27 @@ private object UnixPath {
   def removeRedundantSlashes(str: String): String =
     if (str.length < 2) str
     else {
-      val buffer   = new StringBuffer(str)
-      var previous = buffer.charAt(0)
-      var i        = 1
-      while (i < buffer.length) {
-        val current = buffer.charAt(i)
-        if (previous == '/' && current == '/') {
-          buffer.deleteCharAt(i)
-        } else {
-          previous = current
-          i += 1
-        }
+      str.indexOf("//") match {
+        case -1 =>
+          if (str.endsWith("/")) str.substring(0, str.length - 1) else str //length > 1
+        case idx =>
+          val buffer: StringBuffer = new StringBuffer(str)
+          var previous             = '/'
+          var i                    = idx + 1
+          while (i < buffer.length) {
+            val current = buffer.charAt(i)
+            if (previous == '/' && current == '/') {
+              buffer.deleteCharAt(i)
+            } else {
+              previous = current
+              i += 1
+            }
+          }
+          val result = buffer.toString
+          if (result.length > 1 && result.endsWith("/"))
+            result.substring(0, result.length - 1)
+          else result
       }
-      val result = buffer.toString
-      if (result.length > 1 && result.endsWith("/")) result.init
-      else result
     }
 
 }
