@@ -5,6 +5,9 @@ import scala.scalanative.native.{CString, extern, name}
 
 @extern
 object Platform {
+  @name("scalanative_platform_is_mac")
+  def isMac(): Boolean = extern
+
   @name("scalanative_platform_is_windows")
   def isWindows(): Boolean = extern
 

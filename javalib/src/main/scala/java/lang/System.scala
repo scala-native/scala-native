@@ -4,6 +4,8 @@ import java.io._
 import java.util.{Collections, HashMap, Map, Properties}
 import scala.scalanative.native._
 import scala.scalanative.posix.unistd
+import scala.scalanative.posix.sys.utsname._
+import scala.scalanative.posix.sys.uname._
 import scala.scalanative.runtime.time
 import scala.scalanative.runtime.Platform
 import scala.scalanative.runtime.GC
@@ -49,6 +51,14 @@ object System {
       sysProps.setProperty("user.country", userCountry)
 
     } else {
+      if (Platform.isMac) {
+        sysProps.setProperty("os.name", "Mac OS X")
+      } else {
+        val u = stackalloc[utsname]
+        uname(u)
+        sysProps.setProperty("os.name", u.sysname)
+        sysProps.setProperty("os.version", u.release)
+      }
       sysProps.setProperty("file.separator", "/")
       sysProps.setProperty("path.separator", ":")
       val userLocale = getenv("LANG")
@@ -72,6 +82,13 @@ object System {
 
     sysProps
   }
+
+  var in: InputStream =
+    new FileInputStream(FileDescriptor.in)
+  var out: PrintStream =
+    new PrintStream(new FileOutputStream(FileDescriptor.out))
+  var err: PrintStream =
+    new PrintStream(new FileOutputStream(FileDescriptor.err))
 
   private var systemProperties = loadProperties()
 
@@ -99,13 +116,6 @@ object System {
 
   def getenv(): Map[String, String] = envVars
   def getenv(key: String): String   = envVars.get(key)
-
-  var in: InputStream =
-    new FileInputStream(FileDescriptor.in)
-  var out: PrintStream =
-    new PrintStream(new FileOutputStream(FileDescriptor.out))
-  var err: PrintStream =
-    new PrintStream(new FileOutputStream(FileDescriptor.err))
 
   def setIn(in: InputStream): Unit =
     this.in = in

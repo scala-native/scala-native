@@ -2,6 +2,14 @@
 #include <Windows.h>
 #endif
 
+int scalanative_platform_is_mac() {
+#ifdef __APPLE__
+    return 1;
+#else
+    return 0;
+#endif
+}
+
 int scalanative_platform_is_windows() {
 #ifdef _WIN32
     return 1;
