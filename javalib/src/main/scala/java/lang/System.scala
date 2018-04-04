@@ -51,14 +51,6 @@ object System {
       sysProps.setProperty("user.country", userCountry)
 
     } else {
-      if (Platform.isMac) {
-        sysProps.setProperty("os.name", "Mac OS X")
-      } else {
-        val u = stackalloc[utsname]
-        uname(u)
-        sysProps.setProperty("os.name", u.sysname)
-        sysProps.setProperty("os.version", u.release)
-      }
       sysProps.setProperty("file.separator", "/")
       sysProps.setProperty("path.separator", ":")
       val userLocale = getenv("LANG")
@@ -90,7 +82,11 @@ object System {
   var err: PrintStream =
     new PrintStream(new FileOutputStream(FileDescriptor.err))
 
-  private var systemProperties = loadProperties()
+  private val systemProperties = loadProperties()
+  Platform.setOSProps(
+    CFunctionPtr.fromFunction2((key: CString, value: CString) => {
+      systemProperties.setProperty(fromCString(key), fromCString(value));
+    }))
 
   def lineSeparator(): String = {
     if (Platform.isWindows) "\r\n"

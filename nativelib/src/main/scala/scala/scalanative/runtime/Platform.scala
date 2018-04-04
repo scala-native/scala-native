@@ -1,7 +1,14 @@
 package scala.scalanative
 package runtime
 
-import scala.scalanative.native.{CString, extern, name}
+import scala.scalanative.native.{
+  CInt,
+  CFunctionPtr2,
+  CString,
+  Ptr,
+  extern,
+  name
+}
 
 @extern
 object Platform {
@@ -19,4 +26,8 @@ object Platform {
 
   @name("scalanative_little_endian")
   def littleEndian(): Boolean = extern
+
+  @name("scalanative_set_os_props")
+  def setOSProps(addProp: CFunctionPtr2[CString, CString, Unit]): Unit =
+    extern
 }
