@@ -358,6 +358,42 @@ object FilesSuite extends tests.Suite {
     }
   }
 
+  private val tempFile = "^a?\\d+\\.?(?:[a-z]*)$".r
+  test("Files.createTempDirectory works with null prefix") {
+    val dir = Files.createTempDirectory(null)
+    try {
+      assert(tempFile.findFirstIn(dir.getFileName.toString).isDefined)
+      assert(Files.exists(dir))
+      assert(Files.isDirectory(dir))
+    } finally Files.delete(dir)
+  }
+
+  test("Files.createTempDirectory works with short prefix") {
+    val dir = Files.createTempDirectory("a")
+    try {
+      assert(tempFile.findFirstIn(dir.getFileName.toString).isDefined)
+      assert(Files.exists(dir))
+      assert(Files.isDirectory(dir))
+    } finally Files.delete(dir)
+  }
+  test("Files.createTempFile works with null prefix") {
+    val file = Files.createTempFile(null, "txt")
+    try {
+      assert(tempFile.findFirstIn(file.getFileName.toString).isDefined)
+      assert(Files.exists(file))
+      assert(Files.isRegularFile(file))
+    } finally Files.delete(file)
+  }
+
+  test("Files.createTempFile works with short prefix") {
+    val file = Files.createTempFile("a", null)
+    try {
+      assert(tempFile.findFirstIn(file.getFileName.toString).isDefined)
+      assert(Files.exists(file))
+      assert(Files.isRegularFile(file))
+    } finally Files.delete(file)
+  }
+
   test("Files.isRegularFile reports files as such") {
     withTemporaryDirectory { dirFile =>
       val dir  = dirFile.toPath

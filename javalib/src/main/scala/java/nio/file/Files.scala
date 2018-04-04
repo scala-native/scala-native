@@ -151,7 +151,8 @@ object Files {
   private def createTempDirectory(dir: File,
                                   prefix: String,
                                   attrs: Array[FileAttribute[_]]): Path = {
-    val temp = File.createTempFile(prefix, "", dir)
+    val p    = if (prefix == null) "" else prefix
+    val temp = File.createTempFile(p, "", dir, minLength = false)
     if (temp.delete() && temp.mkdir()) {
       val tempPath = temp.toPath()
       setAttributes(tempPath, attrs)
@@ -174,7 +175,8 @@ object Files {
                              prefix: String,
                              suffix: String,
                              attrs: Array[FileAttribute[_]]): Path = {
-    val temp     = File.createTempFile(prefix, suffix, dir)
+    val p        = if (prefix == null) "" else prefix
+    val temp     = File.createTempFile(p, suffix, dir, minLength = false)
     val tempPath = temp.toPath()
     setAttributes(tempPath, attrs)
     tempPath

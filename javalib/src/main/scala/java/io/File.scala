@@ -568,9 +568,12 @@ object File {
     createTempFile(prefix, suffix, null)
 
   @throws(classOf[IOException])
-  def createTempFile(prefix: String, suffix: String, directory: File): File =
+  private[java] def createTempFile(prefix: String,
+                                   suffix: String,
+                                   directory: File,
+                                   minLength: Boolean): File =
     if (prefix == null) throw new NullPointerException
-    else if (prefix.length < 3)
+    else if (minLength && prefix.length < 3)
       throw new IllegalArgumentException("Prefix string too short")
     else {
       val tmpDir       = Option(directory).getOrElse(tempDir())
@@ -581,17 +584,27 @@ object File {
       } while (!result.createNewFile())
       result
     }
+  @throws(classOf[IOException])
+  def createTempFile(prefix: String, suffix: String, directory: File): File =
+    createTempFile(prefix, suffix, directory, minLength = true)
 
   private def tempDir(): File = {
     val dir = getenv(c"TMPDIR")
-    if (dir == null) new File("/tmp")
-    else new File(fromCString(dir))
+    if (dir == null) {
+      new File(System.getProperty("java.io.tmpdir") match {
+        case null => "/tmp"
+        case d    => d
+      })
+    } else new File(fromCString(dir))
   }
 
   private def genTempFile(prefix: String,
                           suffix: String,
                           directory: File): File = {
-    val id       = random.nextInt()
+    val id = random.nextLong() match {
+      case l if l == java.lang.Long.MIN_VALUE => 0
+      case l                                  => math.labs(l)
+    }
     val fileName = prefix + id + suffix
     new File(directory, fileName)
   }
