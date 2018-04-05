@@ -309,19 +309,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
     }
 
   def createNewFile(): Boolean =
-    if (path.isEmpty) {
-      throw new IOException("No such file or directory")
-    } else if (!Option(getParentFile).forall(_.exists)) {
-      throw new IOException("No such file or directory")
-    } else if (exists) {
-      false
-    } else
-      Zone { implicit z =>
-        fopen(toCString(path), c"w") match {
-          case null => false
-          case fd   => fclose(fd); exists()
-        }
-      }
+    FileHelpers.createNewFile(path, throwOnError = true)
 
   def renameTo(dest: File): Boolean =
     Zone { implicit z =>
@@ -545,25 +533,12 @@ object File {
     createTempFile(prefix, suffix, null)
 
   @throws(classOf[IOException])
-  private[java] def createTempFile(prefix: String,
-                                   suffix: String,
-                                   directory: File,
-                                   minLength: Boolean): File =
-    if (prefix == null) throw new NullPointerException
-    else if (minLength && prefix.length < 3)
-      throw new IllegalArgumentException("Prefix string too short")
-    else {
-      val tmpDir       = Option(directory).getOrElse(tempDir())
-      val newSuffix    = Option(suffix).getOrElse(".tmp")
-      var result: File = null
-      do {
-        result = genTempFile(prefix, newSuffix, tmpDir)
-      } while (!result.createNewFile())
-      result
-    }
-  @throws(classOf[IOException])
   def createTempFile(prefix: String, suffix: String, directory: File): File =
-    createTempFile(prefix, suffix, directory, minLength = true)
+    FileHelpers.createTempFile(prefix,
+                               suffix,
+                               directory,
+                               minLength = true,
+                               throwOnError = true)
 
   private def tempDir(): File = {
     val dir = getenv(c"TMPDIR")
@@ -573,17 +548,6 @@ object File {
         case d    => d
       })
     } else new File(fromCString(dir))
-  }
-
-  private def genTempFile(prefix: String,
-                          suffix: String,
-                          directory: File): File = {
-    val id = random.nextLong() match {
-      case l if l == java.lang.Long.MIN_VALUE => 0
-      case l                                  => math.labs(l)
-    }
-    val fileName = prefix + id + suffix
-    new File(directory, fileName)
   }
 
 }

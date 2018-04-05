@@ -38,6 +38,7 @@ import scalanative.posix.sys.stat
 import scalanative.nio.fs.{FileHelpers, UnixException}
 
 import scala.collection.immutable.{Map => SMap, Stream => SStream, Set => SSet}
+import StandardCopyOption._
 
 object Files {
 
@@ -47,7 +48,7 @@ object Files {
   def copy(in: InputStream, target: Path, options: Array[CopyOption]): Long = {
     val replaceExisting =
       if (options.isEmpty) false
-      else if (options.length == 1 && options(0) == StandardCopyOption.REPLACE_EXISTING)
+      else if (options.length == 1 && options(0) == REPLACE_EXISTING)
         true
       else throw new UnsupportedOperationException()
 
@@ -73,9 +74,32 @@ object Files {
   }
 
   def copy(source: Path, target: Path, options: Array[CopyOption]): Path = {
-    val in = newInputStream(source, Array.empty)
-    try copy(in, target, options)
-    finally in.close()
+    val linkOpts = Array(LinkOption.NOFOLLOW_LINKS)
+    val attrs =
+      Files.readAttributes(source, classOf[PosixFileAttributes], linkOpts)
+    if (attrs.isSymbolicLink)
+      throw new IOException(
+        s"Unsupported operation: copy symbolic link $source to $target")
+    val targetExists = exists(target, linkOpts)
+    if (targetExists && !options.contains(REPLACE_EXISTING))
+      throw new FileAlreadyExistsException(target.toString)
+    if (isDirectory(source, Array.empty)) {
+      createDirectory(target, Array.empty)
+    } else {
+      val in = newInputStream(source, Array.empty)
+      try copy(in, target, options.filter(_ == REPLACE_EXISTING))
+      finally in.close()
+    }
+    if (options.contains(COPY_ATTRIBUTES)) {
+      val newAttrView =
+        getFileAttributeView(target, classOf[PosixFileAttributeView], linkOpts)
+      newAttrView.setTimes(attrs.lastModifiedTime,
+                           attrs.lastAccessTime,
+                           attrs.creationTime)
+      newAttrView.setGroup(attrs.group)
+      newAttrView.setOwner(attrs.owner)
+      newAttrView.setPermissions(attrs.permissions)
+    }
     target
   }
 
@@ -103,9 +127,14 @@ object Files {
     }
 
   def createDirectory(dir: Path, attrs: Array[FileAttribute[_]]): Path =
-    if (exists(dir, Array.empty))
-      throw new FileAlreadyExistsException(dir.toString)
-    else if (dir.toFile().mkdir()) {
+    if (exists(dir, Array.empty)) {
+      if (!isDirectory(dir, Array.empty)) {
+        throw new FileAlreadyExistsException(dir.toString)
+      } else if (list(dir).iterator.hasNext) {
+        throw new DirectoryNotEmptyException(dir.toString)
+      }
+      dir
+    } else if (dir.toFile().mkdir()) {
       setAttributes(dir, attrs)
       dir
     } else {
@@ -115,7 +144,7 @@ object Files {
   def createFile(path: Path, attrs: Array[FileAttribute[_]]): Path =
     if (exists(path, Array.empty))
       throw new FileAlreadyExistsException(path.toString)
-    else if (path.toFile().createNewFile()) {
+    else if (FileHelpers.createNewFile(path.toString)) {
       setAttributes(path, attrs)
       path
     } else {
@@ -153,7 +182,7 @@ object Files {
                                   prefix: String,
                                   attrs: Array[FileAttribute[_]]): Path = {
     val p    = if (prefix == null) "" else prefix
-    val temp = File.createTempFile(p, "", dir, minLength = false)
+    val temp = FileHelpers.createTempFile(p, "", dir, minLength = false)
     if (temp.delete() && temp.mkdir()) {
       val tempPath = temp.toPath()
       setAttributes(tempPath, attrs)
@@ -177,7 +206,7 @@ object Files {
                              suffix: String,
                              attrs: Array[FileAttribute[_]]): Path = {
     val p        = if (prefix == null) "" else prefix
-    val temp     = File.createTempFile(p, suffix, dir, minLength = false)
+    val temp     = FileHelpers.createTempFile(p, suffix, dir, minLength = false)
     val tempPath = temp.toPath()
     setAttributes(tempPath, attrs)
     tempPath
@@ -324,8 +353,19 @@ object Files {
       None)
 
   def move(source: Path, target: Path, options: Array[CopyOption]): Path = {
-    copy(source, target, options)
-    delete(source)
+    if (!exists(source.toAbsolutePath, Array.empty)) {
+      throw new NoSuchFileException(source.toString)
+    } else if (!exists(target.toAbsolutePath, Array.empty) || options.contains(
+                 REPLACE_EXISTING)) {
+      Zone { implicit z =>
+        if (stdio.rename(toCString(source.toAbsolutePath().toString),
+                         toCString(target.toAbsolutePath().toString)) != 0) {
+          throw UnixException(target.toString, errno.errno)
+        }
+      }
+    } else {
+      throw new FileAlreadyExistsException(target.toString)
+    }
     target
   }
 
