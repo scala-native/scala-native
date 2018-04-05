@@ -289,4 +289,10 @@ object PathSuite extends tests.Suite {
         .resolveSibling(Paths.get("/bar"))
         .toString == "/bar")
   }
+
+  test("Path.equals") {
+    assert(Paths.get("") == Paths.get(""))
+    assert(Paths.get("////") == Paths.get("/"))
+    assert(Paths.get("/.") != Paths.get("/"))
+  }
 }

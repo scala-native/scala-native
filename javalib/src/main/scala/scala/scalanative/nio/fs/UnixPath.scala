@@ -15,8 +15,7 @@ import java.util.Iterator
 
 import scala.collection.mutable.UnrolledBuffer
 
-class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
-    extends Path {
+class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
   import UnixPath._
 
   private lazy val path: String = removeRedundantSlashes(rawPath)
@@ -44,9 +43,7 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
 
   private lazy val _isAbsolute = rawPath.startsWith("/")
 
-  private lazy val root =
-    if (isAbsolute) new UnixPath(fs, "/")
-    else null
+  private lazy val root = if (isAbsolute) new UnixPath(fs, "/") else null
 
   private lazy val fileName =
     if (path == "/") null
@@ -72,8 +69,8 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
     else new UnixPath(fs, toFile().getAbsolutePath())
 
   private lazy val file =
-    if (isAbsolute) new File(rawPath)
-    else new File(s"${fs.defaultDirectory}/$rawPath")
+    if (isAbsolute) new File(path)
+    else new File(s"${fs.defaultDirectory}/$path")
 
   private lazy val uri =
     new URI(scheme = "file",
@@ -101,7 +98,7 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
     if (index < 0 || nameCount == 0 || index >= nameCount)
       throw new IllegalArgumentException
     else {
-      if (rawPath.isEmpty) null
+      if (path.isEmpty) null
       else path.substring(offsets(index) + 1, offsets(index + 1))
     }
   }
@@ -156,7 +153,7 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
   override def resolve(other: Path): Path =
     if (other.isAbsolute || path.isEmpty) other
     else if (other.toString.isEmpty) this
-    else new UnixPath(fs, rawPath + "/" + other.toString())
+    else new UnixPath(fs, path + "/" + other.toString())
 
   override def resolve(other: String): Path =
     resolve(new UnixPath(fs, other))
@@ -227,15 +224,15 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
   override def equals(obj: Any): Boolean =
     obj match {
       case other: UnixPath =>
-        this.fs == other.fs && this.rawPath == other.rawPath
+        this.fs == other.fs && this.path == other.path
       case _ => false
     }
 
   override def hashCode(): Int =
-    rawPath.##
+    path.##
 
   override def toString(): String =
-    rawPath
+    path
 
 }
 
