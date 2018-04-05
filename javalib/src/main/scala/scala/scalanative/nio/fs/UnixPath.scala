@@ -20,6 +20,27 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
   import UnixPath._
 
   private lazy val path: String = removeRedundantSlashes(rawPath)
+  private lazy val offsets =
+    if (path.isEmpty) Array(-1, 0)
+    else if (path == "/") Array(0)
+    else {
+      var i     = 0
+      var count = 1
+      do {
+        count += 1
+        i = path.indexOf('/', i + 1)
+      } while (i != -1)
+      val result = new Array[Int](count)
+      i = if (path.charAt(0) == '/') 0 else -1
+      var j = 0
+      do {
+        result(j) = i
+        i = path.indexOf('/', i + 1)
+        j += 1
+      } while (i != -1)
+      result(count - 1) = path.length
+      result
+    }
 
   private lazy val _isAbsolute = rawPath.startsWith("/")
 
@@ -44,9 +65,7 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
     if (rawPath.isEmpty) 1
     else path.split("/").filter(_.nonEmpty).length
 
-  private lazy val splitCached = path.split("/").filter(_.nonEmpty)
-
-  private lazy val normalizedPath = new UnixPath(fs, normalized(path))
+  private lazy val normalizedPath = new UnixPath(fs, normalized(this))
 
   private lazy val absPath =
     if (path.startsWith("/")) this
@@ -75,16 +94,21 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
 
   override def getParent(): Path = parent
 
-  override def getNameCount(): Int = nameCount
+  override def getNameCount(): Int = offsets.size - 1
 
-  override def getName(index: Int): Path = {
+  @inline private def getNameString(index: Int): String = {
     val nameCount = getNameCount
     if (index < 0 || nameCount == 0 || index >= nameCount)
       throw new IllegalArgumentException
     else {
-      if (rawPath.isEmpty) this
-      else new UnixPath(fs, splitCached(index))
+      if (rawPath.isEmpty) null
+      else path.substring(offsets(index) + 1, offsets(index + 1))
     }
+  }
+
+  override def getName(index: Int): Path = getNameString(index) match {
+    case null => this
+    case n    => new UnixPath(fs, n)
   }
 
   override def subpath(beginIndex: Int, endIndex: Int): Path =
@@ -216,12 +240,12 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
 }
 
 private object UnixPath {
-  def normalized(path: String): String = {
-    if (path.length < 2) return path
-    val absolute = path.startsWith("/")
+  def normalized(path: UnixPath): String = {
+    if (path.path.length < 2) return path.path
+    val absolute = path.path.startsWith("/")
     val components =
-      path
-        .split("/")
+      (0 until path.offsets.size - 1)
+        .map(path.getNameString)
         .foldLeft(List.empty[String]) {
           case (acc, "..") =>
             if (acc.isEmpty && absolute) Nil
