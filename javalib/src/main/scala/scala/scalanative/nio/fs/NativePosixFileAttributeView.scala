@@ -7,13 +7,14 @@ import java.nio.file.attribute._
 import java.io.IOException
 
 import scalanative.native._
-import scalanative.posix.{grp, pwd, unistd, utime}
+import scalanative.posix.{errno => e, grp, pwd, unistd, time, utime}, e._
 import scalanative.posix.sys.stat
 
 final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
     extends PosixFileAttributeView
     with FileOwnerAttributeView {
-
+  private def throwIOException() =
+    throw UnixException(path.toString, errno.errno)
   override val name: String = "posix"
 
   override def setTimes(lastModifiedTime: FileTime,
@@ -30,14 +31,14 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
       else !(sb._8)
     // createTime is ignored: No posix-y way to set it.
     if (utime.utime(toCString(path.toString), buf) != 0)
-      throw new IOException()
+      throwIOException()
   }
 
   override def setOwner(owner: UserPrincipal): Unit =
     Zone { implicit z =>
       val passwd = getPasswd(toCString(owner.getName))
       if (unistd.chown(toCString(path.toString), !(passwd._2), -1.toUInt) != 0)
-        throw new IOException()
+        throwIOException()
     }
 
   override def setPermissions(perms: Set[PosixFilePermission]): Unit =
@@ -47,12 +48,11 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
         case (flag, value) => if (perms.contains(value)) mask = mask | flag
       }
       if (stat.chmod(toCString(path.toString), mask) != 0) {
-        throw new IOException()
+        throwIOException()
       }
     }
 
-  override def getOwner(): UserPrincipal =
-    attributes.owner
+  override def getOwner(): UserPrincipal = attributes.owner
 
   override def setGroup(group: GroupPrincipal): Unit =
     Zone { implicit z =>
@@ -60,64 +60,73 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
       val err    = unistd.chown(toCString(path.toString), -1.toUInt, !(_group._2))
 
       if (err != 0) {
-        throw new IOException()
+        throwIOException()
       }
     }
 
-  override def readAttributes(): BasicFileAttributes =
-    attributes
+  override def readAttributes(): BasicFileAttributes = attributes
 
-  private lazy val attributes =
+  private def attributes =
     new PosixFileAttributes {
-      private def fileStat()(implicit z: Zone) =
-        getStat()
+      private[this] var st_dev: stat.dev_t         = _
+      private[this] var st_rdev: stat.dev_t        = _
+      private[this] var st_ino: stat.ino_t         = _
+      private[this] var st_uid: stat.uid_t         = _
+      private[this] var st_gid: stat.gid_t         = _
+      private[this] var st_size: unistd.off_t      = _
+      private[this] var st_atime: time.time_t      = _
+      private[this] var st_mtime: time.time_t      = _
+      private[this] var st_ctime: time.time_t      = _
+      private[this] var st_blocks: stat.blkcnt_t   = _
+      private[this] var st_blksize: stat.blksize_t = _
+      private[this] var st_nlink: stat.nlink_t     = _
+      private[this] var st_mode: stat.mode_t       = _
 
-      private def fileMode()(implicit z: Zone) =
-        !(fileStat()._13)
+      Zone { implicit z =>
+        val buf = getStat()
+        st_dev = !buf._1
+        st_rdev = !buf._2
+        st_ino = !buf._3
+        st_uid = !buf._4
+        st_gid = !buf._5
+        st_size = !buf._6
+        st_atime = !buf._7
+        st_mtime = !buf._8
+        st_ctime = !buf._9
+        st_blocks = !buf._10
+        st_blksize = !buf._11
+        st_nlink = !buf._12
+        st_mode = !buf._13
+      }
 
       private def filePasswd()(implicit z: Zone) =
-        getPasswd(!(fileStat()._4))
+        getPasswd(st_uid)
 
       private def fileGroup()(implicit z: Zone) =
-        getGroup(!(fileStat()._5))
+        getGroup(st_gid)
 
-      override def fileKey =
-        Zone { implicit z =>
-          (!(fileStat()._3)).asInstanceOf[Object]
-        }
+      override def fileKey = st_ino.asInstanceOf[Object]
 
-      override def isDirectory =
-        Zone { implicit z =>
-          stat.S_ISDIR(fileMode()) == 1
-        }
+      override lazy val isDirectory =
+        stat.S_ISDIR(st_mode) == 1
 
-      override def isRegularFile =
-        Zone { implicit z =>
-          stat.S_ISREG(fileMode()) == 1
-        }
+      override lazy val isRegularFile =
+        stat.S_ISREG(st_mode) == 1
 
-      override def isSymbolicLink =
-        Zone { implicit z =>
-          stat.S_ISLNK(fileMode()) == 1
-        }
+      override lazy val isSymbolicLink =
+        stat.S_ISLNK(st_mode) == 1
 
-      override def isOther =
+      override lazy val isOther =
         !isDirectory && !isRegularFile && !isSymbolicLink
 
       override def lastAccessTime =
-        Zone { implicit z =>
-          FileTime.from(!(fileStat()._7), TimeUnit.SECONDS)
-        }
+        FileTime.from(st_atime, TimeUnit.SECONDS)
 
       override def lastModifiedTime =
-        Zone { implicit z =>
-          FileTime.from(!(fileStat()._8), TimeUnit.SECONDS)
-        }
+        FileTime.from(st_mtime, TimeUnit.SECONDS)
 
       override def creationTime =
-        Zone { implicit z =>
-          FileTime.from(!(fileStat()._9), TimeUnit.SECONDS)
-        }
+        FileTime.from(st_ctime, TimeUnit.SECONDS)
 
       override def group = new GroupPrincipal {
         override val getName =
@@ -133,36 +142,33 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
           }
       }
 
-      override def permissions =
-        Zone { implicit z =>
-          val set = new HashSet[PosixFilePermission]
-          NativePosixFileAttributeView.permMap.foreach {
-            case (flag, value) =>
-              if ((fileMode() & flag).toInt != 0) set.add(value)
-          }
-          set
+      override def permissions = {
+        val set = new HashSet[PosixFilePermission]
+        NativePosixFileAttributeView.permMap.foreach {
+          case (flag, value) =>
+            if ((st_mode & flag).toInt != 0) set.add(value)
         }
+        set
+      }
 
-      override def size =
-        Zone { implicit z =>
-          !(fileStat()._6)
-        }
+      override def size = st_size
     }
 
   override def asMap(): HashMap[String, Object] = {
+    val attrs = attributes
     val values =
       List(
-        "lastModifiedTime" -> attributes.lastModifiedTime,
-        "lastAccessTime"   -> attributes.lastAccessTime,
-        "creationTime"     -> attributes.creationTime,
-        "size"             -> Long.box(attributes.size),
-        "isRegularFile"    -> Boolean.box(attributes.isRegularFile),
-        "isDirectory"      -> Boolean.box(attributes.isDirectory),
-        "isSymbolicLink"   -> Boolean.box(attributes.isSymbolicLink),
-        "isOther"          -> Boolean.box(attributes.isOther),
-        "fileKey"          -> attributes.fileKey,
-        "permissions"      -> attributes.permissions,
-        "group"            -> attributes.group
+        "lastModifiedTime" -> attrs.lastModifiedTime,
+        "lastAccessTime"   -> attrs.lastAccessTime,
+        "creationTime"     -> attrs.creationTime,
+        "size"             -> Long.box(attrs.size),
+        "isRegularFile"    -> Boolean.box(attrs.isRegularFile),
+        "isDirectory"      -> Boolean.box(attrs.isDirectory),
+        "isSymbolicLink"   -> Boolean.box(attrs.isSymbolicLink),
+        "isOther"          -> Boolean.box(attrs.isOther),
+        "fileKey"          -> attrs.fileKey,
+        "permissions"      -> attrs.permissions,
+        "group"            -> attrs.group
       )
 
     val map = new HashMap[String, Object]()
@@ -196,7 +202,7 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
       }
 
     if (err == 0) buf
-    else throw new IOException()
+    else throwIOException()
   }
 
   private def getGroup(name: CString)(implicit z: Zone): Ptr[grp.group] = {
@@ -204,7 +210,7 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
     val err = grp.getgrnam(name, buf)
 
     if (err == 0) buf
-    else throw new IOException()
+    else throwIOException()
   }
 
   private def getGroup(gid: stat.gid_t)(implicit z: Zone): Ptr[grp.group] = {
@@ -212,7 +218,7 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
     val err = grp.getgrgid(gid, buf)
 
     if (err == 0) buf
-    else throw new IOException()
+    else throwIOException()
   }
 
   private def getPasswd(name: CString)(implicit z: Zone): Ptr[pwd.passwd] = {
@@ -220,7 +226,7 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
     val err = pwd.getpwnam(name, buf)
 
     if (err == 0) buf
-    else throw new IOException()
+    else throwIOException()
   }
 
   private def getPasswd(uid: stat.uid_t)(implicit z: Zone): Ptr[pwd.passwd] = {
@@ -228,7 +234,7 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
     val err = pwd.getpwuid(uid, buf)
 
     if (err == 0) buf
-    else throw new IOException()
+    else throwIOException()
   }
 
 }
