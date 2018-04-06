@@ -43,6 +43,9 @@ abstract class FileSystemProvider protected () {
     val channel = Files.newByteChannel(path, options)
     new InputStream {
       private val buffer = ByteBuffer.allocate(1)
+      override def read(buf: Array[Byte], offset: Int, count: Int): Int = {
+        channel.read(ByteBuffer.wrap(buf, offset, count))
+      }
       override def read(): Int = {
         buffer.position(0)
         val read = channel.read(buffer)
@@ -68,6 +71,9 @@ abstract class FileSystemProvider protected () {
         buffer.position(0)
         buffer.put(0, b.toByte)
         channel.write(buffer)
+      }
+      override def write(b: Array[Byte], off: Int, len: Int): Unit = {
+        channel.write(ByteBuffer.wrap(b, off, len))
       }
       override def close(): Unit =
         channel.close()
