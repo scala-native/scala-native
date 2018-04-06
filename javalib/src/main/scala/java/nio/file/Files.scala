@@ -393,17 +393,23 @@ object Files {
   def notExists(path: Path, options: Array[LinkOption]): Boolean =
     !exists(path, options)
 
-  def readAllBytes(path: Path): Array[Byte] = {
-    val bytes  = new Array[Byte](size(path).toInt)
-    val buffer = new Array[Byte](4096)
-    val input  = newInputStream(path, Array.empty)
-    var offset = 0
-    var read   = 0
-    while ({ read = input.read(buffer); read != -1 }) {
-      System.arraycopy(buffer, 0, bytes, offset, read)
-      offset += read
+  def readAllBytes(path: Path): Array[Byte] = Zone { implicit z =>
+    val len   = size(path).toInt
+    val bytes = scala.scalanative.runtime.ByteArray.alloc(len)
+    val fd    = fcntl.open(toCString(path.toString), fcntl.O_RDONLY)
+    try {
+      var offset = 0
+      var read   = 0
+      while ({
+        read = unistd.read(fd, bytes.at(offset), len - offset);
+        read != -1 && (offset + read) < len
+      }) {
+        offset += read
+      }
+      bytes.asInstanceOf[Array[Byte]]
+    } finally {
+      fcntl.close(fd)
     }
-    bytes
   }
 
   def readAllLines(path: Path): List[String] =
