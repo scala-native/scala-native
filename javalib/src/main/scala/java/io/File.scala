@@ -2,14 +2,12 @@ package java.io
 
 import java.nio.file.{FileSystems, Path}
 
-import scala.collection.mutable.UnrolledBuffer
-
 import scala.annotation.tailrec
-import scalanative.posix.{dirent, fcntl, limits, unistd, utime}
+import scalanative.posix.{fcntl, limits, unistd, utime}
 import scalanative.posix.sys.stat
 import scalanative.native._, stdlib._, stdio._, string._
+import scalanative.nio.fs.FileHelpers
 import scalanative.runtime.Platform
-import dirent._
 import unistd._
 
 class File(_path: String) extends Serializable with Comparable[File] {
@@ -267,7 +265,8 @@ class File(_path: String) extends Serializable with Comparable[File] {
       null
     } else
       Zone { implicit z =>
-        val elements = listImpl(toCString(properPath))
+        val elements =
+          FileHelpers.list(properPath, (n, _) => n, allowEmpty = true)
         if (elements == null)
           Array.empty[String]
         else
@@ -287,28 +286,6 @@ class File(_path: String) extends Serializable with Comparable[File] {
           filter.accept(new File(dir, name))
       }
     listFiles(filenameFilter)
-  }
-
-  private def listImpl(path: CString): Array[String] = {
-    val dir = opendir(path)
-
-    if (dir == null) {
-      null
-    } else
-      Zone { implicit z =>
-        val buffer = UnrolledBuffer.empty[String]
-        var elem   = alloc[dirent]
-        while (readdir(dir, elem) == 0) {
-          val name = fromCString(elem._2.asInstanceOf[CString])
-
-          // java doesn't list '.' and '..', we filter them out.
-          if (name != "." && name != "..") {
-            buffer += name
-          }
-        }
-        closedir(dir)
-        buffer.toArray
-      }
   }
 
   def mkdir(): Boolean =
