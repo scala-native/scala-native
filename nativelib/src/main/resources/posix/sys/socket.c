@@ -63,12 +63,12 @@ int scalanative_MSG_EOR() { return MSG_EOR; }
 int scalanative_MSG_OOB() { return MSG_OOB; }
 
 int scalanative_MSG_NOSIGNAL() {
-    #ifdef MSG_NOSIGNAL
+#ifdef MSG_NOSIGNAL
     return MSG_NOSIGNAL;
-    #endif
-    #ifndef MSG_NOSIGNAL
+#endif
+#ifndef MSG_NOSIGNAL
     return 0;
-    #endif
+#endif
 }
 
 int scalanative_MSG_PEEK() { return MSG_PEEK; }
