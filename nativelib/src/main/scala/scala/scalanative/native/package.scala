@@ -3,14 +3,15 @@ package scala.scalanative
 import scala.language.experimental.macros
 import java.nio.charset.Charset
 import scalanative.runtime.undefined
+import scalanative.runtime.CrossPlatform
 
 package object native {
 
   /** Int on 32-bit architectures and Long on 64-bit ones. */
-  type Word = Long
+  type Word = CrossPlatform.Cross3264[Int, Long]
 
   /** UInt on 32-bit architectures and ULong on 64-bit ones. */
-  type UWord = ULong
+  type UWord = CrossPlatform.Cross3264[UInt, ULong]
 
   /** The C 'char' type. */
   type CChar = Byte
@@ -28,7 +29,7 @@ package object native {
   type CUnsignedLong = UWord
 
   /** The C 'unsigned long int' type. */
-  type CUnsignedLongInt = ULong
+  type CUnsignedLongInt = CrossPlatform.Cross3264[UInt, ULong]
 
   /** The C 'unsigned long long' type. */
   type CUnsignedLongLong = ULong
@@ -46,7 +47,7 @@ package object native {
   type CLong = Word
 
   /** The C 'long int' type. */
-  type CLongInt = Long
+  type CLongInt = CrossPlatform.Cross3264[Int, Long]
 
   /** The C 'long long' type. */
   type CLongLong = Long

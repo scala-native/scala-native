@@ -8,7 +8,7 @@ import scala.annotation.tailrec
 import scalanative.posix.{dirent, fcntl, limits, unistd, utime}
 import scalanative.posix.sys.stat
 import scalanative.native._, stdlib._, stdio._, string._
-import scalanative.runtime.Platform
+import scalanative.runtime.{Platform, CrossPlatform}
 import dirent._
 import unistd._
 
@@ -234,7 +234,10 @@ class File(_path: String) extends Serializable with Comparable[File] {
         if (stat.stat(toCString(path), statbuf) == 0) {
           val timebuf = alloc[utime.utimbuf]
           !(timebuf._1) = !(statbuf._8)
-          !(timebuf._2) = time / 1000L
+          !(timebuf._2) = CrossPlatform.cross3264(
+            (time / 1000L).toInt,
+            time / 1000L
+          )
           utime.utime(toCString(path), timebuf) == 0
         } else {
           false

@@ -9,6 +9,7 @@ import java.io.IOException
 import scalanative.native._
 import scalanative.posix.{grp, pwd, unistd, utime}
 import scalanative.posix.sys.stat
+import scalanative.runtime.CrossPlatform
 
 final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
     extends PosixFileAttributeView
@@ -23,10 +24,10 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
 
     val buf = alloc[utime.utimbuf]
     !(buf._1) =
-      if (lastAccessTime != null) lastAccessTime.to(TimeUnit.SECONDS)
+      if (lastAccessTime != null) CrossPlatform.cross3264(lastAccessTime.to(TimeUnit.SECONDS).toInt, lastAccessTime.to(TimeUnit.SECONDS))
       else !(sb._7)
     !(buf._2) =
-      if (lastModifiedTime != null) lastModifiedTime.to(TimeUnit.SECONDS)
+      if (lastModifiedTime != null) CrossPlatform.cross3264(lastModifiedTime.to(TimeUnit.SECONDS).toInt, lastModifiedTime.to(TimeUnit.SECONDS))
       else !(sb._8)
     // createTime is ignored: No posix-y way to set it.
     if (utime.utime(toCString(path.toString), buf) != 0)

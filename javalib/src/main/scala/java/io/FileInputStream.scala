@@ -3,6 +3,7 @@ package java.io
 import scalanative.native._, stdlib._, stdio._, string._
 import scalanative.posix.{fcntl, unistd}, unistd._
 import scalanative.runtime
+import scalanative.runtime.CrossPlatform
 
 class FileInputStream(fd: FileDescriptor) extends InputStream {
 
@@ -71,7 +72,7 @@ class FileInputStream(fd: FileDescriptor) extends InputStream {
       throw new IOException()
     } else {
       val bytesToSkip = Math.min(n, available())
-      lseek(fd.fd, bytesToSkip, SEEK_CUR)
+      lseek(fd.fd, CrossPlatform.cross3264(bytesToSkip.toInt, bytesToSkip), SEEK_CUR)
       bytesToSkip
     }
 

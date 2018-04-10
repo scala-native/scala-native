@@ -3,6 +3,7 @@ package java.lang
 import scala.scalanative.native._
 import scala.scalanative.runtime, runtime.ClassTypeOps
 import scala.scalanative.runtime.Intrinsics._
+import scala.scalanative.runtime.CrossPlatform
 
 class _Object {
   @inline def __equals(that: _Object): scala.Boolean =
@@ -10,7 +11,7 @@ class _Object {
 
   @inline def __hashCode(): scala.Int = {
     val addr = this.cast[Word]
-    addr.toInt ^ (addr >> 32).toInt
+    CrossPlatform.cross3264(addr.toInt, addr.toInt ^ (addr >> 32).toInt)
   }
 
   @inline def __toString(): String =
@@ -46,18 +47,29 @@ class _Object {
     // hashCode. Otherwise, whenever hashCode is overriden, we also update the
     // vtable entry for scala_## to point to the override directly.
     val addr = this.cast[Word]
-    addr.toInt ^ (addr >> 32).toInt
+    CrossPlatform.cross3264(addr.toInt, addr.toInt ^ (addr >> 32).toInt)
   }
 
   protected def __clone(): _Object = {
     val ty    = runtime.getType(this)
     val size  = ty.size
-    val clone = runtime.GC.alloc(ty, size)
-    `llvm.memcpy.p0i8.p0i8.i64`(clone.cast[Ptr[scala.Byte]],
-                                this.cast[Ptr[scala.Byte]],
-                                size,
-                                1,
-                                false)
+    val clone = runtime.GC.alloc(ty, size.asInstanceOf[Word])
+    CrossPlatform.cross3264(
+      {
+        `llvm.memcpy.p0i8.p0i8.i32`(clone.cast[Ptr[scala.Byte]],
+          this.cast[Ptr[scala.Byte]],
+          size.toInt,
+          1,
+          false)
+      },
+      {
+        `llvm.memcpy.p0i8.p0i8.i64`(clone.cast[Ptr[scala.Byte]],
+          this.cast[Ptr[scala.Byte]],
+          size,
+          1,
+          false)
+      }
+    )
     clone.cast[_Object]
   }
 

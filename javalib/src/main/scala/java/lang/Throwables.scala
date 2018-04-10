@@ -3,6 +3,7 @@ package java.lang
 import scala.collection.mutable
 import scalanative.native._
 import scalanative.runtime.unwind
+import scalanative.runtime.CrossPlatform
 
 private[lang] object StackTrace {
   private val cache =
@@ -29,7 +30,7 @@ private[lang] object StackTrace {
     val cursor  = stackalloc[scala.Byte](2048)
     val context = stackalloc[scala.Byte](2048)
     val offset  = stackalloc[scala.Byte](8)
-    val ip      = stackalloc[CUnsignedLongLong]
+    val ip      = stackalloc[CrossPlatform.Cross3264[CUnsignedInt, CUnsignedLongLong]]
     var buffer  = mutable.ArrayBuffer.empty[StackTraceElement]
 
     unwind.get_context(context)
