@@ -30,8 +30,9 @@ private[lang] object StackTrace {
     val cursor  = stackalloc[scala.Byte](2048)
     val context = stackalloc[scala.Byte](2048)
     val offset  = stackalloc[scala.Byte](8)
-    val ip      = stackalloc[CrossPlatform.Cross3264[CUnsignedInt, CUnsignedLongLong]]
-    var buffer  = mutable.ArrayBuffer.empty[StackTraceElement]
+    val ip =
+      stackalloc[CrossPlatform.Cross3264[CUnsignedInt, CUnsignedLongLong]]
+    var buffer = mutable.ArrayBuffer.empty[StackTraceElement]
 
     unwind.get_context(context)
     unwind.init_local(cursor, context)

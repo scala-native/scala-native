@@ -126,17 +126,16 @@ final class BooleanArray private () extends Array[Boolean] {
     CrossPlatform.cross3264(
       {
         `llvm.memcpy.p0i8.p0i8.i32`(arr.cast[Ptr[Byte]],
-          this.cast[Ptr[Byte]],
-          arrsize.toInt,
-          1,
-          false)
-      },
-      {
+                                    this.cast[Ptr[Byte]],
+                                    arrsize.toInt,
+                                    1,
+                                    false)
+      }, {
         `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
-          this.cast[Ptr[Byte]],
-          arrsize,
-          1,
-          false)
+                                    this.cast[Ptr[Byte]],
+                                    arrsize,
+                                    1,
+                                    false)
       }
     )
     arr.cast[BooleanArray]
@@ -188,17 +187,16 @@ final class CharArray private () extends Array[Char] {
     CrossPlatform.cross3264(
       {
         `llvm.memcpy.p0i8.p0i8.i32`(arr.cast[Ptr[Byte]],
-          this.cast[Ptr[Byte]],
-          arrsize.toInt,
-          1,
-          false)
-      },
-      {
+                                    this.cast[Ptr[Byte]],
+                                    arrsize.toInt,
+                                    1,
+                                    false)
+      }, {
         `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
-          this.cast[Ptr[Byte]],
-          arrsize,
-          1,
-          false)
+                                    this.cast[Ptr[Byte]],
+                                    arrsize,
+                                    1,
+                                    false)
       }
     )
     arr.cast[CharArray]
@@ -250,17 +248,16 @@ final class ByteArray private () extends Array[Byte] {
     CrossPlatform.cross3264(
       {
         `llvm.memcpy.p0i8.p0i8.i32`(arr.cast[Ptr[Byte]],
-          this.cast[Ptr[Byte]],
-          arrsize.toInt,
-          1,
-          false)
-      },
-      {
+                                    this.cast[Ptr[Byte]],
+                                    arrsize.toInt,
+                                    1,
+                                    false)
+      }, {
         `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
-          this.cast[Ptr[Byte]],
-          arrsize,
-          1,
-          false)
+                                    this.cast[Ptr[Byte]],
+                                    arrsize,
+                                    1,
+                                    false)
       }
     )
     arr.cast[ByteArray]
@@ -312,17 +309,16 @@ final class ShortArray private () extends Array[Short] {
     CrossPlatform.cross3264(
       {
         `llvm.memcpy.p0i8.p0i8.i32`(arr.cast[Ptr[Byte]],
-          this.cast[Ptr[Byte]],
-          arrsize.toInt,
-          1,
-          false)
-      },
-      {
+                                    this.cast[Ptr[Byte]],
+                                    arrsize.toInt,
+                                    1,
+                                    false)
+      }, {
         `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
-          this.cast[Ptr[Byte]],
-          arrsize,
-          1,
-          false)
+                                    this.cast[Ptr[Byte]],
+                                    arrsize,
+                                    1,
+                                    false)
       }
     )
     arr.cast[ShortArray]
@@ -374,17 +370,16 @@ final class IntArray private () extends Array[Int] {
     CrossPlatform.cross3264(
       {
         `llvm.memcpy.p0i8.p0i8.i32`(arr.cast[Ptr[Byte]],
-          this.cast[Ptr[Byte]],
-          arrsize.toInt,
-          1,
-          false)
-      },
-      {
+                                    this.cast[Ptr[Byte]],
+                                    arrsize.toInt,
+                                    1,
+                                    false)
+      }, {
         `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
-          this.cast[Ptr[Byte]],
-          arrsize,
-          1,
-          false)
+                                    this.cast[Ptr[Byte]],
+                                    arrsize,
+                                    1,
+                                    false)
       }
     )
     arr.cast[IntArray]
@@ -436,17 +431,16 @@ final class LongArray private () extends Array[Long] {
     CrossPlatform.cross3264(
       {
         `llvm.memcpy.p0i8.p0i8.i32`(arr.cast[Ptr[Byte]],
-          this.cast[Ptr[Byte]],
-          arrsize.toInt,
-          1,
-          false)
-      },
-      {
+                                    this.cast[Ptr[Byte]],
+                                    arrsize.toInt,
+                                    1,
+                                    false)
+      }, {
         `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
-          this.cast[Ptr[Byte]],
-          arrsize,
-          1,
-          false)
+                                    this.cast[Ptr[Byte]],
+                                    arrsize,
+                                    1,
+                                    false)
       }
     )
     arr.cast[LongArray]
@@ -498,17 +492,16 @@ final class FloatArray private () extends Array[Float] {
     CrossPlatform.cross3264(
       {
         `llvm.memcpy.p0i8.p0i8.i32`(arr.cast[Ptr[Byte]],
-          this.cast[Ptr[Byte]],
-          arrsize.toInt,
-          1,
-          false)
-      },
-      {
+                                    this.cast[Ptr[Byte]],
+                                    arrsize.toInt,
+                                    1,
+                                    false)
+      }, {
         `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
-          this.cast[Ptr[Byte]],
-          arrsize,
-          1,
-          false)
+                                    this.cast[Ptr[Byte]],
+                                    arrsize,
+                                    1,
+                                    false)
       }
     )
     arr.cast[FloatArray]
@@ -560,17 +553,16 @@ final class DoubleArray private () extends Array[Double] {
     CrossPlatform.cross3264(
       {
         `llvm.memcpy.p0i8.p0i8.i32`(arr.cast[Ptr[Byte]],
-          this.cast[Ptr[Byte]],
-          arrsize.toInt,
-          1,
-          false)
-      },
-      {
+                                    this.cast[Ptr[Byte]],
+                                    arrsize.toInt,
+                                    1,
+                                    false)
+      }, {
         `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
-          this.cast[Ptr[Byte]],
-          arrsize,
-          1,
-          false)
+                                    this.cast[Ptr[Byte]],
+                                    arrsize,
+                                    1,
+                                    false)
       }
     )
     arr.cast[DoubleArray]
@@ -622,17 +614,16 @@ final class ObjectArray private () extends Array[Object] {
     CrossPlatform.cross3264(
       {
         `llvm.memcpy.p0i8.p0i8.i32`(arr.cast[Ptr[Byte]],
-          this.cast[Ptr[Byte]],
-          arrsize.toInt,
-          1,
-          false)
-      },
-      {
+                                    this.cast[Ptr[Byte]],
+                                    arrsize.toInt,
+                                    1,
+                                    false)
+      }, {
         `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
-          this.cast[Ptr[Byte]],
-          arrsize,
-          1,
-          false)
+                                    this.cast[Ptr[Byte]],
+                                    arrsize,
+                                    1,
+                                    false)
       }
     )
     arr.cast[ObjectArray]

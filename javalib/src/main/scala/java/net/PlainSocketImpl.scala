@@ -109,7 +109,6 @@ private[net] class PlainSocketImpl extends SocketImpl {
     FD_SET(fd.fd, fdset)
   }
 
-
   override def accept(s: SocketImpl): Unit = {
     if (timeout > 0) {
       val fdset = stackalloc[fd_set]

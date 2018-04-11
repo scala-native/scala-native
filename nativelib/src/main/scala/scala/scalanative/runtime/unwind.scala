@@ -17,9 +17,11 @@ object unwind {
                     length: CSize,
                     offset: Ptr[Byte]): CInt = extern
   @name("scalanative_unwind_get_reg")
-  def get_reg(cursor: Ptr[Byte],
-              reg: CInt,
-              valp: Ptr[CrossPlatform.Cross3264[CUnsignedInt, CUnsignedLongLong]]): CInt = extern
+  def get_reg(
+      cursor: Ptr[Byte],
+      reg: CInt,
+      valp: Ptr[CrossPlatform.Cross3264[CUnsignedInt, CUnsignedLongLong]])
+    : CInt = extern
 
   @name("scalanative_UNW_REG_IP")
   def UNW_REG_IP: CInt = extern

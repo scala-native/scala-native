@@ -72,7 +72,9 @@ class FileInputStream(fd: FileDescriptor) extends InputStream {
       throw new IOException()
     } else {
       val bytesToSkip = Math.min(n, available())
-      lseek(fd.fd, CrossPlatform.cross3264(bytesToSkip.toInt, bytesToSkip), SEEK_CUR)
+      lseek(fd.fd,
+            CrossPlatform.cross3264(bytesToSkip.toInt, bytesToSkip),
+            SEEK_CUR)
       bytesToSkip
     }
 

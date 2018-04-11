@@ -116,10 +116,13 @@ class RandomAccessFile private (file: File,
       throw new IOException("Invalid argument")
     } else {
       val currentPosition = getFilePointer()
-      if (unistd.ftruncate(fd.fd, CrossPlatform.cross3264(newLength.toInt, newLength)) != 0) {
+      if (unistd.ftruncate(
+            fd.fd,
+            CrossPlatform.cross3264(newLength.toInt, newLength)) != 0) {
         throw new IOException()
       }
-      if (currentPosition > newLength) seek(CrossPlatform.cross3264(newLength.toInt, newLength))
+      if (currentPosition > newLength)
+        seek(CrossPlatform.cross3264(newLength.toInt, newLength))
     }
 
   override def skipBytes(n: Int): Int =

@@ -57,17 +57,16 @@ class _Object {
     CrossPlatform.cross3264(
       {
         `llvm.memcpy.p0i8.p0i8.i32`(clone.cast[Ptr[scala.Byte]],
-          this.cast[Ptr[scala.Byte]],
-          size.toInt,
-          1,
-          false)
-      },
-      {
+                                    this.cast[Ptr[scala.Byte]],
+                                    size.toInt,
+                                    1,
+                                    false)
+      }, {
         `llvm.memcpy.p0i8.p0i8.i64`(clone.cast[Ptr[scala.Byte]],
-          this.cast[Ptr[scala.Byte]],
-          size,
-          1,
-          false)
+                                    this.cast[Ptr[scala.Byte]],
+                                    size,
+                                    1,
+                                    false)
       }
     )
     clone.cast[_Object]
