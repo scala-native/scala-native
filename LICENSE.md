@@ -4,7 +4,7 @@ The original source code of the Scala Native toolchain and accompanying
 libraries is provided under Scala License:
 
 ```
-    Copyright (c) 2015-2017 EPFL
+    Copyright (c) 2015-2018 EPFL
 
     All rights reserved.
 
