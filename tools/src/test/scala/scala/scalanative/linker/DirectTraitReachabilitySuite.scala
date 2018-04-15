@@ -17,10 +17,10 @@ class DirectTraitReachabilitySuite extends ReachabilitySuite {
   val Parent     = g("Parent")
   val ParentMeth = g("Parent", "meth_unit")
   val Child      = g("Child")
-  val ChildInit  = g("Child", "init")
+  val ChildInit  = g("Child", "<init>")
   val ChildMeth  = g("Child", "meth_unit")
   val Object     = g("java.lang.Object")
-  val ObjectInit = g("java.lang.Object", "init")
+  val ObjectInit = g("java.lang.Object", "<init>")
 
   testReachable("trait")(Parent)(Parent)
   testReachable("trait method")(ParentMeth)(Parent, ParentMeth)
@@ -30,7 +30,7 @@ class DirectTraitReachabilitySuite extends ReachabilitySuite {
                                                     ParentMeth,
                                                     Object)
   testReachable("trait inherited")(Child)(Child, Parent, Object)
-  testReachable("trait meth + inherited init")(ParentMeth, ChildInit)(
+  testReachable("trait meth + inherited <init>")(ParentMeth, ChildInit)(
     Parent,
     ParentMeth,
     Child,

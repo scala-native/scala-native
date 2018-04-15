@@ -6,10 +6,14 @@ import java.nio.ByteBuffer
 import java.nio.file.Paths
 import scala.annotation.tailrec
 import scala.collection.mutable
-import scalanative.util.{Scope, ShowBuilder, unsupported}
-import scalanative.io.{VirtualDirectory, withScratchBuffer}
-import scalanative.optimizer.analysis.ControlFlow.{Graph => CFG, Block, Edge}
-import scalanative.nir._
+import scala.scalanative.util.{Scope, ShowBuilder, unsupported}
+import scala.scalanative.io.{VirtualDirectory, withScratchBuffer}
+import scala.scalanative.optimizer.analysis.ControlFlow.{
+  Graph => CFG,
+  Block,
+  Edge
+}
+import scala.scalanative.nir._
 
 object CodeGen {
 

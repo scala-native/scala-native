@@ -15,16 +15,16 @@ class IndirectTraitReachabilitySuite extends ReachabilitySuite {
   """)
 
   val Parent       = g("Parent")
-  val ParentInit   = g("Parent", "init")
+  val ParentInit   = g("Parent", "<init>")
   val ParentMeth   = g("Parent", "meth_unit")
   val Child        = g("Child")
-  val ChildInit    = g("Child", "init")
+  val ChildInit    = g("Child", "<init>")
   val Object       = g("java.lang.Object")
-  val ObjectInit   = g("java.lang.Object", "init")
+  val ObjectInit   = g("java.lang.Object", "<init>")
   val Indirect     = g("Indirect")
   val IndirectMeth = g("Indirect", "meth_unit")
 
-  testReachable("child init + trait meth")(ChildInit, IndirectMeth)(
+  testReachable("child <init> + trait meth")(ChildInit, IndirectMeth)(
     Child,
     ChildInit,
     Parent,

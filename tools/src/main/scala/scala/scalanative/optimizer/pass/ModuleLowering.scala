@@ -62,7 +62,7 @@ class ModuleLowering(implicit top: Top) extends Pass {
           Inst.None
         } else {
           val initSig = Type.Function(Seq(Type.Class(clsName)), Type.Void)
-          val init    = Val.Global(clsName member "init", Type.Ptr)
+          val init    = Val.Global(clsName member "<init>", Type.Ptr)
 
           Inst.Let(Op.Call(initSig, init, Seq(alloc), Next.None))
         }
@@ -120,7 +120,7 @@ class ModuleLowering(implicit top: Top) extends Pass {
 
   def isStaticModule(name: Global): Boolean =
     top.nodes(name).isInstanceOf[Class] &&
-      (!top.nodes.contains(name member "init"))
+      (!top.nodes.contains(name member "<init>"))
 }
 
 object ModuleLowering extends PassCompanion {

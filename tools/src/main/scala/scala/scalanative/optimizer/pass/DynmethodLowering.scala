@@ -85,7 +85,7 @@ object DynmethodLowering extends PassCompanion {
 
   val excptnGlobal = Global.Top("java.lang.NoSuchMethodException")
   val excptnInitGlobal =
-    Global.Member(excptnGlobal, "init_java.lang.String")
+    Global.Member(excptnGlobal, "<init>_java.lang.String")
 
   val excInitSig = Type.Function(
     Seq(Type.Class(excptnGlobal), Type.Class(Global.Top("java.lang.String"))),

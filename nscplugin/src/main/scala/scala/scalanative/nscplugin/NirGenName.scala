@@ -3,7 +3,7 @@ package nscplugin
 
 import scala.tools.nsc._
 import scala.reflect.internal.Flags._
-import scalanative.util.unreachable
+import scala.scalanative.util.unreachable
 
 trait NirGenName { self: NirGenPhase =>
   import global.{Name => _, _}, definitions._
@@ -80,7 +80,7 @@ trait NirGenName { self: NirGenPhase =>
     } else if (sym.owner.isExternModule) {
       owner member id tag "extern"
     } else if (sym.name == nme.CONSTRUCTOR) {
-      owner member ("init" +: mangledParams).mkString("_")
+      owner member ("<init>" +: mangledParams).mkString("_")
     } else {
       val mangledRetty = mangledType(tpe.resultType)
       val mangledId = id
