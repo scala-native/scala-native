@@ -457,10 +457,6 @@ lazy val tests =
     .settings(projectSettings)
     .settings(noPublishSettings)
     .settings(
-      // nativeOptimizerReporter := OptimizerReporter.toDirectory(
-      //   crossTarget.value),
-      // nativeLinkerReporter := LinkerReporter.toFile(
-      //   target.value / "out.dot"),
       libraryDependencies += "org.scala-native" %%% "test-interface" % nativeVersion,
       testFrameworks += new TestFramework("tests.NativeFramework"),
       envVars in (Test, test) ++= Map(
@@ -479,8 +475,7 @@ lazy val sandbox =
     .in(file("sandbox"))
     .settings(noPublishSettings)
     .settings(
-      // nativeOptimizerReporter := OptimizerReporter.toDirectory(
-      //   crossTarget.value),
+//      optimizerReporterOutPath := Some(crossTarget.value.toPath),
       scalaVersion := libScalaVersion
     )
     .enablePlugins(ScalaNativePlugin)

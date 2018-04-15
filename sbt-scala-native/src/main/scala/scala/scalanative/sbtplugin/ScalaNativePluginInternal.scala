@@ -4,9 +4,9 @@ package sbtplugin
 import java.lang.System.{lineSeparator => nl}
 import java.io.ByteArrayInputStream
 import java.nio.file.Files
+import java.nio.file.Path
 
 import scala.util.Try
-
 import sbt._
 import sbt.Keys._
 import sbt.complete.DefaultParsers._
@@ -14,7 +14,7 @@ import sbt.testing.Framework
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 
 import scalanative.nir
-import scalanative.build.{Build, Discover, BuildException}
+import scalanative.build.{Build, BuildException, Discover}
 import scalanative.io.VirtualDirectory
 import scalanative.util.{Scope => ResourceScope}
 import scalanative.sbtplugin.Utilities._
@@ -24,6 +24,9 @@ import scalanative.sbtplugin.SBTCompat.{Process, _}
 import scalanative.sbtplugin.testinterface.ScalaNativeFramework
 
 object ScalaNativePluginInternal {
+
+  val optimizerReporterOutPath =
+    settingKey[Option[Path]]("Output directory for optimizer reporter")
 
   val nativeWarnOldJVM =
     taskKey[Unit]("Warn if JVM 7 or older is used.")
@@ -67,7 +70,8 @@ object ScalaNativePluginInternal {
     nativeLinkStubs in NativeTest := (nativeLinkStubs in Test).value,
     nativeGC := Option(System.getenv.get("SCALANATIVE_GC"))
       .getOrElse(build.GC.default.name),
-    nativeGC in NativeTest := (nativeGC in Test).value
+    nativeGC in NativeTest := (nativeGC in Test).value,
+    optimizerReporterOutPath := None
   )
 
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
@@ -125,6 +129,7 @@ object ScalaNativePluginInternal {
         .withGC(gc)
         .withMode(mode)
         .withLinkStubs(nativeLinkStubs.value)
+        .withOptimizerReporterOutPath(optimizerReporterOutPath.value)
     },
     nativeLink := {
       val logger  = streams.value.log.toLogger

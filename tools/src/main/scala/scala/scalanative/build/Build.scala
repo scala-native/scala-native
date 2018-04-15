@@ -3,6 +3,8 @@ package build
 
 import java.nio.file.Path
 
+import scala.scalanative.optimizer.Reporter
+
 /** Utility methods for building code using Scala Native. */
 object Build {
 
@@ -50,7 +52,15 @@ object Build {
    *  @return `outpath`, the path to the resulting native binary.
    */
   def build(config: Config, outpath: Path): Path = {
-    val driver       = optimizer.Driver.default(config.mode)
+    val driver0 = optimizer.Driver.default(config.mode)
+
+    config.optimizerReporterOutPath
+    val driver = config.optimizerReporterOutPath.fold(driver0) {
+      optimizerReportOutPath =>
+        driver0.withOptimizerReporter(
+          Reporter.toDirectory(optimizerReportOutPath))
+    }
+
     val linkerResult = ScalaNative.link(config, driver)
 
     if (linkerResult.unresolved.nonEmpty) {

@@ -47,6 +47,8 @@ sealed trait Config {
   /** The logger used by the toolchain. */
   def logger: Logger
 
+  def optimizerReporterOutPath: Option[Path]
+
   /** Create a new config with given garbage collector. */
   def withGC(value: GC): Config
 
@@ -85,6 +87,8 @@ sealed trait Config {
 
   /** Create a new config with the given logger. */
   def withLogger(value: Logger): Config
+
+  def withOptimizerReporterOutPath(outdir: Option[Path]): Config
 }
 
 object Config {
@@ -104,7 +108,8 @@ object Config {
       gc = GC.default,
       mode = Mode.default,
       linkStubs = false,
-      logger = Logger.default
+      logger = Logger.default,
+      optimizerReporterOutPath = None
     )
 
   private final case class Impl(nativelib: Path,
@@ -119,7 +124,8 @@ object Config {
                                 gc: GC,
                                 mode: Mode,
                                 linkStubs: Boolean,
-                                logger: Logger)
+                                logger: Logger,
+                                optimizerReporterOutPath: Option[Path])
       extends Config {
     def withNativelib(value: Path): Config =
       copy(nativelib = value)
@@ -159,5 +165,10 @@ object Config {
 
     def withLogger(value: Logger): Config =
       copy(logger = value)
+
+    override def withOptimizerReporterOutPath(outdir: Option[Path]): Config = {
+      copy(optimizerReporterOutPath = outdir)
+    }
   }
+
 }
