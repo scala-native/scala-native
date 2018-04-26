@@ -1,5 +1,4 @@
 package scala.scalanative
-package sbtplugin
 package testinterface
 
 import java.io._
@@ -7,12 +6,11 @@ import java.net.{ServerSocket, SocketTimeoutException}
 
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration.Duration
+import scala.sys.process._
 
-import sbt.{Logger, MessageOnlyException}
-
+import scalanative.build.{BuildException, Logger}
 import scalanative.testinterface.serialization.Log.Level
 import scalanative.testinterface.serialization._
-import scalanative.sbtplugin.SBTCompat._
 
 /**
  * Represents a distant program with whom we communicate over the network.
@@ -29,7 +27,8 @@ class ComRunner(bin: File,
     override def run(): Unit = {
       val port = serverSocket.getLocalPort
       logger.info(s"Starting process '$bin' on port '$port'.")
-      Process(bin.toString +: port.toString +: args, None, envVars.toSeq: _*) ! logger
+      Process(bin.toString +: port.toString +: args, None, envVars.toSeq: _*) ! Logger
+        .toProcessLogger(logger)
     }
   }
 
@@ -44,8 +43,8 @@ class ComRunner(bin: File,
       serverSocket.accept()
     } catch {
       case _: SocketTimeoutException =>
-        throw new MessageOnlyException(
-          "The test program never connected to sbt.")
+        throw new BuildException(
+          "The test program never connected to the test runner.")
     } finally {
       // We can close it immediately, since we won't receive another connection.
       serverSocket.close()
@@ -90,7 +89,7 @@ class ComRunner(bin: File,
       } catch {
         case _: EOFException =>
           close()
-          throw new MessageOnlyException(
+          throw new BuildException(
             s"EOF on connection with remote runner on port ${serverSocket.getLocalPort}")
         case _: SocketTimeoutException =>
           close()
@@ -114,7 +113,12 @@ class ComRunner(bin: File,
       case Level.Info  => logger.info(message.message)
       case Level.Warn  => logger.warn(message.message)
       case Level.Error => logger.error(message.message)
-      case Level.Trace => message.throwable.foreach(logger.trace(_))
+      case Level.Trace =>
+        logger.debug(message.message)
+        message.throwable.foreach { t =>
+          logger.debug(t.getMessage)
+          t.getStackTrace.foreach(ste => logger.debug(s"\t$ste"))
+        }
       case Level.Debug => logger.debug(message.message)
     }
 

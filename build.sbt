@@ -54,6 +54,7 @@ addCommandAlias(
   "dirty-rebuild",
   Seq(
     "scalalib/publishLocal",
+    "testRunner/publishLocal",
     "sbtScalaNative/publishLocal",
     "testInterface/publishLocal"
   ).mkString(";", ";", "")
@@ -324,7 +325,7 @@ lazy val sbtScalaNative =
         .evaluated,
       publishLocal := publishLocal.dependsOn(publishLocal in tools).value
     )
-    .dependsOn(tools)
+    .dependsOn(tools, testRunner)
 
 lazy val nativelib =
   project
@@ -579,3 +580,15 @@ lazy val testInterfaceSbtDefs =
       libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test
     )
     .enablePlugins(ScalaNativePlugin)
+
+lazy val testRunner =
+  project
+    .settings(toolSettings)
+    .settings(mavenPublishSettings)
+    .in(file("test-runner"))
+    .settings(
+      crossScalaVersions := Seq(sbt13ScalaVersion, sbt10ScalaVersion),
+      libraryDependencies += "org.scala-sbt" % "test-interface" % "1.0",
+      sources in Compile ++= (sources in testInterfaceSerialization in Compile).value
+    )
+    .dependsOn(tools)

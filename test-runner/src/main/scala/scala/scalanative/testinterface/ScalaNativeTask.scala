@@ -1,11 +1,10 @@
 package scala.scalanative
-package sbtplugin
 package testinterface
 
-import sbt.MessageOnlyException
 import sbt.testing.{EventHandler, Logger, Task, TaskDef}
 
-import scala.scalanative.testinterface.serialization.{
+import scalanative.build.BuildException
+import scalanative.testinterface.serialization.{
   Command,
   Event,
   TaskInfo,
@@ -36,7 +35,7 @@ final case class ScalaNativeTask private (
           handler.handle(ev)
           receive()
         case other =>
-          throw new MessageOnlyException(
+          throw new BuildException(
             s"Unexpected message: ${other.getClass.getName}")
       }
 

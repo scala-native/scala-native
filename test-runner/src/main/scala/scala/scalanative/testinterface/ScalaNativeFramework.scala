@@ -1,13 +1,12 @@
 package scala.scalanative
-package sbtplugin
 package testinterface
 
 import java.io.File
 
-import sbt.Logger
 import sbt.testing.{Fingerprint, Framework, Runner}
 
-import scala.scalanative.testinterface.serialization.{Command, FrameworkInfo}
+import scalanative.build.Logger
+import scalanative.testinterface.serialization.{Command, FrameworkInfo}
 
 class ScalaNativeFramework(val framework: Framework,
                            val id: Int,
