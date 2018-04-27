@@ -34,7 +34,7 @@ class StringLowering(implicit top: Top) extends Pass {
           Global.None,
           Seq(CharArrayCls.rtti.const,
               charsLength,
-              Val.Int(0), // padding to get next field aligned properly
+              //Val.Int(0), // padding to get next field aligned properly
               Val.Array(Type.Short, chars.map(c => Val.Short(c.toShort))))
         ))
 

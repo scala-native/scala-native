@@ -16,5 +16,5 @@ class ExceptionWrapper : public std::exception {
 } // namespace scalanative
 
 extern "C" {
-void scalanative_throw(void *obj) { throw scalanative::ExceptionWrapper(obj); }
+void scalanative_throw(void *obj) { /*throw scalanative::ExceptionWrapper(obj);*/ }
 }

@@ -34,7 +34,7 @@ object Type {
   // low-level primitive types
 
   sealed abstract class Primitive(val width: Int) extends Type
-  final case object Ptr                           extends Primitive(64)
+  final case object Ptr                           extends Primitive(32)
 
   sealed abstract class I(width: Int, val signed: Boolean)
       extends Primitive(width)

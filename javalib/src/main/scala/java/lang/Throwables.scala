@@ -31,7 +31,7 @@ private[lang] object StackTrace {
     val context = stackalloc[scala.Byte](2048)
     val offset  = stackalloc[scala.Byte](8)
     val ip =
-      stackalloc[CrossPlatform.Cross3264[CUnsignedInt, CUnsignedLongLong]]
+      stackalloc[CrossPlatform.Cross3264[CUnsignedLong, CUnsignedLongLong]]
     var buffer = mutable.ArrayBuffer.empty[StackTraceElement]
 
     unwind.get_context(context)
@@ -90,8 +90,10 @@ class Throwable(s: String, private var e: Throwable)
     this.stackTrace = stackTrace.clone()
   }
 
-  def printStackTrace(): Unit =
+  def printStackTrace(): Unit = {
+    println("PRINTING STACK TRACE!")
     printStackTrace(System.err)
+  }
 
   def printStackTrace(ps: java.io.PrintStream): Unit =
     printStackTrace(ps.println(_: String))

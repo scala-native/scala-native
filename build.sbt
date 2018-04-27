@@ -481,7 +481,8 @@ lazy val sandbox =
     .settings(
       // nativeOptimizerReporter := OptimizerReporter.toDirectory(
       //   crossTarget.value),
-      scalaVersion := libScalaVersion
+      scalaVersion := libScalaVersion,
+      nativeCompileOptions in NativeTest += "-fexceptions"
     )
     .enablePlugins(ScalaNativePlugin)
 

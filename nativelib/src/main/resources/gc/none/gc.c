@@ -6,10 +6,10 @@
 #define MAP_ANONYMOUS MAP_ANON
 #endif
 
-// Dummy GC that maps chunks of 4GB and allocates but never frees.
+// Dummy GC that maps chunks of 64MB and allocates but never frees.
 
-// Map 4GB
-#define CHUNK (4 * 1024 * 1024 * 1024L)
+// Map 64MB
+#define CHUNK (64 * 1024 * 1024L)
 // Allow read and write
 #define DUMMY_GC_PROT (PROT_READ | PROT_WRITE)
 // Map private anonymous memory, and prevent from reserving swap

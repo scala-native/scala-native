@@ -30,7 +30,7 @@ class AllocLowering(implicit top: Top) extends Pass {
         let(n,
             Op.Call(allocSig,
                     allocMethod,
-                    Seq(cls.rtti.const, Val.Long(size)),
+                    Seq(cls.rtti.const, Val.Int(size)),
                     Next.None))
 
       case inst =>
@@ -45,7 +45,7 @@ object AllocLowering extends PassCompanion {
 
   val LARGE_OBJECT_MIN_SIZE = 8192
 
-  val allocSig = Type.Function(Seq(Type.Ptr, Type.Long), Type.Ptr)
+  val allocSig = Type.Function(Seq(Type.Ptr, Type.Int), Type.Ptr)
 
   val allocSmallName = Global.Top("scalanative_alloc_small")
   val alloc          = Val.Global(allocSmallName, allocSig)
