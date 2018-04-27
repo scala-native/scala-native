@@ -323,7 +323,9 @@ lazy val sbtScalaNative =
         .dependsOn(publishLocal in ThisProject)
         .dependsOn(publishLocal in scalalib)
         .evaluated,
-      publishLocal := publishLocal.dependsOn(publishLocal in tools).value
+      publishLocal := publishLocal
+        .dependsOn(publishLocal in tools, publishLocal in testRunner)
+        .value
     )
     .dependsOn(tools, testRunner)
 
