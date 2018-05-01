@@ -9,7 +9,7 @@ object zlib {
   type voidp      = Ptr[Byte]
   type voidpc     = Ptr[Byte]
   type uInt       = CUnsignedInt
-  type uLong      = CUnsignedLongLong
+  type uLong      = CUnsignedLong
   type uLongf     = CUnsignedLong
   type alloc_func = CFunctionPtr3[voidpf, uInt, uInt, voidpf]
   type free_func  = CFunctionPtr2[voidpf, voidpf, Void]

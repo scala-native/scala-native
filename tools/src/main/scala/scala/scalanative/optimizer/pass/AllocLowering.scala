@@ -30,7 +30,7 @@ class AllocLowering(implicit top: Top) extends Pass {
         let(n,
             Op.Call(allocSig,
                     allocMethod,
-                    Seq(cls.rtti.const, Val.Int(size)),
+                    Seq(cls.rtti.const, Val.Int(size.toInt)),
                     Next.None))
 
       case inst =>

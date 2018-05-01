@@ -10,6 +10,7 @@ import scalanative.build.IO.RichPath
 
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {
+  private val unwindSettings = Seq("-fexceptions", "-fcxx-exceptions", "-funwind-tables")
 
   /**
    * Unpack the `nativelib` to `workdir/lib`.
@@ -93,7 +94,7 @@ private[scalanative] object LLVM {
         val isCpp    = path.endsWith(".cpp")
         val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
         val flags    = (if (isCpp) Seq("-std=c++11") else Seq()) ++ config.compileOptions
-        val compilec = Seq(compiler) ++ flags ++ Seq("-c", path, "-o", opath)
+        val compilec = Seq(compiler) ++ flags ++ unwindSettings ++ Seq("-c", path, "-o", opath)
 
         config.logger.running(compilec)
         val result = Process(compilec, config.workdir.toFile) ! Logger
@@ -121,7 +122,7 @@ private[scalanative] object LLVM {
         .map { ll =>
           val apppath = ll.abs
           val outpath = apppath + ".o"
-          val compile = Seq(config.clang.abs, "-c", apppath, "-o", outpath) ++ opts
+          val compile = Seq(config.clang.abs, "-c", apppath, "-o", outpath) ++ opts ++ unwindSettings
           config.logger.running(compile)
           Process(compile, config.workdir.toFile) ! Logger.toProcessLogger(
             config.logger)
@@ -155,9 +156,15 @@ private[scalanative] object LLVM {
         case "Linux" => Seq("rt")
         case _       => Seq.empty
       }
+
+      val unwindArch = arch match {
+        case "i686" => "x86"
+        case other => other
+      }
+
       val libunwind = os match {
         case "Mac OS X" => Seq.empty
-        case _          => Seq("unwind", "unwind-" + arch)
+        case _          => Seq.empty//Seq("unwind", "unwind-" + unwindArch)
       }
       librt ++ libunwind ++ linkerResult.links
         .map(_.name) ++ config.gc.links
@@ -168,7 +175,7 @@ private[scalanative] object LLVM {
     val flags     = Seq("-o", outpath.abs) ++ linkopts ++ targetopt
     val opaths    = IO.getAll(nativelib, "glob:**.o").map(_.abs)
     val paths     = llPaths.map(_.abs) ++ opaths
-    val compile   = config.clangPP.abs +: (flags ++ paths)
+    val compile   = config.clangPP.abs +: (flags ++ unwindSettings ++ paths)
 
     config.logger.time(s"Linking native code (${config.gc.name} gc)") {
       config.logger.running(compile)

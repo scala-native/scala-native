@@ -20,6 +20,10 @@ RUN \
   apt-get update && \
   apt-get install sbt
 
+RUN mkdir project && echo 'sbt.version=0.13.17' >> project/build.properties
+
+RUN sbt exit && rm -rf project && rm -rf target
+
 RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
 
 RUN apt-add-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-5.0 main" && apt-get update
@@ -39,4 +43,4 @@ RUN git clone git://github.com/ivmai/bdwgc.git && \
     make -j && \
     make install
 
-RUN echo 'export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib"' >> ~/.bashrc && sh ~/.bashrc
+RUN echo 'export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib"' >> ~/.bashrc && bash ~/.bashrc

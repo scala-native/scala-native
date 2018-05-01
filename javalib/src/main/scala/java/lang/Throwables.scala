@@ -2,46 +2,55 @@ package java.lang
 
 import scala.collection.mutable
 import scalanative.native._
-import scalanative.runtime.unwind
+// import scalanative.runtime.unwind
 import scalanative.runtime.CrossPlatform
 
 private[lang] object StackTrace {
   private val cache =
     collection.mutable.HashMap.empty[CUnsignedLong, StackTraceElement]
 
-  private def makeStackTraceElement(
-      cursor: Ptr[scala.Byte]): StackTraceElement = {
-    val name   = stackalloc[CChar](256)
-    val offset = stackalloc[scala.Byte](8)
+  // private def makeStackTraceElement(
+  //     cursor: Ptr[scala.Byte]): StackTraceElement = {
+  //   val name   = stackalloc[CChar](256)
+  //   val offset = stackalloc[scala.Byte](8)
 
-    unwind.get_proc_name(cursor, name, 256, offset)
-    StackTraceElement.fromSymbol(scalanative.native.fromCString(name))
-  }
+  //   unwind.get_proc_name(cursor, name, 256, offset)
+  //   stdio.printf(name)
+  //   stdio.printf(c"\n")
+  //   StackTraceElement.fromSymbol(scalanative.native.fromCString(name))
+  // }
 
-  /** Creates a stack trace element in given unwind context.
-   *  Finding a name of the symbol for current function is expensive,
-   *  so we cache stack trace elements based on current instruction pointer.
-   */
-  private def cachedStackTraceElement(cursor: Ptr[scala.Byte],
-                                      ip: CUnsignedLong): StackTraceElement =
-    cache.getOrElseUpdate(ip, makeStackTraceElement(cursor))
+  // /** Creates a stack trace element in given unwind context.
+  //  *  Finding a name of the symbol for current function is expensive,
+  //  *  so we cache stack trace elements based on current instruction pointer.
+  //  */
+  // private def cachedStackTraceElement(cursor: Ptr[scala.Byte],
+  //                                     ip: CUnsignedLong): StackTraceElement =
+  //   cache.getOrElseUpdate(ip, makeStackTraceElement(cursor))
 
   private[lang] def currentStackTrace(): Array[StackTraceElement] = {
-    val cursor  = stackalloc[scala.Byte](2048)
-    val context = stackalloc[scala.Byte](2048)
-    val offset  = stackalloc[scala.Byte](8)
-    val ip =
-      stackalloc[CrossPlatform.Cross3264[CUnsignedLong, CUnsignedLongLong]]
-    var buffer = mutable.ArrayBuffer.empty[StackTraceElement]
+    Array.empty
+    // val cursor  = stackalloc[scala.Byte](2048)
+    // val context = stackalloc[scala.Byte](2048)
+    // val offset  = stackalloc[scala.Byte](8)
+    // val ip =
+    //   stackalloc[CrossPlatform.Cross3264[CUnsignedLong, CUnsignedLongLong]]
+    // var buffer = mutable.ArrayBuffer.empty[StackTraceElement]
 
-    unwind.get_context(context)
-    unwind.init_local(cursor, context)
-    while (unwind.step(cursor) > 0) {
-      unwind.get_reg(cursor, unwind.UNW_REG_IP, ip)
-      buffer += cachedStackTraceElement(cursor, !ip)
-    }
+    // println("SET UP FOR UNWIND")
 
-    buffer.toArray
+    // unwind.get_context(context)
+    // unwind.init_local(cursor, context)
+    // while (unwind.step(cursor) > 0) {
+    //   println("START STEP")
+    //   unwind.get_reg(cursor, unwind.UNW_REG_IP, ip)
+    //   buffer += cachedStackTraceElement(cursor, !ip)
+    //   println("END STEP")
+    // }
+
+    // println("FINISHING")
+
+    // buffer.toArray
   }
 }
 
@@ -91,7 +100,6 @@ class Throwable(s: String, private var e: Throwable)
   }
 
   def printStackTrace(): Unit = {
-    println("PRINTING STACK TRACE!")
     printStackTrace(System.err)
   }
 

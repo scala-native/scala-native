@@ -1,5 +1,7 @@
 package scala.scalanative.native
 
+import scala.scalanative.runtime.CrossPlatform
+
 object SizeofSuite extends tests.Suite {
 
   test("Byte") {
@@ -35,7 +37,7 @@ object SizeofSuite extends tests.Suite {
   }
 
   test("Ptr") {
-    assert(sizeof[Ptr[_]] == 8)
+    assert(sizeof[Ptr[_]] == CrossPlatform.cross3264(4, 8))
   }
 
   test("CStruct1[Byte]") {
