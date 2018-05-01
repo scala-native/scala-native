@@ -30,7 +30,7 @@ RUN apt-add-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-5.
 
 RUN apt-get install -y clang-5.0
 
-RUN apt-get install -y libunwind8-dev zlib1g-dev libre2-dev
+RUN apt-get install -y libunwind8-dev liblzma-dev zlib1g-dev libre2-dev
 
 RUN apt-get install -y gcc git autoconf libtool pkg-config
 
