@@ -6,6 +6,8 @@ import scalanative.native._
 import scalanative.posix.time._
 import scalanative.posix.unistd.off_t
 
+import scala.scalanative.runtime.CrossPlatform
+
 @extern
 object stat {
   type dev_t     = CUnsignedLong
@@ -16,19 +18,36 @@ object stat {
   type gid_t     = CUnsignedInt
   type blksize_t = CLong
   type blkcnt_t  = CLongLong
-  type stat = CStruct13[dev_t, // st_dev
-                        dev_t, // st_rdev
-                        ino_t, // st_ino
-                        uid_t, // st_uid
-                        gid_t, // st_gid
-                        off_t, // st_size
-                        time_t, // st_atime
-                        time_t, // st_mtime
-                        time_t, // st_ctime
-                        blkcnt_t, // st_blocks
-                        blksize_t, // st_blksize
-                        nlink_t, // st_nlink
-                        mode_t] // st_mode
+  
+  type stat32 = CStruct14[dev_t, // st_dev
+                          dev_t, // st_rdev
+                          ino_t, // st_ino
+                          uid_t, // st_uid
+                          gid_t, // st_gid
+                          off_t, // st_size
+                          time_t, // st_atime
+                          time_t, // st_mtime
+                          time_t, // st_ctime
+                          blkcnt_t, // st_blocks
+                          blksize_t, // st_blksize
+                          nlink_t, // st_nlink
+                          mode_t, // st_mode,
+                          CInt] // padding
+  type stat64 = CStruct13[dev_t, // st_dev
+                          dev_t, // st_rdev
+                          ino_t, // st_ino
+                          uid_t, // st_uid
+                          gid_t, // st_gid
+                          off_t, // st_size
+                          time_t, // st_atime
+                          time_t, // st_mtime
+                          time_t, // st_ctime
+                          blkcnt_t, // st_blocks
+                          blksize_t, // st_blksize
+                          nlink_t, // st_nlink
+                          mode_t] // st_mode,
+  
+  type stat = CrossPlatform.Cross3264[stat32, stat64]
 
   @name("scalanative_stat")
   def stat(path: CString, buf: Ptr[stat]): CInt = extern
