@@ -8,10 +8,6 @@
 
 void scalanative_init() { GC_init(); }
 
-void printsomething() {
-    for(int i = 0; i < 100; i++) { printf("hello %i!\n", i); }
-}
-
 void *scalanative_alloc(void *info, size_t size) {
     void **alloc = (void **)GC_malloc(size);
     *alloc = info;
