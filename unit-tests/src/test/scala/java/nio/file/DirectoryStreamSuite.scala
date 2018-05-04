@@ -66,28 +66,34 @@ object DirectoryStreamSuite extends tests.Suite {
   }
 
   test("Cannot get iterator more than once") {
-    val stream = Files.newDirectoryStream(Paths.get("."))
-    stream.iterator()
-    assertThrows[IllegalStateException] {
+    withTemporaryDirectory { dirFile =>
+      val stream = Files.newDirectoryStream(dirFile.toPath())
       stream.iterator()
+      assertThrows[IllegalStateException] {
+        stream.iterator()
+      }
     }
   }
 
   test("Cannot get an iterator after close()") {
-    val stream = Files.newDirectoryStream(Paths.get("."))
-    stream.close()
-    assertThrows[IllegalStateException] {
-      stream.iterator()
+    withTemporaryDirectory { dirFile =>
+      val stream = Files.newDirectoryStream(dirFile.toPath())
+      stream.close()
+      assertThrows[IllegalStateException] {
+        stream.iterator()
+      }
     }
   }
 
   test("hasNext returns false after stream is closed") {
-    val stream = Files.newDirectoryStream(Paths.get("."))
-    val it     = stream.iterator()
-    stream.close()
-    assert(!it.hasNext())
-    assertThrows[NoSuchElementException] {
-      it.next()
+    withTemporaryDirectory { dirFile =>
+      val stream = Files.newDirectoryStream(dirFile.toPath())
+      val it     = stream.iterator()
+      stream.close()
+      assert(!it.hasNext())
+      assertThrows[NoSuchElementException] {
+        it.next()
+      }
     }
   }
 
