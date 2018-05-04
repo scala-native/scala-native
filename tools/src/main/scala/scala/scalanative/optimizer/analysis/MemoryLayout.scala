@@ -37,8 +37,16 @@ object MemoryLayout {
     case Type.Struct(_, tys)       => MemoryLayout(tys).size
     case Type.Nothing | Type.Ptr | _: Type.Trait | _: Type.Module |
         _: Type.Class =>
-      8
+      math.max(Type.Ptr.width / WORD_SIZE, 1)
     case _ => unsupported(s"sizeOf $ty")
+  }
+
+  def alignmentSize(ty: Type) = {
+    ty match {
+      case Type.Double => 4L
+      case Type.Long => 4L
+      case o => sizeOf(o)
+    }
   }
 
   def apply(tys: Seq[Type]): MemoryLayout = {
@@ -52,18 +60,18 @@ object MemoryLayout {
       return (0, List())
     }
 
-    val sizes = tys.map(sizeOf)
+    val sizes = tys.map(o => (sizeOf(o), alignmentSize(o)))
 
     def findMax(tys: Seq[Type]): Long = tys.foldLeft(0L) {
       case (acc, Type.Struct(_, innerTy)) => math.max(acc, findMax(innerTy))
-      case (acc, ty)                      => math.max(acc, sizeOf(ty))
+      case (acc, ty)                      => math.max(acc, alignmentSize(ty))
     }
 
     val maxSize = findMax(tys)
 
     val (size, positionedTypes) =
       (tys zip sizes).foldLeft((offset, List[PositionedType]())) {
-        case ((index, potys), (ty, size)) if size > 0 =>
+        case ((index, potys), (ty, (size, alignmentSize))) if size > 0 =>
           ty match {
             case Type.Struct(_, stys) =>
               val innerAlignment = findMax(stys)
@@ -76,7 +84,7 @@ object MemoryLayout {
                innerTys ::: Padding(pad, index) :: potys)
 
             case _ =>
-              val pad = if (index % size == 0) 0 else size - (index % size)
+              val pad = if (index % alignmentSize == 0) 0 else alignmentSize - (index % alignmentSize)
               (index + pad + size,
                Tpe(size, index + pad, ty) :: Padding(pad, index) :: potys)
 

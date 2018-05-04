@@ -61,11 +61,11 @@ object SizeofSuite extends tests.Suite {
   }
 
   test("inner struct CStruct2[Byte, CStruct2[Long, Byte]]") {
-    assert(sizeof[CStruct2[Byte, CStruct2[Long, Byte]]] == 24)
+    assert(sizeof[CStruct2[Byte, CStruct2[Long, Byte]]] == CrossPlatform.cross3264(16, 24))
   }
 
   test("inner struct CStruct3[Byte, Long, CStruct3[Int, Int, Byte]]") {
-    assert(sizeof[CStruct3[Byte, Long, CStruct3[Int, Int, Byte]]] == 32)
+    assert(sizeof[CStruct3[Byte, Long, CStruct3[Int, Int, Byte]]] == CrossPlatform.cross3264(24, 32))
   }
 
   test(
@@ -74,7 +74,7 @@ object SizeofSuite extends tests.Suite {
       sizeof[
         CStruct3[Byte,
                  Long,
-                 CStruct3[Int, Int, CStruct4[Byte, Int, Short, Byte]]]] == 40)
+                 CStruct3[Int, Int, CStruct4[Byte, Int, Short, Byte]]]] == CrossPlatform.cross3264(32, 40))
   }
 
   type _32   = Nat.Digit[Nat._3, Nat._2]
