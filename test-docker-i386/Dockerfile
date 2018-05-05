@@ -54,4 +54,4 @@ RUN cd /home/scala-native && mkdir project && echo "sbt.version=0.13.17" >> proj
 
 WORKDIR /home/scala-native
 
-CMD ["sbt", "dirty-rebuild", "test-all"]
+CMD ["sbt", "dirty-rebuild_arch-i386", "test-all_arch-i386"]

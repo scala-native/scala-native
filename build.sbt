@@ -17,7 +17,7 @@ def convertCamelKebab(name: String): String = {
 
 // Generate project name from project id.
 def projectName(project: sbt.ResolvedProject): String = {
-  convertCamelKebab(project.id)
+  convertCamelKebab(project.id).split("_arch-").head
 }
 
 // Provide consistent project name pattern.
@@ -41,33 +41,55 @@ lazy val baseSettings = Seq(
 )
 
 addCommandAlias(
-  "rebuild",
+  "rebuild_arch-x86_64",
   Seq(
     "clean",
     "cleanCache",
     "cleanLocal",
-    "dirty-rebuild"
+    "dirty-rebuild_arch-x86_64"
   ).mkString(";", ";", "")
 )
 
 addCommandAlias(
-  "dirty-rebuild",
+  "dirty-rebuild_arch-x86_64",
   Seq(
-    "scalalib/publishLocal",
+    "scalalib_arch-x86_64/publishLocal",
     "sbtScalaNative/publishLocal",
-    "testInterface/publishLocal"
+    "testInterface_arch-x86_64/publishLocal"
   ).mkString(";", ";", "")
 )
 
 addCommandAlias(
-  "test-all",
+  "dirty-rebuild_arch-i386",
   Seq(
-    "sandbox/run",
-    "tests/test",
+    "scalalib_arch-i386/publishLocal",
+    "sbtScalaNative/publishLocal",
+    "testInterface_arch-i386/publishLocal"
+  ).mkString(";", ";", "")
+)
+
+addCommandAlias(
+  "test-all_arch-x86_64",
+  Seq(
+    "sandbox_arch-x86_64/run",
+    "tests_arch-x86_64/test",
     "tools/test",
     "nirparser/test",
-    "benchmarks/run --test",
+    "benchmarks_arch-x86_64/run --test",
     "sbtScalaNative/scripted",
+    "tools/mimaReportBinaryIssues"
+  ).mkString(";", ";", "")
+)
+
+addCommandAlias(
+  "test-all_arch-i386",
+  Seq(
+    "sandbox_arch-i386/run",
+    "tests_arch-i386/test",
+    "tools/test",
+    "nirparser/test",
+    "benchmarks_arch-i386/run --test",
+    "sbtScalaNative_arch-i386/scripted",
     "tools/mimaReportBinaryIssues"
   ).mkString(";", ";", "")
 )
@@ -77,10 +99,10 @@ lazy val publishSnapshot =
 
 lazy val setUpTestingCompiler = Def.task {
   val nscpluginjar = (Keys.`package` in nscplugin in Compile).value
-  val nativelibjar = (Keys.`package` in nativelib in Compile).value
-  val auxlibjar    = (Keys.`package` in auxlib in Compile).value
-  val scalalibjar  = (Keys.`package` in scalalib in Compile).value
-  val javalibjar   = (Keys.`package` in javalib in Compile).value
+  val nativelibjar = (Keys.`package` in nativelibx86_64 in Compile).value
+  val auxlibjar    = (Keys.`package` in auxlibx86_64 in Compile).value
+  val scalalibjar  = (Keys.`package` in scalalibx86_64 in Compile).value
+  val javalibjar   = (Keys.`package` in javalibx86_64 in Compile).value
   val testingcompilercp =
     (fullClasspath in testingCompiler in Compile).value.files
   val testingcompilerjar = (Keys.`package` in testingCompiler in Compile).value
@@ -206,14 +228,14 @@ lazy val toolSettings =
     )
 
 lazy val libSettings =
-  (baseSettings ++ ScalaNativePlugin.projectSettings.tail) ++ Seq(
+  baseSettings ++ Seq(
     scalaVersion := libScalaVersion,
     resolvers := Nil,
     scalacOptions ++= Seq("-encoding", "utf8")
   )
 
 lazy val projectSettings =
-  ScalaNativePlugin.projectSettings ++ Seq(
+  Seq(
     scalaVersion := libScalaVersion,
     resolvers := Nil,
     scalacOptions ++= Seq("-target:jvm-1.8")
@@ -315,19 +337,25 @@ lazy val sbtScalaNative =
       // `testInterfaceSerialization` needs to be available from the sbt plugin,
       // but it's a Scala Native project (and thus 2.11), and the plugin is 2.10 or 2.12.
       // We simply add the sources to mimic cross-compilation.
-      sources in Compile ++= (sources in Compile in testInterfaceSerialization).value,
+      sources in Compile ++= (sources in Compile in testInterfaceSerializationx86_64).value,
       // publish the other projects before running scripted tests.
       scripted := scripted
-        .dependsOn(publishLocal in testInterface)
+        .dependsOn(publishLocal in testInterfacex86_64)
+        .dependsOn(publishLocal in testInterfacex86_64)
         .dependsOn(publishLocal in ThisProject)
-        .dependsOn(publishLocal in scalalib)
+        .dependsOn(publishLocal in scalalibx86_64)
+        .dependsOn(publishLocal in scalalibi386)
         .evaluated,
       publishLocal := publishLocal.dependsOn(publishLocal in tools).value
     )
     .dependsOn(tools)
 
+import CrossArchitecturePlatform._
+import scala.scalanative.build.{x86_64, i386}
+
 lazy val nativelib =
-  project
+  crossProject(CrossArchitectureLibPlatform(x86_64), CrossArchitectureLibPlatform(i386))
+    .crossType(CrossType.Full)
     .in(file("nativelib"))
     .settings(libSettings)
     .settings(mavenPublishSettings)
@@ -338,8 +366,12 @@ lazy val nativelib =
         .value
     )
 
+lazy val nativelibx86_64 = nativelib.crossArchitecture(x86_64)
+lazy val nativelibi386 = nativelib.crossArchitecture(i386)
+
 lazy val javalib =
-  project
+  crossProject(CrossArchitectureLibPlatform(x86_64), CrossArchitectureLibPlatform(i386))
+    .crossType(CrossType.Pure)
     .in(file("javalib"))
     .settings(libSettings)
     .settings(mavenPublishSettings)
@@ -363,30 +395,50 @@ lazy val javalib =
           case (file, path) =>
             !path.endsWith(".class")
         }
-      },
+      }
+    )
+    .architectureSettings(x86_64)(
       publishLocal := publishLocal
-        .dependsOn(publishLocal in nativelib)
+        .dependsOn(publishLocal in nativelibx86_64)
+        .value
+    )
+    .architectureSettings(i386)(
+      publishLocal := publishLocal
+        .dependsOn(publishLocal in nativelibi386)
         .value
     )
     .dependsOn(nativelib)
+
+val javalibx86_64 = javalib.crossArchitecture(x86_64)
+val javalibi386 = javalib.crossArchitecture(i386)
 
 lazy val assembleScalaLibrary = taskKey[Unit](
   "Checks out scala standard library from submodules/scala and then applies overrides.")
 
 lazy val auxlib =
-  project
+  crossProject(CrossArchitectureLibPlatform(x86_64), CrossArchitectureLibPlatform(i386))
+    .crossType(CrossType.Pure)
     .in(file("auxlib"))
     .settings(libSettings)
     .settings(mavenPublishSettings)
-    .settings(
+    .architectureSettings(x86_64)(
       publishLocal := publishLocal
-        .dependsOn(publishLocal in javalib)
+        .dependsOn(publishLocal in javalibx86_64)
+        .value
+    )
+    .architectureSettings(i386)(
+      publishLocal := publishLocal
+        .dependsOn(publishLocal in javalibi386)
         .value
     )
     .dependsOn(nativelib)
 
+val auxlibx86_64 = auxlib.crossArchitecture(x86_64)
+val auxlibi386 = auxlib.crossArchitecture(i386)
+
 lazy val scalalib =
-  project
+  crossProject(CrossArchitectureLibPlatform(x86_64), CrossArchitectureLibPlatform(i386))
+    .crossType(CrossType.Pure)
     .in(file("scalalib"))
     .settings(libSettings)
     .settings(mavenPublishSettings)
@@ -444,15 +496,26 @@ lazy val scalalib =
           case (file, path) =>
             !path.endsWith(".class")
         }
-      },
+      }
+    )
+    .architectureSettings(x86_64)(
       publishLocal := publishLocal
-        .dependsOn(assembleScalaLibrary, publishLocal in auxlib)
+        .dependsOn(assembleScalaLibrary, publishLocal in auxlibx86_64)
+        .value
+    )
+    .architectureSettings(i386)(
+      publishLocal := publishLocal
+        .dependsOn(assembleScalaLibrary, publishLocal in auxlibi386)
         .value
     )
     .dependsOn(auxlib, nativelib, javalib)
 
+lazy val scalalibx86_64 = scalalib.crossArchitecture(x86_64)
+lazy val scalalibi386 = scalalib.crossArchitecture(i386)
+
 lazy val tests =
-  project
+  crossProject(CrossArchitecturePlatform(x86_64), CrossArchitecturePlatform(i386))
+    .crossType(CrossType.Pure)
     .in(file("unit-tests"))
     .settings(projectSettings)
     .settings(noPublishSettings)
@@ -472,10 +535,13 @@ lazy val tests =
         "SCALA_NATIVE_USER_DIR"          -> System.getProperty("user.dir")
       )
     )
-    .enablePlugins(ScalaNativePlugin)
+
+lazy val testsx86_64 = tests.crossArchitecture(x86_64)
+lazy val testsi386 = tests.crossArchitecture(i386)
 
 lazy val sandbox =
-  project
+  crossProject(CrossArchitecturePlatform(x86_64), CrossArchitecturePlatform(i386))
+    .crossType(CrossType.Pure)
     .in(file("sandbox"))
     .settings(noPublishSettings)
     .settings(
@@ -483,10 +549,13 @@ lazy val sandbox =
       //   crossTarget.value),
       scalaVersion := libScalaVersion
     )
-    .enablePlugins(ScalaNativePlugin)
+
+lazy val sandboxx86_64 = sandbox.crossArchitecture(x86_64)
+lazy val sandboxi386 = sandbox.crossArchitecture(i386)
 
 lazy val benchmarks =
-  project
+  crossProject(CrossArchitecturePlatform(x86_64), CrossArchitecturePlatform(i386))
+    .crossType(CrossType.Pure)
     .in(file("benchmarks"))
     .settings(projectSettings)
     .settings(noPublishSettings)
@@ -512,12 +581,15 @@ lazy val benchmarks =
         Seq(file)
       }
     )
-    .enablePlugins(ScalaNativePlugin)
+
+lazy val benchmarksx86_64 = benchmarks.crossArchitecture(x86_64)
+lazy val benchmarksi386 = benchmarks.crossArchitecture(i386)
 
 lazy val testingCompilerInterface =
   project
     .in(file("testing-compiler-interface"))
     .settings(libSettings)
+    .settings(ScalaNativePlugin.projectSettings.tail)
     .settings(noPublishSettings)
     .settings(
       crossPaths := false,
@@ -529,6 +601,7 @@ lazy val testingCompiler =
   project
     .in(file("testing-compiler"))
     .settings(libSettings)
+    .settings(ScalaNativePlugin.projectSettings.tail)
     .settings(noPublishSettings)
     .settings(
       libraryDependencies ++= Seq(
@@ -536,41 +609,62 @@ lazy val testingCompiler =
         "org.scala-lang" % "scala-reflect"  % scalaVersion.value
       )
     )
-    .dependsOn(testingCompilerInterface, nativelib)
+    .dependsOn(testingCompilerInterface, nativelibx86_64)
 
 lazy val testInterface =
-  project
+  crossProject(CrossArchitecturePlatform(x86_64), CrossArchitecturePlatform(i386))
+    .crossType(CrossType.Pure)
     .settings(toolSettings)
     .settings(scalaVersion := libScalaVersion)
     .settings(mavenPublishSettings)
     .in(file("test-interface"))
     .settings(
       libraryDependencies += "org.scala-sbt"    % "test-interface"   % "1.0",
-      libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test,
+      libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test
+    )
+    .architectureSettings(x86_64)(
       publishLocal := publishLocal
-        .dependsOn(publishLocal in testInterfaceSerialization)
+        .dependsOn(publishLocal in testInterfaceSerializationx86_64)
         .value
     )
-    .enablePlugins(ScalaNativePlugin)
+    .architectureSettings(i386)(
+      publishLocal := publishLocal
+        .dependsOn(publishLocal in testInterfaceSerializationi386)
+        .value
+    )
     .dependsOn(testInterfaceSerialization)
 
+lazy val testInterfacex86_64 = testInterface.crossArchitecture(x86_64)
+lazy val testInterfacei386 = testInterface.crossArchitecture(i386)
+
 lazy val testInterfaceSerialization =
-  project
+  crossProject(CrossArchitecturePlatform(x86_64), CrossArchitecturePlatform(i386))
+    .crossType(CrossType.Pure)
     .settings(toolSettings)
     .settings(scalaVersion := libScalaVersion)
     .settings(mavenPublishSettings)
     .in(file("test-interface-serialization"))
     .settings(
-      libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test,
+      libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test
+    )
+    .architectureSettings(x86_64)(
       publishLocal := publishLocal
-        .dependsOn(publishLocal in testInterfaceSbtDefs)
+        .dependsOn(publishLocal in testInterfaceSbtDefsx86_64)
+        .value
+    )
+    .architectureSettings(i386)(
+      publishLocal := publishLocal
+        .dependsOn(publishLocal in testInterfaceSbtDefsi386)
         .value
     )
     .dependsOn(testInterfaceSbtDefs)
-    .enablePlugins(ScalaNativePlugin)
+
+lazy val testInterfaceSerializationx86_64 = testInterfaceSerialization.crossArchitecture(x86_64)
+lazy val testInterfaceSerializationi386 = testInterfaceSerialization.crossArchitecture(i386)
 
 lazy val testInterfaceSbtDefs =
-  project
+  crossProject(CrossArchitecturePlatform(x86_64), CrossArchitecturePlatform(i386))
+    .crossType(CrossType.Pure)
     .settings(toolSettings)
     .settings(scalaVersion := libScalaVersion)
     .settings(mavenPublishSettings)
@@ -578,4 +672,6 @@ lazy val testInterfaceSbtDefs =
     .settings(
       libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test
     )
-    .enablePlugins(ScalaNativePlugin)
+
+lazy val testInterfaceSbtDefsx86_64 = testInterfaceSbtDefs.crossArchitecture(x86_64)
+lazy val testInterfaceSbtDefsi386 = testInterfaceSbtDefs.crossArchitecture(i386)

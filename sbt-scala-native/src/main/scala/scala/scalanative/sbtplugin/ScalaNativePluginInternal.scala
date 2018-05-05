@@ -69,7 +69,8 @@ object ScalaNativePluginInternal {
     nativeGC := Option(System.getenv.get("SCALANATIVE_GC"))
       .getOrElse(build.GC.default.name),
     nativeGC in NativeTest := (nativeGC in Test).value,
-    targetArchitecture := x86_64
+    targetArchitecture := x86_64,
+    targetArchitecture in NativeTest := (targetArchitecture in Test).value
   )
 
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(

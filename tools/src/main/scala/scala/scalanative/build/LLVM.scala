@@ -117,7 +117,7 @@ private[scalanative] object LLVM {
       }
     val opts = optimizationOpt +: config.compileOptions
 
-    config.logger.time("Compiling to native code") {
+    config.logger.time(s"Compiling to native code (${config.targetArchitecture})") {
       llPaths.par
         .map { ll =>
           val apppath = ll.abs
