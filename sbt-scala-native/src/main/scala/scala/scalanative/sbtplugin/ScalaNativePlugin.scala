@@ -5,6 +5,8 @@ import ScalaNativePluginInternal._
 
 import sbt._
 
+import scala.scalanative.build.{TargetArchitecture, x86_64, i386, ARM, ARM64}
+
 object ScalaNativePlugin extends AutoPlugin {
   override def requires: Plugins = plugins.JvmPlugin
 
@@ -39,6 +41,9 @@ object ScalaNativePlugin extends AutoPlugin {
 
     val nativeGC =
       settingKey[String]("GC choice, either \"none\", \"boehm\" or \"immix\".")
+
+    val targetArchitecture =
+      settingKey[TargetArchitecture]("The target architecture to build for")
   }
 
   @deprecated("use autoImport instead", "0.3.7")

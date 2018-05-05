@@ -6,7 +6,7 @@ import scala.collection.mutable
 import util.unreachable
 import nir._
 
-import scala.scalanative.build.NativePlatform
+import scala.scalanative.build.TargetArchitecture
 
 object ClassHierarchy {
   sealed abstract class Node {
@@ -88,7 +88,7 @@ object ClassHierarchy {
     var moduleArray: ModuleArray    = _
   }
 
-  def apply(defns: Seq[Defn], dyns: Seq[String], nativePlatform: NativePlatform): Top = {
+  def apply(defns: Seq[Defn], dyns: Seq[String], targetArchitecture: TargetArchitecture): Top = {
     val nodes   = mutable.Map.empty[Global, Node]
     val structs = mutable.UnrolledBuffer.empty[Struct]
     val classes = mutable.UnrolledBuffer.empty[Class]
@@ -294,7 +294,7 @@ object ClassHierarchy {
                                     javaHashCode,
                                     scalaEquals,
                                     scalaHashCode)
-      cls.layout = new FieldLayout(cls, nativePlatform)
+      cls.layout = new FieldLayout(cls, targetArchitecture)
       cls.dynmap = new DynamicHashMap(cls, dyns)
       cls.rtti = new RuntimeTypeInformation(cls)
     }

@@ -3,7 +3,9 @@ package scala.scalanative.build
 /**
  * Represents the platform the built code will be run on.
  */
-sealed abstract class NativePlatform(val is32: Boolean, val isIntel: Boolean)
+sealed abstract class TargetArchitecture(val is32: Boolean, val isIntel: Boolean)
 
-case object x86_64 extends NativePlatform(false, true)
-case object i386 extends NativePlatform(true, true)
+case object i386 extends TargetArchitecture(true, true)
+case object x86_64 extends TargetArchitecture(false, true)
+case object ARM extends TargetArchitecture(true, false)
+case object ARM64 extends TargetArchitecture(false, false)

@@ -164,8 +164,9 @@ private[scalanative] object LLVM {
 
       val libunwind = os match {
         case "Mac OS X" => Seq.empty
-        case _          => Seq("lzma")//("unwind", "unwind-" + unwindArch)
+        case _          => Seq("unwind", "unwind-" + unwindArch)
       }
+      
       librt ++ libunwind ++ linkerResult.links
         .map(_.name) ++ config.gc.links
     }

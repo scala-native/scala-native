@@ -22,6 +22,7 @@ import scalanative.sbtplugin.TestUtilities._
 import scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 import scalanative.sbtplugin.SBTCompat.{Process, _}
 import scalanative.sbtplugin.testinterface.ScalaNativeFramework
+import scala.scalanative.build.x86_64
 
 object ScalaNativePluginInternal {
 
@@ -50,8 +51,8 @@ object ScalaNativePluginInternal {
   )
 
   lazy val scalaNativeBaseSettings: Seq[Setting[_]] = Seq(
-    crossVersion := ScalaNativeCrossVersion.binary,
-    platformDepsCrossVersion := ScalaNativeCrossVersion.binary,
+    crossVersion := ScalaNativeCrossVersion.binary(targetArchitecture.value),
+    platformDepsCrossVersion := ScalaNativeCrossVersion.binary(targetArchitecture.value),
     nativeClang := interceptBuildException(Discover.clang().toFile),
     nativeClang in NativeTest := (nativeClang in Test).value,
     nativeClangPP := interceptBuildException(Discover.clangpp().toFile),
@@ -67,7 +68,8 @@ object ScalaNativePluginInternal {
     nativeLinkStubs in NativeTest := (nativeLinkStubs in Test).value,
     nativeGC := Option(System.getenv.get("SCALANATIVE_GC"))
       .getOrElse(build.GC.default.name),
-    nativeGC in NativeTest := (nativeGC in Test).value
+    nativeGC in NativeTest := (nativeGC in Test).value,
+    targetArchitecture := x86_64
   )
 
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
@@ -124,6 +126,7 @@ object ScalaNativePluginInternal {
         .withCompileOptions(nativeCompileOptions.value)
         .withLinkingOptions(nativeLinkingOptions.value)
         .withGC(gc)
+        .withTargetArchitecture(targetArchitecture.value)
         .withMode(mode)
         .withLinkStubs(nativeLinkStubs.value)
     },

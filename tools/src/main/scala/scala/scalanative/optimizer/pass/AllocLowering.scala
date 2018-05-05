@@ -23,7 +23,7 @@ class AllocLowering(config: build.Config)(implicit top: Top) extends Pass {
 
     insts.foreach {
       case Let(n, Op.Classalloc(ClassRef(cls))) =>
-        val size = MemoryLayout.sizeOf(cls.layout.struct, config.nativePlatform)
+        val size = MemoryLayout.sizeOf(cls.layout.struct, config.targetArchitecture)
         val allocMethod =
           if (size < LARGE_OBJECT_MIN_SIZE) alloc else largeAlloc
 

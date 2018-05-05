@@ -5,9 +5,9 @@ package analysis
 import ClassHierarchy._
 import nir._
 
-import scala.scalanative.build.NativePlatform
+import scala.scalanative.build.TargetArchitecture
 
-class FieldLayout(cls: Class, nativePlatform: NativePlatform) {
+class FieldLayout(cls: Class, targetArchitecture: TargetArchitecture) {
   def index(fld: Field) =
     entries.indexOf(fld) + 1
   val entries: Seq[Field] = {
@@ -25,7 +25,7 @@ class FieldLayout(cls: Class, nativePlatform: NativePlatform) {
     val ty   = Type.Struct(name, body)
     Type.Struct(name, body)
   }
-  val layout = MemoryLayout(struct.tys, nativePlatform)
+  val layout = MemoryLayout(struct.tys, targetArchitecture)
   val size   = layout.size
   val referenceOffsetsTy =
     Type.Struct(Global.None, Seq(Type.Ptr))

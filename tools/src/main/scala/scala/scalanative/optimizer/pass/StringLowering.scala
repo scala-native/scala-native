@@ -32,7 +32,7 @@ class StringLowering(config: build.Config)(implicit top: Top) extends Pass {
       val charsConst = Val.Const(
         Val.Struct(
           Global.None,
-          if (config.nativePlatform.is32) {
+          if (config.targetArchitecture.is32) {
             Seq(CharArrayCls.rtti.const,
                 charsLength,
                 Val.Array(Type.Short, chars.map(c => Val.Short(c.toShort))))
