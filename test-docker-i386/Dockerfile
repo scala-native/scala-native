@@ -41,11 +41,15 @@ RUN git clone git://github.com/ivmai/bdwgc.git && \
 
 ENV LD_LIBRARY_PATH "/usr/local/lib"
 
-RUN useradd -ms /bin/bash scalanative
+ENV LC_ALL "C.UTF-8"
 
-USER scalanative
+ENV LANG "C.UTF-8"
 
-RUN cd /home/scalanative && mkdir project && echo "sbt.version=0.13.17" >> project/build.properties && \
+RUN useradd -ms /bin/bash scala-native
+
+USER scala-native
+
+RUN cd /home/scala-native && mkdir project && echo "sbt.version=0.13.17" >> project/build.properties && \
     sbt exit && rm -rf project && rm -rf target
 
 WORKDIR /home/scala-native
