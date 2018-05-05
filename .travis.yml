@@ -51,9 +51,9 @@ script:
       "-no-colors" \
       "-J-Xmx2G" \
       "^^ $SBT_VERSION" \
-      rebuild \
+      rebuild_arch-x86_64 \
       "set scriptedBufferLog in sbtScalaNative := false" \
-      test-all
+      test-all_arch-x86_64
 
 before_cache:
   - find $HOME/.sbt -name "*.lock" | xargs rm
