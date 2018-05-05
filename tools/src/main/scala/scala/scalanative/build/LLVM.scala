@@ -173,11 +173,11 @@ private[scalanative] object LLVM {
       "-lpthread")
     val targetopt = Seq("-target", config.targetTriple)
     val flags     = Seq("-o", outpath.abs) ++ linkopts ++ targetopt
-    val opaths    = IO.getAll(nativelib, "glob:**.o").map(_.abs) ++
+    val opaths    = IO.getAll(nativelib, "glob:**.o").map(_.abs)/* ++
       Seq(
         "/usr/lib/i386-linux-gnu/libunwind.a",
         "/usr/lib/i386-linux-gnu/libunwind-x86.a"
-      )
+      )*/
     val paths     = llPaths.map(_.abs) ++ opaths
     val compile   = config.clangPP.abs +: (flags ++ unwindSettings ++ paths)
 

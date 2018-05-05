@@ -14,7 +14,7 @@ import scala.scalanative.optimizer.analysis.MemoryLayout
 /** Hoists all stack allocations to the entry basic block and
  *  maps class allocations to calls to the gc allocator.
  */
-class AllocLowering(implicit top: Top) extends Pass {
+class AllocLowering(config: build.Config)(implicit top: Top) extends Pass {
   import AllocLowering._
 
   override def onInsts(insts: Seq[Inst]) = {
@@ -23,7 +23,7 @@ class AllocLowering(implicit top: Top) extends Pass {
 
     insts.foreach {
       case Let(n, Op.Classalloc(ClassRef(cls))) =>
-        val size = MemoryLayout.sizeOf(cls.layout.struct)
+        val size = MemoryLayout.sizeOf(cls.layout.struct, config.nativePlatform)
         val allocMethod =
           if (size < LARGE_OBJECT_MIN_SIZE) alloc else largeAlloc
 
@@ -58,5 +58,5 @@ object AllocLowering extends PassCompanion {
         Defn.Declare(Attrs.None, largeAllocName, allocSig))
 
   override def apply(config: build.Config, top: Top) =
-    new AllocLowering()(top)
+    new AllocLowering(config)(top)
 }
