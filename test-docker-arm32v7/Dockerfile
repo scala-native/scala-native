@@ -1,8 +1,12 @@
-FROM arm32v7/openjdk:8-jdk
+FROM arm32v7/ubuntu:16.04
 
 ENV SBT_VERSION 1.1.2
 
-ENV SBT_OPTS "-Dsbt.server.autostart=false"
+RUN apt-get update && apt-get install -y wget software-properties-common
+
+RUN apt-get install -y openjdk-8-jdk
+
+RUN apt-get install -y curl
 
 # Install sbt
 RUN \
@@ -12,14 +16,40 @@ RUN \
   apt-get update && \
   apt-get install sbt
 
-RUN apt-get update && apt-get install -y wget software-properties-common
+RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
 
-RUN wget http://releases.llvm.org/5.0.0/clang+llvm-5.0.0-armv7a-linux-gnueabihf.tar.xz
+RUN apt-add-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-5.0 main" && apt-get update
 
-RUN echo 'export PATH="$PATH:/llvm/clang+llvm-5.0.0-armv7a-linux-gnueabihf/bin"' >> ~/.bashrc && sh ~/.bashrc
+RUN apt-get install -y clang-5.0
 
-RUN rm /llvm/clang+llvm-5.0.0-armv7a-linux-gnueabihf/lib/libunwind*
+RUN apt-get install -y libunwind8-dev liblzma-dev zlib1g-dev libre2-dev
 
-RUN mkdir llvm && tar xf clang+llvm-5.0.0-armv7a-linux-gnueabihf.tar.xz && mv clang+llvm-5.0.0-armv7a-linux-gnueabihf llvm
+RUN apt-get install -y gcc git autoconf libtool pkg-config
 
-RUN apt-get install -y libc6-dev libc++-dev gcc g++ libgc-dev libunwind8-dev zlib1g-dev libre2-dev
+RUN git clone git://github.com/ivmai/bdwgc.git && \
+    cd bdwgc && \
+    git checkout v7.6.4 && \
+    git clone git://github.com/ivmai/libatomic_ops.git -b release-7_6 && \
+    ./autogen.sh && \
+    ./configure && \
+    make -j && \
+    make install
+
+ENV LD_LIBRARY_PATH "/usr/local/lib"
+
+ENV LC_ALL "C.UTF-8"
+
+ENV LANG "C.UTF-8"
+
+RUN useradd -ms /bin/bash scala-native
+
+RUN update-ca-certificates -f
+
+USER scala-native
+
+RUN cd /home/scala-native && mkdir project && echo "sbt.version=0.13.17" >> project/build.properties && \
+    sbt exit && rm -rf project && rm -rf target
+
+WORKDIR /home/scala-native
+
+CMD ["sbt", "dirty-rebuild", "test-all"]

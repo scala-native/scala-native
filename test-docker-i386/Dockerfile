@@ -1,4 +1,4 @@
-FROM i386/ubuntu
+FROM i386/ubuntu:16.04
 
 ENV SBT_VERSION 1.1.2
 
