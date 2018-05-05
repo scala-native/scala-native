@@ -24,3 +24,4 @@ bin/
 .ivy2/
 .sbt/
 .bash_history
+.oracle_jre_usage/
