@@ -51,7 +51,7 @@ private[scalanative] object LLVM {
   def compileNativelib(config: Config,
                        linkerResult: linker.Result,
                        libPath: Path): Path = {
-    val cpaths   = IO.getAll(config.workdir, "glob:**.c").map(_.abs)
+    val cpaths   = IO.getAll(config.workdir, "glob:**.c").map(_.abs) ++ IO.getAll(config.workdir, "glob:**.S").map(_.abs)
     val cpppaths = IO.getAll(config.workdir, "glob:**.cpp").map(_.abs)
     val paths    = cpaths ++ cpppaths
 
@@ -156,11 +156,7 @@ private[scalanative] object LLVM {
         case "Linux" => Seq("rt")
         case _       => Seq.empty
       }
-      val libunwind = os match {
-        case "Mac OS X" => Seq.empty
-        case _          => Seq("unwind", "unwind-" + arch)
-      }
-      linkerResult.links.map(_.name) ++ librt ++ libunwind ++ config.gc.links
+      linkerResult.links.map(_.name) ++ librt ++ config.gc.links
     }
     val linkopts = config.linkingOptions ++ links.map("-l" + _) ++ Seq(
       "-lpthread")
