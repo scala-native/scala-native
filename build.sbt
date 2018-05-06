@@ -562,7 +562,7 @@ lazy val benchmarks =
     .settings(
       nativeMode := "release",
       sourceGenerators in Compile += Def.task {
-        val dir = (scalaSource in Compile).value
+        val dir = file("benchmarks/src/main/scala")
         val benchmarks = (dir ** "*Benchmark.scala").get
           .flatMap(IO.relativizeFile(dir, _))
           .map(file => packageNameFromPath(file.toPath))
