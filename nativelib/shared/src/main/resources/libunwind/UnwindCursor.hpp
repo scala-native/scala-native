@@ -16,7 +16,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unwind.h>
+#include "include-libunwind/unwind.h"
 
 #ifdef __APPLE__
   #include <mach-o/dyld.h>
@@ -29,7 +29,7 @@
 #include "config.h"
 #include "DwarfInstructions.hpp"
 #include "EHHeaderParser.hpp"
-#include "libunwind.h"
+#include "include-libunwind/libunwind.h"
 #include "Registers.hpp"
 #include "RWMutex.hpp"
 #include "Unwind-EHABI.h"

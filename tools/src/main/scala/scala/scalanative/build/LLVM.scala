@@ -10,6 +10,7 @@ import scalanative.build.IO.RichPath
 
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {
+  // settings to make sure that exceptions can be caught and unwinded
   private val unwindSettings = Seq("-fexceptions", "-fcxx-exceptions", "-funwind-tables")
 
   /**
@@ -157,26 +158,16 @@ private[scalanative] object LLVM {
         case _       => Seq.empty
       }
 
-      val unwindArch = arch match {
-        case "i686" => "x86"
-        case other => other
-      }
-
-      val libunwind = os match {
-        case "Mac OS X" => Seq.empty
-        case _          => Seq("lzma")//Seq("unwind", "unwind-" + unwindArch)
-      }
-      
-      librt ++ libunwind ++ linkerResult.links
+      librt ++ linkerResult.links
         .map(_.name) ++ config.gc.links
     }
     val linkopts = links.map("-l" + _) ++ config.linkingOptions ++ Seq(
-      "-lpthread")
+      "-ldl", "-lpthread")
     val targetopt = Seq("-target", config.targetTriple)
-    val flags     = Seq("-o", outpath.abs) ++ linkopts ++ targetopt
+    val flags     = Seq("-rdynamic", "-o", outpath.abs) ++ unwindSettings ++ linkopts ++ targetopt
     val opaths    = IO.getAll(nativelib, "glob:**.o").map(_.abs)
     val paths     = llPaths.map(_.abs) ++ opaths
-    val compile   = config.clangPP.abs +: (flags ++ unwindSettings ++ paths)
+    val compile   = config.clangPP.abs +: (flags ++ paths)
 
     config.logger.time(s"Linking native code (${config.gc.name} gc)") {
       config.logger.running(compile)
