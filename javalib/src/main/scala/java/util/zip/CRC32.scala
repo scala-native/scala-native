@@ -38,6 +38,8 @@ class CRC32 extends Checksum {
                          nbytes: Int,
                          crc1: Long): Long =
     zlib
-      .crc32(CrossPlatform.cross3264(crc1.toUInt, crc1.toULong), buf.asInstanceOf[ByteArray].at(off), nbytes.toUInt)
+      .crc32(CrossPlatform.cross3264(crc1.toUInt, crc1.toULong),
+             buf.asInstanceOf[ByteArray].at(off),
+             nbytes.toUInt)
       .toLong
 }

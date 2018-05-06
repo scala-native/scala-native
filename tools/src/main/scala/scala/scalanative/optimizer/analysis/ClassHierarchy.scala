@@ -88,7 +88,9 @@ object ClassHierarchy {
     var moduleArray: ModuleArray    = _
   }
 
-  def apply(defns: Seq[Defn], dyns: Seq[String], targetArchitecture: TargetArchitecture): Top = {
+  def apply(defns: Seq[Defn],
+            dyns: Seq[String],
+            targetArchitecture: TargetArchitecture): Top = {
     val nodes   = mutable.Map.empty[Global, Node]
     val structs = mutable.UnrolledBuffer.empty[Struct]
     val classes = mutable.UnrolledBuffer.empty[Class]

@@ -11,7 +11,8 @@ import scalanative.build.IO.RichPath
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {
   // settings to make sure that exceptions can be caught and unwinded
-  private val unwindSettings = Seq("-fexceptions", "-fcxx-exceptions", "-funwind-tables")
+  private val unwindSettings =
+    Seq("-fexceptions", "-fcxx-exceptions", "-funwind-tables")
 
   /**
    * Unpack the `nativelib` to `workdir/lib`.
@@ -53,7 +54,9 @@ private[scalanative] object LLVM {
   def compileNativelib(config: Config,
                        linkerResult: linker.Result,
                        libPath: Path): Path = {
-    val cpaths   = IO.getAll(config.workdir, "glob:**.c").map(_.abs) ++ IO.getAll(config.workdir, "glob:**.S").map(_.abs)
+    val cpaths = IO.getAll(config.workdir, "glob:**.c").map(_.abs) ++ IO
+      .getAll(config.workdir, "glob:**.S")
+      .map(_.abs)
     val cpppaths = IO.getAll(config.workdir, "glob:**.cpp").map(_.abs)
     val paths    = cpaths ++ cpppaths
 
@@ -95,7 +98,10 @@ private[scalanative] object LLVM {
         val isCpp    = path.endsWith(".cpp")
         val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
         val flags    = (if (isCpp) Seq("-std=c++11") else Seq()) ++ config.compileOptions
-        val compilec = Seq(compiler) ++ flags ++ unwindSettings ++ Seq("-c", path, "-o", opath)
+        val compilec = Seq(compiler) ++ flags ++ unwindSettings ++ Seq("-c",
+                                                                       path,
+                                                                       "-o",
+                                                                       opath)
 
         config.logger.running(compilec)
         val result = Process(compilec, config.workdir.toFile) ! Logger
@@ -118,7 +124,8 @@ private[scalanative] object LLVM {
       }
     val opts = optimizationOpt +: config.compileOptions
 
-    config.logger.time(s"Compiling to native code (${config.targetArchitecture})") {
+    config.logger.time(
+      s"Compiling to native code (${config.targetArchitecture})") {
       llPaths.par
         .map { ll =>
           val apppath = ll.abs
@@ -162,7 +169,8 @@ private[scalanative] object LLVM {
         .map(_.name) ++ config.gc.links
     }
     val linkopts = links.map("-l" + _) ++ config.linkingOptions ++ Seq(
-      "-ldl", "-lpthread")
+      "-ldl",
+      "-lpthread")
     val targetopt = Seq("-target", config.targetTriple)
     val flags     = Seq("-rdynamic", "-o", outpath.abs) ++ unwindSettings ++ linkopts ++ targetopt
     val opaths    = IO.getAll(nativelib, "glob:**.o").map(_.abs)

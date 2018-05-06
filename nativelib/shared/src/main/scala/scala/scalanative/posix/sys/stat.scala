@@ -18,7 +18,7 @@ object stat {
   type off_t     = CLongLong
   type blksize_t = CLong
   type blkcnt_t  = CLongLong
-  
+
   type stat = CStruct13[dev_t, // st_dev
                         dev_t, // st_rdev
                         ino_t, // st_ino

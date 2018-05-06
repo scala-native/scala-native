@@ -24,13 +24,16 @@ object ScalaNativeCrossVersion {
     targetArchitecture.toString
 
   // produces native{version}_{arch}
-  def scalaNativeMapped(cross: CrossVersion, targetArchitecture: TargetArchitecture): CrossVersion =
+  def scalaNativeMapped(cross: CrossVersion,
+                        targetArchitecture: TargetArchitecture): CrossVersion =
     crossVersionAddPlatformPart(
       crossVersionAddPlatformPart(cross, platformVersion(targetArchitecture)),
       "native" + currentBinaryVersion
     )
 
-  def binary(targetArchitecture: TargetArchitecture): CrossVersion = scalaNativeMapped(CrossVersion.binary, targetArchitecture)
+  def binary(targetArchitecture: TargetArchitecture): CrossVersion =
+    scalaNativeMapped(CrossVersion.binary, targetArchitecture)
 
-  def full(targetArchitecture: TargetArchitecture): CrossVersion = scalaNativeMapped(CrossVersion.full, targetArchitecture)
+  def full(targetArchitecture: TargetArchitecture): CrossVersion =
+    scalaNativeMapped(CrossVersion.full, targetArchitecture)
 }

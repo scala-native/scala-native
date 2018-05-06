@@ -67,7 +67,7 @@ sealed trait Config {
 
   /** Create a new config with given compilation options. */
   def withCompileOptions(value: Seq[String]): Config
-  
+
   def withTargetArchitecture(value: TargetArchitecture): Config
 
   /** Create a new config with given target triple. */

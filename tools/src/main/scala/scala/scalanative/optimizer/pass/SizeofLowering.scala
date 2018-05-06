@@ -16,9 +16,14 @@ class SizeofLowering(top: Top, config: build.Config) extends Pass {
 
       case Inst.Let(n, Op.Sizeof(ty)) =>
         if (config.targetArchitecture.is32) {
-          let(n, Op.Copy(Val.Int(MemoryLayout.sizeOf(ty, config.targetArchitecture).toInt)))
+          let(n,
+              Op.Copy(
+                Val.Int(
+                  MemoryLayout.sizeOf(ty, config.targetArchitecture).toInt)))
         } else {
-          let(n, Op.Copy(Val.Long(MemoryLayout.sizeOf(ty, config.targetArchitecture))))
+          let(n,
+              Op.Copy(
+                Val.Long(MemoryLayout.sizeOf(ty, config.targetArchitecture))))
         }
 
       case inst =>
