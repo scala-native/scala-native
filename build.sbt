@@ -89,7 +89,7 @@ addCommandAlias(
     "tools/test",
     "nirparser/test",
     "benchmarks_arch-i386/run --test",
-    "sbtScalaNative_arch-i386/scripted",
+    "sbtScalaNative/scripted",
     "tools/mimaReportBinaryIssues"
   ).mkString(";", ";", "")
 )
@@ -341,7 +341,7 @@ lazy val sbtScalaNative =
       // publish the other projects before running scripted tests.
       scripted := scripted
         .dependsOn(publishLocal in testInterfacex86_64)
-        .dependsOn(publishLocal in testInterfacex86_64)
+        .dependsOn(publishLocal in testInterfacei386)
         .dependsOn(publishLocal in ThisProject)
         .dependsOn(publishLocal in scalalibx86_64)
         .dependsOn(publishLocal in scalalibi386)

@@ -22,7 +22,7 @@ import scalanative.sbtplugin.TestUtilities._
 import scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 import scalanative.sbtplugin.SBTCompat.{Process, _}
 import scalanative.sbtplugin.testinterface.ScalaNativeFramework
-import scala.scalanative.build.x86_64
+import scala.scalanative.build.{x86_64, i386}
 
 object ScalaNativePluginInternal {
 
@@ -70,7 +70,25 @@ object ScalaNativePluginInternal {
     nativeGC := Option(System.getenv.get("SCALANATIVE_GC"))
       .getOrElse(build.GC.default.name),
     nativeGC in NativeTest := (nativeGC in Test).value,
-    targetArchitecture := x86_64,
+    targetArchitecture := {
+      val cwd = {
+        val workdir = crossTarget.value / "native"
+        IO.delete(workdir)
+        IO.createDirectory(workdir)
+        workdir
+      }.toPath
+
+      val clang = Discover.clang().toFile.toPath
+
+      Discover.targetTriple(clang, cwd).split("-").head match {
+        case "x86_64" => x86_64
+        case "i386" => i386
+        case "i686" => i386 // essentially the same
+        case other =>
+          println(s"Unable to detect target architecture from $other, defaulting to x86_64")
+          x86_64
+      }
+    },
     targetArchitecture in NativeTest := (targetArchitecture in Test).value
   )
 

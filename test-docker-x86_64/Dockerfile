@@ -1,14 +1,10 @@
-FROM i386/ubuntu:16.04
+FROM ubuntu:16.04
 
 ENV SBT_VERSION 1.1.2
 
 RUN apt-get update && apt-get install -y wget software-properties-common
 
-RUN add-apt-repository ppa:webupd8team/java -y && \
-    apt-get update && \
-    echo oracle-java7-installer shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections && \
-    apt-get install -y oracle-java8-installer && \
-    apt-get clean
+RUN apt-get install -y openjdk-8-jdk
 
 RUN apt-get install -y curl
 
@@ -45,10 +41,12 @@ ENV LC_ALL "C.UTF-8"
 
 ENV LANG "C.UTF-8"
 
+ENV TARGET_ARCHITECTURE "x86_64"
+
 RUN useradd -ms /bin/bash scala-native
 
 USER scala-native
 
 WORKDIR /home/scala-native
 
-CMD ["sbt", "^^ $SBT_VERSION", "dirty-rebuild_arch-i386", "test-all_arch-i386"]
+CMD ["sbt", "^^ $SBT_VERSION", "dirty-rebuild_arch-x86_64", "test-all_arch-x86_64"]
