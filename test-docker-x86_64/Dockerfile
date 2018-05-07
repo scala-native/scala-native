@@ -47,6 +47,6 @@ RUN useradd -ms /bin/bash scala-native
 
 USER scala-native
 
-WORKDIR /home/scala-native
+WORKDIR /home/scala-native/scala-native
 
 CMD ["sbt", "^^ $SBT_VERSION", "dirty-rebuild_arch-x86_64", "test-all_arch-x86_64"]
