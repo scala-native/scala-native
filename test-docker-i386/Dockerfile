@@ -51,4 +51,4 @@ USER scala-native
 
 WORKDIR /home/scala-native/scala-native
 
-CMD sbt ^^ $SBT_VERSION dirty-rebuild_arch-i386 test-all_arch-i386
+CMD sbt "^^ $SBT_VERSION" dirty-rebuild_arch-i386 test-all_arch-i386
