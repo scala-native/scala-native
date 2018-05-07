@@ -82,10 +82,11 @@ object ScalaNativePluginInternal {
 
       Discover.targetTriple(clang, cwd).split("-").head match {
         case "x86_64" => x86_64
-        case "i386" => i386
-        case "i686" => i386 // essentially the same
+        case "i386"   => i386
+        case "i686"   => i386 // essentially the same
         case other =>
-          println(s"Unable to detect target architecture from $other, defaulting to x86_64")
+          println(
+            s"Unable to detect target architecture from $other, defaulting to x86_64")
           x86_64
       }
     },
