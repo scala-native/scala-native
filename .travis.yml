@@ -49,7 +49,8 @@ script:
   - if [ -n "$CLANG_FORMAT_PATH" ]; then scripts/clangfmt --test; fi
   - scripts/scalafmt --test
   - docker build -t $TEST_CONTAINER $TEST_CONTAINER
-  - docker run --privileged -v $PWD:/home/scala-native/scala-native -e SCALANATIVE_GC=$SCALANATIVE_GC -e SBT_VERSION=$SBT_VERSION -it $TEST_CONTAINER
+  - chmod a+rwx -R .
+  - docker run -v $PWD:/home/scala-native/scala-native -e SCALANATIVE_GC=$SCALANATIVE_GC -e SBT_VERSION=$SBT_VERSION -it $TEST_CONTAINER
 
 before_cache:
   - find $HOME/.sbt -name "*.lock" | xargs rm
