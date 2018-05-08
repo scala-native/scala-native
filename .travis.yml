@@ -64,8 +64,8 @@ script:
   - scripts/scalafmt --test
   - docker run --rm --privileged multiarch/qemu-user-static:register
   - docker build -t $TEST_CONTAINER $TEST_CONTAINER
-  - chmod a+rwx -R $HOME
-  - docker run -v $HOME:/home/scala-native -e SCALANATIVE_GC=$SCALANATIVE_GC -e SBT_VERSION=$SBT_VERSION -it $TEST_CONTAINER
+  - chmod a+rwx -R $PWD
+  - docker run -v $PWD:/home/scala-native -e SCALANATIVE_GC=$SCALANATIVE_GC -e SBT_VERSION=$SBT_VERSION -it $TEST_CONTAINER
 
 before_cache:
   - find $HOME/.sbt -name "*.lock" | xargs rm

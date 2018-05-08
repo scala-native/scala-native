@@ -49,6 +49,6 @@ RUN useradd -ms /bin/bash scala-native
 
 USER scala-native
 
-WORKDIR /home/scala-native/scala-native
+WORKDIR /home/scala-native
 
 CMD sbt -no-colors -J-Xmx2G "^^ $SBT_VERSION" "set scriptedBufferLog in sbtScalaNative := false" test-all_arch-i386
