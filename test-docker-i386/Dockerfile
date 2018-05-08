@@ -51,4 +51,4 @@ USER scala-native
 
 WORKDIR /home/scala-native/scala-native
 
-CMD sbt "^^ $SBT_VERSION" dirty-rebuild_arch-i386 test-all_arch-i386
+CMD sbt -no-colors -J-Xmx2G "^^ $SBT_VERSION" dirty-rebuild_arch-i386 "set scriptedBufferLog in sbtScalaNative := false" test-all_arch-i386
