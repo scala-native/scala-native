@@ -60,15 +60,6 @@ addCommandAlias(
 )
 
 addCommandAlias(
-  "dirty-rebuild_arch-i386",
-  Seq(
-    "scalalib_arch-i386/publishLocal",
-    "sbtScalaNative/publishLocal",
-    "testInterface_arch-i386/publishLocal"
-  ).mkString(";", ";", "")
-)
-
-addCommandAlias(
   "test-all_arch-x86_64",
   Seq(
     "sandbox_arch-x86_64/run",
@@ -78,6 +69,25 @@ addCommandAlias(
     "benchmarks_arch-x86_64/run --test",
     "sbtScalaNative/scripted",
     "tools/mimaReportBinaryIssues"
+  ).mkString(";", ";", "")
+)
+
+addCommandAlias(
+  "rebuild_arch-i386",
+  Seq(
+    "clean",
+    "cleanCache",
+    "cleanLocal",
+    "dirty-rebuild_arch-i386"
+  ).mkString(";", ";", "")
+)
+
+addCommandAlias(
+  "dirty-rebuild_arch-i386",
+  Seq(
+    "scalalib_arch-i386/publishLocal",
+    "sbtScalaNative/publishLocal",
+    "testInterface_arch-i386/publishLocal"
   ).mkString(";", ";", "")
 )
 
