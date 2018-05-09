@@ -12,14 +12,6 @@ services:
   - docker
 
 env:
-  matrix:
-    - TEST_CONTAINER=test-docker-x86_64 SCALANATIVE_GC=boehm SBT_VERSION=0.13.16
-    - TEST_CONTAINER=test-docker-x86_64 SCALANATIVE_GC=boehm SBT_VERSION=1.0.4
-    - TEST_CONTAINER=test-docker-x86_64 SCALANATIVE_GC=immix SBT_VERSION=0.13.16
-    - TEST_CONTAINER=test-docker-x86_64 SCALANATIVE_GC=immix SBT_VERSION=1.0.4
-    - TEST_CONTAINER=test-docker-i386 SCALANATIVE_GC=boehm SBT_VERSION=0.13.16
-    - TEST_CONTAINER=test-docker-i386 SCALANATIVE_GC=boehm SBT_VERSION=1.0.4
-
   global:
     - MAVEN_REALM="Sonatype Nexus Repository Manager"
     - MAVEN_DOMAIN="oss.sonatype.org"
@@ -35,37 +27,76 @@ jobs:
     - stage: compile
       script:
         - rm -rf $HOME/.ivy2/{cache,local}/org.scala-native/
+        - if [ "$TRAVIS_PULL_REQUEST" != "false" ] ; then
+            echo "Incoming pull request from https://github.com/$TRAVIS_REPO_SLUG/pull/$TRAVIS_PULL_REQUEST";
+            author=$(curl -u dummy4dummy:dummy2dummy -s "https://api.github.com/repos/$TRAVIS_REPO_SLUG/pulls/$TRAVIS_PULL_REQUEST" | jq -r ".user.login");
+            if [ $? -ne 0 ] ; then exit 1; fi;
+            echo "Pull request submitted by $author";
+            signed=$(curl -s https://www.lightbend.com/contribute/cla/scala/check/$author | jq -r ".signed");
+            if [ $? -ne 0 ] ; then exit 1; fi;
+            if [ "$signed" = "true" ] ; then
+              echo "CLA check for $author successful";
+            else
+              echo "CLA check for $author failed";
+              echo "Please sign the Scala CLA to contribute to Scala Native";
+              echo "Go to https://www.lightbend.com/contribute/cla/scala and then resubmit this pull request";
+              exit 1;
+            fi;
+          fi;
+        - if [ -n "$CLANG_FORMAT_PATH" ]; then scripts/clangfmt --test; fi
+        - scripts/scalafmt --test
         - sbt -no-colors -J-Xmx2G "^^ 0.13.16" rebuild_arch-x86_64
         - sbt -no-colors -J-Xmx2G "^^ 0.13.16" rebuild_arch-i386
         - sbt -no-colors -J-Xmx2G "^^ 0.13.16" sbtScalaNative/publishLocal
         - sbt -no-colors -J-Xmx2G "^^ 1.0.4" sbtScalaNative/publishLocal
-
-before_script:
-  - if [ "$TRAVIS_PULL_REQUEST" != "false" ] ; then
-      echo "Incoming pull request from https://github.com/$TRAVIS_REPO_SLUG/pull/$TRAVIS_PULL_REQUEST";
-      author=$(curl -u dummy4dummy:dummy2dummy -s "https://api.github.com/repos/$TRAVIS_REPO_SLUG/pulls/$TRAVIS_PULL_REQUEST" | jq -r ".user.login");
-      if [ $? -ne 0 ] ; then exit 1; fi;
-      echo "Pull request submitted by $author";
-      signed=$(curl -s https://www.lightbend.com/contribute/cla/scala/check/$author | jq -r ".signed");
-      if [ $? -ne 0 ] ; then exit 1; fi;
-      if [ "$signed" = "true" ] ; then
-        echo "CLA check for $author successful";
-      else
-        echo "CLA check for $author failed";
-        echo "Please sign the Scala CLA to contribute to Scala Native";
-        echo "Go to https://www.lightbend.com/contribute/cla/scala and then resubmit this pull request";
-        exit 1;
-      fi;
-    fi;
-
-script:
-  - java -version
-  - if [ -n "$CLANG_FORMAT_PATH" ]; then scripts/clangfmt --test; fi
-  - scripts/scalafmt --test
-  - docker run --rm --privileged multiarch/qemu-user-static:register
-  - docker build -t $TEST_CONTAINER $TEST_CONTAINER
-  - chmod a+rwx -R $HOME
-  - docker run -v $HOME/.ivy2:/home/scala-native/.ivy2 -v $HOME/.sbt:/home/scala-native/.sbt -v $PWD:/home/scala-native/scala-native -e SCALANATIVE_GC=$SCALANATIVE_GC -e SBT_VERSION=$SBT_VERSION -it $TEST_CONTAINER
+    - stage: test
+      script:
+        - export TEST_CONTAINER=test-docker-x86_64 SCALANATIVE_GC=boehm SBT_VERSION=0.13.16
+        - java -version
+        - docker run --rm --privileged multiarch/qemu-user-static:register
+        - docker build -t $TEST_CONTAINER $TEST_CONTAINER
+        - chmod a+rwx -R $HOME
+        - docker run -v $HOME/.ivy2:/home/scala-native/.ivy2 -v $HOME/.sbt:/home/scala-native/.sbt -v $PWD:/home/scala-native/scala-native -e SCALANATIVE_GC=$SCALANATIVE_GC -e SBT_VERSION=$SBT_VERSION -it $TEST_CONTAINER
+    - stage: test
+      script:
+        - export TEST_CONTAINER=test-docker-x86_64 SCALANATIVE_GC=boehm SBT_VERSION=1.0.4
+        - java -version
+        - docker run --rm --privileged multiarch/qemu-user-static:register
+        - docker build -t $TEST_CONTAINER $TEST_CONTAINER
+        - chmod a+rwx -R $HOME
+        - docker run -v $HOME/.ivy2:/home/scala-native/.ivy2 -v $HOME/.sbt:/home/scala-native/.sbt -v $PWD:/home/scala-native/scala-native -e SCALANATIVE_GC=$SCALANATIVE_GC -e SBT_VERSION=$SBT_VERSION -it $TEST_CONTAINER
+    - stage: test
+      script:
+        - export TEST_CONTAINER=test-docker-x86_64 SCALANATIVE_GC=immix SBT_VERSION=0.13.16
+        - java -version
+        - docker run --rm --privileged multiarch/qemu-user-static:register
+        - docker build -t $TEST_CONTAINER $TEST_CONTAINER
+        - chmod a+rwx -R $HOME
+        - docker run -v $HOME/.ivy2:/home/scala-native/.ivy2 -v $HOME/.sbt:/home/scala-native/.sbt -v $PWD:/home/scala-native/scala-native -e SCALANATIVE_GC=$SCALANATIVE_GC -e SBT_VERSION=$SBT_VERSION -it $TEST_CONTAINER
+    - stage: test
+      script:
+        - export TEST_CONTAINER=test-docker-x86_64 SCALANATIVE_GC=immix SBT_VERSION=1.0.4
+        - java -version
+        - docker run --rm --privileged multiarch/qemu-user-static:register
+        - docker build -t $TEST_CONTAINER $TEST_CONTAINER
+        - chmod a+rwx -R $HOME
+        - docker run -v $HOME/.ivy2:/home/scala-native/.ivy2 -v $HOME/.sbt:/home/scala-native/.sbt -v $PWD:/home/scala-native/scala-native -e SCALANATIVE_GC=$SCALANATIVE_GC -e SBT_VERSION=$SBT_VERSION -it $TEST_CONTAINER
+    - stage: test
+      script:
+        - export TEST_CONTAINER=test-docker-i386 SCALANATIVE_GC=boehm SBT_VERSION=0.13.16
+        - java -version
+        - docker run --rm --privileged multiarch/qemu-user-static:register
+        - docker build -t $TEST_CONTAINER $TEST_CONTAINER
+        - chmod a+rwx -R $HOME
+        - docker run -v $HOME/.ivy2:/home/scala-native/.ivy2 -v $HOME/.sbt:/home/scala-native/.sbt -v $PWD:/home/scala-native/scala-native -e SCALANATIVE_GC=$SCALANATIVE_GC -e SBT_VERSION=$SBT_VERSION -it $TEST_CONTAINER
+    - stage: test
+      script:
+        - export TEST_CONTAINER=test-docker-i386 SCALANATIVE_GC=boehm SBT_VERSION=1.0.4
+        - java -version
+        - docker run --rm --privileged multiarch/qemu-user-static:register
+        - docker build -t $TEST_CONTAINER $TEST_CONTAINER
+        - chmod a+rwx -R $HOME
+        - docker run -v $HOME/.ivy2:/home/scala-native/.ivy2 -v $HOME/.sbt:/home/scala-native/.sbt -v $PWD:/home/scala-native/scala-native -e SCALANATIVE_GC=$SCALANATIVE_GC -e SBT_VERSION=$SBT_VERSION -it $TEST_CONTAINER
 
 before_cache:
   - find $HOME/.sbt -name "*.lock" | xargs rm
