@@ -60,25 +60,19 @@ jobs:
       script:
         - export TEST_CONTAINER=shadaj/scala-native-testing:x86_64 SCALANATIVE_GC=boehm SBT_VERSION=0.13.16 TEST_COMMAND=test-runtime_arch-x86_64
         - ./scripts/travis_test.sh
-    - stage: test
-      script:
-        - export TEST_CONTAINER=shadaj/scala-native-testing:x86_64 SCALANATIVE_GC=boehm SBT_VERSION=1.0.4 TEST_COMMAND=sbtScalaNative/scripted
+        - export SBT_VERSION=1.0.4 TEST_COMMAND=sbtScalaNative/scripted
         - ./scripts/travis_test.sh
     - stage: test
       script:
         - export TEST_CONTAINER=shadaj/scala-native-testing:x86_64 SCALANATIVE_GC=immix SBT_VERSION=0.13.16 TEST_COMMAND=test-runtime_arch-x86_64
         - ./scripts/travis_test.sh
-    - stage: test
-      script:
-        - export TEST_CONTAINER=shadaj/scala-native-testing:x86_64 SCALANATIVE_GC=immix SBT_VERSION=1.0.4 TEST_COMMAND=sbtScalaNative/scripted
+        - export SBT_VERSION=1.0.4 TEST_COMMAND=sbtScalaNative/scripted
         - ./scripts/travis_test.sh
     - stage: test
       script:
         - export TEST_CONTAINER=shadaj/scala-native-testing:i386 SCALANATIVE_GC=boehm SBT_VERSION=0.13.16 TEST_COMMAND=test-runtime_arch-i386
         - ./scripts/travis_test.sh
-    - stage: test
-      script:
-        - export TEST_CONTAINER=shadaj/scala-native-testing:i386 SCALANATIVE_GC=boehm SBT_VERSION=1.0.4 TEST_COMMAND=sbtScalaNative/scripted
+        - export SBT_VERSION=1.0.4 TEST_COMMAND=sbtScalaNative/scripted
         - ./scripts/travis_test.sh
 
 before_cache:
