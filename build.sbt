@@ -41,6 +41,15 @@ lazy val baseSettings = Seq(
 )
 
 addCommandAlias(
+  "compiler-test",
+  Seq(
+    "tools/test",
+    "nirparser/test",
+    "tools/mimaReportBinaryIssues"
+  ).mkString(";", ";", "")
+)
+
+addCommandAlias(
   "rebuild_arch-x86_64",
   Seq(
     "clean",
@@ -73,6 +82,16 @@ addCommandAlias(
 )
 
 addCommandAlias(
+  "test-runtime_arch-x86_64",
+  Seq(
+    "sandbox_arch-x86_64/run",
+    "tests_arch-x86_64/test",
+    "benchmarks_arch-x86_64/run --test",
+    "sbtScalaNative/scripted"
+  ).mkString(";", ";", "")
+)
+
+addCommandAlias(
   "rebuild_arch-i386",
   Seq(
     "clean",
@@ -88,6 +107,16 @@ addCommandAlias(
     "scalalib_arch-i386/publishLocal",
     "sbtScalaNative/publishLocal",
     "testInterface_arch-i386/publishLocal"
+  ).mkString(";", ";", "")
+)
+
+addCommandAlias(
+  "test-runtime_arch-i386",
+  Seq(
+    "sandbox_arch-i386/run",
+    "tests_arch-i386/test",
+    "benchmarks_arch-i386/run --test",
+    "sbtScalaNative/scripted"
   ).mkString(";", ";", "")
 )
 
@@ -350,11 +379,7 @@ lazy val sbtScalaNative =
       sources in Compile ++= (sources in Compile in testInterfaceSerializationx86_64).value,
       // publish the other projects before running scripted tests.
       scripted := scripted
-        .dependsOn(publishLocal in testInterfacex86_64)
-        .dependsOn(publishLocal in testInterfacei386)
         .dependsOn(publishLocal in ThisProject)
-        .dependsOn(publishLocal in scalalibx86_64)
-        .dependsOn(publishLocal in scalalibi386)
         .evaluated,
       publishLocal := publishLocal.dependsOn(publishLocal in tools).value
     )
