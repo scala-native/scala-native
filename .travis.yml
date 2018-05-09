@@ -25,8 +25,7 @@ stages:
 jobs:
   include:
     - stage: compile
-      script:
-        - sudo rm -rf $HOME/.ivy2/{cache,local}/org.scala-native/
+      before_script:
         - if [ "$TRAVIS_PULL_REQUEST" != "false" ] ; then
             echo "Incoming pull request from https://github.com/$TRAVIS_REPO_SLUG/pull/$TRAVIS_PULL_REQUEST";
             author=$(curl -u dummy4dummy:dummy2dummy -s "https://api.github.com/repos/$TRAVIS_REPO_SLUG/pulls/$TRAVIS_PULL_REQUEST" | jq -r ".user.login");
@@ -43,6 +42,9 @@ jobs:
               exit 1;
             fi;
           fi;
+      script:
+        - sudo rm -rf $HOME/.ivy2/{cache,local}/org.scala-native/
+        - java -version
         - if [ -n "$CLANG_FORMAT_PATH" ]; then scripts/clangfmt --test; fi
         - scripts/scalafmt --test
         - sbt -no-colors -J-Xmx2G "^^ 0.13.16" rebuild_arch-x86_64
