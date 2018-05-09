@@ -26,7 +26,7 @@ jobs:
   include:
     - stage: compile
       script:
-        - rm -rf $HOME/.ivy2/{cache,local}/org.scala-native/
+        - rsudo m -rf $HOME/.ivy2/{cache,local}/org.scala-native/
         - if [ "$TRAVIS_PULL_REQUEST" != "false" ] ; then
             echo "Incoming pull request from https://github.com/$TRAVIS_REPO_SLUG/pull/$TRAVIS_PULL_REQUEST";
             author=$(curl -u dummy4dummy:dummy2dummy -s "https://api.github.com/repos/$TRAVIS_REPO_SLUG/pulls/$TRAVIS_PULL_REQUEST" | jq -r ".user.login");
