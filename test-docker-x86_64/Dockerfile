@@ -49,4 +49,4 @@ USER scala-native
 
 WORKDIR /home/scala-native/scala-native
 
-CMD sbt -no-colors -J-Xmx2G "^^ $SBT_VERSION" "set scriptedBufferLog in sbtScalaNative := false" test-runtime_arch-x86_64
+CMD sbt -no-colors -J-Xmx2G "^^ $SBT_VERSION" "set scriptedBufferLog in sbtScalaNative := false" "$TEST_COMMAND"
