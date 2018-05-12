@@ -18,7 +18,7 @@ final class ULong private[scala] (private val underlying: Long)
   @inline final def toFloat: Float = toDouble.toFloat
   @inline final def toDouble: Double =
     if (underlying >= 0) underlying.toDouble
-    else 18446744073709551616.0 - underlying.toDouble // TODO Verify precision
+    else 18446744073709551616.0 + underlying.toDouble
 
   @inline final def toUByte: UByte   = new UByte(toByte)
   @inline final def toUShort: UShort = new UShort(toShort)
