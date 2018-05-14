@@ -22,7 +22,7 @@ import scalanative.sbtplugin.TestUtilities._
 import scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 import scalanative.sbtplugin.SBTCompat.{Process, _}
 import scalanative.sbtplugin.testinterface.ScalaNativeFramework
-import scala.scalanative.build.{x86_64, i386}
+import scala.scalanative.build.{x86_64, i386, ARM}
 
 object ScalaNativePluginInternal {
 
@@ -84,6 +84,7 @@ object ScalaNativePluginInternal {
         case "x86_64" => x86_64
         case "i386"   => i386
         case "i686"   => i386 // essentially the same
+        case "armv7l" => ARM
         case other =>
           println(
             s"Unable to detect target architecture from $other, defaulting to x86_64")

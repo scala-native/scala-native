@@ -22,7 +22,7 @@ RUN apt-add-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-5.
 
 RUN apt-get install -y clang-5.0
 
-RUN apt-get install -y libunwind8-dev liblzma-dev zlib1g-dev libre2-dev
+RUN apt-get install -y zlib1g-dev libre2-dev
 
 RUN apt-get install -y gcc git autoconf libtool pkg-config
 
@@ -43,13 +43,8 @@ ENV LANG "C.UTF-8"
 
 RUN useradd -ms /bin/bash scala-native
 
-RUN update-ca-certificates -f
-
 USER scala-native
 
-RUN cd /home/scala-native && mkdir project && echo "sbt.version=0.13.17" >> project/build.properties && \
-    sbt exit && rm -rf project && rm -rf target
+WORKDIR /home/scala-native/scala-native
 
-WORKDIR /home/scala-native
-
-CMD ["sbt", "dirty-rebuild", "test-all"]
+CMD sbt -no-colors -J-Xmx2G "^^ $SBT_VERSION" "set scriptedBufferLog in sbtScalaNative := false" "$TEST_COMMAND"

@@ -49,89 +49,48 @@ addCommandAlias(
   ).mkString(";", ";", "")
 )
 
-addCommandAlias(
-  "rebuild_arch-x86_64",
+Seq("x86_64", "i386", "ARM").flatMap { platform =>
   Seq(
-    "clean",
-    "cleanCache",
-    "cleanLocal",
-    "dirty-rebuild_arch-x86_64"
-  ).mkString(";", ";", "")
-)
-
-addCommandAlias(
-  "dirty-rebuild_arch-x86_64",
-  Seq(
-    "scalalib_arch-x86_64/publishLocal",
-    "sbtScalaNative/publishLocal",
-    "testInterface_arch-x86_64/publishLocal"
-  ).mkString(";", ";", "")
-)
-
-addCommandAlias(
-  "test-all_arch-x86_64",
-  Seq(
-    "sandbox_arch-x86_64/run",
-    "tests_arch-x86_64/test",
-    "tools/test",
-    "nirparser/test",
-    "benchmarks_arch-x86_64/run --test",
-    "sbtScalaNative/scripted",
-    "tools/mimaReportBinaryIssues"
-  ).mkString(";", ";", "")
-)
-
-addCommandAlias(
-  "test-runtime_arch-x86_64",
-  Seq(
-    "sandbox_arch-x86_64/run",
-    "tests_arch-x86_64/test",
-    "benchmarks_arch-x86_64/run --test",
-    "sbtScalaNative/scripted"
-  ).mkString(";", ";", "")
-)
-
-addCommandAlias(
-  "rebuild_arch-i386",
-  Seq(
-    "clean",
-    "cleanCache",
-    "cleanLocal",
-    "dirty-rebuild_arch-i386"
-  ).mkString(";", ";", "")
-)
-
-addCommandAlias(
-  "dirty-rebuild_arch-i386",
-  Seq(
-    "scalalib_arch-i386/publishLocal",
-    "sbtScalaNative/publishLocal",
-    "testInterface_arch-i386/publishLocal"
-  ).mkString(";", ";", "")
-)
-
-addCommandAlias(
-  "test-runtime_arch-i386",
-  Seq(
-    "sandbox_arch-i386/run",
-    "tests_arch-i386/test",
-    "benchmarks_arch-i386/run --test",
-    "sbtScalaNative/scripted"
-  ).mkString(";", ";", "")
-)
-
-addCommandAlias(
-  "test-all_arch-i386",
-  Seq(
-    "sandbox_arch-i386/run",
-    "tests_arch-i386/test",
-    "tools/test",
-    "nirparser/test",
-    "benchmarks_arch-i386/run --test",
-    "sbtScalaNative/scripted",
-    "tools/mimaReportBinaryIssues"
-  ).mkString(";", ";", "")
-)
+    addCommandAlias(
+      s"rebuild_arch-$platform",
+      Seq(
+        "clean",
+        "cleanCache",
+        "cleanLocal",
+        s"dirty-rebuild_arch-$platform"
+      ).mkString(";", ";", "")
+    ),
+    addCommandAlias(
+      s"dirty-rebuild_arch-$platform",
+      Seq(
+        s"scalalib_arch-$platform/publishLocal",
+        "sbtScalaNative/publishLocal",
+        s"testInterface_arch-$platform/publishLocal"
+      ).mkString(";", ";", "")
+    ),
+    addCommandAlias(
+      s"test-all_arch-$platform",
+      Seq(
+        s"sandbox_arch-$platform/run",
+        "tests_arch-$platform/test",
+        "tools/test",
+        "nirparser/test",
+        s"benchmarks_arch-$platform/run --test",
+        "sbtScalaNative/scripted",
+        "tools/mimaReportBinaryIssues"
+      ).mkString(";", ";", "")
+    ),
+    addCommandAlias(
+      s"test-runtime_arch-$platform",
+      Seq(
+        s"sandbox_arch-$platform/run",
+        s"tests_arch-$platform/test",
+        s"benchmarks_arch-$platform/run --test",
+        "sbtScalaNative/scripted"
+      ).mkString(";", ";", "")
+    )
+  )
+}.flatten
 
 lazy val publishSnapshot =
   taskKey[Unit]("Publish snapshot to sonatype on every commit to master.")
@@ -386,11 +345,12 @@ lazy val sbtScalaNative =
     .dependsOn(tools)
 
 import CrossArchitecturePlatform._
-import scala.scalanative.build.{x86_64, i386}
+import scala.scalanative.build.{x86_64, i386, ARM}
 
 lazy val nativelib =
   crossProject(CrossArchitectureLibPlatform(x86_64),
-               CrossArchitectureLibPlatform(i386))
+               CrossArchitectureLibPlatform(i386),
+               CrossArchitectureLibPlatform(ARM))
     .crossType(CrossType.Full)
     .in(file("nativelib"))
     .settings(libSettings)
@@ -404,10 +364,12 @@ lazy val nativelib =
 
 lazy val nativelibx86_64 = nativelib.crossArchitecture(x86_64)
 lazy val nativelibi386   = nativelib.crossArchitecture(i386)
+lazy val nativelibARM = nativelib.crossArchitecture(ARM)
 
 lazy val javalib =
   crossProject(CrossArchitectureLibPlatform(x86_64),
-               CrossArchitectureLibPlatform(i386))
+               CrossArchitectureLibPlatform(i386),
+               CrossArchitectureLibPlatform(ARM))
     .crossType(CrossType.Pure)
     .in(file("javalib"))
     .settings(libSettings)
@@ -444,17 +406,24 @@ lazy val javalib =
         .dependsOn(publishLocal in nativelibi386)
         .value
     )
+    .architectureSettings(ARM)(
+      publishLocal := publishLocal
+        .dependsOn(publishLocal in nativelibARM)
+        .value
+    )
     .dependsOn(nativelib)
 
 val javalibx86_64 = javalib.crossArchitecture(x86_64)
 val javalibi386   = javalib.crossArchitecture(i386)
+val javalibARM = javalib.crossArchitecture(ARM)
 
 lazy val assembleScalaLibrary = taskKey[Unit](
   "Checks out scala standard library from submodules/scala and then applies overrides.")
 
 lazy val auxlib =
   crossProject(CrossArchitectureLibPlatform(x86_64),
-               CrossArchitectureLibPlatform(i386))
+               CrossArchitectureLibPlatform(i386),
+               CrossArchitectureLibPlatform(ARM))
     .crossType(CrossType.Pure)
     .in(file("auxlib"))
     .settings(libSettings)
@@ -469,14 +438,21 @@ lazy val auxlib =
         .dependsOn(publishLocal in javalibi386)
         .value
     )
+    .architectureSettings(ARM)(
+      publishLocal := publishLocal
+        .dependsOn(publishLocal in javalibARM)
+        .value
+    )
     .dependsOn(nativelib)
 
-val auxlibx86_64 = auxlib.crossArchitecture(x86_64)
-val auxlibi386   = auxlib.crossArchitecture(i386)
+lazy val auxlibx86_64 = auxlib.crossArchitecture(x86_64)
+lazy val auxlibi386   = auxlib.crossArchitecture(i386)
+lazy val auxlibARM = auxlib.crossArchitecture(ARM)
 
 lazy val scalalib =
   crossProject(CrossArchitectureLibPlatform(x86_64),
-               CrossArchitectureLibPlatform(i386))
+               CrossArchitectureLibPlatform(i386),
+               CrossArchitectureLibPlatform(ARM))
     .crossType(CrossType.Pure)
     .in(file("scalalib"))
     .settings(libSettings)
@@ -547,14 +523,21 @@ lazy val scalalib =
         .dependsOn(assembleScalaLibrary, publishLocal in auxlibi386)
         .value
     )
+    .architectureSettings(ARM)(
+      publishLocal := publishLocal
+        .dependsOn(assembleScalaLibrary, publishLocal in auxlibARM)
+        .value
+    )
     .dependsOn(auxlib, nativelib, javalib)
 
 lazy val scalalibx86_64 = scalalib.crossArchitecture(x86_64)
 lazy val scalalibi386   = scalalib.crossArchitecture(i386)
+lazy val scalalibARM = scalalib.crossArchitecture(ARM)
 
 lazy val tests =
   crossProject(CrossArchitecturePlatform(x86_64),
-               CrossArchitecturePlatform(i386))
+               CrossArchitecturePlatform(i386),
+               CrossArchitecturePlatform(ARM))
     .crossType(CrossType.Pure)
     .in(file("unit-tests"))
     .settings(projectSettings)
@@ -578,10 +561,12 @@ lazy val tests =
 
 lazy val testsx86_64 = tests.crossArchitecture(x86_64)
 lazy val testsi386   = tests.crossArchitecture(i386)
+lazy val testsARM = tests.crossArchitecture(ARM)
 
 lazy val sandbox =
   crossProject(CrossArchitecturePlatform(x86_64),
-               CrossArchitecturePlatform(i386))
+               CrossArchitecturePlatform(i386),
+               CrossArchitecturePlatform(ARM))
     .crossType(CrossType.Pure)
     .in(file("sandbox"))
     .settings(noPublishSettings)
@@ -593,10 +578,12 @@ lazy val sandbox =
 
 lazy val sandboxx86_64 = sandbox.crossArchitecture(x86_64)
 lazy val sandboxi386   = sandbox.crossArchitecture(i386)
+lazy val sandboxARM = sandbox.crossArchitecture(ARM)
 
 lazy val benchmarks =
   crossProject(CrossArchitecturePlatform(x86_64),
-               CrossArchitecturePlatform(i386))
+               CrossArchitecturePlatform(i386),
+               CrossArchitecturePlatform(ARM))
     .crossType(CrossType.Pure)
     .in(file("benchmarks"))
     .settings(projectSettings)
@@ -626,6 +613,7 @@ lazy val benchmarks =
 
 lazy val benchmarksx86_64 = benchmarks.crossArchitecture(x86_64)
 lazy val benchmarksi386   = benchmarks.crossArchitecture(i386)
+lazy val benchmarksARM   = benchmarks.crossArchitecture(ARM)
 
 lazy val testingCompilerInterface =
   project
@@ -655,7 +643,8 @@ lazy val testingCompiler =
 
 lazy val testInterface =
   crossProject(CrossArchitecturePlatform(x86_64),
-               CrossArchitecturePlatform(i386))
+               CrossArchitecturePlatform(i386),
+               CrossArchitecturePlatform(ARM))
     .crossType(CrossType.Pure)
     .settings(toolSettings)
     .settings(scalaVersion := libScalaVersion)
@@ -675,14 +664,21 @@ lazy val testInterface =
         .dependsOn(publishLocal in testInterfaceSerializationi386)
         .value
     )
+    .architectureSettings(ARM)(
+      publishLocal := publishLocal
+        .dependsOn(publishLocal in testInterfaceSerializationARM)
+        .value
+    )
     .dependsOn(testInterfaceSerialization)
 
 lazy val testInterfacex86_64 = testInterface.crossArchitecture(x86_64)
 lazy val testInterfacei386   = testInterface.crossArchitecture(i386)
+lazy val testInterfaceARM   = testInterface.crossArchitecture(ARM)
 
 lazy val testInterfaceSerialization =
   crossProject(CrossArchitecturePlatform(x86_64),
-               CrossArchitecturePlatform(i386))
+               CrossArchitecturePlatform(i386),
+               CrossArchitecturePlatform(ARM))
     .crossType(CrossType.Pure)
     .settings(toolSettings)
     .settings(scalaVersion := libScalaVersion)
@@ -701,16 +697,24 @@ lazy val testInterfaceSerialization =
         .dependsOn(publishLocal in testInterfaceSbtDefsi386)
         .value
     )
+    .architectureSettings(ARM)(
+      publishLocal := publishLocal
+        .dependsOn(publishLocal in testInterfaceSbtDefsARM)
+        .value
+    )
     .dependsOn(testInterfaceSbtDefs)
 
 lazy val testInterfaceSerializationx86_64 =
   testInterfaceSerialization.crossArchitecture(x86_64)
 lazy val testInterfaceSerializationi386 =
   testInterfaceSerialization.crossArchitecture(i386)
+lazy val testInterfaceSerializationARM =
+  testInterfaceSerialization.crossArchitecture(ARM)
 
 lazy val testInterfaceSbtDefs =
   crossProject(CrossArchitecturePlatform(x86_64),
-               CrossArchitecturePlatform(i386))
+               CrossArchitecturePlatform(i386),
+               CrossArchitecturePlatform(ARM))
     .crossType(CrossType.Pure)
     .settings(toolSettings)
     .settings(scalaVersion := libScalaVersion)
@@ -723,3 +727,4 @@ lazy val testInterfaceSbtDefs =
 lazy val testInterfaceSbtDefsx86_64 =
   testInterfaceSbtDefs.crossArchitecture(x86_64)
 lazy val testInterfaceSbtDefsi386 = testInterfaceSbtDefs.crossArchitecture(i386)
+lazy val testInterfaceSbtDefsARM = testInterfaceSbtDefs.crossArchitecture(ARM)
