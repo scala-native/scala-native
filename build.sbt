@@ -364,7 +364,7 @@ lazy val nativelib =
 
 lazy val nativelibx86_64 = nativelib.crossArchitecture(x86_64)
 lazy val nativelibi386   = nativelib.crossArchitecture(i386)
-lazy val nativelibARM = nativelib.crossArchitecture(ARM)
+lazy val nativelibARM    = nativelib.crossArchitecture(ARM)
 
 lazy val javalib =
   crossProject(CrossArchitectureLibPlatform(x86_64),
@@ -415,7 +415,7 @@ lazy val javalib =
 
 val javalibx86_64 = javalib.crossArchitecture(x86_64)
 val javalibi386   = javalib.crossArchitecture(i386)
-val javalibARM = javalib.crossArchitecture(ARM)
+val javalibARM    = javalib.crossArchitecture(ARM)
 
 lazy val assembleScalaLibrary = taskKey[Unit](
   "Checks out scala standard library from submodules/scala and then applies overrides.")
@@ -447,7 +447,7 @@ lazy val auxlib =
 
 lazy val auxlibx86_64 = auxlib.crossArchitecture(x86_64)
 lazy val auxlibi386   = auxlib.crossArchitecture(i386)
-lazy val auxlibARM = auxlib.crossArchitecture(ARM)
+lazy val auxlibARM    = auxlib.crossArchitecture(ARM)
 
 lazy val scalalib =
   crossProject(CrossArchitectureLibPlatform(x86_64),
@@ -532,7 +532,7 @@ lazy val scalalib =
 
 lazy val scalalibx86_64 = scalalib.crossArchitecture(x86_64)
 lazy val scalalibi386   = scalalib.crossArchitecture(i386)
-lazy val scalalibARM = scalalib.crossArchitecture(ARM)
+lazy val scalalibARM    = scalalib.crossArchitecture(ARM)
 
 lazy val tests =
   crossProject(CrossArchitecturePlatform(x86_64),
@@ -561,7 +561,7 @@ lazy val tests =
 
 lazy val testsx86_64 = tests.crossArchitecture(x86_64)
 lazy val testsi386   = tests.crossArchitecture(i386)
-lazy val testsARM = tests.crossArchitecture(ARM)
+lazy val testsARM    = tests.crossArchitecture(ARM)
 
 lazy val sandbox =
   crossProject(CrossArchitecturePlatform(x86_64),
@@ -578,7 +578,7 @@ lazy val sandbox =
 
 lazy val sandboxx86_64 = sandbox.crossArchitecture(x86_64)
 lazy val sandboxi386   = sandbox.crossArchitecture(i386)
-lazy val sandboxARM = sandbox.crossArchitecture(ARM)
+lazy val sandboxARM    = sandbox.crossArchitecture(ARM)
 
 lazy val benchmarks =
   crossProject(CrossArchitecturePlatform(x86_64),
@@ -613,7 +613,7 @@ lazy val benchmarks =
 
 lazy val benchmarksx86_64 = benchmarks.crossArchitecture(x86_64)
 lazy val benchmarksi386   = benchmarks.crossArchitecture(i386)
-lazy val benchmarksARM   = benchmarks.crossArchitecture(ARM)
+lazy val benchmarksARM    = benchmarks.crossArchitecture(ARM)
 
 lazy val testingCompilerInterface =
   project
@@ -673,7 +673,7 @@ lazy val testInterface =
 
 lazy val testInterfacex86_64 = testInterface.crossArchitecture(x86_64)
 lazy val testInterfacei386   = testInterface.crossArchitecture(i386)
-lazy val testInterfaceARM   = testInterface.crossArchitecture(ARM)
+lazy val testInterfaceARM    = testInterface.crossArchitecture(ARM)
 
 lazy val testInterfaceSerialization =
   crossProject(CrossArchitecturePlatform(x86_64),
@@ -727,4 +727,4 @@ lazy val testInterfaceSbtDefs =
 lazy val testInterfaceSbtDefsx86_64 =
   testInterfaceSbtDefs.crossArchitecture(x86_64)
 lazy val testInterfaceSbtDefsi386 = testInterfaceSbtDefs.crossArchitecture(i386)
-lazy val testInterfaceSbtDefsARM = testInterfaceSbtDefs.crossArchitecture(ARM)
+lazy val testInterfaceSbtDefsARM  = testInterfaceSbtDefs.crossArchitecture(ARM)
