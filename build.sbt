@@ -335,7 +335,7 @@ lazy val sbtScalaNative =
       // `testInterfaceSerialization` needs to be available from the sbt plugin,
       // but it's a Scala Native project (and thus 2.11), and the plugin is 2.10 or 2.12.
       // We simply add the sources to mimic cross-compilation.
-      sources in Compile ++= (sources in Compile in testInterfaceSerialization).value,
+      sources in Compile ++= (sources in Compile in testInterfaceSerializationx86_64).value,
       publishLocal := publishLocal.dependsOn(publishLocal in tools).value
     )
     .dependsOn(tools)
