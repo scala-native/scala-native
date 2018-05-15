@@ -332,16 +332,9 @@ lazy val sbtScalaNative =
       sbtBinaryVersion in update := (sbtBinaryVersion in pluginCrossBuild).value,
       addSbtPlugin("org.portable-scala" % "sbt-platform-deps" % "1.0.0-M2"),
       sbtTestDirectory := (baseDirectory in ThisBuild).value / "scripted-tests",
-      // `testInterfaceSerialization` needs to be available from the sbt plugin,
-      // but it's a Scala Native project (and thus 2.11), and the plugin is 2.10 or 2.12.
-      // We simply add the sources to mimic cross-compilation.
-      sources in Compile ++= (sources in Compile in testInterfaceSerializationx86_64).value,
-      // publish the other projects before running scripted tests.
-      scripted := scripted
-        .dependsOn(publishLocal in ThisProject)
-        .evaluated,
       publishLocal := publishLocal.dependsOn(publishLocal in tools).value
     )
+    .dependsOn(testInterfaceSerializationJVM)
     .dependsOn(tools)
 
 import CrossArchitecturePlatform._
@@ -676,7 +669,8 @@ lazy val testInterfacei386   = testInterface.crossArchitecture(i386)
 lazy val testInterfaceARM    = testInterface.crossArchitecture(ARM)
 
 lazy val testInterfaceSerialization =
-  crossProject(CrossArchitecturePlatform(x86_64),
+  crossProject(JVMPlatform
+               CrossArchitecturePlatform(x86_64),
                CrossArchitecturePlatform(i386),
                CrossArchitecturePlatform(ARM))
     .crossType(CrossType.Pure)
@@ -686,6 +680,14 @@ lazy val testInterfaceSerialization =
     .in(file("test-interface-serialization"))
     .settings(
       libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test
+    )
+    .jvmSettings(
+      scalaVersion := {
+        (sbtBinaryVersion in pluginCrossBuild).value match {
+          case "0.13" => sbt13ScalaVersion
+          case _      => sbt10ScalaVersion
+        }
+      }
     )
     .architectureSettings(x86_64)(
       publishLocal := publishLocal
@@ -704,6 +706,8 @@ lazy val testInterfaceSerialization =
     )
     .dependsOn(testInterfaceSbtDefs)
 
+lazy val testInterfaceSerializationJVM =
+  testInterfaceSerialization.jvm
 lazy val testInterfaceSerializationx86_64 =
   testInterfaceSerialization.crossArchitecture(x86_64)
 lazy val testInterfaceSerializationi386 =
