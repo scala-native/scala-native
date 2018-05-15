@@ -669,7 +669,7 @@ lazy val testInterfacei386   = testInterface.crossArchitecture(i386)
 lazy val testInterfaceARM    = testInterface.crossArchitecture(ARM)
 
 lazy val testInterfaceSerialization =
-  crossProject(JVMPlatform
+  crossProject(JVMPlatform,
                CrossArchitecturePlatform(x86_64),
                CrossArchitecturePlatform(i386),
                CrossArchitecturePlatform(ARM))
