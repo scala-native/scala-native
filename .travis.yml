@@ -49,6 +49,7 @@ jobs:
         - scripts/scalafmt --test
         - sbt -no-colors -J-Xmx2G "^^ 0.13.16" rebuild_arch-x86_64
         - sbt -no-colors -J-Xmx2G "^^ 0.13.16" rebuild_arch-i386
+        - sbt -no-colors -J-Xmx2G "^^ 0.13.16" rebuild_arch-ARM
         - sbt -no-colors -J-Xmx2G "^^ 0.13.16" sbtScalaNative/publishLocal
         - sbt -no-colors -J-Xmx2G "^^ 1.0.4" sbtScalaNative/publishLocal
     - stage: test
