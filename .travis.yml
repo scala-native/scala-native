@@ -84,14 +84,16 @@ jobs:
     - stage: test
       script:
         - export TEST_CONTAINER=shadaj/scala-native-testing:arm32v7 SCALANATIVE_GC=boehm SBT_VERSION=0.13.16 TEST_COMMAND=test-runtime_arch-arm32v7
-        - sudo apt-get install -y qemu-user-static
+        - sudo apt-get update
+        - sudo apt-get install -y qemu qemu-user-static qemu-user binfmt-support
         - docker run --rm --privileged multiarch/qemu-user-static:register
         - export DOCKER_OPTIONS="--cpuset-cpus=0 -v /usr/bin/qemu-arm-static:/usr/bin/qemu-arm-static"
         - ./scripts/travis_test.sh
     - stage: test
       script:
         - export TEST_CONTAINER=shadaj/scala-native-testing:arm32v7 SCALANATIVE_GC=boehm SBT_VERSION=1.0.4 TEST_COMMAND=sbtScalaNative/scripted
-        - sudo apt-get install -y qemu-user-static
+        - sudo apt-get update
+        - sudo apt-get install -y qemu qemu-user-static qemu-user binfmt-support
         - docker run --rm --privileged multiarch/qemu-user-static:register
         - export DOCKER_OPTIONS="--cpuset-cpus=0 -v /usr/bin/qemu-arm-static:/usr/bin/qemu-arm-static"
         - ./scripts/travis_test.sh
