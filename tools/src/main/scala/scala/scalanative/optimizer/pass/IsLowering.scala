@@ -77,6 +77,6 @@ class IsLowering(implicit top: Top) extends Pass {
 }
 
 object IsLowering extends PassCompanion {
-  override def apply(config: tools.Config, top: Top) =
+  override def apply(config: build.Config, top: Top) =
     new IsLowering()(top)
 }

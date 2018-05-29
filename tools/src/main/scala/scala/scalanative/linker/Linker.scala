@@ -18,10 +18,10 @@ sealed trait Linker {
 object Linker {
 
   /** Create a new linker given tools configuration. */
-  def apply(config: tools.Config, reporter: Reporter = Reporter.empty): Linker =
+  def apply(config: build.Config, reporter: Reporter): Linker =
     new Impl(config, reporter)
 
-  private final class Impl(config: tools.Config, reporter: Reporter)
+  private final class Impl(config: build.Config, reporter: Reporter)
       extends Linker {
     import reporter._
 
@@ -36,9 +36,11 @@ object Linker {
       val signatures  = mutable.Set.empty[String]
       val dyndefns    = mutable.Set.empty[Global]
 
-      val paths = config.paths.map(p => ClassPath(VirtualDirectory.real(p)))
+      val classpath = config.classPath.map { p =>
+        ClassPath(VirtualDirectory.real(p))
+      }
       def load(global: Global) =
-        paths.collectFirst {
+        classpath.collectFirst {
           case path if path.contains(global) =>
             path.load(global)
         }.flatten

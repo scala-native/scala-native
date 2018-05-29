@@ -149,9 +149,9 @@ int64_t scalanative_cre2_opt_max_mem(scalanative_cre2_options_t *opt) {
     return TO_OPT(opt)->max_mem();
 }
 
-/** --------------------------------------------------------------------
- ** Precompiled regular expressions objects.
- ** ----------------------------------------------------------------- */
+    /** --------------------------------------------------------------------
+     ** Precompiled regular expressions objects.
+     ** ----------------------------------------------------------------- */
 
 #define TO_RE2(re) (reinterpret_cast<RE2 *>(re))
 #define TO_CONST_RE2(re) (reinterpret_cast<const RE2 *>(re))

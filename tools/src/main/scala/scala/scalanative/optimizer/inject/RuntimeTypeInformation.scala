@@ -23,6 +23,6 @@ class RuntimeTypeInformation(implicit top: Top) extends Inject {
 }
 
 object RuntimeTypeInformation extends InjectCompanion {
-  override def apply(config: tools.Config, top: Top) =
+  override def apply(config: build.Config, top: Top) =
     new RuntimeTypeInformation()(top)
 }

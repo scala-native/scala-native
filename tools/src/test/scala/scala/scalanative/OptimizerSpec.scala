@@ -1,7 +1,7 @@
 package scala.scalanative
 
 import optimizer.Driver
-import tools.Config
+import build.{ScalaNative, Config, Mode}
 
 /** Base class to test the optimizer */
 abstract class OptimizerSpec extends LinkerSpec {
@@ -23,10 +23,10 @@ abstract class OptimizerSpec extends LinkerSpec {
       fn: (Config, Seq[nir.Attr.Link], Seq[nir.Defn]) => T): T =
     link(entry, sources, driver = driver) {
       case (config, res) =>
-        val driver_ = driver.fold(Driver(config))(identity)
+        val driver_ = driver.getOrElse(Driver.default(Mode.default))
         fn(config,
            res.links,
-           tools.optimize(config, driver_, res.defns, res.dyns))
+           ScalaNative.optimize(config, driver_, res.defns, res.dyns))
     }
 
 }

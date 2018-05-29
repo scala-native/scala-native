@@ -63,15 +63,17 @@ int scalanative_libc_sigsegv() { return SIGSEGV; }
 
 int scalanative_libc_sigterm() { return SIGTERM; }
 
+int scalanative_libc_sigusr1() { return SIGUSR1; }
+
 int scalanative_libc_rand_max() { return RAND_MAX; }
 
 float scalanative_libc_huge_valf() { return HUGE_VALF; }
 
 double scalanative_libc_huge_val() { return HUGE_VAL; }
 
-float scanative_libc_infinity() { return INFINITY; }
+float scalanative_libc_infinity() { return INFINITY; }
 
-float scanative_libc_nan() { return NAN; }
+float scalanative_libc_nan() { return NAN; }
 
 int scalanative_libc_math_errhandling() { return math_errhandling; }
 

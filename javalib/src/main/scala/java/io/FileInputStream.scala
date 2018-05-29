@@ -22,7 +22,7 @@ class FileInputStream(fd: FileDescriptor) extends InputStream {
   override protected def finalize(): Unit =
     close()
 
-  final def getFD: FileDescriptor =
+  final def getFD(): FileDescriptor =
     fd
 
   override def read(): Int = {

@@ -57,6 +57,6 @@ object AllocLowering extends PassCompanion {
     Seq(Defn.Declare(Attrs.None, allocSmallName, allocSig),
         Defn.Declare(Attrs.None, largeAllocName, allocSig))
 
-  override def apply(config: tools.Config, top: Top) =
+  override def apply(config: build.Config, top: Top) =
     new AllocLowering()(top)
 }

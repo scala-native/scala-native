@@ -5,9 +5,17 @@ _build/
 *.ppm
 .idea
 _build/
-bin/.coursier
-bin/.scalafmt*
+scripts/.coursier
+scripts/.scalafmt*
 sbt-crossproject/
 
 CMakeLists.txt
 cmake-build-debug/
+
+# Eclipse / Scala IDE
+bin/
+.project
+.classpath
+.settings/
+.externalToolBuilders/
+.cache*

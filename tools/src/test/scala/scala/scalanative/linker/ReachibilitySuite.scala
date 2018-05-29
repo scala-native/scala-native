@@ -3,11 +3,10 @@ package linker
 
 import org.scalatest._
 import java.io.File
-import java.nio.file.Files
+import java.nio.file.{Files, Path, Paths}
 import scalanative.util.Scope
 import scalanative.nir.Global
-import scalanative.tools
-import scalanative.optimizer.Driver
+import scalanative.build.ScalaNative
 
 trait ReachabilitySuite extends FunSuite {
 
@@ -40,7 +39,7 @@ trait ReachabilitySuite extends FunSuite {
   def link[T](entries: Seq[Global], sources: Seq[String])(
       f: linker.Result => T): T =
     Scope { implicit in =>
-      val outDir   = Files.createTempDirectory("native-test-out").toFile()
+      val outDir   = Files.createTempDirectory("native-test-out")
       val compiler = NIRCompiler.getCompiler(outDir)
       val sourceMap = sources.zipWithIndex.map {
         case (b, i) => (s"file$i.scala", b)
@@ -48,25 +47,25 @@ trait ReachabilitySuite extends FunSuite {
       val sourcesDir = NIRCompiler.writeSources(sourceMap)
       val files      = compiler.compile(sourcesDir)
       val config     = makeConfig(outDir)
-      val result     = tools.linkRaw(config, entries)
+      val result     = ScalaNative.linkOnly(config, Reporter.empty, entries)
 
       f(result)
     }
 
-  private def makePaths(outDir: File)(implicit in: Scope) = {
-    val parts: Array[File] =
+  private def makeClasspath(outDir: Path)(implicit in: Scope) = {
+    val parts: Array[Path] =
       sys
         .props("scalanative.nativeruntime.cp")
         .split(File.pathSeparator)
-        .map(new File(_))
+        .map(Paths.get(_))
 
     parts :+ outDir
   }
 
-  private def makeConfig(outDir: File)(implicit in: Scope): tools.Config = {
-    val paths = makePaths(outDir)
-    tools.Config.empty
+  private def makeConfig(outDir: Path)(implicit in: Scope): build.Config = {
+    val paths = makeClasspath(outDir)
+    build.Config.empty
       .withWorkdir(outDir)
-      .withPaths(paths)
+      .withClassPath(paths)
   }
 }

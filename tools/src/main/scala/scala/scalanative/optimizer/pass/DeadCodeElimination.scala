@@ -40,7 +40,7 @@ class DeadCodeElimination(implicit top: Top) extends Pass {
 }
 
 object DeadCodeElimination extends PassCompanion {
-  override def apply(config: tools.Config, top: Top) =
+  override def apply(config: build.Config, top: Top) =
     new DeadCodeElimination()(top)
 
   class ArgRemover(usedef: Map[Local, UseDef.Def], entryName: Local)

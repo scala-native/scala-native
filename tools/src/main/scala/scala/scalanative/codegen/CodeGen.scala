@@ -14,7 +14,7 @@ import scalanative.nir._
 object CodeGen {
 
   /** Generate code for given assembly. */
-  def apply(config: tools.Config, assembly: Seq[Defn]): Unit =
+  def apply(config: build.Config, assembly: Seq[Defn]): Unit =
     Scope { implicit in =>
       val env     = assembly.map(defn => defn.name -> defn).toMap
       val workdir = VirtualDirectory.real(config.workdir)
@@ -40,7 +40,7 @@ object CodeGen {
           case (k, defns) =>
             val sorted = defns.sortBy(_.name.show)
             val impl =
-              new Impl(config.target, env, sorted, workdir)
+              new Impl(config.targetTriple, env, sorted, workdir)
             val outpath = k + ".ll"
             val buffer  = impl.gen()
             buffer.flip
@@ -50,19 +50,19 @@ object CodeGen {
 
       def release(): Unit = {
         val sorted = assembly.sortBy(_.name.show)
-        val impl   = new Impl(config.target, env, sorted, workdir)
+        val impl   = new Impl(config.targetTriple, env, sorted, workdir)
         val buffer = impl.gen()
         buffer.flip
         workdir.write(Paths.get("out.ll"), buffer)
       }
 
       config.mode match {
-        case tools.Mode.Debug   => debug()
-        case tools.Mode.Release => release()
+        case build.Mode.Debug   => debug()
+        case build.Mode.Release => release()
       }
     }
 
-  private final class Impl(target: String,
+  private final class Impl(targetTriple: String,
                            env: Map[Global, Defn],
                            defns: Seq[Defn],
                            workdir: VirtualDirectory) {
@@ -155,9 +155,9 @@ object CodeGen {
     }
 
     def genPrelude(): Unit = {
-      if (target.nonEmpty) {
+      if (targetTriple.nonEmpty) {
         str("target triple = \"")
-        str(target)
+        str(targetTriple)
         str("\"")
         newline()
       }

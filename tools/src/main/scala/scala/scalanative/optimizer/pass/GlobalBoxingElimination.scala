@@ -100,6 +100,6 @@ object GlobalBoxingElimination extends PassCompanion {
   private final case class Unbox(ty: Type, from: nir.Val, to: nir.Val)
       extends Record
 
-  override def apply(config: tools.Config, top: Top) =
+  override def apply(config: build.Config, top: Top) =
     new GlobalBoxingElimination
 }

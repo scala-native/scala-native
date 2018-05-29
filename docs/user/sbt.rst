@@ -16,11 +16,11 @@ This includes:
 
 * ``project/plugins.sbt`` to add a plugin dependency::
 
-    addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.3.6")
+    addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.3.7")
 
 * ``project/build.properties`` to specify the sbt version::
 
-    sbt.version = 0.13.16
+    sbt.version = 0.13.17
 
 * ``build.sbt`` to enable the plugin and specify Scala version::
 

@@ -76,6 +76,6 @@ object UnitLowering extends PassCompanion {
   override val injects =
     Seq(unitDefn)
 
-  override def apply(config: tools.Config, top: Top) =
+  override def apply(config: build.Config, top: Top) =
     new UnitLowering()
 }

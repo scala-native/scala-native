@@ -3,6 +3,7 @@ package posix
 package sys
 
 import scalanative.native._
+import scalanative.posix.time._
 import scalanative.posix.unistd.off_t
 
 @extern
@@ -21,9 +22,9 @@ object stat {
                         uid_t, // st_uid
                         gid_t, // st_gid
                         off_t, // st_size
-                        time.time_t, // st_atime
-                        time.time_t, // st_mtime
-                        time.time_t, // st_ctime
+                        time_t, // st_atime
+                        time_t, // st_mtime
+                        time_t, // st_ctime
                         blkcnt_t, // st_blocks
                         blksize_t, // st_blksize
                         nlink_t, // st_nlink

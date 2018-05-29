@@ -1,6 +1,6 @@
 package scala.scalanative
 
-import java.nio.file.Files
+import java.nio.file.{Files, Path}
 import java.io.{File, PrintWriter}
 import java.net.URLClassLoader
 
@@ -50,10 +50,10 @@ object NIRCompiler {
    * @param outDir Where to write all products of compilation.
    * @return An NIRCompiler that will compile to `outDir`.
    */
-  def getCompiler(outDir: File): api.NIRCompiler = {
+  def getCompiler(outDir: Path): api.NIRCompiler = {
     val clazz =
       classLoader.loadClass("scala.scalanative.NIRCompiler")
-    val constructor = clazz.getConstructor(classOf[File])
+    val constructor = clazz.getConstructor(classOf[Path])
     constructor.newInstance(outDir) match {
       case compiler: api.NIRCompiler => compiler
       case other =>
@@ -70,7 +70,7 @@ object NIRCompiler {
    * @param fn     The function to apply to the NIRCompiler.
    * @return The result of applying fn to the NIRCompiler
    */
-  def apply[T](outDir: File)(fn: api.NIRCompiler => T): T =
+  def apply[T](outDir: Path)(fn: api.NIRCompiler => T): T =
     withSources(outDir)(Map.empty) { case (_, compiler) => fn(compiler) }
 
   /**
@@ -93,8 +93,8 @@ object NIRCompiler {
    * @param fn      The function to apply to the NIRCompiler and the base dir.
    * @return The result of applying `fn` to the NIRCompiler and the base dir.
    */
-  def withSources[T](outDir: File)(sources: Map[String, String])(
-      fn: (File, api.NIRCompiler) => T): T = {
+  def withSources[T](outDir: Path)(sources: Map[String, String])(
+      fn: (Path, api.NIRCompiler) => T): T = {
     val sourcesDir = writeSources(sources)
     fn(sourcesDir, getCompiler(outDir))
   }
@@ -108,7 +108,7 @@ object NIRCompiler {
    * @return The result of applying `fn` to the NIRCompiler and the base dir.
    */
   def withSources[T](sources: Map[String, String])(
-      fn: (File, api.NIRCompiler) => T): T = {
+      fn: (Path, api.NIRCompiler) => T): T = {
     val sourcesDir = writeSources(sources)
     fn(sourcesDir, getCompiler())
   }
@@ -119,16 +119,16 @@ object NIRCompiler {
    * @param sources Map from file name to file content representing the sources.
    * @return The base directory that contains the sources.
    */
-  def writeSources(sources: Map[String, String]): File = {
-    val baseDir = Files.createTempDirectory("scala-native-sources").toFile()
+  def writeSources(sources: Map[String, String]): Path = {
+    val baseDir = Files.createTempDirectory("scala-native-sources")
     sources foreach {
       case (name, content) => makeFile(baseDir, name, content)
     }
     baseDir
   }
 
-  private def makeFile(base: File, name: String, content: String): Unit = {
-    val writer = new PrintWriter(new File(base, name))
+  private def makeFile(base: Path, name: String, content: String): Unit = {
+    val writer = new PrintWriter(Files.newBufferedWriter(base.resolve(name)))
     writer.write(content)
     writer.close()
   }

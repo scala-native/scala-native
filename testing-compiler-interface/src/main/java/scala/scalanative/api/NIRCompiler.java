@@ -1,6 +1,6 @@
 package scala.scalanative.api;
 
-import java.io.File;
+import java.nio.file.Path;
 
 /**
  * NIR compiler API.
@@ -17,7 +17,7 @@ public interface NIRCompiler {
 	 * @return All the files produced during compilation (classfiles, nir, hnir,
 	 *         etc.)
 	 */
-    public File[] compile(String source);
+    public Path[] compile(String source);
 
     /**
      * Compiles all the source files in `base` and returns all the files
@@ -27,5 +27,5 @@ public interface NIRCompiler {
      * @return All the files produced during compilation (classfiles, nir, hnir,
      *         etc.)
      */
-    public File[] compile(File base);
+    public Path[] compile(Path base);
 }

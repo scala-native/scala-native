@@ -3,6 +3,7 @@ package sbtplugin
 
 import java.lang.System.{lineSeparator => nl}
 import java.io.ByteArrayInputStream
+import java.nio.file.Files
 
 import scala.util.Try
 
@@ -13,7 +14,7 @@ import sbt.testing.Framework
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 
 import scalanative.nir
-import scalanative.tools
+import scalanative.build.{Build, Discover, BuildException}
 import scalanative.io.VirtualDirectory
 import scalanative.util.{Scope => ResourceScope}
 import scalanative.sbtplugin.Utilities._
@@ -30,43 +31,11 @@ object ScalaNativePluginInternal {
   val nativeTarget =
     taskKey[String]("Target triple.")
 
-  val nativeLinkerReporter =
-    settingKey[tools.LinkerReporter](
-      "A reporter that gets notified whenever a linking event happens.")
-
-  val nativeOptimizerReporter =
-    settingKey[tools.OptimizerReporter](
-      "A reporter that gets notified whenever an optimizer event happens.")
-
-  val nativeOptimizerDriver =
-    taskKey[tools.OptimizerDriver]("Pass manager for the optimizer.")
-
   val nativeWorkdir =
     taskKey[File]("Working directory for intermediate build files.")
 
   val nativeConfig =
-    taskKey[tools.Config]("Aggregate config object that's used for tools.")
-
-  val nativeLinkNIR =
-    taskKey[tools.LinkerResult]("Link NIR using Scala Native linker.")
-
-  val nativeOptimizeNIR =
-    taskKey[Seq[nir.Defn]]("Optimize NIR produced after linking.")
-
-  val nativeGenerateLL =
-    taskKey[Seq[File]]("Generate LLVM IR based on the optimized NIR.")
-
-  val nativeCompileLL =
-    taskKey[Seq[File]]("Compile LLVM IR to native object files.")
-
-  val nativeUnpackLib =
-    taskKey[File]("Unpack native lib.")
-
-  val nativeCompileLib =
-    taskKey[File]("Precompile C/C++ code in native lib.")
-
-  val nativeLinkLL =
-    taskKey[File]("Link native object files into the final binary")
+    taskKey[build.Config]("Aggregate config object that's used for tools.")
 
   lazy val scalaNativeDependencySettings: Seq[Setting[_]] = Seq(
     libraryDependencies ++= Seq(
@@ -83,48 +52,21 @@ object ScalaNativePluginInternal {
   lazy val scalaNativeBaseSettings: Seq[Setting[_]] = Seq(
     crossVersion := ScalaNativeCrossVersion.binary,
     platformDepsCrossVersion := ScalaNativeCrossVersion.binary,
-    nativeClang := {
-      val clang = discover("clang", clangVersions)
-      checkThatClangIsRecentEnough(clang)
-      clang
-    },
+    nativeClang := interceptBuildException(Discover.clang().toFile),
     nativeClang in NativeTest := (nativeClang in Test).value,
-    nativeClangPP := {
-      val clang = discover("clang++", clangVersions)
-      checkThatClangIsRecentEnough(clang)
-      clang
-    },
+    nativeClangPP := interceptBuildException(Discover.clangpp().toFile),
     nativeClangPP in NativeTest := (nativeClangPP in Test).value,
-    nativeCompileOptions := {
-      val includes = {
-        val includedir =
-          Try(Process("llvm-config --includedir").lines_!.toSeq)
-            .getOrElse(Seq.empty)
-        ("/usr/local/include" +: includedir).map(s => s"-I$s")
-      }
-      includes :+ "-Qunused-arguments"
-    },
+    nativeCompileOptions := Discover.compileOptions(),
     nativeCompileOptions in NativeTest := (nativeCompileOptions in Test).value,
-    nativeLinkingOptions := {
-      val libs = {
-        val libdir =
-          Try(Process("llvm-config --libdir").lines_!.toSeq)
-            .getOrElse(Seq.empty)
-        ("/usr/local/lib" +: libdir).map(s => s"-L$s")
-      }
-      libs
-    },
+    nativeLinkingOptions := Discover.linkingOptions(),
     nativeLinkingOptions in NativeTest := (nativeLinkingOptions in Test).value,
     nativeMode := Option(System.getenv.get("SCALANATIVE_MODE"))
-      .getOrElse("debug"),
+      .getOrElse(build.Mode.default.name),
     nativeMode in NativeTest := (nativeMode in Test).value,
     nativeLinkStubs := false,
     nativeLinkStubs in NativeTest := (nativeLinkStubs in Test).value,
-    nativeLinkerReporter := tools.LinkerReporter.empty,
-    nativeLinkerReporter in NativeTest := (nativeLinkerReporter in Test).value,
-    nativeOptimizerReporter := tools.OptimizerReporter.empty,
-    nativeOptimizerReporter in NativeTest := (nativeOptimizerReporter in Test).value,
-    nativeGC := Option(System.getenv.get("SCALANATIVE_GC")).getOrElse("boehm"),
+    nativeGC := Option(System.getenv.get("SCALANATIVE_GC"))
+      .getOrElse(build.GC.default.name),
     nativeGC in NativeTest := (nativeGC in Test).value
   )
 
@@ -141,39 +83,14 @@ object ScalaNativePluginInternal {
   )
 
   lazy val scalaNativeConfigSettings: Seq[Setting[_]] = Seq(
-    nativeTarget := {
-      val logger = streams.value.log
-      val cwd    = nativeWorkdir.value
-      val clang  = nativeClang.value
-      // Use non-standard extension to not include the ll file when linking (#639)
-      val targetc  = cwd / "target" / "c.probe"
-      val targetll = cwd / "target" / "ll.probe"
-      val compilec =
-        Seq(clang.abs,
-            "-S",
-            "-xc",
-            "-emit-llvm",
-            "-o",
-            targetll.abs,
-            targetc.abs)
-      def fail =
-        throw new MessageOnlyException("Failed to detect native target.")
-
-      IO.write(targetc, "int probe;")
-      logger.running(compilec)
-      val exit = Process(compilec, cwd) ! logger
-      if (exit != 0) fail
-      IO.readLines(targetll)
-        .collectFirst {
-          case line if line.startsWith("target triple") =>
-            line.split("\"").apply(1)
-        }
-        .getOrElse(fail)
+    nativeTarget := interceptBuildException {
+      val cwd   = nativeWorkdir.value.toPath
+      val clang = nativeClang.value.toPath
+      Discover.targetTriple(clang, cwd)
     },
     artifactPath in nativeLink := {
       crossTarget.value / (moduleName.value + "-out")
     },
-    nativeOptimizerDriver := tools.OptimizerDriver(nativeConfig.value),
     nativeWorkdir := {
       val workdir = crossTarget.value / "native"
       IO.delete(workdir)
@@ -181,240 +98,42 @@ object ScalaNativePluginInternal {
       workdir
     },
     nativeConfig := {
-      val mainClass = selectMainClass.value.getOrElse(
+      val mainClass = selectMainClass.value.getOrElse {
         throw new MessageOnlyException("No main class detected.")
-      )
-      val classpath = fullClasspath.value.map(_.data).filter(_.exists)
-      val entry     = nir.Global.Top(mainClass.toString + "$")
-      val cwd       = nativeWorkdir.value
+      }
+      val classpath =
+        fullClasspath.value.map(_.data.toPath).filter(f => Files.exists(f))
+      val nativelib = Discover.nativelib(classpath).getOrElse {
+        throw new MessageOnlyException("Could not find nativelib on classpath.")
+      }
+      val maincls = mainClass.toString + "$"
+      val cwd     = nativeWorkdir.value.toPath
+      val clang   = nativeClang.value.toPath
+      val clangpp = nativeClangPP.value.toPath
+      val gc      = build.GC(nativeGC.value)
+      val mode    = build.Mode(nativeMode.value)
 
-      tools.Config.empty
-        .withEntry(entry)
-        .withPaths(classpath)
+      build.Config.empty
+        .withNativelib(nativelib)
+        .withMainClass(maincls)
+        .withClassPath(classpath)
         .withWorkdir(cwd)
-        .withTarget(nativeTarget.value)
-        .withMode(mode(nativeMode.value))
+        .withClang(clang)
+        .withClangPP(clangpp)
+        .withTargetTriple(nativeTarget.value)
+        .withLinkingOptions(nativeLinkingOptions.value)
+        .withGC(gc)
+        .withMode(mode)
         .withLinkStubs(nativeLinkStubs.value)
     },
-    nativeUnpackLib := {
-      val cwd       = nativeWorkdir.value
-      val logger    = streams.value.log
-      val classpath = (fullClasspath in Compile).value
+    nativeLink := {
+      val logger  = streams.value.log.toLogger
+      val config  = nativeConfig.value.withLogger(logger)
+      val outpath = (artifactPath in nativeLink).value
 
-      val lib = cwd / "lib"
-      val jar =
-        classpath
-          .map(entry => entry.data.abs)
-          .collectFirst {
-            case p if p.contains("scala-native") && p.contains("nativelib") =>
-              file(p)
-          }
-          .get
-      val jarhash     = Hash(jar).toSeq
-      val jarhashfile = lib / "jarhash"
-      def unpacked =
-        lib.exists &&
-          jarhashfile.exists &&
-          jarhash == IO.readBytes(jarhashfile).toSeq
-
-      if (!unpacked) {
-        IO.delete(lib)
-        IO.unzip(jar, lib)
-        IO.write(jarhashfile, Hash(jar))
-      }
-
-      lib
-    },
-    nativeCompileLib := {
-      val linked    = nativeLinkNIR.value
-      val cwd       = nativeWorkdir.value
-      val clang     = nativeClang.value
-      val clangpp   = nativeClangPP.value
-      val gc        = nativeGC.value
-      val opts      = "-O2" +: nativeCompileOptions.value
-      val logger    = streams.value.log
-      val nativelib = nativeUnpackLib.value
-      val cpaths    = (cwd ** "*.c").get.map(_.abs)
-      val cpppaths  = (cwd ** "*.cpp").get.map(_.abs)
-      val paths     = cpaths ++ cpppaths
-
-      // predicate to check if given file path shall be compiled
-      // we only include sources of the current gc and exclude
-      // all optional dependencies if they are not necessary
-      val sep       = java.io.File.separator
-      val libPath   = crossTarget.value + sep + "native" + sep + "lib"
-      val optPath   = libPath + sep + "optional"
-      val gcPath    = libPath + sep + "gc"
-      val gcSelPath = gcPath + sep + gc
-
-      def include(path: String) = {
-        if (path.contains(optPath)) {
-          val name = file(path).getName.split("\\.").head
-          linked.links.map(_.name).contains(name)
-        } else if (path.contains(gcPath)) {
-          path.contains(gcSelPath)
-        } else {
-          true
-        }
-      }
-
-      // delete .o files for all excluded source files
-      paths.foreach { path =>
-        if (!include(path)) {
-          val ofile = file(path + ".o")
-          if (ofile.exists) {
-            IO.delete(ofile)
-          }
-        }
-      }
-
-      // generate .o files for all included source files in parallel
-      paths.par.foreach {
-        path =>
-          val opath = path + ".o"
-          if (include(path) && !file(opath).exists) {
-            val isCpp    = path.endsWith(".cpp")
-            val compiler = if (isCpp) clangpp.abs else clang.abs
-            val flags    = (if (isCpp) Seq("-std=c++11") else Seq()) ++ opts
-            val compilec = Seq(compiler) ++ flags ++ Seq("-c",
-                                                         path,
-                                                         "-o",
-                                                         opath)
-
-            logger.running(compilec)
-            val result = Process(compilec, cwd) ! logger
-            if (result != 0) {
-              sys.error("Failed to compile native library runtime code.")
-            }
-          }
-      }
-
-      nativelib
-    },
-    nativeLinkNIR := {
-      val logger   = streams.value.log
-      val driver   = nativeOptimizerDriver.value
-      val config   = nativeConfig.value
-      val reporter = nativeLinkerReporter.value
-      val result = logger.time("Linking") {
-        tools.link(config, driver, reporter)
-      }
-      if (result.unresolved.nonEmpty) {
-        result.unresolved.map(_.show).sorted.foreach { signature =>
-          logger.error(s"cannot link: $signature")
-        }
-        throw new MessageOnlyException("unable to link")
-      }
-      val classCount = result.defns.count {
-        case _: nir.Defn.Class | _: nir.Defn.Module | _: nir.Defn.Trait => true
-        case _                                                          => false
-      }
-      val methodCount = result.defns.count(_.isInstanceOf[nir.Defn.Define])
-      logger.info(
-        s"Discovered ${classCount} classes and ${methodCount} methods")
-      result
-    },
-    nativeOptimizeNIR := {
-      val logger   = streams.value.log
-      val result   = nativeLinkNIR.value
-      val config   = nativeConfig.value
-      val reporter = nativeOptimizerReporter.value
-      val driver   = nativeOptimizerDriver.value
-      val mode     = nativeMode.value
-      logger.time(s"Optimizing ($mode mode)") {
-        tools.optimize(config, driver, result.defns, result.dyns, reporter)
-      }
-    },
-    nativeGenerateLL := {
-      val logger    = streams.value.log
-      val config    = nativeConfig.value
-      val optimized = nativeOptimizeNIR.value
-      val cwd       = nativeWorkdir.value
-      logger.time("Generating intermediate code") {
-        tools.codegen(config, optimized)
-      }
-      logger.info(s"Produced ${(cwd ** "*.ll").get.length} files")
-      (cwd ** "*.ll").get.toSeq
-    },
-    nativeCompileLL := {
-      val logger      = streams.value.log
-      val generated   = nativeGenerateLL.value
-      val clangpp     = nativeClangPP.value
-      val cwd         = nativeWorkdir.value
-      val compileOpts = nativeCompileOptions.value
-      val optimizationOpt =
-        mode(nativeMode.value) match {
-          case tools.Mode.Debug   => "-O0"
-          case tools.Mode.Release => "-O2"
-        }
-      val opts = optimizationOpt +: compileOpts
-
-      logger.time("Compiling to native code") {
-        generated.par
-          .map { ll =>
-            val apppath = ll.abs
-            val outpath = apppath + ".o"
-            val compile = Seq(clangpp.abs, "-c", apppath, "-o", outpath) ++ opts
-            logger.running(compile)
-            Process(compile, cwd) ! logger
-            new File(outpath)
-          }
-          .seq
-          .toSeq
-      }
-    },
-    nativeLinkLL := {
-      val linked      = nativeLinkNIR.value
-      val logger      = streams.value.log
-      val apppaths    = nativeCompileLL.value
-      val nativelib   = nativeCompileLib.value
-      val cwd         = nativeWorkdir.value
-      val target      = nativeTarget.value
-      val gc          = nativeGC.value
-      val linkingOpts = nativeLinkingOptions.value
-      val clangpp     = nativeClangPP.value
-      val outpath     = (artifactPath in nativeLink).value
-
-      val links = {
-        val os   = Option(sys props "os.name").getOrElse("")
-        val arch = target.split("-").head
-        // we need re2 to link the re2 c wrapper (cre2.h)
-        val librt = os match {
-          case "Linux" => Seq("rt")
-          case _       => Seq.empty
-        }
-        val libunwind = os match {
-          case "Mac OS X" => Seq.empty
-          case _          => Seq("unwind", "unwind-" + arch)
-        }
-        librt ++ libunwind ++ linked.links
-          .map(_.name) ++ garbageCollector(gc).links
-      }
-      val linkopts  = links.map("-l" + _) ++ linkingOpts
-      val targetopt = Seq("-target", target)
-      val flags     = Seq("-o", outpath.abs) ++ linkopts ++ targetopt
-      val opaths    = (nativelib ** "*.o").get.map(_.abs)
-      val paths     = apppaths.map(_.abs) ++ opaths
-      val compile   = clangpp.abs +: (flags ++ paths)
-
-      logger.time(s"Linking native code ($gc gc)") {
-        logger.running(compile)
-        Process(compile, cwd) ! logger
-      }
+      interceptBuildException(Build.build(config, outpath.toPath))
 
       outpath
-    },
-    nativeLink := {
-      nativeWarnOldJVM.value
-      // We explicitly mention all of the steps in the pipeline
-      // although only the last one is strictly necessary.
-      compile.value
-      nativeLinkNIR.value
-      nativeOptimizeNIR.value
-      nativeGenerateLL.value
-      nativeCompileLL.value
-      nativeCompileLib.value
-      nativeLinkLL.value
     },
     run := {
       val env    = (envVars in run).value.toSeq
@@ -432,33 +151,6 @@ object ScalaNativePluginInternal {
         else Some("Nonzero exit code: " + exitCode)
 
       message.foreach(sys.error)
-    },
-    nativeMissingDependencies := {
-      (nativeExternalDependencies.value.toSet --
-        nativeAvailableDependencies.value.toSet).toList.sorted
-    },
-    nativeAvailableDependencies := {
-      val fcp = fullClasspath.value
-      ResourceScope { implicit scope =>
-        val globals = fcp
-          .collect { case p if p.data.exists => p.data }
-          .flatMap(p =>
-            tools.LinkerPath(VirtualDirectory.real(p)).globals.toSeq)
-
-        globals.map(_.show).sorted
-      }
-    },
-    nativeExternalDependencies := {
-      val forceCompile = compile.value
-      val classDir     = classDirectory.value
-
-      ResourceScope { implicit scope =>
-        val globals = linker.ClassPath(VirtualDirectory.real(classDir)).globals
-        val config  = tools.Config.empty.withPaths(Seq(classDir))
-        val result  = (linker.Linker(config)).link(globals.toSeq)
-
-        result.unresolved.map(_.show).sorted
-      }
     }
   )
 
@@ -506,4 +198,12 @@ object ScalaNativePluginInternal {
       inConfig(Compile)(scalaNativeCompileSettings) ++
       inConfig(Test)(scalaNativeTestSettings) ++
       inConfig(NativeTest)(scalaNativeNativeTestSettings)
+
+  /** Run `op`, rethrows `BuildException`s as `MessageOnlyException`s. */
+  private def interceptBuildException[T](op: => T): T = {
+    try op
+    catch {
+      case ex: BuildException => throw new MessageOnlyException(ex.getMessage)
+    }
+  }
 }
