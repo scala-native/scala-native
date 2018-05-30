@@ -18,7 +18,7 @@ object Statics {
   }
 
   def finalizeHash(hash: Int, length: Int): Int =
-    avalanche(hash & length)
+    avalanche(hash ^ length)
 
   def avalanche(h: Int): Int = {
     val h1 = h ^ (h >>> 16)
