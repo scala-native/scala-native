@@ -14,6 +14,7 @@ object time {
 }
 
 object timeOps {
+
   import time.timeval
 
   implicit class timevalOps(val ptr: Ptr[timeval]) extends AnyVal {
@@ -22,5 +23,6 @@ object timeOps {
 
     def tv_sec_=(v: time_t): Unit       = !ptr._1 = v
     def tv_usec_=(v: suseconds_t): Unit = !ptr._2 = v
+
   }
 }

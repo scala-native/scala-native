@@ -1,22 +1,29 @@
 package java.net
 
 import scala.scalanative.native._
-import scala.scalanative.runtime.ByteArray
+import scala.scalanative.posix.arpa.inet
 import scala.scalanative.posix.errno._
-import scala.scalanative.posix.sys.socket
-import scala.scalanative.posix.sys.socketOps._
+import scala.scalanative.posix.fcntl._
+import scala.scalanative.posix.netdb._
+import scala.scalanative.posix.netdbOps._
 import scala.scalanative.posix.netinet.in
 import scala.scalanative.posix.netinet.inOps._
 import scala.scalanative.posix.netinet.tcp
-import scala.scalanative.posix.arpa.inet
-import scala.scalanative.posix.netdb._
-import scala.scalanative.posix.netdbOps._
+import scala.scalanative.posix.poll._
+import scala.scalanative.posix.pollEvents._
+import scala.scalanative.posix.pollNfds._
+import scala.scalanative.posix.pollOps._
 import scala.scalanative.posix.sys.ioctl._
-import scala.scalanative.posix.fcntl._
-import scala.scalanative.posix.sys.select._
-import scala.scalanative.posix.sys.selectOps._
+import scala.scalanative.posix.sys.socket
+import scala.scalanative.posix.sys.socketOps._
 import scala.scalanative.posix.sys.time._
+import scala.scalanative.posix.sys.timeOps._
 import scala.scalanative.posix.unistd.{close => cClose}
+import scala.scalanative.runtime.ByteArray
+
+// N.B. The state of a PlainSocketImpl after an Exception has been thrown
+//      is undefined and almost certainly not fit for further use.
+
 import java.io.{FileDescriptor, IOException, OutputStream, InputStream}
 
 private[net] class PlainSocketImpl extends SocketImpl {
@@ -32,9 +39,18 @@ private[net] class PlainSocketImpl extends SocketImpl {
   override def getInetAddress: InetAddress       = address
   override def getFileDescriptor: FileDescriptor = fd
 
+  private def throwIfClosed(osFd: Int, methodName: String): Unit = {
+    if (osFd == -1) {
+      throw new SocketException(s"${methodName}: Socket is closed")
+    }
+  }
+
   override def create(streaming: Boolean): Unit = {
     val sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-    if (sock < 0) throw new IOException("Couldn't create a socket")
+    if (sock < 0)
+      throw new IOException(
+        "Could not create a socket"
+          + s", errno: ${errno.errno}")
     fd = new FileDescriptor(sock)
   }
 
@@ -44,7 +60,8 @@ private[net] class PlainSocketImpl extends SocketImpl {
       val sin = stackalloc[in.sockaddr_in]
       !len = sizeof[in.sockaddr_in].toUInt
 
-      if (socket.getsockname(fd.fd, sin.cast[Ptr[socket.sockaddr]], len) == -1) {
+      if (socket.getsockname(fd.fd, sin.cast[Ptr[socket.sockaddr]], len)
+            == -1) {
         None
       } else {
         Some(sin.sin_port)
@@ -53,7 +70,8 @@ private[net] class PlainSocketImpl extends SocketImpl {
       val sin = stackalloc[in.sockaddr_in6]
       !len = sizeof[in.sockaddr_in6].toUInt
 
-      if (socket.getsockname(fd.fd, sin.cast[Ptr[socket.sockaddr]], len) == -1) {
+      if (socket.getsockname(fd.fd, sin.cast[Ptr[socket.sockaddr]], len)
+            == -1) {
         None
       } else {
         Some(sin.sin6_port)
@@ -72,10 +90,16 @@ private[net] class PlainSocketImpl extends SocketImpl {
     hints.ai_socktype = socket.SOCK_STREAM
 
     Zone { implicit z =>
-      val cIP = toCString(addr.getHostAddress)
-      if (getaddrinfo(cIP, toCString(port.toString), hints, ret) != 0) {
+      val cIP   = toCString(addr.getHostAddress)
+      val cPort = toCString(port.toString)
+
+      val retCode = getaddrinfo(cIP, cPort, hints, ret)
+
+      if (retCode != 0) {
         throw new BindException(
-          "Couldn't resolve address: " + addr.getHostAddress)
+          s"Could not resolve address: ${addr.getHostAddress}"
+            + s" on port: ${port}"
+            + s" return code: ${retCode}")
       }
     }
 
@@ -86,42 +110,66 @@ private[net] class PlainSocketImpl extends SocketImpl {
 
     if (bindRes < 0) {
       throw new BindException(
-        "Couldn't bind to an address: " + addr.getHostAddress +
-          " on port: " + port.toString)
+        s"Could not bind to address: ${addr.getHostAddress}"
+          + s" on port: ${port.toString}"
+          + s". errno: ${errno.errno}")
     }
 
     this.localport = fetchLocalPort(family).getOrElse {
       throw new BindException(
-        "Couldn't bind to address: " + addr.getHostAddress + " on port: " + port)
+        "Could not bind to address: "
+          + addr.getHostAddress
+          + " on port: "
+          + port)
     }
   }
 
   override def listen(backlog: Int): Unit = {
     if (socket.listen(fd.fd, backlog) == -1) {
-      throw new SocketException("Listen failed")
+      throw new SocketException(s"Listen failed, errno: ${errno.errno}")
     }
     listening = true
   }
 
   override def accept(s: SocketImpl): Unit = {
+
+    throwIfClosed(fd.fd, "accept") // Do not send negative fd.fd to poll()
+
     if (timeout > 0) {
-      val fdset = stackalloc[fd_set]
-      !fdset._1 = stackalloc[CLongInt](FD_SETSIZE / (8 * sizeof[CLongInt]))
-      FD_ZERO(fdset)
-      FD_SET(fd.fd, fdset)
+      val nAlloc: Int = 1
+      val nfds        = toNfsd_t(nAlloc)
 
-      val time = stackalloc[timeval]
-      time.tv_sec = timeout / 1000
-      time.tv_usec = (timeout % 1000) * 1000
+      val pollFdPtr = stackalloc[struct_pollfd](nAlloc)
 
-      val selectRes = select(fd.fd + 1, fdset, null, null, time)
-      selectRes match {
+      pollFdPtr.fd = fd.fd
+      pollFdPtr.events = POLLIN
+      pollFdPtr.revents = 0
+
+      val pollRes = poll(pollFdPtr, nfds, timeout)
+
+      pollRes match {
+        case err if err < 0 =>
+          throw new SocketException(
+            s"accept failed, poll errno: ${errno.errno}")
+
         case 0 =>
           throw new SocketTimeoutException(
-            "Accept timed out, "
-              + "SO_TIMEOUT was set to: " + timeout)
-        case -1 => throw new SocketException("Accept failed")
-        case _  => {}
+            s"accept timed out, SO_TIMEOUT: ${timeout}")
+
+        case _ => // success, carry on
+      }
+
+      val revents = pollFdPtr.revents
+
+      if (((revents & POLLERR) | (revents & POLLHUP)) != 0) {
+        throw new SocketException("Accept poll failed, POLLERR or POLLHUP")
+      } else if ((revents & POLLNVAL) != 0) {
+        throw new SocketException(
+          s"accept failed, invalid poll request: ${revents}")
+      } else if (((revents & POLLIN) | (revents & POLLOUT)) == 0) {
+        throw new SocketException(
+          "accept failed, neither POLLIN nor POLLOUT set, " +
+            s"revents, ${revents}")
       }
     }
 
@@ -131,7 +179,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
 
     val newFd = socket.accept(fd.fd, storage.cast[Ptr[socket.sockaddr]], len)
     if (newFd == -1) {
-      throw new SocketException("Accept failed")
+      throw new SocketException(s"Accept failed, errno: ${errno.errno}")
     }
     val family = storage.cast[Ptr[socket.sockaddr_storage]].ss_family.toInt
     val ipstr  = stackalloc[CChar](in.INET6_ADDRSTRLEN)
@@ -169,7 +217,79 @@ private[net] class PlainSocketImpl extends SocketImpl {
     connect(new InetSocketAddress(address, port), 0)
   }
 
+  @inline
+  private def connectGetFdOpts(fdFd: Int): Int = {
+    val opts = fcntl(fdFd, F_GETFL, 0)
+
+    if (opts == -1) {
+      throw new ConnectException(
+        "connect failed, fcntl F_GETFL" +
+          s", errno: ${errno.errno}")
+    }
+
+    opts
+  }
+
+  @inline
+  private def connectSetFdOpts(fdFd: Int, opts: Int): Unit = {
+    val ret = fcntl(fdFd, F_SETFL, opts)
+
+    if (ret == -1) {
+      throw new ConnectException(
+        "connect failed, " +
+          s"fcntl F_SETFL for opts: ${opts}" +
+          s", errno: ${errno.errno}")
+    }
+  }
+
+  @inline
+  private def connectSetFdNoBlock(fdFd: Int): Int = {
+    val oldOpts = connectGetFdOpts(fdFd)
+    val newOpts = oldOpts | O_NONBLOCK
+    connectSetFdOpts(fdFd, newOpts)
+    oldOpts
+  }
+
+  private def connectPollTimeout(timeout: Int, fdFd: Int, opts: Int): Unit = {
+    val nAlloc: Int = 1
+    val nfds        = toNfsd_t(nAlloc)
+
+    val pollFdPtr = stackalloc[struct_pollfd](nAlloc)
+    pollFdPtr.fd = fd.fd
+    pollFdPtr.events = POLLIN | POLLOUT
+    pollFdPtr.revents = 0
+
+    val pollRes = poll(pollFdPtr, nfds, timeout)
+
+    connectSetFdOpts(fdFd, opts & ~O_NONBLOCK)
+
+    pollRes match {
+      case err if err < 0 =>
+        throw new SocketException(
+          "connect failed"
+            + s", poll errno: ${errno.errno}")
+
+      case 0 =>
+        throw new SocketTimeoutException(
+          s"connect timed out, SO_TIMEOUT: ${timeout}")
+
+      case _ =>
+        val revents = pollFdPtr.revents
+
+        if ((revents & POLLNVAL) != 0) {
+          throw new ConnectException(
+            s"connect failed, invalid poll request: ${revents}")
+        } else if ((revents & (POLLERR | POLLHUP)) != 0) {
+          throw new ConnectException(
+            s"connect failed, POLLERR or POLLHUP set: ${revents}")
+        }
+    }
+  }
+
   override def connect(address: SocketAddress, timeout: Int): Unit = {
+
+    throwIfClosed(fd.fd, "connect") // Do not send negative fd.fd to poll()
+
     val inetAddr = address.asInstanceOf[InetSocketAddress]
     val hints    = stackalloc[addrinfo]
     val ret      = stackalloc[Ptr[addrinfo]]
@@ -177,85 +297,63 @@ private[net] class PlainSocketImpl extends SocketImpl {
     hints.ai_family = socket.AF_UNSPEC
     hints.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV
     hints.ai_socktype = socket.SOCK_STREAM
+    val remoteAddress = inetAddr.getAddress.getHostAddress
 
     Zone { implicit z =>
-      val cIP = toCString(inetAddr.getAddress.getHostAddress)
-      if (getaddrinfo(cIP, toCString(inetAddr.getPort.toString), hints, ret) != 0) {
+      val cIP   = toCString(remoteAddress)
+      val cPort = toCString(inetAddr.getPort.toString)
+
+      val retCode = getaddrinfo(cIP, cPort, hints, ret)
+
+      if (retCode != 0) {
         throw new ConnectException(
-          "Couldn't resolve address: "
-            + inetAddr.getAddress.getHostAddress)
+          s"Could not resolve address: ${remoteAddress}"
+            + s" on port: ${inetAddr.getPort}"
+            + s" return code: ${retCode}")
       }
     }
 
     val family = (!ret).ai_family
 
-    if (timeout == 0) {
-      val connectRes = socket.connect(fd.fd, (!ret).ai_addr, (!ret).ai_addrlen)
-      freeaddrinfo(!ret)
+    val oldOpts = if (timeout == 0) 0 else connectSetFdNoBlock(fd.fd)
 
-      if (connectRes < 0) {
-        throw new ConnectException(
-          "Couldn't connect to address: "
-            + inetAddr.getAddress.getHostAddress +
-            " on port: " + inetAddr.getPort)
-      }
-    } else {
-      val opts = fcntl(fd.fd, F_GETFL, 0) | O_NONBLOCK
-      fcntl(fd.fd, F_SETFL, opts)
+    val connectRet = socket.connect(fd.fd, (!ret).ai_addr, (!ret).ai_addrlen)
 
-      val fdset = stackalloc[fd_set]
-      !fdset._1 = stackalloc[CLongInt](FD_SETSIZE / (8 * sizeof[CLongInt]))
-      FD_ZERO(fdset)
-      FD_SET(fd.fd, fdset)
+    freeaddrinfo(!ret) // Must be after last use of ai_addr.
 
-      val time = stackalloc[timeval]
-      time.tv_sec = timeout / 1000
-      time.tv_usec = (timeout % 1000) * 1000
-      socket.connect(fd.fd, (!ret).ai_addr, (!ret).ai_addrlen)
-      freeaddrinfo(!ret)
-
-      if (select(fd.fd + 1, null, fdset, null, time) != 1) {
-        fcntl(fd.fd, F_SETFL, opts & ~O_NONBLOCK)
-        throw new SocketTimeoutException("Connect timed out")
+    if (connectRet < 0) {
+      if ((timeout > 0) && (errno.errno == EINPROGRESS)) {
+        connectPollTimeout(timeout, fd.fd, oldOpts)
       } else {
-        fcntl(fd.fd, F_SETFL, opts & ~O_NONBLOCK)
-        val so_error = stackalloc[CInt].cast[Ptr[Byte]]
-        val len      = stackalloc[socket.socklen_t]
-        !len = sizeof[CInt].toUInt
-        socket.getsockopt(fd.fd,
-                          socket.SOL_SOCKET,
-                          socket.SO_ERROR,
-                          so_error,
-                          len)
-        if (!(so_error.cast[Ptr[CInt]]) != 0) {
-          throw new ConnectException(
-            "Couldn't connect to address: " +
-              inetAddr.getAddress.getHostAddress
-              + " on port: " + inetAddr.getPort)
-        }
+        throw new ConnectException(
+          s"Could not connect to address: ${remoteAddress}"
+            + s" on port: ${inetAddr.getPort}"
+            + s", errno: ${errno.errno}")
       }
     }
 
     this.address = inetAddr.getAddress
     this.port = inetAddr.getPort
-
     this.localport = fetchLocalPort(family).getOrElse {
       throw new ConnectException(
-        "Couldn't resolve a local port when connecting")
+        "Could not resolve a local port when connecting")
     }
   }
 
   override def close(): Unit = {
     if (fd.fd != -1) {
-      cClose(fd.fd)
-      fd = new FileDescriptor
+      val ret = cClose(fd.fd)
+      if (ret == -1) {
+        throw new SocketException(
+          "Could not close socket"
+            + s", errno: ${errno.errno}")
+      }
+      fd = new FileDescriptor // new fd.fd will be set to closed (-1)
     }
   }
 
   override def getOutputStream: OutputStream = {
-    if (fd.fd == -1) {
-      throw new SocketException("Socket is closed")
-    }
+    throwIfClosed(fd.fd, "getOutputStream")
     if (shutOutput) {
       throw new SocketException("Socket output is shutdown")
     }
@@ -263,9 +361,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
   }
 
   override def getInputStream: InputStream = {
-    if (fd.fd == -1) {
-      throw new SocketException("Socket is closed")
-    }
+    throwIfClosed(fd.fd, "getInputStream")
     if (shutInput) {
       throw new SocketException("Socket input is shutdown")
     }
@@ -276,7 +372,9 @@ private[net] class PlainSocketImpl extends SocketImpl {
     socket.shutdown(fd.fd, 1) match {
       case 0 => shutOutput = true
       case _ =>
-        throw new SocketException("Error while shutting down socket's output")
+        throw new SocketException(
+          "Error while shutting down socket's output"
+            + s", errno: ${errno.errno}")
     }
   }
 
@@ -284,7 +382,9 @@ private[net] class PlainSocketImpl extends SocketImpl {
     socket.shutdown(fd.fd, 0) match {
       case 0 => shutInput = true
       case _ =>
-        throw new SocketException("Error while shutting down socket's input")
+        throw new SocketException(
+          "Error while shutting down socket's input"
+            + s", errno: ${errno.errno}")
     }
   }
 
@@ -301,7 +401,9 @@ private[net] class PlainSocketImpl extends SocketImpl {
           .send(fd.fd, cArr + sent, count - sent, socket.MSG_NOSIGNAL)
           .toInt
         if (ret < 0) {
-          throw new IOException("Could not send the packet to the client")
+          throw new IOException(
+            s"Could not send the packet to the client "
+              + s", errno: ${errno.errno}")
         }
         sent += ret
       }
@@ -310,18 +412,25 @@ private[net] class PlainSocketImpl extends SocketImpl {
   }
 
   def read(buffer: Array[Byte], offset: Int, count: Int): Int = {
-    if (shutInput) -1
-
-    val bytesNum = socket
-      .recv(fd.fd, buffer.asInstanceOf[ByteArray].at(offset), count, 0)
-      .toInt
-    if (bytesNum <= 0) {
-      if (errno.errno == EAGAIN || errno.errno == EWOULDBLOCK) {
-        throw new SocketTimeoutException("Socket timeout while reading data")
-      }
+    if (shutInput) {
       -1
     } else {
-      bytesNum
+      val bytesNum = socket
+        .recv(fd.fd, buffer.asInstanceOf[ByteArray].at(offset), count, 0)
+        .toInt
+      if (bytesNum <= 0) {
+        if (errno.errno == EAGAIN || errno.errno == EWOULDBLOCK) {
+          throw new SocketTimeoutException("Socket timeout while reading data")
+        }
+        // Should really throw a SocketException & report errno here.
+        // Unfortunately, code in the wild may depend on current behavior with
+        // -1 return with no Exception.
+        // throw new SocketException("error while reading data"
+        //                            + s", errno: ${errno.errno}")
+        -1
+      } else {
+        bytesNum
+      }
     }
   }
 
@@ -357,9 +466,8 @@ private[net] class PlainSocketImpl extends SocketImpl {
   }
 
   override def getOption(optID: Int): Object = {
-    if (fd.fd == -1) {
-      throw new SocketException("Socket is closed")
-    }
+
+    throwIfClosed(fd.fd, "getOption")
 
     if (listening && optID == SocketOptions.SO_TIMEOUT) {
       return Integer.valueOf(this.timeout)
@@ -388,8 +496,8 @@ private[net] class PlainSocketImpl extends SocketImpl {
 
     if (socket.getsockopt(fd.fd, level, optValue, opt, len) == -1) {
       throw new SocketException(
-        "Exception while getting socket option with id: "
-          + optValue + ", errno: " + errno.errno)
+        s"Exception while getting socket option with id: ${optValue}"
+          + s", errno: ${errno.errno}")
     }
 
     optID match {
@@ -411,9 +519,8 @@ private[net] class PlainSocketImpl extends SocketImpl {
   }
 
   override def setOption(optID: Int, value: Object): Unit = {
-    if (fd.fd == -1) {
-      throw new SocketException("Socket is closed")
-    }
+
+    throwIfClosed(fd.fd, "setOption")
 
     if (listening && optID == SocketOptions.SO_TIMEOUT) {
       this.timeout = value.asInstanceOf[Int]
@@ -469,9 +576,8 @@ private[net] class PlainSocketImpl extends SocketImpl {
 
     if (socket.setsockopt(fd.fd, level, optValue, opt, len) == -1) {
       throw new SocketException(
-        "Exception while setting socket option with id: "
-          + optID + ", errno: " + errno.errno)
+        "Exception while setting socket option with id: ${optID}"
+          + ", errno: " + errno.errno)
     }
   }
-
 }
