@@ -14,8 +14,8 @@ import scala.scalanative.posix.netdbOps._
 import scala.scalanative.posix.sys.ioctl._
 import scala.scalanative.posix.fcntl._
 import scala.scalanative.posix.sys.select._
-import scala.scalanative.posix.sys.selectOps._
-import scala.scalanative.posix.sys.time._
+import scala.scalanative.posix.sys.SelectFdSet
+import scala.scalanative.posix.sys.{time, timeOps}, time._, timeOps._
 import scala.scalanative.posix.unistd.{close => cClose}
 import java.io.{FileDescriptor, IOException, OutputStream, InputStream}
 
@@ -104,38 +104,101 @@ private[net] class PlainSocketImpl extends SocketImpl {
   }
 
   override def accept(s: SocketImpl): Unit = {
+    println("LeeT: PSockImpl Accept: Begin - using CArray fd_set")
+//    if (fd.fd == -1) {
+//      println("LeeT: PSockImpl Accept: socket is closed")
+//      throw new SocketException("Socket is closed")
+//    }
     if (timeout > 0) {
-      val fdset = stackalloc[fd_set]
-      !fdset._1 = stackalloc[CLongInt](FD_SETSIZE / (8 * sizeof[CLongInt]))
-      FD_ZERO(fdset)
-      FD_SET(fd.fd, fdset)
+      println("LeeT: PSockImpl Accept: timeout > 0 begin")
 
-      val time = stackalloc[timeval]
-      time.tv_sec = timeout / 1000
-      time.tv_usec = (timeout % 1000) * 1000
+//    var selectRes: Int = -99
 
-      val selectRes = select(fd.fd + 1, fdset, null, null, time)
-      selectRes match {
-        case 0 =>
-          throw new SocketTimeoutException(
-            "Accept timed out, "
-              + "SO_TIMEOUT was set to: " + timeout)
-        case -1 => throw new SocketException("Accept failed")
-        case _  => {}
-      }
+      Zone { implicit z =>
+        println(
+          "LeeT: PSockImpl Accept: using zone fd_set - begin - no FD_ZERO")
+        println("LeeT: PSockImpl Accept: zone end _after_ selectRes testing")
+
+//      val fdset = stackalloc[fd_set]
+        /*      val fdsetPtr = stackalloc[CLongInt](FD_SETSIZE / (8.0 * sizeof[CLongInt])
+                                            .ceil.toInt).cast[Ptr[fd_set]]
+      zeroAndSet(fdsetPtr)
+         */
+        val fdsetPtr = SelectFdSet.create(fd.fd)
+
+//      val fdset = alloc[Byte](FD_SETSIZE / 8).cast[Ptr[fd_set]]
+//    FD_ZERO(fdset) // Zone alloc returns cleared memory, no need to do twice
+//    FD_SET(fd.fd, fdset)
+
+//      val fdset = stackalloc[CLongInt](FD_SETSIZE / (8 * sizeof[CLongInt])
+//    println("LeeT: PSockImpl Accept: before my zero&Set")
+//    FD_ZERO(fdset)
+//    FD_SET(fd.fd, fdset)
+//      zeroAndSet(fdset)
+//    println("LeeT: PSockImpl Accept: after my zero&Set")
+        println("LeeT: PSockImpl Accept: t>0 after zero&Set")
+
+//      val time = stackalloc[timeval]
+        val time = alloc[timeval]
+        time.tv_sec = timeout / 1000
+        time.tv_usec = (timeout % 1000) * 1000
+
+        println("LeeT: PSockImpl Accept: before select()")
+        val selectRes = select(fd.fd + 1, fdsetPtr, null, null, time)
+//      selectRes = select(fd.fd + 1, fdset, null, null, time)
+
+//    println("LeeT: PSockImpl Accept: using zone fd_set - end")
+
+//    } // Zone
+
+        println(s"LeeT: PSockImpl Accept: after select() status: ${selectRes}")
+
+        selectRes match {
+          case 0 =>
+            println(
+              "LeeT: PSockImpl Accept: selectRes0 about to thow my SocketTmoExc")
+//          throw new SocketTimeoutException(
+//            s"Accept timed out, SO_TIMEOUT was set to: ${timeout}")
+
+            throw new SocketTimeoutException(
+              "Accept timed out, SO_TIMEOUT was set to: LT-????")
+
+//    println("LeeT: PSockImpl Accept: selectRes0 about to thow SocketTmoExc")
+//          throw new SocketTimeoutException(
+//            "Accept timed out, "
+//              + "SO_TIMEOUT was set to: " + timeout)
+          case -1 =>
+            println(
+              "LeeT: PSockImpl Accept: selectRes-1 about to thow SocketExc")
+            throw new SocketException("Accept failed")
+          case _ => {
+            println("LeeT: PSockImpl Accept: selectResWildcard OK")
+          }
+        }
+        println("LeeT: PSockImpl Accept: using zone fd_set - long zone - end")
+
+      } // Zone
+
     }
+
+    println("LeeT: PSockImpl Accept: after selectRes cases")
 
     val storage = stackalloc[Byte](sizeof[in.sockaddr_in6])
     val len     = stackalloc[socket.socklen_t]
     !len = sizeof[in.sockaddr_in6].toUInt
 
+    println("LeeT: PSockImpl Accept: before infinite TMO accept")
+
     val newFd = socket.accept(fd.fd, storage.cast[Ptr[socket.sockaddr]], len)
     if (newFd == -1) {
+      println("LeeT: PSockImpl Accept: after infinite TMO accept w SocketExcep")
       throw new SocketException("Accept failed")
     }
+    println("LeeT: PSockImpl Accept: after infinite TMO accept")
     val family = storage.cast[Ptr[socket.sockaddr_storage]].ss_family.toInt
     val ipstr  = stackalloc[CChar](in.INET6_ADDRSTRLEN)
 
+    println("LeeT: PSockImpl Accept: point 1")
     if (family == socket.AF_INET) {
       val sa = storage.cast[Ptr[in.sockaddr_in]]
       inet.inet_ntop(socket.AF_INET,
@@ -152,12 +215,16 @@ private[net] class PlainSocketImpl extends SocketImpl {
       s.port = inet.ntohs(sa.sin6_port).toInt
     }
 
+    println("LeeT: PSockImpl Accept: before InetAddress.getByName")
+
     Zone { implicit z =>
       s.address = InetAddress.getByName(fromCString(ipstr))
     }
+    println("LeeT: PSockImpl Accept: after InetAddress.getByName")
 
     s.fd = new FileDescriptor(newFd)
     s.localport = this.localport
+    println("LeeT: PSockImpl Accept: End")
   }
 
   override def connect(host: String, port: Int): Unit = {
@@ -200,38 +267,47 @@ private[net] class PlainSocketImpl extends SocketImpl {
             " on port: " + inetAddr.getPort)
       }
     } else {
-      val opts = fcntl(fd.fd, F_GETFL, 0) | O_NONBLOCK
-      fcntl(fd.fd, F_SETFL, opts)
+      Zone { implicit z =>
+        val opts = fcntl(fd.fd, F_GETFL, 0) | O_NONBLOCK
+        fcntl(fd.fd, F_SETFL, opts)
 
-      val fdset = stackalloc[fd_set]
-      !fdset._1 = stackalloc[CLongInt](FD_SETSIZE / (8 * sizeof[CLongInt]))
-      FD_ZERO(fdset)
-      FD_SET(fd.fd, fdset)
+//      val fdset = stackalloc[fd_set]
+//      zeroAndSet(fdset)
+        /*
+      val fdsetPtr = stackalloc[CLongInt](FD_SETSIZE / (8.0 * sizeof[CLongInt])
+                                            .ceil.toInt).cast[Ptr[fd_set]]
+      zeroAndSet(fdsetPtr)
+         */
+//      val fdsetPtr =  scalanative.posix.sys.SelectFdSet.create(fd.fd)
 
-      val time = stackalloc[timeval]
-      time.tv_sec = timeout / 1000
-      time.tv_usec = (timeout % 1000) * 1000
-      socket.connect(fd.fd, (!ret).ai_addr, (!ret).ai_addrlen)
-      freeaddrinfo(!ret)
+        val fdsetPtr = SelectFdSet.create(fd.fd)
 
-      if (select(fd.fd + 1, null, fdset, null, time) != 1) {
-        fcntl(fd.fd, F_SETFL, opts & ~O_NONBLOCK)
-        throw new SocketTimeoutException("Connect timed out")
-      } else {
-        fcntl(fd.fd, F_SETFL, opts & ~O_NONBLOCK)
-        val so_error = stackalloc[CInt].cast[Ptr[Byte]]
-        val len      = stackalloc[socket.socklen_t]
-        !len = sizeof[CInt].toUInt
-        socket.getsockopt(fd.fd,
-                          socket.SOL_SOCKET,
-                          socket.SO_ERROR,
-                          so_error,
-                          len)
-        if (!(so_error.cast[Ptr[CInt]]) != 0) {
-          throw new ConnectException(
-            "Couldn't connect to address: " +
-              inetAddr.getAddress.getHostAddress
-              + " on port: " + inetAddr.getPort)
+        val time = stackalloc[timeval]
+        time.tv_sec = timeout / 1000
+        time.tv_usec = (timeout % 1000) * 1000
+        socket.connect(fd.fd, (!ret).ai_addr, (!ret).ai_addrlen)
+        freeaddrinfo(!ret)
+
+//      if (select(fd.fd + 1, null, fdset, null, time) != 1) {
+        if (select(fd.fd + 1, null, fdsetPtr, null, time) != 1) {
+          fcntl(fd.fd, F_SETFL, opts & ~O_NONBLOCK)
+          throw new SocketTimeoutException("Connect timed out")
+        } else {
+          fcntl(fd.fd, F_SETFL, opts & ~O_NONBLOCK)
+          val so_error = stackalloc[CInt].cast[Ptr[Byte]]
+          val len      = stackalloc[socket.socklen_t]
+          !len = sizeof[CInt].toUInt
+          socket.getsockopt(fd.fd,
+                            socket.SOL_SOCKET,
+                            socket.SO_ERROR,
+                            so_error,
+                            len)
+          if (!(so_error.cast[Ptr[CInt]]) != 0) {
+            throw new ConnectException(
+              "Couldn't connect to address: " +
+                inetAddr.getAddress.getHostAddress
+                + " on port: " + inetAddr.getPort)
+          }
         }
       }
     }
