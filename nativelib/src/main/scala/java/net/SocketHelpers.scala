@@ -65,7 +65,7 @@ private[net] object SocketHelpers {
         }
 
         // Re-set timeval. On Linux, its value after select() returns is
-        // undefined.
+        // not defined.
         time.tv_sec = timeout / 1000
         time.tv_usec = (timeout % 1000) * 1000
 
