@@ -1,16 +1,16 @@
 package java.net
 
 import scala.scalanative.native._
-import scala.scalanative.posix.{netdb, netdbOps}, netdb._, netdbOps._
 import scala.scalanative.posix.arpa.inet._
+import scala.scalanative.posix.fcntl._
+import scala.scalanative.posix.{netdb, netdbOps}, netdb._, netdbOps._
+import scala.scalanative.posix.netinet.{in, inOps}, in._, inOps._
+import scala.scalanative.posix.sys.select._
+import scala.scalanative.posix.sys.SelectFdSet
 import scala.scalanative.posix.sys.socketOps._
 import scala.scalanative.posix.sys.socket._
-import scala.scalanative.posix.sys.select._
+import scala.scalanative.posix.sys.{time, timeOps}, time.timeval, timeOps._
 import scala.scalanative.posix.unistd.close
-import scala.scalanative.posix.fcntl._
-import scala.scalanative.posix.sys.time.timeval
-import scala.scalanative.posix.sys.selectOps._
-import scala.scalanative.posix.netinet.{in, inOps}, in._, inOps._
 
 private[net] object SocketHelpers {
 
@@ -39,10 +39,7 @@ private[net] object SocketHelpers {
         }
         fcntl(sock, F_SETFL, O_NONBLOCK)
 
-        val fdset = stackalloc[fd_set]
-        !fdset._1 = stackalloc[CLongInt](FD_SETSIZE / (8 * sizeof[CLongInt]))
-        FD_ZERO(fdset)
-        FD_SET(sock, fdset)
+        val fdsetPtr = SelectFdSet.create(sock)
 
         val time = stackalloc[timeval]
         time.tv_sec = timeout / 1000
@@ -50,7 +47,7 @@ private[net] object SocketHelpers {
 
         connect(sock, (!ret).ai_addr, (!ret).ai_addrlen)
 
-        if (select(sock + 1, null, fdset, null, time) == 1) {
+        if (select(sock + 1, null, fdsetPtr, null, time) == 1) {
           val so_error = stackalloc[CInt].cast[Ptr[Byte]]
           val len      = stackalloc[socklen_t]
           !len = sizeof[CInt].toUInt
@@ -67,7 +64,12 @@ private[net] object SocketHelpers {
           return false
         }
 
-        if (select(sock + 1, fdset, null, null, time) != 1) {
+        // Re-set timeval. On Linux, its value after select() returns is
+        // undefined.
+        time.tv_sec = timeout / 1000
+        time.tv_usec = (timeout % 1000) * 1000
+
+        if (select(sock + 1, fdsetPtr, null, null, time) != 1) {
           return false
         } else {
           val buf      = stackalloc[CChar](5)
