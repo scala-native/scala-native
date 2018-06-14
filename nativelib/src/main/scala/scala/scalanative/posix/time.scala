@@ -2,12 +2,13 @@ package scala.scalanative
 package posix
 
 import scala.scalanative.native._
+import scala.scalanative.posix.sys.types, types._
 
 @extern
 object time {
 
-  type time_t   = CLong
-  type clock_t  = CLong
+  type time_t   = types.time_t
+  type clock_t  = types.clock_t
   type timespec = CStruct2[time_t, CLong]
   type tm       = CStruct9[CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt]
 
@@ -45,8 +46,8 @@ object time {
 }
 
 object timeOps {
+  import time.{time_t, timespec, tm}
 
-  import time._
   implicit class timespecOps(val ptr: Ptr[timespec]) extends AnyVal {
     def tv_sec: time_t = !ptr._1
 
