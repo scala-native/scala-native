@@ -38,7 +38,13 @@ templates_path = ['_templates']
 # You can specify multiple suffix as a list of string:
 #
 # source_suffix = ['.rst', '.md']
-source_suffix = '.rst'
+from recommonmark.parser import CommonMarkParser
+
+source_parsers = {
+  '.md': CommonMarkParser,
+}
+
+source_suffix = ['.rst', '.md']
 
 # The encoding of source files.
 #
@@ -49,7 +55,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Scala Native'
-copyright = u'2016-2017, EPFL'
+copyright = u'2016-2018, EPFL'
 author = u'Denys Shabalin'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -342,3 +348,5 @@ texinfo_documents = [
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #
 # texinfo_no_detailmenu = False
+
+
