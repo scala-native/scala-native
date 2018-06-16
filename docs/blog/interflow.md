@@ -2,7 +2,7 @@
 
 June 16, 2018.
 
-This post provides a sneak peak at Interflow, an upcoming optimizer for Scala Native. For more details, see [our publication preprint](interflow-preprint.pdf).
+This post provides a sneak peak at Interflow, an upcoming optimizer for Scala Native. For more details, see [our publication preprint](https://github.com/densh/talks/blob/master/2018-06-16-interflow-preprint-v1.pdf).
 
 ## The Interflow Optimizer
 
