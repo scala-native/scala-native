@@ -33,3 +33,8 @@ int scalanative_little_endian() {
     int n = 1;
     return (*(char *)&n);
 }
+
+extern int __targetArchitecture;
+int scalanative_targetArchitecture() {
+    return __targetArchitecture;
+}

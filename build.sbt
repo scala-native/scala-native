@@ -17,7 +17,7 @@ def convertCamelKebab(name: String): String = {
 
 // Generate project name from project id.
 def projectName(project: sbt.ResolvedProject): String = {
-  convertCamelKebab(project.id).split("_arch-").head
+  convertCamelKebab(project.id).split("_bits-").head
 }
 
 // Provide consistent project name pattern.
@@ -49,43 +49,43 @@ addCommandAlias(
   ).mkString(";", ";", "")
 )
 
-Seq("x86_64", "i386", "ARM").flatMap { platform =>
+Seq("32", "64").flatMap { platform =>
   Seq(
     addCommandAlias(
-      s"rebuild_arch-$platform",
+      s"rebuild_bits-$platform",
       Seq(
         "clean",
         "cleanCache",
         "cleanLocal",
-        s"dirty-rebuild_arch-$platform"
+        s"dirty-rebuild_bits-$platform"
       ).mkString(";", ";", "")
     ),
     addCommandAlias(
-      s"dirty-rebuild_arch-$platform",
+      s"dirty-rebuild_bits-$platform",
       Seq(
-        s"scalalib_arch-$platform/publishLocal",
+        s"scalalib_bits-$platform/publishLocal",
         "sbtScalaNative/publishLocal",
-        s"testInterface_arch-$platform/publishLocal"
+        s"testInterface_bits-$platform/publishLocal"
       ).mkString(";", ";", "")
     ),
     addCommandAlias(
-      s"test-all_arch-$platform",
+      s"test-all_bits-$platform",
       Seq(
-        s"sandbox_arch-$platform/run",
-        "tests_arch-$platform/test",
+        s"sandbox_bits-$platform/run",
+        "tests_bits-$platform/test",
         "tools/test",
         "nirparser/test",
-        s"benchmarks_arch-$platform/run --test",
+        s"benchmarks_bits-$platform/run --test",
         "sbtScalaNative/scripted",
         "tools/mimaReportBinaryIssues"
       ).mkString(";", ";", "")
     ),
     addCommandAlias(
-      s"test-runtime_arch-$platform",
+      s"test-runtime_bits-$platform",
       Seq(
-        s"sandbox_arch-$platform/run",
-        s"tests_arch-$platform/test",
-        s"benchmarks_arch-$platform/run --test",
+        s"sandbox_bits-$platform/run",
+        s"tests_bits-$platform/test",
+        s"benchmarks_bits-$platform/run --test",
         "sbtScalaNative/scripted"
       ).mkString(";", ";", "")
     )
@@ -97,10 +97,10 @@ lazy val publishSnapshot =
 
 lazy val setUpTestingCompiler = Def.task {
   val nscpluginjar = (Keys.`package` in nscplugin in Compile).value
-  val nativelibjar = (Keys.`package` in nativelibx86_64 in Compile).value
-  val auxlibjar    = (Keys.`package` in auxlibx86_64 in Compile).value
-  val scalalibjar  = (Keys.`package` in scalalibx86_64 in Compile).value
-  val javalibjar   = (Keys.`package` in javalibx86_64 in Compile).value
+  val nativelibjar = (Keys.`package` in nativelib64 in Compile).value
+  val auxlibjar    = (Keys.`package` in auxlib64 in Compile).value
+  val scalalibjar  = (Keys.`package` in scalalib64 in Compile).value
+  val javalibjar   = (Keys.`package` in javalib64 in Compile).value
   val testingcompilercp =
     (fullClasspath in testingCompiler in Compile).value.files
   val testingcompilerjar = (Keys.`package` in testingCompiler in Compile).value
@@ -335,18 +335,17 @@ lazy val sbtScalaNative =
       // `testInterfaceSerialization` needs to be available from the sbt plugin,
       // but it's a Scala Native project (and thus 2.11), and the plugin is 2.10 or 2.12.
       // We simply add the sources to mimic cross-compilation.
-      sources in Compile ++= (sources in Compile in testInterfaceSerializationx86_64).value,
+      sources in Compile ++= (sources in Compile in testInterfaceSerialization64).value,
       publishLocal := publishLocal.dependsOn(publishLocal in tools).value
     )
     .dependsOn(tools)
 
-import CrossArchitecturePlatform._
-import scala.scalanative.build.{x86_64, i386, ARM}
+import CrossBitsPlatform._
+import scala.scalanative.build.{ThirtyTwo, SixtyFour}
 
 lazy val nativelib =
-  crossProject(CrossArchitectureLibPlatform(x86_64),
-               CrossArchitectureLibPlatform(i386),
-               CrossArchitectureLibPlatform(ARM))
+  crossProject(CrossBitsLibPlatform(ThirtyTwo),
+               CrossBitsLibPlatform(SixtyFour))
     .crossType(CrossType.Full)
     .in(file("nativelib"))
     .settings(libSettings)
@@ -358,14 +357,12 @@ lazy val nativelib =
         .value
     )
 
-lazy val nativelibx86_64 = nativelib.crossArchitecture(x86_64)
-lazy val nativelibi386   = nativelib.crossArchitecture(i386)
-lazy val nativelibARM    = nativelib.crossArchitecture(ARM)
+lazy val nativelib32 = nativelib.crossBits(ThirtyTwo)
+lazy val nativelib64   = nativelib.crossBits(SixtyFour)
 
 lazy val javalib =
-  crossProject(CrossArchitectureLibPlatform(x86_64),
-               CrossArchitectureLibPlatform(i386),
-               CrossArchitectureLibPlatform(ARM))
+  crossProject(CrossBitsLibPlatform(ThirtyTwo),
+               CrossBitsLibPlatform(SixtyFour))
     .crossType(CrossType.Pure)
     .in(file("javalib"))
     .settings(libSettings)
@@ -392,63 +389,49 @@ lazy val javalib =
         }
       }
     )
-    .architectureSettings(x86_64)(
+    .bitsSettings(ThirtyTwo)(
       publishLocal := publishLocal
-        .dependsOn(publishLocal in nativelibx86_64)
+        .dependsOn(publishLocal in nativelib32)
         .value
     )
-    .architectureSettings(i386)(
+    .bitsSettings(SixtyFour)(
       publishLocal := publishLocal
-        .dependsOn(publishLocal in nativelibi386)
-        .value
-    )
-    .architectureSettings(ARM)(
-      publishLocal := publishLocal
-        .dependsOn(publishLocal in nativelibARM)
+        .dependsOn(publishLocal in nativelib64)
         .value
     )
     .dependsOn(nativelib)
 
-val javalibx86_64 = javalib.crossArchitecture(x86_64)
-val javalibi386   = javalib.crossArchitecture(i386)
-val javalibARM    = javalib.crossArchitecture(ARM)
+val javalib32 = javalib.crossBits(ThirtyTwo)
+val javalib64   = javalib.crossBits(SixtyFour)
 
 lazy val assembleScalaLibrary = taskKey[Unit](
   "Checks out scala standard library from submodules/scala and then applies overrides.")
 
 lazy val auxlib =
-  crossProject(CrossArchitectureLibPlatform(x86_64),
-               CrossArchitectureLibPlatform(i386),
-               CrossArchitectureLibPlatform(ARM))
+  crossProject(CrossBitsLibPlatform(ThirtyTwo),
+               CrossBitsLibPlatform(SixtyFour))
     .crossType(CrossType.Pure)
     .in(file("auxlib"))
     .settings(libSettings)
     .settings(mavenPublishSettings)
-    .architectureSettings(x86_64)(
+    .bitsSettings(ThirtyTwo)(
       publishLocal := publishLocal
-        .dependsOn(publishLocal in javalibx86_64)
+        .dependsOn(publishLocal in javalib32)
         .value
     )
-    .architectureSettings(i386)(
+    .bitsSettings(SixtyFour)(
       publishLocal := publishLocal
-        .dependsOn(publishLocal in javalibi386)
-        .value
-    )
-    .architectureSettings(ARM)(
-      publishLocal := publishLocal
-        .dependsOn(publishLocal in javalibARM)
+        .dependsOn(publishLocal in javalib64)
         .value
     )
     .dependsOn(nativelib)
 
-lazy val auxlibx86_64 = auxlib.crossArchitecture(x86_64)
-lazy val auxlibi386   = auxlib.crossArchitecture(i386)
-lazy val auxlibARM    = auxlib.crossArchitecture(ARM)
+lazy val auxlib32 = auxlib.crossBits(ThirtyTwo)
+lazy val auxlib64   = auxlib.crossBits(SixtyFour)
 
 lazy val scalalib =
-  crossProject(CrossArchitectureLibPlatform(x86_64),
-               CrossArchitectureLibPlatform(i386),
-               CrossArchitectureLibPlatform(ARM))
+  crossProject(CrossBitsLibPlatform(ThirtyTwo),
+               CrossBitsLibPlatform(SixtyFour))
     .crossType(CrossType.Pure)
     .in(file("scalalib"))
     .settings(libSettings)
@@ -509,31 +492,24 @@ lazy val scalalib =
         }
       }
     )
-    .architectureSettings(x86_64)(
+    .bitsSettings(ThirtyTwo)(
       publishLocal := publishLocal
-        .dependsOn(assembleScalaLibrary, publishLocal in auxlibx86_64)
+        .dependsOn(assembleScalaLibrary, publishLocal in auxlib32)
         .value
     )
-    .architectureSettings(i386)(
+    .bitsSettings(SixtyFour)(
       publishLocal := publishLocal
-        .dependsOn(assembleScalaLibrary, publishLocal in auxlibi386)
-        .value
-    )
-    .architectureSettings(ARM)(
-      publishLocal := publishLocal
-        .dependsOn(assembleScalaLibrary, publishLocal in auxlibARM)
+        .dependsOn(assembleScalaLibrary, publishLocal in auxlib64)
         .value
     )
     .dependsOn(auxlib, nativelib, javalib)
 
-lazy val scalalibx86_64 = scalalib.crossArchitecture(x86_64)
-lazy val scalalibi386   = scalalib.crossArchitecture(i386)
-lazy val scalalibARM    = scalalib.crossArchitecture(ARM)
+lazy val scalalib32 = scalalib.crossBits(ThirtyTwo)
+lazy val scalalib64   = scalalib.crossBits(SixtyFour)
 
 lazy val tests =
-  crossProject(CrossArchitecturePlatform(x86_64),
-               CrossArchitecturePlatform(i386),
-               CrossArchitecturePlatform(ARM))
+  crossProject(CrossBitsPlatform(ThirtyTwo),
+               CrossBitsPlatform(SixtyFour))
     .crossType(CrossType.Pure)
     .in(file("unit-tests"))
     .settings(projectSettings)
@@ -555,14 +531,12 @@ lazy val tests =
       )
     )
 
-lazy val testsx86_64 = tests.crossArchitecture(x86_64)
-lazy val testsi386   = tests.crossArchitecture(i386)
-lazy val testsARM    = tests.crossArchitecture(ARM)
+lazy val tests32 = tests.crossBits(ThirtyTwo)
+lazy val tests64   = tests.crossBits(SixtyFour)
 
 lazy val sandbox =
-  crossProject(CrossArchitecturePlatform(x86_64),
-               CrossArchitecturePlatform(i386),
-               CrossArchitecturePlatform(ARM))
+  crossProject(CrossBitsPlatform(ThirtyTwo),
+               CrossBitsPlatform(SixtyFour))
     .crossType(CrossType.Pure)
     .in(file("sandbox"))
     .settings(noPublishSettings)
@@ -572,14 +546,12 @@ lazy val sandbox =
       scalaVersion := libScalaVersion
     )
 
-lazy val sandboxx86_64 = sandbox.crossArchitecture(x86_64)
-lazy val sandboxi386   = sandbox.crossArchitecture(i386)
-lazy val sandboxARM    = sandbox.crossArchitecture(ARM)
+lazy val sandbox32 = sandbox.crossBits(ThirtyTwo)
+lazy val sandbox64   = sandbox.crossBits(SixtyFour)
 
 lazy val benchmarks =
-  crossProject(CrossArchitecturePlatform(x86_64),
-               CrossArchitecturePlatform(i386),
-               CrossArchitecturePlatform(ARM))
+  crossProject(CrossBitsPlatform(ThirtyTwo),
+               CrossBitsPlatform(SixtyFour))
     .crossType(CrossType.Pure)
     .in(file("benchmarks"))
     .settings(projectSettings)
@@ -607,9 +579,8 @@ lazy val benchmarks =
       }
     )
 
-lazy val benchmarksx86_64 = benchmarks.crossArchitecture(x86_64)
-lazy val benchmarksi386   = benchmarks.crossArchitecture(i386)
-lazy val benchmarksARM    = benchmarks.crossArchitecture(ARM)
+lazy val benchmarks32 = benchmarks.crossBits(ThirtyTwo)
+lazy val benchmarks64   = benchmarks.crossBits(SixtyFour)
 
 lazy val testingCompilerInterface =
   project
@@ -635,12 +606,11 @@ lazy val testingCompiler =
         "org.scala-lang" % "scala-reflect"  % scalaVersion.value
       )
     )
-    .dependsOn(testingCompilerInterface, nativelibx86_64)
+    .dependsOn(testingCompilerInterface, nativelib64)
 
 lazy val testInterface =
-  crossProject(CrossArchitecturePlatform(x86_64),
-               CrossArchitecturePlatform(i386),
-               CrossArchitecturePlatform(ARM))
+  crossProject(CrossBitsPlatform(ThirtyTwo),
+               CrossBitsPlatform(SixtyFour))
     .crossType(CrossType.Pure)
     .settings(toolSettings)
     .settings(scalaVersion := libScalaVersion)
@@ -650,31 +620,24 @@ lazy val testInterface =
       libraryDependencies += "org.scala-sbt"    % "test-interface"   % "1.0",
       libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test
     )
-    .architectureSettings(x86_64)(
+    .bitsSettings(ThirtyTwo)(
       publishLocal := publishLocal
-        .dependsOn(publishLocal in testInterfaceSerializationx86_64)
+        .dependsOn(publishLocal in testInterfaceSerialization32)
         .value
     )
-    .architectureSettings(i386)(
+    .bitsSettings(SixtyFour)(
       publishLocal := publishLocal
-        .dependsOn(publishLocal in testInterfaceSerializationi386)
-        .value
-    )
-    .architectureSettings(ARM)(
-      publishLocal := publishLocal
-        .dependsOn(publishLocal in testInterfaceSerializationARM)
+        .dependsOn(publishLocal in testInterfaceSerialization64)
         .value
     )
     .dependsOn(testInterfaceSerialization)
 
-lazy val testInterfacex86_64 = testInterface.crossArchitecture(x86_64)
-lazy val testInterfacei386   = testInterface.crossArchitecture(i386)
-lazy val testInterfaceARM    = testInterface.crossArchitecture(ARM)
+lazy val testInterface32 = testInterface.crossBits(ThirtyTwo)
+lazy val testInterface64   = testInterface.crossBits(SixtyFour)
 
 lazy val testInterfaceSerialization =
-  crossProject(CrossArchitecturePlatform(x86_64),
-               CrossArchitecturePlatform(i386),
-               CrossArchitecturePlatform(ARM))
+  crossProject(CrossBitsPlatform(ThirtyTwo),
+               CrossBitsPlatform(SixtyFour))
     .crossType(CrossType.Pure)
     .settings(toolSettings)
     .settings(scalaVersion := libScalaVersion)
@@ -683,34 +646,26 @@ lazy val testInterfaceSerialization =
     .settings(
       libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test
     )
-    .architectureSettings(x86_64)(
+    .bitsSettings(ThirtyTwo)(
       publishLocal := publishLocal
-        .dependsOn(publishLocal in testInterfaceSbtDefsx86_64)
+        .dependsOn(publishLocal in testInterfaceSbtDefs32)
         .value
     )
-    .architectureSettings(i386)(
+    .bitsSettings(SixtyFour)(
       publishLocal := publishLocal
-        .dependsOn(publishLocal in testInterfaceSbtDefsi386)
-        .value
-    )
-    .architectureSettings(ARM)(
-      publishLocal := publishLocal
-        .dependsOn(publishLocal in testInterfaceSbtDefsARM)
+        .dependsOn(publishLocal in testInterfaceSbtDefs64)
         .value
     )
     .dependsOn(testInterfaceSbtDefs)
 
-lazy val testInterfaceSerializationx86_64 =
-  testInterfaceSerialization.crossArchitecture(x86_64)
-lazy val testInterfaceSerializationi386 =
-  testInterfaceSerialization.crossArchitecture(i386)
-lazy val testInterfaceSerializationARM =
-  testInterfaceSerialization.crossArchitecture(ARM)
+lazy val testInterfaceSerialization32 =
+  testInterfaceSerialization.crossBits(ThirtyTwo)
+lazy val testInterfaceSerialization64 =
+  testInterfaceSerialization.crossBits(SixtyFour)
 
 lazy val testInterfaceSbtDefs =
-  crossProject(CrossArchitecturePlatform(x86_64),
-               CrossArchitecturePlatform(i386),
-               CrossArchitecturePlatform(ARM))
+  crossProject(CrossBitsPlatform(ThirtyTwo),
+               CrossBitsPlatform(SixtyFour))
     .crossType(CrossType.Pure)
     .settings(toolSettings)
     .settings(scalaVersion := libScalaVersion)
@@ -720,7 +675,5 @@ lazy val testInterfaceSbtDefs =
       libraryDependencies -= "org.scala-native" %%% "test-interface" % version.value % Test
     )
 
-lazy val testInterfaceSbtDefsx86_64 =
-  testInterfaceSbtDefs.crossArchitecture(x86_64)
-lazy val testInterfaceSbtDefsi386 = testInterfaceSbtDefs.crossArchitecture(i386)
-lazy val testInterfaceSbtDefsARM  = testInterfaceSbtDefs.crossArchitecture(ARM)
+lazy val testInterfaceSbtDefs32 = testInterfaceSbtDefs.crossBits(ThirtyTwo)
+lazy val testInterfaceSbtDefs64 = testInterfaceSbtDefs.crossBits(SixtyFour)

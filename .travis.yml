@@ -47,7 +47,7 @@ jobs:
         - java -version
         - if [ -n "$CLANG_FORMAT_PATH" ]; then scripts/clangfmt --test; fi
         - scripts/scalafmt --test
-        - sbt -no-colors -J-Xmx2G "^^ 0.13.16" rebuild_arch-x86_64 dirty-rebuild_arch-i386 dirty-rebuild_arch-ARM
+        - sbt -no-colors -J-Xmx2G "^^ 0.13.16" rebuild_bits-32 dirty-rebuild_bits-64
         - sbt -no-colors -J-Xmx2G "^^ 1.0.4" sbtScalaNative/publishLocal
     - stage: test
       script:
@@ -56,7 +56,7 @@ jobs:
         - sbt "^^ 1.0.4" compiler-test
     - stage: test
       script:
-        - export TEST_CONTAINER=shadaj/scala-native-testing:x86_64 SCALANATIVE_GC=boehm SBT_VERSION=0.13.16 TEST_COMMAND=test-runtime_arch-x86_64
+        - export TEST_CONTAINER=shadaj/scala-native-testing:x86_64 SCALANATIVE_GC=boehm SBT_VERSION=0.13.16 TEST_COMMAND=test-runtime_bits-64
         - ./scripts/travis_test.sh
     - stage: test
       script:
@@ -64,7 +64,7 @@ jobs:
         - ./scripts/travis_test.sh
     - stage: test
       script:
-        - export TEST_CONTAINER=shadaj/scala-native-testing:x86_64 SCALANATIVE_GC=immix SBT_VERSION=0.13.16 TEST_COMMAND=test-runtime_arch-x86_64
+        - export TEST_CONTAINER=shadaj/scala-native-testing:x86_64 SCALANATIVE_GC=immix SBT_VERSION=0.13.16 TEST_COMMAND=test-runtime_bits-64
         - ./scripts/travis_test.sh
     - stage: test
       script:
@@ -72,7 +72,7 @@ jobs:
         - ./scripts/travis_test.sh
     - stage: test
       script:
-        - export TEST_CONTAINER=shadaj/scala-native-testing:i386 SCALANATIVE_GC=boehm SBT_VERSION=0.13.16 TEST_COMMAND=test-runtime_arch-i386
+        - export TEST_CONTAINER=shadaj/scala-native-testing:i386 SCALANATIVE_GC=boehm SBT_VERSION=0.13.16 TEST_COMMAND=test-runtime_bits-32
         - ./scripts/travis_test.sh
     - stage: test
       script:

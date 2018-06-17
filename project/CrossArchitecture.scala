@@ -2,35 +2,25 @@ import sbt._
 import Keys.{name, unmanagedResourceDirectories, baseDirectory}
 import sbtcrossproject._
 import scala.scalanative.build
-import scala.scalanative.build.TargetArchitecture
+import build.Bits
 import scala.scalanative.sbtplugin.ScalaNativeCrossVersion
 import scala.scalanative.sbtplugin.ScalaNativePlugin
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 
-case class CrossArchitecturePlatform(architecture: TargetArchitecture,
+case class CrossBitsPlatform(bits: Bits,
                                      lib: Boolean = false)
     extends Platform {
-  def identifier: String = "_arch-" + architecture.toString
-  def sbtSuffix: String  = "_arch-" + architecture.toString
+  def identifier: String = "_bits-" + bits.toString
+  def sbtSuffix: String  = "_bits-" + bits.toString
   def enable(project: Project): Project = {
     (if (lib) {
        project.settings(
-         ScalaNativePlugin.projectSettings.tail ++ Seq(
-           targetArchitecture := architecture,
-           targetArchitecture in Test := architecture
-         )
+         ScalaNativePlugin.projectSettings.tail
        )
      } else {
        project
          .enablePlugins(ScalaNativePlugin)
-         .settings(
-           targetArchitecture := architecture,
-           targetArchitecture in Test := architecture
-         )
      })
-      .settings(
-        name := name.value.dropRight(architecture.toString.length)
-      )
       .settings(
         unmanagedResourceDirectories in Compile += {
           baseDirectory.value / ".." / "shared" / "src/main/resources"
@@ -39,38 +29,38 @@ case class CrossArchitecturePlatform(architecture: TargetArchitecture,
   }
 
   @deprecated("Will be removed", "0.3.0")
-  val crossBinary: CrossVersion = ScalaNativeCrossVersion.binary(architecture)
+  val crossBinary: CrossVersion = ScalaNativeCrossVersion.binary(bits)
 
   @deprecated("Will be removed", "0.3.0")
-  val crossFull: CrossVersion = ScalaNativeCrossVersion.full(architecture)
+  val crossFull: CrossVersion = ScalaNativeCrossVersion.full(bits)
 
   override def equals(other: Any) = other match {
-    case CrossArchitecturePlatform(arch, _) => architecture == arch
+    case CrossBitsPlatform(arch, _) => bits == arch
     case _                                  => false
   }
 }
 
-object CrossArchitectureLibPlatform {
-  def apply(arch: TargetArchitecture) =
-    CrossArchitecturePlatform(arch, lib = true)
+object CrossBitsLibPlatform {
+  def apply(arch: Bits) =
+    CrossBitsPlatform(arch, lib = true)
 }
 
-object CrossArchitecturePlatform {
-  implicit def CrossArchitectureProjectBuilderOps(
-      builder: CrossProject.Builder): CrossArchitectureProjectOps =
-    new CrossArchitectureProjectOps(builder.crossType(CrossType.Full))
+object CrossBitsPlatform {
+  implicit def CrossBitsProjectBuilderOps(
+      builder: CrossProject.Builder): CrossBitsProjectOps =
+    new CrossBitsProjectOps(builder.crossType(CrossType.Full))
 
-  implicit class CrossArchitectureProjectOps(project: CrossProject) {
-    def crossArchitecture(architecture: TargetArchitecture): Project =
-      project.projects(CrossArchitecturePlatform(architecture))
+  implicit class CrossBitsProjectOps(project: CrossProject) {
+    def crossBits(bits: Bits): Project =
+      project.projects(CrossBitsPlatform(bits))
 
-    def architectureSettings(architecture: TargetArchitecture)(
+    def bitsSettings(bits: Bits)(
         ss: Def.SettingsDefinition*): CrossProject =
-      architectureConfigure(architecture)(_.settings(ss: _*))
+      bitsConfigure(bits)(_.settings(ss: _*))
 
-    def architectureConfigure(architecture: TargetArchitecture)(
+    def bitsConfigure(bits: Bits)(
         transformer: Project => Project): CrossProject =
-      project.configurePlatform(CrossArchitecturePlatform(architecture))(
+      project.configurePlatform(CrossBitsPlatform(bits))(
         transformer)
   }
 }

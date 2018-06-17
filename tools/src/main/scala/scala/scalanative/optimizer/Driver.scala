@@ -33,7 +33,8 @@ object Driver {
     inject.RuntimeTypeInformation,
     inject.ClassStruct,
     inject.ObjectArrayId,
-    inject.ModuleArray
+    inject.ModuleArray,
+    inject.TargetArchitecture
   )
 
   private val fastOptPasses = Seq(

@@ -103,7 +103,7 @@ object Config {
       workdir = Paths.get(""),
       clang = Paths.get(""),
       clangPP = Paths.get(""),
-      targetArchitecture = x86_64,
+      targetArchitecture = TargetArchitecture.x86_64,
       targetTriple = "",
       linkingOptions = Seq.empty,
       compileOptions = Seq.empty,

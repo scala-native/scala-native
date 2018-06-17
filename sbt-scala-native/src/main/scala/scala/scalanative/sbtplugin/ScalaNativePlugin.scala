@@ -5,7 +5,7 @@ import ScalaNativePluginInternal._
 
 import sbt._
 
-import scala.scalanative.build.{TargetArchitecture, x86_64, i386, ARM, ARM64}
+import scala.scalanative.build.TargetArchitecture
 
 object ScalaNativePlugin extends AutoPlugin {
   override def requires: Plugins = plugins.JvmPlugin

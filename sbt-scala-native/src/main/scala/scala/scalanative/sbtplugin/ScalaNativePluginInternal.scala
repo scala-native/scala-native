@@ -22,7 +22,8 @@ import scalanative.sbtplugin.TestUtilities._
 import scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 import scalanative.sbtplugin.SBTCompat.{Process, _}
 import scalanative.sbtplugin.testinterface.ScalaNativeFramework
-import scala.scalanative.build.{x86_64, i386, ARM}
+
+import scala.scalanative.build.TargetArchitecture._
 
 object ScalaNativePluginInternal {
 
@@ -51,9 +52,8 @@ object ScalaNativePluginInternal {
   )
 
   lazy val scalaNativeBaseSettings: Seq[Setting[_]] = Seq(
-    crossVersion := ScalaNativeCrossVersion.binary(targetArchitecture.value),
-    platformDepsCrossVersion := ScalaNativeCrossVersion.binary(
-      targetArchitecture.value),
+    crossVersion := ScalaNativeCrossVersion.binary(targetArchitecture.value.bits),
+    platformDepsCrossVersion := ScalaNativeCrossVersion.binary(targetArchitecture.value.bits),
     nativeClang := interceptBuildException(Discover.clang().toFile),
     nativeClang in NativeTest := (nativeClang in Test).value,
     nativeClangPP := interceptBuildException(Discover.clangpp().toFile),
@@ -83,8 +83,8 @@ object ScalaNativePluginInternal {
       Discover.targetTriple(clang, cwd).split("-").head match {
         case "x86_64" => x86_64
         case "i386"   => i386
-        case "i686"   => i386 // essentially the same
-        case "armv7l" => ARM
+        case "i686"   => i686
+        case "armv7l" => armv7l
         case other =>
           println(
             s"Unable to detect target architecture from $other, defaulting to x86_64")
