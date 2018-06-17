@@ -19,7 +19,8 @@ class TargetArchitecture(top: Top, config: Config) extends Inject {
 }
 
 object TargetArchitecture extends InjectCompanion {
-  val targetArchitecture     = Global.Top("__targetArchitecture")
+  val targetArchitecture = Global.Top("__targetArchitecture")
 
-  override def apply(config: Config, top: Top) = new TargetArchitecture(top, config)
+  override def apply(config: Config, top: Top) =
+    new TargetArchitecture(top, config)
 }

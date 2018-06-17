@@ -24,7 +24,8 @@ object TargetArchitecture {
   case object x86_64 extends TargetArchitecture(SixtyFour, true, 3)
   case object armv7l extends TargetArchitecture(ThirtyTwo, false, 4)
 
-  val current = Seq(i386, i686, x86_64, armv7l).find(_.id == TargetArchitectureNative.__targetArchitecture)
+  val current = Seq(i386, i686, x86_64, armv7l).find(
+    _.id == TargetArchitectureNative.__targetArchitecture)
 }
 
 @extern

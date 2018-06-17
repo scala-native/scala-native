@@ -344,8 +344,7 @@ import CrossBitsPlatform._
 import scala.scalanative.build.{ThirtyTwo, SixtyFour}
 
 lazy val nativelib =
-  crossProject(CrossBitsLibPlatform(ThirtyTwo),
-               CrossBitsLibPlatform(SixtyFour))
+  crossProject(CrossBitsLibPlatform(ThirtyTwo), CrossBitsLibPlatform(SixtyFour))
     .crossType(CrossType.Full)
     .in(file("nativelib"))
     .settings(libSettings)
@@ -358,11 +357,10 @@ lazy val nativelib =
     )
 
 lazy val nativelib32 = nativelib.crossBits(ThirtyTwo)
-lazy val nativelib64   = nativelib.crossBits(SixtyFour)
+lazy val nativelib64 = nativelib.crossBits(SixtyFour)
 
 lazy val javalib =
-  crossProject(CrossBitsLibPlatform(ThirtyTwo),
-               CrossBitsLibPlatform(SixtyFour))
+  crossProject(CrossBitsLibPlatform(ThirtyTwo), CrossBitsLibPlatform(SixtyFour))
     .crossType(CrossType.Pure)
     .in(file("javalib"))
     .settings(libSettings)
@@ -402,14 +400,13 @@ lazy val javalib =
     .dependsOn(nativelib)
 
 val javalib32 = javalib.crossBits(ThirtyTwo)
-val javalib64   = javalib.crossBits(SixtyFour)
+val javalib64 = javalib.crossBits(SixtyFour)
 
 lazy val assembleScalaLibrary = taskKey[Unit](
   "Checks out scala standard library from submodules/scala and then applies overrides.")
 
 lazy val auxlib =
-  crossProject(CrossBitsLibPlatform(ThirtyTwo),
-               CrossBitsLibPlatform(SixtyFour))
+  crossProject(CrossBitsLibPlatform(ThirtyTwo), CrossBitsLibPlatform(SixtyFour))
     .crossType(CrossType.Pure)
     .in(file("auxlib"))
     .settings(libSettings)
@@ -427,11 +424,10 @@ lazy val auxlib =
     .dependsOn(nativelib)
 
 lazy val auxlib32 = auxlib.crossBits(ThirtyTwo)
-lazy val auxlib64   = auxlib.crossBits(SixtyFour)
+lazy val auxlib64 = auxlib.crossBits(SixtyFour)
 
 lazy val scalalib =
-  crossProject(CrossBitsLibPlatform(ThirtyTwo),
-               CrossBitsLibPlatform(SixtyFour))
+  crossProject(CrossBitsLibPlatform(ThirtyTwo), CrossBitsLibPlatform(SixtyFour))
     .crossType(CrossType.Pure)
     .in(file("scalalib"))
     .settings(libSettings)
@@ -505,11 +501,10 @@ lazy val scalalib =
     .dependsOn(auxlib, nativelib, javalib)
 
 lazy val scalalib32 = scalalib.crossBits(ThirtyTwo)
-lazy val scalalib64   = scalalib.crossBits(SixtyFour)
+lazy val scalalib64 = scalalib.crossBits(SixtyFour)
 
 lazy val tests =
-  crossProject(CrossBitsPlatform(ThirtyTwo),
-               CrossBitsPlatform(SixtyFour))
+  crossProject(CrossBitsPlatform(ThirtyTwo), CrossBitsPlatform(SixtyFour))
     .crossType(CrossType.Pure)
     .in(file("unit-tests"))
     .settings(projectSettings)
@@ -532,11 +527,10 @@ lazy val tests =
     )
 
 lazy val tests32 = tests.crossBits(ThirtyTwo)
-lazy val tests64   = tests.crossBits(SixtyFour)
+lazy val tests64 = tests.crossBits(SixtyFour)
 
 lazy val sandbox =
-  crossProject(CrossBitsPlatform(ThirtyTwo),
-               CrossBitsPlatform(SixtyFour))
+  crossProject(CrossBitsPlatform(ThirtyTwo), CrossBitsPlatform(SixtyFour))
     .crossType(CrossType.Pure)
     .in(file("sandbox"))
     .settings(noPublishSettings)
@@ -547,11 +541,10 @@ lazy val sandbox =
     )
 
 lazy val sandbox32 = sandbox.crossBits(ThirtyTwo)
-lazy val sandbox64   = sandbox.crossBits(SixtyFour)
+lazy val sandbox64 = sandbox.crossBits(SixtyFour)
 
 lazy val benchmarks =
-  crossProject(CrossBitsPlatform(ThirtyTwo),
-               CrossBitsPlatform(SixtyFour))
+  crossProject(CrossBitsPlatform(ThirtyTwo), CrossBitsPlatform(SixtyFour))
     .crossType(CrossType.Pure)
     .in(file("benchmarks"))
     .settings(projectSettings)
@@ -580,7 +573,7 @@ lazy val benchmarks =
     )
 
 lazy val benchmarks32 = benchmarks.crossBits(ThirtyTwo)
-lazy val benchmarks64   = benchmarks.crossBits(SixtyFour)
+lazy val benchmarks64 = benchmarks.crossBits(SixtyFour)
 
 lazy val testingCompilerInterface =
   project
@@ -609,8 +602,7 @@ lazy val testingCompiler =
     .dependsOn(testingCompilerInterface, nativelib64)
 
 lazy val testInterface =
-  crossProject(CrossBitsPlatform(ThirtyTwo),
-               CrossBitsPlatform(SixtyFour))
+  crossProject(CrossBitsPlatform(ThirtyTwo), CrossBitsPlatform(SixtyFour))
     .crossType(CrossType.Pure)
     .settings(toolSettings)
     .settings(scalaVersion := libScalaVersion)
@@ -633,11 +625,10 @@ lazy val testInterface =
     .dependsOn(testInterfaceSerialization)
 
 lazy val testInterface32 = testInterface.crossBits(ThirtyTwo)
-lazy val testInterface64   = testInterface.crossBits(SixtyFour)
+lazy val testInterface64 = testInterface.crossBits(SixtyFour)
 
 lazy val testInterfaceSerialization =
-  crossProject(CrossBitsPlatform(ThirtyTwo),
-               CrossBitsPlatform(SixtyFour))
+  crossProject(CrossBitsPlatform(ThirtyTwo), CrossBitsPlatform(SixtyFour))
     .crossType(CrossType.Pure)
     .settings(toolSettings)
     .settings(scalaVersion := libScalaVersion)
@@ -664,8 +655,7 @@ lazy val testInterfaceSerialization64 =
   testInterfaceSerialization.crossBits(SixtyFour)
 
 lazy val testInterfaceSbtDefs =
-  crossProject(CrossBitsPlatform(ThirtyTwo),
-               CrossBitsPlatform(SixtyFour))
+  crossProject(CrossBitsPlatform(ThirtyTwo), CrossBitsPlatform(SixtyFour))
     .crossType(CrossType.Pure)
     .settings(toolSettings)
     .settings(scalaVersion := libScalaVersion)

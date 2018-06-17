@@ -52,8 +52,10 @@ object ScalaNativePluginInternal {
   )
 
   lazy val scalaNativeBaseSettings: Seq[Setting[_]] = Seq(
-    crossVersion := ScalaNativeCrossVersion.binary(targetArchitecture.value.bits),
-    platformDepsCrossVersion := ScalaNativeCrossVersion.binary(targetArchitecture.value.bits),
+    crossVersion := ScalaNativeCrossVersion.binary(
+      targetArchitecture.value.bits),
+    platformDepsCrossVersion := ScalaNativeCrossVersion.binary(
+      targetArchitecture.value.bits),
     nativeClang := interceptBuildException(Discover.clang().toFile),
     nativeClang in NativeTest := (nativeClang in Test).value,
     nativeClangPP := interceptBuildException(Discover.clangpp().toFile),

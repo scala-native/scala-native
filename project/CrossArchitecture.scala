@@ -7,8 +7,7 @@ import scala.scalanative.sbtplugin.ScalaNativeCrossVersion
 import scala.scalanative.sbtplugin.ScalaNativePlugin
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 
-case class CrossBitsPlatform(bits: Bits,
-                                     lib: Boolean = false)
+case class CrossBitsPlatform(bits: Bits, lib: Boolean = false)
     extends Platform {
   def identifier: String = "_bits-" + bits.toString
   def sbtSuffix: String  = "_bits-" + bits.toString
@@ -36,7 +35,7 @@ case class CrossBitsPlatform(bits: Bits,
 
   override def equals(other: Any) = other match {
     case CrossBitsPlatform(arch, _) => bits == arch
-    case _                                  => false
+    case _                          => false
   }
 }
 
@@ -54,13 +53,11 @@ object CrossBitsPlatform {
     def crossBits(bits: Bits): Project =
       project.projects(CrossBitsPlatform(bits))
 
-    def bitsSettings(bits: Bits)(
-        ss: Def.SettingsDefinition*): CrossProject =
+    def bitsSettings(bits: Bits)(ss: Def.SettingsDefinition*): CrossProject =
       bitsConfigure(bits)(_.settings(ss: _*))
 
     def bitsConfigure(bits: Bits)(
         transformer: Project => Project): CrossProject =
-      project.configurePlatform(CrossBitsPlatform(bits))(
-        transformer)
+      project.configurePlatform(CrossBitsPlatform(bits))(transformer)
   }
 }

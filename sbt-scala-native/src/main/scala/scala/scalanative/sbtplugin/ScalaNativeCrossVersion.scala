@@ -24,8 +24,7 @@ object ScalaNativeCrossVersion {
     targetBits.toString
 
   // produces native{version}_{bits}
-  def scalaNativeMapped(cross: CrossVersion,
-                        targetBits: Bits): CrossVersion =
+  def scalaNativeMapped(cross: CrossVersion, targetBits: Bits): CrossVersion =
     crossVersionAddPlatformPart(
       crossVersionAddPlatformPart(cross, platformVersion(targetBits)),
       "native" + currentBinaryVersion
