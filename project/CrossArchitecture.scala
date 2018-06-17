@@ -2,7 +2,7 @@ import sbt._
 import Keys.{name, unmanagedResourceDirectories, baseDirectory}
 import sbtcrossproject._
 import scala.scalanative.build
-import build.Bits
+import build.{Bits, ThirtyTwo, SixtyFour, TargetArchitecture}
 import scala.scalanative.sbtplugin.ScalaNativeCrossVersion
 import scala.scalanative.sbtplugin.ScalaNativePlugin
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
@@ -24,6 +24,12 @@ case class CrossBitsPlatform(bits: Bits, lib: Boolean = false)
         unmanagedResourceDirectories in Compile += {
           baseDirectory.value / ".." / "shared" / "src/main/resources"
         }
+      )
+      .settings(
+        targetArchitecture := (bits match {
+          case ThirtyTwo => TargetArchitecture.i386
+          case SixtyFour => TargetArchitecture.x86_64
+        })
       )
   }
 
