@@ -7,9 +7,17 @@ import scalanative.posix.sys.types.{suseconds_t, time_t}
 @extern
 object select {
 
-  type _16 = Digit[_1, _6]
+  /// Note Well!
+  ///
+  /// See comments and code in resources/select.c. That file does a
+  /// compile time check to ensure that the size of fd_sets allocated using,
+  /// say "stackalloc[fd_set]" is greater than or equal to the size that
+  /// C code, say FD_ZERO, will touch. Insurance well worth the cheap cost.
 
-  type fd_set = CStruct1[CArray[CLongInt, _16]]
+  // CLongLong instead of proper CLongInt allows same code to work on
+  // both 32 & 64 architectures.
+  private[this] type _16 = Digit[_1, _6] // on size change, see also select.c.
+  type fd_set            = CStruct1[CArray[CLongLong, _16]]
 
   @name("scalanative_select")
   def select(nfds: CInt,

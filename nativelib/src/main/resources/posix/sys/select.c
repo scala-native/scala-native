@@ -1,8 +1,24 @@
-#include <sys/select.h>
-#include <stdbool.h>
-#include <errno.h>
 #include <stddef.h>
-#include <string.h>
+#include <sys/select.h>
+
+#if (FD_SETSIZE > 1024)
+// Cross checking code is a mixed blessing. It can generate both
+// false positives and get out of sync. Such code should, in general,
+// be avoided.
+//
+// Here there is a magic compile time constant that _is_ grow
+// sometime after tomorrow. That change will cause a mismatch
+// between this C code and the scala static type declaration and
+// undesired things will happen.
+//
+// For one example, FD_ZERO below will try to clear memory beyond the end
+// of the smaller fd_set allocated by the scala code.
+//
+// Being robust to such a change is well worth the code smell of this
+// large block comment. Miserere mei, peccatoris.
+//
+# error("Probable size mismatch with static fd_set type in select.scala ")
+#endif
 
 #define FDBITS (8 * sizeof(long))
 
