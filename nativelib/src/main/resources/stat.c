@@ -50,9 +50,10 @@ void scalanative_stat_init(struct stat *stat,
     my_stat->st_mode = stat->st_mode;
 }
 
-int scalanative_stat(char *path, struct scalanative_stat *buf) {
+
+int scalanative_fstat(int fildes, struct scalanative_stat *buf) {
     struct stat orig_buf;
-    if (stat(path, &orig_buf) == 0) {
+    if (fstat(fildes, &orig_buf) == 0) {
         scalanative_stat_init(&orig_buf, buf);
         return 0;
     } else {
@@ -60,10 +61,14 @@ int scalanative_stat(char *path, struct scalanative_stat *buf) {
     }
 }
 
-int scalanative_fstat(int fildes, struct scalanative_stat *buf) {
+
+int scalanative_fstatat(int dirfd,
+			const char *pathname,
+			struct scalanative_stat *statbuf,
+			int flags) {
     struct stat orig_buf;
-    if (fstat(fildes, &orig_buf) == 0) {
-        scalanative_stat_init(&orig_buf, buf);
+    if (fstatat(dirfd, pathname, &orig_buf, flags) == 0) {
+        scalanative_stat_init(&orig_buf, statbuf);
         return 0;
     } else {
         return 1;
@@ -80,13 +85,15 @@ int scalanative_lstat(char *path, struct scalanative_stat *buf) {
     }
 }
 
-int scalanative_mkdir(char *path, mode_t mode) { return mkdir(path, mode); }
-
-int scalanative_chmod(char *pathname, mode_t mode) {
-    return chmod(pathname, mode);
+int scalanative_stat(char *path, struct scalanative_stat *buf) {
+    struct stat orig_buf;
+    if (stat(path, &orig_buf) == 0) {
+        scalanative_stat_init(&orig_buf, buf);
+        return 0;
+    } else {
+        return 1;
+    }
 }
-
-int scalanative_fchmod(int fd, mode_t mode) { return fchmod(fd, mode); }
 
 mode_t scalanative_s_isuid() { return S_ISUID; }
 
