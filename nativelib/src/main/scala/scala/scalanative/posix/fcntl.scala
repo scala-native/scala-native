@@ -2,8 +2,7 @@ package scala.scalanative
 package posix
 
 import scalanative.native._
-import scalanative.posix.sys.stat.mode_t
-import scalanative.posix.sys.stat.mode_t
+import scalanative.posix.sys.types.mode_t
 
 @extern
 object fcntl {
@@ -13,6 +12,24 @@ object fcntl {
   def close(fd: CInt): CInt = extern
 
   def fcntl(fd: CInt, cmd: CInt, args: CVararg*): CInt = extern
+
+  @name("scalanative_o_at_eaccess")
+  def AT_EACCESS: CInt = extern
+
+  @name("scalanative_o_at_empty_path")
+  def AT_EMPTY_PATH: CInt = extern
+
+  @name("scalanative_o_at_no_automount")
+  def AT_NO_AUTOMOUNT: CInt = extern
+
+  @name("scalanative_o_at_removedir")
+  def AT_REMOVEDIR: CInt = extern
+
+  @name("scalanative_o_at_symlink_follow")
+  def AT_SYMLINK_FOLLOW: CInt = extern
+
+  @name("scalanative_o_at_symlink_nofollow")
+  def AT_SYMLINK_NOFOLLOW: CInt = extern
 
   @name("scalanative_o_rdonly")
   def O_RDONLY: CInt = extern

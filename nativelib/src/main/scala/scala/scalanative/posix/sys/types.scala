@@ -1,7 +1,23 @@
 package scala.scalanative
 package posix.sys
 
-import scala.scalanative.native._
+// nativelib resources/types.h &
+// nativelib scalanative/posix/sys/types.scala should/MUST be kept
+// in sync.
+//
+// Someday, one file will be generated from the other. For now, the
+// synchronization is manual & error prone.  If you  make a change to
+// this file, please consider if the change is applicable to the other
+// file.  Future developers will sing you praises if you document the
+// existence and reason for designed, desired inconsistencies.
+
+// Create minimal, clean environment.
+// Only bring declarations that will be used in this file.
+import scala.scalanative.native.{CInt, CUnsignedInt}
+import scala.scalanative.native.{CLong, CUnsignedLong, CUnsignedLongLong}
+import scala.scalanative.native.{CSize, CSSize}
+import scala.scalanative.native.{Ptr, ULong}
+import scala.scalanative.native.{extern}
 
 @extern
 object types {
