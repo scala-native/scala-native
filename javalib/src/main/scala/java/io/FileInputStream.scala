@@ -51,7 +51,7 @@ class FileInputStream(fd: FileDescriptor) extends InputStream {
 
     // we use the runtime knowledge of the array layout to avoid
     // intermediate buffer, and write straight into the array memory
-    val buf       = buffer.asInstanceOf[runtime.ByteArray].at(offset)
+    val buf = buffer.asInstanceOf[runtime.ByteArray].at(offset)
     // toInt never causes data loss on 64 bit systems because count is an Int.
     val readCount = unistd.read(fd.fd, buf, count).toInt
 
