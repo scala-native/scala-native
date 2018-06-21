@@ -3,19 +3,28 @@ package posix
 package sys
 
 import scalanative.native._
-import scalanative.posix.time._
-import scalanative.posix.unistd.off_t
+import scalanative.posix.sys.types._
 
 @extern
 object stat {
-  type dev_t     = CUnsignedLong
-  type ino_t     = CUnsignedLongLong
-  type mode_t    = CUnsignedInt
-  type nlink_t   = CUnsignedLong
-  type uid_t     = CUnsignedInt
-  type gid_t     = CUnsignedInt
-  type blksize_t = CLong
-  type blkcnt_t  = CLongLong
+
+  type blkcnt_t  = types.blkcnt_t
+  type blksize_t = types.blksize_t
+  type dev_t     = types.dev_t
+  type gid_t     = types.gid_t
+  type ino_t     = types.ino_t
+  type mode_t    = types.mode_t
+  type nlink_t   = types.nlink_t
+  type off_t     = types.off_t
+  type uid_t     = types.uid_t
+
+  type timespec = posix.time.timespec
+
+  // fstat(), fstatat(), lstat(), and fstat() all use this CStruct because
+  // the order of fields can vary across operating systems.
+  // This use necessitates translation code for those methods/functions in
+  // resources/stat.c. Other methods can be straight passthrough.
+
   type stat = CStruct13[dev_t, // st_dev
                         dev_t, // st_rdev
                         ino_t, // st_ino
@@ -30,23 +39,43 @@ object stat {
                         nlink_t, // st_nlink
                         mode_t] // st_mode
 
-  @name("scalanative_stat")
-  def stat(path: CString, buf: Ptr[stat]): CInt = extern
+  def chmod(pathname: CString, mode: mode_t): CInt = extern
+  def fchmod(fd: CInt, mode: mode_t): CInt         = extern
+  def fchmodat(dirfd: CInt,
+               pathname: CString,
+               mode: mode_t,
+               flags: CInt): CInt = extern
 
   @name("scalanative_fstat")
   def fstat(fildes: CInt, buf: Ptr[stat]): CInt = extern
 
+  @name("scalanative_fstatat")
+  def fstatat(dirfd: CInt,
+              pathname: CString,
+              statbuf: Ptr[stat],
+              flags: CInt): CInt = extern
+
+  def futimesns(fd: CInt, times: Ptr[timespec]): CInt = extern
+
   @name("scalanative_lstat")
   def lstat(path: CString, buf: Ptr[stat]): CInt = extern
 
-  @name("scalanative_mkdir")
-  def mkdir(path: CString, mode: mode_t): CInt = extern
+  def mkdir(pathname: CString, mode: mode_t): CInt                 = extern
+  def mkdirat(dirfd: CInt, pathname: CString, mode: mode_t): CInt  = extern
+  def mkfifo(pathname: CString, mode: mode_t): CInt                = extern
+  def mkfifoat(dirfd: CInt, pathname: CString, mode: mode_t): CInt = extern
+  def mknod(pathname: CString, mode: mode_t, dev: dev_t): CInt     = extern
+  def mknodat(dirfd: CInt, pathname: CString, mode: mode_t, dev: dev_t): CInt =
+    extern
 
-  @name("scalanative_chmod")
-  def chmod(pathname: CString, mode: mode_t): CInt = extern
+  @name("scalanative_stat")
+  def stat(path: CString, buf: Ptr[stat]): CInt = extern
 
-  @name("scalanative_fchmod")
-  def fchmod(fd: CInt, mode: mode_t): CInt = extern
+  def umask(mode: mode_t): mode_t = extern
+  def utimesns(dirfd: CInt,
+               pathname: CString,
+               times: Ptr[timespec],
+               flags: CInt): CInt = extern
 
   @name("scalanative_s_isdir")
   def S_ISDIR(mode: mode_t): CInt = extern
