@@ -13,22 +13,22 @@ object fcntl {
 
   def fcntl(fd: CInt, cmd: CInt, args: CVararg*): CInt = extern
 
-  @name("scalanative_o_at_eaccess")
+  @name("scalanative_fcntl_at_eaccess")
   def AT_EACCESS: CInt = extern
 
-  @name("scalanative_o_at_empty_path")
+  @name("scalanative_fcntl_at_empty_path")
   def AT_EMPTY_PATH: CInt = extern
 
-  @name("scalanative_o_at_no_automount")
+  @name("scalanative_fcntl_at_no_automount")
   def AT_NO_AUTOMOUNT: CInt = extern
 
-  @name("scalanative_o_at_removedir")
+  @name("scalanative_fcntl_at_removedir")
   def AT_REMOVEDIR: CInt = extern
 
-  @name("scalanative_o_at_symlink_follow")
+  @name("scalanative_fcntl_at_symlink_follow")
   def AT_SYMLINK_FOLLOW: CInt = extern
 
-  @name("scalanative_o_at_symlink_nofollow")
+  @name("scalanative_fcntl_at_symlink_nofollow")
   def AT_SYMLINK_NOFOLLOW: CInt = extern
 
   @name("scalanative_o_rdonly")
