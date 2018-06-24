@@ -512,11 +512,17 @@ object CodeGen {
       case Global.None =>
         unsupported(g)
       case Global.Top(id) =>
-        str(id.replace("+", "$plus").replace("-", "$minus").replace("=", "$equals"))
+        str(
+          id.replace("+", "$plus")
+            .replace("-", "$minus")
+            .replace("=", "$equals"))
       case Global.Member(n, id) =>
         genJustGlobal(n)
         str("::")
-        str(id.replace("+", "$plus").replace("-", "$minus").replace("=", "$equals"))
+        str(
+          id.replace("+", "$plus")
+            .replace("-", "$minus")
+            .replace("=", "$equals"))
     }
 
     def genGlobal(g: Global): Unit = {
