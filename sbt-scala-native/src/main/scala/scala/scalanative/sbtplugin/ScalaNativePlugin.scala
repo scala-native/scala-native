@@ -11,6 +11,7 @@ object ScalaNativePlugin extends AutoPlugin {
   override def requires: Plugins = plugins.JvmPlugin
 
   object autoImport {
+    val TargetArchitecture = scala.scalanative.build.TargetArchitecture
 
     val ScalaNativeCrossVersion = sbtplugin.ScalaNativeCrossVersion
 
