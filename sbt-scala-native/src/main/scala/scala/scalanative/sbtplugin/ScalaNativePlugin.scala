@@ -39,6 +39,8 @@ object ScalaNativePlugin extends AutoPlugin {
 
     val nativeGC =
       settingKey[String]("GC choice, either \"none\", \"boehm\" or \"immix\".")
+
+    val directTestCommand = InputKey[String]("direct-test-command")
   }
 
   @deprecated("use autoImport instead", "0.3.7")
