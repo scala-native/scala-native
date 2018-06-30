@@ -55,7 +55,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
 
   def setExecutable(executable: Boolean, ownerOnly: Boolean): Boolean = {
     import stat._
-    val mask = if (ownerOnly) S_IXUSR | S_IXGRP | S_IXOTH else S_IXUSR
+    val mask = if (!ownerOnly) S_IXUSR | S_IXGRP | S_IXOTH else S_IXUSR
     updatePermissions(mask, executable)
   }
 
@@ -64,7 +64,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
 
   def setReadable(readable: Boolean, ownerOnly: Boolean): Boolean = {
     import stat._
-    val mask = if (ownerOnly) S_IRUSR | S_IRGRP | S_IROTH else S_IRUSR
+    val mask = if (!ownerOnly) S_IRUSR | S_IRGRP | S_IROTH else S_IRUSR
     updatePermissions(mask, readable)
   }
 
@@ -73,7 +73,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
 
   def setWritable(writable: Boolean, ownerOnly: Boolean = true): Boolean = {
     import stat._
-    val mask = if (ownerOnly) S_IWUSR | S_IWGRP | S_IWOTH else S_IWUSR
+    val mask = if (!ownerOnly) S_IWUSR | S_IWGRP | S_IWOTH else S_IWUSR
     updatePermissions(mask, writable)
   }
 
