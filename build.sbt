@@ -297,7 +297,7 @@ lazy val sbtPluginSettings =
       sbtPlugin := true,
       scriptedLaunchOpts ++=
         Seq("-Xmx1024M",
-            "-XX:MaxPermSize=256M",
+            "-XX:MaxMetaspaceSize=256M",
             "-Dplugin.version=" + version.value) ++
           ivyPaths.value.ivyHome.map(home => s"-Dsbt.ivy.home=${home}").toSeq
     )
