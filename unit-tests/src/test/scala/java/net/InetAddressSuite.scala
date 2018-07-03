@@ -155,4 +155,10 @@ object InetAddressSuite extends tests.Suite {
     assertEquals("/127.0.0.1", InetAddress.getByName("127.0.0.1").toString)
   }
 
+  test("getLocalHost") {
+    val dg = new DatagramSocket(0, InetAddress.getLocalHost())
+    assertEquals(InetAddress.getLocalHost(), dg.getLocalAddress())
+    dg.close()
+  }
+
 }
