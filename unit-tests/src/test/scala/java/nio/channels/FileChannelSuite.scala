@@ -5,7 +5,7 @@ import java.nio.file.{Files, Path, StandardOpenOption}
 import java.io.File
 
 object FileChannelSuite extends tests.Suite {
-  test("A FileChannel can read from a file") {
+  test("A FileChannel can read a Buffer from a file") {
     withTemporaryDirectory { dir =>
       val f     = dir.resolve("f")
       val bytes = Array.apply[Byte](1, 2, 3, 4, 5)
@@ -14,14 +14,45 @@ object FileChannelSuite extends tests.Suite {
 
       val channel = FileChannel.open(f)
       val buffer  = ByteBuffer.allocate(5)
-      while (channel.read(buffer) > 0) {}
 
-      buffer.rewind()
-      var i = 0
-      while (i < bytes.length) {
-        assert(buffer.get() == bytes(i))
-        i += 1
-      }
+      val bread = channel.read(buffer)
+      buffer.flip()
+
+      assert(buffer.limit() == 5)
+      assert(buffer.position() == 0)
+      assert(bread == 5l)
+      assert(buffer.array() sameElements bytes)
+
+      channel.close()
+    }
+  }
+
+  test("A FileChannel can read Buffers from a file") {
+    withTemporaryDirectory { dir =>
+      val f     = dir.resolve("f")
+      val bytes = Array.apply[Byte](1, 2, 3, 4, 5)
+      Files.write(f, bytes)
+      assert(Files.getAttribute(f, "size") == 5)
+
+      val channel = FileChannel.open(f)
+      val bufferA = ByteBuffer.allocate(2)
+      val bufferB = ByteBuffer.allocate(3)
+      val buffers = Array[ByteBuffer](bufferA, bufferB)
+
+      val bread = channel.read(buffers)
+      bufferA.flip()
+      bufferB.flip()
+
+      assert(bufferA.limit() == 2)
+      assert(bufferB.limit() == 3)
+      assert(bufferA.position() == 0)
+      assert(bufferB.position() == 0)
+
+      assert(bread == 5l)
+      assert(bufferA.array() sameElements Array[Byte](1, 2))
+      assert(bufferB.array() sameElements Array[Byte](3, 4, 5))
+
+      channel.close()
     }
   }
 
