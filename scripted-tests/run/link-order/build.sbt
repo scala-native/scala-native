@@ -24,7 +24,7 @@ compile in Compile := {
   val opaths = cpaths.map { cpath =>
     val opath = abs(cwd / s"${cpath.getName}.o")
     val command = Seq(clangPath) ++ compileOptions ++
-                  Seq("-c", abs(cpath), "-o", opath)
+      Seq("-c", abs(cpath), "-o", opath)
 
     if (run(command) != 0) {
       sys.error(s"Failed to compile $cpath")
