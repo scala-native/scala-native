@@ -9,7 +9,7 @@ Scala Native provides bindings for the core subset of the
 ================= ==================================
 C Header          Scala Native Module
 ================= ==================================
-`aio.h`_          N/A
+`aio.h`_          scala.scalanative.posix.aio_
 `arpa/inet.h`_    scala.scalanative.posix.arpa.inet_
 `assert.h`_       N/A
 `complex.h`_      scala.scalanative.native.complex_
@@ -176,6 +176,7 @@ C Header          Scala Native Module
 .. _wctype.h: http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/wctype.h.html
 .. _wordexp.h: http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/wordexp.h.html
 
+.. _scala.scalanative.posix.aio: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/aio.scala
 .. _scala.scalanative.posix.arpa.inet: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/arpa/inet.scala
 .. _scala.scalanative.native.complex: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/native/complex.scala
 .. _scala.scalanative.posix.cpio: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/cpio.scala
