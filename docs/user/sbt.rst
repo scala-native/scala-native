@@ -12,21 +12,21 @@ The easiest way to make a fresh project is to use our official gitter8 template:
 
     sbt new scala-native/scala-native.g8
 
-This includes:
+This includes the following files with the <version> filled in:
 
 * ``project/plugins.sbt`` to add a plugin dependency::
 
-    addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.3.7")
+    addSbtPlugin("org.scala-native" % "sbt-scala-native" % "<version>")
 
 * ``project/build.properties`` to specify the sbt version::
 
-    sbt.version = 0.13.17
+    sbt.version = <version>
 
 * ``build.sbt`` to enable the plugin and specify Scala version::
 
     enablePlugins(ScalaNativePlugin)
 
-    scalaVersion := "2.11.12"
+    scalaVersion := "<version>"
 
 * ``src/main/scala/Main.scala`` with minimal application::
 
@@ -96,7 +96,7 @@ Scala Native supports two distinct linking modes:
 Garbage collectors
 ------------------
 
-1. **boehm.** (default)
+1. **boehm.**
 
    Conservative generational garbage collector. More information is available
    at the `project's page <https://www.hboehm.info/gc/>`_.
@@ -107,7 +107,7 @@ Garbage collectors
    for short-running command-line applications or applications where garbage
    collections pauses are not acceptable.
 
-3. **immix.** (experimental, since 0.3)
+3. **immix.** (default, since 0.3)
 
    Immix is a mostly-precise mark-region tracing garbage collector.
    More information about the collector is available as part of the original
