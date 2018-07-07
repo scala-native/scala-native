@@ -69,7 +69,9 @@ abstract class Suite {
         body
         true
       } catch {
-        case _: Throwable => false
+        case t: Throwable =>
+          t.printStackTrace()
+          false
       }
     })
 

@@ -7,6 +7,8 @@ import sbt._
 import scala.scalanative.nir.Versions
 import SBTCompat._
 
+import scala.scalanative.build.Bits
+
 object ScalaNativeCrossVersion {
   private final val ReleaseVersion =
     raw"""(\d+)\.(\d+)\.(\d+)""".r
@@ -18,10 +20,19 @@ object ScalaNativeCrossVersion {
     case _                               => full
   }
 
-  def scalaNativeMapped(cross: CrossVersion): CrossVersion =
-    crossVersionAddPlatformPart(cross, "native" + currentBinaryVersion)
+  def platformVersion(targetBits: Bits): String =
+    targetBits.toString
 
-  val binary: CrossVersion = scalaNativeMapped(CrossVersion.binary)
+  // produces native{version}_{bits}
+  def scalaNativeMapped(cross: CrossVersion, targetBits: Bits): CrossVersion =
+    crossVersionAddPlatformPart(
+      crossVersionAddPlatformPart(cross, platformVersion(targetBits)),
+      "native" + currentBinaryVersion
+    )
 
-  val full: CrossVersion = scalaNativeMapped(CrossVersion.full)
+  def binary(targetBits: Bits): CrossVersion =
+    scalaNativeMapped(CrossVersion.binary, targetBits)
+
+  def full(targetBits: Bits): CrossVersion =
+    scalaNativeMapped(CrossVersion.full, targetBits)
 }

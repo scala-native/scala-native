@@ -26,6 +26,9 @@ sealed trait Config {
   /** The compilation options passed to LLVM. */
   def compileOptions: Seq[String]
 
+  /** The target platform to build against */
+  def targetArchitecture: TargetArchitecture
+
   /** Target triple that defines current OS, ABI and CPU architecture. */
   def targetTriple: String
 
@@ -65,6 +68,8 @@ sealed trait Config {
   /** Create a new config with given compilation options. */
   def withCompileOptions(value: Seq[String]): Config
 
+  def withTargetArchitecture(value: TargetArchitecture): Config
+
   /** Create a new config with given target triple. */
   def withTargetTriple(value: String): Config
 
@@ -98,6 +103,7 @@ object Config {
       workdir = Paths.get(""),
       clang = Paths.get(""),
       clangPP = Paths.get(""),
+      targetArchitecture = TargetArchitecture.x86_64,
       targetTriple = "",
       linkingOptions = Seq.empty,
       compileOptions = Seq.empty,
@@ -113,6 +119,7 @@ object Config {
                                 workdir: Path,
                                 clang: Path,
                                 clangPP: Path,
+                                targetArchitecture: TargetArchitecture,
                                 targetTriple: String,
                                 linkingOptions: Seq[String],
                                 compileOptions: Seq[String],
@@ -138,6 +145,9 @@ object Config {
 
     def withClangPP(value: Path): Config =
       copy(clangPP = value)
+
+    def withTargetArchitecture(value: TargetArchitecture): Config =
+      copy(targetArchitecture = value)
 
     def withTargetTriple(value: String): Config =
       copy(targetTriple = value)

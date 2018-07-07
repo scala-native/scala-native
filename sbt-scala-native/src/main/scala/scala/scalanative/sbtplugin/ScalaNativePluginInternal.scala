@@ -23,6 +23,8 @@ import scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 import scalanative.sbtplugin.SBTCompat.{Process, _}
 import scalanative.sbtplugin.testinterface.ScalaNativeFramework
 
+import scala.scalanative.build.TargetArchitecture._
+
 object ScalaNativePluginInternal {
 
   val nativeWarnOldJVM =
@@ -50,8 +52,10 @@ object ScalaNativePluginInternal {
   )
 
   lazy val scalaNativeBaseSettings: Seq[Setting[_]] = Seq(
-    crossVersion := ScalaNativeCrossVersion.binary,
-    platformDepsCrossVersion := ScalaNativeCrossVersion.binary,
+    crossVersion := ScalaNativeCrossVersion.binary(
+      targetArchitecture.value.bits),
+    platformDepsCrossVersion := ScalaNativeCrossVersion.binary(
+      targetArchitecture.value.bits),
     nativeClang := interceptBuildException(Discover.clang().toFile),
     nativeClang in NativeTest := (nativeClang in Test).value,
     nativeClangPP := interceptBuildException(Discover.clangpp().toFile),
@@ -67,7 +71,29 @@ object ScalaNativePluginInternal {
     nativeLinkStubs in NativeTest := (nativeLinkStubs in Test).value,
     nativeGC := Option(System.getenv.get("SCALANATIVE_GC"))
       .getOrElse(build.GC.default.name),
-    nativeGC in NativeTest := (nativeGC in Test).value
+    nativeGC in NativeTest := (nativeGC in Test).value,
+    targetArchitecture := {
+      val cwd = {
+        val workdir = crossTarget.value / "native"
+        IO.delete(workdir)
+        IO.createDirectory(workdir)
+        workdir
+      }.toPath
+
+      val clang = Discover.clang().toFile.toPath
+
+      Discover.targetTriple(clang, cwd).split("-").head match {
+        case "x86_64" => x86_64
+        case "i386"   => i386
+        case "i686"   => i686
+        case "armv7l" => armv7l
+        case other =>
+          println(
+            s"Unable to detect target architecture from $other, defaulting to x86_64")
+          x86_64
+      }
+    },
+    targetArchitecture in NativeTest := (targetArchitecture in Test).value
   )
 
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
@@ -121,8 +147,10 @@ object ScalaNativePluginInternal {
         .withClang(clang)
         .withClangPP(clangpp)
         .withTargetTriple(nativeTarget.value)
+        .withCompileOptions(nativeCompileOptions.value)
         .withLinkingOptions(nativeLinkingOptions.value)
         .withGC(gc)
+        .withTargetArchitecture(targetArchitecture.value)
         .withMode(mode)
         .withLinkStubs(nativeLinkStubs.value)
     },

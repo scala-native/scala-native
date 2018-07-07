@@ -3,6 +3,7 @@ package java.lang
 import scala.collection.mutable
 import scalanative.native._
 import scalanative.runtime.unwind
+import scalanative.runtime.CrossPlatform
 
 private[lang] object StackTrace {
   private val cache =
@@ -29,8 +30,9 @@ private[lang] object StackTrace {
     val cursor  = stackalloc[scala.Byte](2048)
     val context = stackalloc[scala.Byte](2048)
     val offset  = stackalloc[scala.Byte](8)
-    val ip      = stackalloc[CUnsignedLongLong]
-    var buffer  = mutable.ArrayBuffer.empty[StackTraceElement]
+    val ip =
+      stackalloc[CrossPlatform.Cross3264[CUnsignedLong, CUnsignedLongLong]]
+    var buffer = mutable.ArrayBuffer.empty[StackTraceElement]
 
     unwind.get_context(context)
     unwind.init_local(cursor, context)
@@ -88,8 +90,9 @@ class Throwable(s: String, private var e: Throwable)
     this.stackTrace = stackTrace.clone()
   }
 
-  def printStackTrace(): Unit =
+  def printStackTrace(): Unit = {
     printStackTrace(System.err)
+  }
 
   def printStackTrace(ps: java.io.PrintStream): Unit =
     printStackTrace(ps.println(_: String))

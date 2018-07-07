@@ -10,6 +10,9 @@ import scalanative.build.IO.RichPath
 
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {
+  // settings to make sure that exceptions can be caught and unwinded
+  private val unwindSettings =
+    Seq("-fexceptions", "-fcxx-exceptions", "-funwind-tables")
 
   /**
    * Unpack the `nativelib` to `workdir/lib`.
@@ -51,7 +54,9 @@ private[scalanative] object LLVM {
   def compileNativelib(config: Config,
                        linkerResult: linker.Result,
                        libPath: Path): Path = {
-    val cpaths   = IO.getAll(config.workdir, "glob:**.c").map(_.abs)
+    val cpaths = IO.getAll(config.workdir, "glob:**.c").map(_.abs) ++ IO
+      .getAll(config.workdir, "glob:**.S")
+      .map(_.abs)
     val cpppaths = IO.getAll(config.workdir, "glob:**.cpp").map(_.abs)
     val paths    = cpaths ++ cpppaths
 
@@ -93,7 +98,10 @@ private[scalanative] object LLVM {
         val isCpp    = path.endsWith(".cpp")
         val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
         val flags    = (if (isCpp) Seq("-std=c++11") else Seq()) ++ config.compileOptions
-        val compilec = Seq(compiler) ++ flags ++ Seq("-c", path, "-o", opath)
+        val compilec = Seq(compiler) ++ flags ++ unwindSettings ++ Seq("-c",
+                                                                       path,
+                                                                       "-o",
+                                                                       opath)
 
         config.logger.running(compilec)
         val result = Process(compilec, config.workdir.toFile) ! Logger
@@ -116,12 +124,13 @@ private[scalanative] object LLVM {
       }
     val opts = optimizationOpt +: config.compileOptions
 
-    config.logger.time("Compiling to native code") {
+    config.logger.time(
+      s"Compiling to native code (${config.targetArchitecture})") {
       llPaths.par
         .map { ll =>
           val apppath = ll.abs
           val outpath = apppath + ".o"
-          val compile = Seq(config.clang.abs, "-c", apppath, "-o", outpath) ++ opts
+          val compile = Seq(config.clang.abs, "-c", apppath, "-o", outpath) ++ opts ++ unwindSettings
           config.logger.running(compile)
           Process(compile, config.workdir.toFile) ! Logger.toProcessLogger(
             config.logger)
@@ -155,17 +164,15 @@ private[scalanative] object LLVM {
         case "Linux" => Seq("rt")
         case _       => Seq.empty
       }
-      val libunwind = os match {
-        case "Mac OS X" => Seq.empty
-        case _          => Seq("unwind", "unwind-" + arch)
-      }
-      librt ++ libunwind ++ linkerResult.links
+
+      librt ++ linkerResult.links
         .map(_.name) ++ config.gc.links
     }
     val linkopts = links.map("-l" + _) ++ config.linkingOptions ++ Seq(
+      "-ldl",
       "-lpthread")
     val targetopt = Seq("-target", config.targetTriple)
-    val flags     = Seq("-o", outpath.abs) ++ linkopts ++ targetopt
+    val flags     = Seq("-rdynamic", "-o", outpath.abs) ++ unwindSettings ++ linkopts ++ targetopt
     val opaths    = IO.getAll(nativelib, "glob:**.o").map(_.abs)
     val paths     = llPaths.map(_.abs) ++ opaths
     val compile   = config.clangPP.abs +: (flags ++ paths)

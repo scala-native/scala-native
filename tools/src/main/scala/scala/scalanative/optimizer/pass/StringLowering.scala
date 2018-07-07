@@ -9,7 +9,7 @@ import util.ScopedVar, ScopedVar.scoped
 import nir._
 
 /** Maps string values to intrinsified global constants. */
-class StringLowering(implicit top: Top) extends Pass {
+class StringLowering(config: build.Config)(implicit top: Top) extends Pass {
   import StringLowering._
 
   private val strings = mutable.UnrolledBuffer.empty[String]
@@ -32,10 +32,16 @@ class StringLowering(implicit top: Top) extends Pass {
       val charsConst = Val.Const(
         Val.Struct(
           Global.None,
-          Seq(CharArrayCls.rtti.const,
-              charsLength,
-              Val.Int(0), // padding to get next field aligned properly
-              Val.Array(Type.Short, chars.map(c => Val.Short(c.toShort))))
+          if (config.targetArchitecture.is32) {
+            Seq(CharArrayCls.rtti.const,
+                charsLength,
+                Val.Array(Type.Short, chars.map(c => Val.Short(c.toShort))))
+          } else {
+            Seq(CharArrayCls.rtti.const,
+                charsLength,
+                Val.Int(0), // padding to get next field aligned properly
+                Val.Array(Type.Short, chars.map(c => Val.Short(c.toShort))))
+          }
         ))
 
       val fieldValues = stringFieldNames.map {
@@ -85,5 +91,5 @@ object StringLowering extends PassCompanion {
                              CharArrayName)
 
   override def apply(config: build.Config, top: Top) =
-    new StringLowering()(top)
+    new StringLowering(config)(top)
 }

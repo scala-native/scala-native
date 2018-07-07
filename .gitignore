@@ -19,3 +19,9 @@ bin/
 .settings/
 .externalToolBuilders/
 .cache*
+
+# from running the Docker image
+.ivy2/
+.sbt/
+.bash_history
+.oracle_jre_usage/

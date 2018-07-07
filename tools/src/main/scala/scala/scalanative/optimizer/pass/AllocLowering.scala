@@ -14,7 +14,7 @@ import scala.scalanative.optimizer.analysis.MemoryLayout
 /** Hoists all stack allocations to the entry basic block and
  *  maps class allocations to calls to the gc allocator.
  */
-class AllocLowering(implicit top: Top) extends Pass {
+class AllocLowering(config: build.Config)(implicit top: Top) extends Pass {
   import AllocLowering._
 
   override def onInsts(insts: Seq[Inst]) = {
@@ -23,14 +23,15 @@ class AllocLowering(implicit top: Top) extends Pass {
 
     insts.foreach {
       case Let(n, Op.Classalloc(ClassRef(cls))) =>
-        val size = MemoryLayout.sizeOf(cls.layout.struct)
+        val size =
+          MemoryLayout.sizeOf(cls.layout.struct, config.targetArchitecture)
         val allocMethod =
           if (size < LARGE_OBJECT_MIN_SIZE) alloc else largeAlloc
 
         let(n,
             Op.Call(allocSig,
                     allocMethod,
-                    Seq(cls.rtti.const, Val.Long(size)),
+                    Seq(cls.rtti.const, Val.Int(size.toInt)),
                     Next.None))
 
       case inst =>
@@ -45,7 +46,7 @@ object AllocLowering extends PassCompanion {
 
   val LARGE_OBJECT_MIN_SIZE = 8192
 
-  val allocSig = Type.Function(Seq(Type.Ptr, Type.Long), Type.Ptr)
+  val allocSig = Type.Function(Seq(Type.Ptr, Type.Int), Type.Ptr)
 
   val allocSmallName = Global.Top("scalanative_alloc_small")
   val alloc          = Val.Global(allocSmallName, allocSig)
@@ -58,5 +59,5 @@ object AllocLowering extends PassCompanion {
         Defn.Declare(Attrs.None, largeAllocName, allocSig))
 
   override def apply(config: build.Config, top: Top) =
-    new AllocLowering()(top)
+    new AllocLowering(config)(top)
 }

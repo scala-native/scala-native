@@ -103,12 +103,16 @@ private[net] class PlainSocketImpl extends SocketImpl {
     listening = true
   }
 
+  private def zeroAndSet(fdset: Ptr[fd_set]): Unit = {
+    !fdset._1 = stackalloc[CLongInt](FD_SETSIZE / (8 * sizeof[CLongInt]))
+    FD_ZERO(fdset)
+    FD_SET(fd.fd, fdset)
+  }
+
   override def accept(s: SocketImpl): Unit = {
     if (timeout > 0) {
       val fdset = stackalloc[fd_set]
-      !fdset._1 = stackalloc[CLongInt](FD_SETSIZE / (8 * sizeof[CLongInt]))
-      FD_ZERO(fdset)
-      FD_SET(fd.fd, fdset)
+      zeroAndSet(fdset)
 
       val time = stackalloc[timeval]
       time.tv_sec = timeout / 1000
@@ -204,9 +208,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
       fcntl(fd.fd, F_SETFL, opts)
 
       val fdset = stackalloc[fd_set]
-      !fdset._1 = stackalloc[CLongInt](FD_SETSIZE / (8 * sizeof[CLongInt]))
-      FD_ZERO(fdset)
-      FD_SET(fd.fd, fdset)
+      zeroAndSet(fdset)
 
       val time = stackalloc[timeval]
       time.tv_sec = timeout / 1000
