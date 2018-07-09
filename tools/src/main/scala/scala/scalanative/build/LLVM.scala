@@ -159,16 +159,15 @@ private[scalanative] object LLVM {
         case "Mac OS X" => Seq.empty
         case _          => Seq("unwind", "unwind-" + arch)
       }
-      librt ++ libunwind ++ linkerResult.links
-        .map(_.name) ++ config.gc.links
+      linkerResult.links.map(_.name) ++ librt ++ libunwind ++ config.gc.links
     }
-    val linkopts = links.map("-l" + _) ++ config.linkingOptions ++ Seq(
+    val linkopts = config.linkingOptions ++ links.map("-l" + _) ++ Seq(
       "-lpthread")
     val targetopt = Seq("-target", config.targetTriple)
-    val flags     = Seq("-o", outpath.abs) ++ linkopts ++ targetopt
+    val flags     = Seq("-o", outpath.abs) ++ targetopt
     val opaths    = IO.getAll(nativelib, "glob:**.o").map(_.abs)
     val paths     = llPaths.map(_.abs) ++ opaths
-    val compile   = config.clangPP.abs +: (flags ++ paths)
+    val compile   = config.clangPP.abs +: (flags ++ paths ++ linkopts)
 
     config.logger.time(s"Linking native code (${config.gc.name} gc)") {
       config.logger.running(compile)
