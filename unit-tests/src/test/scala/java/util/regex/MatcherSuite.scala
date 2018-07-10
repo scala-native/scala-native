@@ -289,6 +289,12 @@ object MatcherSuite extends tests.Suite {
     assertEquals(m.end, 0)
   }
 
+  test("empty strings for optional match") {
+    val OptionalA = "(a?)".r
+    "a" match { case OptionalA("a") => assert(true) }
+    "" match { case OptionalA("")   => assert(true) }
+  }
+
   private def matcher(regex: String, text: String): Matcher =
     Pattern.compile(regex).matcher(text)
 }
