@@ -9,7 +9,7 @@ object RuntimeSuite extends tests.Suite {
     val proc = Runtime.getRuntime.exec(Array("ls", resourceDir))
     val out  = readInputStream(proc.getInputStream)
     assert(proc.waitFor(5, TimeUnit.SECONDS))
-    assert(out.split("\n").toSet == Set("echo.sh", "err.sh", "ls"))
+    assert(out.split("\n").toSet == Set("echo.sh", "err.sh", "hello.sh", "ls"))
   }
   test("exec envp") {
     val envp = Array(s"PATH=$resourceDir")
@@ -22,6 +22,6 @@ object RuntimeSuite extends tests.Suite {
     val proc = Runtime.getRuntime.exec(Array("ls"), null, new File(resourceDir))
     val out  = readInputStream(proc.getInputStream)
     assert(proc.waitFor(5, TimeUnit.SECONDS))
-    assert(out.split("\n").toSet == Set("echo.sh", "err.sh", "ls"))
+    assert(out.split("\n").toSet == Set("echo.sh", "err.sh", "hello.sh", "ls"))
   }
 }
