@@ -60,10 +60,14 @@ class VirtualTable(cls: Class,
     // We short-circuit scala_== and scala_## to immeditately point to the
     // equals and hashCode implementation for the reference types to avoid
     // double virtual dispatch overhead.
-    if (javaEqualsOverride.nonEmpty && scalaEqualsOverride.isEmpty) {
+    if (javaEqualsOverride.nonEmpty
+        && scalaEqualsOverride.isEmpty
+        && scalaEquals.isVirtual) {
       values(index(scalaEquals)) = javaEqualsOverride.get
     }
-    if (javaHashCodeOverride.nonEmpty && scalaHashCodeOverride.isEmpty) {
+    if (javaHashCodeOverride.nonEmpty
+        && scalaHashCodeOverride.isEmpty
+        && scalaHashCode.isVirtual) {
       values(index(scalaHashCode)) = javaHashCodeOverride.get
     }
   }
