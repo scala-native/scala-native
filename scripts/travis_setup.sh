@@ -18,6 +18,8 @@ if [ "$(uname)" == "Darwin" ]; then
 
 else
 
+    sudo apt-get update
+
     # Remove pre-bundled libunwind
     sudo find /usr -name "*libunwind*" -delete
 

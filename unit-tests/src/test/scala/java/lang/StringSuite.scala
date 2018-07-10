@@ -98,6 +98,12 @@ object StringSuite extends tests.Suite {
     assert(new String(b) equals "test")
   }
 
+  test("getBytes unsupported encoding") {
+    assertThrows[java.io.UnsupportedEncodingException] {
+      "This is a test".getBytes("unsupported encoding")
+    }
+  }
+
   test("literals have consistent hash code implementation") {
     assert(
       "foobar".hashCode == new String(Array('f', 'o', 'o', 'b', 'a', 'r')).hashCode)

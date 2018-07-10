@@ -21,7 +21,7 @@ import scalanative.sbtplugin.Utilities._
 import scalanative.sbtplugin.TestUtilities._
 import scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 import scalanative.sbtplugin.SBTCompat.{Process, _}
-import scalanative.sbtplugin.testinterface.ScalaNativeFramework
+import scalanative.testinterface.ScalaNativeFramework
 
 object ScalaNativePluginInternal {
 
@@ -186,7 +186,12 @@ object ScalaNativePluginInternal {
         val envVars    = (Keys.envVars in (Test, test)).value
         (frameworks.zipWithIndex).map {
           case ((tf, f), id) =>
-            (tf, new ScalaNativeFramework(f, id, logger, testBinary, envVars))
+            (tf,
+             new ScalaNativeFramework(f,
+                                      id,
+                                      logger.toLogger,
+                                      testBinary,
+                                      envVars))
         }
       },
       definedTests := (definedTests in Test).value
