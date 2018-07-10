@@ -11,24 +11,20 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
     extends Path {
   import UnixPath._
 
-  lazy val path: String = removeRedundantSlashes(rawPath)
+  private lazy val path: String = removeRedundantSlashes(rawPath)
 
-  override def getFileSystem(): FileSystem =
-    fs
+  private lazy val _isAbsolute = rawPath.startsWith("/")
 
-  override def isAbsolute(): Boolean =
-    rawPath.startsWith("/")
-
-  override def getRoot(): Path =
+  private lazy val root =
     if (isAbsolute) new UnixPath(fs, "/")
     else null
 
-  override def getFileName(): Path =
+  private lazy val fileName =
     if (path == "/") null
     else if (path.isEmpty) this
     else new UnixPath(fs, path.split("/").last)
 
-  override def getParent(): Path = {
+  private lazy val parent = {
     val nameCount = getNameCount()
     if (nameCount == 0 || (nameCount == 1 && !isAbsolute)) null
     else if (isAbsolute)
@@ -36,9 +32,40 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
     else subpath(0, nameCount - 1)
   }
 
-  override def getNameCount(): Int =
+  private lazy val nameCount =
     if (rawPath.isEmpty) 1
     else path.split("/").filter(_.nonEmpty).length
+
+  private lazy val splitCached = path.split("/").filter(_.nonEmpty)
+
+  private lazy val normalizedPath = new UnixPath(fs, normalized(path))
+
+  private lazy val absPath = new UnixPath(fs, toFile().getAbsolutePath())
+
+  private lazy val file =
+    if (isAbsolute) new File(rawPath)
+    else new File(s"${fs.defaultDirectory}/$rawPath")
+
+  private lazy val uri =
+    new URI(scheme = "file",
+            userInfo = null,
+            host = null,
+            port = -1,
+            path = toFile().getAbsolutePath(),
+            query = null,
+            fragment = null)
+
+  override def getFileSystem(): FileSystem = fs
+
+  override def isAbsolute(): Boolean = _isAbsolute
+
+  override def getRoot(): Path = root
+
+  override def getFileName(): Path = fileName
+
+  override def getParent(): Path = parent
+
+  override def getNameCount(): Int = nameCount
 
   override def getName(index: Int): Path = {
     val nameCount = getNameCount
@@ -46,7 +73,7 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
       throw new IllegalArgumentException
     else {
       if (rawPath.isEmpty) this
-      else new UnixPath(fs, path.split("/").filter(_.nonEmpty)(index))
+      else new UnixPath(fs, splitCached(index))
     }
   }
 
@@ -90,8 +117,7 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
   override def endsWith(other: String): Boolean =
     endsWith(new UnixPath(fs, other))
 
-  override def normalize(): Path =
-    new UnixPath(fs, normalized(path))
+  override def normalize(): Path = normalizedPath
 
   override def resolve(other: Path): Path =
     if (other.isAbsolute || path.isEmpty) other
@@ -126,26 +152,16 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
     }
   }
 
-  override def toAbsolutePath(): Path =
-    new UnixPath(fs, toFile().getAbsolutePath())
+  override def toAbsolutePath(): Path = absPath
 
   override def toRealPath(options: Array[LinkOption]): Path = {
     if (options.contains(LinkOption.NOFOLLOW_LINKS)) toAbsolutePath()
     else new UnixPath(fs, toFile().getCanonicalPath())
   }
 
-  override def toFile(): File =
-    if (isAbsolute) new File(rawPath)
-    else new File(s"${fs.defaultDirectory}/$rawPath")
+  override def toFile(): File = file
 
-  override def toUri(): URI =
-    new URI(scheme = "file",
-            userInfo = null,
-            host = null,
-            port = -1,
-            path = toFile().getAbsolutePath(),
-            query = null,
-            fragment = null)
+  override def toUri(): URI = uri
 
   override def iterator(): Iterator[Path] =
     new Iterator[Path] {

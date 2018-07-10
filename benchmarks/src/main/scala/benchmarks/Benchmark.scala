@@ -23,7 +23,10 @@ case object ShortRunningTime    extends BenchmarkRunningTime(30000)
 case object UnknownRunningTime  extends BenchmarkRunningTime(1)
 
 abstract class Benchmark[T]() {
+  def setup(): Unit = ()
+
   def run(): T
+
   def check(t: T): Boolean
 
   val runningTime: BenchmarkRunningTime
@@ -38,6 +41,8 @@ abstract class Benchmark[T]() {
       var success: Boolean   = true
       var i: Int             = 0
       val times: Array[Long] = new Array[Long](iterations)
+
+      setup()
 
       while (i < iterations) {
         val start  = System.nanoTime()
