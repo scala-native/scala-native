@@ -2,19 +2,19 @@ package scala.scalanative
 package posix
 
 import scala.scalanative.native._
-import sys.types.{pthread_attr_t}
 
 @extern
 object aio {
+  import sys.types
 
-  // types as described in <sys/types.h> - imported above for use in this and ops
-  // pthread_attr_t
+  // types as described in <sys/types.h>
+  type pthread_attr_t = types.pthread_attr_t
   type off_t   = CLongLong
   type size_t  = CSize
   type ssize_t = CSSize
 
   // struct timespec structure as described in <time.h>
-  import time.timespec
+  type timespec = time.timespec
 
   // sigevent structure and sigval union as described in <signal.h>
   type sigevent = CStruct5[CInt,
@@ -74,9 +74,9 @@ object aio {
                  sigp: Ptr[sigevent]): CInt = extern
 }
 
-import aio._
 
 object aioOps {
+  import aio._
 
   implicit class sigevent_ops(val p: Ptr[sigevent]) extends AnyVal {
     def sigev_notify: CInt                                 = !p._1
