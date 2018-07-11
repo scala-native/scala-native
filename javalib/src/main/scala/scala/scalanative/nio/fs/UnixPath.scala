@@ -2,22 +2,48 @@ package scala.scalanative.nio.fs
 
 import java.io.File
 import java.net.URI
-import java.nio.file.{FileSystem, LinkOption, Path, WatchEvent, WatchKey}
+import java.nio.file.{
+  FileSystem,
+  Files,
+  LinkOption,
+  NoSuchFileException,
+  Path,
+  WatchEvent,
+  WatchKey
+}
 import java.util.Iterator
 
 import scala.collection.mutable.UnrolledBuffer
 
-class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
-    extends Path {
+class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
   import UnixPath._
 
   private lazy val path: String = removeRedundantSlashes(rawPath)
+  private lazy val offsets =
+    if (path.isEmpty) Array(-1, 0)
+    else if (path == "/") Array(0)
+    else {
+      var i     = 0
+      var count = 1
+      do {
+        count += 1
+        i = path.indexOf('/', i + 1)
+      } while (i != -1)
+      val result = new Array[Int](count)
+      i = if (path.charAt(0) == '/') 0 else -1
+      var j = 0
+      do {
+        result(j) = i
+        i = path.indexOf('/', i + 1)
+        j += 1
+      } while (i != -1)
+      result(count - 1) = path.length
+      result
+    }
 
   private lazy val _isAbsolute = rawPath.startsWith("/")
 
-  private lazy val root =
-    if (isAbsolute) new UnixPath(fs, "/")
-    else null
+  private lazy val root = if (isAbsolute) new UnixPath(fs, "/") else null
 
   private lazy val fileName =
     if (path == "/") null
@@ -36,15 +62,15 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
     if (rawPath.isEmpty) 1
     else path.split("/").filter(_.nonEmpty).length
 
-  private lazy val splitCached = path.split("/").filter(_.nonEmpty)
+  private lazy val normalizedPath = new UnixPath(fs, normalized(this))
 
-  private lazy val normalizedPath = new UnixPath(fs, normalized(path))
-
-  private lazy val absPath = new UnixPath(fs, toFile().getAbsolutePath())
+  private lazy val absPath =
+    if (path.startsWith("/")) this
+    else new UnixPath(fs, toFile().getAbsolutePath())
 
   private lazy val file =
-    if (isAbsolute) new File(rawPath)
-    else new File(s"${fs.defaultDirectory}/$rawPath")
+    if (isAbsolute) new File(path)
+    else new File(s"${fs.defaultDirectory}/$path")
 
   private lazy val uri =
     new URI(scheme = "file",
@@ -65,16 +91,21 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
 
   override def getParent(): Path = parent
 
-  override def getNameCount(): Int = nameCount
+  override def getNameCount(): Int = offsets.size - 1
 
-  override def getName(index: Int): Path = {
+  @inline private def getNameString(index: Int): String = {
     val nameCount = getNameCount
     if (index < 0 || nameCount == 0 || index >= nameCount)
       throw new IllegalArgumentException
     else {
-      if (rawPath.isEmpty) this
-      else new UnixPath(fs, splitCached(index))
+      if (path.isEmpty) null
+      else path.substring(offsets(index) + 1, offsets(index + 1))
     }
+  }
+
+  override def getName(index: Int): Path = getNameString(index) match {
+    case null => this
+    case n    => new UnixPath(fs, n)
   }
 
   override def subpath(beginIndex: Int, endIndex: Int): Path =
@@ -122,7 +153,7 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
   override def resolve(other: Path): Path =
     if (other.isAbsolute || path.isEmpty) other
     else if (other.toString.isEmpty) this
-    else new UnixPath(fs, rawPath + "/" + other.toString())
+    else new UnixPath(fs, path + "/" + other.toString())
 
   override def resolve(other: String): Path =
     resolve(new UnixPath(fs, other))
@@ -156,7 +187,12 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
 
   override def toRealPath(options: Array[LinkOption]): Path = {
     if (options.contains(LinkOption.NOFOLLOW_LINKS)) toAbsolutePath()
-    else new UnixPath(fs, toFile().getCanonicalPath())
+    else {
+      new UnixPath(fs, toFile().getCanonicalPath()) match {
+        case p if Files.exists(p, Array.empty) => p
+        case p                                 => throw new NoSuchFileException(p.path)
+      }
+    }
   }
 
   override def toFile(): File = file
@@ -188,24 +224,25 @@ class UnixPath(private val fs: UnixFileSystem, private val rawPath: String)
   override def equals(obj: Any): Boolean =
     obj match {
       case other: UnixPath =>
-        this.fs == other.fs && this.rawPath == other.rawPath
+        this.fs == other.fs && this.path == other.path
       case _ => false
     }
 
   override def hashCode(): Int =
-    rawPath.##
+    path.##
 
   override def toString(): String =
-    rawPath
+    path
 
 }
 
 private object UnixPath {
-  def normalized(path: String): String = {
-    val absolute = path.startsWith("/")
+  def normalized(path: UnixPath): String = {
+    if (path.path.length < 2) return path.path
+    val absolute = path.path.startsWith("/")
     val components =
-      path
-        .split("/")
+      (0 until path.offsets.size - 1)
+        .map(path.getNameString)
         .foldLeft(List.empty[String]) {
           case (acc, "..") =>
             if (acc.isEmpty && absolute) Nil
@@ -223,21 +260,27 @@ private object UnixPath {
   def removeRedundantSlashes(str: String): String =
     if (str.length < 2) str
     else {
-      val buffer   = new StringBuffer(str)
-      var previous = buffer.charAt(0)
-      var i        = 1
-      while (i < buffer.length) {
-        val current = buffer.charAt(i)
-        if (previous == '/' && current == '/') {
-          buffer.deleteCharAt(i)
-        } else {
-          previous = current
-          i += 1
-        }
+      str.indexOf("//") match {
+        case -1 =>
+          if (str.endsWith("/")) str.substring(0, str.length - 1) else str //length > 1
+        case idx =>
+          val buffer: StringBuffer = new StringBuffer(str)
+          var previous             = '/'
+          var i                    = idx + 1
+          while (i < buffer.length) {
+            val current = buffer.charAt(i)
+            if (previous == '/' && current == '/') {
+              buffer.deleteCharAt(i)
+            } else {
+              previous = current
+              i += 1
+            }
+          }
+          val result = buffer.toString
+          if (result.length > 1 && result.endsWith("/"))
+            result.substring(0, result.length - 1)
+          else result
       }
-      val result = buffer.toString
-      if (result.length > 1 && result.endsWith("/")) result.init
-      else result
     }
 
 }
