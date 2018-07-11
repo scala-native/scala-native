@@ -22,6 +22,7 @@ object aio {
                            sigval,
                            CFunctionPtr1[sigval, Unit],
                            Ptr[pthread_attr_t]]
+  // union of int and void *ptr
   type sigval = CArray[Byte, Nat._8]
 
   // constants
@@ -59,6 +60,7 @@ object aio {
 
   def aio_cancel(fd: CInt, aiocbp: Ptr[aiocb]): CInt = extern
   def aio_error(aiocbp: Ptr[aiocb]): CInt            = extern
+  // File Synchronization and Synchronized Input and Output are optional and extensions to the ISO C standard.
   def aio_fsync(op: CInt, aiocbp: Ptr[aiocb]): CInt  = extern
   def aio_read(aiocbp: Ptr[aiocb]): CInt             = extern
   def aio_return(aiocbp: Ptr[aiocb]): ssize_t        = extern
