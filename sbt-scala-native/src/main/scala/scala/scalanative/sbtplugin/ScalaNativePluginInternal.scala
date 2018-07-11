@@ -46,8 +46,7 @@ object ScalaNativePluginInternal {
       "org.scala-native" %%% "test-interface" % nativeVersion % Test
     ),
     addCompilerPlugin(
-      "org.scala-native" % "nscplugin" % nativeVersion cross CrossVersion.full
-    )
+      "org.scala-native" % "nscplugin" % nativeVersion cross CrossVersion.full)
   )
 
   lazy val scalaNativeBaseSettings: Seq[Setting[_]] = Seq(
@@ -188,16 +187,12 @@ object ScalaNativePluginInternal {
         val envVars    = (Keys.envVars in (Test, test)).value
         (frameworks.zipWithIndex).map {
           case ((tf, f), id) =>
-            (
-              tf,
-              new ScalaNativeFramework(
-                f,
-                id,
-                logger.toLogger,
-                testBinary,
-                envVars
-              )
-            )
+            (tf,
+             new ScalaNativeFramework(f,
+                                      id,
+                                      logger.toLogger,
+                                      testBinary,
+                                      envVars))
         }
       },
       definedTests := (definedTests in Test).value
