@@ -33,10 +33,12 @@ import java.util.{
 import java.util.stream.{Stream, WrappedScalaStream}
 
 import scalanative.native._
-import scalanative.posix.{limits, unistd}
+import scalanative.posix.{dirent, fcntl, limits, unistd}, dirent._
 import scalanative.posix.sys.stat
+import scalanative.nio.fs.{FileHelpers, UnixException}
 
 import scala.collection.immutable.{Map => SMap, Stream => SStream, Set => SSet}
+import StandardCopyOption._
 
 object Files {
 
@@ -46,7 +48,7 @@ object Files {
   def copy(in: InputStream, target: Path, options: Array[CopyOption]): Long = {
     val replaceExisting =
       if (options.isEmpty) false
-      else if (options.length == 1 && options(0) == StandardCopyOption.REPLACE_EXISTING)
+      else if (options.length == 1 && options(0) == REPLACE_EXISTING)
         true
       else throw new UnsupportedOperationException()
 
@@ -72,9 +74,32 @@ object Files {
   }
 
   def copy(source: Path, target: Path, options: Array[CopyOption]): Path = {
-    val in = newInputStream(source, Array.empty)
-    try copy(in, target, options)
-    finally in.close()
+    val linkOpts = Array(LinkOption.NOFOLLOW_LINKS)
+    val attrs =
+      Files.readAttributes(source, classOf[PosixFileAttributes], linkOpts)
+    if (attrs.isSymbolicLink)
+      throw new IOException(
+        s"Unsupported operation: copy symbolic link $source to $target")
+    val targetExists = exists(target, linkOpts)
+    if (targetExists && !options.contains(REPLACE_EXISTING))
+      throw new FileAlreadyExistsException(target.toString)
+    if (isDirectory(source, Array.empty)) {
+      createDirectory(target, Array.empty)
+    } else {
+      val in = newInputStream(source, Array.empty)
+      try copy(in, target, options.filter(_ == REPLACE_EXISTING))
+      finally in.close()
+    }
+    if (options.contains(COPY_ATTRIBUTES)) {
+      val newAttrView =
+        getFileAttributeView(target, classOf[PosixFileAttributeView], linkOpts)
+      newAttrView.setTimes(attrs.lastModifiedTime,
+                           attrs.lastAccessTime,
+                           attrs.creationTime)
+      newAttrView.setGroup(attrs.group)
+      newAttrView.setOwner(attrs.owner)
+      newAttrView.setPermissions(attrs.permissions)
+    }
     target
   }
 
@@ -102,9 +127,14 @@ object Files {
     }
 
   def createDirectory(dir: Path, attrs: Array[FileAttribute[_]]): Path =
-    if (exists(dir, Array.empty))
-      throw new FileAlreadyExistsException(dir.toString)
-    else if (dir.toFile().mkdir()) {
+    if (exists(dir, Array.empty)) {
+      if (!isDirectory(dir, Array.empty)) {
+        throw new FileAlreadyExistsException(dir.toString)
+      } else if (list(dir).iterator.hasNext) {
+        throw new DirectoryNotEmptyException(dir.toString)
+      }
+      dir
+    } else if (dir.toFile().mkdir()) {
       setAttributes(dir, attrs)
       dir
     } else {
@@ -114,7 +144,7 @@ object Files {
   def createFile(path: Path, attrs: Array[FileAttribute[_]]): Path =
     if (exists(path, Array.empty))
       throw new FileAlreadyExistsException(path.toString)
-    else if (path.toFile().createNewFile()) {
+    else if (FileHelpers.createNewFile(path.toString)) {
       setAttributes(path, attrs)
       path
     } else {
@@ -151,7 +181,8 @@ object Files {
   private def createTempDirectory(dir: File,
                                   prefix: String,
                                   attrs: Array[FileAttribute[_]]): Path = {
-    val temp = File.createTempFile(prefix, "", dir)
+    val p    = if (prefix == null) "" else prefix
+    val temp = FileHelpers.createTempFile(p, "", dir, minLength = false)
     if (temp.delete() && temp.mkdir()) {
       val tempPath = temp.toPath()
       setAttributes(tempPath, attrs)
@@ -174,7 +205,8 @@ object Files {
                              prefix: String,
                              suffix: String,
                              attrs: Array[FileAttribute[_]]): Path = {
-    val temp     = File.createTempFile(prefix, suffix, dir)
+    val p        = if (prefix == null) "" else prefix
+    val temp     = FileHelpers.createTempFile(p, suffix, dir, minLength = false)
     val tempPath = temp.toPath()
     setAttributes(tempPath, attrs)
     tempPath
@@ -219,7 +251,7 @@ object Files {
                                             Array.empty).readAttributes()
       matcher.test(p, attributes)
     }
-    new WrappedScalaStream(stream, None)
+    new WrappedScalaStream(stream.toStream, None)
   }
 
   def getAttribute(path: Path,
@@ -315,19 +347,25 @@ object Files {
   def lines(path: Path, cs: Charset): Stream[String] =
     newBufferedReader(path, cs).lines(true)
 
-  private def _list(dir: Path): SStream[Path] =
-    dir.toFile().list().toStream.map(dir.resolve)
-
   def list(dir: Path): Stream[Path] =
-    if (!isDirectory(dir, Array.empty)) {
-      throw new NotDirectoryException(dir.toString)
-    } else {
-      new WrappedScalaStream(_list(dir), None)
-    }
+    new WrappedScalaStream(
+      FileHelpers.list(dir.toString, (n, _) => dir.resolve(n)).toStream,
+      None)
 
   def move(source: Path, target: Path, options: Array[CopyOption]): Path = {
-    copy(source, target, options)
-    delete(source)
+    if (!exists(source.toAbsolutePath, Array.empty)) {
+      throw new NoSuchFileException(source.toString)
+    } else if (!exists(target.toAbsolutePath, Array.empty) || options.contains(
+                 REPLACE_EXISTING)) {
+      Zone { implicit z =>
+        if (stdio.rename(toCString(source.toAbsolutePath().toString),
+                         toCString(target.toAbsolutePath().toString)) != 0) {
+          throw UnixException(target.toString, errno.errno)
+        }
+      }
+    } else {
+      throw new FileAlreadyExistsException(target.toString)
+    }
     target
   }
 
@@ -391,17 +429,24 @@ object Files {
   def notExists(path: Path, options: Array[LinkOption]): Boolean =
     !exists(path, options)
 
-  def readAllBytes(path: Path): Array[Byte] = {
-    val bytes  = new Array[Byte](size(path).toInt)
-    val buffer = new Array[Byte](4096)
-    val input  = newInputStream(path, Array.empty)
-    var offset = 0
-    var read   = 0
-    while ({ read = input.read(buffer); read != -1 }) {
-      System.arraycopy(buffer, 0, bytes, offset, read)
-      offset += read
+  def readAllBytes(path: Path): Array[Byte] = Zone { implicit z =>
+    val len   = size(path).toInt
+    val bytes = scala.scalanative.runtime.ByteArray.alloc(len)
+    val fd    = fcntl.open(toCString(path.toString), fcntl.O_RDONLY)
+    try {
+      var offset = 0
+      var read   = 0
+      while ({
+        read = unistd.read(fd, bytes.at(offset), len - offset);
+        read != -1 && (offset + read) < len
+      }) {
+        offset += read
+      }
+      if (read == -1) throw UnixException(path.toString, errno.errno)
+      bytes.asInstanceOf[Array[Byte]]
+    } finally {
+      fcntl.close(fd)
     }
-    bytes
   }
 
   def readAllLines(path: Path): List[String] =
@@ -460,7 +505,7 @@ object Files {
       Zone { implicit z =>
         val buf: CString = alloc[Byte](limits.PATH_MAX)
         if (unistd.readlink(toCString(link.toString), buf, limits.PATH_MAX) == -1) {
-          throw new IOException()
+          throw UnixException(link.toString, errno.errno)
         } else {
           Paths.get(fromCString(buf), Array.empty)
         }
@@ -521,28 +566,30 @@ object Files {
                    maxDepth: Int,
                    currentDepth: Int,
                    options: Array[FileVisitOption],
-                   visited: SSet[Path]): SStream[Path] =
-    if (!isDirectory(start, Array.empty))
-      throw new NotDirectoryException(start.toString)
-    else {
-      start #:: _list(start).flatMap {
-        case p
-            if isSymbolicLink(p) && options.contains(
+                   visited: SSet[Path]): SStream[Path] = {
+    start #:: FileHelpers
+      .list(start.toString, (n, t) => (n, t))
+      .toStream
+      .flatMap {
+        case (name, tpe)
+            if tpe == DT_LNK && options.contains(
               FileVisitOption.FOLLOW_LINKS) =>
-          val newVisited = visited + p
-          val target     = readSymbolicLink(p)
+          val path       = start.resolve(name)
+          val newVisited = visited + path
+          val target     = readSymbolicLink(path)
           if (newVisited.contains(target))
-            throw new FileSystemLoopException(p.toString)
-          else walk(p, maxDepth, currentDepth + 1, options, newVisited)
-        case p
-            if isDirectory(p, Array(LinkOption.NOFOLLOW_LINKS)) && currentDepth < maxDepth =>
+            throw new FileSystemLoopException(path.toString)
+          else walk(path, maxDepth, currentDepth + 1, options, newVisited)
+        case (name, tpe) if tpe == DT_DIR && currentDepth < maxDepth =>
+          val path = start.resolve(name)
           val newVisited =
-            if (options.contains(FileVisitOption.FOLLOW_LINKS)) visited + p
+            if (options.contains(FileVisitOption.FOLLOW_LINKS)) visited + path
             else visited
-          walk(p, maxDepth, currentDepth + 1, options, newVisited)
-        case p => p #:: SStream.Empty
+          walk(path, maxDepth, currentDepth + 1, options, newVisited)
+        case (name, _) =>
+          start.resolve(name) #:: SStream.Empty
       }
-    }
+  }
 
   def walkFileTree(start: Path, visitor: FileVisitor[_ >: Path]): Path =
     walkFileTree(start,

@@ -140,6 +140,13 @@ object PathSuite extends tests.Suite {
     assert(Paths.get("/foo").normalize.toString == "/foo")
     assert(Paths.get("/foo/bar").normalize.toString == "/foo/bar")
     assert(Paths.get("/foo//bar").normalize.toString == "/foo/bar")
+    assert(Paths.get("/foo/bar/").normalize.toString == "/foo/bar")
+    assert(Paths.get("./foo/bar/").normalize.toString == "foo/bar")
+    assert(Paths.get("../foo/bar/").normalize.toString == "../foo/bar")
+    assert(Paths.get("/foo/bar/.").normalize.toString == "/foo/bar")
+    assert(Paths.get("foo/bar/.").normalize.toString == "foo/bar")
+    assert(Paths.get("../foo/bar/.").normalize.toString == "../foo/bar")
+    assert(Paths.get("../foo//bar/.").normalize.toString == "../foo/bar")
   }
 
   test("Path.startsWith") {
@@ -281,5 +288,11 @@ object PathSuite extends tests.Suite {
         .get("/foo/../bar")
         .resolveSibling(Paths.get("/bar"))
         .toString == "/bar")
+  }
+
+  test("Path.equals") {
+    assert(Paths.get("") == Paths.get(""))
+    assert(Paths.get("////") == Paths.get("/"))
+    assert(Paths.get("/.") != Paths.get("/"))
   }
 }

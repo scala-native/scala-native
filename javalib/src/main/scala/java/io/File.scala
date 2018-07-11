@@ -2,14 +2,12 @@ package java.io
 
 import java.nio.file.{FileSystems, Path}
 
-import scala.collection.mutable.UnrolledBuffer
-
 import scala.annotation.tailrec
-import scalanative.posix.{dirent, fcntl, limits, unistd, utime}
+import scalanative.posix.{fcntl, limits, unistd, utime}
 import scalanative.posix.sys.stat
 import scalanative.native._, stdlib._, stdio._, string._
+import scalanative.nio.fs.FileHelpers
 import scalanative.runtime.Platform
-import dirent._
 import unistd._
 
 class File(_path: String) extends Serializable with Comparable[File] {
@@ -267,7 +265,8 @@ class File(_path: String) extends Serializable with Comparable[File] {
       null
     } else
       Zone { implicit z =>
-        val elements = listImpl(toCString(properPath))
+        val elements =
+          FileHelpers.list(properPath, (n, _) => n, allowEmpty = true)
         if (elements == null)
           Array.empty[String]
         else
@@ -287,28 +286,6 @@ class File(_path: String) extends Serializable with Comparable[File] {
           filter.accept(new File(dir, name))
       }
     listFiles(filenameFilter)
-  }
-
-  private def listImpl(path: CString): Array[String] = {
-    val dir = opendir(path)
-
-    if (dir == null) {
-      null
-    } else
-      Zone { implicit z =>
-        val buffer = UnrolledBuffer.empty[String]
-        var elem   = alloc[dirent]
-        while (readdir(dir, elem) == 0) {
-          val name = fromCString(elem._2.asInstanceOf[CString])
-
-          // java doesn't list '.' and '..', we filter them out.
-          if (name != "." && name != "..") {
-            buffer += name
-          }
-        }
-        closedir(dir)
-        buffer.toArray
-      }
   }
 
   def mkdir(): Boolean =
@@ -332,19 +309,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
     }
 
   def createNewFile(): Boolean =
-    if (path.isEmpty) {
-      throw new IOException("No such file or directory")
-    } else if (!Option(getParentFile).forall(_.exists)) {
-      throw new IOException("No such file or directory")
-    } else if (exists) {
-      false
-    } else
-      Zone { implicit z =>
-        fopen(toCString(path), c"w") match {
-          case null => false
-          case fd   => fclose(fd); exists()
-        }
-      }
+    FileHelpers.createNewFile(path, throwOnError = true)
 
   def renameTo(dest: File): Boolean =
     Zone { implicit z =>
@@ -569,31 +534,20 @@ object File {
 
   @throws(classOf[IOException])
   def createTempFile(prefix: String, suffix: String, directory: File): File =
-    if (prefix == null) throw new NullPointerException
-    else if (prefix.length < 3)
-      throw new IllegalArgumentException("Prefix string too short")
-    else {
-      val tmpDir       = Option(directory).getOrElse(tempDir())
-      val newSuffix    = Option(suffix).getOrElse(".tmp")
-      var result: File = null
-      do {
-        result = genTempFile(prefix, newSuffix, tmpDir)
-      } while (!result.createNewFile())
-      result
-    }
+    FileHelpers.createTempFile(prefix,
+                               suffix,
+                               directory,
+                               minLength = true,
+                               throwOnError = true)
 
   private def tempDir(): File = {
     val dir = getenv(c"TMPDIR")
-    if (dir == null) new File("/tmp")
-    else new File(fromCString(dir))
-  }
-
-  private def genTempFile(prefix: String,
-                          suffix: String,
-                          directory: File): File = {
-    val id       = random.nextInt()
-    val fileName = prefix + id + suffix
-    new File(directory, fileName)
+    if (dir == null) {
+      new File(System.getProperty("java.io.tmpdir") match {
+        case null => "/tmp"
+        case d    => d
+      })
+    } else new File(fromCString(dir))
   }
 
 }

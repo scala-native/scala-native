@@ -26,14 +26,14 @@ object GC {
   /** Non-freeing garbage collector.*/
   def none: GC = None
 
-  /** Conservative grbage collector based on libgc. */
+  /** Conservative garbage collector based on libgc. */
   def boehm: GC = Boehm
 
   /** Mostly-precise mark-region garbage collector. */
   def immix: GC = Immix
 
   /** The default garbage collector. */
-  def default: GC = Boehm
+  def default: GC = Immix
 
   /** Get a garbage collector with given name. */
   def apply(gc: String) = gc match {

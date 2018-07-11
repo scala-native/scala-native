@@ -20,6 +20,9 @@ import java.nio.file.attribute.{
 }
 
 import java.util.function.BiPredicate
+import scala.collection.JavaConverters._
+import PosixFilePermission._
+import StandardCopyOption._
 
 object FilesSuite extends tests.Suite {
 
@@ -77,7 +80,7 @@ object FilesSuite extends tests.Suite {
         .isDirectory() && targetFile.list().isEmpty)
 
     val in = new ByteArrayInputStream(Array(1, 2, 3))
-    assert(Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING) == 3)
+    assert(Files.copy(in, target, REPLACE_EXISTING) == 3)
     assert(targetFile.exists() && targetFile.isFile())
     assert(in.read() == -1)
 
@@ -117,7 +120,7 @@ object FilesSuite extends tests.Suite {
     val in = new ByteArrayInputStream(Array(1, 2, 3))
 
     assertThrows[FileAlreadyExistsException] {
-      Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING)
+      Files.copy(in, target, REPLACE_EXISTING)
     }
   }
 
@@ -128,7 +131,7 @@ object FilesSuite extends tests.Suite {
     assert(targetFile.exists() && targetFile.isFile())
 
     val in = new ByteArrayInputStream(Array(1, 2, 3))
-    assert(Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING) == 3)
+    assert(Files.copy(in, target, REPLACE_EXISTING) == 3)
     assert(in.read() == -1)
 
     val fromFile = new FileInputStream(targetFile)
@@ -136,6 +139,80 @@ object FilesSuite extends tests.Suite {
     assert(fromFile.read() == 2)
     assert(fromFile.read() == 3)
     assert(fromFile.read() == -1)
+  }
+
+  test("Files.copy creates a new directory") {
+    withTemporaryDirectory { dirFile =>
+      val targetDir = File.createTempFile("test", "").toPath()
+      Files.delete(targetDir)
+      Files.copy(dirFile.toPath, targetDir)
+      assert(Files.exists(targetDir))
+      assert(Files.isDirectory(targetDir))
+      assert(Files.deleteIfExists(targetDir))
+    }
+  }
+
+  test("Files.copy doesn't replace existing directory") {
+    withTemporaryDirectory { dirFile =>
+      val targetDir = File.createTempFile("test", "").toPath()
+      assertThrows[FileAlreadyExistsException] {
+        Files.copy(dirFile.toPath, targetDir)
+      }
+    }
+  }
+
+  test("Files.copy replaces the target directory") {
+    withTemporaryDirectory { dirFile =>
+      val targetDir = File.createTempFile("test", "").toPath()
+      Files.delete(targetDir)
+      Files.copy(dirFile.toPath, targetDir, REPLACE_EXISTING)
+      assert(Files.exists(targetDir))
+      assert(Files.isDirectory(targetDir))
+      assert(Files.deleteIfExists(targetDir))
+    }
+  }
+
+  test("Files.copy does not replace a non-empty target directory") {
+    withTemporaryDirectory { dirFile =>
+      val targetDir = File.createTempFile("test", "").toPath()
+      Files.delete(targetDir)
+      Files.copy(dirFile.toPath, targetDir, REPLACE_EXISTING)
+      val f = Files.createTempFile(targetDir, "", "")
+      assertThrows[DirectoryNotEmptyException] {
+        Files.copy(dirFile.toPath, targetDir, REPLACE_EXISTING)
+      }
+    }
+  }
+
+  test("Files.copy does not copy symlinks") {
+    withTemporaryDirectory { dirFile =>
+      val dir  = dirFile.toPath
+      val link = dir.resolve("link")
+      val file = dir.resolve("target")
+      Files.createSymbolicLink(link, dir.resolve("foo"))
+      assertThrows[IOException] {
+        Files.copy(link, file)
+      }
+    }
+  }
+
+  test("Files.copy should copy attributes") {
+    withTemporaryDirectory { dirFile =>
+      val foo = dirFile.toPath.resolve("foo")
+      Files.createFile(foo)
+      Files.write(foo, "foo".getBytes)
+      val permissions = Set(OWNER_EXECUTE, OWNER_READ, OWNER_WRITE).asJava
+      Files.setPosixFilePermissions(foo, permissions)
+      val fooCopy = dirFile.toPath.resolve("foocopy")
+      Files.copy(foo, fooCopy, COPY_ATTRIBUTES)
+      val attrs = Files.readAttributes(foo, classOf[PosixFileAttributes])
+      val copyAttrs =
+        Files.readAttributes(fooCopy, classOf[PosixFileAttributes])
+      assert(attrs.lastModifiedTime == copyAttrs.lastModifiedTime)
+      assert(attrs.lastAccessTime == copyAttrs.lastAccessTime)
+      assert(attrs.creationTime == copyAttrs.creationTime)
+      assert(attrs.permissions.asScala == copyAttrs.permissions.asScala)
+    }
   }
 
   test("Files.createSymbolicLink can create symbolic links") {
@@ -356,6 +433,42 @@ object FilesSuite extends tests.Suite {
       Files.createFile(file)
       assert(Files.exists(file))
     }
+  }
+
+  private val tempFile = "^a?\\d+\\.?(?:[a-z]*)$".r
+  test("Files.createTempDirectory works with null prefix") {
+    val dir = Files.createTempDirectory(null)
+    try {
+      assert(tempFile.findFirstIn(dir.getFileName.toString).isDefined)
+      assert(Files.exists(dir))
+      assert(Files.isDirectory(dir))
+    } finally Files.delete(dir)
+  }
+
+  test("Files.createTempDirectory works with short prefix") {
+    val dir = Files.createTempDirectory("a")
+    try {
+      assert(tempFile.findFirstIn(dir.getFileName.toString).isDefined)
+      assert(Files.exists(dir))
+      assert(Files.isDirectory(dir))
+    } finally Files.delete(dir)
+  }
+  test("Files.createTempFile works with null prefix") {
+    val file = Files.createTempFile(null, "txt")
+    try {
+      assert(tempFile.findFirstIn(file.getFileName.toString).isDefined)
+      assert(Files.exists(file))
+      assert(Files.isRegularFile(file))
+    } finally Files.delete(file)
+  }
+
+  test("Files.createTempFile works with short prefix") {
+    val file = Files.createTempFile("a", null)
+    try {
+      assert(tempFile.findFirstIn(file.getFileName.toString).isDefined)
+      assert(Files.exists(file))
+      assert(Files.isRegularFile(file))
+    } finally Files.delete(file)
   }
 
   test("Files.isRegularFile reports files as such") {
@@ -1008,6 +1121,36 @@ object FilesSuite extends tests.Suite {
     }
   }
 
+  def moveDirectoryTest(delete: Boolean, options: CopyOption*) {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val f0  = dir.resolve("f0")
+      Files.write(f0, "foo\n".getBytes)
+      val target = Files.createTempDirectory(null)
+      if (delete) assert(Files.deleteIfExists(target))
+      Files.move(dir, target, options: _*)
+      assert(!Files.exists(dir))
+      assert(!Files.exists(f0))
+
+      val newF0 = target.resolve("f0")
+      assert(Files.exists(newF0))
+      assert(Files.lines(newF0).iterator.asScala.mkString == "foo")
+    }
+  }
+  test("Files.move directory") {
+    moveDirectoryTest(delete = true)
+  }
+
+  test("Files.move replace directory") {
+    moveDirectoryTest(delete = false, REPLACE_EXISTING)
+  }
+
+  test("Files.move does not replace directory") {
+    assertThrows[FileAlreadyExistsException] {
+      moveDirectoryTest(delete = false)
+    }
+  }
+
   test("Files.setAttribute can set lastModifiedTime") {
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath()
@@ -1129,10 +1272,11 @@ object FilesSuite extends tests.Suite {
       Files.write(f, Array[Byte](1, 2, 3))
       val channel = Files.newByteChannel(f)
       val buffer  = ByteBuffer.allocate(10)
-      var read    = 0
-      while (channel.read(buffer) != -1) {
-        read += 1
-      }
+
+      val read = channel.read(buffer)
+      buffer.flip()
+
+      assert(buffer.limit() == 3)
       assert(read == 3)
       assert(buffer.get(0) == 1)
       assert(buffer.get(1) == 2)
