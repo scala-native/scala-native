@@ -1,3 +1,4 @@
+
 .. _faq:
 
 FAQ
@@ -7,7 +8,12 @@ FAQ
 
 **Q:** How do I make the resulting executable smaller?
 
-**A:** Compress the binary with https://upx.github.io/
+**A1:** Compress the binary with https://upx.github.io/
+
+**A2:** Your operating system may allow stripping symbols from the
+        executable (man strip). On systems which allow symbol stripping,
+	the nativeLinkerOption can be set (see :ref:`interopOptionsExamples`)
+	to do this at link time.
 
 ---
 

@@ -61,22 +61,25 @@ Since Name                     Type            Description
 0.1   ``compile``              ``Analysis``    Compile Scala code to NIR
 0.1   ``run``                  ``Unit``        Compile, link and run the generated binary
 0.1   ``package``              ``File``        Similar to standard package with addition of NIR
-0.1   ``publish``              ``Unit``        Similar to standard publish with addition of NIR (1)
+0.1   ``publish``              ``Unit``        Similar to standard publish with addition of NIR [1]_
 0.1   ``nativeLink``           ``File``        Link NIR and generate native binary
 0.1   ``nativeClang``          ``File``        Path to ``clang`` command
 0.1   ``nativeClangPP``        ``File``        Path to ``clang++`` command
-0.1   ``nativeCompileOptions`` ``Seq[String]`` Extra options passed to clang verbatim during compilation
-0.1   ``nativeLinkingOptions`` ``Seq[String]`` Extra options passed to clang verbatim during linking
-0.1   ``nativeMode``           ``String``      Either ``"debug"`` or ``"release"`` (2)
-0.2   ``nativeGC``             ``String``      Either ``"none"``, ``"boehm"`` or ``"immix"`` (3)
+0.1   ``nativeCompileOptions`` ``Seq[String]`` Extra options passed to clang verbatim during compilation [4]_
+0.1   ``nativeLinkingOptions`` ``Seq[String]`` Extra options passed to clang verbatim during linking [5]_
+0.1   ``nativeMode``           ``String``      Either ``"debug"`` or ``"release"`` [2]_
+0.2   ``nativeGC``             ``String``      Either ``"none"``, ``"boehm"`` or ``"immix"`` [3]_
 0.3.3 ``nativeLinkStubs``      ``Boolean``     Whether to link ``@stub`` definitions, or to ignore them
-0.3.9 ``nativeLTO``            ``String``      Either ``"none"``, ``"full"`` or ``"thin"`` (4)
+0.3.9 ``nativeLTO``            ``String``      Either ``"none"``, ``"full"`` or ``"thin"`` [6]
 ===== ======================== =============== =========================================================
 
-1. See `Publishing`_ and `Cross compilation`_ for details.
-2. See `Compilation modes`_ for details.
-3. See `Garbage collectors`_ for details.
-4. See `Link-Time Optimization (LTO)`_ for details.
+=======
+.. [1] See `Publishing`_ and `Cross compilation`_ for details.
+.. [2] See `Compilation modes`_ for details.
+.. [3] See `Garbage collectors`_ for details.
+.. [4] See :ref:`CompileOptions`.
+.. [5] See :ref:`LinkerOptions`.
+.. [6] See `Link-Time Optimization (LTO)`_ for details.
 
 Compilation modes
 -----------------
