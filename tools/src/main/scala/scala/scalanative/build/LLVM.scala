@@ -92,7 +92,8 @@ private[scalanative] object LLVM {
       if (include(path) && !Files.exists(Paths.get(opath))) {
         val isCpp    = path.endsWith(".cpp")
         val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
-        val flags    = (if (isCpp) Seq("-std=c++11") else Seq()) ++ config.compileOptions
+        val flags = (if (isCpp) Seq("-std=c++11")
+                     else Seq("-std=gnu11")) ++ config.compileOptions
         val compilec = Seq(compiler) ++ flags ++ Seq("-c", path, "-o", opath)
 
         config.logger.running(compilec)
