@@ -434,10 +434,10 @@ object Files {
     val bytes = scala.scalanative.runtime.ByteArray.alloc(len)
     val fd    = fcntl.open(toCString(path.toString), fcntl.O_RDONLY)
     try {
-      var offset = 0
-      var read   = 0
+      var offset: Int = 0
+      var read: Int   = 0
       while ({
-        read = unistd.read(fd, bytes.at(offset), len - offset);
+        read = unistd.read(fd, bytes.at(offset), len - offset).toInt;
         read != -1 && (offset + read) < len
       }) {
         offset += read
