@@ -1,17 +1,12 @@
 package scala.scalanative
-package sbtplugin
 package testinterface
 
 import java.io.File
 
-import sbt.Logger
 import sbt.testing.{Runner, Task, TaskDef}
 
-import scala.scalanative.testinterface.serialization.{
-  Command,
-  Message,
-  TaskInfos
-}
+import scalanative.build.Logger
+import scalanative.testinterface.serialization.{Command, Message, TaskInfos}
 
 class ScalaNativeRunner(val framework: ScalaNativeFramework,
                         bin: File,

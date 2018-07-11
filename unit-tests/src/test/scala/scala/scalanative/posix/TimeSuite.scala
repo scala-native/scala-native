@@ -14,9 +14,10 @@ object TimeSuite extends tests.Suite {
     Zone { implicit z =>
       val anno_zero_ptr = alloc[tm]
       anno_zero_ptr.tm_mday = 1
+      anno_zero_ptr.tm_wday = 1
       val cstr: CString = asctime(anno_zero_ptr)
       val str: String   = fromCString(cstr)
-      assert("Sun Jan  1 00:00:00 1900\n".equals(str))
+      assert("Mon Jan  1 00:00:00 1900\n".equals(str))
     }
   }
 
@@ -24,9 +25,10 @@ object TimeSuite extends tests.Suite {
     Zone { implicit z =>
       val anno_zero_ptr = alloc[tm]
       anno_zero_ptr.tm_mday = 1
+      anno_zero_ptr.tm_wday = 1
       val cstr: CString = asctime_r(anno_zero_ptr, alloc[Byte](26))
       val str: String   = fromCString(cstr)
-      assert("Sun Jan  1 00:00:00 1900\n".equals(str))
+      assert("Mon Jan  1 00:00:00 1900\n".equals(str))
     }
   }
 
@@ -62,28 +64,33 @@ object TimeSuite extends tests.Suite {
     assert(now_time_t > 1502752688)
   }
 
-  test("strftime() for 1900-01-00T00:00:00Z") {
+  test("strftime() for 1900-01-01T00:00:00Z") {
     Zone { implicit z =>
       val isoDatePtr: Ptr[CChar] = alloc[CChar](70)
       val timePtr                = alloc[tm]
+
+      timePtr.tm_mday = 1
 
       strftime(isoDatePtr, 70, c"%FT%TZ", timePtr)
 
       val isoDateString: String = fromCString(isoDatePtr)
 
-      assert("1900-01-00T00:00:00Z".equals(isoDateString))
+      assert("1900-01-01T00:00:00Z".equals(isoDateString))
     }
   }
 
-  test("strftime for date") {
+  test("strftime() for Monday Mon Jan  1 00:00:00 1900") {
     Zone { implicit z =>
       val timePtr             = alloc[tm]
       val datePtr: Ptr[CChar] = alloc[CChar](70)
 
+      timePtr.tm_mday = 1
+      timePtr.tm_wday = 1
+
       strftime(datePtr, 70, c"%A %c", timePtr)
 
       val dateString: String = fromCString(datePtr)
-      assert("Sunday Sun Jan  0 00:00:00 1900".equals(dateString))
+      assert("Monday Mon Jan  1 00:00:00 1900".equals(dateString))
     }
   }
 }

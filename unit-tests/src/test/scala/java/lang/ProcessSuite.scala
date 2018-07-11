@@ -16,11 +16,12 @@ object ProcessSuite extends tests.Suite {
   def addTest[R](name: String)(f: => R): Unit = test(name) {
     f
   }
+  val scripts = Set("echo.sh", "err.sh", "ls", "hello.sh")
   addTest("ls") {
     val proc = new ProcessBuilder("ls", resourceDir).start()
     val out  = readInputStream(proc.getInputStream)
     proc.waitFor
-    assert(out.split("\n").toSet == Set("echo.sh", "err.sh", "ls"))
+    assert(out.split("\n").toSet == scripts)
   }
 
   addTest("inherit") {
@@ -40,7 +41,7 @@ object ProcessSuite extends tests.Suite {
       unistd.dup2(savedFD, unistd.STDOUT_FILENO)
       fcntl.close(savedFD)
     }
-    assert(out.split("\n").toSet == Set("echo.sh", "err.sh", "ls"))
+    assert(out.split("\n").toSet == scripts)
   }
 
   private def checkPathOverride(pb: ProcessBuilder) = {
@@ -148,5 +149,14 @@ object ProcessSuite extends tests.Suite {
     val p = proc.destroyForcibly()
     assert(p.waitFor(100, TimeUnit.MILLISECONDS))
     assert(p.exitValue == 0x80 + 9)
+  }
+
+  addTest("shell fallback") {
+    val pb = new ProcessBuilder("hello.sh")
+    pb.environment.put("PATH", resourceDir)
+    val proc = pb.start()
+    proc.waitFor
+    val out = readInputStream(proc.getInputStream)
+    assert(out == "hello\n")
   }
 }

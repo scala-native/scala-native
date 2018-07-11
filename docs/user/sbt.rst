@@ -12,7 +12,7 @@ The easiest way to make a fresh project is to use our official gitter8 template:
 
     sbt new scala-native/scala-native.g8
 
-This includes:
+This generates the following files:
 
 * ``project/plugins.sbt`` to add a plugin dependency::
 
@@ -96,22 +96,22 @@ Scala Native supports two distinct linking modes:
 Garbage collectors
 ------------------
 
-1. **boehm.** (default)
-
-   Conservative generational garbage collector. More information is available
-   at the `project's page <https://www.hboehm.info/gc/>`_.
-
-2. **none.** (experimental, since 0.2)
-
-   Garbage collector that allocates things without ever freeing them. Useful
-   for short-running command-line applications or applications where garbage
-   collections pauses are not acceptable.
-
-3. **immix.** (experimental, since 0.3)
+1. **immix.** (default since 0.3.8, introduced in 0.3)
 
    Immix is a mostly-precise mark-region tracing garbage collector.
    More information about the collector is available as part of the original
    `0.3.0 announcement <https://github.com/scala-native/scala-native/releases/tag/v0.3.0>`_.
+
+2. **boehm.** (default through 0.3.7)
+
+   Conservative generational garbage collector. More information is available
+   at the `project's page <https://www.hboehm.info/gc/>`_.
+
+3. **none.** (experimental, introduced in 0.2)
+
+   Garbage collector that allocates things without ever freeing them. Useful
+   for short-running command-line applications or applications where garbage
+   collections pauses are not acceptable.
 
 Publishing
 ----------

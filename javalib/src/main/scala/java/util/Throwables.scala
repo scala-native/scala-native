@@ -4,8 +4,11 @@ class ServiceConfigurationError(s: String, e: Throwable) extends Error(s, e) {
   def this(s: String) = this(s, null)
 }
 
-class ConcurrentModificationException(s: String) extends RuntimeException(s) {
-  def this() = this(null)
+class ConcurrentModificationException(s: String, c: Throwable)
+    extends RuntimeException(s, c) {
+  def this(c: Throwable) = this(null, c)
+  def this(s: String) = this(s, null)
+  def this() = this(null, null)
 }
 
 class DuplicateFormatFlagsException private () extends IllegalFormatException {

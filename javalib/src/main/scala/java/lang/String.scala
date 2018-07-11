@@ -291,9 +291,14 @@ final class _String()
   }
 
   def getBytes(encoding: _String): Array[scala.Byte] = {
-    val charset = Charset.forName(encoding)
-    val buffer  = charset.encode(CharBuffer.wrap(value, offset, count))
-    val bytes   = new Array[scala.Byte](buffer.limit())
+    val charset = try {
+      Charset.forName(encoding)
+    } catch {
+      case e: UnsupportedCharsetException =>
+        throw new java.io.UnsupportedEncodingException(encoding)
+    }
+    val buffer = charset.encode(CharBuffer.wrap(value, offset, count))
+    val bytes  = new Array[scala.Byte](buffer.limit())
     buffer.get(bytes)
     bytes
   }
@@ -733,11 +738,58 @@ final class _String()
   def replaceFirst(expr: _String, substitute: _String): _String =
     Pattern.compile(expr).matcher(this).replaceFirst(substitute)
 
+  def fastSplit(ch: Char, max: Int): Array[String] = {
+    var separatorCount = 0
+    var begin          = 0
+    var end            = 0
+    while (separatorCount + 1 != max && { end = indexOf(ch, begin); end != -1 }) {
+      separatorCount += 1
+      begin = end + 1
+    }
+    val lastPartEnd = if (max == 0 && begin == count) {
+      if (separatorCount == count) {
+        return Array.empty[String]
+      }
+      do {
+        begin -= 1
+      } while (charAt(begin - 1) == ch)
+      separatorCount -= count - begin
+      begin
+    } else {
+      count
+    }
+
+    val result = new Array[String](separatorCount + 1)
+    begin = 0
+    var i = 0
+    while (i < separatorCount) {
+      end = indexOf(ch, begin)
+      result(i) = substring(begin, end);
+      begin = end + 1
+      i += 1
+    }
+    result(separatorCount) = substring(begin, lastPartEnd)
+    result
+  }
+
+  private[this] final val REGEX_METACHARACTERS = ".$()[{^?*+\\"
+  @inline private def isRegexMeta(c: Char) =
+    REGEX_METACHARACTERS.indexOf(c) >= 0
+
   def split(expr: _String): Array[String] =
-    Pattern.compile(expr).split(this)
+    split(expr, 0)
 
   def split(expr: _String, max: Int): Array[String] =
-    Pattern.compile(expr).split(this, max)
+    if (isEmpty) {
+      Array("")
+    } else {
+      expr.length match {
+        case 1 if !isRegexMeta(expr.charAt(0)) => fastSplit(expr.charAt(0), max)
+        case 2 if expr.charAt(0) == '\\' && isRegexMeta(expr.charAt(1)) =>
+          fastSplit(expr.charAt(1), max)
+        case _ => Pattern.compile(expr).split(this, max)
+      }
+    }
 
   def subSequence(start: Int, end: Int): CharSequence =
     substring(start, end)
