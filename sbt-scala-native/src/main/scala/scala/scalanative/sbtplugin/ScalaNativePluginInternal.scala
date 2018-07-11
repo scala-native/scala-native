@@ -121,6 +121,7 @@ object ScalaNativePluginInternal {
         .withClang(clang)
         .withClangPP(clangpp)
         .withTargetTriple(nativeTarget.value)
+        .withCompileOptions(nativeCompileOptions.value)
         .withLinkingOptions(nativeLinkingOptions.value)
         .withGC(gc)
         .withMode(mode)
