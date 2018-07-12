@@ -1,10 +1,38 @@
 package scala.scalanative
 package posix.sys
 
-import scala.scalanative.native.{CInt, ULong, extern}
+import scala.scalanative.native._
 
 @extern
 object types {
+
+  type blkcnt_t = CLong
+
+  type blksize_t = CLong
+
+  type clock_t = CLong
+
+  type clockid_t = CInt
+
+  type dev_t = CUnsignedLongLong
+
+  type fsblkcnt_t = CUnsignedLong
+
+  type fsfilcnt_t = CUnsignedLong
+
+  type gid_t = CUnsignedInt
+
+  type id_t = CUnsignedInt
+
+  type ino_t = CUnsignedLong
+
+  type key_t = CInt
+
+  type mode_t = CUnsignedInt
+
+  type nlink_t = CUnsignedLong
+
+  type off_t = CLong
 
   type pid_t = CInt
 
@@ -34,5 +62,16 @@ object types {
 
   type pthread_t = ULong
 
-  type clockid_t = CInt
+  type size_t = CSize
+
+  type ssize_t = CSSize
+
+  type suseconds_t = CLong
+
+  type time_t = CLong
+
+  type timer_t = Ptr[CUnsignedLong] // Actually C void *. Used as Ptr[Any]
+
+  type uid_t = CUnsignedInt
+
 }
