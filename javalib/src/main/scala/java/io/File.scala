@@ -7,7 +7,7 @@ import scalanative.posix.{fcntl, limits, unistd, utime}
 import scalanative.posix.sys.stat
 import scalanative.native._, stdlib._, stdio._, string._
 import scalanative.nio.fs.FileHelpers
-import scalanative.runtime.Platform
+import scalanative.runtime.{DeleteOnExit, Platform}
 import unistd._
 
 class File(_path: String) extends Serializable with Comparable[File] {
@@ -318,8 +318,8 @@ class File(_path: String) extends Serializable with Comparable[File] {
 
   override def toString(): String = path
 
-  @stub
-  def deleteOnExit(): Unit = ???
+  def deleteOnExit(): Unit = DeleteOnExit.addFile(this.getAbsolutePath)
+
   @stub
   def toURL(): java.net.URL = ???
   @stub
