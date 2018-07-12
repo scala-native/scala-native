@@ -9,19 +9,20 @@ object aio {
 
   // types as described in <sys/types.h>
   type pthread_attr_t = types.pthread_attr_t
-  type off_t   = CLongLong
-  type size_t  = CSize
-  type ssize_t = CSSize
+  type off_t          = types.off_t
+  type size_t         = types.size_t
+  type ssize_t        = types.ssize_t
 
-  // struct timespec structure as described in <time.h>
+  // timespec structure as described in <time.h>
   type timespec = time.timespec
 
   // sigevent structure and sigval union as described in <signal.h>
   type sigevent = CStruct5[CInt,
                            CInt,
                            sigval,
-                           CFunctionPtr1[sigval, Unit],
+                           Ptr[sigval], // defined as sigval
                            Ptr[pthread_attr_t]]
+
   // union of int and void *ptr
   type sigval = CArray[Byte, Nat._8]
 
@@ -55,38 +56,45 @@ object aio {
                         Ptr[Byte],
                         size_t,
                         CInt,
-                        CFunctionPtr1[sigevent, Unit],
+                        Ptr[sigevent], // defined as sigevent
                         CInt]
 
+  @name("scalanative_aio_cancel")
   def aio_cancel(fd: CInt, aiocbp: Ptr[aiocb]): CInt = extern
-  def aio_error(aiocbp: Ptr[aiocb]): CInt            = extern
+  @name("scalanative_aio_error")
+  def aio_error(aiocbp: Ptr[aiocb]): CInt = extern
   // File Synchronization and Synchronized Input and Output are optional and extensions to the ISO C standard.
-  def aio_fsync(op: CInt, aiocbp: Ptr[aiocb]): CInt  = extern
-  def aio_read(aiocbp: Ptr[aiocb]): CInt             = extern
-  def aio_return(aiocbp: Ptr[aiocb]): ssize_t        = extern
+  @name("scalanative_aio_fsync")
+  def aio_fsync(op: CInt, aiocbp: Ptr[aiocb]): CInt = extern
+  @name("scalanative_aio_read")
+  def aio_read(aiocbp: Ptr[aiocb]): CInt = extern
+  @name("scalanative_aio_return")
+  def aio_return(aiocbp: Ptr[aiocb]): ssize_t = extern
+  @name("scalanative_aio_suspend")
   def aio_suspend(aiocblist: Ptr[Ptr[aiocb]],
                   nent: CInt,
                   timeoutp: Ptr[timespec]): CInt = extern
-  def aio_write(aiocbp: Ptr[aiocb]): CInt        = extern
+  @name("scalanative_aio_write")
+  def aio_write(aiocbp: Ptr[aiocb]): CInt = extern
+  @name("scalanative_lio_listio")
   def lio_listio(mode: CInt,
                  aiocblist: Ptr[Ptr[aiocb]],
                  nent: CInt,
                  sigp: Ptr[sigevent]): CInt = extern
 }
 
-
 object aioOps {
   import aio._
 
   implicit class sigevent_ops(val p: Ptr[sigevent]) extends AnyVal {
-    def sigev_notify: CInt                                 = !p._1
-    def sigev_notify_=(value: CInt): Unit                  = !p._1 = value
-    def sigev_signo: CInt                                  = !p._2
-    def sigev_signo_=(value: CInt): Unit                   = !p._2 = value
-    def sigev_value: sigval                                = !p._3
-    def sigev_value_=(value: sigval): Unit                 = !p._3 = value
-    def sigev_notify_function: CFunctionPtr1[sigval, Unit] = !p._4
-    def sigev_notify_function_=(value: CFunctionPtr1[sigval, Unit]): Unit =
+    def sigev_notify: CInt                 = !p._1
+    def sigev_notify_=(value: CInt): Unit  = !p._1 = value
+    def sigev_signo: CInt                  = !p._2
+    def sigev_signo_=(value: CInt): Unit   = !p._2 = value
+    def sigev_value: sigval                = !p._3
+    def sigev_value_=(value: sigval): Unit = !p._3 = value
+    def sigev_notify_function: Ptr[sigval] = !p._4
+    def sigev_notify_function_=(value: Ptr[sigval]): Unit =
       !p._4 = value
     def sigev_notify_attributes: Ptr[pthread_attr_t] = !p._5
     def sigev_notify_attributes_=(value: Ptr[pthread_attr_t]): Unit =
@@ -96,18 +104,18 @@ object aioOps {
   //def sigevent()(implicit z: Zone): Ptr[sigevent] = native.alloc[sigevent]
 
   implicit class aiocb_ops(val p: Ptr[aiocb]) extends AnyVal {
-    def aio_fildes: CInt                            = !p._1
-    def aio_fildes_=(value: CInt): Unit             = !p._1 = value
-    def aio_offset: off_t                           = !p._2
-    def aio_offset_=(value: off_t): Unit            = !p._2 = value
-    def aio_buf: Ptr[Byte]                          = !p._3
-    def aio_buf_=(value: Ptr[Byte]): Unit           = !p._3 = value
-    def aio_nbytes: size_t                          = !p._4
-    def aio_nbytes_=(value: size_t): Unit           = !p._4 = value
-    def aio_reqprio: CInt                           = !p._5
-    def aio_reqprio_=(value: CInt): Unit            = !p._5 = value
-    def aio_sigevent: CFunctionPtr1[sigevent, Unit] = !p._6
-    def aio_sigevent_=(value: CFunctionPtr1[sigevent, Unit]): Unit =
+    def aio_fildes: CInt                  = !p._1
+    def aio_fildes_=(value: CInt): Unit   = !p._1 = value
+    def aio_offset: off_t                 = !p._2
+    def aio_offset_=(value: off_t): Unit  = !p._2 = value
+    def aio_buf: Ptr[Byte]                = !p._3
+    def aio_buf_=(value: Ptr[Byte]): Unit = !p._3 = value
+    def aio_nbytes: size_t                = !p._4
+    def aio_nbytes_=(value: size_t): Unit = !p._4 = value
+    def aio_reqprio: CInt                 = !p._5
+    def aio_reqprio_=(value: CInt): Unit  = !p._5 = value
+    def aio_sigevent: Ptr[sigevent]       = !p._6
+    def aio_sigevent_=(value: Ptr[sigevent]): Unit =
       !p._6 = value
     def aio_lio_opcode: CInt                = !p._7
     def aio_lio_opcode_=(value: CInt): Unit = !p._7 = value
