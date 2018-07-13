@@ -540,14 +540,4 @@ object File {
                                minLength = true,
                                throwOnError = true)
 
-  private def tempDir(): File = {
-    val dir = getenv(c"TMPDIR")
-    if (dir == null) {
-      new File(System.getProperty("java.io.tmpdir") match {
-        case null => "/tmp"
-        case d    => d
-      })
-    } else new File(fromCString(dir))
-  }
-
 }
