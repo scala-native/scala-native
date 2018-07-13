@@ -1050,16 +1050,8 @@ object FilesSuite extends tests.Suite {
 
       import PosixFilePermission._
       assert(permissions.contains(OWNER_READ))
-      assert(permissions.contains(GROUP_READ))
-      assert(permissions.contains(OTHERS_READ))
       assert(!permissions.contains(OWNER_WRITE))
-      assert(!permissions.contains(GROUP_WRITE))
-      assert(!permissions.contains(OTHERS_WRITE))
       assert(permissions.contains(OWNER_EXECUTE))
-      assert(permissions.contains(GROUP_EXECUTE))
-      assert(permissions.contains(OTHERS_EXECUTE))
-      assert(permissions.size() == 6)
-
     }
   }
 
