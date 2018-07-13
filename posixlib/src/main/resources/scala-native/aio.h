@@ -1,5 +1,5 @@
-#ifndef __AIO_H
-#define __AIO_H
+#ifndef AIO_H
+#define AIO_H
 
 struct scalanative_aiocb {
     int aio_fildes;
@@ -11,4 +11,4 @@ struct scalanative_aiocb {
     int aio_lio_opcode;
 };
 
-#endif //  __AIO_H
+#endif
