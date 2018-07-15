@@ -20,7 +20,10 @@ and linkers follow the convention that later options override or
 supersede any early specification of the same option.
 
 The following examples are, for simplicity, presented separately. They
-can often be combined, either as separate lines or into one Seq().
+can often be combined, either as separate lines or as one Seq().
+
+Examples were tested on sbt version 0.13.7. They may need
+to be modified as sbt changes.
 
 These techniques can aid but not replace well chosen and competently
 implemented algorithms and data structures. 
@@ -59,6 +62,12 @@ To link with one or more object (.o) files in (sub-) project root directory::
 
   nativeLinkingOptions ++=
     Seq(baseDirectory.value.getAbsolutePath + "/second.o")
+
+  // Same goal, condensed to one Seq()
+
+  nativeLinkingOptions ++=
+    Seq(baseDirectory.value.getAbsolutePath + "/first.o",
+        baseDirectory.value.getAbsolutePath + "/second.o")
     
 To link with one or more object (.o) files at an absolute location::
 
