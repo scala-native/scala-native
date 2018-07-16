@@ -16,7 +16,7 @@ This generates the following files:
 
 * ``project/plugins.sbt`` to add a plugin dependency::
 
-    addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.3.7")
+    addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.3.8")
 
 * ``project/build.properties`` to specify the sbt version::
 

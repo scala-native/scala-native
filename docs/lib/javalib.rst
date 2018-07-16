@@ -136,6 +136,7 @@ Here is the list of currently available classes:
 * ``java.lang.RejectedExecutionException``
 * ``java.lang.Runnable``
 * ``java.lang.Runtime``
+* ``java.lang.Runtime$ProcessBuilderOps``
 * ``java.lang.RuntimeException``
 * ``java.lang.SecurityException``
 * ``java.lang.Short``
@@ -222,6 +223,7 @@ Here is the list of currently available classes:
 * ``java.net.URL``
 * ``java.net.URLClassLoader``
 * ``java.net.URLConnection``
+* ``java.net.URLEncoder``
 * ``java.net.UnknownHostException``
 * ``java.net.UnknownServiceException``
 * ``java.nio.Buffer``
@@ -301,7 +303,10 @@ Here is the list of currently available classes:
 * ``java.nio.charset.StandardCharsets``
 * ``java.nio.charset.UnmappableCharacterException``
 * ``java.nio.charset.UnsupportedCharsetException``
+* ``java.nio.file.AccessDeniedException``
 * ``java.nio.file.CopyOption``
+* ``java.nio.file.DirectoryIteratorException``
+* ``java.nio.file.DirectoryNotEmptyException``
 * ``java.nio.file.DirectoryStream``
 * ``java.nio.file.DirectoryStream$Filter``
 * ``java.nio.file.DirectoryStreamImpl``
@@ -369,8 +374,10 @@ Here is the list of currently available classes:
 * ``java.security.NoSuchAlgorithmException``
 * ``java.security.Principal``
 * ``java.security.Timestamp``
+* ``java.security.TimestampConstructorHelper``
 * ``java.security.cert.CertPath``
 * ``java.security.cert.Certificate``
+* ``java.security.cert.CertificateEncodingException``
 * ``java.security.cert.CertificateException``
 * ``java.security.cert.CertificateFactory``
 * ``java.security.cert.X509Certificate``
@@ -571,12 +578,16 @@ Here is the list of currently available classes:
 * ``java.util.concurrent.atomic.AtomicReferenceArray``
 * ``java.util.concurrent.locks.AbstractOwnableSynchronizer``
 * ``java.util.concurrent.locks.AbstractQueuedSynchronizer``
+* ``java.util.function.BiFunction``
+* ``java.util.function.BiFunction$class``
 * ``java.util.function.BiPredicate``
 * ``java.util.function.BiPredicate$class``
 * ``java.util.function.Function``
 * ``java.util.function.Function$class``
 * ``java.util.function.Predicate``
 * ``java.util.function.Predicate$class``
+* ``java.util.function.Supplier``
+* ``java.util.function.UnaryOperator``
 * ``java.util.jar.Attributes``
 * ``java.util.jar.Attributes$Name``
 * ``java.util.jar.InitManifest``
