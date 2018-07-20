@@ -164,7 +164,7 @@ private[scalanative] object LLVM {
       "-ldl",
       "-lpthread")
     val targetopt = Seq("-target", config.targetTriple)
-    val flags     = Seq("-o", outpath.abs) ++ targetopt
+    val flags     = Seq("-rdynamic", "-o", outpath.abs) ++ targetopt
     val opaths    = IO.getAll(nativelib, "glob:**.o").map(_.abs)
     val paths     = llPaths.map(_.abs) ++ opaths
     val compile   = config.clangPP.abs +: (flags ++ paths ++ linkopts)
