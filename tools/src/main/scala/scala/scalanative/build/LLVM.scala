@@ -161,6 +161,7 @@ private[scalanative] object LLVM {
       linkerResult.links.map(_.name) ++ librt ++ config.gc.links
     }
     val linkopts = config.linkingOptions ++ links.map("-l" + _) ++ Seq(
+      "-ldl",
       "-lpthread")
     val targetopt = Seq("-target", config.targetTriple)
     val flags     = Seq("-o", outpath.abs) ++ targetopt
