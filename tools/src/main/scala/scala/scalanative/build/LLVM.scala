@@ -51,7 +51,9 @@ private[scalanative] object LLVM {
   def compileNativelib(config: Config,
                        linkerResult: linker.Result,
                        libPath: Path): Path = {
-    val cpaths   = IO.getAll(config.workdir, "glob:**.c").map(_.abs) ++ IO.getAll(config.workdir, "glob:**.S").map(_.abs)
+    val cpaths = IO.getAll(config.workdir, "glob:**.c").map(_.abs) ++ IO
+      .getAll(config.workdir, "glob:**.S")
+      .map(_.abs)
     val cpppaths = IO.getAll(config.workdir, "glob:**.cpp").map(_.abs)
     val paths    = cpaths ++ cpppaths
 
