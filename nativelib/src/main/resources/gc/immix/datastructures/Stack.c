@@ -4,13 +4,11 @@
 #include "Stack.h"
 #include "../Log.h"
 
-Stack *Stack_Alloc(size_t size) {
+void Stack_Init(Stack *stack, size_t size) {
     assert(size % sizeof(Stack_Type) == 0);
-    Stack *stack = malloc(sizeof(Stack));
     stack->current = 0;
     stack->bottom = malloc(size);
     stack->nb_words = size / sizeof(Stack_Type);
-    return stack;
 }
 
 bool Stack_Push(Stack *stack, Stack_Type word) {

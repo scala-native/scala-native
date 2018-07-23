@@ -46,7 +46,7 @@ void Marker_markConservative(Heap *heap, Stack *stack, word_t *address) {
         }
 #endif
     } else {
-        object = Object_GetLargeObject(heap->largeAllocator, address);
+        object = Object_GetLargeObject(&largeAllocator, address);
     }
 
     if (object != NULL && !Object_IsMarked(&object->header)) {

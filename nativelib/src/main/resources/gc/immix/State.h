@@ -3,8 +3,10 @@
 
 #include "Heap.h"
 
-extern Heap *heap;
-extern Stack *stack;
+extern Heap heap;
+extern Stack stack;
+extern Allocator allocator;
+extern LargeAllocator largeAllocator;
 
 extern bool overflow;
 extern word_t *currentOverflowAddress;

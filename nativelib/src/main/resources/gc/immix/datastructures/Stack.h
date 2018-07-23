@@ -14,7 +14,7 @@ typedef struct {
     int current;
 } Stack;
 
-Stack *Stack_Alloc(size_t size);
+void Stack_Init(Stack *stack, size_t size);
 
 bool Stack_Push(Stack *stack, Stack_Type word);
 

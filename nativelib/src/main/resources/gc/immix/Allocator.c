@@ -16,8 +16,7 @@ bool Allocator_getNextLine(Allocator *allocator);
  * @param blockCount Initial number of blocks in the heap
  * @return
  */
-Allocator *Allocator_Create(word_t *heapStart, int blockCount) {
-    Allocator *allocator = malloc(sizeof(Allocator));
+void Allocator_Init(Allocator *allocator, word_t *heapStart, int blockCount) {
     allocator->heapStart = heapStart;
 
     BlockList_Init(&allocator->recycledBlocks, heapStart);
@@ -36,8 +35,6 @@ Allocator *Allocator_Create(word_t *heapStart, int blockCount) {
     allocator->recycledBlockCount = 0;
 
     Allocator_InitCursors(allocator);
-
-    return allocator;
 }
 
 /**

@@ -62,8 +62,8 @@ void LargeAllocator_freeListInit(FreeList *freeList) {
     freeList->last = NULL;
 }
 
-LargeAllocator *LargeAllocator_Create(word_t *offset, size_t size) {
-    LargeAllocator *allocator = malloc(sizeof(LargeAllocator));
+void LargeAllocator_Init(LargeAllocator *allocator, word_t *offset,
+                         size_t size) {
     allocator->offset = offset;
     allocator->size = size;
     allocator->bitmap = Bitmap_Alloc(size, offset);
@@ -73,8 +73,6 @@ LargeAllocator *LargeAllocator_Create(word_t *offset, size_t size) {
     }
 
     LargeAllocator_AddChunk(allocator, (Chunk *)offset, size);
-
-    return allocator;
 }
 
 void LargeAllocator_AddChunk(LargeAllocator *allocator, Chunk *chunk,

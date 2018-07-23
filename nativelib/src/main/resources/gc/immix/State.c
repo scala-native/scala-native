@@ -1,7 +1,9 @@
 #include "State.h"
 
-Heap *heap = NULL;
-Stack *stack = NULL;
+Heap heap;
+Stack stack;
+Allocator allocator;
+LargeAllocator largeAllocator;
 
 // For stackoverflow handling
 bool overflow = false;

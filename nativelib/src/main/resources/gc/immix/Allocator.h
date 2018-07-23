@@ -21,7 +21,7 @@ typedef struct {
     size_t freeMemoryAfterCollection;
 } Allocator;
 
-Allocator *Allocator_Create(word_t *, int);
+void Allocator_Init(Allocator *allocator, word_t *, int);
 bool Allocator_CanInitCursors(Allocator *allocator);
 void Allocator_InitCursors(Allocator *allocator);
 word_t *Allocator_Alloc(Allocator *allocator, size_t size);
