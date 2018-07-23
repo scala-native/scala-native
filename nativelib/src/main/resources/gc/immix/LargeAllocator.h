@@ -28,7 +28,8 @@ typedef struct {
     Bitmap *bitmap;
 } LargeAllocator;
 
-LargeAllocator *LargeAllocator_Create(word_t *offset, size_t largeHeapSize);
+void LargeAllocator_Init(LargeAllocator *allocator, word_t *offset,
+                         size_t largeHeapSize);
 void LargeAllocator_AddChunk(LargeAllocator *allocator, Chunk *chunk,
                              size_t total_block_size);
 Object *LargeAllocator_GetBlock(LargeAllocator *allocator,

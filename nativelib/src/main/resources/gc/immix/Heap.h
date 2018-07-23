@@ -14,8 +14,6 @@ typedef struct {
     word_t *largeHeapStart;
     word_t *largeHeapEnd;
     size_t largeHeapSize;
-    Allocator *allocator;
-    LargeAllocator *largeAllocator;
 } Heap;
 
 static inline bool Heap_IsWordInLargeHeap(Heap *heap, word_t *word) {
@@ -35,7 +33,8 @@ static inline bool heap_isObjectInHeap(Heap *heap, Object *object) {
     return Heap_IsWordInHeap(heap, (word_t *)object);
 }
 
-Heap *Heap_Create(size_t initialSmallHeapSize, size_t initialLargeHeapSize);
+void Heap_Init(Heap *heap, size_t initialSmallHeapSize,
+               size_t initialLargeHeapSize);
 word_t *Heap_Alloc(Heap *heap, uint32_t objectSize);
 word_t *Heap_AllocSmall(Heap *heap, uint32_t objectSize);
 word_t *Heap_AllocLarge(Heap *heap, uint32_t objectSize);

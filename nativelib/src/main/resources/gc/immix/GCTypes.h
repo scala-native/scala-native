@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+#define NOINLINE __attribute__((noinline))
 #define INLINE __attribute__((always_inline))
 
 typedef uintptr_t word_t;

@@ -10,6 +10,7 @@
 #include "utils/MathUtils.h"
 #include "StackTrace.h"
 #include "Memory.h"
+#include <memory.h>
 
 // Allow read and write
 #define HEAP_MEM_PROT (PROT_READ | PROT_WRITE)
@@ -42,13 +43,12 @@ word_t *Heap_mapAndAlign(size_t memoryLimit, size_t alignmentSize) {
 /**
  * Allocates the heap struct and initializes it
  */
-Heap *Heap_Create(size_t initialSmallHeapSize, size_t initialLargeHeapSize) {
+void Heap_Init(Heap *heap, size_t initialSmallHeapSize,
+               size_t initialLargeHeapSize) {
     assert(initialSmallHeapSize >= 2 * BLOCK_TOTAL_SIZE);
     assert(initialSmallHeapSize % BLOCK_TOTAL_SIZE == 0);
     assert(initialLargeHeapSize >= 2 * BLOCK_TOTAL_SIZE);
     assert(initialLargeHeapSize % BLOCK_TOTAL_SIZE == 0);
-
-    Heap *heap = malloc(sizeof(Heap));
 
     size_t memoryLimit = Heap_getMemoryLimit();
     heap->memoryLimit = memoryLimit;
@@ -59,19 +59,16 @@ Heap *Heap_Create(size_t initialSmallHeapSize, size_t initialLargeHeapSize) {
     heap->smallHeapSize = initialSmallHeapSize;
     heap->heapStart = smallHeapStart;
     heap->heapEnd = smallHeapStart + initialSmallHeapSize / WORD_SIZE;
-    heap->allocator = Allocator_Create(smallHeapStart,
-                                       initialSmallHeapSize / BLOCK_TOTAL_SIZE);
+    Allocator_Init(&allocator, smallHeapStart,
+                   initialSmallHeapSize / BLOCK_TOTAL_SIZE);
 
     // Init heap for large objects
     word_t *largeHeapStart = Heap_mapAndAlign(memoryLimit, MIN_BLOCK_SIZE);
     heap->largeHeapSize = initialLargeHeapSize;
-    heap->largeAllocator =
-        LargeAllocator_Create(largeHeapStart, initialLargeHeapSize);
+    LargeAllocator_Init(&largeAllocator, largeHeapStart, initialLargeHeapSize);
     heap->largeHeapStart = largeHeapStart;
     heap->largeHeapEnd =
         (word_t *)((ubyte_t *)largeHeapStart + initialLargeHeapSize);
-
-    return heap;
 }
 /**
  * Allocates large objects using the `LargeAllocator`.
@@ -87,7 +84,7 @@ word_t *Heap_AllocLarge(Heap *heap, uint32_t objectSize) {
     assert(size >= MIN_BLOCK_SIZE);
 
     // Request an object from the `LargeAllocator`
-    Object *object = LargeAllocator_GetBlock(heap->largeAllocator, size);
+    Object *object = LargeAllocator_GetBlock(&largeAllocator, size);
     // If the object is not NULL, update it's metadata and return it
     if (object != NULL) {
         ObjectHeader *objectHeader = &object->header;
@@ -97,11 +94,11 @@ word_t *Heap_AllocLarge(Heap *heap, uint32_t objectSize) {
         return Object_ToMutatorAddress(object);
     } else {
         // Otherwise collect
-        Heap_Collect(heap, stack);
+        Heap_Collect(heap, &stack);
 
         // After collection, try to alloc again, if it fails, grow the heap by
         // at least the size of the object we want to alloc
-        object = LargeAllocator_GetBlock(heap->largeAllocator, size);
+        object = LargeAllocator_GetBlock(&largeAllocator, size);
         if (object != NULL) {
             Object_SetObjectType(&object->header, object_large);
             Object_SetSize(&object->header, size);
@@ -109,7 +106,7 @@ word_t *Heap_AllocLarge(Heap *heap, uint32_t objectSize) {
         } else {
             Heap_GrowLarge(heap, size);
 
-            object = LargeAllocator_GetBlock(heap->largeAllocator, size);
+            object = LargeAllocator_GetBlock(&largeAllocator, size);
             ObjectHeader *objectHeader = &object->header;
 
             Object_SetObjectType(objectHeader, object_large);
@@ -119,32 +116,28 @@ word_t *Heap_AllocLarge(Heap *heap, uint32_t objectSize) {
     }
 }
 
-word_t *Heap_allocSmallSlow(Heap *heap, uint32_t size) {
+NOINLINE word_t *Heap_allocSmallSlow(Heap *heap, uint32_t size) {
+    Object *object;
+    object = (Object *)Allocator_Alloc(&allocator, size);
 
-    Heap_Collect(heap, stack);
+    if (object != NULL)
+        goto done;
 
-    Object *object = (Object *)Allocator_Alloc(heap->allocator, size);
-    if (object != NULL) {
-        ObjectHeader *objectHeader = &object->header;
+    Heap_Collect(heap, &stack);
+    object = (Object *)Allocator_Alloc(&allocator, size);
 
-        Object_SetObjectType(objectHeader, object_standard);
-        Object_SetSize(objectHeader, size);
-        Object_SetAllocated(objectHeader);
-    }
+    if (object != NULL)
+        goto done;
 
-    if (object == NULL) {
-        Heap_Grow(heap, size);
+    Heap_Grow(heap, size);
+    object = (Object *)Allocator_Alloc(&allocator, size);
 
-        object = (Object *)Allocator_Alloc(heap->allocator, size);
-        assert(object != NULL);
-
-        ObjectHeader *objectHeader = &object->header;
-
-        Object_SetObjectType(objectHeader, object_standard);
-        Object_SetSize(objectHeader, size);
-        Object_SetAllocated(objectHeader);
-    }
-
+done:
+    assert(object != NULL);
+    ObjectHeader *objectHeader = &object->header;
+    Object_SetObjectType(objectHeader, object_standard);
+    Object_SetSize(objectHeader, size);
+    Object_SetAllocated(objectHeader);
     return Object_ToMutatorAddress(object);
 }
 
@@ -155,17 +148,29 @@ INLINE word_t *Heap_AllocSmall(Heap *heap, uint32_t objectSize) {
     assert(objectSize % WORD_SIZE == 0);
     assert(size < MIN_BLOCK_SIZE);
 
-    Object *object = (Object *)Allocator_Alloc(heap->allocator, size);
-    if (object != NULL) {
-        ObjectHeader *objectHeader = &object->header;
-        Object_SetObjectType(objectHeader, object_standard);
-        Object_SetSize(objectHeader, size);
-        Object_SetAllocated(objectHeader);
+    word_t *start = allocator.cursor;
+    word_t *end = (word_t *)((uint8_t *)start + size);
 
-        return Object_ToMutatorAddress(object);
-    } else {
+    // Checks if the end of the block overlaps with the limit
+    if (end >= allocator.limit) {
         return Heap_allocSmallSlow(heap, size);
     }
+
+    allocator.cursor = end;
+
+    Line_Update(allocator.block, start);
+
+    memset(start, 0, size + WORD_SIZE);
+
+    Object *object = (Object *)start;
+    ObjectHeader *objectHeader = &object->header;
+    Object_SetObjectType(objectHeader, object_standard);
+    Object_SetSize(objectHeader, size);
+    Object_SetAllocated(objectHeader);
+
+    __builtin_prefetch(object + 36, 0, 3);
+
+    return Object_ToMutatorAddress(object);
 }
 
 word_t *Heap_Alloc(Heap *heap, uint32_t objectSize) {
@@ -193,35 +198,34 @@ void Heap_Collect(Heap *heap, Stack *stack) {
 }
 
 void Heap_Recycle(Heap *heap) {
-    BlockList_Clear(&heap->allocator->recycledBlocks);
-    BlockList_Clear(&heap->allocator->freeBlocks);
+    BlockList_Clear(&allocator.recycledBlocks);
+    BlockList_Clear(&allocator.freeBlocks);
 
-    heap->allocator->freeBlockCount = 0;
-    heap->allocator->recycledBlockCount = 0;
-
-    heap->allocator->freeMemoryAfterCollection = 0;
+    allocator.freeBlockCount = 0;
+    allocator.recycledBlockCount = 0;
+    allocator.freeMemoryAfterCollection = 0;
 
     word_t *current = heap->heapStart;
     while (current != heap->heapEnd) {
         BlockHeader *blockHeader = (BlockHeader *)current;
-        Block_Recycle(heap->allocator, blockHeader);
+        Block_Recycle(&allocator, blockHeader);
         // block_print(blockHeader);
         current += WORDS_IN_BLOCK;
     }
-    LargeAllocator_Sweep(heap->largeAllocator);
+    LargeAllocator_Sweep(&largeAllocator);
 
-    if (Allocator_ShouldGrow(heap->allocator)) {
+    if (Allocator_ShouldGrow(&allocator)) {
         double growth;
         if (heap->smallHeapSize < EARLY_GROWTH_THRESHOLD) {
             growth = EARLY_GROWTH_RATE;
         } else {
             growth = GROWTH_RATE;
         }
-        size_t blocks = heap->allocator->blockCount * (growth - 1);
+        size_t blocks = allocator.blockCount * (growth - 1);
         size_t increment = blocks * WORDS_IN_BLOCK;
         Heap_Grow(heap, increment);
     }
-    Allocator_InitCursors(heap->allocator);
+    Allocator_InitCursors(&allocator);
 }
 
 void Heap_exitWithOutOfMemory() {
@@ -242,7 +246,7 @@ void Heap_Grow(Heap *heap, size_t increment) {
     // If we cannot grow because we reached the memory limit
     if (!Heap_isGrowingPossible(heap, increment)) {
         // If we can still init the cursors, grow by max possible increment
-        if (Allocator_CanInitCursors(heap->allocator)) {
+        if (Allocator_CanInitCursors(&allocator)) {
             // increment = heap->memoryLimit - (heap->smallHeapSize +
             // heap->largeHeapSize);
             // round down to block size
@@ -266,11 +270,11 @@ void Heap_Grow(Heap *heap, size_t increment) {
     heap->smallHeapSize += increment * WORD_SIZE;
 
     BlockHeader *lastBlock = (BlockHeader *)(heap->heapEnd - WORDS_IN_BLOCK);
-    BlockList_AddBlocksLast(&heap->allocator->freeBlocks,
-                            (BlockHeader *)heapEnd, lastBlock);
+    BlockList_AddBlocksLast(&allocator.freeBlocks, (BlockHeader *)heapEnd,
+                            lastBlock);
 
-    heap->allocator->blockCount += increment / WORDS_IN_BLOCK;
-    heap->allocator->freeBlockCount += increment / WORDS_IN_BLOCK;
+    allocator.blockCount += increment / WORDS_IN_BLOCK;
+    allocator.freeBlockCount += increment / WORDS_IN_BLOCK;
 }
 
 /** Grows the large heap by at least `increment` words */
@@ -290,10 +294,10 @@ void Heap_GrowLarge(Heap *heap, size_t increment) {
     word_t *heapEnd = heap->largeHeapEnd;
     heap->largeHeapEnd += increment;
     heap->largeHeapSize += increment * WORD_SIZE;
-    heap->largeAllocator->size += increment * WORD_SIZE;
+    largeAllocator.size += increment * WORD_SIZE;
 
-    Bitmap_Grow(heap->largeAllocator->bitmap, increment * WORD_SIZE);
+    Bitmap_Grow(largeAllocator.bitmap, increment * WORD_SIZE);
 
-    LargeAllocator_AddChunk(heap->largeAllocator, (Chunk *)heapEnd,
+    LargeAllocator_AddChunk(&largeAllocator, (Chunk *)heapEnd,
                             increment * WORD_SIZE);
 }

@@ -18,9 +18,9 @@ bool StackOverflowHandler_overflowBlockScan(BlockHeader *block, Heap *heap,
 void StackOverflowHandler_CheckForOverflow() {
     if (overflow) {
         // Set overflow address to the first word of the heap
-        currentOverflowAddress = heap->heapStart;
+        currentOverflowAddress = heap.heapStart;
         overflow = false;
-        Stack_DoubleSize(stack);
+        Stack_DoubleSize(&stack);
 
 #ifdef PRINT_STACK_OVERFLOW
         printf("Stack grew to %zu bytes\n",
@@ -28,25 +28,25 @@ void StackOverflowHandler_CheckForOverflow() {
         fflush(stdout);
 #endif
 
-        word_t *largeHeapEnd = heap->largeHeapEnd;
+        word_t *largeHeapEnd = heap.largeHeapEnd;
         // Continue while we don' hit the end of the large heap.
         while (currentOverflowAddress != largeHeapEnd) {
 
             // If the current overflow address is in the small heap, scan the
             // small heap.
-            if (Heap_IsWordInSmallHeap(heap, currentOverflowAddress)) {
+            if (Heap_IsWordInSmallHeap(&heap, currentOverflowAddress)) {
                 // If no object was found in the small heap, move on to large
                 // heap
-                if (!StackOverflowHandler_smallHeapOverflowHeapScan(heap,
-                                                                    stack)) {
-                    currentOverflowAddress = heap->largeHeapStart;
+                if (!StackOverflowHandler_smallHeapOverflowHeapScan(&heap,
+                                                                    &stack)) {
+                    currentOverflowAddress = heap.largeHeapStart;
                 }
             } else {
-                StackOverflowHandler_largeHeapOverflowHeapScan(heap, stack);
+                StackOverflowHandler_largeHeapOverflowHeapScan(&heap, &stack);
             }
 
             // At every iteration when a object is found, trace it
-            Marker_Mark(heap, stack);
+            Marker_Mark(&heap, &stack);
         }
     }
 }
