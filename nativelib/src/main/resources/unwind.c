@@ -1,4 +1,4 @@
-#include <libunwind.h>
+#include "libunwind/include-libunwind/libunwind.h"
 
 int scalanative_unwind_get_context(void *context) {
     return unw_getcontext((unw_context_t *)context);
