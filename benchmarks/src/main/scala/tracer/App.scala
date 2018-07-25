@@ -1,3 +1,0 @@
-package tracer
-
-trait App
