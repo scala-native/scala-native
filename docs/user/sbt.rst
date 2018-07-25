@@ -70,11 +70,13 @@ Since Name                     Type            Description
 0.1   ``nativeMode``           ``String``      Either ``"debug"`` or ``"release"`` (2)
 0.2   ``nativeGC``             ``String``      Either ``"none"``, ``"boehm"`` or ``"immix"`` (3)
 0.3.3 ``nativeLinkStubs``      ``Boolean``     Whether to link ``@stub`` definitions, or to ignore them
+0.3.9 ``nativeLTO``            ``String``      Either ``"none"``, ``"full"`` or ``"thin"`` (4)
 ===== ======================== =============== =========================================================
 
 1. See `Publishing`_ and `Cross compilation`_ for details.
 2. See `Compilation modes`_ for details.
 3. See `Garbage collectors`_ for details.
+4. See `Link-Time Optimization (LTO)`_ for details.
 
 Compilation modes
 -----------------
@@ -112,6 +114,34 @@ Garbage collectors
    Garbage collector that allocates things without ever freeing them. Useful
    for short-running command-line applications or applications where garbage
    collections pauses are not acceptable.
+
+Link-Time Optimization (LTO)
+----------------------------
+
+Scala Native relies on link-time optimization to maximize runtime performance
+of release builds. There are three possible modes that are currently supported:
+
+1. **none.** (default)
+
+   Does not inline across Scala/C boundary. Scala to Scala calls
+   are still optimized by emitting one fat LLVM IR module for
+   the whole application.
+
+2. **full.** (Clang 3.8 or older)
+
+   Inlines across Scala/C boundary by merging all of the LLVM IR
+   modules into a single module for the whole application. Unlike
+   **none** this module also includes the runtime code thus allows
+   for additional optimization opportunities.
+
+3. **thin.** (recommended on Clang 3.9 or newer)
+
+   Inlines across Scala/C boundary using LLVM's
+   `ThinLTO <https://clang.llvm.org/docs/ThinLTO.html>`_.
+   Unlike **none** and **full**
+   it's able to optimize the application in parallel.
+   It also offers the best runtime performance according
+   to our benchmarks.
 
 Publishing
 ----------

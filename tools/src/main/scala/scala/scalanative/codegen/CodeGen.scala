@@ -19,7 +19,10 @@ object CodeGen {
       val env     = assembly.map(defn => defn.name -> defn).toMap
       val workdir = VirtualDirectory.real(config.workdir)
 
-      def debug(): Unit = {
+      // Generate one LLVM IR file per package. This
+      // prevents LLVM from optimizing across IR module
+      // boundary unless LTO is turned on.
+      def separate(): Unit = {
         val batches = mutable.Map.empty[String, mutable.Buffer[Defn]]
         assembly.foreach { defn =>
           val top = defn.name.top.id
@@ -48,7 +51,10 @@ object CodeGen {
         }
       }
 
-      def release(): Unit = {
+      // Generate a single LLVM IR file for the whole application.
+      // This is an adhoc form of LTO. We use it in release mode if
+      // Clang's LTO is not available.
+      def single(): Unit = {
         val sorted = assembly.sortBy(_.name.show)
         val impl   = new Impl(config.targetTriple, env, sorted, workdir)
         val buffer = impl.gen()
@@ -56,9 +62,10 @@ object CodeGen {
         workdir.write(Paths.get("out.ll"), buffer)
       }
 
-      config.mode match {
-        case build.Mode.Debug   => debug()
-        case build.Mode.Release => release()
+      (config.mode, config.LTO) match {
+        case (build.Mode.Debug, _)        => separate()
+        case (build.Mode.Release, "none") => single()
+        case (build.Mode.Release, _)      => separate()
       }
     }
 

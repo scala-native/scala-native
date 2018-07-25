@@ -47,6 +47,9 @@ sealed trait Config {
   /** The logger used by the toolchain. */
   def logger: Logger
 
+  /** The LTO variant used for release mode. */
+  def LTO: String
+
   /** Create a new config with given garbage collector. */
   def withGC(value: GC): Config
 
@@ -85,6 +88,9 @@ sealed trait Config {
 
   /** Create a new config with the given logger. */
   def withLogger(value: Logger): Config
+
+  /** The LTO variant used for release mode. */
+  def withLTO(value: String): Config
 }
 
 object Config {
@@ -104,7 +110,8 @@ object Config {
       gc = GC.default,
       mode = Mode.default,
       linkStubs = false,
-      logger = Logger.default
+      logger = Logger.default,
+      LTO = "none"
     )
 
   private final case class Impl(nativelib: Path,
@@ -119,7 +126,8 @@ object Config {
                                 gc: GC,
                                 mode: Mode,
                                 linkStubs: Boolean,
-                                logger: Logger)
+                                logger: Logger,
+                                LTO: String)
       extends Config {
     def withNativelib(value: Path): Config =
       copy(nativelib = value)
@@ -159,5 +167,8 @@ object Config {
 
     def withLogger(value: Logger): Config =
       copy(logger = value)
+
+    def withLTO(value: String): Config =
+      copy(LTO = value)
   }
 }

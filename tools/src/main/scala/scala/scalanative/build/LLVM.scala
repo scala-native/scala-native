@@ -96,7 +96,10 @@ private[scalanative] object LLVM {
         val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
         val flags = (if (isCpp) Seq("-std=c++11")
                      else Seq("-std=gnu11")) ++ config.compileOptions
-        val compilec = Seq(compiler) ++ flags ++ Seq("-c", path, "-o", opath)
+        val compilec = Seq(compiler) ++ flto(config) ++ flags ++ Seq("-c",
+                                                                     path,
+                                                                     "-o",
+                                                                     opath)
 
         config.logger.running(compilec)
         val result = Process(compilec, config.workdir.toFile) ! Logger
@@ -124,7 +127,11 @@ private[scalanative] object LLVM {
         .map { ll =>
           val apppath = ll.abs
           val outpath = apppath + ".o"
-          val compile = Seq(config.clang.abs, "-c", apppath, "-o", outpath) ++ opts
+          val compile = Seq(config.clang.abs) ++ flto(config) ++ Seq(
+            "-c",
+            apppath,
+            "-o",
+            outpath) ++ opts
           config.logger.running(compile)
           Process(compile, config.workdir.toFile) ! Logger.toProcessLogger(
             config.logger)
@@ -164,12 +171,14 @@ private[scalanative] object LLVM {
       "-ldl",
       "-lpthread")
     val targetopt = Seq("-target", config.targetTriple)
-    val flags     = Seq("-rdynamic", "-o", outpath.abs) ++ targetopt
+    val flags     = flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ targetopt
     val opaths    = IO.getAll(nativelib, "glob:**.o").map(_.abs)
     val paths     = llPaths.map(_.abs) ++ opaths
     val compile   = config.clangPP.abs +: (flags ++ paths ++ linkopts)
+    val ltoName   = lto(config).getOrElse("none")
 
-    config.logger.time(s"Linking native code (${config.gc.name} gc)") {
+    config.logger.time(
+      s"Linking native code (${config.gc.name} gc, $ltoName lto)") {
       config.logger.running(compile)
       Process(compile, config.workdir.toFile) ! Logger.toProcessLogger(
         config.logger)
@@ -177,4 +186,18 @@ private[scalanative] object LLVM {
 
     outpath
   }
+
+  private def lto(config: Config): Option[String] =
+    (config.mode, config.LTO) match {
+      case (Mode.Debug, _)        => None
+      case (Mode.Release, "none") => None
+      case (Mode.Release, name)   => Some(name)
+    }
+
+  private def flto(config: Config): Seq[String] =
+    lto(config).fold[Seq[String]] {
+      Seq()
+    } { name =>
+      Seq(s"-flto=$name")
+    }
 }

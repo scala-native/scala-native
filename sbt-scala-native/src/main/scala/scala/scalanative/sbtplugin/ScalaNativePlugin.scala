@@ -39,6 +39,10 @@ object ScalaNativePlugin extends AutoPlugin {
 
     val nativeGC =
       settingKey[String]("GC choice, either \"none\", \"boehm\" or \"immix\".")
+
+    val nativeLTO =
+      taskKey[String](
+        "LTO variant used for release mode (either \"none\", \"thin\" or \"full\").")
   }
 
   @deprecated("use autoImport instead", "0.3.7")
