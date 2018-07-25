@@ -217,7 +217,7 @@ object CodeGen {
       str("@")
       genGlobal(name)
       str(" = ")
-      str(if (attrs.isExtern) "external " else "")
+      str(if (attrs.isExtern) "external " else "hidden ")
       str(if (isConst) "constant" else "global")
       str(" ")
       rhs match {
