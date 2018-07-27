@@ -86,6 +86,50 @@ object Array {
       `llvm.memmove.p0i8.p0i8.i64`(toPtr, fromPtr, size, 1, false)
     }
   }
+
+  def compare(left: AnyRef,
+              leftPos: Int,
+              right: AnyRef,
+              rightPos: Int,
+              len: Int): Int = {
+    if (left == null || right == null) {
+      throw new NullPointerException()
+    } else if (!left.isInstanceOf[Array[_]]) {
+      throw new IllegalArgumentException("left argument must be an array")
+    } else if (!right.isInstanceOf[Array[_]]) {
+      throw new IllegalArgumentException("right argument must be an array")
+    } else {
+      compare(left.asInstanceOf[Array[_]],
+              leftPos,
+              right.asInstanceOf[Array[_]],
+              rightPos,
+              len)
+    }
+  }
+
+  def compare(left: Array[_],
+              leftPos: Int,
+              right: Array[_],
+              rightPos: Int,
+              len: Int): Int = {
+    if (left == null || right == null) {
+      throw new NullPointerException()
+    } else if (getType(left) != getType(right)) {
+      throw new ArrayStoreException("Invalid array copy.")
+    } else if (len < 0) {
+      throw new IndexOutOfBoundsException("length is negative")
+    } else if (leftPos < 0 || leftPos + len > left.length) {
+      throw new IndexOutOfBoundsException(leftPos.toString)
+    } else if (rightPos < 0 || rightPos + len > right.length) {
+      throw new IndexOutOfBoundsException(rightPos.toString)
+    } else if (len == 0) {
+      0
+    } else {
+      val leftPtr  = left.at(leftPos).cast[Ptr[Byte]]
+      val rightPtr = right.at(rightPos).cast[Ptr[Byte]]
+      string.memcmp(leftPtr, rightPtr, len * left.stride)
+    }
+  }
 }
 
 // ###sourceLocation(file: "/home/denys/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 82)
