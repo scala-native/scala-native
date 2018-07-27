@@ -1,6 +1,6 @@
 package java.lang
 
-import java.lang.reflect.Field
+import java.lang.reflect.{Field, Method}
 
 import scalanative.native._
 import scalanative.runtime.{Array => _, _}
@@ -145,11 +145,11 @@ final class _Class[A](val ty: Ptr[Type]) {
   def getConstructor(args: Array[Object]): java.lang.reflect.Constructor[_] =
     ???
   @stub
-  def getConstructors(): Array[Object]   = ???
-  def getDeclaredFields(): Array[Object] = ???
+  def getConstructors(): Array[Object]  = ???
+  def getDeclaredFields(): Array[Field] = ???
   def getMethod(name: java.lang.String,
-                args: Array[Object]): java.lang.reflect.Method         = ???
-  def getMethods(): Array[Object]                                      = ???
+                args: Array[Class[_]]): java.lang.reflect.Method       = ???
+  def getMethods(): Array[Method]                                      = ???
   def getResourceAsStream(name: java.lang.String): java.io.InputStream = ???
 }
 
