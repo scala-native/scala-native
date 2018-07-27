@@ -1549,8 +1549,8 @@ object Character {
   //  println(charTypes.mkString("val charTypes = Array[scala.Byte](", ", ", ")"))
   //
   // format: off
-  private[this] lazy val charTypeIndices = {
-    val deltas = Array[Int](257, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  @noinline private def charTypeIndicesDeltas =
+    Array[Int](257, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
       1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
       1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1,
       1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -1697,8 +1697,8 @@ object Character {
       182, 1, 4, 3, 62, 2, 4, 12, 24, 147, 70, 4, 11, 48, 70, 58, 116, 2188,
       42711, 41, 4149, 11, 222, 16354, 542, 722403, 1, 30, 96, 128, 240,
       65040, 65534, 2, 65534)
-    uncompressDeltas(deltas)
-  }
+  private[this] lazy val charTypeIndices =
+    uncompressDeltas(charTypeIndicesDeltas)
 
   private[this] lazy val charTypes = Array[scala.Byte](1, 2, 1, 2, 1, 2,
     1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1,
@@ -1864,8 +1864,8 @@ object Character {
   //       0 :: isMirroredIndices.init).map(tup => tup._1 - tup._2)
   //  println(isMirroredIndicesDeltas.mkString(
   //     "isMirroredIndices: val deltas = Array[Int](", ", ", ")"))
-  private[this] lazy val isMirroredIndices = {
-    val deltas = Array[Int](40, 2, 18, 1, 1, 1, 28, 1, 1, 1, 29, 1, 1, 1,
+  @noinline private def isMirroredIndicesDeltas =
+    Array[Int](40, 2, 18, 1, 1, 1, 28, 1, 1, 1, 29, 1, 1, 1,
       45, 1, 15, 1, 3710, 4, 1885, 2, 2460, 2, 10, 2, 54, 2, 14, 2, 177, 1,
       192, 4, 3, 6, 3, 1, 3, 2, 3, 4, 1, 4, 1, 1, 1, 1, 4, 9, 5, 1, 1, 18,
       5, 4, 9, 2, 1, 1, 1, 8, 2, 31, 2, 4, 5, 1, 9, 2, 2, 19, 5, 2, 9, 5, 2,
@@ -1876,12 +1876,13 @@ object Character {
       1, 1, 3, 5, 5, 3, 4, 1, 3, 5, 1, 1, 772, 4, 3, 2, 1, 2, 14, 2, 2, 10,
       478, 10, 2, 8, 52797, 6, 5, 2, 162, 2, 18, 1, 1, 1, 28, 1, 1, 1, 29,
       1, 1, 1, 1, 2, 1, 2, 55159, 1, 57, 1, 57, 1, 57, 1, 57, 1)
-    uncompressDeltas(deltas)
-  }
+  private[this] lazy val isMirroredIndices =
+    uncompressDeltas(isMirroredIndicesDeltas)
 
   // format: on
 
-  private[this] def uncompressDeltas(deltas: Array[Int]): Array[Int] = {
+  @noinline private[this] def uncompressDeltas(
+      deltas: Array[Int]): Array[Int] = {
     for (i <- 1 until deltas.length)
       deltas(i) += deltas(i - 1)
     deltas
