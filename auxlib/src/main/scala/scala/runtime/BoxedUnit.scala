@@ -7,5 +7,5 @@ class BoxedUnit extends java.io.Serializable {
 }
 object BoxedUnit {
   def UNIT = ???
-  val TYPE = classOf[Unit]
+  def TYPE = classOf[Unit]
 }

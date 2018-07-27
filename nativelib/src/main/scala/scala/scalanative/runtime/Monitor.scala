@@ -1,6 +1,6 @@
 package scala.scalanative.runtime
 
-final class Monitor private () {
+sealed class Monitor private () {
   def _notify(): Unit                              = ()
   def _notifyAll(): Unit                           = ()
   def _wait(): Unit                                = ()
@@ -11,5 +11,5 @@ final class Monitor private () {
 }
 
 object Monitor {
-  val dummy = new Monitor()
+  @inline def dummy: Monitor = new Monitor
 }
