@@ -6,7 +6,7 @@ import build.Mode
 sealed trait Driver {
 
   /** Companion of all the passes in the driver's pipeline. */
-  def passes: Seq[AnyPassCompanion]
+  def passes: Seq[PassCompanion]
 
   /** Linker event reporter. */
   def linkerReporter: linker.Reporter
@@ -15,7 +15,7 @@ sealed trait Driver {
   def optimizerReporter: optimizer.Reporter
 
   /** Create a copy with given passes. */
-  def withPasses(value: Seq[AnyPassCompanion]): Driver
+  def withPasses(value: Seq[PassCompanion]): Driver
 
   /** Create a copy of driver with given linker reporter. */
   def withLinkerReporter(value: linker.Reporter): Driver
@@ -25,16 +25,6 @@ sealed trait Driver {
 }
 
 object Driver {
-
-  private val injectionPasses: Seq[InjectCompanion] = Seq(
-    inject.Main,
-    inject.TraitDispatchTables,
-    inject.HasTrait,
-    inject.RuntimeTypeInformation,
-    inject.ClassStruct,
-    inject.ObjectArrayId,
-    inject.ModuleArray
-  )
 
   private val fastOptPasses = Seq(
     pass.DeadBlockElimination,
@@ -55,45 +45,24 @@ object Driver {
     pass.GlobalValueNumbering
   )
 
-  private val loweringPasses = Seq(
-    pass.SRemOverflow,
-    pass.DynmethodLowering,
-    pass.ExternHoisting,
-    pass.ModuleLowering,
-    pass.TypeValueLowering,
-    pass.BoxingLowering,
-    pass.AsLowering,
-    pass.IsLowering,
-    pass.MethodLowering,
-    pass.TraitLowering,
-    pass.ClassLowering,
-    pass.StringLowering,
-    pass.UnitLowering,
-    pass.NothingLowering,
-    pass.AllocLowering,
-    pass.SizeofLowering,
-    pass.CopyPropagation,
-    pass.DeadCodeElimination
-  )
-
   /** Create driver with default pipeline for this configuration. */
   def default(mode: Mode): Driver = {
     val optPasses = mode match {
       case Mode.Debug   => fastOptPasses
       case Mode.Release => fullOptPasses
     }
-    empty.withPasses(injectionPasses ++ optPasses ++ loweringPasses)
+    empty.withPasses(optPasses)
   }
 
   /** Create an empty pass-lesss driver. */
   def empty: Driver =
     new Impl(Seq.empty, linker.Reporter.empty, optimizer.Reporter.empty)
 
-  private final case class Impl(passes: Seq[AnyPassCompanion],
+  private final case class Impl(passes: Seq[PassCompanion],
                                 linkerReporter: linker.Reporter,
                                 optimizerReporter: optimizer.Reporter)
       extends Driver {
-    def withPasses(value: Seq[AnyPassCompanion]): Driver =
+    def withPasses(value: Seq[PassCompanion]): Driver =
       copy(passes = value)
 
     def withLinkerReporter(value: linker.Reporter): Driver =

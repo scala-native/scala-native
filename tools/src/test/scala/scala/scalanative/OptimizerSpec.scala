@@ -24,9 +24,7 @@ abstract class OptimizerSpec extends LinkerSpec {
     link(entry, sources, driver = driver) {
       case (config, res) =>
         val driver_ = driver.getOrElse(Driver.default(Mode.default))
-        fn(config,
-           res.links,
-           ScalaNative.optimize(config, driver_, res.defns, res.dyns))
+        fn(config, res.links, ScalaNative.optimize(config, driver_, res.defns))
     }
 
 }

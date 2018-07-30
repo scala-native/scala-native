@@ -2,11 +2,8 @@ package scala.scalanative
 package optimizer
 package pass
 
-import analysis.ControlFlow
-import analysis.ControlFlow.Block
-
-import nir._
-import Inst._
+import nir._, Inst._
+import sema._, ControlFlow.Block
 import scala.collection.mutable
 
 class BasicBlocksFusion extends Pass {
@@ -79,6 +76,6 @@ class BasicBlocksFusion extends Pass {
 }
 
 object BasicBlocksFusion extends PassCompanion {
-  def apply(config: build.Config, top: analysis.ClassHierarchy.Top) =
+  def apply(config: build.Config, top: sema.Top) =
     new BasicBlocksFusion
 }

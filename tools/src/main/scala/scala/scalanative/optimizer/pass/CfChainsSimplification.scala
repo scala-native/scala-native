@@ -2,29 +2,26 @@ package scala.scalanative
 package optimizer
 package pass
 
-import analysis.ControlFlow
-import analysis.ControlFlow.Block
-import analysis.UseDef
-import analysis.ClassHierarchy.Top
+import nir._, Inst._
+import sema._, ControlFlow.Block
 
-import nir._
-import Inst._
-
-class CfChainsSimplification(implicit top: Top) extends Pass {
+class CfChainsSimplification(implicit top: sema.Top) extends Pass {
   import CfChainsSimplification._
 
   override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
+    val fresh  = Fresh(insts)
     val cfg    = ControlFlow.Graph(insts)
     val usedef = UseDef(cfg)
     val method = MethodInfo(cfg, usedef)
 
     cfg.all.flatMap { b =>
-      (b.label +: b.insts.dropRight(1)) ++ simplifyCf(b.insts.last)(method)
+      (b.label +: b.insts.dropRight(1)) ++ simplifyCf(b.insts.last)(method,
+                                                                    fresh)
     }
   }
 
-  private def simplifyCf(cfInst: Inst)(
-      implicit method: MethodInfo): Seq[Inst] = {
+  private def simplifyCf(cfInst: Inst)(implicit method: MethodInfo,
+                                       fresh: Fresh): Seq[Inst] = {
     var nonCf     = Seq.empty[Inst]
     var currentCf = cfInst
     var continue  = true
@@ -42,8 +39,8 @@ class CfChainsSimplification(implicit top: Top) extends Pass {
     nonCf :+ currentCf
   }
 
-  private def simplifyCfOnce(cfInst: Inst)(
-      implicit method: MethodInfo): Seq[Inst] = {
+  private def simplifyCfOnce(cfInst: Inst)(implicit method: MethodInfo,
+                                           fresh: Fresh): Seq[Inst] = {
     val simpleRes = cfInst match {
 
       // If the target block of this jump is only a comprised of
@@ -112,7 +109,7 @@ class CfChainsSimplification(implicit top: Top) extends Pass {
    * can't handle two distinct CFG-edges going from the same source block to the
    * same destination block
    */
-  private def fixIf(inst: Inst): Seq[Inst] = {
+  private def fixIf(inst: Inst)(implicit fresh: Fresh): Seq[Inst] = {
     inst match {
       // The problem only occurs when the two destination blocks are the same
       case If(cond,
@@ -145,8 +142,8 @@ class CfChainsSimplification(implicit top: Top) extends Pass {
   /* To simplify a normal `if` branch, imagine it is a simple `jump`, and try to optimize
    * the latter. After that, keep the most optimized `jump` instruction, and get its next
    */
-  private def simplifyIfBranch(branch: Next)(
-      implicit method: MethodInfo): Next = {
+  private def simplifyIfBranch(branch: Next)(implicit method: MethodInfo,
+                                             fresh: Fresh): Next = {
     var newBranch       = branch
     var currentCf: Inst = Jump(branch)
     var continue        = true
@@ -172,8 +169,8 @@ class CfChainsSimplification(implicit top: Top) extends Pass {
    * the latter. After that, keep the most optimized `jump` instruction that has no
    * parameters (not allowed in Next.Case), and get its target block
    */
-  private def simplifySwitchCase(swCase: Next)(
-      implicit method: MethodInfo): Next = {
+  private def simplifySwitchCase(swCase: Next)(implicit method: MethodInfo,
+                                               fresh: Fresh): Next = {
     swCase match {
       case Next.Case(value, name) => {
         var newLocalJump    = name
@@ -214,13 +211,13 @@ class CfChainsSimplification(implicit top: Top) extends Pass {
 }
 
 object CfChainsSimplification extends PassCompanion {
-  override def apply(config: build.Config, top: Top) =
+  override def apply(config: build.Config, top: sema.Top) =
     new CfChainsSimplification()(top)
 
   /** The ArgumentReplacer is used to replace the arguments of a Cf instruction
    * by its concrete evaluation
    */
-  class ArgumentReplacer(evaluation: Map[Local, Val]) extends Pass {
+  class ArgumentReplacer(evaluation: Map[Local, Val]) extends Transform {
 
     override def onVal(value: Val) = value match {
       case local @ Val.Local(name, _) =>

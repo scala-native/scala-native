@@ -4,9 +4,7 @@ package pass
 
 import scala.collection.mutable
 import nir._, Inst.Let
-import analysis.ClassHierarchy.Top
-import analysis.DominatorTree
-import analysis.ControlFlow
+import sema._
 
 /** Eliminates redundant box/unbox operations within
  *  a single method definition. This is quite simplistic approach
@@ -100,6 +98,6 @@ object GlobalBoxingElimination extends PassCompanion {
   private final case class Unbox(ty: Type, from: nir.Val, to: nir.Val)
       extends Record
 
-  override def apply(config: build.Config, top: Top) =
+  override def apply(config: build.Config, top: sema.Top) =
     new GlobalBoxingElimination
 }

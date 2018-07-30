@@ -2,18 +2,15 @@ package scala.scalanative
 package optimizer
 package pass
 
-import analysis.ControlFlow
-import analysis.ClassHierarchy.Top
-import analysis.SuppliedArguments
-
-import nir._
-import Inst.Let
+import nir._, Inst.Let
+import sema._
 
 class BlockParamReduction extends Pass {
   import BlockParamReduction._
 
   override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
-    val cfg = ControlFlow.Graph(insts)
+    val fresh = Fresh(insts)
+    val cfg   = ControlFlow.Graph(insts)
 
     val suppliedArgs = SuppliedArguments(cfg)
     val changeParams = new ParamChanger(suppliedArgs)
@@ -23,10 +20,10 @@ class BlockParamReduction extends Pass {
 }
 
 object BlockParamReduction extends PassCompanion {
-  def apply(config: build.Config, top: Top) =
+  def apply(config: build.Config, top: sema.Top) =
     new BlockParamReduction
 
-  class ParamChanger(val suppliedArgs: SuppliedArguments) extends Pass {
+  class ParamChanger(val suppliedArgs: SuppliedArguments) extends Transform {
     /* On block labels, copy the known argument values, and remove the
      * corresponding parameters
      */

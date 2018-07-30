@@ -5,6 +5,11 @@ import java.nio.file.{Files, Path, Paths}
 import scala.sys.process.Process
 import scalanative.build.IO.RichPath
 import scalanative.nir.Global
+import scalanative.lower.Lower
+import scalanative.linker.Linker
+import scalanative.sema.Sema
+import scalanative.codegen.CodeGen
+import scalanative.optimizer.Optimizer
 
 /** Internal utilities to instrument Scala Native linker, otimizer and codegen. */
 private[scalanative] object ScalaNative {
@@ -14,19 +19,14 @@ private[scalanative] object ScalaNative {
    */
   def link(config: Config, driver: optimizer.Driver): linker.Result = {
     config.logger.time("Linking") {
-      val chaDeps   = optimizer.analysis.ClassHierarchy.depends
-      val passes    = driver.passes
-      val passDeps  = passes.flatMap(_.depends).distinct
-      val deps      = (chaDeps ++ passDeps).distinct
-      val injects   = passes.flatMap(_.injects)
-      val mainClass = nir.Global.Top(config.mainClass)
+      val mainClass = Global.Top(config.mainClass)
       val entry =
-        nir.Global
-          .Member(mainClass, "main_scala.scalanative.runtime.ObjectArray_unit")
-      val result =
-        (linker.Linker(config, driver.linkerReporter)).link(entry +: deps)
+        Global.Member(mainClass,
+                      "main_scala.scalanative.runtime.ObjectArray_unit")
+      val linker = Linker(config, driver.linkerReporter)
+      val result = linker.link(entry +: Lower.depends)
 
-      result.withDefns(result.defns ++ injects)
+      result.withDefns(result.defns ++ Lower.injects)
     }
   }
 
@@ -40,19 +40,26 @@ private[scalanative] object ScalaNative {
       linker.Linker(config, reporter).link(entries)
     }
 
-  /** Transform high-level closed world to its lower-level counterpart. */
+  /** Optimizer high-level NIR under closed-world assumption. */
   def optimize(config: Config,
                driver: optimizer.Driver,
-               assembly: Seq[nir.Defn],
-               dyns: Seq[String]): Seq[nir.Defn] =
+               assembly: Seq[nir.Defn]): Seq[nir.Defn] =
     config.logger.time(s"Optimizing (${config.mode} mode)") {
-      optimizer.Optimizer(config, driver, assembly, dyns)
+      Optimizer(config, driver, assembly)
+    }
+
+  /** Transform high-level closed world to its lower-level counterpart. */
+  def lower(config: Config,
+            assembly: Seq[nir.Defn],
+            dyns: Seq[String]): Seq[nir.Defn] =
+    config.logger.time("Lowering") {
+      Lower(config, assembly, dyns)
     }
 
   /** Given low-level assembly, emit LLVM IR for it to the buildDirectory. */
   def codegen(config: Config, assembly: Seq[nir.Defn]): Seq[Path] = {
     config.logger.time("Generating intermediate code") {
-      scalanative.codegen.CodeGen(config, assembly)
+      CodeGen(config, assembly)
     }
     val produced = IO.getAll(config.workdir, "glob:**.ll")
     config.logger.info(s"Produced ${produced.length} files")

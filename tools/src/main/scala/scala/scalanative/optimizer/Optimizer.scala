@@ -9,17 +9,9 @@ import nir._
  */
 object Optimizer {
 
-  private def time[T](msg: String)(f: => T): T = {
-    import java.lang.System.nanoTime
-    val start = nanoTime()
-    val res   = f
-    val end   = nanoTime()
-    println(s"[info] $msg (${(end - start) / 1000000} ms)")
-    res
-  }
-
-  private def partition(defns: Seq[Defn]) = {
-    val batches = java.lang.Runtime.getRuntime.availableProcessors * 4
+  def partition(defns: Seq[Defn]) = {
+    val procs   = java.lang.Runtime.getRuntime.availableProcessors
+    val batches = procs * procs
     defns.groupBy { defn =>
       Math.abs(System.identityHashCode(defn)) % batches
     }
@@ -28,50 +20,35 @@ object Optimizer {
   /** Run all of the passes on given assembly. */
   def apply(config: build.Config,
             driver: Driver,
-            assembly: Seq[Defn],
-            dyns: Seq[String]): Seq[Defn] = {
+            assembly: Seq[Defn]): Seq[Defn] = {
     val reporter = driver.optimizerReporter
     import reporter._
 
-    val passes     = driver.passes
-    val injects    = passes.filter(_.isInjectionPass)
-    val transforms = passes.filterNot(_.isInjectionPass)
-    val world      = analysis.ClassHierarchy(assembly, dyns)
-
-    val injected = {
-      val buf = mutable.UnrolledBuffer.empty[Defn]
-      buf ++= assembly
-      injects.foreach { make =>
-        make(config, world) match {
-          case NoPass         => ()
-          case inject: Inject => inject(buf)
-          case _              => util.unreachable
-        }
-      }
-      buf
-    }
+    val top = sema.Sema(assembly)
 
     def loop(batchId: Int,
              batchDefns: Seq[Defn],
-             passes: Seq[(AnyPass, Int)]): Seq[Defn] =
+             passes: Seq[(Pass, Int)]): Seq[Defn] =
       passes match {
         case Seq() =>
           batchDefns
 
-        case (NoPass, _) +: rest =>
-          loop(batchId, batchDefns, rest)
-
         case (pass: Pass, passId) +: rest =>
-          val passResult = pass.onDefns(batchDefns)
+          val passResult = batchDefns.map {
+            case defn: Defn.Define =>
+              defn.copy(insts = pass.onInsts(defn.insts))
+            case defn =>
+              defn
+          }
           onPass(batchId, passId, pass, passResult)
           loop(batchId, passResult, rest)
       }
 
-    partition(injected).par
+    partition(assembly).par
       .map {
         case (batchId, batchDefns) =>
           onStart(batchId, batchDefns)
-          val passes = transforms.map(_.apply(config, world))
+          val passes = driver.passes.map(_.apply(config, top))
           val res    = loop(batchId, batchDefns, passes.zipWithIndex)
           onComplete(batchId, res)
           res

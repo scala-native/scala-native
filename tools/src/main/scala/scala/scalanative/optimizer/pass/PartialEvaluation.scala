@@ -2,8 +2,6 @@ package scala.scalanative
 package optimizer
 package pass
 
-import analysis.ClassHierarchy.Top
-
 import nir._
 import Inst.Let
 import Bin._
@@ -16,7 +14,7 @@ class PartialEvaluation extends Pass {
   import PartialEvaluation._
   import ConstantFolding._
 
-  override def onInst(inst: Inst): Inst = inst match {
+  override def onInsts(insts: Seq[Inst]): Seq[Inst] = insts.map {
 
     /* Iadd */
     case Let(n, Op.Bin(Iadd, ty, lhs, IVal(0))) =>
@@ -219,7 +217,7 @@ class PartialEvaluation extends Pass {
     case Let(n, Op.Select(cond, Val.False, Val.True)) =>
       neg(n, cond)
 
-    case _ =>
+    case inst =>
       inst
   }
 
@@ -231,7 +229,7 @@ class PartialEvaluation extends Pass {
 }
 
 object PartialEvaluation extends PassCompanion {
-  override def apply(config: build.Config, top: Top) =
+  override def apply(config: build.Config, top: sema.Top) =
     new PartialEvaluation
 
   object PowerOf2 {
