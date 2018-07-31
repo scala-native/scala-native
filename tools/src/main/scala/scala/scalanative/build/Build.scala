@@ -76,13 +76,13 @@ object Build {
       ScalaNative.codegen(config, optimized)
       IO.getAll(config.workdir, "glob:**.ll")
     }
-    val objectFiles = LLVM.compile(config, generated)
     val unpackedLib = LLVM.unpackNativelib(config.nativelib, config.workdir)
-
-    val nativelibConfig =
-      config.withCompileOptions("-O2" +: config.compileOptions)
-    val _ =
+    val objectFiles = config.logger.time("Compiling to native code") {
+      val nativelibConfig =
+        config.withCompileOptions("-O2" +: config.compileOptions)
       LLVM.compileNativelib(nativelibConfig, linkerResult, unpackedLib)
+      LLVM.compile(config, generated)
+    }
 
     LLVM.link(config, linkerResult, objectFiles, unpackedLib, outpath)
   }
