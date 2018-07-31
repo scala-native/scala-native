@@ -122,24 +122,22 @@ private[scalanative] object LLVM {
       }
     val opts = optimizationOpt +: config.compileOptions
 
-    config.logger.time("Compiling to native code") {
-      llPaths.par
-        .map { ll =>
-          val apppath = ll.abs
-          val outpath = apppath + ".o"
-          val compile = Seq(config.clang.abs) ++ flto(config) ++ Seq(
-            "-c",
-            apppath,
-            "-o",
-            outpath) ++ opts
-          config.logger.running(compile)
-          Process(compile, config.workdir.toFile) ! Logger.toProcessLogger(
-            config.logger)
-          Paths.get(outpath)
-        }
-        .seq
-        .toSeq
-    }
+    llPaths.par
+      .map { ll =>
+        val apppath = ll.abs
+        val outpath = apppath + ".o"
+        val compile = Seq(config.clang.abs) ++ flto(config) ++ Seq(
+          "-c",
+          apppath,
+          "-o",
+          outpath) ++ opts
+        config.logger.running(compile)
+        Process(compile, config.workdir.toFile) ! Logger.toProcessLogger(
+          config.logger)
+        Paths.get(outpath)
+      }
+      .seq
+      .toSeq
   }
 
   /**
