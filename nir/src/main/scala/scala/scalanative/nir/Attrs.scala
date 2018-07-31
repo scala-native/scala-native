@@ -20,6 +20,7 @@ object Attr {
 
   final case object Pure                  extends Attr
   final case object Extern                extends Attr
+  final case object JavaVolatile          extends Attr
   final case class Override(name: Global) extends Attr
 
   final case class Align(value: Int) extends Attr
@@ -37,6 +38,7 @@ final case class Attrs(inline: Inline = MayInline,
                        isExtern: Boolean = false,
                        isDyn: Boolean = false,
                        isStub: Boolean = false,
+                       isJavaVolatile: Boolean = false,
                        overrides: Seq[Global] = Seq(),
                        pins: Seq[Pin] = Seq(),
                        links: Seq[Attr.Link] = Seq(),
@@ -49,6 +51,8 @@ final case class Attrs(inline: Inline = MayInline,
     if (isExtern) out += Extern
     if (isDyn) out += Dyn
     if (isStub) out += Stub
+    if (isJavaVolatile) out += JavaVolatile
+
     overrides.foreach { out += Override(_) }
     out ++= pins
     out ++= links
@@ -61,15 +65,16 @@ object Attrs {
   val None = new Attrs()
 
   def fromSeq(attrs: Seq[Attr]) = {
-    var inline    = None.inline
-    var isPure    = false
-    var isExtern  = false
-    var isDyn     = false
-    var isStub    = false
-    var align     = Option.empty[Int]
-    val overrides = mutable.UnrolledBuffer.empty[Global]
-    val pins      = mutable.UnrolledBuffer.empty[Pin]
-    val links     = mutable.UnrolledBuffer.empty[Attr.Link]
+    var inline         = None.inline
+    var isPure         = false
+    var isExtern       = false
+    var isDyn          = false
+    var isStub         = false
+    var isJavaVolatile = false
+    var align          = Option.empty[Int]
+    val overrides      = mutable.UnrolledBuffer.empty[Global]
+    val pins           = mutable.UnrolledBuffer.empty[Pin]
+    val links          = mutable.UnrolledBuffer.empty[Attr.Link]
 
     attrs.foreach {
       case attr: Inline    => inline = attr
@@ -81,16 +86,20 @@ object Attrs {
       case Override(name)  => overrides += name
       case attr: Pin       => pins += attr
       case link: Attr.Link => links += link
+      case JavaVolatile    => isJavaVolatile = true
     }
 
-    new Attrs(inline,
-              isPure,
-              isExtern,
-              isDyn,
-              isStub,
-              overrides,
-              pins,
-              links,
-              align)
+    new Attrs(
+      inline = inline,
+      isPure = isPure,
+      isExtern = isExtern,
+      isDyn = isDyn,
+      isStub = isStub,
+      isJavaVolatile = isJavaVolatile,
+      overrides = overrides,
+      pins = pins,
+      links = links,
+      align = align
+    )
   }
 }

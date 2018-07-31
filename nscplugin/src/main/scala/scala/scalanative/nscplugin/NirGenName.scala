@@ -53,7 +53,7 @@ trait NirGenName { self: NirGenPhase =>
     val owner = genTypeName(sym.owner)
     val id    = nativeIdOf(sym)
     val tag   = if (sym.owner.isExternModule) "extern" else "field"
-    owner member id tag tag
+    owner.member(id).tag(tag)
   }
 
   def genMethodSignature(sym: Symbol): String = {

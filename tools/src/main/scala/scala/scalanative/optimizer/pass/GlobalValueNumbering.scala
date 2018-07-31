@@ -277,10 +277,11 @@ object GlobalValueNumbering extends PassCompanion {
     def hashOp(op: Op): Hash = {
       import Op._
       val opFields: Seq[Any] = op match {
-        case Call(ty, ptr, args, _)    => "Call" +: ty +: ptr +: args
-        case Load(ty, ptr, isVolatile) => Seq("Load", ty, ptr, isVolatile)
-        case Store(ty, ptr, value, isVolatile) =>
-          Seq("Store", ty, ptr, value, isVolatile)
+        case Call(ty, ptr, args, _) => "Call" +: ty +: ptr +: args
+        case Load(ty, ptr, isVolatile, isAtomic) =>
+          Seq("Load", ty, ptr, isVolatile, isAtomic)
+        case Store(ty, ptr, value, isVolatile, isAtomic) =>
+          Seq("Store", ty, ptr, value, isVolatile, isAtomic)
         case Elem(ty, ptr, indexes) => "Elem" +: ty +: ptr +: indexes
         case Extract(aggr, indexes) => "Extract" +: aggr +: indexes
         case Insert(aggr, value, indexes) =>

@@ -2,10 +2,8 @@ package scala.scalanative
 package optimizer
 package pass
 
-import scala.collection.mutable
 import analysis.ClassHierarchy._
 import analysis.ClassHierarchyExtractors._
-import util.unsupported
 import nir._
 
 /** Lowers class definitions, and field accesses to structs

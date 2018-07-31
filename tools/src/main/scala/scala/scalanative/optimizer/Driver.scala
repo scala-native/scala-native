@@ -65,6 +65,7 @@ object Driver {
     pass.AsLowering,
     pass.IsLowering,
     pass.MethodLowering,
+    pass.AtomicBooleanToBytePass,
     pass.TraitLowering,
     pass.ClassLowering,
     pass.StringLowering,
@@ -102,4 +103,5 @@ object Driver {
     def withOptimizerReporter(value: optimizer.Reporter): Driver =
       copy(optimizerReporter = value)
   }
+
 }

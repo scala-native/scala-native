@@ -76,9 +76,10 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Attr.Align(_) =>
       assert(false, "alignment attribute is not serializable")
 
-    case Attr.Pure        => putInt(T.PureAttr)
-    case Attr.Extern      => putInt(T.ExternAttr)
-    case Attr.Override(n) => putInt(T.OverrideAttr); putGlobal(n)
+    case Attr.Pure         => putInt(T.PureAttr)
+    case Attr.Extern       => putInt(T.ExternAttr)
+    case Attr.Override(n)  => putInt(T.OverrideAttr); putGlobal(n)
+    case Attr.JavaVolatile => putInt(T.JavaVolatileAttr)
 
     case Attr.Link(s)      => putInt(T.LinkAttr); putString(s)
     case Attr.PinAlways(n) => putInt(T.PinAlwaysAttr); putGlobal(n)
@@ -274,18 +275,20 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putVals(args)
       putNext(unwind)
 
-    case Op.Load(ty, ptr, isVolatile) =>
+    case Op.Load(ty, ptr, isVolatile, isAtomic) =>
       assert(!isVolatile, "volatile loads are not serializable")
       putInt(T.LoadOp)
       putType(ty)
       putVal(ptr)
+      putBool(isAtomic)
 
-    case Op.Store(ty, value, ptr, isVolatile) =>
+    case Op.Store(ty, value, ptr, isVolatile, isAtomic) =>
       assert(!isVolatile, "volatile stores are not serializable")
       putInt(T.StoreOp)
       putType(ty)
       putVal(value)
       putVal(ptr)
+      putBool(isAtomic)
 
     case Op.Elem(ty, v, indexes) =>
       putInt(T.ElemOp)

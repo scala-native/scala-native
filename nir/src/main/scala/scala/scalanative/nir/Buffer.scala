@@ -43,10 +43,17 @@ class Buffer(implicit fresh: Fresh) {
     let(fresh(), op)
   def call(ty: Type, ptr: Val, args: Seq[Val], unwind: Next): Val =
     let(Op.Call(ty, ptr, args, unwind))
-  def load(ty: Type, ptr: Val, isVolatile: Boolean = false): Val =
-    let(Op.Load(ty, ptr, isVolatile))
-  def store(ty: Type, ptr: Val, value: Val, isVolatile: Boolean = false): Val =
-    let(Op.Store(ty, ptr, value, isVolatile))
+  def load(ty: Type,
+           ptr: Val,
+           isVolatile: Boolean = false,
+           isAtomic: Boolean = false): Val =
+    let(Op.Load(ty, ptr, isVolatile, isAtomic))
+  def store(ty: Type,
+            ptr: Val,
+            value: Val,
+            isVolatile: Boolean = false,
+            isAtomic: Boolean = false): Val =
+    let(Op.Store(ty, ptr, value, isVolatile, isAtomic))
   def elem(ty: Type, ptr: Val, indexes: Seq[Val]): Val =
     let(Op.Elem(ty, ptr, indexes))
   def extract(aggr: Val, indexes: Seq[Int]): Val =
