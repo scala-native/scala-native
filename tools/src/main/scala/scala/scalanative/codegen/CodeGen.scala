@@ -8,7 +8,7 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 import scalanative.util.{Scope, ShowBuilder, unsupported}
 import scalanative.io.{VirtualDirectory, withScratchBuffer}
-import scalanative.optimizer.analysis.ControlFlow.{Graph => CFG, Block, Edge}
+import scalanative.sema.ControlFlow.{Graph => CFG, Block, Edge}
 import scalanative.nir._
 
 object CodeGen {
@@ -78,6 +78,7 @@ object CodeGen {
     var currentBlockName: Local = _
     var currentBlockSplit: Int  = _
 
+    val copies    = mutable.Map.empty[Local, Val]
     val deps      = mutable.Set.empty[Global]
     val generated = mutable.Set.empty[Global]
     val builder   = new ShowBuilder
@@ -263,12 +264,23 @@ object CodeGen {
       }
       if (!isDecl) {
         str(" {")
+
+        insts.foreach {
+          case Inst.Let(n, Op.Copy(v)) =>
+            copies(n) = v
+          case _ =>
+            ()
+        }
+
         val cfg = CFG(insts)
-        cfg.foreach { block =>
+        cfg.all.foreach { block =>
           genBlock(block)(cfg, fresh)
         }
         newline()
+
         str("}")
+
+        copies.clear()
       }
     }
 
@@ -404,6 +416,8 @@ object CodeGen {
         name
       }
     def deconstify(v: Val): Val = v match {
+      case Val.Local(local, _) if copies.contains(local) =>
+        deconstify(copies(local))
       case Val.Struct(name, vals) =>
         Val.Struct(name, vals.map(deconstify))
       case Val.Array(elemty, vals) =>
@@ -607,6 +621,9 @@ object CodeGen {
         }
 
       op match {
+        case _: Op.Copy =>
+          ()
+
         case call: Op.Call =>
           genCall(genBind, call)
 

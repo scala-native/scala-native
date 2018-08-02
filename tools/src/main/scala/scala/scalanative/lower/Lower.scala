@@ -1,0 +1,724 @@
+package scala.scalanative
+package lower
+
+import scala.collection.mutable
+import scalanative.util.ScopedVar
+import scalanative.nir._
+import scalanative.sema._
+
+object Lower {
+  import Impl._
+
+  def apply(config: build.Config,
+            assembly: Seq[Defn],
+            dyns: Seq[String]): Seq[Defn] = {
+    implicit val top  = sema.Sema(assembly)
+    implicit val meta = new Metadata(top, dyns)
+
+    val buf   = mutable.UnrolledBuffer.empty[Defn]
+    val input = assembly ++ Generate(Global.Top(config.mainClass))
+
+    optimizer.Optimizer
+      .partition(input)
+      .par
+      .map {
+        case (_, defns) =>
+          (new Impl).onDefns(defns)
+      }
+      .seq
+      .foreach { defns =>
+        buf ++= defns
+      }
+
+    buf
+  }
+
+  private final class Impl(implicit top: sema.Top, meta: Metadata)
+      extends Transform {
+    import meta._
+
+    // Type of the bare runtime type information struct.
+    private val classRttiType =
+      rtti(top.nodes(Global.Top("java.lang.Object"))).struct
+
+    // Names of the fields of the java.lang.String in the memory layout order.
+    private val stringFieldNames = {
+      val node  = ClassRef.unapply(StringName).get
+      val names = layout(node).entries.map(_.name)
+      assert(names.length == 4, "java.lang.String is expected to have 4 fields")
+      names
+    }
+
+    private val retty = new util.ScopedVar[Type]
+    private val fresh = new util.ScopedVar[Fresh]
+
+    override def onDefns(defns: Seq[Defn]): Seq[Defn] = {
+      val buf = mutable.UnrolledBuffer.empty[Defn]
+
+      defns.foreach {
+        case defn: Defn.Class =>
+          genClassDefn(buf, defn.name)
+        case defn: Defn.Trait =>
+          genTraitDefn(buf, defn.name)
+        case defn: Defn.Struct =>
+          genStructDefn(buf, defn.name)
+        case defn: Defn.Module =>
+          genModuleDefn(buf, defn.name)
+        case defn @ Defn.Declare(attrs, name, _) if attrs.isExtern =>
+          buf += onDefn(defn.copy(name = stripExternName(name)))
+        case defn @ Defn.Define(attrs, name, _, _) if attrs.isExtern =>
+          buf += onDefn(defn.copy(name = stripExternName(name)))
+        case defn @ Defn.Const(attrs, name, _, _) if attrs.isExtern =>
+          buf += onDefn(defn.copy(name = stripExternName(name)))
+        case defn @ Defn.Var(attrs, name, _, _) if attrs.isExtern =>
+          buf += onDefn(defn.copy(name = stripExternName(name)))
+        case Defn.Declare(_, MethodRef(_: Class | _: Trait, _), _) =>
+          ()
+        case Defn.Var(_, FieldRef(_: Class, _), _, _) =>
+          ()
+        case defn =>
+          buf += onDefn(defn)
+      }
+
+      buf
+    }
+
+    override def onDefn(defn: Defn): Defn = defn match {
+      case defn: Defn.Define =>
+        val Type.Function(_, ty) = defn.ty
+        ScopedVar.scoped(
+          retty := ty,
+          fresh := Fresh(defn.insts)
+        )(super.onDefn(defn))
+      case _ =>
+        super.onDefn(defn)
+    }
+
+    override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
+      val buf = new nir.Buffer()(fresh)
+      import buf._
+
+      insts.foreach {
+        case inst @ Inst.Let(n, op) =>
+          op.resty match {
+            case Type.Unit =>
+              genOp(buf, fresh(), op)
+              let(n, Op.Copy(unit))
+            case Type.Nothing =>
+              genOp(buf, fresh(), op)
+              unreachable
+              label(fresh(), Seq(Val.Local(n, op.resty)))
+            case _ =>
+              genOp(buf, n, op)
+          }
+
+        case Inst.Throw(v, unwind) =>
+          genThrow(buf, v, unwind)
+
+        case Inst.Ret(_) if retty.get == Type.Unit =>
+          ret(Val.None)
+
+        case inst =>
+          buf += inst
+      }
+
+      buf.toSeq.map(super.onInst)
+    }
+
+    override def onVal(value: Val): Val = value match {
+      case Val.Global(n @ Global.Member(_, id), ty)
+          if id.startsWith("extern.__") =>
+        Val.Global(stripExternName(n), ty)
+      case Val.Global(n @ Ref(node), ty) if node.attrs.isExtern =>
+        Val.Global(stripExternName(n), ty)
+      case Val.Global(ScopeRef(node), _) =>
+        Val.Global(rtti(node).name, Type.Ptr)
+      case Val.String(v) =>
+        genStringVal(v)
+      case Val.Unit =>
+        unit
+      case _ =>
+        super.onVal(value)
+    }
+
+    override def onType(ty: Type): Type = ty match {
+      case _: Type.RefKind | Type.Nothing =>
+        Type.Ptr
+      case Type.Function(params, Type.Unit | Type.Nothing) =>
+        Type.Function(params.map(onType), Type.Void)
+      case _ =>
+        super.onType(ty)
+    }
+
+    def genClassDefn(buf: mutable.Buffer[Defn], name: Global): Unit = {
+      val cls    = top.nodes(name).asInstanceOf[Class]
+      val struct = layout(cls).struct
+      val rtti   = meta.rtti(cls)
+
+      buf += onDefn(Defn.Struct(Attrs.None, struct.name, struct.tys))
+      buf += onDefn(Defn.Const(Attrs.None, rtti.name, rtti.struct, rtti.value))
+    }
+
+    def genTraitDefn(buf: mutable.Buffer[Defn], name: Global): Unit = {
+      val trt  = top.nodes(name).asInstanceOf[Trait]
+      val rtti = meta.rtti(trt)
+
+      buf += onDefn(Defn.Const(Attrs.None, rtti.name, rtti.struct, rtti.value))
+    }
+
+    def genStructDefn(buf: mutable.Buffer[Defn], name: Global): Unit = {
+      val struct = top.nodes(name).asInstanceOf[Struct]
+      val rtti   = meta.rtti(struct)
+
+      buf += onDefn(Defn.Const(Attrs.None, rtti.name, rtti.struct, rtti.value))
+    }
+
+    def genModuleDefn(buf: mutable.Buffer[Defn], name: Global): Unit = {
+      val cls   = top.nodes(name).asInstanceOf[Class]
+      val clsTy = cls.ty
+
+      implicit val fresh = Fresh()
+
+      val entry      = fresh()
+      val existing   = fresh()
+      val initialize = fresh()
+
+      val slot  = Val.Local(fresh(), Type.Ptr)
+      val self  = Val.Local(fresh(), clsTy)
+      val cond  = Val.Local(fresh(), Type.Bool)
+      val alloc = Val.Local(fresh(), clsTy)
+
+      val initCall = if (cls.isStaticModule) {
+        Inst.None
+      } else {
+        val initSig = Type.Function(Seq(clsTy), Type.Void)
+        val init    = Val.Global(name member "init", Type.Ptr)
+
+        Inst.Let(Op.Call(initSig, init, Seq(alloc), Next.None))
+      }
+
+      val loadName = name member "load"
+      val loadSig  = Type.Function(Seq(), clsTy)
+      val loadDefn = Defn.Define(
+        Attrs.None,
+        loadName,
+        loadSig,
+        Seq(
+          Inst.Label(entry, Seq()),
+          Inst.Let(slot.name,
+                   Op.Elem(Type.Ptr,
+                           Val.Global(Global.Top("__modules"), Type.Ptr),
+                           Seq(Val.Int(meta.moduleArray.index(cls))))),
+          Inst.Let(self.name, Op.Load(clsTy, slot)),
+          Inst.Let(cond.name, Op.Comp(Comp.Ine, Rt.Object, self, Val.Null)),
+          Inst.If(cond, Next(existing), Next(initialize)),
+          Inst.Label(existing, Seq()),
+          Inst.Ret(self),
+          Inst.Label(initialize, Seq()),
+          Inst.Let(alloc.name, Op.Classalloc(name)),
+          Inst.Let(Op.Store(clsTy, slot, alloc)),
+          initCall,
+          Inst.Ret(alloc)
+        )
+      )
+
+      buf += onDefn(loadDefn)
+      genClassDefn(buf, name)
+    }
+
+    def genThrow(buf: Buffer, exc: Val, unwind: Next) = {
+      genOp(buf, fresh(), Op.Call(throwSig, throw_, Seq(exc), unwind))
+      buf.unreachable
+    }
+
+    def genOp(buf: Buffer, n: Local, op: Op): Unit = op match {
+      case op: Op.Field =>
+        genFieldOp(buf, n, op)
+      case op: Op.Method =>
+        genMethodOp(buf, n, op)
+      case op: Op.Dynmethod =>
+        genDynmethodOp(buf, n, op)
+      case op: Op.Is =>
+        genIsOp(buf, n, op)
+      case op: Op.As =>
+        genAsOp(buf, n, op)
+      case op: Op.Sizeof =>
+        genSizeofOp(buf, n, op)
+      case op: Op.Classalloc =>
+        genClassallocOp(buf, n, op)
+      case op: Op.Bin =>
+        genBinOp(buf, n, op)
+      case op: Op.Box =>
+        genBoxOp(buf, n, op)
+      case op: Op.Unbox =>
+        genUnboxOp(buf, n, op)
+      case op: Op.Module =>
+        genModuleOp(buf, n, op)
+      case _ =>
+        buf.let(n, op)
+    }
+
+    def genFieldOp(buf: Buffer, n: Local, op: Op.Field) = {
+      val Op.Field(obj, FieldRef(cls: Class, fld)) = op
+
+      val layout = meta.layout(cls)
+      val ty     = layout.struct
+      val index  = layout.index(fld)
+
+      buf.let(n, Op.Elem(ty, obj, Seq(Val.Int(0), Val.Int(index))))
+    }
+
+    def genMethodOp(buf: Buffer, n: Local, op: Op.Method) = {
+      import buf._
+
+      op match {
+        case Op.Method(obj, MethodRef(cls: Class, meth)) if meth.isVirtual =>
+          val vindex  = vtable(cls).index(meth)
+          val typeptr = let(Op.Load(Type.Ptr, obj))
+          val methptrptr = let(
+            Op.Elem(rtti(cls).struct,
+                    typeptr,
+                    Seq(Val.Int(0),
+                        Val.Int(5), // index of vtable in type struct
+                        Val.Int(vindex))))
+
+          let(n, Op.Load(Type.Ptr, methptrptr))
+
+        case Op.Method(obj, MethodRef(_: Class, meth)) if meth.isStatic =>
+          let(n, Op.Copy(Val.Global(meth.name, Type.Ptr)))
+
+        case Op.Method(obj, MethodRef(trt: Trait, meth)) =>
+          val sig = meth.name.id
+          if (tables.traitInlineSigs.contains(sig)) {
+            let(n, Op.Copy(tables.traitInlineSigs(sig)))
+          } else {
+            val sigid   = tables.traitDispatchSigs(meth.name.id)
+            val typeptr = let(Op.Load(Type.Ptr, obj))
+            val idptr =
+              let(Op.Elem(Rt.Type, typeptr, Seq(Val.Int(0), Val.Int(0))))
+            val id = let(Op.Load(Type.Int, idptr))
+            val rowptr = let(
+              Op.Elem(Type.Ptr,
+                      tables.dispatchVal,
+                      Seq(Val.Int(tables.dispatchOffset(sigid)))))
+            val methptrptr =
+              let(Op.Elem(Type.Ptr, rowptr, Seq(id)))
+            let(n, Op.Load(Type.Ptr, methptrptr))
+          }
+      }
+    }
+
+    def genDynmethodOp(buf: Buffer, n: Local, op: Op.Dynmethod): Unit = {
+      import buf._
+
+      val Op.Dynmethod(obj, signature) = op
+
+      def throwInstrs(): Unit = {
+        val exc = Val.Local(fresh(), Type.Ptr)
+        genClassallocOp(buf, exc.name, Op.Classalloc(excptnGlobal))
+        let(
+          Op.Call(excInitSig,
+                  excInit,
+                  Seq(exc, Val.String(signature)),
+                  Next.None))
+        genThrow(buf, exc, Next.None)
+      }
+
+      def throwIfCond(cond: Op.Comp): Unit = {
+        val labelIsNull, labelEndNull = Next(fresh())
+
+        val condNull = let(cond)
+        branch(condNull, labelIsNull, labelEndNull)
+        label(labelIsNull.name)
+        throwInstrs()
+        label(labelEndNull.name)
+      }
+
+      def throwIfNull(value: Val) =
+        throwIfCond(Op.Comp(Comp.Ieq, Type.Ptr, value, Val.Null))
+
+      val methodIndex =
+        meta.dyns.zipWithIndex.find(_._1 == signature).get._2
+
+      // Load the type information pointer
+      val typeptr = let(Op.Load(Type.Ptr, obj))
+      // Load the pointer of the table size
+      val methodCountPtr = let(
+        Op.Elem(classRttiType,
+                typeptr,
+                Seq(Val.Int(0), Val.Int(3), Val.Int(0))))
+      // Load the table size
+      val methodCount = let(Op.Load(Type.Int, methodCountPtr))
+      throwIfCond(Op.Comp(Comp.Ieq, Type.Int, methodCount, Val.Int(0)))
+      // If the size is greater than 0, call the dyndispatch runtime function
+      val dyndispatchTablePtr = let(
+        Op.Elem(classRttiType,
+                typeptr,
+                Seq(Val.Int(0), Val.Int(3), Val.Int(0))))
+      val methptrptr = let(
+        Op.Call(dyndispatchSig,
+                dyndispatch,
+                Seq(dyndispatchTablePtr, Val.Int(methodIndex)),
+                Next.None))
+      throwIfNull(methptrptr)
+      let(n, Op.Load(Type.Ptr, methptrptr))
+    }
+
+    def genIsOp(buf: Buffer, n: Local, op: Op.Is): Unit = {
+      import buf._
+
+      op match {
+        case Op.Is(_, Val.Null | Val.Zero(_)) =>
+          let(n, Op.Copy(Val.False))
+
+        case Op.Is(ty, obj) =>
+          val result = Val.Local(fresh(), Type.Bool)
+
+          val thenL, elseL, contL = fresh()
+
+          // check if obj is null
+          val isnull = let(Op.Comp(Comp.Ieq, Type.Ptr, obj, Val.Null))
+          branch(isnull, Next(thenL), Next(elseL))
+          // in case it's null, result is always false
+          label(thenL)
+          val res1 = let(Op.Copy(Val.False))
+          jump(contL, Seq(res1))
+          // otherwise, do an actual instance check
+          label(elseL)
+          val res2 = genIsOp(buf, ty, obj)
+          jump(contL, Seq(res2))
+          // merge the result of two branches
+          label(contL, Seq(result))
+          let(n, Op.Copy(result))
+      }
+    }
+
+    def genIsOp(buf: Buffer, ty: Type, obj: Val): Val = {
+      import buf._
+
+      ty match {
+        case ClassRef(cls) if cls.range.length == 1 =>
+          val typeptr = let(Op.Load(Type.Ptr, obj))
+          let(Op.Comp(Comp.Ieq, Type.Ptr, typeptr, rtti(cls).const))
+
+        case ClassRef(cls) =>
+          val typeptr = let(Op.Load(Type.Ptr, obj))
+          val idptr = let(
+            Op.Elem(Rt.Type, typeptr, Seq(Val.Int(0), Val.Int(0))))
+          val id = let(Op.Load(Type.Int, idptr))
+          val ge = let(
+            Op.Comp(Comp.Sle, Type.Int, Val.Int(cls.range.start), id))
+          val le = let(Op.Comp(Comp.Sle, Type.Int, id, Val.Int(cls.range.end)))
+          let(Op.Bin(Bin.And, Type.Bool, ge, le))
+
+        case TraitRef(trt) =>
+          val typeptr = let(Op.Load(Type.Ptr, obj))
+          val idptr = let(
+            Op.Elem(Rt.Type, typeptr, Seq(Val.Int(0), Val.Int(0))))
+          val id = let(Op.Load(Type.Int, idptr))
+          val boolptr = let(
+            Op.Elem(tables.classHasTraitTy,
+                    tables.classHasTraitVal,
+                    Seq(Val.Int(0), id, Val.Int(trt.id))))
+          let(Op.Load(Type.Bool, boolptr))
+
+        case _ =>
+          util.unsupported(s"is[$ty] $obj")
+      }
+    }
+
+    def genAsOp(buf: Buffer, n: Local, op: Op.As): Unit = op match {
+      case Op.As(_: Type.RefKind, v) if v.ty.isInstanceOf[Type.RefKind] =>
+        buf.let(n, Op.Copy(v))
+      case Op.As(to, v) =>
+        util.unsupported(s"can't cast from ${v.ty} to $to")
+    }
+
+    def genSizeofOp(buf: Buffer, n: Local, op: Op.Sizeof): Unit = {
+      val Op.Sizeof(ty) = op
+
+      buf.let(n, Op.Copy(Val.Long(MemoryLayout.sizeOf(ty))))
+    }
+
+    def genClassallocOp(buf: Buffer, n: Local, op: Op.Classalloc): Unit = {
+      val Op.Classalloc(ClassRef(cls)) = op
+
+      val size = MemoryLayout.sizeOf(layout(cls).struct)
+      val allocMethod =
+        if (size < LARGE_OBJECT_MIN_SIZE) alloc else largeAlloc
+
+      buf.let(n,
+              Op.Call(allocSig,
+                      allocMethod,
+                      Seq(rtti(cls).const, Val.Long(size)),
+                      Next.None))
+    }
+
+    def genBinOp(buf: Buffer, n: Local, op: Op.Bin): Unit = {
+      import buf._
+
+      op match {
+        // Detects taking remainder for division by -1 and replaces
+        // it by division by 1 which can't overflow.
+        //
+        // We implement '%' (remainder) with LLVM's 'srem' and it
+        // can overflow for cases:
+        //
+        // - Int.MinValue % -1
+        // - Long.MinValue % -1
+        //
+        // E.g. On x86_64 'srem' might get translated to 'idiv'
+        // which computes both quotient and remainder at once
+        // and quotient can overflow.
+        case sremBin @ Op.Bin(Bin.Srem, intType: Type.I, _, divisor)
+            if intType.width == 32 || intType.width == 64 =>
+          val safeDivisor         = Val.Local(fresh(), intType)
+          val thenL, elseL, contL = fresh()
+
+          val isPossibleOverflow =
+            let(Op.Comp(Comp.Ieq, intType, divisor, Val.Int(-1)))
+          branch(isPossibleOverflow, Next(thenL), Next(elseL))
+
+          label(thenL)
+          jump(contL, Seq(Val.Int(1)))
+
+          label(elseL)
+          jump(contL, Seq(divisor))
+
+          label(contL, Seq(safeDivisor))
+          let(n, sremBin.copy(r = safeDivisor))
+
+        case op =>
+          let(n, op)
+      }
+    }
+
+    def genBoxOp(buf: Buffer, n: Local, op: Op.Box): Unit = {
+      val Op.Box(ty, from) = op
+      val (module, id)     = BoxTo(ty)
+
+      val boxTy =
+        Type.Function(Seq(Type.Module(module), Type.unbox(ty)), ty)
+
+      buf.let(n,
+              Op.Call(boxTy,
+                      Val.Global(Global.Member(module, id), Type.Ptr),
+                      Seq(
+                        Val.Undef(Type.Module(module)),
+                        from
+                      ),
+                      Next.None))
+    }
+
+    def genUnboxOp(buf: Buffer, n: Local, op: Op.Unbox): Unit = {
+      val Op.Unbox(ty, from) = op
+      val (module, id)       = UnboxTo(ty)
+
+      val unboxTy =
+        Type.Function(Seq(Type.Module(module), ty), Type.unbox(ty))
+
+      buf.let(n,
+              Op.Call(unboxTy,
+                      Val.Global(Global.Member(module, id), Type.Ptr),
+                      Seq(
+                        Val.Undef(Type.Module(module)),
+                        from
+                      ),
+                      Next.None))
+    }
+
+    def genModuleOp(buf: Buffer, n: Local, op: Op.Module) = {
+      val Op.Module(name, unwind) = op
+
+      val loadSig = Type.Function(Seq(), Type.Class(name))
+      val load    = Val.Global(name member "load", Type.Ptr)
+
+      buf.let(n, Op.Call(loadSig, load, Seq(), unwind))
+    }
+
+    def genStringVal(value: String): Val = {
+      val StringCls    = ClassRef.unapply(StringName).get
+      val CharArrayCls = ClassRef.unapply(CharArrayName).get
+
+      val chars       = value.toCharArray
+      val charsLength = Val.Int(chars.length)
+      val charsConst = Val.Const(
+        Val.Struct(
+          Global.None,
+          Seq(rtti(CharArrayCls).const,
+              charsLength,
+              Val.Int(0), // padding to get next field aligned properly
+              Val.Array(Type.Short, chars.map(c => Val.Short(c.toShort))))
+        ))
+
+      val fieldValues = stringFieldNames.map {
+        case StringValueName          => charsConst
+        case StringOffsetName         => Val.Int(0)
+        case StringCountName          => charsLength
+        case StringCachedHashCodeName => Val.Int(stringHashCode(value))
+        case _                        => util.unreachable
+      }
+
+      Val.Const(Val.Struct(Global.None, rtti(StringCls).const +: fieldValues))
+    }
+
+    // Update java.lang.String::hashCode whenever you change this method.
+    def stringHashCode(s: String): Int =
+      if (s.length == 0) {
+        0
+      } else {
+        val value = s.toCharArray
+        var hash  = 0
+        var i     = 0
+        while (i < value.length) {
+          hash = value(i) + ((hash << 5) - hash)
+          i += 1
+        }
+        hash
+      }
+
+    def stripExternName(n: Global): Global = {
+      val id = n.id
+      assert(id.startsWith("extern."))
+      Global.Member(Global.Top("__extern"), id.substring(7)) // strip extern. prefix
+    }
+  }
+
+  private object Impl {
+    val LARGE_OBJECT_MIN_SIZE = 8192
+
+    val allocSig = Type.Function(Seq(Type.Ptr, Type.Long), Type.Ptr)
+
+    val allocSmallName = Global.Top("scalanative_alloc_small")
+    val alloc          = Val.Global(allocSmallName, allocSig)
+
+    val largeAllocName = Global.Top("scalanative_alloc_large")
+    val largeAlloc     = Val.Global(largeAllocName, allocSig)
+
+    val dyndispatchName = Global.Top("scalanative_dyndispatch")
+    val dyndispatchSig =
+      Type.Function(Seq(Type.Ptr, Type.Int), Type.Ptr)
+    val dyndispatch = Val.Global(dyndispatchName, dyndispatchSig)
+
+    val excptnGlobal = Global.Top("java.lang.NoSuchMethodException")
+    val excptnInitGlobal =
+      Global.Member(excptnGlobal, "init_java.lang.String")
+
+    val excInitSig = Type.Function(
+      Seq(Type.Class(excptnGlobal), Type.Class(Global.Top("java.lang.String"))),
+      Type.Unit)
+    val excInit = Val.Global(excptnInitGlobal, Type.Ptr)
+
+    val StringName               = Rt.String.name
+    val StringValueName          = StringName member "value" tag "field"
+    val StringOffsetName         = StringName member "offset" tag "field"
+    val StringCountName          = StringName member "count" tag "field"
+    val StringCachedHashCodeName = StringName member "cachedHashCode" tag "field"
+
+    val CharArrayName = Global.Top("scala.scalanative.runtime.CharArray")
+
+    val BoxesRunTime = Global.Top("scala.runtime.BoxesRunTime$")
+    val RuntimeBoxes = Global.Top("scala.scalanative.runtime.Boxes$")
+
+    val BoxTo: Map[Type, (Global, String)] = Seq(
+      ("java.lang.Boolean",
+       BoxesRunTime,
+       "boxToBoolean_bool_java.lang.Boolean"),
+      ("java.lang.Character",
+       BoxesRunTime,
+       "boxToCharacter_char_java.lang.Character"),
+      ("scala.scalanative.native.UByte",
+       RuntimeBoxes,
+       "boxToUByte_i8_java.lang.Object"),
+      ("java.lang.Byte", BoxesRunTime, "boxToByte_i8_java.lang.Byte"),
+      ("scala.scalanative.native.UShort",
+       RuntimeBoxes,
+       "boxToUShort_i16_java.lang.Object"),
+      ("java.lang.Short", BoxesRunTime, "boxToShort_i16_java.lang.Short"),
+      ("scala.scalanative.native.UInt",
+       RuntimeBoxes,
+       "boxToUInt_i32_java.lang.Object"),
+      ("java.lang.Integer", BoxesRunTime, "boxToInteger_i32_java.lang.Integer"),
+      ("scala.scalanative.native.ULong",
+       RuntimeBoxes,
+       "boxToULong_i64_java.lang.Object"),
+      ("java.lang.Long", BoxesRunTime, "boxToLong_i64_java.lang.Long"),
+      ("java.lang.Float", BoxesRunTime, "boxToFloat_f32_java.lang.Float"),
+      ("java.lang.Double", BoxesRunTime, "boxToDouble_f64_java.lang.Double")
+    ).map {
+      case (name, module, id) =>
+        Type.Class(Global.Top(name)) -> (module, id)
+    }.toMap
+
+    val UnboxTo: Map[Type, (Global, String)] = Seq(
+      ("java.lang.Boolean",
+       BoxesRunTime,
+       "unboxToBoolean_java.lang.Object_bool"),
+      ("java.lang.Character",
+       BoxesRunTime,
+       "unboxToChar_java.lang.Object_char"),
+      ("scala.scalanative.native.UByte",
+       RuntimeBoxes,
+       "unboxToUByte_java.lang.Object_i8"),
+      ("java.lang.Byte", BoxesRunTime, "unboxToByte_java.lang.Object_i8"),
+      ("scala.scalanative.native.UShort",
+       RuntimeBoxes,
+       "unboxToUShort_java.lang.Object_i16"),
+      ("java.lang.Short", BoxesRunTime, "unboxToShort_java.lang.Object_i16"),
+      ("scala.scalanative.native.UInt",
+       RuntimeBoxes,
+       "unboxToUInt_java.lang.Object_i32"),
+      ("java.lang.Integer", BoxesRunTime, "unboxToInt_java.lang.Object_i32"),
+      ("scala.scalanative.native.ULong",
+       RuntimeBoxes,
+       "unboxToULong_java.lang.Object_i64"),
+      ("java.lang.Long", BoxesRunTime, "unboxToLong_java.lang.Object_i64"),
+      ("java.lang.Float", BoxesRunTime, "unboxToFloat_java.lang.Object_f32"),
+      ("java.lang.Double", BoxesRunTime, "unboxToDouble_java.lang.Object_f64")
+    ).map {
+      case (name, module, id) =>
+        Type.Class(Global.Top(name)) -> (module, id)
+    }.toMap
+
+    val unitName  = Global.Top("scala.scalanative.runtime.BoxedUnit$")
+    val unit      = Val.Global(unitName, Type.Ptr)
+    val unitTy    = Type.Struct(unitName member "layout", Seq(Type.Ptr))
+    val unitConst = Val.Global(unitName member "type", Type.Ptr)
+    val unitValue = Val.Struct(unitTy.name, Seq(unitConst))
+
+    val throwName = Global.Top("scalanative_throw")
+    val throwSig  = Type.Function(Seq(Type.Ptr), Type.Void)
+    val throw_    = Val.Global(throwName, Type.Ptr)
+  }
+
+  val injects: Seq[Defn] = {
+    val buf = mutable.UnrolledBuffer.empty[Defn]
+    buf += Defn.Declare(Attrs.None, allocSmallName, allocSig)
+    buf += Defn.Declare(Attrs.None, largeAllocName, allocSig)
+    buf += Defn.Declare(Attrs.None, dyndispatchName, dyndispatchSig)
+    buf += Defn.Const(Attrs.None, unitName, unitTy, unitValue)
+    buf += Defn.Declare(Attrs.None, throwName, throwSig)
+    buf ++= Generate.injects
+    buf
+  }
+
+  val depends: Seq[Global] = {
+    val buf = mutable.UnrolledBuffer.empty[Global]
+    buf += excptnGlobal
+    buf += excptnInitGlobal
+    buf += StringName
+    buf += StringValueName
+    buf += StringOffsetName
+    buf += StringCountName
+    buf += StringCachedHashCodeName
+    buf += CharArrayName
+    buf += BoxesRunTime
+    buf += RuntimeBoxes
+    buf += unitName
+    buf ++= BoxTo.values.map { case (owner, id)   => Global.Member(owner, id) }
+    buf ++= UnboxTo.values.map { case (owner, id) => Global.Member(owner, id) }
+    buf ++= Generate.depends
+    buf ++= Metadata.depends
+    buf
+  }
+}

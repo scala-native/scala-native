@@ -2,7 +2,7 @@ package scala.scalanative
 package optimizer
 
 import build.Config
-import analysis.ClassHierarchy.Top
+import sema.Top
 
 import org.scalatest._
 
@@ -11,7 +11,9 @@ class DriverSpec extends FlatSpec with Matchers {
   private def makeCompanion: PassCompanion =
     new PassCompanion {
       override def apply(config: Config, top: Top): Pass =
-        new Pass {}
+        new Pass {
+          def onInsts(insts: Seq[nir.Inst]): Seq[nir.Inst] = insts
+        }
     }
 
   private val P0 = makeCompanion

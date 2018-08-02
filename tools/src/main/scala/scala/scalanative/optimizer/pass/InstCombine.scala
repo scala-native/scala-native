@@ -2,14 +2,8 @@ package scala.scalanative
 package optimizer
 package pass
 
-import analysis.ClassHierarchy.Top
-import analysis.ControlFlow
-
-import nir._
-import Inst._
-import Bin._
-import Comp._
-
+import nir._, Inst._, Bin._, Comp._
+import sema.ControlFlow
 import scala.None
 import scala.collection.mutable
 
@@ -19,7 +13,8 @@ class InstCombine extends Pass {
 
   override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
     // This stores the encountered definitions for non-params locals
-    val buf      = new nir.Buffer
+    val fresh    = Fresh(insts)
+    val buf      = new nir.Buffer()(fresh)
     val defop    = mutable.HashMap.empty[Local, Op]
     val resolver = new DefOp(defop)
     val cfg      = ControlFlow.Graph(insts)
@@ -27,10 +22,10 @@ class InstCombine extends Pass {
     /* Because of the pre-order traversal of the CFG, the definitions will be
      * seen before their use
      */
-    cfg.foreach { b =>
+    cfg.all.foreach { b =>
       buf += b.label
       b.insts.foreach { inst =>
-        val simplifiedSeq = simplify(inst, resolver)
+        val simplifiedSeq = simplify(inst, resolver)(fresh)
         simplifiedSeq.foreach {
           case Let(n, op) => defop += (n -> op)
           case _          =>
@@ -42,7 +37,8 @@ class InstCombine extends Pass {
     buf.toSeq
   }
 
-  private def simplify(inst: Inst, defop: DefOp): Seq[Inst] = {
+  private def simplify(inst: Inst, defop: DefOp)(
+      implicit fresh: Fresh): Seq[Inst] = {
     val singleSimp = inst match {
 
       case Let(z, Op.Bin(Iadd, ty, y, IVal(a))) =>
@@ -325,7 +321,7 @@ class InstCombine extends Pass {
 }
 
 object InstCombine extends PassCompanion {
-  override def apply(config: build.Config, top: Top) =
+  override def apply(config: build.Config, top: sema.Top) =
     new InstCombine
 
   class DefOp(val defops: mutable.HashMap[Local, Op]) {

@@ -2,14 +2,11 @@ package scala.scalanative
 package optimizer
 package pass
 
-import analysis.ClassHierarchy.Top
-
 import nir._
 import Inst.Let
 import Bin._
 import Comp._
 import Conv._
-
 import scala.None
 
 /** For operations with constant operands and no side-effects, compute the resulting value */
@@ -127,21 +124,20 @@ class ConstantFolding extends Pass {
       elsev
   }
 
-  override def onInst(inst: Inst): Inst = inst match {
+  override def onInsts(insts: Seq[Inst]): Seq[Inst] = insts.map {
     case inst @ Inst.Let(n, op) =>
-      val newInst = emulate.lift(op) match {
+      emulate.lift(op) match {
         case Some(newVal) => Let(n, Op.Copy(newVal))
         case None         => inst
       }
-      newInst
 
-    case _ =>
+    case inst =>
       inst
   }
 }
 
 object ConstantFolding extends PassCompanion {
-  override def apply(config: build.Config, top: Top) =
+  override def apply(config: build.Config, top: sema.Top) =
     new ConstantFolding
 
   object IVal {

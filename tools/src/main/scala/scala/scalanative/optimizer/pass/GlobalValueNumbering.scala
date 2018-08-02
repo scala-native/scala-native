@@ -4,13 +4,8 @@ package pass
 
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
-
-import analysis.ClassHierarchy.Top
-import analysis.ControlFlow
-import analysis.ControlFlow.Block
-import analysis.DominatorTree
-
 import nir._
+import sema._, ControlFlow.Block
 
 class GlobalValueNumbering extends Pass {
   import GlobalValueNumbering._
@@ -49,7 +44,7 @@ class GlobalValueNumbering extends Pass {
       }
     }
 
-    val newInsts = cfg.map { block =>
+    val newInsts = cfg.all.map { block =>
       variableVN ++= block.params.map(lval =>
         (lval.name, HashFunction.rawLocal(lval.name)))
       localDefs ++= block.params.map(lval => (lval.name, block.label))
@@ -356,6 +351,6 @@ object GlobalValueNumbering extends PassCompanion {
     def rawLocal(local: Local): Hash = local.id
   }
 
-  override def apply(config: build.Config, top: Top) =
+  override def apply(config: build.Config, top: sema.Top) =
     new GlobalValueNumbering()
 }

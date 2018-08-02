@@ -68,14 +68,12 @@ object Build {
       s"Discovered ${classCount} classes and ${methodCount} methods")
 
     val optimized =
-      ScalaNative.optimize(config,
-                           driver,
-                           linkerResult.defns,
-                           linkerResult.dyns)
-    val generated = {
-      ScalaNative.codegen(config, optimized)
-      IO.getAll(config.workdir, "glob:**.ll")
-    }
+      ScalaNative.optimize(config, driver, linkerResult.defns)
+    val lowered =
+      ScalaNative.lower(config, optimized, linkerResult.dyns)
+    ScalaNative.codegen(config, lowered)
+    val generated = IO.getAll(config.workdir, "glob:**.ll")
+
     val unpackedLib = LLVM.unpackNativelib(config.nativelib, config.workdir)
     val objectFiles = config.logger.time("Compiling to native code") {
       val nativelibConfig =

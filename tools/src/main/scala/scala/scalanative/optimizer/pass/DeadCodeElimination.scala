@@ -3,20 +3,19 @@ package optimizer
 package pass
 
 import scala.collection.mutable
-import analysis.ClassHierarchy.Top
-import analysis.UseDef
-import analysis.ControlFlow
 import nir._
+import sema._
 
 /** Eliminates pure computations that are not being used, as well as unused block parameters. */
-class DeadCodeElimination(implicit top: Top) extends Pass {
+class DeadCodeElimination(implicit top: sema.Top) extends Pass {
   import DeadCodeElimination._
 
   override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
+    val fresh      = Fresh(insts)
     val cfg        = ControlFlow.Graph(insts)
     val usedef     = UseDef(cfg)
     val removeArgs = new ArgRemover(usedef, cfg.entry.name)
-    val buf        = new nir.Buffer
+    val buf        = new nir.Buffer()(fresh)
 
     cfg.all.foreach { block =>
       if (usedef(block.name).alive) {
@@ -40,11 +39,11 @@ class DeadCodeElimination(implicit top: Top) extends Pass {
 }
 
 object DeadCodeElimination extends PassCompanion {
-  override def apply(config: build.Config, top: Top) =
+  override def apply(config: build.Config, top: sema.Top) =
     new DeadCodeElimination()(top)
 
   class ArgRemover(usedef: Map[Local, UseDef.Def], entryName: Local)
-      extends Pass {
+      extends Transform {
     override def onNext(next: Next) = next match {
       case Next.Label(name, args) if (name != entryName) =>
         usedef(name) match {
