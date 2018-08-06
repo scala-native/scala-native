@@ -896,12 +896,8 @@ object FormatterUSSuite extends tests.Suite {
     }
   }
 
-  testFails(
-    "format(String, Array[Object]) for Float/Double conversion type 's' and 'S' with excess precision",
-    481) {
-    // 1.1.toString = "1.1" on Scala JVM, "1.100000" on Scala Native
-    // Formatter$.Transformer.padding trims to `precision` number of chars, and then pads up to `width`.
-    // The excess '0's lead to test failure.
+  test(
+    "format(String, Array[Object]) for Float/Double conversion type 's' and 'S' with excess precision") {
     val triple = Array(
       Array(1.1f, "%-6.4s", "1.1   "),
       Array(1.1f, "%.5s", "1.1"),

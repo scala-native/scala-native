@@ -200,14 +200,51 @@ object DoubleSuite extends tests.Suite {
     assertThrows[NumberFormatException](Double.parseDouble("0.potato"))
   }
 
-  // Not fully JVM compliant yet
   test("toString") {
-    assert(Double.toString(1.0).equals("1.000000"))
-    assert(Double.toString(-1.0).equals("-1.000000"))
-    assert(Double.toString(0.0).equals("0.000000"))
-    assert(Double.toString(-0.0).equals("-0.000000"))
+
+// Test non-finite values.
     assert(Double.toString(Double.POSITIVE_INFINITY).equals("Infinity"))
     assert(Double.toString(Double.NEGATIVE_INFINITY).equals("-Infinity"))
     assert(Double.toString(Double.NaN).equals("NaN"))
+
+// Test simple values around zero.
+    assert(Double.toString(0.0).equals("0.0"))
+    assert(Double.toString(-0.0).equals("-0.0"))
+
+    assert(Double.toString(1.0).equals("1.0"))
+    assert(Double.toString(-1.0).equals("-1.0"))
+
+    assert(Double.toString(2.0).equals("2.0"))
+    assert(Double.toString(-2.0).equals("-2.0"))
+
+// Test maximum & minima.
+    assert(
+      Double
+        .toString(scala.Double.MaxValue)
+        .equals("1.7976931348623157E308"))
+
+    assert(
+      Double
+        .toString(scala.Double.MinValue)
+        .equals("-1.7976931348623157E308"))
+
+    assert(Double.toString(scala.Double.MinPositiveValue).equals("4.9E-324"))
+
+// Test correctness least significant digits  & number of digits after the
+// decimal point of values with 'infinite' number of fraction digits.
+
+    assert((math.Pi * 1.0E+0).toString.equals("3.141592653589793"))
+
+    assert((math.Pi * 1.0E+1).toString.equals("31.41592653589793"))
+    assert((math.Pi * 1.0E-1).toString.equals("0.3141592653589793"))
+
+// Test transitions to scientific notation.
+
+    assert((math.Pi * 1.0E+6).toString.equals("3141592.653589793"))
+    assert((math.Pi * 1.0E+7).toString.equals("3.1415926535897933E7"))
+
+    assert((math.Pi * 1.0E-3).toString.equals("0.0031415926535897933"))
+    assert((math.Pi * 1.0E-4).toString.equals("3.141592653589793E-4"))
+
   }
 }

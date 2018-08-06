@@ -2,6 +2,8 @@ package java.lang
 
 import scalanative.native, native._
 
+import java.lang.ieee754tostring.ryu.{RyuRoundingMode, RyuDouble, RyuFloat}
+
 final class Float(val _value: scala.Float)
     extends Number
     with Comparable[Float] {
@@ -318,17 +320,7 @@ object Float {
     }
 
   def toString(f: scala.Float): String = {
-    if (isNaN(f)) {
-      "NaN"
-    } else if (f == POSITIVE_INFINITY) {
-      "Infinity"
-    } else if (f == NEGATIVE_INFINITY) {
-      "-Infinity"
-    } else {
-      val cstr = stackalloc[CChar](32)
-      stdio.snprintf(cstr, 32, c"%f", f.toDouble)
-      fromCString(cstr)
-    }
+    RyuFloat.floatToString(f, RyuRoundingMode.ROUND_EVEN);
   }
 
   @inline def valueOf(s: String): Float =
