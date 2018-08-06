@@ -13,8 +13,6 @@ object Generate {
   private class Impl(entry: Global)(implicit top: sema.Top, meta: Metadata) {
     val buf = mutable.UnrolledBuffer.empty[Defn]
 
-    val tables = new TraitDispatchTables(top)
-
     def generate(): Seq[Defn] = {
       genClassHasTrait()
       genTraitHasTrait()
@@ -40,8 +38,8 @@ object Generate {
         Seq(
           Inst.Label(fresh(), Seq(classid, traitid)),
           Inst.Let(boolptr.name,
-                   Op.Elem(tables.classHasTraitTy,
-                           tables.classHasTraitVal,
+                   Op.Elem(meta.tables.classHasTraitTy,
+                           meta.tables.classHasTraitVal,
                            Seq(Val.Int(0), classid, traitid))),
           Inst.Let(result.name, Op.Load(Type.Bool, boolptr)),
           Inst.Ret(result)
@@ -62,8 +60,8 @@ object Generate {
         Seq(
           Inst.Label(fresh(), Seq(leftid, rightid)),
           Inst.Let(boolptr.name,
-                   Op.Elem(tables.traitHasTraitTy,
-                           tables.traitHasTraitVal,
+                   Op.Elem(meta.tables.traitHasTraitTy,
+                           meta.tables.traitHasTraitVal,
                            Seq(Val.Int(0), leftid, rightid))),
           Inst.Let(result.name, Op.Load(Type.Bool, boolptr)),
           Inst.Ret(result)
@@ -144,9 +142,9 @@ object Generate {
     }
 
     def genTraitDispatchTables() = {
-      buf += tables.dispatchDefn
-      buf += tables.classHasTraitDefn
-      buf += tables.traitHasTraitDefn
+      buf += meta.tables.dispatchDefn
+      buf += meta.tables.classHasTraitDefn
+      buf += meta.tables.traitHasTraitDefn
     }
   }
 
