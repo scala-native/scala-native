@@ -111,12 +111,18 @@ object ReflectiveProxy {
             acc
         }
         .values
+        .toSet
 
     // generates a reflective proxy from the defn
-    toProxy.flatMap { g =>
-      defns.collectFirst {
-        case defn: Defn.Define if defn.name == g => genReflProxy(defn)
-      }
-    }.toSeq
+    val result = mutable.UnrolledBuffer.empty[Defn.Define]
+    defns.foreach {
+      case defn: Defn.Define =>
+        if (toProxy.contains(defn.name)) {
+          result += genReflProxy(defn)
+        }
+      case _ =>
+        ()
+    }
+    result
   }
 }

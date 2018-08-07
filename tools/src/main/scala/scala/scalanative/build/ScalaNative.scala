@@ -6,7 +6,7 @@ import scala.sys.process.Process
 import scalanative.build.IO.RichPath
 import scalanative.nir.Global
 import scalanative.lower.Lower
-import scalanative.linker.Linker
+import scalanative.linker.Link
 import scalanative.sema.Sema
 import scalanative.codegen.CodeGen
 import scalanative.optimizer.Optimizer
@@ -23,8 +23,7 @@ private[scalanative] object ScalaNative {
       val entry =
         Global.Member(mainClass,
                       "main_scala.scalanative.runtime.ObjectArray_unit")
-      val linker = Linker(config, driver.linkerReporter)
-      val result = linker.link(entry +: Lower.depends)
+      val result = Link(config, entry +: Lower.depends)
 
       result.withDefns(result.defns ++ Lower.injects)
     }
@@ -37,7 +36,7 @@ private[scalanative] object ScalaNative {
                reporter: linker.Reporter,
                entries: Seq[nir.Global]): linker.Result =
     config.logger.time("Linking") {
-      linker.Linker(config, reporter).link(entries)
+      Link(config, entries)
     }
 
   /** Optimizer high-level NIR under closed-world assumption. */
