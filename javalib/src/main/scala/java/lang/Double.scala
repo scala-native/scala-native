@@ -2,7 +2,7 @@ package java.lang
 
 import scalanative.native._
 
-import java.lang.ieee754tostring.ryu.{RyuRoundingMode, RyuDouble, RyuFloat}
+import java.lang.ieee754tostring.ryu.{RyuRoundingMode, RyuDouble}
 
 final class Double(val _value: scala.Double)
     extends Number
