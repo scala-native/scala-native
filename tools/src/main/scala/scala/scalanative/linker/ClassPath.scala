@@ -1,6 +1,7 @@
 package scala.scalanative
 package linker
 
+import scala.collection.mutable
 import nir.{Global, Dep, Attr, Defn}
 import nir.serialization.BinaryDeserializer
 import java.nio.file.{FileSystems, Path}

@@ -6,7 +6,7 @@ import nir._
 trait Result {
 
   /** Sequence of globals that could not be resolved. */
-  private[scalanative] def unresolved: Seq[Global]
+  private[scalanative] def unavailable: Seq[Global]
 
   /** Sequence of external c libraries to link with. */
   private[scalanative] def links: Seq[Attr.Link]
@@ -17,8 +17,8 @@ trait Result {
   /** Sequence of signatures of dynamic methods that were discovered during linking. */
   private[scalanative] def dyns: Seq[String]
 
-  /** Create a copy of the result with given unresolved sequence. */
-  private[scalanative] def withUnresolved(value: Seq[Global]): Result
+  /** Create a copy of the result with given unavailable sequence. */
+  private[scalanative] def withUnavailable(value: Seq[Global]): Result
 
   /** Create a copy of the result with given links sequence. */
   private[scalanative] def withLinks(value: Seq[Attr.Link]): Result
@@ -35,13 +35,13 @@ object Result {
   /** Default, empty linker result. */
   val empty: Result = Impl(Seq.empty, Seq.empty, Seq.empty, Seq.empty)
 
-  private[linker] final case class Impl(unresolved: Seq[Global],
+  private[linker] final case class Impl(unavailable: Seq[Global],
                                         links: Seq[Attr.Link],
                                         defns: Seq[nir.Defn],
                                         dyns: Seq[String])
       extends Result {
-    def withUnresolved(value: Seq[Global]): Result =
-      copy(unresolved = value)
+    def withUnavailable(value: Seq[Global]): Result =
+      copy(unavailable = value)
 
     def withLinks(value: Seq[Attr.Link]): Result =
       copy(links = value)
@@ -53,9 +53,9 @@ object Result {
       copy(dyns = value)
   }
 
-  private[linker] def apply(unresolved: Seq[Global],
+  private[linker] def apply(unavailable: Seq[Global],
                             links: Seq[Attr.Link],
                             defns: Seq[nir.Defn],
                             dyns: Seq[String]): Result =
-    Impl(unresolved, links, defns, dyns)
+    Impl(unavailable, links, defns, dyns)
 }

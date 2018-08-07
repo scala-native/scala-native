@@ -53,8 +53,8 @@ object Build {
     val driver       = optimizer.Driver.default(config.mode)
     val linkerResult = ScalaNative.link(config, driver)
 
-    if (linkerResult.unresolved.nonEmpty) {
-      linkerResult.unresolved.map(_.show).sorted.foreach { signature =>
+    if (linkerResult.unavailable.nonEmpty) {
+      linkerResult.unavailable.map(_.show).sorted.foreach { signature =>
         config.logger.error(s"cannot link: $signature")
       }
       throw new BuildException("unable to link")

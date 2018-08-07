@@ -47,7 +47,7 @@ sealed trait Config {
   /** The logger used by the toolchain. */
   def logger: Logger
 
-  /** The LTO variant used for release mode. */
+  /** The LTO mode to use used during a release build. */
   def LTO: String
 
   /** Create a new config with given garbage collector. */
@@ -89,14 +89,14 @@ sealed trait Config {
   /** Create a new config with the given logger. */
   def withLogger(value: Logger): Config
 
-  /** The LTO variant used for release mode. */
+  /** Create a new config with the given lto mode. */
   def withLTO(value: String): Config
 }
 
 object Config {
 
   /** Default empty config object where all of the fields are left blank. */
-  val empty: Config =
+  def empty: Config =
     Impl(
       nativelib = Paths.get(""),
       mainClass = "",

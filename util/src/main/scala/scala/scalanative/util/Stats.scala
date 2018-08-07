@@ -20,11 +20,12 @@ object Stats {
     counters(key) = counters.getOrElse(key, 0L) + 1L
   }
   def print(): Unit = synchronized {
-    println("--- Stats")
+    println("--- Times")
     times.toSeq.sortBy(_._1).foreach {
       case (key, time) =>
         println(key + ": " + (time / 1000000D).toString + " ms")
     }
+    println("--- Counters")
     counters.toSeq.sortBy(_._1).foreach {
       case (key, n) =>
         println(key + ": " + n + " times")
