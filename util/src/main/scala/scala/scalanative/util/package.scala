@@ -44,4 +44,15 @@ package object util {
     println(s"$msg (${(end - start).toFloat / 1000000} ms)")
     res
   }
+
+  def procs: Int =
+    java.lang.Runtime.getRuntime.availableProcessors
+
+  def partition[T](elems: Seq[T]): Map[Int, Seq[T]] =
+    partition(elems, procs * procs)
+
+  def partition[T](elems: Seq[T], batches: Int): Map[Int, Seq[T]] =
+    elems.groupBy { elem =>
+      Math.abs(System.identityHashCode(elem)) % batches
+    }
 }

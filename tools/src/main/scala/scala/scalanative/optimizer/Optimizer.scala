@@ -3,19 +3,12 @@ package optimizer
 
 import scala.collection.mutable
 import nir._
+import scalanative.util.partition
 
 /** Optimizer reporters can override one of the corresponding methods to
  *  get notified whenever one of the optimization events happens.
  */
 object Optimizer {
-
-  def partition(defns: Seq[Defn]) = {
-    val procs   = java.lang.Runtime.getRuntime.availableProcessors
-    val batches = procs * procs
-    defns.groupBy { defn =>
-      Math.abs(System.identityHashCode(defn)) % batches
-    }
-  }
 
   /** Run all of the passes on given assembly. */
   def apply(config: build.Config,
