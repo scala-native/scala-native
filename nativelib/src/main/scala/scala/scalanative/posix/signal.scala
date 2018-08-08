@@ -133,7 +133,6 @@ object signal {
              p1: CFunctionPtr1[CInt, Unit]): CFunctionPtr1[CInt, Unit] = extern
   def sigsuspend(p0: Ptr[sigset_t]): CInt                              = extern
   def sigwait(p0: Ptr[sigset_t], p1: Ptr[CInt]): CInt                  = extern
-  def psignal(p0: CUnsignedInt, p1: CString): Unit                     = extern
   def sigblock(p0: CInt): CInt                                         = extern
   def sigsetmask(p0: CInt): CInt                                       = extern
   def sigvec(p0: CInt, p1: Ptr[struct_sigvec], p2: Ptr[struct_sigvec]): CInt =
@@ -143,182 +142,182 @@ object signal {
 
 import signal._
 
-object signalOps {
-
-  implicit class struct___darwin_pthread_handler_rec_ops(
-      val p: Ptr[struct___darwin_pthread_handler_rec])
-      extends AnyVal {
-    def __routine: CFunctionPtr1[Ptr[Byte], Unit]                = !p._1
-    def __routine_=(value: CFunctionPtr1[Ptr[Byte], Unit]): Unit = !p._1 = value
-    def __arg: Ptr[Byte]                                         = !p._2
-    def __arg_=(value: Ptr[Byte]): Unit                          = !p._2 = value
-    def __next
-      : Ptr[CArray[Byte, Nat.Digit[Nat._1, Nat.Digit[Nat._9, Nat._2]]]] = !p._3
-    def __next_=(
-        value: Ptr[CArray[Byte, Nat.Digit[Nat._1, Nat.Digit[Nat._9, Nat._2]]]])
-      : Unit = !p._3 = value
-  }
-
-  def struct___darwin_pthread_handler_rec()(
-      implicit z: Zone): Ptr[struct___darwin_pthread_handler_rec] =
-    alloc[struct___darwin_pthread_handler_rec]
-
-  implicit class struct__opaque_pthread_t_ops(
-      val p: Ptr[struct__opaque_pthread_t])
-      extends AnyVal {
-    def __sig: CLong                                              = !p._1
-    def __sig_=(value: CLong): Unit                               = !p._1 = value
-    def __cleanup_stack: Ptr[struct___darwin_pthread_handler_rec] = !p._2
-    def __cleanup_stack_=(
-        value: Ptr[struct___darwin_pthread_handler_rec]): Unit = !p._2 = value
-    def __opaque: CArray[
-      CChar,
-      Nat.Digit[Nat._8, Nat.Digit[Nat._1, Nat.Digit[Nat._7, Nat._6]]]] = !p._3
-    def __opaque_=(
-        value: CArray[
-          CChar,
-          Nat.Digit[Nat._8, Nat.Digit[Nat._1, Nat.Digit[Nat._7, Nat._6]]]])
-      : Unit = !p._3 = value
-  }
-
-  def struct__opaque_pthread_t()(
-      implicit z: Zone): Ptr[struct__opaque_pthread_t] =
-    alloc[struct__opaque_pthread_t]
-
-  implicit class struct_sigevent_ops(val p: Ptr[sigevent]) extends AnyVal {
-    def sigev_notify: CInt                                 = !p._1
-    def sigev_notify_=(value: CInt): Unit                  = !p._1 = value
-    def sigev_signo: CInt                                  = !p._2
-    def sigev_signo_=(value: CInt): Unit                   = !p._2 = value
-    def sigev_value: sigval                                = !p._3
-    def sigev_value_=(value: sigval): Unit                 = !p._3 = value
-    def sigev_notify_function: CFunctionPtr1[sigval, Unit] = !p._4
-    def sigev_notify_function_=(value: CFunctionPtr1[sigval, Unit]): Unit =
-      !p._4 = value
-    def sigev_notify_attributes: Ptr[pthread_attr_t] = !p._5
-    def sigev_notify_attributes_=(value: Ptr[pthread_attr_t]): Unit =
-      !p._5 = value
-  }
-
-  def struct_sigevent()(implicit z: Zone): Ptr[sigevent] = alloc[sigevent]
-
-  implicit class siginfo_ops(val p: Ptr[siginfo_t]) extends AnyVal {
-    def si_signo: CInt                                      = !p._1
-    def si_signo_=(value: CInt): Unit                       = !p._1 = value
-    def si_errno: CInt                                      = !p._2
-    def si_errno_=(value: CInt): Unit                       = !p._2 = value
-    def si_code: CInt                                       = !p._3
-    def si_code_=(value: CInt): Unit                        = !p._3 = value
-    def si_pid: pid_t                                       = !p._4
-    def si_pid_=(value: pid_t): Unit                        = !p._4 = value
-    def si_uid: uid_t                                       = !p._5
-    def si_uid_=(value: uid_t): Unit                        = !p._5 = value
-    def si_status: CInt                                     = !p._6
-    def si_status_=(value: CInt): Unit                      = !p._6 = value
-    def si_addr: Ptr[Byte]                                  = !p._7
-    def si_addr_=(value: Ptr[Byte]): Unit                   = !p._7 = value
-    def si_value: sigval                                    = !p._8
-    def si_value_=(value: sigval): Unit                     = !p._8 = value
-    def si_band: CLong                                      = !p._9
-    def si_band_=(value: CLong): Unit                       = !p._9 = value
-    def __pad: CArray[CUnsignedLong, Nat._7]                = !p._10
-    def __pad_=(value: CArray[CUnsignedLong, Nat._7]): Unit = !p._10 = value
-  }
-
-  def struct___siginfo()(implicit z: Zone): Ptr[siginfo_t] = alloc[siginfo_t]
-
-  implicit class struct___sigaction_ops(val p: Ptr[struct___sigaction])
-      extends AnyVal {
-    def __sigaction_u: union___sigaction_u                = !p._1
-    def __sigaction_u_=(value: union___sigaction_u): Unit = !p._1 = value
-    def sa_tramp
-      : CFunctionPtr5[Ptr[Byte], CInt, CInt, Ptr[siginfo_t], Ptr[Byte], Unit] =
-      !p._2
-    def sa_tramp_=(
-        value: CFunctionPtr5[Ptr[Byte],
-                             CInt,
-                             CInt,
-                             Ptr[siginfo_t],
-                             Ptr[Byte],
-                             Unit]): Unit = !p._2 = value
-    def sa_mask: sigset_t                 = !p._3
-    def sa_mask_=(value: sigset_t): Unit  = !p._3 = value
-    def sa_flags: CInt                    = !p._4
-    def sa_flags_=(value: CInt): Unit     = !p._4 = value
-  }
-
-  def struct___sigaction()(implicit z: Zone): Ptr[struct___sigaction] =
-    alloc[struct___sigaction]
-
-  implicit class struct_sigaction_ops(val p: Ptr[struct_sigaction])
-      extends AnyVal {
-    def __sigaction_u: union___sigaction_u                = !p._1
-    def __sigaction_u_=(value: union___sigaction_u): Unit = !p._1 = value
-    def sa_mask: sigset_t                                 = !p._2
-    def sa_mask_=(value: sigset_t): Unit                  = !p._2 = value
-    def sa_flags: CInt                                    = !p._3
-    def sa_flags_=(value: CInt): Unit                     = !p._3 = value
-  }
-
-  def struct_sigaction()(implicit z: Zone): Ptr[struct_sigaction] =
-    alloc[struct_sigaction]
-
-  implicit class struct_sigvec_ops(val p: Ptr[struct_sigvec]) extends AnyVal {
-    def sv_handler: CFunctionPtr1[CInt, Unit]                = !p._1
-    def sv_handler_=(value: CFunctionPtr1[CInt, Unit]): Unit = !p._1 = value
-    def sv_mask: CInt                                        = !p._2
-    def sv_mask_=(value: CInt): Unit                         = !p._2 = value
-    def sv_flags: CInt                                       = !p._3
-    def sv_flags_=(value: CInt): Unit                        = !p._3 = value
-  }
-
-  def struct_sigvec()(implicit z: Zone): Ptr[struct_sigvec] =
-    alloc[struct_sigvec]
-
-  implicit class struct_sigstack_ops(val p: Ptr[struct_sigstack])
-      extends AnyVal {
-    def ss_sp: CString                  = !p._1
-    def ss_sp_=(value: CString): Unit   = !p._1 = value
-    def ss_onstack: CInt                = !p._2
-    def ss_onstack_=(value: CInt): Unit = !p._2 = value
-  }
-
-  def struct_sigstack()(implicit z: Zone): Ptr[struct_sigstack] =
-    alloc[struct_sigstack]
-
-  implicit class union___mbstate_t_pos(val p: Ptr[union___mbstate_t])
-      extends AnyVal {
-    def __mbstate8
-      : Ptr[CArray[CChar, Nat.Digit[Nat._1, Nat.Digit[Nat._2, Nat._8]]]] =
-      p.cast[Ptr[CArray[CChar, Nat.Digit[Nat._1, Nat.Digit[Nat._2, Nat._8]]]]]
-    def __mbstate8_=(
-        value: CArray[CChar, Nat.Digit[Nat._1, Nat.Digit[Nat._2, Nat._8]]])
-      : Unit =
-      !p.cast[Ptr[
-        CArray[CChar, Nat.Digit[Nat._1, Nat.Digit[Nat._2, Nat._8]]]]] = value
-    def _mbstateL: Ptr[CLongLong]           = p.cast[Ptr[CLongLong]]
-    def _mbstateL_=(value: CLongLong): Unit = !p.cast[Ptr[CLongLong]] = value
-  }
-
-  implicit class union_sigval_pos(val p: Ptr[sigval]) extends AnyVal {
-    def sival_int: Ptr[CInt]                = p.cast[Ptr[CInt]]
-    def sival_int_=(value: CInt): Unit      = !p.cast[Ptr[CInt]] = value
-    def sival_ptr: Ptr[Ptr[Byte]]           = p.cast[Ptr[Ptr[Byte]]]
-    def sival_ptr_=(value: Ptr[Byte]): Unit = !p.cast[Ptr[Ptr[Byte]]] = value
-  }
-
-  implicit class union___sigaction_u_pos(val p: Ptr[union___sigaction_u])
-      extends AnyVal {
-    def __sa_handler: Ptr[CFunctionPtr1[CInt, Unit]] =
-      p.cast[Ptr[CFunctionPtr1[CInt, Unit]]]
-    def __sa_handler_=(value: CFunctionPtr1[CInt, Unit]): Unit =
-      !p.cast[Ptr[CFunctionPtr1[CInt, Unit]]] = value
-    def __sa_sigaction
-      : Ptr[CFunctionPtr3[CInt, Ptr[siginfo_t], Ptr[Byte], Unit]] =
-      p.cast[Ptr[CFunctionPtr3[CInt, Ptr[struct___siginfo], Ptr[Byte], Unit]]]
-    def __sa_sigaction_=(
-        value: CFunctionPtr3[CInt, Ptr[siginfo_t], Ptr[Byte], Unit]): Unit =
-      !p.cast[Ptr[
-        CFunctionPtr3[CInt, Ptr[struct___siginfo], Ptr[Byte], Unit]]] = value
-  }
-}
+//object signalOps {
+//
+//  implicit class struct___darwin_pthread_handler_rec_ops(
+//      val p: Ptr[struct___darwin_pthread_handler_rec])
+//      extends AnyVal {
+//    def __routine: CFunctionPtr1[Ptr[Byte], Unit]                = !p._1
+//    def __routine_=(value: CFunctionPtr1[Ptr[Byte], Unit]): Unit = !p._1 = value
+//    def __arg: Ptr[Byte]                                         = !p._2
+//    def __arg_=(value: Ptr[Byte]): Unit                          = !p._2 = value
+//    def __next
+//      : Ptr[CArray[Byte, Nat.Digit[Nat._1, Nat.Digit[Nat._9, Nat._2]]]] = !p._3
+//    def __next_=(
+//        value: Ptr[CArray[Byte, Nat.Digit[Nat._1, Nat.Digit[Nat._9, Nat._2]]]])
+//      : Unit = !p._3 = value
+//  }
+//
+//  def struct___darwin_pthread_handler_rec()(
+//      implicit z: Zone): Ptr[struct___darwin_pthread_handler_rec] =
+//    alloc[struct___darwin_pthread_handler_rec]
+//
+//  implicit class struct__opaque_pthread_t_ops(
+//      val p: Ptr[struct__opaque_pthread_t])
+//      extends AnyVal {
+//    def __sig: CLong                                              = !p._1
+//    def __sig_=(value: CLong): Unit                               = !p._1 = value
+//    def __cleanup_stack: Ptr[struct___darwin_pthread_handler_rec] = !p._2
+//    def __cleanup_stack_=(
+//        value: Ptr[struct___darwin_pthread_handler_rec]): Unit = !p._2 = value
+//    def __opaque: CArray[
+//      CChar,
+//      Nat.Digit[Nat._8, Nat.Digit[Nat._1, Nat.Digit[Nat._7, Nat._6]]]] = !p._3
+//    def __opaque_=(
+//        value: CArray[
+//          CChar,
+//          Nat.Digit[Nat._8, Nat.Digit[Nat._1, Nat.Digit[Nat._7, Nat._6]]]])
+//      : Unit = !p._3 = value
+//  }
+//
+//  def struct__opaque_pthread_t()(
+//      implicit z: Zone): Ptr[struct__opaque_pthread_t] =
+//    alloc[struct__opaque_pthread_t]
+//
+//  implicit class struct_sigevent_ops(val p: Ptr[sigevent]) extends AnyVal {
+//    def sigev_notify: CInt                                 = !p._1
+//    def sigev_notify_=(value: CInt): Unit                  = !p._1 = value
+//    def sigev_signo: CInt                                  = !p._2
+//    def sigev_signo_=(value: CInt): Unit                   = !p._2 = value
+//    def sigev_value: sigval                                = !p._3
+//    def sigev_value_=(value: sigval): Unit                 = !p._3 = value
+//    def sigev_notify_function: CFunctionPtr1[sigval, Unit] = !p._4
+//    def sigev_notify_function_=(value: CFunctionPtr1[sigval, Unit]): Unit =
+//      !p._4 = value
+//    def sigev_notify_attributes: Ptr[pthread_attr_t] = !p._5
+//    def sigev_notify_attributes_=(value: Ptr[pthread_attr_t]): Unit =
+//      !p._5 = value
+//  }
+//
+//  def struct_sigevent()(implicit z: Zone): Ptr[sigevent] = alloc[sigevent]
+//
+//  implicit class siginfo_ops(val p: Ptr[siginfo_t]) extends AnyVal {
+//    def si_signo: CInt                                      = !p._1
+//    def si_signo_=(value: CInt): Unit                       = !p._1 = value
+//    def si_errno: CInt                                      = !p._2
+//    def si_errno_=(value: CInt): Unit                       = !p._2 = value
+//    def si_code: CInt                                       = !p._3
+//    def si_code_=(value: CInt): Unit                        = !p._3 = value
+//    def si_pid: pid_t                                       = !p._4
+//    def si_pid_=(value: pid_t): Unit                        = !p._4 = value
+//    def si_uid: uid_t                                       = !p._5
+//    def si_uid_=(value: uid_t): Unit                        = !p._5 = value
+//    def si_status: CInt                                     = !p._6
+//    def si_status_=(value: CInt): Unit                      = !p._6 = value
+//    def si_addr: Ptr[Byte]                                  = !p._7
+//    def si_addr_=(value: Ptr[Byte]): Unit                   = !p._7 = value
+//    def si_value: sigval                                    = !p._8
+//    def si_value_=(value: sigval): Unit                     = !p._8 = value
+//    def si_band: CLong                                      = !p._9
+//    def si_band_=(value: CLong): Unit                       = !p._9 = value
+//    def __pad: CArray[CUnsignedLong, Nat._7]                = !p._10
+//    def __pad_=(value: CArray[CUnsignedLong, Nat._7]): Unit = !p._10 = value
+//  }
+//
+//  def struct___siginfo()(implicit z: Zone): Ptr[siginfo_t] = alloc[siginfo_t]
+//
+//  implicit class struct___sigaction_ops(val p: Ptr[struct___sigaction])
+//      extends AnyVal {
+//    def __sigaction_u: union___sigaction_u                = !p._1
+//    def __sigaction_u_=(value: union___sigaction_u): Unit = !p._1 = value
+//    def sa_tramp
+//      : CFunctionPtr5[Ptr[Byte], CInt, CInt, Ptr[siginfo_t], Ptr[Byte], Unit] =
+//      !p._2
+//    def sa_tramp_=(
+//        value: CFunctionPtr5[Ptr[Byte],
+//                             CInt,
+//                             CInt,
+//                             Ptr[siginfo_t],
+//                             Ptr[Byte],
+//                             Unit]): Unit = !p._2 = value
+//    def sa_mask: sigset_t                 = !p._3
+//    def sa_mask_=(value: sigset_t): Unit  = !p._3 = value
+//    def sa_flags: CInt                    = !p._4
+//    def sa_flags_=(value: CInt): Unit     = !p._4 = value
+//  }
+//
+//  def struct___sigaction()(implicit z: Zone): Ptr[struct___sigaction] =
+//    alloc[struct___sigaction]
+//
+//  implicit class struct_sigaction_ops(val p: Ptr[struct_sigaction])
+//      extends AnyVal {
+//    def __sigaction_u: union___sigaction_u                = !p._1
+//    def __sigaction_u_=(value: union___sigaction_u): Unit = !p._1 = value
+//    def sa_mask: sigset_t                                 = !p._2
+//    def sa_mask_=(value: sigset_t): Unit                  = !p._2 = value
+//    def sa_flags: CInt                                    = !p._3
+//    def sa_flags_=(value: CInt): Unit                     = !p._3 = value
+//  }
+//
+//  def struct_sigaction()(implicit z: Zone): Ptr[struct_sigaction] =
+//    alloc[struct_sigaction]
+//
+//  implicit class struct_sigvec_ops(val p: Ptr[struct_sigvec]) extends AnyVal {
+//    def sv_handler: CFunctionPtr1[CInt, Unit]                = !p._1
+//    def sv_handler_=(value: CFunctionPtr1[CInt, Unit]): Unit = !p._1 = value
+//    def sv_mask: CInt                                        = !p._2
+//    def sv_mask_=(value: CInt): Unit                         = !p._2 = value
+//    def sv_flags: CInt                                       = !p._3
+//    def sv_flags_=(value: CInt): Unit                        = !p._3 = value
+//  }
+//
+//  def struct_sigvec()(implicit z: Zone): Ptr[struct_sigvec] =
+//    alloc[struct_sigvec]
+//
+//  implicit class struct_sigstack_ops(val p: Ptr[struct_sigstack])
+//      extends AnyVal {
+//    def ss_sp: CString                  = !p._1
+//    def ss_sp_=(value: CString): Unit   = !p._1 = value
+//    def ss_onstack: CInt                = !p._2
+//    def ss_onstack_=(value: CInt): Unit = !p._2 = value
+//  }
+//
+//  def struct_sigstack()(implicit z: Zone): Ptr[struct_sigstack] =
+//    alloc[struct_sigstack]
+//
+//  implicit class union___mbstate_t_pos(val p: Ptr[union___mbstate_t])
+//      extends AnyVal {
+//    def __mbstate8
+//      : Ptr[CArray[CChar, Nat.Digit[Nat._1, Nat.Digit[Nat._2, Nat._8]]]] =
+//      p.cast[Ptr[CArray[CChar, Nat.Digit[Nat._1, Nat.Digit[Nat._2, Nat._8]]]]]
+//    def __mbstate8_=(
+//        value: CArray[CChar, Nat.Digit[Nat._1, Nat.Digit[Nat._2, Nat._8]]])
+//      : Unit =
+//      !p.cast[Ptr[
+//        CArray[CChar, Nat.Digit[Nat._1, Nat.Digit[Nat._2, Nat._8]]]]] = value
+//    def _mbstateL: Ptr[CLongLong]           = p.cast[Ptr[CLongLong]]
+//    def _mbstateL_=(value: CLongLong): Unit = !p.cast[Ptr[CLongLong]] = value
+//  }
+//
+//  implicit class union_sigval_pos(val p: Ptr[sigval]) extends AnyVal {
+//    def sival_int: Ptr[CInt]                = p.cast[Ptr[CInt]]
+//    def sival_int_=(value: CInt): Unit      = !p.cast[Ptr[CInt]] = value
+//    def sival_ptr: Ptr[Ptr[Byte]]           = p.cast[Ptr[Ptr[Byte]]]
+//    def sival_ptr_=(value: Ptr[Byte]): Unit = !p.cast[Ptr[Ptr[Byte]]] = value
+//  }
+//
+//  implicit class union___sigaction_u_pos(val p: Ptr[union___sigaction_u])
+//      extends AnyVal {
+//    def __sa_handler: Ptr[CFunctionPtr1[CInt, Unit]] =
+//      p.cast[Ptr[CFunctionPtr1[CInt, Unit]]]
+//    def __sa_handler_=(value: CFunctionPtr1[CInt, Unit]): Unit =
+//      !p.cast[Ptr[CFunctionPtr1[CInt, Unit]]] = value
+//    def __sa_sigaction
+//      : Ptr[CFunctionPtr3[CInt, Ptr[siginfo_t], Ptr[Byte], Unit]] =
+//      p.cast[Ptr[CFunctionPtr3[CInt, Ptr[struct___siginfo], Ptr[Byte], Unit]]]
+//    def __sa_sigaction_=(
+//        value: CFunctionPtr3[CInt, Ptr[siginfo_t], Ptr[Byte], Unit]): Unit =
+//      !p.cast[Ptr[
+//        CFunctionPtr3[CInt, Ptr[struct___siginfo], Ptr[Byte], Unit]]] = value
+//  }
+//}
