@@ -1,9 +1,10 @@
 package scala.scalanative
-package lower
+package codegen
 
 import scala.collection.mutable
 import scalanative.nir._
 import scalanative.sema._
+import scalanative.util.Stats
 
 class Metadata(top: Top, val dyns: Seq[String]) {
   import Metadata._
@@ -19,16 +20,16 @@ class Metadata(top: Top, val dyns: Seq[String]) {
   val dynmap = mutable.Map.empty[sema.Class, DynamicHashMap]
 
   locally {
-    top.traits.foreach { node =>
-      rtti(node) = new RuntimeTypeInformation(this, node)
-    }
-    top.structs.foreach { node =>
-      rtti(node) = new RuntimeTypeInformation(this, node)
-    }
     top.classes.foreach { node =>
       vtable(node) = new VirtualTable(this, node)
       layout(node) = new FieldLayout(this, node)
       dynmap(node) = new DynamicHashMap(this, node, dyns)
+      rtti(node) = new RuntimeTypeInformation(this, node)
+    }
+    top.traits.foreach { node =>
+      rtti(node) = new RuntimeTypeInformation(this, node)
+    }
+    top.structs.foreach { node =>
       rtti(node) = new RuntimeTypeInformation(this, node)
     }
   }

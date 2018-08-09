@@ -1,35 +1,17 @@
 package scala.scalanative
-package lower
+package codegen
 
 import scala.collection.mutable
-import scalanative.util.{ScopedVar, partitionBy}
+import scalanative.util.ScopedVar
 import scalanative.nir._
 import scalanative.sema._
 
 object Lower {
   import Impl._
 
-  def apply(config: build.Config,
-            assembly: Seq[Defn],
-            dyns: Seq[String]): Seq[Defn] = {
-    implicit val top  = sema.Sema(assembly)
-    implicit val meta = new Metadata(top, dyns)
-
-    val buf   = mutable.UnrolledBuffer.empty[Defn]
-    val input = assembly ++ Generate(Global.Top(config.mainClass))
-
-    partitionBy(input)(_.name).par
-      .map {
-        case (_, defns) =>
-          (new Impl).onDefns(defns)
-      }
-      .seq
-      .foreach { defns =>
-        buf ++= defns
-      }
-
-    buf
-  }
+  def apply(defns: Seq[Defn])(implicit top: sema.Top,
+                              meta: Metadata): Seq[Defn] =
+    (new Impl).onDefns(defns)
 
   private final class Impl(implicit top: sema.Top, meta: Metadata)
       extends Transform {
@@ -54,14 +36,8 @@ object Lower {
       val buf = mutable.UnrolledBuffer.empty[Defn]
 
       defns.foreach {
-        case defn: Defn.Class =>
-          genClassDefn(buf, defn.name)
-        case defn: Defn.Trait =>
-          genTraitDefn(buf, defn.name)
-        case defn: Defn.Struct =>
-          genStructDefn(buf, defn.name)
-        case defn: Defn.Module =>
-          genModuleDefn(buf, defn.name)
+        case _: Defn.Class | _: Defn.Module | _: Defn.Trait =>
+          ()
         case defn @ Defn.Declare(attrs, name, _) if attrs.isExtern =>
           buf += onDefn(defn.copy(name = stripExternName(name)))
         case defn @ Defn.Define(attrs, name, _, _) if attrs.isExtern =>
@@ -146,82 +122,6 @@ object Lower {
         Type.Function(params.map(onType), Type.Void)
       case _ =>
         super.onType(ty)
-    }
-
-    def genClassDefn(buf: mutable.Buffer[Defn], name: Global): Unit = {
-      val cls    = top.nodes(name).asInstanceOf[Class]
-      val struct = layout(cls).struct
-      val rtti   = meta.rtti(cls)
-
-      buf += onDefn(Defn.Struct(Attrs.None, struct.name, struct.tys))
-      buf += onDefn(Defn.Const(Attrs.None, rtti.name, rtti.struct, rtti.value))
-    }
-
-    def genTraitDefn(buf: mutable.Buffer[Defn], name: Global): Unit = {
-      val trt  = top.nodes(name).asInstanceOf[Trait]
-      val rtti = meta.rtti(trt)
-
-      buf += onDefn(Defn.Const(Attrs.None, rtti.name, rtti.struct, rtti.value))
-    }
-
-    def genStructDefn(buf: mutable.Buffer[Defn], name: Global): Unit = {
-      val struct = top.nodes(name).asInstanceOf[Struct]
-      val rtti   = meta.rtti(struct)
-
-      buf += onDefn(Defn.Const(Attrs.None, rtti.name, rtti.struct, rtti.value))
-    }
-
-    def genModuleDefn(buf: mutable.Buffer[Defn], name: Global): Unit = {
-      val cls   = top.nodes(name).asInstanceOf[Class]
-      val clsTy = cls.ty
-
-      implicit val fresh = Fresh()
-
-      val entry      = fresh()
-      val existing   = fresh()
-      val initialize = fresh()
-
-      val slot  = Val.Local(fresh(), Type.Ptr)
-      val self  = Val.Local(fresh(), clsTy)
-      val cond  = Val.Local(fresh(), Type.Bool)
-      val alloc = Val.Local(fresh(), clsTy)
-
-      val initCall = if (cls.isStaticModule) {
-        Inst.None
-      } else {
-        val initSig = Type.Function(Seq(clsTy), Type.Void)
-        val init    = Val.Global(name member "init", Type.Ptr)
-
-        Inst.Let(Op.Call(initSig, init, Seq(alloc), Next.None))
-      }
-
-      val loadName = name member "load"
-      val loadSig  = Type.Function(Seq(), clsTy)
-      val loadDefn = Defn.Define(
-        Attrs.None,
-        loadName,
-        loadSig,
-        Seq(
-          Inst.Label(entry, Seq()),
-          Inst.Let(slot.name,
-                   Op.Elem(Type.Ptr,
-                           Val.Global(Global.Top("__modules"), Type.Ptr),
-                           Seq(Val.Int(meta.moduleArray.index(cls))))),
-          Inst.Let(self.name, Op.Load(clsTy, slot)),
-          Inst.Let(cond.name, Op.Comp(Comp.Ine, Rt.Object, self, Val.Null)),
-          Inst.If(cond, Next(existing), Next(initialize)),
-          Inst.Label(existing, Seq()),
-          Inst.Ret(self),
-          Inst.Label(initialize, Seq()),
-          Inst.Let(alloc.name, Op.Classalloc(name)),
-          Inst.Let(Op.Store(clsTy, slot, alloc)),
-          initCall,
-          Inst.Ret(alloc)
-        )
-      )
-
-      buf += onDefn(loadDefn)
-      genClassDefn(buf, name)
     }
 
     def genThrow(buf: Buffer, exc: Val, unwind: Next) = {
@@ -696,7 +596,6 @@ object Lower {
     buf += Defn.Declare(Attrs.None, dyndispatchName, dyndispatchSig)
     buf += Defn.Const(Attrs.None, unitName, unitTy, unitValue)
     buf += Defn.Declare(Attrs.None, throwName, throwSig)
-    buf ++= Generate.injects
     buf
   }
 
@@ -715,8 +614,6 @@ object Lower {
     buf += unitName
     buf ++= BoxTo.values.map { case (owner, id)   => Global.Member(owner, id) }
     buf ++= UnboxTo.values.map { case (owner, id) => Global.Member(owner, id) }
-    buf ++= Generate.depends
-    buf ++= Metadata.depends
     buf
   }
 }

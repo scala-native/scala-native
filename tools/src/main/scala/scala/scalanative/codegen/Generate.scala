@@ -1,5 +1,5 @@
 package scala.scalanative
-package lower
+package codegen
 
 import scala.collection.mutable
 import scala.scalanative.nir._
@@ -14,15 +14,37 @@ object Generate {
     val buf = mutable.UnrolledBuffer.empty[Defn]
 
     def generate(): Seq[Defn] = {
-      genClassHasTrait()
-      genTraitHasTrait()
       genMain()
-      genStackBottom()
+      genStructMetadata()
+      genClassMetadata()
+      genClassHasTrait()
+      genTraitMetadata()
+      genTraitHasTrait()
+      genTraitDispatchTables()
+      genModuleAccessors()
       genModuleArray()
       genModuleArraySize()
       genObjectArrayId()
-      genTraitDispatchTables()
+      genStackBottom()
       buf
+    }
+
+    def genStructMetadata(): Unit = {
+      top.structs.foreach { struct =>
+        val rtti = meta.rtti(struct)
+
+        buf += Defn.Const(Attrs.None, rtti.name, rtti.struct, rtti.value)
+      }
+    }
+
+    def genClassMetadata(): Unit = {
+      top.classes.foreach { cls =>
+        val struct = meta.layout(cls).struct
+        val rtti   = meta.rtti(cls)
+
+        buf += Defn.Struct(Attrs.None, struct.name, struct.tys)
+        buf += Defn.Const(Attrs.None, rtti.name, rtti.struct, rtti.value)
+      }
     }
 
     def genClassHasTrait(): Unit = {
@@ -45,6 +67,14 @@ object Generate {
           Inst.Ret(result)
         )
       )
+    }
+
+    def genTraitMetadata(): Unit = {
+      top.traits.foreach { trt =>
+        val rtti = meta.rtti(trt)
+
+        buf += Defn.Const(Attrs.None, rtti.name, rtti.struct, rtti.value)
+      }
     }
 
     def genTraitHasTrait(): Unit = {
@@ -116,6 +146,60 @@ object Generate {
 
     def genStackBottom(): Unit =
       buf += Defn.Var(Attrs.None, stackBottomName, Type.Ptr, Val.Null)
+
+    def genModuleAccessors(): Unit =
+      top.classes.filter(_.isModule).foreach { cls =>
+        val name  = cls.name
+        val clsTy = cls.ty
+
+        implicit val fresh = Fresh()
+
+        val entry      = fresh()
+        val existing   = fresh()
+        val initialize = fresh()
+
+        val slot  = Val.Local(fresh(), Type.Ptr)
+        val self  = Val.Local(fresh(), clsTy)
+        val cond  = Val.Local(fresh(), Type.Bool)
+        val alloc = Val.Local(fresh(), clsTy)
+
+        val initCall = if (cls.isStaticModule) {
+          Inst.None
+        } else {
+          val initSig = Type.Function(Seq(clsTy), Type.Void)
+          val init    = Val.Global(name member "init", Type.Ptr)
+
+          Inst.Let(Op.Call(initSig, init, Seq(alloc), Next.None))
+        }
+
+        val loadName = name member "load"
+        val loadSig  = Type.Function(Seq(), clsTy)
+        val loadDefn = Defn.Define(
+          Attrs.None,
+          loadName,
+          loadSig,
+          Seq(
+            Inst.Label(entry, Seq()),
+            Inst.Let(slot.name,
+                     Op.Elem(Type.Ptr,
+                             Val.Global(Global.Top("__modules"), Type.Ptr),
+                             Seq(Val.Int(meta.moduleArray.index(cls))))),
+            Inst.Let(self.name, Op.Load(clsTy, slot)),
+            Inst.Let(cond.name,
+                     Op.Comp(Comp.Ine, nir.Rt.Object, self, Val.Null)),
+            Inst.If(cond, Next(existing), Next(initialize)),
+            Inst.Label(existing, Seq()),
+            Inst.Ret(self),
+            Inst.Label(initialize, Seq()),
+            Inst.Let(alloc.name, Op.Classalloc(name)),
+            Inst.Let(Op.Store(clsTy, slot, alloc)),
+            initCall,
+            Inst.Ret(alloc)
+          )
+        )
+
+        buf += loadDefn
+      }
 
     def genModuleArray(): Unit =
       buf +=

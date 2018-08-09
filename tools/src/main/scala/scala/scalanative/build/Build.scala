@@ -69,9 +69,7 @@ object Build {
 
     val optimized =
       ScalaNative.optimize(config, driver, linkerResult.defns)
-    val lowered =
-      ScalaNative.lower(config, optimized, linkerResult.dyns)
-    ScalaNative.codegen(config, lowered)
+    ScalaNative.codegen(config, optimized, linkerResult.dyns)
     val generated = IO.getAll(config.workdir, "glob:**.ll")
 
     val unpackedLib = LLVM.unpackNativelib(config.nativelib, config.workdir)

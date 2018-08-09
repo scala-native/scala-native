@@ -1,5 +1,5 @@
 package scala.scalanative
-package lower
+package codegen
 
 import scala.collection.mutable
 import scalanative.nir._
