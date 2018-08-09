@@ -47,10 +47,12 @@ jobs:
       script:
         - java -version
         - if [ -n "$CLANG_FORMAT_PATH" ]; then scripts/clangfmt --test; fi
+        - docker run --rm --privileged multiarch/qemu-user-static:register
+        - docker build --cache-from scala-native-testing:linux-x86_64 -t scala-native-testing:linux-x86_64 ci-docker/linux-x86_64
+        - docker build --cache-from scala-native-testing:linux-arm64v8 --cpuset-cpus="0" -t scala-native-testing:linux-arm64v8 ci-docker/linux-arm64v8
         - scripts/scalafmt --test
         - sbt -no-colors -J-Xmx2G "^^ 0.13.16" rebuild
         - sbt -no-colors -J-Xmx2G "^^ 1.0.4" sbtScalaNative/publishLocal
-        - docker build --cache-from scala-native-testing:linux-x86_64 -t scala-native-testing:linux-x86_64 ci-docker/linux-x86_64
       before_cache:
         - find $HOME/.sbt -name "*.lock" | xargs rm
         - find $HOME/.ivy2 -name "ivydata-*.properties" | sudo xargs rm
@@ -77,6 +79,14 @@ jobs:
     - stage: test
       script:
         - export TEST_CONTAINER=scala-native-testing:linux-x86_64 SCALANATIVE_GC=immix SBT_VERSION=1.0.4 TEST_COMMAND=sbtScalaNative/scripted
+        - ./ci-docker/run-test-travis.sh
+    - stage: test
+      script:
+        - export TEST_CONTAINER=scala-native-testing:linux-arm64v8 SCALANATIVE_GC=immix SBT_VERSION=0.13.16 TEST_COMMAND=test-runtime
+        - ./ci-docker/run-test-travis.sh
+    - stage: test
+      script:
+        - export TEST_CONTAINER=scala-native-testing:linux-arm64v8 SCALANATIVE_GC=immix SBT_VERSION=1.0.4 TEST_COMMAND=sbtScalaNative/scripted
         - ./ci-docker/run-test-travis.sh
 
 before_cache:
