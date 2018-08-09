@@ -2,8 +2,8 @@ package scala.scalanative
 package optimizer
 
 import scala.collection.mutable
-import nir._
-import scalanative.util.partition
+import scalanative.nir._
+import scalanative.util.partitionBy
 
 /** Optimizer reporters can override one of the corresponding methods to
  *  get notified whenever one of the optimization events happens.
@@ -37,7 +37,7 @@ object Optimizer {
           loop(batchId, passResult, rest)
       }
 
-    partition(assembly).par
+    partitionBy(assembly)(_.name).par
       .map {
         case (batchId, batchDefns) =>
           onStart(batchId, batchDefns)

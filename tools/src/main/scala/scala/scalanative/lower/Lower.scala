@@ -2,7 +2,7 @@ package scala.scalanative
 package lower
 
 import scala.collection.mutable
-import scalanative.util.{ScopedVar, partition}
+import scalanative.util.{ScopedVar, partitionBy}
 import scalanative.nir._
 import scalanative.sema._
 
@@ -18,7 +18,7 @@ object Lower {
     val buf   = mutable.UnrolledBuffer.empty[Defn]
     val input = assembly ++ Generate(Global.Top(config.mainClass))
 
-    partition(input).par
+    partitionBy(input)(_.name).par
       .map {
         case (_, defns) =>
           (new Impl).onDefns(defns)

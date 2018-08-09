@@ -48,11 +48,12 @@ package object util {
   def procs: Int =
     java.lang.Runtime.getRuntime.availableProcessors
 
-  def partition[T](elems: Seq[T]): Map[Int, Seq[T]] =
-    partition(elems, procs * procs)
+  def partitionBy[T](elems: Seq[T])(f: T => Any): Map[Int, Seq[T]] =
+    partitionBy(elems, procs * procs)(f)
 
-  def partition[T](elems: Seq[T], batches: Int): Map[Int, Seq[T]] =
+  def partitionBy[T](elems: Seq[T], batches: Int)(
+      f: T => Any): Map[Int, Seq[T]] =
     elems.groupBy { elem =>
-      Math.abs(System.identityHashCode(elem)) % batches
+      Math.abs(f(elem).##) % batches
     }
 }
