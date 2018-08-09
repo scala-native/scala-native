@@ -10,11 +10,40 @@ import scalanative.util.{Scope, ShowBuilder, unsupported, partitionBy, procs}
 import scalanative.io.{VirtualDirectory, withScratchBuffer}
 import scalanative.sema.ControlFlow.{Graph => CFG, Block, Edge}
 import scalanative.nir._
+import scalanative.util.Stats
 
 object CodeGen {
 
+  /** Lower and generate code for given assembly. */
+  def apply(config: build.Config,
+            assembly: Seq[Defn],
+            dyns: Seq[String]): Unit = {
+    implicit val top  = sema.Sema(assembly)
+    implicit val meta = new Metadata(top, dyns)
+
+    val lowered = lower(assembly ++ Generate(Global.Top(config.mainClass)))
+    emit(config, lowered)
+  }
+
+  private def lower(defns: Seq[Defn])(implicit top: sema.Top,
+                                      meta: Metadata): Seq[Defn] = {
+    val buf = mutable.UnrolledBuffer.empty[Defn]
+
+    partitionBy(defns)(_.name).par
+      .map {
+        case (_, defns) =>
+          Lower(defns)
+      }
+      .seq
+      .foreach { defns =>
+        buf ++= defns
+      }
+
+    buf
+  }
+
   /** Generate code for given assembly. */
-  def apply(config: build.Config, assembly: Seq[Defn]): Unit =
+  private def emit(config: build.Config, assembly: Seq[Defn]): Unit =
     Scope { implicit in =>
       val env     = assembly.map(defn => defn.name -> defn).toMap
       val workdir = VirtualDirectory.real(config.workdir)
@@ -876,5 +905,20 @@ object CodeGen {
       "landingpad { i8*, i32 } catch i8* bitcast ({ i8*, i8*, i8* }* @_ZTIN11scalanative16ExceptionWrapperE to i8*)"
     val typeid =
       "call i32 @llvm.eh.typeid.for(i8* bitcast ({ i8*, i8*, i8* }* @_ZTIN11scalanative16ExceptionWrapperE to i8*))"
+  }
+
+  val injects: Seq[Defn] = {
+    val buf = mutable.UnrolledBuffer.empty[Defn]
+    buf ++= Lower.injects
+    buf ++= Generate.injects
+    buf
+  }
+
+  val depends: Seq[Global] = {
+    val buf = mutable.UnrolledBuffer.empty[Global]
+    buf ++= Lower.depends
+    buf ++= Generate.depends
+    buf ++= Metadata.depends
+    buf
   }
 }

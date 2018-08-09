@@ -1,4 +1,5 @@
 package scala.scalanative
+package codegen
 
 import java.nio.file.{Path, Paths}
 import scalanative.io.VirtualDirectory
@@ -26,7 +27,7 @@ abstract class CodeGenSpec extends OptimizerSpec {
     optimize(entry, sources, driver) {
       case (config, links, assembly) =>
         Scope { implicit in =>
-          ScalaNative.codegen(config, assembly)
+          ScalaNative.codegen(config, assembly, Seq.empty)
           val workdir = VirtualDirectory.real(config.workdir)
           val outfile = Paths.get("out.ll")
 

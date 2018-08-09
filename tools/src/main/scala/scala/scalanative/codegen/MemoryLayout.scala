@@ -1,10 +1,10 @@
 package scala.scalanative
-package lower
+package codegen
 
 import scalanative.nir.Type.RefKind
 import scalanative.nir.{Type, Val}
-import scalanative.lower.MemoryLayout.PositionedType
 import scalanative.util.unsupported
+import scalanative.codegen.MemoryLayout.PositionedType
 
 final case class MemoryLayout(size: Long, tys: List[PositionedType]) {
   lazy val offsetArray: Seq[Val] = {

@@ -1,5 +1,5 @@
 package scala.scalanative
-package lower
+package codegen
 
 import scalanative.util.unreachable
 import scalanative.nir._

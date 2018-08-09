@@ -5,7 +5,6 @@ import java.nio.file.{Files, Path, Paths}
 import scala.sys.process.Process
 import scalanative.build.IO.RichPath
 import scalanative.nir.Global
-import scalanative.lower.Lower
 import scalanative.linker.Link
 import scalanative.sema.Sema
 import scalanative.codegen.CodeGen
@@ -23,9 +22,9 @@ private[scalanative] object ScalaNative {
       val entry =
         Global.Member(mainClass,
                       "main_scala.scalanative.runtime.ObjectArray_unit")
-      val result = Link(config, entry +: Lower.depends)
+      val result = Link(config, entry +: CodeGen.depends)
 
-      result.withDefns(result.defns ++ Lower.injects)
+      result.withDefns(result.defns ++ CodeGen.injects)
     }
   }
 
@@ -47,18 +46,12 @@ private[scalanative] object ScalaNative {
       Optimizer(config, driver, assembly)
     }
 
-  /** Transform high-level closed world to its lower-level counterpart. */
-  def lower(config: Config,
-            assembly: Seq[nir.Defn],
-            dyns: Seq[String]): Seq[nir.Defn] =
-    config.logger.time("Lowering") {
-      Lower(config, assembly, dyns)
-    }
-
   /** Given low-level assembly, emit LLVM IR for it to the buildDirectory. */
-  def codegen(config: Config, assembly: Seq[nir.Defn]): Seq[Path] = {
+  def codegen(config: Config,
+              assembly: Seq[nir.Defn],
+              dyns: Seq[String]): Seq[Path] = {
     config.logger.time("Generating intermediate code") {
-      CodeGen(config, assembly)
+      CodeGen(config, assembly, dyns)
     }
     val produced = IO.getAll(config.workdir, "glob:**.ll")
     config.logger.info(s"Produced ${produced.length} files")
