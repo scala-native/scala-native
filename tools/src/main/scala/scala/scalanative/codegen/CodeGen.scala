@@ -6,7 +6,7 @@ import java.nio.ByteBuffer
 import java.nio.file.Paths
 import scala.annotation.tailrec
 import scala.collection.mutable
-import scalanative.util.{Scope, ShowBuilder, unsupported}
+import scalanative.util.{Scope, ShowBuilder, unsupported, partitionBy, procs}
 import scalanative.io.{VirtualDirectory, withScratchBuffer}
 import scalanative.sema.ControlFlow.{Graph => CFG, Block, Edge}
 import scalanative.nir._
@@ -19,44 +19,25 @@ object CodeGen {
       val env     = assembly.map(defn => defn.name -> defn).toMap
       val workdir = VirtualDirectory.real(config.workdir)
 
-      // Generate one LLVM IR file per package. This
-      // prevents LLVM from optimizing across IR module
-      // boundary unless LTO is turned on.
-      def separate(): Unit = {
-        val batches = mutable.Map.empty[String, mutable.Buffer[Defn]]
-        assembly.foreach { defn =>
-          val top = defn.name.top.id
-          val key =
-            if (top.startsWith("__")) top
-            else if (top == "main") "__main"
-            else {
-              val pkg = top.split("\\.").init.mkString(".")
-              if (pkg == "") "__empty"
-              else pkg
-            }
-          if (!batches.contains(key)) {
-            batches(key) = mutable.UnrolledBuffer.empty[Defn]
-          }
-          batches(key) += defn
-        }
-        batches.par.foreach {
-          case (k, defns) =>
+      // Partition into multiple LLVM IR files proportional to number
+      // of available processesors. This prevents LLVM from optimizing
+      // across IR module boundary unless LTO is turned on.
+      def separate(): Unit =
+        partitionBy(assembly, procs)(_.name).par.foreach {
+          case (id, defns) =>
             val sorted = defns.sortBy(_.name.show)
-            val impl =
-              new Impl(config.targetTriple, env, sorted, workdir)
-            val outpath = k + ".ll"
-            val buffer  = impl.gen()
+            val impl   = new Impl(config.targetTriple, env, sorted)
+            val buffer = impl.gen()
             buffer.flip
-            workdir.write(Paths.get(outpath), buffer)
+            workdir.write(Paths.get(s"$id.ll"), buffer)
         }
-      }
 
       // Generate a single LLVM IR file for the whole application.
       // This is an adhoc form of LTO. We use it in release mode if
       // Clang's LTO is not available.
       def single(): Unit = {
         val sorted = assembly.sortBy(_.name.show)
-        val impl   = new Impl(config.targetTriple, env, sorted, workdir)
+        val impl   = new Impl(config.targetTriple, env, sorted)
         val buffer = impl.gen()
         buffer.flip
         workdir.write(Paths.get("out.ll"), buffer)
@@ -71,8 +52,7 @@ object CodeGen {
 
   private final class Impl(targetTriple: String,
                            env: Map[Global, Defn],
-                           defns: Seq[Defn],
-                           workdir: VirtualDirectory) {
+                           defns: Seq[Defn]) {
     import Impl._
 
     var currentBlockName: Local = _
