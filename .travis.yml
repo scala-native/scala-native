@@ -53,11 +53,6 @@ jobs:
         - scripts/scalafmt --test
         - sbt -no-colors -J-Xmx2G "^^ 0.13.16" rebuild
         - sbt -no-colors -J-Xmx2G "^^ 1.0.4" sbtScalaNative/publishLocal
-      before_cache:
-        - find $HOME/.sbt -name "*.lock" | xargs rm
-        - find $HOME/.ivy2 -name "ivydata-*.properties" | sudo xargs rm
-        - mkdir -p $HOME/docker && docker images -a --filter='dangling=false' --format '{{.Repository}}:{{.Tag}} {{.ID}}'
-          | xargs -n 2 -t sh -c 'test -e $HOME/docker/$1.tar.gz || docker save $0 | gzip -2 > $HOME/docker/$1.tar.gz'
 
     - stage: test
       script:
@@ -83,17 +78,19 @@ jobs:
     - stage: test
       script:
         - docker run --rm --privileged multiarch/qemu-user-static:register
-        - export TEST_CONTAINER=scala-native-testing:linux-arm64v8 SCALANATIVE_GC=immix SBT_VERSION=0.13.16 TEST_COMMAND=test-runtime
+        - export TEST_CONTAINER=scala-native-testing:linux-arm64v8 SCALANATIVE_GC=boehm SBT_VERSION=0.13.16 TEST_COMMAND=test-runtime
         - ./ci-docker/run-test-travis.sh
     - stage: test
       script:
         - docker run --rm --privileged multiarch/qemu-user-static:register
-        - export TEST_CONTAINER=scala-native-testing:linux-arm64v8 SCALANATIVE_GC=immix SBT_VERSION=1.0.4 TEST_COMMAND=sbtScalaNative/scripted
+        - export TEST_CONTAINER=scala-native-testing:linux-arm64v8 SCALANATIVE_GC=boehm SBT_VERSION=1.0.4 TEST_COMMAND=sbtScalaNative/scripted
         - ./ci-docker/run-test-travis.sh
 
 before_cache:
   - find $HOME/.sbt -name "*.lock" | xargs rm
   - find $HOME/.ivy2 -name "ivydata-*.properties" | sudo xargs rm
+  - mkdir -p $HOME/docker && docker images -a --filter='dangling=false' --format '{{.Repository}}:{{.Tag}} {{.ID}}'
+    | xargs -n 2 -t sh -c 'test -e $HOME/docker/$1.tar.gz || docker save $0 | gzip -2 > $HOME/docker/$1.tar.gz'
 
 cache:
   directories:
