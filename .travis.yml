@@ -82,10 +82,12 @@ jobs:
         - ./ci-docker/run-test-travis.sh
     - stage: test
       script:
+        - docker run --rm --privileged multiarch/qemu-user-static:register
         - export TEST_CONTAINER=scala-native-testing:linux-arm64v8 SCALANATIVE_GC=immix SBT_VERSION=0.13.16 TEST_COMMAND=test-runtime
         - ./ci-docker/run-test-travis.sh
     - stage: test
       script:
+        - docker run --rm --privileged multiarch/qemu-user-static:register
         - export TEST_CONTAINER=scala-native-testing:linux-arm64v8 SCALANATIVE_GC=immix SBT_VERSION=1.0.4 TEST_COMMAND=sbtScalaNative/scripted
         - ./ci-docker/run-test-travis.sh
 
