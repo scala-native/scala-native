@@ -57,6 +57,7 @@ jobs:
     - stage: test
       script:
         - java -version
+        - ./ci-docker/load-cached-images.sh
         - sbt "^^ 0.13.16" test-compile
         - sbt "^^ 1.0.4" test-compile
     - stage: test
