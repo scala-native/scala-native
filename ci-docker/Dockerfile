@@ -1,16 +1,20 @@
+ARG TARGET_DOCKER_PLATFORM
+
 FROM library/debian:stretch
 
 RUN apt-get update && apt-get install -y qemu-user-static
 
-FROM arm64v8/debian:stretch
+FROM $TARGET_DOCKER_PLATFORM/debian:stretch
 
-COPY --from=0 /usr/bin/qemu-aarch64-static /usr/bin/qemu-aarch64-static
+ARG HOST_DEBIAN_PLATFORM
 
-RUN dpkg --add-architecture amd64
+COPY --from=0 /usr/bin/qemu-* /usr/bin/
 
-RUN apt-get update && apt-get install -y openjdk-8-jdk-headless:amd64
+RUN dpkg --add-architecture $HOST_DEBIAN_PLATFORM
 
-ENV PATH "/usr/lib/jvm/java-8-openjdk-amd64/bin:$PATH"
+RUN apt-get update && apt-get install -y openjdk-8-jdk-headless:$HOST_DEBIAN_PLATFORM
+
+ENV PATH "/usr/lib/jvm/java-8-openjdk-$HOST_DEBIAN_PLATFORM/bin:$PATH"
 
 ENV SBT_LAUNCHER_VERSION 1.2.0
 

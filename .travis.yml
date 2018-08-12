@@ -48,8 +48,8 @@ jobs:
         - java -version
         - if [ -n "$CLANG_FORMAT_PATH" ]; then scripts/clangfmt --test; fi
         - docker run --rm --privileged multiarch/qemu-user-static:register
-        - docker build --cache-from scala-native-testing:linux-x86_64 -t scala-native-testing:linux-x86_64 ci-docker/linux-x86_64
-        - docker build --cache-from scala-native-testing:linux-arm64v8 --cpuset-cpus="0" -t scala-native-testing:linux-arm64v8 ci-docker/linux-arm64v8
+        - docker build --cache-from scala-native-testing:linux-x86_64 -t scala-native-testing:linux-x86_64 --build-arg TARGET_DOCKER_PLATFORM=library --build-arg HOST_DEBIAN_PLATFORM=amd64 ci-docker
+        - docker build --cache-from scala-native-testing:linux-arm64v8 -t scala-native-testing:linux-arm64v8 --cpuset-cpus="0" --build-arg TARGET_DOCKER_PLATFORM=arm64v8 --build-arg HOST_DEBIAN_PLATFORM=amd64 ci-docker
         - scripts/scalafmt --test
         - sbt -no-colors -J-Xmx2G "^^ 0.13.16" rebuild
         - sbt -no-colors -J-Xmx2G "^^ 1.0.4" sbtScalaNative/publishLocal
