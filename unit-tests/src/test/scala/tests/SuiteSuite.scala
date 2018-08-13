@@ -9,6 +9,7 @@ object Foo {
 }
 
 object SuiteSuite extends Suite {
+
   test("expects true") {
     assert(true)
   }
@@ -52,4 +53,24 @@ object SuiteSuite extends Suite {
   test("catch RuntimeException") {
     assertThrows[RuntimeException] { Foo.bar() }
   }
+
+  test("assert(false, msg) Exception should contain expected message") {
+    val expected = "<Your message goes here.>"
+    try {
+      assert(false, expected)
+    } catch {
+
+      case AssertionFailed(mesg: String) =>
+        if (mesg != expected) {
+          throw AssertionFailed(s"unexpected message found: ${mesg}")
+        }
+
+      case exc: Throwable =>
+        if (exc == AssertionFailed) // got case object, expected case class
+          throw AssertionFailed("expected message yet none found")
+        else
+          throw exc
+    }
+  }
+
 }
