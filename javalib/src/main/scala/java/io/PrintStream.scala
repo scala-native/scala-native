@@ -1,7 +1,8 @@
 package java.io
 
-import java.nio.charset.Charset
+import java.nio.charset.{Charset, UnsupportedCharsetException}
 import java.util.Formatter
+import java.util.Objects
 
 class PrintStream private (_out: OutputStream,
                            autoFlush: Boolean,
@@ -37,13 +38,30 @@ class PrintStream private (_out: OutputStream,
     this(out, autoFlush, null: Charset)
 
   def this(out: OutputStream, autoFlush: Boolean, encoding: String) =
-    this(out, autoFlush, Charset.forName(encoding))
+    this(
+      out,
+      autoFlush,
+      try {
+        Charset.forName(Objects.requireNonNull(encoding))
+      } catch {
+        case e: UnsupportedCharsetException =>
+          throw new java.io.UnsupportedEncodingException(encoding)
+      }
+    )
 
   /* The following constructors, although implemented, will not link, since
    * File, FileOutputStream and BufferedOutputStream are not implemented.
    * They're here just in case a third-party library on the classpath
    * implements those.
    */
+
+  /* Cravenly pass the possibly null, possibly unsupported charSet String
+   * through to whatever third-party software satisfies the link.
+   * Let it deal with converting UnsupportedCharsetException to
+   * UnsupportedEncodingException. Since the code will not link, there
+   * is no good way to test that conversion for these two items.
+   */
+
   def this(file: File) =
     this(new BufferedOutputStream(new FileOutputStream(file)))
   def this(file: File, csn: String) =

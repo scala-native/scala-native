@@ -13,13 +13,13 @@ package java.net
 object URLEncoderSuite extends tests.Suite {
   test("null input string") {
     assertThrows[NullPointerException] {
-      URLEncoder.encode(null, "ignored")
+      URLEncoder.encode(null: String, "ignored")
     }
   }
 
   test("null encoding name") {
     assertThrows[NullPointerException] {
-      URLEncoder.encode("any", null)
+      URLEncoder.encode("any", null: String)
     }
   }
 

@@ -21,4 +21,11 @@ object OutputStreamWriterSuite extends tests.Suite {
       new OutputStreamWriter(new MockOutputStream, null: String)
     }
   }
+
+  test("OutputStreamWriter(OutputStream, String) with unsupported encoding") {
+    assertThrows[java.io.UnsupportedEncodingException] {
+      new OutputStreamWriter(new MockOutputStream, "unsupported encoding")
+    }
+  }
+
 }

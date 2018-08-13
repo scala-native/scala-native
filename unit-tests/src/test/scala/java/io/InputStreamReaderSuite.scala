@@ -28,6 +28,12 @@ object InputStreamReaderSuite extends tests.Suite {
     }
   }
 
+  test("InputStreamReader(InputStream, String) with unsupported encoding") {
+    assertThrows[java.io.UnsupportedEncodingException] {
+      new InputStreamReader(new MockInputStream, "unsupported encoding")
+    }
+  }
+
   test("closing closes the inner stream") {
     val in     = new MockInputStream
     val reader = new InputStreamReader(in)
