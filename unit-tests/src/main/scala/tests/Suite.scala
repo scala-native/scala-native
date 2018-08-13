@@ -6,8 +6,7 @@ import scala.collection.mutable
 import scala.reflect.ClassTag
 
 final case class AssertionFailed(msg: String) extends Exception(msg)
-
-final case object AssertionFailed extends Exception
+final case object AssertionFailed             extends Exception
 
 final case class TestResult(status: Boolean, thrown: Option[Throwable])
 
@@ -20,7 +19,7 @@ abstract class Suite {
     if (!cond) throw AssertionFailed else ()
 
   def assert(cond: Boolean, message: String): Unit =
-    if (!cond) throw AssertionFailed("assertion failed: " + message) else ()
+    if (!cond) throw AssertionFailed(message) else ()
 
   def assertTrue(cond: Boolean): Unit =
     assert(cond)
@@ -90,17 +89,14 @@ abstract class Suite {
       }
     })
 
-  @inline private[this] def getThrownMessage(thrown: Option[Throwable],
-                                             color: String,
-                                             indent: Int): String = {
+  @inline private[this] def getThrownString(thrown: Option[Throwable],
+                                            color: String,
+                                            indent: Int): String = {
     if (thrown.isEmpty) ""
     else {
-      val thrownMsg = thrown.get.getMessage
-      if (thrownMsg == null) ""
-      else {
-        val indentSpaces = " " * indent
-        s"\n${color}${indentSpaces}${thrownMsg}"
-      }
+      val indentSpaces = " " * indent
+      val info         = thrown.get.toString
+      s"\n${color}${indentSpaces}${info}"
     }
   }
 
@@ -117,7 +113,7 @@ abstract class Suite {
       val event = NativeEvent(className, test.name, NativeFingerprint, status)
 
       val outMsg = color + statusStr + test.name +
-        getThrownMessage(thrown, color, statusStr.length) +
+        getThrownString(thrown, color, statusStr.length) +
         Console.RESET
 
       loggers.foreach(_.info(outMsg))
