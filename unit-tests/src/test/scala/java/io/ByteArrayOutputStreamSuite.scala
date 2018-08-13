@@ -9,7 +9,7 @@ object ByteArrayOutputStreamSuite extends tests.Suite {
       val bytes     = "look about you and think".getBytes // R. Feynman
       val outStream = new ByteArrayOutputStream()
       outStream.write(bytes, 0, bytes.length)
-      val unused   = outStream.toString("unsupported encoding")
+      val unused = outStream.toString("unsupported encoding")
     }
   }
 }
