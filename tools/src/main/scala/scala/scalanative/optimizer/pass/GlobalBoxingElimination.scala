@@ -27,7 +27,7 @@ class GlobalBoxingElimination extends Pass {
           (local.name, block)
         }
         val insts = block.insts.collect {
-          case Let(name, _) => (name, block)
+          case Let(name, _, _) => (name, block)
         }
         params ++ insts
       }.toMap
@@ -47,18 +47,18 @@ class GlobalBoxingElimination extends Pass {
 
     // Original box elimination code
     insts.map {
-      case inst @ Let(to, op @ Op.Box(ty, from)) =>
+      case inst @ Let(to, op @ Op.Box(ty, from), _) =>
         records
           .collectFirst {
             // if a box for given value already exists, re-use the box
             case Box(rty, rfrom, rto)
                 if rty == ty && from == rfrom && canReuse(to, rto) =>
-              Let(to, Op.Copy(rto))
+              Let(to, Op.Copy(rto), Next.None)
 
             // if we re-box previously unboxed value, re-use the original box
             case Unbox(rty, rfrom, rto)
                 if rty == ty && from == rto && canReuse(to, rfrom) =>
-              Let(to, Op.Copy(rfrom))
+              Let(to, Op.Copy(rfrom), Next.None)
           }
           .getOrElse {
             // otherwise do actual boxing
@@ -66,18 +66,18 @@ class GlobalBoxingElimination extends Pass {
             inst
           }
 
-      case inst @ Let(to, op @ Op.Unbox(ty, from)) =>
+      case inst @ Let(to, op @ Op.Unbox(ty, from), _) =>
         records
           .collectFirst {
             // if we unbox previously boxed value, return original value
             case Box(rty, rfrom, rto)
                 if rty == ty && from == rto && canReuse(to, rfrom) =>
-              Let(to, Op.Copy(rfrom))
+              Let(to, Op.Copy(rfrom), Next.None)
 
             // if an unbox for this value already exists, re-use unbox
             case Unbox(rty, rfrom, rto)
                 if rty == ty && from == rfrom && canReuse(to, rto) =>
-              Let(to, Op.Copy(rto))
+              Let(to, Op.Copy(rto), Next.None)
           }
           .getOrElse {
             // otherwise do actual unboxing

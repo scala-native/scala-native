@@ -118,10 +118,16 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putLocal(name)
       putParams(params)
 
-    case Inst.Let(name, op) =>
+    case Inst.Let(name, op, Next.None) =>
       putInt(T.LetInst)
       putLocal(name)
       putOp(op)
+
+    case Inst.Let(name, op, unwind) =>
+      putInt(T.LetUnwindInst)
+      putLocal(name)
+      putOp(op)
+      putNext(unwind)
 
     case Inst.Unreachable =>
       putInt(T.UnreachableInst)
@@ -267,12 +273,11 @@ final class BinarySerializer(buffer: ByteBuffer) {
   }
 
   private def putOp(op: Op) = op match {
-    case Op.Call(ty, v, args, unwind) =>
+    case Op.Call(ty, v, args) =>
       putInt(T.CallOp)
       putType(ty)
       putVal(v)
       putVals(args)
-      putNext(unwind)
 
     case Op.Load(ty, ptr, isVolatile) =>
       assert(!isVolatile, "volatile loads are not serializable")
@@ -354,10 +359,9 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putVal(obj)
       putString(sign)
 
-    case Op.Module(name, unwind) =>
+    case Op.Module(name) =>
       putInt(T.ModuleOp)
       putGlobal(name)
-      putNext(unwind)
 
     case Op.As(ty, v) =>
       putInt(T.AsOp)

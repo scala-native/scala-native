@@ -55,11 +55,11 @@ object UseDef {
   }
 
   private def isPure(inst: Inst)(implicit top: Top) = inst match {
-    case Inst.Let(_, Op.Call(_, Val.Global(Ref(node), _), _, _)) =>
+    case Inst.Let(_, Op.Call(_, Val.Global(Ref(node), _), _), _) =>
       node.attrs.isPure
-    case Inst.Let(_, Op.Module(Ref(node), _)) =>
+    case Inst.Let(_, Op.Module(Ref(node)), _) =>
       node.attrs.isPure
-    case Inst.Let(_, _: Op.Pure) =>
+    case Inst.Let(_, _: Op.Pure, _) =>
       true
     case _ =>
       false
@@ -99,8 +99,8 @@ object UseDef {
     blocks.foreach { block =>
       enterBlock(block.name, block.params.map(_.name))
       block.insts.foreach {
-        case Inst.Let(n, _) => enterInst(n)
-        case _              => ()
+        case Inst.Let(n, _, _) => enterInst(n)
+        case _                 => ()
       }
     }
 

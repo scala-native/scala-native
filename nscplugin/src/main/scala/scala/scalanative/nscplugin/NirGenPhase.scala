@@ -38,6 +38,9 @@ abstract class NirGenPhase
   protected val curUnwind     = new util.ScopedVar[nir.Next]
   protected val curStatBuffer = new util.ScopedVar[StatBuffer]
 
+  protected def unwind: Next =
+    curUnwind.get
+
   protected def lazyAnonDefs =
     curLazyAnonDefs.get
   protected def consumeLazyAnonDef(sym: Symbol): ClassDef = {

@@ -36,7 +36,7 @@ object BlockParamReduction extends PassCompanion {
         }
         val argCopies = params.zip(paramVals).collect {
           case (param, Some(value)) =>
-            Let(param.name, Op.Copy(value))
+            Let(param.name, Op.Copy(value), Next.None)
         }
 
         val newLabel = Inst.Label(name, newParams)

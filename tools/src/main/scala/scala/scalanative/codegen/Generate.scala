@@ -62,8 +62,9 @@ object Generate {
           Inst.Let(boolptr.name,
                    Op.Elem(meta.tables.classHasTraitTy,
                            meta.tables.classHasTraitVal,
-                           Seq(Val.Int(0), classid, traitid))),
-          Inst.Let(result.name, Op.Load(Type.Bool, boolptr)),
+                           Seq(Val.Int(0), classid, traitid)),
+                   Next.None),
+          Inst.Let(result.name, Op.Load(Type.Bool, boolptr), Next.None),
           Inst.Ret(result)
         )
       )
@@ -92,8 +93,9 @@ object Generate {
           Inst.Let(boolptr.name,
                    Op.Elem(meta.tables.traitHasTraitTy,
                            meta.tables.traitHasTraitVal,
-                           Seq(Val.Int(0), leftid, rightid))),
-          Inst.Let(result.name, Op.Load(Type.Bool, boolptr)),
+                           Seq(Val.Int(0), leftid, rightid)),
+                   Next.None),
+          Inst.Let(result.name, Op.Load(Type.Bool, boolptr), Next.None),
           Inst.Ret(result)
         )
       )
@@ -123,22 +125,25 @@ object Generate {
         MainSig,
         Seq(
           Inst.Label(fresh(), Seq(argc, argv)),
-          Inst.Let(stackBottom.name, Op.Stackalloc(Type.Ptr, Val.Long(0))),
-          Inst.Let(
-            Op.Store(Type.Ptr,
-                     Val.Global(stackBottomName, Type.Ptr),
-                     stackBottom)),
-          Inst.Let(Op.Call(InitSig, Init, Seq(), unwind)),
-          Inst.Let(rt.name, Op.Module(Rt.name, unwind)),
+          Inst.Let(stackBottom.name,
+                   Op.Stackalloc(Type.Ptr, Val.Long(0)),
+                   unwind),
+          Inst.Let(Op.Store(Type.Ptr,
+                            Val.Global(stackBottomName, Type.Ptr),
+                            stackBottom),
+                   unwind),
+          Inst.Let(Op.Call(InitSig, Init, Seq()), unwind),
+          Inst.Let(rt.name, Op.Module(Rt.name), unwind),
           Inst.Let(arr.name,
-                   Op.Call(RtInitSig, RtInit, Seq(rt, argc, argv), unwind)),
-          Inst.Let(module.name, Op.Module(entry.top, unwind)),
-          Inst.Let(Op.Call(entryMainTy, entryMain, Seq(module, arr), unwind)),
-          Inst.Let(Op.Call(RtLoopSig, RtLoop, Seq(module), unwind)),
+                   Op.Call(RtInitSig, RtInit, Seq(rt, argc, argv)),
+                   unwind),
+          Inst.Let(module.name, Op.Module(entry.top), unwind),
+          Inst.Let(Op.Call(entryMainTy, entryMain, Seq(module, arr)), unwind),
+          Inst.Let(Op.Call(RtLoopSig, RtLoop, Seq(module)), unwind),
           Inst.Ret(Val.Int(0)),
           Inst.Label(unwind.name, Seq(exc)),
-          Inst.Let(
-            Op.Call(PrintStackTraceSig, PrintStackTrace, Seq(exc), Next.None)),
+          Inst.Let(Op.Call(PrintStackTraceSig, PrintStackTrace, Seq(exc)),
+                   Next.None),
           Inst.Ret(Val.Int(1))
         )
       )
@@ -169,7 +174,7 @@ object Generate {
           val initSig = Type.Function(Seq(clsTy), Type.Void)
           val init    = Val.Global(name member "init", Type.Ptr)
 
-          Inst.Let(Op.Call(initSig, init, Seq(alloc), Next.None))
+          Inst.Let(Op.Call(initSig, init, Seq(alloc)), Next.None)
         }
 
         val loadName = name member "load"
@@ -183,16 +188,18 @@ object Generate {
             Inst.Let(slot.name,
                      Op.Elem(Type.Ptr,
                              Val.Global(Global.Top("__modules"), Type.Ptr),
-                             Seq(Val.Int(meta.moduleArray.index(cls))))),
-            Inst.Let(self.name, Op.Load(clsTy, slot)),
+                             Seq(Val.Int(meta.moduleArray.index(cls)))),
+                     Next.None),
+            Inst.Let(self.name, Op.Load(clsTy, slot), Next.None),
             Inst.Let(cond.name,
-                     Op.Comp(Comp.Ine, nir.Rt.Object, self, Val.Null)),
+                     Op.Comp(Comp.Ine, nir.Rt.Object, self, Val.Null),
+                     Next.None),
             Inst.If(cond, Next(existing), Next(initialize)),
             Inst.Label(existing, Seq()),
             Inst.Ret(self),
             Inst.Label(initialize, Seq()),
-            Inst.Let(alloc.name, Op.Classalloc(name)),
-            Inst.Let(Op.Store(clsTy, slot, alloc)),
+            Inst.Let(alloc.name, Op.Classalloc(name), Next.None),
+            Inst.Let(Op.Store(clsTy, slot, alloc), Next.None),
             initCall,
             Inst.Ret(alloc)
           )

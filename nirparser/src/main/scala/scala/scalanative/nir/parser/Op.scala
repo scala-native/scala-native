@@ -9,14 +9,11 @@ object Op extends Base[nir.Op] {
 
   import Base.IgnoreWhitespace._
 
-  private val unwind: P[Next] =
-    P(Next.parser.?).map(_.getOrElse(nir.Next.None))
-
   val Call =
     P(
       "call[" ~ Type.parser ~ "]" ~ Val.parser ~ "(" ~ Val.parser
-        .rep(sep = ",") ~ ")" ~ unwind).map {
-      case (ty, f, args, unwind) => nir.Op.Call(ty, f, args, unwind)
+        .rep(sep = ",") ~ ")").map {
+      case (ty, f, args) => nir.Op.Call(ty, f, args)
     }
   val Load =
     P("volatile".!.? ~ "load[" ~ Type.parser ~ "]" ~ Val.parser map {
@@ -75,9 +72,8 @@ object Op extends Base[nir.Op] {
     P("dynmethod" ~ Val.parser ~ "," ~ Base.stringLit map {
       case (obj, signature) => nir.Op.Dynmethod(obj, signature)
     })
-  val Module = P("module" ~ Global.parser ~ unwind).map {
-    case (name, unwind) =>
-      nir.Op.Module(name, unwind)
+  val Module = P("module" ~ Global.parser).map {
+    case name => nir.Op.Module(name)
   }
   val As =
     P("as[" ~ Type.parser ~ "]" ~ Val.parser map {

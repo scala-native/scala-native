@@ -36,8 +36,8 @@ class GlobalValueNumbering extends Pass {
           case Val.Local(paramName, _) => (paramName == dominatingDef)
         }
         val foundInInsts = dominatingBlock.insts.exists {
-          case Inst.Let(name, _) => (name == dominatingDef)
-          case _                 => false
+          case Inst.Let(name, _, _) => (name == dominatingDef)
+          case _                    => false
         }
 
         foundInParam || foundInInsts
@@ -76,7 +76,8 @@ class GlobalValueNumbering extends Pass {
             val newInstOpt = redundantInstrs.headOption.map(
               redInst =>
                 Inst.Let(inst.name,
-                         Op.Copy(Val.Local(redInst.name, redInst.op.resty))))
+                         Op.Copy(Val.Local(redInst.name, redInst.op.resty)),
+                         Next.None))
             newInstOpt.getOrElse(inst)
           } else {
             inst
@@ -159,7 +160,7 @@ object GlobalValueNumbering extends PassCompanion {
           case (Dynmethod(objA, signatureA), Dynmethod(objB, signatureB)) =>
             eqVal(objA, objB) && signatureA == signatureB
 
-          case (Module(nameA, _), Module(nameB, _)) =>
+          case (Module(nameA), Module(nameB)) =>
             eqGlobal(nameA, nameB)
 
           case (As(tyA, objA), As(tyB, objB)) =>
@@ -272,7 +273,7 @@ object GlobalValueNumbering extends PassCompanion {
     def hashOp(op: Op): Hash = {
       import Op._
       val opFields: Seq[Any] = op match {
-        case Call(ty, ptr, args, _)    => "Call" +: ty +: ptr +: args
+        case Call(ty, ptr, args)       => "Call" +: ty +: ptr +: args
         case Load(ty, ptr, isVolatile) => Seq("Load", ty, ptr, isVolatile)
         case Store(ty, ptr, value, isVolatile) =>
           Seq("Store", ty, ptr, value, isVolatile)
@@ -296,7 +297,7 @@ object GlobalValueNumbering extends PassCompanion {
         case Closure(ty, fun, captures) => "Closure" +: ty +: fun +: captures
 
         case Classalloc(name) => Seq("Classalloc", name)
-        case Module(name, _)  => Seq("Module", name)
+        case Module(name)     => Seq("Module", name)
         case Sizeof(ty)       => Seq("Sizeof", ty)
         case Box(code, obj)   => Seq("Box", code.toString, obj)
         case Unbox(code, obj) => Seq("Unbox", code.toString, obj)

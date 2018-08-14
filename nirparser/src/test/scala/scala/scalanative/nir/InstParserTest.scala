@@ -22,8 +22,15 @@ class InstParserTest extends FlatSpec with Matchers {
     result should be(label)
   }
 
-  it should "parse `Inst.Let`" in {
-    val let: Inst                 = Inst.Let(local, Op.As(noTpe, Val.None))
+  it should "parse `Inst.Let` without unwind" in {
+    val let: Inst                 = Inst.Let(local, Op.As(noTpe, Val.None), Next.None)
+    val Parsed.Success(result, _) = parser.Inst.Let.parse(let.show)
+    result should be(let)
+  }
+
+  it should "parse `Inst.Let` with unwind" in {
+    val let: Inst =
+      Inst.Let(local, Op.As(noTpe, Val.None), Next.Unwind(Local(0)))
     val Parsed.Success(result, _) = parser.Inst.Let.parse(let.show)
     result should be(let)
   }
