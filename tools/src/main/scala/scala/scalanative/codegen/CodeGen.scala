@@ -275,7 +275,7 @@ object CodeGen {
         str(" {")
 
         insts.foreach {
-          case Inst.Let(n, Op.Copy(v)) =>
+          case Inst.Let(n, Op.Copy(v), _) =>
             copies(n) = v
           case _ =>
             ()
@@ -619,8 +619,9 @@ object CodeGen {
       def isVoid(ty: Type): Boolean =
         ty == Type.Void || ty == Type.Unit || ty == Type.Nothing
 
-      val op   = inst.op
-      val name = inst.name
+      val op     = inst.op
+      val name   = inst.name
+      val unwind = inst.unwind
 
       def genBind() =
         if (!isVoid(op.resty)) {
@@ -634,7 +635,7 @@ object CodeGen {
           ()
 
         case call: Op.Call =>
-          genCall(genBind, call)
+          genCall(genBind, call, unwind)
 
         case Op.Load(ty, ptr, isVolatile) =>
           val pointee = fresh()
@@ -745,10 +746,9 @@ object CodeGen {
       }
     }
 
-    def genCall(genBind: () => Unit, call: Op.Call)(
+    def genCall(genBind: () => Unit, call: Op.Call, unwind: Next)(
         implicit fresh: Fresh): Unit = call match {
-      case Op.Call(ty, Val.Global(pointee, _), args, unwind)
-          if lookup(pointee) == ty =>
+      case Op.Call(ty, Val.Global(pointee, _), args) if lookup(pointee) == ty =>
         val Type.Function(argtys, _) = ty
 
         touch(pointee)
@@ -775,7 +775,7 @@ object CodeGen {
           indent()
         }
 
-      case Op.Call(ty, ptr, args, unwind) =>
+      case Op.Call(ty, ptr, args) =>
         val Type.Function(_, resty) = ty
 
         val pointee = fresh()

@@ -131,7 +131,8 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
   private def getInst(): Inst = getInt match {
     case T.NoneInst        => Inst.None
     case T.LabelInst       => Inst.Label(getLocal, getParams)
-    case T.LetInst         => Inst.Let(getLocal, getOp)
+    case T.LetInst         => Inst.Let(getLocal, getOp, Next.None)
+    case T.LetUnwindInst   => Inst.Let(getLocal, getOp, getNext)
     case T.UnreachableInst => Inst.Unreachable
     case T.RetInst         => Inst.Ret(getVal)
     case T.JumpInst        => Inst.Jump(getNext)
@@ -235,7 +236,7 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
   }
 
   private def getOp(): Op = getInt match {
-    case T.CallOp       => Op.Call(getType, getVal, getVals, getNext)
+    case T.CallOp       => Op.Call(getType, getVal, getVals)
     case T.LoadOp       => Op.Load(getType, getVal, isVolatile = false)
     case T.StoreOp      => Op.Store(getType, getVal, getVal, isVolatile = false)
     case T.ElemOp       => Op.Elem(getType, getVal, getVals)
@@ -254,7 +255,7 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
       val dynmethod = Op.Dynmethod(getVal, getString)
       dyns += dynmethod.signature
       dynmethod
-    case T.ModuleOp  => Op.Module(getGlobal, getNext)
+    case T.ModuleOp  => Op.Module(getGlobal)
     case T.AsOp      => Op.As(getType, getVal)
     case T.IsOp      => Op.Is(getType, getVal)
     case T.CopyOp    => Op.Copy(getVal)

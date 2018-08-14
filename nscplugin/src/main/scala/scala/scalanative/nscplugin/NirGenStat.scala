@@ -350,7 +350,7 @@ trait NirGenStat { self: NirGenPhase =>
         buf.label(fresh(), params)
         vars.foreach { sym =>
           val ty    = genType(sym.info, box = false)
-          val alloc = buf.stackalloc(ty, Val.None)
+          val alloc = buf.stackalloc(ty, Val.None, unwind)
           curMethodEnv.enter(sym, alloc)
         }
       }

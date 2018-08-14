@@ -9,15 +9,8 @@ class OpParserTest extends FlatSpec with Matchers {
   val global = Global.Top("test")
   val noTpe  = Type.None
 
-  "The NIR parser" should "parse `Op.Call` without unwind" in {
-    val call: Op                  = Op.Call(noTpe, Val.None, Seq.empty, Next.None)
-    val Parsed.Success(result, _) = parser.Op.Call.parse(call.show)
-    result should be(call)
-  }
-
-  "The NIR parser" should "parse `Op.Call` with unwind" in {
-    val call: Op =
-      Op.Call(noTpe, Val.None, Seq.empty, Next.Unwind(Local(0)))
+  "The NIR parser" should "parse `Op.Call`" in {
+    val call: Op                  = Op.Call(noTpe, Val.None, Seq.empty)
     val Parsed.Success(result, _) = parser.Op.Call.parse(call.show)
     result should be(call)
   }
@@ -120,14 +113,8 @@ class OpParserTest extends FlatSpec with Matchers {
       parser.Op.Dynmethod.parse(dynmethod.show)
     result should be(dynmethod)
   }
-  it should "parse `Op.Module` without unwind" in {
-    val module: Op                = Op.Module(global, Next.None)
-    val Parsed.Success(result, _) = parser.Op.Module.parse(module.show)
-    result should be(module)
-  }
-
-  it should "parse `Op.Module` with unwind" in {
-    val module: Op                = Op.Module(global, Next.Unwind(Local(0)))
+  it should "parse `Op.Module`" in {
+    val module: Op                = Op.Module(global)
     val Parsed.Success(result, _) = parser.Op.Module.parse(module.show)
     result should be(module)
   }

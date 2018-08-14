@@ -126,8 +126,9 @@ class CfChainsSimplification(implicit top: sema.Top) extends Pass {
             .zip(elseArgs)
             .map {
               case (thenV, elseV) =>
-                val freshVar   = fresh()
-                val selectInst = Let(freshVar, Op.Select(cond, thenV, elseV))
+                val freshVar = fresh()
+                val selectInst =
+                  Let(freshVar, Op.Select(cond, thenV, elseV), Next.None)
                 (Val.Local(freshVar, thenV.ty), selectInst)
             }
             .unzip

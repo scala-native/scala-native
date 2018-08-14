@@ -125,10 +125,14 @@ object Show {
           str(")")
         }
         str(":")
-      case Inst.Let(name, op) =>
+      case Inst.Let(name, op, unwind) =>
         local_(name)
         str(" = ")
         op_(op)
+        if (unwind ne Next.None) {
+          str(" ")
+          next_(unwind)
+        }
       case Inst.Unreachable =>
         str("unreachable")
       case Inst.Ret(Val.None) =>
@@ -171,7 +175,7 @@ object Show {
     }
 
     def op_(op: Op): Unit = op match {
-      case Op.Call(ty, f, args, unwind) =>
+      case Op.Call(ty, f, args) =>
         str("call[")
         type_(ty)
         str("] ")
@@ -179,10 +183,6 @@ object Show {
         str("(")
         rep(args, sep = ", ")(val_)
         str(")")
-        if (unwind ne Next.None) {
-          str(" ")
-          next_(unwind)
-        }
       case Op.Load(ty, ptr, isVolatile) =>
         str(if (isVolatile) "volatile load[" else "load[")
         type_(ty)
@@ -271,13 +271,9 @@ object Show {
         str(", \"")
         str(escapeQuotes(signature))
         str("\"")
-      case Op.Module(name, unwind) =>
+      case Op.Module(name) =>
         str("module ")
         global_(name)
-        if (unwind ne Next.None) {
-          str(" ")
-          next_(unwind)
-        }
       case Op.As(ty, v) =>
         str("as[")
         type_(ty)

@@ -114,6 +114,7 @@ object Tags {
   final val IfInst          = 1 + JumpInst
   final val SwitchInst      = 1 + IfInst
   final val ThrowInst       = 1 + SwitchInst
+  final val LetUnwindInst   = 1 + ThrowInst
 
   // Globals
 

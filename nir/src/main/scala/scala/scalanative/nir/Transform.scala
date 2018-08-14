@@ -35,8 +35,8 @@ trait Transform {
         Val.Local(param.name, onType(param.ty))
       }
       Inst.Label(n, newparams)
-    case Inst.Let(n, op) =>
-      Inst.Let(n, onOp(op))
+    case Inst.Let(n, op, unwind) =>
+      Inst.Let(n, onOp(op), onNext(unwind))
 
     case Inst.Unreachable =>
       Inst.Unreachable
@@ -53,8 +53,8 @@ trait Transform {
   }
 
   def onOp(op: Op): Op = op match {
-    case Op.Call(ty, ptrv, argvs, unwind) =>
-      Op.Call(onType(ty), onVal(ptrv), argvs.map(onVal), onNext(unwind))
+    case Op.Call(ty, ptrv, argvs) =>
+      Op.Call(onType(ty), onVal(ptrv), argvs.map(onVal))
     case Op.Load(ty, ptrv, isVolatile) =>
       Op.Load(onType(ty), onVal(ptrv), isVolatile)
     case Op.Store(ty, ptrv, v, isVolatile) =>
@@ -84,8 +84,8 @@ trait Transform {
       Op.Method(onVal(v), n)
     case Op.Dynmethod(obj, signature) =>
       Op.Dynmethod(onVal(obj), signature)
-    case Op.Module(n, unwind) =>
-      Op.Module(n, onNext(unwind))
+    case Op.Module(n) =>
+      Op.Module(n)
     case Op.As(ty, v) =>
       Op.As(onType(ty), onVal(v))
     case Op.Is(ty, v) =>

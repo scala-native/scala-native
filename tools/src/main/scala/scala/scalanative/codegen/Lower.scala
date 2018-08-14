@@ -73,17 +73,17 @@ object Lower {
       import buf._
 
       insts.foreach {
-        case inst @ Inst.Let(n, op) =>
+        case inst @ Inst.Let(n, op, unwind) =>
           op.resty match {
             case Type.Unit =>
-              genOp(buf, fresh(), op)
-              let(n, Op.Copy(unit))
+              genOp(buf, fresh(), op, unwind)
+              let(n, Op.Copy(unit), unwind)
             case Type.Nothing =>
-              genOp(buf, fresh(), op)
+              genOp(buf, fresh(), op, unwind)
               unreachable
               label(fresh(), Seq(Val.Local(n, op.resty)))
             case _ =>
-              genOp(buf, n, op)
+              genOp(buf, n, op, unwind)
           }
 
         case Inst.Throw(v, unwind) =>
@@ -125,107 +125,110 @@ object Lower {
     }
 
     def genThrow(buf: Buffer, exc: Val, unwind: Next) = {
-      genOp(buf, fresh(), Op.Call(throwSig, throw_, Seq(exc), unwind))
+      genOp(buf, fresh(), Op.Call(throwSig, throw_, Seq(exc)), unwind)
       buf.unreachable
     }
 
-    def genOp(buf: Buffer, n: Local, op: Op): Unit = op match {
+    def genOp(buf: Buffer, n: Local, op: Op, unwind: Next): Unit = op match {
       case op: Op.Field =>
-        genFieldOp(buf, n, op)
+        genFieldOp(buf, n, op, unwind)
       case op: Op.Method =>
-        genMethodOp(buf, n, op)
+        genMethodOp(buf, n, op, unwind)
       case op: Op.Dynmethod =>
-        genDynmethodOp(buf, n, op)
+        genDynmethodOp(buf, n, op, unwind)
       case op: Op.Is =>
-        genIsOp(buf, n, op)
+        genIsOp(buf, n, op, unwind)
       case op: Op.As =>
-        genAsOp(buf, n, op)
+        genAsOp(buf, n, op, unwind)
       case op: Op.Sizeof =>
-        genSizeofOp(buf, n, op)
+        genSizeofOp(buf, n, op, unwind)
       case op: Op.Classalloc =>
-        genClassallocOp(buf, n, op)
+        genClassallocOp(buf, n, op, unwind)
       case op: Op.Bin =>
-        genBinOp(buf, n, op)
+        genBinOp(buf, n, op, unwind)
       case op: Op.Box =>
-        genBoxOp(buf, n, op)
+        genBoxOp(buf, n, op, unwind)
       case op: Op.Unbox =>
-        genUnboxOp(buf, n, op)
+        genUnboxOp(buf, n, op, unwind)
       case op: Op.Module =>
-        genModuleOp(buf, n, op)
+        genModuleOp(buf, n, op, unwind)
       case _ =>
-        buf.let(n, op)
+        buf.let(n, op, unwind)
     }
 
-    def genFieldOp(buf: Buffer, n: Local, op: Op.Field) = {
+    def genFieldOp(buf: Buffer, n: Local, op: Op.Field, unwind: Next) = {
       val Op.Field(obj, FieldRef(cls: Class, fld)) = op
 
       val layout = meta.layout(cls)
       val ty     = layout.struct
       val index  = layout.index(fld)
 
-      buf.let(n, Op.Elem(ty, obj, Seq(Val.Int(0), Val.Int(index))))
+      buf.let(n, Op.Elem(ty, obj, Seq(Val.Int(0), Val.Int(index))), unwind)
     }
 
-    def genMethodOp(buf: Buffer, n: Local, op: Op.Method) = {
+    def genMethodOp(buf: Buffer, n: Local, op: Op.Method, unwind: Next) = {
       import buf._
 
       op match {
         case Op.Method(obj, MethodRef(cls: Class, meth)) if meth.isVirtual =>
           val vindex  = vtable(cls).index(meth)
-          val typeptr = let(Op.Load(Type.Ptr, obj))
+          val typeptr = let(Op.Load(Type.Ptr, obj), unwind)
           val methptrptr = let(
             Op.Elem(rtti(cls).struct,
                     typeptr,
                     Seq(Val.Int(0),
                         Val.Int(5), // index of vtable in type struct
-                        Val.Int(vindex))))
+                        Val.Int(vindex))),
+            unwind)
 
-          let(n, Op.Load(Type.Ptr, methptrptr))
+          let(n, Op.Load(Type.Ptr, methptrptr), unwind)
 
         case Op.Method(obj, MethodRef(_: Class, meth)) if meth.isStatic =>
-          let(n, Op.Copy(Val.Global(meth.name, Type.Ptr)))
+          let(n, Op.Copy(Val.Global(meth.name, Type.Ptr)), unwind)
 
         case Op.Method(obj, MethodRef(trt: Trait, meth)) =>
           val sig = meth.name.id
           if (tables.traitInlineSigs.contains(sig)) {
-            let(n, Op.Copy(tables.traitInlineSigs(sig)))
+            let(n, Op.Copy(tables.traitInlineSigs(sig)), unwind)
           } else {
             val sigid   = tables.traitDispatchSigs(meth.name.id)
-            val typeptr = let(Op.Load(Type.Ptr, obj))
+            val typeptr = let(Op.Load(Type.Ptr, obj), unwind)
             val idptr =
-              let(Op.Elem(Rt.Type, typeptr, Seq(Val.Int(0), Val.Int(0))))
-            val id = let(Op.Load(Type.Int, idptr))
+              let(Op.Elem(Rt.Type, typeptr, Seq(Val.Int(0), Val.Int(0))),
+                  unwind)
+            val id = let(Op.Load(Type.Int, idptr), unwind)
             val rowptr = let(
               Op.Elem(Type.Ptr,
                       tables.dispatchVal,
-                      Seq(Val.Int(tables.dispatchOffset(sigid)))))
+                      Seq(Val.Int(tables.dispatchOffset(sigid)))),
+              unwind)
             val methptrptr =
-              let(Op.Elem(Type.Ptr, rowptr, Seq(id)))
-            let(n, Op.Load(Type.Ptr, methptrptr))
+              let(Op.Elem(Type.Ptr, rowptr, Seq(id)), unwind)
+            let(n, Op.Load(Type.Ptr, methptrptr), unwind)
           }
       }
     }
 
-    def genDynmethodOp(buf: Buffer, n: Local, op: Op.Dynmethod): Unit = {
+    def genDynmethodOp(buf: Buffer,
+                       n: Local,
+                       op: Op.Dynmethod,
+                       unwind: Next): Unit = {
       import buf._
 
       val Op.Dynmethod(obj, signature) = op
 
       def throwInstrs(): Unit = {
         val exc = Val.Local(fresh(), Type.Ptr)
-        genClassallocOp(buf, exc.name, Op.Classalloc(excptnGlobal))
-        let(
-          Op.Call(excInitSig,
-                  excInit,
-                  Seq(exc, Val.String(signature)),
-                  Next.None))
+        genClassallocOp(buf, exc.name, Op.Classalloc(excptnGlobal), unwind)
+        let(Op.Call(excInitSig, excInit, Seq(exc, Val.String(signature))),
+            unwind)
         genThrow(buf, exc, Next.None)
       }
 
       def throwIfCond(cond: Op.Comp): Unit = {
         val labelIsNull, labelEndNull = Next(fresh())
 
-        val condNull = let(cond)
+        val condNull = let(cond, unwind)
         branch(condNull, labelIsNull, labelEndNull)
         label(labelIsNull.name)
         throwInstrs()
@@ -239,35 +242,36 @@ object Lower {
         meta.dyns.zipWithIndex.find(_._1 == signature).get._2
 
       // Load the type information pointer
-      val typeptr = let(Op.Load(Type.Ptr, obj))
+      val typeptr = let(Op.Load(Type.Ptr, obj), unwind)
       // Load the pointer of the table size
-      val methodCountPtr = let(
-        Op.Elem(classRttiType,
-                typeptr,
-                Seq(Val.Int(0), Val.Int(3), Val.Int(0))))
+      val methodCountPtr = let(Op.Elem(classRttiType,
+                                       typeptr,
+                                       Seq(Val.Int(0), Val.Int(3), Val.Int(0))),
+                               unwind)
       // Load the table size
-      val methodCount = let(Op.Load(Type.Int, methodCountPtr))
+      val methodCount = let(Op.Load(Type.Int, methodCountPtr), unwind)
       throwIfCond(Op.Comp(Comp.Ieq, Type.Int, methodCount, Val.Int(0)))
       // If the size is greater than 0, call the dyndispatch runtime function
       val dyndispatchTablePtr = let(
         Op.Elem(classRttiType,
                 typeptr,
-                Seq(Val.Int(0), Val.Int(3), Val.Int(0))))
+                Seq(Val.Int(0), Val.Int(3), Val.Int(0))),
+        unwind)
       val methptrptr = let(
         Op.Call(dyndispatchSig,
                 dyndispatch,
-                Seq(dyndispatchTablePtr, Val.Int(methodIndex)),
-                Next.None))
+                Seq(dyndispatchTablePtr, Val.Int(methodIndex))),
+        unwind)
       throwIfNull(methptrptr)
-      let(n, Op.Load(Type.Ptr, methptrptr))
+      let(n, Op.Load(Type.Ptr, methptrptr), unwind)
     }
 
-    def genIsOp(buf: Buffer, n: Local, op: Op.Is): Unit = {
+    def genIsOp(buf: Buffer, n: Local, op: Op.Is, unwind: Next): Unit = {
       import buf._
 
       op match {
         case Op.Is(_, Val.Null | Val.Zero(_)) =>
-          let(n, Op.Copy(Val.False))
+          let(n, Op.Copy(Val.False), unwind)
 
         case Op.Is(ty, obj) =>
           val result = Val.Local(fresh(), Type.Bool)
@@ -275,84 +279,92 @@ object Lower {
           val thenL, elseL, contL = fresh()
 
           // check if obj is null
-          val isnull = let(Op.Comp(Comp.Ieq, Type.Ptr, obj, Val.Null))
+          val isnull = let(Op.Comp(Comp.Ieq, Type.Ptr, obj, Val.Null), unwind)
           branch(isnull, Next(thenL), Next(elseL))
           // in case it's null, result is always false
           label(thenL)
-          val res1 = let(Op.Copy(Val.False))
+          val res1 = let(Op.Copy(Val.False), unwind)
           jump(contL, Seq(res1))
           // otherwise, do an actual instance check
           label(elseL)
-          val res2 = genIsOp(buf, ty, obj)
+          val res2 = genIsOp(buf, ty, obj, unwind)
           jump(contL, Seq(res2))
           // merge the result of two branches
           label(contL, Seq(result))
-          let(n, Op.Copy(result))
+          let(n, Op.Copy(result), unwind)
       }
     }
 
-    def genIsOp(buf: Buffer, ty: Type, obj: Val): Val = {
+    def genIsOp(buf: Buffer, ty: Type, obj: Val, unwind: Next): Val = {
       import buf._
 
       ty match {
         case ClassRef(cls) if cls.range.length == 1 =>
-          val typeptr = let(Op.Load(Type.Ptr, obj))
-          let(Op.Comp(Comp.Ieq, Type.Ptr, typeptr, rtti(cls).const))
+          val typeptr = let(Op.Load(Type.Ptr, obj), unwind)
+          let(Op.Comp(Comp.Ieq, Type.Ptr, typeptr, rtti(cls).const), unwind)
 
         case ClassRef(cls) =>
-          val typeptr = let(Op.Load(Type.Ptr, obj))
-          val idptr = let(
-            Op.Elem(Rt.Type, typeptr, Seq(Val.Int(0), Val.Int(0))))
-          val id = let(Op.Load(Type.Int, idptr))
+          val typeptr = let(Op.Load(Type.Ptr, obj), unwind)
+          val idptr =
+            let(Op.Elem(Rt.Type, typeptr, Seq(Val.Int(0), Val.Int(0))), unwind)
+          val id = let(Op.Load(Type.Int, idptr), unwind)
           val ge = let(
-            Op.Comp(Comp.Sle, Type.Int, Val.Int(cls.range.start), id))
-          val le = let(Op.Comp(Comp.Sle, Type.Int, id, Val.Int(cls.range.end)))
-          let(Op.Bin(Bin.And, Type.Bool, ge, le))
+            Op.Comp(Comp.Sle, Type.Int, Val.Int(cls.range.start), id),
+            unwind)
+          val le =
+            let(Op.Comp(Comp.Sle, Type.Int, id, Val.Int(cls.range.end)), unwind)
+          let(Op.Bin(Bin.And, Type.Bool, ge, le), unwind)
 
         case TraitRef(trt) =>
-          val typeptr = let(Op.Load(Type.Ptr, obj))
-          val idptr = let(
-            Op.Elem(Rt.Type, typeptr, Seq(Val.Int(0), Val.Int(0))))
-          val id = let(Op.Load(Type.Int, idptr))
-          val boolptr = let(
-            Op.Elem(tables.classHasTraitTy,
-                    tables.classHasTraitVal,
-                    Seq(Val.Int(0), id, Val.Int(trt.id))))
-          let(Op.Load(Type.Bool, boolptr))
+          val typeptr = let(Op.Load(Type.Ptr, obj), unwind)
+          val idptr =
+            let(Op.Elem(Rt.Type, typeptr, Seq(Val.Int(0), Val.Int(0))), unwind)
+          val id = let(Op.Load(Type.Int, idptr), unwind)
+          val boolptr = let(Op.Elem(tables.classHasTraitTy,
+                                    tables.classHasTraitVal,
+                                    Seq(Val.Int(0), id, Val.Int(trt.id))),
+                            unwind)
+          let(Op.Load(Type.Bool, boolptr), unwind)
 
         case _ =>
           util.unsupported(s"is[$ty] $obj")
       }
     }
 
-    def genAsOp(buf: Buffer, n: Local, op: Op.As): Unit = op match {
-      case Op.As(_: Type.RefKind, v) if v.ty.isInstanceOf[Type.RefKind] =>
-        buf.let(n, Op.Copy(v))
-      case Op.As(to, v) =>
-        util.unsupported(s"can't cast from ${v.ty} to $to")
-    }
+    def genAsOp(buf: Buffer, n: Local, op: Op.As, unwind: Next): Unit =
+      op match {
+        case Op.As(_: Type.RefKind, v) if v.ty.isInstanceOf[Type.RefKind] =>
+          buf.let(n, Op.Copy(v), unwind)
+        case Op.As(to, v) =>
+          util.unsupported(s"can't cast from ${v.ty} to $to")
+      }
 
-    def genSizeofOp(buf: Buffer, n: Local, op: Op.Sizeof): Unit = {
+    def genSizeofOp(buf: Buffer,
+                    n: Local,
+                    op: Op.Sizeof,
+                    unwind: Next): Unit = {
       val Op.Sizeof(ty) = op
 
-      buf.let(n, Op.Copy(Val.Long(MemoryLayout.sizeOf(ty))))
+      buf.let(n, Op.Copy(Val.Long(MemoryLayout.sizeOf(ty))), unwind)
     }
 
-    def genClassallocOp(buf: Buffer, n: Local, op: Op.Classalloc): Unit = {
+    def genClassallocOp(buf: Buffer,
+                        n: Local,
+                        op: Op.Classalloc,
+                        unwind: Next): Unit = {
       val Op.Classalloc(ClassRef(cls)) = op
 
       val size = MemoryLayout.sizeOf(layout(cls).struct)
       val allocMethod =
         if (size < LARGE_OBJECT_MIN_SIZE) alloc else largeAlloc
 
-      buf.let(n,
-              Op.Call(allocSig,
-                      allocMethod,
-                      Seq(rtti(cls).const, Val.Long(size)),
-                      Next.None))
+      buf.let(
+        n,
+        Op.Call(allocSig, allocMethod, Seq(rtti(cls).const, Val.Long(size))),
+        unwind)
     }
 
-    def genBinOp(buf: Buffer, n: Local, op: Op.Bin): Unit = {
+    def genBinOp(buf: Buffer, n: Local, op: Op.Bin, unwind: Next): Unit = {
       import buf._
 
       op match {
@@ -374,7 +386,7 @@ object Lower {
           val thenL, elseL, contL = fresh()
 
           val isPossibleOverflow =
-            let(Op.Comp(Comp.Ieq, intType, divisor, Val.Int(-1)))
+            let(Op.Comp(Comp.Ieq, intType, divisor, Val.Int(-1)), unwind)
           branch(isPossibleOverflow, Next(thenL), Next(elseL))
 
           label(thenL)
@@ -384,14 +396,14 @@ object Lower {
           jump(contL, Seq(divisor))
 
           label(contL, Seq(safeDivisor))
-          let(n, sremBin.copy(r = safeDivisor))
+          let(n, sremBin.copy(r = safeDivisor), unwind)
 
         case op =>
-          let(n, op)
+          let(n, op, unwind)
       }
     }
 
-    def genBoxOp(buf: Buffer, n: Local, op: Op.Box): Unit = {
+    def genBoxOp(buf: Buffer, n: Local, op: Op.Box, unwind: Next): Unit = {
       val Op.Box(ty, from) = op
       val (module, id)     = BoxTo(ty)
 
@@ -404,11 +416,11 @@ object Lower {
                       Seq(
                         Val.Undef(Type.Module(module)),
                         from
-                      ),
-                      Next.None))
+                      )),
+              unwind)
     }
 
-    def genUnboxOp(buf: Buffer, n: Local, op: Op.Unbox): Unit = {
+    def genUnboxOp(buf: Buffer, n: Local, op: Op.Unbox, unwind: Next): Unit = {
       val Op.Unbox(ty, from) = op
       val (module, id)       = UnboxTo(ty)
 
@@ -421,17 +433,17 @@ object Lower {
                       Seq(
                         Val.Undef(Type.Module(module)),
                         from
-                      ),
-                      Next.None))
+                      )),
+              unwind)
     }
 
-    def genModuleOp(buf: Buffer, n: Local, op: Op.Module) = {
-      val Op.Module(name, unwind) = op
+    def genModuleOp(buf: Buffer, n: Local, op: Op.Module, unwind: Next) = {
+      val Op.Module(name) = op
 
       val loadSig = Type.Function(Seq(), Type.Class(name))
       val load    = Val.Global(name member "load", Type.Ptr)
 
-      buf.let(n, Op.Call(loadSig, load, Seq(), unwind))
+      buf.let(n, Op.Call(loadSig, load, Seq()), unwind)
     }
 
     def genStringVal(value: String): Val = {
