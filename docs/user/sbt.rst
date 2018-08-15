@@ -70,10 +70,11 @@ Since Name                     Type            Description
 0.1   ``nativeMode``           ``String``      Either ``"debug"`` or ``"release"`` [2]_
 0.2   ``nativeGC``             ``String``      Either ``"none"``, ``"boehm"`` or ``"immix"`` [3]_
 0.3.3 ``nativeLinkStubs``      ``Boolean``     Whether to link ``@stub`` definitions, or to ignore them
-0.3.9 ``nativeLTO``            ``String``      Either ``"none"``, ``"full"`` or ``"thin"`` [6]
+0.3.9 ``nativeLTO``            ``String``      Either ``"none"``, ``"full"`` or ``"thin"`` [6]_
 ===== ======================== =============== =========================================================
 
 =======
+
 .. [1] See `Publishing`_ and `Cross compilation`_ for details.
 .. [2] See `Compilation modes`_ for details.
 .. [3] See `Garbage collectors`_ for details.
