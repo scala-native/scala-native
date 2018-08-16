@@ -16,9 +16,10 @@ object CodeGen {
 
   /** Lower and generate code for given assembly. */
   def apply(config: build.Config,
+            entries: Seq[Global],
             assembly: Seq[Defn],
             dyns: Seq[String]): Unit = {
-    implicit val top  = sema.Sema(assembly)
+    implicit val top  = sema.Sema(entries, assembly)
     implicit val meta = new Metadata(top, dyns)
 
     val lowered = lower(assembly ++ Generate(Global.Top(config.mainClass)))
@@ -907,18 +908,10 @@ object CodeGen {
       "call i32 @llvm.eh.typeid.for(i8* bitcast ({ i8*, i8*, i8* }* @_ZTIN11scalanative16ExceptionWrapperE to i8*))"
   }
 
-  val injects: Seq[Defn] = {
-    val buf = mutable.UnrolledBuffer.empty[Defn]
-    buf ++= Lower.injects
-    buf ++= Generate.injects
-    buf
-  }
-
   val depends: Seq[Global] = {
     val buf = mutable.UnrolledBuffer.empty[Global]
     buf ++= Lower.depends
     buf ++= Generate.depends
-    buf ++= Metadata.depends
     buf
   }
 }

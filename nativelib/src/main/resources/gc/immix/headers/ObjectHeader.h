@@ -28,6 +28,7 @@ typedef struct {
 typedef struct {
     struct {
         int32_t id;
+        int32_t tid;
         word_t *name;
         int8_t kind;
     } rt;

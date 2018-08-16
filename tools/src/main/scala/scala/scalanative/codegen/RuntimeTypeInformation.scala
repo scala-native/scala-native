@@ -25,7 +25,7 @@ class RuntimeTypeInformation(meta: Metadata, node: Scope) {
       Rt.Type
   }
   val value: Val.Struct = {
-    val typeId  = Val.Int(node.id)
+    val typeId  = Val.Int(meta.ids(node))
     val typeStr = Val.String(node.name.id)
     val typeKind = Val.Byte(node match {
       case _: Class  => 0
@@ -33,16 +33,23 @@ class RuntimeTypeInformation(meta: Metadata, node: Scope) {
       case _: Struct => 2
       case _         => unreachable
     })
-    val base = Val.Struct(Rt.Type.name, Seq(typeId, typeStr, typeKind))
+    val traitId = Val.Int(node match {
+      case node: Class =>
+        meta.tables.traitClassIds.get(node).getOrElse(-1)
+      case _ =>
+        -1
+    })
+    val base = Val.Struct(Rt.Type.name, Seq(typeId, traitId, typeStr, typeKind))
     node match {
       case cls: Class =>
+        val range = meta.ranges(cls)
         Val.Struct(
           Global.None,
           Seq(
             base,
             Val.Long(meta.layout(cls).size),
             Val.Struct(Global.None,
-                       Seq(Val.Int(cls.range.head), Val.Int(cls.range.last))),
+                       Seq(Val.Int(range.head), Val.Int(range.last))),
             meta.dynmap(cls).value,
             meta.layout(cls).referenceOffsetsValue,
             meta.vtable(cls).value
