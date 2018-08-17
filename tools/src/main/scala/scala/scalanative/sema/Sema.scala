@@ -2,8 +2,8 @@ package scala.scalanative
 package sema
 
 import scala.collection.mutable
-import util.unreachable
-import nir._
+import scalanative.nir._
+import scalanative.util.unreachable
 
 object Sema {
   def apply(entries: Seq[Global], defns: Seq[Defn]): Top = {
@@ -109,12 +109,14 @@ object Sema {
     }
 
     defns.foreach(enterDefn)
-    val top = new Top(nodes = nodes,
-                      structs = structs,
-                      classes = sortClasses(classes),
-                      traits = sortTraits(traits),
-                      methods = methods,
-                      fields = fields)
+
+    val top =
+      new Top(nodes = nodes,
+              structs = structs,
+              classes = sortClasses(classes),
+              traits = sortTraits(traits),
+              methods = methods,
+              fields = fields)
 
     def completeMethods(): Unit = methods.foreach { meth =>
       if (meth.name.isTop) {
@@ -144,6 +146,27 @@ object Sema {
       top.structs.foreach { node =>
         node.in = top
       }
+
+    def completeClasses(): Unit = top.classes.foreach { cls =>
+      cls.in = top
+      cls.parent = cls.parentName.map { name =>
+        nodes(name).asInstanceOf[Class]
+      }
+      cls.traitNames.foreach { name =>
+        cls.traits += nodes(name).asInstanceOf[Trait]
+      }
+      def loopParent(parent: Class): Unit = {
+        parent.subclasses += cls
+        parent.parent.foreach(loopParent)
+        parent.traits.foreach(loopTraits)
+      }
+      def loopTraits(trt: Trait): Unit = {
+        trt.implementors += cls
+        trt.traits.foreach(loopTraits)
+      }
+      cls.parent.foreach(loopParent)
+      cls.traits.foreach(loopTraits)
+    }
 
     def completeAllocatedAndCalled(): Unit = {
       def markCalled(scopeName: Global, methName: Global): Unit = {
@@ -198,25 +221,30 @@ object Sema {
       }
     }
 
-    def completeClasses(): Unit = top.classes.foreach { cls =>
-      cls.in = top
-      cls.parent = cls.parentName.map { name =>
-        nodes(name).asInstanceOf[Class]
+    def completeResolved(): Unit = {
+      top.classes.foreach { cls =>
+        def update(sig: String): Unit =
+          cls.resolved(sig) = cls.resolveImpl(sig).get
+
+        cls.parent.fold {
+          cls.resolved = mutable.Map.empty
+        } { parent =>
+          cls.resolved = parent.resolved.clone()
+        }
+
+        cls.methods.foreach { meth =>
+          meth.name.id match {
+            case Rt.JavaEqualsSig =>
+              update(Rt.ScalaEqualsSig)
+              update(Rt.JavaEqualsSig)
+            case Rt.JavaHashCodeSig =>
+              update(Rt.ScalaHashCodeSig)
+              update(Rt.JavaHashCodeSig)
+            case sig =>
+              update(sig)
+          }
+        }
       }
-      cls.traitNames.foreach { name =>
-        cls.traits += nodes(name).asInstanceOf[Trait]
-      }
-      def loopParent(parent: Class): Unit = {
-        parent.subclasses += cls
-        parent.parent.foreach(loopParent)
-        parent.traits.foreach(loopTraits)
-      }
-      def loopTraits(trt: Trait): Unit = {
-        trt.implementors += cls
-        trt.traits.foreach(loopTraits)
-      }
-      cls.parent.foreach(loopParent)
-      cls.traits.foreach(loopTraits)
     }
 
     completeFields()
@@ -225,6 +253,7 @@ object Sema {
     completeStructs()
     completeClasses()
     completeAllocatedAndCalled()
+    completeResolved()
 
     top
   }

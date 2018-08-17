@@ -2,8 +2,8 @@ package scala.scalanative
 package sema
 
 import scala.collection.mutable
-import scalanative.util.unreachable
 import scalanative.nir._
+import scalanative.util.unreachable
 
 sealed abstract class Node {
   var in: Scope = _
@@ -43,12 +43,16 @@ final class Class(val attrs: Attrs,
   val traits     = mutable.UnrolledBuffer.empty[Trait]
   var allocated  = false
 
-  var parent: Option[Class] = _
+  var parent: Option[Class]                 = _
+  var resolved: mutable.Map[String, Method] = _
 
   def isStaticModule: Boolean =
     !in.asInstanceOf[Top].nodes.contains(name member "init")
 
-  def resolve(sig: String): Option[Method] = {
+  def resolve(sig: String): Option[Method] =
+    resolved.get(sig)
+
+  def resolveImpl(sig: String): Option[Method] = {
     val top = this.in.asInstanceOf[Top]
 
     def impl(cls: Class, sig: String): Option[Method] =
