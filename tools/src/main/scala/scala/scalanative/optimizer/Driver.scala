@@ -8,17 +8,11 @@ sealed trait Driver {
   /** Companion of all the passes in the driver's pipeline. */
   def passes: Seq[PassCompanion]
 
-  /** Linker event reporter. */
-  def linkerReporter: linker.Reporter
-
   /** Optimizer event reporter. */
   def optimizerReporter: optimizer.Reporter
 
   /** Create a copy with given passes. */
   def withPasses(value: Seq[PassCompanion]): Driver
-
-  /** Create a copy of driver with given linker reporter. */
-  def withLinkerReporter(value: linker.Reporter): Driver
 
   /** Create a copy of driver with given linker reporter. */
   def withOptimizerReporter(value: optimizer.Reporter): Driver
@@ -56,17 +50,13 @@ object Driver {
 
   /** Create an empty pass-lesss driver. */
   def empty: Driver =
-    new Impl(Seq.empty, linker.Reporter.empty, optimizer.Reporter.empty)
+    new Impl(Seq.empty, optimizer.Reporter.empty)
 
   private final case class Impl(passes: Seq[PassCompanion],
-                                linkerReporter: linker.Reporter,
                                 optimizerReporter: optimizer.Reporter)
       extends Driver {
     def withPasses(value: Seq[PassCompanion]): Driver =
       copy(passes = value)
-
-    def withLinkerReporter(value: linker.Reporter): Driver =
-      copy(linkerReporter = value)
 
     def withOptimizerReporter(value: optimizer.Reporter): Driver =
       copy(optimizerReporter = value)

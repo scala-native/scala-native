@@ -13,45 +13,42 @@ import scalanative.optimizer.Optimizer
 /** Internal utilities to instrument Scala Native linker, otimizer and codegen. */
 private[scalanative] object ScalaNative {
 
+  /** Compute all globals that must be reachable
+   *  based on given configuration.
+   */
+  def entries(config: Config): Seq[Global] = {
+    val mainClass = Global.Top(config.mainClass)
+    val entry =
+      Global.Member(mainClass,
+                    "main_scala.scalanative.runtime.ObjectArray_unit")
+    entry +: CodeGen.depends
+  }
+
   /** Given the classpath and main entry point, link under closed-world
    *  assumption.
    */
-  def link(config: Config, driver: optimizer.Driver): linker.Result = {
-    config.logger.time("Linking") {
-      val mainClass = Global.Top(config.mainClass)
-      val entry =
-        Global.Member(mainClass,
-                      "main_scala.scalanative.runtime.ObjectArray_unit")
-      val result = Link(config, entry +: CodeGen.depends)
-
-      result.withDefns(result.defns ++ CodeGen.injects)
-    }
-  }
-
-  /** Link just the given entries, disregarding the extra ones that are
-   *  needed for the optimizer and/or codegen.
-   */
-  def linkOnly(config: Config,
-               reporter: linker.Reporter,
-               entries: Seq[nir.Global]): linker.Result =
+  def link(config: Config, entries: Seq[Global]): linker.Result = {
     config.logger.time("Linking") {
       Link(config, entries)
     }
+  }
 
   /** Optimizer high-level NIR under closed-world assumption. */
   def optimize(config: Config,
                driver: optimizer.Driver,
+               entries: Seq[nir.Global],
                assembly: Seq[nir.Defn]): Seq[nir.Defn] =
     config.logger.time(s"Optimizing (${config.mode} mode)") {
-      Optimizer(config, driver, assembly)
+      Optimizer(config, driver, entries, assembly)
     }
 
   /** Given low-level assembly, emit LLVM IR for it to the buildDirectory. */
   def codegen(config: Config,
+              entries: Seq[nir.Global],
               assembly: Seq[nir.Defn],
               dyns: Seq[String]): Seq[Path] = {
     config.logger.time("Generating intermediate code") {
-      CodeGen(config, assembly, dyns)
+      CodeGen(config, entries, assembly, dyns)
     }
     val produced = IO.getAll(config.workdir, "glob:**.ll")
     config.logger.info(s"Produced ${produced.length} files")

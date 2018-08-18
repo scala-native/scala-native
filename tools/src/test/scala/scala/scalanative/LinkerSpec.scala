@@ -38,7 +38,8 @@ abstract class LinkerSpec extends FlatSpec {
       val files      = compiler.compile(sourcesDir)
       val driver_    = driver.fold(Driver.default(Mode.default))(identity)
       val config     = makeConfig(outDir, entry, linkStubs)
-      val result     = ScalaNative.link(config, driver_)
+      val entries    = ScalaNative.entries(config)
+      val result     = ScalaNative.link(config, entries)
 
       f(config, result)
     }

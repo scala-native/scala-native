@@ -51,7 +51,8 @@ object Build {
    */
   def build(config: Config, outpath: Path): Path = {
     val driver       = optimizer.Driver.default(config.mode)
-    val linkerResult = ScalaNative.link(config, driver)
+    val entries      = ScalaNative.entries(config)
+    val linkerResult = ScalaNative.link(config, entries)
 
     if (linkerResult.unavailable.nonEmpty) {
       linkerResult.unavailable.map(_.show).sorted.foreach { signature =>
@@ -68,8 +69,8 @@ object Build {
       s"Discovered ${classCount} classes and ${methodCount} methods")
 
     val optimized =
-      ScalaNative.optimize(config, driver, linkerResult.defns)
-    ScalaNative.codegen(config, optimized, linkerResult.dyns)
+      ScalaNative.optimize(config, driver, entries, linkerResult.defns)
+    ScalaNative.codegen(config, entries, optimized, linkerResult.dyns)
     val generated = IO.getAll(config.workdir, "glob:**.ll")
 
     val unpackedLib = LLVM.unpackNativelib(config.nativelib, config.workdir)

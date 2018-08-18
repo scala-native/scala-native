@@ -47,7 +47,7 @@ trait ReachabilitySuite extends FunSuite {
       val sourcesDir = NIRCompiler.writeSources(sourceMap)
       val files      = compiler.compile(sourcesDir)
       val config     = makeConfig(outDir)
-      val result     = ScalaNative.linkOnly(config, Reporter.empty, entries)
+      val result     = ScalaNative.link(config, entries)
 
       f(result)
     }

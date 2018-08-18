@@ -5,7 +5,7 @@ import scala.collection.mutable
 import scalanative.nir._
 import scalanative.sema._
 
-class TraitDispatchTables(top: Top) {
+class TraitDispatchTables(meta: Metadata, top: Top) {
   val dispatchName                          = Global.Top("__dispatch")
   val dispatchVal                           = Val.Global(dispatchName, Type.Ptr)
   var dispatchTy: Type                      = _
@@ -22,58 +22,50 @@ class TraitDispatchTables(top: Top) {
   var traitHasTraitTy: Type   = _
   var traitHasTraitDefn: Defn = _
 
-  val (traitInlineSigs, traitDispatchSigs) = {
-    // Collect signatures of trait methods
-    val methods = top.methods.filter(_.inTrait)
-    val sigs    = mutable.Set.empty[String]
-    methods.foreach { meth =>
-      sigs += meth.name.id
-    }
-
-    // Collect implementations per signature
-    val impls = mutable.Map.empty[String, mutable.Set[Val]]
-    sigs.foreach { sig =>
-      impls(sig) = mutable.Set.empty[Val]
-    }
-    top.classes.foreach { cls =>
-      def visit(cur: Class): Unit = {
-        cur.methods.foreach { meth =>
-          val sig = meth.name.id
-          if (sigs.contains(sig)) {
-            impls(sig) += meth.value
-          }
+  val traitSigIds = {
+    // Collect signatures of trait methods, excluding
+    // the ones defined on java.lang.Object, those always
+    // go through vtable dispatch.
+    val sigs = mutable.Set.empty[String]
+    top.traits.foreach { trt =>
+      trt.calls.foreach { sig =>
+        if (top.targets(Type.Trait(trt.name), sig).size > 1) {
+          sigs += sig
         }
-        cur.parent.foreach(visit)
       }
-      visit(cls)
     }
-
-    // Extract one-or-less implementation signatures
-    val inlineImpls = impls.collect {
-      case (sig, impls) if impls.size <= 1 =>
-        if (impls.isEmpty) {
-          (sig, Val.Undef(Type.Ptr))
-        } else {
-          (sig, impls.head)
-        }
-    }
-    val tableImpls = impls.toSeq
-      .collect {
-        case (sig, impls) if impls.size > 1 =>
-          sig
+    val Object = top.nodes(Rt.Object.name).asInstanceOf[Class]
+    sigs.toList.foreach { sig =>
+      if (Object.calls.contains(sig)) {
+        sigs -= sig
       }
-      .sorted
-      .zipWithIndex
-      .toMap
+    }
+    sigs.toArray.sorted.zipWithIndex.toMap
+  }
 
-    (inlineImpls, tableImpls)
+  val traitClassIds = {
+    def isActive(trt: Trait): Boolean =
+      trt.calls.exists { sig =>
+        traitSigIds.contains(sig)
+      } || trt.traits.exists(isActive)
+
+    val activeTraits =
+      top.traits.filter(isActive).toSet
+
+    def implementsTrait(cls: Class): Boolean =
+      cls.traits.exists(activeTraits.contains(_)) || cls.parent.exists(
+        implementsTrait)
+    def include(cls: Class): Boolean =
+      cls.allocated && implementsTrait(cls)
+
+    top.classes.filter(include).sortBy(meta.ids(_)).zipWithIndex.toMap
   }
 
   def initDispatch(): Unit = {
-    val sigs          = traitDispatchSigs
-    val sigsLength    = traitDispatchSigs.size
-    val classes       = top.classes.sortBy(_.id)
-    val classesLength = classes.length
+    val sigs          = traitSigIds
+    val sigsLength    = traitSigIds.size
+    val classes       = traitClassIds
+    val classesLength = traitClassIds.size
     val table =
       Array.fill[Val](classesLength * sigsLength)(Val.Null)
     val mins = Array.fill[Int](sigsLength)(Int.MaxValue)
@@ -88,20 +80,14 @@ class TraitDispatchTables(top: Top) {
       table(meth * classesLength + cls)
 
     // Visit every class and enter all the trait sigs they support
-    classes.foreach { cls =>
-      def visit(cur: Class): Unit = {
-        cur.methods.foreach { meth =>
-          val sig = meth.name.id
-          if (sigs.contains(sig)) {
-            val id = sigs(sig)
-            if (get(cls.id, id) eq Val.Null) {
-              put(cls.id, id, meth.value)
+    classes.foreach {
+      case (cls, clsId) =>
+        sigs.foreach {
+          case (sig, sigId) =>
+            cls.resolve(sig).foreach { impl =>
+              put(clsId, sigId, impl.value)
             }
-          }
         }
-        cur.parent.foreach(visit)
-      }
-      visit(cls)
     }
 
     // Generate a compressed representation of the dispatch table
@@ -154,15 +140,15 @@ class TraitDispatchTables(top: Top) {
   }
 
   def markTraits(row: Array[Boolean], trt: Trait): Unit = {
-    row(trt.id) = true
+    row(meta.ids(trt)) = true
     trt.traits.foreach { right =>
-      row(right.id) = true
+      row(meta.ids(right)) = true
     }
     trt.traits.foreach(markTraits(row, _))
   }
 
   def initClassHasTrait(): Unit = {
-    val columns = top.classes.sortBy(_.id).map { cls =>
+    val columns = top.classes.sortBy(meta.ids(_)).map { cls =>
       val row = new Array[Boolean](top.traits.length)
       markTraits(row, cls)
       Val.Array(Type.Bool, row.map(Val.Bool))
@@ -175,10 +161,10 @@ class TraitDispatchTables(top: Top) {
   }
 
   def initTraitHasTrait(): Unit = {
-    val columns = top.traits.sortBy(_.id).map { left =>
+    val columns = top.traits.sortBy(meta.ids(_)).map { left =>
       val row = new Array[Boolean](top.traits.length)
       markTraits(row, left)
-      row(left.id) = true
+      row(meta.ids(left)) = true
       Val.Array(Type.Bool, row.map(Val.Bool))
     }
     val table = Val.Array(Type.Array(Type.Bool, top.traits.length), columns)

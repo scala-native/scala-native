@@ -13,11 +13,12 @@ object Optimizer {
   /** Run all of the passes on given assembly. */
   def apply(config: build.Config,
             driver: Driver,
+            entries: Seq[Global],
             assembly: Seq[Defn]): Seq[Defn] = {
     val reporter = driver.optimizerReporter
     import reporter._
 
-    val top = sema.Sema(assembly)
+    val top = sema.Sema(entries, assembly)
 
     def loop(batchId: Int,
              batchDefns: Seq[Defn],

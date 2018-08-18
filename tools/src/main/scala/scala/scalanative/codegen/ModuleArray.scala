@@ -9,7 +9,7 @@ class ModuleArray(top: Top) {
   val index   = mutable.Map.empty[Class, Int]
   val modules = mutable.UnrolledBuffer.empty[Class]
   top.classes.foreach { cls =>
-    if (cls.isModule) {
+    if (cls.isModule && cls.allocated) {
       index(cls) = modules.size
       modules += cls
     }

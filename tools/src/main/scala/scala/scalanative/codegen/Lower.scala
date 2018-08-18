@@ -17,6 +17,8 @@ object Lower {
       extends Transform {
     import meta._
 
+    val Object = top.nodes(Rt.Object.name).asInstanceOf[Class]
+
     // Type of the bare runtime type information struct.
     private val classRttiType =
       rtti(top.nodes(Global.Top("java.lang.Object"))).struct
@@ -169,42 +171,50 @@ object Lower {
     def genMethodOp(buf: Buffer, n: Local, op: Op.Method, unwind: Next) = {
       import buf._
 
-      op match {
-        case Op.Method(obj, MethodRef(cls: Class, meth)) if meth.isVirtual =>
-          val vindex  = vtable(cls).index(meth)
-          val typeptr = let(Op.Load(Type.Ptr, obj), unwind)
-          val methptrptr = let(
-            Op.Elem(rtti(cls).struct,
-                    typeptr,
-                    Seq(Val.Int(0),
-                        Val.Int(5), // index of vtable in type struct
-                        Val.Int(vindex))),
-            unwind)
+      val Op.Method(obj, Global.Member(_, sig)) = op
 
-          let(n, Op.Load(Type.Ptr, methptrptr), unwind)
+      def genClassVirtual(cls: Class): Unit = {
+        val vindex  = vtable(cls).index(sig)
+        val typeptr = let(Op.Load(Type.Ptr, obj), unwind)
+        val methptrptr = let(
+          Op.Elem(rtti(cls).struct,
+                  typeptr,
+                  Seq(Val.Int(0),
+                      Val.Int(5), // index of vtable in type struct
+                      Val.Int(vindex))),
+          unwind)
 
-        case Op.Method(obj, MethodRef(_: Class, meth)) if meth.isStatic =>
-          let(n, Op.Copy(Val.Global(meth.name, Type.Ptr)), unwind)
+        let(n, Op.Load(Type.Ptr, methptrptr), unwind)
+      }
 
-        case Op.Method(obj, MethodRef(trt: Trait, meth)) =>
-          val sig = meth.name.id
-          if (tables.traitInlineSigs.contains(sig)) {
-            let(n, Op.Copy(tables.traitInlineSigs(sig)), unwind)
-          } else {
-            val sigid   = tables.traitDispatchSigs(meth.name.id)
-            val typeptr = let(Op.Load(Type.Ptr, obj), unwind)
-            val idptr =
-              let(Op.Elem(Rt.Type, typeptr, Seq(Val.Int(0), Val.Int(0))),
-                  unwind)
-            val id = let(Op.Load(Type.Int, idptr), unwind)
-            val rowptr = let(
-              Op.Elem(Type.Ptr,
-                      tables.dispatchVal,
-                      Seq(Val.Int(tables.dispatchOffset(sigid)))),
-              unwind)
-            val methptrptr =
-              let(Op.Elem(Type.Ptr, rowptr, Seq(id)), unwind)
-            let(n, Op.Load(Type.Ptr, methptrptr), unwind)
+      def genTraitVirtual(trt: Trait): Unit = {
+        val sigid   = tables.traitSigIds(sig)
+        val typeptr = let(Op.Load(Type.Ptr, obj), unwind)
+        val idptr =
+          let(Op.Elem(Rt.Type, typeptr, Seq(Val.Int(0), Val.Int(1))), unwind)
+        val id = let(Op.Load(Type.Int, idptr), unwind)
+        val rowptr = let(Op.Elem(Type.Ptr,
+                                 tables.dispatchVal,
+                                 Seq(Val.Int(tables.dispatchOffset(sigid)))),
+                         unwind)
+        val methptrptr =
+          let(Op.Elem(Type.Ptr, rowptr, Seq(id)), unwind)
+        let(n, Op.Load(Type.Ptr, methptrptr), unwind)
+      }
+
+      top.targets(obj.ty, sig).toSeq match {
+        case Seq() =>
+          let(n, Op.Copy(Val.Null), unwind)
+        case Seq(impl) =>
+          let(n, Op.Copy(impl.value), unwind)
+        case _ =>
+          obj.ty match {
+            case ClassRef(cls) =>
+              genClassVirtual(cls)
+            case TraitRef(_) if Object.calls.contains(sig) =>
+              genClassVirtual(Object)
+            case TraitRef(trt) =>
+              genTraitVirtual(trt)
           }
       }
     }
@@ -299,20 +309,20 @@ object Lower {
       import buf._
 
       ty match {
-        case ClassRef(cls) if cls.range.length == 1 =>
+        case ClassRef(cls) if meta.ranges(cls).length == 1 =>
           val typeptr = let(Op.Load(Type.Ptr, obj), unwind)
           let(Op.Comp(Comp.Ieq, Type.Ptr, typeptr, rtti(cls).const), unwind)
 
         case ClassRef(cls) =>
+          val range   = meta.ranges(cls)
           val typeptr = let(Op.Load(Type.Ptr, obj), unwind)
           val idptr =
             let(Op.Elem(Rt.Type, typeptr, Seq(Val.Int(0), Val.Int(0))), unwind)
           val id = let(Op.Load(Type.Int, idptr), unwind)
-          val ge = let(
-            Op.Comp(Comp.Sle, Type.Int, Val.Int(cls.range.start), id),
-            unwind)
+          val ge =
+            let(Op.Comp(Comp.Sle, Type.Int, Val.Int(range.start), id), unwind)
           val le =
-            let(Op.Comp(Comp.Sle, Type.Int, id, Val.Int(cls.range.end)), unwind)
+            let(Op.Comp(Comp.Sle, Type.Int, id, Val.Int(range.end)), unwind)
           let(Op.Bin(Bin.And, Type.Bool, ge, le), unwind)
 
         case TraitRef(trt) =>
@@ -320,10 +330,11 @@ object Lower {
           val idptr =
             let(Op.Elem(Rt.Type, typeptr, Seq(Val.Int(0), Val.Int(0))), unwind)
           val id = let(Op.Load(Type.Int, idptr), unwind)
-          val boolptr = let(Op.Elem(tables.classHasTraitTy,
-                                    tables.classHasTraitVal,
-                                    Seq(Val.Int(0), id, Val.Int(trt.id))),
-                            unwind)
+          val boolptr = let(
+            Op.Elem(tables.classHasTraitTy,
+                    tables.classHasTraitVal,
+                    Seq(Val.Int(0), id, Val.Int(meta.ids(trt)))),
+            unwind)
           let(Op.Load(Type.Bool, boolptr), unwind)
 
         case _ =>
