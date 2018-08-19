@@ -61,6 +61,10 @@ class TraitDispatchTables(meta: Metadata, top: Top) {
     top.classes.filter(include).sortBy(meta.ids(_)).zipWithIndex.toMap
   }
 
+  initDispatch()
+  initClassHasTrait()
+  initTraitHasTrait()
+
   def initDispatch(): Unit = {
     val sigs          = traitSigIds
     val sigsLength    = traitSigIds.size
@@ -68,13 +72,15 @@ class TraitDispatchTables(meta: Metadata, top: Top) {
     val classesLength = traitClassIds.size
     val table =
       Array.fill[Val](classesLength * sigsLength)(Val.Null)
-    val mins = Array.fill[Int](sigsLength)(Int.MaxValue)
-    val maxs = Array.fill[Int](sigsLength)(Int.MinValue)
+    val mins  = Array.fill[Int](sigsLength)(Int.MaxValue)
+    val maxs  = Array.fill[Int](sigsLength)(Int.MinValue)
+    val sizes = Array.fill[Int](sigsLength)(0)
 
     def put(cls: Int, meth: Int, value: Val) = {
       table(meth * classesLength + cls) = value
       mins(meth) = mins(meth) min cls
       maxs(meth) = maxs(meth) max cls
+      sizes(meth) = maxs(meth) - mins(meth) + 1
     }
     def get(cls: Int, meth: Int) =
       table(meth * classesLength + cls)
@@ -90,48 +96,103 @@ class TraitDispatchTables(meta: Metadata, top: Top) {
         }
     }
 
-    // Generate a compressed representation of the dispatch table
-    // that displaces method rows one of top of the other to miniminize
-    // number of nulls in the table.
-    val offsets = mutable.Map.empty[Int, Int]
-    val compressed = new Array[Val]({
-      var meth = 0
-      var size = 0
-      while (meth < sigsLength) {
-        val min = mins(meth)
-        if (min != Int.MaxValue) {
-          val max = maxs(meth)
-          size += max - min + 1
-        }
-        meth += 1
-      }
-      size
-    })
-    var current = 0
-    var meth    = 0
-    while (meth < sigsLength) {
-      val start = mins(meth)
-      val end   = maxs(meth)
-      if (start == Int.MaxValue) {
-        offsets(meth) = 0
-      } else {
-        val total = end - start + 1
-        java.lang.System.arraycopy(table,
-                                   meth * classesLength + start,
-                                   compressed,
-                                   current,
-                                   total)
-        offsets(meth) = current - start
-        current += total
-      }
-      meth += 1
-    }
+    val (compressed, offsets) = compressTable(table, mins, sizes)
 
     val value = Val.Array(Type.Ptr, compressed)
 
     dispatchOffset = offsets
     dispatchTy = Type.Ptr
     dispatchDefn = Defn.Const(Attrs.None, dispatchName, value.ty, value)
+  }
+
+  // Generate a compressed representation of the dispatch table
+  // that displaces method rows one of top of the other to miniminize
+  // number of nulls in the table.
+  def compressTable(table: Array[Val],
+                    mins: Array[Int],
+                    sizes: Array[Int]): (Array[Val], mutable.Map[Int, Int]) = {
+    val classesLength = traitClassIds.size
+    val sigsLength    = traitSigIds.size
+    val maxSize       = sizes.max
+    val totalSize     = sizes.sum
+
+    val free       = Array.fill[List[Int]](maxSize + 1)(List())
+    val offsets    = mutable.Map.empty[Int, Int]
+    val compressed = new Array[Val](totalSize)
+    var current    = 0
+
+    def updateFree(from: Int, total: Int): Unit = {
+      var start = -1
+      var size  = 0
+      var i     = 0
+      while (i < total) {
+        val isNull = compressed(from + i) eq Val.Null
+        val inFree = start != -1
+        if (inFree) {
+          if (isNull) {
+            size += 1
+          } else {
+            free(size) = start :: free(size)
+            start = -1
+            size = 0
+          }
+        } else {
+          if (isNull) {
+            start = from + i
+            size = 1
+          } else {
+            ()
+          }
+        }
+        i += 1
+      }
+    }
+
+    def findFree(size: Int): Option[Int] = {
+      var bucket = size
+      while (bucket <= maxSize) {
+        if (free(bucket).nonEmpty) {
+          val head :: tail = free(bucket)
+          free(bucket) = tail
+          val leftoverSize = bucket - size
+          if (leftoverSize != 0) {
+            val leftoverStart = head + size
+            free(leftoverSize) = leftoverStart :: free(leftoverSize)
+          }
+          return Some(head)
+        }
+        bucket += 1
+      }
+      None
+    }
+
+    def allocate(sig: Int): Int = {
+      val start = mins(sig)
+      val size  = sizes(sig)
+      val offset =
+        findFree(size).getOrElse {
+          val offset = current
+          current += sizes(sig)
+          offset
+        }
+      java.lang.System.arraycopy(table,
+                                 sig * classesLength + start,
+                                 compressed,
+                                 offset,
+                                 size)
+      updateFree(offset, size)
+      offset
+    }
+
+    sizes.zipWithIndex.sortBy(-_._1).foreach {
+      case (_, sig) =>
+        offsets(sig) = allocate(sig) - mins(sig)
+    }
+
+    val result = new Array[Val](current)
+    System.arraycopy(compressed, 0, result, 0, current)
+
+    (result, offsets)
   }
 
   def markTraits(row: Array[Boolean], cls: Class): Unit = {
@@ -173,8 +234,4 @@ class TraitDispatchTables(meta: Metadata, top: Top) {
     traitHasTraitDefn =
       Defn.Const(Attrs.None, traitHasTraitName, table.ty, table)
   }
-
-  initDispatch()
-  initClassHasTrait()
-  initTraitHasTrait()
 }
