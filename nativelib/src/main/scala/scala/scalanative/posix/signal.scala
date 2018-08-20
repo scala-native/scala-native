@@ -122,22 +122,64 @@ object signal {
   @name("scalanative_sigxfsz")
   def SIGXFSZ: CInt = extern
 
+  // The storage occupied by sa_handler and sa_sigaction may overlap,
+  // and a conforming application shall not use both simultaneously.
+  type sigaction = CStruct4[
+    CFunctionPtr1[CInt, Unit], // sa_handler
+    sigset_t, // sa_mask
+    CInt, // sa_flags
+    CFunctionPtr3[CInt, Ptr[siginfo_t], Ptr[Byte], Unit] // sa_sigaction
+  ]
+
+  // define the following macros which shall expand to integer constant expressions
+  // that need not be usable in #if preprocessing directives
+  @name("scalanative_sig_block")
+  def SIG_BLOCK: CInt = extern
+  @name("scalanative_sig_unblock")
+  def SIG_UNBLOCK: CInt = extern
+  @name("scalanative_sig_setmask")
+  def SIG_SETMASK: CInt = extern
+
+  // define the following symbolic constants
+  @name("scalanative_sa_nocldstop")
+  def SA_NOCLDSTOP: CInt = extern
+  @name("scalanative_sa_onstack")
+  def SA_ONSTACK: CInt = extern
+  @name("scalanative_sa_resethand")
+  def SA_RESETHAND: CInt = extern
+  @name("scalanative_sa_restart")
+  def SA_RESTART: CInt = extern
+  @name("scalanative_sa_siginfo")
+  def SA_SIGINFO: CInt = extern
+  @name("scalanative_sa_nocldwait")
+  def SA_NOCLDWAIT: CInt = extern
+  @name("scalanative_sa_nodefer")
+  def SA_NODEFER: CInt = extern
+  @name("scalanative_ss_onstack")
+  def SS_ONSTACK: CInt = extern
+  @name("scalanative_ss_disable")
+  def SS_DISABLE: CInt = extern
+  @name("scalanative_minsigstksz")
+  def MINSIGSTKSZ: CInt = extern
+  @name("scalanative_sigstksz")
+  def SIGSTKSZ: CInt = extern
+
   // A machine-specific representation of the saved context
-  // mac OS type mcontext_t = Ptr[struct___darwin_mcontext64]
+  // mac OS type mcontext_t = Ptr[__darwin_mcontext64]
   // __darwin_mcontext64 -> _STRUCT_MCONTEXT64 -> typedef _STRUCT_MCONTEXT64	*mcontext_t;
   type mcontext_t = Ptr[Byte]
-
-  type stack_t = CStruct3[
-    Ptr[Byte], // void *ss_sp Stack base or pointer
-    size_t,
-    CInt
-  ]
 
   type ucontext_t = CStruct4[
     Ptr[Byte], // ptr to ucontext_t
     sigset_t,
     Ptr[stack_t], // Ptr instead of value
     mcontext_t
+  ]
+
+  type stack_t = CStruct3[
+    Ptr[Byte], // void *ss_sp Stack base or pointer
+    size_t,
+    CInt
   ]
 
   type siginfo_t = CStruct9[

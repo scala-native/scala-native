@@ -39,4 +39,21 @@ int scalanative_sigtalrm() { return SIGVTALRM; }
 int scalanative_sigxcpu() { return SIGXCPU; }
 int scalanative_sigxfsz() { return SIGXFSZ; }
 
+int scalanative_sig_block() { return SIG_BLOCK; }
+int scalanative_sig_unblock() { return SIG_UNBLOCK; }
+int scalanative_sig_setmask() { return SIG_SETMASK; }
+
+// define the following symbolic constants
+int scalanative_sa_nocldstop() { return SA_NOCLDSTOP; }
+int scalanative_sa_onstack() { return SA_ONSTACK; }
+int scalanative_sa_resethand() { return SA_RESETHAND; }
+int scalanative_sa_restart() { return SA_RESTART; }
+int scalanative_sa_siginfo() { return SA_SIGINFO; }
+int scalanative_sa_nocldwait() { return SA_NOCLDWAIT; }
+int scalanative_sa_nodefer() { return SA_NODEFER; }
+int scalanative_ss_onstack() { return SS_ONSTACK; }
+int scalanative_ss_disable() { return SS_DISABLE; }
+int scalanative_minsigstksz() { return MINSIGSTKSZ; }
+int scalanative_sigstksz() { return SIGSTKSZ; }
+
 // scala native functions
