@@ -3,7 +3,7 @@
 // symbolic constants
 void *scalanative_sig_dfl(int s) { return SIG_DFL; }
 void *scalanative_sig_err(int s) { return SIG_ERR; }
-void *scalanative_sig_hold(int s) { return SIG_HOLD; }
+// void *scalanative_sig_hold(int s) { return SIG_HOLD; }
 void *scalanative_sig_ign(int s) { return SIG_IGN; }
 
 int scalanative_sigev_none() { return SIGEV_NONE; }
