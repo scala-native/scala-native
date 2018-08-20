@@ -3,8 +3,25 @@ package posix
 
 import scala.scalanative.native._
 
+/**
+ * Some of the functionality described on this reference page extends the ISO C standard.
+ * Applications shall define the appropriate feature test macro (see XSH The Compilation Environment )
+ * to enable the visibility of these symbols in this header.
+ */
 @extern
 object signal {
+  // define the following macros, which shall expand to constant expressions with distinct values
+  // that have a type compatible with the second argument to, and the return value of, the signal() function,
+  // and whose values shall compare unequal to the address of any declarable function.
+  @name("scalanative_sig_dfl")
+  def SIG_DFL: CFunctionPtr1[CInt, Unit] = extern
+  @name("scalanative_sig_err")
+  def SIG_ERR: CFunctionPtr1[CInt, Unit] = extern
+  @name("scalanative_sig_hold")
+  def SIG_HOLD: CFunctionPtr1[CInt, Unit] = extern
+  @name("scalanative_sig_ign")
+  def SIG_IGN: CFunctionPtr1[CInt, Unit] = extern
+
   import sys.types
   // pthread_t, size_t, and uid_t types as described in <sys/types.h>
   type pthread_t = types.pthread_t
@@ -16,20 +33,22 @@ object signal {
 
   // define the following data types
   type sig_atomic_t = CInt
+
   // Integer or structure type of an object used to represent sets of signals
-  type sigset_t = CUnsignedInt // macOS
-  type sigset_t_linux =
-    CStruct1[CArray[CUnsignedLong, Nat.Digit[Nat._1, Nat._6]]] // Linux
+  // macOS CUnsignedInt
+  // Linux CStruct1[CArray[CUnsignedLong, Nat.Digit[Nat._1, Nat._6]]]
+  type sigset_t = Ptr[Byte]
+
   type pid_t          = types.pid_t
   type pthread_attr_t = types.pthread_attr_t
 
-  type sigevent =
-    CStruct5[CInt,
-             CInt,
-             Ptr[sigval], // Ptr instead of value
-             CFunctionPtr1[Ptr[sigval], Unit], // Ptr instead of value
-             Ptr[pthread_attr_t]]
-
+  type sigevent = CStruct5[
+    CInt, // sigev_notify
+    CInt, // sigev_signo
+    Ptr[sigval], // sigev_value - Ptr instead of value
+    CFunctionPtr1[Ptr[sigval], Unit], // sigev_notify_function - Ptr instead of value
+    Ptr[pthread_attr_t] // sigev_notify_attributes
+  ]
   // define the following symbolic constants for the values of sigev_notify:
   @name("scalanative_sigev_none")
   def SIGEV_NONE: CInt = extern
@@ -41,21 +60,82 @@ object signal {
   // union of int sival_int and void *sival_ptr
   type sigval = CArray[Byte, Nat._8]
 
-  // A machine-specific representation of the saved context.
-  type mcontext_t = Ptr[Byte] //MCONTEXT platfrom dependent macro resolve to Ptr to some struct
-  // The <ucontext.h> header defines the mcontext_t type through typedef
-  // this means this points to a macro and some machine specific structures (portability should be fun)
-  // type mcontext_t = Ptr[struct___darwin_mcontext64]
+  // manditory signals
+  @name("scalanative_sigabrt")
+  def SIGABRT: CInt = extern
+  @name("scalanative_sigalrm")
+  def SIGALRM: CInt = extern
+  @name("scalanative_sigbus")
+  def SIGBUS: CInt = extern
+  @name("scalanative_sigchld")
+  def SIGCHLD: CInt = extern
+  @name("scalanative_sigcont")
+  def SIGCONT: CInt = extern
+  @name("scalanative_sigfpe")
+  def SIGFPE: CInt = extern
+  @name("scalanative_sighup")
+  def SIGHUP: CInt = extern
+  @name("scalanative_sigill")
+  def SIGILL: CInt = extern
+  @name("scalanative_sigint")
+  def SIGINT: CInt = extern
+  @name("scalanative_sigkill")
+  def SIGKILL: CInt = extern
+  @name("scalanative_sigpipe")
+  def SIGPIPE: CInt = extern
+  @name("scalanative_sigquit")
+  def SIGQUIT: CInt = extern
+  @name("scalanative_sigsegv")
+  def SIGSEGV: CInt = extern
+  @name("scalanative_sigstop")
+  def SIGSTOP: CInt = extern
+  @name("scalanative_sigterm")
+  def SIGTERM: CInt = extern
+  @name("scalanative_sigtstp")
+  def SIGTSTP: CInt = extern
+  @name("scalanative_sigttin")
+  def SIGTTIN: CInt = extern
+  @name("scalanative_sigttou")
+  def SIGTTOU: CInt = extern
+  @name("scalanative_sigusr1")
+  def SIGUSR1: CInt = extern
+  @name("scalanative_sigusr2")
+  def SIGUSR2: CInt = extern
+  // The functionality described may be removed in a future version of this volume of POSIX.1-2017
+//  @name("scalanative_sigpoll")
+//  def SIGPOLL: CInt = extern
+  @name("scalanative_sigprof")
+  def SIGPROF: CInt = extern
+  @name("scalanative_sigsys")
+  def SIGSYS: CInt = extern
+  @name("scalanative_sigtrap")
+  def SIGTRAP: CInt = extern
+  @name("scalanative_sigurg")
+  def SIGURG: CInt = extern
+  @name("scalanative_sigtalrm")
+  def SIGVTALRM: CInt = extern
+  @name("scalanative_sigxcpu")
+  def SIGXCPU: CInt = extern
+  @name("scalanative_sigxfsz")
+  def SIGXFSZ: CInt = extern
+
+  // A machine-specific representation of the saved context
+  // mac OS type mcontext_t = Ptr[struct___darwin_mcontext64]
   // __darwin_mcontext64 -> _STRUCT_MCONTEXT64 -> typedef _STRUCT_MCONTEXT64	*mcontext_t;
+  type mcontext_t = Ptr[Byte]
 
-  type stack_t = CStruct3[Ptr[Byte], // void *ss_sp Stack base or pointer
-                          size_t,
-                          CInt]
+  type stack_t = CStruct3[
+    Ptr[Byte], // void *ss_sp Stack base or pointer
+    size_t,
+    CInt
+  ]
 
-  type ucontext_t = CStruct4[Ptr[Byte], // ptr to ucontext_t
-                             sigset_t,
-                             Ptr[stack_t], // Ptr instead of value
-                             mcontext_t]
+  type ucontext_t = CStruct4[
+    Ptr[Byte], // ptr to ucontext_t
+    sigset_t,
+    Ptr[stack_t], // Ptr instead of value
+    mcontext_t
+  ]
 
   type siginfo_t = CStruct9[
     CInt,
@@ -105,7 +185,6 @@ object signal {
   def bsd_signal(p0: CInt,
                  p1: CFunctionPtr1[CInt, Unit]): CFunctionPtr1[CInt, Unit] =
     extern
-
   def kill(p0: pid_t, p1: CInt): CInt                  = extern
   def killpg(p0: pid_t, p1: CInt): CInt                = extern
   def psiginfo(p0: Ptr[siginfo_t], p1: CString): Unit  = extern
