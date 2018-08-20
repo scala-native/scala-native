@@ -15,7 +15,8 @@ object Optimizer {
             driver: Driver,
             entries: Seq[Global],
             assembly: Seq[Defn]): Seq[Defn] = {
-    val reporter = driver.optimizerReporter
+    val reporter = /*driver.optimizerReporter*/ Reporter.toDirectory(
+      java.nio.file.Paths.get("debug"))
     import reporter._
 
     val top = sema.Sema(entries, assembly)
@@ -38,7 +39,7 @@ object Optimizer {
           loop(batchId, passResult, rest)
       }
 
-    partitionBy(assembly)(_.name).par
+    partitionBy(assembly, 1)(_.name).par
       .map {
         case (batchId, batchDefns) =>
           onStart(batchId, batchDefns)

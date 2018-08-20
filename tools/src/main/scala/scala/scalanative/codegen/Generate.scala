@@ -61,7 +61,7 @@ object Generate {
       val result           = Val.Local(fresh(), Type.Bool)
 
       buf += Defn.Define(
-        Attrs(isExtern = true, inline = Attr.AlwaysInline),
+        Attrs(inline = Attr.AlwaysInline),
         ClassHasTraitName,
         ClassHasTraitSig,
         Seq(
@@ -92,7 +92,7 @@ object Generate {
       val result          = Val.Local(fresh(), Type.Bool)
 
       buf += Defn.Define(
-        Attrs(isExtern = true, inline = Attr.AlwaysInline),
+        Attrs(inline = Attr.AlwaysInline),
         TraitHasTraitName,
         TraitHasTraitSig,
         Seq(
@@ -252,13 +252,11 @@ object Generate {
   }
 
   private object Impl {
-    val ClassHasTraitName =
-      Global.Member(Global.Top("__extern"), "extern.__check_class_has_trait")
-    val ClassHasTraitSig = Type.Function(Seq(Type.Int, Type.Int), Type.Bool)
+    val ClassHasTraitName = Global.Top("__check_class_has_trait")
+    val ClassHasTraitSig  = Type.Function(Seq(Type.Int, Type.Int), Type.Bool)
 
-    val TraitHasTraitName =
-      Global.Member(Global.Top("__extern"), "extern.__check_trait_has_trait")
-    val TraitHasTraitSig = Type.Function(Seq(Type.Int, Type.Int), Type.Bool)
+    val TraitHasTraitName = Global.Top("__check_trait_has_trait")
+    val TraitHasTraitSig  = Type.Function(Seq(Type.Int, Type.Int), Type.Bool)
 
     val ObjectArray =
       Type.Class(Global.Top("scala.scalanative.runtime.ObjectArray"))

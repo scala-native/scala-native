@@ -202,16 +202,16 @@ object Sema {
                   case _ =>
                     ()
                 }
-                if (arrayAlloc.contains(methName)) {
-                  markAllocated(arrayAlloc(methName))
+                if (Rt.arrayAlloc.contains(methName)) {
+                  markAllocated(Rt.arrayAlloc(methName))
                 }
               case Op.Classalloc(name) =>
                 markAllocated(name)
               case Op.Module(name) =>
                 markAllocated(name)
               case Op.Call(_, Val.Global(methName, _), _)
-                  if arrayAlloc.contains(methName) =>
-                markAllocated(arrayAlloc(methName))
+                  if Rt.arrayAlloc.contains(methName) =>
+                markAllocated(Rt.arrayAlloc(methName))
               case _ =>
                 ()
             }
@@ -257,22 +257,4 @@ object Sema {
 
     top
   }
-
-  val arrayAlloc = Seq(
-    "BooleanArray",
-    "CharArray",
-    "ByteArray",
-    "ShortArray",
-    "IntArray",
-    "LongArray",
-    "FloatArray",
-    "DoubleArray",
-    "ObjectArray"
-  ).map { arr =>
-    val cls          = "scala.scalanative.runtime." + arr
-    val module       = "scala.scalanative.runtime." + arr + "$"
-    val from: Global = Global.Member(Global.Top(module), "alloc_i32_" + cls)
-    val to: Global   = Global.Top(cls)
-    from -> to
-  }.toMap
 }

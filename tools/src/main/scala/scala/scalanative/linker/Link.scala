@@ -10,10 +10,13 @@ import scalanative.util.Scope
 object Link {
 
   /** Create a new linker given tools configuration. */
-  def apply(config: build.Config, entries: Seq[Global]): Result =
-    Scope { implicit in =>
-      (new Impl(config)).link(entries)
-    }
+  def apply(config: build.Config, entries: Seq[Global]): Result = {
+    val result =
+      Scope { implicit in =>
+        (new Impl(config)).link(entries)
+      }
+    result.withDefns(Reachability(entries, result.defns, result.dyns))
+  }
 
   private final class Impl(config: build.Config)(implicit in: Scope) {
     val enqueued    = mutable.Set.empty[Global]
@@ -37,7 +40,7 @@ object Link {
       }.flatten
 
     def pushDirect(global: Global): Unit = {
-      if (!enqueued.contains(global) && !global.isIntrinsic) {
+      if (!enqueued.contains(global)) {
         direct.push(global)
         enqueued += global
         if (conditional.contains(global)) {
