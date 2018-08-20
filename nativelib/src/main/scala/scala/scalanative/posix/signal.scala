@@ -7,6 +7,8 @@ import scala.scalanative.native._
  * Some of the functionality described on this reference page extends the ISO C standard.
  * Applications shall define the appropriate feature test macro (see XSH The Compilation Environment )
  * to enable the visibility of these symbols in this header.
+ *
+ * Note 1: The functionality described may be removed in a future version of this volume of POSIX.1-2017
  */
 @extern
 object signal {
@@ -17,8 +19,9 @@ object signal {
   def SIG_DFL: CFunctionPtr1[CInt, Unit] = extern
   @name("scalanative_sig_err")
   def SIG_ERR: CFunctionPtr1[CInt, Unit] = extern
-  @name("scalanative_sig_hold")
-  def SIG_HOLD: CFunctionPtr1[CInt, Unit] = extern
+  // Note 1: Linux
+//  @name("scalanative_sig_hold")
+//  def SIG_HOLD: CFunctionPtr1[CInt, Unit] = extern
   @name("scalanative_sig_ign")
   def SIG_IGN: CFunctionPtr1[CInt, Unit] = extern
 
@@ -101,7 +104,7 @@ object signal {
   def SIGUSR1: CInt = extern
   @name("scalanative_sigusr2")
   def SIGUSR2: CInt = extern
-  // The functionality described may be removed in a future version of this volume of POSIX.1-2017
+  // Note 1: macOS
 //  @name("scalanative_sigpoll")
 //  def SIGPOLL: CInt = extern
   @name("scalanative_sigprof")
