@@ -154,15 +154,6 @@ class ArrayList[E] private (private[this] var inner: Array[Any],
     _size = 0
   }
 
-  override def addAll(c: Collection[_ <: E]): Boolean =
-    super.addAll(c)
-
-  override def addAll(index: Int, c: Collection[_ <: E]): Boolean =
-    super.addAll(index, c)
-
-  override def iterator(): java.util.Iterator[E] =
-    super.iterator()
-
   // TODO: JDK 1.8
   // def forEach(action: Consumer[_ >: E]): Unit =
   // def spliterator(): Spliterator[E] =

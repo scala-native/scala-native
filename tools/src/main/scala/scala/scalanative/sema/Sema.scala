@@ -169,8 +169,7 @@ object Sema {
     }
 
     def completeAllocatedAndCalled(): Unit = {
-      def markCalled(scopeName: Global, methName: Global): Unit = {
-        val sig = methName.id
+      def markCalled(scopeName: Global, sig: String): Unit = {
         nodes(scopeName).asInstanceOf[Scope].calls += sig
       }
       def markAllocated(clsName: Global): Unit = {
@@ -191,27 +190,27 @@ object Sema {
         meth.insts.foreach {
           case Inst.Let(_, op, _) =>
             op match {
-              case Op.Method(obj, methName) =>
+              case Op.Method(obj, sig) =>
                 obj.ty match {
                   case Type.Module(name) =>
-                    markCalled(name, methName)
+                    markCalled(name, sig)
                   case Type.Class(name) =>
-                    markCalled(name, methName)
+                    markCalled(name, sig)
                   case Type.Trait(name) =>
-                    markCalled(name, methName)
+                    markCalled(name, sig)
                   case _ =>
                     ()
                 }
-                if (Rt.arrayAlloc.contains(methName)) {
-                  markAllocated(Rt.arrayAlloc(methName))
+                if (Rt.arrayAlloc.contains(sig)) {
+                  markAllocated(Rt.arrayAlloc(sig))
                 }
               case Op.Classalloc(name) =>
                 markAllocated(name)
               case Op.Module(name) =>
                 markAllocated(name)
               case Op.Call(_, Val.Global(methName, _), _)
-                  if Rt.arrayAlloc.contains(methName) =>
-                markAllocated(Rt.arrayAlloc(methName))
+                  if Rt.arrayAlloc.contains(methName.id) =>
+                markAllocated(Rt.arrayAlloc(methName.id))
               case _ =>
                 ()
             }

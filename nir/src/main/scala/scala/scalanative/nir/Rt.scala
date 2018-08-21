@@ -26,7 +26,7 @@ object Rt {
   ).map { arr =>
     val cls          = "scala.scalanative.runtime." + arr
     val module       = "scala.scalanative.runtime." + arr + "$"
-    val from: Global = Global.Member(Global.Top(module), "alloc_i32_" + cls)
+    val from: String = "alloc_i32_" + cls
     val to: Global   = Global.Top(cls)
     from -> to
   }.toMap

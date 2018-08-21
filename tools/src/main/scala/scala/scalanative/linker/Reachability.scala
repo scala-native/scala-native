@@ -7,7 +7,7 @@ import scalanative.codegen.Metadata
 import scalanative.util.Stats
 
 class Reachability(defns: Seq[Defn]) {
-  val (env, scopes) = {
+  val (env, scopes) = Stats.time("reach.init") {
     val envMap    = mutable.Map.empty[Global, Defn]
     val scopesMap = mutable.Map.empty[Global, mutable.UnrolledBuffer[Global]]
     def getScopeBuf(name: Global) =
@@ -51,21 +51,37 @@ class Reachability(defns: Seq[Defn]) {
   def reachDefn(defn: Defn): Unit = {
     defn match {
       case defn: Defn.Var =>
-        reachVar(defn)
+        Stats.time("reach.var") {
+          reachVar(defn)
+        }
       case defn: Defn.Const =>
-        reachConst(defn)
+        Stats.time("reach.const") {
+          reachConst(defn)
+        }
       case defn: Defn.Declare =>
-        reachDeclare(defn)
+        Stats.time("reach.declare") {
+          reachDeclare(defn)
+        }
       case defn: Defn.Define =>
-        reachDefine(defn)
+        Stats.time("reach.define") {
+          reachDefine(defn)
+        }
       case defn: Defn.Struct =>
-        reachStruct(defn)
+        Stats.time("reach.struct") {
+          reachStruct(defn)
+        }
       case defn: Defn.Trait =>
-        reachTrait(defn)
+        Stats.time("reach.trait") {
+          reachTrait(defn)
+        }
       case defn: Defn.Class =>
-        reachClass(defn)
+        Stats.time("reach.class") {
+          reachClass(defn)
+        }
       case defn: Defn.Module =>
-        reachModule(defn)
+        Stats.time("reach.module") {
+          reachModule(defn)
+        }
     }
     done(defn.name) = defn
   }
@@ -113,56 +129,60 @@ class Reachability(defns: Seq[Defn]) {
       case info: MemberInfo =>
         info.owner.members += info
       case info: Class =>
-        info.parent.foreach { parentInfo =>
-          info.responds ++= parentInfo.responds
-        }
-        scopes(info.name).foreach { name =>
-          def update(sig: String): Unit = {
-            val impl = resolve(info, sig).get
-            info.responds(sig) = impl
-            val dynsig = Global.genSignature(sig)
-            if (!dynsigs.contains(dynsig)) {
-              val buf =
-                dyncandidates.getOrElseUpdate(dynsig, mutable.Set.empty[Global])
-              buf += impl
-            } else {
-              dynimpls += impl
-              reachGlobal(impl)
+        Stats.time("reach.class.newinfo") {
+          info.parent.foreach { parentInfo =>
+            info.responds ++= parentInfo.responds
+          }
+          scopes(info.name).foreach { name =>
+            def update(sig: String): Unit =
+              Stats.time("reach.class.newinfo.update") {
+                val impl = resolve(info, sig).get
+                info.responds(sig) = impl
+                val dynsig = Global.genSignature(sig)
+                if (!dynsigs.contains(dynsig)) {
+                  val buf =
+                    dyncandidates.getOrElseUpdate(dynsig,
+                                                  mutable.Set.empty[Global])
+                  buf += impl
+                } else {
+                  dynimpls += impl
+                  reachGlobal(impl)
+                }
+              }
+            env(name) match {
+              case defn: Defn.Define =>
+                defn.name.id match {
+                  case Rt.JavaEqualsSig =>
+                    update(Rt.ScalaEqualsSig)
+                    update(Rt.JavaEqualsSig)
+                  case Rt.JavaHashCodeSig =>
+                    update(Rt.ScalaHashCodeSig)
+                    update(Rt.JavaHashCodeSig)
+                  case sig =>
+                    update(sig)
+                }
+              case _ =>
+                ()
             }
           }
-          env(name) match {
-            case defn: Defn.Define =>
-              defn.name.id match {
-                case Rt.JavaEqualsSig =>
-                  update(Rt.ScalaEqualsSig)
-                  update(Rt.JavaEqualsSig)
-                case Rt.JavaHashCodeSig =>
-                  update(Rt.ScalaHashCodeSig)
-                  update(Rt.JavaHashCodeSig)
-                case sig =>
-                  update(sig)
-              }
-            case _ =>
-              ()
-          }
-        }
 
-        val calls = mutable.Set.empty[String]
-        def loopParent(parentInfo: Class): Unit = {
-          calls ++= parentInfo.calls
-          parentInfo.subclasses += info
-          parentInfo.parent.foreach(loopParent)
-          parentInfo.traits.foreach(loopTraits)
-        }
-        def loopTraits(traitInfo: Trait): Unit = {
-          calls ++= traitInfo.calls
-          traitInfo.implementors += info
-          traitInfo.traits.foreach(loopTraits)
-        }
-        info.parent.foreach(loopParent)
-        info.traits.foreach(loopTraits)
-        calls.foreach { sig =>
-          info.responds.get(sig).foreach(reachGlobal)
+          val calls = mutable.Set.empty[String]
+          def loopParent(parentInfo: Class): Unit = {
+            calls ++= parentInfo.calls
+            parentInfo.subclasses += info
+            parentInfo.parent.foreach(loopParent)
+            parentInfo.traits.foreach(loopTraits)
+          }
+          def loopTraits(traitInfo: Trait): Unit = {
+            calls ++= traitInfo.calls
+            traitInfo.implementors += info
+            traitInfo.traits.foreach(loopTraits)
+          }
+          info.parent.foreach(loopParent)
+          info.traits.foreach(loopTraits)
+          calls.foreach { sig =>
+            info.responds.get(sig).foreach(reachGlobal)
+          }
         }
       case _ =>
         ()
@@ -220,9 +240,11 @@ class Reachability(defns: Seq[Defn]) {
   def reachDefine(defn: Defn.Define): Unit = {
     val Defn.Define(attrs, name, sig, insts) = defn
     newInfo(new Method(scopeInfo(name.top), name, isConcrete = true))
-    reachAttrs(attrs)
-    reachType(sig)
-    reachInsts(insts)
+    Stats.time("reach.define.postinfo") {
+      reachAttrs(attrs)
+      reachType(sig)
+      reachInsts(insts)
+    }
   }
 
   def reachStruct(defn: Defn.Struct): Unit = {
@@ -297,7 +319,9 @@ class Reachability(defns: Seq[Defn]) {
   }
 
   def reachInsts(insts: Seq[Inst]): Unit =
-    insts.foreach(reachInst)
+    Stats.time("reach.define.insts") {
+      insts.foreach(reachInst)
+    }
 
   def reachInst(inst: Inst): Unit = inst match {
     case Inst.None | Inst.Unreachable =>
@@ -369,10 +393,9 @@ class Reachability(defns: Seq[Defn]) {
     case Op.Field(v, n) =>
       reachVal(v)
       reachGlobal(n)
-    case Op.Method(obj, name) =>
+    case Op.Method(obj, sig) =>
       reachVal(obj)
-      reachGlobal(name)
-      reachMethodTargets(obj.ty, name)
+      reachMethodTargets(obj.ty, sig)
     case Op.Dynmethod(obj, dynsig) =>
       reachVal(obj)
       reachDynamicMethodTargets(dynsig)
@@ -412,57 +435,60 @@ class Reachability(defns: Seq[Defn]) {
   def reachMethodTargets(ty: Type, name: Global): Unit =
     reachMethodTargets(ty, name.id)
 
-  def reachMethodTargets(ty: Type, sig: String): Unit = {
-    def reachImpl(cls: Class): Unit =
-      cls.responds.get(sig).foreach(reachGlobal)
+  def reachMethodTargets(ty: Type, sig: String): Unit =
+    Stats.time("reach.define.insts.targets") {
+      def reachImpl(cls: Class): Unit =
+        cls.responds.get(sig).foreach(reachGlobal)
 
-    ty match {
-      case Type.Module(name) =>
-        val cls = classInfo(name)
-        if (!cls.calls.contains(sig)) {
-          cls.calls += sig
-          reachImpl(cls)
-        }
-      case Type.Class(name) =>
-        val cls = classInfo(name)
-        if (!cls.calls.contains(sig)) {
-          cls.calls += sig
-          reachImpl(cls)
-          cls.subclasses.foreach(reachImpl)
-        }
-      case Type.Trait(name) =>
-        val trt = traitInfo(name)
-        if (!trt.calls.contains(sig)) {
-          trt.calls += sig
-          trt.implementors.foreach(reachImpl)
-        }
-      case _ =>
-        ()
-    }
-  }
-
-  def reachDynamicMethodTargets(dynsig: String) =
-    if (!dynsigs.contains(dynsig)) {
-      dynsigs += dynsig
-      if (dyncandidates.contains(dynsig)) {
-        dyncandidates(dynsig).foreach { impl =>
-          dynimpls += impl
-          reachGlobal(impl)
-        }
-        dyncandidates -= dynsig
+      ty match {
+        case Type.Module(name) =>
+          val cls = classInfo(name)
+          if (!cls.calls.contains(sig)) {
+            cls.calls += sig
+            reachImpl(cls)
+          }
+        case Type.Class(name) =>
+          val cls = classInfo(name)
+          if (!cls.calls.contains(sig)) {
+            cls.calls += sig
+            reachImpl(cls)
+            cls.subclasses.foreach(reachImpl)
+          }
+        case Type.Trait(name) =>
+          val trt = traitInfo(name)
+          if (!trt.calls.contains(sig)) {
+            trt.calls += sig
+            trt.implementors.foreach(reachImpl)
+          }
+        case _ =>
+          ()
       }
     }
 
-  def lookup(cls: Class, sig: String): Option[Global] = {
-    val tryMember = cls.name member sig
-    if (env.contains(tryMember)) {
-      Some(tryMember)
-    } else {
-      cls.parent.flatMap(lookup(_, sig))
+  def reachDynamicMethodTargets(dynsig: String) =
+    Stats.time("reach.define.insts.dyntargets") {
+      if (!dynsigs.contains(dynsig)) {
+        dynsigs += dynsig
+        if (dyncandidates.contains(dynsig)) {
+          dyncandidates(dynsig).foreach { impl =>
+            dynimpls += impl
+            reachGlobal(impl)
+          }
+          dyncandidates -= dynsig
+        }
+      }
     }
-  }
 
   def resolve(cls: Class, sig: String): Option[Global] = {
+    def lookup(cls: Class, sig: String): Option[Global] = {
+      val tryMember = cls.name member sig
+      if (env.contains(tryMember)) {
+        Some(tryMember)
+      } else {
+        cls.parent.flatMap(lookup(_, sig))
+      }
+    }
+
     sig match {
       // We short-circuit scala_== and scala_## to immeditately point to the
       // equals and hashCode implementation for the reference types to avoid
@@ -492,50 +518,15 @@ class Reachability(defns: Seq[Defn]) {
 }
 
 object Reachability {
-  def apply(entries: Seq[Global], result: Result): Result =
-    Stats.in(Stats.time("reachability") {
-      val defns        = result.defns
-      val reachability = new Reachability(defns)
-      entries.foreach(reachability.reachEntry)
-      reachability.process()
-      val res = reachability.result()
-      val origClassCount = defns.count {
-        case _: nir.Defn.Class | _: nir.Defn.Module | _: nir.Defn.Trait => true
-        case _                                                          => false
-      }
-      val origMemberCount = defns.count {
-        case _: nir.Defn.Define | _: nir.Defn.Declare | _: nir.Defn.Var |
-            _: nir.Defn.Const =>
-          true
-        case _ => false
-      }
-      val classCount = res.count {
-        case _: nir.Defn.Class | _: nir.Defn.Module | _: nir.Defn.Trait => true
-        case _                                                          => false
-      }
-      val memberCount = res.count {
-        case _: nir.Defn.Define | _: nir.Defn.Declare | _: nir.Defn.Var |
-            _: nir.Defn.Const =>
-          true
-        case _ => false
-      }
-      val resNames = res.map(_.name).toSet
-      val excluded = mutable.Set.empty[Global]
-      defns.foreach { defn =>
-        if (!resNames.contains(defn.name)) {
-          excluded += defn.name
-        }
-      }
-      excluded.toList.map(_.show).sorted.foreach { d =>
-        println("excluded " + d)
-      }
-      println(s"Reached ${classCount} classes and ${memberCount} members")
-      println(
-        s"(down from ${origClassCount} classes and ${origMemberCount} members)")
-      result
-        .withDefns(reachability.result())
-        .withDynsigs(reachability.dynsigs.toSeq)
-        .withDynimpls(reachability.dynimpls.toSeq)
-        .withLinks(reachability.links.toSeq)
-    })
+  def apply(entries: Seq[Global], result: Result): Result = {
+    val reachability = new Reachability(result.defns)
+    entries.foreach(reachability.reachEntry)
+    reachability.process()
+
+    result
+      .withDefns(reachability.result())
+      .withDynsigs(reachability.dynsigs.toSeq)
+      .withDynimpls(reachability.dynimpls.toSeq)
+      .withLinks(reachability.links.toSeq)
+  }
 }

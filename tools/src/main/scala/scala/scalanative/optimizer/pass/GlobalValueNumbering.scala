@@ -154,8 +154,8 @@ object GlobalValueNumbering extends PassCompanion {
           case (Field(objA, nameA), Field(objB, nameB)) =>
             eqVal(objA, objB) && eqGlobal(nameA, nameB)
 
-          case (Method(objA, nameA), Method(objB, nameB)) =>
-            eqVal(objA, objB) && eqGlobal(nameA, nameB)
+          case (Method(objA, signatureA), Method(objB, signatureB)) =>
+            eqVal(objA, objB) && signatureA == signatureB
 
           case (Dynmethod(objA, signatureA), Dynmethod(objB, signatureB)) =>
             eqVal(objA, objB) && signatureA == signatureB

@@ -171,7 +171,7 @@ object Lower {
     def genMethodOp(buf: Buffer, n: Local, op: Op.Method, unwind: Next) = {
       import buf._
 
-      val Op.Method(obj, Global.Member(_, sig)) = op
+      val Op.Method(obj, sig) = op
 
       def genClassVirtual(cls: Class): Unit = {
         val vindex  = vtable(cls).index(sig)

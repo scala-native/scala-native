@@ -1598,7 +1598,7 @@ trait NirGenExpr { self: NirGenPhase =>
         if (statically || owner.isStruct || owner.isExternModule) {
           Val.Global(name, nir.Type.Ptr)
         } else {
-          buf.method(self, name, unwind)
+          buf.method(self, name.id, unwind)
         }
       val values =
         if (owner.isExternModule || owner.isImplClass)

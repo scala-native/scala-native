@@ -19,7 +19,7 @@ object GenerateReflectiveProxies {
 
     val label      = genProxyLabel(proxyArgs)
     val unboxInsts = genArgUnboxes(label)
-    val method     = Inst.Let(Op.Method(label.params.head, defn.name), Next.None)
+    val method     = Inst.Let(Op.Method(label.params.head, defn.name.id), Next.None)
     val call       = genCall(defnType, method, label.params, unboxInsts)
     val box        = genRetValBox(call.name, defnType.ret, proxyTy.ret)
     val retInst    = genRet(box.name, proxyTy.ret)

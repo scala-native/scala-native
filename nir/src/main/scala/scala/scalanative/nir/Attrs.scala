@@ -18,18 +18,13 @@ object Attr {
   final case object Dyn  extends Attr
   final case object Stub extends Attr
 
-  final case object Pure                  extends Attr
-  final case object Extern                extends Attr
-  final case class Override(name: Global) extends Attr
+  final case object Pure   extends Attr
+  final case object Extern extends Attr
 
   final case class Align(value: Int) extends Attr
 
   // Linker attributes
-  final case class Link(name: String)               extends Attr
-  sealed abstract class Pin                         extends Attr
-  final case class PinAlways(dep: Global)           extends Pin
-  final case class PinIf(dep: Global, cond: Global) extends Pin
-  final case class PinWeak(dep: Global)             extends Pin
+  final case class Link(name: String) extends Attr
 }
 
 final case class Attrs(inline: Inline = MayInline,
@@ -37,8 +32,6 @@ final case class Attrs(inline: Inline = MayInline,
                        isExtern: Boolean = false,
                        isDyn: Boolean = false,
                        isStub: Boolean = false,
-                       overrides: Seq[Global] = Seq(),
-                       pins: Seq[Pin] = Seq(),
                        links: Seq[Attr.Link] = Seq(),
                        align: Option[Int] = scala.None) {
   def toSeq: Seq[Attr] = {
@@ -49,8 +42,6 @@ final case class Attrs(inline: Inline = MayInline,
     if (isExtern) out += Extern
     if (isDyn) out += Dyn
     if (isStub) out += Stub
-    overrides.foreach { out += Override(_) }
-    out ++= pins
     out ++= links
     align.foreach { out += Align(_) }
 
@@ -68,7 +59,6 @@ object Attrs {
     var isStub    = false
     var align     = Option.empty[Int]
     val overrides = mutable.UnrolledBuffer.empty[Global]
-    val pins      = mutable.UnrolledBuffer.empty[Pin]
     val links     = mutable.UnrolledBuffer.empty[Attr.Link]
 
     attrs.foreach {
@@ -78,19 +68,9 @@ object Attrs {
       case Dyn             => isDyn = true
       case Stub            => isStub = true
       case Align(value)    => align = Some(value)
-      case Override(name)  => overrides += name
-      case attr: Pin       => pins += attr
       case link: Attr.Link => links += link
     }
 
-    new Attrs(inline,
-              isPure,
-              isExtern,
-              isDyn,
-              isStub,
-              overrides,
-              pins,
-              links,
-              align)
+    new Attrs(inline, isPure, isExtern, isDyn, isStub, links, align)
   }
 }

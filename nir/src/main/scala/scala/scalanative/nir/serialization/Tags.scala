@@ -19,12 +19,8 @@ object Tags {
   final val AlwaysInlineAttr = 1 + NoInlineAttr
   final val PureAttr         = 1 + AlwaysInlineAttr
   final val ExternAttr       = 1 + PureAttr
-  final val OverrideAttr     = 1 + ExternAttr
-  final val LinkAttr         = 1 + OverrideAttr
-  final val PinAlwaysAttr    = 1 + LinkAttr
-  final val PinIfAttr        = 1 + PinAlwaysAttr
-  final val PinWeakAttr      = 1 + PinIfAttr
-  final val DynAttr          = 1 + PinWeakAttr
+  final val LinkAttr         = 1 + ExternAttr
+  final val DynAttr          = 1 + LinkAttr
   final val StubAttr         = 1 + DynAttr
 
   // Binary ops
