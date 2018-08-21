@@ -3,9 +3,23 @@ package posix
 
 import scala.scalanative.native._
 
+/**
+ * aio.h - asynchronous input and output
+ */
 @extern
 object aio {
   import sys.types
+
+  // header shall define the aiocb structure, which shall include at least the following members
+  type aiocb = CStruct7[
+    CInt, // aio_fildes     File descriptor
+    off_t, // aio_offset     File offset
+    Ptr[Byte], // aio_buf        Location of buffer
+    size_t, // aio_nbytes     Length of transfer
+    CInt, // aio_reqprio    Request priority offset
+    Ptr[sigevent], // aio_sigevent   Signal number and value
+    CInt // aio_lio_opcode Operation to be performed
+  ]
 
   // types as described in <sys/types.h>
   type pthread_attr_t = types.pthread_attr_t
@@ -17,48 +31,29 @@ object aio {
   type timespec = time.timespec
 
   // sigevent structure and sigval union as described in <signal.h>
-  type sigevent = CStruct5[CInt,
-                           CInt,
-                           sigval,
-                           Ptr[sigval], // defined as sigval
-                           Ptr[pthread_attr_t]]
+  type sigevent = signal.sigevent
+  type sigval   = signal.sigval
 
-  // union of int and void *ptr
-  type sigval = CArray[Byte, Nat._8]
-
-  // constants
+  // header shall define the following symbolic constants
   @name("scalanative_aio_alldone")
   def AIO_ALLDONE: CInt = extern
-
   @name("scalanative_aio_canceled")
   def AIO_CANCELED: CInt = extern
-
   @name("scalanative_aio_notcanceled")
   def AIO_NOTCANCELED: CInt = extern
-
   @name("scalanative_lio_nop")
   def LIO_NOP: CInt = extern
-
   @name("scalanative_lio_nowait")
   def LIO_NOWAIT: CInt = extern
-
   @name("scalanative_lio_read")
   def LIO_READ: CInt = extern
-
   @name("scalanative_lio_wait")
   def LIO_WAIT: CInt = extern
-
   @name("scalanative_lio_write")
   def LIO_WRITE: CInt = extern
 
-  type aiocb = CStruct7[CInt,
-                        off_t,
-                        Ptr[Byte],
-                        size_t,
-                        CInt,
-                        Ptr[sigevent], // defined as sigevent
-                        CInt]
-
+  // The following shall be declared as functions and may also be defined as macros.
+  // Function prototypes shall be provided
   @name("scalanative_aio_cancel")
   def aio_cancel(fd: CInt, aiocbp: Ptr[aiocb]): CInt = extern
   @name("scalanative_aio_error")
@@ -86,22 +81,21 @@ object aio {
 object aioOps {
   import aio._
 
+  // TODO: move to signal
   implicit class sigevent_ops(val p: Ptr[sigevent]) extends AnyVal {
-    def sigev_notify: CInt                 = !p._1
-    def sigev_notify_=(value: CInt): Unit  = !p._1 = value
-    def sigev_signo: CInt                  = !p._2
-    def sigev_signo_=(value: CInt): Unit   = !p._2 = value
-    def sigev_value: sigval                = !p._3
-    def sigev_value_=(value: sigval): Unit = !p._3 = value
-    def sigev_notify_function: Ptr[sigval] = !p._4
-    def sigev_notify_function_=(value: Ptr[sigval]): Unit =
+    def sigev_notify: CInt                                      = !p._1
+    def sigev_notify_=(value: CInt): Unit                       = !p._1 = value
+    def sigev_signo: CInt                                       = !p._2
+    def sigev_signo_=(value: CInt): Unit                        = !p._2 = value
+    def sigev_value: Ptr[sigval]                                = !p._3
+    def sigev_value_=(value: Ptr[sigval]): Unit                 = !p._3 = value
+    def sigev_notify_function: CFunctionPtr1[Ptr[sigval], Unit] = !p._4
+    def sigev_notify_function_=(value: CFunctionPtr1[Ptr[sigval], Unit]): Unit =
       !p._4 = value
     def sigev_notify_attributes: Ptr[pthread_attr_t] = !p._5
     def sigev_notify_attributes_=(value: Ptr[pthread_attr_t]): Unit =
       !p._5 = value
   }
-
-  //def sigevent()(implicit z: Zone): Ptr[sigevent] = native.alloc[sigevent]
 
   implicit class aiocb_ops(val p: Ptr[aiocb]) extends AnyVal {
     def aio_fildes: CInt                  = !p._1
@@ -121,8 +115,7 @@ object aioOps {
     def aio_lio_opcode_=(value: CInt): Unit = !p._7 = value
   }
 
-  //def aiocb()(implicit z: Zone): Ptr[aiocb] = native.alloc[aiocb]
-
+  // TODO: move to signal
   implicit class sigval_ops(val p: Ptr[sigval]) extends AnyVal {
     def sival_int: Ptr[CInt]                = p.cast[Ptr[CInt]]
     def sival_int_=(value: CInt): Unit      = !p.cast[Ptr[CInt]] = value
