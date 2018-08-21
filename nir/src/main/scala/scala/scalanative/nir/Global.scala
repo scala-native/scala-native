@@ -43,9 +43,17 @@ object Global {
     override def top: Global.Top = owner.top
   }
 
-  def genSignature(methodName: nir.Global, proxy: Boolean = false): String = {
-    val fullSignature = methodName.id
-    val index         = fullSignature.lastIndexOf("_")
+  def genSignature(methodName: nir.Global): String =
+    genSignature(methodName, proxy = false)
+
+  def genSignature(methodName: nir.Global, proxy: Boolean): String =
+    genSignature(methodName.id, proxy)
+
+  def genSignature(fullSignature: String): String =
+    genSignature(fullSignature, proxy = false)
+
+  def genSignature(fullSignature: String, proxy: Boolean): String = {
+    val index = fullSignature.lastIndexOf("_")
     val signature =
       if (index != -1) {
         fullSignature.substring(0, index)

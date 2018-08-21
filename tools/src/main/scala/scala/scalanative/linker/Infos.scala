@@ -20,6 +20,7 @@ final class Class(val name: Global,
                   val isModule: Boolean)
     extends ScopeInfo {
   val subclasses = mutable.Set.empty[Class]
+  val responds   = mutable.Map.empty[String, Global]
 }
 final class Trait(val name: Global, val traits: Seq[Trait]) extends ScopeInfo {
   val implementors = mutable.Set.empty[Class]

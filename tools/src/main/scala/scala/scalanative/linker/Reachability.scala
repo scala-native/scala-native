@@ -7,20 +7,33 @@ import scalanative.codegen.Metadata
 import scalanative.util.Stats
 
 class Reachability(defns: Seq[Defn]) {
-  val env = {
-    val out = mutable.Map.empty[Global, Defn]
+  val (env, scopes) = {
+    val envMap    = mutable.Map.empty[Global, Defn]
+    val scopesMap = mutable.Map.empty[Global, mutable.UnrolledBuffer[Global]]
+    def getScopeBuf(name: Global) =
+      scopesMap.getOrElseUpdate(name, mutable.UnrolledBuffer.empty[Global])
     defns.foreach { defn =>
-      out(defn.name) = defn
+      defn.name match {
+        case name: Global.Top =>
+          getScopeBuf(name)
+        case name: Global.Member =>
+          getScopeBuf(name.top) += defn.name
+      }
+      envMap(defn.name) = defn
     }
-    out
+    (envMap, scopesMap)
   }
+
   val enqueued = mutable.Set.empty[Global]
   val todo     = mutable.Stack.empty[Global]
   val done     = mutable.Map.empty[Global, Defn]
   val infos    = mutable.Map.empty[Global, Info]
   val stack    = mutable.Stack.empty[Global]
-  val links    = mutable.Set.empty[String]
-  val dynsigs  = mutable.Set.empty[String]
+  val links    = mutable.Set.empty[Attr.Link]
+
+  val dyncandidates = mutable.Map.empty[String, mutable.Set[Global]]
+  val dynsigs       = mutable.Set.empty[String]
+  val dynimpls      = mutable.Set.empty[Global]
 
   def result(): Seq[Defn] =
     done.values.toSeq
@@ -100,6 +113,40 @@ class Reachability(defns: Seq[Defn]) {
       case info: MemberInfo =>
         info.owner.members += info
       case info: Class =>
+        info.parent.foreach { parentInfo =>
+          info.responds ++= parentInfo.responds
+        }
+        scopes(info.name).foreach { name =>
+          def update(sig: String): Unit = {
+            val impl = resolve(info, sig).get
+            info.responds(sig) = impl
+            val dynsig = Global.genSignature(sig)
+            if (!dynsigs.contains(dynsig)) {
+              val buf =
+                dyncandidates.getOrElseUpdate(dynsig, mutable.Set.empty[Global])
+              buf += impl
+            } else {
+              dynimpls += impl
+              reachGlobal(impl)
+            }
+          }
+          env(name) match {
+            case defn: Defn.Define =>
+              defn.name.id match {
+                case Rt.JavaEqualsSig =>
+                  update(Rt.ScalaEqualsSig)
+                  update(Rt.JavaEqualsSig)
+                case Rt.JavaHashCodeSig =>
+                  update(Rt.ScalaHashCodeSig)
+                  update(Rt.JavaHashCodeSig)
+                case sig =>
+                  update(sig)
+              }
+            case _ =>
+              ()
+          }
+        }
+
         val calls = mutable.Set.empty[String]
         def loopParent(parentInfo: Class): Unit = {
           calls ++= parentInfo.calls
@@ -115,7 +162,7 @@ class Reachability(defns: Seq[Defn]) {
         info.parent.foreach(loopParent)
         info.traits.foreach(loopTraits)
         calls.foreach { sig =>
-          resolve(info, sig).foreach(reachGlobal)
+          info.responds.get(sig).foreach(reachGlobal)
         }
       case _ =>
         ()
@@ -211,7 +258,7 @@ class Reachability(defns: Seq[Defn]) {
   }
 
   def reachAttrs(attrs: Attrs): Unit =
-    links ++= attrs.links.map(_.name)
+    links ++= attrs.links
 
   def reachType(ty: Type): Unit = ty match {
     case Type.Array(ty, n) =>
@@ -325,11 +372,10 @@ class Reachability(defns: Seq[Defn]) {
     case Op.Method(obj, name) =>
       reachVal(obj)
       reachGlobal(name)
-      targets(obj.ty, name).foreach(reachGlobal)
-    case Op.Dynmethod(obj, sig) =>
+      reachMethodTargets(obj.ty, name)
+    case Op.Dynmethod(obj, dynsig) =>
       reachVal(obj)
-      dynsigs += sig
-      dyntargets(obj.ty, sig).foreach(reachGlobal)
+      reachDynamicMethodTargets(dynsig)
     case Op.Module(n) =>
       reachGlobal(n)
       val init = n member "init"
@@ -363,51 +409,67 @@ class Reachability(defns: Seq[Defn]) {
       ()
   }
 
-  def targets(ty: Type, name: Global): mutable.Set[Global] =
-    targets(ty, name.id)
+  def reachMethodTargets(ty: Type, name: Global): Unit =
+    reachMethodTargets(ty, name.id)
 
-  def targets(ty: Type, sig: String): mutable.Set[Global] = {
-    val out = mutable.Set.empty[Global]
-
-    def add(cls: Class): Unit =
-      resolve(cls, sig).foreach { impl =>
-        out += impl
-      }
+  def reachMethodTargets(ty: Type, sig: String): Unit = {
+    def reachImpl(cls: Class): Unit =
+      cls.responds.get(sig).foreach(reachGlobal)
 
     ty match {
+      case Type.Module(name) =>
+        val cls = classInfo(name)
+        if (!cls.calls.contains(sig)) {
+          cls.calls += sig
+          reachImpl(cls)
+        }
       case Type.Class(name) =>
         val cls = classInfo(name)
-        cls.calls += sig
-        add(cls)
-        cls.subclasses.foreach(add)
+        if (!cls.calls.contains(sig)) {
+          cls.calls += sig
+          reachImpl(cls)
+          cls.subclasses.foreach(reachImpl)
+        }
       case Type.Trait(name) =>
         val trt = traitInfo(name)
-        trt.calls += sig
-        trt.implementors.foreach(add)
+        if (!trt.calls.contains(sig)) {
+          trt.calls += sig
+          trt.implementors.foreach(reachImpl)
+        }
       case _ =>
         ()
     }
-
-    out
   }
 
-  def resolve(cls: Class, sig: String): Option[Global] = {
-    def impl(cls: Class, sig: String): Option[Global] = {
-      val tryMember = cls.name member sig
-      if (env.contains(tryMember)) {
-        Some(tryMember)
-      } else {
-        cls.parent.flatMap(impl(_, sig))
+  def reachDynamicMethodTargets(dynsig: String) =
+    if (!dynsigs.contains(dynsig)) {
+      dynsigs += dynsig
+      if (dyncandidates.contains(dynsig)) {
+        dyncandidates(dynsig).foreach { impl =>
+          dynimpls += impl
+          reachGlobal(impl)
+        }
+        dyncandidates -= dynsig
       }
     }
 
+  def lookup(cls: Class, sig: String): Option[Global] = {
+    val tryMember = cls.name member sig
+    if (env.contains(tryMember)) {
+      Some(tryMember)
+    } else {
+      cls.parent.flatMap(lookup(_, sig))
+    }
+  }
+
+  def resolve(cls: Class, sig: String): Option[Global] = {
     sig match {
       // We short-circuit scala_== and scala_## to immeditately point to the
       // equals and hashCode implementation for the reference types to avoid
       // double virtual dispatch overhead.
       case Rt.ScalaEqualsSig =>
-        val scalaImpl = impl(cls, Rt.ScalaEqualsSig).get
-        val javaImpl  = impl(cls, Rt.JavaEqualsSig).get
+        val scalaImpl = lookup(cls, Rt.ScalaEqualsSig).get
+        val javaImpl  = lookup(cls, Rt.JavaEqualsSig).get
         if (javaImpl.top != Rt.Object.name &&
             scalaImpl.top == Rt.Object.name) {
           Some(javaImpl)
@@ -415,8 +477,8 @@ class Reachability(defns: Seq[Defn]) {
           Some(scalaImpl)
         }
       case Rt.ScalaHashCodeSig =>
-        val scalaImpl = impl(cls, Rt.ScalaHashCodeSig).get
-        val javaImpl  = impl(cls, Rt.JavaHashCodeSig).get
+        val scalaImpl = lookup(cls, Rt.ScalaHashCodeSig).get
+        val javaImpl  = lookup(cls, Rt.JavaHashCodeSig).get
         if (javaImpl.top != Rt.Object.name &&
             scalaImpl.top == Rt.Object.name) {
           Some(javaImpl)
@@ -424,19 +486,15 @@ class Reachability(defns: Seq[Defn]) {
           Some(scalaImpl)
         }
       case _ =>
-        impl(cls, sig)
+        lookup(cls, sig)
     }
   }
-
-  def dyntargets(ty: Type, sig: String): Seq[Global] =
-    Seq.empty
 }
 
 object Reachability {
-  def apply(entries: Seq[Global],
-            defns: Seq[Defn],
-            dyns: Seq[String]): Seq[Defn] =
+  def apply(entries: Seq[Global], result: Result): Result =
     Stats.in(Stats.time("reachability") {
+      val defns        = result.defns
       val reachability = new Reachability(defns)
       entries.foreach(reachability.reachEntry)
       reachability.process()
@@ -468,10 +526,16 @@ object Reachability {
           excluded += defn.name
         }
       }
-      // excluded.toList.map(_.show).sorted.foreach(println)
+      excluded.toList.map(_.show).sorted.foreach { d =>
+        println("excluded " + d)
+      }
       println(s"Reached ${classCount} classes and ${memberCount} members")
       println(
         s"(down from ${origClassCount} classes and ${origMemberCount} members)")
-      defns
+      result
+        .withDefns(reachability.result())
+        .withDynsigs(reachability.dynsigs.toSeq)
+        .withDynimpls(reachability.dynimpls.toSeq)
+        .withLinks(reachability.links.toSeq)
     })
 }

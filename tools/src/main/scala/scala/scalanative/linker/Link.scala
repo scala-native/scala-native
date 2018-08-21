@@ -15,7 +15,7 @@ object Link {
       Scope { implicit in =>
         (new Impl(config)).link(entries)
       }
-    result.withDefns(Reachability(entries, result.defns, result.dynsigs))
+    Reachability(entries, result)
   }
 
   private final class Impl(config: build.Config)(implicit in: Scope) {

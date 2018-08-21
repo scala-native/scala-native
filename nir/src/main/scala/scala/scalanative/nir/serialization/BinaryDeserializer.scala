@@ -94,7 +94,7 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
         case T.ExternAttr   => buf += Attr.Extern
         case T.OverrideAttr => buf += Attr.Override(getGlobal)
 
-        case T.LinkAttr      => links += Attr.Link(getString)
+        case T.LinkAttr      => buf += Attr.Link(getString)
         case T.PinAlwaysAttr => deps += Dep.Direct(getGlobalNoDep)
         case T.PinWeakAttr   => deps += Dep.Weak(getGlobalNoDep)
         case T.PinIfAttr =>
