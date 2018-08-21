@@ -1,6 +1,6 @@
 #include <signal.h>
 
-// symbolic constants
+// symbolic constants - commented are obsolete - see signal.scala
 void *scalanative_sig_dfl(int s) { return SIG_DFL; }
 void *scalanative_sig_err(int s) { return SIG_ERR; }
 // void *scalanative_sig_hold(int s) { return SIG_HOLD; }
@@ -43,7 +43,6 @@ int scalanative_sig_block() { return SIG_BLOCK; }
 int scalanative_sig_unblock() { return SIG_UNBLOCK; }
 int scalanative_sig_setmask() { return SIG_SETMASK; }
 
-// define the following symbolic constants
 int scalanative_sa_nocldstop() { return SA_NOCLDSTOP; }
 int scalanative_sa_onstack() { return SA_ONSTACK; }
 int scalanative_sa_resethand() { return SA_RESETHAND; }
@@ -55,5 +54,46 @@ int scalanative_ss_onstack() { return SS_ONSTACK; }
 int scalanative_ss_disable() { return SS_DISABLE; }
 int scalanative_minsigstksz() { return MINSIGSTKSZ; }
 int scalanative_sigstksz() { return SIGSTKSZ; }
+
+int scalanative_ill_illopc() { return ILL_ILLOPC; }
+int scalanative_ill_illopn() { return ILL_ILLOPN; }
+int scalanative_ill_illadr() { return ILL_ILLADR; }
+int scalanative_ill_illtrp() { return ILL_ILLTRP; }
+int scalanative_ill_prvopc() { return ILL_PRVOPC; }
+int scalanative_ill_prvreg() { return ILL_PRVREG; }
+int scalanative_ill_coproc() { return ILL_COPROC; }
+int scalanative_ill_badstk() { return ILL_BADSTK; }
+int scalanative_fpe_intdiv() { return FPE_INTDIV; }
+int scalanative_fpe_intovf() { return FPE_INTOVF; }
+int scalanative_fpe_fltdiv() { return FPE_FLTDIV; }
+int scalanative_fpe_fltovf() { return FPE_FLTOVF; }
+int scalanative_fpe_fltund() { return FPE_FLTUND; }
+int scalanative_fpe_fltres() { return FPE_FLTRES; }
+int scalanative_fpe_fltinv() { return FPE_FLTINV; }
+int scalanative_fpe_fltsub() { return FPE_FLTSUB; }
+int scalanative_segv_maperr() { return SEGV_MAPERR; }
+int scalanative_segv_accerr() { return SEGV_ACCERR; }
+int scalanative_bus_adraln() { return BUS_ADRALN; }
+int scalanative_bus_adrerr() { return BUS_ADRERR; }
+int scalanative_bus_objerr() { return BUS_OBJERR; }
+int scalanative_trap_brkpt() { return TRAP_BRKPT; }
+int scalanative_trap_trace() { return TRAP_TRACE; }
+int scalanative_cld_exited() { return CLD_EXITED; }
+int scalanative_cld_killed() { return CLD_KILLED; }
+int scalanative_cld_dumped() { return CLD_DUMPED; }
+int scalanative_cld_trapped() { return CLD_TRAPPED; }
+int scalanative_cld_stopped() { return CLD_STOPPED; }
+int scalanative_cld_continued() { return CLD_CONTINUED; }
+int scalanative_poll_in() { return POLL_IN; }
+int scalanative_poll_out() { return POLL_OUT; }
+int scalanative_poll_msg() { return POLL_MSG; }
+int scalanative_poll_err() { return POLL_ERR; }
+int scalanative_poll_pri() { return POLL_PRI; }
+int scalanative_poll_hup() { return POLL_HUP; }
+int scalanative_si_user() { return SI_USER; }
+int scalanative_si_queue() { return SI_QUEUE; }
+int scalanative_si_timer() { return SI_TIMER; }
+int scalanative_si_asyncio() { return SI_ASYNCIO; }
+int scalanative_si_mesgq() { return SI_MESGQ; }
 
 // scala native functions
