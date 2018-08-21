@@ -66,21 +66,6 @@ class LinkedHashMap[K, V] private (inner: mutable.LinkedHashMap[AnyRef, V],
   override def clone(): AnyRef = {
     new LinkedHashMap(inner.clone(), accessOrder)
   }
-
-  override def clear(): Unit =
-    super.clear()
-
-  override def containsValue(value: Any): Boolean =
-    super.containsValue(value)
-
-  override def entrySet(): Set[Map.Entry[K, V]] =
-    super.entrySet()
-
-  override def keySet(): Set[K] =
-    super.keySet()
-
-  override def values(): Collection[V] =
-    super.values()
 }
 
 object LinkedHashMap {
