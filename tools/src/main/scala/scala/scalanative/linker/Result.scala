@@ -15,7 +15,10 @@ trait Result {
   private[scalanative] def defns: Seq[nir.Defn]
 
   /** Sequence of signatures of dynamic methods that were discovered during linking. */
-  private[scalanative] def dyns: Seq[String]
+  private[scalanative] def dynsigs: Seq[String]
+
+  /** Sequence of all implementations of dynamic methods that were discovered during linking. */
+  private[scalanative] def dynimpls: Seq[Global]
 
   /** Create a copy of the result with given unavailable sequence. */
   private[scalanative] def withUnavailable(value: Seq[Global]): Result
@@ -27,18 +30,23 @@ trait Result {
   private[scalanative] def withDefns(value: Seq[nir.Defn]): Result
 
   /** Create a copy of the result with given dyns sequence. */
-  private[scalanative] def withDyns(value: Seq[String]): Result
+  private[scalanative] def withDynsigs(value: Seq[String]): Result
+
+  /** Create a copy of the result with given dyns sequence. */
+  private[scalanative] def withDynimpls(value: Seq[Global]): Result
 }
 
 object Result {
 
   /** Default, empty linker result. */
-  val empty: Result = Impl(Seq.empty, Seq.empty, Seq.empty, Seq.empty)
+  val empty: Result =
+    Impl(Seq.empty, Seq.empty, Seq.empty, Seq.empty, Seq.empty)
 
   private[linker] final case class Impl(unavailable: Seq[Global],
                                         links: Seq[Attr.Link],
                                         defns: Seq[nir.Defn],
-                                        dyns: Seq[String])
+                                        dynsigs: Seq[String],
+                                        dynimpls: Seq[Global])
       extends Result {
     def withUnavailable(value: Seq[Global]): Result =
       copy(unavailable = value)
@@ -49,13 +57,17 @@ object Result {
     def withDefns(value: Seq[nir.Defn]): Result =
       copy(defns = value)
 
-    def withDyns(value: Seq[String]): Result =
-      copy(dyns = value)
+    def withDynsigs(value: Seq[String]): Result =
+      copy(dynsigs = value)
+
+    def withDynimpls(value: Seq[Global]): Result =
+      copy(dynimpls = value)
   }
 
   private[linker] def apply(unavailable: Seq[Global],
                             links: Seq[Attr.Link],
                             defns: Seq[nir.Defn],
-                            dyns: Seq[String]): Result =
-    Impl(unavailable, links, defns, dyns)
+                            dynsigs: Seq[String],
+                            dynimpls: Seq[Global]): Result =
+    Impl(unavailable, links, defns, dynsigs, dynimpls)
 }

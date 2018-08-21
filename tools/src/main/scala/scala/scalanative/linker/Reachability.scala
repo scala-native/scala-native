@@ -58,7 +58,6 @@ class Reachability(defns: Seq[Defn]) {
   }
 
   def reachEntry(name: Global): Unit = {
-    println(s"entry " + name.show)
     if (!name.isTop) {
       reachEntry(name.top)
     }
@@ -430,43 +429,49 @@ class Reachability(defns: Seq[Defn]) {
   }
 
   def dyntargets(ty: Type, sig: String): Seq[Global] =
-    ???
+    Seq.empty
 }
 
 object Reachability {
   def apply(entries: Seq[Global],
             defns: Seq[Defn],
-            dyns: Seq[String]): Seq[Defn] = Stats.in(Stats.time("reachability") {
-    val reachability = new Reachability(defns)
-    entries.foreach(reachability.reachEntry)
-    reachability.process()
-    val res = reachability.result()
-    val origClassCount = defns.count {
-      case _: nir.Defn.Class | _: nir.Defn.Module | _: nir.Defn.Trait => true
-      case _                                                          => false
-    }
-    val origMemberCount = defns.count {
-      case _: nir.Defn.Define | _: nir.Defn.Declare | _: nir.Defn.Var | _: nir.Defn.Const => true
-      case _ => false
-    }
-    val classCount = res.count {
-      case _: nir.Defn.Class | _: nir.Defn.Module | _: nir.Defn.Trait => true
-      case _                                                          => false
-    }
-    val memberCount = res.count {
-      case _: nir.Defn.Define | _: nir.Defn.Declare | _: nir.Defn.Var | _: nir.Defn.Const => true
-      case _ => false
-    }
-    val resNames = res.map(_.name).toSet
-    val excluded = mutable.Set.empty[Global]
-    defns.foreach { defn =>
-      if (!resNames.contains(defn.name)) {
-        excluded += defn.name
+            dyns: Seq[String]): Seq[Defn] =
+    Stats.in(Stats.time("reachability") {
+      val reachability = new Reachability(defns)
+      entries.foreach(reachability.reachEntry)
+      reachability.process()
+      val res = reachability.result()
+      val origClassCount = defns.count {
+        case _: nir.Defn.Class | _: nir.Defn.Module | _: nir.Defn.Trait => true
+        case _                                                          => false
       }
-    }
-    excluded.toList.map(_.show).sorted.foreach(println)
-    println(s"Reached ${classCount} classes and ${memberCount} members")
-    println(s"(down from ${origClassCount} classes and ${origMemberCount} members)")
-    res
-  })
+      val origMemberCount = defns.count {
+        case _: nir.Defn.Define | _: nir.Defn.Declare | _: nir.Defn.Var |
+            _: nir.Defn.Const =>
+          true
+        case _ => false
+      }
+      val classCount = res.count {
+        case _: nir.Defn.Class | _: nir.Defn.Module | _: nir.Defn.Trait => true
+        case _                                                          => false
+      }
+      val memberCount = res.count {
+        case _: nir.Defn.Define | _: nir.Defn.Declare | _: nir.Defn.Var |
+            _: nir.Defn.Const =>
+          true
+        case _ => false
+      }
+      val resNames = res.map(_.name).toSet
+      val excluded = mutable.Set.empty[Global]
+      defns.foreach { defn =>
+        if (!resNames.contains(defn.name)) {
+          excluded += defn.name
+        }
+      }
+      // excluded.toList.map(_.show).sorted.foreach(println)
+      println(s"Reached ${classCount} classes and ${memberCount} members")
+      println(
+        s"(down from ${origClassCount} classes and ${origMemberCount} members)")
+      defns
+    })
 }

@@ -46,9 +46,9 @@ private[scalanative] object ScalaNative {
   def codegen(config: Config,
               entries: Seq[nir.Global],
               assembly: Seq[nir.Defn],
-              dyns: Seq[String]): Seq[Path] = {
+              linked: linker.Result): Seq[Path] = {
     config.logger.time("Generating intermediate code") {
-      CodeGen(config, entries, assembly, dyns)
+      CodeGen(config, entries, assembly, linked)
     }
     val produced = IO.getAll(config.workdir, "glob:**.ll")
     config.logger.info(s"Produced ${produced.length} files")

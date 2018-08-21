@@ -72,7 +72,7 @@ object Build {
       ScalaNative.optimize(config, driver, entries, linkerResult.defns)
 
     IO.getAll(config.workdir, "glob:**.ll").foreach(Files.delete)
-    ScalaNative.codegen(config, entries, optimized, linkerResult.dyns)
+    ScalaNative.codegen(config, entries, optimized, linkerResult)
     val generated = IO.getAll(config.workdir, "glob:**.ll")
 
     val unpackedLib = LLVM.unpackNativelib(config.nativelib, config.workdir)

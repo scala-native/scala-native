@@ -17,12 +17,16 @@ object CodeGen {
   /** Lower and generate code for given assembly. */
   def apply(config: build.Config,
             entries: Seq[Global],
-            assembly: Seq[Defn],
-            dyns: Seq[String]): Unit = {
-    implicit val top  = sema.Sema(entries, assembly)
-    implicit val meta = new Metadata(top, dyns)
+            defns: Seq[Defn],
+            linked: linker.Result): Unit = {
+    val reflproxies = GenerateReflectiveProxies(linked.dynimpls, defns)
+    val assembly    = defns ++ reflproxies
 
-    val lowered = lower(assembly ++ Generate(Global.Top(config.mainClass)))
+    implicit val top  = sema.Sema(entries, assembly)
+    implicit val meta = new Metadata(top, linked.dynsigs)
+
+    val generated = Generate(Global.Top(config.mainClass))
+    val lowered   = lower(assembly ++ generated)
     emit(config, lowered)
   }
 

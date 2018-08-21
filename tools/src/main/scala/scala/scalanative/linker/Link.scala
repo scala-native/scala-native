@@ -15,7 +15,7 @@ object Link {
       Scope { implicit in =>
         (new Impl(config)).link(entries)
       }
-    result.withDefns(Reachability(entries, result.defns, result.dyns))
+    result.withDefns(Reachability(entries, result.defns, result.dynsigs))
   }
 
   private final class Impl(config: build.Config)(implicit in: Scope) {
@@ -26,8 +26,8 @@ object Link {
     val direct      = mutable.Stack.empty[Global]
     var conditional = mutable.Map.empty[Global, mutable.Set[Global]]
     val weaks       = mutable.Map.empty[String, mutable.Set[Global]]
-    val signatures  = mutable.Set.empty[String]
-    val dyndefns    = mutable.Set.empty[Global]
+    val dynsigs     = mutable.Set.empty[String]
+    val dynimpls    = mutable.Set.empty[Global]
 
     val classpath = config.classPath.map { path =>
       ClassPath(VirtualDirectory.real(path))
@@ -75,17 +75,17 @@ object Link {
             case (_, _, _, defn) if defn.attrs.isStub && !config.linkStubs =>
               unavailable += workitem
 
-            case (deps, newlinks, newsignatures, defn) =>
+            case (deps, newlinks, newdynsigs, defn) =>
               defns += defn
               links ++= newlinks
-              signatures ++= newsignatures
+              dynsigs ++= newdynsigs
 
-              // Comparing new signatures with already collected weak dependencies
-              newsignatures.foreach { signature =>
+              // Comparing new dynsigs with already collected weak dependencies
+              newdynsigs.foreach { signature =>
                 if (weaks.contains(signature)) {
                   weaks(signature).foreach { global =>
                     pushDirect(global)
-                    dyndefns += global
+                    dynimpls += global
                   }
                 }
               }
@@ -98,11 +98,11 @@ object Link {
                   pushConditional(dep, condition)
 
                 case Dep.Weak(global) =>
-                  // comparing new dependencies with all signatures
+                  // comparing new dependencies with all dynsigs
                   val sig = Global.genSignature(global)
-                  if (signatures(sig)) {
+                  if (dynsigs.contains(sig)) {
                     pushDirect(global)
-                    dyndefns += global
+                    dynimpls += global
                   }
                   val buf =
                     weaks.get(sig).getOrElse(mutable.Set.empty[Global])
@@ -114,15 +114,15 @@ object Link {
       }
     }
 
-    def generate(): Seq[Defn] =
-      ReflectiveProxy.genAllReflectiveProxies(dyndefns, defns)
-
     def link(entries: Seq[Global]): Result = {
       entries.foreach(pushDirect)
       process()
-      defns ++= generate()
 
-      Result(unavailable.toSeq, links.toSeq, defns, signatures.toSeq)
+      Result(unavailable.toSeq,
+             links.toSeq,
+             defns,
+             dynsigs.toSeq,
+             dynimpls.toSeq)
     }
   }
 }
