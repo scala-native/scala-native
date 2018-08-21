@@ -46,11 +46,11 @@ object signal {
   type pthread_attr_t = types.pthread_attr_t
 
   type sigevent = CStruct5[
-    CInt, // sigev_notify
-    CInt, // sigev_signo
-    Ptr[sigval], // sigev_value - Ptr instead of value
-    CFunctionPtr1[Ptr[sigval], Unit], // sigev_notify_function - Ptr instead of value
-    Ptr[pthread_attr_t] // sigev_notify_attributes
+    CInt, // sigev_notify Notification type
+    CInt, // sigev_signo Signal number
+    Ptr[sigval], // Ptr instead of value - sigev_value Signal value
+    CFunctionPtr1[Ptr[sigval], Unit], // Ptr instead of value for sigval - sigev_notify_function Notification function
+    Ptr[pthread_attr_t] // sigev_notify_attributes Notification attributes
   ]
   // define the following symbolic constants for the values of sigev_notify:
   @name("scalanative_sigev_none")
@@ -125,10 +125,10 @@ object signal {
   // The storage occupied by sa_handler and sa_sigaction may overlap,
   // and a conforming application shall not use both simultaneously.
   type sigaction = CStruct4[
-    CFunctionPtr1[CInt, Unit], // sa_handler
-    sigset_t, // sa_mask
-    CInt, // sa_flags
-    CFunctionPtr3[CInt, Ptr[siginfo_t], Ptr[Byte], Unit] // sa_sigaction
+    CFunctionPtr1[CInt, Unit], // sa_handler Ptr to a signal-catching function or one of the SIG_IGN or SIG_DFL
+    sigset_t, // sa_mask Set of signals to be blocked during execution of the signal handling func
+    CInt, // sa_flags Special flags
+    CFunctionPtr3[CInt, Ptr[siginfo_t], Ptr[Byte], Unit] // sa_sigaction Pointer to a signal-catching function
   ]
 
   // define the following macros which shall expand to integer constant expressions
@@ -170,76 +170,125 @@ object signal {
   type mcontext_t = Ptr[Byte]
 
   type ucontext_t = CStruct4[
-    Ptr[Byte], // ptr to ucontext_t
-    sigset_t,
-    Ptr[stack_t], // Ptr instead of value
-    mcontext_t
+    Ptr[Byte], // ucontext_t *uc_link Ptr to the context that is resumed when this context returns
+    sigset_t, // c_sigmask  The set of signals that are blocked when this context is active
+    Ptr[stack_t], // Ptr instead of value - uc_stack The stack used by this context
+    mcontext_t // uc_mcontext A machine-specific representation of the saved context
   ]
 
   type stack_t = CStruct3[
     Ptr[Byte], // void *ss_sp Stack base or pointer
-    size_t,
-    CInt
+    size_t, // ss_size     Stack size
+    CInt // ss_flags    Flags
   ]
 
   type siginfo_t = CStruct9[
-    CInt,
-    CInt,
-    CInt,
-    pid_t,
-    uid_t,
+    CInt, // si_signo  Signal number
+    CInt, // si_code   Signal code
+    CInt, // si_errno  If non-zero, an errno value associated with this signal, as described in <errno.h>
+    pid_t, // si_pid    Sending process ID
+    uid_t, // si_uid    Real user ID of sending process
     Ptr[Byte], // void *si_addr Address of faulting instruction
-    CInt,
-    CLong,
-    Ptr[sigval] // Ptr instead of value
+    CInt, // si_status Exit value or signal
+    CLong, // si_band   Band event for SIGPOLL
+    Ptr[sigval] // Ptr instead of value - si_value  Signal value
   ]
 
   // define the symbolic constants in the Code column of the following table for use as values of si_code
-  // that are signal-specific or non-signal-specific reasons why the signal was generated.
+  // that are signal-specific or non-signal-specific reasons why the signal was generated
+  @name("scalanative_ill_illopc")
+  def ILL_ILLOPC: CInt = extern
+  @name("scalanative_ill_illopn")
+  def ILL_ILLOPN: CInt = extern
+  @name("scalanative_ill_illadr")
+  def ILL_ILLADR: CInt = extern
+  @name("scalanative_ill_illtrp")
+  def ILL_ILLTRP: CInt = extern
+  @name("scalanative_ill_prvopc")
+  def ILL_PRVOPC: CInt = extern
+  @name("scalanative_ill_prvreg")
+  def ILL_PRVREG: CInt = extern
+  @name("scalanative_ill_coproc")
+  def ILL_COPROC: CInt = extern
+  @name("scalanative_ill_badstk")
+  def ILL_BADSTK: CInt = extern
+  @name("scalanative_fpe_intdiv")
+  def FPE_INTDIV: CInt = extern
+  @name("scalanative_fpe_intovf")
+  def FPE_INTOVF: CInt = extern
+  @name("scalanative_fpe_fltdiv")
+  def FPE_FLTDIV: CInt = extern
+  @name("scalanative_fpe_fltovf")
+  def FPE_FLTOVF: CInt = extern
+  @name("scalanative_fpe_fltund")
+  def FPE_FLTUND: CInt = extern
+  @name("scalanative_fpe_fltres")
+  def FPE_FLTRES: CInt = extern
+  @name("scalanative_fpe_fltinv")
+  def FPE_FLTINV: CInt = extern
+  @name("scalanative_fpe_fltsub")
+  def FPE_FLTSUB: CInt = extern
+  @name("scalanative_segv_maperr")
+  def SEGV_MAPERR: CInt = extern
+  @name("scalanative_segv_accerr")
+  def SEGV_ACCERR: CInt = extern
+  @name("scalanative_bus_adraln")
+  def BUS_ADRALN: CInt = extern
+  @name("scalanative_bus_adrerr")
+  def BUS_ADRERR: CInt = extern
+  @name("scalanative_bus_objerr")
+  def BUS_OBJERR: CInt = extern
+  @name("scalanative_trap_brkpt")
+  def TRAP_BRKPT: CInt = extern
+  @name("scalanative_trap_trace")
+  def TRAP_TRACE: CInt = extern
+  @name("scalanative_cld_exited")
+  def CLD_EXITED: CInt = extern
+  @name("scalanative_cld_killed")
+  def CLD_KILLED: CInt = extern
+  @name("scalanative_cld_dumped")
+  def CLD_DUMPED: CInt = extern
+  @name("scalanative_cld_trapped")
+  def CLD_TRAPPED: CInt = extern
+  @name("scalanative_cld_stopped")
+  def CLD_STOPPED: CInt = extern
+  @name("scalanative_cld_continued")
+  def CLD_CONTINUED: CInt = extern
+  @name("scalanative_poll_in")
+  def POLL_IN: CInt = extern
+  @name("scalanative_poll_out")
+  def POLL_OUT: CInt = extern
+  @name("scalanative_poll_msg")
+  def POLL_MSG: CInt = extern
+  @name("scalanative_poll_err")
+  def POLL_ERR: CInt = extern
+  @name("scalanative_poll_pri")
+  def POLL_PRI: CInt = extern
+  @name("scalanative_poll_hup")
+  def POLL_HUP: CInt = extern
+  @name("scalanative_si_user")
+  def SI_USER: CInt = extern
+  @name("scalanative_si_queue")
+  def SI_QUEUE: CInt = extern
+  @name("scalanative_si_timer")
+  def SI_TIMER: CInt = extern
+  @name("scalanative_si_asyncio")
+  def SI_ASYNCIO: CInt = extern
+  @name("scalanative_si_mesgq")
+  def SI_MESGQ: CInt = extern
 
-  type sig_t = CFunctionPtr1[CInt, Unit]
-  type struct___darwin_pthread_handler_rec =
-    CStruct3[CFunctionPtr1[Ptr[Byte], Unit],
-             Ptr[Byte],
-             Ptr[CArray[Byte, Nat.Digit[Nat._1, Nat.Digit[Nat._9, Nat._2]]]]]
-
-  type struct__opaque_pthread_t = CStruct3[
-    CLong,
-    Ptr[struct___darwin_pthread_handler_rec],
-    CArray[CChar,
-           Nat.Digit[Nat._8, Nat.Digit[Nat._1, Nat.Digit[Nat._7, Nat._6]]]]]
-
-  type struct___sigaction = CStruct4[
-    union___sigaction_u,
-    CFunctionPtr5[Ptr[Byte], CInt, CInt, Ptr[siginfo_t], Ptr[Byte], Unit],
-    sigset_t,
-    CInt]
-
-  type struct_sigaction = CStruct3[union___sigaction_u, sigset_t, CInt]
-
-  type struct_sigvec   = CStruct3[CFunctionPtr1[CInt, Unit], CInt, CInt]
-  type struct_sigstack = CStruct2[CString, CInt]
-  type union___mbstate_t =
-    CArray[Byte, Nat.Digit[Nat._1, Nat.Digit[Nat._2, Nat._8]]]
-
-  type union___sigaction_u = CArray[Byte, Nat._8]
-
-  def signal(p0: CInt,
-             p1: CFunctionPtr1[CInt, Unit]): CFunctionPtr1[CInt, Unit] = extern
-  def raise(p0: CInt): CInt                                            = extern
-  def bsd_signal(p0: CInt,
-                 p1: CFunctionPtr1[CInt, Unit]): CFunctionPtr1[CInt, Unit] =
-    extern
-  def kill(p0: pid_t, p1: CInt): CInt                  = extern
-  def killpg(p0: pid_t, p1: CInt): CInt                = extern
-  def psiginfo(p0: Ptr[siginfo_t], p1: CString): Unit  = extern
-  def psignal(p0: CInt, p1: CString): Unit             = extern
-  def pthread_kill(p0: Ptr[pthread_t], p1: CInt): CInt = extern
+  // The following shall be declared as functions and may also be defined as macros.
+  // Function prototypes shall be provided
+  // Note: sigset_t is already a pointer above
+  def kill(p0: pid_t, p1: CInt): CInt                 = extern
+  def killpg(p0: pid_t, p1: CInt): CInt               = extern
+  def psiginfo(p0: Ptr[siginfo_t], p1: CString): Unit = extern
+  def psignal(p0: CInt, p1: CString): Unit            = extern
+  def pthread_kill(p0: pthread_t, p1: CInt): CInt     = extern
   def pthread_sigmask(p0: CInt, p1: Ptr[sigset_t], p2: Ptr[sigset_t]): CInt =
     extern
-  def sigaction(p0: CInt,
-                p1: Ptr[struct_sigaction],
-                p2: Ptr[struct_sigaction]): CInt                        = extern
+  def raise(p0: CInt): CInt                                             = extern
+  def sigaction(p0: CInt, p1: Ptr[sigaction], p2: Ptr[sigaction]): CInt = extern
   def sigaddset(p0: Ptr[sigset_t], p1: CInt): CInt                      = extern
   def sigaltstack(p0: Ptr[stack_t], p1: Ptr[stack_t]): CInt             = extern
   def sigdelset(p0: Ptr[sigset_t], p1: CInt): CInt                      = extern
@@ -249,64 +298,26 @@ object signal {
   def sigignore(p0: CInt): CInt                                         = extern
   def siginterrupt(p0: CInt, p1: CInt): CInt                            = extern
   def sigismember(p0: Ptr[sigset_t], p1: CInt): CInt                    = extern
+  def signal(p0: CInt,
+             p1: CFunctionPtr1[CInt, Unit]): CFunctionPtr1[CInt, Unit]  = extern
   def sigpause(p0: CInt): CInt                                          = extern
   def sigpending(p0: Ptr[sigset_t]): CInt                               = extern
   def sigprocmask(p0: CInt, p1: Ptr[sigset_t], p2: Ptr[sigset_t]): CInt = extern
+  def sigqueue(p0: pid_t, p1: CInt, p2: Ptr[sigval]): CInt              = extern
   def sigrelse(p0: CInt): CInt                                          = extern
   def sigset(p0: CInt,
              p1: CFunctionPtr1[CInt, Unit]): CFunctionPtr1[CInt, Unit] = extern
   def sigsuspend(p0: Ptr[sigset_t]): CInt                              = extern
-  def sigwait(p0: Ptr[sigset_t], p1: Ptr[CInt]): CInt                  = extern
-  def sigblock(p0: CInt): CInt                                         = extern
-  def sigsetmask(p0: CInt): CInt                                       = extern
-  def sigvec(p0: CInt, p1: Ptr[struct_sigvec], p2: Ptr[struct_sigvec]): CInt =
-    extern
-  def __sigbits(__signo: CInt): CInt = extern
+  def sigtimedwait(p0: Ptr[sigset_t],
+                   p1: Ptr[siginfo_t],
+                   p2: Ptr[timespec]): CInt                    = extern
+  def sigwait(p0: Ptr[sigset_t], p1: Ptr[CInt]): CInt          = extern
+  def sigwaitinfo(p0: Ptr[sigset_t], p1: Ptr[siginfo_t]): CInt = extern
 }
 
 import signal._
 
 //object signalOps {
-//
-//  implicit class struct___darwin_pthread_handler_rec_ops(
-//      val p: Ptr[struct___darwin_pthread_handler_rec])
-//      extends AnyVal {
-//    def __routine: CFunctionPtr1[Ptr[Byte], Unit]                = !p._1
-//    def __routine_=(value: CFunctionPtr1[Ptr[Byte], Unit]): Unit = !p._1 = value
-//    def __arg: Ptr[Byte]                                         = !p._2
-//    def __arg_=(value: Ptr[Byte]): Unit                          = !p._2 = value
-//    def __next
-//      : Ptr[CArray[Byte, Nat.Digit[Nat._1, Nat.Digit[Nat._9, Nat._2]]]] = !p._3
-//    def __next_=(
-//        value: Ptr[CArray[Byte, Nat.Digit[Nat._1, Nat.Digit[Nat._9, Nat._2]]]])
-//      : Unit = !p._3 = value
-//  }
-//
-//  def struct___darwin_pthread_handler_rec()(
-//      implicit z: Zone): Ptr[struct___darwin_pthread_handler_rec] =
-//    alloc[struct___darwin_pthread_handler_rec]
-//
-//  implicit class struct__opaque_pthread_t_ops(
-//      val p: Ptr[struct__opaque_pthread_t])
-//      extends AnyVal {
-//    def __sig: CLong                                              = !p._1
-//    def __sig_=(value: CLong): Unit                               = !p._1 = value
-//    def __cleanup_stack: Ptr[struct___darwin_pthread_handler_rec] = !p._2
-//    def __cleanup_stack_=(
-//        value: Ptr[struct___darwin_pthread_handler_rec]): Unit = !p._2 = value
-//    def __opaque: CArray[
-//      CChar,
-//      Nat.Digit[Nat._8, Nat.Digit[Nat._1, Nat.Digit[Nat._7, Nat._6]]]] = !p._3
-//    def __opaque_=(
-//        value: CArray[
-//          CChar,
-//          Nat.Digit[Nat._8, Nat.Digit[Nat._1, Nat.Digit[Nat._7, Nat._6]]]])
-//      : Unit = !p._3 = value
-//  }
-//
-//  def struct__opaque_pthread_t()(
-//      implicit z: Zone): Ptr[struct__opaque_pthread_t] =
-//    alloc[struct__opaque_pthread_t]
 //
 //  implicit class struct_sigevent_ops(val p: Ptr[sigevent]) extends AnyVal {
 //    def sigev_notify: CInt                                 = !p._1
