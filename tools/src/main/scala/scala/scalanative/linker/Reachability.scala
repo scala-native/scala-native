@@ -19,6 +19,8 @@ class Reachability(defns: Seq[Defn]) {
   val done     = mutable.Map.empty[Global, Defn]
   val infos    = mutable.Map.empty[Global, Info]
   val stack    = mutable.Stack.empty[Global]
+  val links    = mutable.Set.empty[String]
+  val dynsigs  = mutable.Set.empty[String]
 
   def result(): Seq[Defn] =
     done.values.toSeq
@@ -149,6 +151,7 @@ class Reachability(defns: Seq[Defn]) {
   def reachVar(defn: Defn.Var): Unit = {
     val Defn.Var(attrs, name, ty, rhs) = defn
     newInfo(new Field(scopeInfo(name.top), name, isConst = false))
+    reachAttrs(attrs)
     reachType(ty)
     reachVal(rhs)
   }
@@ -156,6 +159,7 @@ class Reachability(defns: Seq[Defn]) {
   def reachConst(defn: Defn.Const): Unit = {
     val Defn.Const(attrs, name, ty, rhs) = defn
     newInfo(new Field(scopeInfo(name.top), name, isConst = true))
+    reachAttrs(attrs)
     reachType(ty)
     reachVal(rhs)
   }
@@ -163,25 +167,28 @@ class Reachability(defns: Seq[Defn]) {
   def reachDeclare(defn: Defn.Declare): Unit = {
     val Defn.Declare(attrs, name, sig) = defn
     newInfo(new Method(scopeInfo(name.top), name, isConcrete = false))
+    reachAttrs(attrs)
     reachType(sig)
   }
 
   def reachDefine(defn: Defn.Define): Unit = {
     val Defn.Define(attrs, name, sig, insts) = defn
     newInfo(new Method(scopeInfo(name.top), name, isConcrete = true))
+    reachAttrs(attrs)
     reachType(sig)
     reachInsts(insts)
   }
 
   def reachStruct(defn: Defn.Struct): Unit = {
     val Defn.Struct(attrs, _, tys) = defn
+    reachAttrs(attrs)
     tys.foreach(reachType)
   }
 
   def reachTrait(defn: Defn.Trait): Unit = {
     val Defn.Trait(attrs, name, traits) = defn
     newInfo(new Trait(name, traits.map(traitInfo)))
-    traits.foreach(reachGlobal)
+    reachAttrs(attrs)
   }
 
   def reachClass(defn: Defn.Class): Unit = {
@@ -191,8 +198,7 @@ class Reachability(defns: Seq[Defn]) {
                 parent.map(classInfo),
                 traits.map(traitInfo),
                 isModule = false))
-    parent.foreach(reachGlobal)
-    traits.foreach(reachGlobal)
+    reachAttrs(attrs)
   }
 
   def reachModule(defn: Defn.Module): Unit = {
@@ -202,9 +208,11 @@ class Reachability(defns: Seq[Defn]) {
                 parent.map(classInfo),
                 traits.map(traitInfo),
                 isModule = true))
-    parent.foreach(reachGlobal)
-    traits.foreach(reachGlobal)
+    reachAttrs(attrs)
   }
+
+  def reachAttrs(attrs: Attrs): Unit =
+    links ++= attrs.links.map(_.name)
 
   def reachType(ty: Type): Unit = ty match {
     case Type.Array(ty, n) =>
@@ -319,9 +327,10 @@ class Reachability(defns: Seq[Defn]) {
       reachVal(obj)
       reachGlobal(name)
       targets(obj.ty, name).foreach(reachGlobal)
-    case Op.Dynmethod(obj, signature) =>
+    case Op.Dynmethod(obj, sig) =>
       reachVal(obj)
-      dyntargets(obj.ty, signature).foreach(reachGlobal)
+      dynsigs += sig
+      dyntargets(obj.ty, sig).foreach(reachGlobal)
     case Op.Module(n) =>
       reachGlobal(n)
       val init = n member "init"
