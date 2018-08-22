@@ -21,6 +21,6 @@ class DeadBlockElimination extends Pass {
 }
 
 object DeadBlockElimination extends PassCompanion {
-  override def apply(config: build.Config, top: sema.Top) =
+  override def apply(config: build.Config, linked: linker.Result) =
     new DeadBlockElimination()
 }

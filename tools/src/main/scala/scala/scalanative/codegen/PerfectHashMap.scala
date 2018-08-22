@@ -2,7 +2,7 @@ package scala.scalanative
 package codegen
 
 import scalanative.nir._
-import scalanative.sema._
+import scalanative.linker.Method
 
 /**
  *
@@ -158,7 +158,7 @@ class PerfectHashMap[K, V](val keys: Seq[Int],
 }
 
 object DynmethodPerfectHashMap {
-  def apply(dynmethods: Seq[Method], allSignatures: Seq[String]): Val.Struct = {
+  def apply(dynmethods: Seq[Global], allSignatures: Seq[String]): Val.Struct = {
 
     val signaturesWithIndex =
       allSignatures.zipWithIndex.foldLeft(Map[String, Int]()) {
@@ -167,8 +167,8 @@ object DynmethodPerfectHashMap {
 
     val entries = dynmethods.foldLeft(Map[Int, (Int, Val)]()) {
       case (acc, m) =>
-        val index = signaturesWithIndex(Global.genSignature(m.name))
-        acc + (index -> (index, m.value))
+        val index = signaturesWithIndex(Global.genSignature(m))
+        acc + (index -> (index, Val.Global(m, Type.Ptr)))
     }
 
     val perfectHashMap = PerfectHashMap[Int, (Int, Val)](hash, entries)

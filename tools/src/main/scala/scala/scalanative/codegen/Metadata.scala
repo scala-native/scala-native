@@ -5,35 +5,36 @@ import scala.collection.mutable
 import scalanative.nir._
 import scalanative.sema._
 import scalanative.util.Stats
+import scalanative.linker.Class
 
-class Metadata(top: Top, val dyns: Seq[String]) {
-  val rtti   = mutable.Map.empty[sema.Node, RuntimeTypeInformation]
-  val vtable = mutable.Map.empty[sema.Class, VirtualTable]
-  val layout = mutable.Map.empty[sema.Class, FieldLayout]
-  val dynmap = mutable.Map.empty[sema.Class, DynamicHashMap]
-  val ids    = mutable.Map.empty[sema.Scope, Int]
-  val ranges = mutable.Map.empty[sema.Class, Range]
+class Metadata(val linked: linker.Result, proxies: Seq[Defn]) {
+  val rtti   = mutable.Map.empty[linker.Info, RuntimeTypeInformation]
+  val vtable = mutable.Map.empty[linker.Class, VirtualTable]
+  val layout = mutable.Map.empty[linker.Class, FieldLayout]
+  val dynmap = mutable.Map.empty[linker.Class, DynamicHashMap]
+  val ids    = mutable.Map.empty[linker.ScopeInfo, Int]
+  val ranges = mutable.Map.empty[linker.Class, Range]
 
   initTraitIds()
   initStructIds()
   initClassIdsAndRanges()
 
-  val tables      = new TraitDispatchTables(this, top)
-  val moduleArray = new ModuleArray(top)
+  val tables      = new TraitDispatchTables(this)
+  val moduleArray = new ModuleArray(this)
 
   initClassMetadata()
   initTraitMetadata()
   initStructMetadata()
 
   def initTraitIds(): Unit = {
-    top.traits.zipWithIndex.foreach {
+    linked.traits.zipWithIndex.foreach {
       case (node, id) =>
         ids(node) = id
     }
   }
 
   def initStructIds(): Unit = {
-    top.structs.zipWithIndex.foreach {
+    linked.structs.zipWithIndex.foreach {
       case (node, id) =>
         ids(node) = id
     }
@@ -53,26 +54,26 @@ class Metadata(top: Top, val dyns: Seq[String]) {
       ranges(node) = start to end
     }
 
-    loop(top.nodes(Rt.Object.name).asInstanceOf[Class])
+    loop(linked.infos(Rt.Object.name).asInstanceOf[Class])
   }
 
   def initClassMetadata(): Unit = {
-    top.classes.foreach { node =>
+    linked.classes.toArray.sortBy(ids(_)).foreach { node =>
       vtable(node) = new VirtualTable(this, node)
       layout(node) = new FieldLayout(this, node)
-      dynmap(node) = new DynamicHashMap(this, node, dyns)
+      dynmap(node) = new DynamicHashMap(this, node, proxies)
       rtti(node) = new RuntimeTypeInformation(this, node)
     }
   }
 
   def initTraitMetadata(): Unit = {
-    top.traits.foreach { node =>
+    linked.traits.foreach { node =>
       rtti(node) = new RuntimeTypeInformation(this, node)
     }
   }
 
   def initStructMetadata(): Unit = {
-    top.structs.foreach { node =>
+    linked.structs.foreach { node =>
       rtti(node) = new RuntimeTypeInformation(this, node)
     }
   }

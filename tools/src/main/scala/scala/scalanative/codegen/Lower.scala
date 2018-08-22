@@ -4,24 +4,33 @@ package codegen
 import scala.collection.mutable
 import scalanative.util.ScopedVar
 import scalanative.nir._
-import scalanative.sema._
+import scalanative.linker.{
+  Class,
+  Trait,
+  Ref,
+  ScopeRef,
+  ClassRef,
+  TraitRef,
+  FieldRef,
+  MethodRef
+}
 
 object Lower {
   import Impl._
 
-  def apply(defns: Seq[Defn])(implicit top: sema.Top,
-                              meta: Metadata): Seq[Defn] =
+  def apply(defns: Seq[Defn])(implicit meta: Metadata): Seq[Defn] =
     (new Impl).onDefns(defns)
 
-  private final class Impl(implicit top: sema.Top, meta: Metadata)
-      extends Transform {
+  private final class Impl(implicit meta: Metadata) extends Transform {
     import meta._
 
-    val Object = top.nodes(Rt.Object.name).asInstanceOf[Class]
+    implicit val linked = meta.linked
+
+    val Object = linked.infos(Rt.Object.name).asInstanceOf[Class]
 
     // Type of the bare runtime type information struct.
     private val classRttiType =
-      rtti(top.nodes(Global.Top("java.lang.Object"))).struct
+      rtti(linked.infos(Global.Top("java.lang.Object"))).struct
 
     // Names of the fields of the java.lang.String in the memory layout order.
     private val stringFieldNames = {
@@ -202,11 +211,11 @@ object Lower {
         let(n, Op.Load(Type.Ptr, methptrptr), unwind)
       }
 
-      top.targets(obj.ty, sig).toSeq match {
+      linked.targets(obj.ty, sig).toSeq match {
         case Seq() =>
           let(n, Op.Copy(Val.Null), unwind)
         case Seq(impl) =>
-          let(n, Op.Copy(impl.value), unwind)
+          let(n, Op.Copy(Val.Global(impl, Type.Ptr)), unwind)
         case _ =>
           obj.ty match {
             case ClassRef(cls) =>
@@ -249,7 +258,7 @@ object Lower {
         throwIfCond(Op.Comp(Comp.Ieq, Type.Ptr, value, Val.Null))
 
       val methodIndex =
-        meta.dyns.zipWithIndex.find(_._1 == signature).get._2
+        meta.linked.dynsigs.zipWithIndex.find(_._1 == signature).get._2
 
       // Load the type information pointer
       val typeptr = let(Op.Load(Type.Ptr, obj), unwind)

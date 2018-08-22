@@ -6,21 +6,50 @@ import scalanative.nir._
 import scalanative.codegen.Metadata
 import scalanative.util.Stats
 
-class Reach(loader: ClassLoader) {
+class Reach(entries: Seq[Global], loader: ClassLoader) {
   val loaded   = mutable.Map.empty[Global, mutable.Map[Global, Defn]]
   val enqueued = mutable.Set.empty[Global]
   val todo     = mutable.Stack.empty[Global]
   val done     = mutable.Map.empty[Global, Defn]
-  val infos    = mutable.Map.empty[Global, Info]
   val stack    = mutable.Stack.empty[Global]
   val links    = mutable.Set.empty[Attr.Link]
+  val infos    = mutable.Map.empty[Global, Info]
 
   val dyncandidates = mutable.Map.empty[String, mutable.Set[Global]]
   val dynsigs       = mutable.Set.empty[String]
   val dynimpls      = mutable.Set.empty[Global]
 
-  def result(): Seq[Defn] =
-    done.values.toSeq
+  entries.foreach(reachEntry)
+
+  def result(): Result = {
+    cleanup()
+
+    println(s"Found ${dynsigs.size} dynsigs")
+    println(s"Found ${dynimpls.size} dynimpls")
+
+    new Result(infos,
+               entries,
+               Seq.empty,
+               links.toSeq,
+               done.values.toSeq,
+               dynsigs.toSeq,
+               dynimpls.toSeq)
+  }
+
+  def cleanup(): Unit = Stats.time("reach.cleanup") {
+    infos.values.foreach {
+      case cls: Class =>
+        val entries = cls.responds.toArray
+        entries.foreach {
+          case (sig, name) =>
+            if (!done.contains(name)) {
+              cls.responds -= sig
+            }
+        }
+      case _ =>
+        ()
+    }
+  }
 
   def lookup(global: Global): Defn = Stats.time("reach.lookup") {
     val owner = global.top
@@ -207,7 +236,8 @@ class Reach(loader: ClassLoader) {
 
   def reachVar(defn: Defn.Var): Unit = {
     val Defn.Var(attrs, name, ty, rhs) = defn
-    newInfo(new Field(scopeInfo(name.top), name, isConst = false))
+    newInfo(
+      new Field(attrs, scopeInfo(name.top), name, isConst = false, ty, rhs))
     reachAttrs(attrs)
     reachType(ty)
     reachVal(rhs)
@@ -215,7 +245,8 @@ class Reach(loader: ClassLoader) {
 
   def reachConst(defn: Defn.Const): Unit = {
     val Defn.Const(attrs, name, ty, rhs) = defn
-    newInfo(new Field(scopeInfo(name.top), name, isConst = true))
+    newInfo(
+      new Field(attrs, scopeInfo(name.top), name, isConst = true, ty, rhs))
     reachAttrs(attrs)
     reachType(ty)
     reachVal(rhs)
@@ -223,35 +254,37 @@ class Reach(loader: ClassLoader) {
 
   def reachDeclare(defn: Defn.Declare): Unit = {
     val Defn.Declare(attrs, name, sig) = defn
-    newInfo(new Method(scopeInfo(name.top), name, isConcrete = false))
+    newInfo(new Method(attrs, scopeInfo(name.top), name, Seq()))
     reachAttrs(attrs)
     reachType(sig)
   }
 
   def reachDefine(defn: Defn.Define): Unit = {
     val Defn.Define(attrs, name, sig, insts) = defn
-    newInfo(new Method(scopeInfo(name.top), name, isConcrete = true))
+    newInfo(new Method(attrs, scopeInfo(name.top), name, insts))
     reachAttrs(attrs)
     reachType(sig)
     reachInsts(insts)
   }
 
   def reachStruct(defn: Defn.Struct): Unit = {
-    val Defn.Struct(attrs, _, tys) = defn
+    val Defn.Struct(attrs, name, tys) = defn
+    newInfo(new Struct(attrs, name, tys))
     reachAttrs(attrs)
     tys.foreach(reachType)
   }
 
   def reachTrait(defn: Defn.Trait): Unit = {
     val Defn.Trait(attrs, name, traits) = defn
-    newInfo(new Trait(name, traits.map(traitInfo)))
+    newInfo(new Trait(attrs, name, traits.map(traitInfo)))
     reachAttrs(attrs)
   }
 
   def reachClass(defn: Defn.Class): Unit = {
     val Defn.Class(attrs, name, parent, traits) = defn
     newInfo(
-      new Class(name,
+      new Class(attrs,
+                name,
                 parent.map(classInfo),
                 traits.map(traitInfo),
                 isModule = false))
@@ -261,7 +294,8 @@ class Reach(loader: ClassLoader) {
   def reachModule(defn: Defn.Module): Unit = {
     val Defn.Module(attrs, name, parent, traits) = defn
     newInfo(
-      new Class(name,
+      new Class(attrs,
+                name,
                 parent.map(classInfo),
                 traits.map(traitInfo),
                 isModule = true))
@@ -506,14 +540,8 @@ class Reach(loader: ClassLoader) {
 
 object Reach {
   def apply(entries: Seq[Global], loader: ClassLoader): Result = {
-    val reachability = new Reach(loader)
-    entries.foreach(reachability.reachEntry)
+    val reachability = new Reach(entries, loader)
     reachability.process()
-
-    Result.empty
-      .withDefns(reachability.result())
-      .withDynsigs(reachability.dynsigs.toSeq)
-      .withDynimpls(reachability.dynimpls.toSeq)
-      .withLinks(reachability.links.toSeq)
+    reachability.result()
   }
 }

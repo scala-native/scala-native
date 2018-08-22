@@ -352,6 +352,6 @@ object GlobalValueNumbering extends PassCompanion {
     def rawLocal(local: Local): Hash = local.id
   }
 
-  override def apply(config: build.Config, top: sema.Top) =
+  override def apply(config: build.Config, linked: linker.Result) =
     new GlobalValueNumbering()
 }

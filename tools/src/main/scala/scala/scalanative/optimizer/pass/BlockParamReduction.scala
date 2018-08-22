@@ -20,7 +20,7 @@ class BlockParamReduction extends Pass {
 }
 
 object BlockParamReduction extends PassCompanion {
-  def apply(config: build.Config, top: sema.Top) =
+  def apply(config: build.Config, linked: linker.Result) =
     new BlockParamReduction
 
   class ParamChanger(val suppliedArgs: SuppliedArguments) extends Transform {

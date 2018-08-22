@@ -6,7 +6,7 @@ import scalanative.nir._
 import scalanative.nir.Rt.{Type => _, _}
 import scalanative.sema._
 
-class VirtualTable(meta: Metadata, cls: Class) {
+class VirtualTable(meta: Metadata, cls: linker.Class) {
   private val slots: mutable.UnrolledBuffer[String] =
     cls.parent.fold {
       mutable.UnrolledBuffer.empty[String]
@@ -22,15 +22,15 @@ class VirtualTable(meta: Metadata, cls: Class) {
       slots += sig
     }
     def addImpl(sig: String): Unit = {
-      val impl = cls.resolve(sig).map(_.value).getOrElse(Val.Null)
+      val impl =
+        cls.resolve(sig).map(Val.Global(_, Type.Ptr)).getOrElse(Val.Null)
       impls(sig) = impl
     }
     slots.foreach { sig =>
       addImpl(sig)
     }
-    val top = cls.in.asInstanceOf[Top]
     cls.calls.foreach { sig =>
-      if (top.targets(Type.Class(cls.name), sig).size > 1) {
+      if (meta.linked.targets(Type.Class(cls.name), sig).size > 1) {
         if (!impls.contains(sig)) {
           addSlot(sig)
           addImpl(sig)

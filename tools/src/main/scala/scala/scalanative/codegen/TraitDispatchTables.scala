@@ -3,9 +3,11 @@ package codegen
 
 import scala.collection.mutable
 import scalanative.nir._
-import scalanative.sema._
+import scalanative.linker.{Trait, Class}
 
-class TraitDispatchTables(meta: Metadata, top: Top) {
+class TraitDispatchTables(meta: Metadata) {
+  val linked = meta.linked
+
   val dispatchName                          = Global.Top("__dispatch")
   val dispatchVal                           = Val.Global(dispatchName, Type.Ptr)
   var dispatchTy: Type                      = _
@@ -27,14 +29,14 @@ class TraitDispatchTables(meta: Metadata, top: Top) {
     // the ones defined on java.lang.Object, those always
     // go through vtable dispatch.
     val sigs = mutable.Set.empty[String]
-    top.traits.foreach { trt =>
+    linked.traits.foreach { trt =>
       trt.calls.foreach { sig =>
-        if (top.targets(Type.Trait(trt.name), sig).size > 1) {
+        if (linked.targets(Type.Trait(trt.name), sig).size > 1) {
           sigs += sig
         }
       }
     }
-    val Object = top.nodes(Rt.Object.name).asInstanceOf[Class]
+    val Object = linked.infos(Rt.Object.name).asInstanceOf[Class]
     sigs.toList.foreach { sig =>
       if (Object.calls.contains(sig)) {
         sigs -= sig
@@ -50,7 +52,7 @@ class TraitDispatchTables(meta: Metadata, top: Top) {
       } || trt.traits.exists(isActive)
 
     val activeTraits =
-      top.traits.filter(isActive).toSet
+      linked.traits.filter(isActive).toSet
 
     def implementsTrait(cls: Class): Boolean =
       cls.traits.exists(activeTraits.contains(_)) || cls.parent.exists(
@@ -58,7 +60,12 @@ class TraitDispatchTables(meta: Metadata, top: Top) {
     def include(cls: Class): Boolean =
       cls.allocated && implementsTrait(cls)
 
-    top.classes.filter(include).sortBy(meta.ids(_)).zipWithIndex.toMap
+    linked.classes
+      .filter(include)
+      .toArray
+      .sortBy(meta.ids(_))
+      .zipWithIndex
+      .toMap
   }
 
   initDispatch()
@@ -91,7 +98,7 @@ class TraitDispatchTables(meta: Metadata, top: Top) {
         sigs.foreach {
           case (sig, sigId) =>
             cls.resolve(sig).foreach { impl =>
-              put(clsId, sigId, impl.value)
+              put(clsId, sigId, Val.Global(impl, Type.Ptr))
             }
         }
     }
@@ -209,12 +216,12 @@ class TraitDispatchTables(meta: Metadata, top: Top) {
   }
 
   def initClassHasTrait(): Unit = {
-    val columns = top.classes.sortBy(meta.ids(_)).map { cls =>
-      val row = new Array[Boolean](top.traits.length)
+    val columns = linked.classes.toArray.sortBy(meta.ids(_)).map { cls =>
+      val row = new Array[Boolean](linked.traits.length)
       markTraits(row, cls)
       Val.Array(Type.Bool, row.map(Val.Bool))
     }
-    val table = Val.Array(Type.Array(Type.Bool, top.traits.length), columns)
+    val table = Val.Array(Type.Array(Type.Bool, linked.traits.length), columns)
 
     classHasTraitTy = table.ty
     classHasTraitDefn =
@@ -222,13 +229,13 @@ class TraitDispatchTables(meta: Metadata, top: Top) {
   }
 
   def initTraitHasTrait(): Unit = {
-    val columns = top.traits.sortBy(meta.ids(_)).map { left =>
-      val row = new Array[Boolean](top.traits.length)
+    val columns = linked.traits.toArray.sortBy(meta.ids(_)).map { left =>
+      val row = new Array[Boolean](linked.traits.length)
       markTraits(row, left)
       row(meta.ids(left)) = true
       Val.Array(Type.Bool, row.map(Val.Bool))
     }
-    val table = Val.Array(Type.Array(Type.Bool, top.traits.length), columns)
+    val table = Val.Array(Type.Array(Type.Bool, linked.traits.length), columns)
 
     traitHasTraitTy = table.ty
     traitHasTraitDefn =
