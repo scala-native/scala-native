@@ -24,9 +24,6 @@ class Reach(entries: Seq[Global], loader: ClassLoader) {
   def result(): Result = {
     cleanup()
 
-    println(s"Found ${dynsigs.size} dynsigs")
-    println(s"Found ${dynimpls.size} dynimpls")
-
     new Result(infos,
                entries,
                Seq.empty,

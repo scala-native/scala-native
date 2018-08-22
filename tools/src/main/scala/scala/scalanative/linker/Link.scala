@@ -10,7 +10,7 @@ object Link {
   def apply(config: build.Config, entries: Seq[Global]): Result =
     Scope { implicit in =>
       Stats.in(Stats.time("reach") {
-        Reach(entries, ClassLoader(config))
+        Reach(entries, ClassLoader.fromDisk(config))
       })
     }
 }
