@@ -13,6 +13,15 @@ object MatcherSuite extends tests.Suite {
     )
   }
 
+  test("issue #1070, quoteReplacement should quote backslash and only it") {
+    val replacement = "\\fin$\\du.$$monde\\"
+    val expected    = "\\\\fin$\\\\du.$$monde\\\\"
+    assertEquals(
+      Matcher.quoteReplacement(replacement),
+      expected
+    )
+  }
+
   test("match") {
     val m = matcher("foo", "foobar")
     assert(!m.matches())

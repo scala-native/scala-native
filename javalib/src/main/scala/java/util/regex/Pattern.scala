@@ -33,14 +33,9 @@ object Pattern {
   def matches(regex: String, input: CharSequence): Boolean =
     compile(regex).matcher(input).matches
 
-  def quote(s: String): String =
-    Zone { implicit z =>
-      val original, quoted = stackalloc[cre2.string_t]
-      toRE2String(s, original)
-      cre2.quoteMeta(quoted, original)
-      val res = fromRE2String(quoted)
-      res
-    }
+  def quote(s: String): String = {
+    s"\\Q${s}\\E"
+  }
 
   private object CompiledPatternStore {
     final case class Key(regex: String, flags: Int)

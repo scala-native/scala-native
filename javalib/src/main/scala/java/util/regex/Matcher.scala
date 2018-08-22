@@ -4,24 +4,45 @@ package regex
 import cre2h._
 import scalanative.native._, stdlib._, stdio._, string._
 
+import scala.annotation.tailrec
+
 // Inspired by: https://github.com/google/re2j/blob/master/java/com/google/re2j/Matcher.java
 
 object Matcher {
+
   def quoteReplacement(s: String): String = {
-    if (s.indexOf('\\') < 0 && s.indexOf('$') < 0) {
+    // Every backslash ('\') character becomes two, that is, quoted.
+    // Do not quote dollar signs ($) or any other character
+    // (dot, asterisk, etc).
+    //
+    // According to the cre2 documentation, only the backslash before
+    // a digit (\0, \1, ..., \9) need be quoted. In practice, cre2
+    // fails if there are any solo backslashes in the supposedly literal
+    // replacement string. Quote them all and be done with it.
+
+    // Build the return string manually, rather than using a replace
+    // method from some other class, such as String or Regex, to avoid
+    // any chance of unwanted recursion.
+
+    @tailrec
+    def qrLoop(s: String, index: Int, sb: StringBuilder): StringBuilder = {
+
+      if (index < 0) {
+        if (s.isEmpty) sb else sb.append(s) // final slice, if any.
+      } else {
+        val (prefix, suffix) = s.splitAt(index + 1)
+        sb.append(prefix) += '\\'
+        if (suffix.isEmpty) sb else qrLoop(suffix, suffix.indexOf('\\'), sb)
+      }
+    }
+
+    val idx = s.indexOf('\\')
+
+    if (idx < 0) {
       s
     } else {
-      val sb = new StringBuilder()
-      var i  = 0
-      while (i < s.length) {
-        val c = s.charAt(i)
-        if (c == '\\' || c == '$') {
-          sb.append('\\')
-        }
-        sb.append(c)
-        i += 1
-      }
-      sb.toString
+      val sb = new StringBuilder(s.length + 1)
+      qrLoop(s, idx, sb).toString
     }
   }
 }

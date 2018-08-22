@@ -23,7 +23,7 @@ object PatternSuite extends tests.Suite {
   test("quote") {
     assertEquals(
       Pattern.quote("1.5-2.0?"),
-      "1\\.5\\-2\\.0\\?"
+      "\\Q1.5-2.0?\\E"
     )
   }
 
