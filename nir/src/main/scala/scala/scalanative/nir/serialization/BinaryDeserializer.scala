@@ -11,8 +11,6 @@ import Global.Member
 final class BinaryDeserializer(buffer: ByteBuffer) {
   import buffer._
 
-  private val deps = mutable.Set.empty[Global]
-
   private val header: Map[Global, Int] = {
     buffer.position(0)
 
@@ -24,30 +22,21 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     assert(compat == Versions.compat && revision <= Versions.revision,
            "Can't read binary-incompatible version of NIR.")
 
-    val (_, pairs) = scoped(getSeq((getGlobal, getInt)))
-    val map        = pairs.toMap
+    val pairs = getSeq((getGlobal, getInt))
+    val map   = pairs.toMap
     map
-  }
-
-  private def scoped[T](f: => T): (Seq[Global], T) = {
-    deps.clear()
-    val res = f
-    (deps.toSeq, res)
   }
 
   final def globals: Set[Global] = header.keySet
 
-  final def deserialize(): (Seq[Global], Seq[Defn]) = {
-    val allDeps  = mutable.Set.empty[Global]
+  final def deserialize(): Seq[Defn] = {
     val allDefns = mutable.UnrolledBuffer.empty[Defn]
     header.map {
       case (g, offset) =>
         buffer.position(offset)
-        val (deps, defn) = scoped(getDefn)
-        allDeps ++= deps
-        allDefns += defn
+        allDefns += getDefn
     }
-    (allDeps.toSeq, allDefns)
+    allDefns
   }
 
   private def getSeq[T](getT: => T): Seq[T] =
@@ -182,15 +171,7 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
 
   private def getGlobals(): Seq[Global]      = getSeq(getGlobal)
   private def getGlobalOpt(): Option[Global] = getOpt(getGlobal)
-  private def getGlobal(): Global = {
-    val name = getGlobalNoDep
-    if (name ne Global.None) {
-      deps += name.top
-    }
-    name
-  }
-
-  private def getGlobalNoDep(): Global = getInt match {
+  private def getGlobal(): Global = getInt match {
     case T.NoneGlobal =>
       Global.None
     case T.TopGlobal =>

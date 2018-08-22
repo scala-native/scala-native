@@ -14,7 +14,7 @@ sealed trait ClassPath {
   private[scalanative] def contains(name: Global): Boolean
 
   /** Load given global and info about its dependencies. */
-  private[scalanative] def load(name: Global): Option[(Seq[Global], Seq[Defn])]
+  private[scalanative] def load(name: Global): Option[Seq[Defn]]
 }
 
 object ClassPath {
@@ -40,12 +40,12 @@ object ClassPath {
         .toMap
 
     private val cache =
-      mutable.Map.empty[Global, Option[(Seq[Global], Seq[Defn])]]
+      mutable.Map.empty[Global, Option[Seq[Defn]]]
 
     def contains(name: Global) =
       files.contains(name.top)
 
-    def load(name: Global): Option[(Seq[Global], Seq[Defn])] =
+    def load(name: Global): Option[Seq[Defn]] =
       cache.getOrElseUpdate(name, {
         files.get(name.top).map { file =>
           deserializeBinary(directory.read(file))

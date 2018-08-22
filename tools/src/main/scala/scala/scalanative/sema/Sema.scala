@@ -6,7 +6,7 @@ import scalanative.nir._
 import scalanative.util.unreachable
 
 object Sema {
-  def apply(entries: Seq[Global], defns: Seq[Defn]): Top = {
+  def apply(entries: Seq[Global], defns: Seq[Defn]): Top = util.time("sema") {
     val nodes   = mutable.Map.empty[Global, Node]
     val structs = mutable.UnrolledBuffer.empty[Struct]
     val classes = mutable.UnrolledBuffer.empty[Class]
