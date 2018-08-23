@@ -245,7 +245,6 @@ object Show {
       case Op.Method(value, signature) =>
         str("method ")
         val_(value)
-        str(", ")
         str(", \"")
         str(escapeQuotes(signature))
         str("\"")

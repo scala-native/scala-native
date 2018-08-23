@@ -65,8 +65,8 @@ object Op extends Base[nir.Op] {
       case (value, name) => nir.Op.Field(value, name)
     })
   val Method =
-    P("method" ~ Val.parser ~ "," ~ Global.parser map {
-      case (value, name) => nir.Op.Method(value, name)
+    P("method" ~ Val.parser ~ "," ~ Base.stringLit map {
+      case (value, signature) => nir.Op.Method(value, signature)
     })
   val Dynmethod =
     P("dynmethod" ~ Val.parser ~ "," ~ Base.stringLit map {
