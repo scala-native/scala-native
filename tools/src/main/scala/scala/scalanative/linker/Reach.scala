@@ -4,7 +4,6 @@ package linker
 import scala.collection.mutable
 import scalanative.nir._
 import scalanative.codegen.Metadata
-import scalanative.util.Stats
 
 class Reach(entries: Seq[Global], loader: ClassLoader) {
   val loaded   = mutable.Map.empty[Global, mutable.Map[Global, Defn]]
@@ -36,7 +35,7 @@ class Reach(entries: Seq[Global], loader: ClassLoader) {
                dynimpls.toSeq)
   }
 
-  def cleanup(): Unit = Stats.time("reach.cleanup") {
+  def cleanup(): Unit = {
     infos.values.foreach {
       case cls: Class =>
         val entries = cls.responds.toArray
@@ -51,7 +50,7 @@ class Reach(entries: Seq[Global], loader: ClassLoader) {
     }
   }
 
-  def lookup(global: Global): Defn = Stats.time("reach.lookup") {
+  def lookup(global: Global): Defn = {
     val owner = global.top
     if (!loaded.contains(owner)) {
       val scope = mutable.Map.empty[Global, Defn]
@@ -76,41 +75,25 @@ class Reach(entries: Seq[Global], loader: ClassLoader) {
   def reachDefn(defn: Defn): Unit = {
     defn match {
       case defn: Defn.Var =>
-        Stats.time("reach.var") {
-          reachVar(defn)
-        }
+        reachVar(defn)
       case defn: Defn.Const =>
-        Stats.time("reach.const") {
-          reachConst(defn)
-        }
+        reachConst(defn)
       case defn: Defn.Declare =>
-        Stats.time("reach.declare") {
-          reachDeclare(defn)
-        }
+        reachDeclare(defn)
       case defn: Defn.Define =>
         val sig = defn.name.id
         if (Rt.arrayAlloc.contains(sig)) {
           reachAllocation(classInfo(Rt.arrayAlloc(sig)))
         }
-        Stats.time("reach.define") {
-          reachDefine(defn)
-        }
+        reachDefine(defn)
       case defn: Defn.Struct =>
-        Stats.time("reach.struct") {
-          reachStruct(defn)
-        }
+        reachStruct(defn)
       case defn: Defn.Trait =>
-        Stats.time("reach.trait") {
-          reachTrait(defn)
-        }
+        reachTrait(defn)
       case defn: Defn.Class =>
-        Stats.time("reach.class") {
-          reachClass(defn)
-        }
+        reachClass(defn)
       case defn: Defn.Module =>
-        Stats.time("reach.module") {
-          reachModule(defn)
-        }
+        reachModule(defn)
     }
     done(defn.name) = defn
   }

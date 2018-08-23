@@ -6,11 +6,9 @@ import scalanative.util.{Stats, Scope}
 
 object Link {
 
-  /** Create a new linker given tools configuration. */
+  /** Load all clases and methods reachable from the entry points. */
   def apply(config: build.Config, entries: Seq[Global]): Result =
     Scope { implicit in =>
-      Stats.in(Stats.time("reach") {
-        Reach(entries, ClassLoader.fromDisk(config))
-      })
+      Reach(entries, ClassLoader.fromDisk(config))
     }
 }
