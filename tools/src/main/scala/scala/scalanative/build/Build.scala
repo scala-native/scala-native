@@ -1,7 +1,7 @@
 package scala.scalanative
 package build
 
-import java.nio.file.Path
+import java.nio.file.{Path, Files}
 
 /** Utility methods for building code using Scala Native. */
 object Build {
@@ -70,6 +70,8 @@ object Build {
 
     val optimized =
       ScalaNative.optimize(config, driver, entries, linkerResult.defns)
+
+    IO.getAll(config.workdir, "glob:**.ll").foreach(Files.delete)
     ScalaNative.codegen(config, entries, optimized, linkerResult.dyns)
     val generated = IO.getAll(config.workdir, "glob:**.ll")
 
