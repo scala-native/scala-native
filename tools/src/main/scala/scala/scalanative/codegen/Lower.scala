@@ -197,15 +197,16 @@ object Lower {
       }
 
       def genTraitVirtual(trt: Trait): Unit = {
-        val sigid   = tables.traitSigIds(sig)
+        val sigid   = dispatchTable.traitSigIds(sig)
         val typeptr = let(Op.Load(Type.Ptr, obj), unwind)
         val idptr =
           let(Op.Elem(Rt.Type, typeptr, Seq(Val.Int(0), Val.Int(1))), unwind)
         val id = let(Op.Load(Type.Int, idptr), unwind)
-        val rowptr = let(Op.Elem(Type.Ptr,
-                                 tables.dispatchVal,
-                                 Seq(Val.Int(tables.dispatchOffset(sigid)))),
-                         unwind)
+        val rowptr = let(
+          Op.Elem(Type.Ptr,
+                  dispatchTable.dispatchVal,
+                  Seq(Val.Int(dispatchTable.dispatchOffset(sigid)))),
+          unwind)
         val methptrptr =
           let(Op.Elem(Type.Ptr, rowptr, Seq(id)), unwind)
         let(n, Op.Load(Type.Ptr, methptrptr), unwind)
@@ -340,8 +341,8 @@ object Lower {
             let(Op.Elem(Rt.Type, typeptr, Seq(Val.Int(0), Val.Int(0))), unwind)
           val id = let(Op.Load(Type.Int, idptr), unwind)
           val boolptr = let(
-            Op.Elem(tables.classHasTraitTy,
-                    tables.classHasTraitVal,
+            Op.Elem(hasTraitTables.classHasTraitTy,
+                    hasTraitTables.classHasTraitVal,
                     Seq(Val.Int(0), id, Val.Int(meta.ids(trt)))),
             unwind)
           let(Op.Load(Type.Bool, boolptr), unwind)

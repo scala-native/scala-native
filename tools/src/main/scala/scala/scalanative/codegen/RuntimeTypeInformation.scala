@@ -35,7 +35,7 @@ class RuntimeTypeInformation(meta: Metadata, info: ScopeInfo) {
     })
     val traitId = Val.Int(info match {
       case info: Class =>
-        meta.tables.traitClassIds.get(info).getOrElse(-1)
+        meta.dispatchTable.traitClassIds.get(info).getOrElse(-1)
       case _ =>
         -1
     })

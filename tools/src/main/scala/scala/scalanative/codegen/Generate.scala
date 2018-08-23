@@ -40,7 +40,7 @@ object Generate {
     }
 
     def genStructMetadata(): Unit = {
-      linked.structs.foreach { struct =>
+      meta.structs.foreach { struct =>
         val rtti = meta.rtti(struct)
 
         buf += Defn.Const(Attrs.None, rtti.name, rtti.struct, rtti.value)
@@ -48,7 +48,7 @@ object Generate {
     }
 
     def genClassMetadata(): Unit = {
-      linked.classes.foreach { cls =>
+      meta.classes.foreach { cls =>
         val struct = meta.layout(cls).struct
         val rtti   = meta.rtti(cls)
 
@@ -70,8 +70,8 @@ object Generate {
         Seq(
           Inst.Label(fresh(), Seq(classid, traitid)),
           Inst.Let(boolptr.name,
-                   Op.Elem(meta.tables.classHasTraitTy,
-                           meta.tables.classHasTraitVal,
+                   Op.Elem(meta.hasTraitTables.classHasTraitTy,
+                           meta.hasTraitTables.classHasTraitVal,
                            Seq(Val.Int(0), classid, traitid)),
                    Next.None),
           Inst.Let(result.name, Op.Load(Type.Bool, boolptr), Next.None),
@@ -81,7 +81,7 @@ object Generate {
     }
 
     def genTraitMetadata(): Unit = {
-      linked.traits.foreach { trt =>
+      meta.traits.foreach { trt =>
         val rtti = meta.rtti(trt)
 
         buf += Defn.Const(Attrs.None, rtti.name, rtti.struct, rtti.value)
@@ -101,8 +101,8 @@ object Generate {
         Seq(
           Inst.Label(fresh(), Seq(leftid, rightid)),
           Inst.Let(boolptr.name,
-                   Op.Elem(meta.tables.traitHasTraitTy,
-                           meta.tables.traitHasTraitVal,
+                   Op.Elem(meta.hasTraitTables.traitHasTraitTy,
+                           meta.hasTraitTables.traitHasTraitVal,
                            Seq(Val.Int(0), leftid, rightid)),
                    Next.None),
           Inst.Let(result.name, Op.Load(Type.Bool, boolptr), Next.None),
@@ -163,7 +163,7 @@ object Generate {
       buf += Defn.Var(Attrs.None, stackBottomName, Type.Ptr, Val.Null)
 
     def genModuleAccessors(): Unit = {
-      linked.classes.foreach { cls =>
+      meta.classes.foreach { cls =>
         if (cls.isModule && cls.allocated) {
           val name  = cls.name
           val clsTy = cls.ty
@@ -248,9 +248,9 @@ object Generate {
     }
 
     def genTraitDispatchTables() = {
-      buf += meta.tables.dispatchDefn
-      buf += meta.tables.classHasTraitDefn
-      buf += meta.tables.traitHasTraitDefn
+      buf += meta.dispatchTable.dispatchDefn
+      buf += meta.hasTraitTables.classHasTraitDefn
+      buf += meta.hasTraitTables.traitHasTraitDefn
     }
   }
 

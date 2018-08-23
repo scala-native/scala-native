@@ -24,11 +24,14 @@ class Reach(entries: Seq[Global], loader: ClassLoader) {
   def result(): Result = {
     cleanup()
 
+    val defns = mutable.UnrolledBuffer.empty[Defn]
+    defns ++= done.valuesIterator
+
     new Result(infos,
                entries,
                Seq.empty,
                links.toSeq,
-               done.values.toSeq,
+               defns,
                dynsigs.toSeq,
                dynimpls.toSeq)
   }
@@ -85,6 +88,10 @@ class Reach(entries: Seq[Global], loader: ClassLoader) {
           reachDeclare(defn)
         }
       case defn: Defn.Define =>
+        val sig = defn.name.id
+        if (Rt.arrayAlloc.contains(sig)) {
+          reachAllocation(classInfo(Rt.arrayAlloc(sig)))
+        }
         Stats.time("reach.define") {
           reachDefine(defn)
         }
@@ -114,10 +121,13 @@ class Reach(entries: Seq[Global], loader: ClassLoader) {
     }
     reachGlobalNow(name)
     infos.get(name) match {
-      case Some(cls: Class) if cls.isModule =>
-        val init = cls.name member "init"
-        if (loaded(cls.name).contains(init)) {
-          reachGlobal(init)
+      case Some(cls: Class) =>
+        reachAllocation(cls)
+        if (cls.isModule) {
+          val init = cls.name member "init"
+          if (loaded(cls.name).contains(init)) {
+            reachGlobal(init)
+          }
         }
       case _ =>
         ()
@@ -151,24 +161,31 @@ class Reach(entries: Seq[Global], loader: ClassLoader) {
       case info: MemberInfo =>
         info.owner.members += info
       case info: Class =>
+        // Register given class as a subclass of
+        // all transitive parents and as an implementation
+        // of all transitive traits.
+        def loopParent(parentInfo: Class): Unit = {
+          parentInfo.subclasses += info
+          parentInfo.parent.foreach(loopParent)
+          parentInfo.traits.foreach(loopTraits)
+        }
+        def loopTraits(traitInfo: Trait): Unit = {
+          traitInfo.implementors += info
+          traitInfo.traits.foreach(loopTraits)
+        }
+        info.parent.foreach(loopParent)
+        info.traits.foreach(loopTraits)
+
+        // Initialize responds map to keep track
+        // of all signatures this class responds to
+        // and its corresponding implementation.
         info.parent.foreach { parentInfo =>
           info.responds ++= parentInfo.responds
         }
         loaded(info.name).foreach {
           case (_, defn: Defn.Define) =>
             def update(sig: String): Unit = {
-              val impl = resolve(info, sig).get
-              info.responds(sig) = impl
-              val dynsig = Global.genSignature(sig)
-              if (!dynsigs.contains(dynsig)) {
-                val buf =
-                  dyncandidates.getOrElseUpdate(dynsig,
-                                                mutable.Set.empty[Global])
-                buf += impl
-              } else {
-                dynimpls += impl
-                reachGlobal(impl)
-              }
+              info.responds(sig) = resolve(info, sig).get
             }
             defn.name.id match {
               case Rt.JavaEqualsSig =>
@@ -183,28 +200,47 @@ class Reach(entries: Seq[Global], loader: ClassLoader) {
           case _ =>
             ()
         }
-
-        val calls = mutable.Set.empty[String]
-        def loopParent(parentInfo: Class): Unit = {
-          calls ++= parentInfo.calls
-          parentInfo.subclasses += info
-          parentInfo.parent.foreach(loopParent)
-          parentInfo.traits.foreach(loopTraits)
-        }
-        def loopTraits(traitInfo: Trait): Unit = {
-          calls ++= traitInfo.calls
-          traitInfo.implementors += info
-          traitInfo.traits.foreach(loopTraits)
-        }
-        info.parent.foreach(loopParent)
-        info.traits.foreach(loopTraits)
-        calls.foreach { sig =>
-          info.responds.get(sig).foreach(reachGlobal)
-        }
       case _ =>
         ()
     }
   }
+
+  def reachAllocation(info: Class): Unit =
+    if (!info.allocated) {
+      info.allocated = true
+
+      // Handle all class and trait virtual calls
+      // on this class.
+      val calls = mutable.Set.empty[String]
+      def loopParent(parentInfo: Class): Unit = {
+        calls ++= parentInfo.calls
+        parentInfo.parent.foreach(loopParent)
+        parentInfo.traits.foreach(loopTraits)
+      }
+      def loopTraits(traitInfo: Trait): Unit = {
+        calls ++= traitInfo.calls
+        traitInfo.traits.foreach(loopTraits)
+      }
+      info.parent.foreach(loopParent)
+      info.traits.foreach(loopTraits)
+      calls.foreach { sig =>
+        info.responds.get(sig).foreach(reachGlobal)
+      }
+
+      // Handle all dynamic calls on this type.
+      info.responds.foreach {
+        case (sig, impl) =>
+          val dynsig = Global.genSignature(sig)
+          if (!dynsigs.contains(dynsig)) {
+            val buf =
+              dyncandidates.getOrElseUpdate(dynsig, mutable.Set.empty[Global])
+            buf += impl
+          } else {
+            dynimpls += impl
+            reachGlobal(impl)
+          }
+      }
+    }
 
   def scopeInfo(name: Global): ScopeInfo = {
     reachGlobalNow(name)
@@ -407,7 +443,7 @@ class Reach(entries: Seq[Global], loader: ClassLoader) {
       reachVal(v3)
 
     case Op.Classalloc(n) =>
-      reachGlobal(n)
+      reachAllocation(classInfo(n))
     case Op.Field(v, n) =>
       reachVal(v)
       reachGlobal(n)
@@ -418,7 +454,7 @@ class Reach(entries: Seq[Global], loader: ClassLoader) {
       reachVal(obj)
       reachDynamicMethodTargets(dynsig)
     case Op.Module(n) =>
-      reachGlobalNow(n)
+      reachAllocation(classInfo(n))
       val init = n member "init"
       if (loaded(n).contains(init)) {
         reachGlobal(init)

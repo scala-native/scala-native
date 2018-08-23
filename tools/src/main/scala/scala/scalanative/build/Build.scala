@@ -49,7 +49,7 @@ object Build {
    *  @param outpath The path to the resulting native binary.
    *  @return `outpath`, the path to the resulting native binary.
    */
-  def build(config: Config, outpath: Path): Path = {
+  def build(config: Config, outpath: Path): Path = config.logger.time("Total") {
     val driver  = optimizer.Driver.default(config.mode)
     val entries = ScalaNative.entries(config)
     val linked  = ScalaNative.link(config, entries)
@@ -61,8 +61,8 @@ object Build {
       throw new BuildException("unable to link")
     }
     val classCount = linked.defns.count {
-      case _: nir.Defn.Class | _: nir.Defn.Module | _: nir.Defn.Trait => true
-      case _                                                          => false
+      case _: nir.Defn.Class | _: nir.Defn.Module => true
+      case _                                      => false
     }
     val methodCount = linked.defns.count(_.isInstanceOf[nir.Defn.Define])
     config.logger.info(

@@ -8,7 +8,7 @@ import scalanative.linker.Class
 class ModuleArray(meta: Metadata) {
   val index   = mutable.Map.empty[Class, Int]
   val modules = mutable.UnrolledBuffer.empty[Class]
-  meta.linked.classes.foreach { cls =>
+  meta.classes.foreach { cls =>
     if (cls.isModule && cls.allocated) {
       index(cls) = modules.size
       modules += cls

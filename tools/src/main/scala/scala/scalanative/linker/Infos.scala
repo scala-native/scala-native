@@ -32,7 +32,7 @@ final class Class(val attrs: Attrs,
                   val traits: Seq[Trait],
                   val isModule: Boolean)
     extends ScopeInfo {
-  var allocated  = true
+  var allocated  = false
   val subclasses = mutable.Set.empty[Class]
   val responds   = mutable.Map.empty[String, Global]
 
@@ -74,22 +74,15 @@ final class Result(val infos: mutable.Map[Global, Info],
                    val defns: Seq[Defn],
                    val dynsigs: Seq[String],
                    val dynimpls: Seq[Global]) {
-  def classes: Iterator[Class] =
-    infos.valuesIterator.collect { case info: Class => info }
-  def traits: Iterator[Trait] =
-    infos.valuesIterator.collect { case info: Trait => info }
-  def structs: Iterator[Struct] =
-    infos.valuesIterator.collect { case info: Struct => info }
   def targets(ty: Type, sig: String): mutable.Set[Global] = {
     val out = mutable.Set.empty[Global]
 
-    def add(cls: Class): Unit = {
+    def add(cls: Class): Unit =
       if (cls.allocated) {
         cls.resolve(sig).foreach { impl =>
           out += impl
         }
       }
-    }
 
     ty match {
       case Type.Module(name) =>
