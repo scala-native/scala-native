@@ -59,8 +59,10 @@ class Metadata(val linked: linker.Result, proxies: Seq[Defn]) {
       out += node
       val start = id
       id += 1
-      node.subclasses.foreach { subcls =>
-        if (subcls.parent == Some(node)) loop(subcls)
+      val directSubclasses =
+        node.subclasses.filter(_.parent == Some(node)).toArray
+      directSubclasses.sortBy(_.name.show).foreach { subcls =>
+        loop(subcls)
       }
       val end = id - 1
       ids(node) = start

@@ -3,7 +3,7 @@ package codegen
 
 import scala.collection.mutable
 import scalanative.nir._
-import scalanative.linker.{Trait, Class}
+import scalanative.linker.{Method, Trait, Class}
 
 class TraitDispatchTable(meta: Metadata) {
   val dispatchName                          = Global.Top("__dispatch")
@@ -80,7 +80,8 @@ class TraitDispatchTable(meta: Metadata) {
         sigs.foreach {
           case (sig, sigId) =>
             cls.resolve(sig).foreach { impl =>
-              put(clsId, sigId, Val.Global(impl, Type.Ptr))
+              val info = meta.linked.infos(impl).asInstanceOf[Method]
+              put(clsId, sigId, info.value)
             }
         }
     }
