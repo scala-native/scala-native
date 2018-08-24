@@ -2,6 +2,7 @@
 #define IMMIX_BLOCLIST_H
 
 #include "../headers/BlockHeader.h"
+#include <pthread.h>
 
 #define LAST_BLOCK -1
 
@@ -9,6 +10,7 @@ typedef struct {
     word_t *heapStart;
     BlockHeader *first;
     BlockHeader *last;
+    pthread_mutex_t mutex;
 } BlockList;
 
 void BlockList_Init(BlockList *blockList, word_t *offset);
