@@ -37,14 +37,18 @@ inline bool BlockList_IsEmpty(BlockList *blockList) {
     return result;
 }
 
-BlockHeader *BlockList_RemoveFirstBlock(BlockList *blockList) {
-    assert(blockList->first != NULL);
+BlockHeader *BlockList_PopFirstBlock(BlockList *blockList) {
     pthread_mutex_lock(&blockList->mutex);
-    BlockHeader *block = blockList->first;
-    if (block == blockList->last) {
-        blockList->first = NULL;
+    BlockHeader *block;
+    if (blockList->first == NULL) {
+        block = NULL;
+    } else {
+        block = blockList->first;
+        if (block == blockList->last) {
+            blockList->first = NULL;
+        }
+        blockList->first = _getNextBlock(blockList->heapStart, block);
     }
-    blockList->first = _getNextBlock(blockList->heapStart, block);
     pthread_mutex_unlock(&blockList->mutex);
     return block;
 }

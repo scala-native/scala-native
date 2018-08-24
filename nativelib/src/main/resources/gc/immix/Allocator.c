@@ -70,7 +70,9 @@ void Allocator_InitCursors(Allocator *allocator) {
     assert(!BlockList_IsEmpty(&allocator->freeBlocks));
 
     BlockHeader *largeHeader =
-        BlockList_RemoveFirstBlock(&allocator->freeBlocks);
+        BlockList_PopFirstBlock(&allocator->freeBlocks);
+    assert(largeHeader != NULL);
+
     allocator->largeBlock = largeHeader;
     assert(allocator->block != allocator->largeBlock);
     allocator->largeCursor = Block_GetFirstWord(largeHeader);
@@ -107,10 +109,10 @@ word_t *Allocator_overflowAllocation(Allocator *allocator, size_t size) {
     word_t *end = (word_t *)((uint8_t *)start + size);
 
     if (end > allocator->largeLimit) {
-        if (BlockList_IsEmpty(&allocator->freeBlocks)) {
+        BlockHeader *block = BlockList_PopFirstBlock(&allocator->freeBlocks);
+        if (block == NULL) {
             return NULL;
         }
-        BlockHeader *block = BlockList_RemoveFirstBlock(&allocator->freeBlocks);
         allocator->largeBlock = block;
         assert(allocator->block != allocator->largeBlock);
         allocator->largeCursor = Block_GetFirstWord(block);
@@ -247,25 +249,28 @@ bool Allocator_getNextLine(Allocator *allocator) {
  * chunk_allocator
  */
 BlockHeader *Allocator_getNextBlock(Allocator *allocator) {
-    BlockHeader *block = NULL;
-    if (!BlockList_IsEmpty(&allocator->recycledBlocks)) {
-        block = BlockList_RemoveFirstBlock(&allocator->recycledBlocks);
-#ifdef DEBUG_PRINT
-        printf("NextRecycledBlock %p (%lu)\n", block,
-               (uint64_t)((word_t *)block - allocator->heapStart) /
-                   WORDS_IN_BLOCK);
-        Block_Print(block);
-        fflush(stdout);
-#endif
-    } else if (!BlockList_IsEmpty(&allocator->freeBlocks)) {
-        block = BlockList_RemoveFirstBlock(&allocator->freeBlocks);
-#ifdef DEBUG_PRINT
-        printf("NextFreeBlock %p (%lu)\n", block,
-               (uint64_t)((word_t *)block - allocator->heapStart) /
-                   WORDS_IN_BLOCK);
-        Block_Print(block);
-        fflush(stdout);
-#endif
+    BlockHeader *block = BlockList_PopFirstBlock(&allocator->recycledBlocks);
+    #ifdef DEBUG_PRINT
+        if (block != NULL) {
+            printf("NextRecycledBlock %p (%lu)\n", block,
+                   (uint64_t)((word_t *)block - allocator->heapStart) /
+                       WORDS_IN_BLOCK);
+            Block_Print(block);
+            fflush(stdout);
+        }
+    #endif
+    if (block == NULL) {
+        block = BlockList_PopFirstBlock(&allocator->freeBlocks);
     }
+    #ifdef DEBUG_PRINT
+        if (block != NULL) {
+            printf("NextFreeBlock %p (%lu)\n", block,
+                   (uint64_t)((word_t *)block - allocator->heapStart) /
+                       WORDS_IN_BLOCK);
+            Block_Print(block);
+            fflush(stdout);
+        }
+    #endif
+
     return block;
 }
