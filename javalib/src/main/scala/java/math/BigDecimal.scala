@@ -21,6 +21,9 @@
  *  limitations under the License.
  */
 
+/* Modified for ScalaNative. sqrt() added. See git commit comments.
+ */
+
 package java.math
 
 import java.util.Arrays
@@ -110,9 +113,11 @@ object BigDecimal {
     new BigDecimal(d.toString)
   }
 
-  private def addAndMult10(thisValue: BigDecimal,
-                           augend: BigDecimal,
-                           diffScale: Int): BigDecimal = {
+  private def addAndMult10(
+      thisValue: BigDecimal,
+      augend: BigDecimal,
+      diffScale: Int
+  ): BigDecimal = {
     def powLen           = LongTenPowsBitLength(diffScale)
     def augPlusPowLength = augend._bitLength + powLen
     def maxLen           = Math.max(thisValue._bitLength, augPlusPowLength) + 1
@@ -128,10 +133,12 @@ object BigDecimal {
     }
   }
 
-  private def divideBigIntegers(scaledDividend: BigInteger,
-                                scaledDivisor: BigInteger,
-                                scale: Int,
-                                roundingMode: RoundingMode): BigDecimal = {
+  private def divideBigIntegers(
+      scaledDividend: BigInteger,
+      scaledDivisor: BigInteger,
+      scale: Int,
+      roundingMode: RoundingMode
+  ): BigDecimal = {
     val qr = scaledDividend.divideAndRemainderImpl(scaledDivisor)
     // If after division there is a remainder...
 
@@ -171,10 +178,12 @@ object BigDecimal {
     }
   }
 
-  private def dividePrimitiveLongs(scaledDividend: Long,
-                                   scaledDivisor: Long,
-                                   scale: Int,
-                                   roundingMode: RoundingMode): BigDecimal = {
+  private def dividePrimitiveLongs(
+      scaledDividend: Long,
+      scaledDivisor: Long,
+      scale: Int,
+      roundingMode: RoundingMode
+  ): BigDecimal = {
     import java.lang.{Long => JLong}
 
     val remainder = scaledDividend % scaledDivisor
@@ -212,9 +221,11 @@ object BigDecimal {
    *  @param roundingMode the type of rounding
    *  @return the carry propagated after rounding.
    */
-  private def roundingBehavior(parityBit: Int,
-                               fraction: Int,
-                               roundingMode: RoundingMode): Int = {
+  private def roundingBehavior(
+      parityBit: Int,
+      fraction: Int,
+      roundingMode: RoundingMode
+  ): Int = {
     import RoundingMode._
 
     val absFraction = Math.abs(fraction)
@@ -285,11 +296,13 @@ object BigDecimal {
     s.substring(0, pos) + s2 + s.substring(pos)
 
   @inline
-  private def insertString(s: String,
-                           pos: Int,
-                           s2: String,
-                           s2Start: Int,
-                           s2Len: Int): String = {
+  private def insertString(
+      s: String,
+      pos: Int,
+      s2: String,
+      s2Start: Int,
+      s2Len: Int
+  ): String = {
     insertString(s, pos, s2.substring(s2Start, s2Start + s2Len))
   }
 
@@ -367,7 +380,8 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
 
     if (last >= in.length || offset < 0 || len <= 0 || last < 0) {
       throw new NumberFormatException(
-        s"Bad offset/length: offset=${offset} len=$len in.length=${in.length}")
+        s"Bad offset/length: offset=${offset} len=$len in.length=${in.length}"
+      )
     }
 
     var index = offset
@@ -479,8 +493,8 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
     _scale = 1075 - ((bits >> 52) & 2047).toInt
     // Extracting the 52 bits of the mantissa.
     val mantissa =
-      if (_scale == 1075) (bits & 0xFFFFFFFFFFFFFL) << 1
-      else (bits & 0xFFFFFFFFFFFFFL) | 0x10000000000000L
+      if (_scale == 1075) (bits & 0XFFFFFFFFFFFFFL) << 1
+      else (bits & 0XFFFFFFFFFFFFFL) | 0X10000000000000L
 
     if (mantissa == 0) {
       _scale = 0
@@ -514,7 +528,8 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
         _bitLength = bitLength(_smallValue)
       } else {
         setUnscaledValue(
-          multiplyByFivePow(BigInteger.valueOf(mantissa3), _scale))
+          multiplyByFivePow(BigInteger.valueOf(mantissa3), _scale)
+        )
       }
     } else {
       _smallValue = mantissa3
@@ -579,8 +594,10 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
       if (Math.max(this._bitLength, augend._bitLength) + 1 < 64)
         valueOf(this._smallValue + augend._smallValue, this._scale)
       else
-        new BigDecimal(this.getUnscaledValue.add(augend.getUnscaledValue),
-                       this._scale)
+        new BigDecimal(
+          this.getUnscaledValue.add(augend.getUnscaledValue),
+          this._scale
+        )
     } else if (diffScale > 0) {
       addAndMult10(this, augend, diffScale)
     } else {
@@ -612,7 +629,8 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
         } else {
           val tempBI2 = larger.getUnscaledValue.subtract(biLarger)
           multiplyByPosInt(tempBI2, 10).add(
-            BigInteger.valueOf(largerSignum * 9))
+            BigInteger.valueOf(largerSignum * 9)
+          )
         }
       }
       // Rounding the improved adding
@@ -634,8 +652,10 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
       if (Math.max(this._bitLength, subtrahend._bitLength) + 1 < 64)
         valueOf(this._smallValue - subtrahend._smallValue, this._scale)
       else
-        new BigDecimal(getUnscaledValue.subtract(subtrahend.getUnscaledValue),
-                       _scale)
+        new BigDecimal(
+          getUnscaledValue.subtract(subtrahend.getUnscaledValue),
+          _scale
+        )
     } else if (diffScale > 0) {
       def powTenLen = LongTenPowsBitLength(diffScale)
       def maxLen =
@@ -656,8 +676,10 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
 
       if (negDiffScale < LongTenPows.length && maxLen < 64) {
         val powTen = LongTenPows(negDiffScale)
-        valueOf(_smallValue * powTen - subtrahend._smallValue,
-                subtrahend._scale)
+        valueOf(
+          _smallValue * powTen - subtrahend._smallValue,
+          subtrahend._scale
+        )
       } else {
         val mult    = multiplyByTenPow(this.getUnscaledValue, negDiffScale)
         val multSub = mult.subtract(subtrahend.getUnscaledValue)
@@ -696,8 +718,10 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
     if (this.isZero || multiplicand.isZero) {
       zeroScaledBy(newScale)
     } else if (this._bitLength + multiplicand._bitLength < 64) {
-      valueOf(this._smallValue * multiplicand._smallValue,
-              safeLongToInt(newScale))
+      valueOf(
+        this._smallValue * multiplicand._smallValue,
+        safeLongToInt(newScale)
+      )
     } else {
       val unscaled =
         this.getUnscaledValue.multiply(multiplicand.getUnscaledValue)
@@ -714,9 +738,11 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
   def divide(divisor: BigDecimal, scale: Int, roundingMode: Int): BigDecimal =
     divide(divisor, scale, RoundingMode.valueOf(roundingMode))
 
-  def divide(divisor: BigDecimal,
-             scale: Int,
-             roundingMode: RoundingMode): BigDecimal = {
+  def divide(
+      divisor: BigDecimal,
+      scale: Int,
+      roundingMode: RoundingMode
+  ): BigDecimal = {
     if (roundingMode == null)
       throw new NullPointerException("roundingMode == null")
     else if (divisor.isZero)
@@ -816,7 +842,8 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
       // If  abs(q) != 1  then the quotient is periodic
       if (q.abs() != BigInteger.ONE) {
         throw new ArithmeticException(
-          "Non-terminating decimal expansion; no exact representable decimal result")
+          "Non-terminating decimal expansion; no exact representable decimal result"
+        )
       }
 
       // The sign of the is fixed and the quotient will be saved in 'p2'
@@ -941,8 +968,10 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
     else new BigDecimal(integralValue, safeLongToInt(varScale))
   }
 
-  def divideToIntegralValue(divisor: BigDecimal,
-                            mc: MathContext): BigDecimal = {
+  def divideToIntegralValue(
+      divisor: BigDecimal,
+      mc: MathContext
+  ): BigDecimal = {
     // scalastyle:off return
     val mcPrecision   = mc.precision
     val diffPrecision = this.precision() - divisor.precision()
@@ -1004,10 +1033,12 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
     // To strip trailing zeros until the specified precision is reached
     @inline
     @tailrec
-    def loop(i: Int,
-             ns: Long,
-             q: BigInteger,
-             prec: Int): (Long, BigInteger, Int) = {
+    def loop(
+        i: Int,
+        ns: Long,
+        q: BigInteger,
+        prec: Int
+    ): (Long, BigInteger, Int) = {
       if (!q.testBit(0)) {
         val qr = q.divideAndRemainderImpl(BigTenPows(i))
         val cond1 = {
@@ -1046,8 +1077,10 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
   def divideAndRemainder(divisor: BigDecimal): Array[BigDecimal] =
     divideAndRemainderImpl(divisor).toArray()
 
-  def divideAndRemainder(divisor: BigDecimal,
-                         mc: MathContext): Array[BigDecimal] =
+  def divideAndRemainder(
+      divisor: BigDecimal,
+      mc: MathContext
+  ): Array[BigDecimal] =
     divideAndRemainderImpl(divisor, mc).toArray()
 
   def pow(n: Int): BigDecimal = {
@@ -1177,8 +1210,10 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
       if (diffScale < LongTenPows.length && cmp < 64) {
         valueOf(this._smallValue * LongTenPows(diffScale.toInt), newScale)
       } else {
-        new BigDecimal(multiplyByTenPow(getUnscaledValue, diffScale.toInt),
-                       newScale)
+        new BigDecimal(
+          multiplyByTenPow(getUnscaledValue, diffScale.toInt),
+          newScale
+        )
       }
     } else if (this._bitLength < 64 && -diffScale < LongTenPows.length) {
       val lpt = LongTenPows(-diffScale.toInt)
@@ -1223,9 +1258,11 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
       // while the number is even...
       @inline
       @tailrec
-      def loop(i: Int,
-               strippedBI: BigInteger,
-               scale: Long): (BigInteger, Long) = {
+      def loop(
+          i: Int,
+          strippedBI: BigInteger,
+          scale: Long
+      ): (BigInteger, Long) = {
         if (!strippedBI.testBit(0)) {
           // To divide by 10^i
           val qr = strippedBI.divideAndRemainderImpl(BigTenPows(i))
@@ -1585,7 +1622,7 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
           bits += 2
       }
       // Testing bit 54 to check if the carry creates a new binary digit
-      if ((bits & 0x40000000000000L) == 0) {
+      if ((bits & 0X40000000000000L) == 0) {
         // To drop the last bit of mantissa (first discarded)
         bits >>= 1
         exponent += discardedSize
@@ -1616,15 +1653,98 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
 
         // Construct the 64 double bits: [sign(1), exponent(11), mantissa(52)]
         val resultBits =
-          (sign & 0x8000000000000000L) |
+          (sign & 0X8000000000000000L) |
             (exponent.toLong << 52) |
-            (bits & 0xFFFFFFFFFFFFFL)
+            (bits & 0XFFFFFFFFFFFFFL)
         java.lang.Double.longBitsToDouble(resultBits)
       }
     }
   }
 
   def ulp(): BigDecimal = valueOf(1, _scale)
+
+  def sqrt(mc: MathContext): BigDecimal = {
+
+    if (mc == null)
+      throw new NullPointerException("MathContext == null")
+
+    val sgn = this.signum
+
+    if (sgn < 0)
+      throw new ArithmeticException("sqrt of negative number")
+    else if (sgn == 0) {
+      val newScale = this.scale / 2
+      BigDecimal.valueOf(0L, newScale)
+    } else {
+
+      // Babylonian or Newton's method.
+
+      val radicand = this
+
+      // To avoid least significant digit rounding issues, do sqrt math
+      // with one additional guard digit of precision. Just before returning
+      // the result drop that digit by rounding using the MathContext
+      // passed in.
+
+      val workMc = new MathContext(mc.getPrecision + 1, mc.getRoundingMode)
+
+      val bdTWO = new BigDecimal("2.0", workMc)
+      @tailrec
+      def loop(x: BigDecimal): BigDecimal = {
+
+        val y = (radicand
+          .divide(x, workMc))
+          .add(x)
+          .divide(bdTWO, workMc)
+
+        // Important note on loop/recursion termination.
+        //
+        // Math theory guarantees that a correct implementation will
+        // converge. That is, the difference between two iterations
+        // will become less than epsilon or tolerance, for a suitable
+        // definition of epsilon.
+        //
+        // Using the workMc, with its guard digit, in the subtraction drops
+        // digits to_the_right_of or smaller_than workMc.getPrecision defines
+        // such an epsilon. Digits to_the_right_of or smaller_than
+        // workMc.getPrecison are dropped, allowing a direct comparison to
+        // BigDecimal.ZERO and eventual loop/recursion termination.
+
+        val delta = y.subtract(x, workMc)
+        val done  = (delta.compareTo(ZERO) == 0)
+
+        if (done) y else loop(y)
+
+      }
+
+      def guess(): BigDecimal = {
+
+        // Try for a guess better than a hardcoded 1 or this/2 without
+        // expending lots of CPU cycles. A reasonably good initial guess
+        // saves many trips through the loop, with its division and general
+        // BigDecimal math.
+        //
+        // Can not simply bitshift a BigDecimal. A math.pow() of a double
+        // by power of two is not all that expensive.
+        //
+        // Bet that most BigDecimals will have whole integer portions
+        // larger than 10 or so.  For small radicands, this algorithm
+        // is slightly expensive and yields an OK but not superior guess.
+        // It comes onto its own with larger radicands and amply repays
+        // the cost of the Math.pow() by its much better guess saving many
+        // trips through the loop.
+        //
+        // Improvements are left to the Gentle Reader.
+
+        val powerOfTwo = (this._bitLength) - (_scale / Log2).toLong
+
+        new BigDecimal(Math.pow(2, powerOfTwo / 2))
+      }
+
+      loop(guess()).round(mc) // drop method-internal extra digit of precision.
+
+    }
+  }
 
   private def decimalDigitsInLong(value: Long): Int = {
     if (value == Long.MinValue) {
@@ -1644,8 +1764,10 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
   }
 
   @inline
-  private def divideAndRemainderImpl(divisor: BigDecimal,
-                                     mc: MathContext): QuotAndRem = {
+  private def divideAndRemainderImpl(
+      divisor: BigDecimal,
+      mc: MathContext
+  ): QuotAndRem = {
     val quot = this.divideToIntegralValue(divisor, mc)
     val rem  = this.subtract(quot.multiply(divisor))
     new QuotAndRem(quot, rem)
@@ -1725,7 +1847,8 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
     } else {
       new BigDecimal(
         multiplyByTenPow(getUnscaledValue, safeLongToInt(-newScale)),
-        0)
+        0
+      )
     }
   }
 
