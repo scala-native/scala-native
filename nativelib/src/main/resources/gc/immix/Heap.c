@@ -120,13 +120,13 @@ word_t *Heap_AllocLarge(Heap *heap, uint32_t objectSize) {
 
 NOINLINE word_t *Heap_allocSmallSlow(Heap *heap, uint32_t size) {
     Object *object;
-    object = (Object *)Allocator_Alloc(&allocator, size);
+    object = (Object *) Heap_LazySweep(heap, size);
 
     if (object != NULL)
         goto done;
 
     Heap_Collect(heap, &stack);
-    object = (Object *)Allocator_Alloc(&allocator, size);
+    object = (Object *) Heap_LazySweep(heap, size);
 
     if (object != NULL)
         goto done;
@@ -207,15 +207,33 @@ void Heap_Recycle(Heap *heap) {
     allocator.recycledBlockCount = 0;
     allocator.freeMemoryAfterCollection = 0;
 
-    word_t *current = heap->heapStart;
-    while (current != heap->heapEnd) {
-        BlockHeader *blockHeader = (BlockHeader *)current;
-        Block_Recycle(&allocator, blockHeader);
-        // block_print(blockHeader);
-        current += WORDS_IN_BLOCK;
-    }
     LargeAllocator_Sweep(&largeAllocator);
+    // prepare for lazy sweeping
+    heap->sweepCursor = heap->heapStart;
+}
 
+INLINE word_t *Heap_LazySweep(Heap *heap, uint32_t size) {
+    word_t *object;
+    while (!Heap_IsSweepDone(heap)) {
+        BlockHeader *blockHeader = (BlockHeader *) heap -> sweepCursor;
+        Block_Recycle(&allocator, blockHeader);
+        heap -> sweepCursor += WORDS_IN_BLOCK;
+
+        object = Allocator_Alloc(&allocator, size);
+        if (object != NULL)
+            break;
+    }
+    if (Heap_IsSweepDone(heap)) {
+        Heap_SweepDone(heap);
+    }
+    if (object != NULL) {
+        return object;
+    } else {
+        return Allocator_Alloc(&allocator, size);
+    }
+}
+
+INLINE void Heap_SweepDone(Heap *heap) {
     if (Allocator_ShouldGrow(&allocator)) {
         double growth;
         if (heap->smallHeapSize < EARLY_GROWTH_THRESHOLD) {
