@@ -58,7 +58,9 @@ void Heap_Init(Heap *heap, size_t initialSmallHeapSize,
     // Init heap for small objects
     heap->smallHeapSize = initialSmallHeapSize;
     heap->heapStart = smallHeapStart;
-    heap->heapEnd = smallHeapStart + initialSmallHeapSize / WORD_SIZE;
+    word_t *heapEnd = smallHeapStart + initialSmallHeapSize / WORD_SIZE;
+    heap->heapEnd = heapEnd;
+    heap->sweepCursor = heapEnd;
     Allocator_Init(&allocator, smallHeapStart,
                    initialSmallHeapSize / BLOCK_TOTAL_SIZE);
 
@@ -266,7 +268,9 @@ void Heap_Grow(Heap *heap, size_t increment) {
 #endif
 
     word_t *heapEnd = heap->heapEnd;
-    heap->heapEnd = heapEnd + increment;
+    word_t *newHeapEnd = heapEnd + increment;
+    heap->heapEnd = newHeapEnd;
+    heap->sweepCursor = newHeapEnd;
     heap->smallHeapSize += increment * WORD_SIZE;
 
     BlockHeader *lastBlock = (BlockHeader *)(heap->heapEnd - WORDS_IN_BLOCK);

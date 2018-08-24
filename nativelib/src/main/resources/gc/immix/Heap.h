@@ -10,6 +10,7 @@ typedef struct {
     size_t memoryLimit;
     word_t *heapStart;
     word_t *heapEnd;
+    word_t *sweepCursor;
     size_t smallHeapSize;
     word_t *largeHeapStart;
     word_t *largeHeapEnd;
@@ -29,6 +30,12 @@ static inline bool Heap_IsWordInHeap(Heap *heap, word_t *word) {
     return Heap_IsWordInSmallHeap(heap, word) ||
            Heap_IsWordInLargeHeap(heap, word);
 }
+
+static inline bool Heap_IsSweepDone(Heap *heap) {
+    return heap->sweepCursor >= heap->heapEnd;
+}
+
+
 static inline bool heap_isObjectInHeap(Heap *heap, Object *object) {
     return Heap_IsWordInHeap(heap, (word_t *)object);
 }
