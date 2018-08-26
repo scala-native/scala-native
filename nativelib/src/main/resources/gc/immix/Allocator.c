@@ -85,10 +85,10 @@ bool Allocator_ShouldGrow(Allocator *allocator) {
         (allocator->freeBlockCount + allocator->recycledBlockCount);
 
 #ifdef DEBUG_PRINT
-    printf("\n\nBlock count: %llu\n", allocator->blockCount);
-    printf("Unavailable: %llu\n", unavailableBlockCount);
-    printf("Free: %llu\n", allocator->freeBlockCount);
-    printf("Recycled: %llu\n", allocator->recycledBlockCount);
+    printf("\n\nBlock count: %lu\n", allocator->blockCount);
+    printf("Unavailable: %lu\n", unavailableBlockCount);
+    printf("Free: %lu\n", allocator->freeBlockCount);
+    printf("Recycled: %lu\n", allocator->recycledBlockCount);
     fflush(stdout);
 #endif
 

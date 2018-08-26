@@ -114,7 +114,7 @@ Object *Object_getLargeInnerPointer(LargeAllocator *allocator, word_t *word) {
     if (word < (word_t *)object + Object_ChunkSize(object) / WORD_SIZE &&
         object->rtti != NULL) {
 #ifdef DEBUG_PRINT
-        printf("large inner pointer: %p, object: %p\n", word, objectHeader);
+        printf("large inner pointer: %p, object: %p\n", word, object);
         fflush(stdout);
 #endif
         return object;
