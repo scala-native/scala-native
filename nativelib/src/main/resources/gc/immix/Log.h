@@ -1,7 +1,7 @@
 #ifndef IMMIX_LOG_H
 #define IMMIX_LOG_H
 
-#define NDEBUG
+//#define NDEBUG
 #include <assert.h>
 
 //#define PRINT_STACK_OVERFLOW
