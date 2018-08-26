@@ -213,7 +213,8 @@ void Heap_Recycle(Heap *heap) {
 }
 
 INLINE word_t *Heap_LazySweep(Heap *heap, uint32_t size) {
-    word_t *object;
+    word_t *object = NULL;
+
     while (!Heap_IsSweepDone(heap)) {
         BlockHeader *blockHeader = (BlockHeader *) heap -> sweepCursor;
         Block_Recycle(&allocator, blockHeader);
