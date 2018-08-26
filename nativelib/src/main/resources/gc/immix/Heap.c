@@ -60,7 +60,7 @@ void Heap_Init(Heap *heap, size_t initialSmallHeapSize,
     heap->heapStart = smallHeapStart;
     word_t *heapEnd = smallHeapStart + initialSmallHeapSize / WORD_SIZE;
     heap->heapEnd = heapEnd;
-    heap->sweepCursor = heapEnd;
+    heap->sweepCursor = NULL;
     Allocator_Init(&allocator, smallHeapStart,
                    initialSmallHeapSize / BLOCK_TOTAL_SIZE);
 
@@ -213,6 +213,10 @@ void Heap_Recycle(Heap *heap) {
 }
 
 INLINE word_t *Heap_LazySweep(Heap *heap, uint32_t size) {
+    // the sweep was already done, including post-sweep actions
+    if (heap->sweepCursor == NULL) {
+        return Allocator_Alloc(&allocator, size);
+    }
     word_t *object = NULL;
 
     while (!Heap_IsSweepDone(heap)) {
@@ -289,7 +293,7 @@ void Heap_Grow(Heap *heap, size_t increment) {
     word_t *heapEnd = heap->heapEnd;
     word_t *newHeapEnd = heapEnd + increment;
     heap->heapEnd = newHeapEnd;
-    heap->sweepCursor = newHeapEnd;
+    heap->sweepCursor = NULL;
     heap->smallHeapSize += increment * WORD_SIZE;
 
     BlockHeader *lastBlock = (BlockHeader *)(heap->heapEnd - WORDS_IN_BLOCK);
