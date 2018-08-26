@@ -239,6 +239,8 @@ INLINE word_t *Heap_LazySweep(Heap *heap, uint32_t size) {
 }
 
 INLINE void Heap_SweepDone(Heap *heap) {
+    // mark sweep as done
+    heap->sweepCursor = NULL;
     if (Allocator_ShouldGrow(&allocator)) {
         double growth;
         if (heap->smallHeapSize < EARLY_GROWTH_THRESHOLD) {
