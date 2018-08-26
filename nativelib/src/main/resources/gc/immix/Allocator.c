@@ -72,6 +72,7 @@ void Allocator_InitCursors(Allocator *allocator) {
     BlockHeader *largeHeader =
         BlockList_RemoveFirstBlock(&allocator->freeBlocks);
     allocator->largeBlock = largeHeader;
+    assert(allocator->block != allocator->largeBlock);
     allocator->largeCursor = Block_GetFirstWord(largeHeader);
     allocator->largeLimit = Block_GetBlockEnd(largeHeader);
 }
@@ -111,6 +112,7 @@ word_t *Allocator_overflowAllocation(Allocator *allocator, size_t size) {
         }
         BlockHeader *block = BlockList_RemoveFirstBlock(&allocator->freeBlocks);
         allocator->largeBlock = block;
+        assert(allocator->block != allocator->largeBlock);
         allocator->largeCursor = Block_GetFirstWord(block);
         allocator->largeLimit = Block_GetBlockEnd(block);
         return Allocator_overflowAllocation(allocator, size);
@@ -197,6 +199,7 @@ bool Allocator_nextLineRecycled(Allocator *allocator) {
  */
 void Allocator_firstLineNewBlock(Allocator *allocator, BlockHeader *block) {
     allocator->block = block;
+    assert(allocator->block != allocator->largeBlock);
 
     // The block can be free or recycled.
     if (Block_IsFree(block)) {
