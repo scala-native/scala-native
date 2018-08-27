@@ -15,7 +15,6 @@ object Optimizer {
             linked: linker.Result,
             driver: Driver): Seq[Defn] = {
     val reporter = driver.optimizerReporter
-    // Reporter.toDirectory(java.nio.file.Paths.get("debug"))
     import reporter._
 
     def loop(batchId: Int,
