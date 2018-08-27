@@ -36,6 +36,10 @@ class Reach(entries: Seq[Global], loader: ClassLoader) {
   }
 
   def cleanup(): Unit = {
+    // Remove all unreachable methods from the
+    // responds map of every class. Optimizer and
+    // codegen may never increase reachability past
+    // what's known now, so it's safe to do this.
     infos.values.foreach {
       case cls: Class =>
         val entries = cls.responds.toArray
@@ -66,11 +70,15 @@ class Reach(entries: Seq[Global], loader: ClassLoader) {
     while (todo.nonEmpty) {
       val name = todo.pop()
       if (!done.contains(name)) {
-        stack.push(name)
-        reachDefn(lookup(name))
-        stack.pop()
+        reachDefn(name)
       }
     }
+
+  def reachDefn(name: Global): Unit = {
+    stack.push(name)
+    reachDefn(lookup(name))
+    stack.pop()
+  }
 
   def reachDefn(defn: Defn): Unit = {
     defn match {
@@ -128,11 +136,9 @@ class Reach(entries: Seq[Global], loader: ClassLoader) {
       ()
     } else if (!stack.contains(name)) {
       enqueued += name
-      stack.push(name)
-      reachDefn(lookup(name))
-      stack.pop()
+      reachDefn(name)
     } else {
-      val lines = (s"cyclic reference error to ${name.show}:" +:
+      val lines = (s"cyclic reference to ${name.show}:" +:
         stack.map(el => s"* ${el.show}"))
       val msg = lines.mkString("\n")
       throw new Exception(msg)
@@ -144,8 +150,8 @@ class Reach(entries: Seq[Global], loader: ClassLoader) {
       case info: MemberInfo =>
         info.owner.members += info
       case info: Class =>
-        // Register given class as a subclass of
-        // all transitive parents and as an implementation
+        // Register given class as a subclass of all
+        // transitive parents and as an implementation
         // of all transitive traits.
         def loopParent(parentInfo: Class): Unit = {
           parentInfo.subclasses += info
@@ -159,9 +165,11 @@ class Reach(entries: Seq[Global], loader: ClassLoader) {
         info.parent.foreach(loopParent)
         info.traits.foreach(loopTraits)
 
-        // Initialize responds map to keep track
-        // of all signatures this class responds to
-        // and its corresponding implementation.
+        // Initialize responds map to keep track of all
+        // signatures this class responds to and its
+        // corresponding implementation. Some of the entries
+        // may end up being not reachable, we remove those
+        // in the cleanup right before we return the result.
         info.parent.foreach { parentInfo =>
           info.responds ++= parentInfo.responds
         }
@@ -193,8 +201,11 @@ class Reach(entries: Seq[Global], loader: ClassLoader) {
       info.allocated = true
 
       // Handle all class and trait virtual calls
-      // on this class.
+      // on this class. This includes virtual calls
+      // on the traits that this class implements and
+      // calls on all transitive parents.
       val calls = mutable.Set.empty[String]
+      calls ++= info.calls
       def loopParent(parentInfo: Class): Unit = {
         calls ++= parentInfo.calls
         parentInfo.parent.foreach(loopParent)
@@ -210,7 +221,10 @@ class Reach(entries: Seq[Global], loader: ClassLoader) {
         info.responds.get(sig).foreach(reachGlobal)
       }
 
-      // Handle all dynamic calls on this type.
+      // Handle all dynamic methods on this class.
+      // Any method that implements a known dynamic
+      // signature becomes reachable. The others are
+      // stashed as dynamic candidates.
       info.responds.foreach {
         case (sig, impl) =>
           val dynsig = Global.genSignature(sig)
@@ -469,36 +483,15 @@ class Reach(entries: Seq[Global], loader: ClassLoader) {
       ()
   }
 
-  def reachMethodTargets(ty: Type, name: Global): Unit =
-    reachMethodTargets(ty, name.id)
-
-  def reachMethodTargets(ty: Type, sig: String): Unit = {
-    def reachImpl(cls: Class): Unit =
-      cls.responds.get(sig).foreach(reachGlobal)
-
-    ty match {
-      case Type.Module(name) =>
-        val cls = classInfo(name)
-        if (!cls.calls.contains(sig)) {
-          cls.calls += sig
-          reachImpl(cls)
-        }
-      case Type.Class(name) =>
-        val cls = classInfo(name)
-        if (!cls.calls.contains(sig)) {
-          cls.calls += sig
-          reachImpl(cls)
-          cls.subclasses.foreach(reachImpl)
-        }
-      case Type.Trait(name) =>
-        val trt = traitInfo(name)
-        if (!trt.calls.contains(sig)) {
-          trt.calls += sig
-          trt.implementors.foreach(reachImpl)
-        }
-      case _ =>
-        ()
-    }
+  def reachMethodTargets(ty: Type, sig: String): Unit = ty match {
+    case ty: Type.Named =>
+      val scope = scopeInfo(ty.name)
+      if (!scope.calls.contains(sig)) {
+        scope.calls += sig
+        scope.targets(sig).foreach(reachGlobal)
+      }
+    case _ =>
+      ()
   }
 
   def reachDynamicMethodTargets(dynsig: String) = {
@@ -529,7 +522,9 @@ class Reach(entries: Seq[Global], loader: ClassLoader) {
     sig match {
       // We short-circuit scala_== and scala_## to immeditately point to the
       // equals and hashCode implementation for the reference types to avoid
-      // double virtual dispatch overhead.
+      // double virtual dispatch overhead. This optimization is *not* optional
+      // as implementation of scala_== on java.lang.Object assumes it's only
+      // called on classes which don't overrider java_==.
       case Rt.ScalaEqualsSig =>
         val scalaImpl = lookupSig(cls, Rt.ScalaEqualsSig).get
         val javaImpl  = lookupSig(cls, Rt.JavaEqualsSig).get

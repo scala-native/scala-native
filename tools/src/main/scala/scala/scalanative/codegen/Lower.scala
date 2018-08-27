@@ -212,7 +212,14 @@ object Lower {
         let(n, Op.Load(Type.Ptr, methptrptr), unwind)
       }
 
-      linked.targets(obj.ty, sig).toSeq match {
+      val targets = obj.ty match {
+        case ScopeRef(scope) =>
+          scope.targets(sig).toSeq
+        case _ =>
+          Seq()
+      }
+
+      targets match {
         case Seq() =>
           let(n, Op.Copy(Val.Null), unwind)
         case Seq(impl) =>

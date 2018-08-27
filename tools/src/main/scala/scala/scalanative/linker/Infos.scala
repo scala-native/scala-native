@@ -12,6 +12,8 @@ sealed abstract class Info {
 sealed abstract class ScopeInfo extends Info {
   val members = mutable.UnrolledBuffer.empty[MemberInfo]
   val calls   = mutable.Set.empty[String]
+
+  def targets(sig: String): mutable.Set[Global]
 }
 
 sealed abstract class MemberInfo extends Info {
@@ -19,11 +21,29 @@ sealed abstract class MemberInfo extends Info {
 }
 
 final class Struct(val attrs: Attrs, val name: Global, val tys: Seq[nir.Type])
-    extends ScopeInfo
+    extends ScopeInfo {
+  def targets(sig: String): mutable.Set[Global] =
+    util.unsupported("can't call a method on a struct")
+}
 
 final class Trait(val attrs: Attrs, val name: Global, val traits: Seq[Trait])
     extends ScopeInfo {
   val implementors = mutable.Set.empty[Class]
+
+  def targets(sig: String): mutable.Set[Global] = {
+    val out = mutable.Set.empty[Global]
+
+    def add(cls: Class): Unit =
+      if (cls.allocated) {
+        cls.resolve(sig).foreach { impl =>
+          out += impl
+        }
+      }
+
+    implementors.foreach(add)
+
+    out
+  }
 }
 
 final class Class(val attrs: Attrs,
@@ -42,6 +62,21 @@ final class Class(val attrs: Attrs,
     isModule && !top.infos.contains(name member "init")
   def resolve(sig: String): Option[Global] =
     responds.get(sig)
+  def targets(sig: String): mutable.Set[Global] = {
+    val out = mutable.Set.empty[Global]
+
+    def add(cls: Class): Unit =
+      if (cls.allocated) {
+        cls.resolve(sig).foreach { impl =>
+          out += impl
+        }
+      }
+
+    add(this)
+    subclasses.foreach(add)
+
+    out
+  }
 }
 
 final class Method(val attrs: Attrs,
@@ -73,32 +108,4 @@ final class Result(val infos: mutable.Map[Global, Info],
                    val links: Seq[Attr.Link],
                    val defns: Seq[Defn],
                    val dynsigs: Seq[String],
-                   val dynimpls: Seq[Global]) {
-  def targets(ty: Type, sig: String): mutable.Set[Global] = {
-    val out = mutable.Set.empty[Global]
-
-    def add(cls: Class): Unit =
-      if (cls.allocated) {
-        cls.resolve(sig).foreach { impl =>
-          out += impl
-        }
-      }
-
-    ty match {
-      case Type.Module(name) =>
-        val cls = infos(name).asInstanceOf[Class]
-        add(cls)
-      case Type.Class(name) =>
-        val cls = infos(name).asInstanceOf[Class]
-        add(cls)
-        cls.subclasses.foreach(add)
-      case Type.Trait(name) =>
-        val trt = infos(name).asInstanceOf[Trait]
-        trt.implementors.foreach(add)
-      case _ =>
-        ()
-    }
-
-    out
-  }
-}
+                   val dynimpls: Seq[Global])

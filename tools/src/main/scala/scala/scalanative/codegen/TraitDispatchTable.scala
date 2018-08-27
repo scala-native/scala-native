@@ -19,7 +19,7 @@ class TraitDispatchTable(meta: Metadata) {
     val sigs = mutable.Set.empty[String]
     meta.traits.foreach { trt =>
       trt.calls.foreach { sig =>
-        if (meta.linked.targets(Type.Trait(trt.name), sig).size > 1) {
+        if (trt.targets(sig).size > 1) {
           sigs += sig
         }
       }

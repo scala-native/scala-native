@@ -30,7 +30,7 @@ class VirtualTable(meta: Metadata, cls: linker.Class) {
       addImpl(sig)
     }
     cls.calls.foreach { sig =>
-      if (meta.linked.targets(Type.Class(cls.name), sig).size > 1) {
+      if (cls.targets(sig).size > 1) {
         if (!impls.contains(sig)) {
           addSlot(sig)
           addImpl(sig)
