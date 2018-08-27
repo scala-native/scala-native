@@ -143,13 +143,20 @@ object RyuDouble {
     doubleToString(value, RyuRoundingMode.ROUND_EVEN)
 
   def doubleToString(value: Double, roundingMode: RyuRoundingMode): String = {
+    // Step 1: Decode the floating point number, and unify normalized and
+    // subnormal cases.
 // First, handle all the trivial cases.
     if (java.lang.Double.isNaN(value)) return "NaN"
-    if (value == java.lang.Float.POSITIVE_INFINITY) return "Infinity"
-    if (value == java.lang.Float.NEGATIVE_INFINITY) return "-Infinity"
+    if (value == java.lang.Double.POSITIVE_INFINITY) return "Infinity"
+    if (value == java.lang.Double.NEGATIVE_INFINITY) return "-Infinity"
     val bits: Long = java.lang.Double.doubleToLongBits(value)
     if (bits == 0) return "0.0"
     if (bits == 0x8000000000000000L) return "-0.0"
+
+    // FIX ME: Far better to understand why the algorithm is not working.
+    // Did I miss a missing return or such?
+//    if (bits == 1L) return "4.9E-324" // j.l.Double.MIN_VALUE
+
 // Otherwise extract the mantissa and exponent bits and run the full algorithm.
     val ieeeExponent: Int =
       ((bits >>> DOUBLE_MANTISSA_BITS) & DOUBLE_EXPONENT_MASK).toInt
@@ -172,13 +179,14 @@ object RyuDouble {
         "   S=" + (if (sign) "-" else "+") + " E=" + e2 + " M=" +
           m2)
     }
-// Step 2: Determine the interval of legal decimal representations.
+    // Step 2: Determine the interval of legal decimal representations.
     val even: Boolean = (m2 & 1) == 0
     val mv: Long      = 4 * m2
     val mp: Long      = 4 * m2 + 2
-    val mm: Long = 4 * m2 -
-      (if (((m2 != (1L << DOUBLE_MANTISSA_BITS)) || (ieeeExponent <= 1))) 2
-       else 1)
+    val mmShift: Int =
+      if (((m2 != (1L << DOUBLE_MANTISSA_BITS)) || (ieeeExponent <= 1))) 1
+      else 0
+    val mm: Long = 4 * m2 - 1 - mmShift
     e2 -= 2
     if (DEBUG) {
       var sv: String = null
@@ -204,12 +212,14 @@ object RyuDouble {
       println("d-=" + sm)
       println("e2=" + e2)
     }
-// -1077 = 1 - 1023 - 53 - 2 <= e_2 - 2 <= 2046 - 1023 - 53 - 2 = 968
+    // Step 3: Convert to a decimal power base using 128-bit arithmetic.
+    // -1077 = 1 - 1023 - 53 - 2 <= e_2 - 2 <= 2046 - 1023 - 53 - 2 = 968
     var dv: Long                   = 0l
     var dp: Long                   = 0l
     var dm: Long                   = 0l
     var e10: Int                   = 0
     var dmIsTrailingZeros: Boolean = false
+    var dvIsTrailingZeros: Boolean = false
     if (e2 >= 0) {
       val q: Int = Math.max(
         0,
@@ -239,12 +249,12 @@ object RyuDouble {
         }
       }
       if (q <= 21) {
-        if (mm % 5 == 0) {
+        if (mv % 5 == 0) {
+          dvIsTrailingZeros = multipleOfPowerOf5(mv, q)
+        } else if (roundingMode.acceptUpperBound(even)) {
           dmIsTrailingZeros = multipleOfPowerOf5(mm, q)
-        } else {
-          if (multipleOfPowerOf5(mp, q) && !roundingMode.acceptUpperBound(even)) {
-            { dp -= 1; dp + 1 }
-          }
+        } else if (multipleOfPowerOf5(mp, q)) {
+          dp -= 1
         }
       }
     } else {
@@ -263,10 +273,14 @@ object RyuDouble {
         println(mv + " * 5^" + (-e2) + " / 10^" + q)
       }
       if (q <= 1) {
-        dmIsTrailingZeros = (~mm & 1) >= q
-        if (!roundingMode.acceptUpperBound(even)) {
-          { dp -= 1; dp + 1 }
+        dvIsTrailingZeros = true
+        if (roundingMode.acceptUpperBound(even)) {
+          dmIsTrailingZeros = mmShift == 1
+        } else {
+          dp -= 1
         }
+      } else if (q < 63) {
+        dvIsTrailingZeros = (mv & ((1L << (q - 1)) - 1)) == 0
       }
     }
     if (DEBUG) {
@@ -275,10 +289,22 @@ object RyuDouble {
       println("d-=" + dm)
       println("e10=" + e10)
       println("d-10=" + dmIsTrailingZeros)
+      println("d   =" + dvIsTrailingZeros)
       println("Accept upper=" + roundingMode.acceptUpperBound(even))
       println("Accept lower=" + roundingMode.acceptLowerBound(even))
     }
-// figure out the correct exponent for scientific notation.
+
+    // Step 4: Find the shortest decimal representation in the interval of
+    // legal representations.
+    //
+    // We do some extra work here in order to follow Float/Double.toString
+    // semantics. In particular, that requires printing in scientific format
+    // if and only if the exponent is between -3 and 7, and it requires
+    // printing at least two decimal digits.
+    //
+    // Above, we moved the decimal dot all the way to the right, so now we
+    // need to count digits to
+    // figure out the correct exponent for scientific notation.
     val vplength: Int = decimalLength(dp)
     var exp: Int      = e10 + vplength - 1
 // Double.toString semantics requires using scientific notation if and only if outside this range.
@@ -286,7 +312,7 @@ object RyuDouble {
     var removed: Int                = 0
     var lastRemovedDigit: Int       = 0
     var output: Long                = 0l
-    if (dmIsTrailingZeros && roundingMode.acceptLowerBound(even)) {
+    if (dmIsTrailingZeros || dvIsTrailingZeros) {
       var done = false // workaround break in .java source
       while ((dp / 10 > dm / 10) && !done) {
         if ((dp < 100) && scientificNotation) {
@@ -294,27 +320,32 @@ object RyuDouble {
           done = true
         } else {
           dmIsTrailingZeros &= dm % 10 == 0
-          dp /= 10
+          dvIsTrailingZeros &= lastRemovedDigit == 0
           lastRemovedDigit = (dv % 10).toInt
+          dp /= 10
           dv /= 10
-          dm /= 10; { removed += 1; removed - 1 }
+          dm /= 10; removed += 1
         }
       }
-
       if (dmIsTrailingZeros && roundingMode.acceptLowerBound(even)) {
         var done = false // workaround break in .java source
         while ((dm % 10 == 0) && !done) {
           if ((dp < 100) && scientificNotation) {
 // Double.toString semantics requires printing at least two digits.
             done = true
-
           } else {
-            dp /= 10
+            dvIsTrailingZeros &= lastRemovedDigit == 0
             lastRemovedDigit = (dv % 10).toInt
+            dp /= 10
             dv /= 10
-            dm /= 10; { removed += 1; removed - 1 }
+            dm /= 10; removed += 1
           }
         }
+      }
+
+      if (dvIsTrailingZeros && (lastRemovedDigit == 5) && (dv % 2 == 0)) {
+// Round even if the exact numbers is .....50..0.
+        lastRemovedDigit = 4
       }
       output = dv +
         (if ((dv == dm &&
@@ -328,10 +359,10 @@ object RyuDouble {
 // Double.toString semantics requires printing at least two digits.
           done = true
         } else {
-          dp /= 10
           lastRemovedDigit = (dv % 10).toInt
+          dp /= 10
           dv /= 10
-          dm /= 10; { removed += 1; removed - 1 }
+          dm /= 10; removed += 1
         }
       }
       output = dv +
@@ -347,12 +378,14 @@ object RyuDouble {
       println("OLEN=" + olength)
       println("EXP=" + exp)
     }
+
 // We follow Double.toString semantics here.
     val result: Array[Char] = Array.ofDim[Char](24)
     var index: Int          = 0
     if (sign) {
       result({ index += 1; index - 1 }) = '-'
     }
+
 // Values in the interval [1E-3, 1E7) are special.
     if (scientificNotation) {
       for (i <- 0 until olength - 1) {
@@ -366,6 +399,7 @@ object RyuDouble {
       if (olength == 1) {
         result({ index += 1; index - 1 }) = '0'
       }
+
 // Print 'E', the exponent sign, and the exponent, which has at most three digits.
       result({ index += 1; index - 1 }) = 'E'
       if (exp < 0) {
@@ -389,12 +423,12 @@ object RyuDouble {
         result({ index += 1; index - 1 }) = '.'
         var i: Int = -1
         while (i > exp) {
-          result({ index += 1; index - 1 }) = '0'; { i -= 1; i + 1 }
+          result({ index += 1; index - 1 }) = '0'; i -= 1
         }
         val current: Int = index
         for (i <- 0 until olength) {
           result(current + olength - i - 1) = ('0' + output % 10).toChar
-          output /= 10; { index += 1; index - 1 }
+          output /= 10; index += 1
         }
       } else if (exp + 1 >= olength) {
         for (i <- 0 until olength) {
@@ -412,10 +446,7 @@ object RyuDouble {
         var current: Int = index + 1
         for (i <- 0 until olength) {
           if (olength - i - 1 == exp) {
-            result(current + olength - i - 1) = '.';
-            {
-              current -= 1; current + 1
-            }
+            result(current + olength - i - 1) = '.'; current -= 1
           }
           result(current + olength - i - 1) = ('0' + output % 10).toChar
           output /= 10
@@ -425,27 +456,8 @@ object RyuDouble {
       new String(result, 0, index)
     }
   }
-// Step 1: Decode the floating point number, and unify normalized and subnormal cases.
-// Step 3: Convert to a decimal power base using 128-bit arithmetic.
-// Step 4: Find the shortest decimal representation in the interval of legal representations.
-//
-// We do some extra work here in order to follow Float/Double.toString semantics. In particular,
-// that requires printing in scientific format if and only if the exponent is between -3 and 7,
-// and it requires printing at least two decimal digits.
-//
-// Above, we moved the decimal dot all the way to the right, so now we need to count digits to
-// Step 5: Print the decimal representation.
-// Step 1: Decode the floating point number, and unify normalized and subnormal cases.
-// Step 3: Convert to a decimal power base using 128-bit arithmetic.
-// Step 4: Find the shortest decimal representation in the interval of legal representations.
-//
-// We do some extra work here in order to follow Float/Double.toString semantics. In particular,
-// that requires printing in scientific format if and only if the exponent is between -3 and 7,
-// and it requires printing at least two decimal digits.
-//
-// Above, we moved the decimal dot all the way to the right, so now we need to count digits to
-// Step 5: Print the decimal representation.
 
+  // Step 5: Print the decimal representation.
   private def pow5bits(e: Int): Int =
     if (e == 0) 1
     else
@@ -489,7 +501,7 @@ object RyuDouble {
       if (value % 5 != 0) {
         return count
       }
-      value /= 5; { count += 1; count - 1 }
+      value /= 5; count += 1
     }
     throw new IllegalArgumentException("" + value)
   }

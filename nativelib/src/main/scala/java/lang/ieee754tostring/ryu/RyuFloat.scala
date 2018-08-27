@@ -131,6 +131,7 @@ object RyuFloat {
     floatToString(value, RyuRoundingMode.ROUND_EVEN)
 
   def floatToString(value: Float, roundingMode: RyuRoundingMode): String = {
+// Step 1: Decode the floating point number, and unify normalized and subnormal cases.
 // First, handle all the trivial cases.
     if (java.lang.Float.isNaN(value)) return "NaN"
     if (value == java.lang.Float.POSITIVE_INFINITY) return "Infinity"
@@ -192,6 +193,8 @@ object RyuFloat {
       println("  d-=" + sm)
       println("  e2=" + e2)
     }
+
+// Step 3: Convert to a decimal power base using 128-bit arithmetic.
 // -151 = 1 - 127 - 23 - 2 <= e_2 - 2 <= 254 - 127 - 23 - 2 = 102
     var dp: Int                    = 0
     var dv: Int                    = 0
@@ -263,14 +266,23 @@ object RyuFloat {
       println("  d   =" + dvIsTrailingZeros)
       println("  d-10=" + dmIsTrailingZeros)
     }
+
+// Step 4: Find the shortest decimal representation in the interval of legal representations.
+//
+// We do some extra work here in order to follow Float/Double.toString semantics. In particular,
+// that requires printing in scientific format if and only if the exponent is between -3 and 7,
+// and it requires printing at least two decimal digits.
+//
+// Above, we moved the decimal dot all the way to the right, so now we need to count digits to
 // figure out the correct exponent for scientific notation.
+
     val dplength: Int = decimalLength(dp)
     var exp: Int      = e10 + dplength - 1
 // Float.toString semantics requires using scientific notation if and only if outside this range.
     val scientificNotation: Boolean = !((exp >= -3) && (exp < 7))
     var removed: Int                = 0
     if (dpIsTrailingZeros && !roundingMode.acceptUpperBound(even)) {
-      { dp -= 1; dp + 1 }
+      dp -= 1
     }
 
     var done = false // workaround break in .java source
@@ -284,7 +296,7 @@ object RyuFloat {
         dp /= 10
         lastRemovedDigit = dv % 10
         dv /= 10
-        dm /= 10; { removed += 1; removed - 1 }
+        dm /= 10; removed += 1
       }
     }
     if (dmIsTrailingZeros && roundingMode.acceptLowerBound(even)) {
@@ -297,7 +309,7 @@ object RyuFloat {
           dp /= 10
           lastRemovedDigit = dv % 10
           dv /= 10
-          dm /= 10; { removed += 1; removed - 1 }
+          dm /= 10; removed += 1
         }
       }
     }
@@ -324,7 +336,10 @@ object RyuFloat {
       println("  output_length=" + olength)
       println("  output_exponent=" + exp)
     }
+
+// Step 5: Print the decimal representation.
 // We follow Float.toString semantics here.
+
     val result: Array[Char] = Array.ofDim[Char](15)
     var index: Int          = 0
     if (sign) {
@@ -360,12 +375,12 @@ object RyuFloat {
         result({ index += 1; index - 1 }) = '.'
         var i: Int = -1
         while (i > exp) {
-          result({ index += 1; index - 1 }) = '0'; { i -= 1; i + 1 }
+          result({ index += 1; index - 1 }) = '0'; i -= 1
         }
         val current: Int = index
         for (i <- 0 until olength) {
           result(current + olength - i - 1) = ('0' + output % 10).toChar
-          output /= 10; { index += 1; index - 1 }
+          output /= 10; index += 1
         }
       } else if (exp + 1 >= olength) {
         for (i <- 0 until olength) {
@@ -396,26 +411,6 @@ object RyuFloat {
     }
     new String(result, 0, index)
   }
-// Step 1: Decode the floating point number, and unify normalized and subnormal cases.
-// Step 3: Convert to a decimal power base using 128-bit arithmetic.
-// Step 4: Find the shortest decimal representation in the interval of legal representations.
-//
-// We do some extra work here in order to follow Float/Double.toString semantics. In particular,
-// that requires printing in scientific format if and only if the exponent is between -3 and 7,
-// and it requires printing at least two decimal digits.
-//
-// Above, we moved the decimal dot all the way to the right, so now we need to count digits to
-// Step 5: Print the decimal representation.
-// Step 1: Decode the floating point number, and unify normalized and subnormal cases.
-// Step 3: Convert to a decimal power base using 128-bit arithmetic.
-// Step 4: Find the shortest decimal representation in the interval of legal representations.
-//
-// We do some extra work here in order to follow Float/Double.toString semantics. In particular,
-// that requires printing in scientific format if and only if the exponent is between -3 and 7,
-// and it requires printing at least two decimal digits.
-//
-// Above, we moved the decimal dot all the way to the right, so now we need to count digits to
-// Step 5: Print the decimal representation.
 
   private def pow5bits(e: Int): Int =
     if (e == 0) 1
@@ -433,7 +428,7 @@ object RyuFloat {
       if (value % 5 != 0) {
         return count
       }
-      value /= 5; { count += 1; count - 1 }
+      value /= 5; count += 1
     }
     throw new IllegalArgumentException("" + value)
   }
