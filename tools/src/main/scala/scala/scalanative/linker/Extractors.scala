@@ -44,17 +44,15 @@ object TraitRef extends Extractor[Trait] {
     }
 }
 
-object MethodRef extends Extractor[(ScopeInfo, Method)] {
-  def unapply(name: Global)(
-      implicit linked: Result): Option[(ScopeInfo, Method)] =
+object MethodRef extends Extractor[(Info, Method)] {
+  def unapply(name: Global)(implicit linked: Result): Option[(Info, Method)] =
     linked.infos.get(name).collect {
       case node: Method => (node.owner, node)
     }
 }
 
-object FieldRef extends Extractor[(ScopeInfo, Field)] {
-  def unapply(name: Global)(
-      implicit linked: Result): Option[(ScopeInfo, Field)] =
+object FieldRef extends Extractor[(Info, Field)] {
+  def unapply(name: Global)(implicit linked: Result): Option[(Info, Field)] =
     linked.infos.get(name).collect {
       case node: Field => (node.owner, node)
     }

@@ -9,6 +9,6 @@ object Link {
   /** Load all clases and methods reachable from the entry points. */
   def apply(config: build.Config, entries: Seq[Global]): Result =
     Scope { implicit in =>
-      Reach(entries, ClassLoader.fromDisk(config))
+      Reach(config, entries, ClassLoader.fromDisk(config))
     }
 }

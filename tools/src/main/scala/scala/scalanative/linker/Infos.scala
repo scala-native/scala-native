@@ -17,7 +17,12 @@ sealed abstract class ScopeInfo extends Info {
 }
 
 sealed abstract class MemberInfo extends Info {
-  def owner: ScopeInfo
+  def owner: Info
+}
+
+final class Unavailable(val name: Global) extends Info {
+  def attrs: Attrs =
+    util.unsupported(s"unavailable ${name.show} has no attrs")
 }
 
 final class Struct(val attrs: Attrs, val name: Global, val tys: Seq[nir.Type])
@@ -80,7 +85,7 @@ final class Class(val attrs: Attrs,
 }
 
 final class Method(val attrs: Attrs,
-                   val owner: ScopeInfo,
+                   val owner: Info,
                    val name: Global,
                    val insts: Seq[Inst])
     extends MemberInfo {
@@ -95,7 +100,7 @@ final class Method(val attrs: Attrs,
 }
 
 final class Field(val attrs: Attrs,
-                  val owner: ScopeInfo,
+                  val owner: Info,
                   val name: Global,
                   val isConst: Boolean,
                   val ty: nir.Type,

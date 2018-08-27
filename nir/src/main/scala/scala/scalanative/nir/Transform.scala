@@ -6,6 +6,8 @@ trait Transform {
     assembly.map(onDefn)
 
   def onDefn(defn: Defn): Defn = defn match {
+    case defn @ Defn.Unavailable(_) =>
+      defn
     case defn @ Defn.Var(_, _, ty, value) =>
       defn.copy(ty = onType(ty), rhs = onVal(value))
     case defn @ Defn.Const(_, _, ty, value) =>
