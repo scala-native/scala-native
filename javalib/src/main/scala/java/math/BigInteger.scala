@@ -39,6 +39,10 @@
  * INCLUDES MODIFICATIONS BY RICHARD ZSCHECH AS WELL AS GOOGLE.
  */
 
+/* Modified for ScalaNative. sqrt() and Java 9 API features added. See
+ * git commit comments.
+ */
+
 package java.math
 
 import java.util.Random
@@ -49,6 +53,8 @@ object BigInteger {
   final val ONE = new BigInteger(1, 1)
 
   final val TEN = new BigInteger(1, 10)
+
+  final val TWO = new BigInteger(1, 2)
 
   final val ZERO = new BigInteger(0, 0)
 
@@ -70,7 +76,7 @@ object BigInteger {
   private final val SMALL_VALUES = Array(
     ZERO,
     ONE,
-    new BigInteger(1, 2),
+    TWO,
     new BigInteger(1, 3),
     new BigInteger(1, 4),
     new BigInteger(1, 5),
@@ -169,10 +175,7 @@ class BigInteger extends Number with Comparable[BigInteger] {
   /** Cache for the hash code. */
   private var _hashCode: Int = 0
 
-  def this(byteArray: Array[Byte]) = {
-    this()
-    if (byteArray.length == 0)
-      throw new NumberFormatException("Zero length BigInteger")
+  private[this] def byteArrayConstructorImpl(byteArray: Array[Byte]) {
 
     if (byteArray(0) < 0) {
       sign = -1
@@ -185,14 +188,40 @@ class BigInteger extends Number with Comparable[BigInteger] {
     this.cutOffLeadingZeroes()
   }
 
-  def this(signum: Int, magnitude: Array[Byte]) = {
+  def this(byteArray: Array[Byte]) = {
     this()
-    checkNotNull(magnitude)
-    if ((signum < -1) || (signum > 1))
-      throw new NumberFormatException("Invalid signum value")
-    if (signum == 0 && magnitude.exists(_ != 0))
-      throw new NumberFormatException("signum-magnitude mismatch")
+    checkNotNull(byteArray)
 
+    if (byteArray.length == 0)
+      throw new NumberFormatException("Zero length BigInteger")
+
+    byteArrayConstructorImpl(byteArray)
+  }
+
+  def this(byteArray: Array[Byte], off: Int, len: Int) = {
+    this()
+    checkNotNull(byteArray)
+
+    // verbosity is the price of descriptive error messages, well paid!
+    if (byteArray.length == 0)
+      throw new NumberFormatException("Zero length BigInteger")
+
+    if (off < 0)
+      throw new IndexOutOfBoundsException("off < 0")
+
+    if (len < 0)
+      throw new IndexOutOfBoundsException("len < 0")
+
+    val until = off + len
+    if (until > byteArray.length)
+      throw new IndexOutOfBoundsException("off + len > byteArray.length")
+
+    byteArrayConstructorImpl(byteArray.slice(off, until))
+
+  }
+
+  private[this] def signumMagnitudeConstructorImpl(signum: Int,
+                                                   magnitude: Array[Byte]) {
     if (magnitude.length == 0) {
       sign = 0
       numberLength = 1
@@ -202,6 +231,55 @@ class BigInteger extends Number with Comparable[BigInteger] {
       this.putBytesPositiveToIntegers(magnitude)
       this.cutOffLeadingZeroes()
     }
+  }
+
+  def this(signum: Int, magnitude: Array[Byte]) = {
+    this()
+    checkNotNull(magnitude)
+    if ((signum < -1) || (signum > 1))
+      throw new NumberFormatException("Invalid signum value")
+    if (signum == 0 && magnitude.exists(_ != 0))
+      throw new NumberFormatException("signum-magnitude mismatch")
+
+    signumMagnitudeConstructorImpl(signum, magnitude)
+  }
+
+  def this(signum: Int, magnitude: Array[Byte], off: Int, len: Int) = {
+    this()
+    checkNotNull(magnitude)
+    if ((signum < -1) || (signum > 1))
+      throw new NumberFormatException("Invalid signum value")
+    if (signum == 0 && magnitude.exists(_ != 0))
+      throw new NumberFormatException("signum-magnitude mismatch")
+
+    // verbosity is the price of descriptive error messages, well paid!
+
+    // API for long extant Java constructor
+    // public BigInteger​(int signum, byte[] magnitude)
+    // explicitly allows zero length magnitude array, so allow that here also.
+    //
+    // API for this constructor explicitly states that various conditions
+    // (off < 0 etc) are not checked and allowed if magnitude.length == 0.
+
+    val slice =
+      if (magnitude.length == 0) {
+        magnitude
+      } else {
+        if (off < 0)
+          throw new IndexOutOfBoundsException("off < 0")
+
+        if (len < 0)
+          throw new IndexOutOfBoundsException("len < 0")
+
+        val until = off + len
+        if (until > magnitude.length)
+          throw new IndexOutOfBoundsException("off + len > magnitude.length")
+
+        magnitude.slice(off, until)
+      }
+
+    signumMagnitudeConstructorImpl(signum, slice)
+
   }
 
   def this(bitLength: Int, certainty: Int, rnd: Random) = {
@@ -332,6 +410,13 @@ class BigInteger extends Number with Comparable[BigInteger] {
   def bitCount(): Int = BitLevel.bitCount(this)
 
   def bitLength(): Int = BitLevel.bitLength(this)
+
+  def byteValueExact(): Byte = {
+    if ((numberLength > 1) || (bitLength() >= java.lang.Byte.SIZE)) {
+      throw new ArithmeticException("BigInteger out of byte range")
+    }
+    byteValue()
+  }
 
   def clearBit(n: Int): BigInteger = {
     if (testBit(n)) BitLevel.flipBit(this, n)
@@ -514,6 +599,13 @@ class BigInteger extends Number with Comparable[BigInteger] {
 
   override def intValue(): Int = sign * digits(0)
 
+  def intValueExact(): Int = {
+    if ((numberLength > 1) || (bitLength() >= java.lang.Integer.SIZE)) {
+      throw new ArithmeticException("BigInteger out of int range")
+    }
+    intValue()
+  }
+
   def isProbablePrime(certainty: Int): Boolean =
     Primality.isProbablePrime(abs(), certainty)
 
@@ -523,6 +615,13 @@ class BigInteger extends Number with Comparable[BigInteger] {
         (digits(1).toLong << 32) | (digits(0) & 0xFFFFFFFFL)
       else digits(0) & 0xFFFFFFFFL
     sign * value
+  }
+
+  def longValueExact(): Long = {
+    if ((numberLength > 2) || (bitLength() >= java.lang.Long.SIZE)) {
+      throw new ArithmeticException("BigInteger out of long range")
+    }
+    longValue()
   }
 
   def max(bi: BigInteger): BigInteger = {
@@ -679,7 +778,49 @@ class BigInteger extends Number with Comparable[BigInteger] {
     else BitLevel.shiftLeft(this, -n)
   }
 
+  def shortValueExact(): Short = {
+    if ((numberLength > 1) || (bitLength() >= java.lang.Short.SIZE)) {
+      throw new ArithmeticException("BigInteger out of short range")
+    }
+    shortValue()
+  }
+
   def signum(): Int = sign
+
+  def sqrt(): BigInteger = {
+    // Babylonian or Newton's method.
+    // See https://en.wikipedia.org/wiki/Integer_square_root, especially
+    // for termination condition.
+    //
+    // Ideas & proofs from https://www.akalin.com/computing-isqrt
+    // were also useful, especially for initial guess.
+
+    @tailrec
+    def loop(x: BigInteger): BigInteger = {
+
+      val y     = (this.divide(x)).add(x).shiftRight(1)
+      val delta = y.subtract(x)
+      val done  = ((delta.compareTo(ZERO) == 0) || (delta.compareTo(ONE) == 0))
+
+      if (done) x else loop(y)
+    }
+
+    if (this.compareTo(BigInteger.ZERO) < 0)
+      throw new ArithmeticException("sqrt of negative number")
+
+    // Intentionally a slight overestimate of true root.
+    val initialGuess = (1 << Math.ceil(this.bitLength / 2.0).toInt)
+
+    loop(BigInteger.valueOf(initialGuess))
+  }
+
+  def sqrtAndRemainder(): Array[BigInteger] = {
+
+    val root      = this.sqrt()
+    val remainder = this.subtract(root.multiply(root))
+
+    Array[BigInteger](root, remainder)
+  }
 
   def subtract(bi: BigInteger): BigInteger = Elementary.subtract(this, bi)
 
