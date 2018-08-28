@@ -101,14 +101,13 @@ class OpParserTest extends FlatSpec with Matchers {
   }
 
   it should "parse `Op.Method`" in {
-    val method: Op                = Op.Method(Val.None, global)
+    val method: Op                = Op.Method(Val.None, "signature")
     val Parsed.Success(result, _) = parser.Op.Method.parse(method.show)
     result should be(method)
   }
 
   it should "parse `Op.Dynmethod`" in {
-    val signature     = "signature"
-    val dynmethod: Op = Op.Dynmethod(Val.None, signature)
+    val dynmethod: Op = Op.Dynmethod(Val.None, "signature")
     val Parsed.Success(result, _) =
       parser.Op.Dynmethod.parse(dynmethod.show)
     result should be(dynmethod)

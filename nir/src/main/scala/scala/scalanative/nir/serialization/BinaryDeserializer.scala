@@ -8,11 +8,10 @@ import scala.collection.mutable
 import nir.serialization.{Tags => T}
 import Global.Member
 
-final class BinaryDeserializer(_buffer: => ByteBuffer) {
-  private lazy val buffer = _buffer
+final class BinaryDeserializer(buffer: ByteBuffer) {
   import buffer._
 
-  private lazy val header: Map[Global, Int] = {
+  private val header: Map[Global, Int] = {
     buffer.position(0)
 
     val magic    = getInt
@@ -23,42 +22,22 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
     assert(compat == Versions.compat && revision <= Versions.revision,
            "Can't read binary-incompatible version of NIR.")
 
-    val (_, _, _, pairs) = scoped(getSeq((getGlobal, getInt)))
-    val map              = pairs.toMap
-    this.deps = null
+    val pairs = getSeq((getGlobal, getInt))
+    val map   = pairs.toMap
     map
-  }
-
-  private var deps: mutable.Set[Dep]        = _
-  private var links: mutable.Set[Attr.Link] = _
-  private var dyns: mutable.Set[String]     = _
-
-  private def scoped[T](f: => T)
-    : (mutable.Set[Dep], mutable.Set[Attr.Link], mutable.Set[String], T) = {
-    this.deps = mutable.Set.empty[Dep]
-    this.links = mutable.Set.empty[Attr.Link]
-    this.dyns = mutable.Set.empty[String]
-    val res   = f
-    val deps  = this.deps
-    val links = this.links
-    val dyns  = this.dyns
-    this.deps = null
-    this.links = null
-    this.dyns = null
-    (deps, links, dyns, res)
   }
 
   final def globals: Set[Global] = header.keySet
 
-  final def deserialize(
-      g: Global): Option[(Seq[Dep], Seq[Attr.Link], Seq[String], Defn)] =
-    header.get(g).map {
-      case offset =>
+  final def deserialize(): Seq[Defn] = {
+    val allDefns = mutable.UnrolledBuffer.empty[Defn]
+    header.map {
+      case (g, offset) =>
         buffer.position(offset)
-        val (deps, links, dyns, defn) = scoped(getDefn)
-        deps -= Dep.Direct(g)
-        (deps.toSeq, links.toSeq, dyns.toSeq, defn)
+        allDefns += getDefn
     }
+    allDefns
+  }
 
   private def getSeq[T](getT: => T): Seq[T] =
     (1 to getInt).map(_ => getT).toSeq
@@ -77,33 +56,20 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
 
   private def getBool(): Boolean = get != 0
 
-  private def getAttrs(): Attrs = {
-    val buf = mutable.UnrolledBuffer.empty[Attr]
+  private def getAttrs(): Attrs = Attrs.fromSeq(getSeq(getAttr))
+  private def getAttr(): Attr = getInt match {
+    case T.MayInlineAttr    => Attr.MayInline
+    case T.InlineHintAttr   => Attr.InlineHint
+    case T.NoInlineAttr     => Attr.NoInline
+    case T.AlwaysInlineAttr => Attr.AlwaysInline
 
-    (1 to getInt).foreach { _ =>
-      getInt match {
-        case T.MayInlineAttr    => buf += Attr.MayInline
-        case T.InlineHintAttr   => buf += Attr.InlineHint
-        case T.NoInlineAttr     => buf += Attr.NoInline
-        case T.AlwaysInlineAttr => buf += Attr.AlwaysInline
+    case T.DynAttr  => Attr.Dyn
+    case T.StubAttr => Attr.Stub
 
-        case T.DynAttr  => buf += Attr.Dyn
-        case T.StubAttr => buf += Attr.Stub
+    case T.PureAttr   => Attr.Pure
+    case T.ExternAttr => Attr.Extern
 
-        case T.PureAttr     => buf += Attr.Pure
-        case T.ExternAttr   => buf += Attr.Extern
-        case T.OverrideAttr => buf += Attr.Override(getGlobal)
-
-        case T.LinkAttr      => links += Attr.Link(getString)
-        case T.PinAlwaysAttr => deps += Dep.Direct(getGlobalNoDep)
-        case T.PinWeakAttr   => deps += Dep.Weak(getGlobalNoDep)
-        case T.PinIfAttr =>
-          deps += Dep.Conditional(getGlobalNoDep, getGlobalNoDep)
-      }
-      ()
-    }
-
-    Attrs.fromSeq(buf)
+    case T.LinkAttr => Attr.Link(getString)
   }
 
   private def getBin(): Bin = getInt match {
@@ -205,15 +171,7 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
 
   private def getGlobals(): Seq[Global]      = getSeq(getGlobal)
   private def getGlobalOpt(): Option[Global] = getOpt(getGlobal)
-  private def getGlobal(): Global = {
-    val name = getGlobalNoDep
-    if (name != Global.None) {
-      deps += Dep.Direct(name)
-    }
-    name
-  }
-
-  private def getGlobalNoDep(): Global = getInt match {
+  private def getGlobal(): Global = getInt match {
     case T.NoneGlobal =>
       Global.None
     case T.TopGlobal =>
@@ -250,19 +208,16 @@ final class BinaryDeserializer(_buffer: => ByteBuffer) {
 
     case T.ClassallocOp => Op.Classalloc(getGlobal)
     case T.FieldOp      => Op.Field(getVal, getGlobal)
-    case T.MethodOp     => Op.Method(getVal, getGlobal)
-    case T.DynmethodOp =>
-      val dynmethod = Op.Dynmethod(getVal, getString)
-      dyns += dynmethod.signature
-      dynmethod
-    case T.ModuleOp  => Op.Module(getGlobal)
-    case T.AsOp      => Op.As(getType, getVal)
-    case T.IsOp      => Op.Is(getType, getVal)
-    case T.CopyOp    => Op.Copy(getVal)
-    case T.SizeofOp  => Op.Sizeof(getType)
-    case T.ClosureOp => Op.Closure(getType, getVal, getVals)
-    case T.BoxOp     => Op.Box(getType, getVal)
-    case T.UnboxOp   => Op.Unbox(getType, getVal)
+    case T.MethodOp     => Op.Method(getVal, getString)
+    case T.DynmethodOp  => Op.Dynmethod(getVal, getString)
+    case T.ModuleOp     => Op.Module(getGlobal)
+    case T.AsOp         => Op.As(getType, getVal)
+    case T.IsOp         => Op.Is(getType, getVal)
+    case T.CopyOp       => Op.Copy(getVal)
+    case T.SizeofOp     => Op.Sizeof(getType)
+    case T.ClosureOp    => Op.Closure(getType, getVal, getVals)
+    case T.BoxOp        => Op.Box(getType, getVal)
+    case T.UnboxOp      => Op.Unbox(getType, getVal)
   }
 
   private def getParams(): Seq[Val.Local] = getSeq(getParam)

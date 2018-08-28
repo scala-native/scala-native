@@ -3,8 +3,8 @@ package optimizer
 package pass
 
 import scala.collection.mutable
-import nir._, Inst.Let
-import sema._
+import scalanative.nir._, Inst.Let
+import scalanative.sema.{ControlFlow, DominatorTree}
 
 /** Eliminates redundant box/unbox operations within
  *  a single method definition. This is quite simplistic approach
@@ -98,6 +98,6 @@ object GlobalBoxingElimination extends PassCompanion {
   private final case class Unbox(ty: Type, from: nir.Val, to: nir.Val)
       extends Record
 
-  override def apply(config: build.Config, top: sema.Top) =
+  override def apply(config: build.Config, linked: linker.Result) =
     new GlobalBoxingElimination
 }

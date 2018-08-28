@@ -12,13 +12,10 @@ object Optimizer {
 
   /** Run all of the passes on given assembly. */
   def apply(config: build.Config,
-            driver: Driver,
-            entries: Seq[Global],
-            assembly: Seq[Defn]): Seq[Defn] = {
+            linked: linker.Result,
+            driver: Driver): Seq[Defn] = {
     val reporter = driver.optimizerReporter
     import reporter._
-
-    val top = sema.Sema(entries, assembly)
 
     def loop(batchId: Int,
              batchDefns: Seq[Defn],
@@ -38,11 +35,11 @@ object Optimizer {
           loop(batchId, passResult, rest)
       }
 
-    partitionBy(assembly)(_.name).par
+    partitionBy(linked.defns)(_.name).par
       .map {
         case (batchId, batchDefns) =>
           onStart(batchId, batchDefns)
-          val passes = driver.passes.map(_.apply(config, top))
+          val passes = driver.passes.map(_.apply(config, linked))
           val res    = loop(batchId, batchDefns, passes.zipWithIndex)
           onComplete(batchId, res)
           res

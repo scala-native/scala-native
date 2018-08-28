@@ -3,15 +3,18 @@ package codegen
 
 import scala.collection.mutable
 import scala.scalanative.nir._
-import scala.scalanative.sema._
+import scala.scalanative.linker.Class
 
 object Generate {
   import Impl._
 
-  def apply(entry: Global)(implicit top: sema.Top, meta: Metadata): Seq[Defn] =
+  def apply(entry: Global)(implicit meta: Metadata): Seq[Defn] =
     (new Impl(entry)).generate()
 
-  private class Impl(entry: Global)(implicit top: sema.Top, meta: Metadata) {
+  implicit def linked(implicit meta: Metadata): linker.Result =
+    meta.linked
+
+  private class Impl(entry: Global)(implicit meta: Metadata) {
     val buf = mutable.UnrolledBuffer.empty[Defn]
 
     def generate(): Seq[Defn] = {
@@ -37,7 +40,7 @@ object Generate {
     }
 
     def genStructMetadata(): Unit = {
-      top.structs.foreach { struct =>
+      meta.structs.foreach { struct =>
         val rtti = meta.rtti(struct)
 
         buf += Defn.Const(Attrs.None, rtti.name, rtti.struct, rtti.value)
@@ -45,7 +48,7 @@ object Generate {
     }
 
     def genClassMetadata(): Unit = {
-      top.classes.foreach { cls =>
+      meta.classes.foreach { cls =>
         val struct = meta.layout(cls).struct
         val rtti   = meta.rtti(cls)
 
@@ -61,14 +64,14 @@ object Generate {
       val result           = Val.Local(fresh(), Type.Bool)
 
       buf += Defn.Define(
-        Attrs(isExtern = true, inline = Attr.AlwaysInline),
+        Attrs(inline = Attr.AlwaysInline),
         ClassHasTraitName,
         ClassHasTraitSig,
         Seq(
           Inst.Label(fresh(), Seq(classid, traitid)),
           Inst.Let(boolptr.name,
-                   Op.Elem(meta.tables.classHasTraitTy,
-                           meta.tables.classHasTraitVal,
+                   Op.Elem(meta.hasTraitTables.classHasTraitTy,
+                           meta.hasTraitTables.classHasTraitVal,
                            Seq(Val.Int(0), classid, traitid)),
                    Next.None),
           Inst.Let(result.name, Op.Load(Type.Bool, boolptr), Next.None),
@@ -78,7 +81,7 @@ object Generate {
     }
 
     def genTraitMetadata(): Unit = {
-      top.traits.foreach { trt =>
+      meta.traits.foreach { trt =>
         val rtti = meta.rtti(trt)
 
         buf += Defn.Const(Attrs.None, rtti.name, rtti.struct, rtti.value)
@@ -92,14 +95,14 @@ object Generate {
       val result          = Val.Local(fresh(), Type.Bool)
 
       buf += Defn.Define(
-        Attrs(isExtern = true, inline = Attr.AlwaysInline),
+        Attrs(inline = Attr.AlwaysInline),
         TraitHasTraitName,
         TraitHasTraitSig,
         Seq(
           Inst.Label(fresh(), Seq(leftid, rightid)),
           Inst.Let(boolptr.name,
-                   Op.Elem(meta.tables.traitHasTraitTy,
-                           meta.tables.traitHasTraitVal,
+                   Op.Elem(meta.hasTraitTables.traitHasTraitTy,
+                           meta.hasTraitTables.traitHasTraitVal,
                            Seq(Val.Int(0), leftid, rightid)),
                    Next.None),
           Inst.Let(result.name, Op.Load(Type.Bool, boolptr), Next.None),
@@ -160,7 +163,7 @@ object Generate {
       buf += Defn.Var(Attrs.None, stackBottomName, Type.Ptr, Val.Null)
 
     def genModuleAccessors(): Unit = {
-      top.classes.foreach { cls =>
+      meta.classes.foreach { cls =>
         if (cls.isModule && cls.allocated) {
           val name  = cls.name
           val clsTy = cls.ty
@@ -234,8 +237,8 @@ object Generate {
 
     def genObjectArrayId() = {
       val objectArray =
-        top
-          .nodes(Global.Top("scala.scalanative.runtime.ObjectArray"))
+        linked
+          .infos(Global.Top("scala.scalanative.runtime.ObjectArray"))
           .asInstanceOf[Class]
 
       buf += Defn.Var(Attrs.None,
@@ -245,20 +248,18 @@ object Generate {
     }
 
     def genTraitDispatchTables() = {
-      buf += meta.tables.dispatchDefn
-      buf += meta.tables.classHasTraitDefn
-      buf += meta.tables.traitHasTraitDefn
+      buf += meta.dispatchTable.dispatchDefn
+      buf += meta.hasTraitTables.classHasTraitDefn
+      buf += meta.hasTraitTables.traitHasTraitDefn
     }
   }
 
   private object Impl {
-    val ClassHasTraitName =
-      Global.Member(Global.Top("__extern"), "extern.__check_class_has_trait")
-    val ClassHasTraitSig = Type.Function(Seq(Type.Int, Type.Int), Type.Bool)
+    val ClassHasTraitName = Global.Top("__check_class_has_trait")
+    val ClassHasTraitSig  = Type.Function(Seq(Type.Int, Type.Int), Type.Bool)
 
-    val TraitHasTraitName =
-      Global.Member(Global.Top("__extern"), "extern.__check_trait_has_trait")
-    val TraitHasTraitSig = Type.Function(Seq(Type.Int, Type.Int), Type.Bool)
+    val TraitHasTraitName = Global.Top("__check_trait_has_trait")
+    val TraitHasTraitSig  = Type.Function(Seq(Type.Int, Type.Int), Type.Bool)
 
     val ObjectArray =
       Type.Class(Global.Top("scala.scalanative.runtime.ObjectArray"))

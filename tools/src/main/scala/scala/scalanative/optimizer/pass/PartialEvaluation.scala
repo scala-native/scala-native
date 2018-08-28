@@ -235,7 +235,7 @@ class PartialEvaluation extends Pass {
 }
 
 object PartialEvaluation extends PassCompanion {
-  override def apply(config: build.Config, top: sema.Top) =
+  override def apply(config: build.Config, linked: linker.Result) =
     new PartialEvaluation
 
   object PowerOf2 {

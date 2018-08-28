@@ -2,8 +2,8 @@ package scala.scalanative
 package optimizer
 package pass
 
-import nir._, Inst._, Bin._, Comp._
-import sema.ControlFlow
+import scalanative.nir._, Inst._, Bin._, Comp._
+import scalanative.sema.ControlFlow
 import scala.None
 import scala.collection.mutable
 
@@ -340,7 +340,7 @@ class InstCombine extends Pass {
 }
 
 object InstCombine extends PassCompanion {
-  override def apply(config: build.Config, top: sema.Top) =
+  override def apply(config: build.Config, linked: linker.Result) =
     new InstCombine
 
   class DefOp(val defops: mutable.HashMap[Local, Op]) {

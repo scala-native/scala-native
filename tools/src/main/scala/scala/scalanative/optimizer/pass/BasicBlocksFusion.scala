@@ -76,6 +76,6 @@ class BasicBlocksFusion extends Pass {
 }
 
 object BasicBlocksFusion extends PassCompanion {
-  def apply(config: build.Config, top: sema.Top) =
+  def apply(config: build.Config, linked: linker.Result) =
     new BasicBlocksFusion
 }

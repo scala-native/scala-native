@@ -10,18 +10,18 @@ import scalanative.build.ScalaNative
 
 trait ReachabilitySuite extends FunSuite {
 
-  def sources: Seq[String]
-
   def g(top: String, members: String*): Global =
     members.foldLeft[Global](Global.Top(top))(Global.Member(_, _))
 
-  def testReachable(label: String)(entries: Global*)(expected: Global*) =
+  def testReachable(label: String)(f: => (String, Global, Seq[Global])) =
     test(label) {
-      link(entries, sources) { res =>
+      val (source, entry, expected) = f
+      link(Seq(entry), Seq(source)) { res =>
         val left  = res.defns.map(_.name).toSet
         val right = expected.toSet
-        assert((left -- right).isEmpty, "overapproximation")
-        assert((right -- left).isEmpty, "underapproximation")
+        assert(res.unavailable.isEmpty, "unavailable")
+        assert((left -- right).isEmpty, "underapproximation")
+        assert((right -- left).isEmpty, "overapproximation")
       }
     }
 

@@ -250,8 +250,6 @@ final class StringBuffer
       return this
     }
 
-  override def length(): Int = super.length()
-
   override def setCharAt(index: scala.Int, ch: scala.Char): Unit =
     synchronized {
       super.setCharAt(index, ch)

@@ -65,27 +65,9 @@ object Show {
         str("pure")
       case Attr.Extern =>
         str("extern")
-      case Attr.Override(name) =>
-        str("override(")
-        global_(name)
-        str(")")
       case Attr.Link(name) =>
         str("link(")
         str(name)
-        str(")")
-      case Attr.PinAlways(name) =>
-        str("pin(")
-        global_(name)
-        str(")")
-      case Attr.PinIf(name, cond) =>
-        str("pin-if(")
-        global_(name)
-        str(", ")
-        global_(cond)
-        str(")")
-      case Attr.PinWeak(name) =>
-        str("pin-weak(")
-        global_(name)
         str(")")
     }
 
@@ -260,11 +242,12 @@ object Show {
         val_(value)
         str(", ")
         global_(name)
-      case Op.Method(value, name) =>
+      case Op.Method(value, signature) =>
         str("method ")
         val_(value)
-        str(", ")
-        global_(name)
+        str(", \"")
+        str(escapeQuotes(signature))
+        str("\"")
       case Op.Dynmethod(value, signature) =>
         str("dynmethod ")
         val_(value)

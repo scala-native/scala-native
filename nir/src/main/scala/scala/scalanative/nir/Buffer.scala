@@ -71,8 +71,8 @@ class Buffer(implicit fresh: Fresh) {
     let(Op.Classalloc(name), unwind)
   def field(obj: Val, name: Global, unwind: Next): Val =
     let(Op.Field(obj, name), unwind)
-  def method(obj: Val, name: Global, unwind: Next): Val =
-    let(Op.Method(obj, name), unwind)
+  def method(obj: Val, signature: String, unwind: Next): Val =
+    let(Op.Method(obj, signature), unwind)
   def dynmethod(obj: Val, signature: String, unwind: Next): Val =
     let(Op.Dynmethod(obj, signature), unwind)
   def module(name: Global, unwind: Next): Val =

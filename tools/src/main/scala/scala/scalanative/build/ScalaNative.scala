@@ -6,7 +6,6 @@ import scala.sys.process.Process
 import scalanative.build.IO.RichPath
 import scalanative.nir.Global
 import scalanative.linker.Link
-import scalanative.sema.Sema
 import scalanative.codegen.CodeGen
 import scalanative.optimizer.Optimizer
 
@@ -35,20 +34,18 @@ private[scalanative] object ScalaNative {
 
   /** Optimizer high-level NIR under closed-world assumption. */
   def optimize(config: Config,
-               driver: optimizer.Driver,
-               entries: Seq[nir.Global],
-               assembly: Seq[nir.Defn]): Seq[nir.Defn] =
+               linked: linker.Result,
+               driver: optimizer.Driver): Seq[nir.Defn] =
     config.logger.time(s"Optimizing (${config.mode} mode)") {
-      Optimizer(config, driver, entries, assembly)
+      Optimizer(config, linked, driver)
     }
 
   /** Given low-level assembly, emit LLVM IR for it to the buildDirectory. */
   def codegen(config: Config,
-              entries: Seq[nir.Global],
-              assembly: Seq[nir.Defn],
-              dyns: Seq[String]): Seq[Path] = {
+              linked: linker.Result,
+              optimized: Seq[nir.Defn]): Seq[Path] = {
     config.logger.time("Generating intermediate code") {
-      CodeGen(config, entries, assembly, dyns)
+      CodeGen(config, linked, optimized)
     }
     val produced = IO.getAll(config.workdir, "glob:**.ll")
     config.logger.info(s"Produced ${produced.length} files")

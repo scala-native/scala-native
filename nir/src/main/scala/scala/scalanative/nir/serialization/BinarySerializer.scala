@@ -76,15 +76,10 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Attr.Align(_) =>
       assert(false, "alignment attribute is not serializable")
 
-    case Attr.Pure        => putInt(T.PureAttr)
-    case Attr.Extern      => putInt(T.ExternAttr)
-    case Attr.Override(n) => putInt(T.OverrideAttr); putGlobal(n)
+    case Attr.Pure   => putInt(T.PureAttr)
+    case Attr.Extern => putInt(T.ExternAttr)
 
-    case Attr.Link(s)      => putInt(T.LinkAttr); putString(s)
-    case Attr.PinAlways(n) => putInt(T.PinAlwaysAttr); putGlobal(n)
-    case Attr.PinIf(n, cond) =>
-      putInt(T.PinIfAttr); putGlobal(n); putGlobal(cond)
-    case Attr.PinWeak(n) => putInt(T.PinWeakAttr); putGlobal(n)
+    case Attr.Link(s) => putInt(T.LinkAttr); putString(s)
   }
 
   private def putBin(bin: Bin) = bin match {
@@ -349,15 +344,15 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putVal(v)
       putGlobal(name)
 
-    case Op.Method(v, name) =>
+    case Op.Method(v, signature) =>
       putInt(T.MethodOp)
       putVal(v)
-      putGlobal(name)
+      putString(signature)
 
-    case Op.Dynmethod(obj, sign) =>
+    case Op.Dynmethod(obj, signature) =>
       putInt(T.DynmethodOp)
       putVal(obj)
-      putString(sign)
+      putString(signature)
 
     case Op.Module(name) =>
       putInt(T.ModuleOp)

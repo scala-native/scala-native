@@ -3,43 +3,31 @@ package codegen
 
 import scala.collection.mutable
 import scalanative.nir._
-import scalanative.sema._
+import scalanative.linker.{Method, Trait, Class}
 
-class TraitDispatchTables(meta: Metadata, top: Top) {
+class TraitDispatchTable(meta: Metadata) {
   val dispatchName                          = Global.Top("__dispatch")
   val dispatchVal                           = Val.Global(dispatchName, Type.Ptr)
   var dispatchTy: Type                      = _
   var dispatchDefn: Defn                    = _
   var dispatchOffset: mutable.Map[Int, Int] = _
 
-  val classHasTraitName       = Global.Top("__class_has_trait")
-  val classHasTraitVal        = Val.Global(classHasTraitName, Type.Ptr)
-  var classHasTraitTy: Type   = _
-  var classHasTraitDefn: Defn = _
-
-  val traitHasTraitName       = Global.Top("__trait_has_trait")
-  val traitHasTraitVal        = Val.Global(traitHasTraitName, Type.Ptr)
-  var traitHasTraitTy: Type   = _
-  var traitHasTraitDefn: Defn = _
-
   val traitSigIds = {
     // Collect signatures of trait methods, excluding
     // the ones defined on java.lang.Object, those always
     // go through vtable dispatch.
     val sigs = mutable.Set.empty[String]
-    top.traits.foreach { trt =>
+    meta.traits.foreach { trt =>
       trt.calls.foreach { sig =>
-        if (top.targets(Type.Trait(trt.name), sig).size > 1) {
+        if (trt.targets(sig).size > 1) {
           sigs += sig
         }
       }
     }
-    val Object = top.nodes(Rt.Object.name).asInstanceOf[Class]
-    sigs.toList.foreach { sig =>
-      if (Object.calls.contains(sig)) {
-        sigs -= sig
-      }
-    }
+
+    val Object = meta.linked.infos(Rt.Object.name).asInstanceOf[Class]
+    sigs --= Object.calls
+
     sigs.toArray.sorted.zipWithIndex.toMap
   }
 
@@ -50,7 +38,7 @@ class TraitDispatchTables(meta: Metadata, top: Top) {
       } || trt.traits.exists(isActive)
 
     val activeTraits =
-      top.traits.filter(isActive).toSet
+      meta.traits.filter(isActive).toSet
 
     def implementsTrait(cls: Class): Boolean =
       cls.traits.exists(activeTraits.contains(_)) || cls.parent.exists(
@@ -58,12 +46,13 @@ class TraitDispatchTables(meta: Metadata, top: Top) {
     def include(cls: Class): Boolean =
       cls.allocated && implementsTrait(cls)
 
-    top.classes.filter(include).sortBy(meta.ids(_)).zipWithIndex.toMap
+    meta.classes
+      .filter(include)
+      .zipWithIndex
+      .toMap
   }
 
   initDispatch()
-  initClassHasTrait()
-  initTraitHasTrait()
 
   def initDispatch(): Unit = {
     val sigs          = traitSigIds
@@ -91,7 +80,8 @@ class TraitDispatchTables(meta: Metadata, top: Top) {
         sigs.foreach {
           case (sig, sigId) =>
             cls.resolve(sig).foreach { impl =>
-              put(clsId, sigId, impl.value)
+              val info = meta.linked.infos(impl).asInstanceOf[Method]
+              put(clsId, sigId, info.value)
             }
         }
     }
@@ -193,45 +183,5 @@ class TraitDispatchTables(meta: Metadata, top: Top) {
     System.arraycopy(compressed, 0, result, 0, current)
 
     (result, offsets)
-  }
-
-  def markTraits(row: Array[Boolean], cls: Class): Unit = {
-    cls.traits.foreach(markTraits(row, _))
-    cls.parent.foreach(markTraits(row, _))
-  }
-
-  def markTraits(row: Array[Boolean], trt: Trait): Unit = {
-    row(meta.ids(trt)) = true
-    trt.traits.foreach { right =>
-      row(meta.ids(right)) = true
-    }
-    trt.traits.foreach(markTraits(row, _))
-  }
-
-  def initClassHasTrait(): Unit = {
-    val columns = top.classes.sortBy(meta.ids(_)).map { cls =>
-      val row = new Array[Boolean](top.traits.length)
-      markTraits(row, cls)
-      Val.Array(Type.Bool, row.map(Val.Bool))
-    }
-    val table = Val.Array(Type.Array(Type.Bool, top.traits.length), columns)
-
-    classHasTraitTy = table.ty
-    classHasTraitDefn =
-      Defn.Const(Attrs.None, classHasTraitName, table.ty, table)
-  }
-
-  def initTraitHasTrait(): Unit = {
-    val columns = top.traits.sortBy(meta.ids(_)).map { left =>
-      val row = new Array[Boolean](top.traits.length)
-      markTraits(row, left)
-      row(meta.ids(left)) = true
-      Val.Array(Type.Bool, row.map(Val.Bool))
-    }
-    val table = Val.Array(Type.Array(Type.Bool, top.traits.length), columns)
-
-    traitHasTraitTy = table.ty
-    traitHasTraitDefn =
-      Defn.Const(Attrs.None, traitHasTraitName, table.ty, table)
   }
 }

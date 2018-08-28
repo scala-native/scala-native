@@ -2,8 +2,9 @@ package scala.scalanative
 package sema
 
 import scala.collection.mutable
-import nir._
-import util.unreachable
+import scalanative.nir._
+import scalanative.util.unreachable
+import scalanative.linker.{Result, Ref}
 
 object UseDef {
   sealed abstract class Def {
@@ -54,18 +55,19 @@ object UseDef {
     collector.deps.distinct
   }
 
-  private def isPure(inst: Inst)(implicit top: Top) = inst match {
-    case Inst.Let(_, Op.Call(_, Val.Global(Ref(node), _), _), _) =>
-      node.attrs.isPure
-    case Inst.Let(_, Op.Module(Ref(node)), _) =>
-      node.attrs.isPure
+  private def isPure(inst: Inst)(implicit linked: linker.Result) = inst match {
+    case Inst.Let(_, Op.Call(_, Val.Global(Ref(info), _), _), _) =>
+      info.attrs.isPure
+    case Inst.Let(_, Op.Module(Ref(info)), _) =>
+      info.attrs.isPure
     case Inst.Let(_, _: Op.Pure, _) =>
       true
     case _ =>
       false
   }
 
-  def apply(cfg: ControlFlow.Graph)(implicit top: Top): Map[Local, Def] = {
+  def apply(cfg: ControlFlow.Graph)(
+      implicit linked: linker.Result): Map[Local, Def] = {
     val defs   = mutable.Map.empty[Local, Def]
     val blocks = cfg.all
 
