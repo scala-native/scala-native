@@ -88,15 +88,14 @@ object Tags {
 
   final val Defn = Conv + 32
 
-  final val VarDefn         = 1 + Defn
-  final val ConstDefn       = 1 + VarDefn
-  final val DeclareDefn     = 1 + ConstDefn
-  final val DefineDefn      = 1 + DeclareDefn
-  final val StructDefn      = 1 + DefineDefn
-  final val TraitDefn       = 1 + StructDefn
-  final val ClassDefn       = 1 + TraitDefn
-  final val ModuleDefn      = 1 + ClassDefn
-  final val UnavailableDefn = 1 + ModuleDefn
+  final val VarDefn     = 1 + Defn
+  final val ConstDefn   = 1 + VarDefn
+  final val DeclareDefn = 1 + ConstDefn
+  final val DefineDefn  = 1 + DeclareDefn
+  final val StructDefn  = 1 + DefineDefn
+  final val TraitDefn   = 1 + StructDefn
+  final val ClassDefn   = 1 + TraitDefn
+  final val ModuleDefn  = 1 + ClassDefn
 
   // Control-flow ops
 

@@ -241,10 +241,6 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putGlobal(name)
       putGlobalOpt(parent)
       putGlobals(ifaces)
-
-    case Defn.Unavailable(name) =>
-      putInt(T.UnavailableDefn)
-      putGlobal(name)
   }
 
   private def putGlobals(globals: Seq[Global]): Unit =

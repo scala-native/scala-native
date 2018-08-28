@@ -426,9 +426,6 @@ object Show {
       }
 
     def defn_(defn: Defn): Unit = defn match {
-      case Defn.Unavailable(name) =>
-        str("unavailable ")
-        global_(name)
       case Defn.Var(attrs, name, ty, v) =>
         attrs_(attrs)
         str("var ")

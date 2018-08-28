@@ -83,24 +83,20 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
 
   def reachDefn(name: Global): Unit = {
     stack.push(name)
-    val defn =
-      lookup(name).fold[Defn] {
-        Defn.Unavailable(name)
-      } { defn =>
-        if (defn.attrs.isStub && !config.linkStubs) {
-          Defn.Unavailable(name)
-        } else {
-          defn
-        }
+    lookup(name).fold[Unit] {
+      reachUnavailable(name)
+    } { defn =>
+      if (defn.attrs.isStub && !config.linkStubs) {
+        reachUnavailable(name)
+      } else {
+        reachDefn(defn)
       }
-    reachDefn(defn)
+    }
     stack.pop()
   }
 
   def reachDefn(defn: Defn): Unit = {
     defn match {
-      case defn: Defn.Unavailable =>
-        reachUnavailable(defn)
       case defn: Defn.Var =>
         reachVar(defn)
       case defn: Defn.Const =>
@@ -317,9 +313,15 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     }
   }
 
-  def reachUnavailable(defn: Defn.Unavailable): Unit = {
-    newInfo(new Unavailable(defn.name))
-    unavailable += defn.name
+  def reachUnavailable(name: Global): Unit = {
+    newInfo(new Unavailable(name))
+    unavailable += name
+    // Put a dummy definition to indicate that name
+    // is effectively done and doesn't need to be
+    // visited any more. This saves us the need to
+    // check the unavailable set every time we check
+    // if something is truly handled.
+    done(name) = Defn.Struct(Attrs.None, Global.None, Seq.empty)
   }
 
   def reachVar(defn: Defn.Var): Unit = {

@@ -144,9 +144,6 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
 
   private def getDefns(): Seq[Defn] = getSeq(getDefn)
   private def getDefn(): Defn = getInt match {
-    case T.UnavailableDefn =>
-      Defn.Unavailable(getGlobal)
-
     case T.VarDefn =>
       Defn.Var(getAttrs, getGlobal, getType, getVal)
 

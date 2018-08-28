@@ -9,10 +9,6 @@ sealed abstract class Defn {
 }
 
 object Defn {
-  final case class Unavailable(name: Global) extends Defn {
-    def attrs: Attrs = Attrs.None
-  }
-
   // low-level
   final case class Var(attrs: Attrs, name: Global, ty: Type, rhs: Val)
       extends Defn
