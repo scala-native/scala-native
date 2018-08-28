@@ -166,4 +166,22 @@ class OpParserTest extends FlatSpec with Matchers {
     val Parsed.Success(result, _) = parser.Op.Unbox.parse(unbox.show)
     result should be(unbox)
   }
+
+  it should "parse `Op.Var`" in {
+    val op: Op                    = Op.Var(Type.Int)
+    val Parsed.Success(result, _) = parser.Op.Var.parse(op.show)
+    result should be(op)
+  }
+
+  it should "parse `Op.Varload`" in {
+    val op: Op                    = Op.Varload(Val.None)
+    val Parsed.Success(result, _) = parser.Op.Varload.parse(op.show)
+    result should be(op)
+  }
+
+  it should "parse `Op.Varstore`" in {
+    val op: Op                    = Op.Varstore(Val.None, Val.None)
+    val Parsed.Success(result, _) = parser.Op.Varstore.parse(op.show)
+    result should be(op)
+  }
 }

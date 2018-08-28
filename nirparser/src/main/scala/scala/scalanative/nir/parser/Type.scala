@@ -33,12 +33,13 @@ object Type extends Base[nir.Type] {
       "{" ~ Type.parser.rep(sep = ",") ~ "}" map (nir.Type
         .Struct(nir.Global.None, _)))
   val Struct  = P("struct" ~ Global.parser map (nir.Type.Struct(_, Nil)))
-  val Unit    = P("unit".! map (_ => nir.Type.Unit))
   val Nothing = P("nothing".! map (_ => nir.Type.Nothing))
+  val Var     = P("var[" ~ Type.parser ~ "]" map (nir.Type.Var(_)))
+  val Unit    = P("unit".! map (_ => nir.Type.Unit))
   val Class   = P("class" ~ Global.parser map (nir.Type.Class(_)))
   val Trait   = P("trait" ~ Global.parser map (nir.Type.Trait(_)))
   val Module  = P("module" ~ Global.parser map (nir.Type.Module(_)))
 
   override val parser: P[nir.Type] =
-    None | Void | Vararg | Ptr | Bool | Byte | Short | Int | Long | Float | Double | Array | Function | NoneStruct | Struct | Unit | Nothing | Class | Trait | Module
+    None | Void | Vararg | Ptr | Bool | Byte | Short | Int | Long | Float | Double | Array | Function | NoneStruct | Struct | Nothing | Var | Unit | Class | Trait | Module
 }

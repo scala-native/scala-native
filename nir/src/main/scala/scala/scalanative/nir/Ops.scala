@@ -31,6 +31,9 @@ sealed abstract class Op {
     case Op.Closure(ty, _, _)       => ty
     case Op.Box(ty, _)              => ty
     case Op.Unbox(ty, _)            => Type.unbox(ty)
+    case Op.Var(ty)                 => Type.Var(ty)
+    case Op.Varload(slot)           => val Type.Var(ty) = slot.ty; ty
+    case Op.Varstore(slot, _)       => Type.Unit
   }
 
   final def show: String = nir.Show(this)
@@ -72,4 +75,7 @@ object Op {
   final case class Closure(ty: Type, fun: Val, captures: Seq[Val]) extends Op
   final case class Box(ty: Type, obj: Val)                         extends Op
   final case class Unbox(ty: Type, obj: Val)                       extends Op
+  final case class Var(ty: Type)                                   extends Op
+  final case class Varload(slot: Val)                              extends Op
+  final case class Varstore(slot: Val, value: Val)                 extends Op
 }

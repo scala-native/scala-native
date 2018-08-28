@@ -300,6 +300,18 @@ object Show {
         type_(ty)
         str("] ")
         val_(v)
+      case Op.Var(ty) =>
+        str("var[")
+        type_(ty)
+        str("]")
+      case Op.Varload(slot) =>
+        str("varload ")
+        val_(slot)
+      case Op.Varstore(slot, value) =>
+        str("varstore ")
+        val_(slot)
+        str(", ")
+        val_(value)
     }
 
     def bin_(bin: Bin): Unit = bin match {
@@ -554,8 +566,9 @@ object Show {
         str("struct ")
         global_(name)
 
-      case Type.Unit    => str("unit")
       case Type.Nothing => str("nothing")
+      case Type.Var(ty) => str("var["); type_(ty); str("]")
+      case Type.Unit    => str("unit")
       case Type.Class(name) =>
         str("class ")
         global_(name)

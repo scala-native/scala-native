@@ -219,6 +219,9 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.ClosureOp    => Op.Closure(getType, getVal, getVals)
     case T.BoxOp        => Op.Box(getType, getVal)
     case T.UnboxOp      => Op.Unbox(getType, getVal)
+    case T.VarOp        => Op.Var(getType)
+    case T.VarloadOp    => Op.Varload(getVal)
+    case T.VarstoreOp   => Op.Varstore(getVal, getVal)
   }
 
   private def getParams(): Seq[Val.Local] = getSeq(getParam)
@@ -246,8 +249,9 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.FunctionType => Type.Function(getTypes, getType)
     case T.StructType   => Type.Struct(getGlobal, getTypes)
 
-    case T.UnitType    => Type.Unit
     case T.NothingType => Type.Nothing
+    case T.VarType     => Type.Var(getType)
+    case T.UnitType    => Type.Unit
     case T.ClassType   => Type.Class(getGlobal)
     case T.TraitType   => Type.Trait(getGlobal)
     case T.ModuleType  => Type.Module(getGlobal)

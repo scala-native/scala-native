@@ -277,9 +277,9 @@ trait NirGenStat { self: NirGenPhase =>
         val vars = curMethodInfo.mutableVars.toSeq
         buf.label(fresh(), params)
         vars.foreach { sym =>
-          val ty    = genType(sym.info, box = false)
-          val alloc = buf.stackalloc(ty, Val.None, unwind)
-          curMethodEnv.enter(sym, alloc)
+          val ty   = genType(sym.info, box = false)
+          val slot = buf.var_(ty, unwind)
+          curMethodEnv.enter(sym, slot)
         }
       }
 

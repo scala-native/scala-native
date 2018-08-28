@@ -97,4 +97,10 @@ class Buffer(implicit fresh: Fresh) {
     let(Op.Box(ty, obj), unwind)
   def unbox(ty: Type, obj: Val, unwind: Next): Val =
     let(Op.Unbox(ty, obj), unwind)
+  def var_(ty: Type, unwind: Next): Val =
+    let(Op.Var(ty), unwind)
+  def varload(slot: Val, unwind: Next): Val =
+    let(Op.Varload(slot), unwind)
+  def varstore(slot: Val, value: Val, unwind: Next): Val =
+    let(Op.Varstore(slot, value), unwind)
 }

@@ -66,7 +66,8 @@ object Type {
 
   // high-level types
 
-  final case object Nothing extends Type
+  final case object Nothing      extends Type
+  final case class Var(ty: Type) extends Type
 
   sealed abstract class RefKind         extends Type
   final case object Unit                extends RefKind

@@ -121,4 +121,10 @@ class TypeParserTest extends FlatSpec with Matchers {
     val Parsed.Success(result, _) = parser.Type.Module.parse(module.show)
     result should be(module)
   }
+
+  it should "parse `Type.Var`" in {
+    val ty: Type                  = Type.Var(Type.Int)
+    val Parsed.Success(result, _) = parser.Type.Var.parse(ty.show)
+    result should be(ty)
+  }
 }
