@@ -511,9 +511,15 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
 
     case Op.Classalloc(n) =>
       classInfo(n).foreach(reachAllocation)
-    case Op.Field(v, n) =>
+    case Op.Fieldload(ty, v, n) =>
+      reachType(ty)
       reachVal(v)
       reachGlobal(n)
+    case Op.Fieldstore(ty, v1, n, v2) =>
+      reachType(ty)
+      reachVal(v1)
+      reachGlobal(n)
+      reachVal(v2)
     case Op.Method(obj, sig) =>
       reachVal(obj)
       reachMethodTargets(obj.ty, sig)

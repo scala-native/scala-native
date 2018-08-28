@@ -141,8 +141,10 @@ object Lower {
     }
 
     def genOp(buf: Buffer, n: Local, op: Op, unwind: Next): Unit = op match {
-      case op: Op.Field =>
-        genFieldOp(buf, n, op, unwind)
+      case op: Op.Fieldload =>
+        genFieldloadOp(buf, n, op, unwind)
+      case op: Op.Fieldstore =>
+        genFieldstoreOp(buf, n, op, unwind)
       case op: Op.Method =>
         genMethodOp(buf, n, op, unwind)
       case op: Op.Dynmethod =>
@@ -167,14 +169,34 @@ object Lower {
         buf.let(n, op, unwind)
     }
 
-    def genFieldOp(buf: Buffer, n: Local, op: Op.Field, unwind: Next) = {
-      val Op.Field(obj, FieldRef(cls: Class, fld)) = op
+    def genFieldElemOp(buf: Buffer, obj: Val, name: Global, unwind: Next) = {
+      val FieldRef(cls: Class, fld) = name
 
       val layout = meta.layout(cls)
       val ty     = layout.struct
       val index  = layout.index(fld)
 
-      buf.let(n, Op.Elem(ty, obj, Seq(Val.Int(0), Val.Int(index))), unwind)
+      buf.elem(ty, obj, Seq(Val.Int(0), Val.Int(index)), unwind)
+    }
+
+    def genFieldloadOp(buf: Buffer,
+                       n: Local,
+                       op: Op.Fieldload,
+                       unwind: Next) = {
+      val Op.Fieldload(ty, obj, name) = op
+
+      val elem = genFieldElemOp(buf, obj, name, unwind)
+      buf.let(n, Op.Load(ty, elem), unwind)
+    }
+
+    def genFieldstoreOp(buf: Buffer,
+                        n: Local,
+                        op: Op.Fieldstore,
+                        unwind: Next) = {
+      val Op.Fieldstore(ty, obj, name, value) = op
+
+      val elem = genFieldElemOp(buf, obj, name, unwind)
+      buf.let(n, Op.Store(ty, elem, value), unwind)
     }
 
     def genMethodOp(buf: Buffer, n: Local, op: Op.Method, unwind: Next) = {

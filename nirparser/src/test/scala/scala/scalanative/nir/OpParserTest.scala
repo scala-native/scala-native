@@ -93,10 +93,17 @@ class OpParserTest extends FlatSpec with Matchers {
     result should be(classalloc)
   }
 
-  it should "parse `Op.Field`" in {
-    val field: Op = Op.Field(Val.None, global)
+  it should "parse `Op.Fieldload`" in {
+    val field: Op = Op.Fieldload(Type.Int, Val.None, global)
     val Parsed.Success(result, _) =
-      parser.Op.Field.parse(field.show)
+      parser.Op.Fieldload.parse(field.show)
+    result should be(field)
+  }
+
+  it should "parse `Op.Fieldstore`" in {
+    val field: Op = Op.Fieldstore(Type.Int, Val.None, global, Val.None)
+    val Parsed.Success(result, _) =
+      parser.Op.Fieldstore.parse(field.show)
     result should be(field)
   }
 

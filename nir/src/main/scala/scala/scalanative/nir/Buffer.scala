@@ -69,8 +69,14 @@ class Buffer(implicit fresh: Fresh) {
     let(Op.Select(cond, thenv, elsev), unwind)
   def classalloc(name: Global, unwind: Next): Val =
     let(Op.Classalloc(name), unwind)
-  def field(obj: Val, name: Global, unwind: Next): Val =
-    let(Op.Field(obj, name), unwind)
+  def fieldload(ty: Type, obj: Val, name: Global, unwind: Next): Val =
+    let(Op.Fieldload(ty, obj, name), unwind)
+  def fieldstore(ty: Type,
+                 obj: Val,
+                 name: Global,
+                 value: Val,
+                 unwind: Next): Val =
+    let(Op.Fieldstore(ty, obj, name, value), unwind)
   def method(obj: Val, signature: String, unwind: Next): Val =
     let(Op.Method(obj, signature), unwind)
   def dynmethod(obj: Val, signature: String, unwind: Next): Val =

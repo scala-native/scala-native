@@ -515,13 +515,11 @@ trait NirGenExpr { self: NirGenPhase =>
         val ty   = genType(tree.symbol.tpe, box = false)
         val qual = genExpr(qualp)
         val name = genFieldName(tree.symbol)
-        val elem =
-          if (sym.owner.isExternModule) {
-            Val.Global(name, Type.Ptr)
-          } else {
-            buf.field(qual, name, unwind)
-          }
-        buf.load(ty, elem, unwind)
+        if (sym.owner.isExternModule) {
+          buf.load(ty, Val.Global(name, Type.Ptr), unwind)
+        } else {
+          buf.fieldload(ty, qual, name, unwind)
+        }
       }
     }
 
@@ -544,13 +542,11 @@ trait NirGenExpr { self: NirGenPhase =>
           val qual = genExpr(qualp)
           val rhs  = genExpr(rhsp)
           val name = genFieldName(sel.symbol)
-          val elem =
-            if (sel.symbol.owner.isExternModule) {
-              Val.Global(name, Type.Ptr)
-            } else {
-              buf.field(qual, name, unwind)
-            }
-          buf.store(ty, elem, rhs, unwind)
+          if (sel.symbol.owner.isExternModule) {
+            buf.store(ty, Val.Global(name, Type.Ptr), rhs, unwind)
+          } else {
+            buf.fieldstore(ty, qual, name, rhs, unwind)
+          }
 
         case id: Ident =>
           val ty  = genType(id.tpe, box = false)
