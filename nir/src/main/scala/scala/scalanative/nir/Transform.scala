@@ -78,8 +78,10 @@ trait Transform {
 
     case Op.Classalloc(n) =>
       Op.Classalloc(n)
-    case Op.Field(v, n) =>
-      Op.Field(onVal(v), n)
+    case Op.Fieldload(ty, v, n) =>
+      Op.Fieldload(onType(ty), onVal(v), n)
+    case Op.Fieldstore(ty, v1, n, v2) =>
+      Op.Fieldstore(onType(ty), onVal(v1), n, onVal(v2))
     case Op.Method(v, n) =>
       Op.Method(onVal(v), n)
     case Op.Dynmethod(obj, signature) =>

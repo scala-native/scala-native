@@ -237,11 +237,22 @@ object Show {
       case Op.Classalloc(name) =>
         str("classalloc ")
         global_(name)
-      case Op.Field(value, name) =>
-        str("field ")
-        val_(value)
+      case Op.Fieldload(ty, obj, name) =>
+        str("fieldload[")
+        type_(ty)
+        str("] ")
+        val_(obj)
         str(", ")
         global_(name)
+      case Op.Fieldstore(ty, obj, name, value) =>
+        str("fieldstore[")
+        type_(ty)
+        str("] ")
+        val_(obj)
+        str(", ")
+        global_(name)
+        str(", ")
+        val_(value)
       case Op.Method(value, signature) =>
         str("method ")
         val_(value)

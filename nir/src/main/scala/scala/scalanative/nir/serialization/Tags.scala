@@ -145,8 +145,9 @@ object Tags {
   final val ConvOp       = 1 + CompOp
   final val SelectOp     = 1 + ConvOp
   final val ClassallocOp = 1 + SelectOp
-  final val FieldOp      = 1 + ClassallocOp
-  final val MethodOp     = 1 + FieldOp
+  final val FieldloadOp  = 1 + ClassallocOp
+  final val FieldstoreOp = 1 + FieldloadOp
+  final val MethodOp     = 1 + FieldstoreOp
   final val ModuleOp     = 1 + MethodOp
   final val AsOp         = 1 + ModuleOp
   final val IsOp         = 1 + AsOp

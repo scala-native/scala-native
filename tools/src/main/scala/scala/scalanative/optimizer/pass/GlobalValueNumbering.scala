@@ -102,12 +102,12 @@ object GlobalValueNumbering extends PassCompanion {
     op match {
       // Always idempotent:
       case (_: Pure | _: Method | _: Dynmethod | _: As | _: Is | _: Copy |
-          _: Sizeof | _: Module | _: Field | _: Box | _: Unbox) =>
+          _: Sizeof | _: Module | _: Box | _: Unbox) =>
         true
 
       // Never idempotent:
       case (_: Load | _: Store | _: Stackalloc | _: Classalloc | _: Call |
-          _: Closure) =>
+          _: Closure | _: Fieldload | _: Fieldstore) =>
         false
     }
   }
@@ -151,8 +151,14 @@ object GlobalValueNumbering extends PassCompanion {
           case (Select(condA, thenvA, elsevA), Select(condB, thenvB, elsevB)) =>
             eqVals(Seq(condA, thenvA, elsevA), Seq(condB, thenvB, elsevB))
 
-          case (Field(objA, nameA), Field(objB, nameB)) =>
-            eqVal(objA, objB) && eqGlobal(nameA, nameB)
+          case (Fieldload(tyA, objA, nameA), Fieldload(tyB, objB, nameB)) =>
+            eqType(tyA, tyB) && eqVal(objA, objB) && eqGlobal(nameA, nameB)
+
+          case (Fieldstore(tyA, objA, nameA, vA),
+                Fieldstore(tyB, objB, nameB, vB)) =>
+            eqType(tyA, tyB) && eqVal(objA, objB) && eqGlobal(nameA, nameB) && eqVal(
+              vA,
+              vB)
 
           case (Method(objA, signatureA), Method(objB, signatureB)) =>
             eqVal(objA, objB) && signatureA == signatureB
@@ -288,7 +294,9 @@ object GlobalValueNumbering extends PassCompanion {
         case Conv(conv, ty, value)      => Seq("Conv", ty, value)
         case Select(cond, thenv, elsev) => Seq("Select", cond, thenv, elsev)
 
-        case Field(obj, name)           => Seq("Field", obj, name)
+        case Fieldload(ty, obj, name) => Seq("Fieldload", ty, obj, name)
+        case Fieldstore(ty, obj, name, value) =>
+          Seq("Fieldstore", ty, obj, name, value)
         case Method(obj, name)          => Seq("Method", obj, name)
         case Dynmethod(obj, signature)  => Seq("Dynmethod", obj, signature)
         case As(ty, obj)                => Seq("As", ty, obj)

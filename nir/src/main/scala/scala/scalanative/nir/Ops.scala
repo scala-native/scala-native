@@ -18,18 +18,19 @@ sealed abstract class Op {
     case Op.Conv(_, ty, _)                    => ty
     case Op.Select(_, v, _)                   => v.ty
 
-    case Op.Classalloc(n)     => Type.Class(n)
-    case Op.Field(_, _)       => Type.Ptr
-    case Op.Method(_, _)      => Type.Ptr
-    case Op.Dynmethod(_, _)   => Type.Ptr
-    case Op.Module(n)         => Type.Module(n)
-    case Op.As(ty, _)         => ty
-    case Op.Is(_, _)          => Type.Bool
-    case Op.Copy(v)           => v.ty
-    case Op.Sizeof(_)         => Type.Long
-    case Op.Closure(ty, _, _) => ty
-    case Op.Box(ty, _)        => ty
-    case Op.Unbox(ty, _)      => Type.unbox(ty)
+    case Op.Classalloc(n)           => Type.Class(n)
+    case Op.Fieldload(ty, _, _)     => ty
+    case Op.Fieldstore(ty, _, _, _) => Type.Unit
+    case Op.Method(_, _)            => Type.Ptr
+    case Op.Dynmethod(_, _)         => Type.Ptr
+    case Op.Module(n)               => Type.Module(n)
+    case Op.As(ty, _)               => ty
+    case Op.Is(_, _)                => Type.Bool
+    case Op.Copy(v)                 => v.ty
+    case Op.Sizeof(_)               => Type.Long
+    case Op.Closure(ty, _, _)       => ty
+    case Op.Box(ty, _)              => ty
+    case Op.Unbox(ty, _)            => Type.unbox(ty)
   }
 
   final def show: String = nir.Show(this)
@@ -57,8 +58,10 @@ object Op {
     Store(ty, ptr, value, isVolatile = false)
 
   // high-level
-  final case class Classalloc(name: Global)                        extends Op
-  final case class Field(obj: Val, name: Global)                   extends Op
+  final case class Classalloc(name: Global)                    extends Op
+  final case class Fieldload(ty: Type, obj: Val, name: Global) extends Op
+  final case class Fieldstore(ty: Type, obj: Val, name: Global, value: Val)
+      extends Op
   final case class Method(obj: Val, signature: String)             extends Op
   final case class Dynmethod(obj: Val, signature: String)          extends Op
   final case class Module(name: Global)                            extends Op

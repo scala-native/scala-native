@@ -60,9 +60,13 @@ object Op extends Base[nir.Op] {
       case (cond, thenp, elsep) => nir.Op.Select(cond, thenp, elsep)
     })
   val Classalloc = P("classalloc" ~ Global.parser map (nir.Op.Classalloc(_)))
-  val Field =
-    P("field" ~ Val.parser ~ "," ~ Global.parser map {
-      case (value, name) => nir.Op.Field(value, name)
+  val Fieldload =
+    P("fieldload" ~ "[" ~ Type.parser ~ "]" ~ Val.parser ~ "," ~ Global.parser map {
+      case (ty, value, name) => nir.Op.Fieldload(ty, value, name)
+    })
+  val Fieldstore =
+    P("fieldstore" ~ "[" ~ Type.parser ~ "]" ~ Val.parser ~ "," ~ Global.parser ~ "," ~ Val.parser map {
+      case (ty, obj, name, value) => nir.Op.Fieldstore(ty, obj, name, value)
     })
   val Method =
     P("method" ~ Val.parser ~ "," ~ Base.stringLit map {
@@ -96,5 +100,5 @@ object Op extends Base[nir.Op] {
     case (ty, obj) => nir.Op.Unbox(ty, obj)
   })
   override val parser: P[nir.Op] =
-    Call | Load | Store | Elem | Extract | Insert | Stackalloc | Bin | Comp | Conv | Select | Classalloc | Field | Method | Module | As | Is | Copy | Sizeof | Closure | Box | Unbox
+    Call | Load | Store | Elem | Extract | Insert | Stackalloc | Bin | Comp | Conv | Select | Classalloc | Fieldload | Fieldstore | Method | Module | As | Is | Copy | Sizeof | Closure | Box | Unbox
 }
