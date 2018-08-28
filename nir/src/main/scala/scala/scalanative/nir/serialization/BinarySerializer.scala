@@ -399,6 +399,19 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.UnboxOp)
       putType(ty)
       putVal(obj)
+
+    case Op.Var(ty) =>
+      putInt(T.VarOp)
+      putType(ty)
+
+    case Op.Varload(slot) =>
+      putInt(T.VarloadOp)
+      putVal(slot)
+
+    case Op.Varstore(slot, value) =>
+      putInt(T.VarstoreOp)
+      putVal(slot)
+      putVal(value)
   }
 
   private def putParams(params: Seq[Val.Local]) = putSeq(params)(putParam)
@@ -431,8 +444,9 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Type.Struct(n, tys) =>
       putInt(T.StructType); putGlobal(n); putTypes(tys)
 
-    case Type.Unit      => putInt(T.UnitType)
     case Type.Nothing   => putInt(T.NothingType)
+    case Type.Var(ty)   => putInt(T.VarType); putType(ty)
+    case Type.Unit      => putInt(T.UnitType)
     case Type.Class(n)  => putInt(T.ClassType); putGlobal(n)
     case Type.Trait(n)  => putInt(T.TraitType); putGlobal(n)
     case Type.Module(n) => putInt(T.ModuleType); putGlobal(n)

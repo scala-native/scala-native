@@ -168,9 +168,8 @@ trait NirGenExpr { self: NirGenPhase =>
         curMethodEnv.enter(vd.symbol, rhs)
         Val.Unit
       } else {
-        val ty    = genType(vd.symbol.tpe, box = false)
-        val alloc = curMethodEnv.resolve(vd.symbol)
-        buf.store(ty, alloc, rhs, unwind)
+        val slot = curMethodEnv.resolve(vd.symbol)
+        buf.varstore(slot, rhs, unwind)
       }
     }
 
@@ -487,8 +486,7 @@ trait NirGenExpr { self: NirGenPhase =>
     def genIdent(tree: Ident): Val = {
       val sym = tree.symbol
       if (curMethodInfo.mutableVars.contains(sym)) {
-        val ty = genType(sym.tpe, box = false)
-        buf.load(ty, curMethodEnv.resolve(sym), unwind)
+        buf.varload(curMethodEnv.resolve(sym), unwind)
       } else if (sym.isModule) {
         buf.module(genTypeName(sym), unwind)
       } else {
@@ -549,10 +547,10 @@ trait NirGenExpr { self: NirGenPhase =>
           }
 
         case id: Ident =>
-          val ty  = genType(id.tpe, box = false)
-          val rhs = genExpr(rhsp)
-          val ptr = curMethodEnv.resolve(id.symbol)
-          buf.store(ty, ptr, rhs, unwind)
+          val ty   = genType(id.tpe, box = false)
+          val rhs  = genExpr(rhsp)
+          val slot = curMethodEnv.resolve(id.symbol)
+          buf.varstore(slot, rhs, unwind)
       }
     }
 

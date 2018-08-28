@@ -157,6 +157,9 @@ object Tags {
   final val BoxOp        = 1 + ClosureOp
   final val UnboxOp      = 1 + BoxOp
   final val DynmethodOp  = 1 + UnboxOp
+  final val VarOp        = 1 + DynmethodOp
+  final val VarloadOp    = 1 + VarOp
+  final val VarstoreOp   = 1 + VarloadOp
 
   // Types
 
@@ -181,9 +184,10 @@ object Tags {
   final val ArrayType    = 1 + DoubleType
   final val FunctionType = 1 + ArrayType
   final val StructType   = 1 + FunctionType
-  final val UnitType     = 1 + StructType
-  final val NothingType  = 1 + UnitType
-  final val ClassType    = 1 + NothingType
+  final val NothingType  = 1 + StructType
+  final val VarType      = 1 + NothingType
+  final val UnitType     = 1 + VarType
+  final val ClassType    = 1 + UnitType
   final val TraitType    = 1 + ClassType
   final val ModuleType   = 1 + TraitType
 

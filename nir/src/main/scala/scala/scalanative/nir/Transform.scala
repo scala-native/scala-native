@@ -102,6 +102,12 @@ trait Transform {
       Op.Box(code, onVal(obj))
     case Op.Unbox(code, obj) =>
       Op.Unbox(code, onVal(obj))
+    case Op.Var(ty) =>
+      Op.Var(onType(ty))
+    case Op.Varload(elem) =>
+      Op.Varload(onVal(elem))
+    case Op.Varstore(elem, value) =>
+      Op.Varstore(onVal(elem), onVal(value))
   }
 
   def onVal(value: Val): Val = value match {
@@ -122,6 +128,8 @@ trait Transform {
       Type.Function(args.map(onType), onType(ty))
     case Type.Struct(n, tys) =>
       Type.Struct(n, tys.map(onType))
+    case Type.Var(ty) =>
+      Type.Var(onType(ty))
     case _ =>
       ty
   }

@@ -107,7 +107,8 @@ object GlobalValueNumbering extends PassCompanion {
 
       // Never idempotent:
       case (_: Load | _: Store | _: Stackalloc | _: Classalloc | _: Call |
-          _: Closure | _: Fieldload | _: Fieldstore) =>
+          _: Closure | _: Fieldload | _: Fieldstore | _: Var | _: Varload |
+          _: Varstore) =>
         false
     }
   }

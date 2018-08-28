@@ -416,6 +416,8 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       tys.foreach(reachType)
     case ty: Type.Named =>
       reachGlobal(ty.name)
+    case Type.Var(ty) =>
+      reachType(ty)
     case _ =>
       ()
   }
@@ -550,6 +552,13 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       reachVal(obj)
     case Op.Unbox(code, obj) =>
       reachVal(obj)
+    case Op.Var(ty) =>
+      reachType(ty)
+    case Op.Varload(slot) =>
+      reachVal(slot)
+    case Op.Varstore(slot, value) =>
+      reachVal(slot)
+      reachVal(value)
   }
 
   def reachNext(next: Next): Unit = next match {

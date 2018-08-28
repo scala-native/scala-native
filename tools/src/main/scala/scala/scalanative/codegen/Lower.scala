@@ -83,7 +83,16 @@ object Lower {
       val buf = new nir.Buffer()(fresh)
       import buf._
 
+      buf += insts.head
+
       insts.foreach {
+        case Inst.Let(n, Op.Var(ty), unwind) =>
+          buf.let(n, Op.Stackalloc(ty, Val.None), unwind)
+        case _ =>
+          ()
+      }
+
+      insts.tail.foreach {
         case inst @ Inst.Let(n, op, unwind) =>
           op.resty match {
             case Type.Unit =>
@@ -165,6 +174,12 @@ object Lower {
         genUnboxOp(buf, n, op, unwind)
       case op: Op.Module =>
         genModuleOp(buf, n, op, unwind)
+      case op: Op.Var =>
+        ()
+      case Op.Varload(Val.Local(slot, Type.Var(ty))) =>
+        buf.let(n, Op.Load(ty, Val.Local(slot, Type.Ptr)), unwind)
+      case Op.Varstore(Val.Local(slot, Type.Var(ty)), value) =>
+        buf.let(n, Op.Store(ty, Val.Local(slot, Type.Ptr), value), unwind)
       case _ =>
         buf.let(n, op, unwind)
     }
