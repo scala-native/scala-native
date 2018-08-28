@@ -99,6 +99,15 @@ object Op extends Base[nir.Op] {
   val Unbox = P("unbox[" ~ Type.parser ~ "]" ~ Val.parser map {
     case (ty, obj) => nir.Op.Unbox(ty, obj)
   })
+  val Var = P("var[" ~ Type.parser ~ "]" map {
+    case ty => nir.Op.Var(ty)
+  })
+  val Varload = P("varload" ~ Val.parser map {
+    case slot => nir.Op.Varload(slot)
+  })
+  val Varstore = P("varstore" ~ Val.parser ~ "," ~ Val.parser map {
+    case (slot, value) => nir.Op.Varstore(slot, value)
+  })
   override val parser: P[nir.Op] =
-    Call | Load | Store | Elem | Extract | Insert | Stackalloc | Bin | Comp | Conv | Select | Classalloc | Fieldload | Fieldstore | Method | Module | As | Is | Copy | Sizeof | Closure | Box | Unbox
+    Call | Load | Store | Elem | Extract | Insert | Stackalloc | Bin | Comp | Conv | Select | Classalloc | Fieldload | Fieldstore | Method | Module | As | Is | Copy | Sizeof | Closure | Box | Unbox | Var | Varload | Varstore
 }
