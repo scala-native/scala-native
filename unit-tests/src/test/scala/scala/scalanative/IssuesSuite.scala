@@ -357,6 +357,22 @@ object IssuesSuite extends tests.Suite {
   test("#1155") {
     assert(issue1155.C.CLASS.toString.contains("C$CLASS$@"))
   }
+
+  test("#1090") {
+    val xs = new Array[issue1090.X](20)
+    val ys = new Array[issue1090.Y](20)
+    assert(issue1090.A.foo(xs) == "X array")
+    assert(issue1090.A.foo(ys) == "Y array")
+  }
+}
+
+package issue1090 {
+  class X
+  class Y
+  object A {
+    def foo(a: Array[X]) = "X array"
+    def foo(a: Array[Y]) = "Y array"
+  }
 }
 
 package issue1155 {
