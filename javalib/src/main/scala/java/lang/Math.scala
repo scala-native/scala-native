@@ -234,11 +234,35 @@ object Math {
   @inline def rint(a: scala.Double): scala.Double =
     `llvm.rint.f64`(a)
 
-  @inline def round(a: scala.Float): scala.Int =
-    `llvm.round.f32`(a).toInt
+  @inline def round(a: scala.Float): scala.Int = {
+    if (a.isNaN) {
+      0
+    } else if (a >= scala.Int.MaxValue.toFloat - 0.5f) {
+      scala.Int.MaxValue
+    } else if (a <= scala.Int.MinValue.toFloat) {
+      scala.Int.MinValue
+    } else {
+      // Java rounds both +/- half to towards +Infinity.
+      // In its default rounding mode, llvm.round.f32 rounds half away
+      // from zero (+/- Infinity).
+      math.floor(a + 0.5f).toInt
+    }
+  }
 
-  @inline def round(a: scala.Double): scala.Long =
-    `llvm.round.f64`(a).toLong
+  @inline def round(a: scala.Double): scala.Long = {
+    if (a.isNaN) {
+      0L
+    } else if (a >= scala.Long.MaxValue.toDouble - 0.5d) {
+      scala.Long.MaxValue
+    } else if (a <= scala.Long.MinValue.toDouble) {
+      scala.Long.MinValue
+    } else {
+      // Java rounds both +/- half towards +Infinity.
+      // In its default rounding mode, llvm.round.f64 rounds half away
+      // from zero (+/- Infinity).
+      math.floor(a + 0.5d).toLong
+    }
+  }
 
   @inline def scalb(a: scala.Float, scaleFactor: scala.Int): scala.Float =
     cmath.scalbnf(a, scaleFactor)
