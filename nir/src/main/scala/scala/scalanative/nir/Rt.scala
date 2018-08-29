@@ -6,7 +6,7 @@ import Type._
 object Rt {
   val Object = Class(Global.Top("java.lang.Object"))
   val String = Class(Global.Top("java.lang.String"))
-  val Type   = Struct(Global.None, Seq(Int, Int, Ptr, Byte))
+  val Type   = StructValue(Global.None, Seq(Int, Int, Ptr, Byte))
 
   val JavaEqualsSig    = "equals_java.lang.Object_bool"
   val JavaHashCodeSig  = "hashCode_i32"

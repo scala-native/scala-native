@@ -404,8 +404,8 @@ object Show {
       case Val.Double(value) =>
         str("double ")
         str(value)
-      case Val.Struct(n, values) =>
-        str("struct ")
+      case Val.StructValue(n, values) =>
+        str("structvalue ")
         if (n ne Global.None) {
           global_(n)
           str(" ")
@@ -413,8 +413,8 @@ object Show {
         str("{")
         rep(values, sep = ", ")(val_)
         str("}")
-      case Val.Array(ty, values) =>
-        str("array ")
+      case Val.ArrayValue(ty, values) =>
+        str("arrayvalue ")
         type_(ty)
         str(" {")
         rep(values, sep = ", ")(val_)
@@ -547,7 +547,7 @@ object Show {
       case Type.Float  => str("float")
       case Type.Double => str("double")
 
-      case Type.Array(ty, n) =>
+      case Type.ArrayValue(ty, n) =>
         str("[")
         type_(ty)
         str(" x ")
@@ -558,12 +558,12 @@ object Show {
         rep(args, sep = ", ")(type_)
         str(") => ")
         type_(ret)
-      case Type.Struct(Global.None, tys) =>
+      case Type.StructValue(Global.None, tys) =>
         str("{")
         rep(tys, sep = ", ")(type_)
         str("}")
-      case Type.Struct(name, _) =>
-        str("struct ")
+      case Type.StructValue(name, _) =>
+        str("structvalue ")
         global_(name)
 
       case Type.Nothing => str("nothing")

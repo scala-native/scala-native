@@ -69,7 +69,8 @@ trait NirGenType { self: NirGenPhase =>
     case PtrClass     => nir.Type.Ptr
     // format: on
     case sym if CStructClass.contains(sym) =>
-      nir.Type.Struct(nir.Global.None, st.targs.map(genType(_, box = false)))
+      nir.Type
+        .StructValue(nir.Global.None, st.targs.map(genType(_, box = false)))
     case CArrayClass =>
       genCArrayType(st)
     case sym if CFunctionPtrClass.contains(sym) =>
@@ -80,11 +81,11 @@ trait NirGenType { self: NirGenPhase =>
 
   def genCArrayType(st: SimpleType): nir.Type = st.targs match {
     case Seq() =>
-      nir.Type.Array(nir.Rt.Object, 0)
+      nir.Type.ArrayValue(nir.Rt.Object, 0)
     case Seq(targ, tnat) =>
       val ty = genType(targ, box = false)
       val n  = genNatType(tnat)
-      nir.Type.Array(ty, n)
+      nir.Type.ArrayValue(ty, n)
   }
 
   def genNatType(st: SimpleType): Int = {
@@ -142,7 +143,7 @@ trait NirGenType { self: NirGenPhase =>
     val name   = genTypeName(st.sym)
     val fields = genStructFields(st)
 
-    nir.Type.Struct(name, fields)
+    nir.Type.StructValue(name, fields)
   }
 
   def genPrimCode(st: SimpleType): Char = st.sym match {

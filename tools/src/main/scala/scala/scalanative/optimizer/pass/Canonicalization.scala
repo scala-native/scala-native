@@ -48,8 +48,9 @@ object Canonicalization extends PassCompanion {
     private def scalarValue(value: Val): Boolean = {
       import Val._
       value match {
-        case _: Struct | _: Array | _: Local | _: Global | _: Const => false
-        case _                                                      => true
+        case _: StructValue | _: ArrayValue | _: Local | _: Global | _: Const =>
+          false
+        case _ => true
       }
     }
   }

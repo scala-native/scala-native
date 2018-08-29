@@ -518,12 +518,14 @@ object Lower {
       val chars       = value.toCharArray
       val charsLength = Val.Int(chars.length)
       val charsConst = Val.Const(
-        Val.Struct(
+        Val.StructValue(
           Global.None,
-          Seq(rtti(CharArrayCls).const,
-              charsLength,
-              Val.Int(0), // padding to get next field aligned properly
-              Val.Array(Type.Short, chars.map(c => Val.Short(c.toShort))))
+          Seq(
+            rtti(CharArrayCls).const,
+            charsLength,
+            Val.Int(0), // padding to get next field aligned properly
+            Val.ArrayValue(Type.Short, chars.map(c => Val.Short(c.toShort)))
+          )
         ))
 
       val fieldValues = stringFieldNames.map {
@@ -534,7 +536,8 @@ object Lower {
         case _                        => util.unreachable
       }
 
-      Val.Const(Val.Struct(Global.None, rtti(StringCls).const +: fieldValues))
+      Val.Const(
+        Val.StructValue(Global.None, rtti(StringCls).const +: fieldValues))
     }
 
     // Update java.lang.String::hashCode whenever you change this method.
@@ -590,7 +593,8 @@ object Lower {
     val StringCountName          = StringName member "count" tag "field"
     val StringCachedHashCodeName = StringName member "cachedHashCode" tag "field"
 
-    val CharArrayName = Global.Top("scala.scalanative.runtime.CharArray")
+    val CharArrayName =
+      Global.Top("scala.scalanative.runtime.CharArray")
 
     val BoxesRunTime = Global.Top("scala.runtime.BoxesRunTime$")
     val RuntimeBoxes = Global.Top("scala.scalanative.runtime.Boxes$")
@@ -657,9 +661,9 @@ object Lower {
 
     val unitName  = Global.Top("scala.scalanative.runtime.BoxedUnit$")
     val unit      = Val.Global(unitName, Type.Ptr)
-    val unitTy    = Type.Struct(unitName member "layout", Seq(Type.Ptr))
+    val unitTy    = Type.StructValue(unitName member "layout", Seq(Type.Ptr))
     val unitConst = Val.Global(unitName member "type", Type.Ptr)
-    val unitValue = Val.Struct(unitTy.name, Seq(unitConst))
+    val unitValue = Val.StructValue(unitTy.name, Seq(unitConst))
 
     val throwName = Global.Top("scalanative_throw")
     val throwSig  = Type.Function(Seq(Type.Ptr), Type.Void)

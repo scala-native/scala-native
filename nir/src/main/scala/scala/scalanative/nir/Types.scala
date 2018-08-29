@@ -8,9 +8,9 @@ sealed abstract class Type {
   final def elemty(path: Seq[Val]): Type = (this, path) match {
     case (_, Seq()) =>
       this
-    case (Type.Struct(_, tys), Val.Int(idx) +: rest) =>
+    case (Type.StructValue(_, tys), Val.Int(idx) +: rest) =>
       tys(idx).elemty(rest)
-    case (Type.Array(ty, n), idx +: rest) =>
+    case (Type.ArrayValue(ty, n), idx +: rest) =>
       ty.elemty(rest)
     case _ =>
       unsupported(s"${this}.elemty($path)")
@@ -59,10 +59,11 @@ object Type {
 
   // low-level composite types
 
-  final case class Array(ty: Type, n: Int)              extends Type
+  final case class ArrayValue(ty: Type, n: Int) extends Type
+  final case class StructValue(name: Global, tys: Seq[Type])
+      extends Type
+      with Named
   final case class Function(args: Seq[Type], ret: Type) extends Type
-
-  final case class Struct(name: Global, tys: Seq[Type]) extends Type with Named
 
   // high-level types
 

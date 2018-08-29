@@ -196,10 +196,10 @@ object GlobalValueNumbering extends PassCompanion {
     def eqVal(valueA: Val, valueB: Val): Boolean = {
       import Val._
       (valueA, valueB) match {
-        case (Struct(nameA, valuesA), Struct(nameB, valuesB)) =>
+        case (StructValue(nameA, valuesA), StructValue(nameB, valuesB)) =>
           eqGlobal(nameA, nameB) && eqVals(valuesA, valuesB)
 
-        case (Array(elemtyA, valuesA), Array(elemtyB, valuesB)) =>
+        case (ArrayValue(elemtyA, valuesA), ArrayValue(elemtyB, valuesB)) =>
           eqType(elemtyA, elemtyB) && eqVals(valuesA, valuesB)
 
         case (Const(valueA), Const(valueB)) =>
@@ -318,9 +318,9 @@ object GlobalValueNumbering extends PassCompanion {
     def hashVal(value: Val): Hash = {
       import Val._
       val fields: Seq[Any] = value match {
-        case Struct(name, values)  => "Struct" +: name +: values
-        case Array(elemty, values) => "Array" +: elemty +: values
-        case Const(value)          => Seq("Const", value)
+        case StructValue(name, values)  => "StructValue" +: name +: values
+        case ArrayValue(elemty, values) => "ArrayValue" +: elemty +: values
+        case Const(value)               => Seq("Const", value)
 
         case Local(name, _) => Seq(hashLocal(name))
 

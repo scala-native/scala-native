@@ -74,9 +74,9 @@ class TypeParserTest extends FlatSpec with Matchers {
     result should be(f64)
   }
 
-  it should "parse `Type.Array`" in {
-    val array: Type               = Type.Array(Type.None, 10)
-    val Parsed.Success(result, _) = parser.Type.Array.parse(array.show)
+  it should "parse `Type.ArrayValue`" in {
+    val array: Type               = Type.ArrayValue(Type.None, 10)
+    val Parsed.Success(result, _) = parser.Type.ArrayValue.parse(array.show)
     result should be(array)
   }
 
@@ -86,9 +86,9 @@ class TypeParserTest extends FlatSpec with Matchers {
     result should be(function)
   }
 
-  it should "parse `Type.Struct`" in {
-    val struct: Type              = Type.Struct(global, Seq.empty)
-    val Parsed.Success(result, _) = parser.Type.Struct.parse(struct.show)
+  it should "parse `Type.StructValue`" in {
+    val struct: Type              = Type.StructValue(global, Seq.empty)
+    val Parsed.Success(result, _) = parser.Type.StructValue.parse(struct.show)
     result should be(struct)
   }
 

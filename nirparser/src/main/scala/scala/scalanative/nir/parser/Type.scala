@@ -20,19 +20,20 @@ object Type extends Base[nir.Type] {
   val Long   = P("long".! map (_ => nir.Type.Long))
   val Float  = P("float".! map (_ => nir.Type.Float))
   val Double = P("double".! map (_ => nir.Type.Double))
-  val Array =
+  val ArrayValue =
     P("[" ~ Type.parser ~ "x" ~ int ~ "]" map {
-      case (ty, n) => nir.Type.Array(ty, n)
+      case (ty, n) => nir.Type.ArrayValue(ty, n)
     })
   val Function =
     P("(" ~ Type.parser.rep(sep = ",") ~ ")" ~ "=>" ~ Type.parser map {
       case (args, ret) => nir.Type.Function(args, ret)
     })
-  val NoneStruct =
+  val NoneStructValue =
     P(
       "{" ~ Type.parser.rep(sep = ",") ~ "}" map (nir.Type
-        .Struct(nir.Global.None, _)))
-  val Struct  = P("struct" ~ Global.parser map (nir.Type.Struct(_, Nil)))
+        .StructValue(nir.Global.None, _)))
+  val StructValue = P(
+    "structvalue" ~ Global.parser map (nir.Type.StructValue(_, Nil)))
   val Nothing = P("nothing".! map (_ => nir.Type.Nothing))
   val Var     = P("var[" ~ Type.parser ~ "]" map (nir.Type.Var(_)))
   val Unit    = P("unit".! map (_ => nir.Type.Unit))
@@ -41,5 +42,5 @@ object Type extends Base[nir.Type] {
   val Module  = P("module" ~ Global.parser map (nir.Type.Module(_)))
 
   override val parser: P[nir.Type] =
-    None | Void | Vararg | Ptr | Bool | Byte | Short | Int | Long | Float | Double | Array | Function | NoneStruct | Struct | Nothing | Var | Unit | Class | Trait | Module
+    None | Void | Vararg | Ptr | Bool | Byte | Short | Int | Long | Float | Double | ArrayValue | Function | NoneStructValue | StructValue | Nothing | Var | Unit | Class | Trait | Module
 }

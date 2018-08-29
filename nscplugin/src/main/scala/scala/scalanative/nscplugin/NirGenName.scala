@@ -108,20 +108,20 @@ trait NirGenName { self: NirGenPhase =>
       case nir.Type.I(w, true)  => sb.str("i"); sb.str(w)
       case nir.Type.Float       => sb.str("f32")
       case nir.Type.Double      => sb.str("f64")
-      case nir.Type.Array(ty, n) =>
+      case nir.Type.ArrayValue(ty, n) =>
         sb.str("arr.")
         printType(ty)
         sb.str(".")
         sb.str(n)
+      case nir.Type.StructValue(name, _) => printGlobal(name)
       case nir.Type.Function(args, ret) =>
         sb.str("fun.")
         sb.rep(args, sep = ".")(printType)
-      case nir.Type.Struct(name, _) => printGlobal(name)
-      case nir.Type.Nothing         => sb.str("nothing")
-      case nir.Type.Unit            => sb.str("unit")
-      case nir.Type.Class(name)     => printGlobal(name)
-      case nir.Type.Trait(name)     => printGlobal(name)
-      case nir.Type.Module(name)    => printGlobal(name)
+      case nir.Type.Nothing      => sb.str("nothing")
+      case nir.Type.Unit         => sb.str("unit")
+      case nir.Type.Class(name)  => printGlobal(name)
+      case nir.Type.Trait(name)  => printGlobal(name)
+      case nir.Type.Module(name) => printGlobal(name)
     }
 
     def printGlobal(global: nir.Global): Unit = global match {

@@ -7,22 +7,22 @@ import scala.annotation.tailrec
 
 sealed abstract class Val {
   final def ty: Type = this match {
-    case Val.None               => Type.None
-    case Val.Null               => Type.Ptr
-    case Val.Zero(ty)           => ty
-    case Val.Undef(ty)          => ty
-    case Val.True | Val.False   => Type.Bool
-    case Val.Byte(_)            => Type.Byte
-    case Val.Short(_)           => Type.Short
-    case Val.Int(_)             => Type.Int
-    case Val.Long(_)            => Type.Long
-    case Val.Float(_)           => Type.Float
-    case Val.Double(_)          => Type.Double
-    case Val.Struct(name, vals) => Type.Struct(name, vals.map(_.ty))
-    case Val.Array(ty, vals)    => Type.Array(ty, vals.length)
-    case Val.Chars(s)           => Type.Array(Type.Byte, countBytes(s))
-    case Val.Local(_, ty)       => ty
-    case Val.Global(_, ty)      => ty
+    case Val.None                    => Type.None
+    case Val.Null                    => Type.Ptr
+    case Val.Zero(ty)                => ty
+    case Val.Undef(ty)               => ty
+    case Val.True | Val.False        => Type.Bool
+    case Val.Byte(_)                 => Type.Byte
+    case Val.Short(_)                => Type.Short
+    case Val.Int(_)                  => Type.Int
+    case Val.Long(_)                 => Type.Long
+    case Val.Float(_)                => Type.Float
+    case Val.Double(_)               => Type.Double
+    case Val.StructValue(name, vals) => Type.StructValue(name, vals.map(_.ty))
+    case Val.ArrayValue(ty, vals)    => Type.ArrayValue(ty, vals.length)
+    case Val.Chars(s)                => Type.ArrayValue(Type.Byte, countBytes(s))
+    case Val.Local(_, ty)            => ty
+    case Val.Global(_, ty)           => ty
 
     case Val.Unit      => Type.Unit
     case Val.Const(_)  => Type.Ptr
@@ -102,11 +102,11 @@ object Val {
       case _ => false
     }
   }
-  final case class Struct(name: nir.Global, values: Seq[Val]) extends Val
-  final case class Array(elemty: nir.Type, values: Seq[Val])  extends Val
-  final case class Chars(value: java.lang.String)             extends Val
-  final case class Local(name: nir.Local, valty: nir.Type)    extends Val
-  final case class Global(name: nir.Global, valty: nir.Type)  extends Val
+  final case class StructValue(name: nir.Global, values: Seq[Val]) extends Val
+  final case class ArrayValue(elemty: nir.Type, values: Seq[Val])  extends Val
+  final case class Chars(value: java.lang.String)                  extends Val
+  final case class Local(name: nir.Local, valty: nir.Type)         extends Val
+  final case class Global(name: nir.Global, valty: nir.Type)       extends Val
   def Bool(bool: Boolean) = if (bool) True else False
 
   // high-level

@@ -81,14 +81,14 @@ class ValParserTest extends FlatSpec with Matchers {
   }
 
   it should "parse `Val.Struct`" in {
-    val struct: Val               = Val.Struct(global, Seq.empty)
-    val Parsed.Success(result, _) = parser.Val.Struct.parse(struct.show)
+    val struct: Val               = Val.StructValue(global, Seq.empty)
+    val Parsed.Success(result, _) = parser.Val.StructValue.parse(struct.show)
     result should be(struct)
   }
 
   it should "parse `Val.Array`" in {
-    val array: Val                = Val.Array(noTpe, Seq.empty)
-    val Parsed.Success(result, _) = parser.Val.Array.parse(array.show)
+    val array: Val                = Val.ArrayValue(noTpe, Seq.empty)
+    val Parsed.Success(result, _) = parser.Val.ArrayValue.parse(array.show)
     result should be(array)
   }
 

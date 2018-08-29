@@ -111,23 +111,24 @@ trait Transform {
   }
 
   def onVal(value: Val): Val = value match {
-    case Val.Zero(ty)          => Val.Zero(onType(ty))
-    case Val.Undef(ty)         => Val.Undef(onType(ty))
-    case Val.Struct(n, values) => Val.Struct(n, values.map(onVal))
-    case Val.Array(ty, values) => Val.Array(onType(ty), values.map(onVal))
-    case Val.Local(n, ty)      => Val.Local(n, onType(ty))
-    case Val.Global(n, ty)     => Val.Global(n, onType(ty))
-    case Val.Const(v)          => Val.Const(onVal(v))
-    case _                     => value
+    case Val.Zero(ty)               => Val.Zero(onType(ty))
+    case Val.Undef(ty)              => Val.Undef(onType(ty))
+    case Val.StructValue(n, values) => Val.StructValue(n, values.map(onVal))
+    case Val.ArrayValue(ty, values) =>
+      Val.ArrayValue(onType(ty), values.map(onVal))
+    case Val.Local(n, ty)  => Val.Local(n, onType(ty))
+    case Val.Global(n, ty) => Val.Global(n, onType(ty))
+    case Val.Const(v)      => Val.Const(onVal(v))
+    case _                 => value
   }
 
   def onType(ty: Type): Type = ty match {
-    case Type.Array(ty, n) =>
-      Type.Array(onType(ty), n)
+    case Type.ArrayValue(ty, n) =>
+      Type.ArrayValue(onType(ty), n)
     case Type.Function(args, ty) =>
       Type.Function(args.map(onType), onType(ty))
-    case Type.Struct(n, tys) =>
-      Type.Struct(n, tys.map(onType))
+    case Type.StructValue(n, tys) =>
+      Type.StructValue(n, tys.map(onType))
     case Type.Var(ty) =>
       Type.Var(onType(ty))
     case _ =>
