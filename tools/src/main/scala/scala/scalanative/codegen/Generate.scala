@@ -116,7 +116,7 @@ object Generate {
       val entryMainTy =
         Type.Function(Seq(Type.Module(entry.top), ObjectArray), Type.Void)
       val entryMainName =
-        Global.Member(entry, "main_scala.scalanative.runtime.ObjectArray_unit")
+        Global.Member(entry, "main_arr.java.lang.String_unit")
       val entryMain = Val.Global(entryMainName, Type.Ptr)
 
       val stackBottom = Val.Local(fresh(), Type.Ptr)

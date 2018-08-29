@@ -18,8 +18,7 @@ private[scalanative] object ScalaNative {
   def entries(config: Config): Seq[Global] = {
     val mainClass = Global.Top(config.mainClass)
     val entry =
-      Global.Member(mainClass,
-                    "main_scala.scalanative.runtime.ObjectArray_unit")
+      Global.Member(mainClass, "main_arr.java.lang.String_unit")
     entry +: CodeGen.depends
   }
 

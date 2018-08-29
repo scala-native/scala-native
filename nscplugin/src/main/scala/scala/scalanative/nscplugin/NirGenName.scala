@@ -92,52 +92,7 @@ trait NirGenName { self: NirGenPhase =>
   }
 
   private def mangledType(tpe: Type): String =
-    mangledTypeInternal(genType(tpe, box = false))
-
-  private def mangledTypeInternal(ty: nir.Type): String = {
-    val sb = new scalanative.util.ShowBuilder
-
-    def printType(ty: nir.Type): Unit = ty match {
-      case nir.Type.None        => sb.str("")
-      case nir.Type.Void        => sb.str("void")
-      case nir.Type.Vararg      => sb.str("...")
-      case nir.Type.Ptr         => sb.str("ptr")
-      case nir.Type.Bool        => sb.str("bool")
-      case nir.Type.Char        => sb.str("char")
-      case nir.Type.I(w, false) => sb.str("u"); sb.str(w)
-      case nir.Type.I(w, true)  => sb.str("i"); sb.str(w)
-      case nir.Type.Float       => sb.str("f32")
-      case nir.Type.Double      => sb.str("f64")
-      case nir.Type.ArrayValue(ty, n) =>
-        sb.str("arr.")
-        printType(ty)
-        sb.str(".")
-        sb.str(n)
-      case nir.Type.StructValue(name, _) => printGlobal(name)
-      case nir.Type.Function(args, ret) =>
-        sb.str("fun.")
-        sb.rep(args, sep = ".")(printType)
-      case nir.Type.Nothing      => sb.str("nothing")
-      case nir.Type.Unit         => sb.str("unit")
-      case nir.Type.Class(name)  => printGlobal(name)
-      case nir.Type.Trait(name)  => printGlobal(name)
-      case nir.Type.Module(name) => printGlobal(name)
-    }
-
-    def printGlobal(global: nir.Global): Unit = global match {
-      case nir.Global.None =>
-        unreachable
-      case nir.Global.Top(id) =>
-        sb.str(id)
-      case nir.Global.Member(n, id) =>
-        sb.str(id)
-        sb.str("..")
-        sb.str(id)
-    }
-
-    printType(ty)
-    sb.toString
-  }
+    genType(tpe, box = false).mangle
 
   private def nativeIdOf(sym: Symbol): String = {
     sym.getAnnotation(NameClass).flatMap(_.stringArg(0)).getOrElse {

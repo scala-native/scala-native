@@ -412,6 +412,28 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.VarstoreOp)
       putVal(slot)
       putVal(value)
+
+    case Op.Arrayalloc(ty, init) =>
+      putInt(T.ArrayallocOp)
+      putType(ty)
+      putVal(init)
+
+    case Op.Arrayload(ty, arr, idx) =>
+      putInt(T.ArrayloadOp)
+      putType(ty)
+      putVal(arr)
+      putVal(idx)
+
+    case Op.Arraystore(ty, arr, idx, value) =>
+      putInt(T.ArraystoreOp)
+      putType(ty)
+      putVal(arr)
+      putVal(idx)
+      putVal(value)
+
+    case Op.Arraylength(arr) =>
+      putInt(T.ArraylengthOp)
+      putVal(arr)
   }
 
   private def putParams(params: Seq[Val.Local]) = putSeq(params)(putParam)
@@ -448,6 +470,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Type.Nothing   => putInt(T.NothingType)
     case Type.Var(ty)   => putInt(T.VarType); putType(ty)
     case Type.Unit      => putInt(T.UnitType)
+    case Type.Array(ty) => putInt(T.ArrayType); putType(ty)
     case Type.Class(n)  => putInt(T.ClassType); putGlobal(n)
     case Type.Trait(n)  => putInt(T.TraitType); putGlobal(n)
     case Type.Module(n) => putInt(T.ModuleType); putGlobal(n)

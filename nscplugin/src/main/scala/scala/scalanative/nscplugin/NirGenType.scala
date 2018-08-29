@@ -108,11 +108,10 @@ trait NirGenType { self: NirGenPhase =>
   }
 
   def genRefType(st: SimpleType): nir.Type = st.sym match {
-    case ObjectClass => nir.Rt.Object
-    case UnitClass   => nir.Type.Unit
-    case NullClass   => genRefType(RuntimeNullClass)
-    case ArrayClass =>
-      genRefType(RuntimeArrayClass(genPrimCode(st.targs.head)))
+    case ObjectClass           => nir.Rt.Object
+    case UnitClass             => nir.Type.Unit
+    case NullClass             => genRefType(RuntimeNullClass)
+    case ArrayClass            => nir.Type.Array(genType(st.targs.head, box = false))
     case _ if st.isStruct      => genStruct(st)
     case _ if st.isScalaModule => nir.Type.Module(genTypeName(st.sym))
     case _ if st.isInterface   => nir.Type.Trait(genTypeName(st.sym))

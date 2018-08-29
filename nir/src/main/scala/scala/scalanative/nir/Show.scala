@@ -312,6 +312,30 @@ object Show {
         val_(slot)
         str(", ")
         val_(value)
+      case Op.Arrayalloc(ty, init) =>
+        str("arrayalloc[")
+        type_(ty)
+        str("] ")
+        val_(init)
+      case Op.Arrayload(ty, arr, idx) =>
+        str("arrayload[")
+        type_(ty)
+        str("] ")
+        val_(arr)
+        str(", ")
+        val_(idx)
+      case Op.Arraystore(ty, arr, idx, value) =>
+        str("arraystore[")
+        type_(ty)
+        str("] ")
+        val_(arr)
+        str(", ")
+        val_(idx)
+        str(", ")
+        val_(value)
+      case Op.Arraylength(arr) =>
+        str("arraylength ")
+        val_(arr)
     }
 
     def bin_(bin: Bin): Unit = bin match {
@@ -569,6 +593,10 @@ object Show {
       case Type.Nothing => str("nothing")
       case Type.Var(ty) => str("var["); type_(ty); str("]")
       case Type.Unit    => str("unit")
+      case Type.Array(ty) =>
+        str("array[")
+        type_(ty)
+        str("]")
       case Type.Class(name) =>
         str("class ")
         global_(name)

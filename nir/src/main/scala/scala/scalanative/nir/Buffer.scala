@@ -103,4 +103,12 @@ class Buffer(implicit fresh: Fresh) {
     let(Op.Varload(slot), unwind)
   def varstore(slot: Val, value: Val, unwind: Next): Val =
     let(Op.Varstore(slot, value), unwind)
+  def arrayalloc(ty: Type, init: Val, unwind: Next): Val =
+    let(Op.Arrayalloc(ty, init), unwind)
+  def arrayload(ty: Type, arr: Val, idx: Val, unwind: Next): Val =
+    let(Op.Arrayload(ty, arr, idx), unwind)
+  def arraystore(ty: Type, arr: Val, idx: Val, value: Val, unwind: Next): Val =
+    let(Op.Arraystore(ty, arr, idx, value), unwind)
+  def arraylength(arr: Val, unwind: Next): Val =
+    let(Op.Arraylength(arr), unwind)
 }

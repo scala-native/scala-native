@@ -104,6 +104,12 @@ class TypeParserTest extends FlatSpec with Matchers {
     result should be(unit)
   }
 
+  it should "parse `Type.Array`" in {
+    val ty: Type                  = Type.Array(Type.Int)
+    val Parsed.Success(result, _) = parser.Type.Array.parse(ty.show)
+    result should be(ty)
+  }
+
   it should "parse `Type.Class`" in {
     val `class`: Type             = Type.Class(global)
     val Parsed.Success(result, _) = parser.Type.Class.parse(`class`.show)

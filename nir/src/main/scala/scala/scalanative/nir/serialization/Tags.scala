@@ -133,33 +133,37 @@ object Tags {
 
   final val Op = Next + 32
 
-  final val CallOp       = 1 + Op
-  final val LoadOp       = 1 + CallOp
-  final val StoreOp      = 1 + LoadOp
-  final val ElemOp       = 1 + StoreOp
-  final val ExtractOp    = 1 + ElemOp
-  final val InsertOp     = 1 + ExtractOp
-  final val StackallocOp = 1 + InsertOp
-  final val BinOp        = 1 + StackallocOp
-  final val CompOp       = 1 + BinOp
-  final val ConvOp       = 1 + CompOp
-  final val SelectOp     = 1 + ConvOp
-  final val ClassallocOp = 1 + SelectOp
-  final val FieldloadOp  = 1 + ClassallocOp
-  final val FieldstoreOp = 1 + FieldloadOp
-  final val MethodOp     = 1 + FieldstoreOp
-  final val ModuleOp     = 1 + MethodOp
-  final val AsOp         = 1 + ModuleOp
-  final val IsOp         = 1 + AsOp
-  final val CopyOp       = 1 + IsOp
-  final val SizeofOp     = 1 + CopyOp
-  final val ClosureOp    = 1 + SizeofOp
-  final val BoxOp        = 1 + ClosureOp
-  final val UnboxOp      = 1 + BoxOp
-  final val DynmethodOp  = 1 + UnboxOp
-  final val VarOp        = 1 + DynmethodOp
-  final val VarloadOp    = 1 + VarOp
-  final val VarstoreOp   = 1 + VarloadOp
+  final val CallOp        = 1 + Op
+  final val LoadOp        = 1 + CallOp
+  final val StoreOp       = 1 + LoadOp
+  final val ElemOp        = 1 + StoreOp
+  final val ExtractOp     = 1 + ElemOp
+  final val InsertOp      = 1 + ExtractOp
+  final val StackallocOp  = 1 + InsertOp
+  final val BinOp         = 1 + StackallocOp
+  final val CompOp        = 1 + BinOp
+  final val ConvOp        = 1 + CompOp
+  final val SelectOp      = 1 + ConvOp
+  final val ClassallocOp  = 1 + SelectOp
+  final val FieldloadOp   = 1 + ClassallocOp
+  final val FieldstoreOp  = 1 + FieldloadOp
+  final val MethodOp      = 1 + FieldstoreOp
+  final val ModuleOp      = 1 + MethodOp
+  final val AsOp          = 1 + ModuleOp
+  final val IsOp          = 1 + AsOp
+  final val CopyOp        = 1 + IsOp
+  final val SizeofOp      = 1 + CopyOp
+  final val ClosureOp     = 1 + SizeofOp
+  final val BoxOp         = 1 + ClosureOp
+  final val UnboxOp       = 1 + BoxOp
+  final val DynmethodOp   = 1 + UnboxOp
+  final val VarOp         = 1 + DynmethodOp
+  final val VarloadOp     = 1 + VarOp
+  final val VarstoreOp    = 1 + VarloadOp
+  final val ArrayallocOp  = 1 + VarstoreOp
+  final val ArrayloadOp   = 1 + ArrayallocOp
+  final val ArraystoreOp  = 1 + ArrayloadOp
+  final val ArraylengthOp = 1 + ArraystoreOp
 
   // Types
 
@@ -187,7 +191,8 @@ object Tags {
   final val NothingType     = 1 + FunctionType
   final val VarType         = 1 + NothingType
   final val UnitType        = 1 + VarType
-  final val ClassType       = 1 + UnitType
+  final val ArrayType       = 1 + UnitType
+  final val ClassType       = 1 + ArrayType
   final val TraitType       = 1 + ClassType
   final val ModuleType      = 1 + TraitType
 

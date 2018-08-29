@@ -34,6 +34,10 @@ sealed abstract class Op {
     case Op.Var(ty)                 => Type.Var(ty)
     case Op.Varload(slot)           => val Type.Var(ty) = slot.ty; ty
     case Op.Varstore(slot, _)       => Type.Unit
+    case Op.Arrayalloc(ty, _)       => Type.Array(ty)
+    case Op.Arrayload(ty, _, _)     => ty
+    case Op.Arraystore(_, _, _, _)  => Type.Unit
+    case Op.Arraylength(_)          => Type.Int
   }
 
   final def show: String = nir.Show(this)
@@ -78,4 +82,9 @@ object Op {
   final case class Var(ty: Type)                                   extends Op
   final case class Varload(slot: Val)                              extends Op
   final case class Varstore(slot: Val, value: Val)                 extends Op
+  final case class Arrayalloc(ty: Type, init: Val)                 extends Op
+  final case class Arrayload(ty: Type, arr: Val, idx: Val)         extends Op
+  final case class Arraystore(ty: Type, arr: Val, idx: Val, value: Val)
+      extends Op
+  final case class Arraylength(arr: Val) extends Op
 }

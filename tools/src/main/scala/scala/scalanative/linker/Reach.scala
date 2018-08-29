@@ -418,6 +418,8 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       reachGlobal(ty.name)
     case Type.Var(ty) =>
       reachType(ty)
+    case Type.Array(ty) =>
+      reachType(ty)
     case _ =>
       ()
   }
@@ -559,6 +561,21 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     case Op.Varstore(slot, value) =>
       reachVal(slot)
       reachVal(value)
+    case Op.Arrayalloc(ty, init) =>
+      classInfo(Type.toArrayClass(ty)).foreach(reachAllocation)
+      reachType(ty)
+      reachVal(init)
+    case Op.Arrayload(ty, arr, idx) =>
+      reachType(ty)
+      reachVal(arr)
+      reachVal(idx)
+    case Op.Arraystore(ty, arr, idx, value) =>
+      reachType(ty)
+      reachVal(arr)
+      reachVal(idx)
+      reachVal(value)
+    case Op.Arraylength(arr) =>
+      reachVal(arr)
   }
 
   def reachNext(next: Next): Unit = next match {
@@ -569,6 +586,8 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
   }
 
   def reachMethodTargets(ty: Type, sig: String): Unit = ty match {
+    case Type.Array(ty) =>
+      reachMethodTargets(Type.Class(Type.toArrayClass(ty)), sig)
     case ty: Type.Named =>
       scopeInfo(ty.name).foreach { scope =>
         if (!scope.calls.contains(sig)) {

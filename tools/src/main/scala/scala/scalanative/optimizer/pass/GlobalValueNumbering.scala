@@ -102,13 +102,13 @@ object GlobalValueNumbering extends PassCompanion {
     op match {
       // Always idempotent:
       case (_: Pure | _: Method | _: Dynmethod | _: As | _: Is | _: Copy |
-          _: Sizeof | _: Module | _: Box | _: Unbox) =>
+          _: Sizeof | _: Module | _: Box | _: Unbox | _: Arraylength) =>
         true
 
       // Never idempotent:
       case (_: Load | _: Store | _: Stackalloc | _: Classalloc | _: Call |
           _: Closure | _: Fieldload | _: Fieldstore | _: Var | _: Varload |
-          _: Varstore) =>
+          _: Varstore | _: Arrayalloc | _: Arrayload | _: Arraystore) =>
         false
     }
   }
@@ -183,10 +183,34 @@ object GlobalValueNumbering extends PassCompanion {
             eqType(tyA, tyB)
 
           case (Box(tyA, objA), Box(tyB, objB)) =>
-            tyA == tyB && eqVal(objA, objB)
+            eqType(tyA, tyB) && eqVal(objA, objB)
 
           case (Unbox(tyA, objA), Unbox(tyB, objB)) =>
-            tyA == tyB && eqVal(objA, objB)
+            eqType(tyA, tyB) && eqVal(objA, objB)
+
+          case (Var(tyA), Var(tyB)) =>
+            eqType(tyA, tyB)
+
+          case (Varload(slotA), Varload(slotB)) =>
+            eqVal(slotA, slotB)
+
+          case (Varstore(slotA, valueA), Varstore(slotB, valueB)) =>
+            eqVal(slotA, slotB) && eqVal(valueA, valueB)
+
+          case (Arrayalloc(tyA, initA), Arrayalloc(tyB, initB)) =>
+            eqType(tyA, tyB) && eqVal(initA, initB)
+
+          case (Arrayload(tyA, arrA, idxA), Arrayload(tyB, arrB, idxB)) =>
+            eqType(tyA, tyB) && eqVal(arrA, arrB) && eqVal(idxA, idxB)
+
+          case (Arraystore(tyA, arrA, idxA, valueA),
+                Arraystore(tyB, arrB, idxB, valueB)) =>
+            eqType(tyA, tyB) && eqVal(arrA, arrB) && eqVal(idxA, idxB) && eqVal(
+              valueA,
+              valueB)
+
+          case (Arraylength(arrA), Arraylength(arrB)) =>
+            eqVal(arrA, arrB)
 
           case _ => false // non-matching pairs of ops, or not idempotent ones
         }
@@ -305,11 +329,19 @@ object GlobalValueNumbering extends PassCompanion {
         case Copy(value)                => Seq("Copy", value)
         case Closure(ty, fun, captures) => "Closure" +: ty +: fun +: captures
 
-        case Classalloc(name) => Seq("Classalloc", name)
-        case Module(name)     => Seq("Module", name)
-        case Sizeof(ty)       => Seq("Sizeof", ty)
-        case Box(code, obj)   => Seq("Box", code.toString, obj)
-        case Unbox(code, obj) => Seq("Unbox", code.toString, obj)
+        case Classalloc(name)        => Seq("Classalloc", name)
+        case Module(name)            => Seq("Module", name)
+        case Sizeof(ty)              => Seq("Sizeof", ty)
+        case Box(code, obj)          => Seq("Box", code.toString, obj)
+        case Unbox(code, obj)        => Seq("Unbox", code.toString, obj)
+        case Var(ty)                 => Seq("Var", ty)
+        case Varload(slot)           => Seq("Varload", slot)
+        case Varstore(slot, value)   => Seq("Varstore", slot, value)
+        case Arrayalloc(ty, init)    => Seq("Arrayalloc", ty, init)
+        case Arrayload(ty, arr, idx) => Seq("Arrayload", ty, arr, idx)
+        case Arraystore(ty, arr, idx, value) =>
+          Seq("Arraystore", ty, arr, idx, value)
+        case Arraylength(arr) => Seq("Arraylength", arr)
       }
 
       combineHashes(opFields.map(this.apply))

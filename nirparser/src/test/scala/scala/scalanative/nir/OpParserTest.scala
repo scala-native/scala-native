@@ -184,4 +184,28 @@ class OpParserTest extends FlatSpec with Matchers {
     val Parsed.Success(result, _) = parser.Op.Varstore.parse(op.show)
     result should be(op)
   }
+
+  it should "parse `Op.Arrayalloc`" in {
+    val op: Op                    = Op.Arrayalloc(Type.Int, Val.None)
+    val Parsed.Success(result, _) = parser.Op.Arrayalloc.parse(op.show)
+    result should be(op)
+  }
+
+  it should "parse `Op.Arrayload`" in {
+    val op: Op                    = Op.Arrayload(Type.Int, Val.None, Val.None)
+    val Parsed.Success(result, _) = parser.Op.Arrayload.parse(op.show)
+    result should be(op)
+  }
+
+  it should "parse `Op.Arraystore`" in {
+    val op: Op                    = Op.Arraystore(Type.Int, Val.None, Val.None, Val.None)
+    val Parsed.Success(result, _) = parser.Op.Arraystore.parse(op.show)
+    result should be(op)
+  }
+
+  it should "parse `Op.Arraylength`" in {
+    val op: Op                    = Op.Arraylength(Val.None)
+    val Parsed.Success(result, _) = parser.Op.Arraylength.parse(op.show)
+    result should be(op)
+  }
 }

@@ -17,6 +17,56 @@ sealed abstract class Type {
   }
 
   final def show: String = nir.Show(this)
+
+  final def mangle = {
+    val sb = new scalanative.util.ShowBuilder
+
+    def printType(ty: nir.Type): Unit = ty match {
+      case nir.Type.None        => sb.str("")
+      case nir.Type.Void        => sb.str("void")
+      case nir.Type.Vararg      => sb.str("...")
+      case nir.Type.Ptr         => sb.str("ptr")
+      case nir.Type.Bool        => sb.str("bool")
+      case nir.Type.Char        => sb.str("char")
+      case nir.Type.I(w, false) => sb.str("u"); sb.str(w)
+      case nir.Type.I(w, true)  => sb.str("i"); sb.str(w)
+      case nir.Type.Float       => sb.str("f32")
+      case nir.Type.Double      => sb.str("f64")
+      case nir.Type.ArrayValue(ty, n) =>
+        sb.str("arrv.")
+        printType(ty)
+        sb.str(".")
+        sb.str(n)
+      case nir.Type.StructValue(name, _) => printGlobal(name)
+      case nir.Type.Function(args, ret) =>
+        sb.str("fun.")
+        sb.rep(args, sep = ".")(printType)
+      case nir.Type.Nothing      => sb.str("nothing")
+      case nir.Type.Unit         => sb.str("unit")
+      case nir.Type.Class(name)  => printGlobal(name)
+      case nir.Type.Trait(name)  => printGlobal(name)
+      case nir.Type.Module(name) => printGlobal(name)
+      case nir.Type.Array(ty) =>
+        sb.str("arr.")
+        printType(ty)
+      case _: nir.Type.Var =>
+        util.unreachable
+    }
+
+    def printGlobal(global: nir.Global): Unit = global match {
+      case nir.Global.None =>
+        util.unreachable
+      case nir.Global.Top(id) =>
+        sb.str(id)
+      case nir.Global.Member(n, id) =>
+        sb.str(id)
+        sb.str("..")
+        sb.str(id)
+    }
+
+    printType(this)
+    sb.toString
+  }
 }
 
 object Type {
@@ -72,6 +122,7 @@ object Type {
 
   sealed abstract class RefKind         extends Type
   final case object Unit                extends RefKind
+  final case class Array(ty: Type)      extends RefKind
   final case class Class(name: Global)  extends RefKind with Named
   final case class Trait(name: Global)  extends RefKind with Named
   final case class Module(name: Global) extends RefKind with Named
@@ -93,4 +144,32 @@ object Type {
 
   val box = unbox.map { case (k, v) => (v, k) }
 
+  val typeToArray = Map[Type, Global](
+    Type.Bool   -> Global.Top("scala.scalanative.runtime.BooleanArray"),
+    Type.Char   -> Global.Top("scala.scalanative.runtime.CharArray"),
+    Type.Byte   -> Global.Top("scala.scalanative.runtime.ByteArray"),
+    Type.Short  -> Global.Top("scala.scalanative.runtime.ShortArray"),
+    Type.Int    -> Global.Top("scala.scalanative.runtime.IntArray"),
+    Type.Long   -> Global.Top("scala.scalanative.runtime.LongArray"),
+    Type.Float  -> Global.Top("scala.scalanative.runtime.FloatArray"),
+    Type.Double -> Global.Top("scala.scalanative.runtime.DoubleArray"),
+    Type.Unit   -> Global.Top("scala.scalanative.runtime.UnitArray"),
+    Rt.Object   -> Global.Top("scala.scalanative.runtime.ObjectArray")
+  )
+  val arrayToType =
+    typeToArray.map { case (k, v) => (v, k) }
+  def toArrayClass(ty: Type): Global = ty match {
+    case _ if typeToArray.contains(ty) =>
+      typeToArray(ty)
+    case ty: Type.Named if ty.name == Global.Top("scala.runtime.BoxedUnit") =>
+      typeToArray(Type.Unit)
+    case _ =>
+      typeToArray(Rt.Object)
+  }
+  def fromArrayClass(name: Global): Option[Type] =
+    arrayToType.get(name)
+  def isArray(clsTy: Type.Class): Boolean =
+    isArray(clsTy.name)
+  def isArray(clsName: Global): Boolean =
+    arrayToType.contains(clsName)
 }

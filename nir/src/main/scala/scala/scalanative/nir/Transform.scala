@@ -108,6 +108,14 @@ trait Transform {
       Op.Varload(onVal(elem))
     case Op.Varstore(elem, value) =>
       Op.Varstore(onVal(elem), onVal(value))
+    case Op.Arrayalloc(ty, init) =>
+      Op.Arrayalloc(onType(ty), onVal(init))
+    case Op.Arrayload(ty, arr, idx) =>
+      Op.Arrayload(onType(ty), onVal(arr), onVal(idx))
+    case Op.Arraystore(ty, arr, idx, value) =>
+      Op.Arraystore(onType(ty), onVal(arr), onVal(idx), onVal(value))
+    case Op.Arraylength(arr) =>
+      Op.Arraylength(onVal(arr))
   }
 
   def onVal(value: Val): Val = value match {
@@ -131,6 +139,8 @@ trait Transform {
       Type.StructValue(n, tys.map(onType))
     case Type.Var(ty) =>
       Type.Var(onType(ty))
+    case Type.Array(ty) =>
+      Type.Array(onType(ty))
     case _ =>
       ty
   }

@@ -108,6 +108,20 @@ object Op extends Base[nir.Op] {
   val Varstore = P("varstore" ~ Val.parser ~ "," ~ Val.parser map {
     case (slot, value) => nir.Op.Varstore(slot, value)
   })
+  val Arrayalloc = P("arrayalloc[" ~ Type.parser ~ "]" ~ Val.parser map {
+    case (ty, init) => nir.Op.Arrayalloc(ty, init)
+  })
+  val Arrayload = P(
+    "arrayload[" ~ Type.parser ~ "]" ~ Val.parser ~ "," ~ Val.parser map {
+      case (ty, arr, idx) => nir.Op.Arrayload(ty, arr, idx)
+    })
+  val Arraystore = P(
+    "arraystore[" ~ Type.parser ~ "]" ~ Val.parser ~ "," ~ Val.parser ~ "," ~ Val.parser map {
+      case (ty, arr, idx, value) => nir.Op.Arraystore(ty, arr, idx, value)
+    })
+  val Arraylength = P("arraylength" ~ Val.parser map {
+    case arr => nir.Op.Arraylength(arr)
+  })
   override val parser: P[nir.Op] =
-    Call | Load | Store | Elem | Extract | Insert | Stackalloc | Bin | Comp | Conv | Select | Classalloc | Fieldload | Fieldstore | Method | Module | As | Is | Copy | Sizeof | Closure | Box | Unbox | Var | Varload | Varstore
+    Call | Load | Store | Elem | Extract | Insert | Stackalloc | Bin | Comp | Conv | Select | Classalloc | Fieldload | Fieldstore | Method | Module | As | Is | Copy | Sizeof | Closure | Box | Unbox | Var | Varload | Varstore | Arrayalloc | Arrayload | Arraystore | Arraylength
 }

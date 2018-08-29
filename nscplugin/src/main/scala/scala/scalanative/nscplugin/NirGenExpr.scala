@@ -450,23 +450,14 @@ trait NirGenExpr { self: NirGenPhase =>
     def genArrayValue(av: ArrayValue): Val = {
       val ArrayValue(tpt, elems) = av
 
-      val len       = Literal(Constant(elems.length))
-      val elemcode  = genPrimCode(tpt.tpe)
-      val modulesym = RuntimeArrayModule(elemcode)
-      val methsym   = RuntimeArrayAllocMethod(elemcode)
-      val alloc     = genApplyModuleMethod(modulesym, methsym, Seq(len))
+      val elemty = genType(tpt.tpe, box = false)
+      val alloc  = buf.arrayalloc(elemty, Val.Int(elems.length), unwind)
 
       if (elems.nonEmpty) {
         val values = genSimpleArgs(elems)
-
         values.zipWithIndex.foreach {
           case (v, i) =>
-            val idx = Literal(Constant(i))
-
-            genApplyMethod(RuntimeArrayUpdateMethod(elemcode),
-                          statically = true,
-                          alloc,
-                          Seq(idx, ValTree(v)))
+            buf.arraystore(elemty, alloc, Val.Int(i), v, unwind)
         }
       }
 
@@ -1069,27 +1060,23 @@ trait NirGenExpr { self: NirGenPhase =>
 
       val Apply(Select(arrayp, _), argsp) = app
 
-      val array    = genExpr(arrayp)
-      def elemcode = genArrayCode(arrayp.tpe)
+      val Type.Array(elemty) = genType(arrayp.tpe, box = false)
 
-      def call(meth: Symbol) =
-        genApplyMethod(meth, statically = true, array, argsp)
+      def elemcode = genArrayCode(arrayp.tpe)
+      val array    = genExpr(arrayp)
 
       if (code == ARRAY_CLONE) {
-        call(RuntimeArrayCloneMethod(elemcode))
+        val method = RuntimeArrayCloneMethod(elemcode)
+        genApplyMethod(method, statically = true, array, argsp)
       } else if (scalaPrimitives.isArrayGet(code)) {
-        def callArrayApply =
-          call(RuntimeArrayApplyMethod(elemcode))
-        genType(app.tpe, box = false) match {
-          case refty: Type.RefKind =>
-            buf.as(refty, callArrayApply, unwind)
-          case _ =>
-            callArrayApply
-        }
+        val idx    = genExpr(argsp(0))
+        buf.arrayload(elemty, array, idx, unwind)
       } else if (scalaPrimitives.isArraySet(code)) {
-        call(RuntimeArrayUpdateMethod(elemcode))
+        val idx   = genExpr(argsp(0))
+        val value = genExpr(argsp(1))
+        buf.arraystore(elemty, array, idx, value, unwind)
       } else {
-        call(RuntimeArrayLengthMethod(elemcode))
+        buf.arraylength(array, unwind)
       }
     }
 
@@ -1248,10 +1235,13 @@ trait NirGenExpr { self: NirGenPhase =>
       val toty   = genType(tost, box = false)
       val value  = genExpr(valuep)
       val from   = unboxValue(fromst, partial = false, value)
-      val conv   = castConv(fromty, toty).fold(from)(buf.conv(_, toty, from, unwind))
+      val conv   = genCastOp(fromty, toty, from)
 
       boxValue(tost, conv)
     }
+
+    def genCastOp(fromty: nir.Type, toty: nir.Type, value: Val): Val =
+      castConv(fromty, toty).fold(value)(buf.conv(_, toty, value, unwind))
 
     def genOfOp(app: Apply, code: Int): Val = {
       val Apply(_, Seq(tagp)) = app
@@ -1474,20 +1464,25 @@ trait NirGenExpr { self: NirGenPhase =>
     def genApplyTypeApply(app: Apply): Val = {
       val Apply(TypeApply(fun @ Select(receiverp, _), targs), _) = app
 
-      val ty    = genType(targs.head.tpe, box = true)
-      val value = genExpr(receiverp)
-      val boxed = boxValue(receiverp.tpe, value)
+      val fromty = genType(receiverp.tpe, box = false)
+      val toty   = genType(targs.head.tpe, box = false)
+      def boxty  = genType(targs.head.tpe, box = true)
+      val value  = genExpr(receiverp)
+      def boxed  = boxValue(receiverp.tpe, value)
 
       fun.symbol match {
         case Object_isInstanceOf =>
-          buf.is(ty, boxed, unwind)
+          buf.is(boxty, boxed, unwind)
 
         case Object_asInstanceOf =>
-          if (boxed.ty == ty) {
-            boxed
-          } else {
-            val cast = buf.as(ty, boxed, unwind)
-            unboxValue(app.tpe, partial = true, cast)
+          (fromty, toty) match {
+            case _ if boxed.ty == boxty =>
+              boxed
+            case (_: Type.Primitive, _: Type.Primitive) =>
+              genCoercion(value, fromty, toty)
+            case _ =>
+              val cast = buf.as(boxty, boxed, unwind)
+              unboxValue(app.tpe, partial = true, cast)
           }
       }
     }
@@ -1497,7 +1492,7 @@ trait NirGenExpr { self: NirGenPhase =>
 
       SimpleType.fromType(tpt.tpe) match {
         case SimpleType(ArrayClass, Seq(targ)) =>
-          genApplyNewArray(genPrimCode(targ), args)
+          genApplyNewArray(targ, args)
 
         case st if st.isStruct =>
           genApplyNewStruct(st, args)
@@ -1530,11 +1525,11 @@ trait NirGenExpr { self: NirGenPhase =>
       res
     }
 
-    def genApplyNewArray(elemcode: Char, argsp: Seq[Tree]): Val = {
-      val module = RuntimeArrayModule(elemcode)
-      val meth   = RuntimeArrayAllocMethod(elemcode)
+    def genApplyNewArray(targ: SimpleType, argsp: Seq[Tree]): Val = {
+      val Seq(lengthp) = argsp
+      val length = genExpr(lengthp)
 
-      genApplyModuleMethod(module, meth, argsp)
+      buf.arrayalloc(genType(targ, box = false), length, unwind)
     }
 
     def genApplyNew(clssym: Symbol, ctorsym: Symbol, args: List[Tree]): Val = {
