@@ -131,11 +131,13 @@ object Math {
   @inline def log1p(a: scala.Double): scala.Double =
     cmath.log1p(a)
 
-  @inline def max(a: scala.Double, b: scala.Double): scala.Double =
-    `llvm.maxnum.f64`(a, b)
+  @inline def max(a: scala.Double, b: scala.Double): scala.Double = {
+    if (a.isNaN || b.isNaN) Double.NaN else `llvm.maxnum.f64`(a, b)
+  }
 
-  @inline def max(a: scala.Float, b: scala.Float): scala.Float =
-    `llvm.maxnum.f32`(a, b)
+  @inline def max(a: scala.Float, b: scala.Float): scala.Float = {
+    if (a.isNaN || b.isNaN) Float.NaN else `llvm.maxnum.f32`(a, b)
+  }
 
   @inline def max(a: scala.Int, b: scala.Int): scala.Int =
     if (a > b) a else b
@@ -143,11 +145,13 @@ object Math {
   @inline def max(a: scala.Long, b: scala.Long): scala.Long =
     if (a > b) a else b
 
-  @inline def min(a: scala.Double, b: scala.Double): scala.Double =
-    `llvm.minnum.f64`(a, b)
+  @inline def min(a: scala.Double, b: scala.Double): scala.Double = {
+    if (a.isNaN || b.isNaN) Double.NaN else `llvm.minnum.f64`(a, b)
+  }
 
-  @inline def min(a: scala.Float, b: scala.Float): scala.Float =
-    `llvm.minnum.f32`(a, b)
+  @inline def min(a: scala.Float, b: scala.Float): scala.Float = {
+    if (a.isNaN || b.isNaN) Float.NaN else `llvm.minnum.f32`(a, b)
+  }
 
   @inline def min(a: scala.Int, b: scala.Int): scala.Int =
     if (a < b) a else b
@@ -171,7 +175,7 @@ object Math {
     subtractExact(0, a)
 
   @inline def negateExact(a: scala.Long): scala.Long =
-    subtractExact(0, a)
+    subtractExact(0L, a)
 
   def nextAfter(a: scala.Float, b: scala.Double): scala.Float = {
     val aabs = abs(a.toDouble)
@@ -179,7 +183,7 @@ object Math {
 
     if (Float.isNaN(a) || Double.isNaN(b)) {
       Float.NaN
-    } else if (aabs == 0f && babs == 0d) {
+    } else if (aabs == 0.0f && babs == 0.0d) {
       b.toFloat
     } else if (aabs == Float.MIN_VALUE && babs < aabs) {
       copySign(0, a)
@@ -200,10 +204,10 @@ object Math {
 
     if (Double.isNaN(a) || Double.isNaN(b)) {
       Double.NaN
-    } else if (aabs == 0f && babs == 0d) {
+    } else if (aabs == 0.0d && babs == 0.0d) {
       b
     } else if (aabs == Double.MIN_VALUE && babs < aabs) {
-      copySign(0, a)
+      copySign(0.0d, a)
     } else if (Double.isInfinite(a) && babs < aabs) {
       copySign(Double.MAX_VALUE, a)
     } else if (aabs == Double.MAX_VALUE && babs > aabs) {
