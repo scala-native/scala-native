@@ -19,12 +19,8 @@ object Tags {
   final val AlwaysInlineAttr = 1 + NoInlineAttr
   final val PureAttr         = 1 + AlwaysInlineAttr
   final val ExternAttr       = 1 + PureAttr
-  final val OverrideAttr     = 1 + ExternAttr
-  final val LinkAttr         = 1 + OverrideAttr
-  final val PinAlwaysAttr    = 1 + LinkAttr
-  final val PinIfAttr        = 1 + PinAlwaysAttr
-  final val PinWeakAttr      = 1 + PinIfAttr
-  final val DynAttr          = 1 + PinWeakAttr
+  final val LinkAttr         = 1 + ExternAttr
+  final val DynAttr          = 1 + LinkAttr
   final val StubAttr         = 1 + DynAttr
 
   // Binary ops
@@ -114,6 +110,7 @@ object Tags {
   final val IfInst          = 1 + JumpInst
   final val SwitchInst      = 1 + IfInst
   final val ThrowInst       = 1 + SwitchInst
+  final val LetUnwindInst   = 1 + ThrowInst
 
   // Globals
 
@@ -148,8 +145,9 @@ object Tags {
   final val ConvOp       = 1 + CompOp
   final val SelectOp     = 1 + ConvOp
   final val ClassallocOp = 1 + SelectOp
-  final val FieldOp      = 1 + ClassallocOp
-  final val MethodOp     = 1 + FieldOp
+  final val FieldloadOp  = 1 + ClassallocOp
+  final val FieldstoreOp = 1 + FieldloadOp
+  final val MethodOp     = 1 + FieldstoreOp
   final val ModuleOp     = 1 + MethodOp
   final val AsOp         = 1 + ModuleOp
   final val IsOp         = 1 + AsOp
@@ -159,6 +157,9 @@ object Tags {
   final val BoxOp        = 1 + ClosureOp
   final val UnboxOp      = 1 + BoxOp
   final val DynmethodOp  = 1 + UnboxOp
+  final val VarOp        = 1 + DynmethodOp
+  final val VarloadOp    = 1 + VarOp
+  final val VarstoreOp   = 1 + VarloadOp
 
   // Types
 
@@ -183,9 +184,10 @@ object Tags {
   final val ArrayType    = 1 + DoubleType
   final val FunctionType = 1 + ArrayType
   final val StructType   = 1 + FunctionType
-  final val UnitType     = 1 + StructType
-  final val NothingType  = 1 + UnitType
-  final val ClassType    = 1 + NothingType
+  final val NothingType  = 1 + StructType
+  final val VarType      = 1 + NothingType
+  final val UnitType     = 1 + VarType
+  final val ClassType    = 1 + UnitType
   final val TraitType    = 1 + ClassType
   final val ModuleType   = 1 + TraitType
 

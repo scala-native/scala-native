@@ -20,7 +20,7 @@ class BlockParamReduction extends Pass {
 }
 
 object BlockParamReduction extends PassCompanion {
-  def apply(config: build.Config, top: sema.Top) =
+  def apply(config: build.Config, linked: linker.Result) =
     new BlockParamReduction
 
   class ParamChanger(val suppliedArgs: SuppliedArguments) extends Transform {
@@ -36,7 +36,7 @@ object BlockParamReduction extends PassCompanion {
         }
         val argCopies = params.zip(paramVals).collect {
           case (param, Some(value)) =>
-            Let(param.name, Op.Copy(value))
+            Let(param.name, Op.Copy(value), Next.None)
         }
 
         val newLabel = Inst.Label(name, newParams)

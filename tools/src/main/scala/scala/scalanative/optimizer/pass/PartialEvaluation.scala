@@ -17,219 +17,225 @@ class PartialEvaluation extends Pass {
   override def onInsts(insts: Seq[Inst]): Seq[Inst] = insts.map {
 
     /* Iadd */
-    case Let(n, Op.Bin(Iadd, ty, lhs, IVal(0))) =>
-      copy(n, lhs)
+    case Let(n, Op.Bin(Iadd, ty, lhs, IVal(0)), unwind) =>
+      copy(n, lhs, unwind)
 
-    case Let(n, Op.Bin(Iadd, ty, lhs, rhs)) if (lhs == rhs) =>
-      Let(n, Op.Bin(Imul, ty, lhs, IVal(2, ty)))
+    case Let(n, Op.Bin(Iadd, ty, lhs, rhs), unwind) if lhs == rhs =>
+      Let(n, Op.Bin(Imul, ty, lhs, IVal(2, ty)), unwind)
 
     /* Isub */
-    case Let(n, Op.Bin(Isub, ty, lhs, IVal(0))) =>
-      copy(n, lhs)
+    case Let(n, Op.Bin(Isub, ty, lhs, IVal(0)), unwind) =>
+      copy(n, lhs, unwind)
 
-    case Let(n, Op.Bin(Isub, ty, lhs, IVal(i))) if (i < 0) =>
-      Let(n, Op.Bin(Iadd, ty, lhs, IVal(-i, ty)))
+    case Let(n, Op.Bin(Isub, ty, lhs, IVal(i)), unwind) if i < 0 =>
+      Let(n, Op.Bin(Iadd, ty, lhs, IVal(-i, ty)), unwind)
 
-    case Let(n, Op.Bin(Isub, ty, lhs, rhs)) if (lhs == rhs) =>
-      copy(n, IVal(0, ty))
+    case Let(n, Op.Bin(Isub, ty, lhs, rhs), unwind) if lhs == rhs =>
+      copy(n, IVal(0, ty), unwind)
 
     /* Imul */
-    case Let(n, Op.Bin(Imul, ty, lhs, IVal(0))) =>
-      copy(n, IVal(0, ty))
+    case Let(n, Op.Bin(Imul, ty, lhs, IVal(0)), unwind) =>
+      copy(n, IVal(0, ty), unwind)
 
-    case Let(n, Op.Bin(Imul, ty, lhs, IVal(1))) =>
-      copy(n, lhs)
+    case Let(n, Op.Bin(Imul, ty, lhs, IVal(1)), unwind) =>
+      copy(n, lhs, unwind)
 
-    case Let(n, Op.Bin(Imul, ty, lhs, IVal(-1))) =>
-      Let(n, Op.Bin(Isub, ty, IVal(0, ty), lhs))
+    case Let(n, Op.Bin(Imul, ty, lhs, IVal(-1)), unwind) =>
+      Let(n, Op.Bin(Isub, ty, IVal(0, ty), lhs), unwind)
 
-    case Let(n, Op.Bin(Imul, ty, lhs, PowerOf2(shift))) =>
-      Let(n, Op.Bin(Shl, ty, lhs, shift))
+    case Let(n, Op.Bin(Imul, ty, lhs, PowerOf2(shift)), unwind) =>
+      Let(n, Op.Bin(Shl, ty, lhs, shift), unwind)
 
     /* Sdiv */
-    case Let(n, Op.Bin(Sdiv, ty, _, IVal(0))) =>
-      copy(n, Val.Undef(ty))
+    case Let(n, Op.Bin(Sdiv, ty, _, IVal(0)), unwind) =>
+      copy(n, Val.Undef(ty), unwind)
 
-    case Let(n, Op.Bin(Sdiv, ty, lhs, IVal(1))) =>
-      copy(n, lhs)
+    case Let(n, Op.Bin(Sdiv, ty, lhs, IVal(1)), unwind) =>
+      copy(n, lhs, unwind)
 
-    case Let(n, Op.Bin(Sdiv, ty, lhs, IVal(-1))) =>
-      Let(n, Op.Bin(Isub, ty, IVal(0, ty), lhs))
+    case Let(n, Op.Bin(Sdiv, ty, lhs, IVal(-1)), unwind) =>
+      Let(n, Op.Bin(Isub, ty, IVal(0, ty), lhs), unwind)
 
-    case Let(n, Op.Bin(Sdiv, ty, IVal(0), _)) =>
-      copy(n, IVal(0, ty))
+    case Let(n, Op.Bin(Sdiv, ty, IVal(0), _), unwind) =>
+      copy(n, IVal(0, ty), unwind)
 
     /* Udiv */
-    case Let(n, Op.Bin(Udiv, ty, _, IVal(0))) =>
-      copy(n, Val.Undef(ty))
+    case Let(n, Op.Bin(Udiv, ty, _, IVal(0)), unwind) =>
+      copy(n, Val.Undef(ty), unwind)
 
-    case Let(n, Op.Bin(Udiv, ty, lhs, IVal(1))) =>
-      copy(n, lhs)
+    case Let(n, Op.Bin(Udiv, ty, lhs, IVal(1)), unwind) =>
+      copy(n, lhs, unwind)
 
-    case Let(n, Op.Bin(Udiv, ty, IVal(0), _)) =>
-      copy(n, IVal(0, ty))
+    case Let(n, Op.Bin(Udiv, ty, IVal(0), _), unwind) =>
+      copy(n, IVal(0, ty), unwind)
 
-    case Let(n, Op.Bin(Udiv, ty, lhs, PowerOf2(shift))) =>
-      Let(n, Op.Bin(Lshr, ty, lhs, shift))
+    case Let(n, Op.Bin(Udiv, ty, lhs, PowerOf2(shift)), unwind) =>
+      Let(n, Op.Bin(Lshr, ty, lhs, shift), unwind)
 
     /* Srem */
-    case Let(n, Op.Bin(Srem, ty, lhs, IVal(0))) =>
-      copy(n, Val.Undef(ty))
+    case Let(n, Op.Bin(Srem, ty, lhs, IVal(0)), unwind) =>
+      copy(n, Val.Undef(ty), unwind)
 
-    case Let(n, Op.Bin(Srem, ty, lhs, IVal(1))) =>
-      copy(n, IVal(0, ty))
+    case Let(n, Op.Bin(Srem, ty, lhs, IVal(1)), unwind) =>
+      copy(n, IVal(0, ty), unwind)
 
-    case Let(n, Op.Bin(Srem, ty, lhs, IVal(-1))) =>
-      copy(n, IVal(0, ty))
+    case Let(n, Op.Bin(Srem, ty, lhs, IVal(-1)), unwind) =>
+      copy(n, IVal(0, ty), unwind)
 
-    case Let(n, Op.Bin(Srem, ty, IVal(0), rhs)) =>
-      copy(n, IVal(0, ty))
+    case Let(n, Op.Bin(Srem, ty, IVal(0), rhs), unwind) =>
+      copy(n, IVal(0, ty), unwind)
 
     /* Urem */
-    case Let(n, Op.Bin(Urem, ty, lhs, IVal(0))) =>
-      copy(n, Val.Undef(ty))
+    case Let(n, Op.Bin(Urem, ty, lhs, IVal(0)), unwind) =>
+      copy(n, Val.Undef(ty), unwind)
 
-    case Let(n, Op.Bin(Urem, ty, lhs, IVal(1))) =>
-      copy(n, IVal(0, ty))
+    case Let(n, Op.Bin(Urem, ty, lhs, IVal(1)), unwind) =>
+      copy(n, IVal(0, ty), unwind)
 
-    case Let(n, Op.Bin(Urem, ty, IVal(0), rhs)) =>
-      copy(n, IVal(0, ty))
+    case Let(n, Op.Bin(Urem, ty, IVal(0), rhs), unwind) =>
+      copy(n, IVal(0, ty), unwind)
 
     /* Shl */
-    case Let(n, Op.Bin(Shl, Type.Int, lhs, Val.Int(a))) if ((a & 31) == 0) =>
-      copy(n, lhs)
+    case Let(n, Op.Bin(Shl, Type.Int, lhs, Val.Int(a)), unwind)
+        if (a & 31) == 0 =>
+      copy(n, lhs, unwind)
 
-    case Let(n, Op.Bin(Shl, Type.Long, lhs, Val.Long(a))) if ((a & 63) == 0) =>
-      copy(n, lhs)
+    case Let(n, Op.Bin(Shl, Type.Long, lhs, Val.Long(a)), unwind)
+        if (a & 63) == 0 =>
+      copy(n, lhs, unwind)
 
-    case Let(n, Op.Bin(Shl, ty, IVal(0), _)) =>
-      copy(n, IVal(0, ty))
+    case Let(n, Op.Bin(Shl, ty, IVal(0), _), unwind) =>
+      copy(n, IVal(0, ty), unwind)
 
     /* Lshr */
-    case Let(n, Op.Bin(Lshr, Type.Int, lhs, Val.Int(a))) if ((a & 31) == 0) =>
-      copy(n, lhs)
+    case Let(n, Op.Bin(Lshr, Type.Int, lhs, Val.Int(a)), unwind)
+        if (a & 31) == 0 =>
+      copy(n, lhs, unwind)
 
-    case Let(n, Op.Bin(Lshr, Type.Long, lhs, Val.Long(a))) if ((a & 63) == 0) =>
-      copy(n, lhs)
+    case Let(n, Op.Bin(Lshr, Type.Long, lhs, Val.Long(a)), unwind)
+        if (a & 63) == 0 =>
+      copy(n, lhs, unwind)
 
-    case Let(n, Op.Bin(Lshr, ty, IVal(0), rhs)) =>
-      copy(n, IVal(0, ty))
+    case Let(n, Op.Bin(Lshr, ty, IVal(0), rhs), unwind) =>
+      copy(n, IVal(0, ty), unwind)
 
     /* Ashr */
-    case Let(n, Op.Bin(Ashr, Type.Int, lhs, Val.Int(a))) if ((a & 31) == 0) =>
-      copy(n, lhs)
+    case Let(n, Op.Bin(Ashr, Type.Int, lhs, Val.Int(a)), unwind)
+        if (a & 31) == 0 =>
+      copy(n, lhs, unwind)
 
-    case Let(n, Op.Bin(Ashr, Type.Long, lhs, Val.Long(a))) if ((a & 63) == 0) =>
-      copy(n, lhs)
+    case Let(n, Op.Bin(Ashr, Type.Long, lhs, Val.Long(a)), unwind)
+        if (a & 63) == 0 =>
+      copy(n, lhs, unwind)
 
-    case Let(n, Op.Bin(Ashr, ty, IVal(0), rhs)) =>
-      copy(n, IVal(0, ty))
+    case Let(n, Op.Bin(Ashr, ty, IVal(0), rhs), unwind) =>
+      copy(n, IVal(0, ty), unwind)
 
-    case Let(n, Op.Bin(Ashr, ty, IVal(-1), rhs)) =>
-      copy(n, IVal(-1, ty))
+    case Let(n, Op.Bin(Ashr, ty, IVal(-1), rhs), unwind) =>
+      copy(n, IVal(-1, ty), unwind)
 
     /* And */
-    case Let(n, Op.Bin(And, ty, lhs, rhs)) if (lhs == rhs) =>
-      copy(n, lhs)
+    case Let(n, Op.Bin(And, ty, lhs, rhs), unwind) if lhs == rhs =>
+      copy(n, lhs, unwind)
 
-    case Let(n, Op.Bin(And, ty, lhs, IVal(0))) =>
-      copy(n, IVal(0, ty))
+    case Let(n, Op.Bin(And, ty, lhs, IVal(0)), unwind) =>
+      copy(n, IVal(0, ty), unwind)
 
-    case Let(n, Op.Bin(And, ty, lhs, IVal(-1))) =>
-      copy(n, lhs)
+    case Let(n, Op.Bin(And, ty, lhs, IVal(-1)), unwind) =>
+      copy(n, lhs, unwind)
 
     /* Or */
-    case Let(n, Op.Bin(Or, ty, lhs, rhs)) if (lhs == rhs) =>
-      copy(n, lhs)
+    case Let(n, Op.Bin(Or, ty, lhs, rhs), unwind) if lhs == rhs =>
+      copy(n, lhs, unwind)
 
-    case Let(n, Op.Bin(Or, ty, lhs, IVal(0))) =>
-      copy(n, lhs)
+    case Let(n, Op.Bin(Or, ty, lhs, IVal(0)), unwind) =>
+      copy(n, lhs, unwind)
 
-    case Let(n, Op.Bin(Or, ty, lhs, IVal(-1))) =>
-      copy(n, IVal(-1, ty))
+    case Let(n, Op.Bin(Or, ty, lhs, IVal(-1)), unwind) =>
+      copy(n, IVal(-1, ty), unwind)
 
     /* Xor */
-    case Let(n, Op.Bin(Xor, ty, lhs, rhs)) if (lhs == rhs) =>
-      copy(n, IVal(0, ty))
+    case Let(n, Op.Bin(Xor, ty, lhs, rhs), unwind) if lhs == rhs =>
+      copy(n, IVal(0, ty), unwind)
 
-    case Let(n, Op.Bin(Xor, ty, lhs, IVal(0))) =>
-      copy(n, lhs)
+    case Let(n, Op.Bin(Xor, ty, lhs, IVal(0)), unwind) =>
+      copy(n, lhs, unwind)
 
     /* Ieq */
-    case Let(n, Op.Comp(Ieq, ty, lhs, rhs)) if (lhs == rhs) =>
-      copy(n, Val.True)
+    case Let(n, Op.Comp(Ieq, ty, lhs, rhs), unwind) if lhs == rhs =>
+      copy(n, Val.True, unwind)
 
-    case Let(n, Op.Comp(Ieq, ty, lhs, Val.True)) =>
-      copy(n, lhs)
+    case Let(n, Op.Comp(Ieq, ty, lhs, Val.True), unwind) =>
+      copy(n, lhs, unwind)
 
-    case Let(n, Op.Comp(Ieq, ty, lhs, Val.False)) =>
-      neg(n, lhs)
+    case Let(n, Op.Comp(Ieq, ty, lhs, Val.False), unwind) =>
+      neg(n, lhs, unwind)
 
     /* Ine */
-    case Let(n, Op.Comp(Ine, ty, lhs, rhs)) if (lhs == rhs) =>
-      copy(n, Val.False)
+    case Let(n, Op.Comp(Ine, ty, lhs, rhs), unwind) if lhs == rhs =>
+      copy(n, Val.False, unwind)
 
-    case Let(n, Op.Comp(Ine, ty, lhs, Val.False)) =>
-      copy(n, lhs)
+    case Let(n, Op.Comp(Ine, ty, lhs, Val.False), unwind) =>
+      copy(n, lhs, unwind)
 
-    case Let(n, Op.Comp(Ine, ty, lhs, Val.True)) =>
-      neg(n, lhs)
+    case Let(n, Op.Comp(Ine, ty, lhs, Val.True), unwind) =>
+      neg(n, lhs, unwind)
 
     /* Ugt */
-    case Let(n, Op.Comp(Ugt, ty, lhs, IVal(a))) if (a == umaxValue(ty)) =>
-      copy(n, Val.False)
+    case Let(n, Op.Comp(Ugt, ty, lhs, IVal(a)), unwind) if a == umaxValue(ty) =>
+      copy(n, Val.False, unwind)
 
     /* Uge */
-    case Let(n, Op.Comp(Uge, ty, lhs, IVal(a))) if (a == uminValue(ty)) =>
-      copy(n, Val.True)
+    case Let(n, Op.Comp(Uge, ty, lhs, IVal(a)), unwind) if a == uminValue(ty) =>
+      copy(n, Val.True, unwind)
 
     /* Ult */
-    case Let(n, Op.Comp(Ult, ty, lhs, IVal(a))) if (a == uminValue(ty)) =>
-      copy(n, Val.False)
+    case Let(n, Op.Comp(Ult, ty, lhs, IVal(a)), unwind) if a == uminValue(ty) =>
+      copy(n, Val.False, unwind)
 
     /* Ule */
-    case Let(n, Op.Comp(Ule, ty, lhs, IVal(a))) if (a == umaxValue(ty)) =>
-      copy(n, Val.True)
+    case Let(n, Op.Comp(Ule, ty, lhs, IVal(a)), unwind) if a == umaxValue(ty) =>
+      copy(n, Val.True, unwind)
 
     /* Sgt */
-    case Let(n, Op.Comp(Sgt, ty, lhs, IVal(a))) if (a == maxValue(ty)) =>
-      copy(n, Val.False)
+    case Let(n, Op.Comp(Sgt, ty, lhs, IVal(a)), unwind) if a == maxValue(ty) =>
+      copy(n, Val.False, unwind)
 
     /* Sge */
-    case Let(n, Op.Comp(Sge, ty, lhs, IVal(a))) if (a == minValue(ty)) =>
-      copy(n, Val.True)
+    case Let(n, Op.Comp(Sge, ty, lhs, IVal(a)), unwind) if a == minValue(ty) =>
+      copy(n, Val.True, unwind)
 
     /* Slt */
-    case Let(n, Op.Comp(Slt, ty, lhs, IVal(a))) if (a == minValue(ty)) =>
-      copy(n, Val.False)
+    case Let(n, Op.Comp(Slt, ty, lhs, IVal(a)), unwind) if a == minValue(ty) =>
+      copy(n, Val.False, unwind)
 
     /* Sle */
-    case Let(n, Op.Comp(Sle, ty, lhs, IVal(a))) if (a == maxValue(ty)) =>
-      copy(n, Val.True)
+    case Let(n, Op.Comp(Sle, ty, lhs, IVal(a)), unwind) if a == maxValue(ty) =>
+      copy(n, Val.True, unwind)
 
     /* Select */
-    case Let(n, Op.Select(cond, thenv, elsev)) if (thenv == elsev) =>
-      copy(n, thenv)
+    case Let(n, Op.Select(cond, thenv, elsev), unwind) if thenv == elsev =>
+      copy(n, thenv, unwind)
 
-    case Let(n, Op.Select(cond, Val.True, Val.False)) =>
-      copy(n, cond)
+    case Let(n, Op.Select(cond, Val.True, Val.False), unwind) =>
+      copy(n, cond, unwind)
 
-    case Let(n, Op.Select(cond, Val.False, Val.True)) =>
-      neg(n, cond)
+    case Let(n, Op.Select(cond, Val.False, Val.True), unwind) =>
+      neg(n, cond, unwind)
 
     case inst =>
       inst
   }
 
-  private def copy(n: Local, value: Val): Inst =
-    Let(n, Op.Copy(value))
+  private def copy(n: Local, value: Val, unwind: Next): Inst =
+    Let(n, Op.Copy(value), unwind)
 
-  private def neg(n: Local, value: Val): Inst =
-    Let(n, Op.Bin(Xor, Type.Bool, value, Val.True))
+  private def neg(n: Local, value: Val, unwind: Next): Inst =
+    Let(n, Op.Bin(Xor, Type.Bool, value, Val.True), unwind)
 }
 
 object PartialEvaluation extends PassCompanion {
-  override def apply(config: build.Config, top: sema.Top) =
+  override def apply(config: build.Config, linked: linker.Result) =
     new PartialEvaluation
 
   object PowerOf2 {

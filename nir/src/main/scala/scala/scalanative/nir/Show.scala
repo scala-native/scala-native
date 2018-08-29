@@ -65,27 +65,9 @@ object Show {
         str("pure")
       case Attr.Extern =>
         str("extern")
-      case Attr.Override(name) =>
-        str("override(")
-        global_(name)
-        str(")")
       case Attr.Link(name) =>
         str("link(")
         str(name)
-        str(")")
-      case Attr.PinAlways(name) =>
-        str("pin(")
-        global_(name)
-        str(")")
-      case Attr.PinIf(name, cond) =>
-        str("pin-if(")
-        global_(name)
-        str(", ")
-        global_(cond)
-        str(")")
-      case Attr.PinWeak(name) =>
-        str("pin-weak(")
-        global_(name)
         str(")")
     }
 
@@ -125,10 +107,14 @@ object Show {
           str(")")
         }
         str(":")
-      case Inst.Let(name, op) =>
+      case Inst.Let(name, op, unwind) =>
         local_(name)
         str(" = ")
         op_(op)
+        if (unwind ne Next.None) {
+          str(" ")
+          next_(unwind)
+        }
       case Inst.Unreachable =>
         str("unreachable")
       case Inst.Ret(Val.None) =>
@@ -171,7 +157,7 @@ object Show {
     }
 
     def op_(op: Op): Unit = op match {
-      case Op.Call(ty, f, args, unwind) =>
+      case Op.Call(ty, f, args) =>
         str("call[")
         type_(ty)
         str("] ")
@@ -179,10 +165,6 @@ object Show {
         str("(")
         rep(args, sep = ", ")(val_)
         str(")")
-        if (unwind ne Next.None) {
-          str(" ")
-          next_(unwind)
-        }
       case Op.Load(ty, ptr, isVolatile) =>
         str(if (isVolatile) "volatile load[" else "load[")
         type_(ty)
@@ -255,29 +237,37 @@ object Show {
       case Op.Classalloc(name) =>
         str("classalloc ")
         global_(name)
-      case Op.Field(value, name) =>
-        str("field ")
-        val_(value)
+      case Op.Fieldload(ty, obj, name) =>
+        str("fieldload[")
+        type_(ty)
+        str("] ")
+        val_(obj)
         str(", ")
         global_(name)
-      case Op.Method(value, name) =>
+      case Op.Fieldstore(ty, obj, name, value) =>
+        str("fieldstore[")
+        type_(ty)
+        str("] ")
+        val_(obj)
+        str(", ")
+        global_(name)
+        str(", ")
+        val_(value)
+      case Op.Method(value, signature) =>
         str("method ")
         val_(value)
-        str(", ")
-        global_(name)
+        str(", \"")
+        str(escapeQuotes(signature))
+        str("\"")
       case Op.Dynmethod(value, signature) =>
         str("dynmethod ")
         val_(value)
         str(", \"")
         str(escapeQuotes(signature))
         str("\"")
-      case Op.Module(name, unwind) =>
+      case Op.Module(name) =>
         str("module ")
         global_(name)
-        if (unwind ne Next.None) {
-          str(" ")
-          next_(unwind)
-        }
       case Op.As(ty, v) =>
         str("as[")
         type_(ty)
@@ -310,6 +300,18 @@ object Show {
         type_(ty)
         str("] ")
         val_(v)
+      case Op.Var(ty) =>
+        str("var[")
+        type_(ty)
+        str("]")
+      case Op.Varload(slot) =>
+        str("varload ")
+        val_(slot)
+      case Op.Varstore(slot, value) =>
+        str("varstore ")
+        val_(slot)
+        str(", ")
+        val_(value)
     }
 
     def bin_(bin: Bin): Unit = bin match {
@@ -564,8 +566,9 @@ object Show {
         str("struct ")
         global_(name)
 
-      case Type.Unit    => str("unit")
       case Type.Nothing => str("nothing")
+      case Type.Var(ty) => str("var["); type_(ty); str("]")
+      case Type.Unit    => str("unit")
       case Type.Class(name) =>
         str("class ")
         global_(name)

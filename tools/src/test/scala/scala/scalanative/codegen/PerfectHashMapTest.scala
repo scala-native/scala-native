@@ -1,5 +1,5 @@
 package scala.scalanative
-package lower
+package codegen
 
 import PerfectHashMap._
 import org.scalacheck.Properties

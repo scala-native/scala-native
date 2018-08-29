@@ -1,5 +1,5 @@
 package scala.scalanative
-package linker
+package codegen
 
 import nir._
 import scala.collection.mutable
@@ -7,7 +7,7 @@ import scala.collection.mutable
 /**
  * Created by lukaskellenberger on 17.12.16.
  */
-object ReflectiveProxy {
+object GenerateReflectiveProxies {
   implicit val fresh = Fresh()
 
   private def genReflProxy(defn: Defn.Define): Defn.Define = {
@@ -19,7 +19,7 @@ object ReflectiveProxy {
 
     val label      = genProxyLabel(proxyArgs)
     val unboxInsts = genArgUnboxes(label)
-    val method     = Inst.Let(Op.Method(label.params.head, defn.name))
+    val method     = Inst.Let(Op.Method(label.params.head, defn.name.id), Next.None)
     val call       = genCall(defnType, method, label.params, unboxInsts)
     val box        = genRetValBox(call.name, defnType.ret, proxyTy.ret)
     val retInst    = genRet(box.name, proxyTy.ret)
@@ -55,9 +55,9 @@ object ReflectiveProxy {
   private def genArgUnboxes(label: Inst.Label) =
     label.params.tail.map {
       case local: Val.Local if Type.unbox.contains(local.ty) =>
-        Inst.Let(Op.Unbox(local.ty, local))
+        Inst.Let(Op.Unbox(local.ty, local), Next.None)
       case local: Val.Local =>
-        Inst.Let(Op.Copy(local))
+        Inst.Let(Op.Copy(local), Next.None)
     }
 
   private def genCall(defnTy: Type.Function,
@@ -74,16 +74,16 @@ object ReflectiveProxy {
         }
         .toList
 
-    Inst.Let(
-      Op.Call(defnTy, Val.Local(method.name, Type.Ptr), callParams, Next.None))
+    Inst.Let(Op.Call(defnTy, Val.Local(method.name, Type.Ptr), callParams),
+             Next.None)
   }
 
   private def genRetValBox(callName: Local, defnRetTy: Type, proxyRetTy: Type) =
     Type.box.get(defnRetTy) match {
       case Some(boxTy) =>
-        Inst.Let(Op.Box(boxTy, Val.Local(callName, defnRetTy)))
+        Inst.Let(Op.Box(boxTy, Val.Local(callName, defnRetTy)), Next.None)
       case None =>
-        Inst.Let(Op.Copy(Val.Local(callName, defnRetTy)))
+        Inst.Let(Op.Copy(Val.Local(callName, defnRetTy)), Next.None)
     }
 
   private def genRet(retValBoxName: Local, proxyRetTy: Type) =
@@ -92,13 +92,11 @@ object ReflectiveProxy {
       case _         => Inst.Ret(Val.Local(retValBoxName, proxyRetTy))
     }
 
-  def genAllReflectiveProxies(
-      dyndefns: mutable.Set[Global],
-      defns: mutable.UnrolledBuffer[Defn]): Seq[Defn.Define] = {
+  def apply(dynimpls: Seq[Global], defns: Seq[Defn]): Seq[Defn.Define] = {
 
     // filters methods with same name and args but different return type for each given type
     val toProxy =
-      dyndefns
+      dynimpls
         .foldLeft(Map[(Global, String), Global]()) {
           case (acc, g @ Global.Member(owner, _)) =>
             val sign = Global.genSignature(g)

@@ -1,7 +1,7 @@
 package scala.scalanative
 package build
 
-import java.nio.file.Path
+import java.nio.file.{Path, Files}
 
 /** Utility methods for building code using Scala Native. */
 object Build {
@@ -49,39 +49,40 @@ object Build {
    *  @param outpath The path to the resulting native binary.
    *  @return `outpath`, the path to the resulting native binary.
    */
-  def build(config: Config, outpath: Path): Path = {
-    val driver       = optimizer.Driver.default(config.mode)
-    val linkerResult = ScalaNative.link(config, driver)
+  def build(config: Config, outpath: Path): Path = config.logger.time("Total") {
+    val driver  = optimizer.Driver.default(config.mode)
+    val entries = ScalaNative.entries(config)
+    val linked  = ScalaNative.link(config, entries)
 
-    if (linkerResult.unavailable.nonEmpty) {
-      linkerResult.unavailable.map(_.show).sorted.foreach { signature =>
+    if (linked.unavailable.nonEmpty) {
+      linked.unavailable.map(_.show).sorted.foreach { signature =>
         config.logger.error(s"cannot link: $signature")
       }
       throw new BuildException("unable to link")
     }
-    val classCount = linkerResult.defns.count {
-      case _: nir.Defn.Class | _: nir.Defn.Module | _: nir.Defn.Trait => true
-      case _                                                          => false
+    val classCount = linked.defns.count {
+      case _: nir.Defn.Class | _: nir.Defn.Module => true
+      case _                                      => false
     }
-    val methodCount = linkerResult.defns.count(_.isInstanceOf[nir.Defn.Define])
+    val methodCount = linked.defns.count(_.isInstanceOf[nir.Defn.Define])
     config.logger.info(
       s"Discovered ${classCount} classes and ${methodCount} methods")
 
     val optimized =
-      ScalaNative.optimize(config, driver, linkerResult.defns)
-    val lowered =
-      ScalaNative.lower(config, optimized, linkerResult.dyns)
-    ScalaNative.codegen(config, lowered)
+      ScalaNative.optimize(config, linked, driver)
+
+    IO.getAll(config.workdir, "glob:**.ll").foreach(Files.delete)
+    ScalaNative.codegen(config, linked, optimized)
     val generated = IO.getAll(config.workdir, "glob:**.ll")
 
     val unpackedLib = LLVM.unpackNativelib(config.nativelib, config.workdir)
     val objectFiles = config.logger.time("Compiling to native code") {
       val nativelibConfig =
         config.withCompileOptions("-O2" +: config.compileOptions)
-      LLVM.compileNativelib(nativelibConfig, linkerResult, unpackedLib)
+      LLVM.compileNativelib(nativelibConfig, linked, unpackedLib)
       LLVM.compile(config, generated)
     }
 
-    LLVM.link(config, linkerResult, objectFiles, unpackedLib, outpath)
+    LLVM.link(config, linked, objectFiles, unpackedLib, outpath)
   }
 }

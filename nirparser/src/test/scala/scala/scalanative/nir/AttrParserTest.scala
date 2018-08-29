@@ -20,11 +20,7 @@ class AttrParserTest extends FlatSpec with Matchers {
       Align(1024),
       Pure,
       Extern,
-      Override(global),
-      Link("test"),
-      PinAlways(global),
-      PinIf(global, global),
-      PinWeak(global)
+      Link("test")
     )
 
     attrs foreach { attr =>

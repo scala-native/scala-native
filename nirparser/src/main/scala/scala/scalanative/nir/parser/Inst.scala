@@ -16,8 +16,8 @@ object Inst extends Base[nir.Inst] {
       case (name, params) => nir.Inst.Label(name, params getOrElse Seq())
     })
   val Let =
-    P(Local.parser ~ "=" ~ Op.parser map {
-      case (name, op) => nir.Inst.Let(name, op)
+    P(Local.parser ~ "=" ~ Op.parser ~ unwind map {
+      case (name, op, unwind) => nir.Inst.Let(name, op, unwind)
     })
   val Unreachable = P("unreachable".! map (_ => nir.Inst.Unreachable))
   val Ret =

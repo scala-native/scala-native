@@ -7,7 +7,7 @@ import nir._
 import sema._
 
 /** Eliminates pure computations that are not being used, as well as unused block parameters. */
-class DeadCodeElimination(implicit top: sema.Top) extends Pass {
+class DeadCodeElimination(implicit linked: linker.Result) extends Pass {
   import DeadCodeElimination._
 
   override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
@@ -24,7 +24,7 @@ class DeadCodeElimination(implicit top: sema.Top) extends Pass {
         }
         buf += block.label.copy(params = newParams)
         block.insts.foreach {
-          case inst @ Inst.Let(n, op) =>
+          case inst @ Inst.Let(n, _, _) =>
             if (usedef(n).alive) buf += inst
           case inst: Inst.Cf =>
             buf += removeArgs.onInst(inst)
@@ -39,8 +39,8 @@ class DeadCodeElimination(implicit top: sema.Top) extends Pass {
 }
 
 object DeadCodeElimination extends PassCompanion {
-  override def apply(config: build.Config, top: sema.Top) =
-    new DeadCodeElimination()(top)
+  override def apply(config: build.Config, linked: linker.Result) =
+    new DeadCodeElimination()(linked)
 
   class ArgRemover(usedef: Map[Local, UseDef.Def], entryName: Local)
       extends Transform {

@@ -20,11 +20,12 @@ abstract class OptimizerSpec extends LinkerSpec {
   def optimize[T](entry: String,
                   sources: Map[String, String],
                   driver: Option[Driver] = None)(
-      fn: (Config, Seq[nir.Attr.Link], Seq[nir.Defn]) => T): T =
+      fn: (Config, linker.Result, Seq[nir.Defn]) => T): T =
     link(entry, sources, driver = driver) {
-      case (config, res) =>
+      case (config, linked) =>
         val driver_ = driver.getOrElse(Driver.default(Mode.default))
-        fn(config, res.links, ScalaNative.optimize(config, driver_, res.defns))
+        val opt     = ScalaNative.optimize(config, linked, driver_)
+        fn(config, linked, opt)
     }
 
 }

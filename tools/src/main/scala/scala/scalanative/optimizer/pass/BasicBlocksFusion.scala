@@ -58,7 +58,7 @@ class BasicBlocksFusion extends Pass {
         // Replace the parameters of the fused block with the supplied arguments
         val paramDef = params.zip(args).map {
           case (param, arg) =>
-            Let(param, Op.Copy(arg))
+            Let(param, Op.Copy(arg), Next.None)
         }
 
         // need to drop the first instruction of recCode, as it is the block label
@@ -76,6 +76,6 @@ class BasicBlocksFusion extends Pass {
 }
 
 object BasicBlocksFusion extends PassCompanion {
-  def apply(config: build.Config, top: sema.Top) =
+  def apply(config: build.Config, linked: linker.Result) =
     new BasicBlocksFusion
 }

@@ -100,7 +100,7 @@ object math {
   // Nearest integer floating-point operations
 
   def ceilf(x: CFloat): CFloat       = extern
-  def ceil(x: CFloat): CFloat        = extern
+  def ceil(x: CDouble): CDouble      = extern
   def floorf(x: CFloat): CFloat      = extern
   def floor(x: CDouble): CDouble     = extern
   def truncf(x: CFloat): CFloat      = extern

@@ -1,8 +1,8 @@
 package scala.scalanative
-package lower
+package codegen
 
 import scalanative.nir._
-import scalanative.sema._
+import scalanative.linker.{Class, Field}
 
 class FieldLayout(meta: Metadata, cls: Class) {
   def index(fld: Field) =
@@ -13,7 +13,7 @@ class FieldLayout(meta: Metadata, cls: Class) {
     } { parent =>
       meta.layout(parent).entries
     }
-    base ++ cls.fields
+    base ++ cls.members.collect { case f: Field => f }
   }
   val name = cls.name member "layout"
   val struct: Type.Struct = {

@@ -95,8 +95,9 @@ object ScalaNativePluginInternal {
     },
     nativeWorkdir := {
       val workdir = crossTarget.value / "native"
-      IO.delete(workdir)
-      IO.createDirectory(workdir)
+      if (!workdir.exists) {
+        IO.createDirectory(workdir)
+      }
       workdir
     },
     nativeConfig := {

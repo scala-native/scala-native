@@ -146,9 +146,15 @@ trait NirGenName { self: NirGenPhase =>
         if (id0.charAt(id0.length() - 1) != ' ') id0
         else id0.substring(0, id0.length() - 1) // strip trailing ' '
       } else if (sym.isMethod) {
-        val name = sym.name.decoded
-        if (sym.owner == NObjectClass) name.substring(2) // strip the __
-        else name.toString
+        val name                = sym.name.decoded
+        val isScalaHashOrEquals = name.startsWith("__scala_")
+        if (sym.owner == NObjectClass) {
+          name.substring(2) // strip the __
+        } else if (isScalaHashOrEquals) {
+          name.substring(2) // strip the __
+        } else {
+          name.toString
+        }
       } else {
         scalanative.util.unreachable
       }

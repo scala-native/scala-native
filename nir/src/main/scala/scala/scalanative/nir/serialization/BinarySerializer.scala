@@ -76,15 +76,10 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Attr.Align(_) =>
       assert(false, "alignment attribute is not serializable")
 
-    case Attr.Pure        => putInt(T.PureAttr)
-    case Attr.Extern      => putInt(T.ExternAttr)
-    case Attr.Override(n) => putInt(T.OverrideAttr); putGlobal(n)
+    case Attr.Pure   => putInt(T.PureAttr)
+    case Attr.Extern => putInt(T.ExternAttr)
 
-    case Attr.Link(s)      => putInt(T.LinkAttr); putString(s)
-    case Attr.PinAlways(n) => putInt(T.PinAlwaysAttr); putGlobal(n)
-    case Attr.PinIf(n, cond) =>
-      putInt(T.PinIfAttr); putGlobal(n); putGlobal(cond)
-    case Attr.PinWeak(n) => putInt(T.PinWeakAttr); putGlobal(n)
+    case Attr.Link(s) => putInt(T.LinkAttr); putString(s)
   }
 
   private def putBin(bin: Bin) = bin match {
@@ -118,10 +113,16 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putLocal(name)
       putParams(params)
 
-    case Inst.Let(name, op) =>
+    case Inst.Let(name, op, Next.None) =>
       putInt(T.LetInst)
       putLocal(name)
       putOp(op)
+
+    case Inst.Let(name, op, unwind) =>
+      putInt(T.LetUnwindInst)
+      putLocal(name)
+      putOp(op)
+      putNext(unwind)
 
     case Inst.Unreachable =>
       putInt(T.UnreachableInst)
@@ -267,12 +268,11 @@ final class BinarySerializer(buffer: ByteBuffer) {
   }
 
   private def putOp(op: Op) = op match {
-    case Op.Call(ty, v, args, unwind) =>
+    case Op.Call(ty, v, args) =>
       putInt(T.CallOp)
       putType(ty)
       putVal(v)
       putVals(args)
-      putNext(unwind)
 
     case Op.Load(ty, ptr, isVolatile) =>
       assert(!isVolatile, "volatile loads are not serializable")
@@ -339,25 +339,32 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.ClassallocOp)
       putGlobal(n)
 
-    case Op.Field(v, name) =>
-      putInt(T.FieldOp)
-      putVal(v)
+    case Op.Fieldload(ty, obj, name) =>
+      putInt(T.FieldloadOp)
+      putType(ty)
+      putVal(obj)
       putGlobal(name)
 
-    case Op.Method(v, name) =>
+    case Op.Fieldstore(ty, obj, name, value) =>
+      putInt(T.FieldstoreOp)
+      putType(ty)
+      putVal(obj)
+      putGlobal(name)
+      putVal(value)
+
+    case Op.Method(v, signature) =>
       putInt(T.MethodOp)
       putVal(v)
-      putGlobal(name)
+      putString(signature)
 
-    case Op.Dynmethod(obj, sign) =>
+    case Op.Dynmethod(obj, signature) =>
       putInt(T.DynmethodOp)
       putVal(obj)
-      putString(sign)
+      putString(signature)
 
-    case Op.Module(name, unwind) =>
+    case Op.Module(name) =>
       putInt(T.ModuleOp)
       putGlobal(name)
-      putNext(unwind)
 
     case Op.As(ty, v) =>
       putInt(T.AsOp)
@@ -392,6 +399,19 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.UnboxOp)
       putType(ty)
       putVal(obj)
+
+    case Op.Var(ty) =>
+      putInt(T.VarOp)
+      putType(ty)
+
+    case Op.Varload(slot) =>
+      putInt(T.VarloadOp)
+      putVal(slot)
+
+    case Op.Varstore(slot, value) =>
+      putInt(T.VarstoreOp)
+      putVal(slot)
+      putVal(value)
   }
 
   private def putParams(params: Seq[Val.Local]) = putSeq(params)(putParam)
@@ -424,8 +444,9 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Type.Struct(n, tys) =>
       putInt(T.StructType); putGlobal(n); putTypes(tys)
 
-    case Type.Unit      => putInt(T.UnitType)
     case Type.Nothing   => putInt(T.NothingType)
+    case Type.Var(ty)   => putInt(T.VarType); putType(ty)
+    case Type.Unit      => putInt(T.UnitType)
     case Type.Class(n)  => putInt(T.ClassType); putGlobal(n)
     case Type.Trait(n)  => putInt(T.TraitType); putGlobal(n)
     case Type.Module(n) => putInt(T.ModuleType); putGlobal(n)

@@ -35,8 +35,8 @@ trait Transform {
         Val.Local(param.name, onType(param.ty))
       }
       Inst.Label(n, newparams)
-    case Inst.Let(n, op) =>
-      Inst.Let(n, onOp(op))
+    case Inst.Let(n, op, unwind) =>
+      Inst.Let(n, onOp(op), onNext(unwind))
 
     case Inst.Unreachable =>
       Inst.Unreachable
@@ -53,8 +53,8 @@ trait Transform {
   }
 
   def onOp(op: Op): Op = op match {
-    case Op.Call(ty, ptrv, argvs, unwind) =>
-      Op.Call(onType(ty), onVal(ptrv), argvs.map(onVal), onNext(unwind))
+    case Op.Call(ty, ptrv, argvs) =>
+      Op.Call(onType(ty), onVal(ptrv), argvs.map(onVal))
     case Op.Load(ty, ptrv, isVolatile) =>
       Op.Load(onType(ty), onVal(ptrv), isVolatile)
     case Op.Store(ty, ptrv, v, isVolatile) =>
@@ -78,14 +78,16 @@ trait Transform {
 
     case Op.Classalloc(n) =>
       Op.Classalloc(n)
-    case Op.Field(v, n) =>
-      Op.Field(onVal(v), n)
+    case Op.Fieldload(ty, v, n) =>
+      Op.Fieldload(onType(ty), onVal(v), n)
+    case Op.Fieldstore(ty, v1, n, v2) =>
+      Op.Fieldstore(onType(ty), onVal(v1), n, onVal(v2))
     case Op.Method(v, n) =>
       Op.Method(onVal(v), n)
     case Op.Dynmethod(obj, signature) =>
       Op.Dynmethod(onVal(obj), signature)
-    case Op.Module(n, unwind) =>
-      Op.Module(n, onNext(unwind))
+    case Op.Module(n) =>
+      Op.Module(n)
     case Op.As(ty, v) =>
       Op.As(onType(ty), onVal(v))
     case Op.Is(ty, v) =>
@@ -100,6 +102,12 @@ trait Transform {
       Op.Box(code, onVal(obj))
     case Op.Unbox(code, obj) =>
       Op.Unbox(code, onVal(obj))
+    case Op.Var(ty) =>
+      Op.Var(onType(ty))
+    case Op.Varload(elem) =>
+      Op.Varload(onVal(elem))
+    case Op.Varstore(elem, value) =>
+      Op.Varstore(onVal(elem), onVal(value))
   }
 
   def onVal(value: Val): Val = value match {
@@ -120,6 +128,8 @@ trait Transform {
       Type.Function(args.map(onType), onType(ty))
     case Type.Struct(n, tys) =>
       Type.Struct(n, tys.map(onType))
+    case Type.Var(ty) =>
+      Type.Var(onType(ty))
     case _ =>
       ty
   }

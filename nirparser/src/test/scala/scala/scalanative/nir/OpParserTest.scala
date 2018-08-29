@@ -9,15 +9,8 @@ class OpParserTest extends FlatSpec with Matchers {
   val global = Global.Top("test")
   val noTpe  = Type.None
 
-  "The NIR parser" should "parse `Op.Call` without unwind" in {
-    val call: Op                  = Op.Call(noTpe, Val.None, Seq.empty, Next.None)
-    val Parsed.Success(result, _) = parser.Op.Call.parse(call.show)
-    result should be(call)
-  }
-
-  "The NIR parser" should "parse `Op.Call` with unwind" in {
-    val call: Op =
-      Op.Call(noTpe, Val.None, Seq.empty, Next.Unwind(Local(0)))
+  "The NIR parser" should "parse `Op.Call`" in {
+    val call: Op                  = Op.Call(noTpe, Val.None, Seq.empty)
     val Parsed.Success(result, _) = parser.Op.Call.parse(call.show)
     result should be(call)
   }
@@ -100,34 +93,34 @@ class OpParserTest extends FlatSpec with Matchers {
     result should be(classalloc)
   }
 
-  it should "parse `Op.Field`" in {
-    val field: Op = Op.Field(Val.None, global)
+  it should "parse `Op.Fieldload`" in {
+    val field: Op = Op.Fieldload(Type.Int, Val.None, global)
     val Parsed.Success(result, _) =
-      parser.Op.Field.parse(field.show)
+      parser.Op.Fieldload.parse(field.show)
+    result should be(field)
+  }
+
+  it should "parse `Op.Fieldstore`" in {
+    val field: Op = Op.Fieldstore(Type.Int, Val.None, global, Val.None)
+    val Parsed.Success(result, _) =
+      parser.Op.Fieldstore.parse(field.show)
     result should be(field)
   }
 
   it should "parse `Op.Method`" in {
-    val method: Op                = Op.Method(Val.None, global)
+    val method: Op                = Op.Method(Val.None, "signature")
     val Parsed.Success(result, _) = parser.Op.Method.parse(method.show)
     result should be(method)
   }
 
   it should "parse `Op.Dynmethod`" in {
-    val signature     = "signature"
-    val dynmethod: Op = Op.Dynmethod(Val.None, signature)
+    val dynmethod: Op = Op.Dynmethod(Val.None, "signature")
     val Parsed.Success(result, _) =
       parser.Op.Dynmethod.parse(dynmethod.show)
     result should be(dynmethod)
   }
-  it should "parse `Op.Module` without unwind" in {
-    val module: Op                = Op.Module(global, Next.None)
-    val Parsed.Success(result, _) = parser.Op.Module.parse(module.show)
-    result should be(module)
-  }
-
-  it should "parse `Op.Module` with unwind" in {
-    val module: Op                = Op.Module(global, Next.Unwind(Local(0)))
+  it should "parse `Op.Module`" in {
+    val module: Op                = Op.Module(global)
     val Parsed.Success(result, _) = parser.Op.Module.parse(module.show)
     result should be(module)
   }
@@ -172,5 +165,23 @@ class OpParserTest extends FlatSpec with Matchers {
     val unbox: Op                 = Op.Unbox(noTpe, Val.None)
     val Parsed.Success(result, _) = parser.Op.Unbox.parse(unbox.show)
     result should be(unbox)
+  }
+
+  it should "parse `Op.Var`" in {
+    val op: Op                    = Op.Var(Type.Int)
+    val Parsed.Success(result, _) = parser.Op.Var.parse(op.show)
+    result should be(op)
+  }
+
+  it should "parse `Op.Varload`" in {
+    val op: Op                    = Op.Varload(Val.None)
+    val Parsed.Success(result, _) = parser.Op.Varload.parse(op.show)
+    result should be(op)
+  }
+
+  it should "parse `Op.Varstore`" in {
+    val op: Op                    = Op.Varstore(Val.None, Val.None)
+    val Parsed.Success(result, _) = parser.Op.Varstore.parse(op.show)
+    result should be(op)
   }
 }

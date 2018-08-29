@@ -125,9 +125,9 @@ class ConstantFolding extends Pass {
   }
 
   override def onInsts(insts: Seq[Inst]): Seq[Inst] = insts.map {
-    case inst @ Inst.Let(n, op) =>
+    case inst @ Inst.Let(n, op, unwind) =>
       emulate.lift(op) match {
-        case Some(newVal) => Let(n, Op.Copy(newVal))
+        case Some(newVal) => Let(n, Op.Copy(newVal), unwind)
         case None         => inst
       }
 
@@ -137,7 +137,7 @@ class ConstantFolding extends Pass {
 }
 
 object ConstantFolding extends PassCompanion {
-  override def apply(config: build.Config, top: sema.Top) =
+  override def apply(config: build.Config, linked: linker.Result) =
     new ConstantFolding
 
   object IVal {

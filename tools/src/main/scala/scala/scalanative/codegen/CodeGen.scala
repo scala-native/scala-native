@@ -6,57 +6,68 @@ import java.nio.ByteBuffer
 import java.nio.file.Paths
 import scala.annotation.tailrec
 import scala.collection.mutable
-import scalanative.util.{Scope, ShowBuilder, unsupported}
+import scalanative.util.{Scope, ShowBuilder, unsupported, partitionBy, procs}
 import scalanative.io.{VirtualDirectory, withScratchBuffer}
 import scalanative.sema.ControlFlow.{Graph => CFG, Block, Edge}
 import scalanative.nir._
+import scalanative.util.Stats
 
 object CodeGen {
 
+  /** Lower and generate code for given assembly. */
+  def apply(config: build.Config,
+            linked: linker.Result,
+            defns: Seq[Defn]): Unit = {
+    val proxies = GenerateReflectiveProxies(linked.dynimpls, defns)
+
+    implicit val meta = new Metadata(linked, proxies)
+
+    val generated = Generate(Global.Top(config.mainClass))
+    val lowered   = lower(defns ++ proxies ++ generated)
+    emit(config, lowered)
+  }
+
+  private def lower(defns: Seq[Defn])(implicit meta: Metadata): Seq[Defn] = {
+    val buf = mutable.UnrolledBuffer.empty[Defn]
+
+    partitionBy(defns)(_.name).par
+      .map {
+        case (_, defns) =>
+          Lower(defns)
+      }
+      .seq
+      .foreach { defns =>
+        buf ++= defns
+      }
+
+    buf
+  }
+
   /** Generate code for given assembly. */
-  def apply(config: build.Config, assembly: Seq[Defn]): Unit =
+  private def emit(config: build.Config, assembly: Seq[Defn]): Unit =
     Scope { implicit in =>
       val env     = assembly.map(defn => defn.name -> defn).toMap
       val workdir = VirtualDirectory.real(config.workdir)
 
-      // Generate one LLVM IR file per package. This
-      // prevents LLVM from optimizing across IR module
-      // boundary unless LTO is turned on.
-      def separate(): Unit = {
-        val batches = mutable.Map.empty[String, mutable.Buffer[Defn]]
-        assembly.foreach { defn =>
-          val top = defn.name.top.id
-          val key =
-            if (top.startsWith("__")) top
-            else if (top == "main") "__main"
-            else {
-              val pkg = top.split("\\.").init.mkString(".")
-              if (pkg == "") "__empty"
-              else pkg
-            }
-          if (!batches.contains(key)) {
-            batches(key) = mutable.UnrolledBuffer.empty[Defn]
-          }
-          batches(key) += defn
-        }
-        batches.par.foreach {
-          case (k, defns) =>
+      // Partition into multiple LLVM IR files proportional to number
+      // of available processesors. This prevents LLVM from optimizing
+      // across IR module boundary unless LTO is turned on.
+      def separate(): Unit =
+        partitionBy(assembly, procs)(_.name).par.foreach {
+          case (id, defns) =>
             val sorted = defns.sortBy(_.name.show)
-            val impl =
-              new Impl(config.targetTriple, env, sorted, workdir)
-            val outpath = k + ".ll"
-            val buffer  = impl.gen()
+            val impl   = new Impl(config.targetTriple, env, sorted)
+            val buffer = impl.gen()
             buffer.flip
-            workdir.write(Paths.get(outpath), buffer)
+            workdir.write(Paths.get(s"$id.ll"), buffer)
         }
-      }
 
       // Generate a single LLVM IR file for the whole application.
       // This is an adhoc form of LTO. We use it in release mode if
       // Clang's LTO is not available.
       def single(): Unit = {
         val sorted = assembly.sortBy(_.name.show)
-        val impl   = new Impl(config.targetTriple, env, sorted, workdir)
+        val impl   = new Impl(config.targetTriple, env, sorted)
         val buffer = impl.gen()
         buffer.flip
         workdir.write(Paths.get("out.ll"), buffer)
@@ -71,8 +82,7 @@ object CodeGen {
 
   private final class Impl(targetTriple: String,
                            env: Map[Global, Defn],
-                           defns: Seq[Defn],
-                           workdir: VirtualDirectory) {
+                           defns: Seq[Defn]) {
     import Impl._
 
     var currentBlockName: Local = _
@@ -266,7 +276,7 @@ object CodeGen {
         str(" {")
 
         insts.foreach {
-          case Inst.Let(n, Op.Copy(v)) =>
+          case Inst.Let(n, Op.Copy(v), _) =>
             copies(n) = v
           case _ =>
             ()
@@ -610,8 +620,9 @@ object CodeGen {
       def isVoid(ty: Type): Boolean =
         ty == Type.Void || ty == Type.Unit || ty == Type.Nothing
 
-      val op   = inst.op
-      val name = inst.name
+      val op     = inst.op
+      val name   = inst.name
+      val unwind = inst.unwind
 
       def genBind() =
         if (!isVoid(op.resty)) {
@@ -625,7 +636,7 @@ object CodeGen {
           ()
 
         case call: Op.Call =>
-          genCall(genBind, call)
+          genCall(genBind, call, unwind)
 
         case Op.Load(ty, ptr, isVolatile) =>
           val pointee = fresh()
@@ -736,10 +747,9 @@ object CodeGen {
       }
     }
 
-    def genCall(genBind: () => Unit, call: Op.Call)(
+    def genCall(genBind: () => Unit, call: Op.Call, unwind: Next)(
         implicit fresh: Fresh): Unit = call match {
-      case Op.Call(ty, Val.Global(pointee, _), args, unwind)
-          if lookup(pointee) == ty =>
+      case Op.Call(ty, Val.Global(pointee, _), args) if lookup(pointee) == ty =>
         val Type.Function(argtys, _) = ty
 
         touch(pointee)
@@ -766,7 +776,7 @@ object CodeGen {
           indent()
         }
 
-      case Op.Call(ty, ptr, args, unwind) =>
+      case Op.Call(ty, ptr, args) =>
         val Type.Function(_, resty) = ty
 
         val pointee = fresh()
@@ -896,5 +906,12 @@ object CodeGen {
       "landingpad { i8*, i32 } catch i8* bitcast ({ i8*, i8*, i8* }* @_ZTIN11scalanative16ExceptionWrapperE to i8*)"
     val typeid =
       "call i32 @llvm.eh.typeid.for(i8* bitcast ({ i8*, i8*, i8* }* @_ZTIN11scalanative16ExceptionWrapperE to i8*))"
+  }
+
+  val depends: Seq[Global] = {
+    val buf = mutable.UnrolledBuffer.empty[Global]
+    buf ++= Lower.depends
+    buf ++= Generate.depends
+    buf
   }
 }

@@ -53,20 +53,19 @@ jobs:
         - scripts/scalafmt --test
         - sbt -no-colors -J-Xmx2G "^^ 0.13.16" rebuild
         - sbt -no-colors -J-Xmx2G "^^ 1.0.4" sbtScalaNative/publishLocal
-
     - stage: test
       script:
         - java -version
         - ./ci-docker/load-cached-images.sh
         - sbt "^^ 0.13.16" test-compile
-        - sbt "^^ 1.0.4" test-compile
+        - sbt "^^ 1.2.1" test-compile
     - stage: test
       script:
         - export TEST_CONTAINER=scala-native-testing:linux-x86_64 SCALANATIVE_GC=boehm SBT_VERSION=0.13.16 TEST_COMMAND=test-runtime
         - ./ci-docker/run-test-travis.sh
     - stage: test
       script:
-        - export TEST_CONTAINER=scala-native-testing:linux-x86_64 SCALANATIVE_GC=boehm SBT_VERSION=1.0.4 TEST_COMMAND=sbtScalaNative/scripted
+        - export TEST_CONTAINER=scala-native-testing:linux-x86_64 SCALANATIVE_GC=boehm SBT_VERSION=1.2.1 TEST_COMMAND=sbtScalaNative/scripted
         - ./ci-docker/run-test-travis.sh
     - stage: test
       script:
@@ -74,7 +73,7 @@ jobs:
         - ./ci-docker/run-test-travis.sh
     - stage: test
       script:
-        - export TEST_CONTAINER=scala-native-testing:linux-x86_64 SCALANATIVE_GC=immix SBT_VERSION=1.0.4 TEST_COMMAND=sbtScalaNative/scripted
+        - export TEST_CONTAINER=scala-native-testing:linux-x86_64 SCALANATIVE_GC=immix SBT_VERSION=1.2.1 TEST_COMMAND=sbtScalaNative/scripted
         - ./ci-docker/run-test-travis.sh
     - stage: test
       script:
@@ -84,7 +83,7 @@ jobs:
     - stage: test
       script:
         - docker run --rm --privileged multiarch/qemu-user-static:register
-        - export TEST_CONTAINER=scala-native-testing:linux-arm64v8 SCALANATIVE_GC=boehm SBT_VERSION=1.0.4 TEST_COMMAND=sbtScalaNative/scripted
+        - export TEST_CONTAINER=scala-native-testing:linux-arm64v8 SCALANATIVE_GC=boehm SBT_VERSION=1.2.1 TEST_COMMAND=sbtScalaNative/scripted
         - ./ci-docker/run-test-travis.sh
 
 before_cache:

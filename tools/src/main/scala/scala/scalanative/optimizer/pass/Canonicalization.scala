@@ -14,13 +14,13 @@ object Canonicalization extends PassCompanion {
 
   private object Canonicalize extends Transform {
     override def onInst(inst: Inst): Inst = inst match {
-      case Let(n, Op.Bin(bin, ty, lhs, rhs))
+      case Let(n, Op.Bin(bin, ty, lhs, rhs), unwind)
           if (commutativeBin(bin) && scalarValue(lhs)) =>
-        Let(n, Op.Bin(bin, ty, rhs, lhs))
+        Let(n, Op.Bin(bin, ty, rhs, lhs), unwind)
 
-      case Let(n, Op.Comp(comp, ty, lhs, rhs))
+      case Let(n, Op.Comp(comp, ty, lhs, rhs), unwind)
           if (commutativeComp(comp) && scalarValue(lhs)) =>
-        Let(n, Op.Comp(comp, ty, rhs, lhs))
+        Let(n, Op.Comp(comp, ty, rhs, lhs), unwind)
 
       case _ =>
         inst
@@ -54,6 +54,6 @@ object Canonicalization extends PassCompanion {
     }
   }
 
-  override def apply(config: build.Config, top: sema.Top) =
+  override def apply(config: build.Config, linked: linker.Result) =
     new Canonicalization
 }

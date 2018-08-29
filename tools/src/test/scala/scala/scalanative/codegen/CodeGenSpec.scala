@@ -1,4 +1,5 @@
 package scala.scalanative
+package codegen
 
 import java.nio.file.{Path, Paths}
 import scalanative.io.VirtualDirectory
@@ -19,20 +20,20 @@ abstract class CodeGenSpec extends OptimizerSpec {
    * @param driver  The driver that defines the pipeline.
    * @return The result of applying `fn` to the resulting file.
    */
-  def codegen[T](entry: String,
-                 sources: Map[String, String],
-                 driver: Option[Driver] = None)(
-      f: (Config, Seq[nir.Attr.Link], Path) => T): T =
+  def codegen[T](
+      entry: String,
+      sources: Map[String, String],
+      driver: Option[Driver] = None)(f: (Config, linker.Result, Path) => T): T =
     optimize(entry, sources, driver) {
-      case (config, links, assembly) =>
+      case (config, linked, optimized) =>
         Scope { implicit in =>
-          ScalaNative.codegen(config, assembly)
+          ScalaNative.codegen(config, linked, optimized)
           val workdir = VirtualDirectory.real(config.workdir)
           val outfile = Paths.get("out.ll")
 
           assert(workdir.contains(outfile), "out.ll not found.")
 
-          f(config, links, outfile)
+          f(config, linked, outfile)
         }
     }
 
