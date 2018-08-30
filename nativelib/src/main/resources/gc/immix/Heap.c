@@ -210,6 +210,14 @@ void Heap_Recycle(Heap *heap) {
     LargeAllocator_Sweep(&largeAllocator);
     // prepare for lazy sweeping
     heap->sweepCursor = heap->heapStart;
+
+    // do not sweep the two blocks that are in use
+    heap->unsweepable[0] = (word_t *) allocator.block;
+    heap->unsweepable[1] = (word_t *) allocator.largeBlock;
+    // Still need to unmark all objects.
+    // This is so the next mark will not use any child objects.
+    Block_ClearMarkBits((BlockHeader *) heap->unsweepable[0]);
+    Block_ClearMarkBits((BlockHeader *) heap->unsweepable[1]);
 }
 
 INLINE word_t *Heap_LazySweep(Heap *heap, uint32_t size) {
@@ -221,12 +229,18 @@ INLINE word_t *Heap_LazySweep(Heap *heap, uint32_t size) {
 
     while (!Heap_IsSweepDone(heap)) {
         BlockHeader *blockHeader = (BlockHeader *) heap -> sweepCursor;
-        Block_Recycle(&allocator, blockHeader);
+        bool sweepable  = blockHeader != heap->unsweepable[0] &&
+                          blockHeader != heap->unsweepable[1];
+        if (sweepable) {
+            Block_Recycle(&allocator, blockHeader);
+        }
         heap -> sweepCursor += WORDS_IN_BLOCK;
 
-        object = Allocator_Alloc(&allocator, size);
-        if (object != NULL)
-            break;
+        if (sweepable) {
+            object = Allocator_Alloc(&allocator, size);
+            if (object != NULL)
+                break;
+        }
     }
     if (Heap_IsSweepDone(heap)) {
         Heap_SweepDone(heap);
@@ -252,7 +266,6 @@ INLINE void Heap_SweepDone(Heap *heap) {
         size_t increment = blocks * WORDS_IN_BLOCK;
         Heap_Grow(heap, increment);
     }
-    Allocator_InitCursors(&allocator);
 }
 
 void Heap_exitWithOutOfMemory() {

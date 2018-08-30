@@ -106,10 +106,23 @@ void Block_Recycle(Allocator *allocator, BlockHeader *blockHeader) {
             allocator->recycledBlockCount++;
         }
     }
+#ifdef DEBUG_PRINT
+    Block_Print(blockHeader);
+#endif
+}
+
+void Block_ClearMarkBits(BlockHeader *block) {
+    Block_Unmark(block);
+    for (int16_t lineIndex = 0; lineIndex < LINE_COUNT; lineIndex++) {
+        LineHeader *lineHeader = Block_GetLineHeader(block, lineIndex);
+        if (Line_IsMarked(lineHeader)) {
+            Block_recycleMarkedLine(block, lineHeader, lineIndex);
+        }
+    }
 }
 
 void Block_Print(BlockHeader *block) {
-    printf("%p ", block);
+    printf("%p", block);
     if (Block_IsFree(block)) {
         printf("FREE\n");
     } else if (Block_IsUnavailable(block)) {
@@ -125,5 +138,13 @@ void Block_Print(BlockHeader *block) {
         }
         printf("\n");
     }
+    printf("mark: %d, flags: %d, first: %d, nextBlock: %d \n",
+           block->header.mark, block->header.flags, block->header.first,
+           block->header.nextBlock);
+
+    for (int i = 0; i < LINE_COUNT; i++) {
+        printf("%d ", block->lineHeaders[i]);
+    }
+    printf("\n");
     fflush(stdout);
 }

@@ -10,6 +10,7 @@ typedef struct {
     size_t memoryLimit;
     word_t *heapStart;
     word_t *heapEnd;
+    word_t *unsweepable[2];
     word_t *sweepCursor; //NULL = sweep not started
     size_t smallHeapSize;
     word_t *largeHeapStart;
