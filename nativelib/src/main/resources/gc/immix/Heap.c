@@ -229,8 +229,8 @@ INLINE word_t *Heap_LazySweep(Heap *heap, uint32_t size) {
 
     while (!Heap_IsSweepDone(heap)) {
         BlockHeader *blockHeader = (BlockHeader *) heap -> sweepCursor;
-        bool sweepable  = blockHeader != heap->unsweepable[0] &&
-                          blockHeader != heap->unsweepable[1];
+        bool sweepable  = (word_t *) blockHeader != heap->unsweepable[0] &&
+                          (word_t *) blockHeader != heap->unsweepable[1];
         if (sweepable) {
             Block_Recycle(&allocator, blockHeader);
         }
