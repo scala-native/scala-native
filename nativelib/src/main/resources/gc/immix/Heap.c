@@ -255,6 +255,29 @@ INLINE word_t *Heap_LazySweep(Heap *heap, uint32_t size) {
 INLINE void Heap_SweepDone(Heap *heap) {
     // mark sweep as done
     heap->sweepCursor = NULL;
+    #ifndef NDEBUG
+        // all should be unmarked when the sweeping is done
+        word_t *current = heap->heapStart;
+        while (current != heap->heapEnd) {
+            BlockHeader *blockHeader = (BlockHeader *)current;
+            assert(!Block_IsMarked(blockHeader));
+            for (int16_t lineIndex = 0; lineIndex < LINE_COUNT; lineIndex++) {
+                LineHeader *lineHeader = Block_GetLineHeader(blockHeader, lineIndex);
+                assert(!Line_IsMarked(lineHeader));
+                if (Line_ContainsObject(lineHeader)) {
+                    Object *object = Line_GetFirstObject(lineHeader);
+                    word_t *lineEnd =
+                        Block_GetLineAddress(blockHeader, lineIndex) + WORDS_IN_LINE;
+                    while (object != NULL && (word_t *)object < lineEnd) {
+                        ObjectHeader *objectHeader = &object->header;
+                        assert(!Object_IsMarked(objectHeader));
+                        object = Object_NextObject(object);
+                    }
+                }
+            }
+            current += WORDS_IN_BLOCK;
+        }
+    #endif
     if (Allocator_ShouldGrow(&allocator)) {
         double growth;
         if (heap->smallHeapSize < EARLY_GROWTH_THRESHOLD) {
