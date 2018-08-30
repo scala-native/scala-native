@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include "Heap.h"
 #include "Block.h"
+#include "Object.h"
 #include "Log.h"
 #include "Allocator.h"
 #include "Marker.h"
@@ -185,7 +186,37 @@ word_t *Heap_Alloc(Heap *heap, uint32_t objectSize) {
     }
 }
 
+INLINE void Heap_Assert_Nothing_IsMarked(Heap *heap) {
+   // all should be unmarked when the sweeping is done
+    word_t *current = heap->heapStart;
+    while (current != heap->heapEnd) {
+        BlockHeader *blockHeader = (BlockHeader *)current;
+        assert(!Block_IsMarked(blockHeader));
+        for (int16_t lineIndex = 0; lineIndex < LINE_COUNT; lineIndex++) {
+            LineHeader *lineHeader = Block_GetLineHeader(blockHeader, lineIndex);
+            assert(!Line_IsMarked(lineHeader));
+            if (Line_ContainsObject(lineHeader)) {
+                Object *object = Line_GetFirstObject(lineHeader);
+                word_t *lineEnd =
+                    Block_GetLineAddress(blockHeader, lineIndex) + WORDS_IN_LINE;
+                while (object != NULL && (word_t *)object < lineEnd) {
+                    ObjectHeader *objectHeader = &object->header;
+                    assert(!Object_IsMarked(objectHeader));
+                    object = Object_NextObject(object);
+                }
+            }
+        }
+        current += WORDS_IN_BLOCK;
+    }
+}
+
+
 void Heap_Collect(Heap *heap, Stack *stack) {
+    // sweep must be done before marking can begin
+    assert(heap->sweepCursor == NULL);
+#ifndef NDEBUG
+    Heap_Assert_Nothing_IsMarked(heap);
+#endif
 #ifdef DEBUG_PRINT
     printf("\nCollect\n");
     fflush(stdout);
@@ -251,32 +282,11 @@ INLINE word_t *Heap_LazySweep(Heap *heap, uint32_t size) {
         return Allocator_Alloc(&allocator, size);
     }
 }
-
 INLINE void Heap_SweepDone(Heap *heap) {
     // mark sweep as done
     heap->sweepCursor = NULL;
     #ifndef NDEBUG
-        // all should be unmarked when the sweeping is done
-        word_t *current = heap->heapStart;
-        while (current != heap->heapEnd) {
-            BlockHeader *blockHeader = (BlockHeader *)current;
-            assert(!Block_IsMarked(blockHeader));
-            for (int16_t lineIndex = 0; lineIndex < LINE_COUNT; lineIndex++) {
-                LineHeader *lineHeader = Block_GetLineHeader(blockHeader, lineIndex);
-                assert(!Line_IsMarked(lineHeader));
-                if (Line_ContainsObject(lineHeader)) {
-                    Object *object = Line_GetFirstObject(lineHeader);
-                    word_t *lineEnd =
-                        Block_GetLineAddress(blockHeader, lineIndex) + WORDS_IN_LINE;
-                    while (object != NULL && (word_t *)object < lineEnd) {
-                        ObjectHeader *objectHeader = &object->header;
-                        assert(!Object_IsMarked(objectHeader));
-                        object = Object_NextObject(object);
-                    }
-                }
-            }
-            current += WORDS_IN_BLOCK;
-        }
+        Heap_Assert_Nothing_IsMarked(heap);
     #endif
     if (Allocator_ShouldGrow(&allocator)) {
         double growth;
