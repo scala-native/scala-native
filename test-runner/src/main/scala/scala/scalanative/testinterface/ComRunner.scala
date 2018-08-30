@@ -58,11 +58,16 @@ class ComRunner(bin: File,
 
   /** Send message `msg` to the distant program. */
   def send(msg: Message): Unit = synchronized {
-    try SerializedOutputStream(out)(_.writeMessage(msg))
-    catch {
-      case ex: Throwable =>
-        close()
-        throw ex
+    if (runner.isAlive) {
+      try SerializedOutputStream(out)(_.writeMessage(msg))
+      catch {
+        case ex: Throwable =>
+          close()
+          throw ex
+      }
+    } else {
+      new BuildException("Test runner not running.").printStackTrace()
+      System.exit(-1);
     }
   }
 
