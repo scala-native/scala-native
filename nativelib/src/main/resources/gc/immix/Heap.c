@@ -249,6 +249,22 @@ void Heap_Recycle(Heap *heap) {
     // This is so the next mark will not use any child objects.
     Block_ClearMarkBits((BlockHeader *) heap->unsweepable[0]);
     Block_ClearMarkBits((BlockHeader *) heap->unsweepable[1]);
+
+    #ifdef DEBUG_PRINT
+        printf("unsweepable[0] %p (%lu)\n", heap->unsweepable[0],
+               (uint64_t)((word_t *)heap->unsweepable[0] - heap->heapStart) /
+                   WORDS_IN_BLOCK);
+        if (heap->unsweepable[0] != NULL) {
+            Block_Print(heap->unsweepable[0]);
+        }
+        printf("unsweepable[1] %p (%lu)\n", heap->unsweepable[1],
+                           (uint64_t)((word_t *)heap->unsweepable[1] - heap->heapStart) /
+                               WORDS_IN_BLOCK);
+        if (heap->unsweepable[1] != NULL) {
+            Block_Print(heap->unsweepable[1]);
+        }
+        fflush(stdout);
+    #endif
 }
 
 INLINE word_t *Heap_LazySweep(Heap *heap, uint32_t size) {
