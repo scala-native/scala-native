@@ -240,8 +240,9 @@ void Heap_Recycle(Heap *heap) {
 
     LargeAllocator_Sweep(&largeAllocator);
     // prepare for lazy sweeping
-//    heap->sweepCursor = heap->heapStart;
-    heap->sweepCursor = NULL;
+    assert(heap->sweepCursor == NULL);
+    heap->sweepCursor = heap->heapStart;
+    assert(heap->sweepCursor != NULL);
 
     // do not sweep the two blocks that are in use
     heap->unsweepable[0] = (word_t *) allocator.block;
@@ -266,18 +267,6 @@ void Heap_Recycle(Heap *heap) {
         }
         fflush(stdout);
     #endif
-    // two steps back
-    word_t *current = heap->heapStart;
-    while (current != heap->heapEnd) {
-        if (current != heap->unsweepable[0] &&
-            current != heap->unsweepable[1]) {
-            BlockHeader *blockHeader = (BlockHeader *)current;
-            Block_Recycle(&allocator, blockHeader);
-        }
-        // block_print(blockHeader);
-        current += WORDS_IN_BLOCK;
-    }
-    Heap_SweepDone(heap);
 }
 
 INLINE word_t *Heap_LazySweep(Heap *heap, uint32_t size) {
@@ -285,7 +274,6 @@ INLINE word_t *Heap_LazySweep(Heap *heap, uint32_t size) {
     if (heap->sweepCursor == NULL) {
         return Allocator_Alloc(&allocator, size);
     }
-    assert(false);
     word_t *object = NULL;
 
     while (!Heap_IsSweepDone(heap)) {
@@ -316,9 +304,6 @@ INLINE word_t *Heap_LazySweep(Heap *heap, uint32_t size) {
 INLINE void Heap_SweepDone(Heap *heap) {
     // mark sweep as done
     heap->sweepCursor = NULL;
-    #ifndef NDEBUG
-        Heap_Assert_Nothing_IsMarked(heap);
-    #endif
     if (Allocator_ShouldGrow(&allocator)) {
         double growth;
         if (heap->smallHeapSize < EARLY_GROWTH_THRESHOLD) {
