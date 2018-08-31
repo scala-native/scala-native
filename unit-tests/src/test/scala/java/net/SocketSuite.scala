@@ -115,9 +115,9 @@ object SocketSuite extends tests.Suite {
     val s = new Socket()
 
     try {
-      val prevValue = s.getReceiveBufferSize
+      val prevValue = s.getSendBufferSize
       assert(prevValue > 0)
-      s.setReceiveBufferSize(prevValue + 100)
+      s.setSendBufferSize(prevValue + 100)
     } finally {
       s.close()
     }
