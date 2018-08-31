@@ -23,7 +23,7 @@ env:
 
 before_install:
   - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-  - sudo add-apt-repository "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-6.0 main" -y
+  - sudo add-apt-repository "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-6.0 main" -y --allow-unauthenticated
   - sudo apt-get update -q
   - sudo apt-get install clang-6.0 -y
   - bash scripts/travis_setup.sh
