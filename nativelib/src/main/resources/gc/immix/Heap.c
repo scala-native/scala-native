@@ -269,7 +269,7 @@ void Heap_Recycle(Heap *heap) {
     #endif
 }
 
-INLINE word_t *Heap_LazySweep(Heap *heap, uint32_t size) {
+word_t *Heap_LazySweep(Heap *heap, uint32_t size) {
     // the sweep was already done, including post-sweep actions
     if (heap->sweepCursor == NULL) {
         return Allocator_Alloc(&allocator, size);
