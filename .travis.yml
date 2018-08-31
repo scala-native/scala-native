@@ -44,7 +44,7 @@ before_script:
 
 script:
   - java -version
-  - clang -version
+  - clang --version
   - clang-format -version
   #- scripts/clangfmt --test
   - scripts/scalafmt --test
