@@ -54,23 +54,55 @@ object SocketSuite extends tests.Suite {
   }
 
   test("receiveBufferSize") {
-    val s         = new Socket()
-    val prevValue = s.getReceiveBufferSize
-    s.setReceiveBufferSize(prevValue + 100)
-    // On linux the size is actually set to the double of given parameter
-    // so we don't test if it's equal
-    assert(s.getReceiveBufferSize >= prevValue + 100)
-    s.close()
+    // This test basically checks that getReceiveBufferSize &
+    // setReceiveBufferSize do not unexpectedly throw and that the former
+    // returns a minimally sane value.
+    //
+    // The Java 8 documentation at URL
+    // https://docs.oracle.com/javase/8/docs/api/java/net/\
+    //     Socket.html#setReceiveBufferSize-int- [sic trailing dash]
+    // describes the argument for setReceiveBufferSize(int) &
+    // setSendBufferSize(int) as a _hint_ to the operating system, _not_
+    // a requirement or demand.  This description is basically unaltered
+    // in Java 10.
+    //
+    // There are a number of reasons the operating system can choose to
+    // ignore the hint. Changing the buffer size, even before a bind() call,
+    // may not be implemented. The buffer size may already be at its
+    // maximum.
+    //
+    // Since, by definition, the OS can ignore the hint, it makes no
+    // sense to set the size, then re-read it and see if it changed.
+    //
+    // The sendBuffersize test refers to this comment.
+    // Please keep both tests synchronized.
+
+    val s = new Socket()
+
+    try {
+      val prevValue = s.getReceiveBufferSize
+      assert(prevValue > 0)
+      s.setReceiveBufferSize(prevValue + 100)
+    } finally {
+      s.close()
+    }
   }
 
   test("sendBufferSize") {
-    val s         = new Socket()
-    val prevValue = s.getSendBufferSize
-    s.setSendBufferSize(prevValue + 100)
-    // On linux the size is actually set to the double of given parameter
-    // so we don't test if it's equal
-    assert(s.getSendBufferSize >= prevValue + 100)
-    s.close()
+    // This test basically checks that getSendBufferSize &
+    // setSendBufferSize do not unexpectedly throw and that the former
+    // returns a minimally sane value.
+    // See more extensive comments in setBufferSize test.
+
+    val s = new Socket()
+
+    try {
+      val prevValue = s.getReceiveBufferSize
+      assert(prevValue > 0)
+      s.setReceiveBufferSize(prevValue + 100)
+    } finally {
+      s.close()
+    }
   }
 
   test("trafficClass") {
