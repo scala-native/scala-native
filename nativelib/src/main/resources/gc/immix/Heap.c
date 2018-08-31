@@ -195,7 +195,7 @@ INLINE void Heap_Assert_Nothing_IsMarked(Heap *heap) {
         for (int16_t lineIndex = 0; lineIndex < LINE_COUNT; lineIndex++) {
             LineHeader *lineHeader = Block_GetLineHeader(blockHeader, lineIndex);
             assert(!Line_IsMarked(lineHeader));
-            if (Line_ContainsObject(lineHeader)) {
+/*            if (Line_ContainsObject(lineHeader)) {
                 Object *object = Line_GetFirstObject(lineHeader);
                 word_t *lineEnd =
                     Block_GetLineAddress(blockHeader, lineIndex) + WORDS_IN_LINE;
@@ -204,7 +204,7 @@ INLINE void Heap_Assert_Nothing_IsMarked(Heap *heap) {
                     assert(!Object_IsMarked(objectHeader));
                     object = Object_NextObject(object);
                 }
-            }
+            }*/
         }
         current += WORDS_IN_BLOCK;
     }
