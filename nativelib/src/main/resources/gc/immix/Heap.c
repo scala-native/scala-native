@@ -285,6 +285,7 @@ INLINE word_t *Heap_LazySweep(Heap *heap, uint32_t size) {
     if (heap->sweepCursor == NULL) {
         return Allocator_Alloc(&allocator, size);
     }
+    assert(false);
     word_t *object = NULL;
 
     while (!Heap_IsSweepDone(heap)) {
