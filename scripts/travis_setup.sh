@@ -36,7 +36,7 @@ else
     export CXX=clang++
 
     # Install Boehm GC and libunwind
-    sudo apt-get install libgc-dev libunwind8-dev clang-6.0 clang-format-6.0
+    sudo apt-get install libgc-dev libunwind8-dev
 
     # Build and install re2 from source
     git clone https://code.googlesource.com/re2
