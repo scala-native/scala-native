@@ -11,9 +11,9 @@ language: scala
 env:
   matrix:
     - SCALANATIVE_GC=boehm SBT_VERSION=0.13.16
-    - SCALANATIVE_GC=boehm SBT_VERSION=1.2.1
-    - SCALANATIVE_GC=immix SBT_VERSION=0.13.16
-    - SCALANATIVE_GC=immix SBT_VERSION=1.2.1
+#    - SCALANATIVE_GC=boehm SBT_VERSION=1.2.1
+#    - SCALANATIVE_GC=immix SBT_VERSION=0.13.16
+#    - SCALANATIVE_GC=immix SBT_VERSION=1.2.1
 
   global:
     - MAVEN_REALM="Sonatype Nexus Repository Manager"
@@ -23,7 +23,7 @@ env:
 
 before_install:
   - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-  - sudo add-apt-repository "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-6.0 main" -y --allow-unauthenticated
+  - sudo add-apt-repository 'deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-6.0 main'
   - sudo apt-get update -q
   - sudo apt-get install clang-6.0 -y
   - bash scripts/travis_setup.sh
