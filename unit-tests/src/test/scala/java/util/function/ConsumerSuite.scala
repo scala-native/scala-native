@@ -1,6 +1,6 @@
 package java.util.function
 
-object ConsumerSuite extends tests.Suite{
+object ConsumerSuite extends tests.Suite {
   var amount = 1
 
   val addT = new Consumer[Int] {
@@ -30,6 +30,6 @@ object ConsumerSuite extends tests.Suite{
 
     assert(amount == 6)
   }
-  */
+ */
 
 }

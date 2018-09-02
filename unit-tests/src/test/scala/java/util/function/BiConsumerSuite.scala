@@ -1,6 +1,6 @@
 package java.util.function
 
-object BiConsumerSuite extends tests.Suite{
+object BiConsumerSuite extends tests.Suite {
   var result = 0
 
   val addT = new BiConsumer[Int, Int] {
@@ -32,6 +32,6 @@ object BiConsumerSuite extends tests.Suite{
     // then 2*3 = 6 will be added to result which is 4, =  11
     assert(result == 11)
   }
-  */
+ */
 
 }

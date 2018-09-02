@@ -1,7 +1,7 @@
 package java.util.function
 
 trait Consumer[T] {
-  self=>
+  self =>
 
   def accept(t: T): Unit
 
