@@ -21,6 +21,7 @@ object ConsumerSuite extends tests.Suite{
     assert(amount == 3)
   }
 
+  // andThen doesn't work currently.
   /*
   test("Consumer.andThen"){
     amount = 1
