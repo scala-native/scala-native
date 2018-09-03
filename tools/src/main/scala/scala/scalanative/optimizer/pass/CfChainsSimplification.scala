@@ -5,7 +5,7 @@ package pass
 import nir._, Inst._
 import sema._, ControlFlow.Block
 
-class CfChainsSimplification(implicit linked: linker.Result) extends Pass {
+class CfChainsSimplification extends Pass {
   import CfChainsSimplification._
 
   override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
@@ -213,7 +213,7 @@ class CfChainsSimplification(implicit linked: linker.Result) extends Pass {
 
 object CfChainsSimplification extends PassCompanion {
   override def apply(config: build.Config, linked: linker.Result) =
-    new CfChainsSimplification()(linked)
+    new CfChainsSimplification()
 
   /** The ArgumentReplacer is used to replace the arguments of a Cf instruction
    * by its concrete evaluation

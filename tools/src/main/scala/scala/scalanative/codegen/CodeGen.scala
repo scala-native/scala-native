@@ -235,10 +235,6 @@ object CodeGen {
         case Val.None => genType(ty)
         case rhs      => genVal(rhs)
       }
-      attrs.align.foreach { value =>
-        str(", align ")
-        str(value)
-      }
     }
 
     def genFunctionDefn(attrs: Attrs,

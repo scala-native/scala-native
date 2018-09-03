@@ -55,19 +55,34 @@ object UseDef {
     collector.deps.distinct
   }
 
-  private def isPure(inst: Inst)(implicit linked: linker.Result) = inst match {
-    case Inst.Let(_, Op.Call(_, Val.Global(Ref(info), _), _), _) =>
-      info.attrs.isPure
-    case Inst.Let(_, Op.Module(Ref(info)), _) =>
-      info.attrs.isPure
+  private val pureWhitelist = {
+    val out = mutable.Set.empty[Global]
+    out += Global.Top("scala.Predef$")
+    out += Global.Top("scala.runtime.BoxesRunTime$")
+    out += Global.Top("scala.scalanative.runtime.Boxes$")
+    out += Global.Top("scala.scalanative.runtime.package$")
+    out += Global.Top("scala.scalanative.native.package$")
+    out ++= codegen.Lower.BoxTo.values.map {
+      case (owner, id) => Global.Member(owner, id)
+    }
+    out ++= codegen.Lower.UnboxTo.values.map {
+      case (owner, id) => Global.Member(owner, id)
+    }
+    out
+  }
+
+  private def isPure(inst: Inst) = inst match {
+    case Inst.Let(_, Op.Call(_, Val.Global(name, _), _), _) =>
+      pureWhitelist.contains(name)
+    case Inst.Let(_, Op.Module(name), _) =>
+      pureWhitelist.contains(name)
     case Inst.Let(_, _: Op.Pure, _) =>
       true
     case _ =>
       false
   }
 
-  def apply(cfg: ControlFlow.Graph)(
-      implicit linked: linker.Result): Map[Local, Def] = {
+  def apply(cfg: ControlFlow.Graph): Map[Local, Def] = {
     val defs   = mutable.Map.empty[Local, Def]
     val blocks = cfg.all
 

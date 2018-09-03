@@ -120,9 +120,8 @@ trait NirGenStat { self: NirGenPhase =>
         case ann if ann.symbol == StubClass =>
           Attr.Stub
       }
-      val pure = if (PureModules.contains(sym)) Seq(Attr.Pure) else Seq()
 
-      Attrs.fromSeq(pure ++ attrs)
+      Attrs.fromSeq(attrs)
     }
 
     def genClassInterfaces(sym: Symbol) =
@@ -233,7 +232,7 @@ trait NirGenStat { self: NirGenPhase =>
     }
 
     def genMethodAttrs(sym: Symbol): Attrs = {
-      val inlineAttrs = {
+      val inlineAttrs =
         if (sym.hasFlag(ACCESSOR)) {
           Seq(Attr.AlwaysInline)
         } else {
@@ -244,12 +243,8 @@ trait NirGenStat { self: NirGenPhase =>
             case ann if ann.symbol == StubClass       => Attr.Stub
           }
         }
-      }
-      val pureAttrs = {
-        if (PureMethods.contains(sym)) Seq(Attr.Pure) else Seq()
-      }
 
-      Attrs.fromSeq(inlineAttrs ++ pureAttrs)
+      Attrs.fromSeq(inlineAttrs)
     }
 
     def genParams(dd: DefDef, isStatic: Boolean): Seq[Val.Local] =
