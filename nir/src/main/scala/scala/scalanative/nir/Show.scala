@@ -57,12 +57,6 @@ object Show {
         str("dyn")
       case Attr.Stub =>
         str("stub")
-      case Attr.Align(value) =>
-        str("align(")
-        str(value)
-        str(")")
-      case Attr.Pure =>
-        str("pure")
       case Attr.Extern =>
         str("extern")
       case Attr.Link(name) =>

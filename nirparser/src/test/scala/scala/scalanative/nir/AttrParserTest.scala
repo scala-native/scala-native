@@ -17,8 +17,6 @@ class AttrParserTest extends FlatSpec with Matchers {
       AlwaysInline,
       Dyn,
       Stub,
-      Align(1024),
-      Pure,
       Extern,
       Link("test")
     )

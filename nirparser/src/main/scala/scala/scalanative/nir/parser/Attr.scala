@@ -15,12 +15,10 @@ object Attr extends Base[nir.Attr] {
   val AlwaysInline = P("alwaysinline".! map (_ => nir.Attr.AlwaysInline))
   val Dyn          = P("dyn".! map (_ => nir.Attr.Dyn))
   val Stub         = P("stub".! map (_ => nir.Attr.Stub))
-  val Align        = P(("align(" ~ int ~ ")") map (nir.Attr.Align(_)))
-  val Pure         = P("pure".! map (_ => nir.Attr.Pure))
   val Extern       = P("extern".! map (_ => nir.Attr.Extern))
   val Link         = P("link(" ~ qualifiedId ~ ")" map (nir.Attr.Link(_)))
 
   override val parser: P[nir.Attr] =
-    MayInline | InlineHint | NoInline | AlwaysInline | Dyn | Stub | Align | Pure | Extern | Link
+    MayInline | InlineHint | NoInline | AlwaysInline | Dyn | Stub | Extern | Link
 
 }

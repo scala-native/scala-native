@@ -12,7 +12,6 @@ final class BinarySerializer(buffer: ByteBuffer) {
   // Things to change in next binary-breaking release:
   // 1. Val.Null should have its own tag, not encoded via Val.Zero(Type.Ptr).
   // 2. Volatile Op.{Load, Store} should become serializable.
-  // 3. Attr.Align should become serializable;
 
   final def serialize(defns: Seq[Defn]): Unit = {
     val names     = defns.map(_.name)
@@ -70,15 +69,9 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Attr.NoInline     => putInt(T.NoInlineAttr)
     case Attr.AlwaysInline => putInt(T.AlwaysInlineAttr)
 
-    case Attr.Dyn  => putInt(T.DynAttr)
-    case Attr.Stub => putInt(T.StubAttr)
-
-    case Attr.Align(_) =>
-      assert(false, "alignment attribute is not serializable")
-
-    case Attr.Pure   => putInt(T.PureAttr)
-    case Attr.Extern => putInt(T.ExternAttr)
-
+    case Attr.Dyn     => putInt(T.DynAttr)
+    case Attr.Stub    => putInt(T.StubAttr)
+    case Attr.Extern  => putInt(T.ExternAttr)
     case Attr.Link(s) => putInt(T.LinkAttr); putString(s)
   }
 
