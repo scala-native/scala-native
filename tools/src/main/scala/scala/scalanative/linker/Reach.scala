@@ -110,7 +110,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
         }
         reachDefine(defn)
       case defn: Defn.Struct =>
-        reachStruct(defn)
+        reachStructValue(defn)
       case defn: Defn.Trait =>
         reachTrait(defn)
       case defn: Defn.Class =>
@@ -367,7 +367,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     reachInsts(insts)
   }
 
-  def reachStruct(defn: Defn.Struct): Unit = {
+  def reachStructValue(defn: Defn.Struct): Unit = {
     val Defn.Struct(attrs, name, tys) = defn
     newInfo(new Struct(attrs, name, tys))
     reachAttrs(attrs)
@@ -406,17 +406,19 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     links ++= attrs.links
 
   def reachType(ty: Type): Unit = ty match {
-    case Type.Array(ty, n) =>
+    case Type.ArrayValue(ty, n) =>
       reachType(ty)
+    case Type.StructValue(n, tys) =>
+      reachGlobal(n)
+      tys.foreach(reachType)
     case Type.Function(args, ty) =>
       args.foreach(reachType)
       reachType(ty)
-    case Type.Struct(n, tys) =>
-      reachGlobal(n)
-      tys.foreach(reachType)
     case ty: Type.Named =>
       reachGlobal(ty.name)
     case Type.Var(ty) =>
+      reachType(ty)
+    case Type.Array(ty) =>
       reachType(ty)
     case _ =>
       ()
@@ -427,10 +429,10 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       reachType(ty)
     case Val.Undef(ty) =>
       reachType(ty)
-    case Val.Struct(n, values) =>
+    case Val.StructValue(n, values) =>
       reachGlobal(n)
       values.foreach(reachVal)
-    case Val.Array(ty, values) =>
+    case Val.ArrayValue(ty, values) =>
       reachType(ty)
       values.foreach(reachVal)
     case Val.Local(n, ty) =>
@@ -559,6 +561,21 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     case Op.Varstore(slot, value) =>
       reachVal(slot)
       reachVal(value)
+    case Op.Arrayalloc(ty, init) =>
+      classInfo(Type.toArrayClass(ty)).foreach(reachAllocation)
+      reachType(ty)
+      reachVal(init)
+    case Op.Arrayload(ty, arr, idx) =>
+      reachType(ty)
+      reachVal(arr)
+      reachVal(idx)
+    case Op.Arraystore(ty, arr, idx, value) =>
+      reachType(ty)
+      reachVal(arr)
+      reachVal(idx)
+      reachVal(value)
+    case Op.Arraylength(arr) =>
+      reachVal(arr)
   }
 
   def reachNext(next: Next): Unit = next match {
@@ -569,6 +586,8 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
   }
 
   def reachMethodTargets(ty: Type, sig: String): Unit = ty match {
+    case Type.Array(ty) =>
+      reachMethodTargets(Type.Class(Type.toArrayClass(ty)), sig)
     case ty: Type.Named =>
       scopeInfo(ty.name).foreach { scope =>
         if (!scope.calls.contains(sig)) {

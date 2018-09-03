@@ -24,7 +24,7 @@ sealed abstract class Array[T]
   def update(i: Int, value: T): Unit
 
   /** Create a shallow of given array. */
-  protected override def clone(): Array[T] = ??? // overriden in concrete classes
+  override def clone(): Array[T] = ??? // overriden in concrete classes
 }
 
 object Array {
@@ -111,14 +111,14 @@ object Array {
 }
 
 %{
-   types = ['Boolean', 'Char', 'Byte', 'Short',
+   types = ['Unit', 'Boolean', 'Char', 'Byte', 'Short',
             'Int', 'Long', 'Float', 'Double', 'Object']
 }%
 
 % for T in types:
 
 %{
-   alloc = 'GC.alloc_atomic' if T != 'Object' else 'GC.alloc'
+   alloc = 'GC.alloc_atomic' if T != 'Object' and T != 'Unit' else 'GC.alloc'
 }%
 
 final class ${T}Array private () extends Array[${T}] {
@@ -136,14 +136,13 @@ final class ${T}Array private () extends Array[${T}] {
 
       ith.cast[Ptr[${T}]]
     }
-
   @inline def apply(i: Int): ${T} =
     !at(i)
 
   @inline def update(i: Int, value: ${T}): Unit =
     !at(i) = value
 
-  @inline protected override def clone(): ${T}Array = {
+  @inline override def clone(): ${T}Array = {
     val arrinfo = typeof[${T}Array].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[${T}] * length
     val arr     = ${alloc}(arrinfo, arrsize)
@@ -161,6 +160,15 @@ object ${T}Array {
     val arr     = ${alloc}(arrinfo, arrsize).cast[Ptr[Header]]
     arr.length  = length
     arr.cast[${T}Array]
+  }
+
+  @inline def snapshot(length: Int, data: Ptr[${T}]): ${T}Array = {
+    val arr  = alloc(length)
+    val dst  = arr.at(0).asInstanceOf[Ptr[Byte]]
+    val src  = data.asInstanceOf[Ptr[Byte]]
+    val size = sizeof[${T}] * length
+    `llvm.memcpy.p0i8.p0i8.i64`(dst, src, size, 1, false)
+    arr
   }
 }
 

@@ -389,25 +389,25 @@ object CodeGen {
       case i: Type.I   => str("i"); str(i.width)
       case Type.Float  => str("float")
       case Type.Double => str("double")
-      case Type.Array(ty, n) =>
+      case Type.ArrayValue(ty, n) =>
         str("[")
         str(n)
         str(" x ")
         genType(ty)
         str("]")
+      case Type.StructValue(Global.None, tys) =>
+        str("{ ")
+        rep(tys, sep = ", ")(genType)
+        str(" }")
+      case Type.StructValue(name, _) =>
+        touch(name)
+        str("%")
+        genGlobal(name)
       case Type.Function(args, ret) =>
         genType(ret)
         str(" (")
         rep(args, sep = ", ")(genType)
         str(")")
-      case Type.Struct(Global.None, tys) =>
-        str("{ ")
-        rep(tys, sep = ", ")(genType)
-        str(" }")
-      case Type.Struct(name, _) =>
-        touch(name)
-        str("%")
-        genGlobal(name)
       case ty =>
         unsupported(ty)
     }
@@ -428,10 +428,10 @@ object CodeGen {
     def deconstify(v: Val): Val = v match {
       case Val.Local(local, _) if copies.contains(local) =>
         deconstify(copies(local))
-      case Val.Struct(name, vals) =>
-        Val.Struct(name, vals.map(deconstify))
-      case Val.Array(elemty, vals) =>
-        Val.Array(elemty, vals.map(deconstify))
+      case Val.StructValue(name, vals) =>
+        Val.StructValue(name, vals.map(deconstify))
+      case Val.ArrayValue(elemty, vals) =>
+        Val.ArrayValue(elemty, vals.map(deconstify))
       case Val.Const(value) =>
         Val.Global(constFor(deconstify(value)), Type.Ptr)
       case _ =>
@@ -450,11 +450,11 @@ object CodeGen {
       case Val.Long(v)   => str(v)
       case Val.Float(v)  => genFloatHex(v)
       case Val.Double(v) => genDoubleHex(v)
-      case Val.Struct(_, vs) =>
+      case Val.StructValue(_, vs) =>
         str("{ ")
         rep(vs, sep = ", ")(genVal)
         str(" }")
-      case Val.Array(_, vs) =>
+      case Val.ArrayValue(_, vs) =>
         str("[ ")
         rep(vs, sep = ", ")(genVal)
         str(" ]")

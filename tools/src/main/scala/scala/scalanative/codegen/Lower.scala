@@ -180,6 +180,14 @@ object Lower {
         buf.let(n, Op.Load(ty, Val.Local(slot, Type.Ptr)), unwind)
       case Op.Varstore(Val.Local(slot, Type.Var(ty)), value) =>
         buf.let(n, Op.Store(ty, Val.Local(slot, Type.Ptr), value), unwind)
+      case op: Op.Arrayalloc =>
+        genArrayallocOp(buf, n, op, unwind)
+      case op: Op.Arrayload =>
+        genArrayloadOp(buf, n, op, unwind)
+      case op: Op.Arraystore =>
+        genArraystoreOp(buf, n, op, unwind)
+      case op: Op.Arraylength =>
+        genArraylengthOp(buf, n, op, unwind)
       case _ =>
         buf.let(n, op, unwind)
     }
@@ -511,6 +519,67 @@ object Lower {
       buf.let(n, Op.Call(loadSig, load, Seq()), unwind)
     }
 
+    def genArrayallocOp(buf: Buffer,
+                        n: Local,
+                        op: Op.Arrayalloc,
+                        unwind: Next): Unit = {
+      val Op.Arrayalloc(ty, init) = op
+      init match {
+        case len if len.ty == Type.Int =>
+          val sig  = arrayAllocSig.getOrElse(ty, arrayAllocSig(Rt.Object))
+          val func = arrayAlloc.getOrElse(ty, arrayAlloc(Rt.Object))
+          buf.let(n,
+                  Op.Call(sig, Val.Global(func, Type.Ptr), Seq(Val.Null, len)),
+                  unwind)
+        case arrval: Val.ArrayValue =>
+          val sig  = arraySnapshotSig.getOrElse(ty, arrayAllocSig(Rt.Object))
+          val func = arraySnapshot.getOrElse(ty, arrayAlloc(Rt.Object))
+          val len  = Val.Int(arrval.values.length)
+          val init = Val.Const(arrval)
+          buf.let(
+            n,
+            Op.Call(sig, Val.Global(func, Type.Ptr), Seq(Val.Null, len, init)),
+            unwind)
+      }
+    }
+
+    def genArrayloadOp(buf: Buffer,
+                       n: Local,
+                       op: Op.Arrayload,
+                       unwind: Next): Unit = {
+      val Op.Arrayload(ty, arr, idx) = op
+
+      val sig  = arrayApplySig.getOrElse(ty, arrayApplySig(Rt.Object))
+      val func = arrayApply.getOrElse(ty, arrayApply(Rt.Object))
+      buf.let(n,
+              Op.Call(sig, Val.Global(func, Type.Ptr), Seq(arr, idx)),
+              unwind)
+    }
+
+    def genArraystoreOp(buf: Buffer,
+                        n: Local,
+                        op: Op.Arraystore,
+                        unwind: Next): Unit = {
+      val Op.Arraystore(ty, arr, idx, value) = op
+
+      val sig  = arrayUpdateSig.getOrElse(ty, arrayUpdateSig(Rt.Object))
+      val func = arrayUpdate.getOrElse(ty, arrayUpdate(Rt.Object))
+      buf.let(n,
+              Op.Call(sig, Val.Global(func, Type.Ptr), Seq(arr, idx, value)),
+              unwind)
+    }
+
+    def genArraylengthOp(buf: Buffer,
+                         n: Local,
+                         op: Op.Arraylength,
+                         unwind: Next): Unit = {
+      val Op.Arraylength(arr) = op
+
+      val sig  = arrayLengthSig
+      val func = arrayLength
+      buf.let(n, Op.Call(sig, Val.Global(func, Type.Ptr), Seq(arr)), unwind)
+    }
+
     def genStringVal(value: String): Val = {
       val StringCls    = ClassRef.unapply(StringName).get
       val CharArrayCls = ClassRef.unapply(CharArrayName).get
@@ -518,12 +587,14 @@ object Lower {
       val chars       = value.toCharArray
       val charsLength = Val.Int(chars.length)
       val charsConst = Val.Const(
-        Val.Struct(
+        Val.StructValue(
           Global.None,
-          Seq(rtti(CharArrayCls).const,
-              charsLength,
-              Val.Int(0), // padding to get next field aligned properly
-              Val.Array(Type.Short, chars.map(c => Val.Short(c.toShort))))
+          Seq(
+            rtti(CharArrayCls).const,
+            charsLength,
+            Val.Int(0), // padding to get next field aligned properly
+            Val.ArrayValue(Type.Short, chars.map(c => Val.Short(c.toShort)))
+          )
         ))
 
       val fieldValues = stringFieldNames.map {
@@ -534,7 +605,8 @@ object Lower {
         case _                        => util.unreachable
       }
 
-      Val.Const(Val.Struct(Global.None, rtti(StringCls).const +: fieldValues))
+      Val.Const(
+        Val.StructValue(Global.None, rtti(StringCls).const +: fieldValues))
     }
 
     // Update java.lang.String::hashCode whenever you change this method.
@@ -590,7 +662,8 @@ object Lower {
     val StringCountName          = StringName member "count" tag "field"
     val StringCachedHashCodeName = StringName member "cachedHashCode" tag "field"
 
-    val CharArrayName = Global.Top("scala.scalanative.runtime.CharArray")
+    val CharArrayName =
+      Global.Top("scala.scalanative.runtime.CharArray")
 
     val BoxesRunTime = Global.Top("scala.runtime.BoxesRunTime$")
     val RuntimeBoxes = Global.Top("scala.scalanative.runtime.Boxes$")
@@ -657,13 +730,66 @@ object Lower {
 
     val unitName  = Global.Top("scala.scalanative.runtime.BoxedUnit$")
     val unit      = Val.Global(unitName, Type.Ptr)
-    val unitTy    = Type.Struct(unitName member "layout", Seq(Type.Ptr))
+    val unitTy    = Type.StructValue(unitName member "layout", Seq(Type.Ptr))
     val unitConst = Val.Global(unitName member "type", Type.Ptr)
-    val unitValue = Val.Struct(unitTy.name, Seq(unitConst))
+    val unitValue = Val.StructValue(unitTy.name, Seq(unitConst))
 
     val throwName = Global.Top("scalanative_throw")
     val throwSig  = Type.Function(Seq(Type.Ptr), Type.Void)
     val throw_    = Val.Global(throwName, Type.Ptr)
+
+    val arrayAlloc = Type.typeToArray.map {
+      case (ty, arrty) =>
+        val arr = Type.Class(arrty).mangle
+        ty -> Global.Member(Global.Top(arr + "$"), "alloc_i32_" + arr)
+    }.toMap
+    val arrayAllocSig = Type.typeToArray.map {
+      case (ty, arrty) =>
+        ty -> Type.Function(Seq(Type.Module(arrty), Type.Int),
+                            Type.Class(arrty))
+    }.toMap
+    val arraySnapshot = Type.typeToArray.map {
+      case (ty, arrty) =>
+        val arr = Type.Class(arrty).mangle
+        ty -> Global.Member(Global.Top(arr + "$"), "snapshot_i32_ptr_" + arr)
+    }.toMap
+    val arraySnapshotSig = Type.typeToArray.map {
+      case (ty, arrty) =>
+        ty -> Type.Function(Seq(Type.Module(arrty), Type.Int, Type.Ptr),
+                            Type.Class(arrty))
+    }.toMap
+    val arrayApplyGeneric = Type.typeToArray.map {
+      case (ty, arrty) =>
+        ty -> Global.Member(arrty, "apply_i32_java.lang.Object")
+    }
+    val arrayApply = Type.typeToArray.map {
+      case (ty, arrty) =>
+        ty -> Global.Member(arrty, "apply_i32_" + ty.mangle)
+    }.toMap
+    val arrayApplySig = Type.typeToArray.map {
+      case (ty, arrty) =>
+        ty -> Type.Function(Seq(Type.Class(arrty), Type.Int), ty)
+    }.toMap
+    val arrayUpdateGeneric = Type.typeToArray.map {
+      case (ty, arrty) =>
+        ty -> Global.Member(arrty, "update_i32_java.lang.Object_unit")
+    }
+    val arrayUpdate = Type.typeToArray.map {
+      case (ty @ Type.Unit, arrty) =>
+        ty -> Global.Member(arrty, "update_i32_scala.runtime.BoxedUnit_unit")
+      case (ty, arrty) =>
+        ty -> Global.Member(arrty, "update_i32_" + ty.mangle + "_unit")
+    }.toMap
+    val arrayUpdateSig = Type.typeToArray.map {
+      case (ty, arrty) =>
+        ty -> Type.Function(Seq(Type.Class(arrty), Type.Int, ty), Type.Unit)
+    }.toMap
+    val arrayLength =
+      Global.Member(Global.Top("scala.scalanative.runtime.Array"), "length_i32")
+    val arrayLengthSig =
+      Type.Function(
+        Seq(Type.Class(Global.Top("scala.scalanative.runtime.Array"))),
+        Type.Int)
   }
 
   val injects: Seq[Defn] = {
@@ -691,6 +817,13 @@ object Lower {
     buf += unitName
     buf ++= BoxTo.values.map { case (owner, id)   => Global.Member(owner, id) }
     buf ++= UnboxTo.values.map { case (owner, id) => Global.Member(owner, id) }
+    buf += arrayLength
+    buf ++= arrayAlloc.values
+    buf ++= arraySnapshot.values
+    buf ++= arrayApplyGeneric.values
+    buf ++= arrayApply.values
+    buf ++= arrayUpdateGeneric.values
+    buf ++= arrayUpdate.values
     buf
   }
 }

@@ -13,7 +13,7 @@ class DynamicHashMap(meta: Metadata, cls: Class, proxies: Seq[Defn]) {
       .filterNot(m => sigs.contains(m.id)) ++ own
   }
   val ty: Type =
-    Type.Struct(Global.None, Seq(Type.Int, Type.Ptr, Type.Ptr, Type.Ptr))
+    Type.StructValue(Global.None, Seq(Type.Int, Type.Ptr, Type.Ptr, Type.Ptr))
   val value: Val =
     DynmethodPerfectHashMap(methods, meta.linked.dynsigs)
 }
