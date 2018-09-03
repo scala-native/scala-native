@@ -97,7 +97,7 @@ word_t *Heap_AllocLarge(Heap *heap, uint32_t objectSize) {
         return Object_ToMutatorAddress(object);
     } else {
         // Otherwise collect
-        Heap_Collect(heap, &stack);
+//        Heap_Collect(heap, &stack);
 
         // After collection, try to alloc again, if it fails, grow the heap by
         // at least the size of the object we want to alloc
