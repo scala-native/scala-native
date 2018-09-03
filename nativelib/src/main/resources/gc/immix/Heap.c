@@ -132,7 +132,7 @@ NOINLINE word_t *Heap_allocSmallSlow(Heap *heap, uint32_t size) {
     if (object != NULL)
         goto done;
 
-    Heap_Grow(heap, size);
+    Heap_Grow(heap, WORDS_IN_BLOCK);
     object = (Object *)Allocator_Alloc(&allocator, size);
 
 done:
@@ -213,6 +213,11 @@ INLINE void Heap_Assert_Nothing_IsMarked(Heap *heap) {
 
 void Heap_Collect(Heap *heap, Stack *stack) {
     // sweep must be done before marking can begin
+    if (heap->sweepCursor != NULL) {
+        printf("%p(%lu)\n", heap->sweepCursor, (uint64_t)((word_t *)heap->sweepCursor - heap->heapStart) /
+                                                                  WORDS_IN_BLOCK);
+        fflush(stdout);
+    }
     assert(heap->sweepCursor == NULL);
 #ifndef NDEBUG
     Heap_Assert_Nothing_IsMarked(heap);
@@ -286,21 +291,20 @@ word_t *Heap_LazySweep(Heap *heap, uint32_t size) {
         heap -> sweepCursor += WORDS_IN_BLOCK;
 
         if (sweepable) {
-            if (object == NULL)
-                object = Allocator_Alloc(&allocator, size);
-//            if (object != NULL)
-//                break;
+            if (object != NULL)
+                break;
         }
     }
     if (Heap_IsSweepDone(heap)) {
         Heap_SweepDone(heap);
     }
-    if (object != NULL) {
-        return object;
-    } else {
-        return Allocator_Alloc(&allocator, size);
+    if (object == NULL) {
+        object = Allocator_Alloc(&allocator, size);
     }
+    assert(object != NULL || heap->sweepCursor == NULL);
+    return object;
 }
+
 INLINE void Heap_SweepDone(Heap *heap) {
     // mark sweep as done
     heap->sweepCursor = NULL;
