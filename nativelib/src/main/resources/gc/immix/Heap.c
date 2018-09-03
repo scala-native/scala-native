@@ -96,12 +96,14 @@ word_t *Heap_AllocLarge(Heap *heap, uint32_t objectSize) {
         Object_SetSize(objectHeader, size);
         return Object_ToMutatorAddress(object);
     } else {
-        // Otherwise collect
-//        Heap_Collect(heap, &stack);
+        // Otherwise collect, but only if there is not
+        if (heap->sweepCursor == NULL) {
+            Heap_Collect(heap, &stack);
 
-        // After collection, try to alloc again, if it fails, grow the heap by
-        // at least the size of the object we want to alloc
-        object = LargeAllocator_GetBlock(&largeAllocator, size);
+            // After collection, try to alloc again, if it fails, grow the heap by
+            // at least the size of the object we want to alloc
+            object = LargeAllocator_GetBlock(&largeAllocator, size);
+        }
         if (object != NULL) {
             Object_SetObjectType(&object->header, object_large);
             Object_SetSize(&object->header, size);
