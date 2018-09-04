@@ -21,6 +21,8 @@
 #define HEAP_MEM_FD -1
 #define HEAP_MEM_FD_OFFSET 0
 
+void *_SweepThread(void *heap);
+
 size_t Heap_getMemoryLimit() { return getMemorySize(); }
 
 /**
@@ -64,8 +66,20 @@ void Heap_Init(Heap *heap, size_t initialSmallHeapSize,
     heap->sweep.cursor = (long)heapEnd;
     heap->sweep.processes = 0;
     heap->sweep.isDone = true;
+
     pthread_mutex_init(&heap->sweep.postActionMutex, NULL);
+    pthread_mutex_init(&heap->sweep.startMutex, NULL);
+
+    pthread_cond_init(&heap->sweep.start, NULL);
     pthread_cond_init(&heap->sweep.processStopped, NULL);
+
+#if NUM_SWEEP_THREADS != 0
+    for (int i = 0; i < NUM_SWEEP_THREADS; i++) {
+        pthread_create(&heap->sweep.threads[i], NULL, _SweepThread,
+                       (void *)heap);
+    }
+#endif
+
     Allocator_Init(&allocator, smallHeapStart,
                    initialSmallHeapSize / BLOCK_TOTAL_SIZE);
 
@@ -255,6 +269,12 @@ void Heap_Recycle(Heap *heap) {
     heap->sweep.isDone = false;
     assert(((word_t *)heap->sweep.cursor) != NULL);
 
+#if NUM_SWEEP_THREADS != 0
+    pthread_mutex_lock(&heap->sweep.startMutex);
+    pthread_cond_broadcast(&heap->sweep.start);
+    pthread_mutex_unlock(&heap->sweep.startMutex);
+#endif
+
     // do not sweep the two blocks that are in use
     heap->sweep.unsweepable[0] = (word_t *)allocator.block;
     heap->sweep.unsweepable[1] = (word_t *)allocator.largeBlock;
@@ -301,7 +321,10 @@ word_t *Heap_LazySweep(Heap *heap, uint32_t size) {
         }
     }
     atomic_fetch_add(&heap->sweep.processes, -1);
+
+    pthread_mutex_lock(&heap->sweep.postActionMutex);
     pthread_cond_broadcast(&heap->sweep.processStopped);
+    pthread_mutex_unlock(&heap->sweep.postActionMutex);
 
     if (((word_t *)heap->sweep.cursor) >= heap->heapEnd) {
         // nothing left to sweep, wait until others are done sweeping
@@ -312,6 +335,19 @@ word_t *Heap_LazySweep(Heap *heap, uint32_t size) {
     }
     assert(object != NULL || heap->sweep.isDone);
     return object;
+}
+
+void *_SweepThread(void *arg) {
+    Heap *heap = (Heap *)arg;
+    while (true) {
+        // wait until it is started
+        pthread_mutex_lock(&heap->sweep.startMutex);
+        pthread_cond_wait(&heap->sweep.start, &heap->sweep.startMutex);
+        pthread_mutex_unlock(&heap->sweep.startMutex);
+
+        Heap_SweepFully(heap);
+    }
+    return NULL;
 }
 
 void Heap_SweepFully(Heap *heap) {
@@ -331,11 +367,12 @@ void Heap_SweepFully(Heap *heap) {
         }
     }
     atomic_fetch_add(&heap->sweep.processes, -1);
-    pthread_cond_broadcast(&heap->sweep.processStopped);
 
-    if (((word_t *)heap->sweep.cursor) >= heap->heapEnd) {
-        Heap_EnsureSweepDone(heap);
-    }
+    pthread_mutex_lock(&heap->sweep.postActionMutex);
+    pthread_cond_broadcast(&heap->sweep.processStopped);
+    pthread_mutex_unlock(&heap->sweep.postActionMutex);
+
+    Heap_EnsureSweepDone(heap);
     assert(heap->sweep.isDone);
 }
 

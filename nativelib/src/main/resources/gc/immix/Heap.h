@@ -14,9 +14,12 @@ typedef struct {
         atomic_long cursor;
         word_t *unsweepable[2];
         atomic_int processes;
+        pthread_mutex_t startMutex;
         pthread_mutex_t postActionMutex;
+        pthread_cond_t start;
         pthread_cond_t processStopped; // uses postActionMutex
         bool isDone;
+        pthread_t threads[NUM_SWEEP_THREADS];
     } sweep;
     size_t smallHeapSize;
     word_t *largeHeapStart;
