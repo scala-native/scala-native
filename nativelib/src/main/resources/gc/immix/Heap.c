@@ -293,6 +293,7 @@ word_t *Heap_LazySweep(Heap *heap, uint32_t size) {
         heap -> sweepCursor += WORDS_IN_BLOCK;
 
         if (sweepable) {
+            object = Allocator_Alloc(&allocator, size);
             if (object != NULL)
                 break;
         }
