@@ -10,8 +10,14 @@ typedef struct {
     size_t memoryLimit;
     word_t *heapStart;
     word_t *heapEnd;
-    word_t *unsweepable[2];
-    word_t *sweepCursor; // NULL = sweep not started
+    struct {
+        atomic_long cursor;
+        word_t *unsweepable[2];
+        atomic_int processes;
+        pthread_mutex_t postActionMutex;
+        pthread_cond_t processStopped; // uses postActionMutex
+        bool isDone;
+    } sweep;
     size_t smallHeapSize;
     word_t *largeHeapStart;
     word_t *largeHeapEnd;
