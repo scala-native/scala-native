@@ -96,14 +96,16 @@ word_t *Heap_AllocLarge(Heap *heap, uint32_t objectSize) {
         Object_SetSize(objectHeader, size);
         return Object_ToMutatorAddress(object);
     } else {
-        // Otherwise collect, but only if there is not
-        if (heap->sweepCursor == NULL) {
+        // Otherwise collect
+        if (heap->sweepCursor != NULL) {
+            // if last sweep was not done, then it needs to be finished
+            Heap_SweepFully(heap);
+        }
             Heap_Collect(heap, &stack);
 
             // After collection, try to alloc again, if it fails, grow the heap by
             // at least the size of the object we want to alloc
             object = LargeAllocator_GetBlock(&largeAllocator, size);
-        }
         if (object != NULL) {
             Object_SetObjectType(&object->header, object_large);
             Object_SetSize(&object->header, size);
@@ -306,6 +308,27 @@ word_t *Heap_LazySweep(Heap *heap, uint32_t size) {
     }
     assert(object != NULL || heap->sweepCursor == NULL);
     return object;
+}
+
+void Heap_SweepFully(Heap *heap) {
+    // the sweep was already done, including post-sweep actions
+    if (heap->sweepCursor == NULL) {
+        return;
+    }
+
+    while (!Heap_IsSweepDone(heap)) {
+        BlockHeader *blockHeader = (BlockHeader *) heap -> sweepCursor;
+        bool sweepable  = (word_t *) blockHeader != heap->unsweepable[0] &&
+                          (word_t *) blockHeader != heap->unsweepable[1];
+        if (sweepable) {
+            Block_Recycle(&allocator, blockHeader);
+        }
+        heap -> sweepCursor += WORDS_IN_BLOCK;
+    }
+    if (Heap_IsSweepDone(heap)) {
+        Heap_SweepDone(heap);
+    }
+    assert(heap->sweepCursor == NULL);
 }
 
 INLINE void Heap_SweepDone(Heap *heap) {
