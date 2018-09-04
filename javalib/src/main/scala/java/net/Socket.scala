@@ -1,6 +1,7 @@
 package java.net
 
 import java.io.{InputStream, OutputStream, IOException, Closeable}
+import java.nio.channels.{SocketChannel}
 
 class Socket protected (private[net] val impl: SocketImpl,
                         private[net] var addr: InetAddress,
@@ -11,7 +12,7 @@ class Socket protected (private[net] val impl: SocketImpl,
                         shouldStartup: Boolean)
     extends Closeable {
 
-  private[net] var created        = false
+  private[java] var created       = false
   private[net] var bound          = false
   private[net] var connected      = false
   private[net] var closed         = false
@@ -143,7 +144,7 @@ class Socket protected (private[net] val impl: SocketImpl,
     startup(addr, port, timeout)
   }
 
-  // def getChannel: SocketChannel
+  def getChannel: SocketChannel = null
 
   def getInetAddress: InetAddress  = addr
   def getLocalAddress: InetAddress = localAddr

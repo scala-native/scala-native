@@ -13,8 +13,10 @@ abstract class AbstractInterruptibleChannel protected ()
 
   final def close(): Unit =
     if (!closed) {
-      closed = true
-      implCloseChannel()
+      synchronized {
+        closed = true
+        implCloseChannel()
+      }
     }
 
   protected final def end(completed: Boolean): Unit =

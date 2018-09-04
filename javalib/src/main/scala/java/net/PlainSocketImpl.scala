@@ -19,12 +19,16 @@ import scala.scalanative.posix.sys.time._
 import scala.scalanative.posix.unistd.{close => cClose}
 import java.io.{FileDescriptor, IOException, OutputStream, InputStream}
 
-private[net] class PlainSocketImpl extends SocketImpl {
+private[java] class WouldBlockException(msg: String)
+    extends SocketException(msg)
 
-  protected[net] var fd                   = new FileDescriptor
-  protected[net] var localport            = 0
-  protected[net] var address: InetAddress = null
-  protected[net] var port                 = 0
+private[java] class PlainSocketImpl extends SocketImpl {
+
+  protected[java] var fd                   = new FileDescriptor
+  protected[java] var localport            = 0
+  private[java] var localAddr: InetAddress = null
+  protected[net] var address: InetAddress  = null
+  protected[net] var port                  = 0
 
   private var timeout   = 0
   private var listening = false
@@ -38,16 +42,24 @@ private[net] class PlainSocketImpl extends SocketImpl {
     fd = new FileDescriptor(sock)
   }
 
-  private def fetchLocalPort(family: Int): Option[Int] = {
+  private def fetchLocalPort(family: Int): Option[(InetAddress, Int)] = {
     val len = stackalloc[socket.socklen_t]
-    val portOpt = if (family == socket.AF_INET) {
+
+    if (family == socket.AF_INET) {
       val sin = stackalloc[in.sockaddr_in]
       !len = sizeof[in.sockaddr_in].toUInt
 
       if (socket.getsockname(fd.fd, sin.cast[Ptr[socket.sockaddr]], len) == -1) {
         None
       } else {
-        Some(sin.sin_port)
+        val ipstr = stackalloc[CChar](in.INET_ADDRSTRLEN)
+        inet.inet_ntop(socket.AF_INET,
+                       sin.sin_addr.cast[Ptr[Byte]],
+                       ipstr,
+                       in.INET_ADDRSTRLEN.toUInt)
+        Some(
+          (InetAddress.getByName(fromCString(ipstr)),
+           inet.ntohs(sin.sin_port).toInt))
       }
     } else {
       val sin = stackalloc[in.sockaddr_in6]
@@ -56,11 +68,16 @@ private[net] class PlainSocketImpl extends SocketImpl {
       if (socket.getsockname(fd.fd, sin.cast[Ptr[socket.sockaddr]], len) == -1) {
         None
       } else {
-        Some(sin.sin6_port)
+        val ipstr = stackalloc[CChar](in.INET6_ADDRSTRLEN)
+        inet.inet_ntop(socket.AF_INET6,
+                       sin.sin6_addr.cast[Ptr[Byte]],
+                       ipstr,
+                       in.INET6_ADDRSTRLEN.toUInt)
+        Some(
+          (InetAddress.getByName(fromCString(ipstr)),
+           inet.ntohs(sin.sin6_port).toInt))
       }
     }
-
-    portOpt.map(inet.ntohs(_).toInt)
   }
 
   override def bind(addr: InetAddress, port: Int): Unit = {
@@ -90,10 +107,13 @@ private[net] class PlainSocketImpl extends SocketImpl {
           " on port: " + port.toString)
     }
 
-    this.localport = fetchLocalPort(family).getOrElse {
+    val addrTuple = fetchLocalPort(family).getOrElse {
       throw new BindException(
         "Couldn't bind to address: " + addr.getHostAddress + " on port: " + port)
     }
+
+    this.localAddr = addrTuple._1
+    this.localport = addrTuple._2
   }
 
   override def listen(backlog: Int): Unit = {
@@ -194,10 +214,17 @@ private[net] class PlainSocketImpl extends SocketImpl {
       freeaddrinfo(!ret)
 
       if (connectRes < 0) {
-        throw new ConnectException(
-          "Couldn't connect to address: "
-            + inetAddr.getAddress.getHostAddress +
-            " on port: " + inetAddr.getPort)
+        if (errno.errno == EINPROGRESS) {
+          throw new WouldBlockException(
+            "If this shows up in user code, "
+              + " it's a Scala Native bug")
+        } else {
+          throw new ConnectException(
+            "Couldn't connect to address: "
+              + inetAddr.getAddress.getHostAddress +
+              " on port: " + inetAddr.getPort + " , errno: "
+              + errno.errno)
+        }
       }
     } else {
       val opts = fcntl(fd.fd, F_GETFL, 0) | O_NONBLOCK
@@ -239,10 +266,13 @@ private[net] class PlainSocketImpl extends SocketImpl {
     this.address = inetAddr.getAddress
     this.port = inetAddr.getPort
 
-    this.localport = fetchLocalPort(family).getOrElse {
+    val addrTuple = fetchLocalPort(family).getOrElse {
       throw new ConnectException(
         "Couldn't resolve a local port when connecting")
     }
+
+    this.localAddr = addrTuple._1
+    this.localport = addrTuple._2
   }
 
   override def close(): Unit = {

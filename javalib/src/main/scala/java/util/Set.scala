@@ -13,7 +13,7 @@ trait Set[E] extends Collection[E] {
   def retainAll(c: Collection[_]): Boolean
 
   //TODO:
-  //def addAll(coll: Collection[_ <: E]): scala.Boolean
+  def addAll(coll: Collection[_ <: E]): scala.Boolean
   //def hashCode(): scala.Int
   //def toArray(): Array[Any]
   //def toArray[T](array: Array[T]): Array[T]
