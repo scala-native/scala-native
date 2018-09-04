@@ -47,7 +47,7 @@ void Heap_Collect(Heap *heap, Stack *stack);
 void Heap_Recycle(Heap *heap);
 word_t *Heap_LazySweep(Heap *heap, uint32_t size);
 void Heap_SweepFully(Heap *heap);
-void Heap_SweepDone(Heap *heap);
+void Heap_EnsureSweepDone(Heap *heap);
 void Heap_Grow(Heap *heap, size_t increment);
 void Heap_GrowLarge(Heap *heap, size_t increment);
 
