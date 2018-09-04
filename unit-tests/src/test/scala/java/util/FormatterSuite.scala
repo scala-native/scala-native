@@ -2913,6 +2913,14 @@ object FormatterSuite extends tests.Suite {
     }
   }
 
+  // Next test uses, by design, Locale.GERMAN and will continue to fail
+  // even after PR #1298 and this PR for issue ##1296 are merged.
+  // Tests in FormatterSuite.scala using Locale.US should pass as
+  // those PRs are merged.
+  //
+  // This test can be enabled as part of verifying Locale.GERMAN
+  // support. It should pass then.
+
   testFails(
     "format(String, Array[Object]) for Float/Double conversion type 'f'",
     1443) {

@@ -192,11 +192,56 @@ class DecimalFormat extends NumberFormat {
   }
 
   implicit private object DoubleFormatting extends Formatting[Double] {
+
+    case class DoubleDigits(whole: Seq[Char], frac: Seq[Char])
+
+    // Given string of 0-9, adjust to char range relative to alternate zero.
+    private[this] def toUnicode(chars: Seq[Char]): Seq[Char] = {
+      val charZero = dfsym.getZeroDigit()
+      if (charZero == '0') {
+        chars
+      } else {
+        for (ch <- chars) yield ((charZero + ch.asDigit).toChar)
+      }
+    }
+
+    private[this] def getDoubleDigits(number: Double): DoubleDigits = {
+      // regular expressions (regex) are a good Computer Science candidate
+      // here. This is essential low level code and the implementation
+      // of regex may not be robust enough.
+
+      val (wdPrefix, suffix) = number.toString.span(_ != '.')
+
+      val (fracDigits, expDigits) = suffix.tail.span(_ != 'E')
+
+      if (expDigits.isEmpty) {
+        DoubleDigits(toUnicode(wdPrefix.toSeq), toUnicode(fracDigits.toSeq))
+      } else {
+        val exponentB10 = java.lang.Integer.parseInt(expDigits.tail)
+
+        if (exponentB10 > 0) {
+          val (wdSuffix, fd) = fracDigits.splitAt(Math.min(exponentB10, 16))
+          val wd =
+            (wdPrefix + wdSuffix).padTo(exponentB10 + 1, dfsym.getZeroDigit())
+
+          DoubleDigits(toUnicode(wd.toSeq), toUnicode(fd.toSeq))
+
+        } else {
+          val wd = dfsym.getZeroDigit()
+          val fdSeq = padLeft(exponentB10.abs + fracDigits.length,
+                              dfsym.getZeroDigit(),
+                              (wdPrefix + fracDigits).toSeq)
+
+          DoubleDigits(Seq(wd), toUnicode(fdSeq))
+        }
+      }
+    }
+
     def toDigits(number: Double): Digits = {
-      val numabs = number.abs
-      Digits(number < 0,
-             nonNegativeIntegralDigits(numabs),
-             nonNegativeFractionDigits(numabs))
+      val numabs                    = number.abs
+      val DoubleDigits(whole, frac) = getDoubleDigits(numabs)
+
+      Digits(number < 0, whole, frac)
     }
 
     def roundToInteger(digits: Digits): Digits = {
