@@ -101,11 +101,11 @@ word_t *Heap_AllocLarge(Heap *heap, uint32_t objectSize) {
             // if last sweep was not done, then it needs to be finished
             Heap_SweepFully(heap);
         }
-            Heap_Collect(heap, &stack);
+        Heap_Collect(heap, &stack);
 
-            // After collection, try to alloc again, if it fails, grow the heap by
-            // at least the size of the object we want to alloc
-            object = LargeAllocator_GetBlock(&largeAllocator, size);
+        // After collection, try to alloc again, if it fails, grow the heap by
+        // at least the size of the object we want to alloc
+        object = LargeAllocator_GetBlock(&largeAllocator, size);
         if (object != NULL) {
             Object_SetObjectType(&object->header, object_large);
             Object_SetSize(&object->header, size);
@@ -125,13 +125,13 @@ word_t *Heap_AllocLarge(Heap *heap, uint32_t objectSize) {
 
 NOINLINE word_t *Heap_allocSmallSlow(Heap *heap, uint32_t size) {
     Object *object;
-    object = (Object *) Heap_LazySweep(heap, size);
+    object = (Object *)Heap_LazySweep(heap, size);
 
     if (object != NULL)
         goto done;
 
     Heap_Collect(heap, &stack);
-    object = (Object *) Heap_LazySweep(heap, size);
+    object = (Object *)Heap_LazySweep(heap, size);
 
     if (object != NULL)
         goto done;
@@ -191,37 +191,33 @@ word_t *Heap_Alloc(Heap *heap, uint32_t objectSize) {
 }
 
 INLINE void Heap_Assert_Nothing_IsMarked(Heap *heap) {
-   // all should be unmarked when the sweeping is done
+    // all should be unmarked when the sweeping is done
     word_t *current = heap->heapStart;
     while (current != heap->heapEnd) {
         BlockHeader *blockHeader = (BlockHeader *)current;
         assert(!Block_IsMarked(blockHeader));
         for (int16_t lineIndex = 0; lineIndex < LINE_COUNT; lineIndex++) {
-            LineHeader *lineHeader = Block_GetLineHeader(blockHeader, lineIndex);
+            LineHeader *lineHeader =
+                Block_GetLineHeader(blockHeader, lineIndex);
             assert(!Line_IsMarked(lineHeader));
-/*            if (Line_ContainsObject(lineHeader)) {
-                Object *object = Line_GetFirstObject(lineHeader);
-                word_t *lineEnd =
-                    Block_GetLineAddress(blockHeader, lineIndex) + WORDS_IN_LINE;
-                while (object != NULL && (word_t *)object < lineEnd) {
-                    ObjectHeader *objectHeader = &object->header;
-                    assert(!Object_IsMarked(objectHeader));
-                    object = Object_NextObject(object);
-                }
-            }*/
+            // not always true
+            /*            if (Line_ContainsObject(lineHeader)) {
+                            Object *object = Line_GetFirstObject(lineHeader);
+                            word_t *lineEnd =
+                                Block_GetLineAddress(blockHeader, lineIndex) +
+               WORDS_IN_LINE; while (object != NULL && (word_t *)object <
+               lineEnd) { ObjectHeader *objectHeader = &object->header;
+                                assert(!Object_IsMarked(objectHeader));
+                                object = Object_NextObject(object);
+                            }
+                        }*/
         }
         current += WORDS_IN_BLOCK;
     }
 }
 
-
 void Heap_Collect(Heap *heap, Stack *stack) {
     // sweep must be done before marking can begin
-    if (heap->sweepCursor != NULL) {
-        printf("%p(%lu)\n", heap->sweepCursor, (uint64_t)((word_t *)heap->sweepCursor - heap->heapStart) /
-                                                                  WORDS_IN_BLOCK);
-        fflush(stdout);
-    }
     assert(heap->sweepCursor == NULL);
 #ifndef NDEBUG
     Heap_Assert_Nothing_IsMarked(heap);
@@ -254,28 +250,28 @@ void Heap_Recycle(Heap *heap) {
     assert(heap->sweepCursor != NULL);
 
     // do not sweep the two blocks that are in use
-    heap->unsweepable[0] = (word_t *) allocator.block;
-    heap->unsweepable[1] = (word_t *) allocator.largeBlock;
+    heap->unsweepable[0] = (word_t *)allocator.block;
+    heap->unsweepable[1] = (word_t *)allocator.largeBlock;
     // Still need to unmark all objects.
     // This is so the next mark will not use any child objects.
-    Block_ClearMarkBits((BlockHeader *) heap->unsweepable[0]);
-    Block_ClearMarkBits((BlockHeader *) heap->unsweepable[1]);
+    Block_ClearMarkBits((BlockHeader *)heap->unsweepable[0]);
+    Block_ClearMarkBits((BlockHeader *)heap->unsweepable[1]);
 
-    #ifdef DEBUG_PRINT
-        printf("unsweepable[0] %p (%lu)\n", heap->unsweepable[0],
-               (uint64_t)((word_t *)heap->unsweepable[0] - heap->heapStart) /
-                   WORDS_IN_BLOCK);
-        if (heap->unsweepable[0] != NULL) {
-            Block_Print(heap->unsweepable[0]);
-        }
-        printf("unsweepable[1] %p (%lu)\n", heap->unsweepable[1],
-                           (uint64_t)((word_t *)heap->unsweepable[1] - heap->heapStart) /
-                               WORDS_IN_BLOCK);
-        if (heap->unsweepable[1] != NULL) {
-            Block_Print(heap->unsweepable[1]);
-        }
-        fflush(stdout);
-    #endif
+#ifdef DEBUG_PRINT
+    printf("unsweepable[0] %p (%lu)\n", heap->unsweepable[0],
+           (uint64_t)((word_t *)heap->unsweepable[0] - heap->heapStart) /
+               WORDS_IN_BLOCK);
+    if (heap->unsweepable[0] != NULL) {
+        Block_Print(heap->unsweepable[0]);
+    }
+    printf("unsweepable[1] %p (%lu)\n", heap->unsweepable[1],
+           (uint64_t)((word_t *)heap->unsweepable[1] - heap->heapStart) /
+               WORDS_IN_BLOCK);
+    if (heap->unsweepable[1] != NULL) {
+        Block_Print(heap->unsweepable[1]);
+    }
+    fflush(stdout);
+#endif
 }
 
 word_t *Heap_LazySweep(Heap *heap, uint32_t size) {
@@ -285,14 +281,14 @@ word_t *Heap_LazySweep(Heap *heap, uint32_t size) {
     }
     word_t *object = NULL;
 
-    while (!Heap_IsSweepDone(heap)) {
-        BlockHeader *blockHeader = (BlockHeader *) heap -> sweepCursor;
-        bool sweepable  = (word_t *) blockHeader != heap->unsweepable[0] &&
-                          (word_t *) blockHeader != heap->unsweepable[1];
+    word_t* current;
+    while ((current = heap->sweepCursor) < heap->heapEnd) {
+        bool sweepable =
+            current != heap->unsweepable[0] && current != heap->unsweepable[1];
         if (sweepable) {
-            Block_Recycle(&allocator, blockHeader);
+            Block_Recycle(&allocator, (BlockHeader *)current);
         }
-        heap -> sweepCursor += WORDS_IN_BLOCK;
+        heap->sweepCursor += WORDS_IN_BLOCK;
 
         if (sweepable) {
             object = Allocator_Alloc(&allocator, size);
@@ -300,7 +296,7 @@ word_t *Heap_LazySweep(Heap *heap, uint32_t size) {
                 break;
         }
     }
-    if (Heap_IsSweepDone(heap)) {
+    if (heap->sweepCursor >= heap->heapEnd) {
         Heap_SweepDone(heap);
     }
     if (object == NULL) {
@@ -316,16 +312,16 @@ void Heap_SweepFully(Heap *heap) {
         return;
     }
 
-    while (!Heap_IsSweepDone(heap)) {
-        BlockHeader *blockHeader = (BlockHeader *) heap -> sweepCursor;
-        bool sweepable  = (word_t *) blockHeader != heap->unsweepable[0] &&
-                          (word_t *) blockHeader != heap->unsweepable[1];
+    word_t* current;
+    while ((current = heap->sweepCursor) < heap->heapEnd) {
+        bool sweepable =
+            current != heap->unsweepable[0] && current != heap->unsweepable[1];
         if (sweepable) {
-            Block_Recycle(&allocator, blockHeader);
+            Block_Recycle(&allocator, (BlockHeader *)current);
         }
-        heap -> sweepCursor += WORDS_IN_BLOCK;
+        heap->sweepCursor += WORDS_IN_BLOCK;
     }
-    if (Heap_IsSweepDone(heap)) {
+    if (heap->sweepCursor >= heap->heapEnd) {
         Heap_SweepDone(heap);
     }
     assert(heap->sweepCursor == NULL);
@@ -387,7 +383,6 @@ void Heap_Grow(Heap *heap, size_t increment) {
     word_t *heapEnd = heap->heapEnd;
     word_t *newHeapEnd = heapEnd + increment;
     heap->heapEnd = newHeapEnd;
-    heap->sweepCursor = NULL;
     heap->smallHeapSize += increment * WORD_SIZE;
 
     BlockHeader *lastBlock = (BlockHeader *)(heap->heapEnd - WORDS_IN_BLOCK);
