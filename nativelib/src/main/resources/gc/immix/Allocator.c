@@ -139,8 +139,10 @@ INLINE word_t *Allocator_Alloc(Allocator *allocator, size_t size) {
     word_t *start = allocator->cursor;
     word_t *end = (word_t *)((uint8_t *)start + size);
 
-    // Checks if the end of the block overlaps with the limit
-    if (end > allocator->limit) {
+    // Cursor can be NULL right after failing to get a new block.
+    // It should try to get a new block then.
+    // Also checks if the end of the block overlaps with the limit
+    if (start == NULL || end > allocator->limit) {
         // If it overlaps but the block to allocate is a `medium` sized block,
         // use overflow allocation
         if (size > LINE_SIZE) {
@@ -155,6 +157,8 @@ INLINE word_t *Allocator_Alloc(Allocator *allocator, size_t size) {
         }
     }
 
+    // start cannot be NULL here
+    assert(start != NULL);
     if (end == allocator->limit) {
         memset(start, 0, size);
     } else {
