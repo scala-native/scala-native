@@ -103,6 +103,7 @@ void Block_Recycle(Allocator *allocator, BlockHeader *blockHeader) {
             BlockList_AddLast(&allocator->recycledBlocks, blockHeader);
 
             assert(blockHeader->header.first != NO_RECYCLABLE_LINE);
+            assert(blockHeader->header.first < LINE_COUNT);
             allocator->recycledBlockCount++;
         }
     }

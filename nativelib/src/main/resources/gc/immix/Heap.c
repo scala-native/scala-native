@@ -154,8 +154,15 @@ NOINLINE word_t *Heap_allocSmallSlow(Heap *heap, uint32_t size) {
     if (object != NULL)
         goto done;
 
-    Heap_Grow(heap, WORDS_IN_BLOCK);
+    pthread_mutex_lock(&heap->sweep.postActionMutex);
+
     object = (Object *)Allocator_Alloc(&allocator, size);
+    if (object == NULL) {
+        Heap_Grow(heap, WORDS_IN_BLOCK);
+        object = (Object *)Allocator_Alloc(&allocator, size);
+    }
+
+    pthread_mutex_unlock(&heap->sweep.postActionMutex);
 
 done:
     assert(object != NULL);
@@ -301,11 +308,13 @@ void Heap_Recycle(Heap *heap) {
 }
 
 word_t *Heap_LazySweep(Heap *heap, uint32_t size) {
+    bool wasDone = heap->sweep.isDone;
+    word_t *object = Allocator_Alloc(&allocator, size);
     // the sweep was already done, including post-sweep actions
-    if (heap->sweep.isDone) {
-        return Allocator_Alloc(&allocator, size);
+    // or we already got a block from the concurrent sweeper, so no need sweeping
+    if (wasDone || object != NULL) {
+        return object;
     }
-    word_t *object = NULL;
 
     word_t *current;
     atomic_fetch_add(&heap->sweep.processes, 1);
