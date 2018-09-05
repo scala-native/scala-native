@@ -285,11 +285,8 @@ object Double {
 
           val hexSignificand = java.lang.Long.toHexString(significand)
           if (significand != 0 && fractionDigits > hexSignificand.length) {
-            var digitDiff = fractionDigits - hexSignificand.length - 1
-            while (digitDiff != 0) {
-              hexString.append('0')
-              digitDiff -= 1
-            }
+            val digitDiff = fractionDigits - hexSignificand.length
+            hexString.append("0" * digitDiff)
           }
 
           hexString.append(hexSignificand)
@@ -304,11 +301,8 @@ object Double {
 
           val hexSignificand = java.lang.Long.toHexString(significand)
           if (significand != 0 && fractionDigits > hexSignificand.length) {
-            var digitDiff = fractionDigits - hexSignificand.length - 1
-            while (digitDiff != 0) {
-              hexString.append('0')
-              digitDiff -= 1
-            }
+            var digitDiff = fractionDigits - hexSignificand.length
+            hexString.append("0" * digitDiff)
           }
 
           hexString.append(hexSignificand)

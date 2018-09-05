@@ -2718,10 +2718,9 @@ object FormatterUSSuite extends tests.Suite {
     }
   }
 
-  testFails(
-    "format(String, Array[Object]) for java.lang.Double.MIN_VALUE conversion type 'a' and 'A'",
-    0) { // issue not filed yet
-    // it is java.lang.Double.toHexString in Formatter.FloatUtil.transform_a that throws NumberFormatException.
+  test(
+    "format(String, Array[Object]) for java.lang.Double.MIN_VALUE conversion type 'a' and 'A'") {
+
     val tripleA: Array[Array[Any]] = Array(
       Array(java.lang.Double.MIN_VALUE, "%a", "0x0.0000000000001p-1022"),
       Array(java.lang.Double.MIN_VALUE, "%5a", "0x0.0000000000001p-1022")
