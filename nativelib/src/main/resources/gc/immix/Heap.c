@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <stdio.h>
+#include <stdatomic.h>
 #include "Heap.h"
 #include "Block.h"
 #include "Object.h"
