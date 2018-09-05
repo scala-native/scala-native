@@ -1,6 +1,7 @@
 #ifndef IMMIX_STATE_H
 #define IMMIX_STATE_H
 
+#include <stdatomic.h>
 #include "Heap.h"
 
 extern Heap heap;

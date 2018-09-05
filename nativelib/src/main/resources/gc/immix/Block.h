@@ -1,6 +1,8 @@
 #ifndef IMMIX_BLOCK_H
 #define IMMIX_BLOCK_H
 
+#include <stdatomic.h>
+
 #include "headers/BlockHeader.h"
 #include "Heap.h"
 #include "Line.h"
