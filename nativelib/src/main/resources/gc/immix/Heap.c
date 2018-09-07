@@ -64,7 +64,7 @@ void Heap_Init(Heap *heap, size_t initialSmallHeapSize,
     heap->heapStart = smallHeapStart;
     word_t *heapEnd = smallHeapStart + initialSmallHeapSize / WORD_SIZE;
     heap->heapEnd = heapEnd;
-    heap->sweep.cursor = (long)heapEnd;
+    heap->sweep.cursor = (word_t) heapEnd;
     heap->sweep.processes = 0;
     heap->sweep.isDone = true;
 
@@ -271,7 +271,7 @@ void Heap_Recycle(Heap *heap) {
 
     LargeAllocator_Sweep(&largeAllocator);
     // prepare for lazy sweeping
-    heap->sweep.cursor = (long)heap->heapStart;
+    heap->sweep.cursor = (word_t) heap->heapStart;
     assert(heap->sweep.processes == 0);
     assert(heap->sweep.isDone);
     heap->sweep.isDone = false;

@@ -5,20 +5,22 @@
 #include "Allocator.h"
 #include "LargeAllocator.h"
 #include "datastructures/Stack.h"
+#include <stdatomic.h>
+#include <pthread.h>
 
 typedef struct {
     size_t memoryLimit;
     word_t *heapStart;
     word_t *heapEnd;
     struct {
-        atomic_long cursor;
+        atomic_uintptr_t cursor;
         word_t *unsweepable[2];
         atomic_int processes;
         pthread_mutex_t startMutex;
         pthread_mutex_t postActionMutex;
         pthread_cond_t start;
         pthread_cond_t processStopped; // uses postActionMutex
-        bool isDone;
+        atomic_bool isDone;
         pthread_t threads[NUM_SWEEP_THREADS];
     } sweep;
     size_t smallHeapSize;
