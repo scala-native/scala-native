@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdatomic.h>
 #include "Allocator.h"
 #include "Line.h"
 #include "Block.h"

@@ -3,22 +3,23 @@
 
 #include "GCTypes.h"
 #include <stddef.h>
+#include <stdatomic.h>
 #include "datastructures/BlockList.h"
 
 typedef struct {
     word_t *heapStart;
     uint64_t blockCount;
     BlockList recycledBlocks;
-    uint64_t recycledBlockCount;
+    atomic_long recycledBlockCount;
     BlockList freeBlocks;
-    uint64_t freeBlockCount;
+    atomic_long freeBlockCount;
     BlockHeader *block;
     word_t *cursor;
     word_t *limit;
     BlockHeader *largeBlock;
     word_t *largeCursor;
     word_t *largeLimit;
-    size_t freeMemoryAfterCollection;
+    atomic_size_t freeMemoryAfterCollection;
 } Allocator;
 
 void Allocator_Init(Allocator *allocator, word_t *, int);
