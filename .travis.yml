@@ -48,7 +48,7 @@ before_script:
 script:
   - java -version
   - if [ -n "$CLANG_FORMAT_PATH" ]; then scripts/clangfmt --test; fi
-  - if [ -z "$TEST_CONTAINER" ]; then sbt "-no-colors" "-J-Xmx2G" "^^ $SBT_VERSION" test-compile; if [ $? -ne 0 ] ; then exit 1; fi; scripts/scalafmt --test; fi
+  - if [ -z "$TEST_CONTAINER" ]; then sbt "-no-colors" "-J-Xmx2G" "^^ $SBT_VERSION" nscplugin/publishLocal sbtScalaNative/publishLocal test-compile; if [ $? -ne 0 ] ; then exit 1; fi; scripts/scalafmt --test; fi
   - if [ -n "$TEST_CONTAINER" ]; then
       docker run --rm --privileged multiarch/qemu-user-static:register;
       docker build --cache-from scala-native-testing:linux-x86_64 -t scala-native-testing:linux-x86_64 --build-arg TARGET_DOCKER_PLATFORM=$TARGET_DOCKER_PLATFORM --build-arg HOST_DEBIAN_PLATFORM=amd64 ci-docker;
