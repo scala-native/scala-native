@@ -11,9 +11,9 @@ language: scala
 env:
   matrix:
     - SCALANATIVE_GC=boehm SBT_VERSION=0.13.16
-    - SCALANATIVE_GC=boehm SBT_VERSION=1.2.1
-    - SCALANATIVE_GC=immix SBT_VERSION=0.13.16
-    - SCALANATIVE_GC=immix SBT_VERSION=1.2.1
+#    - SCALANATIVE_GC=boehm SBT_VERSION=1.2.1
+#    - SCALANATIVE_GC=immix SBT_VERSION=0.13.16
+#    - SCALANATIVE_GC=immix SBT_VERSION=1.2.1
 
   global:
     - MAVEN_REALM="Sonatype Nexus Repository Manager"
@@ -22,6 +22,10 @@ env:
     - secure: "lAh0fiYHWaNd9Z/slDzGj2gSUF1oDwaNBlZX6eeIASFZO2W+HF79UqD/ZGsTn58Ek1XJ9FLWk0+3BIHpoLBv7S7kj2QG8AVGi4EkhvvPc/7RjcO8EM3uN8KXY/XjlDJEI4BmxX1XuzPvwhhbTuk7NY+9DFqhWV3V5xYmtMt5yJ6rbu3NROGHoiiJvBvhzKHbjkoIX0dX/dHAS2bUcRmv6BZiBA9nI1WiDMTrRjnTm1x/v4kqLG5k4UwbBRU33foFzZJrFs04jJ47GXdczCyAH7Xu+NtvxRni9fjUgEKa75PtN4XLn8GRXC6u7HCPfHz2cHTeLyLxxKK1DZ+P08+bkG4MdoaknlN7HUg1gf9zWQYuanUMiqIMry5+URT9A5Jno+Kkr9UKJKqRHxBYVLenTqVCAj8KQONdEm5vCSkqv3dfpQRrljf4CX20vO28cDqXpOTzYdFOApH3Ah8I9uXmysnto9DgVJG3ZX7ibZ6gIHE5cpZuJsBFlVYAdEEygPhRKJrtnmZO7cL7pUIWT8nj3buOuU9uK1+JpWQ32GV+vyJolDRYamxrKLNbp/SVwWHaQk8+igj4zfS42XNDbOtD6KbHdwMzRH4AdpIR8ZWfB2BXSaY9XE0fWGDgG2h+7yropmMa3DWTdT8OWdXiPkn0TDhT2GhVNwxh5G4OB1nGpgw="
 
 before_install:
+  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+  - sudo add-apt-repository 'deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-6.0 main'
+  - sudo apt-get update -q
+  - sudo apt-get install clang-6.0 --allow-unauthenticated
   - bash scripts/travis_setup.sh
 
 before_script:
@@ -44,7 +48,9 @@ before_script:
 
 script:
   - java -version
-  - if [ -n "$CLANG_FORMAT_PATH" ]; then scripts/clangfmt --test; fi
+  - clang --version
+  - clang-format -version
+  #- scripts/clangfmt --test
   - scripts/scalafmt --test
   - >
     sbt \
