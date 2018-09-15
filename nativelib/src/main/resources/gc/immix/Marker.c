@@ -29,17 +29,27 @@ void Marker_markObject(Heap *heap, Stack *stack, Object *object) {
     }
 }
 
+void _Marker_EnsureGoodSmallHeapMarking(Heap *heap, Object *object) {
+    if (object != NULL && Heap_IsWordInSmallHeap(heap, (word_t *)object)) {
+        BlockHeader *block = Block_GetBlockHeader((word_t *)object);
+        LineHeader *line = &block->lineHeaders[Block_GetLineIndexFromWord(
+            block, (word_t *)object)];
+        assert(Line_ContainsObject(line));
+        // IsMarked(object) implies IsMarked(line) implies IsMarked(block)
+
+        assert(!Object_IsMarked(&object->header) || Line_IsMarked(line));
+        assert(!Line_IsMarked(line) || Block_IsMarked(block));
+    }
+}
+
 void Marker_markConservative(Heap *heap, Stack *stack, word_t *address) {
     assert(Heap_IsWordInHeap(heap, address));
     Object *object = NULL;
     if (Heap_IsWordInSmallHeap(heap, address)) {
         object = Object_GetObject(address);
-        assert(
-            object == NULL ||
-            Line_ContainsObject(&Block_GetBlockHeader((word_t *)object)
-                                     ->lineHeaders[Block_GetLineIndexFromWord(
-                                         Block_GetBlockHeader((word_t *)object),
-                                         (word_t *)object)]));
+#ifndef NDEBUG
+        _Marker_EnsureGoodSmallHeapMarking(heap, object);
+#endif
 #ifdef DEBUG_PRINT
         if (object == NULL) {
             printf("Not found: %p\n", address);
@@ -67,6 +77,9 @@ void Marker_Mark(Heap *heap, Stack *stack) {
 
                 word_t *field = object->fields[i];
                 Object *fieldObject = Object_FromMutatorAddress(field);
+#ifndef NDEBUG
+                _Marker_EnsureGoodSmallHeapMarking(heap, fieldObject);
+#endif
                 if (heap_isObjectInHeap(heap, fieldObject) &&
                     !Object_IsMarked(&fieldObject->header)) {
                     Marker_markObject(heap, stack, fieldObject);
@@ -78,6 +91,9 @@ void Marker_Mark(Heap *heap, Stack *stack) {
             while (ptr_map[i] != LAST_FIELD_OFFSET) {
                 word_t *field = object->fields[ptr_map[i]];
                 Object *fieldObject = Object_FromMutatorAddress(field);
+#ifndef NDEBUG
+                _Marker_EnsureGoodSmallHeapMarking(heap, fieldObject);
+#endif
                 if (heap_isObjectInHeap(heap, fieldObject) &&
                     !Object_IsMarked(&fieldObject->header)) {
                     Marker_markObject(heap, stack, fieldObject);
@@ -114,6 +130,9 @@ void Marker_markModules(Heap *heap, Stack *stack) {
 
     for (int i = 0; i < nb_modules; i++) {
         Object *object = Object_FromMutatorAddress(modules[i]);
+#ifndef NDEBUG
+        _Marker_EnsureGoodSmallHeapMarking(heap, object);
+#endif
         if (heap_isObjectInHeap(heap, object) &&
             !Object_IsMarked(&object->header)) {
             Marker_markObject(heap, stack, object);

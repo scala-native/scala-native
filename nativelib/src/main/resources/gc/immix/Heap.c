@@ -64,7 +64,7 @@ void Heap_Init(Heap *heap, size_t initialSmallHeapSize,
     heap->heapStart = smallHeapStart;
     word_t *heapEnd = smallHeapStart + initialSmallHeapSize / WORD_SIZE;
     heap->heapEnd = heapEnd;
-    heap->sweep.cursor = (word_t) heapEnd;
+    heap->sweep.cursor = (word_t)heapEnd;
     heap->sweep.processes = 0;
     heap->sweep.isDone = true;
 
@@ -271,7 +271,7 @@ void Heap_Recycle(Heap *heap) {
 
     LargeAllocator_Sweep(&largeAllocator);
     // prepare for lazy sweeping
-    heap->sweep.cursor = (word_t) heap->heapStart;
+    heap->sweep.cursor = (word_t)heap->heapStart;
     assert(heap->sweep.processes == 0);
     assert(heap->sweep.isDone);
     heap->sweep.isDone = false;
@@ -312,7 +312,8 @@ word_t *Heap_LazySweep(Heap *heap, uint32_t size) {
     bool wasDone = heap->sweep.isDone;
     word_t *object = Allocator_Alloc(&allocator, size);
     // the sweep was already done, including post-sweep actions
-    // or we already got a block from the concurrent sweeper, so no need sweeping
+    // or we already got a block from the concurrent sweeper, so no need
+    // sweeping
     if (wasDone || object != NULL) {
         return object;
     }
