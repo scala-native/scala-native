@@ -77,6 +77,10 @@ void Marker_Mark(Heap *heap, Stack *stack) {
 
                 word_t *field = object->fields[i];
                 Object *fieldObject = Object_FromMutatorAddress(field);
+                // Heap_IsWordInSmallHeap(heap, field) implies Object_GetObject(field) != NULL
+                assert(!Heap_IsWordInSmallHeap(heap, field) || Object_GetObject(field) != NULL);
+                // Heap_IsWordInLargeHeap(heap, field) implies Object_GetLargeObject(&largeAllocator, field) != NULL
+                assert(!Heap_IsWordInLargeHeap(heap, field) || Object_GetLargeObject(&largeAllocator, field) != NULL);
 #ifndef NDEBUG
                 _Marker_EnsureGoodSmallHeapMarking(heap, fieldObject);
 #endif
@@ -91,6 +95,10 @@ void Marker_Mark(Heap *heap, Stack *stack) {
             while (ptr_map[i] != LAST_FIELD_OFFSET) {
                 word_t *field = object->fields[ptr_map[i]];
                 Object *fieldObject = Object_FromMutatorAddress(field);
+                // Heap_IsWordInSmallHeap(heap, field) implies Object_GetObject(field) != NULL
+                assert(!Heap_IsWordInSmallHeap(heap, field) || Object_GetObject(field) != NULL);
+                // Heap_IsWordInLargeHeap(heap, field) implies Object_GetLargeObject(&largeAllocator, field) != NULL
+                assert(!Heap_IsWordInLargeHeap(heap, field) || Object_GetLargeObject(&largeAllocator, field) != NULL);
 #ifndef NDEBUG
                 _Marker_EnsureGoodSmallHeapMarking(heap, fieldObject);
 #endif
