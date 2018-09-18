@@ -1,4 +1,5 @@
-package java.net
+package scala.scalanative
+package runtime
 
 import scala.scalanative.native._
 import scala.scalanative.posix.{netdb, netdbOps}, netdb._, netdbOps._
@@ -12,7 +13,7 @@ import scala.scalanative.posix.sys.time.timeval
 import scala.scalanative.posix.sys.selectOps._
 import scala.scalanative.posix.netinet.{in, inOps}, in._, inOps._
 
-private[net] object SocketHelpers {
+object SocketHelpers {
 
   def isReachableByEcho(ip: String, timeout: Int, port: Int): Boolean = {
     Zone { implicit z =>

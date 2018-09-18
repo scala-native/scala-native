@@ -1,6 +1,7 @@
 package java.net
 
 import scala.scalanative.native._
+import scala.scalanative.runtime.SocketHelpers
 import scala.collection.mutable.ArrayBuffer
 
 import java.util.StringTokenizer
