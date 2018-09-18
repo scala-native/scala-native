@@ -296,13 +296,13 @@ void Heap_Recycle(Heap *heap) {
            (uint64_t)((word_t *)heap->sweep.unsweepable[0] - heap->heapStart) /
                WORDS_IN_BLOCK);
     if (heap->sweep.unsweepable[0] != NULL) {
-        Block_Print(heap->sweep.unsweepable[0]);
+        Block_Print( (BlockHeader *) heap->sweep.unsweepable[0]);
     }
     printf("unsweepable[1] %p (%lu)\n", heap->sweep.unsweepable[1],
            (uint64_t)((word_t *)heap->sweep.unsweepable[1] - heap->heapStart) /
                WORDS_IN_BLOCK);
     if (heap->sweep.unsweepable[1] != NULL) {
-        Block_Print(heap->sweep.unsweepable[1]);
+        Block_Print( (BlockHeader *) heap->sweep.unsweepable[1]);
     }
     fflush(stdout);
 #endif
