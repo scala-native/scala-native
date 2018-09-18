@@ -107,7 +107,7 @@ void Block_Recycle(Allocator *allocator, BlockHeader *blockHeader) {
             allocator->recycledBlockCount++;
         }
     }
-#ifdef DEBUG_PRINT
+#ifdef TRACE_PRINT
     Block_Print(blockHeader);
 #endif
 }

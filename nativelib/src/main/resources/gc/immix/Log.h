@@ -6,5 +6,6 @@
 
 //#define PRINT_STACK_OVERFLOW
 //#define DEBUG_PRINT
+//#define TRACE_PRINT
 
 #endif // IMMIX_LOG_H
