@@ -2,7 +2,8 @@ package java.util
 package regex
 
 import cre2h._
-import scalanative.native._, stdlib._, stdio._, string._
+import scalanative.native._
+import scalanative.libc._, stdlib._, stdio._, string._
 
 // Inspired by: https://github.com/google/re2j/blob/master/java/com/google/re2j/Matcher.java
 

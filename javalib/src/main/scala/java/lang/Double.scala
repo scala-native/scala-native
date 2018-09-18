@@ -1,6 +1,7 @@
 package java.lang
 
 import scalanative.native._
+import scalanative.libc._
 
 final class Double(val _value: scala.Double)
     extends Number

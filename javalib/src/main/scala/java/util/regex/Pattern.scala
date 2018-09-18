@@ -1,7 +1,8 @@
 package java.util
 package regex
 
-import scalanative.native._, stdlib._, stdio._, string._
+import scalanative.native._
+import scalanative.libc._, stdlib._, stdio._, string._
 import cre2h._
 import annotation.tailrec
 

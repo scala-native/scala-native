@@ -2,6 +2,7 @@ package scala.scalanative
 package native
 
 import scala.annotation.implicitNotFound
+import scalanative.runtime.libc
 
 /** Zone allocator that automatically frees allocations whenever
  *  syntactic boundary of the zone is over.
@@ -32,14 +33,14 @@ object Zone {
     private var node: Node = null
 
     final def alloc(size: CSize): Ptr[Byte] = {
-      val ptr = stdlib.malloc(size)
+      val ptr = libc.malloc(size)
       node = new Node(ptr, node)
       ptr
     }
 
     final def close(): Unit = {
       while (node != null) {
-        stdlib.free(node.head)
+        libc.free(node.head)
         node = node.tail
       }
     }

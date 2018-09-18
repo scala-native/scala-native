@@ -1,4 +1,5 @@
-import scala.scalanative.native._, stdio._
+import scala.scalanative.native._
+import scala.scalanative.libc.stdio._
 
 object Hello {
   def main(args: Array[String]): Unit = {

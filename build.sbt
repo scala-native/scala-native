@@ -79,6 +79,7 @@ lazy val setUpTestingCompiler = Def.task {
   val nscpluginjar = (Keys.`package` in nscplugin in Compile).value
   val nativelibjar = (Keys.`package` in nativelib in Compile).value
   val auxlibjar    = (Keys.`package` in auxlib in Compile).value
+  val clibjar      = (Keys.`package` in clib in Compile).value
   val posixlibjar  = (Keys.`package` in posixlib in Compile).value
   val scalalibjar  = (Keys.`package` in scalalib in Compile).value
   val javalibjar   = (Keys.`package` in javalib in Compile).value
@@ -90,7 +91,7 @@ lazy val setUpTestingCompiler = Def.task {
   sys.props("scalanative.testingcompiler.cp") =
     (testingcompilercp :+ testingcompilerjar) map (_.getAbsolutePath) mkString pathSeparator
   sys.props("scalanative.nativeruntime.cp") =
-    Seq(nativelibjar, auxlibjar, posixlibjar, scalalibjar, javalibjar) mkString pathSeparator
+    Seq(nativelibjar, auxlibjar, clibjar, posixlibjar, scalalibjar, javalibjar) mkString pathSeparator
   sys.props("scalanative.nativelib.dir") =
     ((crossTarget in Compile).value / "nativelib").getAbsolutePath
 }
@@ -341,6 +342,18 @@ lazy val nativelib =
         .value
     )
 
+lazy val clib =
+  project
+    .in(file("clib"))
+    .settings(libSettings)
+    .settings(mavenPublishSettings)
+    .settings(
+      publishLocal := publishLocal
+        .dependsOn(publishLocal in nativelib)
+        .value
+    )
+    .dependsOn(nativelib)
+
 lazy val posixlib =
   project
     .in(file("posixlib"))
@@ -348,10 +361,10 @@ lazy val posixlib =
     .settings(mavenPublishSettings)
     .settings(
       publishLocal := publishLocal
-        .dependsOn(publishLocal in nscplugin)
+        .dependsOn(publishLocal in clib)
         .value
     )
-    .dependsOn(nativelib)
+    .dependsOn(clib)
 
 lazy val javalib =
   project

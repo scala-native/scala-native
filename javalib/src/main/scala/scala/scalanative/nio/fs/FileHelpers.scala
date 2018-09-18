@@ -1,6 +1,7 @@
 package scala.scalanative.nio.fs
 
 import scalanative.native._
+import scalanative.libc._
 import scalanative.posix.dirent._
 import scalanative.posix.{errno => e, fcntl, unistd}, e._, unistd.access
 import scalanative.native._, stdlib._, stdio._, string._

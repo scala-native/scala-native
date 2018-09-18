@@ -18,11 +18,11 @@ import scala.scalanative.native.{
   CUnsignedLong,
   Ptr,
   sizeof,
-  statvfs,
   toCString,
   Zone,
   alloc
 }
+import scala.scalanative.posix.sys.statvfs
 
 class UnixFileSystem(override val provider: FileSystemProvider,
                      val root: String,

@@ -1,7 +1,7 @@
 package scala.scalanative.runtime
 
 import scala.collection.mutable
-import scala.scalanative.native.{Zone, stdio, toCString}
+import scala.scalanative.native.{Zone, toCString}
 
 object DeleteOnExit {
   private val toDeleteSet: mutable.Set[String] = mutable.Set.empty
@@ -10,7 +10,7 @@ object DeleteOnExit {
   Shutdown.addHook(() =>
     toDelete.foreach { f =>
       Zone { implicit z =>
-        stdio.remove(toCString(f))
+        libc.remove(toCString(f))
       }
   })
   def addFile(name: String) = toDelete.synchronized {

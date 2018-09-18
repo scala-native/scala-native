@@ -33,6 +33,7 @@ import java.util.{
 import java.util.stream.{Stream, WrappedScalaStream}
 
 import scalanative.native._
+import scalanative.libc._
 import scalanative.posix.{dirent, fcntl, limits, unistd}, dirent._
 import scalanative.posix.sys.stat
 import scalanative.nio.fs.{FileHelpers, UnixException}
