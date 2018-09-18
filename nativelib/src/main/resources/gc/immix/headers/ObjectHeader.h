@@ -57,6 +57,10 @@ static inline bool Object_IsMarked(ObjectHeader *objectHeader) {
     return objectHeader->flag == object_marked;
 }
 
+static inline bool Object_IsFree(ObjectHeader *objectHeader) {
+    return objectHeader->flag == object_free;
+}
+
 static inline void Object_MarkObjectHeader(ObjectHeader *objectHeader) {
     objectHeader->flag = object_marked;
 }

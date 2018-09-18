@@ -65,6 +65,71 @@ Object *Object_getInLine(BlockHeader *blockHeader, int lineIndex,
     }
 }
 
+bool Object_IsObjectValid(Object* object) {
+    word_t *firstWord = (word_t *) object;
+    BlockHeader *blockHeader = Block_GetBlockHeader(firstWord);
+
+    if (firstWord < Block_GetFirstWord(blockHeader)) {
+#ifdef DEBUG_PRINT
+        printf("Points on block header %p\n", firstWord);
+        fflush(stdout);
+#endif
+        return false;
+    }
+
+    if (!isWordAligned(firstWord)) {
+#ifdef DEBUG_PRINT
+        printf("Object not aligned: %p aligning to %p\n", firstWord,
+               (word_t *)((word_t)firstWord & WORD_INVERSE_MASK));
+        fflush(stdout);
+#endif
+        return false;
+    }
+
+    // find the Object in the block
+    // get the correct line
+    int lineIndex = Block_GetLineIndexFromWord(blockHeader, firstWord);
+    LineHeader *lineHeader = Block_GetLineHeader(blockHeader, lineIndex);
+    if (!Line_ContainsObject(lineHeader)) {
+#ifdef DEBUG_PRINT
+        printf("Object points to empty line %p\n", firstWord);
+        fflush(stdout);
+#endif
+        return false;
+    }
+
+    bool exists = false;
+    word_t *lineEnd =
+            Block_GetLineAddress(blockHeader, lineIndex) + WORDS_IN_LINE;
+    for (Object *current = Line_GetFirstObject(lineHeader); (word_t *) current < lineEnd; current = Object_NextObject(current)) {
+        if (current == object) {
+            exists = true;
+            break;
+        }
+    }
+
+    if (!exists) {
+#ifdef DEBUG_PRINT
+        printf("Could not find object %p\n", firstWord);
+        fflush(stdout);
+#endif
+        return false;
+    }
+
+    if (Object_IsFree(&object->header)) {
+#ifdef DEBUG_PRINT
+        printf("Object was free %p\n", firstWord);
+        fflush(stdout);
+#endif
+        return false;
+    }
+
+    size_t size = Object_Size(&object->header);
+    assert(size < LARGE_BLOCK_SIZE);
+
+    return true;
+}
+
 Object *Object_GetObject(word_t *word) {
     BlockHeader *blockHeader = Block_GetBlockHeader(word);
 
@@ -138,6 +203,33 @@ Object *Object_GetLargeObject(LargeAllocator *allocator, word_t *word) {
                 word < (word_t *)Object_NextLargeObject(object)));
         return object;
     }
+}
+
+bool Object_IsLargeObjectValid(LargeAllocator *allocator, Object *object) {
+    word_t *firstWord = (word_t *) object;
+    // check alignment
+    if (((word_t)firstWord & LARGE_BLOCK_MASK) != (word_t)firstWord) {
+#ifdef DEBUG_PRINT
+        printf("Large object not aligned: %p aligning to %p\n", firstWord,
+               (word_t *)((word_t)firstWord & WORD_INVERSE_MASK));
+        fflush(stdout);
+#endif
+        return false;
+    }
+
+    if (!Bitmap_GetBit(allocator->bitmap, (ubyte_t *)firstWord)) {
+#ifdef DEBUG_PRINT
+        printf("Could not find large object at %p\n", firstWord);
+        fflush(stdout);
+#endif
+        return false;
+    }
+
+
+    size_t size = Object_Size(&object->header);
+    assert(size > LARGE_BLOCK_SIZE);
+
+    return true;
 }
 
 void Object_Mark(Object *object) {

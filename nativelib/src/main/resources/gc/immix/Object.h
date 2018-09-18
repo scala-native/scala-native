@@ -11,4 +11,7 @@ Object *Object_GetLargeObject(LargeAllocator *largeAllocator, word_t *address);
 void Object_Mark(Object *objectHeader);
 size_t Object_ChunkSize(Object *objectHeader);
 
+bool Object_IsObjectValid(Object* object);
+bool Object_IsLargeObjectValid(LargeAllocator *allocator, Object *object);
+
 #endif // IMMIX_OBJECT_H
