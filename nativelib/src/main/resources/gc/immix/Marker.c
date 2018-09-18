@@ -50,7 +50,7 @@ void Marker_markConservative(Heap *heap, Stack *stack, word_t *address) {
 #ifndef NDEBUG
         _Marker_EnsureGoodSmallHeapMarking(heap, object);
 #endif
-#ifdef DEBUG_PRINT
+#ifdef TRACE_PRINT
         if (object == NULL) {
             printf("Not found: %p\n", address);
         }

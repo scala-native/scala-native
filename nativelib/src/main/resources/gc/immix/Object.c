@@ -49,7 +49,7 @@ Object *Object_getInLine(BlockHeader *blockHeader, int lineIndex,
 
     if (Object_IsAllocated(&current->header) && word >= (word_t *)current &&
         word < (word_t *)next) {
-#ifdef DEBUG_PRINT
+#ifdef TRACE_PRINT
         if ((word_t *)current != word) {
             printf("inner pointer: %p object: %p\n", word, current);
             fflush(stdout);
@@ -57,7 +57,7 @@ Object *Object_getInLine(BlockHeader *blockHeader, int lineIndex,
 #endif
         return current;
     } else {
-#ifdef DEBUG_PRINT
+#ifdef TRACE_PRINT
         printf("ignoring %p\n", word);
         fflush(stdout);
 #endif
@@ -135,7 +135,7 @@ Object *Object_GetObject(word_t *word) {
 
     // Check if the word points on the block header
     if (word < Block_GetFirstWord(blockHeader)) {
-#ifdef DEBUG_PRINT
+#ifdef TRACE_PRINT
         printf("Points on block header %p\n", word);
         fflush(stdout);
 #endif
@@ -143,7 +143,7 @@ Object *Object_GetObject(word_t *word) {
     }
 
     if (!isWordAligned(word)) {
-#ifdef DEBUG_PRINT
+#ifdef TRACE_PRINT
         printf("Word not aligned: %p aligning to %p\n", word,
                (word_t *)((word_t)word & WORD_INVERSE_MASK));
         fflush(stdout);
@@ -160,7 +160,7 @@ Object *Object_GetObject(word_t *word) {
     if (Line_ContainsObject(Block_GetLineHeader(blockHeader, lineIndex))) {
         return Object_getInLine(blockHeader, lineIndex, word);
     } else {
-#ifdef DEBUG_PRINT
+#ifdef TRACE_PRINT
         printf("Word points to empty line %p\n", word);
         fflush(stdout);
 #endif
