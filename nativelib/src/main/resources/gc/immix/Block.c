@@ -5,6 +5,7 @@
 #include "Log.h"
 #include "Allocator.h"
 #include "Marker.h"
+#include "State.h"
 
 extern int __object_array_id;
 
@@ -123,7 +124,8 @@ void Block_ClearMarkBits(BlockHeader *block) {
 }
 
 void Block_Print(BlockHeader *block) {
-    printf("%p", block);
+    printf("%p (%lu)", block, (uint64_t)((word_t *)block - heap.heapStart) /
+                                                 WORDS_IN_BLOCK);
     if (Block_IsFree(block)) {
         printf("FREE\n");
     } else if (Block_IsUnavailable(block)) {

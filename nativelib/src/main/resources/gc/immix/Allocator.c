@@ -256,9 +256,7 @@ BlockHeader *Allocator_getNextBlock(Allocator *allocator) {
     BlockHeader *block = BlockList_PopFirstBlock(&allocator->recycledBlocks);
 #ifdef TRACE_PRINT
     if (block != NULL) {
-        printf("NextRecycledBlock %p (%lu)\n", block,
-               (uint64_t)((word_t *)block - allocator->heapStart) /
-                   WORDS_IN_BLOCK);
+        printf("NextRecycledBlock\n");
         Block_Print(block);
         fflush(stdout);
     }
@@ -268,9 +266,7 @@ BlockHeader *Allocator_getNextBlock(Allocator *allocator) {
     }
 #ifdef TRACE_PRINT
     if (block != NULL) {
-        printf("NextFreeBlock %p (%lu)\n", block,
-               (uint64_t)((word_t *)block - allocator->heapStart) /
-                   WORDS_IN_BLOCK);
+        printf("NextFreeBlock\n");
         Block_Print(block);
         fflush(stdout);
     }
