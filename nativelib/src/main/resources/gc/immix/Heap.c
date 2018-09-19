@@ -248,6 +248,7 @@ void Heap_Collect(Heap *heap, Stack *stack) {
 #ifndef NDEBUG
     Heap_Assert_Nothing_IsMarked(heap);
 #endif
+    allocator.collectionNumber += 1;
 #ifdef DEBUG_PRINT
     printf("\nCollect\n");
     fflush(stdout);

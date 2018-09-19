@@ -20,6 +20,7 @@ typedef struct {
     word_t *largeCursor;
     word_t *largeLimit;
     atomic_size_t freeMemoryAfterCollection;
+    uint64_t collectionNumber;
 } Allocator;
 
 void Allocator_Init(Allocator *allocator, word_t *, int);

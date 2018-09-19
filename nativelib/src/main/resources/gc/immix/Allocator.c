@@ -34,6 +34,7 @@ void Allocator_Init(Allocator *allocator, word_t *heapStart, int blockCount) {
     allocator->blockCount = (uint64_t)blockCount;
     allocator->freeBlockCount = (uint64_t)blockCount;
     allocator->recycledBlockCount = 0;
+    allocator->collectionNumber = 0;
 
     Allocator_InitCursors(allocator);
 }
