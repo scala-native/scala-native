@@ -2,6 +2,7 @@ package scala.scalanative
 package runtime
 
 import scala.scalanative.native._
+import scala.scalanative.libc._
 import scala.scalanative.posix.{netdb, netdbOps}, netdb._, netdbOps._
 import scala.scalanative.posix.arpa.inet._
 import scala.scalanative.posix.sys.socketOps._

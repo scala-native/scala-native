@@ -1,5 +1,7 @@
 package scala.scalanative
-package native
+package libc
+
+import scalanative.native._
 
 /** All functions take complex but Scala Native does not
  * support pass by value so we pass a pointer to an

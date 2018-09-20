@@ -1,8 +1,8 @@
 package scala.scalanative
 
-import scala.language.experimental.macros
 import java.nio.charset.Charset
-import scalanative.runtime.undefined
+import scala.language.experimental.macros
+import scalanative.runtime.{libc, undefined}
 
 package object native {
 
@@ -157,7 +157,7 @@ package object native {
   /** Convert a CString to a String using given charset. */
   def fromCString(cstr: CString,
                   charset: Charset = Charset.defaultCharset()): String = {
-    val len   = string.strlen(cstr).toInt
+    val len   = libc.strlen(cstr).toInt
     val bytes = new Array[Byte](len)
 
     var c = 0
@@ -202,7 +202,7 @@ package object native {
       q"""{
         val $size = _root_.scala.scalanative.native.sizeof[$T]($tag)
         val $ptr = $z.alloc($size)
-        _root_.scala.scalanative.native.string.memset($ptr, 0, $size)
+        _root_.scala.scalanative.runtime.libc.memset($ptr, 0, $size)
         $ptr.cast[Ptr[$T]]
       }"""
     }
@@ -215,7 +215,7 @@ package object native {
       q"""{
         val $size = _root_.scala.scalanative.native.sizeof[$T]($tag) * $n
         val $ptr = $z.alloc($size)
-        _root_.scala.scalanative.native.string.memset($ptr, 0, $size)
+        _root_.scala.scalanative.runtime.libc.memset($ptr, 0, $size)
         $ptr.cast[Ptr[$T]]
       }"""
     }

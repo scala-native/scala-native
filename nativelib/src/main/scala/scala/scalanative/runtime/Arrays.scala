@@ -2,7 +2,7 @@
 package scala.scalanative
 package runtime
 
-import scalanative.native._, stdlib._, stdio._
+import scalanative.native._
 import scalanative.runtime.Intrinsics._
 
 sealed abstract class Array[T]
@@ -126,7 +126,7 @@ object Array {
     } else {
       val leftPtr  = left.at(leftPos).cast[Ptr[Byte]]
       val rightPtr = right.at(rightPos).cast[Ptr[Byte]]
-      string.memcmp(leftPtr, rightPtr, len * left.stride)
+      libc.memcmp(leftPtr, rightPtr, len * left.stride)
     }
   }
 }

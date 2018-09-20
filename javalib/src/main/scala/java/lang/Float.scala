@@ -1,6 +1,7 @@
 package java.lang
 
-import scalanative.native, native._
+import scalanative.native._
+import scalanative.libc._
 
 final class Float(val _value: scala.Float)
     extends Number

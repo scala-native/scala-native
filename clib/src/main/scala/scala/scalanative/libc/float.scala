@@ -1,5 +1,7 @@
 package scala.scalanative
-package native
+package libc
+
+import scalanative.native._
 
 /**
  * Bindings for float.h

@@ -1,5 +1,8 @@
 package scala.scalanative
-package native
+package posix
+package sys
+
+import scalanative.native._
 
 @extern
 object statvfs {

@@ -1,7 +1,7 @@
 package scala.scalanative.native
 
-import complex._
-import complexOps._
+import scalanative.libc.complex._
+import scalanative.libc.complexOps._
 
 import java.{lang => jl}
 

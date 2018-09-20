@@ -1,6 +1,7 @@
 package java.io
 
-import scalanative.native.{stdio, toCString, Zone}
+import scalanative.native.{toCString, Zone}
+import scalanative.libc.stdio
 import scalanative.posix.{fcntl, unistd}
 import scalanative.posix.sys.stat
 
