@@ -79,6 +79,7 @@ lazy val setUpTestingCompiler = Def.task {
   val nscpluginjar = (Keys.`package` in nscplugin in Compile).value
   val nativelibjar = (Keys.`package` in nativelib in Compile).value
   val auxlibjar    = (Keys.`package` in auxlib in Compile).value
+  val posixlibjar  = (Keys.`package` in posixlib in Compile).value
   val scalalibjar  = (Keys.`package` in scalalib in Compile).value
   val javalibjar   = (Keys.`package` in javalib in Compile).value
   val testingcompilercp =
@@ -89,7 +90,7 @@ lazy val setUpTestingCompiler = Def.task {
   sys.props("scalanative.testingcompiler.cp") =
     (testingcompilercp :+ testingcompilerjar) map (_.getAbsolutePath) mkString pathSeparator
   sys.props("scalanative.nativeruntime.cp") =
-    Seq(nativelibjar, auxlibjar, scalalibjar, javalibjar) mkString pathSeparator
+    Seq(nativelibjar, auxlibjar, posixlibjar, scalalibjar, javalibjar) mkString pathSeparator
   sys.props("scalanative.nativelib.dir") =
     ((crossTarget in Compile).value / "nativelib").getAbsolutePath
 }
@@ -340,6 +341,18 @@ lazy val nativelib =
         .value
     )
 
+lazy val posixlib =
+  project
+    .in(file("posixlib"))
+    .settings(libSettings)
+    .settings(mavenPublishSettings)
+    .settings(
+      publishLocal := publishLocal
+        .dependsOn(publishLocal in nscplugin)
+        .value
+    )
+    .dependsOn(nativelib)
+
 lazy val javalib =
   project
     .in(file("javalib"))
@@ -367,10 +380,10 @@ lazy val javalib =
         }
       },
       publishLocal := publishLocal
-        .dependsOn(publishLocal in nativelib)
+        .dependsOn(publishLocal in nativelib, publishLocal in posixlib)
         .value
     )
-    .dependsOn(nativelib)
+    .dependsOn(nativelib, posixlib)
 
 lazy val assembleScalaLibrary = taskKey[Unit](
   "Checks out scala standard library from submodules/scala and then applies overrides.")
