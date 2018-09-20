@@ -129,7 +129,7 @@ NOINLINE word_t *Heap_allocSmallSlow(Heap *heap, uint32_t size) {
     if (object != NULL)
         goto done;
 
-    Heap_Grow(heap, size);
+    Heap_Grow(heap, WORDS_IN_BLOCK);
     object = (Object *)Allocator_Alloc(&allocator, size);
 
 done:
