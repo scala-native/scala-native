@@ -18,10 +18,12 @@ import scalanative.interflow.UseDef.eliminateDeadCode
 
 object Lower {
 
-  def apply(defns: Seq[Defn])(implicit meta: Metadata): Seq[Defn] =
-    (new Impl).onDefns(defns)
+  def apply(config: build.Config, defns: Seq[Defn])(
+      implicit meta: Metadata): Seq[Defn] =
+    (new Impl(config)).onDefns(defns)
 
-  private final class Impl(implicit meta: Metadata) extends Transform {
+  private final class Impl(config: build.Config)(implicit meta: Metadata)
+      extends Transform {
     import meta._
 
     implicit val linked = meta.linked
@@ -393,6 +395,9 @@ object Lower {
 
       val elem = genFieldElemOp(buf, obj, name)
       buf.let(n, Op.Store(ty, elem, value), unwind)
+      if (config.gc.needsWriteBarrier && ty.isInstanceOf[Type.RefKind]) {
+        buf.call(barrierSig, barrier, Seq(obj), Next.None)
+      }
     }
 
     def genMethodOp(buf: Buffer, n: Local, op: Op.Method) = {
@@ -902,6 +907,9 @@ object Lower {
       val elemPtr =
         buf.elem(arrTy, arr, Seq(Val.Int(0), Val.Int(3), idx), unwind)
       buf.let(n, Op.Store(ty, elemPtr, value), unwind)
+      if (config.gc.needsWriteBarrier && ty.isInstanceOf[Type.RefKind]) {
+        buf.call(barrierSig, barrier, Seq(arr), Next.None)
+      }
     }
 
     def genArraylengthOp(buf: Buffer, n: Local, op: Op.Arraylength): Unit = {
@@ -1167,12 +1175,17 @@ object Lower {
   val RuntimeNull    = Type.Ref(Global.Top("scala.runtime.Null$"))
   val RuntimeNothing = Type.Ref(Global.Top("scala.runtime.Nothing$"))
 
+  val barrierName = extern("scalanative_write_barrier")
+  val barrierSig  = Type.Function(Seq(Type.Ptr), Type.Unit)
+  val barrier     = Val.Global(barrierName, barrierSig)
+
   val injects: Seq[Defn] = {
     val buf = mutable.UnrolledBuffer.empty[Defn]
     buf += Defn.Declare(Attrs.None, allocSmallName, allocSig)
     buf += Defn.Declare(Attrs.None, largeAllocName, allocSig)
     buf += Defn.Declare(Attrs.None, dyndispatchName, dyndispatchSig)
     buf += Defn.Declare(Attrs.None, throwName, throwSig)
+    buf += Defn.Declare(Attrs.None, barrierName, barrierSig)
     buf
   }
 
