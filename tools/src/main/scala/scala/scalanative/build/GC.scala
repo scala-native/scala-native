@@ -15,13 +15,17 @@ package scala.scalanative.build
  *  @param dir name of the gc
  *  @param links linking dependencies of the gc
  */
-sealed abstract class GC private (val name: String, val links: Seq[String]) {
+sealed abstract class GC private (
+    val name: String,
+    val links: Seq[String],
+    private[scalanative] val needsWriteBarrier: Boolean) {
   override def toString: String = name
 }
 object GC {
-  private[scalanative] final case object None  extends GC("none", Seq())
-  private[scalanative] final case object Boehm extends GC("boehm", Seq("gc"))
-  private[scalanative] final case object Immix extends GC("immix", Seq())
+  private[scalanative] final case object None extends GC("none", Seq(), false)
+  private[scalanative] final case object Boehm
+      extends GC("boehm", Seq("gc"), false)
+  private[scalanative] final case object Immix extends GC("immix", Seq(), true)
 
   /** Non-freeing garbage collector.*/
   def none: GC = None

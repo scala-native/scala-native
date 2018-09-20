@@ -22,18 +22,19 @@ object CodeGen {
     implicit val meta = new Metadata(linked, proxies)
 
     val generated = Generate(Global.Top(config.mainClass), defns ++ proxies)
-    val lowered   = lower(generated)
+    val lowered   = lower(config, generated)
     nir.Show.dump(lowered, "lowered.hnir")
     emit(config, lowered)
   }
 
-  private def lower(defns: Seq[Defn])(implicit meta: Metadata): Seq[Defn] = {
+  private def lower(config: build.Config, defns: Seq[Defn])(
+      implicit meta: Metadata): Seq[Defn] = {
     val buf = mutable.UnrolledBuffer.empty[Defn]
 
     partitionBy(defns)(_.name).par
       .map {
         case (_, defns) =>
-          Lower(defns)
+          Lower(config, defns)
       }
       .seq
       .foreach { defns =>
