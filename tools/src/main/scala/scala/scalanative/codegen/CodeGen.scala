@@ -22,8 +22,8 @@ object CodeGen {
 
     implicit val meta = new Metadata(linked, proxies)
 
-    val generated = Generate(Global.Top(config.mainClass))
-    val lowered   = lower(defns ++ proxies ++ generated)
+    val generated = Generate(Global.Top(config.mainClass), defns ++ proxies)
+    val lowered   = lower(generated)
     emit(config, lowered)
   }
 
@@ -108,8 +108,7 @@ object CodeGen {
     }
 
     def genDeps() = deps.foreach { n =>
-      val nn = n.normalize
-      if (!generated.contains(nn)) {
+      if (!generated.contains(n)) {
         newline()
         genDefn {
           env(n) match {
@@ -125,7 +124,7 @@ object CodeGen {
               defn.copy(attrs.copy(isExtern = true), insts = Seq())
           }
         }
-        generated += nn
+        generated += n
       }
     }
 
@@ -147,11 +146,11 @@ object CodeGen {
 
     def genDefns(defns: Seq[Defn]): Unit = {
       def onDefn(defn: Defn): Unit = {
-        val nn = defn.name.normalize
-        if (!generated.contains(nn)) {
+        val n = defn.name
+        if (!generated.contains(n)) {
           newline()
           genDefn(defn)
-          generated += nn
+          generated += n
         }
       }
 
@@ -535,7 +534,7 @@ object CodeGen {
       genJustVal(value)
     }
 
-    def genJustGlobal(g: Global): Unit = g.normalize match {
+    def genJustGlobal(g: Global): Unit = g match {
       case Global.None =>
         unsupported(g)
       case Global.Top(id) =>

@@ -49,13 +49,13 @@ object Lower {
         case _: Defn.Class | _: Defn.Module | _: Defn.Trait =>
           ()
         case defn @ Defn.Declare(attrs, name, _) if attrs.isExtern =>
-          buf += onDefn(defn.copy(name = stripExternName(name)))
+          buf += onDefn(defn.copy(name = hoistExtern(name)))
         case defn @ Defn.Define(attrs, name, _, _) if attrs.isExtern =>
-          buf += onDefn(defn.copy(name = stripExternName(name)))
+          buf += onDefn(defn.copy(name = hoistExtern(name)))
         case defn @ Defn.Const(attrs, name, _, _) if attrs.isExtern =>
-          buf += onDefn(defn.copy(name = stripExternName(name)))
+          buf += onDefn(defn.copy(name = hoistExtern(name)))
         case defn @ Defn.Var(attrs, name, _, _) if attrs.isExtern =>
-          buf += onDefn(defn.copy(name = stripExternName(name)))
+          buf += onDefn(defn.copy(name = hoistExtern(name)))
         case Defn.Declare(_, MethodRef(_: Class | _: Trait, _), _) =>
           ()
         case Defn.Var(_, FieldRef(_: Class, _), _, _) =>
@@ -121,9 +121,9 @@ object Lower {
     override def onVal(value: Val): Val = value match {
       case Val.Global(n @ Global.Member(_, id), ty)
           if id.startsWith("extern.__") =>
-        Val.Global(stripExternName(n), ty)
+        Val.Global(hoistExtern(n), ty)
       case Val.Global(n @ Ref(node), ty) if node.attrs.isExtern =>
-        Val.Global(stripExternName(n), ty)
+        Val.Global(hoistExtern(n), ty)
       case Val.Global(ScopeRef(node), _) =>
         Val.Global(rtti(node).name, Type.Ptr)
       case Val.String(v) =>
@@ -623,10 +623,11 @@ object Lower {
         hash
       }
 
-    def stripExternName(n: Global): Global = {
+    def hoistExtern(n: Global): Global = {
       val id = n.id
       assert(id.startsWith("extern."))
-      Global.Member(Global.Top("__extern"), id.substring(7)) // strip extern. prefix
+      // strip extern. prefix and move it to top-level
+      Global.Top(id.substring(7))
     }
   }
 
