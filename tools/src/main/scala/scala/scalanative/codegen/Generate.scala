@@ -8,16 +8,18 @@ import scala.scalanative.linker.Class
 object Generate {
   import Impl._
 
-  def apply(entry: Global)(implicit meta: Metadata): Seq[Defn] =
-    (new Impl(entry)).generate()
+  def apply(entry: Global, defns: Seq[Defn])(
+      implicit meta: Metadata): Seq[Defn] =
+    (new Impl(entry, defns)).generate()
 
   implicit def linked(implicit meta: Metadata): linker.Result =
     meta.linked
 
-  private class Impl(entry: Global)(implicit meta: Metadata) {
+  private class Impl(entry: Global, defns: Seq[Defn])(implicit meta: Metadata) {
     val buf = mutable.UnrolledBuffer.empty[Defn]
 
     def generate(): Seq[Defn] = {
+      genDefnsExcludingCheckHasTrait()
       genInjects()
       genMain()
       genStructMetadata()
@@ -32,6 +34,15 @@ object Generate {
       genObjectArrayId()
       genStackBottom()
       buf
+    }
+
+    def genDefnsExcludingCheckHasTrait(): Unit = {
+      defns.foreach { defn =>
+        if (defn.name.id != "extern.__check_class_has_trait"
+            && defn.name.id != "extern.__check_trait_has_trait") {
+          buf += defn
+        }
+      }
     }
 
     def genInjects(): Unit = {
