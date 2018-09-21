@@ -40,7 +40,30 @@ size_t parseSizeStr(char * str) {
 }
 
 NOINLINE void scalanative_init() {
-    Heap_Init(&heap, INITIAL_SMALL_HEAP_SIZE, INITIAL_LARGE_HEAP_SIZE);
+    char *minHeapSizeStr = getenv("SCALANATIVE_MIN_HEAP_SIZE");
+    size_t minHeapSize;
+    if (minHeapSizeStr != NULL) {
+        minHeapSize = parseSizeStr(minHeapSizeStr);
+    } else {
+        minHeapSize = DEFAULT_MIN_SMALL_HEAP_SIZE;
+    }
+
+    if (minHeapSize < 2 * BLOCK_TOTAL_SIZE) {
+        printf("SCALANATIVE_MIN_HEAP_SIZE too small to initialize heap.\n");
+        printf("Minimum required: %dk \n", 2 * BLOCK_TOTAL_SIZE / 1024);
+        exit(1);
+    }
+
+    char *maxHeapSizeStr = getenv("SCALANATIVE_MAX_HEAP_SIZE");
+    size_t maxHeapSize;
+    if (maxHeapSizeStr != NULL) {
+        maxHeapSize = parseSizeStr(maxHeapSizeStr);
+    } else {
+        maxHeapSize = UNLIMITED_HEAP_SIZE;
+    }
+
+
+    Heap_Init(&heap, minHeapSize, INITIAL_LARGE_HEAP_SIZE, maxHeapSize);
     Stack_Init(&stack, INITIAL_STACK_SIZE);
 }
 

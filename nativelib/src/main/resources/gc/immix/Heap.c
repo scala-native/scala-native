@@ -43,14 +43,23 @@ word_t *Heap_mapAndAlign(size_t memoryLimit, size_t alignmentSize) {
 /**
  * Allocates the heap struct and initializes it
  */
-void Heap_Init(Heap *heap, size_t initialSmallHeapSize,
-               size_t initialLargeHeapSize) {
+void Heap_Init(Heap *heap, size_t minSmallHeapSize,
+               size_t initialLargeHeapSize, size_t maxHeapSize) {
+    // round down to a multiple of blocksize
+    size_t initialSmallHeapSize = minSmallHeapSize & BLOCK_SIZE_IN_BYTES_INVERSE_MASK;
+
+    assert(minSmallHeapSize - initialSmallHeapSize <= BLOCK_TOTAL_SIZE);
     assert(initialSmallHeapSize >= 2 * BLOCK_TOTAL_SIZE);
     assert(initialSmallHeapSize % BLOCK_TOTAL_SIZE == 0);
     assert(initialLargeHeapSize >= 2 * BLOCK_TOTAL_SIZE);
     assert(initialLargeHeapSize % BLOCK_TOTAL_SIZE == 0);
 
-    size_t memoryLimit = Heap_getMemoryLimit();
+    size_t memoryLimit;
+    if (maxHeapSize == UNLIMITED_HEAP_SIZE) {
+        memoryLimit = Heap_getMemoryLimit();
+    } else {
+        memoryLimit = maxHeapSize;
+    }
     heap->memoryLimit = memoryLimit;
 
     word_t *smallHeapStart = Heap_mapAndAlign(memoryLimit, BLOCK_TOTAL_SIZE);
