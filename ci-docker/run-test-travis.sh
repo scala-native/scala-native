@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
+set -e
+
 sudo chmod a+rwx -R $HOME;
 
-scriptdir="$(dirname "$0")"
-
-$scriptdir/run-test.sh
+ci-docker/run-test.sh

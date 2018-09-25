@@ -73,7 +73,7 @@ addCommandAlias(
 )
 
 addCommandAlias(
-  "test-compile",
+  "test-tools",
   Seq(
     "tools/test",
     "nirparser/test",

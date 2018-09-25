@@ -14,12 +14,12 @@ services:
 env:
   matrix:
     - MODE=source-checks
-    - MODE=compile-tests SBT_VERSION=0.13.16
-    - MODE=compile-tests SBT_VERSION=1.2.1
-    - MODE=runtime-tests TEST_CONTAINER=scala-native-testing:linux-x86_64 TARGET_DOCKER_PLATFORM=library SCALANATIVE_GC=boehm SBT_VERSION=0.13.16 TEST_COMMAND="test-runtime"
-    - MODE=runtime-tests TEST_CONTAINER=scala-native-testing:linux-x86_64 TARGET_DOCKER_PLATFORM=library SCALANATIVE_GC=boehm SBT_VERSION=1.2.1 TEST_COMMAND="sbtScalaNative/scripted"
-    - MODE=runtime-tests TEST_CONTAINER=scala-native-testing:linux-x86_64 TARGET_DOCKER_PLATFORM=library SCALANATIVE_GC=immix SBT_VERSION=0.13.16 TEST_COMMAND="test-runtime"
-    - MODE=runtime-tests TEST_CONTAINER=scala-native-testing:linux-x86_64 TARGET_DOCKER_PLATFORM=library SCALANATIVE_GC=immix SBT_VERSION=1.2.1 TEST_COMMAND="sbtScalaNative/scripted"
+    - MODE=test-tools SBT_VERSION=0.13.16
+    - MODE=test-tools SBT_VERSION=1.2.1
+    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_GC=boehm SBT_VERSION=0.13.16 TEST_COMMAND="test-runtime"
+    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_GC=boehm SBT_VERSION=1.2.1 TEST_COMMAND="sbtScalaNative/scripted"
+    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_GC=immix SBT_VERSION=0.13.16 TEST_COMMAND="test-runtime"
+    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_GC=immix SBT_VERSION=1.2.1 TEST_COMMAND="sbtScalaNative/scripted"
 
   global:
     - MAVEN_REALM="Sonatype Nexus Repository Manager"
@@ -29,43 +29,21 @@ env:
 
 script:
   - java -version
-  - if [ "$MODE" == "source-checks" ]; then
-      if [ -n "$CLANG_FORMAT_PATH" ]; then
-        scripts/clangfmt --test;
-        if [ $? -ne 0 ] ; then exit 1; fi;
-      fi;
-      scripts/scalafmt --test;
-      if [ $? -ne 0 ] ; then exit 1; fi;
-      if [ "$TRAVIS_PULL_REQUEST" != "false" ] ; then
-        echo "Incoming pull request from https://github.com/$TRAVIS_REPO_SLUG/pull/$TRAVIS_PULL_REQUEST";
-        author=$(curl -u dummy4dummy:dummy2dummy -s "https://api.github.com/repos/$TRAVIS_REPO_SLUG/pulls/$TRAVIS_PULL_REQUEST" | jq -r ".user.login");
-        if [ $? -ne 0 ] ; then exit 1; fi;
-        echo "Pull request submitted by $author";
-        signed=$(curl -s https://www.lightbend.com/contribute/cla/scala/check/$author | jq -r ".signed");
-        if [ $? -ne 0 ] ; then exit 1; fi;
-        if [ "$signed" = "true" ] ; then
-          echo "CLA check for $author successful";
-        else
-          echo "CLA check for $author failed";
-          echo "Please sign the Scala CLA to contribute to Scala Native";
-          echo "Go to https://www.lightbend.com/contribute/cla/scala and then resubmit this pull request";
-          exit 1;
-        fi;
-      fi;
+  - if [ "$MODE" == "source-checks" ]; then ./scripts/source-checks; fi
+  - if [ "$MODE" == "test-tools" ]; then
+      sbt "-no-colors" "-J-Xmx2G" "^^ $SBT_VERSION" nscplugin/publishLocal sbtScalaNative/publishLocal test-tools;
     fi
-  - if [ "$MODE" == "compile-tests" ]; then
-      sbt "-no-colors" "-J-Xmx2G" "^^ $SBT_VERSION" nscplugin/publishLocal sbtScalaNative/publishLocal test-compile;
-    fi
-  - if [ "$MODE" == "runtime-tests" ]; then
+  - if [ "$MODE" == "test-runtime" ]; then
       ./ci-docker/load-cached-images.sh
       docker run --rm --privileged multiarch/qemu-user-static:register;
-      docker build --cache-from scala-native-testing:linux-$TARGET_DOCKER_PLATFORM -t scala-native-testing:linux-$TARGET_DOCKER_PLATFORM --build-arg TARGET_DOCKER_PLATFORM=$TARGET_DOCKER_PLATFORM --build-arg HOST_DEBIAN_PLATFORM=amd64 ci-docker;
+      docker build --cache-from scala-native-testing:linux-$TARGET_DOCKER_PLATFORM -t scala-native-testing:linux-$TARGET_DOCKER_PLATFORM --build-arg TARGET_DOCKER_PLATFORM=$TARGET_DOCKER_PLATFORM --build-arg HOST_ARCHITECTURE=amd64 --cpuset-cpus=0 ci-docker;
       ./ci-docker/run-test-travis.sh;
     fi
 
 before_cache:
   - find $HOME/.sbt -name "*.lock" | xargs rm
   - find $HOME/.ivy2 -name "ivydata-*.properties" | sudo xargs rm
+  - rm -rf $HOME/.ivy2/{cache,local}/org.scala-native/
   - mkdir -p $HOME/docker && docker images -a --filter=reference="scala-native-testing:*" --format '{{.Repository}}:{{.Tag}} {{.ID}}'
     | xargs -n 2 -t sh -c 'test -e $HOME/docker/$1.tar.gz || docker save $0 | gzip -2 > $HOME/docker/$1.tar.gz'
 

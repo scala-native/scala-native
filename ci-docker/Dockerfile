@@ -1,24 +1,31 @@
 ARG TARGET_DOCKER_PLATFORM
 
-FROM library/debian:stretch
+FROM ubuntu:18.04
 
 RUN apt-get update && apt-get install -y qemu-user-static
 
-FROM $TARGET_DOCKER_PLATFORM/debian:stretch
+FROM $TARGET_DOCKER_PLATFORM/ubuntu:18.04
 
-ARG HOST_DEBIAN_PLATFORM
+ARG HOST_ARCHITECTURE
 
 COPY --from=0 /usr/bin/qemu-* /usr/bin/
+COPY --from=0 /etc/apt/sources.list /etc/apt/host-sources.list
 
-RUN dpkg --add-architecture $HOST_DEBIAN_PLATFORM
+RUN dpkg --add-architecture $HOST_ARCHITECTURE
 
-RUN apt-get update && apt-get install -y openjdk-8-jdk-headless:$HOST_DEBIAN_PLATFORM
+# Add lists for the host platform and mark architectures
+RUN sed -i -e "s/deb http/deb [arch=$HOST_ARCHITECTURE] http/g" /etc/apt/host-sources.list && \
+    TARGET_UBUNTU_ARCH=$(dpkg --print-architecture) && \
+    sed -i -e "s/deb http/deb [arch=$TARGET_UBUNTU_ARCH] http/g" /etc/apt/sources.list && \
+    cat /etc/apt/host-sources.list >> /etc/apt/sources.list && \
+    rm /etc/apt/host-sources.list
 
-ENV PATH "/usr/lib/jvm/java-8-openjdk-$HOST_DEBIAN_PLATFORM/bin:$PATH"
+RUN apt-get update && apt-get install -y openjdk-8-jdk-headless:$HOST_ARCHITECTURE
+ENV PATH "/usr/lib/jvm/java-8-openjdk-$HOST_ARCHITECTURE/bin:$PATH"
 
-ENV SBT_LAUNCHER_VERSION 1.2.0
+ENV SBT_LAUNCHER_VERSION 0.13.7
 
-RUN apt-get install -y wget curl
+RUN apt-get install -y curl
 
 # Install sbt
 RUN \
@@ -28,11 +35,7 @@ RUN \
   apt-get update && \
   apt-get install -y sbt
 
-RUN echo "deb http://deb.debian.org/debian stretch-backports main contrib non-free" >> /etc/apt/sources.list
-
 RUN apt-get update && apt-get install -y clang-5.0 zlib1g-dev libgc-dev libre2-dev
-
-ENV LD_LIBRARY_PATH "/usr/local/lib"
 
 ENV LC_ALL "C.UTF-8"
 
