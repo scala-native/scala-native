@@ -41,6 +41,7 @@ script:
     fi
 
 before_cache:
+  - sudo chmod a+rw -R $HOME
   - find $HOME/.sbt -name "*.lock" | xargs rm
   - find $HOME/.ivy2 -name "ivydata-*.properties" | sudo xargs rm
   - rm -rf $HOME/.ivy2/{cache,local}/org.scala-native/
