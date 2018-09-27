@@ -8,12 +8,18 @@ dist: trusty
 jdk: oraclejdk8
 language: scala
 
+services:
+  - docker
+
 env:
   matrix:
-    - SCALANATIVE_GC=boehm SBT_VERSION=0.13.16
-    - SCALANATIVE_GC=boehm SBT_VERSION=1.2.1
-    - SCALANATIVE_GC=immix SBT_VERSION=0.13.16
-    - SCALANATIVE_GC=immix SBT_VERSION=1.2.1
+    - MODE=source-checks
+    - MODE=test-tools SBT_VERSION=0.13.16
+    - MODE=test-tools SBT_VERSION=1.2.1
+    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_GC=boehm SBT_VERSION=0.13.16 TEST_COMMAND="test-runtime"
+    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_GC=boehm SBT_VERSION=1.2.1 TEST_COMMAND="sbtScalaNative/scripted"
+    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_GC=immix SBT_VERSION=0.13.16 TEST_COMMAND="test-runtime"
+    - MODE=test-runtime TARGET_DOCKER_PLATFORM=library SCALANATIVE_GC=immix SBT_VERSION=1.2.1 TEST_COMMAND="sbtScalaNative/scripted"
 
   global:
     - MAVEN_REALM="Sonatype Nexus Repository Manager"
@@ -21,47 +27,30 @@ env:
     - secure: "SrnxYRHUcevhm/oWU0mLC2l/EWSEa52oaaSqGrlMCvSX01udMMd5q4qSCzOpNlHviLBmdVxTBTnzlpyc8wnftezgs0pm8JFFj6CuiT37QNcCTtd5PN0QhVzqQauE2oWVkG97iwZFsz9pX87tzLRIlGIRa9A8CuoFY14lhIfmBK5wdiceZ3uBTu/Dcf/kzzC8yAykPhxjPSzeSsDUO2DBqsWjboOGEG2rNyJjKKBvChPyWAm3/4WPmKTV1I5aXUBiIffIWIzZONBobyn71hYfNFjkVF9+uEhsZA8T+5YZyPkyHrsONMBR5QxxDxGgz2YDEJU4aRvOOBW9yZcWa8jpEuBIj1bKFR6g3ZFOp0VgN7bAY4xq1E984T6yypvLiRz8/f7xOW+TLojcrCiz0CDrAjD0Ne9p8da9E1IUuiazqKZ9+TbbY6MHex9wnECEehfpAisI/r2X+vaARdF0zn60M+8h7ek7qIJfK1/7nXXTmy+ABmjrET+5q0oFzTz+0KI4f52KnTxPY8w7Yl7UVxe9LVkXmo9rFlGaeed1JiELBKJRc/sngqCCf1loq9rANK0ik4A4HWDW2pcYj21g8jer++s5IV7eimaX0TAiUgxing5TaGl/lWWg32cpjSqwUH69aOgfOBRJABh6zCK6qN3KCfOPfua+D0W0aDbAXMwpzyw="
     - secure: "lAh0fiYHWaNd9Z/slDzGj2gSUF1oDwaNBlZX6eeIASFZO2W+HF79UqD/ZGsTn58Ek1XJ9FLWk0+3BIHpoLBv7S7kj2QG8AVGi4EkhvvPc/7RjcO8EM3uN8KXY/XjlDJEI4BmxX1XuzPvwhhbTuk7NY+9DFqhWV3V5xYmtMt5yJ6rbu3NROGHoiiJvBvhzKHbjkoIX0dX/dHAS2bUcRmv6BZiBA9nI1WiDMTrRjnTm1x/v4kqLG5k4UwbBRU33foFzZJrFs04jJ47GXdczCyAH7Xu+NtvxRni9fjUgEKa75PtN4XLn8GRXC6u7HCPfHz2cHTeLyLxxKK1DZ+P08+bkG4MdoaknlN7HUg1gf9zWQYuanUMiqIMry5+URT9A5Jno+Kkr9UKJKqRHxBYVLenTqVCAj8KQONdEm5vCSkqv3dfpQRrljf4CX20vO28cDqXpOTzYdFOApH3Ah8I9uXmysnto9DgVJG3ZX7ibZ6gIHE5cpZuJsBFlVYAdEEygPhRKJrtnmZO7cL7pUIWT8nj3buOuU9uK1+JpWQ32GV+vyJolDRYamxrKLNbp/SVwWHaQk8+igj4zfS42XNDbOtD6KbHdwMzRH4AdpIR8ZWfB2BXSaY9XE0fWGDgG2h+7yropmMa3DWTdT8OWdXiPkn0TDhT2GhVNwxh5G4OB1nGpgw="
 
-before_install:
-  - bash scripts/travis_setup.sh
-
-before_script:
-  - if [ "$TRAVIS_PULL_REQUEST" != "false" ] ; then
-      echo "Incoming pull request from https://github.com/$TRAVIS_REPO_SLUG/pull/$TRAVIS_PULL_REQUEST";
-      author=$(curl -u dummy4dummy:dummy2dummy -s "https://api.github.com/repos/$TRAVIS_REPO_SLUG/pulls/$TRAVIS_PULL_REQUEST" | jq -r ".user.login");
-      if [ $? -ne 0 ] ; then exit 1; fi;
-      echo "Pull request submitted by $author";
-      signed=$(curl -s https://www.lightbend.com/contribute/cla/scala/check/$author | jq -r ".signed");
-      if [ $? -ne 0 ] ; then exit 1; fi;
-      if [ "$signed" = "true" ] ; then
-        echo "CLA check for $author successful";
-      else
-        echo "CLA check for $author failed";
-        echo "Please sign the Scala CLA to contribute to Scala Native";
-        echo "Go to https://www.lightbend.com/contribute/cla/scala and then resubmit this pull request";
-        exit 1;
-      fi;
-    fi;
-
 script:
   - java -version
-  - if [ -n "$CLANG_FORMAT_PATH" ]; then scripts/clangfmt --test; fi
-  - scripts/scalafmt --test
-  - >
-    sbt \
-      "-no-colors" \
-      "-J-Xmx2G" \
-      "^^ $SBT_VERSION" \
-      rebuild \
-      "set scriptedBufferLog in sbtScalaNative := false" \
-      test-all
+  - if [ "$MODE" == "source-checks" ]; then ./scripts/source-checks; fi
+  - if [ "$MODE" == "test-tools" ]; then
+      sbt "-no-colors" "-J-Xmx2G" "^^ $SBT_VERSION" nscplugin/publishLocal sbtScalaNative/publishLocal test-tools;
+    fi
+  - if [ "$MODE" == "test-runtime" ]; then
+      ./ci-docker/load-cached-images.sh
+      docker run --rm --privileged multiarch/qemu-user-static:register;
+      docker build --cache-from scala-native-testing:linux-$TARGET_DOCKER_PLATFORM -t scala-native-testing:linux-$TARGET_DOCKER_PLATFORM --build-arg TARGET_DOCKER_PLATFORM=$TARGET_DOCKER_PLATFORM --build-arg HOST_ARCHITECTURE=amd64 --cpuset-cpus=0 ci-docker;
+      ./ci-docker/run-test-travis.sh;
+    fi
 
 before_cache:
+  - sudo chmod a+rw -R $HOME
   - find $HOME/.sbt -name "*.lock" | xargs rm
-  - find $HOME/.ivy2 -name "ivydata-*.properties" | xargs rm
+  - find $HOME/.ivy2 -name "ivydata-*.properties" | sudo xargs rm
   - rm -rf $HOME/.ivy2/{cache,local}/org.scala-native/
+  - mkdir -p $HOME/docker && docker images -a --filter=reference="scala-native-testing:*" --format '{{.Repository}}:{{.Tag}} {{.ID}}'
+    | xargs -n 2 -t sh -c 'test -e $HOME/docker/$1.tar.gz || docker save $0 | gzip -2 > $HOME/docker/$1.tar.gz'
 
 cache:
   directories:
+    - $HOME/docker
     - $HOME/.coursier
     - $HOME/.ivy2/cache
     - $HOME/.sbt/boot/

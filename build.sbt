@@ -72,6 +72,24 @@ addCommandAlias(
   ).mkString(";", ";", "")
 )
 
+addCommandAlias(
+  "test-tools",
+  Seq(
+    "tools/test",
+    "nirparser/test",
+    "tools/mimaReportBinaryIssues"
+  ).mkString(";", ";", "")
+)
+
+addCommandAlias(
+  "test-runtime",
+  Seq(
+    "sandbox/run",
+    "tests/test",
+    "sbtScalaNative/scripted"
+  ).mkString(";", ";", "")
+)
+
 lazy val publishSnapshot =
   taskKey[Unit]("Publish snapshot to sonatype on every commit to master.")
 
