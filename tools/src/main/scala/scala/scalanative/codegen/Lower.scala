@@ -115,7 +115,7 @@ object Lower {
           buf += inst
       }
 
-      buf.toSeq.map(super.onInst)
+      optimizer.pass.DeadCodeElimination(buf.toSeq.map(super.onInst))
     }
 
     override def onVal(value: Val): Val = value match {
