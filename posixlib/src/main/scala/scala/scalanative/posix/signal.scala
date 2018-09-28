@@ -48,8 +48,8 @@ object signal {
   type sigevent = CStruct5[
     CInt, // sigev_notify Notification type
     CInt, // sigev_signo Signal number
-    Ptr[sigval], // Ptr instead of value - sigev_value Signal value
-    CFunctionPtr1[Ptr[sigval], Unit], // Ptr instead of value for sigval - sigev_notify_function Notification function
+    Ptr[sigval], // sigev_value Signal value (Ptr instead of value)
+    CFunctionPtr1[Ptr[sigval], Unit], // sigev_notify_function Notification function (Ptr instead of value for sigval)
     Ptr[pthread_attr_t] // sigev_notify_attributes Notification attributes
   ]
   // define the following symbolic constants for the values of sigev_notify:
@@ -170,28 +170,28 @@ object signal {
   type mcontext_t = Ptr[Byte]
 
   type ucontext_t = CStruct4[
-    Ptr[Byte], // ucontext_t *uc_link Ptr to the context that is resumed when this context returns
-    sigset_t, // c_sigmask  The set of signals that are blocked when this context is active
-    Ptr[stack_t], // Ptr instead of value - uc_stack The stack used by this context
+    Ptr[Byte], // ucontext_t *uc_link Ptr to the context that is resumed when this context returns (Ptr instead)
+    sigset_t, // c_sigmask The set of signals that are blocked when this context is active
+    Ptr[stack_t], // uc_stack The stack used by this context (Ptr instead of value)
     mcontext_t // uc_mcontext A machine-specific representation of the saved context
   ]
 
   type stack_t = CStruct3[
     Ptr[Byte], // void *ss_sp Stack base or pointer
-    size_t, // ss_size     Stack size
-    CInt // ss_flags    Flags
+    size_t, // ss_size Stack size
+    CInt // ss_flags Flags
   ]
 
   type siginfo_t = CStruct9[
-    CInt, // si_signo  Signal number
-    CInt, // si_code   Signal code
-    CInt, // si_errno  If non-zero, an errno value associated with this signal, as described in <errno.h>
-    pid_t, // si_pid    Sending process ID
-    uid_t, // si_uid    Real user ID of sending process
-    Ptr[Byte], // void *si_addr Address of faulting instruction
+    CInt, // si_signo Signal number
+    CInt, // si_code Signal code
+    CInt, // si_errno If non-zero, an errno value associated with this signal, as described in <errno.h>
+    pid_t, // si_pid Sending process ID
+    uid_t, // si_uid Real user ID of sending process
+    Ptr[Byte], // void *si_addr Address of faulting instruction (Ptr instead - is void * a fcn?)
     CInt, // si_status Exit value or signal
-    CLong, // si_band   Band event for SIGPOLL
-    Ptr[sigval] // Ptr instead of value - si_value  Signal value
+    CLong, // si_band Band event for SIGPOLL
+    Ptr[sigval] // si_value Signal value (Ptr instead of value)
   ]
 
   // define the symbolic constants in the Code column of the following table for use as values of si_code
@@ -315,26 +315,34 @@ object signal {
   def sigwaitinfo(p0: Ptr[sigset_t], p1: Ptr[siginfo_t]): CInt = extern
 }
 
-import signal._
+object signalOps {
+  import signal._
 
-//object signalOps {
-//
-//  implicit class struct_sigevent_ops(val p: Ptr[sigevent]) extends AnyVal {
-//    def sigev_notify: CInt                                 = !p._1
-//    def sigev_notify_=(value: CInt): Unit                  = !p._1 = value
-//    def sigev_signo: CInt                                  = !p._2
-//    def sigev_signo_=(value: CInt): Unit                   = !p._2 = value
-//    def sigev_value: sigval                                = !p._3
-//    def sigev_value_=(value: sigval): Unit                 = !p._3 = value
-//    def sigev_notify_function: CFunctionPtr1[sigval, Unit] = !p._4
-//    def sigev_notify_function_=(value: CFunctionPtr1[sigval, Unit]): Unit =
-//      !p._4 = value
-//    def sigev_notify_attributes: Ptr[pthread_attr_t] = !p._5
-//    def sigev_notify_attributes_=(value: Ptr[pthread_attr_t]): Unit =
-//      !p._5 = value
-//  }
-//
-//  def struct_sigevent()(implicit z: Zone): Ptr[sigevent] = alloc[sigevent]
+  implicit class sigevent_ops(val p: Ptr[sigevent]) extends AnyVal {
+    def sigev_notify: CInt                                      = !p._1
+    def sigev_notify_=(value: CInt): Unit                       = !p._1 = value
+    def sigev_signo: CInt                                       = !p._2
+    def sigev_signo_=(value: CInt): Unit                        = !p._2 = value
+    def sigev_value: Ptr[sigval]                                = !p._3
+    def sigev_value_=(value: Ptr[sigval]): Unit                 = !p._3 = value
+    def sigev_notify_function: CFunctionPtr1[Ptr[sigval], Unit] = !p._4
+    def sigev_notify_function_=(value: CFunctionPtr1[Ptr[sigval], Unit]): Unit =
+      !p._4 = value
+    def sigev_notify_attributes: Ptr[pthread_attr_t] = !p._5
+    def sigev_notify_attributes_=(value: Ptr[pthread_attr_t]): Unit =
+      !p._5 = value
+  }
+
+  def struct_sigevent()(implicit z: Zone): Ptr[sigevent] = alloc[sigevent]
+
+  implicit class sigval_ops(val p: Ptr[sigval]) extends AnyVal {
+    def sival_int: Ptr[CInt]                = p.cast[Ptr[CInt]]
+    def sival_int_=(value: CInt): Unit      = !p.cast[Ptr[CInt]] = value
+    def sival_ptr: Ptr[Ptr[Byte]]           = p.cast[Ptr[Ptr[Byte]]]
+    def sival_ptr_=(value: Ptr[Byte]): Unit = !p.cast[Ptr[Ptr[Byte]]] = value
+  }
+
+  def union_sigval()(implicit z: Zone): Ptr[sigval] = alloc[sigval]
 //
 //  implicit class siginfo_ops(val p: Ptr[siginfo_t]) extends AnyVal {
 //    def si_signo: CInt                                      = !p._1
@@ -359,7 +367,7 @@ import signal._
 //    def __pad_=(value: CArray[CUnsignedLong, Nat._7]): Unit = !p._10 = value
 //  }
 //
-//  def struct___siginfo()(implicit z: Zone): Ptr[siginfo_t] = alloc[siginfo_t]
+//  def struct_siginfo()(implicit z: Zone): Ptr[siginfo_t] = alloc[siginfo_t]
 //
 //  implicit class struct___sigaction_ops(val p: Ptr[struct___sigaction])
 //      extends AnyVal {
@@ -455,4 +463,4 @@ import signal._
 //      !p.cast[Ptr[
 //        CFunctionPtr3[CInt, Ptr[struct___siginfo], Ptr[Byte], Unit]]] = value
 //  }
-//}
+}
