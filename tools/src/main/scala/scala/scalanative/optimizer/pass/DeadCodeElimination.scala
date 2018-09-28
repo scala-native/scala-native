@@ -39,6 +39,9 @@ class DeadCodeElimination extends Pass {
 }
 
 object DeadCodeElimination extends PassCompanion {
+  def apply(insts: Seq[Inst]): Seq[Inst] =
+    (new DeadCodeElimination()).onInsts(insts)
+
   override def apply(config: build.Config, linked: linker.Result): Pass =
     new DeadCodeElimination()
 
