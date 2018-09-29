@@ -2,7 +2,7 @@ package scala.scalanative
 package linker
 
 import scala.collection.mutable
-import nir.{Global, Dep, Attr, Defn}
+import nir.{Global, Dep, Attr, Defn, Type}
 import nir.serialization.deserializeBinary
 import java.nio.file.{FileSystems, Path}
 import scalanative.io.VirtualDirectory
@@ -20,14 +20,16 @@ sealed trait ClassPath {
 object ClassPath {
 
   /** Create classpath based on the directory. */
-  def apply(directory: Path): ClassPath =
-    new Impl(VirtualDirectory.local(directory))
+  def apply(directory: Path, config: build.Config): ClassPath =
+    new Impl(VirtualDirectory.local(directory), config)
 
   /** Create classpath based on the virtual directory. */
-  private[scalanative] def apply(directory: VirtualDirectory): ClassPath =
-    new Impl(directory)
+  private[scalanative] def apply(directory: VirtualDirectory,
+                                 config: build.Config): ClassPath =
+    new Impl(directory, config)
 
-  private final class Impl(directory: VirtualDirectory) extends ClassPath {
+  private final class Impl(directory: VirtualDirectory, config: build.Config)
+      extends ClassPath {
     private val files =
       directory.files
         .filter(_.toString.endsWith(".nir"))
@@ -48,7 +50,10 @@ object ClassPath {
     def load(name: Global): Option[Seq[Defn]] =
       cache.getOrElseUpdate(name, {
         files.get(name.top).map { file =>
-          deserializeBinary(directory.read(file))
+          deserializeBinary(
+            directory.read(file),
+            if (config.targetArchitecture.is32) Type.Int else Type.Long
+          )
         }
       })
   }

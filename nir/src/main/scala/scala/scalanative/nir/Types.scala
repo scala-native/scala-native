@@ -26,6 +26,7 @@ sealed abstract class Type {
       case nir.Type.Void        => sb.str("void")
       case nir.Type.Vararg      => sb.str("...")
       case nir.Type.Ptr         => sb.str("ptr")
+      case nir.Type.Size        => sb.str("size")
       case nir.Type.Bool        => sb.str("bool")
       case nir.Type.Char        => sb.str("char")
       case nir.Type.I(w, false) => sb.str("u"); sb.str(w)
@@ -84,7 +85,10 @@ object Type {
   // low-level primitive types
 
   sealed abstract class Primitive(val width: Int) extends Type
-  final case object Ptr                           extends Primitive(64)
+  final case object Ptr                           extends Type
+
+  // this will be read in as either Int or Long in BinaryDeserializer
+  final case object Size extends Type
 
   sealed abstract class I(width: Int, val signed: Boolean)
       extends Primitive(width)

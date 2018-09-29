@@ -5,10 +5,13 @@ import ScalaNativePluginInternal._
 
 import sbt._
 
+import scala.scalanative.build.TargetArchitecture
+
 object ScalaNativePlugin extends AutoPlugin {
   override def requires: Plugins = plugins.JvmPlugin
 
   object autoImport {
+    val TargetArchitecture = scala.scalanative.build.TargetArchitecture
 
     val ScalaNativeCrossVersion = sbtplugin.ScalaNativeCrossVersion
 
@@ -43,6 +46,9 @@ object ScalaNativePlugin extends AutoPlugin {
     val nativeLTO =
       taskKey[String](
         "LTO variant used for release mode (either \"none\", \"thin\" or \"full\").")
+
+    val targetArchitecture =
+      settingKey[TargetArchitecture]("The target architecture to build for")
   }
 
   @deprecated("use autoImport instead", "0.3.7")

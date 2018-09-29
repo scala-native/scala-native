@@ -5,6 +5,7 @@ package sbtplugin
 
 import sbt._
 import scala.scalanative.nir.Versions
+import scala.scalanative.build.Bits
 import SBTCompat._
 
 object ScalaNativeCrossVersion {
@@ -18,10 +19,15 @@ object ScalaNativeCrossVersion {
     case _                               => full
   }
 
-  def scalaNativeMapped(cross: CrossVersion): CrossVersion =
-    crossVersionAddPlatformPart(cross, "native" + currentBinaryVersion)
+  def scalaNativeMapped(cross: CrossVersion, bits: Bits): CrossVersion =
+    crossVersionAddPlatformPart(
+      crossVersionAddPlatformPart(cross, bits.toString),
+      "native" + currentBinaryVersion
+    )
 
-  val binary: CrossVersion = scalaNativeMapped(CrossVersion.binary)
+  def binary(bits: Bits): CrossVersion =
+    scalaNativeMapped(CrossVersion.binary, bits)
 
-  val full: CrossVersion = scalaNativeMapped(CrossVersion.full)
+  def full(bits: Bits): CrossVersion =
+    scalaNativeMapped(CrossVersion.full, bits)
 }

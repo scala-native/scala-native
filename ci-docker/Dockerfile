@@ -35,7 +35,19 @@ RUN \
   apt-get update && \
   apt-get install -y sbt
 
-RUN apt-get update && apt-get install -y clang-5.0 zlib1g-dev libgc-dev libre2-dev
+RUN apt-get update && apt-get install -y clang-5.0 zlib1g-dev libre2-dev gcc git autoconf libtool pkg-config gdb
+
+# Install newer version of BoehmGC from source
+RUN git clone git://github.com/ivmai/bdwgc.git && \
+    cd bdwgc && \
+    git checkout v8.0.0 && \
+    git clone git://github.com/ivmai/libatomic_ops.git -b release-7_6 && \
+    ./autogen.sh && \
+    ./configure && \
+    make -j && \
+    make install
+
+ENV LD_LIBRARY_PATH "/usr/local/lib"
 
 ENV LC_ALL "C.UTF-8"
 
@@ -47,4 +59,4 @@ USER scala-native
 
 WORKDIR /home/scala-native/scala-native
 
-CMD sbt -no-colors -J-Xmx2G "^^ $SBT_VERSION" rebuild "set scriptedBufferLog in sbtScalaNative := false" "$TEST_COMMAND"
+CMD sbt -no-colors -J-Xmx2G "^^ $SBT_VERSION" "set scriptedBufferLog in sbtScalaNative := false" "$TEST_COMMAND"

@@ -1,7 +1,7 @@
 package java.util.zip
 
 import scala.scalanative.native._
-import scala.scalanative.runtime.{ByteArray, zlib}
+import scala.scalanative.runtime.{ByteArray, Platform, zlib}
 
 // Ported from Apache Harmony
 
@@ -38,6 +38,8 @@ class CRC32 extends Checksum {
                          nbytes: Int,
                          crc1: Long): Long =
     zlib
-      .crc32(crc1.toULong, buf.asInstanceOf[ByteArray].at(off), nbytes.toUInt)
+      .crc32(Platform.cross3264(crc1.toUInt, crc1.toULong),
+             buf.asInstanceOf[ByteArray].at(off),
+             nbytes.toUInt)
       .toLong
 }

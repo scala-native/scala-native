@@ -3,6 +3,7 @@ package codegen
 
 import scalanative.nir._
 import scalanative.linker.{Class, Field}
+import scala.scalanative.build.TargetArchitecture
 
 class FieldLayout(meta: Metadata, cls: Class) {
   def index(fld: Field) =
@@ -22,7 +23,7 @@ class FieldLayout(meta: Metadata, cls: Class) {
     val ty   = Type.StructValue(name, body)
     Type.StructValue(name, body)
   }
-  val layout = MemoryLayout(struct.tys)
+  val layout = MemoryLayout(struct.tys, meta.targetArchitecture)
   val size   = layout.size
   val referenceOffsetsTy =
     Type.StructValue(Global.None, Seq(Type.Ptr))

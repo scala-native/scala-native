@@ -173,7 +173,8 @@ object Tags {
   final val VarargType      = 1 + VoidType
   final val BoolType        = 1 + VarargType
   final val PtrType         = 1 + BoolType
-  final val CharType        = 1 + PtrType
+  final val SizeType        = 1 + PtrType
+  final val CharType        = 1 + SizeType
   final val ByteType        = 1 + CharType
   final val UByteType       = 1 + ByteType
   final val ShortType       = 1 + UByteType

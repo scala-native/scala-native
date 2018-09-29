@@ -14,7 +14,7 @@ object ClassLoader {
 
   def fromDisk(config: build.Config)(implicit in: Scope): ClassLoader = {
     val classpath = config.classPath.map { path =>
-      ClassPath(VirtualDirectory.real(path))
+      ClassPath(VirtualDirectory.real(path), config)
     }
     new FromDisk(classpath)
   }

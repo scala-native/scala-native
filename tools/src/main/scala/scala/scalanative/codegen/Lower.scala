@@ -417,7 +417,16 @@ object Lower {
                     unwind: Next): Unit = {
       val Op.Sizeof(ty) = op
 
-      buf.let(n, Op.Copy(Val.Long(MemoryLayout.sizeOf(ty))), unwind)
+      if (targetArchitecture.is32) {
+        buf.let(
+          n,
+          Op.Copy(Val.Int(MemoryLayout.sizeOf(ty, targetArchitecture).toInt)),
+          unwind)
+      } else {
+        buf.let(n,
+                Op.Copy(Val.Long(MemoryLayout.sizeOf(ty, targetArchitecture))),
+                unwind)
+      }
     }
 
     def genClassallocOp(buf: Buffer,
@@ -426,14 +435,15 @@ object Lower {
                         unwind: Next): Unit = {
       val Op.Classalloc(ClassRef(cls)) = op
 
-      val size = MemoryLayout.sizeOf(layout(cls).struct)
+      val size = MemoryLayout.sizeOf(layout(cls).struct, targetArchitecture)
       val allocMethod =
         if (size < LARGE_OBJECT_MIN_SIZE) alloc else largeAlloc
 
-      buf.let(
-        n,
-        Op.Call(allocSig, allocMethod, Seq(rtti(cls).const, Val.Long(size))),
-        unwind)
+      buf.let(n,
+              Op.Call(allocSig,
+                      allocMethod,
+                      Seq(rtti(cls).const, Val.Int(size.toInt))),
+              unwind)
     }
 
     def genBinOp(buf: Buffer, n: Local, op: Op.Bin, unwind: Next): Unit = {
@@ -588,12 +598,20 @@ object Lower {
       val charsConst = Val.Const(
         Val.StructValue(
           Global.None,
-          Seq(
-            rtti(CharArrayCls).const,
-            charsLength,
-            Val.Int(0), // padding to get next field aligned properly
-            Val.ArrayValue(Type.Short, chars.map(c => Val.Short(c.toShort)))
-          )
+          if (targetArchitecture.is32) {
+            Seq(
+              rtti(CharArrayCls).const,
+              charsLength,
+              Val.ArrayValue(Type.Short, chars.map(c => Val.Short(c.toShort)))
+            )
+          } else {
+            Seq(
+              rtti(CharArrayCls).const,
+              charsLength,
+              Val.Int(0), // padding to get next field aligned properly
+              Val.ArrayValue(Type.Short, chars.map(c => Val.Short(c.toShort)))
+            )
+          }
         ))
 
       val fieldValues = stringFieldNames.map {
@@ -633,7 +651,7 @@ object Lower {
 
   val LARGE_OBJECT_MIN_SIZE = 8192
 
-  val allocSig = Type.Function(Seq(Type.Ptr, Type.Long), Type.Ptr)
+  val allocSig = Type.Function(Seq(Type.Ptr, Type.Int), Type.Ptr)
 
   val allocSmallName = Global.Top("scalanative_alloc_small")
   val alloc          = Val.Global(allocSmallName, allocSig)

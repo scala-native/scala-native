@@ -1,7 +1,7 @@
 package java.util.zip
 
 import scala.scalanative.native._
-import scala.scalanative.runtime.{ByteArray, zlib}
+import scala.scalanative.runtime.{ByteArray, Platform, zlib}
 
 // Ported from Apache Harmony
 
@@ -34,7 +34,7 @@ class Adler32 extends Checksum {
                          nbytes: Int,
                          adler1: Long): Long =
     zlib
-      .adler32(adler1.toULong,
+      .adler32(Platform.cross3264(adler1.toUInt, adler1.toULong),
                buf.asInstanceOf[ByteArray].at(off),
                nbytes.toUInt)
       .toLong

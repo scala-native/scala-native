@@ -27,7 +27,7 @@ sealed abstract class Op {
     case Op.As(ty, _)               => ty
     case Op.Is(_, _)                => Type.Bool
     case Op.Copy(v)                 => v.ty
-    case Op.Sizeof(_)               => Type.Long
+    case Op.Sizeof(_)               => Type.Size
     case Op.Closure(ty, _, _)       => ty
     case Op.Box(ty, _)              => ty
     case Op.Unbox(ty, _)            => Type.unbox(ty)

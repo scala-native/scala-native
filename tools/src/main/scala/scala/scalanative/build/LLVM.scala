@@ -10,6 +10,9 @@ import scalanative.build.IO.RichPath
 
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {
+  // settings to make sure that exceptions can be caught and unwinded
+  private val unwindSettings =
+    Seq("-fexceptions", "-fcxx-exceptions", "-funwind-tables")
 
   /**
    * Unpack the `nativelib` to `workdir/lib`.
@@ -96,10 +99,8 @@ private[scalanative] object LLVM {
         val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
         val stdflag  = if (isCpp) "-std=c++11" else "-std=gnu11"
         val flags    = stdflag +: "-fvisibility=hidden" +: config.compileOptions
-        val compilec = Seq(compiler) ++ flto(config) ++ flags ++ Seq("-c",
-                                                                     path,
-                                                                     "-o",
-                                                                     opath)
+        val compilec = Seq(compiler) ++ flto(config) ++ flags ++ unwindSettings ++
+          Seq("-c", path, "-o", opath)
 
         config.logger.running(compilec)
         val result = Process(compilec, config.workdir.toFile) ! Logger
@@ -126,7 +127,7 @@ private[scalanative] object LLVM {
       .map { ll =>
         val apppath = ll.abs
         val outpath = apppath + ".o"
-        val compile = Seq(config.clang.abs) ++ flto(config) ++ Seq(
+        val compile = Seq(config.clang.abs) ++ flto(config) ++ unwindSettings ++ Seq(
           "-c",
           apppath,
           "-o",
@@ -169,7 +170,7 @@ private[scalanative] object LLVM {
       "-ldl",
       "-lpthread")
     val targetopt = Seq("-target", config.targetTriple)
-    val flags     = flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ targetopt
+    val flags     = flto(config) ++ Seq("-rdynamic", "-o", outpath.abs) ++ unwindSettings ++ targetopt
     val opaths    = IO.getAll(nativelib, "glob:**.o").map(_.abs)
     val paths     = llPaths.map(_.abs) ++ opaths
     val compile   = config.clangPP.abs +: (flags ++ paths ++ linkopts)

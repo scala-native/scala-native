@@ -20,7 +20,7 @@ object CodeGen {
             defns: Seq[Defn]): Unit = {
     val proxies = GenerateReflectiveProxies(linked.dynimpls, defns)
 
-    implicit val meta = new Metadata(linked, proxies)
+    implicit val meta = new Metadata(linked, proxies, config.targetArchitecture)
 
     val generated = Generate(Global.Top(config.mainClass), defns ++ proxies)
     val lowered   = lower(generated)

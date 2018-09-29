@@ -104,12 +104,16 @@ private[net] class PlainSocketImpl extends SocketImpl {
     listening = true
   }
 
+  private def zeroAndSet(fdset: Ptr[fd_set]): Unit = {
+    !fdset._1 = stackalloc[CLongInt](FD_SETSIZE / (8 * sizeof[CLongInt]))
+    FD_ZERO(fdset)
+    FD_SET(fd.fd, fdset)
+  }
+
   override def accept(s: SocketImpl): Unit = {
     if (timeout > 0) {
       val fdset = stackalloc[fd_set]
-      !fdset._1 = stackalloc[CLongInt](FD_SETSIZE / (8 * sizeof[CLongInt]))
-      FD_ZERO(fdset)
-      FD_SET(fd.fd, fdset)
+      zeroAndSet(fdset)
 
       val time = stackalloc[timeval]
       time.tv_sec = timeout / 1000
@@ -173,7 +177,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
   override def connect(address: SocketAddress, timeout: Int): Unit = {
     val inetAddr = address.asInstanceOf[InetSocketAddress]
     val hints    = stackalloc[addrinfo]
-    val ret      = stackalloc[Ptr[addrinfo]]
+    val ret      = stdlib.malloc(sizeof[Ptr[Byte]]).cast[Ptr[Ptr[addrinfo]]] //stackalloc[Ptr[addrinfo]]
     string.memset(hints.cast[Ptr[Byte]], 0, sizeof[addrinfo])
     hints.ai_family = socket.AF_UNSPEC
     hints.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV
@@ -205,9 +209,7 @@ private[net] class PlainSocketImpl extends SocketImpl {
       fcntl(fd.fd, F_SETFL, opts)
 
       val fdset = stackalloc[fd_set]
-      !fdset._1 = stackalloc[CLongInt](FD_SETSIZE / (8 * sizeof[CLongInt]))
-      FD_ZERO(fdset)
-      FD_SET(fd.fd, fdset)
+      zeroAndSet(fdset)
 
       val time = stackalloc[timeval]
       time.tv_sec = timeout / 1000
