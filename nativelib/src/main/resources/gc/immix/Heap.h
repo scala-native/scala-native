@@ -33,8 +33,8 @@ static inline bool heap_isObjectInHeap(Heap *heap, Object *object) {
     return Heap_IsWordInHeap(heap, (word_t *)object);
 }
 
-void Heap_Init(Heap *heap, size_t initialSmallHeapSize,
-               size_t initialLargeHeapSize);
+void Heap_Init(Heap *heap, size_t minSmallHeapSize,
+               size_t initialLargeHeapSize, size_t maxHeapSize);
 word_t *Heap_Alloc(Heap *heap, uint32_t objectSize);
 word_t *Heap_AllocSmall(Heap *heap, uint32_t objectSize);
 word_t *Heap_AllocLarge(Heap *heap, uint32_t objectSize);
