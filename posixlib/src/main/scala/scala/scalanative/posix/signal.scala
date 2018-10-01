@@ -9,6 +9,7 @@ import scala.scalanative.native._
  * to enable the visibility of these symbols in this header.
  *
  * Note 1: The functionality described may be removed in a future version of this volume of POSIX.1-2017
+ * Note 2: The functionality is an option marked as XSI (X/Open System Interfaces)
  */
 @extern
 object signal {
@@ -238,10 +239,11 @@ object signal {
   def BUS_ADRERR: CInt = extern
   @name("scalanative_bus_objerr")
   def BUS_OBJERR: CInt = extern
-  @name("scalanative_trap_brkpt")
-  def TRAP_BRKPT: CInt = extern
-  @name("scalanative_trap_trace")
-  def TRAP_TRACE: CInt = extern
+  // Note 2: Linux
+//  @name("scalanative_trap_brkpt")
+//  def TRAP_BRKPT: CInt = extern
+//  @name("scalanative_trap_trace")
+//  def TRAP_TRACE: CInt = extern
   @name("scalanative_cld_exited")
   def CLD_EXITED: CInt = extern
   @name("scalanative_cld_killed")
