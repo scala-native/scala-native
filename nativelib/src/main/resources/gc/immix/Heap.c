@@ -116,7 +116,7 @@ void Heap_Init(Heap *heap, size_t initialSmallHeapSize,
     if (statsFile != NULL) {
         heap->stats = malloc(sizeof(HeapStats));
         heap->stats->outFile = fopen(statsFile, "a");
-        fprintf(heap->stats->outFile, "timestamp,collections,mark_time_us,sweep_time_us\n");
+        fprintf(heap->stats->outFile, "timestamp_us,collection,mark_time_us,sweep_time_us\n");
         heap->stats->collections = 0;
     }
 }
@@ -263,6 +263,18 @@ void Heap_writeStatsToFile(HeapStats *stats) {
                 stats->timestamp_us[i], base + i, stats->mark_time_us[i], stats->sweep_time_us[i]);
     }
     fflush(outFile);
+}
+
+void Heap_StopGracefully(Heap *heap) {
+    HeapStats* stats = heap->stats;
+    if (stats != NULL) {
+        int remainder = heap->stats->collections % GC_STATS_MEASUREMENTS;
+        if (remainder > 0) {
+            // there were some measurements not written in the last full batch.
+            Heap_writeStatsToFile(stats);
+        }
+        fclose(stats->outFile);
+    }
 }
 
 void Heap_Recycle(Heap *heap) {
