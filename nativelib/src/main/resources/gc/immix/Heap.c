@@ -224,15 +224,15 @@ void Heap_Collect(Heap *heap, Stack *stack) {
     fflush(stdout);
 #endif
     if (heap->stats != NULL) {
-        clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+        clock_gettime(CLOCK_REALTIME, &start);
     }
     Marker_MarkRoots(heap, stack);
     if (heap->stats != NULL) {
-        clock_gettime(CLOCK_MONOTONIC_RAW, &sweep_start);
+        clock_gettime(CLOCK_REALTIME, &sweep_start);
     }
     Heap_Recycle(heap);
     if (heap->stats != NULL) {
-        clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+        clock_gettime(CLOCK_REALTIME, &end);
 
         uint64_t start_us = start.tv_sec * 1000000 + start.tv_nsec / 1000;
         uint64_t sweep_start_us = sweep_start.tv_sec * 1000000 + sweep_start.tv_nsec / 1000;
