@@ -238,7 +238,7 @@ void Heap_Collect(Heap *heap, Stack *stack) {
         uint64_t sweep_start_us = sweep_start.tv_sec * 1000000 + sweep_start.tv_nsec / 1000;
         uint64_t end_us = end.tv_sec * 1000000 + end.tv_nsec / 1000;
 
-        int index = heap->stats->collections % GC_STATS_MEASUREMENTS;
+        uint64_t index = heap->stats->collections % GC_STATS_MEASUREMENTS;
         heap->stats->timestamp_us[index] = start_us;
         heap->stats->mark_time_us[index] = sweep_start_us - start_us;
         heap->stats->sweep_time_us[index] = end_us - sweep_start_us;
@@ -254,21 +254,24 @@ void Heap_Collect(Heap *heap, Stack *stack) {
 }
 
 void Heap_writeStatsToFile(HeapStats *stats) {
-    int collections = stats->collections;
-    int remainder = collections % GC_STATS_MEASUREMENTS;
-    int base = collections - remainder;
+    uint64_t collections = stats->collections;
+    uint64_t remainder = collections % GC_STATS_MEASUREMENTS;
+    if (remainder == 0) {
+        remainder = GC_STATS_MEASUREMENTS;
+    }
+    uint64_t base = collections - remainder;
     FILE *outFile = stats->outFile;
-    for (int i = 0; i < remainder; i++) {
+    for (uint64_t i = 0; i < remainder; i++) {
         fprintf(outFile, "%lu,%u,%lu,%lu\n",
                 stats->timestamp_us[i], base + i, stats->mark_time_us[i], stats->sweep_time_us[i]);
     }
     fflush(outFile);
 }
 
-void Heap_StopGracefully(Heap *heap) {
+void Heap_AfterExit(Heap *heap) {
     HeapStats* stats = heap->stats;
     if (stats != NULL) {
-        int remainder = heap->stats->collections % GC_STATS_MEASUREMENTS;
+        uint64_t remainder = heap->stats->collections % GC_STATS_MEASUREMENTS;
         if (remainder > 0) {
             // there were some measurements not written in the last full batch.
             Heap_writeStatsToFile(stats);
