@@ -10,6 +10,14 @@
 #include <stdio.h>
 
 typedef struct {
+    FILE *outFile;
+    uint32_t collections;
+    uint64_t timestamp_us[GC_STATS_MEASUREMENTS];
+    uint64_t mark_time_us[GC_STATS_MEASUREMENTS];
+    uint64_t sweep_time_us[GC_STATS_MEASUREMENTS];
+} HeapStats;
+
+typedef struct {
     size_t memoryLimit;
     word_t *blockMetaStart;
     word_t *blockMetaEnd;
@@ -23,6 +31,7 @@ typedef struct {
     size_t largeHeapSize;
     Bytemap *smallBytemap;
     Bytemap *largeBytemap;
+    HeapStats *stats;
 } Heap;
 
 static inline bool Heap_IsWordInLargeHeap(Heap *heap, word_t *word) {

@@ -1,0 +1,8 @@
+#ifndef IMMIX_SETTINGS_H
+#define IMMIX_SETTINGS_H
+
+#define GC_STATS_FILE_SETTING "SCALANATIVE_GC_STATS_FILE"
+
+char *Settings_GC_StatsFileName();
+
+#endif // IMMIX_SETTINGS_H
