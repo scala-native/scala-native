@@ -262,7 +262,7 @@ void Heap_writeStatsToFile(HeapStats *stats) {
     uint64_t base = collections - remainder;
     FILE *outFile = stats->outFile;
     for (uint64_t i = 0; i < remainder; i++) {
-        fprintf(outFile, "%lu,%u,%lu,%lu\n",
+        fprintf(outFile, "%lu,%lu,%lu,%lu\n",
                 stats->timestamp_us[i], base + i, stats->mark_time_us[i], stats->sweep_time_us[i]);
     }
     fflush(outFile);
