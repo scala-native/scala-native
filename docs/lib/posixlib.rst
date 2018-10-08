@@ -24,6 +24,7 @@ C Header          Scala Native Module
 `fmtmsg.h`_       N/A
 `fnmatch.h`_      N/A
 `ftw.h`_          N/A
+`getopt.h`_       scala.scalanative.posix.getopt_
 `glob.h`_         N/A
 `grp.h`_          scala.scalanative.posix.grp_
 `iconv.h`_        N/A
@@ -108,6 +109,7 @@ C Header          Scala Native Module
 .. _fmtmsg.h: http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/fmtmsg.h.html
 .. _fnmatch.h: http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/fnmatch.h.html
 .. _ftw.h: http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/ftw.h.html
+.. _getopt.h: http://pubs.opengroup.org/onlinepubs/9699919799/functions/getopt.html
 .. _glob.h: http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/glob.h.html
 .. _grp.h: http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/grp.h.html
 .. _iconv.h: http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/iconv.h.html
@@ -182,6 +184,7 @@ C Header          Scala Native Module
 .. _scala.scalanative.posix.dirent: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/dirent.scala
 .. _scala.scalanative.posix.errno: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/errno.scala
 .. _scala.scalanative.posix.fcntl: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/fcntl.scala
+.. _scala.scalanative.posix.getopt: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/getopt.scala
 .. _scala.scalanative.posix.grp: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/grp.scala
 .. _scala.scalanative.posix.inttypes: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/inttypes.scala
 .. _scala.scalanative.posix.limits: https://github.com/scala-native/scala-native/blob/master/nativelib/src/main/scala/scala/scalanative/posix/limits.scala
