@@ -1,8 +1,10 @@
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <stdio.h>
+#include <stdatomic.h>
 #include "Heap.h"
 #include "Block.h"
+#include "Object.h"
 #include "Log.h"
 #include "Allocator.h"
 #include "Marker.h"
@@ -19,6 +21,8 @@
 // Map anonymous memory (not a file)
 #define HEAP_MEM_FD -1
 #define HEAP_MEM_FD_OFFSET 0
+
+void *_SweepThread(void *heap);
 
 size_t Heap_getMemoryLimit() { return getMemorySize(); }
 
@@ -58,7 +62,25 @@ void Heap_Init(Heap *heap, size_t initialSmallHeapSize,
     // Init heap for small objects
     heap->smallHeapSize = initialSmallHeapSize;
     heap->heapStart = smallHeapStart;
-    heap->heapEnd = smallHeapStart + initialSmallHeapSize / WORD_SIZE;
+    word_t *heapEnd = smallHeapStart + initialSmallHeapSize / WORD_SIZE;
+    heap->heapEnd = heapEnd;
+    heap->sweep.cursor = (word_t)heapEnd;
+    heap->sweep.processes = 0;
+    heap->sweep.isDone = true;
+
+    pthread_mutex_init(&heap->sweep.postActionMutex, NULL);
+    pthread_mutex_init(&heap->sweep.startMutex, NULL);
+
+    pthread_cond_init(&heap->sweep.start, NULL);
+    pthread_cond_init(&heap->sweep.processStopped, NULL);
+
+#if NUM_SWEEP_THREADS != 0
+    for (int i = 0; i < NUM_SWEEP_THREADS; i++) {
+        pthread_create(&heap->sweep.threads[i], NULL, _SweepThread,
+                       (void *)heap);
+    }
+#endif
+
     Allocator_Init(&allocator, smallHeapStart,
                    initialSmallHeapSize / BLOCK_TOTAL_SIZE);
 
@@ -94,6 +116,10 @@ word_t *Heap_AllocLarge(Heap *heap, uint32_t objectSize) {
         return Object_ToMutatorAddress(object);
     } else {
         // Otherwise collect
+        if (!heap->sweep.isDone) {
+            // if last sweep was not done, then it needs to be finished
+            Heap_SweepFully(heap);
+        }
         Heap_Collect(heap, &stack);
 
         // After collection, try to alloc again, if it fails, grow the heap by
@@ -118,19 +144,26 @@ word_t *Heap_AllocLarge(Heap *heap, uint32_t objectSize) {
 
 NOINLINE word_t *Heap_allocSmallSlow(Heap *heap, uint32_t size) {
     Object *object;
-    object = (Object *)Allocator_Alloc(&allocator, size);
+    object = (Object *)Heap_LazySweep(heap, size);
 
     if (object != NULL)
         goto done;
 
     Heap_Collect(heap, &stack);
-    object = (Object *)Allocator_Alloc(&allocator, size);
+    object = (Object *)Heap_LazySweep(heap, size);
 
     if (object != NULL)
         goto done;
 
-    Heap_Grow(heap, size);
+    pthread_mutex_lock(&heap->sweep.postActionMutex);
+
     object = (Object *)Allocator_Alloc(&allocator, size);
+    if (object == NULL) {
+        Heap_Grow(heap, WORDS_IN_BLOCK);
+        object = (Object *)Allocator_Alloc(&allocator, size);
+    }
+
+    pthread_mutex_unlock(&heap->sweep.postActionMutex);
 
 done:
     assert(object != NULL);
@@ -183,7 +216,39 @@ word_t *Heap_Alloc(Heap *heap, uint32_t objectSize) {
     }
 }
 
+INLINE void Heap_Assert_Nothing_IsMarked(Heap *heap) {
+    // all should be unmarked when the sweeping is done
+    word_t *current = heap->heapStart;
+    while (current != heap->heapEnd) {
+        BlockHeader *blockHeader = (BlockHeader *)current;
+        assert(!Block_IsMarked(blockHeader));
+        for (int16_t lineIndex = 0; lineIndex < LINE_COUNT; lineIndex++) {
+            LineHeader *lineHeader =
+                Block_GetLineHeader(blockHeader, lineIndex);
+            assert(!Line_IsMarked(lineHeader));
+            // not always true
+            /*            if (Line_ContainsObject(lineHeader)) {
+                            Object *object = Line_GetFirstObject(lineHeader);
+                            word_t *lineEnd =
+                                Block_GetLineAddress(blockHeader, lineIndex) +
+               WORDS_IN_LINE; while (object != NULL && (word_t *)object <
+               lineEnd) { ObjectHeader *objectHeader = &object->header;
+                                assert(!Object_IsMarked(objectHeader));
+                                object = Object_NextObject(object);
+                            }
+                        }*/
+        }
+        current += WORDS_IN_BLOCK;
+    }
+}
+
 void Heap_Collect(Heap *heap, Stack *stack) {
+    // sweep must be done before marking can begin
+    assert(heap->sweep.isDone);
+#ifndef NDEBUG
+    Heap_Assert_Nothing_IsMarked(heap);
+#endif
+    allocator.collectionNumber += 1;
 #ifdef DEBUG_PRINT
     printf("\nCollect\n");
     fflush(stdout);
@@ -205,27 +270,150 @@ void Heap_Recycle(Heap *heap) {
     allocator.recycledBlockCount = 0;
     allocator.freeMemoryAfterCollection = 0;
 
-    word_t *current = heap->heapStart;
-    while (current != heap->heapEnd) {
-        BlockHeader *blockHeader = (BlockHeader *)current;
-        Block_Recycle(&allocator, blockHeader);
-        // block_print(blockHeader);
-        current += WORDS_IN_BLOCK;
-    }
     LargeAllocator_Sweep(&largeAllocator);
+    // prepare for lazy sweeping
+    heap->sweep.cursor = (word_t)heap->heapStart;
+    assert(heap->sweep.processes == 0);
+    assert(heap->sweep.isDone);
+    heap->sweep.isDone = false;
+    assert(((word_t *)heap->sweep.cursor) != NULL);
 
-    if (Allocator_ShouldGrow(&allocator)) {
-        double growth;
-        if (heap->smallHeapSize < EARLY_GROWTH_THRESHOLD) {
-            growth = EARLY_GROWTH_RATE;
-        } else {
-            growth = GROWTH_RATE;
-        }
-        size_t blocks = allocator.blockCount * (growth - 1);
-        size_t increment = blocks * WORDS_IN_BLOCK;
-        Heap_Grow(heap, increment);
+#if NUM_SWEEP_THREADS != 0
+    pthread_mutex_lock(&heap->sweep.startMutex);
+    pthread_cond_broadcast(&heap->sweep.start);
+    pthread_mutex_unlock(&heap->sweep.startMutex);
+#endif
+
+    // do not sweep the two blocks that are in use
+    heap->sweep.unsweepable[0] = (word_t *)allocator.block;
+    heap->sweep.unsweepable[1] = (word_t *)allocator.largeBlock;
+    // Still need to unmark all objects.
+    // This is so the next mark will not use any child objects.
+    Block_ClearMarkBits((BlockHeader *)heap->sweep.unsweepable[0]);
+    Block_ClearMarkBits((BlockHeader *)heap->sweep.unsweepable[1]);
+
+#ifdef DEBUG_PRINT
+    printf("unsweepable[0] %p (%lu)\n", heap->sweep.unsweepable[0],
+           (uint64_t)((word_t *)heap->sweep.unsweepable[0] - heap->heapStart) /
+               WORDS_IN_BLOCK);
+    if (heap->sweep.unsweepable[0] != NULL) {
+        Block_Print( (BlockHeader *) heap->sweep.unsweepable[0]);
     }
-    Allocator_InitCursors(&allocator);
+    printf("unsweepable[1] %p (%lu)\n", heap->sweep.unsweepable[1],
+           (uint64_t)((word_t *)heap->sweep.unsweepable[1] - heap->heapStart) /
+               WORDS_IN_BLOCK);
+    if (heap->sweep.unsweepable[1] != NULL) {
+        Block_Print( (BlockHeader *) heap->sweep.unsweepable[1]);
+    }
+    fflush(stdout);
+#endif
+}
+
+word_t *Heap_LazySweep(Heap *heap, uint32_t size) {
+    bool wasDone = heap->sweep.isDone;
+    word_t *object = Allocator_Alloc(&allocator, size);
+    // the sweep was already done, including post-sweep actions
+    // or we already got a block from the concurrent sweeper, so no need
+    // sweeping
+    if (wasDone || object != NULL) {
+        return object;
+    }
+
+    word_t *current;
+    atomic_fetch_add(&heap->sweep.processes, 1);
+    while ((current = (word_t *)atomic_fetch_add(
+                &heap->sweep.cursor, BLOCK_TOTAL_SIZE)) < heap->heapEnd) {
+        bool sweepable = current != heap->sweep.unsweepable[0] &&
+                         current != heap->sweep.unsweepable[1];
+        if (sweepable) {
+            Block_Recycle(&allocator, (BlockHeader *)current);
+            object = Allocator_Alloc(&allocator, size);
+            if (object != NULL)
+                break;
+        }
+    }
+    atomic_fetch_add(&heap->sweep.processes, -1);
+
+    pthread_mutex_lock(&heap->sweep.postActionMutex);
+    pthread_cond_broadcast(&heap->sweep.processStopped);
+    pthread_mutex_unlock(&heap->sweep.postActionMutex);
+
+    if (((word_t *)heap->sweep.cursor) >= heap->heapEnd) {
+        // nothing left to sweep, wait until others are done sweeping
+        Heap_EnsureSweepDone(heap);
+    }
+    if (object == NULL) {
+        object = Allocator_Alloc(&allocator, size);
+    }
+    assert(object != NULL || heap->sweep.isDone);
+    return object;
+}
+
+void *_SweepThread(void *arg) {
+    Heap *heap = (Heap *)arg;
+    while (true) {
+        // wait until it is started
+        pthread_mutex_lock(&heap->sweep.startMutex);
+        pthread_cond_wait(&heap->sweep.start, &heap->sweep.startMutex);
+        pthread_mutex_unlock(&heap->sweep.startMutex);
+
+        Heap_SweepFully(heap);
+    }
+    return NULL;
+}
+
+void Heap_SweepFully(Heap *heap) {
+    // the sweep was already done, including post-sweep actions
+    if (heap->sweep.isDone) {
+        return;
+    }
+
+    word_t *current;
+    atomic_fetch_add(&heap->sweep.processes, 1);
+    while ((current = (word_t *)atomic_fetch_add(
+                &heap->sweep.cursor, BLOCK_TOTAL_SIZE)) < heap->heapEnd) {
+        bool sweepable = current != heap->sweep.unsweepable[0] &&
+                         current != heap->sweep.unsweepable[1];
+        if (sweepable) {
+            Block_Recycle(&allocator, (BlockHeader *)current);
+        }
+    }
+    atomic_fetch_add(&heap->sweep.processes, -1);
+
+    pthread_mutex_lock(&heap->sweep.postActionMutex);
+    pthread_cond_broadcast(&heap->sweep.processStopped);
+    pthread_mutex_unlock(&heap->sweep.postActionMutex);
+
+    Heap_EnsureSweepDone(heap);
+    assert(heap->sweep.isDone);
+}
+
+INLINE void Heap_EnsureSweepDone(Heap *heap) {
+    if (!heap->sweep.isDone) {
+        pthread_mutex_lock(&heap->sweep.postActionMutex);
+        // double check inside the mutex
+        if (!heap->sweep.isDone) {
+            // wait for all sweep processes to be done
+            while (heap->sweep.processes > 0) {
+                pthread_cond_wait(&heap->sweep.processStopped,
+                                  &heap->sweep.postActionMutex);
+            }
+            // do all post-sweep actions once
+            if (Allocator_ShouldGrow(&allocator)) {
+                double growth;
+                if (heap->smallHeapSize < EARLY_GROWTH_THRESHOLD) {
+                    growth = EARLY_GROWTH_RATE;
+                } else {
+                    growth = GROWTH_RATE;
+                }
+                size_t blocks = allocator.blockCount * (growth - 1);
+                size_t increment = blocks * WORDS_IN_BLOCK;
+                Heap_Grow(heap, increment);
+            }
+            heap->sweep.isDone = true;
+        }
+        pthread_mutex_unlock(&heap->sweep.postActionMutex);
+    }
 }
 
 void Heap_exitWithOutOfMemory() {
@@ -266,7 +454,8 @@ void Heap_Grow(Heap *heap, size_t increment) {
 #endif
 
     word_t *heapEnd = heap->heapEnd;
-    heap->heapEnd = heapEnd + increment;
+    word_t *newHeapEnd = heapEnd + increment;
+    heap->heapEnd = newHeapEnd;
     heap->smallHeapSize += increment * WORD_SIZE;
 
     BlockHeader *lastBlock = (BlockHeader *)(heap->heapEnd - WORDS_IN_BLOCK);

@@ -5,6 +5,7 @@
 #include "Log.h"
 #include "Allocator.h"
 #include "Marker.h"
+#include "State.h"
 
 extern int __object_array_id;
 
@@ -103,13 +104,27 @@ void Block_Recycle(Allocator *allocator, BlockHeader *blockHeader) {
             BlockList_AddLast(&allocator->recycledBlocks, blockHeader);
 
             assert(blockHeader->header.first != NO_RECYCLABLE_LINE);
+            assert(blockHeader->header.first < LINE_COUNT);
             allocator->recycledBlockCount++;
         }
+    }
+#ifdef TRACE_PRINT
+    Block_Print(blockHeader);
+#endif
+}
+
+void Block_ClearMarkBits(BlockHeader *block) {
+    Block_Unmark(block);
+    for (int16_t lineIndex = 0; lineIndex < LINE_COUNT; lineIndex++) {
+        LineHeader *lineHeader = Block_GetLineHeader(block, lineIndex);
+        // clear mark and allocated bits for both marked and unmarked lines, but do not recliam any space
+        Block_recycleMarkedLine(block, lineHeader, lineIndex);
     }
 }
 
 void Block_Print(BlockHeader *block) {
-    printf("%p ", block);
+    printf("%p (%lu)", block, (uint64_t)((word_t *)block - heap.heapStart) /
+                                                 WORDS_IN_BLOCK);
     if (Block_IsFree(block)) {
         printf("FREE\n");
     } else if (Block_IsUnavailable(block)) {
@@ -125,5 +140,13 @@ void Block_Print(BlockHeader *block) {
         }
         printf("\n");
     }
+    printf("mark: %d, flags: %d, first: %d, nextBlock: %d \n",
+           block->header.mark, block->header.flags, block->header.first,
+           block->header.nextBlock);
+
+    for (int i = 0; i < LINE_COUNT; i++) {
+        printf("%d ", block->lineHeaders[i]);
+    }
+    printf("\n");
     fflush(stdout);
 }

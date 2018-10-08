@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdatomic.h>
 #include "Allocator.h"
 #include "Line.h"
 #include "Block.h"
@@ -33,6 +34,7 @@ void Allocator_Init(Allocator *allocator, word_t *heapStart, int blockCount) {
     allocator->blockCount = (uint64_t)blockCount;
     allocator->freeBlockCount = (uint64_t)blockCount;
     allocator->recycledBlockCount = 0;
+    allocator->collectionNumber = 0;
 
     Allocator_InitCursors(allocator);
 }
@@ -69,9 +71,11 @@ void Allocator_InitCursors(Allocator *allocator) {
     // Init large cursor
     assert(!BlockList_IsEmpty(&allocator->freeBlocks));
 
-    BlockHeader *largeHeader =
-        BlockList_RemoveFirstBlock(&allocator->freeBlocks);
+    BlockHeader *largeHeader = BlockList_PopFirstBlock(&allocator->freeBlocks);
+    assert(largeHeader != NULL);
+
     allocator->largeBlock = largeHeader;
+    assert(allocator->block != allocator->largeBlock);
     allocator->largeCursor = Block_GetFirstWord(largeHeader);
     allocator->largeLimit = Block_GetBlockEnd(largeHeader);
 }
@@ -85,10 +89,10 @@ bool Allocator_ShouldGrow(Allocator *allocator) {
         (allocator->freeBlockCount + allocator->recycledBlockCount);
 
 #ifdef DEBUG_PRINT
-    printf("\n\nBlock count: %llu\n", allocator->blockCount);
-    printf("Unavailable: %llu\n", unavailableBlockCount);
-    printf("Free: %llu\n", allocator->freeBlockCount);
-    printf("Recycled: %llu\n", allocator->recycledBlockCount);
+    printf("\n\nBlock count: %lu\n", allocator->blockCount);
+    printf("Unavailable: %lu\n", unavailableBlockCount);
+    printf("Free: %lu\n", allocator->freeBlockCount);
+    printf("Recycled: %lu\n", allocator->recycledBlockCount);
     fflush(stdout);
 #endif
 
@@ -106,11 +110,12 @@ word_t *Allocator_overflowAllocation(Allocator *allocator, size_t size) {
     word_t *end = (word_t *)((uint8_t *)start + size);
 
     if (end > allocator->largeLimit) {
-        if (BlockList_IsEmpty(&allocator->freeBlocks)) {
+        BlockHeader *block = BlockList_PopFirstBlock(&allocator->freeBlocks);
+        if (block == NULL) {
             return NULL;
         }
-        BlockHeader *block = BlockList_RemoveFirstBlock(&allocator->freeBlocks);
         allocator->largeBlock = block;
+        assert(allocator->block != allocator->largeBlock);
         allocator->largeCursor = Block_GetFirstWord(block);
         allocator->largeLimit = Block_GetBlockEnd(block);
         return Allocator_overflowAllocation(allocator, size);
@@ -136,8 +141,10 @@ INLINE word_t *Allocator_Alloc(Allocator *allocator, size_t size) {
     word_t *start = allocator->cursor;
     word_t *end = (word_t *)((uint8_t *)start + size);
 
-    // Checks if the end of the block overlaps with the limit
-    if (end > allocator->limit) {
+    // Cursor can be NULL right after failing to get a new block.
+    // It should try to get a new block then.
+    // Also checks if the end of the block overlaps with the limit
+    if (start == NULL || end > allocator->limit) {
         // If it overlaps but the block to allocate is a `medium` sized block,
         // use overflow allocation
         if (size > LINE_SIZE) {
@@ -152,6 +159,8 @@ INLINE word_t *Allocator_Alloc(Allocator *allocator, size_t size) {
         }
     }
 
+    // start cannot be NULL here
+    assert(start != NULL);
     if (end == allocator->limit) {
         memset(start, 0, size);
     } else {
@@ -197,6 +206,7 @@ bool Allocator_nextLineRecycled(Allocator *allocator) {
  */
 void Allocator_firstLineNewBlock(Allocator *allocator, BlockHeader *block) {
     allocator->block = block;
+    assert(allocator->block != allocator->largeBlock);
 
     // The block can be free or recycled.
     if (Block_IsFree(block)) {
@@ -244,11 +254,24 @@ bool Allocator_getNextLine(Allocator *allocator) {
  * chunk_allocator
  */
 BlockHeader *Allocator_getNextBlock(Allocator *allocator) {
-    BlockHeader *block = NULL;
-    if (!BlockList_IsEmpty(&allocator->recycledBlocks)) {
-        block = BlockList_RemoveFirstBlock(&allocator->recycledBlocks);
-    } else if (!BlockList_IsEmpty(&allocator->freeBlocks)) {
-        block = BlockList_RemoveFirstBlock(&allocator->freeBlocks);
+    BlockHeader *block = BlockList_PopFirstBlock(&allocator->recycledBlocks);
+#ifdef TRACE_PRINT
+    if (block != NULL) {
+        printf("NextRecycledBlock\n");
+        Block_Print(block);
+        fflush(stdout);
     }
+#endif
+    if (block == NULL) {
+        block = BlockList_PopFirstBlock(&allocator->freeBlocks);
+    }
+#ifdef TRACE_PRINT
+    if (block != NULL) {
+        printf("NextFreeBlock\n");
+        Block_Print(block);
+        fflush(stdout);
+    }
+#endif
+
     return block;
 }

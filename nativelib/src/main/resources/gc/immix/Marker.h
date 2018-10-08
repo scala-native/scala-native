@@ -1,6 +1,7 @@
 #ifndef IMMIX_MARKER_H
 #define IMMIX_MARKER_H
 
+#include <stdatomic.h>
 #include "Heap.h"
 #include "datastructures/Stack.h"
 
