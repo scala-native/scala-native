@@ -78,7 +78,12 @@ trait NirGenName { self: NirGenPhase =>
     if (sym == String_+) {
       genMethodName(StringConcatMethod)
     } else if (sym.owner.isExternModule) {
-      owner member id tag "extern"
+      if (sym.isSetter) {
+        val id0 = sym.name.dropSetter.decoded.toString
+        owner member id0 tag "extern"
+      } else {
+        owner member id tag "extern"
+      }
     } else if (sym.name == nme.CONSTRUCTOR) {
       owner member ("init" +: mangledParams).mkString("_")
     } else {
