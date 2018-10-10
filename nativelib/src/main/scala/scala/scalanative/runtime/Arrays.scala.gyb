@@ -37,7 +37,7 @@ object Array {
     @inline def info_=(value: Ptr[Type]): Unit = !(self._1) = value
     @inline def length: Int                    = !(self._2)
     @inline def length_=(value: Int): Unit     = !(self._2) = value
-    @inline def stride: CSize                  = !(self._3).asInstanceOf[CSize]
+    @inline def stride: CSize                  = (!(self._3)).asInstanceOf[CSize]
     @inline def stride_=(value: CSize): Unit =
       !(self._3) = value.asInstanceOf[Int]
   }
