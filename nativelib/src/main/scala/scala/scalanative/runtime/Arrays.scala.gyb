@@ -28,13 +28,15 @@ sealed abstract class Array[T]
 }
 
 object Array {
-  type Header = CStruct2[Ptr[Type], Int]
+  type Header = CStruct3[Ptr[Type], Int, Int]
 
   implicit class HeaderOps(val self: Ptr[Header]) extends AnyVal {
     @inline def info: Ptr[Type]                = !(self._1)
     @inline def info_=(value: Ptr[Type]): Unit = !(self._1) = value
     @inline def length: Int                    = !(self._2)
     @inline def length_=(value: Int): Unit     = !(self._2) = value
+    @inline def stride: CSize                  = !(self._3).asInstanceOf[CSize]
+    @inline def stride_=(value: CSize): Unit   = !(self._3) = value.asInstanceOf[Int]
   }
 
   def copy(from: AnyRef, fromPos: Int,
@@ -159,6 +161,7 @@ object ${T}Array {
     val arrsize = sizeof[Header] + sizeof[${T}] * length
     val arr     = ${alloc}(arrinfo, arrsize).cast[Ptr[Header]]
     arr.length  = length
+    arr.stride  = sizeof[${T}]
     arr.cast[${T}Array]
   }
 
