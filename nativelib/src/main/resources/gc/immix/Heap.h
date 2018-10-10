@@ -6,6 +6,7 @@
 #include "LargeAllocator.h"
 #include "datastructures/Stack.h"
 #include "datastructures/Bytemap.h"
+#include "headers/LineHeader.h"
 #include <stdio.h>
 
 typedef struct {
@@ -20,6 +21,8 @@ typedef struct {
     size_t memoryLimit;
     word_t *blockHeaderStart;
     word_t *blockHeaderEnd;
+    word_t *lineHeaderStart;
+    word_t *lineHeaderEnd;
     word_t *heapStart;
     word_t *heapEnd;
     size_t smallHeapSize;
@@ -55,6 +58,18 @@ static inline Bytemap *Heap_BytemapForWord(Heap *heap, word_t *word){
         return heap->largeBytemap;
     }
 }
+
+static inline LineHeader *Heap_LineHeaderForWord(Heap *heap, word_t *word) {
+    // assumes there are no gaps between lines
+    assert(LINE_COUNT * LINE_SIZE == BLOCK_TOTAL_SIZE);
+    assert(Heap_IsWordInSmallHeap(heap, word));
+    word_t lineGlobalIndex = ((word_t)word - (word_t)heap->heapStart) >> LINE_SIZE_BITS;
+    assert(lineGlobalIndex >= 0);
+    LineHeader *lineHeader = (LineHeader *) heap->lineHeaderStart + lineGlobalIndex;
+    assert(lineHeader < (LineHeader *) heap->lineHeaderEnd);
+    return lineHeader;
+}
+
 
 void Heap_Init(Heap *heap, size_t initialSmallHeapSize,
                size_t initialLargeHeapSize);

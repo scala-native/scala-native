@@ -12,15 +12,14 @@ extern int __object_array_id;
 
 INLINE void Block_recycleUnmarkedBlock(Allocator *allocator,
                                        BlockHeader *blockHeader, word_t* blockStart) {
-    memset(blockHeader, 0, TOTAL_BLOCK_METADATA_SIZE);
+    memset(blockHeader, 0, sizeof(BlockHeader));
+    // does not unmark in LineHeaders because those are ignored by the allocator
     BlockList_AddLast(&allocator->freeBlocks, blockHeader);
     BlockHeader_SetFlag(blockHeader, block_free);
     Bytemap_SetAreaFree(allocator->bytemap, blockStart, WORDS_IN_BLOCK);
 }
 
-INLINE void Block_recycleMarkedLine(Bytemap *bytemap, word_t *blockStart,
-                                    LineHeader *lineHeader, int lineIndex) {
-    Line_Unmark(lineHeader);
+INLINE void Block_recycleMarkedLine(Bytemap *bytemap, word_t *blockStart, int lineIndex) {
     // If the line contains an object
     Object *object = Line_GetFirstObject(bytemap, blockStart, lineIndex);
     // Unmark all objects in line
@@ -40,7 +39,7 @@ INLINE void Block_recycleMarkedLine(Bytemap *bytemap, word_t *blockStart,
 /**
  * recycles a block and adds it to the allocator
  */
-void Block_Recycle(Allocator *allocator, BlockHeader *blockHeader, word_t* blockStart) {
+void Block_Recycle(Allocator *allocator, BlockHeader *blockHeader, word_t* blockStart, LineHeader* lineHeaders) {
 
     // If the block is not marked, it means that it's completely free
     if (!BlockHeader_IsMarked(blockHeader)) {
@@ -55,12 +54,12 @@ void Block_Recycle(Allocator *allocator, BlockHeader *blockHeader, word_t* block
         Bytemap *bytemap = allocator->bytemap;
         int lastRecyclable = NO_RECYCLABLE_LINE;
         while (lineIndex < LINE_COUNT) {
-            LineHeader *lineHeader =
-                BlockHeader_GetLineHeader(blockHeader, lineIndex);
+            LineHeader *lineHeader = &lineHeaders[lineIndex];
             // If the line is marked, we need to unmark all objects in the line
             if (Line_IsMarked(lineHeader)) {
                 // Unmark line
-                Block_recycleMarkedLine(bytemap, blockStart, lineHeader, lineIndex);
+                Line_Unmark(lineHeader);
+                Block_recycleMarkedLine(bytemap, blockStart, lineIndex);
                 lineIndex++;
             } else {
                 // If the line is not marked, we need to merge all continuous
@@ -81,8 +80,7 @@ void Block_Recycle(Allocator *allocator, BlockHeader *blockHeader, word_t* block
                 allocator->freeMemoryAfterCollection += LINE_SIZE;
                 uint8_t size = 1;
                 while (lineIndex < LINE_COUNT &&
-                       !Line_IsMarked(lineHeader = BlockHeader_GetLineHeader(
-                                          blockHeader, lineIndex))) {
+                       !Line_IsMarked(lineHeader = &lineHeaders[lineIndex])) {
                     size++;
                     lineIndex++;
                     allocator->freeMemoryAfterCollection += LINE_SIZE;
@@ -118,10 +116,6 @@ void Block_Print(BlockHeader *block) {
     printf("mark: %d, flags: %d, first: %d, nextBlock: %d \n",
            block->header.mark, block->header.flags, block->header.first,
            block->header.nextBlock);
-
-    for (int i = 0; i < LINE_COUNT; i++) {
-        printf("%d ", block->lineHeaders[i]);
-    }
     printf("\n");
     fflush(stdout);
 }

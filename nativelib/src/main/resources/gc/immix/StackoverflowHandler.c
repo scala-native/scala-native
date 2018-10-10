@@ -124,11 +124,10 @@ void StackOverflowHandler_largeHeapOverflowHeapScan(Heap *heap, Stack *stack) {
 
 bool overflowScanLine(Heap *heap, Stack *stack, BlockHeader *block, word_t* blockStart,
                       int lineIndex) {
-    LineHeader *lineHeader = BlockHeader_GetLineHeader(block, lineIndex);
     Bytemap *bytemap = heap->smallBytemap;
 
     Object *object = Line_GetFirstObject(bytemap, blockStart, lineIndex);
-    if (Line_IsMarked(lineHeader)) {
+    if (object != NULL && Line_IsMarked(Heap_LineHeaderForWord(heap,(word_t *) object))) {
         word_t *lineEnd =
             Block_GetLineAddress(blockStart, lineIndex) + WORDS_IN_LINE;
         while (object != NULL && (word_t *)object < lineEnd) {
