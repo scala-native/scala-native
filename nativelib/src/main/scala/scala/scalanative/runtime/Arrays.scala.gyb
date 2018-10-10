@@ -5,7 +5,9 @@ import scalanative.native._
 import scalanative.runtime.Intrinsics._
 
 sealed abstract class Array[T]
-    extends java.io.Serializable with java.lang.Cloneable {
+    extends java.io.Serializable
+    with java.lang.Cloneable {
+
   /** Number of elements of the array. */
   @inline def length: Int =
     // TODO: Update once we support ptr->field
@@ -36,11 +38,15 @@ object Array {
     @inline def length: Int                    = !(self._2)
     @inline def length_=(value: Int): Unit     = !(self._2) = value
     @inline def stride: CSize                  = !(self._3).asInstanceOf[CSize]
-    @inline def stride_=(value: CSize): Unit   = !(self._3) = value.asInstanceOf[Int]
+    @inline def stride_=(value: CSize): Unit =
+      !(self._3) = value.asInstanceOf[Int]
   }
 
-  def copy(from: AnyRef, fromPos: Int,
-           to: AnyRef, toPos: Int, len: Int): Unit = {
+  def copy(from: AnyRef,
+           fromPos: Int,
+           to: AnyRef,
+           toPos: Int,
+           len: Int): Unit = {
     if (from == null || to == null) {
       throw new NullPointerException()
     } else if (!from.isInstanceOf[Array[_]]) {
@@ -48,13 +54,19 @@ object Array {
     } else if (!to.isInstanceOf[Array[_]]) {
       throw new IllegalArgumentException("to argument must be an array")
     } else {
-      copy(from.asInstanceOf[Array[_]], fromPos,
-           to.asInstanceOf[Array[_]], toPos, len)
+      copy(from.asInstanceOf[Array[_]],
+           fromPos,
+           to.asInstanceOf[Array[_]],
+           toPos,
+           len)
     }
   }
 
-  def copy(from: Array[_], fromPos: Int,
-           to: Array[_], toPos: Int, len: Int): Unit = {
+  def copy(from: Array[_],
+           fromPos: Int,
+           to: Array[_],
+           toPos: Int,
+           len: Int): Unit = {
     if (from == null || to == null) {
       throw new NullPointerException()
     } else if (getType(from) != getType(to)) {
@@ -76,8 +88,11 @@ object Array {
     }
   }
 
-  def compare(left: AnyRef, leftPos: Int,
-              right: AnyRef, rightPos: Int, len: Int): Int = {
+  def compare(left: AnyRef,
+              leftPos: Int,
+              right: AnyRef,
+              rightPos: Int,
+              len: Int): Int = {
     if (left == null || right == null) {
       throw new NullPointerException()
     } else if (!left.isInstanceOf[Array[_]]) {
@@ -85,13 +100,19 @@ object Array {
     } else if (!right.isInstanceOf[Array[_]]) {
       throw new IllegalArgumentException("right argument must be an array")
     } else {
-      compare(left.asInstanceOf[Array[_]], leftPos,
-              right.asInstanceOf[Array[_]], rightPos, len)
+      compare(left.asInstanceOf[Array[_]],
+              leftPos,
+              right.asInstanceOf[Array[_]],
+              rightPos,
+              len)
     }
   }
 
-  def compare(left: Array[_], leftPos: Int,
-              right: Array[_], rightPos: Int, len: Int): Int = {
+  def compare(left: Array[_],
+              leftPos: Int,
+              right: Array[_],
+              rightPos: Int,
+              len: Int): Int = {
     if (left == null || right == null) {
       throw new NullPointerException()
     } else if (getType(left) != getType(right)) {
@@ -148,7 +169,11 @@ final class ${T}Array private () extends Array[${T}] {
     val arrinfo = typeof[${T}Array].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[${T}] * length
     val arr     = ${alloc}(arrinfo, arrsize)
-    `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]], this.cast[Ptr[Byte]], arrsize, 1, false)
+    `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
+                                this.cast[Ptr[Byte]],
+                                arrsize,
+                                1,
+                                false)
     arr.cast[${T}Array]
   }
 }
@@ -160,8 +185,8 @@ object ${T}Array {
     val arrinfo = typeof[${T}Array].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[${T}] * length
     val arr     = ${alloc}(arrinfo, arrsize).cast[Ptr[Header]]
-    arr.length  = length
-    arr.stride  = sizeof[${T}]
+    arr.length = length
+    arr.stride = sizeof[${T}]
     arr.cast[${T}Array]
   }
 
@@ -174,5 +199,4 @@ object ${T}Array {
     arr
   }
 }
-
 % end

@@ -1,4 +1,4 @@
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 1)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 1)
 package scala.scalanative
 package runtime
 
@@ -31,13 +31,16 @@ sealed abstract class Array[T]
 }
 
 object Array {
-  type Header = CStruct2[Ptr[Type], Int]
+  type Header = CStruct3[Ptr[Type], Int, Int]
 
   implicit class HeaderOps(val self: Ptr[Header]) extends AnyVal {
     @inline def info: Ptr[Type]                = !(self._1)
     @inline def info_=(value: Ptr[Type]): Unit = !(self._1) = value
     @inline def length: Int                    = !(self._2)
     @inline def length_=(value: Int): Unit     = !(self._2) = value
+    @inline def stride: CSize                  = !(self._3).asInstanceOf[CSize]
+    @inline def stride_=(value: CSize): Unit =
+      !(self._3) = value.asInstanceOf[Int]
   }
 
   def copy(from: AnyRef,
@@ -131,11 +134,11 @@ object Array {
   }
 }
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 117)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 140)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 119)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 123)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 146)
 
 final class UnitArray private () extends Array[Unit] {
   import Array._
@@ -179,6 +182,7 @@ object UnitArray {
     val arrsize = sizeof[Header] + sizeof[Unit] * length
     val arr     = GC.alloc(arrinfo, arrsize).cast[Ptr[Header]]
     arr.length = length
+    arr.stride = sizeof[Unit]
     arr.cast[UnitArray]
   }
 
@@ -191,10 +195,9 @@ object UnitArray {
     arr
   }
 }
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 119)
-
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 123)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 146)
 
 final class BooleanArray private () extends Array[Boolean] {
   import Array._
@@ -238,6 +241,7 @@ object BooleanArray {
     val arrsize = sizeof[Header] + sizeof[Boolean] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize).cast[Ptr[Header]]
     arr.length = length
+    arr.stride = sizeof[Boolean]
     arr.cast[BooleanArray]
   }
 
@@ -250,10 +254,9 @@ object BooleanArray {
     arr
   }
 }
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 119)
-
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 123)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 146)
 
 final class CharArray private () extends Array[Char] {
   import Array._
@@ -297,6 +300,7 @@ object CharArray {
     val arrsize = sizeof[Header] + sizeof[Char] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize).cast[Ptr[Header]]
     arr.length = length
+    arr.stride = sizeof[Char]
     arr.cast[CharArray]
   }
 
@@ -309,10 +313,9 @@ object CharArray {
     arr
   }
 }
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 119)
-
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 123)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 146)
 
 final class ByteArray private () extends Array[Byte] {
   import Array._
@@ -356,6 +359,7 @@ object ByteArray {
     val arrsize = sizeof[Header] + sizeof[Byte] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize).cast[Ptr[Header]]
     arr.length = length
+    arr.stride = sizeof[Byte]
     arr.cast[ByteArray]
   }
 
@@ -368,10 +372,9 @@ object ByteArray {
     arr
   }
 }
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 119)
-
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 123)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 146)
 
 final class ShortArray private () extends Array[Short] {
   import Array._
@@ -415,6 +418,7 @@ object ShortArray {
     val arrsize = sizeof[Header] + sizeof[Short] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize).cast[Ptr[Header]]
     arr.length = length
+    arr.stride = sizeof[Short]
     arr.cast[ShortArray]
   }
 
@@ -427,10 +431,9 @@ object ShortArray {
     arr
   }
 }
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 119)
-
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 123)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 146)
 
 final class IntArray private () extends Array[Int] {
   import Array._
@@ -474,6 +477,7 @@ object IntArray {
     val arrsize = sizeof[Header] + sizeof[Int] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize).cast[Ptr[Header]]
     arr.length = length
+    arr.stride = sizeof[Int]
     arr.cast[IntArray]
   }
 
@@ -486,10 +490,9 @@ object IntArray {
     arr
   }
 }
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 119)
-
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 123)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 146)
 
 final class LongArray private () extends Array[Long] {
   import Array._
@@ -533,6 +536,7 @@ object LongArray {
     val arrsize = sizeof[Header] + sizeof[Long] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize).cast[Ptr[Header]]
     arr.length = length
+    arr.stride = sizeof[Long]
     arr.cast[LongArray]
   }
 
@@ -545,10 +549,9 @@ object LongArray {
     arr
   }
 }
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 119)
-
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 123)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 146)
 
 final class FloatArray private () extends Array[Float] {
   import Array._
@@ -592,6 +595,7 @@ object FloatArray {
     val arrsize = sizeof[Header] + sizeof[Float] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize).cast[Ptr[Header]]
     arr.length = length
+    arr.stride = sizeof[Float]
     arr.cast[FloatArray]
   }
 
@@ -604,10 +608,9 @@ object FloatArray {
     arr
   }
 }
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 119)
-
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 123)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 146)
 
 final class DoubleArray private () extends Array[Double] {
   import Array._
@@ -651,6 +654,7 @@ object DoubleArray {
     val arrsize = sizeof[Header] + sizeof[Double] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize).cast[Ptr[Header]]
     arr.length = length
+    arr.stride = sizeof[Double]
     arr.cast[DoubleArray]
   }
 
@@ -663,10 +667,9 @@ object DoubleArray {
     arr
   }
 }
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 142)
 
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 119)
-
-// ###sourceLocation(file: "/home/denys/.src/native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 123)
+// ###sourceLocation(file: "/home/valdis/scala-native/nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb", line: 146)
 
 final class ObjectArray private () extends Array[Object] {
   import Array._
@@ -710,6 +713,7 @@ object ObjectArray {
     val arrsize = sizeof[Header] + sizeof[Object] * length
     val arr     = GC.alloc(arrinfo, arrsize).cast[Ptr[Header]]
     arr.length = length
+    arr.stride = sizeof[Object]
     arr.cast[ObjectArray]
   }
 
