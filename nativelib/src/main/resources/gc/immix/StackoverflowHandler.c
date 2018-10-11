@@ -79,7 +79,7 @@ bool StackOverflowHandler_overflowMark(Heap *heap, Stack *stack,
                 Object *fieldObject = (Object *) field;
                 Bytemap *bytemapF = Heap_BytemapForWord(heap, (word_t*) fieldObject);
                 if (heap_isObjectInHeap(heap, fieldObject) &&
-                    !Bytemap_IsMarked(bytemapF, (word_t*) fieldObject)) {
+                    Bytemap_IsAllocated(bytemapF, (word_t*) fieldObject)) {
                     Stack_Push(stack, object);
                     return true;
                 }
@@ -92,7 +92,7 @@ bool StackOverflowHandler_overflowMark(Heap *heap, Stack *stack,
                 Object *fieldObject = (Object *) field;
                 Bytemap *bytemapF = Heap_BytemapForWord(heap, (word_t*) fieldObject);
                 if (heap_isObjectInHeap(heap, fieldObject) &&
-                    !Bytemap_IsMarked(bytemapF, (word_t*) fieldObject)) {
+                    Bytemap_IsAllocated(bytemapF, (word_t*) fieldObject)) {
                     Stack_Push(stack, object);
                     return true;
                 }
