@@ -10,8 +10,8 @@
 #include "../utils/MathUtils.h"
 
 extern int __object_array_id;
-extern int __array_type_count;
-extern int __array_ids; // first element of the array
+extern int __array_ids_min;
+extern int __array_ids_max;
 
 typedef struct {
     struct {
@@ -57,12 +57,7 @@ struct Chunk {
 
 static inline bool Object_IsArray(Object *object) {
     int32_t id = object->rtti->rt.id;
-    for (int i=0; i < __array_type_count; i++) {
-        if ((&__array_ids)[i] == id ) {
-            return true;
-        }
-    }
-    return false;
+    return __array_ids_min <= id && id <= __array_ids_max;
 }
 
 static inline size_t Object_Size(Object *object) {

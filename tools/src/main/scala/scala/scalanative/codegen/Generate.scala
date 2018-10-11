@@ -267,15 +267,22 @@ object Generate {
       val tpes = Seq("Unit", "Boolean", "Char", "Byte", "Short", "Int", "Long", "Float", "Double", "Object")
       val ids = tpes.map(tpe2arrayId).sorted
 
-      buf += Defn.Var(Attrs.None,
-                      arrayIdsName,
-                      Type.Array(Type.Int),
-                      Val.ArrayValue(Type.Int, ids.map(Val.Int)))
+      // all the arrays have a common superclass, therefore their ids are consecutive
+      val min = ids.head
+      val max = ids.last
+      if (ids != (min to max)) {
+        throw new Exception(s"Ids for all known arrays ($tpes) are not consecutive!")
+      }
 
       buf += Defn.Var(Attrs.None,
-                      arrayTypeCountName,
+                      arrayIdsMinName,
                       Type.Int,
-                      Val.Int(ids.size))
+                      Val.Int(min))
+
+      buf += Defn.Var(Attrs.None,
+                      arrayIdsMaxName,
+                      Type.Int,
+                      Val.Int(max))
 
     }
 
@@ -333,8 +340,8 @@ object Generate {
 
     val objectArrayIdName = Global.Top("__object_array_id")
 
-    val arrayIdsName = Global.Top("__array_ids")
-    val arrayTypeCountName = Global.Top("__array_type_count")
+    val arrayIdsMinName = Global.Top("__array_ids_min")
+    val arrayIdsMaxName = Global.Top("__array_ids_max")
   }
 
   val depends =
