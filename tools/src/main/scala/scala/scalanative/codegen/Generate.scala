@@ -32,6 +32,7 @@ object Generate {
       genModuleArray()
       genModuleArraySize()
       genObjectArrayId()
+      genArrayIds()
       genStackBottom()
       buf
     }
@@ -246,19 +247,34 @@ object Generate {
                  Type.Int,
                  Val.Int(meta.moduleArray.size))
 
-    def genObjectArrayId() = {
-      val objectArray =
+    private def tpe2arrayId(tpe: String): Int = {
+      val clazz =
         linked
-          .infos(Global.Top("scala.scalanative.runtime.ObjectArray"))
+          .infos(Global.Top(s"scala.scalanative.runtime.${tpe}Array"))
           .asInstanceOf[Class]
 
+     meta.ids(clazz)
+    }
+
+    def genObjectArrayId(): Unit = {
       buf += Defn.Var(Attrs.None,
                       objectArrayIdName,
                       Type.Int,
-                      Val.Int(meta.ids(objectArray)))
+                      Val.Int(tpe2arrayId("Object")))
     }
 
-    def genTraitDispatchTables() = {
+    def genArrayIds(): Unit = {
+      val tpes = Seq("Unit", "Boolean", "Char", "Byte", "Short", "Int", "Long", "Float", "Double", "Object")
+      val ids = tpes.map(tpe2arrayId).sorted
+
+      buf += Defn.Var(Attrs.None,
+                      arrayIdsName,
+                      Type.Array(Type.Int),
+                      Val.ArrayValue(Type.Int, ids.map(Val.Int)))
+
+    }
+
+    def genTraitDispatchTables(): Unit = {
       buf += meta.dispatchTable.dispatchDefn
       buf += meta.hasTraitTables.classHasTraitDefn
       buf += meta.hasTraitTables.traitHasTraitDefn
@@ -311,6 +327,8 @@ object Generate {
     val moduleArraySizeName = Global.Top("__modules_size")
 
     val objectArrayIdName = Global.Top("__object_array_id")
+
+    val arrayIdsName = Global.Top("__array_ids")
   }
 
   val depends =
