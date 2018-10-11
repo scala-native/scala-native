@@ -1,7 +1,7 @@
 #ifndef IMMIX_LARGEALLOCATOR_H
 #define IMMIX_LARGEALLOCATOR_H
 
-#include "datastructures/Bitmap.h"
+#include "datastructures/Bytemap.h"
 #include "GCTypes.h"
 #include "Constants.h"
 #include "headers/ObjectHeader.h"
@@ -25,11 +25,11 @@ typedef struct {
     word_t *offset;
     size_t size;
     FreeList freeLists[FREE_LIST_COUNT];
-    Bitmap *bitmap;
+    Bytemap *bytemap;
 } LargeAllocator;
 
 void LargeAllocator_Init(LargeAllocator *allocator, word_t *offset,
-                         size_t largeHeapSize);
+                         size_t largeHeapSize, Bytemap *bytemap);
 void LargeAllocator_AddChunk(LargeAllocator *allocator, Chunk *chunk,
                              size_t total_block_size);
 Object *LargeAllocator_GetBlock(LargeAllocator *allocator,

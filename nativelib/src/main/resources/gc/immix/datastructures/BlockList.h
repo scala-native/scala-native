@@ -6,12 +6,12 @@
 #define LAST_BLOCK -1
 
 typedef struct {
-    word_t *heapStart;
+    word_t *blockHeaderStart;
     BlockHeader *first;
     BlockHeader *last;
 } BlockList;
 
-void BlockList_Init(BlockList *blockList, word_t *offset);
+void BlockList_Init(BlockList *blockList, word_t *blockHeaderStart);
 void BlockList_Clear(BlockList *blockList);
 bool BlockList_IsEmpty(BlockList *blockList);
 BlockHeader *BlockList_RemoveFirstBlock(BlockList *blockList);

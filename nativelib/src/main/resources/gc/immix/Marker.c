@@ -21,9 +21,11 @@ void StackOverflowHandler_largeHeapOverflowHeapScan(Heap *heap, Stack *stack);
 bool StackOverflowHandler_smallHeapOverflowHeapScan(Heap *heap, Stack *stack);
 
 void Marker_markObject(Heap *heap, Stack *stack, Object *object) {
-    assert(!Object_IsMarked(&object->header));
+    Bytemap *bytemap = Heap_BytemapForWord(heap, (word_t*) object);
+    assert(Bytemap_IsAllocated(bytemap, (word_t*) object));
+
     assert(Object_Size(&object->header) != 0);
-    Object_Mark(object);
+    Object_Mark(heap, object);
     if (!overflow) {
         overflow = Stack_Push(stack, object);
     }
@@ -32,25 +34,25 @@ void Marker_markObject(Heap *heap, Stack *stack, Object *object) {
 void Marker_markConservative(Heap *heap, Stack *stack, word_t *address) {
     assert(Heap_IsWordInHeap(heap, address));
     Object *object = NULL;
+    Bytemap *bytemap;
     if (Heap_IsWordInSmallHeap(heap, address)) {
-        object = Object_GetObject(address);
-        assert(
-            object == NULL ||
-            Line_ContainsObject(&Block_GetBlockHeader((word_t *)object)
-                                     ->lineHeaders[Block_GetLineIndexFromWord(
-                                         Block_GetBlockHeader((word_t *)object),
-                                         (word_t *)object)]));
+        object = Object_GetUnmarkedObject(heap, address);
+        bytemap = heap->smallBytemap;
 #ifdef DEBUG_PRINT
         if (object == NULL) {
             printf("Not found: %p\n", address);
         }
 #endif
     } else {
-        object = Object_GetLargeObject(&largeAllocator, address);
+        object = Object_GetLargeUnmarkedObject(&largeAllocator, address);
+        bytemap = heap->largeBytemap;
     }
+    assert(object == NULL || Bytemap_IsAllocated(bytemap,(word_t*) object));
 
-    if (object != NULL && !Object_IsMarked(&object->header)) {
-        Marker_markObject(heap, stack, object);
+    if (object != NULL) {
+        if (!Bytemap_IsMarked(bytemap, (word_t*) object)) {
+            Marker_markObject(heap, stack, object);
+        }
     }
 }
 
@@ -67,8 +69,9 @@ void Marker_Mark(Heap *heap, Stack *stack) {
 
                 word_t *field = object->fields[i];
                 Object *fieldObject = Object_FromMutatorAddress(field);
+                Bytemap *bytemap = Heap_BytemapForWord(heap, (word_t*) fieldObject);
                 if (heap_isObjectInHeap(heap, fieldObject) &&
-                    !Object_IsMarked(&fieldObject->header)) {
+                    !Bytemap_IsMarked(bytemap, (word_t*) fieldObject)) {
                     Marker_markObject(heap, stack, fieldObject);
                 }
             }
@@ -78,8 +81,9 @@ void Marker_Mark(Heap *heap, Stack *stack) {
             while (ptr_map[i] != LAST_FIELD_OFFSET) {
                 word_t *field = object->fields[ptr_map[i]];
                 Object *fieldObject = Object_FromMutatorAddress(field);
+                Bytemap *bytemap = Heap_BytemapForWord(heap, (word_t*) fieldObject);
                 if (heap_isObjectInHeap(heap, fieldObject) &&
-                    !Object_IsMarked(&fieldObject->header)) {
+                    !Bytemap_IsMarked(bytemap, (word_t*) fieldObject)) {
                     Marker_markObject(heap, stack, fieldObject);
                 }
                 ++i;
@@ -114,8 +118,9 @@ void Marker_markModules(Heap *heap, Stack *stack) {
 
     for (int i = 0; i < nb_modules; i++) {
         Object *object = Object_FromMutatorAddress(modules[i]);
+        Bytemap *bytemap = Heap_BytemapForWord(heap, (word_t*) object);
         if (heap_isObjectInHeap(heap, object) &&
-            !Object_IsMarked(&object->header)) {
+            !Bytemap_IsMarked(bytemap, (word_t*) object)) {
             Marker_markObject(heap, stack, object);
         }
     }

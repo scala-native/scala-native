@@ -13,9 +13,14 @@
 
 void scalanative_collect();
 
+void scalanative_afterexit() {
+    Heap_AfterExit(&heap);
+}
+
 NOINLINE void scalanative_init() {
     Heap_Init(&heap, INITIAL_SMALL_HEAP_SIZE, INITIAL_LARGE_HEAP_SIZE);
     Stack_Init(&stack, INITIAL_STACK_SIZE);
+    atexit(scalanative_afterexit);
 }
 
 INLINE void *scalanative_alloc(void *info, size_t size) {

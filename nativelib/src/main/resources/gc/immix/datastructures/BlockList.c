@@ -4,26 +4,18 @@
 #include "../Log.h"
 #include "../headers/BlockHeader.h"
 
-int32_t _getBlockIndex(word_t *heapStart, BlockHeader *blockHeader) {
-    return (uint32_t)((word_t *)blockHeader - heapStart) / WORDS_IN_BLOCK;
-}
-
-BlockHeader *_getBlockFromIndex(word_t *heapStart, int32_t index) {
-    return (BlockHeader *)(heapStart + (index * WORDS_IN_BLOCK));
-}
-
-BlockHeader *_getNextBlock(word_t *heapStart, BlockHeader *header) {
+BlockHeader *BlockList_getNextBlock(word_t *blockHeaderStart, BlockHeader *header) {
     int32_t nextBlockId = header->header.nextBlock;
     if (nextBlockId == LAST_BLOCK) {
         return NULL;
     } else if (nextBlockId == 0) {
-        nextBlockId = _getBlockIndex(heapStart, header) + 1;
+        nextBlockId = BlockHeader_GetBlockIndex(blockHeaderStart, header) + 1;
     }
-    return _getBlockFromIndex(heapStart, nextBlockId);
+    return BlockHeader_GetFromIndex(blockHeaderStart, nextBlockId);
 }
 
-void BlockList_Init(BlockList *blockList, word_t *heapStart) {
-    blockList->heapStart = heapStart;
+void BlockList_Init(BlockList *blockList, word_t *blockHeaderStart) {
+    blockList->blockHeaderStart = blockHeaderStart;
     blockList->first = NULL;
     blockList->last = NULL;
 }
@@ -38,7 +30,7 @@ BlockHeader *BlockList_RemoveFirstBlock(BlockList *blockList) {
     if (block == blockList->last) {
         blockList->first = NULL;
     }
-    blockList->first = _getNextBlock(blockList->heapStart, block);
+    blockList->first = BlockList_getNextBlock(blockList->blockHeaderStart, block);
     return block;
 }
 
@@ -47,7 +39,7 @@ void BlockList_AddLast(BlockList *blockList, BlockHeader *blockHeader) {
         blockList->first = blockHeader;
     } else {
         blockList->last->header.nextBlock =
-            _getBlockIndex(blockList->heapStart, blockHeader);
+            BlockHeader_GetBlockIndex(blockList->blockHeaderStart, blockHeader);
     }
     blockList->last = blockHeader;
     blockHeader->header.nextBlock = LAST_BLOCK;
@@ -59,7 +51,7 @@ void BlockList_AddBlocksLast(BlockList *blockList, BlockHeader *first,
         blockList->first = first;
     } else {
         blockList->last->header.nextBlock =
-            _getBlockIndex(blockList->heapStart, first);
+           BlockHeader_GetBlockIndex(blockList->blockHeaderStart, first);
     }
     blockList->last = last;
     last->header.nextBlock = LAST_BLOCK;
@@ -75,7 +67,7 @@ void BlockList_Print(BlockList *blockList) {
     BlockHeader *current = blockList->first;
     while (current != NULL) {
         printf("[%p %d] -> ", current, current->header.first);
-        current = _getNextBlock(blockList->heapStart, current);
+        current = BlockList_getNextBlock(blockList->blockHeaderStart, current);
     }
     printf("\n");
 }

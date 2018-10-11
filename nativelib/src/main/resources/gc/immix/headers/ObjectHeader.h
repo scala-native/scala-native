@@ -54,26 +54,6 @@ typedef struct {
     Field_t fields[0];
 } Object;
 
-static inline bool Object_IsMarked(ObjectHeader *objectHeader) {
-    return objectHeader->flag == object_marked;
-}
-
-static inline void Object_MarkObjectHeader(ObjectHeader *objectHeader) {
-    objectHeader->flag = object_marked;
-}
-
-static inline void Object_SetAllocated(ObjectHeader *objectHeader) {
-    objectHeader->flag = object_allocated;
-}
-
-static inline void Object_SetFree(ObjectHeader *objectHeader) {
-    objectHeader->flag = object_free;
-}
-
-static inline bool Object_IsAllocated(ObjectHeader *objectHeader) {
-    return objectHeader->flag == object_allocated;
-}
-
 static inline bool Object_IsStandardObject(ObjectHeader *objectHeader) {
     return objectHeader->type == object_standard;
 }
