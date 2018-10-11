@@ -124,15 +124,14 @@ bool overflowScanLine(Heap *heap, Stack *stack, BlockHeader *block, word_t* bloc
                       int lineIndex) {
     Bytemap *bytemap = heap->smallBytemap;
 
-    Object *object = Line_GetFirstObject(bytemap, blockStart, lineIndex);
-    if (object != NULL && Line_IsMarked(Heap_LineHeaderForWord(heap,(word_t *) object))) {
-        word_t *lineEnd =
-            Block_GetLineAddress(blockStart, lineIndex) + WORDS_IN_LINE;
-        while (object != NULL && (word_t *)object < lineEnd) {
-            if (StackOverflowHandler_overflowMark(heap, stack, object)) {
+    word_t *lineStart = Block_GetLineAddress(blockStart, lineIndex);
+    if (Line_IsMarked(Heap_LineHeaderForWord(heap,lineStart))) {
+        word_t *lineEnd = lineStart + WORDS_IN_LINE;
+        for (word_t *cursor = lineStart; cursor < lineEnd; cursor++) {
+            Object *object = (Object *) cursor;
+            if (Bytemap_IsMarked(bytemap, cursor) && StackOverflowHandler_overflowMark(heap, stack, object)) {
                 return true;
             }
-            object = Object_NextObject(object);
         }
     }
     return false;

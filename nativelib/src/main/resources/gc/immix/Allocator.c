@@ -154,11 +154,7 @@ INLINE word_t *Allocator_Alloc(Allocator *allocator, size_t size) {
         }
     }
 
-    if (end == allocator->limit) {
-        memset(start, 0, size);
-    } else {
-        memset(start, 0, size + WORD_SIZE);
-    }
+    memset(start, 0, size);
 
     allocator->cursor = end;
 

@@ -182,7 +182,7 @@ INLINE word_t *Heap_AllocSmall(Heap *heap, uint32_t size) {
 
     allocator.cursor = end;
 
-    memset(start, 0, size + WORD_SIZE);
+    memset(start, 0, size);
 
     Object *object = (Object *)start;
     Bytemap_SetAllocated(allocator.bytemap, (word_t *) object);

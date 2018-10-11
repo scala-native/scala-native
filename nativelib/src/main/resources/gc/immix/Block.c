@@ -20,19 +20,14 @@ INLINE void Block_recycleUnmarkedBlock(Allocator *allocator,
 }
 
 INLINE void Block_recycleMarkedLine(Bytemap *bytemap, word_t *blockStart, int lineIndex) {
-    // If the line contains an object
-    Object *object = Line_GetFirstObject(bytemap, blockStart, lineIndex);
-    // Unmark all objects in line
-    word_t *lineEnd =
-        Block_GetLineAddress(blockStart, lineIndex) + WORDS_IN_LINE;
-    while (object != NULL && (word_t *)object < lineEnd) {
-        assert(!Bytemap_IsFree(bytemap, (word_t *) object));
-        if (Bytemap_IsMarked(bytemap, (word_t *) object)) {
-            Bytemap_SetAllocated(bytemap, (word_t*) object);
-        } else {
-            Bytemap_SetPlaceholder(bytemap, (word_t*) object);
+    word_t *lineStart = Block_GetLineAddress(blockStart, lineIndex);
+    word_t *lineEnd = lineStart + WORDS_IN_LINE;
+    for (word_t *cursor = lineStart; cursor < lineEnd; cursor++) {
+        if (Bytemap_IsMarked(bytemap, cursor)) {
+            Bytemap_SetAllocated(bytemap, cursor);
+        } else if (Bytemap_IsAllocated(bytemap, cursor)){
+            Bytemap_SetPlaceholder(bytemap, cursor);
         }
-        object = Object_NextObject(object);
     }
 }
 

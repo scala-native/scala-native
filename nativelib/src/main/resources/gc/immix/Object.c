@@ -12,19 +12,11 @@ Object *Object_NextLargeObject(Object *object) {
     return (Object *)((ubyte_t *)object + size);
 }
 
-Object *Object_NextObject(Object *object) {
+word_t *Object_LastWord(Object *object) {
     size_t size = Object_Size(object);
     assert(size < LARGE_BLOCK_SIZE);
-    if (size == 0) {
-        return NULL;
-    }
-    Object *next = (Object *)((ubyte_t *)object + size);
-    assert(Block_GetBlockStartForWord((word_t *)next) ==
-               Block_GetBlockStartForWord((word_t *)object) ||
-           Block_GetBlockStartForWord((word_t *)next) ==
-               Block_GetBlockStartForWord((word_t *)object) +
-                   WORDS_IN_BLOCK);
-    return next;
+    word_t *last = (word_t *)((ubyte_t *)object + size) - 1;
+    return last;
 }
 
 static inline bool Object_isWordAligned(word_t *word) {
@@ -122,13 +114,13 @@ void Object_Mark(Heap *heap, Object *object) {
         BlockHeader_Mark(blockHeader);
 
         // Mark all Lines
-        word_t *lastWord = (word_t *)Object_NextObject(object) - 1;
+        word_t *lastWord = Object_LastWord(object);
 
         assert(blockHeader == Block_GetBlockHeader(heap->blockHeaderStart, heap->heapStart, lastWord));
         LineHeader *firstHeader = Heap_LineHeaderForWord(heap, (word_t *)object);
         LineHeader *lastHeader = Heap_LineHeaderForWord(heap, lastWord);
         assert(firstHeader <= lastHeader);
-        for (LineHeader *lineHeader = firstHeader; lineHeader <= lastHeader; lineHeader++){
+        for (LineHeader *lineHeader = firstHeader; lineHeader <= lastHeader; lineHeader++) {
             Line_Mark(lineHeader);
         }
     }
