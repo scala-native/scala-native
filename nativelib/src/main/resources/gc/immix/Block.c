@@ -6,8 +6,6 @@
 #include "Allocator.h"
 #include "Marker.h"
 
-extern int __object_array_id;
-
 #define NO_RECYCLABLE_LINE -1
 
 INLINE void Block_recycleUnmarkedBlock(Allocator *allocator,
@@ -17,18 +15,6 @@ INLINE void Block_recycleUnmarkedBlock(Allocator *allocator,
     BlockList_AddLast(&allocator->freeBlocks, blockHeader);
     BlockHeader_SetFlag(blockHeader, block_free);
     Bytemap_SetAreaFree(allocator->bytemap, blockStart, WORDS_IN_BLOCK);
-}
-
-INLINE void Block_recycleMarkedLine(Bytemap *bytemap, word_t *blockStart, int lineIndex) {
-    word_t *lineStart = Block_GetLineAddress(blockStart, lineIndex);
-    word_t *lineEnd = lineStart + WORDS_IN_LINE;
-    for (word_t *cursor = lineStart; cursor < lineEnd; cursor++) {
-        if (Bytemap_IsMarked(bytemap, cursor)) {
-            Bytemap_SetAllocated(bytemap, cursor);
-        } else if (Bytemap_IsAllocated(bytemap, cursor)){
-            Bytemap_SetPlaceholder(bytemap, cursor);
-        }
-    }
 }
 
 /**
@@ -54,7 +40,9 @@ void Block_Recycle(Allocator *allocator, BlockHeader *blockHeader, word_t* block
             if (Line_IsMarked(lineHeader)) {
                 // Unmark line
                 Line_Unmark(lineHeader);
-                Block_recycleMarkedLine(bytemap, blockStart, lineIndex);
+                word_t *lineStart = Block_GetLineAddress(blockStart, lineIndex);
+                Bytemap_Sweep(bytemap, lineStart, WORDS_IN_LINE);
+
                 lineIndex++;
             } else {
                 // If the line is not marked, we need to merge all continuous

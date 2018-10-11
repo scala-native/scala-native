@@ -65,8 +65,21 @@ static inline void Bytemap_SetMarked(Bytemap *bytemap, word_t* address) {
     bytemap->data[Bytemap_index(bytemap, address)] = bm_marked;
 }
 
-static inline void Bytemap_SetAreaFree(Bytemap *bytemap, word_t* start, size_t words){
+static inline void Bytemap_SetAreaFree(Bytemap *bytemap, word_t* start, size_t words) {
     memset(&bytemap->data[Bytemap_index(bytemap, start)], 0, words);
+}
+
+static inline void Bytemap_Sweep(Bytemap *bytemap, word_t* start, size_t words) {
+    size_t startIndex = Bytemap_index(bytemap, start);
+    size_t endIndex = startIndex + words;
+    ubyte_t *data = bytemap->data;
+    for (size_t i = startIndex; i < endIndex; i++) {
+        if (data[i] == bm_marked) {
+            data[i] = bm_allocated;
+        } else if (data[i] == bm_allocated) {
+            data[i] = bm_placeholder;
+        }
+    }
 }
 
 #endif // IMMIX_BYTEMAP_H
