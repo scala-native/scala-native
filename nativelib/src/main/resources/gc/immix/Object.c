@@ -8,7 +8,6 @@
 
 Object *Object_NextLargeObject(Object *object) {
     size_t size = Object_ChunkSize(object);
-    assert(Object_Size(&object->header) == OBJECT_HEADER_SIZE + Object_SizeInternal(object));
     assert(size != 0);
     return (Object *)((ubyte_t *)object + size);
 }
@@ -38,7 +37,13 @@ Object *Object_getInnerPointer(Bytemap *bytemap, word_t *blockStart, word_t *wor
         current -= 1;// 1 WORD
     }
     Object *object = (Object *)current;
-    assert(Object_Size(&object->header) == OBJECT_HEADER_SIZE + Object_SizeInternal(object));
+    if (Bytemap_IsAllocated(bytemap, current)) {
+        if (Object_Size(&object->header) != OBJECT_HEADER_SIZE + Object_SizeInternal(object)) {
+            printf("sad: %p object size: %zu inner_size: %zu isArray: %d \n", current, OBJECT_HEADER_SIZE + Object_SizeInternal(object), Object_Size(&object->header), Object_IsArray(object));
+            fflush(stdout);
+        }
+        assert(Object_Size(&object->header) == OBJECT_HEADER_SIZE + Object_SizeInternal(object));
+    }
     if (Bytemap_IsAllocated(bytemap, current) && word <  current + Object_Size(&object->header) / WORD_SIZE) {
 #ifdef DEBUG_PRINT
         if ((word_t *)current != word) {
@@ -137,7 +142,14 @@ void Object_Mark(Heap *heap, Object *object) {
 }
 
 size_t Object_ChunkSize(Object *object) {
-    assert(Object_Size(&object->header) == OBJECT_HEADER_SIZE + Object_SizeInternal(object));
-    return MathUtils_RoundToNextMultiple(Object_Size(&object->header),
-                                         MIN_BLOCK_SIZE);
+    size_t size = MathUtils_RoundToNextMultiple(Object_Size(&object->header),
+                                                           MIN_BLOCK_SIZE);
+    size_t altSize = MathUtils_RoundToNextMultiple(OBJECT_HEADER_SIZE + Object_SizeInternal(object),
+                                                          MIN_BLOCK_SIZE);
+    if (size != altSize) {
+        printf("sad: %p object size: %zu inner_size: %zu\n", (word_t *) object, size, altSize);
+        fflush(stdout);
+    }
+    assert(size == altSize);
+    return size;
 }

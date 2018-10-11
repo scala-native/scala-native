@@ -9,13 +9,6 @@
 #define FREE_LIST_COUNT                                                        \
     (LARGE_OBJECT_MAX_SIZE_BITS - LARGE_OBJECT_MIN_SIZE_BITS + 1)
 
-typedef struct Chunk Chunk;
-
-struct Chunk {
-    ObjectHeader header;
-    Chunk *next;
-};
-
 typedef struct {
     Chunk *first;
     Chunk *last;

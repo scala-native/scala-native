@@ -65,6 +65,15 @@ typedef struct {
     int32_t stride;
 } ArrayHeader;
 
+typedef struct Chunk Chunk;
+
+struct Chunk {
+    ObjectHeader header;
+    void *nothing;
+    size_t size;
+    Chunk *next;
+};
+
 static inline bool Object_IsStandardObject(ObjectHeader *objectHeader) {
     return objectHeader->type == object_standard;
 }
@@ -88,7 +97,10 @@ static inline void Object_SetObjectType(ObjectHeader *objectHeader,
 }
 
 static inline size_t Object_SizeInternal(Object *object) {
-    if (Object_IsArray(object)) {
+    if (object->rtti == NULL) {
+        Chunk *chunk = (Chunk *) object;
+        return  chunk-> size;
+    } else if (Object_IsArray(object)) {
         ArrayHeader *arrayHeader = (ArrayHeader *)&object->rtti;
         return MathUtils_RoundToNextMultiple(sizeof(ArrayHeader) + (size_t) arrayHeader->length * (size_t) arrayHeader->stride, WORD_SIZE);
     } else {
