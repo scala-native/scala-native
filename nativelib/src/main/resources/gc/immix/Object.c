@@ -13,7 +13,7 @@ Object *Object_NextLargeObject(Object *object) {
 }
 
 Object *Object_NextObject(Object *object) {
-    size_t size = OBJECT_HEADER_SIZE + Object_Size(object);
+    size_t size = Object_Size(object);
     assert(size < LARGE_BLOCK_SIZE);
     if (size == 0) {
         return NULL;
@@ -37,7 +37,7 @@ Object *Object_getInnerPointer(Bytemap *bytemap, word_t *blockStart, word_t *wor
         current -= 1;// 1 WORD
     }
     Object *object = (Object *)current;
-    if (Bytemap_IsAllocated(bytemap, current) && word <  current + (OBJECT_HEADER_SIZE + Object_SizeInternal(object)) / WORD_SIZE) {
+    if (Bytemap_IsAllocated(bytemap, current) && word <  current + Object_Size(object) / WORD_SIZE) {
 #ifdef DEBUG_PRINT
         if ((word_t *)current != word) {
             printf("inner pointer: %p object: %p\n", word, current);
@@ -115,7 +115,7 @@ void Object_Mark(Heap *heap, Object *object) {
     Bytemap *bytemap = Heap_BytemapForWord(heap, (word_t*) object);
     Bytemap_SetMarked(bytemap, (word_t*) object);
 
-    if (Heap_IsWordInSmallHeap((word_t*) object) {
+    if (Heap_IsWordInSmallHeap(heap, (word_t*) object)) {
         // Mark the block
         BlockHeader *blockHeader = Block_GetBlockHeader(heap->blockHeaderStart, heap->heapStart, (word_t *)object);
         word_t *blockStart = Block_GetBlockStartForWord((word_t *)object);
@@ -135,6 +135,5 @@ void Object_Mark(Heap *heap, Object *object) {
 }
 
 size_t Object_ChunkSize(Object *object) {
-    return size = MathUtils_RoundToNextMultiple(OBJECT_HEADER_SIZE + Object_SizeInternal(object),
-                                                                            MIN_BLOCK_SIZE);
+    return MathUtils_RoundToNextMultiple(Object_Size(object), MIN_BLOCK_SIZE);
 }

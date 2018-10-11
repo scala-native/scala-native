@@ -26,7 +26,6 @@ INLINE void Block_recycleMarkedLine(Bytemap *bytemap, word_t *blockStart, int li
     word_t *lineEnd =
         Block_GetLineAddress(blockStart, lineIndex) + WORDS_IN_LINE;
     while (object != NULL && (word_t *)object < lineEnd) {
-        ObjectHeader *objectHeader = &object->header;
         if (Bytemap_IsMarked(bytemap, (word_t *) object)) {
             Bytemap_SetAllocated(bytemap, (word_t*) object);
         } else {

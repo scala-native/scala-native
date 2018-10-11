@@ -12,14 +12,6 @@ inline static int LargeAllocator_sizeToLinkedListIndex(size_t size) {
     return log2_floor(size) - LARGE_OBJECT_MIN_SIZE_BITS;
 }
 
-static inline size_t LargeAllocator_getChunkSize(Chunk *chunk) {
-    return (chunk->header.size << WORD_SIZE_BITS);
-}
-
-static inline void LargeAllocator_setChunkSize(Chunk *chunk, size_t size) {
-    chunk->header.size = (uint32_t)(size >> WORD_SIZE_BITS);
-}
-
 Chunk *LargeAllocator_chunkAddOffset(Chunk *chunk, size_t words) {
     return (Chunk *)((ubyte_t *)chunk + words);
 }
@@ -28,9 +20,8 @@ void LargeAllocator_printFreeList(FreeList *list, int i) {
     Chunk *current = list->first;
     printf("list %d: ", i);
     while (current != NULL) {
-        assert((1 << (i + LARGE_OBJECT_MIN_SIZE_BITS)) ==
-               LargeAllocator_getChunkSize(current));
-        printf("[%p %zu] -> ", current, LargeAllocator_getChunkSize(current));
+        assert((1 << (i + LARGE_OBJECT_MIN_SIZE_BITS)) == current->size);
+        printf("[%p %zu] -> ", current, current->size);
         current = current->next;
     }
     printf("\n");
@@ -92,11 +83,9 @@ void LargeAllocator_AddChunk(LargeAllocator *allocator, Chunk *chunk,
         Chunk *currentChunk = (Chunk *)current;
         LargeAllocator_freeListAddBlockLast(&allocator->freeLists[listIndex],
                                             (Chunk *)current);
-        LargeAllocator_setChunkSize(currentChunk, chunkSize);
-        currentChunk->header.type = object_large;
 
         currentChunk->nothing = NULL;
-        currentChunk->size = chunkSize - OBJECT_HEADER_SIZE;
+        currentChunk->size = chunkSize;
         Bytemap_SetPlaceholder(allocator->bytemap, (word_t*) current);
 
         current += chunkSize;
@@ -121,7 +110,7 @@ Object *LargeAllocator_GetBlock(LargeAllocator *allocator,
         return NULL;
     }
 
-    size_t chunkSize = LargeAllocator_getChunkSize(chunk);
+    size_t chunkSize = chunk->size;
     assert(chunkSize >= MIN_BLOCK_SIZE);
 
     if (chunkSize - MIN_BLOCK_SIZE >= actualBlockSize) {
@@ -138,7 +127,7 @@ Object *LargeAllocator_GetBlock(LargeAllocator *allocator,
 
     Bytemap_SetAllocated(allocator->bytemap, (word_t*) chunk);
     Object *object = (Object *)chunk;
-    memset(Object_ToMutatorAddress(object), 0, actualBlockSize - WORD_SIZE);
+    memset(object, 0, actualBlockSize);
     return object;
 }
 
@@ -166,7 +155,6 @@ void LargeAllocator_Sweep(LargeAllocator *allocator) {
 
     while (current != heapEnd) {
         assert(!Bytemap_IsFree(allocator->bytemap, (word_t *)current));
-        ObjectHeader *currentHeader = &current->header;
         if (Bytemap_IsMarked(allocator->bytemap, (word_t *)current)) {
             Bytemap_SetAllocated(allocator->bytemap, (word_t *)current);
 

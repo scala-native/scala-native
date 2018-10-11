@@ -113,19 +113,16 @@ void Heap_Init(Heap *heap, size_t initialSmallHeapSize,
  * If allocation fails, because there is not enough memory available, it will
  * trigger a collection of both the small and the large heap.
  */
-word_t *Heap_AllocLarge(Heap *heap, uint32_t objectSize) {
+word_t *Heap_AllocLarge(Heap *heap, uint32_t size) {
 
-    // Add header
-    uint32_t size = objectSize + OBJECT_HEADER_SIZE;
-
-    assert(objectSize % WORD_SIZE == 0);
+    assert(size % WORD_SIZE == 0);
     assert(size >= MIN_BLOCK_SIZE);
 
     // Request an object from the `LargeAllocator`
     Object *object = LargeAllocator_GetBlock(&largeAllocator, size);
     // If the object is not NULL, update it's metadata and return it
     if (object != NULL) {
-        return Object_ToMutatorAddress(object);
+        return (word_t *) object;
     } else {
         // Otherwise collect
         Heap_Collect(heap, &stack);
@@ -135,13 +132,13 @@ word_t *Heap_AllocLarge(Heap *heap, uint32_t objectSize) {
         object = LargeAllocator_GetBlock(&largeAllocator, size);
         if (object != NULL) {
             assert(Heap_IsWordInLargeHeap(heap, (word_t *) object));
-            return Object_ToMutatorAddress(object);
+            return (word_t *) object;
         } else {
             Heap_GrowLarge(heap, size);
 
             object = LargeAllocator_GetBlock(&largeAllocator, size);
             assert(Heap_IsWordInLargeHeap(heap, (word_t *) object));
-            return Object_ToMutatorAddress(object);
+            return (word_t *) object;
         }
     }
 }
@@ -168,14 +165,11 @@ done:
     assert(Heap_IsWordInSmallHeap(heap, (word_t *) object));
     assert(object != NULL);
     Bytemap_SetAllocated(allocator.bytemap, (word_t *) object);
-    return Object_ToMutatorAddress(object);
+    return (word_t *) object;
 }
 
-INLINE word_t *Heap_AllocSmall(Heap *heap, uint32_t objectSize) {
-    // Add header
-    uint32_t size = objectSize + OBJECT_HEADER_SIZE;
-
-    assert(objectSize % WORD_SIZE == 0);
+INLINE word_t *Heap_AllocSmall(Heap *heap, uint32_t size) {
+    assert(size % WORD_SIZE == 0);
     assert(size < MIN_BLOCK_SIZE);
 
     word_t *start = allocator.cursor;
@@ -196,13 +190,13 @@ INLINE word_t *Heap_AllocSmall(Heap *heap, uint32_t objectSize) {
     __builtin_prefetch(object + 36, 0, 3);
 
     assert(Heap_IsWordInSmallHeap(heap, (word_t *) object));
-    return Object_ToMutatorAddress(object);
+    return (word_t*) object;
 }
 
 word_t *Heap_Alloc(Heap *heap, uint32_t objectSize) {
     assert(objectSize % WORD_SIZE == 0);
 
-    if (objectSize + OBJECT_HEADER_SIZE >= LARGE_BLOCK_SIZE) {
+    if (objectSize >= LARGE_BLOCK_SIZE) {
         return Heap_AllocLarge(heap, objectSize);
     } else {
         return Heap_AllocSmall(heap, objectSize);

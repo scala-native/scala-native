@@ -65,7 +65,7 @@ void Marker_Mark(Heap *heap, Stack *stack) {
             word_t **fields = (word_t **) (arrayHeader + 1);
             for (int i = 0; i < length; i++) {
                 word_t *field = fields[i];
-                Object *fieldObject = Object_FromMutatorAddress(field);
+                Object *fieldObject = (Object *) field;
                 Bytemap *bytemap = Heap_BytemapForWord(heap, (word_t*) fieldObject);
                 if (heap_isObjectInHeap(heap, fieldObject) &&
                     !Bytemap_IsMarked(bytemap, (word_t*) fieldObject)) {
@@ -77,7 +77,7 @@ void Marker_Mark(Heap *heap, Stack *stack) {
             int i = 0;
             while (ptr_map[i] != LAST_FIELD_OFFSET) {
                 word_t *field = object->fields[ptr_map[i]];
-                Object *fieldObject = Object_FromMutatorAddress(field);
+                Object *fieldObject = (Object *) field;
                 Bytemap *bytemap = Heap_BytemapForWord(heap, (word_t*) fieldObject);
                 if (heap_isObjectInHeap(heap, fieldObject) &&
                     !Bytemap_IsMarked(bytemap, (word_t*) fieldObject)) {
@@ -101,7 +101,7 @@ void Marker_markProgramStack(Heap *heap, Stack *stack) {
 
     while (current <= stackBottom) {
 
-        word_t *stackObject = (*current) - WORDS_IN_OBJECT_HEADER;
+        word_t *stackObject = *current;
         if (Heap_IsWordInHeap(heap, stackObject)) {
             Marker_markConservative(heap, stack, stackObject);
         }
@@ -114,7 +114,7 @@ void Marker_markModules(Heap *heap, Stack *stack) {
     int nb_modules = __modules_size;
 
     for (int i = 0; i < nb_modules; i++) {
-        Object *object = Object_FromMutatorAddress(modules[i]);
+        Object *object = (Object *) modules[i];
         Bytemap *bytemap = Heap_BytemapForWord(heap, (word_t*) object);
         if (heap_isObjectInHeap(heap, object) &&
             !Bytemap_IsMarked(bytemap, (word_t*) object)) {

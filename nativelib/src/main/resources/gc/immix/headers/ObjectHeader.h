@@ -13,23 +13,6 @@ extern int __object_array_id;
 extern int __array_type_count;
 extern int __array_ids; // first element of the array
 
-typedef enum {
-    object_standard = 0x1,
-    object_large = 0x2,
-} ObjectType;
-
-typedef enum {
-    object_free = 0x0,
-    object_allocated = 0x1,
-    object_marked = 0x2,
-} ObjectFlag;
-
-typedef struct {
-    uint32_t size;
-    uint8_t type;
-    uint8_t flag;
-} ObjectHeader;
-
 typedef struct {
     struct {
         int32_t id;
@@ -54,7 +37,6 @@ typedef struct {
 typedef word_t *Field_t;
 
 typedef struct {
-    ObjectHeader header;
     Rtti *rtti;
     Field_t fields[0];
 } Object;
@@ -68,7 +50,6 @@ typedef struct {
 typedef struct Chunk Chunk;
 
 struct Chunk {
-    ObjectHeader header;
     void *nothing;
     size_t size;
     Chunk *next;
@@ -94,14 +75,6 @@ static inline size_t Object_Size(Object *object) {
     } else {
         return MathUtils_RoundToNextMultiple((size_t) object->rtti->size, WORD_SIZE);
     }
-}
-
-static inline Object *Object_FromMutatorAddress(word_t *address) {
-    return (Object *)(address - WORDS_IN_OBJECT_HEADER);
-}
-
-static inline word_t *Object_ToMutatorAddress(Object *object) {
-    return (word_t *)&object->rtti;
 }
 
 #endif // IMMIX_OBJECTHEADER_H

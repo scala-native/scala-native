@@ -19,9 +19,6 @@
 
 #define LINE_SIZE_MASK (LINE_SIZE - 1)
 
-#define OBJECT_HEADER_SIZE 8
-#define WORDS_IN_OBJECT_HEADER (OBJECT_HEADER_SIZE / WORD_SIZE)
-
 #define LINE_COUNT (BLOCK_TOTAL_SIZE / LINE_SIZE)
 
 #define BLOCK_METADATA_ALIGNED_SIZE                                            \
