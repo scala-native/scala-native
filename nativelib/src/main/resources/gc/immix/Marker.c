@@ -23,8 +23,7 @@ void Marker_markObject(Heap *heap, Stack *stack, Object *object) {
     Bytemap *bytemap = Heap_BytemapForWord(heap, (word_t*) object);
     assert(Bytemap_IsAllocated(bytemap, (word_t*) object));
 
-    assert(Object_Size(&object->header) == OBJECT_HEADER_SIZE + Object_SizeInternal(object));
-    assert(Object_Size(&object->header) != 0);
+    assert(Object_Size(object) != 0);
     Object_Mark(heap, object);
     if (!overflow) {
         overflow = Stack_Push(stack, object);
@@ -61,14 +60,11 @@ void Marker_Mark(Heap *heap, Stack *stack) {
         Object *object = Stack_Pop(stack);
 
         if (object->rtti->rt.id == __object_array_id) {
-            // remove header and rtti from size
-            size_t size =
-                Object_Size(&object->header) - OBJECT_HEADER_SIZE - WORD_SIZE;
-            assert(Object_Size(&object->header) == OBJECT_HEADER_SIZE + Object_SizeInternal(object));
-            size_t nbWords = size / WORD_SIZE;
-            for (int i = 0; i < nbWords; i++) {
-
-                word_t *field = object->fields[i];
+            ArrayHeader *arrayHeader = (ArrayHeader *) (&object->rtti);
+            size_t length = arrayHeader -> length;
+            word_t **fields = (word_t **) (arrayHeader + 1);
+            for (int i = 0; i < length; i++) {
+                word_t *field = fields[i];
                 Object *fieldObject = Object_FromMutatorAddress(field);
                 Bytemap *bytemap = Heap_BytemapForWord(heap, (word_t*) fieldObject);
                 if (heap_isObjectInHeap(heap, fieldObject) &&

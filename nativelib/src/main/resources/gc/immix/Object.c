@@ -13,7 +13,7 @@ Object *Object_NextLargeObject(Object *object) {
 }
 
 Object *Object_NextObject(Object *object) {
-    size_t size = Object_Size(&object->header);
+    size_t size = OBJECT_HEADER_SIZE + Object_Size(object);
     assert(size < LARGE_BLOCK_SIZE);
     if (size == 0) {
         return NULL;
@@ -27,7 +27,7 @@ Object *Object_NextObject(Object *object) {
     return next;
 }
 
-static inline bool isWordAligned(word_t *word) {
+static inline bool Object_isWordAligned(word_t *word) {
     return ((word_t)word & WORD_INVERSE_MASK) == (word_t)word;
 }
 
@@ -37,14 +37,7 @@ Object *Object_getInnerPointer(Bytemap *bytemap, word_t *blockStart, word_t *wor
         current -= 1;// 1 WORD
     }
     Object *object = (Object *)current;
-    if (Bytemap_IsAllocated(bytemap, current)) {
-        if (Object_Size(&object->header) != OBJECT_HEADER_SIZE + Object_SizeInternal(object)) {
-            printf("sad: %p object size: %zu inner_size: %zu isArray: %d \n", current, OBJECT_HEADER_SIZE + Object_SizeInternal(object), Object_Size(&object->header), Object_IsArray(object));
-            fflush(stdout);
-        }
-        assert(Object_Size(&object->header) == OBJECT_HEADER_SIZE + Object_SizeInternal(object));
-    }
-    if (Bytemap_IsAllocated(bytemap, current) && word <  current + Object_Size(&object->header) / WORD_SIZE) {
+    if (Bytemap_IsAllocated(bytemap, current) && word <  current + (OBJECT_HEADER_SIZE + Object_SizeInternal(object)) / WORD_SIZE) {
 #ifdef DEBUG_PRINT
         if ((word_t *)current != word) {
             printf("inner pointer: %p object: %p\n", word, current);
@@ -61,7 +54,7 @@ Object *Object_GetUnmarkedObject(Heap *heap, word_t *word) {
     BlockHeader *blockHeader = Block_GetBlockHeader(heap->blockHeaderStart, heap->heapStart, word);
     word_t *blockStart = Block_GetBlockStartForWord(word);
 
-    if (!isWordAligned(word)) {
+    if (!Object_isWordAligned(word)) {
 #ifdef DEBUG_PRINT
         printf("Word not aligned: %p aligning to %p\n", word,
                (word_t *)((word_t)word & WORD_INVERSE_MASK));
@@ -122,7 +115,7 @@ void Object_Mark(Heap *heap, Object *object) {
     Bytemap *bytemap = Heap_BytemapForWord(heap, (word_t*) object);
     Bytemap_SetMarked(bytemap, (word_t*) object);
 
-    if (!Object_IsLargeObject(&object->header)) {
+    if (Heap_IsWordInSmallHeap((word_t*) object) {
         // Mark the block
         BlockHeader *blockHeader = Block_GetBlockHeader(heap->blockHeaderStart, heap->heapStart, (word_t *)object);
         word_t *blockStart = Block_GetBlockStartForWord((word_t *)object);
@@ -142,14 +135,6 @@ void Object_Mark(Heap *heap, Object *object) {
 }
 
 size_t Object_ChunkSize(Object *object) {
-    size_t size = MathUtils_RoundToNextMultiple(Object_Size(&object->header),
-                                                           MIN_BLOCK_SIZE);
-    size_t altSize = MathUtils_RoundToNextMultiple(OBJECT_HEADER_SIZE + Object_SizeInternal(object),
-                                                          MIN_BLOCK_SIZE);
-    if (size != altSize) {
-        printf("sad: %p object size: %zu inner_size: %zu\n", (word_t *) object, size, altSize);
-        fflush(stdout);
-    }
-    assert(size == altSize);
-    return size;
+    return size = MathUtils_RoundToNextMultiple(OBJECT_HEADER_SIZE + Object_SizeInternal(object),
+                                                                            MIN_BLOCK_SIZE);
 }

@@ -73,12 +73,11 @@ bool StackOverflowHandler_overflowMark(Heap *heap, Stack *stack,
 
     if (Bytemap_IsMarked(bytemap, (word_t*) object)) {
         if (object->rtti->rt.id == __object_array_id) {
-            size_t size =
-                Object_Size(&object->header) - OBJECT_HEADER_SIZE - WORD_SIZE;
-            assert(Object_Size(&object->header) == OBJECT_HEADER_SIZE + Object_SizeInternal(object));
-            size_t nbWords = size / WORD_SIZE;
-            for (int i = 0; i < nbWords; i++) {
-                word_t *field = object->fields[i];
+            ArrayHeader *arrayHeader = (ArrayHeader *) (&object->rtti);
+            size_t length = arrayHeader -> length;
+            word_t **fields = (word_t **) (arrayHeader + 1);
+            for (int i = 0; i < length; i++) {
+                word_t *field = fields[i];
                 Object *fieldObject = Object_FromMutatorAddress(field);
                 Bytemap *bytemapF = Heap_BytemapForWord(heap, (word_t*) fieldObject);
                 if (heap_isObjectInHeap(heap, fieldObject) &&

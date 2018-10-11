@@ -74,13 +74,6 @@ struct Chunk {
     Chunk *next;
 };
 
-static inline bool Object_IsStandardObject(ObjectHeader *objectHeader) {
-    return objectHeader->type == object_standard;
-}
-static inline bool Object_IsLargeObject(ObjectHeader *objectHeader) {
-    return objectHeader->type == object_large;
-}
-
 static inline bool Object_IsArray(Object *object) {
     int32_t id = object->rtti->rt.id;
     for (int i=0; i < __array_type_count; i++) {
@@ -91,12 +84,7 @@ static inline bool Object_IsArray(Object *object) {
     return false;
 }
 
-static inline void Object_SetObjectType(ObjectHeader *objectHeader,
-                                        ObjectType objectType) {
-    objectHeader->type = objectType;
-}
-
-static inline size_t Object_SizeInternal(Object *object) {
+static inline size_t Object_Size(Object *object) {
     if (object->rtti == NULL) {
         Chunk *chunk = (Chunk *) object;
         return  chunk-> size;
@@ -106,22 +94,6 @@ static inline size_t Object_SizeInternal(Object *object) {
     } else {
         return MathUtils_RoundToNextMultiple((size_t) object->rtti->size, WORD_SIZE);
     }
-}
-
-static inline size_t Object_Size(ObjectHeader *objectHeader) {
-    uint32_t size = objectHeader->size;
-    assert((Object_IsStandardObject(objectHeader) && size < LARGE_BLOCK_SIZE) ||
-           !Object_IsStandardObject(objectHeader));
-
-    return size << WORD_SIZE_BITS;
-}
-
-static inline void Object_SetSize(ObjectHeader *objectHeader, size_t size) {
-    uint32_t _size = (uint32_t)(size >> WORD_SIZE_BITS);
-    assert(!Object_IsStandardObject(objectHeader) ||
-           (Object_IsStandardObject(objectHeader) && _size > 0 &&
-            _size < LARGE_BLOCK_SIZE));
-    objectHeader->size = _size;
 }
 
 static inline Object *Object_FromMutatorAddress(word_t *address) {

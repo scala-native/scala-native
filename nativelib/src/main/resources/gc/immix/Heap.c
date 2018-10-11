@@ -125,10 +125,6 @@ word_t *Heap_AllocLarge(Heap *heap, uint32_t objectSize) {
     Object *object = LargeAllocator_GetBlock(&largeAllocator, size);
     // If the object is not NULL, update it's metadata and return it
     if (object != NULL) {
-        ObjectHeader *objectHeader = &object->header;
-
-        Object_SetObjectType(objectHeader, object_large);
-        Object_SetSize(objectHeader, size);
         return Object_ToMutatorAddress(object);
     } else {
         // Otherwise collect
@@ -138,18 +134,12 @@ word_t *Heap_AllocLarge(Heap *heap, uint32_t objectSize) {
         // at least the size of the object we want to alloc
         object = LargeAllocator_GetBlock(&largeAllocator, size);
         if (object != NULL) {
-            Object_SetObjectType(&object->header, object_large);
-            Object_SetSize(&object->header, size);
             assert(Heap_IsWordInLargeHeap(heap, (word_t *) object));
             return Object_ToMutatorAddress(object);
         } else {
             Heap_GrowLarge(heap, size);
 
             object = LargeAllocator_GetBlock(&largeAllocator, size);
-            ObjectHeader *objectHeader = &object->header;
-
-            Object_SetObjectType(objectHeader, object_large);
-            Object_SetSize(objectHeader, size);
             assert(Heap_IsWordInLargeHeap(heap, (word_t *) object));
             return Object_ToMutatorAddress(object);
         }
@@ -177,9 +167,6 @@ NOINLINE word_t *Heap_allocSmallSlow(Heap *heap, uint32_t size) {
 done:
     assert(Heap_IsWordInSmallHeap(heap, (word_t *) object));
     assert(object != NULL);
-    ObjectHeader *objectHeader = &object->header;
-    Object_SetObjectType(objectHeader, object_standard);
-    Object_SetSize(objectHeader, size);
     Bytemap_SetAllocated(allocator.bytemap, (word_t *) object);
     return Object_ToMutatorAddress(object);
 }
@@ -204,9 +191,6 @@ INLINE word_t *Heap_AllocSmall(Heap *heap, uint32_t objectSize) {
     memset(start, 0, size + WORD_SIZE);
 
     Object *object = (Object *)start;
-    ObjectHeader *objectHeader = &object->header;
-    Object_SetObjectType(objectHeader, object_standard);
-    Object_SetSize(objectHeader, size);
     Bytemap_SetAllocated(allocator.bytemap, (word_t *) object);
 
     __builtin_prefetch(object + 36, 0, 3);
