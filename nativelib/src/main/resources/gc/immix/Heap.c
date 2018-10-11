@@ -60,8 +60,8 @@ void Heap_Init(Heap *heap, size_t initialSmallHeapSize,
     uint32_t initialBlockCount = initialSmallHeapSize / BLOCK_TOTAL_SIZE;
 
     // reserve space for block headers
-    size_t blockHeaderSpaceSize = maxNumberOfBlocks * BLOCK_METADATA_ALIGNED_SIZE;
-    word_t *blockHeaderStart = Heap_mapAndAlign(blockHeaderSpaceSize, BLOCK_METADATA_ALIGNED_SIZE);
+    size_t blockHeaderSpaceSize = maxNumberOfBlocks * BLOCK_METADATA_SIZE;
+    word_t *blockHeaderStart = Heap_mapAndAlign(blockHeaderSpaceSize, BLOCK_METADATA_SIZE);
     heap->blockHeaderStart = blockHeaderStart;
     heap->blockHeaderEnd = blockHeaderStart + initialBlockCount * WORDS_IN_BLOCK_METADATA;
 
