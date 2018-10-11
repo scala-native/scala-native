@@ -272,6 +272,11 @@ object Generate {
                       Type.Array(Type.Int),
                       Val.ArrayValue(Type.Int, ids.map(Val.Int)))
 
+      buf += Defn.Var(Attrs.None,
+                      arrayTypeCountName,
+                      Type.Int,
+                      Val.Int(ids.size))
+
     }
 
     def genTraitDispatchTables(): Unit = {
@@ -329,6 +334,7 @@ object Generate {
     val objectArrayIdName = Global.Top("__object_array_id")
 
     val arrayIdsName = Global.Top("__array_ids")
+    val arrayTypeCountName = Global.Top("__array_type_count")
   }
 
   val depends =
