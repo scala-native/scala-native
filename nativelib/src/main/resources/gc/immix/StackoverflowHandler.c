@@ -71,7 +71,7 @@ bool StackOverflowHandler_overflowMark(Heap *heap, Stack *stack,
 
     if (Bytemap_IsMarked(bytemap, (word_t*) object)) {
         if (object->rtti->rt.id == __object_array_id) {
-            ArrayHeader *arrayHeader = (ArrayHeader *) (&object->rtti);
+            ArrayHeader *arrayHeader = (ArrayHeader *) object;
             size_t length = arrayHeader -> length;
             word_t **fields = (word_t **) (arrayHeader + 1);
             for (int i = 0; i < length; i++) {

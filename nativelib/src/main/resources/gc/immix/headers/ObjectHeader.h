@@ -70,7 +70,7 @@ static inline size_t Object_Size(Object *object) {
         Chunk *chunk = (Chunk *) object;
         return  chunk-> size;
     } else if (Object_IsArray(object)) {
-        ArrayHeader *arrayHeader = (ArrayHeader *)&object->rtti;
+        ArrayHeader *arrayHeader = (ArrayHeader *)object;
         return MathUtils_RoundToNextMultiple(sizeof(ArrayHeader) + (size_t) arrayHeader->length * (size_t) arrayHeader->stride, WORD_SIZE);
     } else {
         return MathUtils_RoundToNextMultiple((size_t) object->rtti->size, WORD_SIZE);
