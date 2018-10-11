@@ -8,7 +8,7 @@
 
 Object *Object_NextLargeObject(Object *object) {
     size_t size = Object_ChunkSize(object);
-    assert(size == OBJECT_HEADER_SIZE + Object_SizeInternal(object));
+    assert(Object_Size(&object->header) == OBJECT_HEADER_SIZE + Object_SizeInternal(object));
     assert(size != 0);
     return (Object *)((ubyte_t *)object + size);
 }
