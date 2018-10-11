@@ -7,6 +7,7 @@
 #include "../GCTypes.h"
 #include "../Constants.h"
 #include "../Log.h"
+#include "../utils/MathUtils.h"
 
 extern int __object_array_id;
 extern int __array_type_count;
@@ -89,9 +90,9 @@ static inline void Object_SetObjectType(ObjectHeader *objectHeader,
 static inline size_t Object_SizeInternal(Object *object) {
     if (Object_IsArray(object)) {
         ArrayHeader *arrayHeader = (ArrayHeader *)&object->rtti;
-        return sizeof(ArrayHeader) + (size_t) arrayHeader->length * (size_t) arrayHeader->stride;
+        return MathUtils_RoundToNextMultiple(sizeof(ArrayHeader) + (size_t) arrayHeader->length * (size_t) arrayHeader->stride, WORD_SIZE);
     } else {
-        return (size_t) object->rtti->size;
+        return MathUtils_RoundToNextMultiple((size_t) object->rtti->size, WORD_SIZE);
     }
 }
 
