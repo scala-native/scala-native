@@ -9,7 +9,6 @@
 #include "Block.h"
 #include "StackoverflowHandler.h"
 
-extern int __object_array_id;
 extern word_t *__modules;
 extern int __modules_size;
 extern word_t **__stack_bottom;
@@ -24,6 +23,7 @@ void Marker_markObject(Heap *heap, Stack *stack, Object *object) {
     Bytemap *bytemap = Heap_BytemapForWord(heap, (word_t*) object);
     assert(Bytemap_IsAllocated(bytemap, (word_t*) object));
 
+    assert(Object_Size(&object->header) == OBJECT_HEADER_SIZE + Object_SizeInternal(object));
     assert(Object_Size(&object->header) != 0);
     Object_Mark(heap, object);
     if (!overflow) {
@@ -64,6 +64,7 @@ void Marker_Mark(Heap *heap, Stack *stack) {
             // remove header and rtti from size
             size_t size =
                 Object_Size(&object->header) - OBJECT_HEADER_SIZE - WORD_SIZE;
+            assert(Object_Size(&object->header) == OBJECT_HEADER_SIZE + Object_SizeInternal(object));
             size_t nbWords = size / WORD_SIZE;
             for (int i = 0; i < nbWords; i++) {
 
