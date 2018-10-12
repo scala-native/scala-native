@@ -19,7 +19,7 @@ typedef enum {
     bm_free = 0x0,
     bm_placeholder = 0x1,
     bm_allocated = 0x2,
-    bm_marked = 0x3,
+    bm_marked = 0x4,
 } Flag;
 
 void Bytemap_Init(Bytemap *bytemap, word_t *firstAddress, size_t size);
@@ -69,7 +69,9 @@ static inline void Bytemap_SetAreaFree(Bytemap *bytemap, word_t* start, size_t w
     memset(&bytemap->data[Bytemap_index(bytemap, start)], 0, words);
 }
 
-static inline void Bytemap_SweepLine(Bytemap *bytemap, word_t* start) {
+/*
+    implements this, just with hardcoded constants:
+
     size_t startIndex = Bytemap_index(bytemap, start);
     size_t endIndex = startIndex + WORDS_IN_LINE;
     ubyte_t *data = bytemap->data;
@@ -80,6 +82,18 @@ static inline void Bytemap_SweepLine(Bytemap *bytemap, word_t* start) {
             data[i] = bm_free;
         }
     }
+*/
+#define SWEEP_MASK 0x0404040404040404UL
+static inline void Bytemap_SweepLine(Bytemap *bytemap, word_t* start) {
+    assert(WORDS_IN_LINE / 8 == 4);
+    size_t startIndex = Bytemap_index(bytemap, start);
+    uint64_t *first = (uint64_t *) &bytemap->data[startIndex];
+
+    first[0] = (first[0] & SWEEP_MASK) >> 1;
+    first[1] = (first[1] & SWEEP_MASK) >> 1;
+    first[2] = (first[2] & SWEEP_MASK) >> 1;
+    first[3] = (first[3] & SWEEP_MASK) >> 1;
+
 }
 
 #endif // IMMIX_BYTEMAP_H
