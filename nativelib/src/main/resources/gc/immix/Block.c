@@ -41,7 +41,7 @@ void Block_Recycle(Allocator *allocator, BlockHeader *blockHeader, word_t* block
                 // Unmark line
                 Line_Unmark(lineHeader);
                 word_t *lineStart = Block_GetLineAddress(blockStart, lineIndex);
-                Bytemap_Sweep(bytemap, lineStart, WORDS_IN_LINE);
+                Bytemap_SweepLine(bytemap, lineStart);
 
                 lineIndex++;
             } else {

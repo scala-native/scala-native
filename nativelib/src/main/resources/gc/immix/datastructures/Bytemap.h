@@ -69,15 +69,15 @@ static inline void Bytemap_SetAreaFree(Bytemap *bytemap, word_t* start, size_t w
     memset(&bytemap->data[Bytemap_index(bytemap, start)], 0, words);
 }
 
-static inline void Bytemap_Sweep(Bytemap *bytemap, word_t* start, size_t words) {
+static inline void Bytemap_SweepLine(Bytemap *bytemap, word_t* start) {
     size_t startIndex = Bytemap_index(bytemap, start);
-    size_t endIndex = startIndex + words;
+    size_t endIndex = startIndex + WORDS_IN_LINE;
     ubyte_t *data = bytemap->data;
     for (size_t i = startIndex; i < endIndex; i++) {
         if (data[i] == bm_marked) {
             data[i] = bm_allocated;
         } else if (data[i] == bm_allocated) {
-            data[i] = bm_placeholder;
+            data[i] = bm_free;
         }
     }
 }
