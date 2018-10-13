@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdio.h>
 #include "../GCTypes.h"
 #include "../Constants.h"
 #include "../Log.h"
@@ -57,6 +58,13 @@ struct Chunk {
 
 static inline bool Object_IsArray(Object *object) {
     int32_t id = object->rtti->rt.id;
+    bool result = __array_ids_min <= id && id <= __array_ids_max;
+    bool alt = (unsigned)(id - __array_ids_min) <= (__array_ids_max - __array_ids_min);
+    if (!result != !alt) {
+       printf("%d != %d rt.id=%d object=%p \n", result, alt, id , (word_t *) object);
+       fflush(stdout);
+    }
+    assert(!result == !alt);
     return __array_ids_min <= id && id <= __array_ids_max;
 }
 

@@ -35,12 +35,26 @@ typedef struct {
 } Heap;
 
 static inline bool Heap_IsWordInLargeHeap(Heap *heap, word_t *word) {
-    return word != NULL && word >= heap->largeHeapStart &&
-           word < heap->largeHeapEnd;
+    bool result = word != NULL && word >= heap->largeHeapStart &&
+                             word < heap->largeHeapEnd;
+    bool alt = word >= heap->largeHeapStart && word < heap->largeHeapEnd;
+    if (!result != !alt) {
+       printf("%d != %d word=%p \n", result, alt, word);
+       fflush(stdout);
+    }
+    assert(!result == !alt);
+    return result;
 }
 
 static inline bool Heap_IsWordInSmallHeap(Heap *heap, word_t *word) {
-    return word != NULL && word >= heap->heapStart && word < heap->heapEnd;
+    bool result = word != NULL && word >= heap->heapStart && word < heap->heapEnd;
+    bool alt = word >= heap->heapStart && word < heap->heapEnd;
+    if (!result != !alt) {
+       printf("%d != %d word=%p \n", result, alt, word);
+       fflush(stdout);
+    }
+    assert(!result == !alt);
+    return result;
 }
 
 static inline bool Heap_IsWordInHeap(Heap *heap, word_t *word) {
