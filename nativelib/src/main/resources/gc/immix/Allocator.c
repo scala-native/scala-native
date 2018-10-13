@@ -120,11 +120,7 @@ word_t *Allocator_overflowAllocation(Allocator *allocator, size_t size) {
         return Allocator_overflowAllocation(allocator, size);
     }
 
-    if (end == allocator->largeLimit) {
-        memset(start, 0, size);
-    } else {
-        memset(start, 0, size + WORD_SIZE);
-    }
+    memset(start, 0, size);
 
     allocator->largeCursor = end;
 
