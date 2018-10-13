@@ -127,5 +127,10 @@ void Object_Mark(Heap *heap, Object *object) {
 }
 
 size_t Object_ChunkSize(Object *object) {
-    return MathUtils_RoundToNextMultiple(Object_Size(object), MIN_BLOCK_SIZE);
+    if (object->rtti == NULL) {
+        Chunk *chunk = (Chunk *) object;
+        return chunk->size;
+    } else {
+        return MathUtils_RoundToNextMultiple(Object_Size(object), MIN_BLOCK_SIZE);
+    }
 }
