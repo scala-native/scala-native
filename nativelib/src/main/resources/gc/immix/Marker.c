@@ -19,8 +19,7 @@ void Marker_Mark(Heap *heap, Stack *stack);
 void StackOverflowHandler_largeHeapOverflowHeapScan(Heap *heap, Stack *stack);
 bool StackOverflowHandler_smallHeapOverflowHeapScan(Heap *heap, Stack *stack);
 
-void Marker_markObject(Heap *heap, Stack *stack, Object *object) {
-    Bytemap *bytemap = Heap_BytemapForWord(heap, (word_t*) object);
+void Marker_markObject(Heap *heap, Stack *stack, Bytemap *bytemap, Object *object) {
     assert(Bytemap_IsAllocated(bytemap, (word_t*) object));
 
     assert(Object_Size(object) != 0);
@@ -50,7 +49,7 @@ void Marker_markConservative(Heap *heap, Stack *stack, word_t *address) {
 
     if (object != NULL) {
         if (Bytemap_IsAllocated(bytemap, (word_t*) object)) {
-            Marker_markObject(heap, stack, object);
+            Marker_markObject(heap, stack, bytemap, object);
         }
     }
 }
@@ -68,9 +67,9 @@ void Marker_Mark(Heap *heap, Stack *stack) {
                     word_t *field = fields[i];
                     Object *fieldObject = (Object *) field;
                     Bytemap *bytemap = Heap_BytemapForWord(heap, (word_t*) fieldObject);
-                    if (heap_isObjectInHeap(heap, fieldObject) &&
+                    if (bytemap != NULL &&
                         Bytemap_IsAllocated(bytemap, (word_t*) fieldObject)) {
-                        Marker_markObject(heap, stack, fieldObject);
+                        Marker_markObject(heap, stack, bytemap, fieldObject);
                     }
                 }
             }
@@ -82,9 +81,9 @@ void Marker_Mark(Heap *heap, Stack *stack) {
                 word_t *field = object->fields[ptr_map[i]];
                 Object *fieldObject = (Object *) field;
                 Bytemap *bytemap = Heap_BytemapForWord(heap, (word_t*) fieldObject);
-                if (heap_isObjectInHeap(heap, fieldObject) &&
+                if (bytemap != NULL &&
                     Bytemap_IsAllocated(bytemap, (word_t*) fieldObject)) {
-                    Marker_markObject(heap, stack, fieldObject);
+                    Marker_markObject(heap, stack, bytemap, fieldObject);
                 }
                 ++i;
             }
@@ -119,9 +118,9 @@ void Marker_markModules(Heap *heap, Stack *stack) {
     for (int i = 0; i < nb_modules; i++) {
         Object *object = (Object *) modules[i];
         Bytemap *bytemap = Heap_BytemapForWord(heap, (word_t*) object);
-        if (heap_isObjectInHeap(heap, object) &&
+        if (bytemap != NULL &&
             Bytemap_IsAllocated(bytemap, (word_t*) object)) {
-            Marker_markObject(heap, stack, object);
+            Marker_markObject(heap, stack, bytemap, object);
         }
     }
 }

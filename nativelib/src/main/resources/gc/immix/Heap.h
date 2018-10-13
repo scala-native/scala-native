@@ -47,15 +47,14 @@ static inline bool Heap_IsWordInHeap(Heap *heap, word_t *word) {
     return Heap_IsWordInSmallHeap(heap, word) ||
            Heap_IsWordInLargeHeap(heap, word);
 }
-static inline bool heap_isObjectInHeap(Heap *heap, Object *object) {
-    return Heap_IsWordInHeap(heap, (word_t *)object);
-}
 
-static inline Bytemap *Heap_BytemapForWord(Heap *heap, word_t *word){
+static inline Bytemap *Heap_BytemapForWord(Heap *heap, word_t *word) {
     if (Heap_IsWordInSmallHeap(heap, word)) {
         return heap->smallBytemap;
-    } else {
+    } else if(Heap_IsWordInLargeHeap(heap, word)) {
         return heap->largeBytemap;
+    } else {
+        return NULL;
     }
 }
 
