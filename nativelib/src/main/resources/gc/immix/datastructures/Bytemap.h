@@ -65,8 +65,12 @@ static inline void Bytemap_SetMarked(Bytemap *bytemap, word_t* address) {
     bytemap->data[Bytemap_index(bytemap, address)] = bm_marked;
 }
 
-static inline void Bytemap_SetAreaFree(Bytemap *bytemap, word_t* start, size_t words) {
-    memset(&bytemap->data[Bytemap_index(bytemap, start)], 0, words);
+static inline void Bytemap_ClearLine(Bytemap *bytemap, word_t* start) {
+    memset(&bytemap->data[Bytemap_index(bytemap, start)], 0, WORDS_IN_LINE);
+}
+
+static inline void Bytemap_ClearBlock(Bytemap *bytemap, word_t* start) {
+    memset(&bytemap->data[Bytemap_index(bytemap, start)], 0, WORDS_IN_BLOCK);
 }
 
 /*

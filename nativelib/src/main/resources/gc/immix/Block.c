@@ -14,7 +14,7 @@ INLINE void Block_recycleUnmarkedBlock(Allocator *allocator,
     // does not unmark in LineHeaders because those are ignored by the allocator
     BlockList_AddLast(&allocator->freeBlocks, blockHeader);
     BlockHeader_SetFlag(blockHeader, block_free);
-    Bytemap_SetAreaFree(allocator->bytemap, blockStart, WORDS_IN_BLOCK);
+    Bytemap_ClearBlock(allocator->bytemap, blockStart);
 }
 
 /**
@@ -58,17 +58,18 @@ void Block_Recycle(Allocator *allocator, BlockHeader *blockHeader, word_t* block
                     Block_GetFreeLineHeader(blockStart, lastRecyclable)->next =
                         lineIndex;
                 }
+                Bytemap_ClearLine(bytemap,Block_GetLineAddress(blockStart,lineIndex));
                 lastRecyclable = lineIndex;
                 lineIndex++;
                 allocator->freeMemoryAfterCollection += LINE_SIZE;
                 uint8_t size = 1;
                 while (lineIndex < LINE_COUNT &&
                        !Line_IsMarked(lineHeader = &lineHeaders[lineIndex])) {
+                    Bytemap_ClearLine(bytemap,Block_GetLineAddress(blockStart,lineIndex));
                     size++;
                     lineIndex++;
                     allocator->freeMemoryAfterCollection += LINE_SIZE;
                 }
-                Bytemap_SetAreaFree(allocator->bytemap, Block_GetLineAddress(blockStart, lastRecyclable), WORDS_IN_LINE * size);
                 Block_GetFreeLineHeader(blockStart, lastRecyclable)->size = size;
             }
         }
