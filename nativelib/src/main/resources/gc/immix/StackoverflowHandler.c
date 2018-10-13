@@ -70,20 +70,23 @@ bool StackOverflowHandler_overflowMark(Heap *heap, Stack *stack,
     Bytemap *bytemap = Heap_BytemapForWord(heap, (word_t*) object);
 
     if (Bytemap_IsMarked(bytemap, (word_t*) object)) {
-        if (object->rtti->rt.id == __object_array_id) {
-            ArrayHeader *arrayHeader = (ArrayHeader *) object;
-            size_t length = arrayHeader -> length;
-            word_t **fields = (word_t **) (arrayHeader + 1);
-            for (int i = 0; i < length; i++) {
-                word_t *field = fields[i];
-                Object *fieldObject = (Object *) field;
-                Bytemap *bytemapF = Heap_BytemapForWord(heap, (word_t*) fieldObject);
-                if (heap_isObjectInHeap(heap, fieldObject) &&
-                    Bytemap_IsAllocated(bytemapF, (word_t*) fieldObject)) {
-                    Stack_Push(stack, object);
-                    return true;
+        if (Object_IsArray(object)) {
+            if (object->rtti->rt.id == __object_array_id) {
+                ArrayHeader *arrayHeader = (ArrayHeader *) object;
+                size_t length = arrayHeader -> length;
+                word_t **fields = (word_t **) (arrayHeader + 1);
+                for (int i = 0; i < length; i++) {
+                    word_t *field = fields[i];
+                    Object *fieldObject = (Object *) field;
+                    Bytemap *bytemapF = Heap_BytemapForWord(heap, (word_t*) fieldObject);
+                    if (heap_isObjectInHeap(heap, fieldObject) &&
+                        Bytemap_IsAllocated(bytemapF, (word_t*) fieldObject)) {
+                        Stack_Push(stack, object);
+                        return true;
+                    }
                 }
             }
+            // non-object arrays do not contain pointers
         } else {
             int64_t *ptr_map = object->rtti->refMapStruct;
             int i = 0;
