@@ -58,8 +58,7 @@ struct Chunk {
 
 static inline bool Object_IsArray(Object *object) {
     int32_t id = object->rtti->rt.id;
-    // __array_ids_min <= id && id <= __array_ids_max;
-    return (unsigned)(id - __array_ids_min) <= (__array_ids_max - __array_ids_min);
+    return __array_ids_min <= id && id <= __array_ids_max;
 }
 
 static inline size_t Object_Size(Object *object) {
