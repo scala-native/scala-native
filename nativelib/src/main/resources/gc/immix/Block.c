@@ -31,19 +31,28 @@ void Block_Recycle(Allocator *allocator, BlockHeader *blockHeader, word_t* block
         // If the block is marked, we need to recycle line by line
         assert(BlockHeader_IsMarked(blockHeader));
         BlockHeader_Unmark(blockHeader);
-        int16_t lineIndex = 0;
         Bytemap *bytemap = allocator->bytemap;
+
+        // start at line zero, keep separate pointers into all affected data structures
+        int16_t lineIndex = 0;
+        LineHeader *lineHeader = lineHeaders;
+        word_t *lineStart = blockStart;
+        ubyte_t *bytemapCursor = Bytemap_Cursor(bytemap, lineStart);
+
+
         int lastRecyclable = NO_RECYCLABLE_LINE;
         while (lineIndex < LINE_COUNT) {
-            LineHeader *lineHeader = &lineHeaders[lineIndex];
             // If the line is marked, we need to unmark all objects in the line
             if (Line_IsMarked(lineHeader)) {
                 // Unmark line
                 Line_Unmark(lineHeader);
-                word_t *lineStart = Block_GetLineAddress(blockStart, lineIndex);
-                Bytemap_SweepLine(bytemap, lineStart);
+                Bytemap_SweepLineAt(bytemapCursor);
 
+                // next line
                 lineIndex++;
+                lineHeader++;
+                lineStart += WORDS_IN_LINE;
+                bytemapCursor = Bytemap_NextLine(bytemapCursor);
             } else {
                 // If the line is not marked, we need to merge all continuous
                 // unmarked lines.
@@ -58,16 +67,29 @@ void Block_Recycle(Allocator *allocator, BlockHeader *blockHeader, word_t* block
                     Block_GetFreeLineHeader(blockStart, lastRecyclable)->next =
                         lineIndex;
                 }
-                Bytemap_ClearLine(bytemap,Block_GetLineAddress(blockStart,lineIndex));
+                Bytemap_ClearLineAt(bytemapCursor);
                 lastRecyclable = lineIndex;
+
+                // next line
                 lineIndex++;
+                lineHeader++;
+                lineStart += WORDS_IN_LINE;
+                bytemapCursor = Bytemap_NextLine(bytemapCursor);
+
                 allocator->freeMemoryAfterCollection += LINE_SIZE;
+
                 uint8_t size = 1;
                 while (lineIndex < LINE_COUNT &&
-                       !Line_IsMarked(lineHeader = &lineHeaders[lineIndex])) {
-                    Bytemap_ClearLine(bytemap,Block_GetLineAddress(blockStart,lineIndex));
+                       !Line_IsMarked(lineHeader)) {
+                    Bytemap_ClearLineAt(bytemapCursor);
                     size++;
+
+                    // next line
                     lineIndex++;
+                    lineHeader++;
+                    lineStart += WORDS_IN_LINE;
+                    bytemapCursor = Bytemap_NextLine(bytemapCursor);
+
                     allocator->freeMemoryAfterCollection += LINE_SIZE;
                 }
                 Block_GetFreeLineHeader(blockStart, lastRecyclable)->size = size;

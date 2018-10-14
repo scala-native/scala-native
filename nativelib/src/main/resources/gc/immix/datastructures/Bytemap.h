@@ -31,6 +31,12 @@ static inline size_t Bytemap_index(Bytemap *bytemap, word_t* address) {
     return index;
 }
 
+static inline ubyte_t * Bytemap_Cursor(Bytemap *bytemap, word_t* address) {
+    size_t index = address - bytemap->firstAddress;
+    assert(address >= bytemap->firstAddress);
+    assert(index < bytemap -> size);
+    return &bytemap->data[index];
+}
 
 static inline bool Bytemap_IsFree(Bytemap *bytemap, word_t* address) {
     return bytemap->data[Bytemap_index(bytemap, address)] == bm_free;
@@ -65,12 +71,16 @@ static inline void Bytemap_SetMarked(Bytemap *bytemap, word_t* address) {
     bytemap->data[Bytemap_index(bytemap, address)] = bm_marked;
 }
 
-static inline void Bytemap_ClearLine(Bytemap *bytemap, word_t* start) {
-    memset(&bytemap->data[Bytemap_index(bytemap, start)], 0, WORDS_IN_LINE);
+static inline ubyte_t* Bytemap_NextLine(ubyte_t* cursor) {
+    return cursor + WORDS_IN_LINE;
+}
+
+static inline void Bytemap_ClearLineAt(ubyte_t* cursor) {
+    memset(cursor, 0, WORDS_IN_LINE);
 }
 
 static inline void Bytemap_ClearBlock(Bytemap *bytemap, word_t* start) {
-    memset(&bytemap->data[Bytemap_index(bytemap, start)], 0, WORDS_IN_BLOCK);
+    memset(Bytemap_Cursor(bytemap, start), 0, WORDS_IN_BLOCK);
 }
 
 /*
@@ -88,11 +98,9 @@ static inline void Bytemap_ClearBlock(Bytemap *bytemap, word_t* start) {
     }
 */
 #define SWEEP_MASK 0x0404040404040404UL
-static inline void Bytemap_SweepLine(Bytemap *bytemap, word_t* start) {
+static inline void Bytemap_SweepLineAt(ubyte_t *start) {
     assert(WORDS_IN_LINE / 8 == 4);
-    size_t startIndex = Bytemap_index(bytemap, start);
-    uint64_t *first = (uint64_t *) &bytemap->data[startIndex];
-
+    uint64_t *first = (uint64_t *) start;
     first[0] = (first[0] & SWEEP_MASK) >> 1;
     first[1] = (first[1] & SWEEP_MASK) >> 1;
     first[2] = (first[2] & SWEEP_MASK) >> 1;
