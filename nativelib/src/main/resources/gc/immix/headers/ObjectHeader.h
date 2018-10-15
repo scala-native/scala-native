@@ -64,9 +64,9 @@ static inline bool Object_IsArray(Object *object) {
 static inline size_t Object_Size(Object *object) {
     if (Object_IsArray(object)) {
         ArrayHeader *arrayHeader = (ArrayHeader *)object;
-        return MathUtils_RoundToNextMultiple(sizeof(ArrayHeader) + (size_t) arrayHeader->length * (size_t) arrayHeader->stride, WORD_SIZE);
+        return MathUtils_RoundToNextMultiple(sizeof(ArrayHeader) + (size_t) arrayHeader->length * (size_t) arrayHeader->stride, ALLOCATION_ALIGNMENT);
     } else {
-        return MathUtils_RoundToNextMultiple((size_t) object->rtti->size, WORD_SIZE);
+        return MathUtils_RoundToNextMultiple((size_t) object->rtti->size, ALLOCATION_ALIGNMENT);
     }
 }
 

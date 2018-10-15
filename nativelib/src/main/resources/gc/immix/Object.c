@@ -19,14 +19,14 @@ word_t *Object_LastWord(Object *object) {
     return last;
 }
 
-static inline bool Object_isWordAligned(word_t *word) {
-    return ((word_t)word & WORD_INVERSE_MASK) == (word_t)word;
+static inline bool Object_isAligned(word_t *word) {
+    return ((word_t)word & ALLOCATION_ALIGNMENT_INVERSE_MASK) == (word_t)word;
 }
 
 Object *Object_getInnerPointer(Bytemap *bytemap, word_t *blockStart, word_t *word) {
     word_t *current = word;
     while (current >= blockStart && Bytemap_IsFree(bytemap, current)) {
-        current -= 1;// 1 WORD
+        current -= ALLOCATION_ALIGNMENT_WORDS;
     }
     Object *object = (Object *)current;
     if (Bytemap_IsAllocated(bytemap, current) && word <  current + Object_Size(object) / WORD_SIZE) {
@@ -46,13 +46,13 @@ Object *Object_GetUnmarkedObject(Heap *heap, word_t *word) {
     BlockHeader *blockHeader = Block_GetBlockHeader(heap->blockHeaderStart, heap->heapStart, word);
     word_t *blockStart = Block_GetBlockStartForWord(word);
 
-    if (!Object_isWordAligned(word)) {
+    if (!Object_isAligned(word)) {
 #ifdef DEBUG_PRINT
         printf("Word not aligned: %p aligning to %p\n", word,
-               (word_t *)((word_t)word & WORD_INVERSE_MASK));
+               (word_t *)((word_t)word & ALLOCATION_ALIGNMENT_INVERSE_MASK));
         fflush(stdout);
 #endif
-        word = (word_t *)((word_t)word & WORD_INVERSE_MASK);
+        word = (word_t *)((word_t)word & ALLOCATION_ALIGNMENT_INVERSE_MASK);
     }
 
     if (Bytemap_IsPlaceholder(heap->smallBytemap, word) || Bytemap_IsMarked(heap->smallBytemap, word)) {

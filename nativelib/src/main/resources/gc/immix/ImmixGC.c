@@ -24,7 +24,7 @@ NOINLINE void scalanative_init() {
 }
 
 INLINE void *scalanative_alloc(void *info, size_t size) {
-    size = MathUtils_RoundToNextMultiple(size, WORD_SIZE);
+    size = MathUtils_RoundToNextMultiple(size, ALLOCATION_ALIGNMENT);
 
     void **alloc = (void **)Heap_Alloc(&heap, size);
     *alloc = info;
@@ -32,7 +32,7 @@ INLINE void *scalanative_alloc(void *info, size_t size) {
 }
 
 INLINE void *scalanative_alloc_small(void *info, size_t size) {
-    size = MathUtils_RoundToNextMultiple(size, WORD_SIZE);
+    size = MathUtils_RoundToNextMultiple(size, ALLOCATION_ALIGNMENT);
 
     void **alloc = (void **)Heap_AllocSmall(&heap, size);
     *alloc = info;
@@ -40,7 +40,7 @@ INLINE void *scalanative_alloc_small(void *info, size_t size) {
 }
 
 INLINE void *scalanative_alloc_large(void *info, size_t size) {
-    size = MathUtils_RoundToNextMultiple(size, WORD_SIZE);
+    size = MathUtils_RoundToNextMultiple(size, ALLOCATION_ALIGNMENT);
 
     void **alloc = (void **)Heap_AllocLarge(&heap, size);
     *alloc = info;

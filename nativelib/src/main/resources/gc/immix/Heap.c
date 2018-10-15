@@ -76,7 +76,7 @@ void Heap_Init(Heap *heap, size_t initialSmallHeapSize,
     word_t *smallHeapStart = Heap_mapAndAlign(memoryLimit, BLOCK_TOTAL_SIZE);
 
     // reserve space for bytemap
-    Bytemap *smallBytemap = (Bytemap *) Heap_mapAndAlign(memoryLimit / WORD_SIZE + sizeof(Bytemap), WORD_SIZE);
+    Bytemap *smallBytemap = (Bytemap *) Heap_mapAndAlign(memoryLimit / ALLOCATION_ALIGNMENT + sizeof(Bytemap), ALLOCATION_ALIGNMENT);
     heap->smallBytemap = smallBytemap;
 
     // Init heap for small objects
@@ -87,7 +87,7 @@ void Heap_Init(Heap *heap, size_t initialSmallHeapSize,
     Allocator_Init(&allocator, smallBytemap, blockHeaderStart, smallHeapStart, initialBlockCount);
 
     // reserve space for bytemap
-    Bytemap *largeBytemap = (Bytemap *) Heap_mapAndAlign(memoryLimit / WORD_SIZE + sizeof(Bytemap), WORD_SIZE);
+    Bytemap *largeBytemap = (Bytemap *) Heap_mapAndAlign(memoryLimit / ALLOCATION_ALIGNMENT + sizeof(Bytemap), WORD_SIZE);
     heap->largeBytemap = largeBytemap;
 
     // Init heap for large objects
@@ -97,7 +97,7 @@ void Heap_Init(Heap *heap, size_t initialSmallHeapSize,
     word_t *largeHeapEnd = (word_t *)((ubyte_t *)largeHeapStart + initialLargeHeapSize);
     heap->largeHeapEnd = largeHeapEnd;
     Bytemap_Init(largeBytemap, largeHeapStart, memoryLimit);
-    assert(largeBytemap->end <= ((ubyte_t *)largeBytemap) + memoryLimit / WORD_SIZE + sizeof(Bytemap));
+    assert(largeBytemap->end <= ((ubyte_t *)largeBytemap) + memoryLimit / ALLOCATION_ALIGNMENT + sizeof(Bytemap));
     LargeAllocator_Init(&largeAllocator, largeHeapStart, initialLargeHeapSize, largeBytemap);
 
     char *statsFile = Settings_GC_StatsFileName();
@@ -115,7 +115,7 @@ void Heap_Init(Heap *heap, size_t initialSmallHeapSize,
  */
 word_t *Heap_AllocLarge(Heap *heap, uint32_t size) {
 
-    assert(size % WORD_SIZE == 0);
+    assert(size % ALLOCATION_ALIGNMENT == 0);
     assert(size >= MIN_BLOCK_SIZE);
 
     // Request an object from the `LargeAllocator`
@@ -169,7 +169,7 @@ done:
 }
 
 INLINE word_t *Heap_AllocSmall(Heap *heap, uint32_t size) {
-    assert(size % WORD_SIZE == 0);
+    assert(size % ALLOCATION_ALIGNMENT == 0);
     assert(size < MIN_BLOCK_SIZE);
 
     word_t *start = allocator.cursor;
@@ -194,7 +194,7 @@ INLINE word_t *Heap_AllocSmall(Heap *heap, uint32_t size) {
 }
 
 word_t *Heap_Alloc(Heap *heap, uint32_t objectSize) {
-    assert(objectSize % WORD_SIZE == 0);
+    assert(objectSize % ALLOCATION_ALIGNMENT == 0);
 
     if (objectSize >= LARGE_BLOCK_SIZE) {
         return Heap_AllocLarge(heap, objectSize);
