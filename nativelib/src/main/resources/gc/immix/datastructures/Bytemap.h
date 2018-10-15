@@ -101,12 +101,10 @@ static inline void Bytemap_ClearBlock(Bytemap *bytemap, word_t* start) {
 */
 #define SWEEP_MASK 0x0404040404040404UL
 static inline void Bytemap_SweepLineAt(ubyte_t *start) {
-    assert(WORDS_IN_LINE / ALLOCATION_ALIGNMENT == 4);
+    assert(WORDS_IN_LINE / ALLOCATION_ALIGNMENT == 2);
     uint64_t *first = (uint64_t *) start;
     first[0] = (first[0] & SWEEP_MASK) >> 1;
     first[1] = (first[1] & SWEEP_MASK) >> 1;
-    first[2] = (first[2] & SWEEP_MASK) >> 1;
-    first[3] = (first[3] & SWEEP_MASK) >> 1;
 
 }
 
