@@ -23,7 +23,7 @@
 #define HEAP_MEM_FD_OFFSET 0
 
 size_t Heap_getMemoryLimit() { return getMemorySize(); }
-void Heap_writeStatsToFile(HeapStats * statsFile);
+void Heap_writeStatsToFile(HeapStats *statsFile);
 
 /**
  * Maps `MAX_SIZE` of memory and returns the first address aligned on
@@ -61,22 +61,28 @@ void Heap_Init(Heap *heap, size_t initialSmallHeapSize,
 
     // reserve space for block headers
     size_t blockHeaderSpaceSize = maxNumberOfBlocks * BLOCK_METADATA_SIZE;
-    word_t *blockHeaderStart = Heap_mapAndAlign(blockHeaderSpaceSize, BLOCK_METADATA_SIZE);
+    word_t *blockHeaderStart =
+        Heap_mapAndAlign(blockHeaderSpaceSize, BLOCK_METADATA_SIZE);
     heap->blockHeaderStart = blockHeaderStart;
-    heap->blockHeaderEnd = blockHeaderStart + initialBlockCount * WORDS_IN_BLOCK_METADATA;
+    heap->blockHeaderEnd =
+        blockHeaderStart + initialBlockCount * WORDS_IN_BLOCK_METADATA;
 
     // reserve space for line headers
-    size_t lineHeaderSpaceSize = maxNumberOfBlocks * LINE_COUNT * LINE_METADATA_SIZE;
+    size_t lineHeaderSpaceSize =
+        maxNumberOfBlocks * LINE_COUNT * LINE_METADATA_SIZE;
     word_t *lineHeaderStart = Heap_mapAndAlign(lineHeaderSpaceSize, WORD_SIZE);
     heap->lineHeaderStart = lineHeaderStart;
     assert(LINE_COUNT * LINE_SIZE == BLOCK_TOTAL_SIZE);
     assert(LINE_COUNT * LINE_METADATA_SIZE % WORD_SIZE == 0);
-    heap->lineHeaderEnd = lineHeaderStart + initialBlockCount * LINE_COUNT * LINE_METADATA_SIZE / WORD_SIZE;
+    heap->lineHeaderEnd = lineHeaderStart + initialBlockCount * LINE_COUNT *
+                                                LINE_METADATA_SIZE / WORD_SIZE;
 
     word_t *smallHeapStart = Heap_mapAndAlign(memoryLimit, BLOCK_TOTAL_SIZE);
 
     // reserve space for bytemap
-    Bytemap *smallBytemap = (Bytemap *) Heap_mapAndAlign(memoryLimit / ALLOCATION_ALIGNMENT + sizeof(Bytemap), ALLOCATION_ALIGNMENT);
+    Bytemap *smallBytemap = (Bytemap *)Heap_mapAndAlign(
+        memoryLimit / ALLOCATION_ALIGNMENT + sizeof(Bytemap),
+        ALLOCATION_ALIGNMENT);
     heap->smallBytemap = smallBytemap;
 
     // Init heap for small objects
@@ -84,27 +90,34 @@ void Heap_Init(Heap *heap, size_t initialSmallHeapSize,
     heap->heapStart = smallHeapStart;
     heap->heapEnd = smallHeapStart + initialSmallHeapSize / WORD_SIZE;
     Bytemap_Init(smallBytemap, smallHeapStart, memoryLimit);
-    Allocator_Init(&allocator, smallBytemap, blockHeaderStart, smallHeapStart, initialBlockCount);
+    Allocator_Init(&allocator, smallBytemap, blockHeaderStart, smallHeapStart,
+                   initialBlockCount);
 
     // reserve space for bytemap
-    Bytemap *largeBytemap = (Bytemap *) Heap_mapAndAlign(memoryLimit / ALLOCATION_ALIGNMENT + sizeof(Bytemap), WORD_SIZE);
+    Bytemap *largeBytemap = (Bytemap *)Heap_mapAndAlign(
+        memoryLimit / ALLOCATION_ALIGNMENT + sizeof(Bytemap), WORD_SIZE);
     heap->largeBytemap = largeBytemap;
 
     // Init heap for large objects
     word_t *largeHeapStart = Heap_mapAndAlign(memoryLimit, MIN_BLOCK_SIZE);
     heap->largeHeapSize = initialLargeHeapSize;
     heap->largeHeapStart = largeHeapStart;
-    word_t *largeHeapEnd = (word_t *)((ubyte_t *)largeHeapStart + initialLargeHeapSize);
+    word_t *largeHeapEnd =
+        (word_t *)((ubyte_t *)largeHeapStart + initialLargeHeapSize);
     heap->largeHeapEnd = largeHeapEnd;
     Bytemap_Init(largeBytemap, largeHeapStart, memoryLimit);
-    assert(largeBytemap->end <= ((ubyte_t *)largeBytemap) + memoryLimit / ALLOCATION_ALIGNMENT + sizeof(Bytemap));
-    LargeAllocator_Init(&largeAllocator, largeHeapStart, initialLargeHeapSize, largeBytemap);
+    assert(largeBytemap->end <= ((ubyte_t *)largeBytemap) +
+                                    memoryLimit / ALLOCATION_ALIGNMENT +
+                                    sizeof(Bytemap));
+    LargeAllocator_Init(&largeAllocator, largeHeapStart, initialLargeHeapSize,
+                        largeBytemap);
 
     char *statsFile = Settings_GC_StatsFileName();
     if (statsFile != NULL) {
         heap->stats = malloc(sizeof(HeapStats));
         heap->stats->outFile = fopen(statsFile, "a");
-        fprintf(heap->stats->outFile, "timestamp_us,collection,mark_time_us,sweep_time_us\n");
+        fprintf(heap->stats->outFile,
+                "timestamp_us,collection,mark_time_us,sweep_time_us\n");
         heap->stats->collections = 0;
     }
 }
@@ -122,7 +135,7 @@ word_t *Heap_AllocLarge(Heap *heap, uint32_t size) {
     Object *object = LargeAllocator_GetBlock(&largeAllocator, size);
     // If the object is not NULL, update it's metadata and return it
     if (object != NULL) {
-        return (word_t *) object;
+        return (word_t *)object;
     } else {
         // Otherwise collect
         Heap_Collect(heap, &stack);
@@ -131,14 +144,14 @@ word_t *Heap_AllocLarge(Heap *heap, uint32_t size) {
         // at least the size of the object we want to alloc
         object = LargeAllocator_GetBlock(&largeAllocator, size);
         if (object != NULL) {
-            assert(Heap_IsWordInLargeHeap(heap, (word_t *) object));
-            return (word_t *) object;
+            assert(Heap_IsWordInLargeHeap(heap, (word_t *)object));
+            return (word_t *)object;
         } else {
             Heap_GrowLarge(heap, size);
 
             object = LargeAllocator_GetBlock(&largeAllocator, size);
-            assert(Heap_IsWordInLargeHeap(heap, (word_t *) object));
-            return (word_t *) object;
+            assert(Heap_IsWordInLargeHeap(heap, (word_t *)object));
+            return (word_t *)object;
         }
     }
 }
@@ -162,10 +175,10 @@ NOINLINE word_t *Heap_allocSmallSlow(Heap *heap, uint32_t size) {
     object = (Object *)Allocator_Alloc(&allocator, size);
 
 done:
-    assert(Heap_IsWordInSmallHeap(heap, (word_t *) object));
+    assert(Heap_IsWordInSmallHeap(heap, (word_t *)object));
     assert(object != NULL);
-    Bytemap_SetAllocated(allocator.bytemap, (word_t *) object);
-    return (word_t *) object;
+    Bytemap_SetAllocated(allocator.bytemap, (word_t *)object);
+    return (word_t *)object;
 }
 
 INLINE word_t *Heap_AllocSmall(Heap *heap, uint32_t size) {
@@ -185,12 +198,12 @@ INLINE word_t *Heap_AllocSmall(Heap *heap, uint32_t size) {
     memset(start, 0, size);
 
     Object *object = (Object *)start;
-    Bytemap_SetAllocated(allocator.bytemap, (word_t *) object);
+    Bytemap_SetAllocated(allocator.bytemap, (word_t *)object);
 
     __builtin_prefetch(object + 36, 0, 3);
 
-    assert(Heap_IsWordInSmallHeap(heap, (word_t *) object));
-    return (word_t*) object;
+    assert(Heap_IsWordInSmallHeap(heap, (word_t *)object));
+    return (word_t *)object;
 }
 
 word_t *Heap_Alloc(Heap *heap, uint32_t objectSize) {
@@ -221,7 +234,8 @@ void Heap_Collect(Heap *heap, Stack *stack) {
         clock_gettime(CLOCK_REALTIME, &end);
 
         uint64_t start_us = start.tv_sec * 1000000 + start.tv_nsec / 1000;
-        uint64_t sweep_start_us = sweep_start.tv_sec * 1000000 + sweep_start.tv_nsec / 1000;
+        uint64_t sweep_start_us =
+            sweep_start.tv_sec * 1000000 + sweep_start.tv_nsec / 1000;
         uint64_t end_us = end.tv_sec * 1000000 + end.tv_nsec / 1000;
 
         uint64_t index = heap->stats->collections % GC_STATS_MEASUREMENTS;
@@ -248,14 +262,14 @@ void Heap_writeStatsToFile(HeapStats *stats) {
     uint64_t base = collections - remainder;
     FILE *outFile = stats->outFile;
     for (uint64_t i = 0; i < remainder; i++) {
-        fprintf(outFile, "%lu,%lu,%lu,%lu\n",
-                stats->timestamp_us[i], base + i, stats->mark_time_us[i], stats->sweep_time_us[i]);
+        fprintf(outFile, "%lu,%lu,%lu,%lu\n", stats->timestamp_us[i], base + i,
+                stats->mark_time_us[i], stats->sweep_time_us[i]);
     }
     fflush(outFile);
 }
 
 void Heap_AfterExit(Heap *heap) {
-    HeapStats* stats = heap->stats;
+    HeapStats *stats = heap->stats;
     if (stats != NULL) {
         uint64_t remainder = heap->stats->collections % GC_STATS_MEASUREMENTS;
         if (remainder > 0) {
@@ -276,7 +290,7 @@ void Heap_Recycle(Heap *heap) {
 
     word_t *current = heap->blockHeaderStart;
     word_t *currentBlockStart = heap->heapStart;
-    LineHeader *lineHeaders = (LineHeader *) heap->lineHeaderStart;
+    LineHeader *lineHeaders = (LineHeader *)heap->lineHeaderStart;
     while (current < heap->blockHeaderEnd) {
         BlockHeader *blockHeader = (BlockHeader *)current;
         Block_Recycle(&allocator, blockHeader, currentBlockStart, lineHeaders);
@@ -344,11 +358,13 @@ void Heap_Grow(Heap *heap, size_t increment) {
     heap->smallHeapSize += increment * WORD_SIZE;
     word_t *blockHeaderEnd = heap->blockHeaderEnd;
     heap->blockHeaderEnd += incrementInBlocks * WORDS_IN_BLOCK_METADATA;
-    heap->lineHeaderEnd += incrementInBlocks * LINE_COUNT * LINE_METADATA_SIZE / WORD_SIZE;
+    heap->lineHeaderEnd +=
+        incrementInBlocks * LINE_COUNT * LINE_METADATA_SIZE / WORD_SIZE;
 
-    BlockHeader *lastBlock = (BlockHeader *)(heap->blockHeaderEnd - WORDS_IN_BLOCK_METADATA);
-    BlockList_AddBlocksLast(&allocator.freeBlocks, (BlockHeader *)blockHeaderEnd,
-                            lastBlock);
+    BlockHeader *lastBlock =
+        (BlockHeader *)(heap->blockHeaderEnd - WORDS_IN_BLOCK_METADATA);
+    BlockList_AddBlocksLast(&allocator.freeBlocks,
+                            (BlockHeader *)blockHeaderEnd, lastBlock);
 
     allocator.blockCount += incrementInBlocks;
     allocator.freeBlockCount += incrementInBlocks;

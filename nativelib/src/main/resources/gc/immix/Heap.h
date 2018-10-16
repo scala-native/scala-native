@@ -50,7 +50,7 @@ static inline bool Heap_IsWordInHeap(Heap *heap, word_t *word) {
 static inline Bytemap *Heap_BytemapForWord(Heap *heap, word_t *word) {
     if (Heap_IsWordInSmallHeap(heap, word)) {
         return heap->smallBytemap;
-    } else if(Heap_IsWordInLargeHeap(heap, word)) {
+    } else if (Heap_IsWordInLargeHeap(heap, word)) {
         return heap->largeBytemap;
     } else {
         return NULL;
@@ -61,13 +61,14 @@ static inline LineHeader *Heap_LineHeaderForWord(Heap *heap, word_t *word) {
     // assumes there are no gaps between lines
     assert(LINE_COUNT * LINE_SIZE == BLOCK_TOTAL_SIZE);
     assert(Heap_IsWordInSmallHeap(heap, word));
-    word_t lineGlobalIndex = ((word_t)word - (word_t)heap->heapStart) >> LINE_SIZE_BITS;
+    word_t lineGlobalIndex =
+        ((word_t)word - (word_t)heap->heapStart) >> LINE_SIZE_BITS;
     assert(lineGlobalIndex >= 0);
-    LineHeader *lineHeader = (LineHeader *) heap->lineHeaderStart + lineGlobalIndex;
-    assert(lineHeader < (LineHeader *) heap->lineHeaderEnd);
+    LineHeader *lineHeader =
+        (LineHeader *)heap->lineHeaderStart + lineGlobalIndex;
+    assert(lineHeader < (LineHeader *)heap->lineHeaderEnd);
     return lineHeader;
 }
-
 
 void Heap_Init(Heap *heap, size_t initialSmallHeapSize,
                size_t initialLargeHeapSize);

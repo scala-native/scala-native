@@ -4,7 +4,8 @@
 #include "../Log.h"
 #include "../headers/BlockHeader.h"
 
-BlockHeader *BlockList_getNextBlock(word_t *blockHeaderStart, BlockHeader *header) {
+BlockHeader *BlockList_getNextBlock(word_t *blockHeaderStart,
+                                    BlockHeader *header) {
     int32_t nextBlockId = header->header.nextBlock;
     if (nextBlockId == LAST_BLOCK) {
         return NULL;
@@ -30,7 +31,8 @@ BlockHeader *BlockList_RemoveFirstBlock(BlockList *blockList) {
     if (block == blockList->last) {
         blockList->first = NULL;
     }
-    blockList->first = BlockList_getNextBlock(blockList->blockHeaderStart, block);
+    blockList->first =
+        BlockList_getNextBlock(blockList->blockHeaderStart, block);
     return block;
 }
 
@@ -51,7 +53,7 @@ void BlockList_AddBlocksLast(BlockList *blockList, BlockHeader *first,
         blockList->first = first;
     } else {
         blockList->last->header.nextBlock =
-           BlockHeader_GetBlockIndex(blockList->blockHeaderStart, first);
+            BlockHeader_GetBlockIndex(blockList->blockHeaderStart, first);
     }
     blockList->last = last;
     last->header.nextBlock = LAST_BLOCK;

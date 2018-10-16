@@ -13,9 +13,7 @@
 
 void scalanative_collect();
 
-void scalanative_afterexit() {
-    Heap_AfterExit(&heap);
-}
+void scalanative_afterexit() { Heap_AfterExit(&heap); }
 
 NOINLINE void scalanative_init() {
     Heap_Init(&heap, INITIAL_SMALL_HEAP_SIZE, INITIAL_LARGE_HEAP_SIZE);
