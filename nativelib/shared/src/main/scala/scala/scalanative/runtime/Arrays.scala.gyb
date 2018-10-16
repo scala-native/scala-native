@@ -7,6 +7,7 @@ import scalanative.runtime.Intrinsics._
 sealed abstract class Array[T]
     extends java.io.Serializable
     with java.lang.Cloneable {
+
   /** Number of elements of the array. */
   @inline def length: Int =
     // TODO: Update once we support ptr->field
@@ -131,14 +132,11 @@ object Array {
     }
   }
 }
-
 %{
    types = ['Unit', 'Boolean', 'Char', 'Byte', 'Short',
             'Int', 'Long', 'Float', 'Double', 'Object']
 }%
-
 % for T in types:
-
 %{
    alloc = 'GC.alloc_atomic' if T != 'Object' and T != 'Unit' else 'GC.alloc'
 }%
@@ -194,7 +192,7 @@ object ${T}Array {
     val arrinfo = typeof[${T}Array].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[${T}] * length
     val arr     = ${alloc}(arrinfo, arrsize).cast[Ptr[Header]]
-    arr.length  = length
+    arr.length = length
     arr.cast[${T}Array]
   }
 
@@ -210,5 +208,4 @@ object ${T}Array {
     arr
   }
 }
-
 % end

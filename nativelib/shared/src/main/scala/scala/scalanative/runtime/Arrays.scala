@@ -7,6 +7,7 @@ import scalanative.runtime.Intrinsics._
 sealed abstract class Array[T]
     extends java.io.Serializable
     with java.lang.Cloneable {
+
   /** Number of elements of the array. */
   @inline def length: Int =
     // TODO: Update once we support ptr->field
@@ -132,9 +133,6 @@ object Array {
   }
 }
 
-
-
-
 final class UnitArray private () extends Array[Unit] {
   import Array._
 
@@ -186,7 +184,7 @@ object UnitArray {
     val arrinfo = typeof[UnitArray].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[Unit] * length
     val arr     = GC.alloc(arrinfo, arrsize).cast[Ptr[Header]]
-    arr.length  = length
+    arr.length = length
     arr.cast[UnitArray]
   }
 
@@ -202,8 +200,6 @@ object UnitArray {
     arr
   }
 }
-
-
 
 final class BooleanArray private () extends Array[Boolean] {
   import Array._
@@ -256,7 +252,7 @@ object BooleanArray {
     val arrinfo = typeof[BooleanArray].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[Boolean] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize).cast[Ptr[Header]]
-    arr.length  = length
+    arr.length = length
     arr.cast[BooleanArray]
   }
 
@@ -272,8 +268,6 @@ object BooleanArray {
     arr
   }
 }
-
-
 
 final class CharArray private () extends Array[Char] {
   import Array._
@@ -326,7 +320,7 @@ object CharArray {
     val arrinfo = typeof[CharArray].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[Char] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize).cast[Ptr[Header]]
-    arr.length  = length
+    arr.length = length
     arr.cast[CharArray]
   }
 
@@ -342,8 +336,6 @@ object CharArray {
     arr
   }
 }
-
-
 
 final class ByteArray private () extends Array[Byte] {
   import Array._
@@ -396,7 +388,7 @@ object ByteArray {
     val arrinfo = typeof[ByteArray].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[Byte] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize).cast[Ptr[Header]]
-    arr.length  = length
+    arr.length = length
     arr.cast[ByteArray]
   }
 
@@ -412,8 +404,6 @@ object ByteArray {
     arr
   }
 }
-
-
 
 final class ShortArray private () extends Array[Short] {
   import Array._
@@ -466,7 +456,7 @@ object ShortArray {
     val arrinfo = typeof[ShortArray].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[Short] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize).cast[Ptr[Header]]
-    arr.length  = length
+    arr.length = length
     arr.cast[ShortArray]
   }
 
@@ -482,8 +472,6 @@ object ShortArray {
     arr
   }
 }
-
-
 
 final class IntArray private () extends Array[Int] {
   import Array._
@@ -536,7 +524,7 @@ object IntArray {
     val arrinfo = typeof[IntArray].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[Int] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize).cast[Ptr[Header]]
-    arr.length  = length
+    arr.length = length
     arr.cast[IntArray]
   }
 
@@ -552,8 +540,6 @@ object IntArray {
     arr
   }
 }
-
-
 
 final class LongArray private () extends Array[Long] {
   import Array._
@@ -606,7 +592,7 @@ object LongArray {
     val arrinfo = typeof[LongArray].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[Long] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize).cast[Ptr[Header]]
-    arr.length  = length
+    arr.length = length
     arr.cast[LongArray]
   }
 
@@ -622,8 +608,6 @@ object LongArray {
     arr
   }
 }
-
-
 
 final class FloatArray private () extends Array[Float] {
   import Array._
@@ -676,7 +660,7 @@ object FloatArray {
     val arrinfo = typeof[FloatArray].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[Float] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize).cast[Ptr[Header]]
-    arr.length  = length
+    arr.length = length
     arr.cast[FloatArray]
   }
 
@@ -692,8 +676,6 @@ object FloatArray {
     arr
   }
 }
-
-
 
 final class DoubleArray private () extends Array[Double] {
   import Array._
@@ -746,7 +728,7 @@ object DoubleArray {
     val arrinfo = typeof[DoubleArray].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[Double] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize).cast[Ptr[Header]]
-    arr.length  = length
+    arr.length = length
     arr.cast[DoubleArray]
   }
 
@@ -762,8 +744,6 @@ object DoubleArray {
     arr
   }
 }
-
-
 
 final class ObjectArray private () extends Array[Object] {
   import Array._
@@ -816,7 +796,7 @@ object ObjectArray {
     val arrinfo = typeof[ObjectArray].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[Object] * length
     val arr     = GC.alloc(arrinfo, arrsize).cast[Ptr[Header]]
-    arr.length  = length
+    arr.length = length
     arr.cast[ObjectArray]
   }
 
@@ -832,4 +812,3 @@ object ObjectArray {
     arr
   }
 }
-
