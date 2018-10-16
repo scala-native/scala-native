@@ -253,7 +253,7 @@ object Generate {
           .infos(Global.Top(s"scala.scalanative.runtime.${tpe}Array"))
           .asInstanceOf[Class]
 
-     meta.ids(clazz)
+      meta.ids(clazz)
     }
 
     def genObjectArrayId(): Unit = {
@@ -264,25 +264,29 @@ object Generate {
     }
 
     def genArrayIds(): Unit = {
-      val tpes = Seq("Unit", "Boolean", "Char", "Byte", "Short", "Int", "Long", "Float", "Double", "Object")
+      val tpes = Seq("Unit",
+                     "Boolean",
+                     "Char",
+                     "Byte",
+                     "Short",
+                     "Int",
+                     "Long",
+                     "Float",
+                     "Double",
+                     "Object")
       val ids = tpes.map(tpe2arrayId).sorted
 
       // all the arrays have a common superclass, therefore their ids are consecutive
       val min = ids.head
       val max = ids.last
       if (ids != (min to max)) {
-        throw new Exception(s"Ids for all known arrays ($tpes) are not consecutive!")
+        throw new Exception(
+          s"Ids for all known arrays ($tpes) are not consecutive!")
       }
 
-      buf += Defn.Var(Attrs.None,
-                      arrayIdsMinName,
-                      Type.Int,
-                      Val.Int(min))
+      buf += Defn.Var(Attrs.None, arrayIdsMinName, Type.Int, Val.Int(min))
 
-      buf += Defn.Var(Attrs.None,
-                      arrayIdsMaxName,
-                      Type.Int,
-                      Val.Int(max))
+      buf += Defn.Var(Attrs.None, arrayIdsMaxName, Type.Int, Val.Int(max))
 
     }
 
