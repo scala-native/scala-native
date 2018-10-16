@@ -9,7 +9,6 @@
 #include "State.h"
 #include "utils/MathUtils.h"
 #include "StackTrace.h"
-#include "Settings.h"
 #include "Memory.h"
 #include <memory.h>
 #include <time.h>
@@ -23,7 +22,6 @@
 #define HEAP_MEM_FD_OFFSET 0
 
 size_t Heap_getMemoryLimit() { return getMemorySize(); }
-void Heap_writeStatsToFile(HeapStats *statsFile);
 
 /**
  * Maps `MAX_SIZE` of memory and returns the first address aligned on
@@ -111,15 +109,6 @@ void Heap_Init(Heap *heap, size_t initialSmallHeapSize,
                                     sizeof(Bytemap));
     LargeAllocator_Init(&largeAllocator, largeHeapStart, initialLargeHeapSize,
                         largeBytemap);
-
-    char *statsFile = Settings_GC_StatsFileName();
-    if (statsFile != NULL) {
-        heap->stats = malloc(sizeof(HeapStats));
-        heap->stats->outFile = fopen(statsFile, "a");
-        fprintf(heap->stats->outFile,
-                "timestamp_us,collection,mark_time_us,sweep_time_us\n");
-        heap->stats->collections = 0;
-    }
 }
 /**
  * Allocates large objects using the `LargeAllocator`.
@@ -217,67 +206,16 @@ word_t *Heap_Alloc(Heap *heap, uint32_t objectSize) {
 }
 
 void Heap_Collect(Heap *heap, Stack *stack) {
-    struct timespec start, sweep_start, end;
 #ifdef DEBUG_PRINT
     printf("\nCollect\n");
     fflush(stdout);
 #endif
-    if (heap->stats != NULL) {
-        clock_gettime(CLOCK_REALTIME, &start);
-    }
     Marker_MarkRoots(heap, stack);
-    if (heap->stats != NULL) {
-        clock_gettime(CLOCK_REALTIME, &sweep_start);
-    }
     Heap_Recycle(heap);
-    if (heap->stats != NULL) {
-        clock_gettime(CLOCK_REALTIME, &end);
-
-        uint64_t start_us = start.tv_sec * 1000000 + start.tv_nsec / 1000;
-        uint64_t sweep_start_us =
-            sweep_start.tv_sec * 1000000 + sweep_start.tv_nsec / 1000;
-        uint64_t end_us = end.tv_sec * 1000000 + end.tv_nsec / 1000;
-
-        uint64_t index = heap->stats->collections % GC_STATS_MEASUREMENTS;
-        heap->stats->timestamp_us[index] = start_us;
-        heap->stats->mark_time_us[index] = sweep_start_us - start_us;
-        heap->stats->sweep_time_us[index] = end_us - sweep_start_us;
-        heap->stats->collections += 1;
-        if (heap->stats->collections % GC_STATS_MEASUREMENTS == 0) {
-            Heap_writeStatsToFile(heap->stats);
-        }
-    }
 #ifdef DEBUG_PRINT
     printf("End collect\n");
     fflush(stdout);
 #endif
-}
-
-void Heap_writeStatsToFile(HeapStats *stats) {
-    uint64_t collections = stats->collections;
-    uint64_t remainder = collections % GC_STATS_MEASUREMENTS;
-    if (remainder == 0) {
-        remainder = GC_STATS_MEASUREMENTS;
-    }
-    uint64_t base = collections - remainder;
-    FILE *outFile = stats->outFile;
-    for (uint64_t i = 0; i < remainder; i++) {
-        fprintf(outFile, "%lu,%lu,%lu,%lu\n", stats->timestamp_us[i], base + i,
-                stats->mark_time_us[i], stats->sweep_time_us[i]);
-    }
-    fflush(outFile);
-}
-
-void Heap_AfterExit(Heap *heap) {
-    HeapStats *stats = heap->stats;
-    if (stats != NULL) {
-        uint64_t remainder = heap->stats->collections % GC_STATS_MEASUREMENTS;
-        if (remainder > 0) {
-            // there were some measurements not written in the last full batch.
-            Heap_writeStatsToFile(stats);
-        }
-        fclose(stats->outFile);
-    }
 }
 
 void Heap_Recycle(Heap *heap) {

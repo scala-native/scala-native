@@ -10,14 +10,6 @@
 #include <stdio.h>
 
 typedef struct {
-    FILE *outFile;
-    uint64_t collections;
-    uint64_t timestamp_us[GC_STATS_MEASUREMENTS];
-    uint64_t mark_time_us[GC_STATS_MEASUREMENTS];
-    uint64_t sweep_time_us[GC_STATS_MEASUREMENTS];
-} HeapStats;
-
-typedef struct {
     size_t memoryLimit;
     word_t *blockHeaderStart;
     word_t *blockHeaderEnd;
@@ -31,7 +23,6 @@ typedef struct {
     size_t largeHeapSize;
     Bytemap *smallBytemap;
     Bytemap *largeBytemap;
-    HeapStats *stats;
 } Heap;
 
 static inline bool Heap_IsWordInLargeHeap(Heap *heap, word_t *word) {
@@ -72,7 +63,6 @@ static inline LineHeader *Heap_LineHeaderForWord(Heap *heap, word_t *word) {
 
 void Heap_Init(Heap *heap, size_t initialSmallHeapSize,
                size_t initialLargeHeapSize);
-void Heap_AfterExit(Heap *heap);
 word_t *Heap_Alloc(Heap *heap, uint32_t objectSize);
 word_t *Heap_AllocSmall(Heap *heap, uint32_t objectSize);
 word_t *Heap_AllocLarge(Heap *heap, uint32_t objectSize);
