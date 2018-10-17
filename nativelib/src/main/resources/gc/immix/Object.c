@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include "Object.h"
 #include "Block.h"
-#include "Line.h"
 #include "Log.h"
 #include "utils/MathUtils.h"
 
@@ -45,8 +44,8 @@ Object *Object_getInnerPointer(Bytemap *bytemap, word_t *blockStart,
 }
 
 Object *Object_GetUnmarkedObject(Heap *heap, word_t *word) {
-    BlockHeader *blockHeader =
-        Block_GetBlockHeader(heap->blockHeaderStart, heap->heapStart, word);
+    BlockMeta *blockMeta =
+        Block_GetBlockMeta(heap->blockMetaStart, heap->heapStart, word);
     word_t *blockStart = Block_GetBlockStartForWord(word);
 
     if (!Object_isAligned(word)) {
@@ -114,23 +113,23 @@ void Object_Mark(Heap *heap, Object *object) {
 
     if (Heap_IsWordInSmallHeap(heap, (word_t *)object)) {
         // Mark the block
-        BlockHeader *blockHeader = Block_GetBlockHeader(
-            heap->blockHeaderStart, heap->heapStart, (word_t *)object);
+        BlockMeta *blockMeta = Block_GetBlockMeta(
+            heap->blockMetaStart, heap->heapStart, (word_t *)object);
         word_t *blockStart = Block_GetBlockStartForWord((word_t *)object);
-        BlockHeader_Mark(blockHeader);
+        BlockMeta_Mark(blockMeta);
 
         // Mark all Lines
         word_t *lastWord = Object_LastWord(object);
 
-        assert(blockHeader == Block_GetBlockHeader(heap->blockHeaderStart,
+        assert(blockMeta == Block_GetBlockMeta(heap->blockMetaStart,
                                                    heap->heapStart, lastWord));
-        LineHeader *firstHeader =
-            Heap_LineHeaderForWord(heap, (word_t *)object);
-        LineHeader *lastHeader = Heap_LineHeaderForWord(heap, lastWord);
-        assert(firstHeader <= lastHeader);
-        for (LineHeader *lineHeader = firstHeader; lineHeader <= lastHeader;
-             lineHeader++) {
-            Line_Mark(lineHeader);
+        LineMeta *firstLineMeta =
+            Heap_LineMetaForWord(heap, (word_t *)object);
+        LineMeta *lastLineMeta = Heap_LineMetaForWord(heap, lastWord);
+        assert(firstLineMeta <= lastLineMeta);
+        for (LineMeta *lineMeta = firstLineMeta; lineMeta <= lastLineMeta;
+             lineMeta++) {
+            Line_Mark(lineMeta);
         }
     }
 }

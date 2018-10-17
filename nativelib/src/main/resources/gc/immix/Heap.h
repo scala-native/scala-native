@@ -6,15 +6,15 @@
 #include "LargeAllocator.h"
 #include "datastructures/Stack.h"
 #include "datastructures/Bytemap.h"
-#include "headers/LineHeader.h"
+#include "metadata/LineMeta.h"
 #include <stdio.h>
 
 typedef struct {
     size_t memoryLimit;
-    word_t *blockHeaderStart;
-    word_t *blockHeaderEnd;
-    word_t *lineHeaderStart;
-    word_t *lineHeaderEnd;
+    word_t *blockMetaStart;
+    word_t *blockMetaEnd;
+    word_t *lineMetaStart;
+    word_t *lineMetaEnd;
     word_t *heapStart;
     word_t *heapEnd;
     size_t smallHeapSize;
@@ -48,17 +48,17 @@ static inline Bytemap *Heap_BytemapForWord(Heap *heap, word_t *word) {
     }
 }
 
-static inline LineHeader *Heap_LineHeaderForWord(Heap *heap, word_t *word) {
+static inline LineMeta *Heap_LineMetaForWord(Heap *heap, word_t *word) {
     // assumes there are no gaps between lines
     assert(LINE_COUNT * LINE_SIZE == BLOCK_TOTAL_SIZE);
     assert(Heap_IsWordInSmallHeap(heap, word));
     word_t lineGlobalIndex =
         ((word_t)word - (word_t)heap->heapStart) >> LINE_SIZE_BITS;
     assert(lineGlobalIndex >= 0);
-    LineHeader *lineHeader =
-        (LineHeader *)heap->lineHeaderStart + lineGlobalIndex;
-    assert(lineHeader < (LineHeader *)heap->lineHeaderEnd);
-    return lineHeader;
+    LineMeta *lineMeta =
+        (LineMeta *)heap->lineMetaStart + lineGlobalIndex;
+    assert(lineMeta < (LineMeta *)heap->lineMetaEnd);
+    return lineMeta;
 }
 
 void Heap_Init(Heap *heap, size_t initialSmallHeapSize,

@@ -1,23 +1,23 @@
 #ifndef IMMIX_BLOCLIST_H
 #define IMMIX_BLOCLIST_H
 
-#include "../headers/BlockHeader.h"
+#include "../metadata/BlockMeta.h"
 
 #define LAST_BLOCK -1
 
 typedef struct {
-    word_t *blockHeaderStart;
-    BlockHeader *first;
-    BlockHeader *last;
+    word_t *blockMetaStart;
+    BlockMeta *first;
+    BlockMeta *last;
 } BlockList;
 
-void BlockList_Init(BlockList *blockList, word_t *blockHeaderStart);
+void BlockList_Init(BlockList *blockList, word_t *blockMetaStart);
 void BlockList_Clear(BlockList *blockList);
 bool BlockList_IsEmpty(BlockList *blockList);
-BlockHeader *BlockList_RemoveFirstBlock(BlockList *blockList);
-void BlockList_AddLast(BlockList *blockList, BlockHeader *block);
-void BlockList_AddBlocksLast(BlockList *blockList, BlockHeader *first,
-                             BlockHeader *last);
+BlockMeta *BlockList_RemoveFirstBlock(BlockList *blockList);
+void BlockList_AddLast(BlockList *blockList, BlockMeta *block);
+void BlockList_AddBlocksLast(BlockList *blockList, BlockMeta *first,
+                             BlockMeta *last);
 void BlockList_Print(BlockList *blockList);
 
 #endif // IMMIX_BLOCLIST_H

@@ -58,21 +58,21 @@ void Heap_Init(Heap *heap, size_t initialSmallHeapSize,
     uint32_t initialBlockCount = initialSmallHeapSize / BLOCK_TOTAL_SIZE;
 
     // reserve space for block headers
-    size_t blockHeaderSpaceSize = maxNumberOfBlocks * BLOCK_METADATA_SIZE;
-    word_t *blockHeaderStart =
-        Heap_mapAndAlign(blockHeaderSpaceSize, BLOCK_METADATA_SIZE);
-    heap->blockHeaderStart = blockHeaderStart;
-    heap->blockHeaderEnd =
-        blockHeaderStart + initialBlockCount * WORDS_IN_BLOCK_METADATA;
+    size_t blockMetaSpaceSize = maxNumberOfBlocks * BLOCK_METADATA_SIZE;
+    word_t *blockMetaStart =
+        Heap_mapAndAlign(blockMetaSpaceSize, BLOCK_METADATA_SIZE);
+    heap->blockMetaStart = blockMetaStart;
+    heap->blockMetaEnd =
+        blockMetaStart + initialBlockCount * WORDS_IN_BLOCK_METADATA;
 
     // reserve space for line headers
-    size_t lineHeaderSpaceSize =
+    size_t lineMetaSpaceSize =
         maxNumberOfBlocks * LINE_COUNT * LINE_METADATA_SIZE;
-    word_t *lineHeaderStart = Heap_mapAndAlign(lineHeaderSpaceSize, WORD_SIZE);
-    heap->lineHeaderStart = lineHeaderStart;
+    word_t *lineMetaStart = Heap_mapAndAlign(lineMetaSpaceSize, WORD_SIZE);
+    heap->lineMetaStart = lineMetaStart;
     assert(LINE_COUNT * LINE_SIZE == BLOCK_TOTAL_SIZE);
     assert(LINE_COUNT * LINE_METADATA_SIZE % WORD_SIZE == 0);
-    heap->lineHeaderEnd = lineHeaderStart + initialBlockCount * LINE_COUNT *
+    heap->lineMetaEnd = lineMetaStart + initialBlockCount * LINE_COUNT *
                                                 LINE_METADATA_SIZE / WORD_SIZE;
 
     word_t *smallHeapStart = Heap_mapAndAlign(memoryLimit, BLOCK_TOTAL_SIZE);
@@ -88,7 +88,7 @@ void Heap_Init(Heap *heap, size_t initialSmallHeapSize,
     heap->heapStart = smallHeapStart;
     heap->heapEnd = smallHeapStart + initialSmallHeapSize / WORD_SIZE;
     Bytemap_Init(smallBytemap, smallHeapStart, memoryLimit);
-    Allocator_Init(&allocator, smallBytemap, blockHeaderStart, smallHeapStart,
+    Allocator_Init(&allocator, smallBytemap, blockMetaStart, smallHeapStart,
                    initialBlockCount);
 
     // reserve space for bytemap
@@ -226,16 +226,16 @@ void Heap_Recycle(Heap *heap) {
     allocator.recycledBlockCount = 0;
     allocator.freeMemoryAfterCollection = 0;
 
-    word_t *current = heap->blockHeaderStart;
+    word_t *current = heap->blockMetaStart;
     word_t *currentBlockStart = heap->heapStart;
-    LineHeader *lineHeaders = (LineHeader *)heap->lineHeaderStart;
-    while (current < heap->blockHeaderEnd) {
-        BlockHeader *blockHeader = (BlockHeader *)current;
-        Block_Recycle(&allocator, blockHeader, currentBlockStart, lineHeaders);
-        // block_print(blockHeader);
+    LineMeta *lineMetas = (LineMeta *)heap->lineMetaStart;
+    while (current < heap->blockMetaEnd) {
+        BlockMeta *blockMeta = (BlockMeta *)current;
+        Block_Recycle(&allocator, blockMeta, currentBlockStart, lineMetas);
+        // block_print(blockMeta);
         current += WORDS_IN_BLOCK_METADATA;
         currentBlockStart += WORDS_IN_BLOCK;
-        lineHeaders += LINE_COUNT;
+        lineMetas += LINE_COUNT;
     }
     LargeAllocator_Sweep(&largeAllocator);
 
@@ -294,15 +294,15 @@ void Heap_Grow(Heap *heap, size_t increment) {
     word_t *heapEnd = heap->heapEnd;
     heap->heapEnd = heapEnd + increment;
     heap->smallHeapSize += increment * WORD_SIZE;
-    word_t *blockHeaderEnd = heap->blockHeaderEnd;
-    heap->blockHeaderEnd += incrementInBlocks * WORDS_IN_BLOCK_METADATA;
-    heap->lineHeaderEnd +=
+    word_t *blockMetaEnd = heap->blockMetaEnd;
+    heap->blockMetaEnd += incrementInBlocks * WORDS_IN_BLOCK_METADATA;
+    heap->lineMetaEnd +=
         incrementInBlocks * LINE_COUNT * LINE_METADATA_SIZE / WORD_SIZE;
 
-    BlockHeader *lastBlock =
-        (BlockHeader *)(heap->blockHeaderEnd - WORDS_IN_BLOCK_METADATA);
+    BlockMeta *lastBlock =
+        (BlockMeta *)(heap->blockMetaEnd - WORDS_IN_BLOCK_METADATA);
     BlockList_AddBlocksLast(&allocator.freeBlocks,
-                            (BlockHeader *)blockHeaderEnd, lastBlock);
+                            (BlockMeta *)blockMetaEnd, lastBlock);
 
     allocator.blockCount += incrementInBlocks;
     allocator.freeBlockCount += incrementInBlocks;

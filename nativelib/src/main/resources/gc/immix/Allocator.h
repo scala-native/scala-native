@@ -7,7 +7,7 @@
 #include "datastructures/Bytemap.h"
 
 typedef struct {
-    word_t *blockHeaderStart;
+    word_t *blockMetaStart;
     Bytemap *bytemap;
     word_t *heapStart;
     uint64_t blockCount;
@@ -15,11 +15,11 @@ typedef struct {
     uint64_t recycledBlockCount;
     BlockList freeBlocks;
     uint64_t freeBlockCount;
-    BlockHeader *block;
+    BlockMeta *block;
     word_t *blockStart;
     word_t *cursor;
     word_t *limit;
-    BlockHeader *largeBlock;
+    BlockMeta *largeBlock;
     word_t *largeBlockStart;
     word_t *largeCursor;
     word_t *largeLimit;
@@ -27,7 +27,7 @@ typedef struct {
 } Allocator;
 
 void Allocator_Init(Allocator *allocator, Bytemap *bytemap,
-                    word_t *blockHeaderStart, word_t *heapStart,
+                    word_t *blockMetaStart, word_t *heapStart,
                     uint32_t blockCount);
 bool Allocator_CanInitCursors(Allocator *allocator);
 void Allocator_InitCursors(Allocator *allocator);

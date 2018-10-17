@@ -11,7 +11,7 @@ extern int __object_array_id;
 
 bool StackOverflowHandler_smallHeapOverflowHeapScan(Heap *heap, Stack *stack);
 void StackOverflowHandler_largeHeapOverflowHeapScan(Heap *heap, Stack *stack);
-bool StackOverflowHandler_overflowBlockScan(BlockHeader *block, Heap *heap,
+bool StackOverflowHandler_overflowBlockScan(BlockMeta *block, Heap *heap,
                                             Stack *stack);
 
 void StackOverflowHandler_CheckForOverflow() {
@@ -52,18 +52,18 @@ void StackOverflowHandler_CheckForOverflow() {
 
 bool StackOverflowHandler_smallHeapOverflowHeapScan(Heap *heap, Stack *stack) {
     assert(Heap_IsWordInSmallHeap(heap, currentOverflowAddress));
-    BlockHeader *currentBlock = Block_GetBlockHeader(
-        heap->blockHeaderStart, heap->heapStart, currentOverflowAddress);
-    word_t *blockHeaderEnd = heap->blockHeaderEnd;
+    BlockMeta *currentBlock = Block_GetBlockMeta(
+        heap->blockMetaStart, heap->heapStart, currentOverflowAddress);
+    word_t *blockMetaEnd = heap->blockMetaEnd;
 
-    while ((word_t *)currentBlock < blockHeaderEnd) {
+    while ((word_t *)currentBlock < blockMetaEnd) {
         if (StackOverflowHandler_overflowBlockScan(currentBlock, heap, stack)) {
             return true;
         }
         currentBlock =
-            (BlockHeader *)((word_t *)currentBlock + WORDS_IN_BLOCK_METADATA);
-        currentOverflowAddress = BlockHeader_GetBlockStart(
-            heap->blockHeaderStart, heap->heapStart, currentBlock);
+            (BlockMeta *)((word_t *)currentBlock + WORDS_IN_BLOCK_METADATA);
+        currentOverflowAddress = BlockMeta_GetBlockStart(
+            heap->blockMetaStart, heap->heapStart, currentBlock);
     }
     return false;
 }
@@ -128,12 +128,12 @@ void StackOverflowHandler_largeHeapOverflowHeapScan(Heap *heap, Stack *stack) {
     }
 }
 
-bool overflowScanLine(Heap *heap, Stack *stack, BlockHeader *block,
+bool overflowScanLine(Heap *heap, Stack *stack, BlockMeta *block,
                       word_t *blockStart, int lineIndex) {
     Bytemap *bytemap = heap->smallBytemap;
 
     word_t *lineStart = Block_GetLineAddress(blockStart, lineIndex);
-    if (Line_IsMarked(Heap_LineHeaderForWord(heap, lineStart))) {
+    if (Line_IsMarked(Heap_LineMetaForWord(heap, lineStart))) {
         word_t *lineEnd = lineStart + WORDS_IN_LINE;
         for (word_t *cursor = lineStart; cursor < lineEnd;
              cursor += ALLOCATION_ALIGNMENT_WORDS) {
@@ -158,13 +158,13 @@ bool overflowScanLine(Heap *heap, Stack *stack, BlockHeader *block,
  * object is found it returns `false`.
  *
  */
-bool StackOverflowHandler_overflowBlockScan(BlockHeader *block, Heap *heap,
+bool StackOverflowHandler_overflowBlockScan(BlockMeta *block, Heap *heap,
                                             Stack *stack) {
-    if (!BlockHeader_IsMarked(block)) {
+    if (!BlockMeta_IsMarked(block)) {
         return false;
     }
 
-    word_t *blockStart = BlockHeader_GetBlockStart(heap->blockHeaderStart,
+    word_t *blockStart = BlockMeta_GetBlockStart(heap->blockMetaStart,
                                                    heap->heapStart, block);
     int lineIndex =
         Block_GetLineIndexFromWord(blockStart, currentOverflowAddress);

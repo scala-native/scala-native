@@ -2,7 +2,7 @@
 #define IMMIX_BLOCKHEADER_H
 
 #include <stdint.h>
-#include "LineHeader.h"
+#include "LineMeta.h"
 #include "../GCTypes.h"
 #include "../Constants.h"
 #include "../Log.h"
@@ -14,39 +14,37 @@ typedef enum {
 } BlockFlag;
 
 typedef struct {
-    struct {
-        uint8_t mark;
-        uint8_t flags;
-        int16_t first;
-        int32_t nextBlock;
-    } header;
-} BlockHeader;
+    uint8_t mark;
+    uint8_t flags;
+    int16_t first;
+    int32_t nextBlock;
+} BlockMeta;
 
-static inline bool BlockHeader_IsRecyclable(BlockHeader *blockHeader) {
-    return blockHeader->header.flags == block_recyclable;
+static inline bool BlockMeta_IsRecyclable(BlockMeta *blockMeta) {
+    return blockMeta->flags == block_recyclable;
 }
-static inline bool BlockHeader_IsUnavailable(BlockHeader *blockHeader) {
-    return blockHeader->header.flags == block_unavailable;
+static inline bool BlockMeta_IsUnavailable(BlockMeta *blockMeta) {
+    return blockMeta->flags == block_unavailable;
 }
-static inline bool BlockHeader_IsFree(BlockHeader *blockHeader) {
-    return blockHeader->header.flags == block_free;
+static inline bool BlockMeta_IsFree(BlockMeta *blockMeta) {
+    return blockMeta->flags == block_free;
 }
 
-static inline void BlockHeader_SetFlag(BlockHeader *blockHeader,
-                                       BlockFlag blockFlag) {
-    blockHeader->header.flags = blockFlag;
+static inline void BlockMeta_SetFlag(BlockMeta *blockMeta,
+                                     BlockFlag blockFlag) {
+    blockMeta->flags = blockFlag;
 }
 
-static inline bool BlockHeader_IsMarked(BlockHeader *blockHeader) {
-    return blockHeader->header.mark == 1;
+static inline bool BlockMeta_IsMarked(BlockMeta *blockMeta) {
+    return blockMeta->mark == 1;
 }
 
-static inline void BlockHeader_Unmark(BlockHeader *blockHeader) {
-    blockHeader->header.mark = 0;
+static inline void BlockMeta_Unmark(BlockMeta *blockMeta) {
+    blockMeta->mark = 0;
 }
 
-static inline void BlockHeader_Mark(BlockHeader *blockHeader) {
-    blockHeader->header.mark = 1;
+static inline void BlockMeta_Mark(BlockMeta *blockMeta) {
+    blockMeta->mark = 1;
 }
 
 // Block specific
@@ -71,19 +69,19 @@ static inline word_t *Block_GetLineWord(word_t *blockStart, int lineIndex,
     return &Block_GetLineAddress(blockStart, lineIndex)[wordIndex];
 }
 
-static inline FreeLineHeader *Block_GetFreeLineHeader(word_t *blockStart,
+static inline FreeLineMeta *Block_GetFreeLineMeta(word_t *blockStart,
                                                       int lineIndex) {
-    return (FreeLineHeader *)Block_GetLineAddress(blockStart, lineIndex);
+    return (FreeLineMeta *)Block_GetLineAddress(blockStart, lineIndex);
 }
 
 static inline word_t *Block_GetBlockStartForWord(word_t *word) {
     return (word_t *)((word_t)word & BLOCK_SIZE_IN_BYTES_INVERSE_MASK);
 }
 
-// Transitional Block<->BlockHeader
-static inline uint32_t BlockHeader_GetBlockIndex(word_t *blockHeaderStart,
-                                                 BlockHeader *blockHeader) {
-    return (uint32_t)((word_t *)blockHeader - blockHeaderStart) /
+// Transitional Block<->BlockMeta
+static inline uint32_t BlockMeta_GetBlockIndex(word_t *blockMetaStart,
+                                                 BlockMeta *blockMeta) {
+    return (uint32_t)((word_t *)blockMeta - blockMetaStart) /
            WORDS_IN_BLOCK_METADATA;
 }
 
@@ -93,24 +91,24 @@ static inline uint32_t Block_GetBlockIndexForWord(word_t *heapStart,
     return (uint32_t)((blockStart - heapStart) / WORDS_IN_BLOCK);
 }
 
-static inline word_t *BlockHeader_GetBlockStart(word_t *blockHeaderStart,
+static inline word_t *BlockMeta_GetBlockStart(word_t *blockMetaStart,
                                                 word_t *heapStart,
-                                                BlockHeader *blockHeader) {
-    uint32_t index = BlockHeader_GetBlockIndex(blockHeaderStart, blockHeader);
+                                                BlockMeta *blockMeta) {
+    uint32_t index = BlockMeta_GetBlockIndex(blockMetaStart, blockMeta);
     return heapStart + (WORDS_IN_BLOCK * index);
 }
 
-static inline BlockHeader *BlockHeader_GetFromIndex(word_t *blockHeaderStart,
+static inline BlockMeta *BlockMeta_GetFromIndex(word_t *blockMetaStart,
                                                     uint32_t index) {
-    return (BlockHeader *)(blockHeaderStart +
+    return (BlockMeta *)(blockMetaStart +
                            (index * WORDS_IN_BLOCK_METADATA));
 }
 
-static inline BlockHeader *Block_GetBlockHeader(word_t *blockHeaderStart,
+static inline BlockMeta *Block_GetBlockMeta(word_t *blockMetaStart,
                                                 word_t *heapStart,
                                                 word_t *word) {
     uint32_t index = Block_GetBlockIndexForWord(heapStart, word);
-    return BlockHeader_GetFromIndex(blockHeaderStart, index);
+    return BlockMeta_GetFromIndex(blockMetaStart, index);
 }
 
 #endif // IMMIX_BLOCKHEADER_H

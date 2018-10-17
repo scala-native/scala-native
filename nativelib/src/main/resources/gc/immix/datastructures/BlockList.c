@@ -2,21 +2,21 @@
 #include <stdio.h>
 #include "BlockList.h"
 #include "../Log.h"
-#include "../headers/BlockHeader.h"
+#include "../metadata/BlockMeta.h"
 
-BlockHeader *BlockList_getNextBlock(word_t *blockHeaderStart,
-                                    BlockHeader *header) {
-    int32_t nextBlockId = header->header.nextBlock;
+BlockMeta *BlockList_getNextBlock(word_t *blockMetaStart,
+                                    BlockMeta *blockMeta) {
+    int32_t nextBlockId = blockMeta->nextBlock;
     if (nextBlockId == LAST_BLOCK) {
         return NULL;
     } else if (nextBlockId == 0) {
-        nextBlockId = BlockHeader_GetBlockIndex(blockHeaderStart, header) + 1;
+        nextBlockId = BlockMeta_GetBlockIndex(blockMetaStart, blockMeta) + 1;
     }
-    return BlockHeader_GetFromIndex(blockHeaderStart, nextBlockId);
+    return BlockMeta_GetFromIndex(blockMetaStart, nextBlockId);
 }
 
-void BlockList_Init(BlockList *blockList, word_t *blockHeaderStart) {
-    blockList->blockHeaderStart = blockHeaderStart;
+void BlockList_Init(BlockList *blockList, word_t *blockMetaStart) {
+    blockList->blockMetaStart = blockMetaStart;
     blockList->first = NULL;
     blockList->last = NULL;
 }
@@ -25,38 +25,38 @@ inline bool BlockList_IsEmpty(BlockList *blockList) {
     return blockList->first == NULL;
 }
 
-BlockHeader *BlockList_RemoveFirstBlock(BlockList *blockList) {
+BlockMeta *BlockList_RemoveFirstBlock(BlockList *blockList) {
     assert(blockList->first != NULL);
-    BlockHeader *block = blockList->first;
+    BlockMeta *block = blockList->first;
     if (block == blockList->last) {
         blockList->first = NULL;
     }
     blockList->first =
-        BlockList_getNextBlock(blockList->blockHeaderStart, block);
+        BlockList_getNextBlock(blockList->blockMetaStart, block);
     return block;
 }
 
-void BlockList_AddLast(BlockList *blockList, BlockHeader *blockHeader) {
+void BlockList_AddLast(BlockList *blockList, BlockMeta *blockMeta) {
     if (blockList->first == NULL) {
-        blockList->first = blockHeader;
+        blockList->first = blockMeta;
     } else {
-        blockList->last->header.nextBlock =
-            BlockHeader_GetBlockIndex(blockList->blockHeaderStart, blockHeader);
+        blockList->last->nextBlock =
+            BlockMeta_GetBlockIndex(blockList->blockMetaStart, blockMeta);
     }
-    blockList->last = blockHeader;
-    blockHeader->header.nextBlock = LAST_BLOCK;
+    blockList->last = blockMeta;
+    blockMeta->nextBlock = LAST_BLOCK;
 }
 
-void BlockList_AddBlocksLast(BlockList *blockList, BlockHeader *first,
-                             BlockHeader *last) {
+void BlockList_AddBlocksLast(BlockList *blockList, BlockMeta *first,
+                             BlockMeta *last) {
     if (blockList->first == NULL) {
         blockList->first = first;
     } else {
-        blockList->last->header.nextBlock =
-            BlockHeader_GetBlockIndex(blockList->blockHeaderStart, first);
+        blockList->last->nextBlock =
+            BlockMeta_GetBlockIndex(blockList->blockMetaStart, first);
     }
     blockList->last = last;
-    last->header.nextBlock = LAST_BLOCK;
+    last->nextBlock = LAST_BLOCK;
 }
 
 void BlockList_Clear(BlockList *blockList) {
@@ -66,10 +66,10 @@ void BlockList_Clear(BlockList *blockList) {
 
 void BlockList_Print(BlockList *blockList) {
     printf("BlockList: ");
-    BlockHeader *current = blockList->first;
+    BlockMeta *current = blockList->first;
     while (current != NULL) {
-        printf("[%p %d] -> ", current, current->header.first);
-        current = BlockList_getNextBlock(blockList->blockHeaderStart, current);
+        printf("[%p %d] -> ", current, current->first);
+        current = BlockList_getNextBlock(blockList->blockMetaStart, current);
     }
     printf("\n");
 }
