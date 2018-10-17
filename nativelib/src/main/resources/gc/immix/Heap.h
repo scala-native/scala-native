@@ -55,8 +55,7 @@ static inline LineMeta *Heap_LineMetaForWord(Heap *heap, word_t *word) {
     word_t lineGlobalIndex =
         ((word_t)word - (word_t)heap->heapStart) >> LINE_SIZE_BITS;
     assert(lineGlobalIndex >= 0);
-    LineMeta *lineMeta =
-        (LineMeta *)heap->lineMetaStart + lineGlobalIndex;
+    LineMeta *lineMeta = (LineMeta *)heap->lineMetaStart + lineGlobalIndex;
     assert(lineMeta < (LineMeta *)heap->lineMetaEnd);
     return lineMeta;
 }

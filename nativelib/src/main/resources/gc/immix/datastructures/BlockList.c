@@ -5,7 +5,7 @@
 #include "../metadata/BlockMeta.h"
 
 BlockMeta *BlockList_getNextBlock(word_t *blockMetaStart,
-                                    BlockMeta *blockMeta) {
+                                  BlockMeta *blockMeta) {
     int32_t nextBlockId = blockMeta->nextBlock;
     if (nextBlockId == LAST_BLOCK) {
         return NULL;
@@ -31,8 +31,7 @@ BlockMeta *BlockList_RemoveFirstBlock(BlockList *blockList) {
     if (block == blockList->last) {
         blockList->first = NULL;
     }
-    blockList->first =
-        BlockList_getNextBlock(blockList->blockMetaStart, block);
+    blockList->first = BlockList_getNextBlock(blockList->blockMetaStart, block);
     return block;
 }
 

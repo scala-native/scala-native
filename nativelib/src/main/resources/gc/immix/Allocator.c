@@ -30,7 +30,7 @@ void Allocator_Init(Allocator *allocator, Bytemap *bytemap,
     allocator->freeBlocks.first = (BlockMeta *)blockMetaStart;
     BlockMeta *lastBlockMeta =
         (BlockMeta *)(blockMetaStart +
-                     ((blockCount - 1) * WORDS_IN_BLOCK_METADATA));
+                      ((blockCount - 1) * WORDS_IN_BLOCK_METADATA));
     allocator->freeBlocks.last = lastBlockMeta;
     lastBlockMeta->nextBlock = LAST_BLOCK;
 
@@ -71,8 +71,7 @@ void Allocator_InitCursors(Allocator *allocator) {
     // Init large cursor
     assert(!BlockList_IsEmpty(&allocator->freeBlocks));
 
-    BlockMeta *largeBlock =
-        BlockList_RemoveFirstBlock(&allocator->freeBlocks);
+    BlockMeta *largeBlock = BlockList_RemoveFirstBlock(&allocator->freeBlocks);
     allocator->largeBlock = largeBlock;
     word_t *largeBlockStart = BlockMeta_GetBlockStart(
         allocator->blockMetaStart, allocator->heapStart, largeBlock);

@@ -73,7 +73,7 @@ void Heap_Init(Heap *heap, size_t initialSmallHeapSize,
     assert(LINE_COUNT * LINE_SIZE == BLOCK_TOTAL_SIZE);
     assert(LINE_COUNT * LINE_METADATA_SIZE % WORD_SIZE == 0);
     heap->lineMetaEnd = lineMetaStart + initialBlockCount * LINE_COUNT *
-                                                LINE_METADATA_SIZE / WORD_SIZE;
+                                            LINE_METADATA_SIZE / WORD_SIZE;
 
     word_t *smallHeapStart = Heap_mapAndAlign(memoryLimit, BLOCK_TOTAL_SIZE);
 
@@ -303,8 +303,8 @@ void Heap_Grow(Heap *heap, size_t increment) {
 
     BlockMeta *lastBlock =
         (BlockMeta *)(heap->blockMetaEnd - WORDS_IN_BLOCK_METADATA);
-    BlockList_AddBlocksLast(&allocator.freeBlocks,
-                            (BlockMeta *)blockMetaEnd, lastBlock);
+    BlockList_AddBlocksLast(&allocator.freeBlocks, (BlockMeta *)blockMetaEnd,
+                            lastBlock);
 
     allocator.blockCount += incrementInBlocks;
     allocator.freeBlockCount += incrementInBlocks;

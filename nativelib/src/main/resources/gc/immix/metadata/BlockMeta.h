@@ -43,9 +43,7 @@ static inline void BlockMeta_Unmark(BlockMeta *blockMeta) {
     blockMeta->mark = 0;
 }
 
-static inline void BlockMeta_Mark(BlockMeta *blockMeta) {
-    blockMeta->mark = 1;
-}
+static inline void BlockMeta_Mark(BlockMeta *blockMeta) { blockMeta->mark = 1; }
 
 // Block specific
 
@@ -70,7 +68,7 @@ static inline word_t *Block_GetLineWord(word_t *blockStart, int lineIndex,
 }
 
 static inline FreeLineMeta *Block_GetFreeLineMeta(word_t *blockStart,
-                                                      int lineIndex) {
+                                                  int lineIndex) {
     return (FreeLineMeta *)Block_GetLineAddress(blockStart, lineIndex);
 }
 
@@ -80,7 +78,7 @@ static inline word_t *Block_GetBlockStartForWord(word_t *word) {
 
 // Transitional Block<->BlockMeta
 static inline uint32_t BlockMeta_GetBlockIndex(word_t *blockMetaStart,
-                                                 BlockMeta *blockMeta) {
+                                               BlockMeta *blockMeta) {
     return (uint32_t)((word_t *)blockMeta - blockMetaStart) /
            WORDS_IN_BLOCK_METADATA;
 }
@@ -92,21 +90,19 @@ static inline uint32_t Block_GetBlockIndexForWord(word_t *heapStart,
 }
 
 static inline word_t *BlockMeta_GetBlockStart(word_t *blockMetaStart,
-                                                word_t *heapStart,
-                                                BlockMeta *blockMeta) {
+                                              word_t *heapStart,
+                                              BlockMeta *blockMeta) {
     uint32_t index = BlockMeta_GetBlockIndex(blockMetaStart, blockMeta);
     return heapStart + (WORDS_IN_BLOCK * index);
 }
 
 static inline BlockMeta *BlockMeta_GetFromIndex(word_t *blockMetaStart,
-                                                    uint32_t index) {
-    return (BlockMeta *)(blockMetaStart +
-                           (index * WORDS_IN_BLOCK_METADATA));
+                                                uint32_t index) {
+    return (BlockMeta *)(blockMetaStart + (index * WORDS_IN_BLOCK_METADATA));
 }
 
 static inline BlockMeta *Block_GetBlockMeta(word_t *blockMetaStart,
-                                                word_t *heapStart,
-                                                word_t *word) {
+                                            word_t *heapStart, word_t *word) {
     uint32_t index = Block_GetBlockIndexForWord(heapStart, word);
     return BlockMeta_GetFromIndex(blockMetaStart, index);
 }

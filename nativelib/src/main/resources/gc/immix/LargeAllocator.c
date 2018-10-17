@@ -75,7 +75,8 @@ void LargeAllocator_AddChunk(LargeAllocator *allocator, Chunk *chunk,
 
         currentChunk->nothing = NULL;
         currentChunk->size = chunkSize;
-        ObjectMeta *currentMeta = Bytemap_Get(allocator->bytemap, (word_t *)current);
+        ObjectMeta *currentMeta =
+            Bytemap_Get(allocator->bytemap, (word_t *)current);
         ObjectMeta_SetPlaceholder(currentMeta);
 
         current += chunkSize;
@@ -136,7 +137,8 @@ void LargeAllocator_Sweep(LargeAllocator *allocator) {
     void *heapEnd = (ubyte_t *)allocator->offset + allocator->size;
 
     while (current != heapEnd) {
-        ObjectMeta *currentMeta = Bytemap_Get(allocator->bytemap, (word_t *)current);
+        ObjectMeta *currentMeta =
+            Bytemap_Get(allocator->bytemap, (word_t *)current);
         assert(!ObjectMeta_IsFree(currentMeta));
         if (ObjectMeta_IsMarked(currentMeta)) {
             ObjectMeta_SetAllocated(currentMeta);
@@ -145,7 +147,8 @@ void LargeAllocator_Sweep(LargeAllocator *allocator) {
         } else {
             size_t currentSize = Object_ChunkSize(current);
             Object *next = Object_NextLargeObject(current);
-            ObjectMeta *nextMeta = Bytemap_Get(allocator->bytemap, (word_t *)next);
+            ObjectMeta *nextMeta =
+                Bytemap_Get(allocator->bytemap, (word_t *)next);
             while (next != heapEnd && !ObjectMeta_IsMarked(nextMeta)) {
                 currentSize += Object_ChunkSize(next);
                 ObjectMeta_SetFree(nextMeta);

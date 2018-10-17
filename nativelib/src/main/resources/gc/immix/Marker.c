@@ -43,7 +43,7 @@ void Marker_markConservative(Heap *heap, Stack *stack, word_t *address) {
         object = Object_GetLargeUnmarkedObject(bytemap, address);
     }
     if (object != NULL) {
-        ObjectMeta *objectMeta = Bytemap_Get(bytemap, (word_t *) object);
+        ObjectMeta *objectMeta = Bytemap_Get(bytemap, (word_t *)object);
         assert(ObjectMeta_IsAllocated(objectMeta));
         if (ObjectMeta_IsAllocated(objectMeta)) {
             Marker_markObject(heap, stack, bytemap, object, objectMeta);
@@ -67,7 +67,8 @@ void Marker_Mark(Heap *heap, Stack *stack) {
                         // is within heap
                         ObjectMeta *fieldMeta = Bytemap_Get(bytemap, field);
                         if (ObjectMeta_IsAllocated(fieldMeta)) {
-                            Marker_markObject(heap, stack, bytemap, (Object *)field, fieldMeta);
+                            Marker_markObject(heap, stack, bytemap,
+                                              (Object *)field, fieldMeta);
                         }
                     }
                 }
@@ -79,11 +80,12 @@ void Marker_Mark(Heap *heap, Stack *stack) {
             while (ptr_map[i] != LAST_FIELD_OFFSET) {
                 word_t *field = object->fields[ptr_map[i]];
                 Bytemap *bytemap = Heap_BytemapForWord(heap, field);
-                if (bytemap != NULL){
+                if (bytemap != NULL) {
                     // is within heap
                     ObjectMeta *fieldMeta = Bytemap_Get(bytemap, field);
                     if (ObjectMeta_IsAllocated(fieldMeta)) {
-                        Marker_markObject(heap, stack, bytemap, (Object *)field, fieldMeta);
+                        Marker_markObject(heap, stack, bytemap, (Object *)field,
+                                          fieldMeta);
                     }
                 }
                 ++i;
@@ -119,7 +121,7 @@ void Marker_markModules(Heap *heap, Stack *stack) {
     for (int i = 0; i < nb_modules; i++) {
         Object *object = (Object *)modules[i];
         Bytemap *bytemap = Heap_BytemapForWord(heap, (word_t *)object);
-        if (bytemap != NULL){
+        if (bytemap != NULL) {
             // is within heap
             ObjectMeta *objectMeta = Bytemap_Get(bytemap, (word_t *)object);
             if (ObjectMeta_IsAllocated(objectMeta)) {

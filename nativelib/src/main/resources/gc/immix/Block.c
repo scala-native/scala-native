@@ -94,16 +94,14 @@ void Block_Recycle(Allocator *allocator, BlockMeta *blockMeta,
 
                     allocator->freeMemoryAfterCollection += LINE_SIZE;
                 }
-                Block_GetFreeLineMeta(blockStart, lastRecyclable)->size =
-                    size;
+                Block_GetFreeLineMeta(blockStart, lastRecyclable)->size = size;
             }
         }
         // If there is no recyclable line, the block is unavailable
         if (lastRecyclable == NO_RECYCLABLE_LINE) {
             BlockMeta_SetFlag(blockMeta, block_unavailable);
         } else {
-            Block_GetFreeLineMeta(blockStart, lastRecyclable)->next =
-                LAST_HOLE;
+            Block_GetFreeLineMeta(blockStart, lastRecyclable)->next = LAST_HOLE;
             BlockMeta_SetFlag(blockMeta, block_recyclable);
             BlockList_AddLast(&allocator->recycledBlocks, blockMeta);
 

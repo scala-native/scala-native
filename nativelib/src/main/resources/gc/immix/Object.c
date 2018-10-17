@@ -22,7 +22,8 @@ static inline bool Object_isAligned(word_t *word) {
     return ((word_t)word & ALLOCATION_ALIGNMENT_INVERSE_MASK) == (word_t)word;
 }
 
-Object *Object_getInnerPointer(word_t *blockStart, word_t *word, ObjectMeta * wordMeta) {
+Object *Object_getInnerPointer(word_t *blockStart, word_t *word,
+                               ObjectMeta *wordMeta) {
     word_t *current = word;
     ObjectMeta *currentMeta = wordMeta;
     while (current >= blockStart && ObjectMeta_IsFree(currentMeta)) {
@@ -68,7 +69,7 @@ Object *Object_GetUnmarkedObject(Heap *heap, word_t *word) {
     }
 }
 
-Object *Object_getLargeInnerPointer(word_t *word, ObjectMeta * wordMeta) {
+Object *Object_getLargeInnerPointer(word_t *word, ObjectMeta *wordMeta) {
     word_t *current = (word_t *)((word_t)word & LARGE_BLOCK_MASK);
     ObjectMeta *currentMeta = wordMeta;
 
@@ -95,8 +96,7 @@ Object *Object_GetLargeUnmarkedObject(Bytemap *bytemap, word_t *word) {
         word = (word_t *)((word_t)word & LARGE_BLOCK_MASK);
     }
     ObjectMeta *wordMeta = Bytemap_Get(bytemap, word);
-    if (ObjectMeta_IsPlaceholder(wordMeta) ||
-        ObjectMeta_IsMarked(wordMeta)) {
+    if (ObjectMeta_IsPlaceholder(wordMeta) || ObjectMeta_IsMarked(wordMeta)) {
         return NULL;
     } else if (ObjectMeta_IsAllocated(wordMeta)) {
         return (Object *)word;
@@ -124,7 +124,7 @@ void Object_Mark(Heap *heap, Object *object, ObjectMeta *objectMeta) {
         word_t *lastWord = Object_LastWord(object);
 
         assert(blockMeta == Block_GetBlockMeta(heap->blockMetaStart,
-                                                   heap->heapStart, lastWord));
+                                               heap->heapStart, lastWord));
         LineMeta *firstLineMeta = Heap_LineMetaForWord(heap, (word_t *)object);
         LineMeta *lastLineMeta = Heap_LineMetaForWord(heap, lastWord);
         assert(firstLineMeta <= lastLineMeta);

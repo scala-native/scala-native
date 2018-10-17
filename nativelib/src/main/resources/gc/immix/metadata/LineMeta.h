@@ -19,11 +19,7 @@ typedef uint8_t LineMeta;
 static inline bool Line_IsMarked(LineMeta *lineMeta) {
     return *lineMeta == line_marked;
 }
-static inline void Line_Mark(LineMeta *lineMeta) {
-    *lineMeta = line_marked;
-}
-static inline void Line_Unmark(LineMeta *lineMeta) {
-    *lineMeta = line_empty;
-}
+static inline void Line_Mark(LineMeta *lineMeta) { *lineMeta = line_marked; }
+static inline void Line_Unmark(LineMeta *lineMeta) { *lineMeta = line_empty; }
 
 #endif // IMMIX_LINEMETA_H
