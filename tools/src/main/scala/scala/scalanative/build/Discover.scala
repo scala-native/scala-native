@@ -89,7 +89,7 @@ object Discover {
         .getOrElse(fail)
     }
   }
-  
+
   /** Detect the target architecture as a Scala Native build structure
    * @param triple the LLVM target triple, see Discover.targetTriple
    * @return the detected target architecture
