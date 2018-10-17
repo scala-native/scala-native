@@ -65,7 +65,7 @@ object SocketSuite extends tests.Suite {
   Platform.cross3264(
     {
       // something is broken on i386
-      testFails("soTimeout") {
+      testFails("soTimeout", issue = 1369) {
         val s = new Socket()
         try {
           val prevValue = s.getSoTimeout
