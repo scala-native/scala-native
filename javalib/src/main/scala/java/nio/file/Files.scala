@@ -1,6 +1,7 @@
 package java.nio.file
 
 import java.lang.Iterable
+import java.lang.OutOfMemoryError
 
 import java.io.{
   BufferedReader,
@@ -431,7 +432,11 @@ object Files {
     !exists(path, options)
 
   def readAllBytes(path: Path): Array[Byte] = Zone { implicit z =>
-    val len   = size(path).toInt
+    val pathSize: Long = size(path)
+    if (!pathSize.isValidInt) {
+      throw new OutOfMemoryError("Required array size too large")
+    }
+    val len   = pathSize.toInt
     val bytes = scala.scalanative.runtime.ByteArray.alloc(len)
     val fd    = fcntl.open(toCString(path.toString), fcntl.O_RDONLY)
     try {
