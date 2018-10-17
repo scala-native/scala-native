@@ -7,15 +7,8 @@
 #include "datastructures/Stack.h"
 #include "datastructures/Bytemap.h"
 #include "metadata/LineMeta.h"
+#include "Stats.h"
 #include <stdio.h>
-
-typedef struct {
-    FILE *outFile;
-    uint64_t collections;
-    uint64_t timestamp_us[GC_STATS_MEASUREMENTS];
-    uint64_t mark_time_us[GC_STATS_MEASUREMENTS];
-    uint64_t sweep_time_us[GC_STATS_MEASUREMENTS];
-} HeapStats;
 
 typedef struct {
     size_t memoryLimit;
@@ -31,7 +24,7 @@ typedef struct {
     size_t largeHeapSize;
     Bytemap *smallBytemap;
     Bytemap *largeBytemap;
-    HeapStats *stats;
+    Stats *stats;
 } Heap;
 
 static inline bool Heap_IsWordInLargeHeap(Heap *heap, word_t *word) {
