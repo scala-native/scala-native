@@ -28,7 +28,7 @@ static inline size_t Bytemap_index(Bytemap *bytemap, word_t *address) {
     return index;
 }
 
-static inline ObjectMeta *Bytemap_Cursor(Bytemap *bytemap, word_t *address) {
+static inline ObjectMeta *Bytemap_Get(Bytemap *bytemap, word_t *address) {
     size_t index =
         (address - bytemap->firstAddress) / ALLOCATION_ALIGNMENT_WORDS;
     assert(address >= bytemap->firstAddress);
@@ -55,7 +55,7 @@ static inline void Bytemap_ClearLineAt(ObjectMeta *cursor) {
 }
 
 static inline void Bytemap_ClearBlock(Bytemap *bytemap, word_t *start) {
-    memset(Bytemap_Cursor(bytemap, start), 0,
+    memset(Bytemap_Get(bytemap, start), 0,
            WORDS_IN_BLOCK / ALLOCATION_ALIGNMENT_WORDS);
 }
 

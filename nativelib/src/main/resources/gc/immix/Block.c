@@ -40,7 +40,7 @@ void Block_Recycle(Allocator *allocator, BlockMeta *blockMeta,
         int16_t lineIndex = 0;
         LineMeta *lineMeta = lineMetas;
         word_t *lineStart = blockStart;
-        ubyte_t *bytemapCursor = Bytemap_Cursor(bytemap, lineStart);
+        ubyte_t *bytemapCursor = Bytemap_Get(bytemap, lineStart);
 
         int lastRecyclable = NO_RECYCLABLE_LINE;
         while (lineIndex < LINE_COUNT) {

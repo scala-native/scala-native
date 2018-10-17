@@ -58,7 +58,7 @@ Object *Object_GetUnmarkedObject(Heap *heap, word_t *word) {
         word = (word_t *)((word_t)word & ALLOCATION_ALIGNMENT_INVERSE_MASK);
     }
 
-    ObjectMeta *wordMeta = Bytemap_Cursor(heap->smallBytemap, word);
+    ObjectMeta *wordMeta = Bytemap_Get(heap->smallBytemap, word);
     if (ObjectMeta_IsPlaceholder(wordMeta) || ObjectMeta_IsMarked(wordMeta)) {
         return NULL;
     } else if (ObjectMeta_IsAllocated(wordMeta)) {
@@ -94,7 +94,7 @@ Object *Object_GetLargeUnmarkedObject(Bytemap *bytemap, word_t *word) {
     if (((word_t)word & LARGE_BLOCK_MASK) != (word_t)word) {
         word = (word_t *)((word_t)word & LARGE_BLOCK_MASK);
     }
-    ObjectMeta *wordMeta = Bytemap_Cursor(bytemap, word);
+    ObjectMeta *wordMeta = Bytemap_Get(bytemap, word);
     if (ObjectMeta_IsPlaceholder(wordMeta) ||
         ObjectMeta_IsMarked(wordMeta)) {
         return NULL;

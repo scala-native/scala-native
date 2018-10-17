@@ -84,7 +84,7 @@ bool StackOverflowHandler_overflowMark(Heap *heap, Stack *stack,
                         Heap_BytemapForWord(heap, (word_t *)fieldObject);
                     if (bytemapF != NULL) {
                         // is within heap
-                        ObjectMeta *metaF = Bytemap_Cursor(bytemapF, (word_t *)fieldObject);
+                        ObjectMeta *metaF = Bytemap_Get(bytemapF, (word_t *)fieldObject);
                         if (ObjectMeta_IsAllocated(metaF)) {
                             Stack_Push(stack, object);
                             return true;
@@ -103,7 +103,7 @@ bool StackOverflowHandler_overflowMark(Heap *heap, Stack *stack,
                     Heap_BytemapForWord(heap, (word_t *)fieldObject);
                 if (bytemapF != NULL){
                     // is within heap
-                    ObjectMeta *metaF = Bytemap_Cursor(bytemapF, (word_t *)fieldObject);
+                    ObjectMeta *metaF = Bytemap_Get(bytemapF, (word_t *)fieldObject);
                     if (ObjectMeta_IsAllocated(metaF)) {
                         Stack_Push(stack, object);
                         return true;
@@ -126,7 +126,7 @@ void StackOverflowHandler_largeHeapOverflowHeapScan(Heap *heap, Stack *stack) {
 
     while (currentOverflowAddress != heapEnd) {
         Object *object = (Object *)currentOverflowAddress;
-        ObjectMeta *cursorMeta = Bytemap_Cursor(heap->largeBytemap, currentOverflowAddress);
+        ObjectMeta *cursorMeta = Bytemap_Get(heap->largeBytemap, currentOverflowAddress);
         if (StackOverflowHandler_overflowMark(heap, stack, object, cursorMeta)) {
             return;
         }
@@ -142,7 +142,7 @@ bool overflowScanLine(Heap *heap, Stack *stack, BlockMeta *block,
     if (Line_IsMarked(Heap_LineMetaForWord(heap, lineStart))) {
         word_t *lineEnd = lineStart + WORDS_IN_LINE;
         word_t *cursor = lineStart;
-        ObjectMeta *cursorMeta = Bytemap_Cursor(bytemap, cursor);
+        ObjectMeta *cursorMeta = Bytemap_Get(bytemap, cursor);
         while (cursor < lineEnd) {
             Object *object = (Object *)cursor;
             if (ObjectMeta_IsMarked(cursorMeta) &&
