@@ -92,6 +92,17 @@ object StringSuite extends tests.Suite {
     assert("Grueszszszeszszszszsze".replaceAll("sz", "ß") == "Grueßßßeßßßßße")
   }
 
+  test("replaceAllLiterally with $ in replacement, issue #1070") {
+    val literal     = "{.0}"
+    val replacement = "\\$ipsum"
+    val prefix      = "Lorem "
+    val suffix      = " dolor"
+    val text        = prefix + literal + suffix
+    val expected    = prefix + replacement + suffix
+
+    assert(text.replaceAllLiterally(literal, replacement) == expected)
+  }
+
   private implicit class StringOps(val s: String) extends AnyVal {
     def splitVec(sep: String, limit: Int = 0) = s.split(sep, limit).toVector
   }

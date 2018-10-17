@@ -21,27 +21,9 @@ class Formatter(
     private var _locale: Locale
 ) extends Closeable
     with Flushable {
+
   if (_out == null)
     _out = new StringBuilder()
-
-  final class BigDecimalLayoutForm private (name: String, ordinal: Int)
-      extends Enum[BigDecimalLayoutForm](name, ordinal)
-
-  object BigDecimalLayoutForm {
-    final val SCIENTIFIC    = new BigDecimalLayoutForm("SCIENTIFIC", 0)
-    final val DECIMAL_FLOAT = new BigDecimalLayoutForm("DECIMAL_FLOAT", 1)
-
-    def valueOf(name: String): BigDecimalLayoutForm =
-      _values.find(_.name == name).getOrElse {
-        throw new IllegalArgumentException(
-          "No enum constant java.util.Formatter.BigDecimalLayoutForm." + name)
-      }
-
-    private val _values: Array[BigDecimalLayoutForm] =
-      Array(SCIENTIFIC, DECIMAL_FLOAT)
-
-    def values(): Array[BigDecimalLayoutForm] = _values.clone()
-  }
 
   private var closed: Boolean = false
 
@@ -224,6 +206,27 @@ class Formatter(
 }
 
 object Formatter {
+
+  final class BigDecimalLayoutForm private (name: String, ordinal: Int)
+      extends Enum[BigDecimalLayoutForm](name, ordinal)
+
+  object BigDecimalLayoutForm {
+
+    final val SCIENTIFIC    = new BigDecimalLayoutForm("SCIENTIFIC", 0)
+    final val DECIMAL_FLOAT = new BigDecimalLayoutForm("DECIMAL_FLOAT", 1)
+
+    def valueOf(name: String): BigDecimalLayoutForm =
+      _values.find(_.name == name).getOrElse {
+        throw new IllegalArgumentException(
+          "No enum constant java.util.Formatter.BigDecimalLayoutForm." + name)
+      }
+
+    private val _values: Array[BigDecimalLayoutForm] =
+      Array(SCIENTIFIC, DECIMAL_FLOAT)
+
+    def values(): Array[BigDecimalLayoutForm] = _values.clone()
+  }
+
   private def closeOutputStream(os: OutputStream): Unit = {
     if (null == os)
       return
