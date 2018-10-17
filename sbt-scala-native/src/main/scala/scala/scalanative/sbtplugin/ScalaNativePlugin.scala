@@ -47,7 +47,7 @@ object ScalaNativePlugin extends AutoPlugin {
       taskKey[String](
         "LTO variant used for release mode (either \"none\", \"thin\" or \"full\").")
 
-    val targetArchitecture =
+    val nativeTargetArchitecture =
       settingKey[TargetArchitecture]("The target architecture to build for")
   }
 

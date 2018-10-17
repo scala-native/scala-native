@@ -21,7 +21,7 @@ final case class CrossBitsPlatform(bits: Bits) extends Platform {
         }
       )
       .settings(
-        targetArchitecture := (bits match {
+        nativeTargetArchitecture := (bits match {
           case ThirtyTwo => TargetArchitecture.i386
           case SixtyFour => TargetArchitecture.x86_64
         })

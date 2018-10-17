@@ -10,15 +10,14 @@ case object SixtyFour extends Bits(64)
 /**
  * Represents the platform the built code will be run on.
  */
-sealed class TargetArchitecture(val bits: Bits,
-                                val isIntel: Boolean,
-                                val id: Int) {
+sealed class TargetArchitecture(val bits: Bits) {
   val is32 = bits == ThirtyTwo
 }
 
 object TargetArchitecture {
-  case object i386   extends TargetArchitecture(ThirtyTwo, true, 1)
-  case object i686   extends TargetArchitecture(ThirtyTwo, true, 2)
-  case object x86_64 extends TargetArchitecture(SixtyFour, true, 3)
-  case object arm    extends TargetArchitecture(ThirtyTwo, false, 4)
+  case object i386    extends TargetArchitecture(ThirtyTwo)
+  case object i686    extends TargetArchitecture(ThirtyTwo)
+  case object x86_64  extends TargetArchitecture(SixtyFour)
+  case object arm     extends TargetArchitecture(ThirtyTwo)
+  case object aarch64 extends TargetArchitecture(SixtyFour)
 }

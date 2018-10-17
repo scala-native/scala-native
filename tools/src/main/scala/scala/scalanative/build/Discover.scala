@@ -59,7 +59,7 @@ object Discover {
     libs
   }
 
-  /** Detect the target architecture.
+  /** Detect the target architecture as a clang triple.
    *
    *  @param clang   A path to the executable `clang`.
    *  @param workdir A working directory where the compilation will take place.
@@ -87,6 +87,25 @@ object Discover {
             line.split("\"").apply(1)
         }
         .getOrElse(fail)
+    }
+  }
+  
+  /** Detect the target architecture as a Scala Native build structure
+   * @param triple the LLVM target triple, see Discover.targetTriple
+   * @return the detected target architecture
+   */
+  def targetArchitecture(triple: String): TargetArchitecture = {
+    import TargetArchitecture._
+    triple.head match {
+      case "x86_64"  => x86_64
+      case "i386"    => i386
+      case "i686"    => i686
+      case "armv7l"  => arm
+      case "aarch64" => aarch64
+      case other =>
+        println(
+          s"Unable to detect target architecture from $other, defaulting to x86_64")
+        x86_64
     }
   }
 

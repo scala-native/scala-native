@@ -53,9 +53,9 @@ object ScalaNativePluginInternal {
 
   lazy val scalaNativeBaseSettings: Seq[Setting[_]] = Seq(
     crossVersion := ScalaNativeCrossVersion.binary(
-      targetArchitecture.value.bits),
+      nativeTargetArchitectured.value.bits),
     platformDepsCrossVersion := ScalaNativeCrossVersion.binary(
-      targetArchitecture.value.bits),
+      nativeTargetArchitecture.value.bits),
     nativeClang := interceptBuildException(Discover.clang().toFile),
     nativeClang in NativeTest := (nativeClang in Test).value,
     nativeClangPP := interceptBuildException(Discover.clangpp().toFile),
@@ -74,7 +74,7 @@ object ScalaNativePluginInternal {
     nativeGC in NativeTest := (nativeGC in Test).value,
     nativeLTO := Discover.LTO(),
     nativeLTO in NativeTest := (nativeLTO in Test).value,
-    targetArchitecture := {
+    nativeTargetArchitecture := {
       val cwd = {
         val workdir = crossTarget.value / "native"
         IO.delete(workdir)
@@ -82,18 +82,9 @@ object ScalaNativePluginInternal {
         workdir
       }.toPath
       val clang = Discover.clang().toFile.toPath
-      Discover.targetTriple(clang, cwd).split("-").head match {
-        case "x86_64" => x86_64
-        case "i386"   => i386
-        case "i686"   => i686
-        case "armv7l" => arm
-        case other =>
-          println(
-            s"Unable to detect target architecture from $other, defaulting to x86_64")
-          x86_64
-      }
+      Discover.targetArchitecture(Discover.targetTriple(clang, cwd))
     },
-    targetArchitecture in NativeTest := (targetArchitecture in Test).value
+    nativeTargetArchitecture in NativeTest := (nativeTargetArchitecture in Test).value
   )
 
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
@@ -154,7 +145,7 @@ object ScalaNativePluginInternal {
         .withMode(mode)
         .withLinkStubs(nativeLinkStubs.value)
         .withLTO(nativeLTO.value)
-        .withTargetArchitecture(targetArchitecture.value)
+        .withTargetArchitecture(nativeTargetArchitecture.value)
     },
     nativeLink := {
       val logger  = streams.value.log.toLogger
