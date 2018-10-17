@@ -96,7 +96,7 @@ object Discover {
    */
   def targetArchitecture(triple: String): TargetArchitecture = {
     import TargetArchitecture._
-    triple.head match {
+    triple.split('-').head match {
       case "x86_64"  => x86_64
       case "i386"    => i386
       case "i686"    => i686
