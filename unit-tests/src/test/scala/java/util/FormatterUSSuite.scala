@@ -3446,9 +3446,7 @@ object FormatterUSSuite extends tests.Suite {
     }
   }
 
-  testFails("Formatter.BigDecimalLayoutForm.values()", 0) { // issue not filed yet
-    // BigDecimalLayoutForm.values() segfaults for unknown reason.
-    throw new NullPointerException() // to prevent segfault
+  test("Formatter.BigDecimalLayoutForm.values()") {
     import Formatter.BigDecimalLayoutForm
     val vals: Array[BigDecimalLayoutForm] = BigDecimalLayoutForm.values()
     assertEquals(2, vals.length)
@@ -3456,9 +3454,7 @@ object FormatterUSSuite extends tests.Suite {
     assertEquals(BigDecimalLayoutForm.DECIMAL_FLOAT, vals(1))
   }
 
-  testFails("Formatter.BigDecimalLayoutForm.valueOf(String)", 0) { // issue not filed yet
-    // the line `val sci: ...` segfaults for unknown reason.
-    throw new NullPointerException() // to prevent segfault
+  test("Formatter.BigDecimalLayoutForm.valueOf(String)") {
     import Formatter.BigDecimalLayoutForm
     val sci: BigDecimalLayoutForm = BigDecimalLayoutForm.valueOf("SCIENTIFIC")
     assertEquals(BigDecimalLayoutForm.SCIENTIFIC, sci)
