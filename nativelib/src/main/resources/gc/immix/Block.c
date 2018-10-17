@@ -2,6 +2,7 @@
 #include <memory.h>
 #include "Block.h"
 #include "Object.h"
+#include "metadata/ObjectMeta.h"
 #include "Log.h"
 #include "Allocator.h"
 #include "Marker.h"
@@ -15,7 +16,7 @@ INLINE void Block_recycleUnmarkedBlock(Allocator *allocator,
     // does not unmark in LineMetas because those are ignored by the allocator
     BlockList_AddLast(&allocator->freeBlocks, blockMeta);
     BlockMeta_SetFlag(blockMeta, block_free);
-    Bytemap_ClearBlock(allocator->bytemap, blockStart);
+    ObjectMeta_ClearBlockAt(Bytemap_Get(allocator->bytemap, blockStart));
 }
 
 /**
@@ -40,7 +41,7 @@ void Block_Recycle(Allocator *allocator, BlockMeta *blockMeta,
         int16_t lineIndex = 0;
         LineMeta *lineMeta = lineMetas;
         word_t *lineStart = blockStart;
-        ubyte_t *bytemapCursor = Bytemap_Get(bytemap, lineStart);
+        ObjectMeta *bytemapCursor = Bytemap_Get(bytemap, lineStart);
 
         int lastRecyclable = NO_RECYCLABLE_LINE;
         while (lineIndex < LINE_COUNT) {
@@ -48,7 +49,7 @@ void Block_Recycle(Allocator *allocator, BlockMeta *blockMeta,
             if (Line_IsMarked(lineMeta)) {
                 // Unmark line
                 Line_Unmark(lineMeta);
-                Bytemap_SweepLineAt(bytemapCursor);
+                ObjectMeta_SweepLineAt(bytemapCursor);
 
                 // next line
                 lineIndex++;
@@ -69,7 +70,7 @@ void Block_Recycle(Allocator *allocator, BlockMeta *blockMeta,
                     Block_GetFreeLineMeta(blockStart, lastRecyclable)->next =
                         lineIndex;
                 }
-                Bytemap_ClearLineAt(bytemapCursor);
+                ObjectMeta_ClearLineAt(bytemapCursor);
                 lastRecyclable = lineIndex;
 
                 // next line
@@ -82,7 +83,7 @@ void Block_Recycle(Allocator *allocator, BlockMeta *blockMeta,
 
                 uint8_t size = 1;
                 while (lineIndex < LINE_COUNT && !Line_IsMarked(lineMeta)) {
-                    Bytemap_ClearLineAt(bytemapCursor);
+                    ObjectMeta_ClearLineAt(bytemapCursor);
                     size++;
 
                     // next line
