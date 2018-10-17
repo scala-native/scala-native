@@ -22,14 +22,15 @@ static inline bool Object_isAligned(word_t *word) {
     return ((word_t)word & ALLOCATION_ALIGNMENT_INVERSE_MASK) == (word_t)word;
 }
 
-Object *Object_getInnerPointer(Bytemap *bytemap, word_t *blockStart,
-                               word_t *word) {
+Object *Object_getInnerPointer(word_t *blockStart, word_t *word, ObjectMeta * wordMeta) {
     word_t *current = word;
-    while (current >= blockStart && Bytemap_IsFree(bytemap, current)) {
+    ObjectMeta *currentMeta = wordMeta;
+    while (current >= blockStart && ObjectMeta_IsFree(currentMeta)) {
         current -= ALLOCATION_ALIGNMENT_WORDS;
+        currentMeta = Bytemap_PreviousWord(currentMeta);
     }
     Object *object = (Object *)current;
-    if (Bytemap_IsAllocated(bytemap, current) &&
+    if (ObjectMeta_IsAllocated(currentMeta) &&
         word < current + Object_Size(object) / WORD_SIZE) {
 #ifdef DEBUG_PRINT
         if ((word_t *)current != word) {
@@ -57,26 +58,27 @@ Object *Object_GetUnmarkedObject(Heap *heap, word_t *word) {
         word = (word_t *)((word_t)word & ALLOCATION_ALIGNMENT_INVERSE_MASK);
     }
 
-    if (Bytemap_IsPlaceholder(heap->smallBytemap, word) ||
-        Bytemap_IsMarked(heap->smallBytemap, word)) {
+    ObjectMeta *wordMeta = Bytemap_Cursor(heap->smallBytemap, word);
+    if (ObjectMeta_IsPlaceholder(wordMeta) || ObjectMeta_IsMarked(wordMeta)) {
         return NULL;
-    } else if (Bytemap_IsAllocated(heap->smallBytemap, word)) {
+    } else if (ObjectMeta_IsAllocated(wordMeta)) {
         return (Object *)word;
     } else {
-        return Object_getInnerPointer(heap->smallBytemap, blockStart, word);
+        return Object_getInnerPointer(blockStart, word, wordMeta);
     }
 }
 
-Object *Object_getLargeInnerPointer(LargeAllocator *allocator, word_t *word) {
+Object *Object_getLargeInnerPointer(word_t *word, ObjectMeta * wordMeta) {
     word_t *current = (word_t *)((word_t)word & LARGE_BLOCK_MASK);
-    Bytemap *bytemap = allocator->bytemap;
+    ObjectMeta *currentMeta = wordMeta;
 
-    while (Bytemap_IsFree(bytemap, current)) {
-        current -= LARGE_BLOCK_SIZE / WORD_SIZE;
+    while (ObjectMeta_IsFree(currentMeta)) {
+        current -= ALLOCATION_ALIGNMENT_WORDS;
+        currentMeta = Bytemap_PreviousWord(currentMeta);
     }
 
     Object *object = (Object *)current;
-    if (Bytemap_IsAllocated(bytemap, current) &&
+    if (ObjectMeta_IsAllocated(currentMeta) &&
         word < (word_t *)object + Object_ChunkSize(object) / WORD_SIZE) {
 #ifdef DEBUG_PRINT
         printf("large inner pointer: %p, object: %p\n", word, object);
@@ -88,17 +90,18 @@ Object *Object_getLargeInnerPointer(LargeAllocator *allocator, word_t *word) {
     }
 }
 
-Object *Object_GetLargeUnmarkedObject(LargeAllocator *allocator, word_t *word) {
+Object *Object_GetLargeUnmarkedObject(Bytemap *bytemap, word_t *word) {
     if (((word_t)word & LARGE_BLOCK_MASK) != (word_t)word) {
         word = (word_t *)((word_t)word & LARGE_BLOCK_MASK);
     }
-    if (Bytemap_IsPlaceholder(allocator->bytemap, word) ||
-        Bytemap_IsMarked(allocator->bytemap, word)) {
+    ObjectMeta *wordMeta = Bytemap_Cursor(bytemap, word);
+    if (ObjectMeta_IsPlaceholder(wordMeta) ||
+        ObjectMeta_IsMarked(wordMeta)) {
         return NULL;
-    } else if (Bytemap_IsAllocated(allocator->bytemap, word)) {
+    } else if (ObjectMeta_IsAllocated(wordMeta)) {
         return (Object *)word;
     } else {
-        Object *object = Object_getLargeInnerPointer(allocator, word);
+        Object *object = Object_getLargeInnerPointer(word, wordMeta);
         assert(object == NULL ||
                (word >= (word_t *)object &&
                 word < (word_t *)Object_NextLargeObject(object)));
@@ -106,10 +109,9 @@ Object *Object_GetLargeUnmarkedObject(LargeAllocator *allocator, word_t *word) {
     }
 }
 
-void Object_Mark(Heap *heap, Object *object) {
+void Object_Mark(Heap *heap, Object *object, ObjectMeta *objectMeta) {
     // Mark the object itself
-    Bytemap *bytemap = Heap_BytemapForWord(heap, (word_t *)object);
-    Bytemap_SetMarked(bytemap, (word_t *)object);
+    ObjectMeta_SetMarked(objectMeta);
 
     if (Heap_IsWordInSmallHeap(heap, (word_t *)object)) {
         // Mark the block
@@ -123,8 +125,7 @@ void Object_Mark(Heap *heap, Object *object) {
 
         assert(blockMeta == Block_GetBlockMeta(heap->blockMetaStart,
                                                    heap->heapStart, lastWord));
-        LineMeta *firstLineMeta =
-            Heap_LineMetaForWord(heap, (word_t *)object);
+        LineMeta *firstLineMeta = Heap_LineMetaForWord(heap, (word_t *)object);
         LineMeta *lastLineMeta = Heap_LineMetaForWord(heap, lastWord);
         assert(firstLineMeta <= lastLineMeta);
         for (LineMeta *lineMeta = firstLineMeta; lineMeta <= lastLineMeta;

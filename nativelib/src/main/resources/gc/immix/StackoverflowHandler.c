@@ -69,10 +69,9 @@ bool StackOverflowHandler_smallHeapOverflowHeapScan(Heap *heap, Stack *stack) {
 }
 
 bool StackOverflowHandler_overflowMark(Heap *heap, Stack *stack,
-                                       Object *object) {
-    Bytemap *bytemap = Heap_BytemapForWord(heap, (word_t *)object);
+                                       Object *object, ObjectMeta *objectMeta) {
 
-    if (Bytemap_IsMarked(bytemap, (word_t *)object)) {
+    if (ObjectMeta_IsMarked(objectMeta)) {
         if (Object_IsArray(object)) {
             if (object->rtti->rt.id == __object_array_id) {
                 ArrayHeader *arrayHeader = (ArrayHeader *)object;
@@ -83,10 +82,13 @@ bool StackOverflowHandler_overflowMark(Heap *heap, Stack *stack,
                     Object *fieldObject = (Object *)field;
                     Bytemap *bytemapF =
                         Heap_BytemapForWord(heap, (word_t *)fieldObject);
-                    if (bytemapF != NULL &&
-                        Bytemap_IsAllocated(bytemapF, (word_t *)fieldObject)) {
-                        Stack_Push(stack, object);
-                        return true;
+                    if (bytemapF != NULL) {
+                        // is within heap
+                        ObjectMeta *metaF = Bytemap_Cursor(bytemapF, (word_t *)fieldObject);
+                        if (ObjectMeta_IsAllocated(metaF)) {
+                            Stack_Push(stack, object);
+                            return true;
+                        }
                     }
                 }
             }
@@ -99,10 +101,13 @@ bool StackOverflowHandler_overflowMark(Heap *heap, Stack *stack,
                 Object *fieldObject = (Object *)field;
                 Bytemap *bytemapF =
                     Heap_BytemapForWord(heap, (word_t *)fieldObject);
-                if (bytemapF != NULL &&
-                    Bytemap_IsAllocated(bytemapF, (word_t *)fieldObject)) {
-                    Stack_Push(stack, object);
-                    return true;
+                if (bytemapF != NULL){
+                    // is within heap
+                    ObjectMeta *metaF = Bytemap_Cursor(bytemapF, (word_t *)fieldObject);
+                    if (ObjectMeta_IsAllocated(metaF)) {
+                        Stack_Push(stack, object);
+                        return true;
+                    }
                 }
                 ++i;
             }
@@ -121,7 +126,8 @@ void StackOverflowHandler_largeHeapOverflowHeapScan(Heap *heap, Stack *stack) {
 
     while (currentOverflowAddress != heapEnd) {
         Object *object = (Object *)currentOverflowAddress;
-        if (StackOverflowHandler_overflowMark(heap, stack, object)) {
+        ObjectMeta *cursorMeta = Bytemap_Cursor(heap->largeBytemap, currentOverflowAddress);
+        if (StackOverflowHandler_overflowMark(heap, stack, object, cursorMeta)) {
             return;
         }
         currentOverflowAddress = (word_t *)Object_NextLargeObject(object);
@@ -135,13 +141,17 @@ bool overflowScanLine(Heap *heap, Stack *stack, BlockMeta *block,
     word_t *lineStart = Block_GetLineAddress(blockStart, lineIndex);
     if (Line_IsMarked(Heap_LineMetaForWord(heap, lineStart))) {
         word_t *lineEnd = lineStart + WORDS_IN_LINE;
-        for (word_t *cursor = lineStart; cursor < lineEnd;
-             cursor += ALLOCATION_ALIGNMENT_WORDS) {
+        word_t *cursor = lineStart;
+        ObjectMeta *cursorMeta = Bytemap_Cursor(bytemap, cursor);
+        while (cursor < lineEnd) {
             Object *object = (Object *)cursor;
-            if (Bytemap_IsMarked(bytemap, cursor) &&
-                StackOverflowHandler_overflowMark(heap, stack, object)) {
+            if (ObjectMeta_IsMarked(cursorMeta) &&
+                StackOverflowHandler_overflowMark(heap, stack, object, cursorMeta)) {
                 return true;
             }
+
+            cursor += ALLOCATION_ALIGNMENT_WORDS;
+            cursorMeta = Bytemap_NextWord(cursorMeta);
         }
     }
     return false;

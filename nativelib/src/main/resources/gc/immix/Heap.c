@@ -166,7 +166,8 @@ NOINLINE word_t *Heap_allocSmallSlow(Heap *heap, uint32_t size) {
 done:
     assert(Heap_IsWordInSmallHeap(heap, (word_t *)object));
     assert(object != NULL);
-    Bytemap_SetAllocated(allocator.bytemap, (word_t *)object);
+    ObjectMeta *objectMeta = Bytemap_Cursor(allocator.bytemap, (word_t *)object);
+    ObjectMeta_SetAllocated(objectMeta);
     return (word_t *)object;
 }
 
@@ -187,7 +188,8 @@ INLINE word_t *Heap_AllocSmall(Heap *heap, uint32_t size) {
     memset(start, 0, size);
 
     Object *object = (Object *)start;
-    Bytemap_SetAllocated(allocator.bytemap, (word_t *)object);
+    ObjectMeta *objectMeta = Bytemap_Cursor(allocator.bytemap, (word_t *)object);
+    ObjectMeta_SetAllocated(objectMeta);
 
     __builtin_prefetch(object + 36, 0, 3);
 
