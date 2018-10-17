@@ -3171,9 +3171,8 @@ object FormatterSuite extends tests.Suite {
     }
   }
 
-  testFails(
-    "format(String, Array[Object]) for Float/Double conversion type 'a' and 'A'",
-    0) { // issue not filed yet
+  test(
+    "format(String, Array[Object]) for Float/Double conversion type 'a' and 'A'") {
     val tripleA: Array[Array[Any]] = Array(
       Array(-0f, "%a", "-0x0.0p0"),
       Array(-0f, "%#.3a", "-0x0.000p0"),
