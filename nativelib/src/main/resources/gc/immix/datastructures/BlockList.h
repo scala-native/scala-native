@@ -18,6 +18,5 @@ BlockMeta *BlockList_RemoveFirstBlock(BlockList *blockList);
 void BlockList_AddLast(BlockList *blockList, BlockMeta *block);
 void BlockList_AddBlocksLast(BlockList *blockList, BlockMeta *first,
                              BlockMeta *last);
-void BlockList_Print(BlockList *blockList);
 
 #endif // IMMIX_BLOCLIST_H

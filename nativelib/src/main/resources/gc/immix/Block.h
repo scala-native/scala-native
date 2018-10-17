@@ -8,5 +8,4 @@
 
 void Block_Recycle(Allocator *allocator, BlockMeta *block, word_t *blockStart,
                    LineMeta *lineMetas);
-void Block_Print(BlockMeta *block);
 #endif // IMMIX_BLOCK_H

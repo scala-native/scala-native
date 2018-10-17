@@ -16,17 +16,6 @@ Chunk *LargeAllocator_chunkAddOffset(Chunk *chunk, size_t words) {
     return (Chunk *)((ubyte_t *)chunk + words);
 }
 
-void LargeAllocator_printFreeList(FreeList *list, int i) {
-    Chunk *current = list->first;
-    printf("list %d: ", i);
-    while (current != NULL) {
-        assert((1 << (i + LARGE_OBJECT_MIN_SIZE_BITS)) == current->size);
-        printf("[%p %zu] -> ", current, current->size);
-        current = current->next;
-    }
-    printf("\n");
-}
-
 void LargeAllocator_freeListAddBlockLast(FreeList *freeList, Chunk *chunk) {
     if (freeList->first == NULL) {
         freeList->first = chunk;
@@ -131,15 +120,6 @@ Object *LargeAllocator_GetBlock(LargeAllocator *allocator,
     Object *object = (Object *)chunk;
     memset(object, 0, actualBlockSize);
     return object;
-}
-
-void LargeAllocator_Print(LargeAllocator *alloc) {
-    for (int i = 0; i < FREE_LIST_COUNT; i++) {
-        if (alloc->freeLists[i].first != NULL) {
-
-            LargeAllocator_printFreeList(&alloc->freeLists[i], i);
-        }
-    }
 }
 
 void LargeAllocator_clearFreeLists(LargeAllocator *allocator) {

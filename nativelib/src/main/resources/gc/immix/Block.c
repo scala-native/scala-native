@@ -112,19 +112,3 @@ void Block_Recycle(Allocator *allocator, BlockMeta *blockMeta,
         }
     }
 }
-
-void Block_Print(BlockMeta *block) {
-    printf("%p ", block);
-    if (BlockMeta_IsFree(block)) {
-        printf("FREE\n");
-    } else if (BlockMeta_IsUnavailable(block)) {
-        printf("UNAVAILABLE\n");
-    } else {
-        printf("RECYCLED\n");
-    }
-    printf("mark: %d, flags: %d, first: %d, nextBlock: %d \n",
-           block->mark, block->flags, block->first,
-           block->nextBlock);
-    printf("\n");
-    fflush(stdout);
-}

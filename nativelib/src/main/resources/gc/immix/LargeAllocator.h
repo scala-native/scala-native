@@ -28,6 +28,5 @@ void LargeAllocator_AddChunk(LargeAllocator *allocator, Chunk *chunk,
 Object *LargeAllocator_GetBlock(LargeAllocator *allocator,
                                 size_t requestedBlockSize);
 void LargeAllocator_Sweep(LargeAllocator *allocator);
-void LargeAllocator_Print(LargeAllocator *alloc);
 
 #endif // IMMIX_LARGEALLOCATOR_H

@@ -63,13 +63,3 @@ void BlockList_Clear(BlockList *blockList) {
     blockList->first = NULL;
     blockList->last = NULL;
 }
-
-void BlockList_Print(BlockList *blockList) {
-    printf("BlockList: ");
-    BlockMeta *current = blockList->first;
-    while (current != NULL) {
-        printf("[%p %d] -> ", current, current->first);
-        current = BlockList_getNextBlock(blockList->blockMetaStart, current);
-    }
-    printf("\n");
-}
