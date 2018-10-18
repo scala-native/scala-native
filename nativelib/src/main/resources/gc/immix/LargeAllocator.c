@@ -12,28 +12,8 @@ inline static int LargeAllocator_sizeToLinkedListIndex(size_t size) {
     return log2_floor(size) - LARGE_OBJECT_MIN_SIZE_BITS;
 }
 
-static inline size_t LargeAllocator_getChunkSize(Chunk *chunk) {
-    return (chunk->header.size << WORD_SIZE_BITS);
-}
-
-static inline void LargeAllocator_setChunkSize(Chunk *chunk, size_t size) {
-    chunk->header.size = (uint32_t)(size >> WORD_SIZE_BITS);
-}
-
 Chunk *LargeAllocator_chunkAddOffset(Chunk *chunk, size_t words) {
     return (Chunk *)((ubyte_t *)chunk + words);
-}
-
-void LargeAllocator_printFreeList(FreeList *list, int i) {
-    Chunk *current = list->first;
-    printf("list %d: ", i);
-    while (current != NULL) {
-        assert((1 << (i + LARGE_OBJECT_MIN_SIZE_BITS)) ==
-               LargeAllocator_getChunkSize(current));
-        printf("[%p %zu] -> ", current, LargeAllocator_getChunkSize(current));
-        current = current->next;
-    }
-    printf("\n");
 }
 
 void LargeAllocator_freeListAddBlockLast(FreeList *freeList, Chunk *chunk) {
@@ -62,11 +42,11 @@ void LargeAllocator_freeListInit(FreeList *freeList) {
     freeList->last = NULL;
 }
 
-void LargeAllocator_Init(LargeAllocator *allocator, word_t *offset,
-                         size_t size) {
+void LargeAllocator_Init(LargeAllocator *allocator, word_t *offset, size_t size,
+                         Bytemap *bytemap) {
     allocator->offset = offset;
     allocator->size = size;
-    allocator->bitmap = Bitmap_Alloc(size, offset);
+    allocator->bytemap = bytemap;
 
     for (int i = 0; i < FREE_LIST_COUNT; i++) {
         LargeAllocator_freeListInit(&allocator->freeLists[i]);
@@ -92,10 +72,12 @@ void LargeAllocator_AddChunk(LargeAllocator *allocator, Chunk *chunk,
         Chunk *currentChunk = (Chunk *)current;
         LargeAllocator_freeListAddBlockLast(&allocator->freeLists[listIndex],
                                             (Chunk *)current);
-        LargeAllocator_setChunkSize(currentChunk, chunkSize);
-        currentChunk->header.type = object_large;
-        Object_SetFree(&((Object *)currentChunk)->header);
-        Bitmap_SetBit(allocator->bitmap, current);
+
+        currentChunk->nothing = NULL;
+        currentChunk->size = chunkSize;
+        ObjectMeta *currentMeta =
+            Bytemap_Get(allocator->bytemap, (word_t *)current);
+        ObjectMeta_SetPlaceholder(currentMeta);
 
         current += chunkSize;
         remaining_size -= chunkSize;
@@ -119,7 +101,7 @@ Object *LargeAllocator_GetBlock(LargeAllocator *allocator,
         return NULL;
     }
 
-    size_t chunkSize = LargeAllocator_getChunkSize(chunk);
+    size_t chunkSize = chunk->size;
     assert(chunkSize >= MIN_BLOCK_SIZE);
 
     if (chunkSize - MIN_BLOCK_SIZE >= actualBlockSize) {
@@ -134,20 +116,11 @@ Object *LargeAllocator_GetBlock(LargeAllocator *allocator,
             &allocator->freeLists[listIndex]);
     }
 
-    Bitmap_SetBit(allocator->bitmap, (ubyte_t *)chunk);
+    ObjectMeta *objectMeta = Bytemap_Get(allocator->bytemap, (word_t *)chunk);
+    ObjectMeta_SetAllocated(objectMeta);
     Object *object = (Object *)chunk;
-    Object_SetAllocated(&object->header);
-    memset(Object_ToMutatorAddress(object), 0, actualBlockSize - WORD_SIZE);
+    memset(object, 0, actualBlockSize);
     return object;
-}
-
-void LargeAllocator_Print(LargeAllocator *alloc) {
-    for (int i = 0; i < FREE_LIST_COUNT; i++) {
-        if (alloc->freeLists[i].first != NULL) {
-
-            LargeAllocator_printFreeList(&alloc->freeLists[i], i);
-        }
-    }
 }
 
 void LargeAllocator_clearFreeLists(LargeAllocator *allocator) {
@@ -164,19 +137,23 @@ void LargeAllocator_Sweep(LargeAllocator *allocator) {
     void *heapEnd = (ubyte_t *)allocator->offset + allocator->size;
 
     while (current != heapEnd) {
-        assert(Bitmap_GetBit(allocator->bitmap, (ubyte_t *)current));
-        ObjectHeader *currentHeader = &current->header;
-        if (Object_IsMarked(currentHeader)) {
-            Object_SetAllocated(currentHeader);
+        ObjectMeta *currentMeta =
+            Bytemap_Get(allocator->bytemap, (word_t *)current);
+        assert(!ObjectMeta_IsFree(currentMeta));
+        if (ObjectMeta_IsMarked(currentMeta)) {
+            ObjectMeta_SetAllocated(currentMeta);
 
             current = Object_NextLargeObject(current);
         } else {
             size_t currentSize = Object_ChunkSize(current);
             Object *next = Object_NextLargeObject(current);
-            while (next != heapEnd && !Object_IsMarked(&next->header)) {
+            ObjectMeta *nextMeta =
+                Bytemap_Get(allocator->bytemap, (word_t *)next);
+            while (next != heapEnd && !ObjectMeta_IsMarked(nextMeta)) {
                 currentSize += Object_ChunkSize(next);
-                Bitmap_ClearBit(allocator->bitmap, (ubyte_t *)next);
+                ObjectMeta_SetFree(nextMeta);
                 next = Object_NextLargeObject(next);
+                nextMeta = Bytemap_Get(allocator->bytemap, (word_t *)next);
             }
             LargeAllocator_AddChunk(allocator, (Chunk *)current, currentSize);
             current = next;
