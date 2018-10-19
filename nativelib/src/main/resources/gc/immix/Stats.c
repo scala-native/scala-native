@@ -4,7 +4,7 @@
 void Stats_writeStatsToFile(Stats *stats);
 
 void Stats_Init(Stats *stats, const char *statsFile) {
-    stats->outFile = fopen(statsFile, "a");
+    stats->outFile = fopen(statsFile, "w");
     fprintf(stats->outFile, "mark_time_ns,sweep_time_ns\n");
     stats->collections = 0;
 }
