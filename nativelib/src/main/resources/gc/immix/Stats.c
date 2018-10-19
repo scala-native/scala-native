@@ -25,7 +25,6 @@ void Stats_writeStatsToFile(Stats *stats) {
     if (remainder == 0) {
         remainder = GC_STATS_MEASUREMENTS;
     }
-    uint64_t base = collections - remainder;
     FILE *outFile = stats->outFile;
     for (uint64_t i = 0; i < remainder; i++) {
         fprintf(outFile, "%lu,%lu\n", stats->mark_time_ns[i], stats->sweep_time_ns[i]);
