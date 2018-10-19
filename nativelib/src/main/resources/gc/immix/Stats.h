@@ -9,7 +9,6 @@
 typedef struct {
     FILE *outFile;
     uint64_t collections;
-    uint64_t timestamp_ns[GC_STATS_MEASUREMENTS];
     uint64_t mark_time_ns[GC_STATS_MEASUREMENTS];
     uint64_t sweep_time_ns[GC_STATS_MEASUREMENTS];
 } Stats;

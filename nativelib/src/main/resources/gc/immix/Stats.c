@@ -5,13 +5,12 @@ void Stats_writeStatsToFile(Stats *stats);
 
 void Stats_Init(Stats *stats, const char *statsFile) {
     stats->outFile = fopen(statsFile, "a");
-    fprintf(stats->outFile, "timestamp_ns,collection,mark_time_ns,sweep_time_ns\n");
+    fprintf(stats->outFile, "mark_time_ns,sweep_time_ns\n");
     stats->collections = 0;
 }
 
 void Stats_RecordCollection(Stats *stats, uint64_t start_ns, uint64_t sweep_start_ns, uint64_t end_ns) {
     uint64_t index = stats->collections % GC_STATS_MEASUREMENTS;
-    stats->timestamp_ns[index] = start_ns;
     stats->mark_time_ns[index] = sweep_start_ns - start_ns;
     stats->sweep_time_ns[index] = end_ns - sweep_start_ns;
     stats->collections += 1;
@@ -29,8 +28,7 @@ void Stats_writeStatsToFile(Stats *stats) {
     uint64_t base = collections - remainder;
     FILE *outFile = stats->outFile;
     for (uint64_t i = 0; i < remainder; i++) {
-        fprintf(outFile, "%lu,%lu,%lu,%lu\n",
-                stats->timestamp_ns[i], base + i, stats->mark_time_ns[i], stats->sweep_time_ns[i]);
+        fprintf(outFile, "%lu,%lu\n", stats->mark_time_ns[i], stats->sweep_time_ns[i]);
     }
     fflush(outFile);
 }
