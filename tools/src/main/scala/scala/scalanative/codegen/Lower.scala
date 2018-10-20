@@ -600,20 +600,12 @@ object Lower {
       val charsConst = Val.Const(
         Val.StructValue(
           Global.None,
-          if (targetArchitecture.is32) {
-            Seq(
-              rtti(CharArrayCls).const,
-              charsLength,
-              Val.ArrayValue(Type.Short, chars.map(c => Val.Short(c.toShort)))
-            )
-          } else {
-            Seq(
-              rtti(CharArrayCls).const,
-              charsLength,
-              Val.Int(0), // padding to get next field aligned properly
-              Val.ArrayValue(Type.Short, chars.map(c => Val.Short(c.toShort)))
-            )
-          }
+          Seq(
+            rtti(CharArrayCls).const,
+            charsLength,
+            Val.Int(0), // padding to get next field aligned properly
+            Val.ArrayValue(Type.Short, chars.map(c => Val.Short(c.toShort)))
+          )
         ))
 
       val fieldValues = stringFieldNames.map {
