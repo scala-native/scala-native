@@ -234,7 +234,7 @@ lazy val libSettings =
   )
 
 lazy val projectSettings =
-  ScalaNativePlugin.projectSettings ++ Seq(
+  Seq(
     scalaVersion := libScalaVersion,
     resolvers := Nil,
     scalacOptions ++= Seq("-target:jvm-1.8")
