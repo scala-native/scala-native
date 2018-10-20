@@ -8,7 +8,7 @@ import scala.collection.mutable
 import nir.serialization.{Tags => T}
 import Global.Member
 
-final class BinaryDeserializer(buffer: ByteBuffer, sizeType: Type) {
+final class BinaryDeserializer(buffer: ByteBuffer) {
   import buffer._
 
   private val header: Map[Global, Int] = {
@@ -212,7 +212,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, sizeType: Type) {
     case T.AsOp          => Op.As(getType, getVal)
     case T.IsOp          => Op.Is(getType, getVal)
     case T.CopyOp        => Op.Copy(getVal)
-    case T.SizeofOp      => Op.Sizeof(getType)
+    case T.SizeofOp      => Op.Sizeof(getType, getType)
     case T.ClosureOp     => Op.Closure(getType, getVal, getVals)
     case T.BoxOp         => Op.Box(getType, getVal)
     case T.UnboxOp       => Op.Unbox(getType, getVal)
@@ -234,7 +234,6 @@ final class BinaryDeserializer(buffer: ByteBuffer, sizeType: Type) {
     case T.VoidType        => Type.Void
     case T.VarargType      => Type.Vararg
     case T.PtrType         => Type.Ptr
-    case T.SizeType        => sizeType
     case T.BoolType        => Type.Bool
     case T.CharType        => Type.Char
     case T.ByteType        => Type.Byte

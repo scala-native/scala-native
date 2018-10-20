@@ -275,10 +275,11 @@ object Show {
       case Op.Copy(value) =>
         str("copy ")
         val_(value)
-      case Op.Sizeof(ty) =>
+      case Op.Sizeof(ty, retType) =>
         str("sizeof[")
         type_(ty)
-        str("] ")
+        str("]: ")
+        type_(retType)
       case Op.Closure(ty, fun, captures) =>
         str("closure[")
         type_(ty)

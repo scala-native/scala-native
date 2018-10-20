@@ -179,7 +179,7 @@ object GlobalValueNumbering extends PassCompanion {
           case (Copy(valueA), Copy(valueB)) =>
             eqVal(valueA, valueB)
 
-          case (Sizeof(tyA), Sizeof(tyB)) =>
+          case (Sizeof(tyA, _), Sizeof(tyB, _)) =>
             eqType(tyA, tyB)
 
           case (Box(tyA, objA), Box(tyB, objB)) =>
@@ -331,7 +331,7 @@ object GlobalValueNumbering extends PassCompanion {
 
         case Classalloc(name)        => Seq("Classalloc", name)
         case Module(name)            => Seq("Module", name)
-        case Sizeof(ty)              => Seq("Sizeof", ty)
+        case Sizeof(ty, retType)     => Seq("Sizeof", ty, retType)
         case Box(code, obj)          => Seq("Box", code.toString, obj)
         case Unbox(code, obj)        => Seq("Unbox", code.toString, obj)
         case Var(ty)                 => Seq("Var", ty)

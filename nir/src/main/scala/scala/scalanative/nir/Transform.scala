@@ -94,8 +94,8 @@ trait Transform {
       Op.Is(onType(ty), onVal(v))
     case Op.Copy(v) =>
       Op.Copy(onVal(v))
-    case Op.Sizeof(ty) =>
-      Op.Sizeof(onType(ty))
+    case Op.Sizeof(ty, retType) =>
+      Op.Sizeof(onType(ty), onType(retType))
     case Op.Closure(ty, fun, captures) =>
       Op.Closure(onType(ty), onVal(fun), captures.map(onVal))
     case Op.Box(code, obj) =>

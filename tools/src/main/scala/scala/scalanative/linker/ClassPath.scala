@@ -51,8 +51,7 @@ object ClassPath {
       cache.getOrElseUpdate(name, {
         files.get(name.top).map { file =>
           deserializeBinary(
-            directory.read(file),
-            if (config.targetArchitecture.is32) Type.Int else Type.Long
+            directory.read(file)
           )
         }
       })

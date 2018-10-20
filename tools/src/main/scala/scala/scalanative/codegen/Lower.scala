@@ -415,14 +415,16 @@ object Lower {
                     n: Local,
                     op: Op.Sizeof,
                     unwind: Next): Unit = {
-      val Op.Sizeof(ty) = op
+      val Op.Sizeof(ty, retType) = op
 
       if (targetArchitecture.is32) {
+        assert(retType == Type.Int)
         buf.let(
           n,
           Op.Copy(Val.Int(MemoryLayout.sizeOf(ty, targetArchitecture).toInt)),
           unwind)
       } else {
+        assert(retType == Type.Long)
         buf.let(n,
                 Op.Copy(Val.Long(MemoryLayout.sizeOf(ty, targetArchitecture))),
                 unwind)
