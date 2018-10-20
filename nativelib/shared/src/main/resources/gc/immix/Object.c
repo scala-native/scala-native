@@ -1,8 +1,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include "Object.h"
-#include "headers/BlockHeader.h"
-#include "Line.h"
+#include "Block.h"
 #include "Log.h"
 #include "utils/MathUtils.h"
 
@@ -12,127 +11,97 @@ Object *Object_NextLargeObject(Object *object) {
     return (Object *)((ubyte_t *)object + size);
 }
 
-Object *Object_NextObject(Object *object) {
-    size_t size = Object_Size(&object->header);
+word_t *Object_LastWord(Object *object) {
+    size_t size = Object_Size(object);
     assert(size < LARGE_BLOCK_SIZE);
-    if (size == 0) {
-        return NULL;
-    }
-    Object *next = (Object *)((ubyte_t *)object + size);
-    assert(Block_GetBlockHeader((word_t *)next) ==
-               Block_GetBlockHeader((word_t *)object) ||
-           (ubyte_t *)Block_GetBlockHeader((word_t *)next) ==
-               (ubyte_t *)Block_GetBlockHeader((word_t *)object) +
-                   BLOCK_TOTAL_SIZE);
-    return next;
+    word_t *last = (word_t *)((ubyte_t *)object + size) - 1;
+    return last;
 }
 
-static inline bool isWordAligned(word_t *word) {
-    return ((word_t)word & WORD_INVERSE_MASK) == (word_t)word;
+static inline bool Object_isAligned(word_t *word) {
+    return ((word_t)word & ALLOCATION_ALIGNMENT_INVERSE_MASK) == (word_t)word;
 }
 
-Object *Object_getInLine(BlockHeader *blockHeader, int lineIndex,
-                         word_t *word) {
-    assert(Line_ContainsObject(Block_GetLineHeader(blockHeader, lineIndex)));
-
-    Object *current =
-        Line_GetFirstObject(Block_GetLineHeader(blockHeader, lineIndex));
-    Object *next = Object_NextObject(current);
-
-    word_t *lineEnd =
-        Block_GetLineAddress(blockHeader, lineIndex) + WORDS_IN_LINE;
-
-    while (next != NULL && (word_t *)next < lineEnd && (word_t *)next <= word) {
-        current = next;
-        next = Object_NextObject(next);
+Object *Object_getInnerPointer(word_t *blockStart, word_t *word,
+                               ObjectMeta *wordMeta) {
+    word_t *current = word;
+    ObjectMeta *currentMeta = wordMeta;
+    while (current >= blockStart && ObjectMeta_IsFree(currentMeta)) {
+        current -= ALLOCATION_ALIGNMENT_WORDS;
+        currentMeta = Bytemap_PreviousWord(currentMeta);
     }
-
-    if (Object_IsAllocated(&current->header) && word >= (word_t *)current &&
-        word < (word_t *)next) {
+    Object *object = (Object *)current;
+    if (ObjectMeta_IsAllocated(currentMeta) &&
+        word < current + Object_Size(object) / WORD_SIZE) {
 #ifdef DEBUG_PRINT
         if ((word_t *)current != word) {
             printf("inner pointer: %p object: %p\n", word, current);
             fflush(stdout);
         }
 #endif
-        return current;
+        return object;
     } else {
-#ifdef DEBUG_PRINT
-        printf("ignoring %p\n", word);
-        fflush(stdout);
-#endif
         return NULL;
     }
 }
 
-Object *Object_GetObject(word_t *word) {
-    BlockHeader *blockHeader = Block_GetBlockHeader(word);
+Object *Object_GetUnmarkedObject(Heap *heap, word_t *word) {
+    BlockMeta *blockMeta =
+        Block_GetBlockMeta(heap->blockMetaStart, heap->heapStart, word);
+    word_t *blockStart = Block_GetBlockStartForWord(word);
 
-    // Check if the word points on the block header
-    if (word < Block_GetFirstWord(blockHeader)) {
-#ifdef DEBUG_PRINT
-        printf("Points on block header %p\n", word);
-        fflush(stdout);
-#endif
-        return NULL;
-    }
-
-    if (!isWordAligned(word)) {
+    if (!Object_isAligned(word)) {
 #ifdef DEBUG_PRINT
         printf("Word not aligned: %p aligning to %p\n", word,
-               (word_t *)((word_t)word & WORD_INVERSE_MASK));
+               (word_t *)((word_t)word & ALLOCATION_ALIGNMENT_INVERSE_MASK));
         fflush(stdout);
 #endif
-        word = (word_t *)((word_t)word & WORD_INVERSE_MASK);
+        word = (word_t *)((word_t)word & ALLOCATION_ALIGNMENT_INVERSE_MASK);
     }
 
-    int lineIndex = Block_GetLineIndexFromWord(blockHeader, word);
-    while (lineIndex > 0 &&
-           !Line_ContainsObject(Block_GetLineHeader(blockHeader, lineIndex))) {
-        lineIndex--;
-    }
-
-    if (Line_ContainsObject(Block_GetLineHeader(blockHeader, lineIndex))) {
-        return Object_getInLine(blockHeader, lineIndex, word);
-    } else {
-#ifdef DEBUG_PRINT
-        printf("Word points to empty line %p\n", word);
-        fflush(stdout);
-#endif
+    ObjectMeta *wordMeta = Bytemap_Get(heap->smallBytemap, word);
+    if (ObjectMeta_IsPlaceholder(wordMeta) || ObjectMeta_IsMarked(wordMeta)) {
         return NULL;
+    } else if (ObjectMeta_IsAllocated(wordMeta)) {
+        return (Object *)word;
+    } else {
+        return Object_getInnerPointer(blockStart, word, wordMeta);
     }
 }
 
-Object *Object_getLargeInnerPointer(LargeAllocator *allocator, word_t *word) {
+Object *Object_getLargeInnerPointer(word_t *word, ObjectMeta *wordMeta) {
     word_t *current = (word_t *)((word_t)word & LARGE_BLOCK_MASK);
+    ObjectMeta *currentMeta = wordMeta;
 
-    while (!Bitmap_GetBit(allocator->bitmap, (ubyte_t *)current)) {
-        current -= LARGE_BLOCK_SIZE / WORD_SIZE;
+    while (ObjectMeta_IsFree(currentMeta)) {
+        current -= ALLOCATION_ALIGNMENT_WORDS;
+        currentMeta = Bytemap_PreviousWord(currentMeta);
     }
 
     Object *object = (Object *)current;
-    if (Object_IsAllocated(&object->header) &&
+    if (ObjectMeta_IsAllocated(currentMeta) &&
         word < (word_t *)object + Object_ChunkSize(object) / WORD_SIZE) {
 #ifdef DEBUG_PRINT
-        printf("large inner pointer: %p, object: %p\n", word, objectHeader);
+        printf("large inner pointer: %p, object: %p\n", word, object);
         fflush(stdout);
 #endif
         return object;
     } else {
-
         return NULL;
     }
 }
 
-Object *Object_GetLargeObject(LargeAllocator *allocator, word_t *word) {
+Object *Object_GetLargeUnmarkedObject(Bytemap *bytemap, word_t *word) {
     if (((word_t)word & LARGE_BLOCK_MASK) != (word_t)word) {
         word = (word_t *)((word_t)word & LARGE_BLOCK_MASK);
     }
-    if (Bitmap_GetBit(allocator->bitmap, (ubyte_t *)word) &&
-        Object_IsAllocated(&((Object *)word)->header)) {
+    ObjectMeta *wordMeta = Bytemap_Get(bytemap, word);
+    if (ObjectMeta_IsPlaceholder(wordMeta) || ObjectMeta_IsMarked(wordMeta)) {
+        return NULL;
+    } else if (ObjectMeta_IsAllocated(wordMeta)) {
         return (Object *)word;
     } else {
-        Object *object = Object_getLargeInnerPointer(allocator, word);
+        Object *object = Object_getLargeInnerPointer(word, wordMeta);
         assert(object == NULL ||
                (word >= (word_t *)object &&
                 word < (word_t *)Object_NextLargeObject(object)));
@@ -140,31 +109,38 @@ Object *Object_GetLargeObject(LargeAllocator *allocator, word_t *word) {
     }
 }
 
-void Object_Mark(Object *object) {
+void Object_Mark(Heap *heap, Object *object, ObjectMeta *objectMeta) {
     // Mark the object itself
-    Object_MarkObjectHeader(&object->header);
+    ObjectMeta_SetMarked(objectMeta);
 
-    if (!Object_IsLargeObject(&object->header)) {
+    if (Heap_IsWordInSmallHeap(heap, (word_t *)object)) {
         // Mark the block
-        BlockHeader *blockHeader = Block_GetBlockHeader((word_t *)object);
-        Block_Mark(blockHeader);
+        BlockMeta *blockMeta = Block_GetBlockMeta(
+            heap->blockMetaStart, heap->heapStart, (word_t *)object);
+        word_t *blockStart = Block_GetBlockStartForWord((word_t *)object);
+        BlockMeta_Mark(blockMeta);
 
         // Mark all Lines
-        int startIndex =
-            Block_GetLineIndexFromWord(blockHeader, (word_t *)object);
-        word_t *lastWord = (word_t *)Object_NextObject(object) - 1;
-        int endIndex = Block_GetLineIndexFromWord(blockHeader, lastWord);
-        assert(startIndex >= 0 && startIndex < LINE_COUNT);
-        assert(endIndex >= 0 && endIndex < LINE_COUNT);
-        assert(startIndex <= endIndex);
-        for (int i = startIndex; i <= endIndex; i++) {
-            LineHeader *lineHeader = Block_GetLineHeader(blockHeader, i);
-            Line_Mark(lineHeader);
+        word_t *lastWord = Object_LastWord(object);
+
+        assert(blockMeta == Block_GetBlockMeta(heap->blockMetaStart,
+                                               heap->heapStart, lastWord));
+        LineMeta *firstLineMeta = Heap_LineMetaForWord(heap, (word_t *)object);
+        LineMeta *lastLineMeta = Heap_LineMetaForWord(heap, lastWord);
+        assert(firstLineMeta <= lastLineMeta);
+        for (LineMeta *lineMeta = firstLineMeta; lineMeta <= lastLineMeta;
+             lineMeta++) {
+            Line_Mark(lineMeta);
         }
     }
 }
 
 size_t Object_ChunkSize(Object *object) {
-    return MathUtils_RoundToNextMultiple(Object_Size(&object->header),
-                                         MIN_BLOCK_SIZE);
+    if (object->rtti == NULL) {
+        Chunk *chunk = (Chunk *)object;
+        return chunk->size;
+    } else {
+        return MathUtils_RoundToNextMultiple(Object_Size(object),
+                                             MIN_BLOCK_SIZE);
+    }
 }

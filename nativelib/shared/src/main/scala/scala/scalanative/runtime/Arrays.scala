@@ -30,13 +30,16 @@ sealed abstract class Array[T]
 }
 
 object Array {
-  type Header = CStruct2[Ptr[Type], Int]
+  type Header = CStruct3[Ptr[Type], Int, Int]
 
   implicit class HeaderOps(val self: Ptr[Header]) extends AnyVal {
     @inline def info: Ptr[Type]                = !(self._1)
     @inline def info_=(value: Ptr[Type]): Unit = !(self._1) = value
     @inline def length: Int                    = !(self._2)
     @inline def length_=(value: Int): Unit     = !(self._2) = value
+    @inline def stride: CSize                  = (!(self._3)).toLong.asInstanceOf[CSize]
+    @inline def stride_=(value: CSize): Unit =
+      !(self._3) = value.toInt
   }
 
   def copy(from: AnyRef,
@@ -185,6 +188,7 @@ object UnitArray {
     val arrsize = sizeof[Header] + sizeof[Unit] * length
     val arr     = GC.alloc(arrinfo, arrsize).cast[Ptr[Header]]
     arr.length = length
+    arr.stride = sizeof[Unit]
     arr.cast[UnitArray]
   }
 
@@ -253,6 +257,7 @@ object BooleanArray {
     val arrsize = sizeof[Header] + sizeof[Boolean] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize).cast[Ptr[Header]]
     arr.length = length
+    arr.stride = sizeof[Boolean]
     arr.cast[BooleanArray]
   }
 
@@ -321,6 +326,7 @@ object CharArray {
     val arrsize = sizeof[Header] + sizeof[Char] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize).cast[Ptr[Header]]
     arr.length = length
+    arr.stride = sizeof[Char]
     arr.cast[CharArray]
   }
 
@@ -389,6 +395,7 @@ object ByteArray {
     val arrsize = sizeof[Header] + sizeof[Byte] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize).cast[Ptr[Header]]
     arr.length = length
+    arr.stride = sizeof[Byte]
     arr.cast[ByteArray]
   }
 
@@ -457,6 +464,7 @@ object ShortArray {
     val arrsize = sizeof[Header] + sizeof[Short] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize).cast[Ptr[Header]]
     arr.length = length
+    arr.stride = sizeof[Short]
     arr.cast[ShortArray]
   }
 
@@ -525,6 +533,7 @@ object IntArray {
     val arrsize = sizeof[Header] + sizeof[Int] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize).cast[Ptr[Header]]
     arr.length = length
+    arr.stride = sizeof[Int]
     arr.cast[IntArray]
   }
 
@@ -593,6 +602,7 @@ object LongArray {
     val arrsize = sizeof[Header] + sizeof[Long] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize).cast[Ptr[Header]]
     arr.length = length
+    arr.stride = sizeof[Long]
     arr.cast[LongArray]
   }
 
@@ -661,6 +671,7 @@ object FloatArray {
     val arrsize = sizeof[Header] + sizeof[Float] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize).cast[Ptr[Header]]
     arr.length = length
+    arr.stride = sizeof[Float]
     arr.cast[FloatArray]
   }
 
@@ -729,6 +740,7 @@ object DoubleArray {
     val arrsize = sizeof[Header] + sizeof[Double] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize).cast[Ptr[Header]]
     arr.length = length
+    arr.stride = sizeof[Double]
     arr.cast[DoubleArray]
   }
 
@@ -797,6 +809,7 @@ object ObjectArray {
     val arrsize = sizeof[Header] + sizeof[Object] * length
     val arr     = GC.alloc(arrinfo, arrsize).cast[Ptr[Header]]
     arr.length = length
+    arr.stride = sizeof[Object]
     arr.cast[ObjectArray]
   }
 

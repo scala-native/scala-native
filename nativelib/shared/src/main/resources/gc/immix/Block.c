@@ -2,66 +2,60 @@
 #include <memory.h>
 #include "Block.h"
 #include "Object.h"
+#include "metadata/ObjectMeta.h"
 #include "Log.h"
 #include "Allocator.h"
 #include "Marker.h"
 
-extern int __object_array_id;
-
 #define NO_RECYCLABLE_LINE -1
 
 INLINE void Block_recycleUnmarkedBlock(Allocator *allocator,
-                                       BlockHeader *blockHeader) {
-    memset(blockHeader, 0, LINE_SIZE);
-    BlockList_AddLast(&allocator->freeBlocks, blockHeader);
-    Block_SetFlag(blockHeader, block_free);
-}
-
-INLINE void Block_recycleMarkedLine(BlockHeader *blockHeader,
-                                    LineHeader *lineHeader, int lineIndex) {
-    Line_Unmark(lineHeader);
-    // If the line contains an object
-    if (Line_ContainsObject(lineHeader)) {
-        // Unmark all objects in line
-        Object *object = Line_GetFirstObject(lineHeader);
-        word_t *lineEnd =
-            Block_GetLineAddress(blockHeader, lineIndex) + WORDS_IN_LINE;
-        while (object != NULL && (word_t *)object < lineEnd) {
-            ObjectHeader *objectHeader = &object->header;
-            if (Object_IsMarked(objectHeader)) {
-                Object_SetAllocated(objectHeader);
-            } else {
-                Object_SetFree(objectHeader);
-            }
-            object = Object_NextObject(object);
-        }
-    }
+                                       BlockMeta *blockMeta,
+                                       word_t *blockStart) {
+    memset(blockMeta, 0, sizeof(BlockMeta));
+    // does not unmark in LineMetas because those are ignored by the allocator
+    BlockList_AddLast(&allocator->freeBlocks, blockMeta);
+    BlockMeta_SetFlag(blockMeta, block_free);
+    ObjectMeta_ClearBlockAt(Bytemap_Get(allocator->bytemap, blockStart));
 }
 
 /**
  * recycles a block and adds it to the allocator
  */
-void Block_Recycle(Allocator *allocator, BlockHeader *blockHeader) {
+void Block_Recycle(Allocator *allocator, BlockMeta *blockMeta,
+                   word_t *blockStart, LineMeta *lineMetas) {
 
     // If the block is not marked, it means that it's completely free
-    if (!Block_IsMarked(blockHeader)) {
-        Block_recycleUnmarkedBlock(allocator, blockHeader);
+    if (!BlockMeta_IsMarked(blockMeta)) {
+        Block_recycleUnmarkedBlock(allocator, blockMeta, blockStart);
         allocator->freeBlockCount++;
         allocator->freeMemoryAfterCollection += BLOCK_TOTAL_SIZE;
     } else {
         // If the block is marked, we need to recycle line by line
-        assert(Block_IsMarked(blockHeader));
-        Block_Unmark(blockHeader);
+        assert(BlockMeta_IsMarked(blockMeta));
+        BlockMeta_Unmark(blockMeta);
+        Bytemap *bytemap = allocator->bytemap;
+
+        // start at line zero, keep separate pointers into all affected data
+        // structures
         int16_t lineIndex = 0;
+        LineMeta *lineMeta = lineMetas;
+        word_t *lineStart = blockStart;
+        ObjectMeta *bytemapCursor = Bytemap_Get(bytemap, lineStart);
+
         int lastRecyclable = NO_RECYCLABLE_LINE;
         while (lineIndex < LINE_COUNT) {
-            LineHeader *lineHeader =
-                Block_GetLineHeader(blockHeader, lineIndex);
             // If the line is marked, we need to unmark all objects in the line
-            if (Line_IsMarked(lineHeader)) {
+            if (Line_IsMarked(lineMeta)) {
                 // Unmark line
-                Block_recycleMarkedLine(blockHeader, lineHeader, lineIndex);
+                Line_Unmark(lineMeta);
+                ObjectMeta_SweepLineAt(bytemapCursor);
+
+                // next line
                 lineIndex++;
+                lineMeta++;
+                lineStart += WORDS_IN_LINE;
+                bytemapCursor = Bytemap_NextLine(bytemapCursor);
             } else {
                 // If the line is not marked, we need to merge all continuous
                 // unmarked lines.
@@ -69,61 +63,50 @@ void Block_Recycle(Allocator *allocator, BlockHeader *blockHeader) {
                 // If it's the first free line, update the block header to point
                 // to it.
                 if (lastRecyclable == NO_RECYCLABLE_LINE) {
-                    blockHeader->header.first = lineIndex;
+                    blockMeta->first = lineIndex;
                 } else {
                     // Update the last recyclable line to point to the current
                     // one
-                    Block_GetFreeLineHeader(blockHeader, lastRecyclable)->next =
+                    Block_GetFreeLineMeta(blockStart, lastRecyclable)->next =
                         lineIndex;
                 }
+                ObjectMeta_ClearLineAt(bytemapCursor);
                 lastRecyclable = lineIndex;
+
+                // next line
                 lineIndex++;
-                Line_SetEmpty(lineHeader);
+                lineMeta++;
+                lineStart += WORDS_IN_LINE;
+                bytemapCursor = Bytemap_NextLine(bytemapCursor);
+
                 allocator->freeMemoryAfterCollection += LINE_SIZE;
+
                 uint8_t size = 1;
-                while (lineIndex < LINE_COUNT &&
-                       !Line_IsMarked(lineHeader = Block_GetLineHeader(
-                                          blockHeader, lineIndex))) {
+                while (lineIndex < LINE_COUNT && !Line_IsMarked(lineMeta)) {
+                    ObjectMeta_ClearLineAt(bytemapCursor);
                     size++;
+
+                    // next line
                     lineIndex++;
-                    Line_SetEmpty(lineHeader);
+                    lineMeta++;
+                    lineStart += WORDS_IN_LINE;
+                    bytemapCursor = Bytemap_NextLine(bytemapCursor);
+
                     allocator->freeMemoryAfterCollection += LINE_SIZE;
                 }
-                Block_GetFreeLineHeader(blockHeader, lastRecyclable)->size =
-                    size;
+                Block_GetFreeLineMeta(blockStart, lastRecyclable)->size = size;
             }
         }
         // If there is no recyclable line, the block is unavailable
         if (lastRecyclable == NO_RECYCLABLE_LINE) {
-            Block_SetFlag(blockHeader, block_unavailable);
+            BlockMeta_SetFlag(blockMeta, block_unavailable);
         } else {
-            Block_GetFreeLineHeader(blockHeader, lastRecyclable)->next =
-                LAST_HOLE;
-            Block_SetFlag(blockHeader, block_recyclable);
-            BlockList_AddLast(&allocator->recycledBlocks, blockHeader);
+            Block_GetFreeLineMeta(blockStart, lastRecyclable)->next = LAST_HOLE;
+            BlockMeta_SetFlag(blockMeta, block_recyclable);
+            BlockList_AddLast(&allocator->recycledBlocks, blockMeta);
 
-            assert(blockHeader->header.first != NO_RECYCLABLE_LINE);
+            assert(blockMeta->first != NO_RECYCLABLE_LINE);
             allocator->recycledBlockCount++;
         }
     }
-}
-
-void Block_Print(BlockHeader *block) {
-    printf("%p ", block);
-    if (Block_IsFree(block)) {
-        printf("FREE\n");
-    } else if (Block_IsUnavailable(block)) {
-        printf("UNAVAILABLE\n");
-    } else {
-        int lineIndex = block->header.first;
-        while (lineIndex != LAST_HOLE) {
-            FreeLineHeader *freeLineHeader =
-                Block_GetFreeLineHeader(block, lineIndex);
-            printf("[index: %d, size: %d] -> ", lineIndex,
-                   freeLineHeader->size);
-            lineIndex = freeLineHeader->next;
-        }
-        printf("\n");
-    }
-    fflush(stdout);
 }
