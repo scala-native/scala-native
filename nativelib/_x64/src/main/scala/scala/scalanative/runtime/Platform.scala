@@ -12,6 +12,7 @@ object Platform {
   def setOSProps(addProp: CFunctionPtr2[CString, CString, Unit]): Unit =
     ExternPlatform.setOSProps(addProp)
 
+  final val is32 = false
   @inline final def cross3264[A, B](thirtyTwo: => A,
                                     sixtyFour: => B): Cross3264[A, B] = {
     sixtyFour

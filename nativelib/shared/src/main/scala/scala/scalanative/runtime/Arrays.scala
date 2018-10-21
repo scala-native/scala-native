@@ -84,10 +84,11 @@ object Array {
       val toPtr   = to.at(toPos).cast[Ptr[Byte]]
       val size    = to.stride * len
 
-      Platform.cross3264(
-        `llvm.memmove.p0i8.p0i8.i32`(toPtr, fromPtr, size.toInt, 1, false),
+      if (Platform.is32) {
+        `llvm.memmove.p0i8.p0i8.i32`(toPtr, fromPtr, size.toInt, 1, false)
+      } else {
         `llvm.memmove.p0i8.p0i8.i64`(toPtr, fromPtr, size, 1, false)
-      )
+      }
     }
   }
 
@@ -161,21 +162,19 @@ final class UnitArray private () extends Array[Unit] {
     val arrinfo = typeof[UnitArray].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[Unit] * length
     val arr     = GC.alloc(arrinfo, arrsize)
-    Platform.cross3264(
-      {
-        `llvm.memcpy.p0i8.p0i8.i32`(arr.cast[Ptr[Byte]],
-                                    this.cast[Ptr[Byte]],
-                                    arrsize.toInt,
-                                    1,
-                                    false)
-      }, {
-        `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
-                                    this.cast[Ptr[Byte]],
-                                    arrsize,
-                                    1,
-                                    false)
-      }
-    )
+    if (Platform.is32) {
+      `llvm.memcpy.p0i8.p0i8.i32`(arr.cast[Ptr[Byte]],
+                                  this.cast[Ptr[Byte]],
+                                  arrsize.toInt,
+                                  1,
+                                  false)
+    } else {
+      `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
+                                  this.cast[Ptr[Byte]],
+                                  arrsize,
+                                  1,
+                                  false)
+    }
     arr.cast[UnitArray]
   }
 }
@@ -197,10 +196,11 @@ object UnitArray {
     val dst  = arr.at(0).asInstanceOf[Ptr[Byte]]
     val src  = data.asInstanceOf[Ptr[Byte]]
     val size = sizeof[Unit] * length
-    Platform.cross3264(
-      `llvm.memcpy.p0i8.p0i8.i32`(dst, src, size.toInt, 1, false),
+    if (Platform.is32) {
+      `llvm.memcpy.p0i8.p0i8.i32`(dst, src, size.toInt, 1, false)
+    } else {
       `llvm.memcpy.p0i8.p0i8.i64`(dst, src, size, 1, false)
-    )
+    }
     arr
   }
 }
@@ -230,21 +230,19 @@ final class BooleanArray private () extends Array[Boolean] {
     val arrinfo = typeof[BooleanArray].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[Boolean] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize)
-    Platform.cross3264(
-      {
-        `llvm.memcpy.p0i8.p0i8.i32`(arr.cast[Ptr[Byte]],
-                                    this.cast[Ptr[Byte]],
-                                    arrsize.toInt,
-                                    1,
-                                    false)
-      }, {
-        `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
-                                    this.cast[Ptr[Byte]],
-                                    arrsize,
-                                    1,
-                                    false)
-      }
-    )
+    if (Platform.is32) {
+      `llvm.memcpy.p0i8.p0i8.i32`(arr.cast[Ptr[Byte]],
+                                  this.cast[Ptr[Byte]],
+                                  arrsize.toInt,
+                                  1,
+                                  false)
+    } else {
+      `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
+                                  this.cast[Ptr[Byte]],
+                                  arrsize,
+                                  1,
+                                  false)
+    }
     arr.cast[BooleanArray]
   }
 }
@@ -266,10 +264,11 @@ object BooleanArray {
     val dst  = arr.at(0).asInstanceOf[Ptr[Byte]]
     val src  = data.asInstanceOf[Ptr[Byte]]
     val size = sizeof[Boolean] * length
-    Platform.cross3264(
-      `llvm.memcpy.p0i8.p0i8.i32`(dst, src, size.toInt, 1, false),
+    if (Platform.is32) {
+      `llvm.memcpy.p0i8.p0i8.i32`(dst, src, size.toInt, 1, false)
+    } else {
       `llvm.memcpy.p0i8.p0i8.i64`(dst, src, size, 1, false)
-    )
+    }
     arr
   }
 }
@@ -299,21 +298,19 @@ final class CharArray private () extends Array[Char] {
     val arrinfo = typeof[CharArray].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[Char] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize)
-    Platform.cross3264(
-      {
-        `llvm.memcpy.p0i8.p0i8.i32`(arr.cast[Ptr[Byte]],
-                                    this.cast[Ptr[Byte]],
-                                    arrsize.toInt,
-                                    1,
-                                    false)
-      }, {
-        `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
-                                    this.cast[Ptr[Byte]],
-                                    arrsize,
-                                    1,
-                                    false)
-      }
-    )
+    if (Platform.is32) {
+      `llvm.memcpy.p0i8.p0i8.i32`(arr.cast[Ptr[Byte]],
+                                  this.cast[Ptr[Byte]],
+                                  arrsize.toInt,
+                                  1,
+                                  false)
+    } else {
+      `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
+                                  this.cast[Ptr[Byte]],
+                                  arrsize,
+                                  1,
+                                  false)
+    }
     arr.cast[CharArray]
   }
 }
@@ -335,10 +332,11 @@ object CharArray {
     val dst  = arr.at(0).asInstanceOf[Ptr[Byte]]
     val src  = data.asInstanceOf[Ptr[Byte]]
     val size = sizeof[Char] * length
-    Platform.cross3264(
-      `llvm.memcpy.p0i8.p0i8.i32`(dst, src, size.toInt, 1, false),
+    if (Platform.is32) {
+      `llvm.memcpy.p0i8.p0i8.i32`(dst, src, size.toInt, 1, false)
+    } else {
       `llvm.memcpy.p0i8.p0i8.i64`(dst, src, size, 1, false)
-    )
+    }
     arr
   }
 }
@@ -368,21 +366,19 @@ final class ByteArray private () extends Array[Byte] {
     val arrinfo = typeof[ByteArray].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[Byte] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize)
-    Platform.cross3264(
-      {
-        `llvm.memcpy.p0i8.p0i8.i32`(arr.cast[Ptr[Byte]],
-                                    this.cast[Ptr[Byte]],
-                                    arrsize.toInt,
-                                    1,
-                                    false)
-      }, {
-        `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
-                                    this.cast[Ptr[Byte]],
-                                    arrsize,
-                                    1,
-                                    false)
-      }
-    )
+    if (Platform.is32) {
+      `llvm.memcpy.p0i8.p0i8.i32`(arr.cast[Ptr[Byte]],
+                                  this.cast[Ptr[Byte]],
+                                  arrsize.toInt,
+                                  1,
+                                  false)
+    } else {
+      `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
+                                  this.cast[Ptr[Byte]],
+                                  arrsize,
+                                  1,
+                                  false)
+    }
     arr.cast[ByteArray]
   }
 }
@@ -404,10 +400,11 @@ object ByteArray {
     val dst  = arr.at(0).asInstanceOf[Ptr[Byte]]
     val src  = data.asInstanceOf[Ptr[Byte]]
     val size = sizeof[Byte] * length
-    Platform.cross3264(
-      `llvm.memcpy.p0i8.p0i8.i32`(dst, src, size.toInt, 1, false),
+    if (Platform.is32) {
+      `llvm.memcpy.p0i8.p0i8.i32`(dst, src, size.toInt, 1, false)
+    } else {
       `llvm.memcpy.p0i8.p0i8.i64`(dst, src, size, 1, false)
-    )
+    }
     arr
   }
 }
@@ -437,21 +434,19 @@ final class ShortArray private () extends Array[Short] {
     val arrinfo = typeof[ShortArray].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[Short] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize)
-    Platform.cross3264(
-      {
-        `llvm.memcpy.p0i8.p0i8.i32`(arr.cast[Ptr[Byte]],
-                                    this.cast[Ptr[Byte]],
-                                    arrsize.toInt,
-                                    1,
-                                    false)
-      }, {
-        `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
-                                    this.cast[Ptr[Byte]],
-                                    arrsize,
-                                    1,
-                                    false)
-      }
-    )
+    if (Platform.is32) {
+      `llvm.memcpy.p0i8.p0i8.i32`(arr.cast[Ptr[Byte]],
+                                  this.cast[Ptr[Byte]],
+                                  arrsize.toInt,
+                                  1,
+                                  false)
+    } else {
+      `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
+                                  this.cast[Ptr[Byte]],
+                                  arrsize,
+                                  1,
+                                  false)
+    }
     arr.cast[ShortArray]
   }
 }
@@ -473,10 +468,11 @@ object ShortArray {
     val dst  = arr.at(0).asInstanceOf[Ptr[Byte]]
     val src  = data.asInstanceOf[Ptr[Byte]]
     val size = sizeof[Short] * length
-    Platform.cross3264(
-      `llvm.memcpy.p0i8.p0i8.i32`(dst, src, size.toInt, 1, false),
+    if (Platform.is32) {
+      `llvm.memcpy.p0i8.p0i8.i32`(dst, src, size.toInt, 1, false)
+    } else {
       `llvm.memcpy.p0i8.p0i8.i64`(dst, src, size, 1, false)
-    )
+    }
     arr
   }
 }
@@ -506,21 +502,19 @@ final class IntArray private () extends Array[Int] {
     val arrinfo = typeof[IntArray].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[Int] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize)
-    Platform.cross3264(
-      {
-        `llvm.memcpy.p0i8.p0i8.i32`(arr.cast[Ptr[Byte]],
-                                    this.cast[Ptr[Byte]],
-                                    arrsize.toInt,
-                                    1,
-                                    false)
-      }, {
-        `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
-                                    this.cast[Ptr[Byte]],
-                                    arrsize,
-                                    1,
-                                    false)
-      }
-    )
+    if (Platform.is32) {
+      `llvm.memcpy.p0i8.p0i8.i32`(arr.cast[Ptr[Byte]],
+                                  this.cast[Ptr[Byte]],
+                                  arrsize.toInt,
+                                  1,
+                                  false)
+    } else {
+      `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
+                                  this.cast[Ptr[Byte]],
+                                  arrsize,
+                                  1,
+                                  false)
+    }
     arr.cast[IntArray]
   }
 }
@@ -542,10 +536,11 @@ object IntArray {
     val dst  = arr.at(0).asInstanceOf[Ptr[Byte]]
     val src  = data.asInstanceOf[Ptr[Byte]]
     val size = sizeof[Int] * length
-    Platform.cross3264(
-      `llvm.memcpy.p0i8.p0i8.i32`(dst, src, size.toInt, 1, false),
+    if (Platform.is32) {
+      `llvm.memcpy.p0i8.p0i8.i32`(dst, src, size.toInt, 1, false)
+    } else {
       `llvm.memcpy.p0i8.p0i8.i64`(dst, src, size, 1, false)
-    )
+    }
     arr
   }
 }
@@ -575,21 +570,19 @@ final class LongArray private () extends Array[Long] {
     val arrinfo = typeof[LongArray].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[Long] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize)
-    Platform.cross3264(
-      {
-        `llvm.memcpy.p0i8.p0i8.i32`(arr.cast[Ptr[Byte]],
-                                    this.cast[Ptr[Byte]],
-                                    arrsize.toInt,
-                                    1,
-                                    false)
-      }, {
-        `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
-                                    this.cast[Ptr[Byte]],
-                                    arrsize,
-                                    1,
-                                    false)
-      }
-    )
+    if (Platform.is32) {
+      `llvm.memcpy.p0i8.p0i8.i32`(arr.cast[Ptr[Byte]],
+                                  this.cast[Ptr[Byte]],
+                                  arrsize.toInt,
+                                  1,
+                                  false)
+    } else {
+      `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
+                                  this.cast[Ptr[Byte]],
+                                  arrsize,
+                                  1,
+                                  false)
+    }
     arr.cast[LongArray]
   }
 }
@@ -611,10 +604,11 @@ object LongArray {
     val dst  = arr.at(0).asInstanceOf[Ptr[Byte]]
     val src  = data.asInstanceOf[Ptr[Byte]]
     val size = sizeof[Long] * length
-    Platform.cross3264(
-      `llvm.memcpy.p0i8.p0i8.i32`(dst, src, size.toInt, 1, false),
+    if (Platform.is32) {
+      `llvm.memcpy.p0i8.p0i8.i32`(dst, src, size.toInt, 1, false)
+    } else {
       `llvm.memcpy.p0i8.p0i8.i64`(dst, src, size, 1, false)
-    )
+    }
     arr
   }
 }
@@ -644,21 +638,19 @@ final class FloatArray private () extends Array[Float] {
     val arrinfo = typeof[FloatArray].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[Float] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize)
-    Platform.cross3264(
-      {
-        `llvm.memcpy.p0i8.p0i8.i32`(arr.cast[Ptr[Byte]],
-                                    this.cast[Ptr[Byte]],
-                                    arrsize.toInt,
-                                    1,
-                                    false)
-      }, {
-        `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
-                                    this.cast[Ptr[Byte]],
-                                    arrsize,
-                                    1,
-                                    false)
-      }
-    )
+    if (Platform.is32) {
+      `llvm.memcpy.p0i8.p0i8.i32`(arr.cast[Ptr[Byte]],
+                                  this.cast[Ptr[Byte]],
+                                  arrsize.toInt,
+                                  1,
+                                  false)
+    } else {
+      `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
+                                  this.cast[Ptr[Byte]],
+                                  arrsize,
+                                  1,
+                                  false)
+    }
     arr.cast[FloatArray]
   }
 }
@@ -680,10 +672,11 @@ object FloatArray {
     val dst  = arr.at(0).asInstanceOf[Ptr[Byte]]
     val src  = data.asInstanceOf[Ptr[Byte]]
     val size = sizeof[Float] * length
-    Platform.cross3264(
-      `llvm.memcpy.p0i8.p0i8.i32`(dst, src, size.toInt, 1, false),
+    if (Platform.is32) {
+      `llvm.memcpy.p0i8.p0i8.i32`(dst, src, size.toInt, 1, false)
+    } else {
       `llvm.memcpy.p0i8.p0i8.i64`(dst, src, size, 1, false)
-    )
+    }
     arr
   }
 }
@@ -713,21 +706,19 @@ final class DoubleArray private () extends Array[Double] {
     val arrinfo = typeof[DoubleArray].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[Double] * length
     val arr     = GC.alloc_atomic(arrinfo, arrsize)
-    Platform.cross3264(
-      {
-        `llvm.memcpy.p0i8.p0i8.i32`(arr.cast[Ptr[Byte]],
-                                    this.cast[Ptr[Byte]],
-                                    arrsize.toInt,
-                                    1,
-                                    false)
-      }, {
-        `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
-                                    this.cast[Ptr[Byte]],
-                                    arrsize,
-                                    1,
-                                    false)
-      }
-    )
+    if (Platform.is32) {
+      `llvm.memcpy.p0i8.p0i8.i32`(arr.cast[Ptr[Byte]],
+                                  this.cast[Ptr[Byte]],
+                                  arrsize.toInt,
+                                  1,
+                                  false)
+    } else {
+      `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
+                                  this.cast[Ptr[Byte]],
+                                  arrsize,
+                                  1,
+                                  false)
+    }
     arr.cast[DoubleArray]
   }
 }
@@ -749,10 +740,11 @@ object DoubleArray {
     val dst  = arr.at(0).asInstanceOf[Ptr[Byte]]
     val src  = data.asInstanceOf[Ptr[Byte]]
     val size = sizeof[Double] * length
-    Platform.cross3264(
-      `llvm.memcpy.p0i8.p0i8.i32`(dst, src, size.toInt, 1, false),
+    if (Platform.is32) {
+      `llvm.memcpy.p0i8.p0i8.i32`(dst, src, size.toInt, 1, false)
+    } else {
       `llvm.memcpy.p0i8.p0i8.i64`(dst, src, size, 1, false)
-    )
+    }
     arr
   }
 }
@@ -782,21 +774,19 @@ final class ObjectArray private () extends Array[Object] {
     val arrinfo = typeof[ObjectArray].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[Object] * length
     val arr     = GC.alloc(arrinfo, arrsize)
-    Platform.cross3264(
-      {
-        `llvm.memcpy.p0i8.p0i8.i32`(arr.cast[Ptr[Byte]],
-                                    this.cast[Ptr[Byte]],
-                                    arrsize.toInt,
-                                    1,
-                                    false)
-      }, {
-        `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
-                                    this.cast[Ptr[Byte]],
-                                    arrsize,
-                                    1,
-                                    false)
-      }
-    )
+    if (Platform.is32) {
+      `llvm.memcpy.p0i8.p0i8.i32`(arr.cast[Ptr[Byte]],
+                                  this.cast[Ptr[Byte]],
+                                  arrsize.toInt,
+                                  1,
+                                  false)
+    } else {
+      `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
+                                  this.cast[Ptr[Byte]],
+                                  arrsize,
+                                  1,
+                                  false)
+    }
     arr.cast[ObjectArray]
   }
 }
@@ -818,10 +808,11 @@ object ObjectArray {
     val dst  = arr.at(0).asInstanceOf[Ptr[Byte]]
     val src  = data.asInstanceOf[Ptr[Byte]]
     val size = sizeof[Object] * length
-    Platform.cross3264(
-      `llvm.memcpy.p0i8.p0i8.i32`(dst, src, size.toInt, 1, false),
+    if (Platform.is32) {
+      `llvm.memcpy.p0i8.p0i8.i32`(dst, src, size.toInt, 1, false)
+    } else {
       `llvm.memcpy.p0i8.p0i8.i64`(dst, src, size, 1, false)
-    )
+    }
     arr
   }
 }

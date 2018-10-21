@@ -84,10 +84,11 @@ object Array {
       val toPtr   = to.at(toPos).cast[Ptr[Byte]]
       val size    = to.stride * len
 
-      Platform.cross3264(
-        `llvm.memmove.p0i8.p0i8.i32`(toPtr, fromPtr, size.toInt, 1, false),
+      if (Platform.is32) {
+        `llvm.memmove.p0i8.p0i8.i32`(toPtr, fromPtr, size.toInt, 1, false)
+      } else {
         `llvm.memmove.p0i8.p0i8.i64`(toPtr, fromPtr, size, 1, false)
-      )
+      }
     }
   }
 
@@ -169,21 +170,19 @@ final class ${T}Array private () extends Array[${T}] {
     val arrinfo = typeof[${T}Array].cast[Ptr[ClassType]]
     val arrsize = sizeof[Header] + sizeof[${T}] * length
     val arr     = ${alloc}(arrinfo, arrsize)
-    Platform.cross3264(
-      {
-        `llvm.memcpy.p0i8.p0i8.i32`(arr.cast[Ptr[Byte]],
-                                    this.cast[Ptr[Byte]],
-                                    arrsize.toInt,
-                                    1,
-                                    false)
-      }, {
-        `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
-                                    this.cast[Ptr[Byte]],
-                                    arrsize,
-                                    1,
-                                    false)
-      }
-    )
+    if (Platform.is32) {
+      `llvm.memcpy.p0i8.p0i8.i32`(arr.cast[Ptr[Byte]],
+                                  this.cast[Ptr[Byte]],
+                                  arrsize.toInt,
+                                  1,
+                                  false)
+    } else {
+      `llvm.memcpy.p0i8.p0i8.i64`(arr.cast[Ptr[Byte]],
+                                  this.cast[Ptr[Byte]],
+                                  arrsize,
+                                  1,
+                                  false)
+    }
     arr.cast[${T}Array]
   }
 }
@@ -205,10 +204,11 @@ object ${T}Array {
     val dst  = arr.at(0).asInstanceOf[Ptr[Byte]]
     val src  = data.asInstanceOf[Ptr[Byte]]
     val size = sizeof[${T}] * length
-    Platform.cross3264(
-      `llvm.memcpy.p0i8.p0i8.i32`(dst, src, size.toInt, 1, false),
+    if (Platform.is32) {
+      `llvm.memcpy.p0i8.p0i8.i32`(dst, src, size.toInt, 1, false)
+    } else {
       `llvm.memcpy.p0i8.p0i8.i64`(dst, src, size, 1, false)
-    )
+    }
     arr
   }
 }
