@@ -3,7 +3,6 @@
 #include <errno.h>
 #include <stddef.h>
 #include <string.h>
-#include <stdio.h>
 
 #define FDBITS (8 * sizeof(long))
 
