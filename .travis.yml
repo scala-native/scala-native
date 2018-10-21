@@ -40,7 +40,7 @@ script:
       sbt "-no-colors" "-J-Xmx2G" "^^ $SBT_VERSION" nscplugin/publishLocal sbtScalaNative/publishLocal test-tools;
     fi
   - if [ "$MODE" == "test-runtime" ]; then
-      ./ci-docker/load-cached-images.sh
+      ./ci-docker/load-cached-images.sh;
       docker run --rm --privileged multiarch/qemu-user-static:register;
       docker build --cache-from scala-native-testing:linux-$TARGET_DOCKER_PLATFORM -t scala-native-testing:linux-$TARGET_DOCKER_PLATFORM --build-arg TARGET_DOCKER_PLATFORM=$TARGET_DOCKER_PLATFORM --build-arg HOST_ARCHITECTURE=amd64 --cpuset-cpus=0 ci-docker;
       ./ci-docker/run-test-travis.sh;
