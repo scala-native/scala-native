@@ -1,10 +1,10 @@
 ARG TARGET_DOCKER_PLATFORM
 
-FROM ubuntu:18.04
+FROM ubuntu:18.10
 
 RUN apt-get update && apt-get install -y qemu-user-static
 
-FROM $TARGET_DOCKER_PLATFORM/ubuntu:18.04
+FROM $TARGET_DOCKER_PLATFORM/ubuntu:18.10
 
 ARG HOST_ARCHITECTURE
 
@@ -35,7 +35,7 @@ RUN \
   apt-get update && \
   apt-get install -y sbt
 
-RUN apt-get update && apt-get install -y clang-5.0 zlib1g-dev libre2-dev gcc git autoconf libtool pkg-config gdb
+RUN apt-get update && apt-get install -y clang-6.0 zlib1g-dev libre2-dev gcc git autoconf libtool pkg-config gdb
 
 # Install newer version of BoehmGC from source
 RUN git clone git://github.com/ivmai/bdwgc.git && \
