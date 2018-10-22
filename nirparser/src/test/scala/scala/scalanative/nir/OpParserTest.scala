@@ -144,7 +144,7 @@ class OpParserTest extends FlatSpec with Matchers {
   }
 
   it should "parse `Op.Sizeof`" in {
-    val sizeof: Op                = Op.Sizeof(noTpe)
+    val sizeof: Op                = Op.Sizeof(noTpe, Type.Long)
     val Parsed.Success(result, _) = parser.Op.Sizeof.parse(sizeof.show)
     result should be(sizeof)
   }

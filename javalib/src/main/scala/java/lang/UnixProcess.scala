@@ -20,6 +20,7 @@ import java.lang.ProcessBuilder.Redirect
 import pthread._
 import scala.collection.mutable
 import scala.scalanative.posix.sys.types.{pthread_cond_t, pthread_mutex_t}
+import scala.scalanative.runtime.Platform
 
 private[lang] class UnixProcess private (
     pid: CInt,
@@ -71,8 +72,12 @@ private[lang] class UnixProcess private (
         val nsec = unit.toNanos(timeout) + TimeUnit.MICROSECONDS.toNanos(
           !tv._2.cast[Ptr[CInt]])
         val sec = TimeUnit.NANOSECONDS.toSeconds(nsec)
-        !ts._1 = !tv._1 + sec
-        !ts._2 = if (sec > 0) nsec - TimeUnit.SECONDS.toNanos(sec) else nsec
+        !ts._1 = !tv._1 + Platform.cross3264(sec.toInt, sec)
+        !ts._2 = Platform.cross3264({
+          (if (sec > 0) nsec - TimeUnit.SECONDS.toNanos(sec) else nsec).toInt
+        }, {
+          if (sec > 0) nsec - TimeUnit.SECONDS.toNanos(sec) else nsec
+        })
         waitImpl(() => waitFor(ts)) == 0
       case _ => true
     }

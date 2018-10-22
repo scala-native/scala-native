@@ -44,6 +44,7 @@ trait NirDefinitions { self: NirGlobalAddons =>
     lazy val SizeofMethod = getMember(NativeModule, TermName("sizeof"))
     lazy val StackallocMethods =
       getMember(NativeModule, TermName("stackalloc")).alternatives
+    lazy val WordType = getMember(NativeModule, TypeName("Word")).tpe.dealias
 
     lazy val CVarargModule = getRequiredModule(
       "scala.scalanative.native.CVararg")

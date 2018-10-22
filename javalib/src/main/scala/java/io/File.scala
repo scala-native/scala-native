@@ -233,7 +233,10 @@ class File(_path: String) extends Serializable with Comparable[File] {
         if (stat.stat(toCString(path), statbuf) == 0) {
           val timebuf = alloc[utime.utimbuf]
           !(timebuf._1) = !(statbuf._8)
-          !(timebuf._2) = time / 1000L
+          !(timebuf._2) = Platform.cross3264(
+            (time / 1000L).toInt,
+            time / 1000L
+          )
           utime.utime(toCString(path), timebuf) == 0
         } else {
           false

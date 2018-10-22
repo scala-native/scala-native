@@ -544,8 +544,9 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       reachVal(v)
     case Op.Copy(v) =>
       reachVal(v)
-    case Op.Sizeof(ty) =>
+    case Op.Sizeof(ty, retType) =>
       reachType(ty)
+      reachType(retType)
     case Op.Closure(ty, fun, captures) =>
       reachType(ty)
       reachVal(fun)

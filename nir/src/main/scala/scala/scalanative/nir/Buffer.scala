@@ -89,8 +89,8 @@ class Buffer(implicit fresh: Fresh) {
     let(Op.Is(ty, obj), unwind)
   def copy(value: Val, unwind: Next): Val =
     let(Op.Copy(value), unwind)
-  def sizeof(ty: Type, unwind: Next): Val =
-    let(Op.Sizeof(ty), unwind)
+  def sizeof(ty: Type, valType: Type, unwind: Next): Val =
+    let(Op.Sizeof(ty, valType), unwind)
   def closure(ty: Type, fun: Val, captures: Seq[Val], unwind: Next): Val =
     let(Op.Closure(ty, fun, captures), unwind)
   def box(ty: Type, obj: Val, unwind: Next): Val =

@@ -373,9 +373,10 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.CopyOp)
       putVal(v)
 
-    case Op.Sizeof(ty) =>
+    case Op.Sizeof(ty, valType) =>
       putInt(T.SizeofOp)
       putType(ty)
+      putType(valType)
 
     case Op.Closure(ty, fun, captures) =>
       putInt(T.ClosureOp)

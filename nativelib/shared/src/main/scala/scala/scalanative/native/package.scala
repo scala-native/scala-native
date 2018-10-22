@@ -2,15 +2,15 @@ package scala.scalanative
 
 import java.nio.charset.Charset
 import scala.language.experimental.macros
-import scalanative.runtime.{libc, undefined}
+import scalanative.runtime.{libc, undefined, Platform}
 
 package object native {
 
   /** Int on 32-bit architectures and Long on 64-bit ones. */
-  type Word = Long
+  type Word = Platform.Cross3264[Int, Long]
 
   /** UInt on 32-bit architectures and ULong on 64-bit ones. */
-  type UWord = ULong
+  type UWord = Platform.Cross3264[UInt, ULong]
 
   /** The C 'char' type. */
   type CChar = Byte
@@ -28,7 +28,7 @@ package object native {
   type CUnsignedLong = UWord
 
   /** The C 'unsigned long int' type. */
-  type CUnsignedLongInt = ULong
+  type CUnsignedLongInt = Platform.Cross3264[UInt, ULong]
 
   /** The C 'unsigned long long' type. */
   type CUnsignedLongLong = ULong
@@ -46,7 +46,7 @@ package object native {
   type CLong = Word
 
   /** The C 'long int' type. */
-  type CLongInt = Long
+  type CLongInt = Platform.Cross3264[Int, Long]
 
   /** The C 'long long' type. */
   type CLongLong = Long
@@ -76,7 +76,7 @@ package object native {
   type CSSize = Word
 
   /** The C/C++ 'ptrdiff_t' type. */
-  type CPtrDiff = Long
+  type CPtrDiff = Word
 
   /** C-style string with trailing 0. */
   type CString = Ptr[CChar]

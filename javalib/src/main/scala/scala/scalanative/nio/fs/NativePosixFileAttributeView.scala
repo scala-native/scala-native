@@ -10,6 +10,7 @@ import scalanative.native._
 import scalanative.libc._
 import scalanative.posix.{errno => e, grp, pwd, unistd, time, utime}, e._
 import scalanative.posix.sys.stat
+import scalanative.runtime.Platform
 
 final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
     extends PosixFileAttributeView
@@ -25,10 +26,14 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
 
     val buf = alloc[utime.utimbuf]
     !(buf._1) =
-      if (lastAccessTime != null) lastAccessTime.to(TimeUnit.SECONDS)
+      if (lastAccessTime != null)
+        Platform.cross3264(lastAccessTime.to(TimeUnit.SECONDS).toInt,
+                           lastAccessTime.to(TimeUnit.SECONDS))
       else !(sb._7)
     !(buf._2) =
-      if (lastModifiedTime != null) lastModifiedTime.to(TimeUnit.SECONDS)
+      if (lastModifiedTime != null)
+        Platform.cross3264(lastModifiedTime.to(TimeUnit.SECONDS).toInt,
+                           lastModifiedTime.to(TimeUnit.SECONDS))
       else !(sb._8)
     // createTime is ignored: No posix-y way to set it.
     if (utime.utime(toCString(path.toString), buf) != 0)
@@ -74,7 +79,7 @@ final class NativePosixFileAttributeView(path: Path, options: Array[LinkOption])
       private[this] var st_ino: stat.ino_t         = _
       private[this] var st_uid: stat.uid_t         = _
       private[this] var st_gid: stat.gid_t         = _
-      private[this] var st_size: unistd.off_t      = _
+      private[this] var st_size: stat.off_t        = _
       private[this] var st_atime: time.time_t      = _
       private[this] var st_mtime: time.time_t      = _
       private[this] var st_ctime: time.time_t      = _

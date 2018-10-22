@@ -11,7 +11,7 @@ import scala.scalanative.native.{
 }
 
 @extern
-object Platform {
+object ExternPlatform {
   @name("scalanative_platform_is_mac")
   def isMac(): Boolean = extern
 

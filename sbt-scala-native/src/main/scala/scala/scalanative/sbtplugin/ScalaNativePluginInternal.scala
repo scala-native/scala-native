@@ -23,6 +23,8 @@ import scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 import scalanative.sbtplugin.SBTCompat.{Process, _}
 import scalanative.testinterface.ScalaNativeFramework
 
+import scala.scalanative.build.TargetArchitecture._
+
 object ScalaNativePluginInternal {
 
   val nativeWarnOldJVM =
@@ -50,8 +52,10 @@ object ScalaNativePluginInternal {
   )
 
   lazy val scalaNativeBaseSettings: Seq[Setting[_]] = Seq(
-    crossVersion := ScalaNativeCrossVersion.binary,
-    platformDepsCrossVersion := ScalaNativeCrossVersion.binary,
+    crossVersion := ScalaNativeCrossVersion.binary(
+      nativeTargetArchitecture.value.bits),
+    platformDepsCrossVersion := ScalaNativeCrossVersion.binary(
+      nativeTargetArchitecture.value.bits),
     nativeClang := interceptBuildException(Discover.clang().toFile),
     nativeClang in NativeTest := (nativeClang in Test).value,
     nativeClangPP := interceptBuildException(Discover.clangpp().toFile),
@@ -69,7 +73,18 @@ object ScalaNativePluginInternal {
       .getOrElse(build.GC.default.name),
     nativeGC in NativeTest := (nativeGC in Test).value,
     nativeLTO := Discover.LTO(),
-    nativeLTO in NativeTest := (nativeLTO in Test).value
+    nativeLTO in NativeTest := (nativeLTO in Test).value,
+    nativeTargetArchitecture := {
+      val cwd = {
+        val workdir = crossTarget.value / "native"
+        IO.delete(workdir)
+        IO.createDirectory(workdir)
+        workdir
+      }.toPath
+      val clang = Discover.clang().toFile.toPath
+      Discover.targetArchitecture(Discover.targetTriple(clang, cwd))
+    },
+    nativeTargetArchitecture in NativeTest := (nativeTargetArchitecture in Test).value
   )
 
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
@@ -130,6 +145,7 @@ object ScalaNativePluginInternal {
         .withMode(mode)
         .withLinkStubs(nativeLinkStubs.value)
         .withLTO(nativeLTO.value)
+        .withTargetArchitecture(nativeTargetArchitecture.value)
     },
     nativeLink := {
       val logger  = streams.value.log.toLogger
@@ -166,7 +182,8 @@ object ScalaNativePluginInternal {
     scalaNativeConfigSettings ++ Seq(
       test := (test in NativeTest).value,
       testOnly := (testOnly in NativeTest).evaluated,
-      testQuick := (testQuick in NativeTest).evaluated
+      testQuick := (testQuick in NativeTest).evaluated,
+      nativeLink := (nativeLink in NativeTest).value
     )
 
   lazy val NativeTest = config("nativetest").extend(Test).hide

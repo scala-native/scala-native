@@ -1140,12 +1140,13 @@ trait NirGenExpr { self: NirGenPhase =>
               // Pointers in Scala Native are untyped and modeled as `i8*`.
               // Pointer substraction therefore explicitly divide the byte
               // offset by the size of pointer type.
-              val ptrInt     = buf.conv(nir.Conv.Ptrtoint, nir.Type.Long, ptr, unwind)
+              val nirPointerType = genType(WordType, box = false)
+              val ptrInt     = buf.conv(nir.Conv.Ptrtoint, nirPointerType, ptr, unwind)
               val ptrArg     = genExpr(argp)
-              val ptrArgInt  = buf.conv(nir.Conv.Ptrtoint, nir.Type.Long, ptrArg, unwind)
-              val byteOffset = buf.bin(Bin.Isub, nir.Type.Long, ptrInt, ptrArgInt, unwind)
-              val sizeOf     = buf.sizeof(ty, unwind)
-              buf.bin(Bin.Sdiv, nir.Type.Long, byteOffset, sizeOf, unwind)
+              val ptrArgInt  = buf.conv(nir.Conv.Ptrtoint, nirPointerType, ptrArg, unwind)
+              val byteOffset = buf.bin(Bin.Isub, nirPointerType, ptrInt, ptrArgInt, unwind)
+              val sizeOf     = buf.sizeof(ty, nirPointerType, unwind)
+              buf.bin(Bin.Sdiv, nirPointerType, byteOffset, sizeOf, unwind)
           }
 
         case (PTR_APPLY, Seq(offsetp, tagp)) =>
@@ -1247,7 +1248,12 @@ trait NirGenExpr { self: NirGenPhase =>
       val st = unwrapTag(tagp)
 
       code match {
-        case SIZEOF => buf.sizeof(genType(st, box = false), unwind)
+        case SIZEOF =>
+          buf.sizeof(
+            genType(st, box = false),
+            genType(WordType, box = false),
+            unwind
+          )
         case TYPEOF => genTypeValue(st)
         case _      => util.unreachable
       }
