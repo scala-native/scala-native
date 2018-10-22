@@ -11,9 +11,9 @@ sealed abstract class Info {
 
 sealed abstract class ScopeInfo extends Info {
   val members = mutable.UnrolledBuffer.empty[MemberInfo]
-  val calls   = mutable.Set.empty[String]
+  val calls   = mutable.Set.empty[Sig]
 
-  def targets(sig: String): mutable.Set[Global]
+  def targets(sig: Sig): mutable.Set[Global]
 }
 
 sealed abstract class MemberInfo extends Info {
@@ -25,17 +25,11 @@ final class Unavailable(val name: Global) extends Info {
     util.unsupported(s"unavailable ${name.show} has no attrs")
 }
 
-final class Struct(val attrs: Attrs, val name: Global, val tys: Seq[nir.Type])
-    extends ScopeInfo {
-  def targets(sig: String): mutable.Set[Global] =
-    util.unsupported("can't call a method on a struct")
-}
-
 final class Trait(val attrs: Attrs, val name: Global, val traits: Seq[Trait])
     extends ScopeInfo {
   val implementors = mutable.Set.empty[Class]
 
-  def targets(sig: String): mutable.Set[Global] = {
+  def targets(sig: Sig): mutable.Set[Global] = {
     val out = mutable.Set.empty[Global]
 
     def add(cls: Class): Unit =
@@ -59,15 +53,15 @@ final class Class(val attrs: Attrs,
     extends ScopeInfo {
   var allocated  = false
   val subclasses = mutable.Set.empty[Class]
-  val responds   = mutable.Map.empty[String, Global]
+  val responds   = mutable.Map.empty[Sig, Global]
 
   val ty: Type =
-    Type.Class(name)
+    Type.Ref(name)
   def isStaticModule(implicit top: Result): Boolean =
-    isModule && !top.infos.contains(name member "init")
-  def resolve(sig: String): Option[Global] =
+    isModule && !top.infos.contains(name.member(Sig.Ctor(Seq())))
+  def resolve(sig: Sig): Option[Global] =
     responds.get(sig)
-  def targets(sig: String): mutable.Set[Global] = {
+  def targets(sig: Sig): mutable.Set[Global] = {
     val out = mutable.Set.empty[Global]
 
     def add(cls: Class): Unit =
@@ -112,5 +106,5 @@ final class Result(val infos: mutable.Map[Global, Info],
                    val unavailable: Seq[Global],
                    val links: Seq[Attr.Link],
                    val defns: Seq[Defn],
-                   val dynsigs: Seq[String],
+                   val dynsigs: Seq[Sig],
                    val dynimpls: Seq[Global])

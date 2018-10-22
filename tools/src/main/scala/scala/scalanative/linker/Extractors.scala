@@ -24,13 +24,6 @@ object ScopeRef extends Extractor[ScopeInfo] {
     }
 }
 
-object StructRef extends Extractor[Struct] {
-  def unapply(name: Global)(implicit linked: Result): Option[Struct] =
-    linked.infos.get(name).collect {
-      case node: Struct => node
-    }
-}
-
 object ClassRef extends Extractor[Class] {
   def unapply(name: Global)(implicit linked: Result): Option[Class] =
     linked.infos.get(name).collect {

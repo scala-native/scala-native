@@ -1,24 +1,25 @@
 package scala.scalanative.linker
 
 import org.scalatest._
-import scalanative.nir.Global
+import scalanative.nir.{Sig, Type, Global}
 
 class ClassReachabilitySuite extends ReachabilitySuite {
-  val Test         = g("Test$")
-  val TestInit     = g("Test$", "init")
-  val TestMain     = g("Test$", "main_unit")
-  val TestCallFoo  = g("Test$", "callFoo_Parent_unit")
   val Parent       = g("Parent")
-  val ParentInit   = g("Parent", "init")
-  val ParentFoo    = g("Parent", "foo_unit")
-  val ParentBar    = g("Parent", "field.bar")
-  val ParentBarSet = g("Parent", "bar$underscore$=_i32_unit")
-  val ParentBarGet = g("Parent", "bar_i32")
+  val ParentInit   = g("Parent", Sig.Ctor(Seq.empty))
+  val ParentFoo    = g("Parent", Sig.Method("foo", Seq(Type.Unit)))
+  val ParentBar    = g("Parent", Sig.Field("bar"))
+  val ParentBarSet = g("Parent", Sig.Method("bar_=", Seq(Type.Int, Type.Unit)))
+  val ParentBarGet = g("Parent", Sig.Method("bar", Seq(Type.Int)))
   val Child        = g("Child")
-  val ChildInit    = g("Child", "init")
-  val ChildFoo     = g("Child", "foo_unit")
+  val ChildInit    = g("Child", Sig.Ctor(Seq.empty))
+  val ChildFoo     = g("Child", Sig.Method("foo", Seq(Type.Unit)))
   val Object       = g("java.lang.Object")
-  val ObjectInit   = g("java.lang.Object", "init")
+  val ObjectInit   = g("java.lang.Object", Sig.Ctor(Seq.empty))
+  val Test         = g("Test$")
+  val TestInit     = g("Test$", Sig.Ctor(Seq.empty))
+  val TestMain     = g("Test$", Sig.Method("main", Seq(Type.Unit)))
+  val TestCallFoo =
+    g("Test$", Sig.Method("callFoo", Seq(Type.Ref(Parent), Type.Unit)))
 
   testReachable("unused classes are discarded") {
     val source = """

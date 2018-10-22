@@ -22,6 +22,9 @@ object Show {
   def apply(v: Global): String = {
     val b = newBuilder; b.global_(v); b.toString
   }
+  def apply(v: Sig): String = {
+    val b = newBuilder; b.sig_(v); b.toString
+  }
   def apply(v: Inst): String  = { val b = newBuilder; b.inst_(v); b.toString }
   def apply(v: Local): String = { val b = newBuilder; b.local_(v); b.toString }
   def apply(v: Next): String  = { val b = newBuilder; b.next_(v); b.toString }
@@ -177,7 +180,7 @@ object Show {
         str("] ")
         val_(ptr)
         str(", ")
-        rep(indexes, sep = ", ")(str)
+        rep(indexes, sep = ", ")(val_)
       case Op.Extract(aggr, indexes) =>
         str("extract ")
         val_(aggr)
@@ -247,17 +250,17 @@ object Show {
         global_(name)
         str(", ")
         val_(value)
-      case Op.Method(value, signature) =>
+      case Op.Method(value, sig) =>
         str("method ")
         val_(value)
         str(", \"")
-        str(escapeQuotes(signature))
+        str(escapeQuotes(sig.mangle))
         str("\"")
-      case Op.Dynmethod(value, signature) =>
+      case Op.Dynmethod(value, sig) =>
         str("dynmethod ")
         val_(value)
         str(", \"")
-        str(escapeQuotes(signature))
+        str(escapeQuotes(sig.mangle))
         str("\"")
       case Op.Module(name) =>
         str("module ")
@@ -422,13 +425,8 @@ object Show {
       case Val.Double(value) =>
         str("double ")
         str(value)
-      case Val.StructValue(n, values) =>
-        str("structvalue ")
-        if (n ne Global.None) {
-          global_(n)
-          str(" ")
-        }
-        str("{")
+      case Val.StructValue(values) =>
+        str("structvalue {")
         rep(values, sep = ", ")(val_)
         str("}")
       case Val.ArrayValue(ty, values) =>
@@ -489,7 +487,7 @@ object Show {
         }
       case Defn.Declare(attrs, name, ty) =>
         attrs_(attrs)
-        str("def ")
+        str("decl ")
         global_(name)
         str(" : ")
         type_(ty)
@@ -511,13 +509,6 @@ object Show {
             unindent()
         }
         newline()
-        str("}")
-      case Defn.Struct(attrs, name, tys) =>
-        attrs_(attrs)
-        str("struct ")
-        global_(name)
-        str(" {")
-        rep(tys, sep = ", ")(type_)
         str("}")
       case Defn.Trait(attrs, name, ifaces) =>
         attrs_(attrs)
@@ -576,13 +567,10 @@ object Show {
         rep(args, sep = ", ")(type_)
         str(") => ")
         type_(ret)
-      case Type.StructValue(Global.None, tys) =>
+      case Type.StructValue(tys) =>
         str("{")
         rep(tys, sep = ", ")(type_)
         str("}")
-      case Type.StructValue(name, _) =>
-        str("structvalue ")
-        global_(name)
 
       case Type.Nothing => str("nothing")
       case Type.Var(ty) => str("var["); type_(ty); str("]")
@@ -591,28 +579,21 @@ object Show {
         str("array[")
         type_(ty)
         str("]")
-      case Type.Class(name) =>
-        str("class ")
-        global_(name)
-      case Type.Trait(name) =>
-        str("trait ")
-        global_(name)
-      case Type.Module(name) =>
-        str("module ")
+      case Type.Ref(name) =>
         global_(name)
     }
 
     def global_(global: Global): Unit = global match {
       case Global.None =>
         unreachable
-      case Global.Top(id) =>
-        str("@")
-        str(id)
-      case Global.Member(n, id) =>
-        global_(n)
-        str("::")
-        str(id)
+      case _ =>
+        str("@\"")
+        str(escapeQuotes(global.mangle))
+        str("\"")
     }
+
+    def sig_(sig: Sig): Unit =
+      str(sig.mangle)
 
     def local_(local: Local): Unit = {
       str("%")

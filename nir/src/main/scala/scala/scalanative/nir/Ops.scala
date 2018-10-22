@@ -18,12 +18,12 @@ sealed abstract class Op {
     case Op.Conv(_, ty, _)                    => ty
     case Op.Select(_, v, _)                   => v.ty
 
-    case Op.Classalloc(n)           => Type.Class(n)
+    case Op.Classalloc(n)           => Type.Ref(n)
     case Op.Fieldload(ty, _, _)     => ty
     case Op.Fieldstore(ty, _, _, _) => Type.Unit
     case Op.Method(_, _)            => Type.Ptr
     case Op.Dynmethod(_, _)         => Type.Ptr
-    case Op.Module(n)               => Type.Module(n)
+    case Op.Module(n)               => Type.Ref(n)
     case Op.As(ty, _)               => ty
     case Op.Is(_, _)                => Type.Bool
     case Op.Copy(v)                 => v.ty
@@ -69,8 +69,8 @@ object Op {
   final case class Fieldload(ty: Type, obj: Val, name: Global) extends Op
   final case class Fieldstore(ty: Type, obj: Val, name: Global, value: Val)
       extends Op
-  final case class Method(obj: Val, signature: String)             extends Op
-  final case class Dynmethod(obj: Val, signature: String)          extends Op
+  final case class Method(obj: Val, sig: Sig)                      extends Op
+  final case class Dynmethod(obj: Val, sig: Sig)                   extends Op
   final case class Module(name: Global)                            extends Op
   final case class As(ty: Type, obj: Val)                          extends Op
   final case class Is(ty: Type, obj: Val)                          extends Op

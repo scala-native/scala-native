@@ -19,7 +19,7 @@ object Defn extends Base[nir.Defn] {
         nir.Defn.Const(attrs, name, ty, v getOrElse nir.Val.None)
     })
   val Declare =
-    P(Attrs.parser ~ "def" ~ Global.parser ~ ":" ~ Type.parser map {
+    P(Attrs.parser ~ "decl" ~ Global.parser ~ ":" ~ Type.parser map {
       case (attrs, name, ty) => nir.Defn.Declare(attrs, name, ty)
     })
   val Define =
@@ -27,12 +27,6 @@ object Defn extends Base[nir.Defn] {
       case (attrs, name, ty, insts) =>
         nir.Defn.Define(attrs, name, ty, insts)
     })
-  val Struct =
-    P(
-      Attrs.parser ~ "struct" ~ Global.parser ~ "{" ~ Type.parser
-        .rep(sep = ",") ~ "}" map {
-        case (attrs, name, tys) => nir.Defn.Struct(attrs, name, tys)
-      })
   val Trait =
     P(
       Attrs.parser ~ "trait" ~ Global.parser ~ (":" ~ Global.parser.rep(
@@ -57,5 +51,5 @@ object Defn extends Base[nir.Defn] {
           nir.Defn.Module(attrs, name, inherits.headOption, inherits.tail)
       })
   override val parser: P[nir.Defn] =
-    Var | Const | Define | Declare | Struct | Trait | Class | Module
+    Var | Const | Define | Declare | Trait | Class | Module
 }

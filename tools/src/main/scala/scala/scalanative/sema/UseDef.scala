@@ -62,12 +62,8 @@ object UseDef {
     out += Global.Top("scala.scalanative.runtime.Boxes$")
     out += Global.Top("scala.scalanative.runtime.package$")
     out += Global.Top("scala.scalanative.native.package$")
-    out ++= codegen.Lower.BoxTo.values.map {
-      case (owner, id) => Global.Member(owner, id)
-    }
-    out ++= codegen.Lower.UnboxTo.values.map {
-      case (owner, id) => Global.Member(owner, id)
-    }
+    out ++= codegen.Lower.BoxTo.values
+    out ++= codegen.Lower.UnboxTo.values
     out
   }
 

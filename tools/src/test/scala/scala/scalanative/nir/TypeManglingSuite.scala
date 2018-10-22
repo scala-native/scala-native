@@ -1,0 +1,41 @@
+package scala.scalanative
+package nir
+
+import org.scalatest._
+
+class TypeManglingSuite extends FunSuite {
+  Seq(
+    Type.Void,
+    Type.Vararg,
+    Type.Ptr,
+    Type.Byte,
+    Type.Short,
+    Type.Int,
+    Type.Long,
+    Type.UByte,
+    Type.UShort,
+    Type.ULong,
+    Type.Float,
+    Type.Double,
+    Type.ArrayValue(Type.Byte, 256),
+    Type.StructValue(Seq(Type.Byte)),
+    Type.StructValue(Seq(Type.Byte, Type.Int)),
+    Type.StructValue(Seq(Type.Byte, Type.Int, Type.Float)),
+    Type.Function(Seq.empty, Type.Int),
+    Type.Function(Seq(Type.Int), Type.Int),
+    Type.Function(Seq(Type.Float, Type.Int), Type.Int),
+    Type.Nothing,
+    Type.Unit,
+    Type.Array(Rt.Object),
+    Rt.Object
+  ).foreach { ty =>
+    test(s"mangle/unmangle type `${ty.toString}`") {
+      val mangled = ty.mangle
+      assert(mangled.nonEmpty, "empty mangle")
+      val unmangled = Unmangle.unmangleType(mangled)
+      assert(unmangled == ty, "different unmangle")
+      val remangled = unmangled.mangle
+      assert(mangled == remangled, "different remangle")
+    }
+  }
+}

@@ -4,9 +4,7 @@ package serialization
 
 import java.nio.ByteBuffer
 import scala.collection.mutable
-
-import nir.serialization.{Tags => T}
-import Global.Member
+import scalanative.nir.serialization.{Tags => T}
 
 final class BinaryDeserializer(buffer: ByteBuffer) {
   import buffer._
@@ -153,9 +151,6 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.DefineDefn =>
       Defn.Define(getAttrs, getGlobal, getType, getInsts)
 
-    case T.StructDefn =>
-      Defn.Struct(getAttrs, getGlobal, getTypes)
-
     case T.TraitDefn =>
       Defn.Trait(getAttrs, getGlobal, getGlobals)
 
@@ -172,15 +167,22 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.NoneGlobal =>
       Global.None
     case T.TopGlobal =>
-      Global.stripImplClassTrailingDollar(Global.Top(getString))
+      Global.Top(getString)
     case T.MemberGlobal =>
-      Global.Member(getGlobal, getString)
+      Global.Member(Global.Top(getString), getSig)
   }
 
-  private def getLocal(): Local = {
-    val scope = getString // ignored
-    Local(getInt)
+  private def getSig(): Sig = getInt match {
+    case T.FieldSig     => Sig.Field(getString)
+    case T.CtorSig      => Sig.Ctor(getTypes)
+    case T.MethodSig    => Sig.Method(getString, getTypes)
+    case T.ProxySig     => Sig.Proxy(getString, getTypes)
+    case T.ExternSig    => Sig.Extern(getString)
+    case T.GeneratedSig => Sig.Generated(getString)
   }
+
+  private def getLocal(): Local =
+    Local(getInt)
 
   private def getNexts(): Seq[Next] = getSeq(getNext)
   private def getNext(): Next = getInt match {
@@ -206,8 +208,8 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.ClassallocOp  => Op.Classalloc(getGlobal)
     case T.FieldloadOp   => Op.Fieldload(getType, getVal, getGlobal)
     case T.FieldstoreOp  => Op.Fieldstore(getType, getVal, getGlobal, getVal)
-    case T.MethodOp      => Op.Method(getVal, getString)
-    case T.DynmethodOp   => Op.Dynmethod(getVal, getString)
+    case T.MethodOp      => Op.Method(getVal, getSig)
+    case T.DynmethodOp   => Op.Dynmethod(getVal, getSig)
     case T.ModuleOp      => Op.Module(getGlobal)
     case T.AsOp          => Op.As(getType, getVal)
     case T.IsOp          => Op.Is(getType, getVal)
@@ -247,16 +249,14 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.FloatType       => Type.Float
     case T.DoubleType      => Type.Double
     case T.ArrayValueType  => Type.ArrayValue(getType, getInt)
-    case T.StructValueType => Type.StructValue(getGlobal, getTypes)
+    case T.StructValueType => Type.StructValue(getTypes)
     case T.FunctionType    => Type.Function(getTypes, getType)
 
     case T.NothingType => Type.Nothing
     case T.VarType     => Type.Var(getType)
     case T.UnitType    => Type.Unit
     case T.ArrayType   => Type.Array(getType)
-    case T.ClassType   => Type.Class(getGlobal)
-    case T.TraitType   => Type.Trait(getGlobal)
-    case T.ModuleType  => Type.Module(getGlobal)
+    case T.RefType     => Type.Ref(getGlobal)
   }
 
   private def getVals(): Seq[Val] = getSeq(getVal)
@@ -272,7 +272,7 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.LongVal        => Val.Long(getLong)
     case T.FloatVal       => Val.Float(getFloat)
     case T.DoubleVal      => Val.Double(getDouble)
-    case T.StructValueVal => Val.StructValue(getGlobal, getVals)
+    case T.StructValueVal => Val.StructValue(getVals)
     case T.ArrayValueVal  => Val.ArrayValue(getType, getVals)
     case T.CharsVal       => Val.Chars(getString)
     case T.LocalVal       => Val.Local(getLocal, getType)

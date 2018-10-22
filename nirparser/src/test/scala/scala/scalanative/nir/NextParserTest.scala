@@ -4,25 +4,18 @@ package nir
 import fastparse.all.Parsed
 import org.scalatest._
 
-class NextParserTest extends FlatSpec with Matchers {
-
+class NextParserTest extends FunSuite {
   val local = Local(1)
 
-  it should "parse `Next.Unwind`" in {
-    val fail: Next                = Next.Unwind(local)
-    val Parsed.Success(result, _) = parser.Next.Unwind.parse(fail.show)
-    result should be(fail)
-  }
-
-  it should "parse `Next.Case`" in {
-    val `case`: Next              = Next.Case(Val.None, local)
-    val Parsed.Success(result, _) = parser.Next.Case.parse(`case`.show)
-    result should be(`case`)
-  }
-
-  it should "parse `Next.Label`" in {
-    val label: Next               = Next.Label(local, Seq.empty)
-    val Parsed.Success(result, _) = parser.Next.Label.parse(label.show)
-    result should be(label)
+  Seq[Next](
+    Next.Unwind(local),
+    Next.Case(Val.None, local),
+    Next.Label(local, Seq.empty)
+  ).zipWithIndex.foreach {
+    case (next, idx) =>
+      test(s"parse next `${next.show}`") {
+        val Parsed.Success(result, _) = parser.Next.parser.parse(next.show)
+        assert(result == next)
+      }
   }
 }

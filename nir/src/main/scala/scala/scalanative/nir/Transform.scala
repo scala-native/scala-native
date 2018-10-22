@@ -14,8 +14,6 @@ trait Transform {
       defn.copy(ty = onType(ty))
     case defn @ Defn.Define(_, _, ty, insts) =>
       defn.copy(ty = onType(ty), insts = onInsts(insts))
-    case defn @ Defn.Struct(_, _, tys) =>
-      defn.copy(tys = tys.map(onType))
     case defn @ Defn.Trait(_, _, _) =>
       defn
     case defn @ Defn.Class(_, _, _, _) =>
@@ -119,9 +117,9 @@ trait Transform {
   }
 
   def onVal(value: Val): Val = value match {
-    case Val.Zero(ty)               => Val.Zero(onType(ty))
-    case Val.Undef(ty)              => Val.Undef(onType(ty))
-    case Val.StructValue(n, values) => Val.StructValue(n, values.map(onVal))
+    case Val.Zero(ty)            => Val.Zero(onType(ty))
+    case Val.Undef(ty)           => Val.Undef(onType(ty))
+    case Val.StructValue(values) => Val.StructValue(values.map(onVal))
     case Val.ArrayValue(ty, values) =>
       Val.ArrayValue(onType(ty), values.map(onVal))
     case Val.Local(n, ty)  => Val.Local(n, onType(ty))
@@ -135,8 +133,8 @@ trait Transform {
       Type.ArrayValue(onType(ty), n)
     case Type.Function(args, ty) =>
       Type.Function(args.map(onType), onType(ty))
-    case Type.StructValue(n, tys) =>
-      Type.StructValue(n, tys.map(onType))
+    case Type.StructValue(tys) =>
+      Type.StructValue(tys.map(onType))
     case Type.Var(ty) =>
       Type.Var(onType(ty))
     case Type.Array(ty) =>

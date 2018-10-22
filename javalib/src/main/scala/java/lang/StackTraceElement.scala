@@ -5,11 +5,12 @@ final class StackTraceElement(val getClassName: String,
                               val getFileName: String,
                               val getLineNumber: Int) {
 
-  if (getClassName == null)
+  if (getClassName == null) {
     throw new NullPointerException("Declaring class is null")
-
-  if (getMethodName == null)
+  }
+  if (getMethodName == null) {
     throw new NullPointerException("Method name is null")
+  }
 
   def isNativeMethod: scala.Boolean = false
 
@@ -37,21 +38,71 @@ final class StackTraceElement(val getClassName: String,
 }
 
 private[lang] object StackTraceElement {
-  // symbol is "classname::methodName_T1_..._TN"
-  // where classname doesn't include colons and method name underscores.
-  def fromSymbol(symbol: String): StackTraceElement = {
-    val (className, methodName) =
-      symbol.indexOf("::") match {
-        case -1 =>
-          ("<none>", symbol)
-        case sep =>
-          symbol.indexOf("_", sep) match {
-            case -1 =>
-              (symbol.substring(0, sep), symbol.substring(sep + 2))
-            case end =>
-              (symbol.substring(0, sep), symbol.substring(sep + 2, end))
-          }
+  object Fail extends scala.util.control.NoStackTrace
+
+  def fromSymbol(sym: String): StackTraceElement = {
+    val chars      = sym.toArray
+    var pos        = 0
+    var className  = ""
+    var methodName = ""
+
+    def readSymbol(): Unit = {
+      if (read != '_') fail
+      if (read != 'S') fail
+      readGlobal()
+    }
+
+    def readGlobal(): Unit = read() match {
+      case 'M' =>
+        className = readIdent()
+        readSig()
+      case ch =>
+        fail
+    }
+
+    def readSig(): Unit = read() match {
+      case 'R' =>
+        methodName = "<init>"
+      case 'D' | 'P' | 'C' | 'G' =>
+        methodName = readIdent()
+      case ch =>
+        fail
+    }
+
+    def readIdent(): String = {
+      val len   = readNumber()
+      val start = pos
+      pos += len
+      sym.substring(start, pos)
+    }
+
+    def readNumber(): Int = {
+      val start = pos
+      var char  = chars(pos)
+      while ('0' <= char && char <= '9') {
+        pos += 1
+        char = chars(pos)
       }
+      java.lang.Integer.parseInt(sym.substring(start, pos))
+    }
+
+    def fail: Nothing =
+      throw Fail
+
+    def read(): Int = {
+      val value = chars(pos)
+      pos += 1
+      value
+    }
+
+    try {
+      readSymbol()
+    } catch {
+      case _: Throwable =>
+        className = "<none>"
+        methodName = sym
+    }
+
     new StackTraceElement(className, methodName, null, 0)
   }
 }

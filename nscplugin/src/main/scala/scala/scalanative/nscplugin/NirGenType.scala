@@ -69,8 +69,7 @@ trait NirGenType { self: NirGenPhase =>
     case PtrClass     => nir.Type.Ptr
     // format: on
     case sym if CStructClass.contains(sym) =>
-      nir.Type
-        .StructValue(nir.Global.None, st.targs.map(genType(_, box = false)))
+      nir.Type.StructValue(st.targs.map(genType(_, box = false)))
     case CArrayClass =>
       genCArrayType(st)
     case sym if CFunctionPtrClass.contains(sym) =>
@@ -108,14 +107,12 @@ trait NirGenType { self: NirGenPhase =>
   }
 
   def genRefType(st: SimpleType): nir.Type = st.sym match {
-    case ObjectClass           => nir.Rt.Object
-    case UnitClass             => nir.Type.Unit
-    case NullClass             => genRefType(RuntimeNullClass)
-    case ArrayClass            => nir.Type.Array(genType(st.targs.head, box = false))
-    case _ if st.isStruct      => genStruct(st)
-    case _ if st.isScalaModule => nir.Type.Module(genTypeName(st.sym))
-    case _ if st.isInterface   => nir.Type.Trait(genTypeName(st.sym))
-    case _                     => nir.Type.Class(genTypeName(st.sym))
+    case ObjectClass      => nir.Rt.Object
+    case UnitClass        => nir.Type.Unit
+    case NullClass        => genRefType(RuntimeNullClass)
+    case ArrayClass       => nir.Type.Array(genType(st.targs.head, box = false))
+    case _ if st.isStruct => genStruct(st)
+    case _                => nir.Type.Ref(genTypeName(st.sym))
   }
 
   def genTypeValue(st: SimpleType): nir.Val =
@@ -139,10 +136,9 @@ trait NirGenType { self: NirGenPhase =>
   }.toSeq
 
   def genStruct(st: SimpleType): nir.Type = {
-    val name   = genTypeName(st.sym)
     val fields = genStructFields(st)
 
-    nir.Type.StructValue(name, fields)
+    nir.Type.StructValue(fields)
   }
 
   def genPrimCode(st: SimpleType): Char = st.sym match {
@@ -163,29 +159,29 @@ trait NirGenType { self: NirGenPhase =>
 
   def genBoxType(st: SimpleType): nir.Type = st.sym match {
     case BooleanClass =>
-      nir.Type.Class(nir.Global.Top("java.lang.Boolean"))
+      nir.Type.Ref(nir.Global.Top("java.lang.Boolean"))
     case CharClass =>
-      nir.Type.Class(nir.Global.Top("java.lang.Character"))
+      nir.Type.Ref(nir.Global.Top("java.lang.Character"))
     case UByteClass =>
-      nir.Type.Class(nir.Global.Top("scala.scalanative.native.UByte"))
+      nir.Type.Ref(nir.Global.Top("scala.scalanative.native.UByte"))
     case ByteClass =>
-      nir.Type.Class(nir.Global.Top("java.lang.Byte"))
+      nir.Type.Ref(nir.Global.Top("java.lang.Byte"))
     case UShortClass =>
-      nir.Type.Class(nir.Global.Top("scala.scalanative.native.UShort"))
+      nir.Type.Ref(nir.Global.Top("scala.scalanative.native.UShort"))
     case ShortClass =>
-      nir.Type.Class(nir.Global.Top("java.lang.Short"))
+      nir.Type.Ref(nir.Global.Top("java.lang.Short"))
     case UIntClass =>
-      nir.Type.Class(nir.Global.Top("scala.scalanative.native.UInt"))
+      nir.Type.Ref(nir.Global.Top("scala.scalanative.native.UInt"))
     case IntClass =>
-      nir.Type.Class(nir.Global.Top("java.lang.Integer"))
+      nir.Type.Ref(nir.Global.Top("java.lang.Integer"))
     case ULongClass =>
-      nir.Type.Class(nir.Global.Top("scala.scalanative.native.ULong"))
+      nir.Type.Ref(nir.Global.Top("scala.scalanative.native.ULong"))
     case LongClass =>
-      nir.Type.Class(nir.Global.Top("java.lang.Long"))
+      nir.Type.Ref(nir.Global.Top("java.lang.Long"))
     case FloatClass =>
-      nir.Type.Class(nir.Global.Top("java.lang.Float"))
+      nir.Type.Ref(nir.Global.Top("java.lang.Float"))
     case DoubleClass =>
-      nir.Type.Class(nir.Global.Top("java.lang.Double"))
+      nir.Type.Ref(nir.Global.Top("java.lang.Double"))
     case _ =>
       unsupported("Box type must be primitive type.")
   }

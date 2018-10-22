@@ -5,13 +5,16 @@ import org.scalatest._
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import scalanative.util.Scope
-import scalanative.nir.Global
+import scalanative.nir.{Sig, Global}
 import scalanative.build.ScalaNative
 
 trait ReachabilitySuite extends FunSuite {
 
-  def g(top: String, members: String*): Global =
-    members.foldLeft[Global](Global.Top(top))(Global.Member(_, _))
+  def g(top: String): Global =
+    Global.Top(top)
+
+  def g(top: String, sig: Sig): Global =
+    Global.Member(Global.Top(top), sig)
 
   def testReachable(label: String)(f: => (String, Global, Seq[Global])) =
     test(label) {
