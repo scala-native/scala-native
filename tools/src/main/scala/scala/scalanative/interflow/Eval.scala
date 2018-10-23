@@ -123,52 +123,67 @@ trait Eval { self: Interflow =>
           case Val.Global(name, _) if intrinsics.contains(name) =>
             intrinsic(local, sig, name, eargs, unwind)
           case _ =>
-            val mmeth   = materialize(emeth)
-            val margs   = eargs.map(materialize(_))
-            val margtys = margs.map(_.ty)
+            val argtys = eargs.map {
+              case Val.Virtual(addr) =>
+                state.deref(addr).cls.ty
+              case value =>
+                value.ty
+            }
 
-            val (msig, mtarget) = mmeth match {
+            val (dsig, dtarget) = emeth match {
               case Val.Global(name, _) =>
-                visitDuplicate(name, margtys)
+                visitDuplicate(name, argtys)
                   .map { defn =>
                     (defn.ty, Val.Global(defn.name, Type.Ptr))
                   }
                   .getOrElse {
-                    (sig, mmeth)
+                    (sig, emeth)
                   }
               case _ =>
-                (sig, mmeth)
+                (sig, emeth)
             }
 
-            val isDuplicate =
-              mmeth match {
-                case Val.Global(Global.Member(_, _: Sig.Duplicate), _) =>
-                  true
-                case _ =>
-                  false
-              }
+            def fallback = {
+              val mtarget = materialize(dtarget)
+              val margs   = eargs.map(materialize)
 
-            val cargs =
-              if (!isDuplicate) {
-                margs
-              } else {
-                val Type.Function(sigtys, _) = msig
-
-                // Method target might have a more precise signature
-                // than what's known currently available at the call site.
-                // This is a side effect of a method target selection taking
-                // into account which classes are allocated across whole program.
-                margs.zip(sigtys).map {
-                  case (marg, ty) =>
-                    if (!Sub.is(marg.ty, ty)) {
-                      emit.conv(Conv.Bitcast, ty, marg, unwind)
-                    } else {
-                      marg
-                    }
+              val isDuplicate =
+                mtarget match {
+                  case Val.Global(Global.Member(_, _: Sig.Duplicate), _) =>
+                    true
+                  case _ =>
+                    false
                 }
-              }
 
-            emit.call(msig, mtarget, cargs, unwind)
+              val cargs =
+                if (!isDuplicate) {
+                  margs
+                } else {
+                  val Type.Function(sigtys, _) = dsig
+
+                  // Method target might have a more precise signature
+                  // than what's known currently available at the call site.
+                  // This is a side effect of a method target selection taking
+                  // into account which classes are allocated across whole program.
+                  margs.zip(sigtys).map {
+                    case (marg, ty) =>
+                      if (!Sub.is(marg.ty, ty)) {
+                        emit.conv(Conv.Bitcast, ty, marg, unwind)
+                      } else {
+                        marg
+                      }
+                  }
+                }
+
+              emit.call(dsig, mtarget, cargs, unwind)
+            }
+
+            dtarget match {
+              case Val.Global(name, _) if shallInline(name, eargs, unwind) =>
+                inline(name, eargs, unwind, blockFresh)
+              case _ =>
+                fallback
+            }
         }
       case Op.Load(ty, ptr) =>
         emit.load(ty, materialize(eval(ptr)), unwind)
@@ -692,6 +707,7 @@ trait Eval { self: Interflow =>
         value
       case Conv.Trunc =>
         (value, ty) match {
+          case (Val.Char(v), Type.Byte)  => Val.Byte(v.toByte)
           case (Val.Short(v), Type.Byte) => Val.Byte(v.toByte)
           case (Val.Int(v), Type.Byte)   => Val.Byte(v.toByte)
           case (Val.Int(v), Type.Short)  => Val.Short(v.toShort)
@@ -704,6 +720,10 @@ trait Eval { self: Interflow =>
         }
       case Conv.Zext =>
         (value, ty) match {
+          case (Val.Char(v), Type.Int) =>
+            Val.Int(v.toInt)
+          case (Val.Char(v), Type.Long) =>
+            Val.Long(v.toLong)
           case (Val.Short(v), Type.Int) =>
             Val.Int(v.toChar.toInt)
           case (Val.Short(v), Type.Long) =>
@@ -775,6 +795,8 @@ trait Eval { self: Interflow =>
             Val.Int(java.lang.Float.floatToRawIntBits(value))
           case (Val.Double(value), Type.Long) =>
             Val.Long(java.lang.Double.doubleToRawLongBits(value))
+          case (Val.Null, Type.Ptr) =>
+            Val.Null
           case _ =>
             bailOut
         }

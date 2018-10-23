@@ -72,12 +72,13 @@ final class Class(val attrs: Attrs,
 
   lazy val fields: Seq[Field] = {
     val out = mutable.UnrolledBuffer.empty[Field]
-    def add(info: Class): Unit =
+    def add(info: Class): Unit = {
+      info.parent.foreach(add)
       info.members.foreach {
         case info: Field => out += info
         case _           => ()
       }
-    parent.foreach(add)
+    }
     add(this)
     out
   }

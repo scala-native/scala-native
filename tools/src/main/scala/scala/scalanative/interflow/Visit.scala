@@ -68,7 +68,7 @@ trait Visit { self: Interflow =>
     def result(retty: Type, insts: Seq[Inst]) =
       origdefn.copy(name = name,
                     ty = Type.Function(argtys, retty),
-                    insts = insts)
+                    insts = DeadCodeElimination(insts))
 
     // Create new fresh and state for the first basic block.
     val fresh = Fresh(0)

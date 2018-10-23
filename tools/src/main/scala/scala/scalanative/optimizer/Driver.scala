@@ -42,7 +42,7 @@ object Driver {
   def default(mode: Mode): Driver = {
     val optPasses = mode match {
       case Mode.Debug   => fastOptPasses
-      case Mode.Release => fullOptPasses
+      case Mode.Release => fastOptPasses
     }
     empty.withPasses(optPasses)
   }

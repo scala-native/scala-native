@@ -9,6 +9,7 @@ class Interflow(val originals: Map[Global, Defn.Define])(
     implicit val linked: linker.Result)
     extends Visit
     with Eval
+    with Inline
     with Intrinsics
     with Log {
   val todo      = mutable.Queue.empty[Global]
