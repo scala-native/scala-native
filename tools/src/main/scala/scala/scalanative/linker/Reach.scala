@@ -167,6 +167,12 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
           case _ =>
             ()
         }
+      case info: Trait =>
+        def loopTraits(traitInfo: Trait): Unit = {
+          traitInfo.subtraits += info
+          traitInfo.traits.foreach(loopTraits)
+        }
+        info.traits.foreach(loopTraits)
       case info: Class =>
         // Register given class as a subclass of all
         // transitive parents and as an implementation
@@ -356,17 +362,23 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
   }
 
   def reachDeclare(defn: Defn.Declare): Unit = {
-    val Defn.Declare(attrs, name, sig) = defn
-    newInfo(new Method(attrs, scopeInfoOrUnavailable(name.top), name, Seq()))
+    val Defn.Declare(attrs, name, ty) = defn
+    newInfo(
+      new Method(attrs, scopeInfoOrUnavailable(name.top), name, ty, Array()))
     reachAttrs(attrs)
-    reachType(sig)
+    reachType(ty)
   }
 
   def reachDefine(defn: Defn.Define): Unit = {
-    val Defn.Define(attrs, name, sig, insts) = defn
-    newInfo(new Method(attrs, scopeInfoOrUnavailable(name.top), name, insts))
+    val Defn.Define(attrs, name, ty, insts) = defn
+    newInfo(
+      new Method(attrs,
+                 scopeInfoOrUnavailable(name.top),
+                 name,
+                 ty,
+                 insts.toArray))
     reachAttrs(attrs)
-    reachType(sig)
+    reachType(ty)
     reachInsts(insts)
   }
 

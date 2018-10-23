@@ -25,15 +25,15 @@ abstract class CodeGenSpec extends OptimizerSpec {
       sources: Map[String, String],
       driver: Option[Driver] = None)(f: (Config, linker.Result, Path) => T): T =
     optimize(entry, sources, driver) {
-      case (config, linked, optimized) =>
+      case (config, optimized) =>
         Scope { implicit in =>
-          ScalaNative.codegen(config, linked, optimized)
+          ScalaNative.codegen(config, optimized)
           val workdir = VirtualDirectory.real(config.workdir)
           val outfile = Paths.get("out.ll")
 
           assert(workdir.contains(outfile), "out.ll not found.")
 
-          f(config, linked, outfile)
+          f(config, optimized, outfile)
         }
     }
 

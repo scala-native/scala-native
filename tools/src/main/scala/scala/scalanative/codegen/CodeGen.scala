@@ -15,9 +15,8 @@ import scalanative.util.Stats
 object CodeGen {
 
   /** Lower and generate code for given assembly. */
-  def apply(config: build.Config,
-            linked: linker.Result,
-            defns: Seq[Defn]): Unit = {
+  def apply(config: build.Config, linked: linker.Result): Unit = {
+    val defns   = linked.defns
     val proxies = GenerateReflectiveProxies(linked.dynimpls, defns)
 
     implicit val meta = new Metadata(linked, proxies)

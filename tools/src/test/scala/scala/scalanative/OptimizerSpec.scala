@@ -17,15 +17,15 @@ abstract class OptimizerSpec extends LinkerSpec {
    * @param fn      A function to apply to the products of the compilation.
    * @return The result of applying `fn` to the resulting definitions.
    */
-  def optimize[T](entry: String,
-                  sources: Map[String, String],
-                  driver: Option[Driver] = None)(
-      fn: (Config, linker.Result, Seq[nir.Defn]) => T): T =
+  def optimize[T](
+      entry: String,
+      sources: Map[String, String],
+      driver: Option[Driver] = None)(fn: (Config, linker.Result) => T): T =
     link(entry, sources, driver = driver) {
       case (config, linked) =>
-        val driver_ = driver.getOrElse(Driver.default(Mode.default))
-        val opt     = ScalaNative.optimize(config, linked, driver_)
-        fn(config, linked, opt)
+        val driver_   = driver.getOrElse(Driver.default(Mode.default))
+        val optimized = ScalaNative.optimize(config, linked, driver_)
+        fn(config, optimized)
     }
 
 }
