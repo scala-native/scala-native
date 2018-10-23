@@ -35,16 +35,16 @@ RUN \
   apt-get update && \
   apt-get install -y sbt
 
-RUN apt-get update && apt-get install -y clang-6.0 zlib1g-dev libre2-dev gcc git autoconf libtool pkg-config gdb
+RUN apt-get update && apt-get install -y clang-6.0 zlib1g-dev libre2-dev git autoconf libtool pkg-config
 
 # Install newer version of BoehmGC from source
 RUN git clone git://github.com/ivmai/bdwgc.git && \
     cd bdwgc && \
     git checkout v8.0.0 && \
-    git clone git://github.com/ivmai/libatomic_ops.git -b v7.6.6 && \
     ./autogen.sh && \
     ./configure && \
     make -j && \
+    make check && \
     make install
 
 ENV LD_LIBRARY_PATH "/usr/local/lib"
