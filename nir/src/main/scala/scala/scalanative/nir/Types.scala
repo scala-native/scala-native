@@ -21,10 +21,6 @@ sealed abstract class Type {
 }
 
 object Type {
-  sealed trait Named extends Type {
-    def name: Global
-  }
-
   final case object None extends Type
 
   // low-level second-class types
@@ -66,13 +62,18 @@ object Type {
 
   // high-level types
 
+  final case object Null         extends Type
   final case object Nothing      extends Type
+  final case object Virtual      extends Type
   final case class Var(ty: Type) extends Type
 
-  sealed abstract class RefKind      extends Type
-  final case object Unit             extends RefKind
-  final case class Array(ty: Type)   extends RefKind
-  final case class Ref(name: Global) extends RefKind with Named
+  sealed abstract class RefKind                              extends Type
+  final case object Unit                                     extends RefKind
+  final case class Array(ty: Type, nullable: Boolean = true) extends RefKind
+  final case class Ref(name: Global,
+                       exact: Boolean = false,
+                       nullable: Boolean = true)
+      extends RefKind
 
   val unbox = Map[Type, Type](
     Type.Ref(Global.Top("java.lang.Boolean"))               -> Type.Bool,
@@ -108,7 +109,8 @@ object Type {
   def toArrayClass(ty: Type): Global = ty match {
     case _ if typeToArray.contains(ty) =>
       typeToArray(ty)
-    case ty: Type.Named if ty.name == Global.Top("scala.runtime.BoxedUnit") =>
+    case Type.Ref(name, _, _)
+        if name == Global.Top("scala.runtime.BoxedUnit") =>
       typeToArray(Type.Unit)
     case _ =>
       typeToArray(Rt.Object)

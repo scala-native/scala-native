@@ -30,4 +30,5 @@ object Sig {
   final case class Proxy(id: String, types: Seq[Type])  extends Sig
   final case class Extern(id: String)                   extends Sig
   final case class Generated(id: String)                extends Sig
+  final case class Duplicate(of: Sig, types: Seq[Type]) extends Sig
 }

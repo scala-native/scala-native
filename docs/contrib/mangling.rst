@@ -21,6 +21,7 @@ thar uses a notation inspired by
         P <name> <type-name>+ E        // proxy name
         C <name>                       // c extern name
         G <name>                       // generated name
+        K <sig-name> <type-name>+ E    // duplicate name
 
     <type-name> ::=
         v                              // c void
@@ -37,8 +38,15 @@ thar uses a notation inspired by
         d                              // scala.Double
         u                              // scala.Unit
         n                              // scala.Nothing
-        A <type-name> _                // array type-name
-        <name>                         // named type
+        L <nullable-type-name>         // nullable type-name
+        A <type-name> _                // nonnull array type-name
+        X <name>                       // nonnull exact class type-name
+        <name>                         // nonnull class type-name
+
+    <nullable-type-name> ::=
+        A <type-name> _                // nullable array type-name
+        X <name>                       // nullable exact class type-name
+        <name>                         // nullable class type-name
 
     <integer-type-name> ::=
         b                              // scala.Byte

@@ -363,13 +363,13 @@ object CodeGen {
     }
 
     def genType(ty: Type): Unit = ty match {
-      case Type.Void   => str("void")
-      case Type.Vararg => str("...")
-      case Type.Ptr    => str("i8*")
-      case Type.Bool   => str("i1")
-      case i: Type.I   => str("i"); str(i.width)
-      case Type.Float  => str("float")
-      case Type.Double => str("double")
+      case Type.Void            => str("void")
+      case Type.Vararg          => str("...")
+      case Type.Ptr | Type.Null => str("i8*")
+      case Type.Bool            => str("i1")
+      case i: Type.I            => str("i"); str(i.width)
+      case Type.Float           => str("float")
+      case Type.Double          => str("double")
       case Type.ArrayValue(ty, n) =>
         str("[")
         str(n)
@@ -855,10 +855,10 @@ object CodeGen {
     }
 
     def genNext(next: Next) = next match {
-      case Next.Case(v, n) =>
+      case Next.Case(v, next) =>
         genVal(v)
         str(", label %")
-        genLocal(n)
+        genLocal(next.name)
         str(".0")
       case next =>
         str("label %")

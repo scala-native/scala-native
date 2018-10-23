@@ -1062,7 +1062,7 @@ trait NirGenExpr { self: NirGenPhase =>
 
       val Apply(Select(arrayp, _), argsp) = app
 
-      val Type.Array(elemty) = genType(arrayp.tpe, box = false)
+      val Type.Array(elemty, _) = genType(arrayp.tpe, box = false)
 
       def elemcode = genArrayCode(arrayp.tpe)
       val array    = genExpr(arrayp)

@@ -79,11 +79,11 @@ object Show {
       case Next.Unwind(name) =>
         str("unwind ")
         local_(name)
-      case Next.Case(v, name) =>
+      case Next.Case(v, next) =>
         str("case ")
         val_(v)
         str(" => ")
-        local_(name)
+        next_(next)
     }
 
     def inst_(inst: Inst): Unit = inst match {
@@ -456,6 +456,9 @@ object Show {
         str("\"")
         str(escapeNewLine(escapeQuotes(v)))
         str("\"")
+      case Val.Virtual(key) =>
+        str("virtual ")
+        str(key)
     }
 
     def defns_(defns: Seq[Defn]): Unit =
@@ -572,14 +575,19 @@ object Show {
         rep(tys, sep = ", ")(type_)
         str("}")
 
+      case Type.Null    => str("null")
       case Type.Nothing => str("nothing")
+      case Type.Virtual => str("virtual")
       case Type.Var(ty) => str("var["); type_(ty); str("]")
       case Type.Unit    => str("unit")
-      case Type.Array(ty) =>
+      case Type.Array(ty, nullable) =>
+        if (!nullable) { str("?") }
         str("array[")
         type_(ty)
         str("]")
-      case Type.Ref(name) =>
+      case Type.Ref(name, exact, nullable) =>
+        if (exact) { str("!") }
+        if (!nullable) { str("?") }
         global_(name)
     }
 

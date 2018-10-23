@@ -137,8 +137,8 @@ trait Transform {
       Type.StructValue(tys.map(onType))
     case Type.Var(ty) =>
       Type.Var(onType(ty))
-    case Type.Array(ty) =>
-      Type.Array(onType(ty))
+    case Type.Array(ty, nullable) =>
+      Type.Array(onType(ty), nullable)
     case _ =>
       ty
   }

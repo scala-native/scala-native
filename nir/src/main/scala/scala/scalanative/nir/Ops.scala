@@ -18,12 +18,12 @@ sealed abstract class Op {
     case Op.Conv(_, ty, _)                    => ty
     case Op.Select(_, v, _)                   => v.ty
 
-    case Op.Classalloc(n)           => Type.Ref(n)
+    case Op.Classalloc(n)           => Type.Ref(n, exact = true, nullable = false)
     case Op.Fieldload(ty, _, _)     => ty
     case Op.Fieldstore(ty, _, _, _) => Type.Unit
     case Op.Method(_, _)            => Type.Ptr
     case Op.Dynmethod(_, _)         => Type.Ptr
-    case Op.Module(n)               => Type.Ref(n)
+    case Op.Module(n)               => Type.Ref(n, exact = true, nullable = false)
     case Op.As(ty, _)               => ty
     case Op.Is(_, _)                => Type.Bool
     case Op.Copy(v)                 => v.ty
@@ -34,7 +34,7 @@ sealed abstract class Op {
     case Op.Var(ty)                 => Type.Var(ty)
     case Op.Varload(slot)           => val Type.Var(ty) = slot.ty; ty
     case Op.Varstore(slot, _)       => Type.Unit
-    case Op.Arrayalloc(ty, _)       => Type.Array(ty)
+    case Op.Arrayalloc(ty, _)       => Type.Array(ty, nullable = false)
     case Op.Arrayload(ty, _, _)     => ty
     case Op.Arraystore(_, _, _, _)  => Type.Unit
     case Op.Arraylength(_)          => Type.Int

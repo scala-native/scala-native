@@ -88,8 +88,8 @@ class CfChainsSimplification extends Pass {
       case Switch(value, default, cases) if (staticValue(value)) =>
         val next = cases
           .collectFirst {
-            case Next.Case(caseVal, targetName) if (caseVal == value) =>
-              Next.Label(targetName, Seq.empty)
+            case Next.Case(caseVal, caseNext) if (caseVal == value) =>
+              caseNext
           }
           .getOrElse(default)
         Jump(next)
@@ -173,9 +173,9 @@ class CfChainsSimplification extends Pass {
   private def simplifySwitchCase(swCase: Next)(implicit method: MethodInfo,
                                                fresh: Fresh): Next = {
     swCase match {
-      case Next.Case(value, name) => {
-        var newLocalJump    = name
-        var currentCf: Inst = Jump(Next.Label(name, Seq.empty))
+      case Next.Case(value, next) => {
+        var newLocalJump    = next.name
+        var currentCf: Inst = Jump(next)
         var continue        = true
 
         while (continue) {

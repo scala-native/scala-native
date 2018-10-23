@@ -65,6 +65,8 @@ private[lang] object StackTraceElement {
         methodName = "<init>"
       case 'D' | 'P' | 'C' | 'G' =>
         methodName = readIdent()
+      case 'K' =>
+        readSig()
       case ch =>
         fail
     }

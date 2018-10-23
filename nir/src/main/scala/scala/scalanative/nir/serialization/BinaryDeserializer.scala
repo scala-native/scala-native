@@ -179,17 +179,18 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.ProxySig     => Sig.Proxy(getString, getTypes)
     case T.ExternSig    => Sig.Extern(getString)
     case T.GeneratedSig => Sig.Generated(getString)
+    case T.DuplicateSig => Sig.Duplicate(getSig, getTypes)
   }
 
   private def getLocal(): Local =
-    Local(getInt)
+    Local(getLong)
 
   private def getNexts(): Seq[Next] = getSeq(getNext)
   private def getNext(): Next = getInt match {
     case T.NoneNext   => Next.None
     case T.UnwindNext => Next.Unwind(getLocal)
     case T.LabelNext  => Next.Label(getLocal, getVals)
-    case T.CaseNext   => Next.Case(getVal, getLocal)
+    case T.CaseNext   => Next.Case(getVal, getNext)
   }
 
   private def getOp(): Op = getInt match {
@@ -252,11 +253,13 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.StructValueType => Type.StructValue(getTypes)
     case T.FunctionType    => Type.Function(getTypes, getType)
 
+    case T.NullType    => Type.Null
     case T.NothingType => Type.Nothing
+    case T.VirtualType => Type.Virtual
     case T.VarType     => Type.Var(getType)
     case T.UnitType    => Type.Unit
-    case T.ArrayType   => Type.Array(getType)
-    case T.RefType     => Type.Ref(getGlobal)
+    case T.ArrayType   => Type.Array(getType, getBool)
+    case T.RefType     => Type.Ref(getGlobal, getBool, getBool)
   }
 
   private def getVals(): Seq[Val] = getSeq(getVal)
@@ -278,9 +281,10 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.LocalVal       => Val.Local(getLocal, getType)
     case T.GlobalVal      => Val.Global(getGlobal, getType)
 
-    case T.UnitVal   => Val.Unit
-    case T.ConstVal  => Val.Const(getVal)
-    case T.StringVal => Val.String(getString)
+    case T.UnitVal    => Val.Unit
+    case T.ConstVal   => Val.Const(getVal)
+    case T.StringVal  => Val.String(getString)
+    case T.VirtualVal => Val.Virtual(getLong)
   }
   private def getZero(): Val = {
     val ty = getType

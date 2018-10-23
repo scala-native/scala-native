@@ -409,11 +409,11 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     case Type.Function(args, ty) =>
       args.foreach(reachType)
       reachType(ty)
-    case ty: Type.Named =>
-      reachGlobal(ty.name)
+    case Type.Ref(name, _, _) =>
+      reachGlobal(name)
     case Type.Var(ty) =>
       reachType(ty)
-    case Type.Array(ty) =>
+    case Type.Array(ty, _) =>
       reachType(ty)
     case _ =>
       ()
@@ -580,10 +580,10 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
   }
 
   def reachMethodTargets(ty: Type, sig: Sig): Unit = ty match {
-    case Type.Array(ty) =>
+    case Type.Array(ty, _) =>
       reachMethodTargets(Type.Ref(Type.toArrayClass(ty)), sig)
-    case ty: Type.Named =>
-      scopeInfo(ty.name).foreach { scope =>
+    case Type.Ref(name, _, _) =>
+      scopeInfo(name).foreach { scope =>
         if (!scope.calls.contains(sig)) {
           scope.calls += sig
           scope.targets(sig).foreach(reachGlobal)

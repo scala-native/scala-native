@@ -8,7 +8,7 @@ import scala.annotation.tailrec
 sealed abstract class Val {
   final def ty: Type = this match {
     case Val.None                 => Type.None
-    case Val.Null                 => Type.Ptr
+    case Val.Null                 => Type.Null
     case Val.Zero(ty)             => ty
     case Val.Undef(ty)            => ty
     case Val.True | Val.False     => Type.Bool
@@ -24,9 +24,10 @@ sealed abstract class Val {
     case Val.Local(_, ty)         => ty
     case Val.Global(_, ty)        => ty
 
-    case Val.Unit      => Type.Unit
-    case Val.Const(_)  => Type.Ptr
-    case Val.String(_) => Rt.String
+    case Val.Unit       => Type.Unit
+    case Val.Const(_)   => Type.Ptr
+    case Val.String(_)  => Rt.String
+    case Val.Virtual(_) => Type.Virtual
   }
 
   private def countBytes(s: String): Int = {
@@ -71,12 +72,73 @@ sealed abstract class Val {
   }
 
   final def show: String = nir.Show(this)
+
+  final def isVirtual: Boolean =
+    this.isInstanceOf[Val.Virtual]
+
+  final def isCanonical: Boolean = this match {
+    case Val.True | Val.False =>
+      true
+    case _: Val.Byte | _: Val.Short | _: Val.Int | _: Val.Long =>
+      true
+    case _: Val.Float | _: Val.Double =>
+      true
+    case _: Val.Global | Val.Null | _: Val.Virtual =>
+      true
+    case _ =>
+      false
+  }
+
+  final def isDefault: Boolean = this match {
+    case Val.False      => true
+    case Val.Zero(_)    => true
+    case Val.Byte(0)    => true
+    case Val.Short(0)   => true
+    case Val.Int(0)     => true
+    case Val.Long(0L)   => true
+    case Val.Float(0F)  => true
+    case Val.Double(0F) => true
+    case Val.Null       => true
+    case _              => false
+  }
+
+  final def canonicalize: Val = this match {
+    case Val.Zero(Type.Bool) =>
+      Val.False
+    case Val.Zero(Type.Char) =>
+      Val.Short(0.toShort)
+    case Val.Zero(Type.Byte) =>
+      Val.Byte(0.toByte)
+    case Val.Zero(Type.Short) =>
+      Val.Short(0.toShort)
+    case Val.Zero(Type.Int) =>
+      Val.Int(0)
+    case Val.Zero(Type.Long) =>
+      Val.Long(0L)
+    case Val.Zero(Type.Float) =>
+      Val.Float(0F)
+    case Val.Zero(Type.Double) =>
+      Val.Double(0D)
+    case Val.Zero(Type.Ptr) | Val.Zero(_: Type.RefKind) =>
+      Val.Null
+    case _ =>
+      this
+  }
 }
 object Val {
   // low-level
-  final case object None                     extends Val
-  final case object True                     extends Val
-  final case object False                    extends Val
+  final case object None  extends Val
+  final case object True  extends Val
+  final case object False extends Val
+  object Bool extends (Boolean => Val) {
+    def apply(value: Boolean): Val =
+      if (value) True else False
+    def unapply(value: Val): Option[Boolean] = value match {
+      case True  => Some(true)
+      case False => Some(false)
+      case _     => scala.None
+    }
+  }
   final case object Null                     extends Val
   final case class Zero(of: nir.Type)        extends Val
   final case class Undef(of: nir.Type)       extends Val
@@ -107,10 +169,10 @@ object Val {
   final case class Chars(value: java.lang.String)                 extends Val
   final case class Local(name: nir.Local, valty: nir.Type)        extends Val
   final case class Global(name: nir.Global, valty: nir.Type)      extends Val
-  def Bool(bool: Boolean) = if (bool) True else False
 
   // high-level
   final case object Unit                           extends Val
   final case class Const(value: Val)               extends Val
   final case class String(value: java.lang.String) extends Val
+  final case class Virtual(key: scala.Long)        extends Val
 }

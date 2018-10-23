@@ -382,7 +382,6 @@ object GlobalValueNumbering extends PassCompanion {
     def hashConv(conv: Conv): Hash = {
       conv.hashCode
     }
-
   }
 
   object HashFunction {
@@ -390,7 +389,7 @@ object GlobalValueNumbering extends PassCompanion {
     def combineHashes(hashes: Seq[Hash]): Hash =
       MurmurHash3.orderedHash(hashes)
 
-    def rawLocal(local: Local): Hash = local.id
+    def rawLocal(local: Local): Hash = local.id.##
   }
 
   override def apply(config: build.Config, linked: linker.Result) =

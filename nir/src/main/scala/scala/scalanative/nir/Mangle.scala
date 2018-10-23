@@ -64,6 +64,11 @@ object Mangle {
       case Sig.Generated(id) =>
         str("G")
         mangleIdent(id)
+      case Sig.Duplicate(sig, types) =>
+        str("K")
+        mangleSig(sig)
+        types.foreach(mangleType)
+        str("E")
     }
 
     def mangleType(ty: Type): Unit = ty match {
@@ -82,6 +87,7 @@ object Mangle {
       case Type.I(64, true)  => str("j")
       case Type.Float        => str("f")
       case Type.Double       => str("d")
+      case Type.Null         => str("l")
       case Type.Nothing      => str("n")
       case Type.Unit         => str("u")
       case Type.ArrayValue(ty, n) =>
@@ -99,11 +105,14 @@ object Mangle {
         mangleType(ret)
         str("E")
 
-      case Type.Array(ty) =>
+      case Type.Array(ty, nullable) =>
+        if (nullable) { str("L") }
         str("A")
         mangleType(ty)
         str("_")
-      case Type.Ref(Global.Top(id)) =>
+      case Type.Ref(Global.Top(id), exact, nullable) =>
+        if (nullable) { str("L") }
+        if (exact) { str("X") }
         mangleIdent(id)
       case _ =>
         util.unreachable

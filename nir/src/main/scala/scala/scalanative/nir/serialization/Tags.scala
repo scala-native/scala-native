@@ -128,6 +128,7 @@ object Tags {
   final val ProxySig     = 1 + MethodSig
   final val ExternSig    = 1 + ProxySig
   final val GeneratedSig = 1 + ExternSig
+  final val DuplicateSig = 1 + GeneratedSig
 
   // Nexts
 
@@ -197,8 +198,10 @@ object Tags {
   final val ArrayValueType  = 1 + DoubleType
   final val StructValueType = 1 + ArrayValueType
   final val FunctionType    = 1 + StructValueType
-  final val NothingType     = 1 + FunctionType
-  final val VarType         = 1 + NothingType
+  final val NullType        = 1 + FunctionType
+  final val NothingType     = 1 + NullType
+  final val VirtualType     = 1 + NothingType
+  final val VarType         = 1 + VirtualType
   final val UnitType        = 1 + VarType
   final val ArrayType       = 1 + UnitType
   final val RefType         = 1 + ArrayType
@@ -226,4 +229,5 @@ object Tags {
   final val UnitVal        = 1 + GlobalVal
   final val ConstVal       = 1 + UnitVal
   final val StringVal      = 1 + ConstVal
+  final val VirtualVal     = 1 + StringVal
 }

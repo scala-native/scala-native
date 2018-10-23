@@ -107,7 +107,7 @@ object Unmangle {
         peek() match {
           case '_' =>
             next()
-            Type.Array(ty)
+            Type.Array(ty, nullable = false)
           case n if '0' <= n && n <= '9' =>
             val res = Type.ArrayValue(ty, readNumber())
             accept('E')
@@ -118,10 +118,31 @@ object Unmangle {
       case 'S' =>
         next()
         Type.StructValue(readTypes())
+      case 'L' =>
+        next()
+        readNullableType()
+      case 'X' =>
+        next()
+        Type.Ref(Global.Top(readIdent()), exact = true, nullable = false)
       case n if '0' <= n && n <= '9' =>
-        Type.Ref(Global.Top(readIdent()))
+        Type.Ref(Global.Top(readIdent()), exact = false, nullable = false)
       case ch =>
         error(s"expected type, but got $ch")
+    }
+
+    def readNullableType(): Type = peek() match {
+      case 'A' =>
+        next()
+        val ty = readType()
+        accept('_')
+        Type.Array(ty, nullable = true)
+      case 'X' =>
+        next()
+        Type.Ref(Global.Top(readIdent()), exact = true, nullable = true)
+      case n if '0' <= n && n <= '9' =>
+        Type.Ref(Global.Top(readIdent()), exact = false, nullable = true)
+      case ch =>
+        error(s"expected nullable qualifier, but got $ch")
     }
 
     def readTypes(): Seq[Type] = {

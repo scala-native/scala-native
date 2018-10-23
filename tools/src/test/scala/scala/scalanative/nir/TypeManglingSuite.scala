@@ -26,8 +26,12 @@ class TypeManglingSuite extends FunSuite {
     Type.Function(Seq(Type.Float, Type.Int), Type.Int),
     Type.Nothing,
     Type.Unit,
-    Type.Array(Rt.Object),
-    Rt.Object
+    Type.Array(Rt.Object, nullable = false),
+    Type.Array(Rt.Object, nullable = true),
+    Type.Ref(Rt.Object.name, exact = true, nullable = true),
+    Type.Ref(Rt.Object.name, exact = true, nullable = false),
+    Type.Ref(Rt.Object.name, exact = false, nullable = true),
+    Type.Ref(Rt.Object.name, exact = false, nullable = false)
   ).foreach { ty =>
     test(s"mangle/unmangle type `${ty.toString}`") {
       val mangled = ty.mangle
