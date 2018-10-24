@@ -286,6 +286,7 @@ object GlobalValueNumbering extends PassCompanion {
 
         case ty: Type   => hashType(ty)
         case g: Global  => hashGlobal(g)
+        case sig: Sig   => hashSig(sig)
         case bin: Bin   => hashBin(bin)
         case comp: Comp => hashComp(comp)
         case conv: Conv => hashConv(conv)
@@ -369,6 +370,10 @@ object GlobalValueNumbering extends PassCompanion {
 
     def hashGlobal(global: Global): Hash = {
       global.hashCode
+    }
+
+    def hashSig(sig: Sig): Hash = {
+      sig.hashCode
     }
 
     def hashBin(bin: Bin): Hash = {
