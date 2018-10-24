@@ -4,7 +4,7 @@ Name mangling
 Scala Native toolchain mangles names for all definitions except
 the ones which have been explicitly exported to C using
 ``extern``. Mangling scheme is defined through a simple grammar
-thar uses a notation inspired by
+that uses a notation inspired by
 `Itanium ABI <http://refspecs.linuxbase.org/cxxabi-1.83.html>`_::
 
     <mangled-name> ::=
@@ -37,6 +37,7 @@ thar uses a notation inspired by
         f                              // scala.Float
         d                              // scala.Double
         u                              // scala.Unit
+        l                              // scala.Null
         n                              // scala.Nothing
         L <nullable-type-name>         // nullable type-name
         A <type-name> _                // nonnull array type-name

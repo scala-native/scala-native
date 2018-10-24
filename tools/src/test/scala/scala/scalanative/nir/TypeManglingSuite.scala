@@ -24,6 +24,7 @@ class TypeManglingSuite extends FunSuite {
     Type.Function(Seq.empty, Type.Int),
     Type.Function(Seq(Type.Int), Type.Int),
     Type.Function(Seq(Type.Float, Type.Int), Type.Int),
+    Type.Null,
     Type.Nothing,
     Type.Unit,
     Type.Array(Rt.Object, nullable = false),

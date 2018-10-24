@@ -94,7 +94,7 @@ object Mangle {
         str("A")
         mangleType(ty)
         str(n)
-        str("E")
+        str("_")
       case Type.StructValue(tys) =>
         str("S")
         tys.foreach(mangleType)

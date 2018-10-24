@@ -79,13 +79,14 @@ private[lang] object StackTraceElement {
     }
 
     def readNumber(): Int = {
-      val start = pos
-      var char  = chars(pos)
-      while ('0' <= char && char <= '9') {
+      val start  = pos
+      var number = 0
+      while ('0' <= chars(pos) && chars(pos) <= '9') {
+        number = number * 10 + (chars(pos) - '0').toInt
         pos += 1
-        char = chars(pos)
       }
-      java.lang.Integer.parseInt(sym.substring(start, pos))
+      if (start == pos) fail
+      number
     }
 
     def fail: Nothing =

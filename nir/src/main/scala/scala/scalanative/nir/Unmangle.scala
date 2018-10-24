@@ -95,6 +95,9 @@ object Unmangle {
       case 'd' =>
         next()
         Type.Double
+      case 'l' =>
+        next()
+        Type.Null
       case 'n' =>
         next()
         Type.Nothing
@@ -110,7 +113,7 @@ object Unmangle {
             Type.Array(ty, nullable = false)
           case n if '0' <= n && n <= '9' =>
             val res = Type.ArrayValue(ty, readNumber())
-            accept('E')
+            accept('_')
             res
           case ch =>
             error(s"expected digit or _, but got $ch")
