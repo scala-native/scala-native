@@ -33,10 +33,12 @@ void Stats_writeToFile(Stats *stats) {
 }
 
 void Stats_OnExit(Stats *stats) {
-    uint64_t remainder = stats->collections % STATS_MEASUREMENTS;
-    if (remainder > 0) {
-        // there were some measurements not written in the last full batch.
-        Stats_writeToFile(stats);
+    if (stats != NULL) {
+        uint64_t remainder = stats->collections % STATS_MEASUREMENTS;
+        if (remainder > 0) {
+            // there were some measurements not written in the last full batch.
+            Stats_writeToFile(stats);
+        }
+        fclose(stats->outFile);
     }
-    fclose(stats->outFile);
 }

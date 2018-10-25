@@ -23,8 +23,6 @@
 #define HEAP_MEM_FD_OFFSET 0
 
 size_t Heap_getMemoryLimit() { return getMemorySize(); }
-void Heap_writeStatsToFile(Stats * stats);
-
 /**
  * Maps `MAX_SIZE` of memory and returns the first address aligned on
  * `alignement` mask
@@ -238,13 +236,6 @@ void Heap_Collect(Heap *heap, Stack *stack) {
     printf("End collect\n");
     fflush(stdout);
 #endif
-}
-
-void Heap_AfterExit(Heap *heap) {
-    Stats* stats = heap->stats;
-    if (stats != NULL) {
-        Stats_OnExit(stats);
-    }
 }
 
 void Heap_Recycle(Heap *heap) {

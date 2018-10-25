@@ -14,7 +14,7 @@
 void scalanative_collect();
 
 void scalanative_afterexit() {
-    Heap_AfterExit(&heap);
+    Stats_OnExit(heap.stats);
 }
 
 NOINLINE void scalanative_init() {
