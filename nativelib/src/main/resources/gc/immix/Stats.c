@@ -1,7 +1,7 @@
 #include "Stats.h"
 #include <stdio.h>
 
-void Stats_writeStatsToFile(Stats *stats);
+void Stats_writeToFile(Stats *stats);
 
 void Stats_Init(Stats *stats, const char *statsFile) {
     stats->outFile = fopen(statsFile, "w");
@@ -15,11 +15,11 @@ void Stats_RecordCollection(Stats *stats, uint64_t start_ns, uint64_t sweep_star
     stats->sweep_time_ns[index] = end_ns - sweep_start_ns;
     stats->collections += 1;
     if (stats->collections % GC_STATS_MEASUREMENTS == 0) {
-        Stats_writeStatsToFile(stats);
+        Stats_writeToFile(stats);
     }
 }
 
-void Stats_writeStatsToFile(Stats *stats) {
+void Stats_writeToFile(Stats *stats) {
     uint64_t collections = stats->collections;
     uint64_t remainder = collections % GC_STATS_MEASUREMENTS;
     if (remainder == 0) {
@@ -32,11 +32,11 @@ void Stats_writeStatsToFile(Stats *stats) {
     fflush(outFile);
 }
 
-void Stats_Close(Stats *stats) {
+void Stats_OnExit(Stats *stats) {
     uint64_t remainder = stats->collections % GC_STATS_MEASUREMENTS;
     if (remainder > 0) {
         // there were some measurements not written in the last full batch.
-        Stats_writeStatsToFile(stats);
+        Stats_writeToFile(stats);
     }
     fclose(stats->outFile);
 }

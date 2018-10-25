@@ -112,7 +112,7 @@ void Heap_Init(Heap *heap, size_t initialSmallHeapSize,
     LargeAllocator_Init(&largeAllocator, largeHeapStart, initialLargeHeapSize,
                         largeBytemap);
 
-    char *statsFile = Settings_GC_StatsFileName();
+    char *statsFile = Settings_StatsFileName();
     if (statsFile != NULL) {
         heap->stats = malloc(sizeof(Stats));
         Stats_Init(heap->stats, statsFile);
@@ -243,7 +243,7 @@ void Heap_Collect(Heap *heap, Stack *stack) {
 void Heap_AfterExit(Heap *heap) {
     Stats* stats = heap->stats;
     if (stats != NULL) {
-        Stats_Close(stats);
+        Stats_OnExit(stats);
     }
 }
 
