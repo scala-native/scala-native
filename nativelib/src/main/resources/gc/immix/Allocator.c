@@ -6,6 +6,7 @@
 
 bool Allocator_getNextLine(Allocator *allocator);
 bool Allocator_newBlock(Allocator *allocator);
+bool Allocator_newOverflowBlock(Allocator *allocator);
 
 void Allocator_Init(Allocator *allocator, BlockAllocator *blockAllocator,
                     Bytemap *bytemap, word_t *blockMetaStart,
@@ -37,26 +38,35 @@ bool Allocator_CanInitCursors(Allocator *allocator) {
 }
 
 void Allocator_InitCursors(Allocator *allocator) {
-
     // Init cursor
     bool didInit = Allocator_newBlock(allocator);
     assert(didInit);
 
     // Init large cursor
+    bool didLargeInit = Allocator_newOverflowBlock(allocator);
+    assert(didLargeInit);
+}
+
+void Allocator_Clear(Allocator *allocator) {
+    BlockList_Clear(&allocator->recycledBlocks);
+    allocator->recycledBlockCount = 0;
+    allocator->limit = NULL;
+    allocator->largeLimit = NULL;
+}
+
+bool Allocator_newOverflowBlock(Allocator *allocator) {
     BlockMeta *largeBlock =
         BlockAllocator_GetFreeBlock(allocator->blockAllocator);
-    assert(largeBlock != NULL);
+    if (largeBlock == NULL) {
+        return false;
+    }
     allocator->largeBlock = largeBlock;
     word_t *largeBlockStart = BlockMeta_GetBlockStart(
         allocator->blockMetaStart, allocator->heapStart, largeBlock);
     allocator->largeBlockStart = largeBlockStart;
     allocator->largeCursor = largeBlockStart;
     allocator->largeLimit = Block_GetBlockEnd(largeBlockStart);
-}
-
-void Allocator_Clear(Allocator *allocator) {
-    BlockList_Clear(&allocator->recycledBlocks);
-    allocator->recycledBlockCount = 0;
+    return true;
 }
 
 /**
@@ -69,17 +79,9 @@ word_t *Allocator_overflowAllocation(Allocator *allocator, size_t size) {
     word_t *end = (word_t *)((uint8_t *)start + size);
 
     if (end > allocator->largeLimit) {
-        BlockMeta *block =
-            BlockAllocator_GetFreeBlock(allocator->blockAllocator);
-        if (block == NULL) {
+        if (!Allocator_newOverflowBlock(allocator)) {
             return NULL;
         }
-        allocator->largeBlock = block;
-        word_t *blockStart = BlockMeta_GetBlockStart(
-            allocator->blockMetaStart, allocator->heapStart, block);
-        allocator->largeBlockStart = blockStart;
-        allocator->largeCursor = blockStart;
-        allocator->largeLimit = Block_GetBlockEnd(blockStart);
         return Allocator_overflowAllocation(allocator, size);
     }
 

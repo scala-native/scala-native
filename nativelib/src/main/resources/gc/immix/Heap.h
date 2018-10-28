@@ -10,6 +10,8 @@
 #include "Stats.h"
 #include <stdio.h>
 
+#define SWEEP_DONE -1
+
 typedef struct {
     word_t *blockMetaStart;
     word_t *blockMetaEnd;
@@ -21,6 +23,10 @@ typedef struct {
     size_t maxHeapSize;
     uint32_t blockCount;
     uint32_t maxBlockCount;
+    struct {
+        int32_t cursor;
+        int32_t cursorDone;
+    } sweep;
     Bytemap *bytemap;
     Stats *stats;
 } Heap;

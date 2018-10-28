@@ -59,6 +59,8 @@ word_t *Heap_mapAndAlign(size_t memoryLimit, size_t alignmentSize) {
     return heapStart;
 }
 
+void Heap_sweep(Heap *heap, uint32_t maxCount);
+
 /**
  * Allocates the heap struct and initializes it
  */
@@ -134,6 +136,8 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     heap->heapSize = minHeapSize;
     heap->heapStart = heapStart;
     heap->heapEnd = heapStart + minHeapSize / WORD_SIZE;
+    heap->sweep.cursor = SWEEP_DONE;
+    heap->sweep.cursorDone = SWEEP_DONE;
     Bytemap_Init(bytemap, heapStart, maxHeapSize);
     Allocator_Init(&allocator, &blockAllocator, bytemap, blockMetaStart,
                    heapStart);
@@ -290,32 +294,45 @@ bool Heap_shouldGrow(Heap *heap) {
            4 * unavailableBlockCount > blockCount;
 }
 
-void Heap_Recycle(Heap *heap) {
-    Allocator_Clear(&allocator);
-    LargeAllocator_Clear(&largeAllocator);
-    BlockAllocator_Clear(&blockAllocator);
+void Heap_sweep(Heap *heap, uint32_t maxCount) {
+    uint32_t startIdx = heap->sweep.cursor;
+    uint32_t limitIdx = startIdx + maxCount;
+    heap->sweep.cursor = limitIdx;
+    uint32_t blockCount = heap->blockCount;
+    if (limitIdx > blockCount) {
+        limitIdx = blockCount;
+    }
 
-    BlockMeta *current = (BlockMeta *)heap->blockMetaStart;
-    word_t *currentBlockStart = heap->heapStart;
-    LineMeta *lineMetas = (LineMeta *)heap->lineMetaStart;
-    word_t *end = heap->blockMetaEnd;
-    while ((word_t *)current < end) {
+    BlockMeta *current = BlockMeta_GetFromIndex(heap->blockMetaStart, startIdx);
+    BlockMeta *limit = BlockMeta_GetFromIndex(heap->blockMetaStart, limitIdx);
+    word_t *currentBlockStart = Block_GetStartFromIndex(heap->heapStart, startIdx);
+    LineMeta *lineMetas = Line_getFromBlockIndex(heap->lineMetaStart, startIdx);
+    while (current < limit) {
         int size = 1;
-        assert(!BlockMeta_IsSuperblockMiddle(current));
         if (BlockMeta_IsSimpleBlock(current)) {
             Block_Recycle(&allocator, current, currentBlockStart, lineMetas);
         } else if (BlockMeta_IsSuperblockStart(current)) {
             size = BlockMeta_SuperblockSize(current);
             LargeAllocator_Sweep(&largeAllocator, current, currentBlockStart);
-        } else {
-            assert(BlockMeta_IsFree(current));
+        } else if (BlockMeta_IsFree(current)) {
             BlockAllocator_AddFreeBlocks(&blockAllocator, current, 1);
         }
+        // ignore superblock middle blocks, that superblock will be swept by someone else
         assert(size > 0);
         current += size;
         currentBlockStart += WORDS_IN_BLOCK * size;
         lineMetas += LINE_COUNT * size;
     }
+    heap->sweep.cursorDone = limit;
+}
+
+void Heap_Recycle(Heap *heap) {
+    Allocator_Clear(&allocator);
+    LargeAllocator_Clear(&largeAllocator);
+    BlockAllocator_Clear(&blockAllocator);
+
+    heap->sweep.cursor = 0;
+    Heap_sweep(heap, heap->blockCount);
 
     if (Heap_shouldGrow(heap)) {
         double growth;

@@ -146,11 +146,15 @@ static inline uint32_t Block_GetBlockIndexForWord(word_t *heapStart,
     return (uint32_t)((blockStart - heapStart) / WORDS_IN_BLOCK);
 }
 
+static inline word_t *Block_GetStartFromIndex(word_t *heapStart, uint32_t index) {
+    return heapStart + (WORDS_IN_BLOCK * index);
+}
+
 static inline word_t *BlockMeta_GetBlockStart(word_t *blockMetaStart,
                                               word_t *heapStart,
                                               BlockMeta *blockMeta) {
     uint32_t index = BlockMeta_GetBlockIndex(blockMetaStart, blockMeta);
-    return heapStart + (WORDS_IN_BLOCK * index);
+    return Block_GetStartFromIndex(heapStart, index);
 }
 
 static inline BlockMeta *BlockMeta_GetFromIndex(word_t *blockMetaStart,
