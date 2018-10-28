@@ -4,6 +4,7 @@
 #define LAST_HOLE -1
 
 #include <stdint.h>
+#include <string.h>
 #include "LineMeta.h"
 #include "../GCTypes.h"
 #include "../Constants.h"
@@ -77,6 +78,10 @@ static inline int8_t BlockMeta_FirstFreeLine(BlockMeta *blockMeta) {
 static inline void BlockMeta_SetFlag(BlockMeta *blockMeta,
                                      BlockFlag blockFlag) {
     blockMeta->block.simple.flags = blockFlag;
+}
+
+static inline void BlockMeta_Clear(BlockMeta *blockMeta) {
+    memset(blockMeta, 0, sizeof(BlockMeta));
 }
 
 static inline bool BlockMeta_IsMarked(BlockMeta *blockMeta) {

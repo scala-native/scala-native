@@ -2,6 +2,7 @@
 #define IMMIX_OBJECTMETA_H
 
 #include <stddef.h>
+#include <string.h>
 #include <stdbool.h>
 
 typedef enum {

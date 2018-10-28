@@ -334,7 +334,6 @@ void Heap_Recycle(Heap *heap) {
             }
         }
     }
-    BlockAllocator_SweepDone(&blockAllocator);
     if (!Allocator_CanInitCursors(&allocator)) {
         Heap_exitWithOutOfMemory();
     }
@@ -366,7 +365,4 @@ void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
                                  incrementInBlocks);
 
     heap->blockCount += incrementInBlocks;
-
-    // immediately add the block to freelists
-    BlockAllocator_SweepDone(&blockAllocator);
 }
