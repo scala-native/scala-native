@@ -47,7 +47,9 @@ void Allocator_Clear(Allocator *allocator) {
     BlockList_Clear(&allocator->recycledBlocks);
     allocator->recycledBlockCount = 0;
     allocator->limit = NULL;
+    allocator->block = NULL;
     allocator->largeLimit = NULL;
+    allocator->largeBlock = NULL;
 }
 
 bool Allocator_newOverflowBlock(Allocator *allocator) {
@@ -74,6 +76,8 @@ word_t *Allocator_overflowAllocation(Allocator *allocator, size_t size) {
     word_t *start = allocator->largeCursor;
     word_t *end = (word_t *)((uint8_t *)start + size);
 
+    // allocator->largeLimit == NULL implies end > allocator->largeLimit
+    assert(allocator->largeLimit != NULL || end > allocator->largeLimit);
     if (end > allocator->largeLimit) {
         if (!Allocator_newOverflowBlock(allocator)) {
             return NULL;
@@ -95,7 +99,8 @@ INLINE word_t *Allocator_Alloc(Allocator *allocator, size_t size) {
     word_t *start = allocator->cursor;
     word_t *end = (word_t *)((uint8_t *)start + size);
 
-    // Checks if the end of the block overlaps with the limit
+    // allocator->limit == NULL implies end > allocator->limit
+    assert(allocator->limit != NULL || end > allocator->limit);
     if (end > allocator->limit) {
         // If it overlaps but the block to allocate is a `medium` sized block,
         // use overflow allocation
@@ -123,6 +128,9 @@ INLINE word_t *Allocator_Alloc(Allocator *allocator, size_t size) {
  */
 bool Allocator_getNextLine(Allocator *allocator) {
     BlockMeta *block = allocator->block;
+    if (block == NULL) {
+        return Allocator_newBlock(allocator);
+    }
     word_t *blockStart = allocator->blockStart;
 
     int lineIndex = BlockMeta_FirstFreeLine(block);
