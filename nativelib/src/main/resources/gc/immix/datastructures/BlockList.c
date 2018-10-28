@@ -9,10 +9,9 @@ BlockMeta *BlockList_getNextBlock(word_t *blockMetaStart,
     int32_t nextBlockId = blockMeta->nextBlock;
     if (nextBlockId == LAST_BLOCK) {
         return NULL;
-    } else if (nextBlockId == 0) {
-        nextBlockId = BlockMeta_GetBlockIndex(blockMetaStart, blockMeta) + 1;
+    } else {
+        return BlockMeta_GetFromIndex(blockMetaStart, nextBlockId);
     }
-    return BlockMeta_GetFromIndex(blockMetaStart, nextBlockId);
 }
 
 void BlockList_Init(BlockList *blockList, word_t *blockMetaStart) {
@@ -42,18 +41,6 @@ void BlockList_AddLast(BlockList *blockList, BlockMeta *blockMeta) {
     }
     blockList->last = blockMeta;
     blockMeta->nextBlock = LAST_BLOCK;
-}
-
-void BlockList_AddBlocksLast(BlockList *blockList, BlockMeta *first,
-                             BlockMeta *last) {
-    if (blockList->first == NULL) {
-        blockList->first = first;
-    } else {
-        blockList->last->nextBlock =
-            BlockMeta_GetBlockIndex(blockList->blockMetaStart, first);
-    }
-    blockList->last = last;
-    last->nextBlock = LAST_BLOCK;
 }
 
 void BlockList_Clear(BlockList *blockList) {
