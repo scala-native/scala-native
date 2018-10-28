@@ -93,7 +93,15 @@ BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
         int minNonEmptyIndex = blockAllocator->minNonEmptyIndex;
         int first = (minNonEmptyIndex > target) ? minNonEmptyIndex : target;
         superblock = BlockAllocator_pollSuperblock(blockAllocator, first);
-        if (superblock == NULL) {
+
+        if (superblock != NULL) {
+            if (BlockMeta_SuperblockSize(superblock) > size) {
+                BlockMeta *leftover = superblock + size;
+                BlockAllocator_addFreeBlocksInternal(
+                    blockAllocator, leftover,
+                    BlockMeta_SuperblockSize(superblock) - size);
+            }
+        } else {
             // as the last resort look in the superblock being coalesced
             BlockMeta *cFirst = blockAllocator->coalescingSuperblock.first;
             BlockMeta *cLimit = blockAllocator->coalescingSuperblock.limit;
@@ -105,13 +113,6 @@ BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
 
         if (superblock == NULL) {
             return NULL;
-        }
-
-        if (BlockMeta_SuperblockSize(superblock) > size) {
-            BlockMeta *leftover = superblock + size;
-            BlockAllocator_addFreeBlocksInternal(
-                blockAllocator, leftover,
-                BlockMeta_SuperblockSize(superblock) - size);
         }
     }
 
