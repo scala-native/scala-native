@@ -20,7 +20,13 @@ void Allocator_Init(Allocator *allocator, BlockAllocator *blockAllocator,
 
     allocator->recycledBlockCount = 0;
 
-    Allocator_InitCursors(allocator);
+    // Init cursor
+    bool didInit = Allocator_newBlock(allocator);
+    assert(didInit);
+
+    // Init large cursor
+    bool didLargeInit = Allocator_newOverflowBlock(allocator);
+    assert(didLargeInit);
 }
 
 /**
@@ -35,16 +41,6 @@ bool Allocator_CanInitCursors(Allocator *allocator) {
     uint64_t freeBlockCount = allocator->blockAllocator->freeBlockCount;
     return freeBlockCount >= 2 ||
            (freeBlockCount == 1 && allocator->recycledBlockCount > 0);
-}
-
-void Allocator_InitCursors(Allocator *allocator) {
-    // Init cursor
-    bool didInit = Allocator_newBlock(allocator);
-    assert(didInit);
-
-    // Init large cursor
-    bool didLargeInit = Allocator_newOverflowBlock(allocator);
-    assert(didLargeInit);
 }
 
 void Allocator_Clear(Allocator *allocator) {

@@ -22,6 +22,11 @@
 #define HEAP_MEM_FD -1
 #define HEAP_MEM_FD_OFFSET 0
 
+void Heap_sweep(Heap *heap, uint32_t maxCount);
+void Heap_sweepDone(Heap *heap);
+Object *Heap_lazySweep(Heap *heap, uint32_t size);
+Object *Heap_lazySweepLarge(Heap *heap, uint32_t size);
+
 void Heap_exitWithOutOfMemory() {
     printf("Out of heap space\n");
     StackTrace_PrintStackTrace();
@@ -59,7 +64,6 @@ word_t *Heap_mapAndAlign(size_t memoryLimit, size_t alignmentSize) {
     return heapStart;
 }
 
-void Heap_sweep(Heap *heap, uint32_t maxCount);
 
 /**
  * Allocates the heap struct and initializes it
@@ -150,6 +154,17 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
         Stats_Init(heap->stats, statsFile);
     }
 }
+
+Object *Heap_lazySweepLarge(Heap *heap, uint32_t size) {
+    Object *object = LargeAllocator_GetBlock(&largeAllocator, size);
+    size_t increment = MathUtils_DivAndRoundUp(size, BLOCK_TOTAL_SIZE);
+    while (object == NULL && !Heap_IsSweepDone(heap)) {
+        Heap_sweep(heap, increment);
+        object = LargeAllocator_GetBlock(&largeAllocator, size);
+    }
+    return object;
+}
+
 /**
  * Allocates large objects using the `LargeAllocator`.
  * If allocation fails, because there is not enough memory available, it will
@@ -161,7 +176,7 @@ word_t *Heap_AllocLarge(Heap *heap, uint32_t size) {
     assert(size >= MIN_BLOCK_SIZE);
 
     // Request an object from the `LargeAllocator`
-    Object *object = LargeAllocator_GetBlock(&largeAllocator, size);
+    Object *object = Heap_lazySweepLarge(heap, size);
     // If the object is not NULL, update it's metadata and return it
     if (object != NULL) {
         return (word_t *)object;
@@ -188,15 +203,23 @@ word_t *Heap_AllocLarge(Heap *heap, uint32_t size) {
     }
 }
 
+Object *Heap_lazySweep(Heap *heap, uint32_t size) {
+    Object *object = (Object *)Allocator_Alloc(&allocator, size);
+    while (object == NULL && !Heap_IsSweepDone(heap)) {
+        Heap_sweep(heap, 1);
+        Object *object = (Object *)Allocator_Alloc(&allocator, size);
+    }
+    return object;
+}
+
 NOINLINE word_t *Heap_allocSmallSlow(Heap *heap, uint32_t size) {
-    Object *object;
-    object = (Object *)Allocator_Alloc(&allocator, size);
+    Object *object = Heap_lazySweep(heap, size);
 
     if (object != NULL)
         goto done;
 
     Heap_Collect(heap, &stack);
-    object = (Object *)Allocator_Alloc(&allocator, size);
+    object = Heap_lazySweep(heap, size);
 
     if (object != NULL)
         goto done;
@@ -251,6 +274,7 @@ word_t *Heap_Alloc(Heap *heap, uint32_t objectSize) {
 }
 
 void Heap_Collect(Heap *heap, Stack *stack) {
+    assert(Heap_IsSweepDone(heap));
     uint64_t start_ns, sweep_start_ns, end_ns;
     Stats *stats = heap->stats;
 #ifdef DEBUG_PRINT
@@ -323,7 +347,11 @@ void Heap_sweep(Heap *heap, uint32_t maxCount) {
         currentBlockStart += WORDS_IN_BLOCK * size;
         lineMetas += LINE_COUNT * size;
     }
-    heap->sweep.cursorDone = limit;
+    heap->sweep.cursorDone = limitIdx;
+
+    if (Heap_IsSweepDone(heap)) {
+        Heap_sweepDone(heap);
+    }
 }
 
 void Heap_Recycle(Heap *heap) {
@@ -333,7 +361,9 @@ void Heap_Recycle(Heap *heap) {
 
     heap->sweep.cursor = 0;
     Heap_sweep(heap, heap->blockCount);
+}
 
+void Heap_sweepDone(Heap *heap) {
     if (Heap_shouldGrow(heap)) {
         double growth;
         if (heap->heapSize < EARLY_GROWTH_THRESHOLD) {
@@ -354,7 +384,7 @@ void Heap_Recycle(Heap *heap) {
     if (!Allocator_CanInitCursors(&allocator)) {
         Heap_exitWithOutOfMemory();
     }
-    Allocator_InitCursors(&allocator);
+    heap->sweep.cursorDone = SWEEP_DONE;
 }
 
 void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {

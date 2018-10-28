@@ -10,7 +10,7 @@
 #include "Stats.h"
 #include <stdio.h>
 
-#define SWEEP_DONE -1
+#define SWEEP_DONE ~((uint32_t)0)
 
 typedef struct {
     word_t *blockMetaStart;
@@ -24,8 +24,8 @@ typedef struct {
     uint32_t blockCount;
     uint32_t maxBlockCount;
     struct {
-        int32_t cursor;
-        int32_t cursorDone;
+        uint32_t cursor;
+        uint32_t cursorDone;
     } sweep;
     Bytemap *bytemap;
     Stats *stats;
@@ -45,6 +45,10 @@ static inline LineMeta *Heap_LineMetaForWord(Heap *heap, word_t *word) {
     LineMeta *lineMeta = (LineMeta *)heap->lineMetaStart + lineGlobalIndex;
     assert(lineMeta < (LineMeta *)heap->lineMetaEnd);
     return lineMeta;
+}
+
+static inline bool Heap_IsSweepDone(Heap *heap) {
+    return heap->sweep.cursorDone >= heap->blockCount;
 }
 
 void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize);

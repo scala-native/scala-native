@@ -28,7 +28,6 @@ void Allocator_Init(Allocator *allocator, BlockAllocator *blockAllocator,
                     Bytemap *bytemap, word_t *blockMetaStart,
                     word_t *heapStart);
 bool Allocator_CanInitCursors(Allocator *allocator);
-void Allocator_InitCursors(Allocator *allocator);
 void Allocator_Clear(Allocator *allocator);
 word_t *Allocator_Alloc(Allocator *allocator, size_t size);
 
