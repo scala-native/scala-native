@@ -68,7 +68,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     if (maxHeapSize < MIN_HEAP_SIZE) {
         fprintf(stderr,
                 "SCALANATIVE_MAX_HEAP_SIZE too small to initialize heap.\n");
-        fprintf(stderr, "Minimum required: %lum \n",
+        fprintf(stderr, "Minimum required: %zum \n",
                 MIN_HEAP_SIZE / 1024 / 1024);
         fflush(stderr);
         exit(1);
@@ -76,7 +76,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
 
     if (minHeapSize > memoryLimit) {
         fprintf(stderr, "SCALANATIVE_MIN_HEAP_SIZE is too large.\n");
-        fprintf(stderr, "Maximum possible: %lug \n",
+        fprintf(stderr, "Maximum possible: %zug \n",
                 memoryLimit / 1024 / 1024 / 1024);
         fflush(stderr);
         exit(1);
