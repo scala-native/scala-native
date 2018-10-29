@@ -11,7 +11,6 @@ void BlockAllocator_Init(BlockAllocator *blockAllocator, word_t *blockMetaStart,
     for (int i = 0; i < SUPERBLOCK_LIST_SIZE; i++) {
         BlockList_Init(&blockAllocator->freeSuperblocks[i], blockMetaStart);
     }
-    blockAllocator->blockCount = blockCount;
     BlockAllocator_Clear(blockAllocator);
 
     blockAllocator->smallestSuperblock.cursor = (BlockMeta *)blockMetaStart;

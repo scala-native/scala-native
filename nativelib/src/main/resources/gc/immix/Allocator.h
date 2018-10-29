@@ -32,6 +32,4 @@ void Allocator_InitCursors(Allocator *allocator);
 void Allocator_Clear(Allocator *allocator);
 word_t *Allocator_Alloc(Allocator *allocator, size_t size);
 
-bool Allocator_ShouldGrow(Allocator *allocator);
-
 #endif // IMMIX_ALLOCATOR_H

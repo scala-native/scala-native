@@ -11,7 +11,6 @@
 #include <stdio.h>
 
 typedef struct {
-    size_t memoryLimit;
     word_t *blockMetaStart;
     word_t *blockMetaEnd;
     word_t *lineMetaStart;
@@ -19,6 +18,9 @@ typedef struct {
     word_t *heapStart;
     word_t *heapEnd;
     size_t heapSize;
+    size_t maxHeapSize;
+    uint32_t blockCount;
+    uint32_t maxBlockCount;
     Bytemap *bytemap;
     Stats *stats;
 } Heap;
@@ -39,7 +41,7 @@ static inline LineMeta *Heap_LineMetaForWord(Heap *heap, word_t *word) {
     return lineMeta;
 }
 
-void Heap_Init(Heap *heap, size_t heapSize);
+void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize);
 word_t *Heap_Alloc(Heap *heap, uint32_t objectSize);
 word_t *Heap_AllocSmall(Heap *heap, uint32_t objectSize);
 word_t *Heap_AllocLarge(Heap *heap, uint32_t objectSize);
@@ -47,6 +49,6 @@ word_t *Heap_AllocLarge(Heap *heap, uint32_t objectSize);
 void Heap_Collect(Heap *heap, Stack *stack);
 
 void Heap_Recycle(Heap *heap);
-void Heap_Grow(Heap *heap, size_t increment);
+void Heap_Grow(Heap *heap, uint32_t increment);
 
 #endif // IMMIX_HEAP_H

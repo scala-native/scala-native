@@ -15,7 +15,6 @@ typedef struct {
     int minNonEmptyIndex;
     int maxNonEmptyIndex;
     uint32_t freeBlockCount;
-    uint32_t blockCount;
     struct {
         BlockMeta *first;
         BlockMeta *limit;

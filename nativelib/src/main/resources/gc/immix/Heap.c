@@ -22,7 +22,25 @@
 #define HEAP_MEM_FD -1
 #define HEAP_MEM_FD_OFFSET 0
 
-size_t Heap_getMemoryLimit() { return getMemorySize(); }
+void Heap_exitWithOutOfMemory() {
+    printf("Out of heap space\n");
+    StackTrace_PrintStackTrace();
+    exit(1);
+}
+
+bool Heap_isGrowingPossible(Heap *heap, uint32_t incrementInBlocks) {
+    return heap->blockCount + incrementInBlocks <= heap->maxBlockCount;
+}
+
+size_t Heap_getMemoryLimit() {
+    size_t memorySize = getMemorySize();
+    if ((uint64_t)memorySize > MAX_HEAP_SIZE) {
+        return (size_t)MAX_HEAP_SIZE;
+    } else {
+        return memorySize;
+    }
+}
+
 /**
  * Maps `MAX_SIZE` of memory and returns the first address aligned on
  * `alignement` mask
@@ -44,15 +62,46 @@ word_t *Heap_mapAndAlign(size_t memoryLimit, size_t alignmentSize) {
 /**
  * Allocates the heap struct and initializes it
  */
-void Heap_Init(Heap *heap, size_t initialHeapSize) {
-    assert(initialHeapSize >= 2 * BLOCK_TOTAL_SIZE);
-    assert(initialHeapSize % BLOCK_TOTAL_SIZE == 0);
-
+void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     size_t memoryLimit = Heap_getMemoryLimit();
-    heap->memoryLimit = memoryLimit;
 
-    word_t maxNumberOfBlocks = memoryLimit / BLOCK_TOTAL_SIZE;
-    uint32_t initialBlockCount = initialHeapSize / BLOCK_TOTAL_SIZE;
+    if (maxHeapSize < MIN_HEAP_SIZE) {
+        fprintf(stderr,
+                "SCALANATIVE_MAX_HEAP_SIZE too small to initialize heap.\n");
+        fprintf(stderr, "Minimum required: %lum \n",
+                MIN_HEAP_SIZE / 1024 / 1024);
+        fflush(stderr);
+        exit(1);
+    }
+
+    if (minHeapSize > memoryLimit) {
+        fprintf(stderr, "SCALANATIVE_MIN_HEAP_SIZE is too large.\n");
+        fprintf(stderr, "Maximum possible: %lug \n",
+                memoryLimit / 1024 / 1024 / 1024);
+        fflush(stderr);
+        exit(1);
+    }
+
+    if (maxHeapSize < minHeapSize) {
+        fprintf(stderr, "SCALANATIVE_MAX_HEAP_SIZE should be at least "
+                        "SCALANATIVE_MIN_HEAP_SIZE\n");
+        fflush(stderr);
+        exit(1);
+    }
+
+    if (minHeapSize < MIN_HEAP_SIZE) {
+        minHeapSize = MIN_HEAP_SIZE;
+    }
+
+    if (maxHeapSize == UNLIMITED_HEAP_SIZE) {
+        maxHeapSize = memoryLimit;
+    }
+
+    uint32_t maxNumberOfBlocks = maxHeapSize / SPACE_USED_PER_BLOCK;
+    uint32_t initialBlockCount = minHeapSize / SPACE_USED_PER_BLOCK;
+    heap->maxHeapSize = maxHeapSize;
+    heap->blockCount = initialBlockCount;
+    heap->maxBlockCount = maxNumberOfBlocks;
 
     // reserve space for block headers
     size_t blockMetaSpaceSize = maxNumberOfBlocks * sizeof(BlockMeta);
@@ -63,7 +112,7 @@ void Heap_Init(Heap *heap, size_t initialHeapSize) {
 
     // reserve space for line headers
     size_t lineMetaSpaceSize =
-        maxNumberOfBlocks * LINE_COUNT * LINE_METADATA_SIZE;
+        (size_t)maxNumberOfBlocks * LINE_COUNT * LINE_METADATA_SIZE;
     word_t *lineMetaStart = Heap_mapAndAlign(lineMetaSpaceSize, WORD_SIZE);
     heap->lineMetaStart = lineMetaStart;
     assert(LINE_COUNT * LINE_SIZE == BLOCK_TOTAL_SIZE);
@@ -71,21 +120,21 @@ void Heap_Init(Heap *heap, size_t initialHeapSize) {
     heap->lineMetaEnd = lineMetaStart + initialBlockCount * LINE_COUNT *
                                             LINE_METADATA_SIZE / WORD_SIZE;
 
-    word_t *heapStart = Heap_mapAndAlign(memoryLimit, BLOCK_TOTAL_SIZE);
+    word_t *heapStart = Heap_mapAndAlign(maxHeapSize, BLOCK_TOTAL_SIZE);
 
     BlockAllocator_Init(&blockAllocator, blockMetaStart, initialBlockCount);
 
     // reserve space for bytemap
     Bytemap *bytemap = (Bytemap *)Heap_mapAndAlign(
-        memoryLimit / ALLOCATION_ALIGNMENT + sizeof(Bytemap),
+        maxHeapSize / ALLOCATION_ALIGNMENT + sizeof(Bytemap),
         ALLOCATION_ALIGNMENT);
     heap->bytemap = bytemap;
 
     // Init heap for small objects
-    heap->heapSize = initialHeapSize;
+    heap->heapSize = minHeapSize;
     heap->heapStart = heapStart;
-    heap->heapEnd = heapStart + initialHeapSize / WORD_SIZE;
-    Bytemap_Init(bytemap, heapStart, memoryLimit);
+    heap->heapEnd = heapStart + minHeapSize / WORD_SIZE;
+    Bytemap_Init(bytemap, heapStart, maxHeapSize);
     Allocator_Init(&allocator, &blockAllocator, bytemap, blockMetaStart,
                    heapStart);
 
@@ -222,6 +271,25 @@ void Heap_Collect(Heap *heap, Stack *stack) {
 #endif
 }
 
+bool Heap_shouldGrow(Heap *heap) {
+    uint32_t freeBlockCount = blockAllocator.freeBlockCount;
+    uint32_t blockCount = heap->blockCount;
+    uint32_t recycledBlockCount = allocator.recycledBlockCount;
+    uint32_t unavailableBlockCount =
+        blockCount - (freeBlockCount + recycledBlockCount);
+
+#ifdef DEBUG_PRINT
+    printf("\n\nBlock count: %llu\n", blockCount);
+    printf("Unavailable: %llu\n", unavailableBlockCount);
+    printf("Free: %llu\n", freeBlockCount);
+    printf("Recycled: %llu\n", recycledBlockCount);
+    fflush(stdout);
+#endif
+
+    return freeBlockCount * 2 < blockCount ||
+           4 * unavailableBlockCount > blockCount;
+}
+
 void Heap_Recycle(Heap *heap) {
     Allocator_Clear(&allocator);
     LargeAllocator_Clear(&largeAllocator);
@@ -249,58 +317,45 @@ void Heap_Recycle(Heap *heap) {
         lineMetas += LINE_COUNT * size;
     }
 
-    if (Allocator_ShouldGrow(&allocator)) {
+    if (Heap_shouldGrow(heap)) {
         double growth;
         if (heap->heapSize < EARLY_GROWTH_THRESHOLD) {
             growth = EARLY_GROWTH_RATE;
         } else {
             growth = GROWTH_RATE;
         }
-        size_t blocks = blockAllocator.blockCount * (growth - 1);
-        Heap_Grow(heap, blocks);
+        uint32_t blocks = heap->blockCount * (growth - 1);
+        if (Heap_isGrowingPossible(heap, blocks)) {
+            Heap_Grow(heap, blocks);
+        } else {
+            uint32_t remainingGrowth = heap->maxBlockCount - heap->blockCount;
+            if (remainingGrowth > 0) {
+                Heap_Grow(heap, remainingGrowth);
+            }
+        }
     }
     BlockAllocator_SweepDone(&blockAllocator);
+    if (!Allocator_CanInitCursors(&allocator)) {
+        Heap_exitWithOutOfMemory();
+    }
     Allocator_InitCursors(&allocator);
 }
 
-void Heap_exitWithOutOfMemory() {
-    printf("Out of heap space\n");
-    StackTrace_PrintStackTrace();
-    exit(1);
-}
-
-bool Heap_isGrowingPossible(Heap *heap, size_t increment) {
-    return heap->heapSize + increment <= heap->memoryLimit;
-}
-
-/** Grows the small heap by at least `increment` words */
-void Heap_Grow(Heap *heap, size_t incrementInBlocks) {
-
-    // If we cannot grow because we reached the memory limit
-    if (!Heap_isGrowingPossible(heap, incrementInBlocks * BLOCK_TOTAL_SIZE)) {
-        // If we can still init the cursors, grow by max possible increment
-        if (Allocator_CanInitCursors(&allocator)) {
-            // increment = heap->memoryLimit - (heap->smallHeapSize +
-            // heap->largeHeapSize);
-            // round down to block size
-            // increment = increment / BLOCK_TOTAL_SIZE * BLOCK_TOTAL_SIZE;
-            return;
-        } else {
-            // If the cursors cannot be initialised and we cannot grow, throw
-            // out of memory exception.
-            Heap_exitWithOutOfMemory();
-        }
+void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
+    if (!Heap_isGrowingPossible(heap, incrementInBlocks)) {
+        Heap_exitWithOutOfMemory();
     }
 
 #ifdef DEBUG_PRINT
     printf("Growing small heap by %zu bytes, to %zu bytes\n",
-           increment * WORD_SIZE, heap->heapSize + increment * WORD_SIZE);
+           increment * WORD_SIZE,
+           heap->heapSize + incrementInBlocks * SPACE_USED_PER_BLOCK);
     fflush(stdout);
 #endif
 
     word_t *heapEnd = heap->heapEnd;
     heap->heapEnd = heapEnd + incrementInBlocks * BLOCK_TOTAL_SIZE;
-    heap->heapSize += incrementInBlocks * BLOCK_TOTAL_SIZE;
+    heap->heapSize += incrementInBlocks * SPACE_USED_PER_BLOCK;
     word_t *blockMetaEnd = heap->blockMetaEnd;
     heap->blockMetaEnd =
         (word_t *)(((BlockMeta *)heap->blockMetaEnd) + incrementInBlocks);
@@ -310,7 +365,7 @@ void Heap_Grow(Heap *heap, size_t incrementInBlocks) {
     BlockAllocator_AddFreeBlocks(&blockAllocator, (BlockMeta *)blockMetaEnd,
                                  incrementInBlocks);
 
-    blockAllocator.blockCount += incrementInBlocks;
+    heap->blockCount += incrementInBlocks;
 
     // immediately add the block to freelists
     BlockAllocator_SweepDone(&blockAllocator);

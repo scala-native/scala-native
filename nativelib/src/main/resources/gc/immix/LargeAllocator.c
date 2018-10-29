@@ -199,8 +199,7 @@ void LargeAllocator_Sweep(LargeAllocator *allocator, BlockMeta *blockMeta,
     if (chunkStart == lastBlockStart) {
         // free chunk covers the entire last block, released it to the block
         // allocator
-        BlockAllocator_AddFreeBlocks(allocator->blockAllocator,
-                                     lastBlock, 1);
+        BlockAllocator_AddFreeBlocks(allocator->blockAllocator, lastBlock, 1);
     } else if (chunkStart != NULL) {
         size_t currentSize = (current - chunkStart) * WORD_SIZE;
         LargeAllocator_AddChunk(allocator, (Chunk *)chunkStart, currentSize);
