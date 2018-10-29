@@ -27,7 +27,7 @@ void Stats_writeToFile(Stats *stats) {
     }
     FILE *outFile = stats->outFile;
     for (uint64_t i = 0; i < remainder; i++) {
-        fprintf(outFile, "%lu,%lu\n", stats->mark_time_ns[i], stats->sweep_time_ns[i]);
+        fprintf(outFile, "%llu,%llu\n", stats->mark_time_ns[i], stats->sweep_time_ns[i]);
     }
     fflush(outFile);
 }
