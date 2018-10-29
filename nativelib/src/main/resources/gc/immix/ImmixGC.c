@@ -18,7 +18,7 @@ void scalanative_afterexit() {
 }
 
 NOINLINE void scalanative_init() {
-    Heap_Init(&heap, INITIAL_SMALL_HEAP_SIZE, INITIAL_LARGE_HEAP_SIZE);
+    Heap_Init(&heap, INITIAL_HEAP_SIZE);
     Stack_Init(&stack, INITIAL_STACK_SIZE);
     atexit(scalanative_afterexit);
 }
