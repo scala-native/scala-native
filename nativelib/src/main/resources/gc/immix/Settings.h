@@ -1,0 +1,8 @@
+#ifndef IMMIX_SETTINGS_H
+#define IMMIX_SETTINGS_H
+
+#define STATS_FILE_SETTING "SCALANATIVE_STATS_FILE"
+
+char *Settings_StatsFileName();
+
+#endif // IMMIX_SETTINGS_H

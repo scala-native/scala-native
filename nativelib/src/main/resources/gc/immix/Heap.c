@@ -9,6 +9,7 @@
 #include "State.h"
 #include "utils/MathUtils.h"
 #include "StackTrace.h"
+#include "Settings.h"
 #include "Memory.h"
 #include <memory.h>
 #include <time.h>
@@ -22,7 +23,6 @@
 #define HEAP_MEM_FD_OFFSET 0
 
 size_t Heap_getMemoryLimit() { return getMemorySize(); }
-
 /**
  * Maps `MAX_SIZE` of memory and returns the first address aligned on
  * `alignement` mask
@@ -109,6 +109,12 @@ void Heap_Init(Heap *heap, size_t initialSmallHeapSize,
                                     sizeof(Bytemap));
     LargeAllocator_Init(&largeAllocator, largeHeapStart, initialLargeHeapSize,
                         largeBytemap);
+
+    char *statsFile = Settings_StatsFileName();
+    if (statsFile != NULL) {
+        heap->stats = malloc(sizeof(Stats));
+        Stats_Init(heap->stats, statsFile);
+    }
 }
 /**
  * Allocates large objects using the `LargeAllocator`.
@@ -208,12 +214,24 @@ word_t *Heap_Alloc(Heap *heap, uint32_t objectSize) {
 }
 
 void Heap_Collect(Heap *heap, Stack *stack) {
+    uint64_t start_ns, sweep_start_ns, end_ns;
+    Stats *stats = heap->stats;
 #ifdef DEBUG_PRINT
     printf("\nCollect\n");
     fflush(stdout);
 #endif
+    if (stats != NULL) {
+        start_ns = scalanative_nano_time();
+    }
     Marker_MarkRoots(heap, stack);
+    if (stats != NULL) {
+        sweep_start_ns = scalanative_nano_time();
+    }
     Heap_Recycle(heap);
+    if (stats != NULL) {
+        end_ns = scalanative_nano_time();
+        Stats_RecordCollection(stats, start_ns, sweep_start_ns, end_ns);
+    }
 #ifdef DEBUG_PRINT
     printf("End collect\n");
     fflush(stdout);

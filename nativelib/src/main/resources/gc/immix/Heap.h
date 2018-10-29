@@ -7,6 +7,7 @@
 #include "datastructures/Stack.h"
 #include "datastructures/Bytemap.h"
 #include "metadata/LineMeta.h"
+#include "Stats.h"
 #include <stdio.h>
 
 typedef struct {
@@ -23,6 +24,7 @@ typedef struct {
     size_t largeHeapSize;
     Bytemap *smallBytemap;
     Bytemap *largeBytemap;
+    Stats *stats;
 } Heap;
 
 static inline bool Heap_IsWordInLargeHeap(Heap *heap, word_t *word) {
