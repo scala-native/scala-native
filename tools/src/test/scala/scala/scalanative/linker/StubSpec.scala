@@ -1,7 +1,7 @@
 package scala.scalanative
 package linker
 
-import nir.Global.Top
+import nir.{Sig, Type, Global}
 
 class StubSpec extends LinkerSpec {
 
@@ -27,7 +27,10 @@ class StubSpec extends LinkerSpec {
     link(entry, stubMethodSource, linkStubs = false) { (cfg, result) =>
       assert(!cfg.linkStubs)
       assert(result.unavailable.length == 1)
-      assert(result.unavailable.head == Top("Main$").member("stubMethod_i32"))
+      assert(
+        result.unavailable.head == Global
+          .Top("Main$")
+          .member(Sig.Method("stubMethod", Seq(Type.Int))))
     }
   }
 
@@ -42,7 +45,7 @@ class StubSpec extends LinkerSpec {
     link(entry, stubClassSource, linkStubs = false) { (cfg, result) =>
       assert(!cfg.linkStubs)
       assert(result.unavailable.length == 1)
-      assert(result.unavailable.head == Top("StubClass"))
+      assert(result.unavailable.head == Global.Top("StubClass"))
     }
   }
 
@@ -57,7 +60,7 @@ class StubSpec extends LinkerSpec {
     link(entry, stubModuleSource, linkStubs = false) { (cfg, result) =>
       assert(!cfg.linkStubs)
       assert(result.unavailable.length == 1)
-      assert(result.unavailable.head == Top("StubModule$"))
+      assert(result.unavailable.head == Global.Top("StubModule$"))
     }
   }
 

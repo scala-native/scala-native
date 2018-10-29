@@ -73,7 +73,7 @@ package object runtime {
   /** Initialize runtime with given arguments and return the
    *  rest as Java-style array.
    */
-  def init(argc: Int, argv: Ptr[Ptr[Byte]]): ObjectArray = {
+  def init(argc: Int, argv: Ptr[Ptr[Byte]]): scala.Array[String] = {
     val args = new scala.Array[String](argc - 1)
 
     // skip the executable name in argv(0)
@@ -84,7 +84,7 @@ package object runtime {
       c += 1
     }
 
-    args.asInstanceOf[ObjectArray]
+    args
   }
 
   /** Run the runtime's event loop. The method is called from the

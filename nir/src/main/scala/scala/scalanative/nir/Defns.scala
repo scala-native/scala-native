@@ -20,8 +20,6 @@ object Defn {
                           ty: Type,
                           insts: Seq[Inst])
       extends Defn
-  final case class Struct(attrs: Attrs, name: Global, tys: Seq[Type])
-      extends Defn
 
   // high-level
   final case class Trait(attrs: Attrs, name: Global, traits: Seq[Global])

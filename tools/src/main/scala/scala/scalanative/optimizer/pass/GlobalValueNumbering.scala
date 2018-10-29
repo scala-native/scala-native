@@ -220,8 +220,8 @@ object GlobalValueNumbering extends PassCompanion {
     def eqVal(valueA: Val, valueB: Val): Boolean = {
       import Val._
       (valueA, valueB) match {
-        case (StructValue(nameA, valuesA), StructValue(nameB, valuesB)) =>
-          eqGlobal(nameA, nameB) && eqVals(valuesA, valuesB)
+        case (StructValue(valuesA), StructValue(valuesB)) =>
+          eqVals(valuesA, valuesB)
 
         case (ArrayValue(elemtyA, valuesA), ArrayValue(elemtyB, valuesB)) =>
           eqType(elemtyA, elemtyB) && eqVals(valuesA, valuesB)
@@ -286,6 +286,7 @@ object GlobalValueNumbering extends PassCompanion {
 
         case ty: Type   => hashType(ty)
         case g: Global  => hashGlobal(g)
+        case sig: Sig   => hashSig(sig)
         case bin: Bin   => hashBin(bin)
         case comp: Comp => hashComp(comp)
         case conv: Conv => hashConv(conv)
@@ -350,7 +351,7 @@ object GlobalValueNumbering extends PassCompanion {
     def hashVal(value: Val): Hash = {
       import Val._
       val fields: Seq[Any] = value match {
-        case StructValue(name, values)  => "StructValue" +: name +: values
+        case StructValue(values)        => "StructValue" +: values
         case ArrayValue(elemty, values) => "ArrayValue" +: elemty +: values
         case Const(value)               => Seq("Const", value)
 
@@ -371,6 +372,10 @@ object GlobalValueNumbering extends PassCompanion {
       global.hashCode
     }
 
+    def hashSig(sig: Sig): Hash = {
+      sig.hashCode
+    }
+
     def hashBin(bin: Bin): Hash = {
       bin.hashCode
     }
@@ -382,7 +387,6 @@ object GlobalValueNumbering extends PassCompanion {
     def hashConv(conv: Conv): Hash = {
       conv.hashCode
     }
-
   }
 
   object HashFunction {
@@ -390,7 +394,7 @@ object GlobalValueNumbering extends PassCompanion {
     def combineHashes(hashes: Seq[Hash]): Hash =
       MurmurHash3.orderedHash(hashes)
 
-    def rawLocal(local: Local): Hash = local.id
+    def rawLocal(local: Local): Hash = local.id.##
   }
 
   override def apply(config: build.Config, linked: linker.Result) =

@@ -5,8 +5,8 @@
 #include <stdbool.h>
 
 typedef struct {
-    int16_t next;
-    uint16_t size;
+    int8_t next;
+    uint8_t size;
 } FreeLineMeta;
 
 typedef enum {

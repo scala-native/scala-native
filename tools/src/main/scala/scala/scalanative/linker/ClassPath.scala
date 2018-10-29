@@ -33,8 +33,7 @@ object ClassPath {
       directory.files
         .filter(_.toString.endsWith(".nir"))
         .map { file =>
-          val name = Global.stripImplClassTrailingDollar(
-            Global.Top(io.packageNameFromPath(file)))
+          val name = Global.Top(io.packageNameFromPath(file))
 
           name -> file
         }

@@ -77,10 +77,10 @@ class Buffer(implicit fresh: Fresh) {
                  value: Val,
                  unwind: Next): Val =
     let(Op.Fieldstore(ty, obj, name, value), unwind)
-  def method(obj: Val, signature: String, unwind: Next): Val =
-    let(Op.Method(obj, signature), unwind)
-  def dynmethod(obj: Val, signature: String, unwind: Next): Val =
-    let(Op.Dynmethod(obj, signature), unwind)
+  def method(obj: Val, sig: Sig, unwind: Next): Val =
+    let(Op.Method(obj, sig), unwind)
+  def dynmethod(obj: Val, sig: Sig, unwind: Next): Val =
+    let(Op.Dynmethod(obj, sig), unwind)
   def module(name: Global, unwind: Next): Val =
     let(Op.Module(name), unwind)
   def as(ty: Type, obj: Val, unwind: Next): Val =

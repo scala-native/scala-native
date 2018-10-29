@@ -11,22 +11,22 @@ object GenerateReflectiveProxies {
   implicit val fresh = Fresh()
 
   private def genReflProxy(defn: Defn.Define): Defn.Define = {
-    val Global.Member(owner, id) = defn.name
-    val defnType                 = defn.ty.asInstanceOf[Type.Function]
+    val Global.Member(owner, sig) = defn.name
+    val defnType                  = defn.ty.asInstanceOf[Type.Function]
 
     val proxyArgs = genProxyArgs(defnType)
     val proxyTy   = genProxyTy(defnType, proxyArgs)
 
     val label      = genProxyLabel(proxyArgs)
     val unboxInsts = genArgUnboxes(label)
-    val method     = Inst.Let(Op.Method(label.params.head, defn.name.id), Next.None)
+    val method     = Inst.Let(Op.Method(label.params.head, sig), Next.None)
     val call       = genCall(defnType, method, label.params, unboxInsts)
     val box        = genRetValBox(call.name, defnType.ret, proxyTy.ret)
     val retInst    = genRet(box.name, proxyTy.ret)
 
     Defn.Define(
       Attrs.fromSeq(Seq(Attr.Dyn)),
-      Global.Member(owner, Global.genSignature(defn.name, proxy = true)),
+      Global.Member(owner, sig.toProxy),
       proxyTy,
       Seq(
         Seq(label),
@@ -42,7 +42,7 @@ object GenerateReflectiveProxies {
   private def genProxyTy(defnTy: Type.Function, args: Seq[Type]) =
     Type.Function(args, defnTy.ret match {
       case Type.Unit => Type.Unit
-      case _         => Type.Class(Global.Top("java.lang.Object"))
+      case _         => Type.Ref(Global.Top("java.lang.Object"))
     })
 
   private def genProxyLabel(args: Seq[Type]) = {
@@ -97,11 +97,11 @@ object GenerateReflectiveProxies {
     // filters methods with same name and args but different return type for each given type
     val toProxy =
       dynimpls
-        .foldLeft(Map[(Global, String), Global]()) {
-          case (acc, g @ Global.Member(owner, _)) =>
-            val sign = Global.genSignature(g)
-            if (!acc.contains((owner, sign))) {
-              acc + ((owner, sign) -> g)
+        .foldLeft(Map[(Global, Sig), Global]()) {
+          case (acc, g @ Global.Member(owner, sig)) =>
+            val proxySig = sig.toProxy
+            if (!acc.contains((owner, proxySig))) {
+              acc + ((owner, proxySig) -> g)
             } else {
               acc
             }

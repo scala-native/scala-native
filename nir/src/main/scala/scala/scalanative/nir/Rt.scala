@@ -4,16 +4,16 @@ package nir
 import Type._
 
 object Rt {
-  val Object = Class(Global.Top("java.lang.Object"))
-  val String = Class(Global.Top("java.lang.String"))
-  val Type   = StructValue(Global.None, Seq(Int, Int, Ptr, Byte))
+  val Object = Ref(Global.Top("java.lang.Object"))
+  val String = Ref(Global.Top("java.lang.String"))
+  val Type   = StructValue(Seq(Int, Int, Ptr, Byte))
 
-  val JavaEqualsSig    = "equals_java.lang.Object_bool"
-  val JavaHashCodeSig  = "hashCode_i32"
-  val ScalaEqualsSig   = "scala$underscore$==_java.lang.Object_bool"
-  val ScalaHashCodeSig = "scala$underscore$##_i32"
+  val JavaEqualsSig    = Sig.Method("equals", Seq(Object, Bool))
+  val JavaHashCodeSig  = Sig.Method("hashCode", Seq(Int))
+  val ScalaEqualsSig   = Sig.Method("scala_==", Seq(Object, Bool))
+  val ScalaHashCodeSig = Sig.Method("scala_##", Seq(Int))
 
-  val arrayAlloc = Seq(
+  val arrayAlloc: Map[Sig, Global] = Seq(
     "BooleanArray",
     "CharArray",
     "ByteArray",
@@ -24,10 +24,8 @@ object Rt {
     "DoubleArray",
     "ObjectArray"
   ).map { arr =>
-    val cls          = "scala.scalanative.runtime." + arr
-    val module       = "scala.scalanative.runtime." + arr + "$"
-    val from: String = "alloc_i32_" + cls
-    val to: Global   = Global.Top(cls)
-    from -> to
+    val cls = Global.Top("scala.scalanative.runtime." + arr)
+    val sig = Sig.Method("alloc", Seq(Int, Ref(cls)))
+    sig -> cls
   }.toMap
 }

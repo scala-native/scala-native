@@ -80,7 +80,6 @@ trait NirGenStat { self: NirGenPhase =>
       val fields = genStructFields(sym)
       val body   = cd.impl.body
 
-      buf += Defn.Struct(attrs, name, fields)
       genMethods(cd)
     }
 

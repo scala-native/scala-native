@@ -37,8 +37,7 @@ object MemoryLayout {
     ty match {
       case primitive: Type.Primitive => math.max(primitive.width / WORD_SIZE, 1)
       case Type.ArrayValue(arrTy, n) => sizeOf(arrTy, targetArchitecture) * n
-      case Type.StructValue(_, tys) =>
-        MemoryLayout(tys, targetArchitecture).size
+      case Type.StructValue(tys) => MemoryLayout(tys, targetArchitecture).size
       case Type.Nothing | Type.Ptr | _: Type.RefKind =>
         math.max((if (targetArchitecture.is32) 32 else 64) / WORD_SIZE, 1)
       case _ => unsupported(s"sizeOf $ty")
@@ -74,7 +73,7 @@ object MemoryLayout {
       (sizeOf(o, targetArchitecture), alignmentSize(o, targetArchitecture)))
 
     def findMax(tys: Seq[Type]): Long = tys.foldLeft(0L) {
-      case (acc, Type.StructValue(_, innerTy)) =>
+      case (acc, Type.StructValue(innerTy)) =>
         math.max(acc, findMax(innerTy))
       case (acc, ty) => math.max(acc, alignmentSize(ty, targetArchitecture))
     }
@@ -85,7 +84,7 @@ object MemoryLayout {
       (tys zip sizes).foldLeft((offset, List[PositionedType]())) {
         case ((index, potys), (ty, (size, alignmentSize))) if size > 0 =>
           ty match {
-            case Type.StructValue(_, stys) =>
+            case Type.StructValue(stys) =>
               val innerAlignment = findMax(stys)
               val pad =
                 if (index                    % innerAlignment == 0) 0

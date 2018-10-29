@@ -4,7 +4,7 @@ package codegen
 import scala.collection.mutable
 import scalanative.nir._
 import scalanative.sema._
-import scalanative.linker.{Trait, Struct, Class}
+import scalanative.linker.{Trait, Class}
 
 import scala.scalanative.build.TargetArchitecture
 
@@ -18,7 +18,6 @@ class Metadata(val linked: linker.Result,
   val ranges = mutable.Map.empty[linker.Class, Range]
 
   val classes        = initClassIdsAndRanges()
-  val structs        = initStructIds()
   val traits         = initTraitIds()
   val moduleArray    = new ModuleArray(this)
   val dispatchTable  = new TraitDispatchTable(this)
@@ -26,7 +25,6 @@ class Metadata(val linked: linker.Result,
 
   initClassMetadata()
   initTraitMetadata()
-  initStructMetadata()
 
   def initTraitIds(): Seq[Trait] = {
     val traits =
@@ -39,19 +37,6 @@ class Metadata(val linked: linker.Result,
         ids(node) = id
     }
     traits
-  }
-
-  def initStructIds(): Seq[Struct] = {
-    val structs =
-      linked.infos.valuesIterator
-        .collect { case info: Struct => info }
-        .toArray
-        .sortBy(_.name.show)
-    structs.zipWithIndex.foreach {
-      case (node, id) =>
-        ids(node) = id
-    }
-    structs
   }
 
   def initClassIdsAndRanges(): Seq[Class] = {
@@ -88,12 +73,6 @@ class Metadata(val linked: linker.Result,
 
   def initTraitMetadata(): Unit = {
     traits.foreach { node =>
-      rtti(node) = new RuntimeTypeInformation(this, node)
-    }
-  }
-
-  def initStructMetadata(): Unit = {
-    structs.foreach { node =>
       rtti(node) = new RuntimeTypeInformation(this, node)
     }
   }

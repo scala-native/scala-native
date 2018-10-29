@@ -10,4 +10,5 @@ Contributor's Guide
   build
   compiler
   nir
+  mangling
 

@@ -4,26 +4,20 @@ package nir
 import fastparse.all.Parsed
 import org.scalatest._
 
-class AttrParserTest extends FlatSpec with Matchers {
-
-  val global = Global.Top("test")
-
-  "The NIR parser" should "parse attributes" in {
-    import Attr._
-    val attrs: Seq[Attr] = Seq(
-      MayInline,
-      InlineHint,
-      NoInline,
-      AlwaysInline,
-      Dyn,
-      Stub,
-      Extern,
-      Link("test")
-    )
-
-    attrs foreach { attr =>
+class AttrParserTest extends FunSuite {
+  Seq[Attr](
+    Attr.MayInline,
+    Attr.InlineHint,
+    Attr.NoInline,
+    Attr.AlwaysInline,
+    Attr.Dyn,
+    Attr.Stub,
+    Attr.Extern,
+    Attr.Link("test")
+  ).foreach { attr =>
+    test(s"parse attr `${attr.show}`") {
       val Parsed.Success(result, _) = parser.Attr.parser.parse(attr.show)
-      result should be(attr)
+      assert(result == attr)
     }
   }
 }

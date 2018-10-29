@@ -21,16 +21,10 @@ object Val extends Base[nir.Val] {
   val Long   = P("long" ~ Base.Long map (nir.Val.Long(_)))
   val Float  = P("float" ~ Base.Float map (nir.Val.Float(_)))
   val Double = P("double" ~ Base.Double map (nir.Val.Double(_)))
-  val NoneStructValue =
-    P(
-      "structvalue" ~ "{" ~ Val.parser.rep(sep = ",") ~ "}" map (nir.Val
-        .StructValue(nir.Global.None, _)))
   val StructValue =
     P(
-      "structvalue" ~ nir.parser.Global.parser ~ "{" ~ Val.parser
-        .rep(sep = ",") ~ "}" map {
-        case (n, values) => nir.Val.StructValue(n, values)
-      })
+      "structvalue" ~ "{" ~ Val.parser.rep(sep = ",") ~ "}" map (nir.Val
+        .StructValue(_)))
   val ArrayValue =
     P("arrayvalue" ~ Type.parser ~ "{" ~ Val.parser.rep(sep = ",") ~ "}" map {
       case (ty, values) => nir.Val.ArrayValue(ty, values)
@@ -49,6 +43,6 @@ object Val extends Base[nir.Val] {
   val String = P(stringLit map (nir.Val.String(_)))
 
   override val parser: P[nir.Val] =
-    None | True | False | Null | Zero | Undef | Long | Int | Short | Byte | Double | Float | NoneStructValue | StructValue | ArrayValue | Chars | Local | Global | Unit | Const | String
+    None | True | False | Null | Zero | Undef | Long | Int | Short | Byte | Double | Float | StructValue | ArrayValue | Chars | Local | Global | Unit | Const | String
 
 }

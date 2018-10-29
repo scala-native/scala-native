@@ -1,25 +1,28 @@
 package scala.scalanative.linker
 
 import org.scalatest._
-import scalanative.nir.Global
+import scalanative.nir.{Type, Sig, Global}
 
 class TraitReachabilitySuite extends ReachabilitySuite {
-  val Test            = g("Test$")
-  val TestInit        = g("Test$", "init")
-  val TestMain        = g("Test$", "main_unit")
-  val TestCallFoo     = g("Test$", "callFoo_Parent_unit")
-  val Parent          = g("Parent")
-  val ParentClass     = g("Parent$class")
-  val ParentClassInit = g("Parent$class", "$init$_Parent_unit")
-  val ParentClassFoo  = g("Parent$class", "foo_Parent_unit")
-  val Child           = g("Child")
-  val ChildInit       = g("Child", "init")
-  val ChildFoo        = g("Child", "foo_unit")
-  val GrandChild      = g("GrandChild")
-  val GrandChildInit  = g("GrandChild", "init")
-  val GrandChildFoo   = g("GrandChild", "foo_unit")
-  val Object          = g("java.lang.Object")
-  val ObjectInit      = g("java.lang.Object", "init")
+  val Parent      = g("Parent")
+  val ParentClass = g("Parent$class")
+  val ParentClassInit =
+    g("Parent$class", Sig.Method("$init$", Seq(Type.Ref(Parent), Type.Unit)))
+  val ParentClassFoo =
+    g("Parent$class", Sig.Method("foo", Seq(Type.Ref(Parent), Type.Unit)))
+  val Child          = g("Child")
+  val ChildInit      = g("Child", Sig.Ctor(Seq.empty))
+  val ChildFoo       = g("Child", Sig.Method("foo", Seq(Type.Unit)))
+  val GrandChild     = g("GrandChild")
+  val GrandChildInit = g("GrandChild", Sig.Ctor(Seq.empty))
+  val GrandChildFoo  = g("GrandChild", Sig.Method("foo", Seq(Type.Unit)))
+  val Object         = g("java.lang.Object")
+  val ObjectInit     = g("java.lang.Object", Sig.Ctor(Seq.empty))
+  val Test           = g("Test$")
+  val TestInit       = g("Test$", Sig.Ctor(Seq.empty))
+  val TestMain       = g("Test$", Sig.Method("main", Seq(Type.Unit)))
+  val TestCallFoo =
+    g("Test$", Sig.Method("callFoo", Seq(Type.Ref(Parent), Type.Unit)))
 
   testReachable("unused traits are discarded") {
     val source = """

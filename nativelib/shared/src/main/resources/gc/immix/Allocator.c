@@ -4,39 +4,19 @@
 #include <stdio.h>
 #include <memory.h>
 
-BlockMeta *Allocator_getNextBlock(Allocator *allocator);
 bool Allocator_getNextLine(Allocator *allocator);
 bool Allocator_newBlock(Allocator *allocator);
 
-/**
- *
- * Allocates the Allocator and initialises it's fields
- *
- * @param blockMetaStart
- * @param blockCount Initial number of blocks in the heap
- * @return
- */
-void Allocator_Init(Allocator *allocator, Bytemap *bytemap,
-                    word_t *blockMetaStart, word_t *heapStart,
-                    uint32_t blockCount) {
+void Allocator_Init(Allocator *allocator, BlockAllocator *blockAllocator,
+                    Bytemap *bytemap, word_t *blockMetaStart,
+                    word_t *heapStart) {
     allocator->blockMetaStart = blockMetaStart;
+    allocator->blockAllocator = blockAllocator;
     allocator->bytemap = bytemap;
     allocator->heapStart = heapStart;
 
     BlockList_Init(&allocator->recycledBlocks, blockMetaStart);
-    BlockList_Init(&allocator->freeBlocks, blockMetaStart);
 
-    // Init the free block list
-    allocator->freeBlocks.first = (BlockMeta *)blockMetaStart;
-    BlockMeta *lastBlockMeta =
-        (BlockMeta *)(blockMetaStart +
-                      ((blockCount - 1) * WORDS_IN_BLOCK_METADATA));
-    allocator->freeBlocks.last = lastBlockMeta;
-    lastBlockMeta->nextBlock = LAST_BLOCK;
-
-    // Block stats
-    allocator->blockCount = (uint64_t)blockCount;
-    allocator->freeBlockCount = (uint64_t)blockCount;
     allocator->recycledBlockCount = 0;
 
     Allocator_InitCursors(allocator);
@@ -51,17 +31,11 @@ void Allocator_Init(Allocator *allocator, Bytemap *bytemap,
  * otherwise.
  */
 bool Allocator_CanInitCursors(Allocator *allocator) {
-    return allocator->freeBlockCount >= 2 ||
-           (allocator->freeBlockCount == 1 &&
-            allocator->recycledBlockCount > 0);
+    uint64_t freeBlockCount = allocator->blockAllocator->freeBlockCount;
+    return freeBlockCount >= 2 ||
+           (freeBlockCount == 1 && allocator->recycledBlockCount > 0);
 }
 
-/**
- *
- * Used to initialise the cursors of the Allocator after collection
- *
- * @param allocator
- */
 void Allocator_InitCursors(Allocator *allocator) {
 
     // Init cursor
@@ -69,9 +43,9 @@ void Allocator_InitCursors(Allocator *allocator) {
     assert(didInit);
 
     // Init large cursor
-    assert(!BlockList_IsEmpty(&allocator->freeBlocks));
-
-    BlockMeta *largeBlock = BlockList_RemoveFirstBlock(&allocator->freeBlocks);
+    BlockMeta *largeBlock =
+        BlockAllocator_GetFreeBlock(allocator->blockAllocator);
+    assert(largeBlock != NULL);
     allocator->largeBlock = largeBlock;
     word_t *largeBlockStart = BlockMeta_GetBlockStart(
         allocator->blockMetaStart, allocator->heapStart, largeBlock);
@@ -80,24 +54,9 @@ void Allocator_InitCursors(Allocator *allocator) {
     allocator->largeLimit = Block_GetBlockEnd(largeBlockStart);
 }
 
-/**
- * Heuristic that tells if the heap should be grown or not.
- */
-bool Allocator_ShouldGrow(Allocator *allocator) {
-    uint64_t unavailableBlockCount =
-        allocator->blockCount -
-        (allocator->freeBlockCount + allocator->recycledBlockCount);
-
-#ifdef DEBUG_PRINT
-    printf("\n\nBlock count: %llu\n", allocator->blockCount);
-    printf("Unavailable: %llu\n", unavailableBlockCount);
-    printf("Free: %llu\n", allocator->freeBlockCount);
-    printf("Recycled: %llu\n", allocator->recycledBlockCount);
-    fflush(stdout);
-#endif
-
-    return allocator->freeBlockCount * 2 < allocator->blockCount ||
-           4 * unavailableBlockCount > allocator->blockCount;
+void Allocator_Clear(Allocator *allocator) {
+    BlockList_Clear(&allocator->recycledBlocks);
+    allocator->recycledBlockCount = 0;
 }
 
 /**
@@ -110,10 +69,11 @@ word_t *Allocator_overflowAllocation(Allocator *allocator, size_t size) {
     word_t *end = (word_t *)((uint8_t *)start + size);
 
     if (end > allocator->largeLimit) {
-        if (BlockList_IsEmpty(&allocator->freeBlocks)) {
+        BlockMeta *block =
+            BlockAllocator_GetFreeBlock(allocator->blockAllocator);
+        if (block == NULL) {
             return NULL;
         }
-        BlockMeta *block = BlockList_RemoveFirstBlock(&allocator->freeBlocks);
         allocator->largeBlock = block;
         word_t *blockStart = BlockMeta_GetBlockStart(
             allocator->blockMetaStart, allocator->heapStart, block);
@@ -161,15 +121,13 @@ INLINE word_t *Allocator_Alloc(Allocator *allocator, size_t size) {
 }
 
 /**
- * Updates the cursor and the limit of the Allocator to point the next line of
- * the recycled block
+ * Updates the cursor and the limit of the Allocator to point the next line.
  */
-bool Allocator_nextLineRecycled(Allocator *allocator) {
+bool Allocator_getNextLine(Allocator *allocator) {
     BlockMeta *block = allocator->block;
     word_t *blockStart = allocator->blockStart;
-    assert(BlockMeta_IsRecyclable(block));
 
-    int16_t lineIndex = block->first;
+    int lineIndex = BlockMeta_FirstFreeLine(block);
     if (lineIndex == LAST_HOLE) {
         return Allocator_newBlock(allocator);
     }
@@ -178,7 +136,7 @@ bool Allocator_nextLineRecycled(Allocator *allocator) {
 
     allocator->cursor = line;
     FreeLineMeta *lineMeta = (FreeLineMeta *)line;
-    block->first = lineMeta->next;
+    BlockMeta_SetFirstFreeLine(block, lineMeta->next);
     uint16_t size = lineMeta->size;
     allocator->limit = line + (size * WORDS_IN_LINE);
     assert(allocator->limit <= Block_GetBlockEnd(blockStart));
@@ -191,62 +149,39 @@ bool Allocator_nextLineRecycled(Allocator *allocator) {
  * free line of the new block.
  */
 bool Allocator_newBlock(Allocator *allocator) {
-    // request the new block.
-    BlockMeta *block = Allocator_getNextBlock(allocator);
-    // return false if there is no block left.
-    if (block == NULL) {
-        return false;
-    }
-    allocator->block = block;
-    word_t *blockStart = BlockMeta_GetBlockStart(allocator->blockMetaStart,
-                                                 allocator->heapStart, block);
-    allocator->blockStart = blockStart;
+    BlockMeta *block = BlockList_Poll(&allocator->recycledBlocks);
+    word_t *blockStart;
 
-    // The block can be free or recycled.
-    if (BlockMeta_IsFree(block)) {
-        allocator->cursor = blockStart;
-        allocator->limit = Block_GetBlockEnd(blockStart);
-    } else {
-        assert(BlockMeta_IsRecyclable(block));
-        int16_t lineIndex = block->first;
+    if (block != NULL) {
+        blockStart = BlockMeta_GetBlockStart(allocator->blockMetaStart,
+                                             allocator->heapStart, block);
+
+        int lineIndex = BlockMeta_FirstFreeLine(block);
         assert(lineIndex < LINE_COUNT);
         word_t *line = Block_GetLineAddress(blockStart, lineIndex);
 
         allocator->cursor = line;
         FreeLineMeta *lineMeta = (FreeLineMeta *)line;
-        block->first = lineMeta->next;
+        BlockMeta_SetFirstFreeLine(block, lineMeta->next);
         uint16_t size = lineMeta->size;
         assert(size > 0);
         allocator->limit = line + (size * WORDS_IN_LINE);
         assert(allocator->limit <= Block_GetBlockEnd(blockStart));
+    } else {
+        block = BlockAllocator_GetFreeBlock(allocator->blockAllocator);
+        if (block == NULL) {
+            return false;
+        }
+        blockStart = BlockMeta_GetBlockStart(allocator->blockMetaStart,
+                                             allocator->heapStart, block);
+
+        allocator->cursor = blockStart;
+        allocator->limit = Block_GetBlockEnd(blockStart);
+        BlockMeta_SetFirstFreeLine(block, LAST_HOLE);
     }
+
+    allocator->block = block;
+    allocator->blockStart = blockStart;
 
     return true;
-}
-
-bool Allocator_getNextLine(Allocator *allocator) {
-    // If cursor is null or the block was free, we need a new block
-    if (allocator->cursor == NULL || BlockMeta_IsFree(allocator->block)) {
-        return Allocator_newBlock(allocator);
-    } else {
-        // If we have a recycled block
-        return Allocator_nextLineRecycled(allocator);
-    }
-}
-
-/**
- * Returns a block, first from recycled if available, otherwise from
- * chunk_allocator
- */
-BlockMeta *Allocator_getNextBlock(Allocator *allocator) {
-    BlockMeta *block = NULL;
-    if (!BlockList_IsEmpty(&allocator->recycledBlocks)) {
-        block = BlockList_RemoveFirstBlock(&allocator->recycledBlocks);
-    } else if (!BlockList_IsEmpty(&allocator->freeBlocks)) {
-        block = BlockList_RemoveFirstBlock(&allocator->freeBlocks);
-    }
-    assert(block == NULL ||
-           BlockMeta_GetBlockIndex(allocator->blockMetaStart, block) <
-               allocator->blockCount);
-    return block;
 }

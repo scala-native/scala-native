@@ -568,7 +568,7 @@ trait NirGenExpr { self: NirGenPhase =>
       if (isEqEqOrBangEq) {
         val neg  = sym.name == nme.ne || sym.name == NotEqMethodName
         val last = genClassEquality(obj, args.head, ref = false, negated = neg)
-        buf.box(nir.Type.Class(nir.Global.Top("java.lang.Boolean")), last, unwind)
+        buf.box(nir.Type.Ref(nir.Global.Top("java.lang.Boolean")), last, unwind)
       } else {
         val self = genExpr(obj)
         genApplyDynamic(sym, self, args)
@@ -587,25 +587,29 @@ trait NirGenExpr { self: NirGenPhase =>
       def genDynCall(arrayUpdate: Boolean) = {
 
         // In the case of an array update we need to manually erase the return type.
-        val methodName =
-          if (arrayUpdate) "update_i32_java.lang.Object"
-          else nir.Global.genSignature(genMethodName(sym))
+        val methodName: Sig =
+          if (arrayUpdate) {
+            Sig.Proxy("update", Seq(Type.Int, Rt.Object))
+          } else {
+            val Global.Member(_, sig) = genMethodName(sym)
+            sig.toProxy
+          }
 
         val sig =
           Type.Function(
             methodSig.args.head ::
               methodSig.args.tail.map(ty => Type.box.getOrElse(ty, ty)).toList,
-            nir.Type.Class(nir.Global.Top("java.lang.Object")))
+            nir.Type.Ref(nir.Global.Top("java.lang.Object")))
 
         val callerType = methodSig.args.head
         val boxedArgTypes =
           methodSig.args.tail.map(ty => nir.Type.box.getOrElse(ty, ty)).toList
 
-        val retType   = nir.Type.Class(nir.Global.Top("java.lang.Object"))
+        val retType   = nir.Type.Ref(nir.Global.Top("java.lang.Object"))
         val signature = nir.Type.Function(callerType :: boxedArgTypes, retType)
         val args      = genMethodArgs(sym, argsp, boxedArgTypes)
 
-        val method = buf.dynmethod(self, methodName.toString, unwind)
+        val method = buf.dynmethod(self, methodName, unwind)
         val values = self +: args
 
         val call = buf.call(signature, method, values, unwind)
@@ -615,7 +619,7 @@ trait NirGenExpr { self: NirGenPhase =>
       // If the signature matches an array update, tests at runtime if it really is an array update.
       if (isArrayLikeOp) {
         val cond = ContTree { () =>
-          buf.is(nir.Type.Class(
+          buf.is(nir.Type.Ref(
                    nir.Global.Top("scala.scalanative.runtime.ObjectArray")),
                  self, unwind)
         }
@@ -625,7 +629,7 @@ trait NirGenExpr { self: NirGenPhase =>
         val elsep = ContTree { () =>
           genDynCall(arrayUpdate = false)
         }
-        genIf(nir.Type.Class(nir.Global.Top("java.lang.Object")),
+        genIf(nir.Type.Ref(nir.Global.Top("java.lang.Object")),
               cond,
               thenp,
               elsep)
@@ -737,8 +741,8 @@ trait NirGenExpr { self: NirGenPhase =>
     }
 
     lazy val jlClassName     = nir.Global.Top("java.lang.Class")
-    lazy val jlClass         = nir.Type.Class(jlClassName)
-    lazy val jlClassCtorName = jlClassName member "init_ptr"
+    lazy val jlClass         = nir.Type.Ref(jlClassName)
+    lazy val jlClassCtorName = jlClassName.member(nir.Sig.Ctor(Seq(nir.Type.Ptr)))
     lazy val jlClassCtorSig =
       nir.Type.Function(Seq(jlClass, Type.Ptr), nir.Type.Unit)
     lazy val jlClassCtor = nir.Val.Global(jlClassCtorName, nir.Type.Ptr)
@@ -1058,7 +1062,7 @@ trait NirGenExpr { self: NirGenPhase =>
 
       val Apply(Select(arrayp, _), argsp) = app
 
-      val Type.Array(elemty) = genType(arrayp.tpe, box = false)
+      val Type.Array(elemty, _) = genType(arrayp.tpe, box = false)
 
       def elemcode = genArrayCode(arrayp.tpe)
       val array    = genExpr(arrayp)
@@ -1581,7 +1585,8 @@ trait NirGenExpr { self: NirGenPhase =>
         if (statically || owner.isStruct || owner.isExternModule) {
           Val.Global(name, nir.Type.Ptr)
         } else {
-          buf.method(self, name.id, unwind)
+          val Global.Member(_, sig) = name
+          buf.method(self, sig, unwind)
         }
       val values =
         if (owner.isExternModule || owner.isImplClass)

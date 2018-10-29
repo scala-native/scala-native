@@ -4,7 +4,7 @@ package build
 import java.nio.file.{Files, Path, Paths}
 import scala.sys.process.Process
 import scalanative.build.IO.RichPath
-import scalanative.nir.Global
+import scalanative.nir.{Type, Rt, Sig, Global}
 import scalanative.linker.Link
 import scalanative.codegen.CodeGen
 import scalanative.optimizer.Optimizer
@@ -18,7 +18,8 @@ private[scalanative] object ScalaNative {
   def entries(config: Config): Seq[Global] = {
     val mainClass = Global.Top(config.mainClass)
     val entry =
-      Global.Member(mainClass, "main_arr.java.lang.String_unit")
+      mainClass.member(
+        Sig.Method("main", Seq(Type.Array(Rt.String), Type.Unit)))
     entry +: CodeGen.depends
   }
 

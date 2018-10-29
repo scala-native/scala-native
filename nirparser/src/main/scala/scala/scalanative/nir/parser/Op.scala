@@ -70,11 +70,11 @@ object Op extends Base[nir.Op] {
     })
   val Method =
     P("method" ~ Val.parser ~ "," ~ Base.stringLit map {
-      case (value, signature) => nir.Op.Method(value, signature)
+      case (v, sig) => nir.Op.Method(v, Unmangle.unmangleSig(sig))
     })
   val Dynmethod =
     P("dynmethod" ~ Val.parser ~ "," ~ Base.stringLit map {
-      case (obj, signature) => nir.Op.Dynmethod(obj, signature)
+      case (v, sig) => nir.Op.Dynmethod(v, Unmangle.unmangleSig(sig))
     })
   val Module = P("module" ~ Global.parser).map {
     case name => nir.Op.Module(name)
@@ -125,5 +125,5 @@ object Op extends Base[nir.Op] {
     case arr => nir.Op.Arraylength(arr)
   })
   override val parser: P[nir.Op] =
-    Call | Load | Store | Elem | Extract | Insert | Stackalloc | Bin | Comp | Conv | Select | Classalloc | Fieldload | Fieldstore | Method | Module | As | Is | Copy | Sizeof | Closure | Box | Unbox | Var | Varload | Varstore | Arrayalloc | Arrayload | Arraystore | Arraylength
+    Call | Load | Store | Elem | Extract | Insert | Stackalloc | Bin | Comp | Conv | Select | Classalloc | Fieldload | Fieldstore | Method | Dynmethod | Module | As | Is | Copy | Sizeof | Closure | Box | Unbox | Var | Varload | Varstore | Arrayalloc | Arrayload | Arraystore | Arraylength
 }

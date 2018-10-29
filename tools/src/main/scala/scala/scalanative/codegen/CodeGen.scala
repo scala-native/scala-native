@@ -90,7 +90,7 @@ object CodeGen {
 
     val copies    = mutable.Map.empty[Local, Val]
     val deps      = mutable.Set.empty[Global]
-    val generated = mutable.Set.empty[Global]
+    val generated = mutable.Set.empty[String]
     val builder   = new ShowBuilder
     import builder._
 
@@ -108,23 +108,22 @@ object CodeGen {
     }
 
     def genDeps() = deps.foreach { n =>
-      if (!generated.contains(n)) {
+      val mn = mangled(n)
+      if (!generated.contains(mn)) {
         newline()
         genDefn {
           env(n) match {
-            case defn: Defn.Struct =>
-              defn
             case defn @ Defn.Var(attrs, _, _, _) =>
               defn.copy(attrs.copy(isExtern = true), rhs = Val.None)
             case defn @ Defn.Const(attrs, _, ty, _) =>
               defn.copy(attrs.copy(isExtern = true), rhs = Val.None)
             case defn @ Defn.Declare(attrs, _, _) =>
               defn.copy(attrs.copy(isExtern = true))
-            case defn @ Defn.Define(attrs, _, _, _) =>
-              defn.copy(attrs.copy(isExtern = true), insts = Seq())
+            case defn @ Defn.Define(attrs, name, ty, _) =>
+              Defn.Declare(attrs, name, ty)
           }
         }
-        generated += n
+        generated += mn
       }
     }
 
@@ -146,17 +145,14 @@ object CodeGen {
 
     def genDefns(defns: Seq[Defn]): Unit = {
       def onDefn(defn: Defn): Unit = {
-        val n = defn.name
-        if (!generated.contains(n)) {
+        val mn = mangled(defn.name)
+        if (!generated.contains(mn)) {
           newline()
           genDefn(defn)
-          generated += n
+          generated += mn
         }
       }
 
-      defns.foreach { defn =>
-        if (defn.isInstanceOf[Defn.Struct]) onDefn(defn)
-      }
       defns.foreach { defn =>
         if (defn.isInstanceOf[Defn.Const]) onDefn(defn)
       }
@@ -197,8 +193,6 @@ object CodeGen {
       }
 
     def genDefn(defn: Defn): Unit = defn match {
-      case Defn.Struct(attrs, name, tys) =>
-        genStruct(attrs, name, tys)
       case Defn.Var(attrs, name, ty, rhs) =>
         genGlobalDefn(attrs, name, isConst = false, ty, rhs)
       case Defn.Const(attrs, name, ty, rhs) =>
@@ -209,14 +203,6 @@ object CodeGen {
         genFunctionDefn(attrs, name, sig, insts, Fresh(insts))
       case defn =>
         unsupported(defn)
-    }
-
-    def genStruct(attrs: Attrs, name: Global, tys: Seq[Type]): Unit = {
-      str("%")
-      genGlobal(name)
-      str(" = type {")
-      rep(tys, sep = ", ")(genType)
-      str("}")
     }
 
     def genGlobalDefn(attrs: Attrs,
@@ -377,27 +363,23 @@ object CodeGen {
     }
 
     def genType(ty: Type): Unit = ty match {
-      case Type.Void   => str("void")
-      case Type.Vararg => str("...")
-      case Type.Ptr    => str("i8*")
-      case Type.Bool   => str("i1")
-      case i: Type.I   => str("i"); str(i.width)
-      case Type.Float  => str("float")
-      case Type.Double => str("double")
+      case Type.Void            => str("void")
+      case Type.Vararg          => str("...")
+      case Type.Ptr | Type.Null => str("i8*")
+      case Type.Bool            => str("i1")
+      case i: Type.I            => str("i"); str(i.width)
+      case Type.Float           => str("float")
+      case Type.Double          => str("double")
       case Type.ArrayValue(ty, n) =>
         str("[")
         str(n)
         str(" x ")
         genType(ty)
         str("]")
-      case Type.StructValue(Global.None, tys) =>
+      case Type.StructValue(tys) =>
         str("{ ")
         rep(tys, sep = ", ")(genType)
         str(" }")
-      case Type.StructValue(name, _) =>
-        touch(name)
-        str("%")
-        genGlobal(name)
       case Type.Function(args, ret) =>
         genType(ret)
         str(" (")
@@ -415,7 +397,7 @@ object CodeGen {
       } else {
         val idx = constMap.size
         val name =
-          Global.Member(Global.Top("__const"), idx.toString)
+          Global.Member(Global.Top("__const"), Sig.Generated(idx.toString))
         constMap(v) = name
         constTy(name) = v.ty
         name
@@ -423,8 +405,8 @@ object CodeGen {
     def deconstify(v: Val): Val = v match {
       case Val.Local(local, _) if copies.contains(local) =>
         deconstify(copies(local))
-      case Val.StructValue(name, vals) =>
-        Val.StructValue(name, vals.map(deconstify))
+      case Val.StructValue(vals) =>
+        Val.StructValue(vals.map(deconstify))
       case Val.ArrayValue(elemty, vals) =>
         Val.ArrayValue(elemty, vals.map(deconstify))
       case Val.Const(value) =>
@@ -445,7 +427,7 @@ object CodeGen {
       case Val.Long(v)   => str(v)
       case Val.Float(v)  => genFloatHex(v)
       case Val.Double(v) => genDoubleHex(v)
-      case Val.StructValue(_, vs) =>
+      case Val.StructValue(vs) =>
         str("{ ")
         rep(vs, sep = ", ")(genVal)
         str(" }")
@@ -534,20 +516,18 @@ object CodeGen {
       genJustVal(value)
     }
 
-    def genJustGlobal(g: Global): Unit = g match {
+    def mangled(g: Global): String = g match {
       case Global.None =>
         unsupported(g)
-      case Global.Top(id) =>
-        str(id)
-      case Global.Member(n, id) =>
-        genJustGlobal(n)
-        str("::")
-        str(id)
+      case Global.Member(_, Sig.Extern(id)) =>
+        id
+      case _ =>
+        "_S" + g.mangle
     }
 
     def genGlobal(g: Global): Unit = {
       str("\"")
-      genJustGlobal(g)
+      str(mangled(g))
       str("\"")
     }
 
@@ -875,10 +855,10 @@ object CodeGen {
     }
 
     def genNext(next: Next) = next match {
-      case Next.Case(v, n) =>
+      case Next.Case(v, next) =>
         genVal(v)
         str(", label %")
-        genLocal(n)
+        genLocal(next.name)
         str(".0")
       case next =>
         str("label %")

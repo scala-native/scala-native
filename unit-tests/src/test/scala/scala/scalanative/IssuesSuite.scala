@@ -354,6 +354,11 @@ object IssuesSuite extends tests.Suite {
     assert(null.asInstanceOf[AnyRef].## == 0)
   }
 
+  test("#900") {
+    val c = new issue900.C("any")
+    assert(c.init == "foobar")
+  }
+
   test("#1155") {
     assert(issue1155.C.CLASS.toString.contains("C$CLASS$@"))
   }
@@ -382,5 +387,11 @@ package issue1155 {
 
   object C {
     object CLASS extends C
+  }
+}
+
+package issue900 {
+  class C(any: Any) {
+    def init: Any = "foobar"
   }
 }
