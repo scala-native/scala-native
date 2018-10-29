@@ -9,7 +9,8 @@ import scalanative.linker.{Trait, Class}
 import scala.scalanative.build.TargetArchitecture
 
 class Metadata(val linked: linker.Result,
-               proxies: Seq[Defn]) {
+               proxies: Seq[Defn],
+               val targetArchitecture: TargetArchitecture) {
   val rtti   = mutable.Map.empty[linker.Info, RuntimeTypeInformation]
   val vtable = mutable.Map.empty[linker.Class, VirtualTable]
   val layout = mutable.Map.empty[linker.Class, FieldLayout]
