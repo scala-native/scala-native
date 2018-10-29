@@ -27,8 +27,7 @@ object ClassPath {
   private[scalanative] def apply(directory: VirtualDirectory): ClassPath =
     new Impl(directory)
 
-  private final class Impl(directory: VirtualDirectory)
-      extends ClassPath {
+  private final class Impl(directory: VirtualDirectory) extends ClassPath {
     private val files =
       directory.files
         .filter(_.toString.endsWith(".nir"))

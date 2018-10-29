@@ -37,7 +37,7 @@ object MemoryLayout {
     ty match {
       case primitive: Type.Primitive => math.max(primitive.width / WORD_SIZE, 1)
       case Type.ArrayValue(arrTy, n) => sizeOf(arrTy, targetArchitecture) * n
-      case Type.StructValue(tys) => MemoryLayout(tys, targetArchitecture).size
+      case Type.StructValue(tys)     => MemoryLayout(tys, targetArchitecture).size
       case Type.Nothing | Type.Ptr | _: Type.RefKind =>
         math.max((if (targetArchitecture.is32) 32 else 64) / WORD_SIZE, 1)
       case _ => unsupported(s"sizeOf $ty")
