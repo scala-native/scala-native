@@ -100,7 +100,7 @@ object Discover {
       case "x86_64"  => x86_64
       case "i386"    => i386
       case "i686"    => i686
-      case "armv7l"  => arm
+      case "armv7l"  => armv7l
       case "aarch64" => aarch64
       case other =>
         println(

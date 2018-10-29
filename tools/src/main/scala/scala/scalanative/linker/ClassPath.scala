@@ -20,15 +20,14 @@ sealed trait ClassPath {
 object ClassPath {
 
   /** Create classpath based on the directory. */
-  def apply(directory: Path, config: build.Config): ClassPath =
-    new Impl(VirtualDirectory.local(directory), config)
+  def apply(directory: Path): ClassPath =
+    new Impl(VirtualDirectory.local(directory))
 
   /** Create classpath based on the virtual directory. */
-  private[scalanative] def apply(directory: VirtualDirectory,
-                                 config: build.Config): ClassPath =
-    new Impl(directory, config)
+  private[scalanative] def apply(directory: VirtualDirectory): ClassPath =
+    new Impl(directory)
 
-  private final class Impl(directory: VirtualDirectory, config: build.Config)
+  private final class Impl(directory: VirtualDirectory)
       extends ClassPath {
     private val files =
       directory.files

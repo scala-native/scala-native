@@ -145,7 +145,6 @@ object ScalaNativePluginInternal {
         .withMode(mode)
         .withLinkStubs(nativeLinkStubs.value)
         .withLTO(nativeLTO.value)
-        .withTargetArchitecture(nativeTargetArchitecture.value)
     },
     nativeLink := {
       val logger  = streams.value.log.toLogger

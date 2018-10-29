@@ -18,6 +18,6 @@ object TargetArchitecture {
   case object i386    extends TargetArchitecture(ThirtyTwo)
   case object i686    extends TargetArchitecture(ThirtyTwo)
   case object x86_64  extends TargetArchitecture(SixtyFour)
-  case object arm     extends TargetArchitecture(ThirtyTwo)
+  case object armv7l  extends TargetArchitecture(ThirtyTwo)
   case object aarch64 extends TargetArchitecture(SixtyFour)
 }
