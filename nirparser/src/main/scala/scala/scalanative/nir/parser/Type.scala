@@ -14,6 +14,10 @@ object Type extends Base[nir.Type] {
   val Vararg = P("...".! map (_ => nir.Type.Vararg))
   val Ptr    = P("ptr".! map (_ => nir.Type.Ptr))
   val Bool   = P("bool".! map (_ => nir.Type.Bool))
+  val UByte  = P("ubyte".! map (_ => nir.Type.UByte))
+  val UShort = P("ushort".! map (_ => nir.Type.UShort))
+  val UInt   = P("uint".! map (_ => nir.Type.UInt))
+  val ULong  = P("ulong".! map (_ => nir.Type.ULong))
   val Byte   = P("byte".! map (_ => nir.Type.Byte))
   val Short  = P("short".! map (_ => nir.Type.Short))
   val Int    = P("int".! map (_ => nir.Type.Int))
@@ -28,20 +32,14 @@ object Type extends Base[nir.Type] {
     P("(" ~ Type.parser.rep(sep = ",") ~ ")" ~ "=>" ~ Type.parser map {
       case (args, ret) => nir.Type.Function(args, ret)
     })
-  val NoneStructValue =
-    P(
-      "{" ~ Type.parser.rep(sep = ",") ~ "}" map (nir.Type
-        .StructValue(nir.Global.None, _)))
-  val StructValue = P(
-    "structvalue" ~ Global.parser map (nir.Type.StructValue(_, Nil)))
+  val StructValue =
+    P("{" ~ Type.parser.rep(sep = ",") ~ "}" map (nir.Type.StructValue(_)))
   val Nothing = P("nothing".! map (_ => nir.Type.Nothing))
   val Var     = P("var[" ~ Type.parser ~ "]" map (nir.Type.Var(_)))
   val Unit    = P("unit".! map (_ => nir.Type.Unit))
   val Array   = P("array[" ~ Type.parser ~ "]" map (nir.Type.Array(_)))
-  val Class   = P("class" ~ Global.parser map (nir.Type.Class(_)))
-  val Trait   = P("trait" ~ Global.parser map (nir.Type.Trait(_)))
-  val Module  = P("module" ~ Global.parser map (nir.Type.Module(_)))
+  val Ref     = Global.parser.map(nir.Type.Ref(_))
 
   override val parser: P[nir.Type] =
-    None | Void | Vararg | Ptr | Bool | Byte | Short | Int | Long | Float | Double | ArrayValue | Function | NoneStructValue | StructValue | Nothing | Var | Unit | Array | Class | Trait | Module
+    None | Void | Vararg | Ptr | Bool | UByte | UShort | UInt | ULong | Byte | Short | Int | Long | Float | Double | ArrayValue | Function | StructValue | Nothing | Var | Unit | Array | Ref
 }

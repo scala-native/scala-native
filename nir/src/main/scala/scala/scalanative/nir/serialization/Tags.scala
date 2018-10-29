@@ -91,8 +91,7 @@ object Tags {
   final val ConstDefn   = 1 + VarDefn
   final val DeclareDefn = 1 + ConstDefn
   final val DefineDefn  = 1 + DeclareDefn
-  final val StructDefn  = 1 + DefineDefn
-  final val TraitDefn   = 1 + StructDefn
+  final val TraitDefn   = 1 + DefineDefn
   final val ClassDefn   = 1 + TraitDefn
   final val ModuleDefn  = 1 + ClassDefn
 
@@ -119,9 +118,21 @@ object Tags {
   final val TopGlobal    = 1 + NoneGlobal
   final val MemberGlobal = 1 + TopGlobal
 
+  // Sigs
+
+  final def Sig = Global + 32
+
+  final val FieldSig     = 1 + Sig
+  final val CtorSig      = 1 + FieldSig
+  final val MethodSig    = 1 + CtorSig
+  final val ProxySig     = 1 + MethodSig
+  final val ExternSig    = 1 + ProxySig
+  final val GeneratedSig = 1 + ExternSig
+  final val DuplicateSig = 1 + GeneratedSig
+
   // Nexts
 
-  final val Next = Global + 32
+  final val Next = Sig + 32
 
   final val NoneNext   = 1 + Next
   final val UnwindNext = 1 + NoneNext
@@ -187,13 +198,13 @@ object Tags {
   final val ArrayValueType  = 1 + DoubleType
   final val StructValueType = 1 + ArrayValueType
   final val FunctionType    = 1 + StructValueType
-  final val NothingType     = 1 + FunctionType
-  final val VarType         = 1 + NothingType
+  final val NullType        = 1 + FunctionType
+  final val NothingType     = 1 + NullType
+  final val VirtualType     = 1 + NothingType
+  final val VarType         = 1 + VirtualType
   final val UnitType        = 1 + VarType
   final val ArrayType       = 1 + UnitType
-  final val ClassType       = 1 + ArrayType
-  final val TraitType       = 1 + ClassType
-  final val ModuleType      = 1 + TraitType
+  final val RefType         = 1 + ArrayType
 
   // Values
 
@@ -218,4 +229,5 @@ object Tags {
   final val UnitVal        = 1 + GlobalVal
   final val ConstVal       = 1 + UnitVal
   final val StringVal      = 1 + ConstVal
+  final val VirtualVal     = 1 + StringVal
 }

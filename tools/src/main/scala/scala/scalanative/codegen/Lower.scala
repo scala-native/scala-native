@@ -48,17 +48,10 @@ object Lower {
       defns.foreach {
         case _: Defn.Class | _: Defn.Module | _: Defn.Trait =>
           ()
-        case defn @ Defn.Declare(attrs, name, _) if attrs.isExtern =>
-          buf += onDefn(defn.copy(name = hoistExtern(name)))
-        case defn @ Defn.Define(attrs, name, _, _) if attrs.isExtern =>
-          buf += onDefn(defn.copy(name = hoistExtern(name)))
-        case defn @ Defn.Const(attrs, name, _, _) if attrs.isExtern =>
-          buf += onDefn(defn.copy(name = hoistExtern(name)))
-        case defn @ Defn.Var(attrs, name, _, _) if attrs.isExtern =>
-          buf += onDefn(defn.copy(name = hoistExtern(name)))
-        case Defn.Declare(_, MethodRef(_: Class | _: Trait, _), _) =>
+        case Defn.Declare(attrs, MethodRef(_: Class | _: Trait, _), _)
+            if !attrs.isExtern =>
           ()
-        case Defn.Var(_, FieldRef(_: Class, _), _, _) =>
+        case Defn.Var(attrs, FieldRef(_: Class, _), _, _) if !attrs.isExtern =>
           ()
         case defn =>
           buf += onDefn(defn)
@@ -119,11 +112,6 @@ object Lower {
     }
 
     override def onVal(value: Val): Val = value match {
-      case Val.Global(n @ Global.Member(_, id), ty)
-          if id.startsWith("extern.__") =>
-        Val.Global(hoistExtern(n), ty)
-      case Val.Global(n @ Ref(node), ty) if node.attrs.isExtern =>
-        Val.Global(hoistExtern(n), ty)
       case Val.Global(ScopeRef(node), _) =>
         Val.Global(rtti(node).name, Type.Ptr)
       case Val.String(v) =>
@@ -286,12 +274,12 @@ object Lower {
                        unwind: Next): Unit = {
       import buf._
 
-      val Op.Dynmethod(obj, signature) = op
+      val Op.Dynmethod(obj, sig) = op
 
       def throwInstrs(): Unit = {
         val exc = Val.Local(fresh(), Type.Ptr)
         genClassallocOp(buf, exc.name, Op.Classalloc(excptnGlobal), unwind)
-        let(Op.Call(excInitSig, excInit, Seq(exc, Val.String(signature))),
+        let(Op.Call(excInitSig, excInit, Seq(exc, Val.String(sig.mangle))),
             unwind)
         genThrow(buf, exc, Next.None)
       }
@@ -310,7 +298,7 @@ object Lower {
         throwIfCond(Op.Comp(Comp.Ieq, Type.Ptr, value, Val.Null))
 
       val methodIndex =
-        meta.linked.dynsigs.zipWithIndex.find(_._1 == signature).get._2
+        meta.linked.dynsigs.zipWithIndex.find(_._1 == sig).get._2
 
       // Load the type information pointer
       val typeptr = let(Op.Load(Type.Ptr, obj), unwind)
@@ -477,43 +465,39 @@ object Lower {
 
     def genBoxOp(buf: Buffer, n: Local, op: Op.Box, unwind: Next): Unit = {
       val Op.Box(ty, from) = op
-      val (module, id)     = BoxTo(ty)
+
+      val methodName = BoxTo(ty)
+      val moduleName = methodName.top
 
       val boxTy =
-        Type.Function(Seq(Type.Module(module), Type.unbox(ty)), ty)
+        Type.Function(Seq(Type.Ref(moduleName), Type.unbox(ty)), ty)
 
-      buf.let(n,
-              Op.Call(boxTy,
-                      Val.Global(Global.Member(module, id), Type.Ptr),
-                      Seq(
-                        Val.Undef(Type.Module(module)),
-                        from
-                      )),
-              unwind)
+      buf.let(
+        n,
+        Op.Call(boxTy, Val.Global(methodName, Type.Ptr), Seq(Val.Null, from)),
+        unwind)
     }
 
     def genUnboxOp(buf: Buffer, n: Local, op: Op.Unbox, unwind: Next): Unit = {
       val Op.Unbox(ty, from) = op
-      val (module, id)       = UnboxTo(ty)
+
+      val methodName = UnboxTo(ty)
+      val moduleName = methodName.top
 
       val unboxTy =
-        Type.Function(Seq(Type.Module(module), ty), Type.unbox(ty))
+        Type.Function(Seq(Type.Ref(moduleName), ty), Type.unbox(ty))
 
-      buf.let(n,
-              Op.Call(unboxTy,
-                      Val.Global(Global.Member(module, id), Type.Ptr),
-                      Seq(
-                        Val.Undef(Type.Module(module)),
-                        from
-                      )),
-              unwind)
+      buf.let(
+        n,
+        Op.Call(unboxTy, Val.Global(methodName, Type.Ptr), Seq(Val.Null, from)),
+        unwind)
     }
 
     def genModuleOp(buf: Buffer, n: Local, op: Op.Module, unwind: Next) = {
       val Op.Module(name) = op
 
-      val loadSig = Type.Function(Seq(), Type.Class(name))
-      val load    = Val.Global(name member "load", Type.Ptr)
+      val loadSig = Type.Function(Seq(), Type.Ref(name))
+      val load    = Val.Global(name.member(Sig.Generated("load")), Type.Ptr)
 
       buf.let(n, Op.Call(loadSig, load, Seq()), unwind)
     }
@@ -587,7 +571,6 @@ object Lower {
       val charsLength = Val.Int(chars.length)
       val charsConst = Val.Const(
         Val.StructValue(
-          Global.None,
           Seq(
             rtti(CharArrayCls).const,
             charsLength,
@@ -604,8 +587,7 @@ object Lower {
         case _                        => util.unreachable
       }
 
-      Val.Const(
-        Val.StructValue(Global.None, rtti(StringCls).const +: fieldValues))
+      Val.Const(Val.StructValue(rtti(StringCls).const +: fieldValues))
     }
 
     // Update java.lang.String::hashCode whenever you change this method.
@@ -622,44 +604,38 @@ object Lower {
         }
         hash
       }
-
-    def hoistExtern(n: Global): Global = {
-      val id = n.id
-      assert(id.startsWith("extern."))
-      // strip extern. prefix and move it to top-level
-      Global.Top(id.substring(7))
-    }
   }
 
   val LARGE_OBJECT_MIN_SIZE = 8192
 
   val allocSig = Type.Function(Seq(Type.Ptr, Type.Long), Type.Ptr)
 
-  val allocSmallName = Global.Top("scalanative_alloc_small")
+  val allocSmallName = extern("scalanative_alloc_small")
   val alloc          = Val.Global(allocSmallName, allocSig)
 
-  val largeAllocName = Global.Top("scalanative_alloc_large")
+  val largeAllocName = extern("scalanative_alloc_large")
   val largeAlloc     = Val.Global(largeAllocName, allocSig)
 
-  val dyndispatchName = Global.Top("scalanative_dyndispatch")
+  val dyndispatchName = extern("scalanative_dyndispatch")
   val dyndispatchSig =
     Type.Function(Seq(Type.Ptr, Type.Int), Type.Ptr)
   val dyndispatch = Val.Global(dyndispatchName, dyndispatchSig)
 
   val excptnGlobal = Global.Top("java.lang.NoSuchMethodException")
   val excptnInitGlobal =
-    Global.Member(excptnGlobal, "init_java.lang.String")
+    Global.Member(excptnGlobal, Sig.Ctor(Seq(nir.Rt.String)))
 
   val excInitSig = Type.Function(
-    Seq(Type.Class(excptnGlobal), Type.Class(Global.Top("java.lang.String"))),
+    Seq(Type.Ref(excptnGlobal), Type.Ref(Global.Top("java.lang.String"))),
     Type.Unit)
   val excInit = Val.Global(excptnInitGlobal, Type.Ptr)
 
-  val StringName               = Rt.String.name
-  val StringValueName          = StringName member "value" tag "field"
-  val StringOffsetName         = StringName member "offset" tag "field"
-  val StringCountName          = StringName member "count" tag "field"
-  val StringCachedHashCodeName = StringName member "cachedHashCode" tag "field"
+  val StringName       = Rt.String.name
+  val StringValueName  = StringName.member(Sig.Field("value"))
+  val StringOffsetName = StringName.member(Sig.Field("offset"))
+  val StringCountName  = StringName.member(Sig.Field("count"))
+  val StringCachedHashCodeName =
+    StringName.member(Sig.Field("cachedHashCode"))
 
   val CharArrayName =
     Global.Top("scala.scalanative.runtime.CharArray")
@@ -667,121 +643,154 @@ object Lower {
   val BoxesRunTime = Global.Top("scala.runtime.BoxesRunTime$")
   val RuntimeBoxes = Global.Top("scala.scalanative.runtime.Boxes$")
 
-  val BoxTo: Map[Type, (Global, String)] = Seq(
-    ("java.lang.Boolean", BoxesRunTime, "boxToBoolean_bool_java.lang.Boolean"),
-    ("java.lang.Character",
-     BoxesRunTime,
-     "boxToCharacter_char_java.lang.Character"),
-    ("scala.scalanative.native.UByte",
-     RuntimeBoxes,
-     "boxToUByte_i8_java.lang.Object"),
-    ("java.lang.Byte", BoxesRunTime, "boxToByte_i8_java.lang.Byte"),
-    ("scala.scalanative.native.UShort",
-     RuntimeBoxes,
-     "boxToUShort_i16_java.lang.Object"),
-    ("java.lang.Short", BoxesRunTime, "boxToShort_i16_java.lang.Short"),
-    ("scala.scalanative.native.UInt",
-     RuntimeBoxes,
-     "boxToUInt_i32_java.lang.Object"),
-    ("java.lang.Integer", BoxesRunTime, "boxToInteger_i32_java.lang.Integer"),
-    ("scala.scalanative.native.ULong",
-     RuntimeBoxes,
-     "boxToULong_i64_java.lang.Object"),
-    ("java.lang.Long", BoxesRunTime, "boxToLong_i64_java.lang.Long"),
-    ("java.lang.Float", BoxesRunTime, "boxToFloat_f32_java.lang.Float"),
-    ("java.lang.Double", BoxesRunTime, "boxToDouble_f64_java.lang.Double")
-  ).map {
-    case (name, module, id) =>
-      Type.Class(Global.Top(name)) -> (module, id)
+  val BoxTo: Map[Type, Global] = Seq(
+    "java.lang.Boolean",
+    "java.lang.Character",
+    "scala.scalanative.native.UByte",
+    "java.lang.Byte",
+    "scala.scalanative.native.UShort",
+    "java.lang.Short",
+    "scala.scalanative.native.UInt",
+    "java.lang.Integer",
+    "scala.scalanative.native.ULong",
+    "java.lang.Long",
+    "java.lang.Float",
+    "java.lang.Double"
+  ).map { name =>
+    val boxty = Type.Ref(Global.Top(name))
+    val module =
+      if (name.startsWith("java.lang")) BoxesRunTime else RuntimeBoxes
+    val id    = "boxTo" + name.split("\\.").last
+    val retty = if (name.startsWith("java.lang")) boxty else nir.Rt.Object
+    val tys   = Seq(toSigned(nir.Type.unbox(boxty)), retty)
+    val meth  = module.member(Sig.Method(id, tys))
+
+    boxty -> meth
   }.toMap
 
-  val UnboxTo: Map[Type, (Global, String)] = Seq(
-    ("java.lang.Boolean", BoxesRunTime, "unboxToBoolean_java.lang.Object_bool"),
-    ("java.lang.Character", BoxesRunTime, "unboxToChar_java.lang.Object_char"),
-    ("scala.scalanative.native.UByte",
-     RuntimeBoxes,
-     "unboxToUByte_java.lang.Object_i8"),
-    ("java.lang.Byte", BoxesRunTime, "unboxToByte_java.lang.Object_i8"),
-    ("scala.scalanative.native.UShort",
-     RuntimeBoxes,
-     "unboxToUShort_java.lang.Object_i16"),
-    ("java.lang.Short", BoxesRunTime, "unboxToShort_java.lang.Object_i16"),
-    ("scala.scalanative.native.UInt",
-     RuntimeBoxes,
-     "unboxToUInt_java.lang.Object_i32"),
-    ("java.lang.Integer", BoxesRunTime, "unboxToInt_java.lang.Object_i32"),
-    ("scala.scalanative.native.ULong",
-     RuntimeBoxes,
-     "unboxToULong_java.lang.Object_i64"),
-    ("java.lang.Long", BoxesRunTime, "unboxToLong_java.lang.Object_i64"),
-    ("java.lang.Float", BoxesRunTime, "unboxToFloat_java.lang.Object_f32"),
-    ("java.lang.Double", BoxesRunTime, "unboxToDouble_java.lang.Object_f64")
-  ).map {
-    case (name, module, id) =>
-      Type.Class(Global.Top(name)) -> (module, id)
+  val UnboxTo: Map[Type, Global] = Seq(
+    "java.lang.Boolean",
+    "java.lang.Character",
+    "scala.scalanative.native.UByte",
+    "java.lang.Byte",
+    "scala.scalanative.native.UShort",
+    "java.lang.Short",
+    "scala.scalanative.native.UInt",
+    "java.lang.Integer",
+    "scala.scalanative.native.ULong",
+    "java.lang.Long",
+    "java.lang.Float",
+    "java.lang.Double"
+  ).map { name =>
+    val boxty = Type.Ref(Global.Top(name))
+    val module =
+      if (name.startsWith("java.lang")) BoxesRunTime else RuntimeBoxes
+    val id = {
+      val last = name.split("\\.").last
+      val suffix =
+        if (last == "Integer") "Int"
+        else if (last == "Character") "Char"
+        else last
+      "unboxTo" + suffix
+    }
+    val tys  = Seq(nir.Rt.Object, toSigned(nir.Type.unbox(boxty)))
+    val meth = module.member(Sig.Method(id, tys))
+
+    boxty -> meth
   }.toMap
 
-  val unitName  = Global.Top("scala.scalanative.runtime.BoxedUnit$")
-  val unit      = Val.Global(unitName, Type.Ptr)
-  val unitTy    = Type.StructValue(unitName member "layout", Seq(Type.Ptr))
-  val unitConst = Val.Global(unitName member "type", Type.Ptr)
-  val unitValue = Val.StructValue(unitTy.name, Seq(unitConst))
+  private def extern(id: String): Global =
+    Global.Member(Global.Top("__"), Sig.Extern(id))
 
-  val throwName = Global.Top("scalanative_throw")
+  private def toSigned(ty: Type): Type = ty match {
+    case Type.UByte  => Type.Byte
+    case Type.UShort => Type.Short
+    case Type.UInt   => Type.Int
+    case Type.ULong  => Type.Long
+    case _           => ty
+  }
+
+  val unitName = Global.Top("scala.scalanative.runtime.BoxedUnit$")
+  val unit     = Val.Global(unitName, Type.Ptr)
+  val unitTy =
+    Type.StructValue(Seq(Type.Ptr))
+  val unitConst =
+    Val.Global(unitName.member(Sig.Generated("type")), Type.Ptr)
+  val unitValue = Val.StructValue(Seq(unitConst))
+
+  val throwName = extern("scalanative_throw")
   val throwSig  = Type.Function(Seq(Type.Ptr), Type.Void)
   val throw_    = Val.Global(throwName, Type.Ptr)
 
   val arrayAlloc = Type.typeToArray.map {
-    case (ty, arrty) =>
-      val arr = Type.Class(arrty).mangle
-      ty -> Global.Member(Global.Top(arr + "$"), "alloc_i32_" + arr)
+    case (ty, arrname) =>
+      val Global.Top(id) = arrname
+      val arrcls         = Type.Ref(arrname)
+      ty -> Global.Member(Global.Top(id + "$"),
+                          Sig.Method("alloc", Seq(Type.Int, arrcls)))
   }.toMap
   val arrayAllocSig = Type.typeToArray.map {
-    case (ty, arrty) =>
-      ty -> Type.Function(Seq(Type.Module(arrty), Type.Int), Type.Class(arrty))
+    case (ty, arrname) =>
+      val Global.Top(id) = arrname
+      ty -> Type.Function(Seq(Type.Ref(Global.Top(id + "$")), Type.Int),
+                          Type.Ref(arrname))
   }.toMap
   val arraySnapshot = Type.typeToArray.map {
-    case (ty, arrty) =>
-      val arr = Type.Class(arrty).mangle
-      ty -> Global.Member(Global.Top(arr + "$"), "snapshot_i32_ptr_" + arr)
+    case (ty, arrname) =>
+      val Global.Top(id) = arrname
+      val arrcls         = Type.Ref(arrname)
+      ty -> Global.Member(
+        Global.Top(id + "$"),
+        Sig.Method("snapshot", Seq(Type.Int, Type.Ptr, arrcls)))
   }.toMap
   val arraySnapshotSig = Type.typeToArray.map {
-    case (ty, arrty) =>
-      ty -> Type.Function(Seq(Type.Module(arrty), Type.Int, Type.Ptr),
-                          Type.Class(arrty))
+    case (ty, arrname) =>
+      val Global.Top(id) = arrname
+      ty -> Type.Function(
+        Seq(Type.Ref(Global.Top(id + "$")), Type.Int, Type.Ptr),
+        Type.Ref(arrname))
   }.toMap
   val arrayApplyGeneric = Type.typeToArray.map {
-    case (ty, arrty) =>
-      ty -> Global.Member(arrty, "apply_i32_java.lang.Object")
+    case (ty, arrname) =>
+      ty -> Global.Member(arrname,
+                          Sig.Method("apply", Seq(Type.Int, nir.Rt.Object)))
   }
   val arrayApply = Type.typeToArray.map {
-    case (ty, arrty) =>
-      ty -> Global.Member(arrty, "apply_i32_" + ty.mangle)
+    case (ty, arrname) =>
+      ty -> Global.Member(arrname, Sig.Method("apply", Seq(Type.Int, ty)))
   }.toMap
   val arrayApplySig = Type.typeToArray.map {
-    case (ty, arrty) =>
-      ty -> Type.Function(Seq(Type.Class(arrty), Type.Int), ty)
+    case (ty, arrname) =>
+      ty -> Type.Function(Seq(Type.Ref(arrname), Type.Int), ty)
   }.toMap
   val arrayUpdateGeneric = Type.typeToArray.map {
-    case (ty, arrty) =>
-      ty -> Global.Member(arrty, "update_i32_java.lang.Object_unit")
+    case (ty, arrname) =>
+      ty -> Global.Member(
+        arrname,
+        Sig.Method("update", Seq(Type.Int, nir.Rt.Object, Type.Unit)))
   }
   val arrayUpdate = Type.typeToArray.map {
-    case (ty @ Type.Unit, arrty) =>
-      ty -> Global.Member(arrty, "update_i32_scala.runtime.BoxedUnit_unit")
-    case (ty, arrty) =>
-      ty -> Global.Member(arrty, "update_i32_" + ty.mangle + "_unit")
+    case (ty @ Type.Unit, arrname) =>
+      ty -> Global.Member(
+        arrname,
+        Sig.Method("update",
+                   Seq(Type.Int,
+                       Type.Ref(Global.Top("scala.runtime.BoxedUnit")),
+                       Type.Unit)))
+    case (ty, arrname) =>
+      ty -> Global.Member(arrname,
+                          Sig.Method("update", Seq(Type.Int, ty, Type.Unit)))
   }.toMap
   val arrayUpdateSig = Type.typeToArray.map {
-    case (ty, arrty) =>
-      ty -> Type.Function(Seq(Type.Class(arrty), Type.Int, ty), Type.Unit)
+    case (ty, arrname) =>
+      ty -> Type.Function(Seq(Type.Ref(arrname), Type.Int, ty), Type.Unit)
   }.toMap
   val arrayLength =
-    Global.Member(Global.Top("scala.scalanative.runtime.Array"), "length_i32")
+    Global.Member(Global.Top("scala.scalanative.runtime.Array"),
+                  Sig.Method("length", Seq(Type.Int)))
   val arrayLengthSig =
-    Type.Function(
-      Seq(Type.Class(Global.Top("scala.scalanative.runtime.Array"))),
-      Type.Int)
+    Type.Function(Seq(Type.Ref(Global.Top("scala.scalanative.runtime.Array"))),
+                  Type.Int)
 
   val injects: Seq[Defn] = {
     val buf = mutable.UnrolledBuffer.empty[Defn]
@@ -806,8 +815,8 @@ object Lower {
     buf += BoxesRunTime
     buf += RuntimeBoxes
     buf += unitName
-    buf ++= BoxTo.values.map { case (owner, id)   => Global.Member(owner, id) }
-    buf ++= UnboxTo.values.map { case (owner, id) => Global.Member(owner, id) }
+    buf ++= BoxTo.values
+    buf ++= UnboxTo.values
     buf += arrayLength
     buf ++= arrayAlloc.values
     buf ++= arraySnapshot.values

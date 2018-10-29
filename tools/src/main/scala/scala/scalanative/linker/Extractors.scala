@@ -5,9 +5,12 @@ import scalanative.nir._
 
 trait Extractor[T] {
   def unapply(ty: Type)(implicit linked: Result): Option[T] = ty match {
-    case ty: Type.Named => unapply(ty.name)
-    case Type.Array(ty) => unapply(Type.toArrayClass(ty))
-    case _              => None
+    case Type.Array(ty, _) =>
+      unapply(Type.toArrayClass(ty))
+    case Type.Ref(name, _, _) =>
+      unapply(name)
+    case _ =>
+      None
   }
   def unapply(name: Global)(implicit linked: Result): Option[T]
 }
@@ -21,13 +24,6 @@ object ScopeRef extends Extractor[ScopeInfo] {
   def unapply(name: Global)(implicit linked: Result): Option[ScopeInfo] =
     linked.infos.get(name).collect {
       case node: ScopeInfo => node
-    }
-}
-
-object StructRef extends Extractor[Struct] {
-  def unapply(name: Global)(implicit linked: Result): Option[Struct] =
-    linked.infos.get(name).collect {
-      case node: Struct => node
     }
 }
 

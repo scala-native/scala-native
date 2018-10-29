@@ -3,7 +3,7 @@ package nir
 
 import java.util.concurrent.atomic.AtomicInteger
 
-final class Fresh private (private var start: Int) {
+final class Fresh private (private var start: Long) {
   def apply(): Local = {
     start += 1
     val value = start
@@ -12,11 +12,11 @@ final class Fresh private (private var start: Int) {
 }
 
 object Fresh {
-  def apply(start: Int = 0): Fresh =
+  def apply(start: Long = 0L): Fresh =
     new Fresh(start)
 
   def apply(insts: Seq[Inst]): Fresh = {
-    var max = -1
+    var max = -1L
     insts.foreach {
       case Inst.Let(local, _, _) =>
         max = Math.max(max, local.id)

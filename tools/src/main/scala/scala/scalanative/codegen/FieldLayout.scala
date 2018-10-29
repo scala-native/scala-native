@@ -15,19 +15,16 @@ class FieldLayout(meta: Metadata, cls: Class) {
     }
     base ++ cls.members.collect { case f: Field => f }
   }
-  val name = cls.name member "layout"
   val struct: Type.StructValue = {
     val data = entries.map(_.ty)
     val body = Type.Ptr +: data
-    val ty   = Type.StructValue(name, body)
-    Type.StructValue(name, body)
+    Type.StructValue(body)
   }
   val layout = MemoryLayout(struct.tys)
   val size   = layout.size
   val referenceOffsetsTy =
-    Type.StructValue(Global.None, Seq(Type.Ptr))
+    Type.StructValue(Seq(Type.Ptr))
   val referenceOffsetsValue =
     Val.StructValue(
-      Global.None,
       Seq(Val.Const(Val.ArrayValue(Type.Long, layout.offsetArray))))
 }

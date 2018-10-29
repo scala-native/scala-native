@@ -4,24 +4,15 @@ package nir
 import fastparse.all.Parsed
 import org.scalatest._
 
-class GlobalParserTest extends FlatSpec with Matchers {
+class GlobalParserTest extends FunSuite {
 
-  "The NIR parser" should "parse `Global.Top`" in {
-    val top: Global               = Global.Top("java.lang.String")
-    val Parsed.Success(result, _) = parser.Global.Top.parse(top.show)
-    result should be(top)
-  }
-
-  it should "parse `Global.Member`" in {
-    val member: Global            = Global.Top("java.lang.String") member "foobar"
-    val Parsed.Success(result, _) = parser.Global.Member.parse(member.show)
-    result should be(member)
-  }
-
-  it should "parse a global with a decoded name" in {
-    val global =
-      """@scala.collection.TraversableOnce::/:_java.lang.Object_scala.Function2_java.lang.Object"""
-    val Parsed.Success(result, _) = parser.Global(global)
-    result.show should be(global)
+  Seq[Global](
+    Global.Top("java.lang.String"),
+    Global.Top("java.lang.String") member Sig.Method("foobar", Seq(Type.Unit))
+  ).foreach { global =>
+    test(s"parse global `${global.show}`") {
+      val Parsed.Success(result, _) = parser.Global.parser.parse(global.show)
+      assert(result == global)
+    }
   }
 }

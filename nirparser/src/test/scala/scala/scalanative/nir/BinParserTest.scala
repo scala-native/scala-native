@@ -4,32 +4,30 @@ package nir
 import fastparse.all.Parsed
 import org.scalatest._
 
-class BinParserTest extends FlatSpec with Matchers {
+class BinParserTest extends FunSuite {
+  import Bin._
 
-  "The NIR parser" should "parse bin operations" in {
-    import Bin._
-    val bins: Seq[Bin] = Seq(Iadd,
-                             Fadd,
-                             Isub,
-                             Fsub,
-                             Imul,
-                             Fmul,
-                             Sdiv,
-                             Udiv,
-                             Fdiv,
-                             Srem,
-                             Urem,
-                             Frem,
-                             Shl,
-                             Lshr,
-                             Ashr,
-                             And,
-                             Or,
-                             Xor)
-
-    bins foreach { bin =>
+  Seq[Bin](Iadd,
+           Fadd,
+           Isub,
+           Fsub,
+           Imul,
+           Fmul,
+           Sdiv,
+           Udiv,
+           Fdiv,
+           Srem,
+           Urem,
+           Frem,
+           Shl,
+           Lshr,
+           Ashr,
+           And,
+           Or,
+           Xor).foreach { bin =>
+    test(s"parse bin `${bin.show}`") {
       val Parsed.Success(result, _) = parser.Bin.parser.parse(bin.show)
-      result should be(bin)
+      assert(result == bin)
     }
   }
 }
