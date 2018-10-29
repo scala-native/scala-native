@@ -14,7 +14,7 @@ unmanagedSourceDirectories in Compile ++= {
 
 libraryDependencies ++= Seq(
   "org.scala-sbt"    % "scripted-plugin"      % sbtVersion.value,
-  "org.eclipse.jgit" % "org.eclipse.jgit.pgm" % "3.2.0.201312181205-r"
+  "org.eclipse.jgit" % "org.eclipse.jgit.pgm" % "3.7.1.201504261725-r"
 )
 
 addSbtPlugin("org.portable-scala" % "sbt-platform-deps" % "1.0.0")
