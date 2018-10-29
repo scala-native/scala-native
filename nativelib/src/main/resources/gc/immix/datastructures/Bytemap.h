@@ -38,14 +38,6 @@ static inline ObjectMeta *Bytemap_Get(Bytemap *bytemap, word_t *address) {
     return &bytemap->data[index];
 }
 
-static inline ObjectMeta *Bytemap_PreviousWord(ObjectMeta *cursor) {
-    return cursor - 1;
-}
-
-static inline ObjectMeta *Bytemap_NextWord(ObjectMeta *cursor) {
-    return cursor + 1;
-}
-
 static inline ObjectMeta *Bytemap_NextLine(ObjectMeta *cursor) {
     return cursor + WORDS_IN_LINE / ALLOCATION_ALIGNMENT_WORDS;
 }
