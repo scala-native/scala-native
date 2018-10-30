@@ -3,10 +3,10 @@ import scala.util.Try
 import scalanative.sbtplugin.ScalaNativePluginInternal._
 import scalanative.io.packageNameFromPath
 
-val sbt13Version          = "0.13.16"
+val sbt13Version          = "0.13.17"
 val sbt13ScalaVersion     = "2.10.7"
-val sbt10Version          = "1.0.4"
-val sbt10ScalaVersion     = "2.12.4"
+val sbt10Version          = "1.2.6"
+val sbt10ScalaVersion     = "2.12.7"
 val libScalaVersion       = "2.11.12"
 val libCrossScalaVersions = Seq("2.11.8", "2.11.11", libScalaVersion)
 
@@ -330,7 +330,7 @@ lazy val sbtScalaNative =
       crossScalaVersions := libCrossScalaVersions,
       // fixed in https://github.com/sbt/sbt/pull/3397 (for sbt 0.13.17)
       sbtBinaryVersion in update := (sbtBinaryVersion in pluginCrossBuild).value,
-      addSbtPlugin("org.portable-scala" % "sbt-platform-deps" % "1.0.0-M2"),
+      addSbtPlugin("org.portable-scala" % "sbt-platform-deps" % "1.0.0"),
       sbtTestDirectory := (baseDirectory in ThisBuild).value / "scripted-tests",
       // `testInterfaceSerialization` needs to be available from the sbt plugin,
       // but it's a Scala Native project (and thus 2.11), and the plugin is 2.10 or 2.12.
