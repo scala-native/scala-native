@@ -10,10 +10,18 @@ void Stats_Init(Stats *stats, const char *statsFile) {
     stats->collections = 0;
 }
 
-void Stats_RecordCollection(Stats *stats, uint64_t start_ns, uint64_t sweep_start_ns, uint64_t end_ns) {
+void Stats_RecordMark(Stats *stats, uint64_t start_ns,  uint64_t end_ns) {
     uint64_t index = stats->collections % STATS_MEASUREMENTS;
-    stats->mark_time_ns[index] = sweep_start_ns - start_ns;
-    stats->sweep_time_ns[index] = end_ns - sweep_start_ns;
+    stats->mark_time_ns[index] = end_ns - start_ns;
+    stats->sweep_time_ns[index] = 0L;
+}
+
+void Stats_RecordLazySweep(Stats *stats, uint64_t start_ns,  uint64_t end_ns) {
+    uint64_t index = stats->collections % STATS_MEASUREMENTS;
+    stats->sweep_time_ns[index] += end_ns - start_ns;
+}
+
+void Stats_RecordCollectionDone(Stats *stats) {
     stats->collections += 1;
     if (stats->collections % STATS_MEASUREMENTS == 0) {
         Stats_writeToFile(stats);

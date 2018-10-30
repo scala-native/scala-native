@@ -14,7 +14,9 @@ typedef struct {
 } Stats;
 
 void Stats_Init(Stats *stats, const char *statsFile);
-void Stats_RecordCollection(Stats *stats, uint64_t start_ns, uint64_t sweep_start_ns, uint64_t end_ns);
+void Stats_RecordMark(Stats *stats, uint64_t start_ns, uint64_t end_ns);
+void Stats_RecordLazySweep(Stats *stats, uint64_t start_ns, uint64_t end_ns);
+void Stats_RecordCollectionDone(Stats *stats);
 void Stats_OnExit(Stats *stats);
 
 extern long long scalanative_nano_time();

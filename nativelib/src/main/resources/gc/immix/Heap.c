@@ -275,7 +275,7 @@ word_t *Heap_Alloc(Heap *heap, uint32_t objectSize) {
 
 void Heap_Collect(Heap *heap, Stack *stack) {
     assert(Heap_IsSweepDone(heap));
-    uint64_t start_ns, sweep_start_ns, end_ns;
+    uint64_t start_ns, end_ns;
     Stats *stats = heap->stats;
 #ifdef DEBUG_PRINT
     printf("\nCollect\n");
@@ -286,13 +286,10 @@ void Heap_Collect(Heap *heap, Stack *stack) {
     }
     Marker_MarkRoots(heap, stack);
     if (stats != NULL) {
-        sweep_start_ns = scalanative_nano_time();
+        end_ns = scalanative_nano_time();
+        Stats_RecordMark(stats, start_ns, end_ns);
     }
     Heap_Recycle(heap);
-    if (stats != NULL) {
-        end_ns = scalanative_nano_time();
-        Stats_RecordCollection(stats, start_ns, sweep_start_ns, end_ns);
-    }
 #ifdef DEBUG_PRINT
     printf("End collect\n");
     fflush(stdout);
@@ -319,6 +316,12 @@ bool Heap_shouldGrow(Heap *heap) {
 }
 
 void Heap_sweep(Heap *heap, uint32_t maxCount) {
+    uint64_t start_ns, end_ns;
+    Stats *stats = heap->stats;
+    if (stats != NULL) {
+        start_ns = scalanative_nano_time();
+    }
+
     uint32_t startIdx = heap->sweep.cursor;
     uint32_t limitIdx = startIdx + maxCount;
     heap->sweep.cursor = limitIdx;
@@ -348,6 +351,11 @@ void Heap_sweep(Heap *heap, uint32_t maxCount) {
         lineMetas += LINE_COUNT * size;
     }
     heap->sweep.cursorDone = limitIdx;
+
+    if (stats != NULL) {
+        end_ns = scalanative_nano_time();
+        Stats_RecordLazySweep(stats, start_ns, end_ns);
+    }
 
     if (Heap_IsSweepDone(heap)) {
         Heap_sweepDone(heap);
@@ -385,6 +393,10 @@ void Heap_sweepDone(Heap *heap) {
         Heap_exitWithOutOfMemory();
     }
     heap->sweep.cursorDone = SWEEP_DONE;
+    Stats *stats = heap->stats;
+    if (stats != NULL) {
+        Stats_RecordCollectionDone(stats);
+    }
 }
 
 void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
