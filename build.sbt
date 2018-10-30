@@ -5,8 +5,8 @@ import scalanative.io.packageNameFromPath
 
 val sbt13Version          = "0.13.17"
 val sbt13ScalaVersion     = "2.10.7"
-val sbt1Version           = "1.2.6"
-val sbt1ScalaVersion      = "2.12.7"
+val sbt10Version          = "1.2.6"
+val sbt10ScalaVersion     = "2.12.7"
 val libScalaVersion       = "2.11.12"
 val libCrossScalaVersions = Seq("2.11.8", "2.11.11", libScalaVersion)
 
@@ -208,11 +208,11 @@ lazy val noPublishSettings = Seq(
 lazy val toolSettings =
   baseSettings ++
     Seq(
-      crossSbtVersions := List(sbt13Version, sbt1Version),
+      crossSbtVersions := List(sbt13Version, sbt10Version),
       scalaVersion := {
         (sbtBinaryVersion in pluginCrossBuild).value match {
           case "0.13" => sbt13ScalaVersion
-          case _      => sbt1ScalaVersion
+          case _      => sbt10ScalaVersion
         }
       },
       scalacOptions ++= Seq(
@@ -603,7 +603,7 @@ lazy val testRunner =
     .settings(mavenPublishSettings)
     .in(file("test-runner"))
     .settings(
-      crossScalaVersions := Seq(sbt13ScalaVersion, sbt1ScalaVersion),
+      crossScalaVersions := Seq(sbt13ScalaVersion, sbt10ScalaVersion),
       libraryDependencies += "org.scala-sbt" % "test-interface" % "1.0",
       sources in Compile ++= (sources in testInterfaceSerialization in Compile).value
     )
