@@ -7,7 +7,6 @@
 #include "datastructures/Stack.h"
 #include "headers/ObjectHeader.h"
 #include "Block.h"
-#include "StackoverflowHandler.h"
 
 extern word_t *__modules;
 extern int __modules_size;
@@ -21,9 +20,7 @@ void Marker_markObject(Heap *heap, Stack *stack, Bytemap *bytemap,
 
     assert(Object_Size(object) != 0);
     Object_Mark(heap, object, objectMeta);
-    if (!overflow) {
-        overflow = Stack_Push(stack, object);
-    }
+    Stack_Push(stack, object);
 }
 
 void Marker_markConservative(Heap *heap, Stack *stack, word_t *address) {
@@ -77,7 +74,6 @@ void Marker_Mark(Heap *heap, Stack *stack) {
             }
         }
     }
-    StackOverflowHandler_CheckForOverflow();
 }
 
 void Marker_markProgramStack(Heap *heap, Stack *stack) {
