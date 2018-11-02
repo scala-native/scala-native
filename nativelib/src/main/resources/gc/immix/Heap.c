@@ -13,6 +13,7 @@
 #include "Memory.h"
 #include <memory.h>
 #include <time.h>
+#include <inttypes.h>
 
 // Allow read and write
 #define HEAP_MEM_PROT (PROT_READ | PROT_WRITE)
@@ -304,10 +305,10 @@ bool Heap_shouldGrow(Heap *heap) {
         blockCount - (freeBlockCount + recycledBlockCount);
 
 #ifdef DEBUG_PRINT
-    printf("\n\nBlock count: %llu\n", blockCount);
-    printf("Unavailable: %llu\n", unavailableBlockCount);
-    printf("Free: %llu\n", freeBlockCount);
-    printf("Recycled: %llu\n", recycledBlockCount);
+    printf("\n\nBlock count: %" PRIu32 "\n", blockCount);
+    printf("Unavailable: %" PRIu32 "\n", unavailableBlockCount);
+    printf("Free: %" PRIu32 "\n", freeBlockCount);
+    printf("Recycled: %" PRIu32 "\n", recycledBlockCount);
     fflush(stdout);
 #endif
 
@@ -405,7 +406,7 @@ void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
 
 #ifdef DEBUG_PRINT
     printf("Growing small heap by %zu bytes, to %zu bytes\n",
-           increment * WORD_SIZE,
+           incrementInBlocks * SPACE_USED_PER_BLOCK,
            heap->heapSize + incrementInBlocks * SPACE_USED_PER_BLOCK);
     fflush(stdout);
 #endif
