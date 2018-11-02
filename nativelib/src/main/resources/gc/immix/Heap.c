@@ -186,7 +186,7 @@ word_t *Heap_AllocLarge(Heap *heap, uint32_t size) {
 
         // After collection, try to alloc again, if it fails, grow the heap by
         // at least the size of the object we want to alloc
-        object = LargeAllocator_GetBlock(&largeAllocator, size);
+        object = Heap_lazySweepLarge(heap, size);
         if (object != NULL) {
             assert(Heap_IsWordInHeap(heap, (word_t *)object));
             return (word_t *)object;
