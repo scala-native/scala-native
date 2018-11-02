@@ -369,6 +369,7 @@ void Heap_Recycle(Heap *heap) {
     BlockAllocator_Clear(&blockAllocator);
 
     heap->sweep.cursor = 0;
+    heap->sweep.cursorDone = 0;
 }
 
 void Heap_sweepDone(Heap *heap) {
