@@ -288,7 +288,7 @@ void Heap_Collect(Heap *heap, Stack *stack) {
     Marker_MarkRoots(heap, stack);
     if (stats != NULL) {
         end_ns = scalanative_nano_time();
-        Stats_RecordMark(stats, start_ns, end_ns);
+        Stats_RecordEvent(stats, event_mark, start_ns, end_ns);
     }
     Heap_Recycle(heap);
 #ifdef DEBUG_PRINT
@@ -355,7 +355,7 @@ void Heap_sweep(Heap *heap, uint32_t maxCount) {
 
     if (stats != NULL) {
         end_ns = scalanative_nano_time();
-        Stats_RecordLazySweep(stats, start_ns, end_ns);
+        Stats_RecordEvent(stats, event_sweep, start_ns, end_ns);
     }
 
     if (Heap_IsSweepDone(heap)) {
@@ -395,10 +395,6 @@ void Heap_sweepDone(Heap *heap) {
     }
     heap->sweep.cursor = SWEEP_DONE;
     heap->sweep.cursorDone = SWEEP_DONE;
-    Stats *stats = heap->stats;
-    if (stats != NULL) {
-        Stats_RecordCollectionDone(stats);
-    }
 }
 
 void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
