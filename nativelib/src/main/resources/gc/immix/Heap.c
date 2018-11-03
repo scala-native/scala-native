@@ -351,7 +351,7 @@ void Heap_sweep(Heap *heap, uint32_t maxCount) {
         currentBlockStart += WORDS_IN_BLOCK * size;
         lineMetas += LINE_COUNT * size;
     }
-    heap->sweep.cursorDone = limitIdx;
+    heap->sweep.cursor = heap->sweep.cursorDone = BlockMeta_GetBlockIndex(heap->blockMetaStart, current);
 
     if (stats != NULL) {
         end_ns = scalanative_nano_time();
@@ -393,6 +393,7 @@ void Heap_sweepDone(Heap *heap) {
     if (!Allocator_CanInitCursors(&allocator)) {
         Heap_exitWithOutOfMemory();
     }
+    heap->sweep.cursor = SWEEP_DONE;
     heap->sweep.cursorDone = SWEEP_DONE;
     Stats *stats = heap->stats;
     if (stats != NULL) {
