@@ -52,7 +52,6 @@ before_cache:
 
 cache:
   directories:
-    - $HOME/docker
     - $HOME/.coursier
     - $HOME/.ivy2/cache
     - $HOME/.sbt/boot/
