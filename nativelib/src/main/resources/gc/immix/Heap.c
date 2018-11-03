@@ -208,7 +208,7 @@ Object *Heap_lazySweep(Heap *heap, uint32_t size) {
     Object *object = (Object *)Allocator_Alloc(&allocator, size);
     while (object == NULL && !Heap_IsSweepDone(heap)) {
         Heap_sweep(heap, 1);
-        Object *object = (Object *)Allocator_Alloc(&allocator, size);
+        object = (Object *)Allocator_Alloc(&allocator, size);
     }
     return object;
 }
