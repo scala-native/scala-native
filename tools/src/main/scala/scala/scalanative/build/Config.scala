@@ -132,7 +132,7 @@ object Config {
                                 logger: Logger,
                                 LTO: String)
       extends Config {
-    val targetArchitecture: TargetArchitecture = {
+    lazy val targetArchitecture: TargetArchitecture = {
       Discover.targetArchitecture(targetTriple)
     }
 
