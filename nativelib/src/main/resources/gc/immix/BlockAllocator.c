@@ -57,6 +57,7 @@ BlockAllocator_getFreeBlockSlow(BlockAllocator *blockAllocator) {
         BlockMeta *limit = blockAllocator->coalescingSuperblock.limit;
         if (limit - first >= 1) {
             blockAllocator->coalescingSuperblock.first += 1;
+            assert(BlockMeta_IsFree(first));
             BlockMeta_SetFlag(first, block_simple);
             return first;
         } else {
@@ -71,6 +72,7 @@ INLINE BlockMeta *BlockAllocator_GetFreeBlock(BlockAllocator *blockAllocator) {
         return BlockAllocator_getFreeBlockSlow(blockAllocator);
     }
     BlockMeta *block = blockAllocator->smallestSuperblock.cursor;
+    assert(BlockMeta_IsFree(block));
     BlockMeta_SetFlag(block, block_simple);
     blockAllocator->smallestSuperblock.cursor++;
 
@@ -118,10 +120,12 @@ BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
 
     assert(superblock != NULL);
 
+    assert(BlockMeta_IsFree(superblock));
     BlockMeta_SetFlag(superblock, block_superblock_start);
     BlockMeta_SetSuperblockSize(superblock, size);
     BlockMeta *limit = superblock + size;
     for (BlockMeta *current = superblock + 1; current < limit; current++) {
+        assert(BlockMeta_IsFree(current));
         BlockMeta_SetFlag(current, block_superblock_middle);
     }
     // not decrementing freeBlockCount, because it is only used after sweep
