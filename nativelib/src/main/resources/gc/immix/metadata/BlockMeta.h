@@ -36,7 +36,8 @@ static inline bool BlockMeta_IsFree(BlockMeta *blockMeta) {
     return blockMeta->block.simple.flags == block_free;
 }
 static inline bool BlockMeta_IsSimpleBlock(BlockMeta *blockMeta) {
-    return (blockMeta->block.simple.flags & block_simple) != 0;
+    // blockMeta->block.simple.flags == block_simple || blockMeta->block.simple.flags == block_marked
+    return (blockMeta->block.simple.flags & 0x3) == block_simple;
 }
 static inline bool BlockMeta_IsSuperblockStart(BlockMeta *blockMeta) {
     return blockMeta->block.simple.flags == block_superblock_start;
