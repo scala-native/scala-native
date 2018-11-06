@@ -39,7 +39,13 @@ object Array {
     @inline def length_=(value: Int): Unit     = !(self._2) = value
     @inline def stride: CSize                  = (!(self._3)).toLong.asInstanceOf[CSize]
     @inline def stride_=(value: CSize): Unit =
-      !(self._3) = value.toInt
+      if (!Platform.is32) {
+        /*
+        TODO: investigate why this results in segfaults
+        this is fine to disable on 32bit for now because stride is only used for Immix
+        */
+        !(self._3) = value.toInt
+      }
   }
 
   def copy(from: AnyRef,
