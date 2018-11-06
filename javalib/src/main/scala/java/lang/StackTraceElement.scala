@@ -1,5 +1,8 @@
 package java.lang
 
+import scalanative.native.{CString, fromCString}
+import scalanative.libc.string.strlen
+
 final class StackTraceElement(val getClassName: String,
                               val getMethodName: String,
                               val getFileName: String,
@@ -40,70 +43,109 @@ final class StackTraceElement(val getClassName: String,
 private[lang] object StackTraceElement {
   object Fail extends scala.util.control.NoStackTrace
 
-  def fromSymbol(sym: String): StackTraceElement = {
-    val chars      = sym.toArray
+  def fromSymbol(sym: CString): StackTraceElement = {
+    val len        = strlen(sym)
     var pos        = 0
     var className  = ""
     var methodName = ""
 
-    def readSymbol(): Unit = {
-      if (read != '_') fail
-      if (read != 'S') fail
-      readGlobal()
+    def readSymbol(): Boolean = {
+      if (read != '_') {
+        false
+      } else if (read != 'S') {
+        false
+      } else {
+        readGlobal()
+      }
     }
 
-    def readGlobal(): Unit = read() match {
+    def readGlobal(): Boolean = read() match {
       case 'M' =>
-        className = readIdent()
-        readSig()
-      case ch =>
-        fail
+        val id = readIdent()
+        if (id.length == 0) {
+          false
+        } else {
+          className = id
+          readSig()
+        }
+      case _ =>
+        false
     }
 
-    def readSig(): Unit = read() match {
+    def readSig(): Boolean = read() match {
       case 'R' =>
         methodName = "<init>"
+        true
       case 'D' | 'P' | 'C' | 'G' =>
-        methodName = readIdent()
+        val id = readIdent()
+        if (id.length == 0) {
+          false
+        } else {
+          methodName = id
+          true
+        }
       case 'K' =>
         readSig()
-      case ch =>
-        fail
+      case _ =>
+        false
     }
 
     def readIdent(): String = {
-      val len   = readNumber()
-      val start = pos
-      pos += len
-      sym.substring(start, pos)
+      val n = readNumber()
+      if (n <= 0) {
+        ""
+      } else if (!inBounds(pos) || !inBounds(pos + n)) {
+        ""
+      } else {
+        val chars = new Array[Char](n)
+        var i     = 0
+        while (i < n) {
+          chars(i) = sym(pos + i).toChar
+          i += 1
+        }
+        pos += n
+        new String(chars)
+      }
     }
 
     def readNumber(): Int = {
       val start  = pos
       var number = 0
-      while ('0' <= chars(pos) && chars(pos) <= '9') {
-        number = number * 10 + (chars(pos) - '0').toInt
+      while ('0' <= at(pos) && at(pos) <= '9') {
+        number = number * 10 + (at(pos) - '0').toInt
         pos += 1
       }
-      if (start == pos) fail
-      number
+      if (start == pos) {
+        -1
+      } else {
+        number
+      }
     }
 
-    def fail: Nothing =
-      throw Fail
-
-    def read(): Int = {
-      val value = chars(pos)
-      pos += 1
-      value
+    def read(): Char = {
+      if (inBounds(pos)) {
+        val res = sym(pos).toChar
+        pos += 1
+        res
+      } else {
+        -1.toChar
+      }
     }
 
-    try {
-      readSymbol()
-    } catch {
-      case _: Throwable =>
-        className = "<none>"
-        methodName = sym
+    def at(pos: Int): Char = {
+      if (inBounds(pos)) {
+        sym(pos).toChar
+      } else {
+        -1.toChar
+      }
+    }
+
+    def inBounds(pos: Int) =
+      pos >= 0 && pos < len
+
+    if (!readSymbol()) {
+      className = "<none>"
+      methodName = fromCString(sym)
     }
 
     new StackTraceElement(className, methodName, null, 0)
