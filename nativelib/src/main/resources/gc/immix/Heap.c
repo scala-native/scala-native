@@ -158,7 +158,10 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
 
 Object *Heap_lazySweepLarge(Heap *heap, uint32_t size) {
     Object *object = LargeAllocator_GetBlock(&largeAllocator, size);
-    size_t increment = MathUtils_DivAndRoundUp(size, BLOCK_TOTAL_SIZE);
+    uint32_t increment = (uint32_t) MathUtils_DivAndRoundUp(size, BLOCK_TOTAL_SIZE);
+    if (increment < LAZY_SWEEP_MIN_BATCH) {
+        increment = LAZY_SWEEP_MIN_BATCH;
+    }
     while (object == NULL && !Heap_IsSweepDone(heap)) {
         Heap_sweep(heap, increment);
         object = LargeAllocator_GetBlock(&largeAllocator, size);
@@ -207,7 +210,7 @@ word_t *Heap_AllocLarge(Heap *heap, uint32_t size) {
 Object *Heap_lazySweep(Heap *heap, uint32_t size) {
     Object *object = (Object *)Allocator_Alloc(&allocator, size);
     while (object == NULL && !Heap_IsSweepDone(heap)) {
-        Heap_sweep(heap, 1);
+        Heap_sweep(heap, LAZY_SWEEP_MIN_BATCH);
         object = (Object *)Allocator_Alloc(&allocator, size);
     }
     return object;
