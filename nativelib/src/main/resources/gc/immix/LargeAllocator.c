@@ -154,7 +154,6 @@ void LargeAllocator_Sweep(LargeAllocator *allocator, BlockMeta *blockMeta,
     word_t *blockEnd = blockStart + WORDS_IN_BLOCK * superblockSize;
 
     ObjectMeta *firstObject = Bytemap_Get(allocator->bytemap, blockStart);
-    assert(!ObjectMeta_IsFree(firstObject));
     BlockMeta *lastBlock = blockMeta + superblockSize - 1;
     if (superblockSize > 1 && !ObjectMeta_IsMarked(firstObject)) {
         // release free superblock starting from the first object
