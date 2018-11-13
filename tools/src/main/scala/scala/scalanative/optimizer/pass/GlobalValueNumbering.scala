@@ -101,8 +101,10 @@ object GlobalValueNumbering extends PassCompanion {
     import Op._
     op match {
       // Always idempotent:
-      case (_: Pure | _: Method | _: Dynmethod | _: As | _: Is | _: Copy |
-          _: Sizeof | _: Module | _: Box | _: Unbox | _: Arraylength) =>
+      case (_: Method | _: Dynmethod | _: As | _: Is | _: Copy | _: Sizeof |
+          _: Module | _: Box | _: Unbox | _: Arraylength) =>
+        true
+      case op if op.isPure =>
         true
 
       // Never idempotent:
