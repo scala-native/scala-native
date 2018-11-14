@@ -49,15 +49,14 @@ object IssuesSuite extends tests.Suite {
   }
 
   test("#314") {
-    // Division by zero is undefined behavior in production mode.
-    // Optimizer can assume it never happens and remove unused result.
+    // Division by zero is defined behavior.
     assert {
       try {
         5 / 0
-        true
+        false
       } catch {
-        case _: Throwable =>
-          false
+        case _: ArithmeticException =>
+          true
       }
     }
   }

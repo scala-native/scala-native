@@ -72,7 +72,7 @@ object UseDef {
       pureWhitelist.contains(name)
     case Inst.Let(_, Op.Module(name), _) =>
       pureWhitelist.contains(name)
-    case Inst.Let(_, _: Op.Pure, _) =>
+    case Inst.Let(_, op, _) if op.isPure =>
       true
     case _ =>
       false

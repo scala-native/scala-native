@@ -34,7 +34,6 @@ A number of error conditions which are well-defined on JVM are undefined
 behavior:
 
 1. Dereferencing null.
-2. Division by zero.
 3. Stack overflows.
 
 Those typically crash application with a segfault on the supported architectures.

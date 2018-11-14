@@ -41,23 +41,33 @@ sealed abstract class Op {
   }
 
   final def show: String = nir.Show(this)
+
+  final def isPure: Boolean = this match {
+    case _: Op.Elem | _: Op.Extract | _: Op.Insert | _: Op.Comp | _: Op.Conv |
+        _: Op.Select =>
+      true
+    case Op.Bin(Bin.Sdiv | Bin.Udiv | Bin.Srem | Bin.Urem, _, _, _) =>
+      false
+    case _: Op.Bin =>
+      true
+    case _ =>
+      false
+  }
 }
 object Op {
-  sealed abstract class Pure extends Op
-
   // low-level
   final case class Call(ty: Type, ptr: Val, args: Seq[Val])      extends Op
   final case class Load(ty: Type, ptr: Val, isVolatile: Boolean) extends Op
   final case class Store(ty: Type, ptr: Val, value: Val, isVolatile: Boolean)
       extends Op
-  final case class Elem(ty: Type, ptr: Val, indexes: Seq[Val])      extends Pure
-  final case class Extract(aggr: Val, indexes: Seq[Int])            extends Pure
-  final case class Insert(aggr: Val, value: Val, indexes: Seq[Int]) extends Pure
+  final case class Elem(ty: Type, ptr: Val, indexes: Seq[Val])      extends Op
+  final case class Extract(aggr: Val, indexes: Seq[Int])            extends Op
+  final case class Insert(aggr: Val, value: Val, indexes: Seq[Int]) extends Op
   final case class Stackalloc(ty: Type, n: Val)                     extends Op
-  final case class Bin(bin: nir.Bin, ty: Type, l: Val, r: Val)      extends Pure
-  final case class Comp(comp: nir.Comp, ty: Type, l: Val, r: Val)   extends Pure
-  final case class Conv(conv: nir.Conv, ty: Type, value: Val)       extends Pure
-  final case class Select(cond: Val, thenv: Val, elsev: Val)        extends Pure
+  final case class Bin(bin: nir.Bin, ty: Type, l: Val, r: Val)      extends Op
+  final case class Comp(comp: nir.Comp, ty: Type, l: Val, r: Val)   extends Op
+  final case class Conv(conv: nir.Conv, ty: Type, value: Val)       extends Op
+  final case class Select(cond: Val, thenv: Val, elsev: Val)        extends Op
 
   def Load(ty: Type, ptr: Val): Load =
     Load(ty, ptr, isVolatile = false)

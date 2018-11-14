@@ -427,36 +427,91 @@ object Lower {
     def genBinOp(buf: Buffer, n: Local, op: Op.Bin, unwind: Next): Unit = {
       import buf._
 
+      // LLVM's division by zero is undefined behaviour. We guard
+      // the case when the divisor is zero and fail gracefully
+      // by throwing an arithmetic exception.
+      def checkDivisionByZero(op: Op.Bin): Unit = {
+        val Op.Bin(bin, ty: Type.I, dividend, divisor) = op
+
+        val thenL, elseL = fresh()
+
+        val isZero =
+          comp(Comp.Ieq, ty, divisor, Val.Zero(ty), unwind)
+        branch(isZero, Next(thenL), Next(elseL))
+
+        label(thenL)
+        call(throwDivisionByZeroTy,
+             throwDivisionByZeroVal,
+             Seq(Val.Null),
+             unwind)
+        unreachable
+
+        label(elseL)
+        if (bin == Bin.Srem || bin == Bin.Sdiv) {
+          checkDivisionOverflow(op)
+        } else {
+          let(n, op, unwind)
+        }
+      }
+
+      // Detects taking remainder for division by -1 and replaces
+      // it by division by 1 which can't overflow.
+      //
+      // We implement '%' (remainder) with LLVM's 'srem' and it
+      // can overflow for cases:
+      //
+      // - Int.MinValue % -1
+      // - Long.MinValue % -1
+      //
+      // E.g. On x86_64 'srem' might get translated to 'idiv'
+      // which computes both quotient and remainder at once
+      // and quotient can overflow.
+      def checkDivisionOverflow(op: Op.Bin): Unit = {
+        val Op.Bin(bin, ty: Type.I, dividend, divisor) = op
+
+        val mayOverflowL, noOverflowL, didOverflowL, resultL = fresh()
+
+        val minus1 = ty match {
+          case Type.Int  => Val.Int(-1)
+          case Type.Long => Val.Long(-1L)
+          case _         => util.unreachable
+        }
+        val minValue = ty match {
+          case Type.Int  => Val.Int(java.lang.Integer.MIN_VALUE)
+          case Type.Long => Val.Long(java.lang.Long.MIN_VALUE)
+          case _         => util.unreachable
+        }
+
+        val divisorIsMinus1 =
+          let(Op.Comp(Comp.Ieq, ty, divisor, minus1), unwind)
+        branch(divisorIsMinus1, Next(mayOverflowL), Next(noOverflowL))
+
+        label(mayOverflowL)
+        val dividendIsMinValue =
+          let(Op.Comp(Comp.Ieq, ty, dividend, minValue), unwind)
+        branch(dividendIsMinValue, Next(didOverflowL), Next(noOverflowL))
+
+        label(didOverflowL)
+        val overflowResult = bin match {
+          case Bin.Srem => Val.Zero(ty)
+          case Bin.Sdiv => minValue
+          case _        => util.unreachable
+        }
+        jump(resultL, Seq(overflowResult))
+
+        label(noOverflowL)
+        val noOverflowResult = let(op, unwind)
+        jump(resultL, Seq(noOverflowResult))
+
+        label(resultL, Seq(Val.Local(n, ty)))
+      }
+
       op match {
-        // Detects taking remainder for division by -1 and replaces
-        // it by division by 1 which can't overflow.
-        //
-        // We implement '%' (remainder) with LLVM's 'srem' and it
-        // can overflow for cases:
-        //
-        // - Int.MinValue % -1
-        // - Long.MinValue % -1
-        //
-        // E.g. On x86_64 'srem' might get translated to 'idiv'
-        // which computes both quotient and remainder at once
-        // and quotient can overflow.
-        case sremBin @ Op.Bin(Bin.Srem, intType: Type.I, _, divisor)
-            if intType.width == 32 || intType.width == 64 =>
-          val safeDivisor         = Val.Local(fresh(), intType)
-          val thenL, elseL, contL = fresh()
-
-          val isPossibleOverflow =
-            let(Op.Comp(Comp.Ieq, intType, divisor, Val.Int(-1)), unwind)
-          branch(isPossibleOverflow, Next(thenL), Next(elseL))
-
-          label(thenL)
-          jump(contL, Seq(Val.Int(1)))
-
-          label(elseL)
-          jump(contL, Seq(divisor))
-
-          label(contL, Seq(safeDivisor))
-          let(n, sremBin.copy(r = safeDivisor), unwind)
+        case op @ Op.Bin(bin @ (Bin.Srem | Bin.Urem | Bin.Sdiv | Bin.Udiv),
+                         ty: Type.I,
+                         l,
+                         r) =>
+          checkDivisionByZero(op)
 
         case op =>
           let(n, op, unwind)
@@ -792,6 +847,16 @@ object Lower {
     Type.Function(Seq(Type.Ref(Global.Top("scala.scalanative.runtime.Array"))),
                   Type.Int)
 
+  val throwDivisionByZeroTy =
+    Type.Function(
+      Seq(Type.Ref(Global.Top("scala.scalanative.runtime.package$"))),
+      Type.Nothing)
+  val throwDivisionByZero =
+    Global.Member(Global.Top("scala.scalanative.runtime.package$"),
+                  Sig.Method("throwDivisionByZero", Seq(Type.Nothing)))
+  val throwDivisionByZeroVal =
+    Val.Global(throwDivisionByZero, Type.Ptr)
+
   val injects: Seq[Defn] = {
     val buf = mutable.UnrolledBuffer.empty[Defn]
     buf += Defn.Declare(Attrs.None, allocSmallName, allocSig)
@@ -824,6 +889,7 @@ object Lower {
     buf ++= arrayApply.values
     buf ++= arrayUpdateGeneric.values
     buf ++= arrayUpdate.values
+    buf += throwDivisionByZero
     buf
   }
 }
