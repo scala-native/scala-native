@@ -42,13 +42,40 @@ sealed abstract class Op {
 
   final def show: String = nir.Show(this)
 
+  /** Op is pure if it doesn't have any side-effects, including:
+   *
+   *  * doesn't throw exceptions
+   *  * doesn't perform any unsafe reads or writes from the memory
+   *  * doesn't call foreign code
+   *
+   *  Recomputing pure op will always yield to the same result.
+   */
   final def isPure: Boolean = this match {
     case _: Op.Elem | _: Op.Extract | _: Op.Insert | _: Op.Comp | _: Op.Conv |
-        _: Op.Select =>
+        _: Op.Select | _: Op.Is | _: Op.Copy | _: Op.Sizeof =>
       true
-    case Op.Bin(Bin.Sdiv | Bin.Udiv | Bin.Srem | Bin.Urem, _, _, _) =>
+    // Division and modulo on integers are not pure as
+    // they may throw if the divisor is zero.
+    case Op.Bin(Bin.Sdiv | Bin.Udiv | Bin.Srem | Bin.Urem, _: Type.I, _, _) =>
       false
     case _: Op.Bin =>
+      true
+    case _ =>
+      false
+  }
+
+  /** Op is idempotent if re-evaluation of the operation with the same
+   *  arguments is going to produce the same results, without any extra
+   *  side effects as long as previous evaluation did not throw.
+   */
+  final def isIdempotent: Boolean = this match {
+    case op if op.isPure =>
+      true
+    // Division and modulo are non-pure but idempotent.
+    case op: Op.Bin =>
+      true
+    case _: Op.Method | _: Op.Dynmethod | _: Op.Module | _: Op.Box |
+        _: Op.Unbox | _: Op.Arraylength =>
       true
     case _ =>
       false

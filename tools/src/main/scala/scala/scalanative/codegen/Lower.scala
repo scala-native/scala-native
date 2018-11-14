@@ -506,12 +506,31 @@ object Lower {
         label(resultL, Seq(Val.Local(n, ty)))
       }
 
+      // Shifts are undefined if the bits shifted by are >= bits in the type.
+      // We mask the right hand side with bits in type - 1 to make it defined.
+      def maskShift(op: Op.Bin) = {
+        val Op.Bin(_, ty: Type.I, _, r) = op
+        val mask = ty match {
+          case Type.Int  => Val.Int(31)
+          case Type.Long => Val.Int(63)
+          case _         => util.unreachable
+        }
+        val masked = bin(Bin.And, ty, r, mask, unwind)
+        let(n, op.copy(r = masked), unwind)
+      }
+
       op match {
         case op @ Op.Bin(bin @ (Bin.Srem | Bin.Urem | Bin.Sdiv | Bin.Udiv),
                          ty: Type.I,
                          l,
                          r) =>
           checkDivisionByZero(op)
+
+        case op @ Op.Bin(bin @ (Bin.Shl | Bin.Lshr | Bin.Ashr),
+                         ty: Type.I,
+                         l,
+                         r) =>
+          maskShift(op)
 
         case op =>
           let(n, op, unwind)

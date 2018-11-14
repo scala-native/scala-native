@@ -52,7 +52,7 @@ class GlobalValueNumbering extends Pass {
       val newBlockInsts = block.insts.map {
 
         case inst: Inst.Let => {
-          val idempotent = isIdempotent(inst.op)
+          val idempotent = inst.op.isIdempotent
 
           val instHash =
             if (idempotent)
@@ -97,24 +97,6 @@ class GlobalValueNumbering extends Pass {
 }
 
 object GlobalValueNumbering extends PassCompanion {
-  def isIdempotent(op: Op): Boolean = {
-    import Op._
-    op match {
-      // Always idempotent:
-      case (_: Method | _: Dynmethod | _: As | _: Is | _: Copy | _: Sizeof |
-          _: Module | _: Box | _: Unbox | _: Arraylength) =>
-        true
-      case op if op.isPure =>
-        true
-
-      // Never idempotent:
-      case (_: Load | _: Store | _: Stackalloc | _: Classalloc | _: Call |
-          _: Closure | _: Fieldload | _: Fieldstore | _: Var | _: Varload |
-          _: Varstore | _: Arrayalloc | _: Arrayload | _: Arraystore) =>
-        false
-    }
-  }
-
   class DeepEquals(localDefs: Local => Inst) {
 
     def eqInst(instA: Inst.Let, instB: Inst.Let): Boolean = {
@@ -123,7 +105,7 @@ object GlobalValueNumbering extends PassCompanion {
 
     def eqOp(opA: Op, opB: Op): Boolean = {
       import Op._
-      if (!(isIdempotent(opA) && isIdempotent(opB)))
+      if (!(opA.isIdempotent && opB.isIdempotent))
         false
       else {
         (opA, opB) match {
