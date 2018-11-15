@@ -985,6 +985,9 @@ trait NirGenExpr { self: NirGenPhase =>
     }
 
     def binaryOperationType(lty: nir.Type, rty: nir.Type) = (lty, rty) match {
+      // Bug compatibility with scala/bug/issues/11253
+      case (Type.Long, Type.Float) =>
+        Type.Double
       case (nir.Type.Ptr, _: nir.Type.RefKind) =>
         lty
       case (_: nir.Type.RefKind, nir.Type.Ptr) =>
