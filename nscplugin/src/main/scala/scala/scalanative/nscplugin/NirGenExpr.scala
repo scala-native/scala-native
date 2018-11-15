@@ -1379,9 +1379,17 @@ trait NirGenExpr { self: NirGenPhase =>
             Conv.Sitofp
           case (nir.Type.I(_, false), _: nir.Type.F) =>
             Conv.Uitofp
-          case (_: nir.Type.F, nir.Type.I(_, true)) =>
+          case (_: nir.Type.F, nir.Type.I(iwidth, true)) =>
+            if (iwidth < 32) {
+              val ivalue = genCoercion(value, fromty, Type.Int)
+              return genCoercion(ivalue, Type.Int, toty)
+            }
             Conv.Fptosi
-          case (_: nir.Type.F, nir.Type.I(_, false)) =>
+          case (_: nir.Type.F, nir.Type.I(iwidth, false)) =>
+            if (iwidth < 32) {
+              val ivalue = genCoercion(value, fromty, Type.Int)
+              return genCoercion(ivalue, Type.Int, toty)
+            }
             Conv.Fptoui
           case (nir.Type.Double, nir.Type.Float) =>
             Conv.Fptrunc

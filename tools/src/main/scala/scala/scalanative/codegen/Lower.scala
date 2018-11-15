@@ -153,6 +153,8 @@ object Lower {
         genSizeofOp(buf, n, op, unwind)
       case op: Op.Classalloc =>
         genClassallocOp(buf, n, op, unwind)
+      case op: Op.Conv =>
+        genConvOp(buf, n, op, unwind)
       case op: Op.Bin =>
         genBinOp(buf, n, op, unwind)
       case op: Op.Box =>
@@ -422,6 +424,90 @@ object Lower {
         n,
         Op.Call(allocSig, allocMethod, Seq(rtti(cls).const, Val.Long(size))),
         unwind)
+    }
+
+    def genConvOp(buf: Buffer, n: Local, op: Op.Conv, unwind: Next): Unit = {
+      import buf._
+
+      op match {
+        // Fptosi is undefined behaviour on LLVM if the resulting
+        // value doesn't fit the MIN...MAX range for given integer type.
+        // We insert range checks and return MIN_VALUE for floating values
+        // that are numerically less than or equal to MIN_VALUE and MAX_VALUE
+        // for the ones which are greate or equal to MAX_VALUE. Additionally,
+        // NaNs are converted to 0.
+        case Op.Conv(Conv.Fptosi, toty, v) =>
+          val (imin, imax, fmin, fmax) = toty match {
+            case Type.Int =>
+              val min = java.lang.Integer.MIN_VALUE
+              val max = java.lang.Integer.MAX_VALUE
+              v.ty match {
+                case Type.Float =>
+                  (Val.Int(min),
+                   Val.Int(max),
+                   Val.Float(min.toFloat),
+                   Val.Float(max.toFloat))
+                case Type.Double =>
+                  (Val.Int(min),
+                   Val.Int(max),
+                   Val.Double(min.toDouble),
+                   Val.Double(max.toDouble))
+                case _ =>
+                  util.unreachable
+              }
+            case Type.Long =>
+              val min = java.lang.Long.MIN_VALUE
+              val max = java.lang.Long.MAX_VALUE
+              v.ty match {
+                case Type.Float =>
+                  (Val.Long(min),
+                   Val.Long(max),
+                   Val.Float(min.toFloat),
+                   Val.Float(max.toFloat))
+                case Type.Double =>
+                  (Val.Long(min),
+                   Val.Long(max),
+                   Val.Double(min.toDouble),
+                   Val.Double(max.toDouble))
+                case _ =>
+                  util.unreachable
+              }
+            case _ =>
+              util.unreachable
+          }
+
+          val isNaNL, checkLessThanMinL, lessThanMinL, checkLargerThanMaxL,
+          largerThanMaxL, inBoundsL, resultL = fresh()
+
+          val isNaN = comp(Comp.Fne, v.ty, v, v, unwind)
+          branch(isNaN, Next(isNaNL), Next(checkLessThanMinL))
+
+          label(isNaNL)
+          jump(resultL, Seq(Val.Zero(op.resty)))
+
+          label(checkLessThanMinL)
+          val isLessThanMin = comp(Comp.Fle, v.ty, v, fmin, unwind)
+          branch(isLessThanMin, Next(lessThanMinL), Next(checkLargerThanMaxL))
+
+          label(lessThanMinL)
+          jump(resultL, Seq(imin))
+
+          label(checkLargerThanMaxL)
+          val isLargerThanMax = comp(Comp.Fge, v.ty, v, fmax, unwind)
+          branch(isLargerThanMax, Next(largerThanMaxL), Next(inBoundsL))
+
+          label(largerThanMaxL)
+          jump(resultL, Seq(imax))
+
+          label(inBoundsL)
+          val inBoundsResult = let(op, unwind)
+          jump(resultL, Seq(inBoundsResult))
+
+          label(resultL, Seq(Val.Local(n, op.resty)))
+
+        case _ =>
+          let(n, op, unwind)
+      }
     }
 
     def genBinOp(buf: Buffer, n: Local, op: Op.Bin, unwind: Next): Unit = {
