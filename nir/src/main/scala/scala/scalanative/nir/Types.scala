@@ -67,7 +67,13 @@ object Type {
   final case object Virtual      extends Type
   final case class Var(ty: Type) extends Type
 
-  sealed abstract class RefKind                              extends Type
+  sealed abstract class RefKind extends Type {
+    final def className: Global = this match {
+      case Type.Unit            => Rt.BoxedUnit.name
+      case Type.Array(ty, _)    => toArrayClass(ty)
+      case Type.Ref(name, _, _) => name
+    }
+  }
   final case object Unit                                     extends RefKind
   final case class Array(ty: Type, nullable: Boolean = true) extends RefKind
   final case class Ref(name: Global,
@@ -109,8 +115,7 @@ object Type {
   def toArrayClass(ty: Type): Global = ty match {
     case _ if typeToArray.contains(ty) =>
       typeToArray(ty)
-    case Type.Ref(name, _, _)
-        if name == Global.Top("scala.runtime.BoxedUnit") =>
+    case Type.Ref(name, _, _) if name == Rt.BoxedUnit =>
       typeToArray(Type.Unit)
     case _ =>
       typeToArray(Rt.Object)

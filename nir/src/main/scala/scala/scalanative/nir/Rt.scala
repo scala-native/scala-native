@@ -4,9 +4,10 @@ package nir
 import Type._
 
 object Rt {
-  val Object = Ref(Global.Top("java.lang.Object"))
-  val String = Ref(Global.Top("java.lang.String"))
-  val Type   = StructValue(Seq(Int, Int, Ptr, Byte))
+  val Object    = Ref(Global.Top("java.lang.Object"))
+  val String    = Ref(Global.Top("java.lang.String"))
+  val BoxedUnit = Ref(Global.Top("scala.runtime.BoxedUnit"))
+  val Type      = StructValue(Seq(Int, Int, Ptr, Byte))
 
   val JavaEqualsSig    = Sig.Method("equals", Seq(Object, Bool))
   val JavaHashCodeSig  = Sig.Method("hashCode", Seq(Int))

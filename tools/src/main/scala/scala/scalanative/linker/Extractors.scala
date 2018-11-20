@@ -5,10 +5,8 @@ import scalanative.nir._
 
 trait Extractor[T] {
   def unapply(ty: Type)(implicit linked: Result): Option[T] = ty match {
-    case Type.Array(ty, _) =>
-      unapply(Type.toArrayClass(ty))
-    case Type.Ref(name, _, _) =>
-      unapply(name)
+    case ty: Type.RefKind =>
+      unapply(ty.className)
     case _ =>
       None
   }

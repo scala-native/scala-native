@@ -363,13 +363,13 @@ object CodeGen {
     }
 
     def genType(ty: Type): Unit = ty match {
-      case Type.Void            => str("void")
-      case Type.Vararg          => str("...")
-      case Type.Ptr | Type.Null => str("i8*")
-      case Type.Bool            => str("i1")
-      case i: Type.I            => str("i"); str(i.width)
-      case Type.Float           => str("float")
-      case Type.Double          => str("double")
+      case Type.Void                                             => str("void")
+      case Type.Vararg                                           => str("...")
+      case _: Type.RefKind | Type.Ptr | Type.Null | Type.Nothing => str("i8*")
+      case Type.Bool                                             => str("i1")
+      case i: Type.I                                             => str("i"); str(i.width)
+      case Type.Float                                            => str("float")
+      case Type.Double                                           => str("double")
       case Type.ArrayValue(ty, n) =>
         str("[")
         str(n)

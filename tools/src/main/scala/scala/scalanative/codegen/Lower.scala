@@ -39,7 +39,6 @@ object Lower {
       names
     }
 
-    private val retty = new util.ScopedVar[Type]
     private val fresh = new util.ScopedVar[Fresh]
 
     override def onDefns(defns: Seq[Defn]): Seq[Defn] = {
@@ -64,7 +63,6 @@ object Lower {
       case defn: Defn.Define =>
         val Type.Function(_, ty) = defn.ty
         ScopedVar.scoped(
-          retty := ty,
           fresh := Fresh(defn.insts)
         )(super.onDefn(defn))
       case _ =>
@@ -101,9 +99,6 @@ object Lower {
         case Inst.Throw(v, unwind) =>
           genThrow(buf, v, unwind)
 
-        case Inst.Ret(_) if retty.get == Type.Unit =>
-          ret(Val.None)
-
         case inst =>
           buf += inst
       }
@@ -122,18 +117,21 @@ object Lower {
         super.onVal(value)
     }
 
-    override def onType(ty: Type): Type = ty match {
-      case _: Type.RefKind | Type.Nothing =>
-        Type.Ptr
-      case Type.Function(params, Type.Unit | Type.Nothing) =>
-        Type.Function(params.map(onType), Type.Void)
-      case _ =>
-        super.onType(ty)
-    }
-
     def genThrow(buf: Buffer, exc: Val, unwind: Next) = {
+      import buf._
+
+      val isNullL, notNullL = fresh()
+
+      val isNull = comp(Comp.Ieq, exc.ty, exc, Val.Null, unwind)
+      branch(isNull, Next(isNullL), Next(notNullL))
+
+      label(isNullL)
+      call(throwNullPointerTy, throwNullPointerVal, Seq(Val.Null), unwind)
+      unreachable
+
+      label(notNullL)
       genOp(buf, fresh(), Op.Call(throwSig, throw_, Seq(exc)), unwind)
-      buf.unreachable
+      unreachable
     }
 
     def genOp(buf: Buffer, n: Local, op: Op, unwind: Next): Unit = op match {
@@ -335,24 +333,23 @@ object Lower {
           let(n, Op.Copy(Val.False), unwind)
 
         case Op.Is(ty, obj) =>
-          val result = Val.Local(fresh(), Type.Bool)
-
-          val thenL, elseL, contL = fresh()
+          val isNullL, checkL, resultL = fresh()
 
           // check if obj is null
-          val isnull = let(Op.Comp(Comp.Ieq, Type.Ptr, obj, Val.Null), unwind)
-          branch(isnull, Next(thenL), Next(elseL))
+          val isNull = let(Op.Comp(Comp.Ieq, Type.Ptr, obj, Val.Null), unwind)
+          branch(isNull, Next(isNullL), Next(checkL))
+
           // in case it's null, result is always false
-          label(thenL)
-          val res1 = let(Op.Copy(Val.False), unwind)
-          jump(contL, Seq(res1))
+          label(isNullL)
+          jump(resultL, Seq(Val.False))
+
           // otherwise, do an actual instance check
-          label(elseL)
-          val res2 = genIsOp(buf, ty, obj, unwind)
-          jump(contL, Seq(res2))
+          label(checkL)
+          val isInstanceOf = genIsOp(buf, ty, obj, unwind)
+          jump(resultL, Seq(isInstanceOf))
+
           // merge the result of two branches
-          label(contL, Seq(result))
-          let(n, Op.Copy(result), unwind)
+          label(resultL, Seq(Val.Local(n, op.resty)))
       }
     }
 
@@ -393,13 +390,36 @@ object Lower {
       }
     }
 
-    def genAsOp(buf: Buffer, n: Local, op: Op.As, unwind: Next): Unit =
+    def genAsOp(buf: Buffer, n: Local, op: Op.As, unwind: Next): Unit = {
+      import buf._
+
       op match {
-        case Op.As(_: Type.RefKind, v) if v.ty.isInstanceOf[Type.RefKind] =>
-          buf.let(n, Op.Copy(v), unwind)
+        case Op.As(ty: Type.RefKind, v) if v.ty.isInstanceOf[Type.RefKind] =>
+          val checkIfIsInstanceOfL, castL, failL = fresh()
+
+          val isNull = comp(Comp.Ieq, v.ty, v, Val.Null, unwind)
+          branch(isNull, Next(castL), Next(checkIfIsInstanceOfL))
+
+          label(checkIfIsInstanceOfL)
+          val isInstanceOf = genIsOp(buf, ty, v, unwind)
+          branch(isInstanceOf, Next(castL), Next(failL))
+
+          label(failL)
+          val fromTy = let(Op.Load(Type.Ptr, v), unwind)
+          val toTy   = Val.Global(rtti(linked.infos(ty.className)).name, Type.Ptr)
+          call(throwClassCastTy,
+               throwClassCastVal,
+               Seq(Val.Null, fromTy, toTy),
+               unwind)
+          unreachable
+
+          label(castL)
+          let(n, Op.Conv(Conv.Bitcast, ty, v), unwind)
+
         case Op.As(to, v) =>
           util.unsupported(s"can't cast from ${v.ty} to $to")
       }
+    }
 
     def genSizeofOp(buf: Buffer,
                     n: Local,
@@ -962,6 +982,32 @@ object Lower {
   val throwDivisionByZeroVal =
     Val.Global(throwDivisionByZero, Type.Ptr)
 
+  val throwClassCastTy =
+    Type.Function(
+      Seq(Type.Ref(Global.Top("scala.scalanative.runtime.package$")),
+          Type.Ptr,
+          Type.Ptr),
+      Type.Nothing)
+  val throwClassCast =
+    Global.Member(
+      Global.Top("scala.scalanative.runtime.package$"),
+      Sig.Method("throwClassCast", Seq(Type.Ptr, Type.Ptr, Type.Nothing)))
+  val throwClassCastVal =
+    Val.Global(throwClassCast, Type.Ptr)
+
+  val throwNullPointerTy =
+    Type.Function(
+      Seq(Type.Ref(Global.Top("scala.scalanative.runtime.package$"))),
+      Type.Nothing)
+  val throwNullPointer =
+    Global.Member(Global.Top("scala.scalanative.runtime.package$"),
+                  Sig.Method("throwNullPointer", Seq(Type.Nothing)))
+  val throwNullPointerVal =
+    Val.Global(throwNullPointer, Type.Ptr)
+
+  val RuntimeNull    = Type.Ref(Global.Top("scala.runtime.Null$"))
+  val RuntimeNothing = Type.Ref(Global.Top("scala.runtime.Nothing$"))
+
   val injects: Seq[Defn] = {
     val buf = mutable.UnrolledBuffer.empty[Defn]
     buf += Defn.Declare(Attrs.None, allocSmallName, allocSig)
@@ -995,6 +1041,10 @@ object Lower {
     buf ++= arrayUpdateGeneric.values
     buf ++= arrayUpdate.values
     buf += throwDivisionByZero
+    buf += throwClassCast
+    buf += throwNullPointer
+    buf += RuntimeNull.name
+    buf += RuntimeNothing.name
     buf
   }
 }

@@ -188,11 +188,12 @@ private[net] class PlainSocketImpl extends SocketImpl {
       }
     }
 
-    val family = (!ret).ai_family
+    val res    = !ret
+    val family = res.ai_family
 
     if (timeout == 0) {
-      val connectRes = socket.connect(fd.fd, (!ret).ai_addr, (!ret).ai_addrlen)
-      freeaddrinfo(!ret)
+      val connectRes = socket.connect(fd.fd, res.ai_addr, res.ai_addrlen)
+      freeaddrinfo(res)
 
       if (connectRes < 0) {
         throw new ConnectException(
@@ -212,8 +213,8 @@ private[net] class PlainSocketImpl extends SocketImpl {
       val time = stackalloc[timeval]
       time.tv_sec = timeout / 1000
       time.tv_usec = (timeout % 1000) * 1000
-      socket.connect(fd.fd, (!ret).ai_addr, (!ret).ai_addrlen)
-      freeaddrinfo(!ret)
+      socket.connect(fd.fd, res.ai_addr, res.ai_addrlen)
+      freeaddrinfo(res)
 
       if (select(fd.fd + 1, null, fdset, null, time) != 1) {
         fcntl(fd.fd, F_SETFL, opts & ~O_NONBLOCK)
