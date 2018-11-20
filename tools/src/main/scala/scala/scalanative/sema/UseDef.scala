@@ -63,7 +63,6 @@ object UseDef {
     out += Global.Top("scala.scalanative.runtime.package$")
     out += Global.Top("scala.scalanative.native.package$")
     out ++= codegen.Lower.BoxTo.values
-    out ++= codegen.Lower.UnboxTo.values
     out
   }
 

@@ -5,7 +5,7 @@ import sbt.testing.{EventHandler, Logger, Status}
 import scala.collection.mutable
 import scala.reflect.ClassTag
 
-final case object AssertionFailed extends Exception
+final case class AssertionFailed(msg: String) extends Exception(msg)
 
 final case class Test(name: String, run: () => Boolean)
 
@@ -13,28 +13,40 @@ abstract class Suite {
   private val tests = new mutable.UnrolledBuffer[Test]
 
   def assert(cond: Boolean): Unit =
-    if (!cond) throw AssertionFailed else ()
+    assertTrue(cond)
 
   def assertTrue(cond: Boolean): Unit =
-    assert(cond)
+    if (!cond) {
+      throw AssertionFailed(s"condition is false")
+    }
 
   def assertNot(cond: Boolean): Unit =
-    if (cond) throw AssertionFailed else ()
+    assertFalse(cond)
 
   def assertFalse(cond: Boolean): Unit =
-    assertNot(cond)
+    if (cond) {
+      throw AssertionFailed(s"condition is true")
+    }
 
   def assertNull[A](a: A): Unit =
-    assert(a == null)
+    if (a != null) {
+      throw AssertionFailed(s"$a != null")
+    }
 
   def assertNotNull[A](a: A): Unit =
-    assertNot(a == null)
+    if (a == null) {
+      throw AssertionFailed(s"$a == null")
+    }
 
   def assertEquals[T](left: T, right: T): Unit =
-    assert(left == right)
+    if (left != right) {
+      throw AssertionFailed(s"${left} != ${right}")
+    }
 
   def assertEquals(expected: Double, actual: Double, delta: Double): Unit =
-    assert(Math.abs(expected - actual) <= delta)
+    if (Math.abs(expected - actual) > delta) {
+      throw AssertionFailed(s"$expected - $actual > $delta")
+    }
 
   def expectThrows[T <: Throwable, U](expectedThrowable: Class[T],
                                       code: => U): Unit =
@@ -58,9 +70,10 @@ abstract class Suite {
         if (expected.isInstance(exc) && pred(exc.asInstanceOf[T]))
           return
         else
-          throw AssertionFailed
+          throw AssertionFailed(
+            s"expected ${expected.getName} but got ${exc.getClass.getName}")
     }
-    throw AssertionFailed
+    throw AssertionFailed(s"expected to throw ${expected.getName} but didn't")
   }
 
   def test(name: String)(body: => Unit): Unit =

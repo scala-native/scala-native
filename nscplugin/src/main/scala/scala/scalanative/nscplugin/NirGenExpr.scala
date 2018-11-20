@@ -1481,6 +1481,15 @@ trait NirGenExpr { self: NirGenPhase =>
               boxed
             case (_: Type.Primitive, _: Type.Primitive) =>
               genCoercion(value, fromty, toty)
+            case (_, Type.Nothing) =>
+              val runtimeNothing = genType(RuntimeNothingClass, box = true)
+              val isNullL, notNullL = fresh()
+              val isNull = buf.comp(Comp.Ieq, boxed.ty, boxed, Val.Null, unwind)
+              branch(isNull, Next(isNullL), Next(notNullL))
+              label(isNullL)
+              raise(Val.Null, unwind)
+              label(notNullL)
+              buf.as(runtimeNothing, boxed, unwind)
             case _ =>
               val cast = buf.as(boxty, boxed, unwind)
               unboxValue(app.tpe, partial = true, cast)

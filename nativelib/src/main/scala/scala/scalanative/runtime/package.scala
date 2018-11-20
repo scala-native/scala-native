@@ -92,7 +92,16 @@ package object runtime {
   def loop(): Unit =
     ExecutionContext.loop()
 
-  /** Called by the compiler in case of division by zero. */
-  def throwDivisionByZero(): Nothing =
+  /** Called by the generated code in case of division by zero. */
+  @noinline def throwDivisionByZero(): Nothing =
     throw new java.lang.ArithmeticException("/ by zero")
+
+  /** Called by the generated code in case of incorrect class cast. */
+  @noinline def throwClassCast(from: Ptr[Type], to: Ptr[Type]): Nothing =
+    throw new java.lang.ClassCastException(
+      s"${from.name} cannot be cast to ${to.name}")
+
+  /** Called by the generated code in case of operations on null. */
+  @noinline def throwNullPointer(): Nothing =
+    throw new NullPointerException()
 }
