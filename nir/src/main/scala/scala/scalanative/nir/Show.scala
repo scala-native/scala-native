@@ -112,8 +112,6 @@ object Show {
           str(" ")
           next_(unwind)
         }
-      case Inst.Unreachable =>
-        str("unreachable")
       case Inst.Ret(Val.None) =>
         str("ret")
       case Inst.Ret(value) =>
@@ -147,6 +145,12 @@ object Show {
       case Inst.Throw(v, unwind) =>
         str("throw ")
         val_(v)
+        if (unwind ne Next.None) {
+          str(" ")
+          next_(unwind)
+        }
+      case Inst.Unreachable(unwind) =>
+        str("unreachable")
         if (unwind ne Next.None) {
           str(" ")
           next_(unwind)

@@ -94,12 +94,12 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.LabelInst       => Inst.Label(getLocal, getParams)
     case T.LetInst         => Inst.Let(getLocal, getOp, Next.None)
     case T.LetUnwindInst   => Inst.Let(getLocal, getOp, getNext)
-    case T.UnreachableInst => Inst.Unreachable
     case T.RetInst         => Inst.Ret(getVal)
     case T.JumpInst        => Inst.Jump(getNext)
     case T.IfInst          => Inst.If(getVal, getNext, getNext)
     case T.SwitchInst      => Inst.Switch(getVal, getNext, getNexts)
     case T.ThrowInst       => Inst.Throw(getVal, getNext)
+    case T.UnreachableInst => Inst.Unreachable(getNext)
   }
 
   private def getComp(): Comp = getInt match {

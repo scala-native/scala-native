@@ -102,13 +102,13 @@ object Tags {
   final val NoneInst        = 1 + Inst
   final val LabelInst       = 1 + NoneInst
   final val LetInst         = 1 + LabelInst
-  final val UnreachableInst = 1 + LetInst
-  final val RetInst         = 1 + UnreachableInst
+  final val LetUnwindInst   = 1 + LetInst
+  final val RetInst         = 1 + LetUnwindInst
   final val JumpInst        = 1 + RetInst
   final val IfInst          = 1 + JumpInst
   final val SwitchInst      = 1 + IfInst
   final val ThrowInst       = 1 + SwitchInst
-  final val LetUnwindInst   = 1 + ThrowInst
+  final val UnreachableInst = 1 + ThrowInst
 
   // Globals
 

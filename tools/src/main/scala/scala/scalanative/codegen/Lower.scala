@@ -90,7 +90,7 @@ object Lower {
               let(n, Op.Copy(unit), unwind)
             case Type.Nothing =>
               genOp(buf, fresh(), op, unwind)
-              unreachable
+              unreachable(unwind)
               label(fresh(), Seq(Val.Local(n, op.resty)))
             case _ =>
               genOp(buf, n, op, unwind)
@@ -127,11 +127,11 @@ object Lower {
 
       label(isNullL)
       call(throwNullPointerTy, throwNullPointerVal, Seq(Val.Null), unwind)
-      unreachable
+      unreachable(unwind)
 
       label(notNullL)
       genOp(buf, fresh(), Op.Call(throwSig, throw_, Seq(exc)), unwind)
-      unreachable
+      unreachable(unwind)
     }
 
     def genOp(buf: Buffer, n: Local, op: Op, unwind: Next): Unit = op match {
@@ -411,7 +411,7 @@ object Lower {
                throwClassCastVal,
                Seq(Val.Null, fromTy, toTy),
                unwind)
-          unreachable
+          unreachable(unwind)
 
           label(castL)
           let(n, Op.Conv(Conv.Bitcast, ty, v), unwind)
@@ -550,7 +550,7 @@ object Lower {
              throwDivisionByZeroVal,
              Seq(Val.Null),
              unwind)
-        unreachable
+        unreachable(unwind)
 
         label(elseL)
         if (bin == Bin.Srem || bin == Bin.Sdiv) {

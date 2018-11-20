@@ -2,7 +2,7 @@ package scala.scalanative
 
 import java.nio.charset.Charset
 import scala.language.experimental.macros
-import scalanative.runtime.{libc, undefined}
+import scalanative.runtime.{libc, intrinsic}
 
 package object native {
 
@@ -82,7 +82,7 @@ package object native {
   type CString = Ptr[CChar]
 
   /** The C 'sizeof' operator. */
-  def sizeof[T](implicit tag: Tag[T]): CSize = undefined
+  def sizeof[T](implicit tag: Tag[T]): CSize = intrinsic
 
   /** Heap allocate and zero-initialize a value
    *  using current implicit allocator.
@@ -100,26 +100,26 @@ package object native {
    *
    *  Note: unlike alloc, the memory is not zero-initialized.
    */
-  def stackalloc[T](implicit tag: Tag[T]): Ptr[T] = undefined
+  def stackalloc[T](implicit tag: Tag[T]): Ptr[T] = intrinsic
 
   /** Stack allocate n values of given type.
    *
    *  Note: unlike alloc, the memory is not zero-initialized.
    */
-  def stackalloc[T](n: CSize)(implicit tag: Tag[T]): Ptr[T] = undefined
+  def stackalloc[T](n: CSize)(implicit tag: Tag[T]): Ptr[T] = intrinsic
 
   /** Used as right hand side of external method and field declarations. */
-  def extern: Nothing = undefined
+  def extern: Nothing = intrinsic
 
   /** C-style string literal. */
   implicit class CQuote(val ctx: StringContext) {
-    def c(): CString = undefined
+    def c(): CString = intrinsic
   }
 
   /** C-style unchecked cast. */
   implicit class CCast[From](val from: From) {
     def cast[To](implicit fromtag: Tag[From], totag: Tag[To]): To =
-      undefined
+      intrinsic
   }
 
   /** Scala Native extensions to the standard Byte. */

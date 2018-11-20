@@ -15,11 +15,11 @@ object Inst {
   }
 
   sealed abstract class Cf                                  extends Inst
-  final case object Unreachable                             extends Cf
   final case class Ret(value: Val)                          extends Cf
   final case class Jump(next: Next)                         extends Cf
   final case class If(value: Val, thenp: Next, elsep: Next) extends Cf
   final case class Switch(value: Val, default: Next, cases: Seq[Next])
       extends Cf
   final case class Throw(value: Val, unwind: Next) extends Cf
+  final case class Unreachable(unwind: Next)       extends Cf
 }
