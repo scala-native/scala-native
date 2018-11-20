@@ -180,13 +180,24 @@ object Lower {
     }
 
     def genFieldElemOp(buf: Buffer, obj: Val, name: Global, unwind: Next) = {
+      import buf._
+
       val FieldRef(cls: Class, fld) = name
 
       val layout = meta.layout(cls)
       val ty     = layout.struct
       val index  = layout.index(fld)
 
-      buf.elem(ty, obj, Seq(Val.Int(0), Val.Int(index)), unwind)
+      val isNullL, notNullL = fresh()
+
+      val isNull = comp(Comp.Ieq, obj.ty, obj, Val.Null, unwind)
+      branch(isNull, Next(isNullL), Next(notNullL))
+      label(isNullL)
+      call(throwNullPointerTy, throwNullPointerVal, Seq(Val.Null), unwind)
+      unreachable(unwind)
+
+      label(notNullL)
+      elem(ty, obj, Seq(Val.Int(0), Val.Int(index)), unwind)
     }
 
     def genFieldloadOp(buf: Buffer,

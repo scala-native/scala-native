@@ -34,7 +34,9 @@ object SocketHelpers {
         return false
       }
 
-      val sock = socket((!ret).ai_family, SOCK_STREAM, (!ret).ai_protocol)
+      val res = !ret
+
+      val sock = socket(res.ai_family, SOCK_STREAM, res.ai_protocol)
       try {
         if (sock < 0) {
           return false
@@ -50,7 +52,7 @@ object SocketHelpers {
         time.tv_sec = timeout / 1000
         time.tv_usec = (timeout % 1000) * 1000
 
-        connect(sock, (!ret).ai_addr, (!ret).ai_addrlen)
+        connect(sock, res.ai_addr, res.ai_addrlen)
 
         if (select(sock + 1, null, fdset, null, time) == 1) {
           val so_error = stackalloc[CInt].cast[Ptr[Byte]]
@@ -82,7 +84,7 @@ object SocketHelpers {
         case e: Throwable => e
       } finally {
         close(sock)
-        freeaddrinfo(!ret)
+        freeaddrinfo(res)
       }
     }
     true
