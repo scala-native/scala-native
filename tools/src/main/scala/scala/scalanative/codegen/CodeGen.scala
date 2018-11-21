@@ -563,6 +563,33 @@ object CodeGen {
         str("br ")
         genNext(next)
 
+      // LLVM Phis can not express two different if branches pointing at the
+      // same target basic block. In those cases we replace branching with
+      // select instruction.
+      case Inst.If(cond,
+                   thenNext @ Next.Label(thenName, thenArgs),
+                   elseNext @ Next.Label(elseName, elseArgs))
+          if thenName == elseName =>
+        if (thenArgs == elseArgs) {
+          genInst(Inst.Jump(thenNext))
+        } else {
+          val args = thenArgs.zip(elseArgs).map {
+            case (thenV, elseV) =>
+              val name = fresh()
+              newline()
+              str("%")
+              genLocal(name)
+              str(" = select ")
+              genVal(cond)
+              str(", ")
+              genVal(thenV)
+              str(", ")
+              genVal(elseV)
+              Val.Local(name, thenV.ty)
+          }
+          genInst(Inst.Jump(Next.Label(thenName, args)))
+        }
+
       case Inst.If(cond, thenp, elsep) =>
         newline()
         str("br ")
@@ -617,7 +644,7 @@ object CodeGen {
         case call: Op.Call =>
           genCall(genBind, call, unwind)
 
-        case Op.Load(ty, ptr, isVolatile) =>
+        case Op.Load(ty, ptr) =>
           val pointee = fresh()
 
           newline()
@@ -632,16 +659,13 @@ object CodeGen {
           newline()
           genBind()
           str("load ")
-          if (isVolatile) {
-            str("volatile ")
-          }
           genType(ty)
           str(", ")
           genType(ty)
           str("* %")
           genLocal(pointee)
 
-        case Op.Store(ty, ptr, value, isVolatile) =>
+        case Op.Store(ty, ptr, value) =>
           val pointee = fresh()
 
           newline()
@@ -656,9 +680,6 @@ object CodeGen {
           newline()
           genBind()
           str("store ")
-          if (isVolatile) {
-            str("volatile ")
-          }
           genVal(value)
           str(", ")
           genType(ty)
@@ -847,13 +868,6 @@ object CodeGen {
         genVal(v)
         str(" to ")
         genType(ty)
-      case Op.Select(cond, v1, v2) =>
-        str("select ")
-        genVal(cond)
-        str(", ")
-        genVal(v1)
-        str(", ")
-        genVal(v2)
       case op =>
         unsupported(op)
     }

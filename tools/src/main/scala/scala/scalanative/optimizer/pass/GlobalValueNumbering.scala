@@ -133,9 +133,6 @@ object GlobalValueNumbering extends PassCompanion {
           case (Conv(convA, tyA, valueA), Conv(convB, tyB, valueB)) =>
             eqConv(convA, convB) && eqType(tyA, tyB) && eqVal(valueA, valueB)
 
-          case (Select(condA, thenvA, elsevA), Select(condB, thenvB, elsevB)) =>
-            eqVals(Seq(condA, thenvA, elsevA), Seq(condB, thenvB, elsevB))
-
           case (Fieldload(tyA, objA, nameA), Fieldload(tyB, objB, nameB)) =>
             eqType(tyA, tyB) && eqVal(objA, objB) && eqGlobal(nameA, nameB)
 
@@ -289,30 +286,28 @@ object GlobalValueNumbering extends PassCompanion {
     def hashOp(op: Op): Hash = {
       import Op._
       val opFields: Seq[Any] = op match {
-        case Call(ty, ptr, args)       => "Call" +: ty +: ptr +: args
-        case Load(ty, ptr, isVolatile) => Seq("Load", ty, ptr, isVolatile)
-        case Store(ty, ptr, value, isVolatile) =>
-          Seq("Store", ty, ptr, value, isVolatile)
+        case Call(ty, ptr, args) => "Call" +: ty +: ptr +: args
+        case Load(ty, ptr)       => Seq("Load", ty, ptr)
+        case Store(ty, ptr, value) =>
+          Seq("Store", ty, ptr, value)
         case Elem(ty, ptr, indexes) => "Elem" +: ty +: ptr +: indexes
         case Extract(aggr, indexes) => "Extract" +: aggr +: indexes
         case Insert(aggr, value, indexes) =>
           "Insert" +: aggr +: value +: indexes
 
-        case Stackalloc(ty, n)          => Seq("Stackalloc", ty, n)
-        case Bin(bin, ty, l, r)         => Seq("Bin", bin, ty, l, r)
-        case Comp(comp, ty, l, r)       => Seq("Comp", comp, ty, l, r)
-        case Conv(conv, ty, value)      => Seq("Conv", ty, value)
-        case Select(cond, thenv, elsev) => Seq("Select", cond, thenv, elsev)
+        case Stackalloc(ty, n)     => Seq("Stackalloc", ty, n)
+        case Bin(bin, ty, l, r)    => Seq("Bin", bin, ty, l, r)
+        case Comp(comp, ty, l, r)  => Seq("Comp", comp, ty, l, r)
+        case Conv(conv, ty, value) => Seq("Conv", ty, value)
 
         case Fieldload(ty, obj, name) => Seq("Fieldload", ty, obj, name)
         case Fieldstore(ty, obj, name, value) =>
           Seq("Fieldstore", ty, obj, name, value)
-        case Method(obj, name)          => Seq("Method", obj, name)
-        case Dynmethod(obj, signature)  => Seq("Dynmethod", obj, signature)
-        case As(ty, obj)                => Seq("As", ty, obj)
-        case Is(ty, obj)                => Seq("Is", ty, obj)
-        case Copy(value)                => Seq("Copy", value)
-        case Closure(ty, fun, captures) => "Closure" +: ty +: fun +: captures
+        case Method(obj, name)         => Seq("Method", obj, name)
+        case Dynmethod(obj, signature) => Seq("Dynmethod", obj, signature)
+        case As(ty, obj)               => Seq("As", ty, obj)
+        case Is(ty, obj)               => Seq("Is", ty, obj)
+        case Copy(value)               => Seq("Copy", value)
 
         case Classalloc(name)        => Seq("Classalloc", name)
         case Module(name)            => Seq("Module", name)

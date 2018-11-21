@@ -53,10 +53,10 @@ trait Transform {
   def onOp(op: Op): Op = op match {
     case Op.Call(ty, ptrv, argvs) =>
       Op.Call(onType(ty), onVal(ptrv), argvs.map(onVal))
-    case Op.Load(ty, ptrv, isVolatile) =>
-      Op.Load(onType(ty), onVal(ptrv), isVolatile)
-    case Op.Store(ty, ptrv, v, isVolatile) =>
-      Op.Store(onType(ty), onVal(ptrv), onVal(v), isVolatile)
+    case Op.Load(ty, ptrv) =>
+      Op.Load(onType(ty), onVal(ptrv))
+    case Op.Store(ty, ptrv, v) =>
+      Op.Store(onType(ty), onVal(ptrv), onVal(v))
     case Op.Elem(ty, ptrv, indexvs) =>
       Op.Elem(onType(ty), onVal(ptrv), indexvs.map(onVal))
     case Op.Extract(aggrv, indexvs) =>
@@ -71,8 +71,6 @@ trait Transform {
       Op.Comp(comp, onType(ty), onVal(lv), onVal(rv))
     case Op.Conv(conv, ty, v) =>
       Op.Conv(conv, onType(ty), onVal(v))
-    case Op.Select(v1, v2, v3) =>
-      Op.Select(onVal(v1), onVal(v2), onVal(v3))
 
     case Op.Classalloc(n) =>
       Op.Classalloc(n)
@@ -94,8 +92,6 @@ trait Transform {
       Op.Copy(onVal(v))
     case Op.Sizeof(ty) =>
       Op.Sizeof(onType(ty))
-    case Op.Closure(ty, fun, captures) =>
-      Op.Closure(onType(ty), onVal(fun), captures.map(onVal))
     case Op.Box(code, obj) =>
       Op.Box(code, onVal(obj))
     case Op.Unbox(code, obj) =>

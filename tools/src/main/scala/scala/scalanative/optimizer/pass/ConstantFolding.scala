@@ -116,12 +116,6 @@ class ConstantFolding extends Pass {
 
     case Op.Conv(Sext, ty, IVal(i)) =>
       IVal(i, ty)
-
-    /* Select */
-    case Op.Select(Val.True, thenv, _) =>
-      thenv
-    case Op.Select(Val.False, _, elsev) =>
-      elsev
   }
 
   override def onInsts(insts: Seq[Inst]): Seq[Inst] = insts.map {
