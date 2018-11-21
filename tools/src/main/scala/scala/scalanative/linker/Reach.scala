@@ -474,10 +474,10 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       reachType(ty)
       reachVal(ptrv)
       argvs.foreach(reachVal)
-    case Op.Load(ty, ptrv, isVolatile) =>
+    case Op.Load(ty, ptrv) =>
       reachType(ty)
       reachVal(ptrv)
-    case Op.Store(ty, ptrv, v, isVolatile) =>
+    case Op.Store(ty, ptrv, v) =>
       reachType(ty)
       reachVal(ptrv)
       reachVal(v)
@@ -542,10 +542,6 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       reachVal(v)
     case Op.Sizeof(ty) =>
       reachType(ty)
-    case Op.Closure(ty, fun, captures) =>
-      reachType(ty)
-      reachVal(fun)
-      captures.foreach(reachVal)
     case Op.Box(code, obj) =>
       reachVal(obj)
     case Op.Unbox(code, obj) =>

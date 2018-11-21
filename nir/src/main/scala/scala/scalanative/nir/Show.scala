@@ -166,13 +166,13 @@ object Show {
         str("(")
         rep(args, sep = ", ")(val_)
         str(")")
-      case Op.Load(ty, ptr, isVolatile) =>
-        str(if (isVolatile) "volatile load[" else "load[")
+      case Op.Load(ty, ptr) =>
+        str("load[")
         type_(ty)
         str("] ")
         val_(ptr)
-      case Op.Store(ty, ptr, value, isVolatile) =>
-        str(if (isVolatile) "volatile store[" else "store[")
+      case Op.Store(ty, ptr, value) =>
+        str("store[")
         type_(ty)
         str("] ")
         val_(ptr)
@@ -286,11 +286,6 @@ object Show {
         str("sizeof[")
         type_(ty)
         str("] ")
-      case Op.Closure(ty, fun, captures) =>
-        str("closure[")
-        type_(ty)
-        str("] ")
-        rep(fun +: captures, sep = ", ")(val_)
       case Op.Box(ty, v) =>
         str("box[")
         type_(ty)

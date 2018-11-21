@@ -16,14 +16,14 @@ object Op extends Base[nir.Op] {
       case (ty, f, args) => nir.Op.Call(ty, f, args)
     }
   val Load =
-    P("volatile".!.? ~ "load[" ~ Type.parser ~ "]" ~ Val.parser map {
-      case (volatile, ty, ptr) =>
-        nir.Op.Load(ty, ptr, isVolatile = volatile.nonEmpty)
+    P("load[" ~ Type.parser ~ "]" ~ Val.parser map {
+      case (ty, ptr) =>
+        nir.Op.Load(ty, ptr)
     })
   val Store =
-    P("volatile".!.? ~ "store[" ~ Type.parser ~ "]" ~ Val.parser ~ "," ~ Val.parser map {
-      case (volatile, ty, ptr, value) =>
-        nir.Op.Store(ty, ptr, value, isVolatile = volatile.nonEmpty)
+    P("store[" ~ Type.parser ~ "]" ~ Val.parser ~ "," ~ Val.parser map {
+      case (ty, ptr, value) =>
+        nir.Op.Store(ty, ptr, value)
     })
   val Elem =
     P(
@@ -89,10 +89,6 @@ object Op extends Base[nir.Op] {
     })
   val Copy   = P("copy" ~ Val.parser map (nir.Op.Copy(_)))
   val Sizeof = P("sizeof[" ~ Type.parser ~ "]" map (nir.Op.Sizeof(_)))
-  val Closure =
-    P("closure[" ~ Type.parser ~ "]" ~ Val.parser.rep(sep = ",") map {
-      case (ty, fun +: captures) => nir.Op.Closure(ty, fun, captures)
-    })
   val Box = P("box[" ~ Type.parser ~ "]" ~ Val.parser map {
     case (ty, obj) => nir.Op.Box(ty, obj)
   })
@@ -123,5 +119,5 @@ object Op extends Base[nir.Op] {
     case arr => nir.Op.Arraylength(arr)
   })
   override val parser: P[nir.Op] =
-    Call | Load | Store | Elem | Extract | Insert | Stackalloc | Bin | Comp | Conv | Select | Classalloc | Fieldload | Fieldstore | Method | Dynmethod | Module | As | Is | Copy | Sizeof | Closure | Box | Unbox | Var | Varload | Varstore | Arrayalloc | Arrayload | Arraystore | Arraylength
+    Call | Load | Store | Elem | Extract | Insert | Stackalloc | Bin | Comp | Conv | Select | Classalloc | Fieldload | Fieldstore | Method | Dynmethod | Module | As | Is | Copy | Sizeof | Box | Unbox | Var | Varload | Varstore | Arrayalloc | Arrayload | Arraystore | Arraylength
 }

@@ -289,10 +289,10 @@ object GlobalValueNumbering extends PassCompanion {
     def hashOp(op: Op): Hash = {
       import Op._
       val opFields: Seq[Any] = op match {
-        case Call(ty, ptr, args)       => "Call" +: ty +: ptr +: args
-        case Load(ty, ptr, isVolatile) => Seq("Load", ty, ptr, isVolatile)
-        case Store(ty, ptr, value, isVolatile) =>
-          Seq("Store", ty, ptr, value, isVolatile)
+        case Call(ty, ptr, args) => "Call" +: ty +: ptr +: args
+        case Load(ty, ptr)       => Seq("Load", ty, ptr)
+        case Store(ty, ptr, value) =>
+          Seq("Store", ty, ptr, value)
         case Elem(ty, ptr, indexes) => "Elem" +: ty +: ptr +: indexes
         case Extract(aggr, indexes) => "Extract" +: aggr +: indexes
         case Insert(aggr, value, indexes) =>
@@ -307,12 +307,11 @@ object GlobalValueNumbering extends PassCompanion {
         case Fieldload(ty, obj, name) => Seq("Fieldload", ty, obj, name)
         case Fieldstore(ty, obj, name, value) =>
           Seq("Fieldstore", ty, obj, name, value)
-        case Method(obj, name)          => Seq("Method", obj, name)
-        case Dynmethod(obj, signature)  => Seq("Dynmethod", obj, signature)
-        case As(ty, obj)                => Seq("As", ty, obj)
-        case Is(ty, obj)                => Seq("Is", ty, obj)
-        case Copy(value)                => Seq("Copy", value)
-        case Closure(ty, fun, captures) => "Closure" +: ty +: fun +: captures
+        case Method(obj, name)         => Seq("Method", obj, name)
+        case Dynmethod(obj, signature) => Seq("Dynmethod", obj, signature)
+        case As(ty, obj)               => Seq("As", ty, obj)
+        case Is(ty, obj)               => Seq("Is", ty, obj)
+        case Copy(value)               => Seq("Copy", value)
 
         case Classalloc(name)        => Seq("Classalloc", name)
         case Module(name)            => Seq("Module", name)

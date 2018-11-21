@@ -43,14 +43,10 @@ class Buffer(implicit fresh: Fresh) {
     let(fresh(), op, unwind)
   def call(ty: Type, ptr: Val, args: Seq[Val], unwind: Next): Val =
     let(Op.Call(ty, ptr, args), unwind)
-  def load(ty: Type, ptr: Val, unwind: Next, isVolatile: Boolean = false): Val =
-    let(Op.Load(ty, ptr, isVolatile), unwind)
-  def store(ty: Type,
-            ptr: Val,
-            value: Val,
-            unwind: Next,
-            isVolatile: Boolean = false): Val =
-    let(Op.Store(ty, ptr, value, isVolatile), unwind)
+  def load(ty: Type, ptr: Val, unwind: Next): Val =
+    let(Op.Load(ty, ptr), unwind)
+  def store(ty: Type, ptr: Val, value: Val, unwind: Next): Val =
+    let(Op.Store(ty, ptr, value), unwind)
   def elem(ty: Type, ptr: Val, indexes: Seq[Val], unwind: Next): Val =
     let(Op.Elem(ty, ptr, indexes), unwind)
   def extract(aggr: Val, indexes: Seq[Int], unwind: Next): Val =
@@ -91,8 +87,6 @@ class Buffer(implicit fresh: Fresh) {
     let(Op.Copy(value), unwind)
   def sizeof(ty: Type, unwind: Next): Val =
     let(Op.Sizeof(ty), unwind)
-  def closure(ty: Type, fun: Val, captures: Seq[Val], unwind: Next): Val =
-    let(Op.Closure(ty, fun, captures), unwind)
   def box(ty: Type, obj: Val, unwind: Next): Val =
     let(Op.Box(ty, obj), unwind)
   def unbox(ty: Type, obj: Val, unwind: Next): Val =

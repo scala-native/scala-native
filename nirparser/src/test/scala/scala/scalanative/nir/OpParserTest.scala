@@ -12,10 +12,8 @@ class OpParserTest extends FunSuite {
   Seq[Op](
     Op.Call(Type.Function(Seq.empty, ty), local, Seq()),
     Op.Call(Type.Function(Seq(ty), Type.Unit), local, Seq(local)),
-    Op.Load(ty, local, isVolatile = true),
-    Op.Load(ty, local, isVolatile = false),
-    Op.Store(ty, local, local, isVolatile = true),
-    Op.Store(ty, local, local, isVolatile = false),
+    Op.Load(ty, local),
+    Op.Store(ty, local, local),
     Op.Elem(ty, local, Seq(Val.Int(0))),
     Op.Elem(ty, local, Seq(Val.Int(0), Val.Int(1))),
     Op.Elem(ty, local, Seq(Val.Int(0), Val.Int(1), Val.Int(2))),

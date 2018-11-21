@@ -163,8 +163,7 @@ object Tags {
   final val IsOp          = 1 + AsOp
   final val CopyOp        = 1 + IsOp
   final val SizeofOp      = 1 + CopyOp
-  final val ClosureOp     = 1 + SizeofOp
-  final val BoxOp         = 1 + ClosureOp
+  final val BoxOp         = 1 + SizeofOp
   final val UnboxOp       = 1 + BoxOp
   final val DynmethodOp   = 1 + UnboxOp
   final val VarOp         = 1 + DynmethodOp
@@ -213,7 +212,8 @@ object Tags {
   final val NoneVal        = 1 + Val
   final val TrueVal        = 1 + NoneVal
   final val FalseVal       = 1 + TrueVal
-  final val ZeroVal        = 1 + FalseVal
+  final val NullVal        = 1 + FalseVal
+  final val ZeroVal        = 1 + NullVal
   final val UndefVal       = 1 + ZeroVal
   final val ByteVal        = 1 + UndefVal
   final val ShortVal       = 1 + ByteVal

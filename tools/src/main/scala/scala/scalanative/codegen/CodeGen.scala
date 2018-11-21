@@ -617,7 +617,7 @@ object CodeGen {
         case call: Op.Call =>
           genCall(genBind, call, unwind)
 
-        case Op.Load(ty, ptr, isVolatile) =>
+        case Op.Load(ty, ptr) =>
           val pointee = fresh()
 
           newline()
@@ -632,16 +632,13 @@ object CodeGen {
           newline()
           genBind()
           str("load ")
-          if (isVolatile) {
-            str("volatile ")
-          }
           genType(ty)
           str(", ")
           genType(ty)
           str("* %")
           genLocal(pointee)
 
-        case Op.Store(ty, ptr, value, isVolatile) =>
+        case Op.Store(ty, ptr, value) =>
           val pointee = fresh()
 
           newline()
@@ -656,9 +653,6 @@ object CodeGen {
           newline()
           genBind()
           str("store ")
-          if (isVolatile) {
-            str("volatile ")
-          }
           genVal(value)
           str(", ")
           genType(ty)

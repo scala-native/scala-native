@@ -9,10 +9,6 @@ import nir.serialization.{Tags => T}
 final class BinarySerializer(buffer: ByteBuffer) {
   import buffer._
 
-  // Things to change in next binary-breaking release:
-  // 1. Val.Null should have its own tag, not encoded via Val.Zero(Type.Ptr).
-  // 2. Volatile Op.{Load, Store} should become serializable.
-
   final def serialize(defns: Seq[Defn]): Unit = {
     val names     = defns.map(_.name)
     val positions = mutable.UnrolledBuffer.empty[Int]
@@ -294,14 +290,12 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putVal(v)
       putVals(args)
 
-    case Op.Load(ty, ptr, isVolatile) =>
-      assert(!isVolatile, "volatile loads are not serializable")
+    case Op.Load(ty, ptr) =>
       putInt(T.LoadOp)
       putType(ty)
       putVal(ptr)
 
-    case Op.Store(ty, value, ptr, isVolatile) =>
-      assert(!isVolatile, "volatile stores are not serializable")
+    case Op.Store(ty, value, ptr) =>
       putInt(T.StoreOp)
       putType(ty)
       putVal(value)
@@ -404,12 +398,6 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.SizeofOp)
       putType(ty)
 
-    case Op.Closure(ty, fun, captures) =>
-      putInt(T.ClosureOp)
-      putType(ty)
-      putVal(fun)
-      putVals(captures)
-
     case Op.Box(ty, obj) =>
       putInt(T.BoxOp)
       putType(ty)
@@ -508,7 +496,7 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Val.None            => putInt(T.NoneVal)
     case Val.True            => putInt(T.TrueVal)
     case Val.False           => putInt(T.FalseVal)
-    case Val.Null            => putInt(T.ZeroVal); putType(Type.Ptr)
+    case Val.Null            => putInt(T.NullVal)
     case Val.Zero(ty)        => putInt(T.ZeroVal); putType(ty)
     case Val.Undef(ty)       => putInt(T.UndefVal); putType(ty)
     case Val.Byte(v)         => putInt(T.ByteVal); put(v)
