@@ -16,7 +16,6 @@ sealed abstract class Op {
     case Op.Bin(_, ty, _, _)                  => ty
     case Op.Comp(_, _, _, _)                  => Type.Bool
     case Op.Conv(_, ty, _)                    => ty
-    case Op.Select(_, v, _)                   => v.ty
 
     case Op.Classalloc(n)           => Type.Ref(n, exact = true, nullable = false)
     case Op.Fieldload(ty, _, _)     => ty
@@ -51,7 +50,7 @@ sealed abstract class Op {
    */
   final def isPure: Boolean = this match {
     case _: Op.Elem | _: Op.Extract | _: Op.Insert | _: Op.Comp | _: Op.Conv |
-        _: Op.Select | _: Op.Is | _: Op.Copy | _: Op.Sizeof =>
+        _: Op.Is | _: Op.Copy | _: Op.Sizeof =>
       true
     // Division and modulo on integers are not pure as
     // they may throw if the divisor is zero.
@@ -92,7 +91,6 @@ object Op {
   final case class Bin(bin: nir.Bin, ty: Type, l: Val, r: Val)      extends Op
   final case class Comp(comp: nir.Comp, ty: Type, l: Val, r: Val)   extends Op
   final case class Conv(conv: nir.Conv, ty: Type, value: Val)       extends Op
-  final case class Select(cond: Val, thenv: Val, elsev: Val)        extends Op
 
   // high-level
   final case class Classalloc(name: Global)                    extends Op

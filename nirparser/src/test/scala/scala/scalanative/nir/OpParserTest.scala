@@ -28,7 +28,6 @@ class OpParserTest extends FunSuite {
     Op.Bin(Bin.Iadd, ty, local, local),
     Op.Comp(Comp.Ieq, ty, local, local),
     Op.Conv(Conv.Fpext, ty, local),
-    Op.Select(local, local, local),
     Op.Classalloc(global),
     Op.Fieldload(ty, local, global),
     Op.Fieldstore(ty, local, global, local),

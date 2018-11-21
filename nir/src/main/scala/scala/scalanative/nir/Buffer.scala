@@ -61,8 +61,6 @@ class Buffer(implicit fresh: Fresh) {
     let(Op.Comp(comp, ty, l, r), unwind)
   def conv(conv: nir.Conv, ty: Type, value: Val, unwind: Next): Val =
     let(Op.Conv(conv, ty, value), unwind)
-  def select(cond: Val, thenv: Val, elsev: Val, unwind: Next): Val =
-    let(Op.Select(cond, thenv, elsev), unwind)
   def classalloc(name: Global, unwind: Next): Val =
     let(Op.Classalloc(name), unwind)
   def fieldload(ty: Type, obj: Val, name: Global, unwind: Next): Val =

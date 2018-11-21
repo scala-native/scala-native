@@ -213,16 +213,6 @@ class PartialEvaluation extends Pass {
     case Let(n, Op.Comp(Sle, ty, lhs, IVal(a)), unwind) if a == maxValue(ty) =>
       copy(n, Val.True, unwind)
 
-    /* Select */
-    case Let(n, Op.Select(cond, thenv, elsev), unwind) if thenv == elsev =>
-      copy(n, thenv, unwind)
-
-    case Let(n, Op.Select(cond, Val.True, Val.False), unwind) =>
-      copy(n, cond, unwind)
-
-    case Let(n, Op.Select(cond, Val.False, Val.True), unwind) =>
-      neg(n, cond, unwind)
-
     case inst =>
       inst
   }

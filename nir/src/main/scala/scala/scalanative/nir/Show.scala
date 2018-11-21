@@ -227,13 +227,6 @@ object Show {
         type_(ty)
         str("] ")
         val_(v)
-      case Op.Select(cond, thenv, elsev) =>
-        str("select ")
-        val_(cond)
-        str(", ")
-        val_(thenv)
-        str(", ")
-        val_(elsev)
 
       case Op.Classalloc(name) =>
         str("classalloc ")

@@ -55,10 +55,6 @@ object Op extends Base[nir.Op] {
     P(nir.parser.Conv.parser ~ "[" ~ Type.parser ~ "]" ~ Val.parser map {
       case (name, ty, v) => nir.Op.Conv(name, ty, v)
     })
-  val Select =
-    P("select" ~ Val.parser ~ "," ~ Val.parser ~ "," ~ Val.parser map {
-      case (cond, thenp, elsep) => nir.Op.Select(cond, thenp, elsep)
-    })
   val Classalloc = P("classalloc" ~ Global.parser map (nir.Op.Classalloc(_)))
   val Fieldload =
     P("fieldload" ~ "[" ~ Type.parser ~ "]" ~ Val.parser ~ "," ~ Global.parser map {
@@ -119,5 +115,5 @@ object Op extends Base[nir.Op] {
     case arr => nir.Op.Arraylength(arr)
   })
   override val parser: P[nir.Op] =
-    Call | Load | Store | Elem | Extract | Insert | Stackalloc | Bin | Comp | Conv | Select | Classalloc | Fieldload | Fieldstore | Method | Dynmethod | Module | As | Is | Copy | Sizeof | Box | Unbox | Var | Varload | Varstore | Arrayalloc | Arrayload | Arraystore | Arraylength
+    Call | Load | Store | Elem | Extract | Insert | Stackalloc | Bin | Comp | Conv | Classalloc | Fieldload | Fieldstore | Method | Dynmethod | Module | As | Is | Copy | Sizeof | Box | Unbox | Var | Varload | Varstore | Arrayalloc | Arrayload | Arraystore | Arraylength
 }

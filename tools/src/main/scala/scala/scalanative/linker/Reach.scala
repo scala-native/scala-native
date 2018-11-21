@@ -504,10 +504,6 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     case Op.Conv(conv, ty, v) =>
       reachType(ty)
       reachVal(v)
-    case Op.Select(v1, v2, v3) =>
-      reachVal(v1)
-      reachVal(v2)
-      reachVal(v3)
 
     case Op.Classalloc(n) =>
       classInfo(n).foreach(reachAllocation)

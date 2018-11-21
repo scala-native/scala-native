@@ -133,9 +133,6 @@ object GlobalValueNumbering extends PassCompanion {
           case (Conv(convA, tyA, valueA), Conv(convB, tyB, valueB)) =>
             eqConv(convA, convB) && eqType(tyA, tyB) && eqVal(valueA, valueB)
 
-          case (Select(condA, thenvA, elsevA), Select(condB, thenvB, elsevB)) =>
-            eqVals(Seq(condA, thenvA, elsevA), Seq(condB, thenvB, elsevB))
-
           case (Fieldload(tyA, objA, nameA), Fieldload(tyB, objB, nameB)) =>
             eqType(tyA, tyB) && eqVal(objA, objB) && eqGlobal(nameA, nameB)
 
@@ -298,11 +295,10 @@ object GlobalValueNumbering extends PassCompanion {
         case Insert(aggr, value, indexes) =>
           "Insert" +: aggr +: value +: indexes
 
-        case Stackalloc(ty, n)          => Seq("Stackalloc", ty, n)
-        case Bin(bin, ty, l, r)         => Seq("Bin", bin, ty, l, r)
-        case Comp(comp, ty, l, r)       => Seq("Comp", comp, ty, l, r)
-        case Conv(conv, ty, value)      => Seq("Conv", ty, value)
-        case Select(cond, thenv, elsev) => Seq("Select", cond, thenv, elsev)
+        case Stackalloc(ty, n)     => Seq("Stackalloc", ty, n)
+        case Bin(bin, ty, l, r)    => Seq("Bin", bin, ty, l, r)
+        case Comp(comp, ty, l, r)  => Seq("Comp", comp, ty, l, r)
+        case Conv(conv, ty, value) => Seq("Conv", ty, value)
 
         case Fieldload(ty, obj, name) => Seq("Fieldload", ty, obj, name)
         case Fieldstore(ty, obj, name, value) =>

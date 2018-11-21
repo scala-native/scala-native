@@ -100,15 +100,6 @@ class InstCombine extends Pass {
           case _ => inst
         }
 
-      case Let(n, Op.Select(cond, thenv, elsev), unwind) =>
-        defop(cond) match {
-          // select (c xor true) then a else b  =  select c then b else a
-          case Some(Op.Bin(Xor, _, negCond, Val.True)) =>
-            Let(n, Op.Select(negCond, elsev, thenv), unwind)
-
-          case _ => inst
-        }
-
       case If(cond, thenp, elsep) =>
         defop(cond) match {
           // if (c xor true) then a else b  =  if c then b else a

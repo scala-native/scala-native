@@ -102,42 +102,7 @@ class CfChainsSimplification extends Pass {
       case _ => cfInst
     }
 
-    fixIf(simpleRes)
-  }
-
-  /* This is necessary to prevent a problem with LLVM, as its phi-functions
-   * can't handle two distinct CFG-edges going from the same source block to the
-   * same destination block
-   */
-  private def fixIf(inst: Inst)(implicit fresh: Fresh): Seq[Inst] = {
-    inst match {
-      // The problem only occurs when the two destination blocks are the same
-      case If(cond,
-              thenNext @ Next.Label(thenName, thenArgs),
-              Next.Label(elseName, elseArgs)) if (thenName == elseName) =>
-        // if both branches provide the same arguments, we simply have a jump
-        if (thenArgs == elseArgs) {
-          Seq(Jump(thenNext))
-        }
-        // otherwise, we change the `if` to a select (for the argument values)
-        // followed by a jump
-        else {
-          val (newArgs, selects) = thenArgs
-            .zip(elseArgs)
-            .map {
-              case (thenV, elseV) =>
-                val freshVar = fresh()
-                val selectInst =
-                  Let(freshVar, Op.Select(cond, thenV, elseV), Next.None)
-                (Val.Local(freshVar, thenV.ty), selectInst)
-            }
-            .unzip
-
-          selects :+ Jump(Next.Label(thenName, newArgs))
-        }
-
-      case _ => Seq(inst)
-    }
+    Seq(simpleRes)
   }
 
   /* To simplify a normal `if` branch, imagine it is a simple `jump`, and try to optimize

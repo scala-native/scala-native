@@ -71,8 +71,6 @@ trait Transform {
       Op.Comp(comp, onType(ty), onVal(lv), onVal(rv))
     case Op.Conv(conv, ty, v) =>
       Op.Conv(conv, onType(ty), onVal(v))
-    case Op.Select(v1, v2, v3) =>
-      Op.Select(onVal(v1), onVal(v2), onVal(v3))
 
     case Op.Classalloc(n) =>
       Op.Classalloc(n)
