@@ -541,8 +541,12 @@ object CodeGen {
       case inst: Inst.Let =>
         genLet(inst)
 
-      case Inst.Unreachable =>
+      case Inst.Unreachable(unwind) =>
         newline()
+        val noBind = () => ()
+        genCall(noBind,
+                Op.Call(throwUndefinedTy, throwUndefinedVal, Seq(Val.Null)),
+                unwind)
         str("unreachable")
 
       case Inst.Ret(Val.None) =>
@@ -881,12 +885,20 @@ object CodeGen {
       "landingpad { i8*, i32 } catch i8* bitcast ({ i8*, i8*, i8* }* @_ZTIN11scalanative16ExceptionWrapperE to i8*)"
     val typeid =
       "call i32 @llvm.eh.typeid.for(i8* bitcast ({ i8*, i8*, i8* }* @_ZTIN11scalanative16ExceptionWrapperE to i8*))"
+    val throwUndefinedTy =
+      Type.Function(Seq(Type.Ptr), Type.Nothing)
+    val throwUndefined =
+      Global.Member(Global.Top("scala.scalanative.runtime.package$"),
+                    Sig.Method("throwUndefined", Seq(Type.Nothing)))
+    val throwUndefinedVal =
+      Val.Global(throwUndefined, Type.Ptr)
   }
 
   val depends: Seq[Global] = {
     val buf = mutable.UnrolledBuffer.empty[Global]
     buf ++= Lower.depends
     buf ++= Generate.depends
+    buf += Impl.throwUndefined
     buf
   }
 }

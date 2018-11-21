@@ -26,7 +26,7 @@ trait NirGenExpr { self: NirGenPhase =>
       inst match {
         case inst: nir.Inst.Label =>
           if (labeled) {
-            unreachable
+            unreachable(unwind)
           }
           labeled = true
         case _ =>

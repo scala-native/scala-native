@@ -36,8 +36,6 @@ trait Transform {
     case Inst.Let(n, op, unwind) =>
       Inst.Let(n, onOp(op), onNext(unwind))
 
-    case Inst.Unreachable =>
-      Inst.Unreachable
     case Inst.Ret(v) =>
       Inst.Ret(onVal(v))
     case Inst.Jump(next) =>
@@ -48,6 +46,8 @@ trait Transform {
       Inst.Switch(onVal(v), onNext(default), cases.map(onNext))
     case Inst.Throw(v, unwind) =>
       Inst.Throw(onVal(v), onNext(unwind))
+    case Inst.Unreachable(unwind) =>
+      Inst.Unreachable(onNext(unwind))
   }
 
   def onOp(op: Op): Op = op match {

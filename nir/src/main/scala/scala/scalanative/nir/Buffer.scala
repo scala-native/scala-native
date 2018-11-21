@@ -19,8 +19,8 @@ class Buffer(implicit fresh: Fresh) {
     this += Inst.Label(name, Seq.empty)
   def label(name: Local, params: Seq[Val.Local]): Unit =
     this += Inst.Label(name, params)
-  def unreachable: Unit =
-    this += Inst.Unreachable
+  def unreachable(unwind: Next): Unit =
+    this += Inst.Unreachable(unwind)
   def ret(value: Val): Unit =
     this += Inst.Ret(value)
   def jump(next: Next): Unit =

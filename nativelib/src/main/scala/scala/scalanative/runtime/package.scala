@@ -31,37 +31,37 @@ package object runtime {
   final val STRUCT_KIND = 2
 
   /** Used as a stub right hand of intrinsified methods. */
-  def undefined: Nothing = throw new UndefinedBehaviorError
+  def intrinsic: Nothing = throwUndefined()
 
   /** Returns info pointer for given type. */
-  def typeof[T](implicit tag: Tag[T]): Ptr[Type] = undefined
+  def typeof[T](implicit tag: Tag[T]): Ptr[Type] = intrinsic
 
   /** Intrinsified unsigned devision on ints. */
-  def divUInt(l: Int, r: Int): Int = undefined
+  def divUInt(l: Int, r: Int): Int = intrinsic
 
   /** Intrinsified unsigned devision on longs. */
-  def divULong(l: Long, r: Long): Long = undefined
+  def divULong(l: Long, r: Long): Long = intrinsic
 
   /** Intrinsified unsigned remainder on ints. */
-  def remUInt(l: Int, r: Int): Int = undefined
+  def remUInt(l: Int, r: Int): Int = intrinsic
 
   /** Intrinsified unsigned remainder on longs. */
-  def remULong(l: Long, r: Long): Long = undefined
+  def remULong(l: Long, r: Long): Long = intrinsic
 
   /** Intrinsified byte to unsigned int converstion. */
-  def byteToUInt(b: Byte): Int = undefined
+  def byteToUInt(b: Byte): Int = intrinsic
 
   /** Intrinsified byte to unsigned long conversion. */
-  def byteToULong(b: Byte): Long = undefined
+  def byteToULong(b: Byte): Long = intrinsic
 
   /** Intrinsified short to unsigned int conversion. */
-  def shortToUInt(v: Short): Int = undefined
+  def shortToUInt(v: Short): Int = intrinsic
 
   /** Intrinsified short to unsigned long conversion. */
-  def shortToULong(v: Short): Long = undefined
+  def shortToULong(v: Short): Long = intrinsic
 
   /** Intrinsified int to unsigned long conversion. */
-  def intToULong(v: Int): Long = undefined
+  def intToULong(v: Int): Long = intrinsic
 
   /** Read type information of given object. */
   def getType(obj: Object): Ptr[ClassType] = !obj.cast[Ptr[Ptr[ClassType]]]
@@ -104,4 +104,8 @@ package object runtime {
   /** Called by the generated code in case of operations on null. */
   @noinline def throwNullPointer(): Nothing =
     throw new NullPointerException()
+
+  /** Called by the generated code in case of unexpected condition. */
+  @noinline def throwUndefined(): Nothing =
+    throw new UndefinedBehaviorError
 }

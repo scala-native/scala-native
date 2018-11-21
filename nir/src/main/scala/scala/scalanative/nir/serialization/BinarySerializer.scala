@@ -117,9 +117,6 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putOp(op)
       putNext(unwind)
 
-    case Inst.Unreachable =>
-      putInt(T.UnreachableInst)
-
     case Inst.Ret(v) =>
       putInt(T.RetInst)
       putVal(v)
@@ -143,6 +140,10 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Inst.Throw(v, unwind) =>
       putInt(T.ThrowInst)
       putVal(v)
+      putNext(unwind)
+
+    case Inst.Unreachable(unwind) =>
+      putInt(T.UnreachableInst)
       putNext(unwind)
   }
 

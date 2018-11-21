@@ -114,7 +114,7 @@ object ControlFlow {
             ()
         }
         cf match {
-          case Inst.Unreachable | _: Inst.Ret =>
+          case _: Inst.Ret =>
             ()
           case Inst.Jump(next) =>
             edge(node, block(next.name), next)
@@ -127,6 +127,10 @@ object ControlFlow {
               edge(node, block(case_.name), case_)
             }
           case Inst.Throw(_, next) =>
+            if (next ne Next.None) {
+              edge(node, block(next.name), next)
+            }
+          case Inst.Unreachable(next) =>
             if (next ne Next.None) {
               edge(node, block(next.name), next)
             }
