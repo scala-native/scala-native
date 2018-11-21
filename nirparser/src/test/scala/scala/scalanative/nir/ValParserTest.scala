@@ -14,7 +14,6 @@ class ValParserTest extends FunSuite {
     Val.False,
     Val.Null,
     Val.Zero(Type.Int),
-    Val.Undef(Type.Int),
     Val.Byte(0),
     Val.Short(0),
     Val.Int(0),

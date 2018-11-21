@@ -395,10 +395,6 @@ object Show {
         str("zero[")
         type_(ty)
         str("]")
-      case Val.Undef(ty) =>
-        str("undef[")
-        type_(ty)
-        str("]")
       case Val.Byte(value) =>
         str("byte ")
         str(value)

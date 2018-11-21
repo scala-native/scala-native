@@ -114,7 +114,6 @@ trait Transform {
 
   def onVal(value: Val): Val = value match {
     case Val.Zero(ty)            => Val.Zero(onType(ty))
-    case Val.Undef(ty)           => Val.Undef(onType(ty))
     case Val.StructValue(values) => Val.StructValue(values.map(onVal))
     case Val.ArrayValue(ty, values) =>
       Val.ArrayValue(onType(ty), values.map(onVal))

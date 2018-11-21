@@ -10,7 +10,6 @@ sealed abstract class Val {
     case Val.None                 => Type.None
     case Val.Null                 => Type.Null
     case Val.Zero(ty)             => ty
-    case Val.Undef(ty)            => ty
     case Val.True | Val.False     => Type.Bool
     case Val.Byte(_)              => Type.Byte
     case Val.Short(_)             => Type.Short
@@ -141,7 +140,6 @@ object Val {
   }
   final case object Null                     extends Val
   final case class Zero(of: nir.Type)        extends Val
-  final case class Undef(of: nir.Type)       extends Val
   final case class Byte(value: scala.Byte)   extends Val
   final case class Short(value: scala.Short) extends Val
   final case class Int(value: scala.Int)     extends Val

@@ -420,7 +420,6 @@ object CodeGen {
       case Val.False     => str("false")
       case Val.Null      => str("null")
       case Val.Zero(ty)  => str("zeroinitializer")
-      case Val.Undef(ty) => str("undef")
       case Val.Byte(v)   => str(v)
       case Val.Short(v)  => str(v)
       case Val.Int(v)    => str(v)

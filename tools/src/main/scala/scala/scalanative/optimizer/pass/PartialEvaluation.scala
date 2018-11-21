@@ -48,7 +48,7 @@ class PartialEvaluation extends Pass {
 
     /* Sdiv */
     case Let(n, Op.Bin(Sdiv, ty, _, IVal(0)), unwind) =>
-      copy(n, Val.Undef(ty), unwind)
+      copy(n, Val.Zero(ty), unwind)
 
     case Let(n, Op.Bin(Sdiv, ty, lhs, IVal(1)), unwind) =>
       copy(n, lhs, unwind)
@@ -61,7 +61,7 @@ class PartialEvaluation extends Pass {
 
     /* Udiv */
     case Let(n, Op.Bin(Udiv, ty, _, IVal(0)), unwind) =>
-      copy(n, Val.Undef(ty), unwind)
+      copy(n, Val.Zero(ty), unwind)
 
     case Let(n, Op.Bin(Udiv, ty, lhs, IVal(1)), unwind) =>
       copy(n, lhs, unwind)
@@ -74,7 +74,7 @@ class PartialEvaluation extends Pass {
 
     /* Srem */
     case Let(n, Op.Bin(Srem, ty, lhs, IVal(0)), unwind) =>
-      copy(n, Val.Undef(ty), unwind)
+      copy(n, Val.Zero(ty), unwind)
 
     case Let(n, Op.Bin(Srem, ty, lhs, IVal(1)), unwind) =>
       copy(n, IVal(0, ty), unwind)
@@ -87,7 +87,7 @@ class PartialEvaluation extends Pass {
 
     /* Urem */
     case Let(n, Op.Bin(Urem, ty, lhs, IVal(0)), unwind) =>
-      copy(n, Val.Undef(ty), unwind)
+      copy(n, Val.Zero(ty), unwind)
 
     case Let(n, Op.Bin(Urem, ty, lhs, IVal(1)), unwind) =>
       copy(n, IVal(0, ty), unwind)
